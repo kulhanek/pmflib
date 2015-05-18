@@ -13,7 +13,7 @@ INCLUDE(CTest)
 SET(LIBS_SHARED             ON  CACHE BOOL "Should the shared version of pmflib library be built?")
 SET(LIBS_STATIC             OFF CACHE BOOL "Should the static version of pmflib library be built?")
 
-SET(PMFLIB_HAVE_XBPLIB      ON  CACHE BOOL "Is XBPLib available?")
+SET(PMFLIB_HAVE_XBPLIB      OFF CACHE BOOL "Is XBPLib available?")
 SET(PMFLIB_NETWORK          ON  CACHE BOOL "Is network available")
 SET(PMFLIB_COMPILE_FPMF     ON  CACHE BOOL "Should the fortran part of pmflib be built?")
 SET(PMFLIB_HAVE_RPATH       ON  CACHE BOOL "Is rpath option supported by linker?")
@@ -24,7 +24,7 @@ SET(PMFLIB_SANDER_DRV   ON   CACHE BOOL "Should the driver for sander be built?"
 SET(PMFLIB_PMEMD_DRV    ON   CACHE BOOL "Should the driver for pmemd be built?")
 SET(PMFLIB_CPMD_DRV     ON   CACHE BOOL "Should the driver for cpmd be built?")
 SET(PMFLIB_CP2K_DRV     ON   CACHE BOOL "Should the driver for cp2k be built?")
-SET(PMFLIB_XDYNBP_DRV   ON   CACHE BOOL "Should the driver for xdynbp be built?")
+SET(PMFLIB_XDYNBP_DRV   OFF  CACHE BOOL "Should the driver for xdynbp be built?")
 SET(PMFLIB_LIBATOMS_DRV OFF  CACHE BOOL "Should the driver for libatoms be built?")
 
 # ==============================================================================
