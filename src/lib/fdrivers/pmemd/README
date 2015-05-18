@@ -1,0 +1,40 @@
+Calling sequence:
+
+pmemd.F90
+
+    pmf_pmemd_init_taskid_mpi(mytaskid)
+
+    (master_setup) -> master_setup.F90
+
+    pmf_pmemd_bcast_constraints_mpi
+
+    (shake_setup) -> shake.F90
+
+    pmf_pmemd_init(atm_mass,atm_crd)
+
+    pmf_pmemd_bcast_dat_mpi
+
+    (runmd) -> rummd.F90
+
+    pmf_pmemd_finalize
+
+----------------------------------------------
+
+master_setup.F90
+    pmf_pmemd_init_preinit
+    pmf_pmemd_set_residue
+    pmf_pmemd_set_atom
+    pmf_pmemd_finalize_preinit
+
+shake.F90
+    pmf_pmemd_con_checkatom
+    pmf_pmemd_con_shake_allocate
+    pmf_pmemd_con_set_shake
+
+rummd.F90
+    pmf_pmemd_update_xv
+    (force)
+    pmf_pmemd_update_box
+    pmf_pmemd_force
+    (shake)
+    pmf_pmemd_constraints

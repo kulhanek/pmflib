@@ -1,0 +1,19 @@
+[ACYL]
+name    cv1
+group_a @1-10
+
+[ACYL]
+name    cv2
+group_a @7,8,1,2
+
+[ACYL]
+name    cv3
+group_a @1-6
+
+[ACYL]
+name    cv4
+group_a @2-8
+
+[ACYL]
+name    cv5
+group_a @3-9

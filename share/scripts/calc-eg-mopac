@@ -1,0 +1,28 @@
+#!/bin/bash
+# ===============================================================================
+# pmf-dyn driver (calc-eg) for modified mopac 7.1
+# (c) Petr Kulhanek
+# ===============================================================================
+
+# prepare input file ------------------------------
+if [ -f input.den ]; then
+    echo "PM3 NOINT XYZ NOXYZ 1SCF PL NOMM GRAD ANALYT OLDENS DENOUT" > input.mop
+else
+    echo "PM3 NOINT XYZ NOXYZ 1SCF PL NOMM GRAD ANALYT DENOUT" > input.mop
+fi
+echo "comment" >> input.mop
+echo "comment" >> input.mop
+awk '{ if( NR > 2 ) printf("%s %f 1 %f 1 %f 1\n",$1,$2,$3,$4); }' < input.xyz >> input.mop
+
+# execute mopac -----------------------------------
+
+mopac input
+rm -f input.arc
+
+# extract results ---------------------------------
+
+head -1 input.xyz > result.xyz
+grep "FINAL HEAT OF FORMATION" input.out | awk '{ print $6; }' >> result.xyz
+awk 'BEGIN{ start=-1; } /CARTESIAN DERIVATIVES/{start = 5;} { if( start > 0 ) start--; if(start == 0){ if( NF == 5 ) printf("%s %f %f %f\n",$2,-$3,-$4,-$5); else start = -1;} }' < input.out >> result.xyz
+
+

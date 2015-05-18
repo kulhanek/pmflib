@@ -1,0 +1,124 @@
+.TH bm-integrate 1 "2008" "PMFLib" "PMFLib - Library Supporting Potential of Mean Force Calculations"
+
+.\"-----------------------------------------------------------------------------
+.SH NAME
+bm-integrate
+
+.\"-----------------------------------------------------------------------------
+.SH SYNOPSIS
+bm-integrate [OPTIONS] [--] input output
+
+.\"-----------------------------------------------------------------------------
+.SH DESCRIPTION
+Numerically integrate given data by Simpson method. Program reads three numbers
+from input file (x coordinate, derivative, and standard deviation of
+derivative). As output program prints copy of input data plus integrated
+values and its standard error.
+
+.\"-----------------------------------------------------------------------------
+.SH ARGUMENTS
+.B input
+.RS
+input data file or - for data taken from standard input
+.RE
+
+.B output
+.RS
+output data file or - for data written to standard input
+.RE
+
+.\"-----------------------------------------------------------------------------
+.SH OPTIONS
+.B --offset=REAL
+.RS
+specifies integration constant
+.RE
+
+.B -s, --skip=LINES
+.RS
+number of lines skipped from the beginning of input file
+.RE
+
+.B -a, --anal=LINES
+.RS
+number of LINES from input file to be analyzed
+.RE
+
+.B -p, --pad=LINES
+.RS
+number of padding LINES between used records from input file
+.RE
+
+.B --nosigma
+.RS
+standard deviation of derivative is not present in input data
+.RE
+
+.B --noheader
+.RS
+do not print header to output
+.RE
+
+.B --fx=FORMAT
+.RS
+output FORMAT of echoed x values
+.RE
+
+.B --fy=FORMAT
+.RS
+output FORMAT of echoed derivative values
+.RE
+
+.B --fs=FORMAT
+.RS
+output FORMAT of echoed sigma values
+.RE
+
+.B --fi=FORMAT
+.RS
+output FORMAT of integrated values
+.RE
+
+.B --fe=FORMAT
+.RS
+output FORMAT of integrated error values
+.RE
+
+.B -v, --verbose
+.RS
+increase output verbosity
+.RE
+
+.B --version
+.RS
+output version information and exit
+.RE
+
+.B -h, --help
+.RS
+display this help and exit
+.RE
+
+
+.\"-----------------------------------------------------------------------------
+.SH SEE ALSO
+pmflib(1), abf-integrate(1), mtd-energy(1)
+
+.\"-----------------------------------------------------------------------------
+.SH COPYRIGHT
+Copyright (c) 2009 Petr Kulhanek (NCBR)
+.br
+Copyright (c) 2008 Petr Kulhanek (IE), Letif Mones (IE)
+.br
+Copyright (c) 2007 Petr Kulhanek (IE), Martin Petrek (NCBR), Letif Mones (IE)
+.br
+Copyright (c) 2006 Petr Kulhanek (NCBR), Martin Petrek (NCBR)
+.br
+Copyright (c) 2005 Petr Kulhanek (NCBR)
+
+.P
+.I Affilations:
+.br
+IE  : Institute of Enzymology, Hungarian Academy of Science, Hungary
+.br
+NCBR: National Centre for Biomolecular Research, Masaryk University, Czech Republic

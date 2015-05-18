@@ -1,0 +1,30 @@
+[POS]
+name        cv1
+group_a     @1,2,3,4
+direction   x
+
+[POS]
+name        cv2
+group_a     @1,2,3,4
+direction   y
+
+[POS]
+name        cv3
+group_a     @1,2,3,4
+direction   z
+
+[POS]
+name        cv4
+group_a     @1
+direction   x
+
+[POS]
+name        cv5
+group_a     @1
+direction   y
+
+[POS]
+name        cv6
+group_a     @1
+direction   z
+

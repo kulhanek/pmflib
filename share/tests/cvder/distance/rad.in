@@ -1,0 +1,30 @@
+[RAD]
+name        cv1
+group_a     @1,2,3,4
+direction   x
+
+[RAD]
+name        cv2
+group_a     @1,2,3,4
+direction   y
+
+[RAD]
+name        cv3
+group_a     @1,2,3,4
+direction   z
+
+[RAD]
+name        cv4
+group_a     @1
+direction   x
+
+[RAD]
+name        cv5
+group_a     @1
+direction   y
+
+[RAD]
+name        cv6
+group_a     @1
+direction   z
+

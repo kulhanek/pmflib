@@ -1,0 +1,38 @@
+[MDISG]
+name    cv1
+group_a @1
+group_b @2
+
+[MDISG]
+name    cv2
+group_a @7
+group_b @3
+
+[MDISG]
+name    cv3
+group_a @3
+group_b @7
+beta    0.5
+
+[MDISG]
+name    cv4
+group_a @1-5
+group_b @6-9
+
+[MDISG]
+name    cv5
+group_a @5-9
+group_b @1-3
+
+[MDISG]
+name    cv6
+group_a @7-9
+group_b @1-4
+beta    2.0
+
+[MDISG]
+name    cv7
+group_a @1-3
+group_b @6-8
+beta    2.0
+

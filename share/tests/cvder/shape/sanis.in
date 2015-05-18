@@ -1,0 +1,19 @@
+[SANIS]
+name    cv1
+group_a @1-10
+
+[SANIS]
+name    cv2
+group_a @7,8,1,2
+
+[SANIS]
+name    cv3
+group_a @1-6
+
+[SANIS]
+name    cv4
+group_a @2-8
+
+[SANIS]
+name    cv5
+group_a @3-9

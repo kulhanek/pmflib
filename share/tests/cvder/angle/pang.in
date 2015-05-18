@@ -1,0 +1,37 @@
+[PANG]
+name    cv1
+group_a @1-5
+x_direction_a @1
+y_direction_a @2
+group_b @6-9
+x_direction_b @6
+y_direction_b @8
+
+[PANG]
+name    cv1
+group_a @1-8
+x_direction_a @1
+y_direction_a @2
+group_b @4-9
+x_direction_b @6
+y_direction_b @8
+
+[PANG]
+name    cv1
+group_a @7-9
+x_direction_a @7
+y_direction_a @9
+group_b @1-6
+x_direction_b @2
+y_direction_b @3
+
+[PANG]
+name    cv1
+group_a @4-9
+x_direction_a @5
+y_direction_a @9
+group_b @1-8
+x_direction_b @2
+y_direction_b @3
+
+

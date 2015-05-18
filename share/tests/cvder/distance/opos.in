@@ -1,0 +1,43 @@
+[OPOS]
+name        cv1
+group_a     @1,2,3,4
+z_direction @1
+group_b     @5
+direction   x
+
+[OPOS]
+name        cv2
+group_a     @1,2,3,4
+z_direction @1
+group_b     @5,2,3
+direction   x
+
+[OPOS]
+name        cv3
+group_a     @1,2,3,4
+z_direction @1
+group_b     @5
+direction   y
+
+[OPOS]
+name        cv4
+group_a     @1,2,3,4
+z_direction @1
+group_b     @5,2,3
+direction   y
+
+[OPOS]
+name        cv5
+group_a     @1,2,3,4
+z_direction @1
+group_b     @5
+direction   z
+
+[OPOS]
+name        cv6
+group_a     @1,2,3,4
+z_direction @1
+group_b     @5,2,3
+direction   z
+
+

@@ -1,0 +1,53 @@
+[CNGFA]
+name      cv1
+group_a   @1-5
+group_b   @6-10
+steepness 1.0 
+reference 3.0
+group_c   @1,2
+group_d   @9,10
+limit     3.14
+
+[CNGFA]
+name      cv1
+group_a   @1,3,4,6,7
+group_b   @2,5,8,9
+steepness 2.0
+reference 4.0
+group_c   @1,2
+group_d   @9,10
+limit     1.28
+
+[CNGFA]
+name      cv1
+group_a   @1
+group_b   @2,5,8,9
+cutoff    6.0
+steepness 4.0
+reference 3.0
+group_c   @1,2
+group_d   @9,10
+limit     1.28
+
+[CNGFA]
+name      cv1
+group_a   @1,3,4,6,7
+group_b   @2
+cutoff    2.0
+steepness 1.0
+reference 1.0
+group_c   @1,2
+group_d   @9,10
+limit     3.14
+
+[CNGFA]
+name      cv1
+group_a   @1,3,4,6,7
+group_b   @2
+cutoff    2.0
+steepness 3.0
+reference 1.0
+group_c   @1,2
+group_d   @9,10
+limit     3.14
+

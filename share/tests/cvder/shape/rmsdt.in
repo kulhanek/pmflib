@@ -1,0 +1,20 @@
+[RMSDT]
+name    cv1
+group_a @1-6
+target  str001.xyz
+
+[RMSDT]
+name    cv2
+group_a @2-7
+target  str001.xyz
+
+[RMSDT]
+name    cv3
+group_a @1-6
+target  str002.xyz
+
+[RMSDT]
+name    cv4
+group_a @2-7
+target  str002.xyz
+

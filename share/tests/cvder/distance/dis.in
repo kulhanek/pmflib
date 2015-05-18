@@ -1,0 +1,25 @@
+[DIS]
+name    cv1
+group_a @1
+group_b @2
+
+[DIS]
+name    cv2
+group_a @7
+group_b @3
+
+[DIS]
+name    cv3
+group_a @3
+group_b @7
+
+[DIS]
+name    cv4
+group_a @1-7
+group_b @5-9
+
+[DIS]
+name    cv5
+group_a @5-9
+group_b @1-8
+

@@ -1,0 +1,8 @@
+[CNRF]
+name      cv1
+group_a   @1-2
+group_b   @6-10
+offset    0.0
+reference 1.2
+npower    2
+mpower    4

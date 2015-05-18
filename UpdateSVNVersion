@@ -1,0 +1,23 @@
+#!/bin/bash
+
+if [ $# -ne 1 ]
+    then
+        echo "Run with 'activate' argument!"
+        exit
+    fi
+
+SVNVERSION=`svnversion -n`
+DATE=`date +"%Y-%m-%d %H:%M"`
+
+# ------------------------------------------------------------------------------
+
+function pmflib_verupdate()
+{
+    sed -e "s/SVNVERSION/$SVNVERSION/g" -e "s/DATE/$DATE/g" $1 > $1_
+    mv -f $1_  $1
+}
+
+# ------------------------------------------------------------------------------
+
+pmflib_verupdate src/lib/cpmf/PMFMainHeader.hpp
+pmflib_verupdate src/lib/fpmf/common/pmf_ver.f90

@@ -1,0 +1,42 @@
+# ==============================================================================
+# CPMD driver notes ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# ==============================================================================
+
+# ==============================================================================
+# mdmain.F algorithm flow (NVT dynamics)
+# ==============================================================================
+                Eq.     TAU0     TAUP                VELP            FION          Lambda
+input:                  R(t)     n.a.                V(t)            F(t)
+
+LOOP
+    CALL VELUPI(VELP,FION)
+                249.1                                V(t)->v_u(t')   F(t)
+
+    CALL POSUPI(TAU0,TAUP,VELP)
+                249.2   R(t)  -> r_u(t+dt)           v_u(t')         F(t)
+
+    CALL CPMDSHAKE(TAU0,TAUP,VELP)
+                249.3   helper   r_u(t+dt)->R(t+dt)  v_u(t')->??     F(t)         Lr(t)
+    ->PMF shake
+        -> PMF increment counters
+    CALL FORCEDR(TAUP,FION)
+                249.4   n.a.     R(t+dt)             v_u(t')??       F(t+dt)
+    ->PMF force
+    CALL VELUPI(VELP,FION)
+                249.5   n.a.     R(t+dt)             ??->v_u(t+dt)   F(t+dt)
+
+    CALL RATTLE(TAUP,VELP)
+                249.6   n.a.     R(t+dt)             v_u(t+dt)->V(t+dt) F(t+dt)   Lv(t+dt)
+    ->PMF rattle
+END LOOP
+
+Equations are from:
+--------------------------------------------------------------------
+Ab initio molecular dynamics: Theory and Implementation
+Dominik Marx and Jurg Hutter
+Modern Methods and Algorithms of Quantum Chemistry,
+J. Grotendorst (Ed.), John von Neumann Institute for Computing,
+Julich, NIC Series, Vol. 1, ISBN 3-00-005618-1, pp. 301-449, 2000.
+¨
+
+¨

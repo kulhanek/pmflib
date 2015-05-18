@@ -1,0 +1,90 @@
+.TH abf-samples 1 "2008" "PMFLib" "PMFLib - Library Supporting Potential of Mean Force Calculations"
+
+.\"-----------------------------------------------------------------------------
+.SH NAME
+abf-samples
+
+.\"-----------------------------------------------------------------------------
+.SH SYNOPSIS
+abf-samples [OPTIONS] [--] accuname sname
+
+.\"-----------------------------------------------------------------------------
+.SH DESCRIPTION
+Prints the number of samples accumulated during ABF calculation.
+
+.\"-----------------------------------------------------------------------------
+.SH ARGUMENTS
+.B accuname
+.RS
+file name of ABF accumulator file
+.RE
+
+.B sname
+.RS
+file name with samples
+.RE
+
+.\"-----------------------------------------------------------------------------
+.SH OPTIONS
+.B -l, --limit=LIMIT
+.RS
+only bins with the number of samples grater than or equal to LIMIT will be printed
+.RE
+
+.B -g, --group=GROUP
+.RS
+determines which GROUP will be printed, zero and minus one have special meaning, zero indicates ABF free energy derivatives and minus one potential energy derivatives
+.RE
+
+.B --nognuplot
+.RS
+do not print delimiters between records
+.RE
+
+.B --fx=FORMAT 
+.RS
+output FORMAT of coordinate values
+.RE
+
+.B --fe=FORMAT
+.RS
+output FORMAT of samples
+.RE
+
+.B -v, --verbose
+.RS
+increase output verbosity
+.RE
+
+.B --version
+.RS
+output version information and exit
+.RE
+
+.B -h, --help
+.RS
+display this help and exit
+.RE
+
+.\"-----------------------------------------------------------------------------
+.SH SEE ALSO
+pmflib(1), pmflib(1), abf-combine(1), abf-derivatives(1), abf-integrate(1), abf-trajectory(1)
+
+.\"-----------------------------------------------------------------------------
+.SH COPYRIGHT
+Copyright (c) 2009 Petr Kulhanek (NCBR)
+.br
+Copyright (c) 2008 Petr Kulhanek (IE), Letif Mones (IE)
+.br
+Copyright (c) 2007 Petr Kulhanek (IE), Martin Petrek (NCBR), Letif Mones (IE)
+.br
+Copyright (c) 2006 Petr Kulhanek (NCBR), Martin Petrek (NCBR)
+.br
+Copyright (c) 2005 Petr Kulhanek (NCBR)
+
+.P
+.I Affilations:
+.br
+IE  : Institute of Enzymology, Hungarian Academy of Science, Hungary
+.br
+NCBR: National Centre for Biomolecular Research, Masaryk University, Czech Republic

@@ -1,0 +1,2 @@
+flex -o Mask.yy.c Mask.l
+bison -d -b Mask Mask.y

@@ -1,0 +1,24 @@
+[EVEC]
+name    cv1
+group_a @1-6
+average str001.xyz
+evec    str001.evec
+
+[EVEC]
+name    cv2
+group_a @2-7
+average str001.xyz
+evec    str001.evec
+
+[EVEC]
+name    cv3
+group_a @1-6
+average str002.xyz
+evec    str002.evec
+
+[EVEC]
+name    cv4
+group_a @2-7
+average str002.xyz
+evec    str002.evec
+

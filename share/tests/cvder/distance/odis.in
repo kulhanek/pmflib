@@ -1,0 +1,41 @@
+[ODIS]
+name         cv1
+group_a      @1,2,3,4
+x_direction  @1
+y_direction  @2
+orientation   1
+group_b      @5
+
+[ODIS]
+name         cv2
+group_a      @1,2,3
+x_direction  @1
+y_direction  @2
+orientation   1
+group_b      @5
+
+[ODIS]
+name         cv3
+group_a      @1,2,3
+x_direction  @1
+y_direction  @2
+orientation   1
+group_b      @1,2,3
+
+[ODIS]
+name         cv4
+group_a      @6-9
+x_direction  @6
+y_direction  @8
+orientation   -1
+group_b      @1,2,3,7
+
+[ODIS]
+name         cv5
+group_a      @6-9
+x_direction  @9
+y_direction  @6
+orientation   -1
+group_b      @3,7
+
+

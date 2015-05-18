@@ -1,0 +1,28 @@
+// =============================================================================
+// PMFLib - Library Supporting Potential of Mean Force Calculations
+// -----------------------------------------------------------------------------
+
+Principal author:
+    Petr Kulhanek, kulhanek@chemi.muni.cz (IE, NCBR)
+
+Contributors:
+    Letif Mones, molet@enzim.hu (IE)
+    Monika Fuxreiter, monika@enzim.hu (IE)
+    Martin Petrek, petrek@chemi.muni.cz (NCBR)
+    Zora Strelcova, stre@chemi.muni.cz (NCBR)
+    Jan Kmunicek, kmunicek@ics.muni.cz (CESNET)
+    Jaroslav Koca, jkoca@chemi.muni.cz (NCBR)
+
+// -----------------------------------------------------------------------------
+Affilations (alphabetically):
+
+CESNET: CESNET v.o.s.
+        Zikova 4, CZ- Praha, Czech Republic
+
+IE      Institute of Enzymology
+        Hungarian Acadamy of Science
+        Karolina ut 29, H-1113 Budapest, Hungary
+
+NCBR:   National Centre for Biomolecular Research
+        Masaryk University
+        Kotlarska 2, CZ-61137 Brno, Czech Republic

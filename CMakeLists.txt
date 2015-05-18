@@ -1,0 +1,227 @@
+# ==============================================================================
+# PMFLib CMake File
+# ==============================================================================
+
+CMAKE_MINIMUM_REQUIRED(VERSION 2.8 FATAL_ERROR)
+INCLUDE(CTest)
+#SET(CMAKE_VERBOSE_MAKEFILE ON)
+
+# ==============================================================================
+# conditional setup ------------------------------------------------------------
+# ==============================================================================
+
+SET(LIBS_SHARED             ON  CACHE BOOL "Should the shared version of pmflib library be built?")
+SET(LIBS_STATIC             OFF CACHE BOOL "Should the static version of pmflib library be built?")
+
+SET(PMFLIB_HAVE_XBPLIB      ON  CACHE BOOL "Is XBPLib available?")
+SET(PMFLIB_NETWORK          ON  CACHE BOOL "Is network available")
+SET(PMFLIB_COMPILE_FPMF     ON  CACHE BOOL "Should the fortran part of pmflib be built?")
+SET(PMFLIB_HAVE_RPATH       ON  CACHE BOOL "Is rpath option supported by linker?")
+SET(PMFLIB_USE_INST_RPATH   OFF CACHE BOOL "Should CMAKE_INSTALL_RPATH be used as the single RPATH?")
+
+# drivers options --------------------------------
+SET(PMFLIB_SANDER_DRV   ON   CACHE BOOL "Should the driver for sander be built?")
+SET(PMFLIB_PMEMD_DRV    ON   CACHE BOOL "Should the driver for pmemd be built?")
+SET(PMFLIB_CPMD_DRV     ON   CACHE BOOL "Should the driver for cpmd be built?")
+SET(PMFLIB_CP2K_DRV     ON   CACHE BOOL "Should the driver for cp2k be built?")
+SET(PMFLIB_XDYNBP_DRV   ON   CACHE BOOL "Should the driver for xdynbp be built?")
+SET(PMFLIB_LIBATOMS_DRV OFF  CACHE BOOL "Should the driver for libatoms be built?")
+
+# ==============================================================================
+# project setup ----------------------------------------------------------------
+# ==============================================================================
+
+# define project version -------------------------
+SET(PMFLIB_VERSION 4.0.x)
+
+# what languages we use --------------------------
+ENABLE_LANGUAGE(CXX)
+ENABLE_LANGUAGE(Fortran)
+
+# ==============================================================================
+# external dependencies --------------------------------------------------------
+# ==============================================================================
+
+IF(NOT DEFINED COMPOSITE_PROJECT)
+    SET(DEVELOPMENT_ROOT "$ENV{DEVELOPMENT_ROOT}")
+ENDIF(NOT DEFINED COMPOSITE_PROJECT)
+
+IF(NOT DEVELOPMENT_ROOT)
+    MESSAGE(FATAL_ERROR "DEVELOPMENT_ROOT variable is not set!")
+ENDIF(NOT DEVELOPMENT_ROOT)
+
+# ==============================================================================
+# external libraries -----------------------------------------------------------
+# ==============================================================================
+
+# HIPOLY ====================
+SET(HIPOLY_ROOT ${DEVELOPMENT_ROOT}/projects/hipoly/1.0)
+INCLUDE_DIRECTORIES(${HIPOLY_ROOT}/src/lib/hipoly SYSTEM)
+INCLUDE_DIRECTORIES(${HIPOLY_ROOT}/src/lib/hipoly/compress SYSTEM)
+INCLUDE_DIRECTORIES(${HIPOLY_ROOT}/src/lib/hipoly/error SYSTEM)
+INCLUDE_DIRECTORIES(${HIPOLY_ROOT}/src/lib/hipoly/event SYSTEM)
+INCLUDE_DIRECTORIES(${HIPOLY_ROOT}/src/lib/hipoly/file SYSTEM)
+INCLUDE_DIRECTORIES(${HIPOLY_ROOT}/src/lib/hipoly/list SYSTEM)
+INCLUDE_DIRECTORIES(${HIPOLY_ROOT}/src/lib/hipoly/option SYSTEM)
+INCLUDE_DIRECTORIES(${HIPOLY_ROOT}/src/lib/hipoly/string SYSTEM)
+INCLUDE_DIRECTORIES(${HIPOLY_ROOT}/src/lib/hipoly/stream SYSTEM)
+INCLUDE_DIRECTORIES(${HIPOLY_ROOT}/src/lib/hipoly/thread SYSTEM)
+INCLUDE_DIRECTORIES(${HIPOLY_ROOT}/src/lib/hipoly/time SYSTEM)
+INCLUDE_DIRECTORIES(${HIPOLY_ROOT}/src/lib/hipoly/xml SYSTEM)
+LINK_DIRECTORIES(${HIPOLY_ROOT}/lib)
+SET(HIPOLY_LIB_NAME hipoly)
+
+# SCIMAFIC ====================
+SET(SCIMAFIC_ROOT ${DEVELOPMENT_ROOT}/projects/scimafic/1.0)
+INCLUDE_DIRECTORIES(${SCIMAFIC_ROOT}/src/lib/cscimafic SYSTEM)
+INCLUDE_DIRECTORIES(${SCIMAFIC_ROOT}/src/lib/cscimafic/files SYSTEM)
+INCLUDE_DIRECTORIES(${SCIMAFIC_ROOT}/src/lib/cscimafic/maths SYSTEM)
+INCLUDE_DIRECTORIES(${SCIMAFIC_ROOT}/src/lib/cscimafic/chemistry SYSTEM)
+INCLUDE_DIRECTORIES(${SCIMAFIC_ROOT}/src/lib/cscimafic/physics SYSTEM)
+INCLUDE_DIRECTORIES(${SCIMAFIC_ROOT}/src/lib/fscimafic SYSTEM)
+LINK_DIRECTORIES(${SCIMAFIC_ROOT}/lib)
+SET(SCIMAFIC_CLIB_NAME cscimafic)
+SET(SCIMAFIC_FLIB_NAME fscimafic)
+
+# PRMFile ===================
+SET(PRMFILE_ROOT ${DEVELOPMENT_ROOT}/projects/prmfile/1.0)
+INCLUDE_DIRECTORIES(${PRMFILE_ROOT}/src/lib/cprmfile SYSTEM)
+INCLUDE_DIRECTORIES(${PRMFILE_ROOT}/src/lib/fprmfile SYSTEM)
+LINK_DIRECTORIES(${PRMFILE_ROOT}/lib)
+SET(PRMFILE_CLIB_NAME cprmfile)
+SET(PRMFILE_FLIB_NAME fprmfile)
+
+# NETLib ====================
+SET(NETLIB_ROOT ${DEVELOPMENT_ROOT}/projects/netlib/1.0)
+INCLUDE_DIRECTORIES(${NETLIB_ROOT}/src/lib/netlib SYSTEM)
+INCLUDE_DIRECTORIES(${NETLIB_ROOT}/src/lib/netlib/common SYSTEM)
+INCLUDE_DIRECTORIES(${NETLIB_ROOT}/src/lib/netlib/client SYSTEM)
+INCLUDE_DIRECTORIES(${NETLIB_ROOT}/src/lib/netlib/server SYSTEM)
+INCLUDE_DIRECTORIES(${NETLIB_ROOT}/src/lib/netlib/extra/server SYSTEM)
+INCLUDE_DIRECTORIES(${NETLIB_ROOT}/src/lib/netlib/extra/client SYSTEM)
+LINK_DIRECTORIES(${NETLIB_ROOT}/lib)
+SET(NETLIB_LIB_NAME netlib)
+
+IF(NOT MKL_FOUND)
+    # BLAS ======================
+    SET(BLAS_ROOT ${DEVELOPMENT_ROOT}/thirdparty/blas/netlib)
+    LINK_DIRECTORIES(${BLAS_ROOT}/lib)
+    SET(BLAS_LIB_NAME fblasd)
+
+    # LAPACK =====================
+    SET(LAPACK_ROOT ${DEVELOPMENT_ROOT}/thirdparty/lapack/3.1.1)
+    LINK_DIRECTORIES(${LAPACK_ROOT}/lib)
+    SET(LAPACK_LIB_NAME flapackd)
+ELSE(NOT MKL_FOUND)
+    SET(LAPACK_LIB_NAME ${MKL_LIBS})
+ENDIF(NOT MKL_FOUND)
+
+# runlux =====================
+SET(RANLUX_ROOT ${DEVELOPMENT_ROOT}/thirdparty/ranlux/1.0)
+LINK_DIRECTORIES(${RANLUX_ROOT}/lib)
+SET(RANLUX_LIB_NAME franlux)
+
+# CSPARSE ======================
+SET(CSPARSE_ROOT ${DEVELOPMENT_ROOT}/thirdparty/csparse/2.2.1)
+INCLUDE_DIRECTORIES(${CSPARSE_ROOT}/src/lib/csparse SYSTEM)
+LINK_DIRECTORIES(${CSPARSE_ROOT}/lib)
+SET(CSPARSE_LIB_NAME csparse)
+
+IF(PMFLIB_HAVE_XBPLIB)
+    # XBPLib ===================
+    SET(XBPLIB_ROOT ${DEVELOPMENT_ROOT}/projects/xbplib/4.0)
+    INCLUDE_DIRECTORIES(${XBPLIB_ROOT}/src/lib/xcore SYSTEM)
+    INCLUDE_DIRECTORIES(${XBPLIB_ROOT}/src/lib/xfiles SYSTEM)
+    INCLUDE_DIRECTORIES(${XBPLIB_ROOT}/src/lib/xene SYSTEM)
+    LINK_DIRECTORIES(${XBPLIB_ROOT}/lib)
+    SET(XBPLIB_XCORE_LIB_NAME xcore)
+    SET(XBPLIB_XFILES_LIB_NAME xfiles)
+    SET(XBPLIB_XENE_LIB_NAME xene)
+ENDIF(PMFLIB_HAVE_XBPLIB)
+
+# MPI ======================
+GET_FILENAME_COMPONENT(FCOMP_NAME ${CMAKE_Fortran_COMPILER} NAME_WE)
+if(FCOMP_NAME STREQUAL mpif90)
+    ADD_DEFINITIONS(-DMPI)
+    MESSAGE("-- MPI status: enabled")
+ENDIF(FCOMP_NAME STREQUAL mpif90)
+
+# ==============================================================================
+# output directories -----------------------------------------------------------
+# ==============================================================================
+
+SET(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR}/bin)
+SET(LIBRARY_OUTPUT_PATH ${CMAKE_BINARY_DIR}/lib)
+LINK_DIRECTORIES(${CMAKE_BINARY_DIR}/lib)
+LINK_DIRECTORIES(${CMAKE_BINARY_DIR}/lib/drivers)
+
+# ==============================================================================
+# rpaths -----------------------------------------------------------------------
+# ==============================================================================
+
+IF(NOT DEFINED COMPOSITE_PROJECT)
+    # use, i.e. don't skip the full RPATH for the build tree
+    SET(CMAKE_SKIP_BUILD_RPATH  FALSE)
+
+    # when building, don't use the install RPATH already
+    # (but later on when installing)
+    SET(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
+
+    # the RPATH to be used when installing
+    SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib:${CMAKE_INSTALL_PREFIX}/lib/drivers")
+
+    # add the automatically determined parts of the RPATH
+    # which point to directories outside the build tree to the install RPATH
+    SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH FALSE)
+ENDIF(NOT DEFINED COMPOSITE_PROJECT)
+
+# ==============================================================================
+# compiler setups --------------------------------------------------------------
+# ==============================================================================
+
+IF(NOT DEFINED COMPOSITE_PROJECT)
+    # C++ options
+    SET(CMAKE_CXX_FLAGS_RELEASE "-O2")
+    SET(CMAKE_CXX_FLAGS_DEBUG "-O0 -g -Wall -Werror -pedantic-errors -Wundef -Wno-long-long")
+
+    # get the name of fortran compiler
+    get_filename_component(FCOMP_NAME ${CMAKE_Fortran_COMPILER} NAME_WE)
+
+    # default compiler setups - gfortran
+    SET(CMAKE_Fortran_FLAGS_RELEASE "-O0")
+    SET(CMAKE_Fortran_FLAGS_DEBUG   "-g -O0")
+
+    # ifort
+    IF(FCOMP_NAME STREQUAL ifort)
+        SET(CMAKE_Fortran_FLAGS_RELEASE "-O2")
+ #       SET(CMAKE_Fortran_FLAGS_DEBUG   "-g -O0 -std95 -traceback -check all -warn all")
+        SET(CMAKE_Fortran_FLAGS_DEBUG   "-g -O0 -stand f03 -traceback -check all -warn all")
+    ENDIF(FCOMP_NAME STREQUAL ifort)
+
+    # open64
+    IF(FCOMP_NAME STREQUAL openf95)
+        SET(CMAKE_Fortran_FLAGS_RELEASE "-O3 -fno-second-underscore")
+        SET(CMAKE_Fortran_FLAGS_DEBUG "-g -O0 -fno-second-underscore")
+    ENDIF(FCOMP_NAME STREQUAL openf95)
+
+    # fix the problem with dynamic libraries and xlf compiler on SP5
+    IF(FCOMP_NAME STREQUAL xlf)
+        SET(CMAKE_Fortran_FLAGS_RELEASE "-O2 -qsuppress=1501-510:cmpmsg")
+        SET(CMAKE_Fortran_FLAGS_DEBUG   "-g")
+        IF(LIBS_SHARED)
+            MESSAGE(FATAL_ERROR "LIBS_SHARED is ON, which is not supported with xlf compiler!")
+        ENDIF(LIBS_SHARED)
+    ENDIF(FCOMP_NAME STREQUAL xlf)
+
+    #SET(CMAKE_BUILD_TYPE Release)
+    SET(CMAKE_BUILD_TYPE Debug)
+ENDIF(NOT DEFINED COMPOSITE_PROJECT)
+
+# ==============================================================================
+# project subdirectories  ------------------------------------------------------
+# ==============================================================================
+
+ADD_SUBDIRECTORY(src)
+ADD_SUBDIRECTORY(man)
+ADD_SUBDIRECTORY(share)
+

@@ -1,0 +1,37 @@
+[ORAD]
+name        cv1
+group_a     @1,2,3,4
+group_b     @5
+direction   x
+
+[ORAD]
+name        cv2
+group_a     @1,2,3,4
+group_b     @5,2,3
+direction   x
+
+[ORAD]
+name        cv3
+group_a     @1,2,3,4
+group_b     @5
+direction   y
+
+[ORAD]
+name        cv4
+group_a     @1,2,3,4
+group_b     @5,2,3
+direction   y
+
+[ORAD]
+name        cv5
+group_a     @1,2,3,4
+group_b     @5
+direction   z
+
+[ORAD]
+name        cv6
+group_a     @1,2,3,4
+group_b     @5,2,3
+direction   z
+
+

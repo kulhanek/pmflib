@@ -1,0 +1,9 @@
+# random structure, uniform mass
+
+[test-cvs]
+test_type		deriv
+num_of_tests		10
+stop_when_error 	on
+verbose_print 		on
+num_diff			0.00001
+uniform_mass            3.0
