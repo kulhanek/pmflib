@@ -213,8 +213,8 @@ IF(NOT DEFINED COMPOSITE_PROJECT)
         ENDIF(LIBS_SHARED)
     ENDIF(FCOMP_NAME STREQUAL xlf)
 
-    #SET(CMAKE_BUILD_TYPE Release)
-    SET(CMAKE_BUILD_TYPE Debug)
+    SET(CMAKE_BUILD_TYPE Release)
+    #SET(CMAKE_BUILD_TYPE Debug)
 ENDIF(NOT DEFINED COMPOSITE_PROJECT)
 
 # ==============================================================================
