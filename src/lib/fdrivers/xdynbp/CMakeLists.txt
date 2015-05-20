@@ -18,6 +18,7 @@ ENDIF(LIBS_STATIC)
 # create shared library --------------------------------------------------------
 IF(LIBS_SHARED)
     ADD_LIBRARY(xdynbp_drv_shared SHARED ${XDYNBP_DRV_OBJ})
+    TARGET_LINK_LIBRARIES(xdynbp_drv_shared ${FPMF_LIBRARIES})
     SET_TARGET_PROPERTIES(xdynbp_drv_shared PROPERTIES
                             OUTPUT_NAME fpmfdrv_xdynbp
                             CLEAN_DIRECT_OUTPUT 1

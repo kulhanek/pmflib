@@ -231,18 +231,7 @@ IF(LIBS_SHARED)
                             CLEAN_DIRECT_OUTPUT 1
                             VERSION ${PMFLIB_VERSION}
                             )
-    TARGET_LINK_LIBRARIES(fpmf_shared
-            ${CPMF_LIBRARIES}
-            ${XBPLIB_XCORE_LIB_NAME}
-            ${XBPLIB_XFILES_LIB_NAME}
-            ${XBPLIB_XENE_LIB_NAME}
-            ${PRMFILE_FLIB_NAME}
-            ${LAPACK_LIB_NAME}
-            ${BLAS_LIB_NAME}
-            ${SCIMAFIC_FLIB_NAME}
-            ${RANLUX_LIB_NAME}
-            ${CPMF_LIBRARIES}
-            )
+    TARGET_LINK_LIBRARIES(fpmf_shared ${FPMF_LIBRARIES_DEPS})
     INSTALL(TARGETS
                 fpmf_shared
             LIBRARY DESTINATION

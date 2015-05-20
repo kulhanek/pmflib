@@ -20,6 +20,7 @@ ENDIF(LIBS_STATIC)
 # create shared library --------------------------------------------------------
 IF(LIBS_SHARED)
     ADD_LIBRARY(cp2k_drv_shared SHARED ${CP2K_DRV_SRC})
+    TARGET_LINK_LIBRARIES(cp2k_drv_shared ${FPMF_LIBRARIES})
     SET_TARGET_PROPERTIES(cp2k_drv_shared PROPERTIES
                             OUTPUT_NAME fpmfdrv_cp2k
                             CLEAN_DIRECT_OUTPUT 1

@@ -20,6 +20,7 @@ ENDIF(LIBS_STATIC)
 # create shared library --------------------------------------------------------
 IF(LIBS_SHARED)
     ADD_LIBRARY(pmemd_drv_shared SHARED ${PMEMD_DRV_SRC})
+    TARGET_LINK_LIBRARIES(pmemd_drv_shared ${FPMF_LIBRARIES})
     SET_TARGET_PROPERTIES(pmemd_drv_shared PROPERTIES
                             OUTPUT_NAME fpmfdrv_pmemd
                             CLEAN_DIRECT_OUTPUT 1

@@ -20,6 +20,7 @@ ENDIF(LIBS_STATIC)
 # create shared library --------------------------------------------------------
 IF(LIBS_SHARED)
     ADD_LIBRARY(sander_drv_shared SHARED ${SANDER_DRV_SRC})
+    TARGET_LINK_LIBRARIES(sander_drv_shared ${FPMF_LIBRARIES})
     SET_TARGET_PROPERTIES(sander_drv_shared PROPERTIES
                             OUTPUT_NAME fpmfdrv_sander
                             CLEAN_DIRECT_OUTPUT 1
