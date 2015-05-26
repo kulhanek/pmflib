@@ -6,7 +6,8 @@ if [ $# -ne 1 ]
         exit
     fi
 
-SVNVERSION=`svnversion -n`
+# count number of commits | this number can only increase
+GITVERSION=`git log --pretty=%h | wc -l`
 DATE=`date +"%Y-%m-%d %H:%M"`
 
 # ------------------------------------------------------------------------------

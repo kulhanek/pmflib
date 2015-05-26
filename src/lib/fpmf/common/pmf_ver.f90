@@ -1,7 +1,7 @@
 !===============================================================================
 ! PMFLib - Library Supporting Potential of Mean Force Calculations
 !-------------------------------------------------------------------------------
-!    Copyright (C) 2012 Petr Kulhanek, kulhanek@chemi.muni.cz
+!    Copyright (C) 2015 Petr Kulhanek, kulhanek@chemi.muni.cz
 !
 !    This library is free software; you can redistribute it and/or
 !    modify it under the terms of the GNU Lesser General Public
@@ -27,7 +27,7 @@ use pmf_constants
 implicit none
 !-------------------------------------------------------------------------------
 
-character(80),parameter   :: PMFLIBVER   = 'PMFLib 4.0.SVNVERSION (DATE)'
+character(80),parameter   :: PMFLIBVER   = 'PMFLib 5.0.SVNVERSION (DATE)'
 
 !-------------------------------------------------------------------------------
 

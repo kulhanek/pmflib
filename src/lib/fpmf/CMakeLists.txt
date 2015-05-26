@@ -231,7 +231,7 @@ IF(LIBS_SHARED)
                             CLEAN_DIRECT_OUTPUT 1
                             VERSION ${PMFLIB_VERSION}
                             )
-    TARGET_LINK_LIBRARIES(fpmf_shared ${FPMF_LIBRARIES_DEPS})
+    TARGET_LINK_LIBRARIES(fpmf_shared ${CPMF_LIBRARIES} ${FPMF_LIBRARIES_DEPS})
     INSTALL(TARGETS
                 fpmf_shared
             LIBRARY DESTINATION

@@ -31,7 +31,7 @@
 
 //------------------------------------------------------------------------------
 
-#define PMFLIB_VERSION "PMFLib 4.0.SVNVERSION (DATE)"
+#define PMFLIB_VERSION "PMFLib 5.0.SVNVERSION (DATE)"
 
 extern const char* LibBuildVersion_PMF;
 
