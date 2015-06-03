@@ -1,6 +1,8 @@
 ! ==============================================================================
 ! PMFLib - Library Supporting Potential of Mean Force Calculations
 ! ------------------------------------------------------------------------------
+!    Copyright (C) 2011-2015 Petr Kulhanek, kulhanek@chemi.muni.cz
+!    Copyright (C) 2013-2015 Letif Mones, lam81@cam.ac.uk
 !    Copyright (C) 2010 Petr Kulhanek, kulhanek@chemi.muni.cz
 !
 !    This library is free software; you can redistribute it and/or
@@ -33,6 +35,8 @@ integer     :: PMFLIB_TOTAL_TIMER                       = -10
         integer     :: PMFLIB_METHODS_TIMER             = -40
             integer     :: PMFLIB_ABF_TIMER             = -50
                 integer     :: PMFLIB_ABF_MWA_TIMER     = -55
+            integer     :: PMFLIB_ABP_TIMER             = -56
+                integer     :: PMFLIB_ABP_MWA_TIMER     = -57
             integer     :: PMFLIB_MTD_TIMER             = -60
                 integer     :: PMFLIB_MTD_MWA_TIMER     = -65
             integer     :: PMFLIB_CON_TIMER             = -70
@@ -40,8 +44,11 @@ integer     :: PMFLIB_TOTAL_TIMER                       = -10
             integer     :: PMFLIB_STM_TIMER             = -82
                 integer     :: PMFLIB_STM_NET_TIMER     = -84
         integer     :: PMFLIB_EXTENSIONS_TIMER          = -90
+            integer     :: PMFLIB_REMD_TIMER            = -100
+                integer     :: PMFLIB_REMD_NET_TIMER    = -110
             integer     :: PMFLIB_MON_TIMER             = -120
             integer     :: PMFLIB_PDRV_TIMER            = -130
+            integer     :: PMFLIB_GAP_TIMER             = -140
 
 contains
 
@@ -81,6 +88,8 @@ subroutine pmf_timers_init
     PMFLIB_METHODS_TIMER          = add_timer(PMFLIB_TIMER,'Methods')
         PMFLIB_ABF_TIMER            = add_timer(PMFLIB_METHODS_TIMER,'Adaptive Biasing Force')
             PMFLIB_ABF_MWA_TIMER        = add_timer(PMFLIB_ABF_TIMER,'Multiple Walkers Approach')
+        PMFLIB_ABP_TIMER            = add_timer(PMFLIB_METHODS_TIMER,'Adaptive Biasing Potential')
+            PMFLIB_ABP_MWA_TIMER        = add_timer(PMFLIB_ABP_TIMER,'Multiple Walkers Approach')
         PMFLIB_MTD_TIMER            = add_timer(PMFLIB_METHODS_TIMER,'Metadynamics')
             PMFLIB_MTD_MWA_TIMER        = add_timer(PMFLIB_MTD_TIMER,'Multiple Walkers Approach')
         PMFLIB_STM_TIMER            = add_timer(PMFLIB_METHODS_TIMER,'String Method')
@@ -90,6 +99,8 @@ subroutine pmf_timers_init
     PMFLIB_EXTENSIONS_TIMER          = add_timer(PMFLIB_TIMER,'Extensions')
         PMFLIB_MON_TIMER        = add_timer(PMFLIB_EXTENSIONS_TIMER,'Monitoring')
         PMFLIB_PDRV_TIMER       = add_timer(PMFLIB_EXTENSIONS_TIMER,'Path Driving')
+        PMFLIB_REMD_TIMER       = add_timer(PMFLIB_EXTENSIONS_TIMER,'Replica Exchange Molecular Dynamics')
+        PMFLIB_GAP_TIMER        = add_timer(PMFLIB_EXTENSIONS_TIMER,'Gaussian Approximation Potential')
 
 end subroutine pmf_timers_init
 

@@ -1,7 +1,8 @@
 !===============================================================================
 ! PMFLib - Library Supporting Potential of Mean Force Calculations
 !-------------------------------------------------------------------------------
-!    Copyright (C) 2015 Petr Kulhanek, kulhanek@chemi.muni.cz
+!    Copyright (C) 2011-2015 Petr Kulhanek, kulhanek@chemi.muni.cz
+!    Copyright (C) 2013-2015 Letif Mones, lam81@cam.ac.uk
 !
 !    This library is free software; you can redistribute it and/or
 !    modify it under the terms of the GNU Lesser General Public

@@ -44,6 +44,9 @@ SET(CPMF_NETWORK_SRC
     # MTD ----------------------------------------
         network/mtd/MTDClient.cpp
         network/mtd/EntriesMTDClient.cpp
+    # REMD ---------------------------------------
+        network/remd/REMDClient.cpp
+        network/remd/EntriesREMDClient.cpp
     # STM ----------------------------------------
         network/stm/STMClient.cpp
         network/stm/EntriesSTMClient.cpp

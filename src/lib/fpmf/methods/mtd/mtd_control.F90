@@ -1,6 +1,8 @@
 !===============================================================================
 ! PMFLib - Library Supporting Potential of Mean Force Calculations
 !-------------------------------------------------------------------------------
+!    Copyright (C) 2011-2015 Petr Kulhanek, kulhanek@chemi.muni.cz
+!    Copyright (C) 2013-2015 Letif Mones, lam81@cam.ac.uk
 !    Copyright (C) 2007 Petr Kulhanek, kulhanek@enzim.hu
 !    Copyright (C) 2006 Petr Kulhanek, kulhanek@chemi.muni.cz &
 !                       Martin Petrek, petrek@chemi.muni.cz 
@@ -69,8 +71,8 @@ subroutine mtd_control_read_mtd(prm_fin)
         write(PMF_OUT,10) fmode
     end if
 
-    if (fmode .ne. 0 .and. fmode .ne. 1 ) then
-        write(PMF_OUT, '(/2x,a,i3,a)') 'fmode (', fmode, ') must be 0 or 1'
+    if (fmode .ne. 0 .and. fmode .ne. 1 .and. fmode .ne. 2 .and. fmode .ne. 3) then
+        write(PMF_OUT, '(/2x,a,i3,a)') 'fmode (', fmode, ') must be 0, 1, 2 or 3'
         call pmf_utils_exit(PMF_OUT,1)
     end if
 
@@ -80,6 +82,8 @@ subroutine mtd_control_read_mtd(prm_fin)
         call prmfile_set_sec_as_processed(prm_fin)
         return
     end if
+
+    call pmf_get_key(prm_fin,'fheight','R',
 
     if(prmfile_get_real8_by_key(prm_fin,'fheight', fheight) ) then
         write(PMF_OUT,30) fheight
@@ -93,10 +97,16 @@ subroutine mtd_control_read_mtd(prm_fin)
         write(PMF_OUT,45) fmetastep
     end if
 
-    if(prmfile_get_integer_by_key(prm_fin,'fsample', fsample)) then
-        write(PMF_OUT,50) fsample
+    if(prmfile_get_integer_by_key(prm_fin,'fpsample', fpsample)) then
+        write(PMF_OUT,50) fpsample
     else
-        write(PMF_OUT,55) fsample
+        write(PMF_OUT,55) fpsample
+    end if
+
+    if(prmfile_get_integer_by_key(prm_fin,'fplevel', fplevel)) then
+        write(PMF_OUT,60) fplevel
+    else
+        write(PMF_OUT,65) fplevel
     end if
 
     if(prmfile_get_logical_by_key(prm_fin,'frestart', frestart)) then
@@ -120,6 +130,144 @@ subroutine mtd_control_read_mtd(prm_fin)
     if( fbuffersize .le. 0 ) then
         write(PMF_OUT, '(/2x,a,i3,a)') 'fbuffersize (', fbuffersize, ') must be grater then zero.'
         call pmf_utils_exit(PMF_OUT,1)
+    end if
+
+    if(prmfile_get_real8_by_key(prm_fin,'fmetatemp', fmetatemp)) then
+        fmetavary = 1
+        write(PMF_OUT,100) fmetatemp
+    else
+        write(PMF_OUT,105) fmetatemp
+    end if
+
+    if(prmfile_get_integer_by_key(prm_fin,'fmetavary', fmetavary)) then
+        meta_next_fstep = fmetastep
+        write(PMF_OUT,110) fmetavary
+    else
+        write(PMF_OUT,115) fmetavary
+    end if
+
+    if( (fmetavary .lt. 0) .or. (fmetavary .gt. 2) ) then
+        write(PMF_OUT, '(/2x,a,i3,a)') 'fmetavary (', fmetavary, ') must be 0, 1 or 2.'
+        call pmf_utils_exit(PMF_OUT,1)
+    end if
+
+    if(prmfile_get_integer_by_key(prm_fin,'fscaling', fscaling)) then
+        write(PMF_OUT,120) fscaling
+    else
+        write(PMF_OUT,125) fscaling
+    end if
+
+    if( (fscaling .lt. 0) .or. (fscaling .gt. 2) ) then
+        write(PMF_OUT, '(/2x,a,i3,a)') 'fscaling (', fscaling, ') must be 0, 1 or 2.'
+        call pmf_utils_exit(PMF_OUT,1)
+    end if
+
+    if(prmfile_get_integer_by_key(prm_fin,'fdelaying', fdelaying)) then
+        ftransition = fdelaying
+        write(PMF_OUT,130) fdelaying
+    else
+        write(PMF_OUT,135) fdelaying
+    end if
+
+    if( fdelaying .lt. 0 ) then
+        write(PMF_OUT, '(/2x,a,i5,a)') 'fdelaying (', fdelaying, ') must be grater than zero'
+        call pmf_utils_exit(PMF_OUT,1)
+    end if
+
+    if( (fscaling .eq. 0) .and. (fdelaying .ne. 0) ) then
+        write(PMF_OUT, '(/2x,a)') 'fscaling must be also specified when fdelaying is specified'
+        call pmf_utils_exit(PMF_OUT,1)
+    end if
+
+    if(prmfile_get_integer_by_key(prm_fin,'ftransition', ftransition)) then
+        write(PMF_OUT,140) ftransition
+    else
+        write(PMF_OUT,145) ftransition
+    end if 
+
+    if( ftransition .lt. 0 ) then
+        write(PMF_OUT, '(/2x,a,i5,a)') 'ftransition (', ftransition, ') must be grater than zero'
+        call pmf_utils_exit(PMF_OUT,1)
+    end if
+
+    if( (fscaling .eq. 0) .and. (ftransition .ne. 0) ) then
+        write(PMF_OUT, '(/2x,a)') 'fscaling must be also specified when ftransition is specified'
+        call pmf_utils_exit(PMF_OUT,1)
+    end if
+
+    if( ftransition .lt. fdelaying ) then
+        write(PMF_OUT, '(/2x,a)') 'ftransition must be grater or equal than fdelaying'
+        call pmf_utils_exit(PMF_OUT,1)
+    end if
+
+    if( fmode .eq. 3 ) then
+            write(PMF_OUT,410)
+            if( .not. prmfile_get_integer_by_key(prm_fin,'fgpcovfreq', fgpcovfreq)) then
+               call pmf_utils_exit(PMF_OUT,1,'[MTD] fgpcovfreq item is mandatory when GP-MTD is on!')
+            else
+                write(PMF_OUT,415) fgpcovfreq
+            end if
+            if( fgpcovfreq .le. 0 ) then
+                call pmf_utils_exit(PMF_OUT,1,'[MTD] fgpcovfreq must be > 0!')
+            end if
+            fbuffersize = fgpcovfreq / fmetastep
+            if( .not. prmfile_get_integer_by_key(prm_fin,'fgpsparse', fgpsparse)) then
+                call pmf_utils_exit(PMF_OUT,1,'[MTD] fgpsparse item is mandatory when GP-MTD is on!')
+            else
+                write(PMF_OUT,425) fgpsparse
+            end if
+            if(prmfile_get_real8_by_key(prm_fin,'fgpdelta', fgpdelta)) then
+                write(PMF_OUT,430) fgpdelta
+            else
+                write(PMF_OUT,435) fgpdelta
+            end if
+            if( fgpdelta .le. 0 ) then
+                call pmf_utils_exit(PMF_OUT,1,'[MTD] fgpdelta must be > 0!')
+            end if
+            if(prmfile_get_real8_by_key(prm_fin,'fgpjitter', fgpjitter)) then
+                write(PMF_OUT,440) fgpjitter
+            else
+                write(PMF_OUT,445) fgpjitter
+            end if
+            if( fgpjitter .le. 0 ) then
+                call pmf_utils_exit(PMF_OUT,1,'[MTD] fgpjitter must be > 0!')
+            end if
+            if(prmfile_get_integer_by_key(prm_fin,'fgpsparsification', fgpsparsification)) then
+                write(PMF_OUT,450) fgpsparsification
+            else
+                write(PMF_OUT,455) fgpsparsification
+            end if
+            if ( (fgpsparsification .le. 0) .or. (fgpsparsification .gt. 2) ) then
+                  call pmf_utils_exit(PMF_OUT,1,'[MTD] fgpsparsification must be 1 or 2!')
+            end if
+            if(prmfile_get_integer_by_key(prm_fin,'fgpsparsefreq', fgpsparsefreq)) then
+                  write(PMF_OUT,460) fgpsparsefreq
+            else
+                  fgpsparsefreq = fgpcovfreq
+                  write(PMF_OUT,465) fgpsparsefreq
+            end if
+            if( fgpsparsefreq .le. 0 ) then
+                call pmf_utils_exit(PMF_OUT,1,'[MTD] fgpsparsefreq must be > 0!')
+            end if
+            select case (fgpsparsification)
+                case(1)
+                    if( .not. prmfile_get_integer_by_key(prm_fin,'fgpclusterfreq', fgpclusterfreq)) then
+                        call pmf_utils_exit(PMF_OUT,1,'[MTD] fgpclusterfreq item is mandatory when fgpclustering = 1!')
+                    else
+                        write(PMF_OUT,470) fgpclusterfreq
+                    end if
+                    if( fgpclusterfreq .le. 0 ) then
+                        call pmf_utils_exit(PMF_OUT,1,'[MTD] fgpclusterevery must be > 0!')
+                    end if
+            end select
+            if(prmfile_get_integer_by_key(prm_fin,'fgpprint', fgpprint)) then
+                write(PMF_OUT,480) fgpprint
+            else
+                write(PMF_OUT,485) fgpprint
+            end if
+            if( fgpprint .lt. 0 ) then
+                call pmf_utils_exit(PMF_OUT,1,'[ABF] fgpprint must be => 0!')
+            end if
     end if
 
     ! network setup ----------------------------------------------------------------
@@ -183,12 +331,39 @@ subroutine mtd_control_read_mtd(prm_fin)
  45 format ('fmetastep                              = ',i12,'                  (default)')
  50 format ('fsample                                = ',i12)
  55 format ('fsample                                = ',i12,'                  (default)')
+ 60 format ('fplevel                                = ',i12)
+ 65 format ('fplevel                                = ',i12,'                  (default)')
  70 format ('frestart                               = ',a12)
  75 format ('frestart                               = ',a12,'                  (default)')
  80 format ('fextout                                = ',i12)
  85 format ('fextout                                = ',i12,'                  (default)')
  90 format ('fbuffersize                            = ',i12)
  95 format ('fbuffersize                            = ',i12,'                  (default)')
+100 format ('fmetatemp                              = ',E12.4)
+105 format ('fmetatemp                              = ',E12.4,'                  (default)')
+110 format ('fmetavary                              = ',i12)
+115 format ('fmetavary                              = ',i12,'                  (default)')
+120 format ('fscaling                               = ',i12)
+125 format ('fscaling                               = ',i12,'                  (default)')
+130 format ('fdelaying                              = ',i12)
+135 format ('fdelaying                              = ',i12,'                  (default)')
+140 format ('ftransition                            = ',i12)
+145 format ('ftransition                            = ',i12,'                  (default)')
+
+410 format (/,'>> GP-ABF mode IV')
+415 format ('   fgpcovfreq                          = ',i12)
+425 format ('   fgpsparse                           = ',i12)
+430 format ('   fgpdelta                            = ',e12.4)
+435 format ('   fgpdelta                            = ',e12.4,'                  (default)')
+440 format ('   fgpjitter                           = ',e12.4)
+445 format ('   fgpjitter                           = ',e12.4,'                  (default)')
+450 format ('   fgpsparsification                   = ',i12)
+455 format ('   fgpsparsification                   = ',i12,'                  (default)')
+460 format ('   fgpsparsefreq                       = ',i12)
+465 format ('   fgpsparsefreq                       = ',i12,'                  (default)')
+470 format ('   fgpclusterfreq                      = ',i12)
+480 format ('   fgpprint                            = ',i12)
+485 format ('   fgpprint                            = ',i12,'                  (default)')
 
   6 format (' >> Multiple-walkers metadynamics is disabled!')
   7 format (' >> Multiple-walkers metadynamics is not compiled in!')
@@ -224,7 +399,7 @@ subroutine mtd_control_read_cvs(prm_fin)
     if( fmtddef(1:1) .eq. '{' ) then
         grpname = fmtddef(2:len_trim(fmtddef)-1)
          write(PMF_OUT,110) grpname
-        ! open goup with name from metadef
+        ! open group with name from metadef
         if( .not. prmfile_open_group(prm_fin,trim(grpname)) ) then
             write(PMF_OUT,130)
             mtd_enabled = .false.

@@ -1,6 +1,8 @@
 !===============================================================================
 ! PMFLib - Library Supporting Potential of Mean Force Calculations
 !-------------------------------------------------------------------------------
+!    Copyright (C) 2011-2015 Petr Kulhanek, kulhanek@chemi.muni.cz
+!    Copyright (C) 2013-2015 Letif Mones, lam81@cam.ac.uk
 !    Copyright (C) 2012 Petr Kulhanek, kulhanek@chemi.muni.cz
 !    Copyright (C) 2007 Petr Kulhanek, kulhanek@enzim.hu
 !    Copyright (C) 2006 Petr Kulhanek, kulhanek@chemi.muni.cz &
@@ -104,6 +106,52 @@ logical function pmf_utils_fexist(filename)
     if( pmf_utils_fexist ) close(PMF_TEST)
 
 end function pmf_utils_fexist
+
+!===============================================================================
+! Subroutine:   pmf_utils_read_ctrl_real8
+!===============================================================================
+
+subroutine pmf_utils_read_ctrl_real8(prm_fin, name, value, fmt)
+
+    implicit none
+    type(PRMFILE_TYPE),intent(inout)    :: prm_fin
+    character(*)                        :: name
+    real(PMFDP)                         :: value
+    character(*)                        :: name 
+    ! --------------------------------------------
+    logical                             :: defval
+    character(len=80)                        :: 
+    ! --------------------------------------------------------------------------
+
+    ! read value
+    defval = prmfile_get_real8_by_key(prm_fin,name,value)
+
+    ! setup format string
+    
+
+
+    ! write output
+    write(PMF_OUT,fmt) value
+    
+
+
+    if(present(message)) then
+        write(unitnum,'(/,A)') '>>> ERROR: ' // message
+    end if
+
+    call cpmf_print_errors
+
+    write(unitnum,'(/,A)') '>>> ERROR: Some fatal error occured in PMFLib!'
+    write(unitnum,'(A)')   '           Look above for detailed message (if any).'
+    write(unitnum,'(A,/)') '           Program execution is terminated.'
+
+    if( errcode .eq. 0 ) then
+        stop 0
+    else
+        stop 1
+    end if
+
+end subroutine pmf_utils_exit
 
 !===============================================================================
 ! Subroutine:   pmf_utils_exit

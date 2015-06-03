@@ -1,6 +1,8 @@
 !===============================================================================
 ! PMFLib - Library Supporting Potential of Mean Force Calculations
 !-------------------------------------------------------------------------------
+!    Copyright (C) 2011-2015 Petr Kulhanek, kulhanek@chemi.muni.cz
+!    Copyright (C) 2013-2015 Letif Mones, lam81@cam.ac.uk
 !    Copyright (C) 2010 Petr Kulhanek, kulhanek@chemi.muni.cz
 !    Copyright (C) 2007 Petr Kulhanek, kulhanek@enzim.hu
 !    Copyright (C) 2006 Petr Kulhanek, kulhanek@chemi.muni.cz &
@@ -114,6 +116,7 @@ subroutine con_constraints_read_con(prm_fin,con_item)
  96 format('   ** Constrained value  : controlled by path subsystem')
 100 format('   ** Change to value    :',E16.7' [',A,']')
 110 format('   ** Increment value    :',E16.7' [',A,']')
+115 format('   ** Control file       :',A) 
 
 end subroutine con_constraints_read_con
 
@@ -149,6 +152,9 @@ subroutine con_constraints_con_info(con_item)
         write(PMF_OUT,120) con_item%cv%get_rvalue(con_item%stopvalue - con_item%startvalue), &
                            trim(con_item%cv%get_ulabel())
         write(PMF_OUT,130) con_item%cv%get_rvalue(con_item%stopvalue), &
+                           trim(con_item%cv%get_ulabel())
+    case ('S')
+        write(PMF_OUT,110) con_item%cv%get_rvalue(con_item%startvalue), &
                            trim(con_item%cv%get_ulabel())
     end select
 
@@ -202,6 +208,10 @@ subroutine con_constraints_con_init(con_item)
     ! get initial value only for constraints specified by user
     if( con_item%value_set .neqv. .true. ) then
         con_item%value = CVContext%CVsValues(con_item%cvindx)
+    end if
+
+    if( con_item%mode .eq. 'S' ) then
+        con_item%value = con_item%control_values(1)
     end if
 
     con_item%startvalue = con_item%value
@@ -265,11 +275,13 @@ subroutine con_constraints_con_increment(con_item)
 
     if( (fstep .lt. 0) .or. (fstep .gt. fnstlim) ) return
 
-    ! incrementation is in linear mode
-    con_item%value = con_item%startvalue + (con_item%stopvalue - con_item%startvalue)*fstep/fnstlim
-
-    ! image incremented value
-    con_item%value = get_imaged_value(con_item%cv,con_item%value)
+    if( con_item%mode .eq. 'S' ) then
+        ! set corresponding value
+        con_item%value = con_item%control_values(fstep)
+    else
+        ! incrementation is in linear mode
+        con_item%value = con_item%startvalue + (con_item%stopvalue - con_item%startvalue)*fstep/fnstlim
+    end if
 
     return
 
@@ -312,7 +324,7 @@ subroutine con_constraints_calc_fdxp
 end subroutine con_constraints_calc_fdxp
 
 !===============================================================================
-! Subroutine:  con_constraints_calc_fdxp
+! Subroutine:  con_constraints_calc_fdxp_cvitem
 !===============================================================================
 
 recursive subroutine con_constraints_calc_fdxp_cvitem(ci)
@@ -345,6 +357,60 @@ recursive subroutine con_constraints_calc_fdxp_cvitem(ci)
     end if
 
 end subroutine con_constraints_calc_fdxp_cvitem
+
+!===============================================================================
+
+!===============================================================================
+! Subroutine:  con_constraints_read_control_file
+!===============================================================================
+
+subroutine con_constraints_read_control_file(con_item)
+
+    use pmf_dat
+    use pmf_utils
+    use con_dat
+
+    implicit none
+    type(CVTypeBM)     :: con_item
+    ! ----------------------------------------------
+    integer            :: alloc_failed, ios
+    integer            :: i
+    ! --------------------------------------------------------------------------
+
+    ! test if control file exists
+    if( .not. pmf_utils_fexist(fconctr) ) then
+        write(PMF_OUT,10) trim(fconctr)
+        call pmf_utils_exit(PMF_OUT,1,'fconctr file does not exist!')
+    end if
+
+    ! open control file
+    call pmf_utils_open(CON_CTR,fconctr,'O')
+
+    ! allocate con_item%control_values
+    allocate(con_item%control_values(fnstlim), stat = alloc_failed)
+
+    if ( alloc_failed .ne. 0 ) then
+         call pmf_utils_exit(PMF_OUT,1,'[CON] Unable to allocate memory for control_values!')
+    end if
+
+    ! read data from control_file
+    ios = 0
+    do i=1,fnstlim
+       read(CON_CTR,*,iostat=ios) con_item%control_values(i)
+       if ( ios .ne. 0 ) then
+            write(PMF_OUT,20) trim(fconctr), i-1, fnstlim
+            call pmf_utils_exit(PMF_OUT,1,'[CON] There is not enough data in fconctr file!')
+       end if
+    end do
+
+    close(CON_CTR)
+
+    return
+
+ 10 format('[CON] fconctr file (',A,') does not exist!')
+ 20 format('[CON] fconctr file (',A,') has less number of data (',I,') than fnstlim (',I,')!')
+
+end subroutine con_constraints_read_control_file
 
 !===============================================================================
 

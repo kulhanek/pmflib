@@ -35,6 +35,7 @@ SET(PMF_CVS_SRC
 
     # distances
         common/cvs/distance/cv_pos.f90
+        common/cvs/distance/cv_relpos.f90
         common/cvs/distance/cv_rad.f90
         common/cvs/distance/cv_opos.f90
         common/cvs/distance/cv_orad.f90
@@ -88,6 +89,15 @@ SET(PMF_CVS_SRC
         common/cvs/algebra/cv_mul.f90
         common/cvs/algebra/cv_div.f90
        )
+
+# gaussian process -------------------------------------------------------------
+
+SET(PMF_GP_SRC
+        common/gp/positions.f90
+        common/gp/clustering.f90
+        common/gp/gp_dat.f90
+        common/gp/gp_basic.f90
+   )
 
 # XBPLib binding ---------------------------------------------------------------
 
@@ -145,6 +155,7 @@ SET(PMF_MTD_CORE_SRC
         methods/mtd/mtd_restart.f90
         methods/mtd/mtd_core.f90
         methods/mtd/mtd_finalize.f90
+        methods/mtd/mtd_grid.f90
         )
 
 # restraint dynamics -----------------------------------------------------------
@@ -185,6 +196,30 @@ SET(PMF_MON_CORE_SRC
         methods/mon/mon_finalize.f90
         )
 
+# remd -------------------------------------------------------------------------
+
+SET(PMF_REMD_CORE_SRC
+        methods/remd/remd_dat.f90
+        methods/remd/remd_init.f90
+        methods/remd/remd_control.F90
+        methods/remd/remd_client.F90
+        methods/remd/remd_output.f90
+        methods/remd/remd_core.f90
+        methods/remd/remd_finalize.f90
+        )
+
+# gap --------------------------------------------------------------------------
+
+SET(PMF_GAP_CORE_SRC
+        methods/gap/gap_dat.f90
+        methods/gap/gap_init.f90
+        methods/gap/gap_cvs.f90
+        methods/gap/gap_control.f90
+        methods/gap/gap_output.f90
+        methods/gap/gap_core.f90
+        methods/gap/gap_finalize.f90
+        )
+
 # path driving -----------------------------------------------------------------
 
 SET(PMF_PDRV_CORE_SRC
@@ -202,12 +237,15 @@ SET(PMF_PDRV_CORE_SRC
 SET(FPMF_SRC
         ${PMF_COM_SRC}
         ${PMF_CVS_SRC}
+        ${PMF_GP_SRC}
         ${PMF_ABF_CORE_SRC}
         ${PMF_CON_CORE_SRC}
         ${PMF_MTD_CORE_SRC}
         ${PMF_RST_CORE_SRC}
         ${PMF_STM_CORE_SRC}
         ${PMF_MON_CORE_SRC}
+        ${PMF_REMD_CORE_SRC}
+        ${PMF_GAP_CORE_SRC}
         ${PMF_PDRV_CORE_SRC}
         )
 

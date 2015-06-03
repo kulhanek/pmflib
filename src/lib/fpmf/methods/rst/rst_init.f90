@@ -1,6 +1,8 @@
 !===============================================================================
 ! PMFLib - Library Supporting Potential of Mean Force Calculations
 !-------------------------------------------------------------------------------
+!    Copyright (C) 2011-2015 Petr Kulhanek, kulhanek@chemi.muni.cz
+!    Copyright (C) 2013-2015 Letif Mones, lam81@cam.ac.uk
 !    Copyright (C) 2007 Petr Kulhanek, kulhanek@enzim.hu
 !    Copyright (C) 2006 Petr Kulhanek, kulhanek@chemi.muni.cz &
 !                       Martin Petrek, petrek@chemi.muni.cz
@@ -43,6 +45,7 @@ subroutine rst_init_method
     implicit none
     ! --------------------------------------------------------------------------
 
+ 	call rst_init_core
     call rst_accumulator_init
     call rst_init_print_header
     call rst_output_open
@@ -66,9 +69,11 @@ subroutine rst_init_dat
     fsample      = 500       ! output sample period in steps
     fplevel      = 0         ! print level
     frestart     = .false.   ! restart job with previous data
-    fhistupdate   = 0         ! how often is restart file written
-    fhistclear     = 0         ! after first 'fhistclear' steps histogram
+    fhistupdate   = 0        ! how often is restart file written
+    fhistclear     = 0       ! after first 'fhistclear' steps histogram
                              ! will be reset (default 0)
+	fsamplefreq   = 1        ! how often take samples
+	faccumulation = 0        ! number of accumulated data
 
     NumOfRSTItems = 0
     insidesamples = 0
@@ -140,6 +145,33 @@ subroutine rst_init_print_header
 140 format(' == Collective variable #',I4.4)
 
 end subroutine rst_init_print_header
+
+!===============================================================================
+! Subroutine:  rst_init_core
+!===============================================================================
+
+subroutine rst_init_core
+
+ use pmf_utils
+ use pmf_dat
+ use rst_dat
+
+ implicit none
+ integer      :: alloc_failed
+
+ ! ------------------------------------------------------------------------------
+
+ ! allocate arrays for accumulating data
+
+ allocate(svalues(NumOfRSTItems), &
+          s2values(NumOfRSTItems), &
+          stat=alloc_failed)
+
+ if( alloc_failed .ne. 0 ) then
+    call pmf_utils_exit(PMF_OUT,1,'[RST] Unable to allocate memory for arrays of accumutalion!')
+ end if
+
+end subroutine rst_init_core
 
 !===============================================================================
 

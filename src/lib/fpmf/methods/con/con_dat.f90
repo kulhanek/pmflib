@@ -1,6 +1,8 @@
 !===============================================================================
 ! PMFLib - Library Supporting Potential of Mean Force Calculations
 !-------------------------------------------------------------------------------
+!    Copyright (C) 2011-2015 Petr Kulhanek, kulhanek@chemi.muni.cz
+!    Copyright (C) 2013-2015 Letif Mones, lam81@cam.ac.uk
 !    Copyright (C) 2010 Petr Kulhanek, kulhanek@chemi.muni.cz
 !    Copyright (C) 2007 Petr Kulhanek, kulhanek@enzim.hu
 !    Copyright (C) 2006 Petr Kulhanek, kulhanek@chemi.muni.cz &
@@ -40,14 +42,18 @@ logical           :: frestart       ! 1 - restart job with previous data, 0 - ot
 integer           :: flambdasolver  ! 0 - Newton method, 1 - chord method
 real(PMFDP)       :: flambdatol     ! tolerance for lambda optimization
 integer           :: fmaxiter       ! maximum of iteration in lambda optimization
+integer           :: fsamplefreq    ! how often take samples 
+integer           :: faccelerate    ! 0 - disable acceleration, 1 - acceleration on
 
 ! item list --------------------------------------------------------------------
 type CVTypeBM
     integer                 :: cvindx           ! index to PMF CV
     class(CVType),pointer   :: cv               ! cv data
 
-    !mode - constant (C), incremental (I), change to value (V)
-    character(PMF_MAX_MODE) :: mode
+    character(PMF_MAX_MODE) :: mode             ! mode - constant (C)
+                                                !      - incremental (I)
+                                                !      - change to value (V)
+                                                !      - controlled steering (S)
 
     real(PMFDP)             :: startvalue       ! start value
     real(PMFDP)             :: stopvalue        ! stop value
@@ -56,6 +62,7 @@ type CVTypeBM
     real(PMFDP)             :: deviation        ! deviation between real and value
     real(PMFDP)             :: sdevtot          ! total sum of deviation squares
     logical                 :: value_set        ! initial value is user provided
+    real(PMFDP),pointer     :: control_values(:) ! values for controlled streering
 end type CVTypeBM
 
 ! global variables for blue moon -----------------------------------------------
@@ -105,6 +112,14 @@ real(PMFDP),allocatable    :: matv(:,:)             ! left side matrix
 real(PMFDP),allocatable    :: lambdav(:)            ! velocity lambdas
 real(PMFDP),allocatable    :: lambdavtotal(:)       ! accumulated value of kappa
 real(PMFDP),allocatable    :: lambdavtotals(:)      ! accumulated value of square of kappa
+
+! accelerating calculation for large number of CONs
+type CONCommonAtomsType
+     integer                 :: nindatoms         ! total number of individual common atoms 
+     integer, pointer        :: indlindexes(:)    ! common individual local atom indexes 
+end type CONCommonAtomsType
+
+type(CONCommonAtomsType),allocatable  :: CONCommonAtoms(:,:)  ! table for common CON atoms
 
 !===============================================================================
 

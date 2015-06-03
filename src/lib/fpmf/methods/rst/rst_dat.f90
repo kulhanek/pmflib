@@ -1,6 +1,8 @@
 !===============================================================================
 ! PMFLib - Library Supporting Potential of Mean Force Calculations
 !-------------------------------------------------------------------------------
+!    Copyright (C) 2011-2015 Petr Kulhanek, kulhanek@chemi.muni.cz
+!    Copyright (C) 2013-2015 Letif Mones, lam81@cam.ac.uk
 !    Copyright (C) 2007 Petr Kulhanek, kulhanek@enzim.hu
 !    Copyright (C) 2006 Petr Kulhanek, kulhanek@chemi.muni.cz &
 !                       Martin Petrek, petrek@chemi.muni.cz 
@@ -33,13 +35,14 @@ implicit none
 ! MASTER variables =============================================================
 
 ! control section --------------------------------------------------------------
-integer     :: fmode        ! 0 - disable RST, 1 - enabled RST, 1 - enabled RST + acumulator
+integer     :: fmode        ! 0 - disable RST, 1 - enabled RST, 2 - enabled TI, 3 - enabled SM
 integer     :: fsample      ! output sample period in steps
 integer     :: fplevel      ! print level
 logical     :: frestart     ! restart job with previous data
 integer     :: fhistupdate  ! how often is restart file written
 integer     :: fhistclear   ! after first 'fhistclear' steps histogram
                             ! will be reset (default 0)
+integer     :: fsamplefreq  ! how often take samples
 
 ! item list --------------------------------------------------------------------
 type CVTypeUM
@@ -50,6 +53,7 @@ type CVTypeUM
                                                 !      - incremental (I)
                                                 !      - change to value (V)
                                                 !      - wall restraints (W)
+                                                !      - controlled steering (S)
     real(PMFDP)             :: startvalue       ! start value
     real(PMFDP)             :: stopvalue        ! stop value
     real(PMFDP)             :: target_value     ! required value of restraint
@@ -61,11 +65,15 @@ type CVTypeUM
     real(PMFDP)             :: deviation        ! deviation between real and actual value
     real(PMFDP)             :: energy           ! restraint energy
 
+    real(PMFDP)             :: force            ! restraint force
+
     real(PMFDP)             :: min_value        ! left range for this coordinate
     real(PMFDP)             :: max_value        ! right range for this coordinate
     integer                 :: nbins            ! numbins for this coordinate
 
-    logical                 :: set_value        ! set value from initial value
+    logical                 :: set_value         ! set value from initial value
+
+    real(PMFDP),pointer     :: control_values(:) ! values for controlled streering
 end type CVTypeUM
 
 ! accu types -------------------------------------------------------------------
@@ -99,6 +107,12 @@ real(PMFDP)                 :: TotalRstEnergy       ! total restraints energy
 type(UMAccuType)            :: Accumulator          ! accumulated data for TI
 integer                     :: insidesamples
 integer                     :: outsidesamples
+
+! ----------------------
+! value accumulation
+integer                     :: faccumulation        ! total number of accumulated steps
+real(PMFDP),allocatable     :: svalues(:)           ! accumulated values
+real(PMFDP),allocatable     :: s2values(:)          ! accumulated square of values
 
 !===============================================================================
 

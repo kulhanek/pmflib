@@ -1,6 +1,8 @@
 !===============================================================================
 ! PMFLib - Library Supporting Potential of Mean Force Calculations
 !-------------------------------------------------------------------------------
+!    Copyright (C) 2011-2015 Petr Kulhanek, kulhanek@chemi.muni.cz
+!    Copyright (C) 2013-2015 Letif Mones, lam81@cam.ac.uk
 !    Copyright (C) 2009 Petr Kulhanek, kulhanek@chemi.muni.cz
 !    Copyright (C) 2007 Martin Petrek, petrek@chemi.muni.cz &
 !                       Petr Kulhanek, kulhanek@enzim.hu
@@ -33,8 +35,10 @@ implicit none
 
 ! CV values and derivatives ----------------------------------------------------
 type CVContextType
-    real(PMFDP),pointer         :: CVsValues(:)     ! CVs values
-    real(PMFDP),pointer         :: CVsDrvs(:,:,:)   ! CVs derivatives
+    real(PMFDP),pointer         :: CVsValues(:)          ! CVs values
+    real(PMFDP),pointer         :: CVsDrvs(:,:,:)        ! CVs derivatives
+    real(PMFDP),pointer         :: CVsDrvDrvs(:,:,:,:,:) ! CVs second derivatives lam81
+    real(PMFDP),pointer         :: CVsFrc(:)             ! PMF derivatives lam81
 end type CVContextType
 
 ! core definition of collective variables (CVs) --------------------------------
@@ -50,6 +54,8 @@ type CVType
     integer                     :: ngrps            ! number of groups
     integer,pointer             :: grps(:)          ! groups boundary
     integer                     :: pathidx          ! if CV is part of path
+    integer                     :: nindatoms        ! number of individual atoms
+    integer,pointer             :: indlindexes(:)   ! individual local atom indexes
     ! CV abilities -------------------------------
     logical                     :: gradforanycrd    ! is gradient available for any coordinates?
     logical                     :: isalgebraic      ! this CV combines other CVs
@@ -67,6 +73,7 @@ type CVType
         procedure   :: get_rvalue
         ! PBC related methods
         procedure   :: is_periodic_cv
+        procedure   :: get_period_cv_value
         procedure   :: get_min_cv_value
         procedure   :: get_max_cv_value
         procedure   :: get_average_value
@@ -108,6 +115,8 @@ subroutine reset_cv(cv_item)
     cv_item%pathidx         = 0
     cv_item%gradforanycrd   = .false.
     cv_item%isalgebraic     = .false.
+    cv_item%nindatoms       = 0
+    cv_item%indlindexes     => NULL()
 
 end subroutine reset_cv
 
@@ -220,6 +229,24 @@ logical function is_periodic_cv(cv_item)
     ignored_arg__ = same_type_as(cv_item,cv_item)
 
 end function is_periodic_cv
+
+!===============================================================================
+! Function:  get_period_cv_value
+! get periodicity value for periodic CV
+!===============================================================================
+
+real(PMFDP) function get_period_cv_value(cv_item)
+
+    implicit none
+    class(CVType)   :: cv_item
+    ! --------------------------------------------------------------------------
+
+    get_period_cv_value = 0.0d0
+
+    ! disable unsued variable warning
+    ignored_arg__ = same_type_as(cv_item,cv_item)
+
+end function get_period_cv_value
 
 !===============================================================================
 ! Function:  get_min_cv_value

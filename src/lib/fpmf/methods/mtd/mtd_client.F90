@@ -1,6 +1,8 @@
 !===============================================================================
 ! PMFLib - Library Supporting Potential of Mean Force Calculations
 !-------------------------------------------------------------------------------
+!    Copyright (C) 2011-2015 Petr Kulhanek, kulhanek@chemi.muni.cz
+!    Copyright (C) 2013-2015 Letif Mones, lam81@cam.ac.uk
 !    Copyright (C) 2008 Petr Kulhanek, kulhanek@enzim.hu
 !
 !    This library is free software; you can redistribute it and/or
@@ -433,7 +435,7 @@ subroutine mtd_client_get_cpmf_buffers(last_buffer)
         call cpmf_mtd_client_get_buffer_data(ret_st,buffer_id,loc_hbuffer)
 
         if( ret_st .ne. 0 ) then
-            call pmf_utils_exit(PMF_OUT,1,'Unable to get cpmd history buffer!')
+            call pmf_utils_exit(PMF_OUT,1,'Unable to get MTD history buffer!')
         end if
 
         ! allocate new MTD buffer

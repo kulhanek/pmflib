@@ -1,6 +1,8 @@
 !===============================================================================
 ! PMFLib - Library Supporting Potential of Mean Force Calculations
 !-------------------------------------------------------------------------------
+!    Copyright (C) 2011-2015 Petr Kulhanek, kulhanek@chemi.muni.cz
+!    Copyright (C) 2013-2015 Letif Mones, lam81@cam.ac.uk
 !    Copyright (C) 2012      Petr Kulhanek, kulhanek@chemi.muni.cz
 !    Copyright (C) 2011      Petr Kulhanek, kulhanek@chemi.muni.cz
 !    Copyright (C) 2007,2008 Petr Kulhanek, kulhanek@enzim.hu
@@ -46,6 +48,7 @@ subroutine pmf_alloc_cv_allocate(cv_type,cv_item)
     use cv_mdisg
     use cv_dd
     use cv_ds
+    use cv_relpos
 
 ! angle based ------------------------------------
     use cv_ang
@@ -118,6 +121,8 @@ subroutine pmf_alloc_cv_allocate(cv_type,cv_item)
             allocate(CVTypeMDISG::cv_item)
         case('DD')
             allocate(CVTypeDD::cv_item)
+        case('RELPOS')
+            allocate(CVTypeRELPOS::cv_item)
 
     ! angle --------------------------------------
         case('ANG')

@@ -1,6 +1,8 @@
 !===============================================================================
 ! PMFLib - Library Supporting Potential of Mean Force Calculations
 !-------------------------------------------------------------------------------
+!    Copyright (C) 2011-2015 Petr Kulhanek, kulhanek@chemi.muni.cz
+!    Copyright (C) 2013-2015 Letif Mones, lam81@cam.ac.uk
 !    Copyright (C) 2007 Petr Kulhanek, kulhanek@enzim.hu
 !    Copyright (C) 2006 Petr Kulhanek, kulhanek@chemi.muni.cz &
 !                       Martin Petrek, petrek@chemi.muni.cz 
@@ -130,11 +132,13 @@ integer,parameter       :: PMF_DEBUG    = 1000
 integer,parameter       :: CON_INP       = 150
 integer,parameter       :: CON_OUT       = 151
 integer,parameter       :: CON_RST       = 152
+integer,parameter       :: CON_CTR       = 153
 
 ! umbrella part ----------------------------------------------------------------
 integer,parameter       :: RST_INP       = 160
 integer,parameter       :: RST_OUT       = 161
 integer,parameter       :: RST_RST       = 162
+integer,parameter       :: RST_CTR       = 163
 
 ! abf part ---------------------------------------------------------------------
 integer,parameter       :: ABF_INP      = 170
@@ -149,6 +153,7 @@ integer,parameter       :: MTD_OUT      = 181
 integer,parameter       :: MTD_RST      = 182
 integer,parameter       :: MTD_CVS      = 183
 integer,parameter       :: MTD_HILLS    = 184
+integer,parameter       :: MTD_GPOUT    = 185
 
 ! string method ----------------------------------------------------------------
 integer,parameter       :: STM_INP      = 310
@@ -158,6 +163,13 @@ integer,parameter       :: STM_BEADID   = 312
 ! monitoring part --------------------------------------------------------------
 integer,parameter       :: MON_INP      = 190
 integer,parameter       :: MON_OUT      = 191
+
+! remd part --------------------------------------------------------------------
+integer,parameter       :: REMD_OUT     = 211
+
+! gap part ---------------------------------------------------------------------
+integer,parameter       :: GAP_INP      = 221
+integer,parameter       :: GAP_OUT      = 222
 
 ! path driving method ----------------------------------------------------------
 integer,parameter       :: PDRV_INP     = 412

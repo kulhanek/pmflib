@@ -1,6 +1,8 @@
 !===============================================================================
 ! PMFLib - Library Supporting Potential of Mean Force Calculations
 !-------------------------------------------------------------------------------
+!    Copyright (C) 2011-2015 Petr Kulhanek, kulhanek@chemi.muni.cz
+!    Copyright (C) 2013-2015 Letif Mones, lam81@cam.ac.uk
 !    Copyright (C) 2010 Petr Kulhanek, kulhanek@chemi.muni.cz
 !    Copyright (C) 2007 Petr Kulhanek, kulhanek@enzim.hu
 !    Copyright (C) 2006 Petr Kulhanek, kulhanek@chemi.muni.cz &
@@ -40,6 +42,7 @@ logical                 :: fprint_inpcrds       ! print input coordinates includ
                                                 ! names and residue names
 logical                 :: fprint_masks         ! print atom masks in CV definitions
 logical                 :: fenable_pbc          ! enable PBC condition (partially)
+logical                 :: fenable_hessian      ! enable the calculation of second derivatives
 logical                 :: fmonitor_paths       ! enable path monitoring
 
 ! parallel setup ---------------------------------------------------------------
@@ -81,8 +84,10 @@ logical                     :: rst_enabled
 logical                     :: mtd_enabled
 logical                     :: abf_enabled
 logical                     :: mon_enabled
+logical                     :: remd_enabled
 logical                     :: stm_enabled
 logical                     :: pdrv_enabled
+logical                     :: gap_enabled
 
 ! MASTER =======================================================================
 
@@ -93,6 +98,7 @@ real(PMFDP),allocatable     :: MassInv(:)       ! mass inverse
 real(PMFDP),allocatable     :: Crd(:,:)         ! current coordinates
 real(PMFDP),allocatable     :: Frc(:,:)         ! current system forces
 real(PMFDP),allocatable     :: Vel(:,:)         ! current system velocities
+real(PMFDP),allocatable     :: DelV(:,:)        ! current system -forces
 real(PMFDP)                 :: PotEne           ! current system potential energy
 type(CVContextType)         :: CVContext        ! current CV context (values and derivatives)
 
@@ -111,11 +117,13 @@ character(PMF_MAX_PATH)     :: fpathsdef    = '{PATHS}'
 character(PMF_MAX_PATH)     :: fcondef      = '{CON}'
 character(PMF_MAX_PATH)     :: fconout      = '_con.out'
 character(PMF_MAX_PATH)     :: fconrst      = '_con.rst'
+character(PMF_MAX_PATH)     :: fconctr
 
 ! restraint dynamics -------------------------------
 character(PMF_MAX_PATH)     :: frstdef      = '{RST}'
 character(PMF_MAX_PATH)     :: frstout      = '_rst.out'
 character(PMF_MAX_PATH)     :: frsthist     = '_rst.hist'
+character(PMF_MAX_PATH)     :: frstctr
 
 ! metadynamics -----------------------------------
 character(PMF_MAX_PATH)     :: fmtddef     = '{MTD}'
@@ -123,6 +131,7 @@ character(PMF_MAX_PATH)     :: fmtdout     = '_mtd.out'
 character(PMF_MAX_PATH)     :: fmtdrst     = '_mtd.rst'
 character(PMF_MAX_PATH)     :: fmtdcvs     = '_mtd.cvs'
 character(PMF_MAX_PATH)     :: fmtdhills   = '_mtd.hills'
+character(PMF_MAX_PATH)     :: fmtdgpout   = '_mtd.gp'
 
 ! adaptive biasing force method ------------------
 character(PMF_MAX_PATH)     :: fabfdef      = '{ABF}'
@@ -143,6 +152,13 @@ character(PMF_MAX_PATH)     :: fmonout      = '_mon.out'
 ! path driving -----------------------------------
 character(PMF_MAX_PATH)     :: fpdrvdef     = '{PDRV}'
 character(PMF_MAX_PATH)     :: fpdrvout     = '_pdrv.out'
+
+! remd -------------------------------------------
+character(PMF_MAX_PATH)     :: fremdout     = '_remd.out'
+
+! gap --------------------------------------------
+character(PMF_MAX_PATH)     :: fgapdef      = '{GAP}'
+character(PMF_MAX_PATH)     :: fgapout      = '_gap.out'
 
 !-------------------------------------------------------------------------------
 

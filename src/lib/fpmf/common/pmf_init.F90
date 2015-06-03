@@ -1,7 +1,8 @@
 !===============================================================================
 ! PMFLib - Library Supporting Potential of Mean Force Calculations
 !-------------------------------------------------------------------------------
-!    Copyright (C) 2011 Petr Kulhanek, kulhanek@chemi.muni.cz
+!    Copyright (C) 2011-2015 Petr Kulhanek, kulhanek@chemi.muni.cz
+!    Copyright (C) 2013-2015 Letif Mones, lam81@cam.ac.uk
 !    Copyright (C) 2007 Petr Kulhanek, kulhanek@enzim.hu
 !    Copyright (C) 2006 Petr Kulhanek, kulhanek@chemi.muni.cz &
 !                       Martin Petrek, petrek@chemi.muni.cz 
@@ -68,6 +69,7 @@ subroutine pmf_init_dat
     mon_enabled = .false.
     stm_enabled = .false.
     pdrv_enabled = .false.
+    gap_enabled = .false.
 
     fucell(:,:) = 0.0d0
     frecip(:,:) = 0.0d0
@@ -247,6 +249,7 @@ subroutine pmf_init_all(amass,ax)
     ! init CVs
     CVContext%CVsValues = 0.0d0
     CVContext%CVsDrvs = 0.0d0
+    CVContext%CVsFrc = 0.0d0  ! lam81
     do i=1,NumOfCVs
         call CVList(i)%cv%calculate_cv(Crd,CVContext)
     end do
@@ -275,7 +278,7 @@ subroutine pmf_init_pmf
     use con_init
 
     implicit none
-    integer                :: i,j,k,itmp,ai,tot_atoms
+    integer                :: i,j,k,l,itmp,ai,tot_atoms
     logical                :: sorted
     integer                :: alloc_failed
     integer,allocatable    :: tmp_indexes(:)
@@ -359,6 +362,34 @@ subroutine pmf_init_pmf
         end do
     end do
 
+    ! find individual atoms for each CV lam81
+    do i=1,NumOfCVs
+        CVList(i)%cv%nindatoms = CVList(i)%cv%natoms
+        do j=1,CVList(i)%cv%natoms
+           do k=1, j-1
+              if( CVList(i)%cv%lindexes(j) .eq. CVList(i)%cv%lindexes(k) ) then
+                  CVList(i)%cv%nindatoms = CVList(i)%cv%nindatoms - 1
+                  exit
+              end if
+           end do
+        end do  
+        allocate(CVList(i)%cv%indlindexes(CVList(i)%cv%nindatoms), stat=alloc_failed)
+        if( alloc_failed .ne. 0 ) then
+            call pmf_utils_exit(PMF_OUT, 1,&
+                                '[PMFLIB] Unable to allocate memory for indlindexes array!')
+        endif
+        l = 0
+ outer: do j=1,CVList(i)%cv%natoms
+            do k=1, j-1
+               if( CVList(i)%cv%lindexes(j) .eq. CVList(i)%cv%lindexes(k) ) then
+                   cycle outer
+               end if
+            end do
+            l = l + 1
+            CVList(i)%cv%indlindexes(l) = CVList(i)%cv%lindexes(j)
+        end do outer
+    end do
+
     ! release temporary array
     deallocate(tmp_indexes)
 
@@ -369,24 +400,38 @@ subroutine pmf_init_pmf
           Crd(3,NumOfLAtoms), &
           Frc(3,NumOfLAtoms), &
           Vel(3,NumOfLAtoms), &
+          DelV(3,NumOfLAtoms), &
           CVContext%CVsValues(NumOfCVs), &
           CVContext%CVsDrvs(3,NumOfLAtoms,NumOfCVs), &
+          CVContext%CVsFrc(NumOfCVs), &  ! lam81
           stat=alloc_failed)
 
     if( alloc_failed .ne. 0 ) then
         call pmf_utils_exit(PMF_OUT, 1,'[PMFLIB] Unable to allocate memory for common arrays!')
     endif
 
+    if( fenable_hessian ) then
+        allocate(CVContext%CVsDrvDrvs(3,NumOfLAtoms,3,NumOfLAtoms,NumOfCVs), &
+                 stat=alloc_failed) ! lam81
+
+        if( alloc_failed .ne. 0 ) then
+            call pmf_utils_exit(PMF_OUT, 1,'[PMFLIB] Unable to allocate memory for hessian array!')
+        endif
+    end if
+
     if( con_enabled ) then
         ! allocate arrays used by bluemoon
         allocate(CrdP(3,NumOfLAtoms), &
                   CVContextP%CVsValues(NumOfCVs), &
                   CVContextP%CVsDrvs(3,NumOfLAtoms,NumOfCVs), &
+                  CVContextP%CVsFrc(NumOfCVs), &  ! lam81
                   stat=alloc_failed)
 
         if( alloc_failed .ne. 0 ) then
-            call pmf_utils_exit(PMF_OUT, 1,'[PMFLIB] Unable to allocate memory for bluemoon arrays!')
+            call pmf_utils_exit(PMF_OUT, 1,'[PMFLIB] Unable to allocate memory for CON arrays!')
         endif
+
+        CVContextP%CVsFrc = 0.0d0  ! lam81
 
         if( fintalg .eq. IA_VEL_VERLET ) then
             ! allocate arrays used by bluemoon
@@ -394,7 +439,7 @@ subroutine pmf_init_pmf
                       stat=alloc_failed)
 
             if( alloc_failed .ne. 0 ) then
-                call pmf_utils_exit(PMF_OUT, 1,'[PMFLIB] Unable to allocate memory for bluemoon array!')
+                call pmf_utils_exit(PMF_OUT, 1,'[PMFLIB] Unable to allocate memory for CON array!')
             endif
         end if
     end if
@@ -413,8 +458,10 @@ subroutine pmf_init_pmf_methods()
     use abf_init
     use mtd_init
     use con_init
+    use remd_init
     use stm_init
     use pdrv_init
+    use gap_init
 
     implicit none
     ! --------------------------------------------------------------------------
@@ -447,8 +494,17 @@ subroutine pmf_init_pmf_methods()
         call mon_init_method
     end if
 
+    if( remd_enabled ) then
+        call remd_init_method
+    end if
+
+    if( gap_enabled ) then
+        call gap_init_method
+    end if
+
     pmf_enabled = abf_enabled .or. mtd_enabled .or. stm_enabled &
-               .or. con_enabled .or. rst_enabled .or. mon_enabled .or. pdrv_enabled
+               .or. con_enabled .or. rst_enabled .or. mon_enabled .or. pdrv_enabled &
+               .or. mon_enabled .or. gap_enabled
 
 end subroutine pmf_init_pmf_methods
 
@@ -470,16 +526,18 @@ subroutine pmf_init_title(driver_name)
     write(PMF_OUT,'(A)')   '#==============================================================================#'
     write(PMF_OUT,'(A)')   '# PMFLib - Potential of Mean Force Toolkit                                     #'
     write(PMF_OUT,'(A)')   '# -----------------------------------------------------------------------------#'
-    write(PMF_OUT,'(A)')   '# Authors: (c) 2013 - 2011 Petr Kulhanek (CEITEC)                              #'
-    write(PMF_OUT,'(A)')   '#          (c) 2011 - 2009 Petr Kulhanek (NCBR)                                #'
+    write(PMF_OUT,'(A)')   '# Authors: (c) 2011 - 2015 Petr Kulhanek (CEITEC)                              #'
+    write(PMF_OUT,'(A)')   '#          (c) 2013 - 2015 Letif Mones (EDUC)                                  #'
+    write(PMF_OUT,'(A)')   '#          (c) 2009 - 2011 Petr Kulhanek (NCBR)                                #'
     write(PMF_OUT,'(A)')   '#          (c) 2008 Petr Kulhanek (IE), Letif Mones (IE)                       #'
     write(PMF_OUT,'(A)')   '#          (c) 2007 Petr Kulhanek (IE), Martin Petrek (NCBR), Letif Mones (IE) #'
     write(PMF_OUT,'(A)')   '#          (c) 2006 Petr Kulhanek (NCBR), Martin Petrek (NCBR)                 #'
     write(PMF_OUT,'(A)')   '#          (c) 2005 Petr Kulhanek (NCBR)                                       #'
     write(PMF_OUT,'(A)')   '#                                                                              #'
     write(PMF_OUT,'(A)')   '# CEITEC: Central European Institute of Technology, Masaryk University, CZ     #'
-    write(PMF_OUT,'(A)')   '# IE  : Institute of Enzymology, Hungarian Academy of Science, HU              #'
-    write(PMF_OUT,'(A)')   '# NCBR: National Centre for Biomolecular Research, Masaryk University, CZ      #'
+    write(PMF_OUT,'(A)')   '# EDUC:   Engineering Department, University of Cambridge, UK                  #'
+    write(PMF_OUT,'(A)')   '# IE  :   Institute of Enzymology, Hungarian Academy of Science, HU            #'
+    write(PMF_OUT,'(A)')   '# NCBR:   National Centre for Biomolecular Research, Masaryk University, CZ    #'
     write(PMF_OUT,'(A)')   '#                                                                              #'
     write(PMF_OUT,'(A)')   '# Fortran and C++ Cores of PMFLib are license under Lesser GPL v2.1 and above  #'
     write(PMF_OUT,'(A)')   '# PMFLib utilities are license under GPL v2 and above                          #'

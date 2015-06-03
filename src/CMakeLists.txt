@@ -14,6 +14,7 @@ INCLUDE_DIRECTORIES(lib/cpmf/network/mtd SYSTEM)
 INCLUDE_DIRECTORIES(lib/cpmf/network/common SYSTEM)
 INCLUDE_DIRECTORIES(lib/cpmf/network/client SYSTEM)
 INCLUDE_DIRECTORIES(lib/cpmf/network/stm SYSTEM)
+INCLUDE_DIRECTORIES(lib/cpmf/network/remd SYSTEM)
 INCLUDE_DIRECTORIES(lib/cpmf/mask SYSTEM)
 
 INCLUDE_DIRECTORIES(lib/fpmf SYSTEM)

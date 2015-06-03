@@ -1,6 +1,8 @@
 !===============================================================================
 ! PMFLib - Library Supporting Potential of Mean Force Calculations
 !-------------------------------------------------------------------------------
+!    Copyright (C) 2011-2015 Petr Kulhanek, kulhanek@chemi.muni.cz
+!    Copyright (C) 2013-2015 Letif Mones, lam81@cam.ac.uk
 !    Copyright (C) 2007 Petr Kulhanek, kulhanek@enzim.hu
 !    Copyright (C) 2006 Petr Kulhanek, kulhanek@chemi.muni.cz &
 !                       Martin Petrek, petrek@chemi.muni.cz 
@@ -75,6 +77,8 @@ subroutine pmf_finalize_methods
     use con_finalize
     use pdrv_finalize
     use stm_finalize
+    use remd_finalize
+    use gap_finalize
 
     implicit none
     ! --------------------------------------------------------------------------
@@ -95,8 +99,16 @@ subroutine pmf_finalize_methods
         call mon_finalize_method
     end if
 
+    if( remd_enabled ) then
+        call remd_finalize_method
+    end if
+
     if( rst_enabled ) then
         call rst_finalize_method
+    end if
+
+    if( gap_enabled ) then
+        call gap_finalize_method
     end if
 
     if( pdrv_enabled ) then

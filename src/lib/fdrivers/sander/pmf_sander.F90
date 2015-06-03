@@ -175,7 +175,7 @@ subroutine pmf_sander_finalize_preinit(anatom,amass,ax)
     call pmf_mask_topo_finalize()
 
     ! print PMFLib header with system description
-    call pmf_init_title('PMEMD')
+    call pmf_init_title('SANDER')
 
     ! load method setups and CVs definition
     call pmf_sander_process_control
@@ -267,7 +267,7 @@ subroutine pmf_sander_bcast_dat_mpi(anatom,anumtasks,aiparpt)
                  tmp_c(3,fnatoms),stat=alloc_failed)
 
          if( alloc_failed .ne. 0 ) then
-            call pmf_utils_exit(PMF_OUT, 1,'[PMEMD] Unable to allocate memory for tmp_a/b/c arrays!')
+            call pmf_utils_exit(PMF_OUT, 1,'[SANDER] Unable to allocate memory for tmp_a/b/c arrays!')
          end if
     end if
 

@@ -1,6 +1,8 @@
 !===============================================================================
 ! PMFLib - Library Supporting Potential of Mean Force Calculations
 !-------------------------------------------------------------------------------
+!    Copyright (C) 2011-2015 Petr Kulhanek, kulhanek@chemi.muni.cz
+!    Copyright (C) 2013-2015 Letif Mones, lam81@cam.ac.uk
 !    Copyright (C) 2007 Petr Kulhanek, kulhanek@enzim.hu
 !    Copyright (C) 2006 Petr Kulhanek, kulhanek@chemi.muni.cz &
 !                       Martin Petrek, petrek@chemi.muni.cz 
@@ -52,7 +54,7 @@ subroutine mtd_output_open
     ! method header --------------------------------
     write(MTD_OUT,10)
     select case(fmode)
-        case(1)
+        case(1,2,3)
             write(MTD_OUT,20)
         case default
             call pmf_utils_exit(PMF_OUT,1,'[MTD] Unsupported fmode!')
@@ -121,7 +123,7 @@ subroutine mtd_output_write_header
 
     ! data header - related to mtddynamics type
     select case(fmode)
-        case(1)
+        case(1,2,3)
             write(MTD_OUT,100,advance='NO') '#       1'
             off = 1
             do i=off+1,off+NumOfMTDCVs
@@ -176,13 +178,13 @@ subroutine mtd_output_write
  implicit none
  ! -----------------------------------------------------------------------------
 
- if( fsample .le. 0 ) return ! output is written only if fsample > 0
- if( mod(fstep,fsample) .ne. 0 ) return
+ if( fpsample .le. 0 ) return ! output is written only if fpsample > 0
+ if( mod(fstep,fpsample) .ne. 0 ) return
 
  select case(fmode)
     case(0)
         return
-    case(1)
+    case(1,2,3)
         call mtd_output_write_direct
     case default
         call pmf_utils_exit(PMF_OUT,1,'[MTD] Unsupported fmode!')
@@ -240,7 +242,7 @@ subroutine mtd_output_close
  if( .not. mtd_enabled ) return ! method is not enabled
 
  select case(fmode)
-    case(1)
+    case(1,2,3)
         ! nothing to do
     case default
         call pmf_utils_exit(PMF_OUT,1,'[MTD] Unsupported fmode!')
@@ -260,6 +262,34 @@ subroutine mtd_output_close
  return
 
 end subroutine mtd_output_close
+
+!===============================================================================
+! Subroutine:  mtd_gp_output
+!===============================================================================
+
+subroutine mtd_gp_output
+
+    use pmf_dat
+    use pmf_constants
+    use mtd_dat
+    use gp_dat_mod
+    use gp_basic_mod
+
+    implicit none
+    character(len=PMF_MAX_PATH) :: cstep
+    ! --------------------------------------------------------------------------
+
+   if ( fmode .ne. 3 ) return
+   if ( fgpprint .eq. 0 ) return
+   if ( mod(fstep, fgpprint) .ne. 0 ) return
+
+    write(unit=cstep, fmt=*) fstep
+
+    call gp_basic_write(gpmtd%gp, MTD_GPOUT, trim(fmtdgpout)//'_'//trim(adjustl(cstep)))
+
+    return
+
+end subroutine mtd_gp_output
 
 !===============================================================================
 

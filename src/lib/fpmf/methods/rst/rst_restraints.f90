@@ -1,6 +1,8 @@
 !===============================================================================
 ! PMFLib - Library Supporting Potential of Mean Force Calculations
 !-------------------------------------------------------------------------------
+!    Copyright (C) 2011-2015 Petr Kulhanek, kulhanek@chemi.muni.cz
+!    Copyright (C) 2013-2015 Letif Mones, lam81@cam.ac.uk
 !    Copyright (C) 2007 Petr Kulhanek, kulhanek@enzim.hu
 !
 !    This library is free software; you can redistribute it and/or
@@ -78,6 +80,7 @@ subroutine rst_restraints_read_rst(prm_fin,rst_item)
     logical                            :: value_set
     logical                            :: left_value_set
     logical                            :: right_value_set
+    logical                            :: ctr_set
     character(1)                       :: buffer
     type(UnitType)                     :: forceunit
     ! --------------------------------------------------------------------------
@@ -106,6 +109,7 @@ subroutine rst_restraints_read_rst(prm_fin,rst_item)
     value_set = .false.
     left_value_set = .false.
     right_value_set = .false.
+    ctr_set = .false.
 
     if( prmfile_get_real8_by_key(prm_fin,'value',rst_item%startvalue) ) then
         value_set = .true.
@@ -133,24 +137,41 @@ subroutine rst_restraints_read_rst(prm_fin,rst_item)
         write(PMF_OUT,104) rst_item%cv%get_rvalue(rst_item%right_value), trim(rst_item%cv%get_ulabel())
     end if
 
-    if( .not. (value_set .or. left_value_set .or. right_value_set) ) then
-        call pmf_utils_exit(PMF_OUT,1,'Neither value nor left_value and right_value keys are specified!')
+    if( prmfile_get_string_by_key(prm_fin,'control_file',frstctr) ) then
+        ctr_set = .true.
+        write(PMF_OUT,105) trim(frstctr)
+        call rst_restraints_read_control_file(rst_item)
+    end if
+
+    if( .not. (value_set .or. left_value_set .or. right_value_set .or. ctr_set) ) then
+        call pmf_utils_exit(PMF_OUT,1,'Neither value nor left_value and right_value nor control_file keys are specified!')
     end if
 
     if( value_set .and. (left_value_set .or. right_value_set) ) then
         call pmf_utils_exit(PMF_OUT,1,'Either value or left_value and right_value keys can be specified!')
     end if
 
-    if( (.not. value_set) .and. (left_value_set .or. right_value_set) ) then
+    if( value_set .and. ctr_set ) then
+        call pmf_utils_exit(PMF_OUT,1,'>>> ERROR: Either value or left_value and right_value or control_file keys can be specified!')
+    end if
+
+    if( ctr_set .and. (left_value_set .or. right_value_set) ) then
+        call pmf_utils_exit(PMF_OUT,1,'>>> ERROR: Either value or left_value and right_value or control_file keys can be specified!')
+    end if
+
+    if( (.not. value_set) .and. (.not. ctr_set) .and. (left_value_set .or. right_value_set) ) then
         if( .not. (left_value_set .and. right_value_set) ) then
             call pmf_utils_exit(PMF_OUT,1,'Either left_value or right_value key is missing!')
         else
             ! wall restraint mode
             rst_item%mode = 'W'
         end if
-    else
-        ! constant mode by default
+    else if( value_set ) then
+        ! constant mode
         rst_item%mode = 'C'
+    else if( ctr_set ) then
+        ! steering mode
+        rst_item%mode = 'S'
     end if
 
     ! force_constant ==============================================================
@@ -164,6 +185,9 @@ subroutine rst_restraints_read_rst(prm_fin,rst_item)
 
     if( rst_item%mode .ne. 'W' ) then
         if( prmfile_get_real8_by_key(prm_fin,'change_to',rst_item%stopvalue) ) then
+            if( rst_item%mode .eq. 'S' ) then
+                call pmf_utils_exit(PMF_OUT,1,'change_to and control_file keywords cannot be used together!')
+            end if
             rst_item%mode = 'V'
             call rst_item%cv%conv_to_ivalue(rst_item%stopvalue)
             write(PMF_OUT,120) rst_item%cv%get_rvalue(rst_item%stopvalue), trim(rst_item%cv%get_ulabel())
@@ -173,9 +197,20 @@ subroutine rst_restraints_read_rst(prm_fin,rst_item)
             if( rst_item%mode .eq. 'V' ) then
                 call pmf_utils_exit(PMF_OUT,1,'change_to and increment keywords cannot be used together!')
             end if
+            if( rst_item%mode .eq. 'S' ) then
+                call pmf_utils_exit(PMF_OUT,1,'increment and control_file keywords cannot be used together!')
+            end if
             rst_item%mode = 'I'
             call rst_item%cv%conv_to_ivalue(rst_item%stopvalue)
             write(PMF_OUT,130) rst_item%cv%get_rvalue(rst_item%stopvalue), trim(rst_item%cv%get_ulabel())
+        end if
+    else if ( rst_item%mode .ne. 'S' ) then
+        if( prmfile_get_real8_by_key(prm_fin,'change_to',rst_item%stopvalue) ) then
+            call pmf_utils_exit(PMF_OUT,1,'change_to key cannot be specified in wall restraint mode!')
+        end if
+
+        if( prmfile_get_real8_by_key(prm_fin,'increment',rst_item%stopvalue) ) then
+            call pmf_utils_exit(PMF_OUT,1,'increment key cannot be specified in wall restraint mode!')
         end if
     end if
 
@@ -190,6 +225,7 @@ subroutine rst_restraints_read_rst(prm_fin,rst_item)
 101 format('   ** Value          :',A)
 102 format('   ** Left value <=  :',F16.6,' [',A,']')
 104 format('   ** Right value >= :',F16.6,' [',A,']')
+105 format('   ** Control file   :',A)
 110 format('   ** Force constant :',F16.6,' [',A,']')
 120 format('   ** Change to      :',F16.6,' [',A,']')
 130 format('   ** Increment by   :',F16.6,' [',A,']')
@@ -350,6 +386,16 @@ subroutine rst_restraints_rst_info(rst_item)
                                 trim(rst_item%cv%get_ulabel())
             write(PMF_OUT,200) rst_item%cv%get_rvalue(rst_item%stopvalue), &
                                 trim(rst_item%cv%get_ulabel())
+        case('S')
+            write(PMF_OUT,120) 'S','control mode'
+            write(PMF_OUT,160) rst_item%cv%get_rvalue(rst_item%startvalue), &
+                                trim(rst_item%cv%get_ulabel())
+            write(PMF_OUT,110) rst_item%cv%get_rvalue(CVContext%CVsValues(rst_item%cvindx)), &
+                                trim(rst_item%cv%get_ulabel())
+            write(PMF_OUT,170) rst_item%cv%get_rvalue(rst_item%deviation), &
+                                trim(rst_item%cv%get_ulabel())
+            write(PMF_OUT,180) pmf_unit_get_rvalue(forceunit,rst_item%force_constant), &
+                                trim(pmf_unit_label(forceunit))
     end select
 
     if( (fhistupdate .gt. 0) .or. (frestart .eqv. .true.) ) then
@@ -401,20 +447,82 @@ subroutine rst_restraints_increment(rst_item)
     real(PMFDP)        :: difference
     ! --------------------------------------------------------------------------
 
-    ! value changes programmatically by managed path
-    if( rst_item%mode .eq. 'P' ) then
-        rst_item%target_value = pmf_paths_get_rpos(rst_item%cvindx)
-        return
-    end if
-
-    if( rst_item%mode .eq. 'C' ) return  ! no change of constant restraint
-    if( rst_item%mode .eq. 'W' ) return  ! no change of wall restraint
-
-    ! incrementation is in linear mode
-    difference = rst_item%cv%get_deviation(rst_item%stopvalue,rst_item%startvalue)
-    rst_item%target_value = rst_item%startvalue + difference * fstep / fnstlim
+	select case(rst_item%mode)
+		case('P')
+    		! value changes programmatically by managed path
+        	rst_item%target_value = pmf_paths_get_rpos(rst_item%cvindx)
+			return
+		case('C')
+			return	! no change of constant restraint
+		case('W')
+			return  ! no change of wall restraint
+		case('S')
+		    ! set corresponding value
+		    rst_item%target_value = rst_item%control_values(fstep)
+			return
+		case('I')
+		    ! incrementation is in linear mode
+		    difference = rst_item%cv%get_deviation(rst_item%stopvalue,rst_item%startvalue)
+		    rst_item%target_value = rst_item%startvalue + difference * fstep / fnstlim
+		case default
+	end select
 
 end subroutine rst_restraints_increment
+
+!===============================================================================
+! Subroutine:  rst_restraints_read_control_file
+!===============================================================================
+
+subroutine rst_restraints_read_control_file(rst_item)
+
+    use pmf_dat
+    use pmf_utils
+    use rst_dat
+
+    implicit none
+    type(CVTypeUM)     :: rst_item
+    ! ----------------------------------------------
+    integer            :: alloc_failed, ios
+    integer            :: i
+    ! --------------------------------------------------------------------------
+
+    ! test if control file exists
+    if( .not. pmf_utils_fexist(frstctr) ) then
+        write(PMF_OUT,10) trim(frstctr)
+        call pmf_utils_exit(PMF_OUT,1,'>>> ERROR: frstctr file does not exist!')
+    end if
+
+    ! open control file
+    call pmf_utils_open(RST_CTR,frstctr,'O')
+
+    ! allocate rst_item%control_values
+    allocate(rst_item%control_values(fnstlim), stat = alloc_failed)
+
+    if ( alloc_failed .ne. 0 ) then
+         call pmf_utils_exit(PMF_OUT,1,'[RST] Unable to allocate memory for control_values!')
+    end if
+
+    ! read data from control_file
+    ios = 0
+    do i=1,fnstlim
+       read(RST_CTR,*,iostat=ios) rst_item%control_values(i)
+       if ( ios .ne. 0 ) then
+            write(PMF_OUT,20) trim(frstctr), i-1, fnstlim
+            call pmf_utils_exit(PMF_OUT,1,'[RST] There is not enough data in frstctr file!')
+       end if
+    end do
+
+    ! specify start value
+    rst_item%startvalue = rst_item%control_values(1)
+
+    close(RST_CTR)
+
+    return
+
+ 10 format('[RST] frstctr file (',A,') does not exist!')
+ 20 format('[RST] frstctr file (',A,') has less number of data (',I,') than fnstlim (',I,')!')
+
+end subroutine rst_restraints_read_control_file
 
 !===============================================================================
 

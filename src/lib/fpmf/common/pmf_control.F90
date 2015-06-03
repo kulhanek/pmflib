@@ -1,7 +1,8 @@
 !===============================================================================
 ! PMFLib - Library Supporting Potential of Mean Force Calculations
 !-------------------------------------------------------------------------------
-!    Copyright (C) 2011      Petr Kulhanek, kulhanek@chemi.muni.cz
+!    Copyright (C) 2011-2015 Petr Kulhanek, kulhanek@chemi.muni.cz
+!    Copyright (C) 2013-2015 Letif Mones, lam81@cam.ac.uk
 !    Copyright (C) 2007,2008 Petr Kulhanek, kulhanek@enzim.hu
 !
 !    This library is free software; you can redistribute it and/or
@@ -39,7 +40,9 @@ subroutine pmf_control_read_pmflib_group(prm_fin)
     use abf_control
     use mtd_control
     use con_control
+    use remd_control
     use stm_control
+    use gap_control
     use pdrv_control
     use pmf_dat
     use pmf_mask
@@ -69,17 +72,19 @@ subroutine pmf_control_read_pmflib_group(prm_fin)
 
     ! read method setup
     write(PMF_OUT,*)
-    call pmf_utils_heading(PMF_OUT,'PMF Methods','=')   
+    call pmf_utils_heading(PMF_OUT,'PMF Methods','=')
     call abf_control_read_abf(prm_fin)
     call mtd_control_read_mtd(prm_fin)
     call stm_control_read_stm(prm_fin)
     call con_control_read_con(prm_fin)
-    call rst_control_read_rst(prm_fin)    
+    call rst_control_read_rst(prm_fin)
 
     write(PMF_OUT,*)
     call pmf_utils_heading(PMF_OUT,'Extensions','=')
     call pdrv_control_read_pdrv(prm_fin)
+    call remd_control_read_remd(prm_fin)
     call mon_control_read_mon(prm_fin)
+    call gap_control_read_gap(prm_fin)
 
     ! read filenames
     write(PMF_OUT,*)
@@ -182,6 +187,7 @@ subroutine pmf_control_read_control(prm_fin)
         write(PMF_OUT,35) prmfile_onoff(fprint_inpcrds)
         write(PMF_OUT,45) prmfile_onoff(fprint_masks)
         write(PMF_OUT,55) prmfile_onoff(fenable_pbc)
+        write(PMF_OUT,65) prmfile_onoff(fenable_hessian) ! lam81
         return
     end if
 
@@ -215,6 +221,12 @@ subroutine pmf_control_read_control(prm_fin)
         write(PMF_OUT,50) prmfile_onoff(fenable_pbc)
     end if
 
+    if(.not. prmfile_get_logical_by_key(prm_fin,'fenable_hessian', fenable_hessian)) then ! lam81
+        write(PMF_OUT,65) prmfile_onoff(fenable_hessian)
+    else
+        write(PMF_OUT,60) prmfile_onoff(fenable_hessian)
+    end if
+
   1 format('ftopology                              = ',a)
   2 format('ftopology                              = -system-                      (default)')
  10 format('fdebug                                 = ',a)
@@ -225,6 +237,8 @@ subroutine pmf_control_read_control(prm_fin)
  45 format('fprint_masks                           = ',a29,' (default)')
  50 format('fenable_pbc                            = ',a)
  55 format('fenable_pbc                            = ',a29,' (default)')
+ 60 format('fenable_hessian                        = ',a)
+ 65 format('fenable_hessian                        = ',a29,' (default)')
 
 end subroutine pmf_control_read_control
 
@@ -789,6 +803,7 @@ subroutine pmf_control_list_periodic_cvs()
             write(PMF_OUT,40) i, CVList(i)%cv%ctype, trim(CVList(i)%cv%name), &
                               CVList(i)%cv%get_rvalue(CVList(i)%cv%get_min_cv_value()), &
                               CVList(i)%cv%get_rvalue(CVList(i)%cv%get_max_cv_value()), &
+                              CVList(i)%cv%get_rvalue(CVList(i)%cv%get_period_cv_value()), &
                               '['//trim(CVList(i)%cv%get_ulabel())//']'
         end if
     end do
@@ -796,10 +811,10 @@ subroutine pmf_control_list_periodic_cvs()
     return
 
 10 format('Number of periodic CVs : ',I2)
-20 format('ID   Type             Name            Min Value        Max Value    ')
-30 format('-- ---------- -------------------- ---------------- ----------------')
+20 format('ID   Type             Name            Min Value        Max Value       Periodicity   ')
+30 format('-- ---------- -------------------- ---------------- ---------------- ----------------')
 
-40 format(I2,1X,A10,1X,A20,1X,F16.6,1X,F16.6,1X,A)
+40 format(I2,1X,A10,1X,A20,1X,F16.6,1X,F16.6,1X,F16.6,1X,A)
 
 end subroutine pmf_control_list_periodic_cvs
 
@@ -820,6 +835,7 @@ subroutine pmf_control_read_method_cvs_and_paths(prm_fin)
     use con_control
     use stm_control
     use pdrv_control
+    use gap_control
 
     implicit none
     type(PRMFILE_TYPE),intent(inout)       :: prm_fin
@@ -848,6 +864,9 @@ subroutine pmf_control_read_method_cvs_and_paths(prm_fin)
     end if
     if( mon_enabled ) then
         call mon_control_read_cvs(prm_fin)
+    end if
+    if( gap_enabled ) then
+        call gap_control_read_cvs(prm_fin)
     end if
 
 end subroutine pmf_control_read_method_cvs_and_paths

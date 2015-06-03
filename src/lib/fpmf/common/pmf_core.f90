@@ -1,6 +1,8 @@
 !===============================================================================
 ! PMFLib - Library Supporting Potential of Mean Force Calculations
 !-------------------------------------------------------------------------------
+!    Copyright (C) 2011-2015 Petr Kulhanek, kulhanek@chemi.muni.cz
+!    Copyright (C) 2013-2015 Letif Mones, lam81@cam.ac.uk
 !    Copyright (C) 2007 Petr Kulhanek, kulhanek@enzim.hu
 !    Copyright (C) 2006 Petr Kulhanek, kulhanek@chemi.muni.cz &
 !                       Martin Petrek, petrek@chemi.muni.cz 
@@ -48,6 +50,7 @@ subroutine pmf_core_in_data_xvf(x,v,f)
     Crd(:,i) = x(:,ridx)*LengthConv
     Vel(:,i) = v(:,ridx)*VelocityConv
     Frc(:,i) = f(:,ridx)*ForceConv
+    DelV(:,i) = -f(:,ridx)*ForceConv ! lam81
  end do
 
 end subroutine pmf_core_in_data_xvf
@@ -289,6 +292,27 @@ subroutine pmf_core_out_data_xpvp(xp,vp)
 
 end subroutine pmf_core_out_data_xpvp
 
+!===============================================================================
+! Function:  pmf_core_get_num_of_constraints
+!===============================================================================
+
+integer function pmf_core_get_num_of_constraints()
+
+ use pmf_dat
+ use con_dat
+
+ implicit none
+ ! -----------------------------------------------------------------------------
+
+ pmf_core_get_num_of_constraints = 0
+
+ if ( .not. con_enabled) return
+
+ pmf_core_get_num_of_constraints = NumOfCONs 
+
+ return
+
+end function pmf_core_get_num_of_constraints
 
 !===============================================================================
 
