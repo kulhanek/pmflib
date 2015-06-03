@@ -111,47 +111,41 @@ end function pmf_utils_fexist
 ! Subroutine:   pmf_utils_read_ctrl_real8
 !===============================================================================
 
-subroutine pmf_utils_read_ctrl_real8(prm_fin, name, value, fmt)
+subroutine pmf_utils_read_ctrl_real8(prm_fin, name, value, fmt, mandatory)
+
+    use prmfile
+    use pmf_constants
 
     implicit none
     type(PRMFILE_TYPE),intent(inout)    :: prm_fin
     character(*)                        :: name
     real(PMFDP)                         :: value
-    character(*)                        :: name 
+    character(*)                        :: fmt
+    logical                             :: mandatory
     ! --------------------------------------------
     logical                             :: defval
-    character(len=80)                        :: 
+    character(len=80)                   :: buf1
+    character(len=80)                   :: buf2
+    character(len=80)                   :: buf3
     ! --------------------------------------------------------------------------
 
     ! read value
     defval = prmfile_get_real8_by_key(prm_fin,name,value)
 
+    buf2 = name
+    write(buf3,fmt) value
+
     ! setup format string
-    
-
-
-    ! write output
-    write(PMF_OUT,fmt) value
-    
-
-
-    if(present(message)) then
-        write(unitnum,'(/,A)') '>>> ERROR: ' // message
-    end if
-
-    call cpmf_print_errors
-
-    write(unitnum,'(/,A)') '>>> ERROR: Some fatal error occured in PMFLib!'
-    write(unitnum,'(A)')   '           Look above for detailed message (if any).'
-    write(unitnum,'(A,/)') '           Program execution is terminated.'
-
-    if( errcode .eq. 0 ) then
-        stop 0
+    if( defval ) then
+        write(PMF_OUT,10) adjustl(buf2), adjustr(buf3)
     else
-        stop 1
+        write(PMF_OUT,15) adjustl(buf2), adjustr(buf3)
     end if
 
-end subroutine pmf_utils_exit
+10 format(A36,1X,'=',1X,A30)
+15 format(A36,1X,'=',1X,A30,1X,'(default)')
+
+end subroutine pmf_utils_read_ctrl_real8
 
 !===============================================================================
 ! Subroutine:   pmf_utils_exit

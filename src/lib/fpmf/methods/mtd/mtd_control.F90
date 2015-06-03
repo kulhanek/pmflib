@@ -83,8 +83,6 @@ subroutine mtd_control_read_mtd(prm_fin)
         return
     end if
 
-    call pmf_get_key(prm_fin,'fheight','R',
-
     if(prmfile_get_real8_by_key(prm_fin,'fheight', fheight) ) then
         write(PMF_OUT,30) fheight
     else
