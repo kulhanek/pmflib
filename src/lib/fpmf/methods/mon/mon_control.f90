@@ -63,17 +63,9 @@ subroutine mon_control_read_mon(prm_fin)
         return
     end if
 
-    ! process options from [mon] section
-    if( .not. prmfile_get_integer_by_key(prm_fin,'fmode',fmode) ) then
-        call pmf_utils_exit(PMF_OUT,1,'[MON] fmode item is mandatory in this section')
-    else
-        write(PMF_OUT,10) fmode
-    end if
-
-    if (fmode .ne. 0 .and. fmode .ne. 1) then
-        write(PMF_OUT, '(/2x,a,i3,a)') 'fmode (', fmode, ') must be 0 or 1'
-        call pmf_utils_exit(PMF_OUT,1)
-    end if
+    ! read configuration
+    call pmf_utils_read_ctrl_integer(prm_fin,'fmode',fmode,'i12,18x')
+    call pmf_utils_check_integer_in_range('MON','fmode',fmode,0,1)
 
     if( fmode .eq. 0 ) then
         write(PMF_OUT,5)
@@ -82,21 +74,14 @@ subroutine mon_control_read_mon(prm_fin)
         return
     end if
 
-    if(prmfile_get_integer_by_key(prm_fin,'fsample', fsample)) then
-        write(PMF_OUT,50) fsample
-    else
-        write(PMF_OUT,55) fsample
-    end if
+    call pmf_utils_read_ctrl_integer(prm_fin,'fsample',fsample,'i12,18x')
+    call pmf_utils_check_integer('MON','fsample',fsample,0,CND_GE)
 
     mon_enabled = fmode .gt. 0
 
     return
 
   5 format (' >> Monitoring is disabled!')
- 10 format ('fmode                                  = ',i12)
- 15 format ('fmode                                  = ',i12,'                  (default)')
- 50 format ('fsample                                = ',i12)
- 55 format ('fsample                                = ',i12,'                  (default)')
 
 end subroutine mon_control_read_mon
 

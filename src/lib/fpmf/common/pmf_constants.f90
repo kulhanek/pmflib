@@ -200,4 +200,14 @@ integer,parameter       :: IA_VEL_VERLET        = 1
 
 !===============================================================================
 
+! conditions
+integer,parameter       :: CND_GT         = 1
+integer,parameter       :: CND_GE         = 2
+integer,parameter       :: CND_LT         = 3
+integer,parameter       :: CND_LE         = 4
+integer,parameter       :: CND_EQ         = 5
+integer,parameter       :: CND_NE         = 6
+
+!===============================================================================
+
 end module pmf_constants

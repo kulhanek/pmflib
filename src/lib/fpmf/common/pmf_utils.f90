@@ -111,7 +111,7 @@ end function pmf_utils_fexist
 ! Subroutine:   pmf_utils_read_ctrl_real8
 !===============================================================================
 
-subroutine pmf_utils_read_ctrl_real8(prm_fin, name, value, fmt, mandatory)
+subroutine pmf_utils_read_ctrl_real8(prm_fin, name, value, fmt)
 
     use prmfile
     use pmf_constants
@@ -121,31 +121,145 @@ subroutine pmf_utils_read_ctrl_real8(prm_fin, name, value, fmt, mandatory)
     character(*)                        :: name
     real(PMFDP)                         :: value
     character(*)                        :: fmt
-    logical                             :: mandatory
     ! --------------------------------------------
     logical                             :: defval
     character(len=80)                   :: buf1
-    character(len=80)                   :: buf2
-    character(len=80)                   :: buf3
+    character(len=37)                   :: buf2
+    character(len=30)                   :: buf3
     ! --------------------------------------------------------------------------
 
     ! read value
     defval = prmfile_get_real8_by_key(prm_fin,name,value)
 
     buf2 = name
-    write(buf3,fmt) value
+    write(buf3,'('//trim(fmt)//')') value
 
     ! setup format string
     if( defval ) then
-        write(PMF_OUT,10) adjustl(buf2), adjustr(buf3)
+        write(PMF_OUT,10) adjustl(buf2), buf3
     else
-        write(PMF_OUT,15) adjustl(buf2), adjustr(buf3)
+        write(PMF_OUT,15) adjustl(buf2), buf3
     end if
 
-10 format(A36,1X,'=',1X,A30)
-15 format(A36,1X,'=',1X,A30,1X,'(default)')
+10 format(A37,1X,'=',1X,A30)
+15 format(A37,1X,'=',1X,A30,1X,'(default)')
 
 end subroutine pmf_utils_read_ctrl_real8
+
+!===============================================================================
+! Subroutine:   pmf_utils_check_real8_in_range
+!===============================================================================
+
+subroutine pmf_utils_check_real8_in_range(sec,name,value,minv,maxv)
+
+    use prmfile
+    use pmf_constants
+
+    implicit none
+    character(*)                        :: sec
+    character(*)                        :: name
+    real(PMFDP)                         :: value
+    real(PMFDP)                         :: minv
+    real(PMFDP)                         :: maxv
+    ! --------------------------------------------------------------------------
+
+end subroutine pmf_utils_check_real8_in_range
+
+!===============================================================================
+! Subroutine:   pmf_utils_check_real8
+!===============================================================================
+
+subroutine pmf_utils_check_real8(sec,name,value,testv,cond)
+
+    use prmfile
+    use pmf_constants
+
+    implicit none
+    character(*)                        :: sec
+    character(*)                        :: name
+    real(PMFDP)                         :: value
+    real(PMFDP)                         :: testv
+    real(PMFDP)                         :: cond
+    ! --------------------------------------------------------------------------
+
+end subroutine pmf_utils_check_real8
+
+!===============================================================================
+! Subroutine:   pmf_utils_read_ctrl_integer
+!===============================================================================
+
+subroutine pmf_utils_read_ctrl_integer(prm_fin, name, value, fmt)
+
+    use prmfile
+    use pmf_constants
+
+    implicit none
+    type(PRMFILE_TYPE),intent(inout)    :: prm_fin
+    character(*)                        :: name
+    integer                             :: value
+    character(*)                        :: fmt
+    ! --------------------------------------------
+    logical                             :: defval
+    character(len=80)                   :: buf1
+    character(len=37)                   :: buf2
+    character(len=30)                   :: buf3
+    ! --------------------------------------------------------------------------
+
+    ! read value
+    defval = prmfile_get_integer_by_key(prm_fin,name,value)
+
+    buf2 = name
+    write(buf3,'('//trim(fmt)//')') value
+
+    ! setup format string
+    if( defval ) then
+        write(PMF_OUT,10) adjustl(buf2), buf3
+    else
+        write(PMF_OUT,15) adjustl(buf2), buf3
+    end if
+
+10 format(A37,1X,'=',1X,A30)
+15 format(A37,1X,'=',1X,A30,1X,'(default)')
+
+end subroutine pmf_utils_read_ctrl_integer
+
+!===============================================================================
+! Subroutine:   pmf_utils_check_integer_in_range
+!===============================================================================
+
+subroutine pmf_utils_check_integer_in_range(sec,name,value,minv,maxv)
+
+    use prmfile
+    use pmf_constants
+
+    implicit none
+    character(*)                        :: sec
+    character(*)                        :: name
+    integer                             :: value
+    integer                             :: minv
+    integer                             :: maxv
+    ! --------------------------------------------------------------------------
+
+end subroutine pmf_utils_check_integer_in_range
+
+!===============================================================================
+! Subroutine:   pmf_utils_check_integer
+!===============================================================================
+
+subroutine pmf_utils_check_integer(sec,name,value,testv,cond)
+
+    use prmfile
+    use pmf_constants
+
+    implicit none
+    character(*)                        :: sec
+    character(*)                        :: name
+    integer                             :: value
+    integer                             :: testv
+    integer                             :: cond
+    ! --------------------------------------------------------------------------
+
+end subroutine pmf_utils_check_integer
 
 !===============================================================================
 ! Subroutine:   pmf_utils_exit
