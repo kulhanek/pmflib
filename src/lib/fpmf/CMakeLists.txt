@@ -195,30 +195,6 @@ SET(PMF_MON_CORE_SRC
         methods/mon/mon_finalize.f90
         )
 
-# remd -------------------------------------------------------------------------
-
-SET(PMF_REMD_CORE_SRC
-        methods/remd/remd_dat.f90
-        methods/remd/remd_init.f90
-        methods/remd/remd_control.F90
-        methods/remd/remd_client.F90
-        methods/remd/remd_output.f90
-        methods/remd/remd_core.f90
-        methods/remd/remd_finalize.f90
-        )
-
-# gap --------------------------------------------------------------------------
-
-SET(PMF_GAP_CORE_SRC
-        methods/gap/gap_dat.f90
-        methods/gap/gap_init.f90
-        methods/gap/gap_cvs.f90
-        methods/gap/gap_control.f90
-        methods/gap/gap_output.f90
-        methods/gap/gap_core.f90
-        methods/gap/gap_finalize.f90
-        )
-
 # path driving -----------------------------------------------------------------
 
 SET(PMF_PDRV_CORE_SRC
@@ -243,8 +219,6 @@ SET(FPMF_SRC
         ${PMF_RST_CORE_SRC}
         ${PMF_STM_CORE_SRC}
         ${PMF_MON_CORE_SRC}
-        ${PMF_REMD_CORE_SRC}
-        ${PMF_GAP_CORE_SRC}
         ${PMF_PDRV_CORE_SRC}
         )
 

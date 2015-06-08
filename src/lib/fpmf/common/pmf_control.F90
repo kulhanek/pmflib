@@ -40,9 +40,7 @@ subroutine pmf_control_read_pmflib_group(prm_fin)
     use abf_control
     use mtd_control
     use con_control
-    use remd_control
     use stm_control
-    use gap_control
     use pdrv_control
     use pmf_dat
     use pmf_mask
@@ -82,9 +80,7 @@ subroutine pmf_control_read_pmflib_group(prm_fin)
     write(PMF_OUT,*)
     call pmf_utils_heading(PMF_OUT,'Extensions','=')
     call pdrv_control_read_pdrv(prm_fin)
-    call remd_control_read_remd(prm_fin)
     call mon_control_read_mon(prm_fin)
-    call gap_control_read_gap(prm_fin)
 
     ! read filenames
     write(PMF_OUT,*)
@@ -835,7 +831,6 @@ subroutine pmf_control_read_method_cvs_and_paths(prm_fin)
     use con_control
     use stm_control
     use pdrv_control
-    use gap_control
 
     implicit none
     type(PRMFILE_TYPE),intent(inout)       :: prm_fin
@@ -864,9 +859,6 @@ subroutine pmf_control_read_method_cvs_and_paths(prm_fin)
     end if
     if( mon_enabled ) then
         call mon_control_read_cvs(prm_fin)
-    end if
-    if( gap_enabled ) then
-        call gap_control_read_cvs(prm_fin)
     end if
 
 end subroutine pmf_control_read_method_cvs_and_paths

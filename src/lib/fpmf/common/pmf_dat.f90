@@ -84,10 +84,8 @@ logical                     :: rst_enabled
 logical                     :: mtd_enabled
 logical                     :: abf_enabled
 logical                     :: mon_enabled
-logical                     :: remd_enabled
 logical                     :: stm_enabled
 logical                     :: pdrv_enabled
-logical                     :: gap_enabled
 
 ! MASTER =======================================================================
 
@@ -152,13 +150,6 @@ character(PMF_MAX_PATH)     :: fmonout      = '_mon.out'
 ! path driving -----------------------------------
 character(PMF_MAX_PATH)     :: fpdrvdef     = '{PDRV}'
 character(PMF_MAX_PATH)     :: fpdrvout     = '_pdrv.out'
-
-! remd -------------------------------------------
-character(PMF_MAX_PATH)     :: fremdout     = '_remd.out'
-
-! gap --------------------------------------------
-character(PMF_MAX_PATH)     :: fgapdef      = '{GAP}'
-character(PMF_MAX_PATH)     :: fgapout      = '_gap.out'
 
 !-------------------------------------------------------------------------------
 

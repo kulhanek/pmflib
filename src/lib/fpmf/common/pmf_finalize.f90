@@ -77,8 +77,6 @@ subroutine pmf_finalize_methods
     use con_finalize
     use pdrv_finalize
     use stm_finalize
-    use remd_finalize
-    use gap_finalize
 
     implicit none
     ! --------------------------------------------------------------------------
@@ -99,16 +97,8 @@ subroutine pmf_finalize_methods
         call mon_finalize_method
     end if
 
-    if( remd_enabled ) then
-        call remd_finalize_method
-    end if
-
     if( rst_enabled ) then
         call rst_finalize_method
-    end if
-
-    if( gap_enabled ) then
-        call gap_finalize_method
     end if
 
     if( pdrv_enabled ) then

@@ -69,7 +69,6 @@ subroutine pmf_init_dat
     mon_enabled = .false.
     stm_enabled = .false.
     pdrv_enabled = .false.
-    gap_enabled = .false.
 
     fucell(:,:) = 0.0d0
     frecip(:,:) = 0.0d0
@@ -458,10 +457,8 @@ subroutine pmf_init_pmf_methods()
     use abf_init
     use mtd_init
     use con_init
-    use remd_init
     use stm_init
     use pdrv_init
-    use gap_init
 
     implicit none
     ! --------------------------------------------------------------------------
@@ -494,17 +491,8 @@ subroutine pmf_init_pmf_methods()
         call mon_init_method
     end if
 
-    if( remd_enabled ) then
-        call remd_init_method
-    end if
-
-    if( gap_enabled ) then
-        call gap_init_method
-    end if
-
     pmf_enabled = abf_enabled .or. mtd_enabled .or. stm_enabled &
-               .or. con_enabled .or. rst_enabled .or. mon_enabled .or. pdrv_enabled &
-               .or. mon_enabled .or. gap_enabled
+               .or. con_enabled .or. rst_enabled .or. mon_enabled .or. pdrv_enabled 
 
 end subroutine pmf_init_pmf_methods
 
