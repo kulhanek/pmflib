@@ -408,7 +408,7 @@ subroutine con_constraints_read_control_file(con_item)
     return
 
  10 format('[CON] fconctr file (',A,') does not exist!')
- 20 format('[CON] fconctr file (',A,') has less number of data (',I,') than fnstlim (',I,')!')
+ 20 format('[CON] fconctr file (',A,') has less number of data (',I8,') than fnstlim (',I8,')!')
 
 end subroutine con_constraints_read_control_file
 

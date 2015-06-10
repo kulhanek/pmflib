@@ -1934,7 +1934,8 @@ subroutine GP_Matrix_Assign(left_this, right_this)
   left_this%matrix = right_this%matrix
   left_this%factorised = right_this%factorised
 
-  if(left_this%factorised) then
+  ! kulhanek - check BUGFIX
+  if(left_this%factorised .ne. NOT_FACTORISED) then
      left_this%factor = right_this%factor
      left_this%s = right_this%s
      left_this%tau = right_this%tau

@@ -152,11 +152,13 @@ subroutine rst_restraints_read_rst(prm_fin,rst_item)
     end if
 
     if( value_set .and. ctr_set ) then
-        call pmf_utils_exit(PMF_OUT,1,'>>> ERROR: Either value or left_value and right_value or control_file keys can be specified!')
+        call pmf_utils_exit(PMF_OUT,1, &
+        '>>> ERROR: Either value or left_value and right_value or control_file keys can be specified!')
     end if
 
     if( ctr_set .and. (left_value_set .or. right_value_set) ) then
-        call pmf_utils_exit(PMF_OUT,1,'>>> ERROR: Either value or left_value and right_value or control_file keys can be specified!')
+        call pmf_utils_exit(PMF_OUT,1,&
+        '>>> ERROR: Either value or left_value and right_value or control_file keys can be specified!')
     end if
 
     if( (.not. value_set) .and. (.not. ctr_set) .and. (left_value_set .or. right_value_set) ) then
@@ -520,7 +522,7 @@ subroutine rst_restraints_read_control_file(rst_item)
     return
 
  10 format('[RST] frstctr file (',A,') does not exist!')
- 20 format('[RST] frstctr file (',A,') has less number of data (',I,') than fnstlim (',I,')!')
+ 20 format('[RST] frstctr file (',A,') has less number of data (',I8,') than fnstlim (',I8,')!')
 
 end subroutine rst_restraints_read_control_file
 
