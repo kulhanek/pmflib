@@ -162,7 +162,7 @@ bool CABFClient::GetInitialData(int* nisamples,
     try{
 
         // init command
-        InitCommand(&cmd,Operation_GetInitialData);
+        InitCommand(&cmd,OperationPMF_GetInitialData);
 
         // prepare input data
         CXMLElement* p_ele = cmd.GetRootCommandElement();
@@ -193,7 +193,7 @@ bool CABFClient::ExchangeData(int* nisamples,
     try{
 
         // init command
-        InitCommand(&cmd,Operation_ExchangeData);
+        InitCommand(&cmd,OperationPMF_ExchangeData);
 
         // prepare input data
         CXMLElement* p_ele = cmd.GetRootCommandElement();

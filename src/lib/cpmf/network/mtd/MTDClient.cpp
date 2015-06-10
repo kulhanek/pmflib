@@ -137,7 +137,7 @@ bool CMTDClient::GetInitialData(void)
     try{
 
         // init command
-        InitCommand(&cmd,Operation_GetInitialData);
+        InitCommand(&cmd,OperationPMF_GetInitialData);
 
         // prepare input data
         CXMLElement* p_ele = cmd.GetRootCommandElement();
@@ -168,7 +168,7 @@ bool CMTDClient::ExchangeData(void)
     try{
 
         // init command
-        InitCommand(&cmd,Operation_ExchangeData);
+        InitCommand(&cmd,OperationPMF_ExchangeData);
 
         // prepare input data
         CXMLElement* p_ele = cmd.GetRootCommandElement();

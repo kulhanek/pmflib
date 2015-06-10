@@ -54,16 +54,16 @@ AMBER Mask Parser Analyzer
 %%
 
 amber_mask:
-    expr                { TopExpression = $1; $$ = $1; }
+    expr                { PMFTopExpression = $1; $$ = $1; }
     ;
 
 expr:
 /* SELECTION ---------------------------------------------------------------- */
 
     selection {
-        struct SExpression* p_expr = AllocateExpression();
+        struct SExpression* p_expr = PMFAllocateExpression();
         if( p_expr == NULL ){
-            yyerror("unable to allocate memory for the expression");
+            pmf_yyerror("unable to allocate memory for the expression");
             YYERROR;
             }
         p_expr->Selection = $1;
@@ -73,9 +73,9 @@ expr:
 /* LOGICAL OPERATORS -------------------------------------------------------- */
 
     | expr AND expr {
-        struct SExpression* p_expr = AllocateExpression();
+        struct SExpression* p_expr = PMFAllocateExpression();
         if( p_expr == NULL ){
-            yyerror("unable to allocate memory for the expression");
+            pmf_yyerror("unable to allocate memory for the expression");
             YYERROR;
             }
         p_expr->Operator = O_AND; 
@@ -84,9 +84,9 @@ expr:
         $$ = p_expr;
         }
     | expr OR expr {
-        struct SExpression* p_expr = AllocateExpression();
+        struct SExpression* p_expr = PMFAllocateExpression();
         if( p_expr == NULL ){
-            yyerror("unable to allocate memory for the expression");
+            pmf_yyerror("unable to allocate memory for the expression");
             YYERROR;
             }
         p_expr->Operator = O_OR;
@@ -95,9 +95,9 @@ expr:
         $$ = p_expr;
         }
     | NOT expr {
-        struct SExpression* p_expr = AllocateExpression();
+        struct SExpression* p_expr = PMFAllocateExpression();
         if( p_expr == NULL ){
-            yyerror("unable to allocate memory for the expression");
+            pmf_yyerror("unable to allocate memory for the expression");
             YYERROR;
             }
         p_expr->Operator = O_NOT;
@@ -114,9 +114,9 @@ expr:
 
 /* DISTANCE OPERATORS ------------------------------------------------------- */
     | ORIGIN ALT RNUMBER {
-        struct SExpression* p_expr = AllocateExpression();
+        struct SExpression* p_expr = PMFAllocateExpression();
         if( p_expr == NULL ){
-            yyerror("unable to allocate memory for the expression");
+            pmf_yyerror("unable to allocate memory for the expression");
             YYERROR;
             }
         p_expr->Operator = O_ALT;
@@ -126,9 +126,9 @@ expr:
         $$ = p_expr;
         }
     | CBOX ALT RNUMBER {
-        struct SExpression* p_expr = AllocateExpression();
+        struct SExpression* p_expr = PMFAllocateExpression();
         if( p_expr == NULL ){
-            yyerror("unable to allocate memory for the expression");
+            pmf_yyerror("unable to allocate memory for the expression");
             YYERROR;
             }
         p_expr->Operator = O_ALT;
@@ -138,9 +138,9 @@ expr:
         $$ = p_expr;
         }
     | expr ALT RNUMBER {
-        struct SExpression* p_expr = AllocateExpression();
+        struct SExpression* p_expr = PMFAllocateExpression();
         if( p_expr == NULL ){
-            yyerror("unable to allocate memory for the expression");
+            pmf_yyerror("unable to allocate memory for the expression");
             YYERROR;
             }
         p_expr->Operator = O_ALT;
@@ -150,9 +150,9 @@ expr:
         $$ = p_expr;
         }
     | LIST LBRA expr RBRA ALT RNUMBER {
-        struct SExpression* p_expr = AllocateExpression();
+        struct SExpression* p_expr = PMFAllocateExpression();
         if( p_expr == NULL ){
-            yyerror("unable to allocate memory for the expression");
+            pmf_yyerror("unable to allocate memory for the expression");
             YYERROR;
             }
         p_expr->Operator = O_ALT;
@@ -162,9 +162,9 @@ expr:
         $$ = p_expr;
         }
     | COM LBRA expr RBRA ALT RNUMBER {
-        struct SExpression* p_expr = AllocateExpression();
+        struct SExpression* p_expr = PMFAllocateExpression();
         if( p_expr == NULL ){
-            yyerror("unable to allocate memory for the expression");
+            pmf_yyerror("unable to allocate memory for the expression");
             YYERROR;
             }
         p_expr->Operator = O_ALT;
@@ -174,9 +174,9 @@ expr:
         $$ = p_expr;
         }
     | PLANE LBRA expr RBRA ALT RNUMBER {
-        struct SExpression* p_expr = AllocateExpression();
+        struct SExpression* p_expr = PMFAllocateExpression();
         if( p_expr == NULL ){
-            yyerror("unable to allocate memory for the expression");
+            pmf_yyerror("unable to allocate memory for the expression");
             YYERROR;
             }
         p_expr->Operator = O_ALT;
@@ -187,9 +187,9 @@ expr:
         }
 
     | ORIGIN AGT RNUMBER {
-        struct SExpression* p_expr = AllocateExpression();
+        struct SExpression* p_expr = PMFAllocateExpression();
         if( p_expr == NULL ){
-            yyerror("unable to allocate memory for the expression");
+            pmf_yyerror("unable to allocate memory for the expression");
             YYERROR;
             }
         p_expr->Operator = O_AGT;
@@ -199,9 +199,9 @@ expr:
         $$ = p_expr;
         }
     | CBOX AGT RNUMBER {
-        struct SExpression* p_expr = AllocateExpression();
+        struct SExpression* p_expr = PMFAllocateExpression();
         if( p_expr == NULL ){
-            yyerror("unable to allocate memory for the expression");
+            pmf_yyerror("unable to allocate memory for the expression");
             YYERROR;
             }
         p_expr->Operator = O_AGT;
@@ -211,9 +211,9 @@ expr:
         $$ = p_expr;
         }
     | expr AGT RNUMBER {
-        struct SExpression* p_expr = AllocateExpression();
+        struct SExpression* p_expr = PMFAllocateExpression();
         if( p_expr == NULL ){
-            yyerror("unable to allocate memory for the expression");
+            pmf_yyerror("unable to allocate memory for the expression");
             YYERROR;
             }
         p_expr->Operator = O_AGT;
@@ -223,9 +223,9 @@ expr:
         $$ = p_expr;
         }
     | LIST LBRA expr RBRA AGT RNUMBER {
-        struct SExpression* p_expr = AllocateExpression();
+        struct SExpression* p_expr = PMFAllocateExpression();
         if( p_expr == NULL ){
-            yyerror("unable to allocate memory for the expression");
+            pmf_yyerror("unable to allocate memory for the expression");
             YYERROR;
             }
         p_expr->Operator = O_AGT;
@@ -235,9 +235,9 @@ expr:
         $$ = p_expr;
         }
     | COM LBRA expr RBRA AGT RNUMBER {
-        struct SExpression* p_expr = AllocateExpression();
+        struct SExpression* p_expr = PMFAllocateExpression();
         if( p_expr == NULL ){
-            yyerror("unable to allocate memory for the expression");
+            pmf_yyerror("unable to allocate memory for the expression");
             YYERROR;
             }
         p_expr->Operator = O_AGT;
@@ -247,9 +247,9 @@ expr:
         $$ = p_expr;
         }
     | PLANE LBRA expr RBRA AGT RNUMBER {
-        struct SExpression* p_expr = AllocateExpression();
+        struct SExpression* p_expr = PMFAllocateExpression();
         if( p_expr == NULL ){
-            yyerror("unable to allocate memory for the expression");
+            pmf_yyerror("unable to allocate memory for the expression");
             YYERROR;
             }
         p_expr->Operator = O_AGT;
@@ -260,9 +260,9 @@ expr:
         }
 
     | ORIGIN RLT RNUMBER {
-        struct SExpression* p_expr = AllocateExpression();
+        struct SExpression* p_expr = PMFAllocateExpression();
         if( p_expr == NULL ){
-            yyerror("unable to allocate memory for the expression");
+            pmf_yyerror("unable to allocate memory for the expression");
             YYERROR;
             }
         p_expr->Operator = O_RLT;
@@ -272,9 +272,9 @@ expr:
         $$ = p_expr;
         }
     | CBOX RLT RNUMBER {
-        struct SExpression* p_expr = AllocateExpression();
+        struct SExpression* p_expr = PMFAllocateExpression();
         if( p_expr == NULL ){
-            yyerror("unable to allocate memory for the expression");
+            pmf_yyerror("unable to allocate memory for the expression");
             YYERROR;
             }
         p_expr->Operator = O_RLT;
@@ -284,9 +284,9 @@ expr:
         $$ = p_expr;
         }
     | expr RLT RNUMBER {
-        struct SExpression* p_expr = AllocateExpression();
+        struct SExpression* p_expr = PMFAllocateExpression();
         if( p_expr == NULL ){
-            yyerror("unable to allocate memory for the expression");
+            pmf_yyerror("unable to allocate memory for the expression");
             YYERROR;
             }
         p_expr->Operator = O_RLT;
@@ -296,9 +296,9 @@ expr:
         $$ = p_expr;
         }
     | LIST LBRA expr RBRA RLT RNUMBER {
-        struct SExpression* p_expr = AllocateExpression();
+        struct SExpression* p_expr = PMFAllocateExpression();
         if( p_expr == NULL ){
-            yyerror("unable to allocate memory for the expression");
+            pmf_yyerror("unable to allocate memory for the expression");
             YYERROR;
             }
         p_expr->Operator = O_RLT;
@@ -308,9 +308,9 @@ expr:
         $$ = p_expr;
         }
     | COM LBRA expr RBRA RLT RNUMBER {
-        struct SExpression* p_expr = AllocateExpression();
+        struct SExpression* p_expr = PMFAllocateExpression();
         if( p_expr == NULL ){
-            yyerror("unable to allocate memory for the expression");
+            pmf_yyerror("unable to allocate memory for the expression");
             YYERROR;
             }
         p_expr->Operator = O_RLT;
@@ -320,9 +320,9 @@ expr:
         $$ = p_expr;
         }
     | PLANE LBRA expr RBRA RLT RNUMBER {
-        struct SExpression* p_expr = AllocateExpression();
+        struct SExpression* p_expr = PMFAllocateExpression();
         if( p_expr == NULL ){
-            yyerror("unable to allocate memory for the expression");
+            pmf_yyerror("unable to allocate memory for the expression");
             YYERROR;
             }
         p_expr->Operator = O_RLT;
@@ -333,9 +333,9 @@ expr:
         }
 
     | ORIGIN RGT RNUMBER {
-        struct SExpression* p_expr = AllocateExpression();
+        struct SExpression* p_expr = PMFAllocateExpression();
         if( p_expr == NULL ){
-            yyerror("unable to allocate memory for the expression");
+            pmf_yyerror("unable to allocate memory for the expression");
             YYERROR;
             }
         p_expr->Operator = O_RGT;
@@ -345,9 +345,9 @@ expr:
         $$ = p_expr;
         }
     | CBOX RGT RNUMBER {
-        struct SExpression* p_expr = AllocateExpression();
+        struct SExpression* p_expr = PMFAllocateExpression();
         if( p_expr == NULL ){
-            yyerror("unable to allocate memory for the expression");
+            pmf_yyerror("unable to allocate memory for the expression");
             YYERROR;
             }
         p_expr->Operator = O_RGT;
@@ -357,9 +357,9 @@ expr:
         $$ = p_expr;
         }
     | expr RGT RNUMBER {
-        struct SExpression* p_expr = AllocateExpression();
+        struct SExpression* p_expr = PMFAllocateExpression();
         if( p_expr == NULL ){
-            yyerror("unable to allocate memory for the expression");
+            pmf_yyerror("unable to allocate memory for the expression");
             YYERROR;
             }
         p_expr->Operator = O_RGT;
@@ -369,9 +369,9 @@ expr:
         $$ = p_expr;
         }
     | LIST LBRA expr RBRA RGT RNUMBER {
-        struct SExpression* p_expr = AllocateExpression();
+        struct SExpression* p_expr = PMFAllocateExpression();
         if( p_expr == NULL ){
-            yyerror("unable to allocate memory for the expression");
+            pmf_yyerror("unable to allocate memory for the expression");
             YYERROR;
             }
         p_expr->Operator = O_RGT;
@@ -381,9 +381,9 @@ expr:
         $$ = p_expr;
         }
     | COM LBRA expr RBRA RGT RNUMBER {
-        struct SExpression* p_expr = AllocateExpression();
+        struct SExpression* p_expr = PMFAllocateExpression();
         if( p_expr == NULL ){
-            yyerror("unable to allocate memory for the expression");
+            pmf_yyerror("unable to allocate memory for the expression");
             YYERROR;
             }
         p_expr->Operator = O_RGT;
@@ -393,9 +393,9 @@ expr:
         $$ = p_expr;
         }
     | PLANE LBRA expr RBRA RGT RNUMBER {
-        struct SExpression* p_expr = AllocateExpression();
+        struct SExpression* p_expr = PMFAllocateExpression();
         if( p_expr == NULL ){
-            yyerror("unable to allocate memory for the expression");
+            pmf_yyerror("unable to allocate memory for the expression");
             YYERROR;
             }
         p_expr->Operator = O_RGT;
@@ -409,37 +409,37 @@ expr:
 
     | RSELECTOR sel_list ASELECTOR sel_list {
         struct SSelection* p_lsel;
-        p_lsel = AllocateSelection(T_RSELECTOR,$2);
+        p_lsel = PMFAllocateSelection(T_RSELECTOR,$2);
         if( p_lsel == NULL ){
-            yyerror("unable to allocate memory for the residue selection");
+            pmf_yyerror("unable to allocate memory for the residue selection");
             YYERROR;
             }
         struct SExpression* p_lexpr;
-        p_lexpr = AllocateExpression();
+        p_lexpr = PMFAllocateExpression();
         if( p_lexpr == NULL ){
-            yyerror("unable to allocate memory for the expression");
+            pmf_yyerror("unable to allocate memory for the expression");
             YYERROR;
             }
         p_lexpr->Selection = p_lsel;
 
         struct SSelection* p_rsel;
-        p_rsel = AllocateSelection(T_ASELECTOR,$4);
+        p_rsel = PMFAllocateSelection(T_ASELECTOR,$4);
         if( p_rsel == NULL ){
-            yyerror("unable to allocate memory for the atom selection");
+            pmf_yyerror("unable to allocate memory for the atom selection");
             YYERROR;
             }
         struct SExpression* p_rexpr;
-        p_rexpr = AllocateExpression();
+        p_rexpr = PMFAllocateExpression();
         if( p_rexpr == NULL ){
-            yyerror("unable to allocate memory for the expression");
+            pmf_yyerror("unable to allocate memory for the expression");
             YYERROR;
             }
         p_rexpr->Selection = p_rsel;
 
         struct SExpression* p_expr;
-        p_expr = AllocateExpression();
+        p_expr = PMFAllocateExpression();
         if( p_expr == NULL ){
-            yyerror("unable to allocate memory for the expression");
+            pmf_yyerror("unable to allocate memory for the expression");
             YYERROR;
             }
         p_expr->Operator = O_AND;
@@ -449,33 +449,33 @@ expr:
         }
 
     | RSELECTOR sel_list TSELECTOR sel_list {
-        struct SSelection* p_lsel = AllocateSelection(T_RSELECTOR,$2);
+        struct SSelection* p_lsel = PMFAllocateSelection(T_RSELECTOR,$2);
         if( p_lsel == NULL ){
-            yyerror("unable to allocate memory for the residue selection");
+            pmf_yyerror("unable to allocate memory for the residue selection");
             YYERROR;
             }
-        struct SExpression* p_lexpr = AllocateExpression();
+        struct SExpression* p_lexpr = PMFAllocateExpression();
         if( p_lexpr == NULL ){
-            yyerror("unable to allocate memory for the expression");
+            pmf_yyerror("unable to allocate memory for the expression");
             YYERROR;
             }
         p_lexpr->Selection = p_lsel;
 
-        struct SSelection* p_rsel = AllocateSelection(T_TSELECTOR,$4);
+        struct SSelection* p_rsel = PMFAllocateSelection(T_TSELECTOR,$4);
         if( p_rsel == NULL ){
-            yyerror("unable to allocate memory for the atom selection");
+            pmf_yyerror("unable to allocate memory for the atom selection");
             YYERROR;
             }
-        struct SExpression* p_rexpr = AllocateExpression();
+        struct SExpression* p_rexpr = PMFAllocateExpression();
         if( p_rexpr == NULL ){
-            yyerror("unable to allocate memory for the expression");
+            pmf_yyerror("unable to allocate memory for the expression");
             YYERROR;
             }
         p_rexpr->Selection = p_rsel;
 
-        struct SExpression* p_expr = AllocateExpression();
+        struct SExpression* p_expr = PMFAllocateExpression();
         if( p_expr == NULL ){
-            yyerror("unable to allocate memory for the expression");
+            pmf_yyerror("unable to allocate memory for the expression");
             YYERROR;
             }
         p_expr->Operator = O_AND;
@@ -487,27 +487,27 @@ expr:
 
 selection:
     RSELECTOR sel_list {
-        struct SSelection* p_selection = AllocateSelection(T_RSELECTOR,$2);
+        struct SSelection* p_selection = PMFAllocateSelection(T_RSELECTOR,$2);
         if( p_selection == NULL ){
-            yyerror("unable to allocate memory for the residue selection");
+            pmf_yyerror("unable to allocate memory for the residue selection");
             YYERROR;
             }
         $$ = p_selection;
         }
 
     | ASELECTOR sel_list {
-        struct SSelection* p_selection = AllocateSelection(T_ASELECTOR,$2);
+        struct SSelection* p_selection = PMFAllocateSelection(T_ASELECTOR,$2);
         if( p_selection == NULL ){
-            yyerror("unable to allocate memory for the atom selection");
+            pmf_yyerror("unable to allocate memory for the atom selection");
             YYERROR;
             }
         $$ = p_selection;
         }
 
     | TSELECTOR sel_list{
-        struct SSelection* p_selection = AllocateSelection(T_TSELECTOR,$2);
+        struct SSelection* p_selection = PMFAllocateSelection(T_TSELECTOR,$2);
         if( p_selection == NULL ){
-            yyerror("unable to allocate memory for the type selection");
+            pmf_yyerror("unable to allocate memory for the type selection");
             YYERROR;
             }
         $$ = p_selection;
@@ -516,19 +516,19 @@ selection:
 
 sel_list:
     list {
-        $$ = $1
+        $$ = $1;
         }
     | STAR {
-        struct SListItem* p_item = AllocateListItem();
+        struct SListItem* p_item = PMFAllocateListItem();
         if( p_item == NULL ){
-            yyerror("unable to allocate memory for the item");
+            pmf_yyerror("unable to allocate memory for the item");
             YYERROR;
             }
         p_item->Index = -1;
 
-        struct SList* p_list = AllocateList();
+        struct SList* p_list = PMFAllocateList();
         if( p_list == NULL ){
-            yyerror("unable to allocate memory for the list");
+            pmf_yyerror("unable to allocate memory for the list");
             YYERROR;
             }
         /* add everything item to the list */
@@ -542,9 +542,9 @@ sel_list:
 list:
     item {
         /* create list node */
-        struct SList* p_list = AllocateList();
+        struct SList* p_list = PMFAllocateList();
         if( p_list == NULL ){
-            yyerror("unable to allocate memory for the list");
+            pmf_yyerror("unable to allocate memory for the list");
             YYERROR;
             }
         /* add item to the list */
@@ -562,9 +562,9 @@ list:
 
 item:
     INUMBER {
-        struct SListItem* p_item = AllocateListItem();
+        struct SListItem* p_item = PMFAllocateListItem();
         if( p_item == NULL ){
-            yyerror("unable to allocate memory for the item");
+            pmf_yyerror("unable to allocate memory for the item");
             YYERROR;
             }
         p_item->Index = $1.Number;
@@ -572,9 +572,9 @@ item:
         $$ = p_item;
         }
     | INUMBER RANGE INUMBER {
-        struct SListItem* p_item = AllocateListItem();
+        struct SListItem* p_item = PMFAllocateListItem();
         if( p_item == NULL ){
-            yyerror("unable to allocate memory for the item");
+            pmf_yyerror("unable to allocate memory for the item");
             YYERROR;
             }
         p_item->Index = $1.Number;
@@ -582,9 +582,9 @@ item:
         $$ = p_item;
         }
     | STRING {
-        struct SListItem* p_item = AllocateListItem();
+        struct SListItem* p_item = PMFAllocateListItem();
         if( p_item == NULL ){
-            yyerror("unable to allocate memory for the item");
+            pmf_yyerror("unable to allocate memory for the item");
             YYERROR;
             }
         strncpy(p_item->Name,$1.String,4);
@@ -595,11 +595,11 @@ item:
 %%
 /* ========================================================================== */
 
-int parse_mask(const char* p_mask)
+int pmf_parse_mask(const char* p_mask)
 {
- yy_scan_string(p_mask);
- int rvalue = yyparse();
- yylex_destroy();
+ pmf_yy_scan_string(p_mask);
+ int rvalue = pmf_yyparse();
+ pmf_yylex_destroy();
  return(rvalue);
 }
 

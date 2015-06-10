@@ -217,12 +217,12 @@ bool CABFServer::Run(void)
 
 // register operations
     CmdProcessorList.RegisterProcessor(Operation_GetServerInfo,&ABFFactory);
-    CmdProcessorList.RegisterProcessor(Operation_FlushServerData,&ABFFactory);
+    CmdProcessorList.RegisterProcessor(OperationPMF_FlushServerData,&ABFFactory);
     CmdProcessorList.RegisterProcessor(Operation_RegisterClient,&ABFFactory);
     CmdProcessorList.RegisterProcessor(Operation_UnregisterClient,&ABFFactory);
-    CmdProcessorList.RegisterProcessor(Operation_GetInitialData,&ABFFactory);
-    CmdProcessorList.RegisterProcessor(Operation_ExchangeData,&ABFFactory);
-    CmdProcessorList.RegisterProcessor(Operation_GetData,&ABFFactory);
+    CmdProcessorList.RegisterProcessor(OperationPMF_GetInitialData,&ABFFactory);
+    CmdProcessorList.RegisterProcessor(OperationPMF_ExchangeData,&ABFFactory);
+    CmdProcessorList.RegisterProcessor(OperationPMF_GetData,&ABFFactory);
 
 // start server listening
     if( StartServer(vout) == false ){

@@ -419,7 +419,7 @@ subroutine con_init_mpi_bcast_constraints
 
 end subroutine con_init_mpi_bcast_constraints
 
-#endif MPI
+#endif
 
 !===============================================================================
 ! Subroutine:  con_init_core

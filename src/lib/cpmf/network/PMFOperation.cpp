@@ -26,16 +26,16 @@
 //------------------------------------------------------------------------------
 //==============================================================================
 
-DEFINE_OPERATION(Operation_GetInitialData,
+DEFINE_OPERATION(OperationPMF_GetInitialData,
                  "{GET_INITIAL_DATA:b43a8f4d-5c67-4e9d-89b0-41cc419957d7}");
 
-DEFINE_OPERATION(Operation_ExchangeData,
+DEFINE_OPERATION(OperationPMF_ExchangeData,
                  "{EXCHANGE_DATA:23dc05ee-4460-4efd-b8ea-f2395a60a088}");
 
-DEFINE_OPERATION(Operation_GetData,
+DEFINE_OPERATION(OperationPMF_GetData,
                  "{GET_DATA:a959d1fe-6dc0-4226-8b4f-e14f38dd9614}");
 
-DEFINE_OPERATION(Operation_FlushServerData,
+DEFINE_OPERATION(OperationPMF_FlushServerData,
                  "{FLUSH_SERVER_DATA:4e28b112-3045-4644-bd37-161dc4766406}");
 
 //==============================================================================

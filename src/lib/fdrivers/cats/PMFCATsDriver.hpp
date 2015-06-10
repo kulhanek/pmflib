@@ -1,5 +1,5 @@
-#ifndef CATsDriverH
-#define CATsDriverH
+#ifndef PMFCATsDriverH
+#define PMFCATsDriverH
 // =============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
@@ -26,15 +26,15 @@
 
 //------------------------------------------------------------------------------
 
-class PMF_PACKAGE CCATsDriver {
+class PMF_PACKAGE CPMFCATsDriver {
 public:
 // setup methods ---------------------------------------------------------------
-    static void BeginInit(const CSmallString& mdin,int anatom,int anres,
+    static void BeginInit(CSmallString mdin,int anatom,int anres,
                  int antb,double box_a,double box_b,double box_c,
                  double box_alpha,double box_beta,double box_gamma);
-    static void SetResidue(int idx,const CSmallString& name,int first_atom);
-    static void SetAtom(int idx,const CSmallString& name,const CSmallString& type);
-    static void EndInit(std::vector<double>& amass,std::vector<double>& xyz);
+    static void SetResidue(int idx,CSmallString name,int first_atom);
+    static void SetAtom(int idx,CSmallString name,CSmallString type);
+    static void EndInit(int anatom,std::vector<double>& amass,std::vector<double>& xyz);
 
     static void Finalize(void);
 };

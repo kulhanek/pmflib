@@ -175,7 +175,7 @@ bool CABFAdmin::GetABFAccumulator(void)
     try{
 
         // init command
-        InitCommand(&cmd,Operation_GetData);
+        InitCommand(&cmd,OperationPMF_GetData);
 
         // execute command
         ExecuteCommand(&cmd);

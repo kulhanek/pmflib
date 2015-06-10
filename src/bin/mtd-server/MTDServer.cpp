@@ -174,12 +174,12 @@ bool CMTDServer::Run(void)
 
 // register operations
     CmdProcessorList.RegisterProcessor(Operation_GetServerInfo,&MTDFactory);
-    CmdProcessorList.RegisterProcessor(Operation_FlushServerData,&MTDFactory);
+    CmdProcessorList.RegisterProcessor(OperationPMF_FlushServerData,&MTDFactory);
     CmdProcessorList.RegisterProcessor(Operation_RegisterClient,&MTDFactory);
     CmdProcessorList.RegisterProcessor(Operation_UnregisterClient,&MTDFactory);
-    CmdProcessorList.RegisterProcessor(Operation_GetInitialData,&MTDFactory);
-    CmdProcessorList.RegisterProcessor(Operation_ExchangeData,&MTDFactory);
-    CmdProcessorList.RegisterProcessor(Operation_GetData,&MTDFactory);
+    CmdProcessorList.RegisterProcessor(OperationPMF_GetInitialData,&MTDFactory);
+    CmdProcessorList.RegisterProcessor(OperationPMF_ExchangeData,&MTDFactory);
+    CmdProcessorList.RegisterProcessor(OperationPMF_GetData,&MTDFactory);
 
 // start server listening
     if( StartServer() == false ){

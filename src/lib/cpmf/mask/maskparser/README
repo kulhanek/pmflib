@@ -1,2 +1,2 @@
-flex -o Mask.yy.c Mask.l
-bison -d -b Mask Mask.y
+flex --prefix=pmf_yy -o Mask.yy.c Mask.l
+bison --name-prefix=pmf_yy -d -b Mask Mask.y

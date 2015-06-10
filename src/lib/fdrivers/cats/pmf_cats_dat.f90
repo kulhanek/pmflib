@@ -1,8 +1,7 @@
 !===============================================================================
 ! PMFLib - Library Supporting Potential of Mean Force Calculations
 !-------------------------------------------------------------------------------
-!    Copyright (C) 2010,2011 Petr Kulhanek, kulhanek@chemi.muni.cz
-!    Copyright (C) 2007,2008 Petr Kulhanek, kulhanek@enzim.hu
+!    Copyright (C) 2015 Petr Kulhanek, kulhanek@chemi.muni.cz
 !
 !    This library is free software; you can redistribute it and/or
 !    modify it under the terms of the GNU Lesser General Public
@@ -20,7 +19,7 @@
 !    Boston, MA  02110-1301  USA
 !===============================================================================
 
-module pmf_pmemd_dat
+module pmf_cats_dat
 
 use prmfile_dat
 use pmf_sizes
@@ -34,14 +33,8 @@ implicit none
 character(len=PMF_MAX_PATH)     :: ControlFileName
 type(PRMFILE_TYPE)              :: ControlPrmfile
 
-#ifdef MPI
-real(PMFDP),allocatable         :: tmp_a(:,:)   ! helper array
-real(PMFDP),allocatable         :: tmp_b(:,:)   ! helper array
-real(PMFDP),allocatable         :: tmp_c(:,:)   ! helper array
-#endif
-
 !===============================================================================
 !-------------------------------------------------------------------------------
 !===============================================================================
 
-end module pmf_pmemd_dat
+end module pmf_cats_dat

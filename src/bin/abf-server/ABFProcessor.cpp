@@ -48,7 +48,7 @@ bool CABFProcessor::ProcessCommand(void)
             GetServerInfo();
             return(true);
         }
-        if(Operation == Operation_FlushServerData) {
+        if(Operation == OperationPMF_FlushServerData) {
             FlushServerData();
             return(true);
         }
@@ -60,15 +60,15 @@ bool CABFProcessor::ProcessCommand(void)
             UnregisterClient();
             return(true);
         }
-        if(Operation == Operation_GetInitialData) {
+        if(Operation == OperationPMF_GetInitialData) {
             GetInitialData();
             return(true);
         }
-        if(Operation == Operation_ExchangeData) {
+        if(Operation == OperationPMF_ExchangeData) {
             ExchangeData();
             return(true);
         }
-        if(Operation == Operation_GetData) {
+        if(Operation == OperationPMF_GetData) {
             GetData();
             return(true);
         }

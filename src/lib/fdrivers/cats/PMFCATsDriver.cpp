@@ -18,10 +18,11 @@
 //     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 // =============================================================================
 
-#include "CATsDriver.hpp"
+#include "PMFCATsDriver.hpp"
 
 //------------------------------------------------------------------------------
-
+extern "C" {
+// FORTRAN INTERFACE ===========================================================
 //subroutine pmf_cats_begin_init(mdin,anatom,anres, &
 //                            antb,box_a,box_b,box_c,box_alpha,box_beta,box_gamma)
 void pmf_cats_begin_init_(char* mdin,int* anatom,int* anres,int* antb,
@@ -36,49 +37,55 @@ void pmf_cats_set_residue_(int* idx,char* name,int* first_atom,int len_name);
 void pmf_cats_set_atom_(int* idx,char* name,char* atype,int len_name,int len_atype);
 
 //subroutine pmf_cats_end_init(amass,ax)
-void pmf_cats_end_init_(double* amass,double* ax);
+void pmf_cats_end_init_(int* anatom,double* amass,double* ax);
+// FORTRAN INTERFACE ===========================================================
+}
 
 //==============================================================================
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void CCATsDriver::BeginInit(const CSmallString& mdin,int anatom,int anres,
+void CPMFCATsDriver::BeginInit(CSmallString mdin,int anatom,int anres,
              int antb,double box_a,double box_b,double box_c,
              double box_alpha,double box_beta,double box_gamma)
 {
-
+    pmf_cats_begin_init_(mdin.GetBuffer(),&anatom,&anres,&antb,&box_a,&box_b,&box_c,
+                         &box_alpha,&box_beta,&box_gamma,mdin.GetLength());
 }
 
 //==============================================================================
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void CCATsDriver::SetResidue(int idx,const CSmallString& name,int first_atom)
+void CPMFCATsDriver::SetResidue(int idx,CSmallString name,int first_atom)
 {
-
+    idx++; // c->fortran indexing
+    first_atom++;
+    pmf_cats_set_residue_(&idx,name.GetBuffer(),&first_atom,name.GetLength());
 }
 
 //==============================================================================
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void CCATsDriver::SetAtom(int idx,const CSmallString& name,const CSmallString& type)
+void CPMFCATsDriver::SetAtom(int idx,CSmallString name,CSmallString type)
 {
-
+    idx++; // c->fortran indexing
+    pmf_cats_set_atom_(&idx,name.GetBuffer(),type.GetBuffer(),name.GetLength(),type.GetLength());
 }
 
 //==============================================================================
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void CCATsDriver::EndInit(std::vector<double>& amass,std::vector<double>& xyz)
+void CPMFCATsDriver::EndInit(int anatom,std::vector<double>& amass,std::vector<double>& xyz)
 {
-
+    pmf_cats_end_init_(&anatom,amass.data(),xyz.data());
 }
 
 //------------------------------------------------------------------------------
 
-void CCATsDriver::Finalize(void)
+void CPMFCATsDriver::Finalize(void)
 {
 
 }

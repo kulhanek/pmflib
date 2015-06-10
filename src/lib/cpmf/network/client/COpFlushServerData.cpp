@@ -38,7 +38,7 @@ bool CAdminClient::FlushServerData(void)
     try{
 
         // init command
-        InitCommand(&cmd,Operation_FlushServerData);
+        InitCommand(&cmd,OperationPMF_FlushServerData);
 
         // execute command
         ExecuteCommand(&cmd);

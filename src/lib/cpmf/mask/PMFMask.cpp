@@ -102,17 +102,17 @@ bool CPMFMask::SetMask(const CSmallString& mask)
     Selection = NULL;
 
 // init mask parser
-    init_mask();
+    pmf_init_mask();
 
 // parse mask
-    if(parse_mask(Mask) != 0) {
-        free_mask_tree();
+    if(pmf_parse_mask(Mask) != 0) {
+        pmf_free_mask_tree();
         ES_ERROR("unable to parse mask");
         return(false);
     }
 
 // get top mask expression
-    struct SExpression* p_top_expr = get_expression_tree();
+    struct SExpression* p_top_expr = pmf_get_expression_tree();
     if(p_top_expr == NULL) {
         ES_ERROR("top expression is NULL");
         return(false);
@@ -122,19 +122,19 @@ bool CPMFMask::SetMask(const CSmallString& mask)
     try {
         Selection = new CPMFMaskSelection(this);
     } catch(...) {
-        free_mask_tree();
+        pmf_free_mask_tree();
         ES_ERROR("unable to allocate root selection");
         return(false);
     }
 
     if(Selection->ExpandAndReduceTree(p_top_expr) == false) {
         ES_ERROR("unable to expand and reduce expression tree");
-        free_mask_tree();
+        pmf_free_mask_tree();
         return(false);
     }
 
 // free parser data
-    free_mask_tree();
+    pmf_free_mask_tree();
 
     return(true);
 }

@@ -102,8 +102,8 @@ struct SExpression {
 };
 
 /* global variables --------------------------------------------------------- */
-extern int                 LexPosition;        /* position in a mask during lexical analysis */
-extern struct SExpression* TopExpression;      /* top expression to be evaluated */
+extern int                 PMFLexPosition;        /* position in a mask during lexical analysis */
+extern struct SExpression* PMFTopExpression;      /* top expression to be evaluated */
 
 /* global functions --------------------------------------------------------- */
 #ifdef __cplusplus
@@ -111,31 +111,31 @@ extern "C" {
 #endif
 
     /* init mask parser for new job */
-    extern int init_mask(void);
+    extern int pmf_init_mask(void);
 
     /* parse mask */
-    extern int parse_mask(const char* p_mask);
+    extern int pmf_parse_mask(const char* p_mask);
 
     /* free data associated with parsed mask */
-    extern int free_mask_tree(void);
+    extern int pmf_free_mask_tree(void);
 
     /* get top node of mask expression */
-    extern struct SExpression* get_expression_tree(void);
+    extern struct SExpression* pmf_get_expression_tree(void);
 
     /* print mask expression */
-    extern int print_expression_tree(struct SExpression* p_expr);
+    extern int pmf_print_expression_tree(struct SExpression* p_expr);
 
     /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-    extern int yyerror(const char* p_error);
-    extern int pperror(const char* p_error,int position);
+    extern int pmf_yyerror(const char* p_error);
+    extern int pmf_pperror(const char* p_error,int position);
 
 
     /* helper functions */
-    extern struct SListItem*   AllocateListItem(void);
-    extern struct SList*       AllocateList(void);
-    extern struct SSelection*  AllocateSelection(enum SType type,struct SList* p_list);
-    extern struct SExpression* AllocateExpression(void);
+    extern struct SListItem*   PMFAllocateListItem(void);
+    extern struct SList*       PMFAllocateList(void);
+    extern struct SSelection*  PMFAllocateSelection(enum SType type,struct SList* p_list);
+    extern struct SExpression* PMFAllocateExpression(void);
 
     /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 

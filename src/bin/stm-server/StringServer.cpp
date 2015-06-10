@@ -188,12 +188,12 @@ bool CStringServer::Run(void)
 
 // register operations
     CmdProcessorList.RegisterProcessor(Operation_GetServerInfo,&StringFactory);
-    CmdProcessorList.RegisterProcessor(Operation_FlushServerData,&StringFactory);
+    CmdProcessorList.RegisterProcessor(OperationPMF_FlushServerData,&StringFactory);
     CmdProcessorList.RegisterProcessor(Operation_RegisterClient,&StringFactory);
     CmdProcessorList.RegisterProcessor(Operation_UnregisterClient,&StringFactory);
-    CmdProcessorList.RegisterProcessor(Operation_GetInitialData,&StringFactory);
-    CmdProcessorList.RegisterProcessor(Operation_ExchangeData,&StringFactory);
-    CmdProcessorList.RegisterProcessor(Operation_GetData,&StringFactory);
+    CmdProcessorList.RegisterProcessor(OperationPMF_GetInitialData,&StringFactory);
+    CmdProcessorList.RegisterProcessor(OperationPMF_ExchangeData,&StringFactory);
+    CmdProcessorList.RegisterProcessor(OperationPMF_GetData,&StringFactory);
     CmdProcessorList.RegisterProcessor(Operation_ShutdownServer,&StringFactory);
 
 // start job launcher

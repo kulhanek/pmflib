@@ -162,7 +162,7 @@ bool CSTMClient::ExchangeData(int& mode,int& isteps,double* bpos,double* rpmf,do
     try{
 
         // init command
-        InitCommand(&cmd,Operation_ExchangeData);
+        InitCommand(&cmd,OperationPMF_ExchangeData);
 
         long unsigned int bpos_size = NumOfCVs*sizeof(double);
         long unsigned int rpmf_size = NumOfCVs*sizeof(double);

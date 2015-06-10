@@ -48,7 +48,7 @@ bool CStringProcessor::ProcessCommand(void)
             GetServerInfo();
             return(true);
         }
-        if(Operation == Operation_FlushServerData) {
+        if(Operation == OperationPMF_FlushServerData) {
             FlushServerData();
             return(true);
         }
@@ -60,11 +60,11 @@ bool CStringProcessor::ProcessCommand(void)
             UnregisterClient();
             return(true);
         }
-        if(Operation == Operation_ExchangeData) {
+        if(Operation == OperationPMF_ExchangeData) {
             ExchangeData();
             return(true);
         }
-        if(Operation == Operation_GetData) {
+        if(Operation == OperationPMF_GetData) {
             GetData();
             return(true);
         }

@@ -31,6 +31,12 @@ IF(PMFLIB_XDYNBP_DRV)
    ADD_SUBDIRECTORY(xdynbp)
 ENDIF(PMFLIB_XDYNBP_DRV)
 
+# cats drv ===================
+IF(PMFLIB_CATS_DRV)
+   ADD_SUBDIRECTORY(cats)
+ENDIF(PMFLIB_CATS_DRV)
+
+
 # # libatoms drv ===================
 # IF(PMFLIB_LIBATOMS_DRV)
 #     ADD_SUBDIRECTORY(libatoms)

@@ -21,62 +21,62 @@ rnumber       [0-9]+[.]?[0-9]*
 /* rules ==================================================================== */
 %%
 {inumber} {
-    yylval.iValue.Position = LexPosition;
-    if( sscanf(yytext, "%d", &yylval.iValue.Number) != 1 ){
-        pperror("unable to convert string to integer",LexPosition);
+    pmf_yylval.iValue.Position = PMFLexPosition;
+    if( sscanf(yytext, "%d", &pmf_yylval.iValue.Number) != 1 ){
+        pmf_pperror("unable to convert string to integer",PMFLexPosition);
         }
-    LexPosition += yyleng;
+    PMFLexPosition += yyleng;
     return INUMBER;
     }
 
 {rnumber} {
-    yylval.rValue.Position = LexPosition;
-    if( sscanf(yytext, "%lf", &yylval.rValue.Number) != 1 ){
-        pperror("unable to convert string to real number",LexPosition);
+    pmf_yylval.rValue.Position = PMFLexPosition;
+    if( sscanf(yytext, "%lf", &pmf_yylval.rValue.Number) != 1 ){
+        pmf_pperror("unable to convert string to real number",PMFLexPosition);
         }
     return RNUMBER;
     }
 
-"origin"    { yylval.gValue.Position = LexPosition; LexPosition += 6; return ORIGIN; }
-"cbox"      { yylval.gValue.Position = LexPosition; LexPosition += 4; return CBOX; }
-"list"      { yylval.gValue.Position = LexPosition; LexPosition += 4; return LIST; }
-"com"       { yylval.gValue.Position = LexPosition; LexPosition += 3; return COM; }
-"plane"     { yylval.gValue.Position = LexPosition; LexPosition += 5; return PLANE; }
+"origin"    { pmf_yylval.gValue.Position = PMFLexPosition; PMFLexPosition += 6; return ORIGIN; }
+"cbox"      { pmf_yylval.gValue.Position = PMFLexPosition; PMFLexPosition += 4; return CBOX; }
+"list"      { pmf_yylval.gValue.Position = PMFLexPosition; PMFLexPosition += 4; return LIST; }
+"com"       { pmf_yylval.gValue.Position = PMFLexPosition; PMFLexPosition += 3; return COM; }
+"plane"     { pmf_yylval.gValue.Position = PMFLexPosition; PMFLexPosition += 5; return PLANE; }
 
 {string}  {
-    yylval.sValue.Position = LexPosition;
+    pmf_yylval.sValue.Position = PMFLexPosition;
     if( yyleng > 4 ){
-        pperror("name is too long (max 4 characters)",LexPosition);
+        pmf_pperror("name is too long (max 4 characters)",PMFLexPosition);
         }
-    memset(yylval.sValue.String,' ',4);
-    strncpy(yylval.sValue.String,yytext,yyleng);
-    LexPosition += yyleng;
+    memset(pmf_yylval.sValue.String,' ',4);
+    strncpy(pmf_yylval.sValue.String,yytext,yyleng);
+    PMFLexPosition += yyleng;
     return STRING;
     }
 
-"*"       { yylval.gValue.Position = LexPosition; LexPosition++; return STAR; }
-","       { yylval.gValue.Position = LexPosition; LexPosition++; return COMMA; }
-"-"       { yylval.gValue.Position = LexPosition; LexPosition++; return RANGE; }
+"*"       { pmf_yylval.gValue.Position = PMFLexPosition; PMFLexPosition++; return STAR; }
+","       { pmf_yylval.gValue.Position = PMFLexPosition; PMFLexPosition++; return COMMA; }
+"-"       { pmf_yylval.gValue.Position = PMFLexPosition; PMFLexPosition++; return RANGE; }
 
-":"       { yylval.gValue.Position = LexPosition; LexPosition++; return RSELECTOR; }
-"@"       { yylval.gValue.Position = LexPosition; LexPosition++; return ASELECTOR; }
-"@%"      { yylval.gValue.Position = LexPosition; LexPosition += 2; return TSELECTOR; }
+":"       { pmf_yylval.gValue.Position = PMFLexPosition; PMFLexPosition++; return RSELECTOR; }
+"@"       { pmf_yylval.gValue.Position = PMFLexPosition; PMFLexPosition++; return ASELECTOR; }
+"@%"      { pmf_yylval.gValue.Position = PMFLexPosition; PMFLexPosition += 2; return TSELECTOR; }
 
-"<:"      { yylval.gValue.Position = LexPosition; LexPosition += 2; return RLT; }
-">:"      { yylval.gValue.Position = LexPosition; LexPosition += 2; return RGT; }
-"<@"      { yylval.gValue.Position = LexPosition; LexPosition += 2; return ALT; }
-">@"      { yylval.gValue.Position = LexPosition; LexPosition += 2; return AGT; }
+"<:"      { pmf_yylval.gValue.Position = PMFLexPosition; PMFLexPosition += 2; return RLT; }
+">:"      { pmf_yylval.gValue.Position = PMFLexPosition; PMFLexPosition += 2; return RGT; }
+"<@"      { pmf_yylval.gValue.Position = PMFLexPosition; PMFLexPosition += 2; return ALT; }
+">@"      { pmf_yylval.gValue.Position = PMFLexPosition; PMFLexPosition += 2; return AGT; }
 
-"&"       { yylval.gValue.Position = LexPosition; LexPosition++; return AND; }
-"|"       { yylval.gValue.Position = LexPosition; LexPosition++; return OR; }
-"!"       { yylval.gValue.Position = LexPosition; LexPosition++; return NOT; }
+"&"       { pmf_yylval.gValue.Position = PMFLexPosition; PMFLexPosition++; return AND; }
+"|"       { pmf_yylval.gValue.Position = PMFLexPosition; PMFLexPosition++; return OR; }
+"!"       { pmf_yylval.gValue.Position = PMFLexPosition; PMFLexPosition++; return NOT; }
 
-"("       { yylval.gValue.Position = LexPosition; LexPosition++; return LBRA; }
-")"       { yylval.gValue.Position = LexPosition; LexPosition++; return RBRA; }
+"("       { pmf_yylval.gValue.Position = PMFLexPosition; PMFLexPosition++; return LBRA; }
+")"       { pmf_yylval.gValue.Position = PMFLexPosition; PMFLexPosition++; return RBRA; }
 
-{whitesp} { LexPosition += yyleng;}
+{whitesp} { PMFLexPosition += yyleng;}
 
 {newline} {
-            pperror("new line character is not allowed in mask specification",LexPosition);
+            pmf_pperror("new line character is not allowed in mask specification",PMFLexPosition);
             return ERROR;
             }

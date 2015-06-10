@@ -1,8 +1,7 @@
 !===============================================================================
 ! PMFLib - Library Supporting Potential of Mean Force Calculations
 !-------------------------------------------------------------------------------
-!    Copyright (C) 2010,2011 Petr Kulhanek, kulhanek@chemi.muni.cz
-!    Copyright (C) 2007,2008 Petr Kulhanek, kulhanek@enzim.hu
+!    Copyright (C) 2015 Petr Kulhanek, kulhanek@chemi.muni.cz
 !
 !    This library is free software; you can redistribute it and/or
 !    modify it under the terms of the GNU Lesser General Public
@@ -20,7 +19,7 @@
 !    Boston, MA  02110-1301  USA
 !===============================================================================
 
-module pmf_pmemd_control
+module pmf_cats_control
 
 implicit none
 contains
@@ -29,10 +28,10 @@ contains
 !-------------------------------------------------------------------------------
 !===============================================================================
 
-subroutine pmf_pmemd_process_control
+subroutine pmf_cats_process_control
 
     use pmf_constants
-    use pmf_pmemd_dat
+    use pmf_cats_dat
     use prmfile
     use pmf_utils
     use pmf_control
@@ -52,7 +51,7 @@ subroutine pmf_pmemd_process_control
     end if
 
     ! read groups
-    call pmf_pmemd_read_pmemd
+    call pmf_cats_read_main
     call pmf_control_read_pmflib_group(ControlPrmfile)
 
     ! read method CV setup
@@ -72,20 +71,22 @@ subroutine pmf_pmemd_process_control
 
     return
 
-end subroutine pmf_pmemd_process_control
+end subroutine pmf_cats_process_control
 
 !===============================================================================
 !-------------------------------------------------------------------------------
 !===============================================================================
 
-subroutine pmf_pmemd_read_pmemd
+subroutine pmf_cats_read_main
 
     use pmf_constants
-    use pmf_pmemd_dat
+    use pmf_cats_dat
     use prmfile
     use pmf_utils
 
     implicit none
+    logical             :: rst
+    character(len=80)   :: name
     ! ----------------------------------------------------------------------------
 
     write(PMF_OUT,*)
@@ -97,22 +98,23 @@ subroutine pmf_pmemd_read_pmemd
         call pmf_utils_exit(PMF_OUT,1,'Specified control file does not contain {MAIN} group!')
     end if
 
-    write(PMF_OUT,'(a)') '--- [amber] --------------------------------------------------------------------'
+    ! read all sections
+    rst = prmfile_first_section(ControlPrmfile)
+    do while ( rst )
+        rst = prmfile_get_section_name(ControlPrmfile,name)
 
-    ! open pmemd section
-    if( .not. prmfile_open_section(ControlPrmfile,'amber') ) then
-        call pmf_utils_exit(PMF_OUT,1,'[amber] section has to be specified in control file!')
-    end if
+        write(PMF_OUT,'(a)') ' >> [' // trim(name) //'] section is discarded ...'
+        call prmfile_set_sec_as_processed(ControlPrmfile)
 
-    write(PMF_OUT,'(a)') ' >> [amber] section is discarded ...'
-    call prmfile_set_sec_as_processed(ControlPrmfile)
+        rst = prmfile_next_section(ControlPrmfile)
+    end do
 
     return
 
-end subroutine pmf_pmemd_read_pmemd
+end subroutine pmf_cats_read_main
 
 !===============================================================================
 !-------------------------------------------------------------------------------
 !===============================================================================
 
-end module pmf_pmemd_control
+end module pmf_cats_control

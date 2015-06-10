@@ -32,22 +32,22 @@ using namespace std;
 
 //------------------------------------------------------------------------------
 
-int                 LexPosition     = 0;
-struct SExpression* TopExpression   = NULL;
+int                 PMFLexPosition     = 0;
+struct SExpression* PMFTopExpression   = NULL;
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 // track info about allocation
-vector<SListItem*>      ListItemAllocations;
-vector<SList*>          ListAllocations;
-vector<SSelection*>     SelectionAllocations;
-vector<SExpression*>    ExpressionAllocations;
+vector<SListItem*>      PMFListItemAllocations;
+vector<SList*>          PMFListAllocations;
+vector<SSelection*>     PMFSelectionAllocations;
+vector<SExpression*>    PMFExpressionAllocations;
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-bool print_expression(FILE* p_fout,struct SExpression* p_expr);
-bool print_selection(FILE* p_fout,struct SSelection* p_sel);
-bool print_list(FILE* p_fout,struct SList* p_list);
+bool pmf_print_expression(FILE* p_fout,struct SExpression* p_expr);
+bool pmf_print_selection(FILE* p_fout,struct SSelection* p_sel);
+bool pmf_print_list(FILE* p_fout,struct SList* p_list);
 
 //==============================================================================
 //------------------------------------------------------------------------------
@@ -65,11 +65,11 @@ bool print_list(FILE* p_fout,struct SList* p_list);
 //------------------------------------------------------------------------------
 //==============================================================================
 
-int init_mask(void)
+int pmf_init_mask(void)
 {
-    free_mask_tree();
-    LexPosition = 1;
-    TopExpression = NULL;
+    pmf_free_mask_tree();
+    PMFLexPosition = 1;
+    PMFTopExpression = NULL;
     return(0);
 }
 
@@ -79,45 +79,45 @@ int init_mask(void)
 
 //------------------------------------------------------------------------------
 
-struct SExpression* get_expression_tree(void) {
-    return(TopExpression);
+struct SExpression* pmf_get_expression_tree(void) {
+    return(PMFTopExpression);
 }
 
 //------------------------------------------------------------------------------
 
-int free_mask_tree(void)
+int pmf_free_mask_tree(void)
 {
-    for(unsigned int i=0; i < ListItemAllocations.size(); i++) {
-        delete ListItemAllocations[i];
+    for(unsigned int i=0; i < PMFListItemAllocations.size(); i++) {
+        delete PMFListItemAllocations[i];
     }
-    ListItemAllocations.clear();
+    PMFListItemAllocations.clear();
 
-    for(unsigned int i=0; i < ListAllocations.size(); i++) {
-        delete ListAllocations[i];
+    for(unsigned int i=0; i < PMFListAllocations.size(); i++) {
+        delete PMFListAllocations[i];
     }
-    ListAllocations.clear();
+    PMFListAllocations.clear();
 
-    for(unsigned int i=0; i < SelectionAllocations.size(); i++) {
-        delete SelectionAllocations[i];
+    for(unsigned int i=0; i < PMFSelectionAllocations.size(); i++) {
+        delete PMFSelectionAllocations[i];
     }
-    SelectionAllocations.clear();
+    PMFSelectionAllocations.clear();
 
-    for(unsigned int i=0; i < ExpressionAllocations.size(); i++) {
-        delete ExpressionAllocations[i];
+    for(unsigned int i=0; i < PMFExpressionAllocations.size(); i++) {
+        delete PMFExpressionAllocations[i];
     }
-    ExpressionAllocations.clear();
+    PMFExpressionAllocations.clear();
 
-    LexPosition = 0;
-    TopExpression = NULL;
+    PMFLexPosition = 0;
+    PMFTopExpression = NULL;
 
     return(0);
 }
 
 //------------------------------------------------------------------------------
 
-int print_expression_tree(struct SExpression* p_expr)
+int pmf_print_expression_tree(struct SExpression* p_expr)
 {
-    if(print_expression(stdout,p_expr) != true) return(-1);
+    if(pmf_print_expression(stdout,p_expr) != true) return(-1);
     return(0);
 }
 
@@ -125,7 +125,7 @@ int print_expression_tree(struct SExpression* p_expr)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-bool print_expression(FILE* p_fout,struct SExpression* p_expr)
+bool pmf_print_expression(FILE* p_fout,struct SExpression* p_expr)
 {
     if(p_expr == NULL) {
         fprintf(p_fout,"<- NULL expr");
@@ -134,22 +134,22 @@ bool print_expression(FILE* p_fout,struct SExpression* p_expr)
 
     fprintf(p_fout,"EXP(");
     if(p_expr->Selection != NULL) {
-        if(print_selection(p_fout,p_expr->Selection) == false) return(false);
+        if(pmf_print_selection(p_fout,p_expr->Selection) == false) return(false);
     } else {
         switch(p_expr->Operator) {
             case O_AND:
-                if(print_expression(p_fout,p_expr->LeftExpression) == false) return(false);
+                if(pmf_print_expression(p_fout,p_expr->LeftExpression) == false) return(false);
                 fprintf(p_fout," AND ");
-                if(print_expression(p_fout,p_expr->RightExpression) == false) return(false);
+                if(pmf_print_expression(p_fout,p_expr->RightExpression) == false) return(false);
                 break;
             case O_OR:
-                if(print_expression(p_fout,p_expr->LeftExpression) == false) return(false);
+                if(pmf_print_expression(p_fout,p_expr->LeftExpression) == false) return(false);
                 fprintf(p_fout," OR ");
-                if(print_expression(p_fout,p_expr->RightExpression) == false) return(false);
+                if(pmf_print_expression(p_fout,p_expr->RightExpression) == false) return(false);
                 break;
             case O_NOT:
                 fprintf(p_fout,"NOT ");
-                if(print_expression(p_fout,p_expr->RightExpression) == false) return(false);
+                if(pmf_print_expression(p_fout,p_expr->RightExpression) == false) return(false);
                 break;
             default:
                 fprintf(p_fout,"<- unknown operator");
@@ -162,7 +162,7 @@ bool print_expression(FILE* p_fout,struct SExpression* p_expr)
 
 //------------------------------------------------------------------------------
 
-bool print_selection(FILE* p_fout,struct SSelection* p_sel)
+bool pmf_print_selection(FILE* p_fout,struct SSelection* p_sel)
 {
     if(p_sel == NULL) {
         fprintf(p_fout,"<- NULL selection");
@@ -188,7 +188,7 @@ bool print_selection(FILE* p_fout,struct SSelection* p_sel)
     };
 
     fprintf(p_fout,"[%c](",selector);
-    if(print_list(p_fout,p_sel->Items) == false) return(false);
+    if(pmf_print_list(p_fout,p_sel->Items) == false) return(false);
     fprintf(p_fout,")");
 
     return(true);
@@ -196,7 +196,7 @@ bool print_selection(FILE* p_fout,struct SSelection* p_sel)
 
 //------------------------------------------------------------------------------
 
-bool print_list(FILE* p_fout,struct SList* p_list)
+bool pmf_print_list(FILE* p_fout,struct SList* p_list)
 {
     if(p_list == NULL) {
         fprintf(p_fout,"<- NULL list");
@@ -237,7 +237,7 @@ bool print_list(FILE* p_fout,struct SList* p_list)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-int yyerror(const char* p_error)
+int pmf_yyerror(const char* p_error)
 {
     ES_ERROR(p_error);
     return(0);
@@ -245,7 +245,7 @@ int yyerror(const char* p_error)
 
 //------------------------------------------------------------------------------
 
-int pperror(const char* p_error,int position)
+int pmf_pperror(const char* p_error,int position)
 {
     CSmallString error;
     error << position << ": " << p_error;
@@ -257,7 +257,7 @@ int pperror(const char* p_error,int position)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-struct SListItem* AllocateListItem(void) {
+struct SListItem* PMFAllocateListItem(void) {
     struct SListItem* p_item = new struct SListItem;
 
     p_item->Index = 0;
@@ -265,37 +265,37 @@ struct SListItem* AllocateListItem(void) {
     memset(p_item->Name,' ',4);
     p_item->NextItem = NULL;
 
-    ListItemAllocations.push_back(p_item);
+    PMFListItemAllocations.push_back(p_item);
     return(p_item);
 }
 
 //------------------------------------------------------------------------------
 
-struct SList* AllocateList(void) {
+struct SList* PMFAllocateList(void) {
     struct SList* p_list = new struct SList;
 
     p_list->FirstItem = NULL;
     p_list->LastItem = NULL;
 
-    ListAllocations.push_back(p_list);
+    PMFListAllocations.push_back(p_list);
     return(p_list);
 }
 
 //------------------------------------------------------------------------------
 
-struct SSelection* AllocateSelection(enum SType type,struct SList* p_list) {
+struct SSelection* PMFAllocateSelection(enum SType type,struct SList* p_list) {
     struct SSelection* p_sel = new struct SSelection;
 
     p_sel->Type = type;
     p_sel->Items = p_list;
 
-    SelectionAllocations.push_back(p_sel);
+    PMFSelectionAllocations.push_back(p_sel);
     return(p_sel);
 }
 
 //------------------------------------------------------------------------------
 
-struct SExpression* AllocateExpression(void) {
+struct SExpression* PMFAllocateExpression(void) {
     struct SExpression* p_expr = new struct SExpression;
 
     p_expr->Operator = O_NONE;
@@ -304,7 +304,7 @@ struct SExpression* AllocateExpression(void) {
     p_expr->LeftExpression = NULL;
     p_expr->RightExpression = NULL;
 
-    ExpressionAllocations.push_back(p_expr);
+    PMFExpressionAllocations.push_back(p_expr);
     return(p_expr);
 }
 

@@ -22,6 +22,7 @@ SET(PMFLIB_USE_INST_RPATH   OFF CACHE BOOL "Should CMAKE_INSTALL_RPATH be used a
 # drivers options --------------------------------
 SET(PMFLIB_SANDER_DRV   ON   CACHE BOOL "Should the driver for sander be built?")
 SET(PMFLIB_PMEMD_DRV    ON   CACHE BOOL "Should the driver for pmemd be built?")
+SET(PMFLIB_CATS_DRV     ON   CACHE BOOL "Should the driver for cats be built?")
 SET(PMFLIB_CPMD_DRV     ON   CACHE BOOL "Should the driver for cpmd be built?")
 SET(PMFLIB_CP2K_DRV     ON   CACHE BOOL "Should the driver for cp2k be built?")
 SET(PMFLIB_XDYNBP_DRV   OFF  CACHE BOOL "Should the driver for xdynbp be built?")
@@ -32,7 +33,7 @@ SET(PMFLIB_LIBATOMS_DRV OFF  CACHE BOOL "Should the driver for libatoms be built
 # ==============================================================================
 
 # define project version -------------------------
-SET(PMFLIB_VERSION 4.0.x)
+SET(PMFLIB_VERSION 5.0.x)
 
 # what languages we use --------------------------
 ENABLE_LANGUAGE(CXX)
@@ -213,8 +214,8 @@ IF(NOT DEFINED COMPOSITE_PROJECT)
         ENDIF(LIBS_SHARED)
     ENDIF(FCOMP_NAME STREQUAL xlf)
 
-    SET(CMAKE_BUILD_TYPE Release)
-    #SET(CMAKE_BUILD_TYPE Debug)
+    #SET(CMAKE_BUILD_TYPE Release)
+    SET(CMAKE_BUILD_TYPE Debug)
 ENDIF(NOT DEFINED COMPOSITE_PROJECT)
 
 # ==============================================================================
