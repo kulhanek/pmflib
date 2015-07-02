@@ -56,7 +56,7 @@ subroutine pmf_cats_begin_init(mdin,anatom,anres, &
     MassConv         = 1.0d0               ! g/mol -> g/mol
     LengthConv       = 1.0d0               ! A -> A
     AngleConv        = PMF_D2R             ! deg -> rad
-    TimeConv         = 1000.0d0            ! ps -> fs
+    TimeConv         = 1.0d0               ! fs -> fs
     VelocityConv     = 1.0d0               ! pmflib velocity -> pmflib velocity
     EnergyConv       = 1.0d0               ! kcal/mol -> kcal/mol
     ForceConv        = 1.0d0               ! kcal/mol/A -> kcal/mol/A
