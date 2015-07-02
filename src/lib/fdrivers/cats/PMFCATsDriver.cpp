@@ -19,6 +19,7 @@
 // =============================================================================
 
 #include "PMFCATsDriver.hpp"
+#include <iostream>
 
 //------------------------------------------------------------------------------
 extern "C" {
@@ -77,6 +78,12 @@ void CPMFCATsDriver::BeginInit(CSmallString mdin,int anatom,int anres,
              int antb,double box_a,double box_b,double box_c,
              double box_alpha,double box_beta,double box_gamma)
 {
+    // flush C and C++ streams;
+    fflush(stdout);
+    fflush(stderr);
+    std::cout.flush();
+    std::cerr.flush();
+
     pmf_cats_begin_init_(mdin.GetBuffer(),&anatom,&anres,&antb,&box_a,&box_b,&box_c,
                          &box_alpha,&box_beta,&box_gamma,mdin.GetLength());
 }

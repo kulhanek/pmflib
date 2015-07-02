@@ -161,6 +161,9 @@ subroutine pmf_cats_end_init(anatom,amass,ax)
     ! init PMF subsystems
     call pmf_init_all(amass,ax)
 
+    ! flush output streams
+    flush(PMF_OUT)
+
 end subroutine pmf_cats_end_init
 
 !===============================================================================
