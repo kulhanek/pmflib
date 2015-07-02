@@ -32,11 +32,15 @@ public:
     static void BeginInit(CSmallString mdin,int anatom,int anres,
                  int antb,double box_a,double box_b,double box_c,
                  double box_alpha,double box_beta,double box_gamma);
-    static void SetResidue(int idx,CSmallString name,int first_atom);
-    static void SetAtom(int idx,CSmallString name,CSmallString type);
-    static void EndInit(int anatom,std::vector<double>& amass,std::vector<double>& xyz);
-
-    static void Finalize(void);
+    static void     SetResidue(int idx,CSmallString name,int first_atom);
+    static void     SetAtom(int idx,CSmallString name,CSmallString type);
+    static void     EndInit(int anatom,std::vector<double>& amass,std::vector<double>& xyz);
+    static void     SetCoordinates(int numofatoms,double* coords,double a,double b, double c,
+                                   double alpha, double beta, double gamma);
+    static int      GetNumberOfCVs(void);
+    static double   GetCVValue(CSmallString name);
+    static double   GetCVValue(int index);
+    static void     Finalize(void);
 };
 
 //------------------------------------------------------------------------------

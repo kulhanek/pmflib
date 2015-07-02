@@ -38,6 +38,25 @@ void pmf_cats_set_atom_(int* idx,char* name,char* atype,int len_name,int len_aty
 
 //subroutine pmf_cats_end_init(amass,ax)
 void pmf_cats_end_init_(int* anatom,double* amass,double* ax);
+
+//subroutine pmf_cats_update_box(a,b,c,alpha,beta,gamma)
+void pmf_cats_update_box_(double* a,double* b,double* c,double* alpha,double* beta,double* gamma);
+
+//subroutine pmf_cats_update_x(natoms,x)
+void pmf_cats_update_x_(int* natoms,double* x);
+
+//subroutine pmf_cats_get_number_of_cvs(numofcvs)
+void pmf_cats_get_number_of_cvs_(int* numofcvs);
+
+//subroutine pmf_cats_get_value(value,name)
+void pmf_cats_get_value_(double* value,char* name,int name_len);
+
+//subroutine pmf_cats_get_value_by_indx(value,indx)
+void pmf_cats_get_value_by_indx_(double* value,int* indx);
+
+//subroutine pmf_cats_finalize
+void pmf_cats_finalize_(void);
+
 // FORTRAN INTERFACE ===========================================================
 }
 
@@ -83,11 +102,51 @@ void CPMFCATsDriver::EndInit(int anatom,std::vector<double>& amass,std::vector<d
     pmf_cats_end_init_(&anatom,amass.data(),xyz.data());
 }
 
+//==============================================================================
+//------------------------------------------------------------------------------
+//==============================================================================
+
+void CPMFCATsDriver::SetCoordinates(int numofatoms,double* coords,double a,double b, double c, double alpha, double beta, double gamma)
+{
+    pmf_cats_update_box_(&a,&b,&c,&alpha,&beta,&gamma);
+    pmf_cats_update_x_(&numofatoms,coords);
+}
+
+//==============================================================================
+//------------------------------------------------------------------------------
+//==============================================================================
+
+int CPMFCATsDriver::GetNumberOfCVs(void)
+{
+   int numofcvs = 0;
+   pmf_cats_get_number_of_cvs_(&numofcvs);
+   return(numofcvs);
+}
+
+//------------------------------------------------------------------------------
+
+double CPMFCATsDriver::GetCVValue(CSmallString name)
+{
+    double value = 0.0;
+    pmf_cats_get_value_(&value,name.GetBuffer(),name.GetLength());
+    return(value);
+}
+
+//------------------------------------------------------------------------------
+
+double CPMFCATsDriver::GetCVValue(int indx)
+{
+    indx++; // c->fortran indexing
+    double value = 0.0;
+    pmf_cats_get_value_by_indx_(&value,&indx);
+    return(value);
+}
+
 //------------------------------------------------------------------------------
 
 void CPMFCATsDriver::Finalize(void)
 {
-
+    pmf_cats_finalize_();
 }
 
 //==============================================================================

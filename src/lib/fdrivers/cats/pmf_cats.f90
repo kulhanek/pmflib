@@ -185,31 +185,114 @@ subroutine pmf_cats_update_box(a,b,c,alpha,beta,gamma)
 end subroutine pmf_cats_update_box
 
 !===============================================================================
-! subroutine pmf_cats_update_xv
+! subroutine pmf_cats_update_x
 !===============================================================================
 
-subroutine pmf_cats_update_xv(updated,x,v,temp,bathtemp)
+subroutine pmf_cats_update_x(natoms,x)
 
     use pmf_sizes
     use pmf_core_lf
     use pmf_dat
     use pmf_timers
+    use pmf_utils
 
     implicit none
-    logical        :: updated
-    real(PMFDP)    :: x(:,:)
-    real(PMFDP)    :: v(:,:)
-    real(PMFDP)    :: temp
-    real(PMFDP)    :: bathtemp
+    integer         :: natoms
+    real(PMFDP)     :: x(3,natoms)
+    integer         :: i, ridx
     ! --------------------------------------------------------------------------
 
     if( .not. fmaster ) return
 
+    if( natoms .ne. fnatoms ) then
+        call pmf_utils_exit(PMF_OUT,1,'Inconsistent number of atoms in pmf_cats_update_x!')
+    end if
+
     call pmf_timers_start_timer(PMFLIB_TIMER)
-    call pmf_core_lf_update_xv(updated,x,v,temp,bathtemp)
+    do i=1,NumOfLAtoms
+        ridx = RIndexes(i)
+        Crd(:,i) = x(:,ridx)*LengthConv
+        Vel(:,i) = 0.0d0
+        Frc(:,i) = 0.0d0
+    end do
+
+    call pmf_timers_start_timer(PMFLIB_CVS_TIMER)
+        ! clear previous data
+        CVContext%CVsValues(:) = 0.0d0
+        CVContext%CVsDrvs(:,:,:) = 0.0d0
+
+        ! update CVs
+        do i=1,NumOfCVs
+            call CVList(i)%cv%calculate_cv(Crd,CVContext)
+        end do
+    call pmf_timers_stop_timer(PMFLIB_CVS_TIMER)
+
     call pmf_timers_stop_timer(PMFLIB_TIMER)
 
-end subroutine pmf_cats_update_xv
+end subroutine pmf_cats_update_x
+
+!===============================================================================
+! subroutine pmf_cats_get_number_of_cvs
+!===============================================================================
+
+subroutine pmf_cats_get_number_of_cvs(numofcvsout)
+
+    use pmf_dat
+    use pmf_pbc
+
+    integer    :: numofcvsout
+    ! --------------------------------------------------------------------------
+
+    numofcvsout = NumOfCVs
+
+end subroutine pmf_cats_get_number_of_cvs
+
+!===============================================================================
+! subroutine pmf_cats_get_value
+!===============================================================================
+
+subroutine pmf_cats_get_value(value,name)
+
+    use pmf_dat
+    use cv_common
+
+    real(PMFDP)     :: value
+    character(*)    :: name
+    integer         :: indx
+    ! --------------------------------------------------------------------------
+
+    if( .not. fmaster ) return
+
+    indx = cv_common_find_cv(name)
+    value = CVContext%CVsValues(indx)
+    value = CVList(indx)%cv%get_rvalue(value)
+
+end subroutine pmf_cats_get_value
+
+!===============================================================================
+! subroutine pmf_cats_get_value_by_indx
+!===============================================================================
+
+subroutine pmf_cats_get_value_by_indx(value,indx)
+
+    use pmf_dat
+    use cv_common
+    use pmf_utils
+
+    real(PMFDP)     :: value
+    integer         :: indx
+    ! --------------------------------------------------------------------------
+
+    if( .not. fmaster ) return
+
+    if( (indx .le. 0) .or. (indx .gt. NumOfCVs) ) then
+        call pmf_utils_exit(PMF_OUT,1,'CV index is out of legal range!')
+    end if
+
+    value = CVContext%CVsValues(indx)
+    value = CVList(indx)%cv%get_rvalue(value)
+
+end subroutine pmf_cats_get_value_by_indx
 
 !===============================================================================
 ! subroutine pmf_cats_finalize
