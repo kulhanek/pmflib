@@ -160,6 +160,7 @@ CSmallString CPMFCATsDriver::GetCVName(int indx)
     // FIXME
     name.SetLength(50); // PMF_MAX_CV_NAME
     pmf_cats_get_name_(name.GetBuffer(),&indx,name.GetLength());
+    name.Trim();
     return(name);
 }
 
@@ -171,6 +172,7 @@ CSmallString CPMFCATsDriver::GetCVType(CSmallString name)
     // FIXME
     ctype.SetLength(10); // PMF_MAX_TYPE
     pmf_cats_get_type_(ctype.GetBuffer(),name.GetBuffer(),ctype.GetLength(),name.GetLength());
+    ctype.Trim();
     return(ctype);
 }
 
@@ -183,6 +185,7 @@ CSmallString CPMFCATsDriver::GetCVType(int indx)
     // FIXME
     ctype.SetLength(10); // PMF_MAX_TYPE
     pmf_cats_get_type_by_indx_(ctype.GetBuffer(),&indx,ctype.GetLength());
+    ctype.Trim();
     return(ctype);
 }
 
