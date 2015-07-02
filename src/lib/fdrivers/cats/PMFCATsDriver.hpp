@@ -40,6 +40,9 @@ public:
     static int      GetNumberOfCVs(void);
     static double   GetCVValue(CSmallString name);
     static double   GetCVValue(int index);
+    static CSmallString   GetCVName(int indx);
+    static CSmallString   GetCVType(CSmallString name);
+    static CSmallString   GetCVType(int indx);
     static void     Finalize(void);
 };
 

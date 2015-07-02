@@ -45,14 +45,23 @@ void pmf_cats_update_box_(double* a,double* b,double* c,double* alpha,double* be
 //subroutine pmf_cats_update_x(natoms,x)
 void pmf_cats_update_x_(int* natoms,double* x);
 
-//subroutine pmf_cats_get_number_of_cvs(numofcvs)
-void pmf_cats_get_number_of_cvs_(int* numofcvs);
+//subroutine pmf_cats_get_num_of_cvs(numofcvs)
+void pmf_cats_get_num_of_cvs_(int* numofcvs);
 
 //subroutine pmf_cats_get_value(value,name)
 void pmf_cats_get_value_(double* value,char* name,int name_len);
 
 //subroutine pmf_cats_get_value_by_indx(value,indx)
 void pmf_cats_get_value_by_indx_(double* value,int* indx);
+
+//subroutine pmf_cats_get_name(name,indx)
+void pmf_cats_get_name_(char* name,int* indx,int name_len);
+
+//subroutine pmf_cats_get_type_by_indx(ctype,indx)
+void pmf_cats_get_type_by_indx_(char* ctype,int* indx,int ctype_len);
+
+//subroutine pmf_cats_get_type(ctype,name)
+void pmf_cats_get_type_(char* ctype,char* name,int ctype_len,int name_len);
 
 //subroutine pmf_cats_finalize
 void pmf_cats_finalize_(void);
@@ -119,7 +128,7 @@ void CPMFCATsDriver::SetCoordinates(int numofatoms,double* coords,double a,doubl
 int CPMFCATsDriver::GetNumberOfCVs(void)
 {
    int numofcvs = 0;
-   pmf_cats_get_number_of_cvs_(&numofcvs);
+   pmf_cats_get_num_of_cvs_(&numofcvs);
    return(numofcvs);
 }
 
@@ -140,6 +149,41 @@ double CPMFCATsDriver::GetCVValue(int indx)
     double value = 0.0;
     pmf_cats_get_value_by_indx_(&value,&indx);
     return(value);
+}
+
+//------------------------------------------------------------------------------
+
+CSmallString CPMFCATsDriver::GetCVName(int indx)
+{
+    indx++; // c->fortran indexing
+    CSmallString name;
+    // FIXME
+    name.SetLength(50); // PMF_MAX_CV_NAME
+    pmf_cats_get_name_(name.GetBuffer(),&indx,name.GetLength());
+    return(name);
+}
+
+//------------------------------------------------------------------------------
+
+CSmallString CPMFCATsDriver::GetCVType(CSmallString name)
+{
+    CSmallString ctype;
+    // FIXME
+    ctype.SetLength(10); // PMF_MAX_TYPE
+    pmf_cats_get_type_(ctype.GetBuffer(),name.GetBuffer(),ctype.GetLength(),name.GetLength());
+    return(ctype);
+}
+
+//------------------------------------------------------------------------------
+
+CSmallString CPMFCATsDriver::GetCVType(int indx)
+{
+    indx++; // c->fortran indexing
+    CSmallString ctype;
+    // FIXME
+    ctype.SetLength(10); // PMF_MAX_TYPE
+    pmf_cats_get_type_by_indx_(ctype.GetBuffer(),&indx,ctype.GetLength());
+    return(ctype);
 }
 
 //------------------------------------------------------------------------------

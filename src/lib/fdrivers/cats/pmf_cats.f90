@@ -232,10 +232,10 @@ subroutine pmf_cats_update_x(natoms,x)
 end subroutine pmf_cats_update_x
 
 !===============================================================================
-! subroutine pmf_cats_get_number_of_cvs
+! subroutine pmf_cats_get_num_of_cvs
 !===============================================================================
 
-subroutine pmf_cats_get_number_of_cvs(numofcvsout)
+subroutine pmf_cats_get_num_of_cvs(numofcvsout)
 
     use pmf_dat
     use pmf_pbc
@@ -245,7 +245,7 @@ subroutine pmf_cats_get_number_of_cvs(numofcvsout)
 
     numofcvsout = NumOfCVs
 
-end subroutine pmf_cats_get_number_of_cvs
+end subroutine pmf_cats_get_num_of_cvs
 
 !===============================================================================
 ! subroutine pmf_cats_get_value
@@ -293,6 +293,74 @@ subroutine pmf_cats_get_value_by_indx(value,indx)
     value = CVList(indx)%cv%get_rvalue(value)
 
 end subroutine pmf_cats_get_value_by_indx
+
+!===============================================================================
+! subroutine pmf_cats_get_name
+!===============================================================================
+
+subroutine pmf_cats_get_name(name,indx)
+
+    use pmf_dat
+    use pmf_utils
+
+    character(*)    :: name
+    integer         :: indx
+    ! --------------------------------------------------------------------------
+
+    if( .not. fmaster ) return
+
+    if( (indx .le. 0) .or. (indx .gt. NumOfCVs) ) then
+        call pmf_utils_exit(PMF_OUT,1,'CV index is out of legal range!')
+    end if
+
+    name = CVList(indx)%cv%name
+
+end subroutine pmf_cats_get_name
+
+!===============================================================================
+! subroutine pmf_cats_get_type
+!===============================================================================
+
+subroutine pmf_cats_get_type(ctype,name)
+
+    use pmf_dat
+    use cv_common
+    use pmf_utils
+
+    character(*)    :: ctype
+    character(*)    :: name
+    integer         :: indx
+    ! --------------------------------------------------------------------------
+
+    if( .not. fmaster ) return
+
+    indx = cv_common_find_cv(name)
+    ctype = CVList(indx)%cv%ctype
+
+end subroutine pmf_cats_get_type
+
+!===============================================================================
+! subroutine pmf_cats_get_type_by_indx
+!===============================================================================
+
+subroutine pmf_cats_get_type_by_indx(ctype,indx)
+
+    use pmf_dat
+    use pmf_utils
+
+    character(*)    :: ctype
+    integer         :: indx
+    ! --------------------------------------------------------------------------
+
+    if( .not. fmaster ) return
+
+    if( (indx .le. 0) .or. (indx .gt. NumOfCVs) ) then
+        call pmf_utils_exit(PMF_OUT,1,'CV index is out of legal range!')
+    end if
+
+    ctype = CVList(indx)%cv%ctype
+
+end subroutine pmf_cats_get_type_by_indx
 
 !===============================================================================
 ! subroutine pmf_cats_finalize
