@@ -56,6 +56,7 @@ subroutine pmf_alloc_cv_allocate(cv_type,cv_item)
     use cv_pvang
     use cv_axang
     use cv_dih
+    use cv_pfvang
 
 ! shape ------------------------------------------
     use cv_rgyr
@@ -133,6 +134,8 @@ subroutine pmf_alloc_cv_allocate(cv_type,cv_item)
             allocate(CVTypePVANG::cv_item)
         case('AXANG')
             allocate(CVTypeAXANG::cv_item)
+        case('PFVANG')
+            allocate(CVTypePFVANG::cv_item)
 
         case('DIH')
             allocate(CVTypeDIH::cv_item)

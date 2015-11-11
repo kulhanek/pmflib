@@ -50,6 +50,7 @@ SET(PMF_CVS_SRC
         common/cvs/angle/cv_ang.f90
         common/cvs/angle/cv_pang.f90
         common/cvs/angle/cv_pvang.f90
+        common/cvs/angle/cv_pfvang.f90
         common/cvs/angle/cv_axang.f90
         common/cvs/angle/cv_dih.f90
 
