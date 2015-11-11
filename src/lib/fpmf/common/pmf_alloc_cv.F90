@@ -48,6 +48,7 @@ subroutine pmf_alloc_cv_allocate(cv_type,cv_item)
     use cv_mdisg
     use cv_dd
     use cv_ds
+    use cv_ppdis
 
 ! angle based ------------------------------------
     use cv_ang
@@ -120,6 +121,8 @@ subroutine pmf_alloc_cv_allocate(cv_type,cv_item)
             allocate(CVTypeMDISG::cv_item)
         case('DD')
             allocate(CVTypeDD::cv_item)
+        case('PPDIS')
+            allocate(CVTypePPDIS::cv_item)
 
     ! angle --------------------------------------
         case('ANG')

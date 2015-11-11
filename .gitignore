@@ -9,3 +9,5 @@ lib/**
 include/**
 Testing/
 PMFLib.*
+*__genmod*
+PMFLib5.*
