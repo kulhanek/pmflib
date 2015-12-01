@@ -247,7 +247,7 @@ IF(LIBS_SHARED)
     TARGET_LINK_LIBRARIES(fpmf_shared ${CPMF_LIBRARIES} ${FPMF_LIBRARIES_DEPS})
     INSTALL(TARGETS
                 fpmf_shared
-            LIBRARY DESTINATION
+            DESTINATION
                 lib)
 ENDIF(LIBS_SHARED)
 
