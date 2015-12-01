@@ -25,7 +25,7 @@
 !    Boston, MA  02110-1301  USA
 !===============================================================================
 
-module con_dat
+module cst_dat
 
 use pmf_sizes
 use pmf_constants
@@ -119,9 +119,9 @@ type CONCommonAtomsType
      integer, pointer        :: indlindexes(:)    ! common individual local atom indexes 
 end type CONCommonAtomsType
 
-type(CONCommonAtomsType),allocatable  :: CONCommonAtoms(:,:)  ! table for common CON atoms
+type(CONCommonAtomsType),allocatable  :: CONCommonAtoms(:,:)  ! table for common CST atoms
 
 !===============================================================================
 
-end module con_dat
+end module cst_dat
 

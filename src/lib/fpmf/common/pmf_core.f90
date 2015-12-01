@@ -299,14 +299,14 @@ end subroutine pmf_core_out_data_xpvp
 integer function pmf_core_get_num_of_constraints()
 
  use pmf_dat
- use con_dat
+ use cst_dat
 
  implicit none
  ! -----------------------------------------------------------------------------
 
  pmf_core_get_num_of_constraints = 0
 
- if ( .not. con_enabled) return
+ if ( .not. cst_enabled) return
 
  pmf_core_get_num_of_constraints = NumOfCONs 
 

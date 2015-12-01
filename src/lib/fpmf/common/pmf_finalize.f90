@@ -74,7 +74,7 @@ subroutine pmf_finalize_methods
     use rst_finalize
     use abf_finalize
     use mtd_finalize
-    use con_finalize
+    use cst_finalize
     use pdrv_finalize
     use stm_finalize
 
@@ -85,8 +85,8 @@ subroutine pmf_finalize_methods
         call abf_finalize_method
     end if
 
-    if( con_enabled ) then
-        call con_finalize_method
+    if( cst_enabled ) then
+        call cst_finalize_method
     end if
 
     if( mtd_enabled ) then

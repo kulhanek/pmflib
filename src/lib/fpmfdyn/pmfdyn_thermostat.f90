@@ -35,7 +35,7 @@ subroutine init_thermostat_subsystem(x,v)
     use pmf_utils
     use pmfdyn_thermostat_dat
     use pmfdyn_system_dat
-    use con_dat
+    use cst_dat
 
     implicit none
     real(PMFDP)     :: x(:,:)

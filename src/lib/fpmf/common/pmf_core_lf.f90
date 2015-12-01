@@ -189,7 +189,7 @@ subroutine pmf_core_lf_shake(xp)
 
     use pmf_dat
     use pmf_cvs
-    use con_core
+    use cst_core
     use pmf_core
     use pmf_timers
 
@@ -197,7 +197,7 @@ subroutine pmf_core_lf_shake(xp)
     real(PMFDP)    :: xp(:,:)      ! position in t + dt
     ! --------------------------------------------------------------------------
 
-    if( .not. con_enabled ) return
+    if( .not. cst_enabled ) return
 
     call pmf_timers_start_timer(PMFLIB_METHODS_TIMER)
         call pmf_timers_start_timer(PMFLIB_CON_TIMER)
@@ -205,7 +205,7 @@ subroutine pmf_core_lf_shake(xp)
         ! update local data
         call pmf_core_in_data_xp(xp)
 
-        call con_core_main_lf
+        call cst_core_main_lf
 
         ! update global data
         call pmf_core_out_data_xp(xp)

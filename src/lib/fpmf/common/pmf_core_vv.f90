@@ -40,7 +40,7 @@ subroutine pmf_core_vv_shake_SFR(xp,vp)
     use pmf_dat
     use pmf_sizes
     use pmf_core
-    use con_core
+    use cst_core
     use pmf_timers
 
     implicit none
@@ -48,7 +48,7 @@ subroutine pmf_core_vv_shake_SFR(xp,vp)
     real(PMFDP),intent(inout)  :: vp(:,:) ! v_u(t')->??
     ! --------------------------------------------------------------------------
 
-    if( .not. con_enabled ) return
+    if( .not. cst_enabled ) return
 
     call pmf_timers_start_timer(PMFLIB_METHODS_TIMER)
         call pmf_timers_start_timer(PMFLIB_CON_TIMER)
@@ -56,7 +56,7 @@ subroutine pmf_core_vv_shake_SFR(xp,vp)
         ! update local data
         call pmf_core_in_data_xpvp(xp,vp)
 
-        call con_core_main_vv_shake
+        call cst_core_main_vv_shake
 
         ! update global data
         call pmf_core_out_data_xpvp(xp,vp)
@@ -199,14 +199,14 @@ subroutine pmf_core_vv_rattle_SFR(vp)
     use pmf_sizes
     use pmf_dat
     use pmf_core
-    use con_core
+    use cst_core
     use pmf_timers
 
     implicit none
     real(PMFDP),intent(inout)  :: vp(:,:)
     ! --------------------------------------------------------------------------
 
-    if( .not. con_enabled ) return
+    if( .not. cst_enabled ) return
 
     call pmf_timers_start_timer(PMFLIB_METHODS_TIMER)
         call pmf_timers_start_timer(PMFLIB_CON_TIMER)
@@ -215,7 +215,7 @@ subroutine pmf_core_vv_rattle_SFR(vp)
         call pmf_core_in_data_vp(vp)
 
         ! correct velocities
-        call con_core_main_vv_rattle()
+        call cst_core_main_vv_rattle()
 
         ! update global data
         call pmf_core_out_data_vp(vp)

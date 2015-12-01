@@ -25,7 +25,7 @@
 !    Boston, MA  02110-1301  USA
 !===============================================================================
 
-module con_restart
+module cst_restart
 
 use pmf_sizes
 use pmf_constants
@@ -34,14 +34,14 @@ implicit none
 contains
 
 !===============================================================================
-! Subroutine:  con_restart_read
+! Subroutine:  cst_restart_read
 !===============================================================================
 
-subroutine con_restart_read
+subroutine cst_restart_read
 
     use pmf_utils
     use pmf_dat
-    use con_dat
+    use cst_dat
 
     implicit none
     integer :: i,inerr
@@ -55,11 +55,11 @@ subroutine con_restart_read
     end if
 
     ! check if restart file exist
-    open(CON_RST,FILE=fconrst,STATUS='OLD',ERR=1000)
+    open(CON_RST,FILE=fcstrst,STATUS='OLD',ERR=1000)
     close(CON_RST)
 
     ! open restart file
-    call pmf_utils_open(CON_RST,fconrst,'O')
+    call pmf_utils_open(CON_RST,fcstrst,'O')
 
     ! read basic info - serves as finger print
     read(CON_RST,'(4I8)') fpmode, fpnitem
@@ -67,15 +67,15 @@ subroutine con_restart_read
     ! check fingerprints
     inerr = 0
     if( fpmode .ne. fmode ) then
-        write(PMF_OUT, '(/2x,a)') '[CON] fmode from restart file is not identical with this blue moon setup.'
+        write(PMF_OUT, '(/2x,a)') '[CST] fmode from restart file is not identical with this blue moon setup.'
         inerr = 1
     end if
     if( fpnitem .ne. NumOfCONs ) then
-        write(PMF_OUT, '(/2x,a)') '[CON] NumOfCONs from restart file is not identical with this blue moon setup.'
+        write(PMF_OUT, '(/2x,a)') '[CST] NumOfCONs from restart file is not identical with this blue moon setup.'
         inerr = 1
     end if
     if (inerr .eq. 1) then
-        write(PMF_OUT, '(/,a)') '[CON] restart error(s)!'
+        write(PMF_OUT, '(/,a)') '[CST] restart error(s)!'
         call pmf_utils_exit(PMF_OUT, 1)
     end if
 
@@ -105,24 +105,24 @@ subroutine con_restart_read
 
     return
 
-end subroutine con_restart_read
+end subroutine cst_restart_read
 
 !===============================================================================
-! Subroutine:  con_restart_write
+! Subroutine:  cst_restart_write
 !===============================================================================
 
-subroutine con_restart_write
+subroutine cst_restart_write
 
     use pmf_utils
     use pmf_dat
-    use con_dat
+    use cst_dat
 
     implicit none
     integer :: i
     ! --------------------------------------------------------------------------
 
     ! only master process writes restart information
-    call pmf_utils_open(CON_RST,fconrst,'U')
+    call pmf_utils_open(CON_RST,fcstrst,'U')
 
     ! write basic info - serves as finger print
     write(CON_RST,'(4I8)') fmode, NumOfCONs
@@ -144,9 +144,9 @@ subroutine con_restart_write
 
     return
 
-end subroutine con_restart_write
+end subroutine cst_restart_write
 
 !===============================================================================
 
-end module con_restart
+end module cst_restart
 

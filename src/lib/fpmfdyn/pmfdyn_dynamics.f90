@@ -259,7 +259,7 @@ subroutine md_run
 
         !===============================================================================
         ! shake and bluemoon constraints
-        if( con_enabled ) then
+        if( cst_enabled ) then
             call pmf_core_lf_shake(md_x)
             md_v(:,:) = (md_x(:,:) - md_old_x(:,:)) * idt
         end if

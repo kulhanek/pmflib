@@ -194,7 +194,7 @@ end subroutine pmf_pmemd_finalize_preinit
 
 subroutine pmf_pmemd_bcast_constraints_mpi
 
-    use con_init
+    use cst_init
     use pmf_dat
 
     implicit none
@@ -205,7 +205,7 @@ subroutine pmf_pmemd_bcast_constraints_mpi
     end if
 
     ! this HAS TO BE called by all processes
-    call con_init_mpi_bcast_constraints
+    call cst_init_mpi_bcast_constraints
 
 end subroutine pmf_pmemd_bcast_constraints_mpi
 #endif
@@ -220,7 +220,7 @@ subroutine pmf_pmemd_init(amass,ax)
     use pmf_sizes
     use pmf_init
     use pmf_dat
-    use con_init
+    use cst_init
     use pmf_pmemd_control
 
     implicit none
@@ -392,7 +392,7 @@ subroutine pmf_pmemd_constraints(x,modified)
     if( .not. fmaster ) return
 
     modified = .false.
-    if( .not. con_enabled ) return
+    if( .not. cst_enabled ) return
 
     call pmf_timers_start_timer(PMFLIB_TIMER)
     call pmf_core_lf_shake(x)
@@ -451,7 +451,7 @@ subroutine pmf_pmemd_update_xv_mpi(updated,x,v,temp,bathtemp,atm_owner_map)
     ! broadcast updated
     call mpi_bcast(updated, 1, mpi_logical, 0, mpi_comm_world, ierr)
     if( ierr .ne. MPI_SUCCESS ) then
-        call pmf_utils_exit(PMF_OUT, 1,'[CON] Unable to broadcast the value of updated!')
+        call pmf_utils_exit(PMF_OUT, 1,'[CST] Unable to broadcast the value of updated!')
     end if
 
     ! update data if necessary
@@ -551,7 +551,7 @@ subroutine pmf_pmemd_constraints_mpi(x,modified,atm_owner_map)
     ! --------------------------------------------------------------------------
 
     modified = .false.
-    if( .not. con_enabled ) return
+    if( .not. cst_enabled ) return
 
     if(fmaster) then
         call pmf_timers_start_timer(PMFLIB_TIMER)
@@ -585,54 +585,54 @@ end subroutine pmf_pmemd_constraints_mpi
 #endif
 
 !===============================================================================
-! Subroutine: pmf_pmemd_con_checkatom
+! Subroutine: pmf_pmemd_cst_checkatom
 !===============================================================================
 
-logical function pmf_pmemd_con_checkatom(atomid)
+logical function pmf_pmemd_cst_checkatom(atomid)
 
     use pmf_dat
-    use con_shake
+    use cst_shake
 
     implicit none
     integer    :: atomid
     ! --------------------------------------------------------------------------
 
-    pmf_pmemd_con_checkatom = .false.
-    if( .not. con_enabled ) return
+    pmf_pmemd_cst_checkatom = .false.
+    if( .not. cst_enabled ) return
 
-    pmf_pmemd_con_checkatom = con_shake_checkatom(atomid)
+    pmf_pmemd_cst_checkatom = cst_shake_checkatom(atomid)
 
-end function pmf_pmemd_con_checkatom
+end function pmf_pmemd_cst_checkatom
 
 !===============================================================================
-! Subroutine: pmf_pmemd_con_shake_allocate
+! Subroutine: pmf_pmemd_cst_shake_allocate
 !===============================================================================
 
-subroutine pmf_pmemd_con_shake_allocate(num)
+subroutine pmf_pmemd_cst_shake_allocate(num)
 
     use pmf_dat
-    use con_shake
+    use cst_shake
 
     implicit none
     integer    :: num ! number of shake constraints
     ! --------------------------------------------------------------------------
 
     if( .not. fmaster ) return
-    if( .not. con_enabled ) return
+    if( .not. cst_enabled ) return
 
-    call con_shake_allocate(num)
+    call cst_shake_allocate(num)
 
-end subroutine pmf_pmemd_con_shake_allocate
+end subroutine pmf_pmemd_cst_shake_allocate
 
 !===============================================================================
-! Function:  pmf_pmemd_con_set_shake
+! Function:  pmf_pmemd_cst_set_shake
 !===============================================================================
 
-subroutine pmf_pmemd_con_set_shake(id,at1,at2,value)
+subroutine pmf_pmemd_cst_set_shake(id,at1,at2,value)
 
     use pmf_sizes
     use pmf_dat
-    use con_shake
+    use cst_shake
 
     implicit none
     integer        :: id       ! id of constraint
@@ -642,11 +642,11 @@ subroutine pmf_pmemd_con_set_shake(id,at1,at2,value)
     ! --------------------------------------------------------------------------
 
     if( .not. fmaster ) return
-    if( .not. con_enabled ) return
+    if( .not. cst_enabled ) return
 
-    call con_shake_set(id,at1,at2,value)
+    call cst_shake_set(id,at1,at2,value)
 
-end subroutine pmf_pmemd_con_set_shake
+end subroutine pmf_pmemd_cst_set_shake
 
 !===============================================================================
 ! subroutine pmf_pmemd_finalize

@@ -25,7 +25,7 @@
 !    Boston, MA  02110-1301  USA
 !===============================================================================
 
-module con_output
+module cst_output
 
 use pmf_sizes
 use pmf_constants
@@ -33,20 +33,20 @@ use pmf_constants
 contains
 
 !===============================================================================
-! Subroutine:  con_output_open
+! Subroutine:  cst_output_open
 !===============================================================================
 
-subroutine con_output_open
+subroutine cst_output_open
 
     use pmf_utils
     use pmf_dat
-    use con_dat
+    use cst_dat
 
     implicit none
     ! --------------------------------------------------------------------------
 
     ! open output file
-    call pmf_utils_open(CON_OUT,fconout,'R')
+    call pmf_utils_open(CON_OUT,fcstout,'R')
 
     write(CON_OUT,110)
     write(CON_OUT,120)
@@ -58,17 +58,17 @@ subroutine con_output_open
 120 format('# Constrained Dynamics')
 130 format('#===============================================================================')
 
-end subroutine con_output_open
+end subroutine cst_output_open
 
 !===============================================================================
-! Subroutine:  con_output_write_header
+! Subroutine:  cst_output_write_header
 !===============================================================================
 
-subroutine con_output_write_header
+subroutine cst_output_write_header
 
     use pmf_constants
     use pmf_dat
-    use con_dat
+    use cst_dat
 
     implicit none
     integer             :: i,item, nitems
@@ -171,16 +171,16 @@ subroutine con_output_write_header
 40 format(1X,A31)
 45 format(1X,A47)
 
-end subroutine con_output_write_header
+end subroutine cst_output_write_header
 
 !===============================================================================
-! Subroutine: con_output_write
+! Subroutine: cst_output_write
 !===============================================================================
 
-subroutine con_output_write
+subroutine cst_output_write
 
     use pmf_dat
-    use con_dat
+    use cst_dat
 
     implicit none
     integer         :: i,ci,nitems
@@ -289,16 +289,16 @@ subroutine con_output_write
 190 format(1X,E15.8,1X,E15.8)
 200 format(1X,E15.8,1X,E15.8,1X,E15.8)
 
-end subroutine con_output_write
+end subroutine cst_output_write
 
 !===============================================================================
-! Subroutine:  con_output_close
+! Subroutine:  cst_output_close
 !===============================================================================
 
-subroutine con_output_close
+subroutine cst_output_close
 
     use pmf_dat
-    use con_dat
+    use cst_dat
 
     implicit none
     integer             :: i,item, nitems
@@ -474,9 +474,9 @@ subroutine con_output_close
 40 format(1X,A31)
 45 format(1X,A47)
 
-end subroutine con_output_close
+end subroutine cst_output_close
 
 !===============================================================================
 
-end module con_output
+end module cst_output
 

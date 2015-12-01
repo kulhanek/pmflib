@@ -156,7 +156,7 @@ end subroutine pmf_cp2k_init
 ! real(PMFDP)    :: CVELP(3,NAX,NSX)      ! velocities  v_u(t')->??
 ! ! -----------------------------------------------------------------------------
 
-! if( .not. con_enabled ) return
+! if( .not. cst_enabled ) return
 
 ! ! remap cp2k arrays to pmflib arrays
 ! call remap_coords_in(NSP,NAX,NSX,NA,TAUP,tmp_x)
@@ -219,7 +219,7 @@ end subroutine pmf_cp2k_force
 ! real(PMFDP)    :: CVELP(3,NAX,NSX)      ! velocities
 ! ! -----------------------------------------------------------------------------
 
-! if( .not. con_enabled ) return
+! if( .not. cst_enabled ) return
 
 ! ! remap cp2k arrays to pmflib arrays
 ! call remap_coords_in(NSP,NAX,NSX,NA,CVELP,tmp_v)

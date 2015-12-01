@@ -24,7 +24,7 @@
 !    Boston, MA  02110-1301  USA
 !===============================================================================
 
-module con_finalize
+module cst_finalize
 
 use pmf_sizes
 use pmf_constants
@@ -33,20 +33,20 @@ implicit none
 contains
 
 !===============================================================================
-! Subroutine:  con_finalize_method
+! Subroutine:  cst_finalize_method
 !===============================================================================
 
-subroutine con_finalize_method
+subroutine cst_finalize_method
 
- use con_output
- use con_restart
+ use cst_output
+ use cst_restart
 
  implicit none
  ! -----------------------------------------------------------------------------
 
- call con_restart_write
- call con_output_close
+ call cst_restart_write
+ call cst_output_close
 
-end subroutine con_finalize_method
+end subroutine cst_finalize_method
 
-end module con_finalize
+end module cst_finalize

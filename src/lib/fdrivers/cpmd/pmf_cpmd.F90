@@ -237,7 +237,7 @@ subroutine pmf_cpmd_shake(NSP,NAX,NSX,NA,TAUP,CVELP)
     real(PMFDP)    :: CVELP(3,NAX,NSX)     ! velocities  v_u(t')->??
     ! --------------------------------------------------------------------------
 
-    if( .not. con_enabled ) return
+    if( .not. cst_enabled ) return
 
     ! remap cpmd arrays to pmflib arrays
     call remap_coords_in(NSP,NAX,NSX,NA,TAUP,tmp_x)
@@ -315,7 +315,7 @@ subroutine pmf_cpmd_rattle(NSP,NAX,NSX,NA,CVELP)
     real(PMFDP)    :: CVELP(3,NAX,NSX)     ! velocities
     ! --------------------------------------------------------------------------
 
-    if( .not. con_enabled ) return
+    if( .not. cst_enabled ) return
 
     ! remap cpmd arrays to pmflib arrays
     call remap_coords_in(NSP,NAX,NSX,NA,CVELP,tmp_v)

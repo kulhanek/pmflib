@@ -25,7 +25,7 @@
 !    Boston, MA  02110-1301  USA
 !===============================================================================
 
-module con_lambdas
+module cst_lambdas
 
 use pmf_sizes
 use pmf_constants
@@ -34,38 +34,38 @@ implicit none
 contains
 
 !===============================================================================
-! Subroutine:  con_lambdas_calculate
+! Subroutine:  cst_lambdas_calculate
 !===============================================================================
 
-subroutine con_lambdas_calculate
+subroutine cst_lambdas_calculate
 
     use pmf_utils
-    use con_dat
+    use cst_dat
 
     implicit none
     ! --------------------------------------------------------------------------
 
     select case(flambdasolver)
     case(CON_LS_NM)
-        call con_lambdas_calculate_nm(fliter)
+        call cst_lambdas_calculate_nm(fliter)
     case(CON_LS_CM)
-        call con_lambdas_calculate_cm(fliter)
+        call cst_lambdas_calculate_cm(fliter)
     case default
-        call pmf_utils_exit(PMF_OUT,1,'[CON] solver is not implemented!')
+        call pmf_utils_exit(PMF_OUT,1,'[CST] solver is not implemented!')
     end select
 
-end subroutine con_lambdas_calculate
+end subroutine cst_lambdas_calculate
 
 !===============================================================================
-! Subroutine:  con_lambdas_calculate_nm
+! Subroutine:  cst_lambdas_calculate_nm
 !===============================================================================
 
-subroutine con_lambdas_calculate_nm(iter)
+subroutine cst_lambdas_calculate_nm(iter)
 
  use pmf_dat
  use pmf_utils
- use con_dat
- use con_constraints
+ use cst_dat
+ use cst_constraints
 
  implicit none
  integer            :: iter  ! number of iteration to achieve flambdatol
@@ -90,7 +90,7 @@ subroutine con_lambdas_calculate_nm(iter)
  do iter=1,fmaxiter
 
     ! calculate Jacobian matrix ------------------------
-    call con_lambdas_calc_jacobian ! it calculates jac and cv
+    call cst_lambdas_calc_jacobian ! it calculates jac and cv
 
     ! DEBUG
     ! write(*,*) 'A', iter, cv(1)
@@ -101,12 +101,12 @@ subroutine con_lambdas_calculate_nm(iter)
         call dgetrf(NumOfCONs,NumOfCONs,jac,NumOfCONs,indx,info)
         if( info .ne. 0 ) then
             call pmf_utils_exit(PMF_OUT,1,&
-                             '[CON] LU decomposition failed in con_calculate_lambda_nm!')
+                             '[CST] LU decomposition failed in cst_calculate_lambda_nm!')
         end if
         call dgetrs('N',NumOfCONs,1,jac,NumOfCONs,indx,cv,NumOfCONs,info)
         if( info .ne. 0 ) then
             call pmf_utils_exit(PMF_OUT,1, &
-                             '[CON] Solution of LE failed in con_calculate_lambda_nm!')
+                             '[CST] Solution of LE failed in cst_calculate_lambda_nm!')
         end if
     else
         cv(1)=cv(1)/jac(1,1)
@@ -144,27 +144,27 @@ subroutine con_lambdas_calculate_nm(iter)
  end do
 
  ! final derivatives and values
- call con_constraints_calc_fdxp
+ call cst_constraints_calc_fdxp
 
  if( iter .eq. fmaxiter ) then
     call pmf_utils_exit(PMF_OUT,1, &
-                     '[CON] Maximum number of iterations in lambda calculation exceeded!')
+                     '[CST] Maximum number of iterations in lambda calculation exceeded!')
  end if 
 
  return
 
-end subroutine con_lambdas_calculate_nm
+end subroutine cst_lambdas_calculate_nm
 
 !===============================================================================
-! Subroutine:  con_lambdas_calculate_cm
+! Subroutine:  cst_lambdas_calculate_cm
 !===============================================================================
 
-subroutine con_lambdas_calculate_cm(iter)
+subroutine cst_lambdas_calculate_cm(iter)
 
  use pmf_utils
  use pmf_dat
- use con_dat
- use con_constraints
+ use cst_dat
+ use cst_constraints
 
  implicit none
  integer            :: iter  ! number of iteration to achieve flambdatol
@@ -186,7 +186,7 @@ subroutine con_lambdas_calculate_cm(iter)
  end select
 
  ! calculate Jacobian matrix ------------------------
- call con_lambdas_calc_jacobian ! it calculates jac and cv
+ call cst_lambdas_calc_jacobian ! it calculates jac and cv
 
  if ( NumOfCONs .gt. 1 ) then
     ! LU decomposition
@@ -194,7 +194,7 @@ subroutine con_lambdas_calculate_cm(iter)
     call dgetrf(NumOfCONs,NumOfCONs,jac,NumOfCONs,indx,info)
     if( info .ne. 0 ) then
         call pmf_utils_exit(PMF_OUT,1,&
-                            '[CON] LU decomposition failed in con_calculate_lambda_cm!')
+                            '[CST] LU decomposition failed in cst_calculate_lambda_cm!')
     end if
  end if
 
@@ -205,7 +205,7 @@ subroutine con_lambdas_calculate_cm(iter)
         call dgetrs('N',NumOfCONs,1,jac,NumOfCONs,indx,cv,NumOfCONs,info)
         if( info .ne. 0 ) then
             call pmf_utils_exit(PMF_OUT,1, &
-                             '[CON] Solution of LE failed in con_calculate_lambda_cm!')
+                             '[CST] Solution of LE failed in cst_calculate_lambda_cm!')
         end if
     else
         cv(1)=cv(1)/jac(1,1)
@@ -237,26 +237,26 @@ subroutine con_lambdas_calculate_cm(iter)
  end do
 
  ! final derivatives
- call con_constraints_calc_fdxp
+ call cst_constraints_calc_fdxp
 
  if( iter .ge. fmaxiter ) then
     call pmf_utils_exit(PMF_OUT,1, &
-                     '[CON] Maximum number of iterations in lambda calculation exceeded!')
+                     '[CST] Maximum number of iterations in lambda calculation exceeded!')
  end if 
 
  return
 
-end subroutine con_lambdas_calculate_cm
+end subroutine cst_lambdas_calculate_cm
 
 !===============================================================================
-! Subroutine:  con_lambdas_calc_jacobian
+! Subroutine:  cst_lambdas_calc_jacobian
 !===============================================================================
 
-subroutine con_lambdas_calc_jacobian
+subroutine cst_lambdas_calc_jacobian
 
  use pmf_dat
- use con_dat
- use con_constraints
+ use cst_dat
+ use cst_constraints
 
  implicit none
  integer                :: i,ci,j,cj,k
@@ -264,7 +264,7 @@ subroutine con_lambdas_calc_jacobian
  ! ------------------------------------------------------------------------------
 
  ! go throught constraint list and calculate first derivative matrixes and constraint values
- call con_constraints_calc_fdxp
+ call cst_constraints_calc_fdxp
 
  ! complete Jacobian matrix
  do i=1,NumOfCONs
@@ -279,9 +279,9 @@ subroutine con_lambdas_calc_jacobian
     end do
  end do
 
-end subroutine con_lambdas_calc_jacobian
+end subroutine cst_lambdas_calc_jacobian
 
 !===============================================================================
 
-end module con_lambdas
+end module cst_lambdas
 

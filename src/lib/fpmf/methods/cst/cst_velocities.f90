@@ -21,7 +21,7 @@
 !    Boston, MA  02110-1301  USA
 !===============================================================================
 
-module con_velocities
+module cst_velocities
 
 use pmf_sizes
 use pmf_constants
@@ -30,14 +30,14 @@ implicit none
 contains
 
 !===============================================================================
-! Subroutine:  con_velocities_correct_a
+! Subroutine:  cst_velocities_correct_a
 !===============================================================================
 
-subroutine con_velocities_correct_a
+subroutine cst_velocities_correct_a
 
  use pmf_dat
- use con_dat
- use con_constraints
+ use cst_dat
+ use cst_constraints
 
  implicit none
  integer        :: i,ci,k
@@ -51,18 +51,18 @@ subroutine con_velocities_correct_a
     end do
  end do
 
-end subroutine con_velocities_correct_a
+end subroutine cst_velocities_correct_a
 
 !===============================================================================
-! Subroutine:  con_velocities_correct_b
+! Subroutine:  cst_velocities_correct_b
 !===============================================================================
 
-subroutine con_velocities_correct_b
+subroutine cst_velocities_correct_b
 
  use pmf_utils
  use pmf_dat
- use con_dat
- use con_constraints
+ use cst_dat
+ use cst_constraints
 
  implicit none
  integer        :: i,ci,j,cj,k,m,info
@@ -105,11 +105,11 @@ subroutine con_velocities_correct_b
  if( NumOfCONs .gt. 1 ) then
     call dgetrf(NumOfCONs,NumOfCONs,matv,NumOfCONs,indx,info)
     if( info .ne. 0 ) then
-        call pmf_utils_exit(PMF_OUT,1,'[CON] LU decomposition failed in con_correct_velocities_b!')
+        call pmf_utils_exit(PMF_OUT,1,'[CST] LU decomposition failed in cst_correct_velocities_b!')
     end if
     call dgetrs('N',NumOfCONs,1,matv,NumOfCONs,indx,lambdav,NumOfCONs,info)
     if( info .ne. 0 ) then
-        call pmf_utils_exit(PMF_OUT,1,'[CON] Solution of LE failed in con_correct_velocities_b!')
+        call pmf_utils_exit(PMF_OUT,1,'[CST] Solution of LE failed in cst_correct_velocities_b!')
     end if
  else
     lambdav(1) = lambdav(1) / matv(1,1)
@@ -139,13 +139,13 @@ subroutine con_velocities_correct_b
     end do
     if( abs(tmp) .gt. 1e-9 ) then
         write(msg,'(A,E16.6,A)') '(',tmp,'>1e-9)'
-        call pmf_utils_exit(PMF_OUT,1,'[CON] RATTLE convergence was not achived! '//trim(msg))
+        call pmf_utils_exit(PMF_OUT,1,'[CST] RATTLE convergence was not achived! '//trim(msg))
     end if
  end do
 
-end subroutine con_velocities_correct_b
+end subroutine cst_velocities_correct_b
 
 !===============================================================================
 
-end module con_velocities
+end module cst_velocities
 

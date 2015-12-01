@@ -39,7 +39,7 @@ subroutine pmf_control_read_pmflib_group(prm_fin)
     use rst_control
     use abf_control
     use mtd_control
-    use con_control
+    use cst_control
     use stm_control
     use pdrv_control
     use pmf_dat
@@ -74,7 +74,7 @@ subroutine pmf_control_read_pmflib_group(prm_fin)
     call abf_control_read_abf(prm_fin)
     call mtd_control_read_mtd(prm_fin)
     call stm_control_read_stm(prm_fin)
-    call con_control_read_con(prm_fin)
+    call cst_control_read_con(prm_fin)
     call rst_control_read_rst(prm_fin)
 
     write(PMF_OUT,*)
@@ -368,11 +368,11 @@ subroutine pmf_control_read_files(prm_fin)
             call pmf_control_print_stritem_default('fstmdef',fstmdef)
             call pmf_control_print_stritem_default('fstmout',fstmout)
         end if
-        if( con_enabled ) then
+        if( cst_enabled ) then
             write(PMF_OUT,100)
-            call pmf_control_print_stritem_default('fcondef',fcondef)
-            call pmf_control_print_stritem_default('fconout',fconout)
-            call pmf_control_print_stritem_default('fconrst',fconrst)
+            call pmf_control_print_stritem_default('fcstdef',fcstdef)
+            call pmf_control_print_stritem_default('fcstout',fcstout)
+            call pmf_control_print_stritem_default('fcstrst',fcstrst)
         end if
         if( rst_enabled ) then
             write(PMF_OUT,200)
@@ -416,11 +416,11 @@ subroutine pmf_control_read_files(prm_fin)
         call  pmf_control_read_stritem(prm_fin,'fstmdef',fstmdef)
         call  pmf_control_read_stritem(prm_fin,'fstmout',fstmout)
     end if
-    if( con_enabled ) then
+    if( cst_enabled ) then
         write(PMF_OUT,100)
-        call  pmf_control_read_stritem(prm_fin,'fcondef',fcondef)
-        call  pmf_control_read_stritem(prm_fin,'fconout',fconout)
-        call  pmf_control_read_stritem(prm_fin,'fconrst',fconrst)
+        call  pmf_control_read_stritem(prm_fin,'fcstdef',fcstdef)
+        call  pmf_control_read_stritem(prm_fin,'fcstout',fcstout)
+        call  pmf_control_read_stritem(prm_fin,'fcstrst',fcstrst)
     end if
     if( rst_enabled ) then
         write(PMF_OUT,200)
@@ -828,7 +828,7 @@ subroutine pmf_control_read_method_cvs_and_paths(prm_fin)
     use rst_control
     use abf_control
     use mtd_control
-    use con_control
+    use cst_control
     use stm_control
     use pdrv_control
 
@@ -851,8 +851,8 @@ subroutine pmf_control_read_method_cvs_and_paths(prm_fin)
     if( stm_enabled ) then
         call stm_control_read_cvs(prm_fin)
     end if
-    if( con_enabled ) then
-        call con_control_read_cvs(prm_fin)
+    if( cst_enabled ) then
+        call cst_control_read_cvs(prm_fin)
     end if
     if( rst_enabled ) then
         call rst_control_read_cvs(prm_fin)

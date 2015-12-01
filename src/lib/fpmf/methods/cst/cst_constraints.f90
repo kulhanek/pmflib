@@ -25,7 +25,7 @@
 !    Boston, MA  02110-1301  USA
 !===============================================================================
 
-module con_constraints
+module cst_constraints
 
 use pmf_cvs
 
@@ -33,129 +33,129 @@ implicit none
 contains
 
 !===============================================================================
-! Subroutine:  con_constraints_reset_con
+! Subroutine:  cst_constraints_reset_con
 !===============================================================================
 
-subroutine con_constraints_reset_con(con_item)
+subroutine cst_constraints_reset_con(cst_item)
 
-    use con_dat
+    use cst_dat
 
     implicit none
-    type(CVTypeBM)       :: con_item
+    type(CVTypeBM)       :: cst_item
     ! -----------------------------------------------------------------------------
 
-    con_item%cvindx         = 0       ! CV index
-    con_item%mode           = 'C'
-    con_item%cv             => null()
+    cst_item%cvindx         = 0       ! CV index
+    cst_item%mode           = 'C'
+    cst_item%cv             => null()
 
-    con_item%startvalue     = 0.0d0   ! start value
-    con_item%stopvalue      = 0.0d0   ! stop value
-    con_item%value          = 0.0d0   ! current value in time t
+    cst_item%startvalue     = 0.0d0   ! start value
+    cst_item%stopvalue      = 0.0d0   ! stop value
+    cst_item%value          = 0.0d0   ! current value in time t
 
-    con_item%deviation      = 0.0d0   ! deviation between real and value
-    con_item%sdevtot        = 0.0d0   ! total sum of deviation squares
-    con_item%value_set      = .false. ! initial value is user provided
+    cst_item%deviation      = 0.0d0   ! deviation between real and value
+    cst_item%sdevtot        = 0.0d0   ! total sum of deviation squares
+    cst_item%value_set      = .false. ! initial value is user provided
 
-end subroutine con_constraints_reset_con
+end subroutine cst_constraints_reset_con
 
 !===============================================================================
-! Subroutine:  con_constraints_read_con
+! Subroutine:  cst_constraints_read_con
 !===============================================================================
 
-subroutine con_constraints_read_con(prm_fin,con_item)
+subroutine cst_constraints_read_con(prm_fin,cst_item)
 
     use prmfile
     use pmf_utils
-    use con_dat
+    use cst_dat
     use pmf_paths
 
     implicit none
     type(PRMFILE_TYPE),intent(inout)    :: prm_fin
-    type(CVTypeBM)                      :: con_item
+    type(CVTypeBM)                      :: cst_item
     ! --------------------------------------------------------------------------
 
-    if( con_item%cv%pathidx .gt. 0 ) then
-        if( PathList(con_item%cv%pathidx)%path%driven_mode ) then
+    if( cst_item%cv%pathidx .gt. 0 ) then
+        if( PathList(cst_item%cv%pathidx)%path%driven_mode ) then
             write(PMF_OUT,96)
             return
         end if
     end if
 
-    if( prmfile_get_real8_by_key(prm_fin,'value',con_item%value) ) then
-        write(PMF_OUT,90) con_item%value, trim(con_item%cv%get_ulabel())
-        call con_item%cv%conv_to_ivalue(con_item%value)
-        con_item%value_set = .true.
+    if( prmfile_get_real8_by_key(prm_fin,'value',cst_item%value) ) then
+        write(PMF_OUT,90) cst_item%value, trim(cst_item%cv%get_ulabel())
+        call cst_item%cv%conv_to_ivalue(cst_item%value)
+        cst_item%value_set = .true.
     else
         write(PMF_OUT,95)
-        con_item%value_set = .false.
+        cst_item%value_set = .false.
     end if
 
     ! modes -----------------------------------------------------------------------
     ! constant mode by default
-    con_item%mode = 'C'
+    cst_item%mode = 'C'
 
-    if( prmfile_get_real8_by_key(prm_fin,'change_to',con_item%stopvalue) ) then
-        con_item%mode = 'V'
-        write(PMF_OUT,100) con_item%stopvalue, trim(con_item%cv%get_ulabel())
-        call con_item%cv%conv_to_ivalue(con_item%stopvalue)
+    if( prmfile_get_real8_by_key(prm_fin,'change_to',cst_item%stopvalue) ) then
+        cst_item%mode = 'V'
+        write(PMF_OUT,100) cst_item%stopvalue, trim(cst_item%cv%get_ulabel())
+        call cst_item%cv%conv_to_ivalue(cst_item%stopvalue)
     end if
 
-    if( prmfile_get_real8_by_key(prm_fin,'increment',con_item%stopvalue) ) then
-        if( con_item%mode .eq. 'V' ) then
+    if( prmfile_get_real8_by_key(prm_fin,'increment',cst_item%stopvalue) ) then
+        if( cst_item%mode .eq. 'V' ) then
             call pmf_utils_exit(PMF_OUT,1,'change_to and increment keywords cannot be used together!')
         end if
-        con_item%mode = 'I'
-        write(PMF_OUT,110) con_item%stopvalue, trim(con_item%cv%get_ulabel())
-        call con_item%cv%conv_to_ivalue(con_item%stopvalue)
+        cst_item%mode = 'I'
+        write(PMF_OUT,110) cst_item%stopvalue, trim(cst_item%cv%get_ulabel())
+        call cst_item%cv%conv_to_ivalue(cst_item%stopvalue)
     end if
 
     return
 
  90 format('   ** Constrained value  :',E16.7,' [',A,'] (user specified)')
- 95 format('   ** Constrained value  : value from input coordinates or CON restart file')
+ 95 format('   ** Constrained value  : value from input coordinates or CST restart file')
  96 format('   ** Constrained value  : controlled by path subsystem')
 100 format('   ** Change to value    :',E16.7' [',A,']')
 110 format('   ** Increment value    :',E16.7' [',A,']')
 115 format('   ** Control file       :',A) 
 
-end subroutine con_constraints_read_con
+end subroutine cst_constraints_read_con
 
 !===============================================================================
-! Subroutine:  con_constraints_con_info
+! Subroutine:  cst_constraints_cst_info
 !===============================================================================
 
-subroutine con_constraints_con_info(con_item)
+subroutine cst_constraints_cst_info(cst_item)
 
-    use con_dat
+    use cst_dat
     use pmf_paths
 
     implicit none
-    type(CVTypeBM)     :: con_item
+    type(CVTypeBM)     :: cst_item
     ! --------------------------------------------------------------------------
 
-    write(PMF_OUT,70) trim(con_item%cv%name)
-    write(PMF_OUT,80) trim(con_item%cv%ctype)
+    write(PMF_OUT,70) trim(cst_item%cv%name)
+    write(PMF_OUT,80) trim(cst_item%cv%ctype)
 
-    if( con_item%mode .eq. 'P' ) then
-        write(PMF_OUT,105) trim(PathList(con_item%cv%pathidx)%path%name)
+    if( cst_item%mode .eq. 'P' ) then
+        write(PMF_OUT,105) trim(PathList(cst_item%cv%pathidx)%path%name)
     end if
 
-    write(PMF_OUT,90)  con_item%cv%get_rvalue(con_item%value), &
-                       trim(con_item%cv%get_ulabel())
-    write(PMF_OUT,100) con_item%cv%get_rvalue(CVContext%CVsValues(con_item%cvindx)), &
-                       trim(con_item%cv%get_ulabel())
+    write(PMF_OUT,90)  cst_item%cv%get_rvalue(cst_item%value), &
+                       trim(cst_item%cv%get_ulabel())
+    write(PMF_OUT,100) cst_item%cv%get_rvalue(CVContext%CVsValues(cst_item%cvindx)), &
+                       trim(cst_item%cv%get_ulabel())
 
-    select case(con_item%mode)
+    select case(cst_item%mode)
     case ('I','V')
-        write(PMF_OUT,110) con_item%cv%get_rvalue(con_item%startvalue), &
-                           trim(con_item%cv%get_ulabel())
-        write(PMF_OUT,120) con_item%cv%get_rvalue(con_item%stopvalue - con_item%startvalue), &
-                           trim(con_item%cv%get_ulabel())
-        write(PMF_OUT,130) con_item%cv%get_rvalue(con_item%stopvalue), &
-                           trim(con_item%cv%get_ulabel())
+        write(PMF_OUT,110) cst_item%cv%get_rvalue(cst_item%startvalue), &
+                           trim(cst_item%cv%get_ulabel())
+        write(PMF_OUT,120) cst_item%cv%get_rvalue(cst_item%stopvalue - cst_item%startvalue), &
+                           trim(cst_item%cv%get_ulabel())
+        write(PMF_OUT,130) cst_item%cv%get_rvalue(cst_item%stopvalue), &
+                           trim(cst_item%cv%get_ulabel())
     case ('S')
-        write(PMF_OUT,110) con_item%cv%get_rvalue(con_item%startvalue), &
-                           trim(con_item%cv%get_ulabel())
+        write(PMF_OUT,110) cst_item%cv%get_rvalue(cst_item%startvalue), &
+                           trim(cst_item%cv%get_ulabel())
     end select
 
     return
@@ -171,130 +171,130 @@ subroutine con_constraints_con_info(con_item)
 120 format('    ** Increment value   : ',E16.7,' [',A,']')
 130 format('    ** Final value       : ',E16.7,' [',A,']')
 
-end subroutine con_constraints_con_info
+end subroutine cst_constraints_cst_info
 
 !===============================================================================
-! Subroutine:  con_constraints_init_all
+! Subroutine:  cst_constraints_init_all
 !===============================================================================
 
-subroutine con_constraints_init_all
+subroutine cst_constraints_init_all
 
-    use con_dat
+    use cst_dat
 
     implicit none
     integer            :: i
     ! --------------------------------------------------------------------------
 
     do i=1,NumOfCONs
-        call con_constraints_con_init(CONList(i))
+        call cst_constraints_cst_init(CONList(i))
     end do
 
-end subroutine con_constraints_init_all
+end subroutine cst_constraints_init_all
 
 !===============================================================================
-! Subroutine:  con_constraints_con_init
+! Subroutine:  cst_constraints_cst_init
 !===============================================================================
 
-subroutine con_constraints_con_init(con_item)
+subroutine cst_constraints_cst_init(cst_item)
 
     use pmf_dat
-    use con_dat
+    use cst_dat
     use pmf_paths
 
     implicit none
-    type(CVTypeBM)     :: con_item
+    type(CVTypeBM)     :: cst_item
     ! --------------------------------------------------------------------------
 
     ! get initial value only for constraints specified by user
-    if( con_item%value_set .neqv. .true. ) then
-        con_item%value = CVContext%CVsValues(con_item%cvindx)
+    if( cst_item%value_set .neqv. .true. ) then
+        cst_item%value = CVContext%CVsValues(cst_item%cvindx)
     end if
 
-    if( con_item%mode .eq. 'S' ) then
-        con_item%value = con_item%control_values(1)
+    if( cst_item%mode .eq. 'S' ) then
+        cst_item%value = cst_item%control_values(1)
     end if
 
-    con_item%startvalue = con_item%value
-    con_item%deviation  = 0.0
-    con_item%sdevtot    = 0.0
+    cst_item%startvalue = cst_item%value
+    cst_item%deviation  = 0.0
+    cst_item%sdevtot    = 0.0
 
     ! correct increment and stop value -----------------------------------------------
-    if( con_item%mode .eq. 'I' ) then
-        con_item%stopvalue = con_item%startvalue + con_item%stopvalue
+    if( cst_item%mode .eq. 'I' ) then
+        cst_item%stopvalue = cst_item%startvalue + cst_item%stopvalue
     end if
 
-    if( con_item%cv%pathidx .gt. 0 ) then
-        if( PathList(con_item%cv%pathidx)%path%driven_mode ) then
-            con_item%mode = 'P'
+    if( cst_item%cv%pathidx .gt. 0 ) then
+        if( PathList(cst_item%cv%pathidx)%path%driven_mode ) then
+            cst_item%mode = 'P'
         end if
     end if
 
     return
 
-end subroutine con_constraints_con_init
+end subroutine cst_constraints_cst_init
 
 !===============================================================================
-! Subroutine:  con_constraints_increment
+! Subroutine:  cst_constraints_increment
 !===============================================================================
 
-subroutine con_constraints_increment
+subroutine cst_constraints_increment
 
-    use con_dat
+    use cst_dat
 
     implicit none
     integer            :: i
     ! --------------------------------------------------------------------------
 
     do i=1,NumOfCONs
-        call con_constraints_con_increment(CONList(i))
+        call cst_constraints_cst_increment(CONList(i))
     end do
 
-end subroutine con_constraints_increment
+end subroutine cst_constraints_increment
 
 !===============================================================================
-! Subroutine:  con_constraints_increment_all
+! Subroutine:  cst_constraints_increment_all
 !===============================================================================
 
-subroutine con_constraints_con_increment(con_item)
+subroutine cst_constraints_cst_increment(cst_item)
 
-    use con_dat
+    use cst_dat
     use pmf_dat
     use pmf_paths
 
     implicit none
-    type(CVTypeBM)     :: con_item
+    type(CVTypeBM)     :: cst_item
     ! --------------------------------------------------------------------------
 
     ! value changes programmatically by managed path
-    if( con_item%mode .eq. 'P' ) then
-        con_item%value = pmf_paths_get_rpos(con_item%cvindx)
+    if( cst_item%mode .eq. 'P' ) then
+        cst_item%value = pmf_paths_get_rpos(cst_item%cvindx)
         return
     end if
 
-    if( con_item%mode .eq. 'C' ) return  ! no change of constraint
+    if( cst_item%mode .eq. 'C' ) return  ! no change of constraint
 
     if( (fstep .lt. 0) .or. (fstep .gt. fnstlim) ) return
 
-    if( con_item%mode .eq. 'S' ) then
+    if( cst_item%mode .eq. 'S' ) then
         ! set corresponding value
-        con_item%value = con_item%control_values(fstep)
+        cst_item%value = cst_item%control_values(fstep)
     else
         ! incrementation is in linear mode
-        con_item%value = con_item%startvalue + (con_item%stopvalue - con_item%startvalue)*fstep/fnstlim
+        cst_item%value = cst_item%startvalue + (cst_item%stopvalue - cst_item%startvalue)*fstep/fnstlim
     end if
 
     return
 
-end subroutine con_constraints_con_increment
+end subroutine cst_constraints_cst_increment
 
 !===============================================================================
-! Subroutine:  con_constraints_calc_fdxp
+! Subroutine:  cst_constraints_calc_fdxp
 !===============================================================================
 
-subroutine con_constraints_calc_fdxp
+subroutine cst_constraints_calc_fdxp
 
     use pmf_dat
-    use con_dat
+    use cst_dat
     use pmf_timers
 
     implicit none
@@ -309,25 +309,25 @@ subroutine con_constraints_calc_fdxp
         CVList(i)%cv%processed = .false.
     end do
 
-    ! timer cannot be in con_constraints_calc_fdxp_cvitem
+    ! timer cannot be in cst_constraints_calc_fdxp_cvitem
     ! which is called recursively
     call pmf_timers_start_timer(PMFLIB_CVS_TIMER)
 
     do i=1,NumOfCONs
         ci = CONList(i)%cvindx
-        call con_constraints_calc_fdxp_cvitem(ci)
+        call cst_constraints_calc_fdxp_cvitem(ci)
         cv(i) = get_deviation(CONList(i)%cv,CONList(i)%value,CVContextP%CVsValues(ci))
     end do
 
     call pmf_timers_stop_timer(PMFLIB_CVS_TIMER)
 
-end subroutine con_constraints_calc_fdxp
+end subroutine cst_constraints_calc_fdxp
 
 !===============================================================================
-! Subroutine:  con_constraints_calc_fdxp_cvitem
+! Subroutine:  cst_constraints_calc_fdxp_cvitem
 !===============================================================================
 
-recursive subroutine con_constraints_calc_fdxp_cvitem(ci)
+recursive subroutine cst_constraints_calc_fdxp_cvitem(ci)
 
     use pmf_dat
 
@@ -348,7 +348,7 @@ recursive subroutine con_constraints_calc_fdxp_cvitem(ci)
         ! first dependent CVs
         if( associated(CVList(ci)%cv%algebraicidxs) ) then
             do i=1,size(CVList(ci)%cv%algebraicidxs)
-                call con_constraints_calc_fdxp_cvitem(CVList(ci)%cv%algebraicidxs(i))
+                call cst_constraints_calc_fdxp_cvitem(CVList(ci)%cv%algebraicidxs(i))
             end do
         end if
         ! then the CV
@@ -356,50 +356,50 @@ recursive subroutine con_constraints_calc_fdxp_cvitem(ci)
         CVList(ci)%cv%processed = .true.
     end if
 
-end subroutine con_constraints_calc_fdxp_cvitem
+end subroutine cst_constraints_calc_fdxp_cvitem
 
 !===============================================================================
 
 !===============================================================================
-! Subroutine:  con_constraints_read_control_file
+! Subroutine:  cst_constraints_read_control_file
 !===============================================================================
 
-subroutine con_constraints_read_control_file(con_item)
+subroutine cst_constraints_read_control_file(cst_item)
 
     use pmf_dat
     use pmf_utils
-    use con_dat
+    use cst_dat
 
     implicit none
-    type(CVTypeBM)     :: con_item
+    type(CVTypeBM)     :: cst_item
     ! ----------------------------------------------
     integer            :: alloc_failed, ios
     integer            :: i
     ! --------------------------------------------------------------------------
 
     ! test if control file exists
-    if( .not. pmf_utils_fexist(fconctr) ) then
-        write(PMF_OUT,10) trim(fconctr)
-        call pmf_utils_exit(PMF_OUT,1,'fconctr file does not exist!')
+    if( .not. pmf_utils_fexist(fcstctr) ) then
+        write(PMF_OUT,10) trim(fcstctr)
+        call pmf_utils_exit(PMF_OUT,1,'fcstctr file does not exist!')
     end if
 
     ! open control file
-    call pmf_utils_open(CON_CTR,fconctr,'O')
+    call pmf_utils_open(CON_CTR,fcstctr,'O')
 
-    ! allocate con_item%control_values
-    allocate(con_item%control_values(fnstlim), stat = alloc_failed)
+    ! allocate cst_item%control_values
+    allocate(cst_item%control_values(fnstlim), stat = alloc_failed)
 
     if ( alloc_failed .ne. 0 ) then
-         call pmf_utils_exit(PMF_OUT,1,'[CON] Unable to allocate memory for control_values!')
+         call pmf_utils_exit(PMF_OUT,1,'[CST] Unable to allocate memory for control_values!')
     end if
 
     ! read data from control_file
     ios = 0
     do i=1,fnstlim
-       read(CON_CTR,*,iostat=ios) con_item%control_values(i)
+       read(CON_CTR,*,iostat=ios) cst_item%control_values(i)
        if ( ios .ne. 0 ) then
-            write(PMF_OUT,20) trim(fconctr), i-1, fnstlim
-            call pmf_utils_exit(PMF_OUT,1,'[CON] There is not enough data in fconctr file!')
+            write(PMF_OUT,20) trim(fcstctr), i-1, fnstlim
+            call pmf_utils_exit(PMF_OUT,1,'[CST] There is not enough data in fcstctr file!')
        end if
     end do
 
@@ -407,11 +407,11 @@ subroutine con_constraints_read_control_file(con_item)
 
     return
 
- 10 format('[CON] fconctr file (',A,') does not exist!')
- 20 format('[CON] fconctr file (',A,') has less number of data (',I8,') than fnstlim (',I8,')!')
+ 10 format('[CST] fcstctr file (',A,') does not exist!')
+ 20 format('[CST] fcstctr file (',A,') has less number of data (',I8,') than fnstlim (',I8,')!')
 
-end subroutine con_constraints_read_control_file
+end subroutine cst_constraints_read_control_file
 
 !===============================================================================
 
-end module con_constraints
+end module cst_constraints

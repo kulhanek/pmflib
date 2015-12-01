@@ -24,7 +24,7 @@
 !    Boston, MA  02110-1301  USA
 !===============================================================================
 
-module con_control
+module cst_control
 
 use pmf_sizes
 use pmf_constants
@@ -33,22 +33,22 @@ implicit none
 contains
 
 !===============================================================================
-! Subroutine:  con_control_read_con
+! Subroutine:  cst_control_read_con
 !===============================================================================
 
-subroutine con_control_read_con(prm_fin)
+subroutine cst_control_read_con(prm_fin)
 
     use prmfile
     use pmf_utils
     use pmf_dat
-    use con_dat
-    use con_init
+    use cst_dat
+    use cst_init
 
     implicit none
     type(PRMFILE_TYPE),intent(inout)   :: prm_fin
     ! --------------------------------------------------------------------------
 
-    call con_init_dat
+    call cst_init_dat
 
     write(PMF_OUT,'(/,a)') '--- [con] ----------------------------------------------------------------------'
 
@@ -66,7 +66,7 @@ subroutine con_control_read_con(prm_fin)
 
     ! process options from [metadyn] section
     if( .not. prmfile_get_integer_by_key(prm_fin,'fmode',fmode) ) then
-        call pmf_utils_exit(PMF_OUT,1,'[CON] fmode item is mandatory in this section')
+        call pmf_utils_exit(PMF_OUT,1,'[CST] fmode item is mandatory in this section')
     else
         write(PMF_OUT,10) fmode
     end if
@@ -108,9 +108,9 @@ subroutine con_control_read_con(prm_fin)
     end if
 
     if(prmfile_get_integer_by_key(prm_fin,'flambdasolver', flambdasolver) ) then
-        write(PMF_OUT,76) flambdasolver, trim(con_init_get_lsolver_name(flambdasolver))
+        write(PMF_OUT,76) flambdasolver, trim(cst_init_get_lsolver_name(flambdasolver))
     else
-        write(PMF_OUT,77) flambdasolver, trim(con_init_get_lsolver_name(flambdasolver))
+        write(PMF_OUT,77) flambdasolver, trim(cst_init_get_lsolver_name(flambdasolver))
     end if
 
     if(prmfile_get_real8_by_key(prm_fin,'flambdatol', flambdatol) ) then
@@ -127,10 +127,10 @@ subroutine con_control_read_con(prm_fin)
 
     ! check input parameters ------------------------------------------------------
     if( flambdasolver .ne. 0 .and. flambdasolver .ne. 1 ) then
-        call pmf_utils_exit(PMF_OUT,1,'[CON] flambdasolver has to be 0 or 1!')
+        call pmf_utils_exit(PMF_OUT,1,'[CST] flambdasolver has to be 0 or 1!')
     end if
 
-    con_enabled = fmode .gt. 0
+    cst_enabled = fmode .gt. 0
 
     return
 
@@ -152,19 +152,19 @@ subroutine con_control_read_con(prm_fin)
  90 format ('fmaxiter      = ',i12)
  95 format ('fmaxiter      = ',i12,'                                           (default)')
 
-end subroutine con_control_read_con
+end subroutine cst_control_read_con
 
 !===============================================================================
-! Subroutine:  con_control_read_cvs
+! Subroutine:  cst_control_read_cvs
 !===============================================================================
 
-subroutine con_control_read_cvs(prm_fin)
+subroutine cst_control_read_cvs(prm_fin)
 
     use prmfile
     use pmf_utils
     use pmf_dat
-    use con_dat
-    use con_init
+    use cst_dat
+    use cst_init
 
     implicit none
     type(PRMFILE_TYPE),intent(inout)       :: prm_fin
@@ -174,57 +174,57 @@ subroutine con_control_read_cvs(prm_fin)
     ! --------------------------------------------------------------------------
 
     write(PMF_OUT,*)
-    call pmf_utils_heading(PMF_OUT,'{CON}',':')
+    call pmf_utils_heading(PMF_OUT,'{CST}',':')
     write(PMF_OUT,*)
 
     ! get name of group
-    if( fcondef(1:1) .eq. '{' ) then
-        grpname = fcondef(2:len_trim(fcondef)-1)
+    if( fcstdef(1:1) .eq. '{' ) then
+        grpname = fcstdef(2:len_trim(fcstdef)-1)
          write(PMF_OUT,110) grpname
         ! open goup with name from metadef
         if( .not. prmfile_open_group(prm_fin,trim(grpname)) ) then
             write(PMF_OUT,130)
-            con_enabled = .false.
+            cst_enabled = .false.
             return
         end if
-        call con_control_read_cvs_from_group(prm_fin)
+        call cst_control_read_cvs_from_group(prm_fin)
     else
-        write(PMF_OUT,120) trim(fcondef)
+        write(PMF_OUT,120) trim(fcstdef)
 
         call prmfile_init(locprm_fin)
 
-        if( .not. prmfile_read(locprm_fin,fcondef) ) then
-            call pmf_utils_exit(PMF_OUT,1,'[CON] Unable to load file: ' // trim(fcondef) // '!')
+        if( .not. prmfile_read(locprm_fin,fcstdef) ) then
+            call pmf_utils_exit(PMF_OUT,1,'[CST] Unable to load file: ' // trim(fcstdef) // '!')
         end if
 
-        call con_control_read_cvs_from_group(locprm_fin)
+        call cst_control_read_cvs_from_group(locprm_fin)
 
         call prmfile_clear(locprm_fin)
     end if
 
-    ! init constrained atom arrays for CON
-    call con_init_con_atoms
+    ! init constrained atom arrays for CST
+    call cst_init_cst_atoms
 
     return
 
 110 format('Constraints are read from group: ',A)
 120 format('Constraints are read from file : ',A)
-130 format(' >> No {CON} group was specified - disabling constrained dynamics!')
+130 format(' >> No {CST} group was specified - disabling constrained dynamics!')
 
-end subroutine con_control_read_cvs
+end subroutine cst_control_read_cvs
 
 !===============================================================================
-! Subroutine:  con_control_read_cvs_from_group
+! Subroutine:  cst_control_read_cvs_from_group
 !===============================================================================
 
-subroutine con_control_read_cvs_from_group(prm_fin)
+subroutine cst_control_read_cvs_from_group(prm_fin)
 
     use prmfile
     use pmf_utils
     use pmf_dat
     use cv_common
-    use con_dat
-    use con_constraints
+    use cst_dat
+    use cst_constraints
 
     implicit none
     type(PRMFILE_TYPE),intent(inout)    :: prm_fin
@@ -241,7 +241,7 @@ subroutine con_control_read_cvs_from_group(prm_fin)
     if( NumOfCONs .le. 0 ) then
         ! on CV in current or specified group
         fmode = 0
-        con_enabled = .false.
+        cst_enabled = .false.
         write(PMF_OUT,100)
         return
     end if
@@ -252,11 +252,11 @@ subroutine con_control_read_cvs_from_group(prm_fin)
     allocate(CONList(NumOfCONs), stat = alloc_failed)
 
     if ( alloc_failed .ne. 0 ) then
-        call pmf_utils_exit(PMF_OUT,1,'[CON] Unable to allocate memory for constraint data!')
+        call pmf_utils_exit(PMF_OUT,1,'[CST] Unable to allocate memory for constraint data!')
     end if
 
     do i=1,NumOfCONs
-        call con_constraints_reset_con(CONList(i))
+        call cst_constraints_reset_con(CONList(i))
     end do
 
     ! enumerate sections ----------------------------
@@ -269,17 +269,17 @@ subroutine con_control_read_cvs_from_group(prm_fin)
         write(PMF_OUT,130) i
         if( resname .ne. 'CV' ) then
             call pmf_utils_exit(PMF_OUT,1, &
-                 '[CON] Illegal section name ['//trim(resname)//'] - only [CV] is allowed!')
+                 '[CST] Illegal section name ['//trim(resname)//'] - only [CV] is allowed!')
         end if
         if( .not. prmfile_get_string_by_key(prm_fin,'name',cvname)) then
-            call pmf_utils_exit(PMF_OUT,1,'[CON] CV name is not provided!')
+            call pmf_utils_exit(PMF_OUT,1,'[CST] CV name is not provided!')
         end if
         write(PMF_OUT,140) trim(cvname)
 
         CONList(i)%cvindx = cv_common_find_cv(cvname)
         CONList(i)%cv     => CVList(CONList(i)%cvindx)%cv
 
-        call con_constraints_read_con(prm_fin,CONList(i))
+        call cst_constraints_read_con(prm_fin,CONList(i))
 
         eresult = prmfile_next_section(prm_fin)
         i = i + 1
@@ -289,7 +289,7 @@ subroutine con_control_read_cvs_from_group(prm_fin)
     do i=1,NumOfCONs
         do j=i+1,NumOfCONs
             if( CONList(i)%cvindx .eq. CONList(j)%cvindx ) then
-                call pmf_utils_exit(PMF_OUT,1,'[CON] Two different constraints share the same general collective variable!')
+                call pmf_utils_exit(PMF_OUT,1,'[CST] Two different constraints share the same general collective variable!')
             end if
         end do
     end do
@@ -301,9 +301,9 @@ subroutine con_control_read_cvs_from_group(prm_fin)
 130 format('== Reading constraint #',I4.4)
 140 format('   Collective variable name : ',a)
 
-end subroutine con_control_read_cvs_from_group
+end subroutine cst_control_read_cvs_from_group
 
 !===============================================================================
 
-end module con_control
+end module cst_control
 

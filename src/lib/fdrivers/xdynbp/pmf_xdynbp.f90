@@ -130,7 +130,7 @@ subroutine pmf_xdynbp_init(ax,amass)
     ! init methods
     call pmf_init_pmf_methods
 
-    if( con_enabled .or. rst_enabled .or. mtd_enabled .or. abf_enabled .or. mon_enabled ) then
+    if( cst_enabled .or. rst_enabled .or. mtd_enabled .or. abf_enabled .or. mon_enabled ) then
        ! call pmf_init_profiling
     end if
 
@@ -194,7 +194,7 @@ subroutine pmf_xdynbp_constraints(x)
     real(DP)            :: x(:,:)  ! positions in t+dt
     ! -------------------------------------------------------------------
 
-    if( .not. con_enabled ) return
+    if( .not. cst_enabled ) return
 
     call pmf_timers_start_timer(PMFLIB_TIMER)
         call pmf_core_lf_shake(x)
@@ -205,26 +205,26 @@ subroutine pmf_xdynbp_constraints(x)
 end subroutine pmf_xdynbp_constraints
 
 !===============================================================================
-! Subroutine: pmf_xdynbp_con_checkatom
+! Subroutine: pmf_xdynbp_cst_checkatom
 !===============================================================================
 
-logical function pmf_xdynbp_con_checkatom(atomid)
+logical function pmf_xdynbp_cst_checkatom(atomid)
 
     use pmf_dat
-    use con_shake
+    use cst_shake
 
     implicit none
     integer    :: atomid
     ! --------------------------------------------------------------------------
 
-    pmf_xdynbp_con_checkatom = .false.
-    if( .not. con_enabled ) return
+    pmf_xdynbp_cst_checkatom = .false.
+    if( .not. cst_enabled ) return
 
-    pmf_xdynbp_con_checkatom = con_shake_checkatom(atomid)
+    pmf_xdynbp_cst_checkatom = cst_shake_checkatom(atomid)
 
     return
 
-end function pmf_xdynbp_con_checkatom
+end function pmf_xdynbp_cst_checkatom
 
 !===============================================================================
 ! Subroutine:  pmf_xdynbp_num_of_cons
@@ -232,7 +232,7 @@ end function pmf_xdynbp_con_checkatom
 
 integer function pmf_xdynbp_num_of_cons()
 
-    use con_dat
+    use cst_dat
 
     implicit none
     ! --------------------------------------------------------------------------
@@ -248,14 +248,14 @@ end function pmf_xdynbp_num_of_cons
 subroutine pmf_xdynbp_allocate_shake(num)
 
     use pmf_dat
-    use con_shake
+    use cst_shake
 
     implicit none
     integer    :: num ! number of shake constraints
     ! --------------------------------------------------------------------------
 
-    if( .not. con_enabled ) return
-    call con_shake_allocate(num)
+    if( .not. cst_enabled ) return
+    call cst_shake_allocate(num)
 
     return
 
@@ -268,7 +268,7 @@ end subroutine pmf_xdynbp_allocate_shake
 subroutine pmf_xdynbp_set_shake(id,at1,at2,value)
 
     use pmf_dat
-    use con_shake
+    use cst_shake
 
     implicit none
     integer        :: id       ! id of constraint
@@ -277,9 +277,9 @@ subroutine pmf_xdynbp_set_shake(id,at1,at2,value)
     real(PMFDP)    :: value    ! value of DS constraint
     ! --------------------------------------------------------------------------
 
-    if( .not. con_enabled ) return
+    if( .not. cst_enabled ) return
 
-    call con_shake_set(id,at1,at2,value)
+    call cst_shake_set(id,at1,at2,value)
 
     return
 

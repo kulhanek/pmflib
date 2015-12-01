@@ -127,20 +127,20 @@ SET(PMF_ABF_CORE_SRC
         methods/abf/abf_gprocess.f90
         )
 
-# constraint dynamics ----------------------------------------------------------
+# constrained dynamics ----------------------------------------------------------
 
-SET(PMF_CON_CORE_SRC
-        methods/con/con_dat.f90
-        methods/con/con_init.F90
-        methods/con/con_constraints.f90
-        methods/con/con_control.F90
-        methods/con/con_output.f90
-        methods/con/con_restart.f90
-        methods/con/con_core.f90
-        methods/con/con_lambdas.f90
-        methods/con/con_velocities.f90
-        methods/con/con_shake.f90
-        methods/con/con_finalize.f90
+SET(PMF_CST_CORE_SRC
+        methods/cst/cst_dat.f90
+        methods/cst/cst_init.F90
+        methods/cst/cst_constraints.f90
+        methods/cst/cst_control.F90
+        methods/cst/cst_output.f90
+        methods/cst/cst_restart.f90
+        methods/cst/cst_core.f90
+        methods/cst/cst_lambdas.f90
+        methods/cst/cst_velocities.f90
+        methods/cst/cst_shake.f90
+        methods/cst/cst_finalize.f90
         )
 
 # metadynamics -----------------------------------------------------------------
@@ -159,7 +159,7 @@ SET(PMF_MTD_CORE_SRC
         methods/mtd/mtd_grid.f90
         )
 
-# restraint dynamics -----------------------------------------------------------
+# restrained dynamics -----------------------------------------------------------
 
 SET(PMF_RST_CORE_SRC
         methods/rst/rst_dat.f90
@@ -216,7 +216,7 @@ SET(FPMF_SRC
         ${PMF_CVS_SRC}
         ${PMF_GP_SRC}
         ${PMF_ABF_CORE_SRC}
-        ${PMF_CON_CORE_SRC}
+        ${PMF_CST_CORE_SRC}
         ${PMF_MTD_CORE_SRC}
         ${PMF_RST_CORE_SRC}
         ${PMF_STM_CORE_SRC}

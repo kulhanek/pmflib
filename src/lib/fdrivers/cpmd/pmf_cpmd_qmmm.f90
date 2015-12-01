@@ -196,7 +196,7 @@ subroutine pmf_cpmd_shake_qmmm(NTAT,NSAT,NDAT,NAX,NSX,CPAT,CPSP,TAUP,CVELP)
     real(PMFDP)    :: CVELP(3,NAX,NSX)     ! velocities
     ! --------------------------------------------------------------------------
 
-    if( .not. con_enabled ) return
+    if( .not. cst_enabled ) return
 
     ! remap cpmd arrays to pmflib arrays
     call remap_qmmm_coords_in(NTAT,NSAT,NDAT,NAX,NSX,CPAT,CPSP,TAUP,tmp_x)
@@ -280,7 +280,7 @@ subroutine pmf_cpmd_rattle_qmmm(NTAT,NSAT,NDAT,NAX,NSX,CPAT,CPSP,CVELP)
     real(PMFDP)    :: CVELP(3,NAX,NSX)     ! velocities
     ! --------------------------------------------------------------------------
 
-    if( .not. con_enabled ) return
+    if( .not. cst_enabled ) return
 
     ! remap cpmd arrays to pmflib arrays
     call remap_qmmm_coords_in(NTAT,NSAT,NDAT,NAX,NSX,CPAT,CPSP,CVELP,tmp_v)

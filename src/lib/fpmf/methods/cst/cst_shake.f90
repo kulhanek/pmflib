@@ -24,7 +24,7 @@
 !    Boston, MA  02110-1301  USA
 !===============================================================================
 
-module con_shake
+module cst_shake
 
 use pmf_sizes
 use pmf_constants
@@ -33,13 +33,13 @@ implicit none
 contains
 
 !===============================================================================
-! logical function con_shake_checkatom(atomid)
+! logical function cst_shake_checkatom(atomid)
 !===============================================================================
 
-logical function con_shake_checkatom(atomid)
+logical function cst_shake_checkatom(atomid)
 
     use pmf_dat
-    use con_dat
+    use cst_dat
 
     implicit none
     integer    :: atomid
@@ -49,29 +49,29 @@ logical function con_shake_checkatom(atomid)
 
     do i=1,NumOfConAtoms
         if( ConAtoms(i) .eq. atomid ) then
-            con_shake_checkatom = .true.
+            cst_shake_checkatom = .true.
             if( fdebug ) then
-                write(PMF_DEBUG+fmytaskid,*) 'con_shake_checkatom-> conflict ',atomid
+                write(PMF_DEBUG+fmytaskid,*) 'cst_shake_checkatom-> conflict ',atomid
             end if
             return
         end if
     end do
 
-    con_shake_checkatom = .false.
+    cst_shake_checkatom = .false.
 
     return
 
-end function con_shake_checkatom
+end function cst_shake_checkatom
 
 !===============================================================================
-! Function:  con_shake_allocate
+! Function:  cst_shake_allocate
 !===============================================================================
 
-subroutine con_shake_allocate(num)
+subroutine cst_shake_allocate(num)
 
  use pmf_utils
  use pmf_dat
- use con_dat
+ use cst_dat
 
  implicit none
  integer    :: num ! number of shake constraints
@@ -98,16 +98,16 @@ subroutine con_shake_allocate(num)
 
 return
 
-end subroutine con_shake_allocate
+end subroutine cst_shake_allocate
 
 !===============================================================================
-! Function:  con_shake_set
+! Function:  cst_shake_set
 !===============================================================================
 
-subroutine con_shake_set(id,at1,at2,value)
+subroutine cst_shake_set(id,at1,at2,value)
 
  use pmf_dat
- use con_dat
+ use cst_dat
 
  implicit none
  integer        :: id       ! id of constraint
@@ -122,9 +122,9 @@ subroutine con_shake_set(id,at1,at2,value)
 
 return
 
-end subroutine con_shake_set
+end subroutine cst_shake_set
 
 !===============================================================================
 
-end module con_shake
+end module cst_shake
 

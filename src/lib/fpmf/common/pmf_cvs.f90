@@ -60,7 +60,7 @@ type CVType
     logical                     :: gradforanycrd    ! is gradient available for any coordinates?
     logical                     :: isalgebraic      ! this CV combines other CVs
     integer,pointer             :: algebraicidxs(:) ! which CV indexes are used in algebra
-    logical                     :: processed        ! used by CON - see con_constraints_calc_fdxp
+    logical                     :: processed        ! used by CST - see cst_constraints_calc_fdxp
 
     contains
         ! executive methods

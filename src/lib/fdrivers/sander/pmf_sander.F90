@@ -387,7 +387,7 @@ subroutine pmf_sander_constraints(anatom,x,modified)
     ! --------------------------------------------------------------------------
 
     modified = .false.
-    if( .not. con_enabled ) return
+    if( .not. cst_enabled ) return
 
     call pmf_timers_start_timer(PMFLIB_TIMER)
     call pmf_core_lf_shake(x)
@@ -447,7 +447,7 @@ subroutine pmf_sander_update_xv_mpi(anatom,updated,x,v,temp,bathtemp)
     ! broadcast updated
     call mpi_bcast(updated, 1, mpi_logical, 0, mpi_comm_world, ierr)
     if( ierr .ne. MPI_SUCCESS ) then
-        call pmf_utils_exit(PMF_OUT, 1,'[CON] Unable to broadcast the value of updated!')
+        call pmf_utils_exit(PMF_OUT, 1,'[CST] Unable to broadcast the value of updated!')
     end if
 
     ! update data if necessary
@@ -547,7 +547,7 @@ subroutine pmf_sander_constraints_mpi(anatom,x,modified)
     ! --------------------------------------------------------------------------
 
     modified = .false.
-    if( .not. con_enabled ) return
+    if( .not. cst_enabled ) return
 
     if(fmaster) then
         call pmf_timers_start_timer(PMFLIB_TIMER)
@@ -581,13 +581,13 @@ end subroutine pmf_sander_constraints_mpi
 #endif
 
 !===============================================================================
-! Subroutine: pmf_sander_con_init_collisions
+! Subroutine: pmf_sander_cst_init_collisions
 !===============================================================================
 
-subroutine pmf_sander_con_init_collisions(ntc,nbt,ifstwt,ib,jb,conp)
+subroutine pmf_sander_cst_init_collisions(ntc,nbt,ifstwt,ib,jb,conp)
 
  use pmf_dat
- use con_shake
+ use cst_shake
  use pmf_sizes
  use pmf_core
  use pmf_utils
@@ -603,7 +603,7 @@ subroutine pmf_sander_con_init_collisions(ntc,nbt,ifstwt,ib,jb,conp)
  integer        :: ll, i, j, num
  ! -----------------------------------------------------------------------------
 
- if( .not. con_enabled ) return
+ if( .not. cst_enabled ) return
  if( .not. fmaster ) return ! only master can init shake constraint in collision
  if( ntc .eq. 1 ) return    ! no SHAKE
 
@@ -618,12 +618,12 @@ subroutine pmf_sander_con_init_collisions(ntc,nbt,ifstwt,ib,jb,conp)
     i = ib(ll)/3+1
     j  = jb(ll)/3+1
     if( ifstwt(ll) == 1 ) then
-        if( con_shake_checkatom(i) .or. con_shake_checkatom(j) ) then
+        if( cst_shake_checkatom(i) .or. cst_shake_checkatom(j) ) then
             call pmf_utils_exit(PMF_OUT,1,'Water atom cannot be a part of PMFLib constraint!')
         end if
     end if
-    if( (con_shake_checkatom(i) .or. con_shake_checkatom(j)) .and. &
-        (.not. (con_shake_checkatom(i) .and. con_shake_checkatom(j))) ) then
+    if( (cst_shake_checkatom(i) .or. cst_shake_checkatom(j)) .and. &
+        (.not. (cst_shake_checkatom(i) .and. cst_shake_checkatom(j))) ) then
        num = num + 1
        cycle
     end if
@@ -632,16 +632,16 @@ subroutine pmf_sander_con_init_collisions(ntc,nbt,ifstwt,ib,jb,conp)
  if( num .eq. 0 ) return    ! nothing in collision
 
  ! set SHAKE constraints in collisions
- call con_shake_allocate(num)
+ call cst_shake_allocate(num)
 
  num = 1
  do ll = 1,nbt
     if (ifstwt(ll) == 1) cycle
     i  = ib(ll)/3+1
     j  = jb(ll)/3+1
-    if( (con_shake_checkatom(i) .or. con_shake_checkatom(j)) .and. &
-        (.not. (con_shake_checkatom(i) .and. con_shake_checkatom(j))) ) then
-       call con_shake_set(num,i,j,conp(ll))
+    if( (cst_shake_checkatom(i) .or. cst_shake_checkatom(j)) .and. &
+        (.not. (cst_shake_checkatom(i) .and. cst_shake_checkatom(j))) ) then
+       call cst_shake_set(num,i,j,conp(ll))
        num = num + 1
        cycle
     end if
@@ -649,29 +649,29 @@ subroutine pmf_sander_con_init_collisions(ntc,nbt,ifstwt,ib,jb,conp)
 
  return
 
-end subroutine pmf_sander_con_init_collisions
+end subroutine pmf_sander_cst_init_collisions
 
 !===============================================================================
-! Subroutine: pmf_sander_con_checkatom
+! Subroutine: pmf_sander_cst_checkatom
 !===============================================================================
 
-logical function pmf_sander_con_checkatom(atomid)
+logical function pmf_sander_cst_checkatom(atomid)
 
     use pmf_dat
-    use con_shake
+    use cst_shake
 
     implicit none
     integer    :: atomid
     ! --------------------------------------------------------------------------
 
-    pmf_sander_con_checkatom = .false.
-    if( .not. con_enabled ) return
+    pmf_sander_cst_checkatom = .false.
+    if( .not. cst_enabled ) return
 
-    pmf_sander_con_checkatom = con_shake_checkatom(atomid)
+    pmf_sander_cst_checkatom = cst_shake_checkatom(atomid)
 
     return
 
-end function pmf_sander_con_checkatom
+end function pmf_sander_cst_checkatom
 
 !===============================================================================
 ! subroutine pmf_sander_finalize

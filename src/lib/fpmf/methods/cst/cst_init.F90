@@ -24,7 +24,7 @@
 !    Boston, MA  02110-1301  USA
 !===============================================================================
 
-module con_init
+module cst_init
 
 use pmf_sizes
 use pmf_constants
@@ -33,36 +33,36 @@ implicit none
 contains
 
 !===============================================================================
-! Subroutine:  con_init_method
+! Subroutine:  cst_init_method
 !===============================================================================
 
-subroutine con_init_method
+subroutine cst_init_method
 
-    use con_output
-    use con_restart
-    use con_constraints
+    use cst_output
+    use cst_restart
+    use cst_constraints
 
     implicit none
     ! --------------------------------------------------------------------------
 
-    call con_init_core
+    call cst_init_core
     ! we need first output then restart (writes info to output)
-    call con_output_open
-    call con_restart_read
-    call con_constraints_init_all
+    call cst_output_open
+    call cst_restart_read
+    call cst_constraints_init_all
     ! print header need value from restart file
-    call con_init_print_header
-    call con_output_write_header
+    call cst_init_print_header
+    call cst_output_write_header
 
-end subroutine con_init_method
+end subroutine cst_init_method
 
 !===============================================================================
-! Subroutine:  con_init_dat
+! Subroutine:  cst_init_dat
 !===============================================================================
 
-subroutine con_init_dat
+subroutine cst_init_dat
 
-    use con_dat
+    use cst_dat
 
     implicit none
     ! --------------------------------------------------------------------------
@@ -80,18 +80,18 @@ subroutine con_init_dat
     NumOfSHAKECONs  = 0
     NumOfConAtoms   = 0
 
-end subroutine con_init_dat
+end subroutine cst_init_dat
 
 !===============================================================================
-! Subroutine:  con_init_print_header
+! Subroutine:  cst_init_print_header
 !===============================================================================
 
-subroutine con_init_print_header
+subroutine cst_init_print_header
 
  use prmfile
  use pmf_dat
- use con_dat
- use con_constraints
+ use cst_dat
+ use cst_constraints
 
  implicit none
  integer :: i
@@ -105,7 +105,7 @@ subroutine con_init_print_header
  write(PMF_OUT,120)  ' Cartesian Constraint Dynamics Mode'
  write(PMF_OUT,120)  ' ------------------------------------------------------'
  write(PMF_OUT,130)  ' Constrained dynamics mode (fmode)    : ', fmode
- write(PMF_OUT,125)  ' Constraint definition file (fcondef) : ', trim(fcondef)
+ write(PMF_OUT,125)  ' Constraint definition file (fcstdef) : ', trim(fcstdef)
  write(PMF_OUT,130)  ' Total number of constraints          : ', NumOfCONs
  write(PMF_OUT,130)  ' SHAKE constraints in collisions      : ', NumOfSHAKECONs
  write(PMF_OUT,130)  ' Num of constrained atoms (no SHAKE)  : ', NumOfConAtoms
@@ -113,19 +113,19 @@ subroutine con_init_print_header
  write(PMF_OUT,120)  ' Constraint optimization options:'
  write(PMF_OUT,120)  ' ------------------------------------------------------'
  write(PMF_OUT,140)  ' Lambda solver (flambdasolver)        : ', flambdasolver, &
-                                                                 trim(con_init_get_lsolver_name(flambdasolver))
+                                                                 trim(cst_init_get_lsolver_name(flambdasolver))
  write(PMF_OUT,135)  ' Lambda tolerance (flambdatol)        : ', flambdatol
  write(PMF_OUT,130)  ' Maximum of iteration (fmaxiter)      : ', fmaxiter
  write(PMF_OUT,120)
  write(PMF_OUT,120)  ' Output options:'
  write(PMF_OUT,120)  ' ------------------------------------------------------'
- write(PMF_OUT,125)  ' Output file (fconout)                : ', trim(fconout)
+ write(PMF_OUT,125)  ' Output file (fcstout)                : ', trim(fcstout)
  write(PMF_OUT,130)  ' Sample period (fsample)              : ', fsample
  write(PMF_OUT,130)  ' Print level (fplevel)                : ', fplevel
  write(PMF_OUT,120)
  write(PMF_OUT,120)  ' Restart options:'
  write(PMF_OUT,120)  ' ------------------------------------------------------'
- write(PMF_OUT,125)  ' Restart file (fconrst)               : ', trim(fconrst)
+ write(PMF_OUT,125)  ' Restart file (fcstrst)               : ', trim(fcstrst)
  write(PMF_OUT,125)  ' Restart from previous run (frestart) : ', prmfile_onoff(frestart)
  write(PMF_OUT,130)  ' Accumulators reset (faccurst)        : ', faccurst
  write(PMF_OUT,120)
@@ -137,7 +137,7 @@ subroutine con_init_print_header
 
  do i=1,NumOfCONs-NumOfSHAKECONs
     write(PMF_OUT,150) i
-    call con_constraints_con_info(CONList(i))
+    call cst_constraints_cst_info(CONList(i))
     write(PMF_OUT,120)
  end do
 
@@ -150,7 +150,7 @@ subroutine con_init_print_header
  write(PMF_OUT,120)
  do i=NumOfCONs-NumOfSHAKECONs+1,NumOfCONs
     write(PMF_OUT,150) i
-    call con_constraints_con_info(CONList(i))
+    call cst_constraints_cst_info(CONList(i))
     write(PMF_OUT,120)
  end do
 
@@ -167,15 +167,15 @@ subroutine con_init_print_header
 150 format(' == Constrained collective variable #',I4.4)
 155 format('    ** Name              : ',a)
 
-end subroutine con_init_print_header
+end subroutine cst_init_print_header
 
 !===============================================================================
-! Function:  con_init_get_lsolver_name
+! Function:  cst_init_get_lsolver_name
 !===============================================================================
 
-character(80) function con_init_get_lsolver_name(solver_id)
+character(80) function cst_init_get_lsolver_name(solver_id)
 
-    use con_dat
+    use cst_dat
 
     implicit none
     integer     :: solver_id
@@ -183,28 +183,28 @@ character(80) function con_init_get_lsolver_name(solver_id)
 
     select case(solver_id)
         case(CON_LS_NM)
-            con_init_get_lsolver_name = "Newton method"
+            cst_init_get_lsolver_name = "Newton method"
         case(CON_LS_CM)
-            con_init_get_lsolver_name = "Chord method"
+            cst_init_get_lsolver_name = "Chord method"
         case default
-            con_init_get_lsolver_name = "unknown"
+            cst_init_get_lsolver_name = "unknown"
     end select
 
     return
 
-end function con_init_get_lsolver_name
+end function cst_init_get_lsolver_name
 
 !===============================================================================
-! Subroutine:  con_init_add_shake_cons
+! Subroutine:  cst_init_add_shake_csts
 !===============================================================================
 
-subroutine con_init_add_shake_cons
+subroutine cst_init_add_shake_csts
 
     use pmf_utils
     use pmf_dat
     use cv_ds
-    use con_dat
-    use con_constraints
+    use cst_dat
+    use cst_constraints
     use pmf_unit
 
     implicit none
@@ -221,7 +221,7 @@ subroutine con_init_add_shake_cons
           stat = alloc_failed)
     if( alloc_failed .ne. 0 ) then
         call pmf_utils_exit(PMF_OUT, 1, &
-                        '[CON] Unable to allocate memory for CVList_backup/CONList_backup array!')
+                        '[CST] Unable to allocate memory for CVList_backup/CONList_backup array!')
     end if
 
     CVList_backup(:) = CVList(:)
@@ -235,7 +235,7 @@ subroutine con_init_add_shake_cons
           CONList(NumOfCONs + NumOfSHAKECONs), &
           stat = alloc_failed)
     if( alloc_failed .ne. 0 ) then
-        call pmf_utils_exit(PMF_OUT, 1,'[CON] Unable to allocate memory for CVList/CONList array!')
+        call pmf_utils_exit(PMF_OUT, 1,'[CST] Unable to allocate memory for CVList/CONList array!')
     end if
 
     do i=1,NumOfCVs
@@ -256,7 +256,7 @@ subroutine con_init_add_shake_cons
         allocate(CVTypeDS::CVList(cvid)%cv, &
                  stat = alloc_failed)
         if( alloc_failed .ne. 0 ) then
-            call pmf_utils_exit(PMF_OUT, 1,'[CON] Unable to allocate memory for SHAKE constraint!')
+            call pmf_utils_exit(PMF_OUT, 1,'[CST] Unable to allocate memory for SHAKE constraint!')
         end if
         call CVList(cvid)%cv%reset_cv()
         CVList(cvid)%cv%ctype     = 'DS'
@@ -270,14 +270,14 @@ subroutine con_init_add_shake_cons
                  CVList(cvid)%cv%lindexes(2), &
                  stat = alloc_failed)
         if( alloc_failed .ne. 0 ) then
-            call pmf_utils_exit(PMF_OUT, 1,'[CON] Unable to allocate memory for CVList(i)%grps array!')
+            call pmf_utils_exit(PMF_OUT, 1,'[CST] Unable to allocate memory for CVList(i)%grps array!')
         end if
         CVList(cvid)%cv%grps(1)   = 1
         CVList(cvid)%cv%grps(2)   = 2
         CVList(cvid)%cv%rindexes(1) = SHAKECONList(i)%at1
         CVList(cvid)%cv%rindexes(2) = SHAKECONList(i)%at2
-        ! CON ----------------------------------------
-        call con_constraints_reset_con(CONList(conid))
+        ! CST ----------------------------------------
+        call cst_constraints_reset_con(CONList(conid))
         CONList(conid)%cvindx       = cvid
         CONList(conid)%cv           => CVList(cvid)%cv
         CONList(conid)%mode         = 'C'
@@ -289,17 +289,17 @@ subroutine con_init_add_shake_cons
     NumOfCVs = NumOfCVs + NumOfSHAKECONs
     NumOfCONs = NumOfCONs + NumOfSHAKECONs
 
-end subroutine con_init_add_shake_cons
+end subroutine cst_init_add_shake_csts
 
 !===============================================================================
-! Subroutine:  con_init_con_atoms
+! Subroutine:  cst_init_cst_atoms
 !===============================================================================
 
-subroutine con_init_con_atoms
+subroutine cst_init_cst_atoms
 
     use pmf_utils
     use pmf_dat
-    use con_dat
+    use cst_dat
 
     implicit none
     integer                 :: ci, na, i, j, k, alloc_failed
@@ -319,7 +319,7 @@ subroutine con_init_con_atoms
     allocate(tmp_indexes(na),stat=alloc_failed)
 
     if( alloc_failed .ne. 0 ) then
-        call pmf_utils_exit(PMF_OUT, 1,'[CON] Unable to allocate memory for tmp_indexes array!')
+        call pmf_utils_exit(PMF_OUT, 1,'[CST] Unable to allocate memory for tmp_indexes array!')
     end if
 
     tmp_indexes(:) = 0
@@ -353,7 +353,7 @@ subroutine con_init_con_atoms
     allocate(ConAtoms(NumOfConAtoms),stat=alloc_failed)
 
     if( alloc_failed .ne. 0 ) then
-        call pmf_utils_exit(PMF_OUT, 1,'[CON] Unable to allocate memory for ConAtoms array!')
+        call pmf_utils_exit(PMF_OUT, 1,'[CST] Unable to allocate memory for ConAtoms array!')
     end if
 
     do i=1,NumOfConAtoms
@@ -363,19 +363,19 @@ subroutine con_init_con_atoms
     ! release temporary array
     deallocate(tmp_indexes)
 
-end subroutine con_init_con_atoms
+end subroutine cst_init_cst_atoms
 
 #ifdef MPI
 
 !===============================================================================
-! Subroutine:  con_init_mpi_bcast_constraints
-! this is required for con_shake_checkatom
+! Subroutine:  cst_init_mpi_bcast_constraints
+! this is required for cst_shake_checkatom
 !===============================================================================
 
-subroutine con_init_mpi_bcast_constraints
+subroutine cst_init_mpi_bcast_constraints
 
  use mpi
- use con_dat
+ use cst_dat
  use pmf_utils
  use pmf_dat
 
@@ -392,7 +392,7 @@ subroutine con_init_mpi_bcast_constraints
  ! integers --------------------------------------
  call mpi_bcast(NumOfConAtoms, 1, mpi_integer, 0, mpi_comm_world, ierr)
  if( ierr .ne. MPI_SUCCESS ) then
-    call pmf_utils_exit(PMF_OUT, 1,'[CON] Unable to broadcast the value of NumOfConAtoms!')
+    call pmf_utils_exit(PMF_OUT, 1,'[CST] Unable to broadcast the value of NumOfConAtoms!')
  end if
 
  if( fdebug ) then
@@ -407,29 +407,29 @@ subroutine con_init_mpi_bcast_constraints
     allocate(ConAtoms(NumOfConAtoms),    &
             stat= alloc_failed )
     if( alloc_failed .ne. 0 ) then
-        call pmf_utils_exit(PMF_OUT, 1,'[CON] Unable to allocate ConAtoms!')
+        call pmf_utils_exit(PMF_OUT, 1,'[CST] Unable to allocate ConAtoms!')
     end if
  end if
 
  ! transfer ConAtoms
  call mpi_bcast(ConAtoms, NumOfConAtoms, mpi_integer, 0, mpi_comm_world, ierr)
  if( ierr .ne. MPI_SUCCESS ) then
-    call pmf_utils_exit(PMF_OUT, 1,'[CON] Unable to broadcast the ConAtoms array!')
+    call pmf_utils_exit(PMF_OUT, 1,'[CST] Unable to broadcast the ConAtoms array!')
  end if
 
-end subroutine con_init_mpi_bcast_constraints
+end subroutine cst_init_mpi_bcast_constraints
 
 #endif
 
 !===============================================================================
-! Subroutine:  con_init_core
+! Subroutine:  cst_init_core
 !===============================================================================
 
-subroutine con_init_core
+subroutine cst_init_core
 
  use pmf_utils
  use pmf_dat
- use con_dat
+ use cst_dat
 
  implicit none
  integer      :: alloc_failed
@@ -440,7 +440,7 @@ subroutine con_init_core
 
  if( alloc_failed .ne. 0 ) then
     call pmf_utils_exit(PMF_OUT,1,&
-                     '[CON] Unable to allocate memory for arrays used in LU decomposition!')
+                     '[CST] Unable to allocate memory for arrays used in LU decomposition!')
  end if
 
  ! allocate arrays for lambda calculation ---------------------------------------
@@ -451,7 +451,7 @@ subroutine con_init_core
 
  if( alloc_failed .ne. 0 ) then
     call pmf_utils_exit(PMF_OUT,1,&
-                     '[CON] Unable to allocate memory for arrays used in lambda calculation!')
+                     '[CST] Unable to allocate memory for arrays used in lambda calculation!')
  end if
 
  ! allocate arrays for dF/dx calculation ---------------------------------------
@@ -462,7 +462,7 @@ subroutine con_init_core
 
  if( alloc_failed .ne. 0 ) then
     call pmf_utils_exit(PMF_OUT,1,&
-                     '[CON] Unable to allocate memory for arrays used in lambda calculation!')
+                     '[CST] Unable to allocate memory for arrays used in lambda calculation!')
  end if
 
  isrztotal = 0.0d0
@@ -492,7 +492,7 @@ subroutine con_init_core
 
     if( alloc_failed .ne. 0 ) then
         call pmf_utils_exit(PMF_OUT,1,&
-                         '[CON] Unable to allocate memory for arrays used in velocity corrections!')
+                         '[CST] Unable to allocate memory for arrays used in velocity corrections!')
     end if
 
     lambdav(:) = 0.0d0
@@ -503,8 +503,8 @@ subroutine con_init_core
 
  return
 
-end subroutine con_init_core
+end subroutine cst_init_core
 
 !===============================================================================
 
-end module con_init
+end module cst_init

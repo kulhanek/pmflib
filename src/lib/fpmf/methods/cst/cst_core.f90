@@ -24,7 +24,7 @@
 !    Boston, MA  02110-1301  USA
 !===============================================================================
 
-module con_core
+module cst_core
 
 use pmf_sizes
 use pmf_constants
@@ -33,71 +33,71 @@ implicit none
 contains
 
 !===============================================================================
-! Subroutine:  con_core_main_lf
+! Subroutine:  cst_core_main_lf
 !===============================================================================
 
-subroutine con_core_main_lf
+subroutine cst_core_main_lf
 
-    use con_constraints
-    use con_lambdas
-    use con_output
+    use cst_constraints
+    use cst_lambdas
+    use cst_output
 
     implicit none
     ! --------------------------------------------------------------------------
 
-    call con_constraints_increment
-    call con_lambdas_calculate
-    call con_core_analyze
-    call con_output_write
+    call cst_constraints_increment
+    call cst_lambdas_calculate
+    call cst_core_analyze
+    call cst_output_write
 
-end subroutine con_core_main_lf
+end subroutine cst_core_main_lf
 
 !===============================================================================
-! Subroutine:  con_core_main_vv_shake
+! Subroutine:  cst_core_main_vv_shake
 !===============================================================================
 
-subroutine con_core_main_vv_shake
+subroutine cst_core_main_vv_shake
 
-    use con_lambdas
-    use con_output
-    use con_velocities
+    use cst_lambdas
+    use cst_output
+    use cst_velocities
 
     implicit none
     ! --------------------------------------------------------------------------
 
-    call con_lambdas_calculate
-    call con_velocities_correct_a
-    call con_core_analyze
-    call con_output_write
+    call cst_lambdas_calculate
+    call cst_velocities_correct_a
+    call cst_core_analyze
+    call cst_output_write
 
-end subroutine con_core_main_vv_shake
+end subroutine cst_core_main_vv_shake
 
 !===============================================================================
-! Subroutine:  con_core_main_vv_rattle
+! Subroutine:  cst_core_main_vv_rattle
 !===============================================================================
 
-subroutine con_core_main_vv_rattle()
+subroutine cst_core_main_vv_rattle()
 
-    use con_constraints
-    use con_velocities
+    use cst_constraints
+    use cst_velocities
 
     implicit none
     ! --------------------------------------------------------------------------
 
-    call con_constraints_increment
-    call con_velocities_correct_b
+    call cst_constraints_increment
+    call cst_velocities_correct_b
 
-end subroutine con_core_main_vv_rattle
+end subroutine cst_core_main_vv_rattle
 
 !===============================================================================
-! Subroutine:  con_core_analyze
+! Subroutine:  cst_core_analyze
 !===============================================================================
 
-subroutine con_core_analyze
+subroutine cst_core_analyze
 
  use pmf_utils
  use pmf_dat
- use con_dat
+ use cst_dat
 
  implicit none
  integer                :: i,ci,j,cj,k,info
@@ -165,7 +165,7 @@ subroutine con_core_analyze
     ! LU decomposition
     call dgetrf(NumOfCONs,NumOfCONs,fz,NumOfCONs,indx,info)
     if( info .ne. 0 ) then
-        call pmf_utils_exit(PMF_OUT,1,'[CON] LU decomposition failed in con_main!')
+        call pmf_utils_exit(PMF_OUT,1,'[CST] LU decomposition failed in cst_main!')
     end if
     fzdet = 1.0d0
     ! and finaly determinant
@@ -198,9 +198,9 @@ subroutine con_core_analyze
     end if
  end do
 
-end subroutine con_core_analyze
+end subroutine cst_core_analyze
 
 !===============================================================================
 
-end module con_core
+end module cst_core
 

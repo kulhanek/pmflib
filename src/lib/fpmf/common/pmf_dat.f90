@@ -79,7 +79,7 @@ integer,allocatable         :: RIndexes(:)      ! translation from local (PMFLib
 
 ! methods ----------------------------------------------------------------------
 logical                     :: pmf_enabled      ! if any method is on
-logical                     :: con_enabled
+logical                     :: cst_enabled
 logical                     :: rst_enabled
 logical                     :: mtd_enabled
 logical                     :: abf_enabled
@@ -112,10 +112,10 @@ character(PMF_MAX_PATH)     :: fcvsdef      = '{CVS}'
 character(PMF_MAX_PATH)     :: fpathsdef    = '{PATHS}'
 
 ! constraint dynamics -----------------------------
-character(PMF_MAX_PATH)     :: fcondef      = '{CON}'
-character(PMF_MAX_PATH)     :: fconout      = '_con.out'
-character(PMF_MAX_PATH)     :: fconrst      = '_con.rst'
-character(PMF_MAX_PATH)     :: fconctr
+character(PMF_MAX_PATH)     :: fcstdef      = '{CST}'
+character(PMF_MAX_PATH)     :: fcstout      = '_cst.out'
+character(PMF_MAX_PATH)     :: fcstrst      = '_cst.rst'
+character(PMF_MAX_PATH)     :: fcstctr
 
 ! restraint dynamics -------------------------------
 character(PMF_MAX_PATH)     :: frstdef      = '{RST}'

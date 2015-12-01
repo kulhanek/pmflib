@@ -294,13 +294,13 @@ end subroutine run_coord_test_identity
 ! Subroutine: numerical_derivatives
 !===============================================================================
 
-subroutine numerical_derivatives(con_item,x,value,fd)
+subroutine numerical_derivatives(cst_item,x,value,fd)
 
  use test_coords_dat
  use pmf_cvs
 
  implicit none
- class(CVType)      :: con_item
+ class(CVType)      :: cst_item
  real(PMFDP)        :: x(:,:)
  real(PMFDP)        :: value
  real(PMFDP)        :: fd(:,:)
@@ -311,17 +311,17 @@ subroutine numerical_derivatives(con_item,x,value,fd)
  ! -----------------------------------------------------------------------------
 
  ! calculate value
- call con_item%calculate_cv(x,tmp_context)
+ call cst_item%calculate_cv(x,tmp_context)
  value = tmp_context%CVsValues(1)
 
  ! calculate derivatives
  fd(:,:) = 0.0d0
 
- do j=1,con_item%natoms
+ do j=1,cst_item%natoms
     ! was atom already processed? this is necessary because groups can overlap
     processed = .false.
     do k=1,j-1
-        if( con_item%lindexes(j) .eq. con_item%lindexes(k) ) then
+        if( cst_item%lindexes(j) .eq. cst_item%lindexes(k) ) then
             processed = .true.
             exit
         end if
@@ -330,19 +330,19 @@ subroutine numerical_derivatives(con_item,x,value,fd)
         do k=1,3
             ! right point ----------------------------------------
             loc_x = x
-            loc_x(k,con_item%lindexes(j)) = loc_x(k,con_item%lindexes(j)) + num_diff
+            loc_x(k,cst_item%lindexes(j)) = loc_x(k,cst_item%lindexes(j)) + num_diff
 
-            call con_item%calculate_cv(loc_x,tmp_context)
+            call cst_item%calculate_cv(loc_x,tmp_context)
             mv1 = tmp_context%CVsValues(1)
 
             ! left point ----------------------------------------
             loc_x = lx
-            loc_x(k,con_item%lindexes(j)) = loc_x(k,con_item%lindexes(j)) - num_diff
+            loc_x(k,cst_item%lindexes(j)) = loc_x(k,cst_item%lindexes(j)) - num_diff
 
-            call con_item%calculate_cv(loc_x,tmp_context)
+            call cst_item%calculate_cv(loc_x,tmp_context)
             mv2 = tmp_context%CVsValues(1)
 
-            fd(k,con_item%lindexes(j)) = fd(k,con_item%lindexes(j)) + (mv1 - mv2)/(2.0*num_diff)
+            fd(k,cst_item%lindexes(j)) = fd(k,cst_item%lindexes(j)) + (mv1 - mv2)/(2.0*num_diff)
 
         end do
     end if

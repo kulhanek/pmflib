@@ -62,7 +62,7 @@ subroutine pmf_init_dat
     fexit_mdloop = 0
 
     pmf_enabled = .false.
-    con_enabled = .false.
+    cst_enabled = .false.
     rst_enabled = .false.
     mtd_enabled = .false.
     abf_enabled = .false.
@@ -167,10 +167,10 @@ subroutine pmf_init_bcast_dat_mpi
         call pmf_utils_exit(PMF_OUT, 1,'[PMF] Unable to broadcast RIndexes array!')
     end if
 
-    ! transfer con_enabled status
-    call mpi_bcast(con_enabled, 1, mpi_logical, 0, mpi_comm_world, ierr)
+    ! transfer cst_enabled status
+    call mpi_bcast(cst_enabled, 1, mpi_logical, 0, mpi_comm_world, ierr)
     if( ierr .ne. MPI_SUCCESS ) then
-        call pmf_utils_exit(PMF_OUT, 1,'[PMF] Unable to broadcast con_enabled variable!')
+        call pmf_utils_exit(PMF_OUT, 1,'[PMF] Unable to broadcast cst_enabled variable!')
     end if
 
 end subroutine pmf_init_bcast_dat_mpi
@@ -274,7 +274,7 @@ subroutine pmf_init_pmf
 
     use pmf_dat
     use pmf_utils
-    use con_init
+    use cst_init
 
     implicit none
     integer                :: i,j,k,l,itmp,ai,tot_atoms
@@ -285,8 +285,8 @@ subroutine pmf_init_pmf
 
     NumOfLAtoms = 0
 
-    ! update CV and CON according to SHAKE constraints
-    call con_init_add_shake_cons
+    ! update CV and CST according to SHAKE constraints
+    call cst_init_add_shake_csts
 
     !---------------------------------------------------------------------------
     ! calculate total number of atoms including duplicity records
@@ -418,7 +418,7 @@ subroutine pmf_init_pmf
         endif
     end if
 
-    if( con_enabled ) then
+    if( cst_enabled ) then
         ! allocate arrays used by bluemoon
         allocate(CrdP(3,NumOfLAtoms), &
                   CVContextP%CVsValues(NumOfCVs), &
@@ -427,7 +427,7 @@ subroutine pmf_init_pmf
                   stat=alloc_failed)
 
         if( alloc_failed .ne. 0 ) then
-            call pmf_utils_exit(PMF_OUT, 1,'[PMFLIB] Unable to allocate memory for CON arrays!')
+            call pmf_utils_exit(PMF_OUT, 1,'[PMFLIB] Unable to allocate memory for CST arrays!')
         endif
 
         CVContextP%CVsFrc = 0.0d0  ! lam81
@@ -438,7 +438,7 @@ subroutine pmf_init_pmf
                       stat=alloc_failed)
 
             if( alloc_failed .ne. 0 ) then
-                call pmf_utils_exit(PMF_OUT, 1,'[PMFLIB] Unable to allocate memory for CON array!')
+                call pmf_utils_exit(PMF_OUT, 1,'[PMFLIB] Unable to allocate memory for CST array!')
             endif
         end if
     end if
@@ -456,7 +456,7 @@ subroutine pmf_init_pmf_methods()
     use rst_init
     use abf_init
     use mtd_init
-    use con_init
+    use cst_init
     use stm_init
     use pdrv_init
 
@@ -479,8 +479,8 @@ subroutine pmf_init_pmf_methods()
         call stm_init_method
     end if
 
-    if( con_enabled ) then
-        call con_init_method
+    if( cst_enabled ) then
+        call cst_init_method
     end if
 
     if( rst_enabled ) then
@@ -492,7 +492,7 @@ subroutine pmf_init_pmf_methods()
     end if
 
     pmf_enabled = abf_enabled .or. mtd_enabled .or. stm_enabled &
-               .or. con_enabled .or. rst_enabled .or. mon_enabled .or. pdrv_enabled 
+               .or. cst_enabled .or. rst_enabled .or. mon_enabled .or. pdrv_enabled 
 
 end subroutine pmf_init_pmf_methods
 
