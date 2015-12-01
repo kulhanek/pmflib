@@ -27,7 +27,7 @@ IF(LIBS_SHARED)
                             VERSION ${PMFLIB_VERSION})
     INSTALL(TARGETS
                 pmemd_drv_shared
-            LIBRARY DESTINATION
+            DESTINATION
                 lib/drivers
             )
 ENDIF(LIBS_SHARED)

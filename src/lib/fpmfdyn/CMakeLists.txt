@@ -47,7 +47,7 @@ IF(LIBS_SHARED)
             )
     INSTALL(TARGETS
                 fpmfdyn_shared
-            LIBRARY DESTINATION
+            DESTINATION
                 lib)
 ENDIF(LIBS_SHARED)
 

@@ -28,7 +28,7 @@ IF(LIBS_SHARED)
             )
     INSTALL(TARGETS
                 xdynbp_drv_shared
-            LIBRARY DESTINATION
+            DESTINATION
                 lib/drivers
             )
 ENDIF(LIBS_SHARED)
