@@ -98,6 +98,20 @@ integer                     :: EXTERNAL_TIMER           =  -6
 integer                     :: RE_TIMER                 =  -7
 integer                     :: FINALIZATION_TIMER       =  -8
 
+!-------------------------------------------------------------------------------
+
+interface
+	subroutine pot_ext_energy(x,d,ene)
+    	real(8)            :: x(:,:)
+    	real(8)            :: d(:,:)
+    	real(8)            :: ene
+	end subroutine
+end interface
+
+! ------------------------------------------------------------------------------
+
+procedure(pot_ext_energy),pointer	::	pot_ext_energy_pts => NULL()
+
 ! ------------------------------------------------------------------------------
 
 end module pmfdyn_system_dat

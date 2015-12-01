@@ -33,7 +33,7 @@
 /** \brief multidimensional surface
 */
 
-class CEnergySurface {
+class PMF_PACKAGE CEnergySurface {
 public:
 // constructor and destructor -------------------------------------------------
     CEnergySurface(void);

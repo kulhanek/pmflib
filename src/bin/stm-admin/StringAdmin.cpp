@@ -294,7 +294,7 @@ bool CStringAdmin::TerminateServer(void)
 
     // set random generator
     time_t now = time(NULL);
-    srandom(now);
+    srand(now);
     passphrase.SetLength(PASS_LENGTH);
     int pos = 0;
     int attempts = 0;
@@ -302,9 +302,9 @@ bool CStringAdmin::TerminateServer(void)
         attempts++;
         if( attempts % 1000 == 0 ){
             time_t now = time(NULL);
-            srandom(now);
+            srand(now);
         }
-        char c = random()%(126-33) + 33;
+        char c = rand()%(126-33) + 33;
         if( (c == '*') || (c == '#') || (c == '!') || (c == '"') || (c == '\'') ) continue;
         passphrase[pos++] = c;
     } while(pos < PASS_LENGTH);

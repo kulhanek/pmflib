@@ -32,7 +32,7 @@ extern "C" {
 
 // set number items in cpmf part
 
-void cpmf_abf_client_set_header_(int* ret_st,
+void PMF_PACKAGE cpmf_abf_client_set_header_(int* ret_st,
                                  int* nitems,
                                  int* tot_nbins,
                                  char* energy_unit,
@@ -59,7 +59,7 @@ void cpmf_abf_client_set_header_(int* ret_st,
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void cpmf_abf_client_set_coord_(int* ret_st,
+void PMF_PACKAGE cpmf_abf_client_set_coord_(int* ret_st,
                                 int* id,
                                 char* name,
                                 char* type,
@@ -99,7 +99,7 @@ void cpmf_abf_client_set_coord_(int* ret_st,
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void cpmf_abf_client_reg_by_name_(char* fserver,char* fpassword,
+void PMF_PACKAGE cpmf_abf_client_reg_by_name_(char* fserver,char* fpassword,
                                   int* client_id,
                                   unsigned int fserver_len,
                                   unsigned int fpassword_len)
@@ -132,7 +132,7 @@ void cpmf_abf_client_reg_by_name_(char* fserver,char* fpassword,
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void cpmf_abf_client_reg_by_key_(char* fserverkey,char* fserver,
+void PMF_PACKAGE cpmf_abf_client_reg_by_key_(char* fserverkey,char* fserver,
                                  int* client_id,
                                  unsigned int fserverkey_len,
                                  unsigned int fserver_len)
@@ -164,7 +164,7 @@ void cpmf_abf_client_reg_by_key_(char* fserverkey,char* fserver,
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void cpmf_abf_client_initial_data_(int* ret_st,
+void PMF_PACKAGE cpmf_abf_client_initial_data_(int* ret_st,
                                    int* nisamples,
                                    double* iabfforce,
                                    double* iabfforce2)
@@ -183,7 +183,7 @@ void cpmf_abf_client_initial_data_(int* ret_st,
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void cpmf_abf_client_exchange_data_(int* ret_st,
+void PMF_PACKAGE cpmf_abf_client_exchange_data_(int* ret_st,
                                     int* nisamples,
                                     double* iabfforce,
                                     double* iabfforce2)
@@ -202,7 +202,7 @@ void cpmf_abf_client_exchange_data_(int* ret_st,
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void cpmf_abf_client_unregister_(void)
+void PMF_PACKAGE cpmf_abf_client_unregister_(void)
 {
     ABFClient.UnregisterClient();
 }

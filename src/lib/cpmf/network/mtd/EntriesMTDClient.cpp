@@ -32,7 +32,7 @@ extern "C" {
 
 // set number items in cpmf part
 
-void cpmf_mtd_client_set_header_(int* ret_st,int* nitems)
+void PMF_PACKAGE cpmf_mtd_client_set_header_(int* ret_st,int* nitems)
 {
     int l_nitems = *nitems;
 
@@ -51,7 +51,7 @@ void cpmf_mtd_client_set_header_(int* ret_st,int* nitems)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void cpmf_mtd_client_set_coord_(int* ret_st,
+void PMF_PACKAGE cpmf_mtd_client_set_coord_(int* ret_st,
                                 int* id,
                                 char* type,
                                 char* name,
@@ -90,7 +90,7 @@ void cpmf_mtd_client_set_coord_(int* ret_st,
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void cpmf_mtd_client_reg_by_name_(char* fserver,char* fpassword,
+void PMF_PACKAGE cpmf_mtd_client_reg_by_name_(char* fserver,char* fpassword,
                                   int* client_id,
                                   unsigned int fserver_len,
                                   unsigned int fpassword_len)
@@ -123,7 +123,7 @@ void cpmf_mtd_client_reg_by_name_(char* fserver,char* fpassword,
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void cpmf_mtd_client_reg_by_key_(char* fserverkey,char* fserver,
+void PMF_PACKAGE cpmf_mtd_client_reg_by_key_(char* fserverkey,char* fserver,
                                  int* client_id,
                                  unsigned int fserverkey_len,
                                  unsigned int fserver_len)
@@ -155,7 +155,7 @@ void cpmf_mtd_client_reg_by_key_(char* fserverkey,char* fserver,
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void cpmf_mtd_client_initial_data_(int* ret_st)
+void PMF_PACKAGE cpmf_mtd_client_initial_data_(int* ret_st)
 {
     if(MTDClient.GetInitialData() == false) {
         *ret_st = 1;
@@ -168,7 +168,7 @@ void cpmf_mtd_client_initial_data_(int* ret_st)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void cpmf_mtd_client_exchange_data_(int* ret_st)
+void PMF_PACKAGE cpmf_mtd_client_exchange_data_(int* ret_st)
 {
     if(MTDClient.ExchangeData() == false) {
         *ret_st = 1;
@@ -181,7 +181,7 @@ void cpmf_mtd_client_exchange_data_(int* ret_st)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void cpmf_mtd_client_get_buffer_info_(int* ret_st,
+void PMF_PACKAGE cpmf_mtd_client_get_buffer_info_(int* ret_st,
                                       int* id,
                                       int* level,
                                       int* start,
@@ -209,7 +209,7 @@ void cpmf_mtd_client_get_buffer_info_(int* ret_st,
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void cpmf_mtd_client_add_buffer_data_(int* ret_st,
+void PMF_PACKAGE cpmf_mtd_client_add_buffer_data_(int* ret_st,
                                       int* level,
                                       int* start,
                                       int* num_of_hills,
@@ -246,7 +246,7 @@ void cpmf_mtd_client_add_buffer_data_(int* ret_st,
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void cpmf_mtd_client_get_buffer_data_(int* ret_st,
+void PMF_PACKAGE cpmf_mtd_client_get_buffer_data_(int* ret_st,
                                       int* id,
                                       double* data)
 {
@@ -276,7 +276,7 @@ void cpmf_mtd_client_get_buffer_data_(int* ret_st,
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void cpmf_mtd_client_clear_buf_list_(void)
+void PMF_PACKAGE cpmf_mtd_client_clear_buf_list_(void)
 {
     MTDClient.Deallocate();
 }
@@ -285,7 +285,7 @@ void cpmf_mtd_client_clear_buf_list_(void)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void cpmf_mtd_client_unregister_(void)
+void PMF_PACKAGE cpmf_mtd_client_unregister_(void)
 {
     MTDClient.UnregisterClient();
 }

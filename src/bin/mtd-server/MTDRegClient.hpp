@@ -36,7 +36,7 @@ class CServerCommand;
  *
  */
 
-class PMF_PACKAGE CMTDRegClient : public CRegClient {
+class CMTDRegClient : public CRegClient {
 public:
     CMTDRegClient(const CSmallString& client_name,const CSmallString& job_id);
     virtual ~CMTDRegClient(void);

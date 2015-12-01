@@ -28,16 +28,16 @@
 //------------------------------------------------------------------------------
 
 /// get initial data
-DECLARE_OPERATION(OperationPMF_GetInitialData);
+DECLARE_OPERATION(PMF_PACKAGE,OperationPMF_GetInitialData);
 
 /// exchange data
-DECLARE_OPERATION(OperationPMF_ExchangeData);
+DECLARE_OPERATION(PMF_PACKAGE,OperationPMF_ExchangeData);
 
 /// get data
-DECLARE_OPERATION(OperationPMF_GetData);
+DECLARE_OPERATION(PMF_PACKAGE,OperationPMF_GetData);
 
 /// get data
-DECLARE_OPERATION(OperationPMF_FlushServerData);
+DECLARE_OPERATION(PMF_PACKAGE,OperationPMF_FlushServerData);
 
 //------------------------------------------------------------------------------
 

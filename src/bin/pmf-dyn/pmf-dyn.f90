@@ -23,14 +23,19 @@ program PMFDyn
     use smf_profiling
     use pmf_constants
     use pmfdyn_system
+    use pmfdyn_system_dat
     use pmfdyn_dynamics
     use pmf_utils
+    use pmfdyn_mypotene
 
     implicit none
     character(90),parameter :: PROGNAME = 'pmf-dyn: minimalistic molecular dynamics engine'
     ! --------------------------------------------------------------------------
 
     call pmf_utils_header(PROGNAME)
+    
+    ! main energy engine
+    pot_ext_energy_pts => pot_ext_energy_default
 
     call init_profiling(PMF_OUT,50)
     call init_timers

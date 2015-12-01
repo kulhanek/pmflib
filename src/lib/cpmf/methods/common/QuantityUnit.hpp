@@ -30,7 +30,7 @@
 
 // -----------------------------------------------------------------------------
 
-class CUnitType {
+class PMF_PACKAGE CUnitType {
 public:
     CUnitType(void);
 

@@ -21,6 +21,7 @@
 //     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 // ===============================================================================
 
+#include <PMFMainHeader.hpp>
 #include "Bead.hpp"
 #include <SimpleList.hpp>
 #include <IndexCounter.hpp>
@@ -46,7 +47,7 @@ enum ESTMState {
 
 /// STM enegine
 
-class CBeadList {
+class PMF_PACKAGE CBeadList {
 public:
     CBeadList(void);
 

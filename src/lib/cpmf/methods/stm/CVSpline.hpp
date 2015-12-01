@@ -22,13 +22,14 @@
 //     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 // =============================================================================
 
+#include <PMFMainHeader.hpp>
 #include <XMLElement.hpp>
 #include <SimpleVector.hpp>
 #include <FortranMatrix.hpp>
 
 //------------------------------------------------------------------------------
 
-class CCVSpline {
+class PMF_PACKAGE CCVSpline {
 public:
     CCVSpline(void);
     ~CCVSpline(void);

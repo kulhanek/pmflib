@@ -29,6 +29,7 @@
 #include "StringServer.hpp"
 #include <FileSystem.hpp>
 #include <errno.h>
+#include <unistd.h>
 
 using namespace std;
 

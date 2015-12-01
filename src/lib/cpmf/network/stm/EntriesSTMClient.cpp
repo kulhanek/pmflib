@@ -33,7 +33,7 @@ extern "C" {
 
 // set number items in cpmf part
 
-void cpmf_stm_client_set_header_(int* ret_st,int* nitems)
+void PMF_PACKAGE cpmf_stm_client_set_header_(int* ret_st,int* nitems)
 {
     int l_nitems = *nitems;
 
@@ -53,7 +53,7 @@ void cpmf_stm_client_set_header_(int* ret_st,int* nitems)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void cpmf_stm_client_set_coord_(int* ret_st,
+void PMF_PACKAGE cpmf_stm_client_set_coord_(int* ret_st,
                                 int* id,
                                 char* type,
                                 char* name,
@@ -86,7 +86,7 @@ void cpmf_stm_client_set_coord_(int* ret_st,
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void cpmf_stm_client_reg_by_name_(char* fserver,char* fpassword,
+void PMF_PACKAGE cpmf_stm_client_reg_by_name_(char* fserver,char* fpassword,
                                   int* client_id,
                                   int* bead_id,
                                   unsigned int fserver_len,
@@ -121,7 +121,7 @@ void cpmf_stm_client_reg_by_name_(char* fserver,char* fpassword,
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void cpmf_stm_client_reg_by_key_(char* fserverkey,char* fserver,
+void PMF_PACKAGE cpmf_stm_client_reg_by_key_(char* fserverkey,char* fserver,
                                  int* client_id,
                                  int* bead_id,
                                  unsigned int fserverkey_len,
@@ -162,7 +162,7 @@ void cpmf_stm_client_reg_by_key_(char* fserverkey,char* fserver,
 //real(8)         :: rpmf(*)
 //real(8)         :: rfz(*)
 
-void cpmf_stm_client_exchange_data_(int* ret_st,
+void PMF_PACKAGE cpmf_stm_client_exchange_data_(int* ret_st,
                                     int* mode,
                                     int* isteps,
                                     double* bpos,
@@ -183,7 +183,7 @@ void cpmf_stm_client_exchange_data_(int* ret_st,
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void cpmf_stm_client_unregister_(void)
+void PMF_PACKAGE cpmf_stm_client_unregister_(void)
 {
     STMClient.UnregisterClient();
 }

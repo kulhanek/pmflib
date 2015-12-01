@@ -32,7 +32,7 @@ class CXMLElement;
 
 //------------------------------------------------------------------------------
 
-class CColVariable {
+class PMF_PACKAGE CColVariable {
 public:
     CColVariable(void);
 

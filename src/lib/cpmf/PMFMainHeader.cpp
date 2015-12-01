@@ -37,7 +37,7 @@ extern "C" {
 //------------------------------------------------------------------------------
 //==============================================================================
 
-    void cpmf_print_errors_(void)
+    void PMF_PACKAGE cpmf_print_errors_(void)
     {
         ErrorSystem.PrintErrors();
     }

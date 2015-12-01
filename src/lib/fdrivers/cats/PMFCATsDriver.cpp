@@ -74,7 +74,7 @@ void pmf_cats_finalize_(void);
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void CPMFCATsDriver::BeginInit(CSmallString mdin,int anatom,int anres,
+void PMF_PACKAGE CPMFCATsDriver::BeginInit(CSmallString mdin,int anatom,int anres,
              int antb,double box_a,double box_b,double box_c,
              double box_alpha,double box_beta,double box_gamma)
 {
@@ -92,7 +92,7 @@ void CPMFCATsDriver::BeginInit(CSmallString mdin,int anatom,int anres,
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void CPMFCATsDriver::SetResidue(int idx,CSmallString name,int first_atom)
+void PMF_PACKAGE CPMFCATsDriver::SetResidue(int idx,CSmallString name,int first_atom)
 {
     idx++; // c->fortran indexing
     first_atom++;
@@ -103,7 +103,7 @@ void CPMFCATsDriver::SetResidue(int idx,CSmallString name,int first_atom)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void CPMFCATsDriver::SetAtom(int idx,CSmallString name,CSmallString type)
+void PMF_PACKAGE CPMFCATsDriver::SetAtom(int idx,CSmallString name,CSmallString type)
 {
     idx++; // c->fortran indexing
     pmf_cats_set_atom_(&idx,name.GetBuffer(),type.GetBuffer(),name.GetLength(),type.GetLength());
@@ -113,7 +113,7 @@ void CPMFCATsDriver::SetAtom(int idx,CSmallString name,CSmallString type)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void CPMFCATsDriver::EndInit(int anatom,std::vector<double>& amass,std::vector<double>& xyz)
+void PMF_PACKAGE CPMFCATsDriver::EndInit(int anatom,std::vector<double>& amass,std::vector<double>& xyz)
 {
     pmf_cats_end_init_(&anatom,amass.data(),xyz.data());
 }
@@ -122,7 +122,7 @@ void CPMFCATsDriver::EndInit(int anatom,std::vector<double>& amass,std::vector<d
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void CPMFCATsDriver::SetCoordinates(int numofatoms,double* coords,double a,double b, double c, double alpha, double beta, double gamma)
+void PMF_PACKAGE CPMFCATsDriver::SetCoordinates(int numofatoms,double* coords,double a,double b, double c, double alpha, double beta, double gamma)
 {
     pmf_cats_update_box_(&a,&b,&c,&alpha,&beta,&gamma);
     pmf_cats_update_x_(&numofatoms,coords);
@@ -132,7 +132,7 @@ void CPMFCATsDriver::SetCoordinates(int numofatoms,double* coords,double a,doubl
 //------------------------------------------------------------------------------
 //==============================================================================
 
-int CPMFCATsDriver::GetNumberOfCVs(void)
+int PMF_PACKAGE CPMFCATsDriver::GetNumberOfCVs(void)
 {
    int numofcvs = 0;
    pmf_cats_get_num_of_cvs_(&numofcvs);
@@ -141,7 +141,7 @@ int CPMFCATsDriver::GetNumberOfCVs(void)
 
 //------------------------------------------------------------------------------
 
-double CPMFCATsDriver::GetCVValue(CSmallString name)
+double PMF_PACKAGE CPMFCATsDriver::GetCVValue(CSmallString name)
 {
     double value = 0.0;
     pmf_cats_get_value_(&value,name.GetBuffer(),name.GetLength());
@@ -150,7 +150,7 @@ double CPMFCATsDriver::GetCVValue(CSmallString name)
 
 //------------------------------------------------------------------------------
 
-double CPMFCATsDriver::GetCVValue(int indx)
+double PMF_PACKAGE CPMFCATsDriver::GetCVValue(int indx)
 {
     indx++; // c->fortran indexing
     double value = 0.0;
@@ -160,7 +160,7 @@ double CPMFCATsDriver::GetCVValue(int indx)
 
 //------------------------------------------------------------------------------
 
-CSmallString CPMFCATsDriver::GetCVName(int indx)
+CSmallString PMF_PACKAGE CPMFCATsDriver::GetCVName(int indx)
 {
     indx++; // c->fortran indexing
     CSmallString name;
@@ -173,7 +173,7 @@ CSmallString CPMFCATsDriver::GetCVName(int indx)
 
 //------------------------------------------------------------------------------
 
-CSmallString CPMFCATsDriver::GetCVType(CSmallString name)
+CSmallString PMF_PACKAGE CPMFCATsDriver::GetCVType(CSmallString name)
 {
     CSmallString ctype;
     // FIXME
@@ -185,7 +185,7 @@ CSmallString CPMFCATsDriver::GetCVType(CSmallString name)
 
 //------------------------------------------------------------------------------
 
-CSmallString CPMFCATsDriver::GetCVType(int indx)
+CSmallString PMF_PACKAGE CPMFCATsDriver::GetCVType(int indx)
 {
     indx++; // c->fortran indexing
     CSmallString ctype;
@@ -198,7 +198,7 @@ CSmallString CPMFCATsDriver::GetCVType(int indx)
 
 //------------------------------------------------------------------------------
 
-void CPMFCATsDriver::Finalize(void)
+void PMF_PACKAGE CPMFCATsDriver::Finalize(void)
 {
     pmf_cats_finalize_();
 }

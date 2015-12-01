@@ -40,7 +40,7 @@ enum EESPrinterFormat {
 
 //------------------------------------------------------------------------------
 
-class CESPrinter {
+class PMF_PACKAGE CESPrinter {
 public:
 // constructor and destructor -------------------------------------------------
     CESPrinter(void);

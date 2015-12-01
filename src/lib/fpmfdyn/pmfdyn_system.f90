@@ -373,7 +373,9 @@ subroutine pot_energy
     call pmf_core_lf_update_xv(updated,md_x,md_v,TempA,TempT)
 
     ! calculate external forces ---------------------
-    call pot_ext_energy(md_x,md_d,Epot)
+    if( associated(pot_ext_energy_pts) ) then
+    	call pot_ext_energy_pts(md_x,md_d,Epot)
+    end if	
 
     ! calculate restraints --------------------------
     call potene_restraints(md_x,md_d,Erst)

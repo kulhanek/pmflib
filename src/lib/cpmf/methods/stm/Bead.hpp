@@ -21,6 +21,7 @@
 //     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 // =============================================================================
 
+#include <PMFMainHeader.hpp>
 #include <XMLElement.hpp>
 #include <SimpleVector.hpp>
 #include <FortranMatrix.hpp>
@@ -46,7 +47,7 @@ class CBeadList;
 
 //------------------------------------------------------------------------------
 
-class CBead {
+class PMF_PACKAGE CBead {
 public:
     CBead(void);
 

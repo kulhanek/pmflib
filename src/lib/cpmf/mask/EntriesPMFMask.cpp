@@ -38,7 +38,7 @@ extern "C" {
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void cpmf_mask_topo_init_(int* rtstat,int* natoms,int* nres,int* has_box,
+void PMF_PACKAGE cpmf_mask_topo_init_(int* rtstat,int* natoms,int* nres,int* has_box,
                           double* cbox_x,double* cbox_y,double* cbox_z)
 {
     *rtstat = 0;
@@ -56,7 +56,7 @@ void cpmf_mask_topo_init_(int* rtstat,int* natoms,int* nres,int* has_box,
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void cpmf_mask_topo_load_(int* rtstat,char* name,unsigned int name_len)
+void PMF_PACKAGE cpmf_mask_topo_load_(int* rtstat,char* name,unsigned int name_len)
 {
     *rtstat = 0;
 
@@ -75,7 +75,7 @@ void cpmf_mask_topo_load_(int* rtstat,char* name,unsigned int name_len)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void cpmf_mask_clear_(void)
+void PMF_PACKAGE cpmf_mask_clear_(void)
 {
     PMFMask.AssignTopology(NULL);
     PMFTopology.Clear();
@@ -85,7 +85,7 @@ void cpmf_mask_clear_(void)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void cpmf_mask_set_topo_residue_(int* rtstat,int* index,char* name,int* first_atom,
+void PMF_PACKAGE cpmf_mask_set_topo_residue_(int* rtstat,int* index,char* name,int* first_atom,
                                  unsigned int name_len)
 {
     CSmallString s_name;
@@ -102,7 +102,7 @@ void cpmf_mask_set_topo_residue_(int* rtstat,int* index,char* name,int* first_at
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void cpmf_mask_set_topo_atom_(int* rtstat,int* index,char* name,char* type,
+void PMF_PACKAGE cpmf_mask_set_topo_atom_(int* rtstat,int* index,char* name,char* type,
                               unsigned int name_len,unsigned int type_len)
 {
     CSmallString s_name;
@@ -122,7 +122,7 @@ void cpmf_mask_set_topo_atom_(int* rtstat,int* index,char* name,char* type,
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void cpmf_mask_set_topo_atom_mcrd_(int* rtstat,int* index,
+void PMF_PACKAGE cpmf_mask_set_topo_atom_mcrd_(int* rtstat,int* index,
                                    double* mass, double* x,double* y,double* z)
 {
     *rtstat = 0;
@@ -136,7 +136,7 @@ void cpmf_mask_set_topo_atom_mcrd_(int* rtstat,int* index,
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void cpmf_mask_topo_finalize_(int* rtstat)
+void PMF_PACKAGE cpmf_mask_topo_finalize_(int* rtstat)
 {
     *rtstat = 0;
     PMFTopology.Finalize();
@@ -145,7 +145,7 @@ void cpmf_mask_topo_finalize_(int* rtstat)
 
 //------------------------------------------------------------------------------
 
-void cpmf_mask_get_topo_atom_(int* ret_st,int* idx,char* name,int* resid,
+void PMF_PACKAGE cpmf_mask_get_topo_atom_(int* ret_st,int* idx,char* name,int* resid,
                               char* resname,double* x, double* y, double* z,
                               double* mass,char* type,
                               unsigned int name_len,
@@ -173,7 +173,7 @@ void cpmf_mask_get_topo_atom_(int* ret_st,int* idx,char* name,int* resid,
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void cpmf_mask_natoms_in_mask_(int* rtstat,char* mask,int* natoms,unsigned int mask_len)
+void PMF_PACKAGE cpmf_mask_natoms_in_mask_(int* rtstat,char* mask,int* natoms,unsigned int mask_len)
 {
     CSmallString s_mask;
     s_mask.SetFromFortran(mask,mask_len);
@@ -192,7 +192,7 @@ void cpmf_mask_natoms_in_mask_(int* rtstat,char* mask,int* natoms,unsigned int m
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void cpmf_mask_set_mask_(int* rtstat,char* mask,unsigned int mask_len)
+void PMF_PACKAGE cpmf_mask_set_mask_(int* rtstat,char* mask,unsigned int mask_len)
 {
     CSmallString s_mask;
     s_mask.SetFromFortran(mask,mask_len);
@@ -208,7 +208,7 @@ void cpmf_mask_set_mask_(int* rtstat,char* mask,unsigned int mask_len)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void cpmf_mask_is_atom_selected_(int* rtstat,int* idx,int* sel)
+void PMF_PACKAGE cpmf_mask_is_atom_selected_(int* rtstat,int* idx,int* sel)
 {
     *rtstat = 0;
     *sel = 0;
@@ -229,7 +229,7 @@ void cpmf_mask_is_atom_selected_(int* rtstat,int* idx,int* sel)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void cpmf_mask_print_errors_(void)
+void PMF_PACKAGE cpmf_mask_print_errors_(void)
 {
     ErrorSystem.PrintErrors(stderr);
 }

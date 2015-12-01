@@ -18,7 +18,13 @@
 !     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 ! ==============================================================================
 
-subroutine pot_ext_energy(x,d,ene)
+module pmfdyn_mypotene
+
+contains
+
+! ------------------------------------------------------------------------------
+
+subroutine pot_ext_energy_default(x,d,ene)
 
     use smf_profiling
     use smf_xyzfile_type
@@ -85,7 +91,11 @@ subroutine pot_ext_energy(x,d,ene)
 
     return
 
-end subroutine pot_ext_energy
+end subroutine pot_ext_energy_default
+
+! ------------------------------------------------------------------------------
+
+end module pmfdyn_mypotene
 
 !===============================================================================
 
