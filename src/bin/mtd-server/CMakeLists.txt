@@ -21,6 +21,7 @@ SET(MTD_SERVER_SRC
 
 # final build ------------------------------------------------------------------
 ADD_EXECUTABLE(mtd-server ${MTD_SERVER_SRC})
+ADD_DEPENDENCIES(mtd-server cpmf_shared)
 
 TARGET_LINK_LIBRARIES(mtd-server  ${CPMF_LIBRARIES})
 

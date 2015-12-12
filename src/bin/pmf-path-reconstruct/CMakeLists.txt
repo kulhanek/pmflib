@@ -9,6 +9,7 @@ SET(PMF_PR_SRC
 
 # final build ------------------------------------------------------------------
 ADD_EXECUTABLE(pmf-path-reconstruct ${PMF_PR_SRC})
+ADD_DEPENDENCIES(pmf-path-reconstruct fpmf_shared)
 
 TARGET_LINK_LIBRARIES(pmf-path-reconstruct
         fpmf

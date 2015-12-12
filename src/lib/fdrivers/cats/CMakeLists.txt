@@ -22,6 +22,7 @@ ENDIF(LIBS_STATIC)
 IF(LIBS_SHARED)
 	ADD_DEFINITIONS(-DPMFLIB_BUILDING_DLL)
     ADD_LIBRARY(cats_drv_shared SHARED ${CATS_DRV_SRC})
+    ADD_DEPENDENCIES(cats_drv_shared fpmf_shared)
     TARGET_LINK_LIBRARIES(cats_drv_shared ${FPMF_LIBRARIES}  ${CPMF_LIBRARIES})
     SET_TARGET_PROPERTIES(cats_drv_shared PROPERTIES
                             OUTPUT_NAME fpmfdrv_cats

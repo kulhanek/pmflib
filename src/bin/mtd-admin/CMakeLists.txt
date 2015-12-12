@@ -10,6 +10,7 @@ SET(MTD_ADMIN_SRC
 
 # final build ------------------------------------------------------------------
 ADD_EXECUTABLE(mtd-admin ${MTD_ADMIN_SRC})
+ADD_DEPENDENCIES(mtd-admin cpmf_shared)
 
 TARGET_LINK_LIBRARIES(mtd-admin  ${CPMF_LIBRARIES})
 

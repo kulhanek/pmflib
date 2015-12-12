@@ -12,6 +12,7 @@ SET(TEST_COORDS_SRC
 
 # final build ------------------------------------------------------------------
 ADD_EXECUTABLE(pmf-test-cvs ${TEST_COORDS_SRC})
+ADD_DEPENDENCIES(pmf-test-cvs fpmf_shared)
 
 TARGET_LINK_LIBRARIES(pmf-test-cvs
         fpmf

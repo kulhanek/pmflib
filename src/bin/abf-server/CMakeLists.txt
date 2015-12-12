@@ -20,6 +20,7 @@ SET(ABF_SERVER_SRC
 
 # final build ------------------------------------------------------------------
 ADD_EXECUTABLE(abf-server ${ABF_SERVER_SRC})
+ADD_DEPENDENCIES(abf-server cpmf_shared)
 
 TARGET_LINK_LIBRARIES(abf-server  ${CPMF_LIBRARIES})
 

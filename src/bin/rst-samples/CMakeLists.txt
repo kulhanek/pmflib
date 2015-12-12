@@ -10,6 +10,7 @@ SET(RST_SAMPLES_SRC
 
 # final build ------------------------------------------------------------------
 ADD_EXECUTABLE(rst-samples ${RST_SAMPLES_SRC})
+ADD_DEPENDENCIES(rst-samples cpmf_shared)
 
 TARGET_LINK_LIBRARIES(rst-samples ${CPMF_LIBRARIES})
 

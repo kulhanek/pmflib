@@ -20,6 +20,7 @@ SET(STRING_SERVER_SRC
 
 # final build ------------------------------------------------------------------
 ADD_EXECUTABLE(stm-server ${STRING_SERVER_SRC})
+ADD_DEPENDENCIES(stm-server cpmf_shared)
 
 TARGET_LINK_LIBRARIES(stm-server ${CPMF_LIBRARIES})
 

@@ -10,6 +10,7 @@ SET(PMF_DYN_SRC
 
 # final build ------------------------------------------------------------------
 ADD_EXECUTABLE(pmf-dyn ${PMF_DYN_SRC})
+ADD_DEPENDENCIES(pmf-dyn fpmfdyn_shared fpmf_shared)
 
 IF(PMFLIB_NETWORK)
     TARGET_LINK_LIBRARIES(pmf-dyn

@@ -9,6 +9,7 @@ SET(PMF_GP_SRC
 
 # final build ------------------------------------------------------------------
 ADD_EXECUTABLE(pmf-test-gprocess ${PMF_GP_SRC})
+ADD_DEPENDENCIES(pmf-test-gprocess fpmf_shared)
 
 TARGET_LINK_LIBRARIES(pmf-test-gprocess
         fpmf

@@ -10,6 +10,7 @@ SET(ABF_DERIVATIVES_SRC
 
 # final build ------------------------------------------------------------------
 ADD_EXECUTABLE(abf-derivatives ${ABF_DERIVATIVES_SRC})
+ADD_DEPENDENCIES(abf-derivatives cpmf_shared)
 
 TARGET_LINK_LIBRARIES(abf-derivatives  ${CPMF_LIBRARIES})
 

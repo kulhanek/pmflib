@@ -22,6 +22,7 @@ ENDIF(LIBS_STATIC)
 # create shared library --------------------------------------------------------
 IF(LIBS_SHARED)
     ADD_LIBRARY(cpmd_drv_shared SHARED ${CPMD_DRV_SRC})
+    ADD_DEPENDENCIES(cpmd_drv_shared fpmf_shared)
     TARGET_LINK_LIBRARIES(cpmd_drv_shared ${FPMF_LIBRARIES})
     SET_TARGET_PROPERTIES(cpmd_drv_shared PROPERTIES
                             OUTPUT_NAME fpmfdrv_cpmd

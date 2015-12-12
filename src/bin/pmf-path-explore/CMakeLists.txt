@@ -13,6 +13,7 @@ SET(PMF_EXPLORE_SRC
 
 # final build ------------------------------------------------------------------
 ADD_EXECUTABLE(pmf-path-explore ${PMF_EXPLORE_SRC})
+ADD_DEPENDENCIES(pmf-path-explore fpmf_shared)
 
 TARGET_LINK_LIBRARIES(pmf-path-explore
         fpmf

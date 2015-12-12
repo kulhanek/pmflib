@@ -9,6 +9,7 @@ SET(PMF_PR_SRC
 
 # final build ------------------------------------------------------------------
 ADD_EXECUTABLE(pmf-path-derivatives ${PMF_PR_SRC})
+ADD_DEPENDENCIES(pmf-path-derivatives fpmf_shared)
 
 TARGET_LINK_LIBRARIES(pmf-path-derivatives
         fpmf

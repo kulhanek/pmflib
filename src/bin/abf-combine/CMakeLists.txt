@@ -10,6 +10,7 @@ SET(ABF_COMBINE_SRC
 
 # final build ------------------------------------------------------------------
 ADD_EXECUTABLE(abf-combine ${ABF_COMBINE_SRC})
+ADD_DEPENDENCIES(abf-combine cpmf_shared)
 
 TARGET_LINK_LIBRARIES(abf-combine  ${CPMF_LIBRARIES})
 

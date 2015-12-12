@@ -27,6 +27,7 @@ ENDIF(LIBS_STATIC)
 # create shared library --------------------------------------------------------
 IF(LIBS_SHARED)
     ADD_LIBRARY(fpmfdyn_shared SHARED ${FPMF_DYN_SRC})
+    ADD_DEPENDENCIES(fpmfdyn_shared fpmf_shared)
     SET_TARGET_PROPERTIES(fpmfdyn_shared PROPERTIES
                             OUTPUT_NAME fpmfdyn
                             CLEAN_DIRECT_OUTPUT 1
