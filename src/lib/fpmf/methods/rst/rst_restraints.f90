@@ -449,25 +449,25 @@ subroutine rst_restraints_increment(rst_item)
     real(PMFDP)        :: difference
     ! --------------------------------------------------------------------------
 
-	select case(rst_item%mode)
-		case('P')
-    		! value changes programmatically by managed path
-        	rst_item%target_value = pmf_paths_get_rpos(rst_item%cvindx)
-			return
-		case('C')
-			return	! no change of constant restraint
-		case('W')
-			return  ! no change of wall restraint
-		case('S')
-		    ! set corresponding value
-		    rst_item%target_value = rst_item%control_values(fstep)
-			return
-		case('I')
-		    ! incrementation is in linear mode
-		    difference = rst_item%cv%get_deviation(rst_item%stopvalue,rst_item%startvalue)
-		    rst_item%target_value = rst_item%startvalue + difference * fstep / fnstlim
-		case default
-	end select
+    select case(rst_item%mode)
+        case('P')
+            ! value changes programmatically by managed path
+            rst_item%target_value = pmf_paths_get_rpos(rst_item%cvindx)
+            return
+        case('C')
+            return	! no change of constant restraint
+        case('W')
+            return  ! no change of wall restraint
+        case('S')
+            ! set corresponding value
+            rst_item%target_value = rst_item%control_values(fstep)
+            return
+        case('I','V')
+            ! incrementation is in linear mode
+            difference = rst_item%cv%get_deviation(rst_item%stopvalue,rst_item%startvalue)
+            rst_item%target_value = rst_item%startvalue + difference * fstep / fnstlim
+        case default
+    end select
 
 end subroutine rst_restraints_increment
 

@@ -180,6 +180,76 @@ subroutine pmf_core_lf_force(x,v,f,epot,epmf)
 end subroutine pmf_core_lf_force
 
 !===============================================================================
+! Subroutine:  pmf_core_lf_rstforce
+!===============================================================================
+
+subroutine pmf_core_lf_rstforce(x,f,epot,epmf)
+
+    use pmf_dat
+    use pmf_cvs
+    use pmf_core
+    use mon_output
+    use rst_core
+    use rst_dat
+    use pmf_timers
+
+    implicit none
+    real(PMFDP)    :: x(:,:)       ! position in t
+    real(PMFDP)    :: f(:,:)       ! forces in t
+    real(PMFDP)    :: epot         ! potential energy in t
+    real(PMFDP)    :: epmf         ! energy from PMFLib
+    ! -----------------------------------------------
+    integer        :: i
+    ! --------------------------------------------------------------------------
+
+    epmf = 0.0d0
+
+    if( .not. pmf_enabled ) return
+
+    ! convert potential energy
+    PotEne = epot *EnergyConv
+
+    ! update local data
+    call pmf_core_in_data_xf(x,f)
+
+!-------------------------------------------------
+    call pmf_timers_start_timer(PMFLIB_CVS_TIMER)
+        ! clear previous data
+        CVContext%CVsValues(:) = 0.0d0
+        CVContext%CVsDrvs(:,:,:) = 0.0d0
+
+        ! update CVs
+        do i=1,NumOfCVs
+            call CVList(i)%cv%calculate_cv(Crd,CVContext)
+        end do
+    call pmf_timers_stop_timer(PMFLIB_CVS_TIMER)
+
+!-------------------------------------------------
+    call pmf_timers_start_timer(PMFLIB_METHODS_TIMER)
+
+     if( rst_enabled ) then
+        call pmf_timers_start_timer(PMFLIB_RST_TIMER)
+        call rst_core_main
+        epmf = epmf + TotalRSTEnergy
+        call pmf_timers_stop_timer(PMFLIB_RST_TIMER)
+     end if
+
+     if( mon_enabled ) then
+        call pmf_timers_start_timer(PMFLIB_MON_TIMER)
+        call mon_output_write_output
+        call pmf_timers_stop_timer(PMFLIB_MON_TIMER)
+     end if
+
+    call pmf_timers_stop_timer(PMFLIB_METHODS_TIMER)
+
+    epmf = epmf / EnergyConv
+
+    ! update forces
+    call pmf_core_out_data_f(f)
+
+end subroutine pmf_core_lf_rstforce
+
+!===============================================================================
 ! Subroutine:  pmf_core_lf_shake
 ! leap-frog version
 ! Force(t) -> Shake(t)

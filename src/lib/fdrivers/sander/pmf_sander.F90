@@ -370,6 +370,32 @@ subroutine pmf_sander_force(anatom,x,v,f,epot,epmf)
 end subroutine pmf_sander_force
 
 !===============================================================================
+! subroutine pmf_sander_rstforce
+!===============================================================================
+
+subroutine pmf_sander_rstforce(anatom,x,f,epot,epmf)
+
+    use pmf_sizes
+    use pmf_core_lf
+    use pmf_timers
+
+    implicit none
+    integer        :: anatom       ! number of atoms
+    real(PMFDP)    :: x(3,anatom)
+    real(PMFDP)    :: f(3,anatom)
+    real(PMFDP)    :: epot
+    real(PMFDP)    :: epmf
+    ! --------------------------------------------------------------------------
+
+    call pmf_timers_start_timer(PMFLIB_TIMER)
+    call pmf_core_lf_rstforce(x,f,epot,epmf)
+    call pmf_timers_stop_timer(PMFLIB_TIMER)
+
+    return
+
+end subroutine pmf_sander_rstforce
+
+!===============================================================================
 ! Subroutine: pmf_sander_constraints
 !===============================================================================
 
