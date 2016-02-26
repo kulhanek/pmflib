@@ -1,7 +1,7 @@
 !===============================================================================
 ! PMFLib - Library Supporting Potential of Mean Force Calculations
 !-------------------------------------------------------------------------------
-!    Copyright (C) 2011-2015 Petr Kulhanek, kulhanek@chemi.muni.cz
+!    Copyright (C) 2011-2016 Petr Kulhanek, kulhanek@chemi.muni.cz
 !    Copyright (C) 2013-2015 Letif Mones, lam81@cam.ac.uk
 !    Copyright (C) 2012      Petr Kulhanek, kulhanek@chemi.muni.cz
 !    Copyright (C) 2011      Petr Kulhanek, kulhanek@chemi.muni.cz
@@ -83,6 +83,9 @@ subroutine pmf_alloc_cv_allocate(cv_type,cv_item)
     use cv_cngrf
     use cv_cnsw
     use cv_cngsw
+
+! nucleic acids ---------------------------------
+    use cv_nabo
 
 ! ring puckering ---------------------------------
     use cv_puck5q
@@ -184,6 +187,10 @@ subroutine pmf_alloc_cv_allocate(cv_type,cv_item)
             allocate(CVTypeCNSW::cv_item)
         case('CNGSW')
             allocate(CVTypeCNGSW::cv_item)
+
+! nucleic acids ---------------------------------
+        case('NABO')
+            allocate(CVTypeNABO::cv_item)
 
     ! pucker -------------------------------------
         case('PUCK5Q')
