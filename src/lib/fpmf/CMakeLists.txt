@@ -48,6 +48,7 @@ SET(PMF_CVS_SRC
  
     # angle based
         common/cvs/angle/cv_ang.f90
+        common/cvs/angle/cv_ang2.f90
         common/cvs/angle/cv_pang.f90
         common/cvs/angle/cv_pvang.f90
         common/cvs/angle/cv_pfvang.f90

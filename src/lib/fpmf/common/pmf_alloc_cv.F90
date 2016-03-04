@@ -52,6 +52,7 @@ subroutine pmf_alloc_cv_allocate(cv_type,cv_item)
 
 ! angle based ------------------------------------
     use cv_ang
+    use cv_ang2
     use cv_pang
     use cv_pvang
     use cv_axang
@@ -131,6 +132,8 @@ subroutine pmf_alloc_cv_allocate(cv_type,cv_item)
     ! angle --------------------------------------
         case('ANG')
             allocate(CVTypeANG::cv_item)
+        case('ANG2')
+            allocate(CVTypeANG2::cv_item)
         case('PANG')
             allocate(CVTypePANG::cv_item)
         case('PVANG')
