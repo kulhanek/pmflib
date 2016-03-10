@@ -104,43 +104,128 @@ subroutine calculate_nabo(cv_item,x,ctx)
     type(CVContextType) :: ctx
     ! -----------------------------------------------
     integer             :: ai,m
-    real(PMFDP)         :: d1(3),d2(3),dx(3)
-    real(PMFDP)         :: totmass1,totmass2,amass,sc
+    real(PMFDP)         :: d1(3),d2(3),d3(3),d4(3),d5(3),d6(3),h(3)
+    real(PMFDP)         :: v1(3),v2(3),v1p(3),v2p(3),hp(3)
+    real(PMFDP)         :: totmass1,totmass2,totmass3,totmass4,totmass5,totmass6,amass
+    real(PMFDP)         :: h2,t1,t2,arg,v1p2,v2p2,v1pv,v2pv,scal
     ! --------------------------------------------------------------------------
 
-!     ! calculate actual value
-!     totmass1 = 0.0d0
-!     d1(:) = 0.0
-!     do  m = 1, cv_item%grps(1)
-!         ai = cv_item%lindexes(m)
-!         amass = mass(ai)
-!         d1(:) = d1(:) + x(:,ai)*amass
-!         totmass1 = totmass1 + amass
-!     end do
-!     if( totmass1 .le. 0 ) then
-!         call pmf_utils_exit(PMF_OUT,1,'totmass1 is zero in calculate_nabo!')
-!     end if
-!     d1(:) = d1(:) / totmass1
-! 
-!     totmass2 = 0.0d0
-!     d2(:) = 0.0d0
-!     do  m = cv_item%grps(1) + 1 , cv_item%grps(2)
-!         ai = cv_item%lindexes(m)
-!         amass = mass(ai)
-!         d2(:) = d2(:) + x(:,ai)*amass
-!         totmass2 = totmass2 + amass
-!     end do
-!     if( totmass1 .le. 0 ) then
-!         call pmf_utils_exit(PMF_OUT,1,'totmass1 is zero in calculate_nabo!')
-!     end if
-!     d2(:) = d2(:) / totmass2
-! 
-!     dx(:) = d1(:) - d2(:)
-! 
-!     if( fenable_pbc ) then
-!         call pmf_pbc_image_vector(dx)
-!     end if
-! 
+    ! calculate actual value
+    totmass1 = 0.0d0
+    d1(:) = 0.0
+    do  m = 1, cv_item%grps(1)
+        ai = cv_item%lindexes(m)
+        amass = mass(ai)
+        d1(:) = d1(:) + x(:,ai)*amass
+        totmass1 = totmass1 + amass
+    end do
+    if( totmass1 .le. 0 ) then
+        call pmf_utils_exit(PMF_OUT,1,'totmass1 is zero in calculate_nabo!')
+    end if
+    d1(:) = d1(:) / totmass1
+ 
+    totmass2 = 0.0d0
+    d2(:) = 0.0d0
+    do  m = cv_item%grps(1) + 1 , cv_item%grps(2)
+        ai = cv_item%lindexes(m)
+        amass = mass(ai)
+        d2(:) = d2(:) + x(:,ai)*amass
+        totmass2 = totmass2 + amass
+    end do
+    if( totmass2 .le. 0 ) then
+        call pmf_utils_exit(PMF_OUT,1,'totmass2 is zero in calculate_nabo!')
+    end if
+    d2(:) = d2(:) / totmass2
+
+    totmass3 = 0.0d0
+    d3(:) = 0.0d0
+    do  m = cv_item%grps(2) + 1 , cv_item%grps(3)
+        ai = cv_item%lindexes(m)
+        amass = mass(ai)
+        d3(:) = d3(:) + x(:,ai)*amass
+        totmass3 = totmass3 + amass
+    end do
+    if( totmass3 .le. 0 ) then
+        call pmf_utils_exit(PMF_OUT,1,'totmass3 is zero in calculate_nabo!')
+    end if
+    d3(:) = d3(:) / totmass3
+
+    totmass4 = 0.0d0
+    d4(:) = 0.0d0
+    do  m = cv_item%grps(3) + 1 , cv_item%grps(4)
+        ai = cv_item%lindexes(m)
+        amass = mass(ai)
+        d4(:) = d4(:) + x(:,ai)*amass
+        totmass4 = totmass4 + amass
+    end do
+    if( totmass4 .le. 0 ) then
+        call pmf_utils_exit(PMF_OUT,1,'totmass4 is zero in calculate_nabo!')
+    end if
+    d4(:) = d4(:) / totmass4
+
+    totmass5 = 0.0d0
+    d5(:) = 0.0d0
+    do  m = cv_item%grps(4) + 1 , cv_item%grps(5)
+        ai = cv_item%lindexes(m)
+        amass = mass(ai)
+        d5(:) = d5(:) + x(:,ai)*amass
+        totmass5 = totmass5 + amass
+    end do
+    if( totmass5 .le. 0 ) then
+        call pmf_utils_exit(PMF_OUT,1,'totmass5 is zero in calculate_nabo!')
+    end if
+    d5(:) = d5(:) / totmass5
+
+    totmass6 = 0.0d0
+    d6(:) = 0.0d0
+    do  m = cv_item%grps(5) + 1 , cv_item%grps(6)
+        ai = cv_item%lindexes(m)
+        amass = mass(ai)
+        d6(:) = d6(:) + x(:,ai)*amass
+        totmass6 = totmass6 + amass
+    end do
+    if( totmass6 .le. 0 ) then
+        call pmf_utils_exit(PMF_OUT,1,'totmass6 is zero in calculate_nabo!')
+    end if
+    d6(:) = d6(:) / totmass6
+
+    h(:) = d1(:) - d2(:)
+
+    v1(:) = d3(:) - d4(:)
+    v2(:) = d5(:) - d6(:)
+
+    h2 = h(1)**2 + h(2)**2 + h(3)**2
+
+    t1 = ( v1(1)*h(1) + v1(2)*h(2) + v1(3)*h(3) ) / h2
+    v1p(:) = v1(:) - t1*h(:)
+
+    t2 = ( v2(1)*h(1) + v2(2)*h(2) + v2(3)*h(3) ) / h2
+    v2p(:) = v2(:) - t2*h(:)
+
+    v1p2 = v1p(1)**2 + v1p(2)**2 + v1p(3)**2
+    v2p2 = v2p(1)**2 + v2p(2)**2 + v2p(3)**2
+
+    v1pv = sqrt(v1p2);
+    v2pv = sqrt(v2p2);
+
+    arg = (v1p(1)*v2p(1) + v1p(2)*v2p(2) + v1p(3)*v2p(3)) / (v1pv * v2pv)
+
+    hp(1) = v1p(2)*v2p(3) - v2p(2)*v1p(3)
+    hp(2) = v1p(3)*v2p(1) - v2p(3)*v1p(1)
+    hp(3) = v1p(1)*v2p(2) - v2p(1)*v1p(2)
+
+    scal = h(1)*hp(1) + h(2)*hp(2) + h(3)*hp(3)
+
+    ! coordinate ctx%CVsValues(cv_item%idx) ------------------------------------------------------------
+
+    if ( arg .gt.  1.0 ) then
+        arg =  1.0
+    else if ( arg .lt. -1.0 ) then
+        arg = -1.0
+    end if
+
+    ctx%CVsValues(cv_item%idx) = sign(1.0d0,scal)*acos( arg )
+ 
 !     ctx%CVsValues(cv_item%idx) = sqrt(dx(1)**2 + dx(2)**2 + dx(3)**2)
 ! 
 !     ! ------------------------------------------------
