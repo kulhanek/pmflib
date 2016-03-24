@@ -86,7 +86,7 @@ subroutine load_rmsdt(cv_item,prm_fin)
     call close_xyz(PMF_XYZ,cv_item%xyz_str)
 
     if( cv_item%xyz_str%natoms .ne. cv_item%natoms ) then
-        call pmf_utils_exit(PMF_OUT,1,'Number of atoms in group and target structure differ!')
+        call pmf_utils_exit(PMF_OUT,1,'Number of atoms in group and target structure differs!')
     end if
 
     return
@@ -141,6 +141,10 @@ subroutine calculate_rmsdt(cv_item,x,ctx)
 
         totmass = totmass + amass
     end do
+
+    if( totmass .le. 0 ) then
+        call pmf_utils_exit(PMF_OUT,1,'totmass is zero in calculate_rmsdt!')
+    end if
 
     itotmass = 1.0d0 / totmass
     x1 = x1 * itotmass

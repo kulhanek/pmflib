@@ -80,6 +80,7 @@ SET(PMF_CVS_SRC
 
     # nucleic acids
         common/cvs/na/cv_nabo.f90
+        common/cvs/na/cv_nasbpp.f90
 
     # ring puckering
         common/cvs/pucker/cv_puck5q.f90

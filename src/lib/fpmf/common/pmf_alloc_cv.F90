@@ -87,6 +87,7 @@ subroutine pmf_alloc_cv_allocate(cv_type,cv_item)
 
 ! nucleic acids ---------------------------------
     use cv_nabo
+    use cv_nasbpp
 
 ! ring puckering ---------------------------------
     use cv_puck5q
@@ -194,6 +195,8 @@ subroutine pmf_alloc_cv_allocate(cv_type,cv_item)
 ! nucleic acids ---------------------------------
         case('NABO')
             allocate(CVTypeNABO::cv_item)
+        case('NASBPP')
+            allocate(CVTypeNASBPP::cv_item)
 
     ! pucker -------------------------------------
         case('PUCK5Q')

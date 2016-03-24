@@ -50,7 +50,7 @@ logical     :: fmaster      = .true.    ! .true. for master process
 integer     :: fmytaskid    = 0         ! process id
 
 ! local copies of MD variables -------------------------------------------------
-integer     :: fnatoms       ! total number of atoms
+integer     :: fnatoms      ! total number of atoms
 integer     :: fnstlim      ! length of simulation in steps
 integer     :: fstep        ! current MD step
 integer     :: fsystype     ! system type (NT,NTV,NTP)
@@ -58,6 +58,8 @@ real(PMFDP) :: fdt          ! dt of step in [fs]
 real(PMFDP) :: ftime        ! actual time in [fs]
 real(PMFDP) :: ftemp        ! simulation temperature in [K]
 integer     :: fintalg      ! integration algorithm
+
+real(PMFDP),allocatable     :: frmass(:)     ! atom masses of all atoms, should be initialized in pmf_xxxx_end_init
 
 ! status variables -------------------------------------------------------------
 logical     :: fcanexmdloop ! client know how to exit md loop
