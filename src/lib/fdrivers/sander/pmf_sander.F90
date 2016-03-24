@@ -157,6 +157,7 @@ subroutine pmf_sander_finalize_preinit(anatom,amass,ax)
     use pmf_core
     use pmf_init
     use pmf_sander_control
+    use pmf_utils
 
     implicit none
     integer        :: anatom       ! number of atoms

@@ -161,6 +161,7 @@ subroutine pmf_pmemd_finalize_preinit(amass,ax)
     use pmf_core
     use pmf_init
     use pmf_pmemd_control
+    use pmf_utils
 
     implicit none
     real(PMFDP)    :: amass(:)

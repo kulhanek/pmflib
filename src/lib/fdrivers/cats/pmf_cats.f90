@@ -133,6 +133,7 @@ subroutine pmf_cats_end_init(anatom,amass,ax)
     use pmf_core
     use pmf_init
     use pmf_cats_control
+    use pmf_utils
 
     implicit none
     integer        :: anatom                       ! number of atoms in AMBER topology
