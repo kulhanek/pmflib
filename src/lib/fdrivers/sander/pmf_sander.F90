@@ -163,10 +163,15 @@ subroutine pmf_sander_finalize_preinit(anatom,amass,ax)
     real(PMFDP)    :: amass(anatom)
     real(PMFDP)    :: ax(3,anatom)
     ! -----------------------------------------------
-    integer        :: i
+    integer        :: i, alloc_failed
     ! --------------------------------------------------------------------------
 
     ! init mask topology atom masses and positions
+    allocate(frmass(fnatoms), stat= alloc_failed )
+    if( alloc_failed .ne. 0 ) then
+        call pmf_utils_exit(PMF_OUT,1,'Unable to allocate frmass!')
+    end if
+
     do i=1,fnatoms
         call pmf_mask_set_topo_atom_mcrd(i,amass(i),ax(1,i),ax(2,i),ax(3,i))
     end do

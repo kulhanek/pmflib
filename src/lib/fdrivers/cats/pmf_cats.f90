@@ -147,7 +147,7 @@ subroutine pmf_cats_end_init(anatom,amass,ax)
     ! init mask topology atom masses and positions
     allocate(frmass(fnatoms), stat= alloc_failed )
     if( alloc_failed .ne. 0 ) then
-        call pmf_utils_exit(PMF_OUT,1,'Unable to allocate fmass!')
+        call pmf_utils_exit(PMF_OUT,1,'Unable to allocate frmass!')
     end if
 
     do i=1,fnatoms
