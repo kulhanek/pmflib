@@ -454,8 +454,6 @@ subroutine calculate_nasbpp(cv_item,x,ctx)
     tmp1(3) = ub(3,1)*ob(1) + ub(3,2)*ob(2) + ub(3,3)*ob(3)
     ob(:) = tmp1(:) + xsb(:)
 
-    write(*,*) oa,ob-oa
-
     ! vector between base origins
     d(:) = oa(:) - ob(:)
 
