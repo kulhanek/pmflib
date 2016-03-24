@@ -391,8 +391,8 @@ subroutine calculate_nasbpp(cv_item,x,ctx)
 
     ! rotation matrix a ------------------------------
     ua(1,1) = fa(1,best)**2 + fa(2,best)**2 - fa(3,best)**2 - fa(4,best)**2
-    ua(1,1) = 2.0d0*( fa(2,best)*fa(3,best) - fa(1,best)*fa(4,best) )
-    ua(2,1) = 2.0d0*( fa(2,best)*fa(4,best) + fa(1,best)*fa(3,best) )
+    ua(2,1) = 2.0d0*( fa(2,best)*fa(3,best) - fa(1,best)*fa(4,best) )
+    ua(3,1) = 2.0d0*( fa(2,best)*fa(4,best) + fa(1,best)*fa(3,best) )
 
     ua(1,2) = 2.0d0*( fa(2,best)*fa(3,best) + fa(1,best)*fa(4,best) )
     ua(2,2) = fa(1,best)**2 - fa(2,best)**2 + fa(3,best)**2 - fa(4,best)**2
@@ -454,19 +454,21 @@ subroutine calculate_nasbpp(cv_item,x,ctx)
     tmp1(3) = ub(3,1)*ob(1) + ub(3,2)*ob(2) + ub(3,3)*ob(3)
     ob(:) = tmp1(:) + xsb(:)
 
+    write(*,*) oa,ob-oa
+
     ! vector between base origins
     d(:) = oa(:) - ob(:)
 
     select case(cv_item%lbp_par)
         case(1)
             ! 'shear'
-            ctx%CVsValues(cv_item%idx) = dot_product(d,xaxis)
+            ctx%CVsValues(cv_item%idx) = d(1)*xaxis(1) + d(2)*xaxis(2) + d(3)*xaxis(3)
         case(2)
             ! 'stretch'
-            ctx%CVsValues(cv_item%idx) = dot_product(d,yaxis)
+            ctx%CVsValues(cv_item%idx) = d(1)*yaxis(1) + d(2)*yaxis(2) + d(3)*yaxis(3)
         case(3)
             ! 'stagger'
-            ctx%CVsValues(cv_item%idx) = dot_product(d,zaxis)
+            ctx%CVsValues(cv_item%idx) = d(1)*zaxis(1) + d(2)*zaxis(2) + d(3)*zaxis(3)
         case(4)
             ! 'buckle'
             tmp1(1) = ua(2,3)*xaxis(3) - ua(3,3)*xaxis(2)
@@ -482,8 +484,6 @@ subroutine calculate_nasbpp(cv_item,x,ctx)
 
             asc = - (tmp1(2)*tmp2(3) - tmp1(3)*tmp2(2))*xaxis(1) - (tmp1(3)*tmp2(1) - tmp1(1)*tmp2(3))*xaxis(2) &
                   - (tmp1(1)*tmp2(2) - tmp1(2)*tmp2(1))*xaxis(3)
-
-            write(*,*) asc
 
             if ( arg .gt.  1.0 ) then
                 arg =  1.0
@@ -508,8 +508,6 @@ subroutine calculate_nasbpp(cv_item,x,ctx)
             asc = - (tmp1(2)*tmp2(3) - tmp1(3)*tmp2(2))*yaxis(1) - (tmp1(3)*tmp2(1) - tmp1(1)*tmp2(3))*yaxis(2) &
                   - (tmp1(1)*tmp2(2) - tmp1(2)*tmp2(1))*yaxis(3)
 
-            write(*,*) asc
-
             if ( arg .gt.  1.0 ) then
                 arg =  1.0
             else if ( arg .lt. -1.0 ) then
@@ -532,8 +530,6 @@ subroutine calculate_nasbpp(cv_item,x,ctx)
 
             asc = - (tmp1(2)*tmp2(3) - tmp1(3)*tmp2(2))*zaxis(1) - (tmp1(3)*tmp2(1) - tmp1(1)*tmp2(3))*zaxis(2) &
                   - (tmp1(1)*tmp2(2) - tmp1(2)*tmp2(1))*zaxis(3)
-
-            write(*,*) asc
 
             if ( arg .gt.  1.0 ) then
                 arg =  1.0
