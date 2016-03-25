@@ -108,6 +108,8 @@ subroutine calculate_nabo(cv_item,x,ctx)
     real(PMFDP)         :: v1(3),v2(3),v1p(3),v2p(3),hp(3)
     real(PMFDP)         :: totmass1,totmass2,totmass3,totmass4,totmass5,totmass6,amass
     real(PMFDP)         :: h2,t1,t2,arg,v1p2,v2p2,v1pv,v2pv,scal
+    real(PMFDP)         :: o_h2,o_v1p22,o_v2p22,o_v1pvv2pv,argo_v1p22,argo_v2p22
+    real(PMFDP)         :: a_v1(3),a_v2(3),a_h(3),f1,tmp,a_c(3),a_d(3)
     ! --------------------------------------------------------------------------
 
     ! calculate actual value
@@ -195,21 +197,28 @@ subroutine calculate_nabo(cv_item,x,ctx)
     v2(:) = d5(:) - d6(:)
 
     h2 = h(1)**2 + h(2)**2 + h(3)**2
+    o_h2 = 1.0d0 / h2
 
-    t1 = ( v1(1)*h(1) + v1(2)*h(2) + v1(3)*h(3) ) / h2
+    t1 = ( v1(1)*h(1) + v1(2)*h(2) + v1(3)*h(3) ) * o_h2
     v1p(:) = v1(:) - t1*h(:)
 
-    t2 = ( v2(1)*h(1) + v2(2)*h(2) + v2(3)*h(3) ) / h2
+    t2 = ( v2(1)*h(1) + v2(2)*h(2) + v2(3)*h(3) ) * o_h2
     v2p(:) = v2(:) - t2*h(:)
 
     v1p2 = v1p(1)**2 + v1p(2)**2 + v1p(3)**2
     v2p2 = v2p(1)**2 + v2p(2)**2 + v2p(3)**2
 
+    o_v1p22 = 1.0d0 / v1p2
+    o_v2p22 = 1.0d0 / v2p2
+
     v1pv = sqrt(v1p2);
     v2pv = sqrt(v2p2);
 
-    arg = (v1p(1)*v2p(1) + v1p(2)*v2p(2) + v1p(3)*v2p(3)) / (v1pv * v2pv)
+    o_v1pvv2pv = sqrt( o_v1p22 * o_v2p22 )
 
+    arg = (v1p(1)*v2p(1) + v1p(2)*v2p(2) + v1p(3)*v2p(3)) * o_v1pvv2pv 
+
+    ! sign
     hp(1) = v1p(2)*v2p(3) - v2p(2)*v1p(3)
     hp(2) = v1p(3)*v2p(1) - v2p(3)*v1p(1)
     hp(3) = v1p(1)*v2p(2) - v2p(1)*v1p(2)
@@ -225,31 +234,72 @@ subroutine calculate_nabo(cv_item,x,ctx)
     end if
 
     ctx%CVsValues(cv_item%idx) = sign(1.0d0,scal)*acos( arg )
- 
-!     ctx%CVsValues(cv_item%idx) = sqrt(dx(1)**2 + dx(2)**2 + dx(3)**2)
-! 
-!     ! ------------------------------------------------
-! 
-!     if( ctx%CVsValues(cv_item%idx) .gt. 1e-7 ) then
-!         sc = 1.0d0 / ctx%CVsValues(cv_item%idx)
-!     else
-!         sc = 0.0d0
-!     end if
-! 
-!     ! warning - groups can overlap - it is therefore important to add gradients
-! 
-!     do  m = 1, cv_item%grps(1)
-!         ai = cv_item%lindexes(m)
-!         amass = mass(ai)
-!         ctx%CVsDrvs(:,ai,cv_item%idx) = ctx%CVsDrvs(:,ai,cv_item%idx) + sc*dx(:)*amass/totmass1
-!     end do
-! 
-!     do  m = cv_item%grps(1) + 1 , cv_item%grps(2)
-!         ai = cv_item%lindexes(m)
-!         amass = mass(ai)
-!         ctx%CVsDrvs(:,ai,cv_item%idx) = ctx%CVsDrvs(:,ai,cv_item%idx) - sc*dx(:)*amass/totmass2
-!     end do
 
+    ! ------------------------------------------------------------------------------
+
+    argo_v1p22 = arg*o_v1p22;
+    argo_v2p22 = arg*o_v2p22;
+
+    f1 = sin(ctx%CVsValues(cv_item%idx))
+    if( abs(f1) .lt. 1.e-12 ) then
+        ! avoid division by zero
+        f1 = -1.e12
+    else
+        f1 = -1.0d0 / f1
+    end if
+
+    ! first derivatives -----------------------------------------------------------
+
+    a_c(:) = f1*(v2p(:)*o_v1pvv2pv - v1p(:)*argo_v1p22)
+    a_d(:) = f1*(v1p(:)*o_v1pvv2pv - v2p(:)*argo_v2p22)
+
+    a_h(1) = - a_c(1)*t1 - (v1(1)*o_h2 - 2.0d0*t1*o_h2)*(a_c(1)*h(1) +  a_c(2)*h(2) + a_c(3)*h(3)) &
+             - a_d(1)*t2 - (v2(1)*o_h2 - 2.0d0*t2*o_h2)*(a_d(1)*h(1) +  a_d(2)*h(2) + a_d(3)*h(3))
+    a_h(2) = - a_c(2)*t1 - (v1(2)*o_h2 - 2.0d0*t1*o_h2)*(a_c(1)*h(1) +  a_c(2)*h(2) + a_c(3)*h(3)) &
+             - a_d(2)*t2 - (v2(2)*o_h2 - 2.0d0*t2*o_h2)*(a_d(1)*h(1) +  a_d(2)*h(2) + a_d(3)*h(3))
+    a_h(3) = - a_c(3)*t1 - (v1(3)*o_h2 - 2.0d0*t1*o_h2)*(a_c(1)*h(1) +  a_c(2)*h(2) + a_c(3)*h(3)) &
+             - a_d(3)*t2 - (v2(3)*o_h2 - 2.0d0*t2*o_h2)*(a_d(1)*h(1) +  a_d(2)*h(2) + a_d(3)*h(3))
+
+    do  m = 1, cv_item%grps(1)
+        ai = cv_item%lindexes(m)
+        tmp = mass(ai) / totmass1
+        ctx%CVsDrvs(:,ai,cv_item%idx) = ctx%CVsDrvs(:,ai,cv_item%idx) + a_h(:) * tmp
+    end do
+    do  m = cv_item%grps(1)+1, cv_item%grps(2)
+        ai = cv_item%lindexes(m)
+        tmp = mass(ai) / totmass2
+        ctx%CVsDrvs(:,ai,cv_item%idx) = ctx%CVsDrvs(:,ai,cv_item%idx) - a_h(:) * tmp
+    end do
+
+    a_v1(1) = a_c(1)*(1.0d0 - h(1)*h(1)*o_h2) - a_c(2)*h(2)*h(1)*o_h2 - a_c(3)*h(3)*h(1)*o_h2
+    a_v1(2) = a_c(2)*(1.0d0 - h(2)*h(2)*o_h2) - a_c(3)*h(3)*h(2)*o_h2 - a_c(1)*h(1)*h(2)*o_h2
+    a_v1(3) = a_c(3)*(1.0d0 - h(3)*h(3)*o_h2) - a_c(1)*h(1)*h(3)*o_h2 - a_c(2)*h(2)*h(3)*o_h2
+    do  m = cv_item%grps(2) + 1, cv_item%grps(3)
+        ai = cv_item%lindexes(m)
+        tmp = mass(ai) / totmass3
+        ctx%CVsDrvs(:,ai,cv_item%idx) = ctx%CVsDrvs(:,ai,cv_item%idx) + a_v1(:) * tmp
+    end do
+    do  m = cv_item%grps(3)+1, cv_item%grps(4)
+        ai = cv_item%lindexes(m)
+        tmp = mass(ai) / totmass4
+        ctx%CVsDrvs(:,ai,cv_item%idx) = ctx%CVsDrvs(:,ai,cv_item%idx) - a_v1(:) * tmp
+    end do
+
+    a_v2(1) = a_d(1)*(1.0d0 - h(1)*h(1)*o_h2) - a_d(2)*h(2)*h(1)*o_h2 - a_d(3)*h(3)*h(1)*o_h2
+    a_v2(2) = a_d(2)*(1.0d0 - h(2)*h(2)*o_h2) - a_d(3)*h(3)*h(2)*o_h2 - a_d(1)*h(1)*h(2)*o_h2
+    a_v2(3) = a_d(3)*(1.0d0 - h(3)*h(3)*o_h2) - a_d(1)*h(1)*h(3)*o_h2 - a_d(2)*h(2)*h(3)*o_h2
+    do  m = cv_item%grps(4)+1, cv_item%grps(5)
+        ai = cv_item%lindexes(m)
+        tmp = mass(ai) / totmass5
+        ctx%CVsDrvs(:,ai,cv_item%idx) = ctx%CVsDrvs(:,ai,cv_item%idx) + a_v2(:) * tmp
+    end do
+    do  m = cv_item%grps(5)+1, cv_item%grps(6)
+        ai = cv_item%lindexes(m)
+        tmp = mass(ai) / totmass6
+        ctx%CVsDrvs(:,ai,cv_item%idx) = ctx%CVsDrvs(:,ai,cv_item%idx) - a_v2(:) * tmp
+    end do
+
+ 
  return
 
 end subroutine calculate_nabo
