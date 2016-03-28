@@ -192,16 +192,12 @@ subroutine calculate_nasbpp(cv_item,x,ctx)
     real(PMFDP)         :: x(:,:)
     type(CVContextType) :: ctx
     ! -----------------------------------------------
-    integer             :: i,ai,m,info, best
+    integer             :: i,ai,info, best
     real(PMFDP)         :: xsa(3),xra(3),xsb(3),xrb(3)
     real(PMFDP)         :: fa(4,4),fb(4,4),eigenvaluesa(4),eigenvaluesb(4),work(26*4)
-    real(PMFDP)         :: r11,r12,r13,r21,r22,r23,r31,r32,r33,x2sum,xr2sum
+    real(PMFDP)         :: r11,r12,r13,r21,r22,r23,r31,r32,r33
     real(PMFDP)         :: ua(3,3),ub(3,3)
-    real(PMFDP)         :: one_rij2,one_rij
-    real(PMFDP)         :: one_rkj2,one_rkj
-    real(PMFDP)         :: one_rij2rkj2,one_rijrkj
-    real(PMFDP)         :: one_rij3rkj,one_rijrkj3
-    real(PMFDP)         :: rij2,rij,rkj2,rkj,arg
+    real(PMFDP)         :: arg
     real(PMFDP)         :: xaxis(3),yaxis(3),zaxis(3),zsc,y0axis(3),asc,d(3)
     real(PMFDP)         :: tmp1(3),tmp2(3),ingra,ingrb, oa(3), ob(3)
     ! --------------------------------------------------------------------------

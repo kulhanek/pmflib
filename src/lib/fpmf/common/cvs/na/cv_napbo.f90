@@ -20,7 +20,7 @@
 !    Boston, MA  02110-1301  USA
 !===============================================================================
 
-module cv_nabo
+module cv_napbo
 
 use pmf_sizes
 use pmf_constants
@@ -30,33 +30,33 @@ implicit none
 
 !===============================================================================
 
-type, extends(CVType) :: CVTypeNABO
+type, extends(CVType) :: CVTypeNAPBO
     contains
-        procedure :: load_cv        => load_nabo
-        procedure :: calculate_cv   => calculate_nabo
-end type CVTypeNABO
+        procedure :: load_cv        => load_napbo
+        procedure :: calculate_cv   => calculate_napbo
+end type CVTypeNAPBO
 
 !===============================================================================
 
 contains
 
 !===============================================================================
-! Subroutine:  load_nabo
+! Subroutine:  load_napbo
 !===============================================================================
 
-subroutine load_nabo(cv_item,prm_fin)
+subroutine load_napbo(cv_item,prm_fin)
 
     use prmfile
     use pmf_dat
     use cv_common
 
     implicit none
-    class(CVTypeNABO)                   :: cv_item
+    class(CVTypeNAPBO)                   :: cv_item
     type(PRMFILE_TYPE),intent(inout)    :: prm_fin
     ! --------------------------------------------------------------------------
 
     ! unit and CV name initialization ---------------
-    cv_item%ctype         = 'NABO'
+    cv_item%ctype         = 'NAPBO'
     cv_item%unit          = AngleUnit
     cv_item%gradforanycrd = .true.
     call cv_common_read_name(cv_item,prm_fin)
@@ -86,20 +86,20 @@ subroutine load_nabo(cv_item,prm_fin)
 60 format('   == Base #1 direction ==========================')
 70 format('   == Base #2 direction ==========================')
 
-end subroutine load_nabo
+end subroutine load_napbo
 
 !===============================================================================
-! Subroutine:  calculate_nabo
+! Subroutine:  calculate_napbo
 !===============================================================================
 
-subroutine calculate_nabo(cv_item,x,ctx)
+subroutine calculate_napbo(cv_item,x,ctx)
 
     use pmf_dat
     use pmf_pbc
     use pmf_utils
 
     implicit none
-    class(CVTypeNABO)   :: cv_item
+    class(CVTypeNAPBO)   :: cv_item
     real(PMFDP)         :: x(:,:)
     type(CVContextType) :: ctx
     ! -----------------------------------------------
@@ -107,8 +107,8 @@ subroutine calculate_nabo(cv_item,x,ctx)
     real(PMFDP)         :: d1(3),d2(3),d3(3),d4(3),d5(3),d6(3),h(3)
     real(PMFDP)         :: v1(3),v2(3),v1p(3),v2p(3),hp(3)
     real(PMFDP)         :: totmass1,totmass2,totmass3,totmass4,totmass5,totmass6,amass
-    real(PMFDP)         :: h2,t1,t2,arg,v1p2,v2p2,v1pv,v2pv,scal
-    real(PMFDP)         :: o_h2,o_v1p22,o_v2p22,o_v1pvv2pv,argo_v1p22,argo_v2p22
+    real(PMFDP)         :: h2,t1,t2,arg,v1p2,v2p2,scal
+    real(PMFDP)         :: o_h2,o_v1p2,o_v2p2,o_v1pvv2pv,argo_v1p2,argo_v2p2
     real(PMFDP)         :: a_v1(3),a_v2(3),a_h(3),f1,tmp,a_c(3),a_d(3)
     ! --------------------------------------------------------------------------
 
@@ -122,7 +122,7 @@ subroutine calculate_nabo(cv_item,x,ctx)
         totmass1 = totmass1 + amass
     end do
     if( totmass1 .le. 0 ) then
-        call pmf_utils_exit(PMF_OUT,1,'totmass1 is zero in calculate_nabo!')
+        call pmf_utils_exit(PMF_OUT,1,'totmass1 is zero in calculate_napbo!')
     end if
     d1(:) = d1(:) / totmass1
  
@@ -135,7 +135,7 @@ subroutine calculate_nabo(cv_item,x,ctx)
         totmass2 = totmass2 + amass
     end do
     if( totmass2 .le. 0 ) then
-        call pmf_utils_exit(PMF_OUT,1,'totmass2 is zero in calculate_nabo!')
+        call pmf_utils_exit(PMF_OUT,1,'totmass2 is zero in calculate_napbo!')
     end if
     d2(:) = d2(:) / totmass2
 
@@ -148,7 +148,7 @@ subroutine calculate_nabo(cv_item,x,ctx)
         totmass3 = totmass3 + amass
     end do
     if( totmass3 .le. 0 ) then
-        call pmf_utils_exit(PMF_OUT,1,'totmass3 is zero in calculate_nabo!')
+        call pmf_utils_exit(PMF_OUT,1,'totmass3 is zero in calculate_napbo!')
     end if
     d3(:) = d3(:) / totmass3
 
@@ -161,7 +161,7 @@ subroutine calculate_nabo(cv_item,x,ctx)
         totmass4 = totmass4 + amass
     end do
     if( totmass4 .le. 0 ) then
-        call pmf_utils_exit(PMF_OUT,1,'totmass4 is zero in calculate_nabo!')
+        call pmf_utils_exit(PMF_OUT,1,'totmass4 is zero in calculate_napbo!')
     end if
     d4(:) = d4(:) / totmass4
 
@@ -174,7 +174,7 @@ subroutine calculate_nabo(cv_item,x,ctx)
         totmass5 = totmass5 + amass
     end do
     if( totmass5 .le. 0 ) then
-        call pmf_utils_exit(PMF_OUT,1,'totmass5 is zero in calculate_nabo!')
+        call pmf_utils_exit(PMF_OUT,1,'totmass5 is zero in calculate_napbo!')
     end if
     d5(:) = d5(:) / totmass5
 
@@ -187,7 +187,7 @@ subroutine calculate_nabo(cv_item,x,ctx)
         totmass6 = totmass6 + amass
     end do
     if( totmass6 .le. 0 ) then
-        call pmf_utils_exit(PMF_OUT,1,'totmass6 is zero in calculate_nabo!')
+        call pmf_utils_exit(PMF_OUT,1,'totmass6 is zero in calculate_napbo!')
     end if
     d6(:) = d6(:) / totmass6
 
@@ -208,13 +208,10 @@ subroutine calculate_nabo(cv_item,x,ctx)
     v1p2 = v1p(1)**2 + v1p(2)**2 + v1p(3)**2
     v2p2 = v2p(1)**2 + v2p(2)**2 + v2p(3)**2
 
-    o_v1p22 = 1.0d0 / v1p2
-    o_v2p22 = 1.0d0 / v2p2
+    o_v1p2 = 1.0d0 / v1p2
+    o_v2p2 = 1.0d0 / v2p2
 
-    v1pv = sqrt(v1p2);
-    v2pv = sqrt(v2p2);
-
-    o_v1pvv2pv = sqrt( o_v1p22 * o_v2p22 )
+    o_v1pvv2pv = sqrt( o_v1p2 * o_v2p2 )
 
     arg = (v1p(1)*v2p(1) + v1p(2)*v2p(2) + v1p(3)*v2p(3)) * o_v1pvv2pv 
 
@@ -235,10 +232,10 @@ subroutine calculate_nabo(cv_item,x,ctx)
 
     ctx%CVsValues(cv_item%idx) = sign(1.0d0,scal)*acos( arg )
 
-    ! ------------------------------------------------------------------------------
+    ! first derivatives --------------------------------------------------------------------------------
 
-    argo_v1p22 = arg*o_v1p22;
-    argo_v2p22 = arg*o_v2p22;
+    argo_v1p2 = arg*o_v1p2;
+    argo_v2p2 = arg*o_v2p2;
 
     f1 = sin(ctx%CVsValues(cv_item%idx))
     if( abs(f1) .lt. 1.e-12 ) then
@@ -248,10 +245,9 @@ subroutine calculate_nabo(cv_item,x,ctx)
         f1 = -1.0d0 / f1
     end if
 
-    ! first derivatives -----------------------------------------------------------
 
-    a_c(:) = f1*(v2p(:)*o_v1pvv2pv - v1p(:)*argo_v1p22)
-    a_d(:) = f1*(v1p(:)*o_v1pvv2pv - v2p(:)*argo_v2p22)
+    a_c(:) = f1*(v2p(:)*o_v1pvv2pv - v1p(:)*argo_v1p2)
+    a_d(:) = f1*(v1p(:)*o_v1pvv2pv - v2p(:)*argo_v2p2)
 
     a_h(1) = - a_c(1)*t1 - (v1(1)*o_h2 - 2.0d0*t1*o_h2)*(a_c(1)*h(1) +  a_c(2)*h(2) + a_c(3)*h(3)) &
              - a_d(1)*t2 - (v2(1)*o_h2 - 2.0d0*t2*o_h2)*(a_d(1)*h(1) +  a_d(2)*h(2) + a_d(3)*h(3))
@@ -302,9 +298,9 @@ subroutine calculate_nabo(cv_item,x,ctx)
  
  return
 
-end subroutine calculate_nabo
+end subroutine calculate_napbo
 
 !===============================================================================
 
-end module cv_nabo
+end module cv_napbo
 
