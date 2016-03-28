@@ -68,6 +68,7 @@ subroutine load_nasbo(cv_item,prm_fin)
 
     ! unit and CV name initialization ---------------
     cv_item%ctype         = 'NASBO'
+    cv_item%unit          = AngleUnit
     cv_item%gradforanycrd = .true.
     call cv_common_read_name(cv_item,prm_fin)
 
@@ -75,6 +76,7 @@ subroutine load_nasbo(cv_item,prm_fin)
     cv_item%ngrps = 2
     call cv_common_init_groups(cv_item,prm_fin)
 
+    ! this is important for testing
     skiptest = .false.
     lresult = prmfile_get_logical_by_key(prm_fin,'skip_mass_test',skiptest)
 
