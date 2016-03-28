@@ -564,7 +564,7 @@ subroutine calculate_nasbo(cv_item,x,ctx)
         end do
     end do
 
-! finaly gradients for group_a
+! finaly gradients for group_b
     do i = cv_item%grps(1) + 1, cv_item%grps(2)
 
         ai = cv_item%lindexes(i)
