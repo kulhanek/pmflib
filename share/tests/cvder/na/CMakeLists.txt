@@ -18,6 +18,13 @@ ADD_TEST(CVDerRand02-NASBO ${EXECUTABLE_OUTPUT_PATH}/pmf-test-cvs
 ADD_TEST(CVDerRand03-NASBO ${EXECUTABLE_OUTPUT_PATH}/pmf-test-cvs
                         ../random03.in nasbo.in)
 
+ADD_TEST(CVDerRand01-NABEND ${EXECUTABLE_OUTPUT_PATH}/pmf-test-cvs
+                        ../random01.in nabend.in)
+ADD_TEST(CVDerRand02-NABEND ${EXECUTABLE_OUTPUT_PATH}/pmf-test-cvs
+                        ../random02.in nabend.in)
+ADD_TEST(CVDerRand03-NABEND ${EXECUTABLE_OUTPUT_PATH}/pmf-test-cvs
+                        ../random03.in nabend.in)
+
 
 
 

@@ -82,6 +82,7 @@ SET(PMF_CVS_SRC
         common/cvs/na/cv_napbo.f90
         common/cvs/na/cv_nasbo.f90
         common/cvs/na/cv_nasbpp.f90
+        common/cvs/na/cv_nabend.f90
 
     # ring puckering
         common/cvs/pucker/cv_puck5q.f90
