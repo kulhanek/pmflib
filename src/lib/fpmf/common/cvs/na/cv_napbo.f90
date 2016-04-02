@@ -49,6 +49,7 @@ subroutine load_napbo(cv_item,prm_fin)
     use prmfile
     use pmf_dat
     use cv_common
+    use pmf_utils
 
     implicit none
     class(CVTypeNAPBO)                   :: cv_item
@@ -68,17 +69,35 @@ subroutine load_napbo(cv_item,prm_fin)
     ! read group a,b ----------------------------------
     write(PMF_OUT,50)
     call cv_common_read_group(cv_item,prm_fin,1)
+    if( cv_get_group_rmass(cv_item,1) .le. 0.0d0 ) then
+        call pmf_utils_exit(PMF_OUT,1,'group_a must contain mass (atoms)!')
+    end if
     call cv_common_read_group(cv_item,prm_fin,2)
+    if( cv_get_group_rmass(cv_item,2) .le. 0.0d0 ) then
+        call pmf_utils_exit(PMF_OUT,1,'group_b must contain mass (atoms)!')
+    end if
 
     ! read group c,d ----------------------------------
     write(PMF_OUT,60)
     call cv_common_read_group(cv_item,prm_fin,3)
+    if( cv_get_group_rmass(cv_item,3) .le. 0.0d0 ) then
+        call pmf_utils_exit(PMF_OUT,1,'group_c must contain mass (atoms)!')
+    end if
     call cv_common_read_group(cv_item,prm_fin,4)
+    if( cv_get_group_rmass(cv_item,4) .le. 0.0d0 ) then
+        call pmf_utils_exit(PMF_OUT,1,'group_d must contain mass (atoms)!')
+    end if
 
     ! read group e,f ----------------------------------
     write(PMF_OUT,70)
     call cv_common_read_group(cv_item,prm_fin,5)
+    if( cv_get_group_rmass(cv_item,5) .le. 0.0d0 ) then
+        call pmf_utils_exit(PMF_OUT,1,'group_e must contain mass (atoms)!')
+    end if
     call cv_common_read_group(cv_item,prm_fin,6)
+    if( cv_get_group_rmass(cv_item,6) .le. 0.0d0 ) then
+        call pmf_utils_exit(PMF_OUT,1,'group_f must contain mass (atoms)!')
+    end if
 
     return
 
@@ -121,9 +140,6 @@ subroutine calculate_napbo(cv_item,x,ctx)
         d1(:) = d1(:) + x(:,ai)*amass
         totmass1 = totmass1 + amass
     end do
-    if( totmass1 .le. 0 ) then
-        call pmf_utils_exit(PMF_OUT,1,'totmass1 is zero in calculate_napbo!')
-    end if
     d1(:) = d1(:) / totmass1
  
     totmass2 = 0.0d0
@@ -134,9 +150,6 @@ subroutine calculate_napbo(cv_item,x,ctx)
         d2(:) = d2(:) + x(:,ai)*amass
         totmass2 = totmass2 + amass
     end do
-    if( totmass2 .le. 0 ) then
-        call pmf_utils_exit(PMF_OUT,1,'totmass2 is zero in calculate_napbo!')
-    end if
     d2(:) = d2(:) / totmass2
 
     totmass3 = 0.0d0
@@ -147,9 +160,6 @@ subroutine calculate_napbo(cv_item,x,ctx)
         d3(:) = d3(:) + x(:,ai)*amass
         totmass3 = totmass3 + amass
     end do
-    if( totmass3 .le. 0 ) then
-        call pmf_utils_exit(PMF_OUT,1,'totmass3 is zero in calculate_napbo!')
-    end if
     d3(:) = d3(:) / totmass3
 
     totmass4 = 0.0d0
@@ -160,9 +170,6 @@ subroutine calculate_napbo(cv_item,x,ctx)
         d4(:) = d4(:) + x(:,ai)*amass
         totmass4 = totmass4 + amass
     end do
-    if( totmass4 .le. 0 ) then
-        call pmf_utils_exit(PMF_OUT,1,'totmass4 is zero in calculate_napbo!')
-    end if
     d4(:) = d4(:) / totmass4
 
     totmass5 = 0.0d0
@@ -173,9 +180,6 @@ subroutine calculate_napbo(cv_item,x,ctx)
         d5(:) = d5(:) + x(:,ai)*amass
         totmass5 = totmass5 + amass
     end do
-    if( totmass5 .le. 0 ) then
-        call pmf_utils_exit(PMF_OUT,1,'totmass5 is zero in calculate_napbo!')
-    end if
     d5(:) = d5(:) / totmass5
 
     totmass6 = 0.0d0
@@ -186,9 +190,6 @@ subroutine calculate_napbo(cv_item,x,ctx)
         d6(:) = d6(:) + x(:,ai)*amass
         totmass6 = totmass6 + amass
     end do
-    if( totmass6 .le. 0 ) then
-        call pmf_utils_exit(PMF_OUT,1,'totmass6 is zero in calculate_napbo!')
-    end if
     d6(:) = d6(:) / totmass6
 
     h(:) = d1(:) - d2(:)

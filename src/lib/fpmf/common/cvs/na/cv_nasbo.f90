@@ -84,6 +84,10 @@ subroutine load_nasbo(cv_item,prm_fin)
     write(PMF_OUT,50)
     call cv_common_read_group(cv_item,prm_fin,1)
 
+    if( cv_get_group_natoms(cv_item,1) .le. 3 ) then
+        call pmf_utils_exit(PMF_OUT,1,'group_a must contain at least four atoms!')
+    end if
+
     ! read reference structure ------------------------
     if( .not. prmfile_get_string_by_key(prm_fin,'reference_a',tmpstr) ) then
         call pmf_utils_exit(PMF_OUT,1,'File name of reference structure (reference_a) is not specified!')
@@ -112,6 +116,10 @@ subroutine load_nasbo(cv_item,prm_fin)
     ! read group b ----------------------------------
     write(PMF_OUT,60)
     call cv_common_read_group(cv_item,prm_fin,2)
+
+    if( cv_get_group_natoms(cv_item,2) .le. 3 ) then
+        call pmf_utils_exit(PMF_OUT,1,'group_b must contain at least four atoms!')
+    end if
 
     ! read reference structure ------------------------
     if( .not. prmfile_get_string_by_key(prm_fin,'reference_b',tmpstr) ) then
@@ -449,7 +457,7 @@ subroutine calculate_nasbo(cv_item,x,ctx)
     a_zaxis(3) = a_tmp1(1)*uya(2) - uya(1)*a_tmp1(2) + zsc*a_tmp2(1)*uyb(2) - zsc*uyb(1)*a_tmp2(2)
 
 ! with respect to uza and uzb
-    a_uza(:) = 0.50d0*a_zaxis(:)  
+    a_uza(:) = 0.5d0*a_zaxis(:)  
     a_uzb(:) = 0.5d0*zsc*a_zaxis(:) 
 
 ! with respect to fa and fb eigenvectors

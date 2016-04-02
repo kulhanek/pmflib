@@ -84,6 +84,10 @@ subroutine load_nabend(cv_item,prm_fin)
     write(PMF_OUT,50)
     call cv_common_read_group(cv_item,prm_fin,1)
 
+    if( cv_get_group_natoms(cv_item,1) .le. 3 ) then
+        call pmf_utils_exit(PMF_OUT,1,'group_a must contain at least four atoms!')
+    end if
+
     ! read reference structure ------------------------
     if( .not. prmfile_get_string_by_key(prm_fin,'reference_a',tmpstr) ) then
         call pmf_utils_exit(PMF_OUT,1,'File name of reference structure (reference_a) is not specified!')
@@ -113,6 +117,10 @@ subroutine load_nabend(cv_item,prm_fin)
     write(PMF_OUT,60)
     call cv_common_read_group(cv_item,prm_fin,2)
 
+    if( cv_get_group_natoms(cv_item,2) .le. 3 ) then
+        call pmf_utils_exit(PMF_OUT,1,'group_b must contain at least four atoms!')
+    end if
+
     ! read reference structure ------------------------
     if( .not. prmfile_get_string_by_key(prm_fin,'reference_b',tmpstr) ) then
         call pmf_utils_exit(PMF_OUT,1,'File name of reference structure (reference_b) is not specified!')
@@ -141,7 +149,13 @@ subroutine load_nabend(cv_item,prm_fin)
     ! read group c,d ----------------------------------
     write(PMF_OUT,75)
     call cv_common_read_group(cv_item,prm_fin,3)
+    if( cv_get_group_natoms(cv_item,3) .le. 0 ) then
+        call pmf_utils_exit(PMF_OUT,1,'group_c must contain at least one atom!')
+    end if
     call cv_common_read_group(cv_item,prm_fin,4)
+    if( cv_get_group_natoms(cv_item,4) .le. 0 ) then
+        call pmf_utils_exit(PMF_OUT,1,'group_d must contain at least one atom!')
+    end if
 
     return
 

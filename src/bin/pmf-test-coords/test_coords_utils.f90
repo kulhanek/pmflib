@@ -75,9 +75,10 @@ subroutine initialization
  allocate(lx(3,fnatoms),                     &
           loc_x(3,fnatoms),                  &
           mass(fnatoms),                     &
+          frmass(fnatoms),                   &
           fdx_ana(3,fnatoms),                &
           fdx_num(3,fnatoms),                &
-          tmp_context%CVsValues(1),         &
+          tmp_context%CVsValues(1),          &
           tmp_context%CVsDrvs(3,fnatoms,1),  &
           symbols(fnatoms),                  &
           stat= alloc_failed )
@@ -85,6 +86,9 @@ subroutine initialization
  if( alloc_failed .ne. 0 ) then
     call pmf_utils_exit(PMF_OUT,1,'Unable to allocate memory for arrays!')
  end if
+
+ ! this is required by tests in cvs, which test number of atoms by cv_get_group_rmass
+ frmass(:) = 1.0d0
 
  if( UseExternalSnapshosts ) then
     call open_xyz_stream
@@ -174,6 +178,7 @@ subroutine run_coord_test_deriv(test_id)
  lx(:,:) = 0.0d0
  loc_x(:,:) = 0.0d0
  mass(:) = 0.0d0
+ frmass(:) = 0.0d0
  fdx_ana(:,:) = 0.0d0
  fdx_num(:,:) = 0.0d0
  tmp_context%CVsValues(:) = 0.0d0
@@ -249,6 +254,7 @@ subroutine run_coord_test_identity(test_id)
  lx(:,:) = 0.0d0
  loc_x(:,:) = 0.0d0
  mass(:) = 0.0d0
+ frmass(:) = 0.0d0
  fdx_ana(:,:) = 0.0d0
  fdx_num(:,:) = 0.0d0
  tmp_context%CVsValues(:) = 0.0d0
@@ -502,8 +508,10 @@ subroutine new_xyz(no_more_snapshots)
  do i=1,fnatoms
     if( uniform_mass .eq. 0 ) then
         call rand_mass(max_mass,mass(i))
+        frmass(i) = mass(i)
     else
         mass(i) = uniform_mass
+        frmass(i) = uniform_mass
     end if
  end do
 

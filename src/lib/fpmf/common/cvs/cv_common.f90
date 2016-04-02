@@ -393,7 +393,7 @@ subroutine cv_get_group_com(cv_item,grpid,x,com,totmass)
 
     starti = 1
     if( grpid .gt. 1 ) then
-        starti = cv_item%grps(grpid - 1)
+        starti = cv_item%grps(grpid - 1) + 1
     end if
     stopi = cv_item%grps(grpid)
 
@@ -411,6 +411,66 @@ subroutine cv_get_group_com(cv_item,grpid,x,com,totmass)
     com(:) = com(:) / totmass
 
 end subroutine cv_get_group_com
+
+!===============================================================================
+! Function:  cv_get_group_rmass
+!===============================================================================
+
+real(PMFDP) function cv_get_group_rmass(cv_item,grpid)
+
+    use pmf_utils
+    use pmf_dat
+
+    implicit none
+    class(CVType)   :: cv_item
+    integer         :: grpid
+    ! -----------------------------------------------
+    integer         :: starti,stopi,i,ar
+    real(PMFDP)     :: amass,totmass
+    ! --------------------------------------------------------------------------
+
+    totmass = 0.0d0
+
+    starti = 1
+    if( grpid .gt. 1 ) then
+        starti = cv_item%grps(grpid - 1) + 1
+    end if
+    stopi = cv_item%grps(grpid)
+
+    do i = starti, stopi
+        ar = cv_item%rindexes(i)
+        amass = frmass(ar)
+        totmass = totmass + amass
+    end do
+    cv_get_group_rmass = totmass
+
+end function cv_get_group_rmass
+
+!===============================================================================
+! Function:  cv_get_group_natoms
+!===============================================================================
+
+integer  function cv_get_group_natoms(cv_item,grpid)
+
+    use pmf_utils
+    use pmf_dat
+
+    implicit none
+    class(CVType)   :: cv_item
+    integer         :: grpid
+    ! -----------------------------------------------
+    integer         :: starti,stopi
+    ! --------------------------------------------------------------------------
+
+    starti = 1
+    if( grpid .gt. 1 ) then
+        starti = cv_item%grps(grpid - 1) + 1
+    end if
+    stopi = cv_item%grps(grpid)
+
+    cv_get_group_natoms = stopi - starti + 1
+
+end function cv_get_group_natoms
 
 !===============================================================================
 ! Subroutine:  cv_get_angle
