@@ -174,6 +174,7 @@ subroutine pmf_sander_finalize_preinit(anatom,amass,ax)
     end if
 
     do i=1,fnatoms
+        frmass(i) = amass(i)
         call pmf_mask_set_topo_atom_mcrd(i,amass(i),ax(1,i),ax(2,i),ax(3,i))
     end do
 
