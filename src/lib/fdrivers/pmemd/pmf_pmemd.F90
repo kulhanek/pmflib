@@ -178,6 +178,7 @@ subroutine pmf_pmemd_finalize_preinit(amass,ax)
         call pmf_utils_exit(PMF_OUT,1,'Unable to allocate frmass!')
     end if
     do i=1,fnatoms
+        frmass(i) = amass(i)
         call pmf_mask_set_topo_atom_mcrd(i,amass(i),ax(1,i),ax(2,i),ax(3,i))
     end do
 
