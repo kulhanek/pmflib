@@ -36,13 +36,8 @@ IF(PMFLIB_CATS_DRV)
    ADD_SUBDIRECTORY(cats)
 ENDIF(PMFLIB_CATS_DRV)
 
-
 # # libatoms drv ===================
 # IF(PMFLIB_LIBATOMS_DRV)
 #     ADD_SUBDIRECTORY(libatoms)
 # ENDIF(PMFLIB_LIBATOMS_DRV)
 
-# setup files ==================================================================
-INCLUDE(agenerators/amber-11.cmake)
-INCLUDE(agenerators/cpmd-3.13.2.cmake)
-INCLUDE(agenerators/libatoms-dev.cmake)
