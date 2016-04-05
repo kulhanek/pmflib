@@ -46,3 +46,10 @@ ADD_TEST(CVDerRand02-AXANG ${EXECUTABLE_OUTPUT_PATH}/pmf-test-cvs
 ADD_TEST(CVDerRand03-AXANG ${EXECUTABLE_OUTPUT_PATH}/pmf-test-cvs
                         ../random03.in axang.in)
 
+ADD_TEST(CVDerRand01-AXANG2 ${EXECUTABLE_OUTPUT_PATH}/pmf-test-cvs
+                        ../random01.in axang2.in)
+ADD_TEST(CVDerRand02-AXANG2 ${EXECUTABLE_OUTPUT_PATH}/pmf-test-cvs
+                        ../random02.in axang2.in)
+ADD_TEST(CVDerRand03-AXANG2 ${EXECUTABLE_OUTPUT_PATH}/pmf-test-cvs
+                        ../random03.in axang2.in)
+
