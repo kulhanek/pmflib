@@ -55,6 +55,7 @@ SET(PMF_CVS_SRC
         common/cvs/angle/cv_axang.f90
         common/cvs/angle/cv_axang2.f90
         common/cvs/angle/cv_dih.f90
+        common/cvs/angle/cv_dih2.f90
 
     # shape
         common/cvs/shape/cv_rmsdt.f90
@@ -97,6 +98,8 @@ SET(PMF_CVS_SRC
         common/cvs/algebra/cv_sub.f90
         common/cvs/algebra/cv_mul.f90
         common/cvs/algebra/cv_div.f90
+        common/cvs/algebra/cv_fswitch.f90
+        common/cvs/algebra/cv_rswitch.f90
        )
 
 # gaussian process -------------------------------------------------------------

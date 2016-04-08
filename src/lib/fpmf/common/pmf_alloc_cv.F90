@@ -58,6 +58,7 @@ subroutine pmf_alloc_cv_allocate(cv_type,cv_item)
     use cv_axang
     use cv_axang2
     use cv_dih
+    use cv_dih2
     use cv_pfvang
 
 ! shape ------------------------------------------
@@ -104,6 +105,8 @@ subroutine pmf_alloc_cv_allocate(cv_type,cv_item)
     use cv_sub
     use cv_mul
     use cv_div
+    use cv_fswitch
+    use cv_rswitch
 
     implicit none
     character(*)            :: cv_type
@@ -151,6 +154,8 @@ subroutine pmf_alloc_cv_allocate(cv_type,cv_item)
 
         case('DIH')
             allocate(CVTypeDIH::cv_item)
+        case('DIH2')
+            allocate(CVTypeDIH2::cv_item)
 
     ! shape --------------------------------------
         case('RGYR')
@@ -228,6 +233,10 @@ subroutine pmf_alloc_cv_allocate(cv_type,cv_item)
             allocate(CVTypeMUL::cv_item)
         case('DIV')
             allocate(CVTypeDIV::cv_item)
+        case('FSWITCH')
+            allocate(CVTypeFSWITCH::cv_item)
+        case('RSWITCH')
+            allocate(CVTypeRSWITCH::cv_item)
 
         case default
             call pmf_utils_exit(PMF_OUT,1,&
