@@ -30,7 +30,7 @@ direction_b    z
 
 
 [AXANG2]
-name  cv1
+name  cv4
 skip_mass_test on
 group_a        @1-9
 reference_a    G_ring_only.xyz
@@ -40,7 +40,7 @@ reference_b    T_ring_only.xyz
 direction_b    y
 
 [AXANG2]
-name  cv2
+name  cv5
 skip_mass_test on
 group_a        @5-13
 reference_a    G_ring_only.xyz
@@ -50,7 +50,7 @@ reference_b    T_ring_only.xyz
 direction_b    z
 
 [AXANG2]
-name  cv3
+name  cv6
 skip_mass_test on
 group_a        @14-19
 reference_a    T_ring_only.xyz
@@ -61,7 +61,7 @@ direction_b    x
 
 
 [AXANG2]
-name  cv1
+name  cv7
 skip_mass_test on
 group_a        @1-9
 reference_a    G_ring_only.xyz
@@ -71,7 +71,7 @@ reference_b    T_ring_only.xyz
 direction_b    y
 
 [AXANG2]
-name  cv2
+name  cv8
 skip_mass_test on
 group_a        @5-13
 reference_a    G_ring_only.xyz
@@ -81,7 +81,7 @@ reference_b    T_ring_only.xyz
 direction_b    z
 
 [AXANG2]
-name  cv3
+name  cv9
 skip_mass_test on
 group_a        @14-19
 reference_a    T_ring_only.xyz
@@ -92,7 +92,7 @@ direction_b    y
 
 
 [AXANG2]
-name  cv1
+name  cv10
 skip_mass_test on
 group_a        @1-9
 reference_a    G_ring_only.xyz
@@ -102,7 +102,7 @@ reference_b    T_ring_only.xyz
 direction_b    x
 
 [AXANG2]
-name  cv2
+name  cv11
 skip_mass_test on
 group_a        @5-13
 reference_a    G_ring_only.xyz

@@ -69,7 +69,7 @@ subroutine initialization
  call pmf_mask_topo_finalize()
 
  ! print PMFLib header with system description
- call pmf_init_title('PMEMD')
+ call pmf_init_title('TEST')
 
  ! general arrays --------------------------------
  allocate(lx(3,fnatoms),                     &
@@ -97,6 +97,65 @@ subroutine initialization
  return
 
 end subroutine initialization
+
+!===============================================================================
+! Subroutine:  test_coordinates
+!===============================================================================
+
+subroutine test_coordinates
+
+ use prmfile
+ use pmf_dat
+ use pmf_core
+ use pmf_cvs
+ use pmf_utils
+ use pmf_control
+ use test_coords_dat
+ use test_coords_utils
+ use pmf_alloc_cv
+
+ implicit none
+ type(PRMFILE_TYPE),intent(inout)       :: prm_fin
+ ! -----------------------------------------------
+ character(PRMFILE_MAX_SECTION_NAME)    :: resname
+ integer                                :: nitems, i
+ logical                                :: eresult
+ ! -----------------------------------------------------------------------------
+
+ write(PMF_OUT,*)
+ call pmf_utils_heading(PMF_OUT,'TESTING', ':')
+
+ if( NumOfCVs .le. 0 ) then
+    call pmf_utils_exit(PMF_OUT,1,'No coordinate specified!')
+ end if
+
+ write(PMF_OUT,110) NumOfCVs
+
+ select case(test_type)
+    case(TEST_DERIV)
+        do i=1, NumOfCVs
+            write(PMF_OUT,*)
+            call pmf_utils_heading(PMF_OUT,'Testing', '-')
+            write(PMF_OUT,*)
+            write(PMF_OUT,130) i,trim(CVList(i)%cv%name)
+            call test_coord_deriv(i)
+        end do
+    case(TEST_IDENTITY)
+        if( nitems .ne. 2 ) then
+            call pmf_utils_exit(PMF_OUT,1,'Identity test requires only two coordinate definitions!')
+        end if
+        call test_coord_identity
+    case(TEST_VALUE)
+    case default
+        call pmf_utils_exit(PMF_OUT,1,'Not implemented type of test!')
+ end select
+
+ return
+
+110 format('Number of coordinates          : ',I2)
+130 format('=== Coordinate #',I2.2,' of type "',A,'"')
+
+end subroutine test_coordinates
 
 !===============================================================================
 ! Subroutine: test_coord_deriv

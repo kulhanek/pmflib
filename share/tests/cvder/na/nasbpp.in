@@ -45,7 +45,7 @@ parameter      shear
 ! -----------------------------------------------------------------------------
 
 [NASBPP]
-name  cv1
+name  cv5
 skip_mass_test on
 group_a        @1-9
 reference_a    G_ring_only.xyz
@@ -56,7 +56,7 @@ group_d        @17
 parameter      stretch
 
 [NASBPP]
-name  cv2
+name  cv6
 skip_mass_test on
 group_b        @1-9
 reference_b    G_ring_only.xyz
@@ -67,7 +67,7 @@ group_d        @17
 parameter      stretch
 
 [NASBPP]
-name  cv3
+name  cv7
 skip_mass_test on
 group_a        @5-13
 reference_a    G_ring_only.xyz
@@ -78,7 +78,7 @@ group_d        @5
 parameter      stretch
 
 [NASBPP]
-name  cv4
+name  cv8
 skip_mass_test on
 group_a        @14-19
 reference_a    T_ring_only.xyz
@@ -91,7 +91,7 @@ parameter      stretch
 ! -----------------------------------------------------------------------------
 
 [NASBPP]
-name  cv1
+name  cv9
 skip_mass_test on
 group_a        @1-9
 reference_a    G_ring_only.xyz
@@ -102,7 +102,7 @@ group_d        @17
 parameter      stagger
 
 [NASBPP]
-name  cv2
+name  cv10
 skip_mass_test on
 group_b        @1-9
 reference_b    G_ring_only.xyz
@@ -113,7 +113,7 @@ group_d        @17
 parameter      stagger
 
 [NASBPP]
-name  cv3
+name  cv11
 skip_mass_test on
 group_a        @5-13
 reference_a    G_ring_only.xyz
@@ -124,7 +124,7 @@ group_d        @5
 parameter      stagger
 
 [NASBPP]
-name  cv4
+name  cv12
 skip_mass_test on
 group_a        @14-19
 reference_a    T_ring_only.xyz
@@ -137,7 +137,7 @@ parameter      stagger
 ! -----------------------------------------------------------------------------
 
 [NASBPP]
-name  cv1
+name  cv13
 skip_mass_test on
 group_a        @1-9
 reference_a    G_ring_only.xyz
@@ -148,7 +148,7 @@ group_d        @17
 parameter      buckle
 
 [NASBPP]
-name  cv2
+name  cv14
 skip_mass_test on
 group_b        @1-9
 reference_b    G_ring_only.xyz
@@ -159,7 +159,7 @@ group_d        @17
 parameter      buckle
 
 [NASBPP]
-name  cv3
+name  cv15
 skip_mass_test on
 group_a        @5-13
 reference_a    G_ring_only.xyz
@@ -170,7 +170,7 @@ group_d        @5
 parameter      buckle
 
 [NASBPP]
-name  cv4
+name  cv16
 skip_mass_test on
 group_a        @14-19
 reference_a    T_ring_only.xyz
@@ -183,7 +183,7 @@ parameter      buckle
 ! -----------------------------------------------------------------------------
 
 [NASBPP]
-name  cv1
+name  cv17
 skip_mass_test on
 group_a        @1-9
 reference_a    G_ring_only.xyz
@@ -194,7 +194,7 @@ group_d        @17
 parameter      propeller
 
 [NASBPP]
-name  cv2
+name  cv18
 skip_mass_test on
 group_b        @1-9
 reference_b    G_ring_only.xyz
@@ -205,7 +205,7 @@ group_d        @17
 parameter      propeller
 
 [NASBPP]
-name  cv3
+name  cv19
 skip_mass_test on
 group_a        @5-13
 reference_a    G_ring_only.xyz
@@ -216,7 +216,7 @@ group_d        @5
 parameter      propeller
 
 [NASBPP]
-name  cv4
+name  cv20
 skip_mass_test on
 group_a        @14-19
 reference_a    T_ring_only.xyz
@@ -229,7 +229,7 @@ parameter      propeller
 ! -----------------------------------------------------------------------------
 
 [NASBPP]
-name  cv1
+name  cv21
 skip_mass_test on
 group_a        @1-9
 reference_a    G_ring_only.xyz
@@ -240,7 +240,7 @@ group_d        @17
 parameter      opening
 
 [NASBPP]
-name  cv2
+name  cv22
 skip_mass_test on
 group_b        @1-9
 reference_b    G_ring_only.xyz
@@ -251,7 +251,7 @@ group_d        @17
 parameter      opening
 
 [NASBPP]
-name  cv3
+name  cv23
 skip_mass_test on
 group_a        @5-13
 reference_a    G_ring_only.xyz
@@ -262,7 +262,7 @@ group_d        @5
 parameter      opening
 
 [NASBPP]
-name  cv4
+name  cv24
 skip_mass_test on
 group_a        @14-19
 reference_a    T_ring_only.xyz

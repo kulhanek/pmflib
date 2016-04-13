@@ -17,7 +17,6 @@ trajectory      100
 {PMFLIB}
 [mtd]
 fmode           1
-fsample         100
 fheight         0.1
 frestart       on
 

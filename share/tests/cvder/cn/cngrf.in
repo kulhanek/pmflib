@@ -8,7 +8,7 @@ npower    2
 mpower    4
 
 [CNGRF]
-name      cv1
+name      cv2
 group_a   @1-4
 group_b   @6-10
 offset    0.0

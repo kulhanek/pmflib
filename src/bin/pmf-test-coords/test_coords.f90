@@ -61,6 +61,9 @@ program test_coords
     ! load coordinates and test them ----------------
     call load_coordinates
 
+    ! test coordinates
+    call test_coordinates
+
     ! print final results ---------------------------
     write(PMF_OUT,*)
     call pmf_utils_heading(PMF_OUT,'FINAL RESULTS', ':')
