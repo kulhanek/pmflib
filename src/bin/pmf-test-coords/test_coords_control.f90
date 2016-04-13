@@ -105,6 +105,9 @@ subroutine read_main
         case('value')
             test_type = TEST_VALUE
             write(PMF_OUT,1) 'value'
+        case('combined')
+            test_type = TEST_COMBINED
+            write(PMF_OUT,1) 'combined'
         case default
             call pmf_utils_exit(PMF_OUT,1,'Unsupported test type!')
     end select

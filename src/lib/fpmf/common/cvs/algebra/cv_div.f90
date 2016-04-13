@@ -158,8 +158,8 @@ subroutine calculate_div(cv_item,x,ctx)
     end if
 
     ctx%CVsValues(cv_idx) = ctx%CVsValues(cv_item%left_cv) / ctx%CVsValues(cv_item%right_cv)
-    ctx%CVsDrvs(:,:,cv_idx) =   (ctx%CVsValues(cv_item%left_cv)*ctx%CVsDrvs(:,:,cv_item%right_cv) &
-                           - ctx%CVsValues(cv_item%right_cv)*ctx%CVsDrvs(:,:,cv_item%left_cv)) &
+    ctx%CVsDrvs(:,:,cv_idx) = ( ctx%CVsDrvs(:,:,cv_item%left_cv)*ctx%CVsValues(cv_item%right_cv) &
+                              - ctx%CVsValues(cv_item%left_cv)*ctx%CVsDrvs(:,:,cv_item%right_cv) ) &
                            / ctx%CVsValues(cv_item%right_cv)**2
 
     ! disable unused variable warning
