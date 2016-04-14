@@ -172,7 +172,7 @@ subroutine calculate_cnrf(cv_item,x,ctx)
                 else
                     ctx%CVsValues(cv_item%idx) = ctx%CVsValues(cv_item%idx) + real(cv_item%npow) / real(cv_item%mpow)
                     ! TODO derivatives ?
-
+                    call pmf_utils_exit(PMF_OUT,1,'not implemented!')
                 end if
             end if
         end do

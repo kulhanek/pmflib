@@ -171,6 +171,8 @@ subroutine calculate_cngrf(cv_item,x,ctx)
         dm = d - cv_item%offset
         if( dm .le. 0 ) then
             ctx%CVsValues(cv_item%idx) = ctx%CVsValues(cv_item%idx) + 1.0d0
+            ! TODO derivatives ?
+            call pmf_utils_exit(PMF_OUT,1,'not implemented!')
         else
             if( dm .ne. cv_item%reference ) then
                 up = (dm*iref)**cv_item%npow
@@ -190,7 +192,7 @@ subroutine calculate_cngrf(cv_item,x,ctx)
             else
                 ctx%CVsValues(cv_item%idx) = ctx%CVsValues(cv_item%idx) + real(cv_item%npow) / real(cv_item%mpow)
                 ! TODO derivatives ?
-
+                call pmf_utils_exit(PMF_OUT,1,'not implemented!')
             end if
         end if
     end do

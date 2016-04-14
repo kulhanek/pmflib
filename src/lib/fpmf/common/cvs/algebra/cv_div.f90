@@ -147,20 +147,16 @@ subroutine calculate_div(cv_item,x,ctx)
     class(CVTypeDIV)    :: cv_item
     real(PMFDP)         :: x(:,:)
     type(CVContextType) :: ctx
-    ! -----------------------------------------------
-    integer             :: cv_idx
     ! --------------------------------------------------------------------------
-
-    cv_idx = cv_item%idx
 
     if( ctx%CVsValues(cv_item%right_cv) .eq. 0 ) then
         call pmf_utils_exit(PMF_OUT,1,'Second CV is zero in DIV CV!')
     end if
 
-    ctx%CVsValues(cv_idx) = ctx%CVsValues(cv_item%left_cv) / ctx%CVsValues(cv_item%right_cv)
-    ctx%CVsDrvs(:,:,cv_idx) = ( ctx%CVsDrvs(:,:,cv_item%left_cv)*ctx%CVsValues(cv_item%right_cv) &
-                              - ctx%CVsValues(cv_item%left_cv)*ctx%CVsDrvs(:,:,cv_item%right_cv) ) &
-                           / ctx%CVsValues(cv_item%right_cv)**2
+    ctx%CVsValues(cv_item%idx) = ctx%CVsValues(cv_item%left_cv) / ctx%CVsValues(cv_item%right_cv)
+    ctx%CVsDrvs(:,:,cv_item%idx) = ( ctx%CVsDrvs(:,:,cv_item%left_cv)*ctx%CVsValues(cv_item%right_cv) &
+                                 - ctx%CVsValues(cv_item%left_cv)*ctx%CVsDrvs(:,:,cv_item%right_cv) ) &
+                                 / ctx%CVsValues(cv_item%right_cv)**2
 
     ! disable unused variable warning
     ignored_arg__ = size(x) .ne. 0

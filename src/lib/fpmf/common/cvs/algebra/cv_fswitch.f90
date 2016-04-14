@@ -1,7 +1,7 @@
 !===============================================================================
 ! PMFLib - Library Supporting Potential of Mean Force Calculations
 !-------------------------------------------------------------------------------
-!    Copyright (C) 2015 Petr Kulhanek, kulhanek@chemi.muni.cz
+!    Copyright (C) 2016 Petr Kulhanek, kulhanek@chemi.muni.cz
 !
 !    This library is free software; you can redistribute it and/or
 !    modify it under the terms of the GNU Lesser General Public
@@ -106,7 +106,6 @@ subroutine load_fswitch(cv_item,prm_fin)
         cv_item%rindexes(i) = CVList(cv_item%arg_cv)%cv%rindexes(i)
     end do
 
-
     if( CVList(cv_item%arg_cv)%cv%gradforanycrd .neqv. .true. ) then
         call pmf_utils_exit(PMF_OUT,1,'>>> Argument CV does not have gradforanycrd == true!')
     end if
@@ -132,7 +131,7 @@ subroutine load_fswitch(cv_item,prm_fin)
 
      5 format('   ** arg CV             : ',A)
     10 format('   ** steepness          : ',E14.5,' [',A,']')
-    20 format('   ** reference distance : ',E14.5,' [',A,']')
+    20 format('   ** reference value    : ',E14.5,' [',A,']')
 
 end subroutine load_fswitch
 
@@ -150,12 +149,15 @@ subroutine calculate_fswitch(cv_item,x,ctx)
     real(PMFDP)             :: x(:,:)
     type(CVContextType)     :: ctx
     ! -----------------------------------------------
-    integer                 :: cv_idx
+    real(PMFDP)             :: e,e1,v,dv
     ! --------------------------------------------------------------------------
 
-!     cv_idx = cv_item%idx
-!     ctx%CVsValues(cv_idx) = ctx%CVsValues(cv_item%left_cv) + ctx%CVsValues(cv_item%right_cv)
-!     ctx%CVsDrvs(:,:,cv_idx) = ctx%CVsDrvs(:,:,cv_item%left_cv) + ctx%CVsDrvs(:,:,cv_item%right_cv)
+    e  = exp(cv_item%steepness*(ctx%CVsValues(cv_item%arg_cv) - cv_item%reference))
+    e1 = 1.0d0 + e
+    v  = 1.0d0 / e1
+    ctx%CVsValues(cv_item%idx) = v
+    dv = - v*v*e*cv_item%steepness
+    ctx%CVsDrvs(:,:,cv_item%idx) = dv*ctx%CVsDrvs(:,:,cv_item%arg_cv)
 
     ! disable unused variable warning
     ignored_arg__ = size(x) .ne. 0

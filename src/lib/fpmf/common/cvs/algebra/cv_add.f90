@@ -151,13 +151,10 @@ subroutine calculate_add(cv_item,x,ctx)
     class(CVTypeADD)    :: cv_item
     real(PMFDP)         :: x(:,:)
     type(CVContextType) :: ctx
-    ! -----------------------------------------------
-    integer             :: cv_idx
     ! --------------------------------------------------------------------------
 
-    cv_idx = cv_item%idx
-    ctx%CVsValues(cv_idx) = ctx%CVsValues(cv_item%left_cv) + ctx%CVsValues(cv_item%right_cv)
-    ctx%CVsDrvs(:,:,cv_idx) = ctx%CVsDrvs(:,:,cv_item%left_cv) + ctx%CVsDrvs(:,:,cv_item%right_cv)
+    ctx%CVsValues(cv_item%idx) = ctx%CVsValues(cv_item%left_cv) + ctx%CVsValues(cv_item%right_cv)
+    ctx%CVsDrvs(:,:,cv_item%idx) = ctx%CVsDrvs(:,:,cv_item%left_cv) + ctx%CVsDrvs(:,:,cv_item%right_cv)
 
     ! disable unused variable warning
     ignored_arg__ = size(x) .ne. 0
