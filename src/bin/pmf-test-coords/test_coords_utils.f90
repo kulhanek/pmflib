@@ -853,7 +853,6 @@ subroutine read_xyz_stream(error)
     return
 
 ! error handlers ---------------------------------
-100  error = .false.
 110  error = .false.
 120  error = .false.
 130  error = .false.

@@ -56,12 +56,16 @@ subroutine load_rmsdt(cv_item,prm_fin)
     use cv_common
     use smf_xyzfile_type
     use smf_xyzfile
+    use smf_periodic_table
 
     implicit none
     class(CVTypeRMSDT)                  :: cv_item
     type(PRMFILE_TYPE),intent(inout)    :: prm_fin
     ! -----------------------------------------------
     character(len=PRMFILE_MAX_VALUE)    :: file_name
+    character(len=PRMFILE_MAX_VALUE)    :: tmpstr
+    integer                             :: i,ar
+    logical                             :: lresult, skiptest
     ! --------------------------------------------------------------------------
 
     ! unit and CV name initialization ---------------
@@ -73,6 +77,10 @@ subroutine load_rmsdt(cv_item,prm_fin)
     ! load groups -----------------------------------
     cv_item%ngrps = 1
     call cv_common_read_groups(cv_item,prm_fin)
+
+    ! this is important for testing
+    skiptest = .false.
+    lresult = prmfile_get_logical_by_key(prm_fin,'skip_mass_test',skiptest)
 
     ! read target structure -------------------------
     if( .not. prmfile_get_string_by_key(prm_fin,'target',file_name) ) then
@@ -86,12 +94,23 @@ subroutine load_rmsdt(cv_item,prm_fin)
     call close_xyz(PMF_XYZ,cv_item%xyz_str)
 
     if( cv_item%xyz_str%natoms .ne. cv_item%natoms ) then
-        call pmf_utils_exit(PMF_OUT,1,'Number of atoms in group and target structure differs!')
+        call pmf_utils_exit(PMF_OUT,1,'Number of atoms in the group and target structure differs!')
+    end if
+
+    if( .not. skiptest ) then
+        do i = 1, cv_item%grps(1)
+            ar = cv_item%rindexes(i)
+            if( dabs(frmass(ar) - SearchMassBySymbol(cv_item%xyz_str%symbols(i))) .gt. 1.0 ) then
+                write(tmpstr,100) i, frmass(ar), SearchMassBySymbol(cv_item%xyz_str%symbols(i))
+                call pmf_utils_exit(PMF_OUT,1,trim(tmpstr))
+            end if
+        end do
     end if
 
     return
 
-50 format('   ** target structure   : ',A)
+ 50 format('   ** target structure   : ',A)
+100 format('Atom mismatch between group A and reference A atoms! atom: ',I6,', group mass: ',F10.3, ', ref mass: ',F10.3)
 
 end subroutine load_rmsdt
 

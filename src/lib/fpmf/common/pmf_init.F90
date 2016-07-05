@@ -54,7 +54,7 @@ subroutine pmf_init_dat
     fdt = 0.0d0
     ftime = 0.0d0
     ftemp = 0.0d0
-    fstep = 0.0d0
+    fstep = 0
     fsystype = SYS_UNK
     fintalg = IA_LEAP_FROG
 
@@ -210,14 +210,13 @@ end subroutine pmf_init_variables
 ! Subroutine:  pmf_init
 !===============================================================================
 
-subroutine pmf_init_all(amass,ax)
+subroutine pmf_init_all_nocvvalues(amass,ax)
 
     use pmf_dat
     use pmf_core
     use pmf_cvs
     use pmf_mask
     use pmf_pbc
-    use pmf_paths
 
     implicit none
     real(PMFDP)     :: amass(:)
@@ -244,6 +243,31 @@ subroutine pmf_init_all(amass,ax)
         end if
         Crd(:,i) = ax(:,RIndexes(i))*LengthConv
     end do
+
+end subroutine pmf_init_all_nocvvalues
+
+!===============================================================================
+! Subroutine:  pmf_init
+!===============================================================================
+
+subroutine pmf_init_all(amass,ax)
+
+    use pmf_dat
+    use pmf_core
+    use pmf_cvs
+    use pmf_mask
+    use pmf_pbc
+    use pmf_paths
+
+    implicit none
+    real(PMFDP)     :: amass(:)
+    real(PMFDP)     :: ax(:,:)
+    ! -----------------------------------------------
+    integer         :: i
+    ! --------------------------------------------------------------------------
+
+    ! init subsystems
+    call pmf_init_all_nocvvalues(amass,ax)
 
     ! init CVs
     CVContext%CVsValues = 0.0d0

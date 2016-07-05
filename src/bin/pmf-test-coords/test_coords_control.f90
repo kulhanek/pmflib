@@ -166,7 +166,6 @@ subroutine read_main
  return
 
   1 format ('test_type                              = ',a12)
-  5 format ('test_type                              = ',a12,'                  (default)')
  10 format ('max_atoms                              = ',i12)
  15 format ('max_atoms                              = ',i12,'                  (default)')
  20 format ('max_radius                             = ',F12.4)

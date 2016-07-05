@@ -100,7 +100,7 @@ subroutine load_nasbpp(cv_item,prm_fin)
     call close_xyz(PMF_XYZ,cv_item%xyz_str_a)
 
     if( cv_item%xyz_str_a%natoms .ne. cv_item%grps(1) ) then
-        call pmf_utils_exit(PMF_OUT,1,'Number of atoms in group A and reference structure A differs!')
+        call pmf_utils_exit(PMF_OUT,1,'Number of atoms in the group A and reference structure A differs!')
     end if
 
     if( .not. skiptest ) then

@@ -166,7 +166,13 @@ subroutine pmf_cats_end_init(anatom,amass,ax)
     call pmf_cats_process_control
 
     ! init PMF subsystems
-    call pmf_init_all(amass,ax)
+    call pmf_init_all_nocvvalues(amass,ax)
+
+    write(PMF_OUT,'(A)') '#'
+    write(PMF_OUT,'(A)') '#==============================================================================#'
+    write(PMF_OUT,'(A)') '# PMFLib - End of Initialization                                               #'
+    write(PMF_OUT,'(A)') '#==============================================================================#'
+    write(PMF_OUT,*)
 
     ! flush output streams
     flush(PMF_OUT)

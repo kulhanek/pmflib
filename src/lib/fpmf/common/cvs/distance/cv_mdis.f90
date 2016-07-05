@@ -60,10 +60,11 @@ subroutine load_mdis(cv_item,prm_fin)
     type(PRMFILE_TYPE),intent(inout)    :: prm_fin
     ! -----------------------------------------------
     logical                             :: ret
-    integer                             :: count, atomid, alloc_failed
+    integer                             :: count, atomid, alloc_failed, sbeg, send
     character(PRMFILE_MAX_LINE)         :: key
     character(PRMFILE_MAX_LINE)         :: mask1
     character(PRMFILE_MAX_LINE)         :: mask2
+    character(PRMFILE_MAX_LINE)         :: locvalue
     ! --------------------------------------------------------------------------
 
     ! simple init and allocation --------------------
@@ -106,15 +107,58 @@ subroutine load_mdis(cv_item,prm_fin)
     atomid = 1
     do while( prmfile_get_field_on_line(prm_fin,key) .and. ret)
         if( trim(key) .eq. 'pair' ) then
-            if( .not. prmfile_get_field_on_line(prm_fin,mask1) ) then
-                write(mask1,*) count
+            if( .not. prmfile_get_field_on_line(prm_fin,locvalue) ) then
+                write(locvalue,*) count
                 call pmf_utils_exit(PMF_OUT,1, &
-                        'Unable to get first atom mask for pair '//trim(mask1)//'!')
+                        'Unable to get the first atom mask for the pair '//trim(locvalue)//'!')
             end if
-            if( .not. prmfile_get_field_on_line(prm_fin,mask2) ) then
-                write(mask1,*) count
+
+            ! trim quotation
+            sbeg = 1
+            send = len(trim(locvalue))
+
+            ! handle quotations
+            if( send .ge. 2 ) then
+                if( (locvalue(1:1) .eq. '''') .and. (locvalue(send:send) .eq. '''')  ) then
+                    sbeg = sbeg + 1
+                    send = send - 1
+                else if( (locvalue(1:1) .eq. '"') .and. (locvalue(send:send) .eq. '"') ) then
+                    sbeg = sbeg + 1
+                    send = send - 1
+                end if
+            end if
+
+            if( sbeg .le. send ) then
+                mask1 = locvalue(sbeg:send)
+            else
+                mask1 = ''
+            end if
+
+            if( .not. prmfile_get_field_on_line(prm_fin,locvalue) ) then
+                write(locvalue,*) count
                 call pmf_utils_exit(PMF_OUT,1, &
-                        'Unable to get second atom mask for pair '//trim(mask1)//'!')
+                        'Unable to get the second atom mask for the pair '//trim(locvalue)//'!')
+            end if
+
+            ! trim quotation
+            sbeg = 1
+            send = len(trim(locvalue))
+
+            ! handle quotations
+            if( send .ge. 2 ) then
+                if( (locvalue(1:1) .eq. '''') .and. (locvalue(send:send) .eq. '''')  ) then
+                    sbeg = sbeg + 1
+                    send = send - 1
+                else if( (locvalue(1:1) .eq. '"') .and. (locvalue(send:send) .eq. '"') ) then
+                    sbeg = sbeg + 1
+                    send = send - 1
+                end if
+            end if
+
+            if( sbeg .le. send ) then
+                mask2 = locvalue(sbeg:send)
+            else
+                mask2 = ''
             end if
 
             write(PMF_OUT,20) trim(mask1),trim(mask2)

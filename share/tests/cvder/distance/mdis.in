@@ -47,3 +47,14 @@ pair    @4  @7
 pair    @4  @9
 beta    0.5
 
+[MDIS]
+name    cv6
+pair    @1  @2
+pair    @3  @4
+
+[MDIS]
+name    cv7
+pair    "@1"  "@2"
+pair    "@3"  "@4"
+
+

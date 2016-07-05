@@ -103,7 +103,6 @@ subroutine pmf_control_read_pmflib_group(prm_fin)
 
     return
 
-100 format(/,'::::::::::::::::::::::::::::::::::: {PMFLIB} :::::::::::::::::::::::::::::::::::')
 110 format (' >> No PMFLIB group was found - PMFLib is disabled!')
 
 end subroutine pmf_control_read_pmflib_group
@@ -779,7 +778,7 @@ subroutine pmf_control_list_periodic_cvs()
     call pmf_utils_heading(PMF_OUT,'Periodic collective variables','-')
     write(PMF_OUT,*)
 
-    pcvs = 0.0
+    pcvs = 0
     do i=1,NumOfCVs
         if( CVList(i)%cv%is_periodic_cv() ) then
             pcvs = pcvs + 1
