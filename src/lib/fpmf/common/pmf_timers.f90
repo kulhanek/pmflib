@@ -58,14 +58,14 @@ contains
 
 subroutine pmf_timers_init_top
 
- use smf_profiling
- use pmf_dat
+    use smf_profiling
+    use pmf_dat
 
- implicit none
- ! -----------------------------------------------------------------------------
+    implicit none
+    ! -------------------------------------------------------------------------
 
- call init_profiling(PMF_OUT,50)
- PMFLIB_TOTAL_TIMER = TOTAL_TIMER
+    call init_profiling(PMF_OUT,50)
+    PMFLIB_TOTAL_TIMER = TOTAL_TIMER
 
 end subroutine pmf_timers_init_top
 
@@ -75,32 +75,32 @@ end subroutine pmf_timers_init_top
 
 subroutine pmf_timers_init
 
- use smf_profiling_dat
- use smf_profiling
+    use smf_profiling_dat
+    use smf_profiling
 
- implicit none
- ! -----------------------------------------------------------------------------
+    implicit none
+    ! -------------------------------------------------------------------------
 
- ! add standard timers --------------------------------
- PMFLIB_TIMER           = add_timer(PMFLIB_TOTAL_TIMER,'PMFLib')
-    PMFLIB_CVS_TIMER              = add_timer(PMFLIB_TIMER,'Collective Variables')
-    PMFLIB_PATH_TIMER              = add_timer(PMFLIB_TIMER,'Paths')
-    PMFLIB_METHODS_TIMER          = add_timer(PMFLIB_TIMER,'Methods')
-        PMFLIB_ABF_TIMER            = add_timer(PMFLIB_METHODS_TIMER,'Adaptive Biasing Force')
-            PMFLIB_ABF_MWA_TIMER        = add_timer(PMFLIB_ABF_TIMER,'Multiple Walkers Approach')
-        PMFLIB_ABP_TIMER            = add_timer(PMFLIB_METHODS_TIMER,'Adaptive Biasing Potential')
-            PMFLIB_ABP_MWA_TIMER        = add_timer(PMFLIB_ABP_TIMER,'Multiple Walkers Approach')
-        PMFLIB_MTD_TIMER            = add_timer(PMFLIB_METHODS_TIMER,'Metadynamics')
-            PMFLIB_MTD_MWA_TIMER        = add_timer(PMFLIB_MTD_TIMER,'Multiple Walkers Approach')
-        PMFLIB_STM_TIMER            = add_timer(PMFLIB_METHODS_TIMER,'String Method')
-            PMFLIB_STM_NET_TIMER        = add_timer(PMFLIB_STM_TIMER,'Network Communication')
-        PMFLIB_CON_TIMER            = add_timer(PMFLIB_METHODS_TIMER,'Constrained Dynamics')
-        PMFLIB_RST_TIMER            = add_timer(PMFLIB_METHODS_TIMER,'Restrained Dynamics')
-    PMFLIB_EXTENSIONS_TIMER          = add_timer(PMFLIB_TIMER,'Extensions')
-        PMFLIB_MON_TIMER        = add_timer(PMFLIB_EXTENSIONS_TIMER,'Monitoring')
-        PMFLIB_PDRV_TIMER       = add_timer(PMFLIB_EXTENSIONS_TIMER,'Path Driving')
-        PMFLIB_REMD_TIMER       = add_timer(PMFLIB_EXTENSIONS_TIMER,'Replica Exchange Molecular Dynamics')
-        PMFLIB_GAP_TIMER        = add_timer(PMFLIB_EXTENSIONS_TIMER,'Gaussian Approximation Potential')
+    ! add standard timers --------------------------------
+    PMFLIB_TIMER           = add_timer(PMFLIB_TOTAL_TIMER,'PMFLib')
+        PMFLIB_CVS_TIMER              = add_timer(PMFLIB_TIMER,'Collective Variables')
+        PMFLIB_PATH_TIMER              = add_timer(PMFLIB_TIMER,'Paths')
+        PMFLIB_METHODS_TIMER          = add_timer(PMFLIB_TIMER,'Methods')
+            PMFLIB_ABF_TIMER            = add_timer(PMFLIB_METHODS_TIMER,'Adaptive Biasing Force')
+                PMFLIB_ABF_MWA_TIMER        = add_timer(PMFLIB_ABF_TIMER,'Multiple Walkers Approach')
+            PMFLIB_ABP_TIMER            = add_timer(PMFLIB_METHODS_TIMER,'Adaptive Biasing Potential')
+                PMFLIB_ABP_MWA_TIMER        = add_timer(PMFLIB_ABP_TIMER,'Multiple Walkers Approach')
+            PMFLIB_MTD_TIMER            = add_timer(PMFLIB_METHODS_TIMER,'Metadynamics')
+                PMFLIB_MTD_MWA_TIMER        = add_timer(PMFLIB_MTD_TIMER,'Multiple Walkers Approach')
+            PMFLIB_STM_TIMER            = add_timer(PMFLIB_METHODS_TIMER,'String Method')
+                PMFLIB_STM_NET_TIMER        = add_timer(PMFLIB_STM_TIMER,'Network Communication')
+            PMFLIB_CON_TIMER            = add_timer(PMFLIB_METHODS_TIMER,'Constrained Dynamics')
+            PMFLIB_RST_TIMER            = add_timer(PMFLIB_METHODS_TIMER,'Restrained Dynamics')
+        PMFLIB_EXTENSIONS_TIMER          = add_timer(PMFLIB_TIMER,'Extensions')
+            PMFLIB_MON_TIMER        = add_timer(PMFLIB_EXTENSIONS_TIMER,'Monitoring')
+            PMFLIB_PDRV_TIMER       = add_timer(PMFLIB_EXTENSIONS_TIMER,'Path Driving')
+            PMFLIB_REMD_TIMER       = add_timer(PMFLIB_EXTENSIONS_TIMER,'Replica Exchange Molecular Dynamics')
+            PMFLIB_GAP_TIMER        = add_timer(PMFLIB_EXTENSIONS_TIMER,'Gaussian Approximation Potential')
 
 end subroutine pmf_timers_init
 
@@ -110,13 +110,13 @@ end subroutine pmf_timers_init
 
 subroutine pmf_timers_start_timer(id)
 
- use smf_profiling
+    use smf_profiling
 
- implicit none
- integer        :: id
- ! -----------------------------------------------------------------------------
+    implicit none
+    integer        :: id
+    ! -------------------------------------------------------------------------
 
- call start_timer(id)
+    call start_timer(id)
 
 end subroutine pmf_timers_start_timer
 
@@ -126,13 +126,13 @@ end subroutine pmf_timers_start_timer
 
 subroutine pmf_timers_stop_timer(id)
 
- use smf_profiling
+    use smf_profiling
 
- implicit none
- integer        :: id
- ! -----------------------------------------------------------------------------
+    implicit none
+    integer        :: id
+    ! -------------------------------------------------------------------------
 
- call stop_timer(id)
+    call stop_timer(id)
 
 end subroutine pmf_timers_stop_timer
 
@@ -140,14 +140,18 @@ end subroutine pmf_timers_stop_timer
 !-------------------------------------------------------------------------------
 !===============================================================================
 
-subroutine pmf_timers_finalize
+subroutine pmf_timers_finalize(do_profiling)
 
- use smf_profiling
+    use smf_profiling
 
- implicit none
- ! -----------------------------------------------------------------------------
+    implicit none
+    logical :: do_profiling
+    ! -------------------------------------------------------------------------
 
- call write_timing
+    if( do_profiling ) then
+        call write_timing
+    end if
+    call finalize_profiling
 
 end subroutine pmf_timers_finalize
 

@@ -46,8 +46,8 @@ logical                 :: fenable_hessian      ! enable the calculation of seco
 logical                 :: fmonitor_paths       ! enable path monitoring
 
 ! parallel setup ---------------------------------------------------------------
-logical     :: fmaster      = .true.    ! .true. for master process
-integer     :: fmytaskid    = 0         ! process id
+logical     :: fmaster   = .true.   ! .true. for master process
+integer     :: fmytaskid = 0        ! process id
 
 ! local copies of MD variables -------------------------------------------------
 integer     :: fnatoms      ! total number of atoms
@@ -110,48 +110,48 @@ type(CVContextType)         :: CVContextP
 ! MASTER =======================================================================
 
 ! file names -------------------------------------------------------------------
-character(PMF_MAX_PATH)     :: fcvsdef      = '{CVS}'
-character(PMF_MAX_PATH)     :: fpathsdef    = '{PATHS}'
+character(PMF_MAX_PATH)     :: fcvsdef
+character(PMF_MAX_PATH)     :: fpathsdef
 
 ! constraint dynamics -----------------------------
-character(PMF_MAX_PATH)     :: fcstdef      = '{CST}'
-character(PMF_MAX_PATH)     :: fcstout      = '_cst.out'
-character(PMF_MAX_PATH)     :: fcstrst      = '_cst.rst'
+character(PMF_MAX_PATH)     :: fcstdef
+character(PMF_MAX_PATH)     :: fcstout
+character(PMF_MAX_PATH)     :: fcstrst
 character(PMF_MAX_PATH)     :: fcstctr
 
 ! restraint dynamics -------------------------------
-character(PMF_MAX_PATH)     :: frstdef      = '{RST}'
-character(PMF_MAX_PATH)     :: frstout      = '_rst.out'
-character(PMF_MAX_PATH)     :: frsthist     = '_rst.hist'
+character(PMF_MAX_PATH)     :: frstdef
+character(PMF_MAX_PATH)     :: frstout
+character(PMF_MAX_PATH)     :: frsthist
 character(PMF_MAX_PATH)     :: frstctr
 
 ! metadynamics -----------------------------------
-character(PMF_MAX_PATH)     :: fmtddef     = '{MTD}'
-character(PMF_MAX_PATH)     :: fmtdout     = '_mtd.out'
-character(PMF_MAX_PATH)     :: fmtdrst     = '_mtd.rst'
-character(PMF_MAX_PATH)     :: fmtdcvs     = '_mtd.cvs'
-character(PMF_MAX_PATH)     :: fmtdhills   = '_mtd.hills'
-character(PMF_MAX_PATH)     :: fmtdgpout   = '_mtd.gp'
+character(PMF_MAX_PATH)     :: fmtddef
+character(PMF_MAX_PATH)     :: fmtdout
+character(PMF_MAX_PATH)     :: fmtdrst
+character(PMF_MAX_PATH)     :: fmtdcvs
+character(PMF_MAX_PATH)     :: fmtdhills
+character(PMF_MAX_PATH)     :: fmtdgpout
 
 ! adaptive biasing force method ------------------
-character(PMF_MAX_PATH)     :: fabfdef      = '{ABF}'
-character(PMF_MAX_PATH)     :: fabfmask     = '_abf.mask'
-character(PMF_MAX_PATH)     :: fabfout      = '_abf.out'
-character(PMF_MAX_PATH)     :: fabfrst      = '_abf.rst'
-character(PMF_MAX_PATH)     :: fabftrj      = '_abf.trj'
-character(PMF_MAX_PATH)     :: fabfgpout    = '_abf.gpout'
+character(PMF_MAX_PATH)     :: fabfdef
+character(PMF_MAX_PATH)     :: fabfmask
+character(PMF_MAX_PATH)     :: fabfout
+character(PMF_MAX_PATH)     :: fabfrst
+character(PMF_MAX_PATH)     :: fabftrj
+character(PMF_MAX_PATH)     :: fabfgpout
 
 ! string method ----------------------------------
-character(PMF_MAX_PATH)     :: fstmdef      = '{STM}'
-character(PMF_MAX_PATH)     :: fstmout      = '_stm.out'
+character(PMF_MAX_PATH)     :: fstmdef
+character(PMF_MAX_PATH)     :: fstmout
 
 ! monitoring -------------------------------------
-character(PMF_MAX_PATH)     :: fmondef      = '{MON}'
-character(PMF_MAX_PATH)     :: fmonout      = '_mon.out'
+character(PMF_MAX_PATH)     :: fmondef
+character(PMF_MAX_PATH)     :: fmonout
 
 ! path driving -----------------------------------
-character(PMF_MAX_PATH)     :: fpdrvdef     = '{PDRV}'
-character(PMF_MAX_PATH)     :: fpdrvout     = '_pdrv.out'
+character(PMF_MAX_PATH)     :: fpdrvdef
+character(PMF_MAX_PATH)     :: fpdrvout
 
 !-------------------------------------------------------------------------------
 

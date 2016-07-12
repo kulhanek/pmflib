@@ -75,6 +75,41 @@ subroutine pmf_init_dat
     fbox_volume = 0.0d0
     fbox_sphere = 0.0d0
 
+    ! file names ---------------------------------------------------------------
+    fcvsdef      = '{CVS}'
+    fpathsdef    = '{PATHS}'
+
+    fcstdef      = '{CST}'
+    fcstout      = '_cst.out'
+    fcstrst      = '_cst.rst'
+
+    frstdef      = '{RST}'
+    frstout      = '_rst.out'
+    frsthist     = '_rst.hist'
+
+    fmtddef     = '{MTD}'
+    fmtdout     = '_mtd.out'
+    fmtdrst     = '_mtd.rst'
+    fmtdcvs     = '_mtd.cvs'
+    fmtdhills   = '_mtd.hills'
+    fmtdgpout   = '_mtd.gp'
+
+    fabfdef      = '{ABF}'
+    fabfmask     = '_abf.mask'
+    fabfout      = '_abf.out'
+    fabfrst      = '_abf.rst'
+    fabftrj      = '_abf.trj'
+    fabfgpout    = '_abf.gpout'
+
+    fstmdef      = '{STM}'
+    fstmout      = '_stm.out'
+
+    fmondef      = '{MON}'
+    fmonout      = '_mon.out'
+
+    fpdrvdef     = '{PDRV}'
+    fpdrvout     = '_pdrv.out'
+
     ! units --------------------------------------
     call pmf_unit_decode_mass_unit('amu',MassUnit)
     call pmf_unit_decode_time_unit('fs',TimeUnit)

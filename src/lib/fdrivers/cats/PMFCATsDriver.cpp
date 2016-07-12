@@ -65,7 +65,7 @@ void pmf_cats_get_type_by_indx_(char* ctype,int* indx,int ctype_len);
 void pmf_cats_get_type_(char* ctype,char* name,int ctype_len,int name_len);
 
 //subroutine pmf_cats_finalize
-void pmf_cats_finalize_(void);
+void pmf_cats_finalize_(int* mode);
 
 // FORTRAN INTERFACE ===========================================================
 }
@@ -198,9 +198,9 @@ CSmallString PMF_PACKAGE CPMFCATsDriver::GetCVType(int indx)
 
 //------------------------------------------------------------------------------
 
-void PMF_PACKAGE CPMFCATsDriver::Finalize(void)
+void PMF_PACKAGE CPMFCATsDriver::Finalize(int mode)
 {
-    pmf_cats_finalize_();
+    pmf_cats_finalize_(&mode);
 }
 
 //==============================================================================
