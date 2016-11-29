@@ -48,11 +48,14 @@ SET(PMF_CVS_SRC
  
     # angle based
         common/cvs/angle/cv_ang.f90
+        common/cvs/angle/cv_ang2.f90
         common/cvs/angle/cv_pang.f90
         common/cvs/angle/cv_pvang.f90
         common/cvs/angle/cv_pfvang.f90
         common/cvs/angle/cv_axang.f90
+        common/cvs/angle/cv_axang2.f90
         common/cvs/angle/cv_dih.f90
+        common/cvs/angle/cv_dih2.f90
 
     # shape
         common/cvs/shape/cv_rmsdt.f90
@@ -77,6 +80,12 @@ SET(PMF_CVS_SRC
         common/cvs/cn/cv_cnsw.f90
         common/cvs/cn/cv_cngsw.f90
 
+    # nucleic acids
+        common/cvs/na/cv_napbo.f90
+        common/cvs/na/cv_nasbo.f90
+        common/cvs/na/cv_nasbpp.f90
+        common/cvs/na/cv_nabend.f90
+
     # ring puckering
         common/cvs/pucker/cv_puck5q.f90
         common/cvs/pucker/cv_puck5p.f90
@@ -89,6 +98,8 @@ SET(PMF_CVS_SRC
         common/cvs/algebra/cv_sub.f90
         common/cvs/algebra/cv_mul.f90
         common/cvs/algebra/cv_div.f90
+        common/cvs/algebra/cv_fswitch.f90
+        common/cvs/algebra/cv_rswitch.f90
        )
 
 # gaussian process -------------------------------------------------------------

@@ -105,6 +105,9 @@ subroutine read_main
         case('value')
             test_type = TEST_VALUE
             write(PMF_OUT,1) 'value'
+        case('combined')
+            test_type = TEST_COMBINED
+            write(PMF_OUT,1) 'combined'
         case default
             call pmf_utils_exit(PMF_OUT,1,'Unsupported test type!')
     end select
@@ -163,7 +166,6 @@ subroutine read_main
  return
 
   1 format ('test_type                              = ',a12)
-  5 format ('test_type                              = ',a12,'                  (default)')
  10 format ('max_atoms                              = ',i12)
  15 format ('max_atoms                              = ',i12,'                  (default)')
  20 format ('max_radius                             = ',F12.4)
@@ -232,6 +234,7 @@ subroutine load_coordinates
  use pmf_utils
  use pmf_dat
  use pmf_core
+ use pmf_control
  use test_coords_dat
 
  implicit none
@@ -249,7 +252,7 @@ subroutine load_coordinates
     if( .not. prmfile_open_group(ControlPrmfile,trim(grpname)) ) then
         call pmf_utils_exit(PMF_OUT,1,'Unable to open group {' // trim(grpname) // '}!')
     end if
-    call load_coordinates_from_group(ControlPrmfile)
+    call pmf_control_read_cvs_from_group(ControlPrmfile)
  else
     write(PMF_OUT,120) trim(CoordFile)
 
@@ -259,7 +262,7 @@ subroutine load_coordinates
         call pmf_utils_exit(PMF_OUT,1,'Unable to load file: ' // trim(CoordFile) // '!')
     end if
 
-    call load_coordinates_from_group(CoordPrmfile)
+    call pmf_control_read_cvs_from_group(CoordPrmfile)
 
     call prmfile_clear(CoordPrmfile)
  end if
@@ -270,101 +273,6 @@ subroutine load_coordinates
 120 format('Coordinates are read from file : ',A)
 
 end subroutine load_coordinates
-
-!===============================================================================
-! Subroutine:  load_coordinates_from_group
-!===============================================================================
-
-subroutine load_coordinates_from_group(prm_fin)
-
- use prmfile
- use pmf_dat
- use pmf_core
- use pmf_cvs
- use pmf_utils
- use pmf_control
- use test_coords_dat
- use test_coords_utils
- use pmf_alloc_cv
-
- implicit none
- type(PRMFILE_TYPE),intent(inout)       :: prm_fin
- ! -----------------------------------------------
- character(PRMFILE_MAX_SECTION_NAME)    :: resname
- integer                                :: nitems, i
- logical                                :: eresult
- ! -----------------------------------------------------------------------------
-
- ! count number of sections in group
- nitems = prmfile_count_group(prm_fin)
-
- if( nitems .le. 0 ) then
-    call pmf_utils_exit(PMF_OUT,1,'No coordinate specified!')
- end if
-
- write(PMF_OUT,110) nitems
-
- select case(test_type)
-    case(TEST_DERIV)
-    case(TEST_IDENTITY)
-        if( nitems .ne. 2 ) then
-            call pmf_utils_exit(PMF_OUT,1,'Identity test requires only two coordinate definitions!')
-        end if
-    case(TEST_VALUE)
-    case default
-        call pmf_utils_exit(PMF_OUT,1,'Not implemented type of test!')
- end select
-
- ! enumerate sections ----------------------------------------------------------
-
- eresult = prmfile_first_section(prm_fin)
- i = 1
-
- do while(eresult)
-    write(PMF_OUT,*)
-    call pmf_utils_heading(PMF_OUT,'Testing', '-')
-    write(PMF_OUT,*)
-
-    eresult = prmfile_get_section_name(prm_fin,resname)
-    write(PMF_OUT,130) i,trim(resname)
-
-    call pmf_alloc_cv_allocate(trim(resname),rc1)
-    call rc1%reset_cv()
-    rc1%idx = 1
-    call rc1%load_cv(prm_fin)
-
-    select case(test_type)
-        case(TEST_DERIV)
-            call test_coord_deriv
-        case(TEST_IDENTITY)
-            ! load second coordinate
-            write(PMF_OUT,*)
-            eresult = prmfile_next_section(prm_fin)
-            i = i + 1
-            eresult = prmfile_get_section_name(prm_fin,resname)
-            write(PMF_OUT,130) i,trim(resname)
-
-            call pmf_alloc_cv_allocate(trim(resname),rc2)
-            call rc2%reset_cv()
-            rc2%idx = 1
-            call rc2%load_cv(prm_fin)
-
-            call test_coord_identity
-        case(TEST_VALUE)
-        case default
-            call pmf_utils_exit(PMF_OUT,1,'Not implemented type of test!')
-    end select
-
-    eresult = prmfile_next_section(prm_fin)
-    i = i + 1
- end do
-
- return
-
-110 format('Number of coordinates          : ',I2)
-130 format('=== Coordinate #',I2.2,' of type "',A,'"')
-
-end subroutine load_coordinates_from_group
 
 !===============================================================================
 

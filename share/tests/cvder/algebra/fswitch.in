@@ -1,0 +1,49 @@
+[DIS]
+name    cv1
+group_a @1
+group_b @2
+
+[DIS]
+name    cv2
+group_a @7
+group_b @3
+
+[DIS]
+name    cv3
+group_a @3
+group_b @7
+
+[DIS]
+name    cv4
+group_a @1-7
+group_b @5-9
+
+[DIS]
+name    cv5
+group_a @5-9
+group_b @1-8
+
+[FSWITCH]
+name a1
+arg cv1
+steepness 5.0
+reference 1.0
+
+[FSWITCH]
+name a2
+arg cv3
+steepness 5.0
+reference 0.0
+
+[FSWITCH]
+name a3
+arg a1
+steepness 0.5
+reference 2.0
+
+[FSWITCH]
+name a4
+arg cv5
+steepness 1.0
+reference 1.0
+

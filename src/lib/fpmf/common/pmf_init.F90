@@ -54,7 +54,7 @@ subroutine pmf_init_dat
     fdt = 0.0d0
     ftime = 0.0d0
     ftemp = 0.0d0
-    fstep = 0.0d0
+    fstep = 0
     fsystype = SYS_UNK
     fintalg = IA_LEAP_FROG
 
@@ -75,6 +75,41 @@ subroutine pmf_init_dat
     fbox_volume = 0.0d0
     fbox_sphere = 0.0d0
 
+    ! file names ---------------------------------------------------------------
+    fcvsdef      = '{CVS}'
+    fpathsdef    = '{PATHS}'
+
+    fcstdef      = '{CST}'
+    fcstout      = '_cst.out'
+    fcstrst      = '_cst.rst'
+
+    frstdef      = '{RST}'
+    frstout      = '_rst.out'
+    frsthist     = '_rst.hist'
+
+    fmtddef     = '{MTD}'
+    fmtdout     = '_mtd.out'
+    fmtdrst     = '_mtd.rst'
+    fmtdcvs     = '_mtd.cvs'
+    fmtdhills   = '_mtd.hills'
+    fmtdgpout   = '_mtd.gp'
+
+    fabfdef      = '{ABF}'
+    fabfmask     = '_abf.mask'
+    fabfout      = '_abf.out'
+    fabfrst      = '_abf.rst'
+    fabftrj      = '_abf.trj'
+    fabfgpout    = '_abf.gpout'
+
+    fstmdef      = '{STM}'
+    fstmout      = '_stm.out'
+
+    fmondef      = '{MON}'
+    fmonout      = '_mon.out'
+
+    fpdrvdef     = '{PDRV}'
+    fpdrvout     = '_pdrv.out'
+
     ! units --------------------------------------
     call pmf_unit_decode_mass_unit('amu',MassUnit)
     call pmf_unit_decode_time_unit('fs',TimeUnit)
@@ -93,16 +128,19 @@ end subroutine pmf_init_dat
 ! Subroutine:  pmf_init_taskid_mpi
 !===============================================================================
 
-subroutine pmf_init_taskid_mpi(mytaskid)
+subroutine pmf_init_taskid_mpi(mytaskid,numoftasks)
 
     use pmf_dat
 
     implicit none
     integer        :: mytaskid
+    integer        :: numoftasks
     ! --------------------------------------------------------------------------
 
     fmytaskid = mytaskid
+    fnumoftasks = numoftasks
     fmaster = fmytaskid .eq. 0
+
 
 end subroutine pmf_init_taskid_mpi
 
@@ -210,14 +248,13 @@ end subroutine pmf_init_variables
 ! Subroutine:  pmf_init
 !===============================================================================
 
-subroutine pmf_init_all(amass,ax)
+subroutine pmf_init_all_nocvvalues(amass,ax)
 
     use pmf_dat
     use pmf_core
     use pmf_cvs
     use pmf_mask
     use pmf_pbc
-    use pmf_paths
 
     implicit none
     real(PMFDP)     :: amass(:)
@@ -244,6 +281,31 @@ subroutine pmf_init_all(amass,ax)
         end if
         Crd(:,i) = ax(:,RIndexes(i))*LengthConv
     end do
+
+end subroutine pmf_init_all_nocvvalues
+
+!===============================================================================
+! Subroutine:  pmf_init
+!===============================================================================
+
+subroutine pmf_init_all(amass,ax)
+
+    use pmf_dat
+    use pmf_core
+    use pmf_cvs
+    use pmf_mask
+    use pmf_pbc
+    use pmf_paths
+
+    implicit none
+    real(PMFDP)     :: amass(:)
+    real(PMFDP)     :: ax(:,:)
+    ! -----------------------------------------------
+    integer         :: i
+    ! --------------------------------------------------------------------------
+
+    ! init subsystems
+    call pmf_init_all_nocvvalues(amass,ax)
 
     ! init CVs
     CVContext%CVsValues = 0.0d0

@@ -25,6 +25,7 @@ module cv_epot
 use pmf_sizes
 use pmf_constants
 use pmf_dat
+use cv_common
 
 implicit none
 
@@ -48,8 +49,6 @@ subroutine load_epot(cv_item,prm_fin)
 
     use prmfile
     use pmf_utils
-    use pmf_dat
-    use cv_common
 
     implicit none
     class(CVTypeEPOT)                   :: cv_item

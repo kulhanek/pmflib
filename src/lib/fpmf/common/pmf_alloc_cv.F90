@@ -1,7 +1,7 @@
 !===============================================================================
 ! PMFLib - Library Supporting Potential of Mean Force Calculations
 !-------------------------------------------------------------------------------
-!    Copyright (C) 2011-2015 Petr Kulhanek, kulhanek@chemi.muni.cz
+!    Copyright (C) 2011-2016 Petr Kulhanek, kulhanek@chemi.muni.cz
 !    Copyright (C) 2013-2015 Letif Mones, lam81@cam.ac.uk
 !    Copyright (C) 2012      Petr Kulhanek, kulhanek@chemi.muni.cz
 !    Copyright (C) 2011      Petr Kulhanek, kulhanek@chemi.muni.cz
@@ -52,10 +52,13 @@ subroutine pmf_alloc_cv_allocate(cv_type,cv_item)
 
 ! angle based ------------------------------------
     use cv_ang
+    use cv_ang2
     use cv_pang
     use cv_pvang
     use cv_axang
+    use cv_axang2
     use cv_dih
+    use cv_dih2
     use cv_pfvang
 
 ! shape ------------------------------------------
@@ -84,6 +87,12 @@ subroutine pmf_alloc_cv_allocate(cv_type,cv_item)
     use cv_cnsw
     use cv_cngsw
 
+! nucleic acids ---------------------------------
+    use cv_napbo
+    use cv_nasbo
+    use cv_nasbpp
+    use cv_nabend
+
 ! ring puckering ---------------------------------
     use cv_puck5q
     use cv_puck5p
@@ -96,6 +105,8 @@ subroutine pmf_alloc_cv_allocate(cv_type,cv_item)
     use cv_sub
     use cv_mul
     use cv_div
+    use cv_fswitch
+    use cv_rswitch
 
     implicit none
     character(*)            :: cv_type
@@ -128,17 +139,23 @@ subroutine pmf_alloc_cv_allocate(cv_type,cv_item)
     ! angle --------------------------------------
         case('ANG')
             allocate(CVTypeANG::cv_item)
+        case('ANG2')
+            allocate(CVTypeANG2::cv_item)
         case('PANG')
             allocate(CVTypePANG::cv_item)
         case('PVANG')
             allocate(CVTypePVANG::cv_item)
         case('AXANG')
             allocate(CVTypeAXANG::cv_item)
+        case('AXANG2')
+            allocate(CVTypeAXANG2::cv_item)
         case('PFVANG')
             allocate(CVTypePFVANG::cv_item)
 
         case('DIH')
             allocate(CVTypeDIH::cv_item)
+        case('DIH2')
+            allocate(CVTypeDIH2::cv_item)
 
     ! shape --------------------------------------
         case('RGYR')
@@ -185,6 +202,16 @@ subroutine pmf_alloc_cv_allocate(cv_type,cv_item)
         case('CNGSW')
             allocate(CVTypeCNGSW::cv_item)
 
+! nucleic acids ---------------------------------
+        case('NAPBO')
+            allocate(CVTypeNAPBO::cv_item)
+        case('NASBO')
+            allocate(CVTypeNASBO::cv_item)
+        case('NASBPP')
+            allocate(CVTypeNASBPP::cv_item)
+        case('NABEND')
+            allocate(CVTypeNABEND::cv_item)
+
     ! pucker -------------------------------------
         case('PUCK5Q')
             allocate(CVTypePUCK5Q::cv_item)
@@ -206,6 +233,10 @@ subroutine pmf_alloc_cv_allocate(cv_type,cv_item)
             allocate(CVTypeMUL::cv_item)
         case('DIV')
             allocate(CVTypeDIV::cv_item)
+        case('FSWITCH')
+            allocate(CVTypeFSWITCH::cv_item)
+        case('RSWITCH')
+            allocate(CVTypeRSWITCH::cv_item)
 
         case default
             call pmf_utils_exit(PMF_OUT,1,&

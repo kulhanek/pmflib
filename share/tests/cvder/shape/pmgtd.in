@@ -29,55 +29,55 @@ axis_a    x
 axis_b    y
 
 [PMGTD]
-name    cv1
+name    cv6
 group_a @1-10
 axis_a    x
 axis_b    y
 
 [PMGTD]
-name    cv2
+name    cv7
 group_a @7,8,1,2
 axis_a    x
 axis_b    z
 
 [PMGTD]
-name    cv3
+name    cv8
 group_a @1-6
 axis_a    x
 axis_b    z
 
 [PMGTD]
-name    cv4
+name    cv9
 group_a @2-8
 axis_a    x
 axis_b    z
 
 [PMGTD]
-name    cv5
+name    cv10
 group_a @3-9
 axis_a    x
 axis_b    z
 
 [PMGTD]
-name    cv2
+name    cv11
 group_a @7,8,1,2
 axis_a    y
 axis_b    z
 
 [PMGTD]
-name    cv3
+name    cv12
 group_a @1-6
 axis_a    y
 axis_b    z
 
 [PMGTD]
-name    cv4
+name    cv13
 group_a @2-8
 axis_a    y
 axis_b    z
 
 [PMGTD]
-name    cv5
+name    cv14
 group_a @3-9
 axis_a    y
 axis_b    z

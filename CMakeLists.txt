@@ -190,29 +190,13 @@ IF(NOT DEFINED COMPOSITE_PROJECT)
 
     # default compiler setups - gfortran
     SET(CMAKE_Fortran_FLAGS_RELEASE "-O0")
-    SET(CMAKE_Fortran_FLAGS_DEBUG   "-g -O0")
+    SET(CMAKE_Fortran_FLAGS_DEBUG   "-g -O0 -Wall")
 
     # ifort
     IF(FCOMP_NAME STREQUAL ifort)
         SET(CMAKE_Fortran_FLAGS_RELEASE "-O2")
- #       SET(CMAKE_Fortran_FLAGS_DEBUG   "-g -O0 -std95 -traceback -check all -warn all")
         SET(CMAKE_Fortran_FLAGS_DEBUG   "-g -O0 -stand f03 -traceback -check all -warn all")
     ENDIF(FCOMP_NAME STREQUAL ifort)
-
-    # open64
-    IF(FCOMP_NAME STREQUAL openf95)
-        SET(CMAKE_Fortran_FLAGS_RELEASE "-O3 -fno-second-underscore")
-        SET(CMAKE_Fortran_FLAGS_DEBUG "-g -O0 -fno-second-underscore")
-    ENDIF(FCOMP_NAME STREQUAL openf95)
-
-    # fix the problem with dynamic libraries and xlf compiler on SP5
-    IF(FCOMP_NAME STREQUAL xlf)
-        SET(CMAKE_Fortran_FLAGS_RELEASE "-O2 -qsuppress=1501-510:cmpmsg")
-        SET(CMAKE_Fortran_FLAGS_DEBUG   "-g")
-        IF(LIBS_SHARED)
-            MESSAGE(FATAL_ERROR "LIBS_SHARED is ON, which is not supported with xlf compiler!")
-        ENDIF(LIBS_SHARED)
-    ENDIF(FCOMP_NAME STREQUAL xlf)
 
     #SET(CMAKE_BUILD_TYPE Release)
     SET(CMAKE_BUILD_TYPE Debug)

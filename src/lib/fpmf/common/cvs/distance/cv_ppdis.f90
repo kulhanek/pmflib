@@ -27,6 +27,7 @@ module cv_ppdis
 use pmf_sizes
 use pmf_constants
 use pmf_dat
+use cv_common
 
 implicit none
 
@@ -55,8 +56,6 @@ subroutine load_ppdis(cv_item,prm_fin)
 
     use prmfile
     use pmf_utils
-    use pmf_dat
-    use cv_common
 
     implicit none
     class(CVTypePPDIS)                  :: cv_item
@@ -172,7 +171,7 @@ subroutine calculate_ppdis(cv_item,x,ctx)
     integer        :: i,ai,m,info,orient,mi,mj
     real(PMFDP)    :: d1(3),dx(3),dzx(3),dzy(3),dzz(3)
     real(PMFDP)    :: a(3,3),a11,a22,a33,a12,a13,a23,eigenvalues(3)
-    real(PMFDP)    :: totmass1,totmass2,amass,msign,ac,dzz_s
+    real(PMFDP)    :: totmass1,amass,msign,ac,dzz_s
     real(PMFDP)    :: work(26*3)
     real(PMFDP)    :: v(3,3),api(3,3),cij(3),xij(3,3,3),bint(3,3)
     ! -----------------------------------------------------------------------------

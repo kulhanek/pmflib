@@ -26,6 +26,7 @@ module cv_puck6p
 use pmf_sizes
 use pmf_constants
 use pmf_dat
+use cv_common
 
 implicit none
 
@@ -52,8 +53,6 @@ contains
 subroutine load_puck6p(cv_item,prm_fin)
 
     use prmfile
-    use pmf_dat
-    use cv_common
     use pmf_utils
 
     implicit none

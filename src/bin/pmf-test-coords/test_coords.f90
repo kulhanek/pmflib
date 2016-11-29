@@ -33,7 +33,7 @@ program test_coords
 
     call pmf_utils_header('Test CVs')
 
-    ! checkk number of arguments ---------------------
+! checkk number of arguments ---------------------
     if( command_argument_count() .eq. 0 ) then
         call print_usage
         write(PMF_OUT,*)
@@ -45,29 +45,35 @@ program test_coords
         call pmf_utils_exit(PMF_OUT,1,'Incorrect number of arguments was specified (two expected)!')
     end if
 
-    ! get arguments and print -----------------------
+! get arguments and print -----------------------
     call get_command_argument(1, ControlFile)
     call get_command_argument(2, CoordFile)
 
-    ! init timers
+! init timers
     call pmf_timers_init_top()
 
-    ! read control ----------------------------------
+! read control ----------------------------------
     call process_control
 
-    ! initialization --------------------------------
-    call initialization
+! initialization --------------------------------
+    call initialization_pass_I
 
-    ! load coordinates and test them ----------------
+! load coordinates and test them ----------------
     call load_coordinates
 
-    ! print final results ---------------------------
+! initialization --------------------------------
+    call initialization_pass_II
+
+! test coordinates
+    call test_coordinates
+
+! print final results ---------------------------
     write(PMF_OUT,*)
     call pmf_utils_heading(PMF_OUT,'FINAL RESULTS', ':')
     write(PMF_OUT,*)
     write(PMF_OUT,10) total_num_of_tests,num_of_failed_tests
 
-    ! print header ----------------------------------
+! print header ----------------------------------
     call pmf_utils_footer('Test CVs')
 
     stop

@@ -38,7 +38,7 @@ subroutine pmf_sander_init_taskid_mpi(mytaskid)
     integer        :: mytaskid
     ! --------------------------------------------------------------------------
 
-    call pmf_init_taskid_mpi(mytaskid)
+    call pmf_init_taskid_mpi(mytaskid,0)
 
 end subroutine pmf_sander_init_taskid_mpi
 !===============================================================================
@@ -157,17 +157,24 @@ subroutine pmf_sander_finalize_preinit(anatom,amass,ax)
     use pmf_core
     use pmf_init
     use pmf_sander_control
+    use pmf_utils
 
     implicit none
     integer        :: anatom       ! number of atoms
     real(PMFDP)    :: amass(anatom)
     real(PMFDP)    :: ax(3,anatom)
     ! -----------------------------------------------
-    integer        :: i
+    integer        :: i, alloc_failed
     ! --------------------------------------------------------------------------
 
     ! init mask topology atom masses and positions
+    allocate(frmass(fnatoms), stat= alloc_failed )
+    if( alloc_failed .ne. 0 ) then
+        call pmf_utils_exit(PMF_OUT,1,'Unable to allocate frmass!')
+    end if
+
     do i=1,fnatoms
+        frmass(i) = amass(i)
         call pmf_mask_set_topo_atom_mcrd(i,amass(i),ax(1,i),ax(2,i),ax(3,i))
     end do
 

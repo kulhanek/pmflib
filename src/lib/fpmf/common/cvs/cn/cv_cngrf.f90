@@ -27,7 +27,8 @@ module cv_cngrf
 
 use pmf_sizes
 use pmf_constants
-use pmf_cvs
+use pmf_dat
+use cv_common
 
 implicit none
 
@@ -56,8 +57,6 @@ contains
 subroutine load_cngrf(cv_item,prm_fin)
 
     use prmfile
-    use pmf_dat
-    use cv_common
     use pmf_utils
     use pmf_unit
 
@@ -171,6 +170,8 @@ subroutine calculate_cngrf(cv_item,x,ctx)
         dm = d - cv_item%offset
         if( dm .le. 0 ) then
             ctx%CVsValues(cv_item%idx) = ctx%CVsValues(cv_item%idx) + 1.0d0
+            ! TODO derivatives ?
+            call pmf_utils_exit(PMF_OUT,1,'not implemented!')
         else
             if( dm .ne. cv_item%reference ) then
                 up = (dm*iref)**cv_item%npow
@@ -190,7 +191,7 @@ subroutine calculate_cngrf(cv_item,x,ctx)
             else
                 ctx%CVsValues(cv_item%idx) = ctx%CVsValues(cv_item%idx) + real(cv_item%npow) / real(cv_item%mpow)
                 ! TODO derivatives ?
-
+                call pmf_utils_exit(PMF_OUT,1,'not implemented!')
             end if
         end if
     end do

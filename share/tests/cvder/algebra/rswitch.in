@@ -1,0 +1,57 @@
+[DIS]
+name    cv1
+group_a @1
+group_b @2
+
+[DIS]
+name    cv2
+group_a @7
+group_b @3
+
+[DIS]
+name    cv3
+group_a @3
+group_b @7
+
+[DIS]
+name    cv4
+group_a @1-7
+group_b @5-9
+
+[DIS]
+name    cv5
+group_a @5-9
+group_b @1-8
+
+[RSWITCH]
+name a1
+arg cv1
+offset 1.0
+reference 1.0
+npower 2
+mpower 6
+
+[RSWITCH]
+name a2
+arg cv3
+offset 2.0
+reference 10.5
+npower 12
+mpower 7
+
+[RSWITCH]
+name a3
+arg cv5
+offset 1.5
+reference 2.0
+npower 6
+mpower 8
+
+[RSWITCH]
+name a4
+arg cv5
+offset 1.0
+reference 1.0
+npower 3
+mpower 2
+

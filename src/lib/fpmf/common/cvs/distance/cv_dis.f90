@@ -27,6 +27,7 @@ module cv_dis
 use pmf_sizes
 use pmf_constants
 use pmf_dat
+use cv_common
 
 implicit none
 
@@ -49,8 +50,6 @@ contains
 subroutine load_dis(cv_item,prm_fin)
 
     use prmfile
-    use pmf_dat
-    use cv_common
 
     implicit none
     class(CVTypeDIS)                    :: cv_item
@@ -111,8 +110,8 @@ subroutine calculate_dis(cv_item,x,ctx)
         d2(:) = d2(:) + x(:,ai)*amass
         totmass2 = totmass2 + amass
     end do
-    if( totmass1 .le. 0 ) then
-        call pmf_utils_exit(PMF_OUT,1,'totmass1 is zero in calculate_dis!')
+    if( totmass2 .le. 0 ) then
+        call pmf_utils_exit(PMF_OUT,1,'totmass2 is zero in calculate_dis!')
     end if
     d2(:) = d2(:) / totmass2
 

@@ -133,19 +133,26 @@ subroutine pmf_cats_end_init(anatom,amass,ax)
     use pmf_core
     use pmf_init
     use pmf_cats_control
+    use pmf_utils
 
     implicit none
     integer        :: anatom                       ! number of atoms in AMBER topology
     real(PMFDP)    :: amass(anatom)
     real(PMFDP)    :: ax(3,anatom)
     ! ------------------------------------------------------
-    integer        :: i
+    integer        :: i, alloc_failed
     ! --------------------------------------------------------------------------
 
     if( .not. fmaster ) return
 
     ! init mask topology atom masses and positions
+    allocate(frmass(fnatoms), stat= alloc_failed )
+    if( alloc_failed .ne. 0 ) then
+        call pmf_utils_exit(PMF_OUT,1,'Unable to allocate frmass!')
+    end if
+
     do i=1,fnatoms
+        frmass(i) = amass(i)
         call pmf_mask_set_topo_atom_mcrd(i,amass(i),ax(1,i),ax(2,i),ax(3,i))
     end do
 
@@ -159,7 +166,13 @@ subroutine pmf_cats_end_init(anatom,amass,ax)
     call pmf_cats_process_control
 
     ! init PMF subsystems
-    call pmf_init_all(amass,ax)
+    call pmf_init_all_nocvvalues(amass,ax)
+
+    write(PMF_OUT,'(A)') '#'
+    write(PMF_OUT,'(A)') '#==============================================================================#'
+    write(PMF_OUT,'(A)') '# PMFLib - End of Initialization                                               #'
+    write(PMF_OUT,'(A)') '#==============================================================================#'
+    write(PMF_OUT,*)
 
     ! flush output streams
     flush(PMF_OUT)
@@ -369,7 +382,7 @@ end subroutine pmf_cats_get_type_by_indx
 ! subroutine pmf_cats_finalize
 !===============================================================================
 
-subroutine pmf_cats_finalize
+subroutine pmf_cats_finalize(mode)
 
     use pmf_constants
     use pmf_utils
@@ -378,15 +391,24 @@ subroutine pmf_cats_finalize
     use pmf_dat
 
     implicit none
+    integer         :: mode
+    logical         :: do_profiling
     ! --------------------------------------------------------------------------
 
     if( .not. fmaster ) return
 
-    write(PMF_OUT,*)
-    call pmf_utils_heading(PMF_OUT,'PMF Library Finalization', '-')
+    if( mode .eq. 0 ) then
+        write(PMF_OUT,*)
+        call pmf_utils_heading(PMF_OUT,'PMF Library Finalization', '-')
+    end if
 
     call pmf_timers_stop_timer(PMFLIB_TOTAL_TIMER)
-    call pmf_finalize_all(.true.)
+    do_profiling = mode .eq. 0
+    call pmf_finalize_all(do_profiling)
+
+    if( allocated(frmass) ) then
+        deallocate(frmass)
+    end if
 
 end subroutine pmf_cats_finalize
 

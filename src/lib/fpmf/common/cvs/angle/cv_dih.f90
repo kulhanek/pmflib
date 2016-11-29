@@ -26,7 +26,8 @@ module cv_dih
 
 use pmf_sizes
 use pmf_constants
-use pmf_cvs
+use pmf_dat
+use cv_common
 
 implicit none
 
@@ -53,8 +54,6 @@ contains
 subroutine load_dih(cv_item,prm_fin)
 
     use prmfile
-    use pmf_dat
-    use cv_common
 
     implicit none
     class(CVTypeDIH)                    :: cv_item

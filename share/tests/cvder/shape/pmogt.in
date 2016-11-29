@@ -24,52 +24,52 @@ group_a @3-9
 axis    x
 
 [PMOGT]
-name    cv1
+name    cv6
 group_a @1-10
 axis    y 
 
 [PMOGT]
-name    cv2
+name    cv7
 group_a @7,8,1,2
 axis    y
 
 [PMOGT]
-name    cv3
+name    cv8
 group_a @1-6
 axis    y
 
 [PMOGT]
-name    cv4
+name    cv9
 group_a @2-8
 axis    y
 
 [PMOGT]
-name    cv5
+name    cv10
 group_a @3-9
 axis    y
 
 [PMOGT]
-name    cv1
+name    cv11
 group_a @1-10
 axis    z
 
 [PMOGT]
-name    cv2
+name    cv12
 group_a @7,8,1,2
 axis    z
 
 [PMOGT]
-name    cv3
+name    cv13
 group_a @1-6
 axis    z
 
 [PMOGT]
-name    cv4
+name    cv14
 group_a @2-8
 axis    z
 
 [PMOGT]
-name    cv5
+name    cv15
 group_a @3-9
 axis    z
 

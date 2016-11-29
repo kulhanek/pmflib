@@ -41,6 +41,7 @@ logical                     :: UseExternalSnapshosts = .false.
 integer,parameter       :: TEST_DERIV       = 1     ! numerical versus analytical derivatives
 integer,parameter       :: TEST_IDENTITY    = 2     ! identity between two coordinates
 integer,parameter       :: TEST_VALUE       = 3     ! value comparison
+integer,parameter       :: TEST_COMBINED    = 4     ! test CVs - all at once
 
 ! test setups ------------------------------------
 integer                 :: test_type        = TEST_DERIV
@@ -58,13 +59,9 @@ real(PMFDP)             :: uniform_mass     = 0.0d0     ! zero means random mass
 integer                 :: total_num_of_tests = 0
 integer                 :: num_of_failed_tests = 0
 
-! data -------------------------------------------
-class(CVType),pointer   :: rc1              ! reaction coordinate
-class(CVType),pointer   :: rc2              ! reaction coordinate
-
-
-real(PMFDP),allocatable         :: lx(:,:)          ! position in time t
-real(PMFDP),allocatable         :: loc_x(:,:)       ! copy of positions for numerical
+real(PMFDP),allocatable         :: rx(:,:)          ! read positions
+real(PMFDP),allocatable         :: lx(:,:)          ! local positions
+real(PMFDP),allocatable         :: loc_x(:,:)       ! copy of local positions
 real(PMFDP),allocatable         :: fdx_ana(:,:)     ! first derivative of coordinate
 real(PMFDP),allocatable         :: fdx_num(:,:)     ! first derivative of coordinate
 type(CVContextType)             :: tmp_context

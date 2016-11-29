@@ -45,7 +45,7 @@ subroutine rst_init_method
     implicit none
     ! --------------------------------------------------------------------------
 
- 	call rst_init_core
+    call rst_init_core
     call rst_accumulator_init
     call rst_init_print_header
     call rst_output_open
@@ -72,8 +72,8 @@ subroutine rst_init_dat
     fhistupdate   = 0        ! how often is restart file written
     fhistclear     = 0       ! after first 'fhistclear' steps histogram
                              ! will be reset (default 0)
-	fsamplefreq   = 1        ! how often take samples
-	faccumulation = 0        ! number of accumulated data
+    fsamplefreq   = 1        ! how often take samples
+    faccumulation = 0        ! number of accumulated data
 
     NumOfRSTItems = 0
     insidesamples = 0

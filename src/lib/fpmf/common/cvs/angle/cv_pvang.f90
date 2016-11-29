@@ -23,7 +23,8 @@ module cv_pvang
 
 use pmf_sizes
 use pmf_constants
-use pmf_cvs
+use pmf_dat
+use cv_common
 
 implicit none
 
@@ -51,8 +52,6 @@ subroutine load_pvang(cv_item,prm_fin)
 
     use prmfile
     use pmf_utils
-    use pmf_dat
-    use cv_common
 
     implicit none
     class(CVTypePVANG)                  :: cv_item

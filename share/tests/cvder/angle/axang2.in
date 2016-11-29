@@ -1,0 +1,114 @@
+[AXANG2]
+name  cv1
+skip_mass_test on
+group_a        @1-9
+reference_a    G_ring_only.xyz
+direction_a    x
+group_b        @10-15
+reference_b    T_ring_only.xyz
+direction_b    x
+
+[AXANG2]
+name  cv2
+skip_mass_test on
+group_a        @5-13
+reference_a    G_ring_only.xyz
+direction_a    y
+group_b        @14-19
+reference_b    T_ring_only.xyz
+direction_b    y
+
+[AXANG2]
+name  cv3
+skip_mass_test on
+group_a        @14-19
+reference_a    T_ring_only.xyz
+direction_a    y
+group_b        @5-13
+reference_b    G_ring_only.xyz
+direction_b    z
+
+
+[AXANG2]
+name  cv4
+skip_mass_test on
+group_a        @1-9
+reference_a    G_ring_only.xyz
+direction_a    x
+group_b        @10-15
+reference_b    T_ring_only.xyz
+direction_b    y
+
+[AXANG2]
+name  cv5
+skip_mass_test on
+group_a        @5-13
+reference_a    G_ring_only.xyz
+direction_a    y
+group_b        @14-19
+reference_b    T_ring_only.xyz
+direction_b    z
+
+[AXANG2]
+name  cv6
+skip_mass_test on
+group_a        @14-19
+reference_a    T_ring_only.xyz
+direction_a    y
+group_b        @5-13
+reference_b    G_ring_only.xyz
+direction_b    x
+
+
+[AXANG2]
+name  cv7
+skip_mass_test on
+group_a        @1-9
+reference_a    G_ring_only.xyz
+direction_a    x
+group_b        @10-15
+reference_b    T_ring_only.xyz
+direction_b    y
+
+[AXANG2]
+name  cv8
+skip_mass_test on
+group_a        @5-13
+reference_a    G_ring_only.xyz
+direction_a    y
+group_b        @14-19
+reference_b    T_ring_only.xyz
+direction_b    z
+
+[AXANG2]
+name  cv9
+skip_mass_test on
+group_a        @14-19
+reference_a    T_ring_only.xyz
+direction_a    x
+group_b        @5-13
+reference_b    G_ring_only.xyz
+direction_b    y
+
+
+[AXANG2]
+name  cv10
+skip_mass_test on
+group_a        @1-9
+reference_a    G_ring_only.xyz
+direction_a    z
+group_b        @10-15
+reference_b    T_ring_only.xyz
+direction_b    x
+
+[AXANG2]
+name  cv11
+skip_mass_test on
+group_a        @5-13
+reference_a    G_ring_only.xyz
+direction_a    y
+group_b        @14-19
+reference_b    T_ring_only.xyz
+direction_b    x
+
+

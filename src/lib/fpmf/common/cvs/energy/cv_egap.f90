@@ -25,6 +25,7 @@ module cv_egap
 use pmf_sizes
 use pmf_constants
 use pmf_dat
+use cv_common
 
 implicit none
 
@@ -52,8 +53,6 @@ subroutine load_egap(cv_item,prm_fin)
 
     use prmfile
     use pmf_utils
-    use pmf_dat
-    use cv_common
     use xbp_fepfile_dat
     use xbp_topfile_dat
 

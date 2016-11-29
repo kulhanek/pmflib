@@ -25,6 +25,7 @@ module cv_opos
 use pmf_sizes
 use pmf_constants
 use pmf_dat
+use cv_common
 
 implicit none
 
@@ -52,8 +53,6 @@ subroutine load_opos(cv_item,prm_fin)
 
     use prmfile
     use pmf_utils
-    use pmf_dat
-    use cv_common
 
     implicit none
     class(CVTypeOPOS)                   :: cv_item

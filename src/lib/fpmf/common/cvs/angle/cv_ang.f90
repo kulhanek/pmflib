@@ -26,7 +26,8 @@ module cv_ang
 
 use pmf_sizes
 use pmf_constants
-use pmf_cvs
+use pmf_dat
+use cv_common
 
 implicit none
 
@@ -49,8 +50,6 @@ contains
 subroutine load_ang(cv_item,prm_fin)
 
     use prmfile
-    use pmf_dat
-    use cv_common
 
     implicit none
     class(CVTypeANG)                    :: cv_item

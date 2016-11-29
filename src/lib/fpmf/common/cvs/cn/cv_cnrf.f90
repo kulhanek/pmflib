@@ -27,7 +27,8 @@ module cv_cnrf
 
 use pmf_sizes
 use pmf_constants
-use pmf_cvs
+use pmf_dat
+use cv_common
 
 implicit none
 
@@ -56,8 +57,6 @@ contains
 subroutine load_cnrf(cv_item,prm_fin)
 
     use prmfile
-    use pmf_dat
-    use cv_common
     use pmf_utils
     use pmf_unit
 
@@ -172,7 +171,7 @@ subroutine calculate_cnrf(cv_item,x,ctx)
                 else
                     ctx%CVsValues(cv_item%idx) = ctx%CVsValues(cv_item%idx) + real(cv_item%npow) / real(cv_item%mpow)
                     ! TODO derivatives ?
-
+                    call pmf_utils_exit(PMF_OUT,1,'not implemented!')
                 end if
             end if
         end do

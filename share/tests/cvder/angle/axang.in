@@ -8,7 +8,7 @@ head_b  @7
 direction_b x
 
 [AXANG]
-name    cv1
+name    cv2
 group_a @1-5
 head_a  @1
 direction_a x
@@ -17,7 +17,7 @@ head_b  @7
 direction_b y
 
 [AXANG]
-name    cv1
+name    cv3
 group_a @1-5
 head_a  @1
 direction_a x

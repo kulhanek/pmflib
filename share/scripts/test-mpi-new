@@ -1,0 +1,29 @@
+#!/bin/bash
+
+# number of calls
+NC=9
+# number of CPUs
+NCPU=3
+
+mkdir -p mpi_calls
+rm -f mpi_calls/*
+
+for((CALL=1;CALL<=NC;CALL++)); do
+    CID=`printf "%8d" $CALL`
+    SCID=`printf "%08d" $CALL`
+    echo -n "$SCID "
+    for((CPU=1;CPU<=NCPU;CPU++)); do
+        DFILE=`printf "fort.%04d" $((1000+CPU-1))`
+        grep "$CID   > send atom:" $DFILE | awk '{ printf("%8d %14.3f %14.3f %14.3f\n",$5,$6,$7,$8); }' >> mpi_calls/$SCID.send.t
+        grep "$CID   < recv atom:" $DFILE | awk '{ printf("%8d %14.3f %14.3f %14.3f\n",$5,$6,$7,$8); }' >> mpi_calls/$SCID.recv.t
+    done
+    sort -n mpi_calls/$SCID.send.t > mpi_calls/$SCID.send
+    sort -n mpi_calls/$SCID.recv.t > mpi_calls/$SCID.recv
+    rm -f mpi_calls/$SCID.send.t mpi_calls/$SCID.recv.t
+    diff mpi_calls/$SCID.send mpi_calls/$SCID.recv > mpi_calls/$SCID.diff
+    if [ $? -ne 0 ]; then
+        echo "[FAILED]"
+        exit 1
+    fi
+    echo "[OK]"
+done

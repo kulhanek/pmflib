@@ -32,6 +32,7 @@ implicit none
 
 character(len=PMF_MAX_PATH)     :: ControlFileName
 type(PRMFILE_TYPE)              :: ControlPrmfile
+logical                         :: Initialized = .false.
 
 !===============================================================================
 !-------------------------------------------------------------------------------

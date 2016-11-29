@@ -1,0 +1,33 @@
+[NABEND]
+name  cv1
+skip_mass_test on
+group_a        @1-9
+reference_a    G_ring_only.xyz
+group_b        @10-15
+reference_b    T_ring_only.xyz
+group_c        @16,17
+group_d        @18,19
+
+[NABEND]
+name  cv2
+skip_mass_test on
+group_a        @5-13
+reference_a    G_ring_only.xyz
+group_b        @14-19
+reference_b    T_ring_only.xyz
+group_c        @1,5,20
+group_d        @18,19
+
+[NABEND]
+name  cv3
+skip_mass_test on
+group_a        @14-19
+reference_a    T_ring_only.xyz
+group_b        @5-13
+reference_b    G_ring_only.xyz
+group_c        @1,5,20
+group_d        @3,4,5
+
+
+
+

@@ -25,6 +25,7 @@ module cv_rad
 use pmf_sizes
 use pmf_constants
 use pmf_dat
+use cv_common
 
 implicit none
 
@@ -51,8 +52,6 @@ subroutine load_rad(cv_item,prm_fin)
 
     use prmfile
     use pmf_utils
-    use pmf_dat
-    use cv_common
 
     implicit none
     class(CVTypeRAD)                    :: cv_item

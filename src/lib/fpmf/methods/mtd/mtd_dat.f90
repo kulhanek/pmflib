@@ -37,24 +37,24 @@ implicit none
 
 ! control section --------------------------------------------------------------
 integer     :: fmode            ! mode of metadynamics: 
-									! 0 - disable MTD
-		                            ! 1 - conventional MTD
-		                            ! 2 - grid MTD
-		                            ! 3 - GP-MTD
+                                    ! 0 - disable MTD
+                                    ! 1 - conventional MTD
+                                    ! 2 - grid MTD
+                                    ! 3 - GP-MTD
 integer     :: fplevel          ! output print level
 integer     :: fpsample         ! output print sampling
 integer     :: fmetastep        ! step size of metadynamics
 real(PMFDP) :: fheight          ! height of gaussian
 real(PMFDP) :: fmetatemp        ! temperature for well-tempered mtd
 integer     :: fmetavary        ! what to vary when well-tempered mtd is on
-                                	! 0 - nothing
-									! 1 - height
-									! 2 - step 
+                                    ! 0 - nothing
+                                    ! 1 - height
+                                    ! 2 - step
 logical     :: frestart         ! restart job with previous data
 integer     :: fextout          ! control extended output (cvs,hills)
-                                	! 0- none
-									! 1 - new
-									! 2 - append
+                                    ! 0- none
+                                    ! 1 - new
+                                    ! 2 - append
 integer     :: fbuffersize      ! buffer size
 integer     :: fscaling         ! scaling type: 0 - none, 1 - step signal, 2 - ramp signal
 integer     :: fdelaying        ! delaying time in md steps

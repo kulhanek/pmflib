@@ -90,12 +90,12 @@ subroutine mtd_history_add_new_hill(mtd_energy)
      ! what to change?
      select case(fmetavary)
         case(0)
-        	! no metavary
+            ! no metavary
         case(1)
-        	! vary the height
+            ! vary the height
             hill_height = fheight * exp( -mtd_energy/PMF_Rgas/fmetatemp )
         case(2)
-        	! vary the step
+            ! vary the step
             meta_next_fstep = fstep + nint( fmetastep * exp( mtd_energy/PMF_Rgas/fmetatemp ) )
      end select
  end if
