@@ -24,6 +24,7 @@ module cv_rgyr
 use pmf_sizes
 use pmf_constants
 use pmf_dat
+use cv_common
 
 implicit none
 
@@ -46,8 +47,6 @@ contains
 subroutine load_rgyr(cv_item,prm_fin)
 
     use prmfile
-    use pmf_dat
-    use cv_common
 
     implicit none
     class(CVTypeRGYR)                   :: cv_item

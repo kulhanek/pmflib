@@ -93,16 +93,19 @@ end subroutine pmf_init_dat
 ! Subroutine:  pmf_init_taskid_mpi
 !===============================================================================
 
-subroutine pmf_init_taskid_mpi(mytaskid)
+subroutine pmf_init_taskid_mpi(mytaskid,numoftasks)
 
     use pmf_dat
 
     implicit none
     integer        :: mytaskid
+    integer        :: numoftasks
     ! --------------------------------------------------------------------------
 
     fmytaskid = mytaskid
+    fnumoftasks = numoftasks
     fmaster = fmytaskid .eq. 0
+
 
 end subroutine pmf_init_taskid_mpi
 

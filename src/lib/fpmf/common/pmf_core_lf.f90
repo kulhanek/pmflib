@@ -30,37 +30,23 @@ implicit none
 contains
 
 !===============================================================================
-! Subroutine:  pmf_core_lf_update_xv
+! Subroutine:  pmf_core_lf_update_step
 ! leap-frog version
 !===============================================================================
 
-subroutine pmf_core_lf_update_xv(updated,x,v,temp,bathtemp)
+subroutine pmf_core_lf_update_step()
 
     use pmf_dat
     use pmf_core
 
     implicit none
-    logical        :: updated      ! x and v were updated
-    real(PMFDP)    :: x(:,:)       ! position in t
-    real(PMFDP)    :: v(:,:)       ! velocities in t-dt/2
-    real(PMFDP)    :: temp         ! temperature
-    real(PMFDP)    :: bathtemp     ! bath temperature
     ! --------------------------------------------------------------------------
 
     ! update time increments
     ftime = ftime + fdt
     fstep = fstep + 1
 
-    ! should we update x,v, and temp (from REMD)
-    updated = .false.
-
-    ! disable unused variable warning
-    ignored_arg__ = size(x) .ne. 0
-    ignored_arg__ = size(v) .ne. 0
-    ignored_arg__ = temp .ne. 0
-    ignored_arg__ = bathtemp .ne. 0
-
-end subroutine pmf_core_lf_update_xv
+end subroutine pmf_core_lf_update_step
 
 !===============================================================================
 ! Subroutine:  pmf_core_lf_force

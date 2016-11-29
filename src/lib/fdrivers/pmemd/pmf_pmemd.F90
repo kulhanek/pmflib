@@ -38,7 +38,7 @@ subroutine pmf_pmemd_init_taskid_mpi(mytaskid)
     integer        :: mytaskid
     ! --------------------------------------------------------------------------
 
-    call pmf_init_taskid_mpi(mytaskid)
+    call pmf_init_taskid_mpi(mytaskid,0)
 
 end subroutine pmf_pmemd_init_taskid_mpi
 !===============================================================================

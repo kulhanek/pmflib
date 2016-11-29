@@ -24,6 +24,7 @@ module cv_evec
 use pmf_sizes
 use pmf_constants
 use pmf_dat
+use cv_common
 use smf_xyzfile
 use smf_xyzfile_type
 
@@ -53,10 +54,6 @@ subroutine load_evec(cv_item,prm_fin)
 
     use prmfile
     use pmf_utils
-    use pmf_dat
-    use cv_common
-    use smf_xyzfile_type
-    use smf_xyzfile
 
     implicit none
     class(CVTypeEVEC)                   :: cv_item

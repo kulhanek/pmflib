@@ -26,7 +26,8 @@ module cv_dih2
 
 use pmf_sizes
 use pmf_constants
-use pmf_cvs
+use pmf_dat
+use cv_common
 
 implicit none
 
@@ -53,8 +54,6 @@ contains
 subroutine load_dih2(cv_item,prm_fin)
 
     use prmfile
-    use pmf_dat
-    use cv_common
 
     implicit none
     class(CVTypeDIH2)                    :: cv_item
@@ -68,7 +67,7 @@ subroutine load_dih2(cv_item,prm_fin)
     call cv_common_read_name(cv_item,prm_fin)
 
     ! load groups -----------------------------------
-    cv_item%ngrps = 4
+    cv_item%ngrps = 6
     call cv_common_read_groups(cv_item,prm_fin)
 
 end subroutine load_dih2
@@ -140,9 +139,10 @@ subroutine calculate_dih2(cv_item,x,ctx)
     type(CVContextType) :: ctx
     ! -----------------------------------------------
     integer        :: m,ai
-    real(PMFDP)    :: totmass1,totmass2,totmass3,totmass4,amass,tmp
+    real(PMFDP)    :: totmass1,totmass2,totmass3,totmass4,totmass5,totmass6,amass,tmp
     real(PMFDP)    :: x1,y1,z1,x2,y2,z2
     real(PMFDP)    :: x3,y3,z3,x4,y4,z4
+    real(PMFDP)    :: x5,y5,z5,x6,y6,z6
     real(PMFDP)    :: rijx,rijy,rijz
     real(PMFDP)    :: rkjx,rkjy,rkjz,rkj2,rkj,one_rkj2,one_rkj4
     real(PMFDP)    :: rklx,rkly,rklz
@@ -174,15 +174,11 @@ subroutine calculate_dih2(cv_item,x,ctx)
         z1 = z1 + x(3,ai)*amass
         totmass1 = totmass1 + amass
     end do
-    if( totmass1 .le. 0 ) then
-        call pmf_utils_exit(PMF_OUT,1,'totmass1 is zero in calculate_dih2!')
-    end if
     x1 = x1 / totmass1
     y1 = y1 / totmass1
     z1 = z1 / totmass1
 
     ! second point --------
-
     totmass2 = 0
     x2 = 0
     y2 = 0
@@ -195,15 +191,11 @@ subroutine calculate_dih2(cv_item,x,ctx)
         z2 = z2 + x(3,ai)*amass
         totmass2 = totmass2 + amass
     end do
-    if( totmass2 .le. 0 ) then
-        call pmf_utils_exit(PMF_OUT,1,'totmass2 is zero in calculate_dih2!')
-    end if
     x2 = x2 / totmass2
     y2 = y2 / totmass2
     z2 = z2 / totmass2
 
     ! third point --------
-
     totmass3 = 0
     x3 = 0
     y3 = 0
@@ -216,15 +208,11 @@ subroutine calculate_dih2(cv_item,x,ctx)
         z3 = z3 + x(3,ai)*amass
         totmass3 = totmass3 + amass
     end do
-    if( totmass3 .le. 0 ) then
-        call pmf_utils_exit(PMF_OUT,1,'totmass3 is zero in calculate_dih2!')
-    end if
     x3 = x3 / totmass3
     y3 = y3 / totmass3
     z3 = z3 / totmass3
 
     ! fourth point --------
-
     totmass4 = 0
     x4 = 0
     y4 = 0
@@ -237,12 +225,43 @@ subroutine calculate_dih2(cv_item,x,ctx)
         z4 = z4 + x(3,ai)*amass
         totmass4 = totmass4 + amass
     end do
-    if( totmass4 .le. 0 ) then
-        call pmf_utils_exit(PMF_OUT,1,'totmass4 is zero in calculate_dih2!')
-    end if
     x4 = x4 / totmass4
     y4 = y4 / totmass4
     z4 = z4 / totmass4
+
+    ! fith point --------
+    totmass5 = 0
+    x5 = 0
+    y5 = 0
+    z5 = 0
+    do  m = cv_item%grps(4) + 1 , cv_item%grps(5)
+        ai = cv_item%lindexes(m)
+        amass = mass(ai)
+        x5 = x5 + x(1,ai)*amass
+        y5 = y5 + x(2,ai)*amass
+        z5 = z5 + x(3,ai)*amass
+        totmass5 = totmass5 + amass
+    end do
+    x5 = x5 / totmass5
+    y5 = y5 / totmass5
+    z5 = z5 / totmass5
+
+    ! sixth point --------
+    totmass6 = 0
+    x6 = 0
+    y6 = 0
+    z6 = 0
+    do  m = cv_item%grps(5) + 1 , cv_item%grps(6)
+        ai = cv_item%lindexes(m)
+        amass = mass(ai)
+        x4 = x6 + x(1,ai)*amass
+        y4 = y6 + x(2,ai)*amass
+        z4 = z6 + x(3,ai)*amass
+        totmass6 = totmass6 + amass
+    end do
+    x6 = x6 / totmass6
+    y6 = y6 / totmass6
+    z6 = z6 / totmass6
 
     ! calc dih2edral angle
 
@@ -250,13 +269,13 @@ subroutine calculate_dih2(cv_item,x,ctx)
     rijy = y1 - y2
     rijz = z1 - z2
 
-    rkjx = x3 - x2
-    rkjy = y3 - y2
-    rkjz = z3 - z2
+    rkjx = x3 - x4
+    rkjy = y3 - y4
+    rkjz = z3 - z4
 
-    rklx = x3 - x4
-    rkly = y3 - y4
-    rklz = z3 - z4
+    rklx = x5 - x6
+    rkly = y5 - y6
+    rklz = z5 - z6
 
     if( fenable_pbc ) then
         call pmf_pbc_image_vector3(rijx,rijy,rijz)
@@ -326,11 +345,9 @@ subroutine calculate_dih2(cv_item,x,ctx)
     rkj_d2 = rkj / d2
     mrkj_g2 = -rkj / g2
 
-
     a_xix = rkj_d2 * dx
     a_xiy = rkj_d2 * dy
     a_xiz = rkj_d2 * dz
-
 
     a_xlx = mrkj_g2 * gx
     a_xly = mrkj_g2 * gy
@@ -338,7 +355,6 @@ subroutine calculate_dih2(cv_item,x,ctx)
 
     rijorkj = rijx * rkjx + rijy * rkjy + rijz * rkjz
     rkjorkl = rkjx * rklx + rkjy * rkly + rkjz * rklz
-
 
     WjA = rijorkj / rkj2 - 1
     WjB = rkjorkl / rkj2
@@ -381,6 +397,22 @@ subroutine calculate_dih2(cv_item,x,ctx)
     do  m = cv_item%grps(3) + 1, cv_item%grps(4)
         ai = cv_item%lindexes(m)
         tmp = mass(ai) / totmass4
+        ctx%CVsDrvs(1,ai,cv_item%idx) = ctx%CVsDrvs(1,ai,cv_item%idx) + a_xlx * tmp
+        ctx%CVsDrvs(2,ai,cv_item%idx) = ctx%CVsDrvs(2,ai,cv_item%idx) + a_xly * tmp
+        ctx%CVsDrvs(3,ai,cv_item%idx) = ctx%CVsDrvs(3,ai,cv_item%idx) + a_xlz * tmp
+    end do
+
+    do  m = cv_item%grps(4) + 1, cv_item%grps(5)
+        ai = cv_item%lindexes(m)
+        tmp = mass(ai) / totmass5
+        ctx%CVsDrvs(1,ai,cv_item%idx) = ctx%CVsDrvs(1,ai,cv_item%idx) + a_xkx * tmp
+        ctx%CVsDrvs(2,ai,cv_item%idx) = ctx%CVsDrvs(2,ai,cv_item%idx) + a_xky * tmp
+        ctx%CVsDrvs(3,ai,cv_item%idx) = ctx%CVsDrvs(3,ai,cv_item%idx) + a_xkz * tmp
+    end do
+
+    do  m = cv_item%grps(5) + 1, cv_item%grps(6)
+        ai = cv_item%lindexes(m)
+        tmp = mass(ai) / totmass6
         ctx%CVsDrvs(1,ai,cv_item%idx) = ctx%CVsDrvs(1,ai,cv_item%idx) + a_xlx * tmp
         ctx%CVsDrvs(2,ai,cv_item%idx) = ctx%CVsDrvs(2,ai,cv_item%idx) + a_xly * tmp
         ctx%CVsDrvs(3,ai,cv_item%idx) = ctx%CVsDrvs(3,ai,cv_item%idx) + a_xlz * tmp

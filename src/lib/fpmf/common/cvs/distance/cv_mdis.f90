@@ -26,6 +26,7 @@ module cv_mdis
 use pmf_sizes
 use pmf_constants
 use pmf_dat
+use cv_common
 
 implicit none
 
@@ -51,9 +52,7 @@ contains
 subroutine load_mdis(cv_item,prm_fin)
 
     use prmfile
-    use pmf_dat
     use pmf_utils
-    use cv_common
 
     implicit none
     class(CVTypeMDIS)                   :: cv_item

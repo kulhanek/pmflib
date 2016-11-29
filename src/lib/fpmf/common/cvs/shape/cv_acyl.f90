@@ -27,6 +27,7 @@ module cv_acyl
 use pmf_sizes
 use pmf_constants
 use pmf_dat
+use cv_common
 
 implicit none
 
@@ -49,8 +50,6 @@ contains
 subroutine load_acyl(cv_item,prm_fin)
 
     use prmfile
-    use pmf_dat
-    use cv_common
 
     implicit none
     class(CVTypeACYL)                   :: cv_item

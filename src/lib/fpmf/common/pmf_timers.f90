@@ -44,8 +44,6 @@ integer     :: PMFLIB_TOTAL_TIMER                       = -10
             integer     :: PMFLIB_STM_TIMER             = -82
                 integer     :: PMFLIB_STM_NET_TIMER     = -84
         integer     :: PMFLIB_EXTENSIONS_TIMER          = -90
-            integer     :: PMFLIB_REMD_TIMER            = -100
-                integer     :: PMFLIB_REMD_NET_TIMER    = -110
             integer     :: PMFLIB_MON_TIMER             = -120
             integer     :: PMFLIB_PDRV_TIMER            = -130
             integer     :: PMFLIB_GAP_TIMER             = -140
@@ -99,7 +97,6 @@ subroutine pmf_timers_init
     PMFLIB_EXTENSIONS_TIMER          = add_timer(PMFLIB_TIMER,'Extensions')
         PMFLIB_MON_TIMER        = add_timer(PMFLIB_EXTENSIONS_TIMER,'Monitoring')
         PMFLIB_PDRV_TIMER       = add_timer(PMFLIB_EXTENSIONS_TIMER,'Path Driving')
-        PMFLIB_REMD_TIMER       = add_timer(PMFLIB_EXTENSIONS_TIMER,'Replica Exchange Molecular Dynamics')
         PMFLIB_GAP_TIMER        = add_timer(PMFLIB_EXTENSIONS_TIMER,'Gaussian Approximation Potential')
 
 end subroutine pmf_timers_init

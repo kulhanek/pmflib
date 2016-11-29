@@ -101,16 +101,16 @@ integer                     :: FINALIZATION_TIMER       =  -8
 !-------------------------------------------------------------------------------
 
 interface
-	subroutine pot_ext_energy(x,d,ene)
-    	real(8)            :: x(:,:)
-    	real(8)            :: d(:,:)
-    	real(8)            :: ene
-	end subroutine
+    subroutine pot_ext_energy(x,d,ene)
+    real(8)            :: x(:,:)
+    real(8)            :: d(:,:)
+    real(8)            :: ene
+    end subroutine
 end interface
 
 ! ------------------------------------------------------------------------------
 
-procedure(pot_ext_energy),pointer	::	pot_ext_energy_pts => NULL()
+procedure(pot_ext_energy),pointer :: pot_ext_energy_pts => NULL()
 
 ! ------------------------------------------------------------------------------
 

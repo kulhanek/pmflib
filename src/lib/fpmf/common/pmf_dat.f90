@@ -48,6 +48,7 @@ logical                 :: fmonitor_paths       ! enable path monitoring
 ! parallel setup ---------------------------------------------------------------
 logical     :: fmaster      = .true.    ! .true. for master process
 integer     :: fmytaskid    = 0         ! process id
+integer     :: fnumoftasks  = 0         ! number of tasks
 
 ! local copies of MD variables -------------------------------------------------
 integer     :: fnatoms      ! total number of atoms

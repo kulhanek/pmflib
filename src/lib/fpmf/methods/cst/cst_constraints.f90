@@ -28,6 +28,7 @@
 module cst_constraints
 
 use pmf_cvs
+use cst_dat
 
 implicit none
 contains
@@ -37,8 +38,6 @@ contains
 !===============================================================================
 
 subroutine cst_constraints_reset_con(cst_item)
-
-    use cst_dat
 
     implicit none
     type(CVTypeBM)       :: cst_item
@@ -66,7 +65,6 @@ subroutine cst_constraints_read_con(prm_fin,cst_item)
 
     use prmfile
     use pmf_utils
-    use cst_dat
     use pmf_paths
 
     implicit none
@@ -126,7 +124,6 @@ end subroutine cst_constraints_read_con
 
 subroutine cst_constraints_cst_info(cst_item)
 
-    use cst_dat
     use pmf_paths
 
     implicit none
@@ -179,8 +176,6 @@ end subroutine cst_constraints_cst_info
 
 subroutine cst_constraints_init_all
 
-    use cst_dat
-
     implicit none
     integer            :: i
     ! --------------------------------------------------------------------------
@@ -197,8 +192,6 @@ end subroutine cst_constraints_init_all
 
 subroutine cst_constraints_cst_init(cst_item)
 
-    use pmf_dat
-    use cst_dat
     use pmf_paths
 
     implicit none
@@ -239,8 +232,6 @@ end subroutine cst_constraints_cst_init
 
 subroutine cst_constraints_increment
 
-    use cst_dat
-
     implicit none
     integer            :: i
     ! --------------------------------------------------------------------------
@@ -257,8 +248,6 @@ end subroutine cst_constraints_increment
 
 subroutine cst_constraints_cst_increment(cst_item)
 
-    use cst_dat
-    use pmf_dat
     use pmf_paths
 
     implicit none
@@ -293,9 +282,8 @@ end subroutine cst_constraints_cst_increment
 
 subroutine cst_constraints_calc_fdxp
 
-    use pmf_dat
-    use cst_dat
     use pmf_timers
+    use pmf_cvs
 
     implicit none
     integer              :: i,ci
@@ -328,8 +316,6 @@ end subroutine cst_constraints_calc_fdxp
 !===============================================================================
 
 recursive subroutine cst_constraints_calc_fdxp_cvitem(ci)
-
-    use pmf_dat
 
     implicit none
     integer             :: ci
@@ -366,9 +352,7 @@ end subroutine cst_constraints_calc_fdxp_cvitem
 
 subroutine cst_constraints_read_control_file(cst_item)
 
-    use pmf_dat
     use pmf_utils
-    use cst_dat
 
     implicit none
     type(CVTypeBM)     :: cst_item

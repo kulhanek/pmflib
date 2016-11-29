@@ -25,6 +25,13 @@ ADD_TEST(CVDerRand02-DIH ${EXECUTABLE_OUTPUT_PATH}/pmf-test-cvs
 ADD_TEST(CVDerRand03-DIH ${EXECUTABLE_OUTPUT_PATH}/pmf-test-cvs
                         ../random03.in dih.in)
 
+ADD_TEST(CVDerRand01-DIH2 ${EXECUTABLE_OUTPUT_PATH}/pmf-test-cvs
+                        ../random01.in dih2.in)
+ADD_TEST(CVDerRand02-DIH2 ${EXECUTABLE_OUTPUT_PATH}/pmf-test-cvs
+                        ../random02.in dih2.in)
+ADD_TEST(CVDerRand03-DIH2 ${EXECUTABLE_OUTPUT_PATH}/pmf-test-cvs
+                        ../random03.in dih2.in)
+
 ADD_TEST(CVDerRand01-PANG ${EXECUTABLE_OUTPUT_PATH}/pmf-test-cvs
                         ../random01.in pang.in)
 ADD_TEST(CVDerRand02-PANG ${EXECUTABLE_OUTPUT_PATH}/pmf-test-cvs

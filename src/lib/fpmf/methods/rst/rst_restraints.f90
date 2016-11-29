@@ -455,7 +455,7 @@ subroutine rst_restraints_increment(rst_item)
             rst_item%target_value = pmf_paths_get_rpos(rst_item%cvindx)
             return
         case('C')
-            return	! no change of constant restraint
+            return  ! no change of constant restraint
         case('W')
             return  ! no change of wall restraint
         case('S')

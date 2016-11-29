@@ -27,6 +27,7 @@ module cv_ds
 use pmf_sizes
 use pmf_constants
 use pmf_dat
+use cv_common
 
 implicit none
 
@@ -49,9 +50,7 @@ contains
 subroutine load_ds(cv_item,prm_fin)
 
     use prmfile
-    use pmf_dat
     use pmf_unit
-    use cv_common
 
     implicit none
     class(CVTypeDS)                     :: cv_item

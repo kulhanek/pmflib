@@ -25,6 +25,7 @@ module cv_napbo
 use pmf_sizes
 use pmf_constants
 use pmf_dat
+use cv_common
 
 implicit none
 
@@ -47,8 +48,6 @@ contains
 subroutine load_napbo(cv_item,prm_fin)
 
     use prmfile
-    use pmf_dat
-    use cv_common
     use pmf_utils
 
     implicit none

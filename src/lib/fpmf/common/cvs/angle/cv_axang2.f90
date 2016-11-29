@@ -25,6 +25,7 @@ module cv_axang2
 use pmf_sizes
 use pmf_constants
 use pmf_dat
+use cv_common
 use smf_xyzfile
 use smf_xyzfile_type
 
@@ -55,8 +56,6 @@ contains
 subroutine load_axang2(cv_item,prm_fin)
 
     use prmfile
-    use pmf_dat
-    use cv_common
     use pmf_utils
     use smf_periodic_table
 
