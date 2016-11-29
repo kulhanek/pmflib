@@ -53,8 +53,6 @@ subroutine load_rmsdt(cv_item,prm_fin)
 
     use prmfile
     use pmf_utils
-    use pmf_dat
-    use cv_common
     use smf_xyzfile_type
     use smf_xyzfile
     use smf_periodic_table
