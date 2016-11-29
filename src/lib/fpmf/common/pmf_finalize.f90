@@ -43,10 +43,7 @@ subroutine pmf_finalize_all(do_profiling)
 
     call pmf_finalize_methods
     call pmf_finalize_pmf
-
-    if( do_profiling ) then
-        call pmf_timers_finalize
-    end if
+    call pmf_timers_finalize(do_profiling)
 
 end subroutine pmf_finalize_all
 
@@ -56,10 +53,53 @@ end subroutine pmf_finalize_all
 
 subroutine pmf_finalize_pmf
 
+    use pmf_dat
+    use pmf_cvs
+
     implicit none
+    integer     :: i
     ! ----------------------------------------------------------------------------
 
-    ! nothing to be here
+    if( allocated(RIndexes) ) then
+        deallocate(RIndexes)
+    end if
+    if( allocated(InitialCrd) ) then
+        deallocate(InitialCrd)
+    end if
+    if( allocated(Mass) ) then
+        deallocate(Mass)
+    end if
+    if( allocated(MassInv) ) then
+        deallocate(MassInv)
+    end if
+    if( allocated(Crd) ) then
+        deallocate(Crd)
+    end if
+    if( allocated(Frc) ) then
+        deallocate(Frc)
+    end if
+    if( allocated(Vel) ) then
+        deallocate(Vel)
+    end if
+    if( allocated(DelV) ) then
+        deallocate(DelV)
+    end if
+    if( allocated(CrdP) ) then
+        deallocate(CrdP)
+    end if
+    if( allocated(VelP) ) then
+        deallocate(VelP)
+    end if
+
+    ! destroy CVs
+    do i=1,NumOfCVs
+        call CVList(i)%cv%free_cv()
+        deallocate(CVList(i)%cv)
+    end do
+    NumOfCVs = 0
+    if( allocated(CVList) ) then
+        deallocate(CVList)
+    end if
 
 end subroutine pmf_finalize_pmf
 

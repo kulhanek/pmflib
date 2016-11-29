@@ -166,7 +166,13 @@ subroutine pmf_cats_end_init(anatom,amass,ax)
     call pmf_cats_process_control
 
     ! init PMF subsystems
-    call pmf_init_all(amass,ax)
+    call pmf_init_all_nocvvalues(amass,ax)
+
+    write(PMF_OUT,'(A)') '#'
+    write(PMF_OUT,'(A)') '#==============================================================================#'
+    write(PMF_OUT,'(A)') '# PMFLib - End of Initialization                                               #'
+    write(PMF_OUT,'(A)') '#==============================================================================#'
+    write(PMF_OUT,*)
 
     ! flush output streams
     flush(PMF_OUT)
@@ -376,7 +382,7 @@ end subroutine pmf_cats_get_type_by_indx
 ! subroutine pmf_cats_finalize
 !===============================================================================
 
-subroutine pmf_cats_finalize
+subroutine pmf_cats_finalize(mode)
 
     use pmf_constants
     use pmf_utils
@@ -385,15 +391,24 @@ subroutine pmf_cats_finalize
     use pmf_dat
 
     implicit none
+    integer         :: mode
+    logical         :: do_profiling
     ! --------------------------------------------------------------------------
 
     if( .not. fmaster ) return
 
-    write(PMF_OUT,*)
-    call pmf_utils_heading(PMF_OUT,'PMF Library Finalization', '-')
+    if( mode .eq. 0 ) then
+        write(PMF_OUT,*)
+        call pmf_utils_heading(PMF_OUT,'PMF Library Finalization', '-')
+    end if
 
     call pmf_timers_stop_timer(PMFLIB_TOTAL_TIMER)
-    call pmf_finalize_all(.true.)
+    do_profiling = mode .eq. 0
+    call pmf_finalize_all(do_profiling)
+
+    if( allocated(frmass) ) then
+        deallocate(frmass)
+    end if
 
 end subroutine pmf_cats_finalize
 

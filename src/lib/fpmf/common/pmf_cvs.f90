@@ -67,6 +67,7 @@ type CVType
         procedure   :: reset_cv
         procedure   :: load_cv
         procedure   :: calculate_cv
+        procedure   :: free_cv
         ! unit methods
         procedure   :: get_ulabel
         procedure   :: conv_to_ivalue
@@ -164,6 +165,33 @@ subroutine calculate_cv(cv_item,x,ctx)
     ignored_arg__ = same_type_as(ctx,ctx)
 
 end subroutine calculate_cv
+
+!===============================================================================
+! Subroutine:  calculate_cv
+!===============================================================================
+
+subroutine free_cv(cv_item)
+
+    use pmf_utils
+
+    implicit none
+    class(CVType)       :: cv_item
+    ! --------------------------------------------------------------------------
+
+    if( associated(cv_item%rindexes) ) then
+        deallocate(cv_item%rindexes)
+    end if
+    if( associated(cv_item%lindexes) ) then
+        deallocate(cv_item%lindexes)
+    end if
+    if( associated(cv_item%indlindexes) ) then
+        deallocate(cv_item%indlindexes)
+    end if
+    if( associated(cv_item%algebraicidxs) ) then
+        deallocate(cv_item%algebraicidxs)
+    end if
+
+end subroutine free_cv
 
 !===============================================================================
 ! Function:   get_ulabel
