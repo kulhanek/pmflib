@@ -73,7 +73,6 @@ end subroutine pmf_timers_init_top
 
 subroutine pmf_timers_init
 
-<<<<<<< HEAD
  use smf_profiling_dat
  use smf_profiling
 
@@ -99,34 +98,6 @@ subroutine pmf_timers_init
         PMFLIB_MON_TIMER        = add_timer(PMFLIB_EXTENSIONS_TIMER,'Monitoring')
         PMFLIB_PDRV_TIMER       = add_timer(PMFLIB_EXTENSIONS_TIMER,'Path Driving')
         PMFLIB_GAP_TIMER        = add_timer(PMFLIB_EXTENSIONS_TIMER,'Gaussian Approximation Potential')
-=======
-    use smf_profiling_dat
-    use smf_profiling
-
-    implicit none
-    ! -------------------------------------------------------------------------
-
-    ! add standard timers --------------------------------
-    PMFLIB_TIMER           = add_timer(PMFLIB_TOTAL_TIMER,'PMFLib')
-        PMFLIB_CVS_TIMER              = add_timer(PMFLIB_TIMER,'Collective Variables')
-        PMFLIB_PATH_TIMER              = add_timer(PMFLIB_TIMER,'Paths')
-        PMFLIB_METHODS_TIMER          = add_timer(PMFLIB_TIMER,'Methods')
-            PMFLIB_ABF_TIMER            = add_timer(PMFLIB_METHODS_TIMER,'Adaptive Biasing Force')
-                PMFLIB_ABF_MWA_TIMER        = add_timer(PMFLIB_ABF_TIMER,'Multiple Walkers Approach')
-            PMFLIB_ABP_TIMER            = add_timer(PMFLIB_METHODS_TIMER,'Adaptive Biasing Potential')
-                PMFLIB_ABP_MWA_TIMER        = add_timer(PMFLIB_ABP_TIMER,'Multiple Walkers Approach')
-            PMFLIB_MTD_TIMER            = add_timer(PMFLIB_METHODS_TIMER,'Metadynamics')
-                PMFLIB_MTD_MWA_TIMER        = add_timer(PMFLIB_MTD_TIMER,'Multiple Walkers Approach')
-            PMFLIB_STM_TIMER            = add_timer(PMFLIB_METHODS_TIMER,'String Method')
-                PMFLIB_STM_NET_TIMER        = add_timer(PMFLIB_STM_TIMER,'Network Communication')
-            PMFLIB_CON_TIMER            = add_timer(PMFLIB_METHODS_TIMER,'Constrained Dynamics')
-            PMFLIB_RST_TIMER            = add_timer(PMFLIB_METHODS_TIMER,'Restrained Dynamics')
-        PMFLIB_EXTENSIONS_TIMER          = add_timer(PMFLIB_TIMER,'Extensions')
-            PMFLIB_MON_TIMER        = add_timer(PMFLIB_EXTENSIONS_TIMER,'Monitoring')
-            PMFLIB_PDRV_TIMER       = add_timer(PMFLIB_EXTENSIONS_TIMER,'Path Driving')
-            PMFLIB_REMD_TIMER       = add_timer(PMFLIB_EXTENSIONS_TIMER,'Replica Exchange Molecular Dynamics')
-            PMFLIB_GAP_TIMER        = add_timer(PMFLIB_EXTENSIONS_TIMER,'Gaussian Approximation Potential')
->>>>>>> 48167413c2c057fa7683287f9ba6c96a630a57a4
 
 end subroutine pmf_timers_init
 
