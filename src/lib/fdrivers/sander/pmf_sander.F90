@@ -323,33 +323,6 @@ subroutine pmf_sander_update_box(a,b,c,alpha,beta,gamma)
 end subroutine pmf_sander_update_box
 
 !===============================================================================
-! subroutine pmf_sander_update_xv
-!===============================================================================
-
-subroutine pmf_sander_update_xv(anatom,remd_updated,x,v,temp,bathtemp)
-
-    use pmf_sizes
-    use pmf_core_lf
-    use pmf_timers
-
-    implicit none
-    integer        :: anatom       ! number of atoms
-    logical        :: remd_updated
-    real(PMFDP)    :: x(3,anatom)
-    real(PMFDP)    :: v(3,anatom)
-    real(PMFDP)    :: temp
-    real(PMFDP)    :: bathtemp
-    ! --------------------------------------------------------------------------
-
-    call pmf_timers_start_timer(PMFLIB_TIMER)
-    call pmf_core_lf_update_xv(remd_updated,x,v,temp,bathtemp)
-    call pmf_timers_stop_timer(PMFLIB_TIMER)
-
-    return
-
-end subroutine pmf_sander_update_xv
-
-!===============================================================================
 ! subroutine pmf_sander_force
 !===============================================================================
 
