@@ -308,9 +308,11 @@ subroutine pmf_init_all(amass,ax)
     call pmf_init_all_nocvvalues(amass,ax)
 
     ! init CVs
-    CVContext%CVsValues = 0.0d0
-    CVContext%CVsDrvs = 0.0d0
-    CVContext%CVsFrc = 0.0d0  ! lam81
+    if( NumOfCVs .gt. 0 ) then
+        CVContext%CVsValues = 0.0d0
+        CVContext%CVsDrvs = 0.0d0
+        CVContext%CVsFrc = 0.0d0  ! lam81
+    end if
     do i=1,NumOfCVs
         call CVList(i)%cv%calculate_cv(Crd,CVContext)
     end do
