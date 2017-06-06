@@ -676,14 +676,16 @@ function gp_basic_add(self1, self2) result(self3)
 
    do i=1,self1%n_dof
       if (self1%len_scale_sq(i) .ne. self2%len_scale_sq(i)) then
-         print *,"self1%len_scale_sq(",i,")=",self1%len_scale_sq(i)," is not equal to self2%len_scale_sq(",i,")=",self2%len_scale_sq(i)
+         print *,"self1%len_scale_sq(",i,")=",self1%len_scale_sq(i), &
+                 " is not equal to self2%len_scale_sq(",i,")=",self2%len_scale_sq(i)
          stop
       end if
    end do
 
    do i=1,self1%n_dof
       if (self1%periodicity(i) .ne. self2%periodicity(i)) then
-         print *,"self1%periodicity(",i,")=",self1%periodicity(i)," is not equal to self2%periodicity(",i,")=",self2%periodicity(i)
+         print *,"self1%periodicity(",i,")=",self1%periodicity(i), &
+                 " is not equal to self2%periodicity(",i,")=",self2%periodicity(i)
          stop
       end if
    end do
@@ -1217,20 +1219,23 @@ subroutine gp_basic_merge(self1, self2, self3)
    end if
 
    if (trim(self1%sparsemethod) .ne. trim(self2%sparsemethod)) then
-      print *,"self1%sparsemethod=", trim(self1%sparsemethod), " is not equal to self2%sparsemethod=", trim(self1%sparsemethod)
+      print *,"self1%sparsemethod=", trim(self1%sparsemethod), &
+              " is not equal to self2%sparsemethod=", trim(self1%sparsemethod)
       stop
    end if
 
    do i=1,self1%n_dof
       if (self1%len_scale_sq(i) .ne. self2%len_scale_sq(i)) then
-         print *,"self1%len_scale_sq(",i,")=",self1%len_scale_sq(i)," is not equal to self2%len_scale_sq(",i,")=",self2%len_scale_sq(i)
+         print *,"self1%len_scale_sq(",i,")=",self1%len_scale_sq(i), &
+                 " is not equal to self2%len_scale_sq(",i,")=",self2%len_scale_sq(i)
          stop  
       end if
    end do
 
    do i=1,self1%n_dof
       if (self1%periodicity(i) .ne. self2%periodicity(i)) then
-         print *,"self1%periodicity(",i,")=",self1%periodicity(i)," is not equal to self2%periodicity(",i,")=",self2%periodicity(i)
+         print *,"self1%periodicity(",i,")=",self1%periodicity(i),&
+                 " is not equal to self2%periodicity(",i,")=",self2%periodicity(i)
          stop
       end if
    end do
