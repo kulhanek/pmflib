@@ -686,6 +686,7 @@ INCLUDE 'mpif.h'
     ! ------------------------------------------------------
     integer           :: i,at_id,ow_id,ierr,sat_id,slen
     logical           :: start
+    real(PMFDP)       :: f
     ! --------------------------------------------------------------------------
 
     ierr = MPI_SUCCESS
@@ -754,6 +755,14 @@ INCLUDE 'mpif.h'
         call pmf_utils_exit(PMF_OUT, 1,'[PMF] Problem with data distribution in pmf_pmemd_gather_array_mpi!')
     end if
 
+    ! write info about fragmentation
+    if( fmaster .and. frepmpifrag ) then
+        f = real(fragmentation,PMFDP) / real(numofmpitransfers,PMFDP)
+        if( f .gt. 1.0d0 ) then
+            write(PMF_DEBUG-1,20) numofmpitransfers, f
+        end if
+    end if
+    
     ! gather data
     call mpi_gatherv(send_buffer,chunk_sizes(fmytaskid+1),mpi_double_precision, &
                      recv_buffer,chunk_sizes(1),chunk_offsets(1),mpi_double_precision, &
@@ -780,6 +789,8 @@ INCLUDE 'mpif.h'
     if( fdebug ) then
         write(PMF_DEBUG+fmytaskid,*)
     end if
+
+ 20 format('| MPI> ',I9,'Average fragmentation per all CPUs = ',F17.4)
 
 end subroutine pmf_pmemd_gather_array_mpi
 

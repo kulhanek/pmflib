@@ -44,6 +44,7 @@ subroutine pmf_init_dat
 
     ftopology      = ''          ! fake topology
     fdebug         = .false.     ! more verbose output
+    frepmpifrag    = .false.
     fprint_inpcrds = .false.
     fprint_masks   = .false.
     fenable_pbc    = .false.

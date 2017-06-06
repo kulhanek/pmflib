@@ -38,6 +38,7 @@ implicit none
 ! [control] --------------------------------------------------------------------
 character(PMF_MAX_PATH) :: ftopology            ! fake topology
 logical                 :: fdebug               ! more verbose output
+logical                 :: frepmpifrag          ! report MPI fragmentation (pmemd-new, only master)
 logical                 :: fprint_inpcrds       ! print input coordinates including atom
                                                 ! names and residue names
 logical                 :: fprint_masks         ! print atom masks in CV definitions

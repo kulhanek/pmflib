@@ -179,6 +179,7 @@ subroutine pmf_control_read_control(prm_fin)
     if(.not. prmfile_open_section(prm_fin,'control')) then
         write(PMF_OUT,2)
         write(PMF_OUT,15) prmfile_onoff(fdebug)
+        write(PMF_OUT,16) prmfile_onoff(frepmpifrag)
         write(PMF_OUT,35) prmfile_onoff(fprint_inpcrds)
         write(PMF_OUT,45) prmfile_onoff(fprint_masks)
         write(PMF_OUT,55) prmfile_onoff(fenable_pbc)
@@ -196,6 +197,12 @@ subroutine pmf_control_read_control(prm_fin)
         write(PMF_OUT,15) prmfile_onoff(fdebug)
     else
         write(PMF_OUT,10) prmfile_onoff(fdebug)
+    end if
+
+    if(.not. prmfile_get_logical_by_key(prm_fin,'frepmpifrag', frepmpifrag)) then
+        write(PMF_OUT,16) prmfile_onoff(frepmpifrag)
+    else
+        write(PMF_OUT,11) prmfile_onoff(frepmpifrag)
     end if
 
     if(.not. prmfile_get_logical_by_key(prm_fin,'fprint_inpcrds', fprint_inpcrds)) then
@@ -226,6 +233,8 @@ subroutine pmf_control_read_control(prm_fin)
   2 format('ftopology                              = -system-                      (default)')
  10 format('fdebug                                 = ',a)
  15 format('fdebug                                 = ',a29,' (default)')
+ 11 format('frepmpifrag                            = ',a)
+ 16 format('frepmpifrag                            = ',a29,' (default)')
  30 format('fprint_inpcrds                         = ',a)
  35 format('fprint_inpcrds                         = ',a29,' (default)')
  40 format('fprint_masks                           = ',a)
