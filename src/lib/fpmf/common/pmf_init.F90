@@ -184,8 +184,8 @@ subroutine pmf_init_bcast_dat_mpi
     if( fdebug ) then
         write(PMF_DEBUG+fmytaskid,'(A)') '>> Broadcasting dat section - end'
         write(PMF_DEBUG+fmytaskid,'(A,L)') '   fdebug      = ',fdebug
-        write(PMF_DEBUG+fmytaskid,'(A,I)') '   NumOfLAtoms = ',NumOfLAtoms
-        write(PMF_DEBUG+fmytaskid,'(A,I)') '   fnatoms      = ',fnatoms
+        write(PMF_DEBUG+fmytaskid,'(A,I3)') '   NumOfLAtoms = ',NumOfLAtoms
+        write(PMF_DEBUG+fmytaskid,'(A,I3)') '   fnatoms      = ',fnatoms
         write(PMF_DEBUG+fmytaskid,*)
     end if
 
