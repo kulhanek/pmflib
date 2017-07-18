@@ -342,6 +342,7 @@ subroutine pmf_sander_force(anatom,x,v,f,epot,epmf)
     ! --------------------------------------------------------------------------
 
     call pmf_timers_start_timer(PMFLIB_TIMER)
+    call pmf_core_lf_update_step
     call pmf_core_lf_force(x,v,f,epot,epmf)
     call pmf_timers_stop_timer(PMFLIB_TIMER)
 

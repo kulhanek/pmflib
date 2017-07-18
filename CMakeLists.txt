@@ -18,6 +18,7 @@ SET(PMFLIB_NETWORK          ON  CACHE BOOL "Is network available")
 SET(PMFLIB_COMPILE_FPMF     ON  CACHE BOOL "Should the fortran part of pmflib be built?")
 SET(PMFLIB_HAVE_RPATH       ON  CACHE BOOL "Is rpath option supported by linker?")
 SET(PMFLIB_USE_INST_RPATH   OFF CACHE BOOL "Should CMAKE_INSTALL_RPATH be used as the single RPATH?")
+SET(PMFLIB_SKIP_BIN_UTILS   OFF CACHE BOOL "Should utilities be skip in bin?")
 
 # drivers options --------------------------------
 SET(PMFLIB_SANDER_DRV   ON   CACHE BOOL "Should the driver for sander be built?")
