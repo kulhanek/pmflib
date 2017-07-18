@@ -21,13 +21,13 @@
 
 #include <PMFMainHeader.hpp>
 #include <ErrorSystem.hpp>
+#include <PMFMainHeaderConfig.hpp>
 
 //==============================================================================
 //------------------------------------------------------------------------------
 //==============================================================================
 
-const char* LibBuildVersion_PMF = PMFLIB_VERSION;
-
+const char* LibBuildVersion_PMF = PMF_VERSION " (" PMF_BUILDTIME ")";
 
 //------------------------------------------------------------------------------
 

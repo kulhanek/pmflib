@@ -42,7 +42,7 @@ public:
     CSO_PROG_DESC_END
 
     CSO_PROG_VERS_BEGIN
-    PMFLIB_VERSION
+    LibBuildVersion_PMF
     CSO_PROG_VERS_END
 
 // list of all options and arguments ------------------------------------------
