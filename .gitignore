@@ -10,4 +10,5 @@ include/**
 Testing/
 PMFLib.*
 *__genmod*
-PMFLib5.*
+tests/**
+PMFLib.creator.user

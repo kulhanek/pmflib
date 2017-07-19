@@ -208,6 +208,5 @@ ENDIF(NOT DEFINED COMPOSITE_PROJECT)
 # ==============================================================================
 
 ADD_SUBDIRECTORY(src)
-ADD_SUBDIRECTORY(man)
 ADD_SUBDIRECTORY(share)
 
