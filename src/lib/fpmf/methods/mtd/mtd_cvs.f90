@@ -21,7 +21,7 @@
 !    Boston, MA  02110-1301  USA
 !===============================================================================
 
-module mtd_cvs
+module mtd_cvs_mod
 
 implicit none
 contains
@@ -231,4 +231,4 @@ end subroutine mtd_cvs_cv_info
 
 !===============================================================================
 
-end module mtd_cvs
+end module mtd_cvs_mod

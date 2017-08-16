@@ -437,7 +437,7 @@ subroutine mtd_control_read_cvs_from_group(prm_fin)
     use pmf_dat
     use cv_common
     use mtd_dat
-    use mtd_cvs
+    use mtd_cvs_mod
 
     implicit none
     type(PRMFILE_TYPE),intent(inout)        :: prm_fin

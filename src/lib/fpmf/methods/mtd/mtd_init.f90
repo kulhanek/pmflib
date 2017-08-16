@@ -114,7 +114,7 @@ subroutine mtd_init_print_header
  use mtd_dat
  use pmf_dat
  use pmf_constants
- use mtd_cvs
+ use mtd_cvs_mod
  use prmfile
 
  implicit none
