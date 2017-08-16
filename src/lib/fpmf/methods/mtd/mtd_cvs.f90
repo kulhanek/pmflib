@@ -21,6 +21,10 @@
 !    Boston, MA  02110-1301  USA
 !===============================================================================
 
+! ifort version 17.0.1
+! mtd_init.f90(117): error #6406: Conflicting attributes or multiple declaration of name.   [MTD_CVS]
+! renamed mtd_cvs -> mtd_cvs_mod
+
 module mtd_cvs_mod
 
 implicit none
