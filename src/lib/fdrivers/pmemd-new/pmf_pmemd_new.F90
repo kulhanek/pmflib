@@ -296,7 +296,8 @@ subroutine pmf_pmemd_bcast_dat_mpi()
              stat=alloc_failed)
 
      if( alloc_failed .ne. 0 ) then
-        call pmf_utils_exit(PMF_OUT, 1,'[PMEMD] Unable to allocate memory for chunck_sizes/chunck_offsets/send_buffer/recv_buffer arrays!')
+        call pmf_utils_exit(PMF_OUT, 1,&
+             '[PMEMD] Unable to allocate memory for chunck_sizes/chunck_offsets/send_buffer/recv_buffer arrays!')
      end if
 
     ! allocate temporary arrays
@@ -662,7 +663,7 @@ subroutine pmf_pmemd_mpistat
  30 format('| MPI> --- ------------------')
  35 format('| MPI> ',I3,1X,F18.4)
  40 format('| MPI> --- ------------------')
- 45 format('| MPI> Total = ',F14.4,' (NumOfLAtoms =',I,')')
+ 45 format('| MPI> Total = ',F14.4,' (NumOfLAtoms =',I6,')')
 
 end subroutine pmf_pmemd_mpistat
 
@@ -739,9 +740,11 @@ INCLUDE 'mpif.h'
 
     if( fdebug ) then
         do i=1,fnumoftasks
-            write(PMF_DEBUG+fmytaskid,'(A,I3,A,I7,A,I7)') '    cpu id: ',i,', offset = ',chunk_offsets(i)/3,', size = ',chunk_sizes(i)/3
+            write(PMF_DEBUG+fmytaskid,'(A,I3,A,I7,A,I7)') '    cpu id: ',i,', offset = ', &
+                                                          chunk_offsets(i)/3,', size = ',chunk_sizes(i)/3
         end do
-        write(PMF_DEBUG+fmytaskid,'(A,I3,A,I7)') '   task id: ', fmytaskid, ', number of atoms: ', chunk_sizes(fmytaskid+1)/3
+        write(PMF_DEBUG+fmytaskid,'(A,I3,A,I7)') '   task id: ', fmytaskid, &
+                                                          ', number of atoms: ', chunk_sizes(fmytaskid+1)/3
     end if
 
     ! sanity check
@@ -870,7 +873,8 @@ INCLUDE 'mpif.h'
 
     if( fdebug ) then
         do i=1,fnumoftasks
-            write(PMF_DEBUG+fmytaskid,'(A,I3,A,I7,A,I7)') '    cpu id: ',i,', offset = ',chunk_offsets(i)/3,', size = ',chunk_sizes(i)/3
+            write(PMF_DEBUG+fmytaskid,'(A,I3,A,I7,A,I7)') '    cpu id: ',i,', offset = ', &
+                                                          chunk_offsets(i)/3,', size = ',chunk_sizes(i)/3
         end do
         write(PMF_DEBUG+fmytaskid,'(A,I3,A,I7)') '   task id: ', fmytaskid, ', number of atoms: ', chunk_sizes(fmytaskid+1)/3
     end if

@@ -406,68 +406,6 @@ subroutine pmf_sander_constraints(anatom,x,modified)
 end subroutine pmf_sander_constraints
 
 #ifdef MPI
-!===============================================================================
-! subroutine pmf_sander_update_xv_mpi
-!===============================================================================
-
-subroutine pmf_sander_update_xv_mpi(anatom,updated,x,v,temp,bathtemp)
-
-    use pmf_sizes
-    use pmf_core_lf
-    use pmf_sander_dat
-    use pmf_utils
-    use pmf_dat
-    use pmf_timers
-    use mpi
-
-    implicit none
-    integer         :: anatom
-    logical         :: updated
-    real(PMFDP)     :: x(3,anatom)
-    real(PMFDP)     :: v(3,anatom)
-    real(PMFDP)     :: temp
-    real(PMFDP)     :: bathtemp
-    ! ------------------------------------------------------
-    integer         :: ierr,i
-    ! --------------------------------------------------------------------------
-
-    if(fmaster) then
-        call pmf_timers_start_timer(PMFLIB_TIMER)
-    end if
-
-    ! gather data
-    call pmf_sander_gather_array_mpi(tmp_a,x,atm_owner_map,1)
-    call pmf_sander_gather_array_mpi(tmp_b,v,atm_owner_map,2)
-
-    ! do main staff
-    if( fmaster ) then
-        if( fdebug ) then
-            write(PMF_DEBUG+fmytaskid,'(A)') '>> Input coordinates (update_xv): '
-            do i=1,NumOfLAtoms
-                write(PMF_DEBUG+fmytaskid,'(3X,3F10.3)') tmp_a(:,RIndexes(i))
-            end do
-            write(PMF_DEBUG+fmytaskid,*)
-        end if
-        call pmf_core_lf_update_xv(updated,tmp_a,tmp_b,temp,bathtemp)
-    end if
-
-    ! broadcast updated
-    call mpi_bcast(updated, 1, mpi_logical, 0, mpi_comm_world, ierr)
-    if( ierr .ne. MPI_SUCCESS ) then
-        call pmf_utils_exit(PMF_OUT, 1,'[CST] Unable to broadcast the value of updated!')
-    end if
-
-    ! update data if necessary
-    if( updated ) then
-        call pmf_sander_scatter_array_mpi(tmp_a,x,atm_owner_map,3)
-        call pmf_sander_scatter_array_mpi(tmp_b,v,atm_owner_map,4)
-    end if
-
-    if(fmaster) then
-        call pmf_timers_stop_timer(PMFLIB_TIMER)
-    end if
-
-end subroutine pmf_sander_update_xv_mpi
 
 !===============================================================================
 ! subroutine pmf_sander_force_mpi
