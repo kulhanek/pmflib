@@ -55,6 +55,11 @@ ENDIF(NOT DEVELOPMENT_ROOT)
 # ==============================================================================
 # external libraries -----------------------------------------------------------
 # ==============================================================================
+SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${DEVELOPMENT_ROOT}/projects/cmake-modules/1.0/share/modules")
+
+# boost =======================
+FIND_PACKAGE(MyBoost REQUIRED)
+INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIRS} SYSTEM)
 
 # HIPOLY ====================
 SET(HIPOLY_ROOT ${DEVELOPMENT_ROOT}/projects/hipoly/1.0)
@@ -104,19 +109,8 @@ INCLUDE_DIRECTORIES(${NETLIB_ROOT}/src/lib/netlib/extra/client SYSTEM)
 LINK_DIRECTORIES(${NETLIB_ROOT}/lib)
 SET(NETLIB_LIB_NAME netlib)
 
-IF(NOT MKL_FOUND)
-    # BLAS ======================
-    SET(BLAS_ROOT ${DEVELOPMENT_ROOT}/thirdparty/blas/netlib)
-    LINK_DIRECTORIES(${BLAS_ROOT}/lib)
-    SET(BLAS_LIB_NAME fblasd)
-
-    # LAPACK =====================
-    SET(LAPACK_ROOT ${DEVELOPMENT_ROOT}/thirdparty/lapack/3.1.1)
-    LINK_DIRECTORIES(${LAPACK_ROOT}/lib)
-    SET(LAPACK_LIB_NAME flapackd)
-ELSE(NOT MKL_FOUND)
-    SET(LAPACK_LIB_NAME ${MKL_LIBS})
-ENDIF(NOT MKL_FOUND)
+# setup BLAS/LAPACK either from MKL or from fallback netlib blas and lapack
+FIND_PACKAGE(BlasLapack)
 
 # runlux =====================
 SET(RANLUX_ROOT ${DEVELOPMENT_ROOT}/thirdparty/ranlux/1.0)
@@ -141,12 +135,10 @@ IF(PMFLIB_HAVE_XBPLIB)
     SET(XBPLIB_XENE_LIB_NAME xene)
 ENDIF(PMFLIB_HAVE_XBPLIB)
 
-# MPI ======================
-GET_FILENAME_COMPONENT(FCOMP_NAME ${CMAKE_Fortran_COMPILER} NAME_WE)
-if(FCOMP_NAME STREQUAL mpif90)
-    ADD_DEFINITIONS(-DMPI)
-    MESSAGE("-- MPI status: enabled")
-ENDIF(FCOMP_NAME STREQUAL mpif90)
+# setup IntelCDK if available
+INCLUDE(IntelCDK)
+# setup MPI if available
+INCLUDE(OpenMPI)
 
 # ==============================================================================
 # output directories -----------------------------------------------------------
@@ -188,6 +180,9 @@ IF(NOT DEFINED COMPOSITE_PROJECT)
 
     # get the name of fortran compiler
     get_filename_component(FCOMP_NAME ${CMAKE_Fortran_COMPILER} NAME_WE)
+    IF(MPI_ENABLED)
+        EXECUTE_PROCESS(COMMAND mpifort --showme:command OUTPUT_VARIABLE FCOMP_NAME OUTPUT_STRIP_TRAILING_WHITESPACE)
+    ENDIF(MPI_ENABLED)    
 
     # default compiler setups - gfortran
     SET(CMAKE_Fortran_FLAGS_RELEASE "-O0")
