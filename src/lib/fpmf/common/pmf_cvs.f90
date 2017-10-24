@@ -115,9 +115,11 @@ subroutine reset_cv(cv_item)
     cv_item%grps            => NULL()
     cv_item%pathidx         = 0
     cv_item%gradforanycrd   = .false.
-    cv_item%isalgebraic     = .false.
     cv_item%nindatoms       = 0
     cv_item%indlindexes     => NULL()
+    cv_item%isalgebraic     = .false.
+    cv_item%algebraicidxs   => NULL()
+    cv_item%processed     = .false.
 
 end subroutine reset_cv
 
