@@ -151,8 +151,8 @@ subroutine calculate_dih2(cv_item,x,ctx)
     real(PMFDP)    :: rkjijx,rkjijy,rkjijz
     real(PMFDP)    :: rkjklx,rkjkly,rkjklz
     real(PMFDP)    :: a_xix,a_xiy,a_xiz
-    real(PMFDP)    :: a_xjx,a_xjy,a_xjz
-    real(PMFDP)    :: a_xkx,a_xky,a_xkz
+    real(PMFDP)    :: a_xj2x,a_xj2y,a_xj2z
+    real(PMFDP)    :: a_xk2x,a_xk2y,a_xk2z
     real(PMFDP)    :: a_xlx,a_xly,a_xlz
     real(PMFDP)    :: rkj_d2
     real(PMFDP)    :: mrkj_g2
@@ -254,9 +254,9 @@ subroutine calculate_dih2(cv_item,x,ctx)
     do  m = cv_item%grps(5) + 1 , cv_item%grps(6)
         ai = cv_item%lindexes(m)
         amass = mass(ai)
-        x4 = x6 + x(1,ai)*amass
-        y4 = y6 + x(2,ai)*amass
-        z4 = z6 + x(3,ai)*amass
+        x6 = x6 + x(1,ai)*amass
+        y6 = y6 + x(2,ai)*amass
+        z6 = z6 + x(3,ai)*amass
         totmass6 = totmass6 + amass
     end do
     x6 = x6 / totmass6
@@ -269,9 +269,9 @@ subroutine calculate_dih2(cv_item,x,ctx)
     rijy = y1 - y2
     rijz = z1 - z2
 
-    rkjx = x3 - x4
-    rkjy = y3 - y4
-    rkjz = z3 - z4
+    rkjx = x4 - x3
+    rkjy = y4 - y3
+    rkjz = z4 - z3
 
     rklx = x5 - x6
     rkly = y5 - y6
@@ -356,19 +356,19 @@ subroutine calculate_dih2(cv_item,x,ctx)
     rijorkj = rijx * rkjx + rijy * rkjy + rijz * rkjz
     rkjorkl = rkjx * rklx + rkjy * rkly + rkjz * rklz
 
-    WjA = rijorkj / rkj2 - 1
+    WjA = rijorkj / rkj2
     WjB = rkjorkl / rkj2
 
-    WkA = rkjorkl / rkj2 - 1
+    WkA = rkjorkl / rkj2
     WkB = rijorkj / rkj2
 
-    a_xjx = WjA * a_xix - WjB * a_xlx
-    a_xjy = WjA * a_xiy - WjB * a_xly
-    a_xjz = WjA * a_xiz - WjB * a_xlz
+    a_xj2x = WjA * a_xix - WjB * a_xlx
+    a_xj2y = WjA * a_xiy - WjB * a_xly
+    a_xj2z = WjA * a_xiz - WjB * a_xlz
 
-    a_xkx = WkA * a_xlx - WkB * a_xix
-    a_xky = WkA * a_xly - WkB * a_xiy
-    a_xkz = WkA * a_xlz - WkB * a_xiz
+    a_xk2x = WkA * a_xlx - WkB * a_xix
+    a_xk2y = WkA * a_xly - WkB * a_xiy
+    a_xk2z = WkA * a_xlz - WkB * a_xiz
 
     do  m = 1, cv_item%grps(1)
         ai = cv_item%lindexes(m)
@@ -381,33 +381,33 @@ subroutine calculate_dih2(cv_item,x,ctx)
     do  m = cv_item%grps(1) + 1, cv_item%grps(2)
         ai = cv_item%lindexes(m)
         tmp = mass(ai) / totmass2
-        ctx%CVsDrvs(1,ai,cv_item%idx) = ctx%CVsDrvs(1,ai,cv_item%idx) + a_xjx * tmp
-        ctx%CVsDrvs(2,ai,cv_item%idx) = ctx%CVsDrvs(2,ai,cv_item%idx) + a_xjy * tmp
-        ctx%CVsDrvs(3,ai,cv_item%idx) = ctx%CVsDrvs(3,ai,cv_item%idx) + a_xjz * tmp
+        ctx%CVsDrvs(1,ai,cv_item%idx) = ctx%CVsDrvs(1,ai,cv_item%idx) - a_xix * tmp
+        ctx%CVsDrvs(2,ai,cv_item%idx) = ctx%CVsDrvs(2,ai,cv_item%idx) - a_xiy * tmp
+        ctx%CVsDrvs(3,ai,cv_item%idx) = ctx%CVsDrvs(3,ai,cv_item%idx) - a_xiz * tmp
     end do
 
     do  m = cv_item%grps(2) + 1, cv_item%grps(3)
         ai = cv_item%lindexes(m)
         tmp = mass(ai) / totmass3
-        ctx%CVsDrvs(1,ai,cv_item%idx) = ctx%CVsDrvs(1,ai,cv_item%idx) + a_xkx * tmp
-        ctx%CVsDrvs(2,ai,cv_item%idx) = ctx%CVsDrvs(2,ai,cv_item%idx) + a_xky * tmp
-        ctx%CVsDrvs(3,ai,cv_item%idx) = ctx%CVsDrvs(3,ai,cv_item%idx) + a_xkz * tmp
+        ctx%CVsDrvs(1,ai,cv_item%idx) = ctx%CVsDrvs(1,ai,cv_item%idx) + a_xj2x * tmp
+        ctx%CVsDrvs(2,ai,cv_item%idx) = ctx%CVsDrvs(2,ai,cv_item%idx) + a_xj2y * tmp
+        ctx%CVsDrvs(3,ai,cv_item%idx) = ctx%CVsDrvs(3,ai,cv_item%idx) + a_xj2z * tmp
     end do
 
     do  m = cv_item%grps(3) + 1, cv_item%grps(4)
         ai = cv_item%lindexes(m)
         tmp = mass(ai) / totmass4
-        ctx%CVsDrvs(1,ai,cv_item%idx) = ctx%CVsDrvs(1,ai,cv_item%idx) + a_xlx * tmp
-        ctx%CVsDrvs(2,ai,cv_item%idx) = ctx%CVsDrvs(2,ai,cv_item%idx) + a_xly * tmp
-        ctx%CVsDrvs(3,ai,cv_item%idx) = ctx%CVsDrvs(3,ai,cv_item%idx) + a_xlz * tmp
+        ctx%CVsDrvs(1,ai,cv_item%idx) = ctx%CVsDrvs(1,ai,cv_item%idx) + a_xk2x * tmp
+        ctx%CVsDrvs(2,ai,cv_item%idx) = ctx%CVsDrvs(2,ai,cv_item%idx) + a_xk2y * tmp
+        ctx%CVsDrvs(3,ai,cv_item%idx) = ctx%CVsDrvs(3,ai,cv_item%idx) + a_xk2z * tmp
     end do
 
     do  m = cv_item%grps(4) + 1, cv_item%grps(5)
         ai = cv_item%lindexes(m)
         tmp = mass(ai) / totmass5
-        ctx%CVsDrvs(1,ai,cv_item%idx) = ctx%CVsDrvs(1,ai,cv_item%idx) + a_xkx * tmp
-        ctx%CVsDrvs(2,ai,cv_item%idx) = ctx%CVsDrvs(2,ai,cv_item%idx) + a_xky * tmp
-        ctx%CVsDrvs(3,ai,cv_item%idx) = ctx%CVsDrvs(3,ai,cv_item%idx) + a_xkz * tmp
+        ctx%CVsDrvs(1,ai,cv_item%idx) = ctx%CVsDrvs(1,ai,cv_item%idx) - a_xlx * tmp
+        ctx%CVsDrvs(2,ai,cv_item%idx) = ctx%CVsDrvs(2,ai,cv_item%idx) - a_xly * tmp
+        ctx%CVsDrvs(3,ai,cv_item%idx) = ctx%CVsDrvs(3,ai,cv_item%idx) - a_xlz * tmp
     end do
 
     do  m = cv_item%grps(5) + 1, cv_item%grps(6)
