@@ -126,7 +126,7 @@ bool CABFAdmin::Run(void)
     if(ActionRequest.GetAction() == "info") {
         result = GetServerInfo(vout);
     } else if(ActionRequest.GetAction() == "shutdown") {
-        result = ShutdownServer(vout);
+        result = ShutdownServer(vout,Options.GetOptForce());
     } else if(ActionRequest.GetAction() == "flush") {
         result = FlushServerData();
     } else if(ActionRequest.GetAction() == "errors") {
@@ -206,7 +206,7 @@ bool CABFAdmin::GetABFAccumulator(void)
     CSmallString file_output;
 
     if(ActionRequest.GetParameterKeyValue("file",file_output) == false) {
-        file_output = "output.rst";
+        file_output = "_abfserver.rst";
     }
 
 // and now save all data

@@ -50,6 +50,7 @@ public:
     // options ------------------------------
     CSO_OPT(CSmallString,ServerKey)
     CSO_OPT(CSmallString,Password)
+    CSO_OPT(bool,Force)
     CSO_OPT(bool,Help)
     CSO_OPT(bool,Version)
     CSO_OPT(bool,Verbose)
@@ -65,8 +66,8 @@ public:
                 "It provides the action specification. The server is either the DNS name or IP address of the server or word 'serverkey'. In the later case, the information about the server is read from the server key file. The port number, on which the server is listen, may be optionally provided. Finally, the command is administration task, which can be one of the following:\n"
                 "info           = print information about registered clients\n"
                 "flush          = save the accumulated ABF data on the server side\n"
-                "get?file=NAME  = get the accumulated ABF data and saves them locally to the NAME file\n"
-                "shutdown       = stop the server execution\n"
+                "get?file=NAME  = get the accumulated ABF data and saves them locally to the NAME file (the default name is _abfserver.rst)\n"
+                "shutdown       = stop the server execution (use --force to skip protection by passphrase)\n"
                 "errors         = print errors from the server stack\n")   /* argument description */
 // description of options -----------------------------------------------------
     CSO_MAP_OPT(CSmallString,                           /* option type */
@@ -86,6 +87,15 @@ public:
                 "password",                        /* long option name */
                 "FILE",                           /* parametr name */
                 "Name of file containing the server magic word. If the pasword is not provided via this option or via the server key then it is read interactively from the keyboard. This option is mutually exclusive with 'serverkey' option.")   /* option description */
+    //----------------------------------------------------------------------
+    CSO_MAP_OPT(bool,                           /* option type */
+                Force,                        /* option name */
+                false,                          /* default value */
+                false,                          /* is option mandatory */
+                'f',                           /* short option name */
+                "force",                      /* long option name */
+                NULL,                           /* parametr name */
+                "Skip protection of server shutdown by passphrase.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(bool,                           /* option type */
                 Verbose,                        /* option name */
