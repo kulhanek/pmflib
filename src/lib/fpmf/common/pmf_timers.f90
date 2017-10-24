@@ -147,8 +147,8 @@ subroutine pmf_timers_finalize(do_profiling)
 
     if( do_profiling ) then
         call write_timing
+        call finalize_profiling
     end if
-    call finalize_profiling
 
 end subroutine pmf_timers_finalize
 
