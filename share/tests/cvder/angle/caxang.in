@@ -1,0 +1,27 @@
+[CAXANG]
+name    cv1
+group_a @1-5
+head_a  @1
+direction_a x
+group_b @6-9
+head_b  @7
+direction_b x
+
+[CAXANG]
+name    cv2
+group_a @1-5
+head_a  @1
+direction_a x
+group_b @6-9
+head_b  @7
+direction_b y
+
+[CAXANG]
+name    cv3
+group_a @1-5
+head_a  @1
+direction_a x
+group_b @6-9
+head_b  @7
+direction_b z
+

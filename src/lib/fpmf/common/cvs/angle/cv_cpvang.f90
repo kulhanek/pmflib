@@ -19,9 +19,9 @@
 !    Boston, MA  02110-1301  USA
 !===============================================================================
 
-! angle between vector - plane normal
+! cos(angle) between vector - plane normal
 
-module cv_pvang
+module cv_cpvang
 
 use pmf_sizes
 use pmf_constants
@@ -32,31 +32,31 @@ implicit none
 
 !===============================================================================
 
-type, extends(CVType) :: CVTypePVANG
+type, extends(CVType) :: CVTypeCPVANG
 
     integer :: x_direction
     integer :: y_direction
 
     contains
-        procedure :: load_cv        => load_pvang
-        procedure :: calculate_cv   => calculate_pvang
-end type CVTypePVANG
+        procedure :: load_cv        => load_cpvang
+        procedure :: calculate_cv   => calculate_cpvang
+end type CVTypeCPVANG
 
 !===============================================================================
 
 contains
 
 !===============================================================================
-! Subroutine:  load_pvang
+! Subroutine:  load_cpvang
 !===============================================================================
 
-subroutine load_pvang(cv_item,prm_fin)
+subroutine load_cpvang(cv_item,prm_fin)
 
     use prmfile
     use pmf_utils
 
     implicit none
-    class(CVTypePVANG)                  :: cv_item
+    class(CVTypeCPVANG)                 :: cv_item
     type(PRMFILE_TYPE),intent(inout)    :: prm_fin
     ! -----------------------------------------------
     integer                             :: m
@@ -65,8 +65,8 @@ subroutine load_pvang(cv_item,prm_fin)
     ! --------------------------------------------------------------------------
 
     ! unit and CV name initialization ---------------
-    cv_item%ctype         = 'PVANG'
-    cv_item%unit          = AngleUnit
+    cv_item%ctype         = 'CPVANG'
+    call pmf_unit_init(cv_item%unit)
     cv_item%gradforanycrd = .true.
     call cv_common_read_name(cv_item,prm_fin)
 
@@ -131,28 +131,28 @@ subroutine load_pvang(cv_item,prm_fin)
     80 format('   ** y-direction atom   : ',A)
     85 format('   == Vector B ===================================')
 
-end subroutine load_pvang
+end subroutine load_cpvang
 
 !===============================================================================
-! Subroutine:  calculate_pvang
+! Subroutine:  calculate_cpvang
 !===============================================================================
 
-subroutine calculate_pvang(cv_item,x,ctx)
+subroutine calculate_cpvang(cv_item,x,ctx)
 
     use pmf_dat
     use pmf_utils
 
     implicit none
-    class(CVTypePVANG)  :: cv_item
+    class(CVTypeCPVANG) :: cv_item
     real(PMFDP)         :: x(:,:)
     type(CVContextType) :: ctx
     ! -----------------------------------------------
     integer        :: i,ai,m,info,orient,mi,mj
     real(PMFDP)    :: d1(3),d2(3),d3(3),dx(3),dzx(3),dzy(3),dzz(3),cang
-    real(PMFDP)    :: a(3,3),a11,a22,a33,a12,a13,a23,st
+    real(PMFDP)    :: a(3,3),a11,a22,a33,a12,a13,a23,st,sc
     real(PMFDP)    :: eigenvalues(3)
     real(PMFDP)    :: totmass1,totmass2,totmass3,amass,ac,dzz_s,dzz_s2
-    real(PMFDP)    :: work(26*3),sc
+    real(PMFDP)    :: work(26*3)
     real(PMFDP)    :: v(3,3),api(3,3),cij(3),xij(3,3,3),bint(3,3)
     ! --------------------------------------------------------------------------
 
@@ -168,7 +168,7 @@ subroutine calculate_pvang(cv_item,x,ctx)
         totmass1 = totmass1 + amass
     end do
     if( totmass1 .le. 0 ) then
-        call pmf_utils_exit(PMF_OUT,1,'totmass1 is zero in calculate_pvang!')
+        call pmf_utils_exit(PMF_OUT,1,'totmass1 is zero in calculate_cpvang!')
     end if
     d1(:) = d1(:) / totmass1
 
@@ -211,7 +211,7 @@ subroutine calculate_pvang(cv_item,x,ctx)
     call dsyev('V','L', 3, a, 3, eigenvalues, work, 26*3, info)
 
     if( info .ne. 0 ) then
-        call pmf_utils_exit(PMF_OUT,1,'Unable to diagonalize matrix in calculate_pvang (plane A)!')
+        call pmf_utils_exit(PMF_OUT,1,'Unable to diagonalize matrix in calculate_cpvang (plane A)!')
     end if
 
     ! determine z-axis orientation
@@ -273,19 +273,9 @@ subroutine calculate_pvang(cv_item,x,ctx)
         cang = -1.0
     end if
 
-    ctx%CVsValues(cv_item%idx) = acos(cang)
+    ctx%CVsValues(cv_item%idx) = cang
 
     ! derivatives --------------------------------------------------------------
-
-    sc = sin(ctx%CVsValues(cv_item%idx))
-    if( abs(sc) .lt. 1.e-12 ) then
-        ! avoid division by zero
-        sc = -1.e12
-    else
-        sc = -1.0d0 / sc
-    end if
-
-    ! eigenvector derivatives -----------------------
 
     ! construct pseudoinverse matrix of A, api
     v(:,:) = a(:,:)
@@ -308,7 +298,7 @@ subroutine calculate_pvang(cv_item,x,ctx)
             ! xi contains derivatives of eigenvector by A_ij element
             call dgemv('N',3,3,-1.0d0,api,3,cij,1,0.0d0,xij(:,mi,mj),1)
 
-            xij(:,mi,mj) = sc*xij(:,mi,mj)*dx
+            xij(:,mi,mj) = xij(:,mi,mj)*dx
         end do
     end do
 
@@ -341,7 +331,7 @@ subroutine calculate_pvang(cv_item,x,ctx)
 
     ! vector derivatives -----------------------
 
-    sc = sc*dzz_s/dzz_s2
+    sc = dzz_s/dzz_s2
 
     do m = cv_item%grps(1) + 1, cv_item%grps(2)
         ai = cv_item%lindexes(m)
@@ -363,9 +353,9 @@ subroutine calculate_pvang(cv_item,x,ctx)
 
     return
 
-end subroutine calculate_pvang
+end subroutine calculate_cpvang
 
 !===============================================================================
 
-end module cv_pvang
+end module cv_cpvang
 

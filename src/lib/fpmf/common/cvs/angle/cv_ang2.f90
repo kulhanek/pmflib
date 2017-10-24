@@ -22,6 +22,8 @@
 !    Boston, MA  02110-1301  USA
 !===============================================================================
 
+! angle - four points (i-j,k-l)
+
 module cv_ang2
 
 use pmf_sizes

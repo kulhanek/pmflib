@@ -22,9 +22,9 @@
 !    Boston, MA  02110-1301  USA
 !===============================================================================
 
-! angle - three points (i-j-k)
+! cos(angle) - three points (i-j-k)
 
-module cv_ang
+module cv_cang
 
 use pmf_sizes
 use pmf_constants
@@ -35,32 +35,32 @@ implicit none
 
 !===============================================================================
 
-type, extends(CVType) :: CVTypeANG
+type, extends(CVType) :: CVTypeCANG
     contains
-        procedure :: load_cv        => load_ang
-        procedure :: calculate_cv   => calculate_ang
-end type CVTypeANG
+        procedure :: load_cv        => load_cang
+        procedure :: calculate_cv   => calculate_cang
+end type CVTypeCANG
 
 !===============================================================================
 
 contains
 
 !===============================================================================
-! Subroutine:  load_ang
+! Subroutine:  load_cang
 !===============================================================================
 
-subroutine load_ang(cv_item,prm_fin)
+subroutine load_cang(cv_item,prm_fin)
 
     use prmfile
 
     implicit none
-    class(CVTypeANG)                    :: cv_item
+    class(CVTypeCANG)                   :: cv_item
     type(PRMFILE_TYPE),intent(inout)    :: prm_fin
     ! --------------------------------------------------------------------------
 
     ! unit and CV name initialization ---------------
-    cv_item%ctype         = 'ANG'
-    cv_item%unit = AngleUnit
+    cv_item%ctype         = 'CANG'
+    call pmf_unit_init(cv_item%unit)
     cv_item%gradforanycrd = .true.
     call cv_common_read_name(cv_item,prm_fin)
 
@@ -68,25 +68,25 @@ subroutine load_ang(cv_item,prm_fin)
     cv_item%ngrps = 3
     call cv_common_read_groups(cv_item,prm_fin)
 
-end subroutine load_ang
+end subroutine load_cang
 
 !===============================================================================
-! Subroutine:  calculate_ang
+! Subroutine:  calculate_cang
 !===============================================================================
 
-subroutine calculate_ang(cv_item,x,ctx)
+subroutine calculate_cang(cv_item,x,ctx)
 
     use pmf_dat
     use pmf_pbc
     use pmf_utils
 
     implicit none
-    class(CVTypeANG)    :: cv_item
+    class(CVTypeCANG)   :: cv_item
     real(PMFDP)         :: x(:,:)
     type(CVContextType) :: ctx
     ! -----------------------------------------------
     integer        :: ai,m
-    real(PMFDP)    :: arg,f1
+    real(PMFDP)    :: arg
     real(PMFDP)    :: x1,y1,z1,x2,y2,z2,x3,y3,z3
     real(PMFDP)    :: rijx,rijy,rijz,rij,rij2
     real(PMFDP)    :: rkjx,rkjy,rkjz,rkj,rkj2
@@ -115,7 +115,7 @@ subroutine calculate_ang(cv_item,x,ctx)
         totmass1 = totmass1 + amass
     end do
     if( totmass1 .le. 0 ) then
-        call pmf_utils_exit(PMF_OUT,1,'totmass1 is zero in calculate_ang!')
+        call pmf_utils_exit(PMF_OUT,1,'totmass1 is zero in calculate_cang!')
     end if
     x1 = x1 / totmass1;
     y1 = y1 / totmass1;
@@ -135,7 +135,7 @@ subroutine calculate_ang(cv_item,x,ctx)
         totmass2 = totmass2 + amass
     end do
     if( totmass2 .le. 0 ) then
-        call pmf_utils_exit(PMF_OUT,1,'totmass2 is zero in calculate_ang!')
+        call pmf_utils_exit(PMF_OUT,1,'totmass2 is zero in calculate_cang!')
     end if
     x2 = x2 / totmass2;
     y2 = y2 / totmass2;
@@ -155,7 +155,7 @@ subroutine calculate_ang(cv_item,x,ctx)
         totmass3 = totmass3 + amass
     end do
     if( totmass3 .le. 0 ) then
-        call pmf_utils_exit(PMF_OUT,1,'totmass3 is zero in calculate_ang!')
+        call pmf_utils_exit(PMF_OUT,1,'totmass3 is zero in calculate_cang!')
     end if
     x3 = x3 / totmass3;
     y3 = y3 / totmass3;
@@ -202,30 +202,22 @@ subroutine calculate_ang(cv_item,x,ctx)
         arg = -1.0
     end if
 
-    ctx%CVsValues(cv_item%idx) = acos(arg)
+    ctx%CVsValues(cv_item%idx) = arg
 
     ! ------------------------------------------------------------------------------
 
     argone_rij2 = arg*one_rij2;
     argone_rkj2 = arg*one_rkj2;
 
-    f1 = sin(ctx%CVsValues(cv_item%idx))
-    if( abs(f1) .lt. 1.e-12 ) then
-        ! avoid division by zero
-        f1 = -1.e12
-    else
-        f1 = -1.0d0 / f1
-    end if
-
     ! first derivatives -----------------------------------------------------------
 
-    a_xix = f1*(rkjx*one_rijrkj - argone_rij2*rijx)
-    a_xiy = f1*(rkjy*one_rijrkj - argone_rij2*rijy)
-    a_xiz = f1*(rkjz*one_rijrkj - argone_rij2*rijz)
+    a_xix = (rkjx*one_rijrkj - argone_rij2*rijx)
+    a_xiy = (rkjy*one_rijrkj - argone_rij2*rijy)
+    a_xiz = (rkjz*one_rijrkj - argone_rij2*rijz)
 
-    a_xkx = f1*(rijx*one_rijrkj - argone_rkj2*rkjx)
-    a_xky = f1*(rijy*one_rijrkj - argone_rkj2*rkjy)
-    a_xkz = f1*(rijz*one_rijrkj - argone_rkj2*rkjz)
+    a_xkx = (rijx*one_rijrkj - argone_rkj2*rkjx)
+    a_xky = (rijy*one_rijrkj - argone_rkj2*rkjy)
+    a_xkz = (rijz*one_rijrkj - argone_rkj2*rkjz)
 
     a_xjx = -(a_xix + a_xkx)
     a_xjy = -(a_xiy + a_xky)
@@ -257,9 +249,9 @@ subroutine calculate_ang(cv_item,x,ctx)
 
 return
 
-end subroutine calculate_ang
+end subroutine calculate_cang
 
 !===============================================================================
 
-end module cv_ang
+end module cv_cang
 

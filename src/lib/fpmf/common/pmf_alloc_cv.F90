@@ -57,6 +57,14 @@ subroutine pmf_alloc_cv_allocate(cv_type,cv_item)
     use cv_pvang
     use cv_axang
     use cv_axang2
+
+    use cv_cang
+    use cv_cang2
+    use cv_cpang
+    use cv_cpvang
+    use cv_caxang
+    use cv_caxang2
+
     use cv_dih
     use cv_dih2
 
@@ -148,6 +156,19 @@ subroutine pmf_alloc_cv_allocate(cv_type,cv_item)
             allocate(CVTypeAXANG::cv_item)
         case('AXANG2')
             allocate(CVTypeAXANG2::cv_item)
+
+        case('CANG')
+            allocate(CVTypeCANG::cv_item)
+        case('CANG2')
+            allocate(CVTypeCANG2::cv_item)
+        case('CPANG')
+            allocate(CVTypeCPANG::cv_item)
+        case('CPVANG')
+            allocate(CVTypeCPVANG::cv_item)
+        case('CAXANG')
+            allocate(CVTypeCAXANG::cv_item)
+        case('CAXANG2')
+            allocate(CVTypeCAXANG2::cv_item)
 
         case('DIH')
             allocate(CVTypeDIH::cv_item)

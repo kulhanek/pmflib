@@ -1,0 +1,40 @@
+[CPVANG]
+name    cv1
+group_a @1-7
+x_direction @1
+y_direction @2
+group_b @8
+group_c @9
+
+[CPVANG]
+name    cv2
+group_a @1-7
+x_direction @1
+y_direction @2
+group_b @8-10
+group_c @9
+
+[CPVANG]
+name    cv3
+group_a @1-7
+x_direction @1
+y_direction @2
+group_b @5-8
+group_c @9
+
+[CPVANG]
+name    cv4
+group_a @1-7
+x_direction @1
+y_direction @2
+group_b @8
+group_c @7-10
+
+[CPVANG]
+name    cv5
+group_a @3-9
+x_direction @5
+y_direction @8
+group_b @1-4
+group_c @7-10
+

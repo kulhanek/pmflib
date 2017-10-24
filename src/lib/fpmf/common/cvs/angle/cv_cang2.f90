@@ -22,9 +22,9 @@
 !    Boston, MA  02110-1301  USA
 !===============================================================================
 
-! angle - three points (i-j-k)
+! cos(angle) - four points (i-j,k-l)
 
-module cv_ang
+module cv_cang2
 
 use pmf_sizes
 use pmf_constants
@@ -35,59 +35,59 @@ implicit none
 
 !===============================================================================
 
-type, extends(CVType) :: CVTypeANG
+type, extends(CVType) :: CVTypeCANG2
     contains
-        procedure :: load_cv        => load_ang
-        procedure :: calculate_cv   => calculate_ang
-end type CVTypeANG
+        procedure :: load_cv        => load_cang2
+        procedure :: calculate_cv   => calculate_cang2
+end type CVTypeCANG2
 
 !===============================================================================
 
 contains
 
 !===============================================================================
-! Subroutine:  load_ang
+! Subroutine:  load_cang2
 !===============================================================================
 
-subroutine load_ang(cv_item,prm_fin)
+subroutine load_cang2(cv_item,prm_fin)
 
     use prmfile
 
     implicit none
-    class(CVTypeANG)                    :: cv_item
+    class(CVTypeCANG2)                  :: cv_item
     type(PRMFILE_TYPE),intent(inout)    :: prm_fin
     ! --------------------------------------------------------------------------
 
     ! unit and CV name initialization ---------------
-    cv_item%ctype         = 'ANG'
-    cv_item%unit = AngleUnit
+    cv_item%ctype         = 'CANG2'
+    call pmf_unit_init(cv_item%unit)
     cv_item%gradforanycrd = .true.
     call cv_common_read_name(cv_item,prm_fin)
 
     ! load groups -----------------------------------
-    cv_item%ngrps = 3
+    cv_item%ngrps = 4
     call cv_common_read_groups(cv_item,prm_fin)
 
-end subroutine load_ang
+end subroutine load_cang2
 
 !===============================================================================
-! Subroutine:  calculate_ang
+! Subroutine:  calculate_cang2
 !===============================================================================
 
-subroutine calculate_ang(cv_item,x,ctx)
+subroutine calculate_cang2(cv_item,x,ctx)
 
     use pmf_dat
     use pmf_pbc
     use pmf_utils
 
     implicit none
-    class(CVTypeANG)    :: cv_item
+    class(CVTypeCANG2)  :: cv_item
     real(PMFDP)         :: x(:,:)
     type(CVContextType) :: ctx
     ! -----------------------------------------------
     integer        :: ai,m
-    real(PMFDP)    :: arg,f1
-    real(PMFDP)    :: x1,y1,z1,x2,y2,z2,x3,y3,z3
+    real(PMFDP)    :: arg
+    real(PMFDP)    :: x1,y1,z1,x2,y2,z2,x3,y3,z3,x4,y4,z4
     real(PMFDP)    :: rijx,rijy,rijz,rij,rij2
     real(PMFDP)    :: rkjx,rkjy,rkjz,rkj,rkj2
     real(PMFDP)    :: one_rij2,one_rij
@@ -96,9 +96,8 @@ subroutine calculate_ang(cv_item,x,ctx)
     real(PMFDP)    :: one_rij3rkj,one_rijrkj3
     real(PMFDP)    :: argone_rij2,argone_rkj2
     real(PMFDP)    :: a_xix,a_xiy,a_xiz
-    real(PMFDP)    :: a_xjx,a_xjy,a_xjz
     real(PMFDP)    :: a_xkx,a_xky,a_xkz
-    real(PMFDP)    :: tmp, amass, totmass1, totmass2, totmass3
+    real(PMFDP)    :: tmp, amass, totmass1, totmass2, totmass3, totmass4
     ! -----------------------------------------------------------------------------
 
     ! first point ----------
@@ -115,7 +114,7 @@ subroutine calculate_ang(cv_item,x,ctx)
         totmass1 = totmass1 + amass
     end do
     if( totmass1 .le. 0 ) then
-        call pmf_utils_exit(PMF_OUT,1,'totmass1 is zero in calculate_ang!')
+        call pmf_utils_exit(PMF_OUT,1,'totmass1 is zero in calculate_cang2!')
     end if
     x1 = x1 / totmass1;
     y1 = y1 / totmass1;
@@ -135,7 +134,7 @@ subroutine calculate_ang(cv_item,x,ctx)
         totmass2 = totmass2 + amass
     end do
     if( totmass2 .le. 0 ) then
-        call pmf_utils_exit(PMF_OUT,1,'totmass2 is zero in calculate_ang!')
+        call pmf_utils_exit(PMF_OUT,1,'totmass2 is zero in calculate_cang2!')
     end if
     x2 = x2 / totmass2;
     y2 = y2 / totmass2;
@@ -155,11 +154,31 @@ subroutine calculate_ang(cv_item,x,ctx)
         totmass3 = totmass3 + amass
     end do
     if( totmass3 .le. 0 ) then
-        call pmf_utils_exit(PMF_OUT,1,'totmass3 is zero in calculate_ang!')
+        call pmf_utils_exit(PMF_OUT,1,'totmass3 is zero in calculate_cang2!')
     end if
     x3 = x3 / totmass3;
     y3 = y3 / totmass3;
     z3 = z3 / totmass3;
+
+    ! fourth point ----------
+    totmass4 = 0
+    x4 = 0
+    y4 = 0
+    z4 = 0
+    do  m = cv_item%grps(3) + 1 , cv_item%grps(4)
+        ai = cv_item%lindexes(m)
+        amass = mass(ai)
+        x4 = x4 + x(1,ai)*amass
+        y4 = y4 + x(2,ai)*amass
+        z4 = z4 + x(3,ai)*amass
+        totmass4 = totmass4 + amass
+    end do
+    if( totmass4 .le. 0 ) then
+        call pmf_utils_exit(PMF_OUT,1,'totmass4 is zero in calculate_cang2!')
+    end if
+    x4 = x4 / totmass4;
+    y4 = y4 / totmass4;
+    z4 = z4 / totmass4;
 
     ! calc. cos of angle ----------
 
@@ -167,9 +186,9 @@ subroutine calculate_ang(cv_item,x,ctx)
     rijy = y1 - y2
     rijz = z1 - z2
 
-    rkjx = x3 - x2
-    rkjy = y3 - y2
-    rkjz = z3 - z2
+    rkjx = x3 - x4
+    rkjy = y3 - y4
+    rkjz = z3 - z4
 
     if( fenable_pbc ) then
         call pmf_pbc_image_vector3(rijx,rijy,rijz)
@@ -202,34 +221,22 @@ subroutine calculate_ang(cv_item,x,ctx)
         arg = -1.0
     end if
 
-    ctx%CVsValues(cv_item%idx) = acos(arg)
+    ctx%CVsValues(cv_item%idx) = arg
 
     ! ------------------------------------------------------------------------------
 
     argone_rij2 = arg*one_rij2;
     argone_rkj2 = arg*one_rkj2;
 
-    f1 = sin(ctx%CVsValues(cv_item%idx))
-    if( abs(f1) .lt. 1.e-12 ) then
-        ! avoid division by zero
-        f1 = -1.e12
-    else
-        f1 = -1.0d0 / f1
-    end if
-
     ! first derivatives -----------------------------------------------------------
 
-    a_xix = f1*(rkjx*one_rijrkj - argone_rij2*rijx)
-    a_xiy = f1*(rkjy*one_rijrkj - argone_rij2*rijy)
-    a_xiz = f1*(rkjz*one_rijrkj - argone_rij2*rijz)
+    a_xix = (rkjx*one_rijrkj - argone_rij2*rijx)
+    a_xiy = (rkjy*one_rijrkj - argone_rij2*rijy)
+    a_xiz = (rkjz*one_rijrkj - argone_rij2*rijz)
 
-    a_xkx = f1*(rijx*one_rijrkj - argone_rkj2*rkjx)
-    a_xky = f1*(rijy*one_rijrkj - argone_rkj2*rkjy)
-    a_xkz = f1*(rijz*one_rijrkj - argone_rkj2*rkjz)
-
-    a_xjx = -(a_xix + a_xkx)
-    a_xjy = -(a_xiy + a_xky)
-    a_xjz = -(a_xiz + a_xkz)
+    a_xkx = (rijx*one_rijrkj - argone_rkj2*rkjx)
+    a_xky = (rijy*one_rijrkj - argone_rkj2*rkjy)
+    a_xkz = (rijz*one_rijrkj - argone_rkj2*rkjz)
 
     do  m = 1, cv_item%grps(1)
         ai = cv_item%lindexes(m)
@@ -242,9 +249,9 @@ subroutine calculate_ang(cv_item,x,ctx)
     do  m = cv_item%grps(1) + 1, cv_item%grps(2)
         ai = cv_item%lindexes(m)
         tmp = mass(ai) / totmass2
-        ctx%CVsDrvs(1,ai,cv_item%idx) = ctx%CVsDrvs(1,ai,cv_item%idx) + a_xjx * tmp
-        ctx%CVsDrvs(2,ai,cv_item%idx) = ctx%CVsDrvs(2,ai,cv_item%idx) + a_xjy * tmp
-        ctx%CVsDrvs(3,ai,cv_item%idx) = ctx%CVsDrvs(3,ai,cv_item%idx) + a_xjz * tmp
+        ctx%CVsDrvs(1,ai,cv_item%idx) = ctx%CVsDrvs(1,ai,cv_item%idx) - a_xix * tmp
+        ctx%CVsDrvs(2,ai,cv_item%idx) = ctx%CVsDrvs(2,ai,cv_item%idx) - a_xiy * tmp
+        ctx%CVsDrvs(3,ai,cv_item%idx) = ctx%CVsDrvs(3,ai,cv_item%idx) - a_xiz * tmp
     end do
 
     do  m = cv_item%grps(2) + 1, cv_item%grps(3)
@@ -255,11 +262,19 @@ subroutine calculate_ang(cv_item,x,ctx)
         ctx%CVsDrvs(3,ai,cv_item%idx) = ctx%CVsDrvs(3,ai,cv_item%idx) + a_xkz * tmp
     end do
 
+    do  m = cv_item%grps(3) + 1, cv_item%grps(4)
+        ai = cv_item%lindexes(m)
+        tmp = mass(ai) / totmass4
+        ctx%CVsDrvs(1,ai,cv_item%idx) = ctx%CVsDrvs(1,ai,cv_item%idx) - a_xkx * tmp
+        ctx%CVsDrvs(2,ai,cv_item%idx) = ctx%CVsDrvs(2,ai,cv_item%idx) - a_xky * tmp
+        ctx%CVsDrvs(3,ai,cv_item%idx) = ctx%CVsDrvs(3,ai,cv_item%idx) - a_xkz * tmp
+    end do
+
 return
 
-end subroutine calculate_ang
+end subroutine calculate_cang2
 
 !===============================================================================
 
-end module cv_ang
+end module cv_cang2
 

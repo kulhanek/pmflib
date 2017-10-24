@@ -20,9 +20,9 @@
 !    Boston, MA  02110-1301  USA
 !===============================================================================
 
-! angle between z-axis of two reference systems superimposed to two atom groups
+! cos(angle) between z-axis of two reference systems superimposed to two atom groups
 
-module cv_axang2
+module cv_caxang2
 
 use pmf_sizes
 use pmf_constants
@@ -35,7 +35,7 @@ implicit none
 
 !===============================================================================
 
-type, extends(CVType) :: CVTypeAXANG2
+type, extends(CVType) :: CVTypeCAXANG2
 
     type(XYZFILE_TYPE)  :: xyz_str_a
     integer             :: direction_a
@@ -43,26 +43,26 @@ type, extends(CVType) :: CVTypeAXANG2
     integer             :: direction_b   
 
     contains
-        procedure :: load_cv        => load_axang2
-        procedure :: calculate_cv   => calculate_axang2
-end type CVTypeAXANG2
+        procedure :: load_cv        => load_caxang2
+        procedure :: calculate_cv   => calculate_caxang2
+end type CVTypeCAXANG2
 
 !===============================================================================
 
 contains
 
 !===============================================================================
-! Subroutine:  load_axang2
+! Subroutine:  load_caxang2
 !===============================================================================
 
-subroutine load_axang2(cv_item,prm_fin)
+subroutine load_caxang2(cv_item,prm_fin)
 
     use prmfile
     use pmf_utils
     use smf_periodic_table
 
     implicit none
-    class(CVTypeAXANG2)                 :: cv_item
+    class(CVTypeCAXANG2)                :: cv_item
     type(PRMFILE_TYPE),intent(inout)    :: prm_fin
     character(len=PRMFILE_MAX_VALUE)    :: tmpstr
     integer                             :: i,ar
@@ -71,8 +71,8 @@ subroutine load_axang2(cv_item,prm_fin)
     ! --------------------------------------------------------------------------
 
     ! unit and CV name initialization ---------------
-    cv_item%ctype         = 'AXANG2'
-    cv_item%unit          = AngleUnit
+    cv_item%ctype         = 'CAXANG2'
+    call pmf_unit_init(cv_item%unit)
     cv_item%gradforanycrd = .true.
     call cv_common_read_name(cv_item,prm_fin)
 
@@ -194,20 +194,20 @@ subroutine load_axang2(cv_item,prm_fin)
 100 format('Atom mismatch between group A and reference A atoms! atom: ',I6,', group mass: ',F10.3, ', ref mass: ',F10.3)
 110 format('Atom mismatch between group B and reference B atoms! atom: ',I6,', group mass: ',F10.3, ', ref mass: ',F10.3)  
 
-end subroutine load_axang2
+end subroutine load_caxang2
 
 !===============================================================================
-! Subroutine:  calculate_axang2
+! Subroutine:  calculate_caxang2
 !===============================================================================
 
-subroutine calculate_axang2(cv_item,x,ctx)
+subroutine calculate_caxang2(cv_item,x,ctx)
 
     use pmf_dat
     use pmf_pbc
     use pmf_utils
 
     implicit none
-    class(CVTypeAXANG2) :: cv_item
+    class(CVTypeCAXANG2):: cv_item
     real(PMFDP)         :: x(:,:)
     type(CVContextType) :: ctx
     ! -----------------------------------------------
@@ -215,7 +215,7 @@ subroutine calculate_axang2(cv_item,x,ctx)
     real(PMFDP)         :: xsa(3),xra(3),xsb(3),xrb(3)
     real(PMFDP)         :: fa(4,4),fb(4,4),eigenvaluesa(4),eigenvaluesb(4),work(26*4)
     real(PMFDP)         :: r11,r12,r13,r21,r22,r23,r31,r32,r33
-    real(PMFDP)         :: ua(3),ub(3), arg, f1
+    real(PMFDP)         :: ua(3),ub(3), arg
     real(PMFDP)         :: ingra,ingrb
     real(PMFDP)         :: a_fa(4),a_fb(4),a_rij(4,4)
     real(PMFDP)         :: v(4,4),api(4,4),cij(4),xij(4,4,4),bint(4,4)
@@ -310,7 +310,7 @@ subroutine calculate_axang2(cv_item,x,ctx)
     call dsyev('V','L', 4, fa, 4, eigenvaluesa, work, 26*4, info)
 
     if( info .ne. 0 ) then
-        call pmf_utils_exit(PMF_OUT,1,'Unable to diagonalize matrix in calculate_axang2 for point a!')
+        call pmf_utils_exit(PMF_OUT,1,'Unable to diagonalize matrix in calculate_caxang2 for point a!')
     end if
 
     ! calculate geometrical centres (source and target) -------------------
@@ -399,7 +399,7 @@ subroutine calculate_axang2(cv_item,x,ctx)
     call dsyev('V','L', 4, fb, 4, eigenvaluesb, work, 26*4, info)
 
     if( info .ne. 0 ) then
-        call pmf_utils_exit(PMF_OUT,1,'Unable to diagonalize matrix in calculate_axang2 for point b!')
+        call pmf_utils_exit(PMF_OUT,1,'Unable to diagonalize matrix in calculate_caxang2 for point b!')
     end if
 
     best = 4
@@ -449,38 +449,27 @@ subroutine calculate_axang2(cv_item,x,ctx)
         arg = -1.0
     end if
 
-    ctx%CVsValues(cv_item%idx) = acos(arg)
+    ctx%CVsValues(cv_item%idx) = arg
 
     ! first derivatives --------------------------------------------------------------------------------
-
-    ctx%CVsValues(cv_item%idx) = acos(arg)
-    f1 = sin(ctx%CVsValues(cv_item%idx))
-
-    ! derivatives -----------------------------------------------------------------
-    if( abs(f1) .lt. 1.e-12 ) then
-        ! avoid division by zero
-        f1 = -1.e12
-    else
-        f1 = -1.0d0 / f1
-    end if
 
 ! with respect to ua
     select case(cv_item%direction_a )
         case(1)
-            a_fa(1) = f1*2.0d0*( fa(1,best)*ub(1) - fa(4,best)*ub(2) + fa(3,best)*ub(3)) 
-            a_fa(2) = f1*2.0d0*( fa(2,best)*ub(1) + fa(3,best)*ub(2) + fa(4,best)*ub(3))
-            a_fa(3) = f1*2.0d0*(-fa(3,best)*ub(1) + fa(2,best)*ub(2) + fa(1,best)*ub(3))
-            a_fa(4) = f1*2.0d0*(-fa(4,best)*ub(1) - fa(1,best)*ub(2) + fa(2,best)*ub(3))
+            a_fa(1) = 2.0d0*( fa(1,best)*ub(1) - fa(4,best)*ub(2) + fa(3,best)*ub(3))
+            a_fa(2) = 2.0d0*( fa(2,best)*ub(1) + fa(3,best)*ub(2) + fa(4,best)*ub(3))
+            a_fa(3) = 2.0d0*(-fa(3,best)*ub(1) + fa(2,best)*ub(2) + fa(1,best)*ub(3))
+            a_fa(4) = 2.0d0*(-fa(4,best)*ub(1) - fa(1,best)*ub(2) + fa(2,best)*ub(3))
         case(2)
-            a_fa(1) = f1*2.0d0*( fa(4,best)*ub(1) + fa(1,best)*ub(2) - fa(2,best)*ub(3)) 
-            a_fa(2) = f1*2.0d0*( fa(3,best)*ub(1) - fa(2,best)*ub(2) - fa(1,best)*ub(3))
-            a_fa(3) = f1*2.0d0*( fa(2,best)*ub(1) + fa(3,best)*ub(2) + fa(4,best)*ub(3))
-            a_fa(4) = f1*2.0d0*( fa(1,best)*ub(1) - fa(4,best)*ub(2) + fa(3,best)*ub(3))
+            a_fa(1) = 2.0d0*( fa(4,best)*ub(1) + fa(1,best)*ub(2) - fa(2,best)*ub(3))
+            a_fa(2) = 2.0d0*( fa(3,best)*ub(1) - fa(2,best)*ub(2) - fa(1,best)*ub(3))
+            a_fa(3) = 2.0d0*( fa(2,best)*ub(1) + fa(3,best)*ub(2) + fa(4,best)*ub(3))
+            a_fa(4) = 2.0d0*( fa(1,best)*ub(1) - fa(4,best)*ub(2) + fa(3,best)*ub(3))
         case(3)
-            a_fa(1) = f1*2.0d0*(-fa(3,best)*ub(1) + fa(2,best)*ub(2) + fa(1,best)*ub(3)) 
-            a_fa(2) = f1*2.0d0*( fa(4,best)*ub(1) + fa(1,best)*ub(2) - fa(2,best)*ub(3))
-            a_fa(3) = f1*2.0d0*(-fa(1,best)*ub(1) + fa(4,best)*ub(2) - fa(3,best)*ub(3))
-            a_fa(4) = f1*2.0d0*( fa(2,best)*ub(1) + fa(3,best)*ub(2) + fa(4,best)*ub(3))
+            a_fa(1) = 2.0d0*(-fa(3,best)*ub(1) + fa(2,best)*ub(2) + fa(1,best)*ub(3))
+            a_fa(2) = 2.0d0*( fa(4,best)*ub(1) + fa(1,best)*ub(2) - fa(2,best)*ub(3))
+            a_fa(3) = 2.0d0*(-fa(1,best)*ub(1) + fa(4,best)*ub(2) - fa(3,best)*ub(3))
+            a_fa(4) = 2.0d0*( fa(2,best)*ub(1) + fa(3,best)*ub(2) + fa(4,best)*ub(3))
         case default
             call pmf_utils_exit(PMF_OUT,1,'direction_a has to be x, y, or z!')
     end select
@@ -488,20 +477,20 @@ subroutine calculate_axang2(cv_item,x,ctx)
 ! with respect to ub
     select case(cv_item%direction_b )
         case(1)
-            a_fb(1) = f1*2.0d0*( fb(1,best)*ua(1) - fb(4,best)*ua(2) + fb(3,best)*ua(3)) 
-            a_fb(2) = f1*2.0d0*( fb(2,best)*ua(1) + fb(3,best)*ua(2) + fb(4,best)*ua(3))
-            a_fb(3) = f1*2.0d0*(-fb(3,best)*ua(1) + fb(2,best)*ua(2) + fb(1,best)*ua(3))
-            a_fb(4) = f1*2.0d0*(-fb(4,best)*ua(1) - fb(1,best)*ua(2) + fb(2,best)*ua(3))
+            a_fb(1) = 2.0d0*( fb(1,best)*ua(1) - fb(4,best)*ua(2) + fb(3,best)*ua(3))
+            a_fb(2) = 2.0d0*( fb(2,best)*ua(1) + fb(3,best)*ua(2) + fb(4,best)*ua(3))
+            a_fb(3) = 2.0d0*(-fb(3,best)*ua(1) + fb(2,best)*ua(2) + fb(1,best)*ua(3))
+            a_fb(4) = 2.0d0*(-fb(4,best)*ua(1) - fb(1,best)*ua(2) + fb(2,best)*ua(3))
         case(2)
-            a_fb(1) = f1*2.0d0*( fb(4,best)*ua(1) + fb(1,best)*ua(2) - fb(2,best)*ua(3)) 
-            a_fb(2) = f1*2.0d0*( fb(3,best)*ua(1) - fb(2,best)*ua(2) - fb(1,best)*ua(3))
-            a_fb(3) = f1*2.0d0*( fb(2,best)*ua(1) + fb(3,best)*ua(2) + fb(4,best)*ua(3))
-            a_fb(4) = f1*2.0d0*( fb(1,best)*ua(1) - fb(4,best)*ua(2) + fb(3,best)*ua(3))
+            a_fb(1) = 2.0d0*( fb(4,best)*ua(1) + fb(1,best)*ua(2) - fb(2,best)*ua(3))
+            a_fb(2) = 2.0d0*( fb(3,best)*ua(1) - fb(2,best)*ua(2) - fb(1,best)*ua(3))
+            a_fb(3) = 2.0d0*( fb(2,best)*ua(1) + fb(3,best)*ua(2) + fb(4,best)*ua(3))
+            a_fb(4) = 2.0d0*( fb(1,best)*ua(1) - fb(4,best)*ua(2) + fb(3,best)*ua(3))
         case(3)
-            a_fb(1) = f1*2.0d0*(-fb(3,best)*ua(1) + fb(2,best)*ua(2) + fb(1,best)*ua(3)) 
-            a_fb(2) = f1*2.0d0*( fb(4,best)*ua(1) + fb(1,best)*ua(2) - fb(2,best)*ua(3))
-            a_fb(3) = f1*2.0d0*(-fb(1,best)*ua(1) + fb(4,best)*ua(2) - fb(3,best)*ua(3))
-            a_fb(4) = f1*2.0d0*( fb(2,best)*ua(1) + fb(3,best)*ua(2) + fb(4,best)*ua(3))
+            a_fb(1) = 2.0d0*(-fb(3,best)*ua(1) + fb(2,best)*ua(2) + fb(1,best)*ua(3))
+            a_fb(2) = 2.0d0*( fb(4,best)*ua(1) + fb(1,best)*ua(2) - fb(2,best)*ua(3))
+            a_fb(3) = 2.0d0*(-fb(1,best)*ua(1) + fb(4,best)*ua(2) - fb(3,best)*ua(3))
+            a_fb(4) = 2.0d0*( fb(2,best)*ua(1) + fb(3,best)*ua(2) + fb(4,best)*ua(3))
         case default
             call pmf_utils_exit(PMF_OUT,1,'direction_a has to be x, y, or z!')
     end select
@@ -611,9 +600,9 @@ subroutine calculate_axang2(cv_item,x,ctx)
 
  return
 
-end subroutine calculate_axang2
+end subroutine calculate_caxang2
 
 !===============================================================================
 
-end module cv_axang2
+end module cv_caxang2
 

@@ -19,9 +19,9 @@
 !    Boston, MA  02110-1301  USA
 !===============================================================================
 
-! angle between plane normal - plane normal
+! cos(angle) between plane normal - plane normal
 
-module cv_pang
+module cv_cpang
 
 use pmf_sizes
 use pmf_constants
@@ -32,7 +32,7 @@ implicit none
 
 !===============================================================================
 
-type, extends(CVType) :: CVTypePANG
+type, extends(CVType) :: CVTypeCPANG
 
     integer :: x_direction_a
     integer :: y_direction_a
@@ -40,25 +40,25 @@ type, extends(CVType) :: CVTypePANG
     integer :: y_direction_b
 
     contains
-        procedure :: load_cv        => load_pang
-        procedure :: calculate_cv   => calculate_pang
-end type CVTypePANG
+        procedure :: load_cv        => load_cpang
+        procedure :: calculate_cv   => calculate_cpang
+end type CVTypeCPANG
 
 !===============================================================================
 
 contains
 
 !===============================================================================
-! Subroutine:  load_pang
+! Subroutine:  load_cpang
 !===============================================================================
 
-subroutine load_pang(cv_item,prm_fin)
+subroutine load_cpang(cv_item,prm_fin)
 
     use prmfile
     use pmf_utils
 
     implicit none
-    class(CVTypePANG)                   :: cv_item
+    class(CVTypeCPANG)                  :: cv_item
     type(PRMFILE_TYPE),intent(inout)    :: prm_fin
     ! -----------------------------------------------
     integer                             :: m
@@ -67,8 +67,8 @@ subroutine load_pang(cv_item,prm_fin)
     ! --------------------------------------------------------------------------
 
     ! unit and CV name initialization ---------------
-    cv_item%ctype         = 'PANG'
-    cv_item%unit          = AngleUnit
+    cv_item%ctype         = 'CPANG'
+    call pmf_unit_init(cv_item%unit)
     cv_item%gradforanycrd = .true.
     call cv_common_read_name(cv_item,prm_fin)
 
@@ -175,19 +175,19 @@ subroutine load_pang(cv_item,prm_fin)
  90 format('   ** x-direction atom   : ',A)
 100 format('   ** y-direction atom   : ',A)
 
-end subroutine load_pang
+end subroutine load_cpang
 
 !===============================================================================
-! Subroutine:  calculate_pang
+! Subroutine:  calculate_cpang
 !===============================================================================
 
-subroutine calculate_pang(cv_item,x,ctx)
+subroutine calculate_cpang(cv_item,x,ctx)
 
     use pmf_dat
     use pmf_utils
 
     implicit none
-    class(CVTypePANG)   :: cv_item
+    class(CVTypeCPANG)  :: cv_item
     real(PMFDP)         :: x(:,:)
     type(CVContextType) :: ctx
     ! -----------------------------------------------
@@ -196,7 +196,7 @@ subroutine calculate_pang(cv_item,x,ctx)
     real(PMFDP)    :: a(3,3),b(3,3),a11,a22,a33,a12,a13,a23
     real(PMFDP)    :: eigenvaluesA(3),eigenvaluesB(3)
     real(PMFDP)    :: totmass1,totmass2,amass,ac,dzz_s
-    real(PMFDP)    :: work(26*3),sc
+    real(PMFDP)    :: work(26*3)
     real(PMFDP)    :: v(3,3),api(3,3),cij(3),a_xij(3,3,3),b_xij(3,3,3),bint(3,3)
     ! -----------------------------------------------------------------------------
 
@@ -213,7 +213,7 @@ subroutine calculate_pang(cv_item,x,ctx)
         totmass1 = totmass1 + amass
     end do
     if( totmass1 .le. 0 ) then
-        call pmf_utils_exit(PMF_OUT,1,'totmass1 is zero in calculate_pang!')
+        call pmf_utils_exit(PMF_OUT,1,'totmass1 is zero in calculate_cpang!')
     end if
     d1(:) = d1(:) / totmass1
 
@@ -226,7 +226,7 @@ subroutine calculate_pang(cv_item,x,ctx)
         totmass2 = totmass2 + amass
     end do
     if( totmass2 .le. 0 ) then
-        call pmf_utils_exit(PMF_OUT,1,'totmass2 is zero in calculate_pang!')
+        call pmf_utils_exit(PMF_OUT,1,'totmass2 is zero in calculate_cpang!')
     end if
     d2(:) = d2(:) / totmass2
 
@@ -269,7 +269,7 @@ subroutine calculate_pang(cv_item,x,ctx)
     call dsyev('V','L', 3, a, 3, eigenvaluesA, work, 26*3, info)
 
     if( info .ne. 0 ) then
-        call pmf_utils_exit(PMF_OUT,1,'Unable to diagonalize matrix in calculate_pang (plane A)!')
+        call pmf_utils_exit(PMF_OUT,1,'Unable to diagonalize matrix in calculate_cpang (plane A)!')
     end if
 
     ! determine z-axis orientation
@@ -330,7 +330,7 @@ subroutine calculate_pang(cv_item,x,ctx)
     call dsyev('V','L', 3, b, 3, eigenvaluesB, work, 26*3, info)
 
     if( info .ne. 0 ) then
-        call pmf_utils_exit(PMF_OUT,1,'Unable to diagonalize matrix in calculate_pang (plane B)!')
+        call pmf_utils_exit(PMF_OUT,1,'Unable to diagonalize matrix in calculate_cpang (plane B)!')
     end if
 
     ! determine z-axis orientation
@@ -362,17 +362,9 @@ subroutine calculate_pang(cv_item,x,ctx)
         cang = -1.0
     end if
 
-    ctx%CVsValues(cv_item%idx) = acos(cang)
+    ctx%CVsValues(cv_item%idx) = cang
 
-    ! derivatives -----------------------------------------------------------------
-
-    sc = sin(ctx%CVsValues(cv_item%idx))
-    if( abs(sc) .lt. 1.e-12 ) then
-    ! avoid division by zero
-        sc = -1.e12
-    else
-        sc = -1.0d0 / sc
-    end if
+    ! derivatives ----------------------------------------------------------------
 
     ! eigenvector derivatives -----------------------
 
@@ -431,21 +423,21 @@ subroutine calculate_pang(cv_item,x,ctx)
         ai = cv_item%lindexes(m)
         amass = mass(ai)
 
-        ctx%CVsDrvs(1,ai,cv_item%idx) = ctx%CVsDrvs(1,ai,cv_item%idx) + sc*amass*( &
+        ctx%CVsDrvs(1,ai,cv_item%idx) = ctx%CVsDrvs(1,ai,cv_item%idx) + amass*( &
                               2.0d0*(x(1,ai) - d1(1))*(a_xij(1,1,1) + a_xij(2,1,1) + a_xij(3,1,1)) &
                             +       (x(2,ai) - d1(2))*(a_xij(1,1,2) + a_xij(2,1,2) + a_xij(3,1,2)) &
                             +       (x(2,ai) - d1(2))*(a_xij(1,2,1) + a_xij(2,2,1) + a_xij(3,2,1)) &
                             +       (x(3,ai) - d1(3))*(a_xij(1,1,3) + a_xij(2,1,3) + a_xij(3,1,3)) &
                             +       (x(3,ai) - d1(3))*(a_xij(1,3,1) + a_xij(2,3,1) + a_xij(3,3,1)))
 
-        ctx%CVsDrvs(2,ai,cv_item%idx) = ctx%CVsDrvs(2,ai,cv_item%idx) + sc*amass*( &
+        ctx%CVsDrvs(2,ai,cv_item%idx) = ctx%CVsDrvs(2,ai,cv_item%idx) + amass*( &
                                     (x(1,ai) - d1(1))*(a_xij(1,1,2) + a_xij(2,1,2) + a_xij(3,1,2)) &
                             +       (x(1,ai) - d1(1))*(a_xij(1,2,1) + a_xij(2,2,1) + a_xij(3,2,1)) &
                             + 2.0d0*(x(2,ai) - d1(2))*(a_xij(1,2,2) + a_xij(2,2,2) + a_xij(3,2,2)) &
                             +       (x(3,ai) - d1(3))*(a_xij(1,2,3) + a_xij(2,2,3) + a_xij(3,2,3)) &
                             +       (x(3,ai) - d1(3))*(a_xij(1,3,2) + a_xij(2,3,2) + a_xij(3,3,2)))
 
-        ctx%CVsDrvs(3,ai,cv_item%idx) = ctx%CVsDrvs(3,ai,cv_item%idx) + sc*amass*( &
+        ctx%CVsDrvs(3,ai,cv_item%idx) = ctx%CVsDrvs(3,ai,cv_item%idx) + amass*( &
                                     (x(1,ai) - d1(1))*(a_xij(1,1,3) + a_xij(2,1,3) + a_xij(3,1,3)) &
                             +       (x(1,ai) - d1(1))*(a_xij(1,3,1) + a_xij(2,3,1) + a_xij(3,3,1)) &
                             +       (x(2,ai) - d1(2))*(a_xij(1,2,3) + a_xij(2,2,3) + a_xij(3,2,3)) &
@@ -457,21 +449,21 @@ subroutine calculate_pang(cv_item,x,ctx)
         ai = cv_item%lindexes(m)
         amass = mass(ai)
 
-        ctx%CVsDrvs(1,ai,cv_item%idx) = ctx%CVsDrvs(1,ai,cv_item%idx) + sc*amass*( &
+        ctx%CVsDrvs(1,ai,cv_item%idx) = ctx%CVsDrvs(1,ai,cv_item%idx) + amass*( &
                               2.0d0*(x(1,ai) - d2(1))*(b_xij(1,1,1) + b_xij(2,1,1) + b_xij(3,1,1)) &
                             +       (x(2,ai) - d2(2))*(b_xij(1,1,2) + b_xij(2,1,2) + b_xij(3,1,2)) &
                             +       (x(2,ai) - d2(2))*(b_xij(1,2,1) + b_xij(2,2,1) + b_xij(3,2,1)) &
                             +       (x(3,ai) - d2(3))*(b_xij(1,1,3) + b_xij(2,1,3) + b_xij(3,1,3)) &
                             +       (x(3,ai) - d2(3))*(b_xij(1,3,1) + b_xij(2,3,1) + b_xij(3,3,1)))
 
-        ctx%CVsDrvs(2,ai,cv_item%idx) = ctx%CVsDrvs(2,ai,cv_item%idx) + sc*amass*( &
+        ctx%CVsDrvs(2,ai,cv_item%idx) = ctx%CVsDrvs(2,ai,cv_item%idx) + amass*( &
                                     (x(1,ai) - d2(1))*(b_xij(1,1,2) + b_xij(2,1,2) + b_xij(3,1,2)) &
                             +       (x(1,ai) - d2(1))*(b_xij(1,2,1) + b_xij(2,2,1) + b_xij(3,2,1)) &
                             + 2.0d0*(x(2,ai) - d2(2))*(b_xij(1,2,2) + b_xij(2,2,2) + b_xij(3,2,2)) &
                             +       (x(3,ai) - d2(3))*(b_xij(1,2,3) + b_xij(2,2,3) + b_xij(3,2,3)) &
                             +       (x(3,ai) - d2(3))*(b_xij(1,3,2) + b_xij(2,3,2) + b_xij(3,3,2)))
 
-        ctx%CVsDrvs(3,ai,cv_item%idx) = ctx%CVsDrvs(3,ai,cv_item%idx) + sc*amass*( &
+        ctx%CVsDrvs(3,ai,cv_item%idx) = ctx%CVsDrvs(3,ai,cv_item%idx) + amass*( &
                                     (x(1,ai) - d2(1))*(b_xij(1,1,3) + b_xij(2,1,3) + b_xij(3,1,3)) &
                             +       (x(1,ai) - d2(1))*(b_xij(1,3,1) + b_xij(2,3,1) + b_xij(3,3,1)) &
                             +       (x(2,ai) - d2(2))*(b_xij(1,2,3) + b_xij(2,2,3) + b_xij(3,2,3)) &
@@ -481,9 +473,9 @@ subroutine calculate_pang(cv_item,x,ctx)
 
     return
 
-end subroutine calculate_pang
+end subroutine calculate_cpang
 
 !===============================================================================
 
-end module cv_pang
+end module cv_cpang
 
