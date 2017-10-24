@@ -471,7 +471,6 @@ subroutine cst_output_close
 200 format(1X,E15.8,1X,E15.8,1X,E15.8)
 
 39 format(1X,A15)
-40 format(1X,A31)
 45 format(1X,A47)
 
 end subroutine cst_output_close

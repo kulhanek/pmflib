@@ -143,7 +143,6 @@ subroutine pdrv_output_write_header
  6 format(' ReqAlpha CurrAlph  DevToPath  ')
 12 format(' -------- -------- ------------')
 15 format('#        ')
-17 format('                               ')
 20 format(' -----------------------------------------------')
 30 format(' requested value  current value    difference   ')
 35 format(' --------------- --------------- ---------------')

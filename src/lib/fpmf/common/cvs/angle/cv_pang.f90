@@ -82,7 +82,7 @@ subroutine load_pang(cv_item,prm_fin)
     if( .not. prmfile_get_string_by_key(prm_fin,'x_direction_a',mask) ) then
         call pmf_utils_exit(PMF_OUT,1,'x_direction_a atom is not specified!')
     end if
-    write(PMF_OUT,80) trim(mask)
+    write(PMF_OUT,70) trim(mask)
     call cv_common_set_atom_from_mask(mask,cv_item%x_direction_a)
 
     ! find atom in cv_item%rindexes

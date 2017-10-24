@@ -164,7 +164,6 @@ subroutine stm_control_read_stm(prm_fin)
 
   5 format (' >> String method is disabled!')
  10 format ('fmode                                  = ',i12)
- 15 format ('fmode                                  = ',i12,'                  (default)')
  50 format ('fsample                                = ',i12)
  55 format ('fsample                                = ',i12,'                  (default)')
  60 format ('ftensor                                = ',i12)
@@ -179,7 +178,9 @@ subroutine stm_control_read_stm(prm_fin)
 150 format ('Reading bead ID from file              = ',a)
 155 format ('Bead ID                                = ',I3)
 
+#ifndef PMFLIB_NETWORK
 105 format (' >> String method is not compiled in (network support is required)!')
+#endif
 
 end subroutine stm_control_read_stm
 

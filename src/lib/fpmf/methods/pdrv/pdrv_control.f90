@@ -91,7 +91,6 @@ subroutine pdrv_control_read_pdrv(prm_fin)
 
   5 format (' >> Path driving is disabled!')
  10 format ('fmode                                  = ',i12)
- 15 format ('fmode                                  = ',i12,'                  (default)')
  50 format ('fsample                                = ',i12)
  55 format ('fsample                                = ',i12,'                  (default)')
 

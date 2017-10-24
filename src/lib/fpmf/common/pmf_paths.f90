@@ -406,7 +406,7 @@ subroutine pmf_paths_load_cvs(prm_fin,path_item)
     do while (prmfile_get_line(prm_fin,text))
         read(text,*) code
         if( trim(code) .eq. 'min' ) then
-            read(text,*,err=20,end=20) code,(path_item%minvalues(i),i=1,path_item%ncvs)
+            read(text,*,err=30,end=30) code,(path_item%minvalues(i),i=1,path_item%ncvs)
             found = .true.
             exit
         end if
@@ -430,7 +430,7 @@ subroutine pmf_paths_load_cvs(prm_fin,path_item)
     do while (prmfile_get_line(prm_fin,text))
         read(text,*) code
         if( trim(code) .eq. 'max' ) then
-            read(text,*,err=20,end=20) code,(path_item%maxvalues(i),i=1,path_item%ncvs)
+            read(text,*,err=40,end=40) code,(path_item%maxvalues(i),i=1,path_item%ncvs)
             found = .true.
             exit
         end if
@@ -455,7 +455,7 @@ subroutine pmf_paths_load_cvs(prm_fin,path_item)
     do while (prmfile_get_line(prm_fin,text))
         read(text,*) code
         if( trim(code) .eq. 'maxmov' ) then
-            read(text,*,err=20,end=20) code,(path_item%maxmoves(i),i=1,path_item%ncvs)
+            read(text,*,err=50,end=50) code,(path_item%maxmoves(i),i=1,path_item%ncvs)
             found = .true.
             exit
         end if
@@ -526,7 +526,7 @@ subroutine pmf_paths_load_fake_cvs(prm_fin)
     character(PRMFILE_MAX_LINE)             :: text
     character(15)                           :: code
     integer                                 :: ncvs, alloc_failed, i
-    character(PMF_MAX_CV_NAME),allocatable  :: types(:)
+    character(PMF_MAX_TYPE),allocatable     :: types(:)
     character(PMF_MAX_CV_NAME),allocatable  :: names(:)
     logical                                 :: res
     ! -----------------------------------------------------------------------------
@@ -593,7 +593,7 @@ end subroutine pmf_paths_load_fake_cvs
 ! Function:   pmf_paths_get_nbeads
 !===============================================================================
 
-real(PMFDP) function pmf_paths_get_nbeads(prm_fin)
+integer function pmf_paths_get_nbeads(prm_fin)
 
     use prmfile
 

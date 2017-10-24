@@ -41,17 +41,17 @@ subroutine abf_cvs_reset_cv(abf_item)
     type(CVTypeABF) :: abf_item
     ! --------------------------------------------------------------------------
 
-    abf_item%cvindx         = 0   ! CV index
+    abf_item%cvindx         = 0     ! CV index
     abf_item%cv             => null()
     abf_item%set            = 0
-    abf_item%min_value      = 0.0 ! left range
-    abf_item%max_value      = 0.0 ! right range
-    abf_item%nbins          = 0.0 ! number of bins
-    abf_item%maxforce       = 0.0 ! max force to be applied
-    abf_item%switch         = 0.0 ! switch to zero width
-    abf_item%fgplen         = 0.0  ! characteristic lengh-scale
-    abf_item%fgpsigmaoffset = 0.0  ! force sigma offset
-    abf_item%fgpsigmafac    = 1.0  ! force sigma factor
+    abf_item%min_value      = 0.0   ! left range
+    abf_item%max_value      = 0.0   ! right range
+    abf_item%nbins          = 0     ! number of bins
+    abf_item%maxforce       = 0.0   ! max force to be applied
+    abf_item%switch         = 0.0   ! switch to zero width
+    abf_item%fgplen         = 0.0   ! characteristic lengh-scale
+    abf_item%fgpsigmaoffset = 0.0   ! force sigma offset
+    abf_item%fgpsigmafac    = 1.0   ! force sigma factor
 
 end subroutine abf_cvs_reset_cv
 

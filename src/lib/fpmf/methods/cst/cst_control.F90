@@ -136,7 +136,6 @@ subroutine cst_control_read_con(prm_fin)
 
   5 format (' >> Constrained dynamics is disabled!')
  10 format ('fmode         = ',i12)
- 15 format ('fmode         = ',i12,'                                           (default)')
  30 format ('fsample       = ',i12)
  35 format ('fsample       = ',i12,'                                           (default)')
  40 format ('faccurst      = ',i12)

@@ -189,7 +189,6 @@ subroutine generate_MB_velocities(x,v)
 10 format(/,'   Generating new velocities -> T          = ',f12.1)
  20 format ('        Real temperature T                 = ',f12.1)
  40 format ('     Removing translational and rotational moment ...')
- 50 format ('     Initial SHAKE ...')
  60 format ('     Rescaling to correct temperature ...')
 
 end subroutine generate_MB_velocities

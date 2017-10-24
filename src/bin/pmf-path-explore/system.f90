@@ -199,12 +199,13 @@ end subroutine close_trajectory_file
 subroutine write_path_summary_header(ioout)
 
     use pmf_system_dat
+    use pmf_sizes
 
     implicit none
     integer     :: ioout
     ! --------------------------------------------
-    integer             :: i,id
-    character(len=12)   :: buffer
+    integer                         :: i,id
+    character(len=PMF_MAX_CV_NAME)  :: buffer
     ! --------------------------------------------------------------------------
 
     write(ioout,10)

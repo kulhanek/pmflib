@@ -238,7 +238,6 @@ subroutine read_files
     return
 
  10 format('Input FES file (fes)                   = ',a)
- 11 format('Input FES file (fes)                   = ',a12,'                  (default)')
  20 format('Input path file (input)                = ',a)
  21 format('Input path file (input)                = ',a12,'                  (default)')
  30 format('Output path file (output)              = ',a)

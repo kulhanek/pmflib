@@ -322,7 +322,6 @@ subroutine mtd_control_read_mtd(prm_fin)
 
   5 format (' >> Metadynamics is disabled!')
  10 format ('fmode                                  = ',i12)
- 15 format ('fmode                                  = ',i12,'                  (default)')
  30 format ('fheight                                = ',E12.4)
  35 format ('fheight                                = ',E12.4,'                  (default)')
  40 format ('fmetastep                              = ',i12)
@@ -364,7 +363,9 @@ subroutine mtd_control_read_mtd(prm_fin)
 485 format ('   fgpprint                            = ',i12,'                  (default)')
 
   6 format (' >> Multiple-walkers metadynamics is disabled!')
+#ifndef PMFLIB_NETWORK
   7 format (' >> Multiple-walkers metadynamics is not compiled in!')
+#endif
 490 format ('fserverkey                             = ',a)
 500 format ('fserver                                = ',a)
 510 format ('fpassword                              = ',a12)

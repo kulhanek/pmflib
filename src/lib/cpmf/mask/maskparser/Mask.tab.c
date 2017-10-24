@@ -58,6 +58,42 @@
 /* Pull parsers.  */
 #define YYPULL 1
 
+/* moved by Kulhanek here */
+#ifndef YY_TYPEDEF_YY_BUFFER_STATE
+#define YY_TYPEDEF_YY_BUFFER_STATE
+typedef struct yy_buffer_state *YY_BUFFER_STATE;
+#endif
+
+#ifndef YY_TYPEDEF_YY_SIZE_T
+#define YY_TYPEDEF_YY_SIZE_T
+#include <stddef.h>
+typedef size_t yy_size_t;
+#endif
+
+#ifdef __cplusplus
+
+/* The "const" storage-class-modifier is valid. */
+#define YY_USE_CONST
+
+#else	/* ! __cplusplus */
+
+/* C99 requires __STDC__ to be defined as 1. */
+#if defined (__STDC__)
+
+#define YY_USE_CONST
+
+#endif	/* defined (__STDC__) */
+#endif	/* ! __cplusplus */
+
+#ifdef YY_USE_CONST
+#define yyconst const
+#else
+#define yyconst
+#endif
+
+extern int pmf_yylex (void);
+extern int pmf_yylex_destroy (void );
+YY_BUFFER_STATE pmf_yy_scan_string (yyconst char *yy_str  );
 
 /* Substitute the variable and function names.  */
 #define yyparse         pmf_yyparse
@@ -167,8 +203,6 @@ union YYSTYPE
 
 
 extern YYSTYPE pmf_yylval;
-
-int pmf_yyparse (void);
 
 #endif /* !YY_PMF_YY_MASK_TAB_H_INCLUDED  */
 

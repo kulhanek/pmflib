@@ -53,7 +53,7 @@ subroutine read_rstseq
     integer        :: i
     logical        :: yes
     character(80)  :: text
-    character(10)  :: hflag,ceflag,chflag
+    character(12)  :: hflag,ceflag,chflag
     integer        :: alloc_failed
     ! -----------------------------------------------
 

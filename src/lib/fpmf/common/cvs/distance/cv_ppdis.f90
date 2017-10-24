@@ -329,14 +329,6 @@ subroutine calculate_ppdis(cv_item,x,ctx)
 
     return
 
-     9 format('   ** Atom position: ',F10.3,1X,A)
-    10 format('   ** Direction Vector:')
-    12 format('   ** X: ',F10.3,1X,A)
-    14 format('   ** Y: ',F10.3,1X,A)
-    16 format('   ** Z: ',F10.3,1X,A)
-    20 format('=====================================')
-
-
 end subroutine calculate_ppdis
 
 !===============================================================================

@@ -211,7 +211,6 @@ subroutine abf_init_print_header
 120 format(A)
 125 format(A,A)
 130 format(A,I6)
-135 format(A,E12.5)
 
 140 format(' == Collective variable #',I4.4)
 

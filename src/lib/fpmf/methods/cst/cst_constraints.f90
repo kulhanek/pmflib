@@ -114,7 +114,6 @@ subroutine cst_constraints_read_con(prm_fin,cst_item)
  96 format('   ** Constrained value  : controlled by path subsystem')
 100 format('   ** Change to value    :',E16.7' [',A,']')
 110 format('   ** Increment value    :',E16.7' [',A,']')
-115 format('   ** Control file       :',A) 
 
 end subroutine cst_constraints_read_con
 

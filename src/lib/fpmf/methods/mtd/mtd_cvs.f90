@@ -42,15 +42,15 @@ subroutine mtd_cvs_reset_cv(mtd_item)
     type(CVTypeMTD)        :: mtd_item
     ! --------------------------------------------------------------------------
 
-    mtd_item%cvindx          = 0   ! CV index
-    mtd_item%width           = 0.0 ! width
-    mtd_item%min_value       = 0.0 ! left range
-    mtd_item%max_value       = 0.0 ! right range
-    mtd_item%nbins           = 0.0 ! number of bins
-    mtd_item%max_dist        = 0.0 ! maximum distance
-    mtd_item%gptheta        = 0.0  ! GP gptheta
-    mtd_item%gpperiodicity  = 0.0  ! GP periodicities
-    mtd_item%gpfixgrid      = 0    ! GP fixgrid
+    mtd_item%cvindx         = 0     ! CV index
+    mtd_item%width          = 0.0   ! width
+    mtd_item%min_value      = 0.0   ! left range
+    mtd_item%max_value      = 0.0   ! right range
+    mtd_item%nbins          = 0     ! number of bins
+    mtd_item%max_dist       = 0.0   ! maximum distance
+    mtd_item%gptheta        = 0.0   ! GP gptheta
+    mtd_item%gpperiodicity  = 0.0   ! GP periodicities
+    mtd_item%gpfixgrid      = 0     ! GP fixgrid
 
 end subroutine mtd_cvs_reset_cv
 

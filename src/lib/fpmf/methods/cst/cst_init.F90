@@ -165,7 +165,6 @@ subroutine cst_init_print_header
 140 format(A,I6,1X,A)
 
 150 format(' == Constrained collective variable #',I4.4)
-155 format('    ** Name              : ',a)
 
 end subroutine cst_init_print_header
 

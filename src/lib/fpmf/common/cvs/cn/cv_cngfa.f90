@@ -105,7 +105,7 @@ subroutine load_cngfa(cv_item,prm_fin)
     call pmf_unit_conv_to_ivalue(LengthUnit,cv_item%reference)
 
     ! read group c,d ----------------------------------
-    write(PMF_OUT,5)
+    write(PMF_OUT,25)
     call cv_common_read_group(cv_item,prm_fin,3)
     call cv_common_read_group(cv_item,prm_fin,4)
 

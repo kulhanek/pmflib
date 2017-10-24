@@ -244,7 +244,6 @@ subroutine abf_control_read_abf(prm_fin)
 
   5 format (' >> Adaptive biasing force method is disabled!')
  10 format ('fmode                                  = ',i12)
- 15 format ('fmode                                  = ',i12,'                  (default)')
  16 format ('fmask_mode                             = ',i12)
  19 format ('fmask_mode                             = ',i12,'                  (default)')
  21 format ('fapply_abf                             = ',a12)
@@ -261,7 +260,9 @@ subroutine abf_control_read_abf(prm_fin)
  85 format ('ftrjsample                             = ',i12,'                  (default)')
 
 100 format (' >> Multiple-walkers ABF method is disabled!')
+#ifndef PMFLIB_NETWORK
 105 format (' >> Multiple-walkers ABF method is not compiled in!')
+#endif
 110 format ('fserverkey                             = ',a)
 120 format ('fserver                                = ',a)
 130 format ('fpassword                              = ',a16)
