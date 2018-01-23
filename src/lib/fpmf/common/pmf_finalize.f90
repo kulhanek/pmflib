@@ -48,7 +48,7 @@ subroutine pmf_finalize_all(do_profiling)
 end subroutine pmf_finalize_all
 
 !===============================================================================
-! Subroutine: pmf_finalize_methods
+! Subroutine: pmf_finalize_pmf
 !===============================================================================
 
 subroutine pmf_finalize_pmf

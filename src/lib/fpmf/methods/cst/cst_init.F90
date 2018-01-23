@@ -264,7 +264,7 @@ subroutine cst_init_add_shake_csts
         CVList(cvid)%cv%name      = 'SHAKE'
         CVList(cvid)%cv%natoms    = 2
         CVList(cvid)%cv%ngrps     = 2
-        allocate(CVList(cvid)%cv%grps(CVList(i)%cv%ngrps), &
+        allocate(CVList(cvid)%cv%grps(CVList(cvid)%cv%ngrps), &
                  CVList(cvid)%cv%rindexes(2), &
                  CVList(cvid)%cv%lindexes(2), &
                  stat = alloc_failed)
