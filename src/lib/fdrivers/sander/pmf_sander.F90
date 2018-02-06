@@ -449,7 +449,7 @@ subroutine pmf_sander_force_mpi(anatom,x,v,f,epot,epmf)
             end do
             write(PMF_DEBUG+fmytaskid,*)
         end if
-
+        call pmf_core_lf_update_step
         call pmf_core_lf_force(tmp_a,tmp_b,tmp_c,epot,epmf)
     end if
 
@@ -531,68 +531,68 @@ end subroutine pmf_sander_constraints_mpi
 
 subroutine pmf_sander_cst_init_collisions(ntc,nbt,ifstwt,ib,jb,conp)
 
- use pmf_dat
- use cst_shake
- use pmf_sizes
- use pmf_core
- use pmf_utils
+    use pmf_dat
+    use cst_shake
+    use pmf_sizes
+    use pmf_core
+    use pmf_utils
 
- implicit none
- integer        :: ntc          !
- integer        :: nbt          ! number of X-H bonds
- integer        :: ifstwt(*)    ! determine if bond is part of water
- integer        :: ib(*)        ! the first atom of bond
- integer        :: jb(*)        ! the second atom of bond
- real(PMFDP)    :: conp(*)
- ! -----------------------------------------------
- integer        :: ll, i, j, num
- ! -----------------------------------------------------------------------------
+    implicit none
+    integer        :: ntc          !
+    integer        :: nbt          ! number of X-H bonds
+    integer        :: ifstwt(*)    ! determine if bond is part of water
+    integer        :: ib(*)        ! the first atom of bond
+    integer        :: jb(*)        ! the second atom of bond
+    real(PMFDP)    :: conp(*)
+    ! -----------------------------------------------
+    integer        :: ll, i, j, num
+    ! -----------------------------------------------------------------------------
 
- if( .not. cst_enabled ) return
- if( .not. fmaster ) return ! only master can init shake constraint in collision
- if( ntc .eq. 1 ) return    ! no SHAKE
+    if( .not. cst_enabled ) return
+    if( .not. fmaster ) return ! only master can init shake constraint in collision
+    if( ntc .eq. 1 ) return    ! no SHAKE
 
- if( ntc .ne. 2 ) then
-    call pmf_utils_exit(PMF_OUT,1,'ntc has to be either zero or one for PMFLib constrained dynamics!')
- end if
+    if( ntc .ne. 2 ) then
+        call pmf_utils_exit(PMF_OUT,1,'ntc has to be either zero or one for PMFLib constrained dynamics!')
+    end if
 
- ! determine number of SHAKE constraints in collision
- num = 0
+    ! determine number of SHAKE constraints in collision
+    num = 0
 
- do ll = 1,nbt
-    i = ib(ll)/3+1
-    j  = jb(ll)/3+1
-    if( ifstwt(ll) == 1 ) then
-        if( cst_shake_checkatom(i) .or. cst_shake_checkatom(j) ) then
-            call pmf_utils_exit(PMF_OUT,1,'Water atom cannot be a part of PMFLib constraint!')
+    do ll = 1,nbt
+        i = ib(ll)/3+1
+        j  = jb(ll)/3+1
+        if( ifstwt(ll) == 1 ) then
+            if( cst_shake_checkatom(i) .or. cst_shake_checkatom(j) ) then
+                call pmf_utils_exit(PMF_OUT,1,'Water atom cannot be a part of PMFLib constraint!')
+            end if
         end if
-    end if
-    if( (cst_shake_checkatom(i) .or. cst_shake_checkatom(j)) .and. &
-        (.not. (cst_shake_checkatom(i) .and. cst_shake_checkatom(j))) ) then
-       num = num + 1
-       cycle
-    end if
- end do
+        if( (cst_shake_checkatom(i) .or. cst_shake_checkatom(j)) .and. &
+            (.not. (cst_shake_checkatom(i) .and. cst_shake_checkatom(j))) ) then
+            num = num + 1
+            cycle
+        end if
+    end do
 
- if( num .eq. 0 ) return    ! nothing in collision
+    if( num .eq. 0 ) return    ! nothing in collision
 
- ! set SHAKE constraints in collisions
- call cst_shake_allocate(num)
+    ! set SHAKE constraints in collisions
+    call cst_shake_allocate(num)
 
- num = 1
- do ll = 1,nbt
-    if (ifstwt(ll) == 1) cycle
-    i  = ib(ll)/3+1
-    j  = jb(ll)/3+1
-    if( (cst_shake_checkatom(i) .or. cst_shake_checkatom(j)) .and. &
-        (.not. (cst_shake_checkatom(i) .and. cst_shake_checkatom(j))) ) then
-       call cst_shake_set(num,i,j,conp(ll))
-       num = num + 1
-       cycle
-    end if
- end do
+    num = 1
+    do ll = 1,nbt
+        if (ifstwt(ll) == 1) cycle
+        i  = ib(ll)/3+1
+        j  = jb(ll)/3+1
+        if( (cst_shake_checkatom(i) .or. cst_shake_checkatom(j)) .and. &
+            (.not. (cst_shake_checkatom(i) .and. cst_shake_checkatom(j))) ) then
+            call cst_shake_set(num,i,j,conp(ll))
+            num = num + 1
+            cycle
+        end if
+    end do
 
- return
+    return
 
 end subroutine pmf_sander_cst_init_collisions
 
