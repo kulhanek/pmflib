@@ -59,6 +59,13 @@ ADD_TEST(CVDerRand02-RMSDT ${EXECUTABLE_OUTPUT_PATH}/pmf-test-cvs
                         ../random02.in rmsdt.in)
 ADD_TEST(CVDerRand03-RMSDT ${EXECUTABLE_OUTPUT_PATH}/pmf-test-cvs
                         ../random03.in rmsdt.in)
+                        
+ADD_TEST(CVDerRand01-RMSDS ${EXECUTABLE_OUTPUT_PATH}/pmf-test-cvs
+                        ../random01.in rmsds.in)
+ADD_TEST(CVDerRand02-RMSDS ${EXECUTABLE_OUTPUT_PATH}/pmf-test-cvs
+                        ../random02.in rmsds.in)
+ADD_TEST(CVDerRand03-RMSDS ${EXECUTABLE_OUTPUT_PATH}/pmf-test-cvs
+                        ../random03.in rmsds.in)
 
 ADD_TEST(CVDerRand01-EVEC ${EXECUTABLE_OUTPUT_PATH}/pmf-test-cvs
                         ../random01.in evec.in)

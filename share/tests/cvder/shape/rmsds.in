@@ -1,0 +1,27 @@
+[RMSDS]
+name    cv1
+group_a @1-6
+fit     str001.xyz
+group_b @11-16
+target  str002.xyz
+
+[RMSDS]
+name    cv2
+group_a @3-8
+fit     str002.xyz
+group_b @11-16
+target  str001.xyz
+
+[RMSDS]
+name    cv3
+group_a @1-6
+fit     str001.xyz
+group_b @5-10
+target  str002.xyz
+
+[RMSDS]
+name    cv4
+group_a @3-8
+fit     str002.xyz
+group_b @3-8
+target  str001.xyz

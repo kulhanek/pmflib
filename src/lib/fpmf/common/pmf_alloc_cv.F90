@@ -76,6 +76,7 @@ subroutine pmf_alloc_cv_allocate(cv_type,cv_item)
     use cv_asph
     use cv_sanis
     use cv_rmsdt
+    use cv_rmsds
     use cv_plane
     use cv_evec
 
@@ -191,6 +192,8 @@ subroutine pmf_alloc_cv_allocate(cv_type,cv_item)
 
         case('RMSDT')
             allocate(CVTypeRMSDT::cv_item)
+        case('RMSDS')
+            allocate(CVTypeRMSDS::cv_item)
         case('PLANE')
             allocate(CVTypePLANE::cv_item)
         case('EVEC')

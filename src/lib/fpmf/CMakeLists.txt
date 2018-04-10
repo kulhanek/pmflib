@@ -66,6 +66,7 @@ SET(PMF_CVS_SRC
 
     # shape
         common/cvs/shape/cv_rmsdt.f90
+        common/cvs/shape/cv_rmsds.f90
         common/cvs/shape/cv_rgyr.f90
         common/cvs/shape/cv_pmgtd.f90
         common/cvs/shape/cv_pmogt.f90
