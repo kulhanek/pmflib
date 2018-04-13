@@ -165,7 +165,8 @@ subroutine calculate_rmsds(cv_item,x,ctx)
     ! -----------------------------------------------
     integer        :: i,ai,si,info,best,mi,mj
     real(PMFDP)    :: xA1,xA2,xA3,xrA1,xrA2,xrA3,amass,totmassA,itotmassA
-    real(PMFDP)    :: xB1,xB2,xB3,xrB1,xrB2,xrB3,totmassB,itotmassB
+!    real(PMFDP)    :: xB1,xB2,xB3,xrB1,xrB2,xrB3,
+    real(PMFDP)    :: totmassB,itotmassB
     real(PMFDP)    :: r11,r12,r13,r21,r22,r23,r31,r32,r33
     real(PMFDP)    :: f(4,4),u(3,3),a_f(4),a_u(3,3),a_rij(4,4)
     real(PMFDP)    :: eigenvalues(4),work(26*4)
@@ -300,60 +301,61 @@ subroutine calculate_rmsds(cv_item,x,ctx)
     ! value from fitting
     fit_rmsdt = sqrt((x2sum + xr2sum - 2.0d0*eigenvalues(best))*itotmassA)
 
-    ! calculate geometrical centres (source and target) -------------------
-    xB1 = 0.0d0
-    xB2 = 0.0d0
-    xB3 = 0.0d0
-    xrB1 = 0.0d0
-    xrB2 = 0.0d0
-    xrB3 = 0.0d0
-    totmassB = 0.0d0
-
-    do  i = cv_item%grps(1)+1, cv_item%grps(2)
-        ai = cv_item%lindexes(i)
-        si = i - cv_item%grps(1)
-        amass = mass(ai)
-        ! source
-        xB1 = xB1 + x(1,ai)*amass
-        xB2 = xB2 + x(2,ai)*amass
-        xB3 = xB3 + x(3,ai)*amass
-
-        ! reference
-        xrB1 = xrB1 + cv_item%xyz_strB%cvs(1,si)*amass
-        xrB2 = xrB2 + cv_item%xyz_strB%cvs(2,si)*amass
-        xrB3 = xrB3 + cv_item%xyz_strB%cvs(3,si)*amass
-
-        totmassB = totmassB + amass
-    end do
-
-    if( totmassB .le. 0 ) then
-        call pmf_utils_exit(PMF_OUT,1,'totmassB is zero in calculate_rmsds!')
-    end if
-
-    itotmassB = 1.0d0 / totmassB
-    xB1 = xB1 * itotmassB
-    xB2 = xB2 * itotmassB
-    xB3 = xB3 * itotmassB
-    xrB1 = xrB1 * itotmassB
-    xrB2 = xrB2 * itotmassB
-    xrB3 = xrB3 * itotmassB
+!     ! calculate geometrical centres (source and target) -------------------
+!     xB1 = 0.0d0
+!     xB2 = 0.0d0
+!     xB3 = 0.0d0
+!     xrB1 = 0.0d0
+!     xrB2 = 0.0d0
+!     xrB3 = 0.0d0
+!     totmassB = 0.0d0
+! 
+!     do  i = cv_item%grps(1)+1, cv_item%grps(2)
+!         ai = cv_item%lindexes(i)
+!         si = i - cv_item%grps(1)
+!         amass = mass(ai)
+!         ! source
+!         xB1 = xB1 + x(1,ai)*amass
+!         xB2 = xB2 + x(2,ai)*amass
+!         xB3 = xB3 + x(3,ai)*amass
+! 
+!         ! reference
+!         xrB1 = xrB1 + cv_item%xyz_strB%cvs(1,si)*amass
+!         xrB2 = xrB2 + cv_item%xyz_strB%cvs(2,si)*amass
+!         xrB3 = xrB3 + cv_item%xyz_strB%cvs(3,si)*amass
+! 
+!         totmassB = totmassB + amass
+!     end do
+! 
+!     if( totmassB .le. 0 ) then
+!         call pmf_utils_exit(PMF_OUT,1,'totmassB is zero in calculate_rmsds!')
+!     end if
+! 
+!     itotmassB = 1.0d0 / totmassB
+!     xB1 = xB1 * itotmassB
+!     xB2 = xB2 * itotmassB
+!     xB3 = xB3 * itotmassB
+!     xrB1 = xrB1 * itotmassB
+!     xrB2 = xrB2 * itotmassB
+!     xrB3 = xrB3 * itotmassB
 
     a_u(:,:) = 0.0d0
     
     ! calculate rmsds
     value = 0.0d0
+    totmassB = 0.0d0
     do  i = cv_item%grps(1)+1, cv_item%grps(2)
         ai = cv_item%lindexes(i)
         si = i - cv_item%grps(1)        
         amass = mass(ai)
 
-        r11 = x(1,ai) - xB1
-        r12 = x(2,ai) - xB2
-        r13 = x(3,ai) - xB3
+        r11 = x(1,ai) - xA1
+        r12 = x(2,ai) - xA2
+        r13 = x(3,ai) - xA3
 
-        r21 = cv_item%xyz_strB%cvs(1,si) - xrB1
-        r22 = cv_item%xyz_strB%cvs(2,si) - xrB2
-        r23 = cv_item%xyz_strB%cvs(3,si) - xrB3
+        r21 = cv_item%xyz_strB%cvs(1,si) - xrA1
+        r22 = cv_item%xyz_strB%cvs(2,si) - xrA2
+        r23 = cv_item%xyz_strB%cvs(3,si) - xrA3
 
         ! transform r2 point
         r31 = u(1,1)*r21 + u(1,2)*r22 + u(1,3)*r23
@@ -372,10 +374,14 @@ subroutine calculate_rmsds(cv_item,x,ctx)
         
         a_u(3,1) = a_u(3,1) - amass*(r13-r33)*r21
         a_u(3,2) = a_u(3,2) - amass*(r13-r33)*r22
-        a_u(3,3) = a_u(3,3) - amass*(r13-r33)*r23        
+        a_u(3,3) = a_u(3,3) - amass*(r13-r33)*r23  
+        
+        totmassB = totmassB + amass
     end do
+    
+    itotmassB = 1.0d0 / totmassB
     value = value * itotmassB
-
+    
     ctx%CVsValues(cv_item%idx) = sqrt(value)
 
     ! calculate derivatives -------------------------------------------------------
@@ -483,13 +489,13 @@ subroutine calculate_rmsds(cv_item,x,ctx)
         si = i - cv_item%grps(1)          
         amass = mass(ai)
 
-        r11 = x(1,ai) - xB1
-        r12 = x(2,ai) - xB2
-        r13 = x(3,ai) - xB3
+        r11 = x(1,ai) - xA1
+        r12 = x(2,ai) - xA2
+        r13 = x(3,ai) - xA3
 
-        r21 = cv_item%xyz_strB%cvs(1,si) - xrB1
-        r22 = cv_item%xyz_strB%cvs(2,si) - xrB2
-        r23 = cv_item%xyz_strB%cvs(3,si) - xrB3
+        r21 = cv_item%xyz_strB%cvs(1,si) - xrA1
+        r22 = cv_item%xyz_strB%cvs(2,si) - xrA2
+        r23 = cv_item%xyz_strB%cvs(3,si) - xrA3
 
         ! transform r2 point
         r31 = u(1,1)*r21 + u(1,2)*r22 + u(1,3)*r23
