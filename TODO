@@ -13,7 +13,6 @@ CVs - coordination numbers (fermi like, 6/12 form)
 Timers
 
 
-
 void __hipolyspec CEnergySurface::GetPoint(unsigned int index,CSimpleVector<double>& point)
 {
  /* !!!! WRONG !!! */
