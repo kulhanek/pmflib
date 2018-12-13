@@ -12,3 +12,5 @@ PMFLib.*
 *__genmod*
 tests/**
 PMFLib.creator.user
+src/lib/cpmf/PMFMainHeaderConfig.hpp
+src/lib/fpmf/common/pmf_ver.f90
