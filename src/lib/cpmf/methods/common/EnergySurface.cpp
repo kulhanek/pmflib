@@ -33,7 +33,7 @@
 
 CEnergySurface::CEnergySurface(void)
 {
-    NumOfItems = 0;
+    NumOfCVs = 0;
     TotNPoints = 0;
 }
 
@@ -49,7 +49,7 @@ CEnergySurface::~CEnergySurface(void)
 
 unsigned int CEnergySurface::GetNumberOfCoords(void) const
 {
-    return(NumOfItems);
+    return(NumOfCVs);
 }
 
 //------------------------------------------------------------------------------
@@ -72,17 +72,17 @@ const CColVariable* CEnergySurface::GetCoordinate(unsigned int cv) const
 
 void CEnergySurface::Allocate(const CMTDHistory* mtd_hist)
 {
-    if( NumOfItems > 0 ) Deallocate();
+    if( NumOfCVs > 0 ) Deallocate();
     if( mtd_hist == NULL ) return;
     if( mtd_hist->GetNumberOfCoords() <= 0 ) return;
 
 // allocate items
-    NumOfItems = mtd_hist->GetNumberOfCoords();
-    Sizes.CreateVector(NumOfItems);
+    NumOfCVs = mtd_hist->GetNumberOfCoords();
+    Sizes.CreateVector(NumOfCVs);
 
 // copy cvs and calculate total number of points
     TotNPoints = 1;
-    for(unsigned int i=0; i < NumOfItems; i++) {
+    for(unsigned int i=0; i < NumOfCVs; i++) {
         Sizes[i].CopyFrom(mtd_hist->GetCoordinate(i));
         TotNPoints *= Sizes[i].GetNumberOfBins();
     }
@@ -97,17 +97,17 @@ void CEnergySurface::Allocate(const CMTDHistory* mtd_hist)
 
 void CEnergySurface::Allocate(const CABFAccumulator* abf_accu)
 {
-    if( NumOfItems > 0 ) Deallocate();
+    if( NumOfCVs > 0 ) Deallocate();
     if( abf_accu == NULL ) return;
     if( abf_accu->GetNumberOfCoords() <= 0 ) return;
 
 // allocate items
-    NumOfItems = abf_accu->GetNumberOfCoords();
-    Sizes.CreateVector(NumOfItems);
+    NumOfCVs = abf_accu->GetNumberOfCoords();
+    Sizes.CreateVector(NumOfCVs);
 
 // copy cvs and calculate total number of points
     TotNPoints = 1;
-    for(unsigned int i=0; i < NumOfItems; i++) {
+    for(unsigned int i=0; i < NumOfCVs; i++) {
         Sizes[i].CopyFrom(abf_accu->GetCoordinate(i));
         TotNPoints *= Sizes[i].GetNumberOfBins();
     }
@@ -125,7 +125,7 @@ void CEnergySurface::Deallocate(void)
     Sizes.FreeVector();
     Energy.FreeVector();
     Samples.FreeVector();
-    NumOfItems = 0;
+    NumOfCVs = 0;
     TotNPoints = 0;
 }
 
@@ -146,13 +146,13 @@ void CEnergySurface::Clear(void)
 void CEnergySurface::CalculateFES(CMTDHistory& mtd_hist,unsigned int mtd_time)
 {
 // quick compatibility comparison
-    if( NumOfItems != mtd_hist.GetNumberOfCoords() ) {
+    if( NumOfCVs != mtd_hist.GetNumberOfCoords() ) {
         RUNTIME_ERROR("numofitems mismatch");
     }
 
 // allocate point
     CSimpleVector<double> point;
-    point.CreateVector(NumOfItems);
+    point.CreateVector(NumOfCVs);
 
 // calculate surface
     unsigned int loc = 0;
@@ -167,7 +167,7 @@ void CEnergySurface::CalculateFES_Part(CMTDHistory& mtd_hist,
                                        unsigned int& loc,
                                        unsigned int cv)
 {
-    if(cv >= NumOfItems) {
+    if(cv >= NumOfCVs) {
         // calculate value
         double value = - mtd_hist.CalculateValue(point,mtd_time);
         Energy[loc++] = value;
@@ -190,13 +190,13 @@ void CEnergySurface::CalculateFES_Part(CMTDHistory& mtd_hist,
 void CEnergySurface::CalculateFES(unsigned int ncoords,CSimpleVector<double>& params)
 {
 // quick compatibility comparison
-    if( NumOfItems != ncoords ) {
+    if( NumOfCVs != ncoords ) {
         RUNTIME_ERROR("numofitems mismatch");
     }
 
 // allocate point
     CSimpleVector<double> point;
-    point.CreateVector(NumOfItems);
+    point.CreateVector(NumOfCVs);
 
 // calculate fes
     unsigned int loc = 0;
@@ -211,7 +211,7 @@ void CEnergySurface::CalculateFES_MTDParam_Part(
     unsigned int& loc,
     unsigned int cv)
 {
-    if(cv >= NumOfItems) {
+    if(cv >= NumOfCVs) {
         // calculate value
         double value = - CalculateValue(params,point);
         Energy[loc++] = value;
@@ -234,13 +234,13 @@ double CEnergySurface::CalculateValue(const CSimpleVector<double>& params,
 {
     double     value = 0.0;
     double     fexparg;
-    int        num_of_hills = params.GetLength()/(1+2*NumOfItems);
+    int        num_of_hills = params.GetLength()/(1+2*NumOfCVs);
     unsigned int        loc = 0;
 
     for(int i=0; i < num_of_hills; i++) {
         fexparg = 0.0;
         double height = params[loc++];
-        for(unsigned int k=0; k < NumOfItems; k++) {
+        for(unsigned int k=0; k < NumOfCVs; k++) {
             double value = params[loc++];
             double width = params[loc++];
             double e = point[k] - value;
@@ -290,7 +290,7 @@ const int& CEnergySurface::GetNumOfSamples(unsigned int index) const
 
 void CEnergySurface::GetPoint(unsigned int index,CSimpleVector<double>& point)
 {
-    for(int k=NumOfItems-1; k >= 0; k--) {
+    for(int k=NumOfCVs-1; k >= 0; k--) {
         CColVariable* p_coord = &Sizes[k];
         int ibin = index % p_coord->GetNumberOfBins();
         point[k] = p_coord->GetValue(ibin);

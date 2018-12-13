@@ -87,6 +87,9 @@ public:
     /// return value in user specified unit for particular bin
     double GetRealValue(unsigned int bin) const;
 
+    /// get difference between two CVs
+    double GetDifference(double left,double right) const;
+
     /// return coordinate type
     const CSmallString& GetType(void) const;
 

@@ -10,7 +10,8 @@ SET(CPMF_METHODS_SRC
         methods/common/EnergySurface.cpp
         methods/common/ESPrinter.cpp
         methods/abf/ABFAccumulator.cpp
-        methods/abf/ABFIntegratorFD.cpp
+        methods/abf/ABFIntegratorRFD.cpp
+        methods/abf/ABFIntegratorRBF.cpp
         methods/mtd/MTDHistory.cpp
         methods/mtd/MTDBuffer.cpp
         methods/rst/RSTAccumulator.cpp

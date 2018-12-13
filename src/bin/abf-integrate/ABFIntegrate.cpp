@@ -23,7 +23,8 @@
 #include <errno.h>
 #include <ErrorSystem.hpp>
 #include <SmallTimeAndDate.hpp>
-#include <ABFIntegratorFD.hpp>
+#include <ABFIntegratorRFD.hpp>
+#include <ABFIntegratorRBF.hpp>
 #include <EnergySurface.hpp>
 #include <ESPrinter.hpp>
 #include "ABFIntegrate.hpp"
@@ -89,7 +90,8 @@ int CABFIntegrate::Init(int argc,char* argv[])
     } else {
         vout << "# Limit                 : " << Options.GetOptLimit() << endl;
     }
-    vout << "# FD order              : " << Options.GetOptFDOrder() << endl;
+    vout << "# Integration method    : " << Options.GetOptMethod() << endl;
+    vout << "# FD order              : " << Options.GetOptOrder() << endl;
     vout << "# Integration offset    : " << Options.GetOptOffset() << endl;
     vout << "# Periodicity           : " << bool_to_str(Options.GetOptPeriodicity()) << endl;
     vout << "# Integrate errors      : " << bool_to_str(Options.GetOptErrors()) << endl;
@@ -140,21 +142,45 @@ bool CABFIntegrate::Run(void)
 // integrate data ------------------------------
     vout << endl;
     vout << "3) ABF accumulator integration"<< endl;
-    CABFIntegratorFD   integrator;
+
     CEnergySurface     fes;
 
-    integrator.SetVerbosity(Options.GetOptVerbose());
-    integrator.SetPeriodicity(Options.GetOptPeriodicity());
-    integrator.SetFDOrder(Options.GetOptFDOrder());
+    if(Options.GetOptMethod() == "rfd" ) {
+        CABFIntegratorRFD   integrator;
 
-    integrator.SetInputABFAccumulator(&Accumulator);
-    integrator.SetOutputFESurface(&fes);
+        integrator.SetVerbosity(Options.GetOptVerbose());
+        integrator.SetPeriodicity(Options.GetOptPeriodicity());
+        integrator.SetFDOrder(Options.GetOptOrder());
 
-    if(integrator.Integrate() == false) {
-        ES_ERROR("unable to prepare ABF accumulator");
-        return(false);
+        integrator.SetInputABFAccumulator(&Accumulator);
+        integrator.SetOutputFESurface(&fes);
+
+        if(integrator.Integrate() == false) {
+            ES_ERROR("unable to prepare ABF accumulator");
+            return(false);
+        }
+    } else if( Options.GetOptMethod() == "rbf" ){
+        CABFIntegratorRBF   integrator;
+
+        integrator.SetVerbosity(Options.GetOptVerbose());
+        integrator.SetPeriodicity(Options.GetOptPeriodicity());
+        integrator.SetGaussianWidth(Options.GetOptOrder());
+
+        integrator.SetInputABFAccumulator(&Accumulator);
+        integrator.SetOutputFESurface(&fes);
+
+        if(integrator.Integrate(vout) == false) {
+            ES_ERROR("unable to prepare ABF accumulator");
+            return(false);
+        }
+    } else {
+        INVALID_ARGUMENT("method - not implemented");
     }
+
     vout << "   Done" << endl;
+
+// apply offset
+    fes.ApplyOffset(Options.GetOptOffset() - fes.GetGlobalMinimumValue());
 
 // print result ---------------------------------
     vout << endl;
@@ -165,12 +191,12 @@ bool CABFIntegrate::Run(void)
     printer.SetYFormat(Options.GetOptOEFormat());
     if(Options.GetOptOutputFormat() == "plain") {
         printer.SetOutputFormat(EESPF_PLAIN);
-    }
-    if(Options.GetOptOutputFormat() == "gnuplot") {
+    } else if(Options.GetOptOutputFormat() == "gnuplot") {
         printer.SetOutputFormat(EESPF_GNUPLOT);
-    }
-    if(Options.GetOptOutputFormat() == "fes") {
+    } else if(Options.GetOptOutputFormat() == "fes") {
         printer.SetOutputFormat(EESPF_PMF_FES);
+    } else {
+        INVALID_ARGUMENT("output format - not implemented");
     }
 
     if(Options.GetOptPrintWithLimit()) {
@@ -202,13 +228,20 @@ void CABFIntegrate::PrepareAccumulator(void)
 {
 // print header
     if((Options.GetOptNoHeader() == false) && (Options.GetOptOutputFormat() != "fes")) {
-        fprintf(OutputFile,"# data integrated by reverse finite difference method\n");
+        fprintf(OutputFile,"# data integrated by    : ");
+        if(Options.GetOptMethod() == "rfd" ) {
+            fprintf(OutputFile," RFD (reverse finite difference)\n");
+        } else if( Options.GetOptMethod() == "rbf" ){
+            fprintf(OutputFile," RBF (radial basis functions)\n");
+        } else {
+            INVALID_ARGUMENT("method - not implemented");
+        }
         fprintf(OutputFile,"# Number of coordinates : %d\n",Accumulator.GetNumberOfCoords());
         fprintf(OutputFile,"# Total number of bins  : %d\n",Accumulator.GetNumberOfBins());
         fprintf(OutputFile,"# Sample limit          : %d\n",Options.GetOptLimit());
         fprintf(OutputFile,"# Periodicity           : %s\n",(const char*)bool_to_str(Options.GetOptPeriodicity()));
         fprintf(OutputFile,"# Integrate errors      : %s\n",(const char*)bool_to_str(Options.GetOptErrors()));
-        fprintf(OutputFile,"# FD order              : %d\n",Options.GetOptFDOrder());
+        fprintf(OutputFile,"# RFD/RBF order         : %d\n",Options.GetOptOrder());
     }
 
     for(int icoord=0; icoord < Accumulator.GetNumberOfCoords(); icoord++) {

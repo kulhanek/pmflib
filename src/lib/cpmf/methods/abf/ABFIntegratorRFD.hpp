@@ -1,5 +1,5 @@
-#ifndef ABFIntegratorFDH
-#define ABFIntegratorFDH
+#ifndef ABFIntegratorRFDH
+#define ABFIntegratorRFDH
 // =============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
@@ -40,11 +40,11 @@ class CEnergySurface;
     only ABF data part is integrated
 */
 
-class PMF_PACKAGE CABFIntegratorFD {
+class PMF_PACKAGE CABFIntegratorRFD {
 public:
 // constructor and destructor -------------------------------------------------
-    CABFIntegratorFD(void);
-    virtual ~CABFIntegratorFD(void);
+    CABFIntegratorRFD(void);
+    virtual ~CABFIntegratorRFD(void);
 
 // setup methods --------------------------------------------------------------
     /// set input ABF accumulator, only ABF forces are integrated
@@ -74,6 +74,7 @@ private:
     bool                    Verbose;
     int                     FDLevel;
     bool                    Periodicity;
+    bool                    ReconstructAll;
 
     int                     NumOfVariables;
     int                     NumOfEquations;

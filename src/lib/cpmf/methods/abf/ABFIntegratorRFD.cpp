@@ -19,7 +19,7 @@
 //     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 // =============================================================================
 
-#include <ABFIntegratorFD.hpp>
+#include <ABFIntegratorRFD.hpp>
 #include <ABFAccumulator.hpp>
 #include <EnergySurface.hpp>
 #include <ErrorSystem.hpp>
@@ -28,7 +28,7 @@
 //------------------------------------------------------------------------------
 //==============================================================================
 
-CABFIntegratorFD::CABFIntegratorFD(void)
+CABFIntegratorRFD::CABFIntegratorRFD(void)
 {
     Accumulator = NULL;
     FES = NULL;
@@ -43,11 +43,13 @@ CABFIntegratorFD::CABFIntegratorFD(void)
     Verbose = true;
     Periodicity = false;
     FDLevel = 4;
+
+    ReconstructAll = true;
 }
 
 //------------------------------------------------------------------------------
 
-CABFIntegratorFD::~CABFIntegratorFD(void)
+CABFIntegratorRFD::~CABFIntegratorRFD(void)
 {
     ReleaseAllResources();
 }
@@ -56,35 +58,35 @@ CABFIntegratorFD::~CABFIntegratorFD(void)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void CABFIntegratorFD::SetInputABFAccumulator(const CABFAccumulator* p_accu)
+void CABFIntegratorRFD::SetInputABFAccumulator(const CABFAccumulator* p_accu)
 {
     Accumulator = p_accu;
 }
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorFD::SetOutputFESurface(CEnergySurface* p_surf)
+void CABFIntegratorRFD::SetOutputFESurface(CEnergySurface* p_surf)
 {
     FES = p_surf;
 }
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorFD::SetVerbosity(bool set)
+void CABFIntegratorRFD::SetVerbosity(bool set)
 {
     Verbose = set;
 }
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorFD::SetFDOrder(int order)
+void CABFIntegratorRFD::SetFDOrder(int order)
 {
     FDLevel = order;
 }
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorFD::SetPeriodicity(bool set)
+void CABFIntegratorRFD::SetPeriodicity(bool set)
 {
     Periodicity = set;
 }
@@ -93,7 +95,7 @@ void CABFIntegratorFD::SetPeriodicity(bool set)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-bool CABFIntegratorFD::Integrate(void)
+bool CABFIntegratorRFD::Integrate(void)
 {
     if( Accumulator == NULL ) {
         ES_ERROR("ABF accumulator is not set");
@@ -143,7 +145,7 @@ bool CABFIntegratorFD::Integrate(void)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-bool CABFIntegratorFD::BuildSystemOfEquations(void)
+bool CABFIntegratorRFD::BuildSystemOfEquations(void)
 {
 // initializations
     IPoint.CreateVector(Accumulator->GetNumberOfCoords());
@@ -198,7 +200,7 @@ bool CABFIntegratorFD::BuildSystemOfEquations(void)
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorFD::BuildEquations(int icoord,bool trial)
+void CABFIntegratorRFD::BuildEquations(int icoord,bool trial)
 {
     if(icoord < Accumulator->GetNumberOfCoords()) {  // end of recursion ?
         const CColVariable* p_coord = Accumulator->GetCoordinate(icoord);
@@ -324,7 +326,7 @@ void CABFIntegratorFD::BuildEquations(int icoord,bool trial)
 
 //------------------------------------------------------------------------------
 
-int CABFIntegratorFD::GetFBinIndex(const CSimpleVector<int>& position,int ifcoord,int offset) const
+int CABFIntegratorRFD::GetFBinIndex(const CSimpleVector<int>& position,int ifcoord,int offset) const
 {
     int glbindex = 0;
     for(int i=0; i < Accumulator->GetNumberOfCoords(); i++) {
@@ -344,7 +346,9 @@ int CABFIntegratorFD::GetFBinIndex(const CSimpleVector<int>& position,int ifcoor
     }
 
 // check if we have sufficient number of samples
-    if(Accumulator->GetNumberOfABFSamples(glbindex) <= 0) return(-1);
+    if( ! ReconstructAll ){
+        if(Accumulator->GetNumberOfABFSamples(glbindex) <= 0) return(-1);
+    }
 
     return(glbindex);
 }
@@ -353,7 +357,7 @@ int CABFIntegratorFD::GetFBinIndex(const CSimpleVector<int>& position,int ifcoor
 //------------------------------------------------------------------------------
 //==============================================================================
 
-bool CABFIntegratorFD::SolveSystemOfEquations(void)
+bool CABFIntegratorRFD::SolveSystemOfEquations(void)
 {
     cs* cA;    // compressed A
     cs* At;    // transposed A
@@ -423,7 +427,7 @@ bool CABFIntegratorFD::SolveSystemOfEquations(void)
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorFD::ReleaseAllResources(void)
+void CABFIntegratorRFD::ReleaseAllResources(void)
 {
     XMap.FreeVector();
     IPoint.FreeVector();

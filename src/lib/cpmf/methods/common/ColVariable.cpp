@@ -214,6 +214,14 @@ const CSmallString& CColVariable::GetName(void) const
 
 //------------------------------------------------------------------------------
 
+double CColVariable::GetDifference(double left,double right) const
+{
+    // FIXME
+    return(left-right);
+}
+
+//------------------------------------------------------------------------------
+
 bool CColVariable::IsPeriodic(void) const
 {
     if(strstr(Type,"DIH") == NULL) return(false);

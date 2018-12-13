@@ -22,6 +22,7 @@ INCLUDE_DIRECTORIES(lib/fpmfdyn SYSTEM)
 
 # ------------------------------------------------
 SET(CPMF_LIBRARIES_DEPS
+        ${NLOPT_LIB_NAME}
         ${NETLIB_LIB_NAME}
         ${PRMFILE_CLIB_NAME}
         ${CSPARSE_LIB_NAME}

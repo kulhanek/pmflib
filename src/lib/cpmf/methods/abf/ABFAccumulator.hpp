@@ -89,6 +89,9 @@ public:
     /// return global index
     int GetGlobalIndex(const CSimpleVector<int>& position) const;
 
+    /// convert point index to point position
+    void GetPoint(unsigned int index,CSimpleVector<double>& point) const;
+
 //---------------------------------------------------------------------------------
 
     /// return number of samples for a given bin position
@@ -186,9 +189,6 @@ private:
     int map_g(int group,int item,int bin) const;
 
     void Load_v3(FILE* fin);
-
-    /// convert point index to point position
-    void GetPoint(unsigned int index,CSimpleVector<double>& point);
 };
 
 //------------------------------------------------------------------------------

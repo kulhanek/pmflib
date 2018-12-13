@@ -22,7 +22,7 @@
 #include <errno.h>
 #include <ErrorSystem.hpp>
 #include <SmallTimeAndDate.hpp>
-#include <ABFIntegratorFD.hpp>
+#include <ABFIntegratorRFD.hpp>
 #include <EnergySurface.hpp>
 #include <ESPrinter.hpp>
 #include "ABFMask.hpp"
@@ -136,7 +136,7 @@ bool CABFMask::Run(void)
 // integrate data ------------------------------
     vout << endl;
     vout << "3) ABF accumulator integration"<< endl;
-    CABFIntegratorFD   integrator;
+    CABFIntegratorRFD   integrator;
     CEnergySurface     fes;
 
     integrator.SetVerbosity(Options.GetOptVerbose());

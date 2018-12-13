@@ -45,9 +45,35 @@ int CABFIntOptions::CheckOptions(void)
         IsError = true;
     }
 
-    if((GetOptFDOrder() != 3) && (GetOptFDOrder() != 4)) {
+    if((GetOptMethod() != "rfd") &&
+            (GetOptMethod() != "rbf") ) {
         if(IsError == false) fprintf(stderr,"\n");
-        fprintf(stderr,"%s: FD order has to be either three or four, but %d is specified\n", (const char*)GetProgramName(),GetOptFDOrder());
+        fprintf(stderr,"%s: method must be either rfd or rbf, but %s is specified\n",
+                (const char*)GetProgramName(),(const char*)GetOptOutputFormat());
+        IsError = true;
+    }
+
+    if( GetOptMethod() == "rfd" ){
+        if((GetOptOrder() != 3) && (GetOptOrder() != 4)) {
+            if(IsError == false) fprintf(stderr,"\n");
+            fprintf(stderr,"%s: RFD order has to be either three or four, but %d is specified\n", (const char*)GetProgramName(),GetOptOrder());
+            IsError = true;
+        }
+    }
+    if( GetOptMethod() == "rbf" ){
+        if( GetOptOrder() < 1 ) {
+            if(IsError == false) fprintf(stderr,"\n");
+            fprintf(stderr,"%s: RBF order must be greater than 1, but %d is specified\n", (const char*)GetProgramName(),GetOptOrder());
+            IsError = true;
+        }
+    }
+
+    if((GetOptOutputFormat() != "plain") &&
+            (GetOptOutputFormat() != "gnuplot") &&
+            (GetOptOutputFormat() != "fes")) {
+        if(IsError == false) fprintf(stderr,"\n");
+        fprintf(stderr,"%s: output FES format has to be either plain, gnuplot, or fes, but %s is specified\n",
+                (const char*)GetProgramName(),(const char*)GetOptOutputFormat());
         IsError = true;
     }
 

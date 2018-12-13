@@ -443,10 +443,10 @@ void CABFAccumulator::SaveMaskGnuPlot(FILE* fout)
 
 //------------------------------------------------------------------------------
 
-void CABFAccumulator::GetPoint(unsigned int index,CSimpleVector<double>& point)
+void CABFAccumulator::GetPoint(unsigned int index,CSimpleVector<double>& point) const
 {
     for(int k=NCoords-1; k >= 0; k--) {
-        CColVariable* p_coord = &Sizes[k];
+        const CColVariable* p_coord = &Sizes[k];
         int ibin = index % p_coord->GetNumberOfBins();
         point[k] = p_coord->GetValue(ibin);
         index = index / p_coord->GetNumberOfBins();

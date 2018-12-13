@@ -37,7 +37,8 @@ public:
     CSO_PROG_NAME_END
 
     CSO_PROG_DESC_BEGIN
-    "It numericaly integrates data from the ABF calculation. The integration is performed by reverse finite difference method with order either 3 or 4."
+    "It numericaly integrates data from the ABF calculation. The integration is performed either by "
+    "reverse finite difference (RFD) method or employing radial basis functions (RBF)."
     CSO_PROG_DESC_END
 
     CSO_PROG_VERS_BEGIN
@@ -51,7 +52,8 @@ public:
     CSO_ARG(CSmallString,FEOutputName)
     // options ------------------------------
     CSO_OPT(int,Limit)
-    CSO_OPT(int,FDOrder)
+    CSO_OPT(CSmallString,Method)
+    CSO_OPT(int,Order)
     CSO_OPT(double,Offset)
     CSO_OPT(bool,Periodicity)
     CSO_OPT(bool,Errors)
@@ -90,14 +92,23 @@ public:
                 "NUMBER",                           /* parametr name */
                 "Only bins containing more samples than NUMBER are considered as properly sampled.")   /* option description */
     //----------------------------------------------------------------------
+    CSO_MAP_OPT(CSmallString,                           /* option type */
+                Method,                        /* option name */
+                "rfd",                          /* default value */
+                false,                          /* is option mandatory */
+                'm',                           /* short option name */
+                "method",                      /* long option name */
+                "NAME",                           /* parametr name */
+                "Integration method. Supported methods are: rfd (reverse finite difference) and rbf (radial basis functions).")   /* option description */
+    //----------------------------------------------------------------------
     CSO_MAP_OPT(int,                           /* option type */
-                FDOrder,                        /* option name */
+                Order,                        /* option name */
                 3,                          /* default value */
                 false,                          /* is option mandatory */
                 0,                           /* short option name */
-                "fdorder",                      /* long option name */
+                "order",                      /* long option name */
                 "ORDER",                           /* parametr name */
-                "Determines differenciation scheme. Currently implemented schemes use either three or four points.")   /* option description */
+                "Determines differenciation scheme (three or four is upported) or width of gaussian basis functions as a multiple of bin sizes")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(double,                           /* option type */
                 Offset,                        /* option name */
@@ -124,7 +135,7 @@ public:
                 'e',                           /* short option name */
                 "errors",                      /* long option name */
                 NULL,                           /* parametr name */
-                "Integrate errors of derivatives.")   /* option description */
+                "Integrate errors of derivatives (only for RFD).")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(CSmallString,                           /* option type */
                 OutputFormat,                        /* option name */
@@ -133,7 +144,7 @@ public:
                 0,                           /* short option name */
                 "output",                      /* long option name */
                 "FORMAT",                           /* parametr name */
-                "Output FORMAT, which will be used to print free energy surface. Supported formats are: plain, gnuplot, fes.")   /* option description */
+                "Output FORMAT to print the free energy surface. Supported formats are: plain, gnuplot, fes.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(bool,                           /* option type */
                 PrintWithLimit,                        /* option name */

@@ -100,7 +100,7 @@ public:
 
 // section of private data ----------------------------------------------------
 private:
-    unsigned int                NumOfItems;     // number of cvs
+    unsigned int                NumOfCVs;       // number of cvs
     unsigned int                TotNPoints;     // total energy size
     CSimpleVector<CColVariable> Sizes;          // dimensions
     CSimpleVector<double>       Energy;         // energy array

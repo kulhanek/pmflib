@@ -123,6 +123,12 @@ INCLUDE_DIRECTORIES(${CSPARSE_ROOT}/src/lib/csparse SYSTEM)
 LINK_DIRECTORIES(${CSPARSE_ROOT}/lib)
 SET(CSPARSE_LIB_NAME csparse)
 
+# nlopt =====================
+SET(NLOPT_ROOT ${DEVELOPMENT_ROOT}/thirdparty/nlopt/2.4.2)
+INCLUDE_DIRECTORIES(${NLOPT_ROOT}/include)
+LINK_DIRECTORIES(${NLOPT_ROOT}/lib)
+SET(NLOPT_LIB_NAME nlopt)
+
 IF(PMFLIB_HAVE_XBPLIB)
     # XBPLib ===================
     SET(XBPLIB_ROOT ${DEVELOPMENT_ROOT}/projects/xbplib/4.0)
@@ -194,8 +200,8 @@ IF(NOT DEFINED COMPOSITE_PROJECT)
         SET(CMAKE_Fortran_FLAGS_DEBUG   "-g -O0 -stand f03 -traceback -check all -warn all")
     ENDIF(FCOMP_NAME STREQUAL ifort)
 
-    #SET(CMAKE_BUILD_TYPE Release)
-    SET(CMAKE_BUILD_TYPE Debug)
+    SET(CMAKE_BUILD_TYPE Release)
+    #SET(CMAKE_BUILD_TYPE Debug)
 ENDIF(NOT DEFINED COMPOSITE_PROJECT)
 
 # ==============================================================================

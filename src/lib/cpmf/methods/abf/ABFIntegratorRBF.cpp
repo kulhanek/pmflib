@@ -1,8 +1,7 @@
 // =============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
-//    Copyright (C) 2008 Petr Kulhanek, kulhanek@enzim.hu
-//                       Martin Petrek, petrek@chemi.muni.cz
+//    Copyright (C) 2018 Petr Kulhanek, kulhanek@chemi.muni.cz
 //
 //     This program is free software; you can redistribute it and/or modify
 //     it under the terms of the GNU General Public License as published by
@@ -19,72 +18,74 @@
 //     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 // =============================================================================
 
-#include <ABFIntegratorFD.hpp>
+#include <ABFIntegratorRBF.hpp>
 #include <ABFAccumulator.hpp>
 #include <EnergySurface.hpp>
 #include <ErrorSystem.hpp>
+#include <FortranMatrix.hpp>
+#include <Vector.hpp>
+#include <algorithm>
+#include <Lapack.hpp>
+
+using namespace std;
 
 //==============================================================================
 //------------------------------------------------------------------------------
 //==============================================================================
 
-CABFIntegratorFD::CABFIntegratorFD(void)
+CABFIntegratorRBF::CABFIntegratorRBF(void)
 {
     Accumulator = NULL;
     FES = NULL;
 
-    NumOfVariables = 0;
-    NumOfEquations = 0;
-    NumOfNonZeros = 0;
-
-    A = NULL;
-    LocIter = 0;
-
     Verbose = true;
     Periodicity = false;
-    FDLevel = 4;
+    WidthOrder = 4;
+    Limit = 500;
+    Method = EARBF_SVD;
+
+    RCond = -1; // machine precision
 }
 
 //------------------------------------------------------------------------------
 
-CABFIntegratorFD::~CABFIntegratorFD(void)
+CABFIntegratorRBF::~CABFIntegratorRBF(void)
 {
-    ReleaseAllResources();
 }
 
 //==============================================================================
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void CABFIntegratorFD::SetInputABFAccumulator(const CABFAccumulator* p_accu)
+void CABFIntegratorRBF::SetInputABFAccumulator(const CABFAccumulator* p_accu)
 {
     Accumulator = p_accu;
 }
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorFD::SetOutputFESurface(CEnergySurface* p_surf)
+void CABFIntegratorRBF::SetOutputFESurface(CEnergySurface* p_surf)
 {
     FES = p_surf;
 }
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorFD::SetVerbosity(bool set)
+void CABFIntegratorRBF::SetVerbosity(bool set)
 {
     Verbose = set;
 }
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorFD::SetFDOrder(int order)
+void CABFIntegratorRBF::SetGaussianWidth(int order)
 {
-    FDLevel = order;
+    WidthOrder = order;
 }
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorFD::SetPeriodicity(bool set)
+void CABFIntegratorRBF::SetPeriodicity(bool set)
 {
     Periodicity = set;
 }
@@ -93,7 +94,7 @@ void CABFIntegratorFD::SetPeriodicity(bool set)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-bool CABFIntegratorFD::Integrate(void)
+bool CABFIntegratorRBF::Integrate(CVerboseStr& vout)
 {
     if( Accumulator == NULL ) {
         ES_ERROR("ABF accumulator is not set");
@@ -109,31 +110,57 @@ bool CABFIntegratorFD::Integrate(void)
         return(false);
     }
 
-    if( BuildSystemOfEquations() == false ) {
-        ReleaseAllResources();
-        return(false);
+    // RBF setup
+    NumOfCVs = Accumulator->GetNumberOfCoords();
+    NumOfRBFBins.CreateVector(NumOfCVs);
+
+    double sfac = 5;
+
+    NumOfRBFs = 1;
+    for(int i=0; i < NumOfCVs; i++ ){
+        NumOfRBFBins[i] = Accumulator->GetCoordinate(i)->GetNumberOfBins()/sfac;
+        NumOfRBFs *= Accumulator->GetCoordinate(i)->GetNumberOfBins()/sfac;
     }
-    if( SolveSystemOfEquations() == false ) {
-        ReleaseAllResources();
+    Weights.CreateVector(NumOfRBFs);
+    Weights.SetZero();
+
+    Sigmas.CreateVector(NumOfCVs);
+    for(int i=0; i < NumOfCVs; i++){
+        Sigmas[i] = Accumulator->GetCoordinate(i)->GetRange()*WidthOrder/NumOfRBFBins[i];
+        // cout << Sigmas[i] << endl;
+    }
+
+    // integrate
+    if( IntegrateByLS(vout) == false ){
+        ES_ERROR("unable to solve least square problem by svd");
         return(false);
     }
 
-// set-up FES
+    vout << "   Calculating FES ..." << endl;
+
+    // set-up FES
     FES->Allocate(Accumulator);
 
-// find global minimum
-    double glb_min = X[0];
-    for(int i=0; i < X.GetLength(); i++) {
-        if(glb_min > X[i]) glb_min = X[i];
+    // load data to FES
+    CSimpleVector<double>   position;
+    position.CreateVector(NumOfCVs);
+
+    for(unsigned int i=0; i < FES->GetNumberOfPoints(); i++) {
+        FES->GetPoint(i,position);
+        double value = GetEnergy(position);
+        FES->SetEnergy(i,value);
+        FES->SetNumOfSamples(i,Accumulator->GetNumberOfABFSamples(i));
     }
 
-// load data to FES
-    for(unsigned int ipoint=0; ipoint < FES->GetNumberOfPoints(); ipoint++) {
-        int x_index = XMap[ipoint];
-        if(x_index >= 0) {
-            FES->SetEnergy(ipoint,X[x_index]-glb_min);
-            FES->SetNumOfSamples(ipoint,Accumulator->GetNumberOfABFSamples(ipoint));
-        }
+    // find global minimum
+    double glb_min = FES->GetEnergy(0);
+    for(unsigned int i=0; i < FES->GetNumberOfPoints(); i++) {
+        if(glb_min > FES->GetEnergy(i)) glb_min = FES->GetEnergy(i);
+    }
+
+    // move global minimum to zero
+    for(unsigned int i=0; i < FES->GetNumberOfPoints(); i++) {
+        FES->SetEnergy(i,FES->GetEnergy(i) - glb_min);
     }
 
     return(true);
@@ -143,294 +170,131 @@ bool CABFIntegratorFD::Integrate(void)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-bool CABFIntegratorFD::BuildSystemOfEquations(void)
+bool CABFIntegratorRBF::IntegrateByLS(CVerboseStr& vout)
 {
-// initializations
-    IPoint.CreateVector(Accumulator->GetNumberOfCoords());
-    XMap.CreateVector(Accumulator->GetNumberOfBins());
+    vout << "   Creating A and rhs ..." << endl;
 
-    XMap.Set(-1);
+    // number of equations
+    int neq = Accumulator->GetNumberOfBins()*NumOfCVs;
 
-    NumOfVariables = 0;
-    NumOfEquations = 0;
-    NumOfNonZeros = 0;
+    CSimpleVector<double>   spos;           // best sampled bin
+    spos.CreateVector(NumOfCVs);
 
-    LocIter = 0;
-    BuildEquations(0,true);
+    CSimpleVector<double>   ipos;           // best sampled bin
+    ipos.CreateVector(NumOfCVs);
 
-    if(Verbose == true) {
-        printf("# Number of variables           : %d\n",NumOfVariables);
-        printf("# Number of equations           : %d\n",NumOfEquations);
-        printf("# Number of non-zero A elements : %d\n",NumOfNonZeros);
-    }
+    CSimpleVector<double>   lpos;           // best sampled bin
+    lpos.CreateVector(NumOfCVs);
 
-    if(NumOfVariables <= 0) {
-        CSmallString error;
-        error << "number of function nodes is zero - system cannot be integrated";
-        ES_ERROR(error);
-        return(false);
-    }
+    vout << "   Dim: " << neq << " x " << NumOfRBFs << endl;
 
-    if(NumOfEquations < NumOfVariables) {
-        CSmallString error;
-        error << "incomplete system - number of equations (" << CSmallString(NumOfEquations) << ") is smaller than number of variables (" << CSmallString(NumOfVariables) <<  ")";
-        ES_ERROR(error);
-        return(false);
-    }
+    CFortranMatrix A;
+    A.CreateMatrix(neq,NumOfRBFs);
 
-// allocate A and rhs
-    A = cs_spalloc(NumOfEquations,NumOfVariables,NumOfNonZeros,1,1);
-    if(A == NULL) {
-        CSmallString error;
-        error << "unable to allocate A matrix (M: " << CSmallString(NumOfEquations) << ", N: " << CSmallString(NumOfVariables) << ", NZ: " << CSmallString(NumOfNonZeros) << ")";
-        ES_ERROR(error);
-        return(false);
-    }
+    CVector rhs;
+    int nrhs = std::max(neq,NumOfRBFs);
+    rhs.CreateVector(nrhs);
 
-    Rhs.CreateVector(NumOfEquations);
+    // calculate A and rhs
+    int j=0;
+    for(int i=0; i < Accumulator->GetNumberOfBins(); i++){
 
-// build system of equations
-    LocIter = 0;
-    BuildEquations(0,false);
-
-    return(true);
-}
-
-//------------------------------------------------------------------------------
-
-void CABFIntegratorFD::BuildEquations(int icoord,bool trial)
-{
-    if(icoord < Accumulator->GetNumberOfCoords()) {  // end of recursion ?
-        const CColVariable* p_coord = Accumulator->GetCoordinate(icoord);
-        for(unsigned int ibin=0; ibin < p_coord->GetNumberOfBins(); ibin++) {
-            IPoint[icoord] = ibin;
-            BuildEquations(icoord+1,trial);
-        }
-        return;
-    }
-
-// end of recursion - set equations
-    for(int ifcoord=0; ifcoord < Accumulator->GetNumberOfCoords(); ifcoord++) {
-        int ifbin1,ifbin2,ifbin3,ifbin4;
-
-        ifbin1 = GetFBinIndex(IPoint,ifcoord,0);
-        ifbin2 = GetFBinIndex(IPoint,ifcoord,1);
-        ifbin3 = GetFBinIndex(IPoint,ifcoord,2);
-        ifbin4 = GetFBinIndex(IPoint,ifcoord,3);
-
-        const CColVariable* p_coord = Accumulator->GetCoordinate(ifcoord);
-        double              diff = p_coord->GetBinWidth();
-
-        switch(FDLevel) {
-            case 3:
-                if((ifbin1 == -1) || (ifbin2 == -1) || (ifbin3 == -1)) break;
-
-                // map nodes to XMap -------------
-                if(XMap[ifbin1] < 0) {
-                    XMap[ifbin1] = NumOfVariables;
-                    NumOfVariables++;
-                }
-
-                if(XMap[ifbin2] < 0) {
-                    XMap[ifbin2] = NumOfVariables;
-                    NumOfVariables++;
-                }
-
-                if(XMap[ifbin3] < 0) {
-                    XMap[ifbin3] = NumOfVariables;
-                    NumOfVariables++;
-                }
-
-                // set A elements ----------------
-                if(trial == false) {
-                    cs_entry(A,LocIter,XMap[ifbin1],-3.0);
-                    cs_entry(A,LocIter,XMap[ifbin2],+4.0);
-                    cs_entry(A,LocIter,XMap[ifbin3],-1.0);
-                    Rhs[LocIter] = Accumulator->GetABFForceSum(ifcoord,ifbin1) * diff * 2.0;
-                    LocIter++;
-                    cs_entry(A,LocIter,XMap[ifbin1],-1.0);
-                    cs_entry(A,LocIter,XMap[ifbin3],+1.0);
-                    Rhs[LocIter] = Accumulator->GetABFForceSum(ifcoord,ifbin2) * diff * 2.0;
-                    LocIter++;
-                    cs_entry(A,LocIter,XMap[ifbin1],+1.0);
-                    cs_entry(A,LocIter,XMap[ifbin2],-4.0);
-                    cs_entry(A,LocIter,XMap[ifbin3],+3.0);
-                    Rhs[LocIter] = Accumulator->GetABFForceSum(ifcoord,ifbin3) * diff * 2.0;
-                    LocIter++;
-                } else {
-                    NumOfEquations += 3;
-                    NumOfNonZeros += 8;
-                }
-                break;
-            case 4:
-                if((ifbin1 == -1) || (ifbin2 == -1) || (ifbin3 == -1) || (ifbin4 == -1)) break;
-
-                if(XMap[ifbin1] < 0) {
-                    XMap[ifbin1] = NumOfVariables;
-                    NumOfVariables++;
-                }
-
-                if(XMap[ifbin2] < 0) {
-                    XMap[ifbin2] = NumOfVariables;
-                    NumOfVariables++;
-                }
-
-                if(XMap[ifbin3] < 0) {
-                    XMap[ifbin3] = NumOfVariables;
-                    NumOfVariables++;
-                }
-
-                if(XMap[ifbin4] < 0) {
-                    XMap[ifbin4] = NumOfVariables;
-                    NumOfVariables++;
-                }
-
-                if(trial == false) {
-                    cs_entry(A,LocIter,XMap[ifbin1],-11.0);
-                    cs_entry(A,LocIter,XMap[ifbin2],+18.0);
-                    cs_entry(A,LocIter,XMap[ifbin3],-9.0);
-                    cs_entry(A,LocIter,XMap[ifbin4],+2.0);
-                    Rhs[LocIter] = Accumulator->GetABFForceSum(ifcoord,ifbin1) * diff * 6.0;
-                    LocIter++;
-                    cs_entry(A,LocIter,XMap[ifbin1],-2.0);
-                    cs_entry(A,LocIter,XMap[ifbin2],-3.0);
-                    cs_entry(A,LocIter,XMap[ifbin3],+6.0);
-                    cs_entry(A,LocIter,XMap[ifbin4],-1.0);
-                    Rhs[LocIter] = Accumulator->GetABFForceSum(ifcoord,ifbin2) * diff * 6.0;
-                    LocIter++;
-                    cs_entry(A,LocIter,XMap[ifbin1],+1.0);
-                    cs_entry(A,LocIter,XMap[ifbin2],-6.0);
-                    cs_entry(A,LocIter,XMap[ifbin3],+3.0);
-                    cs_entry(A,LocIter,XMap[ifbin4],+2.0);
-                    Rhs[LocIter] = Accumulator->GetABFForceSum(ifcoord,ifbin3) * diff * 6.0;
-                    LocIter++;
-                    cs_entry(A,LocIter,XMap[ifbin1],-2.0);
-                    cs_entry(A,LocIter,XMap[ifbin2],+9.0);
-                    cs_entry(A,LocIter,XMap[ifbin3],-18.0);
-                    cs_entry(A,LocIter,XMap[ifbin4],+11.0);
-                    Rhs[LocIter] = Accumulator->GetABFForceSum(ifcoord,ifbin4) * diff * 6.0;
-                    LocIter++;
-                } else {
-                    NumOfEquations += 4;
-                    NumOfNonZeros += 16;
-                }
-                break;
-            default:
-                break;
-        }
-    }
-    return;
-}
-
-//------------------------------------------------------------------------------
-
-int CABFIntegratorFD::GetFBinIndex(const CSimpleVector<int>& position,int ifcoord,int offset) const
-{
-    int glbindex = 0;
-    for(int i=0; i < Accumulator->GetNumberOfCoords(); i++) {
-        const CColVariable* p_coord = Accumulator->GetCoordinate(i);
-        int nbins = p_coord->GetNumberOfBins();
-        int pos = position[i];
-        if(i == ifcoord) {
-            pos += offset;
-            if(Periodicity == true) {
-                if((p_coord->IsPeriodic() == true) && (pos < 0)) pos = nbins + pos;
-                if((p_coord->IsPeriodic() == true) && (pos >= nbins)) pos = pos - nbins;
+        Accumulator->GetPoint(i,ipos);
+        // A
+        for(int l=0; l < NumOfRBFs; l++){
+            GetRBFPosition(l,lpos);
+                  //      cout << lpos[0] << " " << lpos[1] << endl;
+            double av = 1.0;
+            for(int k=0; k < NumOfCVs; k++){
+                double dvc = Accumulator->GetCoordinate(k)->GetDifference(ipos[k],lpos[k]);
+                double sig = Sigmas[k];
+                av *= exp( - dvc*dvc/(2.0*sig*sig) );
             }
-            if(pos < 0) return(-1);
-            if(pos >= nbins) return(-1);
+            for(int k=0; k < NumOfCVs; k++){
+                double dvc = Accumulator->GetCoordinate(k)->GetDifference(ipos[k],lpos[k]);
+                double sig = Sigmas[k];
+                double fc = -dvc/(sig*sig);  // switch to derivatives
+                A[j+k][l] = av * fc;
+            }
         }
-        glbindex = glbindex*nbins + pos;
+        // rhs
+        for(int k=0; k < NumOfCVs; k++){
+            rhs[j+k] = Accumulator->GetABFForceSum(k,i);
+        }
+        j += NumOfCVs;
     }
 
-// check if we have sufficient number of samples
-    if(Accumulator->GetNumberOfABFSamples(glbindex) <= 0) return(-1);
+    int result = 0;
 
-    return(glbindex);
+    switch(Method){
+        case EARBF_SVD:{
+            vout << "   Solving least square problem by SVD ..." << endl;
+
+            // solve least square problem via GELSD
+            int rank = 0;
+            result = CLapack::gelsd(A,rhs,RCond,rank);
+            vout << "   Rank = " << rank << "; Info = " << result << endl;
+            if( result != 0 ) return(false);
+            }
+        break;
+        case EARBF_QRLQ:{
+            vout << "   Solving least square problem by QRLQ ..." << endl;
+
+            // solve least square problem via GELS
+            result = CLapack::gels(A,rhs);
+            if( result != 0 ) return(false);
+            }
+        break;
+        default:
+            INVALID_ARGUMENT("unsupported method");
+    }
+
+    // copy results to Weights
+    for(int l=0; l < NumOfRBFs; l++){
+        Weights[l] = rhs[l];
+    }
+
+    cout << Weights[0] << endl;
+
+    return( true );
 }
 
 //==============================================================================
 //------------------------------------------------------------------------------
 //==============================================================================
 
-bool CABFIntegratorFD::SolveSystemOfEquations(void)
+void CABFIntegratorRBF::GetRBFPosition(unsigned int index,CSimpleVector<double>& position)
 {
-    cs* cA;    // compressed A
-    cs* At;    // transposed A
-    cs* AtA;   // AtA
+    for(int k=NumOfCVs-1; k >= 0; k--) {
 
-    cA = cs_compress(A);
-    if(cA == NULL) {
-        CSmallString error;
-        error << "unable to compress A matrix";
-        ES_ERROR(error);
-        return(false);
+        const CColVariable* p_coord = Accumulator->GetCoordinate(k);
+        int ibin = index % NumOfRBFBins[k];
+        // bin  = 0,...,NBins-1
+        position[k] = p_coord->GetMinValue() + ((double)ibin + 0.5)*(p_coord->GetMaxValue()-p_coord->GetMinValue())/((double)NumOfRBFBins[k]);
+        index = index / NumOfRBFBins[k];
     }
-
-    cs_spfree(A);
-    A = NULL;
-
-    At = cs_transpose(cA,1);
-    if(At == NULL) {
-        CSmallString error;
-        error << "unable to transpose A matrix";
-        ES_ERROR(error);
-        cs_spfree(cA);
-        return(false);
-    }
-
-    AtA = cs_multiply(At,cA);
-    if(At == NULL) {
-        CSmallString error;
-        error << "unable to create AtA matrix";
-        ES_ERROR(error);
-        cs_spfree(cA);
-        cs_spfree(At);
-        return(false);
-    }
-
-// release cA matrix
-    cs_spfree(cA);
-
-// calculate right hand side vector
-    X.CreateVector(AtA->n);
-
-    X.SetZero();
-    cs_gaxpy(At,Rhs,X);  // AtRhs = At * pRhs->x + AtRhs
-
-// release At matrix and Rhs vector
-    Rhs.FreeVector();
-    cs_spfree(At);
-
-// solve system of linear equations
-    int order = 0;
-    double tol = 0.01;
-
-// solve Ax=b with LU
-    if(cs_lusol(order,AtA,X,tol) == 0) {
-        CSmallString error;
-        error << "unable to solve system of equations";
-        ES_ERROR(error);
-        cs_spfree(AtA);
-        return(false);
-    }
-
-// release AtA matrix
-    cs_spfree(AtA);
-
-    return(true);
 }
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorFD::ReleaseAllResources(void)
+double CABFIntegratorRBF::GetEnergy(const CSimpleVector<double>& position)
 {
-    XMap.FreeVector();
-    IPoint.FreeVector();
-    Rhs.FreeVector();
-    X.FreeVector();
-    if(A != NULL) cs_spfree(A);
-    A = NULL;
+    double                  energy = 0.0;
+    CSimpleVector<double>   rbfpos;
+
+    rbfpos.CreateVector(NumOfCVs);
+
+    for(int i=0; i < NumOfRBFs; i++){
+        GetRBFPosition(i,rbfpos);
+        double value = Weights[i];
+        for(int j=0; j < NumOfCVs; j++){
+            double dvc = Accumulator->GetCoordinate(j)->GetDifference(position[j],rbfpos[j]);
+            double sig = Sigmas[j];
+            value *= exp( - dvc*dvc/(2.0*sig*sig) );
+        }
+        energy = energy + value;
+    }
+    return(energy);
 }
 
 //==============================================================================

@@ -1,10 +1,9 @@
-#ifndef ABFIntegratorFDH
-#define ABFIntegratorFDH
+#ifndef ABFIntegratorRBFH
+#define ABFIntegratorRBFH
 // =============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
-//    Copyright (C) 2008 Petr Kulhanek, kulhanek@enzim.hu
-//                       Martin Petrek, petrek@chemi.muni.cz
+//    Copyright (C) 2018 Petr Kulhanek, kulhanek@chemi.muni.cz
 //
 //     This program is free software; you can redistribute it and/or modify
 //     it under the terms of the GNU General Public License as published by
@@ -23,28 +22,30 @@
 
 #include <PMFMainHeader.hpp>
 #include <SimpleVector.hpp>
-
-extern "C" {
-#include <cs.h>
-}
+#include <VerboseStr.hpp>
 
 //------------------------------------------------------------------------------
 
 class CABFAccumulator;
 class CEnergySurface;
 
+// integration method
+
+enum EARBFMethod {
+    EARBF_SVD = 1,
+    EARBF_QRLQ = 2,
+};
+
 //------------------------------------------------------------------------------
 
-/** \brief integrator of ABF accumulator based on finite differences
-    ABF points with number of samples higher than zero are considered,
-    only ABF data part is integrated
+/** \brief integrator of ABF accumulator employing radial basis functions
 */
 
-class PMF_PACKAGE CABFIntegratorFD {
+class PMF_PACKAGE CABFIntegratorRBF {
 public:
 // constructor and destructor -------------------------------------------------
-    CABFIntegratorFD(void);
-    virtual ~CABFIntegratorFD(void);
+    CABFIntegratorRBF(void);
+    virtual ~CABFIntegratorRBF(void);
 
 // setup methods --------------------------------------------------------------
     /// set input ABF accumulator, only ABF forces are integrated
@@ -56,15 +57,18 @@ public:
     /// set verbosity level
     void SetVerbosity(bool set);
 
-    /// set FD order (3 or 4)
-    void SetFDOrder(int order);
+    /// multiply of bin sizes
+    void SetGaussianWidth(int order);
+
+    /// set limit for number of samples
+    void SetLimit(int limit);
 
     /// should we apply periodicity?
     void SetPeriodicity(bool set);
 
 // execution method -----------------------------------------------------------
     /// integrate data
-    bool Integrate(void);
+    bool Integrate(CVerboseStr& vout);
 
 // section of private data ----------------------------------------------------
 private:
@@ -72,34 +76,25 @@ private:
     CEnergySurface*         FES;
 
     bool                    Verbose;
-    int                     FDLevel;
+    int                     WidthOrder;
     bool                    Periodicity;
+    int                     Limit;
+    EARBFMethod             Method;
 
-    int                     NumOfVariables;
-    int                     NumOfEquations;
-    int                     NumOfNonZeros;
+    // RBF data
+    int                     NumOfRBFs;
+    CSimpleVector<double>   Weights;
+    CSimpleVector<int>      NumOfRBFBins;
+    int                     NumOfCVs;
+    CSimpleVector<double>   Sigmas;
 
-    CSimpleVector<int>      XMap;       // translation between global index and X index
-    CSimpleVector<int>      IPoint;     // index points
-    CSimpleVector<double>   Rhs;        // right hand side
-    CSimpleVector<double>   X;          // unknow free energy
-    cs*                     A;          // main matrix with differentation schemes
-    int                     LocIter;
+    // SVD setup
+    double                  RCond;
 
-    /// release all resources
-    void ReleaseAllResources(void);
+    bool IntegrateByLS(CVerboseStr& vout);
 
-    /// build system of equations describing differentation scheme
-    bool BuildSystemOfEquations(void);
-
-    /// solve redundant system of linear equations
-    bool SolveSystemOfEquations(void);
-
-    /// recursively build system of equations
-    void BuildEquations(int icoord,bool trial);
-
-    /// get global index of point
-    int GetFBinIndex(const CSimpleVector<int>& position,int ifcoord,int offset) const;
+    void    GetRBFPosition(unsigned int index,CSimpleVector<double>& position);
+    double  GetEnergy(const CSimpleVector<double>& position);
 };
 
 //------------------------------------------------------------------------------
