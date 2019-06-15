@@ -63,8 +63,8 @@ public:
     void SetPeriodicity(bool set);
 
 // execution method -----------------------------------------------------------
-    /// integrate data
-    bool Integrate(void);
+    /// integrate data, for errors the FES must be already allocated!!!
+    bool Integrate(bool errors=false);
 
 // section of private data ----------------------------------------------------
 private:

@@ -88,6 +88,7 @@ void CEnergySurface::Allocate(const CMTDHistory* mtd_hist)
     }
 
     Energy.CreateVector(TotNPoints);
+    Error.CreateVector(TotNPoints);
     Samples.CreateVector(TotNPoints);
 
     Clear();
@@ -113,6 +114,7 @@ void CEnergySurface::Allocate(const CABFAccumulator* abf_accu)
     }
 
     Energy.CreateVector(TotNPoints);
+    Error.CreateVector(TotNPoints);
     Samples.CreateVector(TotNPoints);
 
     Clear();
@@ -124,6 +126,7 @@ void CEnergySurface::Deallocate(void)
 {
     Sizes.FreeVector();
     Energy.FreeVector();
+    Error.FreeVector();
     Samples.FreeVector();
     NumOfCVs = 0;
     TotNPoints = 0;
@@ -135,6 +138,7 @@ void CEnergySurface::Clear(void)
 {
     for(unsigned int i=0; i < TotNPoints; i++) {
         Energy[i] = 0.0;
+        Error[i] = 0.0;
         Samples[i] = 0;
     }
 }
@@ -268,6 +272,20 @@ const double& CEnergySurface::GetEnergy(unsigned int index) const
     return(Energy[index]);
 }
 
+//------------------------------------------------------------------------------
+
+void CEnergySurface::SetError(unsigned int index,const double& value)
+{
+    Error[index] = value;
+}
+
+//------------------------------------------------------------------------------
+
+const double& CEnergySurface::GetError(unsigned int index) const
+{
+    return(Error[index]);
+}
+
 //==============================================================================
 //------------------------------------------------------------------------------
 //==============================================================================
@@ -319,6 +337,28 @@ void CEnergySurface::ApplyOffset(double offset)
 {
     for(unsigned int k=0; k < TotNPoints; k++) {
         Energy[k] += offset;
+    }
+}
+
+//------------------------------------------------------------------------------
+
+void CEnergySurface::AdaptErrorsToGlobalMinimum(void)
+{
+    double minimum = 0.0;
+    double err_at_minimum = 0.0;
+
+    if(TotNPoints > 0) minimum = Energy[0];
+
+    for(unsigned int k=0; k < TotNPoints; k++) {
+        if(minimum > Energy[k]){
+            minimum = Energy[k];
+            err_at_minimum = Error[k];
+        }
+    }
+
+    // adapt errors
+    for(unsigned int k=0; k < TotNPoints; k++) {
+        Error[k] = fabs(Error[k] - err_at_minimum);
     }
 }
 

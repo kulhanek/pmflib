@@ -57,6 +57,7 @@ public:
     CSO_OPT(double,Offset)
     CSO_OPT(bool,Periodicity)
     CSO_OPT(bool,Errors)
+    CSO_OPT(bool,WithErrors)
     CSO_OPT(CSmallString,OutputFormat)
     CSO_OPT(bool,PrintWithLimit)
     CSO_OPT(bool,NoHeader)
@@ -136,6 +137,15 @@ public:
                 "errors",                      /* long option name */
                 NULL,                           /* parametr name */
                 "Integrate errors of derivatives (only for RFD).")   /* option description */
+    //----------------------------------------------------------------------
+    CSO_MAP_OPT(bool,                           /* option type */
+                WithErrors,                        /* option name */
+                false,                          /* default value */
+                false,                          /* is option mandatory */
+                'w',                           /* short option name */
+                "witherrors",                      /* long option name */
+                NULL,                           /* parametr name */
+                "Integrate both energy and errors of derivatives (only for RFD).")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(CSmallString,                           /* option type */
                 OutputFormat,                        /* option name */

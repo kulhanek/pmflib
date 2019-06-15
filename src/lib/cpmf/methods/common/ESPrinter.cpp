@@ -37,6 +37,7 @@ CESPrinter::CESPrinter(void)
     YFormat = "%f";
     PrintLimit = 0;
     Format = EESPF_PLAIN;
+    IncludeErrors = false;
 }
 
 //------------------------------------------------------------------------------
@@ -80,6 +81,13 @@ void CESPrinter::SetYFormat(const CSmallString& yform)
 void CESPrinter::SetSampleLimit(int limit)
 {
     PrintLimit = limit;
+}
+
+//------------------------------------------------------------------------------
+
+void CESPrinter::SetIncludeErrors(bool set)
+{
+    IncludeErrors = set;
 }
 
 //==============================================================================
@@ -203,11 +211,10 @@ void CESPrinter::Print_Part(FILE* fout,CSimpleVector<double>& point,
 {
     if(cv >= EnergySurface->GetNumberOfCoords()) {
         // calculate value
-        double value = EnergySurface->GetEnergy(loc);
+
         if(EnergySurface->GetNumOfSamples(loc) >= PrintLimit) {
             // print point position
             CSmallString xform = XFormat + " ";
-            CSmallString yform = YFormat + "\n";
             for(unsigned int i=0; i < EnergySurface->GetNumberOfCoords(); i++) {
                 if(fprintf(fout,xform,point[i]) <= 0) {
                     CSmallString error;
@@ -215,12 +222,23 @@ void CESPrinter::Print_Part(FILE* fout,CSimpleVector<double>& point,
                     RUNTIME_ERROR(error);
                 }
             }
+            CSmallString yform = YFormat + " ";
             // and value
+            double value = EnergySurface->GetEnergy(loc);
             if(fprintf(fout,yform,value) <= 0) {
                 CSmallString error;
                 error << "unable to print Y data to the file (" << strerror(errno) << ")";
                 RUNTIME_ERROR(error);
             }
+            if( IncludeErrors ){
+                double error = EnergySurface->GetError(loc);
+                if(fprintf(fout,yform,error) <= 0) {
+                    CSmallString error;
+                    error << "unable to print Y (error) data to the file (" << strerror(errno) << ")";
+                    RUNTIME_ERROR(error);
+                }
+            }
+            fprintf(fout,"\n");
         } else {
             if(EnergySurface->GetNumberOfCoords() == 1) fprintf(fout,"\n");
         }

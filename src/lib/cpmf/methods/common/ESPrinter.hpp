@@ -62,6 +62,9 @@ public:
     /// only those data with limit higher than limit will be printed
     void SetSampleLimit(int limit);
 
+    /// include errors into output
+    void SetIncludeErrors(bool set);
+
 // printing methods -----------------------------------------------------------
     /// print energy surface
     void Print(const CSmallString& name);
@@ -76,6 +79,7 @@ private:
     CSmallString            XFormat;
     CSmallString            YFormat;
     int                     PrintLimit;
+    bool                    IncludeErrors;
 
     void PrintPlain(FILE* fout);
     void PrintPMF_FES(FILE* fout);

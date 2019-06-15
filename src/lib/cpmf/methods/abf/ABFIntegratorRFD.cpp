@@ -95,7 +95,7 @@ void CABFIntegratorRFD::SetPeriodicity(bool set)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-bool CABFIntegratorRFD::Integrate(void)
+bool CABFIntegratorRFD::Integrate(bool errors)
 {
     if( Accumulator == NULL ) {
         ES_ERROR("ABF accumulator is not set");
@@ -121,7 +121,9 @@ bool CABFIntegratorRFD::Integrate(void)
     }
 
 // set-up FES
-    FES->Allocate(Accumulator);
+    if( ! errors ){
+        FES->Allocate(Accumulator);
+    }
 
 // find global minimum
     double glb_min = X[0];
@@ -133,8 +135,12 @@ bool CABFIntegratorRFD::Integrate(void)
     for(unsigned int ipoint=0; ipoint < FES->GetNumberOfPoints(); ipoint++) {
         int x_index = XMap[ipoint];
         if(x_index >= 0) {
-            FES->SetEnergy(ipoint,X[x_index]-glb_min);
-            FES->SetNumOfSamples(ipoint,Accumulator->GetNumberOfABFSamples(ipoint));
+            if( errors ) {
+                FES->SetError(ipoint,X[x_index]-glb_min);
+            } else {
+                FES->SetEnergy(ipoint,X[x_index]-glb_min);
+                FES->SetNumOfSamples(ipoint,Accumulator->GetNumberOfABFSamples(ipoint));
+            }
         }
     }
 

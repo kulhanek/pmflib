@@ -76,6 +76,12 @@ public:
     /// get energy from point of index
     const double& GetEnergy(unsigned int index) const;
 
+    /// set error from point of index
+    void SetError(unsigned int index,const double& value);
+
+    /// get error from point of index
+    const double& GetError(unsigned int index) const;
+
     /// set number of samples
     void SetNumOfSamples(unsigned int index,const int& value);
 
@@ -90,6 +96,9 @@ public:
 
     /// add offset to the whole surface
     void ApplyOffset(double offset);
+
+    /// adapt errors for energy global minimum
+    void AdaptErrorsToGlobalMinimum(void);
 
 // operators ------------------------------------------------------------------
     /// add energy surface
