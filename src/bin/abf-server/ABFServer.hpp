@@ -25,6 +25,7 @@
 #include <PrmFile.hpp>
 #include <VerboseStr.hpp>
 #include <TerminalStr.hpp>
+#include <SimpleMutex.hpp>
 #include "ABFSrvOptions.hpp"
 #include "ABFServerAccu.hpp"
 
@@ -56,6 +57,9 @@ private:
     CSmallString        InputFileName;  // input file name
     CSmallString        OutputFileName; // output file name
     bool                AutoRestart;
+    int                 AutoSaveInterval;
+    int                 SaveCounter;
+    CSimpleMutex        AutoSaveMutex;
 
     // global data -------------------------------
     CABFServerAccu      ABFAccumulator;     // global ABF accumulator
@@ -70,8 +74,11 @@ private:
     /// process control file
     void ProcessFilesControl(void);
 
-    /// process datat for synchronous mode
+    /// process data for synchronous mode
     void ProcessSyncControl(void);
+
+    /// autosave ABF accumulator
+    void AutoSaveData(void);
 
     friend class CABFProcessor;
     friend class CABFServerAccu;

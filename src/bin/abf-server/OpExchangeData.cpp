@@ -59,6 +59,9 @@ void CABFProcessor::ExchangeData(void)
         throw;
     }
 
+    // autosave data
+    ABFServer.AutoSaveData();
+
     // release command
     p_client->SetCommand(NULL);
 }

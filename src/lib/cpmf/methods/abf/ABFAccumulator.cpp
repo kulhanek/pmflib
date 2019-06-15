@@ -867,6 +867,7 @@ void CABFAccumulator::PrintCVSInfo(std::ostream& vout)
     for(int i=0; i < NCoords; i++) {
         Sizes[i].PrintInfo(vout);
     }
+    vout << endl;
 }
 
 //------------------------------------------------------------------------------

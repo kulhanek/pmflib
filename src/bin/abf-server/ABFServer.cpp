@@ -54,6 +54,8 @@ CABFServer::CABFServer(void)
     SetProtocolName("abf");
     OutputFileName = "_abfserver.rst";
     AutoRestart =  true;
+    AutoSaveInterval = 100;
+    SaveCounter = 0;
 }
 
 //==============================================================================
@@ -140,6 +142,7 @@ void CABFServer::ProcessFilesControl(void)
         vout << "Input ABF accumulator (input)             = none                       (default)" << endl;
         vout << "Output ABF accumulator (output)           = " << OutputFileName << "             (default)" << endl;
         vout << "Restart from the last run (autorestart)   = " << PrmFileOnOff(AutoRestart) << "                         (default)" << endl;
+        vout << format("Autosave interval (saveinterval)          = %5d                      (default)\n") % AutoSaveInterval;
         return;
     }
 
@@ -159,6 +162,12 @@ void CABFServer::ProcessFilesControl(void)
         vout << "Restart from the last run (autorestart)   = " << PrmFileOnOff(AutoRestart) << endl;
     } else {
         vout << "Restart from the last run (autorestart)   = " << PrmFileOnOff(AutoRestart) << "                         (default)" << endl;
+    }
+
+    if(Controls.GetIntegerByKey("autosave",AutoSaveInterval) == true) {
+        vout << format("Autosave interval (saveinterval)          = %5d\n") % AutoSaveInterval;
+    } else {
+        vout << format("Autosave interval (saveinterval)          = %5d                      (default)\n") % AutoSaveInterval;
     }
 }
 
@@ -191,6 +200,36 @@ void CABFServer::ProcessSyncControl(void)
     // FIXME - Letif
     // do we need any further setup or parameters to mix data in CABFServerAccu::ExchangeDataSynchronousMode?
     // if so then we can read them here or in other more relavant section than in [sync]
+}
+
+//------------------------------------------------------------------------------
+
+void CABFServer::AutoSaveData(void)
+{
+    // lock access
+    AutoSaveMutex.Lock();
+
+    SaveCounter++;
+    if( AutoSaveInterval <= 0 ){
+        AutoSaveMutex.Unlock();
+        return; // disabled
+    }
+    if( SaveCounter % AutoSaveInterval != 0 ){
+        AutoSaveMutex.Unlock();
+        return; // too soon
+    }
+
+    vout << format(" --> %9d autosave to ABF accumulator: %s\n") % SaveCounter % OutputFileName;
+    try {
+        ABFAccumulator.Save(OutputFileName);
+    } catch(std::exception& e) {
+        ES_ERROR_FROM_EXCEPTION("unable to save ABF output accumulator",e);
+        AutoSaveMutex.Unlock();
+        return; // skip error
+    }
+
+    // unlock access
+    AutoSaveMutex.Unlock();
 }
 
 //==============================================================================
