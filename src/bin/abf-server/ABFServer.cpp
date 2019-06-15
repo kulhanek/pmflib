@@ -30,10 +30,15 @@
 #include "ABFProcessor.hpp"
 #include "ABFFactory.hpp"
 #include <iomanip>
+#include <sstream>
+#include <PrmUtils.hpp>
+#include <FileSystem.hpp>
+#include <boost/format.hpp>
 
 //------------------------------------------------------------------------------
 
 using namespace std;
+using namespace boost;
 
 //------------------------------------------------------------------------------
 
@@ -48,6 +53,7 @@ CABFServer::CABFServer(void)
 {
     SetProtocolName("abf");
     OutputFileName = "_abfserver.rst";
+    AutoRestart =  true;
 }
 
 //==============================================================================
@@ -131,21 +137,28 @@ void CABFServer::ProcessFilesControl(void)
     vout << endl;
     vout << "=== [files] ====================================================================" << endl;
     if(Controls.OpenSection("files") == false) {
-        vout << "Input ABF accumulator (input)     = none                               (default)" << endl;
-        vout << "Output ABF accumulator (output)   = " << OutputFileName << "                     (default)" << endl;
+        vout << "Input ABF accumulator (input)             = none                       (default)" << endl;
+        vout << "Output ABF accumulator (output)           = " << OutputFileName << "             (default)" << endl;
+        vout << "Restart from the last run (autorestart)   = " << PrmFileOnOff(AutoRestart) << "                         (default)" << endl;
         return;
     }
 
     if(Controls.GetStringByKey("input",InputFileName) == true) {
         vout << "Input ABF accumulator (input)     = " << InputFileName << endl;
     } else {
-        vout << "Input ABF accumulator (input)     = none                               (default)" << endl;
+        vout << "Input ABF accumulator (input)             = none                       (default)" << endl;
     }
 
     if(Controls.GetStringByKey("output",OutputFileName) == true) {
-        vout << "Output ABF accumulator (output)   = " << OutputFileName << endl;
+        vout << "Output ABF accumulator (output)           = " << OutputFileName << endl;
     } else {
-        vout << "Output ABF accumulator (output)   = " << OutputFileName << "                     (default)" << endl;
+        vout << "Output ABF accumulator (output)           = " << OutputFileName << "             (default)" << endl;
+    }
+
+    if(Controls.GetLogicalByKey("autorestart",AutoRestart) == true) {
+        vout << "Restart from the last run (autorestart)   = " << PrmFileOnOff(AutoRestart) << endl;
+    } else {
+        vout << "Restart from the last run (autorestart)   = " << PrmFileOnOff(AutoRestart) << "                         (default)" << endl;
     }
 }
 
@@ -156,7 +169,7 @@ void CABFServer::ProcessSyncControl(void)
     vout << endl;
     vout << "=== [sync] =====================================================================" << endl;
     if(Controls.OpenSection("sync") == false) {
-        vout << "Synchronous mode                  = off                              (default)" << endl;
+        vout << "Synchronous mode                  = off                                (default)" << endl;
         return;
     }
 
@@ -198,7 +211,34 @@ bool CABFServer::Run(void)
             return(false);
         }
     } else {
-        vout << "Input ABF accumulator: none" << endl;
+            vout << "Input ABF accumulator: none" << endl;
+        if( AutoRestart ){
+            vout << "Autorestart is on, searching for the last ABF accumulator to restart from ..." << endl;
+            if( CFileSystem::IsFile(OutputFileName) ){
+                vout << " == Last ABF accumulator found as:         " << OutputFileName << endl;
+                try {
+                    ABFAccumulator.Load(OutputFileName);
+                } catch(std::exception& e) {
+                    ES_ERROR_FROM_EXCEPTION("unable to load restart ABF accumulator",e);
+                    return(false);
+                }
+                CSmallTimeAndDate dt;
+                dt.GetActualTimeAndDate();
+                std::stringstream backup_name;
+                backup_name << format("%s.backuped_%04d-%02d-%02d_%02d:%02d:%02d")
+                               % OutputFileName % dt.GetYear() % dt.GetMonth() % dt.GetDay()
+                               % dt.GetHour() % dt.GetMinute() % dt.GetSecond();
+                vout << " == Backuping the last ABF accumulator as: " << backup_name.str() << endl;
+                try {
+                    ABFAccumulator.Save(backup_name.str());
+                } catch(std::exception& e) {
+                    ES_ERROR_FROM_EXCEPTION("unable to save backup of the ABF output accumulator",e);
+                    return(false);
+                }
+            } else {
+                vout << " == No last ABF accumulator found, fresh start ..." << endl;
+            }
+        }
     }
 
     vout << endl;

@@ -75,7 +75,7 @@ int CMTDAdmin::Init(int argc,char* argv[])
     ActionRequest.SetProtocolName("mtd");
     ActionRequest.SetQualifiedName(Options.GetArgCommand());
 
-    if(Options.IsOptServerKeySet()) {
+    if( Options.IsOptServerKeySet() || ActionRequest.IsServerKey() ) {
         ActionRequest.ReadServerKey(Options.GetOptServerKey());
     }
 
@@ -110,7 +110,7 @@ int CMTDAdmin::Init(int argc,char* argv[])
 
 bool CMTDAdmin::Run(void)
 {
-    if( ! Options.IsOptServerKeySet() ){
+    if( ! ( Options.IsOptServerKeySet() || ActionRequest.IsServerKey() )  ){
        if( ReadPassword(Options.IsOptPasswordSet(),Options.GetOptPassword(),
                         Options.GetOptVerbose()) == false ) return(false);
        }

@@ -77,7 +77,7 @@ int CStringAdmin::Init(int argc,char* argv[])
     ActionRequest.SetProtocolName("stm");
     ActionRequest.SetQualifiedName(Options.GetArgCommand());
 
-    if(Options.IsOptServerKeySet()) {
+    if( Options.IsOptServerKeySet() || ActionRequest.IsServerKey() ) {
         ActionRequest.ReadServerKey(Options.GetOptServerKey());
     }
 
@@ -112,7 +112,7 @@ int CStringAdmin::Init(int argc,char* argv[])
 
 bool CStringAdmin::Run(void)
 {
-    if( ! Options.IsOptServerKeySet() ){
+    if( ! ( Options.IsOptServerKeySet() || ActionRequest.IsServerKey() )  ){
        if( ReadPassword(Options.IsOptPasswordSet(),Options.GetOptPassword(),
                         Options.GetOptVerbose()) == false ) return(false);
        }

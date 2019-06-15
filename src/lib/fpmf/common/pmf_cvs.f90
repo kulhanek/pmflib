@@ -272,6 +272,9 @@ real(PMFDP) function get_period_cv_value(cv_item)
     ! --------------------------------------------------------------------------
 
     get_period_cv_value = 0.0d0
+    if( .not. cv_item%is_periodic_cv() ) return
+
+    get_period_cv_value = cv_item%get_max_cv_value() - cv_item%get_min_cv_value()
 
     ! disable unsued variable warning
     ignored_arg__ = same_type_as(cv_item,cv_item)

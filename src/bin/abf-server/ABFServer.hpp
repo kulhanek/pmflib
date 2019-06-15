@@ -55,6 +55,7 @@ private:
     CPrmFile            Controls;       // controls
     CSmallString        InputFileName;  // input file name
     CSmallString        OutputFileName; // output file name
+    bool                AutoRestart;
 
     // global data -------------------------------
     CABFServerAccu      ABFAccumulator;     // global ABF accumulator

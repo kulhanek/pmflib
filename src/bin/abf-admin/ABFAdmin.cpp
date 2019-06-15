@@ -76,7 +76,7 @@ int CABFAdmin::Init(int argc,char* argv[])
     ActionRequest.SetProtocolName("abf");
     ActionRequest.SetQualifiedName(Options.GetArgCommand());
 
-    if(Options.IsOptServerKeySet()) {
+    if( Options.IsOptServerKeySet() || ActionRequest.IsServerKey() ) {
         ActionRequest.ReadServerKey(Options.GetOptServerKey());
     }
 
@@ -111,7 +111,7 @@ int CABFAdmin::Init(int argc,char* argv[])
 
 bool CABFAdmin::Run(void)
 {
-    if( ! Options.IsOptServerKeySet() ){
+    if( ! ( Options.IsOptServerKeySet() || ActionRequest.IsServerKey() )  ){
        if( ReadPassword(Options.IsOptPasswordSet(),Options.GetOptPassword(),
                         Options.GetOptVerbose()) == false ) return(false);
        }
