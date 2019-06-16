@@ -87,6 +87,7 @@ bool CABFServerAccu::RegisterOrCheckCoords(CServerCommand* p_cmd)
 
             // print info about CVs
             PrintCVSInfo(ABFServer.vout);
+            ABFServer.vout << std::endl;
 
         } catch(std::exception& e) {
             CMD_ERROR_FROM_EXCEPTION(p_cmd,"unable to load coordinates",e);

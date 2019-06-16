@@ -56,6 +56,8 @@ private:
     CPrmFile            Controls;       // controls
     CSmallString        InputFileName;  // input file name
     CSmallString        OutputFileName; // output file name
+    CSmallString        TrajFileName;   // output file name
+    FILE*               TrajFile;
     bool                AutoRestart;
     int                 AutoSaveInterval;
     int                 SaveCounter;

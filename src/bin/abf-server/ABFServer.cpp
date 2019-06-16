@@ -54,8 +54,9 @@ CABFServer::CABFServer(void)
     SetProtocolName("abf");
     OutputFileName = "_abfserver.rst";
     AutoRestart =  true;
-    AutoSaveInterval = 100;
+    AutoSaveInterval = 500;
     SaveCounter = 0;
+    TrajFile = NULL;
 }
 
 //==============================================================================
@@ -141,6 +142,7 @@ void CABFServer::ProcessFilesControl(void)
     if(Controls.OpenSection("files") == false) {
         vout << "Input ABF accumulator (input)             = none                       (default)" << endl;
         vout << "Output ABF accumulator (output)           = " << OutputFileName << "             (default)" << endl;
+        vout << "Output ABF trajectory (trajectory)        = none                       (default)" << endl;
         vout << "Restart from the last run (autorestart)   = " << PrmFileOnOff(AutoRestart) << "                         (default)" << endl;
         vout << format("Autosave interval (saveinterval)          = %5d                      (default)\n") % AutoSaveInterval;
         return;
@@ -158,13 +160,19 @@ void CABFServer::ProcessFilesControl(void)
         vout << "Output ABF accumulator (output)           = " << OutputFileName << "             (default)" << endl;
     }
 
+    if(Controls.GetStringByKey("trajectory",TrajFileName) == true) {
+        vout << "Output ABF trajectory (trajectory)        = " << TrajFileName << endl;
+    } else {
+        vout << "Output ABF trajectory (trajectory)        = none                       (default)" << endl;
+    }
+
     if(Controls.GetLogicalByKey("autorestart",AutoRestart) == true) {
         vout << "Restart from the last run (autorestart)   = " << PrmFileOnOff(AutoRestart) << endl;
     } else {
         vout << "Restart from the last run (autorestart)   = " << PrmFileOnOff(AutoRestart) << "                         (default)" << endl;
     }
 
-    if(Controls.GetIntegerByKey("autosave",AutoSaveInterval) == true) {
+    if(Controls.GetIntegerByKey("saveinterval",AutoSaveInterval) == true) {
         vout << format("Autosave interval (saveinterval)          = %5d\n") % AutoSaveInterval;
     } else {
         vout << format("Autosave interval (saveinterval)          = %5d                      (default)\n") % AutoSaveInterval;
@@ -222,6 +230,9 @@ void CABFServer::AutoSaveData(void)
     vout << format(" --> %9d autosave to ABF accumulator: %s\n") % SaveCounter % OutputFileName;
     try {
         ABFAccumulator.Save(OutputFileName);
+        if( TrajFile ){
+            ABFAccumulator.Save(TrajFile);
+        }
     } catch(std::exception& e) {
         ES_ERROR_FROM_EXCEPTION("unable to save ABF output accumulator",e);
         AutoSaveMutex.Unlock();
@@ -280,6 +291,15 @@ bool CABFServer::Run(void)
         }
     }
 
+    if(TrajFileName != NULL) {
+        vout << "Output ABF trajectory: " << TrajFileName << endl;
+        TrajFile = fopen(TrajFileName,"w");
+        if( TrajFile == NULL ){
+            ES_ERROR("unable to open ABF trajectory file for writing");
+            return(false);
+        }
+    }
+
     vout << endl;
     vout << "::::::::::::::::::::::::::::::::::: ABF Server :::::::::::::::::::::::::::::::::" << endl;
 
@@ -306,6 +326,11 @@ bool CABFServer::Run(void)
 // start server listening
     if( StartServer(vout) == false ){
         return(false);
+    }
+
+    // closing trajectory if opened
+    if( TrajFile != NULL ){
+        fclose(TrajFile);
     }
 
 // print server statistics
