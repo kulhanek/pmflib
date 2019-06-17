@@ -130,6 +130,9 @@ public:
     /// return pointer to ABF force square sum array
     double* GetABFForceSquareSumArray(void);
 
+    /// get value for integration
+    double GetIntegratedValue(int icoord,int ibin,bool error) const;
+
 // mathematical operation -----------------------------------------------------
     /// set all data to zero
     void Clear(void);

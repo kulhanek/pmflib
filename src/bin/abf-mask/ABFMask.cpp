@@ -138,15 +138,15 @@ bool CABFMask::Run(void)
     vout << "3) ABF accumulator integration"<< endl;
     CABFIntegratorRFD   integrator;
     CEnergySurface     fes;
+    fes.Allocate(&Accumulator);
 
-    integrator.SetVerbosity(Options.GetOptVerbose());
     integrator.SetPeriodicity(Options.GetOptPeriodicity());
     integrator.SetFDOrder(Options.GetOptFDOrder());
 
     integrator.SetInputABFAccumulator(&Accumulator);
     integrator.SetOutputFESurface(&fes);
 
-    if(integrator.Integrate() == false) {
+    if(integrator.Integrate(vout) == false) {
         ES_ERROR("unable to prepare ABF accumulator");
         return(false);
     }
@@ -194,35 +194,22 @@ bool CABFMask::Run(void)
 
 // this part performs following tasks:
 //    a) bins with number of samples <= limit will be set to zero
-//    b) accumulated sums/sum squares will be recalculated to averages
 
 void CABFMask::PrepareAccumulator(void)
 {
-    for(int icoord=0; icoord < Accumulator.GetNumberOfCoords(); icoord++) {
-        for(int ibin=0; ibin < Accumulator.GetNumberOfBins(); ibin++) {
-
-            double value = 0.0;
-            double sum = 0.0;
-            int    nsamples = 0;
-            int    newsamples = 0;
-
-            nsamples = Accumulator.GetNumberOfABFSamples(ibin);
-            // abf force
-            sum = Accumulator.GetABFForceSum(icoord,ibin);
-
-            if((nsamples > 0) && (nsamples > Options.GetOptLimit())) {
-                // calculate average
-                value = sum / nsamples;
-                newsamples = nsamples;
-            }
-            Accumulator.SetABFForceSum(icoord,ibin,value);
-            Accumulator.SetNumberOfABFSamples(ibin,newsamples);
+    double sampled = 0.0;
+    double maxbins = 0.0;
+    for(int ibin=0; ibin < Accumulator.GetNumberOfBins(); ibin++) {
+        maxbins++;
+        // erase datapoints not properly sampled
+        if( Accumulator.GetNumberOfABFSamples(ibin) <= Options.GetOptLimit() ) {
+            Accumulator.SetNumberOfABFSamples(ibin,0);
+        } else {
+            sampled++;
         }
     }
 
     // calculate sampled area
-    double maxbins = Accumulator.GetNumberOfBins();
-    double sampled = Accumulator.GetNumberOfBinsWithABFLimit(1);
     if( maxbins > 0 ){
         vout << "   Sampled area: " << setw(5) << setprecision(1) << fixed << sampled/maxbins*100 <<"%" << endl;
     }

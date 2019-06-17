@@ -94,7 +94,11 @@ int CABFIntegrate::Init(int argc,char* argv[])
     vout << "# FD order              : " << Options.GetOptOrder() << endl;
     vout << "# Integration offset    : " << Options.GetOptOffset() << endl;
     vout << "# Periodicity           : " << bool_to_str(Options.GetOptPeriodicity()) << endl;
-    vout << "# Integrate errors      : " << bool_to_str(Options.GetOptErrors()) << endl;
+    if( Options.GetOptWithErrors() ) {
+    vout << "# Integrated domains    : force+errors" << endl;
+    } else {
+    vout << "# Integrated domains    : force only" << endl;
+    }
     vout << "# ------------------------------------------------" << endl;
     vout << "# Output FES format     : " << Options.GetOptOutputFormat() << endl;
     vout << "# No header to output   : " << bool_to_str(Options.GetOptNoHeader()) << endl;
@@ -150,49 +154,36 @@ bool CABFIntegrate::Run(void)
         fprintf(OutputFile,"# Sample limit          : %d\n",Options.GetOptLimit());
         fprintf(OutputFile,"# Periodicity           : %s\n",(const char*)bool_to_str(Options.GetOptPeriodicity()));
         if( Options.GetOptWithErrors() ) {
-        fprintf(OutputFile,"# Integrate errors      : energy+errors\n");
+        fprintf(OutputFile,"# Integrated domains    : force+errors\n");
         } else {
-        fprintf(OutputFile,"# Integrate errors      : %s\n",(const char*)bool_to_str(Options.GetOptErrors()));
+        fprintf(OutputFile,"# Integrated domains    : force only\n");
         }
         fprintf(OutputFile,"# RFD/RBF order         : %d\n",Options.GetOptOrder());
     }
 
-    // simple mode
-    if( Options.GetOptWithErrors() == false ){
-        return(RunSimple(accumulator)); // simple integration - either energy or error
-    } else {
-        return(RunWithErrors(accumulator)); // energy + errors
-    }
-}
-
-//------------------------------------------------------------------------------
-
-bool CABFIntegrate::RunSimple(CABFAccumulator& accumulator)
-{
-
 // prepare accumulator --------------------------
     vout << endl;
     vout << "2) Preparing ABF accumulator for integration"<< endl;
-    PrepareAccumulator(accumulator,Options.GetOptErrors());
+    PrepareAccumulator(accumulator);
     vout << "   Done" << endl;
 
 // integrate data ------------------------------
     vout << endl;
-    vout << "3) ABF accumulator integration"<< endl;
+    vout << "3) ABF accumulator integration (energy)"<< endl;
 
     CEnergySurface     fes;
+    fes.Allocate(&accumulator);
 
     if(Options.GetOptMethod() == "rfd" ) {
         CABFIntegratorRFD   integrator;
 
-        integrator.SetVerbosity(Options.GetOptVerbose());
         integrator.SetPeriodicity(Options.GetOptPeriodicity());
         integrator.SetFDOrder(Options.GetOptOrder());
 
         integrator.SetInputABFAccumulator(&accumulator);
         integrator.SetOutputFESurface(&fes);
 
-        if(integrator.Integrate() == false) {
+        if(integrator.Integrate(vout) == false) {
             ES_ERROR("unable to prepare ABF accumulator");
             return(false);
         }
@@ -216,7 +207,7 @@ bool CABFIntegrate::RunSimple(CABFAccumulator& accumulator)
 
     vout << "   Done" << endl;
 
-// apply offset
+ // apply offset
     fes.ApplyOffset(Options.GetOptOffset() - fes.GetGlobalMinimumValue());
 
 // print result ---------------------------------
@@ -240,134 +231,7 @@ bool CABFIntegrate::RunSimple(CABFAccumulator& accumulator)
         printer.SetSampleLimit(Options.GetOptLimit());
     }
 
-    printer.SetPrintedES(&fes);
-
-    try {
-        printer.Print(OutputFile);
-    } catch(...) {
-        ES_ERROR("unable to save the output free energy file");
-        return(false);
-    }
-    vout << "   Done" << endl;
-
-    return(true);
-}
-
-//------------------------------------------------------------------------------
-
-bool CABFIntegrate::RunWithErrors(CABFAccumulator& accumulator)
-{
-
-// prepare accumulator --------------------------
-    vout << endl;
-    vout << "2) Preparing ABF accumulator for integration (energy)"<< endl;
-    PrepareAccumulator(accumulator,false);
-    vout << "   Done" << endl;
-
-// integrate data ------------------------------
-    vout << endl;
-    vout << "3) ABF accumulator integration (energy)"<< endl;
-
-    CEnergySurface     fes;
-
-    if(Options.GetOptMethod() == "rfd" ) {
-        CABFIntegratorRFD   integrator;
-
-        integrator.SetVerbosity(Options.GetOptVerbose());
-        integrator.SetPeriodicity(Options.GetOptPeriodicity());
-        integrator.SetFDOrder(Options.GetOptOrder());
-
-        integrator.SetInputABFAccumulator(&accumulator);
-        integrator.SetOutputFESurface(&fes);
-
-        if(integrator.Integrate(false) == false) {
-            ES_ERROR("unable to prepare ABF accumulator");
-            return(false);
-        }
-    } else {
-        INVALID_ARGUMENT("method - not implemented");
-    }
-
-    vout << "   Done" << endl;
-
- // apply offset
-    fes.ApplyOffset(Options.GetOptOffset() - fes.GetGlobalMinimumValue());
-
-// -----------------------------------------
-    CABFAccumulator error_accu;
-
- // load accumulator
-     vout << endl;
-     vout << "4) Loading ABF accumulator: " << Options.GetArgABFAccuName() << endl;
-
-     if( fseek(InputFile, 0L, SEEK_SET) != 0 ) {
-         ES_ERROR("unable to rewind input ABF accumulator file - is it a regular file?");
-         return(false);
-     }
-
-     try {
-         error_accu.Load(InputFile);
-     } catch(...) {
-         ES_ERROR("unable to load the input ABF accumulator file");
-         return(false);
-     }
-     vout << "   Done" << endl;
-
- // prepare accumulator --------------------------
-     vout << endl;
-     vout << "5) Preparing ABF accumulator for integration (errors)"<< endl;
-     PrepareAccumulator(error_accu,true);
-     vout << "   Done" << endl;
-
- // integrate data ------------------------------
-     vout << endl;
-     vout << "6) ABF accumulator integration (errors)"<< endl;
-
-     if(Options.GetOptMethod() == "rfd" ) {
-         CABFIntegratorRFD   integrator;
-
-         integrator.SetVerbosity(Options.GetOptVerbose());
-         integrator.SetPeriodicity(Options.GetOptPeriodicity());
-         integrator.SetFDOrder(Options.GetOptOrder());
-
-         integrator.SetInputABFAccumulator(&error_accu);
-         integrator.SetOutputFESurface(&fes);
-
-         if(integrator.Integrate(true) == false) {
-             ES_ERROR("unable to prepare ABF accumulator");
-             return(false);
-         }
-     } else {
-         INVALID_ARGUMENT("method - not implemented");
-     }
-
-     vout << "   Done" << endl;
-
-     // final tuning
-     fes.AdaptErrorsToGlobalMinimum();
-
-// print result ---------------------------------
-    vout << endl;
-    vout << "6) Writing results to file: " << Options.GetArgFEOutputName() << endl;
-    CESPrinter printer;
-
-    printer.SetXFormat(Options.GetOptIXFormat());
-    printer.SetYFormat(Options.GetOptOEFormat());
-    if(Options.GetOptOutputFormat() == "plain") {
-        printer.SetOutputFormat(EESPF_PLAIN);
-    } else if(Options.GetOptOutputFormat() == "gnuplot") {
-        printer.SetOutputFormat(EESPF_GNUPLOT);
-    } else if(Options.GetOptOutputFormat() == "fes") {
-        printer.SetOutputFormat(EESPF_PMF_FES);
-    } else {
-        INVALID_ARGUMENT("output format - not implemented");
-    }
-
-    if(Options.GetOptPrintWithLimit()) {
-        printer.SetSampleLimit(Options.GetOptLimit());
-    }
-
-    printer.SetIncludeErrors(true);
+    printer.SetIncludeErrors(Options.GetOptWithErrors());
     printer.SetPrintedES(&fes);
 
     try {
@@ -387,49 +251,22 @@ bool CABFIntegrate::RunWithErrors(CABFAccumulator& accumulator)
 
 // this part performs following tasks:
 //    a) bins with number of samples <= limit will be set to zero
-//    b) accumulated sums/sum squares will be recalculated to averages
 
-void CABFIntegrate::PrepareAccumulator(CABFAccumulator& accumulator,bool errors)
+void CABFIntegrate::PrepareAccumulator(CABFAccumulator& accumulator)
 {
-
-    for(int icoord=0; icoord < accumulator.GetNumberOfCoords(); icoord++) {
-        for(int ibin=0; ibin < accumulator.GetNumberOfBins(); ibin++) {
-
-            double value = 0.0;
-            double sum = 0.0;
-            double sum_square = 0.0;
-            int    nsamples = 0;
-            int    newsamples = 0;
-
-            nsamples = accumulator.GetNumberOfABFSamples(ibin);
-            // abf force
-            sum = accumulator.GetABFForceSum(icoord,ibin);
-            sum_square = accumulator.GetABFForceSquareSum(icoord,ibin);
-
-            if((nsamples > 0) && (nsamples > Options.GetOptLimit())) {
-                if( errors == false) {
-                    // calculate average
-                    value = sum / nsamples;
-                } else {
-                    // calculate error of average
-                    double sq = nsamples*sum_square - sum*sum;
-                    if(sq > 0) {
-                        sq = sqrt(sq) / nsamples;
-                    } else {
-                        sq = 0.0;
-                    }
-                    value = sq / sqrt((double)nsamples);
-                }
-                newsamples = nsamples;
-            }
-            accumulator.SetABFForceSum(icoord,ibin,value);
-            accumulator.SetNumberOfABFSamples(ibin,newsamples);
+    double sampled = 0.0;
+    double maxbins = 0.0;
+    for(int ibin=0; ibin < accumulator.GetNumberOfBins(); ibin++) {
+        maxbins++;
+        // erase datapoints not properly sampled
+        if( accumulator.GetNumberOfABFSamples(ibin) <= Options.GetOptLimit() ) {
+            accumulator.SetNumberOfABFSamples(ibin,0);
+        } else {
+            sampled++;
         }
     }
 
     // calculate sampled area
-    double maxbins = accumulator.GetNumberOfBins();
-    double sampled = accumulator.GetNumberOfBinsWithABFLimit(Options.GetOptLimit());
     if( maxbins > 0 ){
         vout << "   Sampled area: " << setw(5) << setprecision(1) << fixed << sampled/maxbins*100 <<"%" << endl;
     }

@@ -1076,6 +1076,42 @@ void CABFAccumulator::SubABFAccumulator(const CABFAccumulator* p_accu)
     for(int i=0; i < TotNBins*NCoords; i++) ABFForce2[i] -= p_accu->ABFForce2[i];
 }
 
+//------------------------------------------------------------------------------
+
+double CABFAccumulator::GetIntegratedValue(int icoord,int ibin,bool error) const
+{
+    int nsamples = GetNumberOfABFSamples(ibin);
+    if( nsamples <= 0 ) return(0.0);
+
+    double value = 0.0;
+    double sum = 0.0;
+    double sum_square = 0.0;
+
+    // abf accumulated data
+    sum = GetABFForceSum(icoord,ibin);
+    sum_square = GetABFForceSquareSum(icoord,ibin);
+
+    if( ! error ){
+        value = sum / nsamples;  // mean ABF force
+    } else {
+        // calculate error of mean force
+        // sq is variance of ABF force
+        double sq = nsamples*sum_square - sum*sum;
+        if(sq > 0) {
+            sq = sqrt(sq) / nsamples;
+        } else {
+            sq = 0.0;
+        }
+        // value is variance of mean ABF force
+        value = sq / sqrt((double)nsamples);
+
+        // transform to variance square - for error integration
+        value = value*value;
+    }
+
+    return(value);
+}
+
 //==============================================================================
 //------------------------------------------------------------------------------
 //==============================================================================

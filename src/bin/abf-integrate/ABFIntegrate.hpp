@@ -56,13 +56,7 @@ private:
     CVerboseStr         vout;
 
     /// prepare accumulator
-    void PrepareAccumulator(CABFAccumulator& accumulator,bool errors);
-
-    /// integrate in simple mode
-    bool RunSimple(CABFAccumulator& accumulator);
-
-    /// integrate energy and errors
-    bool RunWithErrors(CABFAccumulator& accumulator);
+    void PrepareAccumulator(CABFAccumulator& accumulator);
 };
 
 //------------------------------------------------------------------------------

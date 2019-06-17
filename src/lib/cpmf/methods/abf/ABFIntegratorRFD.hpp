@@ -23,6 +23,7 @@
 
 #include <PMFMainHeader.hpp>
 #include <SimpleVector.hpp>
+#include <VerboseStr.hpp>
 
 extern "C" {
 #include <cs.h>
@@ -53,9 +54,6 @@ public:
     /// set output free energy surface
     void SetOutputFESurface(CEnergySurface* p_surf);
 
-    /// set verbosity level
-    void SetVerbosity(bool set);
-
     /// set FD order (3 or 4)
     void SetFDOrder(int order);
 
@@ -64,14 +62,13 @@ public:
 
 // execution method -----------------------------------------------------------
     /// integrate data, for errors the FES must be already allocated!!!
-    bool Integrate(bool errors=false);
+    bool Integrate(CVerboseStr& vout);
 
 // section of private data ----------------------------------------------------
 private:
     const CABFAccumulator*  Accumulator;
     CEnergySurface*         FES;
 
-    bool                    Verbose;
     int                     FDLevel;
     bool                    Periodicity;
     bool                    ReconstructAll;
@@ -91,7 +88,7 @@ private:
     void ReleaseAllResources(void);
 
     /// build system of equations describing differentation scheme
-    bool BuildSystemOfEquations(void);
+    bool BuildSystemOfEquations(CVerboseStr& vout);
 
     /// solve redundant system of linear equations
     bool SolveSystemOfEquations(void);
@@ -101,6 +98,9 @@ private:
 
     /// get global index of point
     int GetFBinIndex(const CSimpleVector<int>& position,int ifcoord,int offset) const;
+
+    /// get integrated value
+    double GetIntegratedValue(int icoord,int ibin);
 };
 
 //------------------------------------------------------------------------------

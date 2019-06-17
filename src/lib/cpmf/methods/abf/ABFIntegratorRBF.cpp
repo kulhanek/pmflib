@@ -110,6 +110,11 @@ bool CABFIntegratorRBF::Integrate(CVerboseStr& vout)
         return(false);
     }
 
+    if( Accumulator->GetNumberOfCoords() != FES->GetNumberOfCoords() ){
+        ES_ERROR("inconsistent ABF and FES");
+        return(false);
+    }
+
     // RBF setup
     NumOfCVs = Accumulator->GetNumberOfCoords();
     NumOfRBFBins.CreateVector(NumOfCVs);
@@ -138,29 +143,26 @@ bool CABFIntegratorRBF::Integrate(CVerboseStr& vout)
 
     vout << "   Calculating FES ..." << endl;
 
-    // set-up FES
-    FES->Allocate(Accumulator);
-
     // load data to FES
     CSimpleVector<double>   position;
     position.CreateVector(NumOfCVs);
 
-    for(unsigned int i=0; i < FES->GetNumberOfPoints(); i++) {
-        FES->GetPoint(i,position);
-        double value = GetEnergy(position);
-        FES->SetEnergy(i,value);
-        FES->SetNumOfSamples(i,Accumulator->GetNumberOfABFSamples(i));
-    }
-
     // find global minimum
-    double glb_min = FES->GetEnergy(0);
-    for(unsigned int i=0; i < FES->GetNumberOfPoints(); i++) {
-        if(glb_min > FES->GetEnergy(i)) glb_min = FES->GetEnergy(i);
+    double glb_min = 0.0;
+    for(unsigned int ipoint=0; ipoint < FES->GetNumberOfPoints(); ipoint++) {
+        FES->GetPoint(ipoint,position);
+        double value = GetValue(position);
+        if( (ipoint == 0) || (glb_min > value) ){
+            glb_min = value;
+        }
     }
 
-    // move global minimum to zero
-    for(unsigned int i=0; i < FES->GetNumberOfPoints(); i++) {
-        FES->SetEnergy(i,FES->GetEnergy(i) - glb_min);
+    // write results
+    for(unsigned int ipoint=0; ipoint < FES->GetNumberOfPoints(); ipoint++) {
+        FES->GetPoint(ipoint,position);
+        double value = GetValue(position) - glb_min;
+        FES->SetEnergy(ipoint,value);
+        FES->SetNumOfSamples(ipoint,Accumulator->GetNumberOfABFSamples(ipoint));
     }
 
     return(true);
@@ -219,7 +221,7 @@ bool CABFIntegratorRBF::IntegrateByLS(CVerboseStr& vout)
         }
         // rhs
         for(int k=0; k < NumOfCVs; k++){
-            rhs[j+k] = Accumulator->GetABFForceSum(k,i);
+            rhs[j+k] = Accumulator->GetIntegratedValue(k,i,false);
         }
         j += NumOfCVs;
     }
@@ -254,7 +256,8 @@ bool CABFIntegratorRBF::IntegrateByLS(CVerboseStr& vout)
         Weights[l] = rhs[l];
     }
 
-    cout << Weights[0] << endl;
+    // debug
+    // cout << Weights[0] << endl;
 
     return( true );
 }
@@ -277,7 +280,7 @@ void CABFIntegratorRBF::GetRBFPosition(unsigned int index,CSimpleVector<double>&
 
 //------------------------------------------------------------------------------
 
-double CABFIntegratorRBF::GetEnergy(const CSimpleVector<double>& position)
+double CABFIntegratorRBF::GetValue(const CSimpleVector<double>& position)
 {
     double                  energy = 0.0;
     CSimpleVector<double>   rbfpos;

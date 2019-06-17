@@ -40,7 +40,6 @@ CABFIntegratorRFD::CABFIntegratorRFD(void)
     A = NULL;
     LocIter = 0;
 
-    Verbose = true;
     Periodicity = false;
     FDLevel = 4;
 
@@ -72,13 +71,6 @@ void CABFIntegratorRFD::SetOutputFESurface(CEnergySurface* p_surf)
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorRFD::SetVerbosity(bool set)
-{
-    Verbose = set;
-}
-
-//------------------------------------------------------------------------------
-
 void CABFIntegratorRFD::SetFDOrder(int order)
 {
     FDLevel = order;
@@ -95,7 +87,7 @@ void CABFIntegratorRFD::SetPeriodicity(bool set)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-bool CABFIntegratorRFD::Integrate(bool errors)
+bool CABFIntegratorRFD::Integrate(CVerboseStr& vout)
 {
     if( Accumulator == NULL ) {
         ES_ERROR("ABF accumulator is not set");
@@ -111,18 +103,18 @@ bool CABFIntegratorRFD::Integrate(bool errors)
         return(false);
     }
 
-    if( BuildSystemOfEquations() == false ) {
+    if( Accumulator->GetNumberOfCoords() != FES->GetNumberOfCoords() ){
+        ES_ERROR("inconsistent ABF and FES");
+        return(false);
+    }
+
+    if( BuildSystemOfEquations(vout) == false ) {
         ReleaseAllResources();
         return(false);
     }
     if( SolveSystemOfEquations() == false ) {
         ReleaseAllResources();
         return(false);
-    }
-
-// set-up FES
-    if( ! errors ){
-        FES->Allocate(Accumulator);
     }
 
 // find global minimum
@@ -135,12 +127,9 @@ bool CABFIntegratorRFD::Integrate(bool errors)
     for(unsigned int ipoint=0; ipoint < FES->GetNumberOfPoints(); ipoint++) {
         int x_index = XMap[ipoint];
         if(x_index >= 0) {
-            if( errors ) {
-                FES->SetError(ipoint,X[x_index]-glb_min);
-            } else {
-                FES->SetEnergy(ipoint,X[x_index]-glb_min);
-                FES->SetNumOfSamples(ipoint,Accumulator->GetNumberOfABFSamples(ipoint));
-            }
+            double value = X[x_index]-glb_min;
+            FES->SetEnergy(ipoint,value);
+            FES->SetNumOfSamples(ipoint,Accumulator->GetNumberOfABFSamples(ipoint));
         }
     }
 
@@ -151,7 +140,7 @@ bool CABFIntegratorRFD::Integrate(bool errors)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-bool CABFIntegratorRFD::BuildSystemOfEquations(void)
+bool CABFIntegratorRFD::BuildSystemOfEquations(CVerboseStr& vout)
 {
 // initializations
     IPoint.CreateVector(Accumulator->GetNumberOfCoords());
@@ -166,11 +155,9 @@ bool CABFIntegratorRFD::BuildSystemOfEquations(void)
     LocIter = 0;
     BuildEquations(0,true);
 
-    if(Verbose == true) {
-        printf("# Number of variables           : %d\n",NumOfVariables);
-        printf("# Number of equations           : %d\n",NumOfEquations);
-        printf("# Number of non-zero A elements : %d\n",NumOfNonZeros);
-    }
+    vout << "   Number of variables           : " << NumOfVariables << std::endl;
+    vout << "   Number of equations           : " << NumOfEquations << std::endl;
+    vout << "   Number of non-zero A elements : " << NumOfNonZeros << std::endl;
 
     if(NumOfVariables <= 0) {
         CSmallString error;
@@ -254,16 +241,16 @@ void CABFIntegratorRFD::BuildEquations(int icoord,bool trial)
                     cs_entry(A,LocIter,XMap[ifbin1],-3.0);
                     cs_entry(A,LocIter,XMap[ifbin2],+4.0);
                     cs_entry(A,LocIter,XMap[ifbin3],-1.0);
-                    Rhs[LocIter] = Accumulator->GetABFForceSum(ifcoord,ifbin1) * diff * 2.0;
+                    Rhs[LocIter] = Accumulator->GetIntegratedValue(ifcoord,ifbin1,false) * diff * 2.0;
                     LocIter++;
                     cs_entry(A,LocIter,XMap[ifbin1],-1.0);
                     cs_entry(A,LocIter,XMap[ifbin3],+1.0);
-                    Rhs[LocIter] = Accumulator->GetABFForceSum(ifcoord,ifbin2) * diff * 2.0;
+                    Rhs[LocIter] = Accumulator->GetIntegratedValue(ifcoord,ifbin2,false) * diff * 2.0;
                     LocIter++;
                     cs_entry(A,LocIter,XMap[ifbin1],+1.0);
                     cs_entry(A,LocIter,XMap[ifbin2],-4.0);
                     cs_entry(A,LocIter,XMap[ifbin3],+3.0);
-                    Rhs[LocIter] = Accumulator->GetABFForceSum(ifcoord,ifbin3) * diff * 2.0;
+                    Rhs[LocIter] = Accumulator->GetIntegratedValue(ifcoord,ifbin3,false) * diff * 2.0;
                     LocIter++;
                 } else {
                     NumOfEquations += 3;
@@ -298,25 +285,25 @@ void CABFIntegratorRFD::BuildEquations(int icoord,bool trial)
                     cs_entry(A,LocIter,XMap[ifbin2],+18.0);
                     cs_entry(A,LocIter,XMap[ifbin3],-9.0);
                     cs_entry(A,LocIter,XMap[ifbin4],+2.0);
-                    Rhs[LocIter] = Accumulator->GetABFForceSum(ifcoord,ifbin1) * diff * 6.0;
+                    Rhs[LocIter] = Accumulator->GetIntegratedValue(ifcoord,ifbin1,false) * diff * 6.0;
                     LocIter++;
                     cs_entry(A,LocIter,XMap[ifbin1],-2.0);
                     cs_entry(A,LocIter,XMap[ifbin2],-3.0);
                     cs_entry(A,LocIter,XMap[ifbin3],+6.0);
                     cs_entry(A,LocIter,XMap[ifbin4],-1.0);
-                    Rhs[LocIter] = Accumulator->GetABFForceSum(ifcoord,ifbin2) * diff * 6.0;
+                    Rhs[LocIter] = Accumulator->GetIntegratedValue(ifcoord,ifbin2,false) * diff * 6.0;
                     LocIter++;
                     cs_entry(A,LocIter,XMap[ifbin1],+1.0);
                     cs_entry(A,LocIter,XMap[ifbin2],-6.0);
                     cs_entry(A,LocIter,XMap[ifbin3],+3.0);
                     cs_entry(A,LocIter,XMap[ifbin4],+2.0);
-                    Rhs[LocIter] = Accumulator->GetABFForceSum(ifcoord,ifbin3) * diff * 6.0;
+                    Rhs[LocIter] = Accumulator->GetIntegratedValue(ifcoord,ifbin3,false) * diff * 6.0;
                     LocIter++;
                     cs_entry(A,LocIter,XMap[ifbin1],-2.0);
                     cs_entry(A,LocIter,XMap[ifbin2],+9.0);
                     cs_entry(A,LocIter,XMap[ifbin3],-18.0);
                     cs_entry(A,LocIter,XMap[ifbin4],+11.0);
-                    Rhs[LocIter] = Accumulator->GetABFForceSum(ifcoord,ifbin4) * diff * 6.0;
+                    Rhs[LocIter] = Accumulator->GetIntegratedValue(ifcoord,ifbin4,false) * diff * 6.0;
                     LocIter++;
                 } else {
                     NumOfEquations += 4;

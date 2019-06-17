@@ -94,7 +94,7 @@ private:
     bool IntegrateByLS(CVerboseStr& vout);
 
     void    GetRBFPosition(unsigned int index,CSimpleVector<double>& position);
-    double  GetEnergy(const CSimpleVector<double>& position);
+    double  GetValue(const CSimpleVector<double>& position);
 };
 
 //------------------------------------------------------------------------------
