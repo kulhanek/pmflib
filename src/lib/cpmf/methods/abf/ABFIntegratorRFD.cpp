@@ -44,6 +44,7 @@ CABFIntegratorRFD::CABFIntegratorRFD(void)
     FDLevel = 4;
 
     ReconstructAll = true;
+    IntegrateErrors = false;
 }
 
 //------------------------------------------------------------------------------
@@ -87,8 +88,10 @@ void CABFIntegratorRFD::SetPeriodicity(bool set)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-bool CABFIntegratorRFD::Integrate(CVerboseStr& vout)
+bool CABFIntegratorRFD::Integrate(CVerboseStr& vout, bool errors)
 {
+    IntegrateErrors = errors;
+
     if( Accumulator == NULL ) {
         ES_ERROR("ABF accumulator is not set");
         return(false);
@@ -128,7 +131,11 @@ bool CABFIntegratorRFD::Integrate(CVerboseStr& vout)
         int x_index = XMap[ipoint];
         if(x_index >= 0) {
             double value = X[x_index]-glb_min;
-            FES->SetEnergy(ipoint,value);
+            if( ! IntegrateErrors ){
+                FES->SetEnergy(ipoint,value);
+            } else {
+                FES->SetError(ipoint,value);
+            }
             FES->SetNumOfSamples(ipoint,Accumulator->GetNumberOfABFSamples(ipoint));
         }
     }
@@ -241,16 +248,16 @@ void CABFIntegratorRFD::BuildEquations(int icoord,bool trial)
                     cs_entry(A,LocIter,XMap[ifbin1],-3.0);
                     cs_entry(A,LocIter,XMap[ifbin2],+4.0);
                     cs_entry(A,LocIter,XMap[ifbin3],-1.0);
-                    Rhs[LocIter] = Accumulator->GetIntegratedValue(ifcoord,ifbin1,false) * diff * 2.0;
+                    Rhs[LocIter] = Accumulator->GetIntegratedValue(ifcoord,ifbin1,IntegrateErrors) * diff * 2.0;
                     LocIter++;
                     cs_entry(A,LocIter,XMap[ifbin1],-1.0);
                     cs_entry(A,LocIter,XMap[ifbin3],+1.0);
-                    Rhs[LocIter] = Accumulator->GetIntegratedValue(ifcoord,ifbin2,false) * diff * 2.0;
+                    Rhs[LocIter] = Accumulator->GetIntegratedValue(ifcoord,ifbin2,IntegrateErrors) * diff * 2.0;
                     LocIter++;
                     cs_entry(A,LocIter,XMap[ifbin1],+1.0);
                     cs_entry(A,LocIter,XMap[ifbin2],-4.0);
                     cs_entry(A,LocIter,XMap[ifbin3],+3.0);
-                    Rhs[LocIter] = Accumulator->GetIntegratedValue(ifcoord,ifbin3,false) * diff * 2.0;
+                    Rhs[LocIter] = Accumulator->GetIntegratedValue(ifcoord,ifbin3,IntegrateErrors) * diff * 2.0;
                     LocIter++;
                 } else {
                     NumOfEquations += 3;
@@ -285,25 +292,25 @@ void CABFIntegratorRFD::BuildEquations(int icoord,bool trial)
                     cs_entry(A,LocIter,XMap[ifbin2],+18.0);
                     cs_entry(A,LocIter,XMap[ifbin3],-9.0);
                     cs_entry(A,LocIter,XMap[ifbin4],+2.0);
-                    Rhs[LocIter] = Accumulator->GetIntegratedValue(ifcoord,ifbin1,false) * diff * 6.0;
+                    Rhs[LocIter] = Accumulator->GetIntegratedValue(ifcoord,ifbin1,IntegrateErrors) * diff * 6.0;
                     LocIter++;
                     cs_entry(A,LocIter,XMap[ifbin1],-2.0);
                     cs_entry(A,LocIter,XMap[ifbin2],-3.0);
                     cs_entry(A,LocIter,XMap[ifbin3],+6.0);
                     cs_entry(A,LocIter,XMap[ifbin4],-1.0);
-                    Rhs[LocIter] = Accumulator->GetIntegratedValue(ifcoord,ifbin2,false) * diff * 6.0;
+                    Rhs[LocIter] = Accumulator->GetIntegratedValue(ifcoord,ifbin2,IntegrateErrors) * diff * 6.0;
                     LocIter++;
                     cs_entry(A,LocIter,XMap[ifbin1],+1.0);
                     cs_entry(A,LocIter,XMap[ifbin2],-6.0);
                     cs_entry(A,LocIter,XMap[ifbin3],+3.0);
                     cs_entry(A,LocIter,XMap[ifbin4],+2.0);
-                    Rhs[LocIter] = Accumulator->GetIntegratedValue(ifcoord,ifbin3,false) * diff * 6.0;
+                    Rhs[LocIter] = Accumulator->GetIntegratedValue(ifcoord,ifbin3,IntegrateErrors) * diff * 6.0;
                     LocIter++;
                     cs_entry(A,LocIter,XMap[ifbin1],-2.0);
                     cs_entry(A,LocIter,XMap[ifbin2],+9.0);
                     cs_entry(A,LocIter,XMap[ifbin3],-18.0);
                     cs_entry(A,LocIter,XMap[ifbin4],+11.0);
-                    Rhs[LocIter] = Accumulator->GetIntegratedValue(ifcoord,ifbin4,false) * diff * 6.0;
+                    Rhs[LocIter] = Accumulator->GetIntegratedValue(ifcoord,ifbin4,IntegrateErrors) * diff * 6.0;
                     LocIter++;
                 } else {
                     NumOfEquations += 4;

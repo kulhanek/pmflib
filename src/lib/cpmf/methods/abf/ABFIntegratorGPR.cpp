@@ -1,7 +1,7 @@
 // =============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
-//    Copyright (C) 2018 Petr Kulhanek, kulhanek@chemi.muni.cz
+//    Copyright (C) 2019 Petr Kulhanek, kulhanek@chemi.muni.cz
 //
 //     This program is free software; you can redistribute it and/or modify
 //     it under the terms of the GNU General Public License as published by
@@ -18,7 +18,7 @@
 //     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 // =============================================================================
 
-#include <ABFIntegratorRBF.hpp>
+#include <ABFIntegratorGPR.hpp>
 #include <ABFAccumulator.hpp>
 #include <EnergySurface.hpp>
 #include <ErrorSystem.hpp>
@@ -33,24 +33,22 @@ using namespace std;
 //------------------------------------------------------------------------------
 //==============================================================================
 
-CABFIntegratorRBF::CABFIntegratorRBF(void)
+CABFIntegratorGPR::CABFIntegratorGPR(void)
 {
     Accumulator = NULL;
     FES = NULL;
 
+    Verbose = true;
     Periodicity = false;
     WidthOrder = 4;
-    Method = EARBF_SVD;
+    Method = EAGPR_SVD;
 
-    IntegrateErrors = false;
-
-    RCond   = -1; // machine precision
-    RFac    = 3.0;
+    RCond = -1; // machine precision
 }
 
 //------------------------------------------------------------------------------
 
-CABFIntegratorRBF::~CABFIntegratorRBF(void)
+CABFIntegratorGPR::~CABFIntegratorGPR(void)
 {
 }
 
@@ -58,49 +56,35 @@ CABFIntegratorRBF::~CABFIntegratorRBF(void)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void CABFIntegratorRBF::SetInputABFAccumulator(const CABFAccumulator* p_accu)
+void CABFIntegratorGPR::SetInputABFAccumulator(const CABFAccumulator* p_accu)
 {
     Accumulator = p_accu;
 }
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorRBF::SetOutputFESurface(CEnergySurface* p_surf)
+void CABFIntegratorGPR::SetOutputFESurface(CEnergySurface* p_surf)
 {
     FES = p_surf;
 }
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorRBF::SetVerbosity(bool set)
+void CABFIntegratorGPR::SetVerbosity(bool set)
 {
     Verbose = set;
 }
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorRBF::SetGaussianWidth(int order)
+void CABFIntegratorGPR::SetGaussianWidth(int order)
 {
     WidthOrder = order;
 }
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorRBF::SetRCond(double rcond)
-{
-    RCond = rcond;
-}
-
-//------------------------------------------------------------------------------
-
-void CABFIntegratorRBF::SetRFac(double rfac)
-{
-    RFac = rfac;
-}
-
-//------------------------------------------------------------------------------
-
-void CABFIntegratorRBF::SetPeriodicity(bool set)
+void CABFIntegratorGPR::SetPeriodicity(bool set)
 {
     Periodicity = set;
 }
@@ -109,10 +93,8 @@ void CABFIntegratorRBF::SetPeriodicity(bool set)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-bool CABFIntegratorRBF::Integrate(CVerboseStr& vout,bool errors)
+bool CABFIntegratorGPR::Integrate(CVerboseStr& vout)
 {
-    IntegrateErrors = errors;
-
     if( Accumulator == NULL ) {
         ES_ERROR("ABF accumulator is not set");
         return(false);
@@ -132,23 +114,23 @@ bool CABFIntegratorRBF::Integrate(CVerboseStr& vout,bool errors)
         return(false);
     }
 
-    // RBF setup
+    // GPR setup
     NumOfCVs = Accumulator->GetNumberOfCoords();
-    NumOfRBFBins.CreateVector(NumOfCVs);
+    NumOfGPRBins.CreateVector(NumOfCVs);
 
-    if( RFac <= 0 ) RFac = 1.0;
+    double sfac = 5;
 
-    NumOfRBFs = 1;
+    NumOfGPRs = 1;
     for(int i=0; i < NumOfCVs; i++ ){
-        NumOfRBFBins[i] = Accumulator->GetCoordinate(i)->GetNumberOfBins()/RFac;
-        NumOfRBFs *= Accumulator->GetCoordinate(i)->GetNumberOfBins()/RFac;
+        NumOfGPRBins[i] = Accumulator->GetCoordinate(i)->GetNumberOfBins()/sfac;
+        NumOfGPRs *= Accumulator->GetCoordinate(i)->GetNumberOfBins()/sfac;
     }
-    Weights.CreateVector(NumOfRBFs);
+    Weights.CreateVector(NumOfGPRs);
     Weights.SetZero();
 
     Sigmas.CreateVector(NumOfCVs);
     for(int i=0; i < NumOfCVs; i++){
-        Sigmas[i] = Accumulator->GetCoordinate(i)->GetRange()*WidthOrder/NumOfRBFBins[i];
+        Sigmas[i] = Accumulator->GetCoordinate(i)->GetRange()*WidthOrder/NumOfGPRBins[i];
         // cout << Sigmas[i] << endl;
     }
 
@@ -178,11 +160,7 @@ bool CABFIntegratorRBF::Integrate(CVerboseStr& vout,bool errors)
     for(unsigned int ipoint=0; ipoint < FES->GetNumberOfPoints(); ipoint++) {
         FES->GetPoint(ipoint,position);
         double value = GetValue(position) - glb_min;
-        if( ! IntegrateErrors ){
-            FES->SetEnergy(ipoint,value);
-        } else {
-            FES->SetError(ipoint,value);
-        }
+        FES->SetEnergy(ipoint,value);
         FES->SetNumOfSamples(ipoint,Accumulator->GetNumberOfABFSamples(ipoint));
     }
 
@@ -193,7 +171,7 @@ bool CABFIntegratorRBF::Integrate(CVerboseStr& vout,bool errors)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-bool CABFIntegratorRBF::IntegrateByLS(CVerboseStr& vout)
+bool CABFIntegratorGPR::IntegrateByLS(CVerboseStr& vout)
 {
     vout << "   Creating A and rhs ..." << endl;
 
@@ -209,13 +187,13 @@ bool CABFIntegratorRBF::IntegrateByLS(CVerboseStr& vout)
     CSimpleVector<double>   lpos;           // best sampled bin
     lpos.CreateVector(NumOfCVs);
 
-    vout << "   Dim: " << neq << " x " << NumOfRBFs << endl;
+    vout << "   Dim: " << neq << " x " << NumOfGPRs << endl;
 
     CFortranMatrix A;
-    A.CreateMatrix(neq,NumOfRBFs);
+    A.CreateMatrix(neq,NumOfGPRs);
 
     CVector rhs;
-    int nrhs = std::max(neq,NumOfRBFs);
+    int nrhs = std::max(neq,NumOfGPRs);
     rhs.CreateVector(nrhs);
 
     // calculate A and rhs
@@ -224,8 +202,8 @@ bool CABFIntegratorRBF::IntegrateByLS(CVerboseStr& vout)
 
         Accumulator->GetPoint(i,ipos);
         // A
-        for(int l=0; l < NumOfRBFs; l++){
-            GetRBFPosition(l,lpos);
+        for(int l=0; l < NumOfGPRs; l++){
+            GetGPRPosition(l,lpos);
                   //      cout << lpos[0] << " " << lpos[1] << endl;
             double av = 1.0;
             for(int k=0; k < NumOfCVs; k++){
@@ -242,7 +220,7 @@ bool CABFIntegratorRBF::IntegrateByLS(CVerboseStr& vout)
         }
         // rhs
         for(int k=0; k < NumOfCVs; k++){
-            rhs[j+k] = Accumulator->GetIntegratedValue(k,i,IntegrateErrors);
+            rhs[j+k] = Accumulator->GetIntegratedValue(k,i,false);
         }
         j += NumOfCVs;
     }
@@ -250,7 +228,7 @@ bool CABFIntegratorRBF::IntegrateByLS(CVerboseStr& vout)
     int result = 0;
 
     switch(Method){
-        case EARBF_SVD:{
+        case EAGPR_SVD:{
             vout << "   Solving least square problem by SVD ..." << endl;
 
             // solve least square problem via GELSD
@@ -260,7 +238,7 @@ bool CABFIntegratorRBF::IntegrateByLS(CVerboseStr& vout)
             if( result != 0 ) return(false);
             }
         break;
-        case EARBF_QRLQ:{
+        case EAGPR_QRLQ:{
             vout << "   Solving least square problem by QRLQ ..." << endl;
 
             // solve least square problem via GELS
@@ -273,7 +251,7 @@ bool CABFIntegratorRBF::IntegrateByLS(CVerboseStr& vout)
     }
 
     // copy results to Weights
-    for(int l=0; l < NumOfRBFs; l++){
+    for(int l=0; l < NumOfGPRs; l++){
         Weights[l] = rhs[l];
     }
 
@@ -287,29 +265,29 @@ bool CABFIntegratorRBF::IntegrateByLS(CVerboseStr& vout)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void CABFIntegratorRBF::GetRBFPosition(unsigned int index,CSimpleVector<double>& position)
+void CABFIntegratorGPR::GetGPRPosition(unsigned int index,CSimpleVector<double>& position)
 {
     for(int k=NumOfCVs-1; k >= 0; k--) {
 
         const CColVariable* p_coord = Accumulator->GetCoordinate(k);
-        int ibin = index % NumOfRBFBins[k];
+        int ibin = index % NumOfGPRBins[k];
         // bin  = 0,...,NBins-1
-        position[k] = p_coord->GetMinValue() + ((double)ibin + 0.5)*(p_coord->GetMaxValue()-p_coord->GetMinValue())/((double)NumOfRBFBins[k]);
-        index = index / NumOfRBFBins[k];
+        position[k] = p_coord->GetMinValue() + ((double)ibin + 0.5)*(p_coord->GetMaxValue()-p_coord->GetMinValue())/((double)NumOfGPRBins[k]);
+        index = index / NumOfGPRBins[k];
     }
 }
 
 //------------------------------------------------------------------------------
 
-double CABFIntegratorRBF::GetValue(const CSimpleVector<double>& position)
+double CABFIntegratorGPR::GetValue(const CSimpleVector<double>& position)
 {
     double                  energy = 0.0;
     CSimpleVector<double>   rbfpos;
 
     rbfpos.CreateVector(NumOfCVs);
 
-    for(int i=0; i < NumOfRBFs; i++){
-        GetRBFPosition(i,rbfpos);
+    for(int i=0; i < NumOfGPRs; i++){
+        GetGPRPosition(i,rbfpos);
         double value = Weights[i];
         for(int j=0; j < NumOfCVs; j++){
             double dvc = Accumulator->GetCoordinate(j)->GetDifference(position[j],rbfpos[j]);

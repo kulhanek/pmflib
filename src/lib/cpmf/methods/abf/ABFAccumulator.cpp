@@ -1102,11 +1102,8 @@ double CABFAccumulator::GetIntegratedValue(int icoord,int ibin,bool error) const
         } else {
             sq = 0.0;
         }
-        // value is variance of mean ABF force
+        // value is standard error of mean ABF force
         value = sq / sqrt((double)nsamples);
-
-        // transform to variance square - for error integration
-        value = value*value;
     }
 
     return(value);

@@ -146,7 +146,7 @@ bool CABFMask::Run(void)
     integrator.SetInputABFAccumulator(&Accumulator);
     integrator.SetOutputFESurface(&fes);
 
-    if(integrator.Integrate(vout) == false) {
+    if(integrator.Integrate(vout,false) == false) {
         ES_ERROR("unable to prepare ABF accumulator");
         return(false);
     }

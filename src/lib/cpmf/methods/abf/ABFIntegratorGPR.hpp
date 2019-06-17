@@ -1,9 +1,9 @@
-#ifndef ABFIntegratorRBFH
-#define ABFIntegratorRBFH
+#ifndef ABFIntegratorGPRH
+#define ABFIntegratorGPRH
 // =============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
-//    Copyright (C) 2018 Petr Kulhanek, kulhanek@chemi.muni.cz
+//    Copyright (C) 2019 Petr Kulhanek, kulhanek@chemi.muni.cz
 //
 //     This program is free software; you can redistribute it and/or modify
 //     it under the terms of the GNU General Public License as published by
@@ -31,9 +31,9 @@ class CEnergySurface;
 
 // integration method
 
-enum EARBFMethod {
-    EARBF_SVD = 1,
-    EARBF_QRLQ = 2,
+enum EAGPRMethod {
+    EAGPR_SVD = 1,
+    EAGPR_QRLQ = 2,
 };
 
 //------------------------------------------------------------------------------
@@ -41,11 +41,11 @@ enum EARBFMethod {
 /** \brief integrator of ABF accumulator employing radial basis functions
 */
 
-class PMF_PACKAGE CABFIntegratorRBF {
+class PMF_PACKAGE CABFIntegratorGPR {
 public:
 // constructor and destructor -------------------------------------------------
-    CABFIntegratorRBF(void);
-    virtual ~CABFIntegratorRBF(void);
+    CABFIntegratorGPR(void);
+    virtual ~CABFIntegratorGPR(void);
 
 // setup methods --------------------------------------------------------------
     /// set input ABF accumulator, only ABF forces are integrated
@@ -60,18 +60,12 @@ public:
     /// multiply of bin sizes
     void SetGaussianWidth(int order);
 
-    /// set rcond for SVD
-    void SetRCond(double rcond);
-
-    /// set reduction factor for RBF
-    void SetRFac(double rfac);
-
     /// should we apply periodicity?
     void SetPeriodicity(bool set);
 
 // execution method -----------------------------------------------------------
     /// integrate data
-    bool Integrate(CVerboseStr& vout,bool errors);
+    bool Integrate(CVerboseStr& vout);
 
 // section of private data ----------------------------------------------------
 private:
@@ -81,23 +75,21 @@ private:
     bool                    Verbose;
     int                     WidthOrder;
     bool                    Periodicity;
-    EARBFMethod             Method;
-    bool                    IntegrateErrors;
+    EAGPRMethod             Method;
 
-    // RBF data
-    int                     NumOfRBFs;
+    // GPR data
+    int                     NumOfGPRs;
     CSimpleVector<double>   Weights;
-    CSimpleVector<int>      NumOfRBFBins;
+    CSimpleVector<int>      NumOfGPRBins;
     int                     NumOfCVs;
     CSimpleVector<double>   Sigmas;
-    double                  RFac;   // reduction factor for number of RBFs
 
     // SVD setup
     double                  RCond;
 
     bool IntegrateByLS(CVerboseStr& vout);
 
-    void    GetRBFPosition(unsigned int index,CSimpleVector<double>& position);
+    void    GetGPRPosition(unsigned int index,CSimpleVector<double>& position);
     double  GetValue(const CSimpleVector<double>& position);
 };
 

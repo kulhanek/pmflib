@@ -62,7 +62,7 @@ public:
 
 // execution method -----------------------------------------------------------
     /// integrate data, for errors the FES must be already allocated!!!
-    bool Integrate(CVerboseStr& vout);
+    bool Integrate(CVerboseStr& vout,bool errors);
 
 // section of private data ----------------------------------------------------
 private:
@@ -76,6 +76,8 @@ private:
     int                     NumOfVariables;
     int                     NumOfEquations;
     int                     NumOfNonZeros;
+
+    bool                    IntegrateErrors;
 
     CSimpleVector<int>      XMap;       // translation between global index and X index
     CSimpleVector<int>      IPoint;     // index points

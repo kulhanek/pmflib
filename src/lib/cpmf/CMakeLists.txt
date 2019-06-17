@@ -2,8 +2,6 @@
 # PMFLib CMake File
 # ==============================================================================
 
-#-------------------------------------------------------------------------------
-
 SET(CPMF_METHODS_SRC
         PMFMainHeader.cpp
         methods/common/ColVariable.cpp
@@ -12,6 +10,7 @@ SET(CPMF_METHODS_SRC
         methods/abf/ABFAccumulator.cpp
         methods/abf/ABFIntegratorRFD.cpp
         methods/abf/ABFIntegratorRBF.cpp
+        methods/abf/ABFIntegratorGPR.cpp
         methods/mtd/MTDHistory.cpp
         methods/mtd/MTDBuffer.cpp
         methods/rst/RSTAccumulator.cpp

@@ -169,7 +169,7 @@ bool CABFIntegrate::Run(void)
 
 // integrate data ------------------------------
     vout << endl;
-    vout << "3) ABF accumulator integration (energy)"<< endl;
+    vout << "3a)ABF accumulator integration (energy)"<< endl;
 
     CEnergySurface     fes;
     fes.Allocate(&accumulator);
@@ -183,7 +183,7 @@ bool CABFIntegrate::Run(void)
         integrator.SetInputABFAccumulator(&accumulator);
         integrator.SetOutputFESurface(&fes);
 
-        if(integrator.Integrate(vout) == false) {
+        if(integrator.Integrate(vout,false) == false) {
             ES_ERROR("unable to prepare ABF accumulator");
             return(false);
         }
@@ -193,11 +193,13 @@ bool CABFIntegrate::Run(void)
         integrator.SetVerbosity(Options.GetOptVerbose());
         integrator.SetPeriodicity(Options.GetOptPeriodicity());
         integrator.SetGaussianWidth(Options.GetOptOrder());
+        integrator.SetRCond(Options.GetOptRCond());
+        integrator.SetRFac(Options.GetOptRFac());
 
         integrator.SetInputABFAccumulator(&accumulator);
         integrator.SetOutputFESurface(&fes);
 
-        if(integrator.Integrate(vout) == false) {
+        if(integrator.Integrate(vout,false) == false) {
             ES_ERROR("unable to prepare ABF accumulator");
             return(false);
         }
@@ -209,6 +211,48 @@ bool CABFIntegrate::Run(void)
 
  // apply offset
     fes.ApplyOffset(Options.GetOptOffset() - fes.GetGlobalMinimumValue());
+
+    if( Options.GetOptWithErrors() ){
+        vout << endl;
+        vout << "3b)ABF accumulator integration (errors)"<< endl;
+
+        if(Options.GetOptMethod() == "rfd" ) {
+            CABFIntegratorRFD   integrator;
+
+            integrator.SetPeriodicity(Options.GetOptPeriodicity());
+            integrator.SetFDOrder(Options.GetOptOrder());
+
+            integrator.SetInputABFAccumulator(&accumulator);
+            integrator.SetOutputFESurface(&fes);
+
+            if(integrator.Integrate(vout,true) == false) {
+                ES_ERROR("unable to prepare ABF accumulator");
+                return(false);
+            }
+        } else if( Options.GetOptMethod() == "rbf" ){
+            CABFIntegratorRBF   integrator;
+
+            integrator.SetVerbosity(Options.GetOptVerbose());
+            integrator.SetPeriodicity(Options.GetOptPeriodicity());
+            integrator.SetGaussianWidth(Options.GetOptOrder());
+            integrator.SetRCond(Options.GetOptRCond());
+            integrator.SetRFac(Options.GetOptRFac());
+
+            integrator.SetInputABFAccumulator(&accumulator);
+            integrator.SetOutputFESurface(&fes);
+
+            if(integrator.Integrate(vout,true) == false) {
+                ES_ERROR("unable to prepare ABF accumulator");
+                return(false);
+            }
+        } else {
+            INVALID_ARGUMENT("method - not implemented");
+        }
+
+        fes.AdaptErrorsToGlobalMinimum();
+
+        vout << "   Done" << endl;
+    }
 
 // print result ---------------------------------
     vout << endl;

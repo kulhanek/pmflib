@@ -38,7 +38,7 @@ public:
 
     CSO_PROG_DESC_BEGIN
     "It numericaly integrates data from the ABF calculation. The integration is performed either by "
-    "reverse finite difference (RFD) method or employing radial basis functions (RBF)."
+    "reverse finite difference (RFD) method, employing radial basis functions (RBF), or gaussian process (GPR)."
     CSO_PROG_DESC_END
 
     CSO_PROG_VERS_BEGIN
@@ -55,6 +55,8 @@ public:
     CSO_OPT(CSmallString,Method)
     CSO_OPT(int,Order)
     CSO_OPT(double,Offset)
+    CSO_OPT(double,RCond)
+    CSO_OPT(double,RFac)
     CSO_OPT(bool,Periodicity)
     CSO_OPT(bool,WithErrors)
     CSO_OPT(CSmallString,OutputFormat)
@@ -99,7 +101,7 @@ public:
                 'm',                           /* short option name */
                 "method",                      /* long option name */
                 "NAME",                           /* parametr name */
-                "Integration method. Supported methods are: rfd (reverse finite difference) and rbf (radial basis functions).")   /* option description */
+                "Integration method. Supported methods are: rfd (reverse finite difference), rbf (radial basis functions), and gpr (gaussian process).")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(int,                           /* option type */
                 Order,                        /* option name */
@@ -118,6 +120,24 @@ public:
                 "offset",                      /* long option name */
                 "NUMBER",                           /* parametr name */
                 "Specify an integration constant.")   /* option description */
+    //----------------------------------------------------------------------
+    CSO_MAP_OPT(double,                           /* option type */
+                RCond,                        /* option name */
+                -1.0,                          /* default value */
+                false,                          /* is option mandatory */
+                'r',                           /* short option name */
+                "rcond",                      /* long option name */
+                "NUMBER",                           /* parametr name */
+                "Rank condition for SVD.")   /* option description */
+    //----------------------------------------------------------------------
+    CSO_MAP_OPT(double,                           /* option type */
+                RFac,                        /* option name */
+                3.0,                          /* default value */
+                false,                          /* is option mandatory */
+                't',                           /* short option name */
+                "rfac",                      /* long option name */
+                "NUMBER",                           /* parametr name */
+                "Reduction factor for number of RBFs.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(bool,                           /* option type */
                 Periodicity,                        /* option name */
