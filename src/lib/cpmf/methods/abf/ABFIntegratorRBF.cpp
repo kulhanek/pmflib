@@ -42,6 +42,7 @@ CABFIntegratorRBF::CABFIntegratorRBF(void)
     Periodicity = false;
     WFac        = 2.0;
     RFac        = 3.0;
+    Overhang    = 2;
     Method      = EARBF_SVD;
 
     IntegrateErrors = false;
@@ -102,6 +103,13 @@ void CABFIntegratorRBF::SetRFac(double rfac)
 
 //------------------------------------------------------------------------------
 
+void CABFIntegratorRBF::SetOverhang(int nrbfs)
+{
+    Overhang = nrbfs;
+}
+
+//------------------------------------------------------------------------------
+
 void CABFIntegratorRBF::SetPeriodicity(bool set)
 {
     Periodicity = set;
@@ -142,8 +150,12 @@ bool CABFIntegratorRBF::Integrate(CVerboseStr& vout,bool errors)
 
     NumOfRBFs = 1;
     for(int i=0; i < NumOfCVs; i++ ){
-        NumOfRBFBins[i] = Accumulator->GetCoordinate(i)->GetNumberOfBins()/RFac;
-        NumOfRBFs *= Accumulator->GetCoordinate(i)->GetNumberOfBins()/RFac;
+        int nrbfbins = Accumulator->GetCoordinate(i)->GetNumberOfBins()/RFac;
+        if( ! Accumulator->GetCoordinate(i)->IsPeriodic() ){
+            nrbfbins += 2*Overhang;
+        }
+        NumOfRBFBins[i] = nrbfbins;
+        NumOfRBFs *= nrbfbins;
     }
     Weights.CreateVector(NumOfRBFs);
     Weights.SetZero();
@@ -297,7 +309,16 @@ void CABFIntegratorRBF::GetRBFPosition(unsigned int index,CSimpleVector<double>&
         const CColVariable* p_coord = Accumulator->GetCoordinate(k);
         int ibin = index % NumOfRBFBins[k];
         // bin  = 0,...,NBins-1
-        position[k] = p_coord->GetMinValue() + ((double)ibin + 0.5)*(p_coord->GetMaxValue()-p_coord->GetMinValue())/((double)NumOfRBFBins[k]);
+        double start = p_coord->GetMinValue();
+        int nbins = NumOfRBFBins[k];
+        if( ! p_coord->IsPeriodic() ){
+            nbins -= 2*Overhang;
+        }
+        double step = (p_coord->GetMaxValue()-p_coord->GetMinValue())/((double)nbins);
+        if( ! p_coord->IsPeriodic() ){
+            start -= Overhang*step; // only half
+        }
+        position[k] = start + ((double)ibin + 0.5)*step;
         index = index / NumOfRBFBins[k];
     }
 }

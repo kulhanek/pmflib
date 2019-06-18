@@ -44,9 +44,9 @@ int CABFMaskOptions::CheckOptions(void)
         IsError = true;
     }
 
-    if((GetOptFDOrder() != 3) && (GetOptFDOrder() != 4)) {
+    if((GetOptFDPoints() != 3) && (GetOptFDPoints() != 4)) {
         if(IsError == false) fprintf(stderr,"\n");
-        fprintf(stderr,"%s: FD order has to be either three or four, but %d is specified\n", (const char*)GetProgramName(),GetOptFDOrder());
+        fprintf(stderr,"%s: FD number of points has to be either three or four, but %d is specified\n", (const char*)GetProgramName(),GetOptFDPoints());
         IsError = true;
     }
 

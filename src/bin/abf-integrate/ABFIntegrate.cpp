@@ -85,32 +85,35 @@ int CABFIntegrate::Init(int argc,char* argv[])
         vout << "# Free energy file (out): - (standard output)" << endl;
     }
     vout << "# ------------------------------------------------" << endl;
-    if(Options.GetOptLimit() == 0) {
-        vout << "# Limit                 : all bins will be taken into account" << endl;
-    } else {
-        vout << "# Limit                 : " << Options.GetOptLimit() << endl;
-    }
-        vout << "# Integration method    : " << Options.GetOptMethod() << endl;
 
+        vout << "# Integration method    : " << Options.GetOptMethod() << endl;
+        if( Options.GetOptWithErrors() ) {
+        vout << "# Integrated domains    : force+errors" << endl;
+        } else {
+        vout << "# Integrated domains    : force only" << endl;
+        }
     if( Options.GetOptMethod() == "rfd" ){
-        vout << "# FD order              : " << Options.GetOptOrder() << endl;
+        vout << "# FD number of points   : " << Options.GetOptFDPoints() << endl;
     } else if ( Options.GetOptMethod() == "rbf" ){
-        vout << "# Reduction factor rfac : " << Options.GetOptRFac() << endl;
-        vout << "# Width factor wfac     : " << Options.GetOptWFac() << endl;
+        vout << "# Reduction factor rfac : " << setprecision(3) << Options.GetOptRFac() << endl;
+        vout << "# Width factor wfac     : " << setprecision(3) << Options.GetOptWFac() << endl;
+        vout << "# SVD rcond             : " << setprecision(3) << Options.GetOptRCond() << endl;
+        vout << "# RBF overhang          : " << Options.GetOptOverhang() << endl;
     } else if ( Options.GetOptMethod() == "gpr"  ) {
         // FIXME
     } else {
         ES_ERROR("not implemented method");
         return(SO_USER_ERROR);
     }
-
-    vout << "# Integration offset    : " << Options.GetOptOffset() << endl;
-    vout << "# Periodicity           : " << bool_to_str(Options.GetOptPeriodicity()) << endl;
-    if( Options.GetOptWithErrors() ) {
-    vout << "# Integrated domains    : force+errors" << endl;
+    vout << "# ------------------------------------------------" << endl;
+    if(Options.GetOptLimit() == 0) {
+        vout << "# Limit                 : all bins will be taken into account" << endl;
     } else {
-    vout << "# Integrated domains    : force only" << endl;
+        vout << "# Limit                 : " << Options.GetOptLimit() << endl;
     }
+        vout << "# Periodicity           : " << bool_to_str(Options.GetOptPeriodicity()) << endl;
+
+        vout << "# Integration offset    : " << Options.GetOptOffset() << endl;
     vout << "# ------------------------------------------------" << endl;
     vout << "# Output FES format     : " << Options.GetOptOutputFormat() << endl;
     vout << "# No header to output   : " << bool_to_str(Options.GetOptNoHeader()) << endl;
@@ -155,32 +158,36 @@ bool CABFIntegrate::Run(void)
     if((Options.GetOptNoHeader() == false) && (Options.GetOptOutputFormat() != "fes")) {
         fprintf(OutputFile,"# data integrated by    : ");
         if(Options.GetOptMethod() == "rfd" ) {
-            fprintf(OutputFile," RFD (reverse finite difference)\n");
+            fprintf(OutputFile," RFD (reverse finite differences)\n");
         } else if( Options.GetOptMethod() == "rbf" ){
             fprintf(OutputFile," RBF (radial basis functions)\n");
+        } else if( Options.GetOptMethod() == "gpr" ) {
+            fprintf(OutputFile," GPR (gaussian process)\n");
         } else {
             INVALID_ARGUMENT("method - not implemented");
         }
-        if( Options.GetOptMethod() == "rfd" ){
-            printf("# FD order              : %d\n", Options.GetOptOrder());
-        } else if ( Options.GetOptMethod() == "rbf" ){
-            printf("# Reduction factor rfac : %5.3f\n", Options.GetOptRFac());
-            printf("# Width factor wfac     : %5.3f\n", Options.GetOptWFac());
-        } else if ( Options.GetOptMethod() == "gpr"  ) {
-            // FIXME
-        } else {
-            ES_ERROR("not implemented method");
-        }
-        fprintf(OutputFile,"# Number of coordinates : %d\n",accumulator.GetNumberOfCoords());
-        fprintf(OutputFile,"# Total number of bins  : %d\n",accumulator.GetNumberOfBins());
-        fprintf(OutputFile,"# Sample limit          : %d\n",Options.GetOptLimit());
-        fprintf(OutputFile,"# Periodicity           : %s\n",(const char*)bool_to_str(Options.GetOptPeriodicity()));
         if( Options.GetOptWithErrors() ) {
         fprintf(OutputFile,"# Integrated domains    : force+errors\n");
         } else {
         fprintf(OutputFile,"# Integrated domains    : force only\n");
         }
-        fprintf(OutputFile,"# RFD/RBF order         : %d\n",Options.GetOptOrder());
+        if( Options.GetOptMethod() == "rfd" ){
+            fprintf(OutputFile,"# FD nuber of points    : %d\n", Options.GetOptFDPoints());
+        } else if ( Options.GetOptMethod() == "rbf" ){
+            fprintf(OutputFile,"# Reduction factor rfac : %5.3f\n", Options.GetOptRFac());
+            fprintf(OutputFile,"# Width factor wfac     : %5.3f\n", Options.GetOptWFac());
+            fprintf(OutputFile,"# SVD rcond             : %5.3f\n", Options.GetOptRCond());
+            fprintf(OutputFile,"# RBF overhang          : %d\n", Options.GetOptOverhang());
+        } else if ( Options.GetOptMethod() == "gpr"  ) {
+            // FIXME
+        } else {
+            ES_ERROR("not implemented method");
+        }
+
+        fprintf(OutputFile,"# Sample limit          : %d\n",Options.GetOptLimit());
+        fprintf(OutputFile,"# Periodicity           : %s\n",(const char*)bool_to_str(Options.GetOptPeriodicity()));
+        fprintf(OutputFile,"# Number of coordinates : %d\n",accumulator.GetNumberOfCoords());
+        fprintf(OutputFile,"# Total number of bins  : %d\n",accumulator.GetNumberOfBins());
     }
 
 // prepare accumulator --------------------------
@@ -200,7 +207,7 @@ bool CABFIntegrate::Run(void)
         CABFIntegratorRFD   integrator;
 
         integrator.SetPeriodicity(Options.GetOptPeriodicity());
-        integrator.SetFDOrder(Options.GetOptOrder());
+        integrator.SetFDPoints(Options.GetOptFDPoints());
 
         integrator.SetInputABFAccumulator(&accumulator);
         integrator.SetOutputFESurface(&fes);
@@ -217,6 +224,7 @@ bool CABFIntegrate::Run(void)
         integrator.SetWFac(Options.GetOptWFac());
         integrator.SetRCond(Options.GetOptRCond());
         integrator.SetRFac(Options.GetOptRFac());
+        integrator.SetOverhang(Options.GetOptOverhang());
 
         integrator.SetInputABFAccumulator(&accumulator);
         integrator.SetOutputFESurface(&fes);
@@ -242,7 +250,7 @@ bool CABFIntegrate::Run(void)
             CABFIntegratorRFD   integrator;
 
             integrator.SetPeriodicity(Options.GetOptPeriodicity());
-            integrator.SetFDOrder(Options.GetOptOrder());
+            integrator.SetFDPoints(Options.GetOptFDPoints());
 
             integrator.SetInputABFAccumulator(&accumulator);
             integrator.SetOutputFESurface(&fes);
@@ -259,6 +267,7 @@ bool CABFIntegrate::Run(void)
             integrator.SetWFac(Options.GetOptWFac());
             integrator.SetRCond(Options.GetOptRCond());
             integrator.SetRFac(Options.GetOptRFac());
+            integrator.SetOverhang(Options.GetOptOverhang());
 
             integrator.SetInputABFAccumulator(&accumulator);
             integrator.SetOutputFESurface(&fes);

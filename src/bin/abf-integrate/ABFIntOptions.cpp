@@ -54,16 +54,9 @@ int CABFIntOptions::CheckOptions(void)
     }
 
     if( GetOptMethod() == "rfd" ){
-        if((GetOptOrder() != 3) && (GetOptOrder() != 4)) {
+        if((GetOptFDPoints() != 3) && (GetOptFDPoints() != 4)) {
             if(IsError == false) fprintf(stderr,"\n");
-            fprintf(stderr,"%s: RFD order has to be either three or four, but %d is specified\n", (const char*)GetProgramName(),GetOptOrder());
-            IsError = true;
-        }
-    }
-    if( GetOptMethod() == "rbf" ){
-        if( GetOptOrder() < 1 ) {
-            if(IsError == false) fprintf(stderr,"\n");
-            fprintf(stderr,"%s: RBF order must be greater than 1, but %d is specified\n", (const char*)GetProgramName(),GetOptOrder());
+            fprintf(stderr,"%s: RFD number of points has to be either three or four, but %d is specified\n", (const char*)GetProgramName(),GetOptFDPoints());
             IsError = true;
         }
     }

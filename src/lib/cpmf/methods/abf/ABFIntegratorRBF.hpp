@@ -69,6 +69,9 @@ public:
     /// should we apply periodicity?
     void SetPeriodicity(bool set);
 
+    /// set overhang, i.e. how many RBFs will be deposited outside of ABF accumulator
+    void SetOverhang(int nrbfs);
+
 // execution method -----------------------------------------------------------
     /// integrate data
     bool Integrate(CVerboseStr& vout,bool errors);
@@ -85,6 +88,7 @@ private:
     double                  WFac;
     double                  RFac;   // reduction factor for number of RBFs
     bool                    Periodicity;
+    int                     Overhang;
     EARBFMethod             Method;
     bool                    IntegrateErrors;
 

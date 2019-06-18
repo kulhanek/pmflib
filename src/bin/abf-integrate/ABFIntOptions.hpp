@@ -52,12 +52,13 @@ public:
     CSO_ARG(CSmallString,FEOutputName)
     // options ------------------------------
     CSO_OPT(int,Limit)
-    CSO_OPT(CSmallString,Method)
-    CSO_OPT(int,Order)
     CSO_OPT(double,Offset)
+    CSO_OPT(CSmallString,Method)
+    CSO_OPT(int,FDPoints)
     CSO_OPT(double,RCond)
     CSO_OPT(double,RFac)
     CSO_OPT(double,WFac)
+    CSO_OPT(int,Overhang)
     CSO_OPT(bool,Periodicity)
     CSO_OPT(bool,WithErrors)
     CSO_OPT(CSmallString,OutputFormat)
@@ -95,24 +96,6 @@ public:
                 "NUMBER",                           /* parametr name */
                 "Only bins containing more samples than NUMBER are considered as properly sampled.")   /* option description */
     //----------------------------------------------------------------------
-    CSO_MAP_OPT(CSmallString,                           /* option type */
-                Method,                        /* option name */
-                "rfd",                          /* default value */
-                false,                          /* is option mandatory */
-                'm',                           /* short option name */
-                "method",                      /* long option name */
-                "NAME",                           /* parametr name */
-                "Integration method. Supported methods are: rfd (reverse finite difference), rbf (radial basis functions), and gpr (gaussian process).")   /* option description */
-    //----------------------------------------------------------------------
-    CSO_MAP_OPT(int,                           /* option type */
-                Order,                        /* option name */
-                3,                          /* default value */
-                false,                          /* is option mandatory */
-                0,                           /* short option name */
-                "order",                      /* long option name */
-                "ORDER",                           /* parametr name */
-                "Determines differenciation scheme (three or four is upported) for RFD method")   /* option description */
-    //----------------------------------------------------------------------
     CSO_MAP_OPT(double,                           /* option type */
                 Offset,                        /* option name */
                 0.0,                          /* default value */
@@ -121,6 +104,24 @@ public:
                 "offset",                      /* long option name */
                 "NUMBER",                           /* parametr name */
                 "Specify an integration constant.")   /* option description */
+    //----------------------------------------------------------------------
+    CSO_MAP_OPT(CSmallString,                           /* option type */
+                Method,                        /* option name */
+                "rfd",                          /* default value */
+                false,                          /* is option mandatory */
+                'm',                           /* short option name */
+                "method",                      /* long option name */
+                "NAME",                           /* parametr name */
+                "Integration method. Supported methods are: rfd (reverse finite differences), rbf (radial basis functions), and gpr (gaussian process).")   /* option description */
+    //----------------------------------------------------------------------
+    CSO_MAP_OPT(int,                           /* option type */
+                FDPoints,                        /* option name */
+                3,                          /* default value */
+                false,                          /* is option mandatory */
+                0,                           /* short option name */
+                "fdpoints",                      /* long option name */
+                "NUMBER",                           /* parametr name */
+                "Determine number of points employed in differenciation scheme (three or four is upported) in RFD method.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(double,                           /* option type */
                 RCond,                        /* option name */
@@ -149,6 +150,15 @@ public:
                 "NUMBER",                           /* parametr name */
                 "Factor influencing widths of RBFs. The width is distance between "
                 "the adjacent RBFs multiplied by this factor.")   /* option description */
+    //----------------------------------------------------------------------
+    CSO_MAP_OPT(int,                           /* option type */
+                Overhang,                        /* option name */
+                2,                          /* default value */
+                false,                          /* is option mandatory */
+                'g',                           /* short option name */
+                "overhang",                      /* long option name */
+                "NUMBER",                           /* parametr name */
+                "RBFs overhang to properly integrate areas near sampled edges. Ignored for periodic CVs.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(bool,                           /* option type */
                 Periodicity,                        /* option name */

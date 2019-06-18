@@ -54,8 +54,8 @@ public:
     /// set output free energy surface
     void SetOutputFESurface(CEnergySurface* p_surf);
 
-    /// set FD order (3 or 4)
-    void SetFDOrder(int order);
+    /// set FD number of points (3 or 4)
+    void SetFDPoints(int npts);
 
     /// should we apply periodicity?
     void SetPeriodicity(bool set);

@@ -51,7 +51,7 @@ public:
     // options ------------------------------
     CSO_OPT(double,MaxEnergy)
     CSO_OPT(int,Limit)
-    CSO_OPT(int,FDOrder)
+    CSO_OPT(int,FDPoints)
     CSO_OPT(double,Offset)
     CSO_OPT(bool,Periodicity)
     CSO_OPT(CSmallString,OutputFormat)
@@ -95,12 +95,12 @@ public:
                 "Only bins containing more samples than NUMBER are considered as properly sampled.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(int,                           /* option type */
-                FDOrder,                        /* option name */
+                FDPoints,                        /* option name */
                 3,                          /* default value */
                 false,                          /* is option mandatory */
                 0,                           /* short option name */
-                "fdorder",                      /* long option name */
-                "ORDER",                           /* parametr name */
+                "fdpoints",                      /* long option name */
+                "NUMBER",                           /* parametr name */
                 "Determines differenciation scheme. Currently implemented schemes use either three or four points.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(double,                           /* option type */

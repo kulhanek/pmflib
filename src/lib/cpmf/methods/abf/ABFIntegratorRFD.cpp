@@ -75,9 +75,9 @@ void CABFIntegratorRFD::SetOutputFESurface(CEnergySurface* p_surf)
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorRFD::SetFDOrder(int order)
+void CABFIntegratorRFD::SetFDPoints(int npts)
 {
-    FDLevel = order;
+    FDLevel = npts;
 }
 
 //------------------------------------------------------------------------------

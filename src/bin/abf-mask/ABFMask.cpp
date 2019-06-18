@@ -88,7 +88,7 @@ int CABFMask::Init(int argc,char* argv[])
     } else {
         vout << "# Limit                 : " << Options.GetOptLimit() << endl;
     }
-    vout << "# FD order              : " << Options.GetOptFDOrder() << endl;
+    vout << "# FD number of points   : " << Options.GetOptFDPoints() << endl;
     vout << "# Integration offset    : " << Options.GetOptOffset() << endl;
     vout << "# Periodicity           : " << bool_to_str(Options.GetOptPeriodicity()) << endl;
     vout << "# ------------------------------------------------" << endl;
@@ -141,7 +141,7 @@ bool CABFMask::Run(void)
     fes.Allocate(&Accumulator);
 
     integrator.SetPeriodicity(Options.GetOptPeriodicity());
-    integrator.SetFDOrder(Options.GetOptFDOrder());
+    integrator.SetFDPoints(Options.GetOptFDPoints());
 
     integrator.SetInputABFAccumulator(&Accumulator);
     integrator.SetOutputFESurface(&fes);
