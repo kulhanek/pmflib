@@ -23,6 +23,9 @@
 #include <ABFAccumulator.hpp>
 #include <EnergySurface.hpp>
 #include <ErrorSystem.hpp>
+#include <iomanip>
+
+using namespace std;
 
 //==============================================================================
 //------------------------------------------------------------------------------
@@ -106,7 +109,7 @@ bool CABFIntegratorRFD::Integrate(CVerboseStr& vout, bool errors)
         return(false);
     }
 
-    if( Accumulator->GetNumberOfCoords() != FES->GetNumberOfCoords() ){
+    if( (unsigned int)Accumulator->GetNumberOfCoords() != FES->GetNumberOfCoords() ){
         ES_ERROR("inconsistent ABF and FES");
         return(false);
     }
@@ -119,6 +122,8 @@ bool CABFIntegratorRFD::Integrate(CVerboseStr& vout, bool errors)
         ReleaseAllResources();
         return(false);
     }
+
+    vout << "   RMSR                          = " << setprecision(5) << GetRMSR() << endl;
 
 // find global minimum
     double glb_min = X[0];
@@ -159,8 +164,7 @@ bool CABFIntegratorRFD::BuildSystemOfEquations(CVerboseStr& vout)
     NumOfEquations = 0;
     NumOfNonZeros = 0;
 
-    LocIter = 0;
-    BuildEquations(0,true);
+    BuildEquations(true);
 
     vout << "   Number of variables           : " << NumOfVariables << std::endl;
     vout << "   Number of equations           : " << NumOfEquations << std::endl;
@@ -192,136 +196,130 @@ bool CABFIntegratorRFD::BuildSystemOfEquations(CVerboseStr& vout)
     Rhs.CreateVector(NumOfEquations);
 
 // build system of equations
-    LocIter = 0;
-    BuildEquations(0,false);
+    BuildEquations(false);
 
     return(true);
 }
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorRFD::BuildEquations(int icoord,bool trial)
+void CABFIntegratorRFD::BuildEquations(bool trial)
 {
-    if(icoord < Accumulator->GetNumberOfCoords()) {  // end of recursion ?
-        const CColVariable* p_coord = Accumulator->GetCoordinate(icoord);
-        for(unsigned int ibin=0; ibin < p_coord->GetNumberOfBins(); ibin++) {
-            IPoint[icoord] = ibin;
-            BuildEquations(icoord+1,trial);
-        }
-        return;
-    }
+    LocIter = 0;
 
-// end of recursion - set equations
-    for(int ifcoord=0; ifcoord < Accumulator->GetNumberOfCoords(); ifcoord++) {
-        int ifbin1,ifbin2,ifbin3,ifbin4;
+    for(int i=0; i < Accumulator->GetNumberOfBins(); i++){
+        Accumulator->GetIPoint(i,IPoint);
 
-        ifbin1 = GetFBinIndex(IPoint,ifcoord,0);
-        ifbin2 = GetFBinIndex(IPoint,ifcoord,1);
-        ifbin3 = GetFBinIndex(IPoint,ifcoord,2);
-        ifbin4 = GetFBinIndex(IPoint,ifcoord,3);
+        for(int ifcoord=0; ifcoord < Accumulator->GetNumberOfCoords(); ifcoord++) {
+            int ifbin1,ifbin2,ifbin3,ifbin4;
 
-        const CColVariable* p_coord = Accumulator->GetCoordinate(ifcoord);
-        double              diff = p_coord->GetBinWidth();
+            ifbin1 = GetFBinIndex(IPoint,ifcoord,0);
+            ifbin2 = GetFBinIndex(IPoint,ifcoord,1);
+            ifbin3 = GetFBinIndex(IPoint,ifcoord,2);
+            ifbin4 = GetFBinIndex(IPoint,ifcoord,3);
 
-        switch(FDLevel) {
-            case 3:
-                if((ifbin1 == -1) || (ifbin2 == -1) || (ifbin3 == -1)) break;
+            const CColVariable* p_coord = Accumulator->GetCoordinate(ifcoord);
+            double              diff = p_coord->GetBinWidth();
 
-                // map nodes to XMap -------------
-                if(XMap[ifbin1] < 0) {
-                    XMap[ifbin1] = NumOfVariables;
-                    NumOfVariables++;
-                }
+            switch(FDLevel) {
+                case 3:
+                    if((ifbin1 == -1) || (ifbin2 == -1) || (ifbin3 == -1)) break;
 
-                if(XMap[ifbin2] < 0) {
-                    XMap[ifbin2] = NumOfVariables;
-                    NumOfVariables++;
-                }
+                    // map nodes to XMap -------------
+                    if(XMap[ifbin1] < 0) {
+                        XMap[ifbin1] = NumOfVariables;
+                        NumOfVariables++;
+                    }
 
-                if(XMap[ifbin3] < 0) {
-                    XMap[ifbin3] = NumOfVariables;
-                    NumOfVariables++;
-                }
+                    if(XMap[ifbin2] < 0) {
+                        XMap[ifbin2] = NumOfVariables;
+                        NumOfVariables++;
+                    }
 
-                // set A elements ----------------
-                if(trial == false) {
-                    cs_entry(A,LocIter,XMap[ifbin1],-3.0);
-                    cs_entry(A,LocIter,XMap[ifbin2],+4.0);
-                    cs_entry(A,LocIter,XMap[ifbin3],-1.0);
-                    Rhs[LocIter] = Accumulator->GetIntegratedValue(ifcoord,ifbin1,IntegrateErrors) * diff * 2.0;
-                    LocIter++;
-                    cs_entry(A,LocIter,XMap[ifbin1],-1.0);
-                    cs_entry(A,LocIter,XMap[ifbin3],+1.0);
-                    Rhs[LocIter] = Accumulator->GetIntegratedValue(ifcoord,ifbin2,IntegrateErrors) * diff * 2.0;
-                    LocIter++;
-                    cs_entry(A,LocIter,XMap[ifbin1],+1.0);
-                    cs_entry(A,LocIter,XMap[ifbin2],-4.0);
-                    cs_entry(A,LocIter,XMap[ifbin3],+3.0);
-                    Rhs[LocIter] = Accumulator->GetIntegratedValue(ifcoord,ifbin3,IntegrateErrors) * diff * 2.0;
-                    LocIter++;
-                } else {
-                    NumOfEquations += 3;
-                    NumOfNonZeros += 8;
-                }
-                break;
-            case 4:
-                if((ifbin1 == -1) || (ifbin2 == -1) || (ifbin3 == -1) || (ifbin4 == -1)) break;
+                    if(XMap[ifbin3] < 0) {
+                        XMap[ifbin3] = NumOfVariables;
+                        NumOfVariables++;
+                    }
 
-                if(XMap[ifbin1] < 0) {
-                    XMap[ifbin1] = NumOfVariables;
-                    NumOfVariables++;
-                }
+                    // set A elements ----------------
+                    if(trial == false) {
+                        cs_entry(A,LocIter,XMap[ifbin1],-3.0);
+                        cs_entry(A,LocIter,XMap[ifbin2],+4.0);
+                        cs_entry(A,LocIter,XMap[ifbin3],-1.0);
+                        Rhs[LocIter] = Accumulator->GetIntegratedValue(ifcoord,ifbin1,IntegrateErrors) * diff * 2.0;
+                        LocIter++;
+                        cs_entry(A,LocIter,XMap[ifbin1],-1.0);
+                        cs_entry(A,LocIter,XMap[ifbin3],+1.0);
+                        Rhs[LocIter] = Accumulator->GetIntegratedValue(ifcoord,ifbin2,IntegrateErrors) * diff * 2.0;
+                        LocIter++;
+                        cs_entry(A,LocIter,XMap[ifbin1],+1.0);
+                        cs_entry(A,LocIter,XMap[ifbin2],-4.0);
+                        cs_entry(A,LocIter,XMap[ifbin3],+3.0);
+                        Rhs[LocIter] = Accumulator->GetIntegratedValue(ifcoord,ifbin3,IntegrateErrors) * diff * 2.0;
+                        LocIter++;
+                    } else {
+                        NumOfEquations += 3;
+                        NumOfNonZeros += 8;
+                    }
+                    break;
+                case 4:
+                    if((ifbin1 == -1) || (ifbin2 == -1) || (ifbin3 == -1) || (ifbin4 == -1)) break;
 
-                if(XMap[ifbin2] < 0) {
-                    XMap[ifbin2] = NumOfVariables;
-                    NumOfVariables++;
-                }
+                    if(XMap[ifbin1] < 0) {
+                        XMap[ifbin1] = NumOfVariables;
+                        NumOfVariables++;
+                    }
 
-                if(XMap[ifbin3] < 0) {
-                    XMap[ifbin3] = NumOfVariables;
-                    NumOfVariables++;
-                }
+                    if(XMap[ifbin2] < 0) {
+                        XMap[ifbin2] = NumOfVariables;
+                        NumOfVariables++;
+                    }
 
-                if(XMap[ifbin4] < 0) {
-                    XMap[ifbin4] = NumOfVariables;
-                    NumOfVariables++;
-                }
+                    if(XMap[ifbin3] < 0) {
+                        XMap[ifbin3] = NumOfVariables;
+                        NumOfVariables++;
+                    }
 
-                if(trial == false) {
-                    cs_entry(A,LocIter,XMap[ifbin1],-11.0);
-                    cs_entry(A,LocIter,XMap[ifbin2],+18.0);
-                    cs_entry(A,LocIter,XMap[ifbin3],-9.0);
-                    cs_entry(A,LocIter,XMap[ifbin4],+2.0);
-                    Rhs[LocIter] = Accumulator->GetIntegratedValue(ifcoord,ifbin1,IntegrateErrors) * diff * 6.0;
-                    LocIter++;
-                    cs_entry(A,LocIter,XMap[ifbin1],-2.0);
-                    cs_entry(A,LocIter,XMap[ifbin2],-3.0);
-                    cs_entry(A,LocIter,XMap[ifbin3],+6.0);
-                    cs_entry(A,LocIter,XMap[ifbin4],-1.0);
-                    Rhs[LocIter] = Accumulator->GetIntegratedValue(ifcoord,ifbin2,IntegrateErrors) * diff * 6.0;
-                    LocIter++;
-                    cs_entry(A,LocIter,XMap[ifbin1],+1.0);
-                    cs_entry(A,LocIter,XMap[ifbin2],-6.0);
-                    cs_entry(A,LocIter,XMap[ifbin3],+3.0);
-                    cs_entry(A,LocIter,XMap[ifbin4],+2.0);
-                    Rhs[LocIter] = Accumulator->GetIntegratedValue(ifcoord,ifbin3,IntegrateErrors) * diff * 6.0;
-                    LocIter++;
-                    cs_entry(A,LocIter,XMap[ifbin1],-2.0);
-                    cs_entry(A,LocIter,XMap[ifbin2],+9.0);
-                    cs_entry(A,LocIter,XMap[ifbin3],-18.0);
-                    cs_entry(A,LocIter,XMap[ifbin4],+11.0);
-                    Rhs[LocIter] = Accumulator->GetIntegratedValue(ifcoord,ifbin4,IntegrateErrors) * diff * 6.0;
-                    LocIter++;
-                } else {
-                    NumOfEquations += 4;
-                    NumOfNonZeros += 16;
-                }
-                break;
-            default:
-                break;
+                    if(XMap[ifbin4] < 0) {
+                        XMap[ifbin4] = NumOfVariables;
+                        NumOfVariables++;
+                    }
+
+                    if(trial == false) {
+                        cs_entry(A,LocIter,XMap[ifbin1],-11.0);
+                        cs_entry(A,LocIter,XMap[ifbin2],+18.0);
+                        cs_entry(A,LocIter,XMap[ifbin3],-9.0);
+                        cs_entry(A,LocIter,XMap[ifbin4],+2.0);
+                        Rhs[LocIter] = Accumulator->GetIntegratedValue(ifcoord,ifbin1,IntegrateErrors) * diff * 6.0;
+                        LocIter++;
+                        cs_entry(A,LocIter,XMap[ifbin1],-2.0);
+                        cs_entry(A,LocIter,XMap[ifbin2],-3.0);
+                        cs_entry(A,LocIter,XMap[ifbin3],+6.0);
+                        cs_entry(A,LocIter,XMap[ifbin4],-1.0);
+                        Rhs[LocIter] = Accumulator->GetIntegratedValue(ifcoord,ifbin2,IntegrateErrors) * diff * 6.0;
+                        LocIter++;
+                        cs_entry(A,LocIter,XMap[ifbin1],+1.0);
+                        cs_entry(A,LocIter,XMap[ifbin2],-6.0);
+                        cs_entry(A,LocIter,XMap[ifbin3],+3.0);
+                        cs_entry(A,LocIter,XMap[ifbin4],+2.0);
+                        Rhs[LocIter] = Accumulator->GetIntegratedValue(ifcoord,ifbin3,IntegrateErrors) * diff * 6.0;
+                        LocIter++;
+                        cs_entry(A,LocIter,XMap[ifbin1],-2.0);
+                        cs_entry(A,LocIter,XMap[ifbin2],+9.0);
+                        cs_entry(A,LocIter,XMap[ifbin3],-18.0);
+                        cs_entry(A,LocIter,XMap[ifbin4],+11.0);
+                        Rhs[LocIter] = Accumulator->GetIntegratedValue(ifcoord,ifbin4,IntegrateErrors) * diff * 6.0;
+                        LocIter++;
+                    } else {
+                        NumOfEquations += 4;
+                        NumOfNonZeros += 16;
+                    }
+                    break;
+                default:
+                    break;
+            }
         }
     }
-    return;
 }
 
 //------------------------------------------------------------------------------
@@ -371,8 +369,9 @@ bool CABFIntegratorRFD::SolveSystemOfEquations(void)
         return(false);
     }
 
-    cs_spfree(A);
-    A = NULL;
+    // keep A for RMSR determination
+//    cs_spfree(A);
+//    A = NULL;
 
     At = cs_transpose(cA,1);
     if(At == NULL) {
@@ -402,9 +401,10 @@ bool CABFIntegratorRFD::SolveSystemOfEquations(void)
     X.SetZero();
     cs_gaxpy(At,Rhs,X);  // AtRhs = At * pRhs->x + AtRhs
 
-// release At matrix and Rhs vector
-    Rhs.FreeVector();
+// release At matrix
     cs_spfree(At);
+    // keep rhs for rmsr calculation
+//  Rhs.FreeVector();
 
 // solve system of linear equations
     int order = 0;
@@ -435,6 +435,98 @@ void CABFIntegratorRFD::ReleaseAllResources(void)
     X.FreeVector();
     if(A != NULL) cs_spfree(A);
     A = NULL;
+}
+
+//------------------------------------------------------------------------------
+
+double CABFIntegratorRFD::GetRMSR(void)
+{
+    CSimpleVector<double> lhs;
+    lhs.CreateVector(A->m);
+    lhs.SetZero();
+
+    cs_gaxpy(A,X,lhs);  // lhs = A * X + lhs
+
+    double rmsr = 0.0;
+    double lv,rv,err;
+    LocIter = 0;
+
+    for(int i=0; i < Accumulator->GetNumberOfBins(); i++){
+        Accumulator->GetIPoint(i,IPoint);
+
+        for(int ifcoord=0; ifcoord < Accumulator->GetNumberOfCoords(); ifcoord++) {
+            int ifbin1,ifbin2,ifbin3,ifbin4;
+
+            ifbin1 = GetFBinIndex(IPoint,ifcoord,0);
+            ifbin2 = GetFBinIndex(IPoint,ifcoord,1);
+            ifbin3 = GetFBinIndex(IPoint,ifcoord,2);
+            ifbin4 = GetFBinIndex(IPoint,ifcoord,3);
+
+            const CColVariable* p_coord = Accumulator->GetCoordinate(ifcoord);
+
+            double  diff = p_coord->GetBinWidth();
+
+            switch(FDLevel) {
+                case 3:
+                    if((ifbin1 == -1) || (ifbin2 == -1) || (ifbin3 == -1)) break;
+
+                    rv = Rhs[LocIter];
+                    lv = lhs[LocIter];
+                    err = (lv-rv)/(diff * 2.0);
+                    rmsr = rmsr + err*err;
+                    LocIter++;
+
+                    rv = Rhs[LocIter];
+                    lv = lhs[LocIter];
+                    err = (lv-rv)/(diff * 2.0);
+                    rmsr = rmsr + err*err;
+                    LocIter++;
+
+                    rv = Rhs[LocIter];
+                    lv = lhs[LocIter];
+                    err = (lv-rv)/(diff * 2.0);
+                    rmsr = rmsr + err*err;
+                    LocIter++;
+
+                    break;
+                case 4:
+                    if((ifbin1 == -1) || (ifbin2 == -1) || (ifbin3 == -1) || (ifbin4 == -1)) break;
+
+                    rv = Rhs[LocIter];
+                    lv = lhs[LocIter];
+                    err = (lv-rv)/(diff * 6.0);
+                    rmsr = rmsr + err*err;
+                    LocIter++;
+
+                    rv = Rhs[LocIter];
+                    lv = lhs[LocIter];
+                    err = (lv-rv)/(diff * 6.0);
+                    rmsr = rmsr + err*err;
+                    LocIter++;
+
+                    rv = Rhs[LocIter];
+                    lv = lhs[LocIter];
+                    err = (lv-rv)/(diff * 6.0);
+                    rmsr = rmsr + err*err;
+                    LocIter++;
+
+                    rv = Rhs[LocIter];
+                    lv = lhs[LocIter];
+                    err = (lv-rv)/(diff * 6.0);
+                    rmsr = rmsr + err*err;
+                    LocIter++;
+                default:
+                    break;
+            }
+        }
+    }
+
+    if( LocIter <= 0 ) return(0.0);
+    rmsr /= LocIter;
+    if( rmsr > 0 ){
+        rmsr = sqrt(rmsr);
+    }
+    return(rmsr);
 }
 
 //==============================================================================

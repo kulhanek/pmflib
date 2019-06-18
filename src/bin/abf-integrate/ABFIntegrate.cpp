@@ -90,8 +90,20 @@ int CABFIntegrate::Init(int argc,char* argv[])
     } else {
         vout << "# Limit                 : " << Options.GetOptLimit() << endl;
     }
-    vout << "# Integration method    : " << Options.GetOptMethod() << endl;
-    vout << "# FD order              : " << Options.GetOptOrder() << endl;
+        vout << "# Integration method    : " << Options.GetOptMethod() << endl;
+
+    if( Options.GetOptMethod() == "rfd" ){
+        vout << "# FD order              : " << Options.GetOptOrder() << endl;
+    } else if ( Options.GetOptMethod() == "rbf" ){
+        vout << "# Reduction factor rfac : " << Options.GetOptRFac() << endl;
+        vout << "# Width factor wfac     : " << Options.GetOptWFac() << endl;
+    } else if ( Options.GetOptMethod() == "gpr"  ) {
+        // FIXME
+    } else {
+        ES_ERROR("not implemented method");
+        return(SO_USER_ERROR);
+    }
+
     vout << "# Integration offset    : " << Options.GetOptOffset() << endl;
     vout << "# Periodicity           : " << bool_to_str(Options.GetOptPeriodicity()) << endl;
     if( Options.GetOptWithErrors() ) {
@@ -149,6 +161,16 @@ bool CABFIntegrate::Run(void)
         } else {
             INVALID_ARGUMENT("method - not implemented");
         }
+        if( Options.GetOptMethod() == "rfd" ){
+            printf("# FD order              : %d\n", Options.GetOptOrder());
+        } else if ( Options.GetOptMethod() == "rbf" ){
+            printf("# Reduction factor rfac : %5.3f\n", Options.GetOptRFac());
+            printf("# Width factor wfac     : %5.3f\n", Options.GetOptWFac());
+        } else if ( Options.GetOptMethod() == "gpr"  ) {
+            // FIXME
+        } else {
+            ES_ERROR("not implemented method");
+        }
         fprintf(OutputFile,"# Number of coordinates : %d\n",accumulator.GetNumberOfCoords());
         fprintf(OutputFile,"# Total number of bins  : %d\n",accumulator.GetNumberOfBins());
         fprintf(OutputFile,"# Sample limit          : %d\n",Options.GetOptLimit());
@@ -192,7 +214,7 @@ bool CABFIntegrate::Run(void)
 
         integrator.SetVerbosity(Options.GetOptVerbose());
         integrator.SetPeriodicity(Options.GetOptPeriodicity());
-        integrator.SetGaussianWidth(Options.GetOptOrder());
+        integrator.SetWFac(Options.GetOptWFac());
         integrator.SetRCond(Options.GetOptRCond());
         integrator.SetRFac(Options.GetOptRFac());
 
@@ -234,7 +256,7 @@ bool CABFIntegrate::Run(void)
 
             integrator.SetVerbosity(Options.GetOptVerbose());
             integrator.SetPeriodicity(Options.GetOptPeriodicity());
-            integrator.SetGaussianWidth(Options.GetOptOrder());
+            integrator.SetWFac(Options.GetOptWFac());
             integrator.SetRCond(Options.GetOptRCond());
             integrator.SetRFac(Options.GetOptRFac());
 

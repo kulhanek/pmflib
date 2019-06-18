@@ -64,6 +64,9 @@ public:
     /// integrate data, for errors the FES must be already allocated!!!
     bool Integrate(CVerboseStr& vout,bool errors);
 
+    /// get root mean square residuals
+    double GetRMSR(void);
+
 // section of private data ----------------------------------------------------
 private:
     const CABFAccumulator*  Accumulator;
@@ -96,7 +99,7 @@ private:
     bool SolveSystemOfEquations(void);
 
     /// recursively build system of equations
-    void BuildEquations(int icoord,bool trial);
+    void BuildEquations(bool trial);
 
     /// get global index of point
     int GetFBinIndex(const CSimpleVector<int>& position,int ifcoord,int offset) const;

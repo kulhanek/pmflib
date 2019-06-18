@@ -453,6 +453,18 @@ void CABFAccumulator::GetPoint(unsigned int index,CSimpleVector<double>& point) 
     }
 }
 
+//------------------------------------------------------------------------------
+
+void CABFAccumulator::GetIPoint(unsigned int index,CSimpleVector<int>& point) const
+{
+    for(int k=NCoords-1; k >= 0; k--) {
+        const CColVariable* p_coord = &Sizes[k];
+        int ibin = index % p_coord->GetNumberOfBins();
+        point[k] = ibin;
+        index = index / p_coord->GetNumberOfBins();
+    }
+}
+
 //==============================================================================
 //------------------------------------------------------------------------------
 //==============================================================================

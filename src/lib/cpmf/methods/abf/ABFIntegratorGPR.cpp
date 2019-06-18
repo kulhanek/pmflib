@@ -109,7 +109,7 @@ bool CABFIntegratorGPR::Integrate(CVerboseStr& vout)
         return(false);
     }
 
-    if( Accumulator->GetNumberOfCoords() != FES->GetNumberOfCoords() ){
+    if( (unsigned int)Accumulator->GetNumberOfCoords() != FES->GetNumberOfCoords() ){
         ES_ERROR("inconsistent ABF and FES");
         return(false);
     }

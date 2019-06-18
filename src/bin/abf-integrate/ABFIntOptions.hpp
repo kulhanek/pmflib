@@ -57,6 +57,7 @@ public:
     CSO_OPT(double,Offset)
     CSO_OPT(double,RCond)
     CSO_OPT(double,RFac)
+    CSO_OPT(double,WFac)
     CSO_OPT(bool,Periodicity)
     CSO_OPT(bool,WithErrors)
     CSO_OPT(CSmallString,OutputFormat)
@@ -110,7 +111,7 @@ public:
                 0,                           /* short option name */
                 "order",                      /* long option name */
                 "ORDER",                           /* parametr name */
-                "Determines differenciation scheme (three or four is upported) or width of gaussian basis functions as a multiple of bin sizes")   /* option description */
+                "Determines differenciation scheme (three or four is upported) for RFD method")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(double,                           /* option type */
                 Offset,                        /* option name */
@@ -137,7 +138,17 @@ public:
                 't',                           /* short option name */
                 "rfac",                      /* long option name */
                 "NUMBER",                           /* parametr name */
-                "Reduction factor for number of RBFs.")   /* option description */
+                "Reduction factor for number of RBFs. Number of RBFs in given direction is number of bins in that direction divided by this factor.")   /* option description */
+    //----------------------------------------------------------------------
+    CSO_MAP_OPT(double,                           /* option type */
+                WFac,                        /* option name */
+                2.0,                          /* default value */
+                false,                          /* is option mandatory */
+                'w',                           /* short option name */
+                "wfac",                      /* long option name */
+                "NUMBER",                           /* parametr name */
+                "Factor influencing widths of RBFs. The width is distance between "
+                "the adjacent RBFs multiplied by this factor.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(bool,                           /* option type */
                 Periodicity,                        /* option name */
@@ -152,7 +163,7 @@ public:
                 WithErrors,                        /* option name */
                 false,                          /* default value */
                 false,                          /* is option mandatory */
-                'w',                           /* short option name */
+                'e',                           /* short option name */
                 "witherrors",                      /* long option name */
                 NULL,                           /* parametr name */
                 "Integrate both energy and errors of derivatives.")   /* option description */

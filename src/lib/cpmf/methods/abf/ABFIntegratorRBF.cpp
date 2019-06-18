@@ -26,6 +26,7 @@
 #include <Vector.hpp>
 #include <algorithm>
 #include <Lapack.hpp>
+#include <iomanip>
 
 using namespace std;
 
@@ -39,13 +40,14 @@ CABFIntegratorRBF::CABFIntegratorRBF(void)
     FES = NULL;
 
     Periodicity = false;
-    WidthOrder = 4;
-    Method = EARBF_SVD;
+    WFac        = 2.0;
+    RFac        = 3.0;
+    Method      = EARBF_SVD;
 
     IntegrateErrors = false;
 
     RCond   = -1; // machine precision
-    RFac    = 3.0;
+
 }
 
 //------------------------------------------------------------------------------
@@ -79,9 +81,9 @@ void CABFIntegratorRBF::SetVerbosity(bool set)
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorRBF::SetGaussianWidth(int order)
+void CABFIntegratorRBF::SetWFac(double wfac)
 {
-    WidthOrder = order;
+    WFac = wfac;
 }
 
 //------------------------------------------------------------------------------
@@ -127,7 +129,7 @@ bool CABFIntegratorRBF::Integrate(CVerboseStr& vout,bool errors)
         return(false);
     }
 
-    if( Accumulator->GetNumberOfCoords() != FES->GetNumberOfCoords() ){
+    if( (unsigned int)Accumulator->GetNumberOfCoords() != FES->GetNumberOfCoords() ){
         ES_ERROR("inconsistent ABF and FES");
         return(false);
     }
@@ -148,7 +150,7 @@ bool CABFIntegratorRBF::Integrate(CVerboseStr& vout,bool errors)
 
     Sigmas.CreateVector(NumOfCVs);
     for(int i=0; i < NumOfCVs; i++){
-        Sigmas[i] = Accumulator->GetCoordinate(i)->GetRange()*WidthOrder/NumOfRBFBins[i];
+        Sigmas[i] = Accumulator->GetCoordinate(i)->GetRange()*WFac/NumOfRBFBins[i];
         // cout << Sigmas[i] << endl;
     }
 
@@ -200,23 +202,22 @@ bool CABFIntegratorRBF::IntegrateByLS(CVerboseStr& vout)
     // number of equations
     int neq = Accumulator->GetNumberOfBins()*NumOfCVs;
 
-    CSimpleVector<double>   spos;           // best sampled bin
-    spos.CreateVector(NumOfCVs);
-
-    CSimpleVector<double>   ipos;           // best sampled bin
+    CSimpleVector<double>   ipos;
     ipos.CreateVector(NumOfCVs);
 
-    CSimpleVector<double>   lpos;           // best sampled bin
+    CSimpleVector<double>   lpos;
     lpos.CreateVector(NumOfCVs);
 
     vout << "   Dim: " << neq << " x " << NumOfRBFs << endl;
 
     CFortranMatrix A;
     A.CreateMatrix(neq,NumOfRBFs);
+    A.SetZero();
 
     CVector rhs;
     int nrhs = std::max(neq,NumOfRBFs);
     rhs.CreateVector(nrhs);
+    rhs.SetZero();
 
     // calculate A and rhs
     int j=0;
@@ -277,6 +278,8 @@ bool CABFIntegratorRBF::IntegrateByLS(CVerboseStr& vout)
         Weights[l] = rhs[l];
     }
 
+    vout << "   RMSR = " << setprecision(5) << GetRMSR() << endl;
+
     // debug
     // cout << Weights[0] << endl;
 
@@ -319,6 +322,62 @@ double CABFIntegratorRBF::GetValue(const CSimpleVector<double>& position)
         energy = energy + value;
     }
     return(energy);
+}
+
+//------------------------------------------------------------------------------
+
+double CABFIntegratorRBF::GetRMSR(void)
+{
+    if( Accumulator->GetNumberOfBins() <= 0 ){
+        ES_ERROR("number of bins is not > 0");
+        return(0.0);
+    }
+
+    CSimpleVector<double>   ipos;
+    ipos.CreateVector(NumOfCVs);
+
+    CSimpleVector<double>   lpos;
+    lpos.CreateVector(NumOfCVs);
+
+    CSimpleVector<double>   der;
+    der.CreateVector(NumOfCVs);
+
+    double rmsr = 0.0;
+
+    for(int i=0; i < Accumulator->GetNumberOfBins(); i++){
+
+        Accumulator->GetPoint(i,ipos);
+        der.SetZero();
+
+        for(int l=0; l < NumOfRBFs; l++){
+            GetRBFPosition(l,lpos);
+                  //      cout << lpos[0] << " " << lpos[1] << endl;
+            double av = 1.0;
+            for(int k=0; k < NumOfCVs; k++){
+                double dvc = Accumulator->GetCoordinate(k)->GetDifference(ipos[k],lpos[k]);
+                double sig = Sigmas[k];
+                av *= exp( - dvc*dvc/(2.0*sig*sig) );
+            }
+            for(int k=0; k < NumOfCVs; k++){
+                double dvc = Accumulator->GetCoordinate(k)->GetDifference(ipos[k],lpos[k]);
+                double sig = Sigmas[k];
+                double fc = -dvc/(sig*sig);  // switch to derivatives
+                der[k] += Weights[l] * av * fc;
+            }
+        }
+
+        for(int k=0; k < NumOfCVs; k++){
+            double diff = Accumulator->GetIntegratedValue(k,i,IntegrateErrors) - der[k];
+            rmsr += diff*diff;
+        }
+    }
+
+    rmsr /= Accumulator->GetNumberOfBins();
+    if( rmsr > 0.0 ){
+        rmsr = sqrt(rmsr);
+    }
+
+    return(rmsr);
 }
 
 //==============================================================================

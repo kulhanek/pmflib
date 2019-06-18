@@ -92,6 +92,9 @@ public:
     /// convert point index to point position
     void GetPoint(unsigned int index,CSimpleVector<double>& point) const;
 
+    /// convert point index to point position
+    void GetIPoint(unsigned int index,CSimpleVector<int>& point) const;
+
 //---------------------------------------------------------------------------------
 
     /// return number of samples for a given bin position

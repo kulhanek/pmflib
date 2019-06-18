@@ -58,7 +58,7 @@ public:
     void SetVerbosity(bool set);
 
     /// multiply of bin sizes
-    void SetGaussianWidth(int order);
+    void SetWFac(double wfac);
 
     /// set rcond for SVD
     void SetRCond(double rcond);
@@ -73,13 +73,17 @@ public:
     /// integrate data
     bool Integrate(CVerboseStr& vout,bool errors);
 
+    /// get root mean square residuals
+    double GetRMSR(void);
+
 // section of private data ----------------------------------------------------
 private:
     const CABFAccumulator*  Accumulator;
     CEnergySurface*         FES;
 
     bool                    Verbose;
-    int                     WidthOrder;
+    double                  WFac;
+    double                  RFac;   // reduction factor for number of RBFs
     bool                    Periodicity;
     EARBFMethod             Method;
     bool                    IntegrateErrors;
@@ -90,7 +94,7 @@ private:
     CSimpleVector<int>      NumOfRBFBins;
     int                     NumOfCVs;
     CSimpleVector<double>   Sigmas;
-    double                  RFac;   // reduction factor for number of RBFs
+
 
     // SVD setup
     double                  RCond;
