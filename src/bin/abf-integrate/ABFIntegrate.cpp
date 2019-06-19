@@ -192,13 +192,13 @@ bool CABFIntegrate::Run(void)
 
 // prepare accumulator --------------------------
     vout << endl;
-    vout << "2) Preparing ABF accumulator for integration"<< endl;
-    PrepareAccumulator(accumulator);
+    vout << "2) Preparing ABF accumulator for integration (sampling limit)"<< endl;
+    PrepareAccumulatorI(accumulator);
     vout << "   Done" << endl;
 
 // integrate data ------------------------------
     vout << endl;
-    vout << "3a)ABF accumulator integration (energy)"<< endl;
+    vout << "3) ABF accumulator integration (energy)"<< endl;
 
     CEnergySurface     fes;
     fes.Allocate(&accumulator);
@@ -237,6 +237,51 @@ bool CABFIntegrate::Run(void)
         INVALID_ARGUMENT("method - not implemented");
     }
 
+    if( Options.GetOptEnergyLimit() > 0.0 ){
+        vout << endl;
+        vout << "2) Preparing ABF accumulator for integration (energy limit)"<< endl;
+        PrepareAccumulatorII(accumulator,fes);
+        vout << "   Done" << endl;
+
+        vout << endl;
+        vout << "3) ABF accumulator integration (energy with energy limit)"<< endl;
+        fes.Clear();
+
+        if(Options.GetOptMethod() == "rfd" ) {
+            CABFIntegratorRFD   integrator;
+
+            integrator.SetPeriodicity(Options.GetOptPeriodicity());
+            integrator.SetFDPoints(Options.GetOptFDPoints());
+
+            integrator.SetInputABFAccumulator(&accumulator);
+            integrator.SetOutputFESurface(&fes);
+
+            if(integrator.Integrate(vout,false) == false) {
+                ES_ERROR("unable to prepare ABF accumulator");
+                return(false);
+            }
+        } else if( Options.GetOptMethod() == "rbf" ){
+            CABFIntegratorRBF   integrator;
+
+            integrator.SetVerbosity(Options.GetOptVerbose());
+            integrator.SetPeriodicity(Options.GetOptPeriodicity());
+            integrator.SetWFac(Options.GetOptWFac());
+            integrator.SetRCond(Options.GetOptRCond());
+            integrator.SetRFac(Options.GetOptRFac());
+            integrator.SetOverhang(Options.GetOptOverhang());
+
+            integrator.SetInputABFAccumulator(&accumulator);
+            integrator.SetOutputFESurface(&fes);
+
+            if(integrator.Integrate(vout,false) == false) {
+                ES_ERROR("unable to prepare ABF accumulator");
+                return(false);
+            }
+        } else {
+            INVALID_ARGUMENT("method - not implemented");
+        }
+    }
+
     vout << "   Done" << endl;
 
  // apply offset
@@ -244,7 +289,7 @@ bool CABFIntegrate::Run(void)
 
     if( Options.GetOptWithErrors() ){
         vout << endl;
-        vout << "3b)ABF accumulator integration (errors)"<< endl;
+        vout << "3) ABF accumulator integration (errors)"<< endl;
 
         if(Options.GetOptMethod() == "rfd" ) {
             CABFIntegratorRFD   integrator;
@@ -327,7 +372,7 @@ bool CABFIntegrate::Run(void)
 // this part performs following tasks:
 //    a) bins with number of samples <= limit will be set to zero
 
-void CABFIntegrate::PrepareAccumulator(CABFAccumulator& accumulator)
+void CABFIntegrate::PrepareAccumulatorI(CABFAccumulator& accumulator)
 {
     double sampled = 0.0;
     double maxbins = 0.0;
@@ -338,6 +383,35 @@ void CABFIntegrate::PrepareAccumulator(CABFAccumulator& accumulator)
             accumulator.SetNumberOfABFSamples(ibin,0);
         } else {
             sampled++;
+        }
+    }
+
+    // calculate sampled area
+    if( maxbins > 0 ){
+        vout << "   Sampled area: " << setw(5) << setprecision(1) << fixed << sampled/maxbins*100 <<"%" << endl;
+    }
+}
+
+//------------------------------------------------------------------------------
+
+// this part performs following tasks:
+//    a) erase data points with large energy
+
+void CABFIntegrate::PrepareAccumulatorII(CABFAccumulator& accumulator,CEnergySurface& fes)
+{
+    double sampled = 0.0;
+    double maxbins = 0.0;
+    for(int ibin=0; ibin < accumulator.GetNumberOfBins(); ibin++) {
+        maxbins++;
+
+        if( accumulator.GetNumberOfABFSamples(ibin) > Options.GetOptLimit() ) {
+            // consider only properly sampled data points
+            if( fes.GetEnergy(ibin) > Options.GetOptEnergyLimit() ){
+                // erase datapoints with too large energy
+                accumulator.SetNumberOfABFSamples(ibin,0);
+            } else {
+                sampled++;
+            }
         }
     }
 

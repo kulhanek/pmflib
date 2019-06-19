@@ -52,6 +52,7 @@ public:
     CSO_ARG(CSmallString,FEOutputName)
     // options ------------------------------
     CSO_OPT(int,Limit)
+    CSO_OPT(double,EnergyLimit)
     CSO_OPT(double,Offset)
     CSO_OPT(CSmallString,Method)
     CSO_OPT(int,FDPoints)
@@ -95,6 +96,16 @@ public:
                 "limit",                      /* long option name */
                 "NUMBER",                           /* parametr name */
                 "Only bins containing more samples than NUMBER are considered as properly sampled.")   /* option description */
+// description of options ---------------------------------------------------
+    CSO_MAP_OPT(double,                           /* option type */
+                EnergyLimit,                        /* option name */
+                -1.0,                          /* default value */
+                false,                          /* is option mandatory */
+                'q',                           /* short option name */
+                "energylimit",                      /* long option name */
+                "NUMBER",                           /* parametr name */
+                "Integrate data only if the free energy is below NUMBER. "
+                "This limit enforces two integration runs. Negative value disables the limit.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(double,                           /* option type */
                 Offset,                        /* option name */

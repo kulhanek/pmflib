@@ -56,7 +56,8 @@ private:
     CVerboseStr         vout;
 
     /// prepare accumulator
-    void PrepareAccumulator(CABFAccumulator& accumulator);
+    void PrepareAccumulatorI(CABFAccumulator& accumulator);
+    void PrepareAccumulatorII(CABFAccumulator& accumulator,CEnergySurface& fes);
 };
 
 //------------------------------------------------------------------------------
