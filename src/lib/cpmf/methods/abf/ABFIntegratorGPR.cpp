@@ -420,7 +420,6 @@ double CABFIntegratorGPR::GetCov(CSimpleVector<double>& lpos,CSimpleVector<doubl
     cov = SigmaF2*exp(-cov);
 
     CSciBlas::gemv(1.0,K,rk,0.0,ik);
-    cout << CSciBlas::dot(lk,ik) << endl;
     cov = cov  - CSciBlas::dot(lk,ik);
 
     return(cov);
