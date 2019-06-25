@@ -200,8 +200,8 @@ IF(NOT DEFINED COMPOSITE_PROJECT)
         SET(CMAKE_Fortran_FLAGS_DEBUG   "-g -O0 -stand f03 -traceback -check all -warn all")
     ENDIF(FCOMP_NAME STREQUAL ifort)
 
-    SET(CMAKE_BUILD_TYPE Release)
-    #SET(CMAKE_BUILD_TYPE Debug)
+    #SET(CMAKE_BUILD_TYPE Release)
+    SET(CMAKE_BUILD_TYPE Debug)
 ENDIF(NOT DEFINED COMPOSITE_PROJECT)
 
 # ==============================================================================

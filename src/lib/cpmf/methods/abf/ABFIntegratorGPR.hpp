@@ -23,18 +23,12 @@
 #include <PMFMainHeader.hpp>
 #include <SimpleVector.hpp>
 #include <VerboseStr.hpp>
+#include <FortranMatrix.hpp>
 
 //------------------------------------------------------------------------------
 
 class CABFAccumulator;
 class CEnergySurface;
-
-// integration method
-
-enum EAGPRMethod {
-    EAGPR_SVD = 1,
-    EAGPR_QRLQ = 2,
-};
 
 //------------------------------------------------------------------------------
 
@@ -54,43 +48,50 @@ public:
     /// set output free energy surface
     void SetOutputFESurface(CEnergySurface* p_surf);
 
-    /// set verbosity level
-    void SetVerbosity(bool set);
-
     /// multiply of bin sizes
-    void SetGaussianWidth(int order);
+    void SetWFac(double wfac);
 
-    /// should we apply periodicity?
-    void SetPeriodicity(bool set);
+    /// set sigmaf2
+    void SetSigmaF2(double sigf2);
+
+    /// set include error
+    void SetIncludeError(bool set);
 
 // execution method -----------------------------------------------------------
     /// integrate data
     bool Integrate(CVerboseStr& vout);
+
+    /// get root mean square residuals
+    double GetRMSR(void);
 
 // section of private data ----------------------------------------------------
 private:
     const CABFAccumulator*  Accumulator;
     CEnergySurface*         FES;
 
-    bool                    Verbose;
-    int                     WidthOrder;
-    bool                    Periodicity;
-    EAGPRMethod             Method;
-
     // GPR data
-    int                     NumOfGPRs;
-    CSimpleVector<double>   Weights;
-    CSimpleVector<int>      NumOfGPRBins;
-    int                     NumOfCVs;
-    CSimpleVector<double>   Sigmas;
+    int                     GPRSize;
+    int                     NCVs;
+    double                  WFac;
+    CSimpleVector<double>   CVLengths2;
+    double                  SigmaF2;
+    CFortranMatrix          K;          // kernels
+    CSimpleVector<double>   GPRModel;   // weights
+    bool                    IncludeError;
 
-    // SVD setup
-    double                  RCond;
+    CSimpleVector<double>   ipos;
+    CSimpleVector<double>   jpos;
+    CSimpleVector<double>   gpos;
+    CSimpleVector<double>   rk;
+    CSimpleVector<double>   lk;
+    CSimpleVector<double>   ik;
 
-    bool IntegrateByLS(CVerboseStr& vout);
+    bool TrainGP(CVerboseStr& vout);
+    void CalculateErrors(CSimpleVector<double>& gpos); // gpos - position of global minimum
 
-    void    GetGPRPosition(unsigned int index,CSimpleVector<double>& position);
-    double  GetValue(const CSimpleVector<double>& position);
+    double GetValue(const CSimpleVector<double>& position);
+    double GetMeanForce(const CSimpleVector<double>& position,int icoord);
+    double GetCov(CSimpleVector<double>& lpos,CSimpleVector<double>& rpos);
 };
 
 //------------------------------------------------------------------------------

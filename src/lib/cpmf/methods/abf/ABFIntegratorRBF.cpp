@@ -25,7 +25,7 @@
 #include <FortranMatrix.hpp>
 #include <Vector.hpp>
 #include <algorithm>
-#include <Lapack.hpp>
+#include <SciLapack.hpp>
 #include <iomanip>
 
 using namespace std;
@@ -39,16 +39,14 @@ CABFIntegratorRBF::CABFIntegratorRBF(void)
     Accumulator = NULL;
     FES = NULL;
 
-    Periodicity = false;
     WFac        = 2.0;
     RFac        = 3.0;
     Overhang    = 2;
     Method      = EARBF_SVD;
 
-    IntegrateErrors = false;
+    IntegratedRealm = EABF_MEAN_FORCE_VALUE;
 
     RCond   = -1; // machine precision
-
 }
 
 //------------------------------------------------------------------------------
@@ -71,13 +69,6 @@ void CABFIntegratorRBF::SetInputABFAccumulator(const CABFAccumulator* p_accu)
 void CABFIntegratorRBF::SetOutputFESurface(CEnergySurface* p_surf)
 {
     FES = p_surf;
-}
-
-//------------------------------------------------------------------------------
-
-void CABFIntegratorRBF::SetVerbosity(bool set)
-{
-    Verbose = set;
 }
 
 //------------------------------------------------------------------------------
@@ -108,20 +99,17 @@ void CABFIntegratorRBF::SetOverhang(int nrbfs)
     Overhang = nrbfs;
 }
 
-//------------------------------------------------------------------------------
-
-void CABFIntegratorRBF::SetPeriodicity(bool set)
-{
-    Periodicity = set;
-}
-
 //==============================================================================
 //------------------------------------------------------------------------------
 //==============================================================================
 
 bool CABFIntegratorRBF::Integrate(CVerboseStr& vout,bool errors)
 {
-    IntegrateErrors = errors;
+    if( ! errors ){
+        IntegratedRealm = EABF_MEAN_FORCE_VALUE;
+    } else {
+        IntegratedRealm = EABF_MEAN_FORCE_ERROR;
+    }
 
     if( Accumulator == NULL ) {
         ES_ERROR("ABF accumulator is not set");
@@ -138,7 +126,11 @@ bool CABFIntegratorRBF::Integrate(CVerboseStr& vout,bool errors)
     }
 
     if( (unsigned int)Accumulator->GetNumberOfCoords() != FES->GetNumberOfCoords() ){
-        ES_ERROR("inconsistent ABF and FES");
+        ES_ERROR("inconsistent ABF and FES - CVs");
+        return(false);
+    }
+    if( (unsigned int)Accumulator->GetNumberOfBins() != FES->GetNumberOfPoints() ){
+        ES_ERROR("inconsistent ABF and FES - points");
         return(false);
     }
 
@@ -175,29 +167,50 @@ bool CABFIntegratorRBF::Integrate(CVerboseStr& vout,bool errors)
     vout << "   Calculating FES ..." << endl;
 
     // load data to FES
-    CSimpleVector<double>   position;
-    position.CreateVector(NumOfCVs);
+    CSimpleVector<double>   ipos;
+    ipos.CreateVector(NumOfCVs);
 
-    // find global minimum
+    // calculate energies
     double glb_min = 0.0;
-    for(unsigned int ipoint=0; ipoint < FES->GetNumberOfPoints(); ipoint++) {
-        FES->GetPoint(ipoint,position);
-        double value = GetValue(position);
-        if( (ipoint == 0) || (glb_min > value) ){
+    bool   first = true;
+    for(int i=0; i < Accumulator->GetNumberOfBins(); i++){
+        int samples = Accumulator->GetNumberOfABFSamples(i);
+        FES->SetNumOfSamples(i,samples);
+        double value = 0.0;
+        if( IntegratedRealm == EABF_MEAN_FORCE_VALUE ){
+            FES->SetEnergy(i,value);
+        } else {
+            FES->SetError(i,value);
+        }
+        if( samples <= 0 ) continue;
+        Accumulator->GetPoint(i,ipos);
+        value = GetValue(ipos);
+        if( IntegratedRealm == EABF_MEAN_FORCE_VALUE ){
+            FES->SetEnergy(i,value);
+        } else {
+            FES->SetError(i,value);
+        }
+        if( first || (glb_min > value) ){
             glb_min = value;
+            first = false;
         }
     }
 
-    // write results
-    for(unsigned int ipoint=0; ipoint < FES->GetNumberOfPoints(); ipoint++) {
-        FES->GetPoint(ipoint,position);
-        double value = GetValue(position) - glb_min;
-        if( ! IntegrateErrors ){
-            FES->SetEnergy(ipoint,value);
+    // move to global minima
+    for(unsigned int i=0; i < FES->GetNumberOfPoints(); i++) {
+        if( FES->GetNumOfSamples(i) <= 0 ) continue;
+        double value = 0.0;
+        if( IntegratedRealm == EABF_MEAN_FORCE_VALUE ){
+            value = FES->GetEnergy(i);
         } else {
-            FES->SetError(ipoint,value);
+            value = FES->GetError(i);
         }
-        FES->SetNumOfSamples(ipoint,Accumulator->GetNumberOfABFSamples(ipoint));
+        value = value - glb_min;
+        if( IntegratedRealm == EABF_MEAN_FORCE_VALUE ){
+            FES->SetEnergy(i,value);
+        } else {
+            FES->SetError(i,value);
+        }
     }
 
     return(true);
@@ -212,7 +225,11 @@ bool CABFIntegratorRBF::IntegrateByLS(CVerboseStr& vout)
     vout << "   Creating A and rhs ..." << endl;
 
     // number of equations
-    int neq = Accumulator->GetNumberOfBins()*NumOfCVs;
+    int neq = 0;
+    for(int i=0; i < Accumulator->GetNumberOfBins(); i++){
+        if( Accumulator->GetNumberOfABFSamples(i) > 0 ) neq++;
+    }
+    neq = neq*NumOfCVs;
 
     CSimpleVector<double>   ipos;
     ipos.CreateVector(NumOfCVs);
@@ -234,6 +251,7 @@ bool CABFIntegratorRBF::IntegrateByLS(CVerboseStr& vout)
     // calculate A and rhs
     int j=0;
     for(int i=0; i < Accumulator->GetNumberOfBins(); i++){
+        if( Accumulator->GetNumberOfABFSamples(i) <= 0 ) continue;
 
         Accumulator->GetPoint(i,ipos);
         // A
@@ -255,7 +273,7 @@ bool CABFIntegratorRBF::IntegrateByLS(CVerboseStr& vout)
         }
         // rhs
         for(int k=0; k < NumOfCVs; k++){
-            rhs[j+k] = Accumulator->GetIntegratedValue(k,i,IntegrateErrors);
+            rhs[j+k] = Accumulator->GetValue(k,i,IntegratedRealm);
         }
         j += NumOfCVs;
     }
@@ -268,7 +286,7 @@ bool CABFIntegratorRBF::IntegrateByLS(CVerboseStr& vout)
 
             // solve least square problem via GELSD
             int rank = 0;
-            result = CLapack::gelsd(A,rhs,RCond,rank);
+            result = CSciLapack::gelsd(A,rhs,RCond,rank);
             vout << "   Rank = " << rank << "; Info = " << result << endl;
             if( result != 0 ) return(false);
             }
@@ -277,7 +295,7 @@ bool CABFIntegratorRBF::IntegrateByLS(CVerboseStr& vout)
             vout << "   Solving least square problem by QRLQ ..." << endl;
 
             // solve least square problem via GELS
-            result = CLapack::gels(A,rhs);
+            result = CSciLapack::gels(A,rhs);
             if( result != 0 ) return(false);
             }
         break;
@@ -364,8 +382,11 @@ double CABFIntegratorRBF::GetRMSR(void)
     der.CreateVector(NumOfCVs);
 
     double rmsr = 0.0;
+    double nsamples = 0.0;
 
     for(int i=0; i < Accumulator->GetNumberOfBins(); i++){
+
+        if( Accumulator->GetNumberOfABFSamples(i) <= 0 ) continue;
 
         Accumulator->GetPoint(i,ipos);
         der.SetZero();
@@ -388,12 +409,15 @@ double CABFIntegratorRBF::GetRMSR(void)
         }
 
         for(int k=0; k < NumOfCVs; k++){
-            double diff = Accumulator->GetIntegratedValue(k,i,IntegrateErrors) - der[k];
+            double diff = Accumulator->GetValue(k,i,IntegratedRealm) - der[k];
             rmsr += diff*diff;
+            nsamples++;
         }
     }
 
-    rmsr /= Accumulator->GetNumberOfBins();
+    if( nsamples > 0 ){
+        rmsr /= nsamples;
+    }
     if( rmsr > 0.0 ){
         rmsr = sqrt(rmsr);
     }

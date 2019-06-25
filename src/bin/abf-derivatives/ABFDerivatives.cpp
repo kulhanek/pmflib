@@ -84,7 +84,9 @@ int CABFDerivatives::Init(int argc,char* argv[])
     } else {
         vout << "# Limit                     : " << Options.GetOptLimit() << endl;
     }
-    vout << "# Print errors              : " << bool_to_str(Options.GetOptErrors()) << endl;
+    vout << "# CV item                   : " << Options.GetOptItem() << endl;
+    vout << "# Print sigmas              : " << bool_to_str(Options.GetOptSigma()) << endl;
+    vout << "# Print errors              : " << bool_to_str(Options.GetOptError()) << endl;
     vout << "# ------------------------------------------------" << endl;
     vout << "# No GNUPlot delimiters     : " << bool_to_str(Options.GetOptNoGNUPlot()) << endl;
     vout << "# No header to output       : " << bool_to_str(Options.GetOptNoHeader()) << endl;
@@ -120,25 +122,19 @@ bool CABFDerivatives::Run(void)
         return(false);
     }
 
-    try {
-        Point.CreateVector(Accumulator.GetNumberOfCoords());
-    } catch(...) {
-        ES_ERROR("unable to allocate memory for coordinate point");
-        return(false);
-    }
-
 // print header
     if(Options.GetOptNoHeader() == false) {
         fprintf(OutputFile,"# derivatives\n");
         fprintf(OutputFile,"# Number of coordinates : %d\n",Accumulator.GetNumberOfCoords());
         fprintf(OutputFile,"# Total number of bins  : %d\n",Accumulator.GetNumberOfBins());
+        fprintf(OutputFile,"# CV item               : %d\n",Options.GetOptItem());
         fprintf(OutputFile,"# Sample limit          : %d\n",Options.GetOptLimit());
         fprintf(OutputFile,"# Derivative std. dev.  : %s\n",(const char*)bool_to_str(Options.GetOptSigma()));
-        fprintf(OutputFile,"# Derivative errors     : %s\n",(const char*)bool_to_str(Options.GetOptErrors()));
+        fprintf(OutputFile,"# Derivative std. err.  : %s\n",(const char*)bool_to_str(Options.GetOptError()));
     }
 
 // print samples
-    if(PrintDerivatives(0) == false) {
+    if(PrintDerivatives() == false) {
         ES_ERROR("unable to print derivatives to output");
         return(false);
     }
@@ -148,52 +144,33 @@ bool CABFDerivatives::Run(void)
 
 //------------------------------------------------------------------------------
 
-bool CABFDerivatives::PrintDerivatives(int cv)
+bool CABFDerivatives::PrintDerivatives(void)
 {
-    if(cv >= Accumulator.GetNumberOfCoords()) {
+    if( (Options.GetOptItem() < 0) || (Options.GetOptItem() > Accumulator.GetNumberOfCoords())){
+        ES_ERROR("requested CV is out of range");
+        return(false);
+    }
 
-        int ibin = Accumulator.GetGlobalIndex(Point);
-        int item = Options.GetOptItem();
+    CSimpleVector<double>   pos;
+    CSimpleVector<int>      ipos;
 
-        double value = 0.0;
-        double sigma = 0.0;
-        double error = 0.0;
-        double sum = 0.0;
-        double sum_square = 0.0;
-        double nsamples = 0;
+    pos.CreateVector(Accumulator.GetNumberOfCoords());
+    ipos.CreateVector(Accumulator.GetNumberOfCoords());
 
-        nsamples = Accumulator.GetNumberOfABFSamples(ibin);
-        if(nsamples < Options.GetOptLimit()) return(true);   // not enough samples
-        // abf force
-        sum = Accumulator.GetABFForceSum(item,ibin);
-        sum_square = Accumulator.GetABFForceSquareSum(item,ibin);
+    for(int ibin=0; ibin < Accumulator.GetNumberOfBins(); ibin++){
 
-        if(nsamples > 0) {
-            // calculate average
-            value = sum / nsamples;
-            if( (Options.GetOptSigma() == true) || (Options.GetOptErrors() == true)  ){
-                // calculate sigma of samples
-                double sq = nsamples*sum_square - sum*sum;
-                if(sq > 0) {
-                    sq = sqrt(sq) / nsamples;
-                } else {
-                    sq = 0.0;
-                }
-                sigma = sq;
-            }
-            if( Options.GetOptErrors() == true ){
-                // calculate error of average
-                error = sigma / sqrt(nsamples);
-            }
-        }
+        // do we have enough samples?
+        double nsamples = Accumulator.GetNumberOfABFSamples(ibin);
+        if( nsamples < Options.GetOptLimit() ) continue;
+
+        Accumulator.GetPoint(ibin,pos);
 
         CSmallString xformat,sformat;
         xformat = Options.GetOptIXFormat() + " ";
 
         // print point position
         for(int i=0; i < Accumulator.GetNumberOfCoords(); i++) {
-            const CColVariable* p_coord = Accumulator.GetCoordinate(i);
-            double xvalue = p_coord->GetValue(Point[i]);
+            double xvalue = pos[i];
             if(fprintf(OutputFile,xformat,xvalue) <= 0) {
                 CSmallString error;
                 error << "unable to write to output (" << strerror(errno) << ")";
@@ -201,28 +178,63 @@ bool CABFDerivatives::PrintDerivatives(int cv)
                 return(false);
             }
         }
-        sformat = Options.GetOptOSFormat() + " ";
-        // and value and optionaly sigma and error
-        if(fprintf(OutputFile,sformat,value) <= 0) {
-            CSmallString error;
-            error << "unable to write to output (" << strerror(errno) << ")";
-            ES_ERROR(error);
-            return(false);
-        }
-        if( Options.GetOptSigma() == true ) {
-            if(fprintf(OutputFile,sformat,sigma) <= 0) {
-                CSmallString error;
-                error << "unable to write to output (" << strerror(errno) << ")";
-                ES_ERROR(error);
-                return(false);
+
+        for(int i=0; i < Accumulator.GetNumberOfCoords(); i++) {
+            double value = 0.0;
+            double sigma = 0.0;
+            double error = 0.0;
+            double sum = 0.0;
+            double sum_square = 0.0;
+
+            // abf force
+            sum = Accumulator.GetABFForceSum(i,ibin);
+            sum_square = Accumulator.GetABFForceSquareSum(i,ibin);
+
+            if(nsamples > 0) {
+                // calculate average
+                value = sum / nsamples;
+                if( (Options.GetOptSigma() == true) || (Options.GetOptError() == true)  ){
+                    // calculate sigma of samples
+                    double sq = nsamples*sum_square - sum*sum;
+                    if(sq > 0) {
+                        sq = sqrt(sq) / nsamples;
+                    } else {
+                        sq = 0.0;
+                    }
+                    sigma = sq;
+                }
+                if( Options.GetOptError() == true ){
+                    // calculate error of average
+                    error = sigma / sqrt(nsamples);
+                }
             }
-        }
-        if( Options.GetOptErrors() == true ) {
-            if(fprintf(OutputFile,sformat,error) <= 0) {
-                CSmallString error;
-                error << "unable to write to output (" << strerror(errno) << ")";
-                ES_ERROR(error);
-                return(false);
+
+            if( (Options.GetOptItem() == 0) || (Options.GetOptItem() == i+1) ){
+
+                sformat = Options.GetOptOSFormat() + " ";
+                // and value and optionaly sigma and error
+                if(fprintf(OutputFile,sformat,value) <= 0) {
+                    CSmallString error;
+                    error << "unable to write to output (" << strerror(errno) << ")";
+                    ES_ERROR(error);
+                    return(false);
+                }
+                if( Options.GetOptSigma() == true ) {
+                    if(fprintf(OutputFile,sformat,sigma) <= 0) {
+                        CSmallString error;
+                        error << "unable to write to output (" << strerror(errno) << ")";
+                        ES_ERROR(error);
+                        return(false);
+                    }
+                }
+                if( Options.GetOptError() == true ) {
+                    if(fprintf(OutputFile,sformat,error) <= 0) {
+                        CSmallString error;
+                        error << "unable to write to output (" << strerror(errno) << ")";
+                        ES_ERROR(error);
+                        return(false);
+                    }
+                }
             }
         }
         if(fprintf(OutputFile,"\n") <= 0) {
@@ -231,25 +243,22 @@ bool CABFDerivatives::PrintDerivatives(int cv)
             ES_ERROR(error);
             return(false);
         }
-        return(true);
-    }
 
-    const CColVariable* p_coord = Accumulator.GetCoordinate(cv);
+    // write block delimiter - required by GNUPlot
+        if(Options.GetOptNoGNUPlot() == false) {
+            int ncvs = Accumulator.GetNumberOfCoords();
+            Accumulator.GetIPoint(ibin,ipos);
+            if( ipos[ncvs-1] == (int)Accumulator.GetCoordinate(ncvs-1)->GetNumberOfBins() - 1){
 
-// cycle through variable
-    for(unsigned int i = 0; i < p_coord->GetNumberOfBins(); i++) {
-        Point[cv] = i;
-        if(PrintDerivatives(cv+1) == false) return(false);
-    }
-
-// write block delimiter - required by GNUPlot
-    if(Options.GetOptNoGNUPlot() == false) {
-        if(fprintf(OutputFile,"\n") <= 0) {
-            CSmallString error;
-            error << "unable to write to output (" << strerror(errno) << ")";
-            ES_ERROR(error);
-            return(false);
+                if(fprintf(OutputFile,"\n") <= 0) {
+                    CSmallString error;
+                    error << "unable to write to output (" << strerror(errno) << ")";
+                    ES_ERROR(error);
+                    return(false);
+                }
+            }
         }
+
     }
 
     return(true);

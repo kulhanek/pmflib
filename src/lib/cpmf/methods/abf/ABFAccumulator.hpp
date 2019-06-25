@@ -29,6 +29,14 @@
 
 //------------------------------------------------------------------------------
 
+enum EABFAccuValue {
+    EABF_MEAN_FORCE_VALUE = 0,  // average of instantious force
+    EABF_INST_FORCE_SIGMA = 1,  // variance of instantious force
+    EABF_MEAN_FORCE_ERROR = 2,  // variance of mean force
+};
+
+//------------------------------------------------------------------------------
+
 /** \brief ABF accumulator
 */
 
@@ -133,8 +141,8 @@ public:
     /// return pointer to ABF force square sum array
     double* GetABFForceSquareSumArray(void);
 
-    /// get value for integration
-    double GetIntegratedValue(int icoord,int ibin,bool error) const;
+    /// get value
+    double GetValue(int icoord,int ibin,EABFAccuValue realm) const;
 
 // mathematical operation -----------------------------------------------------
     /// set all data to zero

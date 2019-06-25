@@ -25,7 +25,9 @@
 #include <FortranMatrix.hpp>
 #include <Vector.hpp>
 #include <algorithm>
-#include <Lapack.hpp>
+#include <SciLapack.hpp>
+#include <iomanip>
+#include <SciBlas.hpp>
 
 using namespace std;
 
@@ -38,12 +40,10 @@ CABFIntegratorGPR::CABFIntegratorGPR(void)
     Accumulator = NULL;
     FES = NULL;
 
-    Verbose = true;
-    Periodicity = false;
-    WidthOrder = 4;
-    Method = EAGPR_SVD;
+    SigmaF2 = 15.0;
+    WFac = 3.0;
 
-    RCond = -1; // machine precision
+    IncludeError = false;
 }
 
 //------------------------------------------------------------------------------
@@ -70,23 +70,23 @@ void CABFIntegratorGPR::SetOutputFESurface(CEnergySurface* p_surf)
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorGPR::SetVerbosity(bool set)
+void CABFIntegratorGPR::SetWFac(double wfac)
 {
-    Verbose = set;
+    WFac = wfac;
 }
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorGPR::SetGaussianWidth(int order)
+void CABFIntegratorGPR::SetSigmaF2(double sigf2)
 {
-    WidthOrder = order;
+    SigmaF2 = sigf2;
 }
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorGPR::SetPeriodicity(bool set)
+void CABFIntegratorGPR::SetIncludeError(bool set)
 {
-    Periodicity = set;
+    IncludeError = set;
 }
 
 //==============================================================================
@@ -110,59 +110,82 @@ bool CABFIntegratorGPR::Integrate(CVerboseStr& vout)
     }
 
     if( (unsigned int)Accumulator->GetNumberOfCoords() != FES->GetNumberOfCoords() ){
-        ES_ERROR("inconsistent ABF and FES");
+        ES_ERROR("inconsistent ABF and FES - CVs");
+        return(false);
+    }
+    if( (unsigned int)Accumulator->GetNumberOfBins() != FES->GetNumberOfPoints() ){
+        ES_ERROR("inconsistent ABF and FES - points");
         return(false);
     }
 
     // GPR setup
-    NumOfCVs = Accumulator->GetNumberOfCoords();
-    NumOfGPRBins.CreateVector(NumOfCVs);
-
-    double sfac = 5;
-
-    NumOfGPRs = 1;
-    for(int i=0; i < NumOfCVs; i++ ){
-        NumOfGPRBins[i] = Accumulator->GetCoordinate(i)->GetNumberOfBins()/sfac;
-        NumOfGPRs *= Accumulator->GetCoordinate(i)->GetNumberOfBins()/sfac;
-    }
-    Weights.CreateVector(NumOfGPRs);
-    Weights.SetZero();
-
-    Sigmas.CreateVector(NumOfCVs);
-    for(int i=0; i < NumOfCVs; i++){
-        Sigmas[i] = Accumulator->GetCoordinate(i)->GetRange()*WidthOrder/NumOfGPRBins[i];
-        // cout << Sigmas[i] << endl;
+    CVLengths2.CreateVector(Accumulator->GetNumberOfCoords());
+    for(int i=0; i < Accumulator->GetNumberOfCoords(); i++){
+        double l = WFac*Accumulator->GetCoordinate(i)->GetRange()/Accumulator->GetCoordinate(i)->GetNumberOfBins();
+        CVLengths2[i] = l*l;
+//        cout << CVLengths2[i] << endl;
     }
 
-    // integrate
-    if( IntegrateByLS(vout) == false ){
-        ES_ERROR("unable to solve least square problem by svd");
+    // number of data points
+    GPRSize = 0;
+    for(int i=0; i < Accumulator->GetNumberOfBins(); i++){
+        if( Accumulator->GetNumberOfABFSamples(i) > 0 ) GPRSize++;
+    }
+    NCVs = Accumulator->GetNumberOfCoords();
+    GPRSize = GPRSize*NCVs;
+
+    // load data to FES
+    ipos.CreateVector(NCVs);
+    jpos.CreateVector(NCVs);
+    gpos.CreateVector(NCVs);
+    rk.CreateVector(GPRSize);
+    lk.CreateVector(GPRSize);
+    ik.CreateVector(GPRSize);
+    GPRModel.CreateVector(GPRSize);
+
+    // train GPR
+    if( TrainGP(vout) == false ){
+        ES_ERROR("unable to train GPR model");
         return(false);
     }
 
     vout << "   Calculating FES ..." << endl;
 
-    // load data to FES
-    CSimpleVector<double>   position;
-    position.CreateVector(NumOfCVs);
-
-    // find global minimum
+    // calculate energies
     double glb_min = 0.0;
-    for(unsigned int ipoint=0; ipoint < FES->GetNumberOfPoints(); ipoint++) {
-        FES->GetPoint(ipoint,position);
-        double value = GetValue(position);
-        if( (ipoint == 0) || (glb_min > value) ){
+    bool   first = true;
+    for(int i=0; i < Accumulator->GetNumberOfBins(); i++){
+        int samples = Accumulator->GetNumberOfABFSamples(i);
+        FES->SetNumOfSamples(i,samples);
+        double value = 0.0;
+        FES->SetEnergy(i,value);
+        if( samples <= 0 ) continue;
+        Accumulator->GetPoint(i,jpos);
+        value = GetValue(jpos);
+        FES->SetEnergy(i,value);
+        if( first || (glb_min > value) ){
             glb_min = value;
+            first = false;
+            gpos = jpos;
         }
     }
 
-    // write results
-    for(unsigned int ipoint=0; ipoint < FES->GetNumberOfPoints(); ipoint++) {
-        FES->GetPoint(ipoint,position);
-        double value = GetValue(position) - glb_min;
-        FES->SetEnergy(ipoint,value);
-        FES->SetNumOfSamples(ipoint,Accumulator->GetNumberOfABFSamples(ipoint));
+    // move to global minima
+    for(unsigned int i=0; i < FES->GetNumberOfPoints(); i++) {
+        if( FES->GetNumOfSamples(i) <= 0 ) continue;
+        double value = 0.0;
+        value = FES->GetEnergy(i);
+        value = value - glb_min;
+        FES->SetEnergy(i,value);
     }
+
+    if( IncludeError ){
+        vout << "   Calculating FES error ..." << endl;
+        CalculateErrors(gpos);
+    }
+
+    // and finaly some statistics
+    vout << "   RMSR = " << setprecision(5) << GetRMSR() << endl;
 
     return(true);
 }
@@ -171,92 +194,82 @@ bool CABFIntegratorGPR::Integrate(CVerboseStr& vout)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-bool CABFIntegratorGPR::IntegrateByLS(CVerboseStr& vout)
+bool CABFIntegratorGPR::TrainGP(CVerboseStr& vout)
 {
-    vout << "   Creating A and rhs ..." << endl;
+    vout << "   Creating K+Sigma and Y ..." << endl;
+    vout << "   Dim: " << GPRSize << " x " << GPRSize << endl;
 
-    // number of equations
-    int neq = Accumulator->GetNumberOfBins()*NumOfCVs;
+    K.CreateMatrix(GPRSize,GPRSize);
+    K.SetZero();
 
-    CSimpleVector<double>   spos;           // best sampled bin
-    spos.CreateVector(NumOfCVs);
-
-    CSimpleVector<double>   ipos;           // best sampled bin
-    ipos.CreateVector(NumOfCVs);
-
-    CSimpleVector<double>   lpos;           // best sampled bin
-    lpos.CreateVector(NumOfCVs);
-
-    vout << "   Dim: " << neq << " x " << NumOfGPRs << endl;
-
-    CFortranMatrix A;
-    A.CreateMatrix(neq,NumOfGPRs);
-
-    CVector rhs;
-    int nrhs = std::max(neq,NumOfGPRs);
-    rhs.CreateVector(nrhs);
-
-    // calculate A and rhs
-    int j=0;
+    // create kernel matrix
+    int indi = 0;
     for(int i=0; i < Accumulator->GetNumberOfBins(); i++){
+        if( Accumulator->GetNumberOfABFSamples(i) <= 0 ) continue; // not sampled
 
         Accumulator->GetPoint(i,ipos);
-        // A
-        for(int l=0; l < NumOfGPRs; l++){
-            GetGPRPosition(l,lpos);
-                  //      cout << lpos[0] << " " << lpos[1] << endl;
-            double av = 1.0;
-            for(int k=0; k < NumOfCVs; k++){
-                double dvc = Accumulator->GetCoordinate(k)->GetDifference(ipos[k],lpos[k]);
-                double sig = Sigmas[k];
-                av *= exp( - dvc*dvc/(2.0*sig*sig) );
+
+        int indj = 0;
+        for(int j=0; j < Accumulator->GetNumberOfBins(); j++){
+            if( Accumulator->GetNumberOfABFSamples(j) <= 0 ) continue; // not sampled
+
+            Accumulator->GetPoint(j,jpos);
+
+            double arg = 0.0;
+            for(int ii=0; ii < NCVs; ii++){
+                double du = Accumulator->GetCoordinate(ii)->GetDifference(ipos[ii],jpos[ii]);
+                double dd = CVLengths2[ii];
+                arg += du*du/(2.0*dd);
             }
-            for(int k=0; k < NumOfCVs; k++){
-                double dvc = Accumulator->GetCoordinate(k)->GetDifference(ipos[k],lpos[k]);
-                double sig = Sigmas[k];
-                double fc = -dvc/(sig*sig);  // switch to derivatives
-                A[j+k][l] = av * fc;
+            arg = SigmaF2*exp(-arg);
+
+            // calculate block of second derivatives
+
+            for(int ii=0; ii < NCVs; ii++){
+                for(int jj=0; jj < NCVs; jj++){
+                    double du = Accumulator->GetCoordinate(ii)->GetDifference(ipos[ii],jpos[ii]) *
+                                Accumulator->GetCoordinate(jj)->GetDifference(ipos[jj],jpos[jj]);
+                    double dd = CVLengths2[ii]*CVLengths2[jj];
+                    K[indi*NCVs+ii][indj*NCVs+jj] -= arg*du/dd;
+                    if( (ii == jj) ){
+                        K[indi*NCVs+ii][indj*NCVs+jj] += arg/CVLengths2[ii];
+                    }
+                }
             }
+            indj++;
         }
-        // rhs
-        for(int k=0; k < NumOfCVs; k++){
-            rhs[j+k] = Accumulator->GetIntegratedValue(k,i,false);
-        }
-        j += NumOfCVs;
+        indi++;
     }
 
+// get mean forces and their variances
+    CSimpleVector<double>   Y;
+    Y.CreateVector(GPRSize);
+
+    indi = 0.0;
+    for(int i=0; i < Accumulator->GetNumberOfBins(); i++){
+        if( Accumulator->GetNumberOfABFSamples(i) <= 0 ) continue; // not sampled
+
+        for(int ii=0; ii < NCVs; ii++){
+
+            // get mean force and its error
+            double mf = Accumulator->GetValue(ii,i,EABF_MEAN_FORCE_VALUE);
+            double er = Accumulator->GetValue(ii,i,EABF_MEAN_FORCE_ERROR);
+
+            Y[indi*NCVs+ii] = mf;
+            K[indi*NCVs+ii][indi*NCVs+ii] += er*er;
+        }
+        indi++;
+    }
+
+// inverting the K+Sigma
     int result = 0;
+    vout << "   Inverting K+Sigma ..." << endl;
+    result = CSciLapack::inv1(K);
+    if( result != 0 ) return(false);
 
-    switch(Method){
-        case EAGPR_SVD:{
-            vout << "   Solving least square problem by SVD ..." << endl;
-
-            // solve least square problem via GELSD
-            int rank = 0;
-            result = CLapack::gelsd(A,rhs,RCond,rank);
-            vout << "   Rank = " << rank << "; Info = " << result << endl;
-            if( result != 0 ) return(false);
-            }
-        break;
-        case EAGPR_QRLQ:{
-            vout << "   Solving least square problem by QRLQ ..." << endl;
-
-            // solve least square problem via GELS
-            result = CLapack::gels(A,rhs);
-            if( result != 0 ) return(false);
-            }
-        break;
-        default:
-            INVALID_ARGUMENT("unsupported method");
-    }
-
-    // copy results to Weights
-    for(int l=0; l < NumOfGPRs; l++){
-        Weights[l] = rhs[l];
-    }
-
-    // debug
-    // cout << Weights[0] << endl;
+// calculate weights
+    vout << "   Calculating weights B ..." << endl;
+    CSciBlas::gemv(1.0,K,Y,0.0,GPRModel);
 
     return( true );
 }
@@ -265,38 +278,175 @@ bool CABFIntegratorGPR::IntegrateByLS(CVerboseStr& vout)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void CABFIntegratorGPR::GetGPRPosition(unsigned int index,CSimpleVector<double>& position)
+double CABFIntegratorGPR::GetValue(const CSimpleVector<double>& position)
 {
-    for(int k=NumOfCVs-1; k >= 0; k--) {
+    double energy = 0.0;
 
-        const CColVariable* p_coord = Accumulator->GetCoordinate(k);
-        int ibin = index % NumOfGPRBins[k];
-        // bin  = 0,...,NBins-1
-        position[k] = p_coord->GetMinValue() + ((double)ibin + 0.5)*(p_coord->GetMaxValue()-p_coord->GetMinValue())/((double)NumOfGPRBins[k]);
-        index = index / NumOfGPRBins[k];
+    int indi = 0;
+    for(int i=0; i < Accumulator->GetNumberOfBins(); i++){
+        if( Accumulator->GetNumberOfABFSamples(i) <= 0 ) continue; // not sampled
+
+        Accumulator->GetPoint(i,ipos);
+
+        double arg = 0.0;
+        for(int ii=0; ii < NCVs; ii++){
+            double du = Accumulator->GetCoordinate(ii)->GetDifference(position[ii],ipos[ii]);
+            double dd = CVLengths2[ii];
+            arg += du*du/(2.0*dd);
+        }
+        arg = SigmaF2*exp(-arg);
+
+        for(int ii=0; ii < NCVs; ii++){
+            double du = Accumulator->GetCoordinate(ii)->GetDifference(position[ii],ipos[ii]);
+            double dd = CVLengths2[ii];
+            energy += GPRModel[indi*NCVs+ii]*(du/dd)*arg;
+        }
+        indi++;
     }
+
+    return(energy);
 }
 
 //------------------------------------------------------------------------------
 
-double CABFIntegratorGPR::GetValue(const CSimpleVector<double>& position)
+double CABFIntegratorGPR::GetMeanForce(const CSimpleVector<double>& position,int icoord)
 {
-    double                  energy = 0.0;
-    CSimpleVector<double>   rbfpos;
+    double mf = 0.0;
 
-    rbfpos.CreateVector(NumOfCVs);
+    int indi = 0;
+    for(int i=0; i < Accumulator->GetNumberOfBins(); i++){
+        if( Accumulator->GetNumberOfABFSamples(i) <= 0 ) continue; // not sampled
 
-    for(int i=0; i < NumOfGPRs; i++){
-        GetGPRPosition(i,rbfpos);
-        double value = Weights[i];
-        for(int j=0; j < NumOfCVs; j++){
-            double dvc = Accumulator->GetCoordinate(j)->GetDifference(position[j],rbfpos[j]);
-            double sig = Sigmas[j];
-            value *= exp( - dvc*dvc/(2.0*sig*sig) );
+        Accumulator->GetPoint(i,ipos);
+
+        double arg = 0.0;
+        for(int ii=0; ii < NCVs; ii++){
+            double du = Accumulator->GetCoordinate(ii)->GetDifference(position[ii],ipos[ii]);
+            double dd = CVLengths2[ii];
+            arg += du*du/(2.0*dd);
         }
-        energy = energy + value;
+        arg = SigmaF2*exp(-arg);
+
+        for(int ii=0; ii < NCVs; ii++){
+            double du = Accumulator->GetCoordinate(ii)->GetDifference(position[ii],ipos[ii])*
+                        Accumulator->GetCoordinate(icoord)->GetDifference(position[icoord],ipos[icoord]);
+            double dd = CVLengths2[ii]*CVLengths2[icoord];
+            double der2 = -arg*du/dd;
+            if( ii == icoord ){
+                der2 += arg/CVLengths2[ii];
+            }
+            mf += GPRModel[indi*NCVs+ii]*der2;
+        }
+        indi++;
     }
-    return(energy);
+
+    return(mf);
+}
+
+//------------------------------------------------------------------------------
+
+double CABFIntegratorGPR::GetRMSR(void)
+{
+    if( Accumulator->GetNumberOfBins() <= 0 ){
+        ES_ERROR("number of bins is not > 0");
+        return(0.0);
+    }
+
+    double rmsr = 0.0;
+    double nsamples = 0.0;
+
+    for(int i=0; i < Accumulator->GetNumberOfBins(); i++){
+        if( Accumulator->GetNumberOfABFSamples(i) <= 0 ) continue;
+
+        Accumulator->GetPoint(i,jpos);
+
+        for(int k=0; k < Accumulator->GetNumberOfCoords(); k++){
+            double diff = Accumulator->GetValue(k,i,EABF_MEAN_FORCE_VALUE) - GetMeanForce(jpos,k);
+            rmsr += diff*diff;
+            nsamples++;
+        }
+    }
+
+    if( nsamples > 0 ){
+        rmsr /= nsamples;
+    }
+    if( rmsr > 0.0 ){
+        rmsr = sqrt(rmsr);
+    }
+
+    return(rmsr);
+}
+
+//------------------------------------------------------------------------------
+
+double CABFIntegratorGPR::GetCov(CSimpleVector<double>& lpos,CSimpleVector<double>& rpos)
+{
+    int indi = 0;
+    for(int i=0; i < Accumulator->GetNumberOfBins(); i++){
+        if( Accumulator->GetNumberOfABFSamples(i) <= 0 ) continue; // not sampled
+
+        Accumulator->GetPoint(i,ipos);
+
+        double argl = 0.0;
+        double argr = 0.0;
+        for(int ii=0; ii < NCVs; ii++){
+            double du = Accumulator->GetCoordinate(ii)->GetDifference(lpos[ii],ipos[ii]);
+            double dd = CVLengths2[ii];
+            argl += du*du/(2.0*dd);
+
+            du = Accumulator->GetCoordinate(ii)->GetDifference(rpos[ii],ipos[ii]);
+            argr += du*du/(2.0*dd);
+        }
+        argl = SigmaF2*exp(-argl);
+        argr = SigmaF2*exp(-argr);
+
+        for(int ii=0; ii < NCVs; ii++){
+            double du = Accumulator->GetCoordinate(ii)->GetDifference(lpos[ii],ipos[ii]);
+            double dd = CVLengths2[ii];
+            lk[indi*NCVs + ii] = (du/dd)*argl;
+
+            du = Accumulator->GetCoordinate(ii)->GetDifference(rpos[ii],ipos[ii]);
+            rk[indi*NCVs + ii] = (du/dd)*argr;
+        }
+        indi++;
+    }
+
+    double cov = 0.0;
+    for(int ii=0; ii < NCVs; ii++){
+        double du = Accumulator->GetCoordinate(ii)->GetDifference(lpos[ii],rpos[ii]);
+        double dd = CVLengths2[ii];
+        cov += du*du/(2.0*dd);
+    }
+    cov = SigmaF2*exp(-cov);
+
+    CSciBlas::gemv(1.0,K,rk,0.0,ik);
+    cout << CSciBlas::dot(lk,ik) << endl;
+    cov = cov  - CSciBlas::dot(lk,ik);
+
+    return(cov);
+}
+
+//------------------------------------------------------------------------------
+
+void CABFIntegratorGPR::CalculateErrors(CSimpleVector<double>& gpos)
+{
+    double vargp = GetCov(gpos,gpos);
+
+    for(int i=0; i < Accumulator->GetNumberOfBins(); i++){
+        int samples = Accumulator->GetNumberOfABFSamples(i);
+        FES->SetError(i,0.0);
+        if( samples <= 0 ) continue;
+        Accumulator->GetPoint(i,jpos);
+        double varfc = GetCov(jpos,jpos);
+        double covfg = GetCov(jpos,gpos);
+        double error = varfc + vargp - 2.0*covfg;
+        if( error > 0 ){
+            error = sqrt(error);
+        } else {
+            error = 0.0;
+        }
+        FES->SetError(i,error);
+    }
 }
 
 //==============================================================================

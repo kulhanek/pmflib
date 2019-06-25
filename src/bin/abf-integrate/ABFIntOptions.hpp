@@ -38,7 +38,15 @@ public:
 
     CSO_PROG_DESC_BEGIN
     "It numericaly integrates data from the ABF calculation. The integration is performed either by "
-    "reverse finite difference (RFD) method, employing radial basis functions (RBF), or gaussian process (GPR)."
+    "reverse finite difference (RFD) method, employing radial basis functions (RBF), or gaussian process (GPR).\n"
+    "<b><red>Warning:</red></b> "
+    "While RFD is extremly fast it can fail on data with irregular sampling. This problem can be partially overcome "
+    "by increasing sampling limit. "
+    "Both RFD and RBF can fail on data with quick changes in mean forces. "
+    "This situation can be partially overcome by increasing sampling limit and "
+    "at the same time by energy limit, which, however, requires two integration passes. "
+    "GPR is probably ultimate way how to obtain correctly integrated data but "
+    "at cost of significantly higher computational demands."
     CSO_PROG_DESC_END
 
     CSO_PROG_VERS_BEGIN
@@ -59,9 +67,10 @@ public:
     CSO_OPT(double,RCond)
     CSO_OPT(double,RFac)
     CSO_OPT(double,WFac)
+    CSO_OPT(double,SigmaF2)
     CSO_OPT(int,Overhang)
     CSO_OPT(bool,Periodicity)
-    CSO_OPT(bool,WithErrors)
+    CSO_OPT(bool,WithError)
     CSO_OPT(CSmallString,OutputFormat)
     CSO_OPT(bool,PrintWithLimit)
     CSO_OPT(bool,NoHeader)
@@ -132,7 +141,7 @@ public:
                 0,                           /* short option name */
                 "fdpoints",                      /* long option name */
                 "NUMBER",                           /* parametr name */
-                "Determine number of points employed in differenciation scheme (three or four is upported) in RFD method.")   /* option description */
+                "RFD: Determine number of points employed in differenciation scheme (three or four is upported) in RFD method.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(double,                           /* option type */
                 RCond,                        /* option name */
@@ -141,7 +150,7 @@ public:
                 'r',                           /* short option name */
                 "rcond",                      /* long option name */
                 "NUMBER",                           /* parametr name */
-                "Rank condition for SVD.")   /* option description */
+                "RBF: Rank condition for SVD.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(double,                           /* option type */
                 RFac,                        /* option name */
@@ -150,7 +159,7 @@ public:
                 't',                           /* short option name */
                 "rfac",                      /* long option name */
                 "NUMBER",                           /* parametr name */
-                "Reduction factor for number of RBFs. Number of RBFs in given direction is number of bins in that direction divided by this factor.")   /* option description */
+                "RBF: Reduction factor for number of RBFs. Number of RBFs in given direction is number of bins in that direction divided by this factor.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(double,                           /* option type */
                 WFac,                        /* option name */
@@ -159,8 +168,17 @@ public:
                 'w',                           /* short option name */
                 "wfac",                      /* long option name */
                 "NUMBER",                           /* parametr name */
-                "Factor influencing widths of RBFs. The width is distance between "
-                "the adjacent RBFs multiplied by this factor.")   /* option description */
+                "RBF+GPR: Factor influencing widths of RBFs or square exponential kernels. The width is distance between "
+                "the adjacent square exponential functions multiplied by this factor.")   /* option description */
+    //----------------------------------------------------------------------
+    CSO_MAP_OPT(double,                           /* option type */
+                SigmaF2,                        /* option name */
+                15.0,                          /* default value */
+                false,                          /* is option mandatory */
+                's',                           /* short option name */
+                "sigmaf2",                      /* long option name */
+                "NUMBER",                           /* parametr name */
+                "GPR: Variance of the reconstructed free energy surface (signal variance).")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(int,                           /* option type */
                 Overhang,                        /* option name */
@@ -178,16 +196,16 @@ public:
                 'p',                           /* short option name */
                 "periodic",                      /* long option name */
                 NULL,                           /* parametr name */
-                "Switch on periodicity for collective variables that are periodic.")   /* option description */
+                "RFD: Switch on periodicity for collective variables that are periodic.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(bool,                           /* option type */
-                WithErrors,                        /* option name */
+                WithError,                        /* option name */
                 false,                          /* default value */
                 false,                          /* is option mandatory */
                 'e',                           /* short option name */
-                "witherrors",                      /* long option name */
+                "witherror",                      /* long option name */
                 NULL,                           /* parametr name */
-                "Integrate both energy and errors of derivatives.")   /* option description */
+                "Integrate free energy and try to estimate its error.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(CSmallString,                           /* option type */
                 OutputFormat,                        /* option name */

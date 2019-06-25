@@ -25,6 +25,7 @@
 #include <SmallTimeAndDate.hpp>
 #include <ABFIntegratorRFD.hpp>
 #include <ABFIntegratorRBF.hpp>
+#include <ABFIntegratorGPR.hpp>
 #include <EnergySurface.hpp>
 #include <ESPrinter.hpp>
 #include "ABFIntegrate.hpp"
@@ -87,8 +88,8 @@ int CABFIntegrate::Init(int argc,char* argv[])
     vout << "# ------------------------------------------------" << endl;
 
         vout << "# Integration method    : " << Options.GetOptMethod() << endl;
-        if( Options.GetOptWithErrors() ) {
-        vout << "# Integrated domains    : force+errors" << endl;
+        if( Options.GetOptWithError() ) {
+        vout << "# Integrated domains    : force+error" << endl;
         } else {
         vout << "# Integrated domains    : force only" << endl;
         }
@@ -100,16 +101,22 @@ int CABFIntegrate::Init(int argc,char* argv[])
         vout << "# SVD rcond             : " << setprecision(3) << Options.GetOptRCond() << endl;
         vout << "# RBF overhang          : " << Options.GetOptOverhang() << endl;
     } else if ( Options.GetOptMethod() == "gpr"  ) {
-        // FIXME
+        vout << "# SigmaF2               : " << setprecision(3) << Options.GetOptSigmaF2() << endl;
+        vout << "# Width factor wfac     : " << setprecision(3) << Options.GetOptWFac() << endl;
     } else {
         ES_ERROR("not implemented method");
         return(SO_USER_ERROR);
     }
     vout << "# ------------------------------------------------" << endl;
     if(Options.GetOptLimit() == 0) {
-        vout << "# Limit                 : all bins will be taken into account" << endl;
+        vout << "# Sampling limit        : all bins will be taken into account" << endl;
     } else {
-        vout << "# Limit                 : " << Options.GetOptLimit() << endl;
+        vout << "# Sampling limit        : " << Options.GetOptLimit() << endl;
+    }
+    if(Options.GetOptEnergyLimit() == -1) {
+        vout << "# Energy limit          : not applied" << endl;
+    } else {
+        vout << "# Energy limit          : " << Options.GetOptEnergyLimit() << endl;
     }
         vout << "# Periodicity           : " << bool_to_str(Options.GetOptPeriodicity()) << endl;
 
@@ -166,8 +173,8 @@ bool CABFIntegrate::Run(void)
         } else {
             INVALID_ARGUMENT("method - not implemented");
         }
-        if( Options.GetOptWithErrors() ) {
-        fprintf(OutputFile,"# Integrated domains    : force+errors\n");
+        if( Options.GetOptWithError() ) {
+        fprintf(OutputFile,"# Integrated domains    : force+error\n");
         } else {
         fprintf(OutputFile,"# Integrated domains    : force only\n");
         }
@@ -179,12 +186,14 @@ bool CABFIntegrate::Run(void)
             fprintf(OutputFile,"# SVD rcond             : %5.3f\n", Options.GetOptRCond());
             fprintf(OutputFile,"# RBF overhang          : %d\n", Options.GetOptOverhang());
         } else if ( Options.GetOptMethod() == "gpr"  ) {
-            // FIXME
+            fprintf(OutputFile,"# SigmaF2               : %5.3f\n", Options.GetOptSigmaF2());
+            fprintf(OutputFile,"# Width factor wfac     : %5.3f\n", Options.GetOptWFac());
         } else {
             ES_ERROR("not implemented method");
         }
 
         fprintf(OutputFile,"# Sample limit          : %d\n",Options.GetOptLimit());
+        fprintf(OutputFile,"# Energy limit          : %f\n",Options.GetOptEnergyLimit());
         fprintf(OutputFile,"# Periodicity           : %s\n",(const char*)bool_to_str(Options.GetOptPeriodicity()));
         fprintf(OutputFile,"# Number of coordinates : %d\n",accumulator.GetNumberOfCoords());
         fprintf(OutputFile,"# Total number of bins  : %d\n",accumulator.GetNumberOfBins());
@@ -198,44 +207,12 @@ bool CABFIntegrate::Run(void)
 
 // integrate data ------------------------------
     vout << endl;
-    vout << "3) ABF accumulator integration (energy)"<< endl;
+    vout << "3) ABF accumulator integration"<< endl;
 
     CEnergySurface     fes;
     fes.Allocate(&accumulator);
 
-    if(Options.GetOptMethod() == "rfd" ) {
-        CABFIntegratorRFD   integrator;
-
-        integrator.SetPeriodicity(Options.GetOptPeriodicity());
-        integrator.SetFDPoints(Options.GetOptFDPoints());
-
-        integrator.SetInputABFAccumulator(&accumulator);
-        integrator.SetOutputFESurface(&fes);
-
-        if(integrator.Integrate(vout,false) == false) {
-            ES_ERROR("unable to prepare ABF accumulator");
-            return(false);
-        }
-    } else if( Options.GetOptMethod() == "rbf" ){
-        CABFIntegratorRBF   integrator;
-
-        integrator.SetVerbosity(Options.GetOptVerbose());
-        integrator.SetPeriodicity(Options.GetOptPeriodicity());
-        integrator.SetWFac(Options.GetOptWFac());
-        integrator.SetRCond(Options.GetOptRCond());
-        integrator.SetRFac(Options.GetOptRFac());
-        integrator.SetOverhang(Options.GetOptOverhang());
-
-        integrator.SetInputABFAccumulator(&accumulator);
-        integrator.SetOutputFESurface(&fes);
-
-        if(integrator.Integrate(vout,false) == false) {
-            ES_ERROR("unable to prepare ABF accumulator");
-            return(false);
-        }
-    } else {
-        INVALID_ARGUMENT("method - not implemented");
-    }
+    if( Integrate(accumulator,fes) == false ) return(false);
 
     if( Options.GetOptEnergyLimit() > 0.0 ){
         vout << endl;
@@ -244,42 +221,10 @@ bool CABFIntegrate::Run(void)
         vout << "   Done" << endl;
 
         vout << endl;
-        vout << "3) ABF accumulator integration (energy with energy limit)"<< endl;
+        vout << "3) ABF accumulator integration"<< endl;
         fes.Clear();
 
-        if(Options.GetOptMethod() == "rfd" ) {
-            CABFIntegratorRFD   integrator;
-
-            integrator.SetPeriodicity(Options.GetOptPeriodicity());
-            integrator.SetFDPoints(Options.GetOptFDPoints());
-
-            integrator.SetInputABFAccumulator(&accumulator);
-            integrator.SetOutputFESurface(&fes);
-
-            if(integrator.Integrate(vout,false) == false) {
-                ES_ERROR("unable to prepare ABF accumulator");
-                return(false);
-            }
-        } else if( Options.GetOptMethod() == "rbf" ){
-            CABFIntegratorRBF   integrator;
-
-            integrator.SetVerbosity(Options.GetOptVerbose());
-            integrator.SetPeriodicity(Options.GetOptPeriodicity());
-            integrator.SetWFac(Options.GetOptWFac());
-            integrator.SetRCond(Options.GetOptRCond());
-            integrator.SetRFac(Options.GetOptRFac());
-            integrator.SetOverhang(Options.GetOptOverhang());
-
-            integrator.SetInputABFAccumulator(&accumulator);
-            integrator.SetOutputFESurface(&fes);
-
-            if(integrator.Integrate(vout,false) == false) {
-                ES_ERROR("unable to prepare ABF accumulator");
-                return(false);
-            }
-        } else {
-            INVALID_ARGUMENT("method - not implemented");
-        }
+        if( Integrate(accumulator,fes) == false ) return(false);
     }
 
     vout << "   Done" << endl;
@@ -287,43 +232,11 @@ bool CABFIntegrate::Run(void)
  // apply offset
     fes.ApplyOffset(Options.GetOptOffset() - fes.GetGlobalMinimumValue());
 
-    if( Options.GetOptWithErrors() ){
+    if( (Options.GetOptWithError()) && (Options.GetOptMethod() != "gpr") ){
         vout << endl;
         vout << "3) ABF accumulator integration (errors)"<< endl;
 
-        if(Options.GetOptMethod() == "rfd" ) {
-            CABFIntegratorRFD   integrator;
-
-            integrator.SetPeriodicity(Options.GetOptPeriodicity());
-            integrator.SetFDPoints(Options.GetOptFDPoints());
-
-            integrator.SetInputABFAccumulator(&accumulator);
-            integrator.SetOutputFESurface(&fes);
-
-            if(integrator.Integrate(vout,true) == false) {
-                ES_ERROR("unable to prepare ABF accumulator");
-                return(false);
-            }
-        } else if( Options.GetOptMethod() == "rbf" ){
-            CABFIntegratorRBF   integrator;
-
-            integrator.SetVerbosity(Options.GetOptVerbose());
-            integrator.SetPeriodicity(Options.GetOptPeriodicity());
-            integrator.SetWFac(Options.GetOptWFac());
-            integrator.SetRCond(Options.GetOptRCond());
-            integrator.SetRFac(Options.GetOptRFac());
-            integrator.SetOverhang(Options.GetOptOverhang());
-
-            integrator.SetInputABFAccumulator(&accumulator);
-            integrator.SetOutputFESurface(&fes);
-
-            if(integrator.Integrate(vout,true) == false) {
-                ES_ERROR("unable to prepare ABF accumulator");
-                return(false);
-            }
-        } else {
-            INVALID_ARGUMENT("method - not implemented");
-        }
+        if( IntegrateErrors(accumulator,fes) == false ) return(false);
 
         fes.AdaptErrorsToGlobalMinimum();
 
@@ -351,7 +264,7 @@ bool CABFIntegrate::Run(void)
         printer.SetSampleLimit(Options.GetOptLimit());
     }
 
-    printer.SetIncludeErrors(Options.GetOptWithErrors());
+    printer.SetIncludeError(Options.GetOptWithError());
     printer.SetPrintedES(&fes);
 
     try {
@@ -361,6 +274,102 @@ bool CABFIntegrate::Run(void)
         return(false);
     }
     vout << "   Done" << endl;
+
+    return(true);
+}
+
+//==============================================================================
+//------------------------------------------------------------------------------
+//==============================================================================
+
+bool CABFIntegrate::Integrate(CABFAccumulator&accumulator, CEnergySurface& fes)
+{
+    if(Options.GetOptMethod() == "rfd" ) {
+        CABFIntegratorRFD   integrator;
+
+        integrator.SetPeriodicity(Options.GetOptPeriodicity());
+        integrator.SetFDPoints(Options.GetOptFDPoints());
+
+        integrator.SetInputABFAccumulator(&accumulator);
+        integrator.SetOutputFESurface(&fes);
+
+        if(integrator.Integrate(vout,false) == false) {
+            ES_ERROR("unable to integrate ABF accumulator");
+            return(false);
+        }
+    } else if( Options.GetOptMethod() == "rbf" ){
+        CABFIntegratorRBF   integrator;
+
+        integrator.SetWFac(Options.GetOptWFac());
+        integrator.SetRCond(Options.GetOptRCond());
+        integrator.SetRFac(Options.GetOptRFac());
+        integrator.SetOverhang(Options.GetOptOverhang());
+
+        integrator.SetInputABFAccumulator(&accumulator);
+        integrator.SetOutputFESurface(&fes);
+
+        if(integrator.Integrate(vout,false) == false) {
+            ES_ERROR("unable to integrate ABF accumulator");
+            return(false);
+        }
+    } else if( Options.GetOptMethod() == "gpr" ){
+        CABFIntegratorGPR   integrator;
+
+        integrator.SetInputABFAccumulator(&accumulator);
+        integrator.SetOutputFESurface(&fes);
+
+        integrator.SetWFac(Options.GetOptWFac());
+        integrator.SetSigmaF2(Options.GetOptSigmaF2());
+        integrator.SetIncludeError(Options.GetOptWithError());
+
+        if(integrator.Integrate(vout) == false) {
+            ES_ERROR("unable to integrate ABF accumulator");
+            return(false);
+        }
+    } else {
+        INVALID_ARGUMENT("method - not implemented");
+    }
+
+    return(true);
+}
+
+//------------------------------------------------------------------------------
+
+bool CABFIntegrate::IntegrateErrors(CABFAccumulator&accumulator, CEnergySurface& fes)
+{
+    if(Options.GetOptMethod() == "rfd" ) {
+        CABFIntegratorRFD   integrator;
+
+        integrator.SetPeriodicity(Options.GetOptPeriodicity());
+        integrator.SetFDPoints(Options.GetOptFDPoints());
+
+        integrator.SetInputABFAccumulator(&accumulator);
+        integrator.SetOutputFESurface(&fes);
+
+        if(integrator.Integrate(vout,true) == false) {
+            ES_ERROR("unable to integrate ABF accumulator");
+            return(false);
+        }
+    } else if( Options.GetOptMethod() == "rbf" ){
+        CABFIntegratorRBF   integrator;
+
+        integrator.SetWFac(Options.GetOptWFac());
+        integrator.SetRCond(Options.GetOptRCond());
+        integrator.SetRFac(Options.GetOptRFac());
+        integrator.SetOverhang(Options.GetOptOverhang());
+
+        integrator.SetInputABFAccumulator(&accumulator);
+        integrator.SetOutputFESurface(&fes);
+
+        if(integrator.Integrate(vout,true) == false) {
+            ES_ERROR("unable to integrate ABF accumulator");
+            return(false);
+        }
+    } else if( Options.GetOptMethod() == "gpr" ){
+        vout << "   Already integrated." << endl;
+    } else {
+        INVALID_ARGUMENT("method - not implemented");
+    }
 
     return(true);
 }

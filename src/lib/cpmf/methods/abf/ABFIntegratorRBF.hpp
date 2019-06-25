@@ -23,6 +23,7 @@
 #include <PMFMainHeader.hpp>
 #include <SimpleVector.hpp>
 #include <VerboseStr.hpp>
+#include <ABFAccumulator.hpp>
 
 //------------------------------------------------------------------------------
 
@@ -54,9 +55,6 @@ public:
     /// set output free energy surface
     void SetOutputFESurface(CEnergySurface* p_surf);
 
-    /// set verbosity level
-    void SetVerbosity(bool set);
-
     /// multiply of bin sizes
     void SetWFac(double wfac);
 
@@ -84,13 +82,11 @@ private:
     const CABFAccumulator*  Accumulator;
     CEnergySurface*         FES;
 
-    bool                    Verbose;
     double                  WFac;
     double                  RFac;   // reduction factor for number of RBFs
-    bool                    Periodicity;
     int                     Overhang;
     EARBFMethod             Method;
-    bool                    IntegrateErrors;
+    EABFAccuValue           IntegratedRealm;
 
     // RBF data
     int                     NumOfRBFs;
@@ -98,7 +94,6 @@ private:
     CSimpleVector<int>      NumOfRBFBins;
     int                     NumOfCVs;
     CSimpleVector<double>   Sigmas;
-
 
     // SVD setup
     double                  RCond;

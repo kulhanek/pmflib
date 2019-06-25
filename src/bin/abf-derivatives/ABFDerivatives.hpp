@@ -51,14 +51,13 @@ private:
     CStdIOFile          InputFile;
     CStdIOFile          OutputFile;
     CABFAccumulator     Accumulator;
-    CSimpleVector<int>  Point;              // current point in accumulator
 
     // output ------------------------------------
     CTerminalStr        Console;
     CVerboseStr         vout;
 
-    /// print samples - it is called recursivelly
-    bool PrintDerivatives(int cv);
+    /// print derivatives
+    bool PrintDerivatives(void);
 };
 
 //------------------------------------------------------------------------------

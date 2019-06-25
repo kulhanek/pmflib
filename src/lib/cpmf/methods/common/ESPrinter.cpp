@@ -37,7 +37,7 @@ CESPrinter::CESPrinter(void)
     YFormat = "%f";
     PrintLimit = 0;
     Format = EESPF_PLAIN;
-    IncludeErrors = false;
+    IncludeError = false;
 }
 
 //------------------------------------------------------------------------------
@@ -85,9 +85,9 @@ void CESPrinter::SetSampleLimit(int limit)
 
 //------------------------------------------------------------------------------
 
-void CESPrinter::SetIncludeErrors(bool set)
+void CESPrinter::SetIncludeError(bool set)
 {
-    IncludeErrors = set;
+    IncludeError = set;
 }
 
 //==============================================================================
@@ -230,7 +230,7 @@ void CESPrinter::Print_Part(FILE* fout,CSimpleVector<double>& point,
                 error << "unable to print Y data to the file (" << strerror(errno) << ")";
                 RUNTIME_ERROR(error);
             }
-            if( IncludeErrors ){
+            if( IncludeError ){
                 double error = EnergySurface->GetError(loc);
                 if(fprintf(fout,yform,error) <= 0) {
                     CSmallString error;

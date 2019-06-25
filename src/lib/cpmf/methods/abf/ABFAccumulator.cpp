@@ -1090,7 +1090,7 @@ void CABFAccumulator::SubABFAccumulator(const CABFAccumulator* p_accu)
 
 //------------------------------------------------------------------------------
 
-double CABFAccumulator::GetIntegratedValue(int icoord,int ibin,bool error) const
+double CABFAccumulator::GetValue(int icoord,int ibin,EABFAccuValue realm) const
 {
     int nsamples = GetNumberOfABFSamples(ibin);
     if( nsamples <= 0 ) return(0.0);
@@ -1103,19 +1103,35 @@ double CABFAccumulator::GetIntegratedValue(int icoord,int ibin,bool error) const
     sum = GetABFForceSum(icoord,ibin);
     sum_square = GetABFForceSquareSum(icoord,ibin);
 
-    if( ! error ){
-        value = sum / nsamples;  // mean ABF force
-    } else {
-        // calculate error of mean force
-        // sq is variance of ABF force
-        double sq = nsamples*sum_square - sum*sum;
-        if(sq > 0) {
-            sq = sqrt(sq) / nsamples;
-        } else {
-            sq = 0.0;
-        }
-        // value is standard error of mean ABF force
-        value = sq / sqrt((double)nsamples);
+    switch(realm){
+        case(EABF_MEAN_FORCE_VALUE): {
+                value = sum / nsamples;  // mean ABF force
+                return(value);
+            }
+        case(EABF_INST_FORCE_SIGMA): {
+                // sq is variance of ABF force
+                double sq = nsamples*sum_square - sum*sum;
+                if(sq > 0) {
+                    sq = sqrt(sq) / nsamples;
+                } else {
+                    sq = 0.0;
+                }
+                return(sq);
+            }
+        case(EABF_MEAN_FORCE_ERROR): {
+                // sq is variance of ABF force
+                double sq = nsamples*sum_square - sum*sum;
+                if(sq > 0) {
+                    sq = sqrt(sq) / nsamples;
+                } else {
+                    sq = 0.0;
+                }
+                // value is standard error of mean ABF force
+                value = sq / sqrt((double)nsamples);
+                return(value);
+            }
+        default:
+            RUNTIME_ERROR("unsupported realm");
     }
 
     return(value);

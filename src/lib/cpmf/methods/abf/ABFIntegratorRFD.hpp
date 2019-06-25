@@ -24,6 +24,7 @@
 #include <PMFMainHeader.hpp>
 #include <SimpleVector.hpp>
 #include <VerboseStr.hpp>
+#include <ABFAccumulator.hpp>
 
 extern "C" {
 #include <cs.h>
@@ -74,13 +75,12 @@ private:
 
     int                     FDLevel;
     bool                    Periodicity;
-    bool                    ReconstructAll;
 
     int                     NumOfVariables;
     int                     NumOfEquations;
     int                     NumOfNonZeros;
 
-    bool                    IntegrateErrors;
+    EABFAccuValue           IntegratedRealm;
 
     CSimpleVector<int>      XMap;       // translation between global index and X index
     CSimpleVector<int>      IPoint;     // index points

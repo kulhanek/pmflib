@@ -46,8 +46,7 @@ CABFIntegratorRFD::CABFIntegratorRFD(void)
     Periodicity = false;
     FDLevel = 4;
 
-    ReconstructAll = true;
-    IntegrateErrors = false;
+    IntegratedRealm = EABF_MEAN_FORCE_VALUE;
 }
 
 //------------------------------------------------------------------------------
@@ -93,7 +92,11 @@ void CABFIntegratorRFD::SetPeriodicity(bool set)
 
 bool CABFIntegratorRFD::Integrate(CVerboseStr& vout, bool errors)
 {
-    IntegrateErrors = errors;
+    if( ! errors ){
+        IntegratedRealm = EABF_MEAN_FORCE_VALUE;
+    } else {
+        IntegratedRealm = EABF_MEAN_FORCE_ERROR;
+    }
 
     if( Accumulator == NULL ) {
         ES_ERROR("ABF accumulator is not set");
@@ -110,7 +113,11 @@ bool CABFIntegratorRFD::Integrate(CVerboseStr& vout, bool errors)
     }
 
     if( (unsigned int)Accumulator->GetNumberOfCoords() != FES->GetNumberOfCoords() ){
-        ES_ERROR("inconsistent ABF and FES");
+        ES_ERROR("inconsistent ABF and FES - CVs");
+        return(false);
+    }
+    if( (unsigned int)Accumulator->GetNumberOfBins() != FES->GetNumberOfPoints() ){
+        ES_ERROR("inconsistent ABF and FES - points");
         return(false);
     }
 
@@ -136,7 +143,7 @@ bool CABFIntegratorRFD::Integrate(CVerboseStr& vout, bool errors)
         int x_index = XMap[ipoint];
         if(x_index >= 0) {
             double value = X[x_index]-glb_min;
-            if( ! IntegrateErrors ){
+            if( IntegratedRealm == EABF_MEAN_FORCE_VALUE ){
                 FES->SetEnergy(ipoint,value);
             } else {
                 FES->SetError(ipoint,value);
@@ -208,6 +215,8 @@ void CABFIntegratorRFD::BuildEquations(bool trial)
     LocIter = 0;
 
     for(int i=0; i < Accumulator->GetNumberOfBins(); i++){
+        // number of samples is controlled via GetFBinIndex
+
         Accumulator->GetIPoint(i,IPoint);
 
         for(int ifcoord=0; ifcoord < Accumulator->GetNumberOfCoords(); ifcoord++) {
@@ -246,16 +255,16 @@ void CABFIntegratorRFD::BuildEquations(bool trial)
                         cs_entry(A,LocIter,XMap[ifbin1],-3.0);
                         cs_entry(A,LocIter,XMap[ifbin2],+4.0);
                         cs_entry(A,LocIter,XMap[ifbin3],-1.0);
-                        Rhs[LocIter] = Accumulator->GetIntegratedValue(ifcoord,ifbin1,IntegrateErrors) * diff * 2.0;
+                        Rhs[LocIter] = Accumulator->GetValue(ifcoord,ifbin1,IntegratedRealm) * diff * 2.0;
                         LocIter++;
                         cs_entry(A,LocIter,XMap[ifbin1],-1.0);
                         cs_entry(A,LocIter,XMap[ifbin3],+1.0);
-                        Rhs[LocIter] = Accumulator->GetIntegratedValue(ifcoord,ifbin2,IntegrateErrors) * diff * 2.0;
+                        Rhs[LocIter] = Accumulator->GetValue(ifcoord,ifbin2,IntegratedRealm) * diff * 2.0;
                         LocIter++;
                         cs_entry(A,LocIter,XMap[ifbin1],+1.0);
                         cs_entry(A,LocIter,XMap[ifbin2],-4.0);
                         cs_entry(A,LocIter,XMap[ifbin3],+3.0);
-                        Rhs[LocIter] = Accumulator->GetIntegratedValue(ifcoord,ifbin3,IntegrateErrors) * diff * 2.0;
+                        Rhs[LocIter] = Accumulator->GetValue(ifcoord,ifbin3,IntegratedRealm) * diff * 2.0;
                         LocIter++;
                     } else {
                         NumOfEquations += 3;
@@ -290,25 +299,25 @@ void CABFIntegratorRFD::BuildEquations(bool trial)
                         cs_entry(A,LocIter,XMap[ifbin2],+18.0);
                         cs_entry(A,LocIter,XMap[ifbin3],-9.0);
                         cs_entry(A,LocIter,XMap[ifbin4],+2.0);
-                        Rhs[LocIter] = Accumulator->GetIntegratedValue(ifcoord,ifbin1,IntegrateErrors) * diff * 6.0;
+                        Rhs[LocIter] = Accumulator->GetValue(ifcoord,ifbin1,IntegratedRealm) * diff * 6.0;
                         LocIter++;
                         cs_entry(A,LocIter,XMap[ifbin1],-2.0);
                         cs_entry(A,LocIter,XMap[ifbin2],-3.0);
                         cs_entry(A,LocIter,XMap[ifbin3],+6.0);
                         cs_entry(A,LocIter,XMap[ifbin4],-1.0);
-                        Rhs[LocIter] = Accumulator->GetIntegratedValue(ifcoord,ifbin2,IntegrateErrors) * diff * 6.0;
+                        Rhs[LocIter] = Accumulator->GetValue(ifcoord,ifbin2,IntegratedRealm) * diff * 6.0;
                         LocIter++;
                         cs_entry(A,LocIter,XMap[ifbin1],+1.0);
                         cs_entry(A,LocIter,XMap[ifbin2],-6.0);
                         cs_entry(A,LocIter,XMap[ifbin3],+3.0);
                         cs_entry(A,LocIter,XMap[ifbin4],+2.0);
-                        Rhs[LocIter] = Accumulator->GetIntegratedValue(ifcoord,ifbin3,IntegrateErrors) * diff * 6.0;
+                        Rhs[LocIter] = Accumulator->GetValue(ifcoord,ifbin3,IntegratedRealm) * diff * 6.0;
                         LocIter++;
                         cs_entry(A,LocIter,XMap[ifbin1],-2.0);
                         cs_entry(A,LocIter,XMap[ifbin2],+9.0);
                         cs_entry(A,LocIter,XMap[ifbin3],-18.0);
                         cs_entry(A,LocIter,XMap[ifbin4],+11.0);
-                        Rhs[LocIter] = Accumulator->GetIntegratedValue(ifcoord,ifbin4,IntegrateErrors) * diff * 6.0;
+                        Rhs[LocIter] = Accumulator->GetValue(ifcoord,ifbin4,IntegratedRealm) * diff * 6.0;
                         LocIter++;
                     } else {
                         NumOfEquations += 4;
@@ -344,9 +353,7 @@ int CABFIntegratorRFD::GetFBinIndex(const CSimpleVector<int>& position,int ifcoo
     }
 
 // check if we have sufficient number of samples
-    if( ! ReconstructAll ){
-        if(Accumulator->GetNumberOfABFSamples(glbindex) <= 0) return(-1);
-    }
+    if(Accumulator->GetNumberOfABFSamples(glbindex) <= 0) return(-1);
 
     return(glbindex);
 }

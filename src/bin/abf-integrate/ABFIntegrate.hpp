@@ -58,6 +58,8 @@ private:
     /// prepare accumulator
     void PrepareAccumulatorI(CABFAccumulator& accumulator);
     void PrepareAccumulatorII(CABFAccumulator& accumulator,CEnergySurface& fes);
+    bool Integrate(CABFAccumulator&accumulator, CEnergySurface& fes);
+    bool IntegrateErrors(CABFAccumulator&accumulator, CEnergySurface& fes);
 };
 
 //------------------------------------------------------------------------------

@@ -36,7 +36,8 @@ public:
     CSO_PROG_NAME_END
 
     CSO_PROG_DESC_BEGIN
-    "It prints selected derivatives from the ABF accumulator."
+    "<b>abf-derivatives</b> prints selected derivatives of the free energy with respect to "
+    "given collective variables (mean forces) from the ABF accumulator."
     CSO_PROG_DESC_END
 
     CSO_PROG_VERS_BEGIN
@@ -52,7 +53,7 @@ public:
     CSO_OPT(int,Limit)
     CSO_OPT(int,Item)
     CSO_OPT(bool,Sigma)
-    CSO_OPT(bool,Errors)
+    CSO_OPT(bool,Error)
     CSO_OPT(bool,NoGNUPlot)
     CSO_OPT(bool,NoHeader)
     CSO_OPT(CSmallString,IXFormat)
@@ -94,7 +95,7 @@ public:
                 'i',                           /* short option name */
                 "item",                      /* long option name */
                 "CV",                           /* parametr name */
-                "Determine which CV derivatives should be printed.")   /* option description */
+                "Forces for all CVs are printed (item == 0) unless item is set for given CV index (counted from 1).")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(bool,                           /* option type */
                 Sigma,                        /* option name */
@@ -103,16 +104,16 @@ public:
                 's',                           /* short option name */
                 "sigma",                      /* long option name */
                 NULL,                           /* parametr name */
-                "Print the standard deviation of derivatives instead of derivatives.")   /* option description */
+                "Print the standard deviation of instanteous forces (fluctuations).")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(bool,                           /* option type */
-                Errors,                        /* option name */
+                Error,                        /* option name */
                 false,                          /* default value */
                 false,                          /* is option mandatory */
                 'e',                           /* short option name */
-                "errors",                      /* long option name */
+                "error",                      /* long option name */
                 NULL,                           /* parametr name */
-                "Print the errors of derivatives instead of derivatives.")   /* option description */
+                "Print the standard deviation of mean forces (standard error).")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(bool,                           /* option type */
                 NoGNUPlot,                        /* option name */

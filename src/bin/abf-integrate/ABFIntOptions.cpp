@@ -38,18 +38,24 @@ CABFIntOptions::CABFIntOptions(void)
 
 int CABFIntOptions::CheckOptions(void)
 {
-// limit has to be grater than 0
     if(GetOptLimit() < 0) {
         if(IsError == false) fprintf(stderr,"\n");
-        fprintf(stderr,"%s: limit option has to be grater or equal to zero, but %d is specified\n", (const char*)GetProgramName(),GetOptLimit());
+        fprintf(stderr,"%s: sampling limit has to be grater or equal to zero, but %d is specified\n", (const char*)GetProgramName(),GetOptLimit());
         IsError = true;
     }
 
-    if((GetOptMethod() != "rfd") &&
-            (GetOptMethod() != "rbf") ) {
+    if((GetOptEnergyLimit() <= 0) && (GetOptEnergyLimit() != -1)) {
+        if(IsError == false) fprintf(stderr,"\n");
+        fprintf(stderr,"%s: energy limit has to be grater than zero or equal to -1, but %f is specified\n", (const char*)GetProgramName(),GetOptEnergyLimit());
+        IsError = true;
+    }
+
+    if( (GetOptMethod() != "rfd") &&
+        (GetOptMethod() != "rbf") &&
+        (GetOptMethod() != "gpr") ) {
         if(IsError == false) fprintf(stderr,"\n");
         fprintf(stderr,"%s: method must be either rfd or rbf, but %s is specified\n",
-                (const char*)GetProgramName(),(const char*)GetOptOutputFormat());
+                (const char*)GetProgramName(),(const char*)GetOptMethod());
         IsError = true;
     }
 
@@ -61,6 +67,36 @@ int CABFIntOptions::CheckOptions(void)
         }
     }
 
+    if( GetOptRFac() <= 0 ){
+        if(IsError == false) fprintf(stderr,"\n");
+        fprintf(stderr,"%s: rfac has to be greater than zero, but %f is provided\n", (const char*)GetProgramName(),GetOptRFac());
+        IsError = true;
+    }
+
+    if( GetOptWFac() <= 0 ){
+        if(IsError == false) fprintf(stderr,"\n");
+        fprintf(stderr,"%s: wfac has to be greater than zero, but %f is provided\n", (const char*)GetProgramName(),GetOptWFac());
+        IsError = true;
+    }
+
+    if( GetOptSigmaF2() <= 0 ){
+        if(IsError == false) fprintf(stderr,"\n");
+        fprintf(stderr,"%s: sigmaf2 has to be greater than zero, but %f is provided\n", (const char*)GetProgramName(),GetOptSigmaF2());
+        IsError = true;
+    }
+
+    if( (GetOptRCond() != -1) && (GetOptRCond() < 0) ){
+        if(IsError == false) fprintf(stderr,"\n");
+        fprintf(stderr,"%s: rcond has to be either -1 or greater than zero, but %f is provided\n", (const char*)GetProgramName(),GetOptRCond());
+        IsError = true;
+    }
+
+    if( GetOptOverhang() <= 0 ){
+        if(IsError == false) fprintf(stderr,"\n");
+        fprintf(stderr,"%s: overhang has to be greater than or equal zero, but %d is provided\n", (const char*)GetProgramName(),GetOptOverhang());
+        IsError = true;
+    }
+
     if((GetOptOutputFormat() != "plain") &&
             (GetOptOutputFormat() != "gnuplot") &&
             (GetOptOutputFormat() != "fes")) {
@@ -76,6 +112,41 @@ int CABFIntOptions::CheckOptions(void)
         if(IsError == false) fprintf(stderr,"\n");
         fprintf(stderr,"%s: output FES format has to be either plain, gnuplot, or fes, but %s is specified\n",
                 (const char*)GetProgramName(),(const char*)GetOptOutputFormat());
+        IsError = true;
+    }
+
+    if( IsOptSigmaF2Set() && (GetOptMethod() != "gpr") ){
+        if(IsError == false) fprintf(stderr,"\n");
+        fprintf(stderr,"%s: sigmaf2 can be set only for GPR method\n",
+                (const char*)GetProgramName());
+        IsError = true;
+    }
+
+    if( IsOptRCondSet() && (GetOptMethod() != "rbf") ){
+        if(IsError == false) fprintf(stderr,"\n");
+        fprintf(stderr,"%s: rcond can be set only for RBF method\n",
+                (const char*)GetProgramName());
+        IsError = true;
+    }
+
+    if( IsOptRFacSet() && (GetOptMethod() != "rbf") ){
+        if(IsError == false) fprintf(stderr,"\n");
+        fprintf(stderr,"%s: rfac can be set only for RBF method\n",
+                (const char*)GetProgramName());
+        IsError = true;
+    }
+
+    if( IsOptOverhangSet() && (GetOptMethod() != "rbf") ){
+        if(IsError == false) fprintf(stderr,"\n");
+        fprintf(stderr,"%s: overhang can be set only for RBF method\n",
+                (const char*)GetProgramName());
+        IsError = true;
+    }
+
+    if( IsOptWFacSet() && ( (GetOptMethod() != "rbf") && (GetOptMethod() != "gpr")) ){
+        if(IsError == false) fprintf(stderr,"\n");
+        fprintf(stderr,"%s: wfac can be set only for RBF or GPR method\n",
+                (const char*)GetProgramName());
         IsError = true;
     }
 
