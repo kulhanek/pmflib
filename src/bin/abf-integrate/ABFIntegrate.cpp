@@ -95,6 +95,7 @@ int CABFIntegrate::Init(int argc,char* argv[])
         }
     if( Options.GetOptMethod() == "rfd" ){
         vout << "# FD number of points   : " << Options.GetOptFDPoints() << endl;
+        vout << "# Periodicity           : " << bool_to_str(Options.GetOptPeriodicity()) << endl;
     } else if ( Options.GetOptMethod() == "rbf" ){
         vout << "# Reduction factor rfac : " << setprecision(3) << Options.GetOptRFac() << endl;
         vout << "# Width factor wfac     : " << setprecision(3) << Options.GetOptWFac() << endl;
@@ -118,8 +119,7 @@ int CABFIntegrate::Init(int argc,char* argv[])
     } else {
         vout << "# Energy limit          : " << Options.GetOptEnergyLimit() << endl;
     }
-        vout << "# Periodicity           : " << bool_to_str(Options.GetOptPeriodicity()) << endl;
-
+        vout << "# Number of corr. sam.  : " << Options.GetOptNCorr() << endl;
         vout << "# Integration offset    : " << Options.GetOptOffset() << endl;
     vout << "# ------------------------------------------------" << endl;
     vout << "# Output FES format     : " << Options.GetOptOutputFormat() << endl;
@@ -160,16 +160,17 @@ bool CABFIntegrate::Run(void)
 
     // print CVS info
     accumulator.PrintCVSInfo(vout);
+    accumulator.SetNCorr(Options.GetOptNCorr());
 
     // print header
     if((Options.GetOptNoHeader() == false) && (Options.GetOptOutputFormat() != "fes")) {
         fprintf(OutputFile,"# data integrated by    : ");
         if(Options.GetOptMethod() == "rfd" ) {
-            fprintf(OutputFile," RFD (reverse finite differences)\n");
+            fprintf(OutputFile,"RFD (reverse finite differences)\n");
         } else if( Options.GetOptMethod() == "rbf" ){
-            fprintf(OutputFile," RBF (radial basis functions)\n");
+            fprintf(OutputFile,"RBF (radial basis functions)\n");
         } else if( Options.GetOptMethod() == "gpr" ) {
-            fprintf(OutputFile," GPR (gaussian process)\n");
+            fprintf(OutputFile,"GPR (gaussian process)\n");
         } else {
             INVALID_ARGUMENT("method - not implemented");
         }
@@ -180,6 +181,7 @@ bool CABFIntegrate::Run(void)
         }
         if( Options.GetOptMethod() == "rfd" ){
             fprintf(OutputFile,"# FD nuber of points    : %d\n", Options.GetOptFDPoints());
+            fprintf(OutputFile,"# Periodicity           : %s\n",(const char*)bool_to_str(Options.GetOptPeriodicity()));
         } else if ( Options.GetOptMethod() == "rbf" ){
             fprintf(OutputFile,"# Reduction factor rfac : %5.3f\n", Options.GetOptRFac());
             fprintf(OutputFile,"# Width factor wfac     : %5.3f\n", Options.GetOptWFac());
@@ -194,7 +196,7 @@ bool CABFIntegrate::Run(void)
 
         fprintf(OutputFile,"# Sample limit          : %d\n",Options.GetOptLimit());
         fprintf(OutputFile,"# Energy limit          : %f\n",Options.GetOptEnergyLimit());
-        fprintf(OutputFile,"# Periodicity           : %s\n",(const char*)bool_to_str(Options.GetOptPeriodicity()));
+        fprintf(OutputFile,"# Number of corr. sam.  : %5.3f\n",Options.GetOptNCorr());
         fprintf(OutputFile,"# Number of coordinates : %d\n",accumulator.GetNumberOfCoords());
         fprintf(OutputFile,"# Total number of bins  : %d\n",accumulator.GetNumberOfBins());
     }
@@ -205,28 +207,26 @@ bool CABFIntegrate::Run(void)
     PrepareAccumulatorI(accumulator);
     vout << "   Done" << endl;
 
-// integrate data ------------------------------
-    vout << endl;
-    vout << "3) ABF accumulator integration"<< endl;
-
     CEnergySurface     fes;
     fes.Allocate(&accumulator);
 
-    if( Integrate(accumulator,fes) == false ) return(false);
-
     if( Options.GetOptEnergyLimit() > 0.0 ){
+        vout << endl;
+        vout << "3) ABF accumulator integration (" << Options.GetOptEcutMethod() << ")" << endl;
+        if( IntegrateForEcut(accumulator,fes) == false ) return(false);
+
         vout << endl;
         vout << "2) Preparing ABF accumulator for integration (energy limit)"<< endl;
         PrepareAccumulatorII(accumulator,fes);
         vout << "   Done" << endl;
 
-        vout << endl;
-        vout << "3) ABF accumulator integration"<< endl;
         fes.Clear();
-
-        if( Integrate(accumulator,fes) == false ) return(false);
     }
 
+// integrate data ------------------------------
+    vout << endl;
+    vout << "3) ABF accumulator integration (" << Options.GetOptMethod() << ")" << endl;
+    if( Integrate(accumulator,fes) == false ) return(false);
     vout << "   Done" << endl;
 
  // apply offset
@@ -281,6 +281,59 @@ bool CABFIntegrate::Run(void)
 //==============================================================================
 //------------------------------------------------------------------------------
 //==============================================================================
+
+bool CABFIntegrate::IntegrateForEcut(CABFAccumulator&accumulator, CEnergySurface& fes)
+{
+    if(Options.GetOptEcutMethod() == "rfd" ) {
+        CABFIntegratorRFD   integrator;
+
+        integrator.SetPeriodicity(Options.GetOptPeriodicity());
+        integrator.SetFDPoints(Options.GetOptFDPoints());
+
+        integrator.SetInputABFAccumulator(&accumulator);
+        integrator.SetOutputFESurface(&fes);
+
+        if(integrator.Integrate(vout,false) == false) {
+            ES_ERROR("unable to integrate ABF accumulator");
+            return(false);
+        }
+    } else if( Options.GetOptEcutMethod() == "rbf" ){
+        CABFIntegratorRBF   integrator;
+
+        integrator.SetWFac(Options.GetOptWFac());
+        integrator.SetRCond(Options.GetOptRCond());
+        integrator.SetRFac(Options.GetOptRFac());
+        integrator.SetOverhang(Options.GetOptOverhang());
+
+        integrator.SetInputABFAccumulator(&accumulator);
+        integrator.SetOutputFESurface(&fes);
+
+        if(integrator.Integrate(vout,false) == false) {
+            ES_ERROR("unable to integrate ABF accumulator");
+            return(false);
+        }
+    } else if( Options.GetOptEcutMethod() == "gpr" ){
+        CABFIntegratorGPR   integrator;
+
+        integrator.SetInputABFAccumulator(&accumulator);
+        integrator.SetOutputFESurface(&fes);
+
+        integrator.SetWFac(Options.GetOptWFac());
+        integrator.SetSigmaF2(Options.GetOptSigmaF2());
+        integrator.SetIncludeError(false);
+
+        if(integrator.Integrate(vout) == false) {
+            ES_ERROR("unable to integrate ABF accumulator");
+            return(false);
+        }
+    } else {
+        INVALID_ARGUMENT("method - not implemented");
+    }
+
+    return(true);
+}
+
+//------------------------------------------------------------------------------
 
 bool CABFIntegrate::Integrate(CABFAccumulator&accumulator, CEnergySurface& fes)
 {

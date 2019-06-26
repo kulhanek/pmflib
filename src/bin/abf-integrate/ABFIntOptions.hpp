@@ -60,9 +60,11 @@ public:
     CSO_ARG(CSmallString,FEOutputName)
     // options ------------------------------
     CSO_OPT(int,Limit)
+    CSO_OPT(double,NCorr)
     CSO_OPT(double,EnergyLimit)
     CSO_OPT(double,Offset)
     CSO_OPT(CSmallString,Method)
+    CSO_OPT(CSmallString,EcutMethod)
     CSO_OPT(int,FDPoints)
     CSO_OPT(double,RCond)
     CSO_OPT(double,RFac)
@@ -105,7 +107,16 @@ public:
                 "limit",                      /* long option name */
                 "NUMBER",                           /* parametr name */
                 "Only bins containing more samples than NUMBER are considered as properly sampled.")   /* option description */
-// description of options ---------------------------------------------------
+    //----------------------------------------------------------------------
+    CSO_MAP_OPT(double,                           /* option type */
+                NCorr,                        /* option name */
+                1.0,                          /* default value */
+                false,                          /* is option mandatory */
+                'c',                           /* short option name */
+                "ncorr",                      /* long option name */
+                "NUMBER",                           /* parametr name */
+                "Number of statistically correlated samples.")   /* option description */
+    //----------------------------------------------------------------------
     CSO_MAP_OPT(double,                           /* option type */
                 EnergyLimit,                        /* option name */
                 -1.0,                          /* default value */
@@ -133,6 +144,15 @@ public:
                 "method",                      /* long option name */
                 "NAME",                           /* parametr name */
                 "Integration method. Supported methods are: rfd (reverse finite differences), rbf (radial basis functions), and gpr (gaussian process).")   /* option description */
+    //----------------------------------------------------------------------
+    CSO_MAP_OPT(CSmallString,                           /* option type */
+                EcutMethod,                        /* option name */
+                "rfd",                          /* default value */
+                false,                          /* is option mandatory */
+                0,                           /* short option name */
+                "emethod",                      /* long option name */
+                "NAME",                           /* parametr name */
+                "Integration method for energy cut-off. Supported methods are: rfd (reverse finite differences), rbf (radial basis functions), and gpr (gaussian process).")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(int,                           /* option type */
                 FDPoints,                        /* option name */
@@ -223,7 +243,7 @@ public:
                 0,                           /* short option name */
                 "printwithlimit",                      /* long option name */
                 NULL,                           /* parametr name */
-                "Print results from bins that were adequately sampled.")   /* option description */
+                "Print results from bins that were adequately sampled only.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(bool,                           /* option type */
                 NoHeader,                        /* option name */

@@ -346,13 +346,14 @@ void CEnergySurface::AdaptErrorsToGlobalMinimum(void)
 {
     double minimum = 0.0;
     double err_at_minimum = 0.0;
-
-    if(TotNPoints > 0) minimum = Energy[0];
+    bool   first = true;
 
     for(unsigned int k=0; k < TotNPoints; k++) {
-        if(minimum > Energy[k]){
+        if( Samples[k] <= 0 ) continue;
+        if( (minimum > Energy[k]) || (first == true) ){
             minimum = Energy[k];
             err_at_minimum = Error[k];
+            first = false;
         }
     }
 

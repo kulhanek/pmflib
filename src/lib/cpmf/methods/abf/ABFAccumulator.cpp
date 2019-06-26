@@ -37,7 +37,8 @@ using namespace std;
 CABFAccumulator::CABFAccumulator(void)
 {
     NCoords     = 0;
-    TotNBins  = 0;
+    TotNBins    = 0;
+    NCorr       = 1.0;
 }
 
 //------------------------------------------------------------------------------
@@ -1090,6 +1091,13 @@ void CABFAccumulator::SubABFAccumulator(const CABFAccumulator* p_accu)
 
 //------------------------------------------------------------------------------
 
+void CABFAccumulator::SetNCorr(double ncorr)
+{
+    NCorr = ncorr;
+}
+
+//------------------------------------------------------------------------------
+
 double CABFAccumulator::GetValue(int icoord,int ibin,EABFAccuValue realm) const
 {
     int nsamples = GetNumberOfABFSamples(ibin);
@@ -1127,7 +1135,7 @@ double CABFAccumulator::GetValue(int icoord,int ibin,EABFAccuValue realm) const
                     sq = 0.0;
                 }
                 // value is standard error of mean ABF force
-                value = sq / sqrt((double)nsamples);
+                value = sq / sqrt((double)nsamples/NCorr);
                 return(value);
             }
         default:

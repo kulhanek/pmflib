@@ -44,6 +44,12 @@ int CABFIntOptions::CheckOptions(void)
         IsError = true;
     }
 
+    if(GetOptNCorr() < 1.0) {
+        if(IsError == false) fprintf(stderr,"\n");
+        fprintf(stderr,"%s: ncorr has to be grater or equal to one, but %f is specified\n", (const char*)GetProgramName(),GetOptNCorr());
+        IsError = true;
+    }
+
     if((GetOptEnergyLimit() <= 0) && (GetOptEnergyLimit() != -1)) {
         if(IsError == false) fprintf(stderr,"\n");
         fprintf(stderr,"%s: energy limit has to be grater than zero or equal to -1, but %f is specified\n", (const char*)GetProgramName(),GetOptEnergyLimit());

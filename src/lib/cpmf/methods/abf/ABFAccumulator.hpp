@@ -141,6 +141,9 @@ public:
     /// return pointer to ABF force square sum array
     double* GetABFForceSquareSumArray(void);
 
+    /// set number of statistically correlated samples (it influences calculated errors of mean forces)
+    void SetNCorr(double ncorr);
+
     /// get value
     double GetValue(int icoord,int ibin,EABFAccuValue realm) const;
 
@@ -183,15 +186,16 @@ public:
 
 // section of private data ----------------------------------------------------
 private:
-    int             NCoords;        // number of coordinates
+    int             NCoords;                // number of coordinates
+    double          NCorr;                  // number of correlated samples (for error evaluation)
 
-    CSimpleVector<CColVariable> Sizes;          // accumulator informations
-    int                         TotNBins;      // number of total bins
+    CSimpleVector<CColVariable> Sizes;      // accumulator informations
+    int                         TotNBins;   // number of total bins
 
     CSimpleVector<int>      NSamples;       // number of hits into bins
     CSimpleVector<double>   Mask;
 
-    // all values are in internal units       // mask weights
+    // all values are in internal units     // mask weights
     CSimpleVector<double>   ABFForce;       // accumulated ABF force
     CSimpleVector<double>   ABFForce2;      // accumulated ABF force squares
 
