@@ -138,6 +138,12 @@ subroutine abf_control_read_abf(prm_fin)
         call pmf_utils_exit(PMF_OUT,1,'ftrjsample has to be >=0')
     end if
 
+    if(prmfile_get_logical_by_key(prm_fin,'fprint_ifc', fprint_ifc)) then
+        write(PMF_OUT,90) prmfile_onoff(fprint_ifc)
+    else
+        write(PMF_OUT,95) prmfile_onoff(fprint_ifc)
+    end if
+
     select case(feimode)
         case(1)
             write(PMF_OUT,190)
@@ -258,6 +264,8 @@ subroutine abf_control_read_abf(prm_fin)
  77 format ('frstupdate                             = ',i12,'                  (default)')
  80 format ('ftrjsample                             = ',i12)
  85 format ('ftrjsample                             = ',i12,'                  (default)')
+ 90 format ('fprint_ifc                             = ',a12)
+ 95 format ('fprint_ifc                             = ',a12,'                  (default)')
 
 100 format (' >> Multiple-walkers ABF method is disabled!')
 #ifndef PMFLIB_NETWORK

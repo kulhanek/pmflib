@@ -41,6 +41,7 @@ subroutine abf_output_open
     use pmf_utils
     use pmf_dat
     use pmf_constants
+    use abf_dat
 
     implicit none
     ! --------------------------------------------------------------------------
@@ -50,6 +51,14 @@ subroutine abf_output_open
     write(ABF_OUT,10)
     write(ABF_OUT,20)
     write(ABF_OUT,30)
+
+    if( fprint_ifc ) then
+        call pmf_utils_open(ABF_IFC,fabfifc,'R')
+
+        write(ABF_IFC,10)
+        write(ABF_IFC,20)
+        write(ABF_IFC,30)
+    end if
 
     return
 
@@ -99,6 +108,9 @@ subroutine abf_output_write_header
     end do
     write(ABF_OUT,*)
 
+    ! write header for IFC file if requested
+    call abf_output_write_header_ifc
+
     return
 
 10 format(A9)
@@ -144,6 +156,105 @@ subroutine abf_output_write
 end subroutine abf_output_write
 
 !===============================================================================
+! Subroutine:  abf_output_write_header_ifc
+!===============================================================================
+
+subroutine abf_output_write_header_ifc
+
+    use pmf_constants
+    use pmf_dat
+    use abf_dat
+    use pmf_cvs
+
+    implicit none
+    integer         :: i, off
+    type(UnitType)  :: ifc_unit
+    ! --------------------------------------------------------------------------
+
+    if( .not. fprint_ifc ) return
+
+    write(ABF_IFC,10,advance='NO') '#       1'
+    off = 1
+    do i=off+1,off+2*NumOfABFCVs,2
+        write(ABF_IFC,15,advance='NO') i
+        write(ABF_IFC,16,advance='NO') i+1
+    end do
+    write(ABF_IFC,*)
+
+    write(ABF_IFC,10,advance='NO') '#   NSTEP'
+    do i=1,NumOfABFCVs
+        write(ABF_IFC,20,advance='NO') trim(ABFCVList(i)%cv%name)
+        write(ABF_IFC,25,advance='NO') 'IFC (' // trim(ABFCVList(i)%cv%name) // ')'
+    end do
+    write(ABF_IFC,*)
+
+    write(ABF_IFC,10,advance='NO') '#        '
+    do i=1,NumOfABFCVs
+        write(ABF_IFC,20,advance='NO') '[' // trim(ABFCVList(i)%cv%get_ulabel()) // ']'
+        ifc_unit = pmf_unit_div_units(EnergyUnit,ABFCVList(i)%cv%unit)
+        write(ABF_IFC,25,advance='NO') '[' // trim(pmf_unit_label(ifc_unit)) // ']'
+    end do
+    write(ABF_IFC,*)
+
+    write(ABF_IFC,10,advance='NO') '#--------'
+    do i=1,NumOfABFCVs
+        write(ABF_IFC,30,advance='NO') '---------------'
+        write(ABF_IFC,35,advance='NO') '--------------------'
+    end do
+    write(ABF_IFC,*)
+
+    return
+
+10 format(A9)
+15 format(1X,I15)
+16 format(1X,I20)
+20 format(1X,A15)
+25 format(1X,A20)
+30 format(1X,A15)
+35 format(1X,A20)
+
+end subroutine abf_output_write_header_ifc
+
+!===============================================================================
+! Subroutine:  abf_output_write_ifc
+!===============================================================================
+
+subroutine abf_output_write_ifc(cvs,gfx)
+
+    use pmf_constants
+    use pmf_dat
+    use abf_dat
+    use pmf_cvs
+
+    implicit none
+    real(PMFDP)     :: cvs(:)
+    real(PMFDP)     :: gfx(:)
+    ! --------------------------------------------
+    integer         :: i
+    type(UnitType)  :: ifc_unit
+    ! --------------------------------------------------------------------------
+
+    if( .not. fprint_ifc ) return
+
+    write(ABF_IFC,10,advance='NO') fstep
+
+    do i=1,NumOfABFCVs
+        write(ABF_IFC,20,advance='NO') ABFCVList(i)%cv%get_rvalue(cvs(i))
+        ifc_unit = pmf_unit_div_units(EnergyUnit,ABFCVList(i)%cv%unit)
+        write(ABF_IFC,25,advance='NO') pmf_unit_get_rvalue(ifc_unit,gfx(i))
+    end do
+
+    write(ABF_IFC,*)
+
+    return
+
+10 format(I9)
+20 format(1X,F15.8)
+25 format(1X,F20.8)
+
+end subroutine abf_output_write_ifc
+
+!===============================================================================
 ! Subroutine:  abf_output_close
 !===============================================================================
 
@@ -151,11 +262,16 @@ subroutine abf_output_close
 
     use pmf_constants
     use pmf_dat
+    use abf_dat
 
     implicit none
     ! --------------------------------------------------------------------------
 
     close(ABF_OUT)
+
+    if( fprint_ifc ) then
+        close(ABF_IFC)
+    end if
 
     return
 

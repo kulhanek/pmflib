@@ -43,6 +43,7 @@ integer     :: feimode      ! extrapolation / interpolation mode
 integer     :: ftrjsample   ! how often save accumulator to "accumulator evolution"
 integer     :: fmask_mode   ! 0 - disable ABF mask, 1 - enable ABF mask
 logical     :: fapply_abf   ! on - apply ABF, off - do not apply ABF
+logical     :: fprint_ifc   ! print instanteous forces
 
 ! linear ramp mode I (feimode .eq. 1)
 integer     :: fhramp       ! ramp size

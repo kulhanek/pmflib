@@ -84,6 +84,7 @@ subroutine abf_core_force()
     use pmf_cvs
     use abf_dat
     use abf_accumulator
+    use abf_output
 
     implicit none
     integer     :: i,j,k,m
@@ -185,6 +186,7 @@ subroutine abf_core_force()
         end do
         ! add data to accumulator
         call abf_accumulator_add_data(avg_values,pxi0(:))
+        call abf_output_write_ifc(avg_values,pxi0(:))
     end if
 
     ! pxi0 <--- -pxip + pxim + pxi1 - la/2

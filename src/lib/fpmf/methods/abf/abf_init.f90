@@ -76,6 +76,7 @@ subroutine abf_init_dat
     ftrjsample      = 0         ! how often save accumulator to "accumulator evolution"
     fmask_mode      = 0         ! 0 - disable ABF mask, 1 - enable ABF mask
     fapply_abf      = .true.    ! on - apply ABF, off - do not apply ABF
+    fprint_ifc      = .false.
 
     fhramp          = 100
     fhramp_min      = 200       ! definition of linear ramp

@@ -146,6 +146,7 @@ integer,parameter       :: ABF_OUT      = 171
 integer,parameter       :: ABF_RST      = 172
 integer,parameter       :: ABF_TRJ      = 173
 integer,parameter       :: ABF_GPOUT    = 174
+integer,parameter       :: ABF_IFC      = 175
 
 ! metadyn part ----------------------------------------------------------------
 integer,parameter       :: MTD_INP      = 180

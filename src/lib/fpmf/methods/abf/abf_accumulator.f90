@@ -471,14 +471,14 @@ end subroutine abf_accumulator_apply_mask
 ! Subroutine:  abf_accumulator_add_data
 !===============================================================================
 
-subroutine abf_accumulator_add_data(values,gfx)
+subroutine abf_accumulator_add_data(cvs,gfx)
 
     use abf_dat
     use pmf_dat
     use pmf_utils
 
     implicit none
-    real(PMFDP)    :: values(:)
+    real(PMFDP)    :: cvs(:)
     real(PMFDP)    :: gfx(:)
     ! -----------------------------------------------
     integer        :: gi0,i
@@ -486,7 +486,7 @@ subroutine abf_accumulator_add_data(values,gfx)
     ! --------------------------------------------------------------------------
 
     ! get global index to accumulator for average values within the set
-    gi0 = abf_accumulator_globalindex(values)
+    gi0 = abf_accumulator_globalindex(cvs)
     if( gi0 .le. 0 ) then
         outsidesamples = outsidesamples + 1
         return ! out of valid area

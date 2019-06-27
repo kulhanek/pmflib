@@ -77,16 +77,16 @@ subroutine pmf_init_dat
     fbox_sphere = 0.0d0
 
     ! file names ---------------------------------------------------------------
-    fcvsdef      = '{CVS}'
-    fpathsdef    = '{PATHS}'
+    fcvsdef     = '{CVS}'
+    fpathsdef   = '{PATHS}'
 
-    fcstdef      = '{CST}'
-    fcstout      = '_cst.out'
-    fcstrst      = '_cst.rst'
+    fcstdef     = '{CST}'
+    fcstout     = '_cst.out'
+    fcstrst     = '_cst.rst'
 
-    frstdef      = '{RST}'
-    frstout      = '_rst.out'
-    frsthist     = '_rst.hist'
+    frstdef     = '{RST}'
+    frstout     = '_rst.out'
+    frsthist    = '_rst.hist'
 
     fmtddef     = '{MTD}'
     fmtdout     = '_mtd.out'
@@ -95,21 +95,22 @@ subroutine pmf_init_dat
     fmtdhills   = '_mtd.hills'
     fmtdgpout   = '_mtd.gp'
 
-    fabfdef      = '{ABF}'
-    fabfmask     = '_abf.mask'
-    fabfout      = '_abf.out'
-    fabfrst      = '_abf.rst'
-    fabftrj      = '_abf.trj'
-    fabfgpout    = '_abf.gpout'
+    fabfdef     = '{ABF}'
+    fabfmask    = '_abf.mask'
+    fabfout     = '_abf.out'
+    fabfrst     = '_abf.rst'
+    fabftrj     = '_abf.trj'
+    fabfgpout   = '_abf.gpout'
+    fabfifc     = '_abf.ifc'
 
-    fstmdef      = '{STM}'
-    fstmout      = '_stm.out'
+    fstmdef     = '{STM}'
+    fstmout     = '_stm.out'
 
-    fmondef      = '{MON}'
-    fmonout      = '_mon.out'
+    fmondef     = '{MON}'
+    fmonout     = '_mon.out'
 
-    fpdrvdef     = '{PDRV}'
-    fpdrvout     = '_pdrv.out'
+    fpdrvdef    = '{PDRV}'
+    fpdrvout    = '_pdrv.out'
 
     ! units --------------------------------------
     call pmf_unit_decode_mass_unit('amu',MassUnit)

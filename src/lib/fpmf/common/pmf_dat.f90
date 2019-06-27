@@ -139,6 +139,7 @@ character(PMF_MAX_PATH)     :: fmtdgpout
 character(PMF_MAX_PATH)     :: fabfdef
 character(PMF_MAX_PATH)     :: fabfmask
 character(PMF_MAX_PATH)     :: fabfout
+character(PMF_MAX_PATH)     :: fabfifc
 character(PMF_MAX_PATH)     :: fabfrst
 character(PMF_MAX_PATH)     :: fabftrj
 character(PMF_MAX_PATH)     :: fabfgpout
