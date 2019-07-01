@@ -65,6 +65,7 @@ int CABFTrajectory::Init(int argc,char* argv[])
     vout << endl;
     vout << "# ==============================================================================" << endl;
     vout << "# abf-trajectory (PMFLib utility)  started at " << dt.GetSDateAndTime() << endl;
+    vout << "# Version: " << LibBuildVersion_PMF << endl;
     vout << "# ==============================================================================" << endl;
 
     if(Options.GetArgABFTrajName() != "-") {

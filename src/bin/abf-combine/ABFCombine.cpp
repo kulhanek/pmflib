@@ -65,6 +65,7 @@ int CABFCombine::Init(int argc,char* argv[])
     vout << endl;
     vout << "# ==============================================================================" << endl;
     vout << "# abf-combine (PMFLib utility)  started at " << dt.GetSDateAndTime() << endl;
+    vout << "# Version: " << LibBuildVersion_PMF << endl;
     vout << "# ==============================================================================" << endl;
     if(Options.GetArgABFAccuName1() != "-") {
         vout << "# ABF accumulator file 1 (in) : " << Options.GetArgABFAccuName1() << endl;

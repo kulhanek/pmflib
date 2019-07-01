@@ -76,6 +76,7 @@ int CMTDServer::Init(int argc,char* argv[])
     vout << endl;
     vout << "# ==============================================================================" << endl;
     vout << "# mtd-server (PMFLib utility)  started at " << dt.GetSDateAndTime() << endl;
+    vout << "# Version: " << LibBuildVersion_PMF << endl;
     vout << "# ==============================================================================" << endl;
 
     if(Options.GetArgControlFile() != "-") {

@@ -68,6 +68,7 @@ int CABFAdmin::Init(int argc,char* argv[])
     vout << endl;
     vout << "# ==============================================================================" << endl;
     vout << "# abf-admin (PMFLib utility) started at " << dt.GetSDateAndTime() << endl;
+    vout << "# Version: " << LibBuildVersion_PMF << endl;
     vout << "# ==============================================================================" << endl;
     vout << "# Server request (by user)   : " << Options.GetArgCommand() << endl;
 

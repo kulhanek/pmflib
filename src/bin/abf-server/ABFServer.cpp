@@ -85,6 +85,7 @@ int CABFServer::Init(int argc,char* argv[])
     vout << endl;
     vout << "# ==============================================================================" << endl;
     vout << "# abf-server (PMFLib utility)  started at " << dt.GetSDateAndTime() << endl;
+    vout << "# Version: " << LibBuildVersion_PMF << endl;
     vout << "# ==============================================================================" << endl;
 
     if(Options.GetArgControlFile() != "-") {

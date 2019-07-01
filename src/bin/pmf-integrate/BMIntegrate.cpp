@@ -76,7 +76,8 @@ int CBMIntegrate::Init(int argc,char* argv[])
 
     vout << endl;
     vout << "# ==============================================================================" << endl;
-    vout << "# con-integrat (PMFLib utility)  started at " << dt.GetSDateAndTime() << endl;
+    vout << "# pmf-integrate (PMFLib utility)  started at " << dt.GetSDateAndTime() << endl;
+    vout << "# Version: " << LibBuildVersion_PMF << endl;
     vout << "# ==============================================================================" << endl;
 
     if(Options.GetArgInput() == "-") {
@@ -409,7 +410,7 @@ void CBMIntegrate::Finalize(void)
 
     vout << endl;
     vout << "# ==============================================================================" << endl;
-    vout << "# con-integrate terminated at " << dt.GetSDateAndTime() << endl;
+    vout << "# pmf-integrate terminated at " << dt.GetSDateAndTime() << endl;
     vout << "# ==============================================================================" << endl;
 
     if( ErrorSystem.IsError() || Options.GetOptVerbose() ){
