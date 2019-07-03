@@ -87,7 +87,7 @@ private:
     CSimpleVector<double>   ik;
 
     bool TrainGP(CVerboseStr& vout);
-    void CalculateErrors(CSimpleVector<double>& gpos); // gpos - position of global minimum
+    void CalculateErrors(CSimpleVector<double>& gpos,CVerboseStr& vout); // gpos - position of global minimum
 
     double GetValue(const CSimpleVector<double>& position);
     double GetMeanForce(const CSimpleVector<double>& position,int icoord);

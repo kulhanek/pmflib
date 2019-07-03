@@ -28,8 +28,10 @@
 #include <SciLapack.hpp>
 #include <iomanip>
 #include <SciBlas.hpp>
+#include <boost/format.hpp>
 
 using namespace std;
+using namespace boost;
 
 //==============================================================================
 //------------------------------------------------------------------------------
@@ -180,8 +182,7 @@ bool CABFIntegratorGPR::Integrate(CVerboseStr& vout)
     }
 
     if( IncludeError ){
-        vout << "   Calculating FES error ..." << endl;
-        CalculateErrors(gpos);
+        CalculateErrors(gpos,vout);
     }
 
     // and finaly some statistics
@@ -427,10 +428,22 @@ double CABFIntegratorGPR::GetCov(CSimpleVector<double>& lpos,CSimpleVector<doubl
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorGPR::CalculateErrors(CSimpleVector<double>& gpos)
+void CABFIntegratorGPR::CalculateErrors(CSimpleVector<double>& gpos,CVerboseStr& vout)
 {
+    vout << "   Calculating FES error ..." << endl;
+    CSmallTime st;
+    st.GetActualTime();
+
     double vargp = GetCov(gpos,gpos);
 
+    int totbatches = 0;
+    for(int i=0; i < Accumulator->GetNumberOfBins(); i++){
+        int samples = Accumulator->GetNumberOfABFSamples(i);
+        if( samples <= 0 ) continue;
+        totbatches++;
+    }
+
+    int nbatches = 0;
     for(int i=0; i < Accumulator->GetNumberOfBins(); i++){
         int samples = Accumulator->GetNumberOfABFSamples(i);
         FES->SetError(i,0.0);
@@ -445,6 +458,14 @@ void CABFIntegratorGPR::CalculateErrors(CSimpleVector<double>& gpos)
             error = 0.0;
         }
         FES->SetError(i,error);
+        nbatches++;
+        CSmallTime ct;
+        ct.GetActualTime();
+        if( (ct - st).GetSecondsFromBeginning() > 5*60 ){
+            int comp = nbatches*100 / totbatches;
+            vout << format("      completed %6d/%6d - %2d%%")%nbatches%totbatches%comp << endl;
+            st = ct;
+        }
     }
 }
 
