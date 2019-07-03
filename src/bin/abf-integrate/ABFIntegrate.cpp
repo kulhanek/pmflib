@@ -22,7 +22,6 @@
 #include <math.h>
 #include <errno.h>
 #include <ErrorSystem.hpp>
-#include <SmallTimeAndDate.hpp>
 #include <ABFIntegratorRFD.hpp>
 #include <ABFIntegratorRBF.hpp>
 #include <ABFIntegratorGPR.hpp>
@@ -67,12 +66,11 @@ int CABFIntegrate::Init(int argc,char* argv[])
         vout.Verbosity(CVerboseStr::high);
     }
 
-    CSmallTimeAndDate dt;
-    dt.GetActualTimeAndDate();
+    StartTime.GetActualTimeAndDate();
 
     vout << endl;
     vout << "# ==============================================================================" << endl;
-    vout << "# abf-integrate (PMFLib utility)  started at " << dt.GetSDateAndTime() << endl;
+    vout << "# abf-integrate (PMFLib utility)  started at " << StartTime.GetSDateAndTime() << endl;
     vout << "# Version: " << LibBuildVersion_PMF << endl;
     vout << "# ==============================================================================" << endl;
 
@@ -501,9 +499,12 @@ void CABFIntegrate::Finalize(void)
     CSmallTimeAndDate dt;
     dt.GetActualTimeAndDate();
 
+    CSmallTime dur;
+    dur = dt - StartTime;
+
     vout << endl;
     vout << "# ==============================================================================" << endl;
-    vout << "# abf-integrate terminated at " << dt.GetSDateAndTime() << endl;
+    vout << "# abf-integrate terminated at " << dt.GetSDateAndTime() << ". Total time: " << dur.GetSTimeAndDay() << endl;
     vout << "# ==============================================================================" << endl;
 
     if( ErrorSystem.IsError() || Options.GetOptVerbose() ){

@@ -26,6 +26,7 @@
 #include <VerboseStr.hpp>
 #include <TerminalStr.hpp>
 #include <StdIOFile.hpp>
+#include <SmallTimeAndDate.hpp>
 
 //------------------------------------------------------------------------------
 
@@ -47,9 +48,10 @@ public:
 
 // section of private data ----------------------------------------------------
 private:
-    CABFIntOptions  Options;
-    CStdIOFile      InputFile;
-    CStdIOFile      OutputFile;
+    CABFIntOptions      Options;
+    CStdIOFile          InputFile;
+    CStdIOFile          OutputFile;
+    CSmallTimeAndDate   StartTime;
 
     // output ------------------------------------
     CTerminalStr        Console;
