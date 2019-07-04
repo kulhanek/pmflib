@@ -77,9 +77,11 @@ int CABFIntOptions::CheckOptions(void)
     }
 
     if( (GetOptLAMethod() != "svd") &&
-        (GetOptLAMethod() != "qr") ) {
+        (GetOptLAMethod() != "qr") &&
+        (GetOptLAMethod() != "lu") &&
+        (GetOptLAMethod() != "default") ) {
         if(IsError == false) fprintf(stderr,"\n");
-        fprintf(stderr,"%s: linear algebra method must be either svd or qr, but %s is specified\n",
+        fprintf(stderr,"%s: linear algebra method must be either svd, qr, lu, or default, but %s is specified\n",
                 (const char*)GetProgramName(),(const char*)GetOptLAMethod());
         IsError = true;
     }

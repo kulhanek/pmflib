@@ -118,6 +118,7 @@ private:
     double GetValue(const CSimpleVector<double>& position);
     double GetMeanForce(const CSimpleVector<double>& position,int icoord);
     double GetCov(CSimpleVector<double>& lpos,CSimpleVector<double>& rpos);
+    double GetVar(CSimpleVector<double>& lpos);
 };
 
 //------------------------------------------------------------------------------

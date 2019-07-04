@@ -159,12 +159,13 @@ public:
     //----------------------------------------------------------------------
     CSO_MAP_OPT(CSmallString,                           /* option type */
                 LAMethod,                        /* option name */
-                "svd",                          /* default value */
+                "default",                          /* default value */
                 false,                          /* is option mandatory */
                 'a',                           /* short option name */
                 "lmethod",                      /* long option name */
                 "NAME",                           /* parametr name */
-                "linear algebra method for LLS solution or matrix inversion. Supported algorithms are: svd (SVD - singular value decomposition) and qr (QR factorization)")   /* option description */
+                "linear algebra method for LLS solution or matrix inversion. Supported algorithms are: default, svd (SVD - singular value decomposition), qr (QR factorization), lu (LU factorization). "
+                "Possible combinations are: RFD(LU,default), RFD2(QR,SVD,default), RBF(QR,SVD,default), and GPR(LU, SVD, default).")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(int,                           /* option type */
                 FDPoints,                        /* option name */
@@ -182,7 +183,7 @@ public:
                 'r',                           /* short option name */
                 "rcond",                      /* long option name */
                 "NUMBER",                           /* parametr name */
-                "RBF: Rank condition for SVD.")   /* option description */
+                "RFD2+RBF+GPR: Rank condition for SVD. Default value means computer precision. But, it is recommended to use value of 1e-5 or 1-e6 for higher numerical stability of integration.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(double,                           /* option type */
                 RFac,                        /* option name */

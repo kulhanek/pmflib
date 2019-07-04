@@ -303,11 +303,13 @@ bool CABFIntegratorGPR::TrainGP(CVerboseStr& vout)
             result = CSciLapack::inv1(K,detK);
             if( result != 0 ) return(false);
             break;
-        case(EGPRINV_SVD):
+        case(EGPRINV_SVD):{
             vout << "   Inverting K+Sigma by SVD ..." << endl;
-            // FIXME
-            result = CSciLapack::inv1(K,detK);
+            int rank = 0;
+            result = CSciLapack::inv2(K,detK,RCond,rank);
+            vout << "   Rank = " << rank << "; Info = " << result << endl;
             if( result != 0 ) return(false);
+            }
             break;
     default:
         INVALID_ARGUMENT("unsupported method");
@@ -494,13 +496,47 @@ double CABFIntegratorGPR::GetCov(CSimpleVector<double>& lpos,CSimpleVector<doubl
 
 //------------------------------------------------------------------------------
 
+double CABFIntegratorGPR::GetVar(CSimpleVector<double>& lpos)
+{
+    int indi = 0;
+    for(int i=0; i < Accumulator->GetNumberOfBins(); i++){
+        if( Accumulator->GetNumberOfABFSamples(i) <= 0 ) continue; // not sampled
+
+        Accumulator->GetPoint(i,ipos);
+
+        double argl = 0.0;
+        for(int ii=0; ii < NCVs; ii++){
+            double du = Accumulator->GetCoordinate(ii)->GetDifference(lpos[ii],ipos[ii]);
+            double dd = CVLengths2[ii];
+            argl += du*du/(2.0*dd);
+        }
+        argl = SigmaF2*exp(-argl);
+
+        for(int ii=0; ii < NCVs; ii++){
+            double du = Accumulator->GetCoordinate(ii)->GetDifference(lpos[ii],ipos[ii]);
+            double dd = CVLengths2[ii];
+            lk[indi*NCVs + ii] = (du/dd)*argl;
+        }
+        indi++;
+    }
+
+    double cov = SigmaF2;
+
+    CSciBlas::gemv(1.0,K,lk,0.0,ik);
+    cov = cov  - CSciBlas::dot(lk,ik);
+
+    return(cov);
+}
+
+//------------------------------------------------------------------------------
+
 void CABFIntegratorGPR::CalculateErrors(CSimpleVector<double>& gpos,CVerboseStr& vout)
 {
     vout << "   Calculating FES error ..." << endl;
     CSmallTime st;
     st.GetActualTime();
 
-    double vargp = GetCov(gpos,gpos);
+    double vargp = GetVar(gpos);
 
     int totbatches = 0;
     for(int i=0; i < Accumulator->GetNumberOfBins(); i++){
@@ -515,8 +551,9 @@ void CABFIntegratorGPR::CalculateErrors(CSimpleVector<double>& gpos,CVerboseStr&
         FES->SetError(i,0.0);
         if( samples <= 0 ) continue;
         Accumulator->GetPoint(i,jpos);
-        double varfc = GetCov(jpos,jpos);
+        double varfc = GetVar(jpos);
         double covfg = GetCov(jpos,gpos);
+        // vout << varfc << " " << vargp << " " << covfg << endl;
         double error = varfc + vargp - 2.0*covfg;
         if( error > 0 ){
             error = sqrt(error);
