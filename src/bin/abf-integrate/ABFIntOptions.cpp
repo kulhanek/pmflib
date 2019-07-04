@@ -57,15 +57,34 @@ int CABFIntOptions::CheckOptions(void)
     }
 
     if( (GetOptMethod() != "rfd") &&
+        (GetOptMethod() != "rfd2") &&
         (GetOptMethod() != "rbf") &&
         (GetOptMethod() != "gpr") ) {
         if(IsError == false) fprintf(stderr,"\n");
-        fprintf(stderr,"%s: method must be either rfd or rbf, but %s is specified\n",
+        fprintf(stderr,"%s: method must be either rfd, rfd2, rbf, or gpr, but %s is specified\n",
                 (const char*)GetProgramName(),(const char*)GetOptMethod());
         IsError = true;
     }
 
-    if( GetOptMethod() == "rfd" ){
+    if( (GetOptEcutMethod() != "rfd") &&
+        (GetOptEcutMethod() != "rfd2") &&
+        (GetOptEcutMethod() != "rbf") &&
+        (GetOptEcutMethod() != "gpr") ) {
+        if(IsError == false) fprintf(stderr,"\n");
+        fprintf(stderr,"%s: emethod must be either rfd, rfd2, rbf, or gpr, but %s is specified\n",
+                (const char*)GetProgramName(),(const char*)GetOptEcutMethod());
+        IsError = true;
+    }
+
+    if( (GetOptLAMethod() != "svd") &&
+        (GetOptLAMethod() != "qr") ) {
+        if(IsError == false) fprintf(stderr,"\n");
+        fprintf(stderr,"%s: linear algebra method must be either svd or qr, but %s is specified\n",
+                (const char*)GetProgramName(),(const char*)GetOptLAMethod());
+        IsError = true;
+    }
+
+    if( (GetOptMethod() == "rfd") || (GetOptMethod() == "rfd2") ){
         if((GetOptFDPoints() != 3) && (GetOptFDPoints() != 4)) {
             if(IsError == false) fprintf(stderr,"\n");
             fprintf(stderr,"%s: RFD number of points has to be either three or four, but %d is specified\n", (const char*)GetProgramName(),GetOptFDPoints());
@@ -79,9 +98,21 @@ int CABFIntOptions::CheckOptions(void)
         IsError = true;
     }
 
+    if( GetOptRFac2() < 0 ){
+        if(IsError == false) fprintf(stderr,"\n");
+        fprintf(stderr,"%s: rfac2 has to be greater than or equal zero, but %f is provided\n", (const char*)GetProgramName(),GetOptRFac2());
+        IsError = true;
+    }
+
     if( GetOptWFac() <= 0 ){
         if(IsError == false) fprintf(stderr,"\n");
         fprintf(stderr,"%s: wfac has to be greater than zero, but %f is provided\n", (const char*)GetProgramName(),GetOptWFac());
+        IsError = true;
+    }
+
+    if( GetOptWFac2() < 0 ){
+        if(IsError == false) fprintf(stderr,"\n");
+        fprintf(stderr,"%s: wfac has to be greater than or equal zero, but %f is provided\n", (const char*)GetProgramName(),GetOptWFac2());
         IsError = true;
     }
 
@@ -128,14 +159,21 @@ int CABFIntOptions::CheckOptions(void)
         IsError = true;
     }
 
-    if( IsOptRCondSet() && (GetOptMethod() != "rbf") ){
+    if( IsOptRCondSet() && ( ! ((GetOptMethod() == "rfd2") || (GetOptMethod() == "rbf") || (GetOptMethod() == "gpr")) ) ){
         if(IsError == false) fprintf(stderr,"\n");
-        fprintf(stderr,"%s: rcond can be set only for RBF method\n",
+        fprintf(stderr,"%s: rcond can be set only for RFD2/RBF/GPR method\n",
                 (const char*)GetProgramName());
         IsError = true;
     }
 
     if( IsOptRFacSet() && (GetOptMethod() != "rbf") ){
+        if(IsError == false) fprintf(stderr,"\n");
+        fprintf(stderr,"%s: rfac can be set only for RBF method\n",
+                (const char*)GetProgramName());
+        IsError = true;
+    }
+
+    if( IsOptRFac2Set() && (GetOptMethod() != "rbf") ){
         if(IsError == false) fprintf(stderr,"\n");
         fprintf(stderr,"%s: rfac can be set only for RBF method\n",
                 (const char*)GetProgramName());
@@ -150,6 +188,13 @@ int CABFIntOptions::CheckOptions(void)
     }
 
     if( IsOptWFacSet() && ( (GetOptMethod() != "rbf") && (GetOptMethod() != "gpr")) ){
+        if(IsError == false) fprintf(stderr,"\n");
+        fprintf(stderr,"%s: wfac can be set only for RBF or GPR method\n",
+                (const char*)GetProgramName());
+        IsError = true;
+    }
+
+    if( IsOptWFac2Set() && ( (GetOptMethod() != "rbf") && (GetOptMethod() != "gpr")) ){
         if(IsError == false) fprintf(stderr,"\n");
         fprintf(stderr,"%s: wfac can be set only for RBF or GPR method\n",
                 (const char*)GetProgramName());

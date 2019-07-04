@@ -9,6 +9,7 @@ SET(CPMF_METHODS_SRC
         methods/common/ESPrinter.cpp
         methods/abf/ABFAccumulator.cpp
         methods/abf/ABFIntegratorRFD.cpp
+        methods/abf/ABFIntegratorRFD2.cpp
         methods/abf/ABFIntegratorRBF.cpp
         methods/abf/ABFIntegratorGPR.cpp
         methods/mtd/MTDHistory.cpp

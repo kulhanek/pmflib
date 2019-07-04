@@ -43,9 +43,12 @@ CABFIntegratorGPR::CABFIntegratorGPR(void)
     FES = NULL;
 
     SigmaF2 = 15.0;
-    WFac = 3.0;
+    WFac1 = 3.0;
+    WFac2 = 0.0;
 
     IncludeError = false;
+
+    Method = EGPRINV_LU;
 }
 
 //------------------------------------------------------------------------------
@@ -72,9 +75,16 @@ void CABFIntegratorGPR::SetOutputFESurface(CEnergySurface* p_surf)
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorGPR::SetWFac(double wfac)
+void CABFIntegratorGPR::SetWFac1(double wfac)
 {
-    WFac = wfac;
+    WFac1 = wfac;
+}
+
+//------------------------------------------------------------------------------
+
+void CABFIntegratorGPR::SetWFac2(double wfac)
+{
+    WFac2 = wfac;
 }
 
 //------------------------------------------------------------------------------
@@ -89,6 +99,20 @@ void CABFIntegratorGPR::SetSigmaF2(double sigf2)
 void CABFIntegratorGPR::SetIncludeError(bool set)
 {
     IncludeError = set;
+}
+
+//------------------------------------------------------------------------------
+
+void CABFIntegratorGPR::SetRCond(double rcond)
+{
+    RCond = rcond;
+}
+
+//------------------------------------------------------------------------------
+
+void CABFIntegratorGPR::SetINVMehod(EGPRINVMethod set)
+{
+    Method = set;
 }
 
 //==============================================================================
@@ -123,9 +147,16 @@ bool CABFIntegratorGPR::Integrate(CVerboseStr& vout)
     // GPR setup
     CVLengths2.CreateVector(Accumulator->GetNumberOfCoords());
     for(int i=0; i < Accumulator->GetNumberOfCoords(); i++){
-        double l = WFac*Accumulator->GetCoordinate(i)->GetRange()/Accumulator->GetCoordinate(i)->GetNumberOfBins();
+        double l = WFac1*Accumulator->GetCoordinate(i)->GetRange()/Accumulator->GetCoordinate(i)->GetNumberOfBins();
         CVLengths2[i] = l*l;
-//        cout << CVLengths2[i] << endl;
+    }
+    if( (WFac2 > 0.0) && (Accumulator->GetNumberOfCoords() == 2) ){
+        int cv = 1;
+        double l = WFac2*Accumulator->GetCoordinate(cv)->GetRange()/Accumulator->GetCoordinate(cv)->GetNumberOfBins();
+        CVLengths2[cv] = l*l;
+    }
+    if( (WFac2 > 0.0) && (Accumulator->GetNumberOfCoords()> 2) ){
+        RUNTIME_ERROR("wfac2 > 0 and ncvs > 2");
     }
 
     // number of data points
@@ -186,7 +217,10 @@ bool CABFIntegratorGPR::Integrate(CVerboseStr& vout)
     }
 
     // and finaly some statistics
-    vout << "   RMSR = " << setprecision(5) << GetRMSR() << endl;
+    vout << "   RMSR  = " << setprecision(5) << GetRMSR() << endl;
+
+    // and marginal likelihood
+    vout << "   logML = " << setprecision(5) << GetLogMarginalLikelihood() << endl;
 
     return(true);
 }
@@ -243,7 +277,6 @@ bool CABFIntegratorGPR::TrainGP(CVerboseStr& vout)
     }
 
 // get mean forces and their variances
-    CSimpleVector<double>   Y;
     Y.CreateVector(GPRSize);
 
     indi = 0.0;
@@ -264,9 +297,21 @@ bool CABFIntegratorGPR::TrainGP(CVerboseStr& vout)
 
 // inverting the K+Sigma
     int result = 0;
-    vout << "   Inverting K+Sigma ..." << endl;
-    result = CSciLapack::inv1(K);
-    if( result != 0 ) return(false);
+    switch(Method){
+        case(EGPRINV_LU):
+            vout << "   Inverting K+Sigma by LU ..." << endl;
+            result = CSciLapack::inv1(K,detK);
+            if( result != 0 ) return(false);
+            break;
+        case(EGPRINV_SVD):
+            vout << "   Inverting K+Sigma by SVD ..." << endl;
+            // FIXME
+            result = CSciLapack::inv1(K,detK);
+            if( result != 0 ) return(false);
+            break;
+    default:
+        INVALID_ARGUMENT("unsupported method");
+    }
 
 // calculate weights
     vout << "   Calculating weights B ..." << endl;
@@ -376,6 +421,27 @@ double CABFIntegratorGPR::GetRMSR(void)
     }
 
     return(rmsr);
+}
+
+//------------------------------------------------------------------------------
+
+double CABFIntegratorGPR::GetLogMarginalLikelihood(void)
+{
+    double ml = 0.0;
+
+    if( detK <= 0.0 ){
+        RUNTIME_ERROR("detK is negative");
+    }
+
+    // http://www.gaussianprocess.org/gpml/chapters/RW5.pdf
+    // page 113
+
+    ml -= CSciBlas::dot(Y,GPRModel);
+    ml -= log(detK);
+    ml -= GPRSize * log(2*M_PI);
+    ml *= 0.5;
+
+    return(ml);
 }
 
 //------------------------------------------------------------------------------

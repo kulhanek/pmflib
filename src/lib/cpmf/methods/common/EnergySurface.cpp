@@ -359,6 +359,7 @@ void CEnergySurface::AdaptErrorsToGlobalMinimum(void)
 
     // adapt errors
     for(unsigned int k=0; k < TotNPoints; k++) {
+        if( Samples[k] <= 0 ) continue;
         Error[k] = fabs(Error[k] - err_at_minimum);
     }
 }

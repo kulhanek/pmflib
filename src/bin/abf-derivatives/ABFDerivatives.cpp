@@ -158,11 +158,29 @@ bool CABFDerivatives::PrintDerivatives(void)
     pos.CreateVector(Accumulator.GetNumberOfCoords());
     ipos.CreateVector(Accumulator.GetNumberOfCoords());
 
+    int last_cv = -1;
+
     for(int ibin=0; ibin < Accumulator.GetNumberOfBins(); ibin++){
 
         // do we have enough samples?
         double nsamples = Accumulator.GetNumberOfABFSamples(ibin);
         if( nsamples < Options.GetOptLimit() ) continue;
+
+    // write block delimiter - required by GNUPlot
+        if(Options.GetOptNoGNUPlot() == false) {
+            int ncvs = Accumulator.GetNumberOfCoords();
+            Accumulator.GetIPoint(ibin,ipos);
+
+            if( (last_cv >= 0) && (ipos[ncvs-1] != last_cv + 1) ){
+                if(fprintf(OutputFile,"\n") <= 0) {
+                    CSmallString error;
+                    error << "unable to write to output (" << strerror(errno) << ")";
+                    ES_ERROR(error);
+                    return(false);
+                }
+            }
+            last_cv = ipos[ncvs-1];
+        }
 
         Accumulator.GetPoint(ibin,pos);
 
@@ -244,22 +262,6 @@ bool CABFDerivatives::PrintDerivatives(void)
             ES_ERROR(error);
             return(false);
         }
-
-    // write block delimiter - required by GNUPlot
-        if(Options.GetOptNoGNUPlot() == false) {
-            int ncvs = Accumulator.GetNumberOfCoords();
-            Accumulator.GetIPoint(ibin,ipos);
-            if( ipos[ncvs-1] == (int)Accumulator.GetCoordinate(ncvs-1)->GetNumberOfBins() - 1){
-
-                if(fprintf(OutputFile,"\n") <= 0) {
-                    CSmallString error;
-                    error << "unable to write to output (" << strerror(errno) << ")";
-                    ES_ERROR(error);
-                    return(false);
-                }
-            }
-        }
-
     }
 
     return(true);

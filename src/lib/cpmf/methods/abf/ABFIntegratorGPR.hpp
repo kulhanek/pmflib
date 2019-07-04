@@ -30,9 +30,16 @@
 class CABFAccumulator;
 class CEnergySurface;
 
+// how to invert the matrix
+
+enum EGPRINVMethod {
+    EGPRINV_LU   = 1,  // DGETRI/DGETRF (via LU factorization)
+    EGPRINV_SVD  = 2,  // via SVD factorization
+};
+
 //------------------------------------------------------------------------------
 
-/** \brief integrator of ABF accumulator employing radial basis functions
+/** \brief integrator of ABF accumulator employing gaussian process
 */
 
 class PMF_PACKAGE CABFIntegratorGPR {
@@ -49,7 +56,10 @@ public:
     void SetOutputFESurface(CEnergySurface* p_surf);
 
     /// multiply of bin sizes
-    void SetWFac(double wfac);
+    void SetWFac1(double wfac);
+
+    /// multiply of bin sizes, if zero use wfac1
+    void SetWFac2(double wfac);
 
     /// set sigmaf2
     void SetSigmaF2(double sigf2);
@@ -57,12 +67,21 @@ public:
     /// set include error
     void SetIncludeError(bool set);
 
+    /// set algorithm for LLS
+    void SetINVMehod(EGPRINVMethod set);
+
+    /// set rcond for SVD
+    void SetRCond(double rcond);
+
 // execution method -----------------------------------------------------------
     /// integrate data
     bool Integrate(CVerboseStr& vout);
 
     /// get root mean square residuals
     double GetRMSR(void);
+
+    /// get log of Marginal Likelihood
+    double GetLogMarginalLikelihood(void);
 
 // section of private data ----------------------------------------------------
 private:
@@ -72,12 +91,16 @@ private:
     // GPR data
     int                     GPRSize;
     int                     NCVs;
-    double                  WFac;
+    double                  WFac1;
+    double                  WFac2;
     CSimpleVector<double>   CVLengths2;
     double                  SigmaF2;
     CFortranMatrix          K;          // kernels
+    double                  detK;
+    CSimpleVector<double>   Y;          // derivatives
     CSimpleVector<double>   GPRModel;   // weights
     bool                    IncludeError;
+    EGPRINVMethod           Method;
 
     CSimpleVector<double>   ipos;
     CSimpleVector<double>   jpos;
@@ -85,6 +108,9 @@ private:
     CSimpleVector<double>   rk;
     CSimpleVector<double>   lk;
     CSimpleVector<double>   ik;
+
+    // SVD setup
+    double                  RCond;
 
     bool TrainGP(CVerboseStr& vout);
     void CalculateErrors(CSimpleVector<double>& gpos,CVerboseStr& vout); // gpos - position of global minimum

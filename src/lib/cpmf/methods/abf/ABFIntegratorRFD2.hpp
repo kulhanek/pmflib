@@ -1,5 +1,5 @@
-#ifndef ABFIntegratorRFDH
-#define ABFIntegratorRFDH
+#ifndef ABFIntegratorRFD2H
+#define ABFIntegratorRFD2H
 // =============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
@@ -23,12 +23,18 @@
 
 #include <PMFMainHeader.hpp>
 #include <SimpleVector.hpp>
+#include <FortranMatrix.hpp>
 #include <VerboseStr.hpp>
 #include <ABFAccumulator.hpp>
 
-extern "C" {
-#include <cs.h>
-}
+//------------------------------------------------------------------------------
+
+// how to find solution for least square problem
+
+enum ERFDLLSMethod {
+    ERFDLLS_SVD   = 1,
+    ERFDLLS_QR    = 2,    // we have overdetermined system, thus only QR is applicable
+};
 
 //------------------------------------------------------------------------------
 
@@ -42,11 +48,11 @@ class CEnergySurface;
     only ABF data part is integrated
 */
 
-class PMF_PACKAGE CABFIntegratorRFD {
+class PMF_PACKAGE CABFIntegratorRFD2 {
 public:
 // constructor and destructor -------------------------------------------------
-    CABFIntegratorRFD(void);
-    virtual ~CABFIntegratorRFD(void);
+    CABFIntegratorRFD2(void);
+    virtual ~CABFIntegratorRFD2(void);
 
 // setup methods --------------------------------------------------------------
     /// set input ABF accumulator, only ABF forces are integrated
@@ -60,6 +66,12 @@ public:
 
     /// should we apply periodicity?
     void SetPeriodicity(bool set);
+
+    /// set algorithm for LLS
+    void SetLLSMehod(ERFDLLSMethod set);
+
+    /// set rcond for SVD
+    void SetRCond(double rcond);
 
 // execution method -----------------------------------------------------------
     /// integrate data, for errors the FES must be already allocated!!!
@@ -78,25 +90,26 @@ private:
 
     int                     NumOfVariables;
     int                     NumOfEquations;
-    int                     NumOfNonZeros;
-
+    ERFDLLSMethod           Method;
     EABFAccuValue           IntegratedRealm;
 
     CSimpleVector<int>      XMap;       // translation between global index and X index
     CSimpleVector<int>      IPoint;     // index points
     CSimpleVector<double>   Rhs;        // right hand side
+    CSimpleVector<double>   Lhs;        // left hand side
     CSimpleVector<double>   X;          // unknow free energy
-    cs*                     A;          // main matrix with differentation schemes
-    int                     LocIter;
+    CFortranMatrix          A;          // main matrix with differentation schemes
+    CFortranMatrix          BA;         // copy of A
+    CSimpleVector<double>   BRhs;       // copy of Rhs
 
-    /// release all resources
-    void ReleaseAllResources(void);
+    // SVD setup
+    double                  RCond;
 
     /// build system of equations describing differentation scheme
     bool BuildSystemOfEquations(CVerboseStr& vout);
 
     /// solve redundant system of linear equations
-    bool SolveSystemOfEquations(void);
+    bool SolveSystemOfEquations(CVerboseStr& vout);
 
     /// recursively build system of equations
     void BuildEquations(bool trial);

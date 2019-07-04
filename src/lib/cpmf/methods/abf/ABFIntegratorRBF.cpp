@@ -39,10 +39,12 @@ CABFIntegratorRBF::CABFIntegratorRBF(void)
     Accumulator = NULL;
     FES = NULL;
 
-    WFac        = 2.0;
-    RFac        = 3.0;
+    WFac1       = 2.0;
+    RFac1       = 3.0;
+    WFac2       = 0.0;
+    RFac2       = 0.0;
     Overhang    = 2;
-    Method      = EARBF_SVD;
+    Method      = ERBFLLS_SVD;
 
     IntegratedRealm = EABF_MEAN_FORCE_VALUE;
 
@@ -73,9 +75,16 @@ void CABFIntegratorRBF::SetOutputFESurface(CEnergySurface* p_surf)
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorRBF::SetWFac(double wfac)
+void CABFIntegratorRBF::SetWFac1(double wfac)
 {
-    WFac = wfac;
+    WFac1 = wfac;
+}
+
+//------------------------------------------------------------------------------
+
+void CABFIntegratorRBF::SetWFac2(double wfac)
+{
+    WFac2 = wfac;
 }
 
 //------------------------------------------------------------------------------
@@ -87,9 +96,16 @@ void CABFIntegratorRBF::SetRCond(double rcond)
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorRBF::SetRFac(double rfac)
+void CABFIntegratorRBF::SetRFac1(double rfac)
 {
-    RFac = rfac;
+    RFac1 = rfac;
+}
+
+//------------------------------------------------------------------------------
+
+void CABFIntegratorRBF::SetRFac2(double rfac)
+{
+    RFac2 = rfac;
 }
 
 //------------------------------------------------------------------------------
@@ -97,6 +113,13 @@ void CABFIntegratorRBF::SetRFac(double rfac)
 void CABFIntegratorRBF::SetOverhang(int nrbfs)
 {
     Overhang = nrbfs;
+}
+
+//------------------------------------------------------------------------------
+
+void CABFIntegratorRBF::SetLLSMehod(ERBFLLSMethod set)
+{
+    Method = set;
 }
 
 //==============================================================================
@@ -138,24 +161,41 @@ bool CABFIntegratorRBF::Integrate(CVerboseStr& vout,bool errors)
     NumOfCVs = Accumulator->GetNumberOfCoords();
     NumOfRBFBins.CreateVector(NumOfCVs);
 
-    if( RFac <= 0 ) RFac = 1.0;
+    if( (RFac2 > 0.0) && (Accumulator->GetNumberOfCoords() > 2) ){
+        RUNTIME_ERROR("rfac2 > 0 and ncvs > 2");
+    }
+
+   if( RFac1 <= 0 ) RFac1 = 1.0;
 
     NumOfRBFs = 1;
     for(int i=0; i < NumOfCVs; i++ ){
-        int nrbfbins = Accumulator->GetCoordinate(i)->GetNumberOfBins()/RFac;
+        int nrbfbins;
+        nrbfbins = Accumulator->GetCoordinate(i)->GetNumberOfBins()/RFac1;
+        if( (i == 1) && (RFac2 > 0.0) ){
+            nrbfbins = Accumulator->GetCoordinate(i)->GetNumberOfBins()/RFac2;
+        }
         if( ! Accumulator->GetCoordinate(i)->IsPeriodic() ){
             nrbfbins += 2*Overhang;
         }
         NumOfRBFBins[i] = nrbfbins;
         NumOfRBFs *= nrbfbins;
     }
+
+    if( (WFac2 > 0.0) && (Accumulator->GetNumberOfCoords() > 2) ){
+        RUNTIME_ERROR("wfac2 > 0 and ncvs > 2");
+    }
+
     Weights.CreateVector(NumOfRBFs);
     Weights.SetZero();
 
     Sigmas.CreateVector(NumOfCVs);
     for(int i=0; i < NumOfCVs; i++){
-        Sigmas[i] = Accumulator->GetCoordinate(i)->GetRange()*WFac/NumOfRBFBins[i];
+        Sigmas[i] = Accumulator->GetCoordinate(i)->GetRange()*WFac1/NumOfRBFBins[i];
         // cout << Sigmas[i] << endl;
+    }
+    if( (WFac2 > 0.0) && (Accumulator->GetNumberOfCoords() == 2) ){
+        int cv = 1;
+        Sigmas[cv] = Accumulator->GetCoordinate(cv)->GetRange()*WFac2/NumOfRBFBins[cv];
     }
 
     // integrate
@@ -281,7 +321,7 @@ bool CABFIntegratorRBF::IntegrateByLS(CVerboseStr& vout)
     int result = 0;
 
     switch(Method){
-        case EARBF_SVD:{
+        case ERBFLLS_SVD:{
             vout << "   Solving least square problem by SVD ..." << endl;
 
             // solve least square problem via GELSD
@@ -291,8 +331,8 @@ bool CABFIntegratorRBF::IntegrateByLS(CVerboseStr& vout)
             if( result != 0 ) return(false);
             }
         break;
-        case EARBF_QRLQ:{
-            vout << "   Solving least square problem by QRLQ ..." << endl;
+        case ERBFLLS_QR:{
+            vout << "   Solving least square problem by QR ..." << endl;
 
             // solve least square problem via GELS
             result = CSciLapack::gels(A,rhs);
@@ -309,9 +349,6 @@ bool CABFIntegratorRBF::IntegrateByLS(CVerboseStr& vout)
     }
 
     vout << "   RMSR = " << setprecision(5) << GetRMSR() << endl;
-
-    // debug
-    // cout << Weights[0] << endl;
 
     return( true );
 }

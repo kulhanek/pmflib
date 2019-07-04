@@ -30,11 +30,11 @@
 class CABFAccumulator;
 class CEnergySurface;
 
-// integration method
+// how to find solution for least square problem
 
-enum EARBFMethod {
-    EARBF_SVD = 1,
-    EARBF_QRLQ = 2,
+enum ERBFLLSMethod {
+    ERBFLLS_SVD   = 1,
+    ERBFLLS_QR    = 2,    // we have overdetermined system, thus only QR is applicable
 };
 
 //------------------------------------------------------------------------------
@@ -56,19 +56,28 @@ public:
     void SetOutputFESurface(CEnergySurface* p_surf);
 
     /// multiply of bin sizes
-    void SetWFac(double wfac);
+    void SetWFac1(double wfac);
+
+    /// multiply of bin sizes, if zero use wfac1
+    void SetWFac2(double wfac);
 
     /// set rcond for SVD
     void SetRCond(double rcond);
 
     /// set reduction factor for RBF
-    void SetRFac(double rfac);
+    void SetRFac1(double rfac);
+
+    /// set reduction factor for RBF, if zero use rfac1
+    void SetRFac2(double rfac);
 
     /// should we apply periodicity?
     void SetPeriodicity(bool set);
 
     /// set overhang, i.e. how many RBFs will be deposited outside of ABF accumulator
     void SetOverhang(int nrbfs);
+
+    /// set algorithm for LLS
+    void SetLLSMehod(ERBFLLSMethod set);
 
 // execution method -----------------------------------------------------------
     /// integrate data
@@ -82,10 +91,12 @@ private:
     const CABFAccumulator*  Accumulator;
     CEnergySurface*         FES;
 
-    double                  WFac;
-    double                  RFac;   // reduction factor for number of RBFs
+    double                  WFac1;
+    double                  RFac1;   // reduction factor for number of RBFs
+    double                  WFac2;
+    double                  RFac2;   // reduction factor for number of RBFs
     int                     Overhang;
-    EARBFMethod             Method;
+    ERBFLLSMethod           Method;
     EABFAccuValue           IntegratedRealm;
 
     // RBF data

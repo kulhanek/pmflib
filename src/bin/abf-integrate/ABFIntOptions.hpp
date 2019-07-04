@@ -38,7 +38,7 @@ public:
 
     CSO_PROG_DESC_BEGIN
     "It numericaly integrates data from the ABF calculation. The integration is performed either by "
-    "reverse finite difference (RFD) method, employing radial basis functions (RBF), or gaussian process (GPR).\n"
+    "reverse finite difference (RFD or RFD2) method, employing radial basis functions (RBF), or gaussian process (GPR).\n"
     "<b><red>Warning:</red></b> "
     "While RFD is extremly fast it can fail on data with irregular sampling. This problem can be partially overcome "
     "by increasing sampling limit. "
@@ -65,16 +65,19 @@ public:
     CSO_OPT(double,Offset)
     CSO_OPT(CSmallString,Method)
     CSO_OPT(CSmallString,EcutMethod)
+    CSO_OPT(CSmallString,LAMethod)
     CSO_OPT(int,FDPoints)
     CSO_OPT(double,RCond)
     CSO_OPT(double,RFac)
+    CSO_OPT(double,RFac2)
     CSO_OPT(double,WFac)
+    CSO_OPT(double,WFac2)
     CSO_OPT(double,SigmaF2)
     CSO_OPT(int,Overhang)
     CSO_OPT(bool,Periodicity)
     CSO_OPT(bool,WithError)
     CSO_OPT(CSmallString,OutputFormat)
-    CSO_OPT(bool,PrintWithLimit)
+    CSO_OPT(bool,PrintAll)
     CSO_OPT(bool,NoHeader)
     CSO_OPT(CSmallString,IXFormat)
     CSO_OPT(CSmallString,OEFormat)
@@ -143,7 +146,7 @@ public:
                 'm',                           /* short option name */
                 "method",                      /* long option name */
                 "NAME",                           /* parametr name */
-                "Integration method. Supported methods are: rfd (reverse finite differences), rbf (radial basis functions), and gpr (gaussian process).")   /* option description */
+                "Integration method. Supported methods are: rfd (reverse finite differences via csparse), rfd2 (reverse finite differences via lapack), rbf (radial basis functions), and gpr (gaussian process).")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(CSmallString,                           /* option type */
                 EcutMethod,                        /* option name */
@@ -152,7 +155,16 @@ public:
                 0,                           /* short option name */
                 "emethod",                      /* long option name */
                 "NAME",                           /* parametr name */
-                "Integration method for energy cut-off. Supported methods are: rfd (reverse finite differences), rbf (radial basis functions), and gpr (gaussian process).")   /* option description */
+                "Integration method for energy cut-off. Supported methods are: rfd (reverse finite differences via csparse), rfd2 (reverse finite differences via lapack), rbf (radial basis functions), and gpr (gaussian process).")   /* option description */
+    //----------------------------------------------------------------------
+    CSO_MAP_OPT(CSmallString,                           /* option type */
+                LAMethod,                        /* option name */
+                "svd",                          /* default value */
+                false,                          /* is option mandatory */
+                'a',                           /* short option name */
+                "lmethod",                      /* long option name */
+                "NAME",                           /* parametr name */
+                "linear algebra method for LLS solution or matrix inversion. Supported algorithms are: svd (SVD - singular value decomposition) and qr (QR factorization)")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(int,                           /* option type */
                 FDPoints,                        /* option name */
@@ -182,6 +194,15 @@ public:
                 "RBF: Reduction factor for number of RBFs. Number of RBFs in given direction is number of bins in that direction divided by this factor.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(double,                           /* option type */
+                RFac2,                        /* option name */
+                0.0,                          /* default value */
+                false,                          /* is option mandatory */
+                0,                           /* short option name */
+                "rfac2",                      /* long option name */
+                "NUMBER",                           /* parametr name */
+                "(optional for the second CV) RBF: Reduction factor for number of RBFs. Number of RBFs in given direction is number of bins in that direction divided by this factor.")   /* option description */
+    //----------------------------------------------------------------------
+    CSO_MAP_OPT(double,                           /* option type */
                 WFac,                        /* option name */
                 2.0,                          /* default value */
                 false,                          /* is option mandatory */
@@ -189,6 +210,16 @@ public:
                 "wfac",                      /* long option name */
                 "NUMBER",                           /* parametr name */
                 "RBF+GPR: Factor influencing widths of RBFs or square exponential kernels. The width is distance between "
+                "the adjacent square exponential functions multiplied by this factor.")   /* option description */
+    //----------------------------------------------------------------------
+    CSO_MAP_OPT(double,                           /* option type */
+                WFac2,                        /* option name */
+                0.0,                          /* default value */
+                false,                          /* is option mandatory */
+                0,                           /* short option name */
+                "wfac2",                      /* long option name */
+                "NUMBER",                           /* parametr name */
+                "(optional for the second CV) RBF+GPR: Factor influencing widths of RBFs or square exponential kernels. The width is distance between "
                 "the adjacent square exponential functions multiplied by this factor.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(double,                           /* option type */
@@ -237,13 +268,13 @@ public:
                 "Output FORMAT to print the free energy surface. Supported formats are: plain, gnuplot, fes.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(bool,                           /* option type */
-                PrintWithLimit,                        /* option name */
+                PrintAll,                        /* option name */
                 false,                          /* default value */
                 false,                          /* is option mandatory */
                 0,                           /* short option name */
-                "printwithlimit",                      /* long option name */
+                "printall",                      /* long option name */
                 NULL,                           /* parametr name */
-                "Print results from bins that were adequately sampled only.")   /* option description */
+                "Print results for all bins even if not properly sampled.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(bool,                           /* option type */
                 NoHeader,                        /* option name */
