@@ -46,7 +46,12 @@ public:
     "This situation can be partially overcome by increasing sampling limit and "
     "at the same time by energy limit, which, however, requires two integration passes. "
     "GPR is probably ultimate way how to obtain correctly integrated data but "
-    "at cost of significantly higher computational demands."
+    "at cost of significantly higher computational demands.\n"
+    "Quality of the integration can be monitored by RMSR and logML (GPR only). <b>RMSR</b> is the root mean square residuals. "
+    "The residual is difference between input mean force (derivative of the free energy) and mean force predicted by the model. "
+    "<b>logML</b> is logarithm of marginal likelihood. "
+    "When changing hyperparameters (wfac, rfac, sigmaf2) RMSR should be minimized (however one must be carefull with possible model overfitting) and logML should be maximized."
+
     CSO_PROG_DESC_END
 
     CSO_PROG_VERS_BEGIN
