@@ -300,13 +300,13 @@ bool CABFIntegratorGPR::TrainGP(CVerboseStr& vout)
     switch(Method){
         case(EGPRINV_LU):
             vout << "   Inverting K+Sigma by LU ..." << endl;
-            result = CSciLapack::inv1(K,detK);
+            result = CSciLapack::inv1(K,logdetK);
             if( result != 0 ) return(false);
             break;
         case(EGPRINV_SVD):{
             vout << "   Inverting K+Sigma by SVD ..." << endl;
             int rank = 0;
-            result = CSciLapack::inv2(K,detK,RCond,rank);
+            result = CSciLapack::inv2(K,logdetK,RCond,rank);
             vout << "   Rank = " << rank << "; Info = " << result << endl;
             if( result != 0 ) return(false);
             }
@@ -431,15 +431,11 @@ double CABFIntegratorGPR::GetLogMarginalLikelihood(void)
 {
     double ml = 0.0;
 
-    if( detK <= 0.0 ){
-        RUNTIME_ERROR("detK is negative");
-    }
-
     // http://www.gaussianprocess.org/gpml/chapters/RW5.pdf
     // page 113
 
     ml -= CSciBlas::dot(Y,GPRModel);
-    ml -= log(detK);
+    ml -= logdetK;
     ml -= GPRSize * log(2*M_PI);
     ml *= 0.5;
 

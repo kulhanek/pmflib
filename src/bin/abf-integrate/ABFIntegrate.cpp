@@ -315,12 +315,14 @@ bool CABFIntegrate::IntegrateForEcut(CABFAccumulator&accumulator, CEnergySurface
         integrator.SetPeriodicity(Options.GetOptPeriodicity());
         integrator.SetFDPoints(Options.GetOptFDPoints());
 
-        if( Options.GetOptLAMethod() == "lu" ){
-            // nothing to do - LU is default
-        } else if( Options.GetOptLAMethod() == "default" ) {
-            // nothing to do - use default method set in constructor of integrator
-        } else {
-            INVALID_ARGUMENT("algorithm - not implemented");
+        if( Options.GetOptEcutMethod() == Options.GetOptMethod() ){
+            if( Options.GetOptLAMethod() == "lu" ){
+                // nothing to do - LU is default
+            } else if( Options.GetOptLAMethod() == "default" ) {
+                // nothing to do - use default method set in constructor of integrator
+            } else {
+                INVALID_ARGUMENT("algorithm - not implemented");
+            }
         }
 
         integrator.SetInputABFAccumulator(&accumulator);
@@ -337,14 +339,16 @@ bool CABFIntegrate::IntegrateForEcut(CABFAccumulator&accumulator, CEnergySurface
         integrator.SetFDPoints(Options.GetOptFDPoints());
         integrator.SetRCond(Options.GetOptRCond());
 
-        if( Options.GetOptLAMethod() == "svd" ){
-            integrator.SetLLSMehod(ERFDLLS_SVD);
-        } else if( Options.GetOptLAMethod() == "qr" ) {
-            integrator.SetLLSMehod(ERFDLLS_QR);
-        } else if( Options.GetOptLAMethod() == "default" ) {
-            // nothing to do - use default method set in constructor of integrator
-        } else {
-            INVALID_ARGUMENT("algorithm - not implemented");
+        if( Options.GetOptEcutMethod() == Options.GetOptMethod() ){
+            if( Options.GetOptLAMethod() == "svd" ){
+                integrator.SetLLSMehod(ERFDLLS_SVD);
+            } else if( Options.GetOptLAMethod() == "qr" ) {
+                integrator.SetLLSMehod(ERFDLLS_QR);
+            } else if( Options.GetOptLAMethod() == "default" ) {
+                // nothing to do - use default method set in constructor of integrator
+            } else {
+                INVALID_ARGUMENT("algorithm - not implemented");
+            }
         }
 
         integrator.SetInputABFAccumulator(&accumulator);
@@ -364,14 +368,16 @@ bool CABFIntegrate::IntegrateForEcut(CABFAccumulator&accumulator, CEnergySurface
         integrator.SetRFac2(Options.GetOptRFac2());
         integrator.SetOverhang(Options.GetOptOverhang());
 
-        if( Options.GetOptLAMethod() == "svd" ){
-            integrator.SetLLSMehod(ERBFLLS_SVD);
-        } else if( Options.GetOptLAMethod() == "qr" ) {
-            integrator.SetLLSMehod(ERBFLLS_QR);
-        } else if( Options.GetOptLAMethod() == "default" ) {
-            // nothing to do - use default method set in constructor of integrator
-        } else {
-            INVALID_ARGUMENT("algorithm - not implemented");
+        if( Options.GetOptEcutMethod() == Options.GetOptMethod() ){
+            if( Options.GetOptLAMethod() == "svd" ){
+                integrator.SetLLSMehod(ERBFLLS_SVD);
+            } else if( Options.GetOptLAMethod() == "qr" ) {
+                integrator.SetLLSMehod(ERBFLLS_QR);
+            } else if( Options.GetOptLAMethod() == "default" ) {
+                // nothing to do - use default method set in constructor of integrator
+            } else {
+                INVALID_ARGUMENT("algorithm - not implemented");
+            }
         }
 
         integrator.SetInputABFAccumulator(&accumulator);
@@ -390,14 +396,16 @@ bool CABFIntegrate::IntegrateForEcut(CABFAccumulator&accumulator, CEnergySurface
         integrator.SetSigmaF2(Options.GetOptSigmaF2());
         integrator.SetIncludeError(false);
 
-        if( Options.GetOptLAMethod() == "svd" ){
-            integrator.SetINVMehod(EGPRINV_SVD);
-        } else if( Options.GetOptLAMethod() == "lu" ) {
-            integrator.SetINVMehod(EGPRINV_LU);
-        } else if( Options.GetOptLAMethod() == "default" ) {
-            // nothing to do - use default method set in constructor of integrator
-        } else {
-            INVALID_ARGUMENT("algorithm - not implemented");
+        if( Options.GetOptEcutMethod() == Options.GetOptMethod() ){
+            if( Options.GetOptLAMethod() == "svd" ){
+                integrator.SetINVMehod(EGPRINV_SVD);
+            } else if( Options.GetOptLAMethod() == "lu" ) {
+                integrator.SetINVMehod(EGPRINV_LU);
+            } else if( Options.GetOptLAMethod() == "default" ) {
+                // nothing to do - use default method set in constructor of integrator
+            } else {
+                INVALID_ARGUMENT("algorithm - not implemented");
+            }
         }
 
         integrator.SetInputABFAccumulator(&accumulator);

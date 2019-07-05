@@ -96,7 +96,7 @@ private:
     CSimpleVector<double>   CVLengths2;
     double                  SigmaF2;
     CFortranMatrix          K;          // kernels
-    double                  detK;
+    double                  logdetK;
     CSimpleVector<double>   Y;          // derivatives
     CSimpleVector<double>   GPRModel;   // weights
     bool                    IncludeError;
