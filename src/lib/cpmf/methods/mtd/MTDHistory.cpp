@@ -28,6 +28,120 @@
 #include <XMLBinData.hpp>
 #include <XMLPrinter.hpp>
 
+
+//==============================================================================
+//------------------------------------------------------------------------------
+//==============================================================================
+
+//void CEnergySurface::CalculateFES(CMTDHistory& mtd_hist,unsigned int mtd_time)
+//{
+//// quick compatibility comparison
+//    if( NumOfCVs != mtd_hist.GetNumberOfCoords() ) {
+//        RUNTIME_ERROR("numofitems mismatch");
+//    }
+
+//// allocate point
+//    CSimpleVector<double> point;
+//    point.CreateVector(NumOfCVs);
+
+//// calculate surface
+//    unsigned int loc = 0;
+//    CalculateFES_Part(mtd_hist,point,mtd_time,loc,0);
+//}
+
+////------------------------------------------------------------------------------
+
+//void CEnergySurface::CalculateFES_Part(CMTDHistory& mtd_hist,
+//                                       CSimpleVector<double>& point,
+//                                       unsigned int mtd_time,
+//                                       unsigned int& loc,
+//                                       unsigned int cv)
+//{
+//    if(cv >= NumOfCVs) {
+//        // calculate value
+//        double value = - mtd_hist.CalculateValue(point,mtd_time);
+//        Energy[loc++] = value;
+//        return;
+//    }
+
+//    const CColVariable* p_coord = &Sizes[cv];
+
+//// cycle through variable
+//    for(unsigned int i = 0; i < p_coord->GetNumberOfBins(); i++) {
+//        point[cv] = p_coord->GetValue(i);
+//        CalculateFES_Part(mtd_hist,point,mtd_time,loc,cv+1);
+//    }
+//}
+
+////==============================================================================
+////------------------------------------------------------------------------------
+////==============================================================================
+
+//void CEnergySurface::CalculateFES(int ncoords,CSimpleVector<double>& params)
+//{
+//// quick compatibility comparison
+//    if( NumOfCVs != ncoords ) {
+//        RUNTIME_ERROR("NumOfCVs != ncoords");
+//    }
+
+//// allocate point
+//    CSimpleVector<double> point;
+//    point.CreateVector(NumOfCVs);
+
+//// calculate fes
+//    unsigned int loc = 0;
+//    CalculateFES_MTDParam_Part(params,point,loc,0);
+//}
+
+////------------------------------------------------------------------------------
+
+//void CEnergySurface::CalculateFES_MTDParam_Part(
+//    CSimpleVector<double>& params,
+//    CSimpleVector<double>& point,
+//    unsigned int& loc,
+//    unsigned int cv)
+//{
+//    if(cv >= NumOfCVs) {
+//        // calculate value
+//        double value = - CalculateValue(params,point);
+//        Energy[loc++] = value;
+//        return;
+//    }
+
+//    const CColVariable* p_coord = &Sizes[cv];
+
+//// cycle through variable
+//    for(unsigned int i = 0; i < p_coord->GetNumberOfBins(); i++) {
+//        point[cv] = p_coord->GetValue(i);
+//        CalculateFES_MTDParam_Part(params,point,loc,cv+1);
+//    }
+//}
+
+////------------------------------------------------------------------------------
+
+//double CEnergySurface::CalculateValue(const CSimpleVector<double>& params,
+//                                      const CSimpleVector<double>& point)
+//{
+//    double     value = 0.0;
+//    double     fexparg;
+//    int        num_of_hills = params.GetLength()/(1+2*NumOfCVs);
+//    unsigned int        loc = 0;
+
+//    for(int i=0; i < num_of_hills; i++) {
+//        fexparg = 0.0;
+//        double height = params[loc++];
+//        for(int k=0; k < NumOfCVs; k++) {
+//            double value = params[loc++];
+//            double width = params[loc++];
+//            double e = point[k] - value;
+//            fexparg = fexparg + e*e / (2.0 * width * width);
+//        }
+//        value = value + height*exp(-fexparg);
+//    }
+
+//    return(value);
+//}
+
 //==============================================================================
 //------------------------------------------------------------------------------
 //==============================================================================

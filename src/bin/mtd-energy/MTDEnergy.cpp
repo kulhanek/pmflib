@@ -268,7 +268,8 @@ void CMTDEnergy::Finalize(void)
 bool CMTDEnergy::CalculateFES(void)
 {
 // calculate surface
-    EnergySurface.CalculateFES(MTDHistory,Options.GetOptTime());
+    // FIXME
+    // EnergySurface.CalculateFES(MTDHistory,Options.GetOptTime());
     return(true);
 }
 
@@ -290,7 +291,8 @@ bool CMTDEnergy::CalculateSmoothedFES(void)
 // cumulate surfaces
     for(int time=Options.GetOptSmooth(); time <= stop; time++) {
         vout << " Processing time : " << time << endl;
-        intermediate.CalculateFES(MTDHistory,time);
+        // FIXME
+        // intermediate.CalculateFES(MTDHistory,time);
         EnergySurface += intermediate;
     }
 

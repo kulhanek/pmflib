@@ -47,14 +47,14 @@ CEnergySurface::~CEnergySurface(void)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-unsigned int CEnergySurface::GetNumberOfCoords(void) const
+int CEnergySurface::GetNumberOfCoords(void) const
 {
     return(NumOfCVs);
 }
 
 //------------------------------------------------------------------------------
 
-unsigned int CEnergySurface::GetNumberOfPoints(void) const
+int CEnergySurface::GetNumberOfPoints(void) const
 {
     return(TotNPoints);
 }
@@ -82,7 +82,7 @@ void CEnergySurface::Allocate(const CMTDHistory* mtd_hist)
 
 // copy cvs and calculate total number of points
     TotNPoints = 1;
-    for(unsigned int i=0; i < NumOfCVs; i++) {
+    for(int i=0; i < NumOfCVs; i++) {
         Sizes[i].CopyFrom(mtd_hist->GetCoordinate(i));
         TotNPoints *= Sizes[i].GetNumberOfBins();
     }
@@ -108,7 +108,7 @@ void CEnergySurface::Allocate(const CABFAccumulator* abf_accu)
 
 // copy cvs and calculate total number of points
     TotNPoints = 1;
-    for(unsigned int i=0; i < NumOfCVs; i++) {
+    for(int i=0; i < NumOfCVs; i++) {
         Sizes[i].CopyFrom(abf_accu->GetCoordinate(i));
         TotNPoints *= Sizes[i].GetNumberOfBins();
     }
@@ -136,125 +136,14 @@ void CEnergySurface::Deallocate(void)
 
 void CEnergySurface::Clear(void)
 {
-    for(unsigned int i=0; i < TotNPoints; i++) {
+    for(int i=0; i < TotNPoints; i++) {
         Energy[i] = 0.0;
         Error[i] = 0.0;
         Samples[i] = 0;
     }
 }
 
-//==============================================================================
-//------------------------------------------------------------------------------
-//==============================================================================
 
-void CEnergySurface::CalculateFES(CMTDHistory& mtd_hist,unsigned int mtd_time)
-{
-// quick compatibility comparison
-    if( NumOfCVs != mtd_hist.GetNumberOfCoords() ) {
-        RUNTIME_ERROR("numofitems mismatch");
-    }
-
-// allocate point
-    CSimpleVector<double> point;
-    point.CreateVector(NumOfCVs);
-
-// calculate surface
-    unsigned int loc = 0;
-    CalculateFES_Part(mtd_hist,point,mtd_time,loc,0);
-}
-
-//------------------------------------------------------------------------------
-
-void CEnergySurface::CalculateFES_Part(CMTDHistory& mtd_hist,
-                                       CSimpleVector<double>& point,
-                                       unsigned int mtd_time,
-                                       unsigned int& loc,
-                                       unsigned int cv)
-{
-    if(cv >= NumOfCVs) {
-        // calculate value
-        double value = - mtd_hist.CalculateValue(point,mtd_time);
-        Energy[loc++] = value;
-        return;
-    }
-
-    const CColVariable* p_coord = &Sizes[cv];
-
-// cycle through variable
-    for(unsigned int i = 0; i < p_coord->GetNumberOfBins(); i++) {
-        point[cv] = p_coord->GetValue(i);
-        CalculateFES_Part(mtd_hist,point,mtd_time,loc,cv+1);
-    }
-}
-
-//==============================================================================
-//------------------------------------------------------------------------------
-//==============================================================================
-
-void CEnergySurface::CalculateFES(unsigned int ncoords,CSimpleVector<double>& params)
-{
-// quick compatibility comparison
-    if( NumOfCVs != ncoords ) {
-        RUNTIME_ERROR("numofitems mismatch");
-    }
-
-// allocate point
-    CSimpleVector<double> point;
-    point.CreateVector(NumOfCVs);
-
-// calculate fes
-    unsigned int loc = 0;
-    CalculateFES_MTDParam_Part(params,point,loc,0);
-}
-
-//------------------------------------------------------------------------------
-
-void CEnergySurface::CalculateFES_MTDParam_Part(
-    CSimpleVector<double>& params,
-    CSimpleVector<double>& point,
-    unsigned int& loc,
-    unsigned int cv)
-{
-    if(cv >= NumOfCVs) {
-        // calculate value
-        double value = - CalculateValue(params,point);
-        Energy[loc++] = value;
-        return;
-    }
-
-    const CColVariable* p_coord = &Sizes[cv];
-
-// cycle through variable
-    for(unsigned int i = 0; i < p_coord->GetNumberOfBins(); i++) {
-        point[cv] = p_coord->GetValue(i);
-        CalculateFES_MTDParam_Part(params,point,loc,cv+1);
-    }
-}
-
-//------------------------------------------------------------------------------
-
-double CEnergySurface::CalculateValue(const CSimpleVector<double>& params,
-                                      const CSimpleVector<double>& point)
-{
-    double     value = 0.0;
-    double     fexparg;
-    int        num_of_hills = params.GetLength()/(1+2*NumOfCVs);
-    unsigned int        loc = 0;
-
-    for(int i=0; i < num_of_hills; i++) {
-        fexparg = 0.0;
-        double height = params[loc++];
-        for(unsigned int k=0; k < NumOfCVs; k++) {
-            double value = params[loc++];
-            double width = params[loc++];
-            double e = point[k] - value;
-            fexparg = fexparg + e*e / (2.0 * width * width);
-        }
-        value = value + height*exp(-fexparg);
-    }
-
-    return(value);
-}
 
 //==============================================================================
 //------------------------------------------------------------------------------
@@ -306,12 +195,24 @@ const int& CEnergySurface::GetNumOfSamples(unsigned int index) const
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void CEnergySurface::GetPoint(unsigned int index,CSimpleVector<double>& point)
+void CEnergySurface::GetPoint(unsigned int index,CSimpleVector<double>& point) const
 {
     for(int k=NumOfCVs-1; k >= 0; k--) {
-        CColVariable* p_coord = &Sizes[k];
+        const CColVariable* p_coord = &Sizes[k];
         int ibin = index % p_coord->GetNumberOfBins();
         point[k] = p_coord->GetValue(ibin);
+        index = index / p_coord->GetNumberOfBins();
+    }
+}
+
+//------------------------------------------------------------------------------
+
+void CEnergySurface::GetIPoint(unsigned int index,CSimpleVector<int>& point) const
+{
+    for(int k=NumOfCVs-1; k >= 0; k--) {
+        const CColVariable* p_coord = &Sizes[k];
+        int ibin = index % p_coord->GetNumberOfBins();
+        point[k] = ibin;
         index = index / p_coord->GetNumberOfBins();
     }
 }
@@ -324,7 +225,7 @@ double CEnergySurface::GetGlobalMinimumValue(void) const
 
     if(TotNPoints > 0) minimum = Energy[0];
 
-    for(unsigned int k=0; k < TotNPoints; k++) {
+    for(int k=0; k < TotNPoints; k++) {
         if(minimum > Energy[k]) minimum = Energy[k];
     }
 
@@ -335,7 +236,7 @@ double CEnergySurface::GetGlobalMinimumValue(void) const
 
 void CEnergySurface::ApplyOffset(double offset)
 {
-    for(unsigned int k=0; k < TotNPoints; k++) {
+    for(int k=0; k < TotNPoints; k++) {
         Energy[k] += offset;
     }
 }
@@ -348,7 +249,7 @@ void CEnergySurface::AdaptErrorsToGlobalMinimum(void)
     double err_at_minimum = 0.0;
     bool   first = true;
 
-    for(unsigned int k=0; k < TotNPoints; k++) {
+    for(int k=0; k < TotNPoints; k++) {
         if( Samples[k] <= 0 ) continue;
         if( (minimum > Energy[k]) || (first == true) ){
             minimum = Energy[k];
@@ -358,7 +259,7 @@ void CEnergySurface::AdaptErrorsToGlobalMinimum(void)
     }
 
     // adapt errors
-    for(unsigned int k=0; k < TotNPoints; k++) {
+    for(int k=0; k < TotNPoints; k++) {
         if( Samples[k] <= 0 ) continue;
         Error[k] = fabs(Error[k] - err_at_minimum);
     }
@@ -375,7 +276,7 @@ void CEnergySurface::operator+=(const CEnergySurface& source)
         return;
     }
 
-    for(unsigned int k=0; k < TotNPoints; k++) {
+    for(int k=0; k < TotNPoints; k++) {
         Energy[k] += source.Energy[k];
     }
 }
@@ -384,7 +285,7 @@ void CEnergySurface::operator+=(const CEnergySurface& source)
 
 void CEnergySurface::operator/=(const double& number)
 {
-    for(unsigned int k=0; k < TotNPoints; k++) {
+    for(int k=0; k < TotNPoints; k++) {
         Energy[k] /= number;
     }
 }

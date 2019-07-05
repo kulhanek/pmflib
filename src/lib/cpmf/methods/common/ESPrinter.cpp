@@ -145,13 +145,73 @@ void CESPrinter::Print(FILE* fout)
 
 void CESPrinter::PrintPlain(FILE* fout)
 {
-// allocate point
-    CSimpleVector<double> point;
-    point.CreateVector(EnergySurface->GetNumberOfCoords());
+    CSimpleVector<double>   pos;
+    CSimpleVector<int>      ipos;
 
-// print surface
-    unsigned int loc = 0;
-    Print_Part(fout,point,loc,0);
+    pos.CreateVector(EnergySurface->GetNumberOfCoords());
+    ipos.CreateVector(EnergySurface->GetNumberOfCoords());
+
+    int last_cv = -1;
+
+    for(int ibin=0; ibin < EnergySurface->GetNumberOfPoints(); ibin++){
+
+        // do we have enough samples?
+        double nsamples = EnergySurface->GetNumOfSamples(ibin);
+        if( nsamples < PrintLimit ) continue;
+
+    // write block delimiter - required by GNUPlot
+        if(Format == EESPF_GNUPLOT) {
+            int ncvs = EnergySurface->GetNumberOfCoords();
+            EnergySurface->GetIPoint(ibin,ipos);
+
+            if( (last_cv >= 0) && (ipos[ncvs-1] != last_cv + 1) ){
+                if(fprintf(fout,"\n") <= 0) {
+                    CSmallString error;
+                    error << "unable to write to output (" << strerror(errno) << ")";
+                    RUNTIME_ERROR(error);
+                }
+            }
+            last_cv = ipos[ncvs-1];
+        }
+
+        EnergySurface->GetPoint(ibin,pos);
+
+        CSmallString xform;
+        xform = XFormat + " ";
+
+        // print point position
+        for(int i=0; i < EnergySurface->GetNumberOfCoords(); i++) {
+            double xvalue = pos[i];
+            if(fprintf(fout,xform,xvalue) <= 0) {
+                CSmallString error;
+                error << "unable to write to output (" << strerror(errno) << ")";
+                RUNTIME_ERROR(error);
+            }
+        }
+
+        CSmallString yform = YFormat + " ";
+        // and value
+        double value = EnergySurface->GetEnergy(ibin);
+        if(fprintf(fout,yform,value) <= 0) {
+            CSmallString error;
+            error << "unable to print Y data to the file (" << strerror(errno) << ")";
+            RUNTIME_ERROR(error);
+        }
+        if( IncludeError ){
+            double error = EnergySurface->GetError(ibin);
+            if(fprintf(fout,yform,error) <= 0) {
+                CSmallString error;
+                error << "unable to print Y (error) data to the file (" << strerror(errno) << ")";
+                RUNTIME_ERROR(error);
+            }
+        }
+
+        if(fprintf(fout,"\n") <= 0) {
+            CSmallString error;
+            error << "unable to write to output (" << strerror(errno) << ")";
+            RUNTIME_ERROR(error);
+        }
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -168,7 +228,7 @@ void CESPrinter::PrintPMF_FES(FILE* fout)
     }
 
 // write coordinate specification ----------------
-    for(unsigned int i=0; i < EnergySurface->GetNumberOfCoords(); i++) {
+    for(int i=0; i < EnergySurface->GetNumberOfCoords(); i++) {
 //20  format(I2,1X,A10,1X,E18.11,1X,E18.11,1X,I6)
 //25  format(I2,1X,A55)
         if(fprintf(fout,"%2d %10s %18.11e %18.11E %6d\n",i+1,
@@ -192,7 +252,7 @@ void CESPrinter::PrintPMF_FES(FILE* fout)
 
 // 40  format(4(E19.11,1X))
     int counter = 0;
-    for(unsigned int i = 0; i < EnergySurface->GetNumberOfPoints(); i++) {
+    for(int i = 0; i < EnergySurface->GetNumberOfPoints(); i++) {
         if(fprintf(fout,"%19.11E ",EnergySurface->GetEnergy(i)) <= 0) {
             CSmallString error;
             error << "unable to write energy for point " << i;
@@ -202,66 +262,6 @@ void CESPrinter::PrintPMF_FES(FILE* fout)
         counter++;
     }
     if(counter % 4 != 0) fprintf(fout,"\n");
-}
-
-//------------------------------------------------------------------------------
-
-void CESPrinter::Print_Part(FILE* fout,CSimpleVector<double>& point,
-                            unsigned int& loc,unsigned int cv)
-{
-    if(cv >= EnergySurface->GetNumberOfCoords()) {
-        // calculate value
-
-        if(EnergySurface->GetNumOfSamples(loc) >= PrintLimit) {
-            // print point position
-            CSmallString xform = XFormat + " ";
-            for(unsigned int i=0; i < EnergySurface->GetNumberOfCoords(); i++) {
-                if(fprintf(fout,xform,point[i]) <= 0) {
-                    CSmallString error;
-                    error << "unable to print X data to the file (" << strerror(errno) << ")";
-                    RUNTIME_ERROR(error);
-                }
-            }
-            CSmallString yform = YFormat + " ";
-            // and value
-            double value = EnergySurface->GetEnergy(loc);
-            if(fprintf(fout,yform,value) <= 0) {
-                CSmallString error;
-                error << "unable to print Y data to the file (" << strerror(errno) << ")";
-                RUNTIME_ERROR(error);
-            }
-            if( IncludeError ){
-                double error = EnergySurface->GetError(loc);
-                if(fprintf(fout,yform,error) <= 0) {
-                    CSmallString error;
-                    error << "unable to print Y (error) data to the file (" << strerror(errno) << ")";
-                    RUNTIME_ERROR(error);
-                }
-            }
-            fprintf(fout,"\n");
-        } else {
-            if(EnergySurface->GetNumberOfCoords() == 1) fprintf(fout,"\n");
-        }
-        loc++;
-        return;
-    }
-
-    const CColVariable* p_coord = EnergySurface->GetCoordinate(cv);
-
-// cycle through variable
-    for(unsigned int i = 0; i < p_coord->GetNumberOfBins(); i++) {
-        point[cv] = p_coord->GetValue(i);
-        Print_Part(fout,point,loc,cv+1);
-    }
-
-// write block delimiter - required by GNUPlot
-    if(Format == EESPF_GNUPLOT) {
-        if(fprintf(fout,"\n") <= 0) {
-            CSmallString error;
-            error << "unable to print GNUPlot delimiter to the file (" << strerror(errno) << ")";
-            RUNTIME_ERROR(error);
-        }
-    }
 }
 
 //==============================================================================

@@ -57,8 +57,8 @@ private:
     CTerminalStr        Console;
     CVerboseStr         vout;
 
-    // print samples - it is called recursivelly
-    bool PrintSamples(int cv);
+    // print samples
+    bool PrintSamples(void);
 };
 
 //------------------------------------------------------------------------------

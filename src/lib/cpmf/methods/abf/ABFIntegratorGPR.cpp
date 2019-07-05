@@ -135,11 +135,11 @@ bool CABFIntegratorGPR::Integrate(CVerboseStr& vout)
         return(false);
     }
 
-    if( (unsigned int)Accumulator->GetNumberOfCoords() != FES->GetNumberOfCoords() ){
+    if( Accumulator->GetNumberOfCoords() != FES->GetNumberOfCoords() ){
         ES_ERROR("inconsistent ABF and FES - CVs");
         return(false);
     }
-    if( (unsigned int)Accumulator->GetNumberOfBins() != FES->GetNumberOfPoints() ){
+    if( Accumulator->GetNumberOfBins() != FES->GetNumberOfPoints() ){
         ES_ERROR("inconsistent ABF and FES - points");
         return(false);
     }
@@ -204,7 +204,7 @@ bool CABFIntegratorGPR::Integrate(CVerboseStr& vout)
     }
 
     // move to global minima
-    for(unsigned int i=0; i < FES->GetNumberOfPoints(); i++) {
+    for(int i=0; i < FES->GetNumberOfPoints(); i++) {
         if( FES->GetNumOfSamples(i) <= 0 ) continue;
         double value = 0.0;
         value = FES->GetEnergy(i);

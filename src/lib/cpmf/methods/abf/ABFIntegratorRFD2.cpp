@@ -126,11 +126,11 @@ bool CABFIntegratorRFD2::Integrate(CVerboseStr& vout, bool errors)
         return(false);
     }
 
-    if( (unsigned int)Accumulator->GetNumberOfCoords() != FES->GetNumberOfCoords() ){
+    if( Accumulator->GetNumberOfCoords() != FES->GetNumberOfCoords() ){
         ES_ERROR("inconsistent ABF and FES - CVs");
         return(false);
     }
-    if( (unsigned int)Accumulator->GetNumberOfBins() != FES->GetNumberOfPoints() ){
+    if( Accumulator->GetNumberOfBins() != FES->GetNumberOfPoints() ){
         ES_ERROR("inconsistent ABF and FES - points");
         return(false);
     }
@@ -159,7 +159,7 @@ bool CABFIntegratorRFD2::Integrate(CVerboseStr& vout, bool errors)
     }
 
 // load data to FES
-    for(unsigned int ipoint=0; ipoint < FES->GetNumberOfPoints(); ipoint++) {
+    for(int ipoint=0; ipoint < FES->GetNumberOfPoints(); ipoint++) {
         int x_index = XMap[ipoint];
         if(x_index >= 0) {
             double value = X[x_index]-glb_min;

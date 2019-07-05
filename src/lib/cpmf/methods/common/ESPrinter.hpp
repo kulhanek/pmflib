@@ -83,9 +83,6 @@ private:
 
     void PrintPlain(FILE* fout);
     void PrintPMF_FES(FILE* fout);
-
-    void Print_Part(FILE* fout,CSimpleVector<double>& point,
-                    unsigned int& loc,unsigned int cv);
 };
 
 //------------------------------------------------------------------------------

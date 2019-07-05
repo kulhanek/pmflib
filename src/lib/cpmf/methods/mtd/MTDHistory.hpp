@@ -28,6 +28,13 @@
 #include <ColVariable.hpp>
 #include <SimpleVector.hpp>
 
+//// calculate energy -----------------------------------------------------------
+//    /// calculate FES from MTD history list
+//    void CalculateFES(CMTDHistory& mtd_hist,unsigned int mtd_time=0);
+
+//    /// calculate FES from MTD parameter list
+//    void CalculateFES(unsigned int ncoords,CSimpleVector<double>& params);
+
 //------------------------------------------------------------------------------
 
 /*! \brief metadynamics gaussian history list

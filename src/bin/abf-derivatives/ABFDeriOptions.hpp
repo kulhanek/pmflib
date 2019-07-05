@@ -51,6 +51,7 @@ public:
     CSO_ARG(CSmallString,OutputName)
     // options ------------------------------
     CSO_OPT(int,Limit)
+    CSO_OPT(double,NCorr)
     CSO_OPT(int,Item)
     CSO_OPT(bool,Sigma)
     CSO_OPT(bool,Error)
@@ -87,6 +88,15 @@ public:
                 "limit",                      /* long option name */
                 "LIMIT",                           /* parametr name */
                 "Only bins containing more samples than NUMBER are considered as properly sampled.")   /* option description */
+    //----------------------------------------------------------------------
+    CSO_MAP_OPT(double,                           /* option type */
+                NCorr,                        /* option name */
+                1.0,                          /* default value */
+                false,                          /* is option mandatory */
+                'c',                           /* short option name */
+                "ncorr",                      /* long option name */
+                "NUMBER",                           /* parametr name */
+                "Number of statistically correlated samples.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(int,                           /* option type */
                 Item,                        /* option name */

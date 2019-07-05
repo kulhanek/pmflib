@@ -50,7 +50,6 @@ public:
     CSO_ARG(CSmallString,OutputName)
     // options ------------------------------
     CSO_OPT(int,Limit)
-    CSO_OPT(int,Group)
     CSO_OPT(bool,NoGNUPlot)
     CSO_OPT(CSmallString,IXFormat)
     CSO_OPT(CSmallString,OSFormat)

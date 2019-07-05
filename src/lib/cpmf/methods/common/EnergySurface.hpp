@@ -41,10 +41,10 @@ public:
 
 // setup method ---------------------------------------------------------------
     /// return number of cvs
-    unsigned int GetNumberOfCoords(void) const;
+    int GetNumberOfCoords(void) const;
 
     /// return number of points
-    unsigned int GetNumberOfPoints(void) const;
+    int GetNumberOfPoints(void) const;
 
     /// return coordinate definition
     const CColVariable* GetCoordinate(unsigned int cv) const;
@@ -61,13 +61,6 @@ public:
 
     /// set all items to zero
     void Clear(void);
-
-// calculate energy -----------------------------------------------------------
-    /// calculate FES from MTD history list
-    void CalculateFES(CMTDHistory& mtd_hist,unsigned int mtd_time=0);
-
-    /// calculate FES from MTD parameter list
-    void CalculateFES(unsigned int ncoords,CSimpleVector<double>& params);
 
 // access methods -------------------------------------------------------------
     /// set energy from point of index
@@ -89,7 +82,10 @@ public:
     const int& GetNumOfSamples(unsigned int index) const;
 
     /// convert point index to point position
-    void GetPoint(unsigned int index,CSimpleVector<double>& point);
+    void GetPoint(unsigned int index,CSimpleVector<double>& point) const;
+
+    /// convert point index to point position
+    void GetIPoint(unsigned int index,CSimpleVector<int>& point) const;
 
     /// return value of global minimum
     double GetGlobalMinimumValue(void) const;
@@ -109,8 +105,8 @@ public:
 
 // section of private data ----------------------------------------------------
 private:
-    unsigned int                NumOfCVs;       // number of cvs
-    unsigned int                TotNPoints;     // total energy size
+    int                         NumOfCVs;       // number of cvs
+    int                         TotNPoints;     // total energy size
     CSimpleVector<CColVariable> Sizes;          // dimensions
     CSimpleVector<double>       Energy;         // energy array
     CSimpleVector<double>       Error;          // error array

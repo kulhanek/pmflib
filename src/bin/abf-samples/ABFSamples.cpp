@@ -84,17 +84,6 @@ int CABFSamples::Init(int argc,char* argv[])
     } else {
         vout << "# Limit                     : " << Options.GetOptLimit() << endl;
     }
-    switch(Options.GetOptGroup()) {
-        case 0:
-            vout << "# Group                     : ABF force samples will be printed" <<  endl;
-            break;
-        case -1:
-            vout << "# Group                     : ENE force samples will will be printed" <<  endl;
-            break;
-        default:
-            vout << "# Group                     : GRP force samples will will be printed" <<  endl;
-            break;
-    }
     vout << "# ------------------------------------------------" <<  endl;
     vout << "# No GNUPlot delimiters     : " << bool_to_str(Options.GetOptNoGNUPlot()) << endl;
     vout << "# X format                  : " << Options.GetOptIXFormat() << endl;
@@ -132,7 +121,7 @@ bool CABFSamples::Run(void)
     Point.CreateVector(Accumulator.GetNumberOfCoords());
 
 // print samples
-    if(PrintSamples(0) == false) {
+    if(PrintSamples() == false) {
         ES_ERROR("unable to print samples");
         return(false);
     }
@@ -142,23 +131,46 @@ bool CABFSamples::Run(void)
 
 //------------------------------------------------------------------------------
 
-bool CABFSamples::PrintSamples(int cv)
+bool CABFSamples::PrintSamples(void)
 {
-    if(cv >= Accumulator.GetNumberOfCoords()) {
-        // get number of samples
-        int value = 0;
-        value = Accumulator.GetNumberOfABFSamples(Point);
+    CSimpleVector<double>   pos;
+    CSimpleVector<int>      ipos;
 
-        if(value < Options.GetOptLimit()) return(true);      // not enough samples
+    pos.CreateVector(Accumulator.GetNumberOfCoords());
+    ipos.CreateVector(Accumulator.GetNumberOfCoords());
+
+    int last_cv = -1;
+
+    for(int ibin=0; ibin < Accumulator.GetNumberOfBins(); ibin++){
+
+        // do we have enough samples?
+        int nsamples = Accumulator.GetNumberOfABFSamples(ibin);
+        if( nsamples < Options.GetOptLimit() ) continue;
+
+    // write block delimiter - required by GNUPlot
+        if(Options.GetOptNoGNUPlot() == false) {
+            int ncvs = Accumulator.GetNumberOfCoords();
+            Accumulator.GetIPoint(ibin,ipos);
+
+            if( (last_cv >= 0) && (ipos[ncvs-1] != last_cv + 1) ){
+                if(fprintf(OutputFile,"\n") <= 0) {
+                    CSmallString error;
+                    error << "unable to write to output (" << strerror(errno) << ")";
+                    ES_ERROR(error);
+                    return(false);
+                }
+            }
+            last_cv = ipos[ncvs-1];
+        }
+
+        Accumulator.GetPoint(ibin,pos);
 
         CSmallString xformat,sformat;
         xformat = Options.GetOptIXFormat() + " ";
-        sformat = Options.GetOptOSFormat() + "\n";
 
         // print point position
         for(int i=0; i < Accumulator.GetNumberOfCoords(); i++) {
-            const CColVariable* p_coord = Accumulator.GetCoordinate(i);
-            double xvalue = p_coord->GetValue(Point[i]);
+            double xvalue = pos[i];
             if(fprintf(OutputFile,xformat,xvalue) <= 0) {
                 CSmallString error;
                 error << "unable to write to output (" << strerror(errno) << ")";
@@ -166,27 +178,10 @@ bool CABFSamples::PrintSamples(int cv)
                 return(false);
             }
         }
+
+        sformat = Options.GetOptOSFormat() + "\n";
         // and value
-        if(fprintf(OutputFile,sformat,value) <= 0) {
-            CSmallString error;
-            error << "unable to write to output (" << strerror(errno) << ")";
-            ES_ERROR(error);
-            return(false);
-        }
-        return(true);
-    }
-
-    const CColVariable* p_coord = Accumulator.GetCoordinate(cv);
-
-// cycle through variable
-    for(unsigned int i = 0; i < p_coord->GetNumberOfBins(); i++) {
-        Point[cv] = i;
-        if(PrintSamples(cv+1) == false) return(false);
-    }
-
-// write block delimiter - required by GNUPlot
-    if(Options.GetOptNoGNUPlot() == false) {
-        if(fprintf(OutputFile,"\n") <= 0) {
+        if(fprintf(OutputFile,sformat,nsamples) <= 0) {
             CSmallString error;
             error << "unable to write to output (" << strerror(errno) << ")";
             ES_ERROR(error);

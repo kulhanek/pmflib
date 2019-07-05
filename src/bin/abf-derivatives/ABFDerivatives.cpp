@@ -88,6 +88,7 @@ int CABFDerivatives::Init(int argc,char* argv[])
     vout << "# CV item                   : " << Options.GetOptItem() << endl;
     vout << "# Print sigmas              : " << bool_to_str(Options.GetOptSigma()) << endl;
     vout << "# Print errors              : " << bool_to_str(Options.GetOptError()) << endl;
+    vout << "# Number of corr. samples   : " << Options.GetOptNCorr() << endl;
     vout << "# ------------------------------------------------" << endl;
     vout << "# No GNUPlot delimiters     : " << bool_to_str(Options.GetOptNoGNUPlot()) << endl;
     vout << "# No header to output       : " << bool_to_str(Options.GetOptNoHeader()) << endl;
@@ -130,8 +131,9 @@ bool CABFDerivatives::Run(void)
         fprintf(OutputFile,"# Total number of bins  : %d\n",Accumulator.GetNumberOfBins());
         fprintf(OutputFile,"# CV item               : %d\n",Options.GetOptItem());
         fprintf(OutputFile,"# Sample limit          : %d\n",Options.GetOptLimit());
-        fprintf(OutputFile,"# Derivative std. dev.  : %s\n",(const char*)bool_to_str(Options.GetOptSigma()));
-        fprintf(OutputFile,"# Derivative std. err.  : %s\n",(const char*)bool_to_str(Options.GetOptError()));
+        fprintf(OutputFile,"# Include std. dev.     : %s\n",(const char*)bool_to_str(Options.GetOptSigma()));
+        fprintf(OutputFile,"# Include std. err.     : %s\n",(const char*)bool_to_str(Options.GetOptError()));
+        fprintf(OutputFile,"# Number of corr. sam.  : %5.3f\n",Options.GetOptNCorr());
     }
 
 // print samples
