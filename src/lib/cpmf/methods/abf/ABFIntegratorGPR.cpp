@@ -47,6 +47,7 @@ CABFIntegratorGPR::CABFIntegratorGPR(void)
     WFac2 = 0.0;
 
     IncludeError = false;
+    NoEnergy = false;
 
     Method = EGPRINV_LU;
 }
@@ -99,6 +100,14 @@ void CABFIntegratorGPR::SetSigmaF2(double sigf2)
 void CABFIntegratorGPR::SetIncludeError(bool set)
 {
     IncludeError = set;
+}
+
+
+//------------------------------------------------------------------------------
+
+void CABFIntegratorGPR::SetNoEnergy(bool set)
+{
+    NoEnergy = set;
 }
 
 //------------------------------------------------------------------------------
@@ -182,38 +191,40 @@ bool CABFIntegratorGPR::Integrate(CVerboseStr& vout)
         return(false);
     }
 
-    vout << "   Calculating FES ..." << endl;
+    if( ! NoEnergy ){
+        vout << "   Calculating FES ..." << endl;
 
-    // calculate energies
-    double glb_min = 0.0;
-    bool   first = true;
-    for(int i=0; i < Accumulator->GetNumberOfBins(); i++){
-        int samples = Accumulator->GetNumberOfABFSamples(i);
-        FES->SetNumOfSamples(i,samples);
-        double value = 0.0;
-        FES->SetEnergy(i,value);
-        if( samples <= 0 ) continue;
-        Accumulator->GetPoint(i,jpos);
-        value = GetValue(jpos);
-        FES->SetEnergy(i,value);
-        if( first || (glb_min > value) ){
-            glb_min = value;
-            first = false;
-            gpos = jpos;
+        // calculate energies
+        double glb_min = 0.0;
+        bool   first = true;
+        for(int i=0; i < Accumulator->GetNumberOfBins(); i++){
+            int samples = Accumulator->GetNumberOfABFSamples(i);
+            FES->SetNumOfSamples(i,samples);
+            double value = 0.0;
+            FES->SetEnergy(i,value);
+            if( samples <= 0 ) continue;
+            Accumulator->GetPoint(i,jpos);
+            value = GetValue(jpos);
+            FES->SetEnergy(i,value);
+            if( first || (glb_min > value) ){
+                glb_min = value;
+                first = false;
+                gpos = jpos;
+            }
         }
-    }
 
-    // move to global minima
-    for(int i=0; i < FES->GetNumberOfPoints(); i++) {
-        if( FES->GetNumOfSamples(i) <= 0 ) continue;
-        double value = 0.0;
-        value = FES->GetEnergy(i);
-        value = value - glb_min;
-        FES->SetEnergy(i,value);
-    }
+        // move to global minima
+        for(int i=0; i < FES->GetNumberOfPoints(); i++) {
+            if( FES->GetNumOfSamples(i) <= 0 ) continue;
+            double value = 0.0;
+            value = FES->GetEnergy(i);
+            value = value - glb_min;
+            FES->SetEnergy(i,value);
+        }
 
-    if( IncludeError ){
-        CalculateErrors(gpos,vout);
+        if( IncludeError ){
+            CalculateErrors(gpos,vout);
+        }
     }
 
     // and finaly some statistics

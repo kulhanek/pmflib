@@ -127,6 +127,7 @@ bool CABFDerivatives::Run(void)
 // print header
     if(Options.GetOptNoHeader() == false) {
         fprintf(OutputFile,"# derivatives\n");
+        fprintf(OutputFile,"# PMFLib version        : %s\n",LibBuildVersion_PMF);
         fprintf(OutputFile,"# Number of coordinates : %d\n",Accumulator.GetNumberOfCoords());
         fprintf(OutputFile,"# Total number of bins  : %d\n",Accumulator.GetNumberOfBins());
         fprintf(OutputFile,"# CV item               : %d\n",Options.GetOptItem());

@@ -67,6 +67,9 @@ public:
     /// set include error
     void SetIncludeError(bool set);
 
+    /// skip energy calculation, it also disables errors
+    void SetNoEnergy(bool set);
+
     /// set algorithm for LLS
     void SetINVMehod(EGPRINVMethod set);
 
@@ -99,6 +102,7 @@ private:
     double                  logdetK;
     CSimpleVector<double>   Y;          // derivatives
     CSimpleVector<double>   GPRModel;   // weights
+    bool                    NoEnergy;
     bool                    IncludeError;
     EGPRINVMethod           Method;
 

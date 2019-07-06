@@ -109,13 +109,25 @@ int CABFIntegrate::Init(int argc,char* argv[])
         vout << "# SVD rcond             : " << setprecision(3) << Options.GetOptRCond() << endl;
         }
     } else if ( Options.GetOptMethod() == "rbf" ){
+        if( Options.IsOptRFac2Set() ){
+        vout << "# Reduction factor rfac : " << setprecision(3) << Options.GetOptRFac() << " x " << setprecision(3) << Options.GetOptRFac2()  << endl;
+        } else {
         vout << "# Reduction factor rfac : " << setprecision(3) << Options.GetOptRFac() << endl;
+        }
+        if( Options.IsOptWFac2Set() ){
+        vout << "# Width factor wfac     : " << setprecision(3) << Options.GetOptWFac() << " x " << setprecision(3) << Options.GetOptWFac2()  << endl;
+        } else {
         vout << "# Width factor wfac     : " << setprecision(3) << Options.GetOptWFac() << endl;
+        }
         vout << "# SVD rcond             : " << setprecision(3) << Options.GetOptRCond() << endl;
         vout << "# RBF overhang          : " << Options.GetOptOverhang() << endl;
     } else if ( Options.GetOptMethod() == "gpr"  ) {
-        vout << "# SigmaF2               : " << setprecision(3) << Options.GetOptSigmaF2() << endl;
+        vout << "# SigmaF2               : " << setprecision(3) << Options.GetOptSigmaF2() << endl;  
+        if( Options.IsOptWFac2Set() ){
+        vout << "# Width factor wfac     : " << setprecision(3) << Options.GetOptWFac() << " x " << setprecision(3) << Options.GetOptWFac2()  << endl;
+        } else {
         vout << "# Width factor wfac     : " << setprecision(3) << Options.GetOptWFac() << endl;
+        }
         vout << "# SVD rcond             : " << setprecision(3) << Options.GetOptRCond() << endl;
     } else {
         ES_ERROR("not implemented method");
@@ -181,6 +193,7 @@ bool CABFIntegrate::Run(void)
 
     // print header
     if((Options.GetOptNoHeader() == false) && (Options.GetOptOutputFormat() != "fes")) {
+        fprintf(OutputFile,"# PMFLib version        : %s\n",LibBuildVersion_PMF);
         fprintf(OutputFile,"# data integrated by    : ");
         if(Options.GetOptMethod() == "rfd" ) {
             fprintf(OutputFile,"RFD (reverse finite differences via csparse)\n");
@@ -205,13 +218,25 @@ bool CABFIntegrate::Run(void)
             fprintf(OutputFile,"# SVD rcond             : %5.3f\n", Options.GetOptRCond());
             }
         } else if ( Options.GetOptMethod() == "rbf" ){
+            if( Options.IsOptRFac2Set() ){
+            fprintf(OutputFile,"# Reduction factor rfac : %5.3f x %5.3f\n", Options.GetOptRFac(), Options.GetOptRFac2());
+            } else {
             fprintf(OutputFile,"# Reduction factor rfac : %5.3f\n", Options.GetOptRFac());
+            }
+            if( Options.IsOptWFac2Set() ){
+            fprintf(OutputFile,"# Width factor wfac     : %5.3f X %5.3f\n", Options.GetOptWFac(), Options.GetOptWFac2());
+            } else {
             fprintf(OutputFile,"# Width factor wfac     : %5.3f\n", Options.GetOptWFac());
+            }
             fprintf(OutputFile,"# SVD rcond             : %5.3f\n", Options.GetOptRCond());
             fprintf(OutputFile,"# RBF overhang          : %d\n", Options.GetOptOverhang());
         } else if ( Options.GetOptMethod() == "gpr"  ) {
             fprintf(OutputFile,"# SigmaF2               : %5.3f\n", Options.GetOptSigmaF2());
+            if( Options.IsOptWFac2Set() ){
+            fprintf(OutputFile,"# Width factor wfac     : %5.3f X %5.3f\n", Options.GetOptWFac(), Options.GetOptWFac2());
+            } else {
             fprintf(OutputFile,"# Width factor wfac     : %5.3f\n", Options.GetOptWFac());
+            }
             fprintf(OutputFile,"# SVD rcond             : %5.3f\n", Options.GetOptRCond());
         } else {
             ES_ERROR("not implemented method");
@@ -264,6 +289,10 @@ bool CABFIntegrate::Run(void)
         fes.AdaptErrorsToGlobalMinimum();
 
         vout << "   Done" << endl;
+    }
+
+    if( Options.GetOptUnsampledAsMaxE() ){
+        fes.AdaptUnsampledToMaxEnergy();
     }
 
 // print result ---------------------------------
@@ -507,6 +536,7 @@ bool CABFIntegrate::Integrate(CABFAccumulator&accumulator, CEnergySurface& fes)
         integrator.SetRCond(Options.GetOptRCond());
         integrator.SetSigmaF2(Options.GetOptSigmaF2());
         integrator.SetIncludeError(Options.GetOptWithError());
+        integrator.SetNoEnergy(Options.GetOptNoEnergy());
 
         if( Options.GetOptLAMethod() == "svd" ){
             integrator.SetINVMehod(EGPRINV_SVD);

@@ -96,6 +96,9 @@ public:
     /// adapt errors for energy global minimum
     void AdaptErrorsToGlobalMinimum(void);
 
+    /// set unsampled region to max energy from sampled region
+    void AdaptUnsampledToMaxEnergy(void);
+
 // operators ------------------------------------------------------------------
     /// add energy surface
     void operator+=(const CEnergySurface& source);

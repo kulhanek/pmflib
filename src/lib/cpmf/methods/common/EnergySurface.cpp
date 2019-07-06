@@ -265,6 +265,30 @@ void CEnergySurface::AdaptErrorsToGlobalMinimum(void)
     }
 }
 
+//------------------------------------------------------------------------------
+
+void CEnergySurface::AdaptUnsampledToMaxEnergy(void)
+{
+    double maxe = 0.0;
+    bool   first = true;
+
+    // find maximum in sampled region
+    for(int k=0; k < TotNPoints; k++) {
+        if( Samples[k] <= 0 ) continue; // skip unsampled
+        if( (maxe < Energy[k]) || (first == true) ){
+            maxe = Energy[k];
+            first = false;
+        }
+    }
+
+    // adapt unsampled region
+    for(int k=0; k < TotNPoints; k++) {
+        if( Samples[k] <= 0 ){
+            Energy[k] = maxe;
+        }
+    }
+}
+
 //==============================================================================
 //------------------------------------------------------------------------------
 //==============================================================================

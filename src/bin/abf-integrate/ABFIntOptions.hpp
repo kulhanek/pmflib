@@ -81,8 +81,10 @@ public:
     CSO_OPT(int,Overhang)
     CSO_OPT(bool,Periodicity)
     CSO_OPT(bool,WithError)
+    CSO_OPT(bool,NoEnergy)
     CSO_OPT(CSmallString,OutputFormat)
     CSO_OPT(bool,PrintAll)
+    CSO_OPT(bool,UnsampledAsMaxE)
     CSO_OPT(bool,NoHeader)
     CSO_OPT(CSmallString,IXFormat)
     CSO_OPT(CSmallString,OEFormat)
@@ -264,6 +266,15 @@ public:
                 NULL,                           /* parametr name */
                 "Integrate free energy and try to estimate its error.")   /* option description */
     //----------------------------------------------------------------------
+    CSO_MAP_OPT(bool,                           /* option type */
+                NoEnergy,                        /* option name */
+                false,                          /* default value */
+                false,                          /* is option mandatory */
+                0,                           /* short option name */
+                "noenergy",                      /* long option name */
+                NULL,                           /* parametr name */
+                "GPR: Skip calculation of energy and errors (it can save some time when only logML is required).")   /* option description */
+    //----------------------------------------------------------------------
     CSO_MAP_OPT(CSmallString,                           /* option type */
                 OutputFormat,                        /* option name */
                 "gnuplot",                          /* default value */
@@ -281,6 +292,15 @@ public:
                 "printall",                      /* long option name */
                 NULL,                           /* parametr name */
                 "Print results for all bins even if not properly sampled.")   /* option description */
+    //----------------------------------------------------------------------
+    CSO_MAP_OPT(bool,                           /* option type */
+                UnsampledAsMaxE,                        /* option name */
+                false,                          /* default value */
+                false,                          /* is option mandatory */
+                0,                           /* short option name */
+                "unsampledasmax",                      /* long option name */
+                NULL,                           /* parametr name */
+                "Set energy values in unsampled region to maximum energy from sampled region.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(bool,                           /* option type */
                 NoHeader,                        /* option name */
