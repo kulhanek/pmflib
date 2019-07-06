@@ -185,12 +185,12 @@ public:
     //----------------------------------------------------------------------
     CSO_MAP_OPT(double,                           /* option type */
                 RCond,                        /* option name */
-                -1.0,                          /* default value */
+                1e-6,                          /* default value */
                 false,                          /* is option mandatory */
                 'r',                           /* short option name */
                 "rcond",                      /* long option name */
                 "NUMBER",                           /* parametr name */
-                "RFD2+RBF+GPR: Rank condition for SVD. Default value means computer precision. But, it is recommended to use value of 1e-5 or 1-e6 for higher numerical stability of integration.")   /* option description */
+                "RFD2+RBF+GPR: Rank condition for SVD. Used value must be carefully tested. Calculation at computer precision is requested with -1 (not recommended).")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(double,                           /* option type */
                 RFac,                        /* option name */
