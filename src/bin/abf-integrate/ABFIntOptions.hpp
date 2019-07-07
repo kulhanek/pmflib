@@ -194,7 +194,7 @@ public:
     //----------------------------------------------------------------------
     CSO_MAP_OPT(double,                           /* option type */
                 RFac,                        /* option name */
-                3.0,                          /* default value */
+                1.0,                          /* default value */
                 false,                          /* is option mandatory */
                 't',                           /* short option name */
                 "rfac",                      /* long option name */
@@ -212,7 +212,7 @@ public:
     //----------------------------------------------------------------------
     CSO_MAP_OPT(double,                           /* option type */
                 WFac,                        /* option name */
-                2.0,                          /* default value */
+                3.0,                          /* default value */
                 false,                          /* is option mandatory */
                 'w',                           /* short option name */
                 "wfac",                      /* long option name */
