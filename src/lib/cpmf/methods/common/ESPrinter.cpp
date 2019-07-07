@@ -221,7 +221,9 @@ void CESPrinter::PrintPMF_FES(FILE* fout)
 // 10  format(A3,1X,I3)
 
 // write FES header ------------------
-    if(fprintf(fout,"FES V1 %3d\n",EnergySurface->GetNumberOfCoords()) <= 0) {
+    int flag = 0;
+    if( IncludeError ) flag = 1;
+    if(fprintf(fout,"FES V2 %3d %d\n",EnergySurface->GetNumberOfCoords(),flag) <= 0) {
         CSmallString error;
         error << "unable to write header";
         RUNTIME_ERROR(error);
@@ -248,7 +250,7 @@ void CESPrinter::PrintPMF_FES(FILE* fout)
         }
     }
 
-// FES energies =================================================================
+// FES energies ================================================================
 
 // 40  format(4(E19.11,1X))
     int counter = 0;
@@ -262,6 +264,23 @@ void CESPrinter::PrintPMF_FES(FILE* fout)
         counter++;
     }
     if(counter % 4 != 0) fprintf(fout,"\n");
+
+// FES error ===================================================================
+
+    if( IncludeError ) {
+    // 40  format(4(E19.11,1X))
+        int counter = 0;
+        for(int i = 0; i < EnergySurface->GetNumberOfPoints(); i++) {
+            if(fprintf(fout,"%19.11E ",EnergySurface->GetError(i)) <= 0) {
+                CSmallString error;
+                error << "unable to write error for point " << i;
+                RUNTIME_ERROR(error);
+            }
+            if(counter % 4 == 3) fprintf(fout,"\n");
+            counter++;
+        }
+        if(counter % 4 != 0) fprintf(fout,"\n");
+    }
 }
 
 //==============================================================================

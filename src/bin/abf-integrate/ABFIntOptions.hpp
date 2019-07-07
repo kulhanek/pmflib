@@ -65,6 +65,7 @@ public:
     CSO_ARG(CSmallString,FEOutputName)
     // options ------------------------------
     CSO_OPT(int,Limit)
+    CSO_OPT(bool,SkipFFTest)
     CSO_OPT(double,NCorr)
     CSO_OPT(double,EnergyLimit)
     CSO_OPT(double,Offset)
@@ -117,6 +118,15 @@ public:
                 "limit",                      /* long option name */
                 "NUMBER",                           /* parametr name */
                 "Only bins containing more samples than NUMBER are considered as properly sampled.")   /* option description */
+    //----------------------------------------------------------------------
+    CSO_MAP_OPT(bool,                           /* option type */
+                SkipFFTest,                        /* option name */
+                false,                          /* default value */
+                false,                          /* is option mandatory */
+                0,                           /* short option name */
+                "skipfftest",                      /* long option name */
+                NULL,                           /* parametr name */
+                "Skip flood fill test for discountinous regions.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(double,                           /* option type */
                 NCorr,                        /* option name */

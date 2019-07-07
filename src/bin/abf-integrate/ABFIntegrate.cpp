@@ -174,13 +174,11 @@ int CABFIntegrate::Init(int argc,char* argv[])
 
 bool CABFIntegrate::Run(void)
 {
-   CABFAccumulator accumulator;
-
 // load accumulator
     vout << endl;
     vout << "1) Loading ABF accumulator: " << Options.GetArgABFAccuName() << endl;
     try {
-        accumulator.Load(InputFile);
+        Accumulator.Load(InputFile);
     } catch(...) {
         ES_ERROR("unable to load the input ABF accumulator file");
         return(false);
@@ -188,8 +186,9 @@ bool CABFIntegrate::Run(void)
     vout << "   Done" << endl;
 
     // print CVS info
-    accumulator.PrintCVSInfo(vout);
-    accumulator.SetNCorr(Options.GetOptNCorr());
+    Accumulator.PrintCVSInfo(vout);
+    Accumulator.SetNCorr(Options.GetOptNCorr());
+    FES.Allocate(&Accumulator);
 
     // print header
     if((Options.GetOptNoHeader() == false) && (Options.GetOptOutputFormat() != "fes")) {
@@ -245,54 +244,59 @@ bool CABFIntegrate::Run(void)
         fprintf(OutputFile,"# Sample limit          : %d\n",Options.GetOptLimit());
         fprintf(OutputFile,"# Energy limit          : %f\n",Options.GetOptEnergyLimit());
         fprintf(OutputFile,"# Number of corr. sam.  : %5.3f\n",Options.GetOptNCorr());
-        fprintf(OutputFile,"# Number of coordinates : %d\n",accumulator.GetNumberOfCoords());
-        fprintf(OutputFile,"# Total number of bins  : %d\n",accumulator.GetNumberOfBins());
+        fprintf(OutputFile,"# Number of coordinates : %d\n",Accumulator.GetNumberOfCoords());
+        fprintf(OutputFile,"# Total number of bins  : %d\n",Accumulator.GetNumberOfBins());
     }
 
 // prepare accumulator --------------------------
     vout << endl;
     vout << "2) Preparing ABF accumulator for integration (sampling limit)"<< endl;
-    PrepareAccumulatorI(accumulator);
+    PrepareAccumulatorI();
+    if( ! Options.GetOptSkipFFTest() ){
+        FloodFillTest();
+    }
+    PrintSampledStat();
     vout << "   Done" << endl;
-
-    CEnergySurface     fes;
-    fes.Allocate(&accumulator);
 
     if( Options.GetOptEnergyLimit() > 0.0 ){
         vout << endl;
         vout << "3) ABF accumulator integration (" << Options.GetOptEcutMethod() << ")" << endl;
-        if( IntegrateForEcut(accumulator,fes) == false ) return(false);
+        if( IntegrateForEcut() == false ) return(false);
 
         vout << endl;
         vout << "2) Preparing ABF accumulator for integration (energy limit)"<< endl;
-        PrepareAccumulatorII(accumulator,fes);
+        PrepareAccumulatorII();
+        if( ! Options.GetOptSkipFFTest() ){
+            FloodFillTest();
+        }
+        PrintSampledStat();
         vout << "   Done" << endl;
 
-        fes.Clear();
+        FES.Clear();
     }
 
 // integrate data ------------------------------
     vout << endl;
     vout << "3) ABF accumulator integration (" << Options.GetOptMethod() << ")" << endl;
-    if( Integrate(accumulator,fes) == false ) return(false);
+    if( Integrate() == false ) return(false);
     vout << "   Done" << endl;
 
  // apply offset
-    fes.ApplyOffset(Options.GetOptOffset() - fes.GetGlobalMinimumValue());
+    FES.ApplyOffset(Options.GetOptOffset() - FES.GetGlobalMinimumValue());
 
     if( (Options.GetOptWithError()) && (Options.GetOptMethod() != "gpr") ){
         vout << endl;
         vout << "3) ABF accumulator integration (errors)"<< endl;
 
-        if( IntegrateErrors(accumulator,fes) == false ) return(false);
+        if( IntegrateErrors() == false ) return(false);
 
-        fes.AdaptErrorsToGlobalMinimum();
+        FES.AdaptErrorsToGlobalMinimum();
 
         vout << "   Done" << endl;
     }
 
     if( Options.GetOptUnsampledAsMaxE() ){
-        fes.AdaptUnsampledToMaxEnergy();
+        FES.AdaptUnsampledToMaxEnergy();
     }
 
 // print result ---------------------------------
@@ -319,7 +323,7 @@ bool CABFIntegrate::Run(void)
     }
 
     printer.SetIncludeError(Options.GetOptWithError());
-    printer.SetPrintedES(&fes);
+    printer.SetPrintedES(&FES);
 
     try {
         printer.Print(OutputFile);
@@ -336,7 +340,7 @@ bool CABFIntegrate::Run(void)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-bool CABFIntegrate::IntegrateForEcut(CABFAccumulator&accumulator, CEnergySurface& fes)
+bool CABFIntegrate::IntegrateForEcut(void)
 {
     if(Options.GetOptEcutMethod() == "rfd" ) {
         CABFIntegratorRFD   integrator;
@@ -354,8 +358,8 @@ bool CABFIntegrate::IntegrateForEcut(CABFAccumulator&accumulator, CEnergySurface
             }
         }
 
-        integrator.SetInputABFAccumulator(&accumulator);
-        integrator.SetOutputFESurface(&fes);
+        integrator.SetInputABFAccumulator(&Accumulator);
+        integrator.SetOutputFESurface(&FES);
 
         if(integrator.Integrate(vout,false) == false) {
             ES_ERROR("unable to integrate ABF accumulator");
@@ -380,8 +384,8 @@ bool CABFIntegrate::IntegrateForEcut(CABFAccumulator&accumulator, CEnergySurface
             }
         }
 
-        integrator.SetInputABFAccumulator(&accumulator);
-        integrator.SetOutputFESurface(&fes);
+        integrator.SetInputABFAccumulator(&Accumulator);
+        integrator.SetOutputFESurface(&FES);
 
         if(integrator.Integrate(vout,false) == false) {
             ES_ERROR("unable to integrate ABF accumulator");
@@ -409,8 +413,8 @@ bool CABFIntegrate::IntegrateForEcut(CABFAccumulator&accumulator, CEnergySurface
             }
         }
 
-        integrator.SetInputABFAccumulator(&accumulator);
-        integrator.SetOutputFESurface(&fes);
+        integrator.SetInputABFAccumulator(&Accumulator);
+        integrator.SetOutputFESurface(&FES);
 
         if(integrator.Integrate(vout,false) == false) {
             ES_ERROR("unable to integrate ABF accumulator");
@@ -437,8 +441,8 @@ bool CABFIntegrate::IntegrateForEcut(CABFAccumulator&accumulator, CEnergySurface
             }
         }
 
-        integrator.SetInputABFAccumulator(&accumulator);
-        integrator.SetOutputFESurface(&fes);
+        integrator.SetInputABFAccumulator(&Accumulator);
+        integrator.SetOutputFESurface(&FES);
 
         if(integrator.Integrate(vout) == false) {
             ES_ERROR("unable to integrate ABF accumulator");
@@ -453,7 +457,7 @@ bool CABFIntegrate::IntegrateForEcut(CABFAccumulator&accumulator, CEnergySurface
 
 //------------------------------------------------------------------------------
 
-bool CABFIntegrate::Integrate(CABFAccumulator&accumulator, CEnergySurface& fes)
+bool CABFIntegrate::Integrate()
 {
     if(Options.GetOptMethod() == "rfd" ) {
         CABFIntegratorRFD   integrator;
@@ -469,8 +473,8 @@ bool CABFIntegrate::Integrate(CABFAccumulator&accumulator, CEnergySurface& fes)
             INVALID_ARGUMENT("algorithm - not implemented");
         }
 
-        integrator.SetInputABFAccumulator(&accumulator);
-        integrator.SetOutputFESurface(&fes);
+        integrator.SetInputABFAccumulator(&Accumulator);
+        integrator.SetOutputFESurface(&FES);
 
         if(integrator.Integrate(vout,false) == false) {
             ES_ERROR("unable to integrate ABF accumulator");
@@ -494,8 +498,8 @@ bool CABFIntegrate::Integrate(CABFAccumulator&accumulator, CEnergySurface& fes)
             INVALID_ARGUMENT("algorithm - not implemented");
         }
 
-        integrator.SetInputABFAccumulator(&accumulator);
-        integrator.SetOutputFESurface(&fes);
+        integrator.SetInputABFAccumulator(&Accumulator);
+        integrator.SetOutputFESurface(&FES);
 
         if(integrator.Integrate(vout,false) == false) {
             ES_ERROR("unable to integrate ABF accumulator");
@@ -521,8 +525,8 @@ bool CABFIntegrate::Integrate(CABFAccumulator&accumulator, CEnergySurface& fes)
             INVALID_ARGUMENT("algorithm - not implemented");
         }
 
-        integrator.SetInputABFAccumulator(&accumulator);
-        integrator.SetOutputFESurface(&fes);
+        integrator.SetInputABFAccumulator(&Accumulator);
+        integrator.SetOutputFESurface(&FES);
 
         if(integrator.Integrate(vout,false) == false) {
             ES_ERROR("unable to integrate ABF accumulator");
@@ -548,8 +552,8 @@ bool CABFIntegrate::Integrate(CABFAccumulator&accumulator, CEnergySurface& fes)
             INVALID_ARGUMENT("algorithm - not implemented");
         }
 
-        integrator.SetInputABFAccumulator(&accumulator);
-        integrator.SetOutputFESurface(&fes);
+        integrator.SetInputABFAccumulator(&Accumulator);
+        integrator.SetOutputFESurface(&FES);
 
         if(integrator.Integrate(vout) == false) {
             ES_ERROR("unable to integrate ABF accumulator");
@@ -564,7 +568,7 @@ bool CABFIntegrate::Integrate(CABFAccumulator&accumulator, CEnergySurface& fes)
 
 //------------------------------------------------------------------------------
 
-bool CABFIntegrate::IntegrateErrors(CABFAccumulator&accumulator, CEnergySurface& fes)
+bool CABFIntegrate::IntegrateErrors(void)
 {
     if(Options.GetOptMethod() == "rfd" ) {
         CABFIntegratorRFD   integrator;
@@ -580,8 +584,8 @@ bool CABFIntegrate::IntegrateErrors(CABFAccumulator&accumulator, CEnergySurface&
             INVALID_ARGUMENT("algorithm - not implemented");
         }
 
-        integrator.SetInputABFAccumulator(&accumulator);
-        integrator.SetOutputFESurface(&fes);
+        integrator.SetInputABFAccumulator(&Accumulator);
+        integrator.SetOutputFESurface(&FES);
 
         if(integrator.Integrate(vout,true) == false) {
             ES_ERROR("unable to integrate ABF accumulator");
@@ -605,8 +609,8 @@ bool CABFIntegrate::IntegrateErrors(CABFAccumulator&accumulator, CEnergySurface&
             INVALID_ARGUMENT("algorithm - not implemented");
         }
 
-        integrator.SetInputABFAccumulator(&accumulator);
-        integrator.SetOutputFESurface(&fes);
+        integrator.SetInputABFAccumulator(&Accumulator);
+        integrator.SetOutputFESurface(&FES);
 
         if(integrator.Integrate(vout,true) == false) {
             ES_ERROR("unable to integrate ABF accumulator");
@@ -632,8 +636,8 @@ bool CABFIntegrate::IntegrateErrors(CABFAccumulator&accumulator, CEnergySurface&
             INVALID_ARGUMENT("algorithm - not implemented");
         }
 
-        integrator.SetInputABFAccumulator(&accumulator);
-        integrator.SetOutputFESurface(&fes);
+        integrator.SetInputABFAccumulator(&Accumulator);
+        integrator.SetOutputFESurface(&FES);
 
         if(integrator.Integrate(vout,true) == false) {
             ES_ERROR("unable to integrate ABF accumulator");
@@ -655,23 +659,13 @@ bool CABFIntegrate::IntegrateErrors(CABFAccumulator&accumulator, CEnergySurface&
 // this part performs following tasks:
 //    a) bins with number of samples <= limit will be set to zero
 
-void CABFIntegrate::PrepareAccumulatorI(CABFAccumulator& accumulator)
+void CABFIntegrate::PrepareAccumulatorI(void)
 {
-    double sampled = 0.0;
-    double maxbins = 0.0;
-    for(int ibin=0; ibin < accumulator.GetNumberOfBins(); ibin++) {
-        maxbins++;
+    for(int ibin=0; ibin < Accumulator.GetNumberOfBins(); ibin++) {
         // erase datapoints not properly sampled
-        if( accumulator.GetNumberOfABFSamples(ibin) <= Options.GetOptLimit() ) {
-            accumulator.SetNumberOfABFSamples(ibin,0);
-        } else {
-            sampled++;
+        if( Accumulator.GetNumberOfABFSamples(ibin) <= Options.GetOptLimit() ) {
+            Accumulator.SetNumberOfABFSamples(ibin,0);
         }
-    }
-
-    // calculate sampled area
-    if( maxbins > 0 ){
-        vout << "   Sampled area: " << setw(5) << setprecision(1) << fixed << sampled/maxbins*100 <<"%" << endl;
     }
 }
 
@@ -680,27 +674,149 @@ void CABFIntegrate::PrepareAccumulatorI(CABFAccumulator& accumulator)
 // this part performs following tasks:
 //    a) erase data points with large energy
 
-void CABFIntegrate::PrepareAccumulatorII(CABFAccumulator& accumulator,CEnergySurface& fes)
+void CABFIntegrate::PrepareAccumulatorII(void)
 {
-    double sampled = 0.0;
-    double maxbins = 0.0;
-    for(int ibin=0; ibin < accumulator.GetNumberOfBins(); ibin++) {
-        maxbins++;
-
-        if( accumulator.GetNumberOfABFSamples(ibin) > Options.GetOptLimit() ) {
+    // filter by energy
+    for(int ibin=0; ibin < Accumulator.GetNumberOfBins(); ibin++) {
+        if( Accumulator.GetNumberOfABFSamples(ibin) > Options.GetOptLimit() ) {
             // consider only properly sampled data points
-            if( fes.GetEnergy(ibin) > Options.GetOptEnergyLimit() ){
+            if( FES.GetEnergy(ibin) > Options.GetOptEnergyLimit() ){
                 // erase datapoints with too large energy
-                accumulator.SetNumberOfABFSamples(ibin,0);
-            } else {
-                sampled++;
+                Accumulator.SetNumberOfABFSamples(ibin,0);
+            }
+        }
+    }
+}
+
+//------------------------------------------------------------------------------
+
+void CABFIntegrate::PrintSampledStat(void)
+{
+    // calculate sampled area
+    double maxbins = Accumulator.GetNumberOfBins();
+    int    sampled = 0;
+    for(int ibin=0; ibin < Accumulator.GetNumberOfBins(); ibin++) {
+        if( Accumulator.GetNumberOfABFSamples(ibin) > 0 ) {
+            sampled++;
+        }
+    }
+    if( maxbins > 0 ){
+        vout << "   Sampled area: " << setw(5) << setprecision(1) << fixed << sampled/maxbins*100 <<"%" << endl;
+    }
+}
+
+//------------------------------------------------------------------------------
+
+void CABFIntegrate::FloodFillTest(void)
+{
+    vout << "   Searching for discontinuous regions ..." << endl;
+    int seedid = 1;
+
+    FFSeeds.CreateVector(Accumulator.GetNumberOfBins());
+    FFSeeds.SetZero();
+    IPos.CreateVector(Accumulator.GetNumberOfCoords());
+    TPos.CreateVector(Accumulator.GetNumberOfCoords());
+
+    double maxbins = Accumulator.GetNumberOfBins();
+    int    maxseedid = 0;
+    int    maxsampled = 0;
+    bool   first = true;
+
+    while( InstallNewSeed(seedid) ){
+        int sampled = 1;    // for initial seed set by InstallNewSeed
+        int newsamples = 0;
+
+        while( (newsamples = FillSeed(seedid)) > 0 ){
+            sampled += newsamples;
+        }
+
+        if( maxbins > 0 ){
+            vout << "   Region: " << setw(6) << seedid << " - sampled area: "
+                 << setw(6) << sampled << " / " << (int)maxbins << " (" << setw(5) << setprecision(1) << fixed << sampled/maxbins*100 <<"%)" << endl;
+        }
+
+        if( first || (maxsampled < sampled) ){
+            first = false;
+            maxsampled = sampled;
+            maxseedid = seedid;
+        }
+
+        seedid++;
+    }
+    seedid--;
+
+    // quit if one or none region
+    if( seedid <= 1 ){
+        vout << "   All is continuous." << endl;
+        return;
+    }
+
+    vout << "   Clearing all except region: " << setw(3) << maxseedid <<  endl;
+
+    for(int ibin=0; ibin < Accumulator.GetNumberOfBins(); ibin++) {
+        if( FFSeeds[ibin] != maxseedid ) {
+            Accumulator.SetNumberOfABFSamples(ibin,0);
+        }
+    }
+}
+
+//------------------------------------------------------------------------------
+
+bool CABFIntegrate::InstallNewSeed(int seedid)
+{
+    for(int ibin=0; ibin < Accumulator.GetNumberOfBins(); ibin++) {
+        if( (FFSeeds[ibin] == 0) && ( Accumulator.GetNumberOfABFSamples(ibin) > 0 ) ) {
+            FFSeeds[ibin] = seedid;
+            return(true);
+        }
+    }
+
+    return(false);
+}
+
+//------------------------------------------------------------------------------
+
+int CABFIntegrate::FillSeed(int seedid)
+{
+    int newsamples = 0;
+    int ndir = 1;
+    for(int j=0; j < Accumulator.GetNumberOfCoords(); j++){
+        ndir *= 3;
+    }
+
+    for(int ibin=0; ibin < Accumulator.GetNumberOfBins(); ibin++) {
+        if( Accumulator.GetNumberOfABFSamples(ibin) <= 0 ) continue; // skip unsampled regions
+        if( FFSeeds[ibin] != seedid ) continue; // skip different regions
+
+        // convert to ipont
+        Accumulator.GetIPoint(ibin,IPos);
+
+        // in each direction
+        for(int j=0; j < ndir; j++){
+            GetTPoint(IPos,j,TPos);
+            int tbin = Accumulator.GetGlobalIndex(TPos);
+            if( tbin >= 0 ){
+                if( FFSeeds[tbin] == 0 ){
+                    if( Accumulator.GetNumberOfABFSamples(tbin) > 0 ){
+                        FFSeeds[tbin] = seedid;
+                        newsamples++;
+                    }
+                }
             }
         }
     }
 
-    // calculate sampled area
-    if( maxbins > 0 ){
-        vout << "   Sampled area: " << setw(5) << setprecision(1) << fixed << sampled/maxbins*100 <<"%" << endl;
+    return(newsamples);
+}
+
+//------------------------------------------------------------------------------
+
+void CABFIntegrate::GetTPoint(CSimpleVector<int>& ipos,int d,CSimpleVector<int>& tpos)
+{
+    for(int k=Accumulator.GetNumberOfCoords()-1; k >= 0; k--) {
+        int ibin = d % 3 - 1;
+        tpos[k] = ibin + ipos[k];
+        d = d / 3;
     }
 }
 

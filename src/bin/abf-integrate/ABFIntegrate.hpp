@@ -51,18 +51,28 @@ private:
     CABFIntOptions      Options;
     CStdIOFile          InputFile;
     CStdIOFile          OutputFile;
+    CABFAccumulator     Accumulator;
+    CEnergySurface      FES;
     CSmallTimeAndDate   StartTime;
+    CSimpleVector<int>  FFSeeds;
+    CSimpleVector<int>  IPos;
+    CSimpleVector<int>  TPos;
 
     // output ------------------------------------
     CTerminalStr        Console;
     CVerboseStr         vout;
 
     /// prepare accumulator
-    void PrepareAccumulatorI(CABFAccumulator& accumulator);
-    void PrepareAccumulatorII(CABFAccumulator& accumulator,CEnergySurface& fes);
-    bool IntegrateForEcut(CABFAccumulator&accumulator, CEnergySurface& fes);
-    bool Integrate(CABFAccumulator&accumulator, CEnergySurface& fes);
-    bool IntegrateErrors(CABFAccumulator&accumulator, CEnergySurface& fes);
+    void PrepareAccumulatorI(void);
+    void PrepareAccumulatorII(void);
+    void PrintSampledStat(void);
+    void FloodFillTest(void);
+    bool InstallNewSeed(int seedid);
+    int  FillSeed(int seedid);
+    void GetTPoint(CSimpleVector<int>& ipos,int d,CSimpleVector<int>& tpos);
+    bool IntegrateForEcut(void);
+    bool Integrate(void);
+    bool IntegrateErrors(void);
 };
 
 //------------------------------------------------------------------------------

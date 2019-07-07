@@ -665,6 +665,8 @@ int CABFAccumulator::GetGlobalIndex(const CSimpleVector<int>& position) const
 {
     int glbindex = 0;
     for(int i=0; i < NCoords; i++) {
+        if( position[i] < 0 ) return(-1);
+        if( position[i] >= (int)Sizes[i].GetNumberOfBins() ) return(-1);
         glbindex = glbindex*Sizes[i].GetNumberOfBins() + position[i];
     }
     return(glbindex);
