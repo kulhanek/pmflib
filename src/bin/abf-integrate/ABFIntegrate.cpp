@@ -139,6 +139,7 @@ int CABFIntegrate::Init(int argc,char* argv[])
     } else {
         vout << "# Sampling limit        : " << Options.GetOptLimit() << endl;
     }
+        vout << "# Skip flood fill test  : " << bool_to_str(Options.GetOptNoHeader()) << endl;
     if(Options.GetOptEnergyLimit() == -1) {
         vout << "# Energy limit          : not applied" << endl;
     } else {
@@ -242,6 +243,7 @@ bool CABFIntegrate::Run(void)
         }
 
         fprintf(OutputFile,"# Sample limit          : %d\n",Options.GetOptLimit());
+        fprintf(OutputFile,"# Skip flood fill test  : %s\n", bool_to_str(Options.GetOptNoHeader()));
         fprintf(OutputFile,"# Energy limit          : %f\n",Options.GetOptEnergyLimit());
         fprintf(OutputFile,"# Number of corr. sam.  : %5.3f\n",Options.GetOptNCorr());
         fprintf(OutputFile,"# Number of coordinates : %d\n",Accumulator.GetNumberOfCoords());
