@@ -61,8 +61,10 @@ private:
     // output ------------------------------------
     CTerminalStr        Console;
     CVerboseStr         vout;
+    CSmallString        ABFAccuName;
+    CSmallString        FEOutputName;
+    CSmallString        FullFEOutputName;
 
-    /// prepare accumulator
     void PrepareAccumulatorI(void);
     void PrepareAccumulatorII(void);
     void PrintSampledStat(void);
@@ -73,6 +75,7 @@ private:
     bool IntegrateForEcut(void);
     bool Integrate(void);
     bool IntegrateErrors(void);
+    void WriteHeader(void);
 };
 
 //------------------------------------------------------------------------------

@@ -99,6 +99,9 @@ public:
     /// set unsampled region to max energy from sampled region
     void AdaptUnsampledToMaxEnergy(void);
 
+    /// set unsampled region to provided max energy
+    void AdaptUnsampledToMaxEnergy(double maxene);
+
 // operators ------------------------------------------------------------------
     /// add energy surface
     void operator+=(const CEnergySurface& source);

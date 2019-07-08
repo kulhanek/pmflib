@@ -51,18 +51,25 @@ public:
     "The residual is difference between input mean force (derivative of the free energy) and mean force predicted by the model. "
     "<b>logML</b> is logarithm of marginal likelihood. "
     "When changing hyperparameters (wfac, rfac, sigmaf2) RMSR should be minimized (however one must be carefull with possible model overfitting) and logML should be maximized."
-
     CSO_PROG_DESC_END
 
     CSO_PROG_VERS_BEGIN
     LibBuildVersion_PMF
     CSO_PROG_VERS_END
 
+    CSO_PROG_ARGS_SHORT_DESC_BEGIN
+    "accuname fename [fullfename]"
+    CSO_PROG_ARGS_SHORT_DESC_END
+
+    CSO_PROG_ARGS_LONG_DESC_BEGIN
+    "<cyan><b>accuname</b></cyan>                   Name of file containing the ABF accumulator. If the name is '-' then the accumulator is read from the standard input.\n"
+    "<cyan><b>fename</b></cyan>                     Name of file where the resulting free energy surface will be printed. If the name is '-' then the output will be written to the standard output.\n"
+    "<cyan><b>fullfename</b></cyan>                 Optional name of file with free energy surface containing all rigions (sampled and unsampled)."
+    CSO_PROG_ARGS_LONG_DESC_END
+
 // list of all options and arguments ------------------------------------------
     CSO_LIST_BEGIN
-    // arguments ----------------------------
-    CSO_ARG(CSmallString,ABFAccuName)
-    CSO_ARG(CSmallString,FEOutputName)
+
     // options ------------------------------
     CSO_OPT(int,Limit)
     CSO_OPT(bool,SkipFFTest)
@@ -86,6 +93,7 @@ public:
     CSO_OPT(CSmallString,OutputFormat)
     CSO_OPT(bool,PrintAll)
     CSO_OPT(bool,UnsampledAsMaxE)
+    CSO_OPT(double,MaxEnergy)
     CSO_OPT(bool,NoHeader)
     CSO_OPT(CSmallString,IXFormat)
     CSO_OPT(CSmallString,OEFormat)
@@ -95,20 +103,6 @@ public:
     CSO_LIST_END
 
     CSO_MAP_BEGIN
-// description of arguments ---------------------------------------------------
-    CSO_MAP_ARG(CSmallString,                   /* argument type */
-                ABFAccuName,                          /* argument name */
-                NULL,                           /* default value */
-                true,                           /* is argument mandatory */
-                "accuname",                        /* parametr name */
-                "Name of file containing the ABF accumulator. If the name is '-' then the accumulator is read from the standard input.")   /* argument description */
-    //----------------------------------------------------------------------
-    CSO_MAP_ARG(CSmallString,                   /* argument type */
-                FEOutputName,                          /* argument name */
-                NULL,                           /* default value */
-                true,                           /* is argument mandatory */
-                "fename",                        /* parametr name */
-                "Name of file where the resulting free energy surface will be printed. If the name is '-' then the output will be written to the standard output.")   /* argument description */
 // description of options ---------------------------------------------------
     CSO_MAP_OPT(int,                           /* option type */
                 Limit,                        /* option name */
@@ -181,7 +175,7 @@ public:
                 'a',                           /* short option name */
                 "lmethod",                      /* long option name */
                 "NAME",                           /* parametr name */
-                "linear algebra method for LLS solution or matrix inversion. Supported algorithms are: default, svd (SVD - singular value decomposition), qr (QR factorization), lu (LU factorization). "
+                "Linear algebra method for LLS solution or matrix inversion. Supported algorithms are: default, svd (SVD - singular value decomposition), qr (QR factorization), lu (LU factorization). "
                 "Possible combinations are: RFD(LU,default), RFD2(QR,SVD,default), RBF(QR,SVD,default), and GPR(LU, SVD, default).")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(int,                           /* option type */
@@ -310,7 +304,16 @@ public:
                 0,                           /* short option name */
                 "unsampledasmax",                      /* long option name */
                 NULL,                           /* parametr name */
-                "Set energy values in unsampled region to maximum energy from sampled region.")   /* option description */
+                "Set energy values in unsampled region to maximum energy from sampled region or to value provided by --maxenergy.")   /* option description */
+    //----------------------------------------------------------------------
+    CSO_MAP_OPT(double,                           /* option type */
+                MaxEnergy,                        /* option name */
+                0.0,                          /* default value */
+                false,                          /* is option mandatory */
+                0,                           /* short option name */
+                "maxenergy",                      /* long option name */
+                "NUMBER",                           /* parametr name */
+                "If set, this is the energy used of unsampled regions.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(bool,                           /* option type */
                 NoHeader,                        /* option name */
@@ -369,6 +372,7 @@ public:
 
 // final operation with options ------------------------------------------------
 private:
+    virtual int CheckArguments(void);
     virtual int CheckOptions(void);
     virtual int FinalizeOptions(void);
 };

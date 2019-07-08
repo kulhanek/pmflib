@@ -28,6 +28,7 @@
 CABFIntOptions::CABFIntOptions(void)
 {
     SetShowMiniUsage(true);
+    SetAllowProgArgs(true);
 }
 
 //------------------------------------------------------------------------------
@@ -210,6 +211,27 @@ int CABFIntOptions::CheckOptions(void)
         IsError = true;
     }
 
+    if( IsOptMaxEnergySet() && (GetOptUnsampledAsMaxE() == false) ){
+        if(IsError == false) fprintf(stderr,"\n");
+        fprintf(stderr,"%s: --maxenergy without --unsampledasmax does not have any effect\n",
+                (const char*)GetProgramName());
+        IsError = true;
+    }
+
+    if(IsError == true) return(SO_OPTS_ERROR);
+    return(SO_CONTINUE);
+}
+
+//------------------------------------------------------------------------------
+
+int CABFIntOptions::CheckArguments(void)
+{
+    if( (GetNumberOfProgArgs() != 2) && (GetNumberOfProgArgs() != 3) ){
+        if(IsError == false) fprintf(stderr,"\n");
+        fprintf(stderr,"%s: two or three arguments are expected, but %d is provided\n",
+                (const char*)GetProgramName(),GetNumberOfProgArgs());
+        IsError = true;
+    }
     if(IsError == true) return(SO_OPTS_ERROR);
     return(SO_CONTINUE);
 }

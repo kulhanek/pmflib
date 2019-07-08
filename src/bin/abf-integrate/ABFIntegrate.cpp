@@ -59,6 +59,18 @@ int CABFIntegrate::Init(int argc,char* argv[])
 // should we exit or was it error?
     if(result != SO_CONTINUE) return(result);
 
+    if( (Options.GetNumberOfProgArgs() != 2) && (Options.GetNumberOfProgArgs() != 3) ){
+        ES_ERROR("two or three arguments are expected");
+        return(SO_OPTS_ERROR);
+    }
+
+    ABFAccuName = Options.GetProgArg(0);
+    FEOutputName = Options.GetProgArg(1);
+    if( Options.GetNumberOfProgArgs() == 3 ) {
+        // optional
+        FullFEOutputName = Options.GetProgArg(2);
+    }
+
 // attach verbose stream to cout and set desired verbosity level
     vout.Attach(Console);
     if( Options.GetOptVerbose() ) {
@@ -75,13 +87,13 @@ int CABFIntegrate::Init(int argc,char* argv[])
     vout << "# Version: " << LibBuildVersion_PMF << endl;
     vout << "# ==============================================================================" << endl;
 
-    if(Options.GetArgABFAccuName() != "-") {
-        vout << "# ABF accu file (in)    : " << Options.GetArgABFAccuName() << endl;
+    if( ABFAccuName != "-") {
+        vout << "# ABF accu file (in)    : " << ABFAccuName << endl;
     } else {
         vout << "# ABF accu file (in)    : - (standard input)" << endl;
     }
-    if(Options.GetArgFEOutputName() != "-") {
-        vout << "# Free energy file (out): " << Options.GetArgFEOutputName() << endl;
+    if( FEOutputName != "-") {
+        vout << "# Free energy file (out): " << FEOutputName << endl;
     } else {
         vout << "# Free energy file (out): - (standard output)" << endl;
     }
@@ -159,11 +171,11 @@ int CABFIntegrate::Init(int argc,char* argv[])
 #endif
 
     // open files -----------------------------------
-    if( InputFile.Open(Options.GetArgABFAccuName(),"r") == false ){
+    if( InputFile.Open(ABFAccuName,"r") == false ){
         ES_ERROR("unable to open input file");
         return(SO_USER_ERROR);
     }
-    if( OutputFile.Open(Options.GetArgFEOutputName(),"w") == false ){
+    if( OutputFile.Open(FEOutputName,"w") == false ){
         ES_ERROR("unable to open output file");
         return(SO_USER_ERROR);
     }
@@ -177,7 +189,7 @@ bool CABFIntegrate::Run(void)
 {
 // load accumulator
     vout << endl;
-    vout << "1) Loading ABF accumulator: " << Options.GetArgABFAccuName() << endl;
+    vout << "1) Loading ABF accumulator: " << ABFAccuName << endl;
     try {
         Accumulator.Load(InputFile);
     } catch(...) {
@@ -191,6 +203,143 @@ bool CABFIntegrate::Run(void)
     Accumulator.SetNCorr(Options.GetOptNCorr());
     FES.Allocate(&Accumulator);
 
+// prepare accumulator --------------------------
+    vout << endl;
+    vout << "2) Preparing ABF accumulator for integration (sampling limit)"<< endl;
+    PrepareAccumulatorI();
+    if( ! Options.GetOptSkipFFTest() ){
+        FloodFillTest();
+    }
+    PrintSampledStat();
+    vout << "   Done" << endl;
+
+    if( Options.GetOptEnergyLimit() > 0.0 ){
+        vout << endl;
+        vout << "3) ABF accumulator integration (" << Options.GetOptEcutMethod() << ")" << endl;
+        if( IntegrateForEcut() == false ) return(false);
+
+        vout << endl;
+        vout << "2) Preparing ABF accumulator for integration (energy limit)"<< endl;
+        PrepareAccumulatorII();
+        if( ! Options.GetOptSkipFFTest() ){
+            FloodFillTest();
+        }
+        PrintSampledStat();
+        vout << "   Done" << endl;
+
+        FES.Clear();
+    }
+
+// integrate data ------------------------------
+    vout << endl;
+    vout << "3) ABF accumulator integration (" << Options.GetOptMethod() << ")" << endl;
+    if( Integrate() == false ) return(false);
+    vout << "   Done" << endl;
+
+ // apply offset
+    FES.ApplyOffset(Options.GetOptOffset() - FES.GetGlobalMinimumValue());
+
+    if( (Options.GetOptWithError()) && (Options.GetOptMethod() != "gpr") ){
+        vout << endl;
+        vout << "3) ABF accumulator integration (errors)"<< endl;
+
+        if( IntegrateErrors() == false ) return(false);
+
+        FES.AdaptErrorsToGlobalMinimum();
+
+        vout << "   Done" << endl;
+    }
+
+    if( Options.GetOptUnsampledAsMaxE() ){
+        if( Options.IsOptMaxEnergySet()){
+            FES.AdaptUnsampledToMaxEnergy(Options.GetOptMaxEnergy());
+        } else {
+            FES.AdaptUnsampledToMaxEnergy();
+        }
+    }
+
+// print result ---------------------------------
+    vout << endl;
+    vout << "4) Writing results to file: " << FEOutputName << endl;
+    CESPrinter printer;
+
+    WriteHeader();
+
+    printer.SetXFormat(Options.GetOptIXFormat());
+    printer.SetYFormat(Options.GetOptOEFormat());
+    if(Options.GetOptOutputFormat() == "plain") {
+        printer.SetOutputFormat(EESPF_PLAIN);
+    } else if(Options.GetOptOutputFormat() == "gnuplot") {
+        printer.SetOutputFormat(EESPF_GNUPLOT);
+    } else if(Options.GetOptOutputFormat() == "fes") {
+        printer.SetOutputFormat(EESPF_PMF_FES);
+    } else {
+        INVALID_ARGUMENT("output format - not implemented");
+    }
+
+    if(Options.GetOptPrintAll()) {
+        printer.SetSampleLimit(0);
+    } else {
+        printer.SetSampleLimit(Options.GetOptLimit());
+    }
+
+    printer.SetIncludeError(Options.GetOptWithError());
+    printer.SetPrintedES(&FES);
+
+    try {
+        printer.Print(OutputFile);
+    } catch(...) {
+        ES_ERROR("unable to save the output free energy file");
+        return(false);
+    }
+    vout << "   Done" << endl;
+
+    if( Options.GetNumberOfProgArgs() == 3 ){
+        vout << endl;
+        vout << "5) Writing results to file: " << FullFEOutputName << " (full version, --printall)" << endl;
+
+        if( OutputFile.Open(FullFEOutputName,"w") == false ){
+            ES_ERROR("unable to open output file");
+            return(SO_USER_ERROR);
+        }
+
+        WriteHeader();
+
+        CESPrinter printer;
+
+        printer.SetXFormat(Options.GetOptIXFormat());
+        printer.SetYFormat(Options.GetOptOEFormat());
+        if(Options.GetOptOutputFormat() == "plain") {
+            printer.SetOutputFormat(EESPF_PLAIN);
+        } else if(Options.GetOptOutputFormat() == "gnuplot") {
+            printer.SetOutputFormat(EESPF_GNUPLOT);
+        } else if(Options.GetOptOutputFormat() == "fes") {
+            printer.SetOutputFormat(EESPF_PMF_FES);
+        } else {
+            INVALID_ARGUMENT("output format - not implemented");
+        }
+
+        // print all
+        printer.SetSampleLimit(0);
+        printer.SetIncludeError(Options.GetOptWithError());
+        printer.SetPrintedES(&FES);
+
+        try {
+            printer.Print(OutputFile);
+        } catch(...) {
+            ES_ERROR("unable to save the output free energy file");
+            return(false);
+        }
+        vout << "   Done" << endl;
+    }
+
+    return(true);
+}
+
+//------------------------------------------------------------------------------
+
+void CABFIntegrate::WriteHeader()
+{
     // print header
     if((Options.GetOptNoHeader() == false) && (Options.GetOptOutputFormat() != "fes")) {
         fprintf(OutputFile,"# PMFLib version        : %s\n",LibBuildVersion_PMF);
@@ -250,92 +399,6 @@ bool CABFIntegrate::Run(void)
         fprintf(OutputFile,"# Total number of bins  : %d\n",Accumulator.GetNumberOfBins());
     }
 
-// prepare accumulator --------------------------
-    vout << endl;
-    vout << "2) Preparing ABF accumulator for integration (sampling limit)"<< endl;
-    PrepareAccumulatorI();
-    if( ! Options.GetOptSkipFFTest() ){
-        FloodFillTest();
-    }
-    PrintSampledStat();
-    vout << "   Done" << endl;
-
-    if( Options.GetOptEnergyLimit() > 0.0 ){
-        vout << endl;
-        vout << "3) ABF accumulator integration (" << Options.GetOptEcutMethod() << ")" << endl;
-        if( IntegrateForEcut() == false ) return(false);
-
-        vout << endl;
-        vout << "2) Preparing ABF accumulator for integration (energy limit)"<< endl;
-        PrepareAccumulatorII();
-        if( ! Options.GetOptSkipFFTest() ){
-            FloodFillTest();
-        }
-        PrintSampledStat();
-        vout << "   Done" << endl;
-
-        FES.Clear();
-    }
-
-// integrate data ------------------------------
-    vout << endl;
-    vout << "3) ABF accumulator integration (" << Options.GetOptMethod() << ")" << endl;
-    if( Integrate() == false ) return(false);
-    vout << "   Done" << endl;
-
- // apply offset
-    FES.ApplyOffset(Options.GetOptOffset() - FES.GetGlobalMinimumValue());
-
-    if( (Options.GetOptWithError()) && (Options.GetOptMethod() != "gpr") ){
-        vout << endl;
-        vout << "3) ABF accumulator integration (errors)"<< endl;
-
-        if( IntegrateErrors() == false ) return(false);
-
-        FES.AdaptErrorsToGlobalMinimum();
-
-        vout << "   Done" << endl;
-    }
-
-    if( Options.GetOptUnsampledAsMaxE() ){
-        FES.AdaptUnsampledToMaxEnergy();
-    }
-
-// print result ---------------------------------
-    vout << endl;
-    vout << "4) Writing results to file: " << Options.GetArgFEOutputName() << endl;
-    CESPrinter printer;
-
-    printer.SetXFormat(Options.GetOptIXFormat());
-    printer.SetYFormat(Options.GetOptOEFormat());
-    if(Options.GetOptOutputFormat() == "plain") {
-        printer.SetOutputFormat(EESPF_PLAIN);
-    } else if(Options.GetOptOutputFormat() == "gnuplot") {
-        printer.SetOutputFormat(EESPF_GNUPLOT);
-    } else if(Options.GetOptOutputFormat() == "fes") {
-        printer.SetOutputFormat(EESPF_PMF_FES);
-    } else {
-        INVALID_ARGUMENT("output format - not implemented");
-    }
-
-    if(Options.GetOptPrintAll()) {
-        printer.SetSampleLimit(0);
-    } else {
-        printer.SetSampleLimit(Options.GetOptLimit());
-    }
-
-    printer.SetIncludeError(Options.GetOptWithError());
-    printer.SetPrintedES(&FES);
-
-    try {
-        printer.Print(OutputFile);
-    } catch(...) {
-        ES_ERROR("unable to save the output free energy file");
-        return(false);
-    }
-    vout << "   Done" << endl;
-
-    return(true);
 }
 
 //==============================================================================
