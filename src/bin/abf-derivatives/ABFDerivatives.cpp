@@ -124,6 +124,8 @@ bool CABFDerivatives::Run(void)
         return(false);
     }
 
+    Accumulator.SetNCorr(Options.GetOptNCorr());
+
 // print header
     if(Options.GetOptNoHeader() == false) {
         fprintf(OutputFile,"# derivatives\n");
