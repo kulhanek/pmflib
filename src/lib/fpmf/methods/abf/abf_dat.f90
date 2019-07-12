@@ -43,7 +43,10 @@ integer     :: feimode      ! extrapolation / interpolation mode
 integer     :: ftrjsample   ! how often save accumulator to "accumulator evolution"
 integer     :: fmask_mode   ! 0 - disable ABF mask, 1 - enable ABF mask
 logical     :: fapply_abf   ! on - apply ABF, off - do not apply ABF
-logical     :: fprint_ifc   ! print instanteous forces
+logical     :: fprint_ifc   ! T - print instanteous forces, F - do not print
+logical     :: fcache_ifc   ! T - cache ifc into memory and dump them at the end,
+                            ! F - write ifc immediatelly at each time step
+logical     :: frawifc      ! T - use raw ifc data (in internal units), F - transform them to user req. units
 
 ! linear ramp mode I (feimode .eq. 1)
 integer     :: fhramp       ! ramp size
@@ -124,7 +127,6 @@ end type ABFAccuType
 type(ABFAccuType)           :: accumulator          ! accumulated forces
 integer                     :: insidesamples
 integer                     :: outsidesamples
-
 ! ----------------------
 
 ! global variables for force calculation ---------------------------------------
@@ -148,10 +150,12 @@ real(PMFDP),allocatable     :: pxip(:)        !
 real(PMFDP),allocatable     :: pxim(:)        !
 real(PMFDP),allocatable     :: avg_values(:)  ! average values of coordinates at t - 3/2dt
 
-real(PMFDP), allocatable     :: cvaluehist0(:)    ! history of coordinate values
-real(PMFDP), allocatable     :: cvaluehist1(:)    ! history of coordinate values
-real(PMFDP), allocatable     :: cvaluehist2(:)    ! history of coordinate values
-real(PMFDP), allocatable     :: cvaluehist3(:)    ! history of coordinate values
+real(PMFDP), allocatable    :: cvaluehist0(:)   ! history of coordinate values
+real(PMFDP), allocatable    :: cvaluehist1(:)   ! history of coordinate values
+real(PMFDP), allocatable    :: cvaluehist2(:)   ! history of coordinate values
+real(PMFDP), allocatable    :: cvaluehist3(:)   ! history of coordinate values
+
+real(PMFDP), allocatable    :: ifc_cache(:,:)   ! ifc_cache(2*ncvs,fnstlim)
 
 ! gaussian process ----
 integer                     :: gpmaxsize

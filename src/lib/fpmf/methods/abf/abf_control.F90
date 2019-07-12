@@ -144,6 +144,18 @@ subroutine abf_control_read_abf(prm_fin)
         write(PMF_OUT,95) prmfile_onoff(fprint_ifc)
     end if
 
+    if(prmfile_get_logical_by_key(prm_fin,'fcache_ifc', fcache_ifc)) then
+        write(PMF_OUT,400) prmfile_onoff(fcache_ifc)
+    else
+        write(PMF_OUT,405) prmfile_onoff(fcache_ifc)
+    end if
+
+    if(prmfile_get_logical_by_key(prm_fin,'frawifc', frawifc)) then
+        write(PMF_OUT,410) prmfile_onoff(frawifc)
+    else
+        write(PMF_OUT,415) prmfile_onoff(frawifc)
+    end if
+
     select case(feimode)
         case(1)
             write(PMF_OUT,190)
@@ -266,6 +278,10 @@ subroutine abf_control_read_abf(prm_fin)
  85 format ('ftrjsample                             = ',i12,'                  (default)')
  90 format ('fprint_ifc                             = ',a12)
  95 format ('fprint_ifc                             = ',a12,'                  (default)')
+400 format ('fcache_ifc                             = ',a12)
+405 format ('fcache_ifc                             = ',a12,'                  (default)')
+410 format ('frawifc                                = ',a12)
+415 format ('frawifc                                = ',a12,'                  (default)')
 
 100 format (' >> Multiple-walkers ABF method is disabled!')
 #ifndef PMFLIB_NETWORK

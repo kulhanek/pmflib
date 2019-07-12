@@ -44,6 +44,7 @@ subroutine abf_output_open
     use abf_dat
 
     implicit none
+    integer     :: alloc_failed
     ! --------------------------------------------------------------------------
 
     call pmf_utils_open(ABF_OUT,fabfout,'R')
@@ -58,6 +59,18 @@ subroutine abf_output_open
         write(ABF_IFC,10)
         write(ABF_IFC,20)
         write(ABF_IFC,30)
+
+        if( fcache_ifc ) then
+            allocate(ifc_cache(2*NumOfABFCVs,fnstlim), stat= alloc_failed)
+
+            if( alloc_failed .ne. 0 ) then
+                call pmf_utils_exit(PMF_OUT,1, &
+                    '[ABF] Unable to allocate memory for ifc_cache!')
+            end if
+            ! clear cache
+            ifc_cache(:,:) = 0.0d0
+        end if
+
     end if
 
     return
@@ -190,9 +203,14 @@ subroutine abf_output_write_header_ifc
 
     write(ABF_IFC,10,advance='NO') '#        '
     do i=1,NumOfABFCVs
-        write(ABF_IFC,20,advance='NO') '[' // trim(ABFCVList(i)%cv%get_ulabel()) // ']'
-        ifc_unit = pmf_unit_div_units(EnergyUnit,ABFCVList(i)%cv%unit)
-        write(ABF_IFC,25,advance='NO') '[' // trim(pmf_unit_label(ifc_unit)) // ']'
+        if( frawifc ) then
+            write(ABF_IFC,20,advance='NO') '[i.u.]'
+            write(ABF_IFC,25,advance='NO') '[i.u.]'
+        else
+            write(ABF_IFC,20,advance='NO') '[' // trim(ABFCVList(i)%cv%get_ulabel()) // ']'
+            ifc_unit = pmf_unit_div_units(EnergyUnit,ABFCVList(i)%cv%unit)
+            write(ABF_IFC,25,advance='NO') '[' // trim(pmf_unit_label(ifc_unit)) // ']'
+        end if
     end do
     write(ABF_IFC,*)
 
@@ -203,6 +221,10 @@ subroutine abf_output_write_header_ifc
     end do
     write(ABF_IFC,*)
 
+    if( fcache_ifc ) then
+        write(ABF_IFC,40)
+    end if
+
     return
 
 10 format(A9)
@@ -212,6 +234,7 @@ subroutine abf_output_write_header_ifc
 25 format(1X,A20)
 30 format(1X,A15)
 35 format(1X,A20)
+40 format('# IFC accumulation is cached, data will be printed at the end at once')
 
 end subroutine abf_output_write_header_ifc
 
@@ -236,15 +259,34 @@ subroutine abf_output_write_ifc(cvs,gfx)
 
     if( .not. fprint_ifc ) return
 
-    write(ABF_IFC,10,advance='NO') fstep
-
-    do i=1,NumOfABFCVs
-        write(ABF_IFC,20,advance='NO') ABFCVList(i)%cv%get_rvalue(cvs(i))
-        ifc_unit = pmf_unit_div_units(EnergyUnit,ABFCVList(i)%cv%unit)
-        write(ABF_IFC,25,advance='NO') pmf_unit_get_rvalue(ifc_unit,gfx(i))
-    end do
-
-    write(ABF_IFC,*)
+    if( fcache_ifc ) then
+        ! write into memory cache
+        if( (fstep .le. 0) .or. (fstep .gt. fnstlim) ) return ! out of cache size
+        do i=1,NumOfABFCVs
+            if( frawifc ) then
+                ifc_cache((i-1)*2+1,fstep) = cvs(i)
+                ifc_cache((i-1)*2+2,fstep) = gfx(i)
+            else
+                ifc_cache((i-1)*2+1,fstep) = ABFCVList(i)%cv%get_rvalue(cvs(i))
+                ifc_unit = pmf_unit_div_units(EnergyUnit,ABFCVList(i)%cv%unit)
+                ifc_cache((i-1)*2+2,fstep) = pmf_unit_get_rvalue(ifc_unit,gfx(i))
+            end if
+        end do
+    else
+        ! direct write into ABF_IFC
+        write(ABF_IFC,10,advance='NO') fstep
+        do i=1,NumOfABFCVs
+            if( frawifc ) then
+                write(ABF_IFC,20,advance='NO') cvs(i)
+                write(ABF_IFC,25,advance='NO') gfx(i)
+            else
+                write(ABF_IFC,20,advance='NO') ABFCVList(i)%cv%get_rvalue(cvs(i))
+                ifc_unit = pmf_unit_div_units(EnergyUnit,ABFCVList(i)%cv%unit)
+                write(ABF_IFC,25,advance='NO') pmf_unit_get_rvalue(ifc_unit,gfx(i))
+            end if
+        end do
+        write(ABF_IFC,*)
+    end if
 
     return
 
@@ -253,6 +295,50 @@ subroutine abf_output_write_ifc(cvs,gfx)
 25 format(1X,F20.8)
 
 end subroutine abf_output_write_ifc
+
+!===============================================================================
+! Subroutine:  abf_output_dump_ifc
+!===============================================================================
+
+subroutine abf_output_dump_ifc()
+
+    use pmf_constants
+    use pmf_dat
+    use abf_dat
+    use pmf_cvs
+
+    implicit none
+    integer         :: i,j
+    type(UnitType)  :: ifc_unit
+    ! --------------------------------------------------------------------------
+
+    if( .not. fprint_ifc ) return
+    if( .not. fcache_ifc ) return
+
+    ! 4 - do to numerical integration of ABF forces
+    do j=4,fnstlim
+        ! write into ABF_IFC
+        write(ABF_IFC,10,advance='NO') j
+        do i=1,NumOfABFCVs
+            if( frawifc ) then
+                write(ABF_IFC,20,advance='NO') ifc_cache((i-1)*2+1,j)
+                write(ABF_IFC,25,advance='NO') ifc_cache((i-1)*2+2,j)
+            else
+                write(ABF_IFC,20,advance='NO') ABFCVList(i)%cv%get_rvalue(ifc_cache((i-1)*2+1,j))
+                ifc_unit = pmf_unit_div_units(EnergyUnit,ABFCVList(i)%cv%unit)
+                write(ABF_IFC,25,advance='NO') pmf_unit_get_rvalue(ifc_unit,ifc_cache((i-1)*2+2,j))
+            end if
+        end do
+        write(ABF_IFC,*)
+    end do
+
+    return
+
+10 format(I9)
+20 format(1X,F15.8)
+25 format(1X,F20.8)
+
+end subroutine abf_output_dump_ifc
 
 !===============================================================================
 ! Subroutine:  abf_output_close
@@ -270,6 +356,9 @@ subroutine abf_output_close
     close(ABF_OUT)
 
     if( fprint_ifc ) then
+        if( fcache_ifc ) then
+            call abf_output_dump_ifc
+        end if
         close(ABF_IFC)
     end if
 

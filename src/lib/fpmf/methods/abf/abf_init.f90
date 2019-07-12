@@ -76,7 +76,10 @@ subroutine abf_init_dat
     ftrjsample      = 0         ! how often save accumulator to "accumulator evolution"
     fmask_mode      = 0         ! 0 - disable ABF mask, 1 - enable ABF mask
     fapply_abf      = .true.    ! on - apply ABF, off - do not apply ABF
-    fprint_ifc      = .false.
+    fprint_ifc      = .false.   ! T - print instanteous forces, F - do not print
+    fcache_ifc      = .true.    ! T - cache ifc into memory and dump them at the end,
+                                ! F - write ifc immediatelly at each time step
+    frawifc         = .true.    ! T - use raw ifc data (in internal units), F - transform them to user req. units
 
     fhramp          = 100
     fhramp_min      = 200       ! definition of linear ramp
@@ -102,7 +105,7 @@ subroutine abf_init_dat
     insidesamples   = 0
     outsidesamples  = 0
 
-    fdtx             = 0.0d0         ! time step in internal units
+    fdtx            = 0.0d0     ! time step in internal units
 
 end subroutine abf_init_dat
 
@@ -172,6 +175,9 @@ subroutine abf_init_print_header
     write(PMF_OUT,120)  ' ------------------------------------------------------'
     write(PMF_OUT,125)  ' Output file (fabfout)                   : ', trim(fabfout)
     write(PMF_OUT,130)  ' Output sampling (fsample)               : ', fsample
+    write(PMF_OUT,125)  ' Print instantenous forces (fprint_ifc)  : ', prmfile_onoff(fprint_ifc)
+    write(PMF_OUT,125)  ' Cache IFC (fcache_ifc)                  : ', prmfile_onoff(fcache_ifc)
+    write(PMF_OUT,125)  ' Print IFC in internal units (frawifc)   : ', prmfile_onoff(frawifc)
     write(PMF_OUT,120)
     write(PMF_OUT,120)  ' Trajectory output options:'
     write(PMF_OUT,120)  ' ------------------------------------------------------'
