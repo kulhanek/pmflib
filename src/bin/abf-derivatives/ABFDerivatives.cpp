@@ -204,34 +204,9 @@ bool CABFDerivatives::PrintDerivatives(void)
         }
 
         for(int i=0; i < Accumulator.GetNumberOfCoords(); i++) {
-            double value = 0.0;
-            double sigma = 0.0;
-            double error = 0.0;
-            double sum = 0.0;
-            double sum_square = 0.0;
-
-            // abf force
-            sum = Accumulator.GetABFForceSum(i,ibin);
-            sum_square = Accumulator.GetABFForceSquareSum(i,ibin);
-
-            if(nsamples > 0) {
-                // calculate average
-                value = sum / nsamples;
-                if( (Options.GetOptSigma() == true) || (Options.GetOptError() == true)  ){
-                    // calculate sigma of samples
-                    double sq = nsamples*sum_square - sum*sum;
-                    if(sq > 0) {
-                        sq = sqrt(sq) / nsamples;
-                    } else {
-                        sq = 0.0;
-                    }
-                    sigma = sq;
-                }
-                if( Options.GetOptError() == true ){
-                    // calculate error of average
-                    error = sigma / sqrt(nsamples);
-                }
-            }
+            double value = Accumulator.GetValue(i,ibin,EABF_MEAN_FORCE_VALUE);
+            double sigma = Accumulator.GetValue(i,ibin,EABF_INST_FORCE_SIGMA);
+            double error = Accumulator.GetValue(i,ibin,EABF_MEAN_FORCE_ERROR);
 
             if( (Options.GetOptItem() == 0) || (Options.GetOptItem() == i+1) ){
 
