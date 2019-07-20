@@ -138,22 +138,22 @@ subroutine abf_control_read_abf(prm_fin)
         call pmf_utils_exit(PMF_OUT,1,'ftrjsample has to be >=0')
     end if
 
-    if(prmfile_get_logical_by_key(prm_fin,'fprint_ifc', fprint_ifc)) then
-        write(PMF_OUT,90) prmfile_onoff(fprint_ifc)
+    if(prmfile_get_logical_by_key(prm_fin,'fprint_icf', fprint_icf)) then
+        write(PMF_OUT,90) prmfile_onoff(fprint_icf)
     else
-        write(PMF_OUT,95) prmfile_onoff(fprint_ifc)
+        write(PMF_OUT,95) prmfile_onoff(fprint_icf)
     end if
 
-    if(prmfile_get_logical_by_key(prm_fin,'fcache_ifc', fcache_ifc)) then
-        write(PMF_OUT,400) prmfile_onoff(fcache_ifc)
+    if(prmfile_get_logical_by_key(prm_fin,'fcache_icf', fcache_icf)) then
+        write(PMF_OUT,400) prmfile_onoff(fcache_icf)
     else
-        write(PMF_OUT,405) prmfile_onoff(fcache_ifc)
+        write(PMF_OUT,405) prmfile_onoff(fcache_icf)
     end if
 
-    if(prmfile_get_logical_by_key(prm_fin,'frawifc', frawifc)) then
-        write(PMF_OUT,410) prmfile_onoff(frawifc)
+    if(prmfile_get_logical_by_key(prm_fin,'frawicf', frawicf)) then
+        write(PMF_OUT,410) prmfile_onoff(frawicf)
     else
-        write(PMF_OUT,415) prmfile_onoff(frawifc)
+        write(PMF_OUT,415) prmfile_onoff(frawicf)
     end if
 
     select case(feimode)
@@ -276,12 +276,12 @@ subroutine abf_control_read_abf(prm_fin)
  77 format ('frstupdate                             = ',i12,'                  (default)')
  80 format ('ftrjsample                             = ',i12)
  85 format ('ftrjsample                             = ',i12,'                  (default)')
- 90 format ('fprint_ifc                             = ',a12)
- 95 format ('fprint_ifc                             = ',a12,'                  (default)')
-400 format ('fcache_ifc                             = ',a12)
-405 format ('fcache_ifc                             = ',a12,'                  (default)')
-410 format ('frawifc                                = ',a12)
-415 format ('frawifc                                = ',a12,'                  (default)')
+ 90 format ('fprint_icf                             = ',a12)
+ 95 format ('fprint_icf                             = ',a12,'                  (default)')
+400 format ('fcache_icf                             = ',a12)
+405 format ('fcache_icf                             = ',a12,'                  (default)')
+410 format ('frawicf                                = ',a12)
+415 format ('frawicf                                = ',a12,'                  (default)')
 
 100 format (' >> Multiple-walkers ABF method is disabled!')
 #ifndef PMFLIB_NETWORK

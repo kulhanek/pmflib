@@ -43,10 +43,10 @@ integer     :: feimode      ! extrapolation / interpolation mode
 integer     :: ftrjsample   ! how often save accumulator to "accumulator evolution"
 integer     :: fmask_mode   ! 0 - disable ABF mask, 1 - enable ABF mask
 logical     :: fapply_abf   ! on - apply ABF, off - do not apply ABF
-logical     :: fprint_ifc   ! T - print instanteous forces, F - do not print
-logical     :: fcache_ifc   ! T - cache ifc into memory and dump them at the end,
-                            ! F - write ifc immediatelly at each time step
-logical     :: frawifc      ! T - use raw ifc data (in internal units), F - transform them to user req. units
+logical     :: fprint_icf   ! T - print instanteous collective forces (icf), F - do not print
+logical     :: fcache_icf   ! T - cache icf into memory and dump them at the end,
+                            ! F - write icf immediatelly at each time step
+logical     :: frawicf      ! T - use raw icf data (in internal units), F - transform them to user req. units
 
 ! linear ramp mode I (feimode .eq. 1)
 integer     :: fhramp       ! ramp size
@@ -155,7 +155,7 @@ real(PMFDP), allocatable    :: cvaluehist1(:)   ! history of coordinate values
 real(PMFDP), allocatable    :: cvaluehist2(:)   ! history of coordinate values
 real(PMFDP), allocatable    :: cvaluehist3(:)   ! history of coordinate values
 
-real(PMFDP), allocatable    :: ifc_cache(:,:)   ! ifc_cache(2*ncvs,fnstlim)
+real(PMFDP), allocatable    :: icf_cache(:,:)   ! icf_cache(2*ncvs,fnstlim)
 
 ! gaussian process ----
 integer                     :: gpmaxsize
