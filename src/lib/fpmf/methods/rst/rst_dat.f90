@@ -43,6 +43,7 @@ integer     :: fhistupdate  ! how often is restart file written
 integer     :: fhistclear   ! after first 'fhistclear' steps histogram
                             ! will be reset (default 0)
 integer     :: fsamplefreq  ! how often take samples
+real(PMFDP) :: fwarnlevel   ! warning level for restraint energy
 
 ! item list --------------------------------------------------------------------
 type CVTypeUM

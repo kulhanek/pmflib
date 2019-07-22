@@ -362,6 +362,7 @@ subroutine pmf_control_read_files(prm_fin)
             call pmf_control_print_stritem_default('fabfmask',fabfmask)
             call pmf_control_print_stritem_default('fabfout',fabfout)
             call pmf_control_print_stritem_default('fabfrst',fabfrst)
+            call pmf_control_print_stritem_default('fabficf',fabficf)
         end if
         if( mtd_enabled ) then
             write(PMF_OUT,300)
@@ -410,6 +411,7 @@ subroutine pmf_control_read_files(prm_fin)
         call  pmf_control_read_stritem(prm_fin,'fabfmask',fabfmask)
         call  pmf_control_read_stritem(prm_fin,'fabfout',fabfout)
         call  pmf_control_read_stritem(prm_fin,'fabfrst',fabfrst)
+        call  pmf_control_read_stritem(prm_fin,'fabficf',fabficf)
     end if
     if( mtd_enabled ) then
         write(PMF_OUT,300)

@@ -191,6 +191,12 @@ bool CABFIntegratorGPR::Integrate(CVerboseStr& vout)
         return(false);
     }
 
+    // and finaly some statistics
+    vout << "   RMSR  = " << setprecision(5) << GetRMSR() << endl;
+
+    // and marginal likelihood
+    vout << "   logML = " << setprecision(5) << GetLogMarginalLikelihood() << endl;
+
     if( ! NoEnergy ){
         vout << "   Calculating FES ..." << endl;
 
@@ -222,16 +228,14 @@ bool CABFIntegratorGPR::Integrate(CVerboseStr& vout)
             FES->SetEnergy(i,value);
         }
 
+        vout << "   SigmaF2 = " << setprecision(5) << FES->GetSigmaF2() << endl;
+
         if( IncludeError ){
             CalculateErrors(gpos,vout);
         }
     }
 
-    // and finaly some statistics
-    vout << "   RMSR  = " << setprecision(5) << GetRMSR() << endl;
 
-    // and marginal likelihood
-    vout << "   logML = " << setprecision(5) << GetLogMarginalLikelihood() << endl;
 
     return(true);
 }

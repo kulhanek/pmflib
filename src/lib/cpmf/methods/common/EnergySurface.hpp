@@ -75,6 +75,9 @@ public:
     /// get error from point of index
     const double& GetError(unsigned int index) const;
 
+    /// get sigmaF2 from sampled area
+    double GetSigmaF2(void) const;
+
     /// set number of samples
     void SetNumOfSamples(unsigned int index,const int& value);
 

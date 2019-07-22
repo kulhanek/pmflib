@@ -113,6 +113,13 @@ subroutine rst_control_read_rst(prm_fin)
         write(PMF_OUT,87) fhistclear
     end if
 
+    if(prmfile_get_real8_by_key(prm_fin,'fwarnlevel', fwarnlevel)) then
+        call pmf_unit_conv_to_ivalue(EnergyUnit,fwarnlevel)
+        write(PMF_OUT,90) pmf_unit_get_rvalue(EnergyUnit,fwarnlevel), pmf_unit_label(EnergyUnit)
+    else
+        write(PMF_OUT,95) pmf_unit_get_rvalue(EnergyUnit,fwarnlevel), pmf_unit_label(EnergyUnit)
+    end if
+
     rst_enabled = fmode .gt. 0
 
     return
@@ -129,6 +136,8 @@ subroutine rst_control_read_rst(prm_fin)
  77 format ('fhistupdate                            = ',i12,'                  (default)')
  86 format ('fhistclear                             = ',i12)
  87 format ('fhistclear                             = ',i12,'                  (default)')
+ 90 format ('fwarnlevel                             = ',f12.3,1X,A)
+ 95 format ('fwarnlevel                             = ',f12.3,1X,A15'  (default)')
 
 end subroutine rst_control_read_rst
 

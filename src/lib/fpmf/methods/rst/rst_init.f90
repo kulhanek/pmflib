@@ -74,6 +74,7 @@ subroutine rst_init_dat
                              ! will be reset (default 0)
     fsamplefreq   = 1        ! how often take samples
     faccumulation = 0        ! number of accumulated data
+    fwarnlevel    = 15.0     ! warning level for restraint energy
 
     NumOfRSTItems = 0
     insidesamples = 0
@@ -112,6 +113,8 @@ subroutine rst_init_print_header
     write(PMF_OUT,125)  ' Output file (frstout)                   : ', trim(frstout)
     write(PMF_OUT,130)  ' Sample period (fsample)                 : ', fsample
     write(PMF_OUT,130)  ' Print level (fplevel)                   : ', fplevel
+    write(PMF_OUT,135)  ' High energy rst warning (fwarnlevel)    : ', pmf_unit_get_rvalue(EnergyUnit,fwarnlevel), &
+                        pmf_unit_label(EnergyUnit)
 
     write(PMF_OUT,120)
     write(PMF_OUT,120)  ' Histogram options:'
@@ -140,6 +143,7 @@ subroutine rst_init_print_header
 120 format(A)
 125 format(A,A)
 130 format(A,I6)
+135 format(A,F10.3,1X,A)
 
 140 format(' == Collective variable #',I4.4)
 

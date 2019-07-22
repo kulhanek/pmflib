@@ -74,7 +74,7 @@ subroutine rst_output_write_header
     integer        :: i, off, iend
     ! --------------------------------------------------------------------------
 
-    write(RST_OUT,10,advance='NO') '#        '
+    write(RST_OUT,10,advance='NO') '#          '
     do i=1,NumOfRSTItems
         select case(fplevel)
             case(0)
@@ -89,7 +89,7 @@ subroutine rst_output_write_header
     end do
     write(RST_OUT,*)
 
-    write(RST_OUT,10,advance='NO') '#        '
+    write(RST_OUT,10,advance='NO') '#          '
     do i=1,NumOfRSTItems
         select case(fplevel)
             case(0)
@@ -110,7 +110,7 @@ subroutine rst_output_write_header
     end do
     write(RST_OUT,*)
 
-    write(RST_OUT,10,advance='NO') '#        '
+    write(RST_OUT,10,advance='NO') '#          '
     do i=1,NumOfRSTItems
         select case(fplevel)
             case(0)
@@ -131,7 +131,7 @@ subroutine rst_output_write_header
     end do
     write(RST_OUT,*)
 
-    write(RST_OUT,10,advance='NO') '#  NSTEP '
+    write(RST_OUT,10,advance='NO') '#  NSTEP  F'
     do i=1,NumOfRSTItems
         select case(fplevel)
             case(0)
@@ -152,7 +152,7 @@ subroutine rst_output_write_header
     end do
     write(RST_OUT,*)
 
-    write(RST_OUT,10,advance='NO') '#--------'
+    write(RST_OUT,10,advance='NO') '#-------- -'
     do i=1,NumOfRSTItems
         select case(fplevel)
             case(0)
@@ -173,8 +173,8 @@ subroutine rst_output_write_header
     end do
     write(RST_OUT,*)
 
-    write(RST_OUT,10,advance='NO') '#       1'
-    off = 1
+    write(RST_OUT,10,advance='NO') '#       1 2'
+    off = 2
     select case(fplevel)
         case(0)
             iend = NumOfRSTItems
@@ -213,7 +213,7 @@ subroutine rst_output_write_header
 
     return
 
-10 format(A9)
+10 format(A11)
 15 format(1X,I15)
 20 format(1X,A15)
 21 format(A16)
@@ -237,14 +237,25 @@ subroutine rst_output_write_data
     use pmf_dat
 
     implicit none
-    integer     :: i
+    integer             :: i
+    character(len=1)    :: flag
     ! --------------------------------------------------------------------------
 
-    if( fsample .le. 0 ) return ! output is written only of fsample > 0
-    if( mod(fstep,fsample) .ne. 0 ) return
+    flag = 'N'
+
+    if( fwarnlevel .ge. 0.0d0 ) then
+        do i=1,NumOfRSTItems
+            if( RSTCVList(i)%energy .gt. fwarnlevel ) flag = 'W'
+        end do
+    end if
+
+    if( flag .eq. 'N' ) then
+        if( fsample .le. 0 ) return ! output is written only of fsample > 0
+        if( mod(fstep,fsample) .ne. 0 ) return
+    end if
 
     ! print data to output --------------------------
-    write(RST_OUT,200,ADVANCE='NO') fstep
+    write(RST_OUT,200,ADVANCE='NO') fstep, flag
     do i=1,NumOfRSTItems
         select case(fplevel)
             case(0)
@@ -267,7 +278,7 @@ subroutine rst_output_write_data
 
     return
 
-200 format(I9)
+200 format(I9,1X,A1)
 210 format(1X,E15.8)
 
 end subroutine rst_output_write_data

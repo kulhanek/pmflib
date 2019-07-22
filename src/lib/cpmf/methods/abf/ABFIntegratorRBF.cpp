@@ -349,6 +349,9 @@ bool CABFIntegratorRBF::IntegrateByLS(CVerboseStr& vout)
     }
 
     vout << "   RMSR = " << setprecision(5) << GetRMSR() << endl;
+    if( IntegratedRealm == EABF_MEAN_FORCE_VALUE ){
+        vout << "   SigmaF2 = " << setprecision(5) << FES->GetSigmaF2() << endl;
+    }
 
     return( true );
 }

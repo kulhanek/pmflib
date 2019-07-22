@@ -54,7 +54,7 @@ subroutine abf_output_open
     write(ABF_OUT,30)
 
     if( fprint_icf ) then
-        call pmf_utils_open(ABF_ICF,fabfifc,'R')
+        call pmf_utils_open(ABF_ICF,fabficf,'R')
 
         write(ABF_ICF,10)
         write(ABF_ICF,20)
@@ -197,7 +197,7 @@ subroutine abf_output_write_header_icf
     write(ABF_ICF,10,advance='NO') '#   NSTEP'
     do i=1,NumOfABFCVs
         write(ABF_ICF,20,advance='NO') trim(ABFCVList(i)%cv%name)
-        write(ABF_ICF,25,advance='NO') 'IFC (' // trim(ABFCVList(i)%cv%name) // ')'
+        write(ABF_ICF,25,advance='NO') 'ICF (' // trim(ABFCVList(i)%cv%name) // ')'
     end do
     write(ABF_ICF,*)
 
@@ -234,7 +234,7 @@ subroutine abf_output_write_header_icf
 25 format(1X,A20)
 30 format(1X,A15)
 35 format(1X,A20)
-40 format('# IFC accumulation is cached, data will be printed at the end at once')
+40 format('# ICF accumulation is cached, data will be printed at the end at once')
 
 end subroutine abf_output_write_header_icf
 

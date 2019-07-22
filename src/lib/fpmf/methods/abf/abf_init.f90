@@ -175,7 +175,7 @@ subroutine abf_init_print_header
     write(PMF_OUT,120)  ' ------------------------------------------------------'
     write(PMF_OUT,125)  ' Output file (fabfout)                   : ', trim(fabfout)
     write(PMF_OUT,130)  ' Output sampling (fsample)               : ', fsample
-    write(PMF_OUT,125)  ' Print instantenous forces (fprint_icf)  : ', prmfile_onoff(fprint_icf)
+    write(PMF_OUT,125)  ' Print instantaneous forces (fprint_icf) : ', prmfile_onoff(fprint_icf)
     write(PMF_OUT,125)  ' Cache ICF (fcache_icf)                  : ', prmfile_onoff(fcache_icf)
     write(PMF_OUT,125)  ' Print ICF in internal units (frawicf)   : ', prmfile_onoff(frawicf)
     write(PMF_OUT,120)

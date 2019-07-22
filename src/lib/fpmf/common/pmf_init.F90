@@ -101,7 +101,7 @@ subroutine pmf_init_dat
     fabfrst     = '_abf.rst'
     fabftrj     = '_abf.trj'
     fabfgpout   = '_abf.gpout'
-    fabfifc     = '_abf.ifc'
+    fabficf     = '_abf.icf'
 
     fstmdef     = '{STM}'
     fstmout     = '_stm.out'

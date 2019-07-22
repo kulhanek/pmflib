@@ -153,6 +153,10 @@ bool CABFIntegratorRFD::Integrate(CVerboseStr& vout, bool errors)
         }
     }
 
+    if( IntegratedRealm == EABF_MEAN_FORCE_VALUE ) {
+        vout << "   SigmaF2 = " << setprecision(5) << FES->GetSigmaF2() << endl;
+    }
+
     return(true);
 }
 
