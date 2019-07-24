@@ -85,8 +85,9 @@ int CMTDServer::Init(int argc,char* argv[])
         vout << "# Control file name : - (standard input)" << endl;
     }
 
-// set SIGINT hadler to cleanly shutdown server ----------
+// set SIGINT/SIGTERM hadler to cleanly shutdown server ----------
     signal(SIGINT,CtrlCSignalHandler);
+    signal(SIGTERM,CtrlCSignalHandler);
 
 // process control file ----------------------------------
     if(Options.GetArgControlFile() != "-") {
@@ -236,7 +237,7 @@ void CMTDServer::Finalize(void)
 void CMTDServer::CtrlCSignalHandler(int signal)
 {
     MTDServer.vout << endl;
-    MTDServer.vout << "Ctrl+C signal recieved. ";
+    MTDServer.vout << "Ctrl+C/TERM signal recieved. ";
     MTDServer.vout << "Initiating server shutdown ... " << endl;
     MTDServer.vout << "Waiting for server finalization ... " << endl;
     MTDServer.TerminateServer();

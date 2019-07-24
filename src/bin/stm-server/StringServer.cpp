@@ -86,8 +86,9 @@ int CStringServer::Init(int argc,char* argv[])
         vout << "# Control file name : - (standard input)" << endl;
     }
 
-// set SIGINT hadler to cleanly shutdown server ----------
+// set SIGINT/SIGTERM hadler to cleanly shutdown server ----------
     signal(SIGINT,CtrlCSignalHandler);
+    signal(SIGTERM,CtrlCSignalHandler);
 
 // process control file ----------------------------------
     if(Options.GetArgControlFile() != "-") {
@@ -267,7 +268,7 @@ void CStringServer::TerminateServer(void)
 void CStringServer::CtrlCSignalHandler(int signal)
 {
     StringServer.vout << endl;
-    StringServer.vout << "Ctrl+C signal recieved. ";
+    StringServer.vout << "Ctrl+C/TERM signal recieved. ";
     StringServer.vout << "Initiating server shutdown ... " << endl;
 
     // stop launcher

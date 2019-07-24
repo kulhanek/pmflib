@@ -94,8 +94,9 @@ int CABFServer::Init(int argc,char* argv[])
         vout << "# Control file name : - (standard input)" << endl;
     }
 
-// set SIGINT hadler to cleanly shutdown server ----------
+// set SIGINT/SIGTERM hadler to cleanly shutdown server ----------
     signal(SIGINT,CtrlCSignalHandler);
+    signal(SIGTERM,CtrlCSignalHandler);
 
 // process control file ----------------------------------
     if(Options.GetArgControlFile() != "-") {
@@ -390,7 +391,7 @@ void CABFServer::Finalize(void)
 void CABFServer::CtrlCSignalHandler(int signal)
 {
     ABFServer.vout << endl;
-    ABFServer.vout << "Ctrl+C signal recieved. ";
+    ABFServer.vout << "Ctrl+C/TERM signal recieved. ";
     ABFServer.vout << "Initiating server shutdown ... " << endl;
     ABFServer.vout << "Waiting for server finalization ... " << endl;
     ABFServer.ABFAccumulator.SetServerTerminated();
