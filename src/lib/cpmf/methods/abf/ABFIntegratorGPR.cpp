@@ -418,16 +418,30 @@ double CABFIntegratorGPR::GetRMSR(void)
     double rmsr = 0.0;
     double nsamples = 0.0;
 
+    cout << endl;
+
     for(int i=0; i < Accumulator->GetNumberOfBins(); i++){
         if( Accumulator->GetNumberOfABFSamples(i) <= 0 ) continue;
 
         Accumulator->GetPoint(i,jpos);
 
+        cout << "| ";
+        for(int c=0; c < Accumulator->GetNumberOfCoords(); c++){
+            cout << format("%20.16f ")%jpos[c];
+        }
+
         for(int k=0; k < Accumulator->GetNumberOfCoords(); k++){
-            double diff = Accumulator->GetValue(k,i,EABF_MEAN_FORCE_VALUE) - GetMeanForce(jpos,k);
+            double mfi = Accumulator->GetValue(k,i,EABF_MEAN_FORCE_VALUE);
+            double mfp = GetMeanForce(jpos,k);
+            double diff = mfi - mfp;
+
+            cout << format("%20.16f %20.16f")%mfi%mfp;
+
             rmsr += diff*diff;
             nsamples++;
         }
+
+        cout << endl;
     }
 
     if( nsamples > 0 ){
