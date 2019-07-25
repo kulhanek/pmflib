@@ -418,30 +418,18 @@ double CABFIntegratorGPR::GetRMSR(void)
     double rmsr = 0.0;
     double nsamples = 0.0;
 
-    cout << endl;
-
     for(int i=0; i < Accumulator->GetNumberOfBins(); i++){
         if( Accumulator->GetNumberOfABFSamples(i) <= 0 ) continue;
 
         Accumulator->GetPoint(i,jpos);
 
-        cout << "| ";
-        for(int c=0; c < Accumulator->GetNumberOfCoords(); c++){
-            cout << format("%20.16f ")%jpos[c];
-        }
-
         for(int k=0; k < Accumulator->GetNumberOfCoords(); k++){
             double mfi = Accumulator->GetValue(k,i,EABF_MEAN_FORCE_VALUE);
             double mfp = GetMeanForce(jpos,k);
             double diff = mfi - mfp;
-
-            cout << format("%20.16f %20.16f")%mfi%mfp;
-
             rmsr += diff*diff;
             nsamples++;
         }
-
-        cout << endl;
     }
 
     if( nsamples > 0 ){
@@ -452,6 +440,45 @@ double CABFIntegratorGPR::GetRMSR(void)
     }
 
     return(rmsr);
+}
+
+//------------------------------------------------------------------------------
+
+bool CABFIntegratorGPR::WriteMFInfo(const CSmallString& name)
+{
+    if( Accumulator->GetNumberOfBins() <= 0 ){
+        ES_ERROR("number of bins is not > 0");
+        return(false);
+    }
+
+    ofstream ofs(name);
+    if( ! ofs ){
+        CSmallString error;
+        error << "unable to open file '" << name << "' for derivatives";
+        ES_ERROR(error);
+        return(false);
+    }
+
+    for(int i=0; i < Accumulator->GetNumberOfBins(); i++){
+        if( Accumulator->GetNumberOfABFSamples(i) <= 0 ) continue;
+
+        Accumulator->GetPoint(i,jpos);
+
+        for(int c=0; c < Accumulator->GetNumberOfCoords(); c++){
+            ofs << format("%20.16f ")%jpos[c];
+        }
+
+        for(int k=0; k < Accumulator->GetNumberOfCoords(); k++){
+            double mfi = Accumulator->GetValue(k,i,EABF_MEAN_FORCE_VALUE);
+            double mfp = GetMeanForce(jpos,k);
+
+            ofs << format("%20.16f %20.16f")%mfi%mfp;
+        }
+
+        ofs << endl;
+    }
+
+    return(true);
 }
 
 //------------------------------------------------------------------------------

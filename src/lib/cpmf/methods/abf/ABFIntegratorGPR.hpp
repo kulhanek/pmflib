@@ -86,6 +86,9 @@ public:
     /// get log of Marginal Likelihood
     double GetLogMarginalLikelihood(void);
 
+    /// write file with derivatives
+    bool WriteMFInfo(const CSmallString& name);
+
 // section of private data ----------------------------------------------------
 private:
     const CABFAccumulator*  Accumulator;

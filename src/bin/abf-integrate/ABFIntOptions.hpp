@@ -98,6 +98,7 @@ public:
     CSO_OPT(bool,NoHeader)
     CSO_OPT(CSmallString,IXFormat)
     CSO_OPT(CSmallString,OEFormat)
+    CSO_OPT(CSmallString,MFInfo)
     CSO_OPT(bool,Verbose)
     CSO_OPT(bool,Version)
     CSO_OPT(bool,Help)
@@ -342,6 +343,15 @@ public:
                 "fe",                      /* long option name */
                 "FORMAT",                           /* parametr name */
                 "Output FORMAT, which will be used to print values of free energy.")   /* option description */
+    //----------------------------------------------------------------------
+    CSO_MAP_OPT(CSmallString,                           /* option type */
+                MFInfo,                        /* option name */
+                NULL,                          /* default value */
+                false,                          /* is option mandatory */
+                '\0',                           /* short option name */
+                "mfinfo",                      /* long option name */
+                "NAME",                           /* parametr name */
+                "name of file with input and predicted mean forces.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(bool,                           /* option type */
                 Verbose,                        /* option name */

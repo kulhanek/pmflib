@@ -27,8 +27,10 @@
 #include <algorithm>
 #include <SciLapack.hpp>
 #include <iomanip>
+#include <boost/format.hpp>
 
 using namespace std;
+using namespace boost;
 
 //==============================================================================
 //------------------------------------------------------------------------------
@@ -253,6 +255,11 @@ bool CABFIntegratorRBF::Integrate(CVerboseStr& vout,bool errors)
         }
     }
 
+    vout << "   RMSR = " << setprecision(5) << GetRMSR() << endl;
+    if( IntegratedRealm == EABF_MEAN_FORCE_VALUE ){
+        vout << "   SigmaF2 = " << setprecision(5) << FES->GetSigmaF2() << endl;
+    }
+
     return(true);
 }
 
@@ -346,11 +353,6 @@ bool CABFIntegratorRBF::IntegrateByLS(CVerboseStr& vout)
     // copy results to Weights
     for(int l=0; l < NumOfRBFs; l++){
         Weights[l] = rhs[l];
-    }
-
-    vout << "   RMSR = " << setprecision(5) << GetRMSR() << endl;
-    if( IntegratedRealm == EABF_MEAN_FORCE_VALUE ){
-        vout << "   SigmaF2 = " << setprecision(5) << FES->GetSigmaF2() << endl;
     }
 
     return( true );
@@ -463,6 +465,74 @@ double CABFIntegratorRBF::GetRMSR(void)
     }
 
     return(rmsr);
+}
+
+//------------------------------------------------------------------------------
+
+bool CABFIntegratorRBF::WriteMFInfo(const CSmallString& name)
+{
+    if( Accumulator->GetNumberOfBins() <= 0 ){
+        ES_ERROR("number of bins is not > 0");
+        return(false);
+    }
+
+    ofstream ofs(name);
+    if( ! ofs ){
+        CSmallString error;
+        error << "unable to open file '" << name << "' for derivatives";
+        ES_ERROR(error);
+        return(false);
+    }
+
+
+    CSimpleVector<double>   ipos;
+    ipos.CreateVector(NumOfCVs);
+
+    CSimpleVector<double>   lpos;
+    lpos.CreateVector(NumOfCVs);
+
+    CSimpleVector<double>   der;
+    der.CreateVector(NumOfCVs);
+
+    for(int i=0; i < Accumulator->GetNumberOfBins(); i++){
+
+        if( Accumulator->GetNumberOfABFSamples(i) <= 0 ) continue;
+
+        Accumulator->GetPoint(i,ipos);
+
+        for(int c=0; c < Accumulator->GetNumberOfCoords(); c++){
+            ofs << format("%20.16f ")%ipos[c];
+        }
+
+        der.SetZero();
+
+        for(int l=0; l < NumOfRBFs; l++){
+            GetRBFPosition(l,lpos);
+                  //      cout << lpos[0] << " " << lpos[1] << endl;
+            double av = 1.0;
+            for(int k=0; k < NumOfCVs; k++){
+                double dvc = Accumulator->GetCoordinate(k)->GetDifference(ipos[k],lpos[k]);
+                double sig = Sigmas[k];
+                av *= exp( - dvc*dvc/(2.0*sig*sig) );
+            }
+            for(int k=0; k < NumOfCVs; k++){
+                double dvc = Accumulator->GetCoordinate(k)->GetDifference(ipos[k],lpos[k]);
+                double sig = Sigmas[k];
+                double fc = -dvc/(sig*sig);  // switch to derivatives
+                der[k] += Weights[l] * av * fc;
+            }
+        }
+
+        for(int k=0; k < NumOfCVs; k++){
+            double mfi = Accumulator->GetValue(k,i,IntegratedRealm);
+            double mfp = der[k];
+            ofs << format("%20.16f %20.16f")%mfi%mfp;
+        }
+
+        ofs << endl;
+    }
+
+    return(true);
 }
 
 //==============================================================================

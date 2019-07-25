@@ -86,6 +86,9 @@ public:
     /// get root mean square residuals
     double GetRMSR(void);
 
+    /// write file with derivatives
+    bool WriteMFInfo(const CSmallString& name);
+
 // section of private data ----------------------------------------------------
 private:
     const CABFAccumulator*  Accumulator;

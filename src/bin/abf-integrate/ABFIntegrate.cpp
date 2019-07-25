@@ -597,6 +597,11 @@ bool CABFIntegrate::Integrate()
             ES_ERROR("unable to integrate ABF accumulator");
             return(false);
         }
+
+        if( Options.IsOptMFInfoSet() ){
+            if( integrator.WriteMFInfo(Options.GetOptMFInfo()) == false ) return(false);
+        }
+
     } else if( Options.GetOptMethod() == "gpr" ){
         CABFIntegratorGPR   integrator;
 
@@ -624,6 +629,12 @@ bool CABFIntegrate::Integrate()
             ES_ERROR("unable to integrate ABF accumulator");
             return(false);
         }
+
+        if( Options.IsOptMFInfoSet() ){
+            if( integrator.WriteMFInfo(Options.GetOptMFInfo()) == false ) return(false);
+        }
+
+
     } else {
         INVALID_ARGUMENT("method - not implemented");
     }
