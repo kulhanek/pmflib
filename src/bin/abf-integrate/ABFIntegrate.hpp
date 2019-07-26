@@ -73,9 +73,10 @@ private:
     int  FillSeed(int seedid);
     void GetTPoint(CSimpleVector<int>& ipos,int d,CSimpleVector<int>& tpos);
     bool IntegrateForEcut(void);
-    bool IntegrateForMFLimit(void);
+    bool IntegrateForMFLimit(double mffac);
     bool Integrate(void);
     void WriteHeader(void);
+    void GlueFES(int factor);
 };
 
 //------------------------------------------------------------------------------

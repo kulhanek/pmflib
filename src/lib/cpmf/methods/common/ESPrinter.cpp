@@ -38,6 +38,7 @@ CESPrinter::CESPrinter(void)
     PrintLimit = 0;
     Format = EESPF_PLAIN;
     IncludeError = false;
+    IncludeGluedBins = false;
 }
 
 //------------------------------------------------------------------------------
@@ -88,6 +89,13 @@ void CESPrinter::SetSampleLimit(int limit)
 void CESPrinter::SetIncludeError(bool set)
 {
     IncludeError = set;
+}
+
+//------------------------------------------------------------------------------
+
+void CESPrinter::IncludeGluedAreas(bool set)
+{
+    IncludeGluedBins = set;
 }
 
 //==============================================================================
@@ -157,7 +165,13 @@ void CESPrinter::PrintPlain(FILE* fout)
 
         // do we have enough samples?
         double nsamples = EnergySurface->GetNumOfSamples(ibin);
-        if( nsamples < PrintLimit ) continue;
+        if( IncludeGluedBins ){
+            if( nsamples > 0 ){
+                if( nsamples < PrintLimit ) continue;
+            }
+        } else {
+            if( nsamples < PrintLimit ) continue;
+        }
 
     // write block delimiter - required by GNUPlot
         if(Format == EESPF_GNUPLOT) {

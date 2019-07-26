@@ -49,6 +49,8 @@ CABFIntegratorRBF::CABFIntegratorRBF(void)
     Method      = ERBFLLS_SVD;
 
     RCond   = -1; // machine precision
+
+    IncludeGluedBins = false;
 }
 
 //------------------------------------------------------------------------------
@@ -120,6 +122,13 @@ void CABFIntegratorRBF::SetOverhang(int nrbfs)
 void CABFIntegratorRBF::SetLLSMehod(ERBFLLSMethod set)
 {
     Method = set;
+}
+
+//------------------------------------------------------------------------------
+
+void CABFIntegratorRBF::IncludeGluedAreas(bool set)
+{
+    IncludeGluedBins = set;
 }
 
 //==============================================================================
@@ -212,7 +221,11 @@ bool CABFIntegratorRBF::Integrate(CVerboseStr& vout)
         FES->SetNumOfSamples(i,samples);
         double value = 0.0;
         FES->SetEnergy(i,value);
-        if( samples <= 0 ) continue;
+        if( IncludeGluedBins ){
+            if( samples == 0 ) continue;
+        } else {
+            if( samples <= 0 ) continue;
+        }
         Accumulator->GetPoint(i,ipos);
         value = GetValue(ipos);
         FES->SetEnergy(i,value);
@@ -224,14 +237,21 @@ bool CABFIntegratorRBF::Integrate(CVerboseStr& vout)
 
     // move to global minima
     for(int i=0; i < FES->GetNumberOfPoints(); i++) {
-        if( FES->GetNumOfSamples(i) <= 0 ) continue;
+        if( IncludeGluedBins ){
+            if( FES->GetNumOfSamples(i) == 0 ) continue;
+        } else {
+            if( FES->GetNumOfSamples(i) <= 0 ) continue;
+        }
         double value = 0.0;
         value = FES->GetEnergy(i);
         value = value - glb_min;
         FES->SetEnergy(i,value);
     }
 
-    vout << "   RMSR = " << setprecision(5) << GetRMSR() << endl;
+    for(int k=0; k < Accumulator->GetNumberOfCoords(); k++ ){
+    vout << "   RMSR CV#" << k+1 << " = " << setprecision(5) << GetRMSR(k) << endl;
+    }
+
     vout << "   SigmaF2 = " << setprecision(5) << FES->GetSigmaF2() << endl;
 
     return(true);
@@ -381,7 +401,7 @@ double CABFIntegratorRBF::GetValue(const CSimpleVector<double>& position)
 
 //------------------------------------------------------------------------------
 
-double CABFIntegratorRBF::GetRMSR(void)
+double CABFIntegratorRBF::GetRMSR(int cv)
 {
     if( Accumulator->GetNumberOfBins() <= 0 ){
         ES_ERROR("number of bins is not > 0");
@@ -400,11 +420,12 @@ double CABFIntegratorRBF::GetRMSR(void)
 
         Accumulator->GetPoint(i,ipos);
 
-        for(int k=0; k < NumOfCVs; k++){
-            double diff = Accumulator->GetValue(k,i,EABF_MEAN_FORCE_VALUE) - GetMeanForce(ipos,k);
-            rmsr += diff*diff;
-            nsamples++;
-        }
+        double mfi = Accumulator->GetValue(cv,i,EABF_MEAN_FORCE_VALUE);
+        double mfp = GetMeanForce(ipos,cv);
+        double diff = mfi - mfp;
+
+        rmsr += diff*diff;
+        nsamples++;
     }
 
     if( nsamples > 0 ){
@@ -467,6 +488,9 @@ void CABFIntegratorRBF::FilterByMFFac(double mffac)
         ES_ERROR("number of bins is not > 0");
         return;
     }
+
+    // we work with variances
+    mffac *= mffac;
 
     // we assume zero mean on errors
     CSimpleVector<double>   sig2;

@@ -76,7 +76,8 @@ public:
     CSO_OPT(bool,SkipFFTest)
     CSO_OPT(double,NCorr)
     CSO_OPT(double,EnergyLimit)
-    CSO_OPT(double,MFLimit)
+    CSO_OPT(double,MFLimit1)
+    CSO_OPT(double,MFLimit2)
     CSO_OPT(double,Offset)
     CSO_OPT(CSmallString,Method)
     CSO_OPT(CSmallString,EcutMethod)
@@ -89,6 +90,7 @@ public:
     CSO_OPT(double,WFac2)
     CSO_OPT(double,SigmaF2)
     CSO_OPT(int,Overhang)
+    CSO_OPT(int,GlueFES)
     CSO_OPT(bool,Periodicity)
     CSO_OPT(bool,WithError)
     CSO_OPT(bool,NoEnergy)
@@ -145,14 +147,24 @@ public:
                 "This limit enforces two integration runs. Negative value disables the limit.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(double,                           /* option type */
-                MFLimit,                        /* option name */
+                MFLimit1,                        /* option name */
                 -1.0,                          /* default value */
                 false,                          /* is option mandatory */
-                'u',                           /* short option name */
-                "mflimit",                      /* long option name */
+                0,                           /* short option name */
+                "mflimit1",                      /* long option name */
                 "NUMBER",                           /* parametr name */
                 "RBF+GPR: Consider only mean forces which are within mflimit*stddev. "
-                "This limit is aplied in two passes. Negative value disables the limit.")   /* option description */
+                "This limit is aplied in the first pass. Negative value disables the limit.")   /* option description */
+    //----------------------------------------------------------------------
+    CSO_MAP_OPT(double,                           /* option type */
+                MFLimit2,                        /* option name */
+                -1.0,                          /* default value */
+                false,                          /* is option mandatory */
+                0,                           /* short option name */
+                "mflimit2",                      /* long option name */
+                "NUMBER",                           /* parametr name */
+                "RBF+GPR: Consider only mean forces which are within mflimit*stddev. "
+                "This limit is aplied in the second pass. Negative value disables the limit.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(double,                           /* option type */
                 Offset,                        /* option name */
@@ -264,6 +276,15 @@ public:
                 "overhang",                      /* long option name */
                 "NUMBER",                           /* parametr name */
                 "RBFs overhang to properly integrate areas near sampled edges. Ignored for periodic CVs.")   /* option description */
+    //----------------------------------------------------------------------
+    CSO_MAP_OPT(int,                           /* option type */
+                GlueFES,                        /* option name */
+                0,                          /* default value */
+                false,                          /* is option mandatory */
+                0,                           /* short option name */
+                "gluefes",                      /* long option name */
+                "NUMBER",                           /* parametr name */
+                "RBF+GPR: calculate energy also for unsampled bins but close vicinity to sampled one")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(bool,                           /* option type */
                 Periodicity,                        /* option name */

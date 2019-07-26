@@ -76,12 +76,15 @@ public:
     /// set rcond for SVD
     void SetRCond(double rcond);
 
+    /// should we include glued area to energy calculation?
+    void IncludeGluedAreas(bool set);
+
 // execution method -----------------------------------------------------------
     /// integrate data
     bool Integrate(CVerboseStr& vout);
 
     /// get root mean square residuals
-    double GetRMSR(void);
+    double GetRMSR(int cv);
 
     /// get log of Marginal Likelihood
     double GetLogMarginalLikelihood(void);
@@ -110,6 +113,7 @@ private:
     CSimpleVector<double>   GPRModel;   // weights
     bool                    NoEnergy;
     bool                    IncludeError;
+    bool                    IncludeGluedBins;
     EGPRINVMethod           Method;
 
     CSimpleVector<double>   ipos;

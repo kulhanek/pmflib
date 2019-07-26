@@ -47,6 +47,7 @@ CABFIntegratorGPR::CABFIntegratorGPR(void)
     WFac2 = 0.0;
 
     IncludeError = false;
+    IncludeGluedBins = false;
     NoEnergy = false;
 
     Method = EGPRINV_LU;
@@ -124,6 +125,13 @@ void CABFIntegratorGPR::SetINVMehod(EGPRINVMethod set)
     Method = set;
 }
 
+//------------------------------------------------------------------------------
+
+void CABFIntegratorGPR::IncludeGluedAreas(bool set)
+{
+    IncludeGluedBins = set;
+}
+
 //==============================================================================
 //------------------------------------------------------------------------------
 //==============================================================================
@@ -192,7 +200,9 @@ bool CABFIntegratorGPR::Integrate(CVerboseStr& vout)
     }
 
     // and finaly some statistics
-    vout << "   RMSR  = " << setprecision(5) << GetRMSR() << endl;
+    for(int k=0; k < Accumulator->GetNumberOfCoords(); k++ ){
+    vout << "   RMSR CV#" << k+1 << " = " << setprecision(5) << GetRMSR(k) << endl;
+    }
 
     // and marginal likelihood
     vout << "   logML = " << setprecision(5) << GetLogMarginalLikelihood() << endl;
@@ -208,7 +218,11 @@ bool CABFIntegratorGPR::Integrate(CVerboseStr& vout)
             FES->SetNumOfSamples(i,samples);
             double value = 0.0;
             FES->SetEnergy(i,value);
-            if( samples <= 0 ) continue;
+            if( IncludeGluedBins ){
+                if( samples == 0 ) continue;
+            } else {
+                if( samples <= 0 ) continue;
+            }
             Accumulator->GetPoint(i,jpos);
             value = GetValue(jpos);
             FES->SetEnergy(i,value);
@@ -221,7 +235,11 @@ bool CABFIntegratorGPR::Integrate(CVerboseStr& vout)
 
         // move to global minima
         for(int i=0; i < FES->GetNumberOfPoints(); i++) {
-            if( FES->GetNumOfSamples(i) <= 0 ) continue;
+            if( IncludeGluedBins ){
+                if( FES->GetNumOfSamples(i) == 0 ) continue;
+            } else {
+                if( FES->GetNumOfSamples(i) <= 0 ) continue;
+            }
             double value = 0.0;
             value = FES->GetEnergy(i);
             value = value - glb_min;
@@ -234,8 +252,6 @@ bool CABFIntegratorGPR::Integrate(CVerboseStr& vout)
             CalculateErrors(gpos,vout);
         }
     }
-
-
 
     return(true);
 }
@@ -408,7 +424,7 @@ double CABFIntegratorGPR::GetMeanForce(const CSimpleVector<double>& position,int
 
 //------------------------------------------------------------------------------
 
-double CABFIntegratorGPR::GetRMSR(void)
+double CABFIntegratorGPR::GetRMSR(int cv)
 {
     if( Accumulator->GetNumberOfBins() <= 0 ){
         ES_ERROR("number of bins is not > 0");
@@ -423,13 +439,11 @@ double CABFIntegratorGPR::GetRMSR(void)
 
         Accumulator->GetPoint(i,jpos);
 
-        for(int k=0; k < Accumulator->GetNumberOfCoords(); k++){
-            double mfi = Accumulator->GetValue(k,i,EABF_MEAN_FORCE_VALUE);
-            double mfp = GetMeanForce(jpos,k);
-            double diff = mfi - mfp;
-            rmsr += diff*diff;
-            nsamples++;
-        }
+        double mfi = Accumulator->GetValue(cv,i,EABF_MEAN_FORCE_VALUE);
+        double mfp = GetMeanForce(jpos,cv);
+        double diff = mfi - mfp;
+        rmsr += diff*diff;
+        nsamples++;
     }
 
     if( nsamples > 0 ){
@@ -489,6 +503,9 @@ void CABFIntegratorGPR::FilterByMFFac(double mffac)
         ES_ERROR("number of bins is not > 0");
         return;
     }
+
+    // we work with variances
+    mffac *= mffac;
 
     // we assume zero mean on errors
     CSimpleVector<double>   sig2;

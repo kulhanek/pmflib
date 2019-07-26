@@ -157,11 +157,17 @@ int CABFIntegrate::Init(int argc,char* argv[])
     } else {
         vout << "# Energy limit          : " << Options.GetOptEnergyLimit() << endl;
     }
-    if(Options.GetOptMFLimit() == -1) {
-        vout << "# Mean force limit      : not applied" << endl;
+    if(Options.GetOptMFLimit1() == -1) {
+        vout << "# Mean force limit #1   : not applied" << endl;
     } else {
-        vout << "# Mean force limit      : " << Options.GetOptMFLimit() << endl;
+        vout << "# Mean force limit #1   : " << Options.GetOptMFLimit1() << endl;
     }
+    if(Options.GetOptMFLimit2() == -1) {
+        vout << "# Mean force limit #2   : not applied" << endl;
+    } else {
+        vout << "# Mean force limit #2   : " << Options.GetOptMFLimit2() << endl;
+    }
+        vout << "# Glue FES factor       : " << Options.GetOptGlueFES() << endl;
         vout << "# Number of corr. sam.  : " << Options.GetOptNCorr() << endl;
         vout << "# Integration offset    : " << Options.GetOptOffset() << endl;
     vout << "# ------------------------------------------------" << endl;
@@ -218,10 +224,27 @@ bool CABFIntegrate::Run(void)
     PrintSampledStat();
     vout << "   Done" << endl;
 
-    if( Options.GetOptMFLimit() > 0.0 ){
+    if( Options.GetOptMFLimit1() > 0.0 ){
         vout << endl;
         vout << "3) ABF accumulator integration (" << Options.GetOptEcutMethod() << ")" << endl;
-        if( IntegrateForMFLimit() == false ) return(false);
+        if( IntegrateForMFLimit(Options.GetOptMFLimit1()) == false ) return(false);
+
+        vout << endl;
+        vout << "2) Preparing ABF accumulator for integration (mean force limit)"<< endl;
+        PrepareAccumulatorI();
+        if( ! Options.GetOptSkipFFTest() ){
+            FloodFillTest();
+        }
+        PrintSampledStat();
+        vout << "   Done" << endl;
+
+        FES.Clear();
+    }
+
+    if( Options.GetOptMFLimit2() > 0.0 ){
+        vout << endl;
+        vout << "3) ABF accumulator integration (" << Options.GetOptEcutMethod() << ")" << endl;
+        if( IntegrateForMFLimit(Options.GetOptMFLimit2()) == false ) return(false);
 
         vout << endl;
         vout << "2) Preparing ABF accumulator for integration (mean force limit)"<< endl;
@@ -250,6 +273,18 @@ bool CABFIntegrate::Run(void)
         vout << "   Done" << endl;
 
         FES.Clear();
+    }
+
+// glue fes ------------------------------------
+    if( Options.GetOptGlueFES() > 0 ){
+        vout << endl;
+        vout << "2) Preparing ABF accumulator for integration (glue FES)"<< endl;
+        vout << "   Searching for border regions in close vicinity of sampled areas ..." << endl;
+        for(int i=1; i <= Options.GetOptGlueFES(); i++ ){
+            GlueFES(i);
+        }
+        PrintSampledStat();
+        vout << "   Done" << endl;
     }
 
 // integrate data ------------------------------
@@ -294,6 +329,7 @@ bool CABFIntegrate::Run(void)
         printer.SetSampleLimit(Options.GetOptLimit());
     }
 
+    printer.IncludeGluedAreas(Options.GetOptGlueFES() > 0);
     printer.SetIncludeError(Options.GetOptWithError());
     printer.SetPrintedES(&FES);
 
@@ -405,7 +441,9 @@ void CABFIntegrate::WriteHeader()
         fprintf(OutputFile,"# Sample limit          : %d\n",Options.GetOptLimit());
         fprintf(OutputFile,"# Skip flood fill test  : %s\n", bool_to_str(Options.GetOptNoHeader()));
         fprintf(OutputFile,"# Energy limit          : %f\n",Options.GetOptEnergyLimit());
-        fprintf(OutputFile,"# Mean force limit      : %f\n",Options.GetOptMFLimit());
+        fprintf(OutputFile,"# Mean force limit #1   : %f\n",Options.GetOptMFLimit1());
+        fprintf(OutputFile,"# Mean force limit #2   : %f\n",Options.GetOptMFLimit2());
+        fprintf(OutputFile,"# Glue FES factor       : %d\n",Options.GetOptGlueFES());
         fprintf(OutputFile,"# Number of corr. sam.  : %5.3f\n",Options.GetOptNCorr());
         fprintf(OutputFile,"# Number of coordinates : %d\n",Accumulator.GetNumberOfCoords());
         fprintf(OutputFile,"# Total number of bins  : %d\n",Accumulator.GetNumberOfBins());
@@ -534,13 +572,13 @@ bool CABFIntegrate::IntegrateForEcut(void)
 
 //------------------------------------------------------------------------------
 
-bool CABFIntegrate::IntegrateForMFLimit(void)
+bool CABFIntegrate::IntegrateForMFLimit(double mffac)
 {
     if(Options.GetOptEcutMethod() == "rfd" ) {
-        ES_ERROR("illegal combination: --emethod=rfd and --mflimit");
+        ES_ERROR("illegal combination: --emethod=rfd and --mflimit1 or mflimit2");
         return(false);
     } else if(Options.GetOptEcutMethod() == "rfd2" ) {
-        ES_ERROR("illegal combination: --emethod=rfd2 and --mflimit");
+        ES_ERROR("illegal combination: --emethod=rfd2 and --mflimit1 or mflimit2");
         return(false);
     } else if( Options.GetOptEcutMethod() == "rbf" ){
         CABFIntegratorRBF   integrator;
@@ -573,7 +611,7 @@ bool CABFIntegrate::IntegrateForMFLimit(void)
         }
 
         // apply mean force limit
-        integrator.FilterByMFFac(Options.GetOptMFLimit());
+        integrator.FilterByMFFac(mffac);
 
     } else if( Options.GetOptEcutMethod() == "gpr" ){
         CABFIntegratorGPR   integrator;
@@ -598,6 +636,7 @@ bool CABFIntegrate::IntegrateForMFLimit(void)
 
         integrator.SetInputABFAccumulator(&Accumulator);
         integrator.SetOutputFESurface(&FES);
+        integrator.SetNoEnergy(true);
 
         if(integrator.Integrate(vout) == false) {
             ES_ERROR("unable to integrate ABF accumulator");
@@ -605,7 +644,7 @@ bool CABFIntegrate::IntegrateForMFLimit(void)
         }
 
         // apply mean force limit
-        integrator.FilterByMFFac(Options.GetOptMFLimit());
+        integrator.FilterByMFFac(mffac);
 
     } else {
         INVALID_ARGUMENT("method - not implemented");
@@ -673,6 +712,7 @@ bool CABFIntegrate::Integrate()
         integrator.SetRFac1(Options.GetOptRFac());
         integrator.SetRFac2(Options.GetOptRFac2());
         integrator.SetOverhang(Options.GetOptOverhang());
+        integrator.IncludeGluedAreas(Options.GetOptGlueFES() > 0);
 
         if( Options.GetOptLAMethod() == "svd" ){
             integrator.SetLLSMehod(ERBFLLS_SVD);
@@ -705,6 +745,7 @@ bool CABFIntegrate::Integrate()
         integrator.SetSigmaF2(Options.GetOptSigmaF2());
         integrator.SetIncludeError(Options.GetOptWithError());
         integrator.SetNoEnergy(Options.GetOptNoEnergy());
+        integrator.IncludeGluedAreas(Options.GetOptGlueFES() > 0);
 
         if( Options.GetOptLAMethod() == "svd" ){
             integrator.SetINVMehod(EGPRINV_SVD);
@@ -778,13 +819,22 @@ void CABFIntegrate::PrintSampledStat(void)
     // calculate sampled area
     double maxbins = Accumulator.GetNumberOfBins();
     int    sampled = 0;
+    int    glued = 0;
     for(int ibin=0; ibin < Accumulator.GetNumberOfBins(); ibin++) {
         if( Accumulator.GetNumberOfABFSamples(ibin) > 0 ) {
             sampled++;
         }
+        if( Accumulator.GetNumberOfABFSamples(ibin) < 0 ) {
+            glued++;
+        }
     }
     if( maxbins > 0 ){
-        vout << "   Sampled area: " << setw(5) << setprecision(1) << fixed << sampled/maxbins*100 <<"%" << endl;
+        vout << "   Sampled area: "
+             << setw(6) << sampled << " / " << (int)maxbins << " | " << setw(5) << setprecision(1) << fixed << sampled/maxbins*100 <<"%" << endl;
+    }
+    if( glued > 0 ){
+        vout << "   Glued area:   "
+             << setw(6) << glued << " / " << (int)maxbins << " | " << setw(5) << setprecision(1) << fixed << glued/maxbins*100 <<"%" << endl;
     }
 }
 
@@ -815,7 +865,7 @@ void CABFIntegrate::FloodFillTest(void)
 
         if( maxbins > 0 ){
             vout << "   Region: " << setw(6) << seedid << " - sampled area: "
-                 << setw(6) << sampled << " / " << (int)maxbins << " (" << setw(5) << setprecision(1) << fixed << sampled/maxbins*100 <<"%)" << endl;
+                 << setw(6) << sampled << " / " << (int)maxbins << " | " << setw(5) << setprecision(1) << fixed << sampled/maxbins*100 <<"%" << endl;
         }
 
         if( first || (maxsampled < sampled) ){
@@ -901,6 +951,55 @@ void CABFIntegrate::GetTPoint(CSimpleVector<int>& ipos,int d,CSimpleVector<int>&
         tpos[k] = ibin + ipos[k];
         d = d / 3;
     }
+}
+
+//------------------------------------------------------------------------------
+
+void CABFIntegrate::GlueFES(int factor)
+{
+    IPos.CreateVector(Accumulator.GetNumberOfCoords());
+    TPos.CreateVector(Accumulator.GetNumberOfCoords());
+
+    int ndir = 1;
+    for(int j=0; j < Accumulator.GetNumberOfCoords(); j++){
+        ndir *= 3;
+    }
+
+    vout << "   Gluing FES: factor = " << factor;
+
+    int glued = 0;
+
+    for(int ibin=0; ibin < Accumulator.GetNumberOfBins(); ibin++) {
+        if( Accumulator.GetNumberOfABFSamples(ibin) != 0 ) continue; // skip glued or sampled bins
+
+        // convert to ipont
+        Accumulator.GetIPoint(ibin,IPos);
+
+        // is sampled or glued region in close vicinty?
+
+        // in each direction
+        for(int j=0; j < ndir; j++){
+            GetTPoint(IPos,j,TPos);
+            int tbin = Accumulator.GetGlobalIndex(TPos);
+            if( tbin >= 0 ){
+                if( factor == 1 ){
+                    if( Accumulator.GetNumberOfABFSamples(tbin) > 0 ){
+                        Accumulator.SetNumberOfABFSamples(ibin,-factor);
+                        glued++;
+                        break;
+                    }
+                } else {
+                    if( - Accumulator.GetNumberOfABFSamples(tbin) == factor - 1 ){
+                        Accumulator.SetNumberOfABFSamples(ibin,-factor);
+                        glued++;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    vout << ", glued bins = " << glued << endl;
 }
 
 //==============================================================================

@@ -65,6 +65,9 @@ public:
     /// include error into output
     void SetIncludeError(bool set);
 
+    /// should we include glued area to energy calculation?
+    void IncludeGluedAreas(bool set);
+
 // printing methods -----------------------------------------------------------
     /// print energy surface
     void Print(const CSmallString& name);
@@ -80,6 +83,7 @@ private:
     CSmallString            YFormat;
     int                     PrintLimit;
     bool                    IncludeError;
+    bool                    IncludeGluedBins;
 
     void PrintPlain(FILE* fout);
     void PrintPMF_FES(FILE* fout);

@@ -79,12 +79,15 @@ public:
     /// set algorithm for LLS
     void SetLLSMehod(ERBFLLSMethod set);
 
+    /// should we include glued area to energy calculation?
+    void IncludeGluedAreas(bool set);
+
 // execution method -----------------------------------------------------------
     /// integrate data
     bool Integrate(CVerboseStr& vout);
 
     /// get root mean square residuals
-    double GetRMSR(void);
+    double GetRMSR(int cv);
 
     /// write file with derivatives
     bool WriteMFInfo(const CSmallString& name);
@@ -110,6 +113,8 @@ private:
     CSimpleVector<int>      NumOfRBFBins;
     int                     NumOfCVs;
     CSimpleVector<double>   Sigmas;
+
+    bool                    IncludeGluedBins;
 
     // SVD setup
     double                  RCond;
