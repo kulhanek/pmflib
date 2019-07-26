@@ -44,7 +44,6 @@ CABFIntegratorRFD2::CABFIntegratorRFD2(void)
     Periodicity = false;
     FDLevel = 4;
 
-    IntegratedRealm = EABF_MEAN_FORCE_VALUE;
     Method = ERFDLLS_SVD;
 
     RCond   = -1; // machine precision
@@ -104,14 +103,8 @@ void CABFIntegratorRFD2::SetRCond(double rcond)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-bool CABFIntegratorRFD2::Integrate(CVerboseStr& vout, bool errors)
+bool CABFIntegratorRFD2::Integrate(CVerboseStr& vout)
 {
-    if( ! errors ){
-        IntegratedRealm = EABF_MEAN_FORCE_VALUE;
-    } else {
-        IntegratedRealm = EABF_MEAN_FORCE_ERROR;
-    }
-
     if( Accumulator == NULL ) {
         ES_ERROR("ABF accumulator is not set");
         return(false);
@@ -163,11 +156,7 @@ bool CABFIntegratorRFD2::Integrate(CVerboseStr& vout, bool errors)
         int x_index = XMap[ipoint];
         if(x_index >= 0) {
             double value = X[x_index]-glb_min;
-            if( IntegratedRealm == EABF_MEAN_FORCE_VALUE ){
-                FES->SetEnergy(ipoint,value);
-            } else {
-                FES->SetError(ipoint,value);
-            }
+            FES->SetEnergy(ipoint,value);
             FES->SetNumOfSamples(ipoint,Accumulator->GetNumberOfABFSamples(ipoint));
         }
     }
@@ -278,16 +267,16 @@ void CABFIntegratorRFD2::BuildEquations(bool trial)
                         A[LocIter][XMap[ifbin1]] = -3.0 * dfac;
                         A[LocIter][XMap[ifbin2]] = +4.0 * dfac;
                         A[LocIter][XMap[ifbin3]] = -1.0 * dfac;
-                        Rhs[LocIter] = Accumulator->GetValue(ifcoord,ifbin1,IntegratedRealm);
+                        Rhs[LocIter] = Accumulator->GetValue(ifcoord,ifbin1,EABF_MEAN_FORCE_VALUE);
                         LocIter++;
                         A[LocIter][XMap[ifbin1]] = -1.0 * dfac;
                         A[LocIter][XMap[ifbin3]] = +1.0 * dfac;
-                        Rhs[LocIter] = Accumulator->GetValue(ifcoord,ifbin2,IntegratedRealm);
+                        Rhs[LocIter] = Accumulator->GetValue(ifcoord,ifbin2,EABF_MEAN_FORCE_VALUE);
                         LocIter++;
                         A[LocIter][XMap[ifbin1]] = +1.0 * dfac;
                         A[LocIter][XMap[ifbin2]] = -4.0 * dfac;
                         A[LocIter][XMap[ifbin3]] = +3.0 * dfac;
-                        Rhs[LocIter] = Accumulator->GetValue(ifcoord,ifbin3,IntegratedRealm);
+                        Rhs[LocIter] = Accumulator->GetValue(ifcoord,ifbin3,EABF_MEAN_FORCE_VALUE);
                         LocIter++;
                     } else {
                         NumOfEquations += 3;
@@ -322,25 +311,25 @@ void CABFIntegratorRFD2::BuildEquations(bool trial)
                         A[LocIter][XMap[ifbin2]] = +18.0 * dfac;
                         A[LocIter][XMap[ifbin3]] = -9.0 * dfac;
                         A[LocIter][XMap[ifbin4]] = +2.0 * dfac;
-                        Rhs[LocIter] = Accumulator->GetValue(ifcoord,ifbin1,IntegratedRealm);
+                        Rhs[LocIter] = Accumulator->GetValue(ifcoord,ifbin1,EABF_MEAN_FORCE_VALUE);
                         LocIter++;
                         A[LocIter][XMap[ifbin1]] = -2.0 * dfac;
                         A[LocIter][XMap[ifbin2]] = -3.0 * dfac;
                         A[LocIter][XMap[ifbin3]] = +6.0 * dfac;
                         A[LocIter][XMap[ifbin4]] = -1.0 * dfac;
-                        Rhs[LocIter] = Accumulator->GetValue(ifcoord,ifbin2,IntegratedRealm);
+                        Rhs[LocIter] = Accumulator->GetValue(ifcoord,ifbin2,EABF_MEAN_FORCE_VALUE);
                         LocIter++;
                         A[LocIter][XMap[ifbin1]] = +1.0 * dfac;
                         A[LocIter][XMap[ifbin2]] = -6.0 * dfac;
                         A[LocIter][XMap[ifbin3]] = +3.0 * dfac;
                         A[LocIter][XMap[ifbin4]] = +2.0 * dfac;
-                        Rhs[LocIter] = Accumulator->GetValue(ifcoord,ifbin3,IntegratedRealm);
+                        Rhs[LocIter] = Accumulator->GetValue(ifcoord,ifbin3,EABF_MEAN_FORCE_VALUE);
                         LocIter++;
                         A[LocIter][XMap[ifbin1]] = -2.0 * dfac;
                         A[LocIter][XMap[ifbin2]] = +9.0 * dfac;
                         A[LocIter][XMap[ifbin3]] = -18.0 * dfac;
                         A[LocIter][XMap[ifbin4]] = +11.0 * dfac;
-                        Rhs[LocIter] = Accumulator->GetValue(ifcoord,ifbin4,IntegratedRealm);
+                        Rhs[LocIter] = Accumulator->GetValue(ifcoord,ifbin4,EABF_MEAN_FORCE_VALUE);
                         LocIter++;
                     } else {
                         NumOfEquations += 4;

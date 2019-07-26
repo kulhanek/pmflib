@@ -48,8 +48,6 @@ CABFIntegratorRBF::CABFIntegratorRBF(void)
     Overhang    = 2;
     Method      = ERBFLLS_SVD;
 
-    IntegratedRealm = EABF_MEAN_FORCE_VALUE;
-
     RCond   = -1; // machine precision
 }
 
@@ -128,14 +126,8 @@ void CABFIntegratorRBF::SetLLSMehod(ERBFLLSMethod set)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-bool CABFIntegratorRBF::Integrate(CVerboseStr& vout,bool errors)
+bool CABFIntegratorRBF::Integrate(CVerboseStr& vout)
 {
-    if( ! errors ){
-        IntegratedRealm = EABF_MEAN_FORCE_VALUE;
-    } else {
-        IntegratedRealm = EABF_MEAN_FORCE_ERROR;
-    }
-
     if( Accumulator == NULL ) {
         ES_ERROR("ABF accumulator is not set");
         return(false);
@@ -219,19 +211,11 @@ bool CABFIntegratorRBF::Integrate(CVerboseStr& vout,bool errors)
         int samples = Accumulator->GetNumberOfABFSamples(i);
         FES->SetNumOfSamples(i,samples);
         double value = 0.0;
-        if( IntegratedRealm == EABF_MEAN_FORCE_VALUE ){
-            FES->SetEnergy(i,value);
-        } else {
-            FES->SetError(i,value);
-        }
+        FES->SetEnergy(i,value);
         if( samples <= 0 ) continue;
         Accumulator->GetPoint(i,ipos);
         value = GetValue(ipos);
-        if( IntegratedRealm == EABF_MEAN_FORCE_VALUE ){
-            FES->SetEnergy(i,value);
-        } else {
-            FES->SetError(i,value);
-        }
+        FES->SetEnergy(i,value);
         if( first || (glb_min > value) ){
             glb_min = value;
             first = false;
@@ -242,23 +226,13 @@ bool CABFIntegratorRBF::Integrate(CVerboseStr& vout,bool errors)
     for(int i=0; i < FES->GetNumberOfPoints(); i++) {
         if( FES->GetNumOfSamples(i) <= 0 ) continue;
         double value = 0.0;
-        if( IntegratedRealm == EABF_MEAN_FORCE_VALUE ){
-            value = FES->GetEnergy(i);
-        } else {
-            value = FES->GetError(i);
-        }
+        value = FES->GetEnergy(i);
         value = value - glb_min;
-        if( IntegratedRealm == EABF_MEAN_FORCE_VALUE ){
-            FES->SetEnergy(i,value);
-        } else {
-            FES->SetError(i,value);
-        }
+        FES->SetEnergy(i,value);
     }
 
     vout << "   RMSR = " << setprecision(5) << GetRMSR() << endl;
-    if( IntegratedRealm == EABF_MEAN_FORCE_VALUE ){
-        vout << "   SigmaF2 = " << setprecision(5) << FES->GetSigmaF2() << endl;
-    }
+    vout << "   SigmaF2 = " << setprecision(5) << FES->GetSigmaF2() << endl;
 
     return(true);
 }
@@ -320,7 +294,7 @@ bool CABFIntegratorRBF::IntegrateByLS(CVerboseStr& vout)
         }
         // rhs
         for(int k=0; k < NumOfCVs; k++){
-            rhs[j+k] = Accumulator->GetValue(k,i,IntegratedRealm);
+            rhs[j+k] = Accumulator->GetValue(k,i,EABF_MEAN_FORCE_VALUE);
         }
         j += NumOfCVs;
     }
@@ -451,7 +425,7 @@ double CABFIntegratorRBF::GetRMSR(void)
         }
 
         for(int k=0; k < NumOfCVs; k++){
-            double diff = Accumulator->GetValue(k,i,IntegratedRealm) - der[k];
+            double diff = Accumulator->GetValue(k,i,EABF_MEAN_FORCE_VALUE) - der[k];
             rmsr += diff*diff;
             nsamples++;
         }
@@ -524,7 +498,7 @@ bool CABFIntegratorRBF::WriteMFInfo(const CSmallString& name)
         }
 
         for(int k=0; k < NumOfCVs; k++){
-            double mfi = Accumulator->GetValue(k,i,IntegratedRealm);
+            double mfi = Accumulator->GetValue(k,i,EABF_MEAN_FORCE_VALUE);
             double mfp = der[k];
             ofs << format("%20.16f %20.16f")%mfi%mfp;
         }

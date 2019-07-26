@@ -81,13 +81,16 @@ public:
 
 // execution method -----------------------------------------------------------
     /// integrate data
-    bool Integrate(CVerboseStr& vout,bool errors);
+    bool Integrate(CVerboseStr& vout);
 
     /// get root mean square residuals
     double GetRMSR(void);
 
     /// write file with derivatives
     bool WriteMFInfo(const CSmallString& name);
+
+    /// filter by MF outliers
+    void FilterByMFFac(double mffac);
 
 // section of private data ----------------------------------------------------
 private:
@@ -100,7 +103,6 @@ private:
     double                  RFac2;   // reduction factor for number of RBFs
     int                     Overhang;
     ERBFLLSMethod           Method;
-    EABFAccuValue           IntegratedRealm;
 
     // RBF data
     int                     NumOfRBFs;

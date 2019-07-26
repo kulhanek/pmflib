@@ -74,7 +74,6 @@ private:
     void GetTPoint(CSimpleVector<int>& ipos,int d,CSimpleVector<int>& tpos);
     bool IntegrateForEcut(void);
     bool Integrate(void);
-    bool IntegrateErrors(void);
     void WriteHeader(void);
 };
 

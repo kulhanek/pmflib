@@ -62,7 +62,7 @@ CABFIntegratorGPR::~CABFIntegratorGPR(void)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void CABFIntegratorGPR::SetInputABFAccumulator(const CABFAccumulator* p_accu)
+void CABFIntegratorGPR::SetInputABFAccumulator(CABFAccumulator* p_accu)
 {
     Accumulator = p_accu;
 }
@@ -479,6 +479,58 @@ bool CABFIntegratorGPR::WriteMFInfo(const CSmallString& name)
     }
 
     return(true);
+}
+
+
+
+//------------------------------------------------------------------------------
+
+void CABFIntegratorGPR::FilterByMFFac(double mffac)
+{
+    if( Accumulator->GetNumberOfBins() <= 0 ){
+        ES_ERROR("number of bins is not > 0");
+        return;
+    }
+
+    // we assume zero mean on errors
+    CSimpleVector<double>   sig2;
+    sig2.CreateVector(Accumulator->GetNumberOfCoords());
+    double                  count = 0;
+
+    // calc variances
+    for(int i=0; i < Accumulator->GetNumberOfBins(); i++){
+        if( Accumulator->GetNumberOfABFSamples(i) <= 0 ) continue;
+
+        Accumulator->GetPoint(i,jpos);
+
+        for(int k=0; k < Accumulator->GetNumberOfCoords(); k++){
+            double diff2 = Accumulator->GetValue(k,i,EABF_MEAN_FORCE_VALUE) - GetMeanForce(jpos,k);
+            diff2 *= diff2;
+            sig2[k] += diff2;
+        }
+        count++;
+    }
+
+    if( count == 0 ) return;
+    for(int k=0; k < Accumulator->GetNumberOfCoords(); k++){
+        sig2[k] /= count;
+    }
+
+    // filter
+    for(int i=0; i < Accumulator->GetNumberOfBins(); i++){
+        if( Accumulator->GetNumberOfABFSamples(i) <= 0 ) continue;
+
+        Accumulator->GetPoint(i,jpos);
+
+        for(int k=0; k < Accumulator->GetNumberOfCoords(); k++){
+            double diff2 = Accumulator->GetValue(k,i,EABF_MEAN_FORCE_VALUE) - GetMeanForce(jpos,k);
+            diff2 *= diff2;
+
+            if( diff2 > mffac*sig2[k] ){
+                Accumulator->SetNumberOfABFSamples(i,0);
+            }
+        }
+    }
 }
 
 //------------------------------------------------------------------------------

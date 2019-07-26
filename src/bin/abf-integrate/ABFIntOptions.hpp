@@ -76,6 +76,7 @@ public:
     CSO_OPT(bool,SkipFFTest)
     CSO_OPT(double,NCorr)
     CSO_OPT(double,EnergyLimit)
+    CSO_OPT(double,MFLimit)
     CSO_OPT(double,Offset)
     CSO_OPT(CSmallString,Method)
     CSO_OPT(CSmallString,EcutMethod)
@@ -142,6 +143,16 @@ public:
                 "NUMBER",                           /* parametr name */
                 "Integrate data only if the free energy is below NUMBER. "
                 "This limit enforces two integration runs. Negative value disables the limit.")   /* option description */
+    //----------------------------------------------------------------------
+    CSO_MAP_OPT(double,                           /* option type */
+                MFLimit,                        /* option name */
+                -1.0,                          /* default value */
+                false,                          /* is option mandatory */
+                'u',                           /* short option name */
+                "mflimit",                      /* long option name */
+                "NUMBER",                           /* parametr name */
+                "Consider only mean forces which are within mflimt*stddev. "
+                "This limit is aplied in two passes. Negative value disables the limit.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(double,                           /* option type */
                 Offset,                        /* option name */

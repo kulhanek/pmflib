@@ -63,7 +63,7 @@ public:
 
 // execution method -----------------------------------------------------------
     /// integrate data, for errors the FES must be already allocated!!!
-    bool Integrate(CVerboseStr& vout,bool errors);
+    bool Integrate(CVerboseStr& vout);
 
     /// get root mean square residuals
     double GetRMSR(void);
@@ -79,8 +79,6 @@ private:
     int                     NumOfVariables;
     int                     NumOfEquations;
     int                     NumOfNonZeros;
-
-    EABFAccuValue           IntegratedRealm;
 
     CSimpleVector<int>      XMap;       // translation between global index and X index
     CSimpleVector<int>      IPoint;     // index points

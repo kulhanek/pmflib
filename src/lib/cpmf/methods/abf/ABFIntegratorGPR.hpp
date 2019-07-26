@@ -50,7 +50,7 @@ public:
 
 // setup methods --------------------------------------------------------------
     /// set input ABF accumulator, only ABF forces are integrated
-    void SetInputABFAccumulator(const CABFAccumulator* p_accu);
+    void SetInputABFAccumulator(CABFAccumulator* p_accu);
 
     /// set output free energy surface
     void SetOutputFESurface(CEnergySurface* p_surf);
@@ -89,10 +89,13 @@ public:
     /// write file with derivatives
     bool WriteMFInfo(const CSmallString& name);
 
+    /// remove mean force outliers from ABF data
+    void FilterByMFFac(double mffac);
+
 // section of private data ----------------------------------------------------
 private:
-    const CABFAccumulator*  Accumulator;
-    CEnergySurface*         FES;
+    CABFAccumulator*    Accumulator;
+    CEnergySurface*     FES;
 
     // GPR data
     int                     GPRSize;

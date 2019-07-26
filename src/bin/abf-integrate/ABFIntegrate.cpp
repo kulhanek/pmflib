@@ -239,17 +239,6 @@ bool CABFIntegrate::Run(void)
  // apply offset
     FES.ApplyOffset(Options.GetOptOffset() - FES.GetGlobalMinimumValue());
 
-    if( (Options.GetOptWithError()) && (Options.GetOptMethod() != "gpr") ){
-        vout << endl;
-        vout << "3) ABF accumulator integration (errors)"<< endl;
-
-        if( IntegrateErrors() == false ) return(false);
-
-        FES.AdaptErrorsToGlobalMinimum();
-
-        vout << "   Done" << endl;
-    }
-
     if( Options.GetOptUnsampledAsMaxE() ){
         if( Options.IsOptMaxEnergySet()){
             FES.AdaptUnsampledToMaxEnergy(Options.GetOptMaxEnergy());
@@ -426,7 +415,7 @@ bool CABFIntegrate::IntegrateForEcut(void)
         integrator.SetInputABFAccumulator(&Accumulator);
         integrator.SetOutputFESurface(&FES);
 
-        if(integrator.Integrate(vout,false) == false) {
+        if(integrator.Integrate(vout) == false) {
             ES_ERROR("unable to integrate ABF accumulator");
             return(false);
         }
@@ -452,7 +441,7 @@ bool CABFIntegrate::IntegrateForEcut(void)
         integrator.SetInputABFAccumulator(&Accumulator);
         integrator.SetOutputFESurface(&FES);
 
-        if(integrator.Integrate(vout,false) == false) {
+        if(integrator.Integrate(vout) == false) {
             ES_ERROR("unable to integrate ABF accumulator");
             return(false);
         }
@@ -481,7 +470,7 @@ bool CABFIntegrate::IntegrateForEcut(void)
         integrator.SetInputABFAccumulator(&Accumulator);
         integrator.SetOutputFESurface(&FES);
 
-        if(integrator.Integrate(vout,false) == false) {
+        if(integrator.Integrate(vout) == false) {
             ES_ERROR("unable to integrate ABF accumulator");
             return(false);
         }
@@ -541,7 +530,7 @@ bool CABFIntegrate::Integrate()
         integrator.SetInputABFAccumulator(&Accumulator);
         integrator.SetOutputFESurface(&FES);
 
-        if(integrator.Integrate(vout,false) == false) {
+        if(integrator.Integrate(vout) == false) {
             ES_ERROR("unable to integrate ABF accumulator");
             return(false);
         }
@@ -566,7 +555,7 @@ bool CABFIntegrate::Integrate()
         integrator.SetInputABFAccumulator(&Accumulator);
         integrator.SetOutputFESurface(&FES);
 
-        if(integrator.Integrate(vout,false) == false) {
+        if(integrator.Integrate(vout) == false) {
             ES_ERROR("unable to integrate ABF accumulator");
             return(false);
         }
@@ -593,7 +582,7 @@ bool CABFIntegrate::Integrate()
         integrator.SetInputABFAccumulator(&Accumulator);
         integrator.SetOutputFESurface(&FES);
 
-        if(integrator.Integrate(vout,false) == false) {
+        if(integrator.Integrate(vout) == false) {
             ES_ERROR("unable to integrate ABF accumulator");
             return(false);
         }
@@ -635,92 +624,6 @@ bool CABFIntegrate::Integrate()
         }
 
 
-    } else {
-        INVALID_ARGUMENT("method - not implemented");
-    }
-
-    return(true);
-}
-
-//------------------------------------------------------------------------------
-
-bool CABFIntegrate::IntegrateErrors(void)
-{
-    if(Options.GetOptMethod() == "rfd" ) {
-        CABFIntegratorRFD   integrator;
-
-        integrator.SetPeriodicity(Options.GetOptPeriodicity());
-        integrator.SetFDPoints(Options.GetOptFDPoints());
-
-        if( Options.GetOptLAMethod() == "lu" ){
-            // nothing to do - LU is default
-        } else if( Options.GetOptLAMethod() == "default" ) {
-            // nothing to do - use default method set in constructor of integrator
-        } else {
-            INVALID_ARGUMENT("algorithm - not implemented");
-        }
-
-        integrator.SetInputABFAccumulator(&Accumulator);
-        integrator.SetOutputFESurface(&FES);
-
-        if(integrator.Integrate(vout,true) == false) {
-            ES_ERROR("unable to integrate ABF accumulator");
-            return(false);
-        }
-    } else if(Options.GetOptMethod() == "rfd2" ) {
-        CABFIntegratorRFD2   integrator;
-
-        integrator.SetPeriodicity(Options.GetOptPeriodicity());
-        integrator.SetFDPoints(Options.GetOptFDPoints());
-
-        integrator.SetRCond(Options.GetOptRCond());
-
-        if( Options.GetOptLAMethod() == "svd" ){
-            integrator.SetLLSMehod(ERFDLLS_SVD);
-        } else if( Options.GetOptLAMethod() == "qr" ) {
-            integrator.SetLLSMehod(ERFDLLS_QR);
-        } else if( Options.GetOptLAMethod() == "default" ) {
-            // nothing to do - use default method set in constructor of integrator
-        }  else {
-            INVALID_ARGUMENT("algorithm - not implemented");
-        }
-
-        integrator.SetInputABFAccumulator(&Accumulator);
-        integrator.SetOutputFESurface(&FES);
-
-        if(integrator.Integrate(vout,true) == false) {
-            ES_ERROR("unable to integrate ABF accumulator");
-            return(false);
-        }
-    } else if( Options.GetOptMethod() == "rbf" ){
-        CABFIntegratorRBF   integrator;
-
-        integrator.SetWFac1(Options.GetOptWFac());
-        integrator.SetWFac2(Options.GetOptWFac2());
-        integrator.SetRCond(Options.GetOptRCond());
-        integrator.SetRFac1(Options.GetOptRFac());
-        integrator.SetRFac2(Options.GetOptRFac2());
-        integrator.SetOverhang(Options.GetOptOverhang());
-
-        if( Options.GetOptLAMethod() == "svd" ){
-            integrator.SetLLSMehod(ERBFLLS_SVD);
-        } else if( Options.GetOptLAMethod() == "qr" ) {
-            integrator.SetLLSMehod(ERBFLLS_QR);
-        } else if( Options.GetOptLAMethod() == "default" ) {
-            // nothing to do - use default method set in constructor of integrator
-        } else {
-            INVALID_ARGUMENT("algorithm - not implemented");
-        }
-
-        integrator.SetInputABFAccumulator(&Accumulator);
-        integrator.SetOutputFESurface(&FES);
-
-        if(integrator.Integrate(vout,true) == false) {
-            ES_ERROR("unable to integrate ABF accumulator");
-            return(false);
-        }
-    } else if( Options.GetOptMethod() == "gpr" ){
-        vout << "   Already integrated." << endl;
     } else {
         INVALID_ARGUMENT("method - not implemented");
     }
