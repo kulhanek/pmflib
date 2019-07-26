@@ -50,7 +50,7 @@ public:
 
 // setup methods --------------------------------------------------------------
     /// set input ABF accumulator, only ABF forces are integrated
-    void SetInputABFAccumulator(const CABFAccumulator* p_accu);
+    void SetInputABFAccumulator(CABFAccumulator* p_accu);
 
     /// set output free energy surface
     void SetOutputFESurface(CEnergySurface* p_surf);
@@ -94,7 +94,7 @@ public:
 
 // section of private data ----------------------------------------------------
 private:
-    const CABFAccumulator*  Accumulator;
+    CABFAccumulator*        Accumulator;
     CEnergySurface*         FES;
 
     double                  WFac1;
@@ -118,6 +118,7 @@ private:
 
     void    GetRBFPosition(unsigned int index,CSimpleVector<double>& position);
     double  GetValue(const CSimpleVector<double>& position);
+    double  GetMeanForce(const CSimpleVector<double>& position,int icoord);
 };
 
 //------------------------------------------------------------------------------

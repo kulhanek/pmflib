@@ -151,7 +151,7 @@ public:
                 'u',                           /* short option name */
                 "mflimit",                      /* long option name */
                 "NUMBER",                           /* parametr name */
-                "Consider only mean forces which are within mflimt*stddev. "
+                "RBF+GPR: Consider only mean forces which are within mflimit*stddev. "
                 "This limit is aplied in two passes. Negative value disables the limit.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(double,                           /* option type */
@@ -281,7 +281,7 @@ public:
                 'e',                           /* short option name */
                 "witherror",                      /* long option name */
                 NULL,                           /* parametr name */
-                "Integrate free energy and try to estimate its error.")   /* option description */
+                "GPR: Estimate free energy errors.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(bool,                           /* option type */
                 NoEnergy,                        /* option name */
@@ -362,7 +362,7 @@ public:
                 '\0',                           /* short option name */
                 "mfinfo",                      /* long option name */
                 "NAME",                           /* parametr name */
-                "name of file with input and predicted mean forces.")   /* option description */
+                "RBF+GPR: name of file with input and predicted mean forces.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(bool,                           /* option type */
                 Verbose,                        /* option name */

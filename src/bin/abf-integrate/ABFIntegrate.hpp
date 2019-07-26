@@ -73,6 +73,7 @@ private:
     int  FillSeed(int seedid);
     void GetTPoint(CSimpleVector<int>& ipos,int d,CSimpleVector<int>& tpos);
     bool IntegrateForEcut(void);
+    bool IntegrateForMFLimit(void);
     bool Integrate(void);
     void WriteHeader(void);
 };

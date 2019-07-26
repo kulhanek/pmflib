@@ -218,6 +218,26 @@ int CABFIntOptions::CheckOptions(void)
         IsError = true;
     }
 
+    if( IsOptWithErrorSet() && (GetOptMethod() != "gpr") ){
+        if(IsError == false) fprintf(stderr,"\n");
+        fprintf(stderr,"%s: --witherror can be compbined only with GPR\n",
+                (const char*)GetProgramName());
+        IsError = true;
+    }
+
+    if( IsOptMFInfoSet() && ((GetOptMethod() != "rbf")&&(GetOptMethod() != "gpr")) ){
+        if(IsError == false) fprintf(stderr,"\n");
+        fprintf(stderr,"%s: --mfinfo can be compbined only with RBF or GPR\n",
+                (const char*)GetProgramName());
+        IsError = true;
+    }
+
+    if( IsOptMFLimitSet() && ((GetOptMethod() != "rbf")&&(GetOptMethod() != "gpr")) ){
+        if(IsError == false) fprintf(stderr,"\n");
+        fprintf(stderr,"%s: --mflimit can be compbined only with RBF or GPR\n",
+                (const char*)GetProgramName());
+        IsError = true;
+    }
     if(IsError == true) return(SO_OPTS_ERROR);
     return(SO_CONTINUE);
 }

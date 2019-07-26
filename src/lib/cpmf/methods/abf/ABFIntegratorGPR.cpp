@@ -481,8 +481,6 @@ bool CABFIntegratorGPR::WriteMFInfo(const CSmallString& name)
     return(true);
 }
 
-
-
 //------------------------------------------------------------------------------
 
 void CABFIntegratorGPR::FilterByMFFac(double mffac)
@@ -496,6 +494,7 @@ void CABFIntegratorGPR::FilterByMFFac(double mffac)
     CSimpleVector<double>   sig2;
     sig2.CreateVector(Accumulator->GetNumberOfCoords());
     double                  count = 0;
+    sig2.SetZero();
 
     // calc variances
     for(int i=0; i < Accumulator->GetNumberOfBins(); i++){
@@ -516,21 +515,34 @@ void CABFIntegratorGPR::FilterByMFFac(double mffac)
         sig2[k] /= count;
     }
 
+    CSimpleVector<int>  flags;
+    flags.CreateVector(Accumulator->GetNumberOfBins());
+    flags.SetZero();
+
     // filter
     for(int i=0; i < Accumulator->GetNumberOfBins(); i++){
         if( Accumulator->GetNumberOfABFSamples(i) <= 0 ) continue;
 
+        flags[i] = 1;
         Accumulator->GetPoint(i,jpos);
 
         for(int k=0; k < Accumulator->GetNumberOfCoords(); k++){
             double diff2 = Accumulator->GetValue(k,i,EABF_MEAN_FORCE_VALUE) - GetMeanForce(jpos,k);
             diff2 *= diff2;
-
             if( diff2 > mffac*sig2[k] ){
-                Accumulator->SetNumberOfABFSamples(i,0);
+                flags[i] = 0;
             }
         }
     }
+
+    // apply limits
+    for(int i=0; i < Accumulator->GetNumberOfBins(); i++){
+        if( flags[i] == 0 ){
+            Accumulator->SetNumberOfABFSamples(i,0);
+        }
+    }
+
+    // from now the integrator is in invalid state !!!
 }
 
 //------------------------------------------------------------------------------

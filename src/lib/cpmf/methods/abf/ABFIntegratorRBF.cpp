@@ -61,7 +61,7 @@ CABFIntegratorRBF::~CABFIntegratorRBF(void)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void CABFIntegratorRBF::SetInputABFAccumulator(const CABFAccumulator* p_accu)
+void CABFIntegratorRBF::SetInputABFAccumulator(CABFAccumulator* p_accu)
 {
     Accumulator = p_accu;
 }
@@ -391,12 +391,6 @@ double CABFIntegratorRBF::GetRMSR(void)
     CSimpleVector<double>   ipos;
     ipos.CreateVector(NumOfCVs);
 
-    CSimpleVector<double>   lpos;
-    lpos.CreateVector(NumOfCVs);
-
-    CSimpleVector<double>   der;
-    der.CreateVector(NumOfCVs);
-
     double rmsr = 0.0;
     double nsamples = 0.0;
 
@@ -405,27 +399,9 @@ double CABFIntegratorRBF::GetRMSR(void)
         if( Accumulator->GetNumberOfABFSamples(i) <= 0 ) continue;
 
         Accumulator->GetPoint(i,ipos);
-        der.SetZero();
-
-        for(int l=0; l < NumOfRBFs; l++){
-            GetRBFPosition(l,lpos);
-                  //      cout << lpos[0] << " " << lpos[1] << endl;
-            double av = 1.0;
-            for(int k=0; k < NumOfCVs; k++){
-                double dvc = Accumulator->GetCoordinate(k)->GetDifference(ipos[k],lpos[k]);
-                double sig = Sigmas[k];
-                av *= exp( - dvc*dvc/(2.0*sig*sig) );
-            }
-            for(int k=0; k < NumOfCVs; k++){
-                double dvc = Accumulator->GetCoordinate(k)->GetDifference(ipos[k],lpos[k]);
-                double sig = Sigmas[k];
-                double fc = -dvc/(sig*sig);  // switch to derivatives
-                der[k] += Weights[l] * av * fc;
-            }
-        }
 
         for(int k=0; k < NumOfCVs; k++){
-            double diff = Accumulator->GetValue(k,i,EABF_MEAN_FORCE_VALUE) - der[k];
+            double diff = Accumulator->GetValue(k,i,EABF_MEAN_FORCE_VALUE) - GetMeanForce(ipos,k);
             rmsr += diff*diff;
             nsamples++;
         }
@@ -458,15 +434,8 @@ bool CABFIntegratorRBF::WriteMFInfo(const CSmallString& name)
         return(false);
     }
 
-
     CSimpleVector<double>   ipos;
     ipos.CreateVector(NumOfCVs);
-
-    CSimpleVector<double>   lpos;
-    lpos.CreateVector(NumOfCVs);
-
-    CSimpleVector<double>   der;
-    der.CreateVector(NumOfCVs);
 
     for(int i=0; i < Accumulator->GetNumberOfBins(); i++){
 
@@ -478,28 +447,9 @@ bool CABFIntegratorRBF::WriteMFInfo(const CSmallString& name)
             ofs << format("%20.16f ")%ipos[c];
         }
 
-        der.SetZero();
-
-        for(int l=0; l < NumOfRBFs; l++){
-            GetRBFPosition(l,lpos);
-                  //      cout << lpos[0] << " " << lpos[1] << endl;
-            double av = 1.0;
-            for(int k=0; k < NumOfCVs; k++){
-                double dvc = Accumulator->GetCoordinate(k)->GetDifference(ipos[k],lpos[k]);
-                double sig = Sigmas[k];
-                av *= exp( - dvc*dvc/(2.0*sig*sig) );
-            }
-            for(int k=0; k < NumOfCVs; k++){
-                double dvc = Accumulator->GetCoordinate(k)->GetDifference(ipos[k],lpos[k]);
-                double sig = Sigmas[k];
-                double fc = -dvc/(sig*sig);  // switch to derivatives
-                der[k] += Weights[l] * av * fc;
-            }
-        }
-
         for(int k=0; k < NumOfCVs; k++){
             double mfi = Accumulator->GetValue(k,i,EABF_MEAN_FORCE_VALUE);
-            double mfp = der[k];
+            double mfp = GetMeanForce(ipos,k);
             ofs << format("%20.16f %20.16f")%mfi%mfp;
         }
 
@@ -507,6 +457,99 @@ bool CABFIntegratorRBF::WriteMFInfo(const CSmallString& name)
     }
 
     return(true);
+}
+
+//------------------------------------------------------------------------------
+
+void CABFIntegratorRBF::FilterByMFFac(double mffac)
+{
+    if( Accumulator->GetNumberOfBins() <= 0 ){
+        ES_ERROR("number of bins is not > 0");
+        return;
+    }
+
+    // we assume zero mean on errors
+    CSimpleVector<double>   sig2;
+    sig2.CreateVector(Accumulator->GetNumberOfCoords());
+    double                  count = 0;
+    sig2.SetZero();
+
+    CSimpleVector<double>   ipos;
+    ipos.CreateVector(NumOfCVs);
+
+    // calc variances
+    for(int i=0; i < Accumulator->GetNumberOfBins(); i++){
+        if( Accumulator->GetNumberOfABFSamples(i) <= 0 ) continue;
+
+        Accumulator->GetPoint(i,ipos);
+
+        for(int k=0; k < Accumulator->GetNumberOfCoords(); k++){
+            double diff2 = Accumulator->GetValue(k,i,EABF_MEAN_FORCE_VALUE) - GetMeanForce(ipos,k);
+            diff2 *= diff2;
+            sig2[k] += diff2;
+        }
+        count++;
+    }
+
+    if( count == 0 ) return;
+    for(int k=0; k < Accumulator->GetNumberOfCoords(); k++){
+        sig2[k] /= count;
+    }
+
+    CSimpleVector<int>  flags;
+    flags.CreateVector(Accumulator->GetNumberOfBins());
+    flags.SetZero();
+
+    // filter
+    for(int i=0; i < Accumulator->GetNumberOfBins(); i++){
+        if( Accumulator->GetNumberOfABFSamples(i) <= 0 ) continue;
+
+        flags[i] = 1;
+        Accumulator->GetPoint(i,ipos);
+
+        for(int k=0; k < Accumulator->GetNumberOfCoords(); k++){
+            double diff2 = Accumulator->GetValue(k,i,EABF_MEAN_FORCE_VALUE) - GetMeanForce(ipos,k);
+            diff2 *= diff2;
+            if( diff2 > mffac*sig2[k] ){
+                flags[i] = 0;
+            }
+        }
+    }
+
+    // apply limits
+    for(int i=0; i < Accumulator->GetNumberOfBins(); i++){
+        if( flags[i] == 0 ){
+            Accumulator->SetNumberOfABFSamples(i,0);
+        }
+    }
+
+    // from now the integrator is in invalid state !!!
+}
+
+//------------------------------------------------------------------------------
+
+double CABFIntegratorRBF::GetMeanForce(const CSimpleVector<double>& ipos,int icoord)
+{
+    CSimpleVector<double>   lpos;
+    lpos.CreateVector(NumOfCVs);
+
+    double mf = 0.0;
+    for(int l=0; l < NumOfRBFs; l++){
+        GetRBFPosition(l,lpos);
+              //      cout << lpos[0] << " " << lpos[1] << endl;
+        double av = 1.0;
+        for(int k=0; k < NumOfCVs; k++){
+            double dvc = Accumulator->GetCoordinate(k)->GetDifference(ipos[k],lpos[k]);
+            double sig = Sigmas[k];
+            av *= exp( - dvc*dvc/(2.0*sig*sig) );
+        }
+        double dvc = Accumulator->GetCoordinate(icoord)->GetDifference(ipos[icoord],lpos[icoord]);
+        double sig = Sigmas[icoord];
+        double fc = -dvc/(sig*sig);  // switch to derivatives
+        mf += Weights[l] * av * fc;
+    }
+
+    return(mf);
 }
 
 //==============================================================================
