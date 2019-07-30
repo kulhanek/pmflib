@@ -166,7 +166,7 @@ void CESPrinter::PrintPlain(FILE* fout)
         // do we have enough samples?
         double nsamples = EnergySurface->GetNumOfSamples(ibin);
         if( IncludeGluedBins ){
-            if( nsamples > 0 ){
+            if( nsamples >= 0 ){
                 if( nsamples < PrintLimit ) continue;
             }
         } else {

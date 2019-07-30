@@ -368,6 +368,7 @@ bool CABFIntegrate::Run(void)
 
         // print all
         printer.SetSampleLimit(0);
+        printer.IncludeGluedAreas(Options.GetOptGlueFES() > 0);
         printer.SetIncludeError(Options.GetOptWithError());
         printer.SetPrintedES(&FES);
 
