@@ -307,7 +307,7 @@ void CEnergySurface::AdaptUnsampledToMaxEnergy(void)
 
     // find maximum in sampled region
     for(int k=0; k < TotNPoints; k++) {
-        if( Samples[k] <= 0 ) continue; // skip unsampled
+        if( Samples[k] == 0 ) continue; // skip unsampled
         if( (maxe < Energy[k]) || (first == true) ){
             maxe = Energy[k];
             first = false;
@@ -316,7 +316,7 @@ void CEnergySurface::AdaptUnsampledToMaxEnergy(void)
 
     // adapt unsampled region
     for(int k=0; k < TotNPoints; k++) {
-        if( Samples[k] <= 0 ){
+        if( Samples[k] == 0 ){
             Energy[k] = maxe;
         }
     }
@@ -328,7 +328,7 @@ void CEnergySurface::AdaptUnsampledToMaxEnergy(double maxene)
 {
     // adapt unsampled region
     for(int k=0; k < TotNPoints; k++) {
-        if( Samples[k] <= 0 ){
+        if( Samples[k] == 0 ){
             Energy[k] = maxene;
         }
     }
