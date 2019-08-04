@@ -551,6 +551,84 @@ void CABFIntegratorRBF::FilterByMFFac(double mffac)
 
 //------------------------------------------------------------------------------
 
+void CABFIntegratorRBF::FilterByMFMaxError(double mfmaxerr)
+{
+    CSimpleVector<int>  flags;
+    flags.CreateVector(Accumulator->GetNumberOfBins());
+    flags.Set(1);
+
+    CSimpleVector<double>   ipos;
+    ipos.CreateVector(NumOfCVs);
+
+    // filter
+    for(int i=0; i < Accumulator->GetNumberOfBins(); i++){
+        if( Accumulator->GetNumberOfABFSamples(i) <= 0 ) continue;
+
+        Accumulator->GetPoint(i,ipos);
+
+        for(int k=0; k < Accumulator->GetNumberOfCoords(); k++){
+            double err = fabs(Accumulator->GetValue(k,i,EABF_MEAN_FORCE_VALUE) - GetMeanForce(ipos,k));
+            if( err > mfmaxerr ){
+                flags[i] = 0;
+            }
+        }
+    }
+
+    // apply limits
+    for(int i=0; i < Accumulator->GetNumberOfBins(); i++){
+        if( flags[i] == 0 ){
+            Accumulator->SetNumberOfABFSamples(i,0);
+        }
+    }
+
+    // from now the integrator is in invalid state !!!
+}
+
+//------------------------------------------------------------------------------
+
+void CABFIntegratorRBF::FilterByMFMaxError(double mfmaxerr1,double mfmaxerr2)
+{
+    if( Accumulator->GetNumberOfCoords() != 2 ){
+        LOGIC_ERROR("only two CV can be combined with FilterByMFMaxError(double mfmaxerr1,double mfmaxerr2)");
+    }
+
+    CSimpleVector<int>  flags;
+    flags.CreateVector(Accumulator->GetNumberOfBins());
+    flags.Set(1);
+
+    CSimpleVector<double>   ipos;
+    ipos.CreateVector(NumOfCVs);
+
+    // filter
+    for(int i=0; i < Accumulator->GetNumberOfBins(); i++){
+        if( Accumulator->GetNumberOfABFSamples(i) <= 0 ) continue;
+
+        Accumulator->GetPoint(i,ipos);
+
+        double err = fabs(Accumulator->GetValue(0,i,EABF_MEAN_FORCE_VALUE) - GetMeanForce(ipos,0));
+        if( err > mfmaxerr1 ){
+            flags[i] = 0;
+        }
+
+        err = fabs(Accumulator->GetValue(1,i,EABF_MEAN_FORCE_VALUE) - GetMeanForce(ipos,1));
+        if( err > mfmaxerr2 ){
+            flags[i] = 0;
+        }
+
+    }
+
+    // apply limits
+    for(int i=0; i < Accumulator->GetNumberOfBins(); i++){
+        if( flags[i] == 0 ){
+            Accumulator->SetNumberOfABFSamples(i,0);
+        }
+    }
+
+    // from now the integrator is in invalid state !!!
+}
+
+//------------------------------------------------------------------------------
+
 double CABFIntegratorRBF::GetMeanForce(const CSimpleVector<double>& ipos,int icoord)
 {
     CSimpleVector<double>   lpos;

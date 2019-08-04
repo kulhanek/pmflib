@@ -244,6 +244,18 @@ int CABFIntOptions::CheckOptions(void)
                 (const char*)GetProgramName());
         IsError = true;
     }
+    if( IsOptMFMaxError1Set() && ((GetOptMethod() != "rbf")&&(GetOptMethod() != "gpr")) ){
+        if(IsError == false) fprintf(stderr,"\n");
+        fprintf(stderr,"%s: --mfmaxerr1 can be combined only with RBF or GPR\n",
+                (const char*)GetProgramName());
+        IsError = true;
+    }
+    if( IsOptMFMaxError2Set() && ((GetOptMethod() != "rbf")&&(GetOptMethod() != "gpr")) ){
+        if(IsError == false) fprintf(stderr,"\n");
+        fprintf(stderr,"%s: --mfmaxerr2 can be combined only with RBF or GPR\n",
+                (const char*)GetProgramName());
+        IsError = true;
+    }
     if( IsOptGlueFESSet() && ((GetOptMethod() != "rbf")&&(GetOptMethod() != "gpr")) ){
         if(IsError == false) fprintf(stderr,"\n");
         fprintf(stderr,"%s: --gluefes can be combined only with RBF or GPR\n",

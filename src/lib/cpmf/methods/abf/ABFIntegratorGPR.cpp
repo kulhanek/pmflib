@@ -563,6 +563,78 @@ void CABFIntegratorGPR::FilterByMFFac(double mffac)
 
 //------------------------------------------------------------------------------
 
+void CABFIntegratorGPR::FilterByMFMaxError(double mfmaxerr)
+{
+    CSimpleVector<int>  flags;
+    flags.CreateVector(Accumulator->GetNumberOfBins());
+    flags.Set(1);
+
+    // filter
+    for(int i=0; i < Accumulator->GetNumberOfBins(); i++){
+        if( Accumulator->GetNumberOfABFSamples(i) <= 0 ) continue;
+
+        Accumulator->GetPoint(i,jpos);
+
+        for(int k=0; k < Accumulator->GetNumberOfCoords(); k++){
+            double err = fabs(Accumulator->GetValue(k,i,EABF_MEAN_FORCE_VALUE) - GetMeanForce(jpos,k));
+            if( err > mfmaxerr ){
+                flags[i] = 0;
+            }
+        }
+    }
+
+    // apply limits
+    for(int i=0; i < Accumulator->GetNumberOfBins(); i++){
+        if( flags[i] == 0 ){
+            Accumulator->SetNumberOfABFSamples(i,0);
+        }
+    }
+
+    // from now the integrator is in invalid state !!!
+}
+
+//------------------------------------------------------------------------------
+
+void CABFIntegratorGPR::FilterByMFMaxError(double mfmaxerr1,double mfmaxerr2)
+{
+    if( Accumulator->GetNumberOfCoords() != 2 ){
+        LOGIC_ERROR("only two CV can be combined with FilterByMFMaxError(double mfmaxerr1,double mfmaxerr2)");
+    }
+
+    CSimpleVector<int>  flags;
+    flags.CreateVector(Accumulator->GetNumberOfBins());
+    flags.Set(1);
+
+    // filter
+    for(int i=0; i < Accumulator->GetNumberOfBins(); i++){
+        if( Accumulator->GetNumberOfABFSamples(i) <= 0 ) continue;
+
+        Accumulator->GetPoint(i,jpos);
+
+        double err = fabs(Accumulator->GetValue(0,i,EABF_MEAN_FORCE_VALUE) - GetMeanForce(jpos,0));
+        if( err > mfmaxerr1 ){
+            flags[i] = 0;
+        }
+
+        err = fabs(Accumulator->GetValue(1,i,EABF_MEAN_FORCE_VALUE) - GetMeanForce(jpos,1));
+        if( err > mfmaxerr2 ){
+            flags[i] = 0;
+        }
+
+    }
+
+    // apply limits
+    for(int i=0; i < Accumulator->GetNumberOfBins(); i++){
+        if( flags[i] == 0 ){
+            Accumulator->SetNumberOfABFSamples(i,0);
+        }
+    }
+
+    // from now the integrator is in invalid state !!!
+}
+
+//------------------------------------------------------------------------------
+
 double CABFIntegratorGPR::GetLogMarginalLikelihood(void)
 {
     double ml = 0.0;

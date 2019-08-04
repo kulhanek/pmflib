@@ -92,8 +92,15 @@ public:
     /// write file with derivatives
     bool WriteMFInfo(const CSmallString& name);
 
+// this destroys the state of the integrator
     /// remove mean force outliers from ABF data
     void FilterByMFFac(double mffac);
+
+    /// remove mean force outliers from ABF data
+    void FilterByMFMaxError(double mfmaxerr);
+
+    /// remove mean force outliers from ABF data
+    void FilterByMFMaxError(double mfmaxerr1,double mfmaxerr2);
 
 // section of private data ----------------------------------------------------
 private:

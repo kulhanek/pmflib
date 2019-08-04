@@ -76,6 +76,8 @@ public:
     CSO_OPT(bool,SkipFFTest)
     CSO_OPT(double,NCorr)
     CSO_OPT(double,EnergyLimit)
+    CSO_OPT(double,MFMaxError1)
+    CSO_OPT(double,MFMaxError2)
     CSO_OPT(double,MFLimit)
     CSO_OPT(int,MFLimitPasses)
     CSO_OPT(double,Offset)
@@ -145,6 +147,25 @@ public:
                 "NUMBER",                           /* parametr name */
                 "Integrate data only if the free energy is below NUMBER. "
                 "This limit enforces two integration runs. Negative value disables the limit.")   /* option description */
+    //----------------------------------------------------------------------
+    CSO_MAP_OPT(double,                           /* option type */
+                MFMaxError1,                        /* option name */
+                0.0,                          /* default value */
+                false,                          /* is option mandatory */
+                0,                           /* short option name */
+                "mfmaxerr1",                      /* long option name */
+                "NUMBER",                           /* parametr name */
+                "RBF+GPR: Consider only mean forces whose errors are below NUMBER. "
+                "This limit is aplied before mflimit. Zero value disables the limit.")   /* option description */
+    //----------------------------------------------------------------------
+    CSO_MAP_OPT(double,                           /* option type */
+                MFMaxError2,                        /* option name */
+                0.0,                          /* default value */
+                false,                          /* is option mandatory */
+                0,                           /* short option name */
+                "mfmaxerr2",                      /* long option name */
+                "NUMBER",                           /* parametr name */
+                "RBF+GPR: The same as mfmaxerr1 but for the second CV.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(double,                           /* option type */
                 MFLimit,                        /* option name */
