@@ -534,13 +534,12 @@ void CABFIntegratorGPR::FilterByMFFac(double mffac)
 
     CSimpleVector<int>  flags;
     flags.CreateVector(Accumulator->GetNumberOfBins());
-    flags.SetZero();
+    flags.Set(1);
 
     // filter
     for(int i=0; i < Accumulator->GetNumberOfBins(); i++){
         if( Accumulator->GetNumberOfABFSamples(i) <= 0 ) continue;
 
-        flags[i] = 1;
         Accumulator->GetPoint(i,jpos);
 
         for(int k=0; k < Accumulator->GetNumberOfCoords(); k++){

@@ -76,8 +76,8 @@ public:
     CSO_OPT(bool,SkipFFTest)
     CSO_OPT(double,NCorr)
     CSO_OPT(double,EnergyLimit)
-    CSO_OPT(double,MFLimit1)
-    CSO_OPT(double,MFLimit2)
+    CSO_OPT(double,MFLimit)
+    CSO_OPT(int,MFLimitPasses)
     CSO_OPT(double,Offset)
     CSO_OPT(CSmallString,Method)
     CSO_OPT(CSmallString,EcutMethod)
@@ -147,24 +147,23 @@ public:
                 "This limit enforces two integration runs. Negative value disables the limit.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(double,                           /* option type */
-                MFLimit1,                        /* option name */
+                MFLimit,                        /* option name */
                 -1.0,                          /* default value */
                 false,                          /* is option mandatory */
                 0,                           /* short option name */
-                "mflimit1",                      /* long option name */
+                "mflimit",                      /* long option name */
                 "NUMBER",                           /* parametr name */
-                "RBF+GPR: Consider only mean forces which are within mflimit*stddev. "
-                "This limit is aplied in the first pass. Negative value disables the limit.")   /* option description */
+                "RBF+GPR: Consider only mean forces which are within mflimit*stddev from zero mean. "
+                "This limit is aplied in the each pass. Negative value disables the limit.")   /* option description */
     //----------------------------------------------------------------------
-    CSO_MAP_OPT(double,                           /* option type */
-                MFLimit2,                        /* option name */
-                -1.0,                          /* default value */
+    CSO_MAP_OPT(int,                           /* option type */
+                MFLimitPasses,                        /* option name */
+                1,                          /* default value */
                 false,                          /* is option mandatory */
                 0,                           /* short option name */
-                "mflimit2",                      /* long option name */
+                "mflpasses",                      /* long option name */
                 "NUMBER",                           /* parametr name */
-                "RBF+GPR: Consider only mean forces which are within mflimit*stddev. "
-                "This limit is aplied in the second pass. Negative value disables the limit.")   /* option description */
+                "RBF+GPR: Repeat mflimit NUMBER times.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(double,                           /* option type */
                 Offset,                        /* option name */

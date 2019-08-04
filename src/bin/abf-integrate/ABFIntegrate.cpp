@@ -157,15 +157,11 @@ int CABFIntegrate::Init(int argc,char* argv[])
     } else {
         vout << "# Energy limit          : " << Options.GetOptEnergyLimit() << endl;
     }
-    if(Options.GetOptMFLimit1() == -1) {
-        vout << "# Mean force limit #1   : not applied" << endl;
+    if(Options.GetOptMFLimit() == -1) {
+        vout << "# Mean force limit      : not applied" << endl;
     } else {
-        vout << "# Mean force limit #1   : " << Options.GetOptMFLimit1() << endl;
-    }
-    if(Options.GetOptMFLimit2() == -1) {
-        vout << "# Mean force limit #2   : not applied" << endl;
-    } else {
-        vout << "# Mean force limit #2   : " << Options.GetOptMFLimit2() << endl;
+        vout << "# Mean force limit (MFL): " << Options.GetOptMFLimit() << endl;
+        vout << "# MFL repeats           : " << Options.GetOptMFLimitPasses() << endl;
     }
         vout << "# Glue FES factor       : " << Options.GetOptGlueFES() << endl;
         vout << "# Number of corr. sam.  : " << Options.GetOptNCorr() << endl;
@@ -224,55 +220,24 @@ bool CABFIntegrate::Run(void)
     PrintSampledStat();
     vout << "   Done" << endl;
 
-    if( Options.GetOptMFLimit1() > 0.0 ){
-        vout << endl;
-        vout << "3) ABF accumulator integration (" << Options.GetOptEcutMethod() << ")" << endl;
-        if( IntegrateForMFLimit(Options.GetOptMFLimit1()) == false ) return(false);
+    if( Options.GetOptMFLimit() > 0.0 ){
+        for(int i=1; i <= Options.GetOptMFLimitPasses(); i++ ){
+            vout << endl;
+            vout << "3) ABF accumulator integration (" << Options.GetOptEcutMethod() << ") for mean force limit #" << i << endl;
+            if( IntegrateForMFLimit(Options.GetOptMFLimit(),i) == false ) return(false);
 
-        vout << endl;
-        vout << "2) Preparing ABF accumulator for integration (mean force limit)"<< endl;
-        PrepareAccumulatorI();
-        if( ! Options.GetOptSkipFFTest() ){
-            FloodFillTest();
+            vout << endl;
+            vout << "2) Preparing ABF accumulator for integration (mean force limit #" << i << ")"<< endl;
+            PrepareAccumulatorI();
+            if( ! Options.GetOptSkipFFTest() ){
+                FloodFillTest();
+            }
+            PrintSampledStat();
+            vout << "   Done" << endl;
+
+            FES.Clear();
         }
-        PrintSampledStat();
-        vout << "   Done" << endl;
 
-        FES.Clear();
-    }
-
-    if( Options.GetOptMFLimit2() > 0.0 ){
-        vout << endl;
-        vout << "3) ABF accumulator integration (" << Options.GetOptEcutMethod() << ")" << endl;
-        if( IntegrateForMFLimit(Options.GetOptMFLimit2()) == false ) return(false);
-
-        vout << endl;
-        vout << "2) Preparing ABF accumulator for integration (mean force limit)"<< endl;
-        PrepareAccumulatorI();
-        if( ! Options.GetOptSkipFFTest() ){
-            FloodFillTest();
-        }
-        PrintSampledStat();
-        vout << "   Done" << endl;
-
-        FES.Clear();
-    }
-
-    if( Options.GetOptEnergyLimit() > 0.0 ){
-        vout << endl;
-        vout << "3) ABF accumulator integration (" << Options.GetOptEcutMethod() << ")" << endl;
-        if( IntegrateForEcut() == false ) return(false);
-
-        vout << endl;
-        vout << "2) Preparing ABF accumulator for integration (energy limit)"<< endl;
-        PrepareAccumulatorII();
-        if( ! Options.GetOptSkipFFTest() ){
-            FloodFillTest();
-        }
-        PrintSampledStat();
-        vout << "   Done" << endl;
-
-        FES.Clear();
     }
 
 // glue fes ------------------------------------
@@ -442,8 +407,8 @@ void CABFIntegrate::WriteHeader()
         fprintf(OutputFile,"# Sample limit          : %d\n",Options.GetOptLimit());
         fprintf(OutputFile,"# Skip flood fill test  : %s\n", bool_to_str(Options.GetOptNoHeader()));
         fprintf(OutputFile,"# Energy limit          : %f\n",Options.GetOptEnergyLimit());
-        fprintf(OutputFile,"# Mean force limit #1   : %f\n",Options.GetOptMFLimit1());
-        fprintf(OutputFile,"# Mean force limit #2   : %f\n",Options.GetOptMFLimit2());
+        fprintf(OutputFile,"# Mean force limit (MFL): %f\n",Options.GetOptMFLimit());
+        fprintf(OutputFile,"# MFL passes            : %d\n",Options.GetOptMFLimitPasses());
         fprintf(OutputFile,"# Glue FES factor       : %d\n",Options.GetOptGlueFES());
         fprintf(OutputFile,"# Number of corr. sam.  : %5.3f\n",Options.GetOptNCorr());
         fprintf(OutputFile,"# Number of coordinates : %d\n",Accumulator.GetNumberOfCoords());
@@ -573,7 +538,7 @@ bool CABFIntegrate::IntegrateForEcut(void)
 
 //------------------------------------------------------------------------------
 
-bool CABFIntegrate::IntegrateForMFLimit(double mffac)
+bool CABFIntegrate::IntegrateForMFLimit(double mffac,int pass)
 {
     if(Options.GetOptEcutMethod() == "rfd" ) {
         ES_ERROR("illegal combination: --emethod=rfd and --mflimit1 or mflimit2");
@@ -611,6 +576,12 @@ bool CABFIntegrate::IntegrateForMFLimit(double mffac)
             return(false);
         }
 
+        if( Options.IsOptMFInfoSet() ){
+            CSmallString mfinfo = Options.GetOptMFInfo();
+            mfinfo << ".mflimit" << pass;
+            if( integrator.WriteMFInfo(mfinfo) == false ) return(false);
+        }
+
         // apply mean force limit
         integrator.FilterByMFFac(mffac);
 
@@ -642,6 +613,12 @@ bool CABFIntegrate::IntegrateForMFLimit(double mffac)
         if(integrator.Integrate(vout) == false) {
             ES_ERROR("unable to integrate ABF accumulator");
             return(false);
+        }
+
+        if( Options.IsOptMFInfoSet() ){
+            CSmallString mfinfo = Options.GetOptMFInfo();
+            mfinfo << ".mflimit" << pass;
+            if( integrator.WriteMFInfo(mfinfo) == false ) return(false);
         }
 
         // apply mean force limit

@@ -232,15 +232,15 @@ int CABFIntOptions::CheckOptions(void)
         IsError = true;
     }
 
-    if( IsOptMFLimit1Set() && ((GetOptMethod() != "rbf")&&(GetOptMethod() != "gpr")) ){
+    if( IsOptMFLimitSet() && ((GetOptMethod() != "rbf")&&(GetOptMethod() != "gpr")) ){
         if(IsError == false) fprintf(stderr,"\n");
-        fprintf(stderr,"%s: --mflimit1 can be combined only with RBF or GPR\n",
+        fprintf(stderr,"%s: --mflimit can be combined only with RBF or GPR\n",
                 (const char*)GetProgramName());
         IsError = true;
     }
-    if( IsOptMFLimit2Set() && ((GetOptMethod() != "rbf")&&(GetOptMethod() != "gpr")) ){
+    if( IsOptMFLimitPassesSet() && ((GetOptMethod() != "rbf")&&(GetOptMethod() != "gpr")) ){
         if(IsError == false) fprintf(stderr,"\n");
-        fprintf(stderr,"%s: --mflimit2 can be combined only with RBF or GPR\n",
+        fprintf(stderr,"%s: --mflpasses can be combined only with RBF or GPR\n",
                 (const char*)GetProgramName());
         IsError = true;
     }
