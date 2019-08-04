@@ -131,7 +131,9 @@ int CABFIntegrate::Init(int argc,char* argv[])
         } else {
         vout << "# Width factor wfac     : " << setprecision(3) << Options.GetOptWFac() << endl;
         }
+        if( Options.GetOptLAMethod() == "svd" ){
         vout << "# SVD rcond             : " << setprecision(3) << Options.GetOptRCond() << endl;
+        }
         vout << "# RBF overhang          : " << Options.GetOptOverhang() << endl;
     } else if ( Options.GetOptMethod() == "gpr"  ) {
         vout << "# SigmaF2               : " << setprecision(3) << Options.GetOptSigmaF2() << endl;  
@@ -140,7 +142,9 @@ int CABFIntegrate::Init(int argc,char* argv[])
         } else {
         vout << "# Width factor wfac     : " << setprecision(3) << Options.GetOptWFac() << endl;
         }
+        if( Options.GetOptLAMethod() == "svd" ){
         vout << "# SVD rcond             : " << setprecision(3) << Options.GetOptRCond() << endl;
+        }
     } else {
         ES_ERROR("not implemented method");
         return(SO_USER_ERROR);
@@ -151,11 +155,15 @@ int CABFIntegrate::Init(int argc,char* argv[])
     } else {
         vout << "# Sampling limit        : " << Options.GetOptLimit() << endl;
     }
-        vout << "# Skip flood fill test  : " << bool_to_str(Options.GetOptNoHeader()) << endl;
-    if(Options.GetOptEnergyLimit() == -1) {
-        vout << "# Energy limit          : not applied" << endl;
+    if( (Options.GetOptEcutMethod() == "gpr") || (Options.GetOptEcutMethod() == "rbf") ){
+    if( Options.GetOptMFMaxError1() > 0 ) {
+    if( Options.GetOptMFMaxError2() > 0 ) {
+        vout << "# Mean force max error  : " << setprecision(3) << Options.GetOptMFMaxError1() << " x " << setprecision(3) << Options.GetOptMFMaxError2()  << endl;
     } else {
-        vout << "# Energy limit          : " << Options.GetOptEnergyLimit() << endl;
+        vout << "# Mean force max error  : " << setprecision(3) << Options.GetOptMFMaxError1() << endl;
+    }
+    } else {
+        vout << "# Mean force max error  : not applied" << endl;
     }
     if(Options.GetOptMFLimit() == -1) {
         vout << "# Mean force limit      : not applied" << endl;
@@ -163,7 +171,15 @@ int CABFIntegrate::Init(int argc,char* argv[])
         vout << "# Mean force limit (MFL): " << Options.GetOptMFLimit() << endl;
         vout << "# MFL repeats           : " << Options.GetOptMFLimitPasses() << endl;
     }
+    }
         vout << "# Glue FES factor       : " << Options.GetOptGlueFES() << endl;
+    if(Options.GetOptEnergyLimit() == -1) {
+        vout << "# Energy limit          : not applied" << endl;
+    } else {
+        vout << "# Energy limit          : " << Options.GetOptEnergyLimit() << endl;
+    }
+        vout << "# Skip flood fill test  : " << bool_to_str(Options.GetOptNoHeader()) << endl;
+
         vout << "# Number of corr. sam.  : " << Options.GetOptNCorr() << endl;
         vout << "# Integration offset    : " << Options.GetOptOffset() << endl;
     vout << "# ------------------------------------------------" << endl;
@@ -210,7 +226,7 @@ bool CABFIntegrate::Run(void)
     Accumulator.SetNCorr(Options.GetOptNCorr());
     FES.Allocate(&Accumulator);
 
-// prepare accumulator --------------------------
+// sampling limit -------------------------------
     vout << endl;
     vout << "2) Preparing ABF accumulator for integration (sampling limit)"<< endl;
     PrepareAccumulatorI();
@@ -223,7 +239,7 @@ bool CABFIntegrate::Run(void)
 // mf limits ------------------------------------
     if( Options.GetOptMFMaxError1() > 0.0 ){
         vout << endl;
-        vout << "3) ABF accumulator integration (" << Options.GetOptEcutMethod() << ") for max mean force error limit)" << endl;
+        vout << "3) ABF accumulator integration (" << Options.GetOptEcutMethod() << ") for max mean force error limit" << endl;
         if( IntegrateForMFMaxError() == false ) return(false);
 
         vout << endl;
@@ -268,6 +284,25 @@ bool CABFIntegrate::Run(void)
         }
         PrintSampledStat();
         vout << "   Done" << endl;
+    }
+
+// energy limit --------------------------------
+
+    if( Options.GetOptEnergyLimit() > 0.0 ){
+        vout << endl;
+        vout << "3) ABF accumulator integration (" << Options.GetOptEcutMethod() << ") for energy limit" << endl;
+        if( IntegrateForEcut() == false ) return(false);
+
+        vout << endl;
+        vout << "2) Preparing ABF accumulator for integration (energy limit)"<< endl;
+        PrepareAccumulatorII();
+        if( ! Options.GetOptSkipFFTest() ){
+            FloodFillTest();
+        }
+        PrintSampledStat();
+        vout << "   Done" << endl;
+
+        FES.Clear();
     }
 
 // integrate data ------------------------------
@@ -408,26 +443,37 @@ void CABFIntegrate::WriteHeader()
             } else {
             fprintf(OutputFile,"# Width factor wfac     : %5.3f\n", Options.GetOptWFac());
             }
+            if( Options.GetOptLAMethod() == "svd" ){
             fprintf(OutputFile,"# SVD rcond             : %5.3f\n", Options.GetOptRCond());
+            }
             fprintf(OutputFile,"# RBF overhang          : %d\n", Options.GetOptOverhang());
-        } else if ( Options.GetOptMethod() == "gpr"  ) {
+        } else if ( Options.GetOptMethod() == "gpr" ) {
             fprintf(OutputFile,"# SigmaF2               : %5.3f\n", Options.GetOptSigmaF2());
             if( Options.IsOptWFac2Set() ){
             fprintf(OutputFile,"# Width factor wfac     : %5.3f X %5.3f\n", Options.GetOptWFac(), Options.GetOptWFac2());
             } else {
             fprintf(OutputFile,"# Width factor wfac     : %5.3f\n", Options.GetOptWFac());
             }
+            if( Options.GetOptLAMethod() == "svd" ){
             fprintf(OutputFile,"# SVD rcond             : %5.3f\n", Options.GetOptRCond());
+            }
         } else {
             ES_ERROR("not implemented method");
         }
 
         fprintf(OutputFile,"# Sample limit          : %d\n",Options.GetOptLimit());
-        fprintf(OutputFile,"# Skip flood fill test  : %s\n", bool_to_str(Options.GetOptNoHeader()));
-        fprintf(OutputFile,"# Energy limit          : %f\n",Options.GetOptEnergyLimit());
-        fprintf(OutputFile,"# Mean force limit (MFL): %f\n",Options.GetOptMFLimit());
-        fprintf(OutputFile,"# MFL passes            : %d\n",Options.GetOptMFLimitPasses());
+        if ( (Options.GetOptEcutMethod() == "gpr") || (Options.GetOptEcutMethod() == "rbf") ){
+            if( Options.GetOptMFMaxError2() > 0 ){
+            fprintf(OutputFile,"# Mean force max error  : %5.3f X %5.3f\n", Options.GetOptMFMaxError1(), Options.GetOptMFMaxError2());
+            } else {
+            fprintf(OutputFile,"# Mean force max error  : %5.3f\n", Options.GetOptMFMaxError1());
+            }
+            fprintf(OutputFile,"# Mean force limit (MFL): %f\n",Options.GetOptMFLimit());
+            fprintf(OutputFile,"# MFL passes            : %d\n",Options.GetOptMFLimitPasses());
+        }
         fprintf(OutputFile,"# Glue FES factor       : %d\n",Options.GetOptGlueFES());
+        fprintf(OutputFile,"# Energy limit          : %f\n",Options.GetOptEnergyLimit());
+        fprintf(OutputFile,"# Skip flood fill test  : %s\n", bool_to_str(Options.GetOptNoHeader()));
         fprintf(OutputFile,"# Number of corr. sam.  : %5.3f\n",Options.GetOptNCorr());
         fprintf(OutputFile,"# Number of coordinates : %d\n",Accumulator.GetNumberOfCoords());
         fprintf(OutputFile,"# Total number of bins  : %d\n",Accumulator.GetNumberOfBins());
@@ -901,7 +947,7 @@ void CABFIntegrate::PrepareAccumulatorII(void)
 {
     // filter by energy
     for(int ibin=0; ibin < Accumulator.GetNumberOfBins(); ibin++) {
-        if( Accumulator.GetNumberOfABFSamples(ibin) > Options.GetOptLimit() ) {
+        if( FES.GetNumOfSamples(ibin) != 0 ) {
             // consider only properly sampled data points
             if( FES.GetEnergy(ibin) > Options.GetOptEnergyLimit() ){
                 // erase datapoints with too large energy
