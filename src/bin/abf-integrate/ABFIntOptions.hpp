@@ -92,7 +92,7 @@ public:
     CSO_OPT(double,WFac2)
     CSO_OPT(double,SigmaF2)
     CSO_OPT(int,Overhang)
-    CSO_OPT(int,GlueFES)
+    CSO_OPT(int,GlueingFES)
     CSO_OPT(bool,Periodicity)
     CSO_OPT(bool,WithError)
     CSO_OPT(bool,NoEnergy)
@@ -101,6 +101,7 @@ public:
     CSO_OPT(bool,UnsampledAsMaxE)
     CSO_OPT(double,MaxEnergy)
     CSO_OPT(bool,NoHeader)
+    CSO_OPT(bool,IncludeBinStat)
     CSO_OPT(CSmallString,IXFormat)
     CSO_OPT(CSmallString,OEFormat)
     CSO_OPT(CSmallString,MFInfo)
@@ -185,6 +186,15 @@ public:
                 "mflpasses",                      /* long option name */
                 "NUMBER",                           /* parametr name */
                 "RBF+GPR: Repeat mflimit NUMBER times.")   /* option description */
+    //----------------------------------------------------------------------
+    CSO_MAP_OPT(CSmallString,                           /* option type */
+                MFInfo,                        /* option name */
+                NULL,                          /* default value */
+                false,                          /* is option mandatory */
+                '\0',                           /* short option name */
+                "mfinfo",                      /* long option name */
+                "NAME",                           /* parametr name */
+                "RBF+GPR: name of file with input and predicted mean forces.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(double,                           /* option type */
                 Offset,                        /* option name */
@@ -298,11 +308,11 @@ public:
                 "RBFs overhang to properly integrate areas near sampled edges. Ignored for periodic CVs.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(int,                           /* option type */
-                GlueFES,                        /* option name */
+                GlueingFES,                        /* option name */
                 0,                          /* default value */
                 false,                          /* is option mandatory */
                 0,                           /* short option name */
-                "gluefes",                      /* long option name */
+                "glueing",                      /* long option name */
                 "NUMBER",                           /* parametr name */
                 "RBF+GPR: calculate energy also for unsampled bins but close vicinity to sampled one")   /* option description */
     //----------------------------------------------------------------------
@@ -378,6 +388,15 @@ public:
                 NULL,                           /* parametr name */
                 "Do not print header to the output file.")   /* option description */
     //----------------------------------------------------------------------
+    CSO_MAP_OPT(bool,                           /* option type */
+                IncludeBinStat,                        /* option name */
+                false,                          /* default value */
+                false,                          /* is option mandatory */
+                0,                           /* short option name */
+                "includebinstat",                      /* long option name */
+                NULL,                           /* parametr name */
+                "Include bin statuses (1=sampled, 0=unsampled, -1=glued) into resulting FES.")   /* option description */
+    //----------------------------------------------------------------------
     CSO_MAP_OPT(CSmallString,                           /* option type */
                 IXFormat,                        /* option name */
                 "%15.7e",                          /* default value */
@@ -395,15 +414,6 @@ public:
                 "fe",                      /* long option name */
                 "FORMAT",                           /* parametr name */
                 "Output FORMAT, which will be used to print values of free energy.")   /* option description */
-    //----------------------------------------------------------------------
-    CSO_MAP_OPT(CSmallString,                           /* option type */
-                MFInfo,                        /* option name */
-                NULL,                          /* default value */
-                false,                          /* is option mandatory */
-                '\0',                           /* short option name */
-                "mfinfo",                      /* long option name */
-                "NAME",                           /* parametr name */
-                "RBF+GPR: name of file with input and predicted mean forces.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(bool,                           /* option type */
                 Verbose,                        /* option name */

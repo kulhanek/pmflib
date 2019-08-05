@@ -172,7 +172,7 @@ int CABFIntegrate::Init(int argc,char* argv[])
         vout << "# MFL repeats           : " << Options.GetOptMFLimitPasses() << endl;
     }
     }
-        vout << "# Glue FES factor       : " << Options.GetOptGlueFES() << endl;
+        vout << "# Glueing FES factor    : " << Options.GetOptGlueingFES() << endl;
     if(Options.GetOptEnergyLimit() == -1) {
         vout << "# Energy limit          : not applied" << endl;
     } else {
@@ -185,6 +185,7 @@ int CABFIntegrate::Init(int argc,char* argv[])
     vout << "# ------------------------------------------------" << endl;
     vout << "# Output FES format     : " << Options.GetOptOutputFormat() << endl;
     vout << "# No header to output   : " << bool_to_str(Options.GetOptNoHeader()) << endl;
+    vout << "# Include bin statuses  : " << bool_to_str(Options.GetOptIncludeBinStat()) << endl;
     vout << "# X format              : " << Options.GetOptIXFormat() << endl;
     vout << "# Y format              : " << Options.GetOptOEFormat() << endl;
     vout << "# ------------------------------------------------------------------------------" << endl;
@@ -275,12 +276,12 @@ bool CABFIntegrate::Run(void)
     }
 
 // glue fes ------------------------------------
-    if( Options.GetOptGlueFES() > 0 ){
+    if( Options.GetOptGlueingFES() > 0 ){
         vout << endl;
         vout << "2) Preparing ABF accumulator for integration (glueing FES)"<< endl;
         vout << "   Searching for border regions in close vicinity of sampled areas ..." << endl;
-        for(int i=1; i <= Options.GetOptGlueFES(); i++ ){
-            GlueFES(i);
+        for(int i=1; i <= Options.GetOptGlueingFES(); i++ ){
+            GlueingFES(i);
         }
         PrintSampledStat();
         vout << "   Done" << endl;
@@ -349,8 +350,9 @@ bool CABFIntegrate::Run(void)
         printer.SetSampleLimit(Options.GetOptLimit());
     }
 
-    printer.IncludeGluedAreas(Options.GetOptGlueFES() > 0);
+    printer.IncludeGluedAreas(Options.GetOptGlueingFES() > 0);
     printer.SetIncludeError(Options.GetOptWithError());
+    printer.SetIncludeBinStat(Options.GetOptIncludeBinStat());
     printer.SetPrintedES(&FES);
 
     try {
@@ -388,8 +390,9 @@ bool CABFIntegrate::Run(void)
 
         // print all
         printer.SetSampleLimit(0);
-        printer.IncludeGluedAreas(Options.GetOptGlueFES() > 0);
+        printer.IncludeGluedAreas(Options.GetOptGlueingFES() > 0);
         printer.SetIncludeError(Options.GetOptWithError());
+        printer.SetIncludeBinStat(Options.GetOptIncludeBinStat());
         printer.SetPrintedES(&FES);
 
         try {
@@ -473,10 +476,11 @@ void CABFIntegrate::WriteHeader()
             fprintf(OutputFile,"# Mean force limit (MFL): %f\n",Options.GetOptMFLimit());
             fprintf(OutputFile,"# MFL passes            : %d\n",Options.GetOptMFLimitPasses());
         }
-        fprintf(OutputFile,"# Glue FES factor       : %d\n",Options.GetOptGlueFES());
+        fprintf(OutputFile,"# Glueing FES factor    : %d\n",Options.GetOptGlueingFES());
         fprintf(OutputFile,"# Energy limit          : %f\n",Options.GetOptEnergyLimit());
         fprintf(OutputFile,"# Skip flood fill test  : %s\n", bool_to_str(Options.GetOptNoHeader()));
         fprintf(OutputFile,"# Number of corr. sam.  : %5.3f\n",Options.GetOptNCorr());
+        fprintf(OutputFile,"# Include bin statuses  : %s\n",bool_to_str(Options.GetOptIncludeBinStat()));
         fprintf(OutputFile,"# Number of coordinates : %d\n",Accumulator.GetNumberOfCoords());
         fprintf(OutputFile,"# Total number of bins  : %d\n",Accumulator.GetNumberOfBins());
     }
@@ -486,123 +490,6 @@ void CABFIntegrate::WriteHeader()
 //==============================================================================
 //------------------------------------------------------------------------------
 //==============================================================================
-
-bool CABFIntegrate::IntegrateForEcut(void)
-{
-    if(Options.GetOptEcutMethod() == "rfd" ) {
-        CABFIntegratorRFD   integrator;
-
-        integrator.SetPeriodicity(Options.GetOptPeriodicity());
-        integrator.SetFDPoints(Options.GetOptFDPoints());
-
-        if( Options.GetOptEcutMethod() == Options.GetOptMethod() ){
-            if( Options.GetOptLAMethod() == "lu" ){
-                // nothing to do - LU is default
-            } else if( Options.GetOptLAMethod() == "default" ) {
-                // nothing to do - use default method set in constructor of integrator
-            } else {
-                INVALID_ARGUMENT("algorithm - not implemented");
-            }
-        }
-
-        integrator.SetInputABFAccumulator(&Accumulator);
-        integrator.SetOutputFESurface(&FES);
-
-        if(integrator.Integrate(vout) == false) {
-            ES_ERROR("unable to integrate ABF accumulator");
-            return(false);
-        }
-    } else if(Options.GetOptEcutMethod() == "rfd2" ) {
-        CABFIntegratorRFD2   integrator;
-
-        integrator.SetPeriodicity(Options.GetOptPeriodicity());
-        integrator.SetFDPoints(Options.GetOptFDPoints());
-        integrator.SetRCond(Options.GetOptRCond());
-
-        if( Options.GetOptEcutMethod() == Options.GetOptMethod() ){
-            if( Options.GetOptLAMethod() == "svd" ){
-                integrator.SetLLSMehod(ERFDLLS_SVD);
-            } else if( Options.GetOptLAMethod() == "qr" ) {
-                integrator.SetLLSMehod(ERFDLLS_QR);
-            } else if( Options.GetOptLAMethod() == "default" ) {
-                // nothing to do - use default method set in constructor of integrator
-            } else {
-                INVALID_ARGUMENT("algorithm - not implemented");
-            }
-        }
-
-        integrator.SetInputABFAccumulator(&Accumulator);
-        integrator.SetOutputFESurface(&FES);
-
-        if(integrator.Integrate(vout) == false) {
-            ES_ERROR("unable to integrate ABF accumulator");
-            return(false);
-        }
-    } else if( Options.GetOptEcutMethod() == "rbf" ){
-        CABFIntegratorRBF   integrator;
-
-        integrator.SetWFac1(Options.GetOptWFac());
-        integrator.SetWFac2(Options.GetOptWFac2());
-        integrator.SetRCond(Options.GetOptRCond());
-        integrator.SetRFac1(Options.GetOptRFac());
-        integrator.SetRFac2(Options.GetOptRFac2());
-        integrator.SetOverhang(Options.GetOptOverhang());
-
-        if( Options.GetOptEcutMethod() == Options.GetOptMethod() ){
-            if( Options.GetOptLAMethod() == "svd" ){
-                integrator.SetLLSMehod(ERBFLLS_SVD);
-            } else if( Options.GetOptLAMethod() == "qr" ) {
-                integrator.SetLLSMehod(ERBFLLS_QR);
-            } else if( Options.GetOptLAMethod() == "default" ) {
-                // nothing to do - use default method set in constructor of integrator
-            } else {
-                INVALID_ARGUMENT("algorithm - not implemented");
-            }
-        }
-
-        integrator.SetInputABFAccumulator(&Accumulator);
-        integrator.SetOutputFESurface(&FES);
-
-        if(integrator.Integrate(vout) == false) {
-            ES_ERROR("unable to integrate ABF accumulator");
-            return(false);
-        }
-    } else if( Options.GetOptEcutMethod() == "gpr" ){
-        CABFIntegratorGPR   integrator;
-
-        integrator.SetWFac1(Options.GetOptWFac());
-        integrator.SetWFac2(Options.GetOptWFac2());
-        integrator.SetRCond(Options.GetOptRCond());
-        integrator.SetSigmaF2(Options.GetOptSigmaF2());
-        integrator.SetIncludeError(false);
-
-        if( Options.GetOptEcutMethod() == Options.GetOptMethod() ){
-            if( Options.GetOptLAMethod() == "svd" ){
-                integrator.SetINVMehod(EGPRINV_SVD);
-            } else if( Options.GetOptLAMethod() == "lu" ) {
-                integrator.SetINVMehod(EGPRINV_LU);
-            } else if( Options.GetOptLAMethod() == "default" ) {
-                // nothing to do - use default method set in constructor of integrator
-            } else {
-                INVALID_ARGUMENT("algorithm - not implemented");
-            }
-        }
-
-        integrator.SetInputABFAccumulator(&Accumulator);
-        integrator.SetOutputFESurface(&FES);
-
-        if(integrator.Integrate(vout) == false) {
-            ES_ERROR("unable to integrate ABF accumulator");
-            return(false);
-        }
-    } else {
-        INVALID_ARGUMENT("method - not implemented");
-    }
-
-    return(true);
-}
-
-//------------------------------------------------------------------------------
 
 bool CABFIntegrate::IntegrateForMFMaxError(void)
 {
@@ -802,6 +689,125 @@ bool CABFIntegrate::IntegrateForMFLimit(int pass)
 
 //------------------------------------------------------------------------------
 
+bool CABFIntegrate::IntegrateForEcut(void)
+{
+    if(Options.GetOptEcutMethod() == "rfd" ) {
+        CABFIntegratorRFD   integrator;
+
+        integrator.SetPeriodicity(Options.GetOptPeriodicity());
+        integrator.SetFDPoints(Options.GetOptFDPoints());
+
+        if( Options.GetOptEcutMethod() == Options.GetOptMethod() ){
+            if( Options.GetOptLAMethod() == "lu" ){
+                // nothing to do - LU is default
+            } else if( Options.GetOptLAMethod() == "default" ) {
+                // nothing to do - use default method set in constructor of integrator
+            } else {
+                INVALID_ARGUMENT("algorithm - not implemented");
+            }
+        }
+
+        integrator.SetInputABFAccumulator(&Accumulator);
+        integrator.SetOutputFESurface(&FES);
+
+        if(integrator.Integrate(vout) == false) {
+            ES_ERROR("unable to integrate ABF accumulator");
+            return(false);
+        }
+    } else if(Options.GetOptEcutMethod() == "rfd2" ) {
+        CABFIntegratorRFD2   integrator;
+
+        integrator.SetPeriodicity(Options.GetOptPeriodicity());
+        integrator.SetFDPoints(Options.GetOptFDPoints());
+        integrator.SetRCond(Options.GetOptRCond());
+
+        if( Options.GetOptEcutMethod() == Options.GetOptMethod() ){
+            if( Options.GetOptLAMethod() == "svd" ){
+                integrator.SetLLSMehod(ERFDLLS_SVD);
+            } else if( Options.GetOptLAMethod() == "qr" ) {
+                integrator.SetLLSMehod(ERFDLLS_QR);
+            } else if( Options.GetOptLAMethod() == "default" ) {
+                // nothing to do - use default method set in constructor of integrator
+            } else {
+                INVALID_ARGUMENT("algorithm - not implemented");
+            }
+        }
+
+        integrator.SetInputABFAccumulator(&Accumulator);
+        integrator.SetOutputFESurface(&FES);
+
+        if(integrator.Integrate(vout) == false) {
+            ES_ERROR("unable to integrate ABF accumulator");
+            return(false);
+        }
+    } else if( Options.GetOptEcutMethod() == "rbf" ){
+        CABFIntegratorRBF   integrator;
+
+        integrator.SetWFac1(Options.GetOptWFac());
+        integrator.SetWFac2(Options.GetOptWFac2());
+        integrator.SetRCond(Options.GetOptRCond());
+        integrator.SetRFac1(Options.GetOptRFac());
+        integrator.SetRFac2(Options.GetOptRFac2());
+        integrator.SetOverhang(Options.GetOptOverhang());
+        integrator.IncludeGluedAreas(Options.GetOptGlueingFES() > 0);
+
+        if( Options.GetOptEcutMethod() == Options.GetOptMethod() ){
+            if( Options.GetOptLAMethod() == "svd" ){
+                integrator.SetLLSMehod(ERBFLLS_SVD);
+            } else if( Options.GetOptLAMethod() == "qr" ) {
+                integrator.SetLLSMehod(ERBFLLS_QR);
+            } else if( Options.GetOptLAMethod() == "default" ) {
+                // nothing to do - use default method set in constructor of integrator
+            } else {
+                INVALID_ARGUMENT("algorithm - not implemented");
+            }
+        }
+
+        integrator.SetInputABFAccumulator(&Accumulator);
+        integrator.SetOutputFESurface(&FES);
+
+        if(integrator.Integrate(vout) == false) {
+            ES_ERROR("unable to integrate ABF accumulator");
+            return(false);
+        }
+    } else if( Options.GetOptEcutMethod() == "gpr" ){
+        CABFIntegratorGPR   integrator;
+
+        integrator.SetWFac1(Options.GetOptWFac());
+        integrator.SetWFac2(Options.GetOptWFac2());
+        integrator.SetRCond(Options.GetOptRCond());
+        integrator.SetSigmaF2(Options.GetOptSigmaF2());
+        integrator.IncludeGluedAreas(Options.GetOptGlueingFES() > 0);
+        integrator.SetIncludeError(false);
+
+        if( Options.GetOptEcutMethod() == Options.GetOptMethod() ){
+            if( Options.GetOptLAMethod() == "svd" ){
+                integrator.SetINVMehod(EGPRINV_SVD);
+            } else if( Options.GetOptLAMethod() == "lu" ) {
+                integrator.SetINVMehod(EGPRINV_LU);
+            } else if( Options.GetOptLAMethod() == "default" ) {
+                // nothing to do - use default method set in constructor of integrator
+            } else {
+                INVALID_ARGUMENT("algorithm - not implemented");
+            }
+        }
+
+        integrator.SetInputABFAccumulator(&Accumulator);
+        integrator.SetOutputFESurface(&FES);
+
+        if(integrator.Integrate(vout) == false) {
+            ES_ERROR("unable to integrate ABF accumulator");
+            return(false);
+        }
+    } else {
+        INVALID_ARGUMENT("method - not implemented");
+    }
+
+    return(true);
+}
+
+//------------------------------------------------------------------------------
+
 bool CABFIntegrate::Integrate()
 {
     if(Options.GetOptMethod() == "rfd" ) {
@@ -859,7 +865,7 @@ bool CABFIntegrate::Integrate()
         integrator.SetRFac1(Options.GetOptRFac());
         integrator.SetRFac2(Options.GetOptRFac2());
         integrator.SetOverhang(Options.GetOptOverhang());
-        integrator.IncludeGluedAreas(Options.GetOptGlueFES() > 0);
+        integrator.IncludeGluedAreas(Options.GetOptGlueingFES() > 0);
 
         if( Options.GetOptLAMethod() == "svd" ){
             integrator.SetLLSMehod(ERBFLLS_SVD);
@@ -892,7 +898,7 @@ bool CABFIntegrate::Integrate()
         integrator.SetSigmaF2(Options.GetOptSigmaF2());
         integrator.SetIncludeError(Options.GetOptWithError());
         integrator.SetNoEnergy(Options.GetOptNoEnergy());
-        integrator.IncludeGluedAreas(Options.GetOptGlueFES() > 0);
+        integrator.IncludeGluedAreas(Options.GetOptGlueingFES() > 0);
 
         if( Options.GetOptLAMethod() == "svd" ){
             integrator.SetINVMehod(EGPRINV_SVD);
@@ -1102,7 +1108,7 @@ void CABFIntegrate::GetTPoint(CSimpleVector<int>& ipos,int d,CSimpleVector<int>&
 
 //------------------------------------------------------------------------------
 
-void CABFIntegrate::GlueFES(int factor)
+void CABFIntegrate::GlueingFES(int factor)
 {
     IPos.CreateVector(Accumulator.GetNumberOfCoords());
     TPos.CreateVector(Accumulator.GetNumberOfCoords());

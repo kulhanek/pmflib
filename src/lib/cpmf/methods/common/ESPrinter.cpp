@@ -39,6 +39,7 @@ CESPrinter::CESPrinter(void)
     Format = EESPF_PLAIN;
     IncludeError = false;
     IncludeGluedBins = false;
+    IncludeBinStat = false;
 }
 
 //------------------------------------------------------------------------------
@@ -89,6 +90,13 @@ void CESPrinter::SetSampleLimit(int limit)
 void CESPrinter::SetIncludeError(bool set)
 {
     IncludeError = set;
+}
+
+//------------------------------------------------------------------------------
+
+void CESPrinter::SetIncludeBinStat(bool set)
+{
+    IncludeBinStat = set;
 }
 
 //------------------------------------------------------------------------------
@@ -216,6 +224,16 @@ void CESPrinter::PrintPlain(FILE* fout)
             if(fprintf(fout,yform,error) <= 0) {
                 CSmallString error;
                 error << "unable to print Y (error) data to the file (" << strerror(errno) << ")";
+                RUNTIME_ERROR(error);
+            }
+        }
+        if( IncludeBinStat ){
+            int stat = 0;
+            if( EnergySurface->GetNumOfSamples(ibin) > 0 ) stat = 1;
+            if( EnergySurface->GetNumOfSamples(ibin) < 0 ) stat = -1;
+            if(fprintf(fout,"%2d",stat) <= 0) {
+                CSmallString error;
+                error << "unable to print bin stat to the file (" << strerror(errno) << ")";
                 RUNTIME_ERROR(error);
             }
         }

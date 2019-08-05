@@ -77,7 +77,7 @@ private:
     bool IntegrateForEcut(void);
     bool Integrate(void);
     void WriteHeader(void);
-    void GlueFES(int factor);
+    void GlueingFES(int factor);
 };
 
 //------------------------------------------------------------------------------

@@ -256,7 +256,7 @@ int CABFIntOptions::CheckOptions(void)
                 (const char*)GetProgramName());
         IsError = true;
     }
-    if( IsOptGlueFESSet() && ((GetOptMethod() != "rbf")&&(GetOptMethod() != "gpr")) ){
+    if( IsOptGlueingFESSet() && ((GetOptMethod() != "rbf")&&(GetOptMethod() != "gpr")) ){
         if(IsError == false) fprintf(stderr,"\n");
         fprintf(stderr,"%s: --gluefes can be combined only with RBF or GPR\n",
                 (const char*)GetProgramName());

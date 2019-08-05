@@ -65,6 +65,9 @@ public:
     /// include error into output
     void SetIncludeError(bool set);
 
+    /// include bin status
+    void SetIncludeBinStat(bool set);
+
     /// should we include glued area to energy calculation?
     void IncludeGluedAreas(bool set);
 
@@ -84,6 +87,7 @@ private:
     int                     PrintLimit;
     bool                    IncludeError;
     bool                    IncludeGluedBins;
+    bool                    IncludeBinStat;
 
     void PrintPlain(FILE* fout);
     void PrintPMF_FES(FILE* fout);
