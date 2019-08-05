@@ -277,13 +277,15 @@ bool CABFIntegrate::Run(void)
 // glue fes ------------------------------------
     if( Options.GetOptGlueFES() > 0 ){
         vout << endl;
-        vout << "2) Preparing ABF accumulator for integration (glue FES)"<< endl;
+        vout << "2) Preparing ABF accumulator for integration (glueing FES)"<< endl;
         vout << "   Searching for border regions in close vicinity of sampled areas ..." << endl;
         for(int i=1; i <= Options.GetOptGlueFES(); i++ ){
             GlueFES(i);
         }
         PrintSampledStat();
         vout << "   Done" << endl;
+
+        FES.Clear();
     }
 
 // energy limit --------------------------------
@@ -947,7 +949,7 @@ void CABFIntegrate::PrepareAccumulatorII(void)
 {
     // filter by energy
     for(int ibin=0; ibin < Accumulator.GetNumberOfBins(); ibin++) {
-        if( FES.GetNumOfSamples(ibin) != 0 ) {
+        if( Accumulator.GetNumberOfABFSamples(ibin) != 0 ) {
             // consider only properly sampled data points
             if( FES.GetEnergy(ibin) > Options.GetOptEnergyLimit() ){
                 // erase datapoints with too large energy
