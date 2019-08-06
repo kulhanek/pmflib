@@ -471,7 +471,7 @@ bool CABFIntegratorRBF::WriteMFInfo(const CSmallString& name)
         for(int k=0; k < NumOfCVs; k++){
             double mfi = Accumulator->GetValue(k,i,EABF_MEAN_FORCE_VALUE);
             double mfp = GetMeanForce(ipos,k);
-            ofs << format("%20.16f %20.16f")%mfi%mfp;
+            ofs << format(" %20.16f %20.16f")%mfi%mfp;
         }
 
         ofs << endl;

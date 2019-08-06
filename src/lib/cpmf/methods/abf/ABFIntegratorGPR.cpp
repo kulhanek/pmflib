@@ -486,7 +486,7 @@ bool CABFIntegratorGPR::WriteMFInfo(const CSmallString& name)
             double mfi = Accumulator->GetValue(k,i,EABF_MEAN_FORCE_VALUE);
             double mfp = GetMeanForce(jpos,k);
 
-            ofs << format("%20.16f %20.16f")%mfi%mfp;
+            ofs << format(" %20.16f %20.16f")%mfi%mfp;
         }
 
         ofs << endl;
