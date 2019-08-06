@@ -78,7 +78,7 @@ public:
     bool Integrate(CVerboseStr& vout);
 
     /// get root mean square residuals
-    double GetRMSR(void);
+    double GetRMSR(int k);
 
 // section of private data ----------------------------------------------------
 private:
@@ -95,6 +95,7 @@ private:
     CSimpleVector<int>      XMap;       // translation between global index and X index
     CSimpleVector<int>      IPoint;     // index points
     CSimpleVector<double>   Rhs;        // right hand side
+    CSimpleVector<int>      RhsCv;      // mapping to CV for RMSR calculation
     CSimpleVector<double>   Lhs;        // left hand side
     CSimpleVector<double>   X;          // unknow free energy
     CFortranMatrix          A;          // main matrix with differentation schemes

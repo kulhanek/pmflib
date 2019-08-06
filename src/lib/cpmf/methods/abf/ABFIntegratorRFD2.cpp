@@ -142,8 +142,10 @@ bool CABFIntegratorRFD2::Integrate(CVerboseStr& vout)
     A.FreeMatrix();
     Rhs.FreeVector();
 
-    // recreate A a rhs - required for GetRMSR();
-    vout << "   RMSR = " << setprecision(5) << GetRMSR() << endl;
+    // and finaly some statistics
+    for(int k=0; k < Accumulator->GetNumberOfCoords(); k++ ){
+    vout << "   RMSR CV#" << k+1 << " = " << setprecision(5) << GetRMSR(k) << endl;
+    }
 
 // find global minimum
     double glb_min = X[0];
@@ -160,6 +162,8 @@ bool CABFIntegratorRFD2::Integrate(CVerboseStr& vout)
             FES->SetNumOfSamples(ipoint,Accumulator->GetNumberOfABFSamples(ipoint));
         }
     }
+
+    vout << "   SigmaF2 = " << setprecision(5) << FES->GetSigmaF2() << endl;
 
     return(true);
 }
@@ -208,6 +212,7 @@ bool CABFIntegratorRFD2::BuildSystemOfEquations(CVerboseStr& vout)
     }
 
     Rhs.CreateVector(NumOfEquations);
+    RhsCv.CreateVector(NumOfEquations);
 
 // build system of equations
     BuildEquations(false);
@@ -412,9 +417,10 @@ bool CABFIntegratorRFD2::SolveSystemOfEquations(CVerboseStr& vout)
 
 //------------------------------------------------------------------------------
 
-double CABFIntegratorRFD2::GetRMSR(void)
+double CABFIntegratorRFD2::GetRMSR(int k)
 {
     double rmsr = 0.0;
+    double count = 0.0;
 
     Lhs.CreateVector(NumOfEquations);
     Lhs.SetZero();
@@ -424,12 +430,15 @@ double CABFIntegratorRFD2::GetRMSR(void)
 
     // calculate error
     for(int i=0; i < NumOfEquations; i++){
-        double err = Lhs[i] - BRhs[i];
-        rmsr = rmsr + err*err;
+        if( RhsCv[i] == k ){
+            double err = Lhs[i] - BRhs[i];
+            rmsr = rmsr + err*err;
+            count++;
+        }
     }
 
-    if( NumOfEquations <= 0 ) return(0.0);
-    rmsr = rmsr / (double) NumOfEquations;
+    if( count == 0 ) return(0.0);
+    rmsr = rmsr / count;
     if( rmsr > 0 ){
         rmsr = sqrt(rmsr);
     }

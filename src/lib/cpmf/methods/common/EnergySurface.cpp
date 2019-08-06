@@ -177,19 +177,21 @@ const double& CEnergySurface::GetError(unsigned int index) const
 
 //------------------------------------------------------------------------------
 
-double CEnergySurface::GetSigmaF2(void) const
+double CEnergySurface::GetSigmaF2(bool includeglued) const
 {
     double sigmafsum = 0.0;
     double sigmafsum2 = 0.0;
     double count = 0.0;
 
     for(int k=0; k < TotNPoints; k++) {
-        if( Samples[k] > 0 ){
-            double ene = Energy[k];
-            sigmafsum += ene;
-            sigmafsum2 += ene*ene;
-            count++;
+        if( Samples[k] == 0 ) continue;
+        if( includeglued == false ){
+            if( Samples[k] < 0 ) continue;
         }
+        double ene = Energy[k];
+        sigmafsum += ene;
+        sigmafsum2 += ene*ene;
+        count++;
     }
 
     double sigmaf2 = 0.0;

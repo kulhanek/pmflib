@@ -253,6 +253,9 @@ bool CABFIntegratorRBF::Integrate(CVerboseStr& vout)
     }
 
     vout << "   SigmaF2 = " << setprecision(5) << FES->GetSigmaF2() << endl;
+    if( IncludeGluedBins ){
+        vout << "   SigmaF2 (including glued bins) = " << setprecision(5) << FES->GetSigmaF2(true) << endl;
+    }
 
     return(true);
 }

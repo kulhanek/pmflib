@@ -123,7 +123,10 @@ bool CABFIntegratorRFD::Integrate(CVerboseStr& vout)
         return(false);
     }
 
-    vout << "   RMSR = " << setprecision(5) << GetRMSR() << endl;
+    // and finaly some statistics
+    for(int k=0; k < Accumulator->GetNumberOfCoords(); k++ ){
+    vout << "   RMSR CV#" << k+1 << " = " << setprecision(5) << GetRMSR(k) << endl;
+    }
 
 // find global minimum
     double glb_min = X[0];
@@ -191,6 +194,7 @@ bool CABFIntegratorRFD::BuildSystemOfEquations(CVerboseStr& vout)
     }
 
     Rhs.CreateVector(NumOfEquations);
+    RhsCv.CreateVector(NumOfEquations);
 
 // build system of equations
     BuildEquations(false);
@@ -247,15 +251,18 @@ void CABFIntegratorRFD::BuildEquations(bool trial)
                         cs_entry(A,LocIter,XMap[ifbin2],+4.0*dfac);
                         cs_entry(A,LocIter,XMap[ifbin3],-1.0*dfac);
                         Rhs[LocIter] = Accumulator->GetValue(ifcoord,ifbin1,EABF_MEAN_FORCE_VALUE);
+                        RhsCv[LocIter] = ifcoord;
                         LocIter++;
                         cs_entry(A,LocIter,XMap[ifbin1],-1.0*dfac);
                         cs_entry(A,LocIter,XMap[ifbin3],+1.0*dfac);
                         Rhs[LocIter] = Accumulator->GetValue(ifcoord,ifbin2,EABF_MEAN_FORCE_VALUE);
+                        RhsCv[LocIter] = ifcoord;
                         LocIter++;
                         cs_entry(A,LocIter,XMap[ifbin1],+1.0*dfac);
                         cs_entry(A,LocIter,XMap[ifbin2],-4.0*dfac);
                         cs_entry(A,LocIter,XMap[ifbin3],+3.0*dfac);
                         Rhs[LocIter] = Accumulator->GetValue(ifcoord,ifbin3,EABF_MEAN_FORCE_VALUE);
+                        RhsCv[LocIter] = ifcoord;
                         LocIter++;
                     } else {
                         NumOfEquations += 3;
@@ -292,24 +299,28 @@ void CABFIntegratorRFD::BuildEquations(bool trial)
                         cs_entry(A,LocIter,XMap[ifbin3],-9.0*dfac);
                         cs_entry(A,LocIter,XMap[ifbin4],+2.0*dfac);
                         Rhs[LocIter] = Accumulator->GetValue(ifcoord,ifbin1,EABF_MEAN_FORCE_VALUE);
+                        RhsCv[LocIter] = ifcoord;
                         LocIter++;
                         cs_entry(A,LocIter,XMap[ifbin1],-2.0*dfac);
                         cs_entry(A,LocIter,XMap[ifbin2],-3.0*dfac);
                         cs_entry(A,LocIter,XMap[ifbin3],+6.0*dfac);
                         cs_entry(A,LocIter,XMap[ifbin4],-1.0*dfac);
                         Rhs[LocIter] = Accumulator->GetValue(ifcoord,ifbin2,EABF_MEAN_FORCE_VALUE);
+                        RhsCv[LocIter] = ifcoord;
                         LocIter++;
                         cs_entry(A,LocIter,XMap[ifbin1],+1.0*dfac);
                         cs_entry(A,LocIter,XMap[ifbin2],-6.0*dfac);
                         cs_entry(A,LocIter,XMap[ifbin3],+3.0*dfac);
                         cs_entry(A,LocIter,XMap[ifbin4],+2.0*dfac);
                         Rhs[LocIter] = Accumulator->GetValue(ifcoord,ifbin3,EABF_MEAN_FORCE_VALUE);
+                        RhsCv[LocIter] = ifcoord;
                         LocIter++;
                         cs_entry(A,LocIter,XMap[ifbin1],-2.0*dfac);
                         cs_entry(A,LocIter,XMap[ifbin2],+9.0*dfac);
                         cs_entry(A,LocIter,XMap[ifbin3],-18.0*dfac);
                         cs_entry(A,LocIter,XMap[ifbin4],+11.0*dfac);
                         Rhs[LocIter] = Accumulator->GetValue(ifcoord,ifbin4,EABF_MEAN_FORCE_VALUE);
+                        RhsCv[LocIter] = ifcoord;
                         LocIter++;
                     } else {
                         NumOfEquations += 4;
@@ -440,7 +451,7 @@ void CABFIntegratorRFD::ReleaseAllResources(void)
 
 //------------------------------------------------------------------------------
 
-double CABFIntegratorRFD::GetRMSR(void)
+double CABFIntegratorRFD::GetRMSR(int k)
 {
     CSimpleVector<double> lhs;
     lhs.CreateVector(NumOfEquations);
@@ -453,17 +464,22 @@ double CABFIntegratorRFD::GetRMSR(void)
     }
 
     double rmsr = 0.0;
+    double count = 0.0;
     double lv,rv,err;
 
     for(int i=0; i < NumOfEquations; i++){
-        rv = Rhs[i];
-        lv = lhs[i];
-        err = lv-rv;
-        rmsr = rmsr + err*err;
+        if( RhsCv[i] == k ){
+            rv = Rhs[i];
+            lv = lhs[i];
+            err = lv-rv;
+            rmsr = rmsr + err*err;
+            count++;
+        }
+
     }
 
-    if( NumOfEquations <= 0 ) return(0.0);
-    rmsr = rmsr / (double) NumOfEquations;
+    if( count == 0 ) return(0.0);
+    rmsr = rmsr / count;
     if( rmsr > 0 ){
         rmsr = sqrt(rmsr);
     }
