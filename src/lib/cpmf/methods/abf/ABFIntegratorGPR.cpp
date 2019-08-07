@@ -748,7 +748,11 @@ void CABFIntegratorGPR::CalculateErrors(CSimpleVector<double>& gpos,CVerboseStr&
     int totbatches = 0;
     for(int i=0; i < Accumulator->GetNumberOfBins(); i++){
         int samples = Accumulator->GetNumberOfABFSamples(i);
-        if( samples <= 0 ) continue;
+        if( IncludeGluedBins ){
+            if( samples == 0 ) continue;
+        } else {
+            if( samples <= 0 ) continue;
+        }
         totbatches++;
     }
 
@@ -756,7 +760,11 @@ void CABFIntegratorGPR::CalculateErrors(CSimpleVector<double>& gpos,CVerboseStr&
     for(int i=0; i < Accumulator->GetNumberOfBins(); i++){
         int samples = Accumulator->GetNumberOfABFSamples(i);
         FES->SetError(i,0.0);
-        if( samples <= 0 ) continue;
+        if( IncludeGluedBins ){
+            if( samples == 0 ) continue;
+        } else {
+            if( samples <= 0 ) continue;
+        }
         Accumulator->GetPoint(i,jpos);
         double varfc = GetVar(jpos);
         double covfg = GetCov(jpos,gpos);
