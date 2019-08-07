@@ -49,6 +49,7 @@ CABFIntegratorGPR::CABFIntegratorGPR(void)
     IncludeError = false;
     IncludeGluedBins = false;
     NoEnergy = false;
+    GlobalMinSet = false;
 
     Method = EGPRINV_LU;
 }
@@ -132,6 +133,32 @@ void CABFIntegratorGPR::IncludeGluedAreas(bool set)
     IncludeGluedBins = set;
 }
 
+//------------------------------------------------------------------------------
+
+void CABFIntegratorGPR::SetGlobalMin(const CSmallString& spec)
+{
+    GlobalMinSet = true;
+    string sspec(spec);
+    if( Accumulator == NULL ){
+        RUNTIME_ERROR("accumulator is not set for SetGlobalMin");
+    }
+
+    // remove "x" from the string
+    replace (sspec.begin(), sspec.end(), 'x' , ' ');
+
+    // parse values of CVs
+    gpos.CreateVector(Accumulator->GetNumberOfCoords());
+    stringstream str(sspec);
+    for(int i=0; i < Accumulator->GetNumberOfCoords(); i++){
+        str >> gpos[i];
+        if( ! str ){
+            CSmallString error;
+            error << "unable to decode CV value for position: " << i+1;
+            RUNTIME_ERROR(error);
+        }
+    }
+}
+
 //==============================================================================
 //------------------------------------------------------------------------------
 //==============================================================================
@@ -187,7 +214,6 @@ bool CABFIntegratorGPR::Integrate(CVerboseStr& vout)
     // load data to FES
     ipos.CreateVector(NCVs);
     jpos.CreateVector(NCVs);
-    gpos.CreateVector(NCVs);
     rk.CreateVector(GPRSize);
     lk.CreateVector(GPRSize);
     ik.CreateVector(GPRSize);
@@ -212,25 +238,61 @@ bool CABFIntegratorGPR::Integrate(CVerboseStr& vout)
 
         // calculate energies
         double glb_min = 0.0;
-        bool   first = true;
-        for(int i=0; i < Accumulator->GetNumberOfBins(); i++){
-            int samples = Accumulator->GetNumberOfABFSamples(i);
-            FES->SetNumOfSamples(i,samples);
-            double value = 0.0;
-            FES->SetEnergy(i,value);
-            if( IncludeGluedBins ){
-                if( samples == 0 ) continue;
-            } else {
-                if( samples <= 0 ) continue;
+        if( GlobalMinSet ){
+            // gpos.CreateVector(NCVs) - is created in  SetGlobalMin
+       //   vout << "   Calculating FES ..." << endl;
+            vout << "       Global minima provided at: ";
+            vout << gpos[0];
+            for(int i=1; i < Accumulator->GetNumberOfCoords(); i++){
+                vout << "x" << gpos[i];
             }
-            Accumulator->GetPoint(i,jpos);
-            value = GetValue(jpos);
-            FES->SetEnergy(i,value);
-            if( first || (glb_min > value) ){
-                glb_min = value;
-                first = false;
-                gpos = jpos;
+            glb_min = GetValue(gpos);
+            vout << " (" << glb_min << ")" << endl;
+
+            for(int i=0; i < Accumulator->GetNumberOfBins(); i++){
+                int samples = Accumulator->GetNumberOfABFSamples(i);
+                FES->SetNumOfSamples(i,samples);
+                double value = 0.0;
+                FES->SetEnergy(i,value);
+                if( IncludeGluedBins ){
+                    if( samples == 0 ) continue;
+                } else {
+                    if( samples <= 0 ) continue;
+                }
+                Accumulator->GetPoint(i,jpos);
+                value = GetValue(jpos);
+                FES->SetEnergy(i,value);
             }
+
+        } else {
+            gpos.CreateVector(NCVs);
+            bool   first = true;
+            for(int i=0; i < Accumulator->GetNumberOfBins(); i++){
+                int samples = Accumulator->GetNumberOfABFSamples(i);
+                FES->SetNumOfSamples(i,samples);
+                double value = 0.0;
+                FES->SetEnergy(i,value);
+                if( IncludeGluedBins ){
+                    if( samples == 0 ) continue;
+                } else {
+                    if( samples <= 0 ) continue;
+                }
+                Accumulator->GetPoint(i,jpos);
+                value = GetValue(jpos);
+                FES->SetEnergy(i,value);
+                if( first || (glb_min > value) ){
+                    glb_min = value;
+                    first = false;
+                    gpos = jpos;
+                }
+            }
+       //   vout << "   Calculating FES ..." << endl;
+            vout << "       Global minima found at: ";
+            vout << gpos[0];
+            for(int i=1; i < Accumulator->GetNumberOfCoords(); i++){
+                vout << "x" << gpos[i];
+            }
+            vout << " (" << glb_min << ")" << endl;
         }
 
         // move to global minima

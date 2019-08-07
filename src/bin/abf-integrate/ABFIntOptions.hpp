@@ -94,6 +94,7 @@ public:
     CSO_OPT(int,Overhang)
     CSO_OPT(int,GlueingFES)
     CSO_OPT(bool,Periodicity)
+    CSO_OPT(CSmallString,GlobalMin)
     CSO_OPT(bool,WithError)
     CSO_OPT(bool,NoEnergy)
     CSO_OPT(CSmallString,OutputFormat)
@@ -324,6 +325,15 @@ public:
                 "periodic",                      /* long option name */
                 NULL,                           /* parametr name */
                 "RFD: Switch on periodicity for collective variables that are periodic.")   /* option description */
+    //----------------------------------------------------------------------
+    CSO_MAP_OPT(CSmallString,                           /* option type */
+                GlobalMin,                        /* option name */
+                NULL,                          /* default value */
+                false,                          /* is option mandatory */
+                '\0',                           /* short option name */
+                "globalmin",                      /* long option name */
+                "SPEC",                           /* parametr name */
+                "GPR: position of global minimum provided as a single string in the form CV1xCV2x...xCVn (relevant for error determination), if not set the position is determined automatically.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(bool,                           /* option type */
                 WithError,                        /* option name */

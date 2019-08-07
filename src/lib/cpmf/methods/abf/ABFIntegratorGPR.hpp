@@ -79,6 +79,9 @@ public:
     /// should we include glued area to energy calculation?
     void IncludeGluedAreas(bool set);
 
+    /// set position of global minimum
+    void SetGlobalMin(const CSmallString& spec);
+
 // execution method -----------------------------------------------------------
     /// integrate data
     bool Integrate(CVerboseStr& vout);
@@ -122,10 +125,11 @@ private:
     bool                    IncludeError;
     bool                    IncludeGluedBins;
     EGPRINVMethod           Method;
+    bool                    GlobalMinSet;
 
     CSimpleVector<double>   ipos;
     CSimpleVector<double>   jpos;
-    CSimpleVector<double>   gpos;
+    CSimpleVector<double>   gpos;   // global position
     CSimpleVector<double>   rk;
     CSimpleVector<double>   lk;
     CSimpleVector<double>   ik;

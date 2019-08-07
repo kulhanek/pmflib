@@ -183,6 +183,12 @@ int CABFIntegrate::Init(int argc,char* argv[])
         vout << "# Number of corr. sam.  : " << Options.GetOptNCorr() << endl;
         vout << "# Integration offset    : " << Options.GetOptOffset() << endl;
     vout << "# ------------------------------------------------" << endl;
+
+    if( Options.IsOptGlobalMinSet() ){
+    vout << "# Global FES minimum    : " << Options.GetOptGlobalMin() << endl;
+    } else {
+    vout << "# Global FES minimum    : -auto-" << endl;
+    }
     vout << "# Output FES format     : " << Options.GetOptOutputFormat() << endl;
     vout << "# No header to output   : " << bool_to_str(Options.GetOptNoHeader()) << endl;
     vout << "# Include bin statuses  : " << bool_to_str(Options.GetOptIncludeBinStat()) << endl;
@@ -481,10 +487,14 @@ void CABFIntegrate::WriteHeader()
         fprintf(OutputFile,"# Skip flood fill test  : %s\n", bool_to_str(Options.GetOptNoHeader()));
         fprintf(OutputFile,"# Number of corr. sam.  : %5.3f\n",Options.GetOptNCorr());
         fprintf(OutputFile,"# Include bin statuses  : %s\n",bool_to_str(Options.GetOptIncludeBinStat()));
+        if( Options.IsOptGlobalMinSet() ){
+        fprintf(OutputFile,"# Global FES minimum    : %s\n",(const char*)Options.GetOptGlobalMin());
+        } else {
+        fprintf(OutputFile,"# Global FES minimum    : -auto-\n");
+        }
         fprintf(OutputFile,"# Number of coordinates : %d\n",Accumulator.GetNumberOfCoords());
         fprintf(OutputFile,"# Total number of bins  : %d\n",Accumulator.GetNumberOfBins());
     }
-
 }
 
 //==============================================================================
@@ -892,6 +902,9 @@ bool CABFIntegrate::Integrate()
     } else if( Options.GetOptMethod() == "gpr" ){
         CABFIntegratorGPR   integrator;
 
+        integrator.SetInputABFAccumulator(&Accumulator);
+        integrator.SetOutputFESurface(&FES);
+
         integrator.SetWFac1(Options.GetOptWFac());
         integrator.SetWFac2(Options.GetOptWFac2());
         integrator.SetRCond(Options.GetOptRCond());
@@ -899,6 +912,10 @@ bool CABFIntegrate::Integrate()
         integrator.SetIncludeError(Options.GetOptWithError());
         integrator.SetNoEnergy(Options.GetOptNoEnergy());
         integrator.IncludeGluedAreas(Options.GetOptGlueingFES() > 0);
+
+        if( Options.IsOptGlobalMinSet() ){
+            integrator.SetGlobalMin(Options.GetOptGlobalMin());
+        }
 
         if( Options.GetOptLAMethod() == "svd" ){
             integrator.SetINVMehod(EGPRINV_SVD);
@@ -909,9 +926,6 @@ bool CABFIntegrate::Integrate()
         } else {
             INVALID_ARGUMENT("algorithm - not implemented");
         }
-
-        integrator.SetInputABFAccumulator(&Accumulator);
-        integrator.SetOutputFESurface(&FES);
 
         if(integrator.Integrate(vout) == false) {
             ES_ERROR("unable to integrate ABF accumulator");
