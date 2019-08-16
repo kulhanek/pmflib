@@ -127,8 +127,8 @@ subroutine load_pvang(cv_item,prm_fin)
 
 
     60 format('   == Plane A ====================================')
-    70 format('   ** x-direction atom   : ',A)
-    80 format('   ** y-direction atom   : ',A)
+    70 format('   ** x-direction atom   = ',A)
+    80 format('   ** y-direction atom   = ',A)
     85 format('   == Vector B ===================================')
 
 end subroutine load_pvang

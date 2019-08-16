@@ -145,8 +145,8 @@ subroutine load_ppdis(cv_item,prm_fin)
     return
 
 50 format('   == Plane A ====================================')
-70 format('   ** x-direction atom   : ',A)
-80 format('   ** y-direction atom   : ',A)
+70 format('   ** x-direction atom   = ',A)
+80 format('   ** y-direction atom   = ',A)
 90 format('   == Point B ====================================')
 92 format('   ** X   : ',F10.3,1X,A)
 94 format('   ** Y   : ',F10.3,1X,A)

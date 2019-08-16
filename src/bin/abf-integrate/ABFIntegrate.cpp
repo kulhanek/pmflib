@@ -233,6 +233,18 @@ bool CABFIntegrate::Run(void)
     Accumulator.SetNCorr(Options.GetOptNCorr());
     FES.Allocate(&Accumulator);
 
+    if( Options.GetOptMethod() == "gpr" ){
+        // test early stage parsing of --globalmin
+        CABFIntegratorGPR   integrator;
+
+        integrator.SetInputABFAccumulator(&Accumulator);
+        integrator.SetOutputFESurface(&FES);
+
+        if( Options.IsOptGlobalMinSet() ){
+            integrator.SetGlobalMin(Options.GetOptGlobalMin());
+        }
+    }
+
 // sampling limit -------------------------------
     vout << endl;
     vout << "2) Preparing ABF accumulator for integration (sampling limit)"<< endl;

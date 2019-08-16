@@ -169,11 +169,11 @@ subroutine load_cpang(cv_item,prm_fin)
     end if
 
  60 format('   == Plane A ====================================')
- 70 format('   ** x-direction atom   : ',A)
- 80 format('   ** y-direction atom   : ',A)
+ 70 format('   ** x-direction atom   = ',A)
+ 80 format('   ** y-direction atom   = ',A)
  85 format('   == Plane B ====================================')
- 90 format('   ** x-direction atom   : ',A)
-100 format('   ** y-direction atom   : ',A)
+ 90 format('   ** x-direction atom   = ',A)
+100 format('   ** y-direction atom   = ',A)
 
 end subroutine load_cpang
 

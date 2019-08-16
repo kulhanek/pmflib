@@ -202,6 +202,136 @@ subroutine cv_common_init_groups(cv_item,prm_fin)
 end subroutine cv_common_init_groups
 
 !===============================================================================
+! Subroutine:  cv_common_init_groups_I
+!===============================================================================
+
+subroutine cv_common_init_groups_I(cv_item,prm_fin)
+
+    use prmfile
+    use pmf_dat
+    use pmf_utils
+    use pmf_mask
+
+    implicit none
+    type(PRMFILE_TYPE),intent(inout)    :: prm_fin
+    class(CVType)                       :: cv_item
+    ! -----------------------------------------------
+    integer                             :: i, alloc_failed
+    character(len=PRMFILE_MAX_LINE)     :: mask
+    integer,parameter                   :: group_index = 96   ! ascii code of 'a' - 1
+    ! --------------------------------------------------------------------------
+
+    if( cv_item%ngrps .le. 0 ) then
+        call pmf_utils_exit(PMF_OUT,1,'No groups defined for CV ('//trim(cv_item%name)//')!')
+    end if
+
+    ! allocate grps array
+    allocate(cv_item%grps(cv_item%ngrps),stat = alloc_failed)
+
+    if( alloc_failed .ne. 0 ) then
+        call pmf_utils_exit(PMF_OUT,1, &
+                       'Unable to allocate memory for CV ('//trim(cv_item%name)//')!')
+    end if
+
+end subroutine cv_common_init_groups_I
+
+!===============================================================================
+! Subroutine:  cv_common_init_groups_II
+!===============================================================================
+
+subroutine cv_common_init_groups_II(cv_item,prm_fin,groupid,groupname)
+
+    use prmfile
+    use pmf_dat
+    use pmf_utils
+    use pmf_mask
+
+    implicit none
+    type(PRMFILE_TYPE),intent(inout)    :: prm_fin
+    class(CVType)                       :: cv_item
+    integer                             :: groupid
+    character(len=PRMFILE_MAX_LINE)     :: groupname
+    ! -----------------------------------------------
+    integer                             :: i, alloc_failed
+    character(len=PRMFILE_MAX_LINE)     :: mask
+    integer,parameter                   :: group_index = 96   ! ascii code of 'a' - 1
+    ! --------------------------------------------------------------------------
+
+    if( cv_item%ngrps .le. 0 ) then
+        call pmf_utils_exit(PMF_OUT,1,'No groups defined for CV ('//trim(cv_item%name)//')!')
+    end if
+
+    if( (groupid .le. 0) .or. (groupid .gt. cv_item%ngrps) ) then
+        call pmf_utils_exit(PMF_OUT,1,'Group index out-of-range for CV ('//trim(cv_item%name)//')!')
+    end if
+
+    ! get mask
+    if( .not. prmfile_get_string_by_key(prm_fin,trim(groupname),mask) ) then
+        call pmf_utils_exit(PMF_OUT,1, &
+                        '('//trim(groupname)//') group mask is not defined!')
+    end if
+
+    cv_item%grps(groupid) = pmf_mask_natoms_in_mask(trim(mask))
+    if( cv_item%grps(groupid) .eq. 0 ) then
+        call pmf_utils_exit(PMF_OUT,1, &
+                            ''//'group_'//achar(group_index+groupid)//' (' // trim(mask) // ') does not contain any atom!')
+    end if
+
+    return
+
+end subroutine cv_common_init_groups_II
+
+!===============================================================================
+! Subroutine:  cv_common_init_groups_III
+!===============================================================================
+
+subroutine cv_common_init_groups_III(cv_item,prm_fin)
+
+    use prmfile
+    use pmf_dat
+    use pmf_utils
+    use pmf_mask
+
+    implicit none
+    type(PRMFILE_TYPE),intent(inout)    :: prm_fin
+    class(CVType)                       :: cv_item
+    ! -----------------------------------------------
+    integer                             :: i, alloc_failed
+    character(len=PRMFILE_MAX_LINE)     :: mask
+    integer,parameter                   :: group_index = 96   ! ascii code of 'a' - 1
+    ! --------------------------------------------------------------------------
+
+    if( cv_item%ngrps .le. 0 ) then
+        call pmf_utils_exit(PMF_OUT,1,'No groups defined for CV ('//trim(cv_item%name)//')!')
+    end if
+
+    do i=1,cv_item%ngrps
+        if( cv_item%grps(i) .eq. 0 ) then
+            call pmf_utils_exit(PMF_OUT,1, &
+                                ''//'group_'//achar(group_index+i)//' does not contain any atom!')
+        end if
+    end do
+
+    ! update grp items
+    cv_item%natoms = cv_item%grps(1)
+    do i=2,cv_item%ngrps
+        cv_item%natoms = cv_item%natoms + cv_item%grps(i)
+        cv_item%grps(i) = cv_item%grps(i) + cv_item%grps(i-1)
+    end do
+
+    ! allocate arrays
+    allocate(cv_item%rindexes(cv_item%natoms),cv_item%lindexes(cv_item%natoms),stat = alloc_failed)
+
+    if( alloc_failed .ne. 0 ) then
+        call pmf_utils_exit(PMF_OUT,1, &
+                       'Unable to allocate memory for CV ('//trim(cv_item%name)//')!')
+    end if
+
+    return
+
+end subroutine cv_common_init_groups_III
+
+!===============================================================================
 ! Subroutine:  cv_common_read_group
 !===============================================================================
 
@@ -230,10 +360,10 @@ subroutine cv_common_read_group(cv_item,prm_fin,groupid)
         call pmf_utils_exit(PMF_OUT,1,'Group index out-of-range for CV ('//trim(cv_item%name)//')!')
     end if
 
-    ! populate rindexes array
+    ! read group mask
     if( .not. prmfile_get_string_by_key(prm_fin,'group_'//achar(group_index+groupid),mask) ) then
         call pmf_utils_exit(PMF_OUT,1, &
-                        ''//'group_'//achar(group_index+groupid)//' mask is not defined!')
+                        ''//'group_'//achar(group_index+groupid)//' mask is not specified!')
     end if
 
     !set mask
@@ -261,10 +391,77 @@ subroutine cv_common_read_group(cv_item,prm_fin,groupid)
 
     return
 
-100 format('   ** group_',A1,' mask       : ',A)
+100 format('   ** group_',A1,' mask       = ',A)
 110 format('      >> Number of atoms : ',I6)
 
 end subroutine cv_common_read_group
+
+!===============================================================================
+! Subroutine:  cv_common_read_group_by_name
+!===============================================================================
+
+subroutine cv_common_read_group_by_name(cv_item,prm_fin,groupid,groupname)
+
+    use prmfile
+    use pmf_dat
+    use pmf_utils
+    use pmf_mask
+
+    implicit none
+    type(PRMFILE_TYPE),intent(inout)    :: prm_fin
+    class(CVType)                       :: cv_item
+    integer                             :: groupid
+    character(len=PRMFILE_MAX_LINE)     :: groupname
+    ! -----------------------------------------------
+    integer                             :: i, k, l, sel
+    character(len=PRMFILE_MAX_LINE)     :: mask
+    character(len=18)                   :: string
+    ! --------------------------------------------------------------------------
+
+    if( cv_item%ngrps .le. 0 ) then
+        call pmf_utils_exit(PMF_OUT,1,'No groups defined for CV ('//trim(cv_item%name)//')!')
+    end if
+
+    if( (groupid .le. 0) .or. (groupid .gt. cv_item%ngrps) ) then
+        call pmf_utils_exit(PMF_OUT,1,'Group index out-of-range for CV ('//trim(cv_item%name)//')!')
+    end if
+
+    ! get mask
+    if( .not. prmfile_get_string_by_key(prm_fin,trim(groupname),mask) ) then
+        call pmf_utils_exit(PMF_OUT,1, &
+                        '('//trim(groupname)//') group mask is not defined!')
+    end if
+
+    !set mask
+    string = adjustl(trim(groupname)//' mask')
+    write(PMF_OUT,100) string,trim(mask)
+    call pmf_mask_set_mask(trim(mask))
+
+    ! populate cv rindexes
+    k = 1
+    l = 0
+    if( groupid .gt. 1 ) k = cv_item%grps(groupid-1) + 1
+    do i=1,fnatoms
+        call pmf_mask_is_atom_selected(i,sel)
+        if( sel .eq. 1 ) then
+            cv_item%rindexes(k) = i
+            k = k + 1
+            l = l + 1
+        end if
+    end do
+
+    write(PMF_OUT,110) l
+    ! print mask
+    if( fprint_masks ) then
+        call pmf_mask_print();
+    end if
+
+    return
+
+100 format('   ** ',A18,' = ',A)
+110 format('      >> Number of atoms : ',I6)
+
+end subroutine cv_common_read_group_by_name
 
 !===============================================================================
 ! Subroutine:  cv_common_set_atom_from_mask

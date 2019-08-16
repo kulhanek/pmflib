@@ -45,6 +45,7 @@ SET(PMF_CVS_SRC
         common/cvs/distance/cv_ds.f90
         common/cvs/distance/cv_dd.f90
         common/cvs/distance/cv_ppdis.f90
+        common/cvs/distance/cv_wormp.f90
  
     # angle based
         common/cvs/angle/cv_ang.f90

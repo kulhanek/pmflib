@@ -127,8 +127,8 @@ subroutine load_odis(cv_item,prm_fin)
     return
 
 50 format('   == Plane A ====================================')
-70 format('   ** x-direction atom   : ',A)
-80 format('   ** y-direction atom   : ',A)
+70 format('   ** x-direction atom   = ',A)
+80 format('   ** y-direction atom   = ',A)
 90 format('   == Point B ====================================')
 
 end subroutine load_odis
