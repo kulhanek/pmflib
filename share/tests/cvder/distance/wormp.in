@@ -1,0 +1,18 @@
+[WORMP]
+name        w1
+plane       @1-6
+x_direction @1
+y_direction @3
+seldist     2.5
+steepness   7.0
+
+nsegs       4
+totlen      15.0
+segment_a   @7-9
+segment_b   @10-12
+segment_c   @13-15
+segment_d   @16-18
+alpha_a     0.00
+alpha_b     0.33
+alpha_c     0.66
+alpha_d     1.00
