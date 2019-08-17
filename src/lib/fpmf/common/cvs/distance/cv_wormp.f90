@@ -230,7 +230,7 @@ subroutine calculate_wormp(cv_item,x,ctx)
     real(PMFDP)         :: x(:,:)
     type(CVContextType) :: ctx
     ! -----------------------------------------------
-    integer        :: i,g,s,ai,m,info,orient,mi,mj
+    integer        :: i,ai,m,info,orient,mi,mj
     real(PMFDP)    :: dx(3),dzx(3),dzy(3),dzz(3)
     real(PMFDP)    :: a(3,3),a11,a22,a33,a12,a13,a23,eigenvalues(3)
     real(PMFDP)    :: top,down,amass,msign,ac,dzz_s
@@ -238,9 +238,15 @@ subroutine calculate_wormp(cv_item,x,ctx)
     real(PMFDP)    :: v(3,3),api(3,3),cij(3),xij(3,3,3),bint(3,3)
     ! -----------------------------------------------------------------------------
 
+    cv_item%coms(:,:)   = 0.0
+    cv_item%totmass(:)  = 0.0
+    cv_item%odist(:)    = 0.0
+    cv_item%wdist(:)    = 0.0
+    cv_item%wd(:)       = 0.0
+
     ! for each group, calculate coms and totmass
-    do g = 1, cv_item%ngrps
-        call cv_get_group_com(cv_item,g,x,cv_item%coms(:,i),cv_item%totmass(i))
+    do i = 1, cv_item%ngrps
+        call cv_get_group_com(cv_item,i,x,cv_item%coms(:,i),cv_item%totmass(i))
     end do
 
     ! calculate parameters of plane -----------------
@@ -309,22 +315,24 @@ subroutine calculate_wormp(cv_item,x,ctx)
     top = 0.0d0
     down = 0.0d0
 
-    do s=1,cv_item%nsegs
+    do i=1,cv_item%nsegs
 
         ! direction vector
-        dx(:) = cv_item%coms(:,s+1) - cv_item%coms(:,1)
+        dx(:) = cv_item%coms(:,i+1) - cv_item%coms(:,1)
 
         ! oriented distance
-        cv_item%odist(s) = msign*(a(1,orient)*dx(1) + a(2,orient)*dx(2) + a(3,orient)*dx(3))
+        cv_item%odist(i) = msign*(a(1,orient)*dx(1) + a(2,orient)*dx(2) + a(3,orient)*dx(3))
 
         ! normal distance for selector
-        cv_item%wdist(s) = sqrt(dx(1)**2 + dx(2)**2 + dx(3)**2)
+        cv_item%wdist(i) = sqrt(dx(1)**2 + dx(2)**2 + dx(3)**2)
 
         ! weight
-        cv_item%wd(s)  = 1.0d0 / (1.0d0 + exp(cv_item%steepness*(cv_item%wdist(s) - cv_item%seldist)))
+        cv_item%wd(i)  = 1.0d0 / (1.0d0 + exp(cv_item%steepness*(cv_item%wdist(i) - cv_item%seldist)))
 
-        top = top + cv_item%wd(s)*(cv_item%alphas(s)*cv_item%totlen + cv_item%odist(s))
-        down = down + cv_item%wd(s)
+        write(*,*) cv_item%wd(i)
+
+        top = top + cv_item%wd(i)*(cv_item%alphas(i)*cv_item%totlen + cv_item%odist(i))
+        down = down + cv_item%wd(i)
     end do
 
     ctx%CVsValues(cv_item%idx) = top / (cv_item%totlen * down)
