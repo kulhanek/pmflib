@@ -21,7 +21,7 @@
 
 ! worm position
 
-module cv_wormp
+module cv_wormod
 
 use pmf_sizes
 use pmf_constants
@@ -32,7 +32,7 @@ implicit none
 
 !===============================================================================
 
-type, extends(CVType) :: CVTypeWORMP
+type, extends(CVType) :: CVTypeWORMOD
 
     ! plane definition
     integer             :: x_direction  ! plane x-direction
@@ -53,25 +53,25 @@ type, extends(CVType) :: CVTypeWORMP
     real(PMFDP),pointer :: wd(:)        ! nsegs
 
     contains
-        procedure :: load_cv        => load_wormp
-        procedure :: calculate_cv   => calculate_wormp
-end type CVTypeWORMP
+        procedure :: load_cv        => load_wormod
+        procedure :: calculate_cv   => calculate_wormod
+end type CVTypeWORMOD
 
 !===============================================================================
 
 contains
 
 !===============================================================================
-! Subroutine:  load_wormp
+! Subroutine:  load_wormod
 !===============================================================================
 
-subroutine load_wormp(cv_item,prm_fin)
+subroutine load_wormod(cv_item,prm_fin)
 
     use prmfile
     use pmf_utils
 
     implicit none
-    class(CVTypeWORMP)                  :: cv_item
+    class(CVTypeWORMOD)                 :: cv_item
     type(PRMFILE_TYPE),intent(inout)    :: prm_fin
     ! -----------------------------------------------
     integer                             :: m, i
@@ -214,19 +214,19 @@ subroutine load_wormp(cv_item,prm_fin)
 220 format('   ** Total length       : ',F10.3,' [',A,']')
 230 format('   ** alpha_',A1,'            : ',F10.3)
 
-end subroutine load_wormp
+end subroutine load_wormod
 
 !===============================================================================
-! Subroutine:  calculate_wormp
+! Subroutine:  calculate_wormod
 !===============================================================================
 
-subroutine calculate_wormp(cv_item,x,ctx)
+subroutine calculate_wormod(cv_item,x,ctx)
 
     use pmf_dat
     use pmf_utils
 
     implicit none
-    class(CVTypeWORMP)  :: cv_item
+    class(CVTypeWORMOD) :: cv_item
     real(PMFDP)         :: x(:,:)
     type(CVContextType) :: ctx
     ! -----------------------------------------------
@@ -288,7 +288,7 @@ subroutine calculate_wormp(cv_item,x,ctx)
     call dsyev('V','L', 3, a, 3, eigenvalues, work, 26*3, info)
 
     if( info .ne. 0 ) then
-    call pmf_utils_exit(PMF_OUT,1,'Unable to diagonalize matrix in calculate_wormp!')
+    call pmf_utils_exit(PMF_OUT,1,'Unable to diagonalize matrix in calculate_wormod!')
     end if
 
     ! determine z-axis orientation
@@ -448,9 +448,9 @@ subroutine calculate_wormp(cv_item,x,ctx)
 
     return
 
-end subroutine calculate_wormp
+end subroutine calculate_wormod
 
 !===============================================================================
 
-end module cv_wormp
+end module cv_wormod
 
