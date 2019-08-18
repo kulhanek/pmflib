@@ -329,7 +329,7 @@ subroutine calculate_wormp(cv_item,x,ctx)
         ! weight
         cv_item%wd(i)  = 1.0d0 / (1.0d0 + exp(cv_item%steepness*(cv_item%wdist(i) - cv_item%seldist)))
 
-        top = top + cv_item%wd(i)*(cv_item%alphas(i)*cv_item%totlen + cv_item%odist(i))
+        top = top + cv_item%wd(i)*(cv_item%alphas(i)*cv_item%totlen - cv_item%odist(i))
         down = down + cv_item%wd(i)
     end do
     down = down * cv_item%totlen
@@ -355,7 +355,7 @@ subroutine calculate_wormp(cv_item,x,ctx)
         dx(:) = cv_item%coms(:,i+1) - cv_item%coms(:,1)
 
         ! sc
-        sc = cv_item%wd(i)/down
+        sc = -cv_item%wd(i)/down
 
         ! first part, e.g. a*dx'
         do  m = 1, cv_item%grps(1)
@@ -429,7 +429,7 @@ subroutine calculate_wormp(cv_item,x,ctx)
         ! for d->0 the derivative should be zero?
         if( cv_item%wdist(i) .gt. 1.0e-7 ) then
             sc = - cv_item%wd(i)**2*e*cv_item%steepness/cv_item%wdist(i)
-            sc = sc * (down*(cv_item%alphas(i)*cv_item%totlen + cv_item%odist(i)) - cv_item%totlen*top)/(down*down)
+            sc = sc * (down*(cv_item%alphas(i)*cv_item%totlen - cv_item%odist(i)) - cv_item%totlen*top)/(down*down)
 
             do  m = 1, cv_item%grps(1)
                 ai = cv_item%lindexes(m)
