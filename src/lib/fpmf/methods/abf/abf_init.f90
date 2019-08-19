@@ -201,7 +201,7 @@ subroutine abf_init_print_header
     end if
     write(PMF_OUT,130)  ' Server update interval (fserverupdate)       : ', fserverupdate
     write(PMF_OUT,130)  ' Number of connection repeats (fconrepeats)   : ', fconrepeats
-    write(PMF_OUT,130)  ' Abort on MWA failure (fabortonmwaerr)        : ', prmfile_onoff(fabortonmwaerr)
+    write(PMF_OUT,125)  ' Abort on MWA failure (fabortonmwaerr)        : ', prmfile_onoff(fabortonmwaerr)
     write(PMF_OUT,120)
     write(PMF_OUT,120)  ' List of ABF coordinates'
     write(PMF_OUT,120)  ' -------------------------------------------------------'
