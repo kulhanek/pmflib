@@ -1,6 +1,6 @@
 [WORMOD]
 name        w1
-plane       @1-6
+group_a     @1-6
 x_direction @1
 y_direction @3
 seldist     2.5
