@@ -67,6 +67,7 @@ character(PMF_MAX_PATH) :: fserver              ! abf-server name
 character(PMF_MAX_PATH) :: fpassword            ! abf-server password
 integer                 :: fserverupdate        ! how often to communicate with server
 integer                 :: fconrepeats          ! how many times to repeat connection
+logical                 :: fabortonmwaerr       ! abort if communication with MWA fails
 
 ! abf server -----------------
 integer                 :: client_id            ! abf walker client ID

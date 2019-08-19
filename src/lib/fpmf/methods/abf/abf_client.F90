@@ -276,7 +276,11 @@ subroutine abf_client_exchange_data(force_exchange)
         failure_counter = failure_counter + 1
         write(ABF_OUT,20) failure_counter,fconrepeats
         if( failure_counter .gt. fconrepeats ) then
-            call pmf_exit_mdloop(PMF_OUT,1,'MWA connection failures reach the treshold!')
+            if( fabortonmwaerr ) then
+                call pmf_utils_exit(PMF_OUT,1,'MWA connection failures reach the treshold!')
+            else
+                call pmf_exit_mdloop(PMF_OUT,1,'MWA connection failures reach the treshold!')
+            end if
         end if
         call pmf_timers_stop_timer(PMFLIB_ABF_MWA_TIMER)
         return

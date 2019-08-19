@@ -240,6 +240,13 @@ subroutine abf_control_read_abf(prm_fin)
     else
         write(PMF_OUT,145) fserverupdate
     end if
+
+    if(prmfile_get_logical_by_key(prm_fin,'fabortonmwaerr', fabortonmwaerr)) then
+        write(PMF_OUT,150) prmfile_onoff(fabortonmwaerr)
+    else
+        write(PMF_OUT,155) prmfile_onoff(fabortonmwaerr)
+    end if
+
 #else
     fserver_enabled = .false.
     use_key = .false.
@@ -292,6 +299,8 @@ subroutine abf_control_read_abf(prm_fin)
 130 format ('fpassword                              = ',a16)
 140 format ('fserverupdate                          = ',i12)
 145 format ('fserverupdate                          = ',i12,'                  (default)')
+150 format ('fabortonmwaerr                          = ',a12)
+155 format ('fabortonmwaerr                          = ',a12,'                  (default)')
 
 190 format (/,'>> Linear ramp mode I (feimode == 1)')
 192 format ('   fhramp                              = ',i12)
