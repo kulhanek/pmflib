@@ -7,7 +7,7 @@
 SET(PMF_COM_SRC
         common/pmf_sizes.f90
         common/pmf_constants.f90
-        common/pmf_utils.f90
+        common/pmf_utils.F90
         common/pmf_dat.f90
         common/pmf_init.F90
         common/pmf_control.F90
@@ -21,7 +21,6 @@ SET(PMF_COM_SRC
         common/pmf_timers.f90
         common/pmf_finalize.f90
         common/pmf_unit.f90
-        common/pmf_utils.f90
         common/pmf_ver.f90
         common/pmf_spline.f90
         common/pmf_alloc_cv.F90

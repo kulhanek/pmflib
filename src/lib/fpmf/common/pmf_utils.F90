@@ -267,10 +267,17 @@ end subroutine pmf_utils_check_integer
 
 subroutine pmf_utils_exit(unitnum, errcode, message)
 
+#ifdef MPI
+use mpi
+#endif
+
     implicit none
-    integer                :: unitnum
-    integer                :: errcode
-    character(*),optional  :: message
+    integer                 :: unitnum
+    integer                 :: errcode
+    character(*),optional   :: message
+#ifdef MPI
+    integer                 :: ierr
+#endif
     ! --------------------------------------------------------------------------
 
     if(present(message)) then
@@ -282,6 +289,11 @@ subroutine pmf_utils_exit(unitnum, errcode, message)
     write(unitnum,'(/,A)') '>>> ERROR: Some fatal error occured in PMFLib!'
     write(unitnum,'(A)')   '           Look above for detailed message (if any).'
     write(unitnum,'(A,/)') '           Program execution is terminated.'
+
+#ifdef MPI
+    write(unitnum,'(A,/)') '           MPI: Requesting for all MPI processes to terminate.'
+    call mpi_abort(mpi_comm_world, errcode, ierr)
+#endif
 
     if( errcode .eq. 0 ) then
         stop 0
