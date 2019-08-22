@@ -795,6 +795,9 @@ bool CABFIntegrate::IntegrateForEcut(void)
     } else if( Options.GetOptEcutMethod() == "gpr" ){
         CABFIntegratorGPR   integrator;
 
+        integrator.SetInputABFAccumulator(&Accumulator);
+        integrator.SetOutputFESurface(&FES);
+
         integrator.SetWFac1(Options.GetOptWFac());
         integrator.SetWFac2(Options.GetOptWFac2());
         integrator.SetRCond(Options.GetOptRCond());
@@ -814,8 +817,9 @@ bool CABFIntegrate::IntegrateForEcut(void)
             }
         }
 
-        integrator.SetInputABFAccumulator(&Accumulator);
-        integrator.SetOutputFESurface(&FES);
+        if( Options.IsOptGlobalMinSet() ){
+            integrator.SetGlobalMin(Options.GetOptGlobalMin());
+        }
 
         if(integrator.Integrate(vout) == false) {
             ES_ERROR("unable to integrate ABF accumulator");
