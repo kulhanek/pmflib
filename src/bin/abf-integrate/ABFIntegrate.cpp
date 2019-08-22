@@ -333,7 +333,9 @@ bool CABFIntegrate::Run(void)
     vout << "   Done" << endl;
 
  // apply offset
-    FES.ApplyOffset(Options.GetOptOffset() - FES.GetGlobalMinimumValue());
+    if( ! Options.IsOptGlobalMinSet() ){
+        FES.ApplyOffset(Options.GetOptOffset() - FES.GetGlobalMinimumValue());
+    }
 
     if( Options.GetOptUnsampledAsMaxE() ){
         if( Options.IsOptMaxEnergySet()){
