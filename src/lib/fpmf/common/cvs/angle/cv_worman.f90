@@ -42,7 +42,6 @@ type, extends(CVType) :: CVTypeWORMAN
 
     ! worm setup
     integer             :: nsegs        ! number of segments
-    real(PMFDP)         :: totlen       ! total length of worm
     real(PMFDP),pointer :: alphas(:)    ! parametric positions of segments
 
     ! intermediate results
@@ -171,7 +170,7 @@ subroutine load_worman(cv_item,prm_fin)
 
 ! allocate data
     allocate(cv_item%coms(3,cv_item%nsegs+1), cv_item%totmass(cv_item%nsegs+1), &
-             cv_item%vects(3,cv_item%nsegs-1), cv_item%wdist(cv_item%nsegs-1), &
+             cv_item%vects(3,cv_item%nsegs-1), cv_item%angles(cv_item%nsegs-1), cv_item%wdist(cv_item%nsegs-1), &
              cv_item%wd(cv_item%nsegs-1), stat = alloc_failed)
 
     if( alloc_failed .ne. 0 ) then
@@ -307,7 +306,7 @@ subroutine calculate_worman(cv_item,x,ctx)
     do i=1,cv_item%nsegs-1
 
         ! direction vector
-        dx(:) = cv_item%coms(:,i+1) - cv_item%coms(:,i+2)
+        dx(:) = cv_item%coms(:,i+2) - cv_item%coms(:,i+1)
         cv_item%vects(:,i) = dx(:)
 
         ! normalize vector
@@ -343,7 +342,6 @@ subroutine calculate_worman(cv_item,x,ctx)
         top = top + cv_item%wd(i)*cv_item%angles(i)
         down = down + cv_item%wd(i)
     end do
-    down = down * cv_item%totlen
 
     ctx%CVsValues(cv_item%idx) = top / down
 
