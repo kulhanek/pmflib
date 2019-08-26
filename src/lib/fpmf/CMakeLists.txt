@@ -64,6 +64,8 @@ SET(PMF_CVS_SRC
         common/cvs/angle/cv_dih.f90
         common/cvs/angle/cv_dih2.f90
 
+        common/cvs/angle/cv_worman.f90
+
     # shape
         common/cvs/shape/cv_rmsdt.f90
         common/cvs/shape/cv_rmsds.f90
