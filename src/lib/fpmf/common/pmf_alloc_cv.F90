@@ -69,6 +69,8 @@ subroutine pmf_alloc_cv_allocate(cv_type,cv_item)
     use cv_dih
     use cv_dih2
 
+    use cv_worman
+
 ! shape ------------------------------------------
     use cv_rgyr
     use cv_pmogt
@@ -178,6 +180,9 @@ subroutine pmf_alloc_cv_allocate(cv_type,cv_item)
             allocate(CVTypeDIH::cv_item)
         case('DIH2')
             allocate(CVTypeDIH2::cv_item)
+
+        case('WORMAN')
+            allocate(CVTypeWORMAN::cv_item)
 
     ! shape --------------------------------------
         case('RGYR')
