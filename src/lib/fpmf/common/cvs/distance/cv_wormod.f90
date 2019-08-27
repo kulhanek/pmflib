@@ -323,7 +323,7 @@ subroutine calculate_wormod(cv_item,x,ctx)
         ! oriented distance
         cv_item%odist(i) = msign*(a(1,orient)*dx(1) + a(2,orient)*dx(2) + a(3,orient)*dx(3))
 
-        ! normal distance for selector
+        ! distance for selector
         cv_item%wdist(i) = sqrt(dx(1)**2 + dx(2)**2 + dx(3)**2)
 
         ! weight
