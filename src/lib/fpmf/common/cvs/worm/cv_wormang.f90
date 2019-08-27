@@ -42,6 +42,7 @@ type, extends(CVType) :: CVTypeWORMANG
 
     ! worm setup
     integer             :: nsegs        ! number of segments
+    logical             :: mult_wiwj    ! use wi*wj instead of wi+wj for individual vectors
 
     ! intermediate results
     real(PMFDP),pointer :: coms(:,:)    ! 3,nsegs+1
@@ -72,9 +73,8 @@ subroutine load_wormang(cv_item,prm_fin)
     class(CVTypeWORMANG)                :: cv_item
     type(PRMFILE_TYPE),intent(inout)    :: prm_fin
     ! -----------------------------------------------
-    ! -----------------------------------------------
     integer                             :: m, i
-    logical                             :: found
+    logical                             :: found, rst
     character(len=PRMFILE_MAX_LINE)     :: mask
     integer,parameter                   :: group_index = 96   ! ascii code of 'a' - 1
     integer                             :: alloc_failed
@@ -179,6 +179,9 @@ subroutine load_wormang(cv_item,prm_fin)
 ! read worm ----------------------------------
     write(PMF_OUT,200)
     write(PMF_OUT,210) cv_item%nsegs
+    cv_item%mult_wiwj = .false.
+    rst = prmfile_get_logical_by_key(prm_fin,'mult_wiwj',cv_item%mult_wiwj)
+    write(PMF_OUT,220) prmfile_onoff(cv_item%mult_wiwj)
 
     do i=1,cv_item%nsegs
         ! read segment mask
@@ -196,6 +199,7 @@ subroutine load_wormang(cv_item,prm_fin)
 
 200 format('   == Worm =======================================')
 210 format('   ** Number of segments : ',I6)
+220 format('   ** Use wi*wj          : ',A6)
 
 end subroutine load_wormang
 
@@ -335,8 +339,13 @@ subroutine calculate_wormang(cv_item,x,ctx)
         cv_item%angles(i) = acos(cang)
 
         ! calc parts of CV
-        top = top + (cv_item%wd(i+1) + cv_item%wd(i)) *cv_item%angles(i)
-        down = down + cv_item%wd(i+1) + cv_item%wd(i)
+        if( cv_item%mult_wiwj ) then
+            top = top + (cv_item%wd(i+1) * cv_item%wd(i)) *cv_item%angles(i)
+            down = down + cv_item%wd(i+1) * cv_item%wd(i)
+        else
+            top = top + (cv_item%wd(i+1) + cv_item%wd(i)) *cv_item%angles(i)
+            down = down + cv_item%wd(i+1) + cv_item%wd(i)
+        end if
     end do
 
     ! finalize CV
@@ -367,7 +376,11 @@ subroutine calculate_wormang(cv_item,x,ctx)
         end if
         cang = cos(cv_item%angles(i))
 
-        sc = sc * (cv_item%wd(i+1) + cv_item%wd(i)) / down
+        if( cv_item%mult_wiwj ) then
+            sc = sc * (cv_item%wd(i+1) * cv_item%wd(i)) / down
+        else
+            sc = sc * (cv_item%wd(i+1) + cv_item%wd(i)) / down
+        end if
 
         ! direction vector between segments
         dx(:) = cv_item%coms(:,i+2) - cv_item%coms(:,i+1)
@@ -459,12 +472,23 @@ subroutine calculate_wormang(cv_item,x,ctx)
         e  = exp(cv_item%steepness*(cv_item%wdist(i) - cv_item%seldist))
         sc = - cv_item%wd(i)**2*e*cv_item%steepness/cv_item%wdist(i)
 
-        if ( i .eq. 1 ) then
-            sc = sc * ( cv_item%angles(i)/ down - top/(down*down) )
-        else if( i .eq. cv_item%nsegs ) then
-            sc = sc * ( cv_item%angles(i-1)/ down - top/(down*down) )
+        if( cv_item%mult_wiwj ) then
+            if ( i .eq. 1 ) then
+                sc = sc * ( cv_item%angles(i)*cv_item%wd(i+1)/down - cv_item%wd(i+1)*top/(down*down) )
+            else if( i .eq. cv_item%nsegs ) then
+                sc = sc * ( cv_item%angles(i-1)*cv_item%wd(i-1)/down - cv_item%wd(i-1)*top/(down*down) )
+            else
+                sc = sc * ( (cv_item%angles(i-1)*cv_item%wd(i-1) + cv_item%angles(i)*cv_item%wd(i+1))/down &
+                        - (cv_item%wd(i-1) + cv_item%wd(i+1))*top/(down*down) )
+            end if
         else
-            sc = sc * ( (cv_item%angles(i-1) + cv_item%angles(i))/ down - 2.0d0*top/(down*down) )
+            if ( i .eq. 1 ) then
+                sc = sc * ( cv_item%angles(i)/down - top/(down*down) )
+            else if( i .eq. cv_item%nsegs ) then
+                sc = sc * ( cv_item%angles(i-1)/down - top/(down*down) )
+            else
+                sc = sc * ( (cv_item%angles(i-1) + cv_item%angles(i))/down - 2.0d0*top/(down*down) )
+            end if
         end if
 
         do  m = 1, cv_item%grps(1)
