@@ -44,7 +44,6 @@ SET(PMF_CVS_SRC
         common/cvs/distance/cv_ds.f90
         common/cvs/distance/cv_dd.f90
         common/cvs/distance/cv_ppdis.f90
-        common/cvs/distance/cv_wormod.f90
  
     # angle based
         common/cvs/angle/cv_ang.f90
@@ -63,8 +62,6 @@ SET(PMF_CVS_SRC
 
         common/cvs/angle/cv_dih.f90
         common/cvs/angle/cv_dih2.f90
-
-        common/cvs/angle/cv_worman.f90
 
     # shape
         common/cvs/shape/cv_rmsdt.f90
@@ -102,6 +99,10 @@ SET(PMF_CVS_SRC
         common/cvs/pucker/cv_puck6q.f90
         common/cvs/pucker/cv_puck6t.f90
         common/cvs/pucker/cv_puck6p.f90
+
+    # worm
+        common/cvs/worm/cv_wormpos.f90
+        common/cvs/worm/cv_wormang.f90
 
     # algebra
         common/cvs/algebra/cv_add.f90

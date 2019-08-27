@@ -308,7 +308,7 @@ subroutine calculate_pvang(cv_item,x,ctx)
             ! xi contains derivatives of eigenvector by A_ij element
             call dgemv('N',3,3,-1.0d0,api,3,cij,1,0.0d0,xij(:,mi,mj),1)
 
-            xij(:,mi,mj) = sc*xij(:,mi,mj)*dx
+            xij(:,mi,mj) = sc*xij(:,mi,mj)*dx(:)
         end do
     end do
 

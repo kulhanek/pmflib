@@ -49,7 +49,6 @@ subroutine pmf_alloc_cv_allocate(cv_type,cv_item)
     use cv_dd
     use cv_ds
     use cv_ppdis
-    use cv_wormod
 
 ! angle based ------------------------------------
     use cv_ang
@@ -68,8 +67,6 @@ subroutine pmf_alloc_cv_allocate(cv_type,cv_item)
 
     use cv_dih
     use cv_dih2
-
-    use cv_worman
 
 ! shape ------------------------------------------
     use cv_rgyr
@@ -111,6 +108,10 @@ subroutine pmf_alloc_cv_allocate(cv_type,cv_item)
     use cv_puck6t
     use cv_puck6p
 
+! worm -------------------------------------------
+    use cv_wormpos
+    use cv_wormang
+
 ! algebra ----------------------------------------
     use cv_add
     use cv_sub
@@ -146,8 +147,6 @@ subroutine pmf_alloc_cv_allocate(cv_type,cv_item)
             allocate(CVTypeDD::cv_item)
         case('PPDIS')
             allocate(CVTypePPDIS::cv_item)
-        case('WORMOD')
-            allocate(CVTypeWORMOD::cv_item)
 
     ! angle --------------------------------------
         case('ANG')
@@ -180,9 +179,6 @@ subroutine pmf_alloc_cv_allocate(cv_type,cv_item)
             allocate(CVTypeDIH::cv_item)
         case('DIH2')
             allocate(CVTypeDIH2::cv_item)
-
-        case('WORMAN')
-            allocate(CVTypeWORMAN::cv_item)
 
     ! shape --------------------------------------
         case('RGYR')
@@ -266,6 +262,12 @@ subroutine pmf_alloc_cv_allocate(cv_type,cv_item)
             allocate(CVTypeFSWITCH::cv_item)
         case('RSWITCH')
             allocate(CVTypeRSWITCH::cv_item)
+
+    ! worm ------------------------------------
+        case('WORMPOS')
+            allocate(CVTypeWORMPOS::cv_item)
+        case('WORMANG')
+            allocate(CVTypeWORMANG::cv_item)
 
         case default
             call pmf_utils_exit(PMF_OUT,1,&
