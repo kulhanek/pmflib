@@ -83,7 +83,7 @@ subroutine load_wormang(cv_item,prm_fin)
 
     ! unit and CV name initialization ---------------
     cv_item%ctype         = 'WORMANG'
-    call pmf_unit_init(cv_item%unit)
+    cv_item%unit          = AngleUnit
     cv_item%gradforanycrd = .true.
     call cv_common_read_name(cv_item,prm_fin)
 
