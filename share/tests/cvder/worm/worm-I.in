@@ -1,0 +1,13 @@
+# two real structures bCD/axle, random masses?
+
+[test-cvs]
+max_atoms               57
+test_type		combined
+num_of_tests		2
+stop_when_error 	on
+verbose_print 		on
+num_diff                0.000001
+alarm_treshold          0.00000001
+
+[files]
+snapshots               traj/worm-I.xyz

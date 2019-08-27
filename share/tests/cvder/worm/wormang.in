@@ -1,0 +1,13 @@
+[WORMANG]
+name        w1
+group_a     @1-6
+x_direction @1
+y_direction @3
+seldist     2.5
+steepness   7.0
+
+nsegs       4
+segment_a   @7-9
+segment_b   @10-12
+segment_c   @13-15
+segment_d   @16-18

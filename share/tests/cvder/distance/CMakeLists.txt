@@ -67,12 +67,6 @@ ADD_TEST(CVDerRand02-MDISG ${EXECUTABLE_OUTPUT_PATH}/pmf-test-cvs
 ADD_TEST(CVDerRand03-MDISG ${EXECUTABLE_OUTPUT_PATH}/pmf-test-cvs
                         ../random03.in mdisg.in)
 
-ADD_TEST(CVDerRand01-WORMOD ${EXECUTABLE_OUTPUT_PATH}/pmf-test-cvs
-                        ../random01.in wormod.in)
-ADD_TEST(CVDerRand02-WORMOD ${EXECUTABLE_OUTPUT_PATH}/pmf-test-cvs
-                        ../random02.in wormod.in)
-ADD_TEST(CVDerRand03-WORMOD ${EXECUTABLE_OUTPUT_PATH}/pmf-test-cvs
-                        ../random03.in wormod.in)
 
 
 

@@ -1,11 +1,11 @@
 # random structure, uniform mass
 
 [test-cvs]
-max_atoms           20
+max_atoms               20
 test_type		deriv
 num_of_tests		10
 stop_when_error 	on
 verbose_print 		on
-num_diff			0.00001
+num_diff                0.00001
 uniform_mass		1.0
 

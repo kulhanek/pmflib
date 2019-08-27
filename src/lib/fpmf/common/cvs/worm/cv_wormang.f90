@@ -42,12 +42,10 @@ type, extends(CVType) :: CVTypeWORMANG
 
     ! worm setup
     integer             :: nsegs        ! number of segments
-    real(PMFDP),pointer :: alphas(:)    ! parametric positions of segments
 
     ! intermediate results
     real(PMFDP),pointer :: coms(:,:)    ! 3,nsegs+1
     real(PMFDP),pointer :: totmass(:)   ! nsegs+1
-    real(PMFDP),pointer :: vects(:,:)   ! nsegs-1
     real(PMFDP),pointer :: angles(:)    ! nsegs-1
     real(PMFDP),pointer :: wdist(:)     ! nsegs
     real(PMFDP),pointer :: wd(:)        ! nsegs
@@ -84,7 +82,7 @@ subroutine load_wormang(cv_item,prm_fin)
     ! --------------------------------------------------------------------------
 
     ! unit and CV name initialization ---------------
-    cv_item%ctype         = 'WORMOD'
+    cv_item%ctype         = 'WORMANG'
     call pmf_unit_init(cv_item%unit)
     cv_item%gradforanycrd = .true.
     call cv_common_read_name(cv_item,prm_fin)
@@ -170,7 +168,7 @@ subroutine load_wormang(cv_item,prm_fin)
 
 ! allocate data
     allocate(cv_item%coms(3,cv_item%nsegs+1), cv_item%totmass(cv_item%nsegs+1), &
-             cv_item%vects(3,cv_item%nsegs-1), cv_item%angles(cv_item%nsegs-1), &
+             cv_item%angles(cv_item%nsegs-1), &
              cv_item%wdist(cv_item%nsegs), cv_item%wd(cv_item%nsegs), stat = alloc_failed)
 
     if( alloc_failed .ne. 0 ) then
@@ -211,9 +209,9 @@ subroutine calculate_wormang(cv_item,x,ctx)
     use pmf_utils
 
     implicit none
-    class(CVTypeWORMANG) :: cv_item
-    real(PMFDP)         :: x(:,:)
-    type(CVContextType) :: ctx
+    class(CVTypeWORMANG)    :: cv_item
+    real(PMFDP)             :: x(:,:)
+    type(CVContextType)     :: ctx
     ! -----------------------------------------------
     integer        :: i,ai,m,info,orient,mi,mj
     real(PMFDP)    :: dx(3),dzx(3),dzy(3),dzz(3)
@@ -225,7 +223,6 @@ subroutine calculate_wormang(cv_item,x,ctx)
 
     cv_item%coms(:,:)   = 0.0
     cv_item%totmass(:)  = 0.0
-    cv_item%vects(:,:)    = 0.0
     cv_item%wdist(:)    = 0.0
     cv_item%wd(:)       = 0.0
 
@@ -318,10 +315,8 @@ subroutine calculate_wormang(cv_item,x,ctx)
     down = 0.0d0
 
     do i=1,cv_item%nsegs-1
-
         ! direction vector between segments
         dx(:) = cv_item%coms(:,i+2) - cv_item%coms(:,i+1)
-        cv_item%vects(:,i) = dx(:)
 
         ! normalize vector
         dzz_s2 = dx(1)**2 + dx(2)**2 + dx(3)**2
@@ -361,7 +356,6 @@ subroutine calculate_wormang(cv_item,x,ctx)
     call dgemm('N','T',3,3,3,1.0d0,bint,3,v,3,0.0d0,api,3)
 
     ! for each PVANG
-
     do i=1,cv_item%nsegs-1
 
         sc = sin(cv_item%angles(i))
@@ -450,113 +444,42 @@ subroutine calculate_wormang(cv_item,x,ctx)
 
     end do
 
-!! odis part ------------------
+! wfac part ------------------
 
-!    ! construct pseudoinverse matrix, api
-!    v(:,:) = a(:,:)
-!    api(:,:) = 0.0d0
-!    do i=1,3
-!        if( i .ne. orient ) api(i,i) = 1.0d0/(eigenvalues(i) - eigenvalues(orient))
-!    end do
-!    call dgemm('N','N',3,3,3,1.0d0,v,3,api,3,0.0d0,bint,3)
-!    call dgemm('N','T',3,3,3,1.0d0,bint,3,v,3,0.0d0,api,3)
+    do i=1,cv_item%nsegs
+        ! for d->0 the derivative should be zero?
+        if( cv_item%wdist(i) .le. 1.0e-7 ) then
+            continue
+        end if
 
-!    do i=1,cv_item%nsegs
+        ! direction vector
+        dx(:) = cv_item%coms(:,i+1) - cv_item%coms(:,1)
 
-!        ! direction vector
-!        dx(:) = cv_item%coms(:,i+1) - cv_item%coms(:,1)
+        ! prefactor
+        e  = exp(cv_item%steepness*(cv_item%wdist(i) - cv_item%seldist))
+        sc = - cv_item%wd(i)**2*e*cv_item%steepness/cv_item%wdist(i)
 
-!        ! sc
-!        sc = -cv_item%wd(i)/down
+        if ( i .eq. 1 ) then
+            sc = sc * ( cv_item%angles(i)/ down - top/(down*down) )
+        else if( i .eq. cv_item%nsegs ) then
+            sc = sc * ( cv_item%angles(i-1)/ down - top/(down*down) )
+        else
+            sc = sc * ( (cv_item%angles(i-1) + cv_item%angles(i))/ down - 2.0d0*top/(down*down) )
+        end if
 
-!        ! first part, e.g. a*dx'
-!        do  m = 1, cv_item%grps(1)
-!            ai = cv_item%lindexes(m)
-!            amass = mass(ai)
-!            ctx%CVsDrvs(:,ai,cv_item%idx) =  ctx%CVsDrvs(:,ai,cv_item%idx) - sc*msign*a(:,orient)*amass/cv_item%totmass(1)
-!        end do
+        do  m = 1, cv_item%grps(1)
+            ai = cv_item%lindexes(m)
+            amass = mass(ai)
+            ctx%CVsDrvs(:,ai,cv_item%idx) =  ctx%CVsDrvs(:,ai,cv_item%idx) - sc*dx(:)*amass/cv_item%totmass(1)
+        end do
 
-!        do  m = cv_item%grps(i) + 1, cv_item%grps(i+1)
-!            ai = cv_item%lindexes(m)
-!            amass = mass(ai)
-!            ctx%CVsDrvs(:,ai,cv_item%idx) = ctx%CVsDrvs(:,ai,cv_item%idx) + sc*msign*a(:,orient)*amass/cv_item%totmass(1+i)
-!        end do
+        do  m = cv_item%grps(i) + 1, cv_item%grps(i+1)
+            ai = cv_item%lindexes(m)
+            amass = mass(ai)
+            ctx%CVsDrvs(:,ai,cv_item%idx) = ctx%CVsDrvs(:,ai,cv_item%idx) + sc*dx(:)*amass/cv_item%totmass(i+1)
+        end do
 
-!        ! second part, e.g. a'dx
-
-!        ! and solve system of equations
-!        xij(:,:,:) = 0.0d0
-!        do mi=1,3
-!            do mj=1,3
-!                ! construct cij
-!                cij(:) = 0.0d0
-!                cij(mi) = cij(mi) + a(mj,orient)
-
-!                ! find eigenvector derivatives
-!                ! xi contains derivatives of eigenvector by A_ij element
-!                call dgemv('N',3,3,-1.0d0,api,3,cij,1,0.0d0,xij(:,mi,mj),1)
-
-!                ! multiply by dx
-!                xij(:,mi,mj) = xij(:,mi,mj)*dx(:)*msign
-!            end do
-!        end do
-
-!        ! and finaly gradients --------------------------
-!        do m = 1, cv_item%grps(1)
-!            ai = cv_item%lindexes(m)
-!            amass = mass(ai)
-
-!            ctx%CVsDrvs(1,ai,cv_item%idx) = ctx%CVsDrvs(1,ai,cv_item%idx) &
-!                                + sc*amass*(2.0d0*(x(1,ai) - cv_item%coms(1,1))*(xij(1,1,1) + xij(2,1,1) + xij(3,1,1)) &
-!                                +       (x(2,ai) - cv_item%coms(2,1))*(xij(1,1,2) + xij(2,1,2) + xij(3,1,2)) &
-!                                +       (x(2,ai) - cv_item%coms(2,1))*(xij(1,2,1) + xij(2,2,1) + xij(3,2,1)) &
-!                                +       (x(3,ai) - cv_item%coms(3,1))*(xij(1,1,3) + xij(2,1,3) + xij(3,1,3)) &
-!                                +       (x(3,ai) - cv_item%coms(3,1))*(xij(1,3,1) + xij(2,3,1) + xij(3,3,1)))
-
-!            ctx%CVsDrvs(2,ai,cv_item%idx) = ctx%CVsDrvs(2,ai,cv_item%idx) &
-!                                +       sc*amass*((x(1,ai) - cv_item%coms(1,1))*(xij(1,1,2) + xij(2,1,2) + xij(3,1,2)) &
-!                                +       (x(1,ai) - cv_item%coms(1,1))*(xij(1,2,1) + xij(2,2,1) + xij(3,2,1)) &
-!                                + 2.0d0*(x(2,ai) - cv_item%coms(2,1))*(xij(1,2,2) + xij(2,2,2) + xij(3,2,2)) &
-!                                +       (x(3,ai) - cv_item%coms(3,1))*(xij(1,2,3) + xij(2,2,3) + xij(3,2,3)) &
-!                                +       (x(3,ai) - cv_item%coms(3,1))*(xij(1,3,2) + xij(2,3,2) + xij(3,3,2)))
-
-!            ctx%CVsDrvs(3,ai,cv_item%idx) = ctx%CVsDrvs(3,ai,cv_item%idx) &
-!                                +       sc*amass*((x(1,ai) - cv_item%coms(1,1))*(xij(1,1,3) + xij(2,1,3) + xij(3,1,3)) &
-!                                +       (x(1,ai) - cv_item%coms(1,1))*(xij(1,3,1) + xij(2,3,1) + xij(3,3,1)) &
-!                                +       (x(2,ai) - cv_item%coms(2,1))*(xij(1,2,3) + xij(2,2,3) + xij(3,2,3)) &
-!                                +       (x(2,ai) - cv_item%coms(2,1))*(xij(1,3,2) + xij(2,3,2) + xij(3,3,2)) &
-!                                + 2.0d0*(x(3,ai) - cv_item%coms(3,1))*(xij(1,3,3) + xij(2,3,3) + xij(3,3,3)))
-!        end do
-!    end do
-
-!! wfac part ------------------
-
-!    do i=1,cv_item%nsegs
-
-!        ! direction vector
-!        dx(:) = cv_item%coms(:,i+1) - cv_item%coms(:,1)
-
-!        e  = exp(cv_item%steepness*(cv_item%wdist(i) - cv_item%seldist))
-
-!        ! for d->0 the derivative should be zero?
-!        if( cv_item%wdist(i) .gt. 1.0e-7 ) then
-!            sc = - cv_item%wd(i)**2*e*cv_item%steepness/cv_item%wdist(i)
-!            sc = sc * (down*(cv_item%alphas(i)*cv_item%totlen - cv_item%odist(i)) - cv_item%totlen*top)/(down*down)
-
-!            do  m = 1, cv_item%grps(1)
-!                ai = cv_item%lindexes(m)
-!                amass = mass(ai)
-!                ctx%CVsDrvs(:,ai,cv_item%idx) =  ctx%CVsDrvs(:,ai,cv_item%idx) - sc*dx(:)*amass/cv_item%totmass(1)
-!            end do
-
-!            do  m = cv_item%grps(i) + 1, cv_item%grps(i+1)
-!                ai = cv_item%lindexes(m)
-!                amass = mass(ai)
-!                ctx%CVsDrvs(:,ai,cv_item%idx) = ctx%CVsDrvs(:,ai,cv_item%idx) + sc*dx(:)*amass/cv_item%totmass(1+i)
-!            end do
-!        end if
-
-!    end do
+    end do
 
     return
 
