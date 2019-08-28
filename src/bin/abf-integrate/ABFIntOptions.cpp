@@ -268,6 +268,12 @@ int CABFIntOptions::CheckOptions(void)
                 (const char*)GetProgramName());
         IsError = true;
     }
+    if( IsOptUseOldRFDSet() && (GetOptMethod() != "rfd") ){
+        if(IsError == false) fprintf(stderr,"\n");
+        fprintf(stderr,"%s: --oldrfd can be combined only with RFD\n",
+                (const char*)GetProgramName());
+        IsError = true;
+    }
     if(IsError == true) return(SO_OPTS_ERROR);
     return(SO_CONTINUE);
 }

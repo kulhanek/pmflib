@@ -103,6 +103,7 @@ public:
     CSO_OPT(double,MaxEnergy)
     CSO_OPT(bool,NoHeader)
     CSO_OPT(bool,IncludeBinStat)
+    CSO_OPT(bool,UseOldRFD)
     CSO_OPT(CSmallString,IXFormat)
     CSO_OPT(CSmallString,OEFormat)
     CSO_OPT(CSmallString,MFInfo)
@@ -406,6 +407,15 @@ public:
                 "includebinstat",                      /* long option name */
                 NULL,                           /* parametr name */
                 "Include bin statuses (1=sampled, 0=unsampled, -1=glued) into resulting FES.")   /* option description */
+    //----------------------------------------------------------------------
+    CSO_MAP_OPT(bool,                           /* option type */
+                UseOldRFD,                        /* option name */
+                false,                          /* default value */
+                false,                          /* is option mandatory */
+                0,                           /* short option name */
+                "oldrfd",                      /* long option name */
+                NULL,                           /* parametr name */
+                "RFD: Use old RFD implementation.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(CSmallString,                           /* option type */
                 IXFormat,                        /* option name */

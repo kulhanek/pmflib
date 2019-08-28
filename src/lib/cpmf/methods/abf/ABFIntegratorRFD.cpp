@@ -46,6 +46,8 @@ CABFIntegratorRFD::CABFIntegratorRFD(void)
 
     Periodicity = false;
     FDLevel = 4;
+
+    UseOldRFDMode = false;
 }
 
 //------------------------------------------------------------------------------
@@ -83,6 +85,13 @@ void CABFIntegratorRFD::SetFDPoints(int npts)
 void CABFIntegratorRFD::SetPeriodicity(bool set)
 {
     Periodicity = set;
+}
+
+//------------------------------------------------------------------------------
+
+void CABFIntegratorRFD::SetUseOldRFDMode(bool set)
+{
+    UseOldRFDMode = set;
 }
 
 //==============================================================================
@@ -246,22 +255,30 @@ void CABFIntegratorRFD::BuildEquations(bool trial)
 
                     // set A elements ----------------
                     if(trial == false) {
-                        double dfac = 1.0 / (diff * 2.0);
-                        cs_entry(A,LocIter,XMap[ifbin1],-3.0*dfac);
-                        cs_entry(A,LocIter,XMap[ifbin2],+4.0*dfac);
-                        cs_entry(A,LocIter,XMap[ifbin3],-1.0*dfac);
-                        Rhs[LocIter] = Accumulator->GetValue(ifcoord,ifbin1,EABF_MEAN_FORCE_VALUE);
+                        double rfac, lfac;
+                        if( UseOldRFDMode ){
+                            lfac = 1.0;
+                            rfac = diff * 2.0;
+
+                        } else {
+                            lfac = 1.0 / (diff * 2.0);
+                            rfac = 1.0;
+                        }
+                        cs_entry(A,LocIter,XMap[ifbin1],-3.0*lfac);
+                        cs_entry(A,LocIter,XMap[ifbin2],+4.0*lfac);
+                        cs_entry(A,LocIter,XMap[ifbin3],-1.0*lfac);
+                        Rhs[LocIter] = Accumulator->GetValue(ifcoord,ifbin1,EABF_MEAN_FORCE_VALUE)*rfac;
                         RhsCv[LocIter] = ifcoord;
                         LocIter++;
-                        cs_entry(A,LocIter,XMap[ifbin1],-1.0*dfac);
-                        cs_entry(A,LocIter,XMap[ifbin3],+1.0*dfac);
-                        Rhs[LocIter] = Accumulator->GetValue(ifcoord,ifbin2,EABF_MEAN_FORCE_VALUE);
+                        cs_entry(A,LocIter,XMap[ifbin1],-1.0*lfac);
+                        cs_entry(A,LocIter,XMap[ifbin3],+1.0*lfac);
+                        Rhs[LocIter] = Accumulator->GetValue(ifcoord,ifbin2,EABF_MEAN_FORCE_VALUE)*rfac;
                         RhsCv[LocIter] = ifcoord;
                         LocIter++;
-                        cs_entry(A,LocIter,XMap[ifbin1],+1.0*dfac);
-                        cs_entry(A,LocIter,XMap[ifbin2],-4.0*dfac);
-                        cs_entry(A,LocIter,XMap[ifbin3],+3.0*dfac);
-                        Rhs[LocIter] = Accumulator->GetValue(ifcoord,ifbin3,EABF_MEAN_FORCE_VALUE);
+                        cs_entry(A,LocIter,XMap[ifbin1],+1.0*lfac);
+                        cs_entry(A,LocIter,XMap[ifbin2],-4.0*lfac);
+                        cs_entry(A,LocIter,XMap[ifbin3],+3.0*lfac);
+                        Rhs[LocIter] = Accumulator->GetValue(ifcoord,ifbin3,EABF_MEAN_FORCE_VALUE)*rfac;
                         RhsCv[LocIter] = ifcoord;
                         LocIter++;
                     } else {
@@ -293,32 +310,40 @@ void CABFIntegratorRFD::BuildEquations(bool trial)
                     }
 
                     if(trial == false) {
-                        double dfac = 1.0 / (diff * 6.0);
-                        cs_entry(A,LocIter,XMap[ifbin1],-11.0*dfac);
-                        cs_entry(A,LocIter,XMap[ifbin2],+18.0*dfac);
-                        cs_entry(A,LocIter,XMap[ifbin3],-9.0*dfac);
-                        cs_entry(A,LocIter,XMap[ifbin4],+2.0*dfac);
-                        Rhs[LocIter] = Accumulator->GetValue(ifcoord,ifbin1,EABF_MEAN_FORCE_VALUE);
+                        double rfac, lfac;
+                        if( UseOldRFDMode ){
+                            lfac = 1.0;
+                            rfac = diff * 6.0;
+
+                        } else {
+                            lfac = 1.0 / (diff * 6.0);
+                            rfac = 1.0;
+                        }
+                        cs_entry(A,LocIter,XMap[ifbin1],-11.0*lfac);
+                        cs_entry(A,LocIter,XMap[ifbin2],+18.0*lfac);
+                        cs_entry(A,LocIter,XMap[ifbin3],-9.0*lfac);
+                        cs_entry(A,LocIter,XMap[ifbin4],+2.0*lfac);
+                        Rhs[LocIter] = Accumulator->GetValue(ifcoord,ifbin1,EABF_MEAN_FORCE_VALUE)*rfac;
                         RhsCv[LocIter] = ifcoord;
                         LocIter++;
-                        cs_entry(A,LocIter,XMap[ifbin1],-2.0*dfac);
-                        cs_entry(A,LocIter,XMap[ifbin2],-3.0*dfac);
-                        cs_entry(A,LocIter,XMap[ifbin3],+6.0*dfac);
-                        cs_entry(A,LocIter,XMap[ifbin4],-1.0*dfac);
-                        Rhs[LocIter] = Accumulator->GetValue(ifcoord,ifbin2,EABF_MEAN_FORCE_VALUE);
+                        cs_entry(A,LocIter,XMap[ifbin1],-2.0*lfac);
+                        cs_entry(A,LocIter,XMap[ifbin2],-3.0*lfac);
+                        cs_entry(A,LocIter,XMap[ifbin3],+6.0*lfac);
+                        cs_entry(A,LocIter,XMap[ifbin4],-1.0*lfac);
+                        Rhs[LocIter] = Accumulator->GetValue(ifcoord,ifbin2,EABF_MEAN_FORCE_VALUE)*rfac;
                         RhsCv[LocIter] = ifcoord;
                         LocIter++;
-                        cs_entry(A,LocIter,XMap[ifbin1],+1.0*dfac);
-                        cs_entry(A,LocIter,XMap[ifbin2],-6.0*dfac);
-                        cs_entry(A,LocIter,XMap[ifbin3],+3.0*dfac);
-                        cs_entry(A,LocIter,XMap[ifbin4],+2.0*dfac);
-                        Rhs[LocIter] = Accumulator->GetValue(ifcoord,ifbin3,EABF_MEAN_FORCE_VALUE);
+                        cs_entry(A,LocIter,XMap[ifbin1],+1.0*lfac);
+                        cs_entry(A,LocIter,XMap[ifbin2],-6.0*lfac);
+                        cs_entry(A,LocIter,XMap[ifbin3],+3.0*lfac);
+                        cs_entry(A,LocIter,XMap[ifbin4],+2.0*lfac);
+                        Rhs[LocIter] = Accumulator->GetValue(ifcoord,ifbin3,EABF_MEAN_FORCE_VALUE)*rfac;
                         RhsCv[LocIter] = ifcoord;
                         LocIter++;
-                        cs_entry(A,LocIter,XMap[ifbin1],-2.0*dfac);
-                        cs_entry(A,LocIter,XMap[ifbin2],+9.0*dfac);
-                        cs_entry(A,LocIter,XMap[ifbin3],-18.0*dfac);
-                        cs_entry(A,LocIter,XMap[ifbin4],+11.0*dfac);
+                        cs_entry(A,LocIter,XMap[ifbin1],-2.0*lfac);
+                        cs_entry(A,LocIter,XMap[ifbin2],+9.0*lfac);
+                        cs_entry(A,LocIter,XMap[ifbin3],-18.0*lfac);
+                        cs_entry(A,LocIter,XMap[ifbin4],+11.0*lfac);
                         Rhs[LocIter] = Accumulator->GetValue(ifcoord,ifbin4,EABF_MEAN_FORCE_VALUE);
                         RhsCv[LocIter] = ifcoord;
                         LocIter++;
@@ -467,10 +492,37 @@ double CABFIntegratorRFD::GetRMSR(int k)
     double count = 0.0;
     double lv,rv,err;
 
+    const CColVariable* p_coord = Accumulator->GetCoordinate(k);
+    double              diff = p_coord->GetBinWidth();
+
+    double rfac, lfac;
+
+    switch(FDLevel) {
+        case 3:
+            if( UseOldRFDMode ){
+                lfac = diff * 2.0;
+                rfac = 1.0 / (diff * 2.0);
+            } else {
+                lfac = 1.0;
+                rfac = 1.0;
+            }
+        break;
+        case 4:
+            if( UseOldRFDMode ){
+                lfac = diff * 6.0;
+                rfac = 1.0 / (diff * 6.0);
+
+            } else {
+                lfac = 1.0;
+                rfac = 1.0;
+            }
+        break;
+    }
+
     for(int i=0; i < NumOfEquations; i++){
         if( RhsCv[i] == k ){
-            rv = Rhs[i];
-            lv = lhs[i];
+            rv = Rhs[i]*rfac;
+            lv = lhs[i]*lfac;
             err = lv-rv;
             rmsr = rmsr + err*err;
             count++;

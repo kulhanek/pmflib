@@ -131,7 +131,7 @@ int CABFIntegrate::Init(int argc,char* argv[])
         } else {
         vout << "# Width factor wfac     : " << setprecision(3) << Options.GetOptWFac() << endl;
         }
-        if( Options.GetOptLAMethod() == "svd" ){
+        if( (Options.GetOptLAMethod() == "svd") || (Options.GetOptLAMethod() == "default") ){
         vout << "# SVD rcond             : " << setprecision(3) << Options.GetOptRCond() << endl;
         }
         vout << "# RBF overhang          : " << Options.GetOptOverhang() << endl;
@@ -468,7 +468,7 @@ void CABFIntegrate::WriteHeader()
             } else {
             fprintf(OutputFile,"# Width factor wfac     : %5.3f\n", Options.GetOptWFac());
             }
-            if( Options.GetOptLAMethod() == "svd" ){
+            if(  (Options.GetOptLAMethod() == "svd") || (Options.GetOptLAMethod() == "default") ){
             fprintf(OutputFile,"# SVD rcond             : %5.3f\n", Options.GetOptRCond());
             }
             fprintf(OutputFile,"# RBF overhang          : %d\n", Options.GetOptOverhang());
@@ -852,6 +852,7 @@ bool CABFIntegrate::Integrate()
             INVALID_ARGUMENT("algorithm - not implemented");
         }
 
+        integrator.SetUseOldRFDMode(Options.GetOptUseOldRFD());
         integrator.SetInputABFAccumulator(&Accumulator);
         integrator.SetOutputFESurface(&FES);
 

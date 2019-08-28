@@ -61,6 +61,9 @@ public:
     /// should we apply periodicity?
     void SetPeriodicity(bool set);
 
+    /// use old fit
+    void SetUseOldRFDMode(bool set);
+
 // execution method -----------------------------------------------------------
     /// integrate data, for errors the FES must be already allocated!!!
     bool Integrate(CVerboseStr& vout);
@@ -75,6 +78,7 @@ private:
 
     int                     FDLevel;
     bool                    Periodicity;
+    bool                    UseOldRFDMode;
 
     int                     NumOfVariables;
     int                     NumOfEquations;
