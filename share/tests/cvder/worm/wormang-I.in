@@ -23,8 +23,42 @@ y_direction @9
 seldist     2.6358
 steepness   0.9309
 
-use_wiwj    on
+wmode       wi*wj
 segment_a   @23,24,25,26,27,28,29,30,31
 segment_b   @33,36,37,38,35,34
 segment_c   @44,41,42,45,46,43
 segment_d   @49,48,50,51,52,53,54,55,56
+
+[WORMANG]
+name        a3
+nsegs       4
+
+group_a     @1-21
+x_direction @3
+y_direction @9
+seldist     2.6358
+steepness   0.9309
+
+wmode       wi+wj
+segment_a   @23,24,25,26,27,28,29,30,31
+segment_b   @33,36,37,38,35,34
+segment_c   @44,41,42,45,46,43
+segment_d   @49,48,50,51,52,53,54,55,56
+
+[WORMANG]
+name        a4
+nsegs       4
+
+group_a     @1-21
+x_direction @3
+y_direction @9
+seldist     2.6358
+steepness   0.9309
+
+wmode       com
+segment_a   @23,24,25,26,27,28,29,30,31
+segment_b   @33,36,37,38,35,34
+segment_c   @44,41,42,45,46,43
+segment_d   @49,48,50,51,52,53,54,55,56
+
+

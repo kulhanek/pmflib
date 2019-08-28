@@ -42,7 +42,9 @@ type, extends(CVType) :: CVTypeWORMANG
 
     ! worm setup
     integer             :: nsegs        ! number of segments
-    logical             :: mult_wiwj    ! use wi*wj instead of wi+wj for individual vectors
+    integer             :: wmode        ! 0 - wi + wj
+                                        ! 1 - wi * wj
+                                        ! 2 - com(i,j)
 
     ! intermediate results
     real(PMFDP),pointer :: coms(:,:)    ! 3,nsegs+1
@@ -74,11 +76,12 @@ subroutine load_wormang(cv_item,prm_fin)
     type(PRMFILE_TYPE),intent(inout)    :: prm_fin
     ! -----------------------------------------------
     integer                             :: m, i
-    logical                             :: found, rst
+    logical                             :: found
     character(len=PRMFILE_MAX_LINE)     :: mask
     integer,parameter                   :: group_index = 96   ! ascii code of 'a' - 1
     integer                             :: alloc_failed
     type(UnitType)                      :: steepnessunit
+    character(PMF_MAX_PATH)             :: string
     ! --------------------------------------------------------------------------
 
     ! unit and CV name initialization ---------------
@@ -179,9 +182,31 @@ subroutine load_wormang(cv_item,prm_fin)
 ! read worm ----------------------------------
     write(PMF_OUT,200)
     write(PMF_OUT,210) cv_item%nsegs
-    cv_item%mult_wiwj = .false.
-    rst = prmfile_get_logical_by_key(prm_fin,'mult_wiwj',cv_item%mult_wiwj)
-    write(PMF_OUT,220) prmfile_onoff(cv_item%mult_wiwj)
+    cv_item%wmode = 0
+    if( prmfile_get_string_by_key(prm_fin,'wmode',string) ) then
+        select case(trim(string))
+            case('wi+wj')
+                cv_item%wmode = 0
+            case('wi*wj')
+                cv_item%wmode = 1
+            case('com')
+                cv_item%wmode = 2
+            case default
+                call pmf_utils_exit(PMF_OUT,1, &
+                           'Unrecognized wmode: ('//trim(trim(string))//')!')
+        end select
+    end if
+    select case(cv_item%wmode)
+        case(0)
+            write(PMF_OUT,220) 'wi+wj'
+        case(1)
+            write(PMF_OUT,220) 'wi*wj'
+        case(2)
+            write(PMF_OUT,220) 'com'
+        case default
+            call pmf_utils_exit(PMF_OUT,1, &
+                       'Not implemented wmode in!')
+    end select
 
     do i=1,cv_item%nsegs
         ! read segment mask
@@ -199,7 +224,7 @@ subroutine load_wormang(cv_item,prm_fin)
 
 200 format('   == Worm =======================================')
 210 format('   ** Number of segments : ',I6)
-220 format('   ** Use wi*wj          : ',A6)
+220 format('   ** wmode              : ',A6)
 
 end subroutine load_wormang
 
@@ -302,17 +327,36 @@ subroutine calculate_wormang(cv_item,x,ctx)
     a(:,orient) = a(:,orient)*sign(1.0d0,ac)
 
     ! calculate weights
-    do i=1,cv_item%nsegs
+    select case(cv_item%wmode)
+        case(0,1)
+            do i=1,cv_item%nsegs
 
-        ! selector vector
-        dx(:) = cv_item%coms(:,i+1) - cv_item%coms(:,1)
+                ! selector vector
+                dx(:) = cv_item%coms(:,i+1) - cv_item%coms(:,1)
 
-        ! and its length
-        cv_item%wdist(i) = sqrt(dx(1)**2 + dx(2)**2 + dx(3)**2)
+                ! and its length
+                cv_item%wdist(i) = sqrt(dx(1)**2 + dx(2)**2 + dx(3)**2)
 
-        ! weight
-        cv_item%wd(i)  = 1.0d0 / (1.0d0 + exp(cv_item%steepness*(cv_item%wdist(i) - cv_item%seldist)))
-    end do
+                ! weight
+                cv_item%wd(i)  = 1.0d0 / (1.0d0 + exp(cv_item%steepness*(cv_item%wdist(i) - cv_item%seldist)))
+            end do
+        case(2)
+            do i=1,cv_item%nsegs-1
+                ! selector vector
+                dx(:) = (cv_item%totmass(i+1)*cv_item%coms(:,i+1) + cv_item%totmass(i+2)*cv_item%coms(:,i+2)) &
+                      / (cv_item%totmass(i+1) + cv_item%totmass(i+2))
+                dx(:) = dx(:) - cv_item%coms(:,1)
+
+                ! and its length
+                cv_item%wdist(i) = sqrt(dx(1)**2 + dx(2)**2 + dx(3)**2)
+
+                ! weight
+                cv_item%wd(i)  = 1.0d0 / (1.0d0 + exp(cv_item%steepness*(cv_item%wdist(i) - cv_item%seldist)))
+            end do
+        case default
+            call pmf_utils_exit(PMF_OUT,1, 'Not implemented wmode in calculate_wormang!')
+    end select
+
 
     ! calculate CV value
     top = 0.0d0
@@ -339,13 +383,20 @@ subroutine calculate_wormang(cv_item,x,ctx)
         cv_item%angles(i) = acos(cang)
 
         ! calc parts of CV
-        if( cv_item%mult_wiwj ) then
-            top = top + (cv_item%wd(i+1) * cv_item%wd(i)) *cv_item%angles(i)
-            down = down + cv_item%wd(i+1) * cv_item%wd(i)
-        else
-            top = top + (cv_item%wd(i+1) + cv_item%wd(i)) *cv_item%angles(i)
-            down = down + cv_item%wd(i+1) + cv_item%wd(i)
-        end if
+        select case(cv_item%wmode)
+            case(0)
+                top = top + (cv_item%wd(i+1) + cv_item%wd(i)) *cv_item%angles(i)
+                down = down + cv_item%wd(i+1) + cv_item%wd(i)
+            case(1)
+                top = top + (cv_item%wd(i+1) * cv_item%wd(i)) *cv_item%angles(i)
+                down = down + cv_item%wd(i+1) * cv_item%wd(i)
+            case(2)
+                top = top + cv_item%wd(i) *cv_item%angles(i)
+                down = down + cv_item%wd(i)
+            case default
+                call pmf_utils_exit(PMF_OUT,1, 'Not implemented wmode in calculate_wormang!')
+        end select
+
     end do
 
     ! finalize CV
@@ -376,11 +427,16 @@ subroutine calculate_wormang(cv_item,x,ctx)
         end if
         cang = cos(cv_item%angles(i))
 
-        if( cv_item%mult_wiwj ) then
-            sc = sc * (cv_item%wd(i+1) * cv_item%wd(i)) / down
-        else
-            sc = sc * (cv_item%wd(i+1) + cv_item%wd(i)) / down
-        end if
+        select case(cv_item%wmode)
+            case(0)
+                sc = sc * (cv_item%wd(i+1) + cv_item%wd(i)) / down
+            case(1)
+                sc = sc * (cv_item%wd(i+1) * cv_item%wd(i)) / down
+            case(2)
+                sc = sc * cv_item%wd(i) / down
+            case default
+                call pmf_utils_exit(PMF_OUT,1, 'Not implemented wmode in calculate_wormang!')
+        end select
 
         ! direction vector between segments
         dx(:) = cv_item%coms(:,i+2) - cv_item%coms(:,i+1)
@@ -459,51 +515,99 @@ subroutine calculate_wormang(cv_item,x,ctx)
 
 ! wfac part ------------------
 
-    do i=1,cv_item%nsegs
-        ! for d->0 the derivative should be zero?
-        if( cv_item%wdist(i) .le. 1.0e-7 ) then
-            continue
-        end if
+    select case(cv_item%wmode)
+        case(0,1)
+            do i=1,cv_item%nsegs
+                ! for d->0 the derivative should be zero?
+                if( cv_item%wdist(i) .le. 1.0e-7 ) then
+                    continue
+                end if
 
-        ! direction vector
-        dx(:) = cv_item%coms(:,i+1) - cv_item%coms(:,1)
+                ! direction vector
+                dx(:) = cv_item%coms(:,i+1) - cv_item%coms(:,1)
 
-        ! prefactor
-        e  = exp(cv_item%steepness*(cv_item%wdist(i) - cv_item%seldist))
-        sc = - cv_item%wd(i)**2*e*cv_item%steepness/cv_item%wdist(i)
+                ! prefactor
+                e  = exp(cv_item%steepness*(cv_item%wdist(i) - cv_item%seldist))
+                sc = - cv_item%wd(i)**2*e*cv_item%steepness/cv_item%wdist(i)
 
-        if( cv_item%mult_wiwj ) then
-            if ( i .eq. 1 ) then
-                sc = sc * ( cv_item%angles(i)*cv_item%wd(i+1)/down - cv_item%wd(i+1)*top/(down*down) )
-            else if( i .eq. cv_item%nsegs ) then
-                sc = sc * ( cv_item%angles(i-1)*cv_item%wd(i-1)/down - cv_item%wd(i-1)*top/(down*down) )
-            else
-                sc = sc * ( (cv_item%angles(i-1)*cv_item%wd(i-1) + cv_item%angles(i)*cv_item%wd(i+1))/down &
-                        - (cv_item%wd(i-1) + cv_item%wd(i+1))*top/(down*down) )
-            end if
-        else
-            if ( i .eq. 1 ) then
+                select case(cv_item%wmode)
+                    case(0)
+                        if ( i .eq. 1 ) then
+                            sc = sc * ( cv_item%angles(i)/down - top/(down*down) )
+                        else if( i .eq. cv_item%nsegs ) then
+                            sc = sc * ( cv_item%angles(i-1)/down - top/(down*down) )
+                        else
+                            sc = sc * ( (cv_item%angles(i-1) + cv_item%angles(i))/down - 2.0d0*top/(down*down) )
+                        end if
+                    case(1)
+                        if ( i .eq. 1 ) then
+                            sc = sc * ( cv_item%angles(i)*cv_item%wd(i+1)/down - cv_item%wd(i+1)*top/(down*down) )
+                        else if( i .eq. cv_item%nsegs ) then
+                            sc = sc * ( cv_item%angles(i-1)*cv_item%wd(i-1)/down - cv_item%wd(i-1)*top/(down*down) )
+                        else
+                            sc = sc * ( (cv_item%angles(i-1)*cv_item%wd(i-1) + cv_item%angles(i)*cv_item%wd(i+1))/down &
+                                    - (cv_item%wd(i-1) + cv_item%wd(i+1))*top/(down*down) )
+                        end if
+                    case(2)
+                        ! nothing to be here
+                    case default
+                        call pmf_utils_exit(PMF_OUT,1, 'Not implemented wmode in calculate_wormang!')
+                end select
+
+                do  m = 1, cv_item%grps(1)
+                    ai = cv_item%lindexes(m)
+                    amass = mass(ai)
+                    ctx%CVsDrvs(:,ai,cv_item%idx) =  ctx%CVsDrvs(:,ai,cv_item%idx) - sc*dx(:)*amass/cv_item%totmass(1)
+                end do
+
+                do  m = cv_item%grps(i) + 1, cv_item%grps(i+1)
+                    ai = cv_item%lindexes(m)
+                    amass = mass(ai)
+                    ctx%CVsDrvs(:,ai,cv_item%idx) = ctx%CVsDrvs(:,ai,cv_item%idx) + sc*dx(:)*amass/cv_item%totmass(i+1)
+                end do
+
+            end do
+        case(2)
+            do i=1,cv_item%nsegs-1
+                ! for d->0 the derivative should be zero?
+                if( cv_item%wdist(i) .le. 1.0e-7 ) then
+                    continue
+                end if
+
+                ! selector vector
+                dx(:) = (cv_item%totmass(i+1)*cv_item%coms(:,i+1) + cv_item%totmass(i+2)*cv_item%coms(:,i+2)) &
+                      / (cv_item%totmass(i+1) + cv_item%totmass(i+2))
+                dx(:) = dx(:) - cv_item%coms(:,1)
+
+                ! prefactor
+                e  = exp(cv_item%steepness*(cv_item%wdist(i) - cv_item%seldist))
+                sc = - cv_item%wd(i)**2*e*cv_item%steepness/cv_item%wdist(i)
+
                 sc = sc * ( cv_item%angles(i)/down - top/(down*down) )
-            else if( i .eq. cv_item%nsegs ) then
-                sc = sc * ( cv_item%angles(i-1)/down - top/(down*down) )
-            else
-                sc = sc * ( (cv_item%angles(i-1) + cv_item%angles(i))/down - 2.0d0*top/(down*down) )
-            end if
-        end if
 
-        do  m = 1, cv_item%grps(1)
-            ai = cv_item%lindexes(m)
-            amass = mass(ai)
-            ctx%CVsDrvs(:,ai,cv_item%idx) =  ctx%CVsDrvs(:,ai,cv_item%idx) - sc*dx(:)*amass/cv_item%totmass(1)
-        end do
+                do  m = 1, cv_item%grps(1)
+                    ai = cv_item%lindexes(m)
+                    amass = mass(ai)
+                    ctx%CVsDrvs(:,ai,cv_item%idx) =  ctx%CVsDrvs(:,ai,cv_item%idx) - sc*dx(:)*amass/cv_item%totmass(1)
+                end do
 
-        do  m = cv_item%grps(i) + 1, cv_item%grps(i+1)
-            ai = cv_item%lindexes(m)
-            amass = mass(ai)
-            ctx%CVsDrvs(:,ai,cv_item%idx) = ctx%CVsDrvs(:,ai,cv_item%idx) + sc*dx(:)*amass/cv_item%totmass(i+1)
-        end do
+                do  m = cv_item%grps(i) + 1, cv_item%grps(i+1)
+                    ai = cv_item%lindexes(m)
+                    amass = mass(ai)
+                    ctx%CVsDrvs(:,ai,cv_item%idx) = ctx%CVsDrvs(:,ai,cv_item%idx) + sc*dx(:)*amass &
+                                                  / (cv_item%totmass(i+1)+cv_item%totmass(i+2))
+                end do
+                do  m = cv_item%grps(i+1) + 1, cv_item%grps(i+2)
+                    ai = cv_item%lindexes(m)
+                    amass = mass(ai)
+                    ctx%CVsDrvs(:,ai,cv_item%idx) = ctx%CVsDrvs(:,ai,cv_item%idx) + sc*dx(:)*amass &
+                                                  / (cv_item%totmass(i+1)+cv_item%totmass(i+2))
+                end do
 
-    end do
+            end do
+        case default
+            call pmf_utils_exit(PMF_OUT,1, 'Not implemented wmode in calculate_wormang!')
+    end select
 
     return
 
