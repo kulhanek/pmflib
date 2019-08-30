@@ -261,6 +261,7 @@ bool CABFIntegratorGPR::Integrate(CVerboseStr& vout)
                 }
                 Accumulator->GetPoint(i,jpos);
                 value = GetValue(jpos);
+                value = value - glb_min;
                 FES->SetEnergy(i,value);
             }
 
