@@ -384,6 +384,7 @@ bool CABFIntegratorGPR::TrainGP(CVerboseStr& vout)
             // get mean force and its error
             double mf = Accumulator->GetValue(ii,i,EABF_MEAN_FORCE_VALUE);
             double er = Accumulator->GetValue(ii,i,EABF_MEAN_FORCE_ERROR);
+            // vout << mf << " " << er << endl;
 
             Y[indi*NCVs+ii] = mf;
             K[indi*NCVs+ii][indi*NCVs+ii] += er*er;
@@ -830,7 +831,11 @@ void CABFIntegratorGPR::CalculateErrors(CSimpleVector<double>& gpos,CVerboseStr&
         Accumulator->GetPoint(i,jpos);
         double varfc = GetVar(jpos);
         double covfg = GetCov(jpos,gpos);
+        // double tvarfc = GetCov(jpos,jpos);
+        // double tvargp = GetCov(gpos,gpos);
         // vout << varfc << " " << vargp << " " << covfg << endl;
+        // vout << varfc << " " << tvarfc << endl;
+        // vout << vargp << " " << tvargp << endl;
         double error = varfc + vargp - 2.0*covfg;
         if( error > 0 ){
             error = sqrt(error);

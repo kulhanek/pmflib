@@ -155,7 +155,7 @@ int CABFIntOptions::CheckOptions(void)
         IsError = true;
     }
 
-    if( IsOptSigmaF2Set() && (GetOptMethod() != "gpr") ){
+    if( IsOptSigmaF2Set() && ( (GetOptMethod() != "gpr") && (GetOptEcutMethod() != "gpr")) ){
         if(IsError == false) fprintf(stderr,"\n");
         fprintf(stderr,"%s: sigmaf2 can be set only for GPR method\n",
                 (const char*)GetProgramName());
@@ -165,13 +165,6 @@ int CABFIntOptions::CheckOptions(void)
     if( IsOptNoEnergySet() && (GetOptMethod() != "gpr") ){
         if(IsError == false) fprintf(stderr,"\n");
         fprintf(stderr,"%s: noenergy can be set only for GPR method\n",
-                (const char*)GetProgramName());
-        IsError = true;
-    }
-
-    if( IsOptRCondSet() && ( ! ((GetOptMethod() == "rfd2") || (GetOptMethod() == "rbf") || (GetOptMethod() == "gpr")) ) ){
-        if(IsError == false) fprintf(stderr,"\n");
-        fprintf(stderr,"%s: rcond can be set only for RFD2/RBF/GPR method\n",
                 (const char*)GetProgramName());
         IsError = true;
     }
