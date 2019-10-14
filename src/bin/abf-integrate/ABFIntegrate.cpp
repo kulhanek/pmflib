@@ -580,6 +580,8 @@ bool CABFIntegrate::IntegrateForMFMaxError(void)
         if( Options.GetOptEcutMethod() == Options.GetOptMethod() ){
             if( Options.GetOptLAMethod() == "svd" ){
                 integrator.SetINVMehod(EGPRINV_SVD);
+            } else if( Options.GetOptLAMethod() == "svd2" ){
+                integrator.SetINVMehod(EGPRINV_SVD2);
             } else if( Options.GetOptLAMethod() == "lu" ) {
                 integrator.SetINVMehod(EGPRINV_LU);
             } else if( Options.GetOptLAMethod() == "default" ) {
@@ -679,6 +681,8 @@ bool CABFIntegrate::IntegrateForMFLimit(int pass)
         if( Options.GetOptEcutMethod() == Options.GetOptMethod() ){
             if( Options.GetOptLAMethod() == "svd" ){
                 integrator.SetINVMehod(EGPRINV_SVD);
+            } else if( Options.GetOptLAMethod() == "svd2" ){
+                integrator.SetINVMehod(EGPRINV_SVD2);
             } else if( Options.GetOptLAMethod() == "lu" ) {
                 integrator.SetINVMehod(EGPRINV_LU);
             } else if( Options.GetOptLAMethod() == "default" ) {
@@ -812,6 +816,8 @@ bool CABFIntegrate::IntegrateForEcut(void)
         if( Options.GetOptEcutMethod() == Options.GetOptMethod() ){
             if( Options.GetOptLAMethod() == "svd" ){
                 integrator.SetINVMehod(EGPRINV_SVD);
+            } else if( Options.GetOptLAMethod() == "svd2" ){
+                integrator.SetINVMehod(EGPRINV_SVD2);
             } else if( Options.GetOptLAMethod() == "lu" ) {
                 integrator.SetINVMehod(EGPRINV_LU);
             } else if( Options.GetOptLAMethod() == "default" ) {
@@ -940,6 +946,8 @@ bool CABFIntegrate::Integrate()
 
         if( Options.GetOptLAMethod() == "svd" ){
             integrator.SetINVMehod(EGPRINV_SVD);
+        } else if( Options.GetOptLAMethod() == "svd2" ){
+                integrator.SetINVMehod(EGPRINV_SVD2);
         } else if( Options.GetOptLAMethod() == "lu" ) {
             integrator.SetINVMehod(EGPRINV_LU);
         } else if( Options.GetOptLAMethod() == "default" ) {

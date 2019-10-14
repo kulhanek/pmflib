@@ -32,8 +32,8 @@
 // how to find solution for least square problem
 
 enum ERFDLLSMethod {
-    ERFDLLS_SVD   = 1,
-    ERFDLLS_QR    = 2,    // we have overdetermined system, thus only QR is applicable
+    ERFDLLS_SVD     = 1,    // SVD,  divide and conquer driver
+    ERFDLLS_QR      = 2,    // we have overdetermined system, thus only QR is applicable
 };
 
 //------------------------------------------------------------------------------

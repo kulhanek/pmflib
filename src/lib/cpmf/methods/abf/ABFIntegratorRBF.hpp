@@ -33,8 +33,8 @@ class CEnergySurface;
 // how to find solution for least square problem
 
 enum ERBFLLSMethod {
-    ERBFLLS_SVD   = 1,
-    ERBFLLS_QR    = 2,    // we have overdetermined system, thus only QR is applicable
+    ERBFLLS_SVD     = 1,    // SVD - divide and conquer driver
+    ERBFLLS_QR      = 2,    // we have overdetermined system, thus only QR is applicable
 };
 
 //------------------------------------------------------------------------------
