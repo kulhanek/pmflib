@@ -45,9 +45,9 @@ int CABFIntOptions::CheckOptions(void)
         IsError = true;
     }
 
-    if(GetOptNCorr() < 1.0) {
+    if(GetOptNCorr() < 0.0) {
         if(IsError == false) fprintf(stderr,"\n");
-        fprintf(stderr,"%s: ncorr has to be grater or equal to one, but %f is specified\n", (const char*)GetProgramName(),GetOptNCorr());
+        fprintf(stderr,"%s: ncorr has to be grater or equal to zero, but %f is specified\n", (const char*)GetProgramName(),GetOptNCorr());
         IsError = true;
     }
 
@@ -226,27 +226,15 @@ int CABFIntOptions::CheckOptions(void)
         IsError = true;
     }
 
-    if( IsOptMFLimitSet() && ((GetOptMethod() != "rbf")&&(GetOptMethod() != "gpr")) ){
+    if( IsOptMFMaxZScoreSet() && ((GetOptMethod() != "rbf")&&(GetOptMethod() != "gpr")) ){
         if(IsError == false) fprintf(stderr,"\n");
-        fprintf(stderr,"%s: --mflimit can be combined only with RBF or GPR\n",
+        fprintf(stderr,"%s: --maxzscore can be combined only with RBF or GPR\n",
                 (const char*)GetProgramName());
         IsError = true;
     }
-    if( IsOptMFLimitPassesSet() && ((GetOptMethod() != "rbf")&&(GetOptMethod() != "gpr")) ){
+    if( IsOptMFZTestPassesSet() && ((GetOptMethod() != "rbf")&&(GetOptMethod() != "gpr")) ){
         if(IsError == false) fprintf(stderr,"\n");
-        fprintf(stderr,"%s: --mflpasses can be combined only with RBF or GPR\n",
-                (const char*)GetProgramName());
-        IsError = true;
-    }
-    if( IsOptMFMaxError1Set() && ((GetOptMethod() != "rbf")&&(GetOptMethod() != "gpr")) ){
-        if(IsError == false) fprintf(stderr,"\n");
-        fprintf(stderr,"%s: --mfmaxerr1 can be combined only with RBF or GPR\n",
-                (const char*)GetProgramName());
-        IsError = true;
-    }
-    if( IsOptMFMaxError2Set() && ((GetOptMethod() != "rbf")&&(GetOptMethod() != "gpr")) ){
-        if(IsError == false) fprintf(stderr,"\n");
-        fprintf(stderr,"%s: --mfmaxerr2 can be combined only with RBF or GPR\n",
+        fprintf(stderr,"%s: --mfzpasses can be combined only with RBF or GPR\n",
                 (const char*)GetProgramName());
         IsError = true;
     }

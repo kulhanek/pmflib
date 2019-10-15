@@ -72,8 +72,7 @@ private:
     bool InstallNewSeed(int seedid);
     int  FillSeed(int seedid);
     void GetTPoint(CSimpleVector<int>& ipos,int d,CSimpleVector<int>& tpos);
-    bool IntegrateForMFMaxError(void);
-    bool IntegrateForMFLimit(int pass);
+    bool IntegrateForMFZScore(int pass);
     bool IntegrateForEcut(void);
     bool Integrate(void);
     void WriteHeader(void);

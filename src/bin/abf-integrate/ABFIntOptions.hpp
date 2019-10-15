@@ -76,10 +76,8 @@ public:
     CSO_OPT(bool,SkipFFTest)
     CSO_OPT(double,NCorr)
     CSO_OPT(double,EnergyLimit)
-    CSO_OPT(double,MFMaxError1)
-    CSO_OPT(double,MFMaxError2)
-    CSO_OPT(double,MFLimit)
-    CSO_OPT(int,MFLimitPasses)
+    CSO_OPT(double,MFMaxZScore)
+    CSO_OPT(int,MFZTestPasses)
     CSO_OPT(double,Offset)
     CSO_OPT(CSmallString,Method)
     CSO_OPT(CSmallString,EcutMethod)
@@ -152,42 +150,23 @@ public:
                 "This limit enforces two integration runs. Negative value disables the limit.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(double,                           /* option type */
-                MFMaxError1,                        /* option name */
-                0.0,                          /* default value */
-                false,                          /* is option mandatory */
-                0,                           /* short option name */
-                "mfmaxerr1",                      /* long option name */
-                "NUMBER",                           /* parametr name */
-                "RBF+GPR: Consider only mean forces whose errors are below NUMBER. "
-                "This limit is aplied before mflimit. Zero value disables the limit.")   /* option description */
-    //----------------------------------------------------------------------
-    CSO_MAP_OPT(double,                           /* option type */
-                MFMaxError2,                        /* option name */
-                0.0,                          /* default value */
-                false,                          /* is option mandatory */
-                0,                           /* short option name */
-                "mfmaxerr2",                      /* long option name */
-                "NUMBER",                           /* parametr name */
-                "RBF+GPR: The same as mfmaxerr1 but for the second CV.")   /* option description */
-    //----------------------------------------------------------------------
-    CSO_MAP_OPT(double,                           /* option type */
-                MFLimit,                        /* option name */
+                MFMaxZScore,                        /* option name */
                 -1.0,                          /* default value */
                 false,                          /* is option mandatory */
                 0,                           /* short option name */
-                "mflimit",                      /* long option name */
+                "maxzscore",                      /* long option name */
                 "NUMBER",                           /* parametr name */
-                "RBF+GPR: Consider only mean forces which are within mflimit*stddev from zero mean. "
+                "RBF+GPR: Consider only mean forces which are within maxzscore*stddev from zero mean. "
                 "This limit is aplied in the each pass. Negative value disables the limit.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(int,                           /* option type */
-                MFLimitPasses,                        /* option name */
+                MFZTestPasses,                        /* option name */
                 1,                          /* default value */
                 false,                          /* is option mandatory */
                 0,                           /* short option name */
-                "mflpasses",                      /* long option name */
+                "mfzpasses",                      /* long option name */
                 "NUMBER",                           /* parametr name */
-                "RBF+GPR: Repeat mflimit NUMBER times.")   /* option description */
+                "RBF+GPR: Repeat z-score test NUMBER times.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(CSmallString,                           /* option type */
                 MFInfo,                        /* option name */

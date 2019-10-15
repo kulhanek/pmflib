@@ -571,7 +571,7 @@ bool CABFIntegratorGPR::WriteMFInfo(const CSmallString& name)
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorGPR::FilterByMFFac(double mffac)
+void CABFIntegratorGPR::FilterByMFZScore(double zscore,CVerboseStr& vout)
 {
     if( Accumulator->GetNumberOfBins() <= 0 ){
         ES_ERROR("number of bins is not > 0");
@@ -579,132 +579,122 @@ void CABFIntegratorGPR::FilterByMFFac(double mffac)
     }
 
     // we work with variances
-    mffac *= mffac;
+    zscore *= zscore;
 
-    // we assume zero mean on errors
+    CSimpleVector<int>      flags;
     CSimpleVector<double>   sig2;
-    sig2.CreateVector(Accumulator->GetNumberOfCoords());
-    double                  count = 0;
-    sig2.SetZero();
+    CSimpleVector<int>      maxi;
+    CSimpleVector<double>   maxzscore;
+    CSimpleVector<double>   mferror2;
 
-    // calc variances
-    for(int i=0; i < Accumulator->GetNumberOfBins(); i++){
-        if( Accumulator->GetNumberOfABFSamples(i) <= 0 ) continue;
-
-        Accumulator->GetPoint(i,jpos);
-
-        for(int k=0; k < Accumulator->GetNumberOfCoords(); k++){
-            double diff2 = Accumulator->GetValue(k,i,EABF_MEAN_FORCE_VALUE) - GetMeanForce(jpos,k);
-            diff2 *= diff2;
-            sig2[k] += diff2;
-        }
-        count++;
-    }
-
-    if( count == 0 ) return;
-    for(int k=0; k < Accumulator->GetNumberOfCoords(); k++){
-        sig2[k] /= count;
-    }
-
-    CSimpleVector<int>  flags;
     flags.CreateVector(Accumulator->GetNumberOfBins());
+    sig2.CreateVector(NCVs);
+    maxi.CreateVector(NCVs);
+    maxzscore.CreateVector(NCVs);
+    mferror2.CreateVector(GPRSize);
+
     flags.Set(1);
 
-    // filter
+    vout << high;
+    vout << "   Precalculating MF errors ..." << endl;
+
+    // precalculate values
+    int indi = 0;
     for(int i=0; i < Accumulator->GetNumberOfBins(); i++){
         if( Accumulator->GetNumberOfABFSamples(i) <= 0 ) continue;
 
         Accumulator->GetPoint(i,jpos);
 
-        for(int k=0; k < Accumulator->GetNumberOfCoords(); k++){
+        for(int k=0; k < NCVs; k++){
             double diff2 = Accumulator->GetValue(k,i,EABF_MEAN_FORCE_VALUE) - GetMeanForce(jpos,k);
             diff2 *= diff2;
-            if( diff2 > mffac*sig2[k] ){
-                flags[i] = 0;
+            mferror2[indi*NCVs+k] = diff2;
+        }
+
+        indi++;
+    }
+
+    vout << "   Searching for MF outliers ..." << endl;
+    vout << debug;
+
+    bool testme = true;
+    while( testme ){
+
+        testme = false;
+
+        double  count = 0;
+        sig2.SetZero();
+
+        // calc variances - we assume zero mean on errors
+        indi = 0;
+        for(int i=0; i < Accumulator->GetNumberOfBins(); i++){
+            if( Accumulator->GetNumberOfABFSamples(i) <= 0 ) continue;
+
+            if( flags[i] != 0 ) {
+                for(int k=0; k < NCVs; k++){
+                    sig2[k] += mferror2[indi*NCVs+k];
+                }
+                count++;
+            }
+            indi++;
+        }
+
+        if( count == 0 ) break;
+        for(int k=0; k < NCVs; k++){
+            sig2[k] /= count;
+        }
+
+        // filter
+        bool first = true;
+        indi = 0;
+        for(int i=0; i < Accumulator->GetNumberOfBins(); i++){
+            if( Accumulator->GetNumberOfABFSamples(i) <= 0 ) continue;
+
+            if( flags[i] != 0 ){
+                Accumulator->GetPoint(i,jpos);
+
+                for(int k=0; k < NCVs; k++){
+                    double diff2 = mferror2[indi*NCVs+k];
+                    double zscore2 = diff2 / sig2[k];
+                    if( first == true ){
+                        maxzscore[k] = zscore2;
+                        maxi[k] = i;
+                    } else {
+                        if( maxzscore[k] < zscore2 ) {
+                            maxi[k] = i;
+                            maxzscore[k] = zscore2;
+
+                        }
+                    }
+                }
+
+                first = false;
+            }
+
+            indi++;
+        }
+
+        for(int k=0; k < NCVs; k++){
+            if( maxzscore[k] > zscore ){
+                flags[maxi[k]] = 0;
+                testme = true;
+                vout << "   outlier found at " << maxi[k] << " for cv " << k << " with z-score " << sqrt(maxzscore[k]) << endl;
             }
         }
     }
 
     // apply limits
+    int outliers = 0;
     for(int i=0; i < Accumulator->GetNumberOfBins(); i++){
         if( flags[i] == 0 ){
             Accumulator->SetNumberOfABFSamples(i,0);
+            outliers++;
         }
     }
 
     // from now the integrator is in invalid state !!!
-}
-
-//------------------------------------------------------------------------------
-
-void CABFIntegratorGPR::FilterByMFMaxError(double mfmaxerr)
-{
-    CSimpleVector<int>  flags;
-    flags.CreateVector(Accumulator->GetNumberOfBins());
-    flags.Set(1);
-
-    // filter
-    for(int i=0; i < Accumulator->GetNumberOfBins(); i++){
-        if( Accumulator->GetNumberOfABFSamples(i) <= 0 ) continue;
-
-        Accumulator->GetPoint(i,jpos);
-
-        for(int k=0; k < Accumulator->GetNumberOfCoords(); k++){
-            double err = fabs(Accumulator->GetValue(k,i,EABF_MEAN_FORCE_VALUE) - GetMeanForce(jpos,k));
-            if( err > mfmaxerr ){
-                flags[i] = 0;
-            }
-        }
-    }
-
-    // apply limits
-    for(int i=0; i < Accumulator->GetNumberOfBins(); i++){
-        if( flags[i] == 0 ){
-            Accumulator->SetNumberOfABFSamples(i,0);
-        }
-    }
-
-    // from now the integrator is in invalid state !!!
-}
-
-//------------------------------------------------------------------------------
-
-void CABFIntegratorGPR::FilterByMFMaxError(double mfmaxerr1,double mfmaxerr2)
-{
-    if( Accumulator->GetNumberOfCoords() != 2 ){
-        LOGIC_ERROR("only two CV can be combined with FilterByMFMaxError(double mfmaxerr1,double mfmaxerr2)");
-    }
-
-    CSimpleVector<int>  flags;
-    flags.CreateVector(Accumulator->GetNumberOfBins());
-    flags.Set(1);
-
-    // filter
-    for(int i=0; i < Accumulator->GetNumberOfBins(); i++){
-        if( Accumulator->GetNumberOfABFSamples(i) <= 0 ) continue;
-
-        Accumulator->GetPoint(i,jpos);
-
-        double err = fabs(Accumulator->GetValue(0,i,EABF_MEAN_FORCE_VALUE) - GetMeanForce(jpos,0));
-        if( err > mfmaxerr1 ){
-            flags[i] = 0;
-        }
-
-        err = fabs(Accumulator->GetValue(1,i,EABF_MEAN_FORCE_VALUE) - GetMeanForce(jpos,1));
-        if( err > mfmaxerr2 ){
-            flags[i] = 0;
-        }
-
-    }
-
-    // apply limits
-    for(int i=0; i < Accumulator->GetNumberOfBins(); i++){
-        if( flags[i] == 0 ){
-            Accumulator->SetNumberOfABFSamples(i,0);
-        }
-    }
-
-    // from now the integrator is in invalid state !!!
+    vout << high;
+    vout << "   Number of outliers = " << outliers << endl;
 }
 
 //------------------------------------------------------------------------------
@@ -839,11 +829,11 @@ void CABFIntegratorGPR::CalculateErrors(CSimpleVector<double>& gpos,CVerboseStr&
         Accumulator->GetPoint(i,jpos);
         double varfc = GetVar(jpos);
         double covfg = GetCov(jpos,gpos);
-        // double tvarfc = GetCov(jpos,jpos);
-        // double tvargp = GetCov(gpos,gpos);
-        // vout << varfc << " " << vargp << " " << covfg << endl;
-        // vout << varfc << " " << tvarfc << endl;
-        // vout << vargp << " " << tvargp << endl;
+//         double tvarfc = GetCov(jpos,jpos);
+//         double tvargp = GetCov(gpos,gpos);
+//         vout << varfc << " " << vargp << " " << covfg << endl;
+//         vout << varfc << " " << tvarfc << endl;
+//         vout << vargp << " " << tvargp << endl;
         double error = varfc + vargp - 2.0*covfg;
         if( error > 0 ){
             error = sqrt(error);

@@ -98,13 +98,7 @@ public:
 
 // this destroys the state of the integrator
     /// remove mean force outliers from ABF data
-    void FilterByMFFac(double mffac);
-
-    /// remove mean force outliers from ABF data
-    void FilterByMFMaxError(double mfmaxerr);
-
-    /// remove mean force outliers from ABF data
-    void FilterByMFMaxError(double mfmaxerr1,double mfmaxerr2);
+    void FilterByMFZScore(double maxzscore,CVerboseStr& vout);
 
 // section of private data ----------------------------------------------------
 private:

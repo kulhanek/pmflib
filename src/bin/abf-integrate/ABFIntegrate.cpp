@@ -156,20 +156,11 @@ int CABFIntegrate::Init(int argc,char* argv[])
         vout << "# Sampling limit        : " << Options.GetOptLimit() << endl;
     }
     if( (Options.GetOptEcutMethod() == "gpr") || (Options.GetOptEcutMethod() == "rbf") ){
-    if( Options.GetOptMFMaxError1() > 0 ) {
-    if( Options.GetOptMFMaxError2() > 0 ) {
-        vout << "# Mean force max error  : " << setprecision(3) << Options.GetOptMFMaxError1() << " x " << setprecision(3) << Options.GetOptMFMaxError2()  << endl;
+    if(Options.GetOptMFMaxZScore() == -1) {
+        vout << "# Max MF Z-score        : not applied" << endl;
     } else {
-        vout << "# Mean force max error  : " << setprecision(3) << Options.GetOptMFMaxError1() << endl;
-    }
-    } else {
-        vout << "# Mean force max error  : not applied" << endl;
-    }
-    if(Options.GetOptMFLimit() == -1) {
-        vout << "# Mean force limit      : not applied" << endl;
-    } else {
-        vout << "# Mean force limit (MFL): " << Options.GetOptMFLimit() << endl;
-        vout << "# MFL repeats           : " << Options.GetOptMFLimitPasses() << endl;
+        vout << "# Max MF Z-score        : " << Options.GetOptMFMaxZScore() << endl;
+        vout << "# Number of MF Z-tests  : " << Options.GetOptMFZTestPasses() << endl;
     }
     }
         vout << "# Glueing FES factor    : " << Options.GetOptGlueingFES() << endl;
@@ -255,32 +246,14 @@ bool CABFIntegrate::Run(void)
     PrintSampledStat();
     vout << "   Done" << endl;
 
-// mf limits ------------------------------------
-    if( Options.GetOptMFMaxError1() > 0.0 ){
-        vout << endl;
-        vout << "3) ABF accumulator integration (" << Options.GetOptEcutMethod() << ") for max mean force error limit" << endl;
-        if( IntegrateForMFMaxError() == false ) return(false);
-
-        vout << endl;
-        vout << "2) Preparing ABF accumulator for integration (max mean force error limit)"<< endl;
-        PrepareAccumulatorI();
-        if( ! Options.GetOptSkipFFTest() ){
-            FloodFillTest();
-        }
-        PrintSampledStat();
-        vout << "   Done" << endl;
-
-        FES.Clear();
-    }
-
-    if( Options.GetOptMFLimit() > 0.0 ){
-        for(int i=1; i <= Options.GetOptMFLimitPasses(); i++ ){
+    if( Options.GetOptMFMaxZScore() > 0.0 ){
+        for(int i=1; i <= Options.GetOptMFZTestPasses(); i++ ){
             vout << endl;
-            vout << "3) ABF accumulator integration (" << Options.GetOptEcutMethod() << ") for mean force limit #" << i << endl;
-            if( IntegrateForMFLimit(i) == false ) return(false);
+            vout << "3) ABF accumulator integration (" << Options.GetOptEcutMethod() << ") for mean force Z-score test #" << i << endl;
+            if( IntegrateForMFZScore(i) == false ) return(false);
 
             vout << endl;
-            vout << "2) Preparing ABF accumulator for integration (mean force limit #" << i << ")"<< endl;
+            vout << "2) Preparing ABF accumulator for integration (z-score test #" << i << ")"<< endl;
             PrepareAccumulatorI();
             if( ! Options.GetOptSkipFFTest() ){
                 FloodFillTest();
@@ -290,7 +263,6 @@ bool CABFIntegrate::Run(void)
 
             FES.Clear();
         }
-
     }
 
 // glue fes ------------------------------------
@@ -490,13 +462,8 @@ void CABFIntegrate::WriteHeader()
 
         fprintf(OutputFile,"# Sample limit          : %d\n",Options.GetOptLimit());
         if ( (Options.GetOptEcutMethod() == "gpr") || (Options.GetOptEcutMethod() == "rbf") ){
-            if( Options.GetOptMFMaxError2() > 0 ){
-            fprintf(OutputFile,"# Mean force max error  : %5.3f X %5.3f\n", Options.GetOptMFMaxError1(), Options.GetOptMFMaxError2());
-            } else {
-            fprintf(OutputFile,"# Mean force max error  : %5.3f\n", Options.GetOptMFMaxError1());
-            }
-            fprintf(OutputFile,"# Mean force limit (MFL): %f\n",Options.GetOptMFLimit());
-            fprintf(OutputFile,"# MFL passes            : %d\n",Options.GetOptMFLimitPasses());
+            fprintf(OutputFile,"# Max MF Z-score        : %f\n",Options.GetOptMFMaxZScore());
+            fprintf(OutputFile,"# Number of MF Z-tests  : %d\n",Options.GetOptMFZTestPasses());
         }
         fprintf(OutputFile,"# Glueing FES factor    : %d\n",Options.GetOptGlueingFES());
         fprintf(OutputFile,"# Energy limit          : %f\n",Options.GetOptEnergyLimit());
@@ -517,118 +484,13 @@ void CABFIntegrate::WriteHeader()
 //------------------------------------------------------------------------------
 //==============================================================================
 
-bool CABFIntegrate::IntegrateForMFMaxError(void)
+bool CABFIntegrate::IntegrateForMFZScore(int pass)
 {
     if(Options.GetOptEcutMethod() == "rfd" ) {
-        ES_ERROR("illegal combination: --emethod=rfd and --mfmaxerr1 or --mfmaxerr2");
+        ES_ERROR("illegal combination: --emethod=rfd and --maxzscore");
         return(false);
     } else if(Options.GetOptEcutMethod() == "rfd2" ) {
-        ES_ERROR("illegal combination: --emethod=rfd2 and --mfmaxerr1 or --mfmaxerr2");
-        return(false);
-    } else if( Options.GetOptEcutMethod() == "rbf" ){
-        CABFIntegratorRBF   integrator;
-
-        integrator.SetWFac1(Options.GetOptWFac());
-        integrator.SetWFac2(Options.GetOptWFac2());
-        integrator.SetRCond(Options.GetOptRCond());
-        integrator.SetRFac1(Options.GetOptRFac());
-        integrator.SetRFac2(Options.GetOptRFac2());
-        integrator.SetOverhang(Options.GetOptOverhang());
-
-        if( Options.GetOptEcutMethod() == Options.GetOptMethod() ){
-            if( Options.GetOptLAMethod() == "svd" ){
-                integrator.SetLLSMehod(ERBFLLS_SVD);
-            } else if( Options.GetOptLAMethod() == "qr" ) {
-                integrator.SetLLSMehod(ERBFLLS_QR);
-            } else if( Options.GetOptLAMethod() == "default" ) {
-                // nothing to do - use default method set in constructor of integrator
-            } else {
-                INVALID_ARGUMENT("algorithm - not implemented");
-            }
-        }
-
-        integrator.SetInputABFAccumulator(&Accumulator);
-        integrator.SetOutputFESurface(&FES);
-
-        if(integrator.Integrate(vout) == false) {
-            ES_ERROR("unable to integrate ABF accumulator");
-            return(false);
-        }
-
-        if( Options.IsOptMFInfoSet() ){
-            CSmallString mfinfo = Options.GetOptMFInfo();
-            mfinfo << ".mfmaxerr";
-            if( integrator.WriteMFInfo(mfinfo) == false ) return(false);
-        }
-
-        // apply MF max error filter
-        if( Options.GetOptMFMaxError2() == 0.0 ){
-            integrator.FilterByMFMaxError(Options.GetOptMFMaxError1());
-        } else {
-            integrator.FilterByMFMaxError(Options.GetOptMFMaxError1(),Options.GetOptMFMaxError2());
-        }
-
-    } else if( Options.GetOptEcutMethod() == "gpr" ){
-        CABFIntegratorGPR   integrator;
-
-        integrator.SetWFac1(Options.GetOptWFac());
-        integrator.SetWFac2(Options.GetOptWFac2());
-        integrator.SetRCond(Options.GetOptRCond());
-        integrator.SetSigmaF2(Options.GetOptSigmaF2());
-        integrator.SetIncludeError(false);
-
-        if( Options.GetOptEcutMethod() == Options.GetOptMethod() ){
-            if( Options.GetOptLAMethod() == "svd" ){
-                integrator.SetINVMehod(EGPRINV_SVD);
-            } else if( Options.GetOptLAMethod() == "svd2" ){
-                integrator.SetINVMehod(EGPRINV_SVD2);
-            } else if( Options.GetOptLAMethod() == "lu" ) {
-                integrator.SetINVMehod(EGPRINV_LU);
-            } else if( Options.GetOptLAMethod() == "default" ) {
-                // nothing to do - use default method set in constructor of integrator
-            } else {
-                INVALID_ARGUMENT("algorithm - not implemented");
-            }
-        }
-
-        integrator.SetInputABFAccumulator(&Accumulator);
-        integrator.SetOutputFESurface(&FES);
-        integrator.SetNoEnergy(true);
-
-        if(integrator.Integrate(vout) == false) {
-            ES_ERROR("unable to integrate ABF accumulator");
-            return(false);
-        }
-
-        if( Options.IsOptMFInfoSet() ){
-            CSmallString mfinfo = Options.GetOptMFInfo();
-            mfinfo << ".mfmaxerr";
-            if( integrator.WriteMFInfo(mfinfo) == false ) return(false);
-        }
-
-        // apply MF max error filter
-        if( Options.GetOptMFMaxError2() == 0.0 ){
-            integrator.FilterByMFMaxError(Options.GetOptMFMaxError1());
-        } else {
-            integrator.FilterByMFMaxError(Options.GetOptMFMaxError1(),Options.GetOptMFMaxError2());
-        }
-
-    } else {
-        INVALID_ARGUMENT("method - not implemented");
-    }
-
-    return(true);
-}
-
-//------------------------------------------------------------------------------
-
-bool CABFIntegrate::IntegrateForMFLimit(int pass)
-{
-    if(Options.GetOptEcutMethod() == "rfd" ) {
-        ES_ERROR("illegal combination: --emethod=rfd and --mflimit");
-        return(false);
-    } else if(Options.GetOptEcutMethod() == "rfd2" ) {
-        ES_ERROR("illegal combination: --emethod=rfd2 and --mflimit");
+        ES_ERROR("illegal combination: --emethod=rfd2 and --maxzscore");
         return(false);
     } else if( Options.GetOptEcutMethod() == "rbf" ){
         CABFIntegratorRBF   integrator;
@@ -667,7 +529,7 @@ bool CABFIntegrate::IntegrateForMFLimit(int pass)
         }
 
         // apply mean force limit
-        integrator.FilterByMFFac(Options.GetOptMFLimit());
+        integrator.FilterByMFZScore(Options.GetOptMFMaxZScore(),vout);
 
     } else if( Options.GetOptEcutMethod() == "gpr" ){
         CABFIntegratorGPR   integrator;
@@ -708,7 +570,7 @@ bool CABFIntegrate::IntegrateForMFLimit(int pass)
         }
 
         // apply mean force limit
-        integrator.FilterByMFFac(Options.GetOptMFLimit());
+        integrator.FilterByMFZScore(Options.GetOptMFMaxZScore(),vout);
 
     } else {
         INVALID_ARGUMENT("method - not implemented");
