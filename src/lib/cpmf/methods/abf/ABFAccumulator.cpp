@@ -1137,7 +1137,7 @@ double CABFAccumulator::GetValue(int icoord,int ibin,EABFAccuValue realm) const
                     sq = 0.0;
                 }
                 // value is standard error of mean ABF force
-                value = sq / sqrt((double)nsamples/NCorr);
+                value = sq / sqrt((double)nsamples/(double)NCorr);
                 return(value);
             }
         default:

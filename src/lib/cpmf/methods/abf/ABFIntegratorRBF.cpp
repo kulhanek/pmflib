@@ -28,9 +28,14 @@
 #include <SciLapack.hpp>
 #include <iomanip>
 #include <boost/format.hpp>
+#include <boost/algorithm/string/split.hpp>
+#include <boost/algorithm/string/classification.hpp>
+
+//------------------------------------------------------------------------------
 
 using namespace std;
 using namespace boost;
+using namespace boost::algorithm;
 
 //==============================================================================
 //------------------------------------------------------------------------------
@@ -41,10 +46,6 @@ CABFIntegratorRBF::CABFIntegratorRBF(void)
     Accumulator = NULL;
     FES = NULL;
 
-    WFac1       = 2.0;
-    RFac1       = 3.0;
-    WFac2       = 0.0;
-    RFac2       = 0.0;
     Overhang    = 2;
     Method      = ERBFLLS_SVD;
 
@@ -77,39 +78,83 @@ void CABFIntegratorRBF::SetOutputFESurface(CEnergySurface* p_surf)
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorRBF::SetWFac1(double wfac)
+void CABFIntegratorRBF::SetWFac(const CSmallString& spec)
 {
-    WFac1 = wfac;
+    if( Accumulator == NULL ){
+        RUNTIME_ERROR("accumulator is not set for SetWFac");
+    }
+
+    string          sspec(spec);
+    vector<string>  swfacs;
+
+    split(swfacs,sspec,is_any_of("x"),token_compress_on);
+
+    if( (int)swfacs.size() > Accumulator->GetNumberOfCoords() ){
+        CSmallString error;
+        error << "too many wfacs (" << swfacs.size() << ") than required (" << Accumulator->GetNumberOfCoords() << ")";
+        RUNTIME_ERROR(error);
+    }
+
+    WFac.CreateVector(Accumulator->GetNumberOfCoords());
+
+    // parse values of wfac
+    double last_wfac = 3.0;
+    for(int i=0; i < (int)swfacs.size(); i++){
+        stringstream str(swfacs[i]);
+        str >> last_wfac;
+        if( ! str ){
+            CSmallString error;
+            error << "unable to decode wfac value for position: " << i+1;
+            RUNTIME_ERROR(error);
+        }
+        WFac[i] = last_wfac;
+    }
+
+    // pad the rest with the last value
+    for(int i=swfacs.size(); i < Accumulator->GetNumberOfCoords(); i++){
+        WFac[i] = last_wfac;
+    }
 }
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorRBF::SetWFac2(double wfac)
-{
-    WFac2 = wfac;
+void CABFIntegratorRBF::SetRFac(const CSmallString& spec)
+{    
+    if( Accumulator == NULL ){
+        RUNTIME_ERROR("accumulator is not set for SetRFac");
+    }
+
+    string          sspec(spec);
+    vector<string>  srfacs;
+
+    split(srfacs,sspec,is_any_of("x"),token_compress_on);
+
+    if( (int)srfacs.size() > Accumulator->GetNumberOfCoords() ){
+        CSmallString error;
+        error << "too many rfacs (" << srfacs.size() << ") than required (" << Accumulator->GetNumberOfCoords() << ")";
+        RUNTIME_ERROR(error);
+    }
+
+    RFac.CreateVector(Accumulator->GetNumberOfCoords());
+
+    // parse values of rfac
+    double last_rfac = 1.0;
+    for(int i=0; i < (int)srfacs.size(); i++){
+        stringstream str(srfacs[i]);
+        str >> last_rfac;
+        if( ! str ){
+            CSmallString error;
+            error << "unable to decode rfac value for position: " << i+1;
+            RUNTIME_ERROR(error);
+        }
+        RFac[i] = last_rfac;
+    }
+
+    // pad the rest with the last value
+    for(int i=srfacs.size(); i < Accumulator->GetNumberOfCoords(); i++){
+        RFac[i] = last_rfac;
+    }
 }
-
-//------------------------------------------------------------------------------
-
-void CABFIntegratorRBF::SetRCond(double rcond)
-{
-    RCond = rcond;
-}
-
-//------------------------------------------------------------------------------
-
-void CABFIntegratorRBF::SetRFac1(double rfac)
-{
-    RFac1 = rfac;
-}
-
-//------------------------------------------------------------------------------
-
-void CABFIntegratorRBF::SetRFac2(double rfac)
-{
-    RFac2 = rfac;
-}
-
 //------------------------------------------------------------------------------
 
 void CABFIntegratorRBF::SetOverhang(int nrbfs)
@@ -122,6 +167,13 @@ void CABFIntegratorRBF::SetOverhang(int nrbfs)
 void CABFIntegratorRBF::SetLLSMehod(ERBFLLSMethod set)
 {
     Method = set;
+}
+
+//------------------------------------------------------------------------------
+
+void CABFIntegratorRBF::SetRCond(double rcond)
+{
+    RCond = rcond;
 }
 
 //------------------------------------------------------------------------------
@@ -159,24 +211,27 @@ bool CABFIntegratorRBF::Integrate(CVerboseStr& vout)
         ES_ERROR("inconsistent ABF and FES - points");
         return(false);
     }
+    if( RFac.GetLength() == 0 ){
+        ES_ERROR("rfac not set");
+        return(false);
+    }
+    if( WFac.GetLength() == 0 ){
+        ES_ERROR("wfac not set");
+        return(false);
+    }
 
     // RBF setup
     NumOfCVs = Accumulator->GetNumberOfCoords();
     NumOfRBFBins.CreateVector(NumOfCVs);
 
-    if( (RFac2 > 0.0) && (Accumulator->GetNumberOfCoords() > 2) ){
-        RUNTIME_ERROR("rfac2 > 0 and ncvs > 2");
+    for(int i=0; i < NumOfCVs; i++ ){
+        if( RFac[i] <= 0 ) RFac[i] = 1.0;
     }
-
-   if( RFac1 <= 0 ) RFac1 = 1.0;
 
     NumOfRBFs = 1;
     for(int i=0; i < NumOfCVs; i++ ){
         int nrbfbins;
-        nrbfbins = Accumulator->GetCoordinate(i)->GetNumberOfBins()/RFac1;
-        if( (i == 1) && (RFac2 > 0.0) ){
-            nrbfbins = Accumulator->GetCoordinate(i)->GetNumberOfBins()/RFac2;
-        }
+        nrbfbins = Accumulator->GetCoordinate(i)->GetNumberOfBins()/RFac[i];
         if( ! Accumulator->GetCoordinate(i)->IsPeriodic() ){
             nrbfbins += 2*Overhang;
         }
@@ -184,21 +239,16 @@ bool CABFIntegratorRBF::Integrate(CVerboseStr& vout)
         NumOfRBFs *= nrbfbins;
     }
 
-    if( (WFac2 > 0.0) && (Accumulator->GetNumberOfCoords() > 2) ){
-        RUNTIME_ERROR("wfac2 > 0 and ncvs > 2");
-    }
-
     Weights.CreateVector(NumOfRBFs);
     Weights.SetZero();
 
     Sigmas.CreateVector(NumOfCVs);
     for(int i=0; i < NumOfCVs; i++){
-        Sigmas[i] = Accumulator->GetCoordinate(i)->GetRange()*WFac1/NumOfRBFBins[i];
+        if( NumOfRBFBins[i] == 0 ){
+            RUNTIME_ERROR("NumOfRBFBins[i] is zero");
+        }
+        Sigmas[i] = Accumulator->GetCoordinate(i)->GetRange()*WFac[i]/NumOfRBFBins[i];
         // cout << Sigmas[i] << endl;
-    }
-    if( (WFac2 > 0.0) && (Accumulator->GetNumberOfCoords() == 2) ){
-        int cv = 1;
-        Sigmas[cv] = Accumulator->GetCoordinate(cv)->GetRange()*WFac2/NumOfRBFBins[cv];
     }
 
     // integrate

@@ -3,6 +3,7 @@
 // =============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
+//    Copyright (C) 2019 Petr Kulhanek, kulhanek@chemi.muni.cz
 //    Copyright (C) 2008 Martin Petrek, petrek@chemi.muni.cz
 //                       Petr Kulhanek, kulhanek@enzim.hu
 //
@@ -47,7 +48,7 @@ public:
     "at the same time by energy limit, which, however, requires two integration passes. "
     "GPR is probably ultimate way how to obtain correctly integrated data but "
     "at cost of significantly higher computational demands.\n"
-    "Quality of the integration can be monitored by RMSR, SigmaF2, and logML (GPR only). <b>RMSR</b> is the root mean square residuals. "
+    "Quality of the integration can be monitored by RMSR, SigmaF2, and logML (GPR only). <b>RMSR</b> is the root mean square of mean force residuals. "
     "The residual is difference between input mean force (derivative of the free energy) and mean force predicted by the model. "
     "<b>SigmaF2</b> is a variance of the resulting free energy. "
     "<b>logML</b> is logarithm of marginal likelihood. "
@@ -72,39 +73,40 @@ public:
     CSO_LIST_BEGIN
 
     // options ------------------------------
-    CSO_OPT(int,Limit)
-    CSO_OPT(bool,SkipFFTest)
-    CSO_OPT(double,NCorr)
-    CSO_OPT(double,EnergyLimit)
-    CSO_OPT(double,MFMaxZScore)
-    CSO_OPT(int,MFZTestPasses)
-    CSO_OPT(double,Offset)
     CSO_OPT(CSmallString,Method)
     CSO_OPT(CSmallString,EcutMethod)
     CSO_OPT(CSmallString,LAMethod)
-    CSO_OPT(int,FDPoints)
     CSO_OPT(double,RCond)
-    CSO_OPT(double,RFac)
-    CSO_OPT(double,RFac2)
-    CSO_OPT(double,WFac)
-    CSO_OPT(double,WFac2)
+    CSO_OPT(int,Limit)
+    CSO_OPT(bool,SkipFFTest)
+    CSO_OPT(double,EnergyLimit)
+    CSO_OPT(double,MFMaxZScore)
+    CSO_OPT(int,MFZTestPasses)
     CSO_OPT(double,SigmaF2)
+    CSO_OPT(double,NCorr)
+    CSO_OPT(CSmallString,WFac)
+    CSO_OPT(CSmallString,LoadHyprms)
+    CSO_OPT(CSmallString,RFac)
     CSO_OPT(int,Overhang)
-    CSO_OPT(int,GlueingFES)
+    CSO_OPT(bool,IncludeGluedRegions)
+    CSO_OPT(int,GlueingFactor)
     CSO_OPT(bool,Periodicity)
     CSO_OPT(CSmallString,GlobalMin)
+    CSO_OPT(double,Offset)
     CSO_OPT(bool,WithError)
     CSO_OPT(bool,NoEnergy)
     CSO_OPT(CSmallString,OutputFormat)
     CSO_OPT(bool,PrintAll)
     CSO_OPT(bool,UnsampledAsMaxE)
-    CSO_OPT(double,MaxEnergy)
+    CSO_OPT(double,MaxEnergy)   
     CSO_OPT(bool,NoHeader)
     CSO_OPT(bool,IncludeBinStat)
     CSO_OPT(bool,UseOldRFD)
+    CSO_OPT(int,FDPoints)
     CSO_OPT(CSmallString,IXFormat)
     CSO_OPT(CSmallString,OEFormat)
     CSO_OPT(CSmallString,MFInfo)
+    CSO_OPT(CSmallString,SaveABF)
     CSO_OPT(bool,Verbose)
     CSO_OPT(bool,Version)
     CSO_OPT(bool,Help)
@@ -112,80 +114,6 @@ public:
 
     CSO_MAP_BEGIN
 // description of options ---------------------------------------------------
-    CSO_MAP_OPT(int,                           /* option type */
-                Limit,                        /* option name */
-                100,                          /* default value */
-                false,                          /* is option mandatory */
-                'l',                           /* short option name */
-                "limit",                      /* long option name */
-                "NUMBER",                           /* parametr name */
-                "Only bins containing more samples than NUMBER are considered as properly sampled.")   /* option description */
-    //----------------------------------------------------------------------
-    CSO_MAP_OPT(bool,                           /* option type */
-                SkipFFTest,                        /* option name */
-                false,                          /* default value */
-                false,                          /* is option mandatory */
-                0,                           /* short option name */
-                "skipfftest",                      /* long option name */
-                NULL,                           /* parametr name */
-                "Skip flood fill test for discountinous regions.")   /* option description */
-    //----------------------------------------------------------------------
-    CSO_MAP_OPT(double,                           /* option type */
-                NCorr,                        /* option name */
-                1.0,                          /* default value */
-                false,                          /* is option mandatory */
-                'c',                           /* short option name */
-                "ncorr",                      /* long option name */
-                "NUMBER",                           /* parametr name */
-                "Number of statistically correlated samples.")   /* option description */
-    //----------------------------------------------------------------------
-    CSO_MAP_OPT(double,                           /* option type */
-                EnergyLimit,                        /* option name */
-                -1.0,                          /* default value */
-                false,                          /* is option mandatory */
-                'q',                           /* short option name */
-                "energylimit",                      /* long option name */
-                "NUMBER",                           /* parametr name */
-                "Integrate data only if the free energy is below NUMBER. "
-                "This limit enforces two integration runs. Negative value disables the limit.")   /* option description */
-    //----------------------------------------------------------------------
-    CSO_MAP_OPT(double,                           /* option type */
-                MFMaxZScore,                        /* option name */
-                -1.0,                          /* default value */
-                false,                          /* is option mandatory */
-                0,                           /* short option name */
-                "maxzscore",                      /* long option name */
-                "NUMBER",                           /* parametr name */
-                "RBF+GPR: Consider only mean forces which are within maxzscore*stddev from zero mean. "
-                "This limit is aplied in the each pass. Negative value disables the limit.")   /* option description */
-    //----------------------------------------------------------------------
-    CSO_MAP_OPT(int,                           /* option type */
-                MFZTestPasses,                        /* option name */
-                1,                          /* default value */
-                false,                          /* is option mandatory */
-                0,                           /* short option name */
-                "mfzpasses",                      /* long option name */
-                "NUMBER",                           /* parametr name */
-                "RBF+GPR: Repeat z-score test NUMBER times.")   /* option description */
-    //----------------------------------------------------------------------
-    CSO_MAP_OPT(CSmallString,                           /* option type */
-                MFInfo,                        /* option name */
-                NULL,                          /* default value */
-                false,                          /* is option mandatory */
-                '\0',                           /* short option name */
-                "mfinfo",                      /* long option name */
-                "NAME",                           /* parametr name */
-                "RBF+GPR: name of file with input and predicted mean forces.")   /* option description */
-    //----------------------------------------------------------------------
-    CSO_MAP_OPT(double,                           /* option type */
-                Offset,                        /* option name */
-                0.0,                          /* default value */
-                false,                          /* is option mandatory */
-                'o',                           /* short option name */
-                "offset",                      /* long option name */
-                "NUMBER",                           /* parametr name */
-                "Specify an integration constant.")   /* option description */
-    //----------------------------------------------------------------------
     CSO_MAP_OPT(CSmallString,                           /* option type */
                 Method,                        /* option name */
                 "rfd",                          /* default value */
@@ -214,15 +142,6 @@ public:
                 "Linear algebra method for LLS solution or matrix inversion. Supported algorithms are: default, svd (SVD - singular value decomposition, divide and conquer driver), svd2 (SVD - singular value decomposition, simple driver ), qr (QR factorization), lu (LU factorization). "
                 "Possible combinations are: RFD(LU,default), RFD2(QR,SVD,default), RBF(QR,SVD,default), and GPR(LU,SVD,SVD2,default).")   /* option description */
     //----------------------------------------------------------------------
-    CSO_MAP_OPT(int,                           /* option type */
-                FDPoints,                        /* option name */
-                3,                          /* default value */
-                false,                          /* is option mandatory */
-                0,                           /* short option name */
-                "fdpoints",                      /* long option name */
-                "NUMBER",                           /* parametr name */
-                "RFD: Determine number of points employed in differenciation scheme (three or four is upported) in RFD method.")   /* option description */
-    //----------------------------------------------------------------------
     CSO_MAP_OPT(double,                           /* option type */
                 RCond,                        /* option name */
                 1e-6,                          /* default value */
@@ -232,43 +151,52 @@ public:
                 "NUMBER",                           /* parametr name */
                 "RFD2+RBF+GPR: Rank condition for SVD. Used value must be carefully tested. Calculation at computer precision is requested with -1 (not recommended).")   /* option description */
     //----------------------------------------------------------------------
-    CSO_MAP_OPT(double,                           /* option type */
-                RFac,                        /* option name */
-                1.0,                          /* default value */
+    CSO_MAP_OPT(int,                           /* option type */
+                Limit,                        /* option name */
+                100,                          /* default value */
                 false,                          /* is option mandatory */
-                't',                           /* short option name */
-                "rfac",                      /* long option name */
+                'l',                           /* short option name */
+                "limit",                      /* long option name */
                 "NUMBER",                           /* parametr name */
-                "RBF: Reduction factor for number of RBFs. Number of RBFs in given direction is number of bins in that direction divided by this factor.")   /* option description */
+                "Only bins containing more samples than NUMBER are considered as properly sampled.")   /* option description */
     //----------------------------------------------------------------------
-    CSO_MAP_OPT(double,                           /* option type */
-                RFac2,                        /* option name */
-                0.0,                          /* default value */
+    CSO_MAP_OPT(bool,                           /* option type */
+                SkipFFTest,                        /* option name */
+                false,                          /* default value */
                 false,                          /* is option mandatory */
                 0,                           /* short option name */
-                "rfac2",                      /* long option name */
-                "NUMBER",                           /* parametr name */
-                "(optional for the second CV) RBF: Reduction factor for number of RBFs. Number of RBFs in given direction is number of bins in that direction divided by this factor.")   /* option description */
+                "skipfftest",                      /* long option name */
+                NULL,                           /* parametr name */
+                "Skip flood fill test for discountinous regions.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(double,                           /* option type */
-                WFac,                        /* option name */
-                3.0,                          /* default value */
+                EnergyLimit,                        /* option name */
+                -1.0,                          /* default value */
                 false,                          /* is option mandatory */
-                'w',                           /* short option name */
-                "wfac",                      /* long option name */
+                'q',                           /* short option name */
+                "energylimit",                      /* long option name */
                 "NUMBER",                           /* parametr name */
-                "RBF+GPR: Factor influencing widths of RBFs or square exponential kernels. The width is distance between "
-                "the adjacent square exponential functions multiplied by this factor.")   /* option description */
+                "Integrate data only if the free energy is below NUMBER. "
+                "This limit enforces two integration runs. Negative value disables the limit.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(double,                           /* option type */
-                WFac2,                        /* option name */
-                0.0,                          /* default value */
+                MFMaxZScore,                        /* option name */
+                -1.0,                          /* default value */
                 false,                          /* is option mandatory */
                 0,                           /* short option name */
-                "wfac2",                      /* long option name */
+                "mfmaxzscore",                      /* long option name */
                 "NUMBER",                           /* parametr name */
-                "(optional for the second CV) RBF+GPR: Factor influencing widths of RBFs or square exponential kernels. The width is distance between "
-                "the adjacent square exponential functions multiplied by this factor.")   /* option description */
+                "RBF+GPR: Reject mean forces whose errors in prediction have z-score above NUMBER. In the test, it is assumend that mean force errors have zero mean and they follow normal distribution. "
+                "This limit is aplied in the each pass. Negative value disables the limit.")   /* option description */
+    //----------------------------------------------------------------------
+    CSO_MAP_OPT(int,                           /* option type */
+                MFZTestPasses,                        /* option name */
+                1,                          /* default value */
+                false,                          /* is option mandatory */
+                0,                           /* short option name */
+                "mfnumofztests",                      /* long option name */
+                "NUMBER",                           /* parametr name */
+                "RBF+GPR: Repeat z-score test for mean force errrors NUMBER times.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(double,                           /* option type */
                 SigmaF2,                        /* option name */
@@ -279,6 +207,45 @@ public:
                 "NUMBER",                           /* parametr name */
                 "GPR: Variance of the reconstructed free energy surface (signal variance).")   /* option description */
     //----------------------------------------------------------------------
+    CSO_MAP_OPT(double,                           /* option type */
+                NCorr,                        /* option name */
+                1.0,                          /* default value */
+                false,                          /* is option mandatory */
+                'c',                           /* short option name */
+                "ncorr",                      /* long option name */
+                "NUMBER",                           /* parametr name */
+                "GPR: Number of statistically correlated samples.")   /* option description */
+    //----------------------------------------------------------------------
+    CSO_MAP_OPT(CSmallString,                           /* option type */
+                WFac,                        /* option name */
+                "3.0",                          /* default value */
+                false,                          /* is option mandatory */
+                'w',                           /* short option name */
+                "wfac",                      /* long option name */
+                "SPEC",                           /* parametr name */
+                "RBF+GPR: Factors influencing widths of RBFs or square exponential kernels. The width is distance between "
+                "the adjacent square exponential functions multiplied by this factors in the form WFac1[xWFac2x...]. "
+                "The last value pads the rest.")   /* option description */
+    //----------------------------------------------------------------------
+    CSO_MAP_OPT(CSmallString,                           /* option type */
+                LoadHyprms,                        /* option name */
+                NULL,                          /* default value */
+                false,                          /* is option mandatory */
+                0,                           /* short option name */
+                "loadhyprms",                      /* long option name */
+                "NAME",                           /* parametr name */
+                "GPR: Name of file with GPR hyperparameters.")   /* option description */
+    //----------------------------------------------------------------------
+    CSO_MAP_OPT(CSmallString,                           /* option type */
+                RFac,                        /* option name */
+                "1.0",                          /* default value */
+                false,                          /* is option mandatory */
+                't',                           /* short option name */
+                "rfac",                      /* long option name */
+                "SPEC",                           /* parametr name */
+                "RBF: Reduction factor for number of RBFs. Number of RBFs in given direction is number of bins in that "
+                "direction divided by this factor in the form RFac1[xRFac2x...]. The last value pads the rest.")   /* option description */
+    //----------------------------------------------------------------------
     CSO_MAP_OPT(int,                           /* option type */
                 Overhang,                        /* option name */
                 2,                          /* default value */
@@ -288,14 +255,23 @@ public:
                 "NUMBER",                           /* parametr name */
                 "RBFs overhang to properly integrate areas near sampled edges. Ignored for periodic CVs.")   /* option description */
     //----------------------------------------------------------------------
+    CSO_MAP_OPT(bool,                           /* option type */
+                IncludeGluedRegions,                        /* option name */
+                0,                          /* default value */
+                false,                          /* is option mandatory */
+                0,                           /* short option name */
+                "includeglued",                      /* long option name */
+                NULL,                           /* parametr name */
+                "RBF+GPR: Explicitly include glued regions. This options is set ON when --glueing > 0.")   /* option description */
+    //----------------------------------------------------------------------
     CSO_MAP_OPT(int,                           /* option type */
-                GlueingFES,                        /* option name */
+                GlueingFactor,                        /* option name */
                 0,                          /* default value */
                 false,                          /* is option mandatory */
                 0,                           /* short option name */
                 "glueing",                      /* long option name */
                 "NUMBER",                           /* parametr name */
-                "RBF+GPR: calculate energy also for unsampled bins but close vicinity to sampled one")   /* option description */
+                "RBF+GPR: Calculate energy also for unsampled bins in close vicinity to sampled ones.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(bool,                           /* option type */
                 Periodicity,                        /* option name */
@@ -315,6 +291,15 @@ public:
                 "SPEC",                           /* parametr name */
                 "GPR: position of global minimum provided as a single string in the form CV1xCV2x...xCVn (relevant for error determination), if not set the position is determined automatically.")   /* option description */
     //----------------------------------------------------------------------
+    CSO_MAP_OPT(double,                           /* option type */
+                Offset,                        /* option name */
+                0.0,                          /* default value */
+                false,                          /* is option mandatory */
+                'o',                           /* short option name */
+                "offset",                      /* long option name */
+                "NUMBER",                           /* parametr name */
+                "Specify an integration constant.")   /* option description */
+    //----------------------------------------------------------------------
     CSO_MAP_OPT(bool,                           /* option type */
                 WithError,                        /* option name */
                 false,                          /* default value */
@@ -332,6 +317,24 @@ public:
                 "noenergy",                      /* long option name */
                 NULL,                           /* parametr name */
                 "GPR: Skip calculation of energy and errors (it can save some time when only logML is required).")   /* option description */
+    //----------------------------------------------------------------------
+    CSO_MAP_OPT(CSmallString,                           /* option type */
+                SaveABF,                        /* option name */
+                NULL,                          /* default value */
+                false,                          /* is option mandatory */
+                '\0',                           /* short option name */
+                "saveabf",                      /* long option name */
+                "NAME",                           /* parametr name */
+                "Save the final ABF accumulator into the file with NAME.")   /* option description */
+    //----------------------------------------------------------------------
+    CSO_MAP_OPT(CSmallString,                           /* option type */
+                MFInfo,                        /* option name */
+                NULL,                          /* default value */
+                false,                          /* is option mandatory */
+                '\0',                           /* short option name */
+                "mfinfo",                      /* long option name */
+                "NAME",                           /* parametr name */
+                "RBF+GPR: name of file with input and predicted mean forces.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(CSmallString,                           /* option type */
                 OutputFormat,                        /* option name */
@@ -395,6 +398,15 @@ public:
                 "oldrfd",                      /* long option name */
                 NULL,                           /* parametr name */
                 "RFD: Use old RFD implementation.")   /* option description */
+    //----------------------------------------------------------------------
+    CSO_MAP_OPT(int,                           /* option type */
+                FDPoints,                        /* option name */
+                3,                          /* default value */
+                false,                          /* is option mandatory */
+                0,                           /* short option name */
+                "fdpoints",                      /* long option name */
+                "NUMBER",                           /* parametr name */
+                "RFD: Determine number of points employed in differenciation scheme (three or four is upported) in RFD method.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(CSmallString,                           /* option type */
                 IXFormat,                        /* option name */

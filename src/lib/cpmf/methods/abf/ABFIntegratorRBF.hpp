@@ -56,19 +56,13 @@ public:
     void SetOutputFESurface(CEnergySurface* p_surf);
 
     /// multiply of bin sizes
-    void SetWFac1(double wfac);
-
-    /// multiply of bin sizes, if zero use wfac1
-    void SetWFac2(double wfac);
+    void SetWFac(const CSmallString& spec);
 
     /// set rcond for SVD
     void SetRCond(double rcond);
 
     /// set reduction factor for RBF
-    void SetRFac1(double rfac);
-
-    /// set reduction factor for RBF, if zero use rfac1
-    void SetRFac2(double rfac);
+    void SetRFac(const CSmallString& spec);
 
     /// should we apply periodicity?
     void SetPeriodicity(bool set);
@@ -101,10 +95,8 @@ private:
     CABFAccumulator*        Accumulator;
     CEnergySurface*         FES;
 
-    double                  WFac1;
-    double                  RFac1;   // reduction factor for number of RBFs
-    double                  WFac2;
-    double                  RFac2;   // reduction factor for number of RBFs
+    CSimpleVector<double>   WFac;
+    CSimpleVector<double>   RFac;   // reduction factor for number of RBFs
     int                     Overhang;
     ERBFLLSMethod           Method;
 

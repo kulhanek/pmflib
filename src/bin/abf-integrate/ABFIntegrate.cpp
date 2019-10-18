@@ -1,6 +1,7 @@
 // =============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
+//    Copyright (C) 2019 Petr Kulhanek, kulhanek@chemi.muni.cz
 //    Copyright (C) 2008 Martin Petrek, petrek@chemi.muni.cz
 //                       Petr Kulhanek, kulhanek@enzim.hu
 //
@@ -30,6 +31,7 @@
 #include <ESPrinter.hpp>
 #include "ABFIntegrate.hpp"
 #include <iomanip>
+#include <algorithm>
 
 //------------------------------------------------------------------------------
 
@@ -114,41 +116,42 @@ int CABFIntegrate::Init(int argc,char* argv[])
         } else {
         vout << "# Integrated domains    : force only" << endl;
         }
-    if( (Options.GetOptMethod() == "rfd") || (Options.GetOptMethod() == "rfd2" ) ){
-        vout << "# FD number of points   : " << Options.GetOptFDPoints() << endl;
-        vout << "# Periodicity           : " << bool_to_str(Options.GetOptPeriodicity()) << endl;
-        if( Options.GetOptMethod() == "rfd2" ){
+// ---------------------------------------
+        vout << "# Linear algebra        : " << Options.GetOptLAMethod() << endl;
+    if( Options.GetOptMethod() == "rfd2" ){
         vout << "# SVD rcond             : " << setprecision(3) << Options.GetOptRCond() << endl;
-        }
     } else if ( Options.GetOptMethod() == "rbf" ){
-        if( Options.IsOptRFac2Set() ){
-        vout << "# Reduction factor rfac : " << setprecision(3) << Options.GetOptRFac() << " x " << setprecision(3) << Options.GetOptRFac2()  << endl;
-        } else {
-        vout << "# Reduction factor rfac : " << setprecision(3) << Options.GetOptRFac() << endl;
-        }
-        if( Options.IsOptWFac2Set() ){
-        vout << "# Width factor wfac     : " << setprecision(3) << Options.GetOptWFac() << " x " << setprecision(3) << Options.GetOptWFac2()  << endl;
-        } else {
-        vout << "# Width factor wfac     : " << setprecision(3) << Options.GetOptWFac() << endl;
-        }
         if( (Options.GetOptLAMethod() == "svd") || (Options.GetOptLAMethod() == "default") ){
         vout << "# SVD rcond             : " << setprecision(3) << Options.GetOptRCond() << endl;
         }
+   } else if ( Options.GetOptMethod() == "gpr"  ) {
+        if( (Options.GetOptLAMethod() == "svd") || (Options.GetOptLAMethod() == "svd2")  ){
+        vout << "# SVD rcond             : " << setprecision(3) << Options.GetOptRCond() << endl;
+        }
+    }
+// ---------------------------------------
+        vout << "# ------------------------------------------------" << endl;
+    if( (Options.GetOptMethod() == "rfd") || (Options.GetOptMethod() == "rfd2" ) ){
+        vout << "# FD number of points   : " << Options.GetOptFDPoints() << endl;
+        vout << "# Periodicity           : " << bool_to_str(Options.GetOptPeriodicity()) << endl;
+    } else if ( Options.GetOptMethod() == "rbf" ){
+        vout << "# Reduction factor rfac : " << Options.GetOptRFac() << endl;
+        vout << "# Width factor wfac     : " << Options.GetOptWFac() << endl;
         vout << "# RBF overhang          : " << Options.GetOptOverhang() << endl;
     } else if ( Options.GetOptMethod() == "gpr"  ) {
-        vout << "# SigmaF2               : " << setprecision(3) << Options.GetOptSigmaF2() << endl;  
-        if( Options.IsOptWFac2Set() ){
-        vout << "# Width factor wfac     : " << setprecision(3) << Options.GetOptWFac() << " x " << setprecision(3) << Options.GetOptWFac2()  << endl;
+        if( Options.IsOptLoadHyprmsSet() ){
+            vout << "# GPR hyperprms file    : " << Options.GetOptLoadHyprms() << endl;
+            // actual values are printed in detailed output from integrator
         } else {
-        vout << "# Width factor wfac     : " << setprecision(3) << Options.GetOptWFac() << endl;
-        }
-        if( Options.GetOptLAMethod() == "svd" ){
-        vout << "# SVD rcond             : " << setprecision(3) << Options.GetOptRCond() << endl;
+            vout << "# SigmaF2               : " << setprecision(3) << Options.GetOptSigmaF2() << endl;
+            vout << "# NCorr                 : " << setprecision(3) << Options.GetOptNCorr() << endl;
+            vout << "# Width factor wfac     : " << Options.GetOptWFac() << endl;
         }
     } else {
         ES_ERROR("not implemented method");
         return(SO_USER_ERROR);
     }
+
     vout << "# ------------------------------------------------" << endl;
     if(Options.GetOptLimit() == 0) {
         vout << "# Sampling limit        : all bins will be taken into account" << endl;
@@ -157,13 +160,13 @@ int CABFIntegrate::Init(int argc,char* argv[])
     }
     if( (Options.GetOptEcutMethod() == "gpr") || (Options.GetOptEcutMethod() == "rbf") ){
     if(Options.GetOptMFMaxZScore() == -1) {
-        vout << "# Max MF Z-score        : not applied" << endl;
+        vout << "# Max MF error Z-score  : not applied" << endl;
     } else {
-        vout << "# Max MF Z-score        : " << Options.GetOptMFMaxZScore() << endl;
+        vout << "# Max MF error Z-score  : " << Options.GetOptMFMaxZScore() << endl;
         vout << "# Number of MF Z-tests  : " << Options.GetOptMFZTestPasses() << endl;
     }
     }
-        vout << "# Glueing FES factor    : " << Options.GetOptGlueingFES() << endl;
+        vout << "# Glueing FES factor    : " << Options.GetOptGlueingFactor() << endl;
     if(Options.GetOptEnergyLimit() == -1) {
         vout << "# Energy limit          : not applied" << endl;
     } else {
@@ -171,8 +174,6 @@ int CABFIntegrate::Init(int argc,char* argv[])
     }
         vout << "# Skip flood fill test  : " << bool_to_str(Options.GetOptNoHeader()) << endl;
 
-        vout << "# Number of corr. sam.  : " << Options.GetOptNCorr() << endl;
-        vout << "# Integration offset    : " << Options.GetOptOffset() << endl;
     vout << "# ------------------------------------------------" << endl;
 
     if( Options.IsOptGlobalMinSet() ){
@@ -180,6 +181,7 @@ int CABFIntegrate::Init(int argc,char* argv[])
     } else {
     vout << "# Global FES minimum    : -auto-" << endl;
     }
+    vout << "# Integration offset    : " << Options.GetOptOffset() << endl;
     vout << "# Output FES format     : " << Options.GetOptOutputFormat() << endl;
     vout << "# No header to output   : " << bool_to_str(Options.GetOptNoHeader()) << endl;
     vout << "# Include bin statuses  : " << bool_to_str(Options.GetOptIncludeBinStat()) << endl;
@@ -221,7 +223,8 @@ bool CABFIntegrate::Run(void)
 
     // print CVS info
     Accumulator.PrintCVSInfo(vout);
-    Accumulator.SetNCorr(Options.GetOptNCorr());
+    // DO NOT SET IT HERE, Ncorr is now GPR hyperparameter
+    // Accumulator.SetNCorr(Options.GetOptNCorr());
     FES.Allocate(&Accumulator);
 
     if( Options.GetOptMethod() == "gpr" ){
@@ -249,11 +252,11 @@ bool CABFIntegrate::Run(void)
     if( Options.GetOptMFMaxZScore() > 0.0 ){
         for(int i=1; i <= Options.GetOptMFZTestPasses(); i++ ){
             vout << endl;
-            vout << "3) ABF accumulator integration (" << Options.GetOptEcutMethod() << ") for mean force Z-score test #" << i << endl;
+            vout << "3) ABF accumulator integration (" << Options.GetOptEcutMethod() << ") for mean force error Z-score test #" << i << endl;
             if( IntegrateForMFZScore(i) == false ) return(false);
 
             vout << endl;
-            vout << "2) Preparing ABF accumulator for integration (z-score test #" << i << ")"<< endl;
+            vout << "2) Preparing ABF accumulator for integration (mean force error z-score test #" << i << ")"<< endl;
             PrepareAccumulatorI();
             if( ! Options.GetOptSkipFFTest() ){
                 FloodFillTest();
@@ -266,11 +269,11 @@ bool CABFIntegrate::Run(void)
     }
 
 // glue fes ------------------------------------
-    if( Options.GetOptGlueingFES() > 0 ){
+    if( Options.GetOptGlueingFactor() > 0 ){
         vout << endl;
         vout << "2) Preparing ABF accumulator for integration (glueing FES)"<< endl;
         vout << "   Searching for border regions in close vicinity of sampled areas ..." << endl;
-        for(int i=1; i <= Options.GetOptGlueingFES(); i++ ){
+        for(int i=1; i <= Options.GetOptGlueingFactor(); i++ ){
             GlueingFES(i);
         }
         PrintSampledStat();
@@ -344,7 +347,7 @@ bool CABFIntegrate::Run(void)
         printer.SetSampleLimit(Options.GetOptLimit());
     }
 
-    printer.IncludeGluedAreas(Options.GetOptGlueingFES() > 0);
+    printer.IncludeGluedAreas((Options.GetOptGlueingFactor() > 0)||Options.GetOptIncludeGluedRegions());
     printer.SetIncludeError(Options.GetOptWithError());
     printer.SetIncludeBinStat(Options.GetOptIncludeBinStat());
     printer.SetPrintedES(&FES);
@@ -384,7 +387,7 @@ bool CABFIntegrate::Run(void)
 
         // print all
         printer.SetSampleLimit(0);
-        printer.IncludeGluedAreas(Options.GetOptGlueingFES() > 0);
+        printer.IncludeGluedAreas((Options.GetOptGlueingFactor() > 0)||Options.GetOptIncludeGluedRegions());
         printer.SetIncludeError(Options.GetOptWithError());
         printer.SetIncludeBinStat(Options.GetOptIncludeBinStat());
         printer.SetPrintedES(&FES);
@@ -393,6 +396,19 @@ bool CABFIntegrate::Run(void)
             printer.Print(OutputFile);
         } catch(...) {
             ES_ERROR("unable to save the output free energy file");
+            return(false);
+        }
+        vout << "   Done" << endl;
+    }
+
+// save accumulator if requested
+    if( Options.GetOptSaveABF() != NULL ){
+        vout << endl;
+        vout << "6) Saving ABF accumulator to : " <<  Options.GetOptSaveABF() << endl;
+        try {
+            Accumulator.Save(Options.GetOptSaveABF());
+        } catch(...) {
+            ES_ERROR("unable to save the ABF accumulator file");
             return(false);
         }
         vout << "   Done" << endl;
@@ -425,56 +441,57 @@ void CABFIntegrate::WriteHeader()
         } else {
         fprintf(OutputFile,"# Integrated domains    : force only\n");
         }
+        fprintf(OutputFile,"# ------------------------------------------------------------------------------\n");
+            fprintf(OutputFile,"# Linear algebra        : %s\n", (const char*)Options.GetOptLAMethod());
+        if( Options.GetOptMethod() == "rfd2" ){
+            fprintf(OutputFile,"# SVD rcond             : %5.4e\n",Options.GetOptRCond());
+        } else if ( Options.GetOptMethod() == "rbf" ){
+            if( (Options.GetOptLAMethod() == "svd") || (Options.GetOptLAMethod() == "default") ){
+            fprintf(OutputFile,"# SVD rcond             : %5.4e\n",Options.GetOptRCond());
+            }
+        } else if ( Options.GetOptMethod() == "gpr"  ) {
+            if( (Options.GetOptLAMethod() == "svd") || (Options.GetOptLAMethod() == "svd2")  ){
+            fprintf(OutputFile,"# SVD rcond             : %5.4e\n",Options.GetOptRCond());
+            }
+        }
+        fprintf(OutputFile,"# ------------------------------------------------------------------------------\n");
         if( (Options.GetOptMethod() == "rfd") || (Options.GetOptMethod() == "rfd2") ){
             fprintf(OutputFile,"# FD nuber of points    : %d\n", Options.GetOptFDPoints());
             fprintf(OutputFile,"# Periodicity           : %s\n",(const char*)bool_to_str(Options.GetOptPeriodicity()));
-            if( Options.GetOptMethod() == "rfd2" ){
-            fprintf(OutputFile,"# SVD rcond             : %5.3f\n", Options.GetOptRCond());
-            }
         } else if ( Options.GetOptMethod() == "rbf" ){
-            if( Options.IsOptRFac2Set() ){
-            fprintf(OutputFile,"# Reduction factor rfac : %5.3f x %5.3f\n", Options.GetOptRFac(), Options.GetOptRFac2());
-            } else {
-            fprintf(OutputFile,"# Reduction factor rfac : %5.3f\n", Options.GetOptRFac());
-            }
-            if( Options.IsOptWFac2Set() ){
-            fprintf(OutputFile,"# Width factor wfac     : %5.3f X %5.3f\n", Options.GetOptWFac(), Options.GetOptWFac2());
-            } else {
-            fprintf(OutputFile,"# Width factor wfac     : %5.3f\n", Options.GetOptWFac());
-            }
-            if(  (Options.GetOptLAMethod() == "svd") || (Options.GetOptLAMethod() == "default") ){
-            fprintf(OutputFile,"# SVD rcond             : %5.3f\n", Options.GetOptRCond());
-            }
+            fprintf(OutputFile,"# Reduction factor rfac : %s\n", (const char*)Options.GetOptRFac());
+            fprintf(OutputFile,"# Width factor wfac     : %s\n", (const char*)Options.GetOptWFac());
             fprintf(OutputFile,"# RBF overhang          : %d\n", Options.GetOptOverhang());
         } else if ( Options.GetOptMethod() == "gpr" ) {
-            fprintf(OutputFile,"# SigmaF2               : %5.3f\n", Options.GetOptSigmaF2());
-            if( Options.IsOptWFac2Set() ){
-            fprintf(OutputFile,"# Width factor wfac     : %5.3f X %5.3f\n", Options.GetOptWFac(), Options.GetOptWFac2());
+            if( Options.IsOptLoadHyprmsSet() ){
+                fprintf(OutputFile,"# GPR hyperprms file    : %s\n", (const char*)Options.GetOptLoadHyprms());
+                PrintGPRHyprms(OutputFile);
             } else {
-            fprintf(OutputFile,"# Width factor wfac     : %5.3f\n", Options.GetOptWFac());
-            }
-            if( Options.GetOptLAMethod() == "svd" ){
-            fprintf(OutputFile,"# SVD rcond             : %5.3f\n", Options.GetOptRCond());
+                fprintf(OutputFile,"# SigmaF2               : %10.4f\n", Options.GetOptSigmaF2());
+                fprintf(OutputFile,"# NCorr                 : %10.4f\n",Options.GetOptNCorr());
+                fprintf(OutputFile,"# Width factor wfac     : %s\n", (const char*)Options.GetOptWFac());
             }
         } else {
             ES_ERROR("not implemented method");
         }
 
+        fprintf(OutputFile,"# ------------------------------------------------------------------------------\n");
         fprintf(OutputFile,"# Sample limit          : %d\n",Options.GetOptLimit());
         if ( (Options.GetOptEcutMethod() == "gpr") || (Options.GetOptEcutMethod() == "rbf") ){
-            fprintf(OutputFile,"# Max MF Z-score        : %f\n",Options.GetOptMFMaxZScore());
+            fprintf(OutputFile,"# Max MF error Z-score  : %f\n",Options.GetOptMFMaxZScore());
             fprintf(OutputFile,"# Number of MF Z-tests  : %d\n",Options.GetOptMFZTestPasses());
         }
-        fprintf(OutputFile,"# Glueing FES factor    : %d\n",Options.GetOptGlueingFES());
+        fprintf(OutputFile,"# Glueing FES factor    : %d\n",Options.GetOptGlueingFactor());
         fprintf(OutputFile,"# Energy limit          : %f\n",Options.GetOptEnergyLimit());
         fprintf(OutputFile,"# Skip flood fill test  : %s\n", bool_to_str(Options.GetOptNoHeader()));
-        fprintf(OutputFile,"# Number of corr. sam.  : %5.3f\n",Options.GetOptNCorr());
-        fprintf(OutputFile,"# Include bin statuses  : %s\n",bool_to_str(Options.GetOptIncludeBinStat()));
+        fprintf(OutputFile,"# ------------------------------------------------------------------------------\n");
         if( Options.IsOptGlobalMinSet() ){
         fprintf(OutputFile,"# Global FES minimum    : %s\n",(const char*)Options.GetOptGlobalMin());
         } else {
         fprintf(OutputFile,"# Global FES minimum    : -auto-\n");
         }
+        fprintf(OutputFile,"# Integration offset    : %5.3f\n", Options.GetOptOffset());
+        fprintf(OutputFile,"# Include bin statuses  : %s\n",bool_to_str(Options.GetOptIncludeBinStat()));
         fprintf(OutputFile,"# Number of coordinates : %d\n",Accumulator.GetNumberOfCoords());
         fprintf(OutputFile,"# Total number of bins  : %d\n",Accumulator.GetNumberOfBins());
     }
@@ -495,11 +512,9 @@ bool CABFIntegrate::IntegrateForMFZScore(int pass)
     } else if( Options.GetOptEcutMethod() == "rbf" ){
         CABFIntegratorRBF   integrator;
 
-        integrator.SetWFac1(Options.GetOptWFac());
-        integrator.SetWFac2(Options.GetOptWFac2());
+        integrator.SetWFac(Options.GetOptWFac());
         integrator.SetRCond(Options.GetOptRCond());
-        integrator.SetRFac1(Options.GetOptRFac());
-        integrator.SetRFac2(Options.GetOptRFac2());
+        integrator.SetRFac(Options.GetOptRFac());
         integrator.SetOverhang(Options.GetOptOverhang());
 
         if( Options.GetOptEcutMethod() == Options.GetOptMethod() ){
@@ -534,12 +549,20 @@ bool CABFIntegrate::IntegrateForMFZScore(int pass)
     } else if( Options.GetOptEcutMethod() == "gpr" ){
         CABFIntegratorGPR   integrator;
 
-        integrator.SetWFac1(Options.GetOptWFac());
-        integrator.SetWFac2(Options.GetOptWFac2());
-        integrator.SetRCond(Options.GetOptRCond());
-        integrator.SetSigmaF2(Options.GetOptSigmaF2());
+        integrator.SetInputABFAccumulator(&Accumulator);
+        integrator.SetOutputFESurface(&FES);
+
+        if( Options.IsOptLoadHyprmsSet() ){
+            LoadGPRHyprms(integrator);
+        } else {
+            integrator.SetSigmaF2(Options.GetOptSigmaF2());
+            integrator.SetNCorr(Options.GetOptNCorr());
+            integrator.SetWFac(Options.GetOptWFac());
+        }
+
         integrator.SetIncludeError(false);
 
+        integrator.SetRCond(Options.GetOptRCond());
         if( Options.GetOptEcutMethod() == Options.GetOptMethod() ){
             if( Options.GetOptLAMethod() == "svd" ){
                 integrator.SetINVMehod(EGPRINV_SVD);
@@ -554,8 +577,6 @@ bool CABFIntegrate::IntegrateForMFZScore(int pass)
             }
         }
 
-        integrator.SetInputABFAccumulator(&Accumulator);
-        integrator.SetOutputFESurface(&FES);
         integrator.SetNoEnergy(true);
 
         if(integrator.Integrate(vout) == false) {
@@ -635,13 +656,11 @@ bool CABFIntegrate::IntegrateForEcut(void)
     } else if( Options.GetOptEcutMethod() == "rbf" ){
         CABFIntegratorRBF   integrator;
 
-        integrator.SetWFac1(Options.GetOptWFac());
-        integrator.SetWFac2(Options.GetOptWFac2());
+        integrator.SetWFac(Options.GetOptWFac());
         integrator.SetRCond(Options.GetOptRCond());
-        integrator.SetRFac1(Options.GetOptRFac());
-        integrator.SetRFac2(Options.GetOptRFac2());
+        integrator.SetRFac(Options.GetOptRFac());
         integrator.SetOverhang(Options.GetOptOverhang());
-        integrator.IncludeGluedAreas(Options.GetOptGlueingFES() > 0);
+        integrator.IncludeGluedAreas((Options.GetOptGlueingFactor() > 0)||Options.GetOptIncludeGluedRegions());
 
         if( Options.GetOptEcutMethod() == Options.GetOptMethod() ){
             if( Options.GetOptLAMethod() == "svd" ){
@@ -668,13 +687,18 @@ bool CABFIntegrate::IntegrateForEcut(void)
         integrator.SetInputABFAccumulator(&Accumulator);
         integrator.SetOutputFESurface(&FES);
 
-        integrator.SetWFac1(Options.GetOptWFac());
-        integrator.SetWFac2(Options.GetOptWFac2());
-        integrator.SetRCond(Options.GetOptRCond());
-        integrator.SetSigmaF2(Options.GetOptSigmaF2());
-        integrator.IncludeGluedAreas(Options.GetOptGlueingFES() > 0);
+        if( Options.IsOptLoadHyprmsSet() ){
+            LoadGPRHyprms(integrator);
+        } else {
+            integrator.SetSigmaF2(Options.GetOptSigmaF2());
+            integrator.SetNCorr(Options.GetOptNCorr());
+            integrator.SetWFac(Options.GetOptWFac());
+        }
+
+        integrator.IncludeGluedAreas((Options.GetOptGlueingFactor() > 0)||Options.GetOptIncludeGluedRegions());
         integrator.SetIncludeError(false);
 
+        integrator.SetRCond(Options.GetOptRCond());
         if( Options.GetOptEcutMethod() == Options.GetOptMethod() ){
             if( Options.GetOptLAMethod() == "svd" ){
                 integrator.SetINVMehod(EGPRINV_SVD);
@@ -758,13 +782,11 @@ bool CABFIntegrate::Integrate()
     } else if( Options.GetOptMethod() == "rbf" ){
         CABFIntegratorRBF   integrator;
 
-        integrator.SetWFac1(Options.GetOptWFac());
-        integrator.SetWFac2(Options.GetOptWFac2());
+        integrator.SetWFac(Options.GetOptWFac());
         integrator.SetRCond(Options.GetOptRCond());
-        integrator.SetRFac1(Options.GetOptRFac());
-        integrator.SetRFac2(Options.GetOptRFac2());
+        integrator.SetRFac(Options.GetOptRFac());
         integrator.SetOverhang(Options.GetOptOverhang());
-        integrator.IncludeGluedAreas(Options.GetOptGlueingFES() > 0);
+        integrator.IncludeGluedAreas((Options.GetOptGlueingFactor() > 0)||Options.GetOptIncludeGluedRegions());
 
         if( Options.GetOptLAMethod() == "svd" ){
             integrator.SetLLSMehod(ERBFLLS_SVD);
@@ -794,18 +816,23 @@ bool CABFIntegrate::Integrate()
         integrator.SetInputABFAccumulator(&Accumulator);
         integrator.SetOutputFESurface(&FES);
 
-        integrator.SetWFac1(Options.GetOptWFac());
-        integrator.SetWFac2(Options.GetOptWFac2());
-        integrator.SetRCond(Options.GetOptRCond());
-        integrator.SetSigmaF2(Options.GetOptSigmaF2());
+        if( Options.IsOptLoadHyprmsSet() ){
+            LoadGPRHyprms(integrator);
+        } else {
+            integrator.SetSigmaF2(Options.GetOptSigmaF2());
+            integrator.SetNCorr(Options.GetOptNCorr());
+            integrator.SetWFac(Options.GetOptWFac());
+        }
+
         integrator.SetIncludeError(Options.GetOptWithError());
         integrator.SetNoEnergy(Options.GetOptNoEnergy());
-        integrator.IncludeGluedAreas(Options.GetOptGlueingFES() > 0);
+        integrator.IncludeGluedAreas((Options.GetOptGlueingFactor() > 0)||Options.GetOptIncludeGluedRegions());
 
         if( Options.IsOptGlobalMinSet() ){
             integrator.SetGlobalMin(Options.GetOptGlobalMin());
         }
 
+        integrator.SetRCond(Options.GetOptRCond());
         if( Options.GetOptLAMethod() == "svd" ){
             integrator.SetINVMehod(EGPRINV_SVD);
         } else if( Options.GetOptLAMethod() == "svd2" ){
@@ -838,14 +865,109 @@ bool CABFIntegrate::Integrate()
 //------------------------------------------------------------------------------
 //==============================================================================
 
+void CABFIntegrate::PrintGPRHyprms(FILE* p_fout)
+{
+    ifstream fin;
+    fin.open(Options.GetOptLoadHyprms());
+    if( ! fin ){
+        CSmallString error;
+        error << "unable to open file with GPR hyperparameters: " << Options.GetOptLoadHyprms();
+        RUNTIME_ERROR(error);
+    }
+
+    string line;
+    while( getline(fin,line) ){
+        // is it comment?
+        if( (line.size() > 0) && (line[0] == '#') ) continue;
+
+        // parse line
+        stringstream str(line);
+        string key, buf;
+        double value;
+        str >> key >> buf >> value;
+        if( ! str ){
+            CSmallString error;
+            error << "GPR hyperparameters file, unable to decode line: " << line.c_str();
+            RUNTIME_ERROR(error);
+        }
+        if( key == "SigmaF2" ){
+            fprintf(p_fout,"# SigmaF2               : %10.4f\n",value);
+        } else if( key == "NCorr" ){
+            fprintf(p_fout,"# NCorr                 : %10.4f\n",value);
+        } else if( key.find("WFac#") != string::npos ) {
+            fprintf(p_fout,"# %-7s               : %10.4f\n",key.c_str(),value);
+        } else {
+            CSmallString error;
+            error << "GPR hyperparameters file, unrecognized key: " << key.c_str();
+            RUNTIME_ERROR(error);
+        }
+    }
+}
+
+//------------------------------------------------------------------------------
+
+void CABFIntegrate::LoadGPRHyprms(CABFIntegratorGPR& gpr)
+{
+    ifstream fin;
+    fin.open(Options.GetOptLoadHyprms());
+    if( ! fin ){
+        CSmallString error;
+        error << "unable to open file with GPR hyperparameters: " << Options.GetOptLoadHyprms();
+        RUNTIME_ERROR(error);
+    }
+
+    string line;
+    while( getline(fin,line) ){
+        // is it comment?
+        if( (line.size() > 0) && (line[0] == '#') ) continue;
+
+        // parse line
+        stringstream str(line);
+        string key, buf;
+        double value;
+        str >> key >> buf >> value;
+        if( ! str ){
+            CSmallString error;
+            error << "GPR hyperparameters file, unable to decode line: " << line.c_str();
+            RUNTIME_ERROR(error);
+        }
+        if( key == "SigmaF2" ){
+            gpr.SetSigmaF2(value);
+        } else if( key == "NCorr" ){
+            gpr.SetNCorr(value);
+        } else if( key.find("WFac#") != string::npos ) {
+            std::replace( key.begin(), key.end(), '#', ' ');
+            stringstream kstr(key);
+            string swfac;
+            int    cvind;
+            kstr >> swfac >> cvind;
+            if( ! kstr ){
+                CSmallString error;
+                error << "GPR hyperparameters file, unable to decode wfac key: " << key.c_str();
+                RUNTIME_ERROR(error);
+            }
+            cvind--; // transform to 0-based indexing
+            gpr.SetWFac(cvind,value);
+        } else {
+            CSmallString error;
+            error << "GPR hyperparameters file, unrecognized key: " << key.c_str();
+            RUNTIME_ERROR(error);
+        }
+    }
+}
+
+//==============================================================================
+//------------------------------------------------------------------------------
+//==============================================================================
+
 // this part performs following tasks:
 //    a) bins with number of samples <= limit will be set to zero
 
 void CABFIntegrate::PrepareAccumulatorI(void)
 {
     for(int ibin=0; ibin < Accumulator.GetNumberOfBins(); ibin++) {
-        // erase datapoints not properly sampled
-        if( Accumulator.GetNumberOfABFSamples(ibin) <= Options.GetOptLimit() ) {
+        // erase datapoints not properly sampled, preserve glueing
+        if( (Accumulator.GetNumberOfABFSamples(ibin) >= 0) && (Accumulator.GetNumberOfABFSamples(ibin) <= Options.GetOptLimit()) ) {
             Accumulator.SetNumberOfABFSamples(ibin,0);
         }
     }

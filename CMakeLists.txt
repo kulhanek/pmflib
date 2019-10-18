@@ -129,6 +129,11 @@ INCLUDE_DIRECTORIES(${NLOPT_ROOT}/include)
 LINK_DIRECTORIES(${NLOPT_ROOT}/lib)
 SET(NLOPT_LIB_NAME nlopt)
 
+# L-BFGS =====================
+SET(LBFGS_ROOT ${DEVELOPMENT_ROOT}/thirdparty/lbfgs/1.0)
+LINK_DIRECTORIES(${LBFGS_ROOT}/lib)
+SET(LBFGS_LIB_NAME flbfgs)
+
 IF(PMFLIB_HAVE_XBPLIB)
     # XBPLib ===================
     SET(XBPLIB_ROOT ${DEVELOPMENT_ROOT}/projects/xbplib/4.0)

@@ -56,14 +56,20 @@ public:
     /// set output free energy surface
     void SetOutputFESurface(CEnergySurface* p_surf);
 
-    /// multiply of bin sizes
-    void SetWFac1(double wfac);
-
-    /// multiply of bin sizes, if zero use wfac1
-    void SetWFac2(double wfac);
-
     /// set sigmaf2
     void SetSigmaF2(double sigf2);
+
+    /// set ncorr
+    void SetNCorr(double ncorr);
+
+    /// multiply of bin sizes
+    void SetWFac(const CSmallString& spec);
+
+    /// multiply of bin sizes
+    void SetWFac(CSimpleVector<double>& wfac);
+
+    /// multiply of bin sizes
+    void SetWFac(int cvind, double value);
 
     /// set include error
     void SetIncludeError(bool set);
@@ -85,13 +91,17 @@ public:
 
 // execution method -----------------------------------------------------------
     /// integrate data
-    bool Integrate(CVerboseStr& vout);
+    bool Integrate(CVerboseStr& vout,bool nostat=false);
 
     /// get root mean square residuals
     double GetRMSR(int cv);
 
     /// get log of Marginal Likelihood
     double GetLogMarginalLikelihood(void);
+
+    /// get derivative of logML wrt hyperparameters
+    /// order sigmaf2, ncorr, wfac, only requested ders are calculated
+    void GetLogMLDerivatives(const std::vector<bool>& flags,CSimpleVector<double>& der);
 
     /// write file with derivatives
     bool WriteMFInfo(const CSmallString& name);
@@ -108,19 +118,24 @@ private:
     // GPR data
     int                     GPRSize;
     int                     NCVs;
-    double                  WFac1;
-    double                  WFac2;
+    CSimpleVector<double>   WFac;
     CSimpleVector<double>   CVLengths2;
     double                  SigmaF2;
+    double                  NCorr;
     CFortranMatrix          K;          // kernels
     double                  logdetK;
     CSimpleVector<double>   Y;          // derivatives
     CSimpleVector<double>   GPRModel;   // weights
+    bool                    UseAnalyticalK;
     bool                    NoEnergy;
     bool                    IncludeError;
     bool                    IncludeGluedBins;
     EGPRINVMethod           Method;
     bool                    GlobalMinSet;
+
+    // derivatives
+    CFortranMatrix          ATA;        // alphaT*alpha
+    CFortranMatrix          Kder;       // derivative of kernels w.r.t. a hyperparameter
 
     CSimpleVector<double>   ipos;
     CSimpleVector<double>   jpos;
@@ -139,6 +154,18 @@ private:
     double GetMeanForce(const CSimpleVector<double>& position,int icoord);
     double GetCov(CSimpleVector<double>& lpos,CSimpleVector<double>& rpos);
     double GetVar(CSimpleVector<double>& lpos);
+
+    // kernel matrix
+    void AnalyticalK(void);
+    void NumericalK(void);
+    void NumericalKBlock(CSimpleVector<double>& ip,CSimpleVector<double>& jp,CFortranMatrix& kblok);
+    double GetKernelValue(CSimpleVector<double>& ip,CSimpleVector<double>& jp);
+
+    // derivatives
+    void InitHyprmsOpt(void);
+    void CalcKderWRTSigmaF2(void);
+    void CalcKderWRTNCorr(void);
+    void CalcKderWRTWFac(int cv);
 };
 
 //------------------------------------------------------------------------------

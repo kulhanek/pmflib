@@ -1,6 +1,7 @@
 // =============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
+//    Copyright (C) 2019 Petr Kulhanek, kulhanek@chemi.muni.cz
 //    Copyright (C) 2008 Martin Petrek, petrek@chemi.muni.cz
 //                       Petr Kulhanek, kulhanek@enzim.hu
 //
@@ -96,30 +97,6 @@ int CABFIntOptions::CheckOptions(void)
         }
     }
 
-    if( GetOptRFac() <= 0 ){
-        if(IsError == false) fprintf(stderr,"\n");
-        fprintf(stderr,"%s: rfac has to be greater than zero, but %f is provided\n", (const char*)GetProgramName(),GetOptRFac());
-        IsError = true;
-    }
-
-    if( GetOptRFac2() < 0 ){
-        if(IsError == false) fprintf(stderr,"\n");
-        fprintf(stderr,"%s: rfac2 has to be greater than or equal zero, but %f is provided\n", (const char*)GetProgramName(),GetOptRFac2());
-        IsError = true;
-    }
-
-    if( GetOptWFac() <= 0 ){
-        if(IsError == false) fprintf(stderr,"\n");
-        fprintf(stderr,"%s: wfac has to be greater than zero, but %f is provided\n", (const char*)GetProgramName(),GetOptWFac());
-        IsError = true;
-    }
-
-    if( GetOptWFac2() < 0 ){
-        if(IsError == false) fprintf(stderr,"\n");
-        fprintf(stderr,"%s: wfac has to be greater than or equal zero, but %f is provided\n", (const char*)GetProgramName(),GetOptWFac2());
-        IsError = true;
-    }
-
     if( GetOptSigmaF2() <= 0 ){
         if(IsError == false) fprintf(stderr,"\n");
         fprintf(stderr,"%s: sigmaf2 has to be greater than zero, but %f is provided\n", (const char*)GetProgramName(),GetOptSigmaF2());
@@ -177,13 +154,6 @@ int CABFIntOptions::CheckOptions(void)
         IsError = true;
     }
 
-    if( IsOptRFac2Set() && (GetOptMethod() != "rbf") ){
-        if(IsError == false) fprintf(stderr,"\n");
-        fprintf(stderr,"%s: rfac can be set only for RBF method\n",
-                (const char*)GetProgramName());
-        IsError = true;
-    }
-
     if( IsOptOverhangSet() && (GetOptMethod() != "rbf") ){
         if(IsError == false) fprintf(stderr,"\n");
         fprintf(stderr,"%s: overhang can be set only for RBF method\n",
@@ -192,13 +162,6 @@ int CABFIntOptions::CheckOptions(void)
     }
 
     if( IsOptWFacSet() && ( (GetOptMethod() != "rbf") && (GetOptMethod() != "gpr")) ){
-        if(IsError == false) fprintf(stderr,"\n");
-        fprintf(stderr,"%s: wfac can be set only for RBF or GPR method\n",
-                (const char*)GetProgramName());
-        IsError = true;
-    }
-
-    if( IsOptWFac2Set() && ( (GetOptMethod() != "rbf") && (GetOptMethod() != "gpr")) ){
         if(IsError == false) fprintf(stderr,"\n");
         fprintf(stderr,"%s: wfac can be set only for RBF or GPR method\n",
                 (const char*)GetProgramName());
@@ -215,6 +178,30 @@ int CABFIntOptions::CheckOptions(void)
     if( IsOptWithErrorSet() && (GetOptMethod() != "gpr") ){
         if(IsError == false) fprintf(stderr,"\n");
         fprintf(stderr,"%s: --witherror can be compbined only with GPR\n",
+                (const char*)GetProgramName());
+        IsError = true;
+    }
+    if( IsOptLoadHyprmsSet() && (GetOptMethod() != "gpr") ){
+        if(IsError == false) fprintf(stderr,"\n");
+        fprintf(stderr,"%s: --loadhyprms can be compbined only with GPR\n",
+                (const char*)GetProgramName());
+        IsError = true;
+    }
+    if( IsOptLoadHyprmsSet() && IsOptSigmaF2Set() ){
+        if(IsError == false) fprintf(stderr,"\n");
+        fprintf(stderr,"%s: --loadhyprms is mutually exclusive with --sigmaf2\n",
+                (const char*)GetProgramName());
+        IsError = true;
+    }
+    if( IsOptLoadHyprmsSet() && IsOptNCorrSet() ){
+        if(IsError == false) fprintf(stderr,"\n");
+        fprintf(stderr,"%s: --loadhyprms is mutually exclusive with --ncorr\n",
+                (const char*)GetProgramName());
+        IsError = true;
+    }
+    if( IsOptLoadHyprmsSet() && IsOptWFacSet() ){
+        if(IsError == false) fprintf(stderr,"\n");
+        fprintf(stderr,"%s: --loadhyprms is mutually exclusive with --wfac\n",
                 (const char*)GetProgramName());
         IsError = true;
     }
@@ -238,9 +225,9 @@ int CABFIntOptions::CheckOptions(void)
                 (const char*)GetProgramName());
         IsError = true;
     }
-    if( IsOptGlueingFESSet() && ((GetOptMethod() != "rbf")&&(GetOptMethod() != "gpr")) ){
+    if( IsOptGlueingFactorSet() && ((GetOptMethod() != "rbf")&&(GetOptMethod() != "gpr")) ){
         if(IsError == false) fprintf(stderr,"\n");
-        fprintf(stderr,"%s: --gluefes can be combined only with RBF or GPR\n",
+        fprintf(stderr,"%s: --glueing can be combined only with RBF or GPR\n",
                 (const char*)GetProgramName());
         IsError = true;
     }

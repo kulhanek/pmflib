@@ -1,11 +1,9 @@
-#ifndef CABFIntegrateH
-#define CABFIntegrateH
+#ifndef CABFOptGPRHyprmsH
+#define CABFOptGPRHyprmsH
 // =============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
 //    Copyright (C) 2019 Petr Kulhanek, kulhanek@chemi.muni.cz
-//    Copyright (C) 2008 Martin Petrek, petrek@chemi.muni.cz
-//                       Petr Kulhanek, kulhanek@enzim.hu
 //
 //     This program is free software; you can redistribute it and/or modify
 //     it under the terms of the GNU General Public License as published by
@@ -22,21 +20,22 @@
 //     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 // =============================================================================
 
-#include "ABFIntOptions.hpp"
+#include "ABFOptGPRHyprmsOptions.hpp"
 #include <ABFAccumulator.hpp>
 #include <VerboseStr.hpp>
 #include <TerminalStr.hpp>
 #include <StdIOFile.hpp>
 #include <SmallTimeAndDate.hpp>
 #include <ABFIntegratorGPR.hpp>
+#include <vector>
 
 //------------------------------------------------------------------------------
 
 /// utility to integrate ABF accumulator
 
-class CABFIntegrate {
+class CABFOptGPRHyprms {
 public:
-    CABFIntegrate(void);
+    CABFOptGPRHyprms(void);
 
 // main methods ---------------------------------------------------------------
     /// init options
@@ -50,37 +49,48 @@ public:
 
 // section of private data ----------------------------------------------------
 private:
-    CABFIntOptions      Options;
-    CStdIOFile          InputFile;
-    CStdIOFile          OutputFile;
-    CABFAccumulator     Accumulator;
-    CEnergySurface      FES;
-    CSmallTimeAndDate   StartTime;
-    CSimpleVector<int>  FFSeeds;
-    CSimpleVector<int>  IPos;
-    CSimpleVector<int>  TPos;
+    CABFOptGPRHyprmsOptions Options;
+    CStdIOFile              InputFile;
+    CStdIOFile              OutputFile;
+    CABFAccumulator         Accumulator;
+    CEnergySurface          FES;
+    CSmallTimeAndDate       StartTime;
+
+    double                  SigmaF2;
+    double                  NCorr;
+    CSimpleVector<double>   WFac;
+
+// L-BFGS setup
+    int                     NumOfCorrections;
+    bool                    SigmaF2Enabled;
+    bool                    NCorrEnabled;
+    std::vector<bool>       WFacEnabled;
+    int                     NumOfPrms;
+    int                     NumOfOptPrms;
+    CSimpleVector<double>   Hyprms;
+    CSimpleVector<double>   HyprmsGrd;
+    CSimpleVector<double>   Work;
+    CSimpleVector<double>   TmpXG;
+    double                  logML;
+
+// helper
+    std::vector<bool>       HyprmsEnabled;
 
     // output ------------------------------------
-    CTerminalStr        Console;
-    CVerboseStr         vout;
-    CSmallString        ABFAccuName;
-    CSmallString        FEOutputName;
-    CSmallString        FullFEOutputName;
+    CTerminalStr            Console;
+    CVerboseStr             vout;
 
-    void PrepareAccumulatorI(void);
-    void PrepareAccumulatorII(void);
     void PrintSampledStat(void);
-    void FloodFillTest(void);
-    bool InstallNewSeed(int seedid);
-    int  FillSeed(int seedid);
-    void GetTPoint(CSimpleVector<int>& ipos,int d,CSimpleVector<int>& tpos);
-    bool IntegrateForMFZScore(int pass);
-    bool IntegrateForEcut(void);
-    bool Integrate(void);
-    void WriteHeader(void);
-    void GlueingFES(int factor);
-    void PrintGPRHyprms(FILE* p_fout);
-    void LoadGPRHyprms(CABFIntegratorGPR& gpr);
+    void InitOptimizer(void);
+    void Test(void);
+    void Optimize(void);
+    void RunGPRAnalytical(void);
+    void RunGPRNumerical(void);
+    void WriteResults(int istep);
+    bool WriteHyperPrms(FILE* p_fout);
+
+    void    ScatterHyprms(CSimpleVector<double>& hyprsm);
+    double  GetLogML(CABFIntegratorGPR& gpr);
 };
 
 //------------------------------------------------------------------------------

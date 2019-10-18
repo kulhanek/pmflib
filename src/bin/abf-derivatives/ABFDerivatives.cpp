@@ -136,7 +136,7 @@ bool CABFDerivatives::Run(void)
         fprintf(OutputFile,"# Sample limit          : %d\n",Options.GetOptLimit());
         fprintf(OutputFile,"# Include std. dev.     : %s\n",(const char*)bool_to_str(Options.GetOptSigma()));
         fprintf(OutputFile,"# Include std. err.     : %s\n",(const char*)bool_to_str(Options.GetOptError()));
-        fprintf(OutputFile,"# Number of corr. sam.  : %5.3f\n",Options.GetOptNCorr());
+        fprintf(OutputFile,"# NCorr                 : %5.3f\n",Options.GetOptNCorr());
     }
 
 // print samples
