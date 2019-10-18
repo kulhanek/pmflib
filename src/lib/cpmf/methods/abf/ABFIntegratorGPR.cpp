@@ -635,13 +635,18 @@ bool CABFIntegratorGPR::TrainGP(CVerboseStr& vout)
     switch(Method){
         case(EGPRINV_LU):
             vout << "   Inverting K+Sigma by LU ..." << endl;
-            result = CSciLapack::inv1(K,logdetK);
+            result = CSciLapack::invLU(K,logdetK);
+            if( result != 0 ) return(false);
+            break;
+        case(EGPRINV_LL):
+            vout << "   Inverting K+Sigma by LL ..." << endl;
+            result = CSciLapack::invLL(K,logdetK);
             if( result != 0 ) return(false);
             break;
         case(EGPRINV_SVD):{
             vout << "   Inverting K+Sigma by SVD (divide and conquer driver) ..." << endl;
             int rank = 0;
-            result = CSciLapack::inv3(K,logdetK,RCond,rank);
+            result = CSciLapack::invSVD2(K,logdetK,RCond,rank);
             vout << "   Rank = " << rank << "; Info = " << result << endl;
             if( result != 0 ) return(false);
             }
@@ -649,7 +654,7 @@ bool CABFIntegratorGPR::TrainGP(CVerboseStr& vout)
         case(EGPRINV_SVD2):{
             vout << "   Inverting K+Sigma by SVD2 (simple driver) ..." << endl;
             int rank = 0;
-            result = CSciLapack::inv2(K,logdetK,RCond,rank);
+            result = CSciLapack::invSVD1(K,logdetK,RCond,rank);
             vout << "   Rank = " << rank << "; Info = " << result << endl;
             if( result != 0 ) return(false);
             }

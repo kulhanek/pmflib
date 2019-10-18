@@ -92,8 +92,10 @@ public:
                 'a',                           /* short option name */
                 "lmethod",                      /* long option name */
                 "NAME",                           /* parametr name */
-                "Linear algebra method for LLS solution or matrix inversion. Supported algorithms are: default, svd (SVD - singular value decomposition, divide and conquer driver), svd2 (SVD - singular value decomposition, simple driver ), qr (QR factorization), lu (LU factorization). "
-                "Possible combinations are: RFD(LU,default), RFD2(QR,SVD,default), RBF(QR,SVD,default), and GPR(LU,SVD,SVD2,default).")   /* option description */
+                "Linear algebra method for matrix inversion. Supported algorithms are: "
+                "default, svd (SVD - singular value decomposition, divide and conquer driver), "
+                "svd2 (SVD - singular value decomposition, simple driver), lu (LU factorization), "
+                "and ll (LL - Cholesky factorization).")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(double,                           /* option type */
                 RCond,                        /* option name */

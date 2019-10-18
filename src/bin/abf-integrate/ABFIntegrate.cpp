@@ -570,6 +570,8 @@ bool CABFIntegrate::IntegrateForMFZScore(int pass)
                 integrator.SetINVMehod(EGPRINV_SVD2);
             } else if( Options.GetOptLAMethod() == "lu" ) {
                 integrator.SetINVMehod(EGPRINV_LU);
+            } else if( Options.GetOptLAMethod() == "ll" ) {
+                integrator.SetINVMehod(EGPRINV_LL);
             } else if( Options.GetOptLAMethod() == "default" ) {
                 // nothing to do - use default method set in constructor of integrator
             } else {
@@ -706,6 +708,8 @@ bool CABFIntegrate::IntegrateForEcut(void)
                 integrator.SetINVMehod(EGPRINV_SVD2);
             } else if( Options.GetOptLAMethod() == "lu" ) {
                 integrator.SetINVMehod(EGPRINV_LU);
+            } else if( Options.GetOptLAMethod() == "ll" ) {
+                integrator.SetINVMehod(EGPRINV_LL);
             } else if( Options.GetOptLAMethod() == "default" ) {
                 // nothing to do - use default method set in constructor of integrator
             } else {
@@ -839,6 +843,8 @@ bool CABFIntegrate::Integrate()
                 integrator.SetINVMehod(EGPRINV_SVD2);
         } else if( Options.GetOptLAMethod() == "lu" ) {
             integrator.SetINVMehod(EGPRINV_LU);
+        } else if( Options.GetOptLAMethod() == "ll" ) {
+            integrator.SetINVMehod(EGPRINV_LL);
         } else if( Options.GetOptLAMethod() == "default" ) {
             // nothing to do - use default method set in constructor of integrator
         } else {

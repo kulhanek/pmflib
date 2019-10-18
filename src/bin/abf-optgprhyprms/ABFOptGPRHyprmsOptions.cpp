@@ -46,7 +46,7 @@ int CABFOptGPRHyprmsOptions::CheckOptions(void)
 
     if( (GetOptLAMethod() != "svd") &&
         (GetOptLAMethod() != "svd2") &&
-        (GetOptLAMethod() != "qr") &&
+        (GetOptLAMethod() != "ll") &&
         (GetOptLAMethod() != "lu") &&
         (GetOptLAMethod() != "default") ) {
         if(IsError == false) fprintf(stderr,"\n");

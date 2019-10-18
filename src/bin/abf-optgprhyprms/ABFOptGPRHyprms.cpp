@@ -579,6 +579,8 @@ double CABFOptGPRHyprms::GetLogML(CABFIntegratorGPR& gpr)
             gpr.SetINVMehod(EGPRINV_SVD2);
     } else if( Options.GetOptLAMethod() == "lu" ) {
         gpr.SetINVMehod(EGPRINV_LU);
+    } else if( Options.GetOptLAMethod() == "ll" ) {
+        gpr.SetINVMehod(EGPRINV_LL);
     } else if( Options.GetOptLAMethod() == "default" ) {
         // nothing to do - use default method set in constructor of integrator
     } else {

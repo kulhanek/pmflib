@@ -36,6 +36,7 @@ enum EGPRINVMethod {
     EGPRINV_LU      = 1,    // DGETRI/DGETRF (via LU factorization)
     EGPRINV_SVD     = 2,    // via SVD factorization, divide and conquer driver
     EGPRINV_SVD2    = 3,    // via SVD factorization, simple driver
+    EGPRINV_LL      = 4,    // DPOTRF/DPOTRI (via LL factorization)
 };
 
 //------------------------------------------------------------------------------
