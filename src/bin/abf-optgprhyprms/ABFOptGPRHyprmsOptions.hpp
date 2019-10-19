@@ -183,7 +183,7 @@ public:
     //----------------------------------------------------------------------
     CSO_MAP_OPT(double,                           /* option type */
                 TermEps,                        /* option name */
-                1e-7,                          /* default value */
+                1e-6,                          /* default value */
                 false,                          /* is option mandatory */
                 0,                           /* short option name */
                 "termeps",                      /* long option name */
