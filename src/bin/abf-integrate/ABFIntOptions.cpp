@@ -136,35 +136,42 @@ int CABFIntOptions::CheckOptions(void)
 
     if( IsOptSigmaF2Set() && ( (GetOptMethod() != "gpr") && (GetOptEcutMethod() != "gpr")) ){
         if(IsError == false) fprintf(stderr,"\n");
-        fprintf(stderr,"%s: sigmaf2 can be set only for GPR method\n",
+        fprintf(stderr,"%s: --sigmaf2 can be set only for GPR method\n",
                 (const char*)GetProgramName());
         IsError = true;
     }
 
     if( IsOptNoEnergySet() && (GetOptMethod() != "gpr") ){
         if(IsError == false) fprintf(stderr,"\n");
-        fprintf(stderr,"%s: noenergy can be set only for GPR method\n",
+        fprintf(stderr,"%s: --noenergy can be set only for GPR method\n",
+                (const char*)GetProgramName());
+        IsError = true;
+    }
+
+    if( IsOptNumericKSet() && (GetOptMethod() != "gpr") ){
+        if(IsError == false) fprintf(stderr,"\n");
+        fprintf(stderr,"%s: --numericK can be set only for GPR method\n",
                 (const char*)GetProgramName());
         IsError = true;
     }
 
     if( IsOptRFacSet() && (GetOptMethod() != "rbf") ){
         if(IsError == false) fprintf(stderr,"\n");
-        fprintf(stderr,"%s: rfac can be set only for RBF method\n",
+        fprintf(stderr,"%s: --rfac can be set only for RBF method\n",
                 (const char*)GetProgramName());
         IsError = true;
     }
 
     if( IsOptOverhangSet() && (GetOptMethod() != "rbf") ){
         if(IsError == false) fprintf(stderr,"\n");
-        fprintf(stderr,"%s: overhang can be set only for RBF method\n",
+        fprintf(stderr,"%s: --overhang can be set only for RBF method\n",
                 (const char*)GetProgramName());
         IsError = true;
     }
 
     if( IsOptWFacSet() && ( (GetOptMethod() != "rbf") && (GetOptMethod() != "gpr")) ){
         if(IsError == false) fprintf(stderr,"\n");
-        fprintf(stderr,"%s: wfac can be set only for RBF or GPR method\n",
+        fprintf(stderr,"%s: --wfac can be set only for RBF or GPR method\n",
                 (const char*)GetProgramName());
         IsError = true;
     }
@@ -229,6 +236,12 @@ int CABFIntOptions::CheckOptions(void)
     if( IsOptGlueingFactorSet() && ((GetOptMethod() != "rbf")&&(GetOptMethod() != "gpr")) ){
         if(IsError == false) fprintf(stderr,"\n");
         fprintf(stderr,"%s: --glueing can be combined only with RBF or GPR\n",
+                (const char*)GetProgramName());
+        IsError = true;
+    }
+    if( IsOptGlueHolesSet() && ((GetOptMethod() != "rbf")&&(GetOptMethod() != "gpr")) ){
+        if(IsError == false) fprintf(stderr,"\n");
+        fprintf(stderr,"%s: --glueholes can be combined only with RBF or GPR\n",
                 (const char*)GetProgramName());
         IsError = true;
     }

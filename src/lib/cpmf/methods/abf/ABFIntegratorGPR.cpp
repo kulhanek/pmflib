@@ -180,6 +180,12 @@ void CABFIntegratorGPR::SetIncludeError(bool set)
     IncludeError = set;
 }
 
+//------------------------------------------------------------------------------
+
+void CABFIntegratorGPR::SetNumericK(bool set)
+{
+    UseAnalyticalK = !set;
+}
 
 //------------------------------------------------------------------------------
 
@@ -493,10 +499,7 @@ bool CABFIntegratorGPR::Integrate(CVerboseStr& vout,bool nostat)
         ind++;
     }
 
-    // load data to FES
-//    rk.CreateVector(GPRSize);
-//    lk.CreateVector(GPRSize);
-//    ik.CreateVector(GPRSize);
+    // init GPR weights
     GPRModel.CreateVector(GPRSize);
 
     // print hyperparameters
@@ -555,7 +558,12 @@ void CABFIntegratorGPR::PrintExecInfo(CVerboseStr& vout)
 
 bool CABFIntegratorGPR::TrainGP(CVerboseStr& vout)
 {
-    vout << "   Creating K+Sigma and Y ..." << endl;
+    if( UseAnalyticalK ) {
+        vout << "   Creating K+Sigma and Y (analytical differentation) ..." << endl;
+    } else {
+        vout << "   Creating K+Sigma and Y (numeric differentation) ..." << endl;
+    }
+
     vout << "   Dim: " << GPRSize << " x " << GPRSize << endl;
 
     K.CreateMatrix(GPRSize,GPRSize);
@@ -1180,9 +1188,9 @@ double CABFIntegratorGPR::GetCov(CSimpleVector<double>& lpos,CSimpleVector<doubl
     CSimpleVector<double> ik;
 
     ipos.CreateVector(NCVs);
-    rk.CreateVector(NCVs);
-    lk.CreateVector(NCVs);
-    ik.CreateVector(NCVs);
+    rk.CreateVector(GPRSize);
+    lk.CreateVector(GPRSize);
+    ik.CreateVector(GPRSize);
 
     #pragma omp parallel for firstprivate(ipos)
     for(int indi=0; indi < NumOfUsedBins; indi++){
@@ -1231,13 +1239,13 @@ double CABFIntegratorGPR::GetCov(CSimpleVector<double>& lpos,CSimpleVector<doubl
 
 double CABFIntegratorGPR::GetVar(CSimpleVector<double>& lpos)
 {
-    CSimpleVector<double> ipos;
     CSimpleVector<double> lk;
     CSimpleVector<double> ik;
+    CSimpleVector<double> ipos;
 
-    lk.CreateVector(NCVs);
+    lk.CreateVector(GPRSize);
+    ik.CreateVector(GPRSize);
     ipos.CreateVector(NCVs);
-    ik.CreateVector(NCVs);
 
     #pragma omp parallel for firstprivate(ipos)
     for(int indi=0; indi < NumOfUsedBins; indi++){

@@ -90,6 +90,7 @@ public:
     CSO_OPT(int,Overhang)
     CSO_OPT(bool,IncludeGluedRegions)
     CSO_OPT(int,GlueingFactor)
+    CSO_OPT(bool,GlueHoles)
     CSO_OPT(bool,Periodicity)
     CSO_OPT(CSmallString,GlobalMin)
     CSO_OPT(double,Offset)
@@ -107,6 +108,7 @@ public:
     CSO_OPT(CSmallString,OEFormat)
     CSO_OPT(CSmallString,MFInfo)
     CSO_OPT(CSmallString,SaveABF)
+    CSO_OPT(bool,NumericK)
     CSO_OPT(bool,Verbose)
     CSO_OPT(bool,Version)
     CSO_OPT(bool,Help)
@@ -278,6 +280,15 @@ public:
                 "RBF+GPR: Calculate energy also for unsampled bins in close vicinity to sampled ones.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(bool,                           /* option type */
+                GlueHoles,                        /* option name */
+                0,                          /* default value */
+                false,                          /* is option mandatory */
+                0,                           /* short option name */
+                "glueholes",                      /* long option name */
+                NULL,                           /* parametr name */
+                "RBF+GPR: Calculate energy also for unsampled regions inside the FES.")   /* option description */
+    //----------------------------------------------------------------------
+    CSO_MAP_OPT(bool,                           /* option type */
                 Periodicity,                        /* option name */
                 false,                          /* default value */
                 false,                          /* is option mandatory */
@@ -429,6 +440,15 @@ public:
                 "fe",                      /* long option name */
                 "FORMAT",                           /* parametr name */
                 "Output FORMAT, which will be used to print values of free energy.")   /* option description */
+    //----------------------------------------------------------------------
+    CSO_MAP_OPT(bool,                           /* option type */
+                NumericK,                        /* option name */
+                false,                          /* default value */
+                false,                          /* is option mandatory */
+                0,                           /* short option name */
+                "numericK",                      /* long option name */
+                NULL,                           /* parametr name */
+                "GPR: Calculate kernel matrix by numerical differentation (for testing only).")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(bool,                           /* option type */
                 Verbose,                        /* option name */

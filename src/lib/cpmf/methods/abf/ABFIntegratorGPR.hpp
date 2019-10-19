@@ -78,6 +78,9 @@ public:
     /// skip energy calculation, it also disables errors
     void SetNoEnergy(bool set);
 
+    /// switch to numerical evaluation of kernel matrix
+    void SetNumericK(bool set);
+
     /// set algorithm for LLS
     void SetINVMehod(EGPRINVMethod set);
 
