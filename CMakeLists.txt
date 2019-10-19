@@ -151,6 +151,12 @@ INCLUDE(IntelCDK)
 # setup MPI if available
 INCLUDE(OpenMPI)
 
+# if parallel environment is available
+#IF(MPI_ENABLED)
+    # setup OpenMP for cpmf if available
+    FIND_PACKAGE(OpenMP)
+#ENDIF(MPI_ENABLED)
+
 # ==============================================================================
 # output directories -----------------------------------------------------------
 # ==============================================================================
@@ -187,7 +193,7 @@ ENDIF(NOT DEFINED COMPOSITE_PROJECT)
 IF(NOT DEFINED COMPOSITE_PROJECT)
     # C++ options
     SET(CMAKE_CXX_FLAGS_RELEASE "-O2")
-    SET(CMAKE_CXX_FLAGS_DEBUG "-O0 -g -Wall -Werror -pedantic-errors -Wundef -Wno-long-long")
+    SET(CMAKE_CXX_FLAGS_DEBUG "-O0 -g -Wall -Wno-unknown-pragmas -Werror -pedantic-errors -Wundef -Wno-long-long")
 
     # get the name of fortran compiler
     get_filename_component(FCOMP_NAME ${CMAKE_Fortran_COMPILER} NAME_WE)

@@ -57,6 +57,10 @@ SET(CPMF_SRC
         ${CPMF_METHODS_SRC} ${CPMF_MASK_SRC} ${CPMF_NETWORK_SRC}
         )
 
+IF(OpenMP_FOUND)
+    ADD_DEFINITIONS(${OpenMP_CXX_FLAGS})
+ENDIF(OpenMP_FOUND)
+
 #-------------------------------------------------------------------------------
 
 # create static library --------------------------------------------------------
@@ -71,7 +75,11 @@ ENDIF(LIBS_STATIC)
 IF(LIBS_SHARED)
     ADD_DEFINITIONS(-DPMFLIB_BUILDING_DLL)
     ADD_LIBRARY(cpmf_shared SHARED ${CPMF_SRC})
+IF(OpenMP_FOUND)
+    TARGET_LINK_LIBRARIES(cpmf_shared OpenMP::OpenMP_CXX ${CPMF_LIBRARIES_DEPS})
+ELSE(OpenMP_FOUND)
     TARGET_LINK_LIBRARIES(cpmf_shared ${CPMF_LIBRARIES_DEPS})
+ENDIF(OpenMP_FOUND)
     SET_TARGET_PROPERTIES(cpmf_shared PROPERTIES
                             OUTPUT_NAME cpmf
                             CLEAN_DIRECT_OUTPUT 1

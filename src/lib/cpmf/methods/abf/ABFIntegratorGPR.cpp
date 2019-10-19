@@ -32,6 +32,16 @@
 #include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string/classification.hpp>
 
+// OpenMP support
+#if defined(_OPENMP)
+#include <omp.h>
+#endif
+
+// MKL support
+#ifdef HAVE_MKL_PARALLEL
+#include <mkl.h>
+#endif
+
 //------------------------------------------------------------------------------
 
 using namespace std;
@@ -265,6 +275,7 @@ void CABFIntegratorGPR::GetLogMLDerivatives(const std::vector<bool>& flags,CSimp
 
         // calc trace
         double tr = 0.0;
+        #pragma omp parallel for reduction(+:tr)
         for(int i=0; i < GPRSize; i++){
             for(int j=0; j < GPRSize; j++){
                 tr += (ATA[i][j]-K[i][j])*Kder[j][i];
@@ -298,6 +309,7 @@ void CABFIntegratorGPR::InitHyprmsOpt(void)
     Kder.CreateMatrix(GPRSize,GPRSize);
 
     // calc ATA matrix
+    #pragma omp parallel for
     for(int i=0; i < GPRSize; i++){
         for(int j=0; j < GPRSize; j++){
             ATA[i][j] = GPRModel[i]*GPRModel[j];
@@ -311,15 +323,14 @@ void CABFIntegratorGPR::CalcKderWRTSigmaF2(void)
 {
     Kder.SetZero();
 
-    int indi = 0;
-    for(int i=0; i < Accumulator->GetNumberOfBins(); i++){
-        if( Accumulator->GetNumberOfABFSamples(i) <= 0 ) continue; // not sampled
+    #pragma omp parallel for firstprivate(ipos,jpos)
+    for(int indi=0; indi < NumOfUsedBins; indi++){
+        int i = SampledMap[indi];
 
         Accumulator->GetPoint(i,ipos);
 
-        int indj = 0;
-        for(int j=0; j < Accumulator->GetNumberOfBins(); j++){
-            if( Accumulator->GetNumberOfABFSamples(j) <= 0 ) continue; // not sampled
+        for(int indj=0; indj < NumOfUsedBins; indj++){
+            int j = SampledMap[indj];
 
             Accumulator->GetPoint(j,jpos);
 
@@ -343,9 +354,7 @@ void CABFIntegratorGPR::CalcKderWRTSigmaF2(void)
                     }
                 }
             }
-            indj++;
         }
-        indi++;
     }
 }
 
@@ -355,16 +364,15 @@ void CABFIntegratorGPR::CalcKderWRTNCorr(void)
 {
     Kder.SetZero();
 
-    int indi = 0.0;
-    for(int i=0; i < Accumulator->GetNumberOfBins(); i++){
-        if( Accumulator->GetNumberOfABFSamples(i) <= 0 ) continue; // not sampled
+    #pragma omp parallel for
+    for(int indi=0; indi < NumOfUsedBins; indi++){
+        int i = SampledMap[indi];
 
         for(int ii=0; ii < NCVs; ii++){
             // get mean force and its error
             double er = Accumulator->GetValue(ii,i,EABF_MEAN_FORCE_ERROR);
             Kder[indi*NCVs+ii][indi*NCVs+ii] += er*er;
         }
-        indi++;
     }
 }
 
@@ -379,15 +387,14 @@ void CABFIntegratorGPR::CalcKderWRTWFac(int cv)
     double wd5 = wd3/CVLengths2[cv];
 
     // create kernel matrix
-    int indi = 0;
-    for(int i=0; i < Accumulator->GetNumberOfBins(); i++){
-        if( Accumulator->GetNumberOfABFSamples(i) <= 0 ) continue; // not sampled
+    #pragma omp parallel for firstprivate(ipos,jpos)
+    for(int indi=0; indi < NumOfUsedBins; indi++){
+        int i = SampledMap[indi];
 
         Accumulator->GetPoint(i,ipos);
 
-        int indj = 0;
-        for(int j=0; j < Accumulator->GetNumberOfBins(); j++){
-            if( Accumulator->GetNumberOfABFSamples(j) <= 0 ) continue; // not sampled
+        for(int indj=0; indj < NumOfUsedBins; indj++){
+            int j = SampledMap[indj];
 
             Accumulator->GetPoint(j,jpos);
 
@@ -426,9 +433,7 @@ void CABFIntegratorGPR::CalcKderWRTWFac(int cv)
                     }
                 }
             }
-            indj++;
         }
-        indi++;
     }
 }
 
@@ -438,6 +443,8 @@ void CABFIntegratorGPR::CalcKderWRTWFac(int cv)
 
 bool CABFIntegratorGPR::Integrate(CVerboseStr& vout,bool nostat)
 {
+    PrintExecInfo(vout);
+
     if( Accumulator == NULL ) {
         RUNTIME_ERROR("ABF accumulator is not set");
     }
@@ -465,12 +472,21 @@ bool CABFIntegratorGPR::Integrate(CVerboseStr& vout,bool nostat)
     }
 
     // number of data points
-    GPRSize = 0;
+    NumOfUsedBins = 0;
     for(int i=0; i < Accumulator->GetNumberOfBins(); i++){
-        if( Accumulator->GetNumberOfABFSamples(i) > 0 ) GPRSize++;
+        if( Accumulator->GetNumberOfABFSamples(i) > 0 ) NumOfUsedBins++;
     }
     NCVs = Accumulator->GetNumberOfCoords();
-    GPRSize = GPRSize*NCVs;
+    GPRSize = NumOfUsedBins*NCVs;
+
+    // create sampled map
+    SampledMap.CreateVector(NumOfUsedBins);
+    int ind = 0;
+    for(int i=0; i < Accumulator->GetNumberOfBins(); i++){
+        if( Accumulator->GetNumberOfABFSamples(i) <= 0 ) continue;
+        SampledMap[ind] = i;
+        ind++;
+    }
 
     // load data to FES
     ipos.CreateVector(NCVs);
@@ -504,92 +520,33 @@ bool CABFIntegratorGPR::Integrate(CVerboseStr& vout,bool nostat)
         vout << "   logML = " << setprecision(5) << GetLogMarginalLikelihood() << endl;
     }
 
+    // finalize FES if requested
     if( ! NoEnergy ){
-        vout << "   Calculating FES ..." << endl;
-
-        // calculate energies
-        double glb_min = 0.0;
-        if( GlobalMinSet ){
-            // gpos.CreateVector(NCVs) - is created in  SetGlobalMin
-       //   vout << "   Calculating FES ..." << endl;
-            vout << "       Global minima provided at: ";
-            vout << gpos[0];
-            for(int i=1; i < Accumulator->GetNumberOfCoords(); i++){
-                vout << "x" << gpos[i];
-            }
-            glb_min = GetValue(gpos);
-            vout << " (" << glb_min << ")" << endl;
-
-            for(int i=0; i < Accumulator->GetNumberOfBins(); i++){
-                int samples = Accumulator->GetNumberOfABFSamples(i);
-                FES->SetNumOfSamples(i,samples);
-                double value = 0.0;
-                FES->SetEnergy(i,value);
-                if( IncludeGluedBins ){
-                    if( samples == 0 ) continue;
-                } else {
-                    if( samples <= 0 ) continue;
-                }
-                Accumulator->GetPoint(i,jpos);
-                value = GetValue(jpos);
-                FES->SetEnergy(i,value);
-            }
-
-        } else {
-            gpos.CreateVector(NCVs);
-            bool   first = true;
-            for(int i=0; i < Accumulator->GetNumberOfBins(); i++){
-                int samples = Accumulator->GetNumberOfABFSamples(i);
-                FES->SetNumOfSamples(i,samples);
-                double value = 0.0;
-                FES->SetEnergy(i,value);
-                if( IncludeGluedBins ){
-                    if( samples == 0 ) continue;
-                } else {
-                    if( samples <= 0 ) continue;
-                }
-                Accumulator->GetPoint(i,jpos);
-                value = GetValue(jpos);
-                FES->SetEnergy(i,value);
-                if( first || (glb_min > value) ){
-                    glb_min = value;
-                    first = false;
-                    gpos = jpos;
-                }
-            }
-       //   vout << "   Calculating FES ..." << endl;
-            vout << "       Global minima found at: ";
-            vout << gpos[0];
-            for(int i=1; i < Accumulator->GetNumberOfCoords(); i++){
-                vout << "x" << gpos[i];
-            }
-            vout << " (" << glb_min << ")" << endl;
-        }
-
-        // move to global minima
-        for(int i=0; i < FES->GetNumberOfPoints(); i++) {
-            if( IncludeGluedBins ){
-                if( FES->GetNumOfSamples(i) == 0 ) continue;
-            } else {
-                if( FES->GetNumOfSamples(i) <= 0 ) continue;
-            }
-            double value = 0.0;
-            value = FES->GetEnergy(i);
-            value = value - glb_min;
-            FES->SetEnergy(i,value);
-        }
-
-        vout << "   SigmaF2 = " << setprecision(5) << FES->GetSigmaF2() << endl;
-        if( IncludeGluedBins ){
-            vout << "   SigmaF2 (including glued bins) = " << setprecision(5) << FES->GetSigmaF2(true) << endl;
-        }
-
+        CalculateEnergy(vout);
         if( IncludeError ){
             CalculateErrors(gpos,vout);
         }
     }
 
     return(true);
+}
+
+//------------------------------------------------------------------------------
+
+void CABFIntegratorGPR::PrintExecInfo(CVerboseStr& vout)
+{
+#if defined(_OPENMP)
+    int ncpus = omp_get_max_threads();
+    vout << "   OpenMP: Number of threads: " << ncpus << endl;
+#else
+    vout << "   No OpenMP: Number of threads: 1" << endl;
+#endif
+#ifdef HAVE_MKL_PARALLEL
+    int ncpus = mkl_get_max_threads();
+    vout << "   Lapack/Blas via MKL: Number of threads: " << ncpus << endl;
+#else
+    vout << "   Native Lapack/Blas: Number of threads: 1" << endl;
+#endif
 }
 
 //==============================================================================
@@ -611,7 +568,7 @@ bool CABFIntegratorGPR::TrainGP(CVerboseStr& vout)
         NumericalK();
     }
 
-//// debug
+//// debug - print K+sigma matrix
 //    for(int i=0; i < GPRSize; i++){
 //        for(int j=0; j < GPRSize; j++){
 //            vout << format("%12.5e ")%K[i][j];
@@ -620,15 +577,16 @@ bool CABFIntegratorGPR::TrainGP(CVerboseStr& vout)
 //    }
 
 // construct Y
-    int indi = 0.0;
-    for(int i=0; i < Accumulator->GetNumberOfBins(); i++){
-        if( Accumulator->GetNumberOfABFSamples(i) <= 0 ) continue; // not sampled
+    #pragma omp parallel for
+    for(int indi=0; indi < NumOfUsedBins; indi++){
+        int i = SampledMap[indi];
         for(int ii=0; ii < NCVs; ii++){
             double mf = Accumulator->GetValue(ii,i,EABF_MEAN_FORCE_VALUE);
             Y[indi*NCVs+ii] = mf;
         }
-        indi++;
     }
+
+
 
 // inverting the K+Sigma
     int result = 0;
@@ -677,15 +635,14 @@ void CABFIntegratorGPR::AnalyticalK(void)
     K.SetZero();
 
     // main kernel matrix
-    int indi = 0;
-    for(int i=0; i < Accumulator->GetNumberOfBins(); i++){
-        if( Accumulator->GetNumberOfABFSamples(i) <= 0 ) continue; // not sampled
+    #pragma omp parallel for firstprivate(ipos,jpos)
+    for(int indi=0; indi < NumOfUsedBins; indi++){
+        int i = SampledMap[indi];
 
         Accumulator->GetPoint(i,ipos);
 
-        int indj = 0;
-        for(int j=0; j < Accumulator->GetNumberOfBins(); j++){
-            if( Accumulator->GetNumberOfABFSamples(j) <= 0 ) continue; // not sampled
+        for(int indj=0; indj < NumOfUsedBins; indj++){
+            int j = SampledMap[indj];
 
             Accumulator->GetPoint(j,jpos);
 
@@ -710,20 +667,17 @@ void CABFIntegratorGPR::AnalyticalK(void)
                     }
                 }
             }
-            indj++;
         }
-        indi++;
     }
 
 // error of data points
-    indi = 0.0;
-    for(int i=0; i < Accumulator->GetNumberOfBins(); i++){
-        if( Accumulator->GetNumberOfABFSamples(i) <= 0 ) continue; // not sampled
+    #pragma omp parallel for
+    for(int indi=0; indi < NumOfUsedBins; indi++){
+        int i = SampledMap[indi];
         for(int ii=0; ii < NCVs; ii++){
             double er = Accumulator->GetValue(ii,i,EABF_MEAN_FORCE_ERROR);
             K[indi*NCVs+ii][indi*NCVs+ii] += er*er*NCorr;
         }
-        indi++;
     }
 }
 
@@ -735,15 +689,13 @@ void CABFIntegratorGPR::NumericalK(void)
     kblock.CreateMatrix(NCVs,NCVs);
 
     // main kernel matrix
-    int indi = 0;
-    for(int i=0; i < Accumulator->GetNumberOfBins(); i++){
-        if( Accumulator->GetNumberOfABFSamples(i) <= 0 ) continue; // not sampled
+    for(int indi=0; indi < NumOfUsedBins; indi++){
+        int i = SampledMap[indi];
 
         Accumulator->GetPoint(i,ipos);
 
-        int indj = 0;
-        for(int j=0; j < Accumulator->GetNumberOfBins(); j++){
-            if( Accumulator->GetNumberOfABFSamples(j) <= 0 ) continue; // not sampled
+        for(int indj=0; indj < NumOfUsedBins; indj++){
+            int j = SampledMap[indj];
 
             Accumulator->GetPoint(j,jpos);
 
@@ -756,21 +708,16 @@ void CABFIntegratorGPR::NumericalK(void)
                     K[indi*NCVs+ii][indj*NCVs+jj] = kblock[ii][jj];
                 }
             }
-
-            indj++;
         }
-        indi++;
     }
 
 // error of data points
-    indi = 0.0;
-    for(int i=0; i < Accumulator->GetNumberOfBins(); i++){
-        if( Accumulator->GetNumberOfABFSamples(i) <= 0 ) continue; // not sampled
+    for(int indi=0; indi < NumOfUsedBins; indi++){
+        int i = SampledMap[indi];
         for(int ii=0; ii < NCVs; ii++){
             double er = Accumulator->GetValue(ii,i,EABF_MEAN_FORCE_ERROR);
             K[indi*NCVs+ii][indi*NCVs+ii] += er*er*NCorr;
         }
-        indi++;
     }
 }
 
@@ -838,13 +785,97 @@ double CABFIntegratorGPR::GetKernelValue(CSimpleVector<double>& ip,CSimpleVector
 //------------------------------------------------------------------------------
 //==============================================================================
 
+void CABFIntegratorGPR::CalculateEnergy(CVerboseStr& vout)
+{
+    vout << "   Calculating FES ..." << endl;
+
+    // calculate energies
+    double glb_min = 0.0;
+    if( GlobalMinSet ){
+        // gpos.CreateVector(NCVs) - is created in  SetGlobalMin
+   //   vout << "   Calculating FES ..." << endl;
+        vout << "       Global minima provided at: ";
+        vout << gpos[0];
+        for(int i=1; i < Accumulator->GetNumberOfCoords(); i++){
+            vout << "x" << gpos[i];
+        }
+        glb_min = GetValue(gpos);
+        vout << " (" << glb_min << ")" << endl;
+
+        for(int i=0; i < Accumulator->GetNumberOfBins(); i++){
+            int samples = Accumulator->GetNumberOfABFSamples(i);
+            FES->SetNumOfSamples(i,samples);
+            double value = 0.0;
+            FES->SetEnergy(i,value);
+            if( IncludeGluedBins ){
+                if( samples == 0 ) continue;
+            } else {
+                if( samples <= 0 ) continue;
+            }
+            Accumulator->GetPoint(i,jpos);
+            value = GetValue(jpos);
+            FES->SetEnergy(i,value);
+        }
+
+    } else {
+        gpos.CreateVector(NCVs);
+        bool   first = true;
+        for(int i=0; i < Accumulator->GetNumberOfBins(); i++){
+            int samples = Accumulator->GetNumberOfABFSamples(i);
+            FES->SetNumOfSamples(i,samples);
+            double value = 0.0;
+            FES->SetEnergy(i,value);
+            if( IncludeGluedBins ){
+                if( samples == 0 ) continue;
+            } else {
+                if( samples <= 0 ) continue;
+            }
+            Accumulator->GetPoint(i,jpos);
+            value = GetValue(jpos);
+            FES->SetEnergy(i,value);
+            if( first || (glb_min > value) ){
+                glb_min = value;
+                first = false;
+                gpos = jpos;
+            }
+        }
+   //   vout << "   Calculating FES ..." << endl;
+        vout << "       Global minima found at: ";
+        vout << gpos[0];
+        for(int i=1; i < Accumulator->GetNumberOfCoords(); i++){
+            vout << "x" << gpos[i];
+        }
+        vout << " (" << glb_min << ")" << endl;
+    }
+
+    // move to global minima
+    for(int i=0; i < FES->GetNumberOfPoints(); i++) {
+        if( IncludeGluedBins ){
+            if( FES->GetNumOfSamples(i) == 0 ) continue;
+        } else {
+            if( FES->GetNumOfSamples(i) <= 0 ) continue;
+        }
+        double value = 0.0;
+        value = FES->GetEnergy(i);
+        value = value - glb_min;
+        FES->SetEnergy(i,value);
+    }
+
+    vout << "   SigmaF2 = " << setprecision(5) << FES->GetSigmaF2() << endl;
+    if( IncludeGluedBins ){
+        vout << "   SigmaF2 (including glued bins) = " << setprecision(5) << FES->GetSigmaF2(true) << endl;
+    }
+}
+
+//------------------------------------------------------------------------------
+
 double CABFIntegratorGPR::GetValue(const CSimpleVector<double>& position)
 {
     double energy = 0.0;
 
-    int indi = 0;
-    for(int i=0; i < Accumulator->GetNumberOfBins(); i++){
-        if( Accumulator->GetNumberOfABFSamples(i) <= 0 ) continue; // not sampled
+    #pragma omp parallel for firstprivate(ipos) reduction(+:energy)
+    for(int indi=0; indi < NumOfUsedBins; indi++){
+        int i = SampledMap[indi];
 
         Accumulator->GetPoint(i,ipos);
 
@@ -861,7 +892,6 @@ double CABFIntegratorGPR::GetValue(const CSimpleVector<double>& position)
             double dd = CVLengths2[ii];
             energy += GPRModel[indi*NCVs+ii]*(du/dd)*arg;
         }
-        indi++;
     }
 
     return(energy);
@@ -873,9 +903,9 @@ double CABFIntegratorGPR::GetMeanForce(const CSimpleVector<double>& position,int
 {
     double mf = 0.0;
 
-    int indi = 0;
-    for(int i=0; i < Accumulator->GetNumberOfBins(); i++){
-        if( Accumulator->GetNumberOfABFSamples(i) <= 0 ) continue; // not sampled
+    #pragma omp parallel for firstprivate(ipos) reduction(+:mf)
+    for(int indi=0; indi < NumOfUsedBins; indi++){
+        int i = SampledMap[indi];
 
         Accumulator->GetPoint(i,ipos);
 
@@ -897,7 +927,6 @@ double CABFIntegratorGPR::GetMeanForce(const CSimpleVector<double>& position,int
             }
             mf += GPRModel[indi*NCVs+ii]*der2;
         }
-        indi++;
     }
 
     return(mf);
@@ -1006,9 +1035,8 @@ void CABFIntegratorGPR::FilterByMFZScore(double zscore,CVerboseStr& vout)
     vout << "   Precalculating MF errors ..." << endl;
 
     // precalculate values
-    int indi = 0;
-    for(int i=0; i < Accumulator->GetNumberOfBins(); i++){
-        if( Accumulator->GetNumberOfABFSamples(i) <= 0 ) continue;
+    for(int indi=0; indi < NumOfUsedBins; indi++){
+        int i = SampledMap[indi];
 
         Accumulator->GetPoint(i,jpos);
 
@@ -1017,8 +1045,6 @@ void CABFIntegratorGPR::FilterByMFZScore(double zscore,CVerboseStr& vout)
             diff2 *= diff2;
             mferror2[indi*NCVs+k] = diff2;
         }
-
-        indi++;
     }
 
     vout << "   Searching for MF outliers ..." << endl;
@@ -1033,9 +1059,8 @@ void CABFIntegratorGPR::FilterByMFZScore(double zscore,CVerboseStr& vout)
         sig2.SetZero();
 
         // calc variances - we assume zero mean on errors
-        indi = 0;
-        for(int i=0; i < Accumulator->GetNumberOfBins(); i++){
-            if( Accumulator->GetNumberOfABFSamples(i) <= 0 ) continue;
+        for(int indi=0; indi < NumOfUsedBins; indi++){
+            int i = SampledMap[indi];
 
             if( flags[i] != 0 ) {
                 for(int k=0; k < NCVs; k++){
@@ -1043,7 +1068,6 @@ void CABFIntegratorGPR::FilterByMFZScore(double zscore,CVerboseStr& vout)
                 }
                 count++;
             }
-            indi++;
         }
 
         if( count == 0 ) break;
@@ -1053,9 +1077,8 @@ void CABFIntegratorGPR::FilterByMFZScore(double zscore,CVerboseStr& vout)
 
         // filter
         bool first = true;
-        indi = 0;
-        for(int i=0; i < Accumulator->GetNumberOfBins(); i++){
-            if( Accumulator->GetNumberOfABFSamples(i) <= 0 ) continue;
+        for(int indi=0; indi < NumOfUsedBins; indi++){
+            int i = SampledMap[indi];
 
             if( flags[i] != 0 ){
                 Accumulator->GetPoint(i,jpos);
@@ -1077,8 +1100,6 @@ void CABFIntegratorGPR::FilterByMFZScore(double zscore,CVerboseStr& vout)
 
                 first = false;
             }
-
-            indi++;
         }
 
         for(int k=0; k < NCVs; k++){
@@ -1125,9 +1146,9 @@ double CABFIntegratorGPR::GetLogMarginalLikelihood(void)
 
 double CABFIntegratorGPR::GetCov(CSimpleVector<double>& lpos,CSimpleVector<double>& rpos)
 {
-    int indi = 0;
-    for(int i=0; i < Accumulator->GetNumberOfBins(); i++){
-        if( Accumulator->GetNumberOfABFSamples(i) <= 0 ) continue; // not sampled
+    #pragma omp parallel for firstprivate(ipos)
+    for(int indi=0; indi < NumOfUsedBins; indi++){
+        int i = SampledMap[indi];
 
         Accumulator->GetPoint(i,ipos);
 
@@ -1152,7 +1173,6 @@ double CABFIntegratorGPR::GetCov(CSimpleVector<double>& lpos,CSimpleVector<doubl
             du = Accumulator->GetCoordinate(ii)->GetDifference(rpos[ii],ipos[ii]);
             rk[indi*NCVs + ii] = (du/dd)*argr;
         }
-        indi++;
     }
 
     double cov = 0.0;
@@ -1173,9 +1193,9 @@ double CABFIntegratorGPR::GetCov(CSimpleVector<double>& lpos,CSimpleVector<doubl
 
 double CABFIntegratorGPR::GetVar(CSimpleVector<double>& lpos)
 {
-    int indi = 0;
-    for(int i=0; i < Accumulator->GetNumberOfBins(); i++){
-        if( Accumulator->GetNumberOfABFSamples(i) <= 0 ) continue; // not sampled
+    #pragma omp parallel for firstprivate(ipos)
+    for(int indi=0; indi < NumOfUsedBins; indi++){
+        int i = SampledMap[indi];
 
         Accumulator->GetPoint(i,ipos);
 
@@ -1192,7 +1212,6 @@ double CABFIntegratorGPR::GetVar(CSimpleVector<double>& lpos)
             double dd = CVLengths2[ii];
             lk[indi*NCVs + ii] = (du/dd)*argl;
         }
-        indi++;
     }
 
     double cov = SigmaF2;

@@ -189,10 +189,6 @@ int CABFIntegrate::Init(int argc,char* argv[])
     vout << "# Y format              : " << Options.GetOptOEFormat() << endl;
     vout << "# ------------------------------------------------------------------------------" << endl;
 
-#ifdef HAVE_MKL_PARALLEL
-    vout << "# Note: linked with parallel version of MKL" << endl;
-#endif
-
     // open files -----------------------------------
     if( InputFile.Open(ABFAccuName,"r") == false ){
         ES_ERROR("unable to open input file");

@@ -107,9 +107,11 @@ public:
     /// write file with derivatives
     bool WriteMFInfo(const CSmallString& name);
 
-// this destroys the state of the integrator
     /// remove mean force outliers from ABF data
     void FilterByMFZScore(double maxzscore,CVerboseStr& vout);
+
+    /// print exec info
+    static void PrintExecInfo(CVerboseStr& vout);
 
 // section of private data ----------------------------------------------------
 private:
@@ -118,6 +120,8 @@ private:
 
     // GPR data
     int                     GPRSize;
+    int                     NumOfUsedBins;
+    CSimpleVector<int>      SampledMap;
     int                     NCVs;
     CSimpleVector<double>   WFac;
     CSimpleVector<double>   CVLengths2;
@@ -149,6 +153,7 @@ private:
     double                  RCond;
 
     bool TrainGP(CVerboseStr& vout);
+    void CalculateEnergy(CVerboseStr& vout);
     void CalculateErrors(CSimpleVector<double>& gpos,CVerboseStr& vout); // gpos - position of global minimum
 
     double GetValue(const CSimpleVector<double>& position);

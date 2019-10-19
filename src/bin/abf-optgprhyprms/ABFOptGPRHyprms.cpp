@@ -94,10 +94,7 @@ int CABFOptGPRHyprms::Init(int argc,char* argv[])
     if( (Options.GetOptLAMethod() == "svd") || (Options.GetOptLAMethod() == "svd2") ){
     vout << "# SVD rcond             : " << setprecision(3) << Options.GetOptRCond() << endl;
     }
-
-#ifdef HAVE_MKL_PARALLEL
-    vout << "# Note: linked with parallel version of MKL" << endl;
-#endif
+    vout << "# ------------------------------------------------" << endl;
 
     // open files -----------------------------------
     if( InputFile.Open(Options.GetArgABFAccuName(),"r") == false ){
@@ -164,6 +161,7 @@ void CABFOptGPRHyprms::InitOptimizer(void)
 {
     vout << endl;
     vout << "3) Optimization of GPR hyperparameters ..."<< endl;
+    CABFIntegratorGPR::PrintExecInfo(vout);
 
 // what should be optimized?
     SigmaF2Enabled = Options.GetOptSigmaF2Enabled();
@@ -235,11 +233,11 @@ void CABFOptGPRHyprms::InitOptimizer(void)
 
     if( ! Options.GetOptTest() ){
         vout << endl;
-        vout << "# step     logML    ";
-        if( SigmaF2Enabled )    vout << "  SigmaF2  ";
-        if( NCorrEnabled )      vout << "   NCorr   ";
+        vout << "# step         logML";
+        if( SigmaF2Enabled )    vout << "    SigmaF2";
+        if( NCorrEnabled )      vout << "      NCorr";
         for(size_t i=0; i < WFacEnabled.size(); i++){
-            if( WFacEnabled[i] ) vout << "   Wfac#" << i+1 << " ";
+            if( WFacEnabled[i] ) vout << format("     Wfac#%-1d")%(i+1);
         }
         vout << endl;
 
