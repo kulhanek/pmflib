@@ -37,11 +37,6 @@
 #include <omp.h>
 #endif
 
-// MKL support
-#ifdef HAVE_MKL_PARALLEL
-#include <mkl.h>
-#endif
-
 //------------------------------------------------------------------------------
 
 using namespace std;
@@ -228,10 +223,10 @@ void CABFIntegratorGPR::SetGlobalMin(const CSmallString& spec)
     replace (sspec.begin(), sspec.end(), 'x' , ' ');
 
     // parse values of CVs
-    gpos.CreateVector(Accumulator->GetNumberOfCoords());
+    GPos.CreateVector(Accumulator->GetNumberOfCoords());
     stringstream str(sspec);
     for(int i=0; i < Accumulator->GetNumberOfCoords(); i++){
-        str >> gpos[i];
+        str >> GPos[i];
         if( ! str ){
             CSmallString error;
             error << "unable to decode CV value for position: " << i+1;
@@ -323,6 +318,11 @@ void CABFIntegratorGPR::CalcKderWRTSigmaF2(void)
 {
     Kder.SetZero();
 
+    CSimpleVector<double> ipos;
+    CSimpleVector<double> jpos;
+    ipos.CreateVector(NCVs);
+    jpos.CreateVector(NCVs);
+
     #pragma omp parallel for firstprivate(ipos,jpos)
     for(int indi=0; indi < NumOfUsedBins; indi++){
         int i = SampledMap[indi];
@@ -381,6 +381,11 @@ void CABFIntegratorGPR::CalcKderWRTNCorr(void)
 void CABFIntegratorGPR::CalcKderWRTWFac(int cv)
 {
     Kder.SetZero();
+
+    CSimpleVector<double> ipos;
+    CSimpleVector<double> jpos;
+    ipos.CreateVector(NCVs);
+    jpos.CreateVector(NCVs);
 
     double wf = WFac[cv];
     double wd3 = 1.0/(CVLengths2[cv]*wf);
@@ -489,11 +494,9 @@ bool CABFIntegratorGPR::Integrate(CVerboseStr& vout,bool nostat)
     }
 
     // load data to FES
-    ipos.CreateVector(NCVs);
-    jpos.CreateVector(NCVs);
-    rk.CreateVector(GPRSize);
-    lk.CreateVector(GPRSize);
-    ik.CreateVector(GPRSize);
+//    rk.CreateVector(GPRSize);
+//    lk.CreateVector(GPRSize);
+//    ik.CreateVector(GPRSize);
     GPRModel.CreateVector(GPRSize);
 
     // print hyperparameters
@@ -524,7 +527,7 @@ bool CABFIntegratorGPR::Integrate(CVerboseStr& vout,bool nostat)
     if( ! NoEnergy ){
         CalculateEnergy(vout);
         if( IncludeError ){
-            CalculateErrors(gpos,vout);
+            CalculateErrors(GPos,vout);
         }
     }
 
@@ -536,17 +539,14 @@ bool CABFIntegratorGPR::Integrate(CVerboseStr& vout,bool nostat)
 void CABFIntegratorGPR::PrintExecInfo(CVerboseStr& vout)
 {
 #if defined(_OPENMP)
-    int ncpus = omp_get_max_threads();
-    vout << "   OpenMP: Number of threads: " << ncpus << endl;
+    {
+        int ncpus = omp_get_max_threads();
+        vout << "   OpenMP: Number of threads: " << ncpus << endl;
+    }
 #else
-    vout << "   No OpenMP: Number of threads: 1" << endl;
+    vout << "   No OpenMP: Sequential mode." << endl;
 #endif
-#ifdef HAVE_MKL_PARALLEL
-    int ncpus = mkl_get_max_threads();
-    vout << "   Lapack/Blas via MKL: Number of threads: " << ncpus << endl;
-#else
-    vout << "   Native Lapack/Blas: Number of threads: 1" << endl;
-#endif
+    CSciLapack::PrintExecInfo(vout);
 }
 
 //==============================================================================
@@ -634,6 +634,11 @@ void CABFIntegratorGPR::AnalyticalK(void)
 {
     K.SetZero();
 
+    CSimpleVector<double> ipos;
+    CSimpleVector<double> jpos;
+    ipos.CreateVector(NCVs);
+    jpos.CreateVector(NCVs);
+
     // main kernel matrix
     #pragma omp parallel for firstprivate(ipos,jpos)
     for(int indi=0; indi < NumOfUsedBins; indi++){
@@ -685,6 +690,11 @@ void CABFIntegratorGPR::AnalyticalK(void)
 
 void CABFIntegratorGPR::NumericalK(void)
 {
+    CSimpleVector<double> ipos;
+    CSimpleVector<double> jpos;
+    ipos.CreateVector(NCVs);
+    jpos.CreateVector(NCVs);
+
     CFortranMatrix kblock;
     kblock.CreateMatrix(NCVs,NCVs);
 
@@ -789,17 +799,20 @@ void CABFIntegratorGPR::CalculateEnergy(CVerboseStr& vout)
 {
     vout << "   Calculating FES ..." << endl;
 
+    CSimpleVector<double> jpos;
+    jpos.CreateVector(NCVs);
+
     // calculate energies
     double glb_min = 0.0;
     if( GlobalMinSet ){
-        // gpos.CreateVector(NCVs) - is created in  SetGlobalMin
+        // GPos.CreateVector(NCVs) - is created in  SetGlobalMin
    //   vout << "   Calculating FES ..." << endl;
         vout << "       Global minima provided at: ";
-        vout << gpos[0];
+        vout << GPos[0];
         for(int i=1; i < Accumulator->GetNumberOfCoords(); i++){
-            vout << "x" << gpos[i];
+            vout << "x" << GPos[i];
         }
-        glb_min = GetValue(gpos);
+        glb_min = GetValue(GPos);
         vout << " (" << glb_min << ")" << endl;
 
         for(int i=0; i < Accumulator->GetNumberOfBins(); i++){
@@ -818,7 +831,7 @@ void CABFIntegratorGPR::CalculateEnergy(CVerboseStr& vout)
         }
 
     } else {
-        gpos.CreateVector(NCVs);
+        GPos.CreateVector(NCVs);
         bool   first = true;
         for(int i=0; i < Accumulator->GetNumberOfBins(); i++){
             int samples = Accumulator->GetNumberOfABFSamples(i);
@@ -836,14 +849,14 @@ void CABFIntegratorGPR::CalculateEnergy(CVerboseStr& vout)
             if( first || (glb_min > value) ){
                 glb_min = value;
                 first = false;
-                gpos = jpos;
+                GPos = jpos;
             }
         }
    //   vout << "   Calculating FES ..." << endl;
         vout << "       Global minima found at: ";
-        vout << gpos[0];
+        vout << GPos[0];
         for(int i=1; i < Accumulator->GetNumberOfCoords(); i++){
-            vout << "x" << gpos[i];
+            vout << "x" << GPos[i];
         }
         vout << " (" << glb_min << ")" << endl;
     }
@@ -872,6 +885,9 @@ void CABFIntegratorGPR::CalculateEnergy(CVerboseStr& vout)
 double CABFIntegratorGPR::GetValue(const CSimpleVector<double>& position)
 {
     double energy = 0.0;
+
+    CSimpleVector<double> ipos;
+    ipos.CreateVector(NCVs);
 
     #pragma omp parallel for firstprivate(ipos) reduction(+:energy)
     for(int indi=0; indi < NumOfUsedBins; indi++){
@@ -902,6 +918,9 @@ double CABFIntegratorGPR::GetValue(const CSimpleVector<double>& position)
 double CABFIntegratorGPR::GetMeanForce(const CSimpleVector<double>& position,int icoord)
 {
     double mf = 0.0;
+
+    CSimpleVector<double> ipos;
+    ipos.CreateVector(NCVs);
 
     #pragma omp parallel for firstprivate(ipos) reduction(+:mf)
     for(int indi=0; indi < NumOfUsedBins; indi++){
@@ -940,6 +959,9 @@ double CABFIntegratorGPR::GetRMSR(int cv)
         ES_ERROR("number of bins is not > 0");
         return(0.0);
     }
+
+    CSimpleVector<double> jpos;
+    jpos.CreateVector(NCVs);
 
     double rmsr = 0.0;
     double nsamples = 0.0;
@@ -982,6 +1004,9 @@ bool CABFIntegratorGPR::WriteMFInfo(const CSmallString& name)
         ES_ERROR(error);
         return(false);
     }
+
+    CSimpleVector<double> jpos;
+    jpos.CreateVector(NCVs);
 
     for(int i=0; i < Accumulator->GetNumberOfBins(); i++){
         if( Accumulator->GetNumberOfABFSamples(i) <= 0 ) continue;
@@ -1033,6 +1058,9 @@ void CABFIntegratorGPR::FilterByMFZScore(double zscore,CVerboseStr& vout)
 
     vout << high;
     vout << "   Precalculating MF errors ..." << endl;
+
+    CSimpleVector<double> jpos;
+    jpos.CreateVector(NCVs);
 
     // precalculate values
     for(int indi=0; indi < NumOfUsedBins; indi++){
@@ -1146,6 +1174,16 @@ double CABFIntegratorGPR::GetLogMarginalLikelihood(void)
 
 double CABFIntegratorGPR::GetCov(CSimpleVector<double>& lpos,CSimpleVector<double>& rpos)
 {
+    CSimpleVector<double> ipos;
+    CSimpleVector<double> rk;
+    CSimpleVector<double> lk;
+    CSimpleVector<double> ik;
+
+    ipos.CreateVector(NCVs);
+    rk.CreateVector(NCVs);
+    lk.CreateVector(NCVs);
+    ik.CreateVector(NCVs);
+
     #pragma omp parallel for firstprivate(ipos)
     for(int indi=0; indi < NumOfUsedBins; indi++){
         int i = SampledMap[indi];
@@ -1193,6 +1231,14 @@ double CABFIntegratorGPR::GetCov(CSimpleVector<double>& lpos,CSimpleVector<doubl
 
 double CABFIntegratorGPR::GetVar(CSimpleVector<double>& lpos)
 {
+    CSimpleVector<double> ipos;
+    CSimpleVector<double> lk;
+    CSimpleVector<double> ik;
+
+    lk.CreateVector(NCVs);
+    ipos.CreateVector(NCVs);
+    ik.CreateVector(NCVs);
+
     #pragma omp parallel for firstprivate(ipos)
     for(int indi=0; indi < NumOfUsedBins; indi++){
         int i = SampledMap[indi];
@@ -1229,6 +1275,9 @@ void CABFIntegratorGPR::CalculateErrors(CSimpleVector<double>& gpos,CVerboseStr&
     vout << "   Calculating FES error ..." << endl;
     CSmallTime st;
     st.GetActualTime();
+
+    CSimpleVector<double> jpos;
+    jpos.CreateVector(NCVs);
 
     double vargp = GetVar(gpos);
 

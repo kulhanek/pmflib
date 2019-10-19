@@ -115,8 +115,8 @@ public:
 
 // section of private data ----------------------------------------------------
 private:
-    CABFAccumulator*    Accumulator;
-    CEnergySurface*     FES;
+    CABFAccumulator*        Accumulator;
+    CEnergySurface*         FES;
 
     // GPR data
     int                     GPRSize;
@@ -142,12 +142,7 @@ private:
     CFortranMatrix          ATA;        // alphaT*alpha
     CFortranMatrix          Kder;       // derivative of kernels w.r.t. a hyperparameter
 
-    CSimpleVector<double>   ipos;
-    CSimpleVector<double>   jpos;
-    CSimpleVector<double>   gpos;   // global position
-    CSimpleVector<double>   rk;
-    CSimpleVector<double>   lk;
-    CSimpleVector<double>   ik;
+    CSimpleVector<double>   GPos;       // global position, either detected or use
 
     // SVD setup
     double                  RCond;
