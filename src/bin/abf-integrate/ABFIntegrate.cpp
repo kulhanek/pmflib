@@ -213,7 +213,7 @@ bool CABFIntegrate::Run(void)
     int state = 1;
 
     vout << endl;
-    vout << format("%-1d) Loading ABF accumulator: %s")%state%string(ABFAccuName) << endl;
+    vout << format("%02d|Loading ABF accumulator: %s")%state%string(ABFAccuName) << endl;
     state++;
     try {
         Accumulator.Load(InputFile);
@@ -243,7 +243,7 @@ bool CABFIntegrate::Run(void)
 
 // sampling limit -------------------------------
     vout << endl;
-    vout << format("%-1d) Preparing ABF accumulator for integration (sampling limit)")%state << endl;
+    vout << format("%02d|Preparing ABF accumulator for integration (sampling limit)")%state << endl;
     state++;
     PrepareAccumulatorI();
     if( ! Options.GetOptSkipFFTest() ){
@@ -255,12 +255,12 @@ bool CABFIntegrate::Run(void)
     if( Options.GetOptMFMaxZScore() > 0.0 ){
         for(int i=1; i <= Options.GetOptMFZTestPasses(); i++ ){
             vout << endl;
-            vout << format("%-1d) ABF accumulator integration (%s) for mean force error Z-score test #%d")%state%string(Options.GetOptEcutMethod())%i << endl;
+            vout << format("%02d|ABF accumulator integration (%s) for mean force error Z-score test #%d")%state%string(Options.GetOptEcutMethod())%i << endl;
             state++;
             if( IntegrateForMFZScore(i) == false ) return(false);
 
             vout << endl;
-            vout << "%-1d) Preparing ABF accumulator for integration (mean force error z-score test #" << i << ")"<< endl;
+            vout << format("%02d|Preparing ABF accumulator for integration (mean force error z-score test #%d")%state%i << ")"<< endl;
             state++;
             PrepareAccumulatorI();
             if( ! Options.GetOptSkipFFTest() ){
@@ -276,7 +276,7 @@ bool CABFIntegrate::Run(void)
 // glue fes ------------------------------------
     if( Options.GetOptGlueHoles() ){
         vout << endl;
-        vout << format("%-1d) Preparing ABF accumulator for integration (glue holes on FES)")%state << endl;
+        vout << format("%02d|Preparing ABF accumulator for integration (glue holes on FES)")%state << endl;
         state++;
         GlueHoles();
         PrintSampledStat();
@@ -286,7 +286,7 @@ bool CABFIntegrate::Run(void)
 
     if( Options.GetOptGlueingFactor() > 0 ){
         vout << endl;
-        vout << format("%-1d) Preparing ABF accumulator for integration (glueing FES)")%state << endl;
+        vout << format("%02d|Preparing ABF accumulator for integration (glueing FES)")%state << endl;
         state++;
         vout << "   Searching for border regions in close vicinity of sampled areas ..." << endl;
         for(int i=1; i <= Options.GetOptGlueingFactor(); i++ ){
@@ -302,12 +302,12 @@ bool CABFIntegrate::Run(void)
 
     if( Options.GetOptEnergyLimit() > 0.0 ){
         vout << endl;
-        vout << format("%-1d) ABF accumulator integration (%s) for energy limit")%state%string(Options.GetOptEcutMethod()) << endl;
+        vout << format("%02d|ABF accumulator integration (%s) for energy limit")%state%string(Options.GetOptEcutMethod()) << endl;
         state++;
         if( IntegrateForEcut() == false ) return(false);
 
         vout << endl;
-        vout << format("%-1d) Preparing ABF accumulator for integration (energy limit)")%state << endl;
+        vout << format("%02d|Preparing ABF accumulator for integration (energy limit)")%state << endl;
         state++;
         PrepareAccumulatorII();
         if( ! Options.GetOptSkipFFTest() ){
@@ -321,7 +321,7 @@ bool CABFIntegrate::Run(void)
 
 // integrate data ------------------------------
     vout << endl;
-    vout << format("%-1d) ABF accumulator integration (%s)")%state%string(Options.GetOptMethod()) << endl;
+    vout << format("%02d|ABF accumulator integration (%s)")%state%string(Options.GetOptMethod()) << endl;
     state++;
     if( Integrate() == false ) return(false);
     vout << "   Done" << endl;
@@ -343,7 +343,7 @@ bool CABFIntegrate::Run(void)
 
 // print result ---------------------------------
     vout << endl;
-    vout << format("%-1d) Writing results to file: %s")%state%string(FEOutputName) << endl;
+    vout << format("%02d|Writing results to file: %s")%state%string(FEOutputName) << endl;
     state++;
     CESPrinter printer;
 
@@ -382,7 +382,7 @@ bool CABFIntegrate::Run(void)
 
     if( Options.GetNumberOfProgArgs() == 3 ){
         vout << endl;
-        vout << format("%-1d) Writing results to file: %s (full version, --printall)")%state%string(FullFEOutputName) << endl;
+        vout << format("%02d|Writing results to file: %s (full version, --printall)")%state%string(FullFEOutputName) << endl;
         state++;
 
         if( OutputFile.Open(FullFEOutputName,"w") == false ){
@@ -425,7 +425,7 @@ bool CABFIntegrate::Run(void)
 // save accumulator if requested
     if( Options.GetOptSaveABF() != NULL ){
         vout << endl;
-        vout << format("%-1d) Saving ABF accumulator to : %s")%state%string(Options.GetOptSaveABF()) << endl;
+        vout << format("%02d|Saving ABF accumulator to : %s")%state%string(Options.GetOptSaveABF()) << endl;
         state++;
         try {
             Accumulator.Save(Options.GetOptSaveABF());

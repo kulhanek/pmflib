@@ -158,6 +158,8 @@ private:
     double GetMeanForce(const CSimpleVector<double>& position,int icoord);
     double GetCov(CSimpleVector<double>& lpos,CSimpleVector<double>& rpos);
     double GetVar(CSimpleVector<double>& lpos);
+    // optimized version var+cov
+    void GetCovVar(CSimpleVector<double>& lpos,CSimpleVector<double>& rpos,double& llvar,double& lrcov);
 
     // kernel matrix
     void AnalyticalK(void);

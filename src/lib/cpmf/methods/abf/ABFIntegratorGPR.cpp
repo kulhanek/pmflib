@@ -544,10 +544,10 @@ void CABFIntegratorGPR::PrintExecInfo(CVerboseStr& vout)
 #if defined(_OPENMP)
     {
         int ncpus = omp_get_max_threads();
-        vout << "   OpenMP: Number of threads: " << ncpus << endl;
+        vout << "   OpenMP - number of threads: " << ncpus << endl;
     }
 #else
-    vout << "   No OpenMP: Sequential mode." << endl;
+    vout << "   No OpenMP - sequential mode." << endl;
 #endif
     CSciLapack::PrintExecInfo(vout);
 }
@@ -930,7 +930,7 @@ double CABFIntegratorGPR::GetMeanForce(const CSimpleVector<double>& position,int
     CSimpleVector<double> ipos;
     ipos.CreateVector(NCVs);
 
-    #pragma omp parallel for firstprivate(ipos) reduction(+:mf)
+    // paralellelism is moved one level up
     for(int indi=0; indi < NumOfUsedBins; indi++){
         int i = SampledMap[indi];
 
@@ -972,10 +972,10 @@ double CABFIntegratorGPR::GetRMSR(int cv)
     jpos.CreateVector(NCVs);
 
     double rmsr = 0.0;
-    double nsamples = 0.0;
 
-    for(int i=0; i < Accumulator->GetNumberOfBins(); i++){
-        if( Accumulator->GetNumberOfABFSamples(i) <= 0 ) continue;
+    #pragma omp parallel for firstprivate(jpos) reduction(+:rmsr)
+    for(int indi=0; indi < NumOfUsedBins; indi++){
+        int i = SampledMap[indi];
 
         Accumulator->GetPoint(i,jpos);
 
@@ -983,8 +983,9 @@ double CABFIntegratorGPR::GetRMSR(int cv)
         double mfp = GetMeanForce(jpos,cv);
         double diff = mfi - mfp;
         rmsr += diff*diff;
-        nsamples++;
     }
+
+    double nsamples = NumOfUsedBins;
 
     if( nsamples > 0 ){
         rmsr /= nsamples;
@@ -1014,10 +1015,29 @@ bool CABFIntegratorGPR::WriteMFInfo(const CSmallString& name)
     }
 
     CSimpleVector<double> jpos;
-    jpos.CreateVector(NCVs);
+    CSimpleVector<double> mfi;
+    CSimpleVector<double> mfp;
 
-    for(int i=0; i < Accumulator->GetNumberOfBins(); i++){
-        if( Accumulator->GetNumberOfABFSamples(i) <= 0 ) continue;
+    jpos.CreateVector(NCVs);
+    mfi.CreateVector(GPRSize);
+    mfp.CreateVector(GPRSize);
+
+    // calculate
+    #pragma omp parallel for firstprivate(jpos)
+    for(int indi=0; indi < NumOfUsedBins; indi++){
+        int i = SampledMap[indi];
+        Accumulator->GetPoint(i,jpos);
+        for(int k=0; k < Accumulator->GetNumberOfCoords(); k++){
+            mfi[indi*NCVs+k] = Accumulator->GetValue(k,i,EABF_MEAN_FORCE_VALUE);
+            mfp[indi*NCVs+k] = GetMeanForce(jpos,k);
+        }
+
+        ofs << endl;
+    }
+
+    // print
+    for(int indi=0; indi < NumOfUsedBins; indi++){
+        int i = SampledMap[indi];
 
         Accumulator->GetPoint(i,jpos);
 
@@ -1026,14 +1046,12 @@ bool CABFIntegratorGPR::WriteMFInfo(const CSmallString& name)
         }
 
         for(int k=0; k < Accumulator->GetNumberOfCoords(); k++){
-            double mfi = Accumulator->GetValue(k,i,EABF_MEAN_FORCE_VALUE);
-            double mfp = GetMeanForce(jpos,k);
-
-            ofs << format(" %20.16f %20.16f")%mfi%mfp;
+            ofs << format(" %20.16f %20.16f")%mfi[indi*NCVs+k]%mfp[indi*NCVs+k];
         }
 
         ofs << endl;
     }
+
 
     return(true);
 }
@@ -1071,6 +1089,7 @@ void CABFIntegratorGPR::FilterByMFZScore(double zscore,CVerboseStr& vout)
     jpos.CreateVector(NCVs);
 
     // precalculate values
+    #pragma omp parallel for firstprivate(jpos)
     for(int indi=0; indi < NumOfUsedBins; indi++){
         int i = SampledMap[indi];
 
@@ -1278,6 +1297,71 @@ double CABFIntegratorGPR::GetVar(CSimpleVector<double>& lpos)
 
 //------------------------------------------------------------------------------
 
+void CABFIntegratorGPR::GetCovVar(CSimpleVector<double>& lpos,CSimpleVector<double>& rpos,double& rrvar,double& lrcov)
+{
+    CSimpleVector<double> ipos;
+    CSimpleVector<double> rk;
+    CSimpleVector<double> lk;
+    CSimpleVector<double> ik;
+
+    ipos.CreateVector(NCVs);
+    rk.CreateVector(GPRSize);
+    lk.CreateVector(GPRSize);
+    ik.CreateVector(GPRSize);
+    ik.SetZero();
+
+    #pragma omp parallel for firstprivate(ipos)
+    for(int indi=0; indi < NumOfUsedBins; indi++){
+        int i = SampledMap[indi];
+
+        Accumulator->GetPoint(i,ipos);
+
+        double argl = 0.0;
+        double argr = 0.0;
+        for(int ii=0; ii < NCVs; ii++){
+            double du = Accumulator->GetCoordinate(ii)->GetDifference(lpos[ii],ipos[ii]);
+            double dd = CVLengths2[ii];
+            argl += du*du/(2.0*dd);
+
+            du = Accumulator->GetCoordinate(ii)->GetDifference(rpos[ii],ipos[ii]);
+            argr += du*du/(2.0*dd);
+        }
+        argl = SigmaF2*exp(-argl);
+        argr = SigmaF2*exp(-argr);
+
+        for(int ii=0; ii < NCVs; ii++){
+            double du = Accumulator->GetCoordinate(ii)->GetDifference(lpos[ii],ipos[ii]);
+            double dd = CVLengths2[ii];
+            lk[indi*NCVs + ii] = (du/dd)*argl;
+
+            du = Accumulator->GetCoordinate(ii)->GetDifference(rpos[ii],ipos[ii]);
+            rk[indi*NCVs + ii] = (du/dd)*argr;
+        }
+    }
+
+    // paralelized - MKL
+    CSciBlas::gemv(1.0,K,rk,0.0,ik);
+
+// covariance
+    double arg = 0.0;
+    for(int ii=0; ii < NCVs; ii++){
+        double du = Accumulator->GetCoordinate(ii)->GetDifference(lpos[ii],rpos[ii]);
+        double dd = CVLengths2[ii];
+        arg += du*du/(2.0*dd);
+    }
+
+    lrcov = SigmaF2*exp(-arg);
+    rrvar = SigmaF2;
+
+    #pragma omp parallel for reduction(-:lrcov) reduction(-:rrvar)
+    for(int i=0; i <= GPRSize; i++){
+        lrcov -= lk[i]*ik[i];
+        rrvar -= rk[i]*ik[i];
+    }
+}
+
+//------------------------------------------------------------------------------
+
 void CABFIntegratorGPR::CalculateErrors(CSimpleVector<double>& gpos,CVerboseStr& vout)
 {
     vout << "   Calculating FES error ..." << endl;
@@ -1310,8 +1394,11 @@ void CABFIntegratorGPR::CalculateErrors(CSimpleVector<double>& gpos,CVerboseStr&
             if( samples <= 0 ) continue;
         }
         Accumulator->GetPoint(i,jpos);
-        double varfc = GetVar(jpos);
-        double covfg = GetCov(jpos,gpos);
+        // double varfc = GetVar(jpos);
+        // double covfg = GetCov(jpos,gpos);
+        // GetCovVar(CSimpleVector<double>& lpos,CSimpleVector<double>& rpos,double& rrvar,double& lrcov)
+        double varfc,covfg;
+        GetCovVar(gpos,jpos,varfc,covfg);
 //         double tvarfc = GetCov(jpos,jpos);
 //         double tvargp = GetCov(gpos,gpos);
 //         vout << varfc << " " << vargp << " " << covfg << endl;
