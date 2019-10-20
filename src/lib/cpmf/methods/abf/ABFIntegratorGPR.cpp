@@ -659,7 +659,7 @@ void CABFIntegratorGPR::PrintExecInfo(CVerboseStr& vout)
 bool CABFIntegratorGPR::TrainGP(CVerboseStr& vout)
 {
     if( UseAnalyticalK ) {
-        vout << "   Creating K+Sigma and Y (analytical differentation) ..." << endl;
+        vout << "   Creating K+Sigma and Y ..." << endl;
     } else {
         vout << "   Creating K+Sigma and Y (numeric differentation) ..." << endl;
     }

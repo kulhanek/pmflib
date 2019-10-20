@@ -65,6 +65,7 @@ public:
     CSO_OPT(int,NumOfLBFGSCorr)
     CSO_OPT(bool,Test)
     CSO_OPT(bool,CD5)
+    CSO_OPT(CSmallString,LoadHyprms)
     CSO_OPT(bool,Verbose)
     CSO_OPT(bool,Version)
     CSO_OPT(bool,Help)
@@ -228,6 +229,15 @@ public:
                 "cd5",                      /* long option name */
                 NULL,                           /* parametr name */
                 "Use 5-point stencil for numerical differentiation.")   /* option description */
+    //----------------------------------------------------------------------
+    CSO_MAP_OPT(CSmallString,                           /* option type */
+                LoadHyprms,                        /* option name */
+                NULL,                          /* default value */
+                false,                          /* is option mandatory */
+                0,                           /* short option name */
+                "loadhyprms",                      /* long option name */
+                "NAME",                           /* parametr name */
+                "Name of file with GPR hyperparameters.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(bool,                           /* option type */
                 Verbose,                        /* option name */

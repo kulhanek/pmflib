@@ -90,6 +90,7 @@ private:
     void RunGPRNumerical(void);
     void WriteResults(int istep);
     bool WriteHyperPrms(FILE* p_fout);
+    void LoadGPRHyprms(void);
 
     void    ScatterHyprms(CSimpleVector<double>& hyprsm);
     double  GetLogML(CABFIntegratorGPR& gpr);

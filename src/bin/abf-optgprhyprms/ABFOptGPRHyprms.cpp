@@ -85,9 +85,13 @@ int CABFOptGPRHyprms::Init(int argc,char* argv[])
         vout << "# Optimized GPR hyprms (out): - (standard output)" << endl;
     }
     vout << "# ------------------------------------------------" << endl;
-    vout << "# SigmaF2               : " << setprecision(3) << Options.GetOptSigmaF2() << endl;
-    vout << "# NCorr                 : " << setprecision(3) << Options.GetOptNCorr() << endl;
-    vout << "# Width factor wfac     : " << (const char*)Options.GetOptWFac() << endl;
+    if( Options.IsOptLoadHyprmsSet() ){
+        vout << "# GPR hyperprms file    : " << Options.GetOptLoadHyprms() << endl;
+    } else {
+        vout << "# SigmaF2               : " << setprecision(3) << Options.GetOptSigmaF2() << endl;
+        vout << "# NCorr                 : " << setprecision(3) << Options.GetOptNCorr() << endl;
+        vout << "# Width factor wfac     : " << (const char*)Options.GetOptWFac() << endl;
+    }
     vout << "# Split NCorr mode      : " << bool_to_str(Options.GetOptSplitNCorr()) << endl;
     vout << "# ------------------------------------------------" << endl;
     vout << "# Linear algebra        : " << Options.GetOptLAMethod() << endl;
@@ -212,6 +216,30 @@ void CABFOptGPRHyprms::InitOptimizer(void)
     vout << "   Total number of hyprms          = " << NumOfPrms << endl;
     vout << "   Number of optimized hyprms      = " << NumOfOptPrms << endl;
 
+// initial values
+    if( Options.IsOptLoadHyprmsSet() ){
+        LoadGPRHyprms();
+    } else {
+        SigmaF2 = Options.GetOptSigmaF2();
+        DecodeVList(Options.GetOptNCorr(),NCorr,"--ncorr",1.0);
+        DecodeVList(Options.GetOptWFac(),WFac,"--wfac",3.0);
+    }
+
+    // print hyperparameters
+    vout << "   Hyperparameters ..." << endl;
+        vout << format("      SigmaF2  = %10.4f")%SigmaF2 << endl;
+    if( SplitNCorr ){
+        for(int k=0; k < Accumulator.GetNumberOfCoords(); k++ ){
+            vout << format("      NCorr#%-2d = %10.4f")%(k+1)%NCorr[k] << endl;
+        }
+    } else {
+        vout << format("      NCorr    = %10.4f")%NCorr[0] << endl;
+    }
+
+    for(int k=0; k < Accumulator.GetNumberOfCoords(); k++ ){
+        vout << format("      WFac#%-2d  = %10.4f")%(k+1)%WFac[k] << endl;
+    }
+
     if( ! Options.GetOptTest() ){
         vout << endl;
         vout << "# step         logML";
@@ -246,10 +274,6 @@ void CABFOptGPRHyprms::InitOptimizer(void)
     Hyprms.CreateVector(NumOfOptPrms);
     HyprmsGrd.CreateVector(NumOfOptPrms);
 
-// initial values
-    SigmaF2 = Options.GetOptSigmaF2();
-    DecodeVList(Options.GetOptNCorr(),NCorr,"--ncorr",1.0);
-    DecodeVList(Options.GetOptWFac(),WFac,"--wfac",3.0);
 
 // set initial hyprms
     int ind = 0;
@@ -750,6 +774,100 @@ bool CABFOptGPRHyprms::WriteHyperPrms(FILE* p_fout)
     }
 
     return(true);
+}
+
+//------------------------------------------------------------------------------
+
+void CABFOptGPRHyprms::LoadGPRHyprms(void)
+{
+    ifstream fin;
+    fin.open(Options.GetOptLoadHyprms());
+    if( ! fin ){
+        CSmallString error;
+        error << "unable to open file with GPR hyperparameters: " << Options.GetOptLoadHyprms();
+        RUNTIME_ERROR(error);
+    }
+
+    int ncvs = Accumulator.GetNumberOfCoords();
+    NCorr.CreateVector(ncvs);
+    WFac.CreateVector(ncvs);
+
+    string line;
+    while( getline(fin,line) ){
+        // is it comment?
+        if( (line.size() > 0) && (line[0] == '#') ) continue;
+
+        // parse line
+        stringstream str(line);
+        string key, buf;
+        double value;
+        str >> key >> buf >> value;
+        if( ! str ){
+            CSmallString error;
+            error << "GPR hyperparameters file, unable to decode line: " << line.c_str();
+            RUNTIME_ERROR(error);
+        }
+        if( key == "SigmaF2" ){
+            SigmaF2 = value;
+        } else if( key == "NCorr" ){
+            NCorr[0] = value;
+            if( Options.GetOptSplitNCorr() ){
+                vout << "   >> WARNING: Expanding NCorr due to --splitncorr" << endl;
+                for(int i=0; i < ncvs;i++){
+                    NCorr[1] = value;
+                }
+            }
+        } else if( key.find("NCorr#") != string::npos ) {
+            std::replace( key.begin(), key.end(), '#', ' ');
+            stringstream kstr(key);
+            string sncorr;
+            int    cvind;
+            kstr >> sncorr >> cvind;
+            if( ! kstr ){
+                CSmallString error;
+                error << "GPR hyperparameters file, unable to decode ncorr key: " << key.c_str();
+                RUNTIME_ERROR(error);
+            }
+            cvind--; // transform to 0-based indexing
+            if( (cvind < 0) || (cvind >= ncvs) ){
+                CSmallString error;
+                error << "ncorr index " << (cvind+1) << " out-of-range 1-" << ncvs;
+                RUNTIME_ERROR(error);
+            }
+            if( Options.GetOptSplitNCorr() ){
+                NCorr[cvind] = value;
+            } else {
+                if( cvind > 0 ){
+                    vout << "   >> WARNING: NCorr with index higher than one ignored (no --splitncorr)!" << endl;
+                } else {
+                    NCorr[cvind] = value;
+                }
+            }
+
+        } else if( key.find("WFac#") != string::npos ) {
+            std::replace( key.begin(), key.end(), '#', ' ');
+            stringstream kstr(key);
+            string swfac;
+            int    cvind;
+            kstr >> swfac >> cvind;
+            if( ! kstr ){
+                CSmallString error;
+                error << "GPR hyperparameters file, unable to decode wfac key: " << key.c_str();
+                RUNTIME_ERROR(error);
+            }
+            cvind--; // transform to 0-based indexing
+            if( (cvind < 0) || (cvind >= ncvs) ){
+                CSmallString error;
+                error << "wfac index " << (cvind+1) << " out-of-range 1-" << ncvs;
+                RUNTIME_ERROR(error);
+            }
+            WFac[cvind] = value;
+        } else {
+            CSmallString error;
+            error << "GPR hyperparameters file, unrecognized key: " << key.c_str();
+            RUNTIME_ERROR(error);
+        }
+    }
 }
 
 //==============================================================================
