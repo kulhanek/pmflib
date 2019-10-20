@@ -52,6 +52,11 @@ CABFIntegratorGPR::CABFIntegratorGPR(void)
     Accumulator = NULL;
     FES = NULL;
 
+    GPRSize = 0;
+    NumOfUsedBins = 0;
+    NumOfValues = 0;
+    NCVs = 0;
+
     SigmaF2 = 15.0;
     NCorr = 1.0;
 
@@ -807,79 +812,96 @@ void CABFIntegratorGPR::CalculateEnergy(CVerboseStr& vout)
 {
     vout << "   Calculating FES ..." << endl;
 
-    CSimpleVector<double> jpos;
-    jpos.CreateVector(NCVs);
+// create map for bins with calculated energy and error
+    NumOfValues = 0;
+    for(int i=0; i < Accumulator->GetNumberOfBins(); i++){
+        int samples = Accumulator->GetNumberOfABFSamples(i);
+        if( IncludeGluedBins ){
+            if( samples == 0 ) continue;
+        } else {
+            if( samples <= 0 ) continue;
+        }
+        NumOfValues++;
+    }
+    ValueMap.CreateVector(NumOfValues);
 
-    // calculate energies
-    double glb_min = 0.0;
+    int indi = 0;
+    for(int i=0; i < Accumulator->GetNumberOfBins(); i++){
+        int samples = Accumulator->GetNumberOfABFSamples(i);
+        if( IncludeGluedBins ){
+            if( samples == 0 ) continue;
+        } else {
+            if( samples <= 0 ) continue;
+        }
+        ValueMap[indi]=i;
+        indi++;
+    }
+
+// calculate energies
+    CSimpleVector<double> jpos;
+    CSimpleVector<double> values;
+
+    jpos.CreateVector(NCVs);
+    values.CreateVector(NumOfValues);
+
+    #pragma omp parallel for firstprivate(jpos)
+    for(int indj=0; indj < NumOfValues; indj++){
+        int j = ValueMap[indj];
+        Accumulator->GetPoint(j,jpos);
+        values[indj] = GetValue(jpos);
+    }
+
+// basic FES update
+    for(int i=0; i < Accumulator->GetNumberOfBins(); i++){
+        int samples = Accumulator->GetNumberOfABFSamples(i);
+        FES->SetNumOfSamples(i,samples);
+        FES->SetEnergy(i,0.0);
+        FES->SetError(i,0.0);
+    }
+
+// update FES
     if( GlobalMinSet ){
         // GPos.CreateVector(NCVs) - is created in  SetGlobalMin
    //   vout << "   Calculating FES ..." << endl;
-        vout << "       Global minima provided at: ";
+        vout << "       Global minimum provided at: ";
         vout << GPos[0];
         for(int i=1; i < Accumulator->GetNumberOfCoords(); i++){
             vout << "x" << GPos[i];
         }
-        glb_min = GetValue(GPos);
+        double glb_min = GetValue(GPos);
         vout << " (" << glb_min << ")" << endl;
 
-        for(int i=0; i < Accumulator->GetNumberOfBins(); i++){
-            int samples = Accumulator->GetNumberOfABFSamples(i);
-            FES->SetNumOfSamples(i,samples);
-            double value = 0.0;
-            FES->SetEnergy(i,value);
-            if( IncludeGluedBins ){
-                if( samples == 0 ) continue;
-            } else {
-                if( samples <= 0 ) continue;
-            }
-            Accumulator->GetPoint(i,jpos);
-            value = GetValue(jpos);
-            FES->SetEnergy(i,value);
+        for(int indj=0; indj < NumOfValues; indj++){
+            int j = ValueMap[indj];
+            FES->SetEnergy(j,values[indj]-glb_min);
         }
-
     } else {
+        // search for global minimum
         GPos.CreateVector(NCVs);
         bool   first = true;
-        for(int i=0; i < Accumulator->GetNumberOfBins(); i++){
-            int samples = Accumulator->GetNumberOfABFSamples(i);
-            FES->SetNumOfSamples(i,samples);
-            double value = 0.0;
-            FES->SetEnergy(i,value);
-            if( IncludeGluedBins ){
-                if( samples == 0 ) continue;
-            } else {
-                if( samples <= 0 ) continue;
-            }
-            Accumulator->GetPoint(i,jpos);
-            value = GetValue(jpos);
-            FES->SetEnergy(i,value);
+        double glb_min = 0.0;
+        for(int indj=0; indj < NumOfValues; indj++){
+            int j = ValueMap[indj];
+            double value = values[indj];
             if( first || (glb_min > value) ){
                 glb_min = value;
                 first = false;
-                GPos = jpos;
+                Accumulator->GetPoint(j,GPos);
             }
         }
+
    //   vout << "   Calculating FES ..." << endl;
-        vout << "       Global minima found at: ";
+        vout << "       Global minimum found at: ";
         vout << GPos[0];
         for(int i=1; i < Accumulator->GetNumberOfCoords(); i++){
             vout << "x" << GPos[i];
         }
         vout << " (" << glb_min << ")" << endl;
-    }
 
-    // move to global minima
-    for(int i=0; i < FES->GetNumberOfPoints(); i++) {
-        if( IncludeGluedBins ){
-            if( FES->GetNumOfSamples(i) == 0 ) continue;
-        } else {
-            if( FES->GetNumOfSamples(i) <= 0 ) continue;
+        for(int indj=0; indj < NumOfValues; indj++){
+            int j = ValueMap[indj];
+            FES->SetEnergy(j,values[indj]-glb_min);
         }
-        double value = 0.0;
-        value = FES->GetEnergy(i);
-        value = value - glb_min;
-        FES->SetEnergy(i,value);
     }
 
     vout << "   SigmaF2 = " << setprecision(5) << FES->GetSigmaF2() << endl;
@@ -897,7 +919,7 @@ double CABFIntegratorGPR::GetValue(const CSimpleVector<double>& position)
     CSimpleVector<double> ipos;
     ipos.CreateVector(NCVs);
 
-    #pragma omp parallel for firstprivate(ipos) reduction(+:energy)
+    // parallel execution was moved one level up
     for(int indi=0; indi < NumOfUsedBins; indi++){
         int i = SampledMap[indi];
 
@@ -930,7 +952,7 @@ double CABFIntegratorGPR::GetMeanForce(const CSimpleVector<double>& position,int
     CSimpleVector<double> ipos;
     ipos.CreateVector(NCVs);
 
-    // paralellelism is moved one level up
+    // parallel execution was moved one level up
     for(int indi=0; indi < NumOfUsedBins; indi++){
         int i = SampledMap[indi];
 
@@ -1006,14 +1028,6 @@ bool CABFIntegratorGPR::WriteMFInfo(const CSmallString& name)
         return(false);
     }
 
-    ofstream ofs(name);
-    if( ! ofs ){
-        CSmallString error;
-        error << "unable to open file '" << name << "' for derivatives";
-        ES_ERROR(error);
-        return(false);
-    }
-
     CSimpleVector<double> jpos;
     CSimpleVector<double> mfi;
     CSimpleVector<double> mfp;
@@ -1031,8 +1045,14 @@ bool CABFIntegratorGPR::WriteMFInfo(const CSmallString& name)
             mfi[indi*NCVs+k] = Accumulator->GetValue(k,i,EABF_MEAN_FORCE_VALUE);
             mfp[indi*NCVs+k] = GetMeanForce(jpos,k);
         }
+    }
 
-        ofs << endl;
+    ofstream ofs(name);
+    if( ! ofs ){
+        CSmallString error;
+        error << "unable to open file '" << name << "' for derivatives";
+        ES_ERROR(error);
+        return(false);
     }
 
     // print
@@ -1199,63 +1219,6 @@ double CABFIntegratorGPR::GetLogMarginalLikelihood(void)
 
 //------------------------------------------------------------------------------
 
-double CABFIntegratorGPR::GetCov(CSimpleVector<double>& lpos,CSimpleVector<double>& rpos)
-{
-    CSimpleVector<double> ipos;
-    CSimpleVector<double> rk;
-    CSimpleVector<double> lk;
-    CSimpleVector<double> ik;
-
-    ipos.CreateVector(NCVs);
-    rk.CreateVector(GPRSize);
-    lk.CreateVector(GPRSize);
-    ik.CreateVector(GPRSize);
-
-    #pragma omp parallel for firstprivate(ipos)
-    for(int indi=0; indi < NumOfUsedBins; indi++){
-        int i = SampledMap[indi];
-
-        Accumulator->GetPoint(i,ipos);
-
-        double argl = 0.0;
-        double argr = 0.0;
-        for(int ii=0; ii < NCVs; ii++){
-            double du = Accumulator->GetCoordinate(ii)->GetDifference(lpos[ii],ipos[ii]);
-            double dd = CVLengths2[ii];
-            argl += du*du/(2.0*dd);
-
-            du = Accumulator->GetCoordinate(ii)->GetDifference(rpos[ii],ipos[ii]);
-            argr += du*du/(2.0*dd);
-        }
-        argl = SigmaF2*exp(-argl);
-        argr = SigmaF2*exp(-argr);
-
-        for(int ii=0; ii < NCVs; ii++){
-            double du = Accumulator->GetCoordinate(ii)->GetDifference(lpos[ii],ipos[ii]);
-            double dd = CVLengths2[ii];
-            lk[indi*NCVs + ii] = (du/dd)*argl;
-
-            du = Accumulator->GetCoordinate(ii)->GetDifference(rpos[ii],ipos[ii]);
-            rk[indi*NCVs + ii] = (du/dd)*argr;
-        }
-    }
-
-    double cov = 0.0;
-    for(int ii=0; ii < NCVs; ii++){
-        double du = Accumulator->GetCoordinate(ii)->GetDifference(lpos[ii],rpos[ii]);
-        double dd = CVLengths2[ii];
-        cov += du*du/(2.0*dd);
-    }
-    cov = SigmaF2*exp(-cov);
-
-    CSciBlas::gemv(1.0,K,rk,0.0,ik);
-    cov = cov  - CSciBlas::dot(lk,ik);
-
-    return(cov);
-}
-
-//------------------------------------------------------------------------------
-
 double CABFIntegratorGPR::GetVar(CSimpleVector<double>& lpos)
 {
     CSimpleVector<double> lk;
@@ -1297,7 +1260,7 @@ double CABFIntegratorGPR::GetVar(CSimpleVector<double>& lpos)
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorGPR::GetCovVar(CSimpleVector<double>& lpos,CSimpleVector<double>& rpos,double& rrvar,double& lrcov)
+void CABFIntegratorGPR::GetCovVar(CSimpleVector<double>& lpos,CSimpleVector<double>& rpos,double& lrcov,double& rrvar)
 {
     CSimpleVector<double> ipos;
     CSimpleVector<double> rk;
@@ -1310,7 +1273,7 @@ void CABFIntegratorGPR::GetCovVar(CSimpleVector<double>& lpos,CSimpleVector<doub
     ik.CreateVector(GPRSize);
     ik.SetZero();
 
-    #pragma omp parallel for firstprivate(ipos)
+    // parallel execution was moved one level up
     for(int indi=0; indi < NumOfUsedBins; indi++){
         int i = SampledMap[indi];
 
@@ -1318,9 +1281,11 @@ void CABFIntegratorGPR::GetCovVar(CSimpleVector<double>& lpos,CSimpleVector<doub
 
         double argl = 0.0;
         double argr = 0.0;
+        double du,dd;
         for(int ii=0; ii < NCVs; ii++){
-            double du = Accumulator->GetCoordinate(ii)->GetDifference(lpos[ii],ipos[ii]);
-            double dd = CVLengths2[ii];
+            dd = CVLengths2[ii];
+
+            du = Accumulator->GetCoordinate(ii)->GetDifference(lpos[ii],ipos[ii]);
             argl += du*du/(2.0*dd);
 
             du = Accumulator->GetCoordinate(ii)->GetDifference(rpos[ii],ipos[ii]);
@@ -1330,8 +1295,9 @@ void CABFIntegratorGPR::GetCovVar(CSimpleVector<double>& lpos,CSimpleVector<doub
         argr = SigmaF2*exp(-argr);
 
         for(int ii=0; ii < NCVs; ii++){
-            double du = Accumulator->GetCoordinate(ii)->GetDifference(lpos[ii],ipos[ii]);
-            double dd = CVLengths2[ii];
+            dd = CVLengths2[ii];
+
+            du = Accumulator->GetCoordinate(ii)->GetDifference(lpos[ii],ipos[ii]);
             lk[indi*NCVs + ii] = (du/dd)*argl;
 
             du = Accumulator->GetCoordinate(ii)->GetDifference(rpos[ii],ipos[ii]);
@@ -1339,7 +1305,10 @@ void CABFIntegratorGPR::GetCovVar(CSimpleVector<double>& lpos,CSimpleVector<doub
         }
     }
 
-    // paralelized - MKL
+// do not run threaded version of Lapack/Blas
+    CSciLapack::SetNumThreadsLocal(1);
+
+// threading is dissabled above
     CSciBlas::gemv(1.0,K,rk,0.0,ik);
 
 // covariance
@@ -1350,20 +1319,19 @@ void CABFIntegratorGPR::GetCovVar(CSimpleVector<double>& lpos,CSimpleVector<doub
         arg += du*du/(2.0*dd);
     }
 
-    lrcov = SigmaF2*exp(-arg);
-    rrvar = SigmaF2;
-
-    #pragma omp parallel for reduction(-:lrcov) reduction(-:rrvar)
-    for(int i=0; i <= GPRSize; i++){
-        lrcov -= lk[i]*ik[i];
-        rrvar -= rk[i]*ik[i];
-    }
+// threading is dissabled above
+    lrcov = SigmaF2*exp(-arg) - CSciBlas::dot(lk,ik);
+    rrvar = SigmaF2           - CSciBlas::dot(rk,ik);
 }
 
 //------------------------------------------------------------------------------
 
 void CABFIntegratorGPR::CalculateErrors(CSimpleVector<double>& gpos,CVerboseStr& vout)
 {
+    if( NumOfValues == 0 ){
+        RUNTIME_ERROR("NumOfValues == 0");
+    }
+
     vout << "   Calculating FES error ..." << endl;
     CSmallTime st;
     st.GetActualTime();
@@ -1371,53 +1339,41 @@ void CABFIntegratorGPR::CalculateErrors(CSimpleVector<double>& gpos,CVerboseStr&
     CSimpleVector<double> jpos;
     jpos.CreateVector(NCVs);
 
-    double vargp = GetVar(gpos);
+    double  vargp = GetVar(gpos);
+    int     nbatches = 0;
 
-    int totbatches = 0;
-    for(int i=0; i < Accumulator->GetNumberOfBins(); i++){
-        int samples = Accumulator->GetNumberOfABFSamples(i);
-        if( IncludeGluedBins ){
-            if( samples == 0 ) continue;
-        } else {
-            if( samples <= 0 ) continue;
-        }
-        totbatches++;
-    }
+    #pragma omp parallel for firstprivate(jpos)
+    for(int indj=0; indj < NumOfValues; indj++){
+        int j = ValueMap[indj];
+        Accumulator->GetPoint(j,jpos);
 
-    int nbatches = 0;
-    for(int i=0; i < Accumulator->GetNumberOfBins(); i++){
-        int samples = Accumulator->GetNumberOfABFSamples(i);
-        FES->SetError(i,0.0);
-        if( IncludeGluedBins ){
-            if( samples == 0 ) continue;
-        } else {
-            if( samples <= 0 ) continue;
-        }
-        Accumulator->GetPoint(i,jpos);
-        // double varfc = GetVar(jpos);
-        // double covfg = GetCov(jpos,gpos);
-        // GetCovVar(CSimpleVector<double>& lpos,CSimpleVector<double>& rpos,double& rrvar,double& lrcov)
         double varfc,covfg;
-        GetCovVar(gpos,jpos,varfc,covfg);
-//         double tvarfc = GetCov(jpos,jpos);
-//         double tvargp = GetCov(gpos,gpos);
-//         vout << varfc << " " << vargp << " " << covfg << endl;
-//         vout << varfc << " " << tvarfc << endl;
-//         vout << vargp << " " << tvargp << endl;
+        GetCovVar(gpos,jpos,covfg,varfc);
+
         double error = varfc + vargp - 2.0*covfg;
         if( error > 0 ){
             error = sqrt(error);
         } else {
             error = 0.0;
         }
-        FES->SetError(i,error);
+        FES->SetError(j,error);
+
+        #pragma omp private
         nbatches++;
-        CSmallTime ct;
-        ct.GetActualTime();
-        if( (ct - st).GetSecondsFromBeginning() > 5*60 ){
-            int comp = nbatches*100 / totbatches;
-            vout << format("      completed %6d/%6d - %2d%%")%nbatches%totbatches%comp << endl;
-            st = ct;
+
+#if defined(_OPENMP)
+        int tnum = omp_get_thread_num();
+#else
+        int tnum = 0;
+#endif
+        if( tnum == 0){
+            CSmallTime ct;
+            ct.GetActualTime();
+            if( (ct - st).GetSecondsFromBeginning() > 5*60 ){
+                int comp = nbatches*100 / NumOfValues;
+                vout << format("      completed %6d/%6d - %2d%%")%nbatches%NumOfValues%comp << endl;
+                st = ct;
+            }
         }
     }
 }

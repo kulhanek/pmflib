@@ -125,6 +125,8 @@ private:
     int                     GPRSize;
     int                     NumOfUsedBins;
     CSimpleVector<int>      SampledMap;
+    int                     NumOfValues;
+    CSimpleVector<int>      ValueMap;
     int                     NCVs;
     CSimpleVector<double>   WFac;
     CSimpleVector<double>   CVLengths2;
