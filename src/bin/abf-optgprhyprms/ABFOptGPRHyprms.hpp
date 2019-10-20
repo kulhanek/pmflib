@@ -57,13 +57,14 @@ private:
     CSmallTimeAndDate       StartTime;
 
     double                  SigmaF2;
-    double                  NCorr;
+    CSimpleVector<double>   NCorr;
     CSimpleVector<double>   WFac;
 
 // L-BFGS setup
     int                     NumOfCorrections;
     bool                    SigmaF2Enabled;
-    bool                    NCorrEnabled;
+    bool                    SplitNCorr;
+    std::vector<bool>       NCorrEnabled;
     std::vector<bool>       WFacEnabled;
     int                     NumOfPrms;
     int                     NumOfOptPrms;
@@ -75,6 +76,7 @@ private:
 
 // helper
     std::vector<bool>       HyprmsEnabled;
+    int                     State;
 
     // output ------------------------------------
     CTerminalStr            Console;
@@ -91,6 +93,9 @@ private:
 
     void    ScatterHyprms(CSimpleVector<double>& hyprsm);
     double  GetLogML(CABFIntegratorGPR& gpr);
+    void    DecodeEList(const CSmallString& spec, std::vector<bool>& elist,const CSmallString& optionname);
+    void    DecodeVList(const CSmallString& spec, CSimpleVector<double>& vlist,const CSmallString& optionname,double defv);
+
 };
 
 //------------------------------------------------------------------------------

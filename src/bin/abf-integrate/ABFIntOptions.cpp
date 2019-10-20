@@ -46,12 +46,6 @@ int CABFIntOptions::CheckOptions(void)
         IsError = true;
     }
 
-    if(GetOptNCorr() < 0.0) {
-        if(IsError == false) fprintf(stderr,"\n");
-        fprintf(stderr,"%s: ncorr has to be grater or equal to zero, but %f is specified\n", (const char*)GetProgramName(),GetOptNCorr());
-        IsError = true;
-    }
-
     if((GetOptEnergyLimit() <= 0) && (GetOptEnergyLimit() != -1)) {
         if(IsError == false) fprintf(stderr,"\n");
         fprintf(stderr,"%s: energy limit has to be grater than zero or equal to -1, but %f is specified\n", (const char*)GetProgramName(),GetOptEnergyLimit());
@@ -172,6 +166,20 @@ int CABFIntOptions::CheckOptions(void)
     if( IsOptWFacSet() && ( (GetOptMethod() != "rbf") && (GetOptMethod() != "gpr")) ){
         if(IsError == false) fprintf(stderr,"\n");
         fprintf(stderr,"%s: --wfac can be set only for RBF or GPR method\n",
+                (const char*)GetProgramName());
+        IsError = true;
+    }
+
+    if( IsOptNCorrSet() && (GetOptMethod() != "gpr") ){
+        if(IsError == false) fprintf(stderr,"\n");
+        fprintf(stderr,"%s: --ncorr can be set only for GPR method\n",
+                (const char*)GetProgramName());
+        IsError = true;
+    }
+
+    if( IsOptSplitNCorrSet() && (GetOptMethod() != "gpr") ){
+        if(IsError == false) fprintf(stderr,"\n");
+        fprintf(stderr,"%s: --splitncorr can be set only for GPR method\n",
                 (const char*)GetProgramName());
         IsError = true;
     }

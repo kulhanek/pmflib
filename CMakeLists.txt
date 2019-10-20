@@ -152,10 +152,10 @@ INCLUDE(IntelCDK)
 INCLUDE(OpenMPI)
 
 # if parallel environment is available
-#IF(MPI_ENABLED)
+IF(MPI_ENABLED)
     # setup OpenMP for cpmf if available
     FIND_PACKAGE(OpenMP)
-#ENDIF(MPI_ENABLED)
+ENDIF(MPI_ENABLED)
 
 # ==============================================================================
 # output directories -----------------------------------------------------------

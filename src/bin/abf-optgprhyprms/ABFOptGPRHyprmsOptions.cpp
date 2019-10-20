@@ -37,13 +37,6 @@ CABFOptGPRHyprmsOptions::CABFOptGPRHyprmsOptions(void)
 
 int CABFOptGPRHyprmsOptions::CheckOptions(void)
 {
-
-    if(GetOptNCorr() < 0.0) {
-        if(IsError == false) fprintf(stderr,"\n");
-        fprintf(stderr,"%s: ncorr has to be grater or equal to zero, but %f is specified\n", (const char*)GetProgramName(),GetOptNCorr());
-        IsError = true;
-    }
-
     if( (GetOptLAMethod() != "svd") &&
         (GetOptLAMethod() != "svd2") &&
         (GetOptLAMethod() != "ll") &&
@@ -75,13 +68,6 @@ int CABFOptGPRHyprmsOptions::CheckOptions(void)
 
 int CABFOptGPRHyprmsOptions::CheckArguments(void)
 {
-    if( (GetNumberOfProgArgs() != 2) && (GetNumberOfProgArgs() != 3) ){
-        if(IsError == false) fprintf(stderr,"\n");
-        fprintf(stderr,"%s: one argument are expected, but %d is provided\n",
-                (const char*)GetProgramName(),GetNumberOfProgArgs());
-        IsError = true;
-    }
-    if(IsError == true) return(SO_OPTS_ERROR);
     return(SO_CONTINUE);
 }
 

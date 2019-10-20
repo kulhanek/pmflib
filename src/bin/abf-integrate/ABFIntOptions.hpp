@@ -83,7 +83,8 @@ public:
     CSO_OPT(double,MFMaxZScore)
     CSO_OPT(int,MFZTestPasses)
     CSO_OPT(double,SigmaF2)
-    CSO_OPT(double,NCorr)
+    CSO_OPT(CSmallString,NCorr)
+    CSO_OPT(bool,SplitNCorr)
     CSO_OPT(CSmallString,WFac)
     CSO_OPT(CSmallString,LoadHyprms)
     CSO_OPT(CSmallString,RFac)
@@ -213,14 +214,24 @@ public:
                 "NUMBER",                           /* parametr name */
                 "GPR: Variance of the reconstructed free energy surface (signal variance).")   /* option description */
     //----------------------------------------------------------------------
-    CSO_MAP_OPT(double,                           /* option type */
+    CSO_MAP_OPT(CSmallString,                           /* option type */
                 NCorr,                        /* option name */
-                1.0,                          /* default value */
+                "1.0",                          /* default value */
                 false,                          /* is option mandatory */
                 'c',                           /* short option name */
                 "ncorr",                      /* long option name */
-                "NUMBER",                           /* parametr name */
-                "GPR: Number of statistically correlated samples.")   /* option description */
+                "SPEC",                           /* parametr name */
+                "GPR: Number of statistically correlated samples in the form NCorr1[xNCorr2x...]. "
+                "The last value pads the rest. Split ncorr mode is enabled by the --splitncorr option.")   /* option description */
+    //----------------------------------------------------------------------
+    CSO_MAP_OPT(bool,                           /* option type */
+                SplitNCorr,                        /* option name */
+                false,                          /* default value */
+                false,                          /* is option mandatory */
+                0,                           /* short option name */
+                "splitncorr",                      /* long option name */
+                NULL,                           /* parametr name */
+                "Use indepenedent ncorr for each CV.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(CSmallString,                           /* option type */
                 WFac,                        /* option name */

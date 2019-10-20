@@ -44,7 +44,6 @@ MAIN_ENTRY(CABFOptGPRHyprms)
 
 CABFOptGPRHyprms::CABFOptGPRHyprms(void)
 {
-
 }
 
 //==============================================================================
@@ -89,6 +88,7 @@ int CABFOptGPRHyprms::Init(int argc,char* argv[])
     vout << "# SigmaF2               : " << setprecision(3) << Options.GetOptSigmaF2() << endl;
     vout << "# NCorr                 : " << setprecision(3) << Options.GetOptNCorr() << endl;
     vout << "# Width factor wfac     : " << (const char*)Options.GetOptWFac() << endl;
+    vout << "# Split NCorr mode      : " << bool_to_str(Options.GetOptSplitNCorr()) << endl;
     vout << "# ------------------------------------------------" << endl;
     vout << "# Linear algebra        : " << Options.GetOptLAMethod() << endl;
     if( (Options.GetOptLAMethod() == "svd") || (Options.GetOptLAMethod() == "svd2") ){
@@ -114,9 +114,12 @@ int CABFOptGPRHyprms::Init(int argc,char* argv[])
 
 bool CABFOptGPRHyprms::Run(void)
 {
+    State = 1;
+
 // load accumulator
     vout << endl;
-    vout << "1) Loading ABF accumulator: " << Options.GetArgABFAccuName() << endl;
+    vout << format("%02d:Loading ABF accumulator: %s")%State%string(Options.GetArgABFAccuName()) << endl;
+    State++;
     try {
         Accumulator.Load(InputFile);
     } catch(...) {
@@ -133,7 +136,8 @@ bool CABFOptGPRHyprms::Run(void)
     FES.Allocate(&Accumulator);
 
     vout << endl;
-    vout << "2) ABF accumulator statistics ..."<< endl;
+    vout << format("%02d:ABF accumulator statistics ...")%State << endl;
+    State++;
     PrintSampledStat();
     vout << "   Done" << endl;
 
@@ -146,7 +150,8 @@ bool CABFOptGPRHyprms::Run(void)
     }
 
     vout << endl;
-    vout << "3) Saving optimized hyperparameters: " << Options.GetArgGPRHyprmsName() << endl;
+    vout << format("%02d:Saving optimized hyperparameters: %s")%State%string(Options.GetArgGPRHyprmsName()) << endl;
+    State++;
     if( WriteHyperPrms(OutputFile) == false ){
         ES_ERROR("unable to save optimized hyperparameters");
         return(false);
@@ -160,57 +165,33 @@ bool CABFOptGPRHyprms::Run(void)
 void CABFOptGPRHyprms::InitOptimizer(void)
 {
     vout << endl;
-    vout << "3) Optimization of GPR hyperparameters ..."<< endl;
+    vout << format("%02d:Optimization of GPR hyperparameters ...")%State << endl;
+    State++;
     CABFIntegratorGPR::PrintExecInfo(vout);
 
 // what should be optimized?
-    SigmaF2Enabled = Options.GetOptSigmaF2Enabled();
-    NCorrEnabled = Options.GetOptNCorrEnabled();
-
-    string          sspecen(Options.GetOptWFacEnabled());
-    vector<string>  swfacsen;
-
-    split(swfacsen,sspecen,is_any_of("x"),token_compress_on);
-
-    if( (int)swfacsen.size() > Accumulator.GetNumberOfCoords() ){
-        CSmallString error;
-        error << "too many wfacsenabled flags (" << swfacsen.size() << ") than required (" << Accumulator.GetNumberOfCoords() << ")";
-        RUNTIME_ERROR(error);
-    }
-
-    WFacEnabled.resize(Accumulator.GetNumberOfCoords());
-
-    // parse values of wfac
-    bool last_wfac_st = false;
-    for(int i=0; i < (int)swfacsen.size(); i++){
-        stringstream str(swfacsen[i]);
-        char letter;
-        str >> letter;
-        if( ! str ){
-            CSmallString error;
-            error << "unable to decode wfacenabled value for position: " << i+1;
-            RUNTIME_ERROR(error);
-        }
-        if( (letter == 'T') || (letter == 't') ){
-            last_wfac_st = true;
-        } else {
-            last_wfac_st = false;
-        }
-        WFacEnabled[i] = last_wfac_st;
-    }
-
-    // pad the rest with the last value
-    for(int i=swfacsen.size(); i < Accumulator.GetNumberOfCoords(); i++){
-        WFacEnabled[i] = last_wfac_st;
-    }
+    SplitNCorr      = Options.GetOptSplitNCorr();
+    SigmaF2Enabled  = Options.GetOptSigmaF2Enabled();
+    DecodeEList(Options.GetOptNCorrEnabled(),NCorrEnabled,"--enablencorr");
+    DecodeEList(Options.GetOptWFacEnabled(),WFacEnabled,"--enablewfac");
 
 // number of optimized parameters
     NumOfOptPrms = 0;
     NumOfPrms = 0;
+// sigmaf2
     if( SigmaF2Enabled ) NumOfOptPrms++;
     NumOfPrms++;
-    if( NCorrEnabled ) NumOfOptPrms++;
-    NumOfPrms++;
+// ncorr
+    if( SplitNCorr ){
+        for(size_t i=0; i < NCorrEnabled.size(); i++){
+            if( NCorrEnabled[i] ) NumOfOptPrms++;
+        }
+        NumOfPrms += Accumulator.GetNumberOfCoords();
+    } else {
+        if( NCorrEnabled[0] ) NumOfOptPrms++;
+        NumOfPrms++;
+    }
+// wfac
     for(size_t i=0; i < WFacEnabled.size(); i++){
         if( WFacEnabled[i] ) NumOfOptPrms++;
     }
@@ -235,7 +216,13 @@ void CABFOptGPRHyprms::InitOptimizer(void)
         vout << endl;
         vout << "# step         logML";
         if( SigmaF2Enabled )    vout << "    SigmaF2";
-        if( NCorrEnabled )      vout << "      NCorr";
+        if( SplitNCorr ){
+            for(size_t i=0; i < NCorrEnabled.size(); i++){
+                if( NCorrEnabled[i] ) vout << format("    NCorr#%-1d")%(i+1);
+            }
+        } else {
+        if( NCorrEnabled[0] )      vout << "      NCorr";
+        }
         for(size_t i=0; i < WFacEnabled.size(); i++){
             if( WFacEnabled[i] ) vout << format("     Wfac#%-1d")%(i+1);
         }
@@ -243,7 +230,13 @@ void CABFOptGPRHyprms::InitOptimizer(void)
 
         vout << "# ---- -------------";
         if( SigmaF2Enabled )    vout << " ----------";
-        if( NCorrEnabled )      vout << " ----------";
+        if( SplitNCorr ){
+            for(size_t i=0; i < NCorrEnabled.size(); i++){
+                if( NCorrEnabled[i] ) vout << " ----------";
+            }
+        } else {
+            if( NCorrEnabled[0] )      vout << " ----------";
+        }
         for(size_t i=0; i < WFacEnabled.size(); i++){
             if( WFacEnabled[i] ) vout << " ----------";
         }
@@ -253,48 +246,29 @@ void CABFOptGPRHyprms::InitOptimizer(void)
     Hyprms.CreateVector(NumOfOptPrms);
     HyprmsGrd.CreateVector(NumOfOptPrms);
 
+// initial values
+    SigmaF2 = Options.GetOptSigmaF2();
+    DecodeVList(Options.GetOptNCorr(),NCorr,"--ncorr",1.0);
+    DecodeVList(Options.GetOptWFac(),WFac,"--wfac",3.0);
+
 // set initial hyprms
     int ind = 0;
-    SigmaF2 = Options.GetOptSigmaF2();
     if( SigmaF2Enabled ){
         Hyprms[ind] = SigmaF2;
         ind++;
     }
-    NCorr = Options.GetOptNCorr();
-    if( NCorrEnabled ){
-        Hyprms[ind] = NCorr;
-        ind++;
-    }
-
-    string          sspec(Options.GetOptWFac());
-    vector<string>  swfacs;
-
-    split(swfacs,sspec,is_any_of("x"),token_compress_on);
-
-    if( (int)swfacs.size() > Accumulator.GetNumberOfCoords() ){
-        CSmallString error;
-        error << "too many wfacs (" << swfacs.size() << ") than required (" << Accumulator.GetNumberOfCoords() << ")";
-        RUNTIME_ERROR(error);
-    }
-
-    WFac.CreateVector(Accumulator.GetNumberOfCoords());
-
-    // parse values of wfac
-    double last_wfac = 3.0;
-    for(int i=0; i < (int)swfacs.size(); i++){
-        stringstream str(swfacs[i]);
-        str >> last_wfac;
-        if( ! str ){
-            CSmallString error;
-            error << "unable to decode wfac value for position: " << i+1;
-            RUNTIME_ERROR(error);
+    if( SplitNCorr ){
+        for(int i=0; i < (int)NCorrEnabled.size(); i++){
+            if( NCorrEnabled[i] ){
+                Hyprms[ind] = NCorr[i];
+                ind++;
+            }
         }
-        WFac[i] = last_wfac;
-    }
-
-    // pad the rest with the last value
-    for(int i=swfacs.size(); i < Accumulator.GetNumberOfCoords(); i++){
-        WFac[i] = last_wfac;
+    } else {
+        if( NCorrEnabled[0] ){
+            Hyprms[ind] = NCorr[0];
+            ind++;
+        }
     }
 
     for(int i=0; i < (int)WFacEnabled.size(); i++){
@@ -310,6 +284,84 @@ void CABFOptGPRHyprms::InitOptimizer(void)
     Work.SetZero();
     TmpXG.CreateVector(NumOfOptPrms);
     TmpXG.SetZero();
+}
+
+//------------------------------------------------------------------------------
+
+void CABFOptGPRHyprms::DecodeEList(const CSmallString& spec, std::vector<bool>& elist,const CSmallString& optionname)
+{
+    string          sspecen(spec);
+    vector<string>  slist;
+
+    split(slist,sspecen,is_any_of("x"),token_compress_on);
+
+    if( (int)slist.size() > Accumulator.GetNumberOfCoords() ){
+        CSmallString error;
+        error << "too many flags (" << slist.size() << ") for " << optionname << " than required (" << Accumulator.GetNumberOfCoords() << ")";
+        RUNTIME_ERROR(error);
+    }
+
+    elist.resize(Accumulator.GetNumberOfCoords());
+
+    // parse values
+    bool last_st = false;
+    for(int i=0; i < (int)slist.size(); i++){
+        stringstream str(slist[i]);
+        char letter;
+        str >> letter;
+        if( ! str ){
+            CSmallString error;
+            error << "unable to decode value for " << optionname << " at position: " << i+1;
+            RUNTIME_ERROR(error);
+        }
+        if( (letter == 'T') || (letter == 't') ){
+            last_st = true;
+        } else {
+            last_st = false;
+        }
+        elist[i] = last_st;
+    }
+
+    // pad the rest with the last value
+    for(int i=slist.size(); i < Accumulator.GetNumberOfCoords(); i++){
+        elist[i] = last_st;
+    }
+}
+
+//------------------------------------------------------------------------------
+
+void CABFOptGPRHyprms::DecodeVList(const CSmallString& spec, CSimpleVector<double>& vlist,const CSmallString& optionname,double defv)
+{
+    string          sspecen(spec);
+    vector<string>  slist;
+
+    split(slist,sspecen,is_any_of("x"),token_compress_on);
+
+    if( (int)slist.size() > Accumulator.GetNumberOfCoords() ){
+        CSmallString error;
+        error << "too many flags (" << slist.size() << ") for " << optionname << " than required (" << Accumulator.GetNumberOfCoords() << ")";
+        RUNTIME_ERROR(error);
+    }
+
+    vlist.CreateVector(Accumulator.GetNumberOfCoords());
+
+    // parse values
+    double last_st = defv;
+    for(int i=0; i < (int)slist.size(); i++){
+        stringstream str(slist[i]);
+        str >> last_st;
+        if( ! str ){
+            CSmallString error;
+            error << "unable to decode value for " << optionname << " at position: " << i+1;
+            RUNTIME_ERROR(error);
+        }
+        vlist[i] = last_st;
+    }
+
+    // pad the rest with the last value
+    for(int i=slist.size(); i < Accumulator.GetNumberOfCoords(); i++){
+        vlist[i] = last_st;
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -373,7 +425,8 @@ void CABFOptGPRHyprms::Optimize(void)
 void CABFOptGPRHyprms::Test(void)
 {
     vout << endl;
-    vout << "4) Testing gradients ..." << endl;
+    vout << format("%02d:Testing gradients ...")%State << endl;
+    State++;
 
     CSimpleVector<double>   grd1;
     CSimpleVector<double>   grd2;
@@ -400,6 +453,19 @@ void CABFOptGPRHyprms::Test(void)
     double trh = 1e-5;
 
     int ind = 0;
+
+    int soffset = 0;
+    int noffset;
+    int woffset;
+
+    if( SplitNCorr ){
+        noffset = soffset+1;
+        woffset = noffset+NCorr.GetLength();
+    } else {
+        noffset = soffset+1;
+        woffset = noffset+1;
+    }
+
     for(int prm=0; prm < (int)HyprmsEnabled.size(); prm++){
         if( HyprmsEnabled[prm] ){
             double diff = grd1[ind]-grd2[ind];
@@ -413,17 +479,20 @@ void CABFOptGPRHyprms::Test(void)
                 vout << "<red><bold>";
             }
             vout << format("%5d ")%(ind+1);
-            switch(prm){
-                case 0:
-                    vout << "SigmaF2    ";
-                break;
-                case 1:
-                    vout << "NCorr      ";
-                break;
-                default:
-                    vout << format("WFac#%-2d    ")%(prm-2+1);
-                break;
+            if( prm == 0 ){
+                vout << "SigmaF2    ";
+            } else if( (prm >= noffset) && (prm < woffset) ){
+                if( SplitNCorr ){
+               int cv = prm - noffset;
+                vout << format("NCorr#%-2d   ")%(cv+1);
+                } else {
+                vout << "NCorr      ";
+                }
+            } else {
+                int cv = prm - woffset;
+                vout << format("WFac#%-2d    ")%(cv+1);
             }
+
             vout << format("%14.6e %14.6e %14.6e")%grd1[ind]%grd2[ind]%diff << rel << endl;
             if( fabs(diff) > trh ){
                 vout << "</bold></red>";
@@ -537,14 +606,27 @@ void CABFOptGPRHyprms::ScatterHyprms(CSimpleVector<double>& hyprsm)
     }
     i++;
 // ---------------
-    if( NCorrEnabled ){
-        NCorr = fabs(hyprsm[ind]);
-        ind++;
-        HyprmsEnabled[i] = true;
+    if( SplitNCorr ){
+        for(int k=0; k < (int)NCorrEnabled.size(); k++){
+            if( NCorrEnabled[k] ){
+                NCorr[k] = fabs(hyprsm[ind]);
+                ind++;
+                HyprmsEnabled[i] = true;
+            } else {
+                HyprmsEnabled[i] = false;
+            }
+            i++;
+        }
     } else {
-        HyprmsEnabled[i] = false;
+        if( NCorrEnabled[0] ){
+            NCorr[0] = fabs(hyprsm[ind]);
+            ind++;
+            HyprmsEnabled[i] = true;
+        } else {
+            HyprmsEnabled[i] = false;
+        }
+        i++;
     }
-    i++;
 // ---------------
     for(int k=0; k < (int)WFacEnabled.size(); k++){
         if( WFacEnabled[k] ){
@@ -570,6 +652,8 @@ double CABFOptGPRHyprms::GetLogML(CABFIntegratorGPR& gpr)
     gpr.SetIncludeError(false);
     gpr.SetNoEnergy(true);
     gpr.IncludeGluedAreas(false);
+
+    gpr.SetSplitNCorr(SplitNCorr);
 
     if( Options.GetOptLAMethod() == "svd" ){
         gpr.SetINVMehod(EGPRINV_SVD);
@@ -603,7 +687,13 @@ void CABFOptGPRHyprms::WriteResults(int istep)
 {
     vout << format("%6d %13e")%istep%logML;
     if( SigmaF2Enabled ) vout << format(" %10.3f")%SigmaF2;
-    if( NCorrEnabled )   vout << format(" %10.3f")%NCorr;
+    if( SplitNCorr ){
+        for(int i=0; i < (int)NCorrEnabled.size(); i++){
+            if( NCorrEnabled[i] ) vout << format(" %10.3f")%NCorr[i];
+        }
+    } else {
+        if( NCorrEnabled[0] )   vout << format(" %10.3f")%NCorr[0];
+    }
     for(int i=0; i < (int)WFacEnabled.size(); i++){
         if( WFacEnabled[i] ) vout << format(" %10.3f")%WFac[i];
     }
@@ -647,10 +737,16 @@ bool CABFOptGPRHyprms::WriteHyperPrms(FILE* p_fout)
     ScatterHyprms(Hyprms);
 
     if( fprintf(p_fout,"# GPR hyperparameters for abf-integrate\n") <= 0 ) return(false);
-    if( fprintf(p_fout,"SigmaF2 = %10.4f\n",SigmaF2) <= 0 ) return(false);
-    if( fprintf(p_fout,"NCorr   = %10.4f\n",NCorr) <= 0 ) return(false);
+    if( fprintf(p_fout,"SigmaF2  = %10.4f\n",SigmaF2) <= 0 ) return(false);
+    if( SplitNCorr ){
+        for(int i=0; i < NCorr.GetLength(); i++ ){
+            if( fprintf(p_fout,"NCorr#%-2d = %10.4f\n",i+1,NCorr[i]) <= 0 ) return(false);
+        }
+    } else {
+        if( fprintf(p_fout,"NCorr    = %10.4f\n",NCorr[0]) <= 0 ) return(false);
+    }
     for(int i=0; i < WFac.GetLength(); i++ ){
-        if( fprintf(p_fout,"WFac#%-2d = %10.4f\n",i+1,WFac[i]) <= 0 ) return(false);
+        if( fprintf(p_fout,"WFac#%-2d  = %10.4f\n",i+1,WFac[i]) <= 0 ) return(false);
     }
 
     return(true);

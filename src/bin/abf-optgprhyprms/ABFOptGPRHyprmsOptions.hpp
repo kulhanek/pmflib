@@ -53,10 +53,11 @@ public:
     CSO_OPT(CSmallString,LAMethod)
     CSO_OPT(double,RCond)
     CSO_OPT(double,SigmaF2)
-    CSO_OPT(double,NCorr)
+    CSO_OPT(CSmallString,NCorr)
+    CSO_OPT(bool,SplitNCorr)
     CSO_OPT(CSmallString,WFac)
     CSO_OPT(bool,SigmaF2Enabled)
-    CSO_OPT(bool,NCorrEnabled)
+    CSO_OPT(CSmallString,NCorrEnabled)
     CSO_OPT(CSmallString,WFacEnabled)
     CSO_OPT(bool,Numeric)
     CSO_OPT(int,NOptSteps)
@@ -115,14 +116,24 @@ public:
                 "NUMBER",                           /* parametr name */
                 "Variance of the reconstructed free energy surface (signal variance).")   /* option description */
     //----------------------------------------------------------------------
-    CSO_MAP_OPT(double,                           /* option type */
+    CSO_MAP_OPT(CSmallString,                           /* option type */
                 NCorr,                        /* option name */
-                1.0,                          /* default value */
+                "1.0",                          /* default value */
                 false,                          /* is option mandatory */
                 'c',                           /* short option name */
                 "ncorr",                      /* long option name */
-                "NUMBER",                           /* parametr name */
-                "Number of statistically correlated samples.")   /* option description */
+                "SPEC",                           /* parametr name */
+                "GPR: Number of statistically correlated samples in the form NCorr1[xNCorr2x...]. "
+                "The last value pads the rest. Split ncorr mode is enabled by the --splitncorr option.")   /* option description */
+    //----------------------------------------------------------------------
+    CSO_MAP_OPT(bool,                           /* option type */
+                SplitNCorr,                        /* option name */
+                false,                          /* default value */
+                false,                          /* is option mandatory */
+                0,                           /* short option name */
+                "splitncorr",                      /* long option name */
+                NULL,                           /* parametr name */
+                "Use indepenedent ncorr for each CV.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(CSmallString,                           /* option type */
                 WFac,                        /* option name */
@@ -144,14 +155,15 @@ public:
                 NULL,                           /* parametr name */
                 "Enable optimization of SigmaF2 hyperparameter.")   /* option description */
     //----------------------------------------------------------------------
-    CSO_MAP_OPT(bool,                           /* option type */
+    CSO_MAP_OPT(CSmallString,                           /* option type */
                 NCorrEnabled,                        /* option name */
-                false,                          /* default value */
+                "F",                          /* default value */
                 false,                          /* is option mandatory */
                 0,                           /* short option name */
                 "enablencorr",                      /* long option name */
-                NULL,                           /* parametr name */
-                "Enable optimization of NCorr hyperparameter.")   /* option description */
+                "SPEC",                           /* parametr name */
+                "Enable optimization of NCorr hyperparameter. Flags are specified in the form Ncorr1Enabled[xNcorr2Enabledx...] with F and T for disabled and enabled, respectively. "
+                "The last value pads the rest.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(CSmallString,                           /* option type */
                 WFacEnabled,                        /* option name */

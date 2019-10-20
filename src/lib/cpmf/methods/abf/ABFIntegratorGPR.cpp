@@ -49,26 +49,24 @@ using namespace boost::algorithm;
 
 CABFIntegratorGPR::CABFIntegratorGPR(void)
 {
-    Accumulator = NULL;
-    FES = NULL;
+    Accumulator         = NULL;
+    FES                 = NULL;
 
-    GPRSize = 0;
-    NumOfUsedBins = 0;
-    NumOfValues = 0;
-    NCVs = 0;
+    GPRSize             = 0;
+    NumOfUsedBins       = 0;
+    NumOfValues         = 0;
+    NCVs                = 0;
 
-    SigmaF2 = 15.0;
-    NCorr = 1.0;
+    SplitNCorr          = false;
+    SigmaF2             = 15.0;
 
-    IncludeError = false;
-    IncludeGluedBins = false;
-    NoEnergy = false;
-    GlobalMinSet = false;
+    IncludeError        = false;
+    IncludeGluedBins    = false;
+    NoEnergy            = false;
+    GlobalMinSet        = false;
 
-    // for testing
-    UseAnalyticalK = true;
-
-    Method = EGPRINV_LU;
+    UseAnalyticalK      = true;
+    Method              = EGPRINV_LU;
 }
 
 //------------------------------------------------------------------------------
@@ -102,9 +100,86 @@ void CABFIntegratorGPR::SetSigmaF2(double sigf2)
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorGPR::SetNCorr(double ncorr)
+void CABFIntegratorGPR::SetNCorr(const CSmallString& spec)
 {
+    if( Accumulator == NULL ){
+        RUNTIME_ERROR("accumulator is not set for SetNCorr");
+    }
+
+    string          sspec(spec);
+    vector<string>  sncorrs;
+
+    split(sncorrs,sspec,is_any_of("x"),token_compress_on);
+
+    if( (int)sncorrs.size() > Accumulator->GetNumberOfCoords() ){
+        CSmallString error;
+        error << "too many ncorrs (" << sncorrs.size() << ") than required (" << Accumulator->GetNumberOfCoords() << ")";
+        RUNTIME_ERROR(error);
+    }
+
+    if( (SplitNCorr == false) && (sncorrs.size() > 1) ){
+        CSmallString error;
+        error << "too many ncorrs (" << sncorrs.size() << ") but only one allowed without --splitncorr";
+        RUNTIME_ERROR(error);
+    }
+
+    NCorr.CreateVector(Accumulator->GetNumberOfCoords());
+
+    // parse values of ncorr
+    double last_ncorr = 1.0;
+    for(int i=0; i < (int)sncorrs.size(); i++){
+        stringstream str(sncorrs[i]);
+        str >> last_ncorr;
+        if( ! str ){
+            CSmallString error;
+            error << "unable to decode ncorr value for position: " << i+1;
+            RUNTIME_ERROR(error);
+        }
+        NCorr[i] = last_ncorr;
+    }
+
+    // pad the rest with the last value
+    for(int i=sncorrs.size(); i < Accumulator->GetNumberOfCoords(); i++){
+        NCorr[i] = last_ncorr;
+    }
+}
+
+//------------------------------------------------------------------------------
+
+void CABFIntegratorGPR::SetSplitNCorr(bool set)
+{
+    SplitNCorr = set;
+}
+
+//------------------------------------------------------------------------------
+
+void CABFIntegratorGPR::SetNCorr(CSimpleVector<double>& ncorr)
+{
+    if( Accumulator == NULL ){
+        RUNTIME_ERROR("accumulator is not set for SetNCorr");
+    }
+    if( ncorr.GetLength() != Accumulator->GetNumberOfCoords() ){
+        RUNTIME_ERROR("ncvs inconsistent in the source and target");
+    }
+
     NCorr = ncorr;
+}
+
+//------------------------------------------------------------------------------
+
+void CABFIntegratorGPR::SetNCorr(int cvind, double value)
+{
+    if( Accumulator == NULL ){
+        RUNTIME_ERROR("accumulator is not set for SetNCorr");
+    }
+    if( (cvind < 0) || (cvind >= Accumulator->GetNumberOfCoords()) ){
+        RUNTIME_ERROR("cvind out-of-range");
+    }
+    // is NCorr initialized?
+    if( NCorr.GetLength() <= 0 ){
+        NCorr.CreateVector(Accumulator->GetNumberOfCoords());
+    }
+    NCorr[cvind] = value;
 }
 
 //------------------------------------------------------------------------------
@@ -255,28 +330,34 @@ void CABFIntegratorGPR::GetLogMLDerivatives(const std::vector<bool>& flags,CSimp
     InitHyprmsOpt();
 
     int ind = 0;
-    for(size_t prm=0; prm < flags.size(); prm++){
+    int soffset = 0;
+    int noffset;
+    int woffset;
+
+    if( SplitNCorr ){
+        noffset = soffset+1;
+        woffset = noffset+NCVs;
+    } else {
+        noffset = soffset+1;
+        woffset = noffset+1;
+    }
+
+    for(int prm=0; prm < (int)flags.size(); prm++){
         // shall we calc der?
         if( flags[prm] == false ) {
             continue;
         }
 
         // calc Kder
-        switch(prm){
-            case 0:
-                // sigmaf2
-                CalcKderWRTSigmaF2();
-            break;
-            case 1:
-                // ncorr
-                CalcKderWRTNCorr();
-            break;
-            default: {
-                // wfac
-                int cv = prm - 2;
-                CalcKderWRTWFac(cv);
-                }
-            break;
+        if( prm == 0 ){
+            // sigmaf2
+            CalcKderWRTSigmaF2();
+        } else if( (prm >= noffset) && (prm < woffset) ){
+            int cv = prm - noffset;
+            CalcKderWRTNCorr(cv);
+        } else {
+            int cv = prm - woffset;
+            CalcKderWRTWFac(cv);
         }
 
         // calc trace
@@ -371,7 +452,7 @@ void CABFIntegratorGPR::CalcKderWRTSigmaF2(void)
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorGPR::CalcKderWRTNCorr(void)
+void CABFIntegratorGPR::CalcKderWRTNCorr(int cv)
 {
     Kder.SetZero();
 
@@ -382,7 +463,11 @@ void CABFIntegratorGPR::CalcKderWRTNCorr(void)
         for(int ii=0; ii < NCVs; ii++){
             // get mean force and its error
             double er = Accumulator->GetValue(ii,i,EABF_MEAN_FORCE_ERROR);
-            Kder[indi*NCVs+ii][indi*NCVs+ii] += er*er;
+            if( SplitNCorr ){
+                if( cv == ii ) Kder[indi*NCVs+ii][indi*NCVs+ii] += er*er;
+            } else {
+                Kder[indi*NCVs+ii][indi*NCVs+ii] += er*er;
+            }
         }
     }
 }
@@ -477,7 +562,10 @@ bool CABFIntegratorGPR::Integrate(CVerboseStr& vout,bool nostat)
         RUNTIME_ERROR("inconsistent ABF and FES - points");
     }
     if( WFac.GetLength() == 0 ){
-        RUNTIME_ERROR("wfac not set");
+        RUNTIME_ERROR("wfac is not set");
+    }
+    if( NCorr.GetLength() == 0 ){
+        RUNTIME_ERROR("ncorr is not set");
     }
 
     // GPR setup
@@ -509,10 +597,17 @@ bool CABFIntegratorGPR::Integrate(CVerboseStr& vout,bool nostat)
 
     // print hyperparameters
     vout << "   Hyperparameters ..." << endl;
-        vout << format("      SigmaF2 = %10.4f")%SigmaF2 << endl;
-        vout << format("      NCorr   = %10.4f")%NCorr << endl;
+        vout << format("      SigmaF2  = %10.4f")%SigmaF2 << endl;
+    if( SplitNCorr ){
+        for(int k=0; k < Accumulator->GetNumberOfCoords(); k++ ){
+            vout << format("      NCorr#%-2d = %10.4f")%(k+1)%NCorr[k] << endl;
+        }
+    } else {
+        vout << format("      NCorr    = %10.4f")%NCorr[0] << endl;
+    }
+
     for(int k=0; k < Accumulator->GetNumberOfCoords(); k++ ){
-        vout << format("      WFac#%-2d = %10.4f")%(k+1)%WFac[k] << endl;
+        vout << format("      WFac#%-2d  = %10.4f")%(k+1)%WFac[k] << endl;
     }
 
     // train GPR
@@ -694,7 +789,11 @@ void CABFIntegratorGPR::AnalyticalK(void)
         int i = SampledMap[indi];
         for(int ii=0; ii < NCVs; ii++){
             double er = Accumulator->GetValue(ii,i,EABF_MEAN_FORCE_ERROR);
-            K[indi*NCVs+ii][indi*NCVs+ii] += er*er*NCorr;
+            if( SplitNCorr ){
+                K[indi*NCVs+ii][indi*NCVs+ii] += er*er*NCorr[ii];
+            } else {
+                K[indi*NCVs+ii][indi*NCVs+ii] += er*er*NCorr[0];
+            }
         }
     }
 }
@@ -739,7 +838,11 @@ void CABFIntegratorGPR::NumericalK(void)
         int i = SampledMap[indi];
         for(int ii=0; ii < NCVs; ii++){
             double er = Accumulator->GetValue(ii,i,EABF_MEAN_FORCE_ERROR);
-            K[indi*NCVs+ii][indi*NCVs+ii] += er*er*NCorr;
+            if( SplitNCorr ){
+                K[indi*NCVs+ii][indi*NCVs+ii] += er*er*NCorr[ii];
+            } else {
+                K[indi*NCVs+ii][indi*NCVs+ii] += er*er*NCorr[0];
+            }
         }
     }
 }

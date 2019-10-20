@@ -148,6 +148,7 @@ int CABFIntegrate::Init(int argc,char* argv[])
             vout << "# SigmaF2               : " << setprecision(3) << Options.GetOptSigmaF2() << endl;
             vout << "# NCorr                 : " << setprecision(3) << Options.GetOptNCorr() << endl;
             vout << "# Width factor wfac     : " << Options.GetOptWFac() << endl;
+            vout << "# Split NCorr mode      : " << bool_to_str(Options.GetOptSplitNCorr()) << endl;
         }
     } else {
         ES_ERROR("not implemented method");
@@ -213,7 +214,7 @@ bool CABFIntegrate::Run(void)
     int state = 1;
 
     vout << endl;
-    vout << format("%02d|Loading ABF accumulator: %s")%state%string(ABFAccuName) << endl;
+    vout << format("%02d:Loading ABF accumulator: %s")%state%string(ABFAccuName) << endl;
     state++;
     try {
         Accumulator.Load(InputFile);
@@ -243,7 +244,7 @@ bool CABFIntegrate::Run(void)
 
 // sampling limit -------------------------------
     vout << endl;
-    vout << format("%02d|Preparing ABF accumulator for integration (sampling limit)")%state << endl;
+    vout << format("%02d:Preparing ABF accumulator for integration (sampling limit)")%state << endl;
     state++;
     PrepareAccumulatorI();
     if( ! Options.GetOptSkipFFTest() ){
@@ -255,12 +256,12 @@ bool CABFIntegrate::Run(void)
     if( Options.GetOptMFMaxZScore() > 0.0 ){
         for(int i=1; i <= Options.GetOptMFZTestPasses(); i++ ){
             vout << endl;
-            vout << format("%02d|ABF accumulator integration (%s) for mean force error Z-score test #%d")%state%string(Options.GetOptEcutMethod())%i << endl;
+            vout << format("%02d:ABF accumulator integration (%s) for mean force error Z-score test #%d")%state%string(Options.GetOptEcutMethod())%i << endl;
             state++;
             if( IntegrateForMFZScore(i) == false ) return(false);
 
             vout << endl;
-            vout << format("%02d|Preparing ABF accumulator for integration (mean force error z-score test #%d")%state%i << ")"<< endl;
+            vout << format("%02d:Preparing ABF accumulator for integration (mean force error z-score test #%d")%state%i << ")"<< endl;
             state++;
             PrepareAccumulatorI();
             if( ! Options.GetOptSkipFFTest() ){
@@ -276,7 +277,7 @@ bool CABFIntegrate::Run(void)
 // glue fes ------------------------------------
     if( Options.GetOptGlueHoles() ){
         vout << endl;
-        vout << format("%02d|Preparing ABF accumulator for integration (glue holes on FES)")%state << endl;
+        vout << format("%02d:Preparing ABF accumulator for integration (glue holes on FES)")%state << endl;
         state++;
         GlueHoles();
         PrintSampledStat();
@@ -286,7 +287,7 @@ bool CABFIntegrate::Run(void)
 
     if( Options.GetOptGlueingFactor() > 0 ){
         vout << endl;
-        vout << format("%02d|Preparing ABF accumulator for integration (glueing FES)")%state << endl;
+        vout << format("%02d:Preparing ABF accumulator for integration (glueing FES)")%state << endl;
         state++;
         vout << "   Searching for border regions in close vicinity of sampled areas ..." << endl;
         for(int i=1; i <= Options.GetOptGlueingFactor(); i++ ){
@@ -302,12 +303,12 @@ bool CABFIntegrate::Run(void)
 
     if( Options.GetOptEnergyLimit() > 0.0 ){
         vout << endl;
-        vout << format("%02d|ABF accumulator integration (%s) for energy limit")%state%string(Options.GetOptEcutMethod()) << endl;
+        vout << format("%02d:ABF accumulator integration (%s) for energy limit")%state%string(Options.GetOptEcutMethod()) << endl;
         state++;
         if( IntegrateForEcut() == false ) return(false);
 
         vout << endl;
-        vout << format("%02d|Preparing ABF accumulator for integration (energy limit)")%state << endl;
+        vout << format("%02d:Preparing ABF accumulator for integration (energy limit)")%state << endl;
         state++;
         PrepareAccumulatorII();
         if( ! Options.GetOptSkipFFTest() ){
@@ -321,7 +322,7 @@ bool CABFIntegrate::Run(void)
 
 // integrate data ------------------------------
     vout << endl;
-    vout << format("%02d|ABF accumulator integration (%s)")%state%string(Options.GetOptMethod()) << endl;
+    vout << format("%02d:ABF accumulator integration (%s)")%state%string(Options.GetOptMethod()) << endl;
     state++;
     if( Integrate() == false ) return(false);
     vout << "   Done" << endl;
@@ -343,7 +344,7 @@ bool CABFIntegrate::Run(void)
 
 // print result ---------------------------------
     vout << endl;
-    vout << format("%02d|Writing results to file: %s")%state%string(FEOutputName) << endl;
+    vout << format("%02d:Writing results to file: %s")%state%string(FEOutputName) << endl;
     state++;
     CESPrinter printer;
 
@@ -382,7 +383,7 @@ bool CABFIntegrate::Run(void)
 
     if( Options.GetNumberOfProgArgs() == 3 ){
         vout << endl;
-        vout << format("%02d|Writing results to file: %s (full version, --printall)")%state%string(FullFEOutputName) << endl;
+        vout << format("%02d:Writing results to file: %s (full version, --printall)")%state%string(FullFEOutputName) << endl;
         state++;
 
         if( OutputFile.Open(FullFEOutputName,"w") == false ){
@@ -425,7 +426,7 @@ bool CABFIntegrate::Run(void)
 // save accumulator if requested
     if( Options.GetOptSaveABF() != NULL ){
         vout << endl;
-        vout << format("%02d|Saving ABF accumulator to : %s")%state%string(Options.GetOptSaveABF()) << endl;
+        vout << format("%02d:Saving ABF accumulator to : %s")%state%string(Options.GetOptSaveABF()) << endl;
         state++;
         try {
             Accumulator.Save(Options.GetOptSaveABF());
@@ -490,8 +491,10 @@ void CABFIntegrate::WriteHeader()
                 PrintGPRHyprms(OutputFile);
             } else {
                 fprintf(OutputFile,"# SigmaF2               : %10.4f\n", Options.GetOptSigmaF2());
-                fprintf(OutputFile,"# NCorr                 : %10.4f\n",Options.GetOptNCorr());
+                fprintf(OutputFile,"# NCorr                 : %s\n", (const char*)Options.GetOptNCorr());
                 fprintf(OutputFile,"# Width factor wfac     : %s\n", (const char*)Options.GetOptWFac());
+                fprintf(OutputFile,"# Split NCorr mode      : %s\n", bool_to_str(Options.GetOptSplitNCorr()));
+
             }
         } else {
             ES_ERROR("not implemented method");
@@ -574,6 +577,8 @@ bool CABFIntegrate::IntegrateForMFZScore(int pass)
 
         integrator.SetInputABFAccumulator(&Accumulator);
         integrator.SetOutputFESurface(&FES);
+
+        integrator.SetSplitNCorr(Options.GetOptSplitNCorr());
 
         if( Options.IsOptLoadHyprmsSet() ){
             LoadGPRHyprms(integrator);
@@ -713,6 +718,8 @@ bool CABFIntegrate::IntegrateForEcut(void)
         integrator.SetInputABFAccumulator(&Accumulator);
         integrator.SetOutputFESurface(&FES);
 
+        integrator.SetSplitNCorr(Options.GetOptSplitNCorr());
+
         if( Options.IsOptLoadHyprmsSet() ){
             LoadGPRHyprms(integrator);
         } else {
@@ -845,6 +852,8 @@ bool CABFIntegrate::Integrate()
         integrator.SetInputABFAccumulator(&Accumulator);
         integrator.SetOutputFESurface(&FES);
 
+        integrator.SetSplitNCorr(Options.GetOptSplitNCorr());
+
         if( Options.IsOptLoadHyprmsSet() ){
             LoadGPRHyprms(integrator);
         } else {
@@ -926,6 +935,8 @@ void CABFIntegrate::PrintGPRHyprms(FILE* p_fout)
             fprintf(p_fout,"# SigmaF2               : %10.4f\n",value);
         } else if( key == "NCorr" ){
             fprintf(p_fout,"# NCorr                 : %10.4f\n",value);
+        } else if( key.find("NCorr#") != string::npos ) {
+            fprintf(p_fout,"# %-7s               : %10.4f\n",key.c_str(),value);
         } else if( key.find("WFac#") != string::npos ) {
             fprintf(p_fout,"# %-7s               : %10.4f\n",key.c_str(),value);
         } else {
@@ -966,7 +977,20 @@ void CABFIntegrate::LoadGPRHyprms(CABFIntegratorGPR& gpr)
         if( key == "SigmaF2" ){
             gpr.SetSigmaF2(value);
         } else if( key == "NCorr" ){
-            gpr.SetNCorr(value);
+            gpr.SetNCorr(0,value);
+        } else if( key.find("NCorr#") != string::npos ) {
+            std::replace( key.begin(), key.end(), '#', ' ');
+            stringstream kstr(key);
+            string sncorr;
+            int    cvind;
+            kstr >> sncorr >> cvind;
+            if( ! kstr ){
+                CSmallString error;
+                error << "GPR hyperparameters file, unable to decode ncorr key: " << key.c_str();
+                RUNTIME_ERROR(error);
+            }
+            cvind--; // transform to 0-based indexing
+            gpr.SetNCorr(cvind,value);
         } else if( key.find("WFac#") != string::npos ) {
             std::replace( key.begin(), key.end(), '#', ' ');
             stringstream kstr(key);

@@ -57,11 +57,18 @@ public:
     /// set output free energy surface
     void SetOutputFESurface(CEnergySurface* p_surf);
 
+// hyperparameters
     /// set sigmaf2
     void SetSigmaF2(double sigf2);
 
     /// set ncorr
-    void SetNCorr(double ncorr);
+    void SetNCorr(const CSmallString& spec);
+
+    /// set ncorr
+    void SetNCorr(CSimpleVector<double>& wfac);
+
+    /// set ncorr
+    void SetNCorr(int cvind, double value);
 
     /// multiply of bin sizes
     void SetWFac(const CSmallString& spec);
@@ -72,6 +79,7 @@ public:
     /// multiply of bin sizes
     void SetWFac(int cvind, double value);
 
+// setup
     /// set include error
     void SetIncludeError(bool set);
 
@@ -80,6 +88,9 @@ public:
 
     /// switch to numerical evaluation of kernel matrix
     void SetNumericK(bool set);
+
+    /// use split ncorr
+    void SetSplitNCorr(bool set);
 
     /// set algorithm for LLS
     void SetINVMehod(EGPRINVMethod set);
@@ -121,33 +132,40 @@ private:
     CABFAccumulator*        Accumulator;
     CEnergySurface*         FES;
 
-    // GPR data
+    // GPR data, sizes and index maps
+    int                     NCVs;
     int                     GPRSize;
     int                     NumOfUsedBins;
     CSimpleVector<int>      SampledMap;
     int                     NumOfValues;
     CSimpleVector<int>      ValueMap;
-    int                     NCVs;
-    CSimpleVector<double>   WFac;
-    CSimpleVector<double>   CVLengths2;
-    double                  SigmaF2;
-    double                  NCorr;
-    CFortranMatrix          K;          // kernels
-    double                  logdetK;
-    CSimpleVector<double>   Y;          // derivatives
-    CSimpleVector<double>   GPRModel;   // weights
+
+    // setup
     bool                    UseAnalyticalK;
     bool                    NoEnergy;
     bool                    IncludeError;
     bool                    IncludeGluedBins;
     EGPRINVMethod           Method;
-    bool                    GlobalMinSet;
+
+    // hyperparameters
+    bool                    SplitNCorr;     // ncorr for each cv / all cvs
+    double                  SigmaF2;
+    CSimpleVector<double>   NCorr;
+    CSimpleVector<double>   WFac;
+    CSimpleVector<double>   CVLengths2;
+
+    // GPR model
+    CFortranMatrix          K;              // kernels
+    double                  logdetK;
+    CSimpleVector<double>   Y;              // derivatives
+    CSimpleVector<double>   GPRModel;       // weights
 
     // derivatives
-    CFortranMatrix          ATA;        // alphaT*alpha
-    CFortranMatrix          Kder;       // derivative of kernels w.r.t. a hyperparameter
+    CFortranMatrix          ATA;            // alphaT*alpha
+    CFortranMatrix          Kder;           // derivative of kernels w.r.t. a hyperparameter
 
-    CSimpleVector<double>   GPos;       // global position, either detected or use
+    bool                    GlobalMinSet;
+    CSimpleVector<double>   GPos;           // global position, either detected or use
 
     // SVD setup
     double                  RCond;
@@ -172,7 +190,7 @@ private:
     // derivatives
     void InitHyprmsOpt(void);
     void CalcKderWRTSigmaF2(void);
-    void CalcKderWRTNCorr(void);
+    void CalcKderWRTNCorr(int cv);
     void CalcKderWRTWFac(int cv);
 };
 
