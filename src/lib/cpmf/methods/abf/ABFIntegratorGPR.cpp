@@ -1358,7 +1358,7 @@ void CABFIntegratorGPR::CalculateErrors(CSimpleVector<double>& gpos,CVerboseStr&
         }
         FES->SetError(j,error);
 
-        #pragma omp private
+        #pragma omp atomic
         nbatches++;
 
 #if defined(_OPENMP)
