@@ -85,7 +85,7 @@ private:
     void PrintSampledStat(void);
     void InitOptimizer(void);
     void Test(void);
-    void Optimize(void);
+    bool Optimize(void);
     void RunGPRAnalytical(void);
     void RunGPRNumerical(void);
     void WriteResults(int istep);

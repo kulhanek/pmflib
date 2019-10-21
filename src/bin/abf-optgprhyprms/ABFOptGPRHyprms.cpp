@@ -146,9 +146,10 @@ bool CABFOptGPRHyprms::Run(void)
     vout << "   Done" << endl;
 
 // run optimization
+    bool result = true;
     InitOptimizer();
     if( ! Options.GetOptTest() ){
-        Optimize();
+        result = Optimize();
     } else {
         Test();
     }
@@ -161,7 +162,7 @@ bool CABFOptGPRHyprms::Run(void)
         return(false);
     }
 
-    return(true);
+    return(result);
 }
 
 //------------------------------------------------------------------------------
@@ -402,7 +403,7 @@ extern "C" void lbfgs_(int* N,int* M,double* X,double* F,double* G,int* DIAGCO,d
 
 //------------------------------------------------------------------------------
 
-void CABFOptGPRHyprms::Optimize(void)
+bool CABFOptGPRHyprms::Optimize(void)
 {
     int iflag;
     int diacgo = 0;
@@ -438,10 +439,11 @@ void CABFOptGPRHyprms::Optimize(void)
         if( iflag < 0 ) {
             CSmallString error;
             error << ">>> ERROR: Internal L-BFGS driver error! Code = " << iflag;
-            RUNTIME_ERROR(error);
+            ES_ERROR(error);
+            return(false);
         }
     }
-
+    return(true);
 }
 
 //------------------------------------------------------------------------------
