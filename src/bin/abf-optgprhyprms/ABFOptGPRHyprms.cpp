@@ -767,14 +767,14 @@ bool CABFOptGPRHyprms::WriteHyperPrms(FILE* p_fout)
     if( fprintf(p_fout,"# GPR hyperparameters for abf-integrate\n") <= 0 ) return(false);
     if( fprintf(p_fout,"SigmaF2  = %10.4f\n",SigmaF2) <= 0 ) return(false);
     if( SplitNCorr ){
-        for(int i=0; i < NCorr.GetLength(); i++ ){
-            if( fprintf(p_fout,"NCorr#%-2d = %10.4f\n",i+1,NCorr[i]) <= 0 ) return(false);
+        for(size_t i=0; i < NCorr.GetLength(); i++ ){
+            if( fprintf(p_fout,"NCorr#%-2ld = %10.4f\n",i+1,NCorr[i]) <= 0 ) return(false);
         }
     } else {
         if( fprintf(p_fout,"NCorr    = %10.4f\n",NCorr[0]) <= 0 ) return(false);
     }
-    for(int i=0; i < WFac.GetLength(); i++ ){
-        if( fprintf(p_fout,"WFac#%-2d  = %10.4f\n",i+1,WFac[i]) <= 0 ) return(false);
+    for(size_t i=0; i < WFac.GetLength(); i++ ){
+        if( fprintf(p_fout,"WFac#%-2ld  = %10.4f\n",i+1,WFac[i]) <= 0 ) return(false);
     }
 
     return(true);

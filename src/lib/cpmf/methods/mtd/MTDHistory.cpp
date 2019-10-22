@@ -720,7 +720,7 @@ void CMTDHistory::SetPVector(const CSimpleVector<double>& pvector)
 {
     unsigned int   curr_position = 0;
     CMTDBuffer*    p_buff = NULL;
-    int            loc = 0;
+    size_t         loc = 0;
 
     Deallocate();
 

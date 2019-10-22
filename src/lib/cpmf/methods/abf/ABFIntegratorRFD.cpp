@@ -139,7 +139,7 @@ bool CABFIntegratorRFD::Integrate(CVerboseStr& vout)
 
 // find global minimum
     double glb_min = X[0];
-    for(int i=0; i < X.GetLength(); i++) {
+    for(size_t i=0; i < X.GetLength(); i++) {
         if(glb_min > X[i]) glb_min = X[i];
     }
 

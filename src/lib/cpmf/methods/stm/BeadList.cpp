@@ -2094,7 +2094,7 @@ double CBeadList::OptimizePath(CSimpleVector<CBead>& beads)
 
     // get initial path length from linear interpolation
     double tot_length = 0;
-    for(int b=1; b < beads.GetLength(); b++){
+    for(size_t b=1; b < beads.GetLength(); b++){
         double slen = 0;
         for(int i=0; i < NumOfCVs; i++){
             slen += (beads[b].PPos[i]-beads[b-1].PPos[i])*(beads[b].PPos[i]-beads[b-1].PPos[i]);
@@ -2109,7 +2109,7 @@ double CBeadList::OptimizePath(CSimpleVector<CBead>& beads)
     // get initial alphas from linear interpolation
     beads[0].Alpha = 0.0;
     double path_length = 0;
-    for(int b=1; b < beads.GetLength()-1; b++){
+    for(size_t b=1; b < beads.GetLength()-1; b++){
         double slen = 0;
         for(int i=0; i < NumOfCVs; i++){
             slen += (beads[b].PPos[i]-beads[b-1].PPos[i])*(beads[b].PPos[i]-beads[b-1].PPos[i]);
@@ -2131,7 +2131,7 @@ double CBeadList::OptimizePath(CSimpleVector<CBead>& beads)
         // interpolate CVS
         for(int i=0; i < NumOfCVs; i++){
             CVSplines[i].Allocate(beads.GetLength());
-            for(int b=0; b < beads.GetLength(); b++){
+            for(size_t b=0; b < beads.GetLength(); b++){
                 CVSplines[i].AddPoint(b,beads[b].Alpha,beads[b].PPos[i]);
             }
             CVSplines[i].Finalize();
@@ -2141,7 +2141,7 @@ double CBeadList::OptimizePath(CSimpleVector<CBead>& beads)
 
         // determine new path length
         tot_length = 0;
-        for(int b=1; b < beads.GetLength(); b++){
+        for(size_t b=1; b < beads.GetLength(); b++){
             tot_length += GetSegmentLength(beads[b-1].Alpha,beads[b].Alpha);
         }
 
@@ -2156,7 +2156,7 @@ double CBeadList::OptimizePath(CSimpleVector<CBead>& beads)
         beads[0].Alpha = 0.0;
         double path_length = 0;
         double prev_alpha = beads[0].Alpha;
-        for(int b=1; b < beads.GetLength()-1; b++){
+        for(size_t b=1; b < beads.GetLength()-1; b++){
             path_length += GetSegmentLength(prev_alpha,beads[b].Alpha);
             beads[b].Alpha = path_length/tot_length;
             prev_alpha = beads[b].Alpha;

@@ -74,7 +74,7 @@ void CPMFTopology::Clear(void)
 
 bool CPMFTopology::SetResidue(int idx,const CSmallString& name,int first_atom)
 {
-    if((idx < 0) || (idx >= Residues.GetLength())) {
+    if((idx < 0) || (idx >= (int)Residues.GetLength())) {
         ES_ERROR("residue out-of-range");
         return(false);
     }
@@ -88,7 +88,7 @@ bool CPMFTopology::SetResidue(int idx,const CSmallString& name,int first_atom)
 
 bool CPMFTopology::SetAtom(int idx,const CSmallString& name,const CSmallString& type)
 {
-    if((idx < 0) || (idx >= Atoms.GetLength())) {
+    if((idx < 0) || (idx >= (int)Atoms.GetLength())) {
         ES_ERROR("atom out-of-range");
         return(false);
     }
@@ -102,7 +102,7 @@ bool CPMFTopology::SetAtom(int idx,const CSmallString& name,const CSmallString& 
 
 bool CPMFTopology::SetAtom(int idx,double mass,double x,double y,double z)
 {
-    if((idx < 0) || (idx >= Atoms.GetLength())) {
+    if((idx < 0) || (idx >= (int)Atoms.GetLength())) {
         ES_ERROR("atom out-of-range");
         return(false);
     }
@@ -117,7 +117,7 @@ bool CPMFTopology::GetAtom(int idx,double& mass,double& x,double& y,double& z,
                 CSmallString& name,CSmallString& type,
                 int& resid,CSmallString& resname)
 {
-    if((idx < 0) || (idx >= Atoms.GetLength())) {
+    if((idx < 0) || (idx >= (int)Atoms.GetLength())) {
         ES_ERROR("atom out-of-range");
         return(false);
     }
@@ -144,10 +144,10 @@ bool CPMFTopology::GetAtom(int idx,double& mass,double& x,double& y,double& z,
 
 bool CPMFTopology::Finalize(void)
 {
-    for(int i=0; i < Residues.GetLength(); i++) {
+    for(int i=0; i < (int)Residues.GetLength(); i++) {
         int last_atm;
-        if(i == Residues.GetLength() - 1) {
-            last_atm = Atoms.GetLength();
+        if(i == (int)Residues.GetLength() - 1) {
+            last_atm = (int)Atoms.GetLength();
         } else {
             last_atm = Residues[i+1].FirstAtomIndex;
         }
@@ -426,7 +426,7 @@ bool CPMFTopology::LoadBasicInfo(FILE* p_top,const char* p_format)
     }
 
     // check number of atoms
-    if( Atoms.GetLength() !=  NATOM ){
+    if( (int)Atoms.GetLength() !=  NATOM ){
         CSmallString error;
         error << "inconsistent number of atoms: " << NATOM;
         error << " provided, but the system has " << Atoms.GetLength();
@@ -452,7 +452,7 @@ bool CPMFTopology::LoadAtomNames(FILE* p_file,const char* p_format)
     CFortranIO fortranio(p_file);
     fortranio.SetFormat(p_format);
 
-    for(int i=0; i < Atoms.GetLength(); i++) {
+    for(int i=0; i < (int)Atoms.GetLength(); i++) {
         if( fortranio.ReadString(Atoms[i].Name) == false ) {
             ES_ERROR("unable to load ATOM_NAME item");
             return(false);
@@ -469,7 +469,7 @@ bool CPMFTopology::LoadResidueNames(FILE* p_file,const char* p_format)
     CFortranIO fortranio(p_file);
     fortranio.SetFormat(p_format);
 
-    for(int i=0; i < Residues.GetLength(); i++) {
+    for(int i=0; i < (int)Residues.GetLength(); i++) {
         if( fortranio.ReadString(Residues[i].Name) == false ) {
             ES_ERROR("unable to load LABRES item");
             return(false);
@@ -589,7 +589,7 @@ bool CPMFTopology::PrintTopology(void)
     printf("#    ID    Name  ResID  Res     X [A]      Y [A]      Z [A]    Mass  Type\n");
     printf("# -------- ---- ------- ---- ---------- ---------- ---------- ------ ----\n");
 
-    for(int i=0; i < Atoms.GetLength(); i++) {
+    for(int i=0; i < (int)Atoms.GetLength(); i++) {
 
         CPMFResidue* p_res = Atoms[i].GetResidue();
         if(p_res != NULL) {

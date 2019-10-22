@@ -24,6 +24,7 @@
 #include <SimpleVector.hpp>
 #include <VerboseStr.hpp>
 #include <FortranMatrix.hpp>
+#include <stddef.h>
 
 //------------------------------------------------------------------------------
 
@@ -68,7 +69,7 @@ public:
     void SetNCorr(CSimpleVector<double>& wfac);
 
     /// set ncorr
-    void SetNCorr(int cvind, double value);
+    void SetNCorr(size_t cvind, double value);
 
     /// multiply of bin sizes
     void SetWFac(const CSmallString& spec);
@@ -77,7 +78,7 @@ public:
     void SetWFac(CSimpleVector<double>& wfac);
 
     /// multiply of bin sizes
-    void SetWFac(int cvind, double value);
+    void SetWFac(size_t cvind, double value);
 
 // setup
     /// set include error
@@ -109,7 +110,7 @@ public:
     bool Integrate(CVerboseStr& vout,bool nostat=false);
 
     /// get root mean square residuals
-    double GetRMSR(int cv);
+    double GetRMSR(size_t cv);
 
     /// get log of Marginal Likelihood
     double GetLogMarginalLikelihood(void);
@@ -133,12 +134,13 @@ private:
     CEnergySurface*         FES;
 
     // GPR data, sizes and index maps
-    int                     NCVs;
-    int                     GPRSize;
-    int                     NumOfUsedBins;
-    CSimpleVector<int>      SampledMap;
-    int                     NumOfValues;
-    CSimpleVector<int>      ValueMap;
+    size_t                  NCVs;
+    size_t                  NumOfBins;
+    size_t                  GPRSize;
+    size_t                  NumOfUsedBins;
+    CSimpleVector<size_t>   SampledMap;
+    size_t                  NumOfValues;
+    CSimpleVector<size_t>   ValueMap;
 
     // setup
     bool                    UseAnalyticalK;
@@ -175,7 +177,7 @@ private:
     void CalculateErrors(CSimpleVector<double>& gpos,CVerboseStr& vout); // gpos - position of global minimum
 
     double GetValue(const CSimpleVector<double>& position);
-    double GetMeanForce(const CSimpleVector<double>& position,int icoord);
+    double GetMeanForce(const CSimpleVector<double>& position,size_t icoord);
     double GetCov(CSimpleVector<double>& lpos,CSimpleVector<double>& rpos);
     double GetVar(CSimpleVector<double>& lpos);
     // optimized version var+cov
@@ -190,8 +192,8 @@ private:
     // derivatives
     void InitHyprmsOpt(void);
     void CalcKderWRTSigmaF2(void);
-    void CalcKderWRTNCorr(int cv);
-    void CalcKderWRTWFac(int cv);
+    void CalcKderWRTNCorr(size_t cv);
+    void CalcKderWRTWFac(size_t cv);
 };
 
 //------------------------------------------------------------------------------
