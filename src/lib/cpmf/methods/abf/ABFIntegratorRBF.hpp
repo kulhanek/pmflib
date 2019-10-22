@@ -81,7 +81,7 @@ public:
     bool Integrate(CVerboseStr& vout);
 
     /// get root mean square residuals
-    double GetRMSR(int cv);
+    double GetRMSR(size_t cv);
 
     /// write file with derivatives
     bool WriteMFInfo(const CSmallString& name);
@@ -101,10 +101,11 @@ private:
     ERBFLLSMethod           Method;
 
     // RBF data
-    int                     NumOfRBFs;
+    size_t                  NCVs;
+    size_t                  NumOfBins;
+    size_t                  NumOfRBFs;
     CSimpleVector<double>   Weights;
-    CSimpleVector<int>      NumOfRBFBins;
-    int                     NumOfCVs;
+    CSimpleVector<size_t>   NumOfRBFBins;
     CSimpleVector<double>   Sigmas;
 
     bool                    IncludeGluedBins;
@@ -114,9 +115,9 @@ private:
 
     bool IntegrateByLS(CVerboseStr& vout);
 
-    void    GetRBFPosition(unsigned int index,CSimpleVector<double>& position);
+    void    GetRBFPosition(size_t index,CSimpleVector<double>& position);
     double  GetValue(const CSimpleVector<double>& position);
-    double  GetMeanForce(const CSimpleVector<double>& position,int icoord);
+    double  GetMeanForce(const CSimpleVector<double>& position,size_t icoord);
 };
 
 //------------------------------------------------------------------------------

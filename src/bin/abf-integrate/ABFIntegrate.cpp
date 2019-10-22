@@ -368,7 +368,7 @@ bool CABFIntegrate::Run(void)
         printer.SetSampleLimit(Options.GetOptLimit());
     }
 
-    printer.IncludeGluedAreas((Options.GetOptGlueingFactor() > 0)||Options.GetOptIncludeGluedRegions());
+    printer.IncludeGluedAreas((Options.GetOptGlueingFactor() > 0)||Options.GetOptGlueHoles()||Options.GetOptIncludeGluedRegions());
     printer.SetIncludeError(Options.GetOptWithError());
     printer.SetIncludeBinStat(Options.GetOptIncludeBinStat());
     printer.SetPrintedES(&FES);
@@ -409,7 +409,7 @@ bool CABFIntegrate::Run(void)
 
         // print all
         printer.SetSampleLimit(0);
-        printer.IncludeGluedAreas((Options.GetOptGlueingFactor() > 0)||Options.GetOptIncludeGluedRegions());
+        printer.IncludeGluedAreas((Options.GetOptGlueingFactor() > 0)||Options.GetOptGlueHoles()||Options.GetOptIncludeGluedRegions());
         printer.SetIncludeError(Options.GetOptWithError());
         printer.SetIncludeBinStat(Options.GetOptIncludeBinStat());
         printer.SetPrintedES(&FES);
@@ -694,7 +694,7 @@ bool CABFIntegrate::IntegrateForEcut(void)
         integrator.SetRCond(Options.GetOptRCond());
         integrator.SetRFac(Options.GetOptRFac());
         integrator.SetOverhang(Options.GetOptOverhang());
-        integrator.IncludeGluedAreas((Options.GetOptGlueingFactor() > 0)||Options.GetOptIncludeGluedRegions());
+        integrator.IncludeGluedAreas((Options.GetOptGlueingFactor() > 0)||Options.GetOptGlueHoles()||Options.GetOptIncludeGluedRegions());
 
         if( Options.GetOptEcutMethod() == Options.GetOptMethod() ){
             if( Options.GetOptLAMethod() == "svd" ){
@@ -729,7 +729,7 @@ bool CABFIntegrate::IntegrateForEcut(void)
         }
 
         integrator.SetNumericK(Options.GetOptNumericK());
-        integrator.IncludeGluedAreas((Options.GetOptGlueingFactor() > 0)||Options.GetOptIncludeGluedRegions());
+        integrator.IncludeGluedAreas((Options.GetOptGlueingFactor() > 0)||Options.GetOptGlueHoles()||Options.GetOptIncludeGluedRegions());
         integrator.SetIncludeError(false);
 
         integrator.SetRCond(Options.GetOptRCond());
@@ -826,7 +826,7 @@ bool CABFIntegrate::Integrate()
         integrator.SetRCond(Options.GetOptRCond());
         integrator.SetRFac(Options.GetOptRFac());
         integrator.SetOverhang(Options.GetOptOverhang());
-        integrator.IncludeGluedAreas((Options.GetOptGlueingFactor() > 0)||Options.GetOptIncludeGluedRegions());
+        integrator.IncludeGluedAreas((Options.GetOptGlueingFactor() > 0)||Options.GetOptGlueHoles()||Options.GetOptIncludeGluedRegions());
 
         if( Options.GetOptLAMethod() == "svd" ){
             integrator.SetLLSMehod(ERBFLLS_SVD);
@@ -866,7 +866,7 @@ bool CABFIntegrate::Integrate()
         integrator.SetIncludeError(Options.GetOptWithError());
         integrator.SetNoEnergy(Options.GetOptNoEnergy());
         integrator.SetNumericK(Options.GetOptNumericK());
-        integrator.IncludeGluedAreas((Options.GetOptGlueingFactor() > 0)||Options.GetOptIncludeGluedRegions());
+        integrator.IncludeGluedAreas((Options.GetOptGlueingFactor() > 0)||Options.GetOptGlueHoles()||Options.GetOptIncludeGluedRegions());
 
         if( Options.IsOptGlobalMinSet() ){
             integrator.SetGlobalMin(Options.GetOptGlobalMin());
