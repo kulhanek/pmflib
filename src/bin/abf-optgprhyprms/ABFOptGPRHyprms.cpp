@@ -701,10 +701,12 @@ double CABFOptGPRHyprms::GetLogML(CABFIntegratorGPR& gpr)
     gpr.SetWFac(WFac);
     vout << high;
     gpr.Integrate(vout,true);
+    double logml = gpr.GetLogMarginalLikelihood();
+// calculate logML
+    vout << "   logML = " << setprecision(5) << logml << endl;
     vout << low;
 
-// calculate logML
-    return(gpr.GetLogMarginalLikelihood());
+    return(logml);
 }
 
 //------------------------------------------------------------------------------

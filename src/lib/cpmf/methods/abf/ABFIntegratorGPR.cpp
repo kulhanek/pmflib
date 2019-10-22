@@ -664,7 +664,7 @@ bool CABFIntegratorGPR::TrainGP(CVerboseStr& vout)
         vout << "   Creating K+Sigma and Y (numeric differentation) ..." << endl;
     }
 
-    vout << "   Dim: " << GPRSize << " x " << GPRSize << endl;
+    vout << "      Dim: " << GPRSize << " x " << GPRSize << endl;
 
     K.CreateMatrix(GPRSize,GPRSize);
     Y.CreateVector(GPRSize);
@@ -694,8 +694,6 @@ bool CABFIntegratorGPR::TrainGP(CVerboseStr& vout)
         }
     }
 
-
-
 // inverting the K+Sigma
     int result = 0;
     switch(Method){
@@ -712,16 +710,18 @@ bool CABFIntegratorGPR::TrainGP(CVerboseStr& vout)
         case(EGPRINV_SVD):{
             vout << "   Inverting K+Sigma by SVD (divide and conquer driver) ..." << endl;
             int rank = 0;
-            result = CSciLapack::invSVD2(K,logdetK,RCond,rank);
-            vout << "   Rank = " << rank << "; Info = " << result << endl;
+            double realRCond = 0;
+            result = CSciLapack::invSVD2(K,logdetK,RCond,rank,realRCond);
+            vout << "      Rank = " << rank << "; Info = " << result << "; Real rcond = " << scientific << realRCond << fixed << endl;
             if( result != 0 ) return(false);
             }
             break;
         case(EGPRINV_SVD2):{
             vout << "   Inverting K+Sigma by SVD2 (simple driver) ..." << endl;
             int rank = 0;
-            result = CSciLapack::invSVD1(K,logdetK,RCond,rank);
-            vout << "   Rank = " << rank << "; Info = " << result << endl;
+            double realRCond = 0;
+            result = CSciLapack::invSVD1(K,logdetK,RCond,rank,realRCond);
+            vout << "      Rank = " << rank << "; Info = " << result << "; Real rcond = " << scientific << realRCond << fixed << endl;
             if( result != 0 ) return(false);
             }
             break;
@@ -765,6 +765,7 @@ void CABFIntegratorGPR::AnalyticalK(void)
                 double dd = CVLengths2[ii];
                 arg += du*du/(2.0*dd);
             }
+
             arg = SigmaF2*exp(-arg);
 
             // calculate block of second derivatives
@@ -796,6 +797,7 @@ void CABFIntegratorGPR::AnalyticalK(void)
             }
         }
     }
+
 }
 
 //------------------------------------------------------------------------------
@@ -966,7 +968,7 @@ void CABFIntegratorGPR::CalculateEnergy(CVerboseStr& vout)
     if( GlobalMinSet ){
         // GPos.CreateVector(NCVs) - is created in  SetGlobalMin
    //   vout << "   Calculating FES ..." << endl;
-        vout << "       Global minimum provided at: ";
+        vout << "      Global minimum provided at: ";
         vout << GPos[0];
         for(int i=1; i < Accumulator->GetNumberOfCoords(); i++){
             vout << "x" << GPos[i];
@@ -994,7 +996,7 @@ void CABFIntegratorGPR::CalculateEnergy(CVerboseStr& vout)
         }
 
    //   vout << "   Calculating FES ..." << endl;
-        vout << "       Global minimum found at: ";
+        vout << "      Global minimum found at: ";
         vout << GPos[0];
         for(int i=1; i < Accumulator->GetNumberOfCoords(); i++){
             vout << "x" << GPos[i];

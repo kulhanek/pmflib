@@ -538,6 +538,9 @@ bool CABFIntegrate::IntegrateForMFZScore(int pass)
     } else if( Options.GetOptEcutMethod() == "rbf" ){
         CABFIntegratorRBF   integrator;
 
+        integrator.SetInputABFAccumulator(&Accumulator);
+        integrator.SetOutputFESurface(&FES);
+
         integrator.SetWFac(Options.GetOptWFac());
         integrator.SetRCond(Options.GetOptRCond());
         integrator.SetRFac(Options.GetOptRFac());
@@ -554,9 +557,6 @@ bool CABFIntegrate::IntegrateForMFZScore(int pass)
                 INVALID_ARGUMENT("algorithm - not implemented");
             }
         }
-
-        integrator.SetInputABFAccumulator(&Accumulator);
-        integrator.SetOutputFESurface(&FES);
 
         if(integrator.Integrate(vout) == false) {
             ES_ERROR("unable to integrate ABF accumulator");
@@ -661,6 +661,9 @@ bool CABFIntegrate::IntegrateForEcut(void)
     } else if(Options.GetOptEcutMethod() == "rfd2" ) {
         CABFIntegratorRFD2   integrator;
 
+        integrator.SetInputABFAccumulator(&Accumulator);
+        integrator.SetOutputFESurface(&FES);
+
         integrator.SetPeriodicity(Options.GetOptPeriodicity());
         integrator.SetFDPoints(Options.GetOptFDPoints());
         integrator.SetRCond(Options.GetOptRCond());
@@ -677,15 +680,15 @@ bool CABFIntegrate::IntegrateForEcut(void)
             }
         }
 
-        integrator.SetInputABFAccumulator(&Accumulator);
-        integrator.SetOutputFESurface(&FES);
-
         if(integrator.Integrate(vout) == false) {
             ES_ERROR("unable to integrate ABF accumulator");
             return(false);
         }
     } else if( Options.GetOptEcutMethod() == "rbf" ){
         CABFIntegratorRBF   integrator;
+
+        integrator.SetInputABFAccumulator(&Accumulator);
+        integrator.SetOutputFESurface(&FES);
 
         integrator.SetWFac(Options.GetOptWFac());
         integrator.SetRCond(Options.GetOptRCond());
@@ -704,9 +707,6 @@ bool CABFIntegrate::IntegrateForEcut(void)
                 INVALID_ARGUMENT("algorithm - not implemented");
             }
         }
-
-        integrator.SetInputABFAccumulator(&Accumulator);
-        integrator.SetOutputFESurface(&FES);
 
         if(integrator.Integrate(vout) == false) {
             ES_ERROR("unable to integrate ABF accumulator");
@@ -771,6 +771,9 @@ bool CABFIntegrate::Integrate()
     if(Options.GetOptMethod() == "rfd" ) {
         CABFIntegratorRFD   integrator;
 
+        integrator.SetInputABFAccumulator(&Accumulator);
+        integrator.SetOutputFESurface(&FES);
+
         integrator.SetPeriodicity(Options.GetOptPeriodicity());
         integrator.SetFDPoints(Options.GetOptFDPoints());
 
@@ -783,8 +786,6 @@ bool CABFIntegrate::Integrate()
         }
 
         integrator.SetUseOldRFDMode(Options.GetOptUseOldRFD());
-        integrator.SetInputABFAccumulator(&Accumulator);
-        integrator.SetOutputFESurface(&FES);
 
         if(integrator.Integrate(vout) == false) {
             ES_ERROR("unable to integrate ABF accumulator");
@@ -792,6 +793,9 @@ bool CABFIntegrate::Integrate()
         }
     } else if(Options.GetOptMethod() == "rfd2" ) {
         CABFIntegratorRFD2   integrator;
+
+        integrator.SetInputABFAccumulator(&Accumulator);
+        integrator.SetOutputFESurface(&FES);
 
         integrator.SetPeriodicity(Options.GetOptPeriodicity());
         integrator.SetFDPoints(Options.GetOptFDPoints());
@@ -808,15 +812,15 @@ bool CABFIntegrate::Integrate()
             INVALID_ARGUMENT("algorithm - not implemented");
         }
 
-        integrator.SetInputABFAccumulator(&Accumulator);
-        integrator.SetOutputFESurface(&FES);
-
         if(integrator.Integrate(vout) == false) {
             ES_ERROR("unable to integrate ABF accumulator");
             return(false);
         }
     } else if( Options.GetOptMethod() == "rbf" ){
         CABFIntegratorRBF   integrator;
+
+        integrator.SetInputABFAccumulator(&Accumulator);
+        integrator.SetOutputFESurface(&FES);
 
         integrator.SetWFac(Options.GetOptWFac());
         integrator.SetRCond(Options.GetOptRCond());
@@ -833,9 +837,6 @@ bool CABFIntegrate::Integrate()
         } else {
             INVALID_ARGUMENT("algorithm - not implemented");
         }
-
-        integrator.SetInputABFAccumulator(&Accumulator);
-        integrator.SetOutputFESurface(&FES);
 
         if(integrator.Integrate(vout) == false) {
             ES_ERROR("unable to integrate ABF accumulator");
