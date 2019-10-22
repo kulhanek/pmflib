@@ -627,11 +627,11 @@ bool CABFIntegratorGPR::Integrate(CVerboseStr& vout,bool nostat)
     if( ! nostat ){
         // and finaly some statistics
         for(size_t k=0; k < NCVs; k++ ){
-        vout << "   RMSR CV#" << k+1 << " = " << setprecision(5) << GetRMSR(k) << endl;
+        vout << "      RMSR CV#" << k+1 << " = " << setprecision(5) << GetRMSR(k) << endl;
         }
 
         // and marginal likelihood
-        vout << "   logML = " << setprecision(5) << GetLogMarginalLikelihood() << endl;
+        vout << "      logML = " << setprecision(5) << GetLogMarginalLikelihood() << endl;
     }
 
     // finalize FES if requested
@@ -1017,9 +1017,9 @@ void CABFIntegratorGPR::CalculateEnergy(CVerboseStr& vout)
         }
     }
 
-    vout << "   SigmaF2 = " << setprecision(5) << FES->GetSigmaF2() << endl;
+    vout << "      SigmaF2 = " << setprecision(5) << FES->GetSigmaF2() << endl;
     if( IncludeGluedBins ){
-        vout << "   SigmaF2 (including glued bins) = " << setprecision(5) << FES->GetSigmaF2(true) << endl;
+        vout << "      SigmaF2 (including glued bins) = " << setprecision(5) << FES->GetSigmaF2(true) << endl;
     }
 }
 

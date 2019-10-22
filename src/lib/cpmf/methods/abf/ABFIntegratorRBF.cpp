@@ -201,6 +201,8 @@ void CABFIntegratorRBF::IncludeGluedAreas(bool set)
 
 bool CABFIntegratorRBF::Integrate(CVerboseStr& vout)
 {
+    PrintExecInfo(vout);
+
     if( Accumulator == NULL ) {
         ES_ERROR("ABF accumulator is not set");
         return(false);
@@ -223,11 +225,11 @@ bool CABFIntegratorRBF::Integrate(CVerboseStr& vout)
         ES_ERROR("number of coordinates is zero");
         return(false);
     }
-    if( RFac.GetLength() == NCVs ){
+    if( RFac.GetLength() != NCVs ){
         ES_ERROR("rfac not set");
         return(false);
     }
-    if( WFac.GetLength() == NCVs ){
+    if( WFac.GetLength() != NCVs ){
         ES_ERROR("wfac not set");
         return(false);
     }
@@ -265,13 +267,20 @@ bool CABFIntegratorRBF::Integrate(CVerboseStr& vout)
     // print hyperparameters
     vout << "   RBF parameters ..." << endl;
     for(size_t k=0; k < NCVs; k++ ){
-        vout << format("     WFac#%-2d = %10.4f")%(k+1)%WFac[k] << endl;
+        vout << format("      WFac#%-2d = %10.4f")%(k+1)%WFac[k] << endl;
+    }
+    for(size_t k=0; k < NCVs; k++ ){
+        vout << format("      RFac#%-2d = %10.4f")%(k+1)%RFac[k] << endl;
     }
 
     // integrate
     if( IntegrateByLS(vout) == false ){
         ES_ERROR("unable to solve least square problem by svd");
         return(false);
+    }
+
+    for(size_t k=0; k < NCVs; k++ ){
+    vout << "      RMSR CV#" << k+1 << " = " << setprecision(5) << GetRMSR(k) << endl;
     }
 
     vout << "   Calculating FES ..." << endl;
@@ -316,16 +325,27 @@ bool CABFIntegratorRBF::Integrate(CVerboseStr& vout)
         FES->SetEnergy(i,value);
     }
 
-    for(size_t k=0; k < NCVs; k++ ){
-    vout << "   RMSR CV#" << k+1 << " = " << setprecision(5) << GetRMSR(k) << endl;
-    }
-
-    vout << "   SigmaF2 = " << setprecision(5) << FES->GetSigmaF2() << endl;
+    vout << "      SigmaF2 = " << setprecision(5) << FES->GetSigmaF2() << endl;
     if( IncludeGluedBins ){
-        vout << "   SigmaF2 (including glued bins) = " << setprecision(5) << FES->GetSigmaF2(true) << endl;
+        vout << "      SigmaF2 (including glued bins) = " << setprecision(5) << FES->GetSigmaF2(true) << endl;
     }
 
     return(true);
+}
+
+//------------------------------------------------------------------------------
+
+void CABFIntegratorRBF::PrintExecInfo(CVerboseStr& vout)
+{
+//#if defined(_OPENMP)
+//    {
+//        int ncpus = omp_get_max_threads();
+//        vout << "   OpenMP - number of threads: " << ncpus << endl;
+//    }
+//#else
+//    vout << "   No OpenMP - sequential mode." << endl;
+//#endif
+    CSciLapack::PrintExecInfo(vout);
 }
 
 //==============================================================================
@@ -349,7 +369,7 @@ bool CABFIntegratorRBF::IntegrateByLS(CVerboseStr& vout)
     CSimpleVector<double>   lpos;
     lpos.CreateVector(NCVs);
 
-    vout << "   Dim: " << neq << " x " << NumOfRBFs << endl;
+    vout << "      Dim: " << neq << " x " << NumOfRBFs << endl;
 
     CFortranMatrix A;
     A.CreateMatrix(neq,NumOfRBFs);

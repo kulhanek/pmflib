@@ -90,6 +90,9 @@ public:
     /// filter by MF outliers
     void FilterByMFZScore(double zscore,CVerboseStr& vout);
 
+    /// print exec info
+    static void PrintExecInfo(CVerboseStr& vout);
+
 // section of private data ----------------------------------------------------
 private:
     CABFAccumulator*        Accumulator;
