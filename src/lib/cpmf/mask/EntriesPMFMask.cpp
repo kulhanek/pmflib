@@ -24,6 +24,7 @@
 #include <ErrorSystem.hpp>
 #include <PMFTopology.hpp>
 #include <PMFMask.hpp>
+#include <PMFMainHeader.hpp>
 
 //------------------------------------------------------------------------------
 
@@ -38,7 +39,7 @@ extern "C" {
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void PMF_PACKAGE cpmf_mask_topo_init_(int* rtstat,int* natoms,int* nres,int* has_box,
+void PMF_PACKAGE cpmf_mask_topo_init_(FTINT* rtstat,FTINT* natoms,FTINT* nres,FTINT* has_box,
                           double* cbox_x,double* cbox_y,double* cbox_z)
 {
     *rtstat = 0;
@@ -56,7 +57,7 @@ void PMF_PACKAGE cpmf_mask_topo_init_(int* rtstat,int* natoms,int* nres,int* has
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void PMF_PACKAGE cpmf_mask_topo_load_(int* rtstat,char* name,unsigned int name_len)
+void PMF_PACKAGE cpmf_mask_topo_load_(FTINT* rtstat,char* name,UFTINT name_len)
 {
     *rtstat = 0;
 
@@ -85,8 +86,8 @@ void PMF_PACKAGE cpmf_mask_clear_(void)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void PMF_PACKAGE cpmf_mask_set_topo_residue_(int* rtstat,int* index,char* name,int* first_atom,
-                                 unsigned int name_len)
+void PMF_PACKAGE cpmf_mask_set_topo_residue_(FTINT* rtstat,FTINT* index,char* name,FTINT* first_atom,
+                                 UFTINT name_len)
 {
     CSmallString s_name;
     s_name.SetFromFortran(name,name_len,true);
@@ -102,8 +103,8 @@ void PMF_PACKAGE cpmf_mask_set_topo_residue_(int* rtstat,int* index,char* name,i
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void PMF_PACKAGE cpmf_mask_set_topo_atom_(int* rtstat,int* index,char* name,char* type,
-                              unsigned int name_len,unsigned int type_len)
+void PMF_PACKAGE cpmf_mask_set_topo_atom_(FTINT* rtstat,FTINT* index,char* name,char* type,
+                              UFTINT name_len,UFTINT type_len)
 {
     CSmallString s_name;
     s_name.SetFromFortran(name,name_len,true);
@@ -122,7 +123,7 @@ void PMF_PACKAGE cpmf_mask_set_topo_atom_(int* rtstat,int* index,char* name,char
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void PMF_PACKAGE cpmf_mask_set_topo_atom_mcrd_(int* rtstat,int* index,
+void PMF_PACKAGE cpmf_mask_set_topo_atom_mcrd_(FTINT* rtstat,FTINT* index,
                                    double* mass, double* x,double* y,double* z)
 {
     *rtstat = 0;
@@ -136,7 +137,7 @@ void PMF_PACKAGE cpmf_mask_set_topo_atom_mcrd_(int* rtstat,int* index,
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void PMF_PACKAGE cpmf_mask_topo_finalize_(int* rtstat)
+void PMF_PACKAGE cpmf_mask_topo_finalize_(FTINT* rtstat)
 {
     *rtstat = 0;
     PMFTopology.Finalize();
@@ -145,12 +146,12 @@ void PMF_PACKAGE cpmf_mask_topo_finalize_(int* rtstat)
 
 //------------------------------------------------------------------------------
 
-void PMF_PACKAGE cpmf_mask_get_topo_atom_(int* ret_st,int* idx,char* name,int* resid,
+void PMF_PACKAGE cpmf_mask_get_topo_atom_(FTINT* ret_st,FTINT* idx,char* name,FTINT* resid,
                               char* resname,double* x, double* y, double* z,
                               double* mass,char* type,
-                              unsigned int name_len,
-                              unsigned int resname_len,
-                              unsigned int type_len)
+                              UFTINT name_len,
+                              UFTINT resname_len,
+                              UFTINT type_len)
 {
     *ret_st = 0;
     if( (*idx < 1) || (*idx > PMFTopology.GetNumberOfAtoms() ) ){
@@ -159,7 +160,10 @@ void PMF_PACKAGE cpmf_mask_get_topo_atom_(int* ret_st,int* idx,char* name,int* r
     }
 
     CSmallString sname,stype,sresname;
-    PMFTopology.GetAtom(*idx-1,*mass,*x,*y,*z,sname,stype,*resid,sresname);
+
+    int lresid = 0;
+    PMFTopology.GetAtom((*idx)-1,*mass,*x,*y,*z,sname,stype,lresid,sresname);
+    *resid = lresid;
 
     memset(name,' ',name_len);
     memset(resname,' ',resname_len);
@@ -173,7 +177,7 @@ void PMF_PACKAGE cpmf_mask_get_topo_atom_(int* ret_st,int* idx,char* name,int* r
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void PMF_PACKAGE cpmf_mask_natoms_in_mask_(int* rtstat,char* mask,int* natoms,unsigned int mask_len)
+void PMF_PACKAGE cpmf_mask_natoms_in_mask_(FTINT* rtstat,char* mask,FTINT* natoms,UFTINT mask_len)
 {
     CSmallString s_mask;
     s_mask.SetFromFortran(mask,mask_len);
@@ -192,7 +196,7 @@ void PMF_PACKAGE cpmf_mask_natoms_in_mask_(int* rtstat,char* mask,int* natoms,un
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void PMF_PACKAGE cpmf_mask_set_mask_(int* rtstat,char* mask,unsigned int mask_len)
+void PMF_PACKAGE cpmf_mask_set_mask_(FTINT* rtstat,char* mask,UFTINT mask_len)
 {
     CSmallString s_mask;
     s_mask.SetFromFortran(mask,mask_len);
@@ -208,7 +212,7 @@ void PMF_PACKAGE cpmf_mask_set_mask_(int* rtstat,char* mask,unsigned int mask_le
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void PMF_PACKAGE cpmf_mask_is_atom_selected_(int* rtstat,int* idx,int* sel)
+void PMF_PACKAGE cpmf_mask_is_atom_selected_(FTINT* rtstat,FTINT* idx,FTINT* sel)
 {
     *rtstat = 0;
     *sel = 0;

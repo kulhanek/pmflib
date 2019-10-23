@@ -24,6 +24,8 @@
 #include <SmallString.hpp>
 #include <ErrorSystem.hpp>
 #include <STMClient.hpp>
+#include <PMFMainHeader.hpp>
+#include <SimpleVector.hpp>
 
 extern "C" {
 
@@ -33,7 +35,7 @@ extern "C" {
 
 // set number items in cpmf part
 
-void PMF_PACKAGE cpmf_stm_client_set_header_(int* ret_st,int* nitems)
+void PMF_PACKAGE cpmf_stm_client_set_header_(FTINT* ret_st,FTINT* nitems)
 {
     int l_nitems = *nitems;
 
@@ -53,12 +55,12 @@ void PMF_PACKAGE cpmf_stm_client_set_header_(int* ret_st,int* nitems)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void PMF_PACKAGE cpmf_stm_client_set_coord_(int* ret_st,
-                                int* id,
+void PMF_PACKAGE cpmf_stm_client_set_coord_(FTINT* ret_st,
+                                FTINT* id,
                                 char* type,
                                 char* name,
-                                unsigned int type_len,
-                                unsigned int name_len)
+                                UFTINT type_len,
+                                UFTINT name_len)
 {
     int            l_id = *id - 1;
     CSmallString   l_type;
@@ -87,10 +89,10 @@ void PMF_PACKAGE cpmf_stm_client_set_coord_(int* ret_st,
 //==============================================================================
 
 void PMF_PACKAGE cpmf_stm_client_reg_by_name_(char* fserver,char* fpassword,
-                                  int* client_id,
-                                  int* bead_id,
-                                  unsigned int fserver_len,
-                                  unsigned int fpassword_len)
+                                  FTINT* client_id,
+                                  FTINT* bead_id,
+                                  UFTINT fserver_len,
+                                  UFTINT fpassword_len)
 {
 // setup info about server
     CSmallString   server_name;
@@ -114,7 +116,11 @@ void PMF_PACKAGE cpmf_stm_client_reg_by_name_(char* fserver,char* fpassword,
     }
 
 // register client
-    STMClient.RegisterClient(*client_id,*bead_id);
+    int sclient_id = 0;
+    int sbead_id = 0;
+    STMClient.RegisterClient(sclient_id,sbead_id);
+    *client_id = sclient_id;
+    *bead_id = sbead_id;
 }
 
 //==============================================================================
@@ -122,10 +128,10 @@ void PMF_PACKAGE cpmf_stm_client_reg_by_name_(char* fserver,char* fpassword,
 //==============================================================================
 
 void PMF_PACKAGE cpmf_stm_client_reg_by_key_(char* fserverkey,char* fserver,
-                                 int* client_id,
-                                 int* bead_id,
-                                 unsigned int fserverkey_len,
-                                 unsigned int fserver_len)
+                                 FTINT* client_id,
+                                 FTINT* bead_id,
+                                 UFTINT fserverkey_len,
+                                 UFTINT fserver_len)
 {
 // setup info about server
     CSmallString   serverkey_name;
@@ -148,7 +154,11 @@ void PMF_PACKAGE cpmf_stm_client_reg_by_key_(char* fserverkey,char* fserver,
     }
 
 // register client
-    STMClient.RegisterClient(*client_id,*bead_id);
+    int sclient_id = 0;
+    int sbead_id = 0;
+    STMClient.RegisterClient(sclient_id,sbead_id);
+    *client_id = sclient_id;
+    *bead_id = sbead_id;
 }
 
 //==============================================================================
@@ -162,19 +172,23 @@ void PMF_PACKAGE cpmf_stm_client_reg_by_key_(char* fserverkey,char* fserver,
 //real(8)         :: rpmf(*)
 //real(8)         :: rfz(*)
 
-void PMF_PACKAGE cpmf_stm_client_exchange_data_(int* ret_st,
-                                    int* mode,
-                                    int* isteps,
+void PMF_PACKAGE cpmf_stm_client_exchange_data_(FTINT* ret_st,
+                                    FTINT* mode,
+                                    FTINT* isteps,
                                     double* bpos,
                                     double* rpmf,
                                     double* rfz)
 {
 
-    if(STMClient.ExchangeData(*mode,*isteps,bpos,rpmf,rfz) == false) {
+    int listeps = *isteps;
+    int lmode = *mode;
+    if(STMClient.ExchangeData(lmode,listeps,bpos,rpmf,rfz) == false) {
         ES_ERROR("unable to exchange data");
         *ret_st = 1;
         return;
     }
+    *mode = lmode;
+    *isteps = listeps;
 
     *ret_st = 0;
 }

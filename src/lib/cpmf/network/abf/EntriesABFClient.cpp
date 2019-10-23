@@ -23,6 +23,8 @@
 #include <SmallString.hpp>
 #include <ErrorSystem.hpp>
 #include <ABFClient.hpp>
+#include <PMFMainHeader.hpp>
+#include <SimpleVector.hpp>
 
 extern "C" {
 
@@ -32,12 +34,12 @@ extern "C" {
 
 // set number items in cpmf part
 
-void PMF_PACKAGE cpmf_abf_client_set_header_(int* ret_st,
-                                 int* nitems,
-                                 int* tot_nbins,
+void PMF_PACKAGE cpmf_abf_client_set_header_(FTINT* ret_st,
+                                 FTINT* nitems,
+                                 FTINT* tot_nbins,
                                  char* energy_unit,
                                  double* energy_unit_fac,
-                                 unsigned int energy_unit_len
+                                 UFTINT energy_unit_len
                                  )
 {
     int l_nitems = *nitems;
@@ -59,15 +61,15 @@ void PMF_PACKAGE cpmf_abf_client_set_header_(int* ret_st,
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void PMF_PACKAGE cpmf_abf_client_set_coord_(int* ret_st,
-                                int* id,
+void PMF_PACKAGE cpmf_abf_client_set_coord_(FTINT* ret_st,
+                                FTINT* id,
                                 char* name,
                                 char* type,
                                 double* min_value,
                                 double* max_value,
-                                int* nbins,
-                                unsigned int name_len,
-                                unsigned int type_len
+                                FTINT* nbins,
+                                UFTINT name_len,
+                                UFTINT type_len
 )
 {
     int            l_id = *id - 1;
@@ -100,9 +102,9 @@ void PMF_PACKAGE cpmf_abf_client_set_coord_(int* ret_st,
 //==============================================================================
 
 void PMF_PACKAGE cpmf_abf_client_reg_by_name_(char* fserver,char* fpassword,
-                                  int* client_id,
-                                  unsigned int fserver_len,
-                                  unsigned int fpassword_len)
+                                  FTINT* client_id,
+                                  UFTINT fserver_len,
+                                  UFTINT fpassword_len)
 {
 // setup info about server
     CSmallString   server_name;
@@ -133,9 +135,9 @@ void PMF_PACKAGE cpmf_abf_client_reg_by_name_(char* fserver,char* fpassword,
 //==============================================================================
 
 void PMF_PACKAGE cpmf_abf_client_reg_by_key_(char* fserverkey,char* fserver,
-                                 int* client_id,
-                                 unsigned int fserverkey_len,
-                                 unsigned int fserver_len)
+                                 FTINT* client_id,
+                                 UFTINT fserverkey_len,
+                                 UFTINT fserver_len)
 {
 // setup info about server
     CSmallString   serverkey_name;
@@ -164,16 +166,21 @@ void PMF_PACKAGE cpmf_abf_client_reg_by_key_(char* fserverkey,char* fserver,
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void PMF_PACKAGE cpmf_abf_client_initial_data_(int* ret_st,
-                                   int* nisamples,
+void PMF_PACKAGE cpmf_abf_client_initial_data_(FTINT* ret_st,
+                                   FTINT* nisamples,
                                    double* iabfforce,
                                    double* iabfforce2)
 {
+    CSimpleVector<int> isamples;
 
-    if(ABFClient.GetInitialData(nisamples,iabfforce,iabfforce2) == false) {
+    if(ABFClient.GetInitialData(isamples,iabfforce,iabfforce2) == false) {
         ES_ERROR("unable to get initial data");
         *ret_st = 1;
         return;
+    }
+
+    for(int i = 0; i < ABFClient.GetNumberOfBins(); i++){
+        nisamples[i] = isamples[i];
     }
 
     *ret_st = 0;
@@ -183,16 +190,26 @@ void PMF_PACKAGE cpmf_abf_client_initial_data_(int* ret_st,
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void PMF_PACKAGE cpmf_abf_client_exchange_data_(int* ret_st,
-                                    int* nisamples,
+void PMF_PACKAGE cpmf_abf_client_exchange_data_(FTINT* ret_st,
+                                    FTINT* nisamples,
                                     double* iabfforce,
                                     double* iabfforce2)
 {
+    CSimpleVector<int> isamples;
 
-    if(ABFClient.ExchangeData(nisamples,iabfforce,iabfforce2) == false) {
+    isamples.CreateVector(ABFClient.GetNumberOfBins());
+    for(int i = 0; i < ABFClient.GetNumberOfBins(); i++){
+        isamples[i] = nisamples[i];
+    }
+
+    if(ABFClient.ExchangeData(isamples,iabfforce,iabfforce2) == false) {
         ES_ERROR("unable to exchange data");
         *ret_st = 1;
         return;
+    }
+
+    for(int i = 0; i < ABFClient.GetNumberOfBins(); i++){
+        nisamples[i] = isamples[i];
     }
 
     *ret_st = 0;

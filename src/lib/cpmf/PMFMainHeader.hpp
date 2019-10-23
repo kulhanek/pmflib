@@ -34,6 +34,17 @@
 extern const char* LibBuildVersion_PMF;
 
 //------------------------------------------------------------------------------
+// 32bit vs 64bit integers
+
+#ifdef HAVE_MKL_ILP64
+typedef long int FTINT;
+typedef unsigned long int UFTINT;
+#else
+typedef int FTINT;
+typedef unsigned int UFTINT;
+#endif
+
+//------------------------------------------------------------------------------
 
 #if defined _WIN32 || defined __CYGWIN__
 #ifdef PMFLIB_BUILDING_DLL

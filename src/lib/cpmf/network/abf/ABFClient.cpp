@@ -75,6 +75,13 @@ void CABFClient::SetNumberOfItems(int nitems,int ntotbins)
 
 //------------------------------------------------------------------------------
 
+int CABFClient::GetNumberOfBins(void)
+{
+    return(NTotBins);
+}
+
+//------------------------------------------------------------------------------
+
 void CABFClient::SetCoord(int id,const CSmallString& name,const CSmallString& type,
                           double min_value,double max_value,int nbins)
 {

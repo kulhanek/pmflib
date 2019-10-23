@@ -112,6 +112,17 @@ SET(NETLIB_LIB_NAME netlib)
 # setup BLAS/LAPACK either from MKL or from fallback netlib blas and lapack
 FIND_PACKAGE(BlasLapack)
 
+# is MKL in 64bit mode?
+IF(MKL_ILP64)
+    INCLUDE(CheckFortranCompilerFlag)
+    CHECK_FORTRAN_COMPILER_FLAG("-i8" _my_i8)
+    IF(_my_flag)
+        SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -i8")
+    ELSE()
+        MESSAGE(FATAL_ERROR "MKL_ILP64 but -i8 is not supported!")
+    ENDIF()
+ENDIF()
+
 # runlux =====================
 SET(RANLUX_ROOT ${DEVELOPMENT_ROOT}/thirdparty/ranlux/1.0)
 LINK_DIRECTORIES(${RANLUX_ROOT}/lib)
@@ -152,10 +163,10 @@ INCLUDE(IntelCDK)
 INCLUDE(OpenMPI)
 
 # if parallel environment is available
-IF(MPI_ENABLED)
+IF(MPI_ENABLED OR (MKL_MODE STREQUAL "parallel") OR (MKL_MODE STREQUAL "parallel/ilp64"))
     # setup OpenMP for cpmf if available
     FIND_PACKAGE(OpenMP)
-ENDIF(MPI_ENABLED)
+ENDIF()
 
 # ==============================================================================
 # output directories -----------------------------------------------------------

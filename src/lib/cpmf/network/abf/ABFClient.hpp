@@ -49,6 +49,9 @@ public:
     void SetCoord(int id,const CSmallString& name,const CSmallString& type,
                   double min_value,double max_value,int nbins);
 
+    /// get number of bins
+    int GetNumberOfBins(void);
+
 // commands -------------------------------------------------------------------
     /// register client on server side
     int RegisterClient(void);
@@ -70,7 +73,7 @@ public:
 private:
     int                         ClientID;       // client ID
     int                         NItems;         // number of items
-    int                         NTotBins;       // total numbe of bins
+    int                         NTotBins;       // total number of bins
     std::vector<CColVariable>   Coords;         // list of CVs
 
     /// write data for exchange

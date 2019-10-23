@@ -23,6 +23,8 @@
 #include <SmallString.hpp>
 #include <ErrorSystem.hpp>
 #include <MTDClient.hpp>
+#include <PMFMainHeader.hpp>
+#include <SimpleVector.hpp>
 
 extern "C" {
 
@@ -32,7 +34,7 @@ extern "C" {
 
 // set number items in cpmf part
 
-void PMF_PACKAGE cpmf_mtd_client_set_header_(int* ret_st,int* nitems)
+void PMF_PACKAGE cpmf_mtd_client_set_header_(FTINT* ret_st,FTINT* nitems)
 {
     int l_nitems = *nitems;
 
@@ -51,15 +53,15 @@ void PMF_PACKAGE cpmf_mtd_client_set_header_(int* ret_st,int* nitems)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void PMF_PACKAGE cpmf_mtd_client_set_coord_(int* ret_st,
-                                int* id,
+void PMF_PACKAGE cpmf_mtd_client_set_coord_(FTINT* ret_st,
+                                FTINT* id,
                                 char* type,
                                 char* name,
                                 double* min_value,
                                 double* max_value,
-                                int* nbins,
-                                unsigned int type_len,
-                                unsigned int name_len
+                                FTINT* nbins,
+                                UFTINT type_len,
+                                UFTINT name_len
                                 )
 {
     int            l_id = *id - 1;
@@ -91,9 +93,9 @@ void PMF_PACKAGE cpmf_mtd_client_set_coord_(int* ret_st,
 //==============================================================================
 
 void PMF_PACKAGE cpmf_mtd_client_reg_by_name_(char* fserver,char* fpassword,
-                                  int* client_id,
-                                  unsigned int fserver_len,
-                                  unsigned int fpassword_len)
+                                  FTINT* client_id,
+                                  UFTINT fserver_len,
+                                  UFTINT fpassword_len)
 {
 // setup info about server
     CSmallString   server_name;
@@ -124,9 +126,9 @@ void PMF_PACKAGE cpmf_mtd_client_reg_by_name_(char* fserver,char* fpassword,
 //==============================================================================
 
 void PMF_PACKAGE cpmf_mtd_client_reg_by_key_(char* fserverkey,char* fserver,
-                                 int* client_id,
-                                 unsigned int fserverkey_len,
-                                 unsigned int fserver_len)
+                                 FTINT* client_id,
+                                 UFTINT fserverkey_len,
+                                 UFTINT fserver_len)
 {
 // setup info about server
     CSmallString   serverkey_name;
@@ -155,7 +157,7 @@ void PMF_PACKAGE cpmf_mtd_client_reg_by_key_(char* fserverkey,char* fserver,
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void PMF_PACKAGE cpmf_mtd_client_initial_data_(int* ret_st)
+void PMF_PACKAGE cpmf_mtd_client_initial_data_(FTINT* ret_st)
 {
     if(MTDClient.GetInitialData() == false) {
         *ret_st = 1;
@@ -168,7 +170,7 @@ void PMF_PACKAGE cpmf_mtd_client_initial_data_(int* ret_st)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void PMF_PACKAGE cpmf_mtd_client_exchange_data_(int* ret_st)
+void PMF_PACKAGE cpmf_mtd_client_exchange_data_(FTINT* ret_st)
 {
     if(MTDClient.ExchangeData() == false) {
         *ret_st = 1;
@@ -181,11 +183,11 @@ void PMF_PACKAGE cpmf_mtd_client_exchange_data_(int* ret_st)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void PMF_PACKAGE cpmf_mtd_client_get_buffer_info_(int* ret_st,
-                                      int* id,
-                                      int* level,
-                                      int* start,
-                                      int* num_of_hills)
+void PMF_PACKAGE cpmf_mtd_client_get_buffer_info_(FTINT* ret_st,
+                                      FTINT* id,
+                                      FTINT* level,
+                                      FTINT* start,
+                                      FTINT* num_of_hills)
 {
     *level = 0;
     *start = 0;
@@ -209,10 +211,10 @@ void PMF_PACKAGE cpmf_mtd_client_get_buffer_info_(int* ret_st,
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void PMF_PACKAGE cpmf_mtd_client_add_buffer_data_(int* ret_st,
-                                      int* level,
-                                      int* start,
-                                      int* num_of_hills,
+void PMF_PACKAGE cpmf_mtd_client_add_buffer_data_(FTINT* ret_st,
+                                      FTINT* level,
+                                      FTINT* start,
+                                      FTINT* num_of_hills,
                                       double* data)
 {
     unsigned int l_num_of_hills = *num_of_hills;
@@ -246,8 +248,8 @@ void PMF_PACKAGE cpmf_mtd_client_add_buffer_data_(int* ret_st,
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void PMF_PACKAGE cpmf_mtd_client_get_buffer_data_(int* ret_st,
-                                      int* id,
+void PMF_PACKAGE cpmf_mtd_client_get_buffer_data_(FTINT* ret_st,
+                                      FTINT* id,
                                       double* data)
 {
 // is there a buffer with index id?
