@@ -230,7 +230,7 @@ bool CABFIntegrate::Run(void)
     // Accumulator.SetNCorr(Options.GetOptNCorr());
     FES.Allocate(&Accumulator);
 
-    if( Options.GetOptMethod() == "gpr" ){
+    if( (Options.GetOptMethod() == "gpr") || (Options.GetOptMethod() == "rbf") ){
         // test early stage parsing of --globalmin
         CABFIntegratorGPR   integrator;
 
@@ -558,6 +558,8 @@ bool CABFIntegrate::IntegrateForMFZScore(int pass)
             }
         }
 
+        integrator.SetNoEnergy(true);
+
         if(integrator.Integrate(vout) == false) {
             ES_ERROR("unable to integrate ABF accumulator");
             return(false);
@@ -708,6 +710,10 @@ bool CABFIntegrate::IntegrateForEcut(void)
             }
         }
 
+        if( Options.IsOptGlobalMinSet() ){
+            integrator.SetGlobalMin(Options.GetOptGlobalMin());
+        }
+
         if(integrator.Integrate(vout) == false) {
             ES_ERROR("unable to integrate ABF accumulator");
             return(false);
@@ -766,7 +772,7 @@ bool CABFIntegrate::IntegrateForEcut(void)
 
 //------------------------------------------------------------------------------
 
-bool CABFIntegrate::Integrate()
+bool CABFIntegrate::Integrate(void)
 {
     if(Options.GetOptMethod() == "rfd" ) {
         CABFIntegratorRFD   integrator;
@@ -836,6 +842,10 @@ bool CABFIntegrate::Integrate()
             // nothing to do - use default method set in constructor of integrator
         } else {
             INVALID_ARGUMENT("algorithm - not implemented");
+        }
+
+        if( Options.IsOptGlobalMinSet() ){
+            integrator.SetGlobalMin(Options.GetOptGlobalMin());
         }
 
         if(integrator.Integrate(vout) == false) {
@@ -1071,6 +1081,7 @@ void CABFIntegrate::PrintSampledStat(void)
     // calculate sampled area
     double maxbins = Accumulator.GetNumberOfBins();
     int    sampled = 0;
+    int    holes = 0;
     int    glued = 0;
     for(int ibin=0; ibin < Accumulator.GetNumberOfBins(); ibin++) {
         if( Accumulator.GetNumberOfABFSamples(ibin) > 0 ) {
@@ -1079,14 +1090,29 @@ void CABFIntegrate::PrintSampledStat(void)
         if( Accumulator.GetNumberOfABFSamples(ibin) < 0 ) {
             glued++;
         }
+        if( Accumulator.GetNumberOfABFSamples(ibin) == -2 ) {
+            holes++;
+        }
     }
     if( maxbins > 0 ){
-        vout << "   Sampled area: "
+        vout << "   Sampled area:                  "
              << setw(6) << sampled << " / " << (int)maxbins << " | " << setw(5) << setprecision(1) << fixed << sampled/maxbins*100 <<"%" << endl;
     }
     if( glued > 0 ){
-        vout << "   Glued area:   "
+        vout << "   All inter/extrapolated area:   "
              << setw(6) << glued << " / " << (int)maxbins << " | " << setw(5) << setprecision(1) << fixed << glued/maxbins*100 <<"%" << endl;
+    }
+    if( holes > 0 ){
+        vout << "      Interpolated area (holes):  "
+             << setw(6) << holes << " / " << (int)maxbins << " | " << setw(5) << setprecision(1) << fixed << holes/maxbins*100 <<"%" << endl;
+    }
+    if( (glued-holes) > 0 ){
+        vout << "      Extrapolated area:          "
+             << setw(6) << (glued-holes) << " / " << (int)maxbins << " | " << setw(5) << setprecision(1) << fixed << (glued-holes)/maxbins*100 <<"%" << endl;
+    }
+    if( glued+sampled > 0 ){
+        vout << "   Total area:                    "
+             << setw(6) << (glued+sampled) << " / " << (int)maxbins << " | " << setw(5) << setprecision(1) << fixed << (glued+sampled)/maxbins*100 <<"%" << endl;
     }
 }
 
@@ -1312,7 +1338,7 @@ void CABFIntegrate::GlueHoles(void)
             if( hole ){
                 vout << " hole - glued." << endl;
             } else {
-                vout << " area at edge." << endl;
+                vout << " edge." << endl;
             }
         }
         seedid++;
@@ -1372,7 +1398,7 @@ void CABFIntegrate::MarkAsHole(int seedid)
 {
     for(int ibin=0; ibin < Accumulator.GetNumberOfBins(); ibin++) {
         if( FFSeeds[ibin] == seedid ){
-            Accumulator.SetNumberOfABFSamples(ibin,-1);
+            Accumulator.SetNumberOfABFSamples(ibin,-2);
         }
     }
 }

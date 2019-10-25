@@ -122,7 +122,7 @@ bool CABFOptGPRHyprms::Run(void)
     State++;
     for(int i=0; i < Options.GetNumberOfProgArgs()-1; i++){
         CSmallString name = Options.GetProgArg(i);
-        vout << format("*** ABFAccumulator #%02d: %s")%(i+1)%string(name) << endl;
+        vout << format("** ABFAccumulator #%02d: %s")%(i+1)%string(name) << endl;
         CABFAccumulatorP p_accu(new CABFAccumulator);
         try {
             p_accu->Load(name);
@@ -749,7 +749,7 @@ void CABFOptGPRHyprms::ShowGPRStat(void)
 
 // run GPR integration
     for(size_t i=0; i < Accumulators.size(); i++){
-        vout << format("*** ABFAccumulator #%02d ...")%(i+1) << endl;
+        vout << format("** ABFAccumulator #%02d ...")%(i+1) << endl;
 
         CABFAccumulatorP    accu = Accumulators[i];
         CABFIntegratorGPR   gpr;
@@ -1020,7 +1020,7 @@ void CABFOptGPRHyprms::PrintSampledStat(void)
 {
     for(size_t i=0; i < Accumulators.size(); i++){
         CABFAccumulatorP accu = Accumulators[i];
-        vout << format("*** ABFAccumulator #%02d ...")%(i+1) << endl;
+        vout << format("** ABFAccumulator #%02d ...")%(i+1) << endl;
         // calculate sampled area
         double maxbins = accu->GetNumberOfBins();
         int    sampled = 0;

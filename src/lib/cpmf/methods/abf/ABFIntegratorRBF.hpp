@@ -76,6 +76,12 @@ public:
     /// should we include glued area to energy calculation?
     void IncludeGluedAreas(bool set);
 
+    /// skip energy calculation, it also disables errors
+    void SetNoEnergy(bool set);
+
+    /// set position of global minimum
+    void SetGlobalMin(const CSmallString& spec);
+
 // execution method -----------------------------------------------------------
     /// integrate data
     bool Integrate(CVerboseStr& vout);
@@ -113,6 +119,13 @@ private:
 
     bool                    IncludeGluedBins;
 
+    bool                    NoEnergy;
+    bool                    GlobalMinSet;
+    CSimpleVector<double>   GPos;           // global position, either detected or use
+
+    size_t                  NumOfValues;
+    CSimpleVector<size_t>   ValueMap;
+
     // SVD setup
     double                  RCond;
 
@@ -121,6 +134,7 @@ private:
     void    GetRBFPosition(size_t index,CSimpleVector<double>& position);
     double  GetValue(const CSimpleVector<double>& position);
     double  GetMeanForce(const CSimpleVector<double>& position,size_t icoord);
+    void    CalculateEnergy(CVerboseStr& vout);
 };
 
 //------------------------------------------------------------------------------

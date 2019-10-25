@@ -56,6 +56,10 @@ CABFIntegratorRBF::CABFIntegratorRBF(void)
     NumOfBins   = 0;
     NCVs        = 0;
     NumOfRBFs   = 0;
+    NumOfValues = 0;
+
+    GlobalMinSet    = false;
+    NoEnergy        = false;
 }
 
 //------------------------------------------------------------------------------
@@ -190,9 +194,42 @@ void CABFIntegratorRBF::SetRCond(double rcond)
 
 //------------------------------------------------------------------------------
 
+void CABFIntegratorRBF::SetNoEnergy(bool set)
+{
+    NoEnergy = set;
+}
+
+//------------------------------------------------------------------------------
+
 void CABFIntegratorRBF::IncludeGluedAreas(bool set)
 {
     IncludeGluedBins = set;
+}
+
+//------------------------------------------------------------------------------
+
+void CABFIntegratorRBF::SetGlobalMin(const CSmallString& spec)
+{
+    GlobalMinSet = true;
+    string sspec(spec);
+    if( Accumulator == NULL ){
+        RUNTIME_ERROR("accumulator is not set for SetGlobalMin");
+    }
+
+    // remove "x" from the string
+    replace (sspec.begin(), sspec.end(), 'x' , ' ');
+
+    // parse values of CVs
+    GPos.CreateVector(NCVs);
+    stringstream str(sspec);
+    for(size_t i=0; i < NCVs; i++){
+        str >> GPos[i];
+        if( ! str ){
+            CSmallString error;
+            error << "unable to decode CV value for position: " << i+1;
+            RUNTIME_ERROR(error);
+        }
+    }
 }
 
 //==============================================================================
@@ -267,10 +304,10 @@ bool CABFIntegratorRBF::Integrate(CVerboseStr& vout)
     // print hyperparameters
     vout << "   RBF parameters ..." << endl;
     for(size_t k=0; k < NCVs; k++ ){
-        vout << format("      WFac#%-2d = %10.4f")%(k+1)%WFac[k] << endl;
+        vout << format("      WFac#%-2d   = %10.4f")%(k+1)%WFac[k] << endl;
     }
     for(size_t k=0; k < NCVs; k++ ){
-        vout << format("      RFac#%-2d = %10.4f")%(k+1)%RFac[k] << endl;
+        vout << format("      RFac#%-2d   = %10.4f")%(k+1)%RFac[k] << endl;
     }
 
     // integrate
@@ -283,54 +320,115 @@ bool CABFIntegratorRBF::Integrate(CVerboseStr& vout)
     vout << "      RMSR CV#" << k+1 << " = " << setprecision(5) << GetRMSR(k) << endl;
     }
 
-    vout << "   Calculating FES ..." << endl;
-
-    // load data to FES
-    CSimpleVector<double>   ipos;
-    ipos.CreateVector(NCVs);
-
-    // calculate energies
-    double glb_min = 0.0;
-    bool   first = true;
-    for(size_t i=0; i < NumOfBins; i++){
-        int samples = Accumulator->GetNumberOfABFSamples(i);
-        FES->SetNumOfSamples(i,samples);
-        double value = 0.0;
-        FES->SetEnergy(i,value);
-        if( IncludeGluedBins ){
-            if( samples == 0 ) continue;
-        } else {
-            if( samples <= 0 ) continue;
-        }
-        Accumulator->GetPoint(i,ipos);
-        value = GetValue(ipos);
-        FES->SetEnergy(i,value);
-        if( first || (glb_min > value) ){
-            glb_min = value;
-            first = false;
-        }
-    }
-
-    // move to global minima
-    for(size_t i=0; i < NumOfBins; i++) {
-       int samples = Accumulator->GetNumberOfABFSamples(i);
-        if( IncludeGluedBins ){
-            if( samples == 0 ) continue;
-        } else {
-            if( samples <= 0 ) continue;
-        }
-        double value = 0.0;
-        value = FES->GetEnergy(i);
-        value = value - glb_min;
-        FES->SetEnergy(i,value);
-    }
-
-    vout << "      SigmaF2 = " << setprecision(5) << FES->GetSigmaF2() << endl;
-    if( IncludeGluedBins ){
-        vout << "      SigmaF2 (including glued bins) = " << setprecision(5) << FES->GetSigmaF2(true) << endl;
+    if( ! NoEnergy ){
+        CalculateEnergy(vout);
     }
 
     return(true);
+}
+
+//------------------------------------------------------------------------------
+
+void CABFIntegratorRBF::CalculateEnergy(CVerboseStr& vout)
+{
+    vout << "   Calculating FES ..." << endl;
+
+// create map for bins with calculated energy and error
+    NumOfValues = 0;
+    for(size_t i=0; i < NumOfBins; i++){
+        int samples = Accumulator->GetNumberOfABFSamples(i);
+        if( IncludeGluedBins ){
+            if( samples == 0 ) continue;
+        } else {
+            if( samples <= 0 ) continue;
+        }
+        NumOfValues++;
+    }
+    ValueMap.CreateVector(NumOfValues);
+
+    size_t indi = 0;
+    for(size_t i=0; i < NumOfBins; i++){
+        int samples = Accumulator->GetNumberOfABFSamples(i);
+        if( IncludeGluedBins ){
+            if( samples == 0 ) continue;
+        } else {
+            if( samples <= 0 ) continue;
+        }
+        ValueMap[indi]=i;
+        indi++;
+    }
+
+// calculate energies
+    CSimpleVector<double> jpos;
+    CSimpleVector<double> values;
+
+    jpos.CreateVector(NCVs);
+    values.CreateVector(NumOfValues);
+
+    #pragma omp parallel for firstprivate(jpos)
+    for(size_t indj=0; indj < NumOfValues; indj++){
+        size_t j = ValueMap[indj];
+        Accumulator->GetPoint(j,jpos);
+        values[indj] = GetValue(jpos);
+    }
+
+// basic FES update
+    for(size_t i=0; i < NumOfBins; i++){
+        int samples = Accumulator->GetNumberOfABFSamples(i);
+        FES->SetNumOfSamples(i,samples);
+        FES->SetEnergy(i,0.0);
+        FES->SetError(i,0.0);
+    }
+
+// update FES
+    if( GlobalMinSet ){
+        // GPos.CreateVector(NCVs) - is created in  SetGlobalMin
+   //   vout << "   Calculating FES ..." << endl;
+        vout << "      Global minimum provided at: ";
+        vout << GPos[0];
+        for(int i=1; i < Accumulator->GetNumberOfCoords(); i++){
+            vout << "x" << GPos[i];
+        }
+        double glb_min = GetValue(GPos);
+        vout << " (" << glb_min << ")" << endl;
+
+        for(size_t indj=0; indj < NumOfValues; indj++){
+            size_t j = ValueMap[indj];
+            FES->SetEnergy(j,values[indj]-glb_min);
+        }
+    } else {
+        // search for global minimum
+        GPos.CreateVector(NCVs);
+        bool   first = true;
+        double glb_min = 0.0;
+        for(size_t indj=0; indj < NumOfValues; indj++){
+            size_t j = ValueMap[indj];
+            double value = values[indj];
+            if( first || (glb_min > value) ){
+                glb_min = value;
+                first = false;
+                Accumulator->GetPoint(j,GPos);
+            }
+        }
+
+   //   vout << "   Calculating FES ..." << endl;
+        vout << "      Global minimum found at: ";
+        vout << GPos[0];
+        for(size_t i=1; i < NCVs; i++){
+            vout << "x" << GPos[i];
+        }
+        vout << " (" << glb_min << ")" << endl;
+
+        for(size_t indj=0; indj < NumOfValues; indj++){
+            size_t j = ValueMap[indj];
+            FES->SetEnergy(j,values[indj]-glb_min);
+        }
+    }
+
+    vout << "      SigmaF2   = " << setprecision(5) << FES->GetSigmaF2() << endl;
+    if( IncludeGluedBins ){
+        vout << "      SigmaF2 (including glued bins) = " << setprecision(5) << FES->GetSigmaF2(true) << endl;
+    }
 }
 
 //------------------------------------------------------------------------------
