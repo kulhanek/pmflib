@@ -117,6 +117,7 @@ public:
 
     /// get derivative of logML wrt hyperparameters
     /// order sigmaf2, ncorr, wfac, only requested ders are calculated
+    /// derivatives are ADD to der
     void GetLogMLDerivatives(const std::vector<bool>& flags,CSimpleVector<double>& der);
 
     /// write file with derivatives

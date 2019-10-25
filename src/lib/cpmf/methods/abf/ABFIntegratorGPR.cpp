@@ -379,7 +379,7 @@ void CABFIntegratorGPR::GetLogMLDerivatives(const std::vector<bool>& flags,CSimp
         }
 
         // finalize derivative
-        der[ind] = 0.5*tr;
+        der[ind] += 0.5*tr;
         ind++;
     }
 }
@@ -605,17 +605,17 @@ bool CABFIntegratorGPR::Integrate(CVerboseStr& vout,bool nostat)
 
     // print hyperparameters
     vout << "   Hyperparameters ..." << endl;
-        vout << format("      SigmaF2  = %10.4f")%SigmaF2 << endl;
+        vout << format("      SigmaF2   = %10.4f")%SigmaF2 << endl;
     if( SplitNCorr ){
         for(size_t k=0; k < NCVs; k++ ){
-            vout << format("      NCorr#%-2d = %10.4f")%(k+1)%NCorr[k] << endl;
+            vout << format("      NCorr#%-2d  = %10.4f")%(k+1)%NCorr[k] << endl;
         }
     } else {
-        vout << format("      NCorr    = %10.4f")%NCorr[0] << endl;
+        vout << format("      NCorr     = %10.4f")%NCorr[0] << endl;
     }
 
     for(size_t k=0; k < NCVs; k++ ){
-        vout << format("      WFac#%-2d  = %10.4f")%(k+1)%WFac[k] << endl;
+        vout << format("      WFac#%-2d   = %10.4f")%(k+1)%WFac[k] << endl;
     }
 
     // train GPR
@@ -631,7 +631,7 @@ bool CABFIntegratorGPR::Integrate(CVerboseStr& vout,bool nostat)
         }
 
         // and marginal likelihood
-        vout << "      logML = " << setprecision(5) << GetLogMarginalLikelihood() << endl;
+        vout << "      logML     = " << setprecision(5) << GetLogMarginalLikelihood() << endl;
     }
 
     // finalize FES if requested
@@ -1017,7 +1017,7 @@ void CABFIntegratorGPR::CalculateEnergy(CVerboseStr& vout)
         }
     }
 
-    vout << "      SigmaF2 = " << setprecision(5) << FES->GetSigmaF2() << endl;
+    vout << "      SigmaF2   = " << setprecision(5) << FES->GetSigmaF2() << endl;
     if( IncludeGluedBins ){
         vout << "      SigmaF2 (including glued bins) = " << setprecision(5) << FES->GetSigmaF2(true) << endl;
     }

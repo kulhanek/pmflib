@@ -36,7 +36,7 @@ public:
     CSO_PROG_NAME_END
 
     CSO_PROG_DESC_BEGIN
-    "abf-optgprhyprms finds optimal GPR hyperparameters, which maximize logarithm of marginal likelyhood. "
+    "abf-optgprhyprms finds optimal GPR hyperparameters, which maximize logarithm of marginal likelihood. "
     "The optimization is performed by the L-BFGS optimizer employing either analytical or numerical gradients of logML w.r.t. hyperparameters."
     CSO_PROG_DESC_END
 
@@ -44,11 +44,17 @@ public:
     LibBuildVersion_PMF
     CSO_PROG_VERS_END
 
+    CSO_PROG_ARGS_SHORT_DESC_BEGIN
+    "accuname1 [accuname2 [..]] hyprmsname"
+    CSO_PROG_ARGS_SHORT_DESC_END
+
+    CSO_PROG_ARGS_LONG_DESC_BEGIN
+    "<cyan><b>accuname1</b></cyan>                  Name of file containing the ABF accumulator.\n"
+    "<cyan><b>hyprmsname</b></cyan>                 Name of file where the optimized GPR hyperparameters are saved. If the name is '-' then the output will be written to the standard output."
+    CSO_PROG_ARGS_LONG_DESC_END
+
 // list of all options and arguments ------------------------------------------
     CSO_LIST_BEGIN
-    // arguments ----------------------------
-    CSO_ARG(CSmallString,ABFAccuName)
-    CSO_ARG(CSmallString,GPRHyprmsName)
     // options ------------------------------
     CSO_OPT(CSmallString,LAMethod)
     CSO_OPT(double,RCond)
@@ -62,8 +68,11 @@ public:
     CSO_OPT(bool,Numeric)
     CSO_OPT(int,NOptSteps)
     CSO_OPT(double,TermEps)
+    CSO_OPT(double,TermDLogML)
     CSO_OPT(int,NumOfLBFGSCorr)
     CSO_OPT(bool,Test)
+    CSO_OPT(bool,PrintStat)
+    CSO_OPT(bool,SPType)
     CSO_OPT(bool,CD5)
     CSO_OPT(CSmallString,LoadHyprms)
     CSO_OPT(bool,Verbose)
@@ -72,20 +81,6 @@ public:
     CSO_LIST_END
 
     CSO_MAP_BEGIN
-// description of arguments ---------------------------------------------------
-    CSO_MAP_ARG(CSmallString,                   /* argument type */
-                ABFAccuName,                          /* argument name */
-                NULL,                           /* default value */
-                true,                           /* is argument mandatory */
-                "accuname",                        /* parametr name */
-                "Name of file containing the ABF accumulator. If the name is '-' then the accumulator is read from the standard input.")   /* argument description */
-    //----------------------------------------------------------------------
-    CSO_MAP_ARG(CSmallString,                   /* argument type */
-                GPRHyprmsName,                          /* argument name */
-                NULL,                           /* default value */
-                true,                           /* is argument mandatory */
-                "hyprmsname",                        /* parametr name */
-                "Name of file where the optimized GPR hyperparameters are saved. If the name is '-' then the output will be written to the standard output.")   /* argument description */
 // description of options ---------------------------------------------------
     CSO_MAP_OPT(CSmallString,                           /* option type */
                 LAMethod,                        /* option name */
@@ -201,7 +196,16 @@ public:
                 0,                           /* short option name */
                 "termeps",                      /* long option name */
                 "NUMBER",                           /* parametr name */
-                "Termination criteria for L-BFGS optimizer.")   /* option description */
+                "Termination criteria for L-BFGS optimizer (see L-BFGS code).")   /* option description */
+    //----------------------------------------------------------------------
+    CSO_MAP_OPT(double,                           /* option type */
+                TermDLogML,                        /* option name */
+                1e-7,                          /* default value */
+                false,                          /* is option mandatory */
+                0,                           /* short option name */
+                "termdlogm",                      /* long option name */
+                "NUMBER",                           /* parametr name */
+                "Termination criteria for L-BFGS optimizer. Minimum change of logML.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(int,                           /* option type */
                 NumOfLBFGSCorr,                        /* option name */
@@ -238,6 +242,24 @@ public:
                 "loadhyprms",                      /* long option name */
                 "NAME",                           /* parametr name */
                 "Name of file with GPR hyperparameters.")   /* option description */
+    //----------------------------------------------------------------------
+    CSO_MAP_OPT(bool,                           /* option type */
+                PrintStat,                        /* option name */
+                false,                          /* default value */
+                false,                          /* is option mandatory */
+                0,                           /* short option name */
+                "stat",                      /* long option name */
+                NULL,                           /* parametr name */
+                "Calculate detailed GPR status employing found hyperparameters.")   /* option description */
+    //----------------------------------------------------------------------
+    CSO_MAP_OPT(bool,                           /* option type */
+                SPType,                        /* option name */
+                false,                          /* default value */
+                false,                          /* is option mandatory */
+                0,                           /* short option name */
+                "sptype",                      /* long option name */
+                NULL,                           /* parametr name */
+                "Determine type of stationary point.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(bool,                           /* option type */
                 Verbose,                        /* option name */

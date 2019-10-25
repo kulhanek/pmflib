@@ -28,6 +28,11 @@
 #include <SmallTimeAndDate.hpp>
 #include <ABFIntegratorGPR.hpp>
 #include <vector>
+#include <memory>
+
+//------------------------------------------------------------------------------
+
+typedef std::shared_ptr<CABFAccumulator>    CABFAccumulatorP;
 
 //------------------------------------------------------------------------------
 
@@ -49,13 +54,12 @@ public:
 
 // section of private data ----------------------------------------------------
 private:
-    CABFOptGPRHyprmsOptions Options;
-    CStdIOFile              InputFile;
-    CStdIOFile              OutputFile;
-    CABFAccumulator         Accumulator;
-    CEnergySurface          FES;
-    CSmallTimeAndDate       StartTime;
+    CABFOptGPRHyprmsOptions         Options;
+    CStdIOFile                      OutputFile;
+    std::vector<CABFAccumulatorP>   Accumulators;
+    CSmallTimeAndDate               StartTime;
 
+// hyperparameters
     double                  SigmaF2;
     CSimpleVector<double>   NCorr;
     CSimpleVector<double>   WFac;
@@ -68,11 +72,16 @@ private:
     std::vector<bool>       WFacEnabled;
     int                     NumOfPrms;
     int                     NumOfOptPrms;
+    int                     NCVs;
     CSimpleVector<double>   Hyprms;
     CSimpleVector<double>   HyprmsGrd;
     CSimpleVector<double>   Work;
     CSimpleVector<double>   TmpXG;
     double                  logML;
+
+// hessian
+    CFortranMatrix          Hessian;
+    CSimpleVector<double>   EigenValues;
 
 // helper
     std::vector<bool>       HyprmsEnabled;
@@ -88,12 +97,16 @@ private:
     bool Optimize(void);
     void RunGPRAnalytical(void);
     void RunGPRNumerical(void);
+    double RunGPRNumerical(CABFAccumulatorP accu,CSimpleVector<double>& der);
     void WriteResults(int istep);
     bool WriteHyperPrms(FILE* p_fout);
     void LoadGPRHyprms(void);
+    void PrintGradientSummary(void);
+    void ShowGPRStat(void);
+    void CalcHessian(void);
 
     void    ScatterHyprms(CSimpleVector<double>& hyprsm);
-    double  GetLogML(CABFIntegratorGPR& gpr);
+    double  GetLogML(CABFIntegratorGPR& gpr,CABFAccumulatorP accu);
     void    DecodeEList(const CSmallString& spec, std::vector<bool>& elist,const CSmallString& optionname);
     void    DecodeVList(const CSmallString& spec, CSimpleVector<double>& vlist,const CSmallString& optionname,double defv);
 

@@ -27,13 +27,10 @@
 CABFOptGPRHyprmsOptions::CABFOptGPRHyprmsOptions(void)
 {
     SetShowMiniUsage(true);
+    SetAllowProgArgs(true);
 }
 
 //------------------------------------------------------------------------------
-
-/*
- check validity of specified options
-*/
 
 int CABFOptGPRHyprmsOptions::CheckOptions(void)
 {
@@ -48,15 +45,21 @@ int CABFOptGPRHyprmsOptions::CheckOptions(void)
         IsError = true;
     }
 
+    if( GetOptNOptSteps() <= 0 ){
+        if(IsError == false) fprintf(stderr,"\n");
+        fprintf(stderr,"%s: --noptsteps: at least one step must be provided but %d is specified\n", (const char*)GetProgramName(),GetOptNOptSteps());
+        IsError = true;
+    }
+
     if( GetOptSigmaF2() <= 0 ){
         if(IsError == false) fprintf(stderr,"\n");
-        fprintf(stderr,"%s: sigmaf2 has to be greater than zero, but %f is provided\n", (const char*)GetProgramName(),GetOptSigmaF2());
+        fprintf(stderr,"%s: --sigmaf2 has to be greater than zero, but %f is provided\n", (const char*)GetProgramName(),GetOptSigmaF2());
         IsError = true;
     }
 
     if( (GetOptRCond() != -1) && (GetOptRCond() < 0) ){
         if(IsError == false) fprintf(stderr,"\n");
-        fprintf(stderr,"%s: rcond has to be either -1 or greater than zero, but %f is provided\n", (const char*)GetProgramName(),GetOptRCond());
+        fprintf(stderr,"%s: --rcond has to be either -1 or greater than zero, but %f is provided\n", (const char*)GetProgramName(),GetOptRCond());
         IsError = true;
     }
 
@@ -87,6 +90,13 @@ int CABFOptGPRHyprmsOptions::CheckOptions(void)
 
 int CABFOptGPRHyprmsOptions::CheckArguments(void)
 {
+    if( GetNumberOfProgArgs() < 2 ){
+        if(IsError == false) fprintf(stderr,"\n");
+        fprintf(stderr,"%s: at least two arguments are expected, but %d is provided\n",
+                (const char*)GetProgramName(),GetNumberOfProgArgs());
+        IsError = true;
+    }
+    if(IsError == true) return(SO_OPTS_ERROR);
     return(SO_CONTINUE);
 }
 

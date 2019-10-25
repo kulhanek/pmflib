@@ -27,6 +27,7 @@
 #include <boost/format.hpp>
 #include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string/classification.hpp>
+#include <SciLapack.hpp>
 
 //------------------------------------------------------------------------------
 
@@ -44,6 +45,7 @@ MAIN_ENTRY(CABFOptGPRHyprms)
 
 CABFOptGPRHyprms::CABFOptGPRHyprms(void)
 {
+    NCVs = 0;
 }
 
 //==============================================================================
@@ -74,13 +76,13 @@ int CABFOptGPRHyprms::Init(int argc,char* argv[])
     vout << "# Version: " << LibBuildVersion_PMF << endl;
     vout << "# ==============================================================================" << endl;
 
-    if( Options.GetArgABFAccuName() != "-") {
-        vout << "# ABF accu file (in)        : " << Options.GetArgABFAccuName()  << endl;
-    } else {
-        vout << "# ABF accu file (in)        : - (standard input)" << endl;
+    for(int i=0; i < Options.GetNumberOfProgArgs()-1; i++){
+        vout << format("# ABF accu file #%2d (in)        : %s")%i%string(Options.GetProgArg(i)) << endl;
     }
-    if( Options.GetArgGPRHyprmsName() != "-") {
-        vout << "# Optimized GPR hyprms (out): " << Options.GetArgGPRHyprmsName() << endl;
+
+    CSmallString output = Options.GetProgArg(Options.GetNumberOfProgArgs()-1);
+    if( output != "-") {
+        vout << "# Optimized GPR hyprms (out): " << output << endl;
     } else {
         vout << "# Optimized GPR hyprms (out): - (standard output)" << endl;
     }
@@ -100,13 +102,7 @@ int CABFOptGPRHyprms::Init(int argc,char* argv[])
     }
     vout << "# ------------------------------------------------" << endl;
 
-    // open files -----------------------------------
-    if( InputFile.Open(Options.GetArgABFAccuName(),"r") == false ){
-        ES_ERROR("unable to open input file");
-        return(SO_USER_ERROR);
-    }
-
-    if( OutputFile.Open(Options.GetArgGPRHyprmsName(),"w") == false ){
+    if( OutputFile.Open(output,"w") == false ){
         ES_ERROR("unable to open output file");
         return(SO_USER_ERROR);
     }
@@ -122,22 +118,23 @@ bool CABFOptGPRHyprms::Run(void)
 
 // load accumulator
     vout << endl;
-    vout << format("%02d:Loading ABF accumulator: %s")%State%string(Options.GetArgABFAccuName()) << endl;
+    vout << format("%02d:Loading ABF accumulators ...")%State << endl;
     State++;
-    try {
-        Accumulator.Load(InputFile);
-    } catch(...) {
-        ES_ERROR("unable to load the input ABF accumulator file");
-        return(false);
+    for(int i=0; i < Options.GetNumberOfProgArgs()-1; i++){
+        CSmallString name = Options.GetProgArg(i);
+        vout << format("*** ABFAccumulator #%02d: %s")%(i+1)%string(name) << endl;
+        CABFAccumulatorP p_accu(new CABFAccumulator);
+        try {
+            p_accu->Load(name);
+        } catch(...) {
+            CSmallString error;
+            error << "unable to load the input ABF accumulator file '" << name << "'";
+            ES_ERROR(error);
+            return(false);
+        }
+        Accumulators.push_back(p_accu);
     }
     vout << "   Done" << endl;
-
-// print summary
-    // print CVS info
-    Accumulator.PrintCVSInfo(vout);
-    // DO NOT SET IT HERE, Ncorr is now GPR hyperparameter
-    // Accumulator.SetNCorr(Options.GetOptNCorr());
-    FES.Allocate(&Accumulator);
 
     vout << endl;
     vout << format("%02d:ABF accumulator statistics ...")%State << endl;
@@ -154,8 +151,13 @@ bool CABFOptGPRHyprms::Run(void)
         Test();
     }
 
+    if( Options.GetOptPrintStat() ){
+        ShowGPRStat();
+    }
+
+    CSmallString output = Options.GetProgArg(Options.GetNumberOfProgArgs()-1);
     vout << endl;
-    vout << format("%02d:Saving optimized hyperparameters: %s")%State%string(Options.GetArgGPRHyprmsName()) << endl;
+    vout << format("%02d:Saving optimized hyperparameters: %s")%State%string(output) << endl;
     State++;
     if( WriteHyperPrms(OutputFile) == false ){
         ES_ERROR("unable to save optimized hyperparameters");
@@ -191,7 +193,7 @@ void CABFOptGPRHyprms::InitOptimizer(void)
         for(size_t i=0; i < NCorrEnabled.size(); i++){
             if( NCorrEnabled[i] ) NumOfOptPrms++;
         }
-        NumOfPrms += Accumulator.GetNumberOfCoords();
+        NumOfPrms += NCVs;
     } else {
         if( NCorrEnabled[0] ) NumOfOptPrms++;
         NumOfPrms++;
@@ -200,7 +202,7 @@ void CABFOptGPRHyprms::InitOptimizer(void)
     for(size_t i=0; i < WFacEnabled.size(); i++){
         if( WFacEnabled[i] ) NumOfOptPrms++;
     }
-    NumOfPrms += Accumulator.GetNumberOfCoords();
+    NumOfPrms += NCVs;
 
     if( NumOfOptPrms == 0 ){
         RUNTIME_ERROR("no hyperparameter to optimize");
@@ -208,11 +210,13 @@ void CABFOptGPRHyprms::InitOptimizer(void)
 
     int     noptsteps   = Options.GetOptNOptSteps();
     double  termeps     = Options.GetOptTermEps();
+    double  termlogml   = Options.GetOptTermDLogML();
     int     nlbfgscorr  = Options.GetOptNumOfLBFGSCorr();
 
 // print header
     vout << "   Maximum number of L-BFGS steps  = " << noptsteps << endl;
-    vout << "   Termination criteria            = " << std::scientific << termeps << std::fixed << endl;
+    vout << "   Termination criteria (L-BFGS)   = " << std::scientific << termeps << std::fixed << endl;
+    vout << "   Termination criteria (logML)    = " << std::scientific << termlogml << std::fixed << endl;
     vout << "   Number of L-BFGS corrections    = " << nlbfgscorr << endl;
     vout << "   Total number of hyprms          = " << NumOfPrms << endl;
     vout << "   Number of optimized hyprms      = " << NumOfOptPrms << endl;
@@ -230,14 +234,14 @@ void CABFOptGPRHyprms::InitOptimizer(void)
     vout << "   Hyperparameters ..." << endl;
         vout << format("      SigmaF2  = %10.4f")%SigmaF2 << endl;
     if( SplitNCorr ){
-        for(int k=0; k < Accumulator.GetNumberOfCoords(); k++ ){
+        for(int k=0; k < NCVs; k++ ){
             vout << format("      NCorr#%-2d = %10.4f")%(k+1)%NCorr[k] << endl;
         }
     } else {
         vout << format("      NCorr    = %10.4f")%NCorr[0] << endl;
     }
 
-    for(int k=0; k < Accumulator.GetNumberOfCoords(); k++ ){
+    for(int k=0; k < NCVs; k++ ){
         vout << format("      WFac#%-2d  = %10.4f")%(k+1)%WFac[k] << endl;
     }
 
@@ -320,13 +324,13 @@ void CABFOptGPRHyprms::DecodeEList(const CSmallString& spec, std::vector<bool>& 
 
     split(slist,sspecen,is_any_of("x"),token_compress_on);
 
-    if( (int)slist.size() > Accumulator.GetNumberOfCoords() ){
+    if( (int)slist.size() > NCVs ){
         CSmallString error;
-        error << "too many flags (" << slist.size() << ") for " << optionname << " than required (" << Accumulator.GetNumberOfCoords() << ")";
+        error << "too many flags (" << slist.size() << ") for " << optionname << " than required (" << NCVs << ")";
         RUNTIME_ERROR(error);
     }
 
-    elist.resize(Accumulator.GetNumberOfCoords());
+    elist.resize(NCVs);
 
     // parse values
     bool last_st = false;
@@ -348,7 +352,7 @@ void CABFOptGPRHyprms::DecodeEList(const CSmallString& spec, std::vector<bool>& 
     }
 
     // pad the rest with the last value
-    for(int i=slist.size(); i < Accumulator.GetNumberOfCoords(); i++){
+    for(int i=slist.size(); i < NCVs; i++){
         elist[i] = last_st;
     }
 }
@@ -362,13 +366,13 @@ void CABFOptGPRHyprms::DecodeVList(const CSmallString& spec, CSimpleVector<doubl
 
     split(slist,sspecen,is_any_of("x"),token_compress_on);
 
-    if( (int)slist.size() > Accumulator.GetNumberOfCoords() ){
+    if( (int)slist.size() > NCVs ){
         CSmallString error;
-        error << "too many flags (" << slist.size() << ") for " << optionname << " than required (" << Accumulator.GetNumberOfCoords() << ")";
+        error << "too many flags (" << slist.size() << ") for " << optionname << " than required (" << NCVs << ")";
         RUNTIME_ERROR(error);
     }
 
-    vlist.CreateVector(Accumulator.GetNumberOfCoords());
+    vlist.CreateVector(NCVs);
 
     // parse values
     double last_st = defv;
@@ -384,7 +388,7 @@ void CABFOptGPRHyprms::DecodeVList(const CSmallString& spec, CSimpleVector<doubl
     }
 
     // pad the rest with the last value
-    for(int i=slist.size(); i < Accumulator.GetNumberOfCoords(); i++){
+    for(int i=slist.size(); i < NCVs; i++){
         vlist[i] = last_st;
     }
 }
@@ -417,6 +421,7 @@ bool CABFOptGPRHyprms::Optimize(void)
     int     noptsteps   = Options.GetOptNOptSteps();
     double  termeps     = Options.GetOptTermEps();
     int     nlbfgscorr  = Options.GetOptNumOfLBFGSCorr();
+    double  last_logml  = 0;
 
     for(int istep=1; istep <= noptsteps; istep++ ){
         if( Options.GetOptNumeric() ){
@@ -442,7 +447,22 @@ bool CABFOptGPRHyprms::Optimize(void)
             ES_ERROR(error);
             return(false);
         }
+
+        if( istep > 1 ){
+            if( fabs(logML - last_logml) < Options.GetOptTermDLogML() ){
+                vout << ">>> INFO: No significant change in logML - terminating ..." << endl;
+                break;
+            }
+        }
+        last_logml = logML;
     }
+
+    PrintGradientSummary();
+
+    if( Options.GetOptSPType() ){
+        CalcHessian();
+    }
+
     return(true);
 }
 
@@ -530,30 +550,282 @@ void CABFOptGPRHyprms::Test(void)
 
 //------------------------------------------------------------------------------
 
+void CABFOptGPRHyprms::CalcHessian(void)
+{
+    vout << endl;
+    vout << "# Calculating numerical hessian by central differences ... " <<  endl;
+
+    Hessian.CreateMatrix(NumOfOptPrms,NumOfOptPrms);
+    Hessian.SetZero();
+    EigenValues.CreateVector(NumOfOptPrms);
+    EigenValues.SetZero();
+
+    CSimpleVector<double>   tmp_prms;
+    tmp_prms.CreateVector(NumOfOptPrms);
+
+    CSimpleVector<CSimpleVector<double>>   grd1;
+    grd1.CreateVector(NumOfOptPrms);
+    for(int i=0; i < NumOfOptPrms; i++){
+        grd1[i].CreateVector(NumOfOptPrms);
+    }
+
+    CSimpleVector<CSimpleVector<double>>   grd2;
+    grd2.CreateVector(NumOfOptPrms);
+    for(int i=0; i < NumOfOptPrms; i++){
+        grd2[i].CreateVector(NumOfOptPrms);
+    }
+
+// derivatives
+    double dh = 1e-3;
+
+    for(int i=0; i < NumOfOptPrms; i++){
+        tmp_prms = Hyprms;
+        tmp_prms[i] += dh;
+        ScatterHyprms(tmp_prms);
+
+        grd1[i].SetZero();
+        for(size_t c=0; c < Accumulators.size(); c++){
+            CABFAccumulatorP accu = Accumulators[c];
+            CABFIntegratorGPR gpr;
+            GetLogML(gpr,accu);
+            gpr.GetLogMLDerivatives(HyprmsEnabled,grd1[i]);
+        }
+
+        grd2[i].SetZero();
+        tmp_prms = Hyprms;
+        tmp_prms[i] -= dh;
+        ScatterHyprms(tmp_prms);
+
+        for(size_t c=0; c < Accumulators.size(); c++){
+            CABFAccumulatorP accu = Accumulators[c];
+            CABFIntegratorGPR gpr;
+            GetLogML(gpr,accu);
+            gpr.GetLogMLDerivatives(HyprmsEnabled,grd2[i]);
+        }
+    }
+
+// hessian by central differences from gradients
+// https://v8doc.sas.com/sashtml/ormp/chap5/sect28.htm
+    for(int i=0; i < NumOfOptPrms; i++){
+        for(int j=0; j < NumOfOptPrms; j++){
+            Hessian[i][j] = (grd1[j][i] - grd2[j][i])/(4.0*dh) + (grd1[i][j] - grd2[i][j])/(4.0*dh);
+        }
+    }
+
+// find eigenvalues
+    CSciLapack::syev('V','U',Hessian,EigenValues);
+
+    vout << endl;
+    vout << "# idx    hess eigval";
+
+    int soffset = 0;
+    int noffset;
+    int woffset;
+
+    if( SplitNCorr ){
+        noffset = soffset+1;
+        woffset = noffset+NCorr.GetLength();
+    } else {
+        noffset = soffset+1;
+        woffset = noffset+1;
+    }
+
+    int ind = 0;
+    for(int prm=0; prm < (int)HyprmsEnabled.size(); prm++){
+        if( HyprmsEnabled[prm] ){
+            if( prm == 0 ){
+                vout << " SigmaF2   ";
+            } else if( (prm >= noffset) && (prm < woffset) ){
+                if( SplitNCorr ){
+               int cv = prm - noffset;
+                vout << format("NCorr#%-2d  ")%(cv+1);
+                } else {
+                vout << " NCorr     ";
+                }
+            } else {
+                int cv = prm - woffset;
+                vout << format(" WFac#%-2d   ")%(cv+1);
+            }
+            ind++;
+        }
+    }
+    vout << endl;
+
+    vout << "# --- --------------";
+    for(int prm=0; prm < (int)HyprmsEnabled.size(); prm++){
+        if( HyprmsEnabled[prm] ){
+            vout << " ----------";
+        }
+    }
+    vout << endl;
+
+    for(int i=0; i < NumOfOptPrms; i++){
+        vout << format("%5d %14.6e")%(i+1)%EigenValues[i];
+        ind = 0;
+        for(int prm=0; prm < (int)HyprmsEnabled.size(); prm++){
+            if( HyprmsEnabled[prm] ){
+                vout << format(" %10.4f")%Hessian[ind][i];
+                ind++;
+            }
+        }
+        vout << endl;
+    }
+}
+
+//------------------------------------------------------------------------------
+
+void CABFOptGPRHyprms::PrintGradientSummary(void)
+{
+    vout << endl;
+    vout << "# Final results ..." << endl;
+    vout << "# idx       prms          value       gradient" << endl;
+    vout << "# --- ---------- -------------- --------------" << endl;
+
+    int ind = 0;
+
+    int soffset = 0;
+    int noffset;
+    int woffset;
+
+    if( SplitNCorr ){
+        noffset = soffset+1;
+        woffset = noffset+NCorr.GetLength();
+    } else {
+        noffset = soffset+1;
+        woffset = noffset+1;
+    }
+
+    double gnorm = 0.0;
+
+    for(int prm=0; prm < (int)HyprmsEnabled.size(); prm++){
+        if( HyprmsEnabled[prm] ){
+            vout << format("%5d ")%(ind+1);
+            if( prm == 0 ){
+                vout << "SigmaF2    ";
+            } else if( (prm >= noffset) && (prm < woffset) ){
+                if( SplitNCorr ){
+               int cv = prm - noffset;
+                vout << format("NCorr#%-2d   ")%(cv+1);
+                } else {
+                vout << "NCorr      ";
+                }
+            } else {
+                int cv = prm - woffset;
+                vout << format("WFac#%-2d    ")%(cv+1);
+            }
+            gnorm += HyprmsGrd[ind]*HyprmsGrd[ind];
+            vout << format("%14.6e %14.6e")%Hyprms[ind]%HyprmsGrd[ind] << endl;
+            ind++;
+        }
+    }
+    if( NumOfOptPrms > 0 ){
+        gnorm = sqrt(gnorm/(double)NumOfOptPrms);
+    }
+
+    vout << "# --- ---------- -------------- --------------" << endl;
+    vout << format("# Gradient norm                 %14.6e")%gnorm << endl;
+    vout << format("# Sum of logMLs                 %14.6e")%logML << endl;
+}
+
+//------------------------------------------------------------------------------
+
+void CABFOptGPRHyprms::ShowGPRStat(void)
+{
+    vout << endl;
+    vout << format("%02d:Statistics per ABF accumulator ...")%State << endl;
+    State++;
+
+// setup parameters
+    ScatterHyprms(Hyprms);
+
+// run GPR integration
+    for(size_t i=0; i < Accumulators.size(); i++){
+        vout << format("*** ABFAccumulator #%02d ...")%(i+1) << endl;
+
+        CABFAccumulatorP    accu = Accumulators[i];
+        CABFIntegratorGPR   gpr;
+
+        CEnergySurface fes;
+        fes.Allocate(accu.get());
+
+        gpr.SetInputABFAccumulator(accu.get());
+        gpr.SetOutputFESurface(&fes);
+
+        gpr.SetRCond(Options.GetOptRCond());
+
+        gpr.SetIncludeError(false);
+        gpr.SetNoEnergy(false);
+        gpr.IncludeGluedAreas(false);
+
+        gpr.SetSplitNCorr(SplitNCorr);
+
+        if( Options.GetOptLAMethod() == "svd" ){
+            gpr.SetINVMehod(EGPRINV_SVD);
+        } else if( Options.GetOptLAMethod() == "svd2" ){
+                gpr.SetINVMehod(EGPRINV_SVD2);
+        } else if( Options.GetOptLAMethod() == "lu" ) {
+            gpr.SetINVMehod(EGPRINV_LU);
+        } else if( Options.GetOptLAMethod() == "ll" ) {
+            gpr.SetINVMehod(EGPRINV_LL);
+        } else if( Options.GetOptLAMethod() == "default" ) {
+            // nothing to do - use default method set in constructor of integrator
+        } else {
+            INVALID_ARGUMENT("algorithm - not implemented");
+        }
+
+    // run integrator
+        gpr.SetSigmaF2(SigmaF2);
+        gpr.SetNCorr(NCorr);
+        gpr.SetWFac(WFac);
+        gpr.Integrate(vout,false);
+   }
+}
+
+//------------------------------------------------------------------------------
+
 void CABFOptGPRHyprms::RunGPRAnalytical(void)
 {
 // setup parameters
     ScatterHyprms(Hyprms);
 
 // calculate gradient and logML
-    CABFIntegratorGPR gpr;
-    logML = GetLogML(gpr);
-    gpr.GetLogMLDerivatives(HyprmsEnabled,HyprmsGrd);
+    logML = 0;
+    HyprmsGrd.SetZero();
+    for(size_t i=0; i < Accumulators.size(); i++){
+        CABFAccumulatorP accu = Accumulators[i];
+        CABFIntegratorGPR gpr;
+        logML += GetLogML(gpr,accu);
+        gpr.GetLogMLDerivatives(HyprmsEnabled,HyprmsGrd);
+    }
 }
 
 //------------------------------------------------------------------------------
 
 void CABFOptGPRHyprms::RunGPRNumerical(void)
 {
+    logML = 0;
+    HyprmsGrd.SetZero();
+    for(size_t i=0; i < Accumulators.size(); i++){
+        CABFAccumulatorP accu = Accumulators[i];
+        logML += RunGPRNumerical(accu,HyprmsGrd);
+    }
+}
+
+//------------------------------------------------------------------------------
+
+double CABFOptGPRHyprms::RunGPRNumerical(CABFAccumulatorP accu,CSimpleVector<double>& der)
+{
     CSimpleVector<double>   tmp_prms;
     tmp_prms.CreateVector(NumOfOptPrms);
+
+    double lml = 0.0;
 
 // value
     tmp_prms = Hyprms;
     ScatterHyprms(tmp_prms);
     {
         CABFIntegratorGPR gpr;
-        logML = GetLogML(gpr);
+        lml = GetLogML(gpr,accu);
     }
 
 // derivatives
@@ -567,30 +839,30 @@ void CABFOptGPRHyprms::RunGPRNumerical(void)
             ScatterHyprms(tmp_prms);
             {
                 CABFIntegratorGPR gpr;
-                v1 = GetLogML(gpr);
+                v1 = GetLogML(gpr,accu);
             }
             tmp_prms = Hyprms;
             tmp_prms[i] -= dh;
             ScatterHyprms(tmp_prms);
             {
                 CABFIntegratorGPR gpr;
-                v2 = GetLogML(gpr);
+                v2 = GetLogML(gpr,accu);
             }
             tmp_prms = Hyprms;
             tmp_prms[i] += dh;
             ScatterHyprms(tmp_prms);
             {
                 CABFIntegratorGPR gpr;
-                v3 = GetLogML(gpr);
+                v3 = GetLogML(gpr,accu);
             }
             tmp_prms = Hyprms;
             tmp_prms[i] += 2.0*dh;
             ScatterHyprms(tmp_prms);
             {
                 CABFIntegratorGPR gpr;
-                v4 = GetLogML(gpr);
+                v4 = GetLogML(gpr,accu);
             }
-            HyprmsGrd[i] = (v1-8.0*v2+8.0*v3-v4)/(12.0*dh);
+            der[i] += (v1-8.0*v2+8.0*v3-v4)/(12.0*dh);
         } else {
             double lv,rv;
             tmp_prms = Hyprms;
@@ -598,19 +870,21 @@ void CABFOptGPRHyprms::RunGPRNumerical(void)
             ScatterHyprms(tmp_prms);
             {
                 CABFIntegratorGPR gpr;
-                lv = GetLogML(gpr);
+                lv = GetLogML(gpr,accu);
             }
             tmp_prms = Hyprms;
             tmp_prms[i] += dh;
             ScatterHyprms(tmp_prms);
             {
                 CABFIntegratorGPR gpr;
-                rv = GetLogML(gpr);
+                rv = GetLogML(gpr,accu);
             }
-            HyprmsGrd[i] = (rv-lv)/(2.0*dh);
+            der[i] += (rv-lv)/(2.0*dh);
         }
 
     }
+
+    return(lml);
 }
 
 //------------------------------------------------------------------------------
@@ -668,10 +942,13 @@ void CABFOptGPRHyprms::ScatterHyprms(CSimpleVector<double>& hyprsm)
 
 //------------------------------------------------------------------------------
 
-double CABFOptGPRHyprms::GetLogML(CABFIntegratorGPR& gpr)
+double CABFOptGPRHyprms::GetLogML(CABFIntegratorGPR& gpr,CABFAccumulatorP accu)
 {
-    gpr.SetInputABFAccumulator(&Accumulator);
-    gpr.SetOutputFESurface(&FES);
+    CEnergySurface fes;
+    fes.Allocate(accu.get());
+
+    gpr.SetInputABFAccumulator(accu.get());
+    gpr.SetOutputFESurface(&fes);
 
     gpr.SetRCond(Options.GetOptRCond());
 
@@ -732,26 +1009,39 @@ void CABFOptGPRHyprms::WriteResults(int istep)
 
 void CABFOptGPRHyprms::PrintSampledStat(void)
 {
-    // calculate sampled area
-    double maxbins = Accumulator.GetNumberOfBins();
-    int    sampled = 0;
-    int    glued = 0;
-    for(int ibin=0; ibin < Accumulator.GetNumberOfBins(); ibin++) {
-        if( Accumulator.GetNumberOfABFSamples(ibin) > 0 ) {
-            sampled++;
+    for(size_t i=0; i < Accumulators.size(); i++){
+        CABFAccumulatorP accu = Accumulators[i];
+        vout << format("*** ABFAccumulator #%02d ...")%(i+1) << endl;
+        // calculate sampled area
+        double maxbins = accu->GetNumberOfBins();
+        int    sampled = 0;
+        int    glued = 0;
+        for(int ibin=0; ibin < accu->GetNumberOfBins(); ibin++) {
+            if( accu->GetNumberOfABFSamples(ibin) > 0 ) {
+                sampled++;
+            }
+            if( accu->GetNumberOfABFSamples(ibin) < 0 ) {
+                glued++;
+            }
         }
-        if( Accumulator.GetNumberOfABFSamples(ibin) < 0 ) {
-            glued++;
+        if( maxbins > 0 ){
+            vout << "   Sampled area: "
+                 << setw(6) << sampled << " / " << (int)maxbins << " | " << setw(5) << setprecision(1) << fixed << sampled/maxbins*100 <<"%" << endl;
         }
-    }
-    if( maxbins > 0 ){
-        vout << "   Sampled area: "
-             << setw(6) << sampled << " / " << (int)maxbins << " | " << setw(5) << setprecision(1) << fixed << sampled/maxbins*100 <<"%" << endl;
-    }
-    if( glued > 0 ){
-        vout << "   Glued area:   "
-             << setw(6) << glued << " / " << (int)maxbins << " | " << setw(5) << setprecision(1) << fixed << glued/maxbins*100 <<"%" << endl;
-    }
+        if( glued > 0 ){
+            vout << "   Glued area:   "
+                 << setw(6) << glued << " / " << (int)maxbins << " | " << setw(5) << setprecision(1) << fixed << glued/maxbins*100 <<"%" << endl;
+        }
+        int ncvs = accu->GetNumberOfCoords();
+        if( i == 0 ){
+            NCVs = ncvs;
+        }
+        if( NCVs != ncvs ){
+            CSmallString error;
+            error << "inconsistent dimmensions (NCVs) of ABF accumulator: " << ncvs << "; the first accu: " << NCVs;
+            RUNTIME_ERROR(error);
+        }
+   }
 }
 
 //------------------------------------------------------------------------------
@@ -792,9 +1082,8 @@ void CABFOptGPRHyprms::LoadGPRHyprms(void)
         RUNTIME_ERROR(error);
     }
 
-    int ncvs = Accumulator.GetNumberOfCoords();
-    NCorr.CreateVector(ncvs);
-    WFac.CreateVector(ncvs);
+    NCorr.CreateVector(NCVs);
+    WFac.CreateVector(NCVs);
 
     string line;
     while( getline(fin,line) ){
@@ -817,7 +1106,7 @@ void CABFOptGPRHyprms::LoadGPRHyprms(void)
             NCorr[0] = value;
             if( Options.GetOptSplitNCorr() ){
                 vout << "   >> WARNING: Expanding NCorr due to --splitncorr" << endl;
-                for(int i=0; i < ncvs;i++){
+                for(int i=0; i < NCVs;i++){
                     NCorr[1] = value;
                 }
             }
@@ -833,9 +1122,9 @@ void CABFOptGPRHyprms::LoadGPRHyprms(void)
                 RUNTIME_ERROR(error);
             }
             cvind--; // transform to 0-based indexing
-            if( (cvind < 0) || (cvind >= ncvs) ){
+            if( (cvind < 0) || (cvind >= NCVs) ){
                 CSmallString error;
-                error << "ncorr index " << (cvind+1) << " out-of-range 1-" << ncvs;
+                error << "ncorr index " << (cvind+1) << " out-of-range 1-" << NCVs;
                 RUNTIME_ERROR(error);
             }
             if( Options.GetOptSplitNCorr() ){
@@ -860,9 +1149,9 @@ void CABFOptGPRHyprms::LoadGPRHyprms(void)
                 RUNTIME_ERROR(error);
             }
             cvind--; // transform to 0-based indexing
-            if( (cvind < 0) || (cvind >= ncvs) ){
+            if( (cvind < 0) || (cvind >= NCVs) ){
                 CSmallString error;
-                error << "wfac index " << (cvind+1) << " out-of-range 1-" << ncvs;
+                error << "wfac index " << (cvind+1) << " out-of-range 1-" << NCVs;
                 RUNTIME_ERROR(error);
             }
             WFac[cvind] = value;
@@ -881,7 +1170,7 @@ void CABFOptGPRHyprms::LoadGPRHyprms(void)
 void CABFOptGPRHyprms::Finalize(void)
 {
     // close files if they are own by program
-    InputFile.Close();
+    OutputFile.Close();
 
     CSmallTimeAndDate dt;
     dt.GetActualTimeAndDate();

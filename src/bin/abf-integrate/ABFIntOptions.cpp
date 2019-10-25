@@ -34,10 +34,6 @@ CABFIntOptions::CABFIntOptions(void)
 
 //------------------------------------------------------------------------------
 
-/*
- check validity of specified options
-*/
-
 int CABFIntOptions::CheckOptions(void)
 {
     if(GetOptLimit() < 0) {
