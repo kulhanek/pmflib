@@ -572,13 +572,13 @@ void CABFOptGPRHyprms::CalcHessian(void)
     CSimpleVector<double>   tmp_prms;
     tmp_prms.CreateVector(NumOfOptPrms);
 
-    CSimpleVector<CSimpleVector<double>>   grd1;
+    CSimpleVector< CSimpleVector<double> >   grd1;
     grd1.CreateVector(NumOfOptPrms);
     for(int i=0; i < NumOfOptPrms; i++){
         grd1[i].CreateVector(NumOfOptPrms);
     }
 
-    CSimpleVector<CSimpleVector<double>>   grd2;
+    CSimpleVector< CSimpleVector<double> >   grd2;
     grd2.CreateVector(NumOfOptPrms);
     for(int i=0; i < NumOfOptPrms; i++){
         grd2[i].CreateVector(NumOfOptPrms);

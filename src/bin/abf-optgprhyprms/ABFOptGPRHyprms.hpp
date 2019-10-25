@@ -28,11 +28,11 @@
 #include <SmallTimeAndDate.hpp>
 #include <ABFIntegratorGPR.hpp>
 #include <vector>
-#include <memory>
+#include <boost/shared_ptr.hpp>
 
 //------------------------------------------------------------------------------
 
-typedef std::shared_ptr<CABFAccumulator>    CABFAccumulatorP;
+typedef boost::shared_ptr<CABFAccumulator>    CABFAccumulatorP;
 
 //------------------------------------------------------------------------------
 
