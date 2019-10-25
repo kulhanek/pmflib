@@ -402,16 +402,24 @@ void CABFOptGPRHyprms::DecodeVList(const CSmallString& spec, CSimpleVector<doubl
 //        DOUBLE PRECISION F,EPS,XTOL
 //        LOGICAL DIAGCO
 
-extern "C" void lbfgs_(int* N,int* M,double* X,double* F,double* G,int* DIAGCO,double* DIAG,
-                       int* IPRINT,double* EPS,double* XTOL,double* W,int* IFLAG);
+#ifdef HAVE_MKL_ILP64
+// 64-bit integer - ILP64
+typedef long int FT_INT;
+#else
+// standard 32-bit integer
+typedef int FT_INT;
+#endif
+
+extern "C" void lbfgs_(FT_INT* N,FT_INT* M,double* X,double* F,double* G,FT_INT* DIAGCO,double* DIAG,
+                       FT_INT* IPRINT,double* EPS,double* XTOL,double* W,FT_INT* IFLAG);
 
 //------------------------------------------------------------------------------
 
 bool CABFOptGPRHyprms::Optimize(void)
 {
-    int iflag;
-    int diacgo = 0;
-    int iprint[2];
+    FT_INT iflag;
+    FT_INT diacgo = 0;
+    FT_INT iprint[2];
     iprint[0] = -1;
     iprint[1] = 1;
 
@@ -420,7 +428,7 @@ bool CABFOptGPRHyprms::Optimize(void)
 
     int     noptsteps   = Options.GetOptNOptSteps();
     double  termeps     = Options.GetOptTermEps();
-    int     nlbfgscorr  = Options.GetOptNumOfLBFGSCorr();
+    FT_INT  nlbfgscorr  = Options.GetOptNumOfLBFGSCorr();
     double  last_logml  = 0;
 
     for(int istep=1; istep <= noptsteps; istep++ ){
@@ -438,7 +446,8 @@ bool CABFOptGPRHyprms::Optimize(void)
         }
 
         // run L-BFGS
-        lbfgs_(&NumOfOptPrms,&nlbfgscorr,Hyprms,&rv,HyprmsGrd,&diacgo,TmpXG,iprint,&termeps,&xtol,Work,&iflag);
+        FT_INT nx = NumOfOptPrms;
+        lbfgs_(&nx,&nlbfgscorr,Hyprms,&rv,HyprmsGrd,&diacgo,TmpXG,iprint,&termeps,&xtol,Work,&iflag);
 
         if( iflag == 0 ) break;
         if( iflag < 0 ) {
