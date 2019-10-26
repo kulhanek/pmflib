@@ -219,13 +219,13 @@ void CABFOptGPRHyprms::InitOptimizer(void)
 
     int     noptsteps   = Options.GetOptNOptSteps();
     double  termeps     = Options.GetOptTermEps();
-    double  termlogml   = Options.GetOptTermDLogML();
+    double  termval     = Options.GetOptTermVal();
     int     nlbfgscorr  = Options.GetOptNumOfLBFGSCorr();
 
 // print header
     vout << "   Maximum number of L-BFGS steps  = " << noptsteps << endl;
     vout << "   Termination criteria (L-BFGS)   = " << std::scientific << termeps << std::fixed << endl;
-    vout << "   Termination criteria (logML)    = " << std::scientific << termlogml << std::fixed << endl;
+    vout << "   Termination criteria (value)    = " << std::scientific << termval << std::fixed << endl;
     vout << "   Number of L-BFGS corrections    = " << nlbfgscorr << endl;
     vout << "   Total number of hyprms          = " << NumOfPrms << endl;
     vout << "   Number of optimized hyprms      = " << NumOfOptPrms << endl;
@@ -475,7 +475,7 @@ bool CABFOptGPRHyprms::Optimize(void)
         }
 
         if( istep > 1 ){
-            if( fabs(logTarget - last_logtrg) < Options.GetOptTermDLogML() ){
+            if( fabs(logTarget - last_logtrg) < Options.GetOptTermVal() ){
                 switch(Target){
                     case(EGOT_LOGML):
                         vout << ">>> INFO: No significant change in logML - terminating ..." << endl;

@@ -69,7 +69,7 @@ public:
     CSO_OPT(bool,Numeric)
     CSO_OPT(int,NOptSteps)
     CSO_OPT(double,TermEps)
-    CSO_OPT(double,TermDLogML)
+    CSO_OPT(double,TermVal)
     CSO_OPT(int,NumOfLBFGSCorr)
     CSO_OPT(bool,Test)
     CSO_OPT(bool,PrintStat)
@@ -209,13 +209,13 @@ public:
                 "Termination criteria for L-BFGS optimizer (see L-BFGS code).")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(double,                           /* option type */
-                TermDLogML,                        /* option name */
+                TermVal,                        /* option name */
                 1e-7,                          /* default value */
                 false,                          /* is option mandatory */
                 0,                           /* short option name */
-                "termdlogm",                      /* long option name */
+                "termval",                      /* long option name */
                 "NUMBER",                           /* parametr name */
-                "Termination criteria for L-BFGS optimizer. Minimum change of logML.")   /* option description */
+                "Termination criteria for L-BFGS optimizer. Minimum change of optimized property.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(int,                           /* option type */
                 NumOfLBFGSCorr,                        /* option name */
