@@ -90,7 +90,8 @@ public:
                 't',                           /* short option name */
                 "target",                      /* long option name */
                 "NAME",                           /* parametr name */
-                "Specify optimized targed, which can be either logml (logML) or logloo (logLOO).")   /* option description */
+                "Specify optimized targed, which can be either logml (log of marginal likelihood) "
+                "or logpl (log of pseudo-likelihood from leave-one-out cross-validation (LOO-CV)).")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(CSmallString,                           /* option type */
                 LAMethod,                        /* option name */

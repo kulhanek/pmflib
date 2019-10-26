@@ -35,10 +35,10 @@ CABFOptGPRHyprmsOptions::CABFOptGPRHyprmsOptions(void)
 int CABFOptGPRHyprmsOptions::CheckOptions(void)
 {
     if( (GetOptTarget() != "logml") &&
-        (GetOptTarget() != "logloo") ) {
+        (GetOptTarget() != "logpl") ) {
         if(IsError == false) fprintf(stderr,"\n");
-        fprintf(stderr,"%s: optimized target must be either logml or logloo, but %s is specified\n",
-                (const char*)GetProgramName(),(const char*)GetOptLAMethod());
+        fprintf(stderr,"%s: optimized target must be either logml or logpl, but %s is specified\n",
+                (const char*)GetProgramName(),(const char*)GetOptTarget());
         IsError = true;
     }
 

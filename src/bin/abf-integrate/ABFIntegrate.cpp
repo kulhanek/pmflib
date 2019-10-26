@@ -222,7 +222,7 @@ bool CABFIntegrate::Run(void)
         ES_ERROR("unable to load the input ABF accumulator file");
         return(false);
     }
-    vout << "   Done" << endl;
+    vout << "   Done." << endl;
 
     // print CVS info
     Accumulator.PrintCVSInfo(vout);
@@ -251,7 +251,7 @@ bool CABFIntegrate::Run(void)
         FloodFillTest();
     }
     PrintSampledStat();
-    vout << "   Done" << endl;
+    vout << "   Done." << endl;
 
     if( Options.GetOptMFMaxZScore() > 0.0 ){
         for(int i=1; i <= Options.GetOptMFZTestPasses(); i++ ){
@@ -268,7 +268,7 @@ bool CABFIntegrate::Run(void)
                 FloodFillTest();
             }
             PrintSampledStat();
-            vout << "   Done" << endl;
+            vout << "   Done." << endl;
 
             FES.Clear();
         }
@@ -281,7 +281,7 @@ bool CABFIntegrate::Run(void)
         state++;
         GlueHoles();
         PrintSampledStat();
-        vout << "   Done" << endl;
+        vout << "   Done." << endl;
         FES.Clear();
     }
 
@@ -290,11 +290,13 @@ bool CABFIntegrate::Run(void)
         vout << format("%02d:Preparing ABF accumulator for integration (glueing FES)")%state << endl;
         state++;
         vout << "   Searching for border regions in close vicinity of sampled areas ..." << endl;
+        int tg = 0;
         for(int i=1; i <= Options.GetOptGlueingFactor(); i++ ){
-            GlueingFES(i);
+            tg += GlueingFES(i);
         }
+        vout << "   -- Total glued bins: " << tg << endl;
         PrintSampledStat();
-        vout << "   Done" << endl;
+        vout << "   Done." << endl;
 
         FES.Clear();
     }
@@ -315,7 +317,7 @@ bool CABFIntegrate::Run(void)
             FloodFillTest();
         }
         PrintSampledStat();
-        vout << "   Done" << endl;
+        vout << "   Done." << endl;
 
         FES.Clear();
     }
@@ -325,7 +327,7 @@ bool CABFIntegrate::Run(void)
     vout << format("%02d:ABF accumulator integration (%s)")%state%string(Options.GetOptMethod()) << endl;
     state++;
     if( Integrate() == false ) return(false);
-    vout << "   Done" << endl;
+    vout << "   Done." << endl;
 
  // apply offset
     if( ! Options.IsOptGlobalMinSet() ){
@@ -379,7 +381,7 @@ bool CABFIntegrate::Run(void)
         ES_ERROR("unable to save the output free energy file");
         return(false);
     }
-    vout << "   Done" << endl;
+    vout << "   Done." << endl;
 
     if( Options.GetNumberOfProgArgs() == 3 ){
         vout << endl;
@@ -420,7 +422,7 @@ bool CABFIntegrate::Run(void)
             ES_ERROR("unable to save the output free energy file");
             return(false);
         }
-        vout << "   Done" << endl;
+        vout << "   Done." << endl;
     }
 
 // save accumulator if requested
@@ -434,7 +436,7 @@ bool CABFIntegrate::Run(void)
             ES_ERROR("unable to save the ABF accumulator file");
             return(false);
         }
-        vout << "   Done" << endl;
+        vout << "   Done." << endl;
     }
 
     return(true);
@@ -1090,11 +1092,11 @@ void CABFIntegrate::PrintSampledStat(void)
         if( Accumulator.GetNumberOfABFSamples(ibin) < 0 ) {
             glued++;
         }
-        if( Accumulator.GetNumberOfABFSamples(ibin) == -2 ) {
+        if( Accumulator.GetNumberOfABFSamples(ibin) == -1 ) {
             holes++;
         }
     }
-    if( maxbins > 0 ){
+    if( (maxbins > 0) && (glued != 0) ){
         vout << "      Sampled area:               "
              << setw(6) << sampled << " / " << (int)maxbins << " | " << setw(5) << setprecision(1) << fixed << sampled/maxbins*100 <<"%" << endl;
     }
@@ -1158,11 +1160,11 @@ void CABFIntegrate::FloodFillTest(void)
 
     // quit if one or none region
     if( seedid <= 1 ){
-        vout << "   -- All is continuous. -----------------------------" << endl;
+        vout << "   -- All is continuous." << endl;
         return;
     }
 
-    vout << "   -- Clearing all except region: " << setw(3) << maxseedid <<  endl;
+        vout << "   -- Clearing all except region: " << maxseedid <<  endl;
 
     for(int ibin=0; ibin < Accumulator.GetNumberOfBins(); ibin++) {
         if( FFSeeds[ibin] != maxseedid ) {
@@ -1182,7 +1184,7 @@ bool CABFIntegrate::InstallNewSeed(int seedid,bool unsampled)
                 return(true);
             }
         } else {
-            if( (FFSeeds[ibin] == 0) && ( Accumulator.GetNumberOfABFSamples(ibin) > 0 ) ) {
+            if( (FFSeeds[ibin] == 0) && ( Accumulator.GetNumberOfABFSamples(ibin) != 0 ) ) {
                 FFSeeds[ibin] = seedid;
                 return(true);
             }
@@ -1206,7 +1208,7 @@ int CABFIntegrate::FillSeed(int seedid,bool unsampled)
         if( unsampled ){
             if( Accumulator.GetNumberOfABFSamples(ibin) > 0 ) continue; // skip sampled regions
         } else {
-            if( Accumulator.GetNumberOfABFSamples(ibin) <= 0 ) continue; // skip unsampled regions
+            if( Accumulator.GetNumberOfABFSamples(ibin) == 0 ) continue; // skip unsampled regions
         }
         if( FFSeeds[ibin] != seedid ) continue; // skip different regions
 
@@ -1225,7 +1227,7 @@ int CABFIntegrate::FillSeed(int seedid,bool unsampled)
                             newsamples++;
                         }
                     } else {
-                        if( Accumulator.GetNumberOfABFSamples(tbin) > 0 ){
+                        if( Accumulator.GetNumberOfABFSamples(tbin) != 0 ){
                             FFSeeds[tbin] = seedid;
                             newsamples++;
                         }
@@ -1251,7 +1253,7 @@ void CABFIntegrate::GetTPoint(CSimpleVector<int>& ipos,int d,CSimpleVector<int>&
 
 //------------------------------------------------------------------------------
 
-void CABFIntegrate::GlueingFES(int factor)
+int CABFIntegrate::GlueingFES(int factor)
 {
     IPos.CreateVector(Accumulator.GetNumberOfCoords());
     TPos.CreateVector(Accumulator.GetNumberOfCoords());
@@ -1280,13 +1282,13 @@ void CABFIntegrate::GlueingFES(int factor)
             if( tbin >= 0 ){
                 if( factor == 1 ){
                     if( Accumulator.GetNumberOfABFSamples(tbin) > 0 ){
-                        Accumulator.SetNumberOfABFSamples(ibin,-factor);
+                        Accumulator.SetNumberOfABFSamples(ibin,-(factor+1));
                         glued++;
                         break;
                     }
                 } else {
-                    if( - Accumulator.GetNumberOfABFSamples(tbin) == factor - 1 ){
-                        Accumulator.SetNumberOfABFSamples(ibin,-factor);
+                    if( Accumulator.GetNumberOfABFSamples(tbin) == -factor ){
+                        Accumulator.SetNumberOfABFSamples(ibin,-(factor+1));
                         glued++;
                         break;
                     }
@@ -1296,6 +1298,8 @@ void CABFIntegrate::GlueingFES(int factor)
     }
 
     vout << ", glued bins = " << glued << endl;
+
+    return(glued);
 }
 
 //------------------------------------------------------------------------------
@@ -1313,8 +1317,14 @@ void CABFIntegrate::GlueHoles(void)
     double maxbins = Accumulator.GetNumberOfBins();
     int    numofholes = 0;
 
-    SeedSampled(seedid);
+    int sampled = SeedSampled(seedid);
+
+    vout << "   Region: " << setw(6) << seedid << " - area:         "
+         << setw(6) << sampled << " / " << (int)maxbins << " | " << setw(5) << setprecision(1) << fixed << sampled/maxbins*100 <<"% sampled." << endl;
+
     seedid++;
+
+    int tg = 0;
 
     while( InstallNewSeed(seedid,true) ){
         int sampled = 1;    // for initial seed set by InstallNewSeed
@@ -1333,10 +1343,11 @@ void CABFIntegrate::GlueHoles(void)
         }
 
         if( maxbins > 0 ){
-            vout << "   Region: " << setw(6) << seedid << " - sampled area: "
+            vout << "   Region: " << setw(6) << seedid << " - area:         "
                  << setw(6) << sampled << " / " << (int)maxbins << " | " << setw(5) << setprecision(1) << fixed << sampled/maxbins*100 <<"%";
             if( hole ){
                 vout << " hole - glued." << endl;
+                tg += sampled;
             } else {
                 vout << " edge." << endl;
             }
@@ -1345,18 +1356,24 @@ void CABFIntegrate::GlueHoles(void)
     }
 
     // print stat
-    vout << "   Number of holes: " <<  numofholes << endl;
+    vout << "   -- Number of holes      : " <<  numofholes << endl;
+    vout << "   -- Number of glued bins : " <<  tg << endl;
 }
 
 //------------------------------------------------------------------------------
 
-void CABFIntegrate::SeedSampled(int seedid)
+int CABFIntegrate::SeedSampled(int seedid)
 {
+    int sampled = 0;
+
     for(int ibin=0; ibin < Accumulator.GetNumberOfBins(); ibin++) {
         if( Accumulator.GetNumberOfABFSamples(ibin) > 0 ) {
             FFSeeds[ibin] = seedid;
+            sampled++;
         }
     }
+
+    return(sampled);
 }
 
 //------------------------------------------------------------------------------
@@ -1398,7 +1415,7 @@ void CABFIntegrate::MarkAsHole(int seedid)
 {
     for(int ibin=0; ibin < Accumulator.GetNumberOfBins(); ibin++) {
         if( FFSeeds[ibin] == seedid ){
-            Accumulator.SetNumberOfABFSamples(ibin,-2);
+            Accumulator.SetNumberOfABFSamples(ibin,-1);
         }
     }
 }

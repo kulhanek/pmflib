@@ -78,9 +78,9 @@ private:
     bool IntegrateForEcut(void);
     bool Integrate(void);
     void WriteHeader(void);
-    void GlueingFES(int factor);
+    int  GlueingFES(int factor);
     void GlueHoles(void);
-    void SeedSampled(int seedid);
+    int  SeedSampled(int seedid);
     bool IsHole(int seedid);
     void MarkAsHole(int seedid);
     void PrintGPRHyprms(FILE* p_fout);

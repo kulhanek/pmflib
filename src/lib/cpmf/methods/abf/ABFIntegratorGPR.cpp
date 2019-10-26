@@ -416,7 +416,7 @@ bool CABFIntegratorGPR::Integrate(CVerboseStr& vout,bool nostat)
         // and marginal likelihood
         vout << "      logML     = " << setprecision(5) << GetLogML() << endl;
         // and log LOO probability
-        vout << "      logLOO    = " << setprecision(5) << GetLogLOO() << endl;
+        vout << "      logPL     = " << setprecision(5) << GetLogPL() << endl;
     }
 
     // finalize FES if requested
@@ -1118,7 +1118,7 @@ double CABFIntegratorGPR::GetLogML(void)
 
 //------------------------------------------------------------------------------
 
-double CABFIntegratorGPR::GetLogLOO(void)
+double CABFIntegratorGPR::GetLogPL(void)
 {
     double loo = 0.0;
 
@@ -1214,7 +1214,7 @@ void CABFIntegratorGPR::GetLogMLDerivatives(const std::vector<bool>& flags,CSimp
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorGPR::GetLogLOODerivatives(const std::vector<bool>& flags,CSimpleVector<double>& der)
+void CABFIntegratorGPR::GetLogPLDerivatives(const std::vector<bool>& flags,CSimpleVector<double>& der)
 {
     if( Accumulator == NULL ) {
         RUNTIME_ERROR("ABF accumulator is not set");

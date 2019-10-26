@@ -120,13 +120,13 @@ public:
     /// derivatives are ADDED to der
     void GetLogMLDerivatives(const std::vector<bool>& flags,CSimpleVector<double>& der);
 
-    /// get the LOO log predictive probability (leave-one-out cross-validation (LOO-CV))
-    double GetLogLOO(void);
+    /// get the log of pseudo-likelihood from leave-one-out cross-validation (LOO-CV)
+    double GetLogPL(void);
 
-    /// get derivative of logLOO wrt hyperparameters
+    /// get derivative of logPL wrt hyperparameters
     /// order sigmaf2, ncorr, wfac, only requested ders are calculated
     /// derivatives are ADDED to der
-    void GetLogLOODerivatives(const std::vector<bool>& flags,CSimpleVector<double>& der);
+    void GetLogPLDerivatives(const std::vector<bool>& flags,CSimpleVector<double>& der);
 
     /// write file with derivatives
     bool WriteMFInfo(const CSmallString& name);

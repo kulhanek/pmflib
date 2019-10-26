@@ -37,8 +37,8 @@ typedef boost::shared_ptr<CABFAccumulator>    CABFAccumulatorP;
 //------------------------------------------------------------------------------
 
 enum EGPROptTarget {
-    EGOT_LOGML  = 1,    // log marginal likelihood
-    EGOT_LOGLOO = 2,    // log leave-one-out probability
+    EGOT_LOGML  = 1,    // log of marginal likelihood
+    EGOT_LOGPL = 2,     // log of pseudo-likelihood from leave-one-out cross-validation (LOO-CV)
 };
 
 //------------------------------------------------------------------------------

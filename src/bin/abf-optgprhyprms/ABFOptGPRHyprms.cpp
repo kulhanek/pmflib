@@ -110,8 +110,8 @@ int CABFOptGPRHyprms::Init(int argc,char* argv[])
 
     if( Options.GetOptTarget() == "logml" ){
         Target = EGOT_LOGML;
-    } else if ( Options.GetOptTarget() == "logloo" ){
-        Target = EGOT_LOGLOO;
+    } else if ( Options.GetOptTarget() == "logpl" ){
+        Target = EGOT_LOGPL;
     } else {
         RUNTIME_ERROR("unsupported target");
     }
@@ -260,7 +260,7 @@ void CABFOptGPRHyprms::InitOptimizer(void)
             case(EGOT_LOGML):
                 vout << "# step         logML";
             break;
-            case(EGOT_LOGLOO):
+            case(EGOT_LOGPL):
                 vout << "# step        logLOO";
             break;
         }
@@ -483,8 +483,8 @@ bool CABFOptGPRHyprms::Optimize(void)
                     case(EGOT_LOGML):
                         vout << ">>> INFO: No significant change in logML - terminating ..." << endl;
                     break;
-                    case(EGOT_LOGLOO):
-                        vout << ">>> INFO: No significant change in logLOO - terminating ..." << endl;
+                    case(EGOT_LOGPL):
+                        vout << ">>> INFO: No significant change in logPL - terminating ..." << endl;
                     break;
                 }
                 break;
@@ -628,8 +628,8 @@ void CABFOptGPRHyprms::CalcHessian(void)
                 case(EGOT_LOGML):
                     gpr.GetLogMLDerivatives(HyprmsEnabled,grd1[i]);
                 break;
-                case(EGOT_LOGLOO):
-                    gpr.GetLogLOODerivatives(HyprmsEnabled,grd1[i]);
+                case(EGOT_LOGPL):
+                    gpr.GetLogPLDerivatives(HyprmsEnabled,grd1[i]);
                 break;
             }
         }
@@ -647,8 +647,8 @@ void CABFOptGPRHyprms::CalcHessian(void)
                 case(EGOT_LOGML):
                     gpr.GetLogMLDerivatives(HyprmsEnabled,grd2[i]);
                 break;
-                case(EGOT_LOGLOO):
-                    gpr.GetLogLOODerivatives(HyprmsEnabled,grd2[i]);
+                case(EGOT_LOGPL):
+                    gpr.GetLogPLDerivatives(HyprmsEnabled,grd2[i]);
                 break;
             }
         }
@@ -850,8 +850,8 @@ void CABFOptGPRHyprms::RunGPRAnalytical(void)
             case(EGOT_LOGML):
                 gpr.GetLogMLDerivatives(HyprmsEnabled,HyprmsGrd);
             break;
-            case(EGOT_LOGLOO):
-                gpr.GetLogLOODerivatives(HyprmsEnabled,HyprmsGrd);
+            case(EGOT_LOGPL):
+                gpr.GetLogPLDerivatives(HyprmsEnabled,HyprmsGrd);
             break;
         }
     }
@@ -1040,11 +1040,11 @@ double CABFOptGPRHyprms::GetTarget(CABFIntegratorGPR& gpr,CABFAccumulatorP accu)
     if( Options.GetOptTarget() == "logml" ){
         // calculate logML
         target = gpr.GetLogML();
-        vout << "   logML  = " << setprecision(5) << target << endl;
-    } else if ( Options.GetOptTarget() == "logloo" ) {
+        vout << "      logML     = " << setprecision(5) << target << endl;
+    } else if ( Options.GetOptTarget() == "logpl" ) {
         // calculate logLOO
-        target = gpr.GetLogLOO();
-        vout << "   logLOO = " << setprecision(5) << target << endl;
+        target = gpr.GetLogPL();
+        vout << "      logPL     = " << setprecision(5) << target << endl;
     }
 
     vout << low;
