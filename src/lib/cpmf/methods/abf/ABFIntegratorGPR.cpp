@@ -334,223 +334,6 @@ void CABFIntegratorGPR::SetGlobalMin(const CSmallString& spec)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void CABFIntegratorGPR::GetLogMLDerivatives(const std::vector<bool>& flags,CSimpleVector<double>& der)
-{
-    InitHyprmsOpt();
-
-    size_t ind = 0;
-    size_t soffset = 0;
-    size_t noffset;
-    size_t woffset;
-
-    if( SplitNCorr ){
-        noffset = soffset+1;
-        woffset = noffset+NCVs;
-    } else {
-        noffset = soffset+1;
-        woffset = noffset+1;
-    }
-
-    for(size_t prm=0; prm < flags.size(); prm++){
-        // shall we calc der?
-        if( flags[prm] == false ) {
-            continue;
-        }
-
-        // calc Kder
-        if( prm == 0 ){
-            // sigmaf2
-            CalcKderWRTSigmaF2();
-        } else if( (prm >= noffset) && (prm < woffset) ){
-            size_t cv = prm - noffset;
-            CalcKderWRTNCorr(cv);
-        } else {
-            size_t cv = prm - woffset;
-            CalcKderWRTWFac(cv);
-        }
-
-        // calc trace
-        double tr = 0.0;
-        #pragma omp parallel for reduction(+:tr)
-        for(size_t i=0; i < GPRSize; i++){
-            for(size_t j=0; j < GPRSize; j++){
-                tr += (ATA[i][j]-K[i][j])*Kder[j][i];
-            }
-        }
-
-        // finalize derivative
-        der[ind] += 0.5*tr;
-        ind++;
-    }
-}
-
-//------------------------------------------------------------------------------
-
-void CABFIntegratorGPR::InitHyprmsOpt(void)
-{
-    if( Accumulator == NULL ) {
-        RUNTIME_ERROR("ABF accumulator is not set");
-    }
-    if( FES == NULL ) {
-        RUNTIME_ERROR("FES is not set");
-    }
-    if( NCVs <= 0 ){
-        RUNTIME_ERROR("NCVs <= NULL");
-    }
-    if( GPRSize <= 0 ){
-        RUNTIME_ERROR("GPRSize <= NULL");
-    }
-
-    ATA.CreateMatrix(GPRSize,GPRSize);
-    Kder.CreateMatrix(GPRSize,GPRSize);
-
-    // calc ATA matrix
-    #pragma omp parallel for
-    for(size_t i=0; i < GPRSize; i++){
-        for(size_t j=0; j < GPRSize; j++){
-            ATA[i][j] = GPRModel[i]*GPRModel[j];
-        }
-    }
-}
-
-//------------------------------------------------------------------------------
-
-void CABFIntegratorGPR::CalcKderWRTSigmaF2(void)
-{
-    Kder.SetZero();
-
-    CSimpleVector<double> ipos;
-    CSimpleVector<double> jpos;
-    ipos.CreateVector(NCVs);
-    jpos.CreateVector(NCVs);
-
-    #pragma omp parallel for firstprivate(ipos,jpos)
-    for(size_t indi=0; indi < NumOfUsedBins; indi++){
-        size_t i = SampledMap[indi];
-
-        Accumulator->GetPoint(i,ipos);
-
-        for(size_t indj=0; indj < NumOfUsedBins; indj++){
-            size_t j = SampledMap[indj];
-
-            Accumulator->GetPoint(j,jpos);
-
-            double arg = 0.0;
-            for(size_t ii=0; ii < NCVs; ii++){
-                double du = Accumulator->GetCoordinate(ii)->GetDifference(ipos[ii],jpos[ii]);
-                double dd = CVLengths2[ii];
-                arg += du*du/(2.0*dd);
-            }
-            arg = exp(-arg);
-
-            // calculate block of second derivatives
-            for(size_t ii=0; ii < NCVs; ii++){
-                for(size_t jj=0; jj < NCVs; jj++){
-                    double du = Accumulator->GetCoordinate(ii)->GetDifference(ipos[ii],jpos[ii]) *
-                                Accumulator->GetCoordinate(jj)->GetDifference(ipos[jj],jpos[jj]);
-                    double dd = CVLengths2[ii]*CVLengths2[jj];
-                    Kder[indi*NCVs+ii][indj*NCVs+jj] -= arg*du/dd;
-                    if( (ii == jj) ){
-                        Kder[indi*NCVs+ii][indj*NCVs+jj] += arg/CVLengths2[ii];
-                    }
-                }
-            }
-        }
-    }
-}
-
-//------------------------------------------------------------------------------
-
-void CABFIntegratorGPR::CalcKderWRTNCorr(size_t cv)
-{
-    Kder.SetZero();
-
-    #pragma omp parallel for
-    for(size_t indi=0; indi < NumOfUsedBins; indi++){
-        size_t i = SampledMap[indi];
-
-        for(size_t ii=0; ii < NCVs; ii++){
-            // get mean force and its error
-            double er = Accumulator->GetValue(ii,i,EABF_MEAN_FORCE_ERROR);
-            if( SplitNCorr ){
-                if( cv == ii ) Kder[indi*NCVs+ii][indi*NCVs+ii] += er*er;
-            } else {
-                Kder[indi*NCVs+ii][indi*NCVs+ii] += er*er;
-            }
-        }
-    }
-}
-
-//------------------------------------------------------------------------------
-
-void CABFIntegratorGPR::CalcKderWRTWFac(size_t cv)
-{
-    Kder.SetZero();
-
-    CSimpleVector<double> ipos;
-    CSimpleVector<double> jpos;
-    ipos.CreateVector(NCVs);
-    jpos.CreateVector(NCVs);
-
-    double wf = WFac[cv];
-    double wd3 = 1.0/(CVLengths2[cv]*wf);
-    double wd5 = wd3/CVLengths2[cv];
-
-    // create kernel matrix
-    #pragma omp parallel for firstprivate(ipos,jpos)
-    for(size_t indi=0; indi < NumOfUsedBins; indi++){
-        size_t i = SampledMap[indi];
-
-        Accumulator->GetPoint(i,ipos);
-
-        for(size_t indj=0; indj < NumOfUsedBins; indj++){
-            size_t j = SampledMap[indj];
-
-            Accumulator->GetPoint(j,jpos);
-
-            double dc = Accumulator->GetCoordinate(cv)->GetDifference(ipos[cv],jpos[cv]);
-
-            double arg = 0.0;
-            for(size_t ii=0; ii < NCVs; ii++){
-                double du = Accumulator->GetCoordinate(ii)->GetDifference(ipos[ii],jpos[ii]);
-                double dd = CVLengths2[ii];
-                arg += du*du/(2.0*dd);
-            }
-            arg = SigmaF2*exp(-arg);
-
-            double argd = arg*dc*dc*wd3;
-
-            // calculate block of second derivatives
-
-            for(size_t ii=0; ii < NCVs; ii++){
-                for(size_t jj=0; jj < NCVs; jj++){
-                    double du = Accumulator->GetCoordinate(ii)->GetDifference(ipos[ii],jpos[ii]) *
-                                Accumulator->GetCoordinate(jj)->GetDifference(ipos[jj],jpos[jj]);
-                    double dd = CVLengths2[ii]*CVLengths2[jj];
-                    Kder[indi*NCVs+ii][indj*NCVs+jj] -= argd*du/dd;
-                    if( (cv == ii) && (cv != jj) ) {
-                        Kder[indi*NCVs+ii][indj*NCVs+jj] -= -2.0*arg*du*wd3/(CVLengths2[jj]);
-                    } else if( (cv == jj) && (cv != ii) ) {
-                        Kder[indi*NCVs+ii][indj*NCVs+jj] -= -2.0*arg*du*wd3/(CVLengths2[ii]);
-                    } else if( (cv == ii) && (cv == jj) ) {
-                        Kder[indi*NCVs+ii][indj*NCVs+jj] -= -4.0*arg*du*wd5;
-                    }
-                    if( (ii == jj) ){
-                        Kder[indi*NCVs+ii][indj*NCVs+ii] += argd/CVLengths2[ii];
-                        if( ii == cv ){
-                            Kder[indi*NCVs+ii][indj*NCVs+ii] += -2.0*arg*wd3;
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-//==============================================================================
-//------------------------------------------------------------------------------
-//==============================================================================
-
 bool CABFIntegratorGPR::Integrate(CVerboseStr& vout,bool nostat)
 {
     PrintExecInfo(vout);
@@ -631,7 +414,9 @@ bool CABFIntegratorGPR::Integrate(CVerboseStr& vout,bool nostat)
         }
 
         // and marginal likelihood
-        vout << "      logML     = " << setprecision(5) << GetLogMarginalLikelihood() << endl;
+        vout << "      logML     = " << setprecision(5) << GetLogML() << endl;
+        // and log LOO probability
+        vout << "      logLOO    = " << setprecision(5) << GetLogLOO() << endl;
     }
 
     // finalize FES if requested
@@ -1313,9 +1098,11 @@ void CABFIntegratorGPR::FilterByMFZScore(double zscore,CVerboseStr& vout)
     vout << "   Number of outliers = " << outliers << endl;
 }
 
+//==============================================================================
 //------------------------------------------------------------------------------
+//==============================================================================
 
-double CABFIntegratorGPR::GetLogMarginalLikelihood(void)
+double CABFIntegratorGPR::GetLogML(void)
 {
     double ml = 0.0;
 
@@ -1331,6 +1118,320 @@ double CABFIntegratorGPR::GetLogMarginalLikelihood(void)
 }
 
 //------------------------------------------------------------------------------
+
+double CABFIntegratorGPR::GetLogLOO(void)
+{
+    double loo = 0.0;
+
+    // http://www.gaussianprocess.org/gpml/chapters/RW5.pdf
+    // page 116-117
+
+    for(size_t i=0; i < GPRSize; i++){
+        loo -= log(1.0/K[i][i]);
+        loo -= GPRModel[i]*GPRModel[i]/K[i][i];
+    }
+    loo -= GPRSize*log(2*M_PI);
+
+    loo *= 0.5;
+
+    return(loo);
+}
+
+//------------------------------------------------------------------------------
+
+void CABFIntegratorGPR::GetLogMLDerivatives(const std::vector<bool>& flags,CSimpleVector<double>& der)
+{
+    if( Accumulator == NULL ) {
+        RUNTIME_ERROR("ABF accumulator is not set");
+    }
+    if( FES == NULL ) {
+        RUNTIME_ERROR("FES is not set");
+    }
+    if( NCVs <= 0 ){
+        RUNTIME_ERROR("NCVs <= NULL");
+    }
+    if( GPRSize <= 0 ){
+        RUNTIME_ERROR("GPRSize <= NULL");
+    }
+
+    Kder.CreateMatrix(GPRSize,GPRSize);
+
+    CFortranMatrix          ata;            // alphaT*alpha
+    ata.CreateMatrix(GPRSize,GPRSize);
+
+    // calc ATA matrix
+    #pragma omp parallel for
+    for(size_t i=0; i < GPRSize; i++){
+        for(size_t j=0; j < GPRSize; j++){
+            ata[i][j] = GPRModel[i]*GPRModel[j];
+        }
+    }
+
+    size_t ind = 0;
+    size_t soffset = 0;
+    size_t noffset;
+    size_t woffset;
+
+    if( SplitNCorr ){
+        noffset = soffset+1;
+        woffset = noffset+NCVs;
+    } else {
+        noffset = soffset+1;
+        woffset = noffset+1;
+    }
+
+    for(size_t prm=0; prm < flags.size(); prm++){
+        // shall we calc der?
+        if( flags[prm] == false ) {
+            continue;
+        }
+
+        // calc Kder
+        if( prm == 0 ){
+            // sigmaf2
+            CalcKderWRTSigmaF2();
+        } else if( (prm >= noffset) && (prm < woffset) ){
+            size_t cv = prm - noffset;
+            CalcKderWRTNCorr(cv);
+        } else {
+            size_t cv = prm - woffset;
+            CalcKderWRTWFac(cv);
+        }
+
+        // calc trace
+        double tr = 0.0;
+        #pragma omp parallel for reduction(+:tr)
+        for(size_t i=0; i < GPRSize; i++){
+            for(size_t j=0; j < GPRSize; j++){
+                tr += (ata[i][j]-K[i][j])*Kder[j][i];
+            }
+        }
+
+        // finalize derivative
+        der[ind] += 0.5*tr;
+        ind++;
+    }
+}
+
+//------------------------------------------------------------------------------
+
+void CABFIntegratorGPR::GetLogLOODerivatives(const std::vector<bool>& flags,CSimpleVector<double>& der)
+{
+    if( Accumulator == NULL ) {
+        RUNTIME_ERROR("ABF accumulator is not set");
+    }
+    if( FES == NULL ) {
+        RUNTIME_ERROR("FES is not set");
+    }
+    if( NCVs <= 0 ){
+        RUNTIME_ERROR("NCVs <= NULL");
+    }
+    if( GPRSize <= 0 ){
+        RUNTIME_ERROR("GPRSize <= NULL");
+    }
+
+    Kder.CreateMatrix(GPRSize,GPRSize);
+
+    CFortranMatrix zj;
+    zj.CreateMatrix(GPRSize,GPRSize);
+
+    CSimpleVector<double> za;
+    za.CreateVector(GPRSize);
+
+    size_t ind = 0;
+    size_t soffset = 0;
+    size_t noffset;
+    size_t woffset;
+
+    if( SplitNCorr ){
+        noffset = soffset+1;
+        woffset = noffset+NCVs;
+    } else {
+        noffset = soffset+1;
+        woffset = noffset+1;
+    }
+
+    for(size_t prm=0; prm < flags.size(); prm++){
+        // shall we calc der?
+        if( flags[prm] == false ) {
+            continue;
+        }
+
+        // calc Kder
+        if( prm == 0 ){
+            // sigmaf2
+            CalcKderWRTSigmaF2();
+        } else if( (prm >= noffset) && (prm < woffset) ){
+            size_t cv = prm - noffset;
+            CalcKderWRTNCorr(cv);
+        } else {
+            size_t cv = prm - woffset;
+            CalcKderWRTWFac(cv);
+        }
+
+        // calc Zj
+        CSciBlas::gemm(1.0,K,Kder,0.0,zj);
+
+        // calc zj * alpha
+        CSciBlas::gemv(1.0,zj,GPRModel,0.0,za);
+
+        // derivative
+        double loo = 0.0;
+        #pragma omp parallel for reduction(+:der)
+        for(size_t i=0; i < GPRSize; i++){
+            double zk = 0.0;
+            for(size_t j=0; j < GPRSize; j++){
+                zk += zj[i][j]*K[j][i];
+            }
+            double top;
+            top  = GPRModel[i]*za[i];
+            top -= 0.5*(1.0 + GPRModel[i]*GPRModel[i]/K[i][i])*zk;
+            loo += top/K[i][i];
+        }
+
+        // finalize derivative
+        der[ind] += loo;
+        ind++;
+    }
+}
+
+//------------------------------------------------------------------------------
+
+void CABFIntegratorGPR::CalcKderWRTSigmaF2(void)
+{
+    Kder.SetZero();
+
+    CSimpleVector<double> ipos;
+    CSimpleVector<double> jpos;
+    ipos.CreateVector(NCVs);
+    jpos.CreateVector(NCVs);
+
+    #pragma omp parallel for firstprivate(ipos,jpos)
+    for(size_t indi=0; indi < NumOfUsedBins; indi++){
+        size_t i = SampledMap[indi];
+
+        Accumulator->GetPoint(i,ipos);
+
+        for(size_t indj=0; indj < NumOfUsedBins; indj++){
+            size_t j = SampledMap[indj];
+
+            Accumulator->GetPoint(j,jpos);
+
+            double arg = 0.0;
+            for(size_t ii=0; ii < NCVs; ii++){
+                double du = Accumulator->GetCoordinate(ii)->GetDifference(ipos[ii],jpos[ii]);
+                double dd = CVLengths2[ii];
+                arg += du*du/(2.0*dd);
+            }
+            arg = exp(-arg);
+
+            // calculate block of second derivatives
+            for(size_t ii=0; ii < NCVs; ii++){
+                for(size_t jj=0; jj < NCVs; jj++){
+                    double du = Accumulator->GetCoordinate(ii)->GetDifference(ipos[ii],jpos[ii]) *
+                                Accumulator->GetCoordinate(jj)->GetDifference(ipos[jj],jpos[jj]);
+                    double dd = CVLengths2[ii]*CVLengths2[jj];
+                    Kder[indi*NCVs+ii][indj*NCVs+jj] -= arg*du/dd;
+                    if( (ii == jj) ){
+                        Kder[indi*NCVs+ii][indj*NCVs+jj] += arg/CVLengths2[ii];
+                    }
+                }
+            }
+        }
+    }
+}
+
+//------------------------------------------------------------------------------
+
+void CABFIntegratorGPR::CalcKderWRTNCorr(size_t cv)
+{
+    Kder.SetZero();
+
+    #pragma omp parallel for
+    for(size_t indi=0; indi < NumOfUsedBins; indi++){
+        size_t i = SampledMap[indi];
+
+        for(size_t ii=0; ii < NCVs; ii++){
+            // get mean force and its error
+            double er = Accumulator->GetValue(ii,i,EABF_MEAN_FORCE_ERROR);
+            if( SplitNCorr ){
+                if( cv == ii ) Kder[indi*NCVs+ii][indi*NCVs+ii] += er*er;
+            } else {
+                Kder[indi*NCVs+ii][indi*NCVs+ii] += er*er;
+            }
+        }
+    }
+}
+
+//------------------------------------------------------------------------------
+
+void CABFIntegratorGPR::CalcKderWRTWFac(size_t cv)
+{
+    Kder.SetZero();
+
+    CSimpleVector<double> ipos;
+    CSimpleVector<double> jpos;
+    ipos.CreateVector(NCVs);
+    jpos.CreateVector(NCVs);
+
+    double wf = WFac[cv];
+    double wd3 = 1.0/(CVLengths2[cv]*wf);
+    double wd5 = wd3/CVLengths2[cv];
+
+    // create kernel matrix
+    #pragma omp parallel for firstprivate(ipos,jpos)
+    for(size_t indi=0; indi < NumOfUsedBins; indi++){
+        size_t i = SampledMap[indi];
+
+        Accumulator->GetPoint(i,ipos);
+
+        for(size_t indj=0; indj < NumOfUsedBins; indj++){
+            size_t j = SampledMap[indj];
+
+            Accumulator->GetPoint(j,jpos);
+
+            double dc = Accumulator->GetCoordinate(cv)->GetDifference(ipos[cv],jpos[cv]);
+
+            double arg = 0.0;
+            for(size_t ii=0; ii < NCVs; ii++){
+                double du = Accumulator->GetCoordinate(ii)->GetDifference(ipos[ii],jpos[ii]);
+                double dd = CVLengths2[ii];
+                arg += du*du/(2.0*dd);
+            }
+            arg = SigmaF2*exp(-arg);
+
+            double argd = arg*dc*dc*wd3;
+
+            // calculate block of second derivatives
+
+            for(size_t ii=0; ii < NCVs; ii++){
+                for(size_t jj=0; jj < NCVs; jj++){
+                    double du = Accumulator->GetCoordinate(ii)->GetDifference(ipos[ii],jpos[ii]) *
+                                Accumulator->GetCoordinate(jj)->GetDifference(ipos[jj],jpos[jj]);
+                    double dd = CVLengths2[ii]*CVLengths2[jj];
+                    Kder[indi*NCVs+ii][indj*NCVs+jj] -= argd*du/dd;
+                    if( (cv == ii) && (cv != jj) ) {
+                        Kder[indi*NCVs+ii][indj*NCVs+jj] -= -2.0*arg*du*wd3/(CVLengths2[jj]);
+                    } else if( (cv == jj) && (cv != ii) ) {
+                        Kder[indi*NCVs+ii][indj*NCVs+jj] -= -2.0*arg*du*wd3/(CVLengths2[ii]);
+                    } else if( (cv == ii) && (cv == jj) ) {
+                        Kder[indi*NCVs+ii][indj*NCVs+jj] -= -4.0*arg*du*wd5;
+                    }
+                    if( (ii == jj) ){
+                        Kder[indi*NCVs+ii][indj*NCVs+ii] += argd/CVLengths2[ii];
+                        if( ii == cv ){
+                            Kder[indi*NCVs+ii][indj*NCVs+ii] += -2.0*arg*wd3;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+//==============================================================================
+//------------------------------------------------------------------------------
+//==============================================================================
 
 double CABFIntegratorGPR::GetVar(CSimpleVector<double>& lpos)
 {

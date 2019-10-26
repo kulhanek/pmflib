@@ -34,6 +34,14 @@ CABFOptGPRHyprmsOptions::CABFOptGPRHyprmsOptions(void)
 
 int CABFOptGPRHyprmsOptions::CheckOptions(void)
 {
+    if( (GetOptTarget() != "logml") &&
+        (GetOptTarget() != "logloo") ) {
+        if(IsError == false) fprintf(stderr,"\n");
+        fprintf(stderr,"%s: optimized target must be either logml or logloo, but %s is specified\n",
+                (const char*)GetProgramName(),(const char*)GetOptLAMethod());
+        IsError = true;
+    }
+
     if( (GetOptLAMethod() != "svd") &&
         (GetOptLAMethod() != "svd2") &&
         (GetOptLAMethod() != "ll") &&
@@ -78,6 +86,13 @@ int CABFOptGPRHyprmsOptions::CheckOptions(void)
     if( IsOptLoadHyprmsSet() && IsOptWFacSet() ){
         if(IsError == false) fprintf(stderr,"\n");
         fprintf(stderr,"%s: --loadhyprms is mutually exclusive with --wfac\n",
+                (const char*)GetProgramName());
+        IsError = true;
+    }
+
+    if( IsOptTestSet() && IsOptSPTypeSet() ){
+        if(IsError == false) fprintf(stderr,"\n");
+        fprintf(stderr,"%s: --sptype is mutually exclusive with --test\n",
                 (const char*)GetProgramName());
         IsError = true;
     }

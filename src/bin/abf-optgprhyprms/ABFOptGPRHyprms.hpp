@@ -36,7 +36,14 @@ typedef boost::shared_ptr<CABFAccumulator>    CABFAccumulatorP;
 
 //------------------------------------------------------------------------------
 
-/// utility to integrate ABF accumulator
+enum EGPROptTarget {
+    EGOT_LOGML  = 1,    // log marginal likelihood
+    EGOT_LOGLOO = 2,    // log leave-one-out probability
+};
+
+//------------------------------------------------------------------------------
+
+/// utility to find optimal GPR hyperparameters
 
 class CABFOptGPRHyprms {
 public:
@@ -77,7 +84,8 @@ private:
     CSimpleVector<double>   HyprmsGrd;
     CSimpleVector<double>   Work;
     CSimpleVector<double>   TmpXG;
-    double                  logML;
+    EGPROptTarget           Target;
+    double                  logTarget;
 
 // hessian
     CFortranMatrix          Hessian;
@@ -106,7 +114,7 @@ private:
     void CalcHessian(void);
 
     void    ScatterHyprms(CSimpleVector<double>& hyprsm);
-    double  GetLogML(CABFIntegratorGPR& gpr,CABFAccumulatorP accu);
+    double  GetTarget(CABFIntegratorGPR& gpr,CABFAccumulatorP accu);
     void    DecodeEList(const CSmallString& spec, std::vector<bool>& elist,const CSmallString& optionname);
     void    DecodeVList(const CSmallString& spec, CSimpleVector<double>& vlist,const CSmallString& optionname,double defv);
 

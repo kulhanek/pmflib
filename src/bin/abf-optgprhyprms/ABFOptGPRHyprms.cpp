@@ -77,7 +77,7 @@ int CABFOptGPRHyprms::Init(int argc,char* argv[])
     vout << "# ==============================================================================" << endl;
 
     for(int i=0; i < Options.GetNumberOfProgArgs()-1; i++){
-        vout << format("# ABF accu file #%2d (in)        : %s")%i%string(Options.GetProgArg(i)) << endl;
+        vout << format("# ABF accu file #%02d (in)    : %s")%(i+1)%string(Options.GetProgArg(i)) << endl;
     }
 
     CSmallString output = Options.GetProgArg(Options.GetNumberOfProgArgs()-1);
@@ -100,11 +100,20 @@ int CABFOptGPRHyprms::Init(int argc,char* argv[])
     if( (Options.GetOptLAMethod() == "svd") || (Options.GetOptLAMethod() == "svd2") ){
     vout << "# SVD rcond             : " << setprecision(3) << Options.GetOptRCond() << endl;
     }
+    vout << "# Optimized target      : " << Options.GetOptTarget() << endl;
     vout << "# ------------------------------------------------" << endl;
 
     if( OutputFile.Open(output,"w") == false ){
         ES_ERROR("unable to open output file");
         return(SO_USER_ERROR);
+    }
+
+    if( Options.GetOptTarget() == "logml" ){
+        Target = EGOT_LOGML;
+    } else if ( Options.GetOptTarget() == "logloo" ){
+        Target = EGOT_LOGLOO;
+    } else {
+        RUNTIME_ERROR("unsupported target");
     }
 
     return(SO_CONTINUE);
@@ -247,7 +256,15 @@ void CABFOptGPRHyprms::InitOptimizer(void)
 
     if( ! Options.GetOptTest() ){
         vout << endl;
-        vout << "# step         logML";
+        switch(Target){
+            case(EGOT_LOGML):
+                vout << "# step         logML";
+            break;
+            case(EGOT_LOGLOO):
+                vout << "# step        logLOO";
+            break;
+        }
+
         if( SigmaF2Enabled )    vout << "    SigmaF2";
         if( SplitNCorr ){
             for(size_t i=0; i < NCorrEnabled.size(); i++){
@@ -429,7 +446,7 @@ bool CABFOptGPRHyprms::Optimize(void)
     int     noptsteps   = Options.GetOptNOptSteps();
     double  termeps     = Options.GetOptTermEps();
     FT_INT  nlbfgscorr  = Options.GetOptNumOfLBFGSCorr();
-    double  last_logml  = 0;
+    double  last_logtrg  = 0;
 
     for(int istep=1; istep <= noptsteps; istep++ ){
         if( Options.GetOptNumeric() ){
@@ -440,7 +457,7 @@ bool CABFOptGPRHyprms::Optimize(void)
         WriteResults(istep);
 
         // we need to maximize logML, thus reverse curvature
-        double rv = -logML;
+        double rv = -logTarget;
         for(int i=0; i < NumOfOptPrms; i++){
             HyprmsGrd[i] = -HyprmsGrd[i];
         }
@@ -458,12 +475,19 @@ bool CABFOptGPRHyprms::Optimize(void)
         }
 
         if( istep > 1 ){
-            if( fabs(logML - last_logml) < Options.GetOptTermDLogML() ){
-                vout << ">>> INFO: No significant change in logML - terminating ..." << endl;
+            if( fabs(logTarget - last_logtrg) < Options.GetOptTermDLogML() ){
+                switch(Target){
+                    case(EGOT_LOGML):
+                        vout << ">>> INFO: No significant change in logML - terminating ..." << endl;
+                    break;
+                    case(EGOT_LOGLOO):
+                        vout << ">>> INFO: No significant change in logLOO - terminating ..." << endl;
+                    break;
+                }
                 break;
             }
         }
-        last_logml = logML;
+        last_logtrg = logTarget;
     }
 
     PrintGradientSummary();
@@ -596,8 +620,15 @@ void CABFOptGPRHyprms::CalcHessian(void)
         for(size_t c=0; c < Accumulators.size(); c++){
             CABFAccumulatorP accu = Accumulators[c];
             CABFIntegratorGPR gpr;
-            GetLogML(gpr,accu);
-            gpr.GetLogMLDerivatives(HyprmsEnabled,grd1[i]);
+            GetTarget(gpr,accu);
+            switch(Target){
+                case(EGOT_LOGML):
+                    gpr.GetLogMLDerivatives(HyprmsEnabled,grd1[i]);
+                break;
+                case(EGOT_LOGLOO):
+                    gpr.GetLogLOODerivatives(HyprmsEnabled,grd1[i]);
+                break;
+            }
         }
 
         grd2[i].SetZero();
@@ -608,8 +639,15 @@ void CABFOptGPRHyprms::CalcHessian(void)
         for(size_t c=0; c < Accumulators.size(); c++){
             CABFAccumulatorP accu = Accumulators[c];
             CABFIntegratorGPR gpr;
-            GetLogML(gpr,accu);
-            gpr.GetLogMLDerivatives(HyprmsEnabled,grd2[i]);
+            GetTarget(gpr,accu);
+            switch(Target){
+                case(EGOT_LOGML):
+                    gpr.GetLogMLDerivatives(HyprmsEnabled,grd2[i]);
+                break;
+                case(EGOT_LOGLOO):
+                    gpr.GetLogLOODerivatives(HyprmsEnabled,grd2[i]);
+                break;
+            }
         }
     }
 
@@ -733,7 +771,7 @@ void CABFOptGPRHyprms::PrintGradientSummary(void)
 
     vout << "# --- ---------- -------------- --------------" << endl;
     vout << format("# Gradient norm                 %14.6e")%gnorm << endl;
-    vout << format("# Sum of logMLs                 %14.6e")%logML << endl;
+    vout << format("# Sum of targets                %14.6e")%logTarget << endl;
 }
 
 //------------------------------------------------------------------------------
@@ -797,14 +835,22 @@ void CABFOptGPRHyprms::RunGPRAnalytical(void)
 // setup parameters
     ScatterHyprms(Hyprms);
 
-// calculate gradient and logML
-    logML = 0;
+    logTarget = 0;
     HyprmsGrd.SetZero();
+
+// calculate gradient and logML
     for(size_t i=0; i < Accumulators.size(); i++){
         CABFAccumulatorP accu = Accumulators[i];
         CABFIntegratorGPR gpr;
-        logML += GetLogML(gpr,accu);
-        gpr.GetLogMLDerivatives(HyprmsEnabled,HyprmsGrd);
+        logTarget += GetTarget(gpr,accu);
+        switch(Target){
+            case(EGOT_LOGML):
+                gpr.GetLogMLDerivatives(HyprmsEnabled,HyprmsGrd);
+            break;
+            case(EGOT_LOGLOO):
+                gpr.GetLogLOODerivatives(HyprmsEnabled,HyprmsGrd);
+            break;
+        }
     }
 }
 
@@ -812,11 +858,11 @@ void CABFOptGPRHyprms::RunGPRAnalytical(void)
 
 void CABFOptGPRHyprms::RunGPRNumerical(void)
 {
-    logML = 0;
+    logTarget = 0;
     HyprmsGrd.SetZero();
     for(size_t i=0; i < Accumulators.size(); i++){
         CABFAccumulatorP accu = Accumulators[i];
-        logML += RunGPRNumerical(accu,HyprmsGrd);
+        logTarget += RunGPRNumerical(accu,HyprmsGrd);
     }
 }
 
@@ -834,7 +880,7 @@ double CABFOptGPRHyprms::RunGPRNumerical(CABFAccumulatorP accu,CSimpleVector<dou
     ScatterHyprms(tmp_prms);
     {
         CABFIntegratorGPR gpr;
-        lml = GetLogML(gpr,accu);
+        lml = GetTarget(gpr,accu);
     }
 
 // derivatives
@@ -848,28 +894,28 @@ double CABFOptGPRHyprms::RunGPRNumerical(CABFAccumulatorP accu,CSimpleVector<dou
             ScatterHyprms(tmp_prms);
             {
                 CABFIntegratorGPR gpr;
-                v1 = GetLogML(gpr,accu);
+                v1 = GetTarget(gpr,accu);
             }
             tmp_prms = Hyprms;
             tmp_prms[i] -= dh;
             ScatterHyprms(tmp_prms);
             {
                 CABFIntegratorGPR gpr;
-                v2 = GetLogML(gpr,accu);
+                v2 = GetTarget(gpr,accu);
             }
             tmp_prms = Hyprms;
             tmp_prms[i] += dh;
             ScatterHyprms(tmp_prms);
             {
                 CABFIntegratorGPR gpr;
-                v3 = GetLogML(gpr,accu);
+                v3 = GetTarget(gpr,accu);
             }
             tmp_prms = Hyprms;
             tmp_prms[i] += 2.0*dh;
             ScatterHyprms(tmp_prms);
             {
                 CABFIntegratorGPR gpr;
-                v4 = GetLogML(gpr,accu);
+                v4 = GetTarget(gpr,accu);
             }
             der[i] += (v1-8.0*v2+8.0*v3-v4)/(12.0*dh);
         } else {
@@ -879,14 +925,14 @@ double CABFOptGPRHyprms::RunGPRNumerical(CABFAccumulatorP accu,CSimpleVector<dou
             ScatterHyprms(tmp_prms);
             {
                 CABFIntegratorGPR gpr;
-                lv = GetLogML(gpr,accu);
+                lv = GetTarget(gpr,accu);
             }
             tmp_prms = Hyprms;
             tmp_prms[i] += dh;
             ScatterHyprms(tmp_prms);
             {
                 CABFIntegratorGPR gpr;
-                rv = GetLogML(gpr,accu);
+                rv = GetTarget(gpr,accu);
             }
             der[i] += (rv-lv)/(2.0*dh);
         }
@@ -951,7 +997,7 @@ void CABFOptGPRHyprms::ScatterHyprms(CSimpleVector<double>& hyprsm)
 
 //------------------------------------------------------------------------------
 
-double CABFOptGPRHyprms::GetLogML(CABFIntegratorGPR& gpr,CABFAccumulatorP accu)
+double CABFOptGPRHyprms::GetTarget(CABFIntegratorGPR& gpr,CABFAccumulatorP accu)
 {
     CEnergySurface fes;
     fes.Allocate(accu.get());
@@ -987,19 +1033,27 @@ double CABFOptGPRHyprms::GetLogML(CABFIntegratorGPR& gpr,CABFAccumulatorP accu)
     gpr.SetWFac(WFac);
     vout << high;
     gpr.Integrate(vout,true);
-    double logml = gpr.GetLogMarginalLikelihood();
-// calculate logML
-    vout << "   logML = " << setprecision(5) << logml << endl;
+    double target = 0.0;
+    if( Options.GetOptTarget() == "logml" ){
+        // calculate logML
+        target = gpr.GetLogML();
+        vout << "   logML  = " << setprecision(5) << target << endl;
+    } else if ( Options.GetOptTarget() == "logloo" ) {
+        // calculate logLOO
+        target = gpr.GetLogLOO();
+        vout << "   logLOO = " << setprecision(5) << target << endl;
+    }
+
     vout << low;
 
-    return(logml);
+    return(target);
 }
 
 //------------------------------------------------------------------------------
 
 void CABFOptGPRHyprms::WriteResults(int istep)
 {
-    vout << format("%6d %13e")%istep%logML;
+    vout << format("%6d %13e")%istep%logTarget;
     if( SigmaF2Enabled ) vout << format(" %10.3f")%SigmaF2;
     if( SplitNCorr ){
         for(int i=0; i < (int)NCorrEnabled.size(); i++){

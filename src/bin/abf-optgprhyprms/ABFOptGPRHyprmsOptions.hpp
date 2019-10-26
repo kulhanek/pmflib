@@ -56,6 +56,7 @@ public:
 // list of all options and arguments ------------------------------------------
     CSO_LIST_BEGIN
     // options ------------------------------
+    CSO_OPT(CSmallString,Target)
     CSO_OPT(CSmallString,LAMethod)
     CSO_OPT(double,RCond)
     CSO_OPT(double,SigmaF2)
@@ -82,6 +83,15 @@ public:
 
     CSO_MAP_BEGIN
 // description of options ---------------------------------------------------
+    CSO_MAP_OPT(CSmallString,                           /* option type */
+                Target,                        /* option name */
+                "logML",                          /* default value */
+                false,                          /* is option mandatory */
+                't',                           /* short option name */
+                "target",                      /* long option name */
+                "NAME",                           /* parametr name */
+                "Specify optimized targed, which can be either logml (logML) or logloo (logLOO).")   /* option description */
+    //----------------------------------------------------------------------
     CSO_MAP_OPT(CSmallString,                           /* option type */
                 LAMethod,                        /* option name */
                 "default",                          /* default value */

@@ -113,12 +113,20 @@ public:
     double GetRMSR(size_t cv);
 
     /// get log of Marginal Likelihood
-    double GetLogMarginalLikelihood(void);
+    double GetLogML(void);
 
     /// get derivative of logML wrt hyperparameters
     /// order sigmaf2, ncorr, wfac, only requested ders are calculated
     /// derivatives are ADD to der
     void GetLogMLDerivatives(const std::vector<bool>& flags,CSimpleVector<double>& der);
+
+    /// get the LOO log predictive probability (leave-one-out cross-validation (LOO-CV))
+    double GetLogLOO(void);
+
+    /// get derivative of logLOO wrt hyperparameters
+    /// order sigmaf2, ncorr, wfac, only requested ders are calculated
+    /// derivatives are ADD to der
+    void GetLogLOODerivatives(const std::vector<bool>& flags,CSimpleVector<double>& der);
 
     /// write file with derivatives
     bool WriteMFInfo(const CSmallString& name);
@@ -164,7 +172,6 @@ private:
     CSimpleVector<double>   GPRModel;       // weights
 
     // derivatives
-    CFortranMatrix          ATA;            // alphaT*alpha
     CFortranMatrix          Kder;           // derivative of kernels w.r.t. a hyperparameter
 
     bool                    GlobalMinSet;
@@ -191,7 +198,6 @@ private:
     double GetKernelValue(CSimpleVector<double>& ip,CSimpleVector<double>& jp);
 
     // derivatives
-    void InitHyprmsOpt(void);
     void CalcKderWRTSigmaF2(void);
     void CalcKderWRTNCorr(size_t cv);
     void CalcKderWRTWFac(size_t cv);
