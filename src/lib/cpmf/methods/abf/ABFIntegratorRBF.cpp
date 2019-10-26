@@ -455,11 +455,20 @@ bool CABFIntegratorRBF::IntegrateByLS(CVerboseStr& vout)
     vout << "   Creating A and rhs ..." << endl;
 
     // number of equations
-    size_t neq = 0;
+    NumOfUsedBins = 0;
     for(size_t i=0; i < NumOfBins; i++){
-        if( Accumulator->GetNumberOfABFSamples(i) > 0 ) neq++;
+        if( Accumulator->GetNumberOfABFSamples(i) > 0 ) NumOfUsedBins++;
     }
-    neq = neq*NCVs;
+    NumOfEq = NumOfUsedBins*NCVs;
+
+    // create sampled map
+    SampledMap.CreateVector(NumOfUsedBins);
+    size_t ind = 0;
+    for(size_t i=0; i < NumOfBins; i++){
+        if( Accumulator->GetNumberOfABFSamples(i) <= 0 ) continue;
+        SampledMap[ind] = i;
+        ind++;
+    }
 
     CSimpleVector<double>   ipos;
     ipos.CreateVector(NCVs);
@@ -467,21 +476,21 @@ bool CABFIntegratorRBF::IntegrateByLS(CVerboseStr& vout)
     CSimpleVector<double>   lpos;
     lpos.CreateVector(NCVs);
 
-    vout << "      Dim: " << neq << " x " << NumOfRBFs << endl;
+    vout << "      Dim: " << NumOfEq << " x " << NumOfRBFs << endl;
 
     CFortranMatrix A;
-    A.CreateMatrix(neq,NumOfRBFs);
+    A.CreateMatrix(NumOfEq,NumOfRBFs);
     A.SetZero();
 
     CVector rhs;
-    size_t nrhs = std::max(neq,NumOfRBFs);
+    size_t nrhs = std::max(NumOfEq,NumOfRBFs);
     rhs.CreateVector(nrhs);
     rhs.SetZero();
 
     // calculate A and rhs
-    size_t j=0;
-    for(size_t i=0; i < NumOfBins; i++){
-        if( Accumulator->GetNumberOfABFSamples(i) <= 0 ) continue;
+    #pragma omp parallel for firstprivate(ipos,lpos)
+    for(size_t indi=0; indi < NumOfUsedBins; indi++){
+        size_t i = SampledMap[indi];
 
         Accumulator->GetPoint(i,ipos);
         // A
@@ -498,14 +507,13 @@ bool CABFIntegratorRBF::IntegrateByLS(CVerboseStr& vout)
                 double dvc = Accumulator->GetCoordinate(k)->GetDifference(ipos[k],lpos[k]);
                 double sig = Sigmas[k];
                 double fc = -dvc/(sig*sig);  // switch to derivatives
-                A[j+k][l] = av * fc;
+                A[indi+k][l] = av * fc;
             }
         }
         // rhs
         for(size_t k=0; k < NCVs; k++){
-            rhs[j+k] = Accumulator->GetValue(k,i,EABF_MEAN_FORCE_VALUE);
+            rhs[indi+k] = Accumulator->GetValue(k,i,EABF_MEAN_FORCE_VALUE);
         }
-        j += NCVs;
     }
 
     int result = 0;
@@ -516,8 +524,9 @@ bool CABFIntegratorRBF::IntegrateByLS(CVerboseStr& vout)
 
             // solve least square problem via GELSD
             int rank = 0;
-            result = CSciLapack::gelsd(A,rhs,RCond,rank);
-            vout << "      Rank = " << rank << "; Info = " << result << endl;
+            double realRCond = 0.0;
+            result = CSciLapack::gelsd(A,rhs,RCond,rank,realRCond);
+            vout << "      Rank = " << rank << "; Info = " << result << "; Real rcond = " << scientific << realRCond << fixed << endl;
             if( result != 0 ) return(false);
             }
         break;
@@ -534,6 +543,7 @@ bool CABFIntegratorRBF::IntegrateByLS(CVerboseStr& vout)
     }
 
     // copy results to Weights
+    #pragma omp parallel for
     for(size_t l=0; l < NumOfRBFs; l++){
         Weights[l] = rhs[l];
     }
@@ -571,10 +581,11 @@ void CABFIntegratorRBF::GetRBFPosition(size_t index,CSimpleVector<double>& posit
 double CABFIntegratorRBF::GetValue(const CSimpleVector<double>& position)
 {
     double                  energy = 0.0;
-    CSimpleVector<double>   rbfpos;
 
+    CSimpleVector<double>   rbfpos;
     rbfpos.CreateVector(NCVs);
 
+    // parallelized one level up
     for(size_t i=0; i < NumOfRBFs; i++){
         GetRBFPosition(i,rbfpos);
         double value = Weights[i];
@@ -585,6 +596,7 @@ double CABFIntegratorRBF::GetValue(const CSimpleVector<double>& position)
         }
         energy = energy + value;
     }
+
     return(energy);
 }
 
@@ -603,9 +615,9 @@ double CABFIntegratorRBF::GetRMSR(size_t cv)
     double rmsr = 0.0;
     double nsamples = 0.0;
 
-    for(size_t i=0; i < NumOfBins; i++){
-
-        if( Accumulator->GetNumberOfABFSamples(i) <= 0 ) continue;
+    #pragma omp parallel for firstprivate(ipos)
+    for(size_t indi=0; indi < NumOfUsedBins; indi++){
+        size_t i = SampledMap[indi];
 
         Accumulator->GetPoint(i,ipos);
 
@@ -636,6 +648,25 @@ bool CABFIntegratorRBF::WriteMFInfo(const CSmallString& name)
         return(false);
     }
 
+    CSimpleVector<double> jpos;
+    CSimpleVector<double> mfi;
+    CSimpleVector<double> mfp;
+
+    jpos.CreateVector(NCVs);
+    mfi.CreateVector(NumOfEq);
+    mfp.CreateVector(NumOfEq);
+
+    // calculate
+    #pragma omp parallel for firstprivate(jpos)
+    for(size_t indi=0; indi < NumOfUsedBins; indi++){
+        size_t i = SampledMap[indi];
+        Accumulator->GetPoint(i,jpos);
+        for(size_t k=0; k < NCVs; k++){
+            mfi[indi*NCVs+k] = Accumulator->GetValue(k,i,EABF_MEAN_FORCE_VALUE);
+            mfp[indi*NCVs+k] = GetMeanForce(jpos,k);
+        }
+    }
+
     ofstream ofs(name);
     if( ! ofs ){
         CSmallString error;
@@ -644,23 +675,18 @@ bool CABFIntegratorRBF::WriteMFInfo(const CSmallString& name)
         return(false);
     }
 
-    CSimpleVector<double>   ipos;
-    ipos.CreateVector(NCVs);
+    // print
+    for(size_t indi=0; indi < NumOfUsedBins; indi++){
+        size_t i = SampledMap[indi];
 
-    for(size_t i=0; i < NumOfBins; i++){
-
-        if( Accumulator->GetNumberOfABFSamples(i) <= 0 ) continue;
-
-        Accumulator->GetPoint(i,ipos);
+        Accumulator->GetPoint(i,jpos);
 
         for(size_t c=0; c < NCVs; c++){
-            ofs << format("%20.16f ")%ipos[c];
+            ofs << format("%20.16f ")%jpos[c];
         }
 
         for(size_t k=0; k < NCVs; k++){
-            double mfi = Accumulator->GetValue(k,i,EABF_MEAN_FORCE_VALUE);
-            double mfp = GetMeanForce(ipos,k);
-            ofs << format(" %20.16f %20.16f")%mfi%mfp;
+            ofs << format(" %20.16f %20.16f")%mfi[indi*NCVs+k]%mfp[indi*NCVs+k];
         }
 
         ofs << endl;
@@ -681,36 +707,30 @@ void CABFIntegratorRBF::FilterByMFZScore(double zscore,CVerboseStr& vout)
     // we work with variances
     zscore *= zscore;
 
-    // number of equations
-    int neq = 0;
-    for(size_t i=0; i < NumOfBins; i++){
-        if( Accumulator->GetNumberOfABFSamples(i) > 0 ) neq++;
-    }
-    neq = neq*NCVs;
-
     CSimpleVector<int>      flags;
     CSimpleVector<double>   sig2;
     CSimpleVector<int>      maxi;
     CSimpleVector<double>   maxzscore;
     CSimpleVector<double>   mferror2;
-    CSimpleVector<double>   jpos;
 
     flags.CreateVector(NumOfBins);
     sig2.CreateVector(NCVs);
     maxi.CreateVector(NCVs);
     maxzscore.CreateVector(NCVs);
-    mferror2.CreateVector(neq);
-    jpos.CreateVector(NCVs);
+    mferror2.CreateVector(NumOfEq);
 
     flags.Set(1);
 
     vout << high;
     vout << "   Precalculating MF errors ..." << endl;
 
+    CSimpleVector<double> jpos;
+    jpos.CreateVector(NCVs);
+
     // precalculate values
-    size_t indi = 0;
-    for(size_t i=0; i < NumOfBins; i++){
-        if( Accumulator->GetNumberOfABFSamples(i) <= 0 ) continue;
+    #pragma omp parallel for firstprivate(jpos)
+    for(size_t indi=0; indi < NumOfUsedBins; indi++){
+        size_t i = SampledMap[indi];
 
         Accumulator->GetPoint(i,jpos);
 
@@ -719,8 +739,6 @@ void CABFIntegratorRBF::FilterByMFZScore(double zscore,CVerboseStr& vout)
             diff2 *= diff2;
             mferror2[indi*NCVs+k] = diff2;
         }
-
-        indi++;
     }
 
     vout << "   Searching for MF outliers ..." << endl;
@@ -735,9 +753,8 @@ void CABFIntegratorRBF::FilterByMFZScore(double zscore,CVerboseStr& vout)
         sig2.SetZero();
 
         // calc variances - we assume zero mean on errors
-        indi = 0;
-        for(size_t i=0; i < NumOfBins; i++){
-            if( Accumulator->GetNumberOfABFSamples(i) <= 0 ) continue;
+        for(size_t indi=0; indi < NumOfUsedBins; indi++){
+            size_t i = SampledMap[indi];
 
             if( flags[i] != 0 ) {
                 for(size_t k=0; k < NCVs; k++){
@@ -745,7 +762,6 @@ void CABFIntegratorRBF::FilterByMFZScore(double zscore,CVerboseStr& vout)
                 }
                 count++;
             }
-            indi++;
         }
 
         if( count == 0 ) break;
@@ -755,9 +771,8 @@ void CABFIntegratorRBF::FilterByMFZScore(double zscore,CVerboseStr& vout)
 
         // filter
         bool first = true;
-        indi = 0;
-        for(size_t i=0; i < NumOfBins; i++){
-            if( Accumulator->GetNumberOfABFSamples(i) <= 0 ) continue;
+        for(size_t indi=0; indi < NumOfUsedBins; indi++){
+            size_t i = SampledMap[indi];
 
             if( flags[i] != 0 ){
                 Accumulator->GetPoint(i,jpos);
@@ -779,8 +794,6 @@ void CABFIntegratorRBF::FilterByMFZScore(double zscore,CVerboseStr& vout)
 
                 first = false;
             }
-
-            indi++;
         }
 
         for(size_t k=0; k < NCVs; k++){

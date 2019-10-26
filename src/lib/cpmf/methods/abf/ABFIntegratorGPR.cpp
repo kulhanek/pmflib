@@ -970,7 +970,6 @@ bool CABFIntegratorGPR::WriteMFInfo(const CSmallString& name)
         ofs << endl;
     }
 
-
     return(true);
 }
 

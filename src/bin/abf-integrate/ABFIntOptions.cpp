@@ -100,7 +100,7 @@ int CABFIntOptions::CheckOptions(void)
         IsError = true;
     }
 
-    if( GetOptOverhang() <= 0 ){
+    if( GetOptOverhang() < 0 ){
         if(IsError == false) fprintf(stderr,"\n");
         fprintf(stderr,"%s: overhang has to be greater than or equal zero, but %d is provided\n", (const char*)GetProgramName(),GetOptOverhang());
         IsError = true;

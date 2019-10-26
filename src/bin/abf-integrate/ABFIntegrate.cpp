@@ -1095,23 +1095,23 @@ void CABFIntegrate::PrintSampledStat(void)
         }
     }
     if( maxbins > 0 ){
-        vout << "   Sampled area:                  "
+        vout << "      Sampled area:               "
              << setw(6) << sampled << " / " << (int)maxbins << " | " << setw(5) << setprecision(1) << fixed << sampled/maxbins*100 <<"%" << endl;
     }
     if( glued > 0 ){
-        vout << "   All inter/extrapolated area:   "
+        vout << "      All inter/extrapolated area:"
              << setw(6) << glued << " / " << (int)maxbins << " | " << setw(5) << setprecision(1) << fixed << glued/maxbins*100 <<"%" << endl;
     }
     if( holes > 0 ){
-        vout << "      Interpolated area (holes):  "
+        vout << "         Interpolated area:       "
              << setw(6) << holes << " / " << (int)maxbins << " | " << setw(5) << setprecision(1) << fixed << holes/maxbins*100 <<"%" << endl;
     }
     if( (glued-holes) > 0 ){
-        vout << "      Extrapolated area:          "
+        vout << "         Extrapolated area:       "
              << setw(6) << (glued-holes) << " / " << (int)maxbins << " | " << setw(5) << setprecision(1) << fixed << (glued-holes)/maxbins*100 <<"%" << endl;
     }
     if( glued+sampled > 0 ){
-        vout << "   Total area:                    "
+        vout << "      Total area:                 "
              << setw(6) << (glued+sampled) << " / " << (int)maxbins << " | " << setw(5) << setprecision(1) << fixed << (glued+sampled)/maxbins*100 <<"%" << endl;
     }
 }
@@ -1158,11 +1158,11 @@ void CABFIntegrate::FloodFillTest(void)
 
     // quit if one or none region
     if( seedid <= 1 ){
-        vout << "   All is continuous." << endl;
+        vout << "   -- All is continuous. -----------------------------" << endl;
         return;
     }
 
-    vout << "   Clearing all except region: " << setw(3) << maxseedid <<  endl;
+    vout << "   -- Clearing all except region: " << setw(3) << maxseedid <<  endl;
 
     for(int ibin=0; ibin < Accumulator.GetNumberOfBins(); ibin++) {
         if( FFSeeds[ibin] != maxseedid ) {

@@ -388,8 +388,9 @@ bool CABFIntegratorRFD2::SolveSystemOfEquations(CVerboseStr& vout)
 
             // solve least square problem via GELSD
             int rank = 0;
-            result = CSciLapack::gelsd(A,Rhs,RCond,rank);
-            vout << "   Rank = " << rank << "; Info = " << result << endl;
+            double realRCond = 0.0;
+            result = CSciLapack::gelsd(A,Rhs,RCond,rank,realRCond);
+            vout << "      Rank = " << rank << "; Info = " << result << "; Real rcond = " << scientific << realRCond << fixed << endl;
             if( result != 0 ) return(false);
             }
         break;

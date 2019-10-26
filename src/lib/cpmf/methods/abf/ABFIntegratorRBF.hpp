@@ -113,6 +113,9 @@ private:
     size_t                  NCVs;
     size_t                  NumOfBins;
     size_t                  NumOfRBFs;
+    size_t                  NumOfUsedBins;
+    CSimpleVector<size_t>   SampledMap;
+    size_t                  NumOfEq;
     CSimpleVector<double>   Weights;
     CSimpleVector<size_t>   NumOfRBFBins;
     CSimpleVector<double>   Sigmas;

@@ -117,7 +117,7 @@ public:
 
     /// get derivative of logML wrt hyperparameters
     /// order sigmaf2, ncorr, wfac, only requested ders are calculated
-    /// derivatives are ADD to der
+    /// derivatives are ADDED to der
     void GetLogMLDerivatives(const std::vector<bool>& flags,CSimpleVector<double>& der);
 
     /// get the LOO log predictive probability (leave-one-out cross-validation (LOO-CV))
@@ -125,7 +125,7 @@ public:
 
     /// get derivative of logLOO wrt hyperparameters
     /// order sigmaf2, ncorr, wfac, only requested ders are calculated
-    /// derivatives are ADD to der
+    /// derivatives are ADDED to der
     void GetLogLOODerivatives(const std::vector<bool>& flags,CSimpleVector<double>& der);
 
     /// write file with derivatives
