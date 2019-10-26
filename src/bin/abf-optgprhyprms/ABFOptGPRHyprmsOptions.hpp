@@ -85,7 +85,7 @@ public:
 // description of options ---------------------------------------------------
     CSO_MAP_OPT(CSmallString,                           /* option type */
                 Target,                        /* option name */
-                "logML",                          /* default value */
+                "logml",                          /* default value */
                 false,                          /* is option mandatory */
                 't',                           /* short option name */
                 "target",                      /* long option name */
