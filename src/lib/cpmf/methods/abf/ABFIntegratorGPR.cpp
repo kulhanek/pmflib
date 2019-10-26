@@ -1276,7 +1276,7 @@ void CABFIntegratorGPR::GetLogLOODerivatives(const std::vector<bool>& flags,CSim
 
         // derivative
         double loo = 0.0;
-        #pragma omp parallel for reduction(+:der)
+        #pragma omp parallel for reduction(+:loo)
         for(size_t i=0; i < GPRSize; i++){
             double zk = 0.0;
             for(size_t j=0; j < GPRSize; j++){
