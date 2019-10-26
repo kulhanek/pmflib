@@ -434,6 +434,8 @@ extern "C" void lbfgs_(FT_INT* N,FT_INT* M,double* X,double* F,double* G,FT_INT*
 
 bool CABFOptGPRHyprms::Optimize(void)
 {
+    bool result = true;
+
     FT_INT iflag;
     FT_INT diacgo = 0;
     FT_INT iprint[2];
@@ -471,7 +473,8 @@ bool CABFOptGPRHyprms::Optimize(void)
             CSmallString error;
             error << ">>> ERROR: Internal L-BFGS driver error! Code = " << iflag;
             ES_ERROR(error);
-            return(false);
+            result = false;
+            break;
         }
 
         if( istep > 1 ){
@@ -496,7 +499,7 @@ bool CABFOptGPRHyprms::Optimize(void)
         CalcHessian();
     }
 
-    return(true);
+    return(result);
 }
 
 //------------------------------------------------------------------------------
