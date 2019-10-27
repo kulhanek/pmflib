@@ -435,14 +435,14 @@ void CABFIntegratorRBF::CalculateEnergy(CVerboseStr& vout)
 
 void CABFIntegratorRBF::PrintExecInfo(CVerboseStr& vout)
 {
-//#if defined(_OPENMP)
-//    {
-//        int ncpus = omp_get_max_threads();
-//        vout << "   OpenMP - number of threads: " << ncpus << endl;
-//    }
-//#else
-//    vout << "   No OpenMP - sequential mode." << endl;
-//#endif
+#if defined(_OPENMP)
+    {
+        int ncpus = omp_get_max_threads();
+        vout << "   OpenMP - number of threads: " << ncpus << endl;
+    }
+#else
+    vout << "   No OpenMP - sequential mode." << endl;
+#endif
     CSciLapack::PrintExecInfo(vout);
 }
 
@@ -507,12 +507,12 @@ bool CABFIntegratorRBF::IntegrateByLS(CVerboseStr& vout)
                 double dvc = Accumulator->GetCoordinate(k)->GetDifference(ipos[k],lpos[k]);
                 double sig = Sigmas[k];
                 double fc = -dvc/(sig*sig);  // switch to derivatives
-                A[indi+k][l] = av * fc;
+                A[indi*NCVs+k][l] = av * fc;
             }
         }
         // rhs
         for(size_t k=0; k < NCVs; k++){
-            rhs[indi+k] = Accumulator->GetValue(k,i,EABF_MEAN_FORCE_VALUE);
+            rhs[indi*NCVs+k] = Accumulator->GetValue(k,i,EABF_MEAN_FORCE_VALUE);
         }
     }
 
@@ -613,9 +613,8 @@ double CABFIntegratorRBF::GetRMSR(size_t cv)
     ipos.CreateVector(NCVs);
 
     double rmsr = 0.0;
-    double nsamples = 0.0;
 
-    #pragma omp parallel for firstprivate(ipos)
+    #pragma omp parallel for firstprivate(ipos) reduction(+:rmsr)
     for(size_t indi=0; indi < NumOfUsedBins; indi++){
         size_t i = SampledMap[indi];
 
@@ -626,8 +625,9 @@ double CABFIntegratorRBF::GetRMSR(size_t cv)
         double diff = mfi - mfp;
 
         rmsr += diff*diff;
-        nsamples++;
     }
+
+    double nsamples = NumOfUsedBins;
 
     if( nsamples > 0 ){
         rmsr /= nsamples;
@@ -775,7 +775,6 @@ void CABFIntegratorRBF::FilterByMFZScore(double zscore,CVerboseStr& vout)
             size_t i = SampledMap[indi];
 
             if( flags[i] != 0 ){
-                Accumulator->GetPoint(i,jpos);
 
                 for(size_t k=0; k < NCVs; k++){
                     double diff2 = mferror2[indi*NCVs+k];

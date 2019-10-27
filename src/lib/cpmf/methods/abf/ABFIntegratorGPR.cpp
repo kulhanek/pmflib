@@ -413,9 +413,9 @@ bool CABFIntegratorGPR::Integrate(CVerboseStr& vout,bool nostat)
         vout << "      RMSR CV#" << k+1 << " = " << setprecision(5) << GetRMSR(k) << endl;
         }
 
-        // and marginal likelihood
+        // and lof of marginal likelihood
         vout << "      logML     = " << setprecision(5) << GetLogML() << endl;
-        // and log LOO probability
+        // and log of pseudo-likelihood
         vout << "      logPL     = " << setprecision(5) << GetLogPL() << endl;
     }
 
@@ -1053,7 +1053,6 @@ void CABFIntegratorGPR::FilterByMFZScore(double zscore,CVerboseStr& vout)
             size_t i = SampledMap[indi];
 
             if( flags[i] != 0 ){
-                Accumulator->GetPoint(i,jpos);
 
                 for(size_t k=0; k < NCVs; k++){
                     double diff2 = mferror2[indi*NCVs+k];

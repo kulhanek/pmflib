@@ -261,7 +261,7 @@ void CABFOptGPRHyprms::InitOptimizer(void)
                 vout << "# step         logML";
             break;
             case(EGOT_LOGPL):
-                vout << "# step        logLOO";
+                vout << "# step         logPL";
             break;
         }
 
@@ -615,11 +615,12 @@ void CABFOptGPRHyprms::CalcHessian(void)
     double dh = 1e-3;
 
     for(int i=0; i < NumOfOptPrms; i++){
+
+        vout << "  + perturbation for hyprm: " << setw(3) << (i+1) << endl;
+        grd1[i].SetZero();
         tmp_prms = Hyprms;
         tmp_prms[i] += dh;
         ScatterHyprms(tmp_prms);
-
-        grd1[i].SetZero();
         for(size_t c=0; c < Accumulators.size(); c++){
             CABFAccumulatorP accu = Accumulators[c];
             CABFIntegratorGPR gpr;
@@ -634,6 +635,7 @@ void CABFOptGPRHyprms::CalcHessian(void)
             }
         }
 
+        vout << "  - perturbation for hyprm: " << setw(3) << (i+1) << endl;
         grd2[i].SetZero();
         tmp_prms = Hyprms;
         tmp_prms[i] -= dh;
