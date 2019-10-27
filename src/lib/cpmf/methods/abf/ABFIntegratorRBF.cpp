@@ -31,6 +31,11 @@
 #include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string/classification.hpp>
 
+// OpenMP support
+#if defined(_OPENMP)
+#include <omp.h>
+#endif
+
 //------------------------------------------------------------------------------
 
 using namespace std;
