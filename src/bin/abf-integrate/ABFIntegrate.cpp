@@ -176,6 +176,7 @@ int CABFIntegrate::Init(int argc,char* argv[])
     } else {
         vout << "# Energy limit          : " << Options.GetOptEnergyLimit() << endl;
     }
+        vout << "# Skip last energy limit: " << bool_to_str(Options.GetOptSkipLastEnergyLimit()) << endl;
         vout << "# Skip flood fill test  : " << bool_to_str(Options.GetOptNoHeader()) << endl;
 
     vout << "# ------------------------------------------------" << endl;
@@ -336,6 +337,22 @@ bool CABFIntegrate::Run(void)
         FES.ApplyOffset(Options.GetOptOffset());
     }
 
+// final energy limit --------------------------------
+
+    if( (Options.GetOptEnergyLimit() > 0.0) && (Options.GetOptSkipLastEnergyLimit() == false) ){
+        vout << endl;
+        vout << format("%02d:Cleaning FES (energy limit)")%state << endl;
+        state++;
+        PrepareAccumulatorII();
+        if( ! Options.GetOptSkipFFTest() ){
+            FloodFillTest();
+        }
+        PrintSampledStat();
+        SyncFESWithACCU();
+        vout << "   Done." << endl;
+    }
+
+// post-processing
     if( Options.GetOptUnsampledAsMaxE() ){
         if( Options.IsOptMaxEnergySet()){
             FES.AdaptUnsampledToMaxEnergy(Options.GetOptMaxEnergy());
@@ -511,6 +528,7 @@ void CABFIntegrate::WriteHeader()
         fprintf(OutputFile,"# Glueing FES factor    : %d\n",Options.GetOptGlueingFactor());
         fprintf(OutputFile,"# Glue holes on FES     : %s\n", bool_to_str(Options.GetOptGlueHoles()));
         fprintf(OutputFile,"# Energy limit          : %f\n",Options.GetOptEnergyLimit());
+        fprintf(OutputFile,"# Skip last energy limit: %s\n", bool_to_str(Options.GetOptSkipLastEnergyLimit()));
         fprintf(OutputFile,"# Skip flood fill test  : %s\n", bool_to_str(Options.GetOptNoHeader()));
         fprintf(OutputFile,"# ------------------------------------------------------------------------------\n");
         if( Options.IsOptGlobalMinSet() ){
@@ -1072,6 +1090,19 @@ void CABFIntegrate::PrepareAccumulatorII(void)
                 // erase datapoints with too large energy
                 Accumulator.SetNumberOfABFSamples(ibin,0);
             }
+        }
+    }
+}
+
+//------------------------------------------------------------------------------
+
+void CABFIntegrate::SyncFESWithACCU(void)
+{
+    for(int ibin=0; ibin < Accumulator.GetNumberOfBins(); ibin++) {
+        if( Accumulator.GetNumberOfABFSamples(ibin) == 0 ) {
+            FES.SetEnergy(ibin,0.0);
+            FES.SetEnergy(ibin,0.0);
+            FES.SetNumOfSamples(ibin,0);
         }
     }
 }

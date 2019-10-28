@@ -85,6 +85,7 @@ private:
     void MarkAsHole(int seedid);
     void PrintGPRHyprms(FILE* p_fout);
     void LoadGPRHyprms(CABFIntegratorGPR& gpr);
+    void SyncFESWithACCU(void);
 };
 
 //------------------------------------------------------------------------------

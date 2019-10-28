@@ -80,6 +80,7 @@ public:
     CSO_OPT(int,Limit)
     CSO_OPT(bool,SkipFFTest)
     CSO_OPT(double,EnergyLimit)
+    CSO_OPT(bool,SkipLastEnergyLimit)
     CSO_OPT(double,MFMaxZScore)
     CSO_OPT(int,MFZTestPasses)
     CSO_OPT(double,SigmaF2)
@@ -185,6 +186,15 @@ public:
                 "NUMBER",                           /* parametr name */
                 "Integrate data only if the free energy is below NUMBER. "
                 "This limit enforces two integration runs. Negative value disables the limit.")   /* option description */
+    //----------------------------------------------------------------------
+    CSO_MAP_OPT(bool,                           /* option type */
+                SkipLastEnergyLimit,                        /* option name */
+                false,                          /* default value */
+                false,                          /* is option mandatory */
+                0,                           /* short option name */
+                "skiplastelimit",                      /* long option name */
+                NULL,                           /* parametr name */
+                "Skip energy limit filter after final integration.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(double,                           /* option type */
                 MFMaxZScore,                        /* option name */

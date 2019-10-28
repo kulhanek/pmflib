@@ -160,6 +160,10 @@ bool CABFOptGPRHyprms::Run(void)
         Test();
     }
 
+    if( Options.GetOptSPType() ){
+        CalcHessian();
+    }
+
     if( Options.GetOptPrintStat() ){
         ShowGPRStat();
     }
@@ -493,11 +497,17 @@ bool CABFOptGPRHyprms::Optimize(void)
         last_logtrg = logTarget;
     }
 
-    PrintGradientSummary();
-
-    if( Options.GetOptSPType() ){
-        CalcHessian();
+    // run some calculation for SP calculation
+    if( noptsteps == 0 ){
+        if( Options.GetOptNumeric() ){
+            RunGPRNumerical();
+        } else {
+            RunGPRAnalytical();
+        }
+        WriteResults(0);
     }
+
+    PrintGradientSummary();
 
     return(result);
 }
@@ -589,7 +599,8 @@ void CABFOptGPRHyprms::Test(void)
 void CABFOptGPRHyprms::CalcHessian(void)
 {
     vout << endl;
-    vout << "# Calculating numerical hessian by central differences ... " <<  endl;
+    vout << format("%02d:Calculating numerical hessian by central differences ... ")%State << endl;
+    State++;
 
     Hessian.CreateMatrix(NumOfOptPrms,NumOfOptPrms);
     Hessian.SetZero();
@@ -616,7 +627,7 @@ void CABFOptGPRHyprms::CalcHessian(void)
 
     for(int i=0; i < NumOfOptPrms; i++){
 
-        vout << "  + perturbation for hyprm: " << setw(3) << (i+1) << endl;
+        vout << "   + perturbation for hyprm: " << setw(3) << (i+1) << endl;
         grd1[i].SetZero();
         tmp_prms = Hyprms;
         tmp_prms[i] += dh;
@@ -635,7 +646,7 @@ void CABFOptGPRHyprms::CalcHessian(void)
             }
         }
 
-        vout << "  - perturbation for hyprm: " << setw(3) << (i+1) << endl;
+        vout << "   - perturbation for hyprm: " << setw(3) << (i+1) << endl;
         grd2[i].SetZero();
         tmp_prms = Hyprms;
         tmp_prms[i] -= dh;

@@ -53,9 +53,9 @@ int CABFOptGPRHyprmsOptions::CheckOptions(void)
         IsError = true;
     }
 
-    if( GetOptNOptSteps() <= 0 ){
+    if( GetOptNOptSteps() < 0 ){
         if(IsError == false) fprintf(stderr,"\n");
-        fprintf(stderr,"%s: --noptsteps: at least one step must be provided but %d is specified\n", (const char*)GetProgramName(),GetOptNOptSteps());
+        fprintf(stderr,"%s: --noptsteps: negative number of steps (%d) is not allowed\n", (const char*)GetProgramName(),GetOptNOptSteps());
         IsError = true;
     }
 
