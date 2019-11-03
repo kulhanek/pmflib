@@ -454,7 +454,9 @@ bool CABFOptGPRHyprms::Optimize(void)
     FT_INT  nlbfgscorr  = Options.GetOptNumOfLBFGSCorr();
     double  last_logtrg  = 0;
 
-    for(int istep=1; istep <= noptsteps; istep++ ){
+    int istep = 0;
+
+    for(istep=1; istep <= noptsteps; istep++ ){
         if( Options.GetOptNumeric() ){
             RunGPRNumerical();
         } else {
@@ -497,15 +499,13 @@ bool CABFOptGPRHyprms::Optimize(void)
         last_logtrg = logTarget;
     }
 
-    // run some calculation for SP calculation
-    if( noptsteps == 0 ){
-        if( Options.GetOptNumeric() ){
-            RunGPRNumerical();
-        } else {
-            RunGPRAnalytical();
-        }
-        WriteResults(0);
+    // final gradients - for the last values of hyprms or SP type calculations
+    if( Options.GetOptNumeric() ){
+        RunGPRNumerical();
+    } else {
+        RunGPRAnalytical();
     }
+    WriteResults(istep);
 
     PrintGradientSummary();
 

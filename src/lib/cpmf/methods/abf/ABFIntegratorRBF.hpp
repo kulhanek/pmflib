@@ -71,7 +71,10 @@ public:
     void SetOverhang(int nrbfs);
 
     /// set algorithm for LLS
-    void SetLLSMehod(ERBFLLSMethod set);
+    void SetLLSMethod(ERBFLLSMethod set);
+
+    /// set algorithm for LLS
+    void SetLLSMethod(const CSmallString& method);
 
     /// should we include glued area to energy calculation?
     void IncludeGluedAreas(bool set);

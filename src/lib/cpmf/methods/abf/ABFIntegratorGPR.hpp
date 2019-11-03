@@ -94,7 +94,10 @@ public:
     void SetSplitNCorr(bool set);
 
     /// set algorithm for LLS
-    void SetINVMehod(EGPRINVMethod set);
+    void SetINVMethod(EGPRINVMethod set);
+
+    /// set algorithm for LLS
+    void SetINVMethod(const CSmallString& method);
 
     /// set rcond for SVD
     void SetRCond(double rcond);

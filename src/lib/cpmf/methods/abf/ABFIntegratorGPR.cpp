@@ -292,9 +292,31 @@ void CABFIntegratorGPR::SetRCond(double rcond)
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorGPR::SetINVMehod(EGPRINVMethod set)
+void CABFIntegratorGPR::SetINVMethod(EGPRINVMethod set)
 {
     Method = set;
+}
+
+//------------------------------------------------------------------------------
+
+void CABFIntegratorGPR::SetINVMethod(const CSmallString& method)
+{
+    if( method == "svd" ){
+        SetINVMethod(EGPRINV_SVD);
+    } else if( method == "svd2" ){
+        SetINVMethod(EGPRINV_SVD2);
+    } else if( method == "lu" ) {
+        SetINVMethod(EGPRINV_LU);
+    } else if( method == "ll" ) {
+        SetINVMethod(EGPRINV_LL);
+    } else if( method == "default" ) {
+        SetINVMethod(EGPRINV_LU);
+    } else {
+        CSmallString error;
+        error << "Specified method '" << method << "' for matrix inversion is not supported. "
+                 "Supported methods are: svd (simple driver), svd2 (conquer and divide driver), lu, ll (Cholesky decomposition), default (=lu)";
+        INVALID_ARGUMENT(error);
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -365,6 +387,7 @@ bool CABFIntegratorGPR::Integrate(CVerboseStr& vout,bool nostat)
     for(size_t i=0; i < NCVs; i++){
         double l = WFac[i]*Accumulator->GetCoordinate(i)->GetRange()/Accumulator->GetCoordinate(i)->GetNumberOfBins();
         CVLengths2[i] = l*l;
+        cout << "CVlen = " << Accumulator->GetCoordinate(i)->GetRange() << " " << Accumulator->GetCoordinate(i)->GetNumberOfBins() << " " << CVLengths2[i] << endl;
     }
 
     // number of data points
@@ -459,8 +482,19 @@ bool CABFIntegratorGPR::TrainGP(CVerboseStr& vout)
 
     vout << "      Dim: " << GPRSize << " x " << GPRSize << endl;
 
-    K.CreateMatrix(GPRSize,GPRSize);
     Y.CreateVector(GPRSize);
+
+// construct Y
+    #pragma omp parallel for
+    for(size_t indi=0; indi < NumOfUsedBins; indi++){
+        size_t i = SampledMap[indi];
+        for(size_t ii=0; ii < NCVs; ii++){
+            double mf = Accumulator->GetValue(ii,i,EABF_MEAN_FORCE_VALUE);
+            Y[indi*NCVs+ii] = mf;
+        }
+    }
+
+    K.CreateMatrix(GPRSize,GPRSize);
 
 // construct K
     if( UseAnalyticalK ){
@@ -477,15 +511,6 @@ bool CABFIntegratorGPR::TrainGP(CVerboseStr& vout)
 //        vout << endl;
 //    }
 
-// construct Y
-    #pragma omp parallel for
-    for(size_t indi=0; indi < NumOfUsedBins; indi++){
-        size_t i = SampledMap[indi];
-        for(size_t ii=0; ii < NCVs; ii++){
-            double mf = Accumulator->GetValue(ii,i,EABF_MEAN_FORCE_VALUE);
-            Y[indi*NCVs+ii] = mf;
-        }
-    }
 
 // inverting the K+Sigma
     int result = 0;
@@ -583,9 +608,12 @@ void CABFIntegratorGPR::AnalyticalK(void)
         size_t i = SampledMap[indi];
         for(size_t ii=0; ii < NCVs; ii++){
             double er = Accumulator->GetValue(ii,i,EABF_MEAN_FORCE_ERROR);
+
             if( SplitNCorr ){
+              // cout << K[indi*NCVs+ii][indi*NCVs+ii] << " " << er*er*NCorr[ii] << endl;
                 K[indi*NCVs+ii][indi*NCVs+ii] += er*er*NCorr[ii];
             } else {
+              //  cout << K[indi*NCVs+ii][indi*NCVs+ii] << " " << er*er*NCorr[ii] << " " << Y[indi*NCVs+ii] << endl;
                 K[indi*NCVs+ii][indi*NCVs+ii] += er*er*NCorr[0];
             }
         }
@@ -977,6 +1005,9 @@ bool CABFIntegratorGPR::WriteMFInfo(const CSmallString& name)
 
 void CABFIntegratorGPR::FilterByMFZScore(double zscore,CVerboseStr& vout)
 {
+    vout << high;
+    vout << "   Running Z-test filter on MF errors ..." << endl;
+
     if( NumOfBins == 0 ){
         ES_ERROR("number of bins is not > 0");
         return;
@@ -1000,7 +1031,7 @@ void CABFIntegratorGPR::FilterByMFZScore(double zscore,CVerboseStr& vout)
     flags.Set(1);
 
     vout << high;
-    vout << "   Precalculating MF errors ..." << endl;
+    vout << "      Precalculating MF errors ..." << endl;
 
     CSimpleVector<double> jpos;
     jpos.CreateVector(NCVs);
@@ -1019,7 +1050,7 @@ void CABFIntegratorGPR::FilterByMFZScore(double zscore,CVerboseStr& vout)
         }
     }
 
-    vout << "   Searching for MF outliers ..." << endl;
+    vout << "      Searching for MF outliers ..." << endl;
     vout << debug;
 
     bool testme = true;
@@ -1093,7 +1124,7 @@ void CABFIntegratorGPR::FilterByMFZScore(double zscore,CVerboseStr& vout)
 
     // from now the integrator is in invalid state !!!
     vout << high;
-    vout << "   Number of outliers = " << outliers << endl;
+    vout << "      Number of outliers = " << outliers << endl;
 }
 
 //==============================================================================

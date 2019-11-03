@@ -185,9 +185,27 @@ void CABFIntegratorRBF::SetOverhang(int nrbfs)
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorRBF::SetLLSMehod(ERBFLLSMethod set)
+void CABFIntegratorRBF::SetLLSMethod(ERBFLLSMethod set)
 {
     Method = set;
+}
+
+//------------------------------------------------------------------------------
+
+void CABFIntegratorRBF::SetLLSMethod(const CSmallString& method)
+{
+    if( method == "svd" ){
+        SetLLSMethod(ERBFLLS_SVD);
+    } else if( method == "qr" ) {
+        SetLLSMethod(ERBFLLS_QR);
+    } else if( method == "default" ) {
+        SetLLSMethod(ERBFLLS_SVD);
+    } else {
+        CSmallString error;
+        error << "Specified method '" << method << "' for linear algebra is not supported. "
+                 "Supported methods are: svd (divide and conquer driver), qr, default (=svd)";
+        INVALID_ARGUMENT(error);
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -704,6 +722,9 @@ bool CABFIntegratorRBF::WriteMFInfo(const CSmallString& name)
 
 void CABFIntegratorRBF::FilterByMFZScore(double zscore,CVerboseStr& vout)
 {
+    vout << high;
+    vout << "   Running Z-test filter on MF errors ..." << endl;
+
     if( NumOfBins == 0 ){
         ES_ERROR("number of bins is not > 0");
         return;
@@ -727,7 +748,7 @@ void CABFIntegratorRBF::FilterByMFZScore(double zscore,CVerboseStr& vout)
     flags.Set(1);
 
     vout << high;
-    vout << "   Precalculating MF errors ..." << endl;
+    vout << "      Precalculating MF errors ..." << endl;
 
     CSimpleVector<double> jpos;
     jpos.CreateVector(NCVs);
@@ -746,7 +767,7 @@ void CABFIntegratorRBF::FilterByMFZScore(double zscore,CVerboseStr& vout)
         }
     }
 
-    vout << "   Searching for MF outliers ..." << endl;
+    vout << "      Searching for MF outliers ..." << endl;
     vout << debug;
 
     bool testme = true;
@@ -820,7 +841,7 @@ void CABFIntegratorRBF::FilterByMFZScore(double zscore,CVerboseStr& vout)
 
     // from now the integrator is in invalid state !!!
     vout << high;
-    vout << "   Number of outliers = " << outliers << endl;
+    vout << "      Number of outliers = " << outliers << endl;
 }
 
 //------------------------------------------------------------------------------

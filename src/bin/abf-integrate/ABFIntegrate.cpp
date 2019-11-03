@@ -567,15 +567,7 @@ bool CABFIntegrate::IntegrateForMFZScore(int pass)
         integrator.SetOverhang(Options.GetOptOverhang());
 
         if( Options.GetOptEcutMethod() == Options.GetOptMethod() ){
-            if( Options.GetOptLAMethod() == "svd" ){
-                integrator.SetLLSMehod(ERBFLLS_SVD);
-            } else if( Options.GetOptLAMethod() == "qr" ) {
-                integrator.SetLLSMehod(ERBFLLS_QR);
-            } else if( Options.GetOptLAMethod() == "default" ) {
-                // nothing to do - use default method set in constructor of integrator
-            } else {
-                INVALID_ARGUMENT("algorithm - not implemented");
-            }
+            integrator.SetLLSMethod(Options.GetOptLAMethod());
         }
 
         integrator.SetNoEnergy(true);
@@ -615,19 +607,7 @@ bool CABFIntegrate::IntegrateForMFZScore(int pass)
 
         integrator.SetRCond(Options.GetOptRCond());
         if( Options.GetOptEcutMethod() == Options.GetOptMethod() ){
-            if( Options.GetOptLAMethod() == "svd" ){
-                integrator.SetINVMehod(EGPRINV_SVD);
-            } else if( Options.GetOptLAMethod() == "svd2" ){
-                integrator.SetINVMehod(EGPRINV_SVD2);
-            } else if( Options.GetOptLAMethod() == "lu" ) {
-                integrator.SetINVMehod(EGPRINV_LU);
-            } else if( Options.GetOptLAMethod() == "ll" ) {
-                integrator.SetINVMehod(EGPRINV_LL);
-            } else if( Options.GetOptLAMethod() == "default" ) {
-                // nothing to do - use default method set in constructor of integrator
-            } else {
-                INVALID_ARGUMENT("algorithm - not implemented");
-            }
+            integrator.SetINVMethod(Options.GetOptLAMethod());
         }
 
         integrator.SetNoEnergy(true);
@@ -719,15 +699,7 @@ bool CABFIntegrate::IntegrateForEcut(void)
         integrator.IncludeGluedAreas((Options.GetOptGlueingFactor() > 0)||Options.GetOptGlueHoles()||Options.GetOptIncludeGluedRegions());
 
         if( Options.GetOptEcutMethod() == Options.GetOptMethod() ){
-            if( Options.GetOptLAMethod() == "svd" ){
-                integrator.SetLLSMehod(ERBFLLS_SVD);
-            } else if( Options.GetOptLAMethod() == "qr" ) {
-                integrator.SetLLSMehod(ERBFLLS_QR);
-            } else if( Options.GetOptLAMethod() == "default" ) {
-                // nothing to do - use default method set in constructor of integrator
-            } else {
-                INVALID_ARGUMENT("algorithm - not implemented");
-            }
+            integrator.SetLLSMethod(Options.GetOptLAMethod());
         }
 
         if( Options.IsOptGlobalMinSet() ){
@@ -760,19 +732,7 @@ bool CABFIntegrate::IntegrateForEcut(void)
 
         integrator.SetRCond(Options.GetOptRCond());
         if( Options.GetOptEcutMethod() == Options.GetOptMethod() ){
-            if( Options.GetOptLAMethod() == "svd" ){
-                integrator.SetINVMehod(EGPRINV_SVD);
-            } else if( Options.GetOptLAMethod() == "svd2" ){
-                integrator.SetINVMehod(EGPRINV_SVD2);
-            } else if( Options.GetOptLAMethod() == "lu" ) {
-                integrator.SetINVMehod(EGPRINV_LU);
-            } else if( Options.GetOptLAMethod() == "ll" ) {
-                integrator.SetINVMehod(EGPRINV_LL);
-            } else if( Options.GetOptLAMethod() == "default" ) {
-                // nothing to do - use default method set in constructor of integrator
-            } else {
-                INVALID_ARGUMENT("algorithm - not implemented");
-            }
+            integrator.SetINVMethod(Options.GetOptLAMethod());
         }
 
         if( Options.IsOptGlobalMinSet() ){
@@ -854,15 +814,7 @@ bool CABFIntegrate::Integrate(void)
         integrator.SetOverhang(Options.GetOptOverhang());
         integrator.IncludeGluedAreas((Options.GetOptGlueingFactor() > 0)||Options.GetOptGlueHoles()||Options.GetOptIncludeGluedRegions());
 
-        if( Options.GetOptLAMethod() == "svd" ){
-            integrator.SetLLSMehod(ERBFLLS_SVD);
-        } else if( Options.GetOptLAMethod() == "qr" ) {
-            integrator.SetLLSMehod(ERBFLLS_QR);
-        } else if( Options.GetOptLAMethod() == "default" ) {
-            // nothing to do - use default method set in constructor of integrator
-        } else {
-            INVALID_ARGUMENT("algorithm - not implemented");
-        }
+        integrator.SetLLSMethod(Options.GetOptLAMethod());
 
         if( Options.IsOptGlobalMinSet() ){
             integrator.SetGlobalMin(Options.GetOptGlobalMin());
@@ -903,19 +855,7 @@ bool CABFIntegrate::Integrate(void)
         }
 
         integrator.SetRCond(Options.GetOptRCond());
-        if( Options.GetOptLAMethod() == "svd" ){
-            integrator.SetINVMehod(EGPRINV_SVD);
-        } else if( Options.GetOptLAMethod() == "svd2" ){
-                integrator.SetINVMehod(EGPRINV_SVD2);
-        } else if( Options.GetOptLAMethod() == "lu" ) {
-            integrator.SetINVMehod(EGPRINV_LU);
-        } else if( Options.GetOptLAMethod() == "ll" ) {
-            integrator.SetINVMehod(EGPRINV_LL);
-        } else if( Options.GetOptLAMethod() == "default" ) {
-            // nothing to do - use default method set in constructor of integrator
-        } else {
-            INVALID_ARGUMENT("algorithm - not implemented");
-        }
+        integrator.SetINVMethod(Options.GetOptLAMethod());
 
         if(integrator.Integrate(vout) == false) {
             ES_ERROR("unable to integrate ABF accumulator");
