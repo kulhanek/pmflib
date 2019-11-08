@@ -103,7 +103,7 @@ int CABFOptGPRHyprms::Init(int argc,char* argv[])
     vout << "# Optimized target      : " << Options.GetOptTarget() << endl;
     CABFIntegratorGPR gpr;
     gpr.SetKernel(Options.GetOptGPRKernel());
-    vout << "  GPR Kernel            : " << gpr.GetKernelName() << endl;
+    vout << "# GPR Kernel            : " << gpr.GetKernelName() << endl;
     vout << "# ------------------------------------------------" << endl;
 
     if( OutputFile.Open(output,"w") == false ){
