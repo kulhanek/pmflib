@@ -563,7 +563,7 @@ const CSmallString CABFIntegratorGPR::GetKernelName(void)
 {
     switch(Kernel){
     case(EGPRK_ARDSE):
-        return("RD squared exponential");
+        return("ARD squared exponential");
     case(EGPRK_ARDMC52):
         return("ARD Matern class 5/2");
     default:
