@@ -101,6 +101,9 @@ int CABFOptGPRHyprms::Init(int argc,char* argv[])
     vout << "# SVD rcond             : " << setprecision(3) << Options.GetOptRCond() << endl;
     }
     vout << "# Optimized target      : " << Options.GetOptTarget() << endl;
+    CABFIntegratorGPR gpr;
+    gpr.SetKernel(Options.GetOptGPRKernel());
+    vout << "  GPR Kernel            : " << gpr.GetKernelName() << endl;
     vout << "# ------------------------------------------------" << endl;
 
     if( OutputFile.Open(output,"w") == false ){
@@ -223,13 +226,11 @@ void CABFOptGPRHyprms::InitOptimizer(void)
 
     int     noptsteps   = Options.GetOptNOptSteps();
     double  termeps     = Options.GetOptTermEps();
-    double  termval     = Options.GetOptTermVal();
     int     nlbfgscorr  = Options.GetOptNumOfLBFGSCorr();
 
 // print header
     vout << "   Maximum number of L-BFGS steps  = " << noptsteps << endl;
     vout << "   Termination criteria (L-BFGS)   = " << std::scientific << termeps << std::fixed << endl;
-    vout << "   Termination criteria (value)    = " << std::scientific << termval << std::fixed << endl;
     vout << "   Number of L-BFGS corrections    = " << nlbfgscorr << endl;
     vout << "   Total number of hyprms          = " << NumOfPrms << endl;
     vout << "   Number of optimized hyprms      = " << NumOfOptPrms << endl;
@@ -452,11 +453,26 @@ bool CABFOptGPRHyprms::Optimize(void)
     int     noptsteps   = Options.GetOptNOptSteps();
     double  termeps     = Options.GetOptTermEps();
     FT_INT  nlbfgscorr  = Options.GetOptNumOfLBFGSCorr();
-    double  last_logtrg  = 0;
+    int     numofreset  = 0;
 
     int istep = 0;
 
     for(istep=1; istep <= noptsteps; istep++ ){
+        // parameters cannot be zero or negative
+        bool reset = false;
+        for(int i=0; i < NumOfOptPrms; i++){
+            if( Hyprms[i] <= 0.0 ){
+                Hyprms[i] = 0.1;
+                iflag = 0;  // reset optimizer
+                reset = true;
+            }
+        }
+        if( reset ){
+            vout << endl;
+            vout << "<b><blue>>>> INFO: Parameters out-of-range, resetting ...</blue></b>" << endl;
+            vout << endl;
+        }
+
         if( Options.GetOptNumeric() ){
             RunGPRNumerical();
         } else {
@@ -476,27 +492,28 @@ bool CABFOptGPRHyprms::Optimize(void)
 
         if( iflag == 0 ) break;
         if( iflag < 0 ) {
-            CSmallString error;
-            error << ">>> ERROR: Internal L-BFGS driver error! Code = " << iflag;
-            ES_ERROR(error);
-            result = false;
-            break;
-        }
-
-        if( istep > 1 ){
-            if( fabs(logTarget - last_logtrg) < Options.GetOptTermVal() ){
-                switch(Target){
-                    case(EGOT_LOGML):
-                        vout << ">>> INFO: No significant change in logML - terminating ..." << endl;
-                    break;
-                    case(EGOT_LOGPL):
-                        vout << ">>> INFO: No significant change in logPL - terminating ..." << endl;
-                    break;
+            vout << endl;
+                vout << "<b><blue>>>> INFO: Insufficient progress, resetting ...</blue></b>" << endl;
+            iflag = 0;
+            numofreset++;
+            if( numofreset > 1 ){
+                vout << "          Perturbing parameters ..." << endl;
+                // perturbing parameters
+                for(int i=0; i < NumOfOptPrms; i++){
+                    float r = static_cast<float>(rand())/static_cast<float>(RAND_MAX);
+                    Hyprms[i] += 0.5*(r-0.5);
                 }
-                break;
             }
+            vout << endl;
+            continue;
         }
-        last_logtrg = logTarget;
+    }
+
+    if( (istep > noptsteps) && (noptsteps > 0) ){
+        vout << endl;
+        vout << "<red><b>>>> ERROR: Insufficient number of optimization steps ...</b></red>" << endl;
+        vout << endl;
+        result = false;
     }
 
     // final gradients - for the last values of hyprms or SP type calculations
@@ -822,19 +839,9 @@ void CABFOptGPRHyprms::ShowGPRStat(void)
 
         gpr.SetSplitNCorr(SplitNCorr);
 
-        if( Options.GetOptLAMethod() == "svd" ){
-            gpr.SetINVMehod(EGPRINV_SVD);
-        } else if( Options.GetOptLAMethod() == "svd2" ){
-                gpr.SetINVMehod(EGPRINV_SVD2);
-        } else if( Options.GetOptLAMethod() == "lu" ) {
-            gpr.SetINVMehod(EGPRINV_LU);
-        } else if( Options.GetOptLAMethod() == "ll" ) {
-            gpr.SetINVMehod(EGPRINV_LL);
-        } else if( Options.GetOptLAMethod() == "default" ) {
-            // nothing to do - use default method set in constructor of integrator
-        } else {
-            INVALID_ARGUMENT("algorithm - not implemented");
-        }
+        gpr.SetINVMethod(Options.GetOptLAMethod());
+        gpr.SetUseNumDiff(Options.GetOptGPRNumDiff());
+        gpr.SetKernel(Options.GetOptGPRKernel());
 
     // run integrator
         gpr.SetSigmaF2(SigmaF2);
@@ -969,7 +976,7 @@ void CABFOptGPRHyprms::ScatterHyprms(CSimpleVector<double>& hyprsm)
     int i = 0;
 // ---------------
     if( SigmaF2Enabled ){
-        SigmaF2 = fabs(hyprsm[ind]);
+        SigmaF2 = hyprsm[ind];
         ind++;
         HyprmsEnabled[i] = true;
     } else {
@@ -980,7 +987,7 @@ void CABFOptGPRHyprms::ScatterHyprms(CSimpleVector<double>& hyprsm)
     if( SplitNCorr ){
         for(int k=0; k < (int)NCorrEnabled.size(); k++){
             if( NCorrEnabled[k] ){
-                NCorr[k] = fabs(hyprsm[ind]);
+                NCorr[k] = hyprsm[ind];
                 ind++;
                 HyprmsEnabled[i] = true;
             } else {
@@ -990,7 +997,7 @@ void CABFOptGPRHyprms::ScatterHyprms(CSimpleVector<double>& hyprsm)
         }
     } else {
         if( NCorrEnabled[0] ){
-            NCorr[0] = fabs(hyprsm[ind]);
+            NCorr[0] = hyprsm[ind];
             ind++;
             HyprmsEnabled[i] = true;
         } else {
@@ -1001,7 +1008,7 @@ void CABFOptGPRHyprms::ScatterHyprms(CSimpleVector<double>& hyprsm)
 // ---------------
     for(int k=0; k < (int)WFacEnabled.size(); k++){
         if( WFacEnabled[k] ){
-            WFac[k] = fabs(hyprsm[ind]);
+            WFac[k] = hyprsm[ind];
             ind++;
             HyprmsEnabled[i] = true;
         } else {
@@ -1028,20 +1035,9 @@ double CABFOptGPRHyprms::GetTarget(CABFIntegratorGPR& gpr,CABFAccumulatorP accu)
     gpr.IncludeGluedAreas(false);
 
     gpr.SetSplitNCorr(SplitNCorr);
-
-    if( Options.GetOptLAMethod() == "svd" ){
-        gpr.SetINVMehod(EGPRINV_SVD);
-    } else if( Options.GetOptLAMethod() == "svd2" ){
-            gpr.SetINVMehod(EGPRINV_SVD2);
-    } else if( Options.GetOptLAMethod() == "lu" ) {
-        gpr.SetINVMehod(EGPRINV_LU);
-    } else if( Options.GetOptLAMethod() == "ll" ) {
-        gpr.SetINVMehod(EGPRINV_LL);
-    } else if( Options.GetOptLAMethod() == "default" ) {
-        // nothing to do - use default method set in constructor of integrator
-    } else {
-        INVALID_ARGUMENT("algorithm - not implemented");
-    }
+    gpr.SetINVMethod(Options.GetOptLAMethod());
+    gpr.SetUseNumDiff(Options.GetOptGPRNumDiff());
+    gpr.SetKernel(Options.GetOptGPRKernel());
 
 // setup integrator
     gpr.SetSigmaF2(SigmaF2);

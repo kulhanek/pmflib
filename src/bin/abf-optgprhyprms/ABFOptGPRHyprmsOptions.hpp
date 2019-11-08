@@ -69,13 +69,14 @@ public:
     CSO_OPT(bool,Numeric)
     CSO_OPT(int,NOptSteps)
     CSO_OPT(double,TermEps)
-    CSO_OPT(double,TermVal)
     CSO_OPT(int,NumOfLBFGSCorr)
     CSO_OPT(bool,Test)
     CSO_OPT(bool,PrintStat)
     CSO_OPT(bool,SPType)
     CSO_OPT(bool,CD5)
     CSO_OPT(CSmallString,LoadHyprms)
+    CSO_OPT(CSmallString,GPRKernel)
+    CSO_OPT(bool,GPRNumDiff)
     CSO_OPT(bool,Verbose)
     CSO_OPT(bool,Version)
     CSO_OPT(bool,Help)
@@ -209,15 +210,6 @@ public:
                 "NUMBER",                           /* parametr name */
                 "Termination criteria for L-BFGS optimizer (see L-BFGS code).")   /* option description */
     //----------------------------------------------------------------------
-    CSO_MAP_OPT(double,                           /* option type */
-                TermVal,                        /* option name */
-                1e-7,                          /* default value */
-                false,                          /* is option mandatory */
-                0,                           /* short option name */
-                "termval",                      /* long option name */
-                "NUMBER",                           /* parametr name */
-                "Termination criteria for L-BFGS optimizer. Minimum change of optimized property.")   /* option description */
-    //----------------------------------------------------------------------
     CSO_MAP_OPT(int,                           /* option type */
                 NumOfLBFGSCorr,                        /* option name */
                 10,                          /* default value */
@@ -271,6 +263,24 @@ public:
                 "sptype",                      /* long option name */
                 NULL,                           /* parametr name */
                 "Determine type of stationary point.")   /* option description */
+    //----------------------------------------------------------------------
+    CSO_MAP_OPT(bool,                           /* option type */
+                GPRNumDiff,                        /* option name */
+                false,                          /* default value */
+                false,                          /* is option mandatory */
+                0,                           /* short option name */
+                "numdiff",                      /* long option name */
+                NULL,                           /* parametr name */
+                "Use numerical differentiation of kernel function (for testing only).")   /* option description */
+    //----------------------------------------------------------------------
+    CSO_MAP_OPT(CSmallString,                           /* option type */
+                GPRKernel,                        /* option name */
+                "default",                          /* default value */
+                false,                          /* is option mandatory */
+                '\0',                           /* short option name */
+                "kernel",                      /* long option name */
+                "NAME",                           /* parametr name */
+                "GPR: Kernel type. Supported types: ardse (ARD squared exponential), ardmc52 (ARD Matern class 5/2), default(=ardse)")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(bool,                           /* option type */
                 Verbose,                        /* option name */

@@ -110,7 +110,8 @@ public:
     CSO_OPT(CSmallString,OEFormat)
     CSO_OPT(CSmallString,MFInfo)
     CSO_OPT(CSmallString,SaveABF)
-    CSO_OPT(bool,NumericK)
+    CSO_OPT(CSmallString,GPRKernel)
+    CSO_OPT(bool,GPRNumDiff)
     CSO_OPT(bool,Verbose)
     CSO_OPT(bool,Version)
     CSO_OPT(bool,Help)
@@ -462,14 +463,23 @@ public:
                 "FORMAT",                           /* parametr name */
                 "Output FORMAT, which will be used to print values of free energy.")   /* option description */
     //----------------------------------------------------------------------
+    CSO_MAP_OPT(CSmallString,                           /* option type */
+                GPRKernel,                        /* option name */
+                "default",                          /* default value */
+                false,                          /* is option mandatory */
+                '\0',                           /* short option name */
+                "kernel",                      /* long option name */
+                "NAME",                           /* parametr name */
+                "GPR: Kernel type. Supported types: ardse (ARD squared exponential), ardmc52 (ARD Matern class 5/2), default(=ardse)")   /* option description */
+    //----------------------------------------------------------------------
     CSO_MAP_OPT(bool,                           /* option type */
-                NumericK,                        /* option name */
+                GPRNumDiff,                        /* option name */
                 false,                          /* default value */
                 false,                          /* is option mandatory */
                 0,                           /* short option name */
-                "numericK",                      /* long option name */
+                "numdiff",                      /* long option name */
                 NULL,                           /* parametr name */
-                "GPR: Calculate kernel matrix by numerical differentation (for testing only).")   /* option description */
+                "GPR: Use numerical differentiation of kernel function (for testing only).")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(bool,                           /* option type */
                 Verbose,                        /* option name */

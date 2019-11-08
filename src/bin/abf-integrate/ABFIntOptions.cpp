@@ -138,9 +138,16 @@ int CABFIntOptions::CheckOptions(void)
         IsError = true;
     }
 
-    if( IsOptNumericKSet() && (GetOptMethod() != "gpr") ){
+    if( IsOptGPRNumDiffSet() && (GetOptMethod() != "gpr") ){
         if(IsError == false) fprintf(stderr,"\n");
-        fprintf(stderr,"%s: --numericK can be set only for GPR method\n",
+        fprintf(stderr,"%s: --numdiff can be set only for GPR method\n",
+                (const char*)GetProgramName());
+        IsError = true;
+    }
+
+    if( IsOptGPRKernelSet() && (GetOptMethod() != "gpr") ){
+        if(IsError == false) fprintf(stderr,"\n");
+        fprintf(stderr,"%s: --kernel can be set only for GPR method\n",
                 (const char*)GetProgramName());
         IsError = true;
     }

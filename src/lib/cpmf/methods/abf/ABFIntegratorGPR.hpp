@@ -42,6 +42,16 @@ enum EGPRINVMethod {
 
 //------------------------------------------------------------------------------
 
+// supported kernel functions
+// ARD = automatic relevance determination
+
+enum EGPRKernel {
+    EGPRK_ARDSE   = 1,    // ARD squared exponential (radial basis function)
+    EGPRK_ARDMC52 = 3,    // ARD Matern class 5/2 function
+};
+
+//------------------------------------------------------------------------------
+
 /** \brief integrator of ABF accumulator employing gaussian process
 */
 
@@ -87,8 +97,8 @@ public:
     /// skip energy calculation, it also disables errors
     void SetNoEnergy(bool set);
 
-    /// switch to numerical evaluation of kernel matrix
-    void SetNumericK(bool set);
+    /// switch to numerical evaluation of kernel fce derivatives
+    void SetUseNumDiff(bool set);
 
     /// use split ncorr
     void SetSplitNCorr(bool set);
@@ -98,6 +108,9 @@ public:
 
     /// set algorithm for LLS
     void SetINVMethod(const CSmallString& method);
+
+    /// set kernel
+    void SetKernel(const CSmallString& kernel);
 
     /// set rcond for SVD
     void SetRCond(double rcond);
@@ -140,6 +153,9 @@ public:
     /// print exec info
     static void PrintExecInfo(CVerboseStr& vout);
 
+    /// get kernel name
+    const CSmallString GetKernelName(void);
+
 // section of private data ----------------------------------------------------
 private:
     CABFAccumulator*        Accumulator;
@@ -155,7 +171,7 @@ private:
     CSimpleVector<size_t>   ValueMap;
 
     // setup
-    bool                    UseAnalyticalK;
+    bool                    UseNumDiff;
     bool                    NoEnergy;
     bool                    IncludeError;
     bool                    IncludeGluedBins;
@@ -169,9 +185,10 @@ private:
     CSimpleVector<double>   CVLengths2;
 
     // GPR model
-    CFortranMatrix          K;              // kernels
+    EGPRKernel              Kernel;
+    CFortranMatrix          KS;              // kernel matrix
     double                  logdetK;
-    CSimpleVector<double>   Y;              // derivatives
+    CSimpleVector<double>   Y;              // mean forces
     CSimpleVector<double>   GPRModel;       // weights
 
     // derivatives
@@ -189,16 +206,22 @@ private:
 
     double GetValue(const CSimpleVector<double>& position);
     double GetMeanForce(const CSimpleVector<double>& position,size_t icoord);
-    double GetCov(CSimpleVector<double>& lpos,CSimpleVector<double>& rpos);
     double GetVar(CSimpleVector<double>& lpos);
     // optimized version var+cov
-    void GetCovVar(CSimpleVector<double>& lpos,CSimpleVector<double>& rpos,double& llvar,double& lrcov);
+    void   GetCovVar(CSimpleVector<double>& lpos,CSimpleVector<double>& rpos,double& llvar,double& lrcov);
 
-    // kernel matrix
-    void AnalyticalK(void);
-    void NumericalK(void);
-    void NumericalKBlock(CSimpleVector<double>& ip,CSimpleVector<double>& jp,CFortranMatrix& kblok);
-    double GetKernelValue(CSimpleVector<double>& ip,CSimpleVector<double>& jp);
+    // kernel matrix + noise
+    void   CreateKS(void);
+    void   CreateKy(const CSimpleVector<double>& ip,CSimpleVector<double>& ky);
+    void   CreateKy2(const CSimpleVector<double>& ip,size_t icoord,CSimpleVector<double>& ky2);
+    double GetKernelValue(const CSimpleVector<double>& ip,const CSimpleVector<double>& jp);
+    void   GetKernelDerAna(const CSimpleVector<double>& ip,const CSimpleVector<double>& jp,CSimpleVector<double>& der);
+    void   GetKernelDerNum(const CSimpleVector<double>& ip,const CSimpleVector<double>& jp,CSimpleVector<double>& der);
+    void   GetKernelDer2Ana(const CSimpleVector<double>& ip,const CSimpleVector<double>& jp,CFortranMatrix& kblock);
+    void   GetKernelDer2Num(const CSimpleVector<double>& ip,const CSimpleVector<double>& jp,CFortranMatrix& kblock);
+    void   GetKernelDer2AnaWFac(const CSimpleVector<double>& ip,const CSimpleVector<double>& jp,size_t cv,CFortranMatrix& kblock);
+    void   GetKernelDer2NumWFac(const CSimpleVector<double>& ip,const CSimpleVector<double>& jp,size_t cv,CFortranMatrix& kblock);
+
 
     // derivatives
     void CalcKderWRTSigmaF2(void);

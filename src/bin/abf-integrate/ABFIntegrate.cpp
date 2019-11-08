@@ -602,13 +602,14 @@ bool CABFIntegrate::IntegrateForMFZScore(int pass)
             integrator.SetWFac(Options.GetOptWFac());
         }
 
-        integrator.SetNumericK(Options.GetOptNumericK());
+        integrator.SetUseNumDiff(Options.GetOptGPRNumDiff());
         integrator.SetIncludeError(false);
 
         integrator.SetRCond(Options.GetOptRCond());
         if( Options.GetOptEcutMethod() == Options.GetOptMethod() ){
             integrator.SetINVMethod(Options.GetOptLAMethod());
         }
+        integrator.SetKernel(Options.GetOptGPRKernel());
 
         integrator.SetNoEnergy(true);
 
@@ -726,7 +727,7 @@ bool CABFIntegrate::IntegrateForEcut(void)
             integrator.SetWFac(Options.GetOptWFac());
         }
 
-        integrator.SetNumericK(Options.GetOptNumericK());
+        integrator.SetUseNumDiff(Options.GetOptGPRNumDiff());
         integrator.IncludeGluedAreas((Options.GetOptGlueingFactor() > 0)||Options.GetOptGlueHoles()||Options.GetOptIncludeGluedRegions());
         integrator.SetIncludeError(false);
 
@@ -734,6 +735,7 @@ bool CABFIntegrate::IntegrateForEcut(void)
         if( Options.GetOptEcutMethod() == Options.GetOptMethod() ){
             integrator.SetINVMethod(Options.GetOptLAMethod());
         }
+        integrator.SetKernel(Options.GetOptGPRKernel());
 
         if( Options.IsOptGlobalMinSet() ){
             integrator.SetGlobalMin(Options.GetOptGlobalMin());
@@ -847,7 +849,7 @@ bool CABFIntegrate::Integrate(void)
 
         integrator.SetIncludeError(Options.GetOptWithError());
         integrator.SetNoEnergy(Options.GetOptNoEnergy());
-        integrator.SetNumericK(Options.GetOptNumericK());
+        integrator.SetUseNumDiff(Options.GetOptGPRNumDiff());
         integrator.IncludeGluedAreas((Options.GetOptGlueingFactor() > 0)||Options.GetOptGlueHoles()||Options.GetOptIncludeGluedRegions());
 
         if( Options.IsOptGlobalMinSet() ){
@@ -856,6 +858,7 @@ bool CABFIntegrate::Integrate(void)
 
         integrator.SetRCond(Options.GetOptRCond());
         integrator.SetINVMethod(Options.GetOptLAMethod());
+        integrator.SetKernel(Options.GetOptGPRKernel());
 
         if(integrator.Integrate(vout) == false) {
             ES_ERROR("unable to integrate ABF accumulator");
