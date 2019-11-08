@@ -509,6 +509,20 @@ bool CABFOptGPRHyprms::Optimize(void)
         }
     }
 
+    vout << "# ---- -------------";
+    if( SigmaF2Enabled )    vout << " ----------";
+    if( SplitNCorr ){
+        for(size_t i=0; i < NCorrEnabled.size(); i++){
+            if( NCorrEnabled[i] ) vout << " ----------";
+        }
+    } else {
+        if( NCorrEnabled[0] )      vout << " ----------";
+    }
+    for(size_t i=0; i < WFacEnabled.size(); i++){
+        if( WFacEnabled[i] ) vout << " ----------";
+    }
+    vout << endl;
+
     if( (istep > noptsteps) && (noptsteps > 0) ){
         vout << endl;
         vout << "<red><b>>>> ERROR: Insufficient number of optimization steps ...</b></red>" << endl;
