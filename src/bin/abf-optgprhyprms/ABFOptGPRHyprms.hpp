@@ -112,6 +112,7 @@ private:
     void PrintGradientSummary(void);
     void ShowGPRStat(void);
     void CalcHessian(void);
+    double GetGNorm(void);
 
     void    ScatterHyprms(CSimpleVector<double>& hyprsm);
     double  GetTarget(CABFIntegratorGPR& gpr,CABFAccumulatorP accu);

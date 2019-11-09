@@ -526,17 +526,7 @@ bool CABFOptGPRHyprms::Optimize(void)
 
         if( istep > 1 ){
             if( fabs(logTarget - last_logtrg) < Options.GetOptTermVal() ){
-                double gnorm = 0.0;
-                int ind = 0;
-                for(size_t prm=0; prm < HyprmsEnabled.size(); prm++){
-                    if( HyprmsEnabled[prm] ){
-                        gnorm += HyprmsGrd[ind]*HyprmsGrd[ind];
-                        ind++;
-                    }
-                }
-                if( NumOfOptPrms > 0 ){
-                    gnorm = sqrt(gnorm/(double)NumOfOptPrms);
-                }
+                double gnorm = GetGNorm();
                 if( gnorm > termeps*1000 ){
                     vout << endl;
                     vout << "<b><blue>>>> INFO: No significant change, but gradient is large - resetting ...</blue></b>" << endl;
@@ -596,7 +586,33 @@ bool CABFOptGPRHyprms::Optimize(void)
 
     PrintGradientSummary();
 
+    double gnorm = GetGNorm();
+    if( gnorm > termeps*1000 ){
+        vout << endl;
+        vout << "<b><red>>>> ERROR: Gradient is too large, stationary point was not most likely found ...</red></b>" << endl;
+        vout <<  format("           gnorm = %14.6e")%gnorm << endl;
+        result = false;
+    }
+
     return(result);
+}
+
+//------------------------------------------------------------------------------
+
+double CABFOptGPRHyprms::GetGNorm(void)
+{
+    double gnorm = 0.0;
+    int ind = 0;
+    for(size_t prm=0; prm < HyprmsEnabled.size(); prm++){
+        if( HyprmsEnabled[prm] ){
+            gnorm += HyprmsGrd[ind]*HyprmsGrd[ind];
+            ind++;
+        }
+    }
+    if( NumOfOptPrms > 0 ){
+        gnorm = sqrt(gnorm/(double)NumOfOptPrms);
+    }
+    return(gnorm);
 }
 
 //------------------------------------------------------------------------------
