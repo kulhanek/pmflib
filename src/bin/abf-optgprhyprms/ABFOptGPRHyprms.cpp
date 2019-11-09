@@ -548,7 +548,7 @@ bool CABFOptGPRHyprms::Optimize(void)
                             Hyprms[i] += 0.5*(r-0.5);
                         }
                     }
-                    last_logtrg = logTarget - 10; // be sure that the number is somehow different
+                    last_logtrg = logTarget - rand(); // be sure that the number is somehow different
                     vout << endl;
                     continue;
                 } else {
