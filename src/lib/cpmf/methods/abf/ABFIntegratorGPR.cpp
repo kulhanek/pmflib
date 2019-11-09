@@ -69,6 +69,8 @@ CABFIntegratorGPR::CABFIntegratorGPR(void)
     UseNumDiff          = false;
     Method              = EGPRINV_LU;
     Kernel              = EGPRK_ARDSE;
+
+    NumOfThreads        = 1;
 }
 
 //------------------------------------------------------------------------------
@@ -477,15 +479,32 @@ bool CABFIntegratorGPR::Integrate(CVerboseStr& vout,bool nostat)
 
 void CABFIntegratorGPR::PrintExecInfo(CVerboseStr& vout)
 {
+    NumOfThreads = 1;
+
 #if defined(_OPENMP)
     {
-        int ncpus = omp_get_max_threads();
-        vout << "   OpenMP - number of threads: " << ncpus << endl;
+        NumOfThreads = omp_get_max_threads();
+        vout << "   OpenMP - number of threads: " << NumOfThreads << endl;
     }
 #else
     vout << "   No OpenMP - sequential mode." << endl;
 #endif
+    RunBlasLapackPar();
     CSciLapack::PrintExecInfo(vout);
+}
+
+//------------------------------------------------------------------------------
+
+void CABFIntegratorGPR::RunBlasLapackSeq(void)
+{
+    CSciLapack::SetNumThreadsLocal(1);
+}
+
+//------------------------------------------------------------------------------
+
+void CABFIntegratorGPR::RunBlasLapackPar(void)
+{
+    CSciLapack::SetNumThreadsLocal(NumOfThreads);
 }
 
 //==============================================================================
@@ -514,6 +533,8 @@ bool CABFIntegratorGPR::TrainGP(CVerboseStr& vout)
 
 // construct KS
     CreateKS();
+
+    RunBlasLapackPar();
 
 // inverting the K+Sigma
     int result = 0;
@@ -1129,7 +1150,7 @@ double CABFIntegratorGPR::GetValue(const CSimpleVector<double>& position)
     CSimpleVector<double>   ky;
     ky.CreateVector(GPRSize);
 
-    CSciLapack::SetNumThreadsLocal(1);
+    RunBlasLapackSeq();
 
     CreateKy(position,ky);
     double energy = CSciBlas::dot(ky,GPRModel);
@@ -1143,7 +1164,7 @@ double CABFIntegratorGPR::GetMeanForce(const CSimpleVector<double>& position,siz
     CSimpleVector<double>   ky2;
     ky2.CreateVector(GPRSize);
 
-    CSciLapack::SetNumThreadsLocal(1);
+    RunBlasLapackSeq();
 
     CreateKy2(position,icoord,ky2);
     double mf = CSciBlas::dot(ky2,GPRModel);
@@ -1380,6 +1401,8 @@ double CABFIntegratorGPR::GetLogML(void)
     // http://www.gaussianprocess.org/gpml/chapters/RW5.pdf
     // page 113
 
+    RunBlasLapackPar();
+
     ml -= CSciBlas::dot(Y,GPRModel);
     ml -= logdetK;
     ml -= GPRSize * log(2*M_PI);
@@ -1540,6 +1563,8 @@ void CABFIntegratorGPR::GetLogPLDerivatives(const std::vector<bool>& flags,CSimp
             CalcKderWRTWFac(cv);
         }
 
+        RunBlasLapackPar();
+
         // calc Zj
         CSciBlas::gemm(1.0,KS,Kder,0.0,zj);
 
@@ -1679,7 +1704,7 @@ double CABFIntegratorGPR::GetVar(CSimpleVector<double>& lpos)
     ky.CreateVector(GPRSize);
     ik.CreateVector(GPRSize);
 
-    CSciLapack::SetNumThreadsLocal(1);
+    RunBlasLapackSeq();
 
     CreateKy(lpos,ky);
     CSciBlas::gemv(1.0,KS,ky,0.0,ik);
@@ -1699,7 +1724,7 @@ void CABFIntegratorGPR::GetCovVar(CSimpleVector<double>& lpos,CSimpleVector<doub
     kyr.CreateVector(GPRSize);
     ik.CreateVector(GPRSize);
 
-    CSciLapack::SetNumThreadsLocal(1);
+    RunBlasLapackSeq();
 
     CreateKy(rpos,kyr);
     CreateKy(lpos,kyl);

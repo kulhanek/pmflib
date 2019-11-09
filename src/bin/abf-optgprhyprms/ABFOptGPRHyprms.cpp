@@ -193,7 +193,8 @@ void CABFOptGPRHyprms::InitOptimizer(void)
     vout << endl;
     vout << format("%02d:Optimization of GPR hyperparameters ...")%State << endl;
     State++;
-    CABFIntegratorGPR::PrintExecInfo(vout);
+    CABFIntegratorGPR gpr;
+    gpr.PrintExecInfo(vout);
 
 // what should be optimized?
     SplitNCorr      = Options.GetOptSplitNCorr();

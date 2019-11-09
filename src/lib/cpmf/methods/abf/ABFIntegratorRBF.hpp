@@ -100,12 +100,14 @@ public:
     void FilterByMFZScore(double zscore,CVerboseStr& vout);
 
     /// print exec info
-    static void PrintExecInfo(CVerboseStr& vout);
+    void PrintExecInfo(CVerboseStr& vout);
 
 // section of private data ----------------------------------------------------
 private:
     CABFAccumulator*        Accumulator;
     CEnergySurface*         FES;
+
+    int                     NumOfThreads;
 
     CSimpleVector<double>   WFac;
     CSimpleVector<double>   RFac;   // reduction factor for number of RBFs
@@ -141,6 +143,10 @@ private:
     double  GetValue(const CSimpleVector<double>& position);
     double  GetMeanForce(const CSimpleVector<double>& position,size_t icoord);
     void    CalculateEnergy(CVerboseStr& vout);
+
+    // parallel processing
+    void RunBlasLapackSeq(void);
+    void RunBlasLapackPar(void);
 };
 
 //------------------------------------------------------------------------------

@@ -151,7 +151,7 @@ public:
     void FilterByMFZScore(double maxzscore,CVerboseStr& vout);
 
     /// print exec info
-    static void PrintExecInfo(CVerboseStr& vout);
+    void PrintExecInfo(CVerboseStr& vout);
 
     /// get kernel name
     const CSmallString GetKernelName(void);
@@ -160,6 +160,8 @@ public:
 private:
     CABFAccumulator*        Accumulator;
     CEnergySurface*         FES;
+
+    int                     NumOfThreads;
 
     // GPR data, sizes and index maps
     size_t                  NCVs;
@@ -227,6 +229,10 @@ private:
     void CalcKderWRTSigmaF2(void);
     void CalcKderWRTNCorr(size_t cv);
     void CalcKderWRTWFac(size_t cv);
+
+    // parallel processing
+    void RunBlasLapackSeq(void);
+    void RunBlasLapackPar(void);
 };
 
 //------------------------------------------------------------------------------

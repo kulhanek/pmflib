@@ -65,6 +65,8 @@ CABFIntegratorRBF::CABFIntegratorRBF(void)
 
     GlobalMinSet    = false;
     NoEnergy        = false;
+
+    NumOfThreads    = 1;
 }
 
 //------------------------------------------------------------------------------
@@ -458,15 +460,32 @@ void CABFIntegratorRBF::CalculateEnergy(CVerboseStr& vout)
 
 void CABFIntegratorRBF::PrintExecInfo(CVerboseStr& vout)
 {
+    NumOfThreads = 1;
+
 #if defined(_OPENMP)
     {
-        int ncpus = omp_get_max_threads();
-        vout << "   OpenMP - number of threads: " << ncpus << endl;
+        NumOfThreads = omp_get_max_threads();
+        vout << "   OpenMP - number of threads: " << NumOfThreads << endl;
     }
 #else
     vout << "   No OpenMP - sequential mode." << endl;
 #endif
+    RunBlasLapackPar();
     CSciLapack::PrintExecInfo(vout);
+}
+
+//------------------------------------------------------------------------------
+
+void CABFIntegratorRBF::RunBlasLapackSeq(void)
+{
+    CSciLapack::SetNumThreadsLocal(1);
+}
+
+//------------------------------------------------------------------------------
+
+void CABFIntegratorRBF::RunBlasLapackPar(void)
+{
+    CSciLapack::SetNumThreadsLocal(NumOfThreads);
 }
 
 //==============================================================================
@@ -540,6 +559,8 @@ bool CABFIntegratorRBF::IntegrateByLS(CVerboseStr& vout)
     }
 
     int result = 0;
+
+    RunBlasLapackPar();
 
     switch(Method){
         case ERBFLLS_SVD:{
