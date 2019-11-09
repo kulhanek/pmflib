@@ -535,6 +535,7 @@ bool CABFOptGPRHyprms::Optimize(void)
             if( fabs(logTarget - last_logtrg) < Options.GetOptTermVal() ){
                 double gnorm = GetGNorm();
                 if( gnorm > termeps*1000 ){
+                    numofreset++;
                     vout << endl;
                     vout << "<b><blue>>>> INFO: No significant change, but gradient is large - resetting ...</blue></b>" << endl;
                     vout <<   format("          gnorm = %14.6e")%gnorm << endl;
