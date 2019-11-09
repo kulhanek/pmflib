@@ -524,7 +524,7 @@ bool CABFOptGPRHyprms::Optimize(void)
                 // perturbing parameters
                 for(int i=0; i < NumOfOptPrms; i++){
                     float r = static_cast<float>(rand())/static_cast<float>(RAND_MAX);
-                    Hyprms[i] += 0.5*(r-0.5);
+                    Hyprms[i] += 0.5*r;    // perturbe only up due to down limits
                 }
             }
             vout << endl;
@@ -545,7 +545,7 @@ bool CABFOptGPRHyprms::Optimize(void)
                         // perturbing parameters
                         for(int i=0; i < NumOfOptPrms; i++){
                             float r = static_cast<float>(rand())/static_cast<float>(RAND_MAX);
-                            Hyprms[i] += 0.5*(r-0.5);
+                            Hyprms[i] += 0.5*r;    // perturbe only up due to down limits
                         }
                     }
                     last_logtrg = logTarget - rand(); // be sure that the number is somehow different
