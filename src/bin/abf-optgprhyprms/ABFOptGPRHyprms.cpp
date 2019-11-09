@@ -230,12 +230,14 @@ void CABFOptGPRHyprms::InitOptimizer(void)
 
     int     noptsteps   = Options.GetOptNOptSteps();
     double  termeps     = Options.GetOptTermEps();
+    double  termval     = Options.GetOptTermVal();
     int     nlbfgscorr  = Options.GetOptNumOfLBFGSCorr();
 
 // print header
     vout << "   Maximum number of L-BFGS steps  = " << noptsteps << endl;
     vout << "   Max number of optimizer resets  = " << Options.GetOptNumOfResets() << endl;
     vout << "   Termination criteria (L-BFGS)   = " << std::scientific << termeps << std::fixed << endl;
+    vout << "   Termination criteria (value)    = " << std::scientific << termval << std::fixed << endl;
     vout << "   Number of L-BFGS corrections    = " << nlbfgscorr << endl;
     vout << "   Total number of hyprms          = " << NumOfPrms << endl;
     vout << "   Number of optimized hyprms      = " << NumOfOptPrms << endl;
@@ -459,6 +461,7 @@ bool CABFOptGPRHyprms::Optimize(void)
     double  termeps     = Options.GetOptTermEps();
     FT_INT  nlbfgscorr  = Options.GetOptNumOfLBFGSCorr();
     int     numofreset  = 0;
+    double  last_logtrg = 0;
 
     int istep = 0;
 
@@ -520,6 +523,45 @@ bool CABFOptGPRHyprms::Optimize(void)
             vout << endl;
             continue;
         }
+
+        if( istep > 1 ){
+            if( fabs(logTarget - last_logtrg) < Options.GetOptTermVal() ){
+                double gnorm = 0.0;
+                int ind = 0;
+                for(size_t prm=0; prm < HyprmsEnabled.size(); prm++){
+                    if( HyprmsEnabled[prm] ){
+                        gnorm += HyprmsGrd[ind]*HyprmsGrd[ind];
+                        ind++;
+                    }
+                }
+                if( NumOfOptPrms > 0 ){
+                    gnorm = sqrt(gnorm/(double)NumOfOptPrms);
+                }
+                if( gnorm > termeps*1000 ){
+                    vout << endl;
+                    vout << "<b><blue>>>> INFO: No significant change, but gradient is large - resetting ...</blue></b>" << endl;
+                    vout <<   format("          gnorm = %14.6e")%gnorm << endl;
+                    iflag = 0;
+                    if( numofreset > 1 ){
+                    vout <<          "          Perturbing parameters ..." << endl;
+                        // perturbing parameters
+                        for(int i=0; i < NumOfOptPrms; i++){
+                            float r = static_cast<float>(rand())/static_cast<float>(RAND_MAX);
+                            Hyprms[i] += 0.5*(r-0.5);
+                        }
+                    }
+                    last_logtrg = logTarget - 10; // be sure that the number is somehow different
+                    vout << endl;
+                    continue;
+                } else {
+                    vout << endl;
+                    vout << "<b><blue>>>> INFO: No significant change - terminating ...</blue></b>" << endl;
+                    vout << endl;
+                    break;
+                }
+            }
+        }
+        last_logtrg = logTarget;
     }
 
     if( noptsteps > 0 ) {
