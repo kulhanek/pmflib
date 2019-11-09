@@ -478,6 +478,13 @@ bool CABFOptGPRHyprms::Optimize(void)
         if( reset ){
             vout << endl;
             vout << "<b><blue>>>> INFO: Parameters out-of-range, resetting ...</blue></b>" << endl;
+            numofreset++;
+            if( numofreset > Options.GetOptNumOfResets() ){
+                vout <<  "<b><red>          Too many resets, exiting ...</red></b>" << endl;
+                vout << endl;
+                result = false;
+                break;
+            }
             vout << endl;
         }
 
