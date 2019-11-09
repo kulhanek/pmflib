@@ -153,7 +153,7 @@ bool CABFIntegratorRFD::Integrate(CVerboseStr& vout)
         }
     }
 
-    vout << "   SigmaF2 = " << setprecision(5) << FES->GetSigmaF2() << endl;
+    vout << "   SigmaF2   = " << setprecision(5) << FES->GetSigmaF2() << endl;
     return(true);
 }
 

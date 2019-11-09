@@ -106,11 +106,6 @@ int CABFOptGPRHyprms::Init(int argc,char* argv[])
     vout << "# GPR Kernel            : " << gpr.GetKernelName() << endl;
     vout << "# ------------------------------------------------" << endl;
 
-    if( OutputFile.Open(output,"w") == false ){
-        ES_ERROR("unable to open output file");
-        return(SO_USER_ERROR);
-    }
-
     if( Options.GetOptTarget() == "logml" ){
         Target = EGOT_LOGML;
     } else if ( Options.GetOptTarget() == "logpl" ){
@@ -175,9 +170,17 @@ bool CABFOptGPRHyprms::Run(void)
     vout << endl;
     vout << format("%02d:Saving optimized hyperparameters: %s")%State%string(output) << endl;
     State++;
+    if( OutputFile.Open(output,"w") == false ){
+        ES_ERROR("unable to open output file");
+        return(false);
+    }
     if( WriteHyperPrms(OutputFile) == false ){
         ES_ERROR("unable to save optimized hyperparameters");
         return(false);
+    }
+    if( result == false ){
+        // indicate that hyperparameters are not at stationary point
+        fprintf(OutputFile,"# not stationary point\n");
     }
 
     return(result);
@@ -230,6 +233,7 @@ void CABFOptGPRHyprms::InitOptimizer(void)
 
 // print header
     vout << "   Maximum number of L-BFGS steps  = " << noptsteps << endl;
+    vout << "   Max number of optimizer resets  = " << Options.GetOptNumOfResets() << endl;
     vout << "   Termination criteria (L-BFGS)   = " << std::scientific << termeps << std::fixed << endl;
     vout << "   Number of L-BFGS corrections    = " << nlbfgscorr << endl;
     vout << "   Total number of hyprms          = " << NumOfPrms << endl;
@@ -457,7 +461,7 @@ bool CABFOptGPRHyprms::Optimize(void)
 
     int istep = 0;
 
-    for(istep=1; istep <= noptsteps; istep++ ){
+    for(int k=1; k <= noptsteps; k++ ){
         // parameters cannot be zero or negative
         bool reset = false;
         for(int i=0; i < NumOfOptPrms; i++){
@@ -490,12 +494,20 @@ bool CABFOptGPRHyprms::Optimize(void)
         FT_INT nx = NumOfOptPrms;
         lbfgs_(&nx,&nlbfgscorr,Hyprms,&rv,HyprmsGrd,&diacgo,TmpXG,iprint,&termeps,&xtol,Work,&iflag);
 
+        istep++;
+
         if( iflag == 0 ) break;
         if( iflag < 0 ) {
+            numofreset++;
             vout << endl;
                 vout << "<b><blue>>>> INFO: Insufficient progress, resetting ...</blue></b>" << endl;
+            if( numofreset > Options.GetOptNumOfResets() ){
+                vout <<  "<b><red>          Too many resets, exiting ...</red></b>" << endl;
+                vout << endl;
+                result = false;
+                break;
+            }
             iflag = 0;
-            numofreset++;
             if( numofreset > 1 ){
                 vout << "          Perturbing parameters ..." << endl;
                 // perturbing parameters
@@ -509,25 +521,20 @@ bool CABFOptGPRHyprms::Optimize(void)
         }
     }
 
-    vout << "# ---- -------------";
-    if( SigmaF2Enabled )    vout << " ----------";
-    if( SplitNCorr ){
-        for(size_t i=0; i < NCorrEnabled.size(); i++){
-            if( NCorrEnabled[i] ) vout << " ----------";
+    if( noptsteps > 0 ) {
+        vout << "# ---- -------------";
+        if( SigmaF2Enabled )    vout << " ----------";
+        if( SplitNCorr ){
+            for(size_t i=0; i < NCorrEnabled.size(); i++){
+                if( NCorrEnabled[i] ) vout << " ----------";
+            }
+        } else {
+            if( NCorrEnabled[0] )      vout << " ----------";
         }
-    } else {
-        if( NCorrEnabled[0] )      vout << " ----------";
-    }
-    for(size_t i=0; i < WFacEnabled.size(); i++){
-        if( WFacEnabled[i] ) vout << " ----------";
-    }
-    vout << endl;
-
-    if( (istep > noptsteps) && (noptsteps > 0) ){
+        for(size_t i=0; i < WFacEnabled.size(); i++){
+            if( WFacEnabled[i] ) vout << " ----------";
+        }
         vout << endl;
-        vout << "<red><b>>>> ERROR: Insufficient number of optimization steps ...</b></red>" << endl;
-        vout << endl;
-        result = false;
     }
 
     // final gradients - for the last values of hyprms or SP type calculations
@@ -537,6 +544,12 @@ bool CABFOptGPRHyprms::Optimize(void)
         RunGPRAnalytical();
     }
     WriteResults(istep);
+
+    if( (istep >= noptsteps) && (noptsteps > 0) ){
+        vout << endl;
+        vout << "<red><b>>>> ERROR: Insufficient number of optimization steps ...</b></red>" << endl;
+        result = false;
+    }
 
     PrintGradientSummary();
 

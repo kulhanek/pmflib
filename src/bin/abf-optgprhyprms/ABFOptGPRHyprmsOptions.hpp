@@ -68,6 +68,7 @@ public:
     CSO_OPT(CSmallString,WFacEnabled)
     CSO_OPT(bool,Numeric)
     CSO_OPT(int,NOptSteps)
+    CSO_OPT(int,NumOfResets)
     CSO_OPT(double,TermEps)
     CSO_OPT(int,NumOfLBFGSCorr)
     CSO_OPT(bool,Test)
@@ -201,9 +202,18 @@ public:
                 "NUMBER",                           /* parametr name */
                 "Maximum number of optimization steps.")   /* option description */
     //----------------------------------------------------------------------
+    CSO_MAP_OPT(int,                           /* option type */
+                NumOfResets,                        /* option name */
+                3,                          /* default value */
+                false,                          /* is option mandatory */
+                0,                           /* short option name */
+                "nresets",                      /* long option name */
+                "NUMBER",                           /* parametr name */
+                "Maximum number of resets due to insufficient optimization progress.")   /* option description */
+    //----------------------------------------------------------------------
     CSO_MAP_OPT(double,                           /* option type */
                 TermEps,                        /* option name */
-                1e-6,                          /* default value */
+                1e-5,                          /* default value */
                 false,                          /* is option mandatory */
                 0,                           /* short option name */
                 "termeps",                      /* long option name */
