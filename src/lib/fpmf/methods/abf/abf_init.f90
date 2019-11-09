@@ -76,7 +76,7 @@ subroutine abf_init_dat
     ftrjsample      = 0         ! how often save accumulator to "accumulator evolution"
     fmask_mode      = 0         ! 0 - disable ABF mask, 1 - enable ABF mask
     fapply_abf      = .true.    ! on - apply ABF, off - do not apply ABF
-    fprint_icf      = .false.   ! T - print instanteous collective forces, F - do not print
+    fprint_icf      = .true.   ! T - print instanteous collective forces, F - do not print
     fcache_icf      = .true.    ! T - cache icf into memory and dump them at the end,
                                 ! F - write icf immediatelly at each time step
     frawicf         = .true.    ! T - use raw icf data (in internal units), F - transform them to user req. units
