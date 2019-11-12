@@ -818,8 +818,10 @@ bool CABFIntegrate::Integrate(void)
 
         integrator.SetLLSMethod(Options.GetOptLAMethod());
 
-        if( Options.IsOptGlobalMinSet() ){
-            integrator.SetGlobalMin(Options.GetOptGlobalMin());
+        if( Options.GetOptFinalizeGlobalMin() == false ){
+            if( Options.IsOptGlobalMinSet() ){
+                integrator.SetGlobalMin(Options.GetOptGlobalMin());
+            }
         }
 
         if(integrator.Integrate(vout) == false) {
@@ -852,8 +854,10 @@ bool CABFIntegrate::Integrate(void)
         integrator.SetUseNumDiff(Options.GetOptGPRNumDiff());
         integrator.IncludeGluedAreas((Options.GetOptGlueingFactor() > 0)||Options.GetOptGlueHoles()||Options.GetOptIncludeGluedRegions());
 
-        if( Options.IsOptGlobalMinSet() ){
-            integrator.SetGlobalMin(Options.GetOptGlobalMin());
+        if( Options.GetOptFinalizeGlobalMin() == false ){
+            if( Options.IsOptGlobalMinSet() ){
+                integrator.SetGlobalMin(Options.GetOptGlobalMin());
+            }
         }
 
         integrator.SetRCond(Options.GetOptRCond());
