@@ -258,7 +258,13 @@ int CABFIntOptions::CheckOptions(void)
     }
     if( IsOptGlobalMinSet() && ((GetOptMethod() != "rbf")&&(GetOptMethod() != "gpr")) ){
         if(IsError == false) fprintf(stderr,"\n");
-        fprintf(stderr,"%s: --globalmin can be combined only with GPR\n",
+        fprintf(stderr,"%s: --globalmin can be combined only with RBF or GPR\n",
+                (const char*)GetProgramName());
+        IsError = true;
+    }
+    if( IsOptUseRealGlobalMinSet() && ((GetOptMethod() != "rbf")&&(GetOptMethod() != "gpr")) ){
+        if(IsError == false) fprintf(stderr,"\n");
+        fprintf(stderr,"%s: --userealglbmin can be combined only with RBF or GPR\n",
                 (const char*)GetProgramName());
         IsError = true;
     }

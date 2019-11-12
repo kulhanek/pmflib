@@ -95,7 +95,7 @@ public:
     CSO_OPT(bool,GlueHoles)
     CSO_OPT(bool,Periodicity)
     CSO_OPT(CSmallString,GlobalMin)
-    CSO_OPT(bool,FinalizeGlobalMin)
+    CSO_OPT(bool,UseRealGlobalMin)
     CSO_OPT(double,Offset)
     CSO_OPT(bool,WithError)
     CSO_OPT(bool,NoEnergy)
@@ -330,11 +330,11 @@ public:
                 "RBF+GPR: position of global minimum provided as a single string in the form CV1xCV2x...xCVn (relevant for error determination), if not set the position is determined automatically.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(bool,                           /* option type */
-                FinalizeGlobalMin,                        /* option name */
+                UseRealGlobalMin,                        /* option name */
                 NULL,                          /* default value */
                 false,                          /* is option mandatory */
                 '\0',                           /* short option name */
-                "finglobalmin",                      /* long option name */
+                "userealglbmin",                      /* long option name */
                 NULL,                           /* parametr name */
                 "RBF+GPR: ignore --globalmin in the final integration step")   /* option description */
     //----------------------------------------------------------------------
