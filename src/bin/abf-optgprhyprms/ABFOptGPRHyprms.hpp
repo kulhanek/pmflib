@@ -118,7 +118,7 @@ private:
     double  GetTarget(CABFIntegratorGPR& gpr,CABFAccumulatorP accu);
     void    DecodeEList(const CSmallString& spec, std::vector<bool>& elist,const CSmallString& optionname);
     void    DecodeVList(const CSmallString& spec, CSimpleVector<double>& vlist,const CSmallString& optionname,double defv);
-
+    bool    ResetOpt(int& numofreset);
 };
 
 //------------------------------------------------------------------------------

@@ -465,28 +465,37 @@ bool CABFOptGPRHyprms::Optimize(void)
 
     int istep = 0;
 
+    CSimpleVector<double>   OldHyprms;
+    OldHyprms.CreateVector(NumOfOptPrms);
+
+    // input parameters cannot be zero or negative
+    for(int i=0; i < NumOfOptPrms; i++){
+        if( Hyprms[i] <= 0.0 ){
+            Hyprms[i] = 1.0;
+        }
+    }
+
     for(int k=1; k <= noptsteps; k++ ){
         // parameters cannot be zero or negative
         bool reset = false;
         for(int i=0; i < NumOfOptPrms; i++){
             if( Hyprms[i] <= 0.0 ){
-                Hyprms[i] = 0.1;
-                iflag = 0;  // reset optimizer
                 reset = true;
             }
         }
         if( reset ){
             vout << endl;
             vout << "<b><blue>>>> INFO: Parameters out-of-range, resetting ...</blue></b>" << endl;
-            numofreset++;
-            if( numofreset > Options.GetOptNumOfResets() ){
-                vout <<  "<b><red>          Too many resets, exiting ...</red></b>" << endl;
-                vout << endl;
+            Hyprms = OldHyprms;
+            if( ResetOpt(numofreset) == false ){
                 result = false;
                 break;
             }
             vout << endl;
+            iflag = 0;  // reset optimizer
         }
+
+        OldHyprms = Hyprms;
 
         if( Options.GetOptNumeric() ){
             RunGPRNumerical();
@@ -509,25 +518,15 @@ bool CABFOptGPRHyprms::Optimize(void)
 
         if( iflag == 0 ) break;
         if( iflag < 0 ) {
-            numofreset++;
             vout << endl;
-                vout << "<b><blue>>>> INFO: Insufficient progress, resetting ...</blue></b>" << endl;
-            if( numofreset > Options.GetOptNumOfResets() ){
-                vout <<  "<b><red>          Too many resets, exiting ...</red></b>" << endl;
-                vout << endl;
+            vout << "<b><blue>>>> INFO: Insufficient progress, resetting ...</blue></b>" << endl;
+            if( ResetOpt(numofreset) == false ){
                 result = false;
                 break;
             }
-            iflag = 0;
-            if( numofreset > 1 ){
-                vout << "          Perturbing parameters ..." << endl;
-                // perturbing parameters
-                for(int i=0; i < NumOfOptPrms; i++){
-                    float r = static_cast<float>(rand())/static_cast<float>(RAND_MAX);
-                    Hyprms[i] += 0.5*r;    // perturbe only up due to down limits
-                }
-            }
             vout << endl;
+            iflag = 0;
+            last_logtrg = logTarget - rand(); // be sure that the number is somehow different
             continue;
         }
 
@@ -535,21 +534,16 @@ bool CABFOptGPRHyprms::Optimize(void)
             if( fabs(logTarget - last_logtrg) < Options.GetOptTermVal() ){
                 double gnorm = GetGNorm();
                 if( gnorm > termeps*1000 ){
-                    numofreset++;
                     vout << endl;
                     vout << "<b><blue>>>> INFO: No significant change, but gradient is large - resetting ...</blue></b>" << endl;
                     vout <<   format("          gnorm = %14.6e")%gnorm << endl;
-                    iflag = 0;
-                    if( numofreset > 1 ){
-                    vout <<          "          Perturbing parameters ..." << endl;
-                        // perturbing parameters
-                        for(int i=0; i < NumOfOptPrms; i++){
-                            float r = static_cast<float>(rand())/static_cast<float>(RAND_MAX);
-                            Hyprms[i] += 0.5*r;    // perturbe only up due to down limits
-                        }
+                    if( ResetOpt(numofreset) == false ){
+                        result = false;
+                        break;
                     }
-                    last_logtrg = logTarget - rand(); // be sure that the number is somehow different
                     vout << endl;
+                    iflag = 0;
+                    last_logtrg = logTarget - rand(); // be sure that the number is somehow different
                     continue;
                 } else {
                     vout << endl;
@@ -597,12 +591,33 @@ bool CABFOptGPRHyprms::Optimize(void)
     double gnorm = GetGNorm();
     if( gnorm > termeps*1000 ){
         vout << endl;
-        vout << "<b><red>>>> ERROR: Gradient is too large, stationary point was not most likely found ...</red></b>" << endl;
+        vout << "<b><red>>>> ERROR: Gradient is too large, stationary point was not likely found ...</red></b>" << endl;
         vout <<  format("           gnorm = %14.6e")%gnorm << endl;
         result = false;
     }
 
     return(result);
+}
+
+//------------------------------------------------------------------------------
+
+bool CABFOptGPRHyprms::ResetOpt(int& numofreset)
+{
+    numofreset++;
+    if( numofreset > Options.GetOptNumOfResets() ){
+        vout <<  "<b><red>          Too many resets, exiting ...</red></b>" << endl;
+        vout << endl;
+        return(false);
+    }
+    if( numofreset > 1 ){
+        vout <<          "          Perturbing parameters ..." << endl;
+        // perturbing parameters
+        for(int i=0; i < NumOfOptPrms; i++){
+            float r = static_cast<float>(rand())/static_cast<float>(RAND_MAX);
+            Hyprms[i] += 0.5*r + 0.1;    // perturbe only up due to down limits
+        }
+    }
+    return(true);
 }
 
 //------------------------------------------------------------------------------
