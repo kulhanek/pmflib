@@ -231,6 +231,12 @@ bool CABFIntegrate::Run(void)
     // Accumulator.SetNCorr(Options.GetOptNCorr());
     FES.Allocate(&Accumulator);
 
+    vout << endl;
+    vout << format("%02d:Statistics of input ABF accumulator")%state << endl;
+    state++;
+    PrintSampledStat();
+    vout << "   Done." << endl;
+
     if( (Options.GetOptMethod() == "gpr") || (Options.GetOptMethod() == "rbf") ){
         // test early stage parsing of --globalmin
         CABFIntegratorGPR   integrator;
