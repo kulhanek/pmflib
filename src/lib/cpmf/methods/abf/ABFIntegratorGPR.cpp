@@ -67,10 +67,13 @@ CABFIntegratorGPR::CABFIntegratorGPR(void)
     GlobalMinSet        = false;
 
     UseNumDiff          = false;
-    Method              = EGPRINV_LU;
+    Method              = EGPRLA_LU;
     Kernel              = EGPRK_ARDSE;
 
     NumOfThreads        = 1;
+
+    UseInv              = false;
+    NeedInv             = false;
 }
 
 //------------------------------------------------------------------------------
@@ -295,28 +298,28 @@ void CABFIntegratorGPR::SetRCond(double rcond)
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorGPR::SetINVMethod(EGPRINVMethod set)
+void CABFIntegratorGPR::SetLAMethod(EGPRLAMethod set)
 {
     Method = set;
 }
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorGPR::SetINVMethod(const CSmallString& method)
+void CABFIntegratorGPR::SetLAMethod(const CSmallString& method)
 {
     if( method == "svd" ){
-        SetINVMethod(EGPRINV_SVD);
+        SetLAMethod(EGPRLA_SVD);
     } else if( method == "svd2" ){
-        SetINVMethod(EGPRINV_SVD2);
+        SetLAMethod(EGPRLA_SVD2);
     } else if( method == "lu" ) {
-        SetINVMethod(EGPRINV_LU);
+        SetLAMethod(EGPRLA_LU);
     } else if( method == "ll" ) {
-        SetINVMethod(EGPRINV_LL);
+        SetLAMethod(EGPRLA_LL);
     } else if( method == "default" ) {
-        SetINVMethod(EGPRINV_LU);
+        SetLAMethod(EGPRLA_LU);
     } else {
         CSmallString error;
-        error << "Specified method '" << method << "' for matrix inversion is not supported. "
+        error << "Specified method '" << method << "' for linear algebra is not supported. "
                  "Supported methods are: svd (simple driver), svd2 (conquer and divide driver), lu, ll (Cholesky decomposition), default (=lu)";
         INVALID_ARGUMENT(error);
     }
@@ -371,6 +374,27 @@ void CABFIntegratorGPR::SetGlobalMin(const CSmallString& spec)
             RUNTIME_ERROR(error);
         }
     }
+}
+
+//------------------------------------------------------------------------------
+
+void CABFIntegratorGPR::SetUseInv(bool set)
+{
+    UseInv = set;
+}
+
+//------------------------------------------------------------------------------
+
+void CABFIntegratorGPR::PrepForHyprmsGrd(bool set)
+{
+   NeedInv = set;
+}
+
+//------------------------------------------------------------------------------
+
+void CABFIntegratorGPR::SetCalcLogPL(bool set)
+{
+   NeedInv = set;
 }
 
 //==============================================================================
@@ -460,8 +484,10 @@ bool CABFIntegratorGPR::Integrate(CVerboseStr& vout,bool nostat)
 
         // and lof of marginal likelihood
         vout << "      logML     = " << setprecision(5) << GetLogML() << endl;
-        // and log of pseudo-likelihood
-        vout << "      logPL     = " << setprecision(5) << GetLogPL() << endl;
+        if( NeedInv || UseInv ){
+            // and log of pseudo-likelihood
+            vout << "      logPL     = " << setprecision(5) << GetLogPL() << endl;
+        }
     }
 
     // finalize FES if requested
@@ -539,41 +565,77 @@ bool CABFIntegratorGPR::TrainGP(CVerboseStr& vout)
 // inverting the K+Sigma
     int result = 0;
     switch(Method){
-        case(EGPRINV_LU):
-            vout << "   Inverting K+Sigma by LU ..." << endl;
-            result = CSciLapack::invLU(KS,logdetK);
-            if( result != 0 ) return(false);
+        case(EGPRLA_LU):
+            if( UseInv ){
+                vout << "   Inverting K+Sigma by LU ..." << endl;
+                result = CSciLapack::invLU(KS,logdetK);
+                if( result != 0 ) return(false);
+                // calculate weights
+                vout << "   Calculating weights B ..." << endl;
+                CSciBlas::gemv(1.0,KS,Y,0.0,GPRModel);
+            } else {
+                GPRModel = Y;
+                if( NeedInv ){
+                    vout << "   Training GPR + K+Sigma inversion by LU ..." << endl;
+                    result = CSciLapack::solvleLUInv(KS,GPRModel,logdetK);
+                    if( result != 0 ) return(false);
+                } else {
+                    vout << "   Training GPR by LU ..." << endl;
+                    result = CSciLapack::solvleLU(KS,GPRModel,logdetK);
+                    if( result != 0 ) return(false);
+                }
+            }
             break;
-        case(EGPRINV_LL):
-            vout << "   Inverting K+Sigma by LL ..." << endl;
-            result = CSciLapack::invLL(KS,logdetK);
-            if( result != 0 ) return(false);
+        case(EGPRLA_LL):
+            if( UseInv ){
+                vout << "   Inverting K+Sigma by LL ..." << endl;
+                result = CSciLapack::invLL(KS,logdetK);
+                if( result != 0 ) return(false);
+                // calculate weights
+                vout << "   Calculating weights B ..." << endl;
+                CSciBlas::gemv(1.0,KS,Y,0.0,GPRModel);
+            } else {
+                GPRModel = Y;
+                if( NeedInv ){
+                    vout << "   Training GPR + K+Sigma inversion by LL ..." << endl;
+                    result = CSciLapack::solvleLLInv(KS,GPRModel,logdetK);
+                    if( result != 0 ) return(false);
+                } else {
+                    vout << "   Training GPR by LL ..." << endl;
+                    result = CSciLapack::solvleLL(KS,GPRModel,logdetK);
+                    if( result != 0 ) return(false);
+                }
+            }
             break;
-        case(EGPRINV_SVD):{
+        case(EGPRLA_SVD):{
             vout << "   Inverting K+Sigma by SVD (divide and conquer driver) ..." << endl;
             int rank = 0;
             double realRCond = 0;
             result = CSciLapack::invSVD2(KS,logdetK,RCond,rank,realRCond);
             vout << "      Rank = " << rank << "; Info = " << result << "; Real rcond = " << scientific << realRCond << fixed << endl;
             if( result != 0 ) return(false);
+            // calculate weights
+            vout << "   Calculating weights B ..." << endl;
+            CSciBlas::gemv(1.0,KS,Y,0.0,GPRModel);
             }
             break;
-        case(EGPRINV_SVD2):{
+        case(EGPRLA_SVD2):{
             vout << "   Inverting K+Sigma by SVD2 (simple driver) ..." << endl;
             int rank = 0;
             double realRCond = 0;
             result = CSciLapack::invSVD1(KS,logdetK,RCond,rank,realRCond);
             vout << "      Rank = " << rank << "; Info = " << result << "; Real rcond = " << scientific << realRCond << fixed << endl;
             if( result != 0 ) return(false);
+            // calculate weights
+            vout << "   Calculating weights B ..." << endl;
+            CSciBlas::gemv(1.0,KS,Y,0.0,GPRModel);
             }
             break;
     default:
         INVALID_ARGUMENT("unsupported method");
     }
 
-// calculate weights
-    vout << "   Calculating weights B ..." << endl;
-    CSciBlas::gemv(1.0,KS,Y,0.0,GPRModel);
+
 
     return(true);
 }
@@ -1415,6 +1477,10 @@ double CABFIntegratorGPR::GetLogML(void)
 
 double CABFIntegratorGPR::GetLogPL(void)
 {
+    if( ! (NeedInv || UseInv) ){
+        RUNTIME_ERROR("logPL requires K+Sigma inverted matrix");
+    }
+
     double loo = 0.0;
 
     // http://www.gaussianprocess.org/gpml/chapters/RW5.pdf
@@ -1435,6 +1501,10 @@ double CABFIntegratorGPR::GetLogPL(void)
 
 void CABFIntegratorGPR::GetLogMLDerivatives(const std::vector<bool>& flags,CSimpleVector<double>& der)
 {
+    if( ! (NeedInv || UseInv) ){
+        RUNTIME_ERROR("GetLogMLDerivatives requires K+Sigma inverted matrix");
+    }
+
     if( Accumulator == NULL ) {
         RUNTIME_ERROR("ABF accumulator is not set");
     }
@@ -1511,6 +1581,10 @@ void CABFIntegratorGPR::GetLogMLDerivatives(const std::vector<bool>& flags,CSimp
 
 void CABFIntegratorGPR::GetLogPLDerivatives(const std::vector<bool>& flags,CSimpleVector<double>& der)
 {
+    if( ! (NeedInv || UseInv) ){
+        RUNTIME_ERROR("GetLogPLDerivatives requires K+Sigma inverted matrix");
+    }
+
     if( Accumulator == NULL ) {
         RUNTIME_ERROR("ABF accumulator is not set");
     }

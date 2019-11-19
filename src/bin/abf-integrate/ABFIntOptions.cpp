@@ -145,6 +145,20 @@ int CABFIntOptions::CheckOptions(void)
         IsError = true;
     }
 
+    if( IsOptGPRUseInvSet() && (GetOptMethod() != "gpr") ){
+        if(IsError == false) fprintf(stderr,"\n");
+        fprintf(stderr,"%s: --useinv can be set only for GPR method\n",
+                (const char*)GetProgramName());
+        IsError = true;
+    }
+
+    if( IsOptGPRCalcLogPLSet() && (GetOptMethod() != "gpr") ){
+        if(IsError == false) fprintf(stderr,"\n");
+        fprintf(stderr,"%s: --calclogpl can be set only for GPR method\n",
+                (const char*)GetProgramName());
+        IsError = true;
+    }
+
     if( IsOptGPRKernelSet() && (GetOptMethod() != "gpr") ){
         if(IsError == false) fprintf(stderr,"\n");
         fprintf(stderr,"%s: --kernel can be set only for GPR method\n",

@@ -493,6 +493,7 @@ bool CABFOptGPRHyprms::Optimize(void)
             }
             vout << endl;
             iflag = 0;  // reset optimizer
+            last_logtrg = last_logtrg - 10; // be sure that the number is somehow different
         }
 
         OldHyprms = Hyprms;
@@ -526,7 +527,7 @@ bool CABFOptGPRHyprms::Optimize(void)
             }
             vout << endl;
             iflag = 0;
-            last_logtrg = logTarget - rand(); // be sure that the number is somehow different
+            last_logtrg = logTarget - 10; // be sure that the number is somehow different
             continue;
         }
 
@@ -543,7 +544,7 @@ bool CABFOptGPRHyprms::Optimize(void)
                     }
                     vout << endl;
                     iflag = 0;
-                    last_logtrg = logTarget - rand(); // be sure that the number is somehow different
+                    last_logtrg = logTarget - 10; // be sure that the number is somehow different
                     continue;
                 } else {
                     vout << endl;
@@ -948,9 +949,11 @@ void CABFOptGPRHyprms::ShowGPRStat(void)
 
         gpr.SetSplitNCorr(SplitNCorr);
 
-        gpr.SetINVMethod(Options.GetOptLAMethod());
+        gpr.SetLAMethod(Options.GetOptLAMethod());
         gpr.SetUseNumDiff(Options.GetOptGPRNumDiff());
         gpr.SetKernel(Options.GetOptGPRKernel());
+        gpr.SetUseInv(Options.GetOptGPRUseInv());
+        gpr.SetCalcLogPL(Options.GetOptGPRCalcLogPL() || Target == EGOT_LOGPL);
 
     // run integrator
         gpr.SetSigmaF2(SigmaF2);
@@ -974,6 +977,7 @@ void CABFOptGPRHyprms::RunGPRAnalytical(void)
     for(size_t i=0; i < Accumulators.size(); i++){
         CABFAccumulatorP accu = Accumulators[i];
         CABFIntegratorGPR gpr;
+        gpr.PrepForHyprmsGrd(true);
         logTarget += GetTarget(gpr,accu);
         switch(Target){
             case(EGOT_LOGML):
@@ -1144,9 +1148,12 @@ double CABFOptGPRHyprms::GetTarget(CABFIntegratorGPR& gpr,CABFAccumulatorP accu)
     gpr.IncludeGluedAreas(false);
 
     gpr.SetSplitNCorr(SplitNCorr);
-    gpr.SetINVMethod(Options.GetOptLAMethod());
+    gpr.SetLAMethod(Options.GetOptLAMethod());
+    gpr.SetUseInv(Options.GetOptGPRUseInv());
     gpr.SetUseNumDiff(Options.GetOptGPRNumDiff());
     gpr.SetKernel(Options.GetOptGPRKernel());
+
+    if( Target == EGOT_LOGPL) gpr.SetCalcLogPL(true);
 
 // setup integrator
     gpr.SetSigmaF2(SigmaF2);

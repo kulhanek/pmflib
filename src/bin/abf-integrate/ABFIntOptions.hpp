@@ -113,6 +113,8 @@ public:
     CSO_OPT(CSmallString,SaveABF)
     CSO_OPT(CSmallString,GPRKernel)
     CSO_OPT(bool,GPRNumDiff)
+    CSO_OPT(bool,GPRUseInv)
+    CSO_OPT(bool,GPRCalcLogPL)
     CSO_OPT(bool,Verbose)
     CSO_OPT(bool,Version)
     CSO_OPT(bool,Help)
@@ -490,6 +492,24 @@ public:
                 "numdiff",                      /* long option name */
                 NULL,                           /* parametr name */
                 "GPR: Use numerical differentiation of kernel function (for testing only).")   /* option description */
+    //----------------------------------------------------------------------
+    CSO_MAP_OPT(bool,                           /* option type */
+                GPRUseInv,                        /* option name */
+                false,                          /* default value */
+                false,                          /* is option mandatory */
+                0,                           /* short option name */
+                "useinv",                      /* long option name */
+                NULL,                           /* parametr name */
+                "GPR: Use matrix inversion pathway (for testing only).")   /* option description */
+    //----------------------------------------------------------------------
+    CSO_MAP_OPT(bool,                           /* option type */
+                GPRCalcLogPL,                        /* option name */
+                false,                          /* default value */
+                false,                          /* is option mandatory */
+                0,                           /* short option name */
+                "calclogpl",                      /* long option name */
+                NULL,                           /* parametr name */
+                "GPR: Calculate logPL.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(bool,                           /* option type */
                 Verbose,                        /* option name */

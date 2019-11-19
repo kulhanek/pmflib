@@ -31,13 +31,13 @@
 class CABFAccumulator;
 class CEnergySurface;
 
-// how to invert the matrix
+// linear algebra pathway
 
-enum EGPRINVMethod {
-    EGPRINV_LU      = 1,    // DGETRI/DGETRF (via LU factorization)
-    EGPRINV_SVD     = 2,    // via SVD factorization, divide and conquer driver
-    EGPRINV_SVD2    = 3,    // via SVD factorization, simple driver
-    EGPRINV_LL      = 4,    // DPOTRF/DPOTRI (via LL factorization)
+enum EGPRLAMethod {
+    EGPRLA_LU      = 1,    // DGETRI/DGETRF (via LU factorization)
+    EGPRLA_SVD     = 2,    // via SVD factorization, divide and conquer driver
+    EGPRLA_SVD2    = 3,    // via SVD factorization, simple driver
+    EGPRLA_LL      = 4,    // DPOTRF/DPOTRI (via LL factorization)
 };
 
 //------------------------------------------------------------------------------
@@ -103,11 +103,11 @@ public:
     /// use split ncorr
     void SetSplitNCorr(bool set);
 
-    /// set algorithm for LLS
-    void SetINVMethod(EGPRINVMethod set);
+    /// set algorithm for LA
+    void SetLAMethod(EGPRLAMethod set);
 
-    /// set algorithm for LLS
-    void SetINVMethod(const CSmallString& method);
+    /// set algorithm for LA
+    void SetLAMethod(const CSmallString& method);
 
     /// set kernel
     void SetKernel(const CSmallString& kernel);
@@ -120,6 +120,15 @@ public:
 
     /// set position of global minimum
     void SetGlobalMin(const CSmallString& spec);
+
+    /// use inversion alg
+    void SetUseInv(bool set);
+
+    /// calc hyprms grd
+    void PrepForHyprmsGrd(bool set);
+
+    /// calc logpl
+    void SetCalcLogPL(bool set);
 
 // execution method -----------------------------------------------------------
     /// integrate data
@@ -177,7 +186,7 @@ private:
     bool                    NoEnergy;
     bool                    IncludeError;
     bool                    IncludeGluedBins;
-    EGPRINVMethod           Method;
+    EGPRLAMethod            Method;
 
     // hyperparameters
     bool                    SplitNCorr;     // ncorr for each cv / all cvs
@@ -201,6 +210,10 @@ private:
 
     // SVD setup
     double                  RCond;
+
+    // internal flow
+    bool                    UseInv;         // calc all via inversion
+    bool                    NeedInv;        // need inverted matrix - hyprms, error analysis
 
     bool TrainGP(CVerboseStr& vout);
     void CalculateEnergy(CVerboseStr& vout);

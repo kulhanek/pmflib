@@ -79,6 +79,8 @@ public:
     CSO_OPT(CSmallString,LoadHyprms)
     CSO_OPT(CSmallString,GPRKernel)
     CSO_OPT(bool,GPRNumDiff)
+    CSO_OPT(bool,GPRUseInv)
+    CSO_OPT(bool,GPRCalcLogPL)
     CSO_OPT(bool,Verbose)
     CSO_OPT(bool,Version)
     CSO_OPT(bool,Help)
@@ -301,6 +303,24 @@ public:
                 "kernel",                      /* long option name */
                 "NAME",                           /* parametr name */
                 "GPR: Kernel type. Supported types: ardse (ARD squared exponential), ardmc52 (ARD Matern class 5/2), default(=ardse)")   /* option description */
+    //----------------------------------------------------------------------
+    CSO_MAP_OPT(bool,                           /* option type */
+                GPRUseInv,                        /* option name */
+                false,                          /* default value */
+                false,                          /* is option mandatory */
+                0,                           /* short option name */
+                "useinv",                      /* long option name */
+                NULL,                           /* parametr name */
+                "Use matrix inversion pathway (for testing only).")   /* option description */
+    //----------------------------------------------------------------------
+    CSO_MAP_OPT(bool,                           /* option type */
+                GPRCalcLogPL,                        /* option name */
+                false,                          /* default value */
+                false,                          /* is option mandatory */
+                0,                           /* short option name */
+                "calclogpl",                      /* long option name */
+                NULL,                           /* parametr name */
+                "Calculate logPL for --stat if --target is not logpl.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(bool,                           /* option type */
                 Verbose,                        /* option name */

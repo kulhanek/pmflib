@@ -613,8 +613,9 @@ bool CABFIntegrate::IntegrateForMFZScore(int pass)
 
         integrator.SetRCond(Options.GetOptRCond());
         if( Options.GetOptEcutMethod() == Options.GetOptMethod() ){
-            integrator.SetINVMethod(Options.GetOptLAMethod());
+            integrator.SetLAMethod(Options.GetOptLAMethod());
         }
+        integrator.SetUseInv(Options.GetOptGPRUseInv());
         integrator.SetKernel(Options.GetOptGPRKernel());
 
         integrator.SetNoEnergy(true);
@@ -739,8 +740,9 @@ bool CABFIntegrate::IntegrateForEcut(void)
 
         integrator.SetRCond(Options.GetOptRCond());
         if( Options.GetOptEcutMethod() == Options.GetOptMethod() ){
-            integrator.SetINVMethod(Options.GetOptLAMethod());
+            integrator.SetLAMethod(Options.GetOptLAMethod());
         }
+        integrator.SetUseInv(Options.GetOptGPRUseInv());
         integrator.SetKernel(Options.GetOptGPRKernel());
 
         if( Options.IsOptGlobalMinSet() ){
@@ -867,8 +869,10 @@ bool CABFIntegrate::Integrate(void)
         }
 
         integrator.SetRCond(Options.GetOptRCond());
-        integrator.SetINVMethod(Options.GetOptLAMethod());
+        integrator.SetLAMethod(Options.GetOptLAMethod());
+        integrator.SetUseInv(Options.GetOptGPRUseInv());
         integrator.SetKernel(Options.GetOptGPRKernel());
+        integrator.SetCalcLogPL(Options.GetOptGPRCalcLogPL());
 
         if(integrator.Integrate(vout) == false) {
             ES_ERROR("unable to integrate ABF accumulator");
