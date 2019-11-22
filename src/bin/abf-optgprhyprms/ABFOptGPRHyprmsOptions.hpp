@@ -81,6 +81,8 @@ public:
     CSO_OPT(bool,GPRNumDiff)
     CSO_OPT(bool,GPRUseInv)
     CSO_OPT(bool,GPRCalcLogPL)
+    CSO_OPT(CSmallString,GlobalMin)
+    CSO_OPT(bool,GPRIncludeZPE)
     CSO_OPT(bool,Verbose)
     CSO_OPT(bool,Version)
     CSO_OPT(bool,Help)
@@ -321,6 +323,24 @@ public:
                 "calclogpl",                      /* long option name */
                 NULL,                           /* parametr name */
                 "Calculate logPL for --stat if --target is not logpl.")   /* option description */
+    //----------------------------------------------------------------------
+    CSO_MAP_OPT(CSmallString,                           /* option type */
+                GlobalMin,                        /* option name */
+                NULL,                          /* default value */
+                false,                          /* is option mandatory */
+                '\0',                           /* short option name */
+                "globalmin",                      /* long option name */
+                "SPEC",                           /* parametr name */
+                "position of global minimum provided as a single string in the form CV1xCV2x...xCVn (relevant for error determination), if not set the position is determined automatically.")   /* option description */
+    //----------------------------------------------------------------------
+    CSO_MAP_OPT(bool,                           /* option type */
+                GPRIncludeZPE,                        /* option name */
+                false,                          /* default value */
+                false,                          /* is option mandatory */
+                0,                           /* short option name */
+                "inczpe",                      /* long option name */
+                NULL,                           /* parametr name */
+                "Include zero-point energy at position specified by --globalmin.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(bool,                           /* option type */
                 Verbose,                        /* option name */

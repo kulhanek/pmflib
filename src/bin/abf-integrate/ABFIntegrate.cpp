@@ -857,6 +857,7 @@ bool CABFIntegrate::Integrate(void)
             integrator.SetWFac(Options.GetOptWFac());
         }
 
+        integrator.SetFastError(Options.GetOptGPRFastError());
         integrator.SetIncludeError(Options.GetOptWithError());
         integrator.SetNoEnergy(Options.GetOptNoEnergy());
         integrator.SetUseNumDiff(Options.GetOptGPRNumDiff());
@@ -873,6 +874,7 @@ bool CABFIntegrate::Integrate(void)
         integrator.SetUseInv(Options.GetOptGPRUseInv());
         integrator.SetKernel(Options.GetOptGPRKernel());
         integrator.SetCalcLogPL(Options.GetOptGPRCalcLogPL());
+        integrator.SetUseZeroPoint(Options.GetOptGPRIncludeZPE());
 
         if(integrator.Integrate(vout) == false) {
             ES_ERROR("unable to integrate ABF accumulator");

@@ -122,6 +122,38 @@ void CEnergySurface::Allocate(const CABFAccumulator* abf_accu)
 
 //------------------------------------------------------------------------------
 
+void CEnergySurface::Allocate(const CABFAccumulator* abf_accu,const std::vector<bool>& enabled_cvs)
+{
+    if( NumOfCVs > 0 ) Deallocate();
+    if( abf_accu == NULL ) return;
+    if( abf_accu->GetNumberOfCoords() <= 0 ) return;
+
+// allocate items
+    NumOfCVs = 0;
+    for(size_t i = 0; i < enabled_cvs.size(); i++){
+        if( enabled_cvs[i] ) NumOfCVs++;
+    }
+    Sizes.CreateVector(NumOfCVs);
+
+// copy cvs and calculate total number of points
+    TotNPoints = 1;
+    size_t i = 0;
+    for(size_t k = 0; k < enabled_cvs.size(); k++){
+        if( enabled_cvs[k] ){
+            Sizes[i].CopyFrom(abf_accu->GetCoordinate(k));
+            TotNPoints *= Sizes[i].GetNumberOfBins();
+        }
+    }
+
+    Energy.CreateVector(TotNPoints);
+    Error.CreateVector(TotNPoints);
+    Samples.CreateVector(TotNPoints);
+
+    Clear();
+}
+
+//------------------------------------------------------------------------------
+
 void CEnergySurface::Deallocate(void)
 {
     Sizes.FreeVector();

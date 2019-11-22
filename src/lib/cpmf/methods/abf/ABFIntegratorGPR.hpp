@@ -130,6 +130,12 @@ public:
     /// calc logpl
     void SetCalcLogPL(bool set);
 
+    /// include zero-point at user provided global minimum
+    void SetUseZeroPoint(bool set);
+
+    /// use fast error algorithm
+    void SetFastError(bool set);
+
 // execution method -----------------------------------------------------------
     /// integrate data
     bool Integrate(CVerboseStr& vout,bool nostat=false);
@@ -164,6 +170,9 @@ public:
 
     /// get kernel name
     const CSmallString GetKernelName(void);
+
+    /// perform statistical reweighting
+    void Reduce(void);
 
 // section of private data ----------------------------------------------------
 private:
@@ -201,6 +210,7 @@ private:
     double                  logdetK;
     CSimpleVector<double>   Y;              // mean forces
     CSimpleVector<double>   GPRModel;       // weights
+    CFortranMatrix          Cov;            // covariances
 
     // derivatives
     CFortranMatrix          Kder;           // derivative of kernels w.r.t. a hyperparameter
@@ -212,12 +222,19 @@ private:
     double                  RCond;
 
     // internal flow
+    bool                    UseZeroPoint;
     bool                    UseInv;         // calc all via inversion
     bool                    NeedInv;        // need inverted matrix - hyprms, error analysis
+    bool                    FastErrors;     // use faster but more memory intensive algorithm
+
+    // statistical reweighting
+    std::vector<bool>       IntegratedCVs;
 
     bool TrainGP(CVerboseStr& vout);
     void CalculateEnergy(CVerboseStr& vout);
     void CalculateErrors(CSimpleVector<double>& gpos,CVerboseStr& vout); // gpos - position of global minimum
+    void CalculateCovs(CVerboseStr& vout);
+    void CalculateErrorsFromCov(CVerboseStr& vout);
 
     double GetValue(const CSimpleVector<double>& position);
     double GetMeanForce(const CSimpleVector<double>& position,size_t icoord);
@@ -227,11 +244,13 @@ private:
 
     // kernel matrix + noise
     void   CreateKS(void);
-    void   CreateKy(const CSimpleVector<double>& ip,CSimpleVector<double>& ky);
-    void   CreateKy2(const CSimpleVector<double>& ip,size_t icoord,CSimpleVector<double>& ky2);
+    void   CreateKff(const CSimpleVector<double>& ip,CSimpleVector<double>& ky);
+    void   CreateKff2(const CSimpleVector<double>& ip,size_t icoord,CSimpleVector<double>& ky2);
     double GetKernelValue(const CSimpleVector<double>& ip,const CSimpleVector<double>& jp);
-    void   GetKernelDerAna(const CSimpleVector<double>& ip,const CSimpleVector<double>& jp,CSimpleVector<double>& der);
-    void   GetKernelDerNum(const CSimpleVector<double>& ip,const CSimpleVector<double>& jp,CSimpleVector<double>& der);
+    void   GetKernelDerAnaI(const CSimpleVector<double>& ip,const CSimpleVector<double>& jp,CSimpleVector<double>& der);
+    void   GetKernelDerNumI(const CSimpleVector<double>& ip,const CSimpleVector<double>& jp,CSimpleVector<double>& der);
+    void   GetKernelDerAnaJ(const CSimpleVector<double>& ip,const CSimpleVector<double>& jp,CSimpleVector<double>& der);
+    void   GetKernelDerNumJ(const CSimpleVector<double>& ip,const CSimpleVector<double>& jp,CSimpleVector<double>& der);
     void   GetKernelDer2Ana(const CSimpleVector<double>& ip,const CSimpleVector<double>& jp,CFortranMatrix& kblock);
     void   GetKernelDer2Num(const CSimpleVector<double>& ip,const CSimpleVector<double>& jp,CFortranMatrix& kblock);
     void   GetKernelDer2AnaWFac(const CSimpleVector<double>& ip,const CSimpleVector<double>& jp,size_t cv,CFortranMatrix& kblock);

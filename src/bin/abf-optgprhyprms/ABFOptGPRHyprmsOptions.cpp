@@ -97,6 +97,13 @@ int CABFOptGPRHyprmsOptions::CheckOptions(void)
         IsError = true;
     }
 
+    if( IsOptGPRIncludeZPESet() && (IsOptGlobalMinSet() == false) ){
+        if(IsError == false) fprintf(stderr,"\n");
+        fprintf(stderr,"%s: --inczpe can be set only alongside with --globalmin\n",
+                (const char*)GetProgramName());
+        IsError = true;
+    }
+
     if(IsError == true) return(SO_OPTS_ERROR);
     return(SO_CONTINUE);
 }

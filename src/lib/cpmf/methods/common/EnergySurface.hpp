@@ -56,6 +56,9 @@ public:
     /// allocate array
     void Allocate(const CABFAccumulator* abf_accu);
 
+    /// allocate array
+    void Allocate(const CABFAccumulator* abf_accu,const std::vector<bool>& enabled_cvs);
+
     /// deallocate array
     void Deallocate(void);
 

@@ -115,6 +115,8 @@ public:
     CSO_OPT(bool,GPRNumDiff)
     CSO_OPT(bool,GPRUseInv)
     CSO_OPT(bool,GPRCalcLogPL)
+    CSO_OPT(bool,GPRIncludeZPE)
+    CSO_OPT(bool,GPRFastError)
     CSO_OPT(bool,Verbose)
     CSO_OPT(bool,Version)
     CSO_OPT(bool,Help)
@@ -510,6 +512,24 @@ public:
                 "calclogpl",                      /* long option name */
                 NULL,                           /* parametr name */
                 "GPR: Calculate logPL.")   /* option description */
+    //----------------------------------------------------------------------
+    CSO_MAP_OPT(bool,                           /* option type */
+                GPRIncludeZPE,                        /* option name */
+                false,                          /* default value */
+                false,                          /* is option mandatory */
+                0,                           /* short option name */
+                "inczpe",                      /* long option name */
+                NULL,                           /* parametr name */
+                "GPR: Include zero-point energy at position specified by --globalmin.")   /* option description */
+    //----------------------------------------------------------------------
+    CSO_MAP_OPT(bool,                           /* option type */
+                GPRFastError,                        /* option name */
+                false,                          /* default value */
+                false,                          /* is option mandatory */
+                0,                           /* short option name */
+                "fasterror",                      /* long option name */
+                NULL,                           /* parametr name */
+                "GPR: Use faster algorithm for error calculation.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(bool,                           /* option type */
                 Verbose,                        /* option name */

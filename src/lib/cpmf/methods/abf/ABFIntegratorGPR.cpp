@@ -74,6 +74,8 @@ CABFIntegratorGPR::CABFIntegratorGPR(void)
 
     UseInv              = false;
     NeedInv             = false;
+    UseZeroPoint        = false;
+    FastErrors          = true;
 }
 
 //------------------------------------------------------------------------------
@@ -273,6 +275,9 @@ void CABFIntegratorGPR::SetWFac(size_t cvind, double value)
 void CABFIntegratorGPR::SetIncludeError(bool set)
 {
     IncludeError = set;
+    if( FastErrors == false ){
+        NeedInv |= set;
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -320,7 +325,7 @@ void CABFIntegratorGPR::SetLAMethod(const CSmallString& method)
     } else {
         CSmallString error;
         error << "Specified method '" << method << "' for linear algebra is not supported. "
-                 "Supported methods are: svd (simple driver), svd2 (conquer and divide driver), lu, ll (Cholesky decomposition), default (=lu)";
+                 "Supported methods are: svd (simple driver), svd2 (conquer and divide driver), lu, ll (Choleskff decomposition), default (=lu)";
         INVALID_ARGUMENT(error);
     }
 }
@@ -387,14 +392,33 @@ void CABFIntegratorGPR::SetUseInv(bool set)
 
 void CABFIntegratorGPR::PrepForHyprmsGrd(bool set)
 {
-   NeedInv = set;
+   NeedInv |= set;
 }
 
 //------------------------------------------------------------------------------
 
 void CABFIntegratorGPR::SetCalcLogPL(bool set)
 {
-   NeedInv = set;
+   NeedInv |= set;
+}
+
+//------------------------------------------------------------------------------
+
+void CABFIntegratorGPR::SetUseZeroPoint(bool set)
+{
+    if( set == true ){
+        if( GlobalMinSet == false ){
+            RUNTIME_ERROR("position of global minimum was not set");
+        }
+    }
+    UseZeroPoint = set;
+}
+
+//------------------------------------------------------------------------------
+
+void CABFIntegratorGPR::SetFastError(bool set)
+{
+    FastErrors = set;
 }
 
 //==============================================================================
@@ -440,6 +464,7 @@ bool CABFIntegratorGPR::Integrate(CVerboseStr& vout,bool nostat)
         if( Accumulator->GetNumberOfABFSamples(i) > 0 ) NumOfUsedBins++;
     }
     GPRSize = NumOfUsedBins*NCVs;
+    if( UseZeroPoint ) GPRSize++;
 
     // create sampled map
     SampledMap.CreateVector(NumOfUsedBins);
@@ -494,7 +519,12 @@ bool CABFIntegratorGPR::Integrate(CVerboseStr& vout,bool nostat)
     if( ! NoEnergy ){
         CalculateEnergy(vout);
         if( IncludeError ){
-            CalculateErrors(GPos,vout);
+            if( FastErrors ){
+                CalculateCovs(vout);
+                CalculateErrorsFromCov(vout);
+            } else {
+                CalculateErrors(GPos,vout);
+            }
         }
     }
 
@@ -539,6 +569,10 @@ void CABFIntegratorGPR::RunBlasLapackPar(void)
 
 bool CABFIntegratorGPR::TrainGP(CVerboseStr& vout)
 {
+    if( UseZeroPoint ){
+        vout << "   Zero-point included in GPR ..." << endl;
+    }
+
     if( UseNumDiff ) {
         vout << "   Creating K+Sigma and Y (numeric differentation) ..." << endl;
     } else {
@@ -555,6 +589,9 @@ bool CABFIntegratorGPR::TrainGP(CVerboseStr& vout)
             double mf = Accumulator->GetValue(ii,i,EABF_MEAN_FORCE_VALUE);
             Y[indi*NCVs+ii] = mf;
         }
+    }
+    if( UseZeroPoint ){
+        Y[GPRSize-1] = 0.0;
     }
 
 // construct KS
@@ -635,8 +672,6 @@ bool CABFIntegratorGPR::TrainGP(CVerboseStr& vout)
         INVALID_ARGUMENT("unsupported method");
     }
 
-
-
     return(true);
 }
 
@@ -693,6 +728,50 @@ void CABFIntegratorGPR::CreateKS(void)
             }
         }
     }
+    if( UseZeroPoint ){
+        CSimpleVector<double> kder;
+        kder.CreateVector(NCVs);
+
+        #pragma omp parallel for firstprivate(ipos,kder)
+        for(size_t indi=0; indi < NumOfUsedBins; indi++){
+            size_t i = SampledMap[indi];
+
+            Accumulator->GetPoint(i,ipos);
+
+            // calc Kder
+            if( UseNumDiff ){
+                GetKernelDerNumI(ipos,GPos,kder);
+            } else {
+                GetKernelDerAnaI(ipos,GPos,kder);
+            }
+
+            // distribute to matrix
+            for(size_t ii=0; ii < NCVs; ii++){
+                KS[indi*NCVs+ii][GPRSize-1] = kder[ii];
+            }
+        }
+
+        #pragma omp parallel for firstprivate(ipos,kder)
+        for(size_t indj=0; indj < NumOfUsedBins; indj++){
+            size_t j = SampledMap[indj];
+
+            Accumulator->GetPoint(j,jpos);
+
+            // calc Kder
+            if( UseNumDiff ){
+                GetKernelDerNumJ(GPos,jpos,kder);
+            } else {
+                GetKernelDerAnaJ(GPos,jpos,kder);
+            }
+
+            // distribute to matrix
+            for(size_t jj=0; jj < NCVs; jj++){
+                KS[GPRSize-1][indj*NCVs+jj] = kder[jj];
+            }
+        }
+
+        KS[GPRSize-1][GPRSize-1] = GetKernelValue(GPos,GPos);
+    }
 
 // error of data points
     #pragma omp parallel for
@@ -707,11 +786,12 @@ void CABFIntegratorGPR::CreateKS(void)
             }
         }
     }
+    // zero point has no uncertainity
 }
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorGPR::CreateKy(const CSimpleVector<double>& ip,CSimpleVector<double>& ky)
+void CABFIntegratorGPR::CreateKff(const CSimpleVector<double>& ip,CSimpleVector<double>& kff)
 {
     CSimpleVector<double> jpos;
     jpos.CreateVector(NCVs);
@@ -727,22 +807,26 @@ void CABFIntegratorGPR::CreateKy(const CSimpleVector<double>& ip,CSimpleVector<d
 
         // calc Kder
         if( UseNumDiff ){
-            GetKernelDerNum(ip,jpos,kder);
+            GetKernelDerNumJ(ip,jpos,kder);
         } else {
-            GetKernelDerAna(ip,jpos,kder);
+            GetKernelDerAnaJ(ip,jpos,kder);
         }
 
         // distribute to vector
         for(size_t jj=0; jj < NCVs; jj++){
-            ky[indj*NCVs+jj] = kder[jj];
+            kff[indj*NCVs+jj] = kder[jj];
         }
+    }
+
+    if( UseZeroPoint ){
+        kff[GPRSize-1] = GetKernelValue(ip,GPos);
     }
 
 }
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorGPR::CreateKy2(const CSimpleVector<double>& ip,size_t icoord,CSimpleVector<double>& ky2)
+void CABFIntegratorGPR::CreateKff2(const CSimpleVector<double>& ip,size_t icoord,CSimpleVector<double>& kff2)
 {
     CSimpleVector<double> jpos;
     jpos.CreateVector(NCVs);
@@ -750,7 +834,6 @@ void CABFIntegratorGPR::CreateKy2(const CSimpleVector<double>& ip,size_t icoord,
     CFortranMatrix kblock;
     kblock.CreateMatrix(NCVs,NCVs);
 
-    // main kernel matrix
     for(size_t indj=0; indj < NumOfUsedBins; indj++){
         size_t j = SampledMap[indj];
 
@@ -765,14 +848,92 @@ void CABFIntegratorGPR::CreateKy2(const CSimpleVector<double>& ip,size_t icoord,
 
         // distribute to vector
         for(size_t jj=0; jj < NCVs; jj++){
-            ky2[indj*NCVs+jj] = kblock[icoord][jj];
+            kff2[indj*NCVs+jj] = kblock[icoord][jj];
         }
+    }
+
+    if( UseZeroPoint ){
+        CSimpleVector<double> kder;
+        kder.CreateVector(NCVs);
+
+        // calc Kder
+        if( UseNumDiff ){
+            GetKernelDerNumI(ip,GPos,kder);
+        } else {
+            GetKernelDerAnaI(ip,GPos,kder);
+        }
+
+        kff2[GPRSize-1] = kder[icoord];
     }
 }
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorGPR::GetKernelDerAna(const CSimpleVector<double>& ip,const CSimpleVector<double>& jp,CSimpleVector<double>& kder)
+void CABFIntegratorGPR::GetKernelDerAnaI(const CSimpleVector<double>& ip,const CSimpleVector<double>& jp,CSimpleVector<double>& kder)
+{
+    // calculate scaled distance
+    double scdist2 = 0.0;
+    for(size_t ii=0; ii < NCVs; ii++){
+        double du = Accumulator->GetCoordinate(ii)->GetDifference(ip[ii],jp[ii]);
+        double dd = CVLengths2[ii];
+        scdist2 += du*du/dd;
+    }
+
+    // get kernel value
+    switch(Kernel){
+    case(EGPRK_ARDSE):{
+            double pre = SigmaF2*exp(-0.5*scdist2);
+            for(size_t ii=0; ii < NCVs; ii++){
+                double du = Accumulator->GetCoordinate(ii)->GetDifference(ip[ii],jp[ii]);
+                double dd = CVLengths2[ii];
+                kder[ii] = -pre*du/dd;
+            }
+        }
+        break;
+    case(EGPRK_ARDMC52):{
+            double scdist = sqrt(scdist2);
+            double pre = -(5.0/3.0)*SigmaF2*exp(-sqrt(5.0)*scdist)*(sqrt(5.0)*scdist+1.0);
+            for(size_t ii=0; ii < NCVs; ii++){
+                double du = Accumulator->GetCoordinate(ii)->GetDifference(ip[ii],jp[ii]);
+                double dd = CVLengths2[ii];
+                kder[ii] = pre*du/dd;
+            }
+        }
+        break;
+    default:
+        RUNTIME_ERROR("not implemented");
+        break;
+    }
+}
+
+//------------------------------------------------------------------------------
+
+void CABFIntegratorGPR::GetKernelDerNumI(const CSimpleVector<double>& ip,const CSimpleVector<double>& jp,CSimpleVector<double>& kder)
+{
+    CSimpleVector<double> tip;
+    tip.CreateVector(NCVs);
+
+    double  dh = 1e-3;
+    double  v1,v2;
+
+    // off diagonal elements
+    for(size_t ii=0; ii < NCVs; ii++) {
+
+        tip = jp;
+        tip[ii] = ip[ii] - dh;
+        v1 = GetKernelValue(tip,jp);
+
+        tip = jp;
+        tip[ii] = ip[ii] + dh;
+        v2 = GetKernelValue(tip,jp);
+
+        kder[ii] = (v2 - v1)/(2.0*dh);
+    }
+}
+
+//------------------------------------------------------------------------------
+
+void CABFIntegratorGPR::GetKernelDerAnaJ(const CSimpleVector<double>& ip,const CSimpleVector<double>& jp,CSimpleVector<double>& kder)
 {
     // calculate scaled distance
     double scdist2 = 0.0;
@@ -811,7 +972,7 @@ void CABFIntegratorGPR::GetKernelDerAna(const CSimpleVector<double>& ip,const CS
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorGPR::GetKernelDerNum(const CSimpleVector<double>& ip,const CSimpleVector<double>& jp,CSimpleVector<double>& kder)
+void CABFIntegratorGPR::GetKernelDerNumJ(const CSimpleVector<double>& ip,const CSimpleVector<double>& jp,CSimpleVector<double>& kder)
 {
     CSimpleVector<double> tjp;
     tjp.CreateVector(NCVs);
@@ -1209,13 +1370,13 @@ void CABFIntegratorGPR::CalculateEnergy(CVerboseStr& vout)
 
 double CABFIntegratorGPR::GetValue(const CSimpleVector<double>& position)
 {
-    CSimpleVector<double>   ky;
-    ky.CreateVector(GPRSize);
+    CSimpleVector<double>   kff;
+    kff.CreateVector(GPRSize);
 
     RunBlasLapackSeq();
 
-    CreateKy(position,ky);
-    double energy = CSciBlas::dot(ky,GPRModel);
+    CreateKff(position,kff);
+    double energy = CSciBlas::dot(kff,GPRModel);
     return(energy);
 }
 
@@ -1223,13 +1384,13 @@ double CABFIntegratorGPR::GetValue(const CSimpleVector<double>& position)
 
 double CABFIntegratorGPR::GetMeanForce(const CSimpleVector<double>& position,size_t icoord)
 {
-    CSimpleVector<double>   ky2;
-    ky2.CreateVector(GPRSize);
+    CSimpleVector<double>   kff2;
+    kff2.CreateVector(GPRSize);
 
     RunBlasLapackSeq();
 
-    CreateKy2(position,icoord,ky2);
-    double mf = CSciBlas::dot(ky2,GPRModel);
+    CreateKff2(position,icoord,kff2);
+    double mf = CSciBlas::dot(kff2,GPRModel);
     return(mf);
 }
 
@@ -1705,6 +1866,51 @@ void CABFIntegratorGPR::CalcKderWRTSigmaF2(void)
             }
         }
     }
+
+    if( UseZeroPoint ){
+        CSimpleVector<double> kder;
+        kder.CreateVector(NCVs);
+
+        #pragma omp parallel for firstprivate(ipos,kder)
+        for(size_t indi=0; indi < NumOfUsedBins; indi++){
+            size_t i = SampledMap[indi];
+
+            Accumulator->GetPoint(i,ipos);
+
+            // calc Kder
+            if( UseNumDiff ){
+                GetKernelDerNumI(ipos,GPos,kder);
+            } else {
+                GetKernelDerAnaI(ipos,GPos,kder);
+            }
+
+            // distribute to matrix
+            for(size_t ii=0; ii < NCVs; ii++){
+                Kder[indi*NCVs+ii][GPRSize-1] = kder[ii]/SigmaF2;
+            }
+        }
+
+        #pragma omp parallel for firstprivate(ipos,kder)
+        for(size_t indj=0; indj < NumOfUsedBins; indj++){
+            size_t j = SampledMap[indj];
+
+            Accumulator->GetPoint(j,jpos);
+
+            // calc Kder
+            if( UseNumDiff ){
+                GetKernelDerNumJ(GPos,jpos,kder);
+            } else {
+                GetKernelDerAnaJ(GPos,jpos,kder);
+            }
+
+            // distribute to matrix
+            for(size_t jj=0; jj < NCVs; jj++){
+                Kder[GPRSize-1][indj*NCVs+jj] = kder[jj]/SigmaF2;
+            }
+        }
+
+        Kder[GPRSize-1][GPRSize-1] = GetKernelValue(GPos,GPos)/SigmaF2;
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -1764,6 +1970,10 @@ void CABFIntegratorGPR::CalcKderWRTWFac(size_t cv)
             }
         }
     }
+
+    if( UseZeroPoint ){
+        RUNTIME_ERROR("not implemented");
+    }
 }
 
 //==============================================================================
@@ -1772,17 +1982,17 @@ void CABFIntegratorGPR::CalcKderWRTWFac(size_t cv)
 
 double CABFIntegratorGPR::GetVar(CSimpleVector<double>& lpos)
 {
-    CSimpleVector<double>   ky;
+    CSimpleVector<double>   kff;
     CSimpleVector<double>   ik;
 
-    ky.CreateVector(GPRSize);
+    kff.CreateVector(GPRSize);
     ik.CreateVector(GPRSize);
 
     RunBlasLapackSeq();
 
-    CreateKy(lpos,ky);
-    CSciBlas::gemv(1.0,KS,ky,0.0,ik);
-    double cov = GetKernelValue(lpos,lpos)  - CSciBlas::dot(ky,ik);
+    CreateKff(lpos,kff);
+    CSciBlas::gemv(1.0,KS,kff,0.0,ik);
+    double cov = GetKernelValue(lpos,lpos)  - CSciBlas::dot(kff,ik);
     return(cov);
 }
 
@@ -1790,23 +2000,23 @@ double CABFIntegratorGPR::GetVar(CSimpleVector<double>& lpos)
 
 void CABFIntegratorGPR::GetCovVar(CSimpleVector<double>& lpos,CSimpleVector<double>& rpos,double& lrcov,double& rrvar)
 {
-    CSimpleVector<double>   kyr;
-    CSimpleVector<double>   kyl;
+    CSimpleVector<double>   kffr;
+    CSimpleVector<double>   kffl;
     CSimpleVector<double>   ik;
 
-    kyl.CreateVector(GPRSize);
-    kyr.CreateVector(GPRSize);
+    kffl.CreateVector(GPRSize);
+    kffr.CreateVector(GPRSize);
     ik.CreateVector(GPRSize);
 
     RunBlasLapackSeq();
 
-    CreateKy(rpos,kyr);
-    CreateKy(lpos,kyl);
+    CreateKff(rpos,kffr);
+    CreateKff(lpos,kffl);
 
-    CSciBlas::gemv(1.0,KS,kyr,0.0,ik);
+    CSciBlas::gemv(1.0,KS,kffr,0.0,ik);
 
-    lrcov = GetKernelValue(lpos,rpos) - CSciBlas::dot(kyl,ik);
-    rrvar = GetKernelValue(rpos,rpos) - CSciBlas::dot(kyr,ik);
+    lrcov = GetKernelValue(lpos,rpos) - CSciBlas::dot(kffl,ik);
+    rrvar = GetKernelValue(rpos,rpos) - CSciBlas::dot(kffr,ik);
 }
 
 //------------------------------------------------------------------------------
@@ -1834,6 +2044,8 @@ void CABFIntegratorGPR::CalculateErrors(CSimpleVector<double>& gpos,CVerboseStr&
 
         double varfc,covfg;
         GetCovVar(gpos,jpos,covfg,varfc);
+
+        // cout << varfc << " " << covfg << " " << vargp << endl;
 
         double error = varfc + vargp - 2.0*covfg;
         if( error > 0 ){
@@ -1863,6 +2075,151 @@ void CABFIntegratorGPR::CalculateErrors(CSimpleVector<double>& gpos,CVerboseStr&
     }
 }
 
+//------------------------------------------------------------------------------
+
+void CABFIntegratorGPR::CalculateErrorsFromCov(CVerboseStr& vout)
+{
+    if( NumOfValues == 0 ){
+        RUNTIME_ERROR("NumOfValues == 0");
+    }
+
+    vout << "   Calculating FES error ..." << endl;
+
+    // find global minimum
+    bool   first = true;
+    size_t iglb = -1;
+    double glb_min = 0.0;
+    for(size_t indj=0; indj < NumOfValues; indj++){
+        size_t j = ValueMap[indj];
+        double value = FES->GetEnergy(j);
+        if( first || (glb_min > value) ){
+            iglb = indj;
+            first = false;
+            glb_min = value;
+        }
+    }
+
+    for(size_t indj=0; indj < NumOfValues; indj++){
+        size_t j = ValueMap[indj];
+
+        double varfc = Cov[indj][indj];
+        double covfg = Cov[indj][iglb];
+        double vargp = Cov[iglb][iglb];
+
+        // cout << varfc << " " << covfg << " " << vargp << endl;
+
+        double error = varfc + vargp - 2.0*covfg;
+        if( error > 0 ){
+            error = sqrt(error);
+        } else {
+            error = 0.0;
+        }
+        FES->SetError(j,error);
+    }
+}
+
 //==============================================================================
 //------------------------------------------------------------------------------
 //==============================================================================
+
+void CABFIntegratorGPR::CalculateCovs(CVerboseStr& vout)
+{
+    if( NumOfValues == 0 ){
+        RUNTIME_ERROR("NumOfValues == 0");
+    }
+    if( GPRSize == 0 ){
+        RUNTIME_ERROR("GPRSize == 0");
+    }
+    if( NCVs == 0 ){
+        RUNTIME_ERROR("NCVs == 0");
+    }
+
+        vout << "   Calculating covariances ..." << endl;
+    if( UseNumDiff ) {
+        vout << "      Creating K+Sigma (numeric differentation) ..." << endl;
+    } else {
+        vout << "      Creating K+Sigma ..." << endl;
+    }
+        vout << "         Dim    = " << GPRSize << " x " << GPRSize << endl;
+// construct KS
+    CreateKS();
+
+    CSimpleVector<double> ipos;
+    ipos.CreateVector(NCVs);
+
+    CSimpleVector<double> jpos;
+    jpos.CreateVector(NCVs);
+
+    CSimpleVector<double> kff;
+    kff.CreateVector(GPRSize);
+
+    CFortranMatrix  Kr;
+    Kr.CreateMatrix(GPRSize,NumOfValues);
+
+        vout << "      Constructing kff ..." << endl;
+        vout << "         Dim    = " << GPRSize << " x " << NumOfValues << endl;
+    for(size_t indj=0; indj < NumOfValues; indj++){
+        size_t j = ValueMap[indj];
+        Accumulator->GetPoint(j,jpos);
+        CreateKff(jpos,kff);
+        for(size_t k=0; k < GPRSize; k++){
+            Kr[k][indj] = kff[k];
+        }
+    }
+
+    CFortranMatrix  Kl;
+    Kl = Kr;
+
+    int result = 0;
+    switch(Method){
+        case(EGPRLA_LU):
+            vout << format("      Solving (K+Sigma)^(-1)*kff by LU ...") << endl;
+            result = CSciLapack::solvleLU(KS,Kr);
+            if( result != 0 ) return;
+            break;
+        case(EGPRLA_LL):
+            vout << format("      Solving (K+Sigma)^(-1)*kff by LL ...") << endl;
+            result = CSciLapack::solvleLL(KS,Kr);
+            if( result != 0 ) return;
+            break;
+            break;
+    default:
+        INVALID_ARGUMENT("unsupported method");
+    }
+
+    Cov.CreateMatrix(NumOfValues,NumOfValues);
+
+        vout << "      Calculating Cov ..." << endl;
+        vout << "         Dim    = " << NumOfValues << " x " << NumOfValues << endl;
+    for(size_t indi=0; indi < NumOfValues; indi++){
+        size_t i = ValueMap[indi];
+        Accumulator->GetPoint(i,ipos);
+        for(size_t indj=0; indj < NumOfValues; indj++){
+            size_t j = ValueMap[indj];
+            Accumulator->GetPoint(j,jpos);
+            Cov[indi][indj] = GetKernelValue(ipos,jpos);
+        }
+    }
+
+    CSciBlas::gemm(-1.0,'T',Kl,'N',Kr,1.0,Cov);
+
+//    for(size_t indi=0; indi < NumOfValues; indi++){
+//        for(size_t indj=0; indj < NumOfValues; indj++){
+//            cout << Cov[indi][indj] << " ";
+//        }
+//        cout << endl;
+//    }
+}
+
+//==============================================================================
+//------------------------------------------------------------------------------
+//==============================================================================
+
+//void CABFIntegratorGPR::Reduce(CEnergySurface* p_surf,bool inc_inter,bool inc_extra)
+//{
+//    if( p_surf == NULL ){
+//        RUNTIME_ERROR("p_surf is not alloacted");
+//    }
+//}
+
+//------------------------------------------------------------------------------

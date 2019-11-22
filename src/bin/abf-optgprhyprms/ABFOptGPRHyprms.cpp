@@ -762,6 +762,7 @@ void CABFOptGPRHyprms::CalcHessian(void)
         for(size_t c=0; c < Accumulators.size(); c++){
             CABFAccumulatorP accu = Accumulators[c];
             CABFIntegratorGPR gpr;
+            gpr.PrepForHyprmsGrd(true);
             GetTarget(gpr,accu);
             switch(Target){
                 case(EGOT_LOGML):
@@ -782,6 +783,7 @@ void CABFOptGPRHyprms::CalcHessian(void)
         for(size_t c=0; c < Accumulators.size(); c++){
             CABFAccumulatorP accu = Accumulators[c];
             CABFIntegratorGPR gpr;
+            gpr.PrepForHyprmsGrd(true);
             GetTarget(gpr,accu);
             switch(Target){
                 case(EGOT_LOGML):
@@ -954,6 +956,11 @@ void CABFOptGPRHyprms::ShowGPRStat(void)
         gpr.SetKernel(Options.GetOptGPRKernel());
         gpr.SetUseInv(Options.GetOptGPRUseInv());
         gpr.SetCalcLogPL(Options.GetOptGPRCalcLogPL() || Target == EGOT_LOGPL);
+
+        if( Options.IsOptGlobalMinSet() ){
+            gpr.SetGlobalMin(Options.GetOptGlobalMin());
+        }
+        gpr.SetUseZeroPoint(Options.GetOptGPRIncludeZPE());
 
     // run integrator
         gpr.SetSigmaF2(SigmaF2);
@@ -1152,6 +1159,11 @@ double CABFOptGPRHyprms::GetTarget(CABFIntegratorGPR& gpr,CABFAccumulatorP accu)
     gpr.SetUseInv(Options.GetOptGPRUseInv());
     gpr.SetUseNumDiff(Options.GetOptGPRNumDiff());
     gpr.SetKernel(Options.GetOptGPRKernel());
+
+    if( Options.IsOptGlobalMinSet() ){
+        gpr.SetGlobalMin(Options.GetOptGlobalMin());
+    }
+    gpr.SetUseZeroPoint(Options.GetOptGPRIncludeZPE());
 
     if( Target == EGOT_LOGPL) gpr.SetCalcLogPL(true);
 
