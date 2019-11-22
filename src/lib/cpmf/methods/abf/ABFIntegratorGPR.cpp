@@ -2158,6 +2158,8 @@ void CABFIntegratorGPR::CalculateCovs(CVerboseStr& vout)
 
         vout << "      Constructing kff ..." << endl;
         vout << "         Dim    = " << GPRSize << " x " << NumOfValues << endl;
+
+    #pragma omp parallel for firstprivate(jpos)
     for(size_t indj=0; indj < NumOfValues; indj++){
         size_t j = ValueMap[indj];
         Accumulator->GetPoint(j,jpos);
@@ -2170,6 +2172,7 @@ void CABFIntegratorGPR::CalculateCovs(CVerboseStr& vout)
     CFortranMatrix  Kl;
     Kl = Kr;
 
+    RunBlasLapackPar();
     int result = 0;
     switch(Method){
         case(EGPRLA_LU):
@@ -2187,10 +2190,12 @@ void CABFIntegratorGPR::CalculateCovs(CVerboseStr& vout)
         INVALID_ARGUMENT("unsupported method");
     }
 
-    Cov.CreateMatrix(NumOfValues,NumOfValues);
-
         vout << "      Calculating Cov ..." << endl;
         vout << "         Dim    = " << NumOfValues << " x " << NumOfValues << endl;
+
+    Cov.CreateMatrix(NumOfValues,NumOfValues);
+
+    #pragma omp parallel for firstprivate(jpos,ipos)
     for(size_t indi=0; indi < NumOfValues; indi++){
         size_t i = ValueMap[indi];
         Accumulator->GetPoint(i,ipos);
@@ -2201,6 +2206,7 @@ void CABFIntegratorGPR::CalculateCovs(CVerboseStr& vout)
         }
     }
 
+    RunBlasLapackPar();
     CSciBlas::gemm(-1.0,'T',Kl,'N',Kr,1.0,Cov);
 
 //    for(size_t indi=0; indi < NumOfValues; indi++){
