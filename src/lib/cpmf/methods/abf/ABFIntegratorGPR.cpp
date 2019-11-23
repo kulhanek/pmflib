@@ -2311,6 +2311,7 @@ bool CABFIntegratorGPR::ReduceFES(const std::vector<bool>& keepcvs,double temp,C
         IdxMap[indi] = rbin;
         double w = exp(-ene/(R*temp));
         p_rsurf->SetEnergy(rbin,p_rsurf->GetEnergy(rbin) + w);
+        p_rsurf->SetNumOfSamples(rbin,1);
     }
 
 // calculate errors

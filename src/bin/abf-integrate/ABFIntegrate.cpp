@@ -1000,6 +1000,15 @@ bool CABFIntegrate::ReduceFES(void)
         }
     }
 
+// post-processing
+    if( Options.GetOptUnsampledAsMaxE() ){
+        if( Options.IsOptMaxEnergySet()){
+            reducedFES.AdaptUnsampledToMaxEnergy(Options.GetOptMaxEnergy());
+        } else {
+            reducedFES.AdaptUnsampledToMaxEnergy();
+        }
+    }
+
     CESPrinter printer;
 
     printer.SetXFormat(Options.GetOptIXFormat());
