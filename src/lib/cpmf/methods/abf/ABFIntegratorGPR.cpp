@@ -2086,16 +2086,21 @@ void CABFIntegratorGPR::CalculateErrorsFromCov(CVerboseStr& vout)
     vout << "   Calculating FES error ..." << endl;
 
     // find global minimum
-    bool   first = true;
-    size_t iglb = -1;
-    double glb_min = 0.0;
-    for(size_t indj=0; indj < NumOfValues; indj++){
-        size_t j = ValueMap[indj];
-        double value = FES->GetEnergy(j);
-        if( first || (glb_min > value) ){
-            iglb = indj;
-            first = false;
-            glb_min = value;
+    size_t iglb = 0;
+
+    if( GlobalMinSet ){
+        iglb = NumOfValues; // the last item in Cov(i,i)
+    } else {
+        bool   first = true;
+        double glb_min = 0.0;
+        for(size_t indj=0; indj < NumOfValues; indj++){
+            size_t j = ValueMap[indj];
+            double value = FES->GetEnergy(j);
+            if( first || (glb_min > value) ){
+                iglb = indj;
+                first = false;
+                glb_min = value;
+            }
         }
     }
 
@@ -2134,6 +2139,7 @@ void CABFIntegratorGPR::CalculateCovs(CVerboseStr& vout)
         RUNTIME_ERROR("NCVs == 0");
     }
 
+// ------------------------------------
         vout << "   Calculating covariances ..." << endl;
     if( UseNumDiff ) {
         vout << "      Creating K+Sigma (numeric differentation) ..." << endl;
@@ -2141,7 +2147,6 @@ void CABFIntegratorGPR::CalculateCovs(CVerboseStr& vout)
         vout << "      Creating K+Sigma ..." << endl;
     }
         vout << "         Dim    = " << GPRSize << " x " << GPRSize << endl;
-// construct KS
     CreateKS();
 
     CSimpleVector<double> ipos;
@@ -2150,25 +2155,38 @@ void CABFIntegratorGPR::CalculateCovs(CVerboseStr& vout)
     CSimpleVector<double> jpos;
     jpos.CreateVector(NCVs);
 
+// ------------------------------------
     CSimpleVector<double> kff;
     kff.CreateVector(GPRSize);
 
+    size_t nvals = NumOfValues;
+    if( GlobalMinSet ){
+        nvals++; // include explicitly set global minumum
+    }
+
     CFortranMatrix  Kr;
-    Kr.CreateMatrix(GPRSize,NumOfValues);
+    Kr.CreateMatrix(GPRSize,nvals);
 
         vout << "      Constructing kff ..." << endl;
-        vout << "         Dim    = " << GPRSize << " x " << NumOfValues << endl;
+        vout << "         Dim    = " << GPRSize << " x " << nvals << endl;
 
-    #pragma omp parallel for firstprivate(jpos)
-    for(size_t indj=0; indj < NumOfValues; indj++){
-        size_t j = ValueMap[indj];
-        Accumulator->GetPoint(j,jpos);
-        CreateKff(jpos,kff);
+    #pragma omp parallel for firstprivate(ipos,kff)
+    for(size_t indi=0; indi < NumOfValues; indi++){
+        size_t i = ValueMap[indi];
+        Accumulator->GetPoint(i,ipos);
+        CreateKff(ipos,kff);
         for(size_t k=0; k < GPRSize; k++){
-            Kr[k][indj] = kff[k];
+            Kr[k][indi] = kff[k];
+        }
+    }
+    if( GlobalMinSet ){
+        CreateKff(GPos,kff);
+        for(size_t k=0; k < GPRSize; k++){
+            Kr[k][nvals-1] = kff[k];
         }
     }
 
+// ------------------------------------
     CFortranMatrix  Kl;
     Kl = Kr;
 
@@ -2191,11 +2209,12 @@ void CABFIntegratorGPR::CalculateCovs(CVerboseStr& vout)
     }
 
         vout << "      Calculating Cov ..." << endl;
-        vout << "         Dim    = " << NumOfValues << " x " << NumOfValues << endl;
+        vout << "         Dim    = " << nvals << " x " << nvals << endl;
 
-    Cov.CreateMatrix(NumOfValues,NumOfValues);
+// ------------------------------------
+    Cov.CreateMatrix(nvals,nvals);
 
-    #pragma omp parallel for firstprivate(jpos,ipos)
+    #pragma omp parallel for firstprivate(ipos,jpos)
     for(size_t indi=0; indi < NumOfValues; indi++){
         size_t i = ValueMap[indi];
         Accumulator->GetPoint(i,ipos);
@@ -2203,7 +2222,18 @@ void CABFIntegratorGPR::CalculateCovs(CVerboseStr& vout)
             size_t j = ValueMap[indj];
             Accumulator->GetPoint(j,jpos);
             Cov[indi][indj] = GetKernelValue(ipos,jpos);
+
         }
+    }
+    if( GlobalMinSet ){
+        #pragma omp parallel for firstprivate(ipos)
+        for(size_t indi=0; indi < NumOfValues; indi++){
+            size_t i = ValueMap[indi];
+            Accumulator->GetPoint(i,ipos);
+            Cov[indi][nvals-1] = GetKernelValue(ipos,GPos);
+            Cov[nvals-1][indi] = Cov[indi][nvals-1];
+        }
+        Cov[nvals-1][nvals-1] = GetKernelValue(GPos,GPos);
     }
 
     RunBlasLapackPar();
