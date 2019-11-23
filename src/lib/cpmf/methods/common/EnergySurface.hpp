@@ -59,6 +59,9 @@ public:
     /// allocate array
     void Allocate(const CABFAccumulator* abf_accu,const std::vector<bool>& enabled_cvs);
 
+    /// allocate array
+    void Allocate(const CEnergySurface* p_surf,const std::vector<bool>& enabled_cvs);
+
     /// deallocate array
     void Deallocate(void);
 
@@ -99,14 +102,20 @@ public:
     /// add offset to the whole surface
     void ApplyOffset(double offset);
 
-    /// adapt errors for energy global minimum
-    void AdaptErrorsToGlobalMinimum(void);
-
     /// set unsampled region to max energy from sampled region
     void AdaptUnsampledToMaxEnergy(void);
 
     /// set unsampled region to provided max energy
     void AdaptUnsampledToMaxEnergy(double maxene);
+
+    /// reduce FES
+    bool ReduceFES(const std::vector<bool>& keepcvs,double temp,CEnergySurface* p_rsurf);
+
+    /// reduce ipoint
+    void ReduceIPoint(const std::vector<bool>& keepcvs,CSimpleVector<int>& midx,CSimpleVector<int>& ridx);
+
+    /// convert point to bin
+    unsigned int IPoint2Bin(const CSimpleVector<int>& point);
 
 // operators ------------------------------------------------------------------
     /// add energy surface

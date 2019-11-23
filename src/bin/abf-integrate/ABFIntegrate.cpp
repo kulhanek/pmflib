@@ -33,11 +33,14 @@
 #include <iomanip>
 #include <algorithm>
 #include <boost/format.hpp>
+#include <boost/algorithm/string/split.hpp>
+#include <boost/algorithm/string/classification.hpp>
 
 //------------------------------------------------------------------------------
 
 using namespace std;
 using namespace boost;
+using namespace boost::algorithm;
 
 //------------------------------------------------------------------------------
 
@@ -192,15 +195,17 @@ int CABFIntegrate::Init(int argc,char* argv[])
     vout << "# Include bin statuses  : " << bool_to_str(Options.GetOptIncludeBinStat()) << endl;
     vout << "# X format              : " << Options.GetOptIXFormat() << endl;
     vout << "# Y format              : " << Options.GetOptOEFormat() << endl;
+    if( Options.IsOptKeepCVsSet() ){
+    vout << "# ------------------------------------------------------------------------------" << endl;
+    vout << "# Keep CVs              : " << Options.GetOptKeepCVs() << endl;
+    vout << "# Reduced FES file      : " << Options.GetOptReducedFES() << endl;
+    }
+
     vout << "# ------------------------------------------------------------------------------" << endl;
 
     // open files -----------------------------------
     if( InputFile.Open(ABFAccuName,"r") == false ){
         ES_ERROR("unable to open input file");
-        return(SO_USER_ERROR);
-    }
-    if( OutputFile.Open(FEOutputName,"w") == false ){
-        ES_ERROR("unable to open output file");
         return(SO_USER_ERROR);
     }
 
@@ -230,6 +235,11 @@ bool CABFIntegrate::Run(void)
     // DO NOT SET IT HERE, Ncorr is now GPR hyperparameter
     // Accumulator.SetNCorr(Options.GetOptNCorr());
     FES.Allocate(&Accumulator);
+
+// reduced FES options
+    if( Options.IsOptKeepCVsSet() ){
+        DecodeEList(Options.GetOptKeepCVs(),KeepCVs,"--keepcvs");
+    }
 
     vout << endl;
     vout << format("%02d:Statistics of input ABF accumulator")%state << endl;
@@ -367,9 +377,24 @@ bool CABFIntegrate::Run(void)
         }
     }
 
-// print result ---------------------------------
+// reduce FES ------------------------------
+    if( Options.IsOptReducedFESSet() ){
+        vout << endl;
+        vout << format("%02d:Reducing FES by statistical reweighting")%state << endl;
+        state++;
+        if( ReduceFES() == false ) return(false);
+        vout << "   Done." << endl;
+    }
+
+// print result ---------------------------------   
     vout << endl;
     vout << format("%02d:Writing results to file: %s")%state%string(FEOutputName) << endl;
+
+    if( OutputFile.Open(FEOutputName,"w") == false ){
+        ES_ERROR("unable to open output file");
+        return(SO_USER_ERROR);
+    }
+
     state++;
     CESPrinter printer;
 
@@ -885,8 +910,120 @@ bool CABFIntegrate::Integrate(void)
             if( integrator.WriteMFInfo(Options.GetOptMFInfo()) == false ) return(false);
         }
 
+        GPos = integrator.GetGlobalMin();
+
     } else {
         INVALID_ARGUMENT("method - not implemented");
+    }
+
+    return(true);
+}
+
+//------------------------------------------------------------------------------
+
+bool CABFIntegrate::ReduceFES(void)
+{
+    vout << format("   Reduced FES : %s")%string(Options.GetOptReducedFES()) << endl;
+
+    size_t nrcvs = 0;
+           vout << "   Kept CVs    : ";
+    for(size_t i=0; i < KeepCVs.size(); i++){
+        if( KeepCVs[i] ){
+            vout << "T";
+            nrcvs++;
+        } else {
+            vout << "F";
+        }
+        if( (i+1) < KeepCVs.size() ) vout << "x";
+    }
+    vout << endl;
+    if( nrcvs == (size_t)Accumulator.GetNumberOfCoords() ){
+        vout << "   No reduction specified, skipping ..." << endl;
+        return(true);
+    }
+    if( nrcvs == 0 ){
+        vout << "   Too large reduction specified, skipping ..." << endl;
+        return(true);
+    }
+
+    vout << format("   Temperature : %.1f K")%Options.GetOptTemperature() << endl;
+
+    CEnergySurface reducedFES;
+
+    if( (Options.GetOptMethod() == "gpr") && Options.GetOptWithError() ){
+        // need to run another integration
+        CABFIntegratorGPR   integrator;
+
+        // FES is destroyed during reduction by CABFIntegratorGPR, thus use some temp version
+        CEnergySurface tmp_FES;
+        tmp_FES.Allocate(&Accumulator);
+
+        integrator.SetInputABFAccumulator(&Accumulator);
+        integrator.SetOutputFESurface(&tmp_FES);
+
+        integrator.SetSplitNCorr(Options.GetOptSplitNCorr());
+
+        if( Options.IsOptLoadHyprmsSet() ){
+            LoadGPRHyprms(integrator);
+        } else {
+            integrator.SetSigmaF2(Options.GetOptSigmaF2());
+            integrator.SetNCorr(Options.GetOptNCorr());
+            integrator.SetWFac(Options.GetOptWFac());
+        }
+
+        integrator.SetFastError(true);
+        integrator.SetIncludeError(true);
+        integrator.SetNoEnergy(false);
+        integrator.SetUseNumDiff(Options.GetOptGPRNumDiff());
+        integrator.IncludeGluedAreas((Options.GetOptGlueingFactor() > 0)||Options.GetOptGlueHoles()||Options.GetOptIncludeGluedRegions());
+        integrator.SetGlobalMin(GPos);
+        integrator.SetRCond(Options.GetOptRCond());
+        integrator.SetLAMethod(Options.GetOptLAMethod());
+        integrator.SetUseInv(Options.GetOptGPRUseInv());
+        integrator.SetKernel(Options.GetOptGPRKernel());
+        integrator.SetCalcLogPL(Options.GetOptGPRCalcLogPL());
+        integrator.SetUseZeroPoint(true);
+
+        if(integrator.Integrate(vout) == false) {
+            ES_ERROR("unable to integrate ABF accumulator");
+            return(false);
+        }
+        if( integrator.ReduceFES(KeepCVs,Options.GetOptTemperature(),&reducedFES) == false ){
+            ES_ERROR("unable to reduce FES");
+            return(false);
+        }
+
+    } else {
+        if( FES.ReduceFES(KeepCVs,Options.GetOptTemperature(),&reducedFES) == false ){
+            ES_ERROR("unable to reduce FES");
+            return(false);
+        }
+    }
+
+    CESPrinter printer;
+
+    printer.SetXFormat(Options.GetOptIXFormat());
+    printer.SetYFormat(Options.GetOptOEFormat());
+    if(Options.GetOptOutputFormat() == "plain") {
+        printer.SetOutputFormat(EESPF_PLAIN);
+    } else if(Options.GetOptOutputFormat() == "gnuplot") {
+        printer.SetOutputFormat(EESPF_GNUPLOT);
+    } else if(Options.GetOptOutputFormat() == "fes") {
+        printer.SetOutputFormat(EESPF_PMF_FES);
+    } else {
+        INVALID_ARGUMENT("output format - not implemented");
+    }
+
+    printer.SetSampleLimit(0);
+    printer.SetIncludeError(Options.GetOptWithError());
+    printer.SetIncludeBinStat(Options.GetOptIncludeBinStat());
+    printer.SetPrintedES(&reducedFES);
+
+    try {
+        printer.Print(Options.GetOptReducedFES());
+    } catch(...) {
+        ES_ERROR("unable to save the reduced free energy file");
+        return(false);
     }
 
     return(true);
@@ -1407,6 +1544,52 @@ void CABFIntegrate::MarkAsHole(int seedid)
         if( FFSeeds[ibin] == seedid ){
             Accumulator.SetNumberOfABFSamples(ibin,-1);
         }
+    }
+}
+
+//==============================================================================
+//------------------------------------------------------------------------------
+//==============================================================================
+
+void CABFIntegrate::DecodeEList(const CSmallString& spec, std::vector<bool>& elist,const CSmallString& optionname)
+{
+    int ncvs = Accumulator.GetNumberOfCoords();
+
+    string          sspecen(spec);
+    vector<string>  slist;
+
+    split(slist,sspecen,is_any_of("x"),token_compress_on);
+
+    if( (int)slist.size() > ncvs ){
+        CSmallString error;
+        error << "too many flags (" << slist.size() << ") for " << optionname << " than required (" << ncvs << ")";
+        RUNTIME_ERROR(error);
+    }
+
+    elist.resize(ncvs);
+
+    // parse values
+    bool last_st = false;
+    for(int i=0; i < (int)slist.size(); i++){
+        stringstream str(slist[i]);
+        char letter;
+        str >> letter;
+        if( ! str ){
+            CSmallString error;
+            error << "unable to decode value for " << optionname << " at position: " << i+1;
+            RUNTIME_ERROR(error);
+        }
+        if( (letter == 'T') || (letter == 't') ){
+            last_st = true;
+        } else {
+            last_st = false;
+        }
+        elist[i] = last_st;
+    }
+
+    // pad the rest with the last value
+    for(int i=slist.size(); i < ncvs; i++){
+        elist[i] = last_st;
     }
 }
 

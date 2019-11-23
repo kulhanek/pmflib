@@ -154,6 +154,38 @@ void CEnergySurface::Allocate(const CABFAccumulator* abf_accu,const std::vector<
 
 //------------------------------------------------------------------------------
 
+void CEnergySurface::Allocate(const CEnergySurface* p_surf,const std::vector<bool>& enabled_cvs)
+{
+    if( NumOfCVs > 0 ) Deallocate();
+    if( p_surf == NULL ) return;
+    if( p_surf->GetNumberOfCoords() <= 0 ) return;
+
+// allocate items
+    NumOfCVs = 0;
+    for(size_t i = 0; i < enabled_cvs.size(); i++){
+        if( enabled_cvs[i] ) NumOfCVs++;
+    }
+    Sizes.CreateVector(NumOfCVs);
+
+// copy cvs and calculate total number of points
+    TotNPoints = 1;
+    size_t i = 0;
+    for(size_t k = 0; k < enabled_cvs.size(); k++){
+        if( enabled_cvs[k] ){
+            Sizes[i].CopyFrom(p_surf->GetCoordinate(k));
+            TotNPoints *= Sizes[i].GetNumberOfBins();
+        }
+    }
+
+    Energy.CreateVector(TotNPoints);
+    Error.CreateVector(TotNPoints);
+    Samples.CreateVector(TotNPoints);
+
+    Clear();
+}
+
+//------------------------------------------------------------------------------
+
 void CEnergySurface::Deallocate(void)
 {
     Sizes.FreeVector();
@@ -286,6 +318,24 @@ void CEnergySurface::GetIPoint(unsigned int index,CSimpleVector<int>& point) con
 
 //------------------------------------------------------------------------------
 
+unsigned int CEnergySurface::IPoint2Bin(const CSimpleVector<int>& point)
+{
+    unsigned int idx = 0;
+
+    for(int i=0; i < NumOfCVs; i++) {
+        CColVariable cv = Sizes[i];
+        size_t idx_local = point[i];
+        if( (idx_local < 0) || (idx_local >= cv.GetNumberOfBins())){
+            return(-1);
+        }
+        idx = idx*cv.GetNumberOfBins() + idx_local;
+    }
+
+    return(idx);
+}
+
+//------------------------------------------------------------------------------
+
 double CEnergySurface::GetGlobalMinimumValue(void) const
 {
     double minimum = 0.0;
@@ -305,30 +355,6 @@ void CEnergySurface::ApplyOffset(double offset)
 {
     for(int k=0; k < TotNPoints; k++) {
         Energy[k] += offset;
-    }
-}
-
-//------------------------------------------------------------------------------
-
-void CEnergySurface::AdaptErrorsToGlobalMinimum(void)
-{
-    double minimum = 0.0;
-    double err_at_minimum = 0.0;
-    bool   first = true;
-
-    for(int k=0; k < TotNPoints; k++) {
-        if( Samples[k] <= 0 ) continue;
-        if( (minimum > Energy[k]) || (first == true) ){
-            minimum = Energy[k];
-            err_at_minimum = Error[k];
-            first = false;
-        }
-    }
-
-    // adapt errors
-    for(int k=0; k < TotNPoints; k++) {
-        if( Samples[k] <= 0 ) continue;
-        Error[k] = fabs(Error[k] - err_at_minimum);
     }
 }
 
@@ -390,6 +416,68 @@ void CEnergySurface::operator/=(const double& number)
 {
     for(int k=0; k < TotNPoints; k++) {
         Energy[k] /= number;
+    }
+}
+
+//==============================================================================
+//------------------------------------------------------------------------------
+//==============================================================================
+
+bool CEnergySurface::ReduceFES(const std::vector<bool>& keepcvs,double temp,CEnergySurface* p_rsurf)
+{
+    if( p_rsurf == NULL ){
+        ES_ERROR("p_rsurf == NULL");
+        return(false);
+    }
+    if( keepcvs.size() != (size_t)NumOfCVs ){
+        RUNTIME_ERROR("keepcvs.size() != NumOfCVs");
+    }
+
+    p_rsurf->Allocate(this,keepcvs);
+    p_rsurf->Clear();
+
+    CSimpleVector<int>    midx;
+    midx.CreateVector(NumOfCVs);
+
+    CSimpleVector<int>    ridx;
+    ridx.CreateVector(p_rsurf->NumOfCVs);
+
+    const double R = 1.98720425864083e-3;
+
+// calculate weights
+    for(size_t mbin = 0; mbin < (size_t)TotNPoints; mbin++){
+        double ene = GetEnergy(mbin);
+        GetIPoint(mbin,midx);
+        ReduceIPoint(keepcvs,midx,ridx);
+        size_t rbin = p_rsurf->IPoint2Bin(ridx);
+        double w = exp(-ene/(R*temp));
+        p_rsurf->SetEnergy(rbin,p_rsurf->GetEnergy(rbin) + w);
+    }
+
+// transform back to FE
+    for(size_t rbin = 0; rbin < (size_t)p_rsurf->TotNPoints; rbin++){
+        double w = p_rsurf->GetEnergy(rbin);
+        p_rsurf->SetEnergy(rbin,-R*temp*log(w));
+    }
+
+// move global minimum
+   double gmin = p_rsurf->GetGlobalMinimumValue();
+   p_rsurf->ApplyOffset(-gmin);
+
+    return(true);
+}
+
+//------------------------------------------------------------------------------
+
+void CEnergySurface::ReduceIPoint(const std::vector<bool>& keepcvs,CSimpleVector<int>& midx,CSimpleVector<int>& ridx)
+{
+    ridx.SetZero();
+    size_t j = 0;
+    for(int i = 0; i < NumOfCVs; i++){
+        if( keepcvs[i] ){
+            ridx[j] = midx[i];
+            j++;
+        }
     }
 }
 

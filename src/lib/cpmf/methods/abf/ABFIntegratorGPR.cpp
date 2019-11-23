@@ -65,6 +65,7 @@ CABFIntegratorGPR::CABFIntegratorGPR(void)
     IncludeGluedBins    = false;
     NoEnergy            = false;
     GlobalMinSet        = false;
+    GPosSet             = false;
 
     UseNumDiff          = false;
     Method              = EGPRLA_LU;
@@ -379,6 +380,27 @@ void CABFIntegratorGPR::SetGlobalMin(const CSmallString& spec)
             RUNTIME_ERROR(error);
         }
     }
+
+    GPosSet = true;
+}
+
+//------------------------------------------------------------------------------
+
+void CABFIntegratorGPR::SetGlobalMin(const CSimpleVector<double>& pos)
+{
+    GlobalMinSet = true;
+    GPos = pos;
+    GPosSet = true;
+}
+
+//------------------------------------------------------------------------------
+
+CSimpleVector<double> CABFIntegratorGPR::GetGlobalMin(void)
+{
+    if( GPosSet == false ){
+        RUNTIME_ERROR("")
+    }
+    return(GPos);
 }
 
 //------------------------------------------------------------------------------
@@ -1360,6 +1382,8 @@ void CABFIntegratorGPR::CalculateEnergy(CVerboseStr& vout)
         }
     }
 
+    GPosSet = true;
+
     vout << "      SigmaF2   = " << setprecision(5) << FES->GetSigmaF2() << endl;
     if( IncludeGluedBins ){
         vout << "      SigmaF2 (including glued bins) = " << setprecision(5) << FES->GetSigmaF2(true) << endl;
@@ -2251,11 +2275,85 @@ void CABFIntegratorGPR::CalculateCovs(CVerboseStr& vout)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-//void CABFIntegratorGPR::Reduce(CEnergySurface* p_surf,bool inc_inter,bool inc_extra)
-//{
-//    if( p_surf == NULL ){
-//        RUNTIME_ERROR("p_surf is not alloacted");
-//    }
-//}
+bool CABFIntegratorGPR::ReduceFES(const std::vector<bool>& keepcvs,double temp,CEnergySurface* p_rsurf)
+{
+    if( p_rsurf == NULL ){
+        ES_ERROR("p_rsurf == NULL");
+        return(false);
+    }
+    if( keepcvs.size() != NCVs ){
+        RUNTIME_ERROR("keepcvs.size() != NCVs");
+    }
+
+    bool only_variances = false;
+
+    p_rsurf->Allocate(FES,keepcvs);
+    p_rsurf->Clear();
+
+    CSimpleVector<int>    midx;
+    midx.CreateVector(NCVs);
+
+    CSimpleVector<int>    ridx;
+    ridx.CreateVector(p_rsurf->GetNumberOfCoords());
+
+    const double R = 1.98720425864083e-3;
+
+    CSimpleVector<size_t>  IdxMap;
+    IdxMap.CreateVector(NumOfValues);
+
+// calculate weights
+    for(size_t indi=0; indi < NumOfValues; indi++){
+        size_t mbin = ValueMap[indi];
+        double ene = FES->GetEnergy(mbin);
+        FES->GetIPoint(mbin,midx);
+        FES->ReduceIPoint(keepcvs,midx,ridx);
+        size_t rbin = p_rsurf->IPoint2Bin(ridx);
+        IdxMap[indi] = rbin;
+        double w = exp(-ene/(R*temp));
+        p_rsurf->SetEnergy(rbin,p_rsurf->GetEnergy(rbin) + w);
+    }
+
+// calculate errors
+    for(size_t rbin = 0; rbin < (size_t)p_rsurf->GetNumberOfPoints(); rbin++){
+        double err = 0.0;
+        // err is now variance
+        for(size_t indi=0; indi < NumOfValues; indi++){
+            if( IdxMap[indi] != rbin ) continue;
+            size_t mbini = ValueMap[indi];
+            double enei = FES->GetEnergy(mbini);
+            double wi = exp(-enei/(R*temp));
+            for(size_t indj=0; indj < NumOfValues; indj++){
+                if( IdxMap[indj] != rbin ) continue;
+                if( only_variances ){
+                    if( indi != indj ) continue;
+                }
+                size_t mbinj = ValueMap[indj];
+                double enej = FES->GetEnergy(mbinj);
+                double wj = exp(-enej/(R*temp));
+                err = err + wi*wj*Cov[indi][indj];
+            }
+        }
+        // p_rsurf->GetEnergy(rbin) contains sum of all weights
+        err = err / (p_rsurf->GetEnergy(rbin)*p_rsurf->GetEnergy(rbin));
+
+        // switch to error
+        if( err > 0 ){
+            err = sqrt(err);
+        }
+        p_rsurf->SetError(rbin,err);
+    }
+
+// transform back to FE
+    for(size_t rbin = 0; rbin < (size_t)p_rsurf->GetNumberOfPoints(); rbin++){
+        double w = p_rsurf->GetEnergy(rbin);
+        p_rsurf->SetEnergy(rbin,-R*temp*log(w));
+    }
+
+// move global minimum
+   double gmin = p_rsurf->GetGlobalMinimumValue();
+   p_rsurf->ApplyOffset(-gmin);
+
+    return(true);
+}
 
 //------------------------------------------------------------------------------

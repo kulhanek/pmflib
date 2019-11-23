@@ -55,10 +55,11 @@ private:
     CStdIOFile          OutputFile;
     CABFAccumulator     Accumulator;
     CEnergySurface      FES;
-    CSmallTimeAndDate   StartTime;
-    CSimpleVector<int>  FFSeeds;
-    CSimpleVector<int>  IPos;
-    CSimpleVector<int>  TPos;
+    CSmallTimeAndDate       StartTime;
+    CSimpleVector<int>      FFSeeds;
+    CSimpleVector<int>      IPos;
+    CSimpleVector<int>      TPos;
+    CSimpleVector<double>   GPos;
 
     // output ------------------------------------
     CTerminalStr        Console;
@@ -66,6 +67,7 @@ private:
     CSmallString        ABFAccuName;
     CSmallString        FEOutputName;
     CSmallString        FullFEOutputName;
+    std::vector<bool>   KeepCVs;
 
     void PrepareAccumulatorI(void);
     void PrepareAccumulatorII(void);
@@ -86,6 +88,8 @@ private:
     void PrintGPRHyprms(FILE* p_fout);
     void LoadGPRHyprms(CABFIntegratorGPR& gpr);
     void SyncFESWithACCU(void);
+    void DecodeEList(const CSmallString& spec, std::vector<bool>& elist,const CSmallString& optionname);
+    bool ReduceFES(void);
 };
 
 //------------------------------------------------------------------------------

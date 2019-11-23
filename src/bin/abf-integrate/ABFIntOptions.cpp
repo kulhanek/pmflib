@@ -180,6 +180,27 @@ int CABFIntOptions::CheckOptions(void)
         IsError = true;
     }
 
+    if( IsOptGPRFastErrorSet() && (IsOptWithErrorSet() == false) ){
+        if(IsError == false) fprintf(stderr,"\n");
+        fprintf(stderr,"%s: --fasterror can be set only alongside with --witherror\n",
+                (const char*)GetProgramName());
+        IsError = true;
+    }
+
+    if( IsOptKeepCVsSet() && (IsOptReducedFESSet() == false) ){
+        if(IsError == false) fprintf(stderr,"\n");
+        fprintf(stderr,"%s: --keepcvs can be set only alongside with --reducedfes\n",
+                (const char*)GetProgramName());
+        IsError = true;
+    }
+
+    if( IsOptReducedFESSet() && (IsOptKeepCVsSet() == false) ){
+        if(IsError == false) fprintf(stderr,"\n");
+        fprintf(stderr,"%s: --reducedfes can be set only alongside with --keepcvs\n",
+                (const char*)GetProgramName());
+        IsError = true;
+    }
+
     if( IsOptRFacSet() && (GetOptMethod() != "rbf") ){
         if(IsError == false) fprintf(stderr,"\n");
         fprintf(stderr,"%s: --rfac can be set only for RBF method\n",

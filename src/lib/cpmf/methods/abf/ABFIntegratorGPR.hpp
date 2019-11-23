@@ -121,6 +121,12 @@ public:
     /// set position of global minimum
     void SetGlobalMin(const CSmallString& spec);
 
+    /// set position of global minimum
+    void SetGlobalMin(const CSimpleVector<double>& pos);
+
+    /// get position of global minima
+    CSimpleVector<double> GetGlobalMin(void);
+
     /// use inversion alg
     void SetUseInv(bool set);
 
@@ -172,7 +178,7 @@ public:
     const CSmallString GetKernelName(void);
 
     /// perform statistical reweighting
-    void Reduce(void);
+    bool ReduceFES(const std::vector<bool>& keepcvs,double temp,CEnergySurface* p_rsurf);
 
 // section of private data ----------------------------------------------------
 private:
@@ -215,8 +221,9 @@ private:
     // derivatives
     CFortranMatrix          Kder;           // derivative of kernels w.r.t. a hyperparameter
 
-    bool                    GlobalMinSet;
+    bool                    GlobalMinSet;   // true if gpos set by SetGlobalMin()
     CSimpleVector<double>   GPos;           // global position, either detected or use
+    bool                    GPosSet;        // true is gpos set by any means, either SetGlobalMin() or from FES
 
     // SVD setup
     double                  RCond;

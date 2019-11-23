@@ -38,21 +38,8 @@ public:
     CSO_PROG_NAME_END
 
     CSO_PROG_DESC_BEGIN
-    "It numericaly integrates data from the ABF calculation. The integration is performed either by "
-    "reverse finite difference (RFD or RFD2) method, employing radial basis functions (RBF), or gaussian process (GPR).\n"
-    "<b><red>Warning:</red></b> "
-    "While RFD is extremly fast it can fail on data with irregular sampling. This problem can be partially overcome "
-    "by increasing sampling limit. "
-    "Both RFD and RBF can fail on data with quick changes in mean forces. "
-    "This situation can be partially overcome by increasing sampling limit and "
-    "at the same time by energy limit, which, however, requires two integration passes. "
-    "GPR is probably ultimate way how to obtain correctly integrated data but "
-    "at cost of significantly higher computational demands.\n"
-    "Quality of the integration can be monitored by RMSR, SigmaF2, and logML (GPR only). <b>RMSR</b> is the root mean square of mean force residuals. "
-    "The residual is difference between input mean force (derivative of the free energy) and mean force predicted by the model. "
-    "<b>SigmaF2</b> is a variance of the resulting free energy. "
-    "<b>logML</b> is logarithm of marginal likelihood. "
-    "When changing hyperparameters (wfac, rfac, sigmaf2) RMSR should be minimized (however one must be carefull with possible model overfitting) and logML should be maximized."
+    "The program numericaly integrates data from the ABF calculation. The integration is performed either by "
+    "reverse finite difference (RFD or RFD2) method, employing radial basis functions (RBF), or gaussian process (GPR)."
     CSO_PROG_DESC_END
 
     CSO_PROG_VERS_BEGIN
@@ -117,6 +104,9 @@ public:
     CSO_OPT(bool,GPRCalcLogPL)
     CSO_OPT(bool,GPRIncludeZPE)
     CSO_OPT(bool,GPRFastError)
+    CSO_OPT(CSmallString,KeepCVs)
+    CSO_OPT(CSmallString,ReducedFES)
+    CSO_OPT(double,Temperature)
     CSO_OPT(bool,Verbose)
     CSO_OPT(bool,Version)
     CSO_OPT(bool,Help)
@@ -530,6 +520,34 @@ public:
                 "fasterror",                      /* long option name */
                 NULL,                           /* parametr name */
                 "GPR: Use faster algorithm for error calculation.")   /* option description */
+    //----------------------------------------------------------------------
+    CSO_MAP_OPT(CSmallString,                           /* option type */
+                KeepCVs,                        /* option name */
+                "T",                          /* default value */
+                false,                          /* is option mandatory */
+                0,                           /* short option name */
+                "keepcvs",                      /* long option name */
+                "SPEC",                           /* parametr name */
+                "Which CVs should be kept during statistical reweighting of FES. Flags are specified in the form CV1[xCV2x...] with F and T for skip and kept CV, respectively. "
+                "The last value pads the rest.")   /* option description */
+    //----------------------------------------------------------------------
+    CSO_MAP_OPT(CSmallString,                           /* option type */
+                ReducedFES,                        /* option name */
+                NULL,                          /* default value */
+                false,                          /* is option mandatory */
+                0,                           /* short option name */
+                "reducedfes",                      /* long option name */
+                "NAME",                           /* parametr name */
+                "Name of file for FES reduced by statistical reweighting containing only kept CVs.")   /* option description */
+    //----------------------------------------------------------------------
+    CSO_MAP_OPT(double,                           /* option type */
+                Temperature,                        /* option name */
+                300,                          /* default value */
+                false,                          /* is option mandatory */
+                0,                           /* short option name */
+                "temperature",                      /* long option name */
+                "NUMBER",                           /* parametr name */
+                "Absolute temperature for reduction of FES in [K].")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(bool,                           /* option type */
                 Verbose,                        /* option name */
