@@ -1427,19 +1427,19 @@ double CABFIntegratorGPR::GetRMSR(size_t cv)
         return(false);
     }
 
-    CSimpleVector<double> jpos;
-    jpos.CreateVector(NCVs);
+    CSimpleVector<double> ipos;
+    ipos.CreateVector(NCVs);
 
     double rmsr = 0.0;
 
-    #pragma omp parallel for firstprivate(jpos) reduction(+:rmsr)
+    #pragma omp parallel for firstprivate(ipos) reduction(+:rmsr)
     for(size_t indi=0; indi < NumOfUsedBins; indi++){
         size_t i = SampledMap[indi];
 
-        Accumulator->GetPoint(i,jpos);
+        Accumulator->GetPoint(i,ipos);
 
         double mfi = Accumulator->GetValue(cv,i,EABF_MEAN_FORCE_VALUE);
-        double mfp = GetMeanForce(jpos,cv);
+        double mfp = GetMeanForce(ipos,cv);
         double diff = mfi - mfp;
         rmsr += diff*diff;
     }
@@ -1465,22 +1465,22 @@ bool CABFIntegratorGPR::WriteMFInfo(const CSmallString& name)
         return(false);
     }
 
-    CSimpleVector<double> jpos;
+    CSimpleVector<double> ipos;
     CSimpleVector<double> mfi;
     CSimpleVector<double> mfp;
 
-    jpos.CreateVector(NCVs);
+    ipos.CreateVector(NCVs);
     mfi.CreateVector(GPRSize);
     mfp.CreateVector(GPRSize);
 
     // calculate
-    #pragma omp parallel for firstprivate(jpos)
+    #pragma omp parallel for firstprivate(ipos)
     for(size_t indi=0; indi < NumOfUsedBins; indi++){
         size_t i = SampledMap[indi];
-        Accumulator->GetPoint(i,jpos);
+        Accumulator->GetPoint(i,ipos);
         for(size_t k=0; k < NCVs; k++){
             mfi[indi*NCVs+k] = Accumulator->GetValue(k,i,EABF_MEAN_FORCE_VALUE);
-            mfp[indi*NCVs+k] = GetMeanForce(jpos,k);
+            mfp[indi*NCVs+k] = GetMeanForce(ipos,k);
         }
     }
 
@@ -1496,10 +1496,10 @@ bool CABFIntegratorGPR::WriteMFInfo(const CSmallString& name)
     for(size_t indi=0; indi < NumOfUsedBins; indi++){
         size_t i = SampledMap[indi];
 
-        Accumulator->GetPoint(i,jpos);
+        Accumulator->GetPoint(i,ipos);
 
         for(size_t c=0; c < NCVs; c++){
-            ofs << format("%20.16f ")%jpos[c];
+            ofs << format("%20.16f ")%ipos[c];
         }
 
         for(size_t k=0; k < NCVs; k++){
@@ -1544,18 +1544,18 @@ void CABFIntegratorGPR::FilterByMFZScore(double zscore,CVerboseStr& vout)
     vout << high;
     vout << "      Precalculating MF errors ..." << endl;
 
-    CSimpleVector<double> jpos;
-    jpos.CreateVector(NCVs);
+    CSimpleVector<double> ipos;
+    ipos.CreateVector(NCVs);
 
     // precalculate values
-    #pragma omp parallel for firstprivate(jpos)
+    #pragma omp parallel for firstprivate(ipos)
     for(size_t indi=0; indi < NumOfUsedBins; indi++){
         size_t i = SampledMap[indi];
 
-        Accumulator->GetPoint(i,jpos);
+        Accumulator->GetPoint(i,ipos);
 
         for(size_t k=0; k < NCVs; k++){
-            double diff2 = Accumulator->GetValue(k,i,EABF_MEAN_FORCE_VALUE) - GetMeanForce(jpos,k);
+            double diff2 = Accumulator->GetValue(k,i,EABF_MEAN_FORCE_VALUE) - GetMeanForce(ipos,k);
             diff2 *= diff2;
             mferror2[indi*NCVs+k] = diff2;
         }
@@ -1914,7 +1914,7 @@ void CABFIntegratorGPR::CalcKderWRTSigmaF2(void)
             }
         }
 
-        #pragma omp parallel for firstprivate(ipos,kder)
+        #pragma omp parallel for firstprivate(jpos,kder)
         for(size_t indj=0; indj < NumOfUsedBins; indj++){
             size_t j = SampledMap[indj];
 
