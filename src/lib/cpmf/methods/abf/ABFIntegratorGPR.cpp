@@ -773,7 +773,7 @@ void CABFIntegratorGPR::CreateKS(void)
             }
         }
 
-        #pragma omp parallel for firstprivate(ipos,kder)
+        #pragma omp parallel for firstprivate(jpos,kder)
         for(size_t indj=0; indj < NumOfUsedBins; indj++){
             size_t j = SampledMap[indj];
 
@@ -2316,6 +2316,7 @@ bool CABFIntegratorGPR::ReduceFES(const std::vector<bool>& keepcvs,double temp,C
 // calculate errors
     for(size_t rbin = 0; rbin < (size_t)p_rsurf->GetNumberOfPoints(); rbin++){
         double err = 0.0;
+        int count = 0;
         // err is now variance
         for(size_t indi=0; indi < NumOfValues; indi++){
             if( IdxMap[indi] != rbin ) continue;
@@ -2331,8 +2332,11 @@ bool CABFIntegratorGPR::ReduceFES(const std::vector<bool>& keepcvs,double temp,C
                 double enej = FES->GetEnergy(mbinj);
                 double wj = exp(-enej/(R*temp));
                 err = err + wi*wj*Cov[indi][indj];
+                count++;
             }
         }
+        cout << count <<  endl;
+
         // p_rsurf->GetEnergy(rbin) contains sum of all weights
         err = err / (p_rsurf->GetEnergy(rbin)*p_rsurf->GetEnergy(rbin));
 
