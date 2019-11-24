@@ -1360,6 +1360,8 @@ void CABFIntegratorGPR::CalculateEnergy(CVerboseStr& vout)
         double glb_min = 0.0;
         for(size_t indj=0; indj < NumOfValues; indj++){
             size_t j = ValueMap[indj];
+            int samples = Accumulator->GetNumberOfABFSamples(j);
+            if( samples < -1 ) continue;    // include sampled areas and holes but exclude extrapolated areas
             double value = values[indj];
             if( first || (glb_min > value) ){
                 glb_min = value;

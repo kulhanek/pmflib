@@ -230,7 +230,7 @@ void CESPrinter::PrintPlain(FILE* fout)
         if( IncludeBinStat ){
             int stat = 0;
             if( EnergySurface->GetNumOfSamples(ibin) > 0 ) stat = 1;
-            if( EnergySurface->GetNumOfSamples(ibin) < 0 ) stat = -1;
+            if( EnergySurface->GetNumOfSamples(ibin) < 0 ) stat = EnergySurface->GetNumOfSamples(ibin);
             if(fprintf(fout,"%2d",stat) <= 0) {
                 CSmallString error;
                 error << "unable to print bin stat to the file (" << strerror(errno) << ")";
