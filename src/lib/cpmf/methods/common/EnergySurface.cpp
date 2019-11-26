@@ -452,6 +452,7 @@ bool CEnergySurface::ReduceFES(const std::vector<bool>& keepcvs,double temp,CEne
         size_t rbin = p_rsurf->IPoint2Bin(ridx);
         double w = exp(-ene/(R*temp));
         p_rsurf->SetEnergy(rbin,p_rsurf->GetEnergy(rbin) + w);
+        p_rsurf->SetNumOfSamples(rbin,1);
     }
 
 // transform back to FE
