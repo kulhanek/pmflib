@@ -27,6 +27,10 @@
 #include <ErrorSystem.hpp>
 #include <XMLElement.hpp>
 
+//------------------------------------------------------------------------------
+
+using namespace std;
+
 //==============================================================================
 //------------------------------------------------------------------------------
 //==============================================================================
@@ -174,6 +178,7 @@ void CEnergySurface::Allocate(const CEnergySurface* p_surf,const std::vector<boo
         if( enabled_cvs[k] ){
             Sizes[i].CopyFrom(p_surf->GetCoordinate(k));
             TotNPoints *= Sizes[i].GetNumberOfBins();
+            i++;
         }
     }
 
@@ -318,7 +323,7 @@ void CEnergySurface::GetIPoint(unsigned int index,CSimpleVector<int>& point) con
 
 //------------------------------------------------------------------------------
 
-unsigned int CEnergySurface::IPoint2Bin(const CSimpleVector<int>& point)
+int CEnergySurface::IPoint2Bin(const CSimpleVector<int>& point)
 {
     unsigned int idx = 0;
 
@@ -449,7 +454,18 @@ bool CEnergySurface::ReduceFES(const std::vector<bool>& keepcvs,double temp,CEne
         double ene = GetEnergy(mbin);
         GetIPoint(mbin,midx);
         ReduceIPoint(keepcvs,midx,ridx);
-        size_t rbin = p_rsurf->IPoint2Bin(ridx);
+        int rbin = p_rsurf->IPoint2Bin(ridx);
+        if( rbin == -1 ){
+            for(size_t i=0; i < ridx.GetLength(); i++){
+                cout << ridx[i] << " ";
+            }
+            cout << endl;
+            for(int i=0; i < p_rsurf->GetNumberOfCoords(); i++){
+                cout << p_rsurf->GetCoordinate(i)->GetNumberOfBins() << " ";
+            }
+            cout << endl;
+            RUNTIME_ERROR("rbin == -1");
+        }
         double w = exp(-ene/(R*temp));
         p_rsurf->SetEnergy(rbin,p_rsurf->GetEnergy(rbin) + w);
         p_rsurf->SetNumOfSamples(rbin,1);

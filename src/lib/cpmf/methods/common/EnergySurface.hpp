@@ -115,7 +115,7 @@ public:
     void ReduceIPoint(const std::vector<bool>& keepcvs,CSimpleVector<int>& midx,CSimpleVector<int>& ridx);
 
     /// convert point to bin
-    unsigned int IPoint2Bin(const CSimpleVector<int>& point);
+    int IPoint2Bin(const CSimpleVector<int>& point);
 
 // operators ------------------------------------------------------------------
     /// add energy surface
