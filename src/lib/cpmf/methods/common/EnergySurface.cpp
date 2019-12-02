@@ -325,7 +325,7 @@ void CEnergySurface::GetIPoint(unsigned int index,CSimpleVector<int>& point) con
 
 int CEnergySurface::IPoint2Bin(const CSimpleVector<int>& point)
 {
-    unsigned int idx = 0;
+    int idx = 0;
 
     for(int i=0; i < NumOfCVs; i++) {
         CColVariable cv = Sizes[i];

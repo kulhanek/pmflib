@@ -67,6 +67,7 @@ public:
     CSO_OPT(int,Limit)
     CSO_OPT(bool,SkipFFTest)
     CSO_OPT(double,EnergyLimit)
+    CSO_OPT(bool,EraseNegativeEnergy)
     CSO_OPT(bool,SkipLastEnergyLimit)
     CSO_OPT(double,MFMaxZScore)
     CSO_OPT(int,MFZTestPasses)
@@ -182,6 +183,15 @@ public:
                 "NUMBER",                           /* parametr name */
                 "Integrate data only if the free energy is below NUMBER. "
                 "This limit enforces two integration runs. Negative value disables the limit.")   /* option description */
+    //----------------------------------------------------------------------
+    CSO_MAP_OPT(bool,                           /* option type */
+                EraseNegativeEnergy,                        /* option name */
+                false,                          /* default value */
+                false,                          /* is option mandatory */
+                0,                           /* short option name */
+                "rmnegene",                      /* long option name */
+                NULL,                           /* parametr name */
+                "Remove regions with negative free energy.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(bool,                           /* option type */
                 SkipLastEnergyLimit,                        /* option name */

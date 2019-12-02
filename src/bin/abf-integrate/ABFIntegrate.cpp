@@ -1195,6 +1195,12 @@ void CABFIntegrate::PrepareAccumulatorII(void)
                 // erase datapoints with too large energy
                 Accumulator.SetNumberOfABFSamples(ibin,0);
             }
+            if( Options.GetOptEraseNegativeEnergy() ){
+                if( FES.GetEnergy(ibin) < 0 ){
+                    // erase datapoints with negative energy
+                    Accumulator.SetNumberOfABFSamples(ibin,0);
+                }
+            }
         }
     }
 }
