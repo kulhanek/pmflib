@@ -9,13 +9,20 @@ SET(ABF_INTEGRATE_SRC
         )
 
 # final build ------------------------------------------------------------------
-ADD_EXECUTABLE(abf-integrate ${ABF_INTEGRATE_SRC})
-ADD_DEPENDENCIES(abf-integrate cpmf_shared)
 
-TARGET_LINK_LIBRARIES(abf-integrate ${CPMF_LIBRARIES})
+IF(OpenMP_FOUND)
+    SET(TARGET_NAME _abf-integrate)
+ELSE()
+    SET(TARGET_NAME abf-integrate)
+ENDIF()
+
+ADD_EXECUTABLE(${TARGET_NAME} ${ABF_INTEGRATE_SRC})
+ADD_DEPENDENCIES(${TARGET_NAME} cpmf_shared)
+
+TARGET_LINK_LIBRARIES(${TARGET_NAME} ${CPMF_LIBRARIES})
 
 INSTALL(TARGETS
-            abf-integrate
+            ${TARGET_NAME}
         RUNTIME DESTINATION
             bin
         )

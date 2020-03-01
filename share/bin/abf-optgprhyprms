@@ -1,0 +1,14 @@
+#!/bin/bash
+# =============================================================================
+# abf-optgprhyprms
+#
+# Optional environment:
+#  INF_NCPUS            - number of CPU used for job execution
+# =============================================================================
+
+export OMP_NUM_THREADS=${INF_NCPUS:-1}
+export MKL_NUM_THREADS=${INF_NCPUS:-1}
+export OMP_PLACES=${OMP_PLACES:cores}
+
+_abf-optgprhyprms "$@"
+
