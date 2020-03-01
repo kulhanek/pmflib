@@ -21,51 +21,55 @@
 #include "PMFCATsDriver.hpp"
 #include <iostream>
 
+// keep in sync with pmf_sizes + 1 (for "C" null terminator)
+
+#define PMF_MAX_CV_NAME 51
+#define PMF_MAX_TYPE    11
+
 //------------------------------------------------------------------------------
 extern "C" {
 // FORTRAN INTERFACE ===========================================================
-//subroutine pmf_cats_begin_init(mdin,anatom,anres, &
-//                            antb,box_a,box_b,box_c,box_alpha,box_beta,box_gamma)
-void pmf_cats_begin_init_(char* mdin,int* anatom,int* anres,int* antb,
+
+void pmf_cats_begin_init_(char* mdin,FTINT* anatom,FTINT* anres,FTINT* antb,
                          double* box_a,double* box_b,double* box_c,
                          double* box_alpha,double* box_beta,double* box_gamma,
-                         int len_mdin);
+                         UFTINT len_mdin);
 
 //subroutine pmf_cats_set_residue(idx,name,first_atom)
-void pmf_cats_set_residue_(int* idx,char* name,int* first_atom,int len_name);
+void pmf_cats_set_residue_(FTINT* idx,char* name,FTINT* first_atom,UFTINT len_name);
 
 //subroutine pmf_cats_set_atom(idx,name,atype)
-void pmf_cats_set_atom_(int* idx,char* name,char* atype,int len_name,int len_atype);
+void pmf_cats_set_atom_(FTINT* idx,char* name,char* atype,UFTINT len_name,UFTINT len_atype);
 
 //subroutine pmf_cats_end_init(amass,ax)
-void pmf_cats_end_init_(int* anatom,double* amass,double* ax);
+void pmf_cats_end_init_(FTINT* anatom,double* amass,double* ax);
 
 //subroutine pmf_cats_update_box(a,b,c,alpha,beta,gamma)
 void pmf_cats_update_box_(double* a,double* b,double* c,double* alpha,double* beta,double* gamma);
 
 //subroutine pmf_cats_update_x(natoms,x)
-void pmf_cats_update_x_(int* natoms,double* x);
+void pmf_cats_update_x_(FTINT* natoms,double* x);
 
 //subroutine pmf_cats_get_num_of_cvs(numofcvs)
-void pmf_cats_get_num_of_cvs_(int* numofcvs);
+void pmf_cats_get_num_of_cvs_(FTINT* numofcvs);
 
 //subroutine pmf_cats_get_value(value,name)
-void pmf_cats_get_value_(double* value,char* name,int name_len);
+void pmf_cats_get_value_(double* value,char* name,UFTINT name_len);
 
 //subroutine pmf_cats_get_value_by_indx(value,indx)
-void pmf_cats_get_value_by_indx_(double* value,int* indx);
+void pmf_cats_get_value_by_indx_(double* value,FTINT* indx);
 
 //subroutine pmf_cats_get_name(name,indx)
-void pmf_cats_get_name_(char* name,int* indx,int name_len);
+void pmf_cats_get_name_(char* name,FTINT* indx,UFTINT name_len);
 
 //subroutine pmf_cats_get_type_by_indx(ctype,indx)
-void pmf_cats_get_type_by_indx_(char* ctype,int* indx,int ctype_len);
+void pmf_cats_get_type_by_indx_(char* ctype,FTINT* indx,UFTINT ctype_len);
 
 //subroutine pmf_cats_get_type(ctype,name)
-void pmf_cats_get_type_(char* ctype,char* name,int ctype_len,int name_len);
+void pmf_cats_get_type_(char* ctype,char* name,UFTINT ctype_len,UFTINT name_len);
 
 //subroutine pmf_cats_finalize
-void pmf_cats_finalize_(int* mode);
+void pmf_cats_finalize_(FTINT* mode);
 
 // FORTRAN INTERFACE ===========================================================
 }
@@ -84,7 +88,11 @@ void PMF_PACKAGE CPMFCATsDriver::BeginInit(CSmallString mdin,int anatom,int anre
     std::cout.flush();
     std::cerr.flush();
 
-    pmf_cats_begin_init_(mdin.GetBuffer(),&anatom,&anres,&antb,&box_a,&box_b,&box_c,
+    FTINT lnatom = anatom;
+    FTINT lnres = anres;
+    FTINT lntb = antb;
+
+    pmf_cats_begin_init_(mdin.GetBuffer(),&lnatom,&lnres,&lntb,&box_a,&box_b,&box_c,
                          &box_alpha,&box_beta,&box_gamma,mdin.GetLength());
 }
 
@@ -94,9 +102,11 @@ void PMF_PACKAGE CPMFCATsDriver::BeginInit(CSmallString mdin,int anatom,int anre
 
 void PMF_PACKAGE CPMFCATsDriver::SetResidue(int idx,CSmallString name,int first_atom)
 {
-    idx++; // c->fortran indexing
-    first_atom++;
-    pmf_cats_set_residue_(&idx,name.GetBuffer(),&first_atom,name.GetLength());
+    FTINT lidx = idx;
+    lidx++; // c->fortran indexing
+    FTINT lfirst_atom = first_atom;
+    lfirst_atom++;
+    pmf_cats_set_residue_(&lidx,name.GetBuffer(),&lfirst_atom,name.GetLength());
 }
 
 //==============================================================================
@@ -105,8 +115,9 @@ void PMF_PACKAGE CPMFCATsDriver::SetResidue(int idx,CSmallString name,int first_
 
 void PMF_PACKAGE CPMFCATsDriver::SetAtom(int idx,CSmallString name,CSmallString type)
 {
-    idx++; // c->fortran indexing
-    pmf_cats_set_atom_(&idx,name.GetBuffer(),type.GetBuffer(),name.GetLength(),type.GetLength());
+    FTINT lidx = idx;
+    lidx++; // c->fortran indexing
+    pmf_cats_set_atom_(&lidx,name.GetBuffer(),type.GetBuffer(),name.GetLength(),type.GetLength());
 }
 
 //==============================================================================
@@ -115,7 +126,9 @@ void PMF_PACKAGE CPMFCATsDriver::SetAtom(int idx,CSmallString name,CSmallString 
 
 void PMF_PACKAGE CPMFCATsDriver::EndInit(int anatom,std::vector<double>& amass,std::vector<double>& xyz)
 {
-    pmf_cats_end_init_(&anatom,amass.data(),xyz.data());
+    FTINT lnatom = anatom;
+
+    pmf_cats_end_init_(&lnatom,amass.data(),xyz.data());
 }
 
 //==============================================================================
@@ -124,8 +137,10 @@ void PMF_PACKAGE CPMFCATsDriver::EndInit(int anatom,std::vector<double>& amass,s
 
 void PMF_PACKAGE CPMFCATsDriver::SetCoordinates(int numofatoms,double* coords,double a,double b, double c, double alpha, double beta, double gamma)
 {
+    FTINT lnumofatoms = numofatoms;
+
     pmf_cats_update_box_(&a,&b,&c,&alpha,&beta,&gamma);
-    pmf_cats_update_x_(&numofatoms,coords);
+    pmf_cats_update_x_(&lnumofatoms,coords);
 }
 
 //==============================================================================
@@ -134,7 +149,7 @@ void PMF_PACKAGE CPMFCATsDriver::SetCoordinates(int numofatoms,double* coords,do
 
 int PMF_PACKAGE CPMFCATsDriver::GetNumberOfCVs(void)
 {
-   int numofcvs = 0;
+   FTINT numofcvs = 0;
    pmf_cats_get_num_of_cvs_(&numofcvs);
    return(numofcvs);
 }
@@ -152,9 +167,10 @@ double PMF_PACKAGE CPMFCATsDriver::GetCVValue(CSmallString name)
 
 double PMF_PACKAGE CPMFCATsDriver::GetCVValue(int indx)
 {
-    indx++; // c->fortran indexing
+    FTINT lidx = indx;
+    lidx++; // c->fortran indexing
     double value = 0.0;
-    pmf_cats_get_value_by_indx_(&value,&indx);
+    pmf_cats_get_value_by_indx_(&value,&lidx);
     return(value);
 }
 
@@ -162,11 +178,14 @@ double PMF_PACKAGE CPMFCATsDriver::GetCVValue(int indx)
 
 CSmallString PMF_PACKAGE CPMFCATsDriver::GetCVName(int indx)
 {
-    indx++; // c->fortran indexing
+    FTINT lidx = indx;
+    lidx++; // c->fortran indexing
+
     CSmallString name;
-    // FIXME
-    name.SetLength(50); // PMF_MAX_CV_NAME
-    pmf_cats_get_name_(name.GetBuffer(),&indx,name.GetLength());
+    name.SetLength(PMF_MAX_CV_NAME);
+    pmf_cats_get_name_(name.GetBuffer(),&lidx,name.GetLength());
+
+    name[PMF_MAX_CV_NAME-1] = '\0';
     name.Trim();
     return(name);
 }
@@ -176,9 +195,10 @@ CSmallString PMF_PACKAGE CPMFCATsDriver::GetCVName(int indx)
 CSmallString PMF_PACKAGE CPMFCATsDriver::GetCVType(CSmallString name)
 {
     CSmallString ctype;
-    // FIXME
-    ctype.SetLength(10); // PMF_MAX_TYPE
+    ctype.SetLength(PMF_MAX_TYPE);
     pmf_cats_get_type_(ctype.GetBuffer(),name.GetBuffer(),ctype.GetLength(),name.GetLength());
+
+    ctype[PMF_MAX_TYPE-1] = '\0';
     ctype.Trim();
     return(ctype);
 }
@@ -187,11 +207,14 @@ CSmallString PMF_PACKAGE CPMFCATsDriver::GetCVType(CSmallString name)
 
 CSmallString PMF_PACKAGE CPMFCATsDriver::GetCVType(int indx)
 {
-    indx++; // c->fortran indexing
+    FTINT lidx = indx;
+    lidx++; // c->fortran indexing
+
     CSmallString ctype;
-    // FIXME
-    ctype.SetLength(10); // PMF_MAX_TYPE
-    pmf_cats_get_type_by_indx_(ctype.GetBuffer(),&indx,ctype.GetLength());
+    ctype.SetLength(PMF_MAX_TYPE);
+    pmf_cats_get_type_by_indx_(ctype.GetBuffer(),&lidx,ctype.GetLength());
+
+    ctype[PMF_MAX_TYPE-1] = '\0';
     ctype.Trim();
     return(ctype);
 }
@@ -200,7 +223,8 @@ CSmallString PMF_PACKAGE CPMFCATsDriver::GetCVType(int indx)
 
 void PMF_PACKAGE CPMFCATsDriver::Finalize(int mode)
 {
-    pmf_cats_finalize_(&mode);
+    FTINT lmode = mode;
+    pmf_cats_finalize_(&lmode);
 }
 
 //==============================================================================

@@ -3,6 +3,8 @@
 # ==============================================================================
 
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8 FATAL_ERROR)
+PROJECT(PMFLib)
+
 INCLUDE(CTest)
 #SET(CMAKE_VERBOSE_MAKEFILE ON)
 
@@ -19,6 +21,7 @@ SET(PMFLIB_COMPILE_FPMF     ON  CACHE BOOL "Should the fortran part of pmflib be
 SET(PMFLIB_HAVE_RPATH       ON  CACHE BOOL "Is rpath option supported by linker?")
 SET(PMFLIB_USE_INST_RPATH   OFF CACHE BOOL "Should CMAKE_INSTALL_RPATH be used as the single RPATH?")
 SET(PMFLIB_BUILD_UTILS      ON  CACHE BOOL "Should utilities be build?")
+SET(PMFLIB_OPENMP           OFF CACHE BOOL "Should OpenMP be enabled for some PMFLib utilities?")
 
 # drivers options --------------------------------
 SET(PMFLIB_SANDER_DRV   ON   CACHE BOOL "Should the driver for sander be built?")
@@ -146,9 +149,16 @@ INCLUDE(IntelCDK)
 INCLUDE(OpenMPI)
 
 # if parallel environment is available
-IF(MPI_ENABLED OR (MKL_MODE STREQUAL "parallel") OR (MKL_MODE STREQUAL "parallel/ilp64"))
-    # setup OpenMP for cpmf if available
-    FIND_PACKAGE(OpenMP)
+IF( NOT MPI_ENABLED )  # do not mix MPI and OpenMP
+    IF( PMFLIB_OPENMP OR (MKL_MODE STREQUAL "parallel") OR (MKL_MODE STREQUAL "parallel/ilp64"))
+        # setup OpenMP for cpmf if available
+        FIND_PACKAGE(OpenMP)
+        MESSAGE("-- OpenMP MODE: enabled")
+    ELSE()
+        MESSAGE("-- OpenMP MODE: disabled")
+    ENDIF()
+ELSE()
+    MESSAGE("-- OpenMP MODE: disabled")
 ENDIF()
 
 # ==============================================================================
