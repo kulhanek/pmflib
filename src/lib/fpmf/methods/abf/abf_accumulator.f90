@@ -592,27 +592,6 @@ subroutine abf_accumulator_get_data2(values,gfx)
 end subroutine abf_accumulator_get_data2
 
 !===============================================================================
-! Subroutine:  abf_accumulator_get_data3
-!===============================================================================
-
-subroutine abf_accumulator_get_data3(values,gfx)
-
-    use abf_dat
-    use pmf_dat
-    use pmf_utils
-    use abf_gprocess
-
-    implicit none
-    real(PMFDP)    :: values(:)
-    real(PMFDP)    :: gfx(:)
-    ! --------------------------------------------------------------------------
-
-    gfx(:) = 0.0d0
-    gfx(1) = abf_gprocess_interpol(values(1))
-
-end subroutine abf_accumulator_get_data3
-
-!===============================================================================
 
 end module abf_accumulator
 

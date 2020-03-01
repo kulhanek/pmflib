@@ -46,7 +46,6 @@ subroutine abf_core_main
     use abf_client
     use abf_dat
     use pmf_utils
-    use abf_gprocess
 
     ! --------------------------------------------------------------------------
 
@@ -62,12 +61,6 @@ subroutine abf_core_main
     call abf_output_write
     call abf_trajectory_write_snapshot
     call abf_restart_update
-    if( feimode .eq. 3 ) then
-        ! if gaussian process interpolation, update model
-        call abf_gprocess_update_model
-        ! if gaussian process interpolation, write interpolated results
-        call abf_gprocess_write_output
-    end if
     call abf_client_exchange_data(.false.)
 
 end subroutine abf_core_main
@@ -114,8 +107,6 @@ subroutine abf_core_force()
             call abf_accumulator_get_data1(cvaluehist3(:),la)
         case(2)
             call abf_accumulator_get_data2(cvaluehist3(:),la)
-        case(3)
-            call abf_accumulator_get_data3(cvaluehist3(:),la)
         case default
             call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented extrapolation/interpolation mode!')
     end select

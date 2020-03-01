@@ -84,15 +84,6 @@ subroutine mtd_init_dat
  fdelaying        = 0         ! delaying time in md steps
  ftransition      = 0         ! transition time in md steps 
 
- fgpdelta           = 0.005   ! delta value for GP
- fgpjitter          = 1.0e-8  ! jitter value for GP
- fgpncount          = 0       ! GP counting
- fgpsparsification  = 1       ! 1 - kmeans, 2 - grid
- fgpncluster        = 0       ! count for building cluster array
- fgpclusterfreq     = 0       ! frequency for building cluster array
-
- fgpprint           = 0       ! how often the gp is printed out
-
 ! server part ------------------------------------------------------------------
  fserver_enabled        = .false.   ! is mtddyn-server enabled?
  fserver_key_enabled    = .false.
@@ -140,36 +131,24 @@ subroutine mtd_init_print_header
  write(PMF_OUT,130)  ' Varying quantity (fmetavary)            : ', fmetavary
  select case(fmetavary)
      case(0)
-        write(PMF_OUT,120)  ' Varying quantity is not applied'
+        write(PMF_OUT,120)  '  == varying quantity is not applied'
      case(1)
-        write(PMF_OUT,120)  ' Varying quantity is fheight'
+        write(PMF_OUT,120)  '  == varying quantity is fheight'
      case(2)
-        write(PMF_OUT,120)  ' Varying quantity is fmetastep'
+        write(PMF_OUT,120)  '  == varying quantity is fmetastep'
  end select
  write(PMF_OUT,130)  ' Scaling type (fscaling)                 : ', fscaling
  select case(fscaling)
      case(0)
-        write(PMF_OUT,120)  ' Scaling is not applied'
+        write(PMF_OUT,120)  '  == scaling is not applied'
      case(1)
-        write(PMF_OUT,120)  ' Scaling type is step signal'
+        write(PMF_OUT,120)  '  == scaling type is step signal'
      case(2)
-        write(PMF_OUT,120)  ' Scaling type is ramp signal'
+        write(PMF_OUT,120)  '  == scaling type is ramp signal'
  end select
  write(PMF_OUT,130)  ' Transition step size (ftransition)      : ', ftransition
  write(PMF_OUT,130)  ' Delaying step size (fdelaying)          : ', fdelaying
  write(PMF_OUT,130)  ' Buffer size (fbuffersize)               : ', fbuffersize
- if(fmode .eq. 3) then
-    write(PMF_OUT,130)  ' GP-MTD freq of cov calc (fgpcovfreq)    : ', fgpcovfreq
-    write(PMF_OUT,135)  ' GP-MTD delta value (fgpdelta)           : ', fgpdelta
-    write(PMF_OUT,135)  ' GP-MTD jitter value (fgpjitter)         : ', fgpjitter
-    write(PMF_OUT,130)  ' GP-MTD sparsification type (fgpsparsification)  : ', fgpsparsification
-    write(PMF_OUT,130)  ' GP-MTD freq change sparse points (fgpsparsefreq) : ', fgpsparsefreq
-    select case(fgpsparsification)
-    case(1)
-    write(PMF_OUT,130)  ' GP-MTD kmeans cluster frequency (fgpclusterfreq) : ', fgpclusterfreq
-    end select
-    write(PMF_OUT,130)  ' GP-MTD sparse points (fgpsparse)        : ', fgpsparse
- end if
  
  write(PMF_OUT,120)
  write(PMF_OUT,120)  ' Restart options:'
@@ -204,7 +183,7 @@ subroutine mtd_init_print_header
  write(PMF_OUT,125)  ' Server password (fpassword)             : ', 'none'
  end if
  write(PMF_OUT,120)
- write(PMF_OUT,120)  ' List of mtddynamics coordinates'
+ write(PMF_OUT,120)  ' List of metadynamics coordinates'
  write(PMF_OUT,120)  ' -------------------------------------------------------'
  write(PMF_OUT,120)
 
@@ -239,9 +218,6 @@ subroutine mtd_init_core
  use mtd_history
 
  implicit none
- integer              :: i
- integer              :: alloc_failed
- integer              :: totalgrid
  ! -----------------------------------------------------------------------------
 
  ! create first buffer ---------------------------
@@ -249,61 +225,6 @@ subroutine mtd_init_core
     ! in the case of multiple-walker approach, initial allocation is done
     ! in mtd_get_initial_data
     call mtd_history_allocate_buffer(hill_history,fbuffersize)
- end if
-
- if( fmode .eq. 3 ) then
-     allocate( gpmtd%thetas(NumOfMTDCVs), &
-               gpmtd%periodicities(NumOfMTDCVs), &
-               gpmtd%min_positions(NumOfMTDCVs), &
-               gpmtd%max_positions(NumOfMTDCVs), &
-               gpmtd%range_positions(NumOfMTDCVs), &
-               gpmtd%fixgrid(NumOfMTDCVs), &
-               stat = alloc_failed)
-
-     if( alloc_failed .ne. 0 ) then
-         call pmf_utils_exit(PMF_OUT, 1,'[MTD] Unable to allocate memory for gpmtd GP-MTD!')
-     endif
-
-     gpmtd%fvar = fgpdelta * fgpdelta
-
-     do i=1,NumOfMTDCVs
-        gpmtd%thetas(i) = MTDCVList(i)%gptheta
-        gpmtd%periodicities(i) = MTDCVList(i)%gpperiodicity
-        gpmtd%fixgrid(i) = MTDCVList(i)%gpfixgrid
-     end do
-
-     select case ( fgpsparsification )
-        case(1)
-           allocate(gpmtd%clusterarray(NumOfMTDCVs,fnstlim/fgpclusterfreq), stat = alloc_failed)
-           if( alloc_failed .ne. 0 ) then
-               call pmf_utils_exit(PMF_OUT, 1,'[MTD] Unable to allocate memory for gpmtd GP-MTD!')
-           endif
-
-           allocate(gpmtd%sparseindices(fgpsparse), stat = alloc_failed)
-           if( alloc_failed .ne. 0 ) then
-               call pmf_utils_exit(PMF_OUT, 1,'[MTD] Unable to allocate memory for gpmtd GP-MTD!')
-           endif
-        case(2)
-           allocate(gpmtd%numgrid(NumOfMTDCVs), stat = alloc_failed)
-           if( alloc_failed .ne. 0 ) then
-               call pmf_utils_exit(PMF_OUT, 1,'[MTD] Unable to allocate memory for gpmtd GP-MTD!')
-           endif
-           totalgrid = 1
-           do i=1,NumOfMTDCVs
-              gpmtd%numgrid(i) = MTDCVList(i)%gpnumgrid
-              totalgrid = totalgrid * gpmtd%numgrid(i)
-           end do
-
-           if ( totalgrid .ne. fgpsparse ) then
-                call pmf_utils_exit(PMF_OUT, 1,'[MTD] Number of total grid points does not equal to fgpsparse!')
-           end if
-
-           allocate(gpmtd%sparsepoints(NumOfMTDCVs,fgpsparse), stat = alloc_failed)
-           if( alloc_failed .ne. 0 ) then
-               call pmf_utils_exit(PMF_OUT, 1,'[MTD] Unable to allocate memory for gpmtd GP-MTD!')
-           endif
-     end select
-
  end if
 
  return

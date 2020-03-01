@@ -71,8 +71,8 @@ subroutine mtd_control_read_mtd(prm_fin)
         write(PMF_OUT,10) fmode
     end if
 
-    if (fmode .ne. 0 .and. fmode .ne. 1 .and. fmode .ne. 2 .and. fmode .ne. 3) then
-        write(PMF_OUT, '(/2x,a,i3,a)') 'fmode (', fmode, ') must be 0, 1, 2 or 3'
+    if (fmode .ne. 0 .and. fmode .ne. 1 .and. fmode .ne. 2 ) then
+        write(PMF_OUT, '(/2x,a,i3,a)') 'fmode (', fmode, ') must be 0, 1, or 2'
         call pmf_utils_exit(PMF_OUT,1)
     end if
 
@@ -198,76 +198,6 @@ subroutine mtd_control_read_mtd(prm_fin)
         call pmf_utils_exit(PMF_OUT,1)
     end if
 
-    if( fmode .eq. 3 ) then
-            write(PMF_OUT,410)
-            if( .not. prmfile_get_integer_by_key(prm_fin,'fgpcovfreq', fgpcovfreq)) then
-               call pmf_utils_exit(PMF_OUT,1,'[MTD] fgpcovfreq item is mandatory when GP-MTD is on!')
-            else
-                write(PMF_OUT,415) fgpcovfreq
-            end if
-            if( fgpcovfreq .le. 0 ) then
-                call pmf_utils_exit(PMF_OUT,1,'[MTD] fgpcovfreq must be > 0!')
-            end if
-            fbuffersize = fgpcovfreq / fmetastep
-            if( .not. prmfile_get_integer_by_key(prm_fin,'fgpsparse', fgpsparse)) then
-                call pmf_utils_exit(PMF_OUT,1,'[MTD] fgpsparse item is mandatory when GP-MTD is on!')
-            else
-                write(PMF_OUT,425) fgpsparse
-            end if
-            if(prmfile_get_real8_by_key(prm_fin,'fgpdelta', fgpdelta)) then
-                write(PMF_OUT,430) fgpdelta
-            else
-                write(PMF_OUT,435) fgpdelta
-            end if
-            if( fgpdelta .le. 0 ) then
-                call pmf_utils_exit(PMF_OUT,1,'[MTD] fgpdelta must be > 0!')
-            end if
-            if(prmfile_get_real8_by_key(prm_fin,'fgpjitter', fgpjitter)) then
-                write(PMF_OUT,440) fgpjitter
-            else
-                write(PMF_OUT,445) fgpjitter
-            end if
-            if( fgpjitter .le. 0 ) then
-                call pmf_utils_exit(PMF_OUT,1,'[MTD] fgpjitter must be > 0!')
-            end if
-            if(prmfile_get_integer_by_key(prm_fin,'fgpsparsification', fgpsparsification)) then
-                write(PMF_OUT,450) fgpsparsification
-            else
-                write(PMF_OUT,455) fgpsparsification
-            end if
-            if ( (fgpsparsification .le. 0) .or. (fgpsparsification .gt. 2) ) then
-                  call pmf_utils_exit(PMF_OUT,1,'[MTD] fgpsparsification must be 1 or 2!')
-            end if
-            if(prmfile_get_integer_by_key(prm_fin,'fgpsparsefreq', fgpsparsefreq)) then
-                  write(PMF_OUT,460) fgpsparsefreq
-            else
-                  fgpsparsefreq = fgpcovfreq
-                  write(PMF_OUT,465) fgpsparsefreq
-            end if
-            if( fgpsparsefreq .le. 0 ) then
-                call pmf_utils_exit(PMF_OUT,1,'[MTD] fgpsparsefreq must be > 0!')
-            end if
-            select case (fgpsparsification)
-                case(1)
-                    if( .not. prmfile_get_integer_by_key(prm_fin,'fgpclusterfreq', fgpclusterfreq)) then
-                        call pmf_utils_exit(PMF_OUT,1,'[MTD] fgpclusterfreq item is mandatory when fgpclustering = 1!')
-                    else
-                        write(PMF_OUT,470) fgpclusterfreq
-                    end if
-                    if( fgpclusterfreq .le. 0 ) then
-                        call pmf_utils_exit(PMF_OUT,1,'[MTD] fgpclusterevery must be > 0!')
-                    end if
-            end select
-            if(prmfile_get_integer_by_key(prm_fin,'fgpprint', fgpprint)) then
-                write(PMF_OUT,480) fgpprint
-            else
-                write(PMF_OUT,485) fgpprint
-            end if
-            if( fgpprint .lt. 0 ) then
-                call pmf_utils_exit(PMF_OUT,1,'[ABF] fgpprint must be => 0!')
-            end if
-    end if
-
     ! network setup ----------------------------------------------------------------
 
     write(PMF_OUT,'(/,a)') '--- [mtd-walker] -----------------------------------------------------------'
@@ -346,21 +276,6 @@ subroutine mtd_control_read_mtd(prm_fin)
 135 format ('fdelaying                              = ',i12,'                  (default)')
 140 format ('ftransition                            = ',i12)
 145 format ('ftransition                            = ',i12,'                  (default)')
-
-410 format (/,'>> GP-ABF mode IV')
-415 format ('   fgpcovfreq                          = ',i12)
-425 format ('   fgpsparse                           = ',i12)
-430 format ('   fgpdelta                            = ',e12.4)
-435 format ('   fgpdelta                            = ',e12.4,'                  (default)')
-440 format ('   fgpjitter                           = ',e12.4)
-445 format ('   fgpjitter                           = ',e12.4,'                  (default)')
-450 format ('   fgpsparsification                   = ',i12)
-455 format ('   fgpsparsification                   = ',i12,'                  (default)')
-460 format ('   fgpsparsefreq                       = ',i12)
-465 format ('   fgpsparsefreq                       = ',i12,'                  (default)')
-470 format ('   fgpclusterfreq                      = ',i12)
-480 format ('   fgpprint                            = ',i12)
-485 format ('   fgpprint                            = ',i12,'                  (default)')
 
   6 format (' >> Multiple-walkers metadynamics is disabled!')
 #ifndef PMFLIB_NETWORK

@@ -113,15 +113,6 @@ SET(PMF_CVS_SRC
         common/cvs/algebra/cv_rswitch.f90
        )
 
-# gaussian process -------------------------------------------------------------
-
-SET(PMF_GP_SRC
-        common/gp/positions.f90
-        common/gp/clustering.f90
-        common/gp/gp_dat.f90
-        common/gp/gp_basic.f90
-   )
-
 # XBPLib binding ---------------------------------------------------------------
 
 IF(PMFLIB_HAVE_XBPLIB)
@@ -146,7 +137,6 @@ SET(PMF_ABF_CORE_SRC
         methods/abf/abf_client.F90
         methods/abf/abf_trajectory.f90
         methods/abf/abf_finalize.f90
-        methods/abf/abf_gprocess.f90
         )
 
 # constrained dynamics ----------------------------------------------------------
@@ -236,7 +226,6 @@ SET(PMF_PDRV_CORE_SRC
 SET(FPMF_SRC
         ${PMF_COM_SRC}
         ${PMF_CVS_SRC}
-        ${PMF_GP_SRC}
         ${PMF_ABF_CORE_SRC}
         ${PMF_CST_CORE_SRC}
         ${PMF_MTD_CORE_SRC}

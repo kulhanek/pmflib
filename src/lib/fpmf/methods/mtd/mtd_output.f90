@@ -264,33 +264,5 @@ subroutine mtd_output_close
 end subroutine mtd_output_close
 
 !===============================================================================
-! Subroutine:  mtd_gp_output
-!===============================================================================
-
-subroutine mtd_gp_output
-
-    use pmf_dat
-    use pmf_constants
-    use mtd_dat
-    use gp_dat_mod
-    use gp_basic_mod
-
-    implicit none
-    character(len=PMF_MAX_PATH) :: cstep
-    ! --------------------------------------------------------------------------
-
-   if ( fmode .ne. 3 ) return
-   if ( fgpprint .eq. 0 ) return
-   if ( mod(fstep, fgpprint) .ne. 0 ) return
-
-    write(unit=cstep, fmt=*) fstep
-
-    call gp_basic_write(gpmtd%gp, MTD_GPOUT, trim(fmtdgpout)//'_'//trim(adjustl(cstep)))
-
-    return
-
-end subroutine mtd_gp_output
-
-!===============================================================================
 
 end module mtd_output

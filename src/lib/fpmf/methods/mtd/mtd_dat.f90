@@ -29,7 +29,6 @@ module mtd_dat
 use pmf_sizes
 use pmf_constants
 use pmf_cvs
-use gp_dat_mod
 
 implicit none
 
@@ -40,7 +39,6 @@ integer     :: fmode            ! mode of metadynamics:
                                     ! 0 - disable MTD
                                     ! 1 - conventional MTD
                                     ! 2 - grid MTD
-                                    ! 3 - GP-MTD
 integer     :: fplevel          ! output print level
 integer     :: fpsample         ! output print sampling
 integer     :: fmetastep        ! step size of metadynamics
@@ -59,20 +57,6 @@ integer     :: fbuffersize      ! buffer size
 integer     :: fscaling         ! scaling type: 0 - none, 1 - step signal, 2 - ramp signal
 integer     :: fdelaying        ! delaying time in md steps
 integer     :: ftransition      ! transition time in md steps
-
-integer     :: fgpcovfreq        ! how frequently the covariance matrix is calculated
-real(PMFDP) :: fgpdelta          ! delta value
-real(PMFDP) :: fgpjitter         ! jitter value
-integer     :: fgpsparse         ! number of sparse points
-
-integer     :: fgpsparsification ! 1 - kmeans, 2 - grid
-integer     :: fgpsparsefreq     ! frequency for changing positions of sparse points
-integer     :: fgpclusterfreq    ! how frequently take samples for kmeans sparsification
-integer     :: fgpncount         ! count for GP-ABF
-integer     :: fgpncluster       ! count for building cluster array
-logical     :: fgpsparsechange   ! have sparse points changed?
-
-integer     :: fgpprint          ! how often gp is printed out
 
 ! server part ------------------------------------------------------------------
 logical                 :: fserver_enabled      ! is metadyn-server enabled?
@@ -93,11 +77,6 @@ type CVTypeMTD
     real(PMFDP)             :: width            ! gaussian width
     integer                 :: nbins            ! number of bins (for mtd-energy)
     real(PMFDP)             :: max_dist         ! maximum distance to consider a hill
-
-    real(PMFDP)             :: gptheta          ! GP theta
-    real(PMFDP)             :: gpperiodicity    ! GP periodicity
-    integer                 :: gpnumgrid        ! GP number of grids
-    integer                 :: gpfixgrid        ! GP fixing grid
 
     ! this applies to direct and extended version
     real(PMFDP)             :: meta_force       ! system forces
@@ -120,26 +99,6 @@ type MTDHistType
 end type MTDHistType
 
 type(MTDHistType),pointer   :: hill_history
-
-! gp list
-type GPMTDType
-     type(gp_basic)         :: gp                       ! GP
-     real(PMFDP),pointer    :: min_positions(:)         ! minimum of positions
-     real(PMFDP),pointer    :: max_positions(:)         ! maximum of positions
-     real(PMFDP),pointer    :: range_positions(:)       ! range between minimum and maximum positions
-     real(PMFDP),pointer    :: thetas(:)                ! thetas
-     real(PMFDP),pointer    :: periodicities(:)         ! periodicity of CVs
-     real(PMFDP)            :: fvar                     ! variance of function (fgpdelta^2)
-
-     real(PMFDP),pointer    :: gpsamples(:)             ! gpsamples
-     integer, pointer       :: numgrid(:)               ! number of grids
-     integer, pointer       :: fixgrid(:)               ! fixing grid
-     integer, pointer       :: sparseindices(:)         ! array for sparse indices
-     real(PMFDP),pointer    :: sparsepoints(:,:)        ! array for sparse points
-     real(PMFDP),pointer    :: clusterarray(:,:)        ! cluster array for kmeans sparsification
-end type GPMTDType
-
-type(GPMTDType)             :: gpmtd
 
 ! grid list ---------------------------------------------------------------------
 
