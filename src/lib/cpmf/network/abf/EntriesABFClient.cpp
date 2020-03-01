@@ -173,6 +173,8 @@ void PMF_PACKAGE cpmf_abf_client_initial_data_(FTINT* ret_st,
 {
     CSimpleVector<int> isamples;
 
+    isamples.CreateVector(ABFClient.GetNumberOfBins());
+
     if(ABFClient.GetInitialData(isamples,iabfforce,iabfforce2) == false) {
         ES_ERROR("unable to get initial data");
         *ret_st = 1;
@@ -196,6 +198,8 @@ void PMF_PACKAGE cpmf_abf_client_exchange_data_(FTINT* ret_st,
                                     double* iabfforce2)
 {
     CSimpleVector<int> isamples;
+
+    isamples.CreateVector(ABFClient.GetNumberOfBins());
 
     isamples.CreateVector(ABFClient.GetNumberOfBins());
     for(int i = 0; i < ABFClient.GetNumberOfBins(); i++){
