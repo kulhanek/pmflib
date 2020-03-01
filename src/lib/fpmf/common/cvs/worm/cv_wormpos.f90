@@ -95,14 +95,14 @@ subroutine load_wormpos(cv_item,prm_fin)
 
     ! init groups -----------------------------------
     cv_item%ngrps = cv_item%nsegs + 1   ! +1 for the plane
-    call cv_common_init_groups_I(cv_item,prm_fin)
+    call cv_common_init_groups_I(cv_item)
     mask = 'group_a'
     call cv_common_init_groups_II(cv_item,prm_fin,1,mask)
     do i=1,cv_item%nsegs
         mask = 'segment_'//achar(group_index+i)
         call cv_common_init_groups_II(cv_item,prm_fin,1+i,mask)
     end do
-    call cv_common_init_groups_III(cv_item,prm_fin)
+    call cv_common_init_groups_III(cv_item)
 
 ! read plane ------------------------------------
     write(PMF_OUT,50)

@@ -205,7 +205,7 @@ end subroutine cv_common_init_groups
 ! Subroutine:  cv_common_init_groups_I
 !===============================================================================
 
-subroutine cv_common_init_groups_I(cv_item,prm_fin)
+subroutine cv_common_init_groups_I(cv_item)
 
     use prmfile
     use pmf_dat
@@ -213,11 +213,9 @@ subroutine cv_common_init_groups_I(cv_item,prm_fin)
     use pmf_mask
 
     implicit none
-    type(PRMFILE_TYPE),intent(inout)    :: prm_fin
     class(CVType)                       :: cv_item
     ! -----------------------------------------------
-    integer                             :: i, alloc_failed
-    character(len=PRMFILE_MAX_LINE)     :: mask
+    integer                             :: alloc_failed
     integer,parameter                   :: group_index = 96   ! ascii code of 'a' - 1
     ! --------------------------------------------------------------------------
 
@@ -252,7 +250,6 @@ subroutine cv_common_init_groups_II(cv_item,prm_fin,groupid,groupname)
     integer                             :: groupid
     character(len=PRMFILE_MAX_LINE)     :: groupname
     ! -----------------------------------------------
-    integer                             :: i, alloc_failed
     character(len=PRMFILE_MAX_LINE)     :: mask
     integer,parameter                   :: group_index = 96   ! ascii code of 'a' - 1
     ! --------------------------------------------------------------------------
@@ -285,7 +282,7 @@ end subroutine cv_common_init_groups_II
 ! Subroutine:  cv_common_init_groups_III
 !===============================================================================
 
-subroutine cv_common_init_groups_III(cv_item,prm_fin)
+subroutine cv_common_init_groups_III(cv_item)
 
     use prmfile
     use pmf_dat
@@ -293,11 +290,9 @@ subroutine cv_common_init_groups_III(cv_item,prm_fin)
     use pmf_mask
 
     implicit none
-    type(PRMFILE_TYPE),intent(inout)    :: prm_fin
     class(CVType)                       :: cv_item
     ! -----------------------------------------------
     integer                             :: i, alloc_failed
-    character(len=PRMFILE_MAX_LINE)     :: mask
     integer,parameter                   :: group_index = 96   ! ascii code of 'a' - 1
     ! --------------------------------------------------------------------------
 
