@@ -201,7 +201,6 @@ void PMF_PACKAGE cpmf_abf_client_exchange_data_(FTINT* ret_st,
 
     isamples.CreateVector(ABFClient.GetNumberOfBins());
 
-    isamples.CreateVector(ABFClient.GetNumberOfBins());
     for(int i = 0; i < ABFClient.GetNumberOfBins(); i++){
         isamples[i] = nisamples[i];
     }
