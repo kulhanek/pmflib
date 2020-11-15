@@ -62,7 +62,6 @@ subroutine abp_init_dat
 
     fmode              = 0          ! 0 - disable ABP, 1 - enabled ABP
     fsample            = 5000       ! output sample period in steps
-    fplevel            = 0          ! print level
     frestart           = .false.    ! 1 - restart job with previous data, 0 - otherwise not
     frstupdate         = 5000       ! how often is restart file written
     feimode            = 1          ! 1 - linear ramp I
@@ -127,7 +126,6 @@ subroutine abp_init_print_header
     write(PMF_OUT,120)  ' ------------------------------------------------------'
     write(PMF_OUT,125)  ' Output file (fabpout)                   : ', trim(fabpout)
     write(PMF_OUT,130)  ' Output sampling (fsample)               : ', fsample
-    write(PMF_OUT,130)  ' Print level (fplevel)                   : ', fplevel
     write(PMF_OUT,120)
     write(PMF_OUT,120)  ' Trajectory output options:'
     write(PMF_OUT,120)  ' ------------------------------------------------------'
@@ -155,7 +153,6 @@ subroutine abp_init_print_header
     120 format(A)
     125 format(A,A)
     130 format(A,I6)
-    135 format(A,E12.5)
     136 format(A,E12.5,' [',A,']')
 
     140 format(' == Collective variable #',I4.4)

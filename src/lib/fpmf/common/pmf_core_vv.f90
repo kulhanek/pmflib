@@ -80,7 +80,7 @@ subroutine pmf_core_vv_force_SRF(x,f,epot,epmf)
     use rst_core
     use rst_dat
     use abf_core
-    use abf2_core
+    use abp_core
     use mtd_core
     use stm_core
     use mtd_dat
@@ -178,10 +178,12 @@ subroutine pmf_core_vv_force_SRF(x,f,epot,epmf)
                 call abf_core_main
             call pmf_timers_stop_timer(PMFLIB_ABF_TIMER)
         end if
-        if( abf2_enabled ) then
-            call pmf_timers_start_timer(PMFLIB_ABF2_TIMER)
-                call abf2_core_main
-            call pmf_timers_stop_timer(PMFLIB_ABF2_TIMER)
+
+        ! ABP has to be here because it could be influenced by restraints (wall restraints, etc.)
+        if( abp_enabled ) then
+            call pmf_timers_start_timer(PMFLIB_ABP_TIMER)
+                call abp_core_main
+            call pmf_timers_stop_timer(PMFLIB_ABP_TIMER)
         end if
 
     call pmf_timers_stop_timer(PMFLIB_METHODS_TIMER)

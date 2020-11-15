@@ -113,7 +113,6 @@ subroutine pmf_finalize_methods
     use mon_finalize
     use rst_finalize
     use abf_finalize
-    use abf2_finalize
     use abp_finalize
     use mtd_finalize
     use cst_finalize
@@ -125,10 +124,6 @@ subroutine pmf_finalize_methods
 
     if( abf_enabled ) then
         call abf_finalize_method
-    end if
-
-    if( abf2_enabled ) then
-        call abf2_finalize_method
     end if
 
     if( abp_enabled ) then

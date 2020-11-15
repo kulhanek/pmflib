@@ -39,6 +39,7 @@ subroutine abp_control_read_abp(prm_fin)
     use abp_dat
     use abp_init
     use pmf_unit
+    use pmf_control_utils
 
     implicit none
     type(PRMFILE_TYPE),intent(inout)   :: prm_fin
@@ -51,97 +52,49 @@ subroutine abp_control_read_abp(prm_fin)
 
     ! try open group
     if( .not. prmfile_open_group(prm_fin,'PMFLIB') ) then
-        write(PMF_OUT,5)
+        write(PMF_OUT,10)
         return
     end if
 
     ! try open section
     if( .not. prmfile_open_section(prm_fin,'abp') ) then
-        write(PMF_OUT,5)
+        write(PMF_OUT,10)
         return
     end if
 
-    ! process options from [abp] section
-    if( .not. prmfile_get_integer_by_key(prm_fin,'fmode',fmode) ) then
-        call pmf_utils_exit(PMF_OUT,1,'[ABP] fmode item is mandatory in this section')
-    else
-     write(PMF_OUT,10) fmode
-    end if
-
-    if (fmode .ne. 0 .and. fmode .ne. 1) then
-        write(PMF_OUT, '(/2x,a,i3,a)') 'fmode (', fmode, ') must be 0, 1'
-        call pmf_utils_exit(PMF_OUT,1)
-    end if
+    ! read configuration
+    call pmf_ctrl_read_integer(prm_fin,'fmode',fmode,'i12')
+    call pmf_ctrl_check_integer_in_range('ABP','fmode',fmode,0,1)
 
     if( fmode .eq. 0 ) then
-    write(PMF_OUT,5)
+        write(PMF_OUT,10)
         ! no abp - rest of section is skipped
         call prmfile_set_sec_as_processed(prm_fin)
         return
     end if
 
-    if(prmfile_get_real8_by_key(prm_fin,'fhbias', fhbias)) then
-        call pmf_unit_conv_to_ivalue(EnergyUnit,fhbias)
-        write(PMF_OUT,90) pmf_unit_get_rvalue(EnergyUnit,fhbias),pmf_unit_label(EnergyUnit)
-    else
-        write(PMF_OUT,95) pmf_unit_get_rvalue(EnergyUnit,fhbias),pmf_unit_label(EnergyUnit)
-    end if
+    call pmf_ctrl_read_real8_wunit(prm_fin,'fhbias',EnergyUnit,fhbias,'f12.2')
+    call pmf_ctrl_check_real8_wunit('ABP','fhbias',EnergyUnit,fhbias,0.0d0,CND_GE,'f12.2')
 
-    if(prmfile_get_integer_by_key(prm_fin,'feimode', feimode)) then
-        write(PMF_OUT,20) feimode
-    else
-        write(PMF_OUT,25) feimode
-    end if
+    call pmf_ctrl_read_integer(prm_fin,'feimode',feimode,'i12')
+    call pmf_ctrl_check_integer_in_range('ABP','feimode',feimode,1,1)
 
-    if(prmfile_get_integer_by_key(prm_fin,'fsample', fsample)) then
-        write(PMF_OUT,50) fsample
-    else
-        write(PMF_OUT,55) fsample
-    end if
+    call pmf_ctrl_read_integer(prm_fin,'fsample',fsample,'i12')
+    call pmf_ctrl_check_integer('ABP','fsample',fsample,0,CND_GE)
 
-    if(prmfile_get_integer_by_key(prm_fin,'fplevel', fplevel)) then
-        write(PMF_OUT,60) fplevel
-    else
-        write(PMF_OUT,65) fplevel
-    end if
+    call pmf_ctrl_read_logical(prm_fin,'frestart',frestart)
 
-    if(prmfile_get_logical_by_key(prm_fin,'frestart', frestart)) then
-        write(PMF_OUT,70) prmfile_onoff(frestart)
-    else
-        write(PMF_OUT,75) prmfile_onoff(frestart)
-    end if
+    call pmf_ctrl_read_integer(prm_fin,'frstupdate',frstupdate,'i12')
+    call pmf_ctrl_check_integer('ABP','frstupdate',frstupdate,0,CND_GE)
 
-    if(prmfile_get_integer_by_key(prm_fin,'frstupdate', frstupdate)) then
-        write(PMF_OUT,76) frstupdate
-    else
-        write(PMF_OUT,77) frstupdate
-    end if
-
-    if( frstupdate .lt. 0 ) then
-        call pmf_utils_exit(PMF_OUT,1,'frstupdate has to be >=0')
-    end if
-
-    if(prmfile_get_integer_by_key(prm_fin,'ftrjsample', ftrjsample)) then
-        write(PMF_OUT,80) ftrjsample
-    else
-        write(PMF_OUT,85) ftrjsample
-    end if
-
-    if( ftrjsample .lt. 0 ) then
-        call pmf_utils_exit(PMF_OUT,1,'ftrjsample has to be >=0')
-    end if
+    call pmf_ctrl_read_integer(prm_fin,'ftrjsample',ftrjsample,'i12')
+    call pmf_ctrl_check_integer('ABP','ftrjsample',ftrjsample,0,CND_GE)
 
     select case(feimode)
         case(1)
-            write(PMF_OUT,200)
-            if(prmfile_get_integer_by_key(prm_fin,'fhramp', fhramp)) then
-                write(PMF_OUT,202) fhramp
-            else
-                write(PMF_OUT,205) fhramp
-            end if
-            if( fhramp .le. 0 ) then
-               call pmf_utils_exit(PMF_OUT,1,'[ABP] fhramp must be > 0!')
-            end if
+            write(PMF_OUT,20)
+            call pmf_ctrl_read_integer(prm_fin,'fhramp',fhramp,'i12')
+            call pmf_ctrl_check_integer('ABP','fhramp',fhramp,0,CND_GT)
         case default
             call pmf_utils_exit(PMF_OUT,1,'[ABP] Unknown extrapolation/interpolation mode!')
     end select
@@ -150,27 +103,8 @@ subroutine abp_control_read_abp(prm_fin)
 
     return
 
-  5      format (' >> Adaptive biasing force method is disabled!')
- 10      format ('fmode                                  = ',i12)
- 15      format ('fmode                                  = ',i12,'                  (default)')
- 90      format ('fhbias                                 = ',f12.4,1X,'[',A12,']')
- 95      format ('fhbias                                 = ',f12.4,1X,'[',A12,']   (default)')
- 20      format ('feimode                                = ',i12)
- 25      format ('feimode                                = ',i12,'                  (default)')
- 50      format ('fsample                                = ',i12)
- 55      format ('fsample                                = ',i12,'                  (default)')
- 60      format ('fplevel                                = ',i12)
- 65      format ('fplevel                                = ',i12,'                  (default)')
- 70      format ('frestart                               = ',a12)
- 75      format ('frestart                               = ',a12,'                  (default)')
- 76      format ('frstupdate                             = ',i12)
- 77      format ('frstupdate                             = ',i12,'                  (default)')
- 80      format ('ftrjsample                             = ',i12)
- 85      format ('ftrjsample                             = ',i12,'                  (default)')
-
-200      format (/,'>> Linear ramp mode I')
-202      format ('   fhramp                              = ',i12)
-205      format ('   fhramp                              = ',i12,'                  (default)')
+ 10 format (' >> Adaptive biasing force method is disabled!')
+ 20 format (/,'>> Linear ramp mode I')
 
 end subroutine abp_control_read_abp
 

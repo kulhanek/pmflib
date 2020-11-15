@@ -32,7 +32,6 @@ implicit none
 integer     :: fmode        ! 0 - disable ABP
                             ! 1 - enabled ABP (direct mode)
 integer     :: fsample      ! output sample period in steps
-integer     :: fplevel      ! print level
 logical     :: frestart     ! 1 - restart job with previous data, 0 - otherwise not
 integer     :: frstupdate   ! how often is restart file written
 integer     :: feimode      ! extrapolation / interpolation mode

@@ -38,7 +38,6 @@ subroutine pmf_control_read_pmflib_group(prm_fin)
     use mon_control
     use rst_control
     use abf_control
-    use abf2_control
     use abp_control
     use mtd_control
     use cst_control
@@ -75,10 +74,6 @@ subroutine pmf_control_read_pmflib_group(prm_fin)
     call pmf_utils_heading(PMF_OUT,'PMF Methods','=')
 
     call abf_control_read_abf(prm_fin)
-    call abf2_control_read_abf(prm_fin)
-    if( abf_enabled .and. abf2_enabled ) then
-        call pmf_utils_exit(PMF_OUT,1,'[PMFLib] Either [abf] or [abf2] can be enabled but not both at the same time!')
-    end if
     call abp_control_read_abp(prm_fin)
     call mtd_control_read_mtd(prm_fin)
     call stm_control_read_stm(prm_fin)
@@ -372,13 +367,6 @@ subroutine pmf_control_read_files(prm_fin)
             call pmf_control_print_stritem_default('fabfrst',fabfrst)
             call pmf_control_print_stritem_default('fabficf',fabficf)
         end if
-        if( abf2_enabled ) then
-            write(PMF_OUT,420)
-            call pmf_control_print_stritem_default('fabfdef',fabfdef)
-            call pmf_control_print_stritem_default('fabfmask',fabfmask)
-            call pmf_control_print_stritem_default('fabfout',fabfout)
-            call pmf_control_print_stritem_default('fabfrst',fabfrst)
-        end if
         if( mtd_enabled ) then
             write(PMF_OUT,300)
             call pmf_control_print_stritem_default('fmtddef',fmtddef)
@@ -428,13 +416,6 @@ subroutine pmf_control_read_files(prm_fin)
         call  pmf_control_read_stritem(prm_fin,'fabfrst',fabfrst)
         call  pmf_control_read_stritem(prm_fin,'fabficf',fabficf)
     end if
-    if( abf2_enabled ) then
-        write(PMF_OUT,400)
-        call  pmf_control_read_stritem(prm_fin,'fabfdef',fabfdef)
-        call  pmf_control_read_stritem(prm_fin,'fabfmask',fabfmask)
-        call  pmf_control_read_stritem(prm_fin,'fabfout',fabfout)
-        call  pmf_control_read_stritem(prm_fin,'fabfrst',fabfrst)
-    end if
     if( mtd_enabled ) then
         write(PMF_OUT,300)
         call  pmf_control_read_stritem(prm_fin,'fmtddef',fmtddef)
@@ -478,7 +459,6 @@ subroutine pmf_control_read_files(prm_fin)
 200 format('# -------- Restrained Dynamics')
 300 format('# -------- Metadynamics')
 400 format('# -------- Adaptive Biasing Force Method')
-420 format('# -------- Adaptive Biasing Force Method 2')
 500 format('# -------- Monitoring')
 700 format('# -------- String Method')
 800 format('# -------- Path Driving')
@@ -861,7 +841,6 @@ subroutine pmf_control_read_method_cvs_and_paths(prm_fin)
     use mon_control
     use rst_control
     use abf_control
-    use abf2_control
     use abp_control
     use mtd_control
     use cst_control
@@ -880,9 +859,6 @@ subroutine pmf_control_read_method_cvs_and_paths(prm_fin)
     ! read method CVs setup -------------------------
     if( abf_enabled ) then
         call abf_control_read_cvs(prm_fin)
-    end if
-    if( abf2_enabled ) then
-        call abf2_control_read_cvs(prm_fin)
     end if
     if( abp_enabled ) then
         call abp_control_read_cvs(prm_fin)

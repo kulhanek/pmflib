@@ -42,6 +42,7 @@ subroutine mon_control_read_mon(prm_fin)
     use pmf_utils
     use mon_dat
     use mon_init
+    use pmf_control_utils
 
     implicit none
     type(PRMFILE_TYPE),intent(inout)    :: prm_fin
@@ -64,8 +65,8 @@ subroutine mon_control_read_mon(prm_fin)
     end if
 
     ! read configuration
-    call pmf_utils_read_ctrl_integer(prm_fin,'fmode',fmode,'i12,18x')
-    call pmf_utils_check_integer_in_range('MON','fmode',fmode,0,1)
+    call pmf_ctrl_read_integer(prm_fin,'fmode',fmode,'i12')
+    call pmf_ctrl_check_integer_in_range('MON','fmode',fmode,0,1)
 
     if( fmode .eq. 0 ) then
         write(PMF_OUT,5)
@@ -74,8 +75,8 @@ subroutine mon_control_read_mon(prm_fin)
         return
     end if
 
-    call pmf_utils_read_ctrl_integer(prm_fin,'fsample',fsample,'i12,18x')
-    call pmf_utils_check_integer('MON','fsample',fsample,0,CND_GE)
+    call pmf_ctrl_read_integer(prm_fin,'fsample',fsample,'i12')
+    call pmf_ctrl_check_integer('MON','fsample',fsample,0,CND_GE)
 
     mon_enabled = fmode .gt. 0
 

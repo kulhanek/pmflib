@@ -61,7 +61,6 @@ subroutine pmf_core_lf_force(x,v,f,epot,epmf)
     use rst_core
     use rst_dat
     use abf_core
-    use abf2_core
     use abp_core
     use stm_core
     use stm_dat
@@ -156,12 +155,6 @@ subroutine pmf_core_lf_force(x,v,f,epot,epmf)
         call pmf_timers_start_timer(PMFLIB_ABF_TIMER)
         call abf_core_main
         call pmf_timers_stop_timer(PMFLIB_ABF_TIMER)
-     end if
-     ! ABF has to be here because it could be influenced by US restraints (wall restraints, etc.)
-     if( abf2_enabled ) then
-        call pmf_timers_start_timer(PMFLIB_ABF2_TIMER)
-        call abf2_core_main
-        call pmf_timers_stop_timer(PMFLIB_ABF2_TIMER)
      end if
 
      ! ABP has to be here because it could be influenced by US restraints (wall restraints, etc.)

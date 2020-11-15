@@ -518,7 +518,7 @@ end subroutine abf_accumulator_add_data12
 
 subroutine abf_accumulator_add_data3(cvs,gfx)
 
-    use abf2_dat
+    use abf_dat
     use pmf_dat
     use pmf_utils
 
@@ -657,7 +657,7 @@ end subroutine abf_accumulator_get_data2
 
 subroutine abf_accumulator_get_data3(values,gfx)
 
-    use abf2_dat
+    use abf_dat
     use pmf_dat
     use pmf_utils
 

@@ -67,7 +67,6 @@ subroutine pmf_init_dat
     rst_enabled  = .false.
     mtd_enabled  = .false.
     abf_enabled  = .false.
-    abf2_enabled = .false.
     abp_enabled  = .false.
     mon_enabled  = .false.
     stm_enabled  = .false.
@@ -528,7 +527,6 @@ subroutine pmf_init_pmf_methods()
     use mon_init
     use rst_init
     use abf_init
-    use abf2_init
     use abp_init
     use mtd_init
     use cst_init
@@ -544,10 +542,6 @@ subroutine pmf_init_pmf_methods()
 
     if( abf_enabled ) then
         call abf_init_method
-    end if
-
-    if( abf2_enabled ) then
-        call abf2_init_method
     end if
 
     if( abp_enabled ) then
@@ -574,7 +568,7 @@ subroutine pmf_init_pmf_methods()
         call mon_init_method
     end if
 
-    pmf_enabled = abf_enabled .or. abf2_enabled .or. abp_enabled .or. mtd_enabled .or. stm_enabled &
+    pmf_enabled = abf_enabled .or. abp_enabled .or. mtd_enabled .or. stm_enabled &
                .or. cst_enabled .or. rst_enabled .or. mon_enabled .or. pdrv_enabled
 
 end subroutine pmf_init_pmf_methods

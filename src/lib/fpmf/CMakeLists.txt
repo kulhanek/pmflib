@@ -11,6 +11,7 @@ SET(PMF_COM_SRC
         common/pmf_dat.f90
         common/pmf_init.F90
         common/pmf_control.F90
+        common/pmf_control_utils.f90
         common/pmf_core.f90
         common/pmf_core_lf.f90
         common/pmf_core_vv.f90
@@ -140,22 +141,6 @@ SET(PMF_ABF_CORE_SRC
         methods/abf/abf_finalize.f90
         )
 
-# ABF2 -------------------------------------------------------------------------
-
-SET(PMF_ABF2_CORE_SRC
-        methods/abf2/abf2_dat.f90
-        methods/abf2/abf2_init.f90
-        methods/abf2/abf2_cvs.f90
-        methods/abf2/abf2_control.F90
-        methods/abf2/abf2_output.f90
-        methods/abf2/abf2_restart.f90
-        methods/abf2/abf2_accumulator.f90
-        methods/abf2/abf2_core.f90
-        methods/abf2/abf2_client.F90
-        methods/abf2/abf2_trajectory.f90
-        methods/abf2/abf2_finalize.f90
-        )
-
 # ABP -------------------------------------------------------------------------
 
 SET(PMF_ABP_CORE_SRC
@@ -259,7 +244,6 @@ SET(FPMF_SRC
         ${PMF_COM_SRC}
         ${PMF_CVS_SRC}
         ${PMF_ABF_CORE_SRC}
-        ${PMF_ABF2_CORE_SRC}
         ${PMF_ABP_CORE_SRC}
         ${PMF_CST_CORE_SRC}
         ${PMF_MTD_CORE_SRC}

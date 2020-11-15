@@ -51,9 +51,9 @@ subroutine abf_core_main
 
     select case(fmode)
         case(1)
-            call abf2_core_force
+            call abf_core_force
         case(2)
-            call abf2_core_force_numeric
+            call abf_core_force_numeric
         case default
             call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented fmode in abf_core_main!')
     end select
@@ -224,6 +224,7 @@ subroutine abf_core_force_numeric()
     use pmf_cvs
     use abf_dat
     use abf_accumulator
+    use abf_output
 
     implicit none
     integer                :: i,j,m

@@ -106,9 +106,8 @@ subroutine abp_cvs_read_cv(prm_fin,abp_item)
 
 110 format('   ** Min value          : ',F16.6,' [',A,']')
 120 format('   ** Max value          : ',F16.6,' [',A,']')
-130 format('   ** Alfa               : ',F16.6,' [',A,']')
+130 format('   ** Alpha              : ',F16.6,' [',A,']')
 140 format('   ** Number of bins     : ',I9)
-
 
 end subroutine abp_cvs_read_cv
 

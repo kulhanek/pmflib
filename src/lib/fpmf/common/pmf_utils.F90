@@ -6,7 +6,7 @@
 !    Copyright (C) 2012 Petr Kulhanek, kulhanek@chemi.muni.cz
 !    Copyright (C) 2007 Petr Kulhanek, kulhanek@enzim.hu
 !    Copyright (C) 2006 Petr Kulhanek, kulhanek@chemi.muni.cz &
-!                       Martin Petrek, petrek@chemi.muni.cz 
+!                       Martin Petrek, petrek@chemi.muni.cz
 !    Copyright (C) 2005 Petr Kulhanek, kulhanek@chemi.muni.cz
 !
 !    This library is free software; you can redistribute it and/or
@@ -21,7 +21,7 @@
 !
 !    You should have received a copy of the GNU Lesser General Public
 !    License along with this library; if not, write to the Free Software
-!    Foundation, Inc., 51 Franklin Street, Fifth Floor, 
+!    Foundation, Inc., 51 Franklin Street, Fifth Floor,
 !    Boston, MA  02110-1301  USA
 !===============================================================================
 
@@ -106,160 +106,6 @@ logical function pmf_utils_fexist(filename)
     if( pmf_utils_fexist ) close(PMF_TEST)
 
 end function pmf_utils_fexist
-
-!===============================================================================
-! Subroutine:   pmf_utils_read_ctrl_real8
-!===============================================================================
-
-subroutine pmf_utils_read_ctrl_real8(prm_fin, name, value, fmt)
-
-    use prmfile
-    use pmf_constants
-
-    implicit none
-    type(PRMFILE_TYPE),intent(inout)    :: prm_fin
-    character(*)                        :: name
-    real(PMFDP)                         :: value
-    character(*)                        :: fmt
-    ! --------------------------------------------
-    logical                             :: defval
-    character(len=80)                   :: buf1
-    character(len=37)                   :: buf2
-    character(len=30)                   :: buf3
-    ! --------------------------------------------------------------------------
-
-    ! read value
-    defval = prmfile_get_real8_by_key(prm_fin,name,value)
-
-    buf2 = name
-    write(buf3,'('//trim(fmt)//')') value
-
-    ! setup format string
-    if( defval ) then
-        write(PMF_OUT,10) adjustl(buf2), buf3
-    else
-        write(PMF_OUT,15) adjustl(buf2), buf3
-    end if
-
-10 format(A37,1X,'=',1X,A30)
-15 format(A37,1X,'=',1X,A30,1X,'(default)')
-
-end subroutine pmf_utils_read_ctrl_real8
-
-!===============================================================================
-! Subroutine:   pmf_utils_check_real8_in_range
-!===============================================================================
-
-subroutine pmf_utils_check_real8_in_range(sec,name,value,minv,maxv)
-
-    use prmfile
-    use pmf_constants
-
-    implicit none
-    character(*)                        :: sec
-    character(*)                        :: name
-    real(PMFDP)                         :: value
-    real(PMFDP)                         :: minv
-    real(PMFDP)                         :: maxv
-    ! --------------------------------------------------------------------------
-
-end subroutine pmf_utils_check_real8_in_range
-
-!===============================================================================
-! Subroutine:   pmf_utils_check_real8
-!===============================================================================
-
-subroutine pmf_utils_check_real8(sec,name,value,testv,cond)
-
-    use prmfile
-    use pmf_constants
-
-    implicit none
-    character(*)                        :: sec
-    character(*)                        :: name
-    real(PMFDP)                         :: value
-    real(PMFDP)                         :: testv
-    real(PMFDP)                         :: cond
-    ! --------------------------------------------------------------------------
-
-end subroutine pmf_utils_check_real8
-
-!===============================================================================
-! Subroutine:   pmf_utils_read_ctrl_integer
-!===============================================================================
-
-subroutine pmf_utils_read_ctrl_integer(prm_fin, name, value, fmt)
-
-    use prmfile
-    use pmf_constants
-
-    implicit none
-    type(PRMFILE_TYPE),intent(inout)    :: prm_fin
-    character(*)                        :: name
-    integer                             :: value
-    character(*)                        :: fmt
-    ! --------------------------------------------
-    logical                             :: defval
-    character(len=80)                   :: buf1
-    character(len=37)                   :: buf2
-    character(len=30)                   :: buf3
-    ! --------------------------------------------------------------------------
-
-    ! read value
-    defval = prmfile_get_integer_by_key(prm_fin,name,value)
-
-    buf2 = name
-    write(buf3,'('//trim(fmt)//')') value
-
-    ! setup format string
-    if( defval ) then
-        write(PMF_OUT,10) adjustl(buf2), buf3
-    else
-        write(PMF_OUT,15) adjustl(buf2), buf3
-    end if
-
-10 format(A37,1X,'=',1X,A30)
-15 format(A37,1X,'=',1X,A30,1X,'(default)')
-
-end subroutine pmf_utils_read_ctrl_integer
-
-!===============================================================================
-! Subroutine:   pmf_utils_check_integer_in_range
-!===============================================================================
-
-subroutine pmf_utils_check_integer_in_range(sec,name,value,minv,maxv)
-
-    use prmfile
-    use pmf_constants
-
-    implicit none
-    character(*)                        :: sec
-    character(*)                        :: name
-    integer                             :: value
-    integer                             :: minv
-    integer                             :: maxv
-    ! --------------------------------------------------------------------------
-
-end subroutine pmf_utils_check_integer_in_range
-
-!===============================================================================
-! Subroutine:   pmf_utils_check_integer
-!===============================================================================
-
-subroutine pmf_utils_check_integer(sec,name,value,testv,cond)
-
-    use prmfile
-    use pmf_constants
-
-    implicit none
-    character(*)                        :: sec
-    character(*)                        :: name
-    integer                             :: value
-    integer                             :: testv
-    integer                             :: cond
-    ! --------------------------------------------------------------------------
-
-end subroutine pmf_utils_check_integer
 
 !===============================================================================
 ! Subroutine:   pmf_utils_exit

@@ -130,7 +130,7 @@ subroutine pmf_xdynbp_init(ax,amass)
     ! init methods
     call pmf_init_pmf_methods
 
-    if( cst_enabled .or. rst_enabled .or. mtd_enabled .or. abf_enabled .or. abf2_enabled .or. mon_enabled ) then
+    if( cst_enabled .or. rst_enabled .or. mtd_enabled .or. abf_enabled .or. abp_enabled .or. mon_enabled ) then
        ! call pmf_init_profiling
     end if
 
