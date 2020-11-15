@@ -69,10 +69,13 @@ subroutine abf_init_dat
     ! --------------------------------------------------------------------------
 
     fmode           = 0         ! 0 - disable ABF, 1 - enabled ABF
-    fsample         = 500       ! output sample pariod in steps
+    fsample         = 5000      ! output sample pariod in steps
     frestart        = .false.   ! 1 - restart job with previous data, 0 - otherwise not
-    frstupdate      = 1000      ! how often is restart file written
-    feimode         = 1         ! 1 - linear ramp, 2 - linear ramp with edge
+    frstupdate      = 5000      ! how often is restart file written
+    feimode         = 3         ! extrapolation / interpolation mode
+                                ! 1 - linear ramp I
+                                ! 2 - linear ramp II
+                                ! 3 - block averages
     ftrjsample      = 0         ! how often save accumulator to "accumulator evolution"
     fmask_mode      = 0         ! 0 - disable ABF mask, 1 - enable ABF mask
     fapply_abf      = .true.    ! on - apply ABF, off - do not apply ABF
@@ -84,6 +87,7 @@ subroutine abf_init_dat
     fhramp          = 100
     fhramp_min      = 200       ! definition of linear ramp
     fhramp_max      = 500       ! definition of linear ramp
+    fblock_size     = 200
 
     NumOfABFCVs     = 0
 
@@ -152,6 +156,9 @@ subroutine abf_init_print_header
     write(PMF_OUT,120)  '      |-> Min/Max linear ramp'
     write(PMF_OUT,130)  ' Min of accu samples in bin (fhramp_min) : ', fhramp_min
     write(PMF_OUT,130)  ' Max of accu samples in bin (fhramp_max) : ', fhramp_max
+    case(3)
+    write(PMF_OUT,120)  '      |-> Block averages'
+    write(PMF_OUT,130)  ' Block size (fblock_size)                : ', fblock_size
     case default
     call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown extrapolation/interpolation mode!')
     end select

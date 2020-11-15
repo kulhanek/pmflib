@@ -177,9 +177,6 @@ subroutine abp_init_arrays
     ! general arrays --------------------------------
     allocate(la(NumOfABPCVs),               &
             cvvalues(NumOfABPCVs),          &
-            cvindx(NumOfABPCVs),            &
-            gridindx(NumOfABPCVs),          &
-            gridvalues(NumOfABPCVs),        &
             diffvalues(NumOfABPCVs),        &
             stat= alloc_failed )
 

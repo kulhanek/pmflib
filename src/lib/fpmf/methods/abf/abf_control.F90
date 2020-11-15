@@ -43,6 +43,7 @@ subroutine abf_control_read_abf(prm_fin)
     use pmf_utils
     use abf_dat
     use abf_init
+    use pmf_control_utils
 
     implicit none
     type(PRMFILE_TYPE),intent(inout)   :: prm_fin
@@ -54,137 +55,68 @@ subroutine abf_control_read_abf(prm_fin)
 
     ! try open group
     if( .not. prmfile_open_group(prm_fin,'PMFLIB') ) then
-        write(PMF_OUT,5)
+        write(PMF_OUT,10)
         return
     end if
 
     ! try open section
     if( .not. prmfile_open_section(prm_fin,'abf') ) then
-        write(PMF_OUT,5)
+        write(PMF_OUT,10)
         return
     end if
 
-    ! process options from [abf] section
-    if( .not. prmfile_get_integer_by_key(prm_fin,'fmode',fmode) ) then
-        call pmf_utils_exit(PMF_OUT,1,'[ABF] fmode item is mandatory in this section')
-    else
-     write(PMF_OUT,10) fmode
-    end if
-
-    if (fmode .ne. 0 .and. fmode .ne. 1 .and. fmode .ne. 2) then
-        write(PMF_OUT, '(/2x,a,i3,a)') 'fmode (', fmode, ') must be 0, 1 or 2'
-        call pmf_utils_exit(PMF_OUT,1)
-    end if
+    ! read configuration
+    call pmf_ctrl_read_integer(prm_fin,'fmode',fmode,'i12')
+    call pmf_ctrl_check_integer_in_range('ABF','fmode',fmode,0,1)
 
     if( fmode .eq. 0 ) then
-        write(PMF_OUT,5)
+        write(PMF_OUT,10)
         ! no abf - rest of section is skipped
         call prmfile_set_sec_as_processed(prm_fin)
         return
     end if
 
-    if(prmfile_get_integer_by_key(prm_fin,'fmask_mode', fmask_mode)) then
-        write(PMF_OUT,16) fmask_mode
-    else
-        write(PMF_OUT,19) fmask_mode
-    end if
+    call pmf_ctrl_read_integer(prm_fin,'fmask_mode',fmask_mode,'i12')
+    call pmf_ctrl_check_integer_in_range('ABF','fmask_mode',fmask_mode,0,1)
 
-    if (fmask_mode .ne. 0 .and. fmask_mode .ne. 1) then
-        write(PMF_OUT, '(/2x,a,i3,a)') 'fmask_mode (', fmask_mode, ') must be 0 or 1'
-        call pmf_utils_exit(PMF_OUT,1)
-    end if
+    call pmf_ctrl_read_logical(prm_fin,'fapply_abf',fapply_abf)
 
-    if(prmfile_get_logical_by_key(prm_fin,'fapply_abf', fapply_abf)) then
-        write(PMF_OUT,21) prmfile_onoff(fapply_abf)
-    else
-        write(PMF_OUT,26) prmfile_onoff(fapply_abf)
-    end if
+    call pmf_ctrl_read_integer(prm_fin,'feimode',feimode,'i12')
+    call pmf_ctrl_check_integer_in_range('ABF','feimode',feimode,0,3)
 
-    if(prmfile_get_integer_by_key(prm_fin,'feimode', feimode)) then
-        write(PMF_OUT,20) feimode
-    else
-        write(PMF_OUT,25) feimode
-    end if
+    call pmf_ctrl_read_integer(prm_fin,'fsample',fsample,'i12')
+    call pmf_ctrl_check_integer('ABF','fsample',fsample,0,CND_GE)
 
-    if(prmfile_get_integer_by_key(prm_fin,'fsample', fsample)) then
-        write(PMF_OUT,50) fsample
-    else
-        write(PMF_OUT,55) fsample
-    end if
+    call pmf_ctrl_read_logical(prm_fin,'frestart',frestart)
 
-    if(prmfile_get_logical_by_key(prm_fin,'frestart', frestart)) then
-        write(PMF_OUT,70) prmfile_onoff(frestart)
-    else
-        write(PMF_OUT,75) prmfile_onoff(frestart)
-    end if
+    call pmf_ctrl_read_integer(prm_fin,'frstupdate',frstupdate,'i12')
+    call pmf_ctrl_check_integer('ABF','frstupdate',frstupdate,0,CND_GE)
 
-    if(prmfile_get_integer_by_key(prm_fin,'frstupdate', frstupdate)) then
-        write(PMF_OUT,76) frstupdate
-    else
-        write(PMF_OUT,77) frstupdate
-    end if
+    call pmf_ctrl_read_integer(prm_fin,'ftrjsample',ftrjsample,'i12')
+    call pmf_ctrl_check_integer('ABF','ftrjsample',ftrjsample,0,CND_GE)
 
-    if( frstupdate .lt. 0 ) then
-        call pmf_utils_exit(PMF_OUT,1,'frstupdate has to be >=0')
-    end if
-
-    if(prmfile_get_integer_by_key(prm_fin,'ftrjsample', ftrjsample)) then
-        write(PMF_OUT,80) ftrjsample
-    else
-        write(PMF_OUT,85) ftrjsample
-    end if
-
-    if( ftrjsample .lt. 0 ) then
-        call pmf_utils_exit(PMF_OUT,1,'ftrjsample has to be >=0')
-    end if
-
-    if(prmfile_get_logical_by_key(prm_fin,'fprint_icf', fprint_icf)) then
-        write(PMF_OUT,90) prmfile_onoff(fprint_icf)
-    else
-        write(PMF_OUT,95) prmfile_onoff(fprint_icf)
-    end if
-
-    if(prmfile_get_logical_by_key(prm_fin,'fcache_icf', fcache_icf)) then
-        write(PMF_OUT,400) prmfile_onoff(fcache_icf)
-    else
-        write(PMF_OUT,405) prmfile_onoff(fcache_icf)
-    end if
-
-    if(prmfile_get_logical_by_key(prm_fin,'frawicf', frawicf)) then
-        write(PMF_OUT,410) prmfile_onoff(frawicf)
-    else
-        write(PMF_OUT,415) prmfile_onoff(frawicf)
-    end if
+    call pmf_ctrl_read_logical(prm_fin,'fprint_icf',fprint_icf)
+    call pmf_ctrl_read_logical(prm_fin,'fcache_icf',fcache_icf)
+    call pmf_ctrl_read_logical(prm_fin,'frawicf',frawicf)
 
     select case(feimode)
         case(1)
             write(PMF_OUT,190)
-            if(prmfile_get_integer_by_key(prm_fin,'fhramp', fhramp)) then
-                write(PMF_OUT,192) fhramp
-            else
-                write(PMF_OUT,195) fhramp
-            end if
-            if( fhramp .le. 0 ) then
-                call pmf_utils_exit(PMF_OUT,1,'[ABF] fhramp must be > 0!')
-            end if
+            call pmf_ctrl_read_integer(prm_fin,'fhramp',fhramp,'i12')
+            call pmf_ctrl_check_integer('ABF','fhramp',fhramp,0,CND_GT)
         case(2)
             write(PMF_OUT,200)
-            if(prmfile_get_integer_by_key(prm_fin,'fhramp_min', fhramp_min)) then
-                write(PMF_OUT,202) fhramp_min
-            else
-                write(PMF_OUT,205) fhramp_min
-            end if
-            if(prmfile_get_integer_by_key(prm_fin,'fhramp_max', fhramp_max)) then
-                write(PMF_OUT,206) fhramp_max
-            else
-                write(PMF_OUT,207) fhramp_max
-            end if
-            if( fhramp_min .le. 0 ) then
-                call pmf_utils_exit(PMF_OUT,1,'[ABF] fhramp_min must be > 0!')
-            end if
+            call pmf_ctrl_read_integer(prm_fin,'fhramp_min',fhramp_min,'i12')
+            call pmf_ctrl_check_integer('ABF','fhramp_min',fhramp_min,0,CND_GT)
+            call pmf_ctrl_read_integer(prm_fin,'fhramp_max',fhramp_max,'i12')
+            call pmf_ctrl_check_integer('ABF','fhramp_max',fhramp_max,0,CND_GT)
             if( fhramp_max .le. fhramp_min ) then
                 call pmf_utils_exit(PMF_OUT,1,'[ABF] fhramp_max must be > fhramp_min!')
             end if
+        case(3)
+            write(PMF_OUT,210)
+            call pmf_ctrl_read_integer(prm_fin,'fblock_size',fblock_size,'i12')
+            call pmf_ctrl_check_integer('ABF','fblock_size',fblock_size,0,CND_GT)
         case default
         call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown extrapolation/interpolation mode!')
     end select
@@ -218,18 +150,10 @@ subroutine abf_control_read_abf(prm_fin)
         end if
     end if
 
-    if(prmfile_get_integer_by_key(prm_fin,'fserverupdate', fserverupdate)) then
-        write(PMF_OUT,140) fserverupdate
-    else
-        write(PMF_OUT,145) fserverupdate
-    end if
+    call pmf_ctrl_read_integer(prm_fin,'fserverupdate',fserverupdate,'i12')
+    call pmf_ctrl_check_integer('ABF','fserverupdate',fserverupdate,0,CND_GT)
 
-    if(prmfile_get_logical_by_key(prm_fin,'fabortonmwaerr', fabortonmwaerr)) then
-        write(PMF_OUT,150) prmfile_onoff(fabortonmwaerr)
-    else
-        write(PMF_OUT,155) prmfile_onoff(fabortonmwaerr)
-    end if
-
+    call pmf_ctrl_read_logical(prm_fin,'fabortonmwaerr',fabortonmwaerr)
 #else
     fserver_enabled = .false.
     use_key = .false.
@@ -250,28 +174,7 @@ subroutine abf_control_read_abf(prm_fin)
 
     return
 
-  5 format (' >> Adaptive biasing force method is disabled!')
- 10 format ('fmode                                  = ',i12)
- 16 format ('fmask_mode                             = ',i12)
- 19 format ('fmask_mode                             = ',i12,'                  (default)')
- 21 format ('fapply_abf                             = ',a12)
- 26 format ('fapply_abf                             = ',a12,'                  (default)')
- 20 format ('feimode                                = ',i12)
- 25 format ('feimode                                = ',i12,'                  (default)')
- 50 format ('fsample                                = ',i12)
- 55 format ('fsample                                = ',i12,'                  (default)')
- 70 format ('frestart                               = ',a12)
- 75 format ('frestart                               = ',a12,'                  (default)')
- 76 format ('frstupdate                             = ',i12)
- 77 format ('frstupdate                             = ',i12,'                  (default)')
- 80 format ('ftrjsample                             = ',i12)
- 85 format ('ftrjsample                             = ',i12,'                  (default)')
- 90 format ('fprint_icf                             = ',a12)
- 95 format ('fprint_icf                             = ',a12,'                  (default)')
-400 format ('fcache_icf                             = ',a12)
-405 format ('fcache_icf                             = ',a12,'                  (default)')
-410 format ('frawicf                                = ',a12)
-415 format ('frawicf                                = ',a12,'                  (default)')
+ 10 format (' >> Adaptive biasing force method is disabled!')
 
 100 format (' >> Multiple-walkers ABF method is disabled!')
 #ifndef PMFLIB_NETWORK
@@ -280,20 +183,10 @@ subroutine abf_control_read_abf(prm_fin)
 110 format ('fserverkey                             = ',a)
 120 format ('fserver                                = ',a)
 130 format ('fpassword                              = ',a16)
-140 format ('fserverupdate                          = ',i12)
-145 format ('fserverupdate                          = ',i12,'                  (default)')
-150 format ('fabortonmwaerr                         = ',a12)
-155 format ('fabortonmwaerr                         = ',a12,'                  (default)')
 
 190 format (/,'>> Linear ramp mode I (feimode == 1)')
-192 format ('   fhramp                              = ',i12)
-195 format ('   fhramp                              = ',i12,'                  (default)')
-
 200 format (/,'>> Linear ramp mode II (feimode == 2)')
-202 format ('   fhramp_min                          = ',i12)
-205 format ('   fhramp_min                          = ',i12,'                  (default)')
-206 format ('   fhramp_max                          = ',i12)
-207 format ('   fhramp_max                          = ',i12,'                  (default)')
+210 format (/,'>> Block averages (feimode == 3)')
 
 end subroutine abf_control_read_abf
 

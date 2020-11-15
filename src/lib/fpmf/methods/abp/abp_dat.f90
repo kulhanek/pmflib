@@ -78,6 +78,7 @@ type ABPAccuType
     real(PMFDP)                     :: M
     integer,pointer                 :: nsamples(:)  !
     real(PMFDP),pointer             :: dpop(:,:)    !
+    real(PMFDP),pointer             :: binpos(:,:)  !
     real(PMFDP),pointer             :: pop(:)       !
 end type ABPAccuType
 
@@ -88,9 +89,6 @@ real(PMFDP),allocatable     :: la(:)            ! ABP force in coordinate direct
 
 real(PMFDP)                 :: cfac
 real(PMFDP)                 :: kt
-integer,allocatable         :: cvindx(:)
-integer,allocatable         :: gridindx(:)
-real(PMFDP),allocatable     :: gridvalues(:)    ! CV values in a grid point
 real(PMFDP),allocatable     :: diffvalues(:)    ! grid-current considering periodicity
 
 ! ------------------------------------------------------------------------------

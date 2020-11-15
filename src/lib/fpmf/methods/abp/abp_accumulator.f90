@@ -37,7 +37,7 @@ subroutine abp_accumulator_init()
     use pmf_utils
 
     implicit none
-    integer              :: i,tot_nbins
+    integer              :: i,tot_nbins,gi
     integer              :: alloc_failed
     ! --------------------------------------------------------------------------
 
@@ -63,6 +63,7 @@ subroutine abp_accumulator_init()
     allocate(  accumulator%nsamples(accumulator%tot_nbins), &
             accumulator%dpop(NumOfABPCVs,accumulator%tot_nbins), &
             accumulator%pop(accumulator%tot_nbins), &
+            accumulator%binpos(NumOfABPCVs,accumulator%tot_nbins), &
             stat = alloc_failed)
 
     if( alloc_failed .ne. 0 ) then
@@ -70,6 +71,12 @@ subroutine abp_accumulator_init()
     endif
 
     call abp_accumulator_clear()
+
+    ! init binpos
+    do gi=1,accumulator%tot_nbins
+        ! get CV values on a grid point
+        call abp_accumulator_get_values(gi,accumulator%binpos(:,gi))
+    end do
 
 end subroutine abp_accumulator_init
 
@@ -383,14 +390,11 @@ subroutine abp_accumulator_update_direct
 
     ! direct mode - for each bin
     do gi=1,accumulator%tot_nbins
-        ! get CV values on a grid point
-        call abp_accumulator_get_values(gi,gridvalues)
-
         ! update pop
         s = 0.0d0
         do i=1,NumOfABPCVs
             ! calculate difference considering periodicity
-            diffvalues(i) = ABPCVList(i)%cv%get_deviation(gridvalues(i),cvvalues(i))
+            diffvalues(i) = ABPCVList(i)%cv%get_deviation(accumulator%binpos(i,gi),cvvalues(i))
             ! argument for exp
             s = s + diffvalues(i)**2 / ABPCVList(i)%alpha**2
         end do
@@ -408,11 +412,11 @@ subroutine abp_accumulator_update_direct
 
     end do
 
-    call pmf_utils_open(15000,'ene','R')
-    do i=1,accumulator%sizes(1)%nbins
-        write(15000,*) - kt * log (accumulator%pop(i) / accumulator%M)
-    end do
-    close(15000)
+!    call pmf_utils_open(15000,'ene','R')
+!    do i=1,accumulator%sizes(1)%nbins
+!        write(15000,*) - kt * log (accumulator%pop(i) / accumulator%M)
+!    end do
+!    close(15000)
 
 end subroutine abp_accumulator_update_direct
 
