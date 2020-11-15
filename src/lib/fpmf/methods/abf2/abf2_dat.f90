@@ -1,12 +1,7 @@
 !===============================================================================
 ! PMFLib - Library Supporting Potential of Mean Force Calculations
 !-------------------------------------------------------------------------------
-!    Copyright (C) 2011-2015 Petr Kulhanek, kulhanek@chemi.muni.cz
-!    Copyright (C) 2013-2015 Letif Mones, lam81@cam.ac.uk
-!    Copyright (C) 2007 Martin Petrek, petrek@chemi.muni.cz &
-!                       Petr Kulhanek, kulhanek@enzim.hu
-!    Copyright (C) 2006 Petr Kulhanek, kulhanek@chemi.muni.cz &
-!                       Martin Petrek, petrek@chemi.muni.cz
+!    Copyright (C) 2020 Petr Kulhanek, kulhanek@chemi.muni.cz
 !
 !    This library is free software; you can redistribute it and/or
 !    modify it under the terms of the GNU Lesser General Public
@@ -24,7 +19,7 @@
 !    Boston, MA  02110-1301  USA
 !===============================================================================
 
-module abf_dat
+module abf2_dat
 
 use pmf_sizes
 use pmf_dat
@@ -40,27 +35,13 @@ integer     :: fmode        ! 0 - disable ABF
 integer     :: fsample      ! output sample period in steps
 logical     :: frestart     ! 1 - restart job with previous data, 0 - otherwise not
 integer     :: frstupdate   ! how often is restart file written
-integer     :: feimode      ! extrapolation / interpolation mode
-                            ! 1 - linear ramp I
-                            ! 2 - linear ramp II
-                            ! 3 - block averages
 integer     :: ftrjsample   ! how often save accumulator to "accumulator evolution"
 integer     :: fmask_mode   ! 0 - disable ABF mask, 1 - enable ABF mask
 logical     :: fapply_abf   ! on - apply ABF, off - do not apply ABF
-logical     :: fprint_icf   ! T - print instanteous collective forces (icf), F - do not print
-logical     :: fcache_icf   ! T - cache icf into memory and dump them at the end,
-                            ! F - write icf immediatelly at each time step
-logical     :: frawicf      ! T - use raw icf data (in internal units), F - transform them to user req. units
-
-! linear ramp mode I (feimode .eq. 1)
-integer     :: fhramp       ! ramp size
-
-! linear ramp mode II (feimode .eq. 2)
-integer     :: fhramp_min   ! min value of linear ramp - ABF force is ignored below this value
-integer     :: fhramp_max   ! max  value of linear ramp
-
-! block everages (feimode .eq. 3)
 integer     :: fblock_size  ! block size for ABF force pre-accumulation
+integer     :: fintrpl      ! ABF force interpolation: 0 - no interpolation, 1 - linear interpolation
+integer     :: fsmoothlimit = 500
+integer     :: fsmoothfac   = 1
 
 ! server part ------------------------------------------------------------------
 logical                 :: fserver_enabled      ! is abf-server enabled?
@@ -84,6 +65,7 @@ type CVTypeABF
     real(PMFDP)             :: min_value        ! left range
     real(PMFDP)             :: max_value        ! right range
     integer                 :: nbins            ! number of bins
+    real(PMFDP)             :: maxforce         ! maximum force to be aplied, zero = no treshold
 end type CVTypeABF
 
 ! ----------------------
@@ -94,16 +76,16 @@ type(CVTypeABF),allocatable :: ABFCVList(:)     ! definition of CVs
 type CVInfoTypeABF
     integer                  :: nbins           ! number of accumulator bins
     real(PMFDP)              :: min_value       ! left boundary of coordinate
-    real(PMFDP)              :: max_value       ! left boundary of coordinate
-    real(PMFDP)              :: bin_width       ! (right-left)/numbins
-    real(PMFDP)              :: width           ! right - left
+    real(PMFDP)              :: max_value       ! right boundary of coordinate
+    real(PMFDP)              :: bin_width       ! (max-min)/nbins
+    real(PMFDP)              :: width           ! max-min
 end type CVInfoTypeABF
 
 ! ----------------------
 
 type ABFAccuType
      integer                       :: tot_cvs       ! total number of independent CVs
-     type(CVInfoTypeABF), pointer  :: sizes(:)      ! accumulator informations
+     type(CVInfoTypeABF), pointer  :: sizes(:)      ! accumulator information
      integer                       :: tot_nbins     ! number of total bins
 
      ! ABF force
@@ -116,6 +98,7 @@ type ABFAccuType
      integer,pointer        :: nisamples(:)             ! number of hits into bins
      real(PMFDP),pointer    :: iabfforce(:,:)           ! accumulated ABF force
      real(PMFDP),pointer    :: iabfforce2(:,:)          ! accumulated square of ABF force
+     real(PMFDP),pointer    :: iweights(:)              ! accumulated weights for each bin
 
      ! ABF force - block pre-sampling
      integer,pointer        :: block_nsamples(:)        ! number of hits into bins
@@ -154,9 +137,7 @@ real(PMFDP), allocatable    :: cvaluehist1(:)   ! history of coordinate values
 real(PMFDP), allocatable    :: cvaluehist2(:)   ! history of coordinate values
 real(PMFDP), allocatable    :: cvaluehist3(:)   ! history of coordinate values
 
-real(PMFDP), allocatable    :: icf_cache(:,:)   ! icf_cache(2*ncvs,fnstlim)
-
 ! ------------------------------------------------------------------------------
 
-end module abf_dat
+end module abf2_dat
 

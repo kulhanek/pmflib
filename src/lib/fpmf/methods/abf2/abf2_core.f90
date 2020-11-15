@@ -1,13 +1,7 @@
 !===============================================================================
 ! PMFLib - Library Supporting Potential of Mean Force Calculations
 !-------------------------------------------------------------------------------
-!    Copyright (C) 2011-2015 Petr Kulhanek, kulhanek@chemi.muni.cz
-!    Copyright (C) 2013-2015 Letif Mones, lam81@cam.ac.uk
-!    Copyright (C) 2010 Petr Kulhanek, kulhanek@chemi.muni.cz
-!    Copyright (C) 2007 Martin Petrek, petrek@chemi.muni.cz &
-!                       Petr Kulhanek, kulhanek@enzim.hu
-!    Copyright (C) 2006 Petr Kulhanek, kulhanek@chemi.muni.cz &
-!                       Martin Petrek, petrek@chemi.muni.cz
+!    Copyright (C) 2020 Petr Kulhanek, kulhanek@chemi.muni.cz
 !
 !    This library is free software; you can redistribute it and/or
 !    modify it under the terms of the GNU Lesser General Public
@@ -25,7 +19,7 @@
 !    Boston, MA  02110-1301  USA
 !===============================================================================
 
-module abf_core
+module abf2_core
 
 use pmf_sizes
 use pmf_constants
@@ -34,17 +28,17 @@ implicit none
 contains
 
 !===============================================================================
-! Subroutine:  abf_core_main
+! Subroutine:  abf2_core_main
 ! this is leap-frog and velocity-verlet ABF version
 !===============================================================================
 
-subroutine abf_core_main
+subroutine abf2_core_main
 
-    use abf_trajectory
-    use abf_restart
-    use abf_output
-    use abf_client
-    use abf_dat
+    use abf2_trajectory
+    use abf2_restart
+    use abf2_output
+    use abf2_client
+    use abf2_dat
     use pmf_utils
 
     ! --------------------------------------------------------------------------
@@ -55,29 +49,29 @@ subroutine abf_core_main
         case(2)
             call abf2_core_force_numeric
         case default
-            call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented fmode in abf_core_main!')
+            call pmf_utils_exit(PMF_OUT,1,'[ABF2] Not implemented fmode in abf2_core_main!')
     end select
 
-    call abf_output_write
-    call abf_trajectory_write_snapshot
-    call abf_restart_update
-    call abf_client_exchange_data(.false.)
+    call abf2_output_write
+    call abf2_trajectory_write_snapshot
+    call abf2_restart_update
+    call abf2_client_exchange_data(.false.)
 
-end subroutine abf_core_main
+end subroutine abf2_core_main
 
 !===============================================================================
-! Subroutine:  abf_core_force
+! Subroutine:  abf2_core_force
 ! this is leap-frog and velocity-verlet ABF version
 !===============================================================================
 
-subroutine abf_core_force()
+subroutine abf2_core_force()
 
     use pmf_utils
     use pmf_dat
     use pmf_cvs
-    use abf_dat
-    use abf_accumulator
-    use abf_output
+    use abf2_dat
+    use abf2_accumulator
+    use abf2_output
 
     implicit none
     integer     :: i,j,k,m
@@ -102,21 +96,13 @@ subroutine abf_core_force()
     end do
 
     ! calculate abf force to be applied -------------
-    select case(feimode)
-        case(1)
-            call abf_accumulator_get_data1(cvaluehist3(:),la)
-        case(2)
-            call abf_accumulator_get_data2(cvaluehist3(:),la)
-        case(3)
-            call abf_accumulator_get_data3(cvaluehist1(:),la)
-        case default
-            call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented extrapolation/interpolation mode!')
-    end select
+    call abf2_accumulator_get_data(cvaluehist3(:),la)
 
-    ! apply force filters
     if( .not. fapply_abf ) then
         ! we do not want to apply ABF force - set the forces to zero
-        la(:) = 0.0d0
+        do i=1,NumOfABFCVs
+            la(i) = 0.0d0
+        end do
     end if
 
     ! project abf force along coordinate ------------
@@ -130,7 +116,7 @@ subroutine abf_core_force()
     ! rest of ABF stuff -----------------------------
 
     ! calculate Z matrix and its inverse
-    call abf_core_calc_Zmat
+    call abf2_core_calc_Zmat
 
     ! pxip = zd0(t-dt)*[v(t-dt/2)/2 - dt*a1(t)/12]
     do i=1,NumOfABFCVs
@@ -180,21 +166,10 @@ subroutine abf_core_force()
         do i=1,NumOfABFCVs
             avg_values(i) = ABFCVList(i)%cv%get_average_value(cvaluehist1(i),cvaluehist2(i))
         end do
-
         ! add data to accumulator
-        select case(feimode)
-            case(1)
-                call abf_accumulator_add_data12(avg_values,pxi0(:))
-            case(2)
-                call abf_accumulator_add_data12(avg_values,pxi0(:))
-            case(3)
-                call abf_accumulator_add_data3(avg_values,pxi0(:))
-            case default
-                call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented extrapolation/interpolation mode!')
-        end select
+        call abf2_accumulator_add_data(avg_values,pxi0(:))
 
-        ! write icf
-        call abf_output_write_icf(avg_values,pxi0(:))
+      !  write(1248,*) avg_values(1), pxi0(1)
     end if
 
     ! pxi0 <--- -pxip + pxim + pxi1 - la/2
@@ -210,20 +185,20 @@ subroutine abf_core_force()
 
     return
 
-end subroutine abf_core_force
+end subroutine abf2_core_force
 
 !===============================================================================
-! Subroutine:  abf_core_force_numeric
+! Subroutine:  abf2_core_force_numeric
 ! this is leap-frog and velocity-verlet ABF version
 !===============================================================================
 
-subroutine abf_core_force_numeric()
+subroutine abf2_core_force_numeric()
 
     use pmf_utils
     use pmf_dat
     use pmf_cvs
-    use abf_dat
-    use abf_accumulator
+    use abf2_dat
+    use abf2_accumulator
 
     implicit none
     integer                :: i,j,m
@@ -241,22 +216,7 @@ subroutine abf_core_force_numeric()
     end do
 
     ! calculate abf force to be applied -------------
-    select case(feimode)
-        case(1)
-            call abf_accumulator_get_data1(cvaluehist1(:),la)
-        case(2)
-            call abf_accumulator_get_data2(cvaluehist1(:),la)
-        case(3)
-            call abf_accumulator_get_data3(cvaluehist1(:),la)
-        case default
-            call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented extrapolation/interpolation mode!')
-    end select
-
-    ! apply force filters
-    if( .not. fapply_abf ) then
-        ! we do not want to apply ABF force - set the forces to zero
-        la(:) = 0.0d0
-    end if
+    call abf2_accumulator_get_data(cvaluehist1(:),la)
 
     ! project abf force along coordinate
     do i=1,NumOfABFCVs
@@ -267,7 +227,7 @@ subroutine abf_core_force_numeric()
     end do
 
     ! calculate Z matrix and its inverse
-    call abf_core_calc_Zmat
+    call abf2_core_calc_Zmat
 
     ! pxip
     do i=1,NumOfABFCVs
@@ -303,37 +263,26 @@ subroutine abf_core_force_numeric()
         do i=1,NumOfABFCVs
             avg_values(i) = ABFCVList(i)%cv%get_average_value(cvaluehist0(i),cvaluehist1(i))
         end do
-
         ! add data to accumulator
-        select case(feimode)
-            case(1)
-                call abf_accumulator_add_data12(avg_values,pxi0(:))
-            case(2)
-                call abf_accumulator_add_data12(avg_values,pxi0(:))
-            case(3)
-                call abf_accumulator_add_data3(avg_values,pxi0(:))
-            case default
-                call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented extrapolation/interpolation mode!')
-        end select
+        call abf2_accumulator_add_data(avg_values,pxi0(:))
 
-        ! write icf
-        call abf_output_write_icf(avg_values,pxi0(:))
+      !  write(1249,*) avg_values(1), pxi0(1)
     end if
 
     pxim(:) = pxip(:)
 
     return
 
-end subroutine abf_core_force_numeric
+end subroutine abf2_core_force_numeric
 
 !===============================================================================
-! subroutine:  abf_core_calc_Zmat
+! subroutine:  abf2_core_calc_Zmat
 !===============================================================================
 
-subroutine abf_core_calc_Zmat()
+subroutine abf2_core_calc_Zmat()
 
     use pmf_utils
-    use abf_dat
+    use abf2_dat
 
     implicit none
     integer         :: i,ci,j,cj,k,info
@@ -356,12 +305,12 @@ subroutine abf_core_calc_Zmat()
     if (NumOfABFCVs .gt. 1) then
         call dgetrf(NumOfABFCVs,NumOfABFCVs,fzinv,NumOfABFCVs,indx,info)
         if( info .ne. 0 ) then
-            call pmf_utils_exit(PMF_OUT,1,'[ABF] LU decomposition failed in abf_calc_Zmat!')
+            call pmf_utils_exit(PMF_OUT,1,'[ABF2] LU decomposition failed in abf2_calc_Zmat!')
         end if
 
         call dgetri(NumOfABFCVs,fzinv,NumOfABFCVs,indx,vv,NumOfABFCVs,info)
         if( info .ne. 0 ) then
-            call pmf_utils_exit(PMF_OUT,1,'[ABF] Matrix inversion failed in abf_calc_Zmat!')
+            call pmf_utils_exit(PMF_OUT,1,'[ABF2] Matrix inversion failed in abf2_calc_Zmat!')
         end if
     else
         fzinv(1,1)=1.0d0/fz(1,1)
@@ -369,8 +318,8 @@ subroutine abf_core_calc_Zmat()
 
     return
 
-end subroutine abf_core_calc_Zmat
+end subroutine abf2_core_calc_Zmat
 
 !===============================================================================
 
-end module abf_core
+end module abf2_core

@@ -5,7 +5,7 @@
 !    Copyright (C) 2013-2015 Letif Mones, lam81@cam.ac.uk
 !    Copyright (C) 2007 Petr Kulhanek, kulhanek@enzim.hu
 !    Copyright (C) 2006 Petr Kulhanek, kulhanek@chemi.muni.cz &
-!                       Martin Petrek, petrek@chemi.muni.cz 
+!                       Martin Petrek, petrek@chemi.muni.cz
 !    Copyright (C) 2005 Petr Kulhanek, kulhanek@chemi.muni.cz
 !
 !    This library is free software; you can redistribute it and/or
@@ -20,7 +20,7 @@
 !
 !    You should have received a copy of the GNU Lesser General Public
 !    License along with this library; if not, write to the Free Software
-!    Foundation, Inc., 51 Franklin Street, Fifth Floor, 
+!    Foundation, Inc., 51 Franklin Street, Fifth Floor,
 !    Boston, MA  02110-1301  USA
 !===============================================================================
 
@@ -61,6 +61,8 @@ subroutine pmf_core_lf_force(x,v,f,epot,epmf)
     use rst_core
     use rst_dat
     use abf_core
+    use abf2_core
+    use abp_core
     use stm_core
     use stm_dat
     use mtd_core
@@ -154,6 +156,19 @@ subroutine pmf_core_lf_force(x,v,f,epot,epmf)
         call pmf_timers_start_timer(PMFLIB_ABF_TIMER)
         call abf_core_main
         call pmf_timers_stop_timer(PMFLIB_ABF_TIMER)
+     end if
+     ! ABF has to be here because it could be influenced by US restraints (wall restraints, etc.)
+     if( abf2_enabled ) then
+        call pmf_timers_start_timer(PMFLIB_ABF2_TIMER)
+        call abf2_core_main
+        call pmf_timers_stop_timer(PMFLIB_ABF2_TIMER)
+     end if
+
+     ! ABP has to be here because it could be influenced by US restraints (wall restraints, etc.)
+     if( abp_enabled ) then
+        call pmf_timers_start_timer(PMFLIB_ABP_TIMER)
+        call abp_core_main
+        call pmf_timers_stop_timer(PMFLIB_ABP_TIMER)
      end if
 
     call pmf_timers_stop_timer(PMFLIB_METHODS_TIMER)

@@ -5,7 +5,7 @@
 !    Copyright (C) 2013-2015 Letif Mones, lam81@cam.ac.uk
 !    Copyright (C) 2007 Petr Kulhanek, kulhanek@enzim.hu
 !    Copyright (C) 2006 Petr Kulhanek, kulhanek@chemi.muni.cz &
-!                       Martin Petrek, petrek@chemi.muni.cz 
+!                       Martin Petrek, petrek@chemi.muni.cz
 !    Copyright (C) 2005 Petr Kulhanek, kulhanek@chemi.muni.cz
 !
 !    This library is free software; you can redistribute it and/or
@@ -20,7 +20,7 @@
 !
 !    You should have received a copy of the GNU Lesser General Public
 !    License along with this library; if not, write to the Free Software
-!    Foundation, Inc., 51 Franklin Street, Fifth Floor, 
+!    Foundation, Inc., 51 Franklin Street, Fifth Floor,
 !    Boston, MA  02110-1301  USA
 !===============================================================================
 
@@ -113,6 +113,8 @@ subroutine pmf_finalize_methods
     use mon_finalize
     use rst_finalize
     use abf_finalize
+    use abf2_finalize
+    use abp_finalize
     use mtd_finalize
     use cst_finalize
     use pdrv_finalize
@@ -123,6 +125,14 @@ subroutine pmf_finalize_methods
 
     if( abf_enabled ) then
         call abf_finalize_method
+    end if
+
+    if( abf2_enabled ) then
+        call abf2_finalize_method
+    end if
+
+    if( abp_enabled ) then
+        call abp_finalize_method
     end if
 
     if( cst_enabled ) then

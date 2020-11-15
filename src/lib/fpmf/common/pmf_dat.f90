@@ -6,7 +6,7 @@
 !    Copyright (C) 2010 Petr Kulhanek, kulhanek@chemi.muni.cz
 !    Copyright (C) 2007 Petr Kulhanek, kulhanek@enzim.hu
 !    Copyright (C) 2006 Petr Kulhanek, kulhanek@chemi.muni.cz &
-!                       Martin Petrek, petrek@chemi.muni.cz 
+!                       Martin Petrek, petrek@chemi.muni.cz
 !    Copyright (C) 2005 Petr Kulhanek, kulhanek@chemi.muni.cz
 !
 !    This library is free software; you can redistribute it and/or
@@ -21,7 +21,7 @@
 !
 !    You should have received a copy of the GNU Lesser General Public
 !    License along with this library; if not, write to the Free Software
-!    Foundation, Inc., 51 Franklin Street, Fifth Floor, 
+!    Foundation, Inc., 51 Franklin Street, Fifth Floor,
 !    Boston, MA  02110-1301  USA
 !===============================================================================
 
@@ -87,6 +87,8 @@ logical                     :: cst_enabled
 logical                     :: rst_enabled
 logical                     :: mtd_enabled
 logical                     :: abf_enabled
+logical                     :: abf2_enabled
+logical                     :: abp_enabled
 logical                     :: mon_enabled
 logical                     :: stm_enabled
 logical                     :: pdrv_enabled
@@ -143,6 +145,12 @@ character(PMF_MAX_PATH)     :: fabficf
 character(PMF_MAX_PATH)     :: fabfrst
 character(PMF_MAX_PATH)     :: fabftrj
 character(PMF_MAX_PATH)     :: fabfgpout
+
+! adaptive biasing potential method ------------------
+character(PMF_MAX_PATH)     :: fabpdef
+character(PMF_MAX_PATH)     :: fabpout
+character(PMF_MAX_PATH)     :: fabprst
+character(PMF_MAX_PATH)     :: fabptrj
 
 ! string method ----------------------------------
 character(PMF_MAX_PATH)     :: fstmdef

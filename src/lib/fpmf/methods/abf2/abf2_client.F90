@@ -1,9 +1,7 @@
 !===============================================================================
 ! PMFLib - Library Supporting Potential of Mean Force Calculations
 !-------------------------------------------------------------------------------
-!    Copyright (C) 2011-2015 Petr Kulhanek, kulhanek@chemi.muni.cz
-!    Copyright (C) 2013-2015 Letif Mones, lam81@cam.ac.uk
-!    Copyright (C) 2008 Petr Kulhanek, kulhanek@enzim.hu
+!    Copyright (C) 2020 Petr Kulhanek, kulhanek@chemi.muni.cz
 !
 !    This library is free software; you can redistribute it and/or
 !    modify it under the terms of the GNU Lesser General Public
@@ -21,7 +19,7 @@
 !    Boston, MA  02110-1301  USA
 !===============================================================================
 
-module abf_client
+module abf2_client
 
 use pmf_sizes
 use pmf_constants
@@ -89,12 +87,12 @@ end interface
 contains
 
 !===============================================================================
-! Subroutine:  abf_register_client
+! Subroutine:  abf2_register_client
 !===============================================================================
 
-subroutine abf_client_register
+subroutine abf2_client_register
 
- use abf_dat
+ use abf2_dat
  use pmf_utils
  use pmf_timers
  use pmf_unit
@@ -108,7 +106,7 @@ subroutine abf_client_register
 
  if( .not. fserver_enabled ) return
 
- call pmf_timers_start_timer(PMFLIB_ABF_MWA_TIMER)
+ call pmf_timers_start_timer(PMFLIB_ABF2_MWA_TIMER)
 
  write(PMF_OUT,*)
  call pmf_utils_heading(PMF_OUT,'Multiple-walkers ABF method','=')
@@ -166,7 +164,7 @@ subroutine abf_client_register
 
 #endif
 
- call pmf_timers_stop_timer(PMFLIB_ABF_MWA_TIMER)
+ call pmf_timers_stop_timer(PMFLIB_ABF2_MWA_TIMER)
 
  return
 
@@ -177,22 +175,22 @@ subroutine abf_client_register
  30 format(' Registration FAILED!')
  40 format(' Registration SUCCESSFULL! (Client ID: ',I6,')')
 
- 50 format('# [ABF-CLIENT] Registration to server ',A,' failed!')
- 60 format('# [ABF-CLIENT] Registration to server ',A,' successful.')
- 70 format('# [ABF-CLIENT] Client ID: ',I6)
+ 50 format('# [ABF2-CLIENT] Registration to server ',A,' failed!')
+ 60 format('# [ABF2-CLIENT] Registration to server ',A,' successful.')
+ 70 format('# [ABF2-CLIENT] Client ID: ',I6)
 
-end subroutine abf_client_register
+end subroutine abf2_client_register
 
 !===============================================================================
-! Subroutine:  abf_client_get_initial_data
+! Subroutine:  abf2_client_get_initial_data
 !===============================================================================
 
-subroutine abf_client_get_initial_data
+subroutine abf2_client_get_initial_data
 
- use abf_dat
+ use abf2_dat
  use pmf_utils
  use pmf_timers
- use abf_accumulator
+ use abf2_accumulator
 
  implicit none
 #ifdef PMFLIB_NETWORK
@@ -202,7 +200,7 @@ subroutine abf_client_get_initial_data
 
  if( .not. fserver_enabled ) return
 
- call pmf_timers_start_timer(PMFLIB_ABF_MWA_TIMER)
+ call pmf_timers_start_timer(PMFLIB_ABF2_MWA_TIMER)
 
 #ifdef PMFLIB_NETWORK
     call cpmf_abf_client_initial_data(ret_st, &
@@ -220,22 +218,22 @@ subroutine abf_client_get_initial_data
     write(PMF_OUT,*)
 #endif
 
- call pmf_timers_stop_timer(PMFLIB_ABF_MWA_TIMER)
+ call pmf_timers_stop_timer(PMFLIB_ABF2_MWA_TIMER)
 
  return
 
- 10 format('# [ABF-CLIENT] Initial data from server were uploaded')
- 20 format('# [ABF-CLIENT] Unable to get initial data from server - disabling method')
+ 10 format('# [ABF2-CLIENT] Initial data from server were uploaded')
+ 20 format('# [ABF2-CLIENT] Unable to get initial data from server - disabling method')
 
-end subroutine abf_client_get_initial_data
+end subroutine abf2_client_get_initial_data
 
 !===============================================================================
-! Subroutine:  abf_client_exchange_data
+! Subroutine:  abf2_client_exchange_data
 !===============================================================================
 
-subroutine abf_client_exchange_data(force_exchange)
+subroutine abf2_client_exchange_data(force_exchange)
 
- use abf_dat
+ use abf2_dat
  use pmf_utils
  use pmf_timers
  use pmf_exit
@@ -256,7 +254,7 @@ subroutine abf_client_exchange_data(force_exchange)
     if( mod(fstep,fserverupdate) .ne. 0 ) return
  end if
 
- call pmf_timers_start_timer(PMFLIB_ABF_MWA_TIMER)
+ call pmf_timers_start_timer(PMFLIB_ABF2_MWA_TIMER)
 
  write(ABF_OUT,10) fstep
 
@@ -276,7 +274,7 @@ subroutine abf_client_exchange_data(force_exchange)
                 call pmf_exit_mdloop(PMF_OUT,1,'MWA connection failures reach the treshold!')
             end if
         end if
-        call pmf_timers_stop_timer(PMFLIB_ABF_MWA_TIMER)
+        call pmf_timers_stop_timer(PMFLIB_ABF2_MWA_TIMER)
         return
     end if
 #endif
@@ -297,18 +295,18 @@ subroutine abf_client_exchange_data(force_exchange)
 
  return
 
- 10 format('# [ABF-CLIENT] ',I9,' Exchanging data with server')
- 20 format('# [ABF-CLIENT] Unable to exchange data with server - number of connection failures: ',I3,' (Treshold:',I3,')')
+ 10 format('# [ABF2-CLIENT] ',I9,' Exchanging data with server')
+ 20 format('# [ABF2-CLIENT] Unable to exchange data with server - number of connection failures: ',I3,' (Treshold:',I3,')')
 
-end subroutine abf_client_exchange_data
+end subroutine abf2_client_exchange_data
 
 !===============================================================================
-! Subroutine:  abf_client_unregister
+! Subroutine:  abf2_client_unregister
 !===============================================================================
 
-subroutine abf_client_unregister
+subroutine abf2_client_unregister
 
- use abf_dat
+ use abf2_dat
  use pmf_utils
  use pmf_timers
 
@@ -337,9 +335,9 @@ subroutine abf_client_unregister
     end do
     if( new_data ) then
         write(ABF_OUT,30)
-        call pmf_timers_stop_timer(PMFLIB_ABF_MWA_TIMER)
-        call abf_client_exchange_data(.true.)
-        call pmf_timers_start_timer(PMFLIB_ABF_MWA_TIMER)
+        call pmf_timers_stop_timer(PMFLIB_ABF2_MWA_TIMER)
+        call abf2_client_exchange_data(.true.)
+        call pmf_timers_start_timer(PMFLIB_ABF2_MWA_TIMER)
     end if
 
     call cpmf_abf_client_unregister()
@@ -351,12 +349,12 @@ subroutine abf_client_unregister
  return
 
  10 format('>>> INFO: Removing registration from ABF server ',A)
- 20 format('# [ABF-CLIENT] Removing registration from server')
- 30 format('# [ABF-CLIENT]    Sending last unprocessed data')
- 40 format('# [ABF-CLIENT]    Client was unregistered')
+ 20 format('# [ABF2-CLIENT] Removing registration from server')
+ 30 format('# [ABF2-CLIENT]    Sending last unprocessed data')
+ 40 format('# [ABF2-CLIENT]    Client was unregistered')
 
-end subroutine abf_client_unregister
+end subroutine abf2_client_unregister
 
 !===============================================================================
 
-end module abf_client
+end module abf2_client

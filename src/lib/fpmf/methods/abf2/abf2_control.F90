@@ -1,12 +1,7 @@
 !===============================================================================
 ! PMFLib - Library Supporting Potential of Mean Force Calculations
 !-------------------------------------------------------------------------------
-!    Copyright (C) 2011-2015 Petr Kulhanek, kulhanek@chemi.muni.cz
-!    Copyright (C) 2013-2015 Letif Mones, lam81@cam.ac.uk
-!    Copyright (C) 2007 Petr Kulhanek, kulhanek@enzim.hu
-!    Copyright (C) 2006 Petr Kulhanek, kulhanek@chemi.muni.cz &
-!                       Martin Petrek, petrek@chemi.muni.cz
-!    Copyright (C) 2005 Petr Kulhanek, kulhanek@chemi.muni.cz
+!    Copyright (C) 2020 Petr Kulhanek, kulhanek@chemi.muni.cz
 !
 !    This library is free software; you can redistribute it and/or
 !    modify it under the terms of the GNU Lesser General Public
@@ -24,7 +19,7 @@
 !    Boston, MA  02110-1301  USA
 !===============================================================================
 
-module abf_control
+module abf2_control
 
 use pmf_sizes
 use pmf_constants
@@ -33,24 +28,24 @@ implicit none
 contains
 
 !===============================================================================
-! Subroutine:  abf_control_read_abf
+! Subroutine:  abf2_control_read_abf
 !===============================================================================
 
-subroutine abf_control_read_abf(prm_fin)
+subroutine abf2_control_read_abf(prm_fin)
 
     use prmfile
     use pmf_dat
     use pmf_utils
-    use abf_dat
-    use abf_init
+    use abf2_dat
+    use abf2_init
 
     implicit none
     type(PRMFILE_TYPE),intent(inout)   :: prm_fin
     ! --------------------------------------------------------------------------
 
-    call abf_init_dat
+    call abf2_init_dat
 
-    write(PMF_OUT,'(/,a)') '--- [abf] ----------------------------------------------------------------------'
+    write(PMF_OUT,'(/,a)') '--- [abf2] ---------------------------------------------------------------------'
 
     ! try open group
     if( .not. prmfile_open_group(prm_fin,'PMFLIB') ) then
@@ -59,20 +54,20 @@ subroutine abf_control_read_abf(prm_fin)
     end if
 
     ! try open section
-    if( .not. prmfile_open_section(prm_fin,'abf') ) then
+    if( .not. prmfile_open_section(prm_fin,'abf2') ) then
         write(PMF_OUT,5)
         return
     end if
 
     ! process options from [abf] section
     if( .not. prmfile_get_integer_by_key(prm_fin,'fmode',fmode) ) then
-        call pmf_utils_exit(PMF_OUT,1,'[ABF] fmode item is mandatory in this section')
+        call pmf_utils_exit(PMF_OUT,1,'[ABF2] fmode item is mandatory in this section')
     else
      write(PMF_OUT,10) fmode
     end if
 
-    if (fmode .ne. 0 .and. fmode .ne. 1 .and. fmode .ne. 2) then
-        write(PMF_OUT, '(/2x,a,i3,a)') 'fmode (', fmode, ') must be 0, 1 or 2'
+    if (fmode .ne. 0 .and. fmode .ne. 1 .and. fmode .ne. 2 ) then
+        write(PMF_OUT, '(/2x,a,i3,a)') 'fmode (', fmode, ') must be 0, 1, 2'
         call pmf_utils_exit(PMF_OUT,1)
     end if
 
@@ -100,16 +95,31 @@ subroutine abf_control_read_abf(prm_fin)
         write(PMF_OUT,26) prmfile_onoff(fapply_abf)
     end if
 
-    if(prmfile_get_integer_by_key(prm_fin,'feimode', feimode)) then
-        write(PMF_OUT,20) feimode
-    else
-        write(PMF_OUT,25) feimode
-    end if
-
     if(prmfile_get_integer_by_key(prm_fin,'fsample', fsample)) then
         write(PMF_OUT,50) fsample
     else
         write(PMF_OUT,55) fsample
+    end if
+
+    if(prmfile_get_integer_by_key(prm_fin,'fblock_size', fblock_size)) then
+        write(PMF_OUT,90) fblock_size
+    else
+        write(PMF_OUT,94) fblock_size
+    end if
+
+    if( fblock_size .le. 0 ) then
+        call pmf_utils_exit(PMF_OUT,1,'fblock_size has to be > 0')
+    end if
+
+    if(prmfile_get_integer_by_key(prm_fin,'fintrpl', fintrpl)) then
+        write(PMF_OUT,96) fintrpl
+    else
+        write(PMF_OUT,98) fintrpl
+    end if
+
+    if (fintrpl .ne. 0 .and. fintrpl .ne. 1) then
+        write(PMF_OUT, '(/2x,a,i3,a)') 'fintrpl (', fintrpl, ') must be 0 or 1'
+        call pmf_utils_exit(PMF_OUT,1)
     end if
 
     if(prmfile_get_logical_by_key(prm_fin,'frestart', frestart)) then
@@ -137,57 +147,6 @@ subroutine abf_control_read_abf(prm_fin)
     if( ftrjsample .lt. 0 ) then
         call pmf_utils_exit(PMF_OUT,1,'ftrjsample has to be >=0')
     end if
-
-    if(prmfile_get_logical_by_key(prm_fin,'fprint_icf', fprint_icf)) then
-        write(PMF_OUT,90) prmfile_onoff(fprint_icf)
-    else
-        write(PMF_OUT,95) prmfile_onoff(fprint_icf)
-    end if
-
-    if(prmfile_get_logical_by_key(prm_fin,'fcache_icf', fcache_icf)) then
-        write(PMF_OUT,400) prmfile_onoff(fcache_icf)
-    else
-        write(PMF_OUT,405) prmfile_onoff(fcache_icf)
-    end if
-
-    if(prmfile_get_logical_by_key(prm_fin,'frawicf', frawicf)) then
-        write(PMF_OUT,410) prmfile_onoff(frawicf)
-    else
-        write(PMF_OUT,415) prmfile_onoff(frawicf)
-    end if
-
-    select case(feimode)
-        case(1)
-            write(PMF_OUT,190)
-            if(prmfile_get_integer_by_key(prm_fin,'fhramp', fhramp)) then
-                write(PMF_OUT,192) fhramp
-            else
-                write(PMF_OUT,195) fhramp
-            end if
-            if( fhramp .le. 0 ) then
-                call pmf_utils_exit(PMF_OUT,1,'[ABF] fhramp must be > 0!')
-            end if
-        case(2)
-            write(PMF_OUT,200)
-            if(prmfile_get_integer_by_key(prm_fin,'fhramp_min', fhramp_min)) then
-                write(PMF_OUT,202) fhramp_min
-            else
-                write(PMF_OUT,205) fhramp_min
-            end if
-            if(prmfile_get_integer_by_key(prm_fin,'fhramp_max', fhramp_max)) then
-                write(PMF_OUT,206) fhramp_max
-            else
-                write(PMF_OUT,207) fhramp_max
-            end if
-            if( fhramp_min .le. 0 ) then
-                call pmf_utils_exit(PMF_OUT,1,'[ABF] fhramp_min must be > 0!')
-            end if
-            if( fhramp_max .le. fhramp_min ) then
-                call pmf_utils_exit(PMF_OUT,1,'[ABF] fhramp_max must be > fhramp_min!')
-            end if
-        case default
-        call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown extrapolation/interpolation mode!')
-    end select
 
     ! network setup ----------------------------------------------------------------
 
@@ -243,39 +202,35 @@ subroutine abf_control_read_abf(prm_fin)
 
     ! restart is read from server
     if( fserver_enabled .and. frestart ) then
-        call pmf_utils_exit(PMF_OUT,1,'[ABF] frestart cannot be ON if multiple-walkers approach is used!')
+        call pmf_utils_exit(PMF_OUT,1,'[ABF2] frestart cannot be ON if multiple-walkers approach is used!')
     end if
 
-    abf_enabled = fmode .gt. 0
+    abf2_enabled = fmode .gt. 0
 
     return
 
-  5 format (' >> Adaptive biasing force method is disabled!')
+  5 format (' >> Adaptive biasing force 2 method is disabled!')
  10 format ('fmode                                  = ',i12)
  16 format ('fmask_mode                             = ',i12)
  19 format ('fmask_mode                             = ',i12,'                  (default)')
  21 format ('fapply_abf                             = ',a12)
  26 format ('fapply_abf                             = ',a12,'                  (default)')
- 20 format ('feimode                                = ',i12)
- 25 format ('feimode                                = ',i12,'                  (default)')
  50 format ('fsample                                = ',i12)
  55 format ('fsample                                = ',i12,'                  (default)')
+ 90 format ('fblock_size                            = ',i12)
+ 94 format ('fblock_size                            = ',i12,'                  (default)')
+ 96 format ('fintrpl                                = ',i12)
+ 98 format ('fintrpl                                = ',i12,'                  (default)')
  70 format ('frestart                               = ',a12)
  75 format ('frestart                               = ',a12,'                  (default)')
  76 format ('frstupdate                             = ',i12)
  77 format ('frstupdate                             = ',i12,'                  (default)')
  80 format ('ftrjsample                             = ',i12)
  85 format ('ftrjsample                             = ',i12,'                  (default)')
- 90 format ('fprint_icf                             = ',a12)
- 95 format ('fprint_icf                             = ',a12,'                  (default)')
-400 format ('fcache_icf                             = ',a12)
-405 format ('fcache_icf                             = ',a12,'                  (default)')
-410 format ('frawicf                                = ',a12)
-415 format ('frawicf                                = ',a12,'                  (default)')
 
-100 format (' >> Multiple-walkers ABF method is disabled!')
+100 format (' >> Multiple-walkers ABF2 method is disabled!')
 #ifndef PMFLIB_NETWORK
-105 format (' >> Multiple-walkers ABF method is not compiled in!')
+105 format (' >> Multiple-walkers ABF2 method is not compiled in!')
 #endif
 110 format ('fserverkey                             = ',a)
 120 format ('fserver                                = ',a)
@@ -285,27 +240,17 @@ subroutine abf_control_read_abf(prm_fin)
 150 format ('fabortonmwaerr                         = ',a12)
 155 format ('fabortonmwaerr                         = ',a12,'                  (default)')
 
-190 format (/,'>> Linear ramp mode I (feimode == 1)')
-192 format ('   fhramp                              = ',i12)
-195 format ('   fhramp                              = ',i12,'                  (default)')
-
-200 format (/,'>> Linear ramp mode II (feimode == 2)')
-202 format ('   fhramp_min                          = ',i12)
-205 format ('   fhramp_min                          = ',i12,'                  (default)')
-206 format ('   fhramp_max                          = ',i12)
-207 format ('   fhramp_max                          = ',i12,'                  (default)')
-
-end subroutine abf_control_read_abf
+end subroutine abf2_control_read_abf
 
 !===============================================================================
-! Subroutine:  abf_control_read_cvs
+! Subroutine:  abf2_control_read_cvs
 !===============================================================================
 
-subroutine abf_control_read_cvs(prm_fin)
+subroutine abf2_control_read_cvs(prm_fin)
 
     use pmf_dat
     use pmf_utils
-    use abf_dat
+    use abf2_dat
     use prmfile
 
     implicit none
@@ -316,7 +261,7 @@ subroutine abf_control_read_cvs(prm_fin)
     ! --------------------------------------------------------------------------
 
     write(PMF_OUT,*)
-    call pmf_utils_heading(PMF_OUT,'{ABF}',':')
+    call pmf_utils_heading(PMF_OUT,'{ABF2}',':')
     write(PMF_OUT,*)
 
     ! get name of group
@@ -326,20 +271,20 @@ subroutine abf_control_read_cvs(prm_fin)
         ! open goup with name from abfdef
         if( .not. prmfile_open_group(prm_fin,trim(grpname)) ) then
             write(PMF_OUT,130)
-            abf_enabled = .false.
+            abf2_enabled = .false.
             return
         end if
-        call abf_control_read_cvs_from_group(prm_fin)
+        call abf2_control_read_cvs_from_group(prm_fin)
     else
         write(PMF_OUT,120) trim(fabfdef)
 
         call prmfile_init(locprmfile)
 
         if( .not. prmfile_read(locprmfile,fabfdef) ) then
-            call pmf_utils_exit(PMF_OUT,1,'[ABF] Unable to load file: ' // trim(fabfdef) // '!')
+            call pmf_utils_exit(PMF_OUT,1,'[ABF2] Unable to load file: ' // trim(fabfdef) // '!')
         end if
 
-        call abf_control_read_cvs_from_group(locprmfile)
+        call abf2_control_read_cvs_from_group(locprmfile)
 
         call prmfile_clear(locprmfile)
     end if
@@ -348,22 +293,22 @@ subroutine abf_control_read_cvs(prm_fin)
 
 110 format('Collective variables are read from group: ',A)
 120 format('Collective variables are read from file : ',A)
-130 format(' >> No {ABF} group was specified - disabling ABF method!')
+130 format(' >> No {ABF} group was specified - disabling ABF2 method!')
 
-end subroutine abf_control_read_cvs
+end subroutine abf2_control_read_cvs
 
 !===============================================================================
-! Subroutine:  abf_control_read_cvs_from_group
+! Subroutine:  abf2_control_read_cvs_from_group
 !===============================================================================
 
-subroutine abf_control_read_cvs_from_group(prm_fin)
+subroutine abf2_control_read_cvs_from_group(prm_fin)
 
     use prmfile
     use pmf_dat
     use pmf_utils
     use cv_common
-    use abf_dat
-    use abf_cvs
+    use abf2_dat
+    use abf2_cvs
 
     implicit none
     type(PRMFILE_TYPE),intent(inout)    :: prm_fin
@@ -380,7 +325,7 @@ subroutine abf_control_read_cvs_from_group(prm_fin)
     if( NumOfABFCVs .le. 0 ) then
         ! on CV in current or specified group
         fmode = 0
-        abf_enabled = .false.
+        abf2_enabled = .false.
         write(PMF_OUT,100)
         return
     end if
@@ -391,11 +336,11 @@ subroutine abf_control_read_cvs_from_group(prm_fin)
     allocate(ABFCVList(NumOfABFCVs), stat = alloc_failed)
 
     if ( alloc_failed .ne. 0 ) then
-        call pmf_utils_exit(PMF_OUT,1,'[ABF] Unable to allocate memory for coordinate data!')
+        call pmf_utils_exit(PMF_OUT,1,'[ABF2] Unable to allocate memory for coordinate data!')
     end if
 
     do i=1,NumOfABFCVs
-        call abf_cvs_reset_cv(ABFCVList(i))
+        call abf2_cvs_reset_cv(ABFCVList(i))
     end do
 
     ! enumerate sections ----------------------------------------------------------
@@ -407,10 +352,10 @@ subroutine abf_control_read_cvs_from_group(prm_fin)
         write(PMF_OUT,130) i
         if( resname .ne. 'CV' ) then
             call pmf_utils_exit(PMF_OUT,1, &
-                 '[ABF] Illegal section name ['//trim(resname)//'] - only [CV] is allowed!')
+                 '[ABF2] Illegal section name ['//trim(resname)//'] - only [CV] is allowed!')
         end if
         if( .not. prmfile_get_string_by_key(prm_fin,'name',cvname)) then
-            call pmf_utils_exit(PMF_OUT,1,'[ABF] CV name is not provided!')
+            call pmf_utils_exit(PMF_OUT,1,'[ABF2] CV name is not provided!')
         end if
         write(PMF_OUT,140) trim(cvname)
 
@@ -418,7 +363,7 @@ subroutine abf_control_read_cvs_from_group(prm_fin)
         ABFCVList(i)%cv     => CVList(ABFCVList(i)%cvindx)%cv
 
         ! read the rest of abf CV
-        call abf_cvs_read_cv(prm_fin,ABFCVList(i))
+        call abf2_cvs_read_cv(prm_fin,ABFCVList(i))
 
         eresult = prmfile_next_section(prm_fin)
         i = i + 1
@@ -429,7 +374,7 @@ subroutine abf_control_read_cvs_from_group(prm_fin)
         do j=i+1,NumOfABFCVs
             if( ABFCVList(i)%cvindx .eq. ABFCVList(j)%cvindx ) then
                 call pmf_utils_exit(PMF_OUT,1, &
-                     '[ABF] Two different ABF collective variables share the same general collective variable!')
+                     '[ABF2] Two different ABF collective variables share the same general collective variable!')
             end if
         end do
     end do
@@ -441,8 +386,8 @@ subroutine abf_control_read_cvs_from_group(prm_fin)
 130 format('== Reading collective variable #',I4.4)
 140 format('   Collective variable name : ',a)
 
-end subroutine abf_control_read_cvs_from_group
+end subroutine abf2_control_read_cvs_from_group
 
 !===============================================================================
 
-end module abf_control
+end module abf2_control

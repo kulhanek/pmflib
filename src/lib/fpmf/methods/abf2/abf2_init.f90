@@ -1,12 +1,7 @@
 !===============================================================================
 ! PMFLib - Library Supporting Potential of Mean Force Calculations
 !-------------------------------------------------------------------------------
-!    Copyright (C) 2011-2015 Petr Kulhanek, kulhanek@chemi.muni.cz
-!    Copyright (C) 2013-2015 Letif Mones, lam81@cam.ac.uk
-!    Copyright (C) 2007 Petr Kulhanek, kulhanek@enzim.hu
-!    Copyright (C) 2006 Petr Kulhanek, kulhanek@chemi.muni.cz &
-!                       Martin Petrek, petrek@chemi.muni.cz
-!    Copyright (C) 2005 Petr Kulhanek, kulhanek@chemi.muni.cz
+!    Copyright (C) 2020 Petr Kulhanek, kulhanek@chemi.muni.cz
 !
 !    This library is free software; you can redistribute it and/or
 !    modify it under the terms of the GNU Lesser General Public
@@ -24,7 +19,7 @@
 !    Boston, MA  02110-1301  USA
 !===============================================================================
 
-module abf_init
+module abf2_init
 
 use pmf_sizes
 use pmf_constants
@@ -33,37 +28,37 @@ implicit none
 contains
 
 !===============================================================================
-! Subroutine:  abf_init_method
+! Subroutine:  abf2_init_method
 !===============================================================================
 
-subroutine abf_init_method
+subroutine abf2_init_method
 
-    use abf_output
-    use abf_restart
-    use abf_trajectory
-    use abf_client
+    use abf2_output
+    use abf2_restart
+    use abf2_trajectory
+    use abf2_client
 
     implicit none
     ! --------------------------------------------------------------------------
 
-    call abf_init_arrays
-    call abf_init_print_header
-    call abf_output_open
-    call abf_restart_read
-    call abf_trajectory_open
-    call abf_client_register
-    call abf_client_get_initial_data
-    call abf_output_write_header
+    call abf2_init_arrays
+    call abf2_init_print_header
+    call abf2_output_open
+    call abf2_restart_read
+    call abf2_trajectory_open
+    call abf2_client_register
+    call abf2_client_get_initial_data
+    call abf2_output_write_header
 
-end subroutine abf_init_method
+end subroutine abf2_init_method
 
 !===============================================================================
-! Subroutine:  abf_init_dat
+! Subroutine:  abf2_init_dat
 !===============================================================================
 
-subroutine abf_init_dat
+subroutine abf2_init_dat
 
-    use abf_dat
+    use abf2_dat
 
     implicit none
     ! --------------------------------------------------------------------------
@@ -72,18 +67,11 @@ subroutine abf_init_dat
     fsample         = 500       ! output sample pariod in steps
     frestart        = .false.   ! 1 - restart job with previous data, 0 - otherwise not
     frstupdate      = 1000      ! how often is restart file written
-    feimode         = 1         ! 1 - linear ramp, 2 - linear ramp with edge
     ftrjsample      = 0         ! how often save accumulator to "accumulator evolution"
     fmask_mode      = 0         ! 0 - disable ABF mask, 1 - enable ABF mask
+    fblock_size     = 100       ! number of samples for blocking pre-averaging
+    fintrpl         = 0         ! ABF force interpolation: 0 - no interpolation, 1 - linear interpolation
     fapply_abf      = .true.    ! on - apply ABF, off - do not apply ABF
-    fprint_icf      = .false.   ! T - print instanteous collective forces, F - do not print
-    fcache_icf      = .true.    ! T - cache icf into memory and dump them at the end,
-                                ! F - write icf immediatelly at each time step
-    frawicf         = .true.    ! T - use raw icf data (in internal units), F - transform them to user req. units
-
-    fhramp          = 100
-    fhramp_min      = 200       ! definition of linear ramp
-    fhramp_max      = 500       ! definition of linear ramp
 
     NumOfABFCVs     = 0
 
@@ -104,19 +92,19 @@ subroutine abf_init_dat
 
     fdtx            = 0.0d0     ! time step in internal units
 
-end subroutine abf_init_dat
+end subroutine abf2_init_dat
 
 !===============================================================================
-! Subroutine:  abf_print_header
+! Subroutine:  abf2_print_header
 !===============================================================================
 
-subroutine abf_init_print_header
+subroutine abf2_init_print_header
 
     use prmfile
     use pmf_constants
     use pmf_dat
-    use abf_dat
-    use abf_cvs
+    use abf2_dat
+    use abf2_cvs
     use pmf_utils
 
     implicit none
@@ -136,25 +124,11 @@ subroutine abf_init_print_header
     write(PMF_OUT,120)
     write(PMF_OUT,120)  ' ABF Control'
     write(PMF_OUT,120)  ' ------------------------------------------------------'
+    write(PMF_OUT,130)  ' #samp. in block averages (fblock_size)  : ', fblock_size
+    write(PMF_OUT,130)  ' ABF force interpolation mode (fintrpl)  : ', fintrpl
     write(PMF_OUT,130)  ' ABF mask mode (fmask_mode)              : ', fmask_mode
     write(PMF_OUT,125)  ' ABF mask file (fabfmask)                : ', trim(fabfmask)
     write(PMF_OUT,125)  ' Apply ABF force (fapply_abf)            : ', prmfile_onoff(fapply_abf)
-
-    write(PMF_OUT,120)
-    write(PMF_OUT,120)  ' ABF Interpolation/Extrapolation '
-    write(PMF_OUT,120)  ' ------------------------------------------------------'
-    write(PMF_OUT,130)  ' Extra/interpolation mode (feimode)      : ', feimode
-    select case(feimode)
-    case(1)
-    write(PMF_OUT,120)  '      |-> Simple linear ramp'
-    write(PMF_OUT,130)  ' Linear ramp size (fhramp)               : ', fhramp
-    case(2)
-    write(PMF_OUT,120)  '      |-> Min/Max linear ramp'
-    write(PMF_OUT,130)  ' Min of accu samples in bin (fhramp_min) : ', fhramp_min
-    write(PMF_OUT,130)  ' Max of accu samples in bin (fhramp_max) : ', fhramp_max
-    case default
-    call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown extrapolation/interpolation mode!')
-    end select
 
     write(PMF_OUT,120)
     write(PMF_OUT,120)  ' Restart options:'
@@ -167,9 +141,6 @@ subroutine abf_init_print_header
     write(PMF_OUT,120)  ' ------------------------------------------------------'
     write(PMF_OUT,125)  ' Output file (fabfout)                   : ', trim(fabfout)
     write(PMF_OUT,130)  ' Output sampling (fsample)               : ', fsample
-    write(PMF_OUT,125)  ' Print instantaneous forces (fprint_icf) : ', prmfile_onoff(fprint_icf)
-    write(PMF_OUT,125)  ' Cache ICF (fcache_icf)                  : ', prmfile_onoff(fcache_icf)
-    write(PMF_OUT,125)  ' Print ICF in internal units (frawicf)   : ', prmfile_onoff(frawicf)
     write(PMF_OUT,120)
     write(PMF_OUT,120)  ' Trajectory output options:'
     write(PMF_OUT,120)  ' ------------------------------------------------------'
@@ -200,7 +171,7 @@ subroutine abf_init_print_header
 
     do i=1,NumOfABFCVs
     write(PMF_OUT,140) i
-    call abf_cvs_cv_info(ABFCVList(i))
+    call abf2_cvs_cv_info(ABFCVList(i))
     write(PMF_OUT,120)
     end do
 
@@ -214,18 +185,18 @@ subroutine abf_init_print_header
 
 140 format(' == Collective variable #',I4.4)
 
-end subroutine abf_init_print_header
+end subroutine abf2_init_print_header
 
 !===============================================================================
-! Subroutine:  abf_init_arrays
+! Subroutine:  abf2_init_arrays
 !===============================================================================
 
-subroutine abf_init_arrays
+subroutine abf2_init_arrays
 
     use pmf_utils
     use pmf_dat
-    use abf_dat
-    use abf_accumulator
+    use abf2_dat
+    use abf2_accumulator
 
     implicit none
     integer     :: alloc_failed
@@ -253,7 +224,7 @@ subroutine abf_init_arrays
 
     if( alloc_failed .ne. 0 ) then
         call pmf_utils_exit(PMF_OUT,1, &
-            '[ABF] Unable to allocate memory for arrays used in ABF calculation!')
+            '[ABF2] Unable to allocate memory for arrays used in ABF calculation!')
     end if
 
     a0(:,:) = 0.0d0
@@ -280,15 +251,15 @@ subroutine abf_init_arrays
 
         if( alloc_failed .ne. 0 ) then
             call pmf_utils_exit(PMF_OUT,1, &
-                 '[ABF] Unable to allocate memory for arrays used in Z matrix inversion!')
+                 '[ABF2] Unable to allocate memory for arrays used in Z matrix inversion!')
         end if
     end if
 
     ! init accumulator ------------------------------
-    call abf_accumulator_init
+    call abf2_accumulator_init
 
-end subroutine abf_init_arrays
+end subroutine abf2_init_arrays
 
 !===============================================================================
 
-end module abf_init
+end module abf2_init

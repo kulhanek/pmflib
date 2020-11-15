@@ -1,12 +1,7 @@
 !===============================================================================
 ! PMFLib - Library Supporting Potential of Mean Force Calculations
 !-------------------------------------------------------------------------------
-!    Copyright (C) 2011-2015 Petr Kulhanek, kulhanek@chemi.muni.cz
-!    Copyright (C) 2013-2015 Letif Mones, lam81@cam.ac.uk
-!    Copyright (C) 2007 Martin Petrek, petrek@chemi.muni.cz &
-!                       Petr Kulhanek, kulhanek@enzim.hu
-!    Copyright (C) 2006 Petr Kulhanek, kulhanek@chemi.muni.cz &
-!                       Martin Petrek, petrek@chemi.muni.cz
+!    Copyright (C) 2011 Petr Kulhanek, kulhanek@chemi.muni.cz
 !
 !    This library is free software; you can redistribute it and/or
 !    modify it under the terms of the GNU Lesser General Public
@@ -20,74 +15,65 @@
 !
 !    You should have received a copy of the GNU Lesser General Public
 !    License along with this library; if not, write to the Free Software
-!    Foundation, Inc., 51 Franklin Street, Fifth Floor,
+!    Foundation, Inc., 51 Franklin Street, Fifth Floor, 
 !    Boston, MA  02110-1301  USA
 !===============================================================================
 
-module abf_restart
+module abp_restart
 
 implicit none
 contains
 
 !===============================================================================
-! Subroutine:  abf_restart_read
+! Subroutine:  abp_restart_read
 !===============================================================================
 
-subroutine abf_restart_read
+subroutine abp_restart_read
 
     use pmf_dat
     use pmf_utils
-    use abf_dat
-    use abf_accumulator
+    use abp_dat
+    use abp_accumulator
 
     implicit none
     ! --------------------------------------------------------------------------
 
-    ! read mask
-    if( fmask_mode .eq. 1 ) then
-        write(ABF_OUT,5) trim(fabfmask)
-        call pmf_utils_open(ABF_RST,fabfmask,'O')
-        call abf_accumulator_read_mask(ABF_RST)
-        close(ABF_RST)
-    end if
-
     ! test if restart file exists
-    if( frestart .and. .not. pmf_utils_fexist(fabfrst) ) then
+    if( frestart .and. .not. pmf_utils_fexist(fabprst) ) then
         frestart = .false.
-        write(ABF_OUT,10) trim(fabfrst)
+        write(ABP_OUT,10) trim(fabprst)
     end if
 
     if( frestart ) then
-        write(ABF_OUT,20)
+        write(ABP_OUT,20)
         ! open restart file ----------------------------------------------------
-        call pmf_utils_open(ABF_RST,fabfrst,'O')
+        call pmf_utils_open(ABP_RST,fabprst,'O')
 
-        call abf_accumulator_read(ABF_RST)
+        call abp_accumulator_read(ABP_RST)
 
-        close(ABF_RST)
+        close(ABP_RST)
     else
-        write(ABF_OUT,30)
+        write(ABP_OUT,30)
     end if
 
     return
 
-  5 format('# MASK: reading mask: ',A)
- 10 format('# WARNING: frestart = on, but file (',A,') does not exist! => frestart = off')
- 20 format('# RST: frestart = on')
- 30 format('# RST: frestart = off')
+    10 format('# WARNING: frestart = on, but file (',A,') does not exist! => frestart = off')
+    20 format('# RST: frestart = on')
+    30 format('# RST: frestart = off')
 
-end subroutine abf_restart_read
+end subroutine abp_restart_read
 
 !===============================================================================
-! Subroutine:  abf_restart_update
+! Subroutine:  abp_restart_update
 !===============================================================================
 
-subroutine abf_restart_update
+subroutine abp_restart_update
 
     use pmf_dat
     use pmf_utils
-    use abf_accumulator
-    use abf_dat
+    use abp_accumulator
+    use abp_dat
 
     implicit none
     !---------------------------------------------------------------------------
@@ -96,42 +82,40 @@ subroutine abf_restart_update
 
     if( mod(fstep,frstupdate) .ne. 0 ) return
 
-    call pmf_utils_open(ABF_RST,fabfrst,'U')
-    call abf_accumulator_write(ABF_RST)
-    close(ABF_RST)
+    call pmf_utils_open(ABP_RST,fabprst,'U')
 
-    write(ABF_OUT,10) fstep, insidesamples, outsidesamples
+    call abp_accumulator_write(ABP_RST)
+
+    close(ABP_RST)
 
     return
 
- 10 format('# [ACCU] Total steps     = ',I12,' Inside samples  = ',I12,' Outside samples = ',I12  )
-
-end subroutine abf_restart_update
+end subroutine abp_restart_update
 
 !===============================================================================
-! Subroutine:  abf_restart_write
+! Subroutine:  abp_restart_write
 !===============================================================================
 
-subroutine abf_restart_write
+subroutine abp_restart_write
 
     use pmf_dat
     use pmf_utils
-    use abf_accumulator
+    use abp_accumulator
 
     implicit none
     !---------------------------------------------------------------------------
 
-    call pmf_utils_open(ABF_RST,fabfrst,'U')
+    call pmf_utils_open(ABP_RST,fabprst,'U')
 
-    call abf_accumulator_write(ABF_RST)
+    call abp_accumulator_write(ABP_RST)
 
-    close(ABF_RST)
+    close(ABP_RST)
 
     return
 
-end subroutine abf_restart_write
+end subroutine abp_restart_write
 
 !===============================================================================
 
-end module abf_restart
+end module abp_restart
 

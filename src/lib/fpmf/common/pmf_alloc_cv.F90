@@ -99,6 +99,7 @@ subroutine pmf_alloc_cv_allocate(cv_type,cv_item)
     use cv_napbo
     use cv_nasbo
     use cv_nasbpp
+    use cv_nasstp
     use cv_nabend
 
 ! ring puckering ---------------------------------
@@ -232,6 +233,8 @@ subroutine pmf_alloc_cv_allocate(cv_type,cv_item)
             allocate(CVTypeNAPBO::cv_item)
         case('NASBO')
             allocate(CVTypeNASBO::cv_item)
+        case('NASSTP')
+            allocate(CVTypeNASSTP::cv_item)
         case('NASBPP')
             allocate(CVTypeNASBPP::cv_item)
         case('NABEND')

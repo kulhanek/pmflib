@@ -44,7 +44,7 @@ SET(PMF_CVS_SRC
         common/cvs/distance/cv_ds.f90
         common/cvs/distance/cv_dd.f90
         common/cvs/distance/cv_ppdis.f90
- 
+
     # angle based
         common/cvs/angle/cv_ang.f90
         common/cvs/angle/cv_ang2.f90
@@ -91,6 +91,7 @@ SET(PMF_CVS_SRC
         common/cvs/na/cv_napbo.f90
         common/cvs/na/cv_nasbo.f90
         common/cvs/na/cv_nasbpp.f90
+        common/cvs/na/cv_nasstp.f90
         common/cvs/na/cv_nabend.f90
 
     # ring puckering
@@ -137,6 +138,37 @@ SET(PMF_ABF_CORE_SRC
         methods/abf/abf_client.F90
         methods/abf/abf_trajectory.f90
         methods/abf/abf_finalize.f90
+        )
+
+# ABF2 -------------------------------------------------------------------------
+
+SET(PMF_ABF2_CORE_SRC
+        methods/abf2/abf2_dat.f90
+        methods/abf2/abf2_init.f90
+        methods/abf2/abf2_cvs.f90
+        methods/abf2/abf2_control.F90
+        methods/abf2/abf2_output.f90
+        methods/abf2/abf2_restart.f90
+        methods/abf2/abf2_accumulator.f90
+        methods/abf2/abf2_core.f90
+        methods/abf2/abf2_client.F90
+        methods/abf2/abf2_trajectory.f90
+        methods/abf2/abf2_finalize.f90
+        )
+
+# ABP -------------------------------------------------------------------------
+
+SET(PMF_ABP_CORE_SRC
+        methods/abp/abp_dat.f90
+        methods/abp/abp_init.f90
+        methods/abp/abp_cvs.f90
+        methods/abp/abp_control.F90
+        methods/abp/abp_output.f90
+        methods/abp/abp_restart.f90
+        methods/abp/abp_accumulator.f90
+        methods/abp/abp_core.f90
+        methods/abp/abp_trajectory.f90
+        methods/abp/abp_finalize.f90
         )
 
 # constrained dynamics ----------------------------------------------------------
@@ -227,6 +259,8 @@ SET(FPMF_SRC
         ${PMF_COM_SRC}
         ${PMF_CVS_SRC}
         ${PMF_ABF_CORE_SRC}
+        ${PMF_ABF2_CORE_SRC}
+        ${PMF_ABP_CORE_SRC}
         ${PMF_CST_CORE_SRC}
         ${PMF_MTD_CORE_SRC}
         ${PMF_RST_CORE_SRC}

@@ -5,7 +5,7 @@
 !    Copyright (C) 2013-2015 Letif Mones, lam81@cam.ac.uk
 !    Copyright (C) 2007 Petr Kulhanek, kulhanek@enzim.hu
 !    Copyright (C) 2006 Petr Kulhanek, kulhanek@chemi.muni.cz &
-!                       Martin Petrek, petrek@chemi.muni.cz 
+!                       Martin Petrek, petrek@chemi.muni.cz
 !    Copyright (C) 2005 Petr Kulhanek, kulhanek@chemi.muni.cz
 !
 !    This library is free software; you can redistribute it and/or
@@ -20,7 +20,7 @@
 !
 !    You should have received a copy of the GNU Lesser General Public
 !    License along with this library; if not, write to the Free Software
-!    Foundation, Inc., 51 Franklin Street, Fifth Floor, 
+!    Foundation, Inc., 51 Franklin Street, Fifth Floor,
 !    Boston, MA  02110-1301  USA
 !===============================================================================
 
@@ -62,13 +62,15 @@ subroutine pmf_init_dat
     fcanexmdloop = .false.
     fexit_mdloop = 0
 
-    pmf_enabled = .false.
-    cst_enabled = .false.
-    rst_enabled = .false.
-    mtd_enabled = .false.
-    abf_enabled = .false.
-    mon_enabled = .false.
-    stm_enabled = .false.
+    pmf_enabled  = .false.
+    cst_enabled  = .false.
+    rst_enabled  = .false.
+    mtd_enabled  = .false.
+    abf_enabled  = .false.
+    abf2_enabled = .false.
+    abp_enabled  = .false.
+    mon_enabled  = .false.
+    stm_enabled  = .false.
     pdrv_enabled = .false.
 
     fucell(:,:) = 0.0d0
@@ -102,6 +104,11 @@ subroutine pmf_init_dat
     fabftrj     = '_abf.trj'
     fabfgpout   = '_abf.gpout'
     fabficf     = '_abf.icf'
+
+    fabpdef     = '{ABP}'
+    fabpout     = '_abp.out'
+    fabprst     = '_abp.rst'
+    fabptrj     = '_abp.trj'
 
     fstmdef     = '{STM}'
     fstmout     = '_stm.out'
@@ -437,7 +444,7 @@ subroutine pmf_init_pmf
                   exit
               end if
            end do
-        end do  
+        end do
         allocate(CVList(i)%cv%indlindexes(CVList(i)%cv%nindatoms), stat=alloc_failed)
         if( alloc_failed .ne. 0 ) then
             call pmf_utils_exit(PMF_OUT, 1,&
@@ -521,6 +528,8 @@ subroutine pmf_init_pmf_methods()
     use mon_init
     use rst_init
     use abf_init
+    use abf2_init
+    use abp_init
     use mtd_init
     use cst_init
     use stm_init
@@ -535,6 +544,14 @@ subroutine pmf_init_pmf_methods()
 
     if( abf_enabled ) then
         call abf_init_method
+    end if
+
+    if( abf2_enabled ) then
+        call abf2_init_method
+    end if
+
+    if( abp_enabled ) then
+        call abp_init_method
     end if
 
     if( mtd_enabled ) then
@@ -557,8 +574,8 @@ subroutine pmf_init_pmf_methods()
         call mon_init_method
     end if
 
-    pmf_enabled = abf_enabled .or. mtd_enabled .or. stm_enabled &
-               .or. cst_enabled .or. rst_enabled .or. mon_enabled .or. pdrv_enabled 
+    pmf_enabled = abf_enabled .or. abf2_enabled .or. abp_enabled .or. mtd_enabled .or. stm_enabled &
+               .or. cst_enabled .or. rst_enabled .or. mon_enabled .or. pdrv_enabled
 
 end subroutine pmf_init_pmf_methods
 

@@ -5,7 +5,7 @@
 !    Copyright (C) 2013-2015 Letif Mones, lam81@cam.ac.uk
 !    Copyright (C) 2007 Petr Kulhanek, kulhanek@enzim.hu
 !    Copyright (C) 2006 Petr Kulhanek, kulhanek@chemi.muni.cz &
-!                       Martin Petrek, petrek@chemi.muni.cz 
+!                       Martin Petrek, petrek@chemi.muni.cz
 !    Copyright (C) 2005 Petr Kulhanek, kulhanek@chemi.muni.cz
 !
 !    This library is free software; you can redistribute it and/or
@@ -20,7 +20,7 @@
 !
 !    You should have received a copy of the GNU Lesser General Public
 !    License along with this library; if not, write to the Free Software
-!    Foundation, Inc., 51 Franklin Street, Fifth Floor, 
+!    Foundation, Inc., 51 Franklin Street, Fifth Floor,
 !    Boston, MA  02110-1301  USA
 !===============================================================================
 
@@ -147,6 +147,12 @@ integer,parameter       :: ABF_RST      = 172
 integer,parameter       :: ABF_TRJ      = 173
 integer,parameter       :: ABF_GPOUT    = 174
 integer,parameter       :: ABF_ICF      = 175
+
+! abp part ---------------------------------------------------------------------
+integer,parameter       :: ABP_INP      = 370
+integer,parameter       :: ABP_OUT      = 371
+integer,parameter       :: ABP_RST      = 372
+integer,parameter       :: ABP_TRJ      = 373
 
 ! metadyn part ----------------------------------------------------------------
 integer,parameter       :: MTD_INP      = 180
