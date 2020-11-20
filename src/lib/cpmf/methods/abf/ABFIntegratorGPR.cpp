@@ -608,7 +608,7 @@ bool CABFIntegratorGPR::TrainGP(CVerboseStr& vout)
     for(size_t indi=0; indi < NumOfUsedBins; indi++){
         size_t i = SampledMap[indi];
         for(size_t ii=0; ii < NCVs; ii++){
-            double mf = Accumulator->GetValue(ii,i,EABF_MEAN_FORCE_VALUE);
+            double mf = Accumulator->GetValue(ii,i,EABF_DG_VALUE);
             Y[indi*NCVs+ii] = mf;
         }
     }
@@ -800,7 +800,7 @@ void CABFIntegratorGPR::CreateKS(void)
     for(size_t indi=0; indi < NumOfUsedBins; indi++){
         size_t i = SampledMap[indi];
         for(size_t ii=0; ii < NCVs; ii++){
-            double er = Accumulator->GetValue(ii,i,EABF_MEAN_FORCE_ERROR);
+            double er = Accumulator->GetValue(ii,i,EABF_DG_ERROR);
             if( SplitNCorr ){
                 KS[indi*NCVs+ii][indi*NCVs+ii] += er*er*NCorr[ii];
             } else {
@@ -1440,7 +1440,7 @@ double CABFIntegratorGPR::GetRMSR(size_t cv)
 
         Accumulator->GetPoint(i,ipos);
 
-        double mfi = Accumulator->GetValue(cv,i,EABF_MEAN_FORCE_VALUE);
+        double mfi = Accumulator->GetValue(cv,i,EABF_DG_VALUE);
         double mfp = GetMeanForce(ipos,cv);
         double diff = mfi - mfp;
         rmsr += diff*diff;
@@ -1481,7 +1481,7 @@ bool CABFIntegratorGPR::WriteMFInfo(const CSmallString& name)
         size_t i = SampledMap[indi];
         Accumulator->GetPoint(i,ipos);
         for(size_t k=0; k < NCVs; k++){
-            mfi[indi*NCVs+k] = Accumulator->GetValue(k,i,EABF_MEAN_FORCE_VALUE);
+            mfi[indi*NCVs+k] = Accumulator->GetValue(k,i,EABF_DG_VALUE);
             mfp[indi*NCVs+k] = GetMeanForce(ipos,k);
         }
     }
@@ -1557,7 +1557,7 @@ void CABFIntegratorGPR::FilterByMFZScore(double zscore,CVerboseStr& vout)
         Accumulator->GetPoint(i,ipos);
 
         for(size_t k=0; k < NCVs; k++){
-            double diff2 = Accumulator->GetValue(k,i,EABF_MEAN_FORCE_VALUE) - GetMeanForce(ipos,k);
+            double diff2 = Accumulator->GetValue(k,i,EABF_DG_VALUE) - GetMeanForce(ipos,k);
             diff2 *= diff2;
             mferror2[indi*NCVs+k] = diff2;
         }
@@ -1950,7 +1950,7 @@ void CABFIntegratorGPR::CalcKderWRTNCorr(size_t cv)
         size_t i = SampledMap[indi];
 
         for(size_t ii=0; ii < NCVs; ii++){
-            double er = Accumulator->GetValue(ii,i,EABF_MEAN_FORCE_ERROR);
+            double er = Accumulator->GetValue(ii,i,EABF_DG_ERROR);
             if( SplitNCorr ){
                 if( cv == ii ) Kder[indi*NCVs+ii][indi*NCVs+ii] += er*er;
             } else {

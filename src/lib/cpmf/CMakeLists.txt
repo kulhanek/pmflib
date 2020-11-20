@@ -7,6 +7,7 @@ SET(CPMF_METHODS_SRC
         methods/common/ColVariable.cpp
         methods/common/EnergySurface.cpp
         methods/common/ESPrinter.cpp
+        methods/abp/ABPAccumulator.cpp
         methods/abf/ABFAccumulator.cpp
         methods/abf/ABFIntegratorRFD.cpp
         methods/abf/ABFIntegratorRFD2.cpp
@@ -42,6 +43,9 @@ SET(CPMF_NETWORK_SRC
     # ABF ----------------------------------------
         network/abf/ABFClient.cpp
         network/abf/EntriesABFClient.cpp
+    # ABP ----------------------------------------
+        network/abp/ABPClient.cpp
+        network/abp/EntriesABPClient.cpp
     # MTD ----------------------------------------
         network/mtd/MTDClient.cpp
         network/mtd/EntriesMTDClient.cpp

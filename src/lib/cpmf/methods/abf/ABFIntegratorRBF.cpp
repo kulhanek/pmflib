@@ -142,7 +142,7 @@ void CABFIntegratorRBF::SetWFac(const CSmallString& spec)
 //------------------------------------------------------------------------------
 
 void CABFIntegratorRBF::SetRFac(const CSmallString& spec)
-{    
+{
     if( Accumulator == NULL ){
         RUNTIME_ERROR("accumulator is not set for SetRFac");
     }
@@ -556,7 +556,7 @@ bool CABFIntegratorRBF::IntegrateByLS(CVerboseStr& vout)
         }
         // rhs
         for(size_t k=0; k < NCVs; k++){
-            rhs[indi*NCVs+k] = Accumulator->GetValue(k,i,EABF_MEAN_FORCE_VALUE);
+            rhs[indi*NCVs+k] = Accumulator->GetValue(k,i,EABF_DG_VALUE);
         }
     }
 
@@ -666,7 +666,7 @@ double CABFIntegratorRBF::GetRMSR(size_t cv)
 
         Accumulator->GetPoint(i,ipos);
 
-        double mfi = Accumulator->GetValue(cv,i,EABF_MEAN_FORCE_VALUE);
+        double mfi = Accumulator->GetValue(cv,i,EABF_DG_VALUE);
         double mfp = GetMeanForce(ipos,cv);
         double diff = mfi - mfp;
 
@@ -708,7 +708,7 @@ bool CABFIntegratorRBF::WriteMFInfo(const CSmallString& name)
         size_t i = SampledMap[indi];
         Accumulator->GetPoint(i,jpos);
         for(size_t k=0; k < NCVs; k++){
-            mfi[indi*NCVs+k] = Accumulator->GetValue(k,i,EABF_MEAN_FORCE_VALUE);
+            mfi[indi*NCVs+k] = Accumulator->GetValue(k,i,EABF_DG_VALUE);
             mfp[indi*NCVs+k] = GetMeanForce(jpos,k);
         }
     }
@@ -784,7 +784,7 @@ void CABFIntegratorRBF::FilterByMFZScore(double zscore,CVerboseStr& vout)
         Accumulator->GetPoint(i,jpos);
 
         for(size_t k=0; k < NCVs; k++){
-            double diff2 = Accumulator->GetValue(k,i,EABF_MEAN_FORCE_VALUE) - GetMeanForce(jpos,k);
+            double diff2 = Accumulator->GetValue(k,i,EABF_DG_VALUE) - GetMeanForce(jpos,k);
             diff2 *= diff2;
             mferror2[indi*NCVs+k] = diff2;
         }

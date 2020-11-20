@@ -57,6 +57,17 @@ public:
                   double lmin_value,double lmax_value,unsigned int lnbins);
 
     /// set cv data
+    void SetCoord(int lid,const CSmallString& lname,const CSmallString& ltype,
+                  double lmin_value,double lmax_value,unsigned int lnbins,
+                  double lfconv,const CSmallString& lunit);
+
+    /// set cv data
+    void SetCoord(int lid,const CSmallString& lname,const CSmallString& ltype,
+                  double lmin_value,double lmax_value,unsigned int lnbins,
+                  double alpha,
+                  double lfconv,const CSmallString& lunit);
+
+    /// set cv data
     void SetCoord(int lid,const CSmallString& lname,const CSmallString& ltype);
 
     /// copy from
@@ -85,7 +96,7 @@ public:
     double GetValue(unsigned int bin) const;
 
     /// return value in user specified unit for particular bin
-    double GetRealValue(unsigned int bin) const;
+    double GetRValue(unsigned int bin) const;
 
     /// get difference between two CVs
     double GetDifference(double left,double right) const;
@@ -95,6 +106,9 @@ public:
 
     /// return coordinate name
     const CSmallString& GetName(void) const;
+
+    /// return unit name
+    const CSmallString& GetUnit(void) const;
 
     /// check periodicity
     bool IsPeriodic(void) const;
@@ -121,6 +135,8 @@ private:
     int             ID;             // CV id
     CSmallString    Name;           // name of coordinate
     CSmallString    Type;           // type of coordinate
+    CSmallString    Unit;           // unit
+    double          FConv;          // conversion factor from i2r units
     double          MinValue;       // left boundary of coordinate
     double          MaxValue;       // right boundary of coordinate
     // MUST BE SIGNED VALUE
@@ -128,9 +144,11 @@ private:
     double          BinWidth;       // (max_value-min_value)/nbins
     double          Width;          // max_value-min_value
     double          MaxMovement;    // used by STM
+    double          Alpha;          // used by ABP
 
     friend class CMTDHistory;
     friend class CABFAccumulator;
+    friend class CABPAccumulator;
     friend class CRSTAccumulator;
     friend class CBeadList;
 };

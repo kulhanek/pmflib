@@ -44,6 +44,8 @@ CColVariable::CColVariable(void)
     BinWidth    = 0.0;
     Width       = 0.0;
     MaxMovement = 0.0;
+    FConv       = 1.0;
+    Alpha       = 0.0;
 }
 
 //==============================================================================
@@ -134,16 +136,64 @@ void CColVariable::SetCoord(int lid,const CSmallString& lname,const CSmallString
 
 //------------------------------------------------------------------------------
 
+void CColVariable::SetCoord(int lid,const CSmallString& lname,const CSmallString& ltype,
+                  double lmin_value,double lmax_value,unsigned int lnbins,
+                  double lfconv,const CSmallString& lunit)
+{
+    ID = lid;
+    Name = lname;
+    Type = ltype;
+    MinValue = lmin_value;
+    MaxValue = lmax_value;
+    NBins = lnbins;
+
+    Width = MaxValue - MinValue;
+    BinWidth = 0.0;
+    if(NBins > 0) BinWidth = Width / ((double)NBins);
+
+    FConv = lfconv;
+    Unit = lunit;
+}
+
+//------------------------------------------------------------------------------
+
+void CColVariable::SetCoord(int lid,const CSmallString& lname,const CSmallString& ltype,
+              double lmin_value,double lmax_value,unsigned int lnbins,
+              double alpha,
+              double lfconv,const CSmallString& lunit)
+{
+    ID = lid;
+    Name = lname;
+    Type = ltype;
+    MinValue = lmin_value;
+    MaxValue = lmax_value;
+    NBins = lnbins;
+
+    Width = MaxValue - MinValue;
+    BinWidth = 0.0;
+    if(NBins > 0) BinWidth = Width / ((double)NBins);
+
+    Alpha = alpha;
+    FConv = lfconv;
+    Unit = lunit;
+}
+
+//------------------------------------------------------------------------------
+
+// for energy surface
 void CColVariable::CopyFrom(const CColVariable* p_coord)
 {
     ID        = p_coord->ID;
     Name      = p_coord->Name;
     Type      = p_coord->Type;
+    Unit      = p_coord->Unit;
     NBins     = p_coord->NBins;
+    FConv     = p_coord->FConv;
     MinValue  = p_coord->MinValue;
     MaxValue  = p_coord->MaxValue;
     BinWidth  = p_coord->BinWidth;
     Width     = p_coord->Width;
+    Alpha     = p_coord->Alpha;
 }
 
 //==============================================================================
@@ -200,6 +250,13 @@ double CColVariable::GetValue(unsigned int bin) const
 
 //------------------------------------------------------------------------------
 
+double CColVariable::GetRValue(unsigned int bin) const
+{
+  return( GetValue(bin)*FConv );
+}
+
+//------------------------------------------------------------------------------
+
 const CSmallString& CColVariable::GetType(void) const
 {
     return(Type);
@@ -210,6 +267,13 @@ const CSmallString& CColVariable::GetType(void) const
 const CSmallString& CColVariable::GetName(void) const
 {
     return(Name);
+}
+
+//------------------------------------------------------------------------------
+
+const CSmallString& CColVariable::GetUnit(void) const
+{
+    return(Unit);
 }
 
 //------------------------------------------------------------------------------
@@ -225,7 +289,7 @@ double CColVariable::GetDifference(double left,double right) const
 bool CColVariable::IsPeriodic(void) const
 {
     if(strstr(Type,"DIH") == NULL) return(false);
-    // TODO !!!
+    // FIXME - TODO !!!
 // currently only dihedral angle can be periodic
     if(fabs(MaxValue - MinValue - 2*M_PI) <= 0.1) {
         return(true);
@@ -239,12 +303,15 @@ bool CColVariable::IsPeriodic(void) const
 
 void CColVariable::PrintInfo(std::ostream& vout)
 {
-//    vout << "ID  Type      Name                          Min value       Max value     NBins " << endl;
-//    vout << "-- ---------- -------------------------- --------------- --------------- -------" << endl;
+//    vout << "ID P Type       Unit  Name                       Min value   Max value   NBins  " << endl;
+//    vout << "-- - ---------- ----- -------------------------- ----------- ----------- -------" << endl;
 
-    vout << setw(2) << ID+1 << " " << left << setw(10) << Type << " "  << setw(26) << Name << " ";
-    vout << right << scientific << setw(15) << setprecision(8) << MinValue << " ";
-    vout << setw(15) << setprecision(8) << MaxValue << " ";
+    char periodic = 'F';
+    if( IsPeriodic() ) periodic = 'T';
+
+    vout << setw(2) << ID+1 << " " << setw(1) << periodic << " " << left << setw(10) << Type << " " << left << setw(5) << Unit << " " << setw(26) << Name << " ";
+    vout << right << fixed << setw(11) << setprecision(4) << MinValue*FConv << " ";
+    vout << setw(11) << setprecision(4) << MaxValue*FConv << " ";
     vout << setw(7) << NBins << endl;
 }
 
@@ -261,6 +328,8 @@ void CColVariable::LoadInfo(CXMLElement* p_ele)
     result &= p_ele->GetAttribute("ID",ID);
     result &= p_ele->GetAttribute("Name",Name);
     result &= p_ele->GetAttribute("Type",Type);
+    result &= p_ele->GetAttribute("Unit",Unit);
+    result &= p_ele->GetAttribute("FConv",FConv);
 
     if( p_ele->GetAttribute("NBins",NBins) ){
         result &= p_ele->GetAttribute("MinValue",MinValue);
@@ -269,6 +338,7 @@ void CColVariable::LoadInfo(CXMLElement* p_ele)
 
     // optional
     p_ele->GetAttribute("MaxMovement",MaxMovement);
+    p_ele->GetAttribute("Alpha",Alpha);
 
     if(result == false) {
         LOGIC_ERROR("unable to get attribute(s)");
@@ -291,12 +361,14 @@ bool CColVariable::CheckInfo(CXMLElement* p_ele) const
 
     int             lid;
     int             lnbins;
-    CSmallString    ltype,lname; //,lunit;
-    double          lmin_value,lmax_value; //,lunit_fac;
+    CSmallString    ltype,lname,lunit;
+    double          lmin_value,lmax_value,lunit_fac;
 
     result &= p_ele->GetAttribute("ID",lid);
     result &= p_ele->GetAttribute("Name",lname);
     result &= p_ele->GetAttribute("Type",ltype);
+    result &= p_ele->GetAttribute("Unit",lunit);
+    result &= p_ele->GetAttribute("FConv",lunit_fac);
 
     if( NBins > 0 ){
         result &= p_ele->GetAttribute("NBins",lnbins);
@@ -323,6 +395,17 @@ bool CColVariable::CheckInfo(CXMLElement* p_ele) const
         ES_ERROR("mismatch in Type");
         return(false);
     }
+
+// DO NOT CHECK - we work in internal units
+//    if(lunit != Unit) {
+//        ES_ERROR("mismatch in Unit");
+//        return(false);
+//    }
+//
+//    if(fabs(lunit_fac-FConv) > fabs(FConv/100000.0)) {
+//        ES_ERROR("mismatch in FConv");
+//        return(false);
+//    }
 
     if( NBins > 0 ){
         if(fabs(lmin_value-MinValue) > fabs(MinValue/100000.0)) {
@@ -367,6 +450,17 @@ bool CColVariable::CheckInfo(const CColVariable* p_coord) const
         return(false);
     }
 
+// DO NOT CHECK - we work in internal units
+//    if(p_coord->Unit != Unit) {
+//        ES_ERROR("mismatch in Unit");
+//        return(false);
+//    }
+//
+//    if(fabs(p_coord->FConv - FConv) > fabs(FConv/100000.0)) {
+//        ES_ERROR("mismatch in FConv");
+//        return(false);
+//    }
+
     if( NBins > 0 ){
 
         if(fabs(p_coord->MinValue-MinValue) > fabs(MinValue/100000.0)) {
@@ -399,6 +493,8 @@ void CColVariable::SaveInfo(CXMLElement* p_ele) const
     p_ele->SetAttribute("ID",ID);
     p_ele->SetAttribute("Name",Name);
     p_ele->SetAttribute("Type",Type);
+    p_ele->SetAttribute("Unit",Unit);
+    p_ele->SetAttribute("FConv",FConv);
     if( NBins != 0 ){
         p_ele->SetAttribute("MinValue",MinValue);
         p_ele->SetAttribute("MaxValue",MaxValue);
@@ -406,6 +502,7 @@ void CColVariable::SaveInfo(CXMLElement* p_ele) const
     }
     // optional
     p_ele->SetAttribute("MaxMovement",MaxMovement);
+    p_ele->SetAttribute("Alpha",Alpha);
 }
 
 //==============================================================================

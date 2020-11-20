@@ -83,13 +83,13 @@ int CABFClient::GetNumberOfBins(void)
 //------------------------------------------------------------------------------
 
 void CABFClient::SetCoord(int id,const CSmallString& name,const CSmallString& type,
-                          double min_value,double max_value,int nbins)
+                          double min_value,double max_value,int nbins,double fconv,const CSmallString& unit)
 {
     if((id < 0) || (id >= NItems)) {
         INVALID_ARGUMENT("cv id is out of range");
     }
 
-    Coords[id].SetCoord(id,name,type,min_value,max_value,nbins);
+    Coords[id].SetCoord(id,name,type,min_value,max_value,nbins,fconv,unit);
 }
 
 //==============================================================================
@@ -161,9 +161,11 @@ bool CABFClient::UnregisterClient(void)
 
 bool CABFClient::GetInitialData(int* nisamples,
                                 double* iabfforce,
-                                double* iabfforce2)
+                                double* iabfforce2,
+                                double* iepot,
+                                double* iepot2)
 {
-    ClearExchangeData(nisamples,iabfforce,iabfforce2);
+    ClearExchangeData(nisamples,iabfforce,iabfforce2,iepot,iepot2);
 
     CClientCommand cmd;
     try{
@@ -180,7 +182,7 @@ bool CABFClient::GetInitialData(int* nisamples,
 
         // process results
         p_ele = cmd.GetRootResultElement();
-        ReadExchangeData(p_ele,nisamples,iabfforce,iabfforce2);
+        ReadExchangeData(p_ele,nisamples,iabfforce,iabfforce2,iepot,iepot2);
 
     } catch(std::exception& e) {
         ES_ERROR_FROM_EXCEPTION("unable to process command",e);
@@ -193,8 +195,10 @@ bool CABFClient::GetInitialData(int* nisamples,
 //------------------------------------------------------------------------------
 
 bool CABFClient::ExchangeData(int* nisamples,
-                              double* iabfforce,
-                              double* iabfforce2)
+                                double* iabfforce,
+                                double* iabfforce2,
+                                double* iepot,
+                                double* iepot2)
 {
     CClientCommand cmd;
     try{
@@ -205,14 +209,14 @@ bool CABFClient::ExchangeData(int* nisamples,
         // prepare input data
         CXMLElement* p_ele = cmd.GetRootCommandElement();
         p_ele->SetAttribute("client_id",ClientID);
-        WriteExchangeData(p_ele,nisamples,iabfforce,iabfforce2);
+        WriteExchangeData(p_ele,nisamples,iabfforce,iabfforce2,iepot,iepot2);
 
         // execute command
         ExecuteCommand(&cmd);
 
         // process results
         p_ele = cmd.GetRootResultElement();
-        ReadExchangeData(p_ele,nisamples,iabfforce,iabfforce2);
+        ReadExchangeData(p_ele,nisamples,iabfforce,iabfforce2,iepot,iepot2);
 
     } catch(std::exception& e) {
         ES_ERROR_FROM_EXCEPTION("unable to process command",e);
@@ -242,13 +246,14 @@ void CABFClient::SaveCVSInfo(CXMLElement* p_tele)
     }
 }
 
-
 //------------------------------------------------------------------------------
 
 void CABFClient::WriteExchangeData(CXMLElement* p_cele,
-                                   int* nisamples,
-                                   double* iabfforce,
-                                   double* iabfforce2)
+                                    int* nisamples,
+                                    double* iabfforce,
+                                    double* iabfforce2,
+                                    double* iepot,
+                                    double* iepot2)
 {
     if(p_cele == NULL) {
         INVALID_ARGUMENT("p_cele is NULL");
@@ -256,8 +261,9 @@ void CABFClient::WriteExchangeData(CXMLElement* p_cele,
 
     int nisamples_size = NTotBins*sizeof(int);
     int iabfforce_size = NTotBins*NItems*sizeof(double);
+    int iepot_size     = NTotBins*sizeof(double);
 
-    if((nisamples_size == 0) || (iabfforce_size == 0)) {
+    if( (nisamples_size == 0) || (iabfforce_size == 0) || (iepot_size == 0) ) {
         LOGIC_ERROR("size(s) is(are) zero");
     }
 
@@ -270,14 +276,22 @@ void CABFClient::WriteExchangeData(CXMLElement* p_cele,
 
     CXMLBinData* p_iabfforce2 = p_cele->CreateChildBinData("IABFFORCE2");
     p_iabfforce2->SetData(iabfforce2,iabfforce_size);
+
+    CXMLBinData* p_iepot = p_cele->CreateChildBinData("IEPOT");
+    p_iepot->SetData(iepot,iepot_size);
+
+    CXMLBinData* p_iepot2 = p_cele->CreateChildBinData("IEPOT2");
+    p_iepot2->SetData(iepot2,iepot_size);
 }
 
 //------------------------------------------------------------------------------
 
 void CABFClient::ReadExchangeData(CXMLElement* p_rele,
-                                  int* nisamples,
-                                  double* iabfforce,
-                                  double* iabfforce2)
+                                    int* nisamples,
+                                    double* iabfforce,
+                                    double* iabfforce2,
+                                    double* iepot,
+                                    double* iepot2)
 {
     if(p_rele == NULL) {
         INVALID_ARGUMENT("p_rele is NULL");
@@ -285,11 +299,13 @@ void CABFClient::ReadExchangeData(CXMLElement* p_rele,
 
     unsigned int nisamples_size = NTotBins*sizeof(int);
     unsigned int iabfforce_size = NTotBins*NItems*sizeof(double);
+    unsigned int iepot_size     = NTotBins*sizeof(double);
 
-    if((nisamples_size == 0) || (iabfforce_size == 0)) {
+    if( (nisamples_size == 0) || (iabfforce_size == 0) || (iepot_size == 0) ) {
         LOGIC_ERROR("size(s) is(are) zero");
     }
 
+// --------------------------
     CXMLBinData* p_nisamples = p_rele->GetFirstChildBinData("NISAMPLES");
     if(p_nisamples == NULL) {
         LOGIC_ERROR("unable to open NISAMPLES element");
@@ -301,7 +317,7 @@ void CABFClient::ReadExchangeData(CXMLElement* p_rele,
     }
     memcpy(nisamples,p_data,nisamples_size);
 
-
+// --------------------------
     CXMLBinData* p_iabfforce = p_rele->GetFirstChildBinData("IABFFORCE");
     if(p_iabfforce == NULL) {
         LOGIC_ERROR("unable to open IABFFORCE element");
@@ -313,7 +329,7 @@ void CABFClient::ReadExchangeData(CXMLElement* p_rele,
     }
     memcpy(iabfforce,p_data,iabfforce_size);
 
-
+// --------------------------
     CXMLBinData* p_iabfforce2 = p_rele->GetFirstChildBinData("IABFFORCE2");
     if(p_iabfforce2 == NULL) {
         LOGIC_ERROR("unable to open IABFFORCE2 element");
@@ -324,16 +340,44 @@ void CABFClient::ReadExchangeData(CXMLElement* p_rele,
         LOGIC_ERROR("inconsistent IABFFORCE2 element data");
     }
     memcpy(iabfforce2,p_data,iabfforce_size);
+
+// --------------------------
+    CXMLBinData* p_iepot = p_rele->GetFirstChildBinData("IEPOT");
+    if(p_iepot == NULL) {
+        LOGIC_ERROR("unable to open IEPOT element");
+    }
+
+    p_data = p_iepot->GetData();
+    if((p_data == NULL) || (p_iepot->GetLength() != iepot_size)) {
+        LOGIC_ERROR("inconsistent IEPOT element data");
+    }
+    memcpy(iepot,p_data,iepot_size);
+
+// --------------------------
+    CXMLBinData* p_iepot2 = p_rele->GetFirstChildBinData("IEPOT2");
+    if(p_iepot2 == NULL) {
+        LOGIC_ERROR("unable to open IEPOT2 element");
+    }
+
+    p_data = p_iepot2->GetData();
+    if((p_data == NULL) || (p_iepot2->GetLength() != iepot_size)) {
+        LOGIC_ERROR("inconsistent IEPOT2 element data");
+    }
+    memcpy(iepot2,p_data,iepot_size);
 }
 
 //------------------------------------------------------------------------------
 
 void CABFClient::ClearExchangeData(int* nisamples,
-                                   double* iabfforce,
-                                   double* iabfforce2)
+                                    double* iabfforce,
+                                    double* iabfforce2,
+                                    double* iepot,
+                                    double* iepot2
+                                    )
 {
     int nisamples_size = NTotBins;
     int iabfforce_size = NTotBins*NItems;
+    int iepot_size = NTotBins;
 
     for(int i=0; i < nisamples_size; i++) {
         nisamples[i] = 0;
@@ -342,6 +386,11 @@ void CABFClient::ClearExchangeData(int* nisamples,
     for(int i=0; i < iabfforce_size; i++) {
         iabfforce[i] = 0.0;
         iabfforce2[i] = 0.0;
+    }
+
+    for(int i=0; i < iepot_size; i++) {
+        iepot[i] = 0.0;
+        iepot2[i] = 0.0;
     }
 }
 

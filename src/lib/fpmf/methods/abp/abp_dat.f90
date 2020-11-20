@@ -1,6 +1,7 @@
 !===============================================================================
 ! PMFLib - Library Supporting Potential of Mean Force Calculations
 !-------------------------------------------------------------------------------
+!    Copyright (C) 2020 Petr Kulhanek, kulhanek@chemi.muni.cz
 !    Copyright (C) 2011 Petr Kulhanek, kulhanek@chemi.muni.cz
 !
 !    This library is free software; you can redistribute it and/or
@@ -42,6 +43,18 @@ real(PMFDP) :: fhbias       ! bias height
 ! linear ramp mode I
 integer     :: fhramp       ! ramp size
 
+! server part ------------------------------------------------------------------
+logical                 :: fserver_enabled      ! is abp-server enabled?
+character(PMF_MAX_PATH) :: fserverkey           ! abp-server key file name
+character(PMF_MAX_PATH) :: fserver              ! abp-server name
+integer                 :: fserverupdate        ! how often to communicate with server
+integer                 :: fconrepeats          ! how many times to repeat connection
+logical                 :: fabortonmwaerr       ! abort if communication with MWA fails
+
+! abp server -----------------
+integer                 :: client_id            ! abp walker client ID
+integer                 :: failure_counter      ! current number of MWA failures
+
 
 ! item list --------------------------------------------------------------------
 type CVTypeABP
@@ -71,15 +84,22 @@ end type CVInfoTypeABP
 
 type ABPAccuType
     integer                         :: tot_cvs      ! total number of independent CVs
-    type(CVInfoTypeABP), pointer    :: sizes(:)     ! accumulator informations
+    type(CVInfoTypeABP), pointer    :: sizes(:)     ! accumulator information
     integer                         :: tot_nbins    ! number of total bins
 
+    ! helper data
+    real(PMFDP),pointer             :: binpos(:,:)  ! CV values in bin centers
+
     ! ABP data
-    real(PMFDP)                     :: M
+    real(PMFDP)                     :: M            ! max value of pop
     integer,pointer                 :: nsamples(:)  !
     real(PMFDP),pointer             :: dpop(:,:)    !
-    real(PMFDP),pointer             :: binpos(:,:)  !
     real(PMFDP),pointer             :: pop(:)       !
+
+     ! ABP data - incremental part for ABP-server
+     integer,pointer                :: nisamples(:)
+     real(PMFDP),pointer            :: idpop(:,:)
+     real(PMFDP),pointer            :: ipop(:)
 end type ABPAccuType
 
 ! ----------------------

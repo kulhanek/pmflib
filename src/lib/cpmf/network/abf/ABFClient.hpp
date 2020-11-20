@@ -47,7 +47,7 @@ public:
 
     /// set cv
     void SetCoord(int id,const CSmallString& name,const CSmallString& type,
-                  double min_value,double max_value,int nbins);
+                  double min_value,double max_value,int nbins,double fconv,const CSmallString& unit);
 
     /// get number of bins
     int GetNumberOfBins(void);
@@ -62,12 +62,16 @@ public:
     /// get initial data
     bool GetInitialData(int* nisamples,
                         double* iabfforce,
-                        double* iabfforce2);
+                        double* iabfforce2,
+                        double* iepot,
+                        double* iepot2);
 
     /// exchange data with server
     bool ExchangeData(int* nisamples,
-                      double* iabfforce,
-                      double* iabfforce2);
+                        double* iabfforce,
+                        double* iabfforce2,
+                        double* iepot,
+                        double* iepot2);
 
 // section of private data ----------------------------------------------------
 private:
@@ -78,20 +82,26 @@ private:
 
     /// write data for exchange
     void WriteExchangeData(CXMLElement* p_cele,
-                           int* nisamples,
-                           double* iabfforce,
-                           double* iabfforce2);
+                            int* nisamples,
+                            double* iabfforce,
+                            double* iabfforce2,
+                            double* iepot,
+                            double* iepot2);
 
     /// read data from exchange
     void ReadExchangeData(CXMLElement* p_rele,
-                          int* nisamples,
-                          double* iabfforce,
-                          double* iabfforce2);
+                            int* nisamples,
+                            double* iabfforce,
+                            double* iabfforce2,
+                            double* iepot,
+                            double* iepot2);
 
     /// clear data
     void ClearExchangeData(int* nisamples,
-                           double* iabfforce,
-                           double* iabfforce2);
+                            double* iabfforce,
+                            double* iabfforce2,
+                            double* iepot,
+                            double* iepot2);
 
     /// save cvs into XML
     void SaveCVSInfo(CXMLElement* p_tele);

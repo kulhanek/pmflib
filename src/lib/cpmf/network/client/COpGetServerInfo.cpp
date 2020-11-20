@@ -74,8 +74,8 @@ void CAdminClient::GetCVServerInfo(CClientCommand* p_command,std::ostream& vout)
     vout << endl;
     vout << "=== Collective Variables =======================================================" << endl;
     vout << endl;
-    vout << "ID  Type      Name                          Min value       Max value     NBins " << endl;
-    vout << "-- ---------- -------------------------- --------------- --------------- -------" << endl;
+    vout << "ID P Type       Unit  Name                       Min value   Max value   NBins  " << endl;
+    vout << "-- - ---------- ----- -------------------------- ----------- ----------- -------" << endl;
 
     // write cv summary if it is present
     CXMLElement* p_ele  = p_command->GetRootResultElement();

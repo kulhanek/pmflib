@@ -94,7 +94,7 @@ bool CABFServerAccu::RegisterOrCheckCoords(CServerCommand* p_cmd)
             result = false;
         }
     } else {
-        // coodinates have been loaded - so check if other clients are the same
+        // coordinates have been loaded - so check if other clients are the same
         result = CheckCVSInfo(p_cvs);
         if( result == false ){
             // copy last reason to command error stack
@@ -141,10 +141,11 @@ void CABFServerAccu::ExchangeDataWithClient(CRegClient* p_client)
     }
 
     // check if the data storage are ready
-    // FIXME - for Letif add weights array check
     if( (GetNSamplesArray() == NULL)
         || (GetABFForceSumArray() == NULL)
-        || (GetABFForceSquareSumArray() == NULL)) {
+        || (GetABFForceSquareSumArray() == NULL)
+        || (GetEPotSumArray() == NULL)
+        || (GetEPotSquareSumArray() == NULL) ) {
         LOGIC_ERROR("data array(s) is(are) NULL");
     }
 
@@ -211,11 +212,8 @@ void CABFServerAccu::ExchangeDataSynchronousMode(CRegClient* p_client)
             // this is the last client that will do all work for all clients
             try {
                 AccuMutex.Lock();
-                // FIXME - Letif
-                // do all necessary operations on all clients
-                // client command list is accessible in Commands list
 
-                // this code performs convential ABF
+                // this code performs conventional ABF
                 CSimpleIterator<CServerCommand> I(Commands);
 
                 // for each client add data to central accumulator

@@ -57,7 +57,7 @@ private:
     CVerboseStr         vout;
 
     /// print derivatives
-    bool PrintDerivatives(void);
+    bool PrintDG(void);     // mean force
 };
 
 //------------------------------------------------------------------------------

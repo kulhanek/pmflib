@@ -4,12 +4,14 @@
 
 INCLUDE_DIRECTORIES(lib/cpmf SYSTEM)
 INCLUDE_DIRECTORIES(lib/cpmf/methods/abf SYSTEM)
+INCLUDE_DIRECTORIES(lib/cpmf/methods/abp SYSTEM)
 INCLUDE_DIRECTORIES(lib/cpmf/methods/common SYSTEM)
 INCLUDE_DIRECTORIES(lib/cpmf/methods/mtd SYSTEM)
 INCLUDE_DIRECTORIES(lib/cpmf/methods/rst SYSTEM)
 INCLUDE_DIRECTORIES(lib/cpmf/methods/stm SYSTEM)
 INCLUDE_DIRECTORIES(lib/cpmf/network SYSTEM)
 INCLUDE_DIRECTORIES(lib/cpmf/network/abf SYSTEM)
+INCLUDE_DIRECTORIES(lib/cpmf/network/abp SYSTEM)
 INCLUDE_DIRECTORIES(lib/cpmf/network/mtd SYSTEM)
 INCLUDE_DIRECTORIES(lib/cpmf/network/common SYSTEM)
 INCLUDE_DIRECTORIES(lib/cpmf/network/client SYSTEM)
@@ -30,7 +32,7 @@ SET(CPMF_LIBRARIES_DEPS
         ${SYSTEM_LIBS_CMAKE}
     )
 SET(CPMF_LIBRARIES
-    cpmf 
+    cpmf
         ${CPMF_LIBRARIES_DEPS}
     )
 

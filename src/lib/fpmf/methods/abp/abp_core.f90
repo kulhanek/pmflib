@@ -1,6 +1,7 @@
 !===============================================================================
 ! PMFLib - Library Supporting Potential of Mean Force Calculations
 !-------------------------------------------------------------------------------
+!    Copyright (C) 2020 Petr Kulhanek, kulhanek@chemi.muni.cz
 !    Copyright (C) 2011 Petr Kulhanek, kulhanek@chemi.muni.cz
 !
 !    This library is free software; you can redistribute it and/or
@@ -38,6 +39,7 @@ subroutine abp_core_main
     use abp_restart
     use abp_output
     use abp_dat
+    use abp_client
 
     ! --------------------------------------------------------------------------
 
@@ -45,6 +47,7 @@ subroutine abp_core_main
     call abp_output_write
     call abp_trajectory_write_snapshot
     call abp_restart_update
+    call abp_client_exchange_data(.false.)
 
 end subroutine abp_core_main
 

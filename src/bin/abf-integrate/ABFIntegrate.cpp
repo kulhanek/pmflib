@@ -386,7 +386,7 @@ bool CABFIntegrate::Run(void)
         vout << "   Done." << endl;
     }
 
-// print result ---------------------------------   
+// print result ---------------------------------
     vout << endl;
     vout << format("%02d:Writing results to file: %s")%state%string(FEOutputName) << endl;
 

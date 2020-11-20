@@ -26,6 +26,7 @@
 #include <SmallString.hpp>
 #include <MTDHistory.hpp>
 #include <ABFAccumulator.hpp>
+#include <ABPAccumulator.hpp>
 #include <SimpleVector.hpp>
 
 //------------------------------------------------------------------------------
@@ -55,6 +56,9 @@ public:
 
     /// allocate array
     void Allocate(const CABFAccumulator* abf_accu);
+
+    /// allocate array
+    void Allocate(const CABPAccumulator* abp_accu);
 
     /// allocate array
     void Allocate(const CABFAccumulator* abf_accu,const std::vector<bool>& enabled_cvs);

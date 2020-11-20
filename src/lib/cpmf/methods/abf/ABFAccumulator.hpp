@@ -30,9 +30,12 @@
 //------------------------------------------------------------------------------
 
 enum EABFAccuValue {
-    EABF_MEAN_FORCE_VALUE = 0,  // average of instantious force
-    EABF_INST_FORCE_SIGMA = 1,  // variance of instantious force
-    EABF_MEAN_FORCE_ERROR = 2,  // variance of mean force
+    EABF_DG_VALUE       = 0,  // dG/dksi
+    EABF_DG_SIGMA       = 1,  // variance of instantaneous force
+    EABF_DG_ERROR       = 2,  // variance of dG/dksi
+    EABF_H_VALUE        = 3,  // enthalpy
+    EABF_H_SIGMA        = 4,  // variance of potential energy
+    EABF_H_ERROR        = 5,  // variance of enthalpy
 };
 
 //------------------------------------------------------------------------------
@@ -75,6 +78,13 @@ public:
                         const CSmallString& type,
                         double min_value,double max_value,int nbins);
 
+    /// set coordinate data
+    void SetCoordinate(int id,
+                        const CSmallString& name,
+                        const CSmallString& type,
+                        double min_value,double max_value,int nbins,
+                        double fconv, const CSmallString& unit);
+
     /// allocate all arrays specified via SetNumOfCoordinates and SetCoordinate
     void FinalizeAllocation(void);
 
@@ -101,6 +111,9 @@ public:
     void GetPoint(unsigned int index,CSimpleVector<double>& point) const;
 
     /// convert point index to point position
+    void GetPointRValues(unsigned int index,CSimpleVector<double>& point) const;
+
+    /// convert point index to point position
     void GetIPoint(unsigned int index,CSimpleVector<int>& point) const;
 
 //---------------------------------------------------------------------------------
@@ -123,6 +136,12 @@ public:
     /// return ABF force square sum
     const double& GetABFForceSquareSum(int icoord,int ibin) const;
 
+    /// return Epot sum
+    const double& GetEPotSum(int ibin) const;
+
+    /// return Epot square sum
+    const double& GetEPotSquareSum(int ibin) const;
+
     /// set ABF force sum
     void SetABFForceSum(int icoord,int ibin,const double& value);
 
@@ -141,11 +160,20 @@ public:
     /// return pointer to ABF force square sum array
     double* GetABFForceSquareSumArray(void);
 
+    /// return pointer to EPot sum array
+    double* GetEPotSumArray(void);
+
+    /// return pointer to EPot square sum array
+    double* GetEPotSquareSumArray(void);
+
     /// set number of statistically correlated samples (it influences calculated errors of mean forces)
     void SetNCorr(double ncorr);
 
-    /// get value
+    /// get value - dG/dksi
     double GetValue(int icoord,int ibin,EABFAccuValue realm) const;
+
+    /// get value - H=<PotEne>
+    double GetValue(int ibin,EABFAccuValue realm) const;
 
 // mathematical operation -----------------------------------------------------
     /// set all data to zero
@@ -177,11 +205,11 @@ public:
     /// write ABF data to XML file
     void WriteABFData(CXMLElement* p_rele);
 
-// arithemtic operations ------------------------------------------------------
+// arithmetic operations ------------------------------------------------------
     /// add another accumulator
     void AddABFAccumulator(const CABFAccumulator* p_accu);
 
-    /// substract another accumulator
+    /// subtract another accumulator
     void SubABFAccumulator(const CABFAccumulator* p_accu);
 
 // section of private data ----------------------------------------------------
@@ -195,9 +223,13 @@ private:
     CSimpleVector<int>      NSamples;       // number of hits into bins
     CSimpleVector<double>   Mask;
 
-    // all values are in internal units     // mask weights
+    // all values are in internal units
     CSimpleVector<double>   ABFForce;       // accumulated ABF force
     CSimpleVector<double>   ABFForce2;      // accumulated ABF force squares
+
+    // entropy
+    CSimpleVector<double>   EPot;           // accumulated Epot
+    CSimpleVector<double>   EPot2;          // accumulated Epot force squares
 
 // helper methods -------------------------------------------------------------
     /// return index to ABFForce array for particular item and bin
@@ -206,7 +238,8 @@ private:
     /// return index to GRPForce array for particular group, item, and bin
     int map_g(int group,int item,int bin) const;
 
-    void Load_v3(FILE* fin);
+    void Load_v3(char* fline,FILE* fin);
+    void Load_v4(char* fline,FILE* fin);
 };
 
 //------------------------------------------------------------------------------

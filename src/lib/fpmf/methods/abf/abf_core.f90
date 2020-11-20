@@ -51,8 +51,10 @@ subroutine abf_core_main
 
     select case(fmode)
         case(1)
+            ! standard algorithm
             call abf_core_force
         case(2)
+            ! numerical differentiation
             call abf_core_force_numeric
         case default
             call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented fmode in abf_core_main!')

@@ -93,13 +93,11 @@ subroutine abf_init_dat
 
     fserver_enabled = .false.
     fserverkey      = ''
-    fserver         = ''
-    fpassword       = ''
+    fserver         = ''  ! extracted from serverkey
     fserverupdate   = 500
     fconrepeats     = 0
     fabortonmwaerr  = .true.
 
-    use_key         = .false.
     client_id       = -1
     failure_counter = 0
 
@@ -135,6 +133,14 @@ subroutine abf_init_print_header
     write(PMF_OUT,120)  ' ABF Mode'
     write(PMF_OUT,120)  ' ------------------------------------------------------'
     write(PMF_OUT,130)  ' ABF mode (fmode)                        : ', fmode
+    select case(fmode)
+    case(1)
+    write(PMF_OUT,120)  '      |-> Standard ABF algorithm'
+    case(2)
+    write(PMF_OUT,120)  '      |-> Numerical ABF algorithm'
+    case default
+    call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown fmode in abf_init_print_header!')
+    end select
     write(PMF_OUT,125)  ' Coordinate definition file (fabfdef)    : ', trim(fabfdef)
     write(PMF_OUT,130)  ' Number of coordinates                   : ', NumOfABFCVs
     write(PMF_OUT,120)
@@ -160,7 +166,7 @@ subroutine abf_init_print_header
     write(PMF_OUT,120)  '      |-> Block averages'
     write(PMF_OUT,130)  ' Block size (fblock_size)                : ', fblock_size
     case default
-    call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown extrapolation/interpolation mode!')
+    call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown extrapolation/interpolation mode in abf_init_print_header!')
     end select
 
     write(PMF_OUT,120)
@@ -187,15 +193,9 @@ subroutine abf_init_print_header
     write(PMF_OUT,120)  ' ------------------------------------------------------'
     write(PMF_OUT,125)  ' Server communication is                      : ', prmfile_onoff(fserver_enabled)
     if( fserver_enabled ) then
-    if( use_key ) then
     write(PMF_OUT,125)  ' Server key file name (fserverkey)            : ', trim(fserverkey)
     else
-    write(PMF_OUT,125)  ' Server URL (fserver)                         : ', trim(fserver)
-    write(PMF_OUT,125)  ' Server password (fpassword)                  : ', trim(fpassword)
-    end if
-    else
-    write(PMF_OUT,125)  ' Server URL (fserver)                         : ', 'none'
-    write(PMF_OUT,125)  ' Server password (fpassword)                  : ', 'none'
+    write(PMF_OUT,125)  ' Server key file name (fserverkey)            : ', 'none'
     end if
     write(PMF_OUT,130)  ' Server update interval (fserverupdate)       : ', fserverupdate
     write(PMF_OUT,130)  ' Number of connection repeats (fconrepeats)   : ', fconrepeats

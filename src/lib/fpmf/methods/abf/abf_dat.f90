@@ -35,8 +35,8 @@ implicit none
 
 ! control section --------------------------------------------------------------
 integer     :: fmode        ! 0 - disable ABF
-                            ! 1 - enabled ABF (standard algorithm)
-                            ! 2 - enabled ABF (numerical algorithm)
+                            ! 1 - enable ABF (standard algorithm)
+                            ! 2 - enable ABF (numerical algorithm)
 integer     :: fsample      ! output sample period in steps
 logical     :: frestart     ! 1 - restart job with previous data, 0 - otherwise not
 integer     :: frstupdate   ! how often is restart file written
@@ -66,14 +66,12 @@ integer     :: fblock_size  ! block size for ABF force pre-accumulation
 logical                 :: fserver_enabled      ! is abf-server enabled?
 character(PMF_MAX_PATH) :: fserverkey           ! abf-server key file name
 character(PMF_MAX_PATH) :: fserver              ! abf-server name
-character(PMF_MAX_PATH) :: fpassword            ! abf-server password
 integer                 :: fserverupdate        ! how often to communicate with server
 integer                 :: fconrepeats          ! how many times to repeat connection
 logical                 :: fabortonmwaerr       ! abort if communication with MWA fails
 
 ! abf server -----------------
 integer                 :: client_id            ! abf walker client ID
-logical                 :: use_key              ! is abf-server enabled?
 integer                 :: failure_counter      ! current number of MWA failures
 
 ! item list --------------------------------------------------------------------
@@ -111,15 +109,20 @@ type ABFAccuType
      integer,pointer        :: nsamples(:)              ! number of hits into bins
      real(PMFDP),pointer    :: abfforce(:,:)            ! accumulated ABF force
      real(PMFDP),pointer    :: abfforce2(:,:)           ! accumulated square of ABF force
+     real(PMFDP),pointer    :: epot(:)                  ! accumulated potential energy
+     real(PMFDP),pointer    :: epot2(:)                 ! accumulated square of potential energy
 
      ! ABF force - incremental part for ABF-server
      integer,pointer        :: nisamples(:)             ! number of hits into bins
      real(PMFDP),pointer    :: iabfforce(:,:)           ! accumulated ABF force
      real(PMFDP),pointer    :: iabfforce2(:,:)          ! accumulated square of ABF force
+     real(PMFDP),pointer    :: iepot(:)                 ! accumulated potential energy
+     real(PMFDP),pointer    :: iepot2(:)                ! accumulated square of potential energy
 
      ! ABF force - block pre-sampling
      integer,pointer        :: block_nsamples(:)        ! number of hits into bins
      real(PMFDP),pointer    :: block_abfforce(:,:)      ! accumulated ABF force
+     real(PMFDP),pointer    :: block_epot(:)            ! accumulated PotEne
 end type ABFAccuType
 
 ! ----------------------

@@ -67,7 +67,7 @@ subroutine abf_control_read_abf(prm_fin)
 
     ! read configuration
     call pmf_ctrl_read_integer(prm_fin,'fmode',fmode,'i12')
-    call pmf_ctrl_check_integer_in_range('ABF','fmode',fmode,0,1)
+    call pmf_ctrl_check_integer_in_range('ABF','fmode',fmode,0,2)
 
     if( fmode .eq. 0 ) then
         write(PMF_OUT,10)
@@ -101,11 +101,11 @@ subroutine abf_control_read_abf(prm_fin)
 
     select case(feimode)
         case(1)
-            write(PMF_OUT,190)
+            write(PMF_OUT,20)
             call pmf_ctrl_read_integer(prm_fin,'fhramp',fhramp,'i12')
             call pmf_ctrl_check_integer('ABF','fhramp',fhramp,0,CND_GT)
         case(2)
-            write(PMF_OUT,200)
+            write(PMF_OUT,30)
             call pmf_ctrl_read_integer(prm_fin,'fhramp_min',fhramp_min,'i12')
             call pmf_ctrl_check_integer('ABF','fhramp_min',fhramp_min,0,CND_GT)
             call pmf_ctrl_read_integer(prm_fin,'fhramp_max',fhramp_max,'i12')
@@ -114,7 +114,7 @@ subroutine abf_control_read_abf(prm_fin)
                 call pmf_utils_exit(PMF_OUT,1,'[ABF] fhramp_max must be > fhramp_min!')
             end if
         case(3)
-            write(PMF_OUT,210)
+            write(PMF_OUT,40)
             call pmf_ctrl_read_integer(prm_fin,'fblock_size',fblock_size,'i12')
             call pmf_ctrl_check_integer('ABF','fblock_size',fblock_size,0,CND_GT)
         case default
@@ -132,22 +132,6 @@ subroutine abf_control_read_abf(prm_fin)
     if( prmfile_get_string_by_key(prm_fin,'fserverkey',fserverkey)) then
         write(PMF_OUT,110) trim(fserverkey)
         fserver_enabled = .true.
-        use_key = .true.
-    end if
-
-    if( .not. fserver_enabled ) then
-        if( prmfile_get_string_by_key(prm_fin,'fserver', fserver) ) then
-            write(PMF_OUT,120) fserver
-            fserver_enabled = .true.
-            use_key = .false.
-        else
-            call pmf_utils_exit(PMF_OUT,1,'fserver is required when [abf-walker] is specified')
-        end if
-        if( prmfile_get_string_by_key(prm_fin,'fpassword', fpassword) ) then
-            write(PMF_OUT,130) fpassword
-        else
-            call pmf_utils_exit(PMF_OUT,1,'fpassword is required when [abf-walker] is specified')
-        end if
     end if
 
     call pmf_ctrl_read_integer(prm_fin,'fserverupdate',fserverupdate,'i12')
@@ -156,7 +140,6 @@ subroutine abf_control_read_abf(prm_fin)
     call pmf_ctrl_read_logical(prm_fin,'fabortonmwaerr',fabortonmwaerr)
 #else
     fserver_enabled = .false.
-    use_key = .false.
     write(PMF_OUT,105)
 #endif
     ! network setup ----------------------------------------------------------------
@@ -175,18 +158,15 @@ subroutine abf_control_read_abf(prm_fin)
     return
 
  10 format (' >> Adaptive biasing force method is disabled!')
+ 20 format (/,'>> Linear ramp mode I (feimode == 1)')
+ 30 format (/,'>> Linear ramp mode II (feimode == 2)')
+ 40 format (/,'>> Block averages (feimode == 3)')
 
 100 format (' >> Multiple-walkers ABF method is disabled!')
 #ifndef PMFLIB_NETWORK
 105 format (' >> Multiple-walkers ABF method is not compiled in!')
 #endif
 110 format ('fserverkey                             = ',a)
-120 format ('fserver                                = ',a)
-130 format ('fpassword                              = ',a16)
-
-190 format (/,'>> Linear ramp mode I (feimode == 1)')
-200 format (/,'>> Linear ramp mode II (feimode == 2)')
-210 format (/,'>> Block averages (feimode == 3)')
 
 end subroutine abf_control_read_abf
 

@@ -41,7 +41,7 @@ interface
     end subroutine cpmf_abf_client_set_header
 
     ! set coordinate data
-    subroutine cpmf_abf_client_set_coord(ret_st,id,name,ctype,min_value,max_value,nbins)
+    subroutine cpmf_abf_client_set_coord(ret_st,id,name,ctype,min_value,max_value,nbins,fconv,unit)
         integer         :: ret_st
         integer         :: id
         character(*)    :: ctype
@@ -49,14 +49,9 @@ interface
         real(8)         :: min_value
         real(8)         :: max_value
         integer         :: nbins
+        real(8)         :: fconv
+        character(*)    :: unit
     end subroutine cpmf_abf_client_set_coord
-
-    ! register client on server
-    subroutine cpmf_abf_client_reg_by_name(str1,str2,id)
-        character(*)    :: str1
-        character(*)    :: str2
-        integer         :: id
-    end subroutine cpmf_abf_client_reg_by_name
 
     ! register client on server
     subroutine cpmf_abf_client_reg_by_key(str1,str2,id)
@@ -66,19 +61,23 @@ interface
     end subroutine cpmf_abf_client_reg_by_key
 
     ! get initial data from server
-    subroutine cpmf_abf_client_initial_data(ret_st,nisamples,iabfforce,iabfforce2)
+    subroutine cpmf_abf_client_initial_data(ret_st,nisamples,iabfforce,iabfforce2,iepot,iepot2)
         integer         :: ret_st
         integer         :: nisamples(*)
         real(8)         :: iabfforce(*)
         real(8)         :: iabfforce2(*)
+        real(8)         :: iepot(*)
+        real(8)         :: iepot2(*)
     end subroutine cpmf_abf_client_initial_data
 
     ! exchange data with server
-    subroutine cpmf_abf_client_exchange_data(ret_st,nisamples,iabfforce,iabfforce2)
+    subroutine cpmf_abf_client_exchange_data(ret_st,nisamples,iabfforce,iabfforce2,iepot,iepot2)
         integer         :: ret_st
         integer         :: nisamples(*)
         real(8)         :: iabfforce(*)
         real(8)         :: iabfforce2(*)
+        real(8)         :: iepot(*)
+        real(8)         :: iepot2(*)
     end subroutine cpmf_abf_client_exchange_data
 
     ! unregister client on server
@@ -112,12 +111,8 @@ subroutine abf_client_register
 
  write(PMF_OUT,*)
  call pmf_utils_heading(PMF_OUT,'Multiple-walkers ABF method','=')
+ write(PMF_OUT,15) trim(fserverkey)
 
- if( use_key ) then
-    write(PMF_OUT,15) trim(fserverkey)
- else
-    write(PMF_OUT,10) trim(fserver)
- end if
  write(PMF_OUT,*)
  write(PMF_OUT,20)
 
@@ -130,13 +125,16 @@ subroutine abf_client_register
     end if
 
     do i=1,NumOfABFCVs
-        call cpmf_abf_client_set_coord(ret_st, &
-                        i, &
-                        ABFCVList(i)%cv%name, &
-                        ABFCVList(i)%cv%ctype, &
+        call cpmf_abf_client_set_coord(ret_st,  &
+                        i,                      &
+                        ABFCVList(i)%cv%name,   &
+                        ABFCVList(i)%cv%ctype,  &
                         ABFCVList(i)%min_value, &
                         ABFCVList(i)%max_value, &
-                        ABFCVList(i)%nbins)
+                        ABFCVList(i)%nbins,     &
+                        pmf_unit_get_rvalue(ABFCVList(i)%cv%unit,1.0d0), &
+                        pmf_unit_label(ABFCVList(i)%cv%unit)             &
+                        )
 
         if( ret_st .ne. 0 ) then
             call pmf_utils_exit(PMF_OUT,1)
@@ -144,11 +142,7 @@ subroutine abf_client_register
     end do
 
     ! register client
-    if( use_key ) then
-        call cpmf_abf_client_reg_by_key(fserverkey,fserver,client_id)
-    else
-        call cpmf_abf_client_reg_by_name(fserver,fpassword,client_id)
-    end if
+    call cpmf_abf_client_reg_by_key(fserverkey,fserver,client_id)
 
     write(ABF_OUT,*)
 
@@ -170,7 +164,6 @@ subroutine abf_client_register
 
  return
 
- 10 format(' ABF Server          : ', A)
  15 format(' ABF Server Key file : ', A)
  20 format(' Registering client on server, please wait .... ')
 
@@ -205,10 +198,13 @@ subroutine abf_client_get_initial_data
  call pmf_timers_start_timer(PMFLIB_ABF_MWA_TIMER)
 
 #ifdef PMFLIB_NETWORK
-    call cpmf_abf_client_initial_data(ret_st, &
-                                        accumulator%nsamples, &
-                                        accumulator%abfforce, &
-                                        accumulator%abfforce2)
+    call cpmf_abf_client_initial_data(ret_st,                   &
+                                        accumulator%nsamples,   &
+                                        accumulator%abfforce,   &
+                                        accumulator%abfforce2,  &
+                                        accumulator%epot,       &
+                                        accumulator%epot2       &
+                                        )
 
     if( ret_st .ne. 0 ) then
         write(ABF_OUT,20)
@@ -261,10 +257,13 @@ subroutine abf_client_exchange_data(force_exchange)
  write(ABF_OUT,10) fstep
 
 #ifdef PMFLIB_NETWORK
-    call cpmf_abf_client_exchange_data(ret_st, &
-                                       accumulator%nisamples, &
-                                       accumulator%iabfforce, &
-                                       accumulator%iabfforce2)
+    call cpmf_abf_client_exchange_data(ret_st,                  &
+                                       accumulator%nisamples,   &
+                                       accumulator%iabfforce,   &
+                                       accumulator%iabfforce2,  &
+                                       accumulator%iepot,       &
+                                       accumulator%iepot2       &
+                                       )
 
     if( ret_st .ne. 0 ) then
         failure_counter = failure_counter + 1
@@ -279,17 +278,21 @@ subroutine abf_client_exchange_data(force_exchange)
         call pmf_timers_stop_timer(PMFLIB_ABF_MWA_TIMER)
         return
     end if
+
+    ! move received data to main accumulator
+    accumulator%nsamples(:)    = accumulator%nisamples(:)
+    accumulator%abfforce(:,:)  = accumulator%iabfforce(:,:)
+    accumulator%abfforce2(:,:) = accumulator%iabfforce2(:,:)
+    accumulator%epot(:)        = accumulator%iepot(:)
+    accumulator%epot2(:)       = accumulator%iepot2(:)
 #endif
 
- ! move received data to main accumulator
- accumulator%nsamples(:) = accumulator%nisamples(:)
- accumulator%abfforce(:,:) = accumulator%iabfforce(:,:)
- accumulator%abfforce2(:,:) = accumulator%iabfforce2(:,:)
-
  ! and reset incremental data
- accumulator%nisamples(:) = 0
- accumulator%iabfforce(:,:) = 0.0d0
- accumulator%iabfforce2(:,:) = 0.0d0
+ accumulator%nisamples(:)       = 0
+ accumulator%iabfforce(:,:)     = 0.0d0
+ accumulator%iabfforce2(:,:)    = 0.0d0
+ accumulator%iepot(:)           = 0.0d0
+ accumulator%iepot2(:)          = 0.0d0
 
  failure_counter = 0
 

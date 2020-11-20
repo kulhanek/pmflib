@@ -139,9 +139,10 @@ bool CABFDerivatives::Run(void)
         fprintf(OutputFile,"# NCorr                 : %5.3f\n",Options.GetOptNCorr());
     }
 
-// print samples
-    if(PrintDerivatives() == false) {
-        ES_ERROR("unable to print derivatives to output");
+// print derivatives
+
+    if(PrintDG() == false) {
+        ES_ERROR("unable to print derivatives of MF to output");
         return(false);
     }
 
@@ -150,7 +151,7 @@ bool CABFDerivatives::Run(void)
 
 //------------------------------------------------------------------------------
 
-bool CABFDerivatives::PrintDerivatives(void)
+bool CABFDerivatives::PrintDG(void)
 {
     if( (Options.GetOptItem() < 0) || (Options.GetOptItem() > Accumulator.GetNumberOfCoords())){
         ES_ERROR("requested CV is out of range");
@@ -187,7 +188,7 @@ bool CABFDerivatives::PrintDerivatives(void)
             last_cv = ipos[ncvs-1];
         }
 
-        Accumulator.GetPoint(ibin,pos);
+        Accumulator.GetPointRValues(ibin,pos);
 
         CSmallString xformat,sformat;
         xformat = Options.GetOptIXFormat() + " ";
@@ -204,14 +205,14 @@ bool CABFDerivatives::PrintDerivatives(void)
         }
 
         for(int i=0; i < Accumulator.GetNumberOfCoords(); i++) {
-            double value = Accumulator.GetValue(i,ibin,EABF_MEAN_FORCE_VALUE);
-            double sigma = Accumulator.GetValue(i,ibin,EABF_INST_FORCE_SIGMA);
-            double error = Accumulator.GetValue(i,ibin,EABF_MEAN_FORCE_ERROR);
+            double value = Accumulator.GetValue(i,ibin,EABF_DG_VALUE);
+            double sigma = Accumulator.GetValue(i,ibin,EABF_DG_SIGMA);
+            double error = Accumulator.GetValue(i,ibin,EABF_DG_ERROR);
 
             if( (Options.GetOptItem() == 0) || (Options.GetOptItem() == i+1) ){
 
                 sformat = Options.GetOptOSFormat() + " ";
-                // and value and optionaly sigma and error
+                // and value and optionally sigma and error
                 if(fprintf(OutputFile,sformat,value) <= 0) {
                     CSmallString error;
                     error << "unable to write to output (" << strerror(errno) << ")";

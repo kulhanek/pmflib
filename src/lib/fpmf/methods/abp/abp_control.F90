@@ -1,6 +1,7 @@
 !===============================================================================
 ! PMFLib - Library Supporting Potential of Mean Force Calculations
 !-------------------------------------------------------------------------------
+!    Copyright (C) 2020 Petr Kulhanek, kulhanek@chemi.muni.cz
 !    Copyright (C) 2011 Petr Kulhanek, kulhanek@chemi.muni.cz
 !
 !    This library is free software; you can redistribute it and/or
@@ -99,12 +100,50 @@ subroutine abp_control_read_abp(prm_fin)
             call pmf_utils_exit(PMF_OUT,1,'[ABP] Unknown extrapolation/interpolation mode!')
     end select
 
+   ! network setup ----------------------------------------------------------------
+
+    write(PMF_OUT,'(/,a)') '--- [abp-walker] ---------------------------------------------------------------'
+
+    ! try open section
+    if( prmfile_open_section(prm_fin,'abp-walker') ) then
+
+#ifdef PMFLIB_NETWORK
+    if( prmfile_get_string_by_key(prm_fin,'fserverkey',fserverkey)) then
+        write(PMF_OUT,110) trim(fserverkey)
+        fserver_enabled = .true.
+    end if
+
+    call pmf_ctrl_read_integer(prm_fin,'fserverupdate',fserverupdate,'i12')
+    call pmf_ctrl_check_integer('ABF','fserverupdate',fserverupdate,0,CND_GT)
+
+    call pmf_ctrl_read_logical(prm_fin,'fabortonmwaerr',fabortonmwaerr)
+#else
+    fserver_enabled = .false.
+    write(PMF_OUT,105)
+#endif
+    ! network setup ----------------------------------------------------------------
+
+    else
+        write(PMF_OUT,100)
+    endif
+
+    ! restart is read from server
+    if( fserver_enabled .and. frestart ) then
+        call pmf_utils_exit(PMF_OUT,1,'[ABP] frestart cannot be ON if multiple-walkers approach is used!')
+    end if
+
     abp_enabled = fmode .gt. 0
 
     return
 
  10 format (' >> Adaptive biasing force method is disabled!')
  20 format (/,'>> Linear ramp mode I')
+
+100 format (' >> Multiple-walkers ABP method is disabled!')
+#ifndef PMFLIB_NETWORK
+105 format (' >> Multiple-walkers ABP method is not compiled in!')
+#endif
+110 format ('fserverkey                             = ',a)
 
 end subroutine abp_control_read_abp
 

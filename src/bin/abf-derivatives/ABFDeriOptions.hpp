@@ -70,14 +70,14 @@ public:
                 ABFAccuName,                          /* argument name */
                 NULL,                           /* default value */
                 true,                           /* is argument mandatory */
-                "accuname",                        /* parametr name */
+                "accuname",                        /* parameter name */
                 "Name of file containing the ABF accumulator. If the name is '-' then the accumulator is read from the standard input.")   /* argument description */
     //----------------------------------------------------------------------
     CSO_MAP_ARG(CSmallString,                   /* argument type */
                 OutputName,                          /* argument name */
                 NULL,                           /* default value */
                 true,                           /* is argument mandatory */
-                "dname",                        /* parametr name */
+                "dname",                        /* parameter name */
                 "Name of file where results will be printed. If the name is '-' then the output will be written to the standard output.")   /* argument description */
 // description of options ---------------------------------------------------
     CSO_MAP_OPT(int,                           /* option type */
@@ -86,7 +86,7 @@ public:
                 false,                          /* is option mandatory */
                 'l',                           /* short option name */
                 "limit",                      /* long option name */
-                "LIMIT",                           /* parametr name */
+                "LIMIT",                           /* parameter name */
                 "Only bins containing more samples than NUMBER are considered as properly sampled.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(double,                           /* option type */
@@ -95,7 +95,7 @@ public:
                 false,                          /* is option mandatory */
                 'c',                           /* short option name */
                 "ncorr",                      /* long option name */
-                "NUMBER",                           /* parametr name */
+                "NUMBER",                           /* parameter name */
                 "Number of statistically correlated samples.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(int,                           /* option type */
@@ -104,7 +104,7 @@ public:
                 false,                          /* is option mandatory */
                 'i',                           /* short option name */
                 "item",                      /* long option name */
-                "CV",                           /* parametr name */
+                "CV",                           /* parameter name */
                 "Forces for all CVs are printed (item == 0) unless item is set for given CV index (counted from 1).")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(bool,                           /* option type */
@@ -113,7 +113,7 @@ public:
                 false,                          /* is option mandatory */
                 's',                           /* short option name */
                 "sigma",                      /* long option name */
-                NULL,                           /* parametr name */
+                NULL,                           /* parameter name */
                 "Print the standard deviation of instanteous forces (fluctuations).")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(bool,                           /* option type */
@@ -122,7 +122,7 @@ public:
                 false,                          /* is option mandatory */
                 'e',                           /* short option name */
                 "error",                      /* long option name */
-                NULL,                           /* parametr name */
+                NULL,                           /* parameter name */
                 "Print the standard deviation of mean forces (standard error).")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(bool,                           /* option type */
@@ -131,7 +131,7 @@ public:
                 false,                          /* is option mandatory */
                 0,                           /* short option name */
                 "nognuplot",                      /* long option name */
-                NULL,                           /* parametr name */
+                NULL,                           /* parameter name */
                 "Do not print delimiters between records.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(bool,                           /* option type */
@@ -140,7 +140,7 @@ public:
                 false,                          /* is option mandatory */
                 0,                           /* short option name */
                 "noheader",                      /* long option name */
-                NULL,                           /* parametr name */
+                NULL,                           /* parameter name */
                 "Do not print header to the output file.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(CSmallString,                           /* option type */
@@ -149,7 +149,7 @@ public:
                 false,                          /* is option mandatory */
                 '\0',                           /* short option name */
                 "fx",                      /* long option name */
-                "FORMAT",                           /* parametr name */
+                "FORMAT",                           /* parameter name */
                 "Output FORMAT, which will be used to print values of collective variables.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(CSmallString,                           /* option type */
@@ -158,7 +158,7 @@ public:
                 false,                          /* is option mandatory */
                 '\0',                           /* short option name */
                 "fe",                      /* long option name */
-                "FORMAT",                           /* parametr name */
+                "FORMAT",                           /* parameter name */
                 "Output FORMAT, which will be used to print results.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(bool,                           /* option type */
@@ -167,7 +167,7 @@ public:
                 false,                          /* is option mandatory */
                 'v',                           /* short option name */
                 "verbose",                      /* long option name */
-                NULL,                           /* parametr name */
+                NULL,                           /* parameter name */
                 "Increase output verbosity.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(bool,                           /* option type */
@@ -176,7 +176,7 @@ public:
                 false,                          /* is option mandatory */
                 '\0',                           /* short option name */
                 "version",                      /* long option name */
-                NULL,                           /* parametr name */
+                NULL,                           /* parameter name */
                 "Output version information and exit.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(bool,                           /* option type */
@@ -185,7 +185,7 @@ public:
                 false,                          /* is option mandatory */
                 'h',                           /* short option name */
                 "help",                      /* long option name */
-                NULL,                           /* parametr name */
+                NULL,                           /* parameter name */
                 "Display this help and exit.")   /* option description */
     CSO_MAP_END
 

@@ -1,6 +1,7 @@
 !===============================================================================
 ! PMFLib - Library Supporting Potential of Mean Force Calculations
 !-------------------------------------------------------------------------------
+!    Copyright (C) 2020 Petr Kulhanek, kulhanek@chemi.muni.cz
 !    Copyright (C) 2011 Petr Kulhanek, kulhanek@chemi.muni.cz
 !
 !    This library is free software; you can redistribute it and/or
@@ -36,16 +37,19 @@ subroutine abp_init_method
  use abp_output
  use abp_restart
  use abp_trajectory
+ use abp_client
 
  implicit none
  ! -----------------------------------------------------------------------------
 
- call abp_init_arrays
- call abp_init_print_header
- call abp_output_open
- call abp_restart_read
- call abp_trajectory_open
- call abp_output_write_header
+    call abp_init_arrays
+    call abp_init_print_header
+    call abp_output_open
+    call abp_restart_read
+    call abp_trajectory_open
+    call abp_client_register
+    call abp_client_get_initial_data
+    call abp_output_write_header
 
 end subroutine abp_init_method
 
@@ -71,6 +75,16 @@ subroutine abp_init_dat
     fhramp             = 10         ! definition of linear ramp
 
     NumOfABPCVs        = 0
+
+    fserver_enabled = .false.
+    fserverkey      = ''
+    fserver         = ''  ! extracted from serverkey
+    fserverupdate   = 500
+    fconrepeats     = 0
+    fabortonmwaerr  = .true.
+
+    client_id       = -1
+    failure_counter = 0
 
 end subroutine abp_init_dat
 
