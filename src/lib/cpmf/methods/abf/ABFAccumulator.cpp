@@ -1247,8 +1247,9 @@ void CABFAccumulator::ReadABFData(CXMLElement* p_rele)
 
     unsigned int nisamples_size = GetNumberOfBins()*sizeof(int);
     unsigned int iabfforce_size = GetNumberOfBins()*GetNumberOfCoords()*sizeof(double);
+    unsigned int iepot_size = GetNumberOfBins()*sizeof(double);
 
-    if((nisamples_size == 0) || (iabfforce_size == 0)) {
+    if( (nisamples_size == 0) || (iabfforce_size == 0) || (iepot_size == 0) ) {
         RUNTIME_ERROR("size(s) is(are) zero");
     }
 
@@ -1304,13 +1305,13 @@ void CABFAccumulator::ReadABFData(CXMLElement* p_rele)
     }
 
     p_data = p_iepot->GetData();
-    if((GetEPotSumArray() == NULL) || (p_data == NULL) || (p_iepot->GetLength() != nisamples_size)) {
+    if((GetEPotSumArray() == NULL) || (p_data == NULL) || (p_iepot->GetLength() != iepot_size)) {
         CSmallString error;
         error << "inconsistent IEPOT element dat (r: " << p_iepot->GetLength()
-              << ", l: " <<  nisamples_size << ")";
+              << ", l: " <<  iepot_size << ")";
         RUNTIME_ERROR(error);
     }
-    memcpy(GetEPotSumArray(),p_data,nisamples_size);
+    memcpy(GetEPotSumArray(),p_data,iepot_size);
 
 // --------------------------
     CXMLBinData* p_ipot2 = p_rele->GetFirstChildBinData("IEPOT2");
@@ -1319,13 +1320,13 @@ void CABFAccumulator::ReadABFData(CXMLElement* p_rele)
     }
 
     p_data = p_ipot2->GetData();
-    if((GetEPotSquareSumArray() == NULL) || (p_data == NULL) || (p_ipot2->GetLength() != nisamples_size)) {
+    if((GetEPotSquareSumArray() == NULL) || (p_data == NULL) || (p_ipot2->GetLength() != iepot_size)) {
         CSmallString error;
         error << "inconsistent IEPOT2 element dat (r: " << p_ipot2->GetLength()
-              << ", l: " <<  nisamples_size << ")";
+              << ", l: " <<  iepot_size << ")";
         RUNTIME_ERROR(error);
     }
-    memcpy(GetEPotSquareSumArray(),p_data,nisamples_size);
+    memcpy(GetEPotSquareSumArray(),p_data,iepot_size);
 }
 
 //------------------------------------------------------------------------------

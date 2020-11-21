@@ -49,6 +49,8 @@ subroutine abf_core_main
 
     ! --------------------------------------------------------------------------
 
+    write(121,*) PotEne
+
     select case(fmode)
         case(1)
             ! standard algorithm
