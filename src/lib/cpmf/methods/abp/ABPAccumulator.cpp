@@ -39,6 +39,7 @@ CABPAccumulator::CABPAccumulator(void)
 {
     NCoords     = 0;
     TotNBins    = 0;
+    Temperature = 0.0;
 }
 
 //------------------------------------------------------------------------------
@@ -82,6 +83,7 @@ void CABPAccumulator::Load(FILE* fin)
 // read ABP accumulator header ------------------
     char abf_id[4];
     char ver_id[3];
+    char kernel[4];
     int  numofcoords = 0;
     int  nr;
 
@@ -91,7 +93,7 @@ void CABPAccumulator::Load(FILE* fin)
         RUNTIME_ERROR("unable to read the first line");
     }
 
-    nr = sscanf(buffer,"%3s %2s %d",abf_id,ver_id,&numofcoords);
+    nr = sscanf(buffer,"%3s %2s %d %4s %lf",abf_id,ver_id,&numofcoords,kernel,&Temperature);
     if( nr != 3 ){
         CSmallString error;
         error << "illegal header - three items expected (line: " << buffer << ")";
@@ -100,6 +102,7 @@ void CABPAccumulator::Load(FILE* fin)
 
     abf_id[3]='\0';
     ver_id[2]='\0';
+    kernel[3]='\0';
 
 // check ID string
     if(strcmp(abf_id,"ABP") != 0) {
@@ -118,6 +121,8 @@ void CABPAccumulator::Load(FILE* fin)
         error << "number of coordinates has to be greater than zero, but " << numofcoords << " was found";
         RUNTIME_ERROR(error);
     }
+
+    Kernel = kernel;
 
     SetNumberOfCoords(numofcoords);
 
@@ -284,7 +289,7 @@ void CABPAccumulator::Save(FILE* fout)
 // 40  format(4(E19.11,1X))
 
 // write ABP accumulator header ------------------
-    if(fprintf(fout," ABP V1 %2d\n",NCoords) <= 0) {
+    if(fprintf(fout," ABP V1 %2d %4s %10.3f\n",NCoords,(const char*)Kernel,Temperature) <= 0) {
         CSmallString error;
         error << "unable to write header";
         RUNTIME_ERROR(error);
@@ -507,9 +512,16 @@ double* CABPAccumulator::GetPopArray(void)
 
 //------------------------------------------------------------------------------
 
-double CABPAccumulator::GetPop(int ibin)
+double CABPAccumulator::GetPop(int ibin) const
 {
     return(Pop[ibin]);
+}
+
+//------------------------------------------------------------------------------
+
+double CABPAccumulator::GetTemperature(void) const
+{
+    return(Temperature);
 }
 
 //==============================================================================

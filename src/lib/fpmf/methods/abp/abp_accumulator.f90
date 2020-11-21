@@ -259,7 +259,7 @@ subroutine abp_accumulator_read(iounit)
     ! --------------------------------------------------------------------------
 
     ! read header --------------------------
-    read(iounit,10,end=100,err=100) sabp, sver, ibitem
+    read(iounit,10,end=100,err=100) sabp, sver, ibitem, fkernel, ftemp
 
     if( sabp .ne. ' ABP' ) then
         call pmf_utils_exit(PMF_OUT,1,'[ABP] Attempt to read non-ABP accumulator!')
@@ -326,7 +326,7 @@ subroutine abp_accumulator_read(iounit)
 
     return
 
-10  format(A4,1X,A2,1X,I3)
+10  format(A4,1X,A2,1X,I3,1X,A4,1X,F10.3)
 20  format(I2,1X,A10,1X,E18.11,1X,E18.11,1X,I6)
 25  format(I2,1X,A55)
 26  format(I2,1X,E18.11,1X,E20.11,1X,A36)
@@ -358,7 +358,7 @@ subroutine abp_accumulator_write(iounit)
     ingrps = 0
 
     ! write header
-    write(iounit,10) 'ABP', 'V1', NumOfABPCVs
+    write(iounit,10) 'ABP', 'V1', NumOfABPCVs, fkernel, ftemp
     do i=1, NumOfABPCVs
         write(iounit,20) i,trim(ABPCVList(i)%cv%ctype), &
                           accumulator%sizes(i)%min_value,accumulator%sizes(i)%max_value, &
@@ -378,7 +378,7 @@ subroutine abp_accumulator_write(iounit)
 
     return
 
-10  format(A4,1X,A2,1X,I3,1X,I3,1X,I3)
+10  format(A4,1X,A2,1X,I3,1X,A4,1X,F10.3)
 20  format(I2,1X,A10,1X,E18.11,1X,E18.11,1X,I6)
 25  format(I2,1X,A55)
 26  format(I2,1X,E18.11,1X,E20.11,1X,A36)

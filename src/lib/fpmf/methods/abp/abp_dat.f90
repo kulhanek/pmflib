@@ -40,8 +40,11 @@ integer     :: feimode      ! extrapolation / interpolation mode
 integer     :: ftrjsample   ! how often save accumulator to "accumulator evolution"
 real(PMFDP) :: fhbias       ! bias height
 
+
 ! linear ramp mode I
 integer     :: fhramp       ! ramp size
+
+character(PMF_MAX_PATH) :: fkernel  ! SE - squared exponential
 
 ! server part ------------------------------------------------------------------
 logical                 :: fserver_enabled      ! is abp-server enabled?

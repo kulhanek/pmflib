@@ -107,7 +107,10 @@ public:
     double* GetPopArray(void);
 
     /// get value of pop
-    double GetPop(int ibin);
+    double GetPop(int ibin) const;
+
+    /// get temperature
+    double GetTemperature(void) const;
 
 // mathematical operation -----------------------------------------------------
     /// set all data to zero
@@ -142,6 +145,8 @@ public:
 // section of private data ----------------------------------------------------
 private:
     int                         NCoords;    // number of coordinates
+    CSmallString                Kernel;
+    double                      Temperature;
 
     CSimpleVector<CColVariable> Sizes;      // accumulator information
     CSimpleVector<double>       Alphas;     // CV alphas

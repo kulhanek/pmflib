@@ -73,6 +73,7 @@ subroutine abp_init_dat
     fhbias             = 3.0d0      ! bias height
 
     fhramp             = 10         ! definition of linear ramp
+    fkernel            = 'SE'
 
     NumOfABPCVs        = 0
 

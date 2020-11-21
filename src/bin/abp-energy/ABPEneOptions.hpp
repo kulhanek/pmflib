@@ -52,7 +52,6 @@ public:
     CSO_ARG(CSmallString,Output)
     // options ------------------------------
     CSO_OPT(CSmallString,Mode)
-    CSO_OPT(double,Temperature)
     CSO_OPT(int,Limit)
     CSO_OPT(bool,PrintAll)
     CSO_OPT(bool,UnsampledAsMaxE)
@@ -94,15 +93,6 @@ public:
                 "mode",                      /* long option name */
                 "NAME",                           /* parameter name */
                 "Energy calculation mode: mollified (use raw mollified FES), rl (Lucy–Richardson deconvolution)")   /* option description */
-    //----------------------------------------------------------------------
-    CSO_MAP_OPT(double,                           /* option type */
-                Temperature,                        /* option name */
-                300,                          /* default value */
-                false,                          /* is option mandatory */
-                0,                           /* short option name */
-                "temperature",                      /* long option name */
-                "NUMBER",                           /* parameter name */
-                "Absolute temperature in [K].")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(int,                           /* option type */
                 Limit,                        /* option name */

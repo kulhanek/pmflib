@@ -92,7 +92,6 @@ int CABPEnergy::Init(int argc,char* argv[])
     }
     vout << "# ------------------------------------------------" << endl;
     vout << "# Mode                  : " << Options.GetOptMode() << endl;
-    vout << "# Temperature           : " << Options.GetOptTemperature() << endl;
     if(Options.GetOptLimit() == 0) {
     vout << "# Sampling limit        : all bins will be taken into account" << endl;
     } else {
@@ -282,7 +281,7 @@ void CABPEnergy::CalculateFESMollified(void)
     }
     for(int i=0; i < ABPAccumulator.GetNumberOfBins(); i++){
         double pop = ABPAccumulator.GetPop(i);
-        double ene = - Options.GetOptTemperature()*Rgas*log(pop/m);
+        double ene = - ABPAccumulator.GetTemperature()*Rgas*log(pop/m);
         FES.SetEnergy(i,ene);
         FES.SetNumOfSamples(i,ABPAccumulator.GetNumberOfABPSamples(i));
     }
