@@ -52,6 +52,8 @@ logical     :: fcache_icf   ! T - cache icf into memory and dump them at the end
                             ! F - write icf immediatelly at each time step
 logical     :: frawicf      ! T - use raw icf data (in internal units), F - transform them to user req. units
 
+logical     :: faccupotene  ! accumulate PotEne
+
 ! linear ramp mode I (feimode .eq. 1)
 integer     :: fhramp       ! ramp size
 

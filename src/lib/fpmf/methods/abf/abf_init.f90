@@ -84,6 +84,8 @@ subroutine abf_init_dat
                                 ! F - write icf immediatelly at each time step
     frawicf         = .true.    ! T - use raw icf data (in internal units), F - transform them to user req. units
 
+    faccupotene     = .false.   ! accumulate PotEne
+
     fhramp          = 100
     fhramp_min      = 200       ! definition of linear ramp
     fhramp_max      = 500       ! definition of linear ramp
@@ -183,6 +185,7 @@ subroutine abf_init_print_header
     write(PMF_OUT,125)  ' Print instantaneous forces (fprint_icf) : ', prmfile_onoff(fprint_icf)
     write(PMF_OUT,125)  ' Cache ICF (fcache_icf)                  : ', prmfile_onoff(fcache_icf)
     write(PMF_OUT,125)  ' Print ICF in internal units (frawicf)   : ', prmfile_onoff(frawicf)
+    write(PMF_OUT,125)  ' Accumulate PotEne (faccupotene)         : ', prmfile_onoff(faccupotene)
     write(PMF_OUT,120)
     write(PMF_OUT,120)  ' Trajectory output options:'
     write(PMF_OUT,120)  ' ------------------------------------------------------'

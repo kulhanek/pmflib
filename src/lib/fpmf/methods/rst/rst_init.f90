@@ -66,7 +66,7 @@ subroutine rst_init_dat
     ! --------------------------------------------------------------------------
 
     fmode        = 0         ! 0 - disable RST, 1 - enabled RST
-    fsample      = 500       ! output sample period in steps
+    fsample      = 5000      ! output sample period in steps
     fplevel      = 0         ! print level
     frestart     = .false.   ! restart job with previous data
     fhistupdate   = 0        ! how often is restart file written

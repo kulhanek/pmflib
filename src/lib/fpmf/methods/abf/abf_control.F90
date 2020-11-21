@@ -99,6 +99,8 @@ subroutine abf_control_read_abf(prm_fin)
     call pmf_ctrl_read_logical(prm_fin,'fcache_icf',fcache_icf)
     call pmf_ctrl_read_logical(prm_fin,'frawicf',frawicf)
 
+    call pmf_ctrl_read_logical(prm_fin,'faccupotene',faccupotene)
+
     select case(feimode)
         case(1)
             write(PMF_OUT,20)

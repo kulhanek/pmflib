@@ -591,7 +591,7 @@ subroutine abf_accumulator_add_data12(cvs,gfx)
     real(PMFDP)    :: gfx(:)
     ! -----------------------------------------------
     integer        :: gi0,i
-    real(PMFDP)    :: a
+    real(PMFDP)    :: a,lpotene
     ! --------------------------------------------------------------------------
 
     ! get global index to accumulator for average values within the set
@@ -603,6 +603,9 @@ subroutine abf_accumulator_add_data12(cvs,gfx)
         insidesamples = insidesamples + 1
     end if
 
+    lpotene = 0.0d0
+    if( faccupotene ) lpotene = PotEne
+
     ! increase number of samples
     accumulator%nsamples(gi0) = accumulator%nsamples(gi0) + 1
     do i=1,NumOfABFCVs
@@ -612,8 +615,8 @@ subroutine abf_accumulator_add_data12(cvs,gfx)
     end do
 
     ! potential energy
-    accumulator%epot(gi0)  = accumulator%epot(gi0)  + PotEne
-    accumulator%epot2(gi0) = accumulator%epot2(gi0) + PotEne**2
+    accumulator%epot(gi0)  = accumulator%epot(gi0)  + lpotene
+    accumulator%epot2(gi0) = accumulator%epot2(gi0) + lpotene**2
 
     if( fserver_enabled ) then
         accumulator%nisamples(gi0) = accumulator%nisamples(gi0) + 1
@@ -623,8 +626,8 @@ subroutine abf_accumulator_add_data12(cvs,gfx)
             accumulator%iabfforce2(i,gi0) = accumulator%iabfforce2(i,gi0) + a**2
         end do
         ! potential energy
-        accumulator%iepot(gi0)  = accumulator%iepot(gi0)  + PotEne
-        accumulator%iepot2(gi0) = accumulator%iepot2(gi0) + PotEne**2
+        accumulator%iepot(gi0)  = accumulator%iepot(gi0)  + lpotene
+        accumulator%iepot2(gi0) = accumulator%iepot2(gi0) + lpotene**2
     end if
 
 end subroutine abf_accumulator_add_data12
@@ -644,7 +647,7 @@ subroutine abf_accumulator_add_data3(cvs,gfx)
     real(PMFDP)    :: gfx(:)
     ! -----------------------------------------------
     integer        :: gi0,i
-    real(PMFDP)    :: a
+    real(PMFDP)    :: a,lpotene
     ! --------------------------------------------------------------------------
 
     ! get global index to accumulator for average values within the set
@@ -656,10 +659,13 @@ subroutine abf_accumulator_add_data3(cvs,gfx)
 
     insidesamples = insidesamples + 1
 
+    lpotene = 0.0d0
+    if( faccupotene ) lpotene = PotEne
+
     ! update block
     accumulator%block_nsamples(gi0)     = accumulator%block_nsamples(gi0) + 1
     accumulator%block_abfforce(:,gi0)   = accumulator%block_abfforce(:,gi0) + gfx(:)
-    accumulator%block_epot(gi0)         = accumulator%block_epot(gi0) + PotEne
+    accumulator%block_epot(gi0)         = accumulator%block_epot(gi0) + lpotene
 
     ! is block filled?
     if( accumulator%block_nsamples(gi0) .lt. fblock_size ) then
