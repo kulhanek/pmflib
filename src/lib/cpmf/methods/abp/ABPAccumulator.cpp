@@ -94,9 +94,9 @@ void CABPAccumulator::Load(FILE* fin)
     }
 
     nr = sscanf(buffer,"%3s %2s %d %4s %lf",abf_id,ver_id,&numofcoords,kernel,&Temperature);
-    if( nr != 3 ){
+    if( nr != 5 ){
         CSmallString error;
-        error << "illegal header - three items expected (line: " << buffer << ")";
+        error << "illegal header - five items expected (line: " << buffer << ")";
         RUNTIME_ERROR(error);
     }
 

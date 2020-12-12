@@ -13,6 +13,7 @@ SET(CPMF_METHODS_SRC
         methods/abf/ABFIntegratorRFD2.cpp
         methods/abf/ABFIntegratorRBF.cpp
         methods/abf/ABFIntegratorGPR.cpp
+        methods/abf/ABFEnthalpyGPR.cpp
         methods/mtd/MTDHistory.cpp
         methods/mtd/MTDBuffer.cpp
         methods/rst/RSTAccumulator.cpp

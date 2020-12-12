@@ -26,6 +26,8 @@
 #include <VerboseStr.hpp>
 #include <TerminalStr.hpp>
 #include <StdIOFile.hpp>
+#include <EnergySurface.hpp>
+#include <ABFEnthalpyGPR.hpp>
 
 //------------------------------------------------------------------------------
 
@@ -48,17 +50,25 @@ public:
 // section of private data ----------------------------------------------------
 private:
     CABFEnthalpyOptions     Options;
-    CStdIOFile          InputFile;
-    CStdIOFile          OutputFile;
-    CABFAccumulator     Accumulator;
+    CStdIOFile              InputFile;
+    CStdIOFile              OutputFile;
+    CABFAccumulator         Accumulator;
+    CEnergySurface          HES;
+    int                     State;
+    CSmallString            ABFAccuName;
+    CSmallString            HEOutputName;
 
     // output ------------------------------------
     CTerminalStr        Console;
     CVerboseStr         vout;
 
-    /// print derivatives
-    bool PrintDG(void);     // mean force
-    bool PrintH(void);   // pot energy
+    /// helper methods
+    void GetRawEnthalpy(void);
+    void LoadGPRHyprms(CABFEnthalpyGPR& gpr);
+    bool PrintHES(void);
+    void WriteHeader(void);
+    void PrepareAccumulatorI(void);
+    void PrintSampledStat(void);
 };
 
 //------------------------------------------------------------------------------

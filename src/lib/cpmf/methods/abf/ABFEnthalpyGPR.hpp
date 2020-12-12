@@ -1,0 +1,174 @@
+#ifndef ABFEnthalpyGPRH
+#define ABFEnthalpyGPRH
+// =============================================================================
+// PMFLib - Library Supporting Potential of Mean Force Calculations
+// -----------------------------------------------------------------------------
+//    Copyright (C) 2019 Petr Kulhanek, kulhanek@chemi.muni.cz
+//
+//     This program is free software; you can redistribute it and/or modify
+//     it under the terms of the GNU General Public License as published by
+//     the Free Software Foundation; either version 2 of the License, or
+//     (at your option) any later version.
+//
+//     This program is distributed in the hope that it will be useful,
+//     but WITHOUT ANY WARRANTY; without even the implied warranty of
+//     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//     GNU General Public License for more details.
+//
+//     You should have received a copy of the GNU General Public License along
+//     with this program; if not, write to the Free Software Foundation, Inc.,
+//     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+// =============================================================================
+
+#include <PMFMainHeader.hpp>
+#include <SimpleVector.hpp>
+#include <VerboseStr.hpp>
+#include <FortranMatrix.hpp>
+#include <stddef.h>
+#include <ABFIntegratorGPR.hpp>
+
+//------------------------------------------------------------------------------
+
+class CABFAccumulator;
+class CEnergySurface;
+
+//------------------------------------------------------------------------------
+
+/** \brief integrator of ABF accumulator employing gaussian process
+*/
+
+class PMF_PACKAGE CABFEnthalpyGPR {
+public:
+// constructor and destructor -------------------------------------------------
+    CABFEnthalpyGPR(void);
+    virtual ~CABFEnthalpyGPR(void);
+
+// setup methods --------------------------------------------------------------
+    /// set input ABF accumulator
+    void SetInputABFAccumulator(CABFAccumulator* p_accu);
+
+    /// set output enthalpy surface
+    void SetOutputHESurface(CEnergySurface* p_surf);
+
+// hyperparameters
+    /// set sigmaf2
+    void SetSigmaF2(double sigf2);
+
+    /// set ncorr
+    void SetNCorr(const CSmallString& spec);
+
+    /// set ncorr
+    void SetNCorr(double value);
+
+    /// multiply of bin sizes
+    void SetWFac(const CSmallString& spec);
+
+    /// multiply of bin sizes
+    void SetWFac(CSimpleVector<double>& wfac);
+
+    /// multiply of bin sizes
+    void SetWFac(size_t cvind, double value);
+
+// setup
+    /// set include error
+    void SetIncludeError(bool set);
+
+    /// set algorithm for LA
+    void SetLAMethod(EGPRLAMethod set);
+
+    /// set algorithm for LA
+    void SetLAMethod(const CSmallString& method);
+
+    /// set kernel
+    void SetKernel(const CSmallString& kernel);
+
+    /// set rcond for SVD
+    void SetRCond(double rcond);
+
+    /// set position of global minimum
+    void SetGlobalMin(const CSmallString& spec);
+
+    /// set position of global minimum
+    void SetGlobalMin(const CSimpleVector<double>& pos);
+
+    /// get position of global minima
+    CSimpleVector<double> GetGlobalMin(void);
+
+    /// use inversion alg
+    void SetUseInv(bool set);
+
+    /// include zero-point at user provided global minimum
+    void SetUseZeroPoint(bool set);
+
+// execution method -----------------------------------------------------------
+    /// interpolate data
+    bool Interpolate(CVerboseStr& vout,bool nostat=false);
+
+    /// print exec info
+    void PrintExecInfo(CVerboseStr& vout);
+
+    /// get kernel name
+    const CSmallString GetKernelName(void);
+
+// section of private data ----------------------------------------------------
+private:
+    CABFAccumulator*        Accumulator;
+    CEnergySurface*         FES;
+
+    int                     NumOfThreads;
+
+    // GPR data, sizes and index maps
+    size_t                  NCVs;
+    size_t                  NumOfBins;
+    size_t                  GPRSize;
+    size_t                  NumOfUsedBins;
+    CSimpleVector<size_t>   SampledMap;
+    size_t                  NumOfValues;
+    CSimpleVector<size_t>   ValueMap;
+
+    // setup
+    bool                    IncludeError;
+    EGPRLAMethod            Method;
+
+    // hyperparameters
+    double                  SigmaF2;
+    double                  NCorr;
+    CSimpleVector<double>   WFac;
+    CSimpleVector<double>   CVLengths2;
+
+    // GPR model
+    EGPRKernel              Kernel;
+    CFortranMatrix          KS;             // kernel matrix
+    double                  logdetK;
+    double                  Mean;
+    CSimpleVector<double>   Y;              // enthalpy
+    CSimpleVector<double>   GPRModel;       // weights
+    CFortranMatrix          Cov;            // covariances
+
+    bool                    GlobalMinSet;   // true if gpos set by SetGlobalMin()
+    CSimpleVector<double>   GPos;           // global position, either detected or use
+    bool                    GPosSet;        // true is gpos set by any means, either SetGlobalMin() or from FES
+
+    // SVD setup
+    double                  RCond;
+
+    bool TrainGP(CVerboseStr& vout);
+    void CalculateEnergy(CVerboseStr& vout);
+    void CalculateCovs(CVerboseStr& vout);
+    void CalculateErrorsFromCov(CVerboseStr& vout);
+
+    double GetValue(const CSimpleVector<double>& position);
+
+    // kernel matrix + noise
+    void   CreateKS(void);
+    void   CreateKff(const CSimpleVector<double>& ip,CSimpleVector<double>& ky);
+    double GetKernelValue(const CSimpleVector<double>& ip,const CSimpleVector<double>& jp);
+
+    // parallel processing
+    void RunBlasLapackSeq(void);
+    void RunBlasLapackPar(void);
+};
+
+//------------------------------------------------------------------------------
+
+#endif
