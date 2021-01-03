@@ -1,0 +1,37 @@
+[dynamics]
+steps		1000
+stepsize	0.5
+onlyinit        on
+
+[thermostat]
+type		none
+
+[files]
+initial		test.xyz	
+final		final.xyz
+trajectory	movie.xyz
+
+[intervals]
+trajectory      100
+
+{PMFLIB}
+[abf]
+fmode		1
+frestart        on
+
+[units]
+length nm
+
+{CVS}
+[DIS]
+name d1
+group_a @1
+group_b @2
+
+{ABF}
+[CV]
+name d1
+min_value  0.4
+max_value  1.05
+nbins     65
+
