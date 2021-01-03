@@ -111,7 +111,7 @@ subroutine mon_control_read_cvs(prm_fin)
     ! get name of group
     if( fmondef(1:1) .eq. '{' ) then
         grpname = fmondef(2:len_trim(fmondef)-1)
-         write(PMF_OUT,110) grpname
+         write(PMF_OUT,110) trim(grpname)
         ! open goup with name from mondef
         if( .not. prmfile_open_group(prm_fin,trim(grpname)) ) then
             call pmf_utils_exit(PMF_OUT,1,'[MON] Unable to open group {' // trim(grpname) // '}!')

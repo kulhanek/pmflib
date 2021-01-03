@@ -240,24 +240,26 @@ subroutine abf_accumulator_read(iounit)
 
     read(iounit,'(A80)') buffer
 
-    ! read header - V3 --------------------------
-    read(buffer,20,end=200,err=200) sabf, sver, ibitem
+    ! read header --------------------------
+    read(buffer,*,end=200,err=200) sabf, sver, ibitem
 
     if( trim(adjustl(sabf)) .ne. 'ABF' ) then
-        write(PMF_OUT,*) '[ABF] header v3 key = [',sabf,']'
-        call pmf_utils_exit(PMF_OUT,1,'[ABF] Missing ABF key in ABF accumulator v3 header!')
+        write(PMF_OUT,*) '[ABF] header v3/v4 key = [',sabf,']'
+        call pmf_utils_exit(PMF_OUT,1,'[ABF] Missing ABF key in ABF accumulator v3/v4 header!')
     end if
 
     if( ibitem .ne. NumOfABFCVs ) then
-        call pmf_utils_exit(PMF_OUT,1,'[ABF] ABF accumulator v3 contains different number of CVs!')
+        call pmf_utils_exit(PMF_OUT,1,'[ABF] ABF accumulator v3/v4 contains different number of CVs!')
     end if
 
     if( trim(adjustl(sver)) .eq. 'V3' ) then
-        call abf_accumulator_read_v4(iounit)
+        call abf_accumulator_read_v3(iounit)
+        return
     end if
 
     if( trim(adjustl(sver)) .eq. 'V4' ) then
         call abf_accumulator_read_v4(iounit)
+        return
     end if
 
     write(PMF_OUT,*) '[ABF] header ver = [',sver,']'
@@ -269,7 +271,7 @@ subroutine abf_accumulator_read(iounit)
 200 continue
     call pmf_utils_exit(PMF_OUT,1,'[ABF] Illegal header in ABF accumulator (Only V3 header is supported)!')
 
-20  format(A3,1X,A2,1X,I2)
+20  format(A3,1X,A3,1X,I2)
 
 end subroutine abf_accumulator_read
 
@@ -298,7 +300,7 @@ subroutine abf_accumulator_read_v3(iounit)
         read(iounit,20,end=102,err=102) it, stype, min_value, max_value, nbins
         ! check CV definition
         if( it .ne. i ) then
-            call pmf_utils_exit(PMF_OUT,1,'[ABF] Inccorect item in ABF accumulator!')
+            call pmf_utils_exit(PMF_OUT,1,'[ABF] Inccorect item in ABF accumulator v3!')
         end if
         if( trim(adjustl(stype)) .ne. trim(ABFCVList(i)%cv%ctype) ) then
             write(PMF_OUT,*) '[ABF] CV type = [',trim(adjustl(stype)),'] should be [',trim(ABFCVList(i)%cv%ctype),']'
@@ -372,10 +374,10 @@ subroutine abf_accumulator_read_v4(iounit)
     ! read header --------------------------
     do i=1, NumOfABFCVs
         ! read CV definition
-        read(iounit,20,end=102,err=102) it, stype, min_value, max_value, nbins
+        read(iounit,20,end=201,err=201) it, stype, min_value, max_value, nbins
         ! check CV definition
         if( it .ne. i ) then
-            call pmf_utils_exit(PMF_OUT,1,'[ABF] Incorrect item in ABF accumulator!')
+            call pmf_utils_exit(PMF_OUT,1,'[ABF] Incorrect item in ABF accumulator v4!')
         end if
         if( trim(adjustl(stype)) .ne. trim(ABFCVList(i)%cv%ctype) ) then
             write(PMF_OUT,*) '[ABF] CV type = [',trim(adjustl(stype)),'] should be [',trim(ABFCVList(i)%cv%ctype),']'
@@ -392,7 +394,7 @@ subroutine abf_accumulator_read_v4(iounit)
         end if
 
         ! read names
-        read(iounit,25,end=102,err=102) it, sname
+        read(iounit,25,end=202,err=202) it, sname
         ! check names
         if( it .ne. i ) then
             call pmf_utils_exit(PMF_OUT,1,'[ABF] Incorrect item in ABF accumulator!')
@@ -403,7 +405,7 @@ subroutine abf_accumulator_read_v4(iounit)
         end if
 
         ! read names
-        read(iounit,26,end=102,err=102) it, fconv, sunit
+        read(iounit,26,end=203,err=203) it, fconv, sunit
         ! check names
         if( it .ne. i ) then
             call pmf_utils_exit(PMF_OUT,1,'[ABF] Incorrect item in ABF accumulator!')
@@ -416,14 +418,14 @@ subroutine abf_accumulator_read_v4(iounit)
         read(iounit,30,end=100,err=100) (accumulator%nsamples(i),i=1,accumulator%tot_nbins)
 
         do i=1,NumOfABFCVs
-            read(iounit,40,end=100,err=100) (accumulator%abfforce(i,j),j=1,accumulator%tot_nbins)
+            read(iounit,40,end=101,err=101) (accumulator%abfforce(i,j),j=1,accumulator%tot_nbins)
         end do
         do i=1,NumOfABFCVs
-            read(iounit,40,end=100,err=100) (accumulator%abfforce2(i,j),j=1,accumulator%tot_nbins)
+            read(iounit,40,end=102,err=102) (accumulator%abfforce2(i,j),j=1,accumulator%tot_nbins)
         end do
 
-        read(iounit,30,end=100,err=100) (accumulator%epot(i),i=1,accumulator%tot_nbins)
-        read(iounit,30,end=100,err=100) (accumulator%epot2(i),i=1,accumulator%tot_nbins)
+        read(iounit,40,end=103,err=103) (accumulator%epot(i),i=1,accumulator%tot_nbins)
+        read(iounit,40,end=104,err=104) (accumulator%epot2(i),i=1,accumulator%tot_nbins)
     end if
 
     return
@@ -434,8 +436,15 @@ subroutine abf_accumulator_read_v4(iounit)
 30  format(8(I9,1X))
 40  format(4(E19.11,1X))
 
-100 call pmf_utils_exit(PMF_OUT,1,'[ABF] Unable to read from ABF accumulator v4 - data section!')
-102 call pmf_utils_exit(PMF_OUT,1,'[ABF] Unable to read from ABF accumulator v4 - CV section!')
+100 call pmf_utils_exit(PMF_OUT,1,'[ABF] Unable to read from ABF accumulator v4 - data section - bins!')
+101 call pmf_utils_exit(PMF_OUT,1,'[ABF] Unable to read from ABF accumulator v4 - data section - sabf!')
+102 call pmf_utils_exit(PMF_OUT,1,'[ABF] Unable to read from ABF accumulator v4 - data section - sabf2!')
+103 call pmf_utils_exit(PMF_OUT,1,'[ABF] Unable to read from ABF accumulator v4 - data section - spot!')
+104 call pmf_utils_exit(PMF_OUT,1,'[ABF] Unable to read from ABF accumulator v4 - data section - spot2!')
+
+201 call pmf_utils_exit(PMF_OUT,1,'[ABF] Unable to read from ABF accumulator v4 - CV section - def!')
+202 call pmf_utils_exit(PMF_OUT,1,'[ABF] Unable to read from ABF accumulator v4 - CV section - name!')
+203 call pmf_utils_exit(PMF_OUT,1,'[ABF] Unable to read from ABF accumulator v4 - CV section - unit!')
 
 end subroutine abf_accumulator_read_v4
 

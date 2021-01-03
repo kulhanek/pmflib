@@ -5,7 +5,7 @@
 !    Copyright (C) 2013-2015 Letif Mones, lam81@cam.ac.uk
 !    Copyright (C) 2007 Petr Kulhanek, kulhanek@enzim.hu
 !    Copyright (C) 2006 Petr Kulhanek, kulhanek@chemi.muni.cz &
-!                       Martin Petrek, petrek@chemi.muni.cz 
+!                       Martin Petrek, petrek@chemi.muni.cz
 !    Copyright (C) 2005 Petr Kulhanek, kulhanek@chemi.muni.cz
 !
 !    This library is free software; you can redistribute it and/or
@@ -20,7 +20,7 @@
 !
 !    You should have received a copy of the GNU Lesser General Public
 !    License along with this library; if not, write to the Free Software
-!    Foundation, Inc., 51 Franklin Street, Fifth Floor, 
+!    Foundation, Inc., 51 Franklin Street, Fifth Floor,
 !    Boston, MA  02110-1301  USA
 !===============================================================================
 
@@ -179,7 +179,7 @@ subroutine cst_control_read_cvs(prm_fin)
     ! get name of group
     if( fcstdef(1:1) .eq. '{' ) then
         grpname = fcstdef(2:len_trim(fcstdef)-1)
-         write(PMF_OUT,110) grpname
+         write(PMF_OUT,110) trim(grpname)
         ! open goup with name from metadef
         if( .not. prmfile_open_group(prm_fin,trim(grpname)) ) then
             write(PMF_OUT,130)

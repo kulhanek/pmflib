@@ -1,7 +1,7 @@
 # random structure, random masses
 
 [test-cvs]
-max_atoms               20
+max_atoms               40
 test_type		combined
 num_of_tests		10
 stop_when_error 	on

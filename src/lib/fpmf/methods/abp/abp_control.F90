@@ -172,7 +172,7 @@ subroutine abp_control_read_cvs(prm_fin)
     ! get name of group
     if( fabpdef(1:1) .eq. '{' ) then
         grpname = fabpdef(2:len_trim(fabpdef)-1)
-        write(PMF_OUT,110) grpname
+        write(PMF_OUT,110) trim(grpname)
         ! open goup with name from abpdef
         if( .not. prmfile_open_group(prm_fin,trim(grpname)) ) then
             write(PMF_OUT,130)

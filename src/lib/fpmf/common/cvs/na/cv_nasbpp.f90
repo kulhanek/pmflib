@@ -1,7 +1,7 @@
 !===============================================================================
 ! PMFLib - Library Supporting Potential of Mean Force Calculations
 !-------------------------------------------------------------------------------
-!    Copyright (C) 2016 Ivo Durnik, 
+!    Copyright (C) 2016 Ivo Durnik,
 !    Copyright (C) 2016 Petr Kulhanek, kulhanek@chemi.muni.cz
 !
 !    This library is free software; you can redistribute it and/or
@@ -16,7 +16,7 @@
 !
 !    You should have received a copy of the GNU Lesser General Public
 !    License along with this library; if not, write to the Free Software
-!    Foundation, Inc., 51 Franklin Street, Fifth Floor, 
+!    Foundation, Inc., 51 Franklin Street, Fifth Floor,
 !    Boston, MA  02110-1301  USA
 !===============================================================================
 
@@ -37,7 +37,7 @@ type, extends(CVType) :: CVTypeNASBPP
 
     type(XYZFILE_TYPE)  :: xyz_str_a
     type(XYZFILE_TYPE)  :: xyz_str_b
-    integer             :: lbp_par     
+    integer             :: lbp_par
 
     contains
         procedure :: load_cv        => load_nasbpp
@@ -193,10 +193,10 @@ subroutine load_nasbpp(cv_item,prm_fin)
  60 format('   == Base #2 ====================================')
  70 format('   ** reference structure: ',A)
  75 format('   == y-axis  ====================================')
- 80 format('   -----------------------------------------------') 
+ 80 format('   -----------------------------------------------')
  90 format('   ** local BP parameter : ',A)
 100 format('Atom mismatch between group A and reference A atoms! atom: ',I6,', group mass: ',F10.3, ', ref mass: ',F10.3)
-110 format('Atom mismatch between group B and reference B atoms! atom: ',I6,', group mass: ',F10.3, ', ref mass: ',F10.3)  
+110 format('Atom mismatch between group B and reference B atoms! atom: ',I6,', group mass: ',F10.3, ', ref mass: ',F10.3)
 
 end subroutine load_nasbpp
 
@@ -220,7 +220,7 @@ subroutine calculate_nasbpp(cv_item,x,ctx)
     real(PMFDP)         :: fa(4,4),fb(4,4),eigenvaluesa(4),eigenvaluesb(4),work(26*4)
     real(PMFDP)         :: r11,r12,r13,r21,r22,r23,r31,r32,r33
     real(PMFDP)         :: ua(3,3),ub(3,3),t1,t2
-    real(PMFDP)         :: arg,o_zaxis2,o_zaxis,o_tmp12,o_tmp22,o_tmp1vtmp2v,argo_tmp12,argo_tmp22 
+    real(PMFDP)         :: arg,o_zaxis2,o_zaxis,o_tmp12,o_tmp22,o_tmp1vtmp2v,argo_tmp12,argo_tmp22
     real(PMFDP)         :: xaxis(3),yaxis(3),zaxis(3),zaxisr(3),zsc,y0axis(3),asc,d(3)
     real(PMFDP)         :: tmp1(3),tmp2(3),ingra,ingrb,oa(3),ob(3),f1,tmp12,tmp22
     real(PMFDP)         :: a_tmp1(3),a_tmp2(3),a_ua(3,3),a_ub(3,3),a_d(3)
@@ -325,7 +325,7 @@ subroutine calculate_nasbpp(cv_item,x,ctx)
     xsb(:) = 0.0d0
     xrb(:) = 0.0d0
 
-    do  i = cv_item%grps(1)+1,cv_item%grps(2) 
+    do  i = cv_item%grps(1)+1,cv_item%grps(2)
         ai = cv_item%lindexes(i)
 
         ! source
@@ -451,7 +451,7 @@ subroutine calculate_nasbpp(cv_item,x,ctx)
     ! y-axis ===================================================================
     y0axis(:) = x(:,cv_item%lindexes(cv_item%grps(3))) - x(:,cv_item%lindexes(cv_item%grps(4)))
     ! remove projections to z-axis
-    yaxisr(:) = y0axis(:) - (y0axis(1)*zaxis(1)+y0axis(2)*zaxis(2)+y0axis(3)*zaxis(3))*zaxis(:) 
+    yaxisr(:) = y0axis(:) - (y0axis(1)*zaxis(1)+y0axis(2)*zaxis(2)+y0axis(3)*zaxis(3))*zaxis(:)
     ! normalize
     o_yaxis2 = 1.0d0 / (yaxisr(1)**2 + yaxisr(2)**2 + yaxisr(3)**2)
     o_yaxis  = sqrt(o_yaxis2)
@@ -471,7 +471,7 @@ subroutine calculate_nasbpp(cv_item,x,ctx)
     tmp1(1) = ua(1,1)*oa(1) + ua(1,2)*oa(2) + ua(1,3)*oa(3)
     tmp1(2) = ua(2,1)*oa(1) + ua(2,2)*oa(2) + ua(2,3)*oa(3)
     tmp1(3) = ua(3,1)*oa(1) + ua(3,2)*oa(2) + ua(3,3)*oa(3)
-    ! move origin to new reference point (experiemntal structure)
+    ! move origin to new reference point (experimental structure)
     oa(:) = tmp1(:) + xsa(:)
 
     ob(:) = 0.0d0
@@ -585,7 +585,7 @@ subroutine calculate_nasbpp(cv_item,x,ctx)
 
             ctx%CVsValues(cv_item%idx) = sign(1.0d0,asc)*acos(arg)
         case default
-            call pmf_utils_exit(PMF_OUT,1,'Unrecognized value for parameter option!')
+            call pmf_utils_exit(PMF_OUT,1,'Unrecognized value for parameter option in calculate_nasbpp!')
     end select
 
     ! first derivatives --------------------------------------------------------------------------------
@@ -609,14 +609,14 @@ subroutine calculate_nasbpp(cv_item,x,ctx)
             a_tmp2(:) = f1*(tmp1(:)*o_tmp1vtmp2v - tmp2(:)*argo_tmp22)
 
         case default
-            call pmf_utils_exit(PMF_OUT,1,'Unrecognized value for parameter option!')
+            call pmf_utils_exit(PMF_OUT,1,'Unrecognized value for parameter option in calculate_nasbpp!')
     end select
 
-    a_ua(:,:) = 0.0d0
-    a_ub(:,:) = 0.0d0
-    a_y0axis(:3) = 0.0d0
-    a_xsa(:) = 0.0d0
-    a_xsb(:) = 0.0d0
+    a_ua(:,:)   = 0.0d0
+    a_ub(:,:)   = 0.0d0
+    a_y0axis(:) = 0.0d0
+    a_xsa(:)    = 0.0d0
+    a_xsb(:)    = 0.0d0
 
     select case(cv_item%lbp_par)
 !---------------------------------------------------------------------------------------------------
@@ -637,14 +637,14 @@ subroutine calculate_nasbpp(cv_item,x,ctx)
 !     tmp1(3) = ua(3,1)*oa(1) + ua(3,2)*oa(2) + ua(3,3)*oa(3)
 !     ! move origin to new reference point (experiemntal structure)
 !     oa(:) = tmp1(:) + xsa(:)
-! 
+!
 !     ob(:) = 0.0d0
 !     ob(:) = ob(:) - xrb(:)
 !     tmp1(1) = ub(1,1)*ob(1) + ub(1,2)*ob(2) + ub(1,3)*ob(3)
 !     tmp1(2) = ub(2,1)*ob(1) + ub(2,2)*ob(2) + ub(2,3)*ob(3)
 !     tmp1(3) = ub(3,1)*ob(1) + ub(3,2)*ob(2) + ub(3,3)*ob(3)
 !     ob(:) = tmp1(:) + xsb(:)
-! 
+!
 !     ! vector between base origins
 !     d(:) = oa(:) - ob(:)
 
@@ -678,9 +678,9 @@ subroutine calculate_nasbpp(cv_item,x,ctx)
 !     xaxis(1) = yaxis(2)*zaxis(3) - yaxis(3)*zaxis(2)
 !     xaxis(2) = yaxis(3)*zaxis(1) - yaxis(1)*zaxis(3)
 !     xaxis(3) = yaxis(1)*zaxis(2) - yaxis(2)*zaxis(1)
-            a_yaxis(1) = - a_xaxis(2)*zaxis(3) + zaxis(2)*a_xaxis(3) 
+            a_yaxis(1) = - a_xaxis(2)*zaxis(3) + zaxis(2)*a_xaxis(3)
             a_yaxis(2) = - a_xaxis(3)*zaxis(1) + zaxis(3)*a_xaxis(1)
-            a_yaxis(3) = - a_xaxis(1)*zaxis(2) + zaxis(1)*a_xaxis(2) 
+            a_yaxis(3) = - a_xaxis(1)*zaxis(2) + zaxis(1)*a_xaxis(2)
 
 ! with respect to yaxisr
             t1 = yaxisr(1)*a_yaxis(1) + yaxisr(2)*a_yaxis(2) + yaxisr(3)*a_yaxis(3)
@@ -704,9 +704,9 @@ subroutine calculate_nasbpp(cv_item,x,ctx)
 !     xaxis(1) = yaxis(2)*zaxis(3) - yaxis(3)*zaxis(2)
 !     xaxis(2) = yaxis(3)*zaxis(1) - yaxis(1)*zaxis(3)
 !     xaxis(3) = yaxis(1)*zaxis(2) - yaxis(2)*zaxis(1)
-            a_zaxis(1) = a_zaxis(1) - yaxis(2)*a_xaxis(3) + yaxis(3)*a_xaxis(2) 
+            a_zaxis(1) = a_zaxis(1) - yaxis(2)*a_xaxis(3) + yaxis(3)*a_xaxis(2)
             a_zaxis(2) = a_zaxis(2) - yaxis(3)*a_xaxis(1) + yaxis(1)*a_xaxis(3)
-            a_zaxis(3) = a_zaxis(3) - yaxis(1)*a_xaxis(2) + yaxis(2)*a_xaxis(1)             
+            a_zaxis(3) = a_zaxis(3) - yaxis(1)*a_xaxis(2) + yaxis(2)*a_xaxis(1)
 
             t1 = zaxisr(1)*a_zaxis(1) + zaxisr(2)*a_zaxis(2) + zaxisr(3)*a_zaxis(3)
             a_ua(1,3) = a_ua(1,3) + 0.5d0*a_zaxis(1)*o_zaxis - 0.5d0*o_zaxis*o_zaxis2*zaxisr(1)*t1
@@ -767,7 +767,7 @@ subroutine calculate_nasbpp(cv_item,x,ctx)
             a_zaxis(1) = - t1*a_yaxisr(1) - y0axis(1)*t2
             a_zaxis(2) = - t1*a_yaxisr(2) - y0axis(2)*t2
             a_zaxis(3) = - t1*a_yaxisr(3) - y0axis(3)*t2
-           
+
             t1 = zaxisr(1)*a_zaxis(1) + zaxisr(2)*a_zaxis(2) + zaxisr(3)*a_zaxis(3)
             a_ua(1,3) = a_ua(1,3) + 0.5d0*a_zaxis(1)*o_zaxis - 0.5d0*o_zaxis*o_zaxis2*zaxisr(1)*t1
             a_ua(2,3) = a_ua(2,3) + 0.5d0*a_zaxis(2)*o_zaxis - 0.5d0*o_zaxis*o_zaxis2*zaxisr(2)*t1
@@ -811,7 +811,7 @@ subroutine calculate_nasbpp(cv_item,x,ctx)
             a_xsa(:) =   ingra*a_d(:)
             a_xsb(:) = - ingrb*a_d(:)
 
-! with respect to zaxis         
+! with respect to zaxis
             t1 = zaxisr(1)*a_zaxis(1) + zaxisr(2)*a_zaxis(2) + zaxisr(3)*a_zaxis(3)
             a_ua(1,3) = a_ua(1,3) + 0.5d0*a_zaxis(1)*o_zaxis - 0.5d0*o_zaxis*o_zaxis2*zaxisr(1)*t1
             a_ua(2,3) = a_ua(2,3) + 0.5d0*a_zaxis(2)*o_zaxis - 0.5d0*o_zaxis*o_zaxis2*zaxisr(2)*t1
@@ -825,15 +825,15 @@ subroutine calculate_nasbpp(cv_item,x,ctx)
         case(4)
             ! 'buckle'
         ! with respect to ua, ub, and xaxis
-            a_ua(1,3) = xaxis(2)*a_tmp1(3) - a_tmp1(2)*xaxis(3) 
+            a_ua(1,3) = xaxis(2)*a_tmp1(3) - a_tmp1(2)*xaxis(3)
             a_ua(2,3) = xaxis(3)*a_tmp1(1) - a_tmp1(3)*xaxis(1)
             a_ua(3,3) = xaxis(1)*a_tmp1(2) - a_tmp1(1)*xaxis(2)
 
-            a_ub(1,3) = zsc*xaxis(2)*a_tmp2(3) - zsc*a_tmp2(2)*xaxis(3) 
+            a_ub(1,3) = zsc*xaxis(2)*a_tmp2(3) - zsc*a_tmp2(2)*xaxis(3)
             a_ub(2,3) = zsc*xaxis(3)*a_tmp2(1) - zsc*a_tmp2(3)*xaxis(1)
-            a_ub(3,3) = zsc*xaxis(1)*a_tmp2(2) - zsc*a_tmp2(1)*xaxis(2) 
+            a_ub(3,3) = zsc*xaxis(1)*a_tmp2(2) - zsc*a_tmp2(1)*xaxis(2)
 
-            a_xaxis(1) = a_tmp1(2)*ua(3,3) - ua(2,3)*a_tmp1(3) + zsc*a_tmp2(2)*ub(3,3) - zsc*ub(2,3)*a_tmp2(3) 
+            a_xaxis(1) = a_tmp1(2)*ua(3,3) - ua(2,3)*a_tmp1(3) + zsc*a_tmp2(2)*ub(3,3) - zsc*ub(2,3)*a_tmp2(3)
             a_xaxis(2) = a_tmp1(3)*ua(1,3) - ua(3,3)*a_tmp1(1) + zsc*a_tmp2(3)*ub(1,3) - zsc*ub(3,3)*a_tmp2(1)
             a_xaxis(3) = a_tmp1(1)*ua(2,3) - ua(1,3)*a_tmp1(2) + zsc*a_tmp2(1)*ub(2,3) - zsc*ub(1,3)*a_tmp2(2)
 
@@ -841,9 +841,9 @@ subroutine calculate_nasbpp(cv_item,x,ctx)
 !     xaxis(1) = yaxis(2)*zaxis(3) - yaxis(3)*zaxis(2)
 !     xaxis(2) = yaxis(3)*zaxis(1) - yaxis(1)*zaxis(3)
 !     xaxis(3) = yaxis(1)*zaxis(2) - yaxis(2)*zaxis(1)
-            a_yaxis(1) = - a_xaxis(2)*zaxis(3) + zaxis(2)*a_xaxis(3) 
+            a_yaxis(1) = - a_xaxis(2)*zaxis(3) + zaxis(2)*a_xaxis(3)
             a_yaxis(2) = - a_xaxis(3)*zaxis(1) + zaxis(3)*a_xaxis(1)
-            a_yaxis(3) = - a_xaxis(1)*zaxis(2) + zaxis(1)*a_xaxis(2) 
+            a_yaxis(3) = - a_xaxis(1)*zaxis(2) + zaxis(1)*a_xaxis(2)
 
 ! with respect to yaxisr
             t1 = yaxisr(1)*a_yaxis(1) + yaxisr(2)*a_yaxis(2) + yaxisr(3)*a_yaxis(3)
@@ -867,9 +867,9 @@ subroutine calculate_nasbpp(cv_item,x,ctx)
 !     xaxis(1) = yaxis(2)*zaxis(3) - yaxis(3)*zaxis(2)
 !     xaxis(2) = yaxis(3)*zaxis(1) - yaxis(1)*zaxis(3)
 !     xaxis(3) = yaxis(1)*zaxis(2) - yaxis(2)*zaxis(1)
-            a_zaxis(1) = a_zaxis(1) - yaxis(2)*a_xaxis(3) + yaxis(3)*a_xaxis(2) 
+            a_zaxis(1) = a_zaxis(1) - yaxis(2)*a_xaxis(3) + yaxis(3)*a_xaxis(2)
             a_zaxis(2) = a_zaxis(2) - yaxis(3)*a_xaxis(1) + yaxis(1)*a_xaxis(3)
-            a_zaxis(3) = a_zaxis(3) - yaxis(1)*a_xaxis(2) + yaxis(2)*a_xaxis(1)             
+            a_zaxis(3) = a_zaxis(3) - yaxis(1)*a_xaxis(2) + yaxis(2)*a_xaxis(1)
 
             t1 = zaxisr(1)*a_zaxis(1) + zaxisr(2)*a_zaxis(2) + zaxisr(3)*a_zaxis(3)
             a_ua(1,3) = a_ua(1,3) + 0.5d0*a_zaxis(1)*o_zaxis - 0.5d0*o_zaxis*o_zaxis2*zaxisr(1)*t1
@@ -884,22 +884,22 @@ subroutine calculate_nasbpp(cv_item,x,ctx)
         case(5)
         ! 'propeller'
         ! with respect to ua, ub, and yaxis
-            a_ua(1,3) = yaxis(2)*a_tmp1(3) - a_tmp1(2)*yaxis(3) 
+            a_ua(1,3) = yaxis(2)*a_tmp1(3) - a_tmp1(2)*yaxis(3)
             a_ua(2,3) = yaxis(3)*a_tmp1(1) - a_tmp1(3)*yaxis(1)
             a_ua(3,3) = yaxis(1)*a_tmp1(2) - a_tmp1(1)*yaxis(2)
 
-            a_ub(1,3) = zsc*yaxis(2)*a_tmp2(3) - zsc*a_tmp2(2)*yaxis(3) 
+            a_ub(1,3) = zsc*yaxis(2)*a_tmp2(3) - zsc*a_tmp2(2)*yaxis(3)
             a_ub(2,3) = zsc*yaxis(3)*a_tmp2(1) - zsc*a_tmp2(3)*yaxis(1)
-            a_ub(3,3) = zsc*yaxis(1)*a_tmp2(2) - zsc*a_tmp2(1)*yaxis(2) 
+            a_ub(3,3) = zsc*yaxis(1)*a_tmp2(2) - zsc*a_tmp2(1)*yaxis(2)
 
-            a_yaxis(1) = a_tmp1(2)*ua(3,3) - ua(2,3)*a_tmp1(3) + zsc*a_tmp2(2)*ub(3,3) - zsc*ub(2,3)*a_tmp2(3) 
+            a_yaxis(1) = a_tmp1(2)*ua(3,3) - ua(2,3)*a_tmp1(3) + zsc*a_tmp2(2)*ub(3,3) - zsc*ub(2,3)*a_tmp2(3)
             a_yaxis(2) = a_tmp1(3)*ua(1,3) - ua(3,3)*a_tmp1(1) + zsc*a_tmp2(3)*ub(1,3) - zsc*ub(3,3)*a_tmp2(1)
             a_yaxis(3) = a_tmp1(1)*ua(2,3) - ua(1,3)*a_tmp1(2) + zsc*a_tmp2(1)*ub(2,3) - zsc*ub(1,3)*a_tmp2(2)
 
 !     ! y-axis ===================================================================
 !     y0axis(:) = x(:,cv_item%lindexes(cv_item%grps(3))) - x(:,cv_item%lindexes(cv_item%grps(4)))
 !     ! remove projections to z-axis
-!     yaxisr(:) = y0axis(:) - (y0axis(1)*zaxis(1)+y0axis(2)*zaxis(2)+y0axis(3)*zaxis(3))*zaxis(:) 
+!     yaxisr(:) = y0axis(:) - (y0axis(1)*zaxis(1)+y0axis(2)*zaxis(2)+y0axis(3)*zaxis(3))*zaxis(:)
 !     ! normalize
 !     o_yaxis2 = 1.0d0 / (yaxisr(1)**2 + yaxisr(2)**2 + yaxisr(3)**2)
 !     o_yaxis  = sqrt(o_yaxis2)
@@ -933,18 +933,18 @@ subroutine calculate_nasbpp(cv_item,x,ctx)
             a_ub(3,3) = a_ub(3,3) + 0.5d0*zsc*a_zaxis(3)*o_zaxis - 0.5d0*zsc*o_zaxis*o_zaxis2*zaxisr(3)*t1
 
 !---------------------------------------------------------------------------------------------------
-        case(6) 
+        case(6)
         ! opeining
         ! with respect to ua, ub, and zaxis
-            a_ua(1,2) = zaxis(2)*a_tmp1(3) - a_tmp1(2)*zaxis(3) 
+            a_ua(1,2) = zaxis(2)*a_tmp1(3) - a_tmp1(2)*zaxis(3)
             a_ua(2,2) = zaxis(3)*a_tmp1(1) - a_tmp1(3)*zaxis(1)
             a_ua(3,2) = zaxis(1)*a_tmp1(2) - a_tmp1(1)*zaxis(2)
 
-            a_ub(1,2) = zsc*zaxis(2)*a_tmp2(3) - zsc*a_tmp2(2)*zaxis(3) 
+            a_ub(1,2) = zsc*zaxis(2)*a_tmp2(3) - zsc*a_tmp2(2)*zaxis(3)
             a_ub(2,2) = zsc*zaxis(3)*a_tmp2(1) - zsc*a_tmp2(3)*zaxis(1)
-            a_ub(3,2) = zsc*zaxis(1)*a_tmp2(2) - zsc*a_tmp2(1)*zaxis(2) 
+            a_ub(3,2) = zsc*zaxis(1)*a_tmp2(2) - zsc*a_tmp2(1)*zaxis(2)
 
-            a_zaxis(1) = a_tmp1(2)*ua(3,2) - ua(2,2)*a_tmp1(3) + zsc*a_tmp2(2)*ub(3,2) - zsc*ub(2,2)*a_tmp2(3) 
+            a_zaxis(1) = a_tmp1(2)*ua(3,2) - ua(2,2)*a_tmp1(3) + zsc*a_tmp2(2)*ub(3,2) - zsc*ub(2,2)*a_tmp2(3)
             a_zaxis(2) = a_tmp1(3)*ua(1,2) - ua(3,2)*a_tmp1(1) + zsc*a_tmp2(3)*ub(1,2) - zsc*ub(3,2)*a_tmp2(1)
             a_zaxis(3) = a_tmp1(1)*ua(2,2) - ua(1,2)*a_tmp1(2) + zsc*a_tmp2(1)*ub(2,2) - zsc*ub(1,2)*a_tmp2(2)
 
@@ -964,7 +964,7 @@ subroutine calculate_nasbpp(cv_item,x,ctx)
             a_ub(2,3) =   0.5d0*zsc*a_zaxis(2)*o_zaxis - 0.5d0*zsc*o_zaxis*o_zaxis2*zaxisr(2)*t1
             a_ub(3,3) =   0.5d0*zsc*a_zaxis(3)*o_zaxis - 0.5d0*zsc*o_zaxis*o_zaxis2*zaxisr(3)*t1
         case default
-            call pmf_utils_exit(PMF_OUT,1,'Unrecognized value for parameter option!')
+            call pmf_utils_exit(PMF_OUT,1,'Unrecognized value for parameter option in calculate_nasbpp!')
     end select
 
     ! rotation matrix a ------------------------------
@@ -986,12 +986,12 @@ subroutine calculate_nasbpp(cv_item,x,ctx)
 !     ua(2,2) = fa(1,best)**2 - fa(2,best)**2 + fa(3,best)**2 - fa(4,best)**2
 !     ua(3,2) = 2.0d0*( fa(3,best)*fa(4,best) - fa(1,best)*fa(2,best) )
 
-    a_fa(1) = a_fa(1) + 2.0d0*(fa(4,best)*a_ua(1,2) + fa(1,best)*a_ua(2,2) - fa(2,best)*a_ua(3,2)) 
+    a_fa(1) = a_fa(1) + 2.0d0*(fa(4,best)*a_ua(1,2) + fa(1,best)*a_ua(2,2) - fa(2,best)*a_ua(3,2))
     a_fa(2) = a_fa(2) + 2.0d0*(fa(3,best)*a_ua(1,2) - fa(2,best)*a_ua(2,2) - fa(1,best)*a_ua(3,2))
     a_fa(3) = a_fa(3) + 2.0d0*(fa(2,best)*a_ua(1,2) + fa(3,best)*a_ua(2,2) + fa(4,best)*a_ua(3,2))
     a_fa(4) = a_fa(4) + 2.0d0*(fa(1,best)*a_ua(1,2) - fa(4,best)*a_ua(2,2) + fa(3,best)*a_ua(3,2))
 
-    a_fb(1) = a_fb(1) + 2.0d0*(fb(4,best)*a_ub(1,2) + fb(1,best)*a_ub(2,2) - fb(2,best)*a_ub(3,2)) 
+    a_fb(1) = a_fb(1) + 2.0d0*(fb(4,best)*a_ub(1,2) + fb(1,best)*a_ub(2,2) - fb(2,best)*a_ub(3,2))
     a_fb(2) = a_fb(2) + 2.0d0*(fb(3,best)*a_ub(1,2) - fb(2,best)*a_ub(2,2) - fb(1,best)*a_ub(3,2))
     a_fb(3) = a_fb(3) + 2.0d0*(fb(2,best)*a_ub(1,2) + fb(3,best)*a_ub(2,2) + fb(4,best)*a_ub(3,2))
     a_fb(4) = a_fb(4) + 2.0d0*(fb(1,best)*a_ub(1,2) - fb(4,best)*a_ub(2,2) + fb(3,best)*a_ub(3,2))
@@ -1000,12 +1000,12 @@ subroutine calculate_nasbpp(cv_item,x,ctx)
 !     ua(2,3) = 2.0d0*( fa(3,best)*fa(4,best) + fa(1,best)*fa(2,best) )
 !     ua(3,3) = fa(1,best)**2 - fa(2,best)**2 - fa(3,best)**2 + fa(4,best)**2
 
-    a_fa(1) = a_fa(1) + 2.0d0*(-fa(3,best)*a_ua(1,3) + fa(2,best)*a_ua(2,3) + fa(1,best)*a_ua(3,3)) 
+    a_fa(1) = a_fa(1) + 2.0d0*(-fa(3,best)*a_ua(1,3) + fa(2,best)*a_ua(2,3) + fa(1,best)*a_ua(3,3))
     a_fa(2) = a_fa(2) + 2.0d0*( fa(4,best)*a_ua(1,3) + fa(1,best)*a_ua(2,3) - fa(2,best)*a_ua(3,3))
     a_fa(3) = a_fa(3) + 2.0d0*(-fa(1,best)*a_ua(1,3) + fa(4,best)*a_ua(2,3) - fa(3,best)*a_ua(3,3))
     a_fa(4) = a_fa(4) + 2.0d0*( fa(2,best)*a_ua(1,3) + fa(3,best)*a_ua(2,3) + fa(4,best)*a_ua(3,3))
 
-    a_fb(1) = a_fb(1) + 2.0d0*(-fb(3,best)*a_ub(1,3) + fb(2,best)*a_ub(2,3) + fb(1,best)*a_ub(3,3)) 
+    a_fb(1) = a_fb(1) + 2.0d0*(-fb(3,best)*a_ub(1,3) + fb(2,best)*a_ub(2,3) + fb(1,best)*a_ub(3,3))
     a_fb(2) = a_fb(2) + 2.0d0*( fb(4,best)*a_ub(1,3) + fb(1,best)*a_ub(2,3) - fb(2,best)*a_ub(3,3))
     a_fb(3) = a_fb(3) + 2.0d0*(-fb(1,best)*a_ub(1,3) + fb(4,best)*a_ub(2,3) - fb(3,best)*a_ub(3,3))
     a_fb(4) = a_fb(4) + 2.0d0*( fb(2,best)*a_ub(1,3) + fb(3,best)*a_ub(2,3) + fb(4,best)*a_ub(3,3))

@@ -209,7 +209,7 @@ subroutine stm_control_read_cvs(prm_fin)
     ! get name of group
     if( fstmdef(1:1) .eq. '{' ) then
         grpname = fstmdef(2:len_trim(fstmdef)-1)
-         write(PMF_OUT,110) grpname
+         write(PMF_OUT,110) trim(grpname)
         ! open goup with name from stmdef
         if( .not. prmfile_open_group(prm_fin,trim(grpname)) ) then
             call pmf_utils_exit(PMF_OUT,1,'[STM] Unable to open group {' // trim(grpname) // '}!')

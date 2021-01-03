@@ -121,7 +121,7 @@ subroutine pdrv_control_read_pdrvs(prm_fin)
     ! get name of group
     if( fpdrvdef(1:1) .eq. '{' ) then
         grpname = fpdrvdef(2:len_trim(fpdrvdef)-1)
-         write(PMF_OUT,110) grpname
+         write(PMF_OUT,110) trim(grpname)
         ! open goup with name from mondef
         if( .not. prmfile_open_group(prm_fin,trim(grpname)) ) then
             call pmf_utils_exit(PMF_OUT,1,'[PDRV] Unable to open group {' // trim(grpname) // '}!')

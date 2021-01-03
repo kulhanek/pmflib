@@ -490,7 +490,7 @@ subroutine pmf_control_read_cvs(prm_fin)
     ! get name of group
     if( fcvsdef(1:1) .eq. '{' ) then
         grpname = fcvsdef(2:len_trim(fcvsdef)-1)
-        write(PMF_OUT,110) grpname
+        write(PMF_OUT,110) trim(grpname)
         ! open goup with name from cvsdef
         if( .not. prmfile_open_group(prm_fin,trim(grpname)) ) then
             write(PMF_OUT,130) trim(grpname)
@@ -612,7 +612,7 @@ subroutine pmf_control_read_paths(prm_fin)
     ! get name of group
     if( fpathsdef(1:1) .eq. '{' ) then
         grpname = fpathsdef(2:len_trim(fpathsdef)-1)
-        write(PMF_OUT,110) grpname
+        write(PMF_OUT,110) trim(grpname)
         ! open goup with name from fpathsdef
         if( .not. prmfile_open_group(prm_fin,trim(grpname)) ) then
             write(PMF_OUT,130) trim(grpname)

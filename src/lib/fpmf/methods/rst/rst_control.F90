@@ -122,7 +122,7 @@ subroutine rst_control_read_cvs(prm_fin)
     ! get name of group
     if( frstdef(1:1) .eq. '{' ) then
         grpname = frstdef(2:len_trim(frstdef)-1)
-         write(PMF_OUT,110) grpname
+         write(PMF_OUT,110) trim(grpname)
         ! open goup with name from rstdef
         if( .not. prmfile_open_group(prm_fin,trim(grpname)) ) then
             write(PMF_OUT,130)
