@@ -448,7 +448,7 @@ subroutine calculate_nasstp_value(cv_item,ctx,ua,oa,ub,ob,a_ua,a_oa,a_ub,a_ob)
     real(PMFDP)         :: a_ua(3,3),a_ub(3,3)
     real(PMFDP)         :: a_oa(3),a_ob(3)
     ! -----------------------------------------------
-    real(PMFDP)         :: zsc,o_zaxis2,o_zaxis,o_xaxis2,o_xaxis
+    real(PMFDP)         :: zsc,xsc,o_zaxis2,o_zaxis,o_xaxis2,o_xaxis
     real(PMFDP)         :: zaxisr(3),zaxis(3)
     real(PMFDP)         :: x0axis(3),xaxisr(3),xaxis(3),yaxis(3)
     real(PMFDP)         :: d(3),tmp1(3),tmp2(3),a_tmp1(3),a_tmp2(3)
@@ -462,14 +462,16 @@ subroutine calculate_nasstp_value(cv_item,ctx,ua,oa,ub,ob,a_ua,a_oa,a_ub,a_ob)
     ! mutual orientation of two z-axis
     zsc = sign(1.0d0,ua(1,3)*ub(1,3)+ua(2,3)*ub(2,3)+ua(3,3)*ub(3,3))
     ! get z-axis as average of two axes
-    zaxisr(:) = 0.5d0*ua(:,3) + 0.5d0*zsc*ub(:,3)
+    zaxisr(:) = ua(:,3) + zsc*ub(:,3)
     ! normalize
     o_zaxis2 = 1.0d0 / (zaxisr(1)**2 + zaxisr(2)**2 + zaxisr(3)**2)
     o_zaxis  = sqrt(o_zaxis2)
     zaxis(:) = zaxisr(:) * o_zaxis
 
 ! x-axis ===================================================================
-    x0axis(:) = ua(:,1) + ub(:,1)
+    xsc = sign(1.0d0,ua(1,1)*ub(1,1)+ua(2,1)*ub(2,1)+ua(3,1)*ub(3,1))
+    ! get x-axis as average of two axes
+    x0axis(:) = ua(:,1) + xsc*ub(:,1)
     ! remove projections to z-axis
     xaxisr(:) = x0axis(:) - (x0axis(1)*zaxis(1)+x0axis(2)*zaxis(2)+x0axis(3)*zaxis(3))*zaxis(:)
     ! normalize
@@ -643,7 +645,7 @@ subroutine calculate_nasstp_value(cv_item,ctx,ua,oa,ub,ob,a_ua,a_oa,a_ub,a_ob)
             t1 = zaxis(1)*a_xaxisr(1) + zaxis(2)*a_xaxisr(2) + zaxis(3)*a_xaxisr(3)
             a_x0axis(:) = a_xaxisr(:) - zaxis(:)*t1
             a_ua(:,1) = a_x0axis(:)
-            a_ub(:,1) = a_x0axis(:)
+            a_ub(:,1) = xsc*a_x0axis(:)
 
 ! with respect to zaxis
             t1 = x0axis(1)*zaxis(1)+x0axis(2)*zaxis(2)+x0axis(3)*zaxis(3)
@@ -651,8 +653,8 @@ subroutine calculate_nasstp_value(cv_item,ctx,ua,oa,ub,ob,a_ua,a_oa,a_ub,a_ob)
             a_zaxis(:) = - t1*a_xaxisr(:) - x0axis(:)*t2
 
             t1 = zaxisr(1)*a_zaxis(1) + zaxisr(2)*a_zaxis(2) + zaxisr(3)*a_zaxis(3)
-            a_ua(:,3) = 0.5d0*a_zaxis(:)*o_zaxis - 0.5d0*o_zaxis*o_zaxis2*zaxisr(:)*t1
-            a_ub(:,3) = 0.5d0*zsc*a_zaxis(:)*o_zaxis - 0.5d0*zsc*o_zaxis*o_zaxis2*zaxisr(:)*t1
+            a_ua(:,3) = a_zaxis(:)*o_zaxis - o_zaxis*o_zaxis2*zaxisr(:)*t1
+            a_ub(:,3) = zsc*a_zaxis(:)*o_zaxis - zsc*o_zaxis*o_zaxis2*zaxisr(:)*t1
 
 !---------------------------------------------------------------------------------------------------
         case(2)
@@ -679,7 +681,7 @@ subroutine calculate_nasstp_value(cv_item,ctx,ua,oa,ub,ob,a_ua,a_oa,a_ub,a_ob)
             t1 = zaxis(1)*a_xaxisr(1) + zaxis(2)*a_xaxisr(2) + zaxis(3)*a_xaxisr(3)
             a_x0axis(:) = a_xaxisr(:) - zaxis(:)*t1
             a_ua(:,1) = a_x0axis(:)
-            a_ub(:,1) = a_x0axis(:)
+            a_ub(:,1) = xsc*a_x0axis(:)
 
         ! with respect to zaxis
             t1 = x0axis(1)*zaxis(1)+x0axis(2)*zaxis(2)+x0axis(3)*zaxis(3)
@@ -687,8 +689,8 @@ subroutine calculate_nasstp_value(cv_item,ctx,ua,oa,ub,ob,a_ua,a_oa,a_ub,a_ob)
             a_zaxis(:) = - t1*a_xaxisr(:) - x0axis(:)*t2
 
             t1 = zaxisr(1)*a_zaxis(1) + zaxisr(2)*a_zaxis(2) + zaxisr(3)*a_zaxis(3)
-            a_ua(:,3) = 0.5d0*a_zaxis(:)*o_zaxis - 0.5d0*o_zaxis*o_zaxis2*zaxisr(:)*t1
-            a_ub(:,3) = 0.5d0*zsc*a_zaxis(:)*o_zaxis - 0.5d0*zsc*o_zaxis*o_zaxis2*zaxisr(:)*t1
+            a_ua(:,3) = a_zaxis(:)*o_zaxis - o_zaxis*o_zaxis2*zaxisr(:)*t1
+            a_ub(:,3) = zsc*a_zaxis(:)*o_zaxis - zsc*o_zaxis*o_zaxis2*zaxisr(:)*t1
 
         ! with respect to zaxis
             a_zaxis(1) = - a_yaxis(2)*xaxis(3) + a_yaxis(3)*xaxis(2)
@@ -697,8 +699,8 @@ subroutine calculate_nasstp_value(cv_item,ctx,ua,oa,ub,ob,a_ua,a_oa,a_ub,a_ob)
 
         ! with respect to zaxis
             t1 = zaxisr(1)*a_zaxis(1) + zaxisr(2)*a_zaxis(2) + zaxisr(3)*a_zaxis(3)
-            a_ua(:,3) = a_ua(:,3) + 0.5d0*a_zaxis(:)*o_zaxis - 0.5d0*o_zaxis*o_zaxis2*zaxisr(:)*t1
-            a_ub(:,3) = a_ub(:,3) + 0.5d0*zsc*a_zaxis(:)*o_zaxis - 0.5d0*zsc*o_zaxis*o_zaxis2*zaxisr(:)*t1
+            a_ua(:,3) = a_ua(:,3) + a_zaxis(:)*o_zaxis - o_zaxis*o_zaxis2*zaxisr(:)*t1
+            a_ub(:,3) = a_ub(:,3) + zsc*a_zaxis(:)*o_zaxis - zsc*o_zaxis*o_zaxis2*zaxisr(:)*t1
 
 !---------------------------------------------------------------------------------------------------
         case(3)
@@ -710,8 +712,8 @@ subroutine calculate_nasstp_value(cv_item,ctx,ua,oa,ub,ob,a_ua,a_oa,a_ub,a_ob)
 
         ! with respect to zaxis
             t1 = zaxisr(1)*a_zaxis(1) + zaxisr(2)*a_zaxis(2) + zaxisr(3)*a_zaxis(3)
-            a_ua(:,3) = 0.5d0*a_zaxis(:)*o_zaxis - 0.5d0*o_zaxis*o_zaxis2*zaxisr(:)*t1
-            a_ub(:,3) = 0.5d0*zsc*a_zaxis(:)*o_zaxis - 0.5d0*zsc*o_zaxis*o_zaxis2*zaxisr(:)*t1
+            a_ua(:,3) = a_zaxis(:)*o_zaxis - o_zaxis*o_zaxis2*zaxisr(:)*t1
+            a_ub(:,3) = zsc*a_zaxis(:)*o_zaxis - zsc*o_zaxis*o_zaxis2*zaxisr(:)*t1
 
 !---------------------------------------------------------------------------------------------------
         case(4)
@@ -735,7 +737,7 @@ subroutine calculate_nasstp_value(cv_item,ctx,ua,oa,ub,ob,a_ua,a_oa,a_ub,a_ob)
             t1 = zaxis(1)*a_xaxisr(1) + zaxis(2)*a_xaxisr(2) + zaxis(3)*a_xaxisr(3)
             a_x0axis(:) = a_xaxisr(:) - zaxis(:)*t1
             a_ua(:,1) = a_x0axis(:)
-            a_ub(:,1) = a_x0axis(:)
+            a_ub(:,1) = xsc*a_x0axis(:)
 
 ! with respect to zaxis
             t1 = x0axis(1)*zaxis(1)+x0axis(2)*zaxis(2)+x0axis(3)*zaxis(3)
@@ -743,8 +745,8 @@ subroutine calculate_nasstp_value(cv_item,ctx,ua,oa,ub,ob,a_ua,a_oa,a_ub,a_ob)
             a_zaxis(:) = - t1*a_xaxisr(:) - x0axis(:)*t2
 
             t1 = zaxisr(1)*a_zaxis(1) + zaxisr(2)*a_zaxis(2) + zaxisr(3)*a_zaxis(3)
-            a_ua(:,3) = a_ua(:,3) + 0.5d0*a_zaxis(:)*o_zaxis - 0.5d0*o_zaxis*o_zaxis2*zaxisr(:)*t1
-            a_ub(:,3) = a_ub(:,3) + 0.5d0*zsc*a_zaxis(:)*o_zaxis - 0.5d0*zsc*o_zaxis*o_zaxis2*zaxisr(:)*t1
+            a_ua(:,3) = a_ua(:,3) + a_zaxis(:)*o_zaxis - o_zaxis*o_zaxis2*zaxisr(:)*t1
+            a_ub(:,3) = a_ub(:,3) + zsc*a_zaxis(:)*o_zaxis - zsc*o_zaxis*o_zaxis2*zaxisr(:)*t1
 
 !---------------------------------------------------------------------------------------------------
         case(5)
@@ -778,7 +780,7 @@ subroutine calculate_nasstp_value(cv_item,ctx,ua,oa,ub,ob,a_ua,a_oa,a_ub,a_ob)
             t1 = zaxis(1)*a_xaxisr(1) + zaxis(2)*a_xaxisr(2) + zaxis(3)*a_xaxisr(3)
             a_x0axis(:) = a_xaxisr(:) - zaxis(:)*t1
             a_ua(:,1) = a_x0axis(:)
-            a_ub(:,1) = a_x0axis(:)
+            a_ub(:,1) = xsc*a_x0axis(:)
 
         ! with respect to zaxis
             t1 = x0axis(1)*zaxis(1)+x0axis(2)*zaxis(2)+x0axis(3)*zaxis(3)
@@ -786,8 +788,8 @@ subroutine calculate_nasstp_value(cv_item,ctx,ua,oa,ub,ob,a_ua,a_oa,a_ub,a_ob)
             a_zaxis(:) = - t1*a_xaxisr(:) - x0axis(:)*t2
 
             t1 = zaxisr(1)*a_zaxis(1) + zaxisr(2)*a_zaxis(2) + zaxisr(3)*a_zaxis(3)
-            a_ua(:,3) = a_ua(:,3) + 0.5d0*a_zaxis(:)*o_zaxis - 0.5d0*o_zaxis*o_zaxis2*zaxisr(:)*t1
-            a_ub(:,3) = a_ub(:,3) + 0.5d0*zsc*a_zaxis(:)*o_zaxis - 0.5d0*zsc*o_zaxis*o_zaxis2*zaxisr(:)*t1
+            a_ua(:,3) = a_ua(:,3) + a_zaxis(:)*o_zaxis - o_zaxis*o_zaxis2*zaxisr(:)*t1
+            a_ub(:,3) = a_ub(:,3) + zsc*a_zaxis(:)*o_zaxis - zsc*o_zaxis*o_zaxis2*zaxisr(:)*t1
 
         ! with respect to zaxis
             a_zaxis(1) = - a_yaxis(2)*xaxis(3) + a_yaxis(3)*xaxis(2)
@@ -796,8 +798,8 @@ subroutine calculate_nasstp_value(cv_item,ctx,ua,oa,ub,ob,a_ua,a_oa,a_ub,a_ob)
 
         ! with respect to zaxis
             t1 = zaxisr(1)*a_zaxis(1) + zaxisr(2)*a_zaxis(2) + zaxisr(3)*a_zaxis(3)
-            a_ua(:,3) = a_ua(:,3) + 0.5d0*a_zaxis(:)*o_zaxis - 0.5d0*o_zaxis*o_zaxis2*zaxisr(:)*t1
-            a_ub(:,3) = a_ub(:,3) + 0.5d0*zsc*a_zaxis(:)*o_zaxis - 0.5d0*zsc*o_zaxis*o_zaxis2*zaxisr(:)*t1
+            a_ua(:,3) = a_ua(:,3) + a_zaxis(:)*o_zaxis - o_zaxis*o_zaxis2*zaxisr(:)*t1
+            a_ub(:,3) = a_ub(:,3) + zsc*a_zaxis(:)*o_zaxis - zsc*o_zaxis*o_zaxis2*zaxisr(:)*t1
 
 !---------------------------------------------------------------------------------------------------
         case(6)
@@ -817,8 +819,8 @@ subroutine calculate_nasstp_value(cv_item,ctx,ua,oa,ub,ob,a_ua,a_oa,a_ub,a_ob)
 
         ! with respect to zaxis
             t1 = zaxisr(1)*a_zaxis(1) + zaxisr(2)*a_zaxis(2) + zaxisr(3)*a_zaxis(3)
-            a_ua(:,3) = 0.5d0*a_zaxis(:)*o_zaxis - 0.5d0*o_zaxis*o_zaxis2*zaxisr(:)*t1
-            a_ub(:,3) = 0.5d0*zsc*a_zaxis(:)*o_zaxis - 0.5d0*zsc*o_zaxis*o_zaxis2*zaxisr(:)*t1
+            a_ua(:,3) = a_zaxis(:)*o_zaxis - o_zaxis*o_zaxis2*zaxisr(:)*t1
+            a_ub(:,3) = zsc*a_zaxis(:)*o_zaxis - zsc*o_zaxis*o_zaxis2*zaxisr(:)*t1
 
         case default
             call pmf_utils_exit(PMF_OUT,1,'Unrecognized value for parameter option in calculate_nasstp!')

@@ -271,8 +271,6 @@ subroutine abf_accumulator_read(iounit)
 200 continue
     call pmf_utils_exit(PMF_OUT,1,'[ABF] Illegal header in ABF accumulator (Only V3 header is supported)!')
 
-20  format(A3,1X,A3,1X,I2)
-
 end subroutine abf_accumulator_read
 
 !===============================================================================
