@@ -70,6 +70,8 @@ CABFEnthalpyGPR::CABFEnthalpyGPR(void)
 
     NumOfThreads        = 1;
 
+    UseInv              = false;
+    NeedInv             = false;
 }
 
 //------------------------------------------------------------------------------
@@ -113,7 +115,7 @@ void CABFEnthalpyGPR::SetSigmaF2(double sigf2)
 
 void CABFEnthalpyGPR::SetNCorr(const CSmallString& spec)
 {
-    if( Accumulator == NULL ){
+if( Accumulator == NULL ){
         RUNTIME_ERROR("accumulator is not set for SetNCorr");
     }
 
@@ -144,7 +146,10 @@ void CABFEnthalpyGPR::SetNCorr(const CSmallString& spec)
             error << "unable to decode ncorr value for position: " << i+1;
             RUNTIME_ERROR(error);
         }
+        NCorr = last_ncorr;
     }
+
+    // pad the rest with the last value
     NCorr = last_ncorr;
 }
 
@@ -406,6 +411,16 @@ bool CABFEnthalpyGPR::Interpolate(CVerboseStr& vout,bool nostat)
 
     // finalize HES
     CalculateEnergy(vout);
+
+    if( ! nostat ){
+        // and log of marginal likelihood
+        vout << "      logML     = " << setprecision(5) << GetLogML() << endl;
+        if( NeedInv || UseInv ){
+            // and log of pseudo-likelihood
+            vout << "      logPL     = " << setprecision(5) << GetLogPL() << endl;
+        }
+    }
+
     if( IncludeError ){
         CalculateCovs(vout);
         CalculateErrorsFromCov(vout);
@@ -481,16 +496,46 @@ bool CABFEnthalpyGPR::TrainGP(CVerboseStr& vout)
     int result = 0;
     switch(Method){
         case(EGPRLA_LU):
-                GPRModel = Y;
-                vout << "   Training GPR by LU ..." << endl;
-                result = CSciLapack::solvleLU(KS,GPRModel,logdetK);
+            if( UseInv ){
+                vout << "   Inverting K+Sigma by LU ..." << endl;
+                result = CSciLapack::invLU(KS,logdetK);
                 if( result != 0 ) return(false);
+                // calculate weights
+                vout << "   Calculating weights B ..." << endl;
+                CSciBlas::gemv(1.0,KS,Y,0.0,GPRModel);
+            } else {
+                GPRModel = Y;
+                if( NeedInv ){
+                    vout << "   Training GPR + K+Sigma inversion by LU ..." << endl;
+                    result = CSciLapack::solvleLUInv(KS,GPRModel,logdetK);
+                    if( result != 0 ) return(false);
+                } else {
+                    vout << "   Training GPR by LU ..." << endl;
+                    result = CSciLapack::solvleLU(KS,GPRModel,logdetK);
+                    if( result != 0 ) return(false);
+                }
+            }
             break;
         case(EGPRLA_LL):
-                GPRModel = Y;
-                vout << "   Training GPR by LL ..." << endl;
-                result = CSciLapack::solvleLL(KS,GPRModel,logdetK);
+            if( UseInv ){
+                vout << "   Inverting K+Sigma by LL ..." << endl;
+                result = CSciLapack::invLL(KS,logdetK);
                 if( result != 0 ) return(false);
+                // calculate weights
+                vout << "   Calculating weights B ..." << endl;
+                CSciBlas::gemv(1.0,KS,Y,0.0,GPRModel);
+            } else {
+                GPRModel = Y;
+                if( NeedInv ){
+                    vout << "   Training GPR + K+Sigma inversion by LL ..." << endl;
+                    result = CSciLapack::solvleLLInv(KS,GPRModel,logdetK);
+                    if( result != 0 ) return(false);
+                } else {
+                    vout << "   Training GPR by LL ..." << endl;
+                    result = CSciLapack::solvleLL(KS,GPRModel,logdetK);
+                    if( result != 0 ) return(false);
+                }
+            }
             break;
         case(EGPRLA_SVD):{
             vout << "   Inverting K+Sigma by SVD (divide and conquer driver) ..." << endl;
@@ -586,41 +631,6 @@ void CABFEnthalpyGPR::CreateKff(const CSimpleVector<double>& ip,CSimpleVector<do
         kff[indj] = GetKernelValue(ip,jpos);
     }
 
-}
-
-//------------------------------------------------------------------------------
-
-double CABFEnthalpyGPR::GetKernelValue(const CSimpleVector<double>& ip,const CSimpleVector<double>& jp)
-{
-    // get kernel value
-    switch(Kernel){
-        case(EGPRK_ARDSE): {
-            // calculate scaled distance
-            double scdist2 = 0.0;
-            for(size_t ii=0; ii < NCVs; ii++){
-                double du = Accumulator->GetCoordinate(ii)->GetDifference(ip[ii],jp[ii]);
-                double dd = CVLengths2[ii];
-                scdist2 += du*du/dd;
-            }
-            return(SigmaF2*exp(-0.5*scdist2));
-        }
-        break;
-        case(EGPRK_ARDMC52):{
-            // calculate scaled distance
-            double scdist2 = 0.0;
-            for(size_t ii=0; ii < NCVs; ii++){
-                double du = Accumulator->GetCoordinate(ii)->GetDifference(ip[ii],jp[ii]);
-                double dd = CVLengths2[ii];
-                scdist2 += du*du/dd;
-            }
-            double scdist = sqrt(scdist2);
-            return(SigmaF2*(1.0+sqrt(5.0)*scdist+(5.0/3.0)*scdist2)*exp(-sqrt(5.0)*scdist));
-        }
-        break;
-        default:
-            RUNTIME_ERROR("not implemented");
-        break;
-    }
 }
 
 //==============================================================================
@@ -787,6 +797,9 @@ void CABFEnthalpyGPR::CalculateErrorsFromCov(CVerboseStr& vout)
         }
         FES->SetError(j,error);
     }
+
+    vout << "      SigmaF2+  = " << setprecision(5) << FES->GetSigmaF2p() << endl;
+    vout << "      SigmaF2-  = " << setprecision(5) << FES->GetSigmaF2m() << endl;
 }
 
 //==============================================================================
@@ -900,6 +913,341 @@ void CABFEnthalpyGPR::CalculateCovs(CVerboseStr& vout)
 
     RunBlasLapackPar();
     CSciBlas::gemm(-1.0,'T',Kl,'N',Kr,1.0,Cov);
+}
+
+//==============================================================================
+//------------------------------------------------------------------------------
+//==============================================================================
+
+void CABFEnthalpyGPR::SetUseInv(bool set)
+{
+    UseInv = set;
+}
+
+//------------------------------------------------------------------------------
+
+void CABFEnthalpyGPR::PrepForHyprmsGrd(bool set)
+{
+   NeedInv |= set;
+}
+
+//------------------------------------------------------------------------------
+
+void CABFEnthalpyGPR::SetCalcLogPL(bool set)
+{
+   NeedInv |= set;
+}
+
+//------------------------------------------------------------------------------
+
+double CABFEnthalpyGPR::GetLogML(void)
+{
+    double ml = 0.0;
+
+    // http://www.gaussianprocess.org/gpml/chapters/RW5.pdf
+    // page 113
+
+    RunBlasLapackPar();
+
+    ml -= CSciBlas::dot(Y,GPRModel);
+    ml -= logdetK;
+    ml -= GPRSize * log(2*M_PI);
+    ml *= 0.5;
+
+    return(ml);
+}
+
+//------------------------------------------------------------------------------
+
+void CABFEnthalpyGPR::GetLogMLDerivatives(const std::vector<bool>& flags,CSimpleVector<double>& der)
+{
+if( ! (NeedInv || UseInv) ){
+        RUNTIME_ERROR("GetLogMLDerivatives requires K+Sigma inverted matrix");
+    }
+
+    if( Accumulator == NULL ) {
+        RUNTIME_ERROR("ABF accumulator is not set");
+    }
+    if( FES == NULL ) {
+        RUNTIME_ERROR("FES is not set");
+    }
+    if( NCVs <= 0 ){
+        RUNTIME_ERROR("NCVs <= NULL");
+    }
+    if( GPRSize <= 0 ){
+        RUNTIME_ERROR("GPRSize <= NULL");
+    }
+
+    Kder.CreateMatrix(GPRSize,GPRSize);
+
+    CFortranMatrix          ata;            // alphaT*alpha
+    ata.CreateMatrix(GPRSize,GPRSize);
+
+    // calc ATA matrix
+    #pragma omp parallel for
+    for(size_t i=0; i < GPRSize; i++){
+        for(size_t j=0; j < GPRSize; j++){
+            ata[i][j] = GPRModel[i]*GPRModel[j];
+        }
+    }
+
+    size_t ind = 0;
+
+    for(size_t prm=0; prm < flags.size(); prm++){
+        // shall we calc der?
+        if( flags[prm] == false ) {
+            continue;
+        }
+
+        // calc Kder
+        if( prm == 0 ){
+            // sigmaf2
+            CalcKderWRTSigmaF2();
+        } else if( prm == 1 ){
+            CalcKderWRTNCorr();
+        } else {
+            size_t cv = prm - 2;
+            CalcKderWRTWFac(cv);
+        }
+
+        // calc trace
+        double tr = 0.0;
+        #pragma omp parallel for reduction(+:tr)
+        for(size_t i=0; i < GPRSize; i++){
+            for(size_t j=0; j < GPRSize; j++){
+                tr += (ata[i][j]-KS[i][j])*Kder[j][i];
+            }
+        }
+
+        // finalize derivative
+        der[ind] += 0.5*tr;
+        ind++;
+    }
+}
+
+//------------------------------------------------------------------------------
+
+double CABFEnthalpyGPR::GetLogPL(void)
+{
+    if( ! (NeedInv || UseInv) ){
+        RUNTIME_ERROR("logPL requires K+Sigma inverted matrix");
+    }
+
+    double loo = 0.0;
+
+    // http://www.gaussianprocess.org/gpml/chapters/RW5.pdf
+    // page 116-117
+
+    for(size_t i=0; i < GPRSize; i++){
+        loo -= log(1.0/KS[i][i]);
+        loo -= GPRModel[i]*GPRModel[i]/KS[i][i];
+    }
+    loo -= GPRSize*log(2*M_PI);
+
+    loo *= 0.5;
+
+    return(loo);
+}
+
+//------------------------------------------------------------------------------
+
+void CABFEnthalpyGPR::GetLogPLDerivatives(const std::vector<bool>& flags,CSimpleVector<double>& der)
+{
+if( ! (NeedInv || UseInv) ){
+        RUNTIME_ERROR("GetLogPLDerivatives requires K+Sigma inverted matrix");
+    }
+
+    if( Accumulator == NULL ) {
+        RUNTIME_ERROR("ABF accumulator is not set");
+    }
+    if( FES == NULL ) {
+        RUNTIME_ERROR("FES is not set");
+    }
+    if( NCVs <= 0 ){
+        RUNTIME_ERROR("NCVs <= NULL");
+    }
+    if( GPRSize <= 0 ){
+        RUNTIME_ERROR("GPRSize <= NULL");
+    }
+
+    Kder.CreateMatrix(GPRSize,GPRSize);
+
+    CFortranMatrix zj;
+    zj.CreateMatrix(GPRSize,GPRSize);
+
+    CSimpleVector<double> za;
+    za.CreateVector(GPRSize);
+
+    size_t ind = 0;
+
+    for(size_t prm=0; prm < flags.size(); prm++){
+        // shall we calc der?
+        if( flags[prm] == false ) {
+            continue;
+        }
+
+        // calc Kder
+        if( prm == 0 ){
+            // sigmaf2
+            CalcKderWRTSigmaF2();
+        } else if( prm == 1 ){
+            CalcKderWRTNCorr();
+        } else {
+            size_t cv = prm - 2;
+            CalcKderWRTWFac(cv);
+        }
+
+        RunBlasLapackPar();
+
+        // calc Zj
+        CSciBlas::gemm(1.0,KS,Kder,0.0,zj);
+
+        // calc zj * alpha
+        CSciBlas::gemv(1.0,zj,GPRModel,0.0,za);
+
+        // derivative
+        double loo = 0.0;
+        #pragma omp parallel for reduction(+:loo)
+        for(size_t i=0; i < GPRSize; i++){
+            double zk = 0.0;
+            for(size_t j=0; j < GPRSize; j++){
+                zk += zj[i][j]*KS[j][i];
+            }
+            double top;
+            top  = GPRModel[i]*za[i];
+            top -= 0.5*(1.0 + GPRModel[i]*GPRModel[i]/KS[i][i])*zk;
+            loo += top/KS[i][i];
+        }
+
+        // finalize derivative
+        der[ind] += loo;
+        ind++;
+    }
+}
+
+//------------------------------------------------------------------------------
+
+void CABFEnthalpyGPR::CalcKderWRTSigmaF2(void)
+{
+    Kder.SetZero();
+
+    CSimpleVector<double> ipos;
+    CSimpleVector<double> jpos;
+    ipos.CreateVector(NCVs);
+    jpos.CreateVector(NCVs);
+
+    #pragma omp parallel for firstprivate(ipos,jpos,kblock)
+    for(size_t indi=0; indi < NumOfUsedBins; indi++){
+        size_t i = SampledMap[indi];
+        Accumulator->GetPoint(i,ipos);
+
+        for(size_t indj=0; indj < NumOfUsedBins; indj++){
+            size_t j = SampledMap[indj];
+            Accumulator->GetPoint(j,jpos);
+
+            Kder[indi][indj] = GetKernelValue(ipos,jpos) / SigmaF2;
+        }
+    }
+}
+
+//------------------------------------------------------------------------------
+
+void CABFEnthalpyGPR::CalcKderWRTNCorr(void)
+{
+    Kder.SetZero();
+
+    #pragma omp parallel for
+    for(size_t indi=0; indi < NumOfUsedBins; indi++){
+        size_t i = SampledMap[indi];
+        double er = Accumulator->GetValue(i,EABF_H_ERROR);
+        Kder[indi][indi] += er*er;
+    }
+}
+
+//------------------------------------------------------------------------------
+
+void CABFEnthalpyGPR::CalcKderWRTWFac(size_t cv)
+{
+    Kder.SetZero();
+
+    CSimpleVector<double> ipos;
+    CSimpleVector<double> jpos;
+    ipos.CreateVector(NCVs);
+    jpos.CreateVector(NCVs);
+
+    #pragma omp parallel for firstprivate(ipos,jpos,kblock)
+    for(size_t indi=0; indi < NumOfUsedBins; indi++){
+        size_t i = SampledMap[indi];
+        Accumulator->GetPoint(i,ipos);
+
+        for(size_t indj=0; indj < NumOfUsedBins; indj++){
+            size_t j = SampledMap[indj];
+            Accumulator->GetPoint(j,jpos);
+
+            Kder[indi][indj] = GetKernelValueWFacDer(ipos,jpos,cv);
+        }
+    }
+}
+
+//------------------------------------------------------------------------------
+
+double CABFEnthalpyGPR::GetKernelValue(const CSimpleVector<double>& ip,const CSimpleVector<double>& jp)
+{
+    // calculate scaled distance
+    double scdist2 = 0.0;
+    for(size_t ii=0; ii < NCVs; ii++){
+        double du = Accumulator->GetCoordinate(ii)->GetDifference(ip[ii],jp[ii]);
+        double dd = CVLengths2[ii];
+        scdist2 += du*du/dd;
+    }
+
+    // get kernel value
+    switch(Kernel){
+        case(EGPRK_ARDSE): {
+            return(SigmaF2*exp(-0.5*scdist2));
+        }
+        break;
+        case(EGPRK_ARDMC52):{
+            double scdist = sqrt(scdist2);
+            return(SigmaF2*(1.0+sqrt(5.0)*scdist+(5.0/3.0)*scdist2)*exp(-sqrt(5.0)*scdist));
+        }
+        break;
+        default:
+            RUNTIME_ERROR("not implemented");
+        break;
+    }
+}
+
+//------------------------------------------------------------------------------
+
+double CABFEnthalpyGPR::GetKernelValueWFacDer(const CSimpleVector<double>& ip,const CSimpleVector<double>& jp,size_t cv)
+{
+    // calculate scaled distance
+    double scdist2 = 0.0;
+    for(size_t ii=0; ii < NCVs; ii++){
+        double du = Accumulator->GetCoordinate(ii)->GetDifference(ip[ii],jp[ii]);
+        double dd = CVLengths2[ii];
+        scdist2 += du*du/dd;
+    }
+
+    switch(Kernel){
+    case(EGPRK_ARDSE): {
+            double arg = SigmaF2*exp(-0.5*scdist2);
+            double du = Accumulator->GetCoordinate(cv)->GetDifference(ip[cv],jp[cv]);
+            double dd = CVLengths2[cv];
+            double wf = WFac[cv];
+            arg = arg * du*du / (dd * wf);
+            return(arg);
+        }
+        break;
+    case(EGPRK_ARDMC52): {
+            RUNTIME_ERROR("not implemented");
+        }
+        break;
+    default:
+        RUNTIME_ERROR("not implemented");
+        break;
+    }
 }
 
 //------------------------------------------------------------------------------

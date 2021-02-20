@@ -39,6 +39,7 @@ CEnergySurface::CEnergySurface(void)
 {
     NumOfCVs = 0;
     TotNPoints = 0;
+    SLevel = 1.0;
 }
 
 //------------------------------------------------------------------------------
@@ -305,6 +306,76 @@ double CEnergySurface::GetSigmaF2(bool includeglued) const
     return(sigmaf2);
 }
 
+//------------------------------------------------------------------------------
+
+double CEnergySurface::GetSigmaF2p(bool includeglued) const
+{
+    double sigmafsum = 0.0;
+    double sigmafsum2 = 0.0;
+    double count = 0.0;
+
+    for(int k=0; k < TotNPoints; k++) {
+        if( Samples[k] == 0 ) continue;
+        if( includeglued == false ){
+            if( Samples[k] < 0 ) continue;
+        }
+        double ene = Energy[k] + SLevel*Error[k];
+        sigmafsum += ene;
+        sigmafsum2 += ene*ene;
+        count++;
+    }
+
+    double sigmaf2 = 0.0;
+
+    if( count > 0 ){
+        sigmaf2 = count*sigmafsum2 - sigmafsum*sigmafsum;
+        if(sigmaf2 > 0) {
+            sigmaf2 = sqrt(sigmaf2) / count;
+        } else {
+            sigmaf2 = 0.0;
+        }
+    }
+
+    sigmaf2 *= sigmaf2;
+
+    return(sigmaf2);
+}
+
+//------------------------------------------------------------------------------
+
+double CEnergySurface::GetSigmaF2m(bool includeglued) const
+{
+    double sigmafsum = 0.0;
+    double sigmafsum2 = 0.0;
+    double count = 0.0;
+
+    for(int k=0; k < TotNPoints; k++) {
+        if( Samples[k] == 0 ) continue;
+        if( includeglued == false ){
+            if( Samples[k] < 0 ) continue;
+        }
+        double ene = Energy[k] - SLevel*Error[k];
+        sigmafsum += ene;
+        sigmafsum2 += ene*ene;
+        count++;
+    }
+
+    double sigmaf2 = 0.0;
+
+    if( count > 0 ){
+        sigmaf2 = count*sigmafsum2 - sigmafsum*sigmafsum;
+        if(sigmaf2 > 0) {
+            sigmaf2 = sqrt(sigmaf2) / count;
+        } else {
+            sigmaf2 = 0.0;
+        }
+    }
+
+    sigmaf2 *= sigmaf2;
+
+    return(sigmaf2);
+}
+
 //==============================================================================
 //------------------------------------------------------------------------------
 //==============================================================================
@@ -387,6 +458,20 @@ void CEnergySurface::ApplyOffset(double offset)
     for(int k=0; k < TotNPoints; k++) {
         Energy[k] += offset;
     }
+}
+
+//------------------------------------------------------------------------------
+
+void CEnergySurface::SetSLevel(double slevel)
+{
+    SLevel = slevel;
+}
+
+//------------------------------------------------------------------------------
+
+double CEnergySurface::GetSLevel(void) const
+{
+    return(SLevel);
 }
 
 //------------------------------------------------------------------------------

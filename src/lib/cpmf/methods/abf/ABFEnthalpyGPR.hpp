@@ -97,9 +97,6 @@ public:
     /// use inversion alg
     void SetUseInv(bool set);
 
-    /// include zero-point at user provided global minimum
-    void SetUseZeroPoint(bool set);
-
 // execution method -----------------------------------------------------------
     /// interpolate data
     bool Interpolate(CVerboseStr& vout,bool nostat=false);
@@ -109,6 +106,29 @@ public:
 
     /// get kernel name
     const CSmallString GetKernelName(void);
+
+// GPR model optimization ----------------------------------------------------
+    /// calc hyprms grd
+    void PrepForHyprmsGrd(bool set);
+
+    /// calc logpl
+    void SetCalcLogPL(bool set);
+
+    /// get log of Marginal Likelihood
+    double GetLogML(void);
+
+    /// get derivative of logML wrt hyperparameters
+    /// order sigmaf2, ncorr, wfac, only requested ders are calculated
+    /// derivatives are ADDED to der
+    void GetLogMLDerivatives(const std::vector<bool>& flags,CSimpleVector<double>& der);
+
+    /// get the log of pseudo-likelihood from leave-one-out cross-validation (LOO-CV)
+    double GetLogPL(void);
+
+    /// get derivative of logPL wrt hyperparameters
+    /// order sigmaf2, ncorr, wfac, only requested ders are calculated
+    /// derivatives are ADDED to der
+    void GetLogPLDerivatives(const std::vector<bool>& flags,CSimpleVector<double>& der);
 
 // section of private data ----------------------------------------------------
 private:
@@ -149,6 +169,13 @@ private:
     CSimpleVector<double>   GPos;           // global position, either detected or use
     bool                    GPosSet;        // true is gpos set by any means, either SetGlobalMin() or from FES
 
+    // derivatives
+    CFortranMatrix          Kder;           // derivative of kernels w.r.t. a hyperparameter
+
+    // internal
+    bool                    UseInv;         // calc all via inversion
+    bool                    NeedInv;        // need inverted matrix - hyprms, error analysis
+
     // SVD setup
     double                  RCond;
 
@@ -167,6 +194,12 @@ private:
     // parallel processing
     void RunBlasLapackSeq(void);
     void RunBlasLapackPar(void);
+
+    // derivatives
+    void CalcKderWRTSigmaF2(void);
+    void CalcKderWRTNCorr(void);
+    void CalcKderWRTWFac(size_t cv);
+    double GetKernelValueWFacDer(const CSimpleVector<double>& ip,const CSimpleVector<double>& jp,size_t cv);
 };
 
 //------------------------------------------------------------------------------

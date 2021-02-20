@@ -90,7 +90,7 @@ public:
     CSO_OPT(CSmallString,OutputFormat)
     CSO_OPT(bool,PrintAll)
     CSO_OPT(bool,UnsampledAsMaxE)
-    CSO_OPT(double,MaxEnergy)   
+    CSO_OPT(double,MaxEnergy)
     CSO_OPT(bool,NoHeader)
     CSO_OPT(bool,IncludeBinStat)
     CSO_OPT(bool,UseOldRFD)
@@ -104,7 +104,8 @@ public:
     CSO_OPT(bool,GPRUseInv)
     CSO_OPT(bool,GPRCalcLogPL)
     CSO_OPT(bool,GPRIncludeZPE)
-    CSO_OPT(bool,GPRFastError)
+    CSO_OPT(bool,GPRNoFastError)
+    CSO_OPT(double,SLevel)
     CSO_OPT(CSmallString,KeepCVs)
     CSO_OPT(CSmallString,ReducedFES)
     CSO_OPT(double,Temperature)
@@ -523,13 +524,22 @@ public:
                 "GPR: Include zero-point energy at position specified by --globalmin.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(bool,                           /* option type */
-                GPRFastError,                        /* option name */
+                GPRNoFastError,                        /* option name */
                 false,                          /* default value */
                 false,                          /* is option mandatory */
                 0,                           /* short option name */
-                "fasterror",                      /* long option name */
+                "nofasterror",                      /* long option name */
                 NULL,                           /* parametr name */
-                "GPR: Use faster algorithm for error calculation.")   /* option description */
+                "GPR: Do not use faster algorithm for error calculation.")   /* option description */
+    //----------------------------------------------------------------------
+    CSO_MAP_OPT(double,                           /* option type */
+                SLevel,                        /* option name */
+                1.0,                          /* default value */
+                false,                          /* is option mandatory */
+                0,                           /* short option name */
+                "slevel",                      /* long option name */
+                "VALUE",                           /* parametr name */
+                "Sigma-level for confidence interval.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(CSmallString,                           /* option type */
                 KeepCVs,                        /* option name */

@@ -151,6 +151,7 @@ bool CABFEnthalpy::Run(void)
     // DO NOT SET IT HERE, Ncorr can be GPR hyperparameter
     // Accumulator.SetNCorr(Options.GetOptNCorr());
     HES.Allocate(&Accumulator);
+    HES.SetSLevel(Options.GetOptSLevel());
 
     vout << endl;
     vout << format("%02d:Statistics of input ABF accumulator")%State << endl;
@@ -174,6 +175,8 @@ bool CABFEnthalpy::Run(void)
         vout << format("%02d:Raw absolute enthalpy")%State << endl;
         GetRawEnthalpy();
         vout << "      SigmaF2   = " << setprecision(5) << HES.GetSigmaF2() << endl;
+        vout << "      SigmaF2+  = " << setprecision(5) << HES.GetSigmaF2p() << endl;
+        vout << "      SigmaF2-  = " << setprecision(5) << HES.GetSigmaF2m() << endl;
         State++;
         vout << "   Done." << endl;
     } else if ( Options.GetOptMethod() == "gpr" ){

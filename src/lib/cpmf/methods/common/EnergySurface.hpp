@@ -88,6 +88,13 @@ public:
     /// get sigmaF2 from sampled area
     double GetSigmaF2(bool includeglued=false) const;
 
+    /// get sigmaF2+ from sampled area
+    double GetSigmaF2p(bool includeglued=false) const;
+
+    /// get sigmaF2- from sampled area
+    double GetSigmaF2m(bool includeglued=false) const;
+
+// access methods -------------------------------------------------------------
     /// set number of samples
     void SetNumOfSamples(unsigned int index,const int& value);
 
@@ -105,6 +112,12 @@ public:
 
     /// add offset to the whole surface
     void ApplyOffset(double offset);
+
+    /// set sigma-level for error analysis
+    void SetSLevel(double slevel);
+
+    /// get sigma-level for error analysis
+    double GetSLevel(void) const;
 
     /// set unsampled region to max energy from sampled region
     void AdaptUnsampledToMaxEnergy(void);
@@ -136,6 +149,7 @@ private:
     CSimpleVector<double>       Energy;         // energy array
     CSimpleVector<double>       Error;          // error array
     CSimpleVector<int>          Samples;        // number of samples
+    double                      SLevel;         // sigma level for error calculation
 
     void CalculateFES_Part(CMTDHistory& mtd_hist,
                            CSimpleVector<double>& point,unsigned int mtd_time,

@@ -235,6 +235,7 @@ bool CABFIntegrate::Run(void)
     // DO NOT SET IT HERE, Ncorr is now GPR hyperparameter
     // Accumulator.SetNCorr(Options.GetOptNCorr());
     FES.Allocate(&Accumulator);
+    FES.SetSLevel(Options.GetOptSLevel());
 
 // reduced FES options
     if( Options.IsOptKeepCVsSet() ){
@@ -882,7 +883,7 @@ bool CABFIntegrate::Integrate(void)
             integrator.SetWFac(Options.GetOptWFac());
         }
 
-        integrator.SetFastError(Options.GetOptGPRFastError());
+        integrator.SetFastError(!Options.GetOptGPRNoFastError());
         integrator.SetIncludeError(Options.GetOptWithError());
         integrator.SetNoEnergy(Options.GetOptNoEnergy());
         integrator.SetUseNumDiff(Options.GetOptGPRNumDiff());

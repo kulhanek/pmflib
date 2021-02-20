@@ -61,6 +61,7 @@ public:
     CSO_OPT(CSmallString,WFac)
     CSO_OPT(CSmallString,LoadHyprms)
     CSO_OPT(CSmallString,OutputFormat)
+    CSO_OPT(double,SLevel)
     CSO_OPT(bool,NoHeader)
     CSO_OPT(bool,PrintAll)
     CSO_OPT(CSmallString,IXFormat)
@@ -122,7 +123,7 @@ public:
                 'e',                           /* short option name */
                 "witherror",                      /* long option name */
                 NULL,                           /* parametr name */
-                "GPR: Estimate free energy errors.")   /* option description */
+                "GPR: Estimate free energy errors. RAW: Print free energy errors from ABF accumulator.")   /* option description */
    //----------------------------------------------------------------------
     CSO_MAP_OPT(CSmallString,                           /* option type */
                 GPRKernel,                        /* option name */
@@ -170,6 +171,15 @@ public:
                 "loadhyprms",                      /* long option name */
                 "NAME",                           /* parametr name */
                 "GPR: Name of file with GPR hyperparameters.")   /* option description */
+    //----------------------------------------------------------------------
+    CSO_MAP_OPT(double,                           /* option type */
+                SLevel,                        /* option name */
+                1.0,                          /* default value */
+                false,                          /* is option mandatory */
+                0,                           /* short option name */
+                "slevel",                      /* long option name */
+                "VALUE",                           /* parametr name */
+                "Sigma-level for confidence interval.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(CSmallString,                           /* option type */
                 GlobalMin,                        /* option name */

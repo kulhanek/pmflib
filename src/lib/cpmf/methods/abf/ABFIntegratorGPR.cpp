@@ -529,7 +529,7 @@ bool CABFIntegratorGPR::Integrate(CVerboseStr& vout,bool nostat)
         vout << "      RMSR CV#" << k+1 << " = " << setprecision(5) << GetRMSR(k) << endl;
         }
 
-        // and lof of marginal likelihood
+        // and log of marginal likelihood
         vout << "      logML     = " << setprecision(5) << GetLogML() << endl;
         if( NeedInv || UseInv ){
             // and log of pseudo-likelihood
@@ -2099,6 +2099,9 @@ void CABFIntegratorGPR::CalculateErrors(CSimpleVector<double>& gpos,CVerboseStr&
             }
         }
     }
+
+    vout << "      SigmaF2+  = " << setprecision(5) << FES->GetSigmaF2p() << endl;
+    vout << "      SigmaF2-  = " << setprecision(5) << FES->GetSigmaF2m() << endl;
 }
 
 //------------------------------------------------------------------------------
@@ -2147,6 +2150,9 @@ void CABFIntegratorGPR::CalculateErrorsFromCov(CVerboseStr& vout)
         }
         FES->SetError(j,error);
     }
+
+    vout << "      SigmaF2+  = " << setprecision(5) << FES->GetSigmaF2p() << endl;
+    vout << "      SigmaF2-  = " << setprecision(5) << FES->GetSigmaF2m() << endl;
 }
 
 //==============================================================================

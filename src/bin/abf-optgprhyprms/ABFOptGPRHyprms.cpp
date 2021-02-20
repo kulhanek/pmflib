@@ -615,7 +615,7 @@ bool CABFOptGPRHyprms::ResetOpt(int& numofreset)
         // perturbing parameters
         for(int i=0; i < NumOfOptPrms; i++){
             float r = static_cast<float>(rand())/static_cast<float>(RAND_MAX);
-            Hyprms[i] += 0.5*r + 0.1;    // perturbe only up due to down limits
+            Hyprms[i] += 0.5*r + 0.1;    // perturb only up due to down limits
         }
     }
     return(true);

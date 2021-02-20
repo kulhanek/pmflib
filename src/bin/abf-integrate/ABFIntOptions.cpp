@@ -173,16 +173,16 @@ int CABFIntOptions::CheckOptions(void)
         IsError = true;
     }
 
-    if( IsOptGPRFastErrorSet() && (GetOptMethod() != "gpr") ){
+    if( IsOptGPRNoFastErrorSet() && (GetOptMethod() != "gpr") ){
         if(IsError == false) fprintf(stderr,"\n");
-        fprintf(stderr,"%s: --fasterror can be set only for GPR method\n",
+        fprintf(stderr,"%s: --nofasterror can be set only for GPR method\n",
                 (const char*)GetProgramName());
         IsError = true;
     }
 
-    if( IsOptGPRFastErrorSet() && (IsOptWithErrorSet() == false) ){
+    if( IsOptGPRNoFastErrorSet() && (IsOptWithErrorSet() == false) ){
         if(IsError == false) fprintf(stderr,"\n");
-        fprintf(stderr,"%s: --fasterror can be set only alongside with --witherror\n",
+        fprintf(stderr,"%s: --nofasterror can be set only alongside with --witherror\n",
                 (const char*)GetProgramName());
         IsError = true;
     }
