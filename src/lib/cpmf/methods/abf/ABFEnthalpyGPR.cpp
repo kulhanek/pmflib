@@ -592,7 +592,7 @@ void CABFEnthalpyGPR::CreateKS(void)
     jpos.CreateVector(NCVs);
 
     // main kernel matrix
-    #pragma omp parallel for firstprivate(ipos,jpos,kblock)
+    #pragma omp parallel for firstprivate(ipos,jpos)
     for(size_t indi=0; indi < NumOfUsedBins; indi++){
         size_t i = SampledMap[indi];
 
@@ -1136,7 +1136,7 @@ void CABFEnthalpyGPR::CalcKderWRTSigmaF2(void)
     ipos.CreateVector(NCVs);
     jpos.CreateVector(NCVs);
 
-    #pragma omp parallel for firstprivate(ipos,jpos,kblock)
+    #pragma omp parallel for firstprivate(ipos,jpos)
     for(size_t indi=0; indi < NumOfUsedBins; indi++){
         size_t i = SampledMap[indi];
         Accumulator->GetPoint(i,ipos);
@@ -1175,7 +1175,7 @@ void CABFEnthalpyGPR::CalcKderWRTWFac(size_t cv)
     ipos.CreateVector(NCVs);
     jpos.CreateVector(NCVs);
 
-    #pragma omp parallel for firstprivate(ipos,jpos,kblock)
+    #pragma omp parallel for firstprivate(ipos,jpos)
     for(size_t indi=0; indi < NumOfUsedBins; indi++){
         size_t i = SampledMap[indi];
         Accumulator->GetPoint(i,ipos);
