@@ -205,6 +205,7 @@ subroutine abf_core_force()
 
         avg_etot =            0.5d0*(epothist1 + epothist2) ! t - 3/2*dt
         avg_etot = avg_etot + 0.5d0*(ekinhist2 + ekinhist3) ! t - 1/2*dt; ekin already shifted by -dt
+        avg_etot = avg_etot - ftotoffset
 
         ! add data to accumulator
         select case(feimode)
@@ -343,7 +344,7 @@ subroutine abf_core_force_numeric()
             avg_values(i) = ABFCVList(i)%cv%get_average_value(cvaluehist0(i),cvaluehist1(i))
         end do
 
-        avg_etot = 0.5d0*(epothist0 + epothist1)
+        avg_etot = 0.5d0*(epothist0 + epothist1) - ftotoffset
 
         ! add data to accumulator
         select case(feimode)
