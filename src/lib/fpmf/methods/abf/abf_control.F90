@@ -101,6 +101,7 @@ subroutine abf_control_read_abf(prm_fin)
 
     call pmf_ctrl_read_logical(prm_fin,'faccuepot',faccuepot)
     call pmf_ctrl_read_logical(prm_fin,'faccuekin',faccuekin)
+    call pmf_ctrl_read_real8(prm_fin,'ftotoffset',ftotoffset,'F10.1')
 
     if( faccuekin .and. (.not. faccuepot) )  then
             call pmf_utils_exit(PMF_OUT,1,'[ABF] faccuekin = on without faccuepot does not have sense!')

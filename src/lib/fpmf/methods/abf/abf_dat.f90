@@ -54,6 +54,7 @@ logical     :: frawicf      ! T - use raw icf data (in internal units), F - tran
 
 logical     :: faccuepot    ! accumulate PotEne
 logical     :: faccuekin    ! accumulate KinEne
+real(PMFDP) :: ftotoffset
 
 ! linear ramp mode I (feimode .eq. 1)
 integer     :: fhramp       ! ramp size

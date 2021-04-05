@@ -86,6 +86,7 @@ subroutine abf_init_dat
 
     faccuepot       = .false.   ! accumulate PotEne
     faccuekin       = .false.   ! accumulate KinEne
+    ftotoffset      = 0.0d0
 
     fhramp          = 100
     fhramp_min      = 200       ! definition of linear ramp
@@ -188,6 +189,7 @@ subroutine abf_init_print_header
     write(PMF_OUT,125)  ' Print ICF in internal units (frawicf)   : ', prmfile_onoff(frawicf)
     write(PMF_OUT,125)  ' Accumulate Epot (faccuepot)             : ', prmfile_onoff(faccuepot)
     write(PMF_OUT,125)  ' Accumulate Ekin (faccuekin)             : ', prmfile_onoff(faccuekin)
+    write(PMF_OUT,150)  ' Total energy offset (ftotoffset)        : ', ftotoffset
     write(PMF_OUT,120)
     write(PMF_OUT,120)  ' Trajectory output options:'
     write(PMF_OUT,120)  ' ------------------------------------------------------'
@@ -223,6 +225,7 @@ subroutine abf_init_print_header
 120 format(A)
 125 format(A,A)
 130 format(A,I6)
+150 format(A,F10.1)
 
 140 format(' == Collective variable #',I4.4)
 
