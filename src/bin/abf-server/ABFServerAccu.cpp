@@ -144,10 +144,10 @@ void CABFServerAccu::ExchangeDataWithClient(CRegClient* p_client)
     if(    (GetNSamplesArray() == NULL)
         || (GetICFSumArray() == NULL)
         || (GetICFSum2Array() == NULL)
-        || (GetEpotSumArray() == NULL)
-        || (GetEpotSum2Array() == NULL)
-        || (GetICFEpotSumArray() == NULL)
-        || (GetICFEpotSum2Array() == NULL)  ) {
+        || (GetEtotSumArray() == NULL)
+        || (GetEtotSum2Array() == NULL)
+        || (GetICFEtotSumArray() == NULL)
+        || (GetICFEtotSum2Array() == NULL)  ) {
         LOGIC_ERROR("data array(s) is(are) NULL");
     }
 
@@ -304,12 +304,12 @@ void  CABFServerAccu::SetMainHeader(CServerCommand* p_command)
     double          ftemp = 300.0;
     double          fconv = 1.0;
     CSmallString    unit = "kcal mol^-1";
-    bool            epotenabled = false;
+    bool            etotenabled = false;
 
     CXMLElement* p_cele = p_command->GetRootCommandElement();
 
     p_cele->GetAttribute("temperature",ftemp);
-    p_cele->GetAttribute("epot",epotenabled);
+    p_cele->GetAttribute("etot",etotenabled);
 
     CXMLElement* p_ele = p_cele->GetFirstChildElement("ENERGY");
     if( p_ele ){
@@ -321,7 +321,7 @@ void  CABFServerAccu::SetMainHeader(CServerCommand* p_command)
         try {
             SetTemperature(ftemp);
             SetEnergyUnit(fconv,unit);
-            SetEpotEnabled(epotenabled);
+            SetEtotEnabled(etotenabled);
         } catch(...){
             AccuMutex.Unlock();
             throw;

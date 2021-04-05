@@ -112,25 +112,25 @@ type ABFAccuType
      integer,pointer        :: nsamples(:)              ! number of hits into bins
      real(PMFDP),pointer    :: icfsum(:,:)              ! accumulated ABF force
      real(PMFDP),pointer    :: icfsum2(:,:)             ! accumulated square of ABF force
-     real(PMFDP),pointer    :: epotsum(:)               ! accumulated potential energy
-     real(PMFDP),pointer    :: epotsum2(:)              ! accumulated square of potential energy
-     real(PMFDP),pointer    :: icfepotsum(:,:)          ! accumulated icfsum * epotsum
-     real(PMFDP),pointer    :: icfepotsum2(:,:)         ! accumulated square of icfsum * epotsum
+     real(PMFDP),pointer    :: etotsum(:)               ! accumulated potential energy
+     real(PMFDP),pointer    :: etotsum2(:)              ! accumulated square of potential energy
+     real(PMFDP),pointer    :: icfetotsum(:,:)          ! accumulated icfsum * etotsum
+     real(PMFDP),pointer    :: icfetotsum2(:,:)         ! accumulated square of icfsum * etotsum
 
      ! ABF force - incremental part for ABF-server
      integer,pointer        :: inc_nsamples(:)          ! number of hits into bins
      real(PMFDP),pointer    :: inc_icfsum(:,:)          ! accumulated ABF force
      real(PMFDP),pointer    :: inc_icfsum2(:,:)         ! accumulated square of ABF force
-     real(PMFDP),pointer    :: inc_epotsum(:)           ! accumulated potential energy
-     real(PMFDP),pointer    :: inc_epotsum2(:)          ! accumulated square of potential energy
-     real(PMFDP),pointer    :: inc_icfepotsum(:,:)      ! accumulated icfsum * epotsum
-     real(PMFDP),pointer    :: inc_icfepotsum2(:,:)     ! accumulated square of icfsum * epotsum
+     real(PMFDP),pointer    :: inc_etotsum(:)           ! accumulated potential energy
+     real(PMFDP),pointer    :: inc_etotsum2(:)          ! accumulated square of potential energy
+     real(PMFDP),pointer    :: inc_icfetotsum(:,:)      ! accumulated icfsum * etotsum
+     real(PMFDP),pointer    :: inc_icfetotsum2(:,:)     ! accumulated square of icfsum * etotsum
 
      ! ABF force - block pre-sampling
      integer,pointer        :: block_nsamples(:)        ! number of hits into bins
      real(PMFDP),pointer    :: block_icfsum(:,:)        ! accumulated ABF force
-     real(PMFDP),pointer    :: block_epotsum(:)         ! accumulated PotEne
-     real(PMFDP),pointer    :: block_icfepotsum(:,:)    ! accumulated square of icfsum * epotsum
+     real(PMFDP),pointer    :: block_etotsum(:)         ! accumulated PotEne
+     real(PMFDP),pointer    :: block_icfetotsum(:,:)    ! accumulated square of icfsum * etotsum
 end type ABFAccuType
 
 ! ----------------------

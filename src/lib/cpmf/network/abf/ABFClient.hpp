@@ -51,8 +51,8 @@ public:
     /// set energy unit
     void SetEnergyUnit(double fconv,const CSmallString& unit);
 
-    /// set epot enabled
-    void SetEpotEnabled(bool enabled);
+    /// set etot enabled
+    void SetEtotEnabled(bool enabled);
 
     /// set cv
     void SetCV(int id,const CSmallString& name,const CSmallString& type,
@@ -72,19 +72,19 @@ public:
     bool GetInitialData(int* nisamples,
                         double* inc_icfsum,
                         double* inc_icfsum2,
-                        double* inc_epotsum,
-                        double* inc_epotsum2,
-                        double* inc_icfepotsum,
-                        double* inc_icfepotsum2);
+                        double* inc_etotsum,
+                        double* inc_etotsum2,
+                        double* inc_icfetotsum,
+                        double* inc_icfetotsum2);
 
     /// exchange data with server
     bool ExchangeData(int* nisamples,
                         double* inc_icfsum,
                         double* inc_icfsum2,
-                        double* inc_epotsum,
-                        double* inc_epotsum2,
-                        double* inc_icfepotsum,
-                        double* inc_icfepotsum2);
+                        double* inc_etotsum,
+                        double* inc_etotsum2,
+                        double* inc_icfetotsum,
+                        double* inc_icfetotsum2);
 
 // section of private data ----------------------------------------------------
 private:
@@ -95,36 +95,36 @@ private:
     double                      Temperature;
     double                      EnergyFConv;
     CSmallString                EnergyUnit;
-    bool                        EpotEnabled;
+    bool                        EtotEnabled;
 
     /// write data for exchange
     void WriteExchangeData(CXMLElement* p_cele,
                             int* nisamples,
                             double* inc_icfsum,
                             double* inc_icfsum2,
-                            double* inc_epotsum,
-                            double* inc_epotsum2,
-                            double* inc_icfepotsum,
-                            double* inc_icfepotsum2);
+                            double* inc_etotsum,
+                            double* inc_etotsum2,
+                            double* inc_icfetotsum,
+                            double* inc_icfetotsum2);
 
     /// read data from exchange
     void ReadExchangeData(CXMLElement* p_rele,
                             int* nisamples,
                             double* inc_icfsum,
                             double* inc_icfsum2,
-                            double* inc_epotsum,
-                            double* inc_epotsum2,
-                            double* inc_icfepotsum,
-                            double* inc_icfepotsum2);
+                            double* inc_etotsum,
+                            double* inc_etotsum2,
+                            double* inc_icfetotsum,
+                            double* inc_icfetotsum2);
 
     /// clear data
     void ClearExchangeData(int* nisamples,
                             double* inc_icfsum,
                             double* inc_icfsum2,
-                            double* inc_epotsum,
-                            double* inc_epotsum2,
-                            double* inc_icfepotsum,
-                            double* inc_icfepotsum2);
+                            double* inc_etotsum,
+                            double* inc_etotsum2,
+                            double* inc_icfetotsum,
+                            double* inc_icfetotsum2);
 
     /// save cvs into XML
     void SaveCVSInfo(CXMLElement* p_tele);

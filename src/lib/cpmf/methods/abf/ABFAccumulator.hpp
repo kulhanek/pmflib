@@ -125,8 +125,8 @@ public:
     /// set temperature
     void SetEnergyUnit(double fconv,const CSmallString& unit);
 
-    /// epot flag
-    void SetEpotEnabled(bool enabled);
+    /// etot flag
+    void SetEtotEnabled(bool enabled);
 
 //---------------------------------------------------------------------------------
 
@@ -149,16 +149,16 @@ public:
     const double& GetICFSum2(int icv,int ibin) const;
 
     /// return Epot sum
-    const double& GetEpotSum(int ibin) const;
+    const double& GetEtotSum(int ibin) const;
 
     /// return Epot square sum
-    const double& GetEpotSum2(int ibin) const;
+    const double& GetEtotSum2(int ibin) const;
 
     /// return ICF*Epot sum
-    const double& GetICFEpotSum(int icv,int ibin) const;
+    const double& GetICFEtotSum(int icv,int ibin) const;
 
     /// return ICF*Epot square sum
-    const double& GetICFEpotSum2(int icv,int ibin) const;
+    const double& GetICFEtotSum2(int icv,int ibin) const;
 
     /// set ABF force sum
     void SetICFSum(int icv,int ibin,const double& value);
@@ -179,16 +179,16 @@ public:
     double* GetICFSum2Array(void);
 
     /// return pointer to Epot sum array
-    double* GetEpotSumArray(void);
+    double* GetEtotSumArray(void);
 
     /// return pointer to Epot square sum array
-    double* GetEpotSum2Array(void);
+    double* GetEtotSum2Array(void);
 
     /// return pointer to ICF*Epot sum array
-    double* GetICFEpotSumArray(void);
+    double* GetICFEtotSumArray(void);
 
     /// return pointer to ICF*Epot square sum array
-    double* GetICFEpotSum2Array(void);
+    double* GetICFEtotSum2Array(void);
 
     /// set number of statistically correlated samples (it influences calculated errors of mean forces)
     void SetNCorr(double ncorr);
@@ -244,7 +244,8 @@ private:
     double                      EnergyFConv;    // energy unit
     CSmallString                EnergyUnit;
     // flags
-    bool                        EpotAvailable;
+    bool                        EtotAvailable;
+    bool                        EkinIncluded;
 
     CSimpleVector<CColVariable> CVs;            // collective variables
     int                         TotNBins;       // number of total bins
@@ -257,11 +258,11 @@ private:
     CSimpleVector<double>       ICFSum2;        // accumulated ABF force squares
 
     // enthalpy/entropy
-    CSimpleVector<double>       EpotSum;        // accumulated Epot
-    CSimpleVector<double>       EpotSum2;       // accumulated Epot force squares
+    CSimpleVector<double>       EtotSum;        // accumulated Epot
+    CSimpleVector<double>       EtotSum2;       // accumulated Epot force squares
 
-    CSimpleVector<double>       ICFEpotSum;     // accumulated ICF*Epot
-    CSimpleVector<double>       ICFEpotSum2;    // accumulated ICF*Epot force squares
+    CSimpleVector<double>       ICFEtotSum;     // accumulated ICF*Epot
+    CSimpleVector<double>       ICFEtotSum2;    // accumulated ICF*Epot force squares
 
 // helper methods -------------------------------------------------------------
     /// return index to ICFSum array for particular item and bin

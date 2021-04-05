@@ -34,14 +34,14 @@ implicit none
 
 interface
     ! set number of coordinates
-    subroutine cpmf_abf_client_set_header(ret_st,nitems,totnbins,temp,fconv,unit,epotenabled)
+    subroutine cpmf_abf_client_set_header(ret_st,nitems,totnbins,temp,fconv,unit,etotenabled)
         integer         :: ret_st
         integer         :: nitems
         integer         :: totnbins
         real(8)         :: temp
         real(8)         :: fconv
         character(*)    :: unit
-        integer         :: epotenabled
+        integer         :: etotenabled
     end subroutine cpmf_abf_client_set_header
 
     ! set coordinate data
@@ -66,28 +66,28 @@ interface
 
     ! get initial data from server
     subroutine cpmf_abf_client_initial_data(ret_st,nisamples,inc_icfsum,inc_icfsum2, &
-                                            inc_epotsum,inc_epotsum2,inc_icfsum_epot,inc_icfsum_epot2)
+                                            inc_etotsum,inc_etotsum2,inc_icfsum_etot,inc_icfsum_etot2)
         integer         :: ret_st
         integer         :: nisamples(*)
         real(8)         :: inc_icfsum(*)
         real(8)         :: inc_icfsum2(*)
-        real(8)         :: inc_epotsum(*)
-        real(8)         :: inc_epotsum2(*)
-        real(8)         :: inc_icfsum_epot(*)
-        real(8)         :: inc_icfsum_epot2(*)
+        real(8)         :: inc_etotsum(*)
+        real(8)         :: inc_etotsum2(*)
+        real(8)         :: inc_icfsum_etot(*)
+        real(8)         :: inc_icfsum_etot2(*)
     end subroutine cpmf_abf_client_initial_data
 
     ! exchange data with server
     subroutine cpmf_abf_client_exchange_data(ret_st,nisamples,inc_icfsum,inc_icfsum2, &
-                                             inc_epotsum,inc_epotsum2,inc_icfsum_epot,inc_icfsum_epot2)
+                                             inc_etotsum,inc_etotsum2,inc_icfsum_etot,inc_icfsum_etot2)
         integer         :: ret_st
         integer         :: nisamples(*)
         real(8)         :: inc_icfsum(*)
         real(8)         :: inc_icfsum2(*)
-        real(8)         :: inc_epotsum(*)
-        real(8)         :: inc_epotsum2(*)
-        real(8)         :: inc_icfsum_epot(*)
-        real(8)         :: inc_icfsum_epot2(*)
+        real(8)         :: inc_etotsum(*)
+        real(8)         :: inc_etotsum2(*)
+        real(8)         :: inc_icfsum_etot(*)
+        real(8)         :: inc_icfsum_etot2(*)
     end subroutine cpmf_abf_client_exchange_data
 
     ! unregister client on server
@@ -217,10 +217,10 @@ subroutine abf_client_get_initial_data
                                         accumulator%nsamples,       &
                                         accumulator%icfsum,         &
                                         accumulator%icfsum2,        &
-                                        accumulator%epotsum,        &
-                                        accumulator%epotsum2,       &
-                                        accumulator%icfepotsum,     &
-                                        accumulator%icfepotsum2     &
+                                        accumulator%etotsum,        &
+                                        accumulator%etotsum2,       &
+                                        accumulator%icfetotsum,     &
+                                        accumulator%icfetotsum2     &
                                         )
 
     if( ret_st .ne. 0 ) then
@@ -278,10 +278,10 @@ subroutine abf_client_exchange_data(force_exchange)
                                         accumulator%inc_nsamples,   &
                                         accumulator%inc_icfsum,     &
                                         accumulator%inc_icfsum2,    &
-                                        accumulator%inc_epotsum,    &
-                                        accumulator%inc_epotsum2,   &
-                                        accumulator%inc_icfepotsum, &
-                                        accumulator%inc_icfepotsum2 &
+                                        accumulator%inc_etotsum,    &
+                                        accumulator%inc_etotsum2,   &
+                                        accumulator%inc_icfetotsum, &
+                                        accumulator%inc_icfetotsum2 &
                                         )
 
     if( ret_st .ne. 0 ) then
@@ -302,20 +302,20 @@ subroutine abf_client_exchange_data(force_exchange)
     accumulator%nsamples(:)         = accumulator%inc_nsamples(:)
     accumulator%icfsum(:,:)         = accumulator%inc_icfsum(:,:)
     accumulator%icfsum2(:,:)        = accumulator%inc_icfsum2(:,:)
-    accumulator%epotsum(:)          = accumulator%inc_epotsum(:)
-    accumulator%epotsum2(:)         = accumulator%inc_epotsum2(:)
-    accumulator%icfepotsum(:,:)     = accumulator%inc_icfepotsum(:,:)
-    accumulator%icfepotsum(:,:)     = accumulator%inc_icfepotsum2(:,:)
+    accumulator%etotsum(:)          = accumulator%inc_etotsum(:)
+    accumulator%etotsum2(:)         = accumulator%inc_etotsum2(:)
+    accumulator%icfetotsum(:,:)     = accumulator%inc_icfetotsum(:,:)
+    accumulator%icfetotsum(:,:)     = accumulator%inc_icfetotsum2(:,:)
 #endif
 
  ! and reset incremental data
     accumulator%inc_nsamples(:)     = 0
     accumulator%inc_icfsum(:,:)     = 0.0d0
     accumulator%inc_icfsum2(:,:)    = 0.0d0
-    accumulator%inc_epotsum(:)      = 0.0d0
-    accumulator%inc_epotsum2(:)     = 0.0d0
-    accumulator%inc_icfepotsum(:,:) = 0.0d0
-    accumulator%inc_icfepotsum2(:,:)= 0.0d0
+    accumulator%inc_etotsum(:)      = 0.0d0
+    accumulator%inc_etotsum2(:)     = 0.0d0
+    accumulator%inc_icfetotsum(:,:) = 0.0d0
+    accumulator%inc_icfetotsum2(:,:)= 0.0d0
 
  failure_counter = 0
 

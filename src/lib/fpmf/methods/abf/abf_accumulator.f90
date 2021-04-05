@@ -71,10 +71,10 @@ subroutine abf_accumulator_init()
             accumulator%nsamples(accumulator%tot_nbins), &
             accumulator%icfsum(NumOfABFCVs,accumulator%tot_nbins), &
             accumulator%icfsum2(NumOfABFCVs,accumulator%tot_nbins), &
-            accumulator%epotsum(accumulator%tot_nbins), &
-            accumulator%epotsum2(accumulator%tot_nbins), &
-            accumulator%icfepotsum(NumOfABFCVs,accumulator%tot_nbins), &
-            accumulator%icfepotsum2(NumOfABFCVs,accumulator%tot_nbins), &
+            accumulator%etotsum(accumulator%tot_nbins), &
+            accumulator%etotsum2(accumulator%tot_nbins), &
+            accumulator%icfetotsum(NumOfABFCVs,accumulator%tot_nbins), &
+            accumulator%icfetotsum2(NumOfABFCVs,accumulator%tot_nbins), &
             stat = alloc_failed)
 
     if( alloc_failed .ne. 0 ) then
@@ -86,8 +86,8 @@ subroutine abf_accumulator_init()
         allocate(  &
             accumulator%block_nsamples(accumulator%tot_nbins), &
             accumulator%block_icfsum(NumOfABFCVs,accumulator%tot_nbins), &
-            accumulator%block_epotsum(accumulator%tot_nbins), &
-            accumulator%block_icfepotsum(NumOfABFCVs,accumulator%tot_nbins), &
+            accumulator%block_etotsum(accumulator%tot_nbins), &
+            accumulator%block_icfetotsum(NumOfABFCVs,accumulator%tot_nbins), &
             stat = alloc_failed)
 
         if( alloc_failed .ne. 0 ) then
@@ -101,10 +101,10 @@ subroutine abf_accumulator_init()
         allocate(   accumulator%inc_nsamples(accumulator%tot_nbins), &
                     accumulator%inc_icfsum(NumOfABFCVs,accumulator%tot_nbins), &
                     accumulator%inc_icfsum2(NumOfABFCVs,accumulator%tot_nbins), &
-                    accumulator%inc_epotsum(accumulator%tot_nbins), &
-                    accumulator%inc_epotsum2(accumulator%tot_nbins), &
-                    accumulator%inc_icfepotsum(NumOfABFCVs,accumulator%tot_nbins), &
-                    accumulator%inc_icfepotsum2(NumOfABFCVs,accumulator%tot_nbins), &
+                    accumulator%inc_etotsum(accumulator%tot_nbins), &
+                    accumulator%inc_etotsum2(accumulator%tot_nbins), &
+                    accumulator%inc_icfetotsum(NumOfABFCVs,accumulator%tot_nbins), &
+                    accumulator%inc_icfetotsum2(NumOfABFCVs,accumulator%tot_nbins), &
                     stat = alloc_failed)
 
         if( alloc_failed .ne. 0 ) then
@@ -134,26 +134,26 @@ subroutine abf_accumulator_clear()
     accumulator%nsamples(:) = 0
     accumulator%icfsum(:,:) = 0.0d0
     accumulator%icfsum2(:,:) = 0.0d0
-    accumulator%epotsum(:) = 0.0d0
-    accumulator%epotsum2(:) = 0.0d0
-    accumulator%icfepotsum(:,:) = 0.0d0
-    accumulator%icfepotsum2(:,:) = 0.0d0
+    accumulator%etotsum(:) = 0.0d0
+    accumulator%etotsum2(:) = 0.0d0
+    accumulator%icfetotsum(:,:) = 0.0d0
+    accumulator%icfetotsum2(:,:) = 0.0d0
 
     if( feimode .eq. 3 ) then
         accumulator%block_nsamples(:) = 0
         accumulator%block_icfsum(:,:) = 0.0d0
-        accumulator%block_epotsum(:) = 0.0d0
-        accumulator%block_icfepotsum(:,:) = 0.0d0
+        accumulator%block_etotsum(:) = 0.0d0
+        accumulator%block_icfetotsum(:,:) = 0.0d0
     end if
 
     if( fserver_enabled ) then
         accumulator%inc_nsamples(:) = 0
         accumulator%inc_icfsum(:,:) = 0.0d0
         accumulator%inc_icfsum2(:,:) = 0.0d0
-        accumulator%inc_epotsum(:) = 0
-        accumulator%inc_epotsum2(:) = 0
-        accumulator%inc_icfepotsum(:,:) = 0
-        accumulator%inc_icfepotsum2(:,:) = 0
+        accumulator%inc_etotsum(:) = 0
+        accumulator%inc_etotsum2(:) = 0
+        accumulator%inc_icfetotsum(:,:) = 0
+        accumulator%inc_icfetotsum2(:,:) = 0
     end if
 
 end subroutine abf_accumulator_clear
@@ -437,8 +437,8 @@ subroutine abf_accumulator_read_v4(iounit)
             read(iounit,40,end=102,err=102) (accumulator%icfsum2(i,j),j=1,accumulator%tot_nbins)
         end do
 
-        read(iounit,40,end=103,err=103) (accumulator%epotsum(i),i=1,accumulator%tot_nbins)
-        read(iounit,40,end=104,err=104) (accumulator%epotsum2(i),i=1,accumulator%tot_nbins)
+        read(iounit,40,end=103,err=103) (accumulator%etotsum(i),i=1,accumulator%tot_nbins)
+        read(iounit,40,end=104,err=104) (accumulator%etotsum2(i),i=1,accumulator%tot_nbins)
     end if
 
     return
@@ -546,14 +546,14 @@ subroutine abf_accumulator_read_v5(iounit)
                 end do
             case('ABF*EPOT')
                 do i=1,NumOfABFCVs
-                    read(iounit,40,end=101,err=105) (accumulator%icfepotsum(i,j),j=1,accumulator%tot_nbins)
+                    read(iounit,40,end=101,err=105) (accumulator%icfetotsum(i,j),j=1,accumulator%tot_nbins)
                 end do
                 do i=1,NumOfABFCVs
-                    read(iounit,40,end=102,err=106) (accumulator%icfepotsum2(i,j),j=1,accumulator%tot_nbins)
+                    read(iounit,40,end=102,err=106) (accumulator%icfetotsum2(i,j),j=1,accumulator%tot_nbins)
                 end do
             case('EPOT')
-                read(iounit,40,end=103,err=103) (accumulator%epotsum(i),i=1,accumulator%tot_nbins)
-                read(iounit,40,end=104,err=104) (accumulator%epotsum2(i),i=1,accumulator%tot_nbins)
+                read(iounit,40,end=103,err=103) (accumulator%etotsum(i),i=1,accumulator%tot_nbins)
+                read(iounit,40,end=104,err=104) (accumulator%etotsum2(i),i=1,accumulator%tot_nbins)
             case default
                 call pmf_utils_exit(PMF_OUT,1,'[ABF] Unable to read from ABF accumulator v5 - unrecognized keyword: '//trim(key))
         end select
@@ -577,8 +577,8 @@ subroutine abf_accumulator_read_v5(iounit)
 102 call pmf_utils_exit(PMF_OUT,1,'[ABF] Unable to read from ABF accumulator v5 - data section - sabf2!')
 103 call pmf_utils_exit(PMF_OUT,1,'[ABF] Unable to read from ABF accumulator v5 - data section - spot!')
 104 call pmf_utils_exit(PMF_OUT,1,'[ABF] Unable to read from ABF accumulator v5 - data section - spot2!')
-105 call pmf_utils_exit(PMF_OUT,1,'[ABF] Unable to read from ABF accumulator v5 - data section - sabf*epot!')
-106 call pmf_utils_exit(PMF_OUT,1,'[ABF] Unable to read from ABF accumulator v5 - data section - sabf*epot2!')
+105 call pmf_utils_exit(PMF_OUT,1,'[ABF] Unable to read from ABF accumulator v5 - data section - sabf*etot!')
+106 call pmf_utils_exit(PMF_OUT,1,'[ABF] Unable to read from ABF accumulator v5 - data section - sabf*etot2!')
 
 201 call pmf_utils_exit(PMF_OUT,1,'[ABF] Unable to read from ABF accumulator v5 - CV section - def!')
 202 call pmf_utils_exit(PMF_OUT,1,'[ABF] Unable to read from ABF accumulator v5 - CV section - name!')
@@ -727,22 +727,24 @@ subroutine abf_accumulator_write(iounit)
     end do
 
     if( faccuepot .or. faccuekin ) then
-        key = 'ETOTFLAGS'
+        if( faccuekin ) then
+            key = 'ETOT=EPOT+EKIN'
+        else
+            key = 'ETOT=EPOT'
+        end if
         write(iounit,5) adjustl(key)
-        write(iounit,7) 'EPOT',faccuepot
-        write(iounit,7) 'EKIN',faccuekin
         key = 'ETOT'
         write(iounit,5) adjustl(key)
-        write(iounit,40) (accumulator%epotsum(i),i=1,accumulator%tot_nbins)
-        write(iounit,40) (accumulator%epotsum2(i),i=1,accumulator%tot_nbins)
+        write(iounit,40) (accumulator%etotsum(i),i=1,accumulator%tot_nbins)
+        write(iounit,40) (accumulator%etotsum2(i),i=1,accumulator%tot_nbins)
 
         key = 'ICF*ETOT'
         write(iounit,5) adjustl(key)
         do i=1,NumOfABFCVs
-            write(iounit,40) (accumulator%icfepotsum(i,j),j=1,accumulator%tot_nbins)
+            write(iounit,40) (accumulator%icfetotsum(i,j),j=1,accumulator%tot_nbins)
         end do
         do i=1,NumOfABFCVs
-            write(iounit,40) (accumulator%icfepotsum2(i,j),j=1,accumulator%tot_nbins)
+            write(iounit,40) (accumulator%icfetotsum2(i,j),j=1,accumulator%tot_nbins)
         end do
     end if
 
@@ -750,7 +752,6 @@ subroutine abf_accumulator_write(iounit)
 
  5  format(A20)
  6  format(F10.4)
- 7  format(A4,1X,L1)
 10  format(A4,1X,A2,1X,I2)
 20  format(I2,1X,A10,1X,E18.11,1X,E18.11,1X,I6)
 25  format(I2,1X,A55)
@@ -797,13 +798,13 @@ subroutine abf_accumulator_add_data12(cvs,lpotene,gfx)
         accumulator%icfsum2(i,gi0) = accumulator%icfsum2(i,gi0) + a**2
 
         a = a * lpotene
-        accumulator%icfepotsum(i,gi0)  = accumulator%icfepotsum(i,gi0) - a
-        accumulator%icfepotsum2(i,gi0) = accumulator%icfepotsum2(i,gi0) + a**2
+        accumulator%icfetotsum(i,gi0)  = accumulator%icfetotsum(i,gi0) - a
+        accumulator%icfetotsum2(i,gi0) = accumulator%icfetotsum2(i,gi0) + a**2
     end do
 
     ! potential energy
-    accumulator%epotsum(gi0)  = accumulator%epotsum(gi0)  + lpotene
-    accumulator%epotsum2(gi0) = accumulator%epotsum2(gi0) + lpotene**2
+    accumulator%etotsum(gi0)  = accumulator%etotsum(gi0)  + lpotene
+    accumulator%etotsum2(gi0) = accumulator%etotsum2(gi0) + lpotene**2
 
     if( fserver_enabled ) then
         accumulator%inc_nsamples(gi0) = accumulator%inc_nsamples(gi0) + 1
@@ -813,12 +814,12 @@ subroutine abf_accumulator_add_data12(cvs,lpotene,gfx)
             accumulator%inc_icfsum2(i,gi0) = accumulator%inc_icfsum2(i,gi0) + a**2
 
             a = a * lpotene
-            accumulator%inc_icfepotsum(i,gi0)  = accumulator%inc_icfepotsum(i,gi0) - a
-            accumulator%inc_icfepotsum2(i,gi0) = accumulator%inc_icfepotsum2(i,gi0) + a**2
+            accumulator%inc_icfetotsum(i,gi0)  = accumulator%inc_icfetotsum(i,gi0) - a
+            accumulator%inc_icfetotsum2(i,gi0) = accumulator%inc_icfetotsum2(i,gi0) + a**2
         end do
         ! potential energy
-        accumulator%inc_epotsum(gi0)  = accumulator%inc_epotsum(gi0)  + lpotene
-        accumulator%inc_epotsum2(gi0) = accumulator%inc_epotsum2(gi0) + lpotene**2
+        accumulator%inc_etotsum(gi0)  = accumulator%inc_etotsum(gi0)  + lpotene
+        accumulator%inc_etotsum2(gi0) = accumulator%inc_etotsum2(gi0) + lpotene**2
     end if
 
 end subroutine abf_accumulator_add_data12
@@ -854,8 +855,8 @@ subroutine abf_accumulator_add_data3(cvs,lpotene,gfx)
     ! update block
     accumulator%block_nsamples(gi0)      = accumulator%block_nsamples(gi0)      + 1
     accumulator%block_icfsum(:,gi0)      = accumulator%block_icfsum(:,gi0)      + gfx(:)
-    accumulator%block_epotsum(gi0)       = accumulator%block_epotsum(gi0)       + lpotene
-    accumulator%block_icfepotsum(:,gi0)  = accumulator%block_icfepotsum(:,gi0)  + lpotene * gfx(:)
+    accumulator%block_etotsum(gi0)       = accumulator%block_etotsum(gi0)       + lpotene
+    accumulator%block_icfetotsum(:,gi0)  = accumulator%block_icfetotsum(:,gi0)  + lpotene * gfx(:)
 
     ! is block filled?
     if( accumulator%block_nsamples(gi0) .lt. fblock_size ) then
@@ -872,13 +873,13 @@ subroutine abf_accumulator_add_data3(cvs,lpotene,gfx)
         accumulator%icfsum(i,gi0)  = accumulator%icfsum(i,gi0)  - a
         accumulator%icfsum2(i,gi0) = accumulator%icfsum2(i,gi0) + a**2
 
-        a = accumulator%block_icfepotsum(i,gi0) / real(accumulator%block_nsamples(gi0),PMFDP)
-        accumulator%icfepotsum(i,gi0)  = accumulator%icfepotsum(i,gi0)  - a
-        accumulator%icfepotsum2(i,gi0) = accumulator%icfepotsum2(i,gi0) + a**2
+        a = accumulator%block_icfetotsum(i,gi0) / real(accumulator%block_nsamples(gi0),PMFDP)
+        accumulator%icfetotsum(i,gi0)  = accumulator%icfetotsum(i,gi0)  - a
+        accumulator%icfetotsum2(i,gi0) = accumulator%icfetotsum2(i,gi0) + a**2
     end do
-    a = accumulator%block_epotsum(gi0) / real(accumulator%block_nsamples(gi0),PMFDP)
-    accumulator%epotsum(gi0)  = accumulator%epotsum(gi0) + a
-    accumulator%epotsum2(gi0) = accumulator%epotsum2(gi0) + a**2
+    a = accumulator%block_etotsum(gi0) / real(accumulator%block_nsamples(gi0),PMFDP)
+    accumulator%etotsum(gi0)  = accumulator%etotsum(gi0) + a
+    accumulator%etotsum2(gi0) = accumulator%etotsum2(gi0) + a**2
 
     if( fserver_enabled ) then
         accumulator%inc_nsamples(gi0) = accumulator%inc_nsamples(gi0) + 1
@@ -887,20 +888,20 @@ subroutine abf_accumulator_add_data3(cvs,lpotene,gfx)
             accumulator%inc_icfsum(i,gi0)  = accumulator%inc_icfsum(i,gi0) - a
             accumulator%inc_icfsum2(i,gi0) = accumulator%inc_icfsum2(i,gi0) + a**2
 
-            a = accumulator%block_icfepotsum(i,gi0) / real(accumulator%block_nsamples(gi0),PMFDP)
-            accumulator%inc_icfepotsum(i,gi0)  = accumulator%inc_icfepotsum(i,gi0)  - a
-            accumulator%inc_icfepotsum2(i,gi0) = accumulator%inc_icfepotsum2(i,gi0) + a**2
+            a = accumulator%block_icfetotsum(i,gi0) / real(accumulator%block_nsamples(gi0),PMFDP)
+            accumulator%inc_icfetotsum(i,gi0)  = accumulator%inc_icfetotsum(i,gi0)  - a
+            accumulator%inc_icfetotsum2(i,gi0) = accumulator%inc_icfetotsum2(i,gi0) + a**2
         end do
-        a = accumulator%block_epotsum(gi0) / real(accumulator%block_nsamples(gi0),PMFDP)
-        accumulator%inc_epotsum(gi0)  = accumulator%inc_epotsum(gi0) + a
-        accumulator%inc_epotsum2(gi0) = accumulator%inc_epotsum2(gi0) + a**2
+        a = accumulator%block_etotsum(gi0) / real(accumulator%block_nsamples(gi0),PMFDP)
+        accumulator%inc_etotsum(gi0)  = accumulator%inc_etotsum(gi0) + a
+        accumulator%inc_etotsum2(gi0) = accumulator%inc_etotsum2(gi0) + a**2
     end if
 
     ! reset the block
     accumulator%block_nsamples(gi0)         = 0
     accumulator%block_icfsum(:,gi0)         = 0.0d0
-    accumulator%block_epotsum(gi0)          = 0.0d0
-    accumulator%block_icfepotsum(:,gi0)     = 0.0d0
+    accumulator%block_etotsum(gi0)          = 0.0d0
+    accumulator%block_icfetotsum(:,gi0)     = 0.0d0
 
 end subroutine abf_accumulator_add_data3
 

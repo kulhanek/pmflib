@@ -39,7 +39,8 @@ CABFAccumulator::CABFAccumulator(void)
     NCVs            = 0;
     TotNBins        = 0;
     NCorr           = 1.0;
-    EpotAvailable   = false;
+    EtotAvailable   = false;
+    EkinIncluded    = false;
     Temperature     = 300.0;
     EnergyFConv     = 1.0;
     EnergyUnit      = "kcal mol^-1";
@@ -443,29 +444,30 @@ void CABFAccumulator::Load_v4(char* fline,FILE* fin)
         }
     }
 
-    // EpotSum
+    // EtotSum
     for(int i=0; i < TotNBins; i++) {
         double ns = 0;
         if( fscanf(fin,"%lf",&ns) != 1 ) {
             CSmallString error;
-            error << "unable to read EpotSum for bin " << i;
+            error << "unable to read EtotSum for bin " << i;
             RUNTIME_ERROR(error);
         }
-        EpotSum[i] = ns;
+        EtotSum[i] = ns;
     }
     for(int i=0; i < TotNBins; i++) {
         double ns = 0;
         if( fscanf(fin,"%lf",&ns) != 1 ) {
             CSmallString error;
-            error << "unable to read EpotSum2 for bin " << i;
+            error << "unable to read EtotSum2 for bin " << i;
             RUNTIME_ERROR(error);
         }
-        EpotSum2[i] = ns;
+        EtotSum2[i] = ns;
     }
 
-    EpotAvailable = true;
-    ICFEpotSum.SetZero();
-    ICFEpotSum2.SetZero();
+    EtotAvailable   = true;
+    EkinIncluded    = false;
+    ICFEtotSum.SetZero();
+    ICFEtotSum2.SetZero();
 }
 
 //------------------------------------------------------------------------------
@@ -661,39 +663,49 @@ void CABFAccumulator::Load_v5(char* fline,FILE* fin)
                 }
             }
     // -----------------------------------------------------
-        } else if( key == "EPOT" ) {
-            // EpotSum
-            for(int i=0; i < TotNBins; i++) {
-                double ns = 0;
-                if( fscanf(fin,"%lf",&ns) != 1 ) {
-                    CSmallString error;
-                    error << "unable to read EpotSum for bin " << i;
-                    RUNTIME_ERROR(error);
-                }
-                EpotSum[i] = ns;
-            }
-            for(int i=0; i < TotNBins; i++) {
-                double ns = 0;
-                if( fscanf(fin,"%lf",&ns) != 1 ) {
-                    CSmallString error;
-                    error << "unable to read EpotSum2 for bin " << i;
-                    RUNTIME_ERROR(error);
-                }
-                EpotSum2[i] = ns;
-            }
-            EpotAvailable = true;
+        } else if( key == "ETOT=EPOT" ) {
+            // nothing to be here
+            key = NULL;
+            continue;   // do not read the next line, see the end of the cycle
     // -----------------------------------------------------
-        } else if( key == "ICF*EPOT" ) {
+        } else if( key == "ETOT=EPOT+EKIN" ) {
+            EkinIncluded = true;
+            key = NULL;
+            continue;   // do not read the next line, see the end of the cycle
+    // -----------------------------------------------------
+        } else if( key == "ETOT" ) {
+            // EtotSum
+            for(int i=0; i < TotNBins; i++) {
+                double ns = 0;
+                if( fscanf(fin,"%lf",&ns) != 1 ) {
+                    CSmallString error;
+                    error << "unable to read EtotSum for bin " << i;
+                    RUNTIME_ERROR(error);
+                }
+                EtotSum[i] = ns;
+            }
+            for(int i=0; i < TotNBins; i++) {
+                double ns = 0;
+                if( fscanf(fin,"%lf",&ns) != 1 ) {
+                    CSmallString error;
+                    error << "unable to read EtotSum2 for bin " << i;
+                    RUNTIME_ERROR(error);
+                }
+                EtotSum2[i] = ns;
+            }
+            EtotAvailable = true;
+    // -----------------------------------------------------
+        } else if( key == "ICF*ETOT" ) {
             // accumulated force
             for(int i = 0; i < NCVs; i++) {
                 for(int j = 0; j < TotNBins; j++) {
                     double cf = 0.0;
                     if(fscanf(fin,"%lf",&cf) != 1) {
                         CSmallString error;
-                        error << "unable to read ICFEpotSum for bin " << j << " and item " << i;
+                        error << "unable to read ICFEtotSum for bin " << j << " and item " << i;
                         RUNTIME_ERROR(error);
                     }
-                    ICFEpotSum[map(i,j)] = cf;
+                    ICFEtotSum[map(i,j)] = cf;
                 }
             }
 
@@ -703,10 +715,10 @@ void CABFAccumulator::Load_v5(char* fline,FILE* fin)
                     double cf = 0.0;
                     if(fscanf(fin,"%lf",&cf) != 1) {
                         CSmallString error;
-                        error << "unable to read ICFEpotSum2 for bin " << j << " and item " << i;
+                        error << "unable to read ICFEtotSum2 for bin " << j << " and item " << i;
                         RUNTIME_ERROR(error);
                     }
-                    ICFEpotSum2[map(i,j)] = cf;
+                    ICFEtotSum2[map(i,j)] = cf;
                 }
             }
         } else {
@@ -861,17 +873,17 @@ void CABFAccumulator::Save(FILE* fout)
     }
     if(counter % 4 != 0) fprintf(fout,"\n");
 
-// EpotSum
-    if(fprintf(fout,"EPOT\n") <= 0) {
+// EtotSum
+    if(fprintf(fout,"ETOT\n") <= 0) {
         CSmallString error;
-        error << "unable to write EPOT header";
+        error << "unable to write ETOT header";
         RUNTIME_ERROR(error);
     }
     counter = 0;
     for(int i=0; i < TotNBins; i++) {
-        if(fprintf(fout,"%19.11E ",EpotSum[i]) <= 0) {
+        if(fprintf(fout,"%19.11E ",EtotSum[i]) <= 0) {
             CSmallString error;
-            error << "unable to write EpotSum for bin " << i;
+            error << "unable to write EtotSum for bin " << i;
             RUNTIME_ERROR(error);
         }
         if(counter % 4 == 3) fprintf(fout,"\n");
@@ -879,12 +891,12 @@ void CABFAccumulator::Save(FILE* fout)
     }
     if(counter % 4 != 0) fprintf(fout,"\n");
 
-// EpotSum2
+// EtotSum2
     counter = 0;
     for(int i=0; i < TotNBins; i++) {
-        if(fprintf(fout,"%19.11E ",EpotSum2[i]) <= 0) {
+        if(fprintf(fout,"%19.11E ",EtotSum2[i]) <= 0) {
             CSmallString error;
-            error << "unable to write EpotSum2 for bin " << i;
+            error << "unable to write EtotSum2 for bin " << i;
             RUNTIME_ERROR(error);
         }
         if(counter % 4 == 3) fprintf(fout,"\n");
@@ -892,18 +904,18 @@ void CABFAccumulator::Save(FILE* fout)
     }
     if(counter % 4 != 0) fprintf(fout,"\n");
 
-// ICFEpotSum
-    if(fprintf(fout,"ICF*EPOT\n") <= 0) {
+// ICFEtotSum
+    if(fprintf(fout,"ICF*ETOT\n") <= 0) {
         CSmallString error;
-        error << "unable to write ICF*EPOT header";
+        error << "unable to write ICF*ETOT header";
         RUNTIME_ERROR(error);
     }
     counter = 0;
     for(int i = 0; i < NCVs; i++) {
         for(int j = 0; j < TotNBins; j++) {
-            if(fprintf(fout,"%19.11E ",ICFEpotSum[map(i,j)]) <= 0) {
+            if(fprintf(fout,"%19.11E ",ICFEtotSum[map(i,j)]) <= 0) {
                 CSmallString error;
-                error << "unable to write ICFEpotSum for bin " << j << " and item " << i;
+                error << "unable to write ICFEtotSum for bin " << j << " and item " << i;
                 RUNTIME_ERROR(error);
             }
             if(counter % 4 == 3) fprintf(fout,"\n");
@@ -912,13 +924,13 @@ void CABFAccumulator::Save(FILE* fout)
     }
     if(counter % 4 != 0) fprintf(fout,"\n");
 
-// ICFEpotSum2
+// ICFEtotSum2
     counter = 0;
     for(int i = 0; i < NCVs; i++) {
         for(int j = 0; j < TotNBins; j++) {
-            if(fprintf(fout,"%19.11E ",ICFEpotSum2[map(i,j)]) <= 0) {
+            if(fprintf(fout,"%19.11E ",ICFEtotSum2[map(i,j)]) <= 0) {
                 CSmallString error;
-                error << "unable to write ICFEpotSum2 for bin " << j << " and item " << i;
+                error << "unable to write ICFEtotSum2 for bin " << j << " and item " << i;
                 RUNTIME_ERROR(error);
             }
             if(counter % 4 == 3) fprintf(fout,"\n");
@@ -1083,9 +1095,9 @@ void CABFAccumulator::SetEnergyUnit(double fconv,const CSmallString& unit)
 
 //------------------------------------------------------------------------------
 
-void CABFAccumulator::SetEpotEnabled(bool enabled)
+void CABFAccumulator::SetEtotEnabled(bool enabled)
 {
-    EpotAvailable = enabled;
+    EtotAvailable = enabled;
 }
 
 //==============================================================================
@@ -1271,32 +1283,32 @@ const double& CABFAccumulator::GetICFSum2(int icv,int ibin) const
 
 //------------------------------------------------------------------------------
 
-const double& CABFAccumulator::GetEpotSum(int ibin) const
+const double& CABFAccumulator::GetEtotSum(int ibin) const
 {
-    return(EpotSum[ibin]);
+    return(EtotSum[ibin]);
 }
 
 //------------------------------------------------------------------------------
 
-const double& CABFAccumulator::GetEpotSum2(int ibin) const
+const double& CABFAccumulator::GetEtotSum2(int ibin) const
 {
-    return(EpotSum2[ibin]);
+    return(EtotSum2[ibin]);
 }
 
 //------------------------------------------------------------------------------
 
-const double& CABFAccumulator::GetICFEpotSum(int icv,int ibin) const
+const double& CABFAccumulator::GetICFEtotSum(int icv,int ibin) const
 {
     int glbindex = map(icv,ibin);
-    return(ICFEpotSum[glbindex]);
+    return(ICFEtotSum[glbindex]);
 }
 
 //------------------------------------------------------------------------------
 
-const double& CABFAccumulator::GetICFEpotSum2(int icv,int ibin) const
+const double& CABFAccumulator::GetICFEtotSum2(int icv,int ibin) const
 {
     int glbindex = map(icv,ibin);
-    return(ICFEpotSum2[glbindex]);
+    return(ICFEtotSum2[glbindex]);
 }
 
 //------------------------------------------------------------------------------
@@ -1345,30 +1357,30 @@ double* CABFAccumulator::GetICFSum2Array(void)
 
 //------------------------------------------------------------------------------
 
-double* CABFAccumulator::GetEpotSumArray(void)
+double* CABFAccumulator::GetEtotSumArray(void)
 {
-    return(EpotSum);
+    return(EtotSum);
 }
 
 //------------------------------------------------------------------------------
 
-double* CABFAccumulator::GetEpotSum2Array(void)
+double* CABFAccumulator::GetEtotSum2Array(void)
 {
-    return(EpotSum2);
+    return(EtotSum2);
 }
 
 //------------------------------------------------------------------------------
 
-double* CABFAccumulator::GetICFEpotSumArray(void)
+double* CABFAccumulator::GetICFEtotSumArray(void)
 {
-    return(ICFEpotSum);
+    return(ICFEtotSum);
 }
 
 //------------------------------------------------------------------------------
 
-double* CABFAccumulator::GetICFEpotSum2Array(void)
+double* CABFAccumulator::GetICFEtotSum2Array(void)
 {
-    return(ICFEpotSum2);
+    return(ICFEtotSum2);
 }
 
 //==============================================================================
@@ -1399,11 +1411,14 @@ void CABFAccumulator::Clear(void)
     for(int i=0; i < TotNBins*NCVs; i++) ICFSum[i] = 0.0;
     for(int i=0; i < TotNBins*NCVs; i++) ICFSum2[i] = 0.0;
 
-    for(int i=0; i < TotNBins; i++) EpotSum[i] = 0;
-    for(int i=0; i < TotNBins; i++) EpotSum2[i] = 0;
+    for(int i=0; i < TotNBins; i++) EtotSum[i] = 0;
+    for(int i=0; i < TotNBins; i++) EtotSum2[i] = 0;
 
-    for(int i=0; i < TotNBins*NCVs; i++) ICFEpotSum[i] = 0;
-    for(int i=0; i < TotNBins*NCVs; i++) ICFEpotSum2[i] = 0;
+    for(int i=0; i < TotNBins*NCVs; i++) ICFEtotSum[i] = 0;
+    for(int i=0; i < TotNBins*NCVs; i++) ICFEtotSum2[i] = 0;
+
+    EtotAvailable   = false;
+    EkinIncluded    = false;
 }
 
 //==============================================================================
@@ -1431,13 +1446,13 @@ void CABFAccumulator::FinalizeAllocation()
     ICFSum.CreateVector(TotNBins*NCVs);
     ICFSum2.CreateVector(TotNBins*NCVs);
 
-// EpotSum
-    EpotSum.CreateVector(TotNBins);
-    EpotSum2.CreateVector(TotNBins);
+// EtotSum
+    EtotSum.CreateVector(TotNBins);
+    EtotSum2.CreateVector(TotNBins);
 
-// abfforce*EpotSum
-    ICFEpotSum.CreateVector(TotNBins*NCVs);
-    ICFEpotSum2.CreateVector(TotNBins*NCVs);
+// abfforce*EtotSum
+    ICFEtotSum.CreateVector(TotNBins*NCVs);
+    ICFEtotSum2.CreateVector(TotNBins*NCVs);
 
     // reset data
     Clear();
@@ -1455,14 +1470,15 @@ void CABFAccumulator::Deallocate(void)
     ICFSum.FreeVector();
     ICFSum2.FreeVector();
 
-    EpotSum.FreeVector();
-    EpotSum2.FreeVector();
+    EtotSum.FreeVector();
+    EtotSum2.FreeVector();
 
-    ICFEpotSum.FreeVector();
-    ICFEpotSum2.FreeVector();
+    ICFEtotSum.FreeVector();
+    ICFEtotSum2.FreeVector();
 
     TotNBins        = 0;
-    EpotAvailable   = false;
+    EtotAvailable   = false;
+    EkinIncluded    = false;
 }
 
 //==============================================================================
@@ -1686,60 +1702,60 @@ void CABFAccumulator::ReadABFData(CXMLElement* p_rele)
     memcpy(GetICFSum2Array(),p_data,inc_icfsum_size);
 
 // --------------------------
-    CXMLBinData* p_inc_epotsum = p_rele->GetFirstChildBinData("EPOTSUM");
+    CXMLBinData* p_inc_epotsum = p_rele->GetFirstChildBinData("ETOTSUM");
     if(p_inc_epotsum == NULL) {
-        RUNTIME_ERROR("unable to open EPOTSUM element");
+        RUNTIME_ERROR("unable to open ETOTSUM element");
     }
 
     p_data = p_inc_epotsum->GetData();
-    if((GetEpotSumArray() == NULL) || (p_data == NULL) || (p_inc_epotsum->GetLength() != inc_epotsum_size)) {
+    if((GetEtotSumArray() == NULL) || (p_data == NULL) || (p_inc_epotsum->GetLength() != inc_epotsum_size)) {
         CSmallString error;
-        error << "inconsistent EPOTSUM element dat (r: " << p_inc_epotsum->GetLength()
+        error << "inconsistent ETOTSUM element dat (r: " << p_inc_epotsum->GetLength()
               << ", l: " <<  inc_epotsum_size << ")";
         RUNTIME_ERROR(error);
     }
-    memcpy(GetEpotSumArray(),p_data,inc_epotsum_size);
+    memcpy(GetEtotSumArray(),p_data,inc_epotsum_size);
 
 // --------------------------
-    CXMLBinData* p_inc_epotsum2 = p_rele->GetFirstChildBinData("EPOTSUM2");
+    CXMLBinData* p_inc_epotsum2 = p_rele->GetFirstChildBinData("ETOTSUM2");
     if(p_inc_epotsum2 == NULL) {
-        RUNTIME_ERROR("unable to open EPOTSUM2 element");
+        RUNTIME_ERROR("unable to open ETOTSUM2 element");
     }
 
     p_data = p_inc_epotsum2->GetData();
-    if((GetEpotSum2Array() == NULL) || (p_data == NULL) || (p_inc_epotsum2->GetLength() != inc_epotsum_size)) {
+    if((GetEtotSum2Array() == NULL) || (p_data == NULL) || (p_inc_epotsum2->GetLength() != inc_epotsum_size)) {
         CSmallString error;
-        error << "inconsistent EPOTSUM2 element dat (r: " << p_inc_epotsum2->GetLength()
+        error << "inconsistent ETOTSUM2 element dat (r: " << p_inc_epotsum2->GetLength()
               << ", l: " <<  inc_epotsum_size << ")";
         RUNTIME_ERROR(error);
     }
-    memcpy(GetEpotSum2Array(),p_data,inc_epotsum_size);
+    memcpy(GetEtotSum2Array(),p_data,inc_epotsum_size);
 
 // --------------------------
-    CXMLBinData* p_inc_icfepotsum = p_rele->GetFirstChildBinData("ICFEPOTSUM");
+    CXMLBinData* p_inc_icfepotsum = p_rele->GetFirstChildBinData("ICFETOTSUM");
     if(p_inc_icfepotsum == NULL) {
-        RUNTIME_ERROR("unable to open ICFEPOTSUM element");
+        RUNTIME_ERROR("unable to open ICFETOTSUM element");
     }
 
     p_data = p_inc_icfepotsum->GetData();
     if((GetICFSumArray() == NULL) || (p_data == NULL) || (p_inc_icfepotsum->GetLength() != inc_icfepotsum_size)) {
         CSmallString error;
-        error << "inconsistent ICFEPOTSUM element dat (r: " << p_inc_icfepotsum->GetLength()
+        error << "inconsistent ICFETOTSUM element dat (r: " << p_inc_icfepotsum->GetLength()
               << ", l: " <<  inc_icfepotsum_size << ")";
         RUNTIME_ERROR(error);
     }
     memcpy(GetICFSumArray(),p_data,inc_icfepotsum_size);
 
 // --------------------------
-    CXMLBinData* p_inc_icfepotsum2 = p_rele->GetFirstChildBinData("ICFEPOTSUM2");
+    CXMLBinData* p_inc_icfepotsum2 = p_rele->GetFirstChildBinData("ICFETOTSUM2");
     if(p_inc_icfepotsum2 == NULL) {
-        RUNTIME_ERROR("unable to open ICFEPOTSUM2 element");
+        RUNTIME_ERROR("unable to open ICFETOTSUM2 element");
     }
 
     p_data = p_inc_icfepotsum2->GetData();
     if((GetICFSum2Array() == NULL) || (p_data == NULL) || (p_inc_icfepotsum2->GetLength() != inc_icfepotsum_size)) {
         CSmallString error;
-        error << "inconsistent ICFEPOTSUM2 element dat (r: " << p_inc_icfepotsum2->GetLength()
+        error << "inconsistent ICFETOTSUM2 element dat (r: " << p_inc_icfepotsum2->GetLength()
               << ", l: " <<  inc_icfepotsum_size << ")";
         RUNTIME_ERROR(error);
     }
@@ -1825,80 +1841,80 @@ void CABFAccumulator::AddABFData(CXMLElement* p_cele)
     }
 
 // --------------------------
-    CXMLBinData* p_inc_EpotSum = p_cele->GetFirstChildBinData("EPOTSUM");
-    if(p_inc_EpotSum == NULL) {
-        RUNTIME_ERROR("unable to open EPOTSUM element");
+    CXMLBinData* p_inc_EtotSum = p_cele->GetFirstChildBinData("ETOTSUM");
+    if(p_inc_EtotSum == NULL) {
+        RUNTIME_ERROR("unable to open ETOTSUM element");
     }
 
-    p_data = p_inc_EpotSum->GetData();
-    if((GetEpotSumArray() == NULL) || (p_data == NULL) || (p_inc_EpotSum->GetLength() != inc_epotsum_size)) {
+    p_data = p_inc_EtotSum->GetData();
+    if((GetEtotSumArray() == NULL) || (p_data == NULL) || (p_inc_EtotSum->GetLength() != inc_epotsum_size)) {
         CSmallString error;
-        error << "inconsistent EPOTSUM element dat (r: " << p_inc_EpotSum->GetLength()
+        error << "inconsistent ETOTSUM element dat (r: " << p_inc_EtotSum->GetLength()
               << ", l: " <<  inc_epotsum_size << ")";
         RUNTIME_ERROR(error);
     }
 
-    double* ldst = GetEpotSumArray();
+    double* ldst = GetEtotSumArray();
     double* lsrc = (double*)p_data;
     for(unsigned int i=0; i < inc_epotsum; i++) {
         *ldst++ += *lsrc++;
     }
 
 // --------------------------
-    CXMLBinData* p_inc_epotsum = p_cele->GetFirstChildBinData("EPOTSUM2");
+    CXMLBinData* p_inc_epotsum = p_cele->GetFirstChildBinData("ETOTSUM2");
     if(p_inc_epotsum == NULL) {
-        RUNTIME_ERROR("unable to open EPOTSUM2 element");
+        RUNTIME_ERROR("unable to open ETOTSUM2 element");
     }
 
     p_data = p_inc_epotsum->GetData();
-    if((GetEpotSum2Array() == NULL) || (p_data == NULL) || (p_inc_epotsum->GetLength() != inc_epotsum_size)) {
+    if((GetEtotSum2Array() == NULL) || (p_data == NULL) || (p_inc_epotsum->GetLength() != inc_epotsum_size)) {
         CSmallString error;
-        error << "inconsistent EPOTSUM2 element dat (r: " << p_inc_epotsum->GetLength()
+        error << "inconsistent ETOTSUM2 element dat (r: " << p_inc_epotsum->GetLength()
               << ", l: " <<  inc_epotsum_size << ")";
         RUNTIME_ERROR(error);
     }
 
-    double* mdst = GetEpotSum2Array();
+    double* mdst = GetEtotSum2Array();
     double* msrc = (double*)p_data;
     for(unsigned int i=0; i < inc_epotsum; i++) {
         *mdst++ += *msrc++;
     }
 
 // --------------------------
-    CXMLBinData* p_inc_icfepotsum = p_cele->GetFirstChildBinData("ICFEPOTSUM");
+    CXMLBinData* p_inc_icfepotsum = p_cele->GetFirstChildBinData("ICFETOTSUM");
     if(p_inc_icfepotsum == NULL) {
-        RUNTIME_ERROR("unable to open ICFEPOTSUM element");
+        RUNTIME_ERROR("unable to open ICFETOTSUM element");
     }
 
     p_data = p_inc_icfsum->GetData();
     if((GetICFSumArray() == NULL) || (p_data == NULL) || (p_inc_icfepotsum->GetLength() != inc_icfepotsum_size)) {
         CSmallString error;
-        error << "inconsistent ICFEPOTSUM element dat (r: " << p_inc_icfepotsum->GetLength()
+        error << "inconsistent ICFETOTSUM element dat (r: " << p_inc_icfepotsum->GetLength()
               << ", l: " <<  inc_icfepotsum_size << ")";
         RUNTIME_ERROR(error);
     }
 
-    double* ndst = GetICFEpotSumArray();
+    double* ndst = GetICFEtotSumArray();
     double* nsrc = (double*)p_data;
     for(unsigned int i=0; i < inc_icfepotsum; i++) {
         *ndst++ += *nsrc++;
     }
 
 // --------------------------
-    CXMLBinData* p_inc_icfepotsum2 = p_cele->GetFirstChildBinData("ICFEPOTSUM2");
+    CXMLBinData* p_inc_icfepotsum2 = p_cele->GetFirstChildBinData("ICFETOTSUM2");
     if(p_inc_icfepotsum2 == NULL) {
-        RUNTIME_ERROR("unable to open ICFEPOTSUM2 element");
+        RUNTIME_ERROR("unable to open ICFETOTSUM2 element");
     }
 
     p_data = p_inc_icfepotsum2->GetData();
     if((GetICFSum2Array() == NULL) || (p_data == NULL) || (p_inc_icfepotsum2->GetLength() != inc_icfepotsum_size)) {
         CSmallString error;
-        error << "inconsistent ICFEPOTSUM2 element dat (r: " << p_inc_icfepotsum2->GetLength()
+        error << "inconsistent ICFETOTSUM2 element dat (r: " << p_inc_icfepotsum2->GetLength()
               << ", l: " <<  inc_icfepotsum_size << ")";
         RUNTIME_ERROR(error);
     }
 
-    double* odst = GetICFEpotSum2Array();
+    double* odst = GetICFEtotSum2Array();
     double* osrc = (double*)p_data;
     for(unsigned int i=0; i < inc_icfepotsum; i++) {
         *odst++ += *osrc++;
@@ -1928,17 +1944,17 @@ void CABFAccumulator::WriteABFData(CXMLElement* p_rele)
     CXMLBinData* p_inc_icfsum2 = p_rele->CreateChildBinData("ICFSUM2");
     p_inc_icfsum2->CopyData(GetICFSum2Array(),inc_icfsum_size);
 
-    CXMLBinData* p_inc_epotsum = p_rele->CreateChildBinData("EPOTSUM");
-    p_inc_epotsum->CopyData(GetEpotSumArray(),inc_epotsum_size);
+    CXMLBinData* p_inc_epotsum = p_rele->CreateChildBinData("ETOTSUM");
+    p_inc_epotsum->CopyData(GetEtotSumArray(),inc_epotsum_size);
 
-    CXMLBinData* p_inc_epotsum2 = p_rele->CreateChildBinData("EPOTSUM2");
-    p_inc_epotsum2->CopyData(GetEpotSum2Array(),inc_epotsum_size);
+    CXMLBinData* p_inc_epotsum2 = p_rele->CreateChildBinData("ETOTSUM2");
+    p_inc_epotsum2->CopyData(GetEtotSum2Array(),inc_epotsum_size);
 
-    CXMLBinData* p_inc_icfepotsum = p_rele->CreateChildBinData("ICFEPOTSUM");
-    p_inc_icfepotsum->CopyData(GetICFEpotSumArray(),inc_icfepotsum_size);
+    CXMLBinData* p_inc_icfepotsum = p_rele->CreateChildBinData("ICFETOTSUM");
+    p_inc_icfepotsum->CopyData(GetICFEtotSumArray(),inc_icfepotsum_size);
 
-    CXMLBinData* p_inc_icfepotsum2 = p_rele->CreateChildBinData("ICFEPOTSUM2");
-    p_inc_icfepotsum2->CopyData(GetICFEpotSum2Array(),inc_icfepotsum_size);
+    CXMLBinData* p_inc_icfepotsum2 = p_rele->CreateChildBinData("ICFETOTSUM2");
+    p_inc_icfepotsum2->CopyData(GetICFEtotSum2Array(),inc_icfepotsum_size);
 }
 
 //==============================================================================
@@ -1969,11 +1985,11 @@ void CABFAccumulator::AddABFAccumulator(const CABFAccumulator* p_accu)
     for(int i=0; i < TotNBins*NCVs; i++) ICFSum[i]  += p_accu->ICFSum[i];
     for(int i=0; i < TotNBins*NCVs; i++) ICFSum2[i] += p_accu->ICFSum2[i];
 
-    for(int i=0; i < TotNBins; i++) EpotSum[i]  += p_accu->EpotSum[i];
-    for(int i=0; i < TotNBins; i++) EpotSum2[i] += p_accu->EpotSum2[i];
+    for(int i=0; i < TotNBins; i++) EtotSum[i]  += p_accu->EtotSum[i];
+    for(int i=0; i < TotNBins; i++) EtotSum2[i] += p_accu->EtotSum2[i];
 
-    for(int i=0; i < TotNBins*NCVs; i++) ICFEpotSum[i]  += p_accu->ICFEpotSum[i];
-    for(int i=0; i < TotNBins*NCVs; i++) ICFEpotSum2[i] += p_accu->ICFEpotSum2[i];
+    for(int i=0; i < TotNBins*NCVs; i++) ICFEtotSum[i]  += p_accu->ICFEtotSum[i];
+    for(int i=0; i < TotNBins*NCVs; i++) ICFEtotSum2[i] += p_accu->ICFEtotSum2[i];
 }
 
 //------------------------------------------------------------------------------
@@ -1993,11 +2009,11 @@ void CABFAccumulator::SubABFAccumulator(const CABFAccumulator* p_accu)
     for(int i=0; i < TotNBins*NCVs; i++) ICFSum[i]  -= p_accu->ICFSum[i];
     for(int i=0; i < TotNBins*NCVs; i++) ICFSum2[i] -= p_accu->ICFSum2[i];
 
-    for(int i=0; i < TotNBins; i++) EpotSum[i]  -= p_accu->EpotSum[i];
-    for(int i=0; i < TotNBins; i++) EpotSum2[i] -= p_accu->EpotSum2[i];
+    for(int i=0; i < TotNBins; i++) EtotSum[i]  -= p_accu->EtotSum[i];
+    for(int i=0; i < TotNBins; i++) EtotSum2[i] -= p_accu->EtotSum2[i];
 
-    for(int i=0; i < TotNBins*NCVs; i++) ICFEpotSum[i]  -= p_accu->ICFEpotSum[i];
-    for(int i=0; i < TotNBins*NCVs; i++) ICFEpotSum2[i] -= p_accu->ICFEpotSum2[i];
+    for(int i=0; i < TotNBins*NCVs; i++) ICFEtotSum[i]  -= p_accu->ICFEtotSum[i];
+    for(int i=0; i < TotNBins*NCVs; i++) ICFEtotSum2[i] -= p_accu->ICFEtotSum2[i];
 }
 
 //------------------------------------------------------------------------------
@@ -2020,11 +2036,11 @@ double CABFAccumulator::GetValue(int icv,int ibin,EABFAccuValue realm) const
     double icfsum = GetICFSum(icv,ibin);
     double icfsum_square = GetICFSum2(icv,ibin);
 
-    double epotsum = GetEpotSum(ibin);
-//    double epotsum_square = GetEpotSum2(ibin);
+    double epotsum = GetEtotSum(ibin);
+//    double epotsum_square = GetEtotSum2(ibin);
 
-    double icfepotsum = GetICFEpotSum(icv,ibin);
-    double icfepotsum_square = GetICFEpotSum2(icv,ibin);
+    double icfepotsum = GetICFEtotSum(icv,ibin);
+    double icfepotsum_square = GetICFEtotSum2(icv,ibin);
 
     switch(realm){
 // mean force
@@ -2098,8 +2114,8 @@ double CABFAccumulator::GetValue(int ibin,EABFAccuValue realm) const
     double sum_square = 0.0;
 
     // abf accumulated data
-    sum = GetEpotSum(ibin);
-    sum_square = GetEpotSum2(ibin);
+    sum = GetEtotSum(ibin);
+    sum_square = GetEtotSum2(ibin);
 
     switch(realm){
         case(EABF_H_VALUE): {

@@ -42,13 +42,13 @@ CABFClient      ABFClient;
 
 CABFClient::CABFClient(void)
 {
-    ClientID = -1;
-    NCVs   = 0;
-    NTotBins = 0;
-    EpotEnabled = false;
+    ClientID    = -1;
+    NCVs        = 0;
+    NTotBins    = 0;
+    EtotEnabled = false;
     Temperature = 300.0;
     EnergyFConv = 1.0;
-    EnergyUnit = "kcal mol-1";
+    EnergyUnit  = "kcal mol-1";
 }
 
 //------------------------------------------------------------------------------
@@ -93,9 +93,9 @@ void CABFClient::SetEnergyUnit(double fconv,const CSmallString& unit)
 
 //------------------------------------------------------------------------------
 
-void CABFClient::SetEpotEnabled(bool enabled)
+void CABFClient::SetEtotEnabled(bool enabled)
 {
-    EpotEnabled = enabled;
+    EtotEnabled = enabled;
 }
 
 //------------------------------------------------------------------------------
@@ -138,7 +138,7 @@ int CABFClient::RegisterClient(void)
             p_ele->SetAttribute("job_id",job_id);
         }
         p_ele->SetAttribute("temperature",Temperature);
-        p_ele->SetAttribute("epot",EpotEnabled);
+        p_ele->SetAttribute("etot",EtotEnabled);
 
         p_ele = cmd.GetCommandElementByPath("ENERGY",true);
         p_ele->SetAttribute("fconv",EnergyFConv);
@@ -194,12 +194,12 @@ bool CABFClient::UnregisterClient(void)
 bool CABFClient::GetInitialData(int* nisamples,
                                 double* inc_icfsum,
                                 double* inc_icfsum2,
-                                double* inc_epotsum,
-                                double* inc_epotsum2,
-                                double* inc_icfepotsum,
-                                double* inc_icfepotsum2)
+                                double* inc_etotsum,
+                                double* inc_etotsum2,
+                                double* inc_icfetotsum,
+                                double* inc_icfetotsum2)
 {
-    ClearExchangeData(nisamples,inc_icfsum,inc_icfsum2,inc_epotsum,inc_epotsum2,inc_icfepotsum,inc_icfepotsum2);
+    ClearExchangeData(nisamples,inc_icfsum,inc_icfsum2,inc_etotsum,inc_etotsum2,inc_icfetotsum,inc_icfetotsum2);
 
     CClientCommand cmd;
     try{
@@ -216,7 +216,7 @@ bool CABFClient::GetInitialData(int* nisamples,
 
         // process results
         p_ele = cmd.GetRootResultElement();
-        ReadExchangeData(p_ele,nisamples,inc_icfsum,inc_icfsum2,inc_epotsum,inc_epotsum2,inc_icfepotsum,inc_icfepotsum2);
+        ReadExchangeData(p_ele,nisamples,inc_icfsum,inc_icfsum2,inc_etotsum,inc_etotsum2,inc_icfetotsum,inc_icfetotsum2);
 
     } catch(std::exception& e) {
         ES_ERROR_FROM_EXCEPTION("unable to process command",e);
@@ -231,10 +231,10 @@ bool CABFClient::GetInitialData(int* nisamples,
 bool CABFClient::ExchangeData(int* nisamples,
                                 double* inc_icfsum,
                                 double* inc_icfsum2,
-                                double* inc_epotsum,
-                                double* inc_epotsum2,
-                                double* inc_icfepotsum,
-                                double* inc_icfepotsum2)
+                                double* inc_etotsum,
+                                double* inc_etotsum2,
+                                double* inc_icfetotsum,
+                                double* inc_icfetotsum2)
 {
     CClientCommand cmd;
     try{
@@ -245,14 +245,14 @@ bool CABFClient::ExchangeData(int* nisamples,
         // prepare input data
         CXMLElement* p_ele = cmd.GetRootCommandElement();
         p_ele->SetAttribute("client_id",ClientID);
-        WriteExchangeData(p_ele,nisamples,inc_icfsum,inc_icfsum2,inc_epotsum,inc_epotsum2,inc_icfepotsum,inc_icfepotsum2);
+        WriteExchangeData(p_ele,nisamples,inc_icfsum,inc_icfsum2,inc_etotsum,inc_etotsum2,inc_icfetotsum,inc_icfetotsum2);
 
         // execute command
         ExecuteCommand(&cmd);
 
         // process results
         p_ele = cmd.GetRootResultElement();
-        ReadExchangeData(p_ele,nisamples,inc_icfsum,inc_icfsum2,inc_epotsum,inc_epotsum2,inc_icfepotsum,inc_icfepotsum2);
+        ReadExchangeData(p_ele,nisamples,inc_icfsum,inc_icfsum2,inc_etotsum,inc_etotsum2,inc_icfetotsum,inc_icfetotsum2);
 
     } catch(std::exception& e) {
         ES_ERROR_FROM_EXCEPTION("unable to process command",e);
@@ -288,10 +288,10 @@ void CABFClient::WriteExchangeData(CXMLElement* p_cele,
                                     int*    inc_nsamples,
                                     double* inc_icfsum,
                                     double* inc_icfsum2,
-                                    double* inc_epotsum,
-                                    double* inc_epotsum2,
-                                    double* inc_icfepotsum,
-                                    double* inc_icfepotsum2)
+                                    double* inc_etotsum,
+                                    double* inc_etotsum2,
+                                    double* inc_icfetotsum,
+                                    double* inc_icfetotsum2)
 {
     if(p_cele == NULL) {
         INVALID_ARGUMENT("p_cele is NULL");
@@ -299,10 +299,10 @@ void CABFClient::WriteExchangeData(CXMLElement* p_cele,
 
     size_t nsamples_size   = NTotBins*sizeof(int);
     size_t icfsum_size     = NTotBins*NCVs*sizeof(double);
-    size_t epotsum_size    = NTotBins*sizeof(double);
-    size_t icfepotsum_size = NTotBins*NCVs*sizeof(double);
+    size_t etotsum_size    = NTotBins*sizeof(double);
+    size_t icfetotsum_size = NTotBins*NCVs*sizeof(double);
 
-    if( (nsamples_size == 0) || (icfsum_size == 0) || (epotsum_size == 0) || (icfepotsum_size == 0) ) {
+    if( (nsamples_size == 0) || (icfsum_size == 0) || (etotsum_size == 0) || (icfetotsum_size == 0) ) {
         LOGIC_ERROR("size(s) is(are) zero");
     }
 
@@ -316,17 +316,17 @@ void CABFClient::WriteExchangeData(CXMLElement* p_cele,
     CXMLBinData* p_inc_icfsum2 = p_cele->CreateChildBinData("ICFSUM2");
     p_inc_icfsum2->SetData(inc_icfsum2,icfsum_size);
 
-    CXMLBinData* p_inc_epotsum = p_cele->CreateChildBinData("EPOTSUM");
-    p_inc_epotsum->SetData(inc_epotsum,epotsum_size);
+    CXMLBinData* p_inc_etotsum = p_cele->CreateChildBinData("ETOTSUM");
+    p_inc_etotsum->SetData(inc_etotsum,etotsum_size);
 
-    CXMLBinData* p_inc_epotsum2 = p_cele->CreateChildBinData("EPOTSUM2");
-    p_inc_epotsum2->SetData(inc_epotsum2,epotsum_size);
+    CXMLBinData* p_inc_etotsum2 = p_cele->CreateChildBinData("ETOTSUM2");
+    p_inc_etotsum2->SetData(inc_etotsum2,etotsum_size);
 
-    CXMLBinData* p_inc_icfepotsum = p_cele->CreateChildBinData("ICFEPOTSUM");
-    p_inc_icfepotsum->SetData(inc_icfepotsum,icfepotsum_size);
+    CXMLBinData* p_inc_icfetotsum = p_cele->CreateChildBinData("ICFETOTSUM");
+    p_inc_icfetotsum->SetData(inc_icfetotsum,icfetotsum_size);
 
-    CXMLBinData* p_inc_icfepotsum2 = p_cele->CreateChildBinData("ICFEPOTSUM2");
-    p_inc_icfepotsum2->SetData(inc_icfepotsum2,icfepotsum_size);
+    CXMLBinData* p_inc_icfetotsum2 = p_cele->CreateChildBinData("ICFETOTSUM2");
+    p_inc_icfetotsum2->SetData(inc_icfetotsum2,icfetotsum_size);
 }
 
 //------------------------------------------------------------------------------
@@ -335,10 +335,10 @@ void CABFClient::ReadExchangeData(CXMLElement* p_rele,
                                     int*    inc_nsamples,
                                     double* inc_icfsum,
                                     double* inc_icfsum2,
-                                    double* inc_epotsum,
-                                    double* inc_epotsum2,
-                                    double* inc_icfepotsum,
-                                    double* inc_icfepotsum2)
+                                    double* inc_etotsum,
+                                    double* inc_etotsum2,
+                                    double* inc_icfetotsum,
+                                    double* inc_icfetotsum2)
 {
     if(p_rele == NULL) {
         INVALID_ARGUMENT("p_rele is NULL");
@@ -346,10 +346,10 @@ void CABFClient::ReadExchangeData(CXMLElement* p_rele,
 
     size_t nsamples_size   = NTotBins*sizeof(int);
     size_t icfsum_size     = NTotBins*NCVs*sizeof(double);
-    size_t epotsum_size    = NTotBins*sizeof(double);
-    size_t icfepotsum_size = NTotBins*NCVs*sizeof(double);
+    size_t etotsum_size    = NTotBins*sizeof(double);
+    size_t icfetotsum_size = NTotBins*NCVs*sizeof(double);
 
-    if( (nsamples_size == 0) || (icfsum_size == 0) || (epotsum_size == 0) || (icfepotsum_size == 0) ) {
+    if( (nsamples_size == 0) || (icfsum_size == 0) || (etotsum_size == 0) || (icfetotsum_size == 0) ) {
         LOGIC_ERROR("size(s) is(are) zero");
     }
 
@@ -390,52 +390,52 @@ void CABFClient::ReadExchangeData(CXMLElement* p_rele,
     memcpy(inc_icfsum2,p_data,icfsum_size);
 
 // --------------------------
-    CXMLBinData* p_inc_epotsum = p_rele->GetFirstChildBinData("EPOTSUM");
-    if(p_inc_epotsum == NULL) {
-        LOGIC_ERROR("unable to open EPOTSUM element");
+    CXMLBinData* p_inc_etotsum = p_rele->GetFirstChildBinData("ETOTSUM");
+    if(p_inc_etotsum == NULL) {
+        LOGIC_ERROR("unable to open ETOTSUM element");
     }
 
-    p_data = p_inc_epotsum->GetData();
-    if((p_data == NULL) || (p_inc_epotsum->GetLength() != epotsum_size)) {
-        LOGIC_ERROR("inconsistent EPOTSUM element data");
+    p_data = p_inc_etotsum->GetData();
+    if((p_data == NULL) || (p_inc_etotsum->GetLength() != etotsum_size)) {
+        LOGIC_ERROR("inconsistent ETOTSUM element data");
     }
-    memcpy(inc_epotsum,p_data,epotsum_size);
-
-// --------------------------
-    CXMLBinData* p_inc_epotsum2 = p_rele->GetFirstChildBinData("EPOTSUM2");
-    if(p_inc_epotsum2 == NULL) {
-        LOGIC_ERROR("unable to open EPOTSUM2 element");
-    }
-
-    p_data = p_inc_epotsum2->GetData();
-    if((p_data == NULL) || (p_inc_epotsum2->GetLength() != epotsum_size)) {
-        LOGIC_ERROR("inconsistent EPOTSUM2 element data");
-    }
-    memcpy(inc_epotsum2,p_data,epotsum_size);
+    memcpy(inc_etotsum,p_data,etotsum_size);
 
 // --------------------------
-    CXMLBinData* p_inc_icfepotsum = p_rele->GetFirstChildBinData("ICFEPOTSUM");
-    if(p_inc_icfepotsum == NULL) {
-        LOGIC_ERROR("unable to open ICFEPOTSUM element");
+    CXMLBinData* p_inc_etotsum2 = p_rele->GetFirstChildBinData("ETOTSUM2");
+    if(p_inc_etotsum2 == NULL) {
+        LOGIC_ERROR("unable to open ETOTSUM2 element");
     }
 
-    p_data = p_inc_icfepotsum->GetData();
-    if((p_data == NULL) || (p_inc_icfepotsum->GetLength() != icfepotsum_size)) {
-        LOGIC_ERROR("inconsistent ICFEPOTSUM element data");
+    p_data = p_inc_etotsum2->GetData();
+    if((p_data == NULL) || (p_inc_etotsum2->GetLength() != etotsum_size)) {
+        LOGIC_ERROR("inconsistent ETOTSUM2 element data");
     }
-    memcpy(inc_icfepotsum,p_data,icfepotsum_size);
+    memcpy(inc_etotsum2,p_data,etotsum_size);
 
 // --------------------------
-    CXMLBinData* p_inc_icfepotsum2 = p_rele->GetFirstChildBinData("ICFEPOTSUM2");
-    if(p_inc_icfepotsum2 == NULL) {
-        LOGIC_ERROR("unable to open ICFEPOTSUM2 element");
+    CXMLBinData* p_inc_icfetotsum = p_rele->GetFirstChildBinData("ICFETOTSUM");
+    if(p_inc_icfetotsum == NULL) {
+        LOGIC_ERROR("unable to open ICFETOTSUM element");
     }
 
-    p_data = p_inc_icfepotsum2->GetData();
-    if((p_data == NULL) || (p_inc_icfepotsum2->GetLength() != icfepotsum_size)) {
-        LOGIC_ERROR("inconsistent ICFEPOTSUM2 element data");
+    p_data = p_inc_icfetotsum->GetData();
+    if((p_data == NULL) || (p_inc_icfetotsum->GetLength() != icfetotsum_size)) {
+        LOGIC_ERROR("inconsistent ICFETOTSUM element data");
     }
-    memcpy(inc_icfepotsum2,p_data,icfepotsum_size);
+    memcpy(inc_icfetotsum,p_data,icfetotsum_size);
+
+// --------------------------
+    CXMLBinData* p_inc_icfetotsum2 = p_rele->GetFirstChildBinData("ICFETOTSUM2");
+    if(p_inc_icfetotsum2 == NULL) {
+        LOGIC_ERROR("unable to open ICFETOTSUM2 element");
+    }
+
+    p_data = p_inc_icfetotsum2->GetData();
+    if((p_data == NULL) || (p_inc_icfetotsum2->GetLength() != icfetotsum_size)) {
+        LOGIC_ERROR("inconsistent ICFETOTSUM2 element data");
+    }
+    memcpy(inc_icfetotsum2,p_data,icfetotsum_size);
 }
 
 //------------------------------------------------------------------------------
@@ -443,15 +443,15 @@ void CABFClient::ReadExchangeData(CXMLElement* p_rele,
 void CABFClient::ClearExchangeData(int* nisamples,
                                     double* inc_icfsum,
                                     double* inc_icfsum2,
-                                    double* inc_epotsum,
-                                    double* inc_epotsum2,
-                                    double* inc_icfepotsum,
-                                    double* inc_icfepotsum2)
+                                    double* inc_etotsum,
+                                    double* inc_etotsum2,
+                                    double* inc_icfetotsum,
+                                    double* inc_icfetotsum2)
 {
     size_t nsamples_size   = NTotBins*sizeof(int);
     size_t icfsum_size     = NTotBins*NCVs*sizeof(double);
-    size_t epotsum_size    = NTotBins*sizeof(double);
-    size_t icfepotsum_size = NTotBins*NCVs*sizeof(double);
+    size_t etotsum_size    = NTotBins*sizeof(double);
+    size_t icfetotsum_size = NTotBins*NCVs*sizeof(double);
 
     for(size_t i=0; i < nsamples_size; i++) {
         nisamples[i] = 0;
@@ -462,14 +462,14 @@ void CABFClient::ClearExchangeData(int* nisamples,
         inc_icfsum2[i] = 0.0;
     }
 
-    for(size_t i=0; i < epotsum_size; i++) {
-        inc_epotsum[i] = 0.0;
-        inc_epotsum2[i] = 0.0;
+    for(size_t i=0; i < etotsum_size; i++) {
+        inc_etotsum[i] = 0.0;
+        inc_etotsum2[i] = 0.0;
     }
 
-    for(size_t i=0; i < icfepotsum_size; i++) {
-        inc_icfepotsum[i] = 0.0;
-        inc_icfepotsum2[i] = 0.0;
+    for(size_t i=0; i < icfetotsum_size; i++) {
+        inc_icfetotsum[i] = 0.0;
+        inc_icfetotsum2[i] = 0.0;
     }
 }
 
