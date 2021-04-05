@@ -79,7 +79,7 @@ subroutine abp_accumulator_init()
                     stat = alloc_failed)
 
         if( alloc_failed .ne. 0 ) then
-            call pmf_utils_exit(PMF_OUT, 1,'[ABP] Unable to allocate memory for abf accumulator (iabfforce)!')
+            call pmf_utils_exit(PMF_OUT, 1,'[ABP] Unable to allocate memory for abf accumulator (inc_icfsum)!')
         endif
     end if
 

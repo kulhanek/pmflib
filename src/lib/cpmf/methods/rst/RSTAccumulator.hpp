@@ -50,15 +50,15 @@ public:
 
 // dimension specification ----------------------------------------------------
     /// set number of coordinates, all previous data are destroyed
-    void SetNumberOfCoords(int numofcoords);
+    void SetNumOfCVs(int numofcoords);
 
     /// set coordinate data
-    void SetCoordinate(int id,
+    void SetCV(int id,
                         const CSmallString& name,
                         const CSmallString& type,
                         double min_value,double max_value,int nbins);
 
-    /// allocate all arrays specified via SetNumOfCoordinates and SetCoordinate
+    /// allocate all arrays specified via SetNumOfCoordinates and SetCV
     void FinalizeAllocation(void);
 
     /// deallocate all array
@@ -66,16 +66,16 @@ public:
 
 // access data methods --------------------------------------------------------
     /// return number of coordinates
-    int GetNumberOfCoords(void) const;
+    int GetNumOfCVs(void) const;
 
     /// return total number of bins
-    int GetNumberOfBins(void) const;
+    int GetNumOfBins(void) const;
 
     /// return number of bins with samples >= limit
-    int GetNumberOfBinsWithLimit(int limit) const;
+    int GetNumOfBinsWithLimit(int limit) const;
 
     /// return coordinate definition
-    const CColVariable* GetCoordinate(int cv) const;
+    const CColVariable* GetCV(int cv) const;
 
     /// return number of samples for a given bin position
     int GetNumberOfSamples(const CSimpleVector<int>& position) const;

@@ -64,7 +64,7 @@ public:
                          double* box_angles);
 
     /// exchange data with server
-    bool ExchangeData(double iepot,int& bath_id,double& ctemp,double& otemp);
+    bool ExchangeData(double inc_epotsum,int& bath_id,double& ctemp,double& otemp);
 
 // section of private data ----------------------------------------------------
 private:

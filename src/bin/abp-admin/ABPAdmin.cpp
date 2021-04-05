@@ -212,7 +212,7 @@ bool CABPAdmin::GetABPAccumulator(void)
     }
 
 // and now save all data
-    if(accu.GetNumberOfCoords() > 0) {
+    if(accu.GetNumOfCVs() > 0) {
         vout << "Output ABP accumulator: " << file_output << endl;
         try {
             accu.Save(file_output);

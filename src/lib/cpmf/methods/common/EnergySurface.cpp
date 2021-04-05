@@ -52,23 +52,23 @@ CEnergySurface::~CEnergySurface(void)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-int CEnergySurface::GetNumberOfCoords(void) const
+int CEnergySurface::GetNumOfCVs(void) const
 {
     return(NumOfCVs);
 }
 
 //------------------------------------------------------------------------------
 
-int CEnergySurface::GetNumberOfPoints(void) const
+int CEnergySurface::GetNumOfPoints(void) const
 {
     return(TotNPoints);
 }
 
 //------------------------------------------------------------------------------
 
-const CColVariable* CEnergySurface::GetCoordinate(unsigned int cv) const
+const CColVariable* CEnergySurface::GetCV(unsigned int cv) const
 {
-    return(&Sizes[cv]);
+    return(&CVs[cv]);
 }
 
 //==============================================================================
@@ -79,17 +79,17 @@ void CEnergySurface::Allocate(const CMTDHistory* mtd_hist)
 {
     if( NumOfCVs > 0 ) Deallocate();
     if( mtd_hist == NULL ) return;
-    if( mtd_hist->GetNumberOfCoords() <= 0 ) return;
+    if( mtd_hist->GetNumOfCVs() <= 0 ) return;
 
 // allocate items
-    NumOfCVs = mtd_hist->GetNumberOfCoords();
-    Sizes.CreateVector(NumOfCVs);
+    NumOfCVs = mtd_hist->GetNumOfCVs();
+    CVs.CreateVector(NumOfCVs);
 
 // copy cvs and calculate total number of points
     TotNPoints = 1;
     for(int i=0; i < NumOfCVs; i++) {
-        Sizes[i].CopyFrom(mtd_hist->GetCoordinate(i));
-        TotNPoints *= Sizes[i].GetNumberOfBins();
+        CVs[i].CopyFrom(mtd_hist->GetCV(i));
+        TotNPoints *= CVs[i].GetNumOfBins();
     }
 
     Energy.CreateVector(TotNPoints);
@@ -105,17 +105,17 @@ void CEnergySurface::Allocate(const CABFAccumulator* abf_accu)
 {
     if( NumOfCVs > 0 ) Deallocate();
     if( abf_accu == NULL ) return;
-    if( abf_accu->GetNumberOfCoords() <= 0 ) return;
+    if( abf_accu->GetNumOfCVs() <= 0 ) return;
 
 // allocate items
-    NumOfCVs = abf_accu->GetNumberOfCoords();
-    Sizes.CreateVector(NumOfCVs);
+    NumOfCVs = abf_accu->GetNumOfCVs();
+    CVs.CreateVector(NumOfCVs);
 
 // copy cvs and calculate total number of points
     TotNPoints = 1;
     for(int i=0; i < NumOfCVs; i++) {
-        Sizes[i].CopyFrom(abf_accu->GetCoordinate(i));
-        TotNPoints *= Sizes[i].GetNumberOfBins();
+        CVs[i].CopyFrom(abf_accu->GetCV(i));
+        TotNPoints *= CVs[i].GetNumOfBins();
     }
 
     Energy.CreateVector(TotNPoints);
@@ -131,17 +131,17 @@ void CEnergySurface::Allocate(const CABPAccumulator* abp_accu)
 {
     if( NumOfCVs > 0 ) Deallocate();
     if( abp_accu == NULL ) return;
-    if( abp_accu->GetNumberOfCoords() <= 0 ) return;
+    if( abp_accu->GetNumOfCVs() <= 0 ) return;
 
 // allocate items
-    NumOfCVs = abp_accu->GetNumberOfCoords();
-    Sizes.CreateVector(NumOfCVs);
+    NumOfCVs = abp_accu->GetNumOfCVs();
+    CVs.CreateVector(NumOfCVs);
 
 // copy cvs and calculate total number of points
     TotNPoints = 1;
     for(int i=0; i < NumOfCVs; i++) {
-        Sizes[i].CopyFrom(abp_accu->GetCoordinate(i));
-        TotNPoints *= Sizes[i].GetNumberOfBins();
+        CVs[i].CopyFrom(abp_accu->GetCV(i));
+        TotNPoints *= CVs[i].GetNumOfBins();
     }
 
     Energy.CreateVector(TotNPoints);
@@ -157,22 +157,22 @@ void CEnergySurface::Allocate(const CABFAccumulator* abf_accu,const std::vector<
 {
     if( NumOfCVs > 0 ) Deallocate();
     if( abf_accu == NULL ) return;
-    if( abf_accu->GetNumberOfCoords() <= 0 ) return;
+    if( abf_accu->GetNumOfCVs() <= 0 ) return;
 
 // allocate items
     NumOfCVs = 0;
     for(size_t i = 0; i < enabled_cvs.size(); i++){
         if( enabled_cvs[i] ) NumOfCVs++;
     }
-    Sizes.CreateVector(NumOfCVs);
+    CVs.CreateVector(NumOfCVs);
 
 // copy cvs and calculate total number of points
     TotNPoints = 1;
     size_t i = 0;
     for(size_t k = 0; k < enabled_cvs.size(); k++){
         if( enabled_cvs[k] ){
-            Sizes[i].CopyFrom(abf_accu->GetCoordinate(k));
-            TotNPoints *= Sizes[i].GetNumberOfBins();
+            CVs[i].CopyFrom(abf_accu->GetCV(k));
+            TotNPoints *= CVs[i].GetNumOfBins();
         }
     }
 
@@ -189,22 +189,22 @@ void CEnergySurface::Allocate(const CEnergySurface* p_surf,const std::vector<boo
 {
     if( NumOfCVs > 0 ) Deallocate();
     if( p_surf == NULL ) return;
-    if( p_surf->GetNumberOfCoords() <= 0 ) return;
+    if( p_surf->GetNumOfCVs() <= 0 ) return;
 
 // allocate items
     NumOfCVs = 0;
     for(size_t i = 0; i < enabled_cvs.size(); i++){
         if( enabled_cvs[i] ) NumOfCVs++;
     }
-    Sizes.CreateVector(NumOfCVs);
+    CVs.CreateVector(NumOfCVs);
 
 // copy cvs and calculate total number of points
     TotNPoints = 1;
     size_t i = 0;
     for(size_t k = 0; k < enabled_cvs.size(); k++){
         if( enabled_cvs[k] ){
-            Sizes[i].CopyFrom(p_surf->GetCoordinate(k));
-            TotNPoints *= Sizes[i].GetNumberOfBins();
+            CVs[i].CopyFrom(p_surf->GetCV(k));
+            TotNPoints *= CVs[i].GetNumOfBins();
             i++;
         }
     }
@@ -220,7 +220,7 @@ void CEnergySurface::Allocate(const CEnergySurface* p_surf,const std::vector<boo
 
 void CEnergySurface::Deallocate(void)
 {
-    Sizes.FreeVector();
+    CVs.FreeVector();
     Energy.FreeVector();
     Error.FreeVector();
     Samples.FreeVector();
@@ -399,10 +399,10 @@ const int& CEnergySurface::GetNumOfSamples(unsigned int index) const
 void CEnergySurface::GetPoint(unsigned int index,CSimpleVector<double>& point) const
 {
     for(int k=NumOfCVs-1; k >= 0; k--) {
-        const CColVariable* p_coord = &Sizes[k];
-        int ibin = index % p_coord->GetNumberOfBins();
+        const CColVariable* p_coord = &CVs[k];
+        int ibin = index % p_coord->GetNumOfBins();
         point[k] = p_coord->GetValue(ibin);
-        index = index / p_coord->GetNumberOfBins();
+        index = index / p_coord->GetNumOfBins();
     }
 }
 
@@ -411,10 +411,10 @@ void CEnergySurface::GetPoint(unsigned int index,CSimpleVector<double>& point) c
 void CEnergySurface::GetIPoint(unsigned int index,CSimpleVector<int>& point) const
 {
     for(int k=NumOfCVs-1; k >= 0; k--) {
-        const CColVariable* p_coord = &Sizes[k];
-        int ibin = index % p_coord->GetNumberOfBins();
+        const CColVariable* p_coord = &CVs[k];
+        int ibin = index % p_coord->GetNumOfBins();
         point[k] = ibin;
-        index = index / p_coord->GetNumberOfBins();
+        index = index / p_coord->GetNumOfBins();
     }
 }
 
@@ -425,12 +425,12 @@ int CEnergySurface::IPoint2Bin(const CSimpleVector<int>& point)
     int idx = 0;
 
     for(int i=0; i < NumOfCVs; i++) {
-        CColVariable cv = Sizes[i];
-        size_t idx_local = point[i];
-        if( (idx_local < 0) || (idx_local >= cv.GetNumberOfBins())){
+        CColVariable cv = CVs[i];
+        int idx_local = point[i];
+        if( (idx_local < 0) || (idx_local >= cv.GetNumOfBins())){
             return(-1);
         }
-        idx = idx*cv.GetNumberOfBins() + idx_local;
+        idx = idx*cv.GetNumOfBins() + idx_local;
     }
 
     return(idx);
@@ -571,8 +571,8 @@ bool CEnergySurface::ReduceFES(const std::vector<bool>& keepcvs,double temp,CEne
                 cout << ridx[i] << " ";
             }
             cout << endl;
-            for(int i=0; i < p_rsurf->GetNumberOfCoords(); i++){
-                cout << p_rsurf->GetCoordinate(i)->GetNumberOfBins() << " ";
+            for(int i=0; i < p_rsurf->GetNumOfCVs(); i++){
+                cout << p_rsurf->GetCV(i)->GetNumOfBins() << " ";
             }
             cout << endl;
             RUNTIME_ERROR("rbin == -1");

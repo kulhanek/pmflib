@@ -144,7 +144,7 @@ bool CRSTSamples::Run(void)
         return(false);
     }
 
-    Point.CreateVector(Accumulator.GetNumberOfCoords());
+    Point.CreateVector(Accumulator.GetNumOfCVs());
 
 // print samples
     if(PrintSamples(0) == false) {
@@ -159,7 +159,7 @@ bool CRSTSamples::Run(void)
 
 bool CRSTSamples::PrintSamples(int cv)
 {
-    if(cv >= Accumulator.GetNumberOfCoords()) {
+    if(cv >= Accumulator.GetNumOfCVs()) {
         // get number of samples
         int value = Accumulator.GetNumberOfSamples(Point);
 
@@ -170,8 +170,8 @@ bool CRSTSamples::PrintSamples(int cv)
         sformat = Options.GetOptOSFormat() + "\n";
 
         // print point position
-        for(int i=0; i < Accumulator.GetNumberOfCoords(); i++) {
-            const CColVariable* p_coord = Accumulator.GetCoordinate(i);
+        for(int i=0; i < Accumulator.GetNumOfCVs(); i++) {
+            const CColVariable* p_coord = Accumulator.GetCV(i);
             double xvalue = p_coord->GetValue(Point[i]);
             if(fprintf(OutputFile,xformat,xvalue) <= 0) {
                 CSmallString error;
@@ -190,10 +190,10 @@ bool CRSTSamples::PrintSamples(int cv)
         return(true);
     }
 
-    const CColVariable* p_coord = Accumulator.GetCoordinate(cv);
+    const CColVariable* p_coord = Accumulator.GetCV(cv);
 
 // cycle through variable
-    for(unsigned int i = 0; i < p_coord->GetNumberOfBins(); i++) {
+    for(int i = 0; i < p_coord->GetNumOfBins(); i++) {
         Point[cv] = i;
         if(PrintSamples(cv+1) == false) return(false);
     }

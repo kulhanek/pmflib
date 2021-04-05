@@ -44,7 +44,7 @@ CABPClient      ABPClient;
 CABPClient::CABPClient(void)
 {
     ClientID = -1;
-    NItems   = 0;
+    NCVs   = 0;
     NTotBins = 0;
 }
 
@@ -58,9 +58,9 @@ CABPClient::~CABPClient(void)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void CABPClient::SetNumberOfItems(int nitems,int ntotbins)
+void CABPClient::SetNumberOfItems(int NCVs,int ntotbins)
 {
-    if(nitems <= 0) {
+    if(NCVs <= 0) {
         INVALID_ARGUMENT("number of items has to be grater than zero");
     }
 
@@ -68,29 +68,29 @@ void CABPClient::SetNumberOfItems(int nitems,int ntotbins)
         INVALID_ARGUMENT("number of bins has to be grater than zero");
     }
 
-    NItems = 0;
-    Coords.resize(nitems);
-    NItems = nitems;
+    NCVs = 0;
+    CVs.resize(NCVs);
+    NCVs = NCVs;
     NTotBins = ntotbins;
 }
 
 //------------------------------------------------------------------------------
 
-int CABPClient::GetNumberOfBins(void)
+int CABPClient::GetNumOfBins(void)
 {
     return(NTotBins);
 }
 
 //------------------------------------------------------------------------------
 
-void CABPClient::SetCoord(int id,const CSmallString& name,const CSmallString& type,
-                          double min_value,double max_value,int nbins,double alpha,double fconv,const CSmallString& unit)
+void CABPClient::SetCV(int id,const CSmallString& name,const CSmallString& type,
+                       double min_value,double max_value,int nbins,double alpha,double fconv,const CSmallString& unit)
 {
-    if((id < 0) || (id >= NItems)) {
+    if((id < 0) || (id >= NCVs)) {
         INVALID_ARGUMENT("cv id is out of range");
     }
 
-    Coords[id].SetCoord(id,name,type,min_value,max_value,nbins,alpha,fconv,unit);
+    CVs[id].SetCV(id,name,type,min_value,max_value,nbins,alpha,fconv,unit);
 }
 
 //==============================================================================
@@ -235,11 +235,11 @@ void CABPClient::SaveCVSInfo(CXMLElement* p_tele)
 
     CXMLElement* p_ele = p_tele->CreateChildElement("CVS");
 
-    p_ele->SetAttribute("NCoords",NItems);
+    p_ele->SetAttribute("NCVs",NCVs);
 
-    for(int i=0; i < NItems; i++) {
+    for(int i=0; i < NCVs; i++) {
         CXMLElement* p_iele = p_ele->CreateChildElement("COORD");
-        Coords[i].SaveInfo(p_iele);
+        CVs[i].SaveInfo(p_iele);
     }
 }
 
@@ -255,7 +255,7 @@ void CABPClient::WriteExchangeData(CXMLElement* p_cele,
     }
 
     int nisamples_size  = NTotBins*sizeof(int);
-    int idpop_size      = NTotBins*NItems*sizeof(double);
+    int idpop_size      = NTotBins*NCVs*sizeof(double);
     int ipop_size       = NTotBins*sizeof(double);
 
     if( (nisamples_size == 0) || (idpop_size == 0) || (ipop_size == 0) ) {
@@ -285,7 +285,7 @@ void CABPClient::ReadExchangeData(CXMLElement* p_rele,
     }
 
     unsigned int nisamples_size = NTotBins*sizeof(int);
-    unsigned int idpop_size     = NTotBins*NItems*sizeof(double);
+    unsigned int idpop_size     = NTotBins*NCVs*sizeof(double);
     unsigned int ipop_size      = NTotBins*sizeof(double);
 
     if( (nisamples_size == 0) || (idpop_size == 0) || (ipop_size == 0) ) {
@@ -336,7 +336,7 @@ void CABPClient::ClearExchangeData(int* nisamples,
                                     double* ipop)
 {
     int nisamples_size = NTotBins;
-    int idpop_size = NTotBins*NItems;
+    int idpop_size = NTotBins*NCVs;
     int ipop_size = NTotBins;
 
     for(int i=0; i < nisamples_size; i++) {

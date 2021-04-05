@@ -195,7 +195,7 @@ bool CMTDServer::Run(void)
     vout << "::::::::::::::::::::::::::::::::::: Output data ::::::::::::::::::::::::::::::::" << endl;
 
 // and now save all data
-    if(MTDHistory.GetNumberOfCoords() > 0) {
+    if(MTDHistory.GetNumOfCVs() > 0) {
         vout << "Output MTD history file: " << OutputFileName << endl;
         try{
             MTDHistory.Save(OutputFileName);

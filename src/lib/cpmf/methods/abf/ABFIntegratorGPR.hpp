@@ -52,6 +52,15 @@ enum EGPRKernel {
 
 //------------------------------------------------------------------------------
 
+// integrated realm
+
+enum EGPRIntegratedRealm {
+    EGPR_REALM_DG  = 1,    // dG
+    EGPR_REALM_TDS = 2,    // -TdS
+};
+
+//------------------------------------------------------------------------------
+
 /** \brief integrator of ABF accumulator employing gaussian process
 */
 
@@ -67,6 +76,9 @@ public:
 
     /// set output free energy surface
     void SetOutputFESurface(CEnergySurface* p_surf);
+
+    // integrated realm
+    void SetIntegratedRealm(EGPRIntegratedRealm realm);
 
 // hyperparameters
     /// set sigmaf2
@@ -184,6 +196,7 @@ public:
 private:
     CABFAccumulator*        Accumulator;
     CEnergySurface*         FES;
+    EGPRIntegratedRealm     IntRealm;
 
     int                     NumOfThreads;
 

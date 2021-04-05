@@ -471,7 +471,6 @@ subroutine pmf_init_pmf
           Crd(3,NumOfLAtoms), &
           Frc(3,NumOfLAtoms), &
           Vel(3,NumOfLAtoms), &
-          DelV(3,NumOfLAtoms), &
           CVContext%CVsValues(NumOfCVs), &
           CVContext%CVsDrvs(3,NumOfLAtoms,NumOfCVs), &
           CVContext%CVsFrc(NumOfCVs), &  ! lam81

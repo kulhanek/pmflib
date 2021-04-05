@@ -5,7 +5,7 @@
 !    Copyright (C) 2013-2015 Letif Mones, lam81@cam.ac.uk
 !    Copyright (C) 2007 Petr Kulhanek, kulhanek@enzim.hu
 !    Copyright (C) 2006 Petr Kulhanek, kulhanek@chemi.muni.cz &
-!                       Martin Petrek, petrek@chemi.muni.cz 
+!                       Martin Petrek, petrek@chemi.muni.cz
 !    Copyright (C) 2005 Petr Kulhanek, kulhanek@chemi.muni.cz
 !
 !    This library is free software; you can redistribute it and/or
@@ -20,7 +20,7 @@
 !
 !    You should have received a copy of the GNU Lesser General Public
 !    License along with this library; if not, write to the Free Software
-!    Foundation, Inc., 51 Franklin Street, Fifth Floor, 
+!    Foundation, Inc., 51 Franklin Street, Fifth Floor,
 !    Boston, MA  02110-1301  USA
 !===============================================================================
 
@@ -50,7 +50,6 @@ subroutine pmf_core_in_data_xvf(x,v,f)
     Crd(:,i) = x(:,ridx)*LengthConv
     Vel(:,i) = v(:,ridx)*VelocityConv
     Frc(:,i) = f(:,ridx)*ForceConv
-    DelV(:,i) = -f(:,ridx)*ForceConv ! lam81
  end do
 
 end subroutine pmf_core_in_data_xvf
@@ -180,7 +179,7 @@ subroutine pmf_core_out_data_f(f)
  integer                    :: i,ridx
  real(PMFDP)                :: fconv
  ! -----------------------------------------------------------------------------
- 
+
  fconv = 1.0d0 / ForceConv
 
  do i=1,NumOfLAtoms
@@ -231,7 +230,7 @@ subroutine pmf_core_out_data_xp(xp)
  integer                    :: i,ridx
  real(PMFDP)                :: xconv
  ! -----------------------------------------------------------------------------
- 
+
  xconv = 1.0d0 / LengthConv
 
  do i=1,NumOfLAtoms
@@ -308,7 +307,7 @@ integer function pmf_core_get_num_of_constraints()
 
  if ( .not. cst_enabled) return
 
- pmf_core_get_num_of_constraints = NumOfCONs 
+ pmf_core_get_num_of_constraints = NumOfCONs
 
  return
 

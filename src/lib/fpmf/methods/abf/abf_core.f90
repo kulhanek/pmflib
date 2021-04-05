@@ -84,7 +84,7 @@ subroutine abf_core_force()
     implicit none
     integer     :: i,j,k,m
     integer     :: ci,ck
-    real(PMFDP) :: v
+    real(PMFDP) :: v,avg_etot
     ! --------------------------------------------------------------------------
 
     ! calculate acceleration in time t for all pmf atoms
@@ -103,6 +103,26 @@ subroutine abf_core_force()
         cvaluehist3(i) = CVContext%CVsValues(ci)
     end do
 
+    ! shift epot ene
+    epothist0 = epothist1
+    epothist1 = epothist2
+    epothist2 = epothist3
+    if( faccuepot ) then
+        epothist3 = PotEne
+    else
+        epothist3 = 0.0d0
+    end if
+
+    ! shift ekin ene
+    ekinhist0 = ekinhist1
+    ekinhist1 = ekinhist2
+    ekinhist2 = ekinhist3
+    if( faccuekin ) then
+        ekinhist3 = KinEne
+    else
+        ekinhist3 = 0.0d0
+    end if
+
     ! calculate abf force to be applied -------------
     select case(feimode)
         case(1)
@@ -110,7 +130,7 @@ subroutine abf_core_force()
         case(2)
             call abf_accumulator_get_data2(cvaluehist3(:),la)
         case(3)
-            call abf_accumulator_get_data3(cvaluehist1(:),la)
+            call abf_accumulator_get_data3(cvaluehist3(:),la)
         case default
             call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented extrapolation/interpolation mode!')
     end select
@@ -183,14 +203,17 @@ subroutine abf_core_force()
             avg_values(i) = ABFCVList(i)%cv%get_average_value(cvaluehist1(i),cvaluehist2(i))
         end do
 
+        avg_etot =            0.5d0*(epothist1 + epothist2) ! t - 3/2*dt
+        avg_etot = avg_etot + 0.5d0*(ekinhist2 + ekinhist3) ! t - 1/2*dt; ekin already shifted by -dt
+
         ! add data to accumulator
         select case(feimode)
             case(1)
-                call abf_accumulator_add_data12(avg_values,pxi0(:))
+                call abf_accumulator_add_data12(avg_values,avg_etot,pxi0(:))
             case(2)
-                call abf_accumulator_add_data12(avg_values,pxi0(:))
+                call abf_accumulator_add_data12(avg_values,avg_etot,pxi0(:))
             case(3)
-                call abf_accumulator_add_data3(avg_values,pxi0(:))
+                call abf_accumulator_add_data3(avg_values,avg_etot,pxi0(:))
             case default
                 call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented extrapolation/interpolation mode!')
         end select
@@ -231,7 +254,7 @@ subroutine abf_core_force_numeric()
     implicit none
     integer                :: i,j,m
     integer                :: ci
-    real(PMFDP)            :: v
+    real(PMFDP)            :: v,avg_etot
     ! --------------------------------------------------------------------------
 
     ! shift accuvalue history
@@ -242,6 +265,19 @@ subroutine abf_core_force_numeric()
         ci = ABFCVList(i)%cvindx
         cvaluehist1(i) = CVContext%CVsValues(ci)
     end do
+
+    ! shift epot ene
+    epothist0 = epothist1
+    if( faccuepot ) then
+        epothist1 = PotEne
+    else
+        epothist1 = 0.0d0
+    end if
+
+    ! shift ekin ene
+    if( faccuekin ) then
+        call pmf_utils_exit(PMF_OUT,1,'[ABF] faccuekin cannot be on in abf_core_force_numeric!')
+    end if
 
     ! calculate abf force to be applied -------------
     select case(feimode)
@@ -307,14 +343,16 @@ subroutine abf_core_force_numeric()
             avg_values(i) = ABFCVList(i)%cv%get_average_value(cvaluehist0(i),cvaluehist1(i))
         end do
 
+        avg_etot = 0.5d0*(epothist0 + epothist1)
+
         ! add data to accumulator
         select case(feimode)
             case(1)
-                call abf_accumulator_add_data12(avg_values,pxi0(:))
+                call abf_accumulator_add_data12(avg_values,avg_etot,pxi0(:))
             case(2)
-                call abf_accumulator_add_data12(avg_values,pxi0(:))
+                call abf_accumulator_add_data12(avg_values,avg_etot,pxi0(:))
             case(3)
-                call abf_accumulator_add_data3(avg_values,pxi0(:))
+                call abf_accumulator_add_data3(avg_values,avg_etot,pxi0(:))
             case default
                 call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented extrapolation/interpolation mode!')
         end select

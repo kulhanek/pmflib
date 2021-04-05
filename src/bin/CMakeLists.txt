@@ -19,13 +19,17 @@ ENDIF(PMFLIB_COMPILE_FPMF)
 ADD_SUBDIRECTORY(abf-accuinfo)
 ADD_SUBDIRECTORY(abf-combine)
 ADD_SUBDIRECTORY(abf-derivatives)
-ADD_SUBDIRECTORY(abf-integrate)
-ADD_SUBDIRECTORY(abf-optgprhyprms)
+
+ADD_SUBDIRECTORY(abf-energy)
+ADD_SUBDIRECTORY(abf-energy-optgprhyprms)
+ADD_SUBDIRECTORY(abf-enthalpy)
+ADD_SUBDIRECTORY(abf-enthalpy-optgprhyprms)
+ADD_SUBDIRECTORY(abf-entropy)
+#ADD_SUBDIRECTORY(abf-entropy-optgprhyprms)
+
 ADD_SUBDIRECTORY(abf-samples)
 ADD_SUBDIRECTORY(abf-trajectory)
 ADD_SUBDIRECTORY(abf-mask)
-ADD_SUBDIRECTORY(abf-enthalpy)
-ADD_SUBDIRECTORY(abf-enthalpy-optgprhyprms)
 
 # ABP utilities
 ADD_SUBDIRECTORY(abp-samples)

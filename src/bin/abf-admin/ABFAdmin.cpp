@@ -211,7 +211,7 @@ bool CABFAdmin::GetABFAccumulator(void)
     }
 
 // and now save all data
-    if(accu.GetNumberOfCoords() > 0) {
+    if(accu.GetNumOfCVs() > 0) {
         vout << "Output ABF accumulator: " << file_output << endl;
         try {
             accu.Save(file_output);

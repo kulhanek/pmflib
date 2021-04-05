@@ -119,7 +119,7 @@ bool CABPSamples::Run(void)
         return(false);
     }
 
-    Point.CreateVector(Accumulator.GetNumberOfCoords());
+    Point.CreateVector(Accumulator.GetNumOfCVs());
 
 // print samples
     if(PrintSamples() == false) {
@@ -137,12 +137,12 @@ bool CABPSamples::PrintSamples(void)
     CSimpleVector<double>   pos;
     CSimpleVector<int>      ipos;
 
-    pos.CreateVector(Accumulator.GetNumberOfCoords());
-    ipos.CreateVector(Accumulator.GetNumberOfCoords());
+    pos.CreateVector(Accumulator.GetNumOfCVs());
+    ipos.CreateVector(Accumulator.GetNumOfCVs());
 
     int last_cv = -1;
 
-    for(int ibin=0; ibin < Accumulator.GetNumberOfBins(); ibin++){
+    for(int ibin=0; ibin < Accumulator.GetNumOfBins(); ibin++){
 
         // do we have enough samples?
         int nsamples = Accumulator.GetNumberOfABPSamples(ibin);
@@ -150,7 +150,7 @@ bool CABPSamples::PrintSamples(void)
 
     // write block delimiter - required by GNUPlot
         if(Options.GetOptNoGNUPlot() == false) {
-            int ncvs = Accumulator.GetNumberOfCoords();
+            int ncvs = Accumulator.GetNumOfCVs();
             Accumulator.GetIPoint(ibin,ipos);
 
             if( (last_cv >= 0) && (ipos[ncvs-1] != last_cv + 1) ){
@@ -170,7 +170,7 @@ bool CABPSamples::PrintSamples(void)
         xformat = Options.GetOptIXFormat() + " ";
 
         // print point position
-        for(int i=0; i < Accumulator.GetNumberOfCoords(); i++) {
+        for(int i=0; i < Accumulator.GetNumOfCVs(); i++) {
             double xvalue = pos[i];
             if(fprintf(OutputFile,xformat,xvalue) <= 0) {
                 CSmallString error;

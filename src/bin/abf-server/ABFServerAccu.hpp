@@ -63,6 +63,9 @@ public:
     /// server is terminated - unblock waiting beads
     void SetServerTerminated(void);
 
+    /// set temperature and energy unit
+    void SetMainHeader(CServerCommand* p_command);
+
 // section of private data ----------------------------------------------------
 private:
     CSimpleMutex    AccuMutex;          // access mutex

@@ -36,7 +36,7 @@ public:
     CSO_PROG_NAME_END
 
     CSO_PROG_DESC_BEGIN
-    "<b>abf-enthalpy</b> provides enthalpy from the ABF accumulator."
+    "The program provides enthalpy from the ABF accumulator."
     CSO_PROG_DESC_END
 
     CSO_PROG_VERS_BEGIN

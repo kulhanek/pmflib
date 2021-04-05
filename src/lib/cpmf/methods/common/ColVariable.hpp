@@ -53,29 +53,29 @@ public:
     void SetMaxMovement(double lmax);
 
     /// set cv data
-    void SetCoord(int lid,const CSmallString& lname,const CSmallString& ltype,
+    void SetCV(int lid,const CSmallString& lname,const CSmallString& ltype,
                   double lmin_value,double lmax_value,unsigned int lnbins);
 
     /// set cv data
-    void SetCoord(int lid,const CSmallString& lname,const CSmallString& ltype,
+    void SetCV(int lid,const CSmallString& lname,const CSmallString& ltype,
                   double lmin_value,double lmax_value,unsigned int lnbins,
                   double lfconv,const CSmallString& lunit);
 
     /// set cv data
-    void SetCoord(int lid,const CSmallString& lname,const CSmallString& ltype,
+    void SetCV(int lid,const CSmallString& lname,const CSmallString& ltype,
                   double lmin_value,double lmax_value,unsigned int lnbins,
                   double alpha,
                   double lfconv,const CSmallString& lunit);
 
     /// set cv data
-    void SetCoord(int lid,const CSmallString& lname,const CSmallString& ltype);
+    void SetCV(int lid,const CSmallString& lname,const CSmallString& ltype);
 
     /// copy from
     void CopyFrom(const CColVariable* p_coord);
 
 // ----------------------------------------------------------------------------
     /// return number of bins
-    unsigned int GetNumberOfBins(void) const;
+    int GetNumOfBins(void) const;
 
     /// return minimal value
     double GetMinValue(void) const;

@@ -130,8 +130,8 @@ bool CABFDerivatives::Run(void)
     if(Options.GetOptNoHeader() == false) {
         fprintf(OutputFile,"# derivatives\n");
         fprintf(OutputFile,"# PMFLib version        : %s\n",LibBuildVersion_PMF);
-        fprintf(OutputFile,"# Number of coordinates : %d\n",Accumulator.GetNumberOfCoords());
-        fprintf(OutputFile,"# Total number of bins  : %d\n",Accumulator.GetNumberOfBins());
+        fprintf(OutputFile,"# Number of coordinates : %d\n",Accumulator.GetNumOfCVs());
+        fprintf(OutputFile,"# Total number of bins  : %d\n",Accumulator.GetNumOfBins());
         fprintf(OutputFile,"# CV item               : %d\n",Options.GetOptItem());
         fprintf(OutputFile,"# Sample limit          : %d\n",Options.GetOptLimit());
         fprintf(OutputFile,"# Include std. dev.     : %s\n",(const char*)bool_to_str(Options.GetOptSigma()));
@@ -153,7 +153,7 @@ bool CABFDerivatives::Run(void)
 
 bool CABFDerivatives::PrintDG(void)
 {
-    if( (Options.GetOptItem() < 0) || (Options.GetOptItem() > Accumulator.GetNumberOfCoords())){
+    if( (Options.GetOptItem() < 0) || (Options.GetOptItem() > Accumulator.GetNumOfCVs())){
         ES_ERROR("requested CV is out of range");
         return(false);
     }
@@ -161,20 +161,20 @@ bool CABFDerivatives::PrintDG(void)
     CSimpleVector<double>   pos;
     CSimpleVector<int>      ipos;
 
-    pos.CreateVector(Accumulator.GetNumberOfCoords());
-    ipos.CreateVector(Accumulator.GetNumberOfCoords());
+    pos.CreateVector(Accumulator.GetNumOfCVs());
+    ipos.CreateVector(Accumulator.GetNumOfCVs());
 
     int last_cv = -1;
 
-    for(int ibin=0; ibin < Accumulator.GetNumberOfBins(); ibin++){
+    for(int ibin=0; ibin < Accumulator.GetNumOfBins(); ibin++){
 
         // do we have enough samples?
-        double nsamples = Accumulator.GetNumberOfABFSamples(ibin);
+        double nsamples = Accumulator.GetNumOfSamples(ibin);
         if( nsamples < Options.GetOptLimit() ) continue;
 
     // write block delimiter - required by GNUPlot
         if(Options.GetOptNoGNUPlot() == false) {
-            int ncvs = Accumulator.GetNumberOfCoords();
+            int ncvs = Accumulator.GetNumOfCVs();
             Accumulator.GetIPoint(ibin,ipos);
 
             if( (last_cv >= 0) && (ipos[ncvs-1] != last_cv + 1) ){
@@ -194,7 +194,7 @@ bool CABFDerivatives::PrintDG(void)
         xformat = Options.GetOptIXFormat() + " ";
 
         // print point position
-        for(int i=0; i < Accumulator.GetNumberOfCoords(); i++) {
+        for(int i=0; i < Accumulator.GetNumOfCVs(); i++) {
             double xvalue = pos[i];
             if(fprintf(OutputFile,xformat,xvalue) <= 0) {
                 CSmallString error;
@@ -204,7 +204,7 @@ bool CABFDerivatives::PrintDG(void)
             }
         }
 
-        for(int i=0; i < Accumulator.GetNumberOfCoords(); i++) {
+        for(int i=0; i < Accumulator.GetNumOfCVs(); i++) {
             double value = Accumulator.GetValue(i,ibin,EABF_DG_VALUE);
             double sigma = Accumulator.GetValue(i,ibin,EABF_DG_SIGMA);
             double error = Accumulator.GetValue(i,ibin,EABF_DG_ERROR);

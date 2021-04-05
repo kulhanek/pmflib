@@ -43,14 +43,23 @@ public:
 
 // access methods -------------------------------------------------------------
     /// set number of cvs
-    void SetNumberOfItems(int nitems,int ntotbins);
+    void SetNumberOfItems(int ncvs,int ntotbins);
+
+    /// set temperature
+    void SetTemperature(double temp);
+
+    /// set energy unit
+    void SetEnergyUnit(double fconv,const CSmallString& unit);
+
+    /// set epot enabled
+    void SetEpotEnabled(bool enabled);
 
     /// set cv
-    void SetCoord(int id,const CSmallString& name,const CSmallString& type,
-                  double min_value,double max_value,int nbins,double fconv,const CSmallString& unit);
+    void SetCV(int id,const CSmallString& name,const CSmallString& type,
+               double min_value,double max_value,int nbins,double fconv,const CSmallString& unit);
 
     /// get number of bins
-    int GetNumberOfBins(void);
+    int GetNumOfBins(void);
 
 // commands -------------------------------------------------------------------
     /// register client on server side
@@ -61,47 +70,61 @@ public:
 
     /// get initial data
     bool GetInitialData(int* nisamples,
-                        double* iabfforce,
-                        double* iabfforce2,
-                        double* iepot,
-                        double* iepot2);
+                        double* inc_icfsum,
+                        double* inc_icfsum2,
+                        double* inc_epotsum,
+                        double* inc_epotsum2,
+                        double* inc_icfepotsum,
+                        double* inc_icfepotsum2);
 
     /// exchange data with server
     bool ExchangeData(int* nisamples,
-                        double* iabfforce,
-                        double* iabfforce2,
-                        double* iepot,
-                        double* iepot2);
+                        double* inc_icfsum,
+                        double* inc_icfsum2,
+                        double* inc_epotsum,
+                        double* inc_epotsum2,
+                        double* inc_icfepotsum,
+                        double* inc_icfepotsum2);
 
 // section of private data ----------------------------------------------------
 private:
     int                         ClientID;       // client ID
-    int                         NItems;         // number of items
+    int                         NCVs;           // number of CVs
     int                         NTotBins;       // total number of bins
-    std::vector<CColVariable>   Coords;         // list of CVs
+    std::vector<CColVariable>   CVs;            // list of CVs
+    double                      Temperature;
+    double                      EnergyFConv;
+    CSmallString                EnergyUnit;
+    bool                        EpotEnabled;
 
     /// write data for exchange
     void WriteExchangeData(CXMLElement* p_cele,
                             int* nisamples,
-                            double* iabfforce,
-                            double* iabfforce2,
-                            double* iepot,
-                            double* iepot2);
+                            double* inc_icfsum,
+                            double* inc_icfsum2,
+                            double* inc_epotsum,
+                            double* inc_epotsum2,
+                            double* inc_icfepotsum,
+                            double* inc_icfepotsum2);
 
     /// read data from exchange
     void ReadExchangeData(CXMLElement* p_rele,
                             int* nisamples,
-                            double* iabfforce,
-                            double* iabfforce2,
-                            double* iepot,
-                            double* iepot2);
+                            double* inc_icfsum,
+                            double* inc_icfsum2,
+                            double* inc_epotsum,
+                            double* inc_epotsum2,
+                            double* inc_icfepotsum,
+                            double* inc_icfepotsum2);
 
     /// clear data
     void ClearExchangeData(int* nisamples,
-                            double* iabfforce,
-                            double* iabfforce2,
-                            double* iepot,
-                            double* iepot2);
+                            double* inc_icfsum,
+                            double* inc_icfsum2,
+                            double* inc_epotsum,
+                            double* inc_epotsum2,
+                            double* inc_icfepotsum,
+                            double* inc_icfepotsum2);
 
     /// save cvs into XML
     void SaveCVSInfo(CXMLElement* p_tele);

@@ -80,7 +80,7 @@ bool CABFServerAccu::RegisterOrCheckCoords(CServerCommand* p_cmd)
 
     AccuMutex.Lock();
 
-    if(GetNumberOfCoords() == 0) {
+    if(GetNumOfCVs() == 0) {
         try {
             // load coordinates from first client
             LoadCVSInfo(p_cvs);
@@ -141,11 +141,13 @@ void CABFServerAccu::ExchangeDataWithClient(CRegClient* p_client)
     }
 
     // check if the data storage are ready
-    if( (GetNSamplesArray() == NULL)
-        || (GetABFForceSumArray() == NULL)
-        || (GetABFForceSquareSumArray() == NULL)
-        || (GetEPotSumArray() == NULL)
-        || (GetEPotSquareSumArray() == NULL) ) {
+    if(    (GetNSamplesArray() == NULL)
+        || (GetICFSumArray() == NULL)
+        || (GetICFSum2Array() == NULL)
+        || (GetEpotSumArray() == NULL)
+        || (GetEpotSum2Array() == NULL)
+        || (GetICFEpotSumArray() == NULL)
+        || (GetICFEpotSum2Array() == NULL)  ) {
         LOGIC_ERROR("data array(s) is(are) NULL");
     }
 
@@ -262,7 +264,7 @@ void CABFServerAccu::GetData(CServerCommand* p_command)
     AccuMutex.Lock();
     try {
         SaveCVSInfo(p_cvs);
-        if( GetNumberOfCoords() > 0 ) {
+        if( GetNumOfCVs() > 0 ) {
             WriteABFData(p_data);
         }
     } catch(...) {
@@ -281,6 +283,45 @@ void CABFServerAccu::FlushData(const CSmallString& name)
     AccuMutex.Lock();
         try {
             Save(name);
+        } catch(...){
+            AccuMutex.Unlock();
+            throw;
+        }
+    AccuMutex.Unlock();
+}
+
+//==============================================================================
+//------------------------------------------------------------------------------
+//==============================================================================
+
+void  CABFServerAccu::SetMainHeader(CServerCommand* p_command)
+{
+    if(p_command == NULL) {
+        INVALID_ARGUMENT("p_command is NULL");
+    }
+
+// initial accu data
+    double          ftemp = 300.0;
+    double          fconv = 1.0;
+    CSmallString    unit = "kcal mol^-1";
+    bool            epotenabled = false;
+
+    CXMLElement* p_cele = p_command->GetRootCommandElement();
+
+    p_cele->GetAttribute("temperature",ftemp);
+    p_cele->GetAttribute("epot",epotenabled);
+
+    CXMLElement* p_ele = p_cele->GetFirstChildElement("ENERGY");
+    if( p_ele ){
+        p_ele->GetAttribute("fconv",fconv);
+        p_ele->GetAttribute("unit",unit);
+    }
+
+    AccuMutex.Lock();
+        try {
+            SetTemperature(ftemp);
+            SetEnergyUnit(fconv,unit);
+            SetEpotEnabled(epotenabled);
         } catch(...){
             AccuMutex.Unlock();
             throw;

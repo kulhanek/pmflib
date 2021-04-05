@@ -293,8 +293,8 @@ void CABFEnthalpy::LoadGPRHyprms(CABFEnthalpyGPR& gpr)
 
 void CABFEnthalpy::GetRawEnthalpy(void)
 {
-    for(int ibin=0; ibin < Accumulator.GetNumberOfBins(); ibin++){
-        int    nsamples = Accumulator.GetNumberOfABFSamples(ibin);
+    for(int ibin=0; ibin < Accumulator.GetNumOfBins(); ibin++){
+        int    nsamples = Accumulator.GetNumOfSamples(ibin);
         double ent = Accumulator.GetValue(ibin,EABF_H_VALUE);
         double error = Accumulator.GetValue(ibin,EABF_H_ERROR);
         HES.SetNumOfSamples(ibin,nsamples);
@@ -385,8 +385,8 @@ void CABFEnthalpy::WriteHeader(void)
         fprintf(OutputFile,"# Global FES minimum    : -auto-\n");
         }
         fprintf(OutputFile,"# Energy offset         : %5.3f\n", Options.GetOptOffset());
-        fprintf(OutputFile,"# Number of coordinates : %d\n",Accumulator.GetNumberOfCoords());
-        fprintf(OutputFile,"# Total number of bins  : %d\n",Accumulator.GetNumberOfBins());
+        fprintf(OutputFile,"# Number of coordinates : %d\n",Accumulator.GetNumOfCVs());
+        fprintf(OutputFile,"# Total number of bins  : %d\n",Accumulator.GetNumOfBins());
     }
 }
 
@@ -397,9 +397,9 @@ void CABFEnthalpy::WriteHeader(void)
 
 void CABFEnthalpy::PrepareAccumulatorI(void)
 {
-    for(int ibin=0; ibin < Accumulator.GetNumberOfBins(); ibin++) {
+    for(int ibin=0; ibin < Accumulator.GetNumOfBins(); ibin++) {
         // erase datapoints not properly sampled, preserve glueing
-        if( (Accumulator.GetNumberOfABFSamples(ibin) >= 0) && (Accumulator.GetNumberOfABFSamples(ibin) <= Options.GetOptLimit()) ) {
+        if( (Accumulator.GetNumOfSamples(ibin) >= 0) && (Accumulator.GetNumOfSamples(ibin) <= Options.GetOptLimit()) ) {
             Accumulator.SetNumberOfABFSamples(ibin,0);
         }
     }
@@ -410,18 +410,18 @@ void CABFEnthalpy::PrepareAccumulatorI(void)
 void CABFEnthalpy::PrintSampledStat(void)
 {
     // calculate sampled area
-    double maxbins = Accumulator.GetNumberOfBins();
+    double maxbins = Accumulator.GetNumOfBins();
     int    sampled = 0;
     int    holes = 0;
     int    glued = 0;
-    for(int ibin=0; ibin < Accumulator.GetNumberOfBins(); ibin++) {
-        if( Accumulator.GetNumberOfABFSamples(ibin) > 0 ) {
+    for(int ibin=0; ibin < Accumulator.GetNumOfBins(); ibin++) {
+        if( Accumulator.GetNumOfSamples(ibin) > 0 ) {
             sampled++;
         }
-        if( Accumulator.GetNumberOfABFSamples(ibin) < 0 ) {
+        if( Accumulator.GetNumOfSamples(ibin) < 0 ) {
             glued++;
         }
-        if( Accumulator.GetNumberOfABFSamples(ibin) == -1 ) {
+        if( Accumulator.GetNumOfSamples(ibin) == -1 ) {
             holes++;
         }
     }

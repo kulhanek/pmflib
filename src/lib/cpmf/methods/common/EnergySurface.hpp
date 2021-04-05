@@ -42,13 +42,13 @@ public:
 
 // setup method ---------------------------------------------------------------
     /// return number of cvs
-    int GetNumberOfCoords(void) const;
+    int GetNumOfCVs(void) const;
 
     /// return number of points
-    int GetNumberOfPoints(void) const;
+    int GetNumOfPoints(void) const;
 
     /// return coordinate definition
-    const CColVariable* GetCoordinate(unsigned int cv) const;
+    const CColVariable* GetCV(unsigned int cv) const;
 
 // allocate/deallocate --------------------------------------------------------
     /// allocate array
@@ -145,7 +145,7 @@ public:
 private:
     int                         NumOfCVs;       // number of cvs
     int                         TotNPoints;     // total energy size
-    CSimpleVector<CColVariable> Sizes;          // dimensions
+    CSimpleVector<CColVariable> CVs;            // dimensions
     CSimpleVector<double>       Energy;         // energy array
     CSimpleVector<double>       Error;          // error array
     CSimpleVector<int>          Samples;        // number of samples

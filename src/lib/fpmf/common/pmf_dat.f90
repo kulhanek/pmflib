@@ -101,8 +101,8 @@ real(PMFDP),allocatable     :: MassInv(:)       ! mass inverse
 real(PMFDP),allocatable     :: Crd(:,:)         ! current coordinates
 real(PMFDP),allocatable     :: Frc(:,:)         ! current system forces
 real(PMFDP),allocatable     :: Vel(:,:)         ! current system velocities
-real(PMFDP),allocatable     :: DelV(:,:)        ! current system -forces
-real(PMFDP)                 :: PotEne           ! current system potential energy
+real(PMFDP)                 :: KinEne           ! current system kinetic energy in t-dt
+real(PMFDP)                 :: PotEne           ! current system potential energy in t
 type(CVContextType)         :: CVContext        ! current CV context (values and derivatives)
 
 ! used by Blue moon

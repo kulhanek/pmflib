@@ -47,43 +47,43 @@ public:
 
 // access data methods --------------------------------------------------------
     /// return number of coordinates
-    unsigned int GetNumberOfCoords(void) const;
+    int GetNumOfCVs(void) const;
 
     /// return number of hills in this buffer
-    unsigned int GetNumberOfHills(void) const;
+    int GetNumOfHills(void) const;
 
     /// increment number of valid hills
     void IncNumberOfHills(void);
 
     /// return level ID
-    unsigned int GetLevel(void) const;
+    int GetLevel(void) const;
 
     /// set level ID
-    void SetLevel(unsigned int level);
+    void SetLevel(int level);
 
     /// return start index
-    unsigned int GetStart(void) const;
+    int GetStart(void) const;
 
     /// set start index
-    void SetStart(unsigned int start);
+    void SetStart(int start);
 
     /// return CV value
-    const double& GetValue(unsigned int hill,unsigned int cvs) const;
+    const double& GetValue(int hill,int cvs) const;
 
     /// return width
-    const double& GetWidth(unsigned int hill,unsigned int cvs) const;
+    const double& GetWidth(int hill,int cvs) const;
 
     /// return height
-    const double& GetHeight(unsigned int hill) const;
+    const double& GetHeight(int hill) const;
 
     /// set CV value
-    void SetValue(unsigned int hill,unsigned int cvs,double value);
+    void SetValue(int hill,int cvs,double value);
 
     /// set width
-    void SetWidth(unsigned int hill,unsigned int cvs,double width);
+    void SetWidth(int hill,int cvs,double width);
 
     /// set height
-    void SetHeight(unsigned int hill,double height);
+    void SetHeight(int hill,double height);
 
 // data transfer methods ------------------------------------------------------
     /// read data from XML element
@@ -94,14 +94,14 @@ public:
 
 // section of private data ----------------------------------------------------
 private:
-    unsigned int    level_id;               // level id - used in mtd-server/client
-    unsigned int    start_id;
-    unsigned int    length_of_buffer;       // length of buffer
-    unsigned int    number_of_cvs;          // number of CVS
-    unsigned int    num_of_values;          // actual number of snapshots
-    double*         values;                 // CV values
-    double*         widths;                 // gaussian widths for each CV
-    double*         heights;                // gaussian heights
+    int         level_id;               // level id - used in mtd-server/client
+    int         start_id;
+    int         length_of_buffer;       // length of buffer
+    int         number_of_cvs;          // number of CVS
+    int         num_of_values;          // actual number of snapshots
+    double*     values;                 // CV values
+    double*     widths;                 // gaussian widths for each CV
+    double*     heights;                // gaussian heights
 };
 
 //------------------------------------------------------------------------------

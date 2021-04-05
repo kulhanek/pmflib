@@ -124,7 +124,7 @@ void CABPAccumulator::Load(FILE* fin)
 
     Kernel = kernel;
 
-    SetNumberOfCoords(numofcoords);
+    SetNumOfCVs(numofcoords);
 
 // read coordinate specification ----------------
     for(int i=0; i < NCoords; i++) {
@@ -197,7 +197,7 @@ void CABPAccumulator::Load(FILE* fin)
         }
 
         // init coordinate
-        SetCoordinate(i,name,type,min_value,max_value,nbins,alpha,fconv,unit);
+        SetCV(i,name,type,min_value,max_value,nbins,alpha,fconv,unit);
     }
 
 // alloc accumulator data -----------------------
@@ -368,9 +368,9 @@ void CABPAccumulator::GetPoint(unsigned int index,CSimpleVector<double>& point) 
 {
     for(int k=NCoords-1; k >= 0; k--) {
         const CColVariable* p_coord = &Sizes[k];
-        int ibin = index % p_coord->GetNumberOfBins();
+        int ibin = index % p_coord->GetNumOfBins();
         point[k] = p_coord->GetValue(ibin);
-        index = index / p_coord->GetNumberOfBins();
+        index = index / p_coord->GetNumOfBins();
     }
 }
 
@@ -380,9 +380,9 @@ void CABPAccumulator::GetIPoint(unsigned int index,CSimpleVector<int>& point) co
 {
     for(int k=NCoords-1; k >= 0; k--) {
         const CColVariable* p_coord = &Sizes[k];
-        int ibin = index % p_coord->GetNumberOfBins();
+        int ibin = index % p_coord->GetNumOfBins();
         point[k] = ibin;
-        index = index / p_coord->GetNumberOfBins();
+        index = index / p_coord->GetNumOfBins();
     }
 }
 
@@ -390,7 +390,7 @@ void CABPAccumulator::GetIPoint(unsigned int index,CSimpleVector<int>& point) co
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void CABPAccumulator::SetNumberOfCoords(int numofcoords)
+void CABPAccumulator::SetNumOfCVs(int numofcoords)
 {
     if( numofcoords < 0 ) {
         INVALID_ARGUMENT("numofcoords < 0");
@@ -414,7 +414,7 @@ void CABPAccumulator::SetNumberOfCoords(int numofcoords)
 
 //------------------------------------------------------------------------------
 
-void CABPAccumulator::SetCoordinate(int id,
+void CABPAccumulator::SetCV(int id,
                                     const CSmallString& name,
                                     const CSmallString& type,
                                     double min_value,double max_value,int nbins,
@@ -459,29 +459,24 @@ void CABPAccumulator::SetCoordinate(int id,
 //------------------------------------------------------------------------------
 //==============================================================================
 
-int CABPAccumulator::GetNumberOfCoords(void) const
+int CABPAccumulator::GetNumOfCVs(void) const
 {
     return(NCoords);
 }
 
 //------------------------------------------------------------------------------
 
-const CColVariable* CABPAccumulator::GetCoordinate(int cv) const
+const CColVariable* CABPAccumulator::GetCV(int cv) const
 {
     return(&Sizes[cv]);
 }
 
 //------------------------------------------------------------------------------
 
-int CABPAccumulator::GetNumberOfBins(void) const
+int CABPAccumulator::GetNumOfBins(int limit) const
 {
-    return(TotNBins);
-}
+    if( limit == 0 ) return(TotNBins);
 
-//------------------------------------------------------------------------------
-
-int CABPAccumulator::GetNumberOfBinsWithABPLimit(int limit) const
-{
     int number = 0;
     for(int i=0; i < TotNBins; i++) {
         if(NSamples[i] >= limit) number++;
@@ -610,7 +605,7 @@ void CABPAccumulator::LoadCVSInfo(CXMLElement* p_iele)
         return;
     }
 
-    SetNumberOfCoords(lnitems);
+    SetNumOfCVs(lnitems);
 
     CXMLElement*   p_cel = p_ele->GetFirstChildElement("COORD");
 
@@ -749,9 +744,9 @@ void CABPAccumulator::ReadABPData(CXMLElement* p_rele)
         INVALID_ARGUMENT("p_iele is NULL");
     }
 
-    unsigned int nisamples_size = GetNumberOfBins()*sizeof(int);
-    unsigned int idpop_size = GetNumberOfBins()*GetNumberOfCoords()*sizeof(double);
-    unsigned int ipop_size = GetNumberOfBins()*sizeof(double);
+    unsigned int nisamples_size = GetNumOfBins()*sizeof(int);
+    unsigned int idpop_size = GetNumOfBins()*GetNumOfCVs()*sizeof(double);
+    unsigned int ipop_size = GetNumOfBins()*sizeof(double);
 
     if( (nisamples_size == 0) || (idpop_size == 0) || (ipop_size == 0) )  {
         RUNTIME_ERROR("size(s) is(are) zero");
@@ -811,13 +806,13 @@ void CABPAccumulator::AddABPData(CXMLElement* p_cele)
         INVALID_ARGUMENT("p_iele is NULL");
     }
 
-    unsigned int isamples = GetNumberOfBins();
-    unsigned int idpop = GetNumberOfBins()*GetNumberOfCoords();
-    unsigned int ipop = GetNumberOfBins();
+    unsigned int isamples = GetNumOfBins();
+    unsigned int idpop = GetNumOfBins()*GetNumOfCVs();
+    unsigned int ipop = GetNumOfBins();
 
-    unsigned int isamples_size = GetNumberOfBins()*sizeof(int);
-    unsigned int idpop_size = GetNumberOfBins()*GetNumberOfCoords()*sizeof(double);
-    unsigned int ipop_size = GetNumberOfBins()*sizeof(double);
+    unsigned int isamples_size = GetNumOfBins()*sizeof(int);
+    unsigned int idpop_size = GetNumOfBins()*GetNumOfCVs()*sizeof(double);
+    unsigned int ipop_size = GetNumOfBins()*sizeof(double);
 
 // --------------------------
     CXMLBinData* p_isamples = p_cele->GetFirstChildBinData("NISAMPLES");
@@ -888,9 +883,9 @@ void CABPAccumulator::WriteABPData(CXMLElement* p_rele)
         INVALID_ARGUMENT("p_rele is NULL");
     }
 
-    int isamples_size = GetNumberOfBins()*sizeof(int);
-    int idpop_size = GetNumberOfBins()*GetNumberOfCoords()*sizeof(double);
-    int ipop_size = GetNumberOfBins()*sizeof(double);
+    int isamples_size = GetNumOfBins()*sizeof(int);
+    int idpop_size = GetNumOfBins()*GetNumOfCVs()*sizeof(double);
+    int ipop_size = GetNumOfBins()*sizeof(double);
 
 // write collected data to response
     CXMLBinData* p_isamples = p_rele->CreateChildBinData("NISAMPLES");

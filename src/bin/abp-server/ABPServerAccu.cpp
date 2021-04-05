@@ -81,7 +81,7 @@ bool CABPServerAccu::RegisterOrCheckCoords(CServerCommand* p_cmd)
 
     AccuMutex.Lock();
 
-    if(GetNumberOfCoords() == 0) {
+    if(GetNumOfCVs() == 0) {
         try {
             // load coordinates from first client
             LoadCVSInfo(p_cvs);
@@ -261,7 +261,7 @@ void CABPServerAccu::GetData(CServerCommand* p_command)
     AccuMutex.Lock();
     try {
         SaveCVSInfo(p_cvs);
-        if( GetNumberOfCoords() > 0 ) {
+        if( GetNumOfCVs() > 0 ) {
             WriteABPData(p_data);
         }
     } catch(...) {

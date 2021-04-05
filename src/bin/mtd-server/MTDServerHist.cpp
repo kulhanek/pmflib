@@ -41,7 +41,7 @@ bool CMTDServerHist::RegisterOrCheckCoords(CServerCommand* p_cmd)
 
     HistMutex.Lock();
 
-        if(GetNumberOfCoords() == 0) {
+        if(GetNumOfCVs() == 0) {
             try {
                 // load coordinates from first client
                 LoadCVSInfo(p_cvs);
@@ -77,7 +77,7 @@ void CMTDServerHist::GetData(CServerCommand* p_command)
 
         try {
             SaveCVSInfo(p_result);
-            if(GetNumberOfCoords() > 0) {
+            if(GetNumOfCVs() > 0) {
                 WriteMTDData(p_result);
             }
         } catch(...){

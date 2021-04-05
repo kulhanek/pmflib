@@ -143,12 +143,12 @@ void cpmf_remd_client_get_data_(int*    ret_st,
 //==============================================================================
 
 void cpmf_remd_client_exchange_data_(int*   ret_st,
-                                     double* iepot,
+                                     double* inc_epotsum,
                                      int*    bath_id,
                                      double* ctemp,
                                      double* otemp)
 {
-    if(REMDClient.ExchangeData(*iepot,*bath_id,*ctemp,*otemp) == false) {
+    if(REMDClient.ExchangeData(*inc_epotsum,*bath_id,*ctemp,*otemp) == false) {
         fprintf(stderr,"\n>>> ERROR: Unable to exchange data!\n");
         *ret_st = 1;
         return;

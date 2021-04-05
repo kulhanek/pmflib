@@ -39,7 +39,7 @@ void PMF_PACKAGE cpmf_mtd_client_set_header_(FTINT* ret_st,FTINT* nitems)
     int l_nitems = *nitems;
 
     try {
-        MTDClient.SetNumberOfCoords(l_nitems);
+        MTDClient.SetNumOfCVs(l_nitems);
     } catch(std::exception& e) {
         ES_ERROR_FROM_EXCEPTION("unable to set the number of items",e);
         *ret_st = 1;
@@ -75,7 +75,7 @@ void PMF_PACKAGE cpmf_mtd_client_set_coord_(FTINT* ret_st,
         l_type.SetFromFortran(type,type_len);
         l_name.SetFromFortran(name,name_len);
 
-        MTDClient.SetCoordinate(l_id,l_name,l_type,l_min_value,l_max_value,l_nbins);
+        MTDClient.SetCV(l_id,l_name,l_type,l_min_value,l_max_value,l_nbins);
 
     } catch(std::exception& e) {
         CSmallString error;
@@ -202,7 +202,7 @@ void PMF_PACKAGE cpmf_mtd_client_get_buffer_info_(FTINT* ret_st,
 
     *level = p_buffer->GetLevel();
     *start = p_buffer->GetStart();
-    *num_of_hills = p_buffer->GetNumberOfHills();
+    *num_of_hills = p_buffer->GetNumOfHills();
 
     *ret_st = 0;
 }
@@ -217,7 +217,7 @@ void PMF_PACKAGE cpmf_mtd_client_add_buffer_data_(FTINT* ret_st,
                                       FTINT* num_of_hills,
                                       double* data)
 {
-    unsigned int l_num_of_hills = *num_of_hills;
+    int l_num_of_hills = *num_of_hills;
 
 // create new buffer
     CMTDBuffer* p_buffer = MTDClient.GetNewBuffer(l_num_of_hills);
@@ -232,9 +232,9 @@ void PMF_PACKAGE cpmf_mtd_client_add_buffer_data_(FTINT* ret_st,
 // set data
     double* src = data;
 
-    for(unsigned int i=0; i < l_num_of_hills; i++) {
+    for(int i=0; i < l_num_of_hills; i++) {
         p_buffer->SetHeight(i,*src++);
-        for(unsigned int j=0; j < p_buffer->GetNumberOfCoords(); j++) {
+        for(int j=0; j < p_buffer->GetNumOfCVs(); j++) {
             p_buffer->SetValue(i,j,*src++);
             p_buffer->SetWidth(i,j,*src++);
         }
@@ -263,9 +263,9 @@ void PMF_PACKAGE cpmf_mtd_client_get_buffer_data_(FTINT* ret_st,
     double* dst = data;
 
 // copy data
-    for(unsigned int i=0; i < p_buffer->GetNumberOfHills(); i++) {
+    for(int i=0; i < p_buffer->GetNumOfHills(); i++) {
         *dst++ = p_buffer->GetHeight(i);
-        for(unsigned int j=0; j < p_buffer->GetNumberOfCoords(); j++) {
+        for(int j=0; j < p_buffer->GetNumOfCVs(); j++) {
             *dst++ = p_buffer->GetValue(i,j);
             *dst++ = p_buffer->GetWidth(i,j);
         }

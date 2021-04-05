@@ -99,7 +99,12 @@ subroutine abf_control_read_abf(prm_fin)
     call pmf_ctrl_read_logical(prm_fin,'fcache_icf',fcache_icf)
     call pmf_ctrl_read_logical(prm_fin,'frawicf',frawicf)
 
-    call pmf_ctrl_read_logical(prm_fin,'faccupotene',faccupotene)
+    call pmf_ctrl_read_logical(prm_fin,'faccuepot',faccuepot)
+    call pmf_ctrl_read_logical(prm_fin,'faccuekin',faccuekin)
+
+    if( faccuekin .and. (.not. faccuepot) )  then
+            call pmf_utils_exit(PMF_OUT,1,'[ABF] faccuekin = on without faccuepot does not have sense!')
+    end if
 
     select case(feimode)
         case(1)

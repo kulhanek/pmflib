@@ -16,7 +16,7 @@
 !
 !    You should have received a copy of the GNU Lesser General Public
 !    License along with this library; if not, write to the Free Software
-!    Foundation, Inc., 51 Franklin Street, Fifth Floor, 
+!    Foundation, Inc., 51 Franklin Street, Fifth Floor,
 !    Boston, MA  02110-1301  USA
 !===============================================================================
 
@@ -303,7 +303,7 @@ subroutine pmf_pmemd_bcast_dat_mpi()
     ! allocate temporary arrays
     if( fmaster ) then
         numofmpitransfers = 0
-        fragmentation = 0  
+        fragmentation = 0
         numofchunkgaps = 0
         allocate(tmp_a(3,fnatoms), &
                  tmp_b(3,fnatoms), &
@@ -360,14 +360,14 @@ subroutine pmf_pmemd_force(x,v,f,epot,epmf)
     real(PMFDP)    :: v(:,:)
     real(PMFDP)    :: f(:,:)
     real(PMFDP)    :: epot
-    real(PMFDP)    :: epmf 
+    real(PMFDP)    :: epmf
     ! --------------------------------------------------------------------------
 
     if( .not. fmaster ) return
 
     call pmf_timers_start_timer(PMFLIB_TIMER)
     call pmf_core_lf_update_step
-    call pmf_core_lf_force(x,v,f,epot,epmf)
+    call pmf_core_lf_force(x,v,f,0.0d0,epot,epmf)
     call pmf_timers_stop_timer(PMFLIB_TIMER)
 
 end subroutine pmf_pmemd_force
@@ -639,10 +639,10 @@ subroutine pmf_pmemd_mpistat
 
     write(PMF_OUT,10) numofmpitransfers
     write(PMF_OUT,15) fnumoftasks
-    f = real(fragmentation,PMFDP) / real(numofmpitransfers,PMFDP)   
+    f = real(fragmentation,PMFDP) / real(numofmpitransfers,PMFDP)
     write(PMF_OUT,20) f
-    f = real(numofchunkgaps,PMFDP) / real(numofmpitransfers,PMFDP)   
-    write(PMF_OUT,23) f  
+    f = real(numofchunkgaps,PMFDP) / real(numofmpitransfers,PMFDP)
+    write(PMF_OUT,23) f
 
     write(PMF_OUT,25)
     write(PMF_OUT,30)
@@ -653,7 +653,7 @@ subroutine pmf_pmemd_mpistat
         tot = tot + f
     end do
     write(PMF_OUT,40)
-    write(PMF_OUT,45) tot, NumOfLAtoms 
+    write(PMF_OUT,45) tot, NumOfLAtoms
 
  10 format('| MPI> Num of gather/scatter calls        = ',I12)
  15 format('| MPI> Num of CPUs                        = ',I12)
@@ -765,7 +765,7 @@ INCLUDE 'mpif.h'
             write(PMF_DEBUG-1,20) numofmpitransfers, f
         end if
     end if
-    
+
     ! gather data
     call mpi_gatherv(send_buffer,chunk_sizes(fmytaskid+1),mpi_double_precision, &
                      recv_buffer,chunk_sizes(1),chunk_offsets(1),mpi_double_precision, &

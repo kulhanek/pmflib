@@ -89,8 +89,8 @@ void CABFEnthalpyGPR::SetInputABFAccumulator(CABFAccumulator* p_accu)
     Accumulator = p_accu;
 
     if( Accumulator ){
-        NCVs = Accumulator->GetNumberOfCoords();
-        NumOfBins = Accumulator->GetNumberOfBins();
+        NCVs = Accumulator->GetNumOfCVs();
+        NumOfBins = Accumulator->GetNumOfBins();
     } else {
         NCVs = 0;
         NumOfBins = 0;
@@ -353,13 +353,13 @@ bool CABFEnthalpyGPR::Interpolate(CVerboseStr& vout,bool nostat)
     if( FES == NULL ) {
         RUNTIME_ERROR("FES is not set");
     }
-    if( Accumulator->GetNumberOfCoords() == 0 ) {
+    if( Accumulator->GetNumOfCVs() == 0 ) {
         RUNTIME_ERROR("number of coordinates is zero");
     }
-    if( Accumulator->GetNumberOfCoords() != FES->GetNumberOfCoords() ){
+    if( Accumulator->GetNumOfCVs() != FES->GetNumOfCVs() ){
         RUNTIME_ERROR("inconsistent ABF and FES - CVs");
     }
-    if( Accumulator->GetNumberOfBins() != FES->GetNumberOfPoints() ){
+    if( Accumulator->GetNumOfBins() != FES->GetNumOfPoints() ){
         RUNTIME_ERROR("inconsistent ABF and FES - points");
     }
     if( WFac.GetLength() == 0 ){
@@ -369,14 +369,14 @@ bool CABFEnthalpyGPR::Interpolate(CVerboseStr& vout,bool nostat)
     // GPR setup
     CVLengths2.CreateVector(NCVs);
     for(size_t i=0; i < NCVs; i++){
-        double l = WFac[i]*Accumulator->GetCoordinate(i)->GetRange()/Accumulator->GetCoordinate(i)->GetNumberOfBins();
+        double l = WFac[i]*Accumulator->GetCV(i)->GetRange()/Accumulator->GetCV(i)->GetNumOfBins();
         CVLengths2[i] = l*l;
     }
 
     // number of data points
     NumOfUsedBins = 0;
     for(size_t i=0; i < NumOfBins; i++){
-        if( Accumulator->GetNumberOfABFSamples(i) > 0 ) NumOfUsedBins++;
+        if( Accumulator->GetNumOfSamples(i) > 0 ) NumOfUsedBins++;
     }
     GPRSize = NumOfUsedBins;
 
@@ -384,7 +384,7 @@ bool CABFEnthalpyGPR::Interpolate(CVerboseStr& vout,bool nostat)
     SampledMap.CreateVector(NumOfUsedBins);
     size_t ind = 0;
     for(size_t i=0; i < NumOfBins; i++){
-        if( Accumulator->GetNumberOfABFSamples(i) <= 0 ) continue;
+        if( Accumulator->GetNumOfSamples(i) <= 0 ) continue;
         SampledMap[ind] = i;
         ind++;
     }
@@ -644,7 +644,7 @@ void CABFEnthalpyGPR::CalculateEnergy(CVerboseStr& vout)
 // create map for bins with calculated energy and error
     NumOfValues = 0;
     for(size_t i=0; i < NumOfBins; i++){
-        int samples = Accumulator->GetNumberOfABFSamples(i);
+        int samples = Accumulator->GetNumOfSamples(i);
         if( samples <= 0 ) continue;
         NumOfValues++;
     }
@@ -652,7 +652,7 @@ void CABFEnthalpyGPR::CalculateEnergy(CVerboseStr& vout)
 
     size_t indi = 0;
     for(size_t i=0; i < NumOfBins; i++){
-        int samples = Accumulator->GetNumberOfABFSamples(i);
+        int samples = Accumulator->GetNumOfSamples(i);
         if( samples <= 0 ) continue;
         ValueMap[indi]=i;
         indi++;
@@ -674,7 +674,7 @@ void CABFEnthalpyGPR::CalculateEnergy(CVerboseStr& vout)
 
 // basic HES update
     for(size_t i=0; i < NumOfBins; i++){
-        int samples = Accumulator->GetNumberOfABFSamples(i);
+        int samples = Accumulator->GetNumOfSamples(i);
         FES->SetNumOfSamples(i,samples);
         FES->SetEnergy(i,0.0);
         FES->SetError(i,0.0);
@@ -686,7 +686,7 @@ void CABFEnthalpyGPR::CalculateEnergy(CVerboseStr& vout)
    //   vout << "   Calculating FES ..." << endl;
         vout << "      Global minimum provided at: ";
         vout << GPos[0];
-        for(int i=1; i < Accumulator->GetNumberOfCoords(); i++){
+        for(int i=1; i < Accumulator->GetNumOfCVs(); i++){
             vout << "x" << GPos[i];
         }
         double glb_min = GetValue(GPos);
@@ -705,7 +705,7 @@ void CABFEnthalpyGPR::CalculateEnergy(CVerboseStr& vout)
 
         for(size_t indj=0; indj < NumOfValues; indj++){
             size_t j = ValueMap[indj];
-            int samples = Accumulator->GetNumberOfABFSamples(j);
+            int samples = Accumulator->GetNumOfSamples(j);
             if( samples < -1 ) continue;    // include sampled areas and holes but exclude extrapolated areas
             double value = values[indj];
             if( first || (glb_min > value) ){
@@ -1196,7 +1196,7 @@ double CABFEnthalpyGPR::GetKernelValue(const CSimpleVector<double>& ip,const CSi
     // calculate scaled distance
     double scdist2 = 0.0;
     for(size_t ii=0; ii < NCVs; ii++){
-        double du = Accumulator->GetCoordinate(ii)->GetDifference(ip[ii],jp[ii]);
+        double du = Accumulator->GetCV(ii)->GetDifference(ip[ii],jp[ii]);
         double dd = CVLengths2[ii];
         scdist2 += du*du/dd;
     }
@@ -1225,7 +1225,7 @@ double CABFEnthalpyGPR::GetKernelValueWFacDer(const CSimpleVector<double>& ip,co
     // calculate scaled distance
     double scdist2 = 0.0;
     for(size_t ii=0; ii < NCVs; ii++){
-        double du = Accumulator->GetCoordinate(ii)->GetDifference(ip[ii],jp[ii]);
+        double du = Accumulator->GetCV(ii)->GetDifference(ip[ii],jp[ii]);
         double dd = CVLengths2[ii];
         scdist2 += du*du/dd;
     }
@@ -1233,7 +1233,7 @@ double CABFEnthalpyGPR::GetKernelValueWFacDer(const CSimpleVector<double>& ip,co
     switch(Kernel){
     case(EGPRK_ARDSE): {
             double arg = SigmaF2*exp(-0.5*scdist2);
-            double du = Accumulator->GetCoordinate(cv)->GetDifference(ip[cv],jp[cv]);
+            double du = Accumulator->GetCV(cv)->GetDifference(ip[cv],jp[cv]);
             double dd = CVLengths2[cv];
             double wf = WFac[cv];
             arg = arg * du*du / (dd * wf);

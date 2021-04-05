@@ -224,7 +224,7 @@ void CREMDClient::GetSnapshotData(double* crds,
 //------------------------------------------------------------------------------
 //==============================================================================
 
-bool CREMDClient::ExchangeData(double  iepot,
+bool CREMDClient::ExchangeData(double  inc_epotsum,
                                int&    bath_id,
                                double& ctemp,
                                double& otemp)
@@ -245,7 +245,7 @@ bool CREMDClient::ExchangeData(double  iepot,
 //        CXMLElement* p_ele = p_command->GetRootCommandElement();
 //        p_ele->SetAttribute("replica_id",ReplicaID);
 //        p_ele->SetAttribute("bath_id",BathID);
-//        p_ele->SetAttribute("epot",iepot);
+//        p_ele->SetAttribute("epot",inc_epotsum);
 //    } catch(...){
 //        ES_ERROR("unable to prepare input data");
 //        delete p_command;

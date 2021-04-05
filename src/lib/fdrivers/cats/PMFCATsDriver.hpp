@@ -35,8 +35,8 @@ public:
     static void     SetResidue(int idx,CSmallString name,int first_atom);
     static void     SetAtom(int idx,CSmallString name,CSmallString type);
     static void     EndInit(int anatom,std::vector<double>& amass,std::vector<double>& xyz);
-  
-    static void     SetCoordinates(int numofatoms,double* coords,double a,double b, double c,
+
+    static void     SetCVs(int numofatoms,double* coords,double a,double b, double c,
                                    double alpha, double beta, double gamma);
     static int      GetNumberOfCVs(void);
     static double   GetCVValue(CSmallString name);
@@ -44,7 +44,7 @@ public:
     static CSmallString   GetCVName(int indx);
     static CSmallString   GetCVType(CSmallString name);
     static CSmallString   GetCVType(int indx);
-    
+
     static void     Finalize(int mode);
 };
 

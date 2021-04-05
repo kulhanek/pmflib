@@ -36,9 +36,13 @@ using namespace std;
 
 CABFAccumulator::CABFAccumulator(void)
 {
-    NCoords     = 0;
-    TotNBins    = 0;
-    NCorr       = 1.0;
+    NCVs            = 0;
+    TotNBins        = 0;
+    NCorr           = 1.0;
+    EpotAvailable   = false;
+    Temperature     = 300.0;
+    EnergyFConv     = 1.0;
+    EnergyUnit      = "kcal mol^-1";
 }
 
 //------------------------------------------------------------------------------
@@ -113,6 +117,10 @@ void CABFAccumulator::Load(FILE* fin)
         Load_v4(buffer,fin);
         return;
     }
+    if(strcmp(ver_id,"V5") == 0) {
+        Load_v5(buffer,fin);
+        return;
+    }
 
     CSmallString error;
     error << "Unsupported version of ABF accumulator (line: " << buffer << ")";
@@ -130,10 +138,10 @@ void CABFAccumulator::Load_v3(char* fline,FILE* fin)
 // read ABF accumulator header ------------------
     char abf_id[4];
     char ver_id[3];
-    int  numofcoords = 0;
+    int  ncvs = 0;
     int  nr;
 
-    nr = sscanf(fline,"%3s %2s %d",abf_id,ver_id,&numofcoords);
+    nr = sscanf(fline,"%3s %2s %d",abf_id,ver_id,&ncvs);
     if( nr != 3 ){
         CSmallString error;
         error << "illegal header - three items expected (line: " << fline << ")";
@@ -155,26 +163,26 @@ void CABFAccumulator::Load_v3(char* fline,FILE* fin)
         RUNTIME_ERROR(error);
     }
 
-    if(numofcoords <= 0) {
+    if(ncvs <= 0) {
         CSmallString error;
-        error << "number of coordinates has to be greater than zero, but " << numofcoords << " was found";
+        error << "number of coordinates has to be greater than zero, but " << ncvs << " was found";
         RUNTIME_ERROR(error);
     }
 
-    SetNumberOfCoords(numofcoords);
+    SetNumOfCVs(ncvs);
 
 // read coordinate specification ----------------
-    for(int i=0; i < NCoords; i++) {
+    for(int i=0; i < NCVs; i++) {
         int             id = 0;
-        char            type[11];
-        char            name[51];
+        char            type[20];
+        char            name[60];
         double          min_value = 0.0;
         double          max_value = 0.0;
         int             nbins = 0;
         int             tr = 0;
 
-        memset(type,0,11);
-        memset(name,0,51);
+        memset(type,0,20);
+        memset(name,0,60);
 
         // read item
         tr = fscanf(fin,"%d %10s %lf %lf %d",&id,type,&min_value,&max_value,&nbins);
@@ -216,7 +224,7 @@ void CABFAccumulator::Load_v3(char* fline,FILE* fin)
         }
 
         // init coordinate
-        SetCoordinate(i,name,type,min_value,max_value,nbins);
+        SetCV(i,name,type,min_value,max_value,nbins);
     }
 
 // alloc accumulator data -----------------------
@@ -238,11 +246,11 @@ void CABFAccumulator::Load_v3(char* fline,FILE* fin)
     }
 
 // do i=1,fnitem
-//     read(iounit,40,end=100,err=100) (accumulator%ABFForce(i,j),j=1,accumulator%TotNBins)
+//     read(iounit,40,end=100,err=100) (accumulator%ICFSum(i,j),j=1,accumulator%TotNBins)
 // end do
 
 // accumulated force
-    for(int i = 0; i < NCoords; i++) {
+    for(int i = 0; i < NCVs; i++) {
         for(int j = 0; j < TotNBins; j++) {
             double cf = 0.0;
             if(fscanf(fin,"%lf",&cf) != 1) {
@@ -250,12 +258,12 @@ void CABFAccumulator::Load_v3(char* fline,FILE* fin)
                 error << "unable to read accumulated ABF force for bin " << j << " and item " << i;
                 RUNTIME_ERROR(error);
             }
-            ABFForce[map(i,j)] = cf;
+            ICFSum[map(i,j)] = cf;
         }
     }
 
 // accumulated force square
-    for(int i = 0; i < NCoords; i++) {
+    for(int i = 0; i < NCVs; i++) {
         for(int j = 0; j < TotNBins; j++) {
             double cf = 0.0;
             if(fscanf(fin,"%lf",&cf) != 1) {
@@ -263,7 +271,7 @@ void CABFAccumulator::Load_v3(char* fline,FILE* fin)
                 error << "unable to read accumulated ABF force squares for bin " << j << " and item " << i;
                 RUNTIME_ERROR(error);
             }
-            ABFForce2[map(i,j)] = cf;
+            ICFSum2[map(i,j)] = cf;
         }
     }
 }
@@ -279,12 +287,12 @@ void CABFAccumulator::Load_v4(char* fline,FILE* fin)
 // read ABF accumulator header ------------------
     char abf_id[4];
     char ver_id[3];
-    int  numofcoords = 0;
+    int  ncvs = 0;
     int  nr;
 
 // first line can contain either two or four records for version 0
 
-    nr = sscanf(fline,"%s %s %d",abf_id,ver_id,&numofcoords);
+    nr = sscanf(fline,"%s %s %d",abf_id,ver_id,&ncvs);
     if( nr != 3 ){
         CSmallString error;
         error << "illegal header - three items expected (line: " << fline << ")";
@@ -306,29 +314,29 @@ void CABFAccumulator::Load_v4(char* fline,FILE* fin)
         RUNTIME_ERROR(error);
     }
 
-    if(numofcoords <= 0) {
+    if(ncvs <= 0) {
         CSmallString error;
-        error << "number of coordinates has to be greater than zero, but " << numofcoords << " was found";
+        error << "number of coordinates has to be greater than zero, but " << ncvs << " was found";
         RUNTIME_ERROR(error);
     }
 
-    SetNumberOfCoords(numofcoords);
+    SetNumOfCVs(ncvs);
 
 // read coordinate specification ----------------
-    for(int i=0; i < NCoords; i++) {
+    for(int i=0; i < NCVs; i++) {
         int             id = 0;
-        char            type[11];
-        char            name[51];
-        char            unit[37];
+        char            type[15];
+        char            name[60];
+        char            unit[40];
         double          min_value = 0.0;
         double          max_value = 0.0;
         double          fconv = 1.0;
         int             nbins = 0;
         int             tr = 0;
 
-        memset(type,0,11);
-        memset(name,0,51);
-        memset(unit,0,37);
+        memset(type,0,15);
+        memset(name,0,60);
+        memset(unit,0,40);
 
         // read item
         tr = fscanf(fin,"%d %10s %lf %lf %d",&id,type,&min_value,&max_value,&nbins);
@@ -384,7 +392,7 @@ void CABFAccumulator::Load_v4(char* fline,FILE* fin)
         }
 
         // init coordinate
-        SetCoordinate(i,name,type,min_value,max_value,nbins,fconv,unit);
+        SetCV(i,name,type,min_value,max_value,nbins,fconv,unit);
     }
 
 // alloc accumulator data -----------------------
@@ -406,53 +414,310 @@ void CABFAccumulator::Load_v4(char* fline,FILE* fin)
     }
 
 // do i=1,fnitem
-//     read(iounit,40,end=100,err=100) (accumulator%ABFForce(i,j),j=1,accumulator%TotNBins)
+//     read(iounit,40,end=100,err=100) (accumulator%ICFSum(i,j),j=1,accumulator%TotNBins)
 // end do
 
 // accumulated force
-    for(int i = 0; i < NCoords; i++) {
+    for(int i = 0; i < NCVs; i++) {
         for(int j = 0; j < TotNBins; j++) {
             double cf = 0.0;
             if(fscanf(fin,"%lf",&cf) != 1) {
                 CSmallString error;
-                error << "unable to read ABFForce for bin " << j << " and item " << i;
+                error << "unable to read ICFSum for bin " << j << " and item " << i;
                 RUNTIME_ERROR(error);
             }
-            ABFForce[map(i,j)] = cf;
+            ICFSum[map(i,j)] = cf;
         }
     }
 
 // accumulated force square
-    for(int i = 0; i < NCoords; i++) {
+    for(int i = 0; i < NCVs; i++) {
         for(int j = 0; j < TotNBins; j++) {
             double cf = 0.0;
             if(fscanf(fin,"%lf",&cf) != 1) {
                 CSmallString error;
-                error << "unable to read ABFForce2 for bin " << j << " and item " << i;
+                error << "unable to read ICFSum2 for bin " << j << " and item " << i;
                 RUNTIME_ERROR(error);
             }
-            ABFForce2[map(i,j)] = cf;
+            ICFSum2[map(i,j)] = cf;
         }
     }
 
-    // EPot
+    // EpotSum
     for(int i=0; i < TotNBins; i++) {
         double ns = 0;
         if( fscanf(fin,"%lf",&ns) != 1 ) {
             CSmallString error;
-            error << "unable to read EPot for bin " << i;
+            error << "unable to read EpotSum for bin " << i;
             RUNTIME_ERROR(error);
         }
-        EPot[i] = ns;
+        EpotSum[i] = ns;
     }
     for(int i=0; i < TotNBins; i++) {
         double ns = 0;
         if( fscanf(fin,"%lf",&ns) != 1 ) {
             CSmallString error;
-            error << "unable to read EPot2 for bin " << i;
+            error << "unable to read EpotSum2 for bin " << i;
             RUNTIME_ERROR(error);
         }
-        EPot2[i] = ns;
+        EpotSum2[i] = ns;
+    }
+
+    EpotAvailable = true;
+    ICFEpotSum.SetZero();
+    ICFEpotSum2.SetZero();
+}
+
+//------------------------------------------------------------------------------
+
+void CABFAccumulator::Load_v5(char* fline,FILE* fin)
+{
+    if( fin == NULL ) {
+        INVALID_ARGUMENT("stream is not open");
+    }
+
+// read ABF accumulator header ------------------
+    char abf_id[4];
+    char ver_id[3];
+    int  ncvs = 0;
+    int  nr;
+
+// first line can contain either two or four records for version 0
+
+    nr = sscanf(fline,"%s %s %d",abf_id,ver_id,&ncvs);
+    if( nr != 3 ){
+        CSmallString error;
+        error << "illegal header - three items expected (line: " << fline << ")";
+        RUNTIME_ERROR(error);
+    }
+
+    abf_id[3]='\0';
+    ver_id[2]='\0';
+
+// check ID string
+    if(strcmp(abf_id,"ABF") != 0) {
+        CSmallString error;
+        error << "'ABF' magic word was not found in the first line (line: " << fline << ")";
+        RUNTIME_ERROR(error);
+    }
+    if(strcmp(ver_id,"V5") != 0) {
+        CSmallString error;
+        error << "only ABF V5 version is supported (line: " << fline << ")";
+        RUNTIME_ERROR(error);
+    }
+
+    if(ncvs <= 0) {
+        CSmallString error;
+        error << "number of coordinates has to be greater than zero, but " << ncvs << " was found";
+        RUNTIME_ERROR(error);
+    }
+
+    SetNumOfCVs(ncvs);
+
+    CSmallString key;
+
+    while( key.ReadLineFromFile(fin) ){
+
+        key.Trim();
+
+        if( key == "CVS") {
+
+            // read coordinate specification
+            for(int i=0; i < NCVs; i++) {
+                int             id = 0;
+                char            type[15];
+                char            name[60];
+                char            unit[40];
+                double          min_value = 0.0;
+                double          max_value = 0.0;
+                double          fconv = 1.0;
+                int             nbins = 0;
+                int             tr = 0;
+
+                memset(type,0,15);
+                memset(name,0,60);
+                memset(unit,0,40);
+
+                // read item
+                tr = fscanf(fin,"%d %10s %lf %lf %d",&id,type,&min_value,&max_value,&nbins);
+                if( tr != 5 ) {
+                    CSmallString error;
+                    error << "unable to read coordinate definition, id: " << i+1 << " (" << tr << " != 5)";
+                    RUNTIME_ERROR(error);
+                }
+
+                // some tests
+                if(id != i+1) {
+                    CSmallString error;
+                    error << "coordinate id does not match, read: " << id << ", expected: " << i+1;
+                    RUNTIME_ERROR(error);
+                }
+                if(max_value <= min_value) {
+                    CSmallString error;
+                    error << "min value is not smaller than max value, id: " << id;
+                    RUNTIME_ERROR(error);
+                }
+                if(nbins <= 0) {
+                    CSmallString error;
+                    error << "number of bins has to be grater than zero, id: " << id;
+                    RUNTIME_ERROR(error);
+                }
+
+                // read item
+                tr = fscanf(fin,"%d %55s",&id,name);
+                if( tr != 2 ) {
+                    CSmallString error;
+                    error << "unable to read coordinate definition, id: " << i+1 << " (" << tr << " != 2)";
+                    RUNTIME_ERROR(error);
+                }
+                // some tests
+                if(id != i+1) {
+                    CSmallString error;
+                    error << "coordinate id does not match, read: " << id << ", expected: " << i+1;
+                    RUNTIME_ERROR(error);
+                }
+
+                // read item
+                tr = fscanf(fin,"%d %lf %37s",&id,&fconv,unit);
+                if( tr != 3 ) {
+                    CSmallString error;
+                    error << "unable to read coordinate definition, id: " << i+1 << " (" << tr << " != 3)";
+                    RUNTIME_ERROR(error);
+                }
+                // some tests
+                if(id != i+1) {
+                    CSmallString error;
+                    error << "coordinate id does not match, read: " << id << ", expected: " << i+1;
+                    RUNTIME_ERROR(error);
+                }
+
+                // init coordinate
+                SetCV(i,name,type,min_value,max_value,nbins,fconv,unit);
+            }
+
+            // alloc accumulator data
+            FinalizeAllocation();
+    // -----------------------------------------------------
+        } else if( key == "TEMPERATURE" ) {
+            // read item
+            int tr = fscanf(fin,"%lf",&Temperature);
+            if( tr != 1 ) {
+                CSmallString error;
+                error << "unable to read temperature (" << tr << " != 1)";
+                RUNTIME_ERROR(error);
+            }
+    // -----------------------------------------------------
+        } else if( key == "ENERGY" ) {
+            char            unit[40];
+            int             tr = 0;
+
+            memset(unit,0,40);
+
+            // read item
+            tr = fscanf(fin,"%lf %37s",&EnergyFConv,unit);
+            if( tr != 2 ) {
+                CSmallString error;
+                error << "unable to read energy unit (" << tr << " != 2)";
+                RUNTIME_ERROR(error);
+            }
+            EnergyUnit = unit;
+    // -----------------------------------------------------
+        } else if( key == "NSAMPLES" ) {
+            // samples
+            for(int i=0; i < TotNBins; i++) {
+                int ns = 0;
+                if( fscanf(fin,"%d",&ns) != 1 ) {
+                    CSmallString error;
+                    error << "unable to read number of ABF samples for bin " << i;
+                    RUNTIME_ERROR(error);
+                }
+                NSamples[i] = ns;
+            }
+    // -----------------------------------------------------
+        } else if( key == "ICF" ) {
+            // accumulated force
+            for(int i = 0; i < NCVs; i++) {
+                for(int j = 0; j < TotNBins; j++) {
+                    double cf = 0.0;
+                    if(fscanf(fin,"%lf",&cf) != 1) {
+                        CSmallString error;
+                        error << "unable to read ICFSum for bin " << j << " and item " << i;
+                        RUNTIME_ERROR(error);
+                    }
+                    ICFSum[map(i,j)] = cf;
+                }
+            }
+
+            // accumulated force square
+            for(int i = 0; i < NCVs; i++) {
+                for(int j = 0; j < TotNBins; j++) {
+                    double cf = 0.0;
+                    if(fscanf(fin,"%lf",&cf) != 1) {
+                        CSmallString error;
+                        error << "unable to read ICFSum2 for bin " << j << " and item " << i;
+                        RUNTIME_ERROR(error);
+                    }
+                    ICFSum2[map(i,j)] = cf;
+                }
+            }
+    // -----------------------------------------------------
+        } else if( key == "EPOT" ) {
+            // EpotSum
+            for(int i=0; i < TotNBins; i++) {
+                double ns = 0;
+                if( fscanf(fin,"%lf",&ns) != 1 ) {
+                    CSmallString error;
+                    error << "unable to read EpotSum for bin " << i;
+                    RUNTIME_ERROR(error);
+                }
+                EpotSum[i] = ns;
+            }
+            for(int i=0; i < TotNBins; i++) {
+                double ns = 0;
+                if( fscanf(fin,"%lf",&ns) != 1 ) {
+                    CSmallString error;
+                    error << "unable to read EpotSum2 for bin " << i;
+                    RUNTIME_ERROR(error);
+                }
+                EpotSum2[i] = ns;
+            }
+            EpotAvailable = true;
+    // -----------------------------------------------------
+        } else if( key == "ICF*EPOT" ) {
+            // accumulated force
+            for(int i = 0; i < NCVs; i++) {
+                for(int j = 0; j < TotNBins; j++) {
+                    double cf = 0.0;
+                    if(fscanf(fin,"%lf",&cf) != 1) {
+                        CSmallString error;
+                        error << "unable to read ICFEpotSum for bin " << j << " and item " << i;
+                        RUNTIME_ERROR(error);
+                    }
+                    ICFEpotSum[map(i,j)] = cf;
+                }
+            }
+
+            // accumulated force square
+            for(int i = 0; i < NCVs; i++) {
+                for(int j = 0; j < TotNBins; j++) {
+                    double cf = 0.0;
+                    if(fscanf(fin,"%lf",&cf) != 1) {
+                        CSmallString error;
+                        error << "unable to read ICFEpotSum2 for bin " << j << " and item " << i;
+                        RUNTIME_ERROR(error);
+                    }
+                    ICFEpotSum2[map(i,j)] = cf;
+                }
+            }
+        } else {
+            CSmallString error;
+            error << "unrecognized ABF accumulator keyword: '" << key << "'";
+            RUNTIME_ERROR(error);
+        }
+
+        // read the rest of line and reset key
+        key.ReadLineFromFile(fin);
+        key = NULL;
     }
 }
 
@@ -494,35 +759,45 @@ void CABFAccumulator::Save(FILE* fout)
         RUNTIME_ERROR(error);
     }
 
-// 10  format(A3,1X,A2,1X,I2)
-// 20  format(I2,1X,A10,1X,E18.11,1X,E18.11,1X,I6)
-// 25  format(I2,1X,A55)
-// 26  format(I2,1X,E18.11,1X,A36)
-// 30  format(8(I9,1X))
-// 40  format(4(E19.11,1X))
-
 // write ABF accumulator header ------------------
-    if(fprintf(fout," ABF V4 %2d\n",NCoords) <= 0) {
+    if(fprintf(fout," ABF V5 %2d\n",NCVs) <= 0) {
         CSmallString error;
         error << "unable to write header";
         RUNTIME_ERROR(error);
     }
 
+    if(fprintf(fout,"TEMPERATURE\n%18.11E\n",Temperature) <= 0) {
+        CSmallString error;
+        error << "unable to write temperature";
+        RUNTIME_ERROR(error);
+    }
+
+    if(fprintf(fout,"ENERGY\n%18.11E %36s\n",EnergyFConv,(const char*)EnergyUnit) <= 0) {
+        CSmallString error;
+        error << "unable to write energy unit";
+        RUNTIME_ERROR(error);
+    }
+
 // write coordinate specification ----------------
-    for(int i=0; i < NCoords; i++) {
+    if(fprintf(fout,"CVS\n") <= 0) {
+        CSmallString error;
+        error << "unable to write CVS header";
+        RUNTIME_ERROR(error);
+    }
+    for(int i=0; i < NCVs; i++) {
         if(fprintf(fout,"%2d %10s %18.11E %18.11E %6d\n",i+1,
-                   (const char*)Sizes[i].Type,
-                   Sizes[i].MinValue,Sizes[i].MaxValue,Sizes[i].NBins) <= 0) {
+                   (const char*)CVs[i].Type,
+                   CVs[i].MinValue,CVs[i].MaxValue,CVs[i].NBins) <= 0) {
             CSmallString error;
             error << "unable to write coordinate definition1 id: " << i+1;
             RUNTIME_ERROR(error);
         }
-        if(fprintf(fout,"%2d %55s\n",i+1,(const char*)Sizes[i].Name) <= 0) {
+        if(fprintf(fout,"%2d %55s\n",i+1,(const char*)CVs[i].Name) <= 0) {
             CSmallString error;
             error << "unable to write coordinate definition2 id: " << i+1;
             RUNTIME_ERROR(error);
         }
-        if(fprintf(fout,"%2d %18.11E %36s\n",i+1,Sizes[i].FConv,(const char*)Sizes[i].Unit) <= 0) {
+        if(fprintf(fout,"%2d %18.11E %36s\n",i+1,CVs[i].FConv,(const char*)CVs[i].Unit) <= 0) {
             CSmallString error;
             error << "unable to write coordinate definition3 id: " << i+1;
             RUNTIME_ERROR(error);
@@ -534,6 +809,11 @@ void CABFAccumulator::Save(FILE* fout)
 // samples
     int counter;
 
+    if(fprintf(fout,"NSAMPLES\n") <= 0) {
+        CSmallString error;
+        error << "unable to write NSAMPLES header";
+        RUNTIME_ERROR(error);
+    }
     counter = 0;
     for(int i=0; i < TotNBins; i++) {
         if(fprintf(fout,"%9d ",NSamples[i]) <= 0) {
@@ -546,17 +826,18 @@ void CABFAccumulator::Save(FILE* fout)
     }
     if(counter % 8 != 0) fprintf(fout,"\n");
 
-//  do i=1,fnitem
-//     write(iounit,40) (accumulator%ABFForce(i,j),j=1,accumulator%TotNBins)
-//  end do
-
-// accumulated force
+// ICFSum
+    if(fprintf(fout,"ICF\n") <= 0) {
+        CSmallString error;
+        error << "unable to write ICF header";
+        RUNTIME_ERROR(error);
+    }
     counter = 0;
-    for(int i = 0; i < NCoords; i++) {
+    for(int i = 0; i < NCVs; i++) {
         for(int j = 0; j < TotNBins; j++) {
-            if(fprintf(fout,"%19.11E ",ABFForce[map(i,j)]) <= 0) {
+            if(fprintf(fout,"%19.11E ",ICFSum[map(i,j)]) <= 0) {
                 CSmallString error;
-                error << "unable to write accumulated ABF force for bin " << j << " and item " << i;
+                error << "unable to write ICFSum for bin " << j << " and item " << i;
                 RUNTIME_ERROR(error);
             }
             if(counter % 4 == 3) fprintf(fout,"\n");
@@ -565,13 +846,13 @@ void CABFAccumulator::Save(FILE* fout)
     }
     if(counter % 4 != 0) fprintf(fout,"\n");
 
-// accumulated force square
+// ICFSum2
     counter = 0;
-    for(int i = 0; i < NCoords; i++) {
+    for(int i = 0; i < NCVs; i++) {
         for(int j = 0; j < TotNBins; j++) {
-            if(fprintf(fout,"%19.11E ",ABFForce2[map(i,j)]) <= 0) {
+            if(fprintf(fout,"%19.11E ",ICFSum2[map(i,j)]) <= 0) {
                 CSmallString error;
-                error << "unable to write accumulated ABF force squares for bin " << j << " and item " << i;
+                error << "unable to write ICFSum2 for bin " << j << " and item " << i;
                 RUNTIME_ERROR(error);
             }
             if(counter % 4 == 3) fprintf(fout,"\n");
@@ -580,12 +861,17 @@ void CABFAccumulator::Save(FILE* fout)
     }
     if(counter % 4 != 0) fprintf(fout,"\n");
 
-// epot
+// EpotSum
+    if(fprintf(fout,"EPOT\n") <= 0) {
+        CSmallString error;
+        error << "unable to write EPOT header";
+        RUNTIME_ERROR(error);
+    }
     counter = 0;
     for(int i=0; i < TotNBins; i++) {
-        if(fprintf(fout,"%19.11E ",EPot[i]) <= 0) {
+        if(fprintf(fout,"%19.11E ",EpotSum[i]) <= 0) {
             CSmallString error;
-            error << "unable to write number of EPot for bin " << i;
+            error << "unable to write EpotSum for bin " << i;
             RUNTIME_ERROR(error);
         }
         if(counter % 4 == 3) fprintf(fout,"\n");
@@ -593,16 +879,51 @@ void CABFAccumulator::Save(FILE* fout)
     }
     if(counter % 4 != 0) fprintf(fout,"\n");
 
-// epot2
+// EpotSum2
     counter = 0;
     for(int i=0; i < TotNBins; i++) {
-        if(fprintf(fout,"%19.11E ",EPot2[i]) <= 0) {
+        if(fprintf(fout,"%19.11E ",EpotSum2[i]) <= 0) {
             CSmallString error;
-            error << "unable to write number of EPot2 for bin " << i;
+            error << "unable to write EpotSum2 for bin " << i;
             RUNTIME_ERROR(error);
         }
         if(counter % 4 == 3) fprintf(fout,"\n");
         counter++;
+    }
+    if(counter % 4 != 0) fprintf(fout,"\n");
+
+// ICFEpotSum
+    if(fprintf(fout,"ICF*EPOT\n") <= 0) {
+        CSmallString error;
+        error << "unable to write ICF*EPOT header";
+        RUNTIME_ERROR(error);
+    }
+    counter = 0;
+    for(int i = 0; i < NCVs; i++) {
+        for(int j = 0; j < TotNBins; j++) {
+            if(fprintf(fout,"%19.11E ",ICFEpotSum[map(i,j)]) <= 0) {
+                CSmallString error;
+                error << "unable to write ICFEpotSum for bin " << j << " and item " << i;
+                RUNTIME_ERROR(error);
+            }
+            if(counter % 4 == 3) fprintf(fout,"\n");
+            counter++;
+        }
+    }
+    if(counter % 4 != 0) fprintf(fout,"\n");
+
+// ICFEpotSum2
+    counter = 0;
+    for(int i = 0; i < NCVs; i++) {
+        for(int j = 0; j < TotNBins; j++) {
+            if(fprintf(fout,"%19.11E ",ICFEpotSum2[map(i,j)]) <= 0) {
+                CSmallString error;
+                error << "unable to write ICFEpotSum2 for bin " << j << " and item " << i;
+                RUNTIME_ERROR(error);
+            }
+            if(counter % 4 == 3) fprintf(fout,"\n");
+            counter++;
+        }
     }
     if(counter % 4 != 0) fprintf(fout,"\n");
 }
@@ -627,22 +948,22 @@ void CABFAccumulator::SaveMask(FILE* fout)
 // 40  format(4(E19.11,1X))
 
 // write ABF accumulator header ------------------
-    if(fprintf(fout,"MABF V3 %2d\n",NCoords) <= 0) {
+    if(fprintf(fout,"MABF V3 %2d\n",NCVs) <= 0) {
         CSmallString error;
         error << "unable to write header";
         RUNTIME_ERROR(error);
     }
 
 // write coordinate specification ----------------
-    for(int i=0; i < NCoords; i++) {
+    for(int i=0; i < NCVs; i++) {
         if(fprintf(fout,"%2d %-10s %18.11e %18.11E %6d\n",i+1,
-                   (const char*)Sizes[i].Type,
-                   Sizes[i].MinValue,Sizes[i].MaxValue,Sizes[i].NBins) <= 0) {
+                   (const char*)CVs[i].Type,
+                   CVs[i].MinValue,CVs[i].MaxValue,CVs[i].NBins) <= 0) {
             CSmallString error;
             error << "unable to write coordinate definition id: " << i+1;
             RUNTIME_ERROR(error);
         }
-        if(fprintf(fout,"%2d %-55s\n",i+1,(const char*)Sizes[i].Name) <= 0) {
+        if(fprintf(fout,"%2d %-55s\n",i+1,(const char*)CVs[i].Name) <= 0) {
             CSmallString error;
             error << "unable to write coordinate definition id: " << i+1;
             RUNTIME_ERROR(error);
@@ -682,11 +1003,11 @@ void CABFAccumulator::SaveMaskGnuPlot(FILE* fout)
     }
 
     CSimpleVector<double> point;
-    point.CreateVector(NCoords);
+    point.CreateVector(NCVs);
 
     for(int i=0; i < TotNBins; i++) {
         GetPoint(i,point);
-        for(int j=0; j < NCoords; j++){
+        for(int j=0; j < NCVs; j++){
             if(fprintf(fout,"%19.11E ",point[j]) <= 0 ){
                 CSmallString error;
                 error << "unable to write point coordinate for bin " << i;
@@ -698,7 +1019,7 @@ void CABFAccumulator::SaveMaskGnuPlot(FILE* fout)
             error << "unable to write mask weight for bin " << i;
             RUNTIME_ERROR(error);
         }
-        if( i % Sizes[0].GetNumberOfBins() == Sizes[0].GetNumberOfBins() -1 ){
+        if( i % CVs[0].GetNumOfBins() == CVs[0].GetNumOfBins() -1 ){
             fprintf(fout,"\n");
         }
     }
@@ -708,21 +1029,21 @@ void CABFAccumulator::SaveMaskGnuPlot(FILE* fout)
 
 void CABFAccumulator::GetPoint(unsigned int index,CSimpleVector<double>& point) const
 {
-    for(int k=NCoords-1; k >= 0; k--) {
-        const CColVariable* p_coord = &Sizes[k];
-        int ibin = index % p_coord->GetNumberOfBins();
+    for(int k=NCVs-1; k >= 0; k--) {
+        const CColVariable* p_coord = &CVs[k];
+        int ibin = index % p_coord->GetNumOfBins();
         point[k] = p_coord->GetValue(ibin);
-        index = index / p_coord->GetNumberOfBins();
+        index = index / p_coord->GetNumOfBins();
     }
 }
 
 void CABFAccumulator::GetPointRValues(unsigned int index,CSimpleVector<double>& point) const
 {
-    for(int k=NCoords-1; k >= 0; k--) {
-        const CColVariable* p_coord = &Sizes[k];
-        int ibin = index % p_coord->GetNumberOfBins();
+    for(int k=NCVs-1; k >= 0; k--) {
+        const CColVariable* p_coord = &CVs[k];
+        int ibin = index % p_coord->GetNumOfBins();
         point[k] = p_coord->GetRValue(ibin);
-        index = index / p_coord->GetNumberOfBins();
+        index = index / p_coord->GetNumOfBins();
     }
 }
 
@@ -730,51 +1051,80 @@ void CABFAccumulator::GetPointRValues(unsigned int index,CSimpleVector<double>& 
 
 void CABFAccumulator::GetIPoint(unsigned int index,CSimpleVector<int>& point) const
 {
-    for(int k=NCoords-1; k >= 0; k--) {
-        const CColVariable* p_coord = &Sizes[k];
-        int ibin = index % p_coord->GetNumberOfBins();
+    for(int k=NCVs-1; k >= 0; k--) {
+        const CColVariable* p_coord = &CVs[k];
+        int ibin = index % p_coord->GetNumOfBins();
         point[k] = ibin;
-        index = index / p_coord->GetNumberOfBins();
+        index = index / p_coord->GetNumOfBins();
     }
+}
+
+//------------------------------------------------------------------------------
+
+void CABFAccumulator::SetTemperature(double temp)
+{
+    Temperature = temp;
+}
+
+//------------------------------------------------------------------------------
+
+double CABFAccumulator::GetTemperature(void)
+{
+    return(Temperature);
+}
+
+//------------------------------------------------------------------------------
+
+void CABFAccumulator::SetEnergyUnit(double fconv,const CSmallString& unit)
+{
+    EnergyFConv = fconv;
+    EnergyUnit  = unit;
+}
+
+//------------------------------------------------------------------------------
+
+void CABFAccumulator::SetEpotEnabled(bool enabled)
+{
+    EpotAvailable = enabled;
 }
 
 //==============================================================================
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void CABFAccumulator::SetNumberOfCoords(int numofcoords)
+void CABFAccumulator::SetNumOfCVs(int ncvs)
 {
-    if( numofcoords < 0 ) {
-        INVALID_ARGUMENT("numofcoords < 0");
+    if( ncvs < 0 ) {
+        INVALID_ARGUMENT("ncvs < 0");
     }
 
-    if(NCoords > 0) {
+    if(NCVs > 0) {
         // destroy all previous data
         Deallocate();
-        Sizes.FreeVector();
-        NCoords = 0;
+        CVs.FreeVector();
+        NCVs = 0;
     }
 
-// try to allocate Sizes array
-    if( numofcoords > 0 ) {
-        Sizes.CreateVector(numofcoords);
+// try to allocate CVs array
+    if( ncvs > 0 ) {
+        CVs.CreateVector(ncvs);
     }
 
 // all seems to be fine - update items
-    NCoords = numofcoords;
+    NCVs = ncvs;
 }
 
 //------------------------------------------------------------------------------
 
-void CABFAccumulator::SetCoordinate(int id,
+void CABFAccumulator::SetCV(int id,
                                     const CSmallString& name,
                                     const CSmallString& type,
                                     double min_value,double max_value,int nbins)
 {
-    if( Sizes == NULL ){
-        RUNTIME_ERROR("Sizes is NULL");
+    if( CVs == NULL ){
+        RUNTIME_ERROR("CVs is NULL");
     }
-    if( id < 0 || id >= NCoords ){
+    if( id < 0 || id >= NCVs ){
         INVALID_ARGUMENT("id out-of-range");
     }
 
@@ -790,29 +1140,29 @@ void CABFAccumulator::SetCoordinate(int id,
         Deallocate();
     }
 
-    Sizes[id].ID = id;
-    Sizes[id].Name = name;
-    Sizes[id].Type = type;
-    Sizes[id].MinValue = min_value;
-    Sizes[id].MaxValue = max_value;
+    CVs[id].ID = id;
+    CVs[id].Name = name;
+    CVs[id].Type = type;
+    CVs[id].MinValue = min_value;
+    CVs[id].MaxValue = max_value;
 
-    Sizes[id].NBins = nbins;
-    Sizes[id].BinWidth = (Sizes[id].MaxValue - Sizes[id].MinValue)/Sizes[id].NBins;
-    Sizes[id].Width = Sizes[id].MaxValue - Sizes[id].MinValue;
+    CVs[id].NBins = nbins;
+    CVs[id].BinWidth = (CVs[id].MaxValue - CVs[id].MinValue)/CVs[id].NBins;
+    CVs[id].Width = CVs[id].MaxValue - CVs[id].MinValue;
 }
 
 //------------------------------------------------------------------------------
 
-void CABFAccumulator::SetCoordinate(int id,
+void CABFAccumulator::SetCV(int id,
                                     const CSmallString& name,
                                     const CSmallString& type,
                                     double min_value,double max_value,int nbins,
                                     double fconv, const CSmallString& unit)
 {
-    if( Sizes == NULL ){
-        RUNTIME_ERROR("Sizes is NULL");
+    if( CVs == NULL ){
+        RUNTIME_ERROR("CVs is NULL");
     }
-    if( id < 0 || id >= NCoords ){
+    if( id < 0 || id >= NCVs ){
         INVALID_ARGUMENT("id out-of-range");
     }
 
@@ -828,46 +1178,40 @@ void CABFAccumulator::SetCoordinate(int id,
         Deallocate();
     }
 
-    Sizes[id].ID = id;
-    Sizes[id].Name = name;
-    Sizes[id].Type = type;
-    Sizes[id].Unit = unit;
-    Sizes[id].MinValue = min_value;
-    Sizes[id].MaxValue = max_value;
-    Sizes[id].FConv = fconv;
+    CVs[id].ID = id;
+    CVs[id].Name = name;
+    CVs[id].Type = type;
+    CVs[id].Unit = unit;
+    CVs[id].MinValue = min_value;
+    CVs[id].MaxValue = max_value;
+    CVs[id].FConv = fconv;
 
-    Sizes[id].NBins = nbins;
-    Sizes[id].BinWidth = (Sizes[id].MaxValue - Sizes[id].MinValue)/Sizes[id].NBins;
-    Sizes[id].Width = Sizes[id].MaxValue - Sizes[id].MinValue;
+    CVs[id].NBins = nbins;
+    CVs[id].BinWidth = (CVs[id].MaxValue - CVs[id].MinValue)/CVs[id].NBins;
+    CVs[id].Width = CVs[id].MaxValue - CVs[id].MinValue;
 }
 
 //==============================================================================
 //------------------------------------------------------------------------------
 //==============================================================================
 
-int CABFAccumulator::GetNumberOfCoords(void) const
+int CABFAccumulator::GetNumOfCVs(void) const
 {
-    return(NCoords);
+    return(NCVs);
 }
 
 //------------------------------------------------------------------------------
 
-const CColVariable* CABFAccumulator::GetCoordinate(int cv) const
+const CColVariable* CABFAccumulator::GetCV(int cv) const
 {
-    return(&Sizes[cv]);
+    return(&CVs[cv]);
 }
 
 //------------------------------------------------------------------------------
 
-int CABFAccumulator::GetNumberOfBins(void) const
+int CABFAccumulator::GetNumOfBins(int limit) const
 {
-    return(TotNBins);
-}
-
-//------------------------------------------------------------------------------
-
-int CABFAccumulator::GetNumberOfBinsWithABFLimit(int limit) const
-{
+    if( limit == 0 ) return(TotNBins);
     int number = 0;
     for(int i=0; i < TotNBins; i++) {
         if(NSamples[i] >= limit) number++;
@@ -879,18 +1223,18 @@ int CABFAccumulator::GetNumberOfBinsWithABFLimit(int limit) const
 //------------------------------------------------------------------------------
 //==============================================================================
 
-int CABFAccumulator::GetNumberOfABFSamples(const CSimpleVector<int>& position) const
+int CABFAccumulator::GetNumOfSamples(const CSimpleVector<int>& position) const
 {
     int glbindex = 0;
-    for(int i=0; i < NCoords; i++) {
-        glbindex = glbindex*Sizes[i].GetNumberOfBins() + position[i];
+    for(int i=0; i < NCVs; i++) {
+        glbindex = glbindex*CVs[i].GetNumOfBins() + position[i];
     }
     return(NSamples[glbindex]);
 }
 
 //------------------------------------------------------------------------------
 
-int CABFAccumulator::GetNumberOfABFSamples(int ibin) const
+int CABFAccumulator::GetNumOfSamples(int ibin) const
 {
     return(NSamples[ibin]);
 }
@@ -911,48 +1255,64 @@ void CABFAccumulator::SetMaskWeight(int ibin,double weight)
 
 //------------------------------------------------------------------------------
 
-const double& CABFAccumulator::GetABFForceSum(int icoord,int ibin) const
+const double& CABFAccumulator::GetICFSum(int icv,int ibin) const
 {
-    int glbindex = map(icoord,ibin);
-    return(ABFForce[glbindex]);
+    int glbindex = map(icv,ibin);
+    return(ICFSum[glbindex]);
 }
 
 //------------------------------------------------------------------------------
 
-const double& CABFAccumulator::GetABFForceSquareSum(int icoord,int ibin) const
+const double& CABFAccumulator::GetICFSum2(int icv,int ibin) const
 {
-    int glbindex = map(icoord,ibin);
-    return(ABFForce2[glbindex]);
+    int glbindex = map(icv,ibin);
+    return(ICFSum2[glbindex]);
 }
 
 //------------------------------------------------------------------------------
 
-const double& CABFAccumulator::GetEPotSum(int ibin) const
+const double& CABFAccumulator::GetEpotSum(int ibin) const
 {
-    return(EPot[ibin]);
+    return(EpotSum[ibin]);
 }
 
 //------------------------------------------------------------------------------
 
-const double& CABFAccumulator::GetEPotSquareSum(int ibin) const
+const double& CABFAccumulator::GetEpotSum2(int ibin) const
 {
-    return(EPot2[ibin]);
+    return(EpotSum2[ibin]);
 }
 
 //------------------------------------------------------------------------------
 
-void CABFAccumulator::SetABFForceSum(int icoord,int ibin,const double& value)
+const double& CABFAccumulator::GetICFEpotSum(int icv,int ibin) const
 {
-    int glbindex = map(icoord,ibin);
-    ABFForce[glbindex] = value;
+    int glbindex = map(icv,ibin);
+    return(ICFEpotSum[glbindex]);
 }
 
 //------------------------------------------------------------------------------
 
-void CABFAccumulator::SetABFForceSquareSum(int icoord,int ibin,const double& value)
+const double& CABFAccumulator::GetICFEpotSum2(int icv,int ibin) const
 {
-    int glbindex = map(icoord,ibin);
-    ABFForce2[glbindex] = value;
+    int glbindex = map(icv,ibin);
+    return(ICFEpotSum2[glbindex]);
+}
+
+//------------------------------------------------------------------------------
+
+void CABFAccumulator::SetICFSum(int icv,int ibin,const double& value)
+{
+    int glbindex = map(icv,ibin);
+    ICFSum[glbindex] = value;
+}
+
+//------------------------------------------------------------------------------
+
+void CABFAccumulator::SetICFSum2(int icv,int ibin,const double& value)
+{
+    int glbindex = map(icv,ibin);
+    ICFSum2[glbindex] = value;
 }
 
 //------------------------------------------------------------------------------
@@ -971,30 +1331,44 @@ int* CABFAccumulator::GetNSamplesArray(void)
 
 //------------------------------------------------------------------------------
 
-double* CABFAccumulator::GetABFForceSumArray(void)
+double* CABFAccumulator::GetICFSumArray(void)
 {
-    return(ABFForce);
+    return(ICFSum);
 }
 
 //------------------------------------------------------------------------------
 
-double* CABFAccumulator::GetABFForceSquareSumArray(void)
+double* CABFAccumulator::GetICFSum2Array(void)
 {
-    return(ABFForce2);
+    return(ICFSum2);
 }
 
 //------------------------------------------------------------------------------
 
-double* CABFAccumulator::GetEPotSumArray(void)
+double* CABFAccumulator::GetEpotSumArray(void)
 {
-    return(EPot);
+    return(EpotSum);
 }
 
 //------------------------------------------------------------------------------
 
-double* CABFAccumulator::GetEPotSquareSumArray(void)
+double* CABFAccumulator::GetEpotSum2Array(void)
 {
-    return(EPot2);
+    return(EpotSum2);
+}
+
+//------------------------------------------------------------------------------
+
+double* CABFAccumulator::GetICFEpotSumArray(void)
+{
+    return(ICFEpotSum);
+}
+
+//------------------------------------------------------------------------------
+
+double* CABFAccumulator::GetICFEpotSum2Array(void)
+{
+    return(ICFEpotSum2);
 }
 
 //==============================================================================
@@ -1004,10 +1378,10 @@ double* CABFAccumulator::GetEPotSquareSumArray(void)
 int CABFAccumulator::GetGlobalIndex(const CSimpleVector<int>& position) const
 {
     int glbindex = 0;
-    for(int i=0; i < NCoords; i++) {
+    for(int i=0; i < NCVs; i++) {
         if( position[i] < 0 ) return(-1);
-        if( position[i] >= (int)Sizes[i].GetNumberOfBins() ) return(-1);
-        glbindex = glbindex*Sizes[i].GetNumberOfBins() + position[i];
+        if( position[i] >= (int)CVs[i].GetNumOfBins() ) return(-1);
+        glbindex = glbindex*CVs[i].GetNumOfBins() + position[i];
     }
     return(glbindex);
 }
@@ -1022,11 +1396,14 @@ void CABFAccumulator::Clear(void)
 
     for(int i=0; i < TotNBins; i++) NSamples[i] = 0;
 
-    for(int i=0; i < TotNBins*NCoords; i++) ABFForce[i] = 0.0;
-    for(int i=0; i < TotNBins*NCoords; i++) ABFForce2[i] = 0.0;
+    for(int i=0; i < TotNBins*NCVs; i++) ICFSum[i] = 0.0;
+    for(int i=0; i < TotNBins*NCVs; i++) ICFSum2[i] = 0.0;
 
-    for(int i=0; i < TotNBins; i++) EPot[i] = 0;
-    for(int i=0; i < TotNBins; i++) EPot2[i] = 0;
+    for(int i=0; i < TotNBins; i++) EpotSum[i] = 0;
+    for(int i=0; i < TotNBins; i++) EpotSum2[i] = 0;
+
+    for(int i=0; i < TotNBins*NCVs; i++) ICFEpotSum[i] = 0;
+    for(int i=0; i < TotNBins*NCVs; i++) ICFEpotSum2[i] = 0;
 }
 
 //==============================================================================
@@ -1035,14 +1412,14 @@ void CABFAccumulator::Clear(void)
 
 void CABFAccumulator::FinalizeAllocation()
 {
-    if(NCoords <= 0) return;        // at least one coordinate is required
-    if(Sizes == NULL) return;       // Sizes array is not allocated
+    if(NCVs <= 0) return;        // at least one coordinate is required
+    if(CVs == NULL) return;       // CVs array is not allocated
     if(NSamples != NULL) return;    // already finalized!
 
 // check if there is non zero number of bins per coordinate
     TotNBins = 1;
-    for(int i=0; i < NCoords; i++) {
-        TotNBins *= Sizes[i].NBins;
+    for(int i=0; i < NCVs; i++) {
+        TotNBins *= CVs[i].NBins;
     }
 
 // and now allocate data arrays
@@ -1051,12 +1428,16 @@ void CABFAccumulator::FinalizeAllocation()
     for(int i=0; i < TotNBins; i++){
         Mask[i] = 1.0;
     }
-    ABFForce.CreateVector(TotNBins*NCoords);
-    ABFForce2.CreateVector(TotNBins*NCoords);
+    ICFSum.CreateVector(TotNBins*NCVs);
+    ICFSum2.CreateVector(TotNBins*NCVs);
 
-// epot
-    EPot.CreateVector(TotNBins);
-    EPot2.CreateVector(TotNBins);
+// EpotSum
+    EpotSum.CreateVector(TotNBins);
+    EpotSum2.CreateVector(TotNBins);
+
+// abfforce*EpotSum
+    ICFEpotSum.CreateVector(TotNBins*NCVs);
+    ICFEpotSum2.CreateVector(TotNBins*NCVs);
 
     // reset data
     Clear();
@@ -1066,17 +1447,22 @@ void CABFAccumulator::FinalizeAllocation()
 
 void CABFAccumulator::Deallocate(void)
 {
-// do not destroy Sizes array !
+// do not destroy CVs array !
 
 // destroy only data arrays
     NSamples.FreeVector();
-    ABFForce.FreeVector();
-    ABFForce2.FreeVector();
 
-    EPot.FreeVector();
-    EPot2.FreeVector();
+    ICFSum.FreeVector();
+    ICFSum2.FreeVector();
 
-    TotNBins = 0;
+    EpotSum.FreeVector();
+    EpotSum2.FreeVector();
+
+    ICFEpotSum.FreeVector();
+    ICFEpotSum2.FreeVector();
+
+    TotNBins        = 0;
+    EpotAvailable   = false;
 }
 
 //==============================================================================
@@ -1097,7 +1483,7 @@ void CABFAccumulator::LoadCVSInfo(CXMLElement* p_iele)
     }
 
     int lnitems = 0;
-    if( p_ele->GetAttribute("NCoords",lnitems) == false) {
+    if( p_ele->GetAttribute("ncvs",lnitems) == false) {
         RUNTIME_ERROR("unable to get header attributes");
     }
 
@@ -1106,19 +1492,19 @@ void CABFAccumulator::LoadCVSInfo(CXMLElement* p_iele)
         return;
     }
 
-    SetNumberOfCoords(lnitems);
+    SetNumOfCVs(lnitems);
 
-    CXMLElement*   p_cel = p_ele->GetFirstChildElement("COORD");
+    CXMLElement*   p_cel = p_ele->GetFirstChildElement("CV");
 
     int            ccount = 0;
 
     while(p_cel != NULL) {
         if( ccount >= lnitems ) {
-            LOGIC_ERROR("more COORD elements than NCoords");
+            LOGIC_ERROR("more CV elements than NCVs");
         }
-        Sizes[ccount].LoadInfo(p_cel);
+        CVs[ccount].LoadInfo(p_cel);
         ccount++;
-        p_cel = p_cel->GetNextSiblingElement("COORD");
+        p_cel = p_cel->GetNextSiblingElement("CV");
     }
 
 // alloc accumulator data -----------------------
@@ -1146,34 +1532,34 @@ bool CABFAccumulator::CheckCVSInfo(CXMLElement* p_iele) const
 
     int lnitems;
 
-    result &= p_ele->GetAttribute("NCoords",lnitems);
+    result &= p_ele->GetAttribute("ncvs",lnitems);
     if(result == false) {
         ES_ERROR("unable to get header attributes");
         return(false);
     }
 
-    if(lnitems != NCoords) {
+    if(lnitems != NCVs) {
         ES_ERROR("mismatch in the number of coordinates");
         return(false);
     }
 
     CXMLElement*   p_cel = NULL;
-    if(p_ele != NULL) p_cel = p_ele->GetFirstChildElement("COORD");
+    if(p_ele != NULL) p_cel = p_ele->GetFirstChildElement("CV");
     int            ccount = 0;
 
     while(p_cel != NULL) {
         if(ccount >= lnitems) {
-            ES_ERROR("more COORD elements than NCoords");
+            ES_ERROR("more COORD elements than NCVs");
             return(false);
         }
-        if( Sizes[ccount].CheckInfo(p_cel) == false ) {
+        if( CVs[ccount].CheckInfo(p_cel) == false ) {
             CSmallString error;
             error << "mismatch in cv: " << ccount+1;
             ES_ERROR(error);
             return(false);
         }
         ccount++;
-        p_cel = p_cel->GetNextSiblingElement("COORD");
+        p_cel = p_cel->GetNextSiblingElement("CV");
     }
 
     return(true);
@@ -1187,13 +1573,13 @@ bool CABFAccumulator::CheckCVSInfo(const CABFAccumulator* p_accu) const
         INVALID_ARGUMENT("p_iele is NULL");
     }
 
-    if(p_accu->NCoords != NCoords) {
+    if(p_accu->NCVs != NCVs) {
         ES_ERROR("mismatch in the number of coordinates");
         return(false);
     }
 
-    for(int i=0; i < NCoords; i++) {
-        if(Sizes[i].CheckInfo(&p_accu->Sizes[i]) == false) {
+    for(int i=0; i < NCVs; i++) {
+        if(CVs[i].CheckInfo(&p_accu->CVs[i]) == false) {
             CSmallString error;
             error << "mismatch in cv: " << i+1;
             ES_ERROR(error);
@@ -1214,11 +1600,11 @@ void CABFAccumulator::SaveCVSInfo(CXMLElement* p_tele) const
 
     CXMLElement* p_ele = p_tele->CreateChildElement("CVS");
 
-    p_ele->SetAttribute("NCoords",NCoords);
+    p_ele->SetAttribute("ncvs",NCVs);
 
-    for(int i=0; i < NCoords; i++) {
-        CXMLElement* p_iele = p_ele->CreateChildElement("COORD");
-        Sizes[i].SaveInfo(p_iele);
+    for(int i=0; i < NCVs; i++) {
+        CXMLElement* p_iele = p_ele->CreateChildElement("CV");
+        CVs[i].SaveInfo(p_iele);
     }
 }
 
@@ -1232,8 +1618,8 @@ void CABFAccumulator::PrintCVSInfo(std::ostream& vout)
     vout << "ID P Type       Unit  Name                       Min value   Max value   NBins  " << endl;
     vout << "-- - ---------- ----- -------------------------- ----------- ----------- -------" << endl;
 
-    for(int i=0; i < NCoords; i++) {
-        Sizes[i].PrintInfo(vout);
+    for(int i=0; i < NCVs; i++) {
+        CVs[i].PrintInfo(vout);
     }
 }
 
@@ -1245,88 +1631,119 @@ void CABFAccumulator::ReadABFData(CXMLElement* p_rele)
         INVALID_ARGUMENT("p_iele is NULL");
     }
 
-    unsigned int nisamples_size = GetNumberOfBins()*sizeof(int);
-    unsigned int iabfforce_size = GetNumberOfBins()*GetNumberOfCoords()*sizeof(double);
-    unsigned int iepot_size = GetNumberOfBins()*sizeof(double);
+    unsigned int inc_nsamples_size      = GetNumOfBins()*sizeof(int);
+    unsigned int inc_icfsum_size        = GetNumOfBins()*GetNumOfCVs()*sizeof(double);
+    unsigned int inc_epotsum_size       = GetNumOfBins()*sizeof(double);
+    unsigned int inc_icfepotsum_size    = GetNumOfBins()*GetNumOfCVs()*sizeof(double);
 
-    if( (nisamples_size == 0) || (iabfforce_size == 0) || (iepot_size == 0) ) {
+    if( (inc_nsamples_size == 0) || (inc_icfsum_size == 0) || (inc_epotsum_size == 0) || (inc_icfepotsum_size == 0) ) {
         RUNTIME_ERROR("size(s) is(are) zero");
     }
 
 // --------------------------
-    CXMLBinData* p_nisamples = p_rele->GetFirstChildBinData("NISAMPLES");
+    CXMLBinData* p_nisamples = p_rele->GetFirstChildBinData("NSAMPLES");
     if(p_nisamples == NULL) {
-        RUNTIME_ERROR("unable to open NISAMPLES element");
+        RUNTIME_ERROR("unable to open NSAMPLES element");
     }
 
     void* p_data = p_nisamples->GetData();
-    if((GetNSamplesArray() == NULL) || (p_data == NULL) || (p_nisamples->GetLength() != nisamples_size)) {
+    if((GetNSamplesArray() == NULL) || (p_data == NULL) || (p_nisamples->GetLength() != inc_nsamples_size)) {
         CSmallString error;
-        error << "inconsistent NISAMPLES element dat (r: " << p_nisamples->GetLength()
-              << ", l: " <<  nisamples_size << ")";
+        error << "inconsistent NSAMPLES element dat (r: " << p_nisamples->GetLength()
+              << ", l: " <<  inc_nsamples_size << ")";
         RUNTIME_ERROR(error);
     }
-    memcpy(GetNSamplesArray(),p_data,nisamples_size);
+    memcpy(GetNSamplesArray(),p_data,inc_nsamples_size);
 
 // --------------------------
-    CXMLBinData* p_iabfforce = p_rele->GetFirstChildBinData("IABFFORCE");
-    if(p_iabfforce == NULL) {
-        RUNTIME_ERROR("unable to open IABFFORCE element");
+    CXMLBinData* p_inc_icfsum = p_rele->GetFirstChildBinData("ICFSUM");
+    if(p_inc_icfsum == NULL) {
+        RUNTIME_ERROR("unable to open ICFSUM element");
     }
 
-    p_data = p_iabfforce->GetData();
-    if((GetABFForceSumArray() == NULL) || (p_data == NULL) || (p_iabfforce->GetLength() != iabfforce_size)) {
+    p_data = p_inc_icfsum->GetData();
+    if((GetICFSumArray() == NULL) || (p_data == NULL) || (p_inc_icfsum->GetLength() != inc_icfsum_size)) {
         CSmallString error;
-        error << "inconsistent IABFFORCE element dat (r: " << p_iabfforce->GetLength()
-              << ", l: " <<  iabfforce_size << ")";
+        error << "inconsistent ICFSUM element dat (r: " << p_inc_icfsum->GetLength()
+              << ", l: " <<  inc_icfsum_size << ")";
         RUNTIME_ERROR(error);
     }
-    memcpy(GetABFForceSumArray(),p_data,iabfforce_size);
+    memcpy(GetICFSumArray(),p_data,inc_icfsum_size);
 
 // --------------------------
-    CXMLBinData* p_iabfforce2 = p_rele->GetFirstChildBinData("IABFFORCE2");
-    if(p_iabfforce2 == NULL) {
-        RUNTIME_ERROR("unable to open IABFFORCE2 element");
+    CXMLBinData* p_inc_icfsum2 = p_rele->GetFirstChildBinData("ICFSUM2");
+    if(p_inc_icfsum2 == NULL) {
+        RUNTIME_ERROR("unable to open ICFSUM2 element");
     }
 
-    p_data = p_iabfforce2->GetData();
-    if((GetABFForceSquareSumArray() == NULL) || (p_data == NULL) || (p_iabfforce2->GetLength() != iabfforce_size)) {
+    p_data = p_inc_icfsum2->GetData();
+    if((GetICFSum2Array() == NULL) || (p_data == NULL) || (p_inc_icfsum2->GetLength() != inc_icfsum_size)) {
         CSmallString error;
-        error << "inconsistent IABFFORCE element dat (r: " << p_iabfforce2->GetLength()
-              << ", l: " <<  iabfforce_size << ")";
+        error << "inconsistent ICFSUM2 element dat (r: " << p_inc_icfsum2->GetLength()
+              << ", l: " <<  inc_icfsum_size << ")";
         RUNTIME_ERROR(error);
     }
-    memcpy(GetABFForceSquareSumArray(),p_data,iabfforce_size);
+    memcpy(GetICFSum2Array(),p_data,inc_icfsum_size);
 
 // --------------------------
-    CXMLBinData* p_iepot = p_rele->GetFirstChildBinData("IEPOT");
-    if(p_iepot == NULL) {
-        RUNTIME_ERROR("unable to open IEPOT element");
+    CXMLBinData* p_inc_epotsum = p_rele->GetFirstChildBinData("EPOTSUM");
+    if(p_inc_epotsum == NULL) {
+        RUNTIME_ERROR("unable to open EPOTSUM element");
     }
 
-    p_data = p_iepot->GetData();
-    if((GetEPotSumArray() == NULL) || (p_data == NULL) || (p_iepot->GetLength() != iepot_size)) {
+    p_data = p_inc_epotsum->GetData();
+    if((GetEpotSumArray() == NULL) || (p_data == NULL) || (p_inc_epotsum->GetLength() != inc_epotsum_size)) {
         CSmallString error;
-        error << "inconsistent IEPOT element dat (r: " << p_iepot->GetLength()
-              << ", l: " <<  iepot_size << ")";
+        error << "inconsistent EPOTSUM element dat (r: " << p_inc_epotsum->GetLength()
+              << ", l: " <<  inc_epotsum_size << ")";
         RUNTIME_ERROR(error);
     }
-    memcpy(GetEPotSumArray(),p_data,iepot_size);
+    memcpy(GetEpotSumArray(),p_data,inc_epotsum_size);
 
 // --------------------------
-    CXMLBinData* p_ipot2 = p_rele->GetFirstChildBinData("IEPOT2");
-    if(p_ipot2 == NULL) {
-        RUNTIME_ERROR("unable to open IEPOT2 element");
+    CXMLBinData* p_inc_epotsum2 = p_rele->GetFirstChildBinData("EPOTSUM2");
+    if(p_inc_epotsum2 == NULL) {
+        RUNTIME_ERROR("unable to open EPOTSUM2 element");
     }
 
-    p_data = p_ipot2->GetData();
-    if((GetEPotSquareSumArray() == NULL) || (p_data == NULL) || (p_ipot2->GetLength() != iepot_size)) {
+    p_data = p_inc_epotsum2->GetData();
+    if((GetEpotSum2Array() == NULL) || (p_data == NULL) || (p_inc_epotsum2->GetLength() != inc_epotsum_size)) {
         CSmallString error;
-        error << "inconsistent IEPOT2 element dat (r: " << p_ipot2->GetLength()
-              << ", l: " <<  iepot_size << ")";
+        error << "inconsistent EPOTSUM2 element dat (r: " << p_inc_epotsum2->GetLength()
+              << ", l: " <<  inc_epotsum_size << ")";
         RUNTIME_ERROR(error);
     }
-    memcpy(GetEPotSquareSumArray(),p_data,iepot_size);
+    memcpy(GetEpotSum2Array(),p_data,inc_epotsum_size);
+
+// --------------------------
+    CXMLBinData* p_inc_icfepotsum = p_rele->GetFirstChildBinData("ICFEPOTSUM");
+    if(p_inc_icfepotsum == NULL) {
+        RUNTIME_ERROR("unable to open ICFEPOTSUM element");
+    }
+
+    p_data = p_inc_icfepotsum->GetData();
+    if((GetICFSumArray() == NULL) || (p_data == NULL) || (p_inc_icfepotsum->GetLength() != inc_icfepotsum_size)) {
+        CSmallString error;
+        error << "inconsistent ICFEPOTSUM element dat (r: " << p_inc_icfepotsum->GetLength()
+              << ", l: " <<  inc_icfepotsum_size << ")";
+        RUNTIME_ERROR(error);
+    }
+    memcpy(GetICFSumArray(),p_data,inc_icfepotsum_size);
+
+// --------------------------
+    CXMLBinData* p_inc_icfepotsum2 = p_rele->GetFirstChildBinData("ICFEPOTSUM2");
+    if(p_inc_icfepotsum2 == NULL) {
+        RUNTIME_ERROR("unable to open ICFEPOTSUM2 element");
+    }
+
+    p_data = p_inc_icfepotsum2->GetData();
+    if((GetICFSum2Array() == NULL) || (p_data == NULL) || (p_inc_icfepotsum2->GetLength() != inc_icfepotsum_size)) {
+        CSmallString error;
+        error << "inconsistent ICFEPOTSUM2 element dat (r: " << p_inc_icfepotsum2->GetLength()
+              << ", l: " <<  inc_icfepotsum_size << ")";
+        RUNTIME_ERROR(error);
+    }
+    memcpy(GetICFSum2Array(),p_data,inc_icfepotsum_size);
 }
 
 //------------------------------------------------------------------------------
@@ -1337,112 +1754,154 @@ void CABFAccumulator::AddABFData(CXMLElement* p_cele)
         INVALID_ARGUMENT("p_iele is NULL");
     }
 
-    unsigned int isamples = GetNumberOfBins();
-    unsigned int iabfforce = GetNumberOfBins()*GetNumberOfCoords();
-    unsigned int iepot = GetNumberOfBins();
+    unsigned int inc_nsamples           = GetNumOfBins();
+    unsigned int inc_icfsum             = GetNumOfBins()*GetNumOfCVs();
+    unsigned int inc_epotsum            = GetNumOfBins();
+    unsigned int inc_icfepotsum         = GetNumOfBins()*GetNumOfCVs();
 
-    unsigned int isamples_size = GetNumberOfBins()*sizeof(int);
-    unsigned int iabfforce_size = GetNumberOfBins()*GetNumberOfCoords()*sizeof(double);
-    unsigned int iepot_size = GetNumberOfBins()*sizeof(double);
+    unsigned int inc_nsamples_size      = GetNumOfBins()*sizeof(int);
+    unsigned int inc_icfsum_size        = GetNumOfBins()*GetNumOfCVs()*sizeof(double);
+    unsigned int inc_epotsum_size       = GetNumOfBins()*sizeof(double);
+    unsigned int inc_icfepotsum_size    = GetNumOfBins()*GetNumOfCVs()*sizeof(double);
 
 // --------------------------
-    CXMLBinData* p_isamples = p_cele->GetFirstChildBinData("NISAMPLES");
+    CXMLBinData* p_isamples = p_cele->GetFirstChildBinData("NSAMPLES");
     if(p_isamples == NULL) {
-        RUNTIME_ERROR("unable to open NISAMPLES element");
+        RUNTIME_ERROR("unable to open NSAMPLES element");
     }
 
     void* p_data = p_isamples->GetData();
-    if((GetNSamplesArray() == NULL) || (p_data == NULL) || (p_isamples->GetLength() != isamples_size)) {
+    if((GetNSamplesArray() == NULL) || (p_data == NULL) || (p_isamples->GetLength() != inc_nsamples_size)) {
         CSmallString error;
-        error << "inconsistent NISAMPLES element dat (r: " << p_isamples->GetLength()
-              << ", l: " <<  isamples_size << ")";
+        error << "inconsistent NSAMPLES element dat (r: " << p_isamples->GetLength()
+              << ", l: " <<  inc_nsamples_size << ")";
         RUNTIME_ERROR(error);
     }
 
     int* idst = GetNSamplesArray();
     int* isrc = (int*)p_data;
-    for(unsigned int i=0; i < isamples; i++) {
+    for(unsigned int i=0; i < inc_nsamples; i++) {
         *idst++ += *isrc++;
     }
 
 // --------------------------
-    CXMLBinData* p_iabfforce = p_cele->GetFirstChildBinData("IABFFORCE");
-    if(p_iabfforce == NULL) {
-        RUNTIME_ERROR("unable to open IABFFORCE element");
+    CXMLBinData* p_inc_icfsum = p_cele->GetFirstChildBinData("ICFSUM");
+    if(p_inc_icfsum == NULL) {
+        RUNTIME_ERROR("unable to open ICFSUM element");
     }
 
-    p_data = p_iabfforce->GetData();
-    if((GetABFForceSumArray() == NULL) || (p_data == NULL) || (p_iabfforce->GetLength() != iabfforce_size)) {
+    p_data = p_inc_icfsum->GetData();
+    if((GetICFSumArray() == NULL) || (p_data == NULL) || (p_inc_icfsum->GetLength() != inc_icfsum_size)) {
         CSmallString error;
-        error << "inconsistent IABFFORCE element dat (r: " << p_iabfforce->GetLength()
-              << ", l: " <<  iabfforce_size << ")";
+        error << "inconsistent ICFSUM element dat (r: " << p_inc_icfsum->GetLength()
+              << ", l: " <<  inc_icfsum_size << ")";
         RUNTIME_ERROR(error);
     }
 
-    double* jdst = GetABFForceSumArray();
+    double* jdst = GetICFSumArray();
     double* jsrc = (double*)p_data;
-    for(unsigned int i=0; i < iabfforce; i++) {
+    for(unsigned int i=0; i < inc_icfsum; i++) {
         *jdst++ += *jsrc++;
     }
 
 // --------------------------
-    CXMLBinData* p_iabfforce2 = p_cele->GetFirstChildBinData("IABFFORCE2");
-    if(p_iabfforce2 == NULL) {
-        RUNTIME_ERROR("unable to open IABFFORCE2 element");
+    CXMLBinData* p_inc_icfsum2 = p_cele->GetFirstChildBinData("ICFSUM2");
+    if(p_inc_icfsum2 == NULL) {
+        RUNTIME_ERROR("unable to open ICFSUM2 element");
     }
 
-    p_data = p_iabfforce2->GetData();
-    if((GetABFForceSquareSumArray() == NULL) || (p_data == NULL) || (p_iabfforce2->GetLength() != iabfforce_size)) {
+    p_data = p_inc_icfsum2->GetData();
+    if((GetICFSum2Array() == NULL) || (p_data == NULL) || (p_inc_icfsum2->GetLength() != inc_icfsum_size)) {
         CSmallString error;
-        error << "inconsistent IABFFORCE element dat (r: " << p_iabfforce2->GetLength()
-              << ", l: " <<  iabfforce_size << ")";
+        error << "inconsistent ICFSUM2 element dat (r: " << p_inc_icfsum2->GetLength()
+              << ", l: " <<  inc_icfsum_size << ")";
         RUNTIME_ERROR(error);
     }
 
-    double* kdst = GetABFForceSquareSumArray();
+    double* kdst = GetICFSum2Array();
     double* ksrc = (double*)p_data;
-    for(unsigned int i=0; i < iabfforce; i++) {
+    for(unsigned int i=0; i < inc_icfsum; i++) {
         *kdst++ += *ksrc++;
     }
 
 // --------------------------
-    CXMLBinData* p_iepot = p_cele->GetFirstChildBinData("IEPOT");
-    if(p_iepot == NULL) {
-        RUNTIME_ERROR("unable to open IEPOT element");
+    CXMLBinData* p_inc_EpotSum = p_cele->GetFirstChildBinData("EPOTSUM");
+    if(p_inc_EpotSum == NULL) {
+        RUNTIME_ERROR("unable to open EPOTSUM element");
     }
 
-    p_data = p_iepot->GetData();
-    if((GetEPotSumArray() == NULL) || (p_data == NULL) || (p_iepot->GetLength() != iepot_size)) {
+    p_data = p_inc_EpotSum->GetData();
+    if((GetEpotSumArray() == NULL) || (p_data == NULL) || (p_inc_EpotSum->GetLength() != inc_epotsum_size)) {
         CSmallString error;
-        error << "inconsistent IEPOT element dat (r: " << p_iepot->GetLength()
-              << ", l: " <<  iepot_size << ")";
+        error << "inconsistent EPOTSUM element dat (r: " << p_inc_EpotSum->GetLength()
+              << ", l: " <<  inc_epotsum_size << ")";
         RUNTIME_ERROR(error);
     }
 
-    double* ldst = GetEPotSumArray();
+    double* ldst = GetEpotSumArray();
     double* lsrc = (double*)p_data;
-    for(unsigned int i=0; i < iepot; i++) {
+    for(unsigned int i=0; i < inc_epotsum; i++) {
         *ldst++ += *lsrc++;
     }
 
 // --------------------------
-    CXMLBinData* p_iepot2 = p_cele->GetFirstChildBinData("IEPOT2");
-    if(p_iepot2 == NULL) {
-        RUNTIME_ERROR("unable to open IEPOT2 element");
+    CXMLBinData* p_inc_epotsum = p_cele->GetFirstChildBinData("EPOTSUM2");
+    if(p_inc_epotsum == NULL) {
+        RUNTIME_ERROR("unable to open EPOTSUM2 element");
     }
 
-    p_data = p_iepot2->GetData();
-    if((GetEPotSquareSumArray() == NULL) || (p_data == NULL) || (p_iepot2->GetLength() != iepot_size)) {
+    p_data = p_inc_epotsum->GetData();
+    if((GetEpotSum2Array() == NULL) || (p_data == NULL) || (p_inc_epotsum->GetLength() != inc_epotsum_size)) {
         CSmallString error;
-        error << "inconsistent IEPOT2 element dat (r: " << p_iepot2->GetLength()
-              << ", l: " <<  iepot_size << ")";
+        error << "inconsistent EPOTSUM2 element dat (r: " << p_inc_epotsum->GetLength()
+              << ", l: " <<  inc_epotsum_size << ")";
         RUNTIME_ERROR(error);
     }
 
-    double* mdst = GetEPotSquareSumArray();
+    double* mdst = GetEpotSum2Array();
     double* msrc = (double*)p_data;
-    for(unsigned int i=0; i < iepot; i++) {
+    for(unsigned int i=0; i < inc_epotsum; i++) {
         *mdst++ += *msrc++;
+    }
+
+// --------------------------
+    CXMLBinData* p_inc_icfepotsum = p_cele->GetFirstChildBinData("ICFEPOTSUM");
+    if(p_inc_icfepotsum == NULL) {
+        RUNTIME_ERROR("unable to open ICFEPOTSUM element");
+    }
+
+    p_data = p_inc_icfsum->GetData();
+    if((GetICFSumArray() == NULL) || (p_data == NULL) || (p_inc_icfepotsum->GetLength() != inc_icfepotsum_size)) {
+        CSmallString error;
+        error << "inconsistent ICFEPOTSUM element dat (r: " << p_inc_icfepotsum->GetLength()
+              << ", l: " <<  inc_icfepotsum_size << ")";
+        RUNTIME_ERROR(error);
+    }
+
+    double* ndst = GetICFEpotSumArray();
+    double* nsrc = (double*)p_data;
+    for(unsigned int i=0; i < inc_icfepotsum; i++) {
+        *ndst++ += *nsrc++;
+    }
+
+// --------------------------
+    CXMLBinData* p_inc_icfepotsum2 = p_cele->GetFirstChildBinData("ICFEPOTSUM2");
+    if(p_inc_icfepotsum2 == NULL) {
+        RUNTIME_ERROR("unable to open ICFEPOTSUM2 element");
+    }
+
+    p_data = p_inc_icfepotsum2->GetData();
+    if((GetICFSum2Array() == NULL) || (p_data == NULL) || (p_inc_icfepotsum2->GetLength() != inc_icfepotsum_size)) {
+        CSmallString error;
+        error << "inconsistent ICFEPOTSUM2 element dat (r: " << p_inc_icfepotsum2->GetLength()
+              << ", l: " <<  inc_icfepotsum_size << ")";
+        RUNTIME_ERROR(error);
+    }
+
+    double* odst = GetICFEpotSum2Array();
+    double* osrc = (double*)p_data;
+    for(unsigned int i=0; i < inc_icfepotsum; i++) {
+        *odst++ += *osrc++;
     }
 }
 
@@ -1454,25 +1913,32 @@ void CABFAccumulator::WriteABFData(CXMLElement* p_rele)
         INVALID_ARGUMENT("p_rele is NULL");
     }
 
-    int isamples_size = GetNumberOfBins()*sizeof(int);
-    int iabfforce_size = GetNumberOfBins()*GetNumberOfCoords()*sizeof(double);
-    int iepot_size = GetNumberOfBins()*sizeof(double);
+    unsigned int inc_nsamples_size      = GetNumOfBins()*sizeof(int);
+    unsigned int inc_icfsum_size        = GetNumOfBins()*GetNumOfCVs()*sizeof(double);
+    unsigned int inc_epotsum_size       = GetNumOfBins()*sizeof(double);
+    unsigned int inc_icfepotsum_size    = GetNumOfBins()*GetNumOfCVs()*sizeof(double);
 
 // write collected data to response
-    CXMLBinData* p_isamples = p_rele->CreateChildBinData("NISAMPLES");
-    p_isamples->CopyData(GetNSamplesArray(),isamples_size);
+    CXMLBinData* p_isamples = p_rele->CreateChildBinData("NSAMPLES");
+    p_isamples->CopyData(GetNSamplesArray(),inc_nsamples_size);
 
-    CXMLBinData* p_iabfforce = p_rele->CreateChildBinData("IABFFORCE");
-    p_iabfforce->CopyData(GetABFForceSumArray(),iabfforce_size);
+    CXMLBinData* p_inc_icfsum = p_rele->CreateChildBinData("ICFSUM");
+    p_inc_icfsum->CopyData(GetICFSumArray(),inc_icfsum_size);
 
-    CXMLBinData* p_iabfforce2 = p_rele->CreateChildBinData("IABFFORCE2");
-    p_iabfforce2->CopyData(GetABFForceSquareSumArray(),iabfforce_size);
+    CXMLBinData* p_inc_icfsum2 = p_rele->CreateChildBinData("ICFSUM2");
+    p_inc_icfsum2->CopyData(GetICFSum2Array(),inc_icfsum_size);
 
-    CXMLBinData* p_iepot = p_rele->CreateChildBinData("IEPOT");
-    p_iepot->CopyData(GetEPotSumArray(),iepot_size);
+    CXMLBinData* p_inc_epotsum = p_rele->CreateChildBinData("EPOTSUM");
+    p_inc_epotsum->CopyData(GetEpotSumArray(),inc_epotsum_size);
 
-    CXMLBinData* p_iepot2 = p_rele->CreateChildBinData("IEPOT2");
-    p_iepot2->CopyData(GetEPotSquareSumArray(),iepot_size);
+    CXMLBinData* p_inc_epotsum2 = p_rele->CreateChildBinData("EPOTSUM2");
+    p_inc_epotsum2->CopyData(GetEpotSum2Array(),inc_epotsum_size);
+
+    CXMLBinData* p_inc_icfepotsum = p_rele->CreateChildBinData("ICFEPOTSUM");
+    p_inc_icfepotsum->CopyData(GetICFEpotSumArray(),inc_icfepotsum_size);
+
+    CXMLBinData* p_inc_icfepotsum2 = p_rele->CreateChildBinData("ICFEPOTSUM2");
+    p_inc_icfepotsum2->CopyData(GetICFEpotSum2Array(),inc_icfepotsum_size);
 }
 
 //==============================================================================
@@ -1481,14 +1947,7 @@ void CABFAccumulator::WriteABFData(CXMLElement* p_rele)
 
 int CABFAccumulator::map(int item,int bin) const
 {
-    return(item + bin*NCoords);
-}
-
-//------------------------------------------------------------------------------
-
-int CABFAccumulator::map_g(int group,int item,int bin) const
-{
-    return(group*NCoords*TotNBins + item + bin*NCoords);
+    return(item + bin*NCVs);
 }
 
 //==============================================================================
@@ -1507,11 +1966,14 @@ void CABFAccumulator::AddABFAccumulator(const CABFAccumulator* p_accu)
 
     for(int i=0; i < TotNBins; i++) NSamples[i] += p_accu->NSamples[i];
 
-    for(int i=0; i < TotNBins*NCoords; i++) ABFForce[i] += p_accu->ABFForce[i];
-    for(int i=0; i < TotNBins*NCoords; i++) ABFForce2[i] += p_accu->ABFForce2[i];
+    for(int i=0; i < TotNBins*NCVs; i++) ICFSum[i]  += p_accu->ICFSum[i];
+    for(int i=0; i < TotNBins*NCVs; i++) ICFSum2[i] += p_accu->ICFSum2[i];
 
-    for(int i=0; i < TotNBins; i++) EPot[i]  += p_accu->EPot[i];
-    for(int i=0; i < TotNBins; i++) EPot2[i] += p_accu->EPot2[i];
+    for(int i=0; i < TotNBins; i++) EpotSum[i]  += p_accu->EpotSum[i];
+    for(int i=0; i < TotNBins; i++) EpotSum2[i] += p_accu->EpotSum2[i];
+
+    for(int i=0; i < TotNBins*NCVs; i++) ICFEpotSum[i]  += p_accu->ICFEpotSum[i];
+    for(int i=0; i < TotNBins*NCVs; i++) ICFEpotSum2[i] += p_accu->ICFEpotSum2[i];
 }
 
 //------------------------------------------------------------------------------
@@ -1528,11 +1990,14 @@ void CABFAccumulator::SubABFAccumulator(const CABFAccumulator* p_accu)
 
     for(int i=0; i < TotNBins; i++) NSamples[i] -= p_accu->NSamples[i];
 
-    for(int i=0; i < TotNBins*NCoords; i++) ABFForce[i] -= p_accu->ABFForce[i];
-    for(int i=0; i < TotNBins*NCoords; i++) ABFForce2[i] -= p_accu->ABFForce2[i];
+    for(int i=0; i < TotNBins*NCVs; i++) ICFSum[i]  -= p_accu->ICFSum[i];
+    for(int i=0; i < TotNBins*NCVs; i++) ICFSum2[i] -= p_accu->ICFSum2[i];
 
-    for(int i=0; i < TotNBins; i++) EPot[i]  -= p_accu->EPot[i];
-    for(int i=0; i < TotNBins; i++) EPot2[i] -= p_accu->EPot2[i];
+    for(int i=0; i < TotNBins; i++) EpotSum[i]  -= p_accu->EpotSum[i];
+    for(int i=0; i < TotNBins; i++) EpotSum2[i] -= p_accu->EpotSum2[i];
+
+    for(int i=0; i < TotNBins*NCVs; i++) ICFEpotSum[i]  -= p_accu->ICFEpotSum[i];
+    for(int i=0; i < TotNBins*NCVs; i++) ICFEpotSum2[i] -= p_accu->ICFEpotSum2[i];
 }
 
 //------------------------------------------------------------------------------
@@ -1544,28 +2009,32 @@ void CABFAccumulator::SetNCorr(double ncorr)
 
 //------------------------------------------------------------------------------
 
-double CABFAccumulator::GetValue(int icoord,int ibin,EABFAccuValue realm) const
+double CABFAccumulator::GetValue(int icv,int ibin,EABFAccuValue realm) const
 {
-    double nsamples = GetNumberOfABFSamples(ibin);
+    double nsamples = GetNumOfSamples(ibin);
     if( nsamples <= 0 ) return(0.0);
 
     double value = 0.0;
-    double sum = 0.0;
-    double sum_square = 0.0;
 
     // abf accumulated data
-    sum = GetABFForceSum(icoord,ibin);
-    sum_square = GetABFForceSquareSum(icoord,ibin);
+    double icfsum = GetICFSum(icv,ibin);
+    double icfsum_square = GetICFSum2(icv,ibin);
+
+    double epotsum = GetEpotSum(ibin);
+//    double epotsum_square = GetEpotSum2(ibin);
+
+    double icfepotsum = GetICFEpotSum(icv,ibin);
+    double icfepotsum_square = GetICFEpotSum2(icv,ibin);
 
     switch(realm){
 // mean force
         case(EABF_DG_VALUE): {
-                value = sum / nsamples;  // mean ABF force
+                value = icfsum / nsamples;  // mean ABF force
                 return(value);
             }
         case(EABF_DG_SIGMA): {
                 // sq is variance of ABF force
-                double sq = nsamples*sum_square - sum*sum;
+                double sq = nsamples*icfsum_square - icfsum*icfsum;
                 if(sq > 0) {
                     sq = sqrt(sq) / nsamples;
                 } else {
@@ -1575,7 +2044,7 @@ double CABFAccumulator::GetValue(int icoord,int ibin,EABFAccuValue realm) const
             }
         case(EABF_DG_ERROR): {
                 // sq is variance of ABF force
-                double sq = nsamples*sum_square - sum*sum;
+                double sq = nsamples*icfsum_square - icfsum*icfsum;
                 if(sq > 0) {
                     sq = sqrt(sq) / nsamples;
                 } else {
@@ -1584,6 +2053,31 @@ double CABFAccumulator::GetValue(int icoord,int ibin,EABFAccuValue realm) const
                 // value is standard error of mean ABF force
                 value = sq / sqrt((double)nsamples/(double)NCorr);
                 return(value);
+            }
+// -TdS
+        case(EABF_TDS_VALUE): {
+                value = icfepotsum/nsamples -(icfsum/nsamples)*(epotsum/nsamples);
+                //cout << icfepotsum/nsamples << " " << (icfsum/nsamples)*(epotsum/nsamples) << endl;
+                value = value / (Temperature * 1.98720425864083e-3); // R in kcal/mol/K
+                return(value);
+            }
+        case(EABF_TDS_SIGMA): {
+                // FIXME
+                return(0.0);
+            }
+        case(EABF_TDS_ERROR): {
+                // FIXME - only part
+                // sq is variance of ABF force
+                double sq = nsamples*icfepotsum_square - icfepotsum*icfepotsum;
+                if(sq > 0) {
+                    sq = sqrt(sq) / nsamples;
+                } else {
+                    sq = 0.0;
+                }
+                sq = sq / (Temperature * 1.98720425864083e-3);
+                // value is standard error of ICF*Epot
+                value = sq / sqrt((double)nsamples/(double)NCorr);
+                return(5.0);
             }
         default:
             RUNTIME_ERROR("unsupported realm");
@@ -1596,7 +2090,7 @@ double CABFAccumulator::GetValue(int icoord,int ibin,EABFAccuValue realm) const
 
 double CABFAccumulator::GetValue(int ibin,EABFAccuValue realm) const
 {
-    double nsamples = GetNumberOfABFSamples(ibin);
+    double nsamples = GetNumOfSamples(ibin);
     if( nsamples <= 0 ) return(0.0);
 
     double value = 0.0;
@@ -1604,8 +2098,8 @@ double CABFAccumulator::GetValue(int ibin,EABFAccuValue realm) const
     double sum_square = 0.0;
 
     // abf accumulated data
-    sum = GetEPotSum(ibin);
-    sum_square = GetEPotSquareSum(ibin);
+    sum = GetEpotSum(ibin);
+    sum_square = GetEpotSum2(ibin);
 
     switch(realm){
         case(EABF_H_VALUE): {

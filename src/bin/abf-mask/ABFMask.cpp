@@ -159,14 +159,14 @@ bool CABFMask::Run(void)
     vout << "   Sample limit: " << Options.GetOptLimit() << endl;
     vout << "   Energy limit: " << Options.GetOptMaxEnergy() << endl;
     int masked = 0;
-    for(int i = 0; i < Accumulator.GetNumberOfBins(); i++){
+    for(int i = 0; i < Accumulator.GetNumOfBins(); i++){
         double energy = fes.GetEnergy(i);
-        if( (energy > Options.GetOptMaxEnergy()) || (Accumulator.GetNumberOfABFSamples(i) < Options.GetOptLimit()) ){
+        if( (energy > Options.GetOptMaxEnergy()) || (Accumulator.GetNumOfSamples(i) < Options.GetOptLimit()) ){
             Accumulator.SetMaskWeight(i,0.0);
             masked++;
         }
     }
-    double maxbins = Accumulator.GetNumberOfBins();
+    double maxbins = Accumulator.GetNumOfBins();
     if( maxbins > 0 ){
         vout << "   Masked area: " << setw(5) << setprecision(1) << fixed << masked/maxbins*100 <<"%" << endl;
     }
@@ -200,10 +200,10 @@ void CABFMask::PrepareAccumulator(void)
 {
     double sampled = 0.0;
     double maxbins = 0.0;
-    for(int ibin=0; ibin < Accumulator.GetNumberOfBins(); ibin++) {
+    for(int ibin=0; ibin < Accumulator.GetNumOfBins(); ibin++) {
         maxbins++;
         // erase datapoints not properly sampled
-        if( Accumulator.GetNumberOfABFSamples(ibin) <= Options.GetOptLimit() ) {
+        if( Accumulator.GetNumOfSamples(ibin) <= Options.GetOptLimit() ) {
             Accumulator.SetNumberOfABFSamples(ibin,0);
         } else {
             sampled++;

@@ -90,7 +90,7 @@ void PMF_PACKAGE cpmf_abp_client_set_coord_(FTINT* ret_st,
         l_type.SetFromFortran(type,type_len);
         l_unit.SetFromFortran(unit,unit_len);
 
-        ABPClient.SetCoord(l_id,l_name,l_type,l_min_value,l_max_value,l_nbins,l_alpha,l_fconv,l_unit);
+        ABPClient.SetCV(l_id,l_name,l_type,l_min_value,l_max_value,l_nbins,l_alpha,l_fconv,l_unit);
 
     } catch(std::exception& e) {
         CSmallString error;
@@ -146,7 +146,7 @@ void PMF_PACKAGE cpmf_abp_client_initial_data_(FTINT* ret_st,
 {
     CSimpleVector<int> isamples;
 
-    isamples.CreateVector(ABPClient.GetNumberOfBins());
+    isamples.CreateVector(ABPClient.GetNumOfBins());
 
     if(ABPClient.GetInitialData(isamples,idpop,ipop) == false) {
         ES_ERROR("unable to get initial data");
@@ -154,7 +154,7 @@ void PMF_PACKAGE cpmf_abp_client_initial_data_(FTINT* ret_st,
         return;
     }
 
-    for(int i = 0; i < ABPClient.GetNumberOfBins(); i++){
+    for(int i = 0; i < ABPClient.GetNumOfBins(); i++){
         nisamples[i] = isamples[i];
     }
 
@@ -172,9 +172,9 @@ void PMF_PACKAGE cpmf_abp_client_exchange_data_(FTINT* ret_st,
 {
     CSimpleVector<int> isamples;
 
-    isamples.CreateVector(ABPClient.GetNumberOfBins());
+    isamples.CreateVector(ABPClient.GetNumOfBins());
 
-    for(int i = 0; i < ABPClient.GetNumberOfBins(); i++){
+    for(int i = 0; i < ABPClient.GetNumOfBins(); i++){
         isamples[i] = nisamples[i];
     }
 
@@ -184,7 +184,7 @@ void PMF_PACKAGE cpmf_abp_client_exchange_data_(FTINT* ret_st,
         return;
     }
 
-    for(int i = 0; i < ABPClient.GetNumberOfBins(); i++){
+    for(int i = 0; i < ABPClient.GetNumOfBins(); i++){
         nisamples[i] = isamples[i];
     }
 

@@ -105,7 +105,7 @@ void CColVariable::SetMaxMovement(double lmax)
 
 //------------------------------------------------------------------------------
 
-void CColVariable::SetCoord(int lid,const CSmallString& lname,const CSmallString& ltype,
+void CColVariable::SetCV(int lid,const CSmallString& lname,const CSmallString& ltype,
                             double lmin_value,double lmax_value,unsigned int lnbins)
 {
     ID = lid;
@@ -122,7 +122,7 @@ void CColVariable::SetCoord(int lid,const CSmallString& lname,const CSmallString
 
 //------------------------------------------------------------------------------
 
-void CColVariable::SetCoord(int lid,const CSmallString& lname,const CSmallString& ltype)
+void CColVariable::SetCV(int lid,const CSmallString& lname,const CSmallString& ltype)
 {
     ID = lid;
     Name = lname;
@@ -136,7 +136,7 @@ void CColVariable::SetCoord(int lid,const CSmallString& lname,const CSmallString
 
 //------------------------------------------------------------------------------
 
-void CColVariable::SetCoord(int lid,const CSmallString& lname,const CSmallString& ltype,
+void CColVariable::SetCV(int lid,const CSmallString& lname,const CSmallString& ltype,
                   double lmin_value,double lmax_value,unsigned int lnbins,
                   double lfconv,const CSmallString& lunit)
 {
@@ -157,7 +157,7 @@ void CColVariable::SetCoord(int lid,const CSmallString& lname,const CSmallString
 
 //------------------------------------------------------------------------------
 
-void CColVariable::SetCoord(int lid,const CSmallString& lname,const CSmallString& ltype,
+void CColVariable::SetCV(int lid,const CSmallString& lname,const CSmallString& ltype,
               double lmin_value,double lmax_value,unsigned int lnbins,
               double alpha,
               double lfconv,const CSmallString& lunit)
@@ -200,7 +200,7 @@ void CColVariable::CopyFrom(const CColVariable* p_coord)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-unsigned int CColVariable::GetNumberOfBins(void) const
+int CColVariable::GetNumOfBins(void) const
 {
     return(NBins);
 }

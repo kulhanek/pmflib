@@ -349,7 +349,7 @@ bool CABFServer::Run(void)
     vout << "::::::::::::::::::::::::::::::::::: Output data ::::::::::::::::::::::::::::::::" << endl;
 
 // and now save all data
-    if(ABFAccumulator.GetNumberOfCoords() > 0) {
+    if(ABFAccumulator.GetNumOfCVs() > 0) {
         vout << "Output ABF accumulator: " << OutputFileName <<  endl;
         try {
             ABFAccumulator.Save(OutputFileName);

@@ -275,11 +275,11 @@ void CABPEnergy::CalculateFESMollified(void)
     const double Rgas = 0.0019872065;
 
     double m = 1.0;
-    for(int i=0; i < ABPAccumulator.GetNumberOfBins(); i++){
+    for(int i=0; i < ABPAccumulator.GetNumOfBins(); i++){
         double pop = ABPAccumulator.GetPop(i);
         if( pop > m ) m = pop;
     }
-    for(int i=0; i < ABPAccumulator.GetNumberOfBins(); i++){
+    for(int i=0; i < ABPAccumulator.GetNumOfBins(); i++){
         double pop = ABPAccumulator.GetPop(i);
         double ene = - ABPAccumulator.GetTemperature()*Rgas*log(pop/m);
         FES.SetEnergy(i,ene);

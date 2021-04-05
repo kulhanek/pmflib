@@ -36,7 +36,7 @@
 //void CEnergySurface::CalculateFES(CMTDHistory& mtd_hist,unsigned int mtd_time)
 //{
 //// quick compatibility comparison
-//    if( NumOfCVs != mtd_hist.GetNumberOfCoords() ) {
+//    if( NumOfCVs != mtd_hist.GetNumOfCVs() ) {
 //        RUNTIME_ERROR("numofitems mismatch");
 //    }
 
@@ -64,10 +64,10 @@
 //        return;
 //    }
 
-//    const CColVariable* p_coord = &Sizes[cv];
+//    const CColVariable* p_coord = &CVs[cv];
 
 //// cycle through variable
-//    for(unsigned int i = 0; i < p_coord->GetNumberOfBins(); i++) {
+//    for(unsigned int i = 0; i < p_coord->GetNumOfBins(); i++) {
 //        point[cv] = p_coord->GetValue(i);
 //        CalculateFES_Part(mtd_hist,point,mtd_time,loc,cv+1);
 //    }
@@ -77,11 +77,11 @@
 ////------------------------------------------------------------------------------
 ////==============================================================================
 
-//void CEnergySurface::CalculateFES(int ncoords,CSimpleVector<double>& params)
+//void CEnergySurface::CalculateFES(int NCVs,CSimpleVector<double>& params)
 //{
 //// quick compatibility comparison
-//    if( NumOfCVs != ncoords ) {
-//        RUNTIME_ERROR("NumOfCVs != ncoords");
+//    if( NumOfCVs != NCVs ) {
+//        RUNTIME_ERROR("NumOfCVs != NCVs");
 //    }
 
 //// allocate point
@@ -108,10 +108,10 @@
 //        return;
 //    }
 
-//    const CColVariable* p_coord = &Sizes[cv];
+//    const CColVariable* p_coord = &CVs[cv];
 
 //// cycle through variable
-//    for(unsigned int i = 0; i < p_coord->GetNumberOfBins(); i++) {
+//    for(unsigned int i = 0; i < p_coord->GetNumOfBins(); i++) {
 //        point[cv] = p_coord->GetValue(i);
 //        CalculateFES_MTDParam_Part(params,point,loc,cv+1);
 //    }
@@ -148,7 +148,7 @@
 
 CMTDHistory::CMTDHistory(void)
 {
-    NCoords = 0;
+    NCVs = 0;
     MaxBufferSize = 1000;
     EnergyUnitFac = 1;
     EnergyUnit = "kcal mol^-1";
@@ -230,15 +230,15 @@ void CMTDHistory::Load(FILE* fin)
         RUNTIME_ERROR(error);
     }
 
-    SetNumberOfCoords(numofcoords);
+    SetNumOfCVs(numofcoords);
 
    if( fin == NULL ) {
         INVALID_ARGUMENT("stream is not open");
     }
 
 // read coordinate specification ----------------
-    for(unsigned int i=0; i < NCoords; i++) {
-        unsigned int    id = 0;
+    for(int i=0; i < NCVs; i++) {
+        int             id = 0;
         char            type[11];
         char            name[51];
         double          min_value = 0.0;
@@ -250,7 +250,7 @@ void CMTDHistory::Load(FILE* fin)
         memset(name,0,51);
 
         // read item
-        tr = fscanf(fin,"%u %10s %lf %lf %d",&id,type,&min_value,&max_value,&nbins);
+        tr = fscanf(fin,"%d %10s %lf %lf %d",&id,type,&min_value,&max_value,&nbins);
         if( tr != 5 ) {
             CSmallString error;
             error << "unable to read coordinate definition, id: " << i+1 << " (number of collums read: " << tr << ")";
@@ -274,7 +274,7 @@ void CMTDHistory::Load(FILE* fin)
             RUNTIME_ERROR(error);
         }
 
-        tr = fscanf(fin,"%u %55s",&id,name);
+        tr = fscanf(fin,"%d %55s",&id,name);
         if( tr != 2 ) {
             CSmallString error;
             error << "unable to read coordinate definition, id: " << i+1 << " (number of collums read: " << tr << ")";
@@ -288,14 +288,14 @@ void CMTDHistory::Load(FILE* fin)
             RUNTIME_ERROR(error);
         }
         // init coordinate
-        SetCoordinate(i,name,type,min_value,max_value,nbins);
+        SetCV(i,name,type,min_value,max_value,nbins);
     }
 
 // now read records -----------------------------
 
-    unsigned int   curr_position = 0;
-    unsigned int   position = 1;
-    CMTDBuffer*    p_buff = NULL;
+    int             curr_position = 0;
+    int             position = 1;
+    CMTDBuffer*     p_buff = NULL;
 
     while(feof(fin) == 0) {
         int nr,level,time;
@@ -331,7 +331,7 @@ void CMTDHistory::Load(FILE* fin)
 
         p_buff->SetHeight(curr_position,height);
 
-        for(unsigned int i=0; i < GetNumberOfCoords(); i++) {
+        for(int i=0; i < GetNumOfCVs(); i++) {
             double value,width;
             nr = fscanf(fin,"%lf %lf",&value,&width);
             if(nr != 2) {
@@ -351,10 +351,10 @@ void CMTDHistory::Load(FILE* fin)
 
 //------------------------------------------------------------------------------
 
-CMTDBuffer* CMTDHistory::GetNewBuffer(unsigned int size)
+CMTDBuffer* CMTDHistory::GetNewBuffer(int size)
 {
     CMTDBuffer* p_buff = new CMTDBuffer();
-    p_buff->AllocateData(size,NCoords);
+    p_buff->AllocateData(size,NCVs);
     Buffers.InsertToEnd(p_buff,0,true);
     return(p_buff);
 }
@@ -396,19 +396,19 @@ void CMTDHistory::Save(FILE* fout)
 // 30  format(I2,1X,A55)
 
 // write MTD header ------------------
-    if( fprintf(fout,"MTD V3 %2d\n",NCoords) <= 0) {
+    if( fprintf(fout,"MTD V3 %2d\n",NCVs) <= 0) {
         RUNTIME_ERROR("unable to write header");
     }
 
 // write coordinate specification ----------------
-    for(unsigned int i=0; i < NCoords; i++) {
-        if(fprintf(fout,"%2d %10s %18.11E %18.11E %6d\n",i+1,(const char*)Sizes[i].Type,
-                   Sizes[i].MinValue,Sizes[i].MaxValue,Sizes[i].NBins) <= 0) {
+    for(int i=0; i < NCVs; i++) {
+        if(fprintf(fout,"%2d %10s %18.11E %18.11E %6d\n",i+1,(const char*)CVs[i].Type,
+                   CVs[i].MinValue,CVs[i].MaxValue,CVs[i].NBins) <= 0) {
             CSmallString error;
             error << "unable to write coordinate definition, id: " << i+1;
             RUNTIME_ERROR(error);
         }
-        if(fprintf(fout,"%2d %55s\n",i+1,(const char*)Sizes[i].Name) <= 0) {
+        if(fprintf(fout,"%2d %55s\n",i+1,(const char*)CVs[i].Name) <= 0) {
             CSmallString error;
             error << "unable to write coordinate definition, id: " << i+1;
             RUNTIME_ERROR(error);
@@ -431,7 +431,7 @@ void CMTDHistory::Save(FILE* fout)
         mtd_level = p_buf->GetLevel();
         mtd_time  = p_buf->GetStart();
 
-        for(unsigned int i=0; i < p_buf->GetNumberOfHills(); i++) {
+        for(int i=0; i < p_buf->GetNumOfHills(); i++) {
             if(fprintf(fout,"  %5d  %10d ",mtd_level,mtd_time) <= 0) {
                 CSmallString error;
                 error << "unable to write restart level and MTD time, pos: " << mtd_time;
@@ -446,7 +446,7 @@ void CMTDHistory::Save(FILE* fout)
             }
 
             // write values and widths
-            for(unsigned int j=0; j < GetNumberOfCoords(); j++) {
+            for(int j=0; j < GetNumOfCVs(); j++) {
                 if(fprintf(fout,"%10.4f %10.4f ",p_buf->GetValue(i,j),p_buf->GetWidth(i,j)) <= 0) {
                     CSmallString error;
                     error << "unable to write value and/or width, pos: " << mtd_time << ", item: " << j+1;
@@ -464,24 +464,24 @@ void CMTDHistory::Save(FILE* fout)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void CMTDHistory::SetNumberOfCoords(int numofcoords)
+void CMTDHistory::SetNumOfCVs(int numofcoords)
 {
     if(numofcoords <= 0) {
         LOGIC_ERROR("numofcoords <= 0");
     }
 
-    if(NCoords > 0) {
+    if(NCVs > 0) {
         // destroy all previous data
         Deallocate();
-        Sizes.FreeVector();
-        NCoords = 0;
+        CVs.FreeVector();
+        NCVs = 0;
     }
 
-// try to allocate Sizes array
-    Sizes.CreateVector(numofcoords);
+// try to allocate CVs array
+    CVs.CreateVector(numofcoords);
 
 // all seems to be fine - update items
-    NCoords = numofcoords;
+    NCVs = numofcoords;
 }
 
 //------------------------------------------------------------------------------
@@ -494,15 +494,15 @@ void CMTDHistory::SetEnergyUnit(const CSmallString& unit, double unit_fac)
 
 //------------------------------------------------------------------------------
 
-void CMTDHistory::SetCoordinate(unsigned int id,
-                                const CSmallString& name,
-                                const CSmallString& type,
-                                double min_value,double max_value,unsigned int nbins)
+void CMTDHistory::SetCV(int id,
+                        const CSmallString& name,
+                        const CSmallString& type,
+                        double min_value,double max_value,unsigned int nbins)
 {
-    if( Sizes == NULL ){
-        RUNTIME_ERROR("Sizes is NULL");
+    if( CVs == NULL ){
+        RUNTIME_ERROR("CVs is NULL");
     }
-    if( id < 0 || id >= NCoords ){
+    if( id < 0 || id >= NCVs ){
         INVALID_ARGUMENT("id out-of-range");
     }
 
@@ -518,15 +518,15 @@ void CMTDHistory::SetCoordinate(unsigned int id,
         Deallocate();
     }
 
-    Sizes[id].Type = type;
-    Sizes[id].Name = name;
+    CVs[id].Type = type;
+    CVs[id].Name = name;
 
-    Sizes[id].MinValue = min_value;
-    Sizes[id].MaxValue = max_value;
+    CVs[id].MinValue = min_value;
+    CVs[id].MaxValue = max_value;
 
-    Sizes[id].NBins = nbins;
-    Sizes[id].BinWidth = (Sizes[id].MaxValue - Sizes[id].MinValue)/Sizes[id].NBins;
-    Sizes[id].Width = Sizes[id].MaxValue - Sizes[id].MinValue;
+    CVs[id].NBins = nbins;
+    CVs[id].BinWidth = (CVs[id].MaxValue - CVs[id].MinValue)/CVs[id].NBins;
+    CVs[id].Width = CVs[id].MaxValue - CVs[id].MinValue;
 }
 
 //------------------------------------------------------------------------------
@@ -543,13 +543,13 @@ void CMTDHistory::ReallocateAsSingleBuffer(void)
 // create new buffer
     CMTDBuffer* p_buffer = new CMTDBuffer;
 
-    unsigned int num_of_hills = GetNumberOfHills();
-    p_buffer->AllocateData(num_of_hills,NCoords);
+    int num_of_hills = GetNumOfHills();
+    p_buffer->AllocateData(num_of_hills,NCVs);
 
 // copy data
-    for(unsigned int i=0; i < num_of_hills; i++) {
+    for(int i=0; i < num_of_hills; i++) {
         p_buffer->SetHeight(i,GetHeight(i));
-        for(unsigned int j=0; j < NCoords; j++) {
+        for(int j=0; j < NCVs; j++) {
             p_buffer->SetValue(i,j,GetValue(i,j));
             p_buffer->SetWidth(i,j,GetWidth(i,j));
         }
@@ -567,9 +567,9 @@ void CMTDHistory::ReallocateAsSingleBuffer(void)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-unsigned int CMTDHistory::GetNumberOfCoords(void) const
+int CMTDHistory::GetNumOfCVs(void) const
 {
-    return(NCoords);
+    return(NCVs);
 }
 
 //------------------------------------------------------------------------------
@@ -588,14 +588,14 @@ double CMTDHistory::GetEnergyUnitFac(void) const
 
 //------------------------------------------------------------------------------
 
-unsigned int CMTDHistory::GetNumberOfHills(void) const
+int CMTDHistory::GetNumOfHills(void) const
 {
-    return(GetNumberOfHills(Buffers));
+    return(GetNumOfHills(Buffers));
 }
 
 //------------------------------------------------------------------------------
 
-unsigned int CMTDHistory::GetNumberOfHills(const CSimpleList<CMTDBuffer>& list) const
+int CMTDHistory::GetNumOfHills(const CSimpleList<CMTDBuffer>& list) const
 {
     unsigned int nsamples = 0;
 
@@ -603,7 +603,7 @@ unsigned int CMTDHistory::GetNumberOfHills(const CSimpleList<CMTDBuffer>& list) 
     const CMTDBuffer*             p_buf;
 
     while((p_buf = I.Current())!= NULL) {
-        nsamples += p_buf->GetNumberOfHills();
+        nsamples += p_buf->GetNumOfHills();
         I++;
     }
 
@@ -612,25 +612,25 @@ unsigned int CMTDHistory::GetNumberOfHills(const CSimpleList<CMTDBuffer>& list) 
 
 //------------------------------------------------------------------------------
 
-const CColVariable* CMTDHistory::GetCoordinate(unsigned int cv) const
+const CColVariable* CMTDHistory::GetCV(int cv) const
 {
-    return(&Sizes[cv]);
+    return(&CVs[cv]);
 }
 
 //------------------------------------------------------------------------------
 
-const double& CMTDHistory::GetHeight(unsigned int hill_index)
+const double& CMTDHistory::GetHeight(int hill_index)
 {
-    CSimpleIterator<CMTDBuffer>    I(Buffers);
-    CMTDBuffer*                    p_buf;
-    unsigned int                   loc = hill_index;
-    static double                  zero = 0.0;
+    CSimpleIterator<CMTDBuffer>     I(Buffers);
+    CMTDBuffer*                     p_buf;
+    int                             loc = hill_index;
+    static double                   zero = 0.0;
 
     while((p_buf = I.Current())!= NULL) {
-        if(loc < p_buf->GetNumberOfHills()) {
+        if(loc < p_buf->GetNumOfHills()) {
             return(p_buf->GetHeight(loc));
         }
-        loc = loc - p_buf->GetNumberOfHills();
+        loc = loc - p_buf->GetNumOfHills();
         I++;
     }
 
@@ -639,18 +639,18 @@ const double& CMTDHistory::GetHeight(unsigned int hill_index)
 
 //------------------------------------------------------------------------------
 
-const double& CMTDHistory::GetValue(unsigned int hill_index,unsigned int cv)
+const double& CMTDHistory::GetValue(int hill_index, int cv)
 {
-    CSimpleIterator<CMTDBuffer>    I(Buffers);
-    CMTDBuffer*                    p_buf;
-    unsigned int                   loc = hill_index;
-    static double                  zero = 0.0;
+    CSimpleIterator<CMTDBuffer>     I(Buffers);
+    CMTDBuffer*                     p_buf;
+    int                             loc = hill_index;
+    static double                   zero = 0.0;
 
     while((p_buf = I.Current())!= NULL) {
-        if(loc < p_buf->GetNumberOfHills()) {
+        if(loc < p_buf->GetNumOfHills()) {
             return(p_buf->GetValue(loc,cv));
         }
-        loc = loc - p_buf->GetNumberOfHills();
+        loc = loc - p_buf->GetNumOfHills();
         I++;
     }
 
@@ -659,18 +659,18 @@ const double& CMTDHistory::GetValue(unsigned int hill_index,unsigned int cv)
 
 //------------------------------------------------------------------------------
 
-const double& CMTDHistory::GetWidth(unsigned int hill_index,unsigned int cv)
+const double& CMTDHistory::GetWidth(int hill_index, int cv)
 {
-    CSimpleIterator<CMTDBuffer>    I(Buffers);
-    CMTDBuffer*                    p_buf;
-    unsigned int                   loc = hill_index;
-    static double                  zero = 0.0;
+    CSimpleIterator<CMTDBuffer>     I(Buffers);
+    CMTDBuffer*                     p_buf;
+    int                             loc = hill_index;
+    static double                   zero = 0.0;
 
     while((p_buf = I.Current())!= NULL) {
-        if(loc < p_buf->GetNumberOfHills()) {
+        if(loc < p_buf->GetNumOfHills()) {
             return(p_buf->GetWidth(loc,cv));
         }
-        loc = loc - p_buf->GetNumberOfHills();
+        loc = loc - p_buf->GetNumOfHills();
         I++;
     }
 
@@ -679,9 +679,9 @@ const double& CMTDHistory::GetWidth(unsigned int hill_index,unsigned int cv)
 
 //------------------------------------------------------------------------------
 
-CMTDBuffer* CMTDHistory::GetBuffer(unsigned int index)
+CMTDBuffer* CMTDHistory::GetBuffer(int index)
 {
-    if(index >= (unsigned int)Buffers.NumOfMembers()) return(NULL);
+    if(index >= Buffers.NumOfMembers()) return(NULL);
     return(Buffers[index]);
 }
 
@@ -693,7 +693,7 @@ void CMTDHistory::GetPVector(CSimpleVector<double>& pvector)
 {
     pvector.FreeVector();
 
-    int num_of_params = GetNumberOfHills()*(1+2*GetNumberOfCoords());
+    int num_of_params = GetNumOfHills()*(1+2*GetNumOfCVs());
     if(num_of_params <= 0) return;
 
     pvector.CreateVector(num_of_params);
@@ -703,9 +703,9 @@ void CMTDHistory::GetPVector(CSimpleVector<double>& pvector)
     int                            loc = 0;
 
     while((p_buf = I.Current())!= NULL) {
-        for(unsigned int i=0; i < p_buf->GetNumberOfHills(); i++) {
+        for(int i=0; i < p_buf->GetNumOfHills(); i++) {
             pvector[loc++] = p_buf->GetHeight(i);
-            for(unsigned int k=0; k < GetNumberOfCoords(); k++) {
+            for(int k=0; k < GetNumOfCVs(); k++) {
                 pvector[loc++] = p_buf->GetValue(i,k);
                 pvector[loc++] = p_buf->GetWidth(i,k);
             }
@@ -718,9 +718,9 @@ void CMTDHistory::GetPVector(CSimpleVector<double>& pvector)
 
 void CMTDHistory::SetPVector(const CSimpleVector<double>& pvector)
 {
-    unsigned int   curr_position = 0;
-    CMTDBuffer*    p_buff = NULL;
-    size_t         loc = 0;
+    int             curr_position = 0;
+    CMTDBuffer*     p_buff = NULL;
+    size_t          loc = 0;
 
     Deallocate();
 
@@ -735,7 +735,7 @@ void CMTDHistory::SetPVector(const CSimpleVector<double>& pvector)
         // now set height
         p_buff->SetHeight(curr_position,pvector[loc++]);
 
-        for(unsigned int i=0; i < GetNumberOfCoords(); i++) {
+        for(int i=0; i < GetNumOfCVs(); i++) {
             // set value and width
             p_buff->SetValue(curr_position,i,pvector[loc++]);
             p_buff->SetWidth(curr_position,i,pvector[loc++]);
@@ -749,18 +749,18 @@ void CMTDHistory::SetPVector(const CSimpleVector<double>& pvector)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-double CMTDHistory::CalculateValue(const CSimpleVector<double>& point,unsigned int mtdtime)
+double CMTDHistory::CalculateValue(const CSimpleVector<double>& point,int mtdtime)
 {
     CSimpleIterator<CMTDBuffer>    I(Buffers);
     CMTDBuffer*                    p_buf;
     double                         value = 0.0;
-    unsigned int                   processed = 0;
+    int                            processed = 0;
     double                         fexparg;
 
     while((p_buf = I.Current())!= NULL) {
-        for(unsigned int i=0; i < p_buf->GetNumberOfHills(); i++) {
+        for(int i=0; i < p_buf->GetNumOfHills(); i++) {
             fexparg = 0.0;
-            for(unsigned int k=0; k < GetNumberOfCoords(); k++) {
+            for(int k=0; k < GetNumOfCVs(); k++) {
                 double e = point[k] - p_buf->GetValue(i,k);
                 fexparg = fexparg +
                           e*e / (2.0 * p_buf->GetWidth(i,k) * p_buf->GetWidth(i,k));
@@ -802,19 +802,20 @@ void CMTDHistory::LoadCVSInfo(CXMLElement* p_iele)
         LOGIC_ERROR("unable to get header attributes");
     }
 
-    SetNumberOfCoords(lnitems);
+    SetNumOfCVs(lnitems);
 
     CXMLElement*   p_cel = NULL;
-    if(p_ele != NULL) p_cel = p_ele->GetFirstChildElement("COORD");
-    unsigned int   ccount = 0;
+    if(p_ele != NULL) p_cel = p_ele->GetFirstChildElement("CVS");
+
+    int   ccount = 0;
 
     while(p_cel != NULL) {
-        if(ccount >= NCoords) {
-            LOGIC_ERROR("more COORD elements than NCoords");
+        if(ccount >= NCVs) {
+            LOGIC_ERROR("more COORD elements than NCVs");
         }
-        Sizes[ccount].LoadInfo(p_cel);
+        CVs[ccount].LoadInfo(p_cel);
         ccount++;
-        p_cel = p_cel->GetNextSiblingElement("COORD");
+        p_cel = p_cel->GetNextSiblingElement("CV");
     }
 }
 
@@ -836,7 +837,7 @@ bool CMTDHistory::CheckCVSInfo(CXMLElement* p_iele)
 
     bool result = true;
 
-    unsigned int lnitems;
+    int lnitems;
 
     result &= p_ele->GetAttribute("nitems",lnitems);
 
@@ -845,21 +846,21 @@ bool CMTDHistory::CheckCVSInfo(CXMLElement* p_iele)
         return(false);
     }
 
-    if(NCoords != lnitems) {
+    if(NCVs != lnitems) {
         ES_ERROR("mismatch in the number of coordinates");
         return(false);
     }
 
     CXMLElement*   p_cel = NULL;
-    if(p_ele != NULL) p_cel = p_ele->GetFirstChildElement("COORD");
-    unsigned int   ccount = 0;
+    if(p_ele != NULL) p_cel = p_ele->GetFirstChildElement("CV");
+    int   ccount = 0;
 
     while(p_cel != NULL) {
-        if(ccount >= NCoords) {
-            ES_ERROR("more COORD elements than NCoords");
+        if(ccount >= NCVs) {
+            ES_ERROR("more COORD elements than NCVs");
             return(false);
         }
-        if(Sizes[ccount].CheckInfo(p_cel) == false) {
+        if(CVs[ccount].CheckInfo(p_cel) == false) {
             CSmallString error;
             error << "mismatch in cv: " << ccount+1;
             ES_ERROR(error);
@@ -881,13 +882,13 @@ void CMTDHistory::SaveCVSInfo(CXMLElement* p_iele)
     }
 
     CXMLElement* p_ele = p_iele->CreateChildElement("CVS");
-    p_ele->SetAttribute("nitems",NCoords);
+    p_ele->SetAttribute("nitems",NCVs);
 
     CColVariable*  p_coord;
 
-    for(unsigned int i=0; i < NCoords; i++) {
+    for(int i=0; i < NCVs; i++) {
         CXMLElement* p_iele = p_ele->CreateChildElement("COORD");
-        p_coord = &Sizes[i];
+        p_coord = &CVs[i];
         p_coord->SaveInfo(p_iele);
     }
 }
@@ -967,7 +968,7 @@ CMTDBuffer* CMTDHistory::AddMTDDataAsSingleBuffer(CXMLElement* p_ele)
         LOGIC_ERROR("unable to open HISTORY element");
     }
 
-    unsigned int num_of_hills; // this is total number of hills
+    int num_of_hills; // this is total number of hills
 
     if(p_history->GetAttribute("numofhills",num_of_hills) == false) {
         LOGIC_ERROR("unable to get number of hills");
@@ -981,8 +982,8 @@ CMTDBuffer* CMTDHistory::AddMTDDataAsSingleBuffer(CXMLElement* p_ele)
 
     if(p_hele != NULL) {
         // set level and start from the first buffer
-        unsigned int level_id;
-        unsigned int start_id;
+        int level_id;
+        int start_id;
         if(p_hele->GetAttribute("level",level_id) == false) {
             LOGIC_ERROR("unable to get buffer level id");
         }
@@ -993,17 +994,17 @@ CMTDBuffer* CMTDHistory::AddMTDDataAsSingleBuffer(CXMLElement* p_ele)
         p_buffer->SetStart(start_id);
     }
 
-    unsigned int control_num_of_hills = 0;
+    int control_num_of_hills = 0;
 
     while(p_hele != NULL) {
-        unsigned int num_of_values;
+        int num_of_values;
         if(p_hele->GetAttribute("numofhills",num_of_values) == false) {
             LOGIC_ERROR("unable to get number of hills in buffer");
         }
 
-        unsigned int history_size = num_of_values*(1 + 2*NCoords)*sizeof(double);
+        int history_size = num_of_values*(1 + 2*NCVs)*sizeof(double);
 
-        if((history_size == 0) || (history_size != p_hele->GetLength())) {
+        if((history_size == 0) || (history_size != (int)p_hele->GetLength())) {
             LOGIC_ERROR("inconsistent history size");
         }
 
@@ -1014,9 +1015,9 @@ CMTDBuffer* CMTDHistory::AddMTDDataAsSingleBuffer(CXMLElement* p_ele)
         }
 
         // copy data
-        for(unsigned int i=0; i < num_of_values; i++) {
+        for(int i=0; i < num_of_values; i++) {
             p_buffer->SetHeight(control_num_of_hills+i,*src++);
-            for(unsigned int j=0; j < NCoords; j++) {
+            for(int j=0; j < NCVs; j++) {
                 p_buffer->SetValue(control_num_of_hills+i,j,*src++);
                 p_buffer->SetWidth(control_num_of_hills+i,j,*src++);
             }
@@ -1052,7 +1053,7 @@ void CMTDHistory::WriteMTDData(CXMLElement* p_ele,const CSimpleList<CMTDBuffer>&
 
     CXMLElement* p_history = p_ele->CreateChildElement("HISTORY");
 
-    unsigned int num_of_hills = GetNumberOfHills(list);
+    unsigned int num_of_hills = GetNumOfHills(list);
 
     p_history->SetAttribute("numofhills",num_of_hills);
 

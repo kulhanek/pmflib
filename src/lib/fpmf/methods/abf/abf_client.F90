@@ -34,10 +34,14 @@ implicit none
 
 interface
     ! set number of coordinates
-    subroutine cpmf_abf_client_set_header(ret_st,nitems,totnbins)
+    subroutine cpmf_abf_client_set_header(ret_st,nitems,totnbins,temp,fconv,unit,epotenabled)
         integer         :: ret_st
         integer         :: nitems
         integer         :: totnbins
+        real(8)         :: temp
+        real(8)         :: fconv
+        character(*)    :: unit
+        integer         :: epotenabled
     end subroutine cpmf_abf_client_set_header
 
     ! set coordinate data
@@ -61,23 +65,29 @@ interface
     end subroutine cpmf_abf_client_reg_by_key
 
     ! get initial data from server
-    subroutine cpmf_abf_client_initial_data(ret_st,nisamples,iabfforce,iabfforce2,iepot,iepot2)
+    subroutine cpmf_abf_client_initial_data(ret_st,nisamples,inc_icfsum,inc_icfsum2, &
+                                            inc_epotsum,inc_epotsum2,inc_icfsum_epot,inc_icfsum_epot2)
         integer         :: ret_st
         integer         :: nisamples(*)
-        real(8)         :: iabfforce(*)
-        real(8)         :: iabfforce2(*)
-        real(8)         :: iepot(*)
-        real(8)         :: iepot2(*)
+        real(8)         :: inc_icfsum(*)
+        real(8)         :: inc_icfsum2(*)
+        real(8)         :: inc_epotsum(*)
+        real(8)         :: inc_epotsum2(*)
+        real(8)         :: inc_icfsum_epot(*)
+        real(8)         :: inc_icfsum_epot2(*)
     end subroutine cpmf_abf_client_initial_data
 
     ! exchange data with server
-    subroutine cpmf_abf_client_exchange_data(ret_st,nisamples,iabfforce,iabfforce2,iepot,iepot2)
+    subroutine cpmf_abf_client_exchange_data(ret_st,nisamples,inc_icfsum,inc_icfsum2, &
+                                             inc_epotsum,inc_epotsum2,inc_icfsum_epot,inc_icfsum_epot2)
         integer         :: ret_st
         integer         :: nisamples(*)
-        real(8)         :: iabfforce(*)
-        real(8)         :: iabfforce2(*)
-        real(8)         :: iepot(*)
-        real(8)         :: iepot2(*)
+        real(8)         :: inc_icfsum(*)
+        real(8)         :: inc_icfsum2(*)
+        real(8)         :: inc_epotsum(*)
+        real(8)         :: inc_epotsum2(*)
+        real(8)         :: inc_icfsum_epot(*)
+        real(8)         :: inc_icfsum_epot2(*)
     end subroutine cpmf_abf_client_exchange_data
 
     ! unregister client on server
@@ -102,6 +112,7 @@ subroutine abf_client_register
 #ifdef PMFLIB_NETWORK
  integer        :: i
  integer        :: ret_st = 0
+ integer        :: etotenabled
 #endif
  ! -----------------------------------------------------------------------------
 
@@ -117,8 +128,12 @@ subroutine abf_client_register
  write(PMF_OUT,20)
 
 #ifdef PMFLIB_NETWORK
+
+    etotenabled = 0
+    if( faccuepot .or. faccuekin ) etotenabled = 1
     ! register coordinates
-    call cpmf_abf_client_set_header(ret_st,NumOfABFCVs,accumulator%tot_nbins)
+    call cpmf_abf_client_set_header(ret_st,NumOfABFCVs,accumulator%tot_nbins,ftemp, &
+                                    pmf_unit_get_rvalue(EnergyUnit,1.0d0),trim(pmf_unit_label(EnergyUnit)),etotenabled)
 
     if( ret_st .ne. 0 ) then
         call pmf_utils_exit(PMF_OUT,1)
@@ -198,12 +213,14 @@ subroutine abf_client_get_initial_data
  call pmf_timers_start_timer(PMFLIB_ABF_MWA_TIMER)
 
 #ifdef PMFLIB_NETWORK
-    call cpmf_abf_client_initial_data(ret_st,                   &
-                                        accumulator%nsamples,   &
-                                        accumulator%abfforce,   &
-                                        accumulator%abfforce2,  &
-                                        accumulator%epot,       &
-                                        accumulator%epot2       &
+    call cpmf_abf_client_initial_data(ret_st,                       &
+                                        accumulator%nsamples,       &
+                                        accumulator%icfsum,         &
+                                        accumulator%icfsum2,        &
+                                        accumulator%epotsum,        &
+                                        accumulator%epotsum2,       &
+                                        accumulator%icfepotsum,     &
+                                        accumulator%icfepotsum2     &
                                         )
 
     if( ret_st .ne. 0 ) then
@@ -257,13 +274,15 @@ subroutine abf_client_exchange_data(force_exchange)
  write(ABF_OUT,10) fstep
 
 #ifdef PMFLIB_NETWORK
-    call cpmf_abf_client_exchange_data(ret_st,                  &
-                                       accumulator%nisamples,   &
-                                       accumulator%iabfforce,   &
-                                       accumulator%iabfforce2,  &
-                                       accumulator%iepot,       &
-                                       accumulator%iepot2       &
-                                       )
+    call cpmf_abf_client_exchange_data(ret_st,                      &
+                                        accumulator%inc_nsamples,   &
+                                        accumulator%inc_icfsum,     &
+                                        accumulator%inc_icfsum2,    &
+                                        accumulator%inc_epotsum,    &
+                                        accumulator%inc_epotsum2,   &
+                                        accumulator%inc_icfepotsum, &
+                                        accumulator%inc_icfepotsum2 &
+                                        )
 
     if( ret_st .ne. 0 ) then
         failure_counter = failure_counter + 1
@@ -280,19 +299,23 @@ subroutine abf_client_exchange_data(force_exchange)
     end if
 
     ! move received data to main accumulator
-    accumulator%nsamples(:)    = accumulator%nisamples(:)
-    accumulator%abfforce(:,:)  = accumulator%iabfforce(:,:)
-    accumulator%abfforce2(:,:) = accumulator%iabfforce2(:,:)
-    accumulator%epot(:)        = accumulator%iepot(:)
-    accumulator%epot2(:)       = accumulator%iepot2(:)
+    accumulator%nsamples(:)         = accumulator%inc_nsamples(:)
+    accumulator%icfsum(:,:)         = accumulator%inc_icfsum(:,:)
+    accumulator%icfsum2(:,:)        = accumulator%inc_icfsum2(:,:)
+    accumulator%epotsum(:)          = accumulator%inc_epotsum(:)
+    accumulator%epotsum2(:)         = accumulator%inc_epotsum2(:)
+    accumulator%icfepotsum(:,:)     = accumulator%inc_icfepotsum(:,:)
+    accumulator%icfepotsum(:,:)     = accumulator%inc_icfepotsum2(:,:)
 #endif
 
  ! and reset incremental data
- accumulator%nisamples(:)       = 0
- accumulator%iabfforce(:,:)     = 0.0d0
- accumulator%iabfforce2(:,:)    = 0.0d0
- accumulator%iepot(:)           = 0.0d0
- accumulator%iepot2(:)          = 0.0d0
+    accumulator%inc_nsamples(:)     = 0
+    accumulator%inc_icfsum(:,:)     = 0.0d0
+    accumulator%inc_icfsum2(:,:)    = 0.0d0
+    accumulator%inc_epotsum(:)      = 0.0d0
+    accumulator%inc_epotsum2(:)     = 0.0d0
+    accumulator%inc_icfepotsum(:,:) = 0.0d0
+    accumulator%inc_icfepotsum2(:,:)= 0.0d0
 
  failure_counter = 0
 
@@ -336,7 +359,7 @@ subroutine abf_client_unregister
     ! test if there are new accumulated data
     new_data = .false.
     do i=1,accumulator%tot_nbins
-        if( accumulator%nisamples(i) .gt. 0 ) new_data = .true.
+        if( accumulator%inc_nsamples(i) .gt. 0 ) new_data = .true.
     end do
     if( new_data ) then
         write(ABF_OUT,30)

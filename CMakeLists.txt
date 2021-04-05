@@ -37,7 +37,7 @@ SET(PMFLIB_LIBATOMS_DRV OFF  CACHE BOOL "Should the driver for libatoms be built
 # ==============================================================================
 
 # define project version -------------------------
-SET(PMFLIB_VERSION 5.0.x)
+SET(PMFLIB_VERSION 6.0.x)
 
 # what languages we use --------------------------
 ENABLE_LANGUAGE(CXX)
@@ -203,7 +203,7 @@ IF(NOT DEFINED COMPOSITE_PROJECT)
     get_filename_component(FCOMP_NAME ${CMAKE_Fortran_COMPILER} NAME_WE)
     IF(MPI_ENABLED)
         EXECUTE_PROCESS(COMMAND mpifort --showme:command OUTPUT_VARIABLE FCOMP_NAME OUTPUT_STRIP_TRAILING_WHITESPACE)
-    ENDIF(MPI_ENABLED)    
+    ENDIF(MPI_ENABLED)
 
     # default compiler setups - gfortran
     SET(CMAKE_Fortran_FLAGS_RELEASE "-O0")
@@ -215,8 +215,8 @@ IF(NOT DEFINED COMPOSITE_PROJECT)
         SET(CMAKE_Fortran_FLAGS_DEBUG   "-g -O0 -stand f03 -traceback -check all -warn all")
     ENDIF(FCOMP_NAME STREQUAL ifort)
 
-    #SET(CMAKE_BUILD_TYPE Release)
-    SET(CMAKE_BUILD_TYPE Debug)
+    SET(CMAKE_BUILD_TYPE Release)
+    #SET(CMAKE_BUILD_TYPE Debug)
 ENDIF(NOT DEFINED COMPOSITE_PROJECT)
 
 # ==============================================================================

@@ -4,16 +4,16 @@
 
 # program objects --------------------------------------------------------------
 SET(ABF_OPTGPRHPRMS_SRC
-        ABFOptGPRHyprms.cpp
-        ABFOptGPRHyprmsOptions.cpp
+        ABFEnergyOptGPRHyprms.cpp
+        ABFEnergyOptGPRHyprmsOptions.cpp
         )
 
 # final build ------------------------------------------------------------------
 
 IF(OpenMP_FOUND)
-    SET(TARGET_NAME _abf-optgprhyprms)
+    SET(TARGET_NAME _abf-energy-optgprhyprms)
 ELSE()
-    SET(TARGET_NAME abf-optgprhyprms)
+    SET(TARGET_NAME abf-energy-optgprhyprms)
 ENDIF()
 
 ADD_EXECUTABLE(${TARGET_NAME} ${ABF_OPTGPRHPRMS_SRC})

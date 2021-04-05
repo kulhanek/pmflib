@@ -61,16 +61,16 @@ public:
 
 // dimension specification ----------------------------------------------------
     /// set number of coordinates, all previous data are destroyed
-    void SetNumberOfCoords(int numofcoords);
+    void SetNumOfCVs(int ncvs);
 
     /// set energy unit
     void SetEnergyUnit(const CSmallString& unit, double unit_fac);
 
     /// set coordinate data
-    void SetCoordinate(unsigned int id,
-                       const CSmallString& name,
-                       const CSmallString& type,
-                       double min_value,double max_value,unsigned int nbins);
+    void SetCV(int id,
+               const CSmallString& name,
+               const CSmallString& type,
+               double min_value,double max_value,unsigned int nbins);
 
     /// deallocate all array
     void Deallocate(void);
@@ -80,7 +80,7 @@ public:
 
 // access data methods --------------------------------------------------------
     /// return number of coordinates
-    unsigned int GetNumberOfCoords(void) const;
+    int GetNumOfCVs(void) const;
 
     /// get energy unit
     const CSmallString& GetEnergyUnit(void) const;
@@ -89,32 +89,32 @@ public:
     double GetEnergyUnitFac(void) const;
 
     /// return number of hills
-    unsigned int GetNumberOfHills(void) const;
+    int GetNumOfHills(void) const;
 
     /// return number of hills in selected buffer list
-    unsigned int GetNumberOfHills(const CSimpleList<CMTDBuffer>& list) const;
+    int GetNumOfHills(const CSimpleList<CMTDBuffer>& list) const;
 
     /// return coordinate definition
-    const CColVariable* GetCoordinate(unsigned int cv) const;
+    const CColVariable* GetCV(int cv) const;
 
     /// calculate value for given point
-    double CalculateValue(const CSimpleVector<double>& point,unsigned int mtdtime=0);
+    double CalculateValue(const CSimpleVector<double>& point,int mtdtime=0);
 
     /// get height
-    const double& GetHeight(unsigned int hill_index);
+    const double& GetHeight(int hill_index);
 
     /// get CV value
-    const double& GetValue(unsigned int hill_index,unsigned int cv);
+    const double& GetValue(int hill_index, int cv);
 
     /// get width
-    const double& GetWidth(unsigned int hill_index,unsigned int cv);
+    const double& GetWidth(int hill_index, int cv);
 
 // buffer methods -------------------------------------------------------------
     /// allocate new buffer
-    CMTDBuffer* GetNewBuffer(unsigned int size);
+    CMTDBuffer* GetNewBuffer(int size);
 
     /// get buffer
-    CMTDBuffer* GetBuffer(unsigned int index);
+    CMTDBuffer* GetBuffer(int index);
 
 // parameter vector: height,[value,width] -------------------------------------
     /// get history as parameter vector
@@ -151,11 +151,11 @@ public:
 
 // section of private data ----------------------------------------------------
 protected:
-    unsigned int                NCoords;        // number of coordinates
+    int                         NCVs;        // number of coordinates
     CSmallString                EnergyUnit;     // energy unit
     double                      EnergyUnitFac;  // energy unit factor
-    unsigned int                MaxBufferSize;  // max buffer size
-    CSimpleVector<CColVariable> Sizes;          // accumulator informations
+    int                         MaxBufferSize;  // max buffer size
+    CSimpleVector<CColVariable> CVs;          // accumulator informations
     CSimpleList<CMTDBuffer>     Buffers;        // all buffers in history
 };
 

@@ -109,8 +109,8 @@ bool CABFAccuInfo::Run(void)
     Accumulator.PrintCVSInfo(vout);
 
     // calculate sampled area
-    double maxbins = Accumulator.GetNumberOfBins();
-    double sampled = Accumulator.GetNumberOfBinsWithABFLimit(Options.GetOptLimit());
+    double maxbins = Accumulator.GetNumOfBins();
+    double sampled = Accumulator.GetNumOfBins(Options.GetOptLimit());
     if( maxbins > 0 ){
         vout << endl;
         vout << "Sampled area: " << setw(5) << setprecision(1) << fixed << sampled/maxbins*100 <<"%" << endl;

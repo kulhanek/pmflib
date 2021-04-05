@@ -77,7 +77,7 @@ void CSTMClient::SetCoord(int id,const CSmallString& name,const CSmallString& ty
         INVALID_ARGUMENT("cv id is out of range");
     }
 
-    CVs[id].SetCoord(id,name,type);
+    CVs[id].SetCV(id,name,type);
 }
 
 //==============================================================================

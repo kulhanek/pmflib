@@ -4,8 +4,8 @@
 
 # program objects --------------------------------------------------------------
 SET(ABF_OPTENTGPRHPRMS_SRC
-        ABFOptEntGPRHyprms.cpp
-        ABFOptEntGPRHyprmsOptions.cpp
+        ABFEnthalpyOptGPRHyprms.cpp
+        ABFEnthalpyOptGPRHyprmsOptions.cpp
         )
 
 # final build ------------------------------------------------------------------

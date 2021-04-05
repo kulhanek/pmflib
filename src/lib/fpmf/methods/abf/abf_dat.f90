@@ -47,12 +47,13 @@ integer     :: feimode      ! extrapolation / interpolation mode
 integer     :: ftrjsample   ! how often save accumulator to "accumulator evolution"
 integer     :: fmask_mode   ! 0 - disable ABF mask, 1 - enable ABF mask
 logical     :: fapply_abf   ! on - apply ABF, off - do not apply ABF
-logical     :: fprint_icf   ! T - print instanteous collective forces (icf), F - do not print
+logical     :: fprint_icf   ! T - print instantaneous collective forces (icf), F - do not print
 logical     :: fcache_icf   ! T - cache icf into memory and dump them at the end,
-                            ! F - write icf immediatelly at each time step
+                            ! F - write icf immediately at each time step
 logical     :: frawicf      ! T - use raw icf data (in internal units), F - transform them to user req. units
 
-logical     :: faccupotene  ! accumulate PotEne
+logical     :: faccuepot    ! accumulate PotEne
+logical     :: faccuekin    ! accumulate KinEne
 
 ! linear ramp mode I (feimode .eq. 1)
 integer     :: fhramp       ! ramp size
@@ -103,28 +104,33 @@ end type CVInfoTypeABF
 
 type ABFAccuType
      integer                       :: tot_cvs       ! total number of independent CVs
-     type(CVInfoTypeABF), pointer  :: sizes(:)      ! accumulator informations
+     type(CVInfoTypeABF), pointer  :: sizes(:)      ! CV information
      integer                       :: tot_nbins     ! number of total bins
 
      ! ABF force
      real(PMFDP),pointer    :: weights(:)               ! mask weights
      integer,pointer        :: nsamples(:)              ! number of hits into bins
-     real(PMFDP),pointer    :: abfforce(:,:)            ! accumulated ABF force
-     real(PMFDP),pointer    :: abfforce2(:,:)           ! accumulated square of ABF force
-     real(PMFDP),pointer    :: epot(:)                  ! accumulated potential energy
-     real(PMFDP),pointer    :: epot2(:)                 ! accumulated square of potential energy
+     real(PMFDP),pointer    :: icfsum(:,:)              ! accumulated ABF force
+     real(PMFDP),pointer    :: icfsum2(:,:)             ! accumulated square of ABF force
+     real(PMFDP),pointer    :: epotsum(:)               ! accumulated potential energy
+     real(PMFDP),pointer    :: epotsum2(:)              ! accumulated square of potential energy
+     real(PMFDP),pointer    :: icfepotsum(:,:)          ! accumulated icfsum * epotsum
+     real(PMFDP),pointer    :: icfepotsum2(:,:)         ! accumulated square of icfsum * epotsum
 
      ! ABF force - incremental part for ABF-server
-     integer,pointer        :: nisamples(:)             ! number of hits into bins
-     real(PMFDP),pointer    :: iabfforce(:,:)           ! accumulated ABF force
-     real(PMFDP),pointer    :: iabfforce2(:,:)          ! accumulated square of ABF force
-     real(PMFDP),pointer    :: iepot(:)                 ! accumulated potential energy
-     real(PMFDP),pointer    :: iepot2(:)                ! accumulated square of potential energy
+     integer,pointer        :: inc_nsamples(:)          ! number of hits into bins
+     real(PMFDP),pointer    :: inc_icfsum(:,:)          ! accumulated ABF force
+     real(PMFDP),pointer    :: inc_icfsum2(:,:)         ! accumulated square of ABF force
+     real(PMFDP),pointer    :: inc_epotsum(:)           ! accumulated potential energy
+     real(PMFDP),pointer    :: inc_epotsum2(:)          ! accumulated square of potential energy
+     real(PMFDP),pointer    :: inc_icfepotsum(:,:)      ! accumulated icfsum * epotsum
+     real(PMFDP),pointer    :: inc_icfepotsum2(:,:)     ! accumulated square of icfsum * epotsum
 
      ! ABF force - block pre-sampling
      integer,pointer        :: block_nsamples(:)        ! number of hits into bins
-     real(PMFDP),pointer    :: block_abfforce(:,:)      ! accumulated ABF force
-     real(PMFDP),pointer    :: block_epot(:)            ! accumulated PotEne
+     real(PMFDP),pointer    :: block_icfsum(:,:)        ! accumulated ABF force
+     real(PMFDP),pointer    :: block_epotsum(:)         ! accumulated PotEne
+     real(PMFDP),pointer    :: block_icfepotsum(:,:)    ! accumulated square of icfsum * epotsum
 end type ABFAccuType
 
 ! ----------------------
@@ -154,10 +160,20 @@ real(PMFDP),allocatable     :: pxip(:)        !
 real(PMFDP),allocatable     :: pxim(:)        !
 real(PMFDP),allocatable     :: avg_values(:)  ! average values of coordinates at t - 3/2dt
 
-real(PMFDP), allocatable    :: cvaluehist0(:)   ! history of coordinate values
-real(PMFDP), allocatable    :: cvaluehist1(:)   ! history of coordinate values
-real(PMFDP), allocatable    :: cvaluehist2(:)   ! history of coordinate values
-real(PMFDP), allocatable    :: cvaluehist3(:)   ! history of coordinate values
+real(PMFDP),allocatable     :: cvaluehist0(:)   ! history of coordinate values
+real(PMFDP),allocatable     :: cvaluehist1(:)   ! history of coordinate values
+real(PMFDP),allocatable     :: cvaluehist2(:)   ! history of coordinate values
+real(PMFDP),allocatable     :: cvaluehist3(:)   ! history of coordinate values
+
+real(PMFDP)                 :: epothist0   ! history of Epot
+real(PMFDP)                 :: epothist1   ! history of Epot
+real(PMFDP)                 :: epothist2   ! history of Epot
+real(PMFDP)                 :: epothist3   ! history of Epot
+
+real(PMFDP)                 :: ekinhist0   ! history of Ekin
+real(PMFDP)                 :: ekinhist1   ! history of Ekin
+real(PMFDP)                 :: ekinhist2   ! history of Ekin
+real(PMFDP)                 :: ekinhist3   ! history of Ekin
 
 real(PMFDP), allocatable    :: icf_cache(:,:)   ! icf_cache(2*ncvs,fnstlim)
 

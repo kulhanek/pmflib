@@ -107,7 +107,7 @@ void CRSTAccumulator::Load(FILE* fin)
         RUNTIME_ERROR(error);
     }
 
-    SetNumberOfCoords(numofcoords);
+    SetNumOfCVs(numofcoords);
 
 // read coordinate specification ----------------
     for(int i=0; i < NCoords; i++) {
@@ -162,7 +162,7 @@ void CRSTAccumulator::Load(FILE* fin)
         }
 
         // init coordinate
-        SetCoordinate(i,name,type,min_value,max_value,nbins);
+        SetCV(i,name,type,min_value,max_value,nbins);
     }
 
 // alloc accumulator data -----------------------
@@ -256,7 +256,7 @@ void CRSTAccumulator::Save(FILE* fout)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void CRSTAccumulator::SetNumberOfCoords(int numofcoords)
+void CRSTAccumulator::SetNumOfCVs(int numofcoords)
 {
     if(numofcoords <= 0) {
         INVALID_ARGUMENT("numofcoords <= 0");
@@ -278,7 +278,7 @@ void CRSTAccumulator::SetNumberOfCoords(int numofcoords)
 
 //------------------------------------------------------------------------------
 
-void CRSTAccumulator::SetCoordinate(int id,
+void CRSTAccumulator::SetCV(int id,
                                     const CSmallString& name,
                                     const CSmallString& type,
                                     double min_value,double max_value,int nbins)
@@ -317,21 +317,21 @@ void CRSTAccumulator::SetCoordinate(int id,
 //------------------------------------------------------------------------------
 //==============================================================================
 
-int CRSTAccumulator::GetNumberOfCoords(void) const
+int CRSTAccumulator::GetNumOfCVs(void) const
 {
     return(NCoords);
 }
 
 //------------------------------------------------------------------------------
 
-int CRSTAccumulator::GetNumberOfBins(void) const
+int CRSTAccumulator::GetNumOfBins(void) const
 {
     return(TotNBins);
 }
 
 //------------------------------------------------------------------------------
 
-int CRSTAccumulator::GetNumberOfBinsWithLimit(int limit) const
+int CRSTAccumulator::GetNumOfBinsWithLimit(int limit) const
 {
     int number = 0;
     for(int i=0; i < TotNBins; i++) {
@@ -342,7 +342,7 @@ int CRSTAccumulator::GetNumberOfBinsWithLimit(int limit) const
 
 //------------------------------------------------------------------------------
 
-const CColVariable* CRSTAccumulator::GetCoordinate(int cv) const
+const CColVariable* CRSTAccumulator::GetCV(int cv) const
 {
     return(&Sizes[cv]);
 }
@@ -355,7 +355,7 @@ int CRSTAccumulator::GetNumberOfSamples(const CSimpleVector<int>& position) cons
 {
     int glbindex = 0;
     for(int i=0; i < NCoords; i++) {
-        glbindex = glbindex*Sizes[i].GetNumberOfBins() + position[i];
+        glbindex = glbindex*Sizes[i].GetNumOfBins() + position[i];
     }
     return(NSamples[glbindex]);
 }
@@ -366,7 +366,7 @@ int CRSTAccumulator::GetGlobalIndex(const CSimpleVector<int>& position) const
 {
     int glbindex = 0;
     for(int i=0; i < NCoords; i++) {
-        glbindex = glbindex*Sizes[i].GetNumberOfBins() + position[i];
+        glbindex = glbindex*Sizes[i].GetNumOfBins() + position[i];
     }
     return(glbindex);
 }

@@ -206,7 +206,7 @@ bool CMTDAdmin::GetMTDHistory(void)
     }
 
 // and now save all data
-    if(history.GetNumberOfCoords() > 0) {
+    if(history.GetNumOfCVs() > 0) {
         vout << "Output MTD history: " << file_output << endl;
         try {
             history.Save(file_output);

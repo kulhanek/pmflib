@@ -86,42 +86,42 @@ void CMTDBuffer::DeallocateData(void)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-unsigned int CMTDBuffer::GetNumberOfCoords(void) const
+int CMTDBuffer::GetNumOfCVs(void) const
 {
     return(number_of_cvs);
 }
 
 //------------------------------------------------------------------------------
 
-unsigned int CMTDBuffer::GetNumberOfHills(void) const
+int CMTDBuffer::GetNumOfHills(void) const
 {
     return(num_of_values);
 }
 
 //------------------------------------------------------------------------------
 
-unsigned int CMTDBuffer::GetLevel(void) const
+int CMTDBuffer::GetLevel(void) const
 {
     return(level_id);
 }
 
 //------------------------------------------------------------------------------
 
-void CMTDBuffer::SetLevel(unsigned int level)
+void CMTDBuffer::SetLevel(int level)
 {
     level_id = level;
 }
 
 //------------------------------------------------------------------------------
 
-unsigned int CMTDBuffer::GetStart(void) const
+int CMTDBuffer::GetStart(void) const
 {
     return(start_id);
 }
 
 //------------------------------------------------------------------------------
 
-void CMTDBuffer::SetStart(unsigned int start)
+void CMTDBuffer::SetStart(int start)
 {
     start_id = start;
 }
@@ -134,21 +134,21 @@ void CMTDBuffer::IncNumberOfHills(void)
 
 //------------------------------------------------------------------------------
 
-const double& CMTDBuffer::GetValue(unsigned int hill,unsigned int cvs) const
+const double& CMTDBuffer::GetValue(int hill,int cvs) const
 {
     return(values[hill*number_of_cvs+cvs]);
 }
 
 //------------------------------------------------------------------------------
 
-const double& CMTDBuffer::GetWidth(unsigned int hill,unsigned int cvs) const
+const double& CMTDBuffer::GetWidth(int hill,int cvs) const
 {
     return(widths[hill*number_of_cvs+cvs]);
 }
 
 //------------------------------------------------------------------------------
 
-const double& CMTDBuffer::GetHeight(unsigned int hill) const
+const double& CMTDBuffer::GetHeight(int hill) const
 {
     return(heights[hill]);
 }
@@ -157,21 +157,21 @@ const double& CMTDBuffer::GetHeight(unsigned int hill) const
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void CMTDBuffer::SetValue(unsigned int hill,unsigned int cvs,double value)
+void CMTDBuffer::SetValue(int hill, int cvs, double value)
 {
     values[hill*number_of_cvs+cvs] = value;
 }
 
 //------------------------------------------------------------------------------
 
-void CMTDBuffer::SetWidth(unsigned int hill,unsigned int cvs,double width)
+void CMTDBuffer::SetWidth(int hill, int cvs, double width)
 {
     widths[hill*number_of_cvs+cvs] = width;
 }
 
 //------------------------------------------------------------------------------
 
-void CMTDBuffer::SetHeight(unsigned int hill,double height)
+void CMTDBuffer::SetHeight(int hill, double height)
 {
     heights[hill] = height;
 }
@@ -198,9 +198,9 @@ void CMTDBuffer::ReadBufferData(CXMLBinData* p_ele)
         RUNTIME_ERROR("unable to get number of values");
     }
 
-    unsigned int history_size = num_of_values*(1 + 2*number_of_cvs)*sizeof(double);
+    int history_size = num_of_values*(1 + 2*number_of_cvs)*sizeof(double);
 
-    if((history_size == 0) || (history_size != p_ele->GetLength())) {
+    if((history_size == 0) || (history_size != (int)p_ele->GetLength())) {
         RUNTIME_ERROR("inconsistent history size");
     }
 
@@ -211,9 +211,9 @@ void CMTDBuffer::ReadBufferData(CXMLBinData* p_ele)
     }
 
 // copy data
-    for(unsigned int i=0; i < num_of_values; i++) {
+    for(int i=0; i < num_of_values; i++) {
         SetHeight(i,*src++);
-        for(unsigned int j=0; j < number_of_cvs; j++) {
+        for(int j=0; j < number_of_cvs; j++) {
             SetValue(i,j,*src++);
             SetWidth(i,j,*src++);
         }
@@ -232,7 +232,7 @@ void CMTDBuffer::WriteBufferData(CXMLBinData* p_ele) const
     p_ele->SetAttribute("start",start_id);
     p_ele->SetAttribute("numofhills",num_of_values);
 
-    unsigned int history_size = num_of_values*(1 + 2*number_of_cvs)*sizeof(double);
+    int history_size = num_of_values*(1 + 2*number_of_cvs)*sizeof(double);
     if(history_size == 0) return;   // no data
 
     double* p_array = new double[history_size];
@@ -242,9 +242,9 @@ void CMTDBuffer::WriteBufferData(CXMLBinData* p_ele) const
     double* dst = p_array;
 
 // copy data
-    for(unsigned int i=0; i < num_of_values; i++) {
+    for(int i=0; i < num_of_values; i++) {
         *dst++ = GetHeight(i);
-        for(unsigned int j=0; j < number_of_cvs; j++) {
+        for(int j=0; j < number_of_cvs; j++) {
             *dst++ = GetValue(i,j);
             *dst++ = GetWidth(i,j);
         }

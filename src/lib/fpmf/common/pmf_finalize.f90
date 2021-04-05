@@ -81,9 +81,6 @@ subroutine pmf_finalize_pmf
     if( allocated(Vel) ) then
         deallocate(Vel)
     end if
-    if( allocated(DelV) ) then
-        deallocate(DelV)
-    end if
     if( allocated(CrdP) ) then
         deallocate(CrdP)
     end if

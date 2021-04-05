@@ -31,11 +31,14 @@
 
 enum EABFAccuValue {
     EABF_DG_VALUE       = 0,  // dG/dksi
-    EABF_DG_SIGMA       = 1,  // variance of instantaneous force
-    EABF_DG_ERROR       = 2,  // variance of dG/dksi
+    EABF_DG_SIGMA       = 1,  // fluctuation of ICF
+    EABF_DG_ERROR       = 2,  // error of dG/dksi
     EABF_H_VALUE        = 3,  // enthalpy
-    EABF_H_SIGMA        = 4,  // variance of potential energy
-    EABF_H_ERROR        = 5,  // variance of enthalpy
+    EABF_H_SIGMA        = 4,  // fluctuation of potential energy
+    EABF_H_ERROR        = 5,  // error of enthalpy
+    EABF_TDS_VALUE      = 6,  // -TdS/dksi
+    EABF_TDS_SIGMA      = 7,  // fluctuation of -TdS/dksi
+    EABF_TDS_ERROR      = 8,  // error of -TdS/dksi
 };
 
 //------------------------------------------------------------------------------
@@ -69,23 +72,23 @@ public:
     void SaveMaskGnuPlot(FILE* fout);
 
 // dimension specification ----------------------------------------------------
-    /// set number of coordinates and optionaly groups, all previous data are destroyed
-    void SetNumberOfCoords(int numofcoords);
+    /// set number of coordinates, all previous data are destroyed
+    void SetNumOfCVs(int ncvs);
 
     /// set coordinate data
-    void SetCoordinate(int id,
-                        const CSmallString& name,
-                        const CSmallString& type,
-                        double min_value,double max_value,int nbins);
+    void SetCV(int id,
+                const CSmallString& name,
+                const CSmallString& type,
+                double min_value,double max_value,int nbins);
 
     /// set coordinate data
-    void SetCoordinate(int id,
-                        const CSmallString& name,
-                        const CSmallString& type,
-                        double min_value,double max_value,int nbins,
-                        double fconv, const CSmallString& unit);
+    void SetCV(int id,
+                const CSmallString& name,
+                const CSmallString& type,
+                double min_value,double max_value,int nbins,
+                double fconv, const CSmallString& unit);
 
-    /// allocate all arrays specified via SetNumOfCoordinates and SetCoordinate
+    /// allocate all arrays specified via SetNumOfCVs and SetCV
     void FinalizeAllocation(void);
 
     /// deallocate all array
@@ -93,16 +96,13 @@ public:
 
 // access data methods --------------------------------------------------------
     /// return number of coordinates
-    int GetNumberOfCoords(void) const;
+    int GetNumOfCVs(void) const;
 
     /// return coordinate definition
-    const CColVariable* GetCoordinate(int cv) const;
+    const CColVariable* GetCV(int cv) const;
 
-    /// return total number of bins
-    int GetNumberOfBins(void) const;
-
-    /// return number of bins with samples >= limit
-    int GetNumberOfBinsWithABFLimit(int limit) const;
+    /// return number of bins within limit
+    int GetNumOfBins(int limit=0) const;
 
     /// return global index
     int GetGlobalIndex(const CSimpleVector<int>& position) const;
@@ -116,13 +116,25 @@ public:
     /// convert point index to point position
     void GetIPoint(unsigned int index,CSimpleVector<int>& point) const;
 
+    /// set temperature
+    void SetTemperature(double temp);
+
+    /// get temperature
+    double GetTemperature(void);
+
+    /// set temperature
+    void SetEnergyUnit(double fconv,const CSmallString& unit);
+
+    /// epot flag
+    void SetEpotEnabled(bool enabled);
+
 //---------------------------------------------------------------------------------
 
     /// return number of samples for a given bin position
-    int GetNumberOfABFSamples(const CSimpleVector<int>& position) const;
+    int GetNumOfSamples(const CSimpleVector<int>& position) const;
 
     /// return number of samples for a given bin index
-    int GetNumberOfABFSamples(int ibin) const;
+    int GetNumOfSamples(int ibin) const;
 
     /// return mask weight for a given bin index
     double GetMaskWeight(int ibin) const;
@@ -130,23 +142,29 @@ public:
     /// set mask weight for a given bin index
     void SetMaskWeight(int ibin,double weight);
 
-    /// return ABF force sum
-    const double& GetABFForceSum(int icoord,int ibin) const;
+    /// return ICF sum
+    const double& GetICFSum(int icv,int ibin) const;
 
-    /// return ABF force square sum
-    const double& GetABFForceSquareSum(int icoord,int ibin) const;
+    /// return ICF square sum
+    const double& GetICFSum2(int icv,int ibin) const;
 
     /// return Epot sum
-    const double& GetEPotSum(int ibin) const;
+    const double& GetEpotSum(int ibin) const;
 
     /// return Epot square sum
-    const double& GetEPotSquareSum(int ibin) const;
+    const double& GetEpotSum2(int ibin) const;
+
+    /// return ICF*Epot sum
+    const double& GetICFEpotSum(int icv,int ibin) const;
+
+    /// return ICF*Epot square sum
+    const double& GetICFEpotSum2(int icv,int ibin) const;
 
     /// set ABF force sum
-    void SetABFForceSum(int icoord,int ibin,const double& value);
+    void SetICFSum(int icv,int ibin,const double& value);
 
     /// set ABF force sum square
-    void SetABFForceSquareSum(int icoord,int ibin,const double& value);
+    void SetICFSum2(int icv,int ibin,const double& value);
 
     /// set ABF force sum square
     void SetNumberOfABFSamples(int ibin,const int& value);
@@ -154,23 +172,29 @@ public:
     /// return pointer to NSamples array
     int* GetNSamplesArray(void);
 
-    /// return pointer to ABF force sum array
-    double* GetABFForceSumArray(void);
+    /// return pointer to ICF sum array
+    double* GetICFSumArray(void);
 
-    /// return pointer to ABF force square sum array
-    double* GetABFForceSquareSumArray(void);
+    /// return pointer to ICF square sum array
+    double* GetICFSum2Array(void);
 
-    /// return pointer to EPot sum array
-    double* GetEPotSumArray(void);
+    /// return pointer to Epot sum array
+    double* GetEpotSumArray(void);
 
-    /// return pointer to EPot square sum array
-    double* GetEPotSquareSumArray(void);
+    /// return pointer to Epot square sum array
+    double* GetEpotSum2Array(void);
+
+    /// return pointer to ICF*Epot sum array
+    double* GetICFEpotSumArray(void);
+
+    /// return pointer to ICF*Epot square sum array
+    double* GetICFEpotSum2Array(void);
 
     /// set number of statistically correlated samples (it influences calculated errors of mean forces)
     void SetNCorr(double ncorr);
 
     /// get value - dG/dksi
-    double GetValue(int icoord,int ibin,EABFAccuValue realm) const;
+    double GetValue(int icv,int ibin,EABFAccuValue realm) const;
 
     /// get value - H=<PotEne>
     double GetValue(int ibin,EABFAccuValue realm) const;
@@ -214,32 +238,38 @@ public:
 
 // section of private data ----------------------------------------------------
 private:
-    int             NCoords;                // number of coordinates
-    double          NCorr;                  // number of correlated samples (for error evaluation)
+    int                         NCVs;           // number of CVs
+    double                      NCorr;          // number of correlated samples (for error evaluation)
+    double                      Temperature;    // temperature
+    double                      EnergyFConv;    // energy unit
+    CSmallString                EnergyUnit;
+    // flags
+    bool                        EpotAvailable;
 
-    CSimpleVector<CColVariable> Sizes;      // accumulator informations
-    int                         TotNBins;   // number of total bins
+    CSimpleVector<CColVariable> CVs;            // collective variables
+    int                         TotNBins;       // number of total bins
 
-    CSimpleVector<int>      NSamples;       // number of hits into bins
-    CSimpleVector<double>   Mask;
+    CSimpleVector<int>          NSamples;       // number of hits into bins
+    CSimpleVector<double>       Mask;
 
     // all values are in internal units
-    CSimpleVector<double>   ABFForce;       // accumulated ABF force
-    CSimpleVector<double>   ABFForce2;      // accumulated ABF force squares
+    CSimpleVector<double>       ICFSum;         // accumulated ABF force
+    CSimpleVector<double>       ICFSum2;        // accumulated ABF force squares
 
-    // entropy
-    CSimpleVector<double>   EPot;           // accumulated Epot
-    CSimpleVector<double>   EPot2;          // accumulated Epot force squares
+    // enthalpy/entropy
+    CSimpleVector<double>       EpotSum;        // accumulated Epot
+    CSimpleVector<double>       EpotSum2;       // accumulated Epot force squares
+
+    CSimpleVector<double>       ICFEpotSum;     // accumulated ICF*Epot
+    CSimpleVector<double>       ICFEpotSum2;    // accumulated ICF*Epot force squares
 
 // helper methods -------------------------------------------------------------
-    /// return index to ABFForce array for particular item and bin
+    /// return index to ICFSum array for particular item and bin
     int map(int item,int bin) const;
-
-    /// return index to GRPForce array for particular group, item, and bin
-    int map_g(int group,int item,int bin) const;
 
     void Load_v3(char* fline,FILE* fin);
     void Load_v4(char* fline,FILE* fin);
+    void Load_v5(char* fline,FILE* fin);
 };
 
 //------------------------------------------------------------------------------

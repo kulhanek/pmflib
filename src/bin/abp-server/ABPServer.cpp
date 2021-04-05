@@ -350,7 +350,7 @@ bool CABPServer::Run(void)
     vout << "::::::::::::::::::::::::::::::::::: Output data ::::::::::::::::::::::::::::::::" << endl;
 
 // and now save all data
-    if(ABPAccumulator.GetNumberOfCoords() > 0) {
+    if(ABPAccumulator.GetNumOfCVs() > 0) {
         vout << "Output ABP accumulator: " << OutputFileName <<  endl;
         try {
             ABPAccumulator.Save(OutputFileName);

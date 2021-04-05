@@ -136,11 +136,11 @@ void CESPrinter::Print(FILE* fout)
         RUNTIME_ERROR("no surface is associated with printer");
     }
 
-    if(EnergySurface->GetNumberOfCoords() == 0) {
+    if(EnergySurface->GetNumOfCVs() == 0) {
         RUNTIME_ERROR("at least one coordinate has to be present in ES");
     }
 
-    if(EnergySurface->GetNumberOfPoints() == 0) {
+    if(EnergySurface->GetNumOfPoints() == 0) {
         RUNTIME_ERROR("no point is present in ES");
     }
 
@@ -164,12 +164,12 @@ void CESPrinter::PrintPlain(FILE* fout)
     CSimpleVector<double>   pos;
     CSimpleVector<int>      ipos;
 
-    pos.CreateVector(EnergySurface->GetNumberOfCoords());
-    ipos.CreateVector(EnergySurface->GetNumberOfCoords());
+    pos.CreateVector(EnergySurface->GetNumOfCVs());
+    ipos.CreateVector(EnergySurface->GetNumOfCVs());
 
     int last_cv = -1;
 
-    for(int ibin=0; ibin < EnergySurface->GetNumberOfPoints(); ibin++){
+    for(int ibin=0; ibin < EnergySurface->GetNumOfPoints(); ibin++){
 
         // do we have enough samples?
         double nsamples = EnergySurface->GetNumOfSamples(ibin);
@@ -183,7 +183,7 @@ void CESPrinter::PrintPlain(FILE* fout)
 
     // write block delimiter - required by GNUPlot
         if(Format == EESPF_GNUPLOT) {
-            int ncvs = EnergySurface->GetNumberOfCoords();
+            int ncvs = EnergySurface->GetNumOfCVs();
             EnergySurface->GetIPoint(ibin,ipos);
 
             if( (last_cv >= 0) && (ipos[ncvs-1] != last_cv + 1) ){
@@ -202,7 +202,7 @@ void CESPrinter::PrintPlain(FILE* fout)
         xform = XFormat + " ";
 
         // print point position
-        for(int i=0; i < EnergySurface->GetNumberOfCoords(); i++) {
+        for(int i=0; i < EnergySurface->GetNumOfCVs(); i++) {
             double xvalue = pos[i];
             if(fprintf(fout,xform,xvalue) <= 0) {
                 CSmallString error;
@@ -255,27 +255,27 @@ void CESPrinter::PrintPMF_FES(FILE* fout)
 // write FES header ------------------
     int flag = 0;
     if( IncludeError ) flag = 1;
-    if(fprintf(fout,"FES V2 %3d %d\n",EnergySurface->GetNumberOfCoords(),flag) <= 0) {
+    if(fprintf(fout,"FES V2 %3d %d\n",EnergySurface->GetNumOfCVs(),flag) <= 0) {
         CSmallString error;
         error << "unable to write header";
         RUNTIME_ERROR(error);
     }
 
 // write coordinate specification ----------------
-    for(int i=0; i < EnergySurface->GetNumberOfCoords(); i++) {
+    for(int i=0; i < EnergySurface->GetNumOfCVs(); i++) {
 //20  format(I2,1X,A10,1X,E18.11,1X,E18.11,1X,I6)
 //25  format(I2,1X,A55)
         if(fprintf(fout,"%2d %10s %18.11e %18.11E %6d\n",i+1,
-                   (const char*)EnergySurface->GetCoordinate(i)->GetType(),
-                   EnergySurface->GetCoordinate(i)->GetMinValue(),
-                   EnergySurface->GetCoordinate(i)->GetMaxValue(),
-                   EnergySurface->GetCoordinate(i)->GetNumberOfBins()) <= 0) {
+                   (const char*)EnergySurface->GetCV(i)->GetType(),
+                   EnergySurface->GetCV(i)->GetMinValue(),
+                   EnergySurface->GetCV(i)->GetMaxValue(),
+                   EnergySurface->GetCV(i)->GetNumOfBins()) <= 0) {
             CSmallString error;
             error << "unable to write coordinate definition id: " << i+1;
             RUNTIME_ERROR(error);
         }
         if(fprintf(fout,"%2d %55s\n",i+1,
-                   (const char*)EnergySurface->GetCoordinate(i)->GetName()) <= 0) {
+                   (const char*)EnergySurface->GetCV(i)->GetName()) <= 0) {
             CSmallString error;
             error << "unable to write coordinate definition id: " << i+1;
             RUNTIME_ERROR(error);
@@ -286,7 +286,7 @@ void CESPrinter::PrintPMF_FES(FILE* fout)
 
 // 40  format(4(E19.11,1X))
     int counter = 0;
-    for(int i = 0; i < EnergySurface->GetNumberOfPoints(); i++) {
+    for(int i = 0; i < EnergySurface->GetNumOfPoints(); i++) {
         if(fprintf(fout,"%19.11E ",EnergySurface->GetEnergy(i)) <= 0) {
             CSmallString error;
             error << "unable to write energy for point " << i;
@@ -302,7 +302,7 @@ void CESPrinter::PrintPMF_FES(FILE* fout)
     if( IncludeError ) {
     // 40  format(4(E19.11,1X))
         int counter = 0;
-        for(int i = 0; i < EnergySurface->GetNumberOfPoints(); i++) {
+        for(int i = 0; i < EnergySurface->GetNumOfPoints(); i++) {
             if(fprintf(fout,"%19.11E ",EnergySurface->GetError(i)) <= 0) {
                 CSmallString error;
                 error << "unable to write error for point " << i;

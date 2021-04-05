@@ -69,7 +69,7 @@ int CMTDEnergy::Init(int argc,char* argv[])
         vout.Verbosity(CVerboseStr::high);
     }
 
-// print header if requested --------------------  
+// print header if requested --------------------
     CSmallTimeAndDate dt;
     dt.GetActualTimeAndDate();
 
@@ -136,7 +136,7 @@ int CMTDEnergy::Init(int argc,char* argv[])
         OwnOutputFile = false;
     } else {
         OutputFile = fopen(Options.GetArgOutput(),"w");
-        if(OutputFile == NULL) {            
+        if(OutputFile == NULL) {
             CSmallString error;
             error << "unable to open input file '" << Options.GetArgOutput() << "'";
             ES_ERROR(error);
@@ -169,11 +169,11 @@ bool CMTDEnergy::Run(void)
 
 // print header
     if((Options.GetOptNoHeader() == false) && (Options.GetOptOutputFormat() != "fes")) {
-        fprintf(OutputFile,"# Number of coordinates : %d\n",MTDHistory.GetNumberOfCoords());
-        fprintf(OutputFile,"# Total number of hills : %d\n",MTDHistory.GetNumberOfHills());
+        fprintf(OutputFile,"# Number of coordinates : %d\n",MTDHistory.GetNumOfCVs());
+        fprintf(OutputFile,"# Total number of hills : %d\n",MTDHistory.GetNumOfHills());
 
         if(Options.GetOptTime() == 0) {
-            fprintf(OutputFile,"# Used MTD time         : %d\n",MTDHistory.GetNumberOfHills());
+            fprintf(OutputFile,"# Used MTD time         : %d\n",MTDHistory.GetNumOfHills());
         } else {
             fprintf(OutputFile,"# Used MTD time         : %d\n",Options.GetOptTime());
         }
@@ -283,7 +283,7 @@ bool CMTDEnergy::CalculateSmoothedFES(void)
 
     int stop;
     if(Options.GetOptTime() == 0) {
-        stop = MTDHistory.GetNumberOfHills();
+        stop = MTDHistory.GetNumOfHills();
     } else {
         stop = Options.GetOptTime();
     }

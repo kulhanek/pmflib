@@ -16,7 +16,7 @@
 !
 !    You should have received a copy of the GNU Lesser General Public
 !    License along with this library; if not, write to the Free Software
-!    Foundation, Inc., 51 Franklin Street, Fifth Floor, 
+!    Foundation, Inc., 51 Franklin Street, Fifth Floor,
 !    Boston, MA  02110-1301  USA
 !===============================================================================
 
@@ -374,7 +374,7 @@ subroutine pmf_pmemd_force(x,v,f,epot,epmf)
     if( .not. fmaster ) return
 
     call pmf_timers_start_timer(PMFLIB_TIMER)
-    call pmf_core_lf_force(x,v,f,epot,epmf)
+    call pmf_core_lf_force(x,v,f,0.0d0,epot,epmf)
     call pmf_timers_stop_timer(PMFLIB_TIMER)
 
 end subroutine pmf_pmemd_force
@@ -708,7 +708,7 @@ subroutine pmf_pmemd_gather_array_mpi(lx,x,atm_owner_map,id_offset)
     end if
 
     do i=1,NumOfLAtoms
-        at_id = RIndexes(i)    
+        at_id = RIndexes(i)
         mpi_id = at_id + id_offset*fnatoms
         ow_id = atm_owner_map(at_id)
         if( ow_id .eq. fmytaskid ) then

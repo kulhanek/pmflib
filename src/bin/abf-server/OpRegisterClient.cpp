@@ -54,6 +54,9 @@ void CABFProcessor::RegisterClient(void)
     CRegClient* p_rc = new CRegClient(Command->GetClientName(),job_id);
     ABFServer.RegClients.RegisterClient(p_rc);
 
+    // set accu header
+    ABFServer.ABFAccumulator.SetMainHeader(Command);
+
 // write response
     ResultElement->SetAttribute("client_id",p_rc->GetClientID());
 }

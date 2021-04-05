@@ -43,8 +43,12 @@ CABFClient      ABFClient;
 CABFClient::CABFClient(void)
 {
     ClientID = -1;
-    NItems   = 0;
+    NCVs   = 0;
     NTotBins = 0;
+    EpotEnabled = false;
+    Temperature = 300.0;
+    EnergyFConv = 1.0;
+    EnergyUnit = "kcal mol-1";
 }
 
 //------------------------------------------------------------------------------
@@ -57,39 +61,60 @@ CABFClient::~CABFClient(void)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void CABFClient::SetNumberOfItems(int nitems,int ntotbins)
+void CABFClient::SetNumberOfItems(int ncvs,int ntotbins)
 {
-    if(nitems <= 0) {
-        INVALID_ARGUMENT("number of items has to be grater than zero");
+    if(ncvs <= 0) {
+        INVALID_ARGUMENT("number of CVs has to be grater than zero");
     }
 
     if(ntotbins <= 0) {
         INVALID_ARGUMENT("number of bins has to be grater than zero");
     }
 
-    NItems = 0;
-    Coords.resize(nitems);
-    NItems = nitems;
+    NCVs = ncvs;
+    CVs.resize(ncvs);
     NTotBins = ntotbins;
 }
 
 //------------------------------------------------------------------------------
 
-int CABFClient::GetNumberOfBins(void)
+void CABFClient::SetTemperature(double temp)
+{
+    Temperature = temp;
+}
+
+//------------------------------------------------------------------------------
+
+void CABFClient::SetEnergyUnit(double fconv,const CSmallString& unit)
+{
+    EnergyFConv = fconv;
+    EnergyUnit = unit;
+}
+
+//------------------------------------------------------------------------------
+
+void CABFClient::SetEpotEnabled(bool enabled)
+{
+    EpotEnabled = enabled;
+}
+
+//------------------------------------------------------------------------------
+
+int CABFClient::GetNumOfBins(void)
 {
     return(NTotBins);
 }
 
 //------------------------------------------------------------------------------
 
-void CABFClient::SetCoord(int id,const CSmallString& name,const CSmallString& type,
+void CABFClient::SetCV(int id,const CSmallString& name,const CSmallString& type,
                           double min_value,double max_value,int nbins,double fconv,const CSmallString& unit)
 {
-    if((id < 0) || (id >= NItems)) {
+    if((id < 0) || (id >= NCVs)) {
         INVALID_ARGUMENT("cv id is out of range");
     }
 
-    Coords[id].SetCoord(id,name,type,min_value,max_value,nbins,fconv,unit);
+    CVs[id].SetCV(id,name,type,min_value,max_value,nbins,fconv,unit);
 }
 
 //==============================================================================
@@ -112,6 +137,13 @@ int CABFClient::RegisterClient(void)
         if( job_id != NULL ) {
             p_ele->SetAttribute("job_id",job_id);
         }
+        p_ele->SetAttribute("temperature",Temperature);
+        p_ele->SetAttribute("epot",EpotEnabled);
+
+        p_ele = cmd.GetCommandElementByPath("ENERGY",true);
+        p_ele->SetAttribute("fconv",EnergyFConv);
+        p_ele->SetAttribute("unit",EnergyUnit);
+
         p_ele = cmd.GetCommandElementByPath("CVS",true);
         SaveCVSInfo(p_ele);
 
@@ -160,12 +192,14 @@ bool CABFClient::UnregisterClient(void)
 //------------------------------------------------------------------------------
 
 bool CABFClient::GetInitialData(int* nisamples,
-                                double* iabfforce,
-                                double* iabfforce2,
-                                double* iepot,
-                                double* iepot2)
+                                double* inc_icfsum,
+                                double* inc_icfsum2,
+                                double* inc_epotsum,
+                                double* inc_epotsum2,
+                                double* inc_icfepotsum,
+                                double* inc_icfepotsum2)
 {
-    ClearExchangeData(nisamples,iabfforce,iabfforce2,iepot,iepot2);
+    ClearExchangeData(nisamples,inc_icfsum,inc_icfsum2,inc_epotsum,inc_epotsum2,inc_icfepotsum,inc_icfepotsum2);
 
     CClientCommand cmd;
     try{
@@ -182,7 +216,7 @@ bool CABFClient::GetInitialData(int* nisamples,
 
         // process results
         p_ele = cmd.GetRootResultElement();
-        ReadExchangeData(p_ele,nisamples,iabfforce,iabfforce2,iepot,iepot2);
+        ReadExchangeData(p_ele,nisamples,inc_icfsum,inc_icfsum2,inc_epotsum,inc_epotsum2,inc_icfepotsum,inc_icfepotsum2);
 
     } catch(std::exception& e) {
         ES_ERROR_FROM_EXCEPTION("unable to process command",e);
@@ -195,10 +229,12 @@ bool CABFClient::GetInitialData(int* nisamples,
 //------------------------------------------------------------------------------
 
 bool CABFClient::ExchangeData(int* nisamples,
-                                double* iabfforce,
-                                double* iabfforce2,
-                                double* iepot,
-                                double* iepot2)
+                                double* inc_icfsum,
+                                double* inc_icfsum2,
+                                double* inc_epotsum,
+                                double* inc_epotsum2,
+                                double* inc_icfepotsum,
+                                double* inc_icfepotsum2)
 {
     CClientCommand cmd;
     try{
@@ -209,14 +245,14 @@ bool CABFClient::ExchangeData(int* nisamples,
         // prepare input data
         CXMLElement* p_ele = cmd.GetRootCommandElement();
         p_ele->SetAttribute("client_id",ClientID);
-        WriteExchangeData(p_ele,nisamples,iabfforce,iabfforce2,iepot,iepot2);
+        WriteExchangeData(p_ele,nisamples,inc_icfsum,inc_icfsum2,inc_epotsum,inc_epotsum2,inc_icfepotsum,inc_icfepotsum2);
 
         // execute command
         ExecuteCommand(&cmd);
 
         // process results
         p_ele = cmd.GetRootResultElement();
-        ReadExchangeData(p_ele,nisamples,iabfforce,iabfforce2,iepot,iepot2);
+        ReadExchangeData(p_ele,nisamples,inc_icfsum,inc_icfsum2,inc_epotsum,inc_epotsum2,inc_icfepotsum,inc_icfepotsum2);
 
     } catch(std::exception& e) {
         ES_ERROR_FROM_EXCEPTION("unable to process command",e);
@@ -238,159 +274,202 @@ void CABFClient::SaveCVSInfo(CXMLElement* p_tele)
 
     CXMLElement* p_ele = p_tele->CreateChildElement("CVS");
 
-    p_ele->SetAttribute("NCoords",NItems);
+    p_ele->SetAttribute("ncvs",NCVs);
 
-    for(int i=0; i < NItems; i++) {
-        CXMLElement* p_iele = p_ele->CreateChildElement("COORD");
-        Coords[i].SaveInfo(p_iele);
+    for(int i=0; i < NCVs; i++) {
+        CXMLElement* p_iele = p_ele->CreateChildElement("CV");
+        CVs[i].SaveInfo(p_iele);
     }
 }
 
 //------------------------------------------------------------------------------
 
 void CABFClient::WriteExchangeData(CXMLElement* p_cele,
-                                    int* nisamples,
-                                    double* iabfforce,
-                                    double* iabfforce2,
-                                    double* iepot,
-                                    double* iepot2)
+                                    int*    inc_nsamples,
+                                    double* inc_icfsum,
+                                    double* inc_icfsum2,
+                                    double* inc_epotsum,
+                                    double* inc_epotsum2,
+                                    double* inc_icfepotsum,
+                                    double* inc_icfepotsum2)
 {
     if(p_cele == NULL) {
         INVALID_ARGUMENT("p_cele is NULL");
     }
 
-    int nisamples_size = NTotBins*sizeof(int);
-    int iabfforce_size = NTotBins*NItems*sizeof(double);
-    int iepot_size     = NTotBins*sizeof(double);
+    size_t nsamples_size   = NTotBins*sizeof(int);
+    size_t icfsum_size     = NTotBins*NCVs*sizeof(double);
+    size_t epotsum_size    = NTotBins*sizeof(double);
+    size_t icfepotsum_size = NTotBins*NCVs*sizeof(double);
 
-    if( (nisamples_size == 0) || (iabfforce_size == 0) || (iepot_size == 0) ) {
+    if( (nsamples_size == 0) || (icfsum_size == 0) || (epotsum_size == 0) || (icfepotsum_size == 0) ) {
         LOGIC_ERROR("size(s) is(are) zero");
     }
 
 // write new data -------------------------------
-    CXMLBinData* p_nisamples = p_cele->CreateChildBinData("NISAMPLES");
-    p_nisamples->SetData(nisamples,nisamples_size);
+    CXMLBinData* p_nisamples = p_cele->CreateChildBinData("NSAMPLES");
+    p_nisamples->SetData(inc_nsamples,nsamples_size);
 
-    CXMLBinData* p_iabfforce = p_cele->CreateChildBinData("IABFFORCE");
-    p_iabfforce->SetData(iabfforce,iabfforce_size);
+    CXMLBinData* p_inc_icfsum = p_cele->CreateChildBinData("ICFSUM");
+    p_inc_icfsum->SetData(inc_icfsum,icfsum_size);
 
-    CXMLBinData* p_iabfforce2 = p_cele->CreateChildBinData("IABFFORCE2");
-    p_iabfforce2->SetData(iabfforce2,iabfforce_size);
+    CXMLBinData* p_inc_icfsum2 = p_cele->CreateChildBinData("ICFSUM2");
+    p_inc_icfsum2->SetData(inc_icfsum2,icfsum_size);
 
-    CXMLBinData* p_iepot = p_cele->CreateChildBinData("IEPOT");
-    p_iepot->SetData(iepot,iepot_size);
+    CXMLBinData* p_inc_epotsum = p_cele->CreateChildBinData("EPOTSUM");
+    p_inc_epotsum->SetData(inc_epotsum,epotsum_size);
 
-    CXMLBinData* p_iepot2 = p_cele->CreateChildBinData("IEPOT2");
-    p_iepot2->SetData(iepot2,iepot_size);
+    CXMLBinData* p_inc_epotsum2 = p_cele->CreateChildBinData("EPOTSUM2");
+    p_inc_epotsum2->SetData(inc_epotsum2,epotsum_size);
+
+    CXMLBinData* p_inc_icfepotsum = p_cele->CreateChildBinData("ICFEPOTSUM");
+    p_inc_icfepotsum->SetData(inc_icfepotsum,icfepotsum_size);
+
+    CXMLBinData* p_inc_icfepotsum2 = p_cele->CreateChildBinData("ICFEPOTSUM2");
+    p_inc_icfepotsum2->SetData(inc_icfepotsum2,icfepotsum_size);
 }
 
 //------------------------------------------------------------------------------
 
 void CABFClient::ReadExchangeData(CXMLElement* p_rele,
-                                    int* nisamples,
-                                    double* iabfforce,
-                                    double* iabfforce2,
-                                    double* iepot,
-                                    double* iepot2)
+                                    int*    inc_nsamples,
+                                    double* inc_icfsum,
+                                    double* inc_icfsum2,
+                                    double* inc_epotsum,
+                                    double* inc_epotsum2,
+                                    double* inc_icfepotsum,
+                                    double* inc_icfepotsum2)
 {
     if(p_rele == NULL) {
         INVALID_ARGUMENT("p_rele is NULL");
     }
 
-    unsigned int nisamples_size = NTotBins*sizeof(int);
-    unsigned int iabfforce_size = NTotBins*NItems*sizeof(double);
-    unsigned int iepot_size     = NTotBins*sizeof(double);
+    size_t nsamples_size   = NTotBins*sizeof(int);
+    size_t icfsum_size     = NTotBins*NCVs*sizeof(double);
+    size_t epotsum_size    = NTotBins*sizeof(double);
+    size_t icfepotsum_size = NTotBins*NCVs*sizeof(double);
 
-    if( (nisamples_size == 0) || (iabfforce_size == 0) || (iepot_size == 0) ) {
+    if( (nsamples_size == 0) || (icfsum_size == 0) || (epotsum_size == 0) || (icfepotsum_size == 0) ) {
         LOGIC_ERROR("size(s) is(are) zero");
     }
 
 // --------------------------
-    CXMLBinData* p_nisamples = p_rele->GetFirstChildBinData("NISAMPLES");
-    if(p_nisamples == NULL) {
-        LOGIC_ERROR("unable to open NISAMPLES element");
+    CXMLBinData* p_inc_nsamples = p_rele->GetFirstChildBinData("NSAMPLES");
+    if(p_inc_nsamples == NULL) {
+        LOGIC_ERROR("unable to open NSAMPLES element");
     }
 
-    void* p_data = p_nisamples->GetData();
-    if((p_data == NULL) || (p_nisamples->GetLength() != nisamples_size)) {
+    void* p_data = p_inc_nsamples->GetData();
+    if((p_data == NULL) || (p_inc_nsamples->GetLength() != nsamples_size)) {
         LOGIC_ERROR("inconsistent NISAMPLES element data");
     }
-    memcpy(nisamples,p_data,nisamples_size);
+    memcpy(inc_nsamples,p_data,nsamples_size);
 
 // --------------------------
-    CXMLBinData* p_iabfforce = p_rele->GetFirstChildBinData("IABFFORCE");
-    if(p_iabfforce == NULL) {
-        LOGIC_ERROR("unable to open IABFFORCE element");
+    CXMLBinData* p_inc_icfsum = p_rele->GetFirstChildBinData("ICFSUM");
+    if(p_inc_icfsum == NULL) {
+        LOGIC_ERROR("unable to open ICFSUM element");
     }
 
-    p_data = p_iabfforce->GetData();
-    if((p_data == NULL) || (p_iabfforce->GetLength() != iabfforce_size)) {
-        LOGIC_ERROR("inconsistent IABFFORCE element data");
+    p_data = p_inc_icfsum->GetData();
+    if((p_data == NULL) || (p_inc_icfsum->GetLength() != icfsum_size)) {
+        LOGIC_ERROR("inconsistent ICFSUM element data");
     }
-    memcpy(iabfforce,p_data,iabfforce_size);
-
-// --------------------------
-    CXMLBinData* p_iabfforce2 = p_rele->GetFirstChildBinData("IABFFORCE2");
-    if(p_iabfforce2 == NULL) {
-        LOGIC_ERROR("unable to open IABFFORCE2 element");
-    }
-
-    p_data = p_iabfforce2->GetData();
-    if((p_data == NULL) || (p_iabfforce2->GetLength() != iabfforce_size)) {
-        LOGIC_ERROR("inconsistent IABFFORCE2 element data");
-    }
-    memcpy(iabfforce2,p_data,iabfforce_size);
+    memcpy(inc_icfsum,p_data,icfsum_size);
 
 // --------------------------
-    CXMLBinData* p_iepot = p_rele->GetFirstChildBinData("IEPOT");
-    if(p_iepot == NULL) {
-        LOGIC_ERROR("unable to open IEPOT element");
+    CXMLBinData* p_inc_icfsum2 = p_rele->GetFirstChildBinData("ICFSUM2");
+    if(p_inc_icfsum2 == NULL) {
+        LOGIC_ERROR("unable to open ICFSUM2 element");
     }
 
-    p_data = p_iepot->GetData();
-    if((p_data == NULL) || (p_iepot->GetLength() != iepot_size)) {
-        LOGIC_ERROR("inconsistent IEPOT element data");
+    p_data = p_inc_icfsum2->GetData();
+    if((p_data == NULL) || (p_inc_icfsum2->GetLength() != icfsum_size)) {
+        LOGIC_ERROR("inconsistent ICFSUM2 element data");
     }
-    memcpy(iepot,p_data,iepot_size);
+    memcpy(inc_icfsum2,p_data,icfsum_size);
 
 // --------------------------
-    CXMLBinData* p_iepot2 = p_rele->GetFirstChildBinData("IEPOT2");
-    if(p_iepot2 == NULL) {
-        LOGIC_ERROR("unable to open IEPOT2 element");
+    CXMLBinData* p_inc_epotsum = p_rele->GetFirstChildBinData("EPOTSUM");
+    if(p_inc_epotsum == NULL) {
+        LOGIC_ERROR("unable to open EPOTSUM element");
     }
 
-    p_data = p_iepot2->GetData();
-    if((p_data == NULL) || (p_iepot2->GetLength() != iepot_size)) {
-        LOGIC_ERROR("inconsistent IEPOT2 element data");
+    p_data = p_inc_epotsum->GetData();
+    if((p_data == NULL) || (p_inc_epotsum->GetLength() != epotsum_size)) {
+        LOGIC_ERROR("inconsistent EPOTSUM element data");
     }
-    memcpy(iepot2,p_data,iepot_size);
+    memcpy(inc_epotsum,p_data,epotsum_size);
+
+// --------------------------
+    CXMLBinData* p_inc_epotsum2 = p_rele->GetFirstChildBinData("EPOTSUM2");
+    if(p_inc_epotsum2 == NULL) {
+        LOGIC_ERROR("unable to open EPOTSUM2 element");
+    }
+
+    p_data = p_inc_epotsum2->GetData();
+    if((p_data == NULL) || (p_inc_epotsum2->GetLength() != epotsum_size)) {
+        LOGIC_ERROR("inconsistent EPOTSUM2 element data");
+    }
+    memcpy(inc_epotsum2,p_data,epotsum_size);
+
+// --------------------------
+    CXMLBinData* p_inc_icfepotsum = p_rele->GetFirstChildBinData("ICFEPOTSUM");
+    if(p_inc_icfepotsum == NULL) {
+        LOGIC_ERROR("unable to open ICFEPOTSUM element");
+    }
+
+    p_data = p_inc_icfepotsum->GetData();
+    if((p_data == NULL) || (p_inc_icfepotsum->GetLength() != icfepotsum_size)) {
+        LOGIC_ERROR("inconsistent ICFEPOTSUM element data");
+    }
+    memcpy(inc_icfepotsum,p_data,icfepotsum_size);
+
+// --------------------------
+    CXMLBinData* p_inc_icfepotsum2 = p_rele->GetFirstChildBinData("ICFEPOTSUM2");
+    if(p_inc_icfepotsum2 == NULL) {
+        LOGIC_ERROR("unable to open ICFEPOTSUM2 element");
+    }
+
+    p_data = p_inc_icfepotsum2->GetData();
+    if((p_data == NULL) || (p_inc_icfepotsum2->GetLength() != icfepotsum_size)) {
+        LOGIC_ERROR("inconsistent ICFEPOTSUM2 element data");
+    }
+    memcpy(inc_icfepotsum2,p_data,icfepotsum_size);
 }
 
 //------------------------------------------------------------------------------
 
 void CABFClient::ClearExchangeData(int* nisamples,
-                                    double* iabfforce,
-                                    double* iabfforce2,
-                                    double* iepot,
-                                    double* iepot2
-                                    )
+                                    double* inc_icfsum,
+                                    double* inc_icfsum2,
+                                    double* inc_epotsum,
+                                    double* inc_epotsum2,
+                                    double* inc_icfepotsum,
+                                    double* inc_icfepotsum2)
 {
-    int nisamples_size = NTotBins;
-    int iabfforce_size = NTotBins*NItems;
-    int iepot_size = NTotBins;
+    size_t nsamples_size   = NTotBins*sizeof(int);
+    size_t icfsum_size     = NTotBins*NCVs*sizeof(double);
+    size_t epotsum_size    = NTotBins*sizeof(double);
+    size_t icfepotsum_size = NTotBins*NCVs*sizeof(double);
 
-    for(int i=0; i < nisamples_size; i++) {
+    for(size_t i=0; i < nsamples_size; i++) {
         nisamples[i] = 0;
     }
 
-    for(int i=0; i < iabfforce_size; i++) {
-        iabfforce[i] = 0.0;
-        iabfforce2[i] = 0.0;
+    for(size_t i=0; i < icfsum_size; i++) {
+        inc_icfsum[i] = 0.0;
+        inc_icfsum2[i] = 0.0;
     }
 
-    for(int i=0; i < iepot_size; i++) {
-        iepot[i] = 0.0;
-        iepot2[i] = 0.0;
+    for(size_t i=0; i < epotsum_size; i++) {
+        inc_epotsum[i] = 0.0;
+        inc_epotsum2[i] = 0.0;
+    }
+
+    for(size_t i=0; i < icfepotsum_size; i++) {
+        inc_icfepotsum[i] = 0.0;
+        inc_icfepotsum2[i] = 0.0;
     }
 }
 

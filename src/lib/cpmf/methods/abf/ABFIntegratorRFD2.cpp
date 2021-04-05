@@ -114,16 +114,16 @@ bool CABFIntegratorRFD2::Integrate(CVerboseStr& vout)
         return(false);
     }
 
-    if( Accumulator->GetNumberOfCoords() == 0 ) {
+    if( Accumulator->GetNumOfCVs() == 0 ) {
         ES_ERROR("number of coordinates is zero");
         return(false);
     }
 
-    if( Accumulator->GetNumberOfCoords() != FES->GetNumberOfCoords() ){
+    if( Accumulator->GetNumOfCVs() != FES->GetNumOfCVs() ){
         ES_ERROR("inconsistent ABF and FES - CVs");
         return(false);
     }
-    if( Accumulator->GetNumberOfBins() != FES->GetNumberOfPoints() ){
+    if( Accumulator->GetNumOfBins() != FES->GetNumOfPoints() ){
         ES_ERROR("inconsistent ABF and FES - points");
         return(false);
     }
@@ -143,7 +143,7 @@ bool CABFIntegratorRFD2::Integrate(CVerboseStr& vout)
     Rhs.FreeVector();
 
     // and finaly some statistics
-    for(int k=0; k < Accumulator->GetNumberOfCoords(); k++ ){
+    for(int k=0; k < Accumulator->GetNumOfCVs(); k++ ){
     vout << "   RMSR CV#" << k+1 << " = " << setprecision(5) << GetRMSR(k) << endl;
     }
 
@@ -154,12 +154,12 @@ bool CABFIntegratorRFD2::Integrate(CVerboseStr& vout)
     }
 
 // load data to FES
-    for(int ipoint=0; ipoint < FES->GetNumberOfPoints(); ipoint++) {
+    for(int ipoint=0; ipoint < FES->GetNumOfPoints(); ipoint++) {
         int x_index = XMap[ipoint];
         if(x_index >= 0) {
             double value = X[x_index]-glb_min;
             FES->SetEnergy(ipoint,value);
-            FES->SetNumOfSamples(ipoint,Accumulator->GetNumberOfABFSamples(ipoint));
+            FES->SetNumOfSamples(ipoint,Accumulator->GetNumOfSamples(ipoint));
         }
     }
 
@@ -177,8 +177,8 @@ bool CABFIntegratorRFD2::BuildSystemOfEquations(CVerboseStr& vout)
     vout << "   Creating A and rhs ..." << endl;
 
 // initializations
-    IPoint.CreateVector(Accumulator->GetNumberOfCoords());
-    XMap.CreateVector(Accumulator->GetNumberOfBins());
+    IPoint.CreateVector(Accumulator->GetNumOfCVs());
+    XMap.CreateVector(Accumulator->GetNumOfBins());
 
     XMap.Set(-1);
 
@@ -230,12 +230,12 @@ void CABFIntegratorRFD2::BuildEquations(bool trial)
         A.SetZero();
     }
 
-    for(int i=0; i < Accumulator->GetNumberOfBins(); i++){
+    for(int i=0; i < Accumulator->GetNumOfBins(); i++){
         // number of samples is controlled via GetFBinIndex
 
         Accumulator->GetIPoint(i,IPoint);
 
-        for(int ifcoord=0; ifcoord < Accumulator->GetNumberOfCoords(); ifcoord++) {
+        for(int ifcoord=0; ifcoord < Accumulator->GetNumOfCVs(); ifcoord++) {
             int ifbin1,ifbin2,ifbin3,ifbin4;
 
             ifbin1 = GetFBinIndex(IPoint,ifcoord,0);
@@ -243,7 +243,7 @@ void CABFIntegratorRFD2::BuildEquations(bool trial)
             ifbin3 = GetFBinIndex(IPoint,ifcoord,2);
             ifbin4 = GetFBinIndex(IPoint,ifcoord,3);
 
-            const CColVariable* p_coord = Accumulator->GetCoordinate(ifcoord);
+            const CColVariable* p_coord = Accumulator->GetCV(ifcoord);
             double              diff = p_coord->GetBinWidth();
 
             switch(FDLevel) {
@@ -352,9 +352,9 @@ void CABFIntegratorRFD2::BuildEquations(bool trial)
 int CABFIntegratorRFD2::GetFBinIndex(const CSimpleVector<int>& position,int ifcoord,int offset) const
 {
     int glbindex = 0;
-    for(int i=0; i < Accumulator->GetNumberOfCoords(); i++) {
-        const CColVariable* p_coord = Accumulator->GetCoordinate(i);
-        int nbins = p_coord->GetNumberOfBins();
+    for(int i=0; i < Accumulator->GetNumOfCVs(); i++) {
+        const CColVariable* p_coord = Accumulator->GetCV(i);
+        int nbins = p_coord->GetNumOfBins();
         int pos = position[i];
         if(i == ifcoord) {
             pos += offset;
@@ -369,7 +369,7 @@ int CABFIntegratorRFD2::GetFBinIndex(const CSimpleVector<int>& position,int ifco
     }
 
 // check if we have sufficient number of samples
-    if(Accumulator->GetNumberOfABFSamples(glbindex) <= 0) return(-1);
+    if(Accumulator->GetNumOfSamples(glbindex) <= 0) return(-1);
 
     return(glbindex);
 }

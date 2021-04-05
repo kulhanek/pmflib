@@ -4,16 +4,16 @@
 
 # program objects --------------------------------------------------------------
 SET(ABF_INTEGRATE_SRC
-        ABFIntegrate.cpp
-        ABFIntOptions.cpp
+        ABFEnergyIntegrate.cpp
+        ABFEnergyIntOptions.cpp
         )
 
 # final build ------------------------------------------------------------------
 
 IF(OpenMP_FOUND)
-    SET(TARGET_NAME _abf-integrate)
+    SET(TARGET_NAME _abf-energy)
 ELSE()
-    SET(TARGET_NAME abf-integrate)
+    SET(TARGET_NAME abf-energy)
 ENDIF()
 
 ADD_EXECUTABLE(${TARGET_NAME} ${ABF_INTEGRATE_SRC})
