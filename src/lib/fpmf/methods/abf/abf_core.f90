@@ -51,11 +51,14 @@ subroutine abf_core_main
 
     select case(fmode)
         case(1)
-            ! standard algorithm
-            call abf_core_force
+            ! standard ABF algorithm
+            call abf_core_force_4p
         case(2)
             ! numerical differentiation
-            call abf_core_force_numeric
+            call abf_core_force_2p
+        case(3)
+            ! analytical/numerical differentiation
+            call abf_core_force_2p_frc  ! SHAKE must be off
         case default
             call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented fmode in abf_core_main!')
     end select
@@ -68,11 +71,11 @@ subroutine abf_core_main
 end subroutine abf_core_main
 
 !===============================================================================
-! Subroutine:  abf_core_force
-! this is leap-frog and velocity-verlet ABF version
+! Subroutine:  abf_core_force_4p
+! this is leap-frog ABF version, original implementation
 !===============================================================================
 
-subroutine abf_core_force()
+subroutine abf_core_force_4p()
 
     use pmf_utils
     use pmf_dat
@@ -236,14 +239,14 @@ subroutine abf_core_force()
 
     return
 
-end subroutine abf_core_force
+end subroutine abf_core_force_4p
 
 !===============================================================================
-! Subroutine:  abf_core_force_numeric
-! this is leap-frog and velocity-verlet ABF version
+! Subroutine:  abf_core_force_2p
+! this is leap-frog ABF version
 !===============================================================================
 
-subroutine abf_core_force_numeric()
+subroutine abf_core_force_2p()
 
     use pmf_utils
     use pmf_dat
@@ -253,9 +256,9 @@ subroutine abf_core_force_numeric()
     use abf_output
 
     implicit none
-    integer                :: i,j,m
-    integer                :: ci
-    real(PMFDP)            :: v,avg_etot
+    integer                :: i,j,k,m
+    integer                :: ci,ki
+    real(PMFDP)            :: v,e,etot
     ! --------------------------------------------------------------------------
 
     ! shift accuvalue history
@@ -276,97 +279,247 @@ subroutine abf_core_force_numeric()
     end if
 
     ! shift ekin ene
+    ekinhist0 = ekinhist1
     if( faccuekin ) then
-        call pmf_utils_exit(PMF_OUT,1,'[ABF] faccuekin cannot be on in abf_core_force_numeric!')
+        ekinhist1 = KinEne
+    else
+        ekinhist1 = 0.0d0
     end if
-
-    ! calculate abf force to be applied -------------
-    select case(feimode)
-        case(1)
-            call abf_accumulator_get_data1(cvaluehist1(:),la)
-        case(2)
-            call abf_accumulator_get_data2(cvaluehist1(:),la)
-        case(3)
-            call abf_accumulator_get_data3(cvaluehist1(:),la)
-        case default
-            call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented extrapolation/interpolation mode!')
-    end select
-
-    ! apply force filters
-    if( .not. fapply_abf ) then
-        ! we do not want to apply ABF force - set the forces to zero
-        la(:) = 0.0d0
-    end if
-
-    ! project abf force along coordinate
-    do i=1,NumOfABFCVs
-        ci = ABFCVList(i)%cvindx
-        do j=1,NumOfLAtoms
-            Frc(:,j) = Frc(:,j) + la(i) * CVContext%CVsDrvs(:,j,ci)
-        end do
-    end do
 
     ! calculate Z matrix and its inverse
     call abf_core_calc_Zmat
 
-    ! pxip
     do i=1,NumOfABFCVs
-        v = 0.0d0
-        ci = ABFCVList(i)%cvindx
         do j=1,NumOfLAtoms
             do m=1,3
-                v = v + CVContext%CVsDrvs(m,j,ci)*Vel(m,j)
+                v = 0.0d0
+                do k=1,NumOfABFCVs
+                    ki = ABFCVList(k)%cvindx
+                    v = v + fzinv(i,k)*CVContext%CVsDrvs(m,j,ki)
+                end do
+                zd1(m,j,i) = v
             end do
         end do
-        pxi0(i) = v
     end do
 
-    ! mult by fzinv
     do i=1,NumOfABFCVs
         v = 0.0d0
-        do j=1,NumOfABFCVs
-            v = v + fzinv(i,j) * pxi0(j)
+        e = 0.0d0
+        do j=1,NumOfLAtoms
+            do m=1,3
+                ! zd0 in t-dt
+                ! Vel in t-1/2dt
+                ! a (OldVel) in t-3/2dt
+                ! a <- Vel(m,j)-a0(m,j))/fdtx in t-dt, do not use forces (Frc) because of SHAKE
+                v = v + zd0(m,j,i)*(Vel(m,j)-a0(m,j))
+                ! zd1 in t
+                ! zd0 in t-dt
+                ! vel in t-1/2dt
+                e = e + (zd1(m,j,i)-zd0(m,j,i))* Vel(m,j)
+            end do
         end do
-        pxip(i) = v
+        pxi0(i) = v / fdtx ! in t-dt
+        pxip(i) = e / fdtx ! in t-1/2dt
     end do
 
-    pxip(:) = pxip(:)
+    if( fstep .ge. 4 ) then
 
-    ! update accumulator - we need at least two samples
-    if( fstep .ge. 2 ) then
-        ! final derivatives by central differences
-        do i=1,NumOfABFCVs
-            pxi0(i) = (pxip(i) - pxim(i))/fdtx - 0.5*(la(i) + pxi1(i))
-        end do
-        pxi1(:) = la(:)
-        ! calculate coordinate values at time t-dt/2
-        do i=1,NumOfABFCVs
-            avg_values(i) = ABFCVList(i)%cv%get_average_value(cvaluehist0(i),cvaluehist1(i))
-        end do
+        ! complete ICF in t-dt
+        ! pxi0 in t-dt
+        ! pxi1 - old ABF forces in t-dt
+        ! pxip in t-1/2dt
+        ! pxim in t-3/2dt
+        pxim(:) =  pxi0(:) + 0.5d0*(pxim(:)+pxip(:)) - pxi1(:)
 
-        avg_etot = 0.5d0*(epothist0 + epothist1) - ftotoffset
+        etot = ekinhist1 + epothist0 ! ekin is delayed by dt
 
         ! add data to accumulator
         select case(feimode)
             case(1)
-                call abf_accumulator_add_data12(avg_values,avg_etot,pxi0(:))
+                call abf_accumulator_add_data12(cvaluehist0,etot,pxim(:))
             case(2)
-                call abf_accumulator_add_data12(avg_values,avg_etot,pxi0(:))
+                call abf_accumulator_add_data12(cvaluehist0,etot,pxim(:))
             case(3)
-                call abf_accumulator_add_data3(avg_values,avg_etot,pxi0(:))
+                call abf_accumulator_add_data3(cvaluehist0,etot,pxim(:))
+            case default
+                call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented extrapolation/interpolation mode!')
+        end select
+    end if
+
+    ! backup to the next step
+    zd0  = zd1
+    pxim = pxip
+    a0   = Vel
+
+    ! apply ABF bias
+    la(:) = 0.0d0
+
+    ! apply force filters
+    if( fapply_abf ) then
+        ! calculate abf force to be applied
+        select case(feimode)
+            case(1)
+                call abf_accumulator_get_data1(cvaluehist1(:),la)
+            case(2)
+                call abf_accumulator_get_data2(cvaluehist1(:),la)
+            case(3)
+                call abf_accumulator_get_data3(cvaluehist1(:),la)
             case default
                 call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented extrapolation/interpolation mode!')
         end select
 
-        ! write icf
-        call abf_output_write_icf(avg_values,pxi0(:))
+        ! project abf force along coordinate
+        do i=1,NumOfABFCVs
+            ci = ABFCVList(i)%cvindx
+            do j=1,NumOfLAtoms
+                Frc(:,j) = Frc(:,j) + la(i) * CVContext%CVsDrvs(:,j,ci)
+            end do
+        end do
     end if
 
-    pxim(:) = pxip(:)
+    ! keep ABF forces to subtract them in the next step
+    pxi1 = la
 
     return
 
-end subroutine abf_core_force_numeric
+end subroutine abf_core_force_2p
+
+!===============================================================================
+! Subroutine:  abf_core_force_2p_frc
+! this is leap-frog ABF version
+!===============================================================================
+
+subroutine abf_core_force_2p_frc()
+
+    use pmf_utils
+    use pmf_dat
+    use pmf_cvs
+    use abf_dat
+    use abf_accumulator
+    use abf_output
+
+    implicit none
+    integer                :: i,j,k,m
+    integer                :: ci,ki
+    real(PMFDP)            :: v,e,etot
+    ! --------------------------------------------------------------------------
+
+    ! shift accuvalue history
+    cvaluehist0(:) = cvaluehist1(:)
+
+    ! save coordinate value to history
+    do i=1,NumOfABFCVs
+        ci = ABFCVList(i)%cvindx
+        cvaluehist1(i) = CVContext%CVsValues(ci)
+    end do
+
+    ! shift epot ene
+    epothist0 = epothist1
+    if( faccuepot ) then
+        epothist1 = PotEne
+    else
+        epothist1 = 0.0d0
+    end if
+
+    ! shift ekin ene
+    ekinhist0 = ekinhist1
+    if( faccuekin ) then
+        ekinhist1 = KinEne
+    else
+        ekinhist1 = 0.0d0
+    end if
+
+    ! calculate Z matrix and its inverse
+    call abf_core_calc_Zmat
+
+    do i=1,NumOfABFCVs
+        do j=1,NumOfLAtoms
+            do m=1,3
+                v = 0.0d0
+                do k=1,NumOfABFCVs
+                    ki = ABFCVList(k)%cvindx
+                    v = v + fzinv(i,k)*CVContext%CVsDrvs(m,j,ki)
+                end do
+                zd1(m,j,i) = v
+            end do
+        end do
+    end do
+
+    do i=1,NumOfABFCVs
+        v = 0.0d0
+        e = 0.0d0
+        do j=1,NumOfLAtoms
+            do m=1,3
+                ! zd1 in t
+                ! Frc in t
+                v = v + zd1(m,j,i)*MassInv(j)*Frc(m,j)
+                ! zd1 in t
+                ! zd0 in t-dt
+                ! vel in t-1/2dt
+                e = e + (zd1(m,j,i)-zd0(m,j,i))* Vel(m,j)
+            end do
+        end do
+        pxi1(i) = v        ! in t
+        pxip(i) = e / fdtx ! in t-1/2dt
+    end do
+
+    if( fstep .ge. 4 ) then
+
+        ! complete ICF in t-dt
+        ! pxi0 in t-dt
+        ! pxip in t-1/2dt
+        ! pxim in t-3/2dt
+        pxim(:) =  pxi0(:) + 0.5d0*(pxim(:)+pxip(:))
+
+        etot = ekinhist1 + epothist0 ! ekin is delayed by dt
+
+        ! add data to accumulator
+        select case(feimode)
+            case(1)
+                call abf_accumulator_add_data12(cvaluehist0,etot,pxim(:))
+            case(2)
+                call abf_accumulator_add_data12(cvaluehist0,etot,pxim(:))
+            case(3)
+                call abf_accumulator_add_data3(cvaluehist0,etot,pxim(:))
+            case default
+                call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented extrapolation/interpolation mode!')
+        end select
+    end if
+
+    ! backup to the next step
+    zd0  = zd1
+    pxi0 = pxi1
+    pxim = pxip
+
+    ! apply ABF bias
+    la(:) = 0.0d0
+
+    ! apply force filters
+    if( fapply_abf ) then
+        ! calculate abf force to be applied
+        select case(feimode)
+            case(1)
+                call abf_accumulator_get_data1(cvaluehist1(:),la)
+            case(2)
+                call abf_accumulator_get_data2(cvaluehist1(:),la)
+            case(3)
+                call abf_accumulator_get_data3(cvaluehist1(:),la)
+            case default
+                call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented extrapolation/interpolation mode!')
+        end select
+
+        ! project abf force along coordinate
+        do i=1,NumOfABFCVs
+            ci = ABFCVList(i)%cvindx
+            do j=1,NumOfLAtoms
+                Frc(:,j) = Frc(:,j) + la(i) * CVContext%CVsDrvs(:,j,ci)
+            end do
+        end do
+    end if
+
+    return
+
+end subroutine abf_core_force_2p_frc
 
 !===============================================================================
 ! subroutine:  abf_core_calc_Zmat

@@ -155,6 +155,7 @@ real(PMFDP),allocatable     :: a1(:,:)        ! acceleration in current step (t)
 
 real(PMFDP),allocatable     :: la(:)          ! ABF force in coordinate direction
 real(PMFDP),allocatable     :: zd0(:,:,:)     ! ZD0
+real(PMFDP),allocatable     :: zd1(:,:,:)     ! ZD1
 real(PMFDP),allocatable     :: pxi0(:)        !
 real(PMFDP),allocatable     :: pxi1(:)        !
 real(PMFDP),allocatable     :: pxip(:)        !

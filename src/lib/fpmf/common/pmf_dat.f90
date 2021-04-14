@@ -98,12 +98,12 @@ logical                     :: pdrv_enabled
 real(PMFDP),allocatable     :: InitialCrd(:,:)  ! initial coordinates of local atoms
 real(PMFDP),allocatable     :: Mass(:)          ! local atom masses
 real(PMFDP),allocatable     :: MassInv(:)       ! mass inverse
-real(PMFDP),allocatable     :: Crd(:,:)         ! current coordinates
-real(PMFDP),allocatable     :: Frc(:,:)         ! current system forces
-real(PMFDP),allocatable     :: Vel(:,:)         ! current system velocities
+real(PMFDP),allocatable     :: Crd(:,:)         ! current coordinates in t
+real(PMFDP),allocatable     :: Frc(:,:)         ! current system forces in t
+real(PMFDP),allocatable     :: Vel(:,:)         ! current system velocities in t-dt/2
 real(PMFDP)                 :: KinEne           ! current system kinetic energy in t-dt
 real(PMFDP)                 :: PotEne           ! current system potential energy in t
-type(CVContextType)         :: CVContext        ! current CV context (values and derivatives)
+type(CVContextType)         :: CVContext        ! current CV context (values and derivatives) in t
 
 ! used by Blue moon
 real(PMFDP),allocatable     :: CrdP(:,:)        ! coordinates

@@ -142,6 +142,8 @@ subroutine abf_init_print_header
     write(PMF_OUT,120)  '      |-> Standard ABF algorithm'
     case(2)
     write(PMF_OUT,120)  '      |-> Numerical ABF algorithm'
+    case(3)
+    write(PMF_OUT,120)  '      |-> Analytical/Numerical ABF algorithm, SHAKE must be off'
     case default
     call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown fmode in abf_init_print_header!')
     end select
@@ -260,6 +262,7 @@ subroutine abf_init_arrays
           fz(NumOfABFCVs,NumOfABFCVs),      &
           fzinv(NumOfABFCVs,NumOfABFCVs),   &
           zd0(3,NumOfLAtoms,NumOfABFCVs),   &
+          zd1(3,NumOfLAtoms,NumOfABFCVs),   &
           cvaluehist0(NumOfABFCVs),         &
           cvaluehist1(NumOfABFCVs),         &
           cvaluehist2(NumOfABFCVs),         &
