@@ -465,6 +465,8 @@ subroutine abf_core_force_2p_frc()
 
     if( fstep .ge. 4 ) then
 
+        write(1000,*) cvaluehist0, pxi0, 0.5d0*(pxim(:)+pxip(:))
+
         ! complete ICF in t-dt
         ! pxi0 in t-dt
         ! pxip in t-1/2dt
