@@ -10,7 +10,7 @@ GITHASH=`git rev-parse --short HEAD`
 DATE=`date +"%Y-%m-%d %H:%M"`
 
 cat > src/lib/cpmf/PMFMainHeaderConfig.hpp << EOF
-#define PMF_VERSION         "5.${GITREVS}.${GITHASH}"
+#define PMF_VERSION         "6.${GITREVS}.${GITHASH}"
 #define PMF_BUILDTIME       "${DATE}"
 EOF
 
@@ -20,7 +20,7 @@ use pmf_sizes
 use pmf_constants
 implicit none
 !-------------------------------------------------------------------------------
-character(80),parameter   :: PMFLIBVER   = 'PMFLib 5.${GITREVS}.${GITHASH} (${DATE})'
+character(80),parameter   :: PMFLIBVER   = 'PMFLib 6.${GITREVS}.${GITHASH} (${DATE})'
 !-------------------------------------------------------------------------------
 end module pmf_ver
 EOF
