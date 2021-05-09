@@ -142,12 +142,12 @@ void CABFServerAccu::ExchangeDataWithClient(CRegClient* p_client)
 
     // check if the data storage are ready
     if(    (GetNSamplesArray() == NULL)
-        || (GetICFSumArray() == NULL)
-        || (GetICFSum2Array() == NULL)
-        || (GetEtotSumArray() == NULL)
-        || (GetEtotSum2Array() == NULL)
-        || (GetICFEtotSumArray() == NULL)
-        || (GetICFEtotSum2Array() == NULL)  ) {
+        || (GetMICFArray() == NULL)
+        || (GetM2ICFArray() == NULL)
+        || (GetMEtotArray() == NULL)
+        || (GetM2EtotArray() == NULL)
+        || (GetICFMEtotArray() == NULL)
+        || (GetICFM2EtotArray() == NULL)  ) {
         LOGIC_ERROR("data array(s) is(are) NULL");
     }
 

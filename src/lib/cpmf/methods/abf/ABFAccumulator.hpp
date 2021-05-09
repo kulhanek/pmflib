@@ -143,28 +143,28 @@ public:
     void SetMaskWeight(int ibin,double weight);
 
     /// return ICF sum
-    const double& GetICFSum(int icv,int ibin) const;
+    double GetMICF(int icv,int ibin) const;
 
     /// return ICF square sum
-    const double& GetICFSum2(int icv,int ibin) const;
+    double GetM2ICF(int icv,int ibin) const;
 
     /// return Epot sum
-    const double& GetEtotSum(int ibin) const;
+    double GetMEtot(int ibin) const;
 
     /// return Epot square sum
-    const double& GetEtotSum2(int ibin) const;
+    double GetM2Etot(int ibin) const;
 
     /// return ICF*Epot sum
-    const double& GetICFEtotSum(int icv,int ibin) const;
+    double GetICFMEtot(int icv,int ibin) const;
 
     /// return ICF*Epot square sum
-    const double& GetICFEtotSum2(int icv,int ibin) const;
+    double GetICFM2Etot(int icv,int ibin) const;
 
     /// set ABF force sum
-    void SetICFSum(int icv,int ibin,const double& value);
+    void SetMICF(int icv,int ibin,const double& value);
 
     /// set ABF force sum square
-    void SetICFSum2(int icv,int ibin,const double& value);
+    void SetM2ICF(int icv,int ibin,const double& value);
 
     /// set ABF force sum square
     void SetNumberOfABFSamples(int ibin,const int& value);
@@ -173,22 +173,22 @@ public:
     int* GetNSamplesArray(void);
 
     /// return pointer to ICF sum array
-    double* GetICFSumArray(void);
+    double* GetMICFArray(void);
 
     /// return pointer to ICF square sum array
-    double* GetICFSum2Array(void);
+    double* GetM2ICFArray(void);
 
     /// return pointer to Epot sum array
-    double* GetEtotSumArray(void);
+    double* GetMEtotArray(void);
 
     /// return pointer to Epot square sum array
-    double* GetEtotSum2Array(void);
+    double* GetM2EtotArray(void);
 
     /// return pointer to ICF*Epot sum array
-    double* GetICFEtotSumArray(void);
+    double* GetICFMEtotArray(void);
 
     /// return pointer to ICF*Epot square sum array
-    double* GetICFEtotSum2Array(void);
+    double* GetICFM2EtotArray(void);
 
     /// set number of statistically correlated samples (it influences calculated errors of mean forces)
     void SetNCorr(double ncorr);
@@ -254,23 +254,25 @@ private:
     CSimpleVector<double>       Mask;
 
     // all values are in internal units
-    CSimpleVector<double>       ICFSum;         // accumulated ABF force
-    CSimpleVector<double>       ICFSum2;        // accumulated ABF force squares
+    CSimpleVector<double>       MICF;           // mean instantaneous collective force (ICF)
+    CSimpleVector<double>       M2ICF;          // M2 moment of ICF
+    CSimpleVector<double>       MICFKin;        // mean instantaneous collective force (ICF) - kinetic term
+    CSimpleVector<double>       M2ICFKin;       // M2 moment of ICF
 
     // enthalpy/entropy
-    CSimpleVector<double>       EtotSum;        // accumulated Epot
-    CSimpleVector<double>       EtotSum2;       // accumulated Epot force squares
+    CSimpleVector<double>       MEtot;          // mean Etot
+    CSimpleVector<double>       M2Etot;         // M2 moment of Etot
+    CSimpleVector<double>       MEpot;          // mean Epot
+    CSimpleVector<double>       M2Epot;         // M2 moment of Epot
 
-    CSimpleVector<double>       ICFEtotSum;     // accumulated ICF*Epot
-    CSimpleVector<double>       ICFEtotSum2;    // accumulated ICF*Epot force squares
+    CSimpleVector<double>       CDS;            // accumulated ICF*Epot
+    CSimpleVector<double>       M2CDS;          // accumulated ICF*Epot force squares
 
 // helper methods -------------------------------------------------------------
-    /// return index to ICFSum array for particular item and bin
+    /// return index to MICF array for particular item and bin
     int map(int item,int bin) const;
 
-    void Load_v3(char* fline,FILE* fin);
-    void Load_v4(char* fline,FILE* fin);
-    void Load_v5(char* fline,FILE* fin);
+    void Load_v6(char* fline,FILE* fin);
 };
 
 //------------------------------------------------------------------------------

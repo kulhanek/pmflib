@@ -25,7 +25,7 @@
 !    Boston, MA  02110-1301  USA
 !===============================================================================
 
-module abf_core
+module tabf_core
 
 use pmf_sizes
 use pmf_constants
@@ -34,17 +34,16 @@ implicit none
 contains
 
 !===============================================================================
-! Subroutine:  abf_core_main
+! Subroutine:  tabf_core_main
 ! this is leap-frog and velocity-verlet ABF version
 !===============================================================================
 
-subroutine abf_core_main
+subroutine tabf_core_main
 
-    use abf_trajectory
-    use abf_restart
-    use abf_output
-    use abf_client
-    use abf_dat
+    use tabf_trajectory
+    use tabf_restart
+    use tabf_output
+    use tabf_dat
     use pmf_utils
 
     ! --------------------------------------------------------------------------
@@ -52,34 +51,36 @@ subroutine abf_core_main
     select case(fmode)
         case(1)
             ! standard ABF algorithm
-            call abf_core_force_4p
+            call tabf_core_force_4p
         case(2)
             ! numerical differentiation
-            call abf_core_force_2p
+            call tabf_core_force_2p
+        case(3)
+            ! analytical/numerical differentiation
+            call tabf_core_force_2p_frc  ! SHAKE must be off
         case default
-            call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented fmode in abf_core_main!')
+            call pmf_utils_exit(PMF_OUT,1,'[TABF] Not implemented fmode in tabf_core_main!')
     end select
 
-    call abf_output_write
-    call abf_trajectory_write_snapshot
-    call abf_restart_update
-    call abf_client_exchange_data(.false.)
+    call tabf_output_write
+    call tabf_trajectory_write_snapshot
+    call tabf_restart_update
 
-end subroutine abf_core_main
+end subroutine tabf_core_main
 
 !===============================================================================
-! Subroutine:  abf_core_force_4p
+! Subroutine:  tabf_core_force_4p
 ! this is leap-frog ABF version, original implementation
 !===============================================================================
 
-subroutine abf_core_force_4p()
+subroutine tabf_core_force_4p()
 
     use pmf_utils
     use pmf_dat
     use pmf_cvs
-    use abf_dat
-    use abf_accumulator
-    use abf_output
+    use tabf_dat
+    use tabf_accumulator
+    use tabf_output
 
     implicit none
     integer     :: i,j,k,m
@@ -126,9 +127,9 @@ subroutine abf_core_force_4p()
     ! calculate abf force to be applied -------------
     select case(feimode)
         case(1)
-            call abf_accumulator_get_data_lramp(cvaluehist1(:),la)
+            call tabf_accumulator_get_data_lramp(cvaluehist1(:),la)
         case default
-            call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented extrapolation/interpolation mode!')
+            call pmf_utils_exit(PMF_OUT,1,'[TABF] Not implemented extrapolation/interpolation mode!')
     end select
 
     ! apply force filters
@@ -148,7 +149,7 @@ subroutine abf_core_force_4p()
     ! rest of ABF stuff -----------------------------
 
     ! calculate Z matrix and its inverse
-    call abf_core_calc_Zmat
+    call tabf_core_calc_Zmat
 
     ! pxip = zd0(t-dt)*[v(t-dt/2)/2 - dt*a1(t)/12]
     do i=1,NumOfABFCVs
@@ -203,11 +204,10 @@ subroutine abf_core_force_4p()
         avg_ekin = 0.5d0*(ekinhist2 + ekinhist3) ! t - 1/2*dt; ekin already shifted by -dt
 
         ! add data to accumulator
-        if( fblock_size .eq. 0 ) then
-            call abf_accumulator_add_data_online(cvaluehist0,pxi0(:),pxim(:),epothist0,ekinhist1)
-        else
-            call abf_accumulator_add_data_blocked(cvaluehist0,pxi0(:),pxim(:),epothist0,ekinhist1)
-        end if
+        call tabf_accumulator_add_data_online(cvaluehist0,pxi0(:),pxim(:),epothist0,ekinhist1)
+
+        ! write icf
+        call tabf_output_write_icf(avg_values,pxi0(:))
     end if
 
     ! pxi0 <--- -pxip + pxim + pxi1 - la/2
@@ -223,21 +223,21 @@ subroutine abf_core_force_4p()
 
     return
 
-end subroutine abf_core_force_4p
+end subroutine tabf_core_force_4p
 
 !===============================================================================
-! Subroutine:  abf_core_force_2p
+! Subroutine:  tabf_core_force_2p
 ! this is leap-frog ABF version
 !===============================================================================
 
-subroutine abf_core_force_2p()
+subroutine tabf_core_force_2p()
 
     use pmf_utils
     use pmf_dat
     use pmf_cvs
-    use abf_dat
-    use abf_accumulator
-    use abf_output
+    use tabf_dat
+    use tabf_accumulator
+    use tabf_output
 
     implicit none
     integer                :: i,j,k,m
@@ -271,7 +271,7 @@ subroutine abf_core_force_2p()
     end if
 
     ! calculate Z matrix and its inverse
-    call abf_core_calc_Zmat
+    call tabf_core_calc_Zmat
 
     do i=1,NumOfABFCVs
         do j=1,NumOfLAtoms
@@ -317,11 +317,7 @@ subroutine abf_core_force_2p()
         pxim(:) = 0.5d0*(pxim(:)+pxip(:))
 
         ! add data to accumulator
-        if( fblock_size .eq. 0 ) then
-            call abf_accumulator_add_data_online(cvaluehist0,pxi0(:),pxim(:),epothist0,ekinhist1)
-        else
-            call abf_accumulator_add_data_blocked(cvaluehist0,pxi0(:),pxim(:),epothist0,ekinhist1)
-        end if
+        call tabf_accumulator_add_data_online(cvaluehist0,pxi0(:),pxim(:),epothist0,ekinhist1)
     end if
 
     ! backup to the next step
@@ -337,9 +333,9 @@ subroutine abf_core_force_2p()
         ! calculate abf force to be applied
         select case(feimode)
             case(1)
-                call abf_accumulator_get_data_lramp(cvaluehist1(:),la)
+                call tabf_accumulator_get_data_lramp(cvaluehist1(:),la)
             case default
-                call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented extrapolation/interpolation mode!')
+                call pmf_utils_exit(PMF_OUT,1,'[TABF] Not implemented extrapolation/interpolation mode!')
         end select
 
         ! project abf force along coordinate
@@ -356,16 +352,140 @@ subroutine abf_core_force_2p()
 
     return
 
-end subroutine abf_core_force_2p
+end subroutine tabf_core_force_2p
 
 !===============================================================================
-! subroutine:  abf_core_calc_Zmat
+! Subroutine:  tabf_core_force_2p_frc
+! this is leap-frog ABF version
 !===============================================================================
 
-subroutine abf_core_calc_Zmat()
+subroutine tabf_core_force_2p_frc()
 
     use pmf_utils
-    use abf_dat
+    use pmf_dat
+    use pmf_cvs
+    use tabf_dat
+    use tabf_accumulator
+    use tabf_output
+
+    implicit none
+    integer                :: i,j,k,m
+    integer                :: ci,ki
+    real(PMFDP)            :: v,e
+    ! --------------------------------------------------------------------------
+
+    ! shift accuvalue history
+    cvaluehist0(:) = cvaluehist1(:)
+
+    ! save coordinate value to history
+    do i=1,NumOfABFCVs
+        ci = ABFCVList(i)%cvindx
+        cvaluehist1(i) = CVContext%CVsValues(ci)
+    end do
+
+    ! shift epot ene
+    epothist0 = epothist1
+    if( fenthalpy .or. fentropy ) then
+        epothist1 = PotEne
+    else
+        epothist1 = 0.0d0
+    end if
+
+    ! shift ekin ene
+    ekinhist0 = ekinhist1
+    if( fentropy ) then
+        ekinhist1 = KinEne
+    else
+        ekinhist1 = 0.0d0
+    end if
+
+    ! calculate Z matrix and its inverse
+    call tabf_core_calc_Zmat
+
+    do i=1,NumOfABFCVs
+        do j=1,NumOfLAtoms
+            do m=1,3
+                v = 0.0d0
+                do k=1,NumOfABFCVs
+                    ki = ABFCVList(k)%cvindx
+                    v = v + fzinv(i,k)*CVContext%CVsDrvs(m,j,ki)
+                end do
+                zd1(m,j,i) = v
+            end do
+        end do
+    end do
+
+    do i=1,NumOfABFCVs
+        v = 0.0d0
+        e = 0.0d0
+        do j=1,NumOfLAtoms
+            do m=1,3
+                ! zd1 in t
+                ! Frc in t
+                v = v + zd1(m,j,i)*MassInv(j)*Frc(m,j)
+                ! zd1 in t
+                ! zd0 in t-dt
+                ! vel in t-1/2dt
+                e = e + (zd1(m,j,i)-zd0(m,j,i))* Vel(m,j)
+            end do
+        end do
+        pxi1(i) = v        ! in t
+        pxip(i) = e / fdtx ! in t-1/2dt
+    end do
+
+    if( fstep .ge. 4 ) then
+
+        write(1000,*) cvaluehist0, pxi0, 0.5d0*(pxim(:)+pxip(:)), epothist0, ekinhist1
+
+        ! complete ICF in t-dt
+        ! pxi0 in t-dt         - potene contribution
+        ! pxip in t-1/2dt      - kinetic contributions
+        ! pxim in t-3/2dt
+        pxim(:) =  0.5d0*(pxim(:)+pxip(:))
+
+        ! add data to accumulator
+        call tabf_accumulator_add_data_online(cvaluehist0,pxi0(:),pxim(:),epothist0,ekinhist1)
+    end if
+
+    ! backup to the next step
+    zd0  = zd1
+    pxi0 = pxi1
+    pxim = pxip
+
+    ! apply ABF bias
+    la(:) = 0.0d0
+
+    ! apply force filters
+    if( fapply_abf ) then
+        ! calculate abf force to be applied
+        select case(feimode)
+            case(1)
+                call tabf_accumulator_get_data_lramp(cvaluehist1(:),la)
+            case default
+                call pmf_utils_exit(PMF_OUT,1,'[TABF] Not implemented extrapolation/interpolation mode!')
+        end select
+
+        ! project abf force along coordinate
+        do i=1,NumOfABFCVs
+            ci = ABFCVList(i)%cvindx
+            do j=1,NumOfLAtoms
+                Frc(:,j) = Frc(:,j) + la(i) * CVContext%CVsDrvs(:,j,ci)
+            end do
+        end do
+    end if
+
+    return
+
+end subroutine tabf_core_force_2p_frc
+
+!===============================================================================
+! subroutine:  tabf_core_calc_Zmat
+!===============================================================================
+
+subroutine tabf_core_calc_Zmat()
+
+    use pmf_utils
+    use tabf_dat
 
     implicit none
     integer         :: i,ci,j,cj,k,info
@@ -388,12 +508,12 @@ subroutine abf_core_calc_Zmat()
     if (NumOfABFCVs .gt. 1) then
         call dgetrf(NumOfABFCVs,NumOfABFCVs,fzinv,NumOfABFCVs,indx,info)
         if( info .ne. 0 ) then
-            call pmf_utils_exit(PMF_OUT,1,'[ABF] LU decomposition failed in abf_calc_Zmat!')
+            call pmf_utils_exit(PMF_OUT,1,'[TABF] LU decomposition failed in tabf_calc_Zmat!')
         end if
 
         call dgetri(NumOfABFCVs,fzinv,NumOfABFCVs,indx,vv,NumOfABFCVs,info)
         if( info .ne. 0 ) then
-            call pmf_utils_exit(PMF_OUT,1,'[ABF] Matrix inversion failed in abf_calc_Zmat!')
+            call pmf_utils_exit(PMF_OUT,1,'[TABF] Matrix inversion failed in tabf_calc_Zmat!')
         end if
     else
         fzinv(1,1)=1.0d0/fz(1,1)
@@ -401,8 +521,8 @@ subroutine abf_core_calc_Zmat()
 
     return
 
-end subroutine abf_core_calc_Zmat
+end subroutine tabf_core_calc_Zmat
 
 !===============================================================================
 
-end module abf_core
+end module tabf_core

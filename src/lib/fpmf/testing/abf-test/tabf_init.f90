@@ -24,7 +24,7 @@
 !    Boston, MA  02110-1301  USA
 !===============================================================================
 
-module abf_init
+module tabf_init
 
 use pmf_sizes
 use pmf_constants
@@ -33,52 +33,47 @@ implicit none
 contains
 
 !===============================================================================
-! Subroutine:  abf_init_method
+! Subroutine:  tabf_init_method
 !===============================================================================
 
-subroutine abf_init_method
+subroutine tabf_init_method
 
-    use abf_output
-    use abf_restart
-    use abf_trajectory
-    use abf_client
+    use tabf_output
+    use tabf_restart
+    use tabf_trajectory
 
     implicit none
     ! --------------------------------------------------------------------------
 
-    call abf_init_arrays
-    call abf_init_print_header
-    call abf_output_open
-    call abf_restart_read
-    call abf_trajectory_open
-    call abf_client_register
-    call abf_client_get_initial_data
-    call abf_output_write_header
+    call tabf_init_arrays
+    call tabf_init_print_header
+    call tabf_output_open
+    call tabf_trajectory_open
+    call tabf_output_write_header
 
-end subroutine abf_init_method
+end subroutine tabf_init_method
 
 !===============================================================================
-! Subroutine:  abf_init_dat
+! Subroutine:  tabf_init_dat
 !===============================================================================
 
-subroutine abf_init_dat
+subroutine tabf_init_dat
 
-    use abf_dat
+    use tabf_dat
 
     implicit none
     ! --------------------------------------------------------------------------
 
     fmode           = 0         ! 0 - disable ABF, 1 - enabled ABF
-    fsample         = 5000      ! output sample pariod in steps
-    frestart        = .false.   ! 1 - restart job with previous data, 0 - otherwise not
+    fsample         = 5000      ! output sample period in steps
     frstupdate      = 5000      ! how often is restart file written
     feimode         = 3         ! extrapolation / interpolation mode
                                 ! 1 - linear ramp I
                                 ! 2 - linear ramp II
                                 ! 3 - block averages
     ftrjsample      = 0         ! how often save accumulator to "accumulator evolution"
-    fmask_mode      = 0         ! 0 - disable ABF mask, 1 - enable ABF mask
     fapply_abf      = .true.    ! on - apply ABF, off - do not apply ABF
+    fprint_icf      = .false.   ! T - print instantaneous collective forces, F - do not print
 
     fenthalpy       = .false.   ! accumulate enthalpy
     fentropy        = .false.   ! accumulate entropy
@@ -87,38 +82,27 @@ subroutine abf_init_dat
 
     fhramp_min      = 100       ! definition of linear ramp
     fhramp_max      = 200       ! definition of linear ramp
-    fblock_size     = 0
 
     NumOfABFCVs     = 0
-
-    fserver_enabled = .false.
-    fserverkey      = ''
-    fserver         = ''  ! extracted from serverkey
-    fserverupdate   = 500
-    fconrepeats     = 0
-    fabortonmwaerr  = .true.
-
-    client_id       = -1
-    failure_counter = 0
 
     insidesamples   = 0
     outsidesamples  = 0
 
     fdtx            = 0.0d0     ! time step in internal units
 
-end subroutine abf_init_dat
+end subroutine tabf_init_dat
 
 !===============================================================================
-! Subroutine:  abf_print_header
+! Subroutine:  tabf_print_header
 !===============================================================================
 
-subroutine abf_init_print_header
+subroutine tabf_init_print_header
 
     use prmfile
     use pmf_constants
     use pmf_dat
-    use abf_dat
-    use abf_cvs
+    use tabf_dat
+    use tabf_cvs
     use pmf_utils
 
     implicit none
@@ -141,17 +125,14 @@ subroutine abf_init_print_header
     case(3)
     write(PMF_OUT,120)  '      |-> Analytical/Numerical ABF algorithm, SHAKE must be off'
     case default
-    call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown fmode in abf_init_print_header!')
+    call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown fmode in tabf_init_print_header!')
     end select
-    write(PMF_OUT,125)  ' Coordinate definition file (fabfdef)    : ', trim(fabfdef)
+    write(PMF_OUT,125)  ' Coordinate definition file (ftabfdef)   : ', trim(ftabfdef)
     write(PMF_OUT,130)  ' Number of coordinates                   : ', NumOfABFCVs
     write(PMF_OUT,120)
     write(PMF_OUT,120)  ' ABF Control'
     write(PMF_OUT,120)  ' ------------------------------------------------------'
-    write(PMF_OUT,130)  ' ABF mask mode (fmask_mode)              : ', fmask_mode
-    write(PMF_OUT,125)  ' ABF mask file (fabfmask)                : ', trim(fabfmask)
     write(PMF_OUT,125)  ' Apply ABF force (fapply_abf)            : ', prmfile_onoff(fapply_abf)
-    write(PMF_OUT,130)  ' Block size (fblock_size)                : ', fblock_size
 
     write(PMF_OUT,120)
     write(PMF_OUT,120)  ' ABF Interpolation/Extrapolation '
@@ -163,20 +144,21 @@ subroutine abf_init_print_header
     write(PMF_OUT,130)  ' Min of accu samples in bin (fhramp_min) : ', fhramp_min
     write(PMF_OUT,130)  ' Max of accu samples in bin (fhramp_max) : ', fhramp_max
     case default
-    call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown extrapolation/interpolation mode in abf_init_print_header!')
+    call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown extrapolation/interpolation mode in tabf_init_print_header!')
     end select
 
     write(PMF_OUT,120)
     write(PMF_OUT,120)  ' Restart options:'
     write(PMF_OUT,120)  ' ------------------------------------------------------'
-    write(PMF_OUT,125)  ' Restart file (fabfrst)                  : ', trim(fabfrst)
-    write(PMF_OUT,125)  ' Restart enabled (frestart)              : ', prmfile_onoff(frestart)
+    write(PMF_OUT,125)  ' Restart file (ftabfrst)                 : ', trim(ftabfrst)
     write(PMF_OUT,130)  ' Final restart update (frstupdate)       : ', frstupdate
     write(PMF_OUT,120)
     write(PMF_OUT,120)  ' Output options:'
     write(PMF_OUT,120)  ' ------------------------------------------------------'
-    write(PMF_OUT,125)  ' Output file (fabfout)                   : ', trim(fabfout)
+    write(PMF_OUT,125)  ' Output file (ftabfout)                  : ', trim(ftabfout)
     write(PMF_OUT,130)  ' Output sampling (fsample)               : ', fsample
+    write(PMF_OUT,125)  ' Print instantaneous forces (fprint_icf) : ', prmfile_onoff(fprint_icf)
+    write(PMF_OUT,125)  ' ICF file (ftabficf)                     : ', trim(ftabficf)
     write(PMF_OUT,125)  ' Accumulate enthalpy (fenthalpy)         : ', prmfile_onoff(fenthalpy)
     write(PMF_OUT,125)  ' Accumulate entropy (fentropy)           : ', prmfile_onoff(fentropy)
     write(PMF_OUT,150)  ' Potential energy offset (fepotoffset)   : ', fepotoffset
@@ -185,19 +167,7 @@ subroutine abf_init_print_header
     write(PMF_OUT,120)  ' Trajectory output options:'
     write(PMF_OUT,120)  ' ------------------------------------------------------'
     write(PMF_OUT,130)  ' Trajectory sampling (ftrjsample)        : ', ftrjsample
-    write(PMF_OUT,125)  ' Trajectory file (fabftrj)               : ', trim(fabftrj)
-    write(PMF_OUT,120)
-    write(PMF_OUT,120)  ' ABF server options:'
-    write(PMF_OUT,120)  ' ------------------------------------------------------'
-    write(PMF_OUT,125)  ' Server communication is                      : ', prmfile_onoff(fserver_enabled)
-    if( fserver_enabled ) then
-    write(PMF_OUT,125)  ' Server key file name (fserverkey)            : ', trim(fserverkey)
-    else
-    write(PMF_OUT,125)  ' Server key file name (fserverkey)            : ', 'none'
-    end if
-    write(PMF_OUT,130)  ' Server update interval (fserverupdate)       : ', fserverupdate
-    write(PMF_OUT,130)  ' Number of connection repeats (fconrepeats)   : ', fconrepeats
-    write(PMF_OUT,125)  ' Abort on MWA failure (fabortonmwaerr)        : ', prmfile_onoff(fabortonmwaerr)
+    write(PMF_OUT,125)  ' Trajectory file (ftabftrj)              : ', trim(ftabftrj)
     write(PMF_OUT,120)
     write(PMF_OUT,120)  ' List of ABF coordinates'
     write(PMF_OUT,120)  ' -------------------------------------------------------'
@@ -205,7 +175,7 @@ subroutine abf_init_print_header
 
     do i=1,NumOfABFCVs
     write(PMF_OUT,140) i
-    call abf_cvs_cv_info(ABFCVList(i))
+    call tabf_cvs_cv_info(ABFCVList(i))
     write(PMF_OUT,120)
     end do
 
@@ -220,18 +190,18 @@ subroutine abf_init_print_header
 
 140 format(' == Collective variable #',I4.4)
 
-end subroutine abf_init_print_header
+end subroutine tabf_init_print_header
 
 !===============================================================================
-! Subroutine:  abf_init_arrays
+! Subroutine:  tabf_init_arrays
 !===============================================================================
 
-subroutine abf_init_arrays
+subroutine tabf_init_arrays
 
     use pmf_utils
     use pmf_dat
-    use abf_dat
-    use abf_accumulator
+    use tabf_dat
+    use tabf_accumulator
 
     implicit none
     integer     :: alloc_failed
@@ -298,10 +268,10 @@ subroutine abf_init_arrays
     end if
 
     ! init accumulator ------------------------------
-    call abf_accumulator_init
+    call tabf_accumulator_init
 
-end subroutine abf_init_arrays
+end subroutine tabf_init_arrays
 
 !===============================================================================
 
-end module abf_init
+end module tabf_init

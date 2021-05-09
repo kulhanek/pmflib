@@ -129,24 +129,29 @@ integer,parameter       :: PMF_TEST     = 1342
 integer,parameter       :: PMF_DEBUG    = 1000
 
 ! blue moon part ---------------------------------------------------------------
-integer,parameter       :: CON_INP       = 150
-integer,parameter       :: CON_OUT       = 151
-integer,parameter       :: CON_RST       = 152
-integer,parameter       :: CON_CTR       = 153
+integer,parameter       :: CON_INP      = 150
+integer,parameter       :: CON_OUT      = 151
+integer,parameter       :: CON_RST      = 152
+integer,parameter       :: CON_CTR      = 153
 
 ! umbrella part ----------------------------------------------------------------
-integer,parameter       :: RST_INP       = 160
-integer,parameter       :: RST_OUT       = 161
-integer,parameter       :: RST_RST       = 162
-integer,parameter       :: RST_CTR       = 163
+integer,parameter       :: RST_INP      = 160
+integer,parameter       :: RST_OUT      = 161
+integer,parameter       :: RST_RST      = 162
+integer,parameter       :: RST_CTR      = 163
 
 ! abf part ---------------------------------------------------------------------
 integer,parameter       :: ABF_INP      = 170
 integer,parameter       :: ABF_OUT      = 171
 integer,parameter       :: ABF_RST      = 172
 integer,parameter       :: ABF_TRJ      = 173
-integer,parameter       :: ABF_GPOUT    = 174
-integer,parameter       :: ABF_ICF      = 175
+
+! tabf part ---------------------------------------------------------------------
+integer,parameter       :: TABF_INP     = 130
+integer,parameter       :: TABF_OUT     = 131
+integer,parameter       :: TABF_RST     = 132
+integer,parameter       :: TABF_TRJ     = 133
+integer,parameter       :: TABF_ICF     = 135
 
 ! abp part ---------------------------------------------------------------------
 integer,parameter       :: ABP_INP      = 370

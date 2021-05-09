@@ -72,6 +72,8 @@ subroutine pmf_init_dat
     stm_enabled  = .false.
     pdrv_enabled = .false.
 
+    tabf_enabled = .false.
+
     fucell(:,:) = 0.0d0
     frecip(:,:) = 0.0d0
     fbox_volume = 0.0d0
@@ -101,8 +103,12 @@ subroutine pmf_init_dat
     fabfout     = '_abf.out'
     fabfrst     = '_abf.rst'
     fabftrj     = '_abf.trj'
-    fabfgpout   = '_abf.gpout'
-    fabficf     = '_abf.icf'
+
+    ftabfdef     = '{TABF}'
+    ftabfout     = '_tabf.out'
+    ftabfrst     = '_tabf.rst'
+    ftabftrj     = '_tabf.trj'
+    ftabficf     = '_tabf.icf'
 
     fabpdef     = '{ABP}'
     fabpout     = '_abp.out'
@@ -531,6 +537,7 @@ subroutine pmf_init_pmf_methods()
     use cst_init
     use stm_init
     use pdrv_init
+    use tabf_init
 
     implicit none
     ! --------------------------------------------------------------------------
@@ -541,6 +548,10 @@ subroutine pmf_init_pmf_methods()
 
     if( abf_enabled ) then
         call abf_init_method
+    end if
+
+    if( tabf_enabled ) then
+        call tabf_init_method
     end if
 
     if( abp_enabled ) then
@@ -568,7 +579,8 @@ subroutine pmf_init_pmf_methods()
     end if
 
     pmf_enabled = abf_enabled .or. abp_enabled .or. mtd_enabled .or. stm_enabled &
-               .or. cst_enabled .or. rst_enabled .or. mon_enabled .or. pdrv_enabled
+               .or. cst_enabled .or. rst_enabled .or. mon_enabled .or. pdrv_enabled &
+               .or. tabf_enabled
 
 end subroutine pmf_init_pmf_methods
 

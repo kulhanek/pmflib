@@ -217,6 +217,7 @@ bool CABFEnthalpy::Run(void)
 
     if( Options.GetOptAbsolute() == false ){
         if( ! Options.IsOptGlobalMinSet() ){
+                cout << Options.GetOptOffset() << "|" << HES.GetGlobalMinimumValue() << endl;
             HES.ApplyOffset(Options.GetOptOffset() - HES.GetGlobalMinimumValue());
         } else {
             HES.ApplyOffset(Options.GetOptOffset());
@@ -297,6 +298,7 @@ void CABFEnthalpy::GetRawEnthalpy(void)
         int    nsamples = Accumulator.GetNumOfSamples(ibin);
         double ent = Accumulator.GetValue(ibin,EABF_H_VALUE);
         double error = Accumulator.GetValue(ibin,EABF_H_ERROR);
+        cout << ent << endl;
         HES.SetNumOfSamples(ibin,nsamples);
         HES.SetEnergy(ibin,ent);
         HES.SetError(ibin,error);

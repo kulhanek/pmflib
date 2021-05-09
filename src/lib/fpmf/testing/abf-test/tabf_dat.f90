@@ -24,7 +24,7 @@
 !    Boston, MA  02110-1301  USA
 !===============================================================================
 
-module abf_dat
+module tabf_dat
 
 use pmf_sizes
 use pmf_dat
@@ -37,17 +37,14 @@ implicit none
 integer     :: fmode        ! 0 - disable ABF
                             ! 1 - enable ABF (standard algorithm - 4p)
                             ! 2 - enable ABF (numerical algorithm - 2p)
+                            ! 3 - enable ABF (numerical algorithm - 2p, no SHAKE)
 integer     :: fsample      ! output sample period in steps
-logical     :: frestart     ! 1 - restart job with previous data, 0 - otherwise not
 integer     :: frstupdate   ! how often is restart file written
 integer     :: feimode      ! extrapolation / interpolation mode
                             ! 1 - linear ramp I
-                            ! 2 - linear ramp II
-                            ! 3 - block averages
 integer     :: ftrjsample   ! how often save accumulator to "accumulator evolution"
-integer     :: fmask_mode   ! 0 - disable ABF mask, 1 - enable ABF mask
 logical     :: fapply_abf   ! on - apply ABF, off - do not apply ABF
-
+logical     :: fprint_icf   ! T - print instantaneous collective forces (icf) and other data, F - do not print
 
 logical     :: fenthalpy    ! collect data for enthalpy calculation
 logical     :: fentropy     ! collect data for entropy calculation
@@ -57,21 +54,6 @@ real(PMFDP) :: fekinoffset
 ! linear ramp mode II (feimode .eq. 1)
 integer     :: fhramp_min   ! min value of linear ramp - ABF force is ignored below this value
 integer     :: fhramp_max   ! max  value of linear ramp
-
-! data pre-averaging
-integer     :: fblock_size  ! block size for ABF force pre-accumulation
-
-! server part ------------------------------------------------------------------
-logical                 :: fserver_enabled      ! is abf-server enabled?
-character(PMF_MAX_PATH) :: fserverkey           ! abf-server key file name
-character(PMF_MAX_PATH) :: fserver              ! abf-server name
-integer                 :: fserverupdate        ! how often to communicate with server
-integer                 :: fconrepeats          ! how many times to repeat connection
-logical                 :: fabortonmwaerr       ! abort if communication with MWA fails
-
-! abf server -----------------
-integer                 :: client_id            ! abf walker client ID
-integer                 :: failure_counter      ! current number of MWA failures
 
 ! item list --------------------------------------------------------------------
 type CVTypeABF
@@ -104,44 +86,27 @@ type ABFAccuType
     integer                       :: tot_nbins     ! number of total bins
 
     ! biasing force
-    integer,pointer        :: bsamples(:)               ! number of hits into bins
-    real(PMFDP),pointer    :: weights(:)                ! mask weights
-    real(PMFDP),pointer    :: bicf(:,:)                 ! mean ICF - total, used to bias
+    integer,pointer        :: nsamples(:)               ! number of hits into bins
 
     ! MICF
-    integer,pointer        :: nsamples(:)               ! number of hits into bins
     real(PMFDP),pointer    :: micf(:,:)                 ! mean ICF - total
     real(PMFDP),pointer    :: m2icf(:,:)                ! M2 of ICF - total
+    real(PMFDP),pointer    :: micf_pot(:,:)             ! mean ICF - potential energy part
+    real(PMFDP),pointer    :: m2icf_pot(:,:)            ! M2 of ICF - potential energy part
     real(PMFDP),pointer    :: micf_kin(:,:)             ! mean ICF - kinetic energy part
     real(PMFDP),pointer    :: m2icf_kin(:,:)            ! M2 of ICF - kinetic energy part
     ! ENTHALPY
     real(PMFDP),pointer    :: metot(:)                  ! mean of total energy
     real(PMFDP),pointer    :: m2etot(:)                 ! M2 of total energy
-    real(PMFDP),pointer    :: mepot(:)                  ! mean of total energy
-    real(PMFDP),pointer    :: m2epot(:)                 ! M2 of total energy
+    real(PMFDP),pointer    :: mepot(:)                  ! mean of potential energy
+    real(PMFDP),pointer    :: m2epot(:)                 ! M2 of potential energy
+    real(PMFDP),pointer    :: mekin(:)                  ! mean of kinetic energy
+    real(PMFDP),pointer    :: m2ekin(:)                 ! M2 of kinetic energy
     ! ENTROPY
-    real(PMFDP),pointer    :: mcds(:,:)                 ! mean of cds
-    real(PMFDP),pointer    :: m2cds(:,:)                ! M2 of mean co-moment of entropy derivative
-
-!     real(PMFDP),pointer    :: icfetotsum(:,:)          ! accumulated icfsum * etotsum
-!     real(PMFDP),pointer    :: icfetotsum2(:,:)         ! accumulated square of icfsum * etotsum
-
-!     ! ABF force - incremental part for ABF-server
-!     integer,pointer        :: inc_nsamples(:)          ! number of hits into bins
-!     real(PMFDP),pointer    :: inc_icfsum(:,:)          ! accumulated ABF force
-!     real(PMFDP),pointer    :: inc_icfsum2(:,:)         ! accumulated square of ABF force
-!     real(PMFDP),pointer    :: inc_etotsum(:)           ! accumulated potential energy
-!     real(PMFDP),pointer    :: inc_etotsum2(:)          ! accumulated square of potential energy
-!     real(PMFDP),pointer    :: inc_icfetotsum(:,:)      ! accumulated icfsum * etotsum
-!     real(PMFDP),pointer    :: inc_icfetotsum2(:,:)     ! accumulated square of icfsum * etotsum
-!
-     ! ABF force - block pre-sampling
-     integer,pointer        :: block_nsamples(:)        ! number of hits into bins
-     real(PMFDP),pointer    :: block_micf(:,:)          ! online mean of ABF force - total
-     real(PMFDP),pointer    :: block_micf_kin(:,:)      ! online mean of ABF force - kinetic
-     real(PMFDP),pointer    :: block_metot(:)           ! online mean of Etot
-     real(PMFDP),pointer    :: block_mepot(:)           ! online mean of Epot
-     real(PMFDP),pointer    :: block_cds(:,:)           ! accumulated square of icfsum * etotsum
+    real(PMFDP),pointer    :: cds_pp(:,:)               ! cds - potential/potential
+    real(PMFDP),pointer    :: cds_pk(:,:)               ! cds - potential/kinetic
+    real(PMFDP),pointer    :: cds_kp(:,:)               ! cds - kinetic/potential
+    real(PMFDP),pointer    :: cds_kk(:,:)               ! cds - kinetic/kinetic
 end type ABFAccuType
 
 ! ----------------------
@@ -193,5 +158,5 @@ real(PMFDP), allocatable    :: icf_cache(:,:)   ! icf_cache(2*ncvs,fnstlim)
 
 ! ------------------------------------------------------------------------------
 
-end module abf_dat
+end module tabf_dat
 

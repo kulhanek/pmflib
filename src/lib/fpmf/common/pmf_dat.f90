@@ -91,6 +91,8 @@ logical                     :: abp_enabled
 logical                     :: mon_enabled
 logical                     :: stm_enabled
 logical                     :: pdrv_enabled
+! testing
+logical                     :: tabf_enabled
 
 ! MASTER =======================================================================
 
@@ -140,10 +142,16 @@ character(PMF_MAX_PATH)     :: fmtdgpout
 character(PMF_MAX_PATH)     :: fabfdef
 character(PMF_MAX_PATH)     :: fabfmask
 character(PMF_MAX_PATH)     :: fabfout
-character(PMF_MAX_PATH)     :: fabficf
 character(PMF_MAX_PATH)     :: fabfrst
 character(PMF_MAX_PATH)     :: fabftrj
-character(PMF_MAX_PATH)     :: fabfgpout
+
+! adaptive biasing force method (testing) --------
+character(PMF_MAX_PATH)     :: ftabfdef
+character(PMF_MAX_PATH)     :: ftabfmask
+character(PMF_MAX_PATH)     :: ftabfout
+character(PMF_MAX_PATH)     :: ftabficf
+character(PMF_MAX_PATH)     :: ftabfrst
+character(PMF_MAX_PATH)     :: ftabftrj
 
 ! adaptive biasing potential method ------------------
 character(PMF_MAX_PATH)     :: fabpdef

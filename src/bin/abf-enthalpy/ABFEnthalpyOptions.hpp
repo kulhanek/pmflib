@@ -190,6 +190,15 @@ public:
                 "SPEC",                           /* parametr name */
                 "GPR: position of global minimum provided as a single string in the form CV1xCV2x...xCVn (relevant for error determination), if not set the position is determined automatically.")   /* option description */
     //----------------------------------------------------------------------
+    CSO_MAP_OPT(double,                           /* option type */
+                Offset,                        /* option name */
+                0.0,                          /* default value */
+                false,                          /* is option mandatory */
+                'o',                           /* short option name */
+                "offset",                      /* long option name */
+                "NUMBER",                           /* parametr name */
+                "Specify an integration constant.")   /* option description */
+    //----------------------------------------------------------------------
     CSO_MAP_OPT(CSmallString,                           /* option type */
                 OutputFormat,                        /* option name */
                 "gnuplot",                          /* default value */

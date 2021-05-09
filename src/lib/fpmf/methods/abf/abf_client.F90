@@ -127,53 +127,53 @@ subroutine abf_client_register
  write(PMF_OUT,*)
  write(PMF_OUT,20)
 
-#ifdef PMFLIB_NETWORK
-
-    etotenabled = 0
-    if( faccuepot .or. faccuekin ) etotenabled = 1
-    ! register coordinates
-    call cpmf_abf_client_set_header(ret_st,NumOfABFCVs,accumulator%tot_nbins,ftemp, &
-                                    pmf_unit_get_rvalue(EnergyUnit,1.0d0),trim(pmf_unit_label(EnergyUnit)),etotenabled)
-
-    if( ret_st .ne. 0 ) then
-        call pmf_utils_exit(PMF_OUT,1)
-    end if
-
-    do i=1,NumOfABFCVs
-        call cpmf_abf_client_set_coord(ret_st,  &
-                        i,                      &
-                        ABFCVList(i)%cv%name,   &
-                        ABFCVList(i)%cv%ctype,  &
-                        ABFCVList(i)%min_value, &
-                        ABFCVList(i)%max_value, &
-                        ABFCVList(i)%nbins,     &
-                        pmf_unit_get_rvalue(ABFCVList(i)%cv%unit,1.0d0), &
-                        pmf_unit_label(ABFCVList(i)%cv%unit)             &
-                        )
-
-        if( ret_st .ne. 0 ) then
-            call pmf_utils_exit(PMF_OUT,1)
-        end if
-    end do
-
-    ! register client
-    call cpmf_abf_client_reg_by_key(fserverkey,fserver,client_id)
-
-    write(ABF_OUT,*)
-
-    if( client_id .le. 0 ) then
-        fserver_enabled = .false.
-        write(PMF_OUT,30)
-        write(ABF_OUT,50) trim(fserver)
-        call pmf_utils_exit(PMF_OUT,1)
-    else
-        write(PMF_OUT,40) client_id
-        write(ABF_OUT,60) trim(fserver)
-        write(ABF_OUT,70) client_id
-        write(ABF_OUT,*)
-    end if
-
-#endif
+!#ifdef PMFLIB_NETWORK
+!
+!    etotenabled = 0
+!    if( faccuepot .or. faccuekin ) etotenabled = 1
+!    ! register coordinates
+!    call cpmf_abf_client_set_header(ret_st,NumOfABFCVs,accumulator%tot_nbins,ftemp, &
+!                                    pmf_unit_get_rvalue(EnergyUnit,1.0d0),trim(pmf_unit_label(EnergyUnit)),etotenabled)
+!
+!    if( ret_st .ne. 0 ) then
+!        call pmf_utils_exit(PMF_OUT,1)
+!    end if
+!
+!    do i=1,NumOfABFCVs
+!        call cpmf_abf_client_set_coord(ret_st,  &
+!                        i,                      &
+!                        ABFCVList(i)%cv%name,   &
+!                        ABFCVList(i)%cv%ctype,  &
+!                        ABFCVList(i)%min_value, &
+!                        ABFCVList(i)%max_value, &
+!                        ABFCVList(i)%nbins,     &
+!                        pmf_unit_get_rvalue(ABFCVList(i)%cv%unit,1.0d0), &
+!                        pmf_unit_label(ABFCVList(i)%cv%unit)             &
+!                        )
+!
+!        if( ret_st .ne. 0 ) then
+!            call pmf_utils_exit(PMF_OUT,1)
+!        end if
+!    end do
+!
+!    ! register client
+!    call cpmf_abf_client_reg_by_key(fserverkey,fserver,client_id)
+!
+!    write(ABF_OUT,*)
+!
+!    if( client_id .le. 0 ) then
+!        fserver_enabled = .false.
+!        write(PMF_OUT,30)
+!        write(ABF_OUT,50) trim(fserver)
+!        call pmf_utils_exit(PMF_OUT,1)
+!    else
+!        write(PMF_OUT,40) client_id
+!        write(ABF_OUT,60) trim(fserver)
+!        write(ABF_OUT,70) client_id
+!        write(ABF_OUT,*)
+!    end if
+!
+!#endif
 
  call pmf_timers_stop_timer(PMFLIB_ABF_MWA_TIMER)
 
@@ -213,15 +213,15 @@ subroutine abf_client_get_initial_data
  call pmf_timers_start_timer(PMFLIB_ABF_MWA_TIMER)
 
 #ifdef PMFLIB_NETWORK
-    call cpmf_abf_client_initial_data(ret_st,                       &
-                                        accumulator%nsamples,       &
-                                        accumulator%icfsum,         &
-                                        accumulator%icfsum2,        &
-                                        accumulator%etotsum,        &
-                                        accumulator%etotsum2,       &
-                                        accumulator%icfetotsum,     &
-                                        accumulator%icfetotsum2     &
-                                        )
+!    call cpmf_abf_client_initial_data(ret_st,                       &
+!                                        accumulator%nsamples,       &
+!                                        accumulator%icfsum,         &
+!                                        accumulator%icfsum2,        &
+!                                        accumulator%etotsum,        &
+!                                        accumulator%etotsum2,       &
+!                                        accumulator%icfetotsum,     &
+!                                        accumulator%icfetotsum2     &
+!                                        )
 
     if( ret_st .ne. 0 ) then
         write(ABF_OUT,20)
@@ -274,15 +274,15 @@ subroutine abf_client_exchange_data(force_exchange)
  write(ABF_OUT,10) fstep
 
 #ifdef PMFLIB_NETWORK
-    call cpmf_abf_client_exchange_data(ret_st,                      &
-                                        accumulator%inc_nsamples,   &
-                                        accumulator%inc_icfsum,     &
-                                        accumulator%inc_icfsum2,    &
-                                        accumulator%inc_etotsum,    &
-                                        accumulator%inc_etotsum2,   &
-                                        accumulator%inc_icfetotsum, &
-                                        accumulator%inc_icfetotsum2 &
-                                        )
+!    call cpmf_abf_client_exchange_data(ret_st,                      &
+!                                        accumulator%inc_nsamples,   &
+!                                        accumulator%inc_icfsum,     &
+!                                        accumulator%inc_icfsum2,    &
+!                                        accumulator%inc_etotsum,    &
+!                                        accumulator%inc_etotsum2,   &
+!                                        accumulator%inc_icfetotsum, &
+!                                        accumulator%inc_icfetotsum2 &
+!                                        )
 
     if( ret_st .ne. 0 ) then
         failure_counter = failure_counter + 1
@@ -298,24 +298,24 @@ subroutine abf_client_exchange_data(force_exchange)
         return
     end if
 
-    ! move received data to main accumulator
-    accumulator%nsamples(:)         = accumulator%inc_nsamples(:)
-    accumulator%icfsum(:,:)         = accumulator%inc_icfsum(:,:)
-    accumulator%icfsum2(:,:)        = accumulator%inc_icfsum2(:,:)
-    accumulator%etotsum(:)          = accumulator%inc_etotsum(:)
-    accumulator%etotsum2(:)         = accumulator%inc_etotsum2(:)
-    accumulator%icfetotsum(:,:)     = accumulator%inc_icfetotsum(:,:)
-    accumulator%icfetotsum(:,:)     = accumulator%inc_icfetotsum2(:,:)
+!    ! move received data to main accumulator
+!    accumulator%nsamples(:)         = accumulator%inc_nsamples(:)
+!    accumulator%icfsum(:,:)         = accumulator%inc_icfsum(:,:)
+!    accumulator%icfsum2(:,:)        = accumulator%inc_icfsum2(:,:)
+!    accumulator%etotsum(:)          = accumulator%inc_etotsum(:)
+!    accumulator%etotsum2(:)         = accumulator%inc_etotsum2(:)
+!    accumulator%icfetotsum(:,:)     = accumulator%inc_icfetotsum(:,:)
+!    accumulator%icfetotsum(:,:)     = accumulator%inc_icfetotsum2(:,:)
 #endif
 
- ! and reset incremental data
-    accumulator%inc_nsamples(:)     = 0
-    accumulator%inc_icfsum(:,:)     = 0.0d0
-    accumulator%inc_icfsum2(:,:)    = 0.0d0
-    accumulator%inc_etotsum(:)      = 0.0d0
-    accumulator%inc_etotsum2(:)     = 0.0d0
-    accumulator%inc_icfetotsum(:,:) = 0.0d0
-    accumulator%inc_icfetotsum2(:,:)= 0.0d0
+! ! and reset incremental data
+!    accumulator%inc_nsamples(:)     = 0
+!    accumulator%inc_icfsum(:,:)     = 0.0d0
+!    accumulator%inc_icfsum2(:,:)    = 0.0d0
+!    accumulator%inc_etotsum(:)      = 0.0d0
+!    accumulator%inc_etotsum2(:)     = 0.0d0
+!    accumulator%inc_icfetotsum(:,:) = 0.0d0
+!    accumulator%inc_icfetotsum2(:,:)= 0.0d0
 
  failure_counter = 0
 
@@ -355,22 +355,22 @@ subroutine abf_client_unregister
  write(ABF_OUT,*)
  write(ABF_OUT,20)
 
-#ifdef PMFLIB_NETWORK
-    ! test if there are new accumulated data
-    new_data = .false.
-    do i=1,accumulator%tot_nbins
-        if( accumulator%inc_nsamples(i) .gt. 0 ) new_data = .true.
-    end do
-    if( new_data ) then
-        write(ABF_OUT,30)
-        call pmf_timers_stop_timer(PMFLIB_ABF_MWA_TIMER)
-        call abf_client_exchange_data(.true.)
-        call pmf_timers_start_timer(PMFLIB_ABF_MWA_TIMER)
-    end if
-
-    call cpmf_abf_client_unregister()
-    write(ABF_OUT,40)
-#endif
+!#ifdef PMFLIB_NETWORK
+!    ! test if there are new accumulated data
+!    new_data = .false.
+!    do i=1,accumulator%tot_nbins
+!        if( accumulator%inc_nsamples(i) .gt. 0 ) new_data = .true.
+!    end do
+!    if( new_data ) then
+!        write(ABF_OUT,30)
+!        call pmf_timers_stop_timer(PMFLIB_ABF_MWA_TIMER)
+!        call abf_client_exchange_data(.true.)
+!        call pmf_timers_start_timer(PMFLIB_ABF_MWA_TIMER)
+!    end if
+!
+!    call cpmf_abf_client_unregister()
+!    write(ABF_OUT,40)
+!#endif
 
  call pmf_timers_stop_timer(PMFLIB_ABF_MWA_TIMER)
 

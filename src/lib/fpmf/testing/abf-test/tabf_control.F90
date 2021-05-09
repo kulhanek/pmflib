@@ -24,7 +24,7 @@
 !    Boston, MA  02110-1301  USA
 !===============================================================================
 
-module abf_control
+module tabf_control
 
 use pmf_sizes
 use pmf_constants
@@ -33,25 +33,25 @@ implicit none
 contains
 
 !===============================================================================
-! Subroutine:  abf_control_read_abf
+! Subroutine:  tabf_control_read_abf
 !===============================================================================
 
-subroutine abf_control_read_abf(prm_fin)
+subroutine tabf_control_read_abf(prm_fin)
 
     use prmfile
     use pmf_dat
     use pmf_utils
-    use abf_dat
-    use abf_init
+    use tabf_dat
+    use tabf_init
     use pmf_control_utils
 
     implicit none
     type(PRMFILE_TYPE),intent(inout)   :: prm_fin
     ! --------------------------------------------------------------------------
 
-    call abf_init_dat
+    call tabf_init_dat
 
-    write(PMF_OUT,'(/,a)') '--- [abf] ----------------------------------------------------------------------'
+    write(PMF_OUT,'(/,a)') '--- [tabf] ---------------------------------------------------------------------'
 
     ! try open group
     if( .not. prmfile_open_group(prm_fin,'PMFLIB') ) then
@@ -60,7 +60,7 @@ subroutine abf_control_read_abf(prm_fin)
     end if
 
     ! try open section
-    if( .not. prmfile_open_section(prm_fin,'abf') ) then
+    if( .not. prmfile_open_section(prm_fin,'tabf') ) then
         write(PMF_OUT,10)
         return
     end if
@@ -76,9 +76,6 @@ subroutine abf_control_read_abf(prm_fin)
         return
     end if
 
-    call pmf_ctrl_read_integer(prm_fin,'fmask_mode',fmask_mode,'i12')
-    call pmf_ctrl_check_integer_in_range('ABF','fmask_mode',fmask_mode,0,1)
-
     call pmf_ctrl_read_logical(prm_fin,'fapply_abf',fapply_abf)
 
     call pmf_ctrl_read_integer(prm_fin,'feimode',feimode,'i12')
@@ -87,21 +84,18 @@ subroutine abf_control_read_abf(prm_fin)
     call pmf_ctrl_read_integer(prm_fin,'fsample',fsample,'i12')
     call pmf_ctrl_check_integer('ABF','fsample',fsample,0,CND_GE)
 
-    call pmf_ctrl_read_logical(prm_fin,'frestart',frestart)
-
     call pmf_ctrl_read_integer(prm_fin,'frstupdate',frstupdate,'i12')
     call pmf_ctrl_check_integer('ABF','frstupdate',frstupdate,0,CND_GE)
 
     call pmf_ctrl_read_integer(prm_fin,'ftrjsample',ftrjsample,'i12')
     call pmf_ctrl_check_integer('ABF','ftrjsample',ftrjsample,0,CND_GE)
 
+    call pmf_ctrl_read_logical(prm_fin,'fprint_icf',fprint_icf)
+
     call pmf_ctrl_read_logical(prm_fin,'fenthalpy',fenthalpy)
     call pmf_ctrl_read_logical(prm_fin,'fentropy',fentropy)
     call pmf_ctrl_read_real8(prm_fin,'fepotoffset',fepotoffset,'F10.1')
     call pmf_ctrl_read_real8(prm_fin,'fekinoffset',fekinoffset,'F10.1')
-
-    call pmf_ctrl_read_integer(prm_fin,'fblock_size',fblock_size,'i12')
-    call pmf_ctrl_check_integer('ABF','fblock_size',fblock_size,0,CND_GE)
 
     select case(feimode)
         case(1)
@@ -111,68 +105,30 @@ subroutine abf_control_read_abf(prm_fin)
             call pmf_ctrl_read_integer(prm_fin,'fhramp_max',fhramp_max,'i12')
             call pmf_ctrl_check_integer('ABF','fhramp_max',fhramp_max,0,CND_GE)
             if( fhramp_max .lt. fhramp_min ) then
-                call pmf_utils_exit(PMF_OUT,1,'[ABF] fhramp_max must be >= fhramp_min!')
+                call pmf_utils_exit(PMF_OUT,1,'[TABF] fhramp_max must be >= fhramp_min!')
             end if
         case default
-            call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown extrapolation/interpolation mode!')
+            call pmf_utils_exit(PMF_OUT,1,'[TABF] Unknown extrapolation/interpolation mode!')
     end select
 
-    ! network setup ----------------------------------------------------------------
-
-    write(PMF_OUT,'(/,a)') '--- [abf-walker] ---------------------------------------------------------------'
-
-    ! try open section
-    if( prmfile_open_section(prm_fin,'abf-walker') ) then
-
-#ifdef PMFLIB_NETWORK
-    if( prmfile_get_string_by_key(prm_fin,'fserverkey',fserverkey)) then
-        write(PMF_OUT,110) trim(fserverkey)
-        fserver_enabled = .true.
-    end if
-
-    call pmf_ctrl_read_integer(prm_fin,'fserverupdate',fserverupdate,'i12')
-    call pmf_ctrl_check_integer('ABF','fserverupdate',fserverupdate,0,CND_GT)
-
-    call pmf_ctrl_read_logical(prm_fin,'fabortonmwaerr',fabortonmwaerr)
-#else
-    fserver_enabled = .false.
-    write(PMF_OUT,105)
-#endif
-    ! network setup ----------------------------------------------------------------
-
-    else
-        write(PMF_OUT,100)
-    endif
-
-    ! restart is read from server
-    if( fserver_enabled .and. frestart ) then
-        call pmf_utils_exit(PMF_OUT,1,'[ABF] frestart cannot be ON if multiple-walkers approach is used!')
-    end if
-
-    abf_enabled = fmode .gt. 0
+    tabf_enabled = fmode .gt. 0
 
     return
 
  10 format (' >> Adaptive biasing force method is disabled!')
  20 format (/,'>> Linear ramp mode I (feimode == 1)')
 
-100 format (' >> Multiple-walkers ABF method is disabled!')
-#ifndef PMFLIB_NETWORK
-105 format (' >> Multiple-walkers ABF method is not compiled in!')
-#endif
-110 format ('fserverkey                             = ',a)
-
-end subroutine abf_control_read_abf
+end subroutine tabf_control_read_abf
 
 !===============================================================================
-! Subroutine:  abf_control_read_cvs
+! Subroutine:  tabf_control_read_cvs
 !===============================================================================
 
-subroutine abf_control_read_cvs(prm_fin)
+subroutine tabf_control_read_cvs(prm_fin)
 
     use pmf_dat
     use pmf_utils
-    use abf_dat
+    use tabf_dat
     use prmfile
 
     implicit none
@@ -183,30 +139,30 @@ subroutine abf_control_read_cvs(prm_fin)
     ! --------------------------------------------------------------------------
 
     write(PMF_OUT,*)
-    call pmf_utils_heading(PMF_OUT,'{ABF}',':')
+    call pmf_utils_heading(PMF_OUT,'{TABF}',':')
     write(PMF_OUT,*)
 
     ! get name of group
-    if( fabfdef(1:1) .eq. '{' ) then
-        grpname = fabfdef(2:len_trim(fabfdef)-1)
+    if( ftabfdef(1:1) .eq. '{' ) then
+        grpname = ftabfdef(2:len_trim(ftabfdef)-1)
          write(PMF_OUT,110) trim(grpname)
         ! open goup with name from abfdef
         if( .not. prmfile_open_group(prm_fin,trim(grpname)) ) then
             write(PMF_OUT,130)
-            abf_enabled = .false.
+            tabf_enabled = .false.
             return
         end if
-        call abf_control_read_cvs_from_group(prm_fin)
+        call tabf_control_read_cvs_from_group(prm_fin)
     else
-        write(PMF_OUT,120) trim(fabfdef)
+        write(PMF_OUT,120) trim(ftabfdef)
 
         call prmfile_init(locprmfile)
 
-        if( .not. prmfile_read(locprmfile,fabfdef) ) then
-            call pmf_utils_exit(PMF_OUT,1,'[ABF] Unable to load file: ' // trim(fabfdef) // '!')
+        if( .not. prmfile_read(locprmfile,ftabfdef) ) then
+            call pmf_utils_exit(PMF_OUT,1,'[TABF] Unable to load file: ' // trim(ftabfdef) // '!')
         end if
 
-        call abf_control_read_cvs_from_group(locprmfile)
+        call tabf_control_read_cvs_from_group(locprmfile)
 
         call prmfile_clear(locprmfile)
     end if
@@ -215,22 +171,22 @@ subroutine abf_control_read_cvs(prm_fin)
 
 110 format('Collective variables are read from group: ',A)
 120 format('Collective variables are read from file : ',A)
-130 format(' >> No {ABF} group was specified - disabling ABF method!')
+130 format(' >> No {TABF} group was specified - disabling ABF method!')
 
-end subroutine abf_control_read_cvs
+end subroutine tabf_control_read_cvs
 
 !===============================================================================
-! Subroutine:  abf_control_read_cvs_from_group
+! Subroutine:  tabf_control_read_cvs_from_group
 !===============================================================================
 
-subroutine abf_control_read_cvs_from_group(prm_fin)
+subroutine tabf_control_read_cvs_from_group(prm_fin)
 
     use prmfile
     use pmf_dat
     use pmf_utils
     use cv_common
-    use abf_dat
-    use abf_cvs
+    use tabf_dat
+    use tabf_cvs
 
     implicit none
     type(PRMFILE_TYPE),intent(inout)    :: prm_fin
@@ -247,7 +203,7 @@ subroutine abf_control_read_cvs_from_group(prm_fin)
     if( NumOfABFCVs .le. 0 ) then
         ! on CV in current or specified group
         fmode = 0
-        abf_enabled = .false.
+        tabf_enabled = .false.
         write(PMF_OUT,100)
         return
     end if
@@ -258,11 +214,11 @@ subroutine abf_control_read_cvs_from_group(prm_fin)
     allocate(ABFCVList(NumOfABFCVs), stat = alloc_failed)
 
     if ( alloc_failed .ne. 0 ) then
-        call pmf_utils_exit(PMF_OUT,1,'[ABF] Unable to allocate memory for coordinate data!')
+        call pmf_utils_exit(PMF_OUT,1,'[TABF] Unable to allocate memory for coordinate data!')
     end if
 
     do i=1,NumOfABFCVs
-        call abf_cvs_reset_cv(ABFCVList(i))
+        call tabf_cvs_reset_cv(ABFCVList(i))
     end do
 
     ! enumerate sections ----------------------------------------------------------
@@ -274,10 +230,10 @@ subroutine abf_control_read_cvs_from_group(prm_fin)
         write(PMF_OUT,130) i
         if( resname .ne. 'CV' ) then
             call pmf_utils_exit(PMF_OUT,1, &
-                 '[ABF] Illegal section name ['//trim(resname)//'] - only [CV] is allowed!')
+                 '[TABF] Illegal section name ['//trim(resname)//'] - only [CV] is allowed!')
         end if
         if( .not. prmfile_get_string_by_key(prm_fin,'name',cvname)) then
-            call pmf_utils_exit(PMF_OUT,1,'[ABF] CV name is not provided!')
+            call pmf_utils_exit(PMF_OUT,1,'[TABF] CV name is not provided!')
         end if
         write(PMF_OUT,140) trim(cvname)
 
@@ -285,7 +241,7 @@ subroutine abf_control_read_cvs_from_group(prm_fin)
         ABFCVList(i)%cv     => CVList(ABFCVList(i)%cvindx)%cv
 
         ! read the rest of abf CV
-        call abf_cvs_read_cv(prm_fin,ABFCVList(i))
+        call tabf_cvs_read_cv(prm_fin,ABFCVList(i))
 
         eresult = prmfile_next_section(prm_fin)
         i = i + 1
@@ -296,7 +252,7 @@ subroutine abf_control_read_cvs_from_group(prm_fin)
         do j=i+1,NumOfABFCVs
             if( ABFCVList(i)%cvindx .eq. ABFCVList(j)%cvindx ) then
                 call pmf_utils_exit(PMF_OUT,1, &
-                     '[ABF] Two different ABF collective variables share the same general collective variable!')
+                     '[TABF] Two different ABF collective variables share the same general collective variable!')
             end if
         end do
     end do
@@ -308,8 +264,8 @@ subroutine abf_control_read_cvs_from_group(prm_fin)
 130 format('== Reading collective variable #',I4.4)
 140 format('   Collective variable name : ',a)
 
-end subroutine abf_control_read_cvs_from_group
+end subroutine tabf_control_read_cvs_from_group
 
 !===============================================================================
 
-end module abf_control
+end module tabf_control

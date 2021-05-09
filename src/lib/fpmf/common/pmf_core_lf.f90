@@ -61,6 +61,7 @@ subroutine pmf_core_lf_force(x,v,f,ekin,epot,epmf)
     use rst_core
     use rst_dat
     use abf_core
+    use tabf_core
     use abp_core
     use stm_core
     use stm_dat
@@ -157,6 +158,12 @@ subroutine pmf_core_lf_force(x,v,f,ekin,epot,epmf)
      if( abf_enabled ) then
         call pmf_timers_start_timer(PMFLIB_ABF_TIMER)
         call abf_core_main
+        call pmf_timers_stop_timer(PMFLIB_ABF_TIMER)
+     end if
+
+     if( tabf_enabled ) then
+        call pmf_timers_start_timer(PMFLIB_ABF_TIMER)
+        call tabf_core_main
         call pmf_timers_stop_timer(PMFLIB_ABF_TIMER)
      end if
 

@@ -110,16 +110,8 @@ void CABFAccumulator::Load(FILE* fin)
         error << "'ABF' magic word was not found in the first line (line: " << buffer << ")";
         RUNTIME_ERROR(error);
     }
-    if(strcmp(ver_id,"V3") == 0) {
-        Load_v3(buffer,fin);
-        return;
-    }
-    if(strcmp(ver_id,"V4") == 0) {
-        Load_v4(buffer,fin);
-        return;
-    }
-    if(strcmp(ver_id,"V5") == 0) {
-        Load_v5(buffer,fin);
+    if(strcmp(ver_id,"V6") == 0) {
+        Load_v6(buffer,fin);
         return;
     }
 
@@ -130,156 +122,7 @@ void CABFAccumulator::Load(FILE* fin)
 
 //------------------------------------------------------------------------------
 
-void CABFAccumulator::Load_v3(char* fline,FILE* fin)
-{
-    if( fin == NULL ) {
-        INVALID_ARGUMENT("stream is not open");
-    }
-
-// read ABF accumulator header ------------------
-    char abf_id[4];
-    char ver_id[3];
-    int  ncvs = 0;
-    int  nr;
-
-    nr = sscanf(fline,"%3s %2s %d",abf_id,ver_id,&ncvs);
-    if( nr != 3 ){
-        CSmallString error;
-        error << "illegal header - three items expected (line: " << fline << ")";
-        RUNTIME_ERROR(error);
-    }
-
-    abf_id[3]='\0';
-    ver_id[2]='\0';
-
-// check ID string
-    if(strcmp(abf_id,"ABF") != 0) {
-        CSmallString error;
-        error << "'ABF' magic word was not found in the first line (line: " << fline << ")";
-        RUNTIME_ERROR(error);
-    }
-    if(strcmp(ver_id,"V3") != 0) {
-        CSmallString error;
-        error << "only ABF V3 version is supported (line: " << fline << ")";
-        RUNTIME_ERROR(error);
-    }
-
-    if(ncvs <= 0) {
-        CSmallString error;
-        error << "number of coordinates has to be greater than zero, but " << ncvs << " was found";
-        RUNTIME_ERROR(error);
-    }
-
-    SetNumOfCVs(ncvs);
-
-// read coordinate specification ----------------
-    for(int i=0; i < NCVs; i++) {
-        int             id = 0;
-        char            type[20];
-        char            name[60];
-        double          min_value = 0.0;
-        double          max_value = 0.0;
-        int             nbins = 0;
-        int             tr = 0;
-
-        memset(type,0,20);
-        memset(name,0,60);
-
-        // read item
-        tr = fscanf(fin,"%d %10s %lf %lf %d",&id,type,&min_value,&max_value,&nbins);
-        if( tr != 5 ) {
-            CSmallString error;
-            error << "unable to read coordinate definition, id: " << i+1 << " (" << tr << " != 5)";
-            RUNTIME_ERROR(error);
-        }
-
-        // some tests
-        if(id != i+1) {
-            CSmallString error;
-            error << "coordinate id does not match, read: " << id << ", expected: " << i+1;
-            RUNTIME_ERROR(error);
-        }
-        if(max_value <= min_value) {
-            CSmallString error;
-            error << "min value is not smaller than max value, id: " << id;
-            RUNTIME_ERROR(error);
-        }
-        if(nbins <= 0) {
-            CSmallString error;
-            error << "number of bins has to be grater than zero, id: " << id;
-            RUNTIME_ERROR(error);
-        }
-
-        // read item
-        tr = fscanf(fin,"%d %55s",&id,name);
-        if( tr != 2 ) {
-            CSmallString error;
-            error << "unable to read coordinate definition, id: " << i+1 << " (" << tr << " != 2)";
-            RUNTIME_ERROR(error);
-        }
-        // some tests
-        if(id != i+1) {
-            CSmallString error;
-            error << "coordinate id does not match, read: " << id << ", expected: " << i+1;
-            RUNTIME_ERROR(error);
-        }
-
-        // init coordinate
-        SetCV(i,name,type,min_value,max_value,nbins);
-    }
-
-// alloc accumulator data -----------------------
-    FinalizeAllocation();
-
-// read accumulator data ------------------------
-
-// ABF forces =================================================================
-
-// samples
-    for(int i=0; i < TotNBins; i++) {
-        int ns = 0;
-        if( fscanf(fin,"%d",&ns) != 1 ) {
-            CSmallString error;
-            error << "unable to read number of ABF samples for bin " << i;
-            RUNTIME_ERROR(error);
-        }
-        NSamples[i] = ns;
-    }
-
-// do i=1,fnitem
-//     read(iounit,40,end=100,err=100) (accumulator%ICFSum(i,j),j=1,accumulator%TotNBins)
-// end do
-
-// accumulated force
-    for(int i = 0; i < NCVs; i++) {
-        for(int j = 0; j < TotNBins; j++) {
-            double cf = 0.0;
-            if(fscanf(fin,"%lf",&cf) != 1) {
-                CSmallString error;
-                error << "unable to read accumulated ABF force for bin " << j << " and item " << i;
-                RUNTIME_ERROR(error);
-            }
-            ICFSum[map(i,j)] = cf;
-        }
-    }
-
-// accumulated force square
-    for(int i = 0; i < NCVs; i++) {
-        for(int j = 0; j < TotNBins; j++) {
-            double cf = 0.0;
-            if(fscanf(fin,"%lf",&cf) != 1) {
-                CSmallString error;
-                error << "unable to read accumulated ABF force squares for bin " << j << " and item " << i;
-                RUNTIME_ERROR(error);
-            }
-            ICFSum2[map(i,j)] = cf;
-        }
-    }
-}
-
-//------------------------------------------------------------------------------
-
-void CABFAccumulator::Load_v4(char* fline,FILE* fin)
+void CABFAccumulator::Load_v6(char* fline,FILE* fin)
 {
     if( fin == NULL ) {
         INVALID_ARGUMENT("stream is not open");
@@ -309,202 +152,9 @@ void CABFAccumulator::Load_v4(char* fline,FILE* fin)
         error << "'ABF' magic word was not found in the first line (line: " << fline << ")";
         RUNTIME_ERROR(error);
     }
-    if(strcmp(ver_id,"V4") != 0) {
+    if(strcmp(ver_id,"V6") != 0) {
         CSmallString error;
-        error << "only ABF V4 version is supported (line: " << fline << ")";
-        RUNTIME_ERROR(error);
-    }
-
-    if(ncvs <= 0) {
-        CSmallString error;
-        error << "number of coordinates has to be greater than zero, but " << ncvs << " was found";
-        RUNTIME_ERROR(error);
-    }
-
-    SetNumOfCVs(ncvs);
-
-// read coordinate specification ----------------
-    for(int i=0; i < NCVs; i++) {
-        int             id = 0;
-        char            type[15];
-        char            name[60];
-        char            unit[40];
-        double          min_value = 0.0;
-        double          max_value = 0.0;
-        double          fconv = 1.0;
-        int             nbins = 0;
-        int             tr = 0;
-
-        memset(type,0,15);
-        memset(name,0,60);
-        memset(unit,0,40);
-
-        // read item
-        tr = fscanf(fin,"%d %10s %lf %lf %d",&id,type,&min_value,&max_value,&nbins);
-        if( tr != 5 ) {
-            CSmallString error;
-            error << "unable to read coordinate definition, id: " << i+1 << " (" << tr << " != 5)";
-            RUNTIME_ERROR(error);
-        }
-
-        // some tests
-        if(id != i+1) {
-            CSmallString error;
-            error << "coordinate id does not match, read: " << id << ", expected: " << i+1;
-            RUNTIME_ERROR(error);
-        }
-        if(max_value <= min_value) {
-            CSmallString error;
-            error << "min value is not smaller than max value, id: " << id;
-            RUNTIME_ERROR(error);
-        }
-        if(nbins <= 0) {
-            CSmallString error;
-            error << "number of bins has to be grater than zero, id: " << id;
-            RUNTIME_ERROR(error);
-        }
-
-        // read item
-        tr = fscanf(fin,"%d %55s",&id,name);
-        if( tr != 2 ) {
-            CSmallString error;
-            error << "unable to read coordinate definition, id: " << i+1 << " (" << tr << " != 2)";
-            RUNTIME_ERROR(error);
-        }
-        // some tests
-        if(id != i+1) {
-            CSmallString error;
-            error << "coordinate id does not match, read: " << id << ", expected: " << i+1;
-            RUNTIME_ERROR(error);
-        }
-
-        // read item
-        tr = fscanf(fin,"%d %lf %37s",&id,&fconv,unit);
-        if( tr != 3 ) {
-            CSmallString error;
-            error << "unable to read coordinate definition, id: " << i+1 << " (" << tr << " != 3)";
-            RUNTIME_ERROR(error);
-        }
-        // some tests
-        if(id != i+1) {
-            CSmallString error;
-            error << "coordinate id does not match, read: " << id << ", expected: " << i+1;
-            RUNTIME_ERROR(error);
-        }
-
-        // init coordinate
-        SetCV(i,name,type,min_value,max_value,nbins,fconv,unit);
-    }
-
-// alloc accumulator data -----------------------
-    FinalizeAllocation();
-
-// read accumulator data ------------------------
-
-// ABF forces =================================================================
-
-// samples
-    for(int i=0; i < TotNBins; i++) {
-        int ns = 0;
-        if( fscanf(fin,"%d",&ns) != 1 ) {
-            CSmallString error;
-            error << "unable to read number of ABF samples for bin " << i;
-            RUNTIME_ERROR(error);
-        }
-        NSamples[i] = ns;
-    }
-
-// do i=1,fnitem
-//     read(iounit,40,end=100,err=100) (accumulator%ICFSum(i,j),j=1,accumulator%TotNBins)
-// end do
-
-// accumulated force
-    for(int i = 0; i < NCVs; i++) {
-        for(int j = 0; j < TotNBins; j++) {
-            double cf = 0.0;
-            if(fscanf(fin,"%lf",&cf) != 1) {
-                CSmallString error;
-                error << "unable to read ICFSum for bin " << j << " and item " << i;
-                RUNTIME_ERROR(error);
-            }
-            ICFSum[map(i,j)] = cf;
-        }
-    }
-
-// accumulated force square
-    for(int i = 0; i < NCVs; i++) {
-        for(int j = 0; j < TotNBins; j++) {
-            double cf = 0.0;
-            if(fscanf(fin,"%lf",&cf) != 1) {
-                CSmallString error;
-                error << "unable to read ICFSum2 for bin " << j << " and item " << i;
-                RUNTIME_ERROR(error);
-            }
-            ICFSum2[map(i,j)] = cf;
-        }
-    }
-
-    // EtotSum
-    for(int i=0; i < TotNBins; i++) {
-        double ns = 0;
-        if( fscanf(fin,"%lf",&ns) != 1 ) {
-            CSmallString error;
-            error << "unable to read EtotSum for bin " << i;
-            RUNTIME_ERROR(error);
-        }
-        EtotSum[i] = ns;
-    }
-    for(int i=0; i < TotNBins; i++) {
-        double ns = 0;
-        if( fscanf(fin,"%lf",&ns) != 1 ) {
-            CSmallString error;
-            error << "unable to read EtotSum2 for bin " << i;
-            RUNTIME_ERROR(error);
-        }
-        EtotSum2[i] = ns;
-    }
-
-    EtotAvailable   = true;
-    EkinIncluded    = false;
-    ICFEtotSum.SetZero();
-    ICFEtotSum2.SetZero();
-}
-
-//------------------------------------------------------------------------------
-
-void CABFAccumulator::Load_v5(char* fline,FILE* fin)
-{
-    if( fin == NULL ) {
-        INVALID_ARGUMENT("stream is not open");
-    }
-
-// read ABF accumulator header ------------------
-    char abf_id[4];
-    char ver_id[3];
-    int  ncvs = 0;
-    int  nr;
-
-// first line can contain either two or four records for version 0
-
-    nr = sscanf(fline,"%s %s %d",abf_id,ver_id,&ncvs);
-    if( nr != 3 ){
-        CSmallString error;
-        error << "illegal header - three items expected (line: " << fline << ")";
-        RUNTIME_ERROR(error);
-    }
-
-    abf_id[3]='\0';
-    ver_id[2]='\0';
-
-// check ID string
-    if(strcmp(abf_id,"ABF") != 0) {
-        CSmallString error;
-        error << "'ABF' magic word was not found in the first line (line: " << fline << ")";
-        RUNTIME_ERROR(error);
-    }
-    if(strcmp(ver_id,"V5") != 0) {
-        CSmallString error;
-        error << "only ABF V5 version is supported (line: " << fline << ")";
+        error << "only ABF V6 version is supported (line: " << fline << ")";
         RUNTIME_ERROR(error);
     }
 
@@ -636,17 +286,17 @@ void CABFAccumulator::Load_v5(char* fline,FILE* fin)
                 NSamples[i] = ns;
             }
     // -----------------------------------------------------
-        } else if( key == "ICF" ) {
+        } else if( key == "MICF" ) {
             // accumulated force
             for(int i = 0; i < NCVs; i++) {
                 for(int j = 0; j < TotNBins; j++) {
                     double cf = 0.0;
                     if(fscanf(fin,"%lf",&cf) != 1) {
                         CSmallString error;
-                        error << "unable to read ICFSum for bin " << j << " and item " << i;
+                        error << "unable to read MICF for bin " << j << " and item " << i;
                         RUNTIME_ERROR(error);
                     }
-                    ICFSum[map(i,j)] = cf;
+                    MICF[map(i,j)] = cf;
                 }
             }
 
@@ -656,71 +306,111 @@ void CABFAccumulator::Load_v5(char* fline,FILE* fin)
                     double cf = 0.0;
                     if(fscanf(fin,"%lf",&cf) != 1) {
                         CSmallString error;
-                        error << "unable to read ICFSum2 for bin " << j << " and item " << i;
+                        error << "unable to read M2ICF for bin " << j << " and item " << i;
                         RUNTIME_ERROR(error);
                     }
-                    ICFSum2[map(i,j)] = cf;
+                    M2ICF[map(i,j)] = cf;
                 }
             }
     // -----------------------------------------------------
-        } else if( key == "ETOT=EPOT" ) {
-            // nothing to be here
-            key = NULL;
-            continue;   // do not read the next line, see the end of the cycle
+        } else if( key == "MICF-KIN" ) {
+            // accumulated force
+            for(int i = 0; i < NCVs; i++) {
+                for(int j = 0; j < TotNBins; j++) {
+                    double cf = 0.0;
+                    if(fscanf(fin,"%lf",&cf) != 1) {
+                        CSmallString error;
+                        error << "unable to read MICF-KIN for bin " << j << " and item " << i;
+                        RUNTIME_ERROR(error);
+                    }
+                    MICFKin[map(i,j)] = cf;
+                }
+            }
+
+            // accumulated force square
+            for(int i = 0; i < NCVs; i++) {
+                for(int j = 0; j < TotNBins; j++) {
+                    double cf = 0.0;
+                    if(fscanf(fin,"%lf",&cf) != 1) {
+                        CSmallString error;
+                        error << "unable to read M2ICF-KIN for bin " << j << " and item " << i;
+                        RUNTIME_ERROR(error);
+                    }
+                    M2ICFKin[map(i,j)] = cf;
+                }
+            }
     // -----------------------------------------------------
-        } else if( key == "ETOT=EPOT+EKIN" ) {
-            EkinIncluded = true;
-            key = NULL;
-            continue;   // do not read the next line, see the end of the cycle
-    // -----------------------------------------------------
-        } else if( key == "ETOT" ) {
-            // EtotSum
+        } else if( key == "METOT" ) {
+            // MEtot
             for(int i=0; i < TotNBins; i++) {
                 double ns = 0;
                 if( fscanf(fin,"%lf",&ns) != 1 ) {
                     CSmallString error;
-                    error << "unable to read EtotSum for bin " << i;
+                    error << "unable to read METOT for bin " << i;
                     RUNTIME_ERROR(error);
                 }
-                EtotSum[i] = ns;
+                MEtot[i] = ns;
             }
             for(int i=0; i < TotNBins; i++) {
                 double ns = 0;
                 if( fscanf(fin,"%lf",&ns) != 1 ) {
                     CSmallString error;
-                    error << "unable to read EtotSum2 for bin " << i;
+                    error << "unable to read M2ETOT for bin " << i;
                     RUNTIME_ERROR(error);
                 }
-                EtotSum2[i] = ns;
+                M2Etot[i] = ns;
             }
             EtotAvailable = true;
     // -----------------------------------------------------
-        } else if( key == "ICF*ETOT" ) {
+        } else if( key == "MEPOT" ) {
+            // MEtot
+            for(int i=0; i < TotNBins; i++) {
+                double ns = 0;
+                if( fscanf(fin,"%lf",&ns) != 1 ) {
+                    CSmallString error;
+                    error << "unable to read MEPOT for bin " << i;
+                    RUNTIME_ERROR(error);
+                }
+                MEpot[i] = ns;
+            }
+            for(int i=0; i < TotNBins; i++) {
+                double ns = 0;
+                if( fscanf(fin,"%lf",&ns) != 1 ) {
+                    CSmallString error;
+                    error << "unable to read M2EPOT for bin " << i;
+                    RUNTIME_ERROR(error);
+                }
+                M2Epot[i] = ns;
+            }
+            EtotAvailable = true;
+
+    // -----------------------------------------------------
+        } else if( key == "CDS" ) {
             // accumulated force
             for(int i = 0; i < NCVs; i++) {
                 for(int j = 0; j < TotNBins; j++) {
                     double cf = 0.0;
                     if(fscanf(fin,"%lf",&cf) != 1) {
                         CSmallString error;
-                        error << "unable to read ICFEtotSum for bin " << j << " and item " << i;
+                        error << "unable to read ICFMEtot for bin " << j << " and item " << i;
                         RUNTIME_ERROR(error);
                     }
-                    ICFEtotSum[map(i,j)] = cf;
+                    CDS[map(i,j)] = cf;
                 }
             }
 
-            // accumulated force square
-            for(int i = 0; i < NCVs; i++) {
-                for(int j = 0; j < TotNBins; j++) {
-                    double cf = 0.0;
-                    if(fscanf(fin,"%lf",&cf) != 1) {
-                        CSmallString error;
-                        error << "unable to read ICFEtotSum2 for bin " << j << " and item " << i;
-                        RUNTIME_ERROR(error);
-                    }
-                    ICFEtotSum2[map(i,j)] = cf;
-                }
-            }
+//            // accumulated force square
+//            for(int i = 0; i < NCVs; i++) {
+//                for(int j = 0; j < TotNBins; j++) {
+//                    double cf = 0.0;
+//                    if(fscanf(fin,"%lf",&cf) != 1) {
+//                        CSmallString error;
+//                        error << "unable to read ICFM2Etot for bin " << j << " and item " << i;
+//                        RUNTIME_ERROR(error);
+//                    }
+//                    ICFM2Etot[map(i,j)] = cf;
+//                }
+//            }
         } else {
             CSmallString error;
             error << "unrecognized ABF accumulator keyword: '" << key << "'";
@@ -761,183 +451,183 @@ void CABFAccumulator::Save(const CSmallString& name)
 
 void CABFAccumulator::Save(FILE* fout)
 {
-    if(fout == NULL) {
-        INVALID_ARGUMENT("stream is not open");
-    }
-
-    if( TotNBins == 0 ) {
-        CSmallString error;
-        error << "no data in accumulator";
-        RUNTIME_ERROR(error);
-    }
-
-// write ABF accumulator header ------------------
-    if(fprintf(fout," ABF V5 %2d\n",NCVs) <= 0) {
-        CSmallString error;
-        error << "unable to write header";
-        RUNTIME_ERROR(error);
-    }
-
-    if(fprintf(fout,"TEMPERATURE\n%18.11E\n",Temperature) <= 0) {
-        CSmallString error;
-        error << "unable to write temperature";
-        RUNTIME_ERROR(error);
-    }
-
-    if(fprintf(fout,"ENERGY\n%18.11E %36s\n",EnergyFConv,(const char*)EnergyUnit) <= 0) {
-        CSmallString error;
-        error << "unable to write energy unit";
-        RUNTIME_ERROR(error);
-    }
-
-// write coordinate specification ----------------
-    if(fprintf(fout,"CVS\n") <= 0) {
-        CSmallString error;
-        error << "unable to write CVS header";
-        RUNTIME_ERROR(error);
-    }
-    for(int i=0; i < NCVs; i++) {
-        if(fprintf(fout,"%2d %10s %18.11E %18.11E %6d\n",i+1,
-                   (const char*)CVs[i].Type,
-                   CVs[i].MinValue,CVs[i].MaxValue,CVs[i].NBins) <= 0) {
-            CSmallString error;
-            error << "unable to write coordinate definition1 id: " << i+1;
-            RUNTIME_ERROR(error);
-        }
-        if(fprintf(fout,"%2d %55s\n",i+1,(const char*)CVs[i].Name) <= 0) {
-            CSmallString error;
-            error << "unable to write coordinate definition2 id: " << i+1;
-            RUNTIME_ERROR(error);
-        }
-        if(fprintf(fout,"%2d %18.11E %36s\n",i+1,CVs[i].FConv,(const char*)CVs[i].Unit) <= 0) {
-            CSmallString error;
-            error << "unable to write coordinate definition3 id: " << i+1;
-            RUNTIME_ERROR(error);
-        }
-    }
-
-// ABF forces =================================================================
-
-// samples
-    int counter;
-
-    if(fprintf(fout,"NSAMPLES\n") <= 0) {
-        CSmallString error;
-        error << "unable to write NSAMPLES header";
-        RUNTIME_ERROR(error);
-    }
-    counter = 0;
-    for(int i=0; i < TotNBins; i++) {
-        if(fprintf(fout,"%9d ",NSamples[i]) <= 0) {
-            CSmallString error;
-            error << "unable to write number of ABF samples for bin " << i;
-            RUNTIME_ERROR(error);
-        }
-        if(counter % 8 == 7) fprintf(fout,"\n");
-        counter++;
-    }
-    if(counter % 8 != 0) fprintf(fout,"\n");
-
-// ICFSum
-    if(fprintf(fout,"ICF\n") <= 0) {
-        CSmallString error;
-        error << "unable to write ICF header";
-        RUNTIME_ERROR(error);
-    }
-    counter = 0;
-    for(int i = 0; i < NCVs; i++) {
-        for(int j = 0; j < TotNBins; j++) {
-            if(fprintf(fout,"%19.11E ",ICFSum[map(i,j)]) <= 0) {
-                CSmallString error;
-                error << "unable to write ICFSum for bin " << j << " and item " << i;
-                RUNTIME_ERROR(error);
-            }
-            if(counter % 4 == 3) fprintf(fout,"\n");
-            counter++;
-        }
-    }
-    if(counter % 4 != 0) fprintf(fout,"\n");
-
-// ICFSum2
-    counter = 0;
-    for(int i = 0; i < NCVs; i++) {
-        for(int j = 0; j < TotNBins; j++) {
-            if(fprintf(fout,"%19.11E ",ICFSum2[map(i,j)]) <= 0) {
-                CSmallString error;
-                error << "unable to write ICFSum2 for bin " << j << " and item " << i;
-                RUNTIME_ERROR(error);
-            }
-            if(counter % 4 == 3) fprintf(fout,"\n");
-            counter++;
-        }
-    }
-    if(counter % 4 != 0) fprintf(fout,"\n");
-
-// EtotSum
-    if(fprintf(fout,"ETOT\n") <= 0) {
-        CSmallString error;
-        error << "unable to write ETOT header";
-        RUNTIME_ERROR(error);
-    }
-    counter = 0;
-    for(int i=0; i < TotNBins; i++) {
-        if(fprintf(fout,"%19.11E ",EtotSum[i]) <= 0) {
-            CSmallString error;
-            error << "unable to write EtotSum for bin " << i;
-            RUNTIME_ERROR(error);
-        }
-        if(counter % 4 == 3) fprintf(fout,"\n");
-        counter++;
-    }
-    if(counter % 4 != 0) fprintf(fout,"\n");
-
-// EtotSum2
-    counter = 0;
-    for(int i=0; i < TotNBins; i++) {
-        if(fprintf(fout,"%19.11E ",EtotSum2[i]) <= 0) {
-            CSmallString error;
-            error << "unable to write EtotSum2 for bin " << i;
-            RUNTIME_ERROR(error);
-        }
-        if(counter % 4 == 3) fprintf(fout,"\n");
-        counter++;
-    }
-    if(counter % 4 != 0) fprintf(fout,"\n");
-
-// ICFEtotSum
-    if(fprintf(fout,"ICF*ETOT\n") <= 0) {
-        CSmallString error;
-        error << "unable to write ICF*ETOT header";
-        RUNTIME_ERROR(error);
-    }
-    counter = 0;
-    for(int i = 0; i < NCVs; i++) {
-        for(int j = 0; j < TotNBins; j++) {
-            if(fprintf(fout,"%19.11E ",ICFEtotSum[map(i,j)]) <= 0) {
-                CSmallString error;
-                error << "unable to write ICFEtotSum for bin " << j << " and item " << i;
-                RUNTIME_ERROR(error);
-            }
-            if(counter % 4 == 3) fprintf(fout,"\n");
-            counter++;
-        }
-    }
-    if(counter % 4 != 0) fprintf(fout,"\n");
-
-// ICFEtotSum2
-    counter = 0;
-    for(int i = 0; i < NCVs; i++) {
-        for(int j = 0; j < TotNBins; j++) {
-            if(fprintf(fout,"%19.11E ",ICFEtotSum2[map(i,j)]) <= 0) {
-                CSmallString error;
-                error << "unable to write ICFEtotSum2 for bin " << j << " and item " << i;
-                RUNTIME_ERROR(error);
-            }
-            if(counter % 4 == 3) fprintf(fout,"\n");
-            counter++;
-        }
-    }
-    if(counter % 4 != 0) fprintf(fout,"\n");
+//    if(fout == NULL) {
+//        INVALID_ARGUMENT("stream is not open");
+//    }
+//
+//    if( TotNBins == 0 ) {
+//        CSmallString error;
+//        error << "no data in accumulator";
+//        RUNTIME_ERROR(error);
+//    }
+//
+//// write ABF accumulator header ------------------
+//    if(fprintf(fout," ABF V5 %2d\n",NCVs) <= 0) {
+//        CSmallString error;
+//        error << "unable to write header";
+//        RUNTIME_ERROR(error);
+//    }
+//
+//    if(fprintf(fout,"TEMPERATURE\n%18.11E\n",Temperature) <= 0) {
+//        CSmallString error;
+//        error << "unable to write temperature";
+//        RUNTIME_ERROR(error);
+//    }
+//
+//    if(fprintf(fout,"ENERGY\n%18.11E %36s\n",EnergyFConv,(const char*)EnergyUnit) <= 0) {
+//        CSmallString error;
+//        error << "unable to write energy unit";
+//        RUNTIME_ERROR(error);
+//    }
+//
+//// write coordinate specification ----------------
+//    if(fprintf(fout,"CVS\n") <= 0) {
+//        CSmallString error;
+//        error << "unable to write CVS header";
+//        RUNTIME_ERROR(error);
+//    }
+//    for(int i=0; i < NCVs; i++) {
+//        if(fprintf(fout,"%2d %10s %18.11E %18.11E %6d\n",i+1,
+//                   (const char*)CVs[i].Type,
+//                   CVs[i].MinValue,CVs[i].MaxValue,CVs[i].NBins) <= 0) {
+//            CSmallString error;
+//            error << "unable to write coordinate definition1 id: " << i+1;
+//            RUNTIME_ERROR(error);
+//        }
+//        if(fprintf(fout,"%2d %55s\n",i+1,(const char*)CVs[i].Name) <= 0) {
+//            CSmallString error;
+//            error << "unable to write coordinate definition2 id: " << i+1;
+//            RUNTIME_ERROR(error);
+//        }
+//        if(fprintf(fout,"%2d %18.11E %36s\n",i+1,CVs[i].FConv,(const char*)CVs[i].Unit) <= 0) {
+//            CSmallString error;
+//            error << "unable to write coordinate definition3 id: " << i+1;
+//            RUNTIME_ERROR(error);
+//        }
+//    }
+//
+//// ABF forces =================================================================
+//
+//// samples
+//    int counter;
+//
+//    if(fprintf(fout,"NSAMPLES\n") <= 0) {
+//        CSmallString error;
+//        error << "unable to write NSAMPLES header";
+//        RUNTIME_ERROR(error);
+//    }
+//    counter = 0;
+//    for(int i=0; i < TotNBins; i++) {
+//        if(fprintf(fout,"%9d ",NSamples[i]) <= 0) {
+//            CSmallString error;
+//            error << "unable to write number of ABF samples for bin " << i;
+//            RUNTIME_ERROR(error);
+//        }
+//        if(counter % 8 == 7) fprintf(fout,"\n");
+//        counter++;
+//    }
+//    if(counter % 8 != 0) fprintf(fout,"\n");
+//
+//// MICF
+//    if(fprintf(fout,"ICF\n") <= 0) {
+//        CSmallString error;
+//        error << "unable to write ICF header";
+//        RUNTIME_ERROR(error);
+//    }
+//    counter = 0;
+//    for(int i = 0; i < NCVs; i++) {
+//        for(int j = 0; j < TotNBins; j++) {
+//            if(fprintf(fout,"%19.11E ",MICF[map(i,j)]) <= 0) {
+//                CSmallString error;
+//                error << "unable to write MICF for bin " << j << " and item " << i;
+//                RUNTIME_ERROR(error);
+//            }
+//            if(counter % 4 == 3) fprintf(fout,"\n");
+//            counter++;
+//        }
+//    }
+//    if(counter % 4 != 0) fprintf(fout,"\n");
+//
+//// M2ICF
+//    counter = 0;
+//    for(int i = 0; i < NCVs; i++) {
+//        for(int j = 0; j < TotNBins; j++) {
+//            if(fprintf(fout,"%19.11E ",M2ICF[map(i,j)]) <= 0) {
+//                CSmallString error;
+//                error << "unable to write M2ICF for bin " << j << " and item " << i;
+//                RUNTIME_ERROR(error);
+//            }
+//            if(counter % 4 == 3) fprintf(fout,"\n");
+//            counter++;
+//        }
+//    }
+//    if(counter % 4 != 0) fprintf(fout,"\n");
+//
+//// MEtot
+//    if(fprintf(fout,"ETOT\n") <= 0) {
+//        CSmallString error;
+//        error << "unable to write ETOT header";
+//        RUNTIME_ERROR(error);
+//    }
+//    counter = 0;
+//    for(int i=0; i < TotNBins; i++) {
+//        if(fprintf(fout,"%19.11E ",MEtot[i]) <= 0) {
+//            CSmallString error;
+//            error << "unable to write MEtot for bin " << i;
+//            RUNTIME_ERROR(error);
+//        }
+//        if(counter % 4 == 3) fprintf(fout,"\n");
+//        counter++;
+//    }
+//    if(counter % 4 != 0) fprintf(fout,"\n");
+//
+//// M2Etot
+//    counter = 0;
+//    for(int i=0; i < TotNBins; i++) {
+//        if(fprintf(fout,"%19.11E ",M2Etot[i]) <= 0) {
+//            CSmallString error;
+//            error << "unable to write M2Etot for bin " << i;
+//            RUNTIME_ERROR(error);
+//        }
+//        if(counter % 4 == 3) fprintf(fout,"\n");
+//        counter++;
+//    }
+//    if(counter % 4 != 0) fprintf(fout,"\n");
+//
+//// ICFMEtot
+//    if(fprintf(fout,"ICF*ETOT\n") <= 0) {
+//        CSmallString error;
+//        error << "unable to write ICF*ETOT header";
+//        RUNTIME_ERROR(error);
+//    }
+//    counter = 0;
+//    for(int i = 0; i < NCVs; i++) {
+//        for(int j = 0; j < TotNBins; j++) {
+//            if(fprintf(fout,"%19.11E ",ICFMEtot[map(i,j)]) <= 0) {
+//                CSmallString error;
+//                error << "unable to write ICFMEtot for bin " << j << " and item " << i;
+//                RUNTIME_ERROR(error);
+//            }
+//            if(counter % 4 == 3) fprintf(fout,"\n");
+//            counter++;
+//        }
+//    }
+//    if(counter % 4 != 0) fprintf(fout,"\n");
+//
+//// ICFM2Etot
+//    counter = 0;
+//    for(int i = 0; i < NCVs; i++) {
+//        for(int j = 0; j < TotNBins; j++) {
+//            if(fprintf(fout,"%19.11E ",ICFM2Etot[map(i,j)]) <= 0) {
+//                CSmallString error;
+//                error << "unable to write ICFM2Etot for bin " << j << " and item " << i;
+//                RUNTIME_ERROR(error);
+//            }
+//            if(counter % 4 == 3) fprintf(fout,"\n");
+//            counter++;
+//        }
+//    }
+//    if(counter % 4 != 0) fprintf(fout,"\n");
 }
 
 //------------------------------------------------------------------------------
@@ -1267,64 +957,69 @@ void CABFAccumulator::SetMaskWeight(int ibin,double weight)
 
 //------------------------------------------------------------------------------
 
-const double& CABFAccumulator::GetICFSum(int icv,int ibin) const
+double CABFAccumulator::GetMICF(int icv,int ibin) const
 {
     int glbindex = map(icv,ibin);
-    return(ICFSum[glbindex]);
+    // return(MICFPot[glbindex]+MICFKin[glbindex]);
+    return(MICF[glbindex]);
 }
 
 //------------------------------------------------------------------------------
 
-const double& CABFAccumulator::GetICFSum2(int icv,int ibin) const
+double CABFAccumulator::GetM2ICF(int icv,int ibin) const
 {
     int glbindex = map(icv,ibin);
-    return(ICFSum2[glbindex]);
+    // FIXME
+    return(M2ICF[glbindex]);
 }
 
 //------------------------------------------------------------------------------
 
-const double& CABFAccumulator::GetEtotSum(int ibin) const
+double CABFAccumulator::GetMEtot(int ibin) const
 {
-    return(EtotSum[ibin]);
+    return(MEtot[ibin]);
 }
 
 //------------------------------------------------------------------------------
 
-const double& CABFAccumulator::GetEtotSum2(int ibin) const
+double CABFAccumulator::GetM2Etot(int ibin) const
 {
-    return(EtotSum2[ibin]);
+    // FIXME
+    return(M2Etot[ibin]);
 }
 
 //------------------------------------------------------------------------------
 
-const double& CABFAccumulator::GetICFEtotSum(int icv,int ibin) const
-{
-    int glbindex = map(icv,ibin);
-    return(ICFEtotSum[glbindex]);
-}
-
-//------------------------------------------------------------------------------
-
-const double& CABFAccumulator::GetICFEtotSum2(int icv,int ibin) const
+double CABFAccumulator::GetICFMEtot(int icv,int ibin) const
 {
     int glbindex = map(icv,ibin);
-    return(ICFEtotSum2[glbindex]);
+    return(CDS[glbindex]);
 }
 
 //------------------------------------------------------------------------------
 
-void CABFAccumulator::SetICFSum(int icv,int ibin,const double& value)
+double CABFAccumulator::GetICFM2Etot(int icv,int ibin) const
 {
     int glbindex = map(icv,ibin);
-    ICFSum[glbindex] = value;
+    return(M2CDS[glbindex]);
 }
 
 //------------------------------------------------------------------------------
 
-void CABFAccumulator::SetICFSum2(int icv,int ibin,const double& value)
+void CABFAccumulator::SetMICF(int icv,int ibin,const double& value)
 {
-    int glbindex = map(icv,ibin);
-    ICFSum2[glbindex] = value;
+//    int glbindex = map(icv,ibin);
+    // FIXME
+//    MICF[glbindex] = value;
+}
+
+//------------------------------------------------------------------------------
+
+void CABFAccumulator::SetM2ICF(int icv,int ibin,const double& value)
+{
+  //  int glbindex = map(icv,ibin);
+    // FIXME
+  //  M2ICF[glbindex] = value;
 }
 
 //------------------------------------------------------------------------------
@@ -1343,44 +1038,48 @@ int* CABFAccumulator::GetNSamplesArray(void)
 
 //------------------------------------------------------------------------------
 
-double* CABFAccumulator::GetICFSumArray(void)
+double* CABFAccumulator::GetMICFArray(void)
 {
-    return(ICFSum);
+        // FIXME
+    return(MICF);
 }
 
 //------------------------------------------------------------------------------
 
-double* CABFAccumulator::GetICFSum2Array(void)
+double* CABFAccumulator::GetM2ICFArray(void)
 {
-    return(ICFSum2);
+        // FIXME
+    return(M2ICF);
 }
 
 //------------------------------------------------------------------------------
 
-double* CABFAccumulator::GetEtotSumArray(void)
+double* CABFAccumulator::GetMEtotArray(void)
 {
-    return(EtotSum);
+        // FIXME
+    return(MEtot);
 }
 
 //------------------------------------------------------------------------------
 
-double* CABFAccumulator::GetEtotSum2Array(void)
+double* CABFAccumulator::GetM2EtotArray(void)
 {
-    return(EtotSum2);
+        // FIXME
+    return(M2Etot);
 }
 
 //------------------------------------------------------------------------------
 
-double* CABFAccumulator::GetICFEtotSumArray(void)
+double* CABFAccumulator::GetICFMEtotArray(void)
 {
-    return(ICFEtotSum);
+    return(CDS);
 }
 
 //------------------------------------------------------------------------------
 
-double* CABFAccumulator::GetICFEtotSum2Array(void)
+double* CABFAccumulator::GetICFM2EtotArray(void)
 {
-    return(ICFEtotSum2);
+    return(M2CDS);
 }
 
 //==============================================================================
@@ -1408,14 +1107,20 @@ void CABFAccumulator::Clear(void)
 
     for(int i=0; i < TotNBins; i++) NSamples[i] = 0;
 
-    for(int i=0; i < TotNBins*NCVs; i++) ICFSum[i] = 0.0;
-    for(int i=0; i < TotNBins*NCVs; i++) ICFSum2[i] = 0.0;
+    for(int i=0; i < TotNBins*NCVs; i++) MICF[i] = 0.0;
+    for(int i=0; i < TotNBins*NCVs; i++) M2ICF[i] = 0.0;
 
-    for(int i=0; i < TotNBins; i++) EtotSum[i] = 0;
-    for(int i=0; i < TotNBins; i++) EtotSum2[i] = 0;
+    for(int i=0; i < TotNBins*NCVs; i++) MICFKin[i] = 0.0;
+    for(int i=0; i < TotNBins*NCVs; i++) M2ICFKin[i] = 0.0;
 
-    for(int i=0; i < TotNBins*NCVs; i++) ICFEtotSum[i] = 0;
-    for(int i=0; i < TotNBins*NCVs; i++) ICFEtotSum2[i] = 0;
+    for(int i=0; i < TotNBins; i++) MEtot[i] = 0;
+    for(int i=0; i < TotNBins; i++) M2Etot[i] = 0;
+
+    for(int i=0; i < TotNBins; i++) MEpot[i] = 0;
+    for(int i=0; i < TotNBins; i++) M2Epot[i] = 0;
+
+    for(int i=0; i < TotNBins*NCVs; i++) CDS[i] = 0;
+    for(int i=0; i < TotNBins*NCVs; i++) M2CDS[i] = 0;
 
     EtotAvailable   = false;
     EkinIncluded    = false;
@@ -1443,16 +1148,21 @@ void CABFAccumulator::FinalizeAllocation()
     for(int i=0; i < TotNBins; i++){
         Mask[i] = 1.0;
     }
-    ICFSum.CreateVector(TotNBins*NCVs);
-    ICFSum2.CreateVector(TotNBins*NCVs);
+    MICF.CreateVector(TotNBins*NCVs);
+    M2ICF.CreateVector(TotNBins*NCVs);
+    MICFKin.CreateVector(TotNBins*NCVs);
+    M2ICFKin.CreateVector(TotNBins*NCVs);
 
-// EtotSum
-    EtotSum.CreateVector(TotNBins);
-    EtotSum2.CreateVector(TotNBins);
+// MEtot
+    MEtot.CreateVector(TotNBins);
+    M2Etot.CreateVector(TotNBins);
+    MEpot.CreateVector(TotNBins);
+    M2Epot.CreateVector(TotNBins);
 
-// abfforce*EtotSum
-    ICFEtotSum.CreateVector(TotNBins*NCVs);
-    ICFEtotSum2.CreateVector(TotNBins*NCVs);
+
+// abfforce*MEtot
+    CDS.CreateVector(TotNBins*NCVs);
+    M2CDS.CreateVector(TotNBins*NCVs);
 
     // reset data
     Clear();
@@ -1467,14 +1177,19 @@ void CABFAccumulator::Deallocate(void)
 // destroy only data arrays
     NSamples.FreeVector();
 
-    ICFSum.FreeVector();
-    ICFSum2.FreeVector();
+    MICF.FreeVector();
+    M2ICF.FreeVector();
+    MICFKin.FreeVector();
+    M2ICFKin.FreeVector();
 
-    EtotSum.FreeVector();
-    EtotSum2.FreeVector();
+    MEtot.FreeVector();
+    M2Etot.FreeVector();
+    MEpot.FreeVector();
+    M2Epot.FreeVector();
 
-    ICFEtotSum.FreeVector();
-    ICFEtotSum2.FreeVector();
+
+    CDS.FreeVector();
+    M2CDS.FreeVector();
 
     TotNBins        = 0;
     EtotAvailable   = false;
@@ -1678,13 +1393,13 @@ void CABFAccumulator::ReadABFData(CXMLElement* p_rele)
     }
 
     p_data = p_inc_icfsum->GetData();
-    if((GetICFSumArray() == NULL) || (p_data == NULL) || (p_inc_icfsum->GetLength() != inc_icfsum_size)) {
+    if((GetMICFArray() == NULL) || (p_data == NULL) || (p_inc_icfsum->GetLength() != inc_icfsum_size)) {
         CSmallString error;
         error << "inconsistent ICFSUM element dat (r: " << p_inc_icfsum->GetLength()
               << ", l: " <<  inc_icfsum_size << ")";
         RUNTIME_ERROR(error);
     }
-    memcpy(GetICFSumArray(),p_data,inc_icfsum_size);
+    memcpy(GetMICFArray(),p_data,inc_icfsum_size);
 
 // --------------------------
     CXMLBinData* p_inc_icfsum2 = p_rele->GetFirstChildBinData("ICFSUM2");
@@ -1693,13 +1408,13 @@ void CABFAccumulator::ReadABFData(CXMLElement* p_rele)
     }
 
     p_data = p_inc_icfsum2->GetData();
-    if((GetICFSum2Array() == NULL) || (p_data == NULL) || (p_inc_icfsum2->GetLength() != inc_icfsum_size)) {
+    if((GetM2ICFArray() == NULL) || (p_data == NULL) || (p_inc_icfsum2->GetLength() != inc_icfsum_size)) {
         CSmallString error;
         error << "inconsistent ICFSUM2 element dat (r: " << p_inc_icfsum2->GetLength()
               << ", l: " <<  inc_icfsum_size << ")";
         RUNTIME_ERROR(error);
     }
-    memcpy(GetICFSum2Array(),p_data,inc_icfsum_size);
+    memcpy(GetM2ICFArray(),p_data,inc_icfsum_size);
 
 // --------------------------
     CXMLBinData* p_inc_epotsum = p_rele->GetFirstChildBinData("ETOTSUM");
@@ -1708,13 +1423,13 @@ void CABFAccumulator::ReadABFData(CXMLElement* p_rele)
     }
 
     p_data = p_inc_epotsum->GetData();
-    if((GetEtotSumArray() == NULL) || (p_data == NULL) || (p_inc_epotsum->GetLength() != inc_epotsum_size)) {
+    if((GetMEtotArray() == NULL) || (p_data == NULL) || (p_inc_epotsum->GetLength() != inc_epotsum_size)) {
         CSmallString error;
         error << "inconsistent ETOTSUM element dat (r: " << p_inc_epotsum->GetLength()
               << ", l: " <<  inc_epotsum_size << ")";
         RUNTIME_ERROR(error);
     }
-    memcpy(GetEtotSumArray(),p_data,inc_epotsum_size);
+    memcpy(GetMEtotArray(),p_data,inc_epotsum_size);
 
 // --------------------------
     CXMLBinData* p_inc_epotsum2 = p_rele->GetFirstChildBinData("ETOTSUM2");
@@ -1723,13 +1438,13 @@ void CABFAccumulator::ReadABFData(CXMLElement* p_rele)
     }
 
     p_data = p_inc_epotsum2->GetData();
-    if((GetEtotSum2Array() == NULL) || (p_data == NULL) || (p_inc_epotsum2->GetLength() != inc_epotsum_size)) {
+    if((GetM2EtotArray() == NULL) || (p_data == NULL) || (p_inc_epotsum2->GetLength() != inc_epotsum_size)) {
         CSmallString error;
         error << "inconsistent ETOTSUM2 element dat (r: " << p_inc_epotsum2->GetLength()
               << ", l: " <<  inc_epotsum_size << ")";
         RUNTIME_ERROR(error);
     }
-    memcpy(GetEtotSum2Array(),p_data,inc_epotsum_size);
+    memcpy(GetM2EtotArray(),p_data,inc_epotsum_size);
 
 // --------------------------
     CXMLBinData* p_inc_icfepotsum = p_rele->GetFirstChildBinData("ICFETOTSUM");
@@ -1738,13 +1453,13 @@ void CABFAccumulator::ReadABFData(CXMLElement* p_rele)
     }
 
     p_data = p_inc_icfepotsum->GetData();
-    if((GetICFSumArray() == NULL) || (p_data == NULL) || (p_inc_icfepotsum->GetLength() != inc_icfepotsum_size)) {
+    if((GetMICFArray() == NULL) || (p_data == NULL) || (p_inc_icfepotsum->GetLength() != inc_icfepotsum_size)) {
         CSmallString error;
         error << "inconsistent ICFETOTSUM element dat (r: " << p_inc_icfepotsum->GetLength()
               << ", l: " <<  inc_icfepotsum_size << ")";
         RUNTIME_ERROR(error);
     }
-    memcpy(GetICFSumArray(),p_data,inc_icfepotsum_size);
+    memcpy(GetMICFArray(),p_data,inc_icfepotsum_size);
 
 // --------------------------
     CXMLBinData* p_inc_icfepotsum2 = p_rele->GetFirstChildBinData("ICFETOTSUM2");
@@ -1753,13 +1468,13 @@ void CABFAccumulator::ReadABFData(CXMLElement* p_rele)
     }
 
     p_data = p_inc_icfepotsum2->GetData();
-    if((GetICFSum2Array() == NULL) || (p_data == NULL) || (p_inc_icfepotsum2->GetLength() != inc_icfepotsum_size)) {
+    if((GetM2ICFArray() == NULL) || (p_data == NULL) || (p_inc_icfepotsum2->GetLength() != inc_icfepotsum_size)) {
         CSmallString error;
         error << "inconsistent ICFETOTSUM2 element dat (r: " << p_inc_icfepotsum2->GetLength()
               << ", l: " <<  inc_icfepotsum_size << ")";
         RUNTIME_ERROR(error);
     }
-    memcpy(GetICFSum2Array(),p_data,inc_icfepotsum_size);
+    memcpy(GetM2ICFArray(),p_data,inc_icfepotsum_size);
 }
 
 //------------------------------------------------------------------------------
@@ -1807,14 +1522,14 @@ void CABFAccumulator::AddABFData(CXMLElement* p_cele)
     }
 
     p_data = p_inc_icfsum->GetData();
-    if((GetICFSumArray() == NULL) || (p_data == NULL) || (p_inc_icfsum->GetLength() != inc_icfsum_size)) {
+    if((GetMICFArray() == NULL) || (p_data == NULL) || (p_inc_icfsum->GetLength() != inc_icfsum_size)) {
         CSmallString error;
         error << "inconsistent ICFSUM element dat (r: " << p_inc_icfsum->GetLength()
               << ", l: " <<  inc_icfsum_size << ")";
         RUNTIME_ERROR(error);
     }
 
-    double* jdst = GetICFSumArray();
+    double* jdst = GetMICFArray();
     double* jsrc = (double*)p_data;
     for(unsigned int i=0; i < inc_icfsum; i++) {
         *jdst++ += *jsrc++;
@@ -1827,34 +1542,34 @@ void CABFAccumulator::AddABFData(CXMLElement* p_cele)
     }
 
     p_data = p_inc_icfsum2->GetData();
-    if((GetICFSum2Array() == NULL) || (p_data == NULL) || (p_inc_icfsum2->GetLength() != inc_icfsum_size)) {
+    if((GetM2ICFArray() == NULL) || (p_data == NULL) || (p_inc_icfsum2->GetLength() != inc_icfsum_size)) {
         CSmallString error;
         error << "inconsistent ICFSUM2 element dat (r: " << p_inc_icfsum2->GetLength()
               << ", l: " <<  inc_icfsum_size << ")";
         RUNTIME_ERROR(error);
     }
 
-    double* kdst = GetICFSum2Array();
+    double* kdst = GetM2ICFArray();
     double* ksrc = (double*)p_data;
     for(unsigned int i=0; i < inc_icfsum; i++) {
         *kdst++ += *ksrc++;
     }
 
 // --------------------------
-    CXMLBinData* p_inc_EtotSum = p_cele->GetFirstChildBinData("ETOTSUM");
-    if(p_inc_EtotSum == NULL) {
+    CXMLBinData* p_inc_MEtot = p_cele->GetFirstChildBinData("ETOTSUM");
+    if(p_inc_MEtot == NULL) {
         RUNTIME_ERROR("unable to open ETOTSUM element");
     }
 
-    p_data = p_inc_EtotSum->GetData();
-    if((GetEtotSumArray() == NULL) || (p_data == NULL) || (p_inc_EtotSum->GetLength() != inc_epotsum_size)) {
+    p_data = p_inc_MEtot->GetData();
+    if((GetMEtotArray() == NULL) || (p_data == NULL) || (p_inc_MEtot->GetLength() != inc_epotsum_size)) {
         CSmallString error;
-        error << "inconsistent ETOTSUM element dat (r: " << p_inc_EtotSum->GetLength()
+        error << "inconsistent ETOTSUM element dat (r: " << p_inc_MEtot->GetLength()
               << ", l: " <<  inc_epotsum_size << ")";
         RUNTIME_ERROR(error);
     }
 
-    double* ldst = GetEtotSumArray();
+    double* ldst = GetMEtotArray();
     double* lsrc = (double*)p_data;
     for(unsigned int i=0; i < inc_epotsum; i++) {
         *ldst++ += *lsrc++;
@@ -1867,14 +1582,14 @@ void CABFAccumulator::AddABFData(CXMLElement* p_cele)
     }
 
     p_data = p_inc_epotsum->GetData();
-    if((GetEtotSum2Array() == NULL) || (p_data == NULL) || (p_inc_epotsum->GetLength() != inc_epotsum_size)) {
+    if((GetM2EtotArray() == NULL) || (p_data == NULL) || (p_inc_epotsum->GetLength() != inc_epotsum_size)) {
         CSmallString error;
         error << "inconsistent ETOTSUM2 element dat (r: " << p_inc_epotsum->GetLength()
               << ", l: " <<  inc_epotsum_size << ")";
         RUNTIME_ERROR(error);
     }
 
-    double* mdst = GetEtotSum2Array();
+    double* mdst = GetM2EtotArray();
     double* msrc = (double*)p_data;
     for(unsigned int i=0; i < inc_epotsum; i++) {
         *mdst++ += *msrc++;
@@ -1887,14 +1602,14 @@ void CABFAccumulator::AddABFData(CXMLElement* p_cele)
     }
 
     p_data = p_inc_icfsum->GetData();
-    if((GetICFSumArray() == NULL) || (p_data == NULL) || (p_inc_icfepotsum->GetLength() != inc_icfepotsum_size)) {
+    if((GetMICFArray() == NULL) || (p_data == NULL) || (p_inc_icfepotsum->GetLength() != inc_icfepotsum_size)) {
         CSmallString error;
         error << "inconsistent ICFETOTSUM element dat (r: " << p_inc_icfepotsum->GetLength()
               << ", l: " <<  inc_icfepotsum_size << ")";
         RUNTIME_ERROR(error);
     }
 
-    double* ndst = GetICFEtotSumArray();
+    double* ndst = GetICFMEtotArray();
     double* nsrc = (double*)p_data;
     for(unsigned int i=0; i < inc_icfepotsum; i++) {
         *ndst++ += *nsrc++;
@@ -1907,14 +1622,14 @@ void CABFAccumulator::AddABFData(CXMLElement* p_cele)
     }
 
     p_data = p_inc_icfepotsum2->GetData();
-    if((GetICFSum2Array() == NULL) || (p_data == NULL) || (p_inc_icfepotsum2->GetLength() != inc_icfepotsum_size)) {
+    if((GetM2ICFArray() == NULL) || (p_data == NULL) || (p_inc_icfepotsum2->GetLength() != inc_icfepotsum_size)) {
         CSmallString error;
         error << "inconsistent ICFETOTSUM2 element dat (r: " << p_inc_icfepotsum2->GetLength()
               << ", l: " <<  inc_icfepotsum_size << ")";
         RUNTIME_ERROR(error);
     }
 
-    double* odst = GetICFEtotSum2Array();
+    double* odst = GetICFM2EtotArray();
     double* osrc = (double*)p_data;
     for(unsigned int i=0; i < inc_icfepotsum; i++) {
         *odst++ += *osrc++;
@@ -1939,22 +1654,22 @@ void CABFAccumulator::WriteABFData(CXMLElement* p_rele)
     p_isamples->CopyData(GetNSamplesArray(),inc_nsamples_size);
 
     CXMLBinData* p_inc_icfsum = p_rele->CreateChildBinData("ICFSUM");
-    p_inc_icfsum->CopyData(GetICFSumArray(),inc_icfsum_size);
+    p_inc_icfsum->CopyData(GetMICFArray(),inc_icfsum_size);
 
     CXMLBinData* p_inc_icfsum2 = p_rele->CreateChildBinData("ICFSUM2");
-    p_inc_icfsum2->CopyData(GetICFSum2Array(),inc_icfsum_size);
+    p_inc_icfsum2->CopyData(GetM2ICFArray(),inc_icfsum_size);
 
     CXMLBinData* p_inc_epotsum = p_rele->CreateChildBinData("ETOTSUM");
-    p_inc_epotsum->CopyData(GetEtotSumArray(),inc_epotsum_size);
+    p_inc_epotsum->CopyData(GetMEtotArray(),inc_epotsum_size);
 
     CXMLBinData* p_inc_epotsum2 = p_rele->CreateChildBinData("ETOTSUM2");
-    p_inc_epotsum2->CopyData(GetEtotSum2Array(),inc_epotsum_size);
+    p_inc_epotsum2->CopyData(GetM2EtotArray(),inc_epotsum_size);
 
     CXMLBinData* p_inc_icfepotsum = p_rele->CreateChildBinData("ICFETOTSUM");
-    p_inc_icfepotsum->CopyData(GetICFEtotSumArray(),inc_icfepotsum_size);
+    p_inc_icfepotsum->CopyData(GetICFMEtotArray(),inc_icfepotsum_size);
 
     CXMLBinData* p_inc_icfepotsum2 = p_rele->CreateChildBinData("ICFETOTSUM2");
-    p_inc_icfepotsum2->CopyData(GetICFEtotSum2Array(),inc_icfepotsum_size);
+    p_inc_icfepotsum2->CopyData(GetICFM2EtotArray(),inc_icfepotsum_size);
 }
 
 //==============================================================================
@@ -1979,17 +1694,18 @@ void CABFAccumulator::AddABFAccumulator(const CABFAccumulator* p_accu)
     if( CheckCVSInfo(p_accu) == false ) {
         RUNTIME_ERROR("accumulators are not compatible");
     }
-
-    for(int i=0; i < TotNBins; i++) NSamples[i] += p_accu->NSamples[i];
-
-    for(int i=0; i < TotNBins*NCVs; i++) ICFSum[i]  += p_accu->ICFSum[i];
-    for(int i=0; i < TotNBins*NCVs; i++) ICFSum2[i] += p_accu->ICFSum2[i];
-
-    for(int i=0; i < TotNBins; i++) EtotSum[i]  += p_accu->EtotSum[i];
-    for(int i=0; i < TotNBins; i++) EtotSum2[i] += p_accu->EtotSum2[i];
-
-    for(int i=0; i < TotNBins*NCVs; i++) ICFEtotSum[i]  += p_accu->ICFEtotSum[i];
-    for(int i=0; i < TotNBins*NCVs; i++) ICFEtotSum2[i] += p_accu->ICFEtotSum2[i];
+    // FIXME
+//
+//    for(int i=0; i < TotNBins; i++) NSamples[i] += p_accu->NSamples[i];
+//
+//    for(int i=0; i < TotNBins*NCVs; i++) MICF[i]  += p_accu->MICF[i];
+//    for(int i=0; i < TotNBins*NCVs; i++) M2ICF[i] += p_accu->M2ICF[i];
+//
+//    for(int i=0; i < TotNBins; i++) MEtot[i]  += p_accu->MEtot[i];
+//    for(int i=0; i < TotNBins; i++) M2Etot[i] += p_accu->M2Etot[i];
+//
+//    for(int i=0; i < TotNBins*NCVs; i++) ICFMEtot[i]  += p_accu->ICFMEtot[i];
+//    for(int i=0; i < TotNBins*NCVs; i++) ICFM2Etot[i] += p_accu->ICFM2Etot[i];
 }
 
 //------------------------------------------------------------------------------
@@ -2006,14 +1722,15 @@ void CABFAccumulator::SubABFAccumulator(const CABFAccumulator* p_accu)
 
     for(int i=0; i < TotNBins; i++) NSamples[i] -= p_accu->NSamples[i];
 
-    for(int i=0; i < TotNBins*NCVs; i++) ICFSum[i]  -= p_accu->ICFSum[i];
-    for(int i=0; i < TotNBins*NCVs; i++) ICFSum2[i] -= p_accu->ICFSum2[i];
-
-    for(int i=0; i < TotNBins; i++) EtotSum[i]  -= p_accu->EtotSum[i];
-    for(int i=0; i < TotNBins; i++) EtotSum2[i] -= p_accu->EtotSum2[i];
-
-    for(int i=0; i < TotNBins*NCVs; i++) ICFEtotSum[i]  -= p_accu->ICFEtotSum[i];
-    for(int i=0; i < TotNBins*NCVs; i++) ICFEtotSum2[i] -= p_accu->ICFEtotSum2[i];
+    // FIXME
+//    for(int i=0; i < TotNBins*NCVs; i++) MICF[i]  -= p_accu->MICF[i];
+//    for(int i=0; i < TotNBins*NCVs; i++) M2ICF[i] -= p_accu->M2ICF[i];
+//
+//    for(int i=0; i < TotNBins; i++) MEtot[i]  -= p_accu->MEtot[i];
+//    for(int i=0; i < TotNBins; i++) M2Etot[i] -= p_accu->M2Etot[i];
+//
+//    for(int i=0; i < TotNBins*NCVs; i++) ICFMEtot[i]  -= p_accu->ICFMEtot[i];
+//    for(int i=0; i < TotNBins*NCVs; i++) ICFM2Etot[i] -= p_accu->ICFM2Etot[i];
 }
 
 //------------------------------------------------------------------------------
@@ -2032,47 +1749,24 @@ double CABFAccumulator::GetValue(int icv,int ibin,EABFAccuValue realm) const
 
     double value = 0.0;
 
-    // abf accumulated data
-    double icfsum = GetICFSum(icv,ibin);
-    double icfsum_square = GetICFSum2(icv,ibin);
-
-    double epotsum = GetEtotSum(ibin);
-//    double epotsum_square = GetEtotSum2(ibin);
-
-    double icfepotsum = GetICFEtotSum(icv,ibin);
-    double icfepotsum_square = GetICFEtotSum2(icv,ibin);
+    double icfepotsum = GetICFMEtot(icv,ibin);
+    double icfepotsum_square = GetICFM2Etot(icv,ibin);
 
     switch(realm){
 // mean force
-        case(EABF_DG_VALUE): {
-                value = icfsum / nsamples;  // mean ABF force
-                return(value);
-            }
-        case(EABF_DG_SIGMA): {
-                // sq is variance of ABF force
-                double sq = nsamples*icfsum_square - icfsum*icfsum;
-                if(sq > 0) {
-                    sq = sqrt(sq) / nsamples;
-                } else {
-                    sq = 0.0;
-                }
-                return(sq);
-            }
-        case(EABF_DG_ERROR): {
-                // sq is variance of ABF force
-                double sq = nsamples*icfsum_square - icfsum*icfsum;
-                if(sq > 0) {
-                    sq = sqrt(sq) / nsamples;
-                } else {
-                    sq = 0.0;
-                }
-                // value is standard error of mean ABF force
-                value = sq / sqrt((double)nsamples/(double)NCorr);
-                return(value);
-            }
+        // -------------------
+        case(EABF_DG_VALUE):
+            return( GetMICF(icv,ibin) );
+        // -------------------
+        case(EABF_DG_SIGMA):
+            return( sqrt(GetM2ICF(icv,ibin) / nsamples) );
+        // -------------------
+        case(EABF_DG_ERROR):
+            return( sqrt(NCorr * GetM2ICF(icv,ibin)) / nsamples );
+        // -------------------
 // -TdS
         case(EABF_TDS_VALUE): {
-                value = icfepotsum/nsamples -(icfsum/nsamples)*(epotsum/nsamples);
+                value = GetICFMEtot(icv,ibin) / nsamples;
                 //cout << icfepotsum/nsamples << " " << (icfsum/nsamples)*(epotsum/nsamples) << endl;
                 value = value / (Temperature * 1.98720425864083e-3); // R in kcal/mol/K
                 return(value);
@@ -2109,46 +1803,22 @@ double CABFAccumulator::GetValue(int ibin,EABFAccuValue realm) const
     double nsamples = GetNumOfSamples(ibin);
     if( nsamples <= 0 ) return(0.0);
 
-    double value = 0.0;
-    double sum = 0.0;
-    double sum_square = 0.0;
-
-    // abf accumulated data
-    sum = GetEtotSum(ibin);
-    sum_square = GetEtotSum2(ibin);
-
     switch(realm){
-        case(EABF_H_VALUE): {
-                value = sum / nsamples;  // mean PotEne
-                return(value);
-            }
-        case(EABF_H_SIGMA): {
-                // sq is variance of PotEne
-                double sq = nsamples*sum_square - sum*sum;
-                if(sq > 0) {
-                    sq = sqrt(sq) / nsamples;
-                } else {
-                    sq = 0.0;
-                }
-                return(sq);
-            }
-        case(EABF_H_ERROR): {
-                // sq is variance of PotEne
-                double sq = nsamples*sum_square - sum*sum;
-                if(sq > 0) {
-                    sq = sqrt(sq) / nsamples;
-                } else {
-                    sq = 0.0;
-                }
-                // value is standard error of mean PotEne
-                value = sq / sqrt((double)nsamples/(double)NCorr);
-                return(value);
-            }
+        // -------------------
+        case(EABF_H_VALUE):
+            cout << GetMEtot(ibin)  << endl;
+            return( GetMEtot(ibin) );
+        // -------------------
+        case(EABF_H_SIGMA):
+            return( sqrt(GetM2Etot(ibin) / nsamples) );
+        // -------------------
+        case(EABF_H_ERROR):
+            cout << sqrt(NCorr * GetM2Etot(ibin)) << " " << nsamples <<  " " << sqrt(NCorr * GetM2Etot(ibin)) / nsamples  << endl;
+            return( sqrt(NCorr * GetM2Etot(ibin)) / nsamples );
+        // -------------------
         default:
             RUNTIME_ERROR("unsupported realm");
     }
-
-    return(value);
 }
 
 //==============================================================================
