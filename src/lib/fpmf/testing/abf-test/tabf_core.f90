@@ -203,8 +203,10 @@ subroutine tabf_core_force_4p()
         avg_epot = 0.5d0*(epothist1 + epothist2) ! t - 3/2*dt
         avg_ekin = 0.5d0*(ekinhist2 + ekinhist3) ! t - 1/2*dt; ekin already shifted by -dt
 
+        pdum(:) = 0.0d0
+
         ! add data to accumulator
-        call tabf_accumulator_add_data_online(cvaluehist0,pxi0(:),pxim(:),epothist0,ekinhist1)
+        call tabf_accumulator_add_data_online(cvaluehist0,pxi0(:),pdum(:),avg_epot,avg_ekin)
 
         ! write icf
         call tabf_output_write_icf(avg_values,pxi0(:))
