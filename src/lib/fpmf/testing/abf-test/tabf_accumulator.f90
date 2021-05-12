@@ -400,10 +400,10 @@ subroutine tabf_accumulator_add_data_online(cvs,gfx_pot,gfx_kin,epot,ekin)
         dicf_kin2 = - gfx_kin(i) -  accumulator%micf_kin(i,gi0)
         accumulator%m2icf_kin(i,gi0) = accumulator%m2icf_kin(i,gi0) + dicf_kin1 * dicf_kin2
 
-        accumulator%cds_pp(i,gi0)  = accumulator%cds_pp(i,gi0) + depot1 * dicf_pot2
-        accumulator%cds_pk(i,gi0)  = accumulator%cds_pk(i,gi0) + depot1 * dicf_kin2
-        accumulator%cds_kp(i,gi0)  = accumulator%cds_kp(i,gi0) + dekin1 * dicf_pot2
-        accumulator%cds_kk(i,gi0)  = accumulator%cds_kk(i,gi0) + dekin1 * dicf_kin2
+        accumulator%cds_pp(i,gi0)  = accumulator%cds_pp(i,gi0) + dicf_pot1 * depot2
+        accumulator%cds_pk(i,gi0)  = accumulator%cds_pk(i,gi0) + dicf_pot1 * dekin2
+        accumulator%cds_kp(i,gi0)  = accumulator%cds_kp(i,gi0) + dicf_kin1 * depot2
+        accumulator%cds_kk(i,gi0)  = accumulator%cds_kk(i,gi0) + dicf_kin1 * dekin2
     end do
 
 end subroutine tabf_accumulator_add_data_online
