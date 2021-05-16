@@ -86,6 +86,8 @@ subroutine pmf_init_dat
     fcstdef     = '{CST}'
     fcstout     = '_cst.out'
     fcstrst     = '_cst.rst'
+    fcstfrst    = '_cst.rst-full'
+    fcsttrj     = '_cst.trj'
 
     frstdef     = '{RST}'
     frstout     = '_rst.out'

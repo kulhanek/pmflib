@@ -20,6 +20,29 @@
 !    Boston, MA  02110-1301  USA
 !===============================================================================
 
+!sander.F90:   use pmf_sander
+!sander.F90:    call pmf_sander_init_taskid_mpi(mytaskid)
+!sander.F90:        call pmf_sander_init_preinit(mdin,natom,nres,ntb,nstlim,dt,temp0,a,b,c,alpha,beta,gamma)
+!sander.F90:            call pmf_sander_set_residue(i,ih(m02-1+i),ix(i02-1+i))
+!sander.F90:            call pmf_sander_set_atom(i,ih(m04-1+i),ih(m06-1+i))
+!sander.F90:        call pmf_sander_finalize_preinit(natom,x(lmass),x(lcrd))
+!sander.F90:        call pmf_sander_cst_init_collisions(ntc,nbonh,ix(iifstwt),ix(iibh),ix(ijbh),x(l50))
+!sander.F90:        call pmf_sander_init(natom,x(lmass),x(lcrd))
+!sander.F90:    call pmf_sander_bcast_dat_mpi(natom,numtasks,iparpt)
+!sander.F90:        call pmf_sander_finalize()
+
+! >> MD Loop
+! a(t) <- dV/dr
+! if( ntb > 0 ) call pmf_sander_update_box(a,b,c,alpha,beta,gamma): all at "t"
+! call pmf_sander_force: r(t), v(t-dt/2), a(t), epot(t), ekin(t-dt)
+! pressure coupling
+! velocity update: v(t+dt/2), vold(t-dt/2)
+! update position: r(t) -> r(t+dt)
+! SHAKE + call pmf_sander_constraints: r(t+dt)
+! fix velocities: from position changes: v(t+dt/2)
+! thermostat + calculate KE: Ekin(t) <- [0.5( v(t+dt/2) + v(t-dt/2))]^2
+
+
 module pmf_sander
 
 implicit none

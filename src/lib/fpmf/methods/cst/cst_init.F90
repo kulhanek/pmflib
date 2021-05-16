@@ -5,7 +5,7 @@
 !    Copyright (C) 2013-2015 Letif Mones, lam81@cam.ac.uk
 !    Copyright (C) 2007 Petr Kulhanek, kulhanek@enzim.hu
 !    Copyright (C) 2006 Petr Kulhanek, kulhanek@chemi.muni.cz &
-!                       Martin Petrek, petrek@chemi.muni.cz 
+!                       Martin Petrek, petrek@chemi.muni.cz
 !    Copyright (C) 2005 Petr Kulhanek, kulhanek@chemi.muni.cz
 !
 !    This library is free software; you can redistribute it and/or
@@ -20,7 +20,7 @@
 !
 !    You should have received a copy of the GNU Lesser General Public
 !    License along with this library; if not, write to the Free Software
-!    Foundation, Inc., 51 Franklin Street, Fifth Floor, 
+!    Foundation, Inc., 51 Franklin Street, Fifth Floor,
 !    Boston, MA  02110-1301  USA
 !===============================================================================
 
@@ -49,6 +49,7 @@ subroutine cst_init_method
     ! we need first output then restart (writes info to output)
     call cst_output_open
     call cst_restart_read
+    call cst_restart_trajectory_open
     call cst_constraints_init_all
     ! print header need value from restart file
     call cst_init_print_header
@@ -67,18 +68,29 @@ subroutine cst_init_dat
     implicit none
     ! --------------------------------------------------------------------------
 
-    fmode         = 0          ! 0 - disable BM, 1 - enabled BM
-    fsample       = 500        ! output sample pariod in steps
-    faccurst      = 0          ! number of steps for equilibration, it is ignored if job is restarted
-    fplevel       = 0          ! print level
-    frestart      = .false.    ! 1 - restart job with previous data, 0 - otherwise not
-    flambdasolver = CON_LS_NM   ! Newton-Rapson solver
-    flambdatol    = 1.0d-4     ! tolerance for lambda optimization
-    fmaxiter      = 50         ! maximum of iteration in lambda optimization
+    fmode           = 0             ! 0 - disable BM, 1 - enabled BM
+    fsample         = 500           ! output sample pariod in steps
+    fplevel         = 0             ! print level
+
+    frestart        = .false.       ! 1 - restart job with previous data, 0 - otherwise not
+    faccurst        = 0             ! number of steps for equilibration, it is ignored if job is restarted
+    frstupdate      = 500
+    ftrjsample      = 0             ! how often save accumulator to "accumulator evolution"
+
+    flambdasolver   = CON_LS_NM     ! Newton-Rapson solver
+    flambdatol      = 1.0d-4        ! tolerance for lambda optimization
+    fmaxiter        = 50            ! maximum of iteration in lambda optimization
+
+    fenthalpy       = .false.       ! accumulate enthalpy
+    fentropy        = .false.       ! accumulate entropy
+    fepotoffset     = 0.0d0
+    fekinoffset     = 0.0d0
 
     NumOfCONs       = 0
     NumOfSHAKECONs  = 0
     NumOfConAtoms   = 0
+
+    flfsteps        = 0
 
 end subroutine cst_init_dat
 
@@ -88,75 +100,75 @@ end subroutine cst_init_dat
 
 subroutine cst_init_print_header
 
- use prmfile
- use pmf_dat
- use cst_dat
- use cst_constraints
+    use prmfile
+    use pmf_dat
+    use cst_dat
+    use cst_constraints
 
- implicit none
- integer :: i
- ! -----------------------------------------------------------------------------
+    implicit none
+    integer :: i
+    ! -----------------------------------------------------------------------------
 
- write(PMF_OUT,120) 
- write(PMF_OUT,120)  '================================================================================'
- write(PMF_OUT,120)  ' -------------- FREE ENERGY CALCULATION BY CONSTRAINED DYNAMICS --------------- '
- write(PMF_OUT,120)  '================================================================================' 
- write(PMF_OUT,120) 
- write(PMF_OUT,120)  ' Cartesian Constraint Dynamics Mode'
- write(PMF_OUT,120)  ' ------------------------------------------------------'
- write(PMF_OUT,130)  ' Constrained dynamics mode (fmode)    : ', fmode
- write(PMF_OUT,125)  ' Constraint definition file (fcstdef) : ', trim(fcstdef)
- write(PMF_OUT,130)  ' Total number of constraints          : ', NumOfCONs
- write(PMF_OUT,130)  ' SHAKE constraints in collisions      : ', NumOfSHAKECONs
- write(PMF_OUT,130)  ' Num of constrained atoms (no SHAKE)  : ', NumOfConAtoms
- write(PMF_OUT,120)
- write(PMF_OUT,120)  ' Constraint optimization options:'
- write(PMF_OUT,120)  ' ------------------------------------------------------'
- write(PMF_OUT,140)  ' Lambda solver (flambdasolver)        : ', flambdasolver, &
+    write(PMF_OUT,120)
+    write(PMF_OUT,120)  '================================================================================'
+    write(PMF_OUT,120)  ' -------------- FREE ENERGY CALCULATION BY CONSTRAINED DYNAMICS --------------- '
+    write(PMF_OUT,120)  '================================================================================'
+    write(PMF_OUT,120)
+    write(PMF_OUT,120)  ' Cartesian Constraint Dynamics Mode'
+    write(PMF_OUT,120)  ' ------------------------------------------------------'
+    write(PMF_OUT,130)  ' Constrained dynamics mode (fmode)    : ', fmode
+    write(PMF_OUT,125)  ' Constraint definition file (fcstdef) : ', trim(fcstdef)
+    write(PMF_OUT,130)  ' Total number of constraints          : ', NumOfCONs
+    write(PMF_OUT,130)  ' SHAKE constraints in collisions      : ', NumOfSHAKECONs
+    write(PMF_OUT,130)  ' Num of constrained atoms (no SHAKE)  : ', NumOfConAtoms
+    write(PMF_OUT,120)
+    write(PMF_OUT,120)  ' Constraint optimization options:'
+    write(PMF_OUT,120)  ' ------------------------------------------------------'
+    write(PMF_OUT,140)  ' Lambda solver (flambdasolver)        : ', flambdasolver, &
                                                                  trim(cst_init_get_lsolver_name(flambdasolver))
- write(PMF_OUT,135)  ' Lambda tolerance (flambdatol)        : ', flambdatol
- write(PMF_OUT,130)  ' Maximum of iteration (fmaxiter)      : ', fmaxiter
- write(PMF_OUT,120)
- write(PMF_OUT,120)  ' Output options:'
- write(PMF_OUT,120)  ' ------------------------------------------------------'
- write(PMF_OUT,125)  ' Output file (fcstout)                : ', trim(fcstout)
- write(PMF_OUT,130)  ' Sample period (fsample)              : ', fsample
- write(PMF_OUT,130)  ' Print level (fplevel)                : ', fplevel
- write(PMF_OUT,120)
- write(PMF_OUT,120)  ' Restart options:'
- write(PMF_OUT,120)  ' ------------------------------------------------------'
- write(PMF_OUT,125)  ' Restart file (fcstrst)               : ', trim(fcstrst)
- write(PMF_OUT,125)  ' Restart from previous run (frestart) : ', prmfile_onoff(frestart)
- write(PMF_OUT,130)  ' Accumulators reset (faccurst)        : ', faccurst
- write(PMF_OUT,120)
-
- write(PMF_OUT,120)
- write(PMF_OUT,120)  ' List of constraints'
- write(PMF_OUT,120)  ' -------------------------------------------------------------------------------'
- write(PMF_OUT,120)
-
- do i=1,NumOfCONs-NumOfSHAKECONs
-    write(PMF_OUT,150) i
-    call cst_constraints_cst_info(CONList(i))
+    write(PMF_OUT,135)  ' Lambda tolerance (flambdatol)        : ', flambdatol
+    write(PMF_OUT,130)  ' Maximum of iteration (fmaxiter)      : ', fmaxiter
     write(PMF_OUT,120)
- end do
+    write(PMF_OUT,120)  ' Output options:'
+    write(PMF_OUT,120)  ' ------------------------------------------------------'
+    write(PMF_OUT,125)  ' Output file (fcstout)                : ', trim(fcstout)
+    write(PMF_OUT,130)  ' Sample period (fsample)              : ', fsample
+    write(PMF_OUT,130)  ' Print level (fplevel)                : ', fplevel
+    write(PMF_OUT,120)
+    write(PMF_OUT,120)  ' Restart options:'
+    write(PMF_OUT,120)  ' ------------------------------------------------------'
+    write(PMF_OUT,125)  ' Restart file (fcstrst)               : ', trim(fcstrst)
+    write(PMF_OUT,125)  ' Restart from previous run (frestart) : ', prmfile_onoff(frestart)
+    write(PMF_OUT,130)  ' Accumulators reset (faccurst)        : ', faccurst
+    write(PMF_OUT,120)
 
- if( NumOfSHAKECONs .gt. 0 ) then
-    write(PMF_OUT,120) 
-    write(PMF_OUT,120)  ' List of SHAKE constraints in collision'
+    write(PMF_OUT,120)
+    write(PMF_OUT,120)  ' List of constraints'
     write(PMF_OUT,120)  ' -------------------------------------------------------------------------------'
- end if
-
- write(PMF_OUT,120)
- do i=NumOfCONs-NumOfSHAKECONs+1,NumOfCONs
-    write(PMF_OUT,150) i
-    call cst_constraints_cst_info(CONList(i))
     write(PMF_OUT,120)
- end do
 
- write(PMF_OUT,120)  '================================================================================'
+    do i=1,NumOfCONs-NumOfSHAKECONs
+        write(PMF_OUT,150) i
+        call cst_constraints_cst_info(CONList(i))
+        write(PMF_OUT,120)
+    end do
 
- return
+    if( NumOfSHAKECONs .gt. 0 ) then
+        write(PMF_OUT,120)
+        write(PMF_OUT,120)  ' List of SHAKE constraints in collision'
+        write(PMF_OUT,120)  ' -------------------------------------------------------------------------------'
+    end if
+
+    write(PMF_OUT,120)
+    do i=NumOfCONs-NumOfSHAKECONs+1,NumOfCONs
+        write(PMF_OUT,150) i
+        call cst_constraints_cst_info(CONList(i))
+        write(PMF_OUT,120)
+    end do
+
+    write(PMF_OUT,120)  '================================================================================'
+
+    return
 
 120 format(A)
 125 format(A,A)
@@ -238,7 +250,7 @@ subroutine cst_init_add_shake_csts
     end if
 
     do i=1,NumOfCVs
-    CVList(i)  = CVList_backup(i)
+        CVList(i)  = CVList_backup(i)
     end do
     do i=1,NumOfCONs
         CONList(i) = CONList_backup(i)
@@ -373,48 +385,48 @@ end subroutine cst_init_cst_atoms
 
 subroutine cst_init_mpi_bcast_constraints
 
- use mpi
- use cst_dat
- use pmf_utils
- use pmf_dat
+    use mpi
+    use cst_dat
+    use pmf_utils
+    use pmf_dat
 
- implicit none
- integer        :: i,alloc_failed,ierr
- ! -----------------------------------------------------------------------------
+    implicit none
+    integer        :: i,alloc_failed,ierr
+    ! -----------------------------------------------------------------------------
 
- if( fdebug ) then
-    write(PMF_DEBUG+fmytaskid,'(A)') '>> Broadcasting constrained atoms (only master is reporting)'
- end if
-
- ierr = MPI_SUCCESS
-
- ! integers --------------------------------------
- call mpi_bcast(NumOfConAtoms, 1, mpi_integer, 0, mpi_comm_world, ierr)
- if( ierr .ne. MPI_SUCCESS ) then
-    call pmf_utils_exit(PMF_OUT, 1,'[CST] Unable to broadcast the value of NumOfConAtoms!')
- end if
-
- if( fdebug ) then
-    write(PMF_DEBUG+fmytaskid,'(A,I6)') '   Number of constrained atoms: ', NumOfConAtoms
-    write(PMF_DEBUG+fmytaskid,*)
- end if
-
- if( NumOfConAtoms .eq. 0 ) return ! no atoms are constrained
-
- ! allocate arrays on slaves ---------------------
- if( .not. fmaster ) then
-    allocate(ConAtoms(NumOfConAtoms),    &
-            stat= alloc_failed )
-    if( alloc_failed .ne. 0 ) then
-        call pmf_utils_exit(PMF_OUT, 1,'[CST] Unable to allocate ConAtoms!')
+    if( fdebug ) then
+        write(PMF_DEBUG+fmytaskid,'(A)') '>> Broadcasting constrained atoms (only master is reporting)'
     end if
- end if
 
- ! transfer ConAtoms
- call mpi_bcast(ConAtoms, NumOfConAtoms, mpi_integer, 0, mpi_comm_world, ierr)
- if( ierr .ne. MPI_SUCCESS ) then
-    call pmf_utils_exit(PMF_OUT, 1,'[CST] Unable to broadcast the ConAtoms array!')
- end if
+    ierr = MPI_SUCCESS
+
+    ! integers --------------------------------------
+    call mpi_bcast(NumOfConAtoms, 1, mpi_integer, 0, mpi_comm_world, ierr)
+    if( ierr .ne. MPI_SUCCESS ) then
+        call pmf_utils_exit(PMF_OUT, 1,'[CST] Unable to broadcast the value of NumOfConAtoms!')
+    end if
+
+    if( fdebug ) then
+        write(PMF_DEBUG+fmytaskid,'(A,I6)') '   Number of constrained atoms: ', NumOfConAtoms
+        write(PMF_DEBUG+fmytaskid,*)
+    end if
+
+    if( NumOfConAtoms .eq. 0 ) return ! no atoms are constrained
+
+    ! allocate arrays on slaves ---------------------
+    if( .not. fmaster ) then
+        allocate(ConAtoms(NumOfConAtoms),    &
+                stat= alloc_failed )
+        if( alloc_failed .ne. 0 ) then
+            call pmf_utils_exit(PMF_OUT, 1,'[CST] Unable to allocate ConAtoms!')
+        end if
+    end if
+
+    ! transfer ConAtoms
+    call mpi_bcast(ConAtoms, NumOfConAtoms, mpi_integer, 0, mpi_comm_world, ierr)
+    if( ierr .ne. MPI_SUCCESS ) then
+        call pmf_utils_exit(PMF_OUT, 1,'[CST] Unable to broadcast the ConAtoms array!')
+    end if
 
 end subroutine cst_init_mpi_bcast_constraints
 
@@ -426,81 +438,113 @@ end subroutine cst_init_mpi_bcast_constraints
 
 subroutine cst_init_core
 
- use pmf_utils
- use pmf_dat
- use cst_dat
+    use pmf_utils
+    use pmf_dat
+    use cst_dat
 
- implicit none
- integer      :: alloc_failed
- ! ------------------------------------------------------------------------------
+    implicit none
+    integer      :: alloc_failed
+    ! ------------------------------------------------------------------------------
 
- ! allocate arrays for LU decomposition ---------------------------------------
- allocate(vv(NumOfCONs), indx(NumOfCONs), stat= alloc_failed)
-
- if( alloc_failed .ne. 0 ) then
-    call pmf_utils_exit(PMF_OUT,1,&
-                     '[CST] Unable to allocate memory for arrays used in LU decomposition!')
- end if
-
- ! allocate arrays for lambda calculation ---------------------------------------
-
- allocate(lambda(NumOfCONs), &
-          cv(NumOfCONs), &
-          jac(NumOfCONs,NumOfCONs), stat= alloc_failed )
-
- if( alloc_failed .ne. 0 ) then
-    call pmf_utils_exit(PMF_OUT,1,&
-                     '[CST] Unable to allocate memory for arrays used in lambda calculation!')
- end if
-
- ! allocate arrays for dF/dx calculation ---------------------------------------
- allocate( fz(NumOfCONs,NumOfCONs), &
-           lambdatotal(NumOfCONs), &
-           lambdatotals(NumOfCONs), &
-           stat= alloc_failed )
-
- if( alloc_failed .ne. 0 ) then
-    call pmf_utils_exit(PMF_OUT,1,&
-                     '[CST] Unable to allocate memory for arrays used in lambda calculation!')
- end if
-
- isrztotal = 0.0d0
- isrztotals = 0.0d0
-
- ! in velocity verlet there is an additional rattle step
- select case(fintalg)
-    case(IA_VEL_VERLET)
-        faccumulation = -1
-        has_lambdav = .true.
-    case default
-        has_lambdav = .false.
-        faccumulation = 0
- end select
-
- lambda(:) = 0.0d0
- lambdatotal(:) = 0.0d0
- lambdatotals(:) = 0.0d0
-
- ! -----------------------------------------------
- if( has_lambdav ) then
-    allocate( lambdav(NumOfCONs), &
-              matv(NumOfCONs,NumOfCONs), &
-              lambdavtotal(NumOfCONs), &
-              lambdavtotals(NumOfCONs), &
-              stat= alloc_failed )
+! allocate arrays for LU decomposition ---------------------------------------
+    allocate(vv(NumOfCONs), indx(NumOfCONs), stat= alloc_failed)
 
     if( alloc_failed .ne. 0 ) then
         call pmf_utils_exit(PMF_OUT,1,&
-                         '[CST] Unable to allocate memory for arrays used in velocity corrections!')
+                 '[CST] Unable to allocate memory for arrays used in LU decomposition!')
     end if
 
-    lambdav(:) = 0.0d0
-    matv(:,:) = 0.0d0
-    lambdavtotal(:) = 0.0d0
-    lambdavtotals(:) = 0.0d0
- end if
+! allocate arrays for lambda calculation ---------------------------------------
+    allocate(lambda(NumOfCONs), &
+          cv(NumOfCONs), &
+          jac(NumOfCONs,NumOfCONs), stat= alloc_failed )
 
- return
+    if( alloc_failed .ne. 0 ) then
+        call pmf_utils_exit(PMF_OUT,1,&
+                 '[CST] Unable to allocate memory for arrays used in lambda calculation!')
+    end if
+
+! allocate arrays for dF/dx calculation ---------------------------------------
+    allocate( fz(NumOfCONs,NumOfCONs), &
+           mlambda(NumOfCONs), &
+           m2lambda(NumOfCONs), &
+           stat= alloc_failed )
+
+    if( alloc_failed .ne. 0 ) then
+        call pmf_utils_exit(PMF_OUT,1,&
+                 '[CST] Unable to allocate memory for arrays used in lambda calculation!')
+    end if
+
+    misrz   = 0.0d0
+    m2isrz  = 0.0d0
+
+! in velocity verlet there is an additional rattle step
+    select case(fintalg)
+        case(IA_VEL_VERLET)
+            faccumulation = -1
+            has_lambdav = .true.
+        case default
+            has_lambdav = .false.
+            faccumulation = 0
+    end select
+
+    lambda(:) = 0.0d0
+    mlambda(:) = 0.0d0
+    m2lambda(:) = 0.0d0
+
+    ! -----------------------------------------------
+    if( has_lambdav ) then
+        allocate( lambdav(NumOfCONs), &
+                  matv(NumOfCONs,NumOfCONs), &
+                  mlambdav(NumOfCONs), &
+                  m2lambdav(NumOfCONs), &
+                  stat= alloc_failed )
+
+        if( alloc_failed .ne. 0 ) then
+            call pmf_utils_exit(PMF_OUT,1,&
+                     '[CST] Unable to allocate memory for arrays used in velocity corrections!')
+        end if
+
+        lambdav(:) = 0.0d0
+        matv(:,:) = 0.0d0
+        mlambdav(:) = 0.0d0
+        m2lambdav(:) = 0.0d0
+    end if
+
+    ! -----------------------------------------------
+    if( fenthalpy .or. fentropy ) then
+        allocate( mlambdae(NumOfCONs),  &
+                  lambda0(NumOfCONs),   &
+                  lambda1(NumOfCONs),   &
+                  lambda2(NumOfCONs),   &
+                  cds_hp(NumOfCONs),    &
+                  cds_hk(NumOfCONs),    &
+                  stat= alloc_failed )
+
+        if( alloc_failed .ne. 0 ) then
+            call pmf_utils_exit(PMF_OUT,1,&
+                     '[CST] Unable to allocate memory for arrays used for enthalpy/entropy calculations!')
+        end if
+
+        mlambdae(:) = 0.0d0
+        lambda0(:)  = 0.0d0
+        lambda1(:)  = 0.0d0
+        lambda2(:)  = 0.0d0
+        cds_hp(:)   = 0.0d0
+        cds_hk(:)   = 0.0d0
+    end if
+
+    fentaccu    = 0.0d0
+    metot       = 0.0d0
+    m2etot      = 0.0d0
+    mepot       = 0.0d0
+    m2epot      = 0.0d0
+    mekin       = 0.0d0
+    m2ekin      = 0.0d0
+    epothist0   = 0.0d0
+    epothist1   = 0.0d0
+
+    return
 
 end subroutine cst_init_core
 

@@ -6,7 +6,7 @@
 !    Copyright (C) 2010 Petr Kulhanek, kulhanek@chemi.muni.cz
 !    Copyright (C) 2007 Petr Kulhanek, kulhanek@enzim.hu
 !    Copyright (C) 2006 Petr Kulhanek, kulhanek@chemi.muni.cz &
-!                       Martin Petrek, petrek@chemi.muni.cz 
+!                       Martin Petrek, petrek@chemi.muni.cz
 !    Copyright (C) 2005 Petr Kulhanek, kulhanek@chemi.muni.cz
 !
 !    This library is free software; you can redistribute it and/or
@@ -21,7 +21,7 @@
 !
 !    You should have received a copy of the GNU Lesser General Public
 !    License along with this library; if not, write to the Free Software
-!    Foundation, Inc., 51 Franklin Street, Fifth Floor, 
+!    Foundation, Inc., 51 Franklin Street, Fifth Floor,
 !    Boston, MA  02110-1301  USA
 !===============================================================================
 
@@ -253,7 +253,7 @@ subroutine cst_constraints_cst_increment(cst_item)
     type(CVTypeBM)     :: cst_item
     ! --------------------------------------------------------------------------
 
-    ! value changes programmatically by managed path
+    ! value changes pro-grammatically by managed path
     if( cst_item%mode .eq. 'P' ) then
         cst_item%value = pmf_paths_get_rpos(cst_item%cvindx)
         return
@@ -367,7 +367,7 @@ subroutine cst_constraints_read_control_file(cst_item)
     end if
 
     ! open control file
-    call pmf_utils_open(CON_CTR,fcstctr,'O')
+    call pmf_utils_open(CST_CTR,fcstctr,'O')
 
     ! allocate cst_item%control_values
     allocate(cst_item%control_values(fnstlim), stat = alloc_failed)
@@ -379,14 +379,14 @@ subroutine cst_constraints_read_control_file(cst_item)
     ! read data from control_file
     ios = 0
     do i=1,fnstlim
-       read(CON_CTR,*,iostat=ios) cst_item%control_values(i)
+       read(CST_CTR,*,iostat=ios) cst_item%control_values(i)
        if ( ios .ne. 0 ) then
             write(PMF_OUT,20) trim(fcstctr), i-1, fnstlim
             call pmf_utils_exit(PMF_OUT,1,'[CST] There is not enough data in fcstctr file!')
        end if
     end do
 
-    close(CON_CTR)
+    close(CST_CTR)
 
     return
 

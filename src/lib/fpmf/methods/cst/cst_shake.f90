@@ -5,7 +5,7 @@
 !    Copyright (C) 2013-2015 Letif Mones, lam81@cam.ac.uk
 !    Copyright (C) 2007 Petr Kulhanek, kulhanek@enzim.hu
 !    Copyright (C) 2006 Petr Kulhanek, kulhanek@chemi.muni.cz &
-!                       Martin Petrek, petrek@chemi.muni.cz 
+!                       Martin Petrek, petrek@chemi.muni.cz
 !    Copyright (C) 2005 Petr Kulhanek, kulhanek@chemi.muni.cz
 !
 !    This library is free software; you can redistribute it and/or
@@ -20,7 +20,7 @@
 !
 !    You should have received a copy of the GNU Lesser General Public
 !    License along with this library; if not, write to the Free Software
-!    Foundation, Inc., 51 Franklin Street, Fifth Floor, 
+!    Foundation, Inc., 51 Franklin Street, Fifth Floor,
 !    Boston, MA  02110-1301  USA
 !===============================================================================
 
@@ -69,32 +69,31 @@ end function cst_shake_checkatom
 
 subroutine cst_shake_allocate(num)
 
- use pmf_utils
- use pmf_dat
- use cst_dat
+    use pmf_utils
+    use pmf_dat
+    use cst_dat
 
- implicit none
- integer    :: num ! number of shake constraints
- ! -----------------------------------------------
- integer    :: i,alloc_failed
- ! -----------------------------------------------------------------------------
+    implicit none
+    integer    :: num ! number of shake constraints
+    ! -----------------------------------------------
+    integer    :: i,alloc_failed
+    ! -----------------------------------------------------------------------------
 
- NumOfSHAKECONs = num
+    NumOfSHAKECONs = num
+    if( NumOfSHAKECONs .eq. 0 ) return
 
- if( num .ne. 0 ) then
     allocate(SHAKECONList(NumOfSHAKECONs),stat=alloc_failed)
 
     if( alloc_failed .ne. 0 ) then
-      write(PMF_OUT,*) 'Unable to allocate memory for SHAKE constraints!'
-      call pmf_utils_exit(PMF_OUT, 1)
+        write(PMF_OUT,*) 'Unable to allocate memory for SHAKE constraints!'
+        call pmf_utils_exit(PMF_OUT, 1)
     end if
 
     do i=1,NumOfSHAKECONs
-      SHAKECONList(i)%at1   = 0
-      SHAKECONList(i)%at2   = 0
-      SHAKECONList(i)%value = 0.0d0
+        SHAKECONList(i)%at1   = 0
+        SHAKECONList(i)%at2   = 0
+        SHAKECONList(i)%value = 0.0d0
     end do
- end if
 
 return
 
@@ -106,19 +105,19 @@ end subroutine cst_shake_allocate
 
 subroutine cst_shake_set(id,at1,at2,value)
 
- use pmf_dat
- use cst_dat
+    use pmf_dat
+    use cst_dat
 
- implicit none
- integer        :: id       ! id of constraint
- integer        :: at1      ! id of first atom 
- integer        :: at2      ! id of second atom
- real(PMFDP)    :: value    ! value of DS constraint
- ! -----------------------------------------------------------------------------
+    implicit none
+    integer        :: id       ! id of constraint
+    integer        :: at1      ! id of first atom
+    integer        :: at2      ! id of second atom
+    real(PMFDP)    :: value    ! value of DS constraint
+    ! -----------------------------------------------------------------------------
 
- SHAKECONList(id)%at1   = at1
- SHAKECONList(id)%at2   = at2
- SHAKECONList(id)%value = value
+    SHAKECONList(id)%at1   = at1
+    SHAKECONList(id)%at2   = at2
+    SHAKECONList(id)%value = value
 
 return
 

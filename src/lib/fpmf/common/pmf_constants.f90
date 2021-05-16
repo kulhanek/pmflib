@@ -129,10 +129,11 @@ integer,parameter       :: PMF_TEST     = 1342
 integer,parameter       :: PMF_DEBUG    = 1000
 
 ! blue moon part ---------------------------------------------------------------
-integer,parameter       :: CON_INP      = 150
-integer,parameter       :: CON_OUT      = 151
-integer,parameter       :: CON_RST      = 152
-integer,parameter       :: CON_CTR      = 153
+integer,parameter       :: CST_INP      = 150
+integer,parameter       :: CST_OUT      = 151
+integer,parameter       :: CST_RST      = 152
+integer,parameter       :: CST_TRJ      = 154
+integer,parameter       :: CST_CTR      = 153
 
 ! umbrella part ----------------------------------------------------------------
 integer,parameter       :: RST_INP      = 160

@@ -122,7 +122,9 @@ character(PMF_MAX_PATH)     :: fpathsdef
 character(PMF_MAX_PATH)     :: fcstdef
 character(PMF_MAX_PATH)     :: fcstout
 character(PMF_MAX_PATH)     :: fcstrst
+character(PMF_MAX_PATH)     :: fcstfrst
 character(PMF_MAX_PATH)     :: fcstctr
+character(PMF_MAX_PATH)     :: fcsttrj
 
 ! restraint dynamics -------------------------------
 character(PMF_MAX_PATH)     :: frstdef

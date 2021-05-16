@@ -77,7 +77,7 @@ subroutine pmf_utils_open(unitnum, filename, mystatus)
     position = uposition, form = 'FORMATTED', iostat = ierr)
 
     if( ierr .ne. 0 ) then
-        write(6, '(/,a,a)') 'Unable to open file: ',filename
+        write(6, '(/,a,a)') 'Unable to open file: "',trim(filename),'"'
         call pmf_utils_exit(6, 1)
     endif
 

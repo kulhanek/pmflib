@@ -43,6 +43,7 @@ subroutine cst_control_read_con(prm_fin)
     use pmf_dat
     use cst_dat
     use cst_init
+    use pmf_control_utils
 
     implicit none
     type(PRMFILE_TYPE),intent(inout)   :: prm_fin
@@ -50,106 +51,64 @@ subroutine cst_control_read_con(prm_fin)
 
     call cst_init_dat
 
-    write(PMF_OUT,'(/,a)') '--- [con] ----------------------------------------------------------------------'
+    write(PMF_OUT,'(/,a)') '--- [cst] ----------------------------------------------------------------------'
 
     ! try open group
     if( .not. prmfile_open_group(prm_fin,'PMFLIB') ) then
-        write(PMF_OUT,5)
+        write(PMF_OUT,10)
         return
     end if
 
     ! try open section
-    if( .not. prmfile_open_section(prm_fin,'con') ) then
-        write(PMF_OUT,5)
+    if( .not. prmfile_open_section(prm_fin,'cst') ) then
+        write(PMF_OUT,10)
         return
     end if
 
-    ! process options from [metadyn] section
-    if( .not. prmfile_get_integer_by_key(prm_fin,'fmode',fmode) ) then
-        call pmf_utils_exit(PMF_OUT,1,'[CST] fmode item is mandatory in this section')
-    else
-        write(PMF_OUT,10) fmode
-    end if
-
-    if (fmode .ne. 0 .and. fmode .ne. 1) then
-        write(PMF_OUT, '(/2x,a,i3,a)') 'fmode (', fmode, ') must be 0 or 1!'
-        call pmf_utils_exit(PMF_OUT,1)
-    end if
+    ! read configuration
+    call pmf_ctrl_read_integer(prm_fin,'fmode',fmode,'I12')
+    call pmf_ctrl_check_integer_in_range('CST','fmode',fmode,0,1)
 
     if( fmode .eq. 0 ) then
-        write(PMF_OUT,5)
-        ! no umbrealla - rest of section is skipped
+        write(PMF_OUT,10)
+        ! no cst - rest of section is skipped
         call prmfile_set_sec_as_processed(prm_fin)
         return
     end if
 
-    if(prmfile_get_integer_by_key(prm_fin,'fsample', fsample)) then
-        write(PMF_OUT,30) fsample
-    else
-        write(PMF_OUT,35) fsample
-    end if
+    call pmf_ctrl_read_integer(prm_fin,'fsample',fsample,'I12')
+    call pmf_ctrl_check_integer('CST','fsample',fsample,0,CND_GE)
 
-    if(prmfile_get_integer_by_key(prm_fin,'faccurst', faccurst)) then
-        write(PMF_OUT,40) faccurst
-    else
-        write(PMF_OUT,45) faccurst
-    end if
+    call pmf_ctrl_read_integer(prm_fin,'fplevel',fplevel,'I12')
+    call pmf_ctrl_check_integer_in_range('CST','fplevel',fplevel,0,1)
 
-    if(prmfile_get_integer_by_key(prm_fin,'fplevel', fplevel)) then
-        write(PMF_OUT,50) fplevel
-    else
-        write(PMF_OUT,55) fplevel
-    end if
+    call pmf_ctrl_read_logical(prm_fin,'frestart',frestart)
 
-    if(prmfile_get_logical_by_key(prm_fin,'frestart', frestart)) then
-        write(PMF_OUT,70) prmfile_onoff(frestart)
-    else
-        write(PMF_OUT,75) prmfile_onoff(frestart)
-    end if
+    call pmf_ctrl_read_integer(prm_fin,'faccurst',faccurst,'I12')
+    call pmf_ctrl_check_integer('CST','faccurst',faccurst,0,CND_GE)
 
-    if(prmfile_get_integer_by_key(prm_fin,'flambdasolver', flambdasolver) ) then
-        write(PMF_OUT,76) flambdasolver, trim(cst_init_get_lsolver_name(flambdasolver))
-    else
-        write(PMF_OUT,77) flambdasolver, trim(cst_init_get_lsolver_name(flambdasolver))
-    end if
+    call pmf_ctrl_read_integer(prm_fin,'frstupdate',frstupdate,'I12')
+    call pmf_ctrl_check_integer('CST','frstupdate',frstupdate,0,CND_GE)
 
-    if(prmfile_get_real8_by_key(prm_fin,'flambdatol', flambdatol) ) then
-        write(PMF_OUT,80) flambdatol
-    else
-        write(PMF_OUT,85) flambdatol
-    end if
+    call pmf_ctrl_read_integer(prm_fin,'ftrjsample',ftrjsample,'I12')
+    call pmf_ctrl_check_integer('CST','ftrjsample',ftrjsample,0,CND_GE)
 
-    if(prmfile_get_integer_by_key(prm_fin,'fmaxiter', fmaxiter)) then
-        write(PMF_OUT,90) fmaxiter
-    else
-        write(PMF_OUT,95) fmaxiter
-    end if
+    call pmf_ctrl_read_logical(prm_fin,'fenthalpy',fenthalpy)
+    call pmf_ctrl_read_logical(prm_fin,'fentropy',fentropy)
+    call pmf_ctrl_read_real8(prm_fin,'fepotoffset',fepotoffset,'F10.1')
+    call pmf_ctrl_read_real8(prm_fin,'fekinoffset',fekinoffset,'F10.1')
 
-    ! check input parameters ------------------------------------------------------
-    if( flambdasolver .ne. 0 .and. flambdasolver .ne. 1 ) then
-        call pmf_utils_exit(PMF_OUT,1,'[CST] flambdasolver has to be 0 or 1!')
-    end if
+    call pmf_ctrl_read_integer(prm_fin,'flambdasolver',flambdasolver,'I12')
+    call pmf_ctrl_check_integer_in_range('CST','flambdasolver',flambdasolver,0,1)
+
+    call pmf_ctrl_read_real8(prm_fin,'flambdatol',fepotoffset,'E12.4')
+    call pmf_ctrl_read_integer(prm_fin,'fmaxiter',fmaxiter,'I12')
 
     cst_enabled = fmode .gt. 0
 
     return
 
-  5 format (' >> Constrained dynamics is disabled!')
- 10 format ('fmode         = ',i12)
- 30 format ('fsample       = ',i12)
- 35 format ('fsample       = ',i12,'                                           (default)')
- 40 format ('faccurst      = ',i12)
- 45 format ('faccurst      = ',i12,'                                           (default)')
- 50 format ('fplevel       = ',i12)
- 55 format ('fplevel       = ',i12,'                                           (default)')
- 70 format ('frestart      = ',a12)
- 75 format ('frestart      = ',a12,'                                           (default)')
- 76 format ('flambdasolver = ',i12,1x,a)
- 77 format ('flambdasolver = ',i12,1x,a25,'                 (default)')
- 80 format ('flambdatol    = ',E12.4)
- 85 format ('flambdatol    = ',E12.4,'                                           (default)')
- 90 format ('fmaxiter      = ',i12)
- 95 format ('fmaxiter      = ',i12,'                                           (default)')
+ 10 format (' >> Constrained dynamics is disabled!')
 
 end subroutine cst_control_read_con
 

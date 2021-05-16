@@ -6,7 +6,7 @@
 !    Copyright (C) 2010 Petr Kulhanek, kulhanek@chemi.muni.cz
 !    Copyright (C) 2007 Petr Kulhanek, kulhanek@enzim.hu
 !    Copyright (C) 2006 Petr Kulhanek, kulhanek@chemi.muni.cz &
-!                       Martin Petrek, petrek@chemi.muni.cz 
+!                       Martin Petrek, petrek@chemi.muni.cz
 !    Copyright (C) 2005 Petr Kulhanek, kulhanek@chemi.muni.cz
 !
 !    This library is free software; you can redistribute it and/or
@@ -21,7 +21,7 @@
 !
 !    You should have received a copy of the GNU Lesser General Public
 !    License along with this library; if not, write to the Free Software
-!    Foundation, Inc., 51 Franklin Street, Fifth Floor, 
+!    Foundation, Inc., 51 Franklin Street, Fifth Floor,
 !    Boston, MA  02110-1301  USA
 !===============================================================================
 
@@ -34,16 +34,22 @@ use pmf_dat
 implicit none
 
 ! control section --------------------------------------------------------------
-integer           :: fmode          ! 0 - disable BM, 1 - enabled BM
-integer           :: fsample        ! output sample period in steps
-integer           :: faccurst       ! number of steps for equilibration, it is ignored if job is restarted
-integer           :: fplevel        ! print level
-logical           :: frestart       ! 1 - restart job with previous data, 0 - otherwise not
-integer           :: flambdasolver  ! 0 - Newton method, 1 - chord method
-real(PMFDP)       :: flambdatol     ! tolerance for lambda optimization
-integer           :: fmaxiter       ! maximum of iteration in lambda optimization
-integer           :: fsamplefreq    ! how often take samples 
-integer           :: faccelerate    ! 0 - disable acceleration, 1 - acceleration on
+integer         :: fmode            ! 0 - disable BM, 1 - enabled BM
+integer         :: fsample          ! output sample period in steps
+integer         :: faccurst         ! number of steps for equilibration, it is ignored if job is restarted
+integer         :: fplevel          ! print level
+logical         :: frestart         ! 1 - restart job with previous data, 0 - otherwise not
+integer         :: frstupdate       ! how often is restart file written
+integer         :: ftrjsample       ! how often save restart to "restart evolution"
+integer         :: flambdasolver    ! 0 - Newton method, 1 - chord method
+real(PMFDP)     :: flambdatol       ! tolerance for lambda optimization
+integer         :: fmaxiter         ! maximum of iteration in lambda optimization
+integer         :: fsamplefreq      ! how often take samples
+
+logical         :: fenthalpy        ! collect data for enthalpy calculation
+logical         :: fentropy         ! collect data for entropy calculation
+real(PMFDP)     :: fepotoffset
+real(PMFDP)     :: fekinoffset
 
 ! item list --------------------------------------------------------------------
 type CVTypeBM
@@ -61,8 +67,8 @@ type CVTypeBM
 
     real(PMFDP)             :: deviation        ! deviation between real and value
     real(PMFDP)             :: sdevtot          ! total sum of deviation squares
-    logical                 :: value_set        ! initial value is user provided
-    real(PMFDP),pointer     :: control_values(:) ! values for controlled streering
+    logical                 :: value_set        ! initial value user provided
+    real(PMFDP),pointer     :: control_values(:) ! values for controlled steering
 end type CVTypeBM
 
 ! global variables for blue moon -----------------------------------------------
@@ -88,38 +94,56 @@ integer, parameter  :: CON_LS_NM         = 0    ! Newton method lambda solver
 integer, parameter  :: CON_LS_CM         = 1    ! Chord method lambda solver
 
 ! global variables for lambda calculation -----------------------------------
-integer                    :: fliter            ! number of iterations in lambda solver
-real(PMFDP),allocatable    :: lambda(:)         ! list of Lagrange multipliers
-real(PMFDP),allocatable    :: cv(:)             ! constraint value vector
-real(PMFDP),allocatable    :: jac(:,:)          ! Jacobian matrix
-logical                    :: has_lambdav       ! mu values (lambdav)
+integer                     :: fliter           ! number of iterations in lambda solver
+real(PMFDP),allocatable     :: lambda(:)        ! list of Lagrange multipliers
+real(PMFDP),allocatable     :: cv(:)            ! constraint value vector
+real(PMFDP),allocatable     :: jac(:,:)         ! Jacobian matrix
+logical                     :: has_lambdav      ! mu values (lambdav)
 
 ! global variables for LU decomposition  -----------------------------------
-real(PMFDP),allocatable    :: vv(:)            ! for LU decomposition
-integer,allocatable        :: indx(:)
+real(PMFDP),allocatable     :: vv(:)            ! for LU decomposition
+integer,allocatable         :: indx(:)
 
 ! global variables for blue moon - results ---------------------------------
-integer                    :: faccumulation    ! total number of accumulated steps
-real(PMFDP),allocatable    :: fz(:,:)          ! Z matrix
-real(PMFDP)                :: fzdet            ! current value of det(Z)
-real(PMFDP)                :: isrztotal        ! accumulated value of inverse square root of fzdet
-real(PMFDP)                :: isrztotals       ! accumulated value of square of inverse square root of fzdet
-real(PMFDP),allocatable    :: lambdatotal(:)   ! accumulated value of lambda
-real(PMFDP),allocatable    :: lambdatotals(:)  ! accumulated value of square of lambda
+integer                     :: flfsteps         ! number of steps in LF and current MD from beginning or accumulation reset
+integer                     :: faccumulation    ! total number of accumulated steps
+real(PMFDP),allocatable     :: fz(:,:)          ! Z matrix
+real(PMFDP)                 :: fzdet            ! current value of det(Z)
+real(PMFDP)                 :: misrz            ! mean of inverse square root of fzdet
+real(PMFDP)                 :: m2isrz           ! M2 of inverse square root of fzdet
+real(PMFDP),allocatable     :: mlambda(:)       ! mean of lambdas
+real(PMFDP),allocatable     :: m2lambda(:)      ! M2 of lambdas
 
 ! global variables for velocity update ------------------------------
-real(PMFDP),allocatable    :: matv(:,:)             ! left side matrix
-real(PMFDP),allocatable    :: lambdav(:)            ! velocity lambdas
-real(PMFDP),allocatable    :: lambdavtotal(:)       ! accumulated value of kappa
-real(PMFDP),allocatable    :: lambdavtotals(:)      ! accumulated value of square of kappa
+real(PMFDP),allocatable     :: matv(:,:)        ! left side matrix
+real(PMFDP),allocatable     :: lambdav(:)       ! velocity lambdas - kappa
+real(PMFDP),allocatable     :: mlambdav(:)      ! mean of kappa
+real(PMFDP),allocatable     :: m2lambdav(:)     ! M2 of kappa
 
-! accelerating calculation for large number of CONs
-type CONCommonAtomsType
-     integer                 :: nindatoms         ! total number of individual common atoms 
-     integer, pointer        :: indlindexes(:)    ! common individual local atom indexes 
-end type CONCommonAtomsType
+! enthalpy and entropy ----------------------------------------------
+integer                     :: fentaccu         ! number of step for enthalpy and entropy calculations
+! all at t+dt
+real(PMFDP),allocatable     :: mlambdae(:)      ! mean of lambdas for entropy calculations
+real(PMFDP)                 :: metot            ! mean of total energy
+real(PMFDP)                 :: m2etot           ! M2 of total energy
+real(PMFDP)                 :: mepot            ! mean of potential energy
+real(PMFDP)                 :: m2epot           ! M2 of potential energy
+real(PMFDP)                 :: mekin            ! mean of kinetic energy
+real(PMFDP)                 :: m2ekin           ! M2 of kinetic energy
+real(PMFDP),allocatable     :: cds_hp(:)
+real(PMFDP),allocatable     :: cds_hk(:)
 
-type(CONCommonAtomsType),allocatable  :: CONCommonAtoms(:,:)  ! table for common CST atoms
+
+real(PMFDP),allocatable     :: lambda0(:)       ! list of Lagrange multipliers, t
+real(PMFDP),allocatable     :: lambda1(:)       ! list of Lagrange multipliers, t+dt
+real(PMFDP),allocatable     :: lambda2(:)       ! list of Lagrange multipliers, t+2*dt
+real(PMFDP)                 :: epothist0        ! history of Epot, t
+real(PMFDP)                 :: epothist1        ! history of Epot, t+dt
+
+! call in cst_core_main_lf
+! lambda(t), epot(t-dt), ekin(t-2*dt)
+! lambda(t+dt), epot(t), ekin(t-dt)
+! lambda(t+2*dt), epot(t+dt), ekin(t) -> use ekin(t) and from history: lambda(t), epot(t)
 
 !===============================================================================
 

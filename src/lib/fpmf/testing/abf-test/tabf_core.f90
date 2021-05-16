@@ -109,7 +109,7 @@ subroutine tabf_core_force_4p()
     epothist1 = epothist2
     epothist2 = epothist3
     if( fenthalpy .or. fentropy ) then
-        epothist3 = PotEne
+        epothist3 = PotEne + fepotoffset
     else
         epothist3 = 0.0d0
     end if
@@ -119,7 +119,7 @@ subroutine tabf_core_force_4p()
     ekinhist1 = ekinhist2
     ekinhist2 = ekinhist3
     if( fentropy ) then
-        ekinhist3 = KinEne
+        ekinhist3 = KinEne + fekinoffset
     else
         ekinhist3 = 0.0d0
     end if
@@ -259,7 +259,7 @@ subroutine tabf_core_force_2p()
     ! shift epot ene
     epothist0 = epothist1
     if( fenthalpy .or. fentropy ) then
-        epothist1 = PotEne
+        epothist1 = PotEne + fepotoffset
     else
         epothist1 = 0.0d0
     end if
@@ -267,7 +267,7 @@ subroutine tabf_core_force_2p()
     ! shift ekin ene
     ekinhist0 = ekinhist1
     if( fentropy ) then
-        ekinhist1 = KinEne
+        ekinhist1 = KinEne + fekinoffset
     else
         ekinhist1 = 0.0d0
     end if
@@ -388,7 +388,7 @@ subroutine tabf_core_force_2p_frc()
     ! shift epot ene
     epothist0 = epothist1
     if( fenthalpy .or. fentropy ) then
-        epothist1 = PotEne
+        epothist1 = PotEne + fepotoffset
     else
         epothist1 = 0.0d0
     end if
@@ -396,7 +396,7 @@ subroutine tabf_core_force_2p_frc()
     ! shift ekin ene
     ekinhist0 = ekinhist1
     if( fentropy ) then
-        ekinhist1 = KinEne
+        ekinhist1 = KinEne + fekinoffset
     else
         ekinhist1 = 0.0d0
     end if

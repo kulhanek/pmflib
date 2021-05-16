@@ -5,7 +5,7 @@
 !    Copyright (C) 2013-2015 Letif Mones, lam81@cam.ac.uk
 !    Copyright (C) 2007 Petr Kulhanek, kulhanek@enzim.hu
 !    Copyright (C) 2006 Petr Kulhanek, kulhanek@chemi.muni.cz &
-!                       Martin Petrek, petrek@chemi.muni.cz 
+!                       Martin Petrek, petrek@chemi.muni.cz
 !    Copyright (C) 2005 Petr Kulhanek, kulhanek@chemi.muni.cz
 !
 !    This library is free software; you can redistribute it and/or
@@ -20,7 +20,7 @@
 !
 !    You should have received a copy of the GNU Lesser General Public
 !    License along with this library; if not, write to the Free Software
-!    Foundation, Inc., 51 Franklin Street, Fifth Floor, 
+!    Foundation, Inc., 51 Franklin Street, Fifth Floor,
 !    Boston, MA  02110-1301  USA
 !===============================================================================
 
@@ -38,14 +38,15 @@ contains
 
 subroutine cst_finalize_method
 
- use cst_output
- use cst_restart
+    use cst_output
+    use cst_restart
 
- implicit none
- ! -----------------------------------------------------------------------------
+    implicit none
+    ! --------------------------------------------------------------------------
 
- call cst_restart_write
- call cst_output_close
+    call cst_restart_trajectory_close
+    call cst_restart_write
+    call cst_output_close
 
 end subroutine cst_finalize_method
 
