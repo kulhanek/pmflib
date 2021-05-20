@@ -105,6 +105,7 @@ real(PMFDP),allocatable     :: Frc(:,:)         ! current system forces in t
 real(PMFDP),allocatable     :: Vel(:,:)         ! current system velocities in t-dt/2
 real(PMFDP)                 :: KinEne           ! current system kinetic energy in t-dt
 real(PMFDP)                 :: PotEne           ! current system potential energy in t
+real(PMFDP)                 :: PMFEne           ! current PMFLib potential energy in t (from RST, MTD, STM)
 type(CVContextType)         :: CVContext        ! current CV context (values and derivatives) in t
 
 ! used by Blue moon

@@ -85,7 +85,7 @@ subroutine tabf_core_force_4p()
     implicit none
     integer     :: i,j,k,m
     integer     :: ci,ck
-    real(PMFDP) :: v,avg_epot,avg_ekin
+    real(PMFDP) :: v,avg_epot,avg_ekin,avg_erst
     ! --------------------------------------------------------------------------
 
     ! calculate acceleration in time t for all pmf atoms
@@ -122,6 +122,16 @@ subroutine tabf_core_force_4p()
         ekinhist3 = KinEne + fekinoffset
     else
         ekinhist3 = 0.0d0
+    end if
+
+    ! shift erst ene
+    ersthist0 = ersthist1
+    ersthist1 = ersthist2
+    ersthist2 = ersthist3
+    if( fentropy ) then
+        ersthist3 = PMFEne
+    else
+        ersthist3 = 0.0d0
     end if
 
     ! calculate abf force to be applied -------------
@@ -202,11 +212,12 @@ subroutine tabf_core_force_4p()
 
         avg_epot = 0.5d0*(epothist1 + epothist2) ! t - 3/2*dt
         avg_ekin = 0.5d0*(ekinhist2 + ekinhist3) ! t - 1/2*dt; ekin already shifted by -dt
+        avg_erst = 0.5d0*(ersthist1 + ersthist2) ! t - 3/2*dt
 
         pdum(:) = 0.0d0
 
         ! add data to accumulator
-        call tabf_accumulator_add_data_online(cvaluehist0,pxi0(:),pdum(:),avg_epot,avg_ekin)
+        call tabf_accumulator_add_data_online(cvaluehist0,pxi0(:),pdum(:),avg_epot,avg_ekin,avg_erst)
 
         ! write icf
         call tabf_output_write_icf(avg_values,pxi0(:))
@@ -272,6 +283,14 @@ subroutine tabf_core_force_2p()
         ekinhist1 = 0.0d0
     end if
 
+    ! shift erst ene
+    ersthist0 = ersthist1
+    if( fentropy ) then
+        ersthist1 = PMFEne
+    else
+        ersthist1 = 0.0d0
+    end if
+
     ! calculate Z matrix and its inverse
     call tabf_core_calc_Zmat
 
@@ -319,7 +338,7 @@ subroutine tabf_core_force_2p()
         pxim(:) = 0.5d0*(pxim(:)+pxip(:))
 
         ! add data to accumulator
-        call tabf_accumulator_add_data_online(cvaluehist0,pxi0(:),pxim(:),epothist0,ekinhist1)
+        call tabf_accumulator_add_data_online(cvaluehist0,pxi0(:),pxim(:),epothist0,ekinhist1,ersthist0)
     end if
 
     ! backup to the next step
@@ -401,6 +420,14 @@ subroutine tabf_core_force_2p_frc()
         ekinhist1 = 0.0d0
     end if
 
+    ! shift erst ene
+    ersthist0 = ersthist1
+    if( fentropy ) then
+        ersthist1 = PMFEne
+    else
+        ersthist1 = 0.0d0
+    end if
+
     ! calculate Z matrix and its inverse
     call tabf_core_calc_Zmat
 
@@ -444,7 +471,7 @@ subroutine tabf_core_force_2p_frc()
         pxim(:) =  0.5d0*(pxim(:)+pxip(:))
 
         ! add data to accumulator
-        call tabf_accumulator_add_data_online(cvaluehist0,pxi0(:),pxim(:),epothist0,ekinhist1)
+        call tabf_accumulator_add_data_online(cvaluehist0,pxi0(:),pxim(:),epothist0,ekinhist1,ersthist0)
     end if
 
     ! backup to the next step

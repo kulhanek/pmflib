@@ -102,11 +102,15 @@ type ABFAccuType
     real(PMFDP),pointer    :: m2epot(:)                 ! M2 of potential energy
     real(PMFDP),pointer    :: mekin(:)                  ! mean of kinetic energy
     real(PMFDP),pointer    :: m2ekin(:)                 ! M2 of kinetic energy
+    real(PMFDP),pointer    :: merst(:)                  ! mean of restraint energy
+    real(PMFDP),pointer    :: m2erst(:)                 ! M2 of restraint energy
     ! ENTROPY
     real(PMFDP),pointer    :: cds_pp(:,:)               ! cds - potential/potential
     real(PMFDP),pointer    :: cds_pk(:,:)               ! cds - potential/kinetic
+    real(PMFDP),pointer    :: cds_pr(:,:)               ! cds - potential/restraints
     real(PMFDP),pointer    :: cds_kp(:,:)               ! cds - kinetic/potential
     real(PMFDP),pointer    :: cds_kk(:,:)               ! cds - kinetic/kinetic
+    real(PMFDP),pointer    :: cds_kr(:,:)               ! cds - kinetic/restraints
 end type ABFAccuType
 
 ! ----------------------
@@ -153,6 +157,11 @@ real(PMFDP)                 :: ekinhist0   ! history of Ekin
 real(PMFDP)                 :: ekinhist1   ! history of Ekin
 real(PMFDP)                 :: ekinhist2   ! history of Ekin
 real(PMFDP)                 :: ekinhist3   ! history of Ekin
+
+real(PMFDP)                 :: ersthist0   ! history of Erst (PMFEne)
+real(PMFDP)                 :: ersthist1   ! history of Erst
+real(PMFDP)                 :: ersthist2   ! history of Erst
+real(PMFDP)                 :: ersthist3   ! history of Erst
 
 real(PMFDP), allocatable    :: icf_cache(:,:)   ! icf_cache(2*ncvs,fnstlim)
 

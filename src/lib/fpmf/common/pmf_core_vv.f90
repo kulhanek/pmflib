@@ -109,6 +109,7 @@ subroutine pmf_core_vv_force_SRF(x,f,epot,epmf)
 
     ! convert potential energy
     PotEne = epot *EnergyConv
+    PMFEne = 0.0d0
 
     ! update local data
     call pmf_core_in_data_xf(x,f)
@@ -148,21 +149,21 @@ subroutine pmf_core_vv_force_SRF(x,f,epot,epmf)
         if( mtd_enabled ) then
             call pmf_timers_start_timer(PMFLIB_MTD_TIMER)
                 call mtd_core_main
-                epmf = epmf + TotalMTDEnergy
+                PMFEne = PMFEne + TotalMTDEnergy
             call pmf_timers_stop_timer(PMFLIB_MTD_TIMER)
         end if
 
         if( rst_enabled ) then
             call pmf_timers_start_timer(PMFLIB_RST_TIMER)
                 call rst_core_main
-                epmf = epmf + TotalRstEnergy
+                PMFEne = PMFEne + TotalRstEnergy
             call pmf_timers_stop_timer(PMFLIB_RST_TIMER)
         end if
 
         if( stm_enabled ) then
             call pmf_timers_start_timer(PMFLIB_STM_TIMER)
                 call stm_core_main
-                epmf = epmf + TotalSTMEnergy
+                PMFEne = PMFEne + TotalSTMEnergy
             call pmf_timers_stop_timer(PMFLIB_STM_TIMER)
         end if
 
@@ -188,7 +189,7 @@ subroutine pmf_core_vv_force_SRF(x,f,epot,epmf)
 
     call pmf_timers_stop_timer(PMFLIB_METHODS_TIMER)
 
-    epmf = epmf / EnergyConv
+    epmf = PMFEne / EnergyConv
 
     ! update forces
     call pmf_core_out_data_f(f)

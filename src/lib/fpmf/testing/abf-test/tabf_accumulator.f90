@@ -80,10 +80,14 @@ subroutine tabf_accumulator_init()
             accumulator%m2epot(accumulator%tot_nbins), &
             accumulator%mekin(accumulator%tot_nbins), &
             accumulator%m2ekin(accumulator%tot_nbins), &
+            accumulator%merst(accumulator%tot_nbins), &
+            accumulator%m2erst(accumulator%tot_nbins), &
             accumulator%cds_pp(NumOfABFCVs,accumulator%tot_nbins), &
             accumulator%cds_pk(NumOfABFCVs,accumulator%tot_nbins), &
+            accumulator%cds_pr(NumOfABFCVs,accumulator%tot_nbins), &
             accumulator%cds_kp(NumOfABFCVs,accumulator%tot_nbins), &
             accumulator%cds_kk(NumOfABFCVs,accumulator%tot_nbins), &
+            accumulator%cds_kr(NumOfABFCVs,accumulator%tot_nbins), &
             stat = alloc_failed)
 
     if( alloc_failed .ne. 0 ) then
@@ -122,10 +126,14 @@ subroutine tabf_accumulator_clear()
     accumulator%m2epot(:)       = 0.0d0
     accumulator%mekin(:)        = 0.0d0
     accumulator%m2ekin(:)       = 0.0d0
+    accumulator%merst(:)        = 0.0d0
+    accumulator%m2erst(:)       = 0.0d0
     accumulator%cds_pp(:,:)     = 0.0d0
     accumulator%cds_pk(:,:)     = 0.0d0
+    accumulator%cds_pr(:,:)     = 0.0d0
     accumulator%cds_kp(:,:)     = 0.0d0
     accumulator%cds_kk(:,:)     = 0.0d0
+    accumulator%cds_kr(:,:)     = 0.0d0
 
 end subroutine tabf_accumulator_clear
 
@@ -296,6 +304,11 @@ subroutine tabf_accumulator_write(iounit)
         do i=1,NumOfABFCVs
             write(iounit,40) (accumulator%cds_pk(i,j),j=1,accumulator%tot_nbins)
         end do
+        key = 'CDS-PR'
+        write(iounit,5) adjustl(key)
+        do i=1,NumOfABFCVs
+            write(iounit,40) (accumulator%cds_pr(i,j),j=1,accumulator%tot_nbins)
+        end do
         key = 'CDS-KP'
         write(iounit,5) adjustl(key)
         do i=1,NumOfABFCVs
@@ -305,6 +318,11 @@ subroutine tabf_accumulator_write(iounit)
         write(iounit,5) adjustl(key)
         do i=1,NumOfABFCVs
             write(iounit,40) (accumulator%cds_kk(i,j),j=1,accumulator%tot_nbins)
+        end do
+        key = 'CDS-KR'
+        write(iounit,5) adjustl(key)
+        do i=1,NumOfABFCVs
+            write(iounit,40) (accumulator%cds_kr(i,j),j=1,accumulator%tot_nbins)
         end do
     end if
 
@@ -326,7 +344,7 @@ end subroutine tabf_accumulator_write
 ! Subroutine:  tabf_accumulator_add_data_online
 !===============================================================================
 
-subroutine tabf_accumulator_add_data_online(cvs,gfx_pot,gfx_kin,epot,ekin)
+subroutine tabf_accumulator_add_data_online(cvs,gfx_pot,gfx_kin,epot,ekin,erst)
 
     use tabf_dat
     use pmf_dat
@@ -338,12 +356,14 @@ subroutine tabf_accumulator_add_data_online(cvs,gfx_pot,gfx_kin,epot,ekin)
     real(PMFDP)    :: gfx_kin(:)
     real(PMFDP)    :: epot
     real(PMFDP)    :: ekin
+    real(PMFDP)    :: erst
     ! -----------------------------------------------
     integer        :: gi0, i
     real(PMFDP)    :: invn, etot, icf
     real(PMFDP)    :: detot1, detot2
     real(PMFDP)    :: depot1, depot2
     real(PMFDP)    :: dekin1, dekin2
+    real(PMFDP)    :: derst1, derst2
     real(PMFDP)    :: dicf1, dicf2
     real(PMFDP)    :: dicf_pot1, dicf_pot2
     real(PMFDP)    :: dicf_kin1, dicf_kin2
@@ -362,7 +382,7 @@ subroutine tabf_accumulator_add_data_online(cvs,gfx_pot,gfx_kin,epot,ekin)
     accumulator%nsamples(gi0) = accumulator%nsamples(gi0) + 1
     invn = 1.0d0 / real(accumulator%nsamples(gi0),PMFDP)
 
-    etot = epot + ekin
+    etot = epot + ekin + erst
 
     ! total energy
     detot1 = etot - accumulator%metot(gi0)
@@ -381,6 +401,12 @@ subroutine tabf_accumulator_add_data_online(cvs,gfx_pot,gfx_kin,epot,ekin)
     accumulator%mekin(gi0)  = accumulator%mekin(gi0)  + dekin1 * invn
     dekin2 = ekin - accumulator%mekin(gi0)
     accumulator%m2ekin(gi0) = accumulator%m2ekin(gi0) + dekin1 * dekin2
+
+    ! restraint energy
+    derst1 = erst - accumulator%merst(gi0)
+    accumulator%merst(gi0)  = accumulator%merst(gi0)  + derst1 * invn
+    derst2 = erst - accumulator%merst(gi0)
+    accumulator%m2erst(gi0) = accumulator%m2erst(gi0) + derst1 * derst2
 
     do i=1,NumOfABFCVs
         icf = gfx_pot(i) + gfx_kin(i)
@@ -402,8 +428,10 @@ subroutine tabf_accumulator_add_data_online(cvs,gfx_pot,gfx_kin,epot,ekin)
 
         accumulator%cds_pp(i,gi0)  = accumulator%cds_pp(i,gi0) + dicf_pot1 * depot2
         accumulator%cds_pk(i,gi0)  = accumulator%cds_pk(i,gi0) + dicf_pot1 * dekin2
+        accumulator%cds_pr(i,gi0)  = accumulator%cds_pr(i,gi0) + dicf_pot1 * derst2
         accumulator%cds_kp(i,gi0)  = accumulator%cds_kp(i,gi0) + dicf_kin1 * depot2
         accumulator%cds_kk(i,gi0)  = accumulator%cds_kk(i,gi0) + dicf_kin1 * dekin2
+        accumulator%cds_kr(i,gi0)  = accumulator%cds_kr(i,gi0) + dicf_kin1 * derst2
     end do
 
 end subroutine tabf_accumulator_add_data_online
