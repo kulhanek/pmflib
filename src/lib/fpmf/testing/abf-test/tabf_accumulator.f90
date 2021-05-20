@@ -291,6 +291,10 @@ subroutine tabf_accumulator_write(iounit)
         write(iounit,5) adjustl(key)
         write(iounit,40) (accumulator%metot(i),i=1,accumulator%tot_nbins)
         write(iounit,40) (accumulator%m2etot(i),i=1,accumulator%tot_nbins)
+        key = 'MERST'
+        write(iounit,5) adjustl(key)
+        write(iounit,40) (accumulator%merst(i),i=1,accumulator%tot_nbins)
+        write(iounit,40) (accumulator%m2erst(i),i=1,accumulator%tot_nbins)
     end if
 
     if( fentropy ) then
