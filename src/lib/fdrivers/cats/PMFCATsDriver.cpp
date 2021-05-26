@@ -135,7 +135,7 @@ void PMF_PACKAGE CPMFCATsDriver::EndInit(int anatom,std::vector<double>& amass,s
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void PMF_PACKAGE CPMFCATsDriver::SetCVs(int numofatoms,double* coords,double a,double b, double c, double alpha, double beta, double gamma)
+void PMF_PACKAGE CPMFCATsDriver::SetCoordinates(int numofatoms,double* coords,double a,double b, double c, double alpha, double beta, double gamma)
 {
     FTINT lnumofatoms = numofatoms;
 

@@ -36,7 +36,7 @@ public:
     static void     SetAtom(int idx,CSmallString name,CSmallString type);
     static void     EndInit(int anatom,std::vector<double>& amass,std::vector<double>& xyz);
 
-    static void     SetCVs(int numofatoms,double* coords,double a,double b, double c,
+    static void     SetCoordinates(int numofatoms,double* coords,double a,double b, double c,
                                    double alpha, double beta, double gamma);
     static int      GetNumberOfCVs(void);
     static double   GetCVValue(CSmallString name);
