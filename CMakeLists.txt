@@ -2,7 +2,7 @@
 # PMFLib CMake File
 # ==============================================================================
 
-CMAKE_MINIMUM_REQUIRED(VERSION 2.8 FATAL_ERROR)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.10 FATAL_ERROR)
 PROJECT(PMFLib)
 
 INCLUDE(CTest)
