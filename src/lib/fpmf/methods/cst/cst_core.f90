@@ -170,7 +170,7 @@ subroutine cst_core_analyze
     ! calculate final constraint deviations
     do i=1,NumOfCONs
         ci = CONList(i)%cvindx
-        CONList(i)%deviation = get_deviation(CONList(i)%cv,CVContextP%CVsValues(ci),CONList(i)%value)
+        CONList(i)%deviation = CONList(i)%cv%get_deviation(CVContextP%CVsValues(ci),CONList(i)%value)
         CONList(i)%sdevtot = CONList(i)%sdevtot + CONList(i)%deviation**2
     end do
 
