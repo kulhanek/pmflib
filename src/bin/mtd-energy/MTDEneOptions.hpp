@@ -3,6 +3,7 @@
 // =============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
+//    Copyright (C) 2021 Petr Kulhanek, kulhanek@chemi.muni.cz
 //    Copyright (C) 2011 Petr Kulhanek, kulhanek@chemi.muni.cz
 //    Copyright (C) 2008 Petr Kulhanek, kulhanek@enzim.hu
 //    Copyright (C) 2007 Petr Kulhanek, kulhanek@enzim.hu
@@ -38,7 +39,7 @@ public:
     CSO_PROG_NAME_END
 
     CSO_PROG_DESC_BEGIN
-    "It calculate the free energy surface estimate from the metadynamics restart file."
+    "<b>mtd-energy</b> calculates the free energy surface estimate from the metadynamics restart file."
     CSO_PROG_DESC_END
 
     CSO_PROG_VERS_BEGIN
@@ -51,10 +52,8 @@ public:
     CSO_ARG(CSmallString,Input)
     CSO_ARG(CSmallString,Output)
     // options ------------------------------
-    CSO_OPT(int,Time)
+    CSO_OPT(bool,KeepFloating)
     CSO_OPT(double,Offset)
-    CSO_OPT(int,Smooth)
-    CSO_OPT(bool,PrintSD)
     CSO_OPT(CSmallString,OutputFormat)
     CSO_OPT(bool,NoHeader)
     CSO_OPT(CSmallString,IXFormat)
@@ -72,23 +71,24 @@ public:
                 NULL,                           /* default value */
                 true,                           /* is argument mandatory */
                 "input",                        /* parametr name */
-                "Name of file containing the metadynamics restart file. If the name is '-' then the file is read from the standard input.")   /* argument description */
+                "Name of the input file containing the metadynamics restart file. If the name is '-' then it is read from the standard input.")   /* argument description */
     //----------------------------------------------------------------------
     CSO_MAP_ARG(CSmallString,                   /* argument type */
                 Output,                          /* argument name */
                 NULL,                           /* default value */
                 true,                           /* is argument mandatory */
                 "output",                        /* parametr name */
-                "Name of file where the resulting free energy surface will be printed. If the name is '-' then the output will be written to the standard output.")   /* argument description */
+                "Name of the output file where the resulting free energy surface will be printed. If the name is '-' then the output will be written to the standard output.")   /* argument description */
 // description of options ---------------------------------------------------
-    CSO_MAP_OPT(int,                           /* option type */
-                Time,                        /* option name */
-                0,                          /* default value */
+
+    CSO_MAP_OPT(bool,                           /* option type */
+                KeepFloating,                        /* option name */
+                false,                          /* default value */
                 false,                          /* is option mandatory */
-                't',                           /* short option name */
-                "time",                      /* long option name */
-                "NUMBER",                           /* parametr name */
-                "Specifies metadynamics time that will be used for the energy calculation.")   /* option description */
+                '\0',                           /* short option name */
+                "floating",                      /* long option name */
+                NULL,                           /* parametr name */
+                "Keep FES floating.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(double,                           /* option type */
                 Offset,                        /* option name */
@@ -97,25 +97,7 @@ public:
                 '\0',                           /* short option name */
                 "offset",                      /* long option name */
                 "REAL",                           /* parametr name */
-                "Determine position of global minima.")   /* option description */
-    //----------------------------------------------------------------------
-    CSO_MAP_OPT(int,                           /* option type */
-                Smooth,                        /* option name */
-                0,                          /* default value */
-                false,                          /* is option mandatory */
-                '\0',                           /* short option name */
-                "smooth",                      /* long option name */
-                "NUMBER",                           /* parametr name */
-                "Calculate the energy surface average from time interval SMOOTH to TIME.")   /* option description */
-    //----------------------------------------------------------------------
-    CSO_MAP_OPT(bool,                           /* option type */
-                PrintSD,                        /* option name */
-                false,                          /* default value */
-                false,                          /* is option mandatory */
-                '\0',                           /* short option name */
-                "sd",                      /* long option name */
-                NULL,                           /* parametr name */
-                "Print the standard deviation of the free energy when the smoothing is enabled.")   /* option description */
+                "Determine position of the global minima.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(CSmallString,                           /* option type */
                 OutputFormat,                        /* option name */

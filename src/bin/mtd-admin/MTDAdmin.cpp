@@ -22,7 +22,7 @@
 #include <stdio.h>
 #include "MTDAdmin.hpp"
 #include <ErrorSystem.hpp>
-#include <MTDHistory.hpp>
+#include <MTDAccumulator.hpp>
 #include <PMFOperation.hpp>
 
 //------------------------------------------------------------------------------
@@ -170,8 +170,8 @@ void CMTDAdmin::Finalize(void)
 
 bool CMTDAdmin::GetMTDHistory(void)
 {
-    CClientCommand  cmd;
-    CMTDHistory     history;
+    CClientCommand      cmd;
+    CMTDAccumulator     accu;
 
     try{
 
@@ -188,8 +188,8 @@ bool CMTDAdmin::GetMTDHistory(void)
         }
 
         // read cvs info
-        history.LoadCVSInfo(p_rele);
-        history.ReadMTDData(p_rele);
+        accu.LoadCVSInfo(p_rele);
+        accu.ReadMTDData(p_rele);
 
     } catch(std::exception& e) {
         ES_ERROR_FROM_EXCEPTION("unable to process command",e);
@@ -202,20 +202,20 @@ bool CMTDAdmin::GetMTDHistory(void)
     CSmallString file_output;
 
     if(ActionRequest.GetParameterKeyValue("file",file_output) == false) {
-        file_output = "output.rst";
+        file_output = "_mtdserver.rst";
     }
 
 // and now save all data
-    if(history.GetNumOfCVs() > 0) {
-        vout << "Output MTD history: " << file_output << endl;
+    if(accu.GetNumOfCVs() > 0) {
+        vout << "Output MTD accumulator: " << file_output << endl;
         try {
-            history.Save(file_output);
+            accu.Save(file_output);
         } catch(...) {
-            ES_ERROR("unable to save MTD history file");
+            ES_ERROR("unable to save MTD accumulator file");
         }
     } else {
-        vout << "Output MTD history: " << file_output << endl;
-        vout << ">>> INFO: No data in MTD history." << endl;
+        vout << "Output MTD accumulator: " << file_output << endl;
+        vout << ">>> INFO: No data in MTD accumulator." << endl;
     }
 
     return(true);

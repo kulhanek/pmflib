@@ -95,8 +95,9 @@ subroutine cst_control_read_con(prm_fin)
 
     call pmf_ctrl_read_logical(prm_fin,'fenthalpy',fenthalpy)
     call pmf_ctrl_read_logical(prm_fin,'fentropy',fentropy)
-    call pmf_ctrl_read_real8(prm_fin,'fepotoffset',fepotoffset,'F10.1')
-    call pmf_ctrl_read_real8(prm_fin,'fekinoffset',fekinoffset,'F10.1')
+
+    call pmf_ctrl_read_real8_wunit(prm_fin,'fepotoffset',EnergyUnit,fepotoffset,'F10.1')
+    call pmf_ctrl_read_real8_wunit(prm_fin,'fekinoffset',EnergyUnit,fekinoffset,'F10.1')
 
     call pmf_ctrl_read_integer(prm_fin,'flambdasolver',flambdasolver,'I12')
     call pmf_ctrl_check_integer_in_range('CST','flambdasolver',flambdasolver,0,1)

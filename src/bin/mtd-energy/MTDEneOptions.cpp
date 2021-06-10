@@ -1,6 +1,7 @@
 // =============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
+//    Copyright (C) 2021 Petr Kulhanek, kulhanek@chemi.muni.cz
 //    Copyright (C) 2011 Petr Kulhanek, kulhanek@chemi.muni.cz
 //    Copyright (C) 2008 Petr Kulhanek, kulhanek@enzim.hu
 //    Copyright (C) 2007 Petr Kulhanek, kulhanek@enzim.hu
@@ -35,19 +36,6 @@ CMTDEneOptions::CMTDEneOptions(void)
 
 int CMTDEneOptions::CheckOptions(void)
 {
-// limit has to be grater than 0
-    if(GetOptTime() < 0) {
-        if(IsError == false) fprintf(stderr,"\n");
-        fprintf(stderr,"%s: metadynamics time has to be greater or equal to zero, but %d is specified\n", (const char*)GetProgramName(),GetOptTime());
-        IsError = true;
-    }
-
-    if(GetOptSmooth() < 0) {
-        if(IsError == false) fprintf(stderr,"\n");
-        fprintf(stderr,"%s: beginning of smoothing (--smooth=%d) has to be greater than zero\n", (const char*)GetProgramName(),GetOptSmooth());
-        IsError = true;
-    }
-
     if((GetOptOutputFormat() != "plain") &&
             (GetOptOutputFormat() != "gnuplot") &&
             (GetOptOutputFormat() != "fes")) {

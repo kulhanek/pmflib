@@ -23,7 +23,7 @@
 
 #include <PMFMainHeader.hpp>
 #include <Client.hpp>
-#include <MTDHistory.hpp>
+#include <MTDAccumulator.hpp>
 
 //------------------------------------------------------------------------------
 
@@ -31,7 +31,7 @@
  *
  */
 
-class PMF_PACKAGE CMTDClient : public CClient, public CMTDHistory {
+class PMF_PACKAGE CMTDClient : public CClient, public CMTDAccumulator {
 public:
     CMTDClient(void);
     ~CMTDClient(void);

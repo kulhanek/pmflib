@@ -1,6 +1,7 @@
 !===============================================================================
 ! PMFLib - Library Supporting Potential of Mean Force Calculations
 !-------------------------------------------------------------------------------
+!    Copyright (C) 2021 Petr Kulhanek, kulhanek@chemi.muni.cz
 !    Copyright (C) 2011-2015 Petr Kulhanek, kulhanek@chemi.muni.cz
 !    Copyright (C) 2013-2015 Letif Mones, lam81@cam.ac.uk
 !    Copyright (C) 2007 Petr Kulhanek, kulhanek@enzim.hu
@@ -43,6 +44,7 @@ subroutine mtd_control_read_mtd(prm_fin)
     use pmf_utils
     use mtd_dat
     use mtd_init
+    use pmf_control_utils
 
     implicit none
     type(PRMFILE_TYPE),intent(inout)   :: prm_fin
@@ -54,149 +56,46 @@ subroutine mtd_control_read_mtd(prm_fin)
 
     ! try open group
     if( .not. prmfile_open_group(prm_fin,'PMFLIB') ) then
-        write(PMF_OUT,5)
+        write(PMF_OUT,10)
         return
     end if
 
     ! try open section
     if( .not. prmfile_open_section(prm_fin,'mtd') ) then
-        write(PMF_OUT,5)
+        write(PMF_OUT,10)
         return
     end if
 
-    ! process options from [mtd] section
-    if( .not. prmfile_get_integer_by_key(prm_fin,'fmode',fmode) ) then
-        call pmf_utils_exit(PMF_OUT,1,'[MTD] fmode item is mandatory in this section')
-    else
-        write(PMF_OUT,10) fmode
-    end if
-
-    if (fmode .ne. 0 .and. fmode .ne. 1 .and. fmode .ne. 2 ) then
-        write(PMF_OUT, '(/2x,a,i3,a)') 'fmode (', fmode, ') must be 0, 1, or 2'
-        call pmf_utils_exit(PMF_OUT,1)
-    end if
+   ! read configuration
+    call pmf_ctrl_read_integer(prm_fin,'fmode',fmode,'i12')
+    call pmf_ctrl_check_integer_in_range('MTD','fmode',fmode,0,1)
 
     if( fmode .eq. 0 ) then
-        write(PMF_OUT,5)
-        ! no metadynamics - rest of section is skipped
+        write(PMF_OUT,10)
+        ! no abf - rest of section is skipped
         call prmfile_set_sec_as_processed(prm_fin)
         return
     end if
 
-    if(prmfile_get_real8_by_key(prm_fin,'fheight', fheight) ) then
-        write(PMF_OUT,30) fheight
-    else
-        write(PMF_OUT,35) fheight
-    end if
+    call pmf_ctrl_read_real8_wunit(prm_fin,'fheight',EnergyUnit,fheight,'F10.5')
+    call pmf_ctrl_check_real8_wunit('MTD','fheight',EnergyUnit,fheight,0.0d0,CND_GE,'F10.5')
 
-    if(prmfile_get_integer_by_key(prm_fin,'fmetastep', fmetastep)) then
-        write(PMF_OUT,40) fmetastep
-    else
-        write(PMF_OUT,45) fmetastep
-    end if
+    call pmf_ctrl_read_integer(prm_fin,'fmetavary',fmetavary,'i12')
+    call pmf_ctrl_check_integer_in_range('MTD','fmetavary',fmetavary,0,2)
 
-    if(prmfile_get_integer_by_key(prm_fin,'fpsample', fpsample)) then
-        write(PMF_OUT,50) fpsample
-    else
-        write(PMF_OUT,55) fpsample
-    end if
+    call pmf_ctrl_read_real8_wunit(prm_fin,'fmetatemp',TemperatureUnit,fmetatemp,'F10.1')
+    call pmf_ctrl_check_real8_wunit('MTD','fmetatemp',TemperatureUnit,fmetatemp,0.0d0,CND_GE,'F10.1')
 
-    if(prmfile_get_integer_by_key(prm_fin,'fplevel', fplevel)) then
-        write(PMF_OUT,60) fplevel
-    else
-        write(PMF_OUT,65) fplevel
-    end if
+    call pmf_ctrl_read_integer(prm_fin,'fmetastep',fmetastep,'i12')
+    call pmf_ctrl_check_integer('MTD','fmetastep',fmetastep,0,CND_GE)
 
-    if(prmfile_get_logical_by_key(prm_fin,'frestart', frestart)) then
-        write(PMF_OUT,70) prmfile_onoff(frestart)
-    else
-        write(PMF_OUT,75) prmfile_onoff(frestart)
-    end if
+    call pmf_ctrl_read_logical(prm_fin,'frestart',frestart)
 
-    if(prmfile_get_integer_by_key(prm_fin,'fextout', fextout)) then
-        write(PMF_OUT,80) fextout
-    else
-        write(PMF_OUT,85) fextout
-    end if
+    call pmf_ctrl_read_integer(prm_fin,'frstupdate',frstupdate,'i12')
+    call pmf_ctrl_check_integer('ABF','frstupdate',frstupdate,0,CND_GE)
 
-    if(prmfile_get_integer_by_key(prm_fin,'fbuffersize', fbuffersize)) then
-        write(PMF_OUT,90) fbuffersize
-    else
-        write(PMF_OUT,95) fbuffersize
-    end if
-
-    if( fbuffersize .le. 0 ) then
-        write(PMF_OUT, '(/2x,a,i3,a)') 'fbuffersize (', fbuffersize, ') must be grater then zero.'
-        call pmf_utils_exit(PMF_OUT,1)
-    end if
-
-    if(prmfile_get_real8_by_key(prm_fin,'fmetatemp', fmetatemp)) then
-        fmetavary = 1
-        write(PMF_OUT,100) fmetatemp
-    else
-        write(PMF_OUT,105) fmetatemp
-    end if
-
-    if(prmfile_get_integer_by_key(prm_fin,'fmetavary', fmetavary)) then
-        meta_next_fstep = fmetastep
-        write(PMF_OUT,110) fmetavary
-    else
-        write(PMF_OUT,115) fmetavary
-    end if
-
-    if( (fmetavary .lt. 0) .or. (fmetavary .gt. 2) ) then
-        write(PMF_OUT, '(/2x,a,i3,a)') 'fmetavary (', fmetavary, ') must be 0, 1 or 2.'
-        call pmf_utils_exit(PMF_OUT,1)
-    end if
-
-    if(prmfile_get_integer_by_key(prm_fin,'fscaling', fscaling)) then
-        write(PMF_OUT,120) fscaling
-    else
-        write(PMF_OUT,125) fscaling
-    end if
-
-    if( (fscaling .lt. 0) .or. (fscaling .gt. 2) ) then
-        write(PMF_OUT, '(/2x,a,i3,a)') 'fscaling (', fscaling, ') must be 0, 1 or 2.'
-        call pmf_utils_exit(PMF_OUT,1)
-    end if
-
-    if(prmfile_get_integer_by_key(prm_fin,'fdelaying', fdelaying)) then
-        ftransition = fdelaying
-        write(PMF_OUT,130) fdelaying
-    else
-        write(PMF_OUT,135) fdelaying
-    end if
-
-    if( fdelaying .lt. 0 ) then
-        write(PMF_OUT, '(/2x,a,i5,a)') 'fdelaying (', fdelaying, ') must be grater than zero'
-        call pmf_utils_exit(PMF_OUT,1)
-    end if
-
-    if( (fscaling .eq. 0) .and. (fdelaying .ne. 0) ) then
-        write(PMF_OUT, '(/2x,a)') 'fscaling must be also specified when fdelaying is specified'
-        call pmf_utils_exit(PMF_OUT,1)
-    end if
-
-    if(prmfile_get_integer_by_key(prm_fin,'ftransition', ftransition)) then
-        write(PMF_OUT,140) ftransition
-    else
-        write(PMF_OUT,145) ftransition
-    end if
-
-    if( ftransition .lt. 0 ) then
-        write(PMF_OUT, '(/2x,a,i5,a)') 'ftransition (', ftransition, ') must be grater than zero'
-        call pmf_utils_exit(PMF_OUT,1)
-    end if
-
-    if( (fscaling .eq. 0) .and. (ftransition .ne. 0) ) then
-        write(PMF_OUT, '(/2x,a)') 'fscaling must be also specified when ftransition is specified'
-        call pmf_utils_exit(PMF_OUT,1)
-    end if
-
-    if( ftransition .lt. fdelaying ) then
-        write(PMF_OUT, '(/2x,a)') 'ftransition must be grater or equal than fdelaying'
-        call pmf_utils_exit(PMF_OUT,1)
-    end if
+    call pmf_ctrl_read_integer(prm_fin,'ftrjsample',ftrjsample,'i12')
+    call pmf_ctrl_check_integer('ABF','ftrjsample',ftrjsample,0,CND_GE)
 
     ! network setup ----------------------------------------------------------------
 
@@ -207,83 +106,43 @@ subroutine mtd_control_read_mtd(prm_fin)
 
 #ifdef PMFLIB_NETWORK
     if( prmfile_get_string_by_key(prm_fin,'fserverkey',fserverkey)) then
-        write(PMF_OUT,490) trim(fserver)
+        write(PMF_OUT,110) trim(fserverkey)
         fserver_enabled = .true.
-        fserver_key_enabled = .true.
     end if
 
-    if( .not. fserver_enabled ) then
-        if( prmfile_get_string_by_key(prm_fin,'fserver', fserver) ) then
-            write(PMF_OUT,500) fserver
-            fserver_enabled = .true.
-            fserver_key_enabled = .false.
-        else
-            call pmf_utils_exit(PMF_OUT,1,'fserver is required when [abf-walker] is specified')
-        end if
-        if( prmfile_get_string_by_key(prm_fin,'fpassword', fpassword) ) then
-            write(PMF_OUT,510) fpassword
-        else
-            call pmf_utils_exit(PMF_OUT,1,'fpassword is required when [abf-walker] is specified')
-        end if
-    end if
+    call pmf_ctrl_read_integer(prm_fin,'fserverupdate',fserverupdate,'i12')
+    call pmf_ctrl_check_integer('MTD','fserverupdate',fserverupdate,0,CND_GT)
+
+    call pmf_ctrl_read_logical(prm_fin,'fabortonmwaerr',fabortonmwaerr)
 
 #else
     fserver_enabled = .false.
     fserver_key_enabled = .false.
-    write(PMF_OUT,7)
+    write(PMF_OUT,105)
 #endif
     ! network setup ----------------------------------------------------------------
 
     else
-        write(PMF_OUT,6)
+        write(PMF_OUT,100)
     end if
 
     ! restart is read from server
     if( fserver_enabled .and. frestart ) then
-        call pmf_utils_exit(PMF_OUT,1,'[MTD] frestart cannot be on if multiple-walker aproach is used!')
+        call pmf_utils_exit(PMF_OUT,1,'[MTD] frestart cannot be on if multiple-walker approach is used!')
     end if
 
-    if( fserver_enabled .and. fextout .ne. 0 ) then
-        call pmf_utils_exit(PMF_OUT,1,'[MTD] fextout has to zero if multiple-walker aproach is used!')
-    end if
     mtd_enabled = fmode .gt. 0
 
     return
 
-  5 format (' >> Metadynamics is disabled!')
- 10 format ('fmode                                  = ',i12)
- 30 format ('fheight                                = ',E12.4)
- 35 format ('fheight                                = ',E12.4,'                  (default)')
- 40 format ('fmetastep                              = ',i12)
- 45 format ('fmetastep                              = ',i12,'                  (default)')
- 50 format ('fsample                                = ',i12)
- 55 format ('fsample                                = ',i12,'                  (default)')
- 60 format ('fplevel                                = ',i12)
- 65 format ('fplevel                                = ',i12,'                  (default)')
- 70 format ('frestart                               = ',a12)
- 75 format ('frestart                               = ',a12,'                  (default)')
- 80 format ('fextout                                = ',i12)
- 85 format ('fextout                                = ',i12,'                  (default)')
- 90 format ('fbuffersize                            = ',i12)
- 95 format ('fbuffersize                            = ',i12,'                  (default)')
-100 format ('fmetatemp                              = ',E12.4)
-105 format ('fmetatemp                              = ',E12.4,'                  (default)')
-110 format ('fmetavary                              = ',i12)
-115 format ('fmetavary                              = ',i12,'                  (default)')
-120 format ('fscaling                               = ',i12)
-125 format ('fscaling                               = ',i12,'                  (default)')
-130 format ('fdelaying                              = ',i12)
-135 format ('fdelaying                              = ',i12,'                  (default)')
-140 format ('ftransition                            = ',i12)
-145 format ('ftransition                            = ',i12,'                  (default)')
+ 10 format (' >> Metadynamics is disabled!')
 
-  6 format (' >> Multiple-walkers metadynamics is disabled!')
+100 format (' >> Multiple-walkers metadynamics is disabled!')
 #ifndef PMFLIB_NETWORK
-  7 format (' >> Multiple-walkers metadynamics is not compiled in!')
+105 format (' >> Multiple-walkers metadynamics is not compiled in!')
+#else
+110 format ('fserverkey                             = ',a)
 #endif
-490 format ('fserverkey                             = ',a)
-500 format ('fserver                                = ',a)
-510 format ('fpassword                              = ',a12)
 
 end subroutine mtd_control_read_mtd
 

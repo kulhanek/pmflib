@@ -66,15 +66,12 @@ subroutine abf_cvs_read_cv(prm_fin,abf_item)
     implicit none
     type(PRMFILE_TYPE),intent(inout)    :: prm_fin
     type(CVTypeABF)                     :: abf_item
-    ! -----------------------------------------------
-    type(UnitType)                      :: forceunit
-    type(UnitType)                      :: forceunit_recip
     ! --------------------------------------------------------------------------
 
     ! used CV cannot be controlled by the path subsystem
     if( abf_item%cv%pathidx .gt. 0 ) then
         if( PathList(abf_item%cv%pathidx)%path%driven_mode ) then
-            call pmf_utils_exit(PMF_OUT,1,'Requested CV is connected with the path that is in driven mode!')
+            call pmf_utils_exit(PMF_OUT,1,'Requested CV is connected with the path that is in a driven mode!')
         end if
     end if
 
@@ -101,11 +98,6 @@ subroutine abf_cvs_read_cv(prm_fin,abf_item)
         call pmf_utils_exit(PMF_OUT,1,'nbins is not specified!')
     end if
     write(PMF_OUT,125) abf_item%nbins
-
-    ! ============================================
-    ! prepare force unit
-    forceunit = pmf_unit_div_units( EnergyUnit, abf_item%cv%unit )
-    forceunit_recip = pmf_unit_power_unit( forceunit, -1 )
 
     return
 

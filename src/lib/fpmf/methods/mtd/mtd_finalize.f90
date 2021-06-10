@@ -1,11 +1,12 @@
 !===============================================================================
 ! PMFLib - Library Supporting Potential of Mean Force Calculations
 !-------------------------------------------------------------------------------
+!    Copyright (C) 2021 Petr Kulhanek, kulhanek@chemi.muni.cz
 !    Copyright (C) 2011-2015 Petr Kulhanek, kulhanek@chemi.muni.cz
 !    Copyright (C) 2013-2015 Letif Mones, lam81@cam.ac.uk
 !    Copyright (C) 2007 Petr Kulhanek, kulhanek@enzim.hu
 !    Copyright (C) 2006 Petr Kulhanek, kulhanek@chemi.muni.cz &
-!                       Martin Petrek, petrek@chemi.muni.cz 
+!                       Martin Petrek, petrek@chemi.muni.cz
 !    Copyright (C) 2005 Petr Kulhanek, kulhanek@chemi.muni.cz
 !
 !    This library is free software; you can redistribute it and/or
@@ -20,7 +21,7 @@
 !
 !    You should have received a copy of the GNU Lesser General Public
 !    License along with this library; if not, write to the Free Software
-!    Foundation, Inc., 51 Franklin Street, Fifth Floor, 
+!    Foundation, Inc., 51 Franklin Street, Fifth Floor,
 !    Boston, MA  02110-1301  USA
 !===============================================================================
 
@@ -38,16 +39,18 @@ contains
 
 subroutine mtd_finalize_method
 
- use mtd_client
- use mtd_restart
- use mtd_output
+    use mtd_client
+    use mtd_trajectory
+    use mtd_restart
+    use mtd_output
 
- implicit none
- ! -----------------------------------------------------------------------------
+    implicit none
+    ! -----------------------------------------------------------------------------
 
- call mtd_client_unregister
- call mtd_restart_close
- call mtd_output_close
+    call mtd_client_unregister
+    call mtd_trajectory_close
+    call mtd_restart_write
+    call mtd_output_close
 
 end subroutine mtd_finalize_method
 

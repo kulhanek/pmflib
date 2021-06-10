@@ -117,6 +117,9 @@ public:
     /// print info about cv
     void PrintInfo(std::ostream& vout);
 
+    /// print info about cv
+    void PrintInfo(FILE* p_fout);
+
     /// load cv info
     void LoadInfo(CXMLElement* p_ele);
 
@@ -146,7 +149,7 @@ private:
     double          MaxMovement;    // used by STM
     double          Alpha;          // used by ABP
 
-    friend class CMTDHistory;
+    friend class CMTDAccumulator;
     friend class CABFAccumulator;
     friend class CABPAccumulator;
     friend class CRSTAccumulator;

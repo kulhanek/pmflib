@@ -97,8 +97,9 @@ subroutine abf_control_read_abf(prm_fin)
 
     call pmf_ctrl_read_logical(prm_fin,'fenthalpy',fenthalpy)
     call pmf_ctrl_read_logical(prm_fin,'fentropy',fentropy)
-    call pmf_ctrl_read_real8(prm_fin,'fepotoffset',fepotoffset,'F10.1')
-    call pmf_ctrl_read_real8(prm_fin,'fekinoffset',fekinoffset,'F10.1')
+
+    call pmf_ctrl_read_real8_wunit(prm_fin,'fepotoffset',EnergyUnit,fepotoffset,'F10.1')
+    call pmf_ctrl_read_real8_wunit(prm_fin,'fekinoffset',EnergyUnit,fekinoffset,'F10.1')
 
     call pmf_ctrl_read_integer(prm_fin,'fblock_size',fblock_size,'i12')
     call pmf_ctrl_check_integer('ABF','fblock_size',fblock_size,0,CND_GE)
@@ -157,10 +158,13 @@ subroutine abf_control_read_abf(prm_fin)
  20 format (/,'>> Linear ramp mode I (feimode == 1)')
 
 100 format (' >> Multiple-walkers ABF method is disabled!')
+
 #ifndef PMFLIB_NETWORK
 105 format (' >> Multiple-walkers ABF method is not compiled in!')
-#endif
+#else
 110 format ('fserverkey                             = ',a)
+#endif
+
 
 end subroutine abf_control_read_abf
 

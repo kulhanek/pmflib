@@ -130,20 +130,22 @@ real(PMFDP)                 :: mepot            ! mean of potential energy
 real(PMFDP)                 :: m2epot           ! M2 of potential energy
 real(PMFDP)                 :: mekin            ! mean of kinetic energy
 real(PMFDP)                 :: m2ekin           ! M2 of kinetic energy
+real(PMFDP)                 :: merst            ! mean of restraint energy
+real(PMFDP)                 :: m2erst           ! M2 of restraint energy
 real(PMFDP),allocatable     :: cds_hp(:)
 real(PMFDP),allocatable     :: cds_hk(:)
+real(PMFDP),allocatable     :: cds_hr(:)
 
 
-real(PMFDP),allocatable     :: lambda0(:)       ! list of Lagrange multipliers, t
-real(PMFDP),allocatable     :: lambda1(:)       ! list of Lagrange multipliers, t+dt
-real(PMFDP),allocatable     :: lambda2(:)       ! list of Lagrange multipliers, t+2*dt
-real(PMFDP)                 :: epothist0        ! history of Epot, t
-real(PMFDP)                 :: epothist1        ! history of Epot, t+dt
+real(PMFDP),allocatable     :: lambda0(:)       ! list of Lagrange multipliers, t-dt
+real(PMFDP),allocatable     :: lambda1(:)       ! list of Lagrange multipliers, t
+real(PMFDP)                 :: epothist0        ! history of Epot, t-dt
+real(PMFDP)                 :: epothist1        ! history of Epot, t
+real(PMFDP)                 :: ersthist0        ! history of Erst, t-dt
+real(PMFDP)                 :: ersthist1        ! history of Erst, t
 
 ! call in cst_core_main_lf
-! lambda(t), epot(t-dt), ekin(t-2*dt)
-! lambda(t+dt), epot(t), ekin(t-dt)
-! lambda(t+2*dt), epot(t+dt), ekin(t) -> use ekin(t) and from history: lambda(t), epot(t)
+! lambda(t), epot(t), ekin(t-dt)
 
 !===============================================================================
 

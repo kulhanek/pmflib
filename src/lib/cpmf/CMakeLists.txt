@@ -14,8 +14,7 @@ SET(CPMF_METHODS_SRC
         methods/abf/ABFIntegratorRBF.cpp
         methods/abf/ABFIntegratorGPR.cpp
         methods/abf/ABFEnthalpyGPR.cpp
-        methods/mtd/MTDHistory.cpp
-        methods/mtd/MTDBuffer.cpp
+        methods/mtd/MTDAccumulator.cpp
         methods/rst/RSTAccumulator.cpp
         methods/stm/spline.cpp
         methods/stm/Bead.cpp

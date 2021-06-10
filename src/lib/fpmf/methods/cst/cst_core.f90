@@ -130,9 +130,9 @@ subroutine cst_core_analyze
             mlambdae(:) = 0.0d0
             lambda0(:)  = 0.0d0
             lambda1(:)  = 0.0d0
-            lambda2(:)  = 0.0d0
             cds_hp(:)   = 0.0d0
             cds_hk(:)   = 0.0d0
+            cds_hr(:)   = 0.0d0
         end if
 
         metot       = 0.0d0
@@ -141,9 +141,14 @@ subroutine cst_core_analyze
         m2epot      = 0.0d0
         mekin       = 0.0d0
         m2ekin      = 0.0d0
+        merst       = 0.0d0
+        m2erst      = 0.0d0
 
         epothist0   = 0.0d0
         epothist1   = 0.0d0
+
+        ersthist0   = 0.0d0
+        ersthist1   = 0.0d0
 
         CONList(:)%sdevtot = 0.0d0
 
@@ -247,10 +252,11 @@ subroutine cst_core_enthalpy_entropy_lf
 
     implicit none
     integer                :: i
-    real(PMFDP)            :: invn, epot, ekin, etot
+    real(PMFDP)            :: invn, epot, ekin, etot, erst
     real(PMFDP)            :: detot1, detot2
     real(PMFDP)            :: depot1, depot2
     real(PMFDP)            :: dekin1, dekin2
+    real(PMFDP)            :: derst1, derst2
     real(PMFDP)            :: dlam1
     ! --------------------------------------------------------------------------
 
@@ -258,12 +264,14 @@ subroutine cst_core_enthalpy_entropy_lf
 
     ! record history of lambda
     lambda0(:) = lambda1(:)   ! t-dt
-    lambda1(:) = lambda2(:)   ! t
-    lambda2(:) = lambda(:)    ! t+dt
+    lambda1(:) = lambda(:)    ! t
 
     ! record history of Epot
     epothist0  = epothist1             ! t-dt
     epothist1  = PotEne + fepotoffset  ! t
+
+    ersthist0 = ersthist1
+    ersthist1  = PMFEne
 
     ! do we have enough samples?
     if( flfsteps .le. 2 ) return
@@ -273,8 +281,9 @@ subroutine cst_core_enthalpy_entropy_lf
 
     epot = epothist0
     ekin = KinEne + fekinoffset         ! t-dt
+    erst = ersthist0
 
-    etot = epot + ekin
+    etot = epot + ekin + erst
 
     ! total energy
     detot1 = etot - metot
@@ -294,12 +303,19 @@ subroutine cst_core_enthalpy_entropy_lf
     dekin2 = ekin - mekin
     m2ekin = m2ekin + dekin1 * dekin2
 
+    ! restraint energy
+    derst1 = erst - merst
+    merst  = merst  + derst1 * invn
+    derst2 = erst - merst
+    m2erst = m2erst + derst1 * derst2
+
     ! entropy
     do i=1,NumOfCONs
         dlam1 = lambda0(i) - mlambdae(i)
         mlambdae(i) = mlambdae(i)  + dlam1 * invn
         cds_hp(i)   = cds_hp(i) + dlam1 * depot2
         cds_hk(i)   = cds_hk(i) + dlam1 * dekin2
+        cds_hr(i)   = cds_hr(i) + dlam1 * derst2
     end do
 
 

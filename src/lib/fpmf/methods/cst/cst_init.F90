@@ -516,9 +516,9 @@ subroutine cst_init_core
         allocate( mlambdae(NumOfCONs),  &
                   lambda0(NumOfCONs),   &
                   lambda1(NumOfCONs),   &
-                  lambda2(NumOfCONs),   &
                   cds_hp(NumOfCONs),    &
                   cds_hk(NumOfCONs),    &
+                  cds_hr(NumOfCONs),    &
                   stat= alloc_failed )
 
         if( alloc_failed .ne. 0 ) then
@@ -529,9 +529,9 @@ subroutine cst_init_core
         mlambdae(:) = 0.0d0
         lambda0(:)  = 0.0d0
         lambda1(:)  = 0.0d0
-        lambda2(:)  = 0.0d0
         cds_hp(:)   = 0.0d0
         cds_hk(:)   = 0.0d0
+        cds_hr(:)   = 0.0d0
     end if
 
     fentaccu    = 0.0d0
@@ -541,6 +541,8 @@ subroutine cst_init_core
     m2epot      = 0.0d0
     mekin       = 0.0d0
     m2ekin      = 0.0d0
+    merst       = 0.0d0
+    m2erst      = 0.0d0
     epothist0   = 0.0d0
     epothist1   = 0.0d0
 

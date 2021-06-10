@@ -21,7 +21,7 @@
 !
 !    You should have received a copy of the GNU Lesser General Public
 !    License along with this library; if not, write to the Free Software
-!    Foundation, Inc., 51 Franklin Street, Fifth Floor, 
+!    Foundation, Inc., 51 Franklin Street, Fifth Floor,
 !    Boston, MA  02110-1301  USA
 !===============================================================================
 
@@ -37,8 +37,6 @@ implicit none
 type CVContextType
     real(PMFDP),pointer         :: CVsValues(:)          ! CVs values
     real(PMFDP),pointer         :: CVsDrvs(:,:,:)        ! CVs derivatives
-    real(PMFDP),pointer         :: CVsDrvDrvs(:,:,:,:,:) ! CVs second derivatives lam81
-    real(PMFDP),pointer         :: CVsFrc(:)             ! PMF derivatives lam81
 end type CVContextType
 
 ! core definition of collective variables (CVs) --------------------------------
@@ -345,7 +343,7 @@ real(PMFDP) function get_average_value(cv_item,value1,value2)
     if( abs(value2-value1) .lt. 0.5d0*(maxv-minv) ) then
         get_average_value = 0.5d0*(value1+value2)
         return
-    else  
+    else
         ! get vector
         vec = value2 - value1
         ! shift to box center

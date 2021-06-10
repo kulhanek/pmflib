@@ -66,7 +66,7 @@ subroutine pmf_control_read_pmflib_group(prm_fin)
     call pmf_control_read_units(prm_fin)
 
     ! load fake topology - if it is provided
-    if( len_trim(ftopology) .gt. 0 ) then
+    if( (len_trim(ftopology) .gt. 0) .and. (ftopology .ne. '-system-') ) then
         call pmf_mask_topo_load(ftopology)
     end if
 
@@ -115,57 +115,6 @@ subroutine pmf_control_read_pmflib_group(prm_fin)
 end subroutine pmf_control_read_pmflib_group
 
 !===============================================================================
-! Subroutine:  pmf_control_read_stritem
-!===============================================================================
-
-subroutine pmf_control_read_stritem(prm_fin,sname,svalue)
-
-    use prmfile
-    use pmf_constants
-
-    implicit none
-    type(PRMFILE_TYPE),intent(inout)    :: prm_fin
-    character(*)                        :: sname
-    character(*)                        :: svalue
-    character(len=27)                   :: buff
-    ! --------------------------------------------------------------------------
-
-    write(buff,5) trim(sname)
-    if( prmfile_get_string_by_key(prm_fin,sname,svalue) ) then
-        write(PMF_OUT,10) adjustl(buff),trim(svalue)
-    else
-        write(PMF_OUT,15) adjustl(buff),trim(svalue)
-    end if
-
- 5 format(A27)
-10 format(A27,' = ',A40)
-15 format(A27,' = ',A40,' (default)')
-
-end subroutine pmf_control_read_stritem
-
-!===============================================================================
-! Subroutine:  pmf_control_print_stritem_default
-!===============================================================================
-
-subroutine pmf_control_print_stritem_default(sname,svalue)
-
-    use pmf_constants
-
-    implicit none
-    character(*)                        :: sname
-    character(*)                        :: svalue
-    character(len=27)                   :: buff
-    ! --------------------------------------------------------------------------
-
-    write(buff,5) trim(sname)
-    write(PMF_OUT,15) adjustl(buff),trim(svalue)
-
- 5 format(A27)
-15 format(A27,' = ',A40,' (default)')
-
-end subroutine pmf_control_print_stritem_default
-
-!===============================================================================
 ! Subroutine:  pmf_control_read_control
 !===============================================================================
 
@@ -175,81 +124,32 @@ subroutine pmf_control_read_control(prm_fin)
     use prmfile
     use pmf_dat
     use pmf_utils
+    use pmf_control_utils
 
     implicit none
     type(PRMFILE_TYPE),intent(inout)   :: prm_fin
     ! --------------------------------------------------------------------------
 
-    write(PMF_OUT,'(/,a)') &
-          '--- [control] ------------------------------------------------------------------'
+    write(PMF_OUT,'(/,a)') '--- [control] ------------------------------------------------------------------'
+
+    ftopology = '-system-'
 
     if(.not. prmfile_open_section(prm_fin,'control')) then
-        write(PMF_OUT,2)
-        write(PMF_OUT,15) prmfile_onoff(fdebug)
-        write(PMF_OUT,16) prmfile_onoff(frepmpifrag)
-        write(PMF_OUT,35) prmfile_onoff(fprint_inpcrds)
-        write(PMF_OUT,45) prmfile_onoff(fprint_masks)
-        write(PMF_OUT,55) prmfile_onoff(fenable_pbc)
-        write(PMF_OUT,65) prmfile_onoff(fenable_hessian) ! lam81
+        call pmf_ctrl_print_default_stritem('ftopology',ftopology)
+        call pmf_ctrl_print_default_logical('fdebug',fdebug)
+        call pmf_ctrl_print_default_logical('frepmpifrag',frepmpifrag)
+        call pmf_ctrl_print_default_logical('fprint_inpcrds',fprint_inpcrds)
+        call pmf_ctrl_print_default_logical('fprint_masks',fprint_masks)
+        call pmf_ctrl_print_default_logical('fenable_pbc',fenable_pbc)
         return
     end if
 
-    if(.not. prmfile_get_string_by_key(prm_fin,'ftopology', ftopology)) then
-        write(PMF_OUT,2)
-    else
-        write(PMF_OUT,1) trim(ftopology)
-    end if
-
-    if(.not. prmfile_get_logical_by_key(prm_fin,'fdebug', fdebug)) then
-        write(PMF_OUT,15) prmfile_onoff(fdebug)
-    else
-        write(PMF_OUT,10) prmfile_onoff(fdebug)
-    end if
-
-    if(.not. prmfile_get_logical_by_key(prm_fin,'frepmpifrag', frepmpifrag)) then
-        write(PMF_OUT,16) prmfile_onoff(frepmpifrag)
-    else
-        write(PMF_OUT,11) prmfile_onoff(frepmpifrag)
-    end if
-
-    if(.not. prmfile_get_logical_by_key(prm_fin,'fprint_inpcrds', fprint_inpcrds)) then
-        write(PMF_OUT,35) prmfile_onoff(fprint_inpcrds)
-    else
-        write(PMF_OUT,30) prmfile_onoff(fprint_inpcrds)
-    end if
-
-    if(.not. prmfile_get_logical_by_key(prm_fin,'fprint_masks', fprint_masks)) then
-        write(PMF_OUT,45) prmfile_onoff(fprint_masks)
-    else
-        write(PMF_OUT,40) prmfile_onoff(fprint_masks)
-    end if
-
-    if(.not. prmfile_get_logical_by_key(prm_fin,'fenable_pbc', fenable_pbc)) then
-        write(PMF_OUT,55) prmfile_onoff(fenable_pbc)
-    else
-        write(PMF_OUT,50) prmfile_onoff(fenable_pbc)
-    end if
-
-    if(.not. prmfile_get_logical_by_key(prm_fin,'fenable_hessian', fenable_hessian)) then ! lam81
-        write(PMF_OUT,65) prmfile_onoff(fenable_hessian)
-    else
-        write(PMF_OUT,60) prmfile_onoff(fenable_hessian)
-    end if
-
-  1 format('ftopology                              = ',a)
-  2 format('ftopology                              = -system-                      (default)')
- 10 format('fdebug                                 = ',a)
- 15 format('fdebug                                 = ',a29,' (default)')
- 11 format('frepmpifrag                            = ',a)
- 16 format('frepmpifrag                            = ',a29,' (default)')
- 30 format('fprint_inpcrds                         = ',a)
- 35 format('fprint_inpcrds                         = ',a29,' (default)')
- 40 format('fprint_masks                           = ',a)
- 45 format('fprint_masks                           = ',a29,' (default)')
- 50 format('fenable_pbc                            = ',a)
- 55 format('fenable_pbc                            = ',a29,' (default)')
- 60 format('fenable_hessian                        = ',a)
- 65 format('fenable_hessian                        = ',a29,' (default)')
+    call pmf_ctrl_read_stritem(prm_fin,'ftopology',ftopology)
+    call pmf_ctrl_read_logical(prm_fin,'fdebug',fdebug)
+    call pmf_ctrl_read_logical(prm_fin,'frepmpifrag',frepmpifrag)
+    call pmf_ctrl_read_logical(prm_fin,'fprint_inpcrds',fprint_inpcrds)
+    call pmf_ctrl_read_logical(prm_fin,'fprint_masks',fprint_masks)
+    call pmf_ctrl_read_logical(prm_fin,'fenable_pbc',fenable_pbc)
 
 end subroutine pmf_control_read_control
 
@@ -351,6 +251,7 @@ subroutine pmf_control_read_files(prm_fin)
     use prmfile
     use pmf_dat
     use pmf_utils
+    use pmf_control_utils
 
     implicit none
     type(PRMFILE_TYPE),intent(inout)   :: prm_fin
@@ -361,115 +262,113 @@ subroutine pmf_control_read_files(prm_fin)
 
     if( .not. prmfile_open_section(prm_fin,'files') ) then
         write(PMF_OUT,10)
-        call pmf_control_print_stritem_default('fcvsdef',fcvsdef)
-        call pmf_control_print_stritem_default('fpathsdef',fpathsdef)
+        call pmf_ctrl_print_default_stritem('fcvsdef',fcvsdef)
+        call pmf_ctrl_print_default_stritem('fpathsdef',fpathsdef)
         if( abf_enabled ) then
             write(PMF_OUT,400)
-            call pmf_control_print_stritem_default('fabfdef',fabfdef)
-            call pmf_control_print_stritem_default('fabfmask',fabfmask)
-            call pmf_control_print_stritem_default('fabfout',fabfout)
-            call pmf_control_print_stritem_default('fabfrst',fabfrst)
+            call pmf_ctrl_print_default_stritem('fabfdef',fabfdef)
+            call pmf_ctrl_print_default_stritem('fabfmask',fabfmask)
+            call pmf_ctrl_print_default_stritem('fabfout',fabfout)
+            call pmf_ctrl_print_default_stritem('fabfrst',fabfrst)
         end if
         if( tabf_enabled ) then
             write(PMF_OUT,400)
-            call pmf_control_print_stritem_default('ftabfdef',ftabfdef)
-            call pmf_control_print_stritem_default('ftabfout',ftabfout)
-            call pmf_control_print_stritem_default('ftabfrst',ftabfrst)
-            call pmf_control_print_stritem_default('ftabficf',ftabficf)
+            call pmf_ctrl_print_default_stritem('ftabfdef',ftabfdef)
+            call pmf_ctrl_print_default_stritem('ftabfout',ftabfout)
+            call pmf_ctrl_print_default_stritem('ftabfrst',ftabfrst)
+            call pmf_ctrl_print_default_stritem('ftabficf',ftabficf)
         end if
         if( mtd_enabled ) then
             write(PMF_OUT,300)
-            call pmf_control_print_stritem_default('fmtddef',fmtddef)
-            call pmf_control_print_stritem_default('fmtdout',fmtdout)
-            call pmf_control_print_stritem_default('fmtdrst',fmtdrst)
-            call pmf_control_print_stritem_default('fmtdcvs',fmtdcvs)
-            call pmf_control_print_stritem_default('fmtdhills',fmtdhills)
+            call pmf_ctrl_print_default_stritem('fmtddef',fmtddef)
+            call pmf_ctrl_print_default_stritem('fmtdout',fmtdout)
+            call pmf_ctrl_print_default_stritem('fmtdrst',fmtdrst)
+            call pmf_ctrl_print_default_stritem('fmtdtrj',fmtdtrj)
         end if
         if( stm_enabled ) then
             write(PMF_OUT,700)
-            call pmf_control_print_stritem_default('fstmdef',fstmdef)
-            call pmf_control_print_stritem_default('fstmout',fstmout)
+            call pmf_ctrl_print_default_stritem('fstmdef',fstmdef)
+            call pmf_ctrl_print_default_stritem('fstmout',fstmout)
         end if
         if( cst_enabled ) then
             write(PMF_OUT,100)
-            call pmf_control_print_stritem_default('fcstdef',fcstdef)
-            call pmf_control_print_stritem_default('fcstout',fcstout)
-            call pmf_control_print_stritem_default('fcstrst',fcstrst)
-            call pmf_control_print_stritem_default('fcstfrst',fcstfrst)
-            call pmf_control_print_stritem_default('fcsttrj',fcsttrj)
+            call pmf_ctrl_print_default_stritem('fcstdef',fcstdef)
+            call pmf_ctrl_print_default_stritem('fcstout',fcstout)
+            call pmf_ctrl_print_default_stritem('fcstrst',fcstrst)
+            call pmf_ctrl_print_default_stritem('fcstfrst',fcstfrst)
+            call pmf_ctrl_print_default_stritem('fcsttrj',fcsttrj)
         end if
         if( rst_enabled ) then
             write(PMF_OUT,200)
-            call pmf_control_print_stritem_default('frstdef',frstdef)
-            call pmf_control_print_stritem_default('frstout',frstout)
-            call pmf_control_print_stritem_default('frsthist',frsthist)
+            call pmf_ctrl_print_default_stritem('frstdef',frstdef)
+            call pmf_ctrl_print_default_stritem('frstout',frstout)
+            call pmf_ctrl_print_default_stritem('frsthist',frsthist)
         end if
         if( pdrv_enabled ) then
             write(PMF_OUT,800)
-            call pmf_control_print_stritem_default('fpdrvdef',fpdrvdef)
-            call pmf_control_print_stritem_default('fpdrvout',fpdrvout)
+            call pmf_ctrl_print_default_stritem('fpdrvdef',fpdrvdef)
+            call pmf_ctrl_print_default_stritem('fpdrvout',fpdrvout)
         end if
         if( mon_enabled ) then
             write(PMF_OUT,500)
-            call pmf_control_print_stritem_default('fmondef',fmondef)
-            call pmf_control_print_stritem_default('fmonout',fmonout)
+            call pmf_ctrl_print_default_stritem('fmondef',fmondef)
+            call pmf_ctrl_print_default_stritem('fmonout',fmonout)
         end if
         return
     end if
 
     write(PMF_OUT,10)
-    call pmf_control_print_stritem_default('fcvsdef',fcvsdef)
-    call  pmf_control_read_stritem(prm_fin,'fpathsdef',fpathsdef)
+    call pmf_ctrl_print_default_stritem('fcvsdef',fcvsdef)
+    call  pmf_ctrl_read_stritem(prm_fin,'fpathsdef',fpathsdef)
     if( abf_enabled ) then
         write(PMF_OUT,400)
-        call  pmf_control_read_stritem(prm_fin,'fabfdef',fabfdef)
-        call  pmf_control_read_stritem(prm_fin,'fabfmask',fabfmask)
-        call  pmf_control_read_stritem(prm_fin,'fabfout',fabfout)
-        call  pmf_control_read_stritem(prm_fin,'fabfrst',fabfrst)
+        call  pmf_ctrl_read_stritem(prm_fin,'fabfdef',fabfdef)
+        call  pmf_ctrl_read_stritem(prm_fin,'fabfmask',fabfmask)
+        call  pmf_ctrl_read_stritem(prm_fin,'fabfout',fabfout)
+        call  pmf_ctrl_read_stritem(prm_fin,'fabfrst',fabfrst)
     end if
     if( tabf_enabled ) then
         write(PMF_OUT,400)
-        call  pmf_control_read_stritem(prm_fin,'ftabfdef',ftabfdef)
-        call  pmf_control_read_stritem(prm_fin,'ftabfout',ftabfout)
-        call  pmf_control_read_stritem(prm_fin,'ftabfrst',ftabfrst)
-        call  pmf_control_read_stritem(prm_fin,'ftabficf',ftabficf)
+        call  pmf_ctrl_read_stritem(prm_fin,'ftabfdef',ftabfdef)
+        call  pmf_ctrl_read_stritem(prm_fin,'ftabfout',ftabfout)
+        call  pmf_ctrl_read_stritem(prm_fin,'ftabfrst',ftabfrst)
+        call  pmf_ctrl_read_stritem(prm_fin,'ftabficf',ftabficf)
     end if
     if( mtd_enabled ) then
         write(PMF_OUT,300)
-        call  pmf_control_read_stritem(prm_fin,'fmtddef',fmtddef)
-        call  pmf_control_read_stritem(prm_fin,'fmtdout',fmtdout)
-        call  pmf_control_read_stritem(prm_fin,'fmtdrst',fmtdrst)
-        call  pmf_control_read_stritem(prm_fin,'fmtdcvs',fmtdcvs)
-        call  pmf_control_read_stritem(prm_fin,'fmtdhills',fmtdhills)
+        call  pmf_ctrl_read_stritem(prm_fin,'fmtddef',fmtddef)
+        call  pmf_ctrl_read_stritem(prm_fin,'fmtdout',fmtdout)
+        call  pmf_ctrl_read_stritem(prm_fin,'fmtdrst',fmtdrst)
+        call  pmf_ctrl_read_stritem(prm_fin,'fmtdtrj',fmtdtrj)
     end if
     if( stm_enabled ) then
         write(PMF_OUT,700)
-        call  pmf_control_read_stritem(prm_fin,'fstmdef',fstmdef)
-        call  pmf_control_read_stritem(prm_fin,'fstmout',fstmout)
+        call  pmf_ctrl_read_stritem(prm_fin,'fstmdef',fstmdef)
+        call  pmf_ctrl_read_stritem(prm_fin,'fstmout',fstmout)
     end if
     if( cst_enabled ) then
         write(PMF_OUT,100)
-        call  pmf_control_read_stritem(prm_fin,'fcstdef',fcstdef)
-        call  pmf_control_read_stritem(prm_fin,'fcstout',fcstout)
-        call  pmf_control_read_stritem(prm_fin,'fcstrst',fcstrst)
-        call  pmf_control_read_stritem(prm_fin,'fcstfrst',fcstfrst)
-        call  pmf_control_read_stritem(prm_fin,'fcsttrj',fcsttrj)
+        call  pmf_ctrl_read_stritem(prm_fin,'fcstdef',fcstdef)
+        call  pmf_ctrl_read_stritem(prm_fin,'fcstout',fcstout)
+        call  pmf_ctrl_read_stritem(prm_fin,'fcstrst',fcstrst)
+        call  pmf_ctrl_read_stritem(prm_fin,'fcstfrst',fcstfrst)
+        call  pmf_ctrl_read_stritem(prm_fin,'fcsttrj',fcsttrj)
     end if
     if( rst_enabled ) then
         write(PMF_OUT,200)
-        call  pmf_control_read_stritem(prm_fin,'frstdef',frstdef)
-        call  pmf_control_read_stritem(prm_fin,'frstout',frstout)
-        call  pmf_control_read_stritem(prm_fin,'frsthist',frsthist)
+        call  pmf_ctrl_read_stritem(prm_fin,'frstdef',frstdef)
+        call  pmf_ctrl_read_stritem(prm_fin,'frstout',frstout)
+        call  pmf_ctrl_read_stritem(prm_fin,'frsthist',frsthist)
     end if
     if( pdrv_enabled ) then
         write(PMF_OUT,800)
-        call  pmf_control_read_stritem(prm_fin,'fpdrvdef',fpdrvdef)
-        call  pmf_control_read_stritem(prm_fin,'fpdrvout',fpdrvout)
+        call  pmf_ctrl_read_stritem(prm_fin,'fpdrvdef',fpdrvdef)
+        call  pmf_ctrl_read_stritem(prm_fin,'fpdrvout',fpdrvout)
     end if
     if( mon_enabled ) then
         write(PMF_OUT,500)
-        call  pmf_control_read_stritem(prm_fin,'fmondef',fmondef)
-        call  pmf_control_read_stritem(prm_fin,'fmonout',fmonout)
+        call  pmf_ctrl_read_stritem(prm_fin,'fmondef',fmondef)
+        call  pmf_ctrl_read_stritem(prm_fin,'fmonout',fmonout)
     end if
 
     return

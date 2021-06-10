@@ -161,8 +161,10 @@ subroutine tabf_init_print_header
     write(PMF_OUT,125)  ' ICF file (ftabficf)                     : ', trim(ftabficf)
     write(PMF_OUT,125)  ' Accumulate enthalpy (fenthalpy)         : ', prmfile_onoff(fenthalpy)
     write(PMF_OUT,125)  ' Accumulate entropy (fentropy)           : ', prmfile_onoff(fentropy)
-    write(PMF_OUT,150)  ' Potential energy offset (fepotoffset)   : ', fepotoffset
-    write(PMF_OUT,150)  ' Kinetic energy offset (fekinoffset)     : ', fekinoffset
+    write(PMF_OUT,150)  ' Potential energy offset (fepotoffset)   : ', pmf_unit_get_rvalue(EnergyUnit,fepotoffset),  &
+                                                                       '['//trim(pmf_unit_label(EnergyUnit))//']'
+    write(PMF_OUT,150)  ' Kinetic energy offset (fekinoffset)     : ', pmf_unit_get_rvalue(EnergyUnit,fekinoffset), &
+                                                                       '['//trim(pmf_unit_label(EnergyUnit))//']'
     write(PMF_OUT,120)
     write(PMF_OUT,120)  ' Trajectory output options:'
     write(PMF_OUT,120)  ' ------------------------------------------------------'
@@ -186,7 +188,7 @@ subroutine tabf_init_print_header
 120 format(A)
 125 format(A,A)
 130 format(A,I6)
-150 format(A,F10.1)
+150 format(A,F10.1,1X,A)
 
 140 format(' == Collective variable #',I4.4)
 

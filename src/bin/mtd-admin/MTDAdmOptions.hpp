@@ -37,7 +37,7 @@ public:
     CSO_PROG_NAME_END
 
     CSO_PROG_DESC_BEGIN
-    "The utility that controls the behaviour and state of the server implementing the multiple walkers extension of the metadynamics method."
+    "<b>mtd-admin</b> controls the behavior and state of the server implementing the multiple walkers extension of the metadynamics method."
     CSO_PROG_DESC_END
 
     CSO_PROG_VERS_BEGIN
@@ -63,7 +63,11 @@ public:
                 NULL,                           /* default value */
                 true,                           /* is argument mandatory */
                 "mtd://server[:port]/command",                        /* parametr name */
-                "It provides the action specification. The server is either the DNS name or IP address of the server or word 'serverkey' or 'key'. In the later case, the information about the server is read from the server key file. The port number, on which the server is listen, may be optionally provided. Finally, the command is administration task, which can be one of the following:\n"
+                "The action specification.\n"
+                "The server is either the DNS name or IP address of the server or word 'serverkey' or 'key'. "
+                "In the later case, the information about the server is read from the server key file. "
+                "The port number, on which the server is listen, may be optionally provided. Finally, "
+                "the command is administration task, which can be one of the following:\n"
                 "info           = print information about registered clients\n"
                 "flush          = save the accumulated MTD data on the server side\n"
                 "get?file=NAME  = get the accumulated MTD data and saves them locally to the file with NAME\n"

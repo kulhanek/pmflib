@@ -68,32 +68,29 @@ subroutine abf_init_dat
     implicit none
     ! --------------------------------------------------------------------------
 
-    fmode           = 0         ! 0 - disable ABF, 1 - enabled ABF
-    fsample         = 5000      ! output sample pariod in steps
-    frestart        = .false.   ! 1 - restart job with previous data, 0 - otherwise not
-    frstupdate      = 5000      ! how often is restart file written
-    feimode         = 3         ! extrapolation / interpolation mode
-                                ! 1 - linear ramp I
-                                ! 2 - linear ramp II
-                                ! 3 - block averages
-    ftrjsample      = 0         ! how often save accumulator to "accumulator evolution"
-    fmask_mode      = 0         ! 0 - disable ABF mask, 1 - enable ABF mask
-    fapply_abf      = .true.    ! on - apply ABF, off - do not apply ABF
+    fmode           = 0
+    fsample         = 5000
+    frestart        = .false.
+    frstupdate      = 5000
+    feimode         = 1
+    ftrjsample      = 0
+    fmask_mode      = 0
+    fapply_abf      = .true.
 
-    fenthalpy       = .false.   ! accumulate enthalpy
-    fentropy        = .false.   ! accumulate entropy
+    fenthalpy       = .false.
+    fentropy        = .false.
     fepotoffset     = 0.0d0
     fekinoffset     = 0.0d0
 
-    fhramp_min      = 100       ! definition of linear ramp
-    fhramp_max      = 200       ! definition of linear ramp
+    fhramp_min      = 100
+    fhramp_max      = 200
     fblock_size     = 0
 
     NumOfABFCVs     = 0
 
     fserver_enabled = .false.
     fserverkey      = ''
-    fserver         = ''  ! extracted from serverkey
+    fserver         = ''
     fserverupdate   = 500
     fconrepeats     = 0
     fabortonmwaerr  = .true.
@@ -104,7 +101,7 @@ subroutine abf_init_dat
     insidesamples   = 0
     outsidesamples  = 0
 
-    fdtx            = 0.0d0     ! time step in internal units
+    fdtx            = 0.0d0
 
 end subroutine abf_init_dat
 
@@ -171,7 +168,7 @@ subroutine abf_init_print_header
     write(PMF_OUT,120)  ' ------------------------------------------------------'
     write(PMF_OUT,125)  ' Restart file (fabfrst)                  : ', trim(fabfrst)
     write(PMF_OUT,125)  ' Restart enabled (frestart)              : ', prmfile_onoff(frestart)
-    write(PMF_OUT,130)  ' Final restart update (frstupdate)       : ', frstupdate
+    write(PMF_OUT,130)  ' Restart file update (frstupdate)        : ', frstupdate
     write(PMF_OUT,120)
     write(PMF_OUT,120)  ' Output options:'
     write(PMF_OUT,120)  ' ------------------------------------------------------'
@@ -179,8 +176,10 @@ subroutine abf_init_print_header
     write(PMF_OUT,130)  ' Output sampling (fsample)               : ', fsample
     write(PMF_OUT,125)  ' Accumulate enthalpy (fenthalpy)         : ', prmfile_onoff(fenthalpy)
     write(PMF_OUT,125)  ' Accumulate entropy (fentropy)           : ', prmfile_onoff(fentropy)
-    write(PMF_OUT,150)  ' Potential energy offset (fepotoffset)   : ', fepotoffset
-    write(PMF_OUT,150)  ' Kinetic energy offset (fekinoffset)     : ', fekinoffset
+    write(PMF_OUT,150)  ' Potential energy offset (fepotoffset)   : ', pmf_unit_get_rvalue(EnergyUnit,fepotoffset),  &
+                                                                       '['//trim(pmf_unit_label(EnergyUnit))//']'
+    write(PMF_OUT,150)  ' Kinetic energy offset (fekinoffset)     : ', pmf_unit_get_rvalue(EnergyUnit,fekinoffset), &
+                                                                       '['//trim(pmf_unit_label(EnergyUnit))//']'
     write(PMF_OUT,120)
     write(PMF_OUT,120)  ' Trajectory output options:'
     write(PMF_OUT,120)  ' ------------------------------------------------------'
@@ -199,7 +198,7 @@ subroutine abf_init_print_header
     write(PMF_OUT,130)  ' Number of connection repeats (fconrepeats)   : ', fconrepeats
     write(PMF_OUT,125)  ' Abort on MWA failure (fabortonmwaerr)        : ', prmfile_onoff(fabortonmwaerr)
     write(PMF_OUT,120)
-    write(PMF_OUT,120)  ' List of ABF coordinates'
+    write(PMF_OUT,120)  ' List of ABF collective variables'
     write(PMF_OUT,120)  ' -------------------------------------------------------'
     write(PMF_OUT,120)
 
@@ -216,7 +215,7 @@ subroutine abf_init_print_header
 120 format(A)
 125 format(A,A)
 130 format(A,I6)
-150 format(A,F10.1)
+150 format(A,F10.1,1X,A)
 
 140 format(' == Collective variable #',I4.4)
 

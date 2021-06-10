@@ -44,8 +44,6 @@ ADD_SUBDIRECTORY(mtd-energy)
 
 # restraint dynamics
 ADD_SUBDIRECTORY(rst-samples)
-ADD_SUBDIRECTORY(rst-wham)
-ADD_SUBDIRECTORY(rst-wham-2d)
 
 # string method
 ADD_SUBDIRECTORY(stm-trajectory)
@@ -61,7 +59,7 @@ IF(PMFLIB_NETWORK)
     ADD_SUBDIRECTORY(abp-admin)
 
     # MTD MWA utilities
-    ADD_SUBDIRECTORY(mtd-server)
+    #ADD_SUBDIRECTORY(mtd-server)
     ADD_SUBDIRECTORY(mtd-admin)
 
     # STM MWA utilities

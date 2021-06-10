@@ -3,6 +3,7 @@
 // =============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
+//    Copyright (C) 2021 Petr Kulhanek, kulhanek@chemi.muni.cz
 //    Copyright (C) 2011 Petr Kulhanek, kulhanek@chemi.muni.cz
 //    Copyright (C) 2008 Petr Kulhanek, kulhanek@enzim.hu
 //    Copyright (C) 2007 Petr Kulhanek, kulhanek@enzim.hu
@@ -23,11 +24,12 @@
 // =============================================================================
 
 #include <stdio.h>
-#include <MTDHistory.hpp>
+#include <MTDAccumulator.hpp>
 #include <SimpleVector.hpp>
 #include <EnergySurface.hpp>
 #include <VerboseStr.hpp>
 #include <TerminalStr.hpp>
+#include <StdIOFile.hpp>
 #include "MTDEneOptions.hpp"
 
 //------------------------------------------------------------------------------
@@ -50,17 +52,15 @@ public:
 // section of private data ----------------------------------------------------
 private:
     CMTDEneOptions          Options;            // program options
-    FILE*                   InputFile;          // input file
-    bool                    OwnInputFile;       // do we own input file handle?
-    FILE*                   OutputFile;         // output file
-    bool                    OwnOutputFile;      // do we own output file handle?
-    CMTDHistory             MTDHistory;         // history list
-    CEnergySurface          EnergySurface;      // energy surface
+    CStdIOFile              InputFile;
+    CStdIOFile              OutputFile;
+    CMTDAccumulator         MTDAccumulator;     // MTD accumulator
+    CEnergySurface          FES;                // energy surface
     CTerminalStr            Console;
     CVerboseStr             vout;
 
-    bool CalculateFES(void);                    // calculate energy surface
-    bool CalculateSmoothedFES(void);            // calculate smoothed energy surface
+    // calculate energy surface
+    void CalculateFES(void);
 };
 
 //------------------------------------------------------------------------------

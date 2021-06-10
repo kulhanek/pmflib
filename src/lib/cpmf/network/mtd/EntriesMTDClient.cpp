@@ -194,15 +194,15 @@ void PMF_PACKAGE cpmf_mtd_client_get_buffer_info_(FTINT* ret_st,
     *num_of_hills = 0;
 
 // is there a buffer with index id?
-    CMTDBuffer* p_buffer = MTDClient.GetBuffer(*id-1);
-    if(p_buffer == NULL) {
-        *ret_st = 1;
-        return;
-    }
+//    CMTDBuffer* p_buffer = MTDClient.GetBuffer(*id-1);
+//    if(p_buffer == NULL) {
+//        *ret_st = 1;
+//        return;
+//    }
 
-    *level = p_buffer->GetLevel();
-    *start = p_buffer->GetStart();
-    *num_of_hills = p_buffer->GetNumOfHills();
+//    *level = p_buffer->GetLevel();
+//    *start = p_buffer->GetStart();
+//    *num_of_hills = p_buffer->GetNumOfHills();
 
     *ret_st = 0;
 }
@@ -217,29 +217,29 @@ void PMF_PACKAGE cpmf_mtd_client_add_buffer_data_(FTINT* ret_st,
                                       FTINT* num_of_hills,
                                       double* data)
 {
-    int l_num_of_hills = *num_of_hills;
+//    int l_num_of_hills = *num_of_hills;
 
-// create new buffer
-    CMTDBuffer* p_buffer = MTDClient.GetNewBuffer(l_num_of_hills);
-    if(p_buffer == NULL) {
-        *ret_st = 1;
-        return;
-    }
-
-    p_buffer->SetLevel(*level);
-    p_buffer->SetStart(*start);
-
-// set data
-    double* src = data;
-
-    for(int i=0; i < l_num_of_hills; i++) {
-        p_buffer->SetHeight(i,*src++);
-        for(int j=0; j < p_buffer->GetNumOfCVs(); j++) {
-            p_buffer->SetValue(i,j,*src++);
-            p_buffer->SetWidth(i,j,*src++);
-        }
-        p_buffer->IncNumberOfHills();
-    }
+//// create new buffer
+//    CMTDBuffer* p_buffer = MTDClient.GetNewBuffer(l_num_of_hills);
+//    if(p_buffer == NULL) {
+//        *ret_st = 1;
+//        return;
+//    }
+//
+//    p_buffer->SetLevel(*level);
+//    p_buffer->SetStart(*start);
+//
+//// set data
+//    double* src = data;
+//
+//    for(int i=0; i < l_num_of_hills; i++) {
+//        p_buffer->SetHeight(i,*src++);
+//        for(int j=0; j < p_buffer->GetNumOfCVs(); j++) {
+//            p_buffer->SetValue(i,j,*src++);
+//            p_buffer->SetWidth(i,j,*src++);
+//        }
+//        p_buffer->IncNumberOfHills();
+//    }
 
     *ret_st = 0;
 }
@@ -252,24 +252,24 @@ void PMF_PACKAGE cpmf_mtd_client_get_buffer_data_(FTINT* ret_st,
                                       FTINT* id,
                                       double* data)
 {
-// is there a buffer with index id?
-    CMTDBuffer* p_buffer = MTDClient.GetBuffer(*id-1);
-    if(p_buffer == NULL) {
-        *ret_st = 1;
-        return;
-    }
-
-// copy all data
-    double* dst = data;
-
-// copy data
-    for(int i=0; i < p_buffer->GetNumOfHills(); i++) {
-        *dst++ = p_buffer->GetHeight(i);
-        for(int j=0; j < p_buffer->GetNumOfCVs(); j++) {
-            *dst++ = p_buffer->GetValue(i,j);
-            *dst++ = p_buffer->GetWidth(i,j);
-        }
-    }
+//// is there a buffer with index id?
+//    CMTDBuffer* p_buffer = MTDClient.GetBuffer(*id-1);
+//    if(p_buffer == NULL) {
+//        *ret_st = 1;
+//        return;
+//    }
+//
+//// copy all data
+//    double* dst = data;
+//
+//// copy data
+//    for(int i=0; i < p_buffer->GetNumOfHills(); i++) {
+//        *dst++ = p_buffer->GetHeight(i);
+//        for(int j=0; j < p_buffer->GetNumOfCVs(); j++) {
+//            *dst++ = p_buffer->GetValue(i,j);
+//            *dst++ = p_buffer->GetWidth(i,j);
+//        }
+//    }
 
     *ret_st = 0;
 }

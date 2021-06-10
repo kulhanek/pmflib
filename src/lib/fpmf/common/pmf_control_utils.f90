@@ -27,6 +27,138 @@ implicit none
 contains
 
 !===============================================================================
+! Subroutine:   pmf_ctrl_print_default_logical
+!===============================================================================
+
+subroutine pmf_ctrl_print_default_logical(name, value)
+
+    use prmfile
+    use pmf_constants
+
+    implicit none
+    character(*)                        :: name
+    logical                             :: value
+    ! --------------------------------------------
+    character(len=37)                   :: buf2
+    ! --------------------------------------------------------------------------
+
+    buf2 = name
+
+    ! setup format string
+    write(PMF_OUT,15) adjustl(buf2), prmfile_onoff(value)
+
+15 format(A37,1X,'=',1X,A12,19X,'(default)')
+
+end subroutine pmf_ctrl_print_default_logical
+
+!===============================================================================
+! Subroutine:   pmf_ctrl_print_default_real8
+!===============================================================================
+
+subroutine pmf_ctrl_print_default_real8( name, value, fmt)
+
+    use prmfile
+    use pmf_constants
+
+    implicit none
+    character(*)                        :: name
+    real(PMFDP)                         :: value
+    character(*)                        :: fmt
+    ! --------------------------------------------
+    character(len=37)                   :: buf2
+    character(len=30)                   :: buf3
+    ! --------------------------------------------------------------------------
+
+    buf2 = name
+    write(buf3,'('//trim(fmt)//')') value
+
+    ! setup format string
+    write(PMF_OUT,15) adjustl(buf2), buf3
+
+15 format(A37,1X,'=',1X,A12,19X,'(default)')
+
+end subroutine pmf_ctrl_print_default_real8
+
+!===============================================================================
+! Subroutine:   pmf_ctrl_print_default_integer
+!===============================================================================
+
+subroutine pmf_ctrl_print_default_integer(name, value, fmt)
+
+    use prmfile
+    use pmf_constants
+
+    implicit none
+    character(*)                        :: name
+    integer                             :: value
+    character(*)                        :: fmt
+    ! --------------------------------------------
+    character(len=37)                   :: buf2
+    character(len=30)                   :: buf3
+    ! --------------------------------------------------------------------------
+
+    buf2 = name
+    write(buf3,'('//trim(fmt)//')') value
+
+    ! setup format string
+    write(PMF_OUT,15) adjustl(buf2), buf3
+
+15 format(A37,1X,'=',1X,A12,19X,'(default)')
+
+end subroutine pmf_ctrl_print_default_integer
+
+!===============================================================================
+! Subroutine:  pmf_ctrl_print_default_stritem
+!===============================================================================
+
+subroutine pmf_ctrl_print_default_stritem(sname,svalue)
+
+    use pmf_constants
+
+    implicit none
+    character(*)                        :: sname
+    character(*)                        :: svalue
+    character(len=27)                   :: buff
+    ! --------------------------------------------------------------------------
+
+    write(buff,5) trim(sname)
+    write(PMF_OUT,15) adjustl(buff),trim(svalue)
+
+ 5 format(A27)
+15 format(A27,' = ',A40,' (default)')
+
+end subroutine pmf_ctrl_print_default_stritem
+
+!===============================================================================
+! Subroutine:  pmf_ctrl_read_stritem
+!===============================================================================
+
+subroutine pmf_ctrl_read_stritem(prm_fin,sname,svalue)
+
+    use prmfile
+    use pmf_constants
+
+    implicit none
+    type(PRMFILE_TYPE),intent(inout)    :: prm_fin
+    character(*)                        :: sname
+    character(*)                        :: svalue
+    character(len=27)                   :: buff
+    ! --------------------------------------------------------------------------
+
+    write(buff,5) trim(sname)
+    if( prmfile_get_string_by_key(prm_fin,sname,svalue) ) then
+        write(PMF_OUT,10) adjustl(buff),trim(svalue)
+    else
+        write(PMF_OUT,15) adjustl(buff),trim(svalue)
+    end if
+
+ 5 format(A27)
+10 format(A27,' = ',A40)
+15 format(A27,' = ',A40,' (default)')
+
+end subroutine pmf_ctrl_read_stritem
+
+!===============================================================================
 ! Subroutine:   pmf_ctrl_read_logical
 !===============================================================================
 

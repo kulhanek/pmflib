@@ -94,8 +94,9 @@ subroutine tabf_control_read_abf(prm_fin)
 
     call pmf_ctrl_read_logical(prm_fin,'fenthalpy',fenthalpy)
     call pmf_ctrl_read_logical(prm_fin,'fentropy',fentropy)
-    call pmf_ctrl_read_real8(prm_fin,'fepotoffset',fepotoffset,'F10.1')
-    call pmf_ctrl_read_real8(prm_fin,'fekinoffset',fekinoffset,'F10.1')
+
+    call pmf_ctrl_read_real8_wunit(prm_fin,'fepotoffset',EnergyUnit,fepotoffset,'F10.1')
+    call pmf_ctrl_read_real8_wunit(prm_fin,'fekinoffset',EnergyUnit,fekinoffset,'F10.1')
 
     select case(feimode)
         case(1)

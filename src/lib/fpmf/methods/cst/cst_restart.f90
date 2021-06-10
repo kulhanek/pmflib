@@ -415,6 +415,14 @@ subroutine cst_restart_write_data(iounit,full)
         key = 'M2EKIN'
         write(iounit,5) adjustl(key), 'R', 1
         write(iounit,40) m2ekin
+
+        key = 'MERST'
+        write(iounit,5) adjustl(key), 'R', 1
+        write(iounit,40) merst
+
+        key = 'M2ERST'
+        write(iounit,5) adjustl(key), 'R', 1
+        write(iounit,40) m2erst
     end if
 
     if ( fentropy )  then
@@ -429,6 +437,10 @@ subroutine cst_restart_write_data(iounit,full)
         key = 'CDS-HK'
         write(iounit,5) adjustl(key), 'R', nitems
         write(iounit,40) (cds_hk(i), i=1,nitems)
+
+        key = 'CDS-HR'
+        write(iounit,5) adjustl(key), 'R', nitems
+        write(iounit,40) (cds_hr(i), i=1,nitems)
     end if
 
     return

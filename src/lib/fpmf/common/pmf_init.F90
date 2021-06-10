@@ -96,9 +96,7 @@ subroutine pmf_init_dat
     fmtddef     = '{MTD}'
     fmtdout     = '_mtd.out'
     fmtdrst     = '_mtd.rst'
-    fmtdcvs     = '_mtd.cvs'
-    fmtdhills   = '_mtd.hills'
-    fmtdgpout   = '_mtd.gp'
+    fmtdtrj     = '_mtd.trj'
 
     fabfdef     = '{ABF}'
     fabfmask    = '_abf.mask'
@@ -327,8 +325,8 @@ subroutine pmf_init_all(amass,ax)
     if( NumOfCVs .gt. 0 ) then
         CVContext%CVsValues = 0.0d0
         CVContext%CVsDrvs = 0.0d0
-        CVContext%CVsFrc = 0.0d0  ! lam81
     end if
+
     do i=1,NumOfCVs
         call CVList(i)%cv%calculate_cv(Crd,CVContext)
     end do
@@ -481,35 +479,22 @@ subroutine pmf_init_pmf
           Vel(3,NumOfLAtoms), &
           CVContext%CVsValues(NumOfCVs), &
           CVContext%CVsDrvs(3,NumOfLAtoms,NumOfCVs), &
-          CVContext%CVsFrc(NumOfCVs), &  ! lam81
           stat=alloc_failed)
 
     if( alloc_failed .ne. 0 ) then
         call pmf_utils_exit(PMF_OUT, 1,'[PMFLIB] Unable to allocate memory for common arrays!')
     endif
 
-    if( fenable_hessian ) then
-        allocate(CVContext%CVsDrvDrvs(3,NumOfLAtoms,3,NumOfLAtoms,NumOfCVs), &
-                 stat=alloc_failed) ! lam81
-
-        if( alloc_failed .ne. 0 ) then
-            call pmf_utils_exit(PMF_OUT, 1,'[PMFLIB] Unable to allocate memory for hessian array!')
-        endif
-    end if
-
     if( cst_enabled ) then
         ! allocate arrays used by bluemoon
         allocate(CrdP(3,NumOfLAtoms), &
                   CVContextP%CVsValues(NumOfCVs), &
                   CVContextP%CVsDrvs(3,NumOfLAtoms,NumOfCVs), &
-                  CVContextP%CVsFrc(NumOfCVs), &  ! lam81
                   stat=alloc_failed)
 
         if( alloc_failed .ne. 0 ) then
             call pmf_utils_exit(PMF_OUT, 1,'[PMFLIB] Unable to allocate memory for CST arrays!')
         endif
-
-        CVContextP%CVsFrc = 0.0d0  ! lam81
 
         if( fintalg .eq. IA_VEL_VERLET ) then
             ! allocate arrays used by bluemoon
@@ -657,16 +642,16 @@ subroutine pmf_init_sys_summary()
     write(PMF_OUT,30) adjustl(form_str)
 
     write(form_str,'(F10.1)') pmf_unit_get_rvalue(TemperatureUnit,ftemp)
-    write(PMF_OUT,40)  trim(adjustl(form_str)), pmf_unit_label(TemperatureUnit)
+    write(PMF_OUT,40)  trim(adjustl(form_str)), '['//trim(pmf_unit_label(TemperatureUnit))//']'
 
     write(form_str,'(F10.3)') pmf_unit_get_rvalue(TimeUnit,fdt)
-    write(PMF_OUT,50)  trim(adjustl(form_str)), pmf_unit_label(TimeUnit)
+    write(PMF_OUT,50)  trim(adjustl(form_str)), '['//trim(pmf_unit_label(TimeUnit))//']'
 
     write(form_str,'(I10)') fnstlim
     write(PMF_OUT,60) trim(adjustl(form_str))
 
     write(form_str,'(F20.2)') pmf_unit_get_rvalue(TimeUnit,fdt*fnstlim)
-    write(PMF_OUT,65)  trim(adjustl(form_str)), pmf_unit_label(TimeUnit)
+    write(PMF_OUT,65)  trim(adjustl(form_str)), '['//trim(pmf_unit_label(TimeUnit))//']'
 
     select case(fsystype)
     case(SYS_NT)
@@ -691,23 +676,23 @@ subroutine pmf_init_sys_summary()
     select case(fbox_type)
     case(BOX_ORTHOGONAL,BOX_GENERAL)
     write(form_str,'(F15.1)') pmf_unit_get_rvalue(volunit,fbox_volume)
-    write(PMF_OUT,90)  trim(adjustl(form_str)),trim(pmf_unit_label(volunit))
+    write(PMF_OUT,90)  trim(adjustl(form_str)),'['//trim(pmf_unit_label(volunit))//']'
 
     write(PMF_OUT,100) pmf_unit_get_rvalue(LengthUnit,fucell(1,1)), &
                     pmf_unit_get_rvalue(LengthUnit,fucell(2,1)), &
                     pmf_unit_get_rvalue(LengthUnit,fucell(3,1)), &
-                    trim(pmf_unit_label(LengthUnit))
+                    '['//trim(pmf_unit_label(LengthUnit))//']'
     write(PMF_OUT,110) pmf_unit_get_rvalue(LengthUnit,fucell(1,2)), &
                     pmf_unit_get_rvalue(LengthUnit,fucell(2,2)), &
                     pmf_unit_get_rvalue(LengthUnit,fucell(3,2)), &
-                    trim(pmf_unit_label(LengthUnit))
+                    '['//trim(pmf_unit_label(LengthUnit))//']'
     write(PMF_OUT,120) pmf_unit_get_rvalue(LengthUnit,fucell(1,3)), &
                     pmf_unit_get_rvalue(LengthUnit,fucell(2,3)), &
                     pmf_unit_get_rvalue(LengthUnit,fucell(3,3)), &
-                    trim(pmf_unit_label(LengthUnit))
+                    '['//trim(pmf_unit_label(LengthUnit))//']'
 
     write(form_str,'(F10.2)') pmf_unit_get_rvalue(LengthUnit,fbox_sphere)
-    write(PMF_OUT,130) trim(adjustl(form_str)), trim(pmf_unit_label(LengthUnit))
+    write(PMF_OUT,130) trim(adjustl(form_str)), '['//trim(pmf_unit_label(LengthUnit))//']'
     end select
 
  10 format('# Total number of atoms    : ',A)

@@ -317,6 +317,21 @@ void CColVariable::PrintInfo(std::ostream& vout)
 
 //------------------------------------------------------------------------------
 
+void CColVariable::PrintInfo(FILE* p_fout)
+{
+//    fprintf(p_fout,"# ID P Type       Unit  Name                       Min value   Max value   NBins  \n");
+//    fprintf(p_fout,"# -- - ---------- ----- -------------------------- ----------- ----------- -------\n");
+
+    char periodic = 'F';
+    if( IsPeriodic() ) periodic = 'T';
+    fprintf(p_fout,"# %2d %1c %10s %5s %26s %11.4f %11.4f %7d\n",ID+1,periodic,
+                    (const char*)Type,(const char*)Unit,(const char*)Name,
+                     MinValue*FConv,MaxValue*FConv,NBins);
+
+}
+
+//------------------------------------------------------------------------------
+
 void CColVariable::LoadInfo(CXMLElement* p_ele)
 {
     if(p_ele == NULL) {

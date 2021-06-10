@@ -194,14 +194,14 @@ SET(PMF_MTD_CORE_SRC
         methods/mtd/mtd_dat.f90
         methods/mtd/mtd_init.f90
         methods/mtd/mtd_cvs.f90
-        methods/mtd/mtd_history.f90
         methods/mtd/mtd_control.F90
         methods/mtd/mtd_client.F90
         methods/mtd/mtd_output.f90
         methods/mtd/mtd_restart.f90
         methods/mtd/mtd_core.f90
         methods/mtd/mtd_finalize.f90
-        methods/mtd/mtd_grid.f90
+        methods/mtd/mtd_accumulator.f90
+        methods/mtd/mtd_trajectory.f90
         )
 
 # restrained dynamics -----------------------------------------------------------

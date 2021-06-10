@@ -43,7 +43,6 @@ logical                 :: fprint_inpcrds       ! print input coordinates includ
                                                 ! names and residue names
 logical                 :: fprint_masks         ! print atom masks in CV definitions
 logical                 :: fenable_pbc          ! enable PBC condition (partially)
-logical                 :: fenable_hessian      ! enable the calculation of second derivatives
 logical                 :: fmonitor_paths       ! enable path monitoring
 
 ! parallel setup ---------------------------------------------------------------
@@ -137,9 +136,7 @@ character(PMF_MAX_PATH)     :: frstctr
 character(PMF_MAX_PATH)     :: fmtddef
 character(PMF_MAX_PATH)     :: fmtdout
 character(PMF_MAX_PATH)     :: fmtdrst
-character(PMF_MAX_PATH)     :: fmtdcvs
-character(PMF_MAX_PATH)     :: fmtdhills
-character(PMF_MAX_PATH)     :: fmtdgpout
+character(PMF_MAX_PATH)     :: fmtdtrj
 
 ! adaptive biasing force method ------------------
 character(PMF_MAX_PATH)     :: fabfdef
@@ -150,7 +147,6 @@ character(PMF_MAX_PATH)     :: fabftrj
 
 ! adaptive biasing force method (testing) --------
 character(PMF_MAX_PATH)     :: ftabfdef
-character(PMF_MAX_PATH)     :: ftabfmask
 character(PMF_MAX_PATH)     :: ftabfout
 character(PMF_MAX_PATH)     :: ftabficf
 character(PMF_MAX_PATH)     :: ftabfrst

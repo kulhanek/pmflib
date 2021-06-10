@@ -75,20 +75,20 @@ const CColVariable* CEnergySurface::GetCV(unsigned int cv) const
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void CEnergySurface::Allocate(const CMTDHistory* mtd_hist)
+void CEnergySurface::Allocate(const CMTDAccumulator* mtd_accu)
 {
     if( NumOfCVs > 0 ) Deallocate();
-    if( mtd_hist == NULL ) return;
-    if( mtd_hist->GetNumOfCVs() <= 0 ) return;
+    if( mtd_accu == NULL ) return;
+    if( mtd_accu->GetNumOfCVs() <= 0 ) return;
 
 // allocate items
-    NumOfCVs = mtd_hist->GetNumOfCVs();
+    NumOfCVs = mtd_accu->GetNumOfCVs();
     CVs.CreateVector(NumOfCVs);
 
 // copy cvs and calculate total number of points
     TotNPoints = 1;
     for(int i=0; i < NumOfCVs; i++) {
-        CVs[i].CopyFrom(mtd_hist->GetCV(i));
+        CVs[i].CopyFrom(mtd_accu->GetCV(i));
         TotNPoints *= CVs[i].GetNumOfBins();
     }
 

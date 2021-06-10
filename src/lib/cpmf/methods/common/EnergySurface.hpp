@@ -24,10 +24,11 @@
 
 #include <PMFMainHeader.hpp>
 #include <SmallString.hpp>
-#include <MTDHistory.hpp>
 #include <ABFAccumulator.hpp>
 #include <ABPAccumulator.hpp>
+#include <MTDAccumulator.hpp>
 #include <SimpleVector.hpp>
+
 
 //------------------------------------------------------------------------------
 
@@ -52,7 +53,7 @@ public:
 
 // allocate/deallocate --------------------------------------------------------
     /// allocate array
-    void Allocate(const CMTDHistory* mtd_hist);
+    void Allocate(const CMTDAccumulator* mtd_accu);
 
     /// allocate array
     void Allocate(const CABFAccumulator* abf_accu);
@@ -151,9 +152,6 @@ private:
     CSimpleVector<int>          Samples;        // number of samples
     double                      SLevel;         // sigma level for error calculation
 
-    void CalculateFES_Part(CMTDHistory& mtd_hist,
-                           CSimpleVector<double>& point,unsigned int mtd_time,
-                           unsigned int& loc,unsigned int cv);
 
     void CalculateFES_MTDParam_Part(CSimpleVector<double>& params,
                                     CSimpleVector<double>& point,unsigned int& loc,unsigned int cv);
