@@ -43,6 +43,9 @@ implicit none
 
 !===============================================================================
 
+! precision tresholds
+real(PMFDP),parameter   :: PMF_MEPS = 1d-7
+
 ! math part ------------------------------------------------------------------
 real(PMFDP),parameter   :: PMF_PI       = 3.1415926535897932384626433832795d0
 real(PMFDP),parameter   :: PMF_HPI      = 0.5d0 * PMF_PI

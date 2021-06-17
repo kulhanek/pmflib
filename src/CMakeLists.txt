@@ -53,6 +53,7 @@ SET(FPMF_LIBRARIES
 
 # all libraries ----------------------------------
 ADD_SUBDIRECTORY(lib)
+ADD_SUBDIRECTORY(test)
 
 # all binaries -----------------------------------
 IF(PMFLIB_BUILD_UTILS)

@@ -32,6 +32,7 @@ SET(PMF_COM_SRC
 
 SET(PMF_CVS_SRC
         common/cvs/cv_common.f90
+        common/cvs/cv_math.f90
 
     # distances
         common/cvs/distance/cv_pos.f90

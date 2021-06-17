@@ -318,7 +318,6 @@ subroutine cst_core_enthalpy_entropy_lf
         cds_hr(i)   = cds_hr(i) + dlam1 * derst2
     end do
 
-
 end subroutine cst_core_enthalpy_entropy_lf
 
 !===============================================================================

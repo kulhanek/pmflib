@@ -255,6 +255,9 @@ subroutine run_coord_test_deriv(cvid,test_id)
             write(PMF_OUT,50)
             call print_grad(cvid,fdx_num)
             write(PMF_OUT,*)
+            write(PMF_OUT,60)
+            call print_grad(cvid,fdx_ana-fdx_num)
+            write(PMF_OUT,*)
         end if
         if( stop_when_error ) then
             call pmf_utils_exit(PMF_OUT,1,'Requested stop in the case of error!')
@@ -269,6 +272,7 @@ subroutine run_coord_test_deriv(cvid,test_id)
 30 format('Coordinates:')
 40 format('Analytical gradients:')
 50 format('Numerical gradients:')
+60 format('Difference between gradients (ana-num):')
 
 end subroutine run_coord_test_deriv
 
