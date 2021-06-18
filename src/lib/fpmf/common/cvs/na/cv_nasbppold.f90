@@ -20,7 +20,7 @@
 !    Boston, MA  02110-1301  USA
 !===============================================================================
 
-module cv_nasbpp
+module cv_nasbppold
 
 use pmf_sizes
 use pmf_constants
@@ -33,33 +33,33 @@ implicit none
 
 !===============================================================================
 
-type, extends(CVType) :: CVTypeNASBPP
+type, extends(CVType) :: CVTypeNASBPPOLD
 
     type(XYZFILE_TYPE)  :: xyz_str_a
     type(XYZFILE_TYPE)  :: xyz_str_b
     integer             :: lbp_par
 
     contains
-        procedure :: load_cv        => load_nasbpp
-        procedure :: calculate_cv   => calculate_nasbpp
-end type CVTypeNASBPP
+        procedure :: load_cv        => load_nasbppold
+        procedure :: calculate_cv   => calculate_nasbppold
+end type CVTypeNASBPPOLD
 
 !===============================================================================
 
 contains
 
 !===============================================================================
-! Subroutine:  load_nasbpp
+! Subroutine:  load_nasbppold
 !===============================================================================
 
-subroutine load_nasbpp(cv_item,prm_fin)
+subroutine load_nasbppold(cv_item,prm_fin)
 
     use prmfile
     use pmf_utils
     use smf_periodic_table
 
     implicit none
-    class(CVTypeNASBPP)                 :: cv_item
+    class(CVTypeNASBPPOLD)              :: cv_item
     type(PRMFILE_TYPE),intent(inout)    :: prm_fin
     character(len=PRMFILE_MAX_VALUE)    :: tmpstr
     integer                             :: i,ar
@@ -67,7 +67,7 @@ subroutine load_nasbpp(cv_item,prm_fin)
     ! --------------------------------------------------------------------------
 
     ! unit and CV name initialization ---------------
-    cv_item%ctype         = 'NASBPP'
+    cv_item%ctype         = 'NASBPPOLD'
     cv_item%gradforanycrd = .true.
     call cv_common_read_name(cv_item,prm_fin)
 
@@ -198,22 +198,22 @@ subroutine load_nasbpp(cv_item,prm_fin)
 100 format('Atom mismatch between group A and reference A atoms! atom: ',I6,', group mass: ',F10.3, ', ref mass: ',F10.3)
 110 format('Atom mismatch between group B and reference B atoms! atom: ',I6,', group mass: ',F10.3, ', ref mass: ',F10.3)
 
-end subroutine load_nasbpp
+end subroutine load_nasbppold
 
 !===============================================================================
-! Subroutine:  calculate_nasbpp
+! Subroutine:  calculate_nasbppold
 !===============================================================================
 
-subroutine calculate_nasbpp(cv_item,x,ctx)
+subroutine calculate_nasbppold(cv_item,x,ctx)
 
     use pmf_dat
     use pmf_pbc
     use pmf_utils
 
     implicit none
-    class(CVTypeNASBPP) :: cv_item
-    real(PMFDP)         :: x(:,:)
-    type(CVContextType) :: ctx
+    class(CVTypeNASBPPOLD)  :: cv_item
+    real(PMFDP)             :: x(:,:)
+    type(CVContextType)     :: ctx
     ! -----------------------------------------------
     integer             :: i,ai,mi,mj,info, best
     real(PMFDP)         :: xsa(3),xra(3),xsb(3),xrb(3)
@@ -318,7 +318,7 @@ subroutine calculate_nasbpp(cv_item,x,ctx)
     call dsyev('V','L', 4, fa, 4, eigenvaluesa, work, 26*4, info)
 
     if( info .ne. 0 ) then
-        call pmf_utils_exit(PMF_OUT,1,'Unable to diagonalize matrix in calculate_nasbpp for point a!')
+        call pmf_utils_exit(PMF_OUT,1,'Unable to diagonalize matrix in calculate_nasbppold for point a!')
     end if
 
     ! calculate geometrical centres (source and target) -------------------
@@ -407,7 +407,7 @@ subroutine calculate_nasbpp(cv_item,x,ctx)
     call dsyev('V','L', 4, fb, 4, eigenvaluesb, work, 26*4, info)
 
     if( info .ne. 0 ) then
-        call pmf_utils_exit(PMF_OUT,1,'Unable to diagonalize matrix in calculate_nasbpp for point b!')
+        call pmf_utils_exit(PMF_OUT,1,'Unable to diagonalize matrix in calculate_nasbppold for point b!')
     end if
 
     best = 4
@@ -585,7 +585,7 @@ subroutine calculate_nasbpp(cv_item,x,ctx)
 
             ctx%CVsValues(cv_item%idx) = sign(1.0d0,asc)*acos(arg)
         case default
-            call pmf_utils_exit(PMF_OUT,1,'Unrecognized value for parameter option in calculate_nasbpp!')
+            call pmf_utils_exit(PMF_OUT,1,'Unrecognized value for parameter option in calculate_nasbppold!')
     end select
 
     ! first derivatives --------------------------------------------------------------------------------
@@ -609,7 +609,7 @@ subroutine calculate_nasbpp(cv_item,x,ctx)
             a_tmp2(:) = f1*(tmp1(:)*o_tmp1vtmp2v - tmp2(:)*argo_tmp22)
 
         case default
-            call pmf_utils_exit(PMF_OUT,1,'Unrecognized value for parameter option in calculate_nasbpp!')
+            call pmf_utils_exit(PMF_OUT,1,'Unrecognized value for parameter option in calculate_nasbppold!')
     end select
 
     a_ua(:,:)   = 0.0d0
@@ -964,7 +964,7 @@ subroutine calculate_nasbpp(cv_item,x,ctx)
             a_ub(2,3) =   0.5d0*zsc*a_zaxis(2)*o_zaxis - 0.5d0*zsc*o_zaxis*o_zaxis2*zaxisr(2)*t1
             a_ub(3,3) =   0.5d0*zsc*a_zaxis(3)*o_zaxis - 0.5d0*zsc*o_zaxis*o_zaxis2*zaxisr(3)*t1
         case default
-            call pmf_utils_exit(PMF_OUT,1,'Unrecognized value for parameter option in calculate_nasbpp!')
+            call pmf_utils_exit(PMF_OUT,1,'Unrecognized value for parameter option in calculate_nasbppold!')
     end select
 
     ! rotation matrix a ------------------------------
@@ -1127,9 +1127,9 @@ subroutine calculate_nasbpp(cv_item,x,ctx)
 
  return
 
-end subroutine calculate_nasbpp
+end subroutine calculate_nasbppold
 
 !===============================================================================
 
-end module cv_nasbpp
+end module cv_nasbppold
 

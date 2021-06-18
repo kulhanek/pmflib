@@ -33,6 +33,7 @@ type :: SImpStrData
     real(PMFDP)     :: eivals(4)
     real(PMFDP)     :: eivecs(4,4)
     real(PMFDP)     :: u(3,3)
+    real(PMFDP)     :: o(3)
 end type SImpStrData
 
 contains
@@ -46,8 +47,8 @@ contains
 subroutine get_vlen(a,v)
 
     implicit none
-    real(PMFDP),intent(in)  :: a(3)
-    real(PMFDP),intent(out) :: v
+    real(PMFDP)  :: a(3)
+    real(PMFDP) :: v
     ! --------------------------------------------
     real(PMFDP) :: dp
     ! --------------------------------------------------------------------------
@@ -64,8 +65,8 @@ end subroutine get_vlen
 subroutine get_vlen_der(a,d_v,d_a)
 
     implicit none
-    real(PMFDP),intent(in)      :: a(3),d_v
-    real(PMFDP),intent(inout)   :: d_a(3)
+    real(PMFDP)      :: a(3),d_v
+    real(PMFDP)   :: d_a(3)
     ! --------------------------------------------
     real(PMFDP) :: dp,v,f
     ! --------------------------------------------------------------------------
@@ -92,8 +93,8 @@ end subroutine get_vlen_der
 subroutine get_vangle(a,b,v)
 
     implicit none
-    real(PMFDP),intent(in)  :: a(3),b(3)
-    real(PMFDP),intent(out) :: v
+    real(PMFDP)  :: a(3),b(3)
+    real(PMFDP) :: v
     ! --------------------------------------------
     real(PMFDP) :: n_a(3),n_b(3)
     ! --------------------------------------------------------------------------
@@ -112,8 +113,8 @@ end subroutine get_vangle
 subroutine get_vangle_der(a,b,d_v,d_a,d_b)
 
     implicit none
-    real(PMFDP),intent(in)      :: a(3),b(3),d_v
-    real(PMFDP),intent(inout)   :: d_a(3),d_b(3)
+    real(PMFDP)      :: a(3),b(3),d_v
+    real(PMFDP)   :: d_a(3),d_b(3)
     ! --------------------------------------------
     real(PMFDP) :: n_a(3),n_b(3),d_na(3),d_nb(3)
     ! --------------------------------------------------------------------------
@@ -144,8 +145,8 @@ end subroutine get_vangle_der
 subroutine get_nvangle(a,b,v)
 
     implicit none
-    real(PMFDP),intent(in)  :: a(3),b(3)
-    real(PMFDP),intent(out) :: v
+    real(PMFDP)  :: a(3),b(3)
+    real(PMFDP) :: v
     ! --------------------------------------------
     real(PMFDP) :: dp
     ! --------------------------------------------------------------------------
@@ -169,8 +170,8 @@ end subroutine get_nvangle
 subroutine get_nvangle_der(a,b,d_v,d_a,d_b)
 
     implicit none
-    real(PMFDP),intent(in)      :: a(3),b(3),d_v
-    real(PMFDP),intent(inout)   :: d_a(3),d_b(3)
+    real(PMFDP)      :: a(3),b(3),d_v
+    real(PMFDP)   :: d_a(3),d_b(3)
     ! --------------------------------------------
     real(PMFDP) :: dp,df,f
     ! --------------------------------------------------------------------------
@@ -199,15 +200,15 @@ end subroutine get_nvangle_der
 
 !===============================================================================
 ! Subroutine:  get_vtors
-! Input vectors:        a,b,c
+! Input vectors:        a,b,c ! c - is the rotational axis !!!!!
 ! Output torsion angle: v
 !===============================================================================
 
 subroutine get_vtors(a,b,c,v)
 
     implicit none
-    real(PMFDP),intent(in)  :: a(3),b(3),c(3)
-    real(PMFDP),intent(out) :: v
+    real(PMFDP)  :: a(3),b(3),c(3)
+    real(PMFDP) :: v
     ! --------------------------------------------
     real(PMFDP) :: sc
     real(PMFDP) :: c_a(3)
@@ -234,8 +235,8 @@ end subroutine get_vtors
 subroutine get_vtors_der(a,b,c,d_v,d_a,d_b,d_c)
 
     implicit none
-    real(PMFDP),intent(in)      :: a(3),b(3),c(3),d_v
-    real(PMFDP),intent(inout)   :: d_a(3),d_b(3),d_c(3)
+    real(PMFDP)      :: a(3),b(3),c(3),d_v
+    real(PMFDP)   :: d_a(3),d_b(3),d_c(3)
     ! --------------------------------------------
     real(PMFDP) :: sc
     real(PMFDP) :: c_a(3),c_b(3),ta(3),tb(3)
@@ -270,8 +271,8 @@ end subroutine get_vtors_der
 subroutine get_vtors_sign(a,b,c,sc)
 
     implicit none
-    real(PMFDP),intent(in)  :: a(3),b(3),c(3)
-    real(PMFDP),intent(out) :: sc
+    real(PMFDP)  :: a(3),b(3),c(3)
+    real(PMFDP) :: sc
     ! --------------------------------------------
     real(PMFDP) :: c_ab(3), dt
     ! --------------------------------------------------------------------------
@@ -290,8 +291,8 @@ end subroutine get_vtors_sign
 subroutine get_cross_product(a,b,c)
 
     implicit none
-    real(PMFDP),intent(in)  :: a(3),b(3)
-    real(PMFDP),intent(out) :: c(3)
+    real(PMFDP)  :: a(3),b(3)
+    real(PMFDP) :: c(3)
     ! --------------------------------------------------------------------------
 
     c(1) = a(2)*b(3) - a(3)*b(2)
@@ -307,8 +308,8 @@ end subroutine get_cross_product
 subroutine get_cross_product_der(a,b,d_c,d_a,d_b)
 
     implicit none
-    real(PMFDP),intent(in)      :: a(3),b(3),d_c(3)
-    real(PMFDP),intent(inout)   :: d_a(3),d_b(3)
+    real(PMFDP)      :: a(3),b(3),d_c(3)
+    real(PMFDP)   :: d_a(3),d_b(3)
     ! --------------------------------------------------------------------------
 
 !    c(1) = a(2)*b(3) - a(3)*b(2)
@@ -335,8 +336,8 @@ subroutine norm_vec(a,na)
     use pmf_constants
 
     implicit none
-    real(PMFDP),intent(in)  :: a(3)
-    real(PMFDP),intent(out) :: na(3)
+    real(PMFDP)  :: a(3)
+    real(PMFDP) :: na(3)
     ! --------------------------------------------
     real(PMFDP) :: a2,v,dp
     ! --------------------------------------------------------------------------
@@ -362,9 +363,9 @@ subroutine norm_vec_der(a,d_na,d_a)
     use pmf_constants
 
     implicit none
-    real(PMFDP),intent(in)      :: a(3)
-    real(PMFDP),intent(in)      :: d_na(3)
-    real(PMFDP),intent(inout)   :: d_a(3)
+    real(PMFDP)      :: a(3)
+    real(PMFDP)      :: d_na(3)
+    real(PMFDP)   :: d_a(3)
     ! --------------------------------------------
     real(PMFDP) :: a2,v,dp,ds,pre
     ! --------------------------------------------------------------------------
@@ -400,8 +401,8 @@ subroutine get_mst(a,b,c)
     use pmf_constants
 
     implicit none
-    real(PMFDP),intent(in)  :: a(3,3),b(3,3)
-    real(PMFDP),intent(out) :: c(3,3)
+    real(PMFDP)  :: a(3,3),b(3,3)
+    real(PMFDP) :: c(3,3)
     ! --------------------------------------------
     real(PMFDP) :: l(3,3)
     ! --------------------------------------------------------------------------
@@ -427,8 +428,8 @@ subroutine get_mst_der(a,b,d_c,d_a,d_b)
     use pmf_constants
 
     implicit none
-    real(PMFDP),intent(in)      :: a(3,3),b(3,3),d_c(3,3)
-    real(PMFDP),intent(inout)   :: d_a(3,3),d_b(3,3)
+    real(PMFDP)      :: a(3,3),b(3,3),d_c(3,3)
+    real(PMFDP)   :: d_a(3,3),d_b(3,3)
     ! --------------------------------------------
     real(PMFDP) :: l(3,3)
     real(PMFDP) :: d_n(3,3)
@@ -474,9 +475,9 @@ subroutine get_rotmat(h,g,r)
     use pmf_constants
 
     implicit none
-    real(PMFDP),intent(in)  :: h(3)    ! this must be a normal vector
-    real(PMFDP),intent(in)  :: g
-    real(PMFDP),intent(out) :: r(3,3)
+    real(PMFDP)  :: h(3)    ! this must be a normal vector
+    real(PMFDP)  :: g
+    real(PMFDP) :: r(3,3)
     ! --------------------------------------------
     real(PMFDP) :: c, s, dc
     ! --------------------------------------------------------------------------
@@ -508,11 +509,11 @@ subroutine get_rotmat_der(h,g,d_r,d_h,d_g)
     use pmf_constants
 
     implicit none
-    real(PMFDP),intent(in)      :: h(3)    ! this must be a normal vector
-    real(PMFDP),intent(in)      :: g
-    real(PMFDP),intent(in)      :: d_r(3,3)
-    real(PMFDP),intent(inout)   :: d_h(3)
-    real(PMFDP),intent(inout)   :: d_g
+    real(PMFDP)      :: h(3)    ! this must be a normal vector
+    real(PMFDP)      :: g
+    real(PMFDP)      :: d_r(3,3)
+    real(PMFDP)   :: d_h(3)
+    real(PMFDP)   :: d_g
     ! --------------------------------------------
     real(PMFDP) :: c, s, dc, d_c, d_s, d_dc
     ! --------------------------------------------------------------------------
@@ -568,9 +569,9 @@ subroutine rotate_vec(r,a,b)
     use pmf_constants
 
     implicit none
-    real(PMFDP),intent(in) :: r(3,3)
-    real(PMFDP),intent(in) :: a(3)
-    real(PMFDP),intent(out):: b(3)
+    real(PMFDP) :: r(3,3)
+    real(PMFDP) :: a(3)
+    real(PMFDP):: b(3)
     ! --------------------------------------------------------------------------
 
     b(1) = r(1,1)*a(1) + r(1,2)*a(2) + r(1,3)*a(3)
@@ -588,8 +589,8 @@ subroutine rotate_vec_der(r,a,d_b,d_r,d_a)
     use pmf_constants
 
     implicit none
-    real(PMFDP),intent(in)      :: r(3,3),a(3),d_b(3)
-    real(PMFDP),intent(inout)   :: d_r(3,3),d_a(3)
+    real(PMFDP)      :: r(3,3),a(3),d_b(3)
+    real(PMFDP)   :: d_r(3,3),d_a(3)
     ! --------------------------------------------------------------------------
 
 !    b(1) = r(1,1)*a(1) + r(1,2)*a(2) + r(1,3)*a(3)
@@ -621,10 +622,10 @@ end subroutine rotate_vec_der
 subroutine rotate_ux(h,g,u,ru)
 
     implicit none
-    real(PMFDP),intent(in)  :: h(3)
-    real(PMFDP),intent(in)  :: g
-    real(PMFDP),intent(in)  :: u(3,3)
-    real(PMFDP),intent(out) :: ru(3,3)
+    real(PMFDP)  :: h(3)
+    real(PMFDP)  :: g
+    real(PMFDP)  :: u(3,3)
+    real(PMFDP) :: ru(3,3)
     ! --------------------------------------------
     real(PMFDP) :: rm(3,3)
     ! --------------------------------------------------------------------------
@@ -644,13 +645,13 @@ end subroutine rotate_ux
 subroutine rotate_ux_der(h,g,u,d_ru,d_h,d_g,d_u)
 
     implicit none
-    real(PMFDP),intent(in)      :: h(3)
-    real(PMFDP),intent(in)      :: g
-    real(PMFDP),intent(in)      :: u(3,3)
-    real(PMFDP),intent(in)      :: d_ru(3,3)
-    real(PMFDP),intent(inout)   :: d_h(3)
-    real(PMFDP),intent(inout)   :: d_g
-    real(PMFDP),intent(inout)   :: d_u(3,3)
+    real(PMFDP)      :: h(3)
+    real(PMFDP)      :: g
+    real(PMFDP)      :: u(3,3)
+    real(PMFDP)      :: d_ru(3,3)
+    real(PMFDP)   :: d_h(3)
+    real(PMFDP)   :: d_g
+    real(PMFDP)   :: d_u(3,3)
     ! --------------------------------------------
     real(PMFDP) :: rm(3,3), d_rm(3,3)
     ! --------------------------------------------------------------------------
@@ -675,7 +676,7 @@ end subroutine rotate_ux_der
 ! Subroutine:  superimpose_str
 !===============================================================================
 
-subroutine superimpose_str(cv_item,gi,gj,x,str,simpdat)
+subroutine superimpose_str(cv_item,gi,gj,x,str,simpdat,u,o)
 
     use pmf_dat
     use pmf_utils
@@ -683,23 +684,32 @@ subroutine superimpose_str(cv_item,gi,gj,x,str,simpdat)
     use smf_xyzfile_type
 
     implicit none
-    class(CVType),intent(in)        :: cv_item
-    integer,intent(in)              :: gi,gj
-    real(PMFDP),intent(in)          :: x(:,:)
-    type(XYZFILE_TYPE),intent(in)   :: str
-    class(SImpStrData),intent(out)  :: simpdat
+    class(CVType)     :: cv_item
+    integer              :: gi,gj
+    real(PMFDP)          :: x(:,:)
+    type(XYZFILE_TYPE)   :: str
+    class(SImpStrData)  :: simpdat
+    real(PMFDP)         :: u(3,3)
+    real(PMFDP)         :: o(3)
     ! -----------------------------------------------
     integer             :: i,ai,info,best
-    real(PMFDP)         :: work(26*4)
+    real(PMFDP)         :: work(26*4),tmp1(3)
     real(PMFDP)         :: r11,r12,r13,r21,r22,r23,r31,r32,r33
     ! --------------------------------------------------------------------------
+
+    ! reset data
+    simpdat%ingr        = 0.0d0
+    simpdat%xs(:)       = 0.0d0
+    simpdat%xr(:)       = 0.0d0
+    simpdat%eivals(:)   = 0.0d0
+    simpdat%eivecs(:,:) = 0.0d0
+    simpdat%u(:,:)      = 0.0d0
+    simpdat%o(:)        = 0.0d0
 
     ! inverse number of atoms
     simpdat%ingr = 1.0d0 / (gj-gi)
 
     ! calculate geometrical centres (source and target) -------------------
-    simpdat%xs(:) = 0.0d0
-    simpdat%xr(:) = 0.0d0
 
     do  i = gi+1,gj
         ai = cv_item%lindexes(i)
@@ -800,13 +810,29 @@ subroutine superimpose_str(cv_item,gi,gj,x,str,simpdat)
     simpdat%u(2,3) = 2.0d0*( simpdat%eivecs(3,best)*simpdat%eivecs(4,best) + simpdat%eivecs(1,best)*simpdat%eivecs(2,best) )
     simpdat%u(3,3) = simpdat%eivecs(1,best)**2 - simpdat%eivecs(2,best)**2 - simpdat%eivecs(3,best)**2 + simpdat%eivecs(4,best)**2
 
+    ! resulting rotational matrix
+    u(:,:) = simpdat%u(:,:)
+
+    ! get origins of bases
+    simpdat%o(:) = 0.0d0
+    ! move reference point to origin
+    simpdat%o(:) = simpdat%o(:) - simpdat%xr(:)
+    ! rotate
+    tmp1(1) = simpdat%u(1,1)*simpdat%o(1) + simpdat%u(1,2)*simpdat%o(2) + simpdat%u(1,3)*simpdat%o(3)
+    tmp1(2) = simpdat%u(2,1)*simpdat%o(1) + simpdat%u(2,2)*simpdat%o(2) + simpdat%u(2,3)*simpdat%o(3)
+    tmp1(3) = simpdat%u(3,1)*simpdat%o(1) + simpdat%u(3,2)*simpdat%o(2) + simpdat%u(3,3)*simpdat%o(3)
+    ! move origin to new reference point (experimental structure)
+    simpdat%o(:) = tmp1(:) + simpdat%xs(:)
+
+    o(:) = simpdat%o(:)
+
 end subroutine superimpose_str
 
 !===============================================================================
 ! Subroutine:  superimpose_str_der
 !===============================================================================
 
-subroutine superimpose_str_der(cv_item,gi,gj,ctx,str,simpdat,a_xs,a_u)
+subroutine superimpose_str_der(cv_item,gi,gj,ctx,str,simpdat,a_tu,a_o)
 
     use pmf_dat
     use pmf_utils
@@ -814,18 +840,45 @@ subroutine superimpose_str_der(cv_item,gi,gj,ctx,str,simpdat,a_xs,a_u)
     use smf_xyzfile_type
 
     implicit none
-    class(CVType),intent(in)            :: cv_item
-    integer,intent(in)                  :: gi,gj
-    type(CVContextType),intent(inout)   :: ctx
-    type(XYZFILE_TYPE),intent(in)       :: str
-    class(SImpStrData),intent(in)       :: simpdat
-    real(PMFDP),intent(in)              :: a_xs(3)
-    real(PMFDP),intent(in)              :: a_u(3,3)
+    class(CVType)            :: cv_item
+    integer                  :: gi,gj
+    type(CVContextType)   :: ctx
+    type(XYZFILE_TYPE)       :: str
+    class(SImpStrData)       :: simpdat
+    real(PMFDP)              :: a_tu(3,3)
+    real(PMFDP)              :: a_o(3)
     ! -----------------------------------------------
     integer             :: i,best,mi,mj,ai
     real(PMFDP)         :: a_fa(4),a_rij(4,4)
     real(PMFDP)         :: v(4,4),api(4,4),cij(4),xij(4,4,4),bint(4,4)
+    real(PMFDP)         :: l_u(3,3),a_xs(3)
     ! --------------------------------------------------------------------------
+
+    l_u(:,:) = a_tu(:,:)
+
+! origin
+!    ! get origins of bases
+!    o(:) = 0.0d0
+!    ! move reference point to origin
+!    o(:) = o(:) - simpdat%xr(:)
+!    ! rotate
+!    tmp1(1) = simpdat%u(1,1)*o(1) + simpdat%u(1,2)*o(2) + simpdat%u(1,3)*o(3)
+!    tmp1(2) = simpdat%u(2,1)*o(1) + simpdat%u(2,2)*o(2) + simpdat%u(2,3)*o(3)
+!    tmp1(3) = simpdat%u(3,1)*o(1) + simpdat%u(3,2)*o(2) + simpdat%u(3,3)*o(3)
+!    ! move origin to new reference point (experimental structure)
+!    o(:) = tmp1(:) + simpdat%xs(:)
+
+    l_u(1,1) = l_u(1,1) - simpdat%xr(1)*a_o(1)
+    l_u(2,1) = l_u(2,1) - simpdat%xr(1)*a_o(2)
+    l_u(3,1) = l_u(3,1) - simpdat%xr(1)*a_o(3)
+    l_u(1,2) = l_u(1,2) - simpdat%xr(2)*a_o(1)
+    l_u(2,2) = l_u(2,2) - simpdat%xr(2)*a_o(2)
+    l_u(3,2) = l_u(3,2) - simpdat%xr(2)*a_o(3)
+    l_u(1,3) = l_u(1,3) - simpdat%xr(3)*a_o(1)
+    l_u(2,3) = l_u(2,3) - simpdat%xr(3)*a_o(2)
+    l_u(3,3) = l_u(3,3) - simpdat%xr(3)*a_o(3)
+
+    a_xs(:) = a_o(:)*simpdat%ingr
 
     best = 4
 
@@ -834,28 +887,28 @@ subroutine superimpose_str_der(cv_item,gi,gj,ctx,str,simpdat,a_xs,a_u)
 !     ua(2,1) = 2.0d0*( fa(2,best)*fa(3,best) - fa(1,best)*fa(4,best) )
 !     ua(3,1) = 2.0d0*( fa(2,best)*fa(4,best) + fa(1,best)*fa(3,best) )
 
-    a_fa(1) = 2.0d0*( simpdat%eivecs(1,best)*a_u(1,1) - simpdat%eivecs(4,best)*a_u(2,1) + simpdat%eivecs(3,best)*a_u(3,1))
-    a_fa(2) = 2.0d0*( simpdat%eivecs(2,best)*a_u(1,1) + simpdat%eivecs(3,best)*a_u(2,1) + simpdat%eivecs(4,best)*a_u(3,1))
-    a_fa(3) = 2.0d0*(-simpdat%eivecs(3,best)*a_u(1,1) + simpdat%eivecs(2,best)*a_u(2,1) + simpdat%eivecs(1,best)*a_u(3,1))
-    a_fa(4) = 2.0d0*(-simpdat%eivecs(4,best)*a_u(1,1) - simpdat%eivecs(1,best)*a_u(2,1) + simpdat%eivecs(2,best)*a_u(3,1))
+    a_fa(1) = 2.0d0*( simpdat%eivecs(1,best)*l_u(1,1) - simpdat%eivecs(4,best)*l_u(2,1) + simpdat%eivecs(3,best)*l_u(3,1))
+    a_fa(2) = 2.0d0*( simpdat%eivecs(2,best)*l_u(1,1) + simpdat%eivecs(3,best)*l_u(2,1) + simpdat%eivecs(4,best)*l_u(3,1))
+    a_fa(3) = 2.0d0*(-simpdat%eivecs(3,best)*l_u(1,1) + simpdat%eivecs(2,best)*l_u(2,1) + simpdat%eivecs(1,best)*l_u(3,1))
+    a_fa(4) = 2.0d0*(-simpdat%eivecs(4,best)*l_u(1,1) - simpdat%eivecs(1,best)*l_u(2,1) + simpdat%eivecs(2,best)*l_u(3,1))
 
 !     ua(1,2) = 2.0d0*( fa(2,best)*fa(3,best) + fa(1,best)*fa(4,best) )
 !     ua(2,2) = fa(1,best)**2 - fa(2,best)**2 + fa(3,best)**2 - fa(4,best)**2
 !     ua(3,2) = 2.0d0*( fa(3,best)*fa(4,best) - fa(1,best)*fa(2,best) )
 
-    a_fa(1) = a_fa(1) + 2.0d0*(simpdat%eivecs(4,best)*a_u(1,2) + simpdat%eivecs(1,best)*a_u(2,2) - simpdat%eivecs(2,best)*a_u(3,2))
-    a_fa(2) = a_fa(2) + 2.0d0*(simpdat%eivecs(3,best)*a_u(1,2) - simpdat%eivecs(2,best)*a_u(2,2) - simpdat%eivecs(1,best)*a_u(3,2))
-    a_fa(3) = a_fa(3) + 2.0d0*(simpdat%eivecs(2,best)*a_u(1,2) + simpdat%eivecs(3,best)*a_u(2,2) + simpdat%eivecs(4,best)*a_u(3,2))
-    a_fa(4) = a_fa(4) + 2.0d0*(simpdat%eivecs(1,best)*a_u(1,2) - simpdat%eivecs(4,best)*a_u(2,2) + simpdat%eivecs(3,best)*a_u(3,2))
+    a_fa(1) = a_fa(1) + 2.0d0*(simpdat%eivecs(4,best)*l_u(1,2) + simpdat%eivecs(1,best)*l_u(2,2) - simpdat%eivecs(2,best)*l_u(3,2))
+    a_fa(2) = a_fa(2) + 2.0d0*(simpdat%eivecs(3,best)*l_u(1,2) - simpdat%eivecs(2,best)*l_u(2,2) - simpdat%eivecs(1,best)*l_u(3,2))
+    a_fa(3) = a_fa(3) + 2.0d0*(simpdat%eivecs(2,best)*l_u(1,2) + simpdat%eivecs(3,best)*l_u(2,2) + simpdat%eivecs(4,best)*l_u(3,2))
+    a_fa(4) = a_fa(4) + 2.0d0*(simpdat%eivecs(1,best)*l_u(1,2) - simpdat%eivecs(4,best)*l_u(2,2) + simpdat%eivecs(3,best)*l_u(3,2))
 
 !     ua(1,3) = 2.0d0*( fa(2,best)*fa(4,best) - fa(1,best)*fa(3,best) )
 !     ua(2,3) = 2.0d0*( fa(3,best)*fa(4,best) + fa(1,best)*fa(2,best) )
 !     ua(3,3) = fa(1,best)**2 - fa(2,best)**2 - fa(3,best)**2 + fa(4,best)**2
 
-    a_fa(1) = a_fa(1) + 2.0d0*(-simpdat%eivecs(3,best)*a_u(1,3) + simpdat%eivecs(2,best)*a_u(2,3) + simpdat%eivecs(1,best)*a_u(3,3))
-    a_fa(2) = a_fa(2) + 2.0d0*( simpdat%eivecs(4,best)*a_u(1,3) + simpdat%eivecs(1,best)*a_u(2,3) - simpdat%eivecs(2,best)*a_u(3,3))
-    a_fa(3) = a_fa(3) + 2.0d0*(-simpdat%eivecs(1,best)*a_u(1,3) + simpdat%eivecs(4,best)*a_u(2,3) - simpdat%eivecs(3,best)*a_u(3,3))
-    a_fa(4) = a_fa(4) + 2.0d0*( simpdat%eivecs(2,best)*a_u(1,3) + simpdat%eivecs(3,best)*a_u(2,3) + simpdat%eivecs(4,best)*a_u(3,3))
+    a_fa(1) = a_fa(1) + 2.0d0*(-simpdat%eivecs(3,best)*l_u(1,3) + simpdat%eivecs(2,best)*l_u(2,3) + simpdat%eivecs(1,best)*l_u(3,3))
+    a_fa(2) = a_fa(2) + 2.0d0*( simpdat%eivecs(4,best)*l_u(1,3) + simpdat%eivecs(1,best)*l_u(2,3) - simpdat%eivecs(2,best)*l_u(3,3))
+    a_fa(3) = a_fa(3) + 2.0d0*(-simpdat%eivecs(1,best)*l_u(1,3) + simpdat%eivecs(4,best)*l_u(2,3) - simpdat%eivecs(3,best)*l_u(3,3))
+    a_fa(4) = a_fa(4) + 2.0d0*( simpdat%eivecs(2,best)*l_u(1,3) + simpdat%eivecs(3,best)*l_u(2,3) + simpdat%eivecs(4,best)*l_u(3,3))
 
 ! derivatives of fa with respect to matrix elements
     v(:,:) = simpdat%eivecs(:,:)
@@ -912,6 +965,140 @@ subroutine superimpose_str_der(cv_item,gi,gj,ctx,str,simpdat,a_xs,a_u)
     end do
 
 end subroutine superimpose_str_der
+
+! ==============================================================================
+
+subroutine get_mst_morg(ua,oa,ub,ob,y1,y2,mst,morg)
+
+    implicit none
+    real(PMFDP)      :: ua(3,3),ub(3,3)
+    real(PMFDP)      :: oa(3),ob(3)
+    real(PMFDP)      :: y1(3),y2(3)
+    real(PMFDP)     :: mst(3,3)
+    real(PMFDP)     :: morg(3)
+    ! ---------------------------------------------------
+    real(PMFDP)     :: xaxis(3),yaxis(3),zaxis(3)
+    real(PMFDP)     :: yaxisr(3),zaxisr(3)
+    real(PMFDP)     :: y0axis(3),zsc
+    ! --------------------------------------------------------------------------
+
+! z-axis =========================================
+    ! mutual orientation of two z-axis
+    zsc = sign(1.0d0,ua(1,3)*ub(1,3)+ua(2,3)*ub(2,3)+ua(3,3)*ub(3,3))
+    ! get z-axis as average of two axes
+    zaxisr(:) = 0.5d0*ua(:,3) + 0.5d0*zsc*ub(:,3)
+    call norm_vec(zaxisr,zaxis)
+
+! y-axis =========================================
+    y0axis(:) = y1(:) - y2(:)
+    ! remove projections to z-axis
+    yaxisr(:) = y0axis(:) - (y0axis(1)*zaxis(1)+y0axis(2)*zaxis(2)+y0axis(3)*zaxis(3))*zaxis(:)
+    ! normalize
+    call norm_vec(yaxisr,yaxis)
+
+! x-axis =========================================
+    call get_cross_product(yaxis,zaxis,xaxis)
+
+! get origin and complete mst ====================
+    morg(:) = 0.5d0*(oa(:) + ob(:))
+    mst(:,1) = xaxis(:)
+    mst(:,2) = yaxis(:)
+    mst(:,3) = zaxis(:)
+
+end subroutine get_mst_morg
+
+! ==============================================================================
+
+subroutine get_mst_morg_der(ua,ub,y1,y2,a_mst,a_morg,a_ua,a_oa,a_ub,a_ob,a_y1,a_y2)
+
+    implicit none
+    real(PMFDP)      :: ua(3,3),ub(3,3)
+    real(PMFDP)      :: y1(3),y2(3)
+    real(PMFDP)      :: a_mst(3,3)
+    real(PMFDP)      :: a_morg(3)
+    real(PMFDP)   :: a_ua(3,3),a_ub(3,3)
+    real(PMFDP)   :: a_oa(3),a_ob(3)
+    real(PMFDP)   :: a_y1(3),a_y2(3)
+    ! ---------------------------------------------------
+    real(PMFDP)     :: yaxis(3),zaxis(3)
+    real(PMFDP)     :: yaxisr(3),zaxisr(3)
+    real(PMFDP)     :: y0axis(3),zsc
+    real(PMFDP)     :: a_xaxis(3),a_yaxis(3),a_zaxis(3)
+    real(PMFDP)     :: a_zaxisr(3),a_yaxisr(3),a_y0axis(3)
+    real(PMFDP)     :: t1
+    ! --------------------------------------------------------------------------
+
+! z-axis =========================================
+    ! mutual orientation of two z-axis
+    zsc = sign(1.0d0,ua(1,3)*ub(1,3)+ua(2,3)*ub(2,3)+ua(3,3)*ub(3,3))
+    ! get z-axis as average of two axes
+    zaxisr(:) = 0.5d0*ua(:,3) + 0.5d0*zsc*ub(:,3)
+    call norm_vec(zaxisr,zaxis)
+
+! y-axis =========================================
+    y0axis(:) = y1(:) - y2(:)
+    ! remove projections to z-axis
+    yaxisr(:) = y0axis(:) - (y0axis(1)*zaxis(1)+y0axis(2)*zaxis(2)+y0axis(3)*zaxis(3))*zaxis(:)
+    ! normalize
+    call norm_vec(yaxisr,yaxis)
+!
+!! x-axis =========================================
+!    call get_cross_product(yaxis,zaxis,xaxis)
+!
+!! get origin and complete mst ====================
+!    morg(:) = 0.5d0*(oa(:) + ob(:))
+!    mst(:,1) = xaxis(:)
+!    mst(:,2) = yaxis(:)
+!    mst(:,3) = zaxis(:)
+
+! final derivatives
+    a_oa(:)    = a_oa(:) + 0.5d0*a_morg(:)
+    a_ob(:)    = a_ob(:) + 0.5d0*a_morg(:)
+
+    a_xaxis(:) = a_mst(:,1)
+    a_yaxis(:) = a_mst(:,2)
+    a_zaxis(:) = a_mst(:,3)
+
+! x-axis
+    call get_cross_product_der(yaxis,zaxis,a_xaxis,a_yaxis,a_zaxis)
+
+! y-axis
+    call norm_vec_der(yaxisr,a_yaxis,a_yaxisr)
+
+!    y0axis(:) = x(:,cv_item%lindexes(cv_item%grps(3))) - x(:,cv_item%lindexes(cv_item%grps(4)))
+!    ! remove projections to z-axis
+!    yaxisr(1) = y0axis(1) - (y0axis(1)*zaxis(1)+y0axis(2)*zaxis(2)+y0axis(3)*zaxis(3))*zaxis(1)
+!    yaxisr(2) = y0axis(2) - (y0axis(1)*zaxis(1)+y0axis(2)*zaxis(2)+y0axis(3)*zaxis(3))*zaxis(2)
+!    yaxisr(3) = y0axis(3) - (y0axis(1)*zaxis(1)+y0axis(2)*zaxis(2)+y0axis(3)*zaxis(3))*zaxis(3)
+
+    ! with respect to y0axis
+    t1 = zaxis(1)*a_yaxisr(1) + zaxis(2)*a_yaxisr(2) + zaxis(3)*a_yaxisr(3)
+    a_y0axis(1) = a_yaxisr(1) - zaxis(1)*t1
+    a_y0axis(2) = a_yaxisr(2) - zaxis(2)*t1
+    a_y0axis(3) = a_yaxisr(3) - zaxis(3)*t1
+
+    ! with respect to zaxis
+    a_zaxis(1) = a_zaxis(1) - a_yaxisr(1) * ( 2.0d0*y0axis(1)*zaxis(1) + y0axis(2)*zaxis(2) + y0axis(3)*zaxis(3) ) &
+                            - a_yaxisr(2) * y0axis(1)*zaxis(2) &
+                            - a_yaxisr(3) * y0axis(1)*zaxis(3)
+
+    a_zaxis(2) = a_zaxis(2) - a_yaxisr(1) * y0axis(2)*zaxis(1) &
+                            - a_yaxisr(2) * ( y0axis(1)*zaxis(1) + 2.0d0*y0axis(2)*zaxis(2) + y0axis(3)*zaxis(3) ) &
+                            - a_yaxisr(3) * y0axis(2)*zaxis(3)
+
+    a_zaxis(3) = a_zaxis(3) - a_yaxisr(1) * y0axis(3)*zaxis(1) &
+                            - a_yaxisr(2) * y0axis(3)*zaxis(2) &
+                            - a_yaxisr(3) * ( y0axis(1)*zaxis(1) + y0axis(2)*zaxis(2) + 2.0d0*y0axis(3)*zaxis(3) )
+
+! z-axis
+    call norm_vec_der(zaxisr,a_zaxis,a_zaxisr)
+    a_ua(:,3) = a_ua(:,3) + 0.5d0*a_zaxisr(:)
+    a_ub(:,3) = a_ub(:,3) + 0.5d0*zsc*a_zaxisr(:)
+
+    a_y1(:) = a_y1(:) + a_y0axis(:)
+    a_y2(:) = a_y2(:) - a_y0axis(:)
+
+end subroutine get_mst_morg_der
 
 !===============================================================================
 

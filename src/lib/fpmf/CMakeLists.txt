@@ -93,7 +93,9 @@ SET(PMF_CVS_SRC
         common/cvs/na/cv_napbo.f90
         common/cvs/na/cv_nasbo.f90
         common/cvs/na/cv_nasbpp.f90
+        common/cvs/na/cv_nasbppold.f90
         common/cvs/na/cv_nasstp.f90
+        common/cvs/na/cv_nasstpold.f90
         common/cvs/na/cv_nabend.f90
 
     # ring puckering

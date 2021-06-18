@@ -322,7 +322,7 @@ subroutine calculate_nasstp(cv_item,x,ctx)
     call calculate_nasstp_getbp1(cv_item,x,ua,oa)
     call calculate_nasstp_getbp2(cv_item,x,ub,ob)
 
-    call calculate_nasstp_value(cv_item,ctx,ua,oa,ub,ob,a_ua,a_oa,a_ub,a_ob)
+    call calculate_nasstp_value_num(cv_item,ctx,ua,oa,ub,ob,a_ua,a_oa,a_ub,a_ob)
 
     call calculate_nasstp_getbp1_der(cv_item,x,ctx,a_ua,a_oa)
     call calculate_nasstp_getbp2_der(cv_item,x,ctx,a_ub,a_ob)
@@ -480,42 +480,6 @@ subroutine calculate_nasstp_value(cv_item,ctx,ua,oa,ub,ob,a_ua,a_oa,a_ub,a_ob)
     ! get mst
     call get_mst(rua,rub,mst)
 
-! calculate values
-    select case(cv_item%lst_par)
-        case(1)
-            ! 'shift'
-            ! vector between origins
-            d(:) = ob(:) - oa(:)
-            ctx%CVsValues(cv_item%idx) = d(1)*mst(1,1) + d(2)*mst(2,1) + d(3)*mst(3,1)
-        case(2)
-            ! 'slide'
-            ! vector between origins
-            d(:) = ob(:) - oa(:)
-            ctx%CVsValues(cv_item%idx) = d(1)*mst(1,2) + d(2)*mst(2,2) + d(3)*mst(3,2)
-        case(3)
-            ! 'rise'
-            ! vector between origins
-            d(:) = ob(:) - oa(:)
-            ctx%CVsValues(cv_item%idx) = d(1)*mst(1,3) + d(2)*mst(2,3) + d(3)*mst(3,3)
-        case(4)
-            ! 'tilt'
-            call get_nvangle(nh,mst(:,2),phi)
-            call get_vtors_sign(nh,mst(:,2),mst(:,3),sc)
-            ctx%CVsValues(cv_item%idx) = g * sin(phi*sc)
-        case(5)
-            ! 'roll'
-            call get_nvangle(nh,mst(:,2),phi)
-            call get_vtors_sign(nh,mst(:,2),mst(:,3),sc)
-            ctx%CVsValues(cv_item%idx) = g * cos(phi*sc)
-        case(6)
-            ! 'twist'
-            call get_nvangle(rua(:,2),rub(:,2),arg)
-            call get_vtors_sign(rua(:,2),rub(:,2),mst(:,3),sc)
-            ctx%CVsValues(cv_item%idx) = arg * sc
-        case default
-            call pmf_utils_exit(PMF_OUT,1,'Unrecognized value for parameter option in calculate_nasstp!')
-    end select
-
 ! derivatives ====================================
 
 ! final derivatives
@@ -537,9 +501,9 @@ subroutine calculate_nasstp_value(cv_item,ctx,ua,oa,ub,ob,a_ua,a_oa,a_ub,a_ob)
     select case(cv_item%lst_par)
         case(1)
             ! 'shift'
-            !            ! vector between origins
-            !            d(:) = ob(:) - oa(:)
-            !            ctx%CVsValues(cv_item%idx) = d(1)*mst(1,1) + d(2)*mst(2,1) + d(3)*mst(3,1)
+            ! vector between origins
+            d(:) = ob(:) - oa(:)
+            ctx%CVsValues(cv_item%idx) = d(1)*mst(1,1) + d(2)*mst(2,1) + d(3)*mst(3,1)
             ! with respect to oa and ob
             a_oa(:) = a_oa(:) - mst(:,1)
             a_ob(:) = a_ob(:) + mst(:,1)
@@ -547,9 +511,9 @@ subroutine calculate_nasstp_value(cv_item,ctx,ua,oa,ub,ob,a_ua,a_oa,a_ub,a_ob)
             a_mst(:,1) = a_mst(:,1) + d(:)
         case(2)
             ! 'slide'
-            !            ! vector between origins
-            !            d(:) = ob(:) - oa(:)
-            !            ctx%CVsValues(cv_item%idx) = d(1)*mst(1,2) + d(2)*mst(2,2) + d(3)*mst(3,2)
+            ! vector between origins
+            d(:) = ob(:) - oa(:)
+            ctx%CVsValues(cv_item%idx) = d(1)*mst(1,2) + d(2)*mst(2,2) + d(3)*mst(3,2)
             ! with respect to oa and ob
             a_oa(:) = a_oa(:) - mst(:,2)
             a_ob(:) = a_ob(:) + mst(:,2)
@@ -557,9 +521,9 @@ subroutine calculate_nasstp_value(cv_item,ctx,ua,oa,ub,ob,a_ua,a_oa,a_ub,a_ob)
             a_mst(:,2) = a_mst(:,2) + d(:)
         case(3)
             ! 'rise'
-            !            ! vector between origins
-            !            d(:) = ob(:) - oa(:)
-            !            ctx%CVsValues(cv_item%idx) = d(1)*mst(1,3) + d(2)*mst(2,3) + d(3)*mst(3,3)
+            ! vector between origins
+            d(:) = ob(:) - oa(:)
+            ctx%CVsValues(cv_item%idx) = d(1)*mst(1,3) + d(2)*mst(2,3) + d(3)*mst(3,3)
             ! with respect to oa and ob
             a_oa(:) = a_oa(:) - mst(:,3)
             a_ob(:) = a_ob(:) + mst(:,3)
@@ -567,9 +531,9 @@ subroutine calculate_nasstp_value(cv_item,ctx,ua,oa,ub,ob,a_ua,a_oa,a_ub,a_ob)
             a_mst(:,3) = a_mst(:,3) + d(:)
         case(4)
             ! 'tilt'
-            !            call get_nvangle(h,mst(:,2),phi)
-            !            call get_vtors_sign(h,mst(:,2),mst(:,3),sc)
-            !            ctx%CVsValues(cv_item%idx) = g * sin(phi*sc)
+            call get_nvangle(nh,mst(:,2),phi)
+            call get_vtors_sign(nh,mst(:,2),mst(:,3),sc)
+            ctx%CVsValues(cv_item%idx) = g * sin(phi*sc)
             ! with respect to g
             a_g = sin(phi*sc)
             ! with respect to phi
@@ -578,9 +542,9 @@ subroutine calculate_nasstp_value(cv_item,ctx,ua,oa,ub,ob,a_ua,a_oa,a_ub,a_ob)
             call get_nvangle_der(nh,mst(:,2),a_phi,a_nh,a_mst(:,2))
         case(5)
             ! 'roll'
-            !            call get_nvangle(h,mst(:,2),phi)
-            !            call get_vtors_sign(h,mst(:,2),mst(:,3),sc)
-            !            ctx%CVsValues(cv_item%idx) = g * cos(phi*sc)
+            call get_nvangle(nh,mst(:,2),phi)
+            call get_vtors_sign(nh,mst(:,2),mst(:,3),sc)
+            ctx%CVsValues(cv_item%idx) = g * cos(phi*sc)
             ! with respect to g
             a_g = cos(phi*sc)
             ! with respect to phi
@@ -589,9 +553,9 @@ subroutine calculate_nasstp_value(cv_item,ctx,ua,oa,ub,ob,a_ua,a_oa,a_ub,a_ob)
             call get_nvangle_der(nh,mst(:,2),a_phi,a_nh,a_mst(:,2))
         case(6)
             ! 'twist'
-            !            call get_nvangle(rua(:,2),rub(:,2),arg)
-            !            call get_vtors_sign(rua(:,2),rub(:,2),mst(:,3),sc)
-            !            ctx%CVsValues(cv_item%idx) = arg * sc
+            call get_nvangle(rua(:,2),rub(:,2),arg)
+            call get_vtors_sign(rua(:,2),rub(:,2),mst(:,3),sc)
+            ctx%CVsValues(cv_item%idx) = arg * sc
             ! with respect to h a mst
             a_phi = sc
             call get_nvangle_der(rua(:,2),rub(:,2),a_phi,a_rua(:,2),a_rub(:,2))
@@ -628,8 +592,8 @@ subroutine calculate_nasstp_value(cv_item,ctx,ua,oa,ub,ob,a_ua,a_oa,a_ub,a_ob)
     call norm_vec_der(h,a_nh,a_h)
 
     if( (abs(g) .le. PMF_MEPS) .or. (abs(PMF_PI-g) .le. PMF_MEPS) .or. (hlen .le. PMF_MEPS) ) then
-
         ! FIXME
+        stop
     else
         call get_cross_product_der(ua(:,3),ub(:,3),a_h,a_ua(:,3),a_ub(:,3))
     end if
@@ -654,68 +618,22 @@ subroutine calculate_nasstp_getbp1(cv_item,x,mst,morg)
     real(PMFDP)         :: mst(3,3)
     real(PMFDP)         :: morg(3)
     ! -----------------------------------------------
-    real(PMFDP)         :: o_zaxis2,o_zaxis
-    real(PMFDP)         :: xaxis(3),yaxis(3),zaxis(3),zaxisr(3),zsc,y0axis(3)
-    real(PMFDP)         :: tmp1(3),oa(3),ob(3)
-    real(PMFDP)         :: yaxisr(3),o_yaxis,o_yaxis2
+    real(PMFDP)         :: ua(3,3),ub(3,3)
+    real(PMFDP)         :: oa(3),ob(3)
+    real(PMFDP)         :: y1(3),y2(3)
+    integer             :: ai
     ! --------------------------------------------------------------------------
 
-! superimpose bases
-    call superimpose_str(cv_item,0,              cv_item%grps(1),x,cv_item%xyz_str_a1,cv_item%simpdat_a1)
-    call superimpose_str(cv_item,cv_item%grps(1),cv_item%grps(2),x,cv_item%xyz_str_b1,cv_item%simpdat_b1)
+! superimpose bases ==============================
+    call superimpose_str(cv_item,0,              cv_item%grps(1),x,cv_item%xyz_str_a1,cv_item%simpdat_a1,ua,oa)
+    call superimpose_str(cv_item,cv_item%grps(1),cv_item%grps(2),x,cv_item%xyz_str_b1,cv_item%simpdat_b1,ub,ob)
 
-! z-axis ===================================================================
-    ! mutual orientation of two z-axis
-    zsc = sign(1.0d0,cv_item%simpdat_a1%u(1,3)*cv_item%simpdat_b1%u(1,3) + &
-                     cv_item%simpdat_a1%u(2,3)*cv_item%simpdat_b1%u(2,3) + &
-                     cv_item%simpdat_a1%u(3,3)*cv_item%simpdat_b1%u(3,3))
-    ! get z-axis as average of two axes
-    zaxisr(:) = 0.5d0*cv_item%simpdat_a1%u(:,3) + 0.5d0*zsc*cv_item%simpdat_b1%u(:,3)
-    ! normalize
-    o_zaxis2 = 1.0d0 / (zaxisr(1)**2 + zaxisr(2)**2 + zaxisr(3)**2)
-    o_zaxis  = sqrt(o_zaxis2)
-    zaxis(:) = zaxisr(:) * o_zaxis
-
-! y-axis ===================================================================
-    y0axis(:) = x(:,cv_item%lindexes(cv_item%grps(3))) - x(:,cv_item%lindexes(cv_item%grps(4)))
-    ! remove projections to z-axis
-    yaxisr(:) = y0axis(:) - (y0axis(1)*zaxis(1)+y0axis(2)*zaxis(2)+y0axis(3)*zaxis(3))*zaxis(:)
-    ! normalize
-    o_yaxis2 = 1.0d0 / (yaxisr(1)**2 + yaxisr(2)**2 + yaxisr(3)**2)
-    o_yaxis  = sqrt(o_yaxis2)
-    yaxis(:) = yaxisr(:) * o_yaxis
-
-! x-axis ===================================================================
-    ! is cross product of y and z axes
-    xaxis(1) = yaxis(2)*zaxis(3) - yaxis(3)*zaxis(2)
-    xaxis(2) = yaxis(3)*zaxis(1) - yaxis(1)*zaxis(3)
-    xaxis(3) = yaxis(1)*zaxis(2) - yaxis(2)*zaxis(1)
-
-    ! get origins of bases
-    oa(:) = 0.0d0
-    ! move reference point to origin
-    oa(:) = oa(:) - cv_item%simpdat_a1%xr(:)
-    ! rotate
-    tmp1(1) = cv_item%simpdat_a1%u(1,1)*oa(1) + cv_item%simpdat_a1%u(1,2)*oa(2) + cv_item%simpdat_a1%u(1,3)*oa(3)
-    tmp1(2) = cv_item%simpdat_a1%u(2,1)*oa(1) + cv_item%simpdat_a1%u(2,2)*oa(2) + cv_item%simpdat_a1%u(2,3)*oa(3)
-    tmp1(3) = cv_item%simpdat_a1%u(3,1)*oa(1) + cv_item%simpdat_a1%u(3,2)*oa(2) + cv_item%simpdat_a1%u(3,3)*oa(3)
-    ! move origin to new reference point (experimental structure)
-    oa(:) = tmp1(:) + cv_item%simpdat_a1%xs(:)
-
-    ob(:) = 0.0d0
-    ob(:) = ob(:) - cv_item%simpdat_b1%xr(:)
-    tmp1(1) = cv_item%simpdat_b1%u(1,1)*ob(1) + cv_item%simpdat_b1%u(1,2)*ob(2) + cv_item%simpdat_b1%u(1,3)*ob(3)
-    tmp1(2) = cv_item%simpdat_b1%u(2,1)*ob(1) + cv_item%simpdat_b1%u(2,2)*ob(2) + cv_item%simpdat_b1%u(2,3)*ob(3)
-    tmp1(3) = cv_item%simpdat_b1%u(3,1)*ob(1) + cv_item%simpdat_b1%u(3,2)*ob(2) + cv_item%simpdat_b1%u(3,3)*ob(3)
-    ob(:) = tmp1(:) + cv_item%simpdat_b1%xs(:)
-
-    ! position of bp origin
-    morg(:) = 0.5d0*(oa(:) + ob(:))
-
-    ! axis
-    mst(:,1) = xaxis(:)
-    mst(:,2) = yaxis(:)
-    mst(:,3) = zaxis(:)
+! assemble mst and morg ==========================
+    ai = cv_item%lindexes(cv_item%grps(3))
+    y1(:) = x(:,ai)
+    ai = cv_item%lindexes(cv_item%grps(4))
+    y2(:) = x(:,ai)
+    call get_mst_morg(ua,oa,ub,ob,y1,y2,mst,morg)
 
 end subroutine calculate_nasstp_getbp1
 
@@ -736,233 +654,41 @@ subroutine calculate_nasstp_getbp1_der(cv_item,x,ctx,a_mst,a_morg)
     real(PMFDP)         :: a_morg(3)
     ! -----------------------------------------------
     integer             :: ai
-    real(PMFDP)         :: o_zaxis2,o_zaxis
-    real(PMFDP)         :: xaxis(3),yaxis(3),zaxis(3),zaxisr(3),zsc,y0axis(3)
-    real(PMFDP)         :: tmp1(3),oa(3),ob(3)
-    real(PMFDP)         :: yaxisr(3),o_yaxis,o_yaxis2
-
-    real(PMFDP)         :: a_zaxis(3),a_xaxis(3),a_y0axis(3)
-    real(PMFDP)         :: a_xsa(3),a_xsb(3)
-    real(PMFDP)         :: a_yaxisr(3),a_ua(3,3),a_ub(3,3),a_yaxis(3)
-    real(PMFDP)         :: t1,t2
+    real(PMFDP)         :: ua(3,3),ub(3,3)
+    real(PMFDP)         :: y1(3),y2(3)
+    real(PMFDP)         :: a_ua(3,3),a_ub(3,3)
+    real(PMFDP)         :: a_oa(3),a_ob(3)
+    real(PMFDP)         :: a_y1(3),a_y2(3)
     ! --------------------------------------------------------------------------
 
-! z-axis ===================================================================
-    ! mutual orientation of two z-axis
-    zsc = sign(1.0d0,cv_item%simpdat_a1%u(1,3)*cv_item%simpdat_b1%u(1,3) + &
-                     cv_item%simpdat_a1%u(2,3)*cv_item%simpdat_b1%u(2,3) + &
-                     cv_item%simpdat_a1%u(3,3)*cv_item%simpdat_b1%u(3,3))
-    ! get z-axis as average of two axes
-    zaxisr(:) = 0.5d0*cv_item%simpdat_a1%u(:,3) + 0.5d0*zsc*cv_item%simpdat_b1%u(:,3)
-    ! normalize
-    o_zaxis2 = 1.0d0 / (zaxisr(1)**2 + zaxisr(2)**2 + zaxisr(3)**2)
-    o_zaxis  = sqrt(o_zaxis2)
-    zaxis(:) = zaxisr(:) * o_zaxis
+! input data
+    ua(:,:) = cv_item%simpdat_a1%u(:,:)
+    ub(:,:) = cv_item%simpdat_b1%u(:,:)
 
-! y-axis ===================================================================
-    y0axis(:) = x(:,cv_item%lindexes(cv_item%grps(3))) - x(:,cv_item%lindexes(cv_item%grps(4)))
-    ! remove projections to z-axis
-    yaxisr(:) = y0axis(:) - (y0axis(1)*zaxis(1)+y0axis(2)*zaxis(2)+y0axis(3)*zaxis(3))*zaxis(:)
-    ! normalize
-    o_yaxis2 = 1.0d0 / (yaxisr(1)**2 + yaxisr(2)**2 + yaxisr(3)**2)
-    o_yaxis  = sqrt(o_yaxis2)
-    yaxis(:) = yaxisr(:) * o_yaxis
+    ai = cv_item%lindexes(cv_item%grps(3))
+    y1(:) = x(:,ai)
+    ai = cv_item%lindexes(cv_item%grps(4))
+    y2(:) = x(:,ai)
 
-! x-axis ===================================================================
-    ! is cross product of y and z axes
-    xaxis(1) = yaxis(2)*zaxis(3) - yaxis(3)*zaxis(2)
-    xaxis(2) = yaxis(3)*zaxis(1) - yaxis(1)*zaxis(3)
-    xaxis(3) = yaxis(1)*zaxis(2) - yaxis(2)*zaxis(1)
+    a_ua(:,:) = 0.0d0
+    a_oa(:) = 0.0d0
+    a_ub(:,:) = 0.0d0
+    a_ob(:) = 0.0d0
+    a_y1(:) = 0.0d0
+    a_y2(:) = 0.0d0
 
-    ! get origins of bases
-    oa(:) = 0.0d0
-    ! move reference point to origin
-    oa(:) = oa(:) - cv_item%simpdat_a1%xr(:)
-    ! rotate
-    tmp1(1) = cv_item%simpdat_a1%u(1,1)*oa(1) + cv_item%simpdat_a1%u(1,2)*oa(2) + cv_item%simpdat_a1%u(1,3)*oa(3)
-    tmp1(2) = cv_item%simpdat_a1%u(2,1)*oa(1) + cv_item%simpdat_a1%u(2,2)*oa(2) + cv_item%simpdat_a1%u(2,3)*oa(3)
-    tmp1(3) = cv_item%simpdat_a1%u(3,1)*oa(1) + cv_item%simpdat_a1%u(3,2)*oa(2) + cv_item%simpdat_a1%u(3,3)*oa(3)
-    ! move origin to new reference point (experimental structure)
-    oa(:) = tmp1(:) + cv_item%simpdat_a1%xs(:)
-
-    ob(:) = 0.0d0
-    ob(:) = ob(:) - cv_item%simpdat_b1%xr(:)
-    tmp1(1) = cv_item%simpdat_b1%u(1,1)*ob(1) + cv_item%simpdat_b1%u(1,2)*ob(2) + cv_item%simpdat_b1%u(1,3)*ob(3)
-    tmp1(2) = cv_item%simpdat_b1%u(2,1)*ob(1) + cv_item%simpdat_b1%u(2,2)*ob(2) + cv_item%simpdat_b1%u(2,3)*ob(3)
-    tmp1(3) = cv_item%simpdat_b1%u(3,1)*ob(1) + cv_item%simpdat_b1%u(3,2)*ob(2) + cv_item%simpdat_b1%u(3,3)*ob(3)
-    ob(:) = tmp1(:) + cv_item%simpdat_b1%xs(:)
-
-! ==============================================================================
-
-! final derivatives
-    a_ua(:,:)   = 0.0d0
-    a_ub(:,:)   = 0.0d0
-    a_y0axis(:) = 0.0d0
-    a_xsa(:)    = 0.0d0
-    a_xsb(:)    = 0.0d0
-
-! ************
-! ==== a_xaxis
-! ************
-
-    a_xaxis(:) = a_mst(:,1)
-
-! a_xaxis with respect to ua and ub
-! with respect to yaxis
-!     xaxis(1) = yaxis(2)*zaxis(3) - yaxis(3)*zaxis(2)
-!     xaxis(2) = yaxis(3)*zaxis(1) - yaxis(1)*zaxis(3)
-!     xaxis(3) = yaxis(1)*zaxis(2) - yaxis(2)*zaxis(1)
-    a_yaxis(1) = - a_xaxis(2)*zaxis(3) + zaxis(2)*a_xaxis(3)
-    a_yaxis(2) = - a_xaxis(3)*zaxis(1) + zaxis(3)*a_xaxis(1)
-    a_yaxis(3) = - a_xaxis(1)*zaxis(2) + zaxis(1)*a_xaxis(2)
-
-! with respect to yaxisr
-    t1 = yaxisr(1)*a_yaxis(1) + yaxisr(2)*a_yaxis(2) + yaxisr(3)*a_yaxis(3)
-    a_yaxisr(1) =   a_yaxis(1)*o_yaxis - o_yaxis*o_yaxis2*yaxisr(1)*t1
-    a_yaxisr(2) =   a_yaxis(2)*o_yaxis - o_yaxis*o_yaxis2*yaxisr(2)*t1
-    a_yaxisr(3) =   a_yaxis(3)*o_yaxis - o_yaxis*o_yaxis2*yaxisr(3)*t1
-
-! with respect to y0axis
-    t1 = zaxis(1)*a_yaxisr(1) + zaxis(2)*a_yaxisr(2) + zaxis(3)*a_yaxisr(3)
-    a_y0axis(1) = a_yaxisr(1) - zaxis(1)*t1
-    a_y0axis(2) = a_yaxisr(2) - zaxis(2)*t1
-    a_y0axis(3) = a_yaxisr(3) - zaxis(3)*t1
-
-! with respect to zaxis
-    t1 = y0axis(1)*zaxis(1)+y0axis(2)*zaxis(2)+y0axis(3)*zaxis(3)
-    t2 = zaxis(1)*a_yaxisr(1) + zaxis(2)*a_yaxisr(2) + zaxis(3)*a_yaxisr(3)
-    a_zaxis(1) = - t1*a_yaxisr(1) - y0axis(1)*t2
-    a_zaxis(2) = - t1*a_yaxisr(2) - y0axis(2)*t2
-    a_zaxis(3) = - t1*a_yaxisr(3) - y0axis(3)*t2
-
-! with respect to zaxis
-!     xaxis(1) = yaxis(2)*zaxis(3) - yaxis(3)*zaxis(2)
-!     xaxis(2) = yaxis(3)*zaxis(1) - yaxis(1)*zaxis(3)
-!     xaxis(3) = yaxis(1)*zaxis(2) - yaxis(2)*zaxis(1)
-    a_zaxis(1) = a_zaxis(1) - yaxis(2)*a_xaxis(3) + yaxis(3)*a_xaxis(2)
-    a_zaxis(2) = a_zaxis(2) - yaxis(3)*a_xaxis(1) + yaxis(1)*a_xaxis(3)
-    a_zaxis(3) = a_zaxis(3) - yaxis(1)*a_xaxis(2) + yaxis(2)*a_xaxis(1)
-
-    t1 = zaxisr(1)*a_zaxis(1) + zaxisr(2)*a_zaxis(2) + zaxisr(3)*a_zaxis(3)
-    a_ua(1,3) = a_ua(1,3) + 0.5d0*a_zaxis(1)*o_zaxis - 0.5d0*o_zaxis*o_zaxis2*zaxisr(1)*t1
-    a_ua(2,3) = a_ua(2,3) + 0.5d0*a_zaxis(2)*o_zaxis - 0.5d0*o_zaxis*o_zaxis2*zaxisr(2)*t1
-    a_ua(3,3) = a_ua(3,3) + 0.5d0*a_zaxis(3)*o_zaxis - 0.5d0*o_zaxis*o_zaxis2*zaxisr(3)*t1
-
-    a_ub(1,3) = a_ub(1,3) + 0.5d0*zsc*a_zaxis(1)*o_zaxis - 0.5d0*zsc*o_zaxis*o_zaxis2*zaxisr(1)*t1
-    a_ub(2,3) = a_ub(2,3) + 0.5d0*zsc*a_zaxis(2)*o_zaxis - 0.5d0*zsc*o_zaxis*o_zaxis2*zaxisr(2)*t1
-    a_ub(3,3) = a_ub(3,3) + 0.5d0*zsc*a_zaxis(3)*o_zaxis - 0.5d0*zsc*o_zaxis*o_zaxis2*zaxisr(3)*t1
-
-
-! ************
-! ==== a_yaxis
-! ************
-
-    a_yaxis(:) = a_mst(:,2)
-
-! with respect to yaxisr
-    t1 = yaxisr(1)*a_yaxis(1) + yaxisr(2)*a_yaxis(2) + yaxisr(3)*a_yaxis(3)
-    a_yaxisr(1) =   a_yaxis(1)*o_yaxis - o_yaxis*o_yaxis2*yaxisr(1)*t1
-    a_yaxisr(2) =   a_yaxis(2)*o_yaxis - o_yaxis*o_yaxis2*yaxisr(2)*t1
-    a_yaxisr(3) =   a_yaxis(3)*o_yaxis - o_yaxis*o_yaxis2*yaxisr(3)*t1
-! with respect to y0axis
-    t1 = zaxis(1)*a_yaxisr(1) + zaxis(2)*a_yaxisr(2) + zaxis(3)*a_yaxisr(3)
-    a_y0axis(1) = a_y0axis(1) + a_yaxisr(1) - zaxis(1)*t1
-    a_y0axis(2) = a_y0axis(2) + a_yaxisr(2) - zaxis(2)*t1
-    a_y0axis(3) = a_y0axis(3) + a_yaxisr(3) - zaxis(3)*t1
-
-! with respect to zaxis
-    t1 = y0axis(1)*zaxis(1)+y0axis(2)*zaxis(2)+y0axis(3)*zaxis(3)
-    t2 = zaxis(1)*a_yaxisr(1) + zaxis(2)*a_yaxisr(2) + zaxis(3)*a_yaxisr(3)
-    a_zaxis(1) = - t1*a_yaxisr(1) - y0axis(1)*t2
-    a_zaxis(2) = - t1*a_yaxisr(2) - y0axis(2)*t2
-    a_zaxis(3) = - t1*a_yaxisr(3) - y0axis(3)*t2
-
-    t1 = zaxisr(1)*a_zaxis(1) + zaxisr(2)*a_zaxis(2) + zaxisr(3)*a_zaxis(3)
-    a_ua(1,3) = a_ua(1,3) + 0.5d0*a_zaxis(1)*o_zaxis - 0.5d0*o_zaxis*o_zaxis2*zaxisr(1)*t1
-    a_ua(2,3) = a_ua(2,3) + 0.5d0*a_zaxis(2)*o_zaxis - 0.5d0*o_zaxis*o_zaxis2*zaxisr(2)*t1
-    a_ua(3,3) = a_ua(3,3) + 0.5d0*a_zaxis(3)*o_zaxis - 0.5d0*o_zaxis*o_zaxis2*zaxisr(3)*t1
-
-    a_ub(1,3) = a_ub(1,3) + 0.5d0*zsc*a_zaxis(1)*o_zaxis - 0.5d0*zsc*o_zaxis*o_zaxis2*zaxisr(1)*t1
-    a_ub(2,3) = a_ub(2,3) + 0.5d0*zsc*a_zaxis(2)*o_zaxis - 0.5d0*zsc*o_zaxis*o_zaxis2*zaxisr(2)*t1
-    a_ub(3,3) = a_ub(3,3) + 0.5d0*zsc*a_zaxis(3)*o_zaxis - 0.5d0*zsc*o_zaxis*o_zaxis2*zaxisr(3)*t1
-
-! ************
-! ==== a_zaxis
-! ************
-
-    a_zaxis(:) = a_mst(:,3)
-
-! with respect to zaxis
-    t1 = zaxisr(1)*a_zaxis(1) + zaxisr(2)*a_zaxis(2) + zaxisr(3)*a_zaxis(3)
-    a_ua(1,3) = a_ua(1,3) + 0.5d0*a_zaxis(1)*o_zaxis - 0.5d0*o_zaxis*o_zaxis2*zaxisr(1)*t1
-    a_ua(2,3) = a_ua(2,3) + 0.5d0*a_zaxis(2)*o_zaxis - 0.5d0*o_zaxis*o_zaxis2*zaxisr(2)*t1
-    a_ua(3,3) = a_ua(3,3) + 0.5d0*a_zaxis(3)*o_zaxis - 0.5d0*o_zaxis*o_zaxis2*zaxisr(3)*t1
-
-    a_ub(1,3) = a_ub(1,3) + 0.5d0*zsc*a_zaxis(1)*o_zaxis - 0.5d0*zsc*o_zaxis*o_zaxis2*zaxisr(1)*t1
-    a_ub(2,3) = a_ub(2,3) + 0.5d0*zsc*a_zaxis(2)*o_zaxis - 0.5d0*zsc*o_zaxis*o_zaxis2*zaxisr(2)*t1
-    a_ub(3,3) = a_ub(3,3) + 0.5d0*zsc*a_zaxis(3)*o_zaxis - 0.5d0*zsc*o_zaxis*o_zaxis2*zaxisr(3)*t1
-
-! ************
-! ==== origin
-! ************
-
-!     ! get origins of bases
-!     oa(:) = 0.0d0
-!     ! move reference point to origin
-!     oa(:) = oa(:) - xra(:)
-!     ! rotate
-!     tmp1(1) = ua(1,1)*oa(1) + ua(1,2)*oa(2) + ua(1,3)*oa(3)
-!     tmp1(2) = ua(2,1)*oa(1) + ua(2,2)*oa(2) + ua(2,3)*oa(3)
-!     tmp1(3) = ua(3,1)*oa(1) + ua(3,2)*oa(2) + ua(3,3)*oa(3)
-!     ! move origin to new reference point (experiemntal structure)
-!     oa(:) = tmp1(:) + xsa(:)
-!
-!     ob(:) = 0.0d0
-!     ob(:) = ob(:) - xrb(:)
-!     tmp1(1) = ub(1,1)*ob(1) + ub(1,2)*ob(2) + ub(1,3)*ob(3)
-!     tmp1(2) = ub(2,1)*ob(1) + ub(2,2)*ob(2) + ub(2,3)*ob(3)
-!     tmp1(3) = ub(3,1)*ob(1) + ub(3,2)*ob(2) + ub(3,3)*ob(3)
-!     ob(:) = tmp1(:) + xsb(:)
-
-! a_morg
-!    ! position of bp origin
-!    morg(:) = 0.5d0*(oa(:) + ob(:))
-
-! a_morg with respect to ua and ub
-    a_ua(1,1) = a_ua(1,1) - 0.5d0*cv_item%simpdat_a1%xr(1)*a_morg(1)
-    a_ua(2,1) = a_ua(2,1) - 0.5d0*cv_item%simpdat_a1%xr(1)*a_morg(2)
-    a_ua(3,1) = a_ua(3,1) - 0.5d0*cv_item%simpdat_a1%xr(1)*a_morg(3)
-    a_ua(1,2) = a_ua(1,2) - 0.5d0*cv_item%simpdat_a1%xr(2)*a_morg(1)
-    a_ua(2,2) = a_ua(2,2) - 0.5d0*cv_item%simpdat_a1%xr(2)*a_morg(2)
-    a_ua(3,2) = a_ua(3,2) - 0.5d0*cv_item%simpdat_a1%xr(2)*a_morg(3)
-    a_ua(1,3) = a_ua(1,3) - 0.5d0*cv_item%simpdat_a1%xr(3)*a_morg(1)
-    a_ua(2,3) = a_ua(2,3) - 0.5d0*cv_item%simpdat_a1%xr(3)*a_morg(2)
-    a_ua(3,3) = a_ua(3,3) - 0.5d0*cv_item%simpdat_a1%xr(3)*a_morg(3)
-
-    a_ub(1,1) = a_ub(1,1) - 0.5d0*cv_item%simpdat_b1%xr(1)*a_morg(1)
-    a_ub(2,1) = a_ub(2,1) - 0.5d0*cv_item%simpdat_b1%xr(1)*a_morg(2)
-    a_ub(3,1) = a_ub(3,1) - 0.5d0*cv_item%simpdat_b1%xr(1)*a_morg(3)
-    a_ub(1,2) = a_ub(1,2) - 0.5d0*cv_item%simpdat_b1%xr(2)*a_morg(1)
-    a_ub(2,2) = a_ub(2,2) - 0.5d0*cv_item%simpdat_b1%xr(2)*a_morg(2)
-    a_ub(3,2) = a_ub(3,2) - 0.5d0*cv_item%simpdat_b1%xr(2)*a_morg(3)
-    a_ub(1,3) = a_ub(1,3) - 0.5d0*cv_item%simpdat_b1%xr(3)*a_morg(1)
-    a_ub(2,3) = a_ub(2,3) - 0.5d0*cv_item%simpdat_b1%xr(3)*a_morg(2)
-    a_ub(3,3) = a_ub(3,3) - 0.5d0*cv_item%simpdat_b1%xr(3)*a_morg(3)
-
-    ! a_d with respect to xsa, xsb
-    a_xsa(:) = + 0.5d0*cv_item%simpdat_a1%ingr*a_morg(:)
-    a_xsb(:) = + 0.5d0*cv_item%simpdat_b1%ingr*a_morg(:)
+    call get_mst_morg_der(ua,ub,y1,y2,a_mst,a_morg,a_ua,a_oa,a_ub,a_ob,a_y1,a_y2)
 
 ! derivatives for superimposed bases
-    call superimpose_str_der(cv_item,0,              cv_item%grps(1),ctx,cv_item%xyz_str_a1,cv_item%simpdat_a1,a_xsa,a_ua)
-    call superimpose_str_der(cv_item,cv_item%grps(1),cv_item%grps(2),ctx,cv_item%xyz_str_b1,cv_item%simpdat_b1,a_xsb,a_ub)
+    call superimpose_str_der(cv_item,0,              cv_item%grps(1),ctx,cv_item%xyz_str_a1,cv_item%simpdat_a1,a_ua,a_oa)
+    call superimpose_str_der(cv_item,cv_item%grps(1),cv_item%grps(2),ctx,cv_item%xyz_str_b1,cv_item%simpdat_b1,a_ub,a_ob)
 
 ! finally gradients for group_c, group_d
     ai = cv_item%lindexes(cv_item%grps(3))
-    ctx%CVsDrvs(:,ai,cv_item%idx) = ctx%CVsDrvs(:,ai,cv_item%idx) + a_y0axis(:)
+    ctx%CVsDrvs(:,ai,cv_item%idx) = ctx%CVsDrvs(:,ai,cv_item%idx) + a_y1(:)
 
     ai = cv_item%lindexes(cv_item%grps(4))
-    ctx%CVsDrvs(:,ai,cv_item%idx) = ctx%CVsDrvs(:,ai,cv_item%idx) - a_y0axis(:)
+    ctx%CVsDrvs(:,ai,cv_item%idx) = ctx%CVsDrvs(:,ai,cv_item%idx) + a_y2(:)
 
 end subroutine calculate_nasstp_getbp1_der
 
@@ -981,72 +707,24 @@ subroutine calculate_nasstp_getbp2(cv_item,x,mst,morg)
     real(PMFDP)         :: mst(3,3)
     real(PMFDP)         :: morg(3)
     ! -----------------------------------------------
-    real(PMFDP)         :: o_zaxis2,o_zaxis
-    real(PMFDP)         :: xaxis(3),yaxis(3),zaxis(3),zaxisr(3),zsc,y0axis(3)
-    real(PMFDP)         :: tmp1(3),oa(3),ob(3)
-    real(PMFDP)         :: yaxisr(3),o_yaxis,o_yaxis2
+    real(PMFDP)         :: ua(3,3),ub(3,3)
+    real(PMFDP)         :: oa(3),ob(3)
+    real(PMFDP)         :: y1(3),y2(3)
+    integer             :: ai
     ! --------------------------------------------------------------------------
 
-! superimpose bases
-    call superimpose_str(cv_item,cv_item%grps(4),cv_item%grps(5),x,cv_item%xyz_str_a2,cv_item%simpdat_a2)
-    call superimpose_str(cv_item,cv_item%grps(5),cv_item%grps(6),x,cv_item%xyz_str_b2,cv_item%simpdat_b2)
+! superimpose bases ==============================
+    call superimpose_str(cv_item,cv_item%grps(4),cv_item%grps(5),x,cv_item%xyz_str_a2,cv_item%simpdat_a2,ua,oa)
+    call superimpose_str(cv_item,cv_item%grps(5),cv_item%grps(6),x,cv_item%xyz_str_b2,cv_item%simpdat_b2,ub,ob)
 
-! z-axis ===================================================================
-    ! mutual orientation of two z-axis
-    zsc = sign(1.0d0,cv_item%simpdat_a2%u(1,3)*cv_item%simpdat_b2%u(1,3) + &
-                     cv_item%simpdat_a2%u(2,3)*cv_item%simpdat_b2%u(2,3) + &
-                     cv_item%simpdat_a2%u(3,3)*cv_item%simpdat_b2%u(3,3))
-    ! get z-axis as average of two axes
-    zaxisr(:) = 0.5d0*cv_item%simpdat_a2%u(:,3) + 0.5d0*zsc*cv_item%simpdat_b2%u(:,3)
-    ! normalize
-    o_zaxis2 = 1.0d0 / (zaxisr(1)**2 + zaxisr(2)**2 + zaxisr(3)**2)
-    o_zaxis  = sqrt(o_zaxis2)
-    zaxis(:) = zaxisr(:) * o_zaxis
-
-! y-axis ===================================================================
-    y0axis(:) = x(:,cv_item%lindexes(cv_item%grps(7))) - x(:,cv_item%lindexes(cv_item%grps(8)))
-    ! remove projections to z-axis
-    yaxisr(:) = y0axis(:) - (y0axis(1)*zaxis(1)+y0axis(2)*zaxis(2)+y0axis(3)*zaxis(3))*zaxis(:)
-    ! normalize
-    o_yaxis2 = 1.0d0 / (yaxisr(1)**2 + yaxisr(2)**2 + yaxisr(3)**2)
-    o_yaxis  = sqrt(o_yaxis2)
-    yaxis(:) = yaxisr(:) * o_yaxis
-
-! x-axis ===================================================================
-    ! is cross product of y and z axes
-    xaxis(1) = yaxis(2)*zaxis(3) - yaxis(3)*zaxis(2)
-    xaxis(2) = yaxis(3)*zaxis(1) - yaxis(1)*zaxis(3)
-    xaxis(3) = yaxis(1)*zaxis(2) - yaxis(2)*zaxis(1)
-
-    ! get origins of bases
-    oa(:) = 0.0d0
-    ! move reference point to origin
-    oa(:) = oa(:) - cv_item%simpdat_a2%xr(:)
-    ! rotate
-    tmp1(1) = cv_item%simpdat_a2%u(1,1)*oa(1) + cv_item%simpdat_a2%u(1,2)*oa(2) + cv_item%simpdat_a2%u(1,3)*oa(3)
-    tmp1(2) = cv_item%simpdat_a2%u(2,1)*oa(1) + cv_item%simpdat_a2%u(2,2)*oa(2) + cv_item%simpdat_a2%u(2,3)*oa(3)
-    tmp1(3) = cv_item%simpdat_a2%u(3,1)*oa(1) + cv_item%simpdat_a2%u(3,2)*oa(2) + cv_item%simpdat_a2%u(3,3)*oa(3)
-    ! move origin to new reference point (experimental structure)
-    oa(:) = tmp1(:) + cv_item%simpdat_a2%xs(:)
-
-    ob(:) = 0.0d0
-    ob(:) = ob(:) - cv_item%simpdat_b2%xr(:)
-    tmp1(1) = cv_item%simpdat_b2%u(1,1)*ob(1) + cv_item%simpdat_b2%u(1,2)*ob(2) + cv_item%simpdat_b2%u(1,3)*ob(3)
-    tmp1(2) = cv_item%simpdat_b2%u(2,1)*ob(1) + cv_item%simpdat_b2%u(2,2)*ob(2) + cv_item%simpdat_b2%u(2,3)*ob(3)
-    tmp1(3) = cv_item%simpdat_b2%u(3,1)*ob(1) + cv_item%simpdat_b2%u(3,2)*ob(2) + cv_item%simpdat_b2%u(3,3)*ob(3)
-    ob(:) = tmp1(:) + cv_item%simpdat_b2%xs(:)
-
-    ! position of bp origin
-    morg(:) = 0.5d0*(oa(:) + ob(:))
-
-    ! axis
-    mst(:,1) = xaxis(:)
-    mst(:,2) = yaxis(:)
-    mst(:,3) = zaxis(:)
+! assemble mst and morg ==========================
+    ai = cv_item%lindexes(cv_item%grps(7))
+    y1(:) = x(:,ai)
+    ai = cv_item%lindexes(cv_item%grps(8))
+    y2(:) = x(:,ai)
+    call get_mst_morg(ua,oa,ub,ob,y1,y2,mst,morg)
 
 end subroutine calculate_nasstp_getbp2
-
-!===============================================================================
 
 !===============================================================================
 ! Subroutine:  calculate_nasstp_getbp2_der
@@ -1065,231 +743,45 @@ subroutine calculate_nasstp_getbp2_der(cv_item,x,ctx,a_mst,a_morg)
     real(PMFDP)         :: a_morg(3)
     ! -----------------------------------------------
     integer             :: ai
-    real(PMFDP)         :: o_zaxis2,o_zaxis
-    real(PMFDP)         :: yaxis(3),zaxis(3),zaxisr(3),zsc,y0axis(3)
-    real(PMFDP)         :: yaxisr(3),o_yaxis,o_yaxis2
-    real(PMFDP)         :: a_zaxis(3),a_xaxis(3),a_y0axis(3)
-    real(PMFDP)         :: a_xsa(3),a_xsb(3),oa(3),ob(3)
-    real(PMFDP)         :: a_yaxisr(3),a_ua(3,3),a_ub(3,3),a_yaxis(3)
-    real(PMFDP)         :: t1,t2,xaxis(3),tmp1(3)
+    real(PMFDP)         :: ua(3,3),ub(3,3)
+    real(PMFDP)         :: y1(3),y2(3)
+    real(PMFDP)         :: a_ua(3,3),a_ub(3,3)
+    real(PMFDP)         :: a_oa(3),a_ob(3)
+    real(PMFDP)         :: a_y1(3),a_y2(3)
     ! --------------------------------------------------------------------------
 
-! z-axis ===================================================================
-    ! mutual orientation of two z-axis
-    zsc = sign(1.0d0,cv_item%simpdat_a2%u(1,3)*cv_item%simpdat_b2%u(1,3) + &
-                     cv_item%simpdat_a2%u(2,3)*cv_item%simpdat_b2%u(2,3) + &
-                     cv_item%simpdat_a2%u(3,3)*cv_item%simpdat_b2%u(3,3))
-    ! get z-axis as average of two axes
-    zaxisr(:) = 0.5d0*cv_item%simpdat_a2%u(:,3) + 0.5d0*zsc*cv_item%simpdat_b2%u(:,3)
-    ! normalize
-    o_zaxis2 = 1.0d0 / (zaxisr(1)**2 + zaxisr(2)**2 + zaxisr(3)**2)
-    o_zaxis  = sqrt(o_zaxis2)
-    zaxis(:) = zaxisr(:) * o_zaxis
+! input data
+    ua(:,:) = cv_item%simpdat_a2%u(:,:)
+    ub(:,:) = cv_item%simpdat_b2%u(:,:)
 
-! y-axis ===================================================================
-    y0axis(:) = x(:,cv_item%lindexes(cv_item%grps(7))) - x(:,cv_item%lindexes(cv_item%grps(8)))
-    ! remove projections to z-axis
-    yaxisr(:) = y0axis(:) - (y0axis(1)*zaxis(1)+y0axis(2)*zaxis(2)+y0axis(3)*zaxis(3))*zaxis(:)
-    ! normalize
-    o_yaxis2 = 1.0d0 / (yaxisr(1)**2 + yaxisr(2)**2 + yaxisr(3)**2)
-    o_yaxis  = sqrt(o_yaxis2)
-    yaxis(:) = yaxisr(:) * o_yaxis
-
-! x-axis ===================================================================
-    ! is cross product of y and z axes
-    xaxis(1) = yaxis(2)*zaxis(3) - yaxis(3)*zaxis(2)
-    xaxis(2) = yaxis(3)*zaxis(1) - yaxis(1)*zaxis(3)
-    xaxis(3) = yaxis(1)*zaxis(2) - yaxis(2)*zaxis(1)
-
-    ! get origins of bases
-    oa(:) = 0.0d0
-    ! move reference point to origin
-    oa(:) = oa(:) - cv_item%simpdat_a2%xr(:)
-    ! rotate
-    tmp1(1) = cv_item%simpdat_a2%u(1,1)*oa(1) + cv_item%simpdat_a2%u(1,2)*oa(2) + cv_item%simpdat_a2%u(1,3)*oa(3)
-    tmp1(2) = cv_item%simpdat_a2%u(2,1)*oa(1) + cv_item%simpdat_a2%u(2,2)*oa(2) + cv_item%simpdat_a2%u(2,3)*oa(3)
-    tmp1(3) = cv_item%simpdat_a2%u(3,1)*oa(1) + cv_item%simpdat_a2%u(3,2)*oa(2) + cv_item%simpdat_a2%u(3,3)*oa(3)
-    ! move origin to new reference point (experimental structure)
-    oa(:) = tmp1(:) + cv_item%simpdat_a2%xs(:)
-
-    ob(:) = 0.0d0
-    ob(:) = ob(:) - cv_item%simpdat_b2%xr(:)
-    tmp1(1) = cv_item%simpdat_b2%u(1,1)*ob(1) + cv_item%simpdat_b2%u(1,2)*ob(2) + cv_item%simpdat_b2%u(1,3)*ob(3)
-    tmp1(2) = cv_item%simpdat_b2%u(2,1)*ob(1) + cv_item%simpdat_b2%u(2,2)*ob(2) + cv_item%simpdat_b2%u(2,3)*ob(3)
-    tmp1(3) = cv_item%simpdat_b2%u(3,1)*ob(1) + cv_item%simpdat_b2%u(3,2)*ob(2) + cv_item%simpdat_b2%u(3,3)*ob(3)
-    ob(:) = tmp1(:) + cv_item%simpdat_b2%xs(:)
-
-! final derivatives
-    a_ua(:,:)   = 0.0d0
-    a_ub(:,:)   = 0.0d0
-    a_y0axis(:) = 0.0d0
-    a_xsa(:)    = 0.0d0
-    a_xsb(:)    = 0.0d0
-
-! ************
-! ==== a_xaxis
-! ************
-
-    a_xaxis(:) = a_mst(:,1)
-
-! a_xaxis with respect to ua and ub
-! with respect to yaxis
-!     xaxis(1) = yaxis(2)*zaxis(3) - yaxis(3)*zaxis(2)
-!     xaxis(2) = yaxis(3)*zaxis(1) - yaxis(1)*zaxis(3)
-!     xaxis(3) = yaxis(1)*zaxis(2) - yaxis(2)*zaxis(1)
-    a_yaxis(1) = - a_xaxis(2)*zaxis(3) + zaxis(2)*a_xaxis(3)
-    a_yaxis(2) = - a_xaxis(3)*zaxis(1) + zaxis(3)*a_xaxis(1)
-    a_yaxis(3) = - a_xaxis(1)*zaxis(2) + zaxis(1)*a_xaxis(2)
-
-! with respect to yaxisr
-    t1 = yaxisr(1)*a_yaxis(1) + yaxisr(2)*a_yaxis(2) + yaxisr(3)*a_yaxis(3)
-    a_yaxisr(1) =   a_yaxis(1)*o_yaxis - o_yaxis*o_yaxis2*yaxisr(1)*t1
-    a_yaxisr(2) =   a_yaxis(2)*o_yaxis - o_yaxis*o_yaxis2*yaxisr(2)*t1
-    a_yaxisr(3) =   a_yaxis(3)*o_yaxis - o_yaxis*o_yaxis2*yaxisr(3)*t1
-
-! with respect to y0axis
-    t1 = zaxis(1)*a_yaxisr(1) + zaxis(2)*a_yaxisr(2) + zaxis(3)*a_yaxisr(3)
-    a_y0axis(1) = a_yaxisr(1) - zaxis(1)*t1
-    a_y0axis(2) = a_yaxisr(2) - zaxis(2)*t1
-    a_y0axis(3) = a_yaxisr(3) - zaxis(3)*t1
-
-! with respect to zaxis
-    t1 = y0axis(1)*zaxis(1)+y0axis(2)*zaxis(2)+y0axis(3)*zaxis(3)
-    t2 = zaxis(1)*a_yaxisr(1) + zaxis(2)*a_yaxisr(2) + zaxis(3)*a_yaxisr(3)
-    a_zaxis(1) = - t1*a_yaxisr(1) - y0axis(1)*t2
-    a_zaxis(2) = - t1*a_yaxisr(2) - y0axis(2)*t2
-    a_zaxis(3) = - t1*a_yaxisr(3) - y0axis(3)*t2
-
-! with respect to zaxis
-!     xaxis(1) = yaxis(2)*zaxis(3) - yaxis(3)*zaxis(2)
-!     xaxis(2) = yaxis(3)*zaxis(1) - yaxis(1)*zaxis(3)
-!     xaxis(3) = yaxis(1)*zaxis(2) - yaxis(2)*zaxis(1)
-    a_zaxis(1) = a_zaxis(1) - yaxis(2)*a_xaxis(3) + yaxis(3)*a_xaxis(2)
-    a_zaxis(2) = a_zaxis(2) - yaxis(3)*a_xaxis(1) + yaxis(1)*a_xaxis(3)
-    a_zaxis(3) = a_zaxis(3) - yaxis(1)*a_xaxis(2) + yaxis(2)*a_xaxis(1)
-
-    t1 = zaxisr(1)*a_zaxis(1) + zaxisr(2)*a_zaxis(2) + zaxisr(3)*a_zaxis(3)
-    a_ua(1,3) = a_ua(1,3) + 0.5d0*a_zaxis(1)*o_zaxis - 0.5d0*o_zaxis*o_zaxis2*zaxisr(1)*t1
-    a_ua(2,3) = a_ua(2,3) + 0.5d0*a_zaxis(2)*o_zaxis - 0.5d0*o_zaxis*o_zaxis2*zaxisr(2)*t1
-    a_ua(3,3) = a_ua(3,3) + 0.5d0*a_zaxis(3)*o_zaxis - 0.5d0*o_zaxis*o_zaxis2*zaxisr(3)*t1
-
-    a_ub(1,3) = a_ub(1,3) + 0.5d0*zsc*a_zaxis(1)*o_zaxis - 0.5d0*zsc*o_zaxis*o_zaxis2*zaxisr(1)*t1
-    a_ub(2,3) = a_ub(2,3) + 0.5d0*zsc*a_zaxis(2)*o_zaxis - 0.5d0*zsc*o_zaxis*o_zaxis2*zaxisr(2)*t1
-    a_ub(3,3) = a_ub(3,3) + 0.5d0*zsc*a_zaxis(3)*o_zaxis - 0.5d0*zsc*o_zaxis*o_zaxis2*zaxisr(3)*t1
-
-
-! ************
-! ==== a_yaxis
-! ************
-
-    a_yaxis(:) = a_mst(:,2)
-
-! with respect to yaxisr
-    t1 = yaxisr(1)*a_yaxis(1) + yaxisr(2)*a_yaxis(2) + yaxisr(3)*a_yaxis(3)
-    a_yaxisr(1) =   a_yaxis(1)*o_yaxis - o_yaxis*o_yaxis2*yaxisr(1)*t1
-    a_yaxisr(2) =   a_yaxis(2)*o_yaxis - o_yaxis*o_yaxis2*yaxisr(2)*t1
-    a_yaxisr(3) =   a_yaxis(3)*o_yaxis - o_yaxis*o_yaxis2*yaxisr(3)*t1
-! with respect to y0axis
-    t1 = zaxis(1)*a_yaxisr(1) + zaxis(2)*a_yaxisr(2) + zaxis(3)*a_yaxisr(3)
-    a_y0axis(1) = a_y0axis(1) + a_yaxisr(1) - zaxis(1)*t1
-    a_y0axis(2) = a_y0axis(2) + a_yaxisr(2) - zaxis(2)*t1
-    a_y0axis(3) = a_y0axis(3) + a_yaxisr(3) - zaxis(3)*t1
-
-! with respect to zaxis
-    t1 = y0axis(1)*zaxis(1)+y0axis(2)*zaxis(2)+y0axis(3)*zaxis(3)
-    t2 = zaxis(1)*a_yaxisr(1) + zaxis(2)*a_yaxisr(2) + zaxis(3)*a_yaxisr(3)
-    a_zaxis(1) = - t1*a_yaxisr(1) - y0axis(1)*t2
-    a_zaxis(2) = - t1*a_yaxisr(2) - y0axis(2)*t2
-    a_zaxis(3) = - t1*a_yaxisr(3) - y0axis(3)*t2
-
-    t1 = zaxisr(1)*a_zaxis(1) + zaxisr(2)*a_zaxis(2) + zaxisr(3)*a_zaxis(3)
-    a_ua(1,3) = a_ua(1,3) + 0.5d0*a_zaxis(1)*o_zaxis - 0.5d0*o_zaxis*o_zaxis2*zaxisr(1)*t1
-    a_ua(2,3) = a_ua(2,3) + 0.5d0*a_zaxis(2)*o_zaxis - 0.5d0*o_zaxis*o_zaxis2*zaxisr(2)*t1
-    a_ua(3,3) = a_ua(3,3) + 0.5d0*a_zaxis(3)*o_zaxis - 0.5d0*o_zaxis*o_zaxis2*zaxisr(3)*t1
-
-    a_ub(1,3) = a_ub(1,3) + 0.5d0*zsc*a_zaxis(1)*o_zaxis - 0.5d0*zsc*o_zaxis*o_zaxis2*zaxisr(1)*t1
-    a_ub(2,3) = a_ub(2,3) + 0.5d0*zsc*a_zaxis(2)*o_zaxis - 0.5d0*zsc*o_zaxis*o_zaxis2*zaxisr(2)*t1
-    a_ub(3,3) = a_ub(3,3) + 0.5d0*zsc*a_zaxis(3)*o_zaxis - 0.5d0*zsc*o_zaxis*o_zaxis2*zaxisr(3)*t1
-
-! ************
-! ==== a_zaxis
-! ************
-
-    a_zaxis(:) = a_mst(:,3)
-
-! with respect to zaxis
-    t1 = zaxisr(1)*a_zaxis(1) + zaxisr(2)*a_zaxis(2) + zaxisr(3)*a_zaxis(3)
-    a_ua(1,3) = a_ua(1,3) + 0.5d0*a_zaxis(1)*o_zaxis - 0.5d0*o_zaxis*o_zaxis2*zaxisr(1)*t1
-    a_ua(2,3) = a_ua(2,3) + 0.5d0*a_zaxis(2)*o_zaxis - 0.5d0*o_zaxis*o_zaxis2*zaxisr(2)*t1
-    a_ua(3,3) = a_ua(3,3) + 0.5d0*a_zaxis(3)*o_zaxis - 0.5d0*o_zaxis*o_zaxis2*zaxisr(3)*t1
-
-    a_ub(1,3) = a_ub(1,3) + 0.5d0*zsc*a_zaxis(1)*o_zaxis - 0.5d0*zsc*o_zaxis*o_zaxis2*zaxisr(1)*t1
-    a_ub(2,3) = a_ub(2,3) + 0.5d0*zsc*a_zaxis(2)*o_zaxis - 0.5d0*zsc*o_zaxis*o_zaxis2*zaxisr(2)*t1
-    a_ub(3,3) = a_ub(3,3) + 0.5d0*zsc*a_zaxis(3)*o_zaxis - 0.5d0*zsc*o_zaxis*o_zaxis2*zaxisr(3)*t1
-
-! ************
-! ==== origin
-! ************
-
-!     ! get origins of bases
-!     oa(:) = 0.0d0
-!     ! move reference point to origin
-!     oa(:) = oa(:) - xra(:)
-!     ! rotate
-!     tmp1(1) = ua(1,1)*oa(1) + ua(1,2)*oa(2) + ua(1,3)*oa(3)
-!     tmp1(2) = ua(2,1)*oa(1) + ua(2,2)*oa(2) + ua(2,3)*oa(3)
-!     tmp1(3) = ua(3,1)*oa(1) + ua(3,2)*oa(2) + ua(3,3)*oa(3)
-!     ! move origin to new reference point (experiemntal structure)
-!     oa(:) = tmp1(:) + xsa(:)
-!
-!     ob(:) = 0.0d0
-!     ob(:) = ob(:) - xrb(:)
-!     tmp1(1) = ub(1,1)*ob(1) + ub(1,2)*ob(2) + ub(1,3)*ob(3)
-!     tmp1(2) = ub(2,1)*ob(1) + ub(2,2)*ob(2) + ub(2,3)*ob(3)
-!     tmp1(3) = ub(3,1)*ob(1) + ub(3,2)*ob(2) + ub(3,3)*ob(3)
-!     ob(:) = tmp1(:) + xsb(:)
-
-! a_morg
-!    ! position of bp origin
-!    morg(:) = 0.5d0*(oa(:) + ob(:))
-
-! a_morg with respect to ua and ub
-    a_ua(1,1) = a_ua(1,1) - 0.5d0*cv_item%simpdat_a2%xr(1)*a_morg(1)
-    a_ua(2,1) = a_ua(2,1) - 0.5d0*cv_item%simpdat_a2%xr(1)*a_morg(2)
-    a_ua(3,1) = a_ua(3,1) - 0.5d0*cv_item%simpdat_a2%xr(1)*a_morg(3)
-    a_ua(1,2) = a_ua(1,2) - 0.5d0*cv_item%simpdat_a2%xr(2)*a_morg(1)
-    a_ua(2,2) = a_ua(2,2) - 0.5d0*cv_item%simpdat_a2%xr(2)*a_morg(2)
-    a_ua(3,2) = a_ua(3,2) - 0.5d0*cv_item%simpdat_a2%xr(2)*a_morg(3)
-    a_ua(1,3) = a_ua(1,3) - 0.5d0*cv_item%simpdat_a2%xr(3)*a_morg(1)
-    a_ua(2,3) = a_ua(2,3) - 0.5d0*cv_item%simpdat_a2%xr(3)*a_morg(2)
-    a_ua(3,3) = a_ua(3,3) - 0.5d0*cv_item%simpdat_a2%xr(3)*a_morg(3)
-
-    a_ub(1,1) = a_ub(1,1) - 0.5d0*cv_item%simpdat_b2%xr(1)*a_morg(1)
-    a_ub(2,1) = a_ub(2,1) - 0.5d0*cv_item%simpdat_b2%xr(1)*a_morg(2)
-    a_ub(3,1) = a_ub(3,1) - 0.5d0*cv_item%simpdat_b2%xr(1)*a_morg(3)
-    a_ub(1,2) = a_ub(1,2) - 0.5d0*cv_item%simpdat_b2%xr(2)*a_morg(1)
-    a_ub(2,2) = a_ub(2,2) - 0.5d0*cv_item%simpdat_b2%xr(2)*a_morg(2)
-    a_ub(3,2) = a_ub(3,2) - 0.5d0*cv_item%simpdat_b2%xr(2)*a_morg(3)
-    a_ub(1,3) = a_ub(1,3) - 0.5d0*cv_item%simpdat_b2%xr(3)*a_morg(1)
-    a_ub(2,3) = a_ub(2,3) - 0.5d0*cv_item%simpdat_b2%xr(3)*a_morg(2)
-    a_ub(3,3) = a_ub(3,3) - 0.5d0*cv_item%simpdat_b2%xr(3)*a_morg(3)
-
-    ! a_d with respect to xsa, xsb
-    a_xsa(:) = + 0.5d0*cv_item%simpdat_a2%ingr*a_morg(:)
-    a_xsb(:) = + 0.5d0*cv_item%simpdat_b2%ingr*a_morg(:)
-
-! derivatives for superimposed bases
-    call superimpose_str_der(cv_item,cv_item%grps(4),cv_item%grps(5),ctx,cv_item%xyz_str_a2,cv_item%simpdat_a2,a_xsa,a_ua)
-    call superimpose_str_der(cv_item,cv_item%grps(5),cv_item%grps(6),ctx,cv_item%xyz_str_b2,cv_item%simpdat_b2,a_xsb,a_ub)
-
-! finally gradients for group_c, group_d
     ai = cv_item%lindexes(cv_item%grps(7))
-    ctx%CVsDrvs(:,ai,cv_item%idx) = ctx%CVsDrvs(:,ai,cv_item%idx) + a_y0axis(:)
+    y1(:) = x(:,ai)
+    ai = cv_item%lindexes(cv_item%grps(8))
+    y2(:) = x(:,ai)
+
+    a_ua(:,:) = 0.0d0
+    a_oa(:) = 0.0d0
+    a_ub(:,:) = 0.0d0
+    a_ob(:) = 0.0d0
+    a_y1(:) = 0.0d0
+    a_y2(:) = 0.0d0
+
+    call get_mst_morg_der(ua,ub,y1,y2,a_mst,a_morg,a_ua,a_oa,a_ub,a_ob,a_y1,a_y2)
+
+! derivatives for superimposed bases =============
+    call superimpose_str_der(cv_item,cv_item%grps(4),cv_item%grps(5),ctx,cv_item%xyz_str_a2,cv_item%simpdat_a2,a_ua,a_oa)
+    call superimpose_str_der(cv_item,cv_item%grps(5),cv_item%grps(6),ctx,cv_item%xyz_str_b2,cv_item%simpdat_b2,a_ub,a_ob)
+
+! finally gradients for group_c, group_d ========
+    ai = cv_item%lindexes(cv_item%grps(7))
+    ctx%CVsDrvs(:,ai,cv_item%idx) = ctx%CVsDrvs(:,ai,cv_item%idx) + a_y1(:)
 
     ai = cv_item%lindexes(cv_item%grps(8))
-    ctx%CVsDrvs(:,ai,cv_item%idx) = ctx%CVsDrvs(:,ai,cv_item%idx) - a_y0axis(:)
+    ctx%CVsDrvs(:,ai,cv_item%idx) = ctx%CVsDrvs(:,ai,cv_item%idx) + a_y2(:)
 
 end subroutine calculate_nasstp_getbp2_der
+
+!===============================================================================
 
 end module cv_nasstp
 

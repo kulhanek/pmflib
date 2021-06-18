@@ -32,7 +32,7 @@ implicit none
 
 !===============================================================================
 
-type, extends(CVType) :: CVTypeNASSTP
+type, extends(CVType) :: CVTypeNASSTPOLD
 
     type(XYZFILE_TYPE)  :: xyz_str_a1
     type(XYZFILE_TYPE)  :: xyz_str_b1
@@ -43,7 +43,7 @@ type, extends(CVType) :: CVTypeNASSTP
     contains
         procedure :: load_cv        => load_nasstpold
         procedure :: calculate_cv   => calculate_nasstpold
-end type CVTypeNASSTP
+end type CVTypeNASSTPOLD
 
 !===============================================================================
 
@@ -60,7 +60,7 @@ subroutine load_nasstpold(cv_item,prm_fin)
     use smf_periodic_table
 
     implicit none
-    class(CVTypeNASSTP)                 :: cv_item
+    class(CVTypeNASSTPOLD)              :: cv_item
     type(PRMFILE_TYPE),intent(inout)    :: prm_fin
     character(len=PRMFILE_MAX_VALUE)    :: tmpstr
     integer                             :: i,ar
@@ -68,7 +68,7 @@ subroutine load_nasstpold(cv_item,prm_fin)
     ! --------------------------------------------------------------------------
 
     ! unit and CV name initialization ---------------
-    cv_item%ctype         = 'NASSTP'
+    cv_item%ctype         = 'NASSTPOLD'
     cv_item%gradforanycrd = .true.
     call cv_common_read_name(cv_item,prm_fin)
 
@@ -303,7 +303,7 @@ subroutine calculate_nasstpold(cv_item,x,ctx)
     use pmf_utils
 
     implicit none
-    class(CVTypeNASSTP) :: cv_item
+    class(CVTypeNASSTPOLD) :: cv_item
     real(PMFDP)         :: x(:,:)
     type(CVContextType) :: ctx
     ! -----------------------------------------------
@@ -334,7 +334,7 @@ subroutine calculate_nasstpold_value_num(cv_item,ctx,ua,oa,ub,ob,a_ua,a_oa,a_ub,
     use pmf_utils
 
     implicit none
-    class(CVTypeNASSTP) :: cv_item
+    class(CVTypeNASSTPOLD) :: cv_item
     type(CVContextType) :: ctx
     real(PMFDP)         :: ua(3,3),ub(3,3)
     real(PMFDP)         :: oa(3),ob(3)
@@ -440,7 +440,7 @@ subroutine calculate_nasstpold_value(cv_item,ctx,ua,oa,ub,ob,a_ua,a_oa,a_ub,a_ob
     use pmf_utils
 
     implicit none
-    class(CVTypeNASSTP) :: cv_item
+    class(CVTypeNASSTPOLD) :: cv_item
     type(CVContextType) :: ctx
     real(PMFDP)         :: ua(3,3),ub(3,3)
     real(PMFDP)         :: oa(3),ob(3)
@@ -837,7 +837,7 @@ subroutine calculate_nasstpold_getbp1(cv_item,x,mst,morg)
     use pmf_utils
 
     implicit none
-    class(CVTypeNASSTP) :: cv_item
+    class(CVTypeNASSTPOLD) :: cv_item
     real(PMFDP)         :: x(:,:)
     real(PMFDP)         :: mst(3,3)
     real(PMFDP)         :: morg(3)
@@ -1125,7 +1125,7 @@ subroutine calculate_nasstpold_getbp1_der(cv_item,x,ctx,a_mst,a_morg)
     use pmf_utils
 
     implicit none
-    class(CVTypeNASSTP) :: cv_item
+    class(CVTypeNASSTPOLD) :: cv_item
     real(PMFDP)         :: x(:,:)
     type(CVContextType) :: ctx
     real(PMFDP)         :: a_mst(3,3)
@@ -1731,7 +1731,7 @@ subroutine calculate_nasstpold_getbp2(cv_item,x,mst,morg)
     use pmf_utils
 
     implicit none
-    class(CVTypeNASSTP) :: cv_item
+    class(CVTypeNASSTPOLD) :: cv_item
     real(PMFDP)         :: x(:,:)
     real(PMFDP)         :: mst(3,3)
     real(PMFDP)         :: morg(3)
@@ -2021,7 +2021,7 @@ subroutine calculate_nasstpold_getbp2_der(cv_item,x,ctx,a_mst,a_morg)
     use pmf_utils
 
     implicit none
-    class(CVTypeNASSTP) :: cv_item
+    class(CVTypeNASSTPOLD) :: cv_item
     real(PMFDP)         :: x(:,:)
     type(CVContextType) :: ctx
     real(PMFDP)         :: a_mst(3,3)
