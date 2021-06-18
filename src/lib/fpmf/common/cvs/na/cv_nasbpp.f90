@@ -343,6 +343,15 @@ subroutine calculate_nasbpp(cv_item,x,ctx)
     a_ua(:,3) = a_ua(:,3) + 0.5d0*a_zaxisr(:)
     a_ub(:,3) = a_ub(:,3) + 0.5d0*zsc*a_zaxisr(:)
 
+    write(*,*) 'a_ua'
+    write(*,*) a_ua
+    write(*,*) 'a_oa'
+    write(*,*) a_oa
+    write(*,*) 'a_ub'
+    write(*,*) a_ub
+    write(*,*) 'a_ob'
+    write(*,*) a_ob
+
     write(*,*) 'beg'
     write(*,*) ctx%CVsDrvs(:,:,cv_item%idx)
 
