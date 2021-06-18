@@ -343,15 +343,18 @@ subroutine calculate_nasbpp(cv_item,x,ctx)
     a_ua(:,3) = a_ua(:,3) + 0.5d0*a_zaxisr(:)
     a_ub(:,3) = a_ub(:,3) + 0.5d0*zsc*a_zaxisr(:)
 
+    write(*,*) 'beg'
     write(*,*) ctx%CVsDrvs(:,:,cv_item%idx)
 
 ! derivatives for superimposed bases =============
     call superimpose_str_der(cv_item,0,              cv_item%grps(1),ctx,cv_item%xyz_str_a,cv_item%simpdat_a,a_ua,a_oa)
 
+    write(*,*) 'str1'
     write(*,*) ctx%CVsDrvs(:,:,cv_item%idx)
 
     call superimpose_str_der(cv_item,cv_item%grps(1),cv_item%grps(2),ctx,cv_item%xyz_str_b,cv_item%simpdat_b,a_ub,a_ob)
 
+    write(*,*) 'str2'
     write(*,*) ctx%CVsDrvs(:,:,cv_item%idx)
 
 ! finaly gradients for group_c, group_d ==========
