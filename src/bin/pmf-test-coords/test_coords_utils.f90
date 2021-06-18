@@ -451,6 +451,8 @@ subroutine numerical_derivatives(cst_item,x,value,fd)
     ! --------------------------------------------------------------------------
 
 ! calculate value
+    tmp_context%CVsDrvs(:,:,:) = 0.0d0
+    tmp_context%CVsValues(:) = 0.0d0
     call cst_item%calculate_cv(x,tmp_context)
     value = tmp_context%CVsValues(cst_item%idx)
 
@@ -471,6 +473,8 @@ subroutine numerical_derivatives(cst_item,x,value,fd)
                 loc_x = x
                 loc_x(k,cst_item%lindexes(j)) = loc_x(k,cst_item%lindexes(j)) + num_diff
 
+                tmp_context%CVsDrvs(:,:,:) = 0.0d0
+                tmp_context%CVsValues(:) = 0.0d0
                 call cst_item%calculate_cv(loc_x,tmp_context)
                 mv1 = tmp_context%CVsValues(cst_item%idx)
 
@@ -478,6 +482,8 @@ subroutine numerical_derivatives(cst_item,x,value,fd)
                 loc_x = lx
                 loc_x(k,cst_item%lindexes(j)) = loc_x(k,cst_item%lindexes(j)) - num_diff
 
+                tmp_context%CVsDrvs(:,:,:) = 0.0d0
+                tmp_context%CVsValues(:) = 0.0d0
                 call cst_item%calculate_cv(loc_x,tmp_context)
                 mv2 = tmp_context%CVsValues(cst_item%idx)
 
