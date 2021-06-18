@@ -92,6 +92,7 @@ SET(PMF_CVS_SRC
     # nucleic acids
         common/cvs/na/cv_napbo.f90
         common/cvs/na/cv_nasbo.f90
+        common/cvs/na/cv_nalbpp.f90
         common/cvs/na/cv_nasbpp.f90
         common/cvs/na/cv_nasbppold.f90
         common/cvs/na/cv_nasstp.f90

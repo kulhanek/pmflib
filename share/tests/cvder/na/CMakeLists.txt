@@ -25,6 +25,13 @@ ADD_TEST(CVDerRand02-NABEND ${EXECUTABLE_OUTPUT_PATH}/pmf-test-cvs
 ADD_TEST(CVDerRand03-NABEND ${EXECUTABLE_OUTPUT_PATH}/pmf-test-cvs
                         ../random03.in nabend.in)
 
+ADD_TEST(CVDerRand01-NALBPP ${EXECUTABLE_OUTPUT_PATH}/pmf-test-cvs
+                        ../random01.in nalbpp.in)
+ADD_TEST(CVDerRand02-NALBPP ${EXECUTABLE_OUTPUT_PATH}/pmf-test-cvs
+                        ../random02.in nalbpp.in)
+ADD_TEST(CVDerRand03-NALBPP ${EXECUTABLE_OUTPUT_PATH}/pmf-test-cvs
+                        ../random03.in nalbpp.in)
+
 ADD_TEST(CVDerRand01-NASBPP ${EXECUTABLE_OUTPUT_PATH}/pmf-test-cvs
                         ../random01.in nasbpp.in)
 ADD_TEST(CVDerRand02-NASBPP ${EXECUTABLE_OUTPUT_PATH}/pmf-test-cvs
@@ -32,12 +39,26 @@ ADD_TEST(CVDerRand02-NASBPP ${EXECUTABLE_OUTPUT_PATH}/pmf-test-cvs
 ADD_TEST(CVDerRand03-NASBPP ${EXECUTABLE_OUTPUT_PATH}/pmf-test-cvs
                         ../random03.in nasbpp.in)
 
+ADD_TEST(CVDerRand01-NASBPPOLD ${EXECUTABLE_OUTPUT_PATH}/pmf-test-cvs
+                        ../random01.in nasbppold.in)
+ADD_TEST(CVDerRand02-NASBPPOLD ${EXECUTABLE_OUTPUT_PATH}/pmf-test-cvs
+                        ../random02.in nasbppold.in)
+ADD_TEST(CVDerRand03-NASBPPOLD ${EXECUTABLE_OUTPUT_PATH}/pmf-test-cvs
+                        ../random03.in nasbppold.in)
+
 ADD_TEST(CVDerRand01-NASSTP ${EXECUTABLE_OUTPUT_PATH}/pmf-test-cvs
                         ../random01.in nasstp.in)
 ADD_TEST(CVDerRand02-NASSTP ${EXECUTABLE_OUTPUT_PATH}/pmf-test-cvs
                         ../random02.in nasstp.in)
 ADD_TEST(CVDerRand03-NASSTP ${EXECUTABLE_OUTPUT_PATH}/pmf-test-cvs
                         ../random03.in nasstp.in)
+
+ADD_TEST(CVDerRand01-NASSTPOLD ${EXECUTABLE_OUTPUT_PATH}/pmf-test-cvs
+                        ../random01.in nasstpold.in)
+ADD_TEST(CVDerRand02-NASSTPOLD ${EXECUTABLE_OUTPUT_PATH}/pmf-test-cvs
+                        ../random02.in nasstpold.in)
+ADD_TEST(CVDerRand03-NASSTPOLD ${EXECUTABLE_OUTPUT_PATH}/pmf-test-cvs
+                        ../random03.in nasstpold.in)
 
 
 

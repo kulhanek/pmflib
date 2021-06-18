@@ -1,9 +1,7 @@
 !===============================================================================
 ! PMFLib - Library Supporting Potential of Mean Force Calculations
 !-------------------------------------------------------------------------------
-!    Copyright (C) 2018-2021 Petr Kulhanek, kulhanek@chemi.muni.cz
-!    Copyright (C) 2016 Ivo Durnik,
-!    Copyright (C) 2016 Petr Kulhanek, kulhanek@chemi.muni.cz
+!    Copyright (C) 2021 Petr Kulhanek, kulhanek@chemi.muni.cz
 !
 !    This library is free software; you can redistribute it and/or
 !    modify it under the terms of the GNU Lesser General Public
@@ -21,7 +19,7 @@
 !    Boston, MA  02110-1301  USA
 !===============================================================================
 
-module cv_nasbpp
+module cv_nalbpp
 
 use pmf_sizes
 use pmf_constants
@@ -35,7 +33,7 @@ implicit none
 
 !===============================================================================
 
-type, extends(CVType) :: CVTypeNASBPP
+type, extends(CVType) :: CVTypeNALBPP
 
     type(XYZFILE_TYPE)  :: xyz_str_a
     type(SImpStrData)   :: simpdat_a
@@ -44,26 +42,26 @@ type, extends(CVType) :: CVTypeNASBPP
     integer             :: lbp_par
 
     contains
-        procedure :: load_cv        => load_nasbpp
-        procedure :: calculate_cv   => calculate_nasbpp
-end type CVTypeNASBPP
+        procedure :: load_cv        => load_nalbpp
+        procedure :: calculate_cv   => calculate_nalbpp
+end type CVTypeNALBPP
 
 !===============================================================================
 
 contains
 
 !===============================================================================
-! Subroutine:  load_nasbpp
+! Subroutine:  load_nalbpp
 !===============================================================================
 
-subroutine load_nasbpp(cv_item,prm_fin)
+subroutine load_nalbpp(cv_item,prm_fin)
 
     use prmfile
     use pmf_utils
     use smf_periodic_table
 
     implicit none
-    class(CVTypeNASBPP)                 :: cv_item
+    class(CVTypeNALBPP)                 :: cv_item
     type(PRMFILE_TYPE),intent(inout)    :: prm_fin
     character(len=PRMFILE_MAX_VALUE)    :: tmpstr
     integer                             :: i,ar
@@ -71,12 +69,12 @@ subroutine load_nasbpp(cv_item,prm_fin)
     ! --------------------------------------------------------------------------
 
     ! unit and CV name initialization ---------------
-    cv_item%ctype         = 'NASBPP'
+    cv_item%ctype         = 'NALBPP'
     cv_item%gradforanycrd = .true.
     call cv_common_read_name(cv_item,prm_fin)
 
     ! load groups -----------------------------------
-    cv_item%ngrps = 4
+    cv_item%ngrps = 2
     call cv_common_init_groups(cv_item,prm_fin)
 
     ! this is important for testing
@@ -149,22 +147,10 @@ subroutine load_nasbpp(cv_item,prm_fin)
         end do
     end if
 
-    ! read group c,d ----------------------------------
-    write(PMF_OUT,75)
-    call cv_common_read_group(cv_item,prm_fin,3)
-    if( cv_get_group_natoms(cv_item,3) .ne.1 ) then
-        call pmf_utils_exit(PMF_OUT,1,'group_c can contain only one atom!')
-    end if
-
-    call cv_common_read_group(cv_item,prm_fin,4)
-    if( cv_get_group_natoms(cv_item,4) .ne.1 ) then
-        call pmf_utils_exit(PMF_OUT,1,'group_d can contain only one atom!')
-    end if
-
     ! parameter to be calculated ------------------------
     write(PMF_OUT,80)
     if( .not. prmfile_get_string_by_key(prm_fin,'parameter',tmpstr) ) then
-        call pmf_utils_exit(PMF_OUT,1,'Type of simple base pair parameter (parameter) is not specified!')
+        call pmf_utils_exit(PMF_OUT,1,'Type of local base pair parameter (parameter) is not specified!')
     end if
     write(PMF_OUT,90) trim(tmpstr)
 
@@ -196,26 +182,25 @@ subroutine load_nasbpp(cv_item,prm_fin)
  50 format('   == Base #1 ====================================')
  60 format('   == Base #2 ====================================')
  70 format('   ** reference structure: ',A)
- 75 format('   == y-axis  ====================================')
  80 format('   -----------------------------------------------')
- 90 format('   ** simple BP parameter: ',A)
+ 90 format('   ** local BP parameter : ',A)
 100 format('Atom mismatch between group A and reference A atoms! atom: ',I6,', group mass: ',F10.3, ', ref mass: ',F10.3)
 110 format('Atom mismatch between group B and reference B atoms! atom: ',I6,', group mass: ',F10.3, ', ref mass: ',F10.3)
 
-end subroutine load_nasbpp
+end subroutine load_nalbpp
 
 !===============================================================================
-! Subroutine:  calculate_nasbpp
+! Subroutine:  calculate_nalbpp
 !===============================================================================
 
-subroutine calculate_nasbpp(cv_item,x,ctx)
+subroutine calculate_nalbpp(cv_item,x,ctx)
 
     use pmf_dat
     use pmf_pbc
     use pmf_utils
 
     implicit none
-    class(CVTypeNASBPP) :: cv_item
+    class(CVTypeNALBPP) :: cv_item
     real(PMFDP)         :: x(:,:)
     type(CVContextType) :: ctx
     ! -----------------------------------------------
@@ -223,12 +208,6 @@ subroutine calculate_nasbpp(cv_item,x,ctx)
     real(PMFDP)         :: oa(3),ob(3)
     real(PMFDP)         :: a_ua(3,3),a_ub(3,3)
     real(PMFDP)         :: a_oa(3),a_ob(3)
-    real(PMFDP)         :: xaxis(3),yaxis(3),zaxis(3)
-    real(PMFDP)         :: yaxisr(3),zaxisr(3),y0axis(3)
-    real(PMFDP)         :: a_xaxis(3),a_yaxis(3),a_zaxis(3)
-    real(PMFDP)         :: a_yaxisr(3),a_zaxisr(3),a_y0axis(3)
-    real(PMFDP)         :: d(3),t1,zsc
-    integer             :: ai
     ! --------------------------------------------------------------------------
 
     ! ALL a_xxx must be initialized to zero due to additive function of _der methods from cv_math
@@ -236,136 +215,21 @@ subroutine calculate_nasbpp(cv_item,x,ctx)
     a_ub(:,:)   = 0.0d0
     a_oa(:)     = 0.0d0
     a_ob(:)     = 0.0d0
-    a_xaxis(:)  = 0.0d0
-    a_yaxis(:)  = 0.0d0
-    a_zaxis(:)  = 0.0d0
-    a_yaxisr(:) = 0.0d0
-    a_zaxisr(:) = 0.0d0
-    a_y0axis(:) = 0.0d0
 
 ! superimpose bases ==============================
     call superimpose_str(cv_item,0,              cv_item%grps(1),x,cv_item%xyz_str_a,cv_item%simpdat_a,ua,oa)
     call superimpose_str(cv_item,cv_item%grps(1),cv_item%grps(2),x,cv_item%xyz_str_b,cv_item%simpdat_b,ub,ob)
 
-! z-axis =========================================
-    ! mutual orientation of two z-axis
-    zsc = sign(1.0d0,ua(1,3)*ub(1,3)+ua(2,3)*ub(2,3)+ua(3,3)*ub(3,3))
-    ! get z-axis as average of two axes
-    zaxisr(:) = 0.5d0*ua(:,3) + 0.5d0*zsc*ub(:,3)
-    call norm_vec(zaxisr,zaxis)
-
-! y-axis =========================================
-    y0axis(:) = x(:,cv_item%lindexes(cv_item%grps(3))) - x(:,cv_item%lindexes(cv_item%grps(4)))
-    ! remove projections to z-axis
-    yaxisr(:) = y0axis(:) - (y0axis(1)*zaxis(1)+y0axis(2)*zaxis(2)+y0axis(3)*zaxis(3))*zaxis(:)
-    ! normalize
-    call norm_vec(yaxisr,yaxis)
-
-! x-axis =========================================
-    call get_cross_product(yaxis,zaxis,xaxis)
-
-! get value and derivatives ======================
-    select case(cv_item%lbp_par)
-        case(1)
-            ! 'shear'
-            d(:) = oa(:) - ob(:)
-            ctx%CVsValues(cv_item%idx) = d(1)*xaxis(1) + d(2)*xaxis(2) + d(3)*xaxis(3)
-            a_xaxis(:) = d(:)
-            a_oa(:) =   xaxis(:)
-            a_ob(:) = - xaxis(:)
-        case(2)
-            ! 'stretch'
-            d(:) = oa(:) - ob(:)
-            ctx%CVsValues(cv_item%idx) = d(1)*yaxis(1) + d(2)*yaxis(2) + d(3)*yaxis(3)
-            a_yaxis(:) = d(:)
-            a_oa(:) =   yaxis(:)
-            a_ob(:) = - yaxis(:)
-        case(3)
-            ! 'stagger'
-            d(:) = oa(:) - ob(:)
-            ctx%CVsValues(cv_item%idx) = d(1)*zaxis(1) + d(2)*zaxis(2) + d(3)*zaxis(3)
-            a_zaxis(:) = d(:)
-            a_oa(:) =   zaxis(:)
-            a_ob(:) = - zaxis(:)
-        case(4)
-            ! 'buckle'
-            call get_vtors(ua(:,3),ub(:,3),xaxis,ctx%CVsValues(cv_item%idx))
-            call get_vtors_der(ua(:,3),ub(:,3),xaxis,1.0d0,a_ua(:,3),a_ub(:,3),a_xaxis)
-        case(5)
-            ! 'propeller'
-            call get_vtors(ua(:,3),ub(:,3),yaxis,ctx%CVsValues(cv_item%idx))
-            call get_vtors_der(ua(:,3),ub(:,3),yaxis,1.0d0,a_ua(:,3),a_ub(:,3),a_yaxis)
-        case(6)
-            ! 'opening'
-            call get_vtors(ua(:,2),ub(:,2),zaxis,ctx%CVsValues(cv_item%idx))
-            call get_vtors_der(ua(:,2),ub(:,2),zaxis,1.0d0,a_ua(:,2),a_ub(:,2),a_zaxis)
-        case default
-            call pmf_utils_exit(PMF_OUT,1,'Unrecognized value for parameter option in calculate_nasbppold!')
-    end select
-
-! derivatives with respect to axes ===============
-!! z-axis
-!    ! mutual orientation of two z-axis
-!    zsc = sign(1.0d0,ua(1,3)*ub(1,3)+ua(2,3)*ub(2,3)+ua(3,3)*ub(3,3))
-!    ! get z-axis as average of two axes
-!    zaxisr(:) = 0.5d0*ua(:,3) + 0.5d0*zsc*ub(:,3)
-!    call norm_vec(zaxisr,zaxis)
-!
-!! y-axis
-!    y0axis(:) = x(:,cv_item%lindexes(cv_item%grps(3))) - x(:,cv_item%lindexes(cv_item%grps(4)))
-!    ! remove projections to z-axis
-!    yaxisr(:) = y0axis(:) - (y0axis(1)*zaxis(1)+y0axis(2)*zaxis(2)+y0axis(3)*zaxis(3))*zaxis(:)
-!    ! normalize
-!    call norm_vec(yaxisr,yaxis)
-!
-!! x-axis
-!    call get_cross_product(yaxis,zaxis,xaxis)
-
-! x-axis
-    call get_cross_product_der(yaxis,zaxis,a_xaxis,a_yaxis,a_zaxis)
-
-! y-axis
-    call norm_vec_der(yaxisr,a_yaxis,a_yaxisr)
-
-    ! with respect to y0axis
-    t1 = zaxis(1)*a_yaxisr(1) + zaxis(2)*a_yaxisr(2) + zaxis(3)*a_yaxisr(3)
-    a_y0axis(1) = a_yaxisr(1) - zaxis(1)*t1
-    a_y0axis(2) = a_yaxisr(2) - zaxis(2)*t1
-    a_y0axis(3) = a_yaxisr(3) - zaxis(3)*t1
-
-    ! with respect to zaxis
-    a_zaxis(1) = a_zaxis(1) - a_yaxisr(1) * ( 2.0d0*y0axis(1)*zaxis(1) + y0axis(2)*zaxis(2) + y0axis(3)*zaxis(3) ) &
-                            - a_yaxisr(2) * y0axis(1)*zaxis(2) &
-                            - a_yaxisr(3) * y0axis(1)*zaxis(3)
-
-    a_zaxis(2) = a_zaxis(2) - a_yaxisr(1) * y0axis(2)*zaxis(1) &
-                            - a_yaxisr(2) * ( y0axis(1)*zaxis(1) + 2.0d0*y0axis(2)*zaxis(2) + y0axis(3)*zaxis(3) ) &
-                            - a_yaxisr(3) * y0axis(2)*zaxis(3)
-
-    a_zaxis(3) = a_zaxis(3) - a_yaxisr(1) * y0axis(3)*zaxis(1) &
-                            - a_yaxisr(2) * y0axis(3)*zaxis(2) &
-                            - a_yaxisr(3) * ( y0axis(1)*zaxis(1) + y0axis(2)*zaxis(2) + 2.0d0*y0axis(3)*zaxis(3) )
-
-! z-axis
-    call norm_vec_der(zaxisr,a_zaxis,a_zaxisr)
-
-    a_ua(:,3) = a_ua(:,3) + 0.5d0*a_zaxisr(:)
-    a_ub(:,3) = a_ub(:,3) + 0.5d0*zsc*a_zaxisr(:)
+! calculate value
+    call calculate_CEHS_param(cv_item%lbp_par,ua,oa,ub,ob,ctx%CVsValues(cv_item%idx),a_ua,a_oa,a_ub,a_ob)
 
 ! derivatives for superimposed bases =============
     call superimpose_str_der(cv_item,0,              cv_item%grps(1),ctx,cv_item%xyz_str_a,cv_item%simpdat_a,a_ua,a_oa)
-
     call superimpose_str_der(cv_item,cv_item%grps(1),cv_item%grps(2),ctx,cv_item%xyz_str_b,cv_item%simpdat_b,a_ub,a_ob)
 
-! finaly gradients for group_c, group_d ==========
-    ai = cv_item%lindexes(cv_item%grps(3))
-    ctx%CVsDrvs(:,ai,cv_item%idx) = ctx%CVsDrvs(:,ai,cv_item%idx) + a_y0axis(:)
-    ai = cv_item%lindexes(cv_item%grps(4))
-    ctx%CVsDrvs(:,ai,cv_item%idx) = ctx%CVsDrvs(:,ai,cv_item%idx) - a_y0axis(:)
-
-end subroutine calculate_nasbpp
+end subroutine calculate_nalbpp
 
 !===============================================================================
 
-end module cv_nasbpp
+end module cv_nalbpp
 

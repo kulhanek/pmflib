@@ -98,6 +98,7 @@ subroutine pmf_alloc_cv_allocate(cv_type,cv_item)
 ! nucleic acids ---------------------------------
     use cv_napbo
     use cv_nasbo
+    use cv_nalbpp
     use cv_nasbpp
     use cv_nasbppold
     use cv_nasstp
@@ -239,6 +240,8 @@ subroutine pmf_alloc_cv_allocate(cv_type,cv_item)
             allocate(CVTypeNASSTP::cv_item)
         case('NASSTPOLD')
             allocate(CVTypeNASSTPOLD::cv_item)
+        case('NALBPP')
+            allocate(CVTypeNALBPP::cv_item)
         case('NASBPP')
             allocate(CVTypeNASBPP::cv_item)
         case('NASBPPOLD')
