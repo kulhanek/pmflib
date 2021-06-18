@@ -324,8 +324,15 @@ subroutine calculate_nasstp(cv_item,x,ctx)
 
     call calculate_nasstp_value_num(cv_item,ctx,ua,oa,ub,ob,a_ua,a_oa,a_ub,a_ob)
 
+    write(*,*) ctx%CVsDrvs(:,:,cv_item%idx)
+
     call calculate_nasstp_getbp1_der(cv_item,x,ctx,a_ua,a_oa)
+
+    write(*,*) ctx%CVsDrvs(:,:,cv_item%idx)
+
     call calculate_nasstp_getbp2_der(cv_item,x,ctx,a_ub,a_ob)
+
+    write(*,*) ctx%CVsDrvs(:,:,cv_item%idx)
 
 end subroutine calculate_nasstp
 
