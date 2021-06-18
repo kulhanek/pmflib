@@ -1,0 +1,448 @@
+[NASSTPOLD]
+name  cv11
+skip_mass_test on
+group_a        @1-9
+reference_a    G_ring_only.xyz
+group_b        @10-15
+reference_b    T_ring_only.xyz
+group_c        @16
+group_d        @17
+
+group_e        @18-26
+reference_e    G_ring_only.xyz
+group_f        @27-32
+reference_f    T_ring_only.xyz
+group_g        @33
+group_h        @34
+parameter      shift
+
+[NASSTPOLD]
+name  cv12
+skip_mass_test on
+group_b        @1-9
+reference_b    G_ring_only.xyz
+group_a        @8-13
+reference_a    T_ring_only.xyz
+group_c        @2
+group_d        @10
+
+group_e        @18-26
+reference_e    G_ring_only.xyz
+group_f        @25-30
+reference_f    T_ring_only.xyz
+group_g        @19
+group_h        @28
+parameter      shift
+
+[NASSTPOLD]
+name  cv13
+skip_mass_test on
+group_a        @9-17
+reference_a    G_ring_only.xyz
+group_b        @1-6
+reference_b    T_ring_only.xyz
+group_c        @2
+group_d        @10
+
+group_e        @27-35
+reference_e    G_ring_only.xyz
+group_f        @18-23
+reference_f    T_ring_only.xyz
+group_g        @19
+group_h        @28
+parameter      shift
+
+[NASSTPOLD]
+name  cv14
+skip_mass_test on
+group_a        @1-6
+reference_a    T_ring_only.xyz
+group_b        @8-16
+reference_b    G_ring_only.xyz
+group_c        @2
+group_d        @10
+
+group_e        @25-33
+reference_e    G_ring_only.xyz
+group_f        @18-23
+reference_f    T_ring_only.xyz
+group_g        @19
+group_h        @28
+parameter      shift
+
+! ---------------------------------------------
+
+[NASSTPOLD]
+name  cv21
+skip_mass_test on
+group_a        @1-9
+reference_a    G_ring_only.xyz
+group_b        @10-15
+reference_b    T_ring_only.xyz
+group_c        @16
+group_d        @17
+
+group_e        @18-26
+reference_e    G_ring_only.xyz
+group_f        @27-32
+reference_f    T_ring_only.xyz
+group_g        @33
+group_h        @34
+parameter      slide
+
+[NASSTPOLD]
+name  cv22
+skip_mass_test on
+group_b        @1-9
+reference_b    G_ring_only.xyz
+group_a        @8-13
+reference_a    T_ring_only.xyz
+group_c        @2
+group_d        @10
+
+group_e        @18-26
+reference_e    G_ring_only.xyz
+group_f        @25-30
+reference_f    T_ring_only.xyz
+group_g        @19
+group_h        @28
+parameter      slide
+
+[NASSTPOLD]
+name  cv23
+skip_mass_test on
+group_a        @9-17
+reference_a    G_ring_only.xyz
+group_b        @1-6
+reference_b    T_ring_only.xyz
+group_c        @2
+group_d        @10
+
+group_e        @27-35
+reference_e    G_ring_only.xyz
+group_f        @18-23
+reference_f    T_ring_only.xyz
+group_g        @19
+group_h        @28
+parameter      slide
+
+[NASSTPOLD]
+name  cv24
+skip_mass_test on
+group_a        @1-6
+reference_a    T_ring_only.xyz
+group_b        @8-16
+reference_b    G_ring_only.xyz
+group_c        @2
+group_d        @10
+
+group_e        @25-33
+reference_e    G_ring_only.xyz
+group_f        @18-23
+reference_f    T_ring_only.xyz
+group_g        @19
+group_h        @28
+parameter      slide
+
+! ---------------------------------------------
+
+[NASSTPOLD]
+name  cv31
+skip_mass_test on
+group_a        @1-9
+reference_a    G_ring_only.xyz
+group_b        @10-15
+reference_b    T_ring_only.xyz
+group_c        @16
+group_d        @17
+
+group_e        @18-26
+reference_e    G_ring_only.xyz
+group_f        @27-32
+reference_f    T_ring_only.xyz
+group_g        @33
+group_h        @34
+parameter      rise
+
+[NASSTPOLD]
+name  cv32
+skip_mass_test on
+group_b        @1-9
+reference_b    G_ring_only.xyz
+group_a        @8-13
+reference_a    T_ring_only.xyz
+group_c        @2
+group_d        @10
+
+group_e        @18-26
+reference_e    G_ring_only.xyz
+group_f        @25-30
+reference_f    T_ring_only.xyz
+group_g        @19
+group_h        @28
+parameter      rise
+
+[NASSTPOLD]
+name  cv33
+skip_mass_test on
+group_a        @9-17
+reference_a    G_ring_only.xyz
+group_b        @1-6
+reference_b    T_ring_only.xyz
+group_c        @2
+group_d        @10
+
+group_e        @27-35
+reference_e    G_ring_only.xyz
+group_f        @18-23
+reference_f    T_ring_only.xyz
+group_g        @19
+group_h        @28
+parameter      rise
+
+[NASSTPOLD]
+name  cv34
+skip_mass_test on
+group_a        @1-6
+reference_a    T_ring_only.xyz
+group_b        @8-16
+reference_b    G_ring_only.xyz
+group_c        @2
+group_d        @10
+
+group_e        @25-33
+reference_e    G_ring_only.xyz
+group_f        @18-23
+reference_f    T_ring_only.xyz
+group_g        @19
+group_h        @28
+parameter      rise
+
+! ---------------------------------------------
+
+[NASSTPOLD]
+name  cv41
+skip_mass_test on
+group_a        @1-9
+reference_a    G_ring_only.xyz
+group_b        @10-15
+reference_b    T_ring_only.xyz
+group_c        @16
+group_d        @17
+
+group_e        @18-26
+reference_e    G_ring_only.xyz
+group_f        @27-32
+reference_f    T_ring_only.xyz
+group_g        @33
+group_h        @34
+parameter      tilt
+
+[NASSTPOLD]
+name  cv42
+skip_mass_test on
+group_b        @1-9
+reference_b    G_ring_only.xyz
+group_a        @8-13
+reference_a    T_ring_only.xyz
+group_c        @2
+group_d        @10
+
+group_e        @18-26
+reference_e    G_ring_only.xyz
+group_f        @25-30
+reference_f    T_ring_only.xyz
+group_g        @19
+group_h        @28
+parameter      tilt
+
+[NASSTPOLD]
+name  cv43
+skip_mass_test on
+group_a        @9-17
+reference_a    G_ring_only.xyz
+group_b        @1-6
+reference_b    T_ring_only.xyz
+group_c        @2
+group_d        @10
+
+group_e        @27-35
+reference_e    G_ring_only.xyz
+group_f        @18-23
+reference_f    T_ring_only.xyz
+group_g        @19
+group_h        @28
+parameter      tilt
+
+[NASSTPOLD]
+name  cv44
+skip_mass_test on
+group_a        @1-6
+reference_a    T_ring_only.xyz
+group_b        @8-16
+reference_b    G_ring_only.xyz
+group_c        @2
+group_d        @10
+
+group_e        @25-33
+reference_e    G_ring_only.xyz
+group_f        @18-23
+reference_f    T_ring_only.xyz
+group_g        @19
+group_h        @28
+parameter      tilt
+
+! ---------------------------------------------
+
+[NASSTPOLD]
+name  cv51
+skip_mass_test on
+group_a        @1-9
+reference_a    G_ring_only.xyz
+group_b        @10-15
+reference_b    T_ring_only.xyz
+group_c        @16
+group_d        @17
+
+group_e        @18-26
+reference_e    G_ring_only.xyz
+group_f        @27-32
+reference_f    T_ring_only.xyz
+group_g        @33
+group_h        @34
+parameter      roll
+
+[NASSTPOLD]
+name  cv52
+skip_mass_test on
+group_b        @1-9
+reference_b    G_ring_only.xyz
+group_a        @8-13
+reference_a    T_ring_only.xyz
+group_c        @2
+group_d        @10
+
+group_e        @18-26
+reference_e    G_ring_only.xyz
+group_f        @25-30
+reference_f    T_ring_only.xyz
+group_g        @19
+group_h        @28
+parameter      roll
+
+[NASSTPOLD]
+name  cv53
+skip_mass_test on
+group_a        @9-17
+reference_a    G_ring_only.xyz
+group_b        @1-6
+reference_b    T_ring_only.xyz
+group_c        @2
+group_d        @10
+
+group_e        @27-35
+reference_e    G_ring_only.xyz
+group_f        @18-23
+reference_f    T_ring_only.xyz
+group_g        @19
+group_h        @28
+parameter      roll
+
+[NASSTPOLD]
+name  cv54
+skip_mass_test on
+group_a        @1-6
+reference_a    T_ring_only.xyz
+group_b        @8-16
+reference_b    G_ring_only.xyz
+group_c        @2
+group_d        @10
+
+group_e        @25-33
+reference_e    G_ring_only.xyz
+group_f        @18-23
+reference_f    T_ring_only.xyz
+group_g        @19
+group_h        @28
+parameter      roll
+
+! ---------------------------------------------
+
+[NASSTPOLD]
+name  cv61
+skip_mass_test on
+group_a        @1-9
+reference_a    G_ring_only.xyz
+group_b        @10-15
+reference_b    T_ring_only.xyz
+group_c        @16
+group_d        @17
+
+group_e        @18-26
+reference_e    G_ring_only.xyz
+group_f        @27-32
+reference_f    T_ring_only.xyz
+group_g        @33
+group_h        @34
+parameter      twist
+
+[NASSTPOLD]
+name  cv62
+skip_mass_test on
+group_b        @1-9
+reference_b    G_ring_only.xyz
+group_a        @8-13
+reference_a    T_ring_only.xyz
+group_c        @2
+group_d        @10
+
+group_e        @18-26
+reference_e    G_ring_only.xyz
+group_f        @25-30
+reference_f    T_ring_only.xyz
+group_g        @19
+group_h        @28
+parameter      twist
+
+[NASSTPOLD]
+name  cv63
+skip_mass_test on
+group_a        @9-17
+reference_a    G_ring_only.xyz
+group_b        @1-6
+reference_b    T_ring_only.xyz
+group_c        @2
+group_d        @10
+
+group_e        @27-35
+reference_e    G_ring_only.xyz
+group_f        @18-23
+reference_f    T_ring_only.xyz
+group_g        @19
+group_h        @28
+parameter      twist
+
+[NASSTPOLD]
+name  cv64
+skip_mass_test on
+group_a        @1-6
+reference_a    T_ring_only.xyz
+group_b        @8-16
+reference_b    G_ring_only.xyz
+group_c        @2
+group_d        @10
+
+group_e        @25-33
+reference_e    G_ring_only.xyz
+group_f        @18-23
+reference_f    T_ring_only.xyz
+group_g        @19
+group_h        @28
+parameter      twist
+
+
+
+
+
+
+

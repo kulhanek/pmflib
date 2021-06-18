@@ -1,0 +1,278 @@
+[NASBPPOLD]
+name  cv1
+skip_mass_test on
+group_a        @1-9
+reference_a    G_ring_only.xyz
+group_b        @10-15
+reference_b    T_ring_only.xyz
+group_c        @16
+group_d        @17
+parameter      shear
+
+[NASBPPOLD]
+name  cv2
+skip_mass_test on
+group_b        @1-9
+reference_b    G_ring_only.xyz
+group_a        @9-14
+reference_a    T_ring_only.xyz
+group_c        @16
+group_d        @17
+parameter      shear
+
+[NASBPPOLD]
+name  cv3
+skip_mass_test on
+group_a        @5-13
+reference_a    G_ring_only.xyz
+group_b        @14-19
+reference_b    T_ring_only.xyz
+group_c        @6
+group_d        @5
+parameter      shear
+
+[NASBPPOLD]
+name  cv4
+skip_mass_test on
+group_a        @14-19
+reference_a    T_ring_only.xyz
+group_b        @5-13
+reference_b    G_ring_only.xyz
+group_c        @1
+group_d        @13
+parameter      shear
+
+! -----------------------------------------------------------------------------
+
+[NASBPPOLD]
+name  cv5
+skip_mass_test on
+group_a        @1-9
+reference_a    G_ring_only.xyz
+group_b        @10-15
+reference_b    T_ring_only.xyz
+group_c        @16
+group_d        @17
+parameter      stretch
+
+[NASBPPOLD]
+name  cv6
+skip_mass_test on
+group_b        @1-9
+reference_b    G_ring_only.xyz
+group_a        @9-14
+reference_a    T_ring_only.xyz
+group_c        @16
+group_d        @17
+parameter      stretch
+
+[NASBPPOLD]
+name  cv7
+skip_mass_test on
+group_a        @5-13
+reference_a    G_ring_only.xyz
+group_b        @14-19
+reference_b    T_ring_only.xyz
+group_c        @6
+group_d        @5
+parameter      stretch
+
+[NASBPPOLD]
+name  cv8
+skip_mass_test on
+group_a        @14-19
+reference_a    T_ring_only.xyz
+group_b        @5-13
+reference_b    G_ring_only.xyz
+group_c        @1
+group_d        @13
+parameter      stretch
+
+! -----------------------------------------------------------------------------
+
+[NASBPPOLD]
+name  cv9
+skip_mass_test on
+group_a        @1-9
+reference_a    G_ring_only.xyz
+group_b        @10-15
+reference_b    T_ring_only.xyz
+group_c        @16
+group_d        @17
+parameter      stagger
+
+[NASBPPOLD]
+name  cv10
+skip_mass_test on
+group_b        @1-9
+reference_b    G_ring_only.xyz
+group_a        @9-14
+reference_a    T_ring_only.xyz
+group_c        @16
+group_d        @17
+parameter      stagger
+
+[NASBPPOLD]
+name  cv11
+skip_mass_test on
+group_a        @5-13
+reference_a    G_ring_only.xyz
+group_b        @14-19
+reference_b    T_ring_only.xyz
+group_c        @6
+group_d        @5
+parameter      stagger
+
+[NASBPPOLD]
+name  cv12
+skip_mass_test on
+group_a        @14-19
+reference_a    T_ring_only.xyz
+group_b        @5-13
+reference_b    G_ring_only.xyz
+group_c        @1
+group_d        @13
+parameter      stagger
+
+! -----------------------------------------------------------------------------
+
+[NASBPPOLD]
+name  cv13
+skip_mass_test on
+group_a        @1-9
+reference_a    G_ring_only.xyz
+group_b        @10-15
+reference_b    T_ring_only.xyz
+group_c        @16
+group_d        @17
+parameter      buckle
+
+[NASBPPOLD]
+name  cv14
+skip_mass_test on
+group_b        @1-9
+reference_b    G_ring_only.xyz
+group_a        @9-14
+reference_a    T_ring_only.xyz
+group_c        @16
+group_d        @17
+parameter      buckle
+
+[NASBPPOLD]
+name  cv15
+skip_mass_test on
+group_a        @5-13
+reference_a    G_ring_only.xyz
+group_b        @14-19
+reference_b    T_ring_only.xyz
+group_c        @6
+group_d        @5
+parameter      buckle
+
+[NASBPPOLD]
+name  cv16
+skip_mass_test on
+group_a        @14-19
+reference_a    T_ring_only.xyz
+group_b        @5-13
+reference_b    G_ring_only.xyz
+group_c        @1
+group_d        @13
+parameter      buckle
+
+! -----------------------------------------------------------------------------
+
+[NASBPPOLD]
+name  cv17
+skip_mass_test on
+group_a        @1-9
+reference_a    G_ring_only.xyz
+group_b        @10-15
+reference_b    T_ring_only.xyz
+group_c        @16
+group_d        @17
+parameter      propeller
+
+[NASBPPOLD]
+name  cv18
+skip_mass_test on
+group_b        @1-9
+reference_b    G_ring_only.xyz
+group_a        @9-14
+reference_a    T_ring_only.xyz
+group_c        @16
+group_d        @17
+parameter      propeller
+
+[NASBPPOLD]
+name  cv19
+skip_mass_test on
+group_a        @5-13
+reference_a    G_ring_only.xyz
+group_b        @14-19
+reference_b    T_ring_only.xyz
+group_c        @6
+group_d        @5
+parameter      propeller
+
+[NASBPPOLD]
+name  cv20
+skip_mass_test on
+group_a        @14-19
+reference_a    T_ring_only.xyz
+group_b        @5-13
+reference_b    G_ring_only.xyz
+group_c        @1
+group_d        @13
+parameter      propeller
+
+! -----------------------------------------------------------------------------
+
+[NASBPPOLD]
+name  cv21
+skip_mass_test on
+group_a        @1-9
+reference_a    G_ring_only.xyz
+group_b        @10-15
+reference_b    T_ring_only.xyz
+group_c        @16
+group_d        @17
+parameter      opening
+
+[NASBPPOLD]
+name  cv22
+skip_mass_test on
+group_b        @1-9
+reference_b    G_ring_only.xyz
+group_a        @9-14
+reference_a    T_ring_only.xyz
+group_c        @16
+group_d        @17
+parameter      opening
+
+[NASBPPOLD]
+name  cv23
+skip_mass_test on
+group_a        @5-13
+reference_a    G_ring_only.xyz
+group_b        @14-19
+reference_b    T_ring_only.xyz
+group_c        @6
+group_d        @5
+parameter      opening
+
+[NASBPPOLD]
+name  cv24
+skip_mass_test on
+group_a        @14-19
+reference_a    T_ring_only.xyz
+group_b        @5-13
+reference_b    G_ring_only.xyz
+group_c        @1
+group_d        @13
+parameter      opening
+
+
+
+
+
