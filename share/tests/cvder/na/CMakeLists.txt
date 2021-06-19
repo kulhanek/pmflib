@@ -25,6 +25,13 @@ ADD_TEST(CVDerRand02-NABEND ${EXECUTABLE_OUTPUT_PATH}/pmf-test-cvs
 ADD_TEST(CVDerRand03-NABEND ${EXECUTABLE_OUTPUT_PATH}/pmf-test-cvs
                         ../random03.in nabend.in)
 
+ADD_TEST(CVDerRand01-NASPSXY ${EXECUTABLE_OUTPUT_PATH}/pmf-test-cvs
+                        ../random01.in naspsxy.in)
+ADD_TEST(CVDerRand02-NASPSXY ${EXECUTABLE_OUTPUT_PATH}/pmf-test-cvs
+                        ../random02.in naspsxy.in)
+ADD_TEST(CVDerRand03-NASPSXY ${EXECUTABLE_OUTPUT_PATH}/pmf-test-cvs
+                        ../random03.in naspsxy.in)
+
 ADD_TEST(CVDerRand01-NALBPP ${EXECUTABLE_OUTPUT_PATH}/pmf-test-cvs
                         ../random01.in nalbpp.in)
 ADD_TEST(CVDerRand02-NALBPP ${EXECUTABLE_OUTPUT_PATH}/pmf-test-cvs
@@ -45,6 +52,13 @@ ADD_TEST(CVDerRand02-NASBPPOLD ${EXECUTABLE_OUTPUT_PATH}/pmf-test-cvs
                         ../random02.in nasbppold.in)
 ADD_TEST(CVDerRand03-NASBPPOLD ${EXECUTABLE_OUTPUT_PATH}/pmf-test-cvs
                         ../random03.in nasbppold.in)
+
+ADD_TEST(CVDerRand01-NALSTP ${EXECUTABLE_OUTPUT_PATH}/pmf-test-cvs
+                        ../random01.in nalstp.in)
+ADD_TEST(CVDerRand02-NALSTP ${EXECUTABLE_OUTPUT_PATH}/pmf-test-cvs
+                        ../random02.in nalstp.in)
+ADD_TEST(CVDerRand03-NALSTP ${EXECUTABLE_OUTPUT_PATH}/pmf-test-cvs
+                        ../random03.in nalstp.in)
 
 ADD_TEST(CVDerRand01-NASSTP ${EXECUTABLE_OUTPUT_PATH}/pmf-test-cvs
                         ../random01.in nasstp.in)

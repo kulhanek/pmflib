@@ -1,0 +1,46 @@
+[NASPSXY]
+name  cv1
+skip_mass_test on
+group_a        @1-9
+reference_a    G_ring_only.xyz
+group_b        @10-15
+reference_b    T_ring_only.xyz
+group_c        @16
+group_d        @17
+
+[NASPSXY]
+name  cv2
+skip_mass_test on
+group_b        @1-9
+reference_b    G_ring_only.xyz
+group_a        @9-14
+reference_a    T_ring_only.xyz
+group_c        @16
+group_d        @17
+
+[NASPSXY]
+name  cv3
+skip_mass_test on
+group_a        @5-13
+reference_a    G_ring_only.xyz
+group_b        @14-19
+reference_b    T_ring_only.xyz
+group_c        @6
+group_d        @5
+
+[NASPSXY]
+name  cv4
+skip_mass_test on
+group_a        @14-19
+reference_a    T_ring_only.xyz
+group_b        @5-13
+reference_b    G_ring_only.xyz
+group_c        @1
+group_d        @13
+
+
+
+
+
+
+

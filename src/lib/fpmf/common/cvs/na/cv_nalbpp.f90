@@ -207,7 +207,7 @@ subroutine calculate_nalbpp(cv_item,x,ctx)
     real(PMFDP)         :: ua(3,3),ub(3,3)
     real(PMFDP)         :: oa(3),ob(3)
     real(PMFDP)         :: a_ua(3,3),a_ub(3,3)
-    real(PMFDP)         :: a_oa(3),a_ob(3)
+    real(PMFDP)         :: a_oa(3),a_ob(3),zsc,v
     ! --------------------------------------------------------------------------
 
     ! ALL a_xxx must be initialized to zero due to additive function of _der methods from cv_math
@@ -220,8 +220,27 @@ subroutine calculate_nalbpp(cv_item,x,ctx)
     call superimpose_str(cv_item,0,              cv_item%grps(1),x,cv_item%xyz_str_a,cv_item%simpdat_a,ua,oa)
     call superimpose_str(cv_item,cv_item%grps(1),cv_item%grps(2),x,cv_item%xyz_str_b,cv_item%simpdat_b,ub,ob)
 
+! z-axes =========================================
+    ! mutual orientation of two z-axis, N+M vs N-M
+    zsc = sign(1.0d0,ua(1,3)*ub(1,3)+ua(2,3)*ub(2,3)+ua(3,3)*ub(3,3))
+
+    ! rotate ub if necessary to align z-axes
+    ub(:,3) = ub(:,3)*zsc
+    ub(:,2) = ub(:,2)*zsc
+
 ! calculate value
-    call calculate_CEHS_param(cv_item%lbp_par,ua,oa,ub,ob,ctx%CVsValues(cv_item%idx),a_ua,a_oa,a_ub,a_ob)
+    call calculate_CEHS_param(cv_item%lbp_par,ua,oa,ub,ob,v,a_ua,a_oa,a_ub,a_ob)
+    ctx%CVsValues(cv_item%idx)  = v *zsc
+
+    ! sign corrections for gradients
+    a_ua = a_ua*zsc
+    a_oa = a_oa*zsc
+    a_ub = a_ub*zsc
+    a_ob = a_ob*zsc
+
+    ! rotate ub if necessary
+    a_ub(:,3) = a_ub(:,3)*zsc
+    a_ub(:,2) = a_ub(:,2)*zsc
 
 ! derivatives for superimposed bases =============
     call superimpose_str_der(cv_item,0,              cv_item%grps(1),ctx,cv_item%xyz_str_a,cv_item%simpdat_a,a_ua,a_oa)

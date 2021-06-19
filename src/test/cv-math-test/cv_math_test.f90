@@ -13,7 +13,7 @@ program cv_math_test
     call test_get_cross_product
     call test_get_vtors
     call test_get_rotmat
-    call test_get_mst_morg
+    call test_get_mst_morg_simple
 
 contains
 
@@ -354,7 +354,7 @@ subroutine test_get_rotmat
     ia(3) =  0.7
     call norm_vec(ia,a)
 
-    g = 0.23
+    g = 2.98
 
     d_v(3,3)    = 1.0d0
     d_a(:)      = 0.0d0
@@ -398,7 +398,7 @@ end subroutine test_get_rotmat
 
 ! ==============================================================================
 
-subroutine test_get_mst_morg
+subroutine test_get_mst_morg_simple
 
     implicit none
     real(PMFDP)         :: ua(3,3),ub(3,3)
@@ -444,7 +444,7 @@ subroutine test_get_mst_morg
     a_y1(:) = 0.0d0
     a_y2(:) = 0.0d0
 
-    call get_mst_morg_der(ua,ub,y1,y2,a_mst,a_morg,a_ua,a_oa,a_ub,a_ob,a_y1,a_y2)
+    call get_mst_morg_simple_der(ua,ub,y1,y2,a_mst,a_morg,a_ua,a_oa,a_ub,a_ob,a_y1,a_y2)
 
     h = 1e-5
 
@@ -452,10 +452,10 @@ subroutine test_get_mst_morg
     do i=1,3
         oas(:) = oa(:)
         oas(i) = oas(i) - h
-        call get_mst_morg(ua,oas,ub,ob,y1,y2,mst1,morg1)
+        call get_mst_morg_simple(ua,oas,ub,ob,y1,y2,mst1,morg1)
         oas(:) = oa(:)
         oas(i) = oas(i) + h
-        call get_mst_morg(ua,oas,ub,ob,y1,y2,mst2,morg2)
+        call get_mst_morg_simple(ua,oas,ub,ob,y1,y2,mst2,morg2)
         do j=1,3
             do k=1,3
                 na_oa(i) = na_oa(i) + a_mst(j,k)*(mst2(j,k) - mst1(j,k)) / ( 2.0d0 * h )
@@ -470,10 +470,10 @@ subroutine test_get_mst_morg
     do i=1,3
         obs(:) = ob(:)
         obs(i) = obs(i) - h
-        call get_mst_morg(ua,oa,ub,obs,y1,y2,mst1,morg1)
+        call get_mst_morg_simple(ua,oa,ub,obs,y1,y2,mst1,morg1)
         obs(:) = ob(:)
         obs(i) = obs(i) + h
-        call get_mst_morg(ua,oa,ub,obs,y1,y2,mst2,morg2)
+        call get_mst_morg_simple(ua,oa,ub,obs,y1,y2,mst2,morg2)
         do j=1,3
             do k=1,3
                 na_ob(i) = na_ob(i) + a_mst(j,k)*(mst2(j,k) - mst1(j,k)) / ( 2.0d0 * h )
@@ -488,10 +488,10 @@ subroutine test_get_mst_morg
     do i=1,3
         y1s(:) = y1(:)
         y1s(i) = y1s(i) - h
-        call get_mst_morg(ua,oa,ub,ob,y1s,y2,mst1,morg1)
+        call get_mst_morg_simple(ua,oa,ub,ob,y1s,y2,mst1,morg1)
         y1s(:) = y1(:)
         y1s(i) = y1s(i) + h
-        call get_mst_morg(ua,oa,ub,ob,y1s,y2,mst2,morg2)
+        call get_mst_morg_simple(ua,oa,ub,ob,y1s,y2,mst2,morg2)
         do j=1,3
             do k=1,3
                 na_y1(i) = na_y1(i) + a_mst(j,k)*(mst2(j,k) - mst1(j,k)) / ( 2.0d0 * h )
@@ -506,10 +506,10 @@ subroutine test_get_mst_morg
     do i=1,3
         y2s(:) = y2(:)
         y2s(i) = y2s(i) - h
-        call get_mst_morg(ua,oa,ub,ob,y1,y2s,mst1,morg1)
+        call get_mst_morg_simple(ua,oa,ub,ob,y1,y2s,mst1,morg1)
         y2s(:) = y2(:)
         y2s(i) = y2s(i) + h
-        call get_mst_morg(ua,oa,ub,ob,y1,y2s,mst2,morg2)
+        call get_mst_morg_simple(ua,oa,ub,ob,y1,y2s,mst2,morg2)
         do j=1,3
             do k=1,3
                 na_y2(i) = na_y2(i) + a_mst(j,k)*(mst2(j,k) - mst1(j,k)) / ( 2.0d0 * h )
@@ -525,10 +525,10 @@ subroutine test_get_mst_morg
         do l=1,3
             uas(:,:) = ua(:,:)
             uas(i,l) = uas(i,l) - h
-            call get_mst_morg(uas,oa,ub,ob,y1,y2,mst1,morg1)
+            call get_mst_morg_simple(uas,oa,ub,ob,y1,y2,mst1,morg1)
             uas(:,:) = ua(:,:)
             uas(i,l) = uas(i,l) + h
-            call get_mst_morg(uas,oa,ub,ob,y1,y2,mst2,morg2)
+            call get_mst_morg_simple(uas,oa,ub,ob,y1,y2,mst2,morg2)
             do j=1,3
                 do k=1,3
                     na_ua(i,l) = na_ua(i,l) + a_mst(j,k)*(mst2(j,k) - mst1(j,k)) / ( 2.0d0 * h )
@@ -545,10 +545,10 @@ subroutine test_get_mst_morg
         do l=1,3
             ubs(:,:) = ub(:,:)
             ubs(i,l) = ubs(i,l) - h
-            call get_mst_morg(ua,oa,ubs,ob,y1,y2,mst1,morg1)
+            call get_mst_morg_simple(ua,oa,ubs,ob,y1,y2,mst1,morg1)
             ubs(:,:) = ub(:,:)
             ubs(i,l) = ubs(i,l) + h
-            call get_mst_morg(ua,oa,ubs,ob,y1,y2,mst2,morg2)
+            call get_mst_morg_simple(ua,oa,ubs,ob,y1,y2,mst2,morg2)
             do j=1,3
                 do k=1,3
                     na_ub(i,l) = na_ub(i,l) + a_mst(j,k)*(mst2(j,k) - mst1(j,k)) / ( 2.0d0 * h )
@@ -560,7 +560,7 @@ subroutine test_get_mst_morg
         end do
     end do
 
-    write(*,*) '>>>> test_get_mst_morg'
+    write(*,*) '>>>> test_get_mst_morg_simple'
     write(*,*) '> oa'
     write(*,'(3(F10.5,1X))') a_oa, na_oa, a_oa-na_oa
     write(*,*) '> ob'
@@ -574,7 +574,7 @@ subroutine test_get_mst_morg
     write(*,*) '> ub'
     write(*,'(3(F10.5,1X))') a_ub, na_ub, a_ub-na_ub
 
-end subroutine test_get_mst_morg
+end subroutine test_get_mst_morg_simple
 
 
 ! ==============================================================================

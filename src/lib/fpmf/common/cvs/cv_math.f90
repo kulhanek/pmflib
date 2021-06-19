@@ -216,15 +216,16 @@ subroutine get_vtors(a,b,c,v)
     ! --------------------------------------------------------------------------
 
     ! get normal vectors
-    call get_cross_product(c,a,c_a)
-    call get_cross_product(c,b,c_b)
+    call get_cross_product(a,c,c_a)
+    call get_cross_product(b,c,c_b)
 
     ! get angle
     call get_vangle(c_a,c_b,v)
 
     ! determine sign
-    call get_vtors_sign(a,b,c,sc)
-    v = v * sc
+    call get_vtors_sign(c_a,c_b,c,sc)
+    ! is the sign change because of get_cross_product?
+    v = - v * sc
 
 end subroutine get_vtors
 
@@ -243,22 +244,24 @@ subroutine get_vtors_der(a,b,c,d_v,d_a,d_b,d_c)
     ! --------------------------------------------------------------------------
 
    ! get normal vectors
-    call get_cross_product(c,a,c_a)
-    call get_cross_product(c,b,c_b)
+    call get_cross_product(a,c,c_a)
+    call get_cross_product(b,c,c_b)
 !
 !    ! get angle
 !    call get_vangle(c_a,c_b,v)
 
     ! determine sign
-    call get_vtors_sign(a,b,c,sc)
+    call get_vtors_sign(c_a,c_b,c,sc)
+    ! is the sign change because of get_cross_product?
+    sc = -sc
 
     ta(:) = 0.0d0
     tb(:) = 0.0d0
 
     call get_vangle_der(c_a,c_b,d_v*sc,ta,tb)
 
-    call get_cross_product_der(c,a,ta,d_c,d_a)
-    call get_cross_product_der(c,b,tb,d_c,d_b)
+    call get_cross_product_der(a,c,ta,d_a,d_c)
+    call get_cross_product_der(b,c,tb,d_b,d_c)
 
 end subroutine get_vtors_der
 
@@ -967,10 +970,13 @@ subroutine superimpose_str_der(cv_item,gi,gj,ctx,str,simpdat,a_u,a_o)
 end subroutine superimpose_str_der
 
 !===============================================================================
-! Subroutine:  get_mst_morg
+! Subroutine:  get_mst_morg_simple
+! get BP origin (morg) and orientation (mst) from references of two bases:
+! (ua,oa) and (ub,ob)
+! Y-axis is provided as y1-y2
 !===============================================================================
 
-subroutine get_mst_morg(ua,oa,ub,ob,y1,y2,mst,morg)
+subroutine get_mst_morg_simple(ua,oa,ub,ob,y1,y2,mst,morg)
 
     implicit none
     real(PMFDP),intent(in)      :: ua(3,3),ub(3,3)
@@ -1007,13 +1013,13 @@ subroutine get_mst_morg(ua,oa,ub,ob,y1,y2,mst,morg)
     mst(:,2) = yaxis(:)
     mst(:,3) = zaxis(:)
 
-end subroutine get_mst_morg
+end subroutine get_mst_morg_simple
 
 !===============================================================================
-! Subroutine:  get_mst_morg_der
+! Subroutine:  get_mst_morg_simple_der
 !===============================================================================
 
-subroutine get_mst_morg_der(ua,ub,y1,y2,a_mst,a_morg,a_ua,a_oa,a_ub,a_ob,a_y1,a_y2)
+subroutine get_mst_morg_simple_der(ua,ub,y1,y2,a_mst,a_morg,a_ua,a_oa,a_ub,a_ob,a_y1,a_y2)
 
     implicit none
     real(PMFDP),intent(in)      :: ua(3,3),ub(3,3)
@@ -1110,7 +1116,167 @@ subroutine get_mst_morg_der(ua,ub,y1,y2,a_mst,a_morg,a_ua,a_oa,a_ub,a_ob,a_y1,a_
     a_y1(:) = a_y1(:) + a_y0axis(:)
     a_y2(:) = a_y2(:) - a_y0axis(:)
 
-end subroutine get_mst_morg_der
+end subroutine get_mst_morg_simple_der
+
+!===============================================================================
+! Subroutine:  get_mst_morg_local
+! get BP origin (morg) and orientation (mst) from references of two bases:
+! (ua,oa) and (ub,ob)
+!===============================================================================
+
+subroutine get_mst_morg_local(ua,oa,ub,ob,mst,morg)
+
+    implicit none
+    real(PMFDP),intent(in)      :: ua(3,3),ub(3,3)
+    real(PMFDP),intent(in)      :: oa(3),ob(3)
+    real(PMFDP),intent(out)     :: mst(3,3)
+    real(PMFDP),intent(out)     :: morg(3)
+    ! --------------------------------------------
+    real(PMFDP) :: g,h(3),nh(3),hlen,zsc
+    real(PMFDP) :: rua(3,3),rub(3,3),c_ub(3,3)
+    ! --------------------------------------------------------------------------
+
+! z-axis alignment
+    ! mutual orientation of two z-axis
+    zsc = sign(1.0d0,ua(1,3)*ub(1,3)+ua(2,3)*ub(2,3)+ua(3,3)*ub(3,3))
+
+    ! rotate B system to make z-axis parallel
+    c_ub(:,1) =     ub(:,1)
+    c_ub(:,2) = zsc*ub(:,2)
+    c_ub(:,3) = zsc*ub(:,3)
+
+! determine gamma and hinge axis
+    call get_nvangle(ua(:,3),c_ub(:,3),g)
+    call get_cross_product(ua(:,3),c_ub(:,3),h)
+
+! handle situation with aligned z-axis
+    call get_vlen(h,hlen)
+
+    if( (abs(g) .le. PMF_MEPS) .or. (abs(PMF_PI-g) .le. PMF_MEPS) .or. (hlen .le. PMF_MEPS) ) then
+        h(:) = ua(:,1) + c_ub(:,1) + ua(:,2) + c_ub(:,2)
+    end if
+
+    call norm_vec(h,nh)
+
+! rotate ua and ub
+    call rotate_ux(nh,+0.5d0*g,ua,rua)
+    call rotate_ux(nh,-0.5d0*g,c_ub,rub)
+
+    ! get mst
+    call get_mst(rua,rub,mst)
+
+    ! get morg
+    morg(:) = 0.5d0*(oa(:)+ob(:))
+
+end subroutine get_mst_morg_local
+
+!===============================================================================
+! Subroutine:  get_mst_morg_local_der
+!===============================================================================
+
+subroutine get_mst_morg_local_der(ua,ub,a_mst,a_morg,a_ua,a_oa,a_ub,a_ob)
+
+    implicit none
+    real(PMFDP),intent(in)      :: ua(3,3),ub(3,3)
+    real(PMFDP),intent(in)      :: a_mst(3,3)
+    real(PMFDP),intent(in)      :: a_morg(3)
+    real(PMFDP),intent(inout)   :: a_ua(3,3),a_ub(3,3)
+    real(PMFDP),intent(inout)   :: a_oa(3),a_ob(3)
+    ! --------------------------------------------
+    real(PMFDP) :: g,h(3),nh(3),hlen,zsc
+    real(PMFDP) :: rua(3,3),rub(3,3),c_ub(3,3)
+    ! --------------------------------------------
+    real(PMFDP) :: a_rua(3,3),a_rub(3,3),a_g,a_ga,a_gb,a_h(3),a_nh(3)
+    ! --------------------------------------------------------------------------
+
+    ! ALL a_xxx must be initialized to zero due to additive function of _der methods from cv_math
+    a_rua(:,:)      = 0.0d0
+    a_rub(:,:)      = 0.0d0
+    a_g             = 0.0d0
+    a_ga            = 0.0d0
+    a_gb            = 0.0d0
+    a_h(:)          = 0.0d0
+    a_nh(:)         = 0.0d0
+
+! re-calculate some data =========================
+
+! z-axis alignment
+    ! mutual orientation of two z-axis
+    zsc = sign(1.0d0,ua(1,3)*ub(1,3)+ua(2,3)*ub(2,3)+ua(3,3)*ub(3,3))
+
+    ! rotate B system to make z-axis parallel
+    c_ub(:,1) =     ub(:,1)
+    c_ub(:,2) = zsc*ub(:,2)
+    c_ub(:,3) = zsc*ub(:,3)
+
+! determine gamma and hinge axis
+    call get_nvangle(ua(:,3),c_ub(:,3),g)
+    call get_cross_product(ua(:,3),c_ub(:,3),h)
+
+! handle situation with aligned z-axis
+    call get_vlen(h,hlen)
+    if( (abs(g) .le. PMF_MEPS) .or. (abs(PMF_PI-g) .le. PMF_MEPS) .or. (hlen .le. PMF_MEPS) ) then
+        h(:) = ua(:,1) + c_ub(:,1) + ua(:,2) + c_ub(:,2)
+    end if
+
+    call norm_vec(h,nh)
+
+! rotate ua and ub
+    call rotate_ux(nh,+0.5d0*g,ua,rua)
+    call rotate_ux(nh,-0.5d0*g,c_ub,rub)
+
+! derivatives ====================================
+
+!   ! get morg
+    !    morg(:) = 0.5d0*(oa(:)+ob(:))
+    a_oa(:) = 0.5d0*a_morg(:)
+    a_ob(:) = 0.5d0*a_morg(:)
+
+!   ! get mst
+    !    call get_mst(rua,rub,mst)
+    ! with respect to rua a rub
+    call get_mst_der(rua,rub,a_mst,a_rua,a_rub)
+
+!   ! rotate ua and ub
+    !    call rotate_ux(h,+0.5d0*g,ua,rua)
+    !    call rotate_ux(h,-0.5d0*g,c_ub,rub)
+
+    call rotate_ux_der(nh,+0.5d0*g,ua,a_rua,a_nh,a_ga,a_ua)
+    call rotate_ux_der(nh,-0.5d0*g,c_ub,a_rub,a_nh,a_gb,a_ub)
+    a_g = a_g + a_ga * 0.5d0 - a_gb * 0.5d0
+
+!    call norm_vec(h,nh)
+    call norm_vec_der(h,a_nh,a_h)
+
+!! handle situation with aligned z-axis
+!    call get_vlen(h,hlen)
+!
+!    if( (abs(g) .le. PMF_MEPS) .or. (abs(PMF_PI-g) .le. PMF_MEPS) .or. (hlen .le. PMF_MEPS) ) then
+!        h(:) = ua(:,1) + c_ub(:,1) + ua(:,2) + c_ub(:,2)
+!    end if
+
+!! determine gamma and hinge axis
+!    call get_cross_product(ua(:,3),c_ub(:,3),h)
+!
+
+    if( (abs(g) .le. PMF_MEPS) .or. (abs(PMF_PI-g) .le. PMF_MEPS) .or. (hlen .le. PMF_MEPS) ) then
+        a_ua(:,1) = a_ua(:,1) + a_h(:)
+        a_ua(:,2) = a_ua(:,2) + a_h(:)
+        a_ub(:,1) = a_ub(:,1) + a_h(:)
+        a_ub(:,2) = a_ub(:,2) + a_h(:)
+    else
+        call get_cross_product_der(ua(:,3),c_ub(:,3),a_h,a_ua(:,3),a_ub(:,3))
+    end if
+
+!    call get_nvangle(ua(:,3),c_ub(:,3),g)
+    call get_nvangle_der(ua(:,3),c_ub(:,3),a_g,a_ua(:,3),a_ub(:,3))
+
+    ! rotate B system to make z-axis parallel
+    a_ub(:,1) =     a_ub(:,1)
+    a_ub(:,2) = zsc*a_ub(:,2)
+    a_ub(:,3) = zsc*a_ub(:,3)
+
+end subroutine get_mst_morg_local_der
 
 !===============================================================================
 ! Subroutine:  calculate_CEHS_param
@@ -1145,6 +1311,7 @@ subroutine calculate_CEHS_param(par_type,ua,oa,ub,ob,rvalue,a_ua,a_oa,a_ub,a_ob)
 
 ! handle situation with aligned z-axis
     call get_vlen(h,hlen)
+
     if( (abs(g) .le. PMF_MEPS) .or. (abs(PMF_PI-g) .le. PMF_MEPS) .or. (hlen .le. PMF_MEPS) ) then
         h(:) = ua(:,1) + ub(:,1) + ua(:,2) + ub(:,2)
     end if
@@ -1157,6 +1324,215 @@ subroutine calculate_CEHS_param(par_type,ua,oa,ub,ob,rvalue,a_ua,a_oa,a_ub,a_ob)
 
     ! get mst
     call get_mst(rua,rub,mst)
+
+! derivatives ====================================
+
+! final derivatives
+    a_ua(:,:)   = 0.0d0
+    a_ub(:,:)   = 0.0d0
+    a_oa(:)     = 0.0d0
+    a_ob(:)     = 0.0d0
+
+! intermediate derivatives
+    a_mst(:,:)  = 0.0d0
+    a_nh(:)     = 0.0d0
+    a_h(:)      = 0.0d0
+    a_g         = 0.0d0
+    a_phi       = 0.0d0
+    a_rua(:,:)  = 0.0d0
+    a_rub(:,:)  = 0.d00
+
+! calculate derivatives
+    select case(par_type)
+        case(1)
+            ! 'shift'
+            ! vector between origins
+            d(:) = ob(:) - oa(:)
+            rvalue = d(1)*mst(1,1) + d(2)*mst(2,1) + d(3)*mst(3,1)
+            ! with respect to oa and ob
+            a_oa(:) = a_oa(:) - mst(:,1)
+            a_ob(:) = a_ob(:) + mst(:,1)
+            ! with respect to mst
+            a_mst(:,1) = a_mst(:,1) + d(:)
+        case(2)
+            ! 'slide'
+            ! vector between origins
+            d(:) = ob(:) - oa(:)
+            rvalue = d(1)*mst(1,2) + d(2)*mst(2,2) + d(3)*mst(3,2)
+            ! with respect to oa and ob
+            a_oa(:) = a_oa(:) - mst(:,2)
+            a_ob(:) = a_ob(:) + mst(:,2)
+            ! with respect to mst
+            a_mst(:,2) = a_mst(:,2) + d(:)
+        case(3)
+            ! 'rise'
+            ! vector between origins
+            d(:) = ob(:) - oa(:)
+            rvalue = d(1)*mst(1,3) + d(2)*mst(2,3) + d(3)*mst(3,3)
+            ! with respect to oa and ob
+            a_oa(:) = a_oa(:) - mst(:,3)
+            a_ob(:) = a_ob(:) + mst(:,3)
+            ! with respect to mst
+            a_mst(:,3) = a_mst(:,3) + d(:)
+        case(4)
+            ! 'tilt'
+            call get_nvangle(nh,mst(:,2),phi)
+            call get_vtors_sign(nh,mst(:,2),mst(:,3),sc)
+            rvalue = g * sin(phi*sc)
+            ! with respect to g
+            a_g = sin(phi*sc)
+            ! with respect to phi
+            a_phi = g*cos(phi*sc)*sc
+            ! with respect to h a mst
+            call get_nvangle_der(nh,mst(:,2),a_phi,a_nh,a_mst(:,2))
+        case(5)
+            ! 'roll'
+            call get_nvangle(nh,mst(:,2),phi)
+            call get_vtors_sign(nh,mst(:,2),mst(:,3),sc)
+            rvalue = g * cos(phi*sc)
+            ! with respect to g
+            a_g = cos(phi*sc)
+            ! with respect to phi
+            a_phi = -g*sin(phi*sc)*sc
+            ! with respect to h a mst
+            call get_nvangle_der(nh,mst(:,2),a_phi,a_nh,a_mst(:,2))
+        case(6)
+            ! 'twist'
+            call get_nvangle(rua(:,2),rub(:,2),arg)
+            call get_vtors_sign(rua(:,2),rub(:,2),mst(:,3),sc)
+            rvalue = arg * sc
+            ! with respect to h a mst
+            a_phi = sc
+            call get_nvangle_der(rua(:,2),rub(:,2),a_phi,a_rua(:,2),a_rub(:,2))
+        case default
+            call pmf_utils_exit(PMF_OUT,1,'Unrecognized value for parameter option in calculate_CEHS_param!')
+    end select
+
+    !! get mst
+    !    call get_mst(rua,rub,mst)
+    ! with respect to rua a rub
+    call get_mst_der(rua,rub,a_mst,a_rua,a_rub)
+
+    !! rotate ua and ub
+    !    call rotate_ux(h,+0.5d0*g,ua,rua)
+    !    call rotate_ux(h,-0.5d0*g,ub,rub)
+
+    a_ga = 0.0d0
+    a_gb = 0.0d0
+    call rotate_ux_der(nh,+0.5d0*g,ua,a_rua,a_nh,a_ga,a_ua)
+    call rotate_ux_der(nh,-0.5d0*g,ub,a_rub,a_nh,a_gb,a_ub)
+    a_g = a_g + a_ga * 0.5d0 - a_gb * 0.5d0
+
+!! determine gamma and hinge axis
+!    call get_nvangle(ua(:,3),ub(:,3),g)
+!    call get_cross_product(ua(:,3),ub(:,3),h)
+!
+!! handle situation with aligned z-axis
+!    call get_vlen(h,hlen)
+!
+!    if( (abs(g) .le. PMF_MEPS) .or. (abs(PMF_PI-g) .le. PMF_MEPS) .or. (hlen .le. PMF_MEPS) ) then
+!        h(:) = ua(:,1) + ub(:,1) + ua(:,2) + ub(:,2)
+!    end if
+!
+!    call norm_vec(h,nh)
+!
+    call norm_vec_der(h,a_nh,a_h)
+
+    if( (abs(g) .le. PMF_MEPS) .or. (abs(PMF_PI-g) .le. PMF_MEPS) .or. (hlen .le. PMF_MEPS) ) then
+        a_ua(:,1) = a_ua(:,1) + a_h(:)
+        a_ua(:,2) = a_ua(:,2) + a_h(:)
+        a_ub(:,1) = a_ub(:,1) + a_h(:)
+        a_ub(:,2) = a_ub(:,2) + a_h(:)
+    else
+        call get_cross_product_der(ua(:,3),ub(:,3),a_h,a_ua(:,3),a_ub(:,3))
+    end if
+
+    call get_nvangle_der(ua(:,3),ub(:,3),a_g,a_ua(:,3),a_ub(:,3))
+
+end subroutine calculate_CEHS_param
+
+!===============================================================================
+! Subroutine:  calculate_CEHS_param_test
+! the structural parameters
+! the Cambridge University Engineering Department Helix computation Scheme (CEHS)
+!===============================================================================
+
+subroutine calculate_CEHS_param_test(par_type,ua,oa,ub,ob,rvalue,a_ua,a_oa,a_ub,a_ob)
+
+    use pmf_dat
+    use pmf_pbc
+    use pmf_utils
+
+    implicit none
+    integer,intent(in)      :: par_type
+    real(PMFDP),intent(in)  :: ua(3,3),ub(3,3)
+    real(PMFDP),intent(in)  :: oa(3),ob(3)
+    real(PMFDP),intent(out) :: rvalue
+    real(PMFDP),intent(out) :: a_ua(3,3),a_ub(3,3)
+    real(PMFDP),intent(out) :: a_oa(3),a_ob(3)
+    ! --------------------------------------------
+    real(PMFDP) :: g,h(3),nh(3),hlen,d(3),arg,sc,phi
+    real(PMFDP) :: rua(3,3),rub(3,3),mst(3,3)
+    real(PMFDP) :: xaxis(3),yaxis(3),zaxis(3)
+    ! -----------------------------------------------
+    real(PMFDP) :: a_mst(3,3),a_g,a_h(3),a_nh(3),a_phi,a_rua(3,3),a_rub(3,3)
+    real(PMFDP) :: a_ga,a_gb,twist,rot(3,3),l
+    ! --------------------------------------------------------------------------
+
+    write(*,*) 'ua='
+    write(*,'(3(F10.5,1X))') ua
+
+    write(*,*) 'ub='
+    write(*,'(3(F10.5,1X))') ub
+
+! determine gamma and hinge axis
+    call get_nvangle(ua(:,3),ub(:,3),g)
+    call get_cross_product(ua(:,3),ub(:,3),h)
+
+! handle situation with aligned z-axis
+    call get_vlen(h,hlen)
+
+    if( (abs(g) .le. PMF_MEPS) .or. (abs(PMF_PI-g) .le. PMF_MEPS) .or. (hlen .le. PMF_MEPS) ) then
+        h(:) = ua(:,1) + ub(:,1) + ua(:,2) + ub(:,2)
+    end if
+
+    call norm_vec(h,nh)
+
+! rotate ua and ub
+    call rotate_ux(nh,+0.5d0*g,ua,rua)
+    call rotate_ux(nh,-0.5d0*g,ub,rub)
+
+! get twist
+    zaxis(:) = rua(:,3)
+    call get_nvangle(rua(:,2),rub(:,2),arg)
+    call get_vtors_sign(rua(:,2),rub(:,2),zaxis,sc)
+    twist = arg * sc
+
+! get mst
+    call get_rotmat(zaxis,0.5d0*twist,rot)
+    call rotate_vec(rot,rua(:,2),yaxis)
+    call get_cross_product(yaxis, zaxis, xaxis);
+
+    mst(:,1) = xaxis(:)
+    mst(:,2) = yaxis(:)
+    mst(:,3) = zaxis(:)
+
+    write(*,*) 'oa='
+    write(*,'(3(F10.5,1X))') oa
+    write(*,*) 'ob='
+    write(*,'(3(F10.5,1X))') ob
+
+    write(*,*) 'mob='
+    write(*,'(3(F10.5,1X))') (ob+oa)*0.5d0
+    write(*,*) 'xaxis='
+    write(*,'(3(F10.5,1X))') xaxis
+    write(*,*) 'yaxis='
+    write(*,'(3(F10.5,1X))') yaxis
+    write(*,*) 'zaxis='
+    write(*,'(3(F10.5,1X))') zaxis
+    call get_vlen(zaxis,l)
+    write(*,*) l
+
 
 ! derivatives ====================================
 
@@ -1279,7 +1655,7 @@ subroutine calculate_CEHS_param(par_type,ua,oa,ub,ob,rvalue,a_ua,a_oa,a_ub,a_ob)
 !    call get_nvangle(ua(:,3),ub(:,3),g)
     call get_nvangle_der(ua(:,3),ub(:,3),a_g,a_ua(:,3),a_ub(:,3))
 
-end subroutine calculate_CEHS_param
+end subroutine calculate_CEHS_param_test
 
 !===============================================================================
 
