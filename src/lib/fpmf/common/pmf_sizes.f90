@@ -38,6 +38,7 @@ integer,parameter       :: PMF_MAX_CV_NAME  = 50
 integer,parameter       :: PMF_MAX_TYPE     = 10
 integer,parameter       :: PMF_MAX_MODE     = 1
 integer,parameter       :: PMF_MAX_KEY      = 20
+integer,parameter       :: PMF_KEYLINE      = 80
 
 ! ------------------------------------------------------------------------------
 

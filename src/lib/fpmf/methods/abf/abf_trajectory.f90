@@ -21,7 +21,7 @@
 !
 !    You should have received a copy of the GNU Lesser General Public
 !    License along with this library; if not, write to the Free Software
-!    Foundation, Inc., 51 Franklin Street, Fifth Floor, 
+!    Foundation, Inc., 51 Franklin Street, Fifth Floor,
 !    Boston, MA  02110-1301  USA
 !===============================================================================
 
@@ -69,7 +69,7 @@ subroutine abf_trajectory_write_snapshot
     use pmf_dat
     use pmf_constants
     use abf_dat
-    use abf_accumulator
+    use abf_accu
 
     implicit none
     ! --------------------------------------------------------------------------
@@ -82,7 +82,7 @@ subroutine abf_trajectory_write_snapshot
     write(ABF_TRJ,10) fstep
 
     ! write accumulator
-    call abf_accumulator_write(ABF_TRJ)
+    call abf_accu_write(ABF_TRJ)
 
     return
 

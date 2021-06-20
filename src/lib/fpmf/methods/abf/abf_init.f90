@@ -72,19 +72,19 @@ subroutine abf_init_dat
     fsample         = 5000
     frestart        = .false.
     frstupdate      = 5000
-    feimode         = 1
     ftrjsample      = 0
     fmask_mode      = 0
     fapply_abf      = .true.
 
     fenthalpy       = .false.
-    fentropy        = .false.
     fepotoffset     = 0.0d0
-    fekinoffset     = 0.0d0
 
+    fblock_size     = 0
+
+    feimode         = 1
     fhramp_min      = 100
     fhramp_max      = 200
-    fblock_size     = 0
+    fsmoothupdate   = 5000
 
     NumOfABFCVs     = 0
 
@@ -155,10 +155,15 @@ subroutine abf_init_print_header
     write(PMF_OUT,120)  ' ------------------------------------------------------'
     write(PMF_OUT,130)  ' Extra/interpolation mode (feimode)      : ', feimode
     select case(feimode)
+    case(0)
+    write(PMF_OUT,120)  '      |-> Disabled'
     case(1)
     write(PMF_OUT,120)  '      |-> Min/Max linear ramp'
     write(PMF_OUT,130)  ' Min of accu samples in bin (fhramp_min) : ', fhramp_min
     write(PMF_OUT,130)  ' Max of accu samples in bin (fhramp_max) : ', fhramp_max
+    case(2)
+    write(PMF_OUT,120)  '      |-> Smoothing using Gaussian kernel'
+    write(PMF_OUT,130)  ' Smoothing interval                      : ', fsmoothupdate
     case default
     call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown extrapolation/interpolation mode in abf_init_print_header!')
     end select
@@ -175,10 +180,7 @@ subroutine abf_init_print_header
     write(PMF_OUT,125)  ' Output file (fabfout)                   : ', trim(fabfout)
     write(PMF_OUT,130)  ' Output sampling (fsample)               : ', fsample
     write(PMF_OUT,125)  ' Accumulate enthalpy (fenthalpy)         : ', prmfile_onoff(fenthalpy)
-    write(PMF_OUT,125)  ' Accumulate entropy (fentropy)           : ', prmfile_onoff(fentropy)
     write(PMF_OUT,150)  ' Potential energy offset (fepotoffset)   : ', pmf_unit_get_rvalue(EnergyUnit,fepotoffset),  &
-                                                                       '['//trim(pmf_unit_label(EnergyUnit))//']'
-    write(PMF_OUT,150)  ' Kinetic energy offset (fekinoffset)     : ', pmf_unit_get_rvalue(EnergyUnit,fekinoffset), &
                                                                        '['//trim(pmf_unit_label(EnergyUnit))//']'
     write(PMF_OUT,120)
     write(PMF_OUT,120)  ' Trajectory output options:'
@@ -230,7 +232,7 @@ subroutine abf_init_arrays
     use pmf_utils
     use pmf_dat
     use abf_dat
-    use abf_accumulator
+    use abf_accu
 
     implicit none
     integer     :: alloc_failed
@@ -297,7 +299,7 @@ subroutine abf_init_arrays
     end if
 
     ! init accumulator ------------------------------
-    call abf_accumulator_init
+    call abf_accu_init
 
 end subroutine abf_init_arrays
 

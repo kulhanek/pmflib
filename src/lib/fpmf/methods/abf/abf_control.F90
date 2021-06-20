@@ -81,9 +81,6 @@ subroutine abf_control_read_abf(prm_fin)
 
     call pmf_ctrl_read_logical(prm_fin,'fapply_abf',fapply_abf)
 
-    call pmf_ctrl_read_integer(prm_fin,'feimode',feimode,'i12')
-    call pmf_ctrl_check_integer_in_range('ABF','feimode',feimode,1,1)
-
     call pmf_ctrl_read_integer(prm_fin,'fsample',fsample,'i12')
     call pmf_ctrl_check_integer('ABF','fsample',fsample,0,CND_GE)
 
@@ -96,17 +93,20 @@ subroutine abf_control_read_abf(prm_fin)
     call pmf_ctrl_check_integer('ABF','ftrjsample',ftrjsample,0,CND_GE)
 
     call pmf_ctrl_read_logical(prm_fin,'fenthalpy',fenthalpy)
-    call pmf_ctrl_read_logical(prm_fin,'fentropy',fentropy)
 
     call pmf_ctrl_read_real8_wunit(prm_fin,'fepotoffset',EnergyUnit,fepotoffset,'F10.1')
-    call pmf_ctrl_read_real8_wunit(prm_fin,'fekinoffset',EnergyUnit,fekinoffset,'F10.1')
 
     call pmf_ctrl_read_integer(prm_fin,'fblock_size',fblock_size,'i12')
     call pmf_ctrl_check_integer('ABF','fblock_size',fblock_size,0,CND_GE)
 
+    call pmf_ctrl_read_integer(prm_fin,'feimode',feimode,'i12')
+    call pmf_ctrl_check_integer_in_range('ABF','feimode',feimode,0,2)
+
     select case(feimode)
+        case(0)
+            write(PMF_OUT,50)
         case(1)
-            write(PMF_OUT,20)
+            write(PMF_OUT,51)
             call pmf_ctrl_read_integer(prm_fin,'fhramp_min',fhramp_min,'i12')
             call pmf_ctrl_check_integer('ABF','fhramp_min',fhramp_min,0,CND_GE)
             call pmf_ctrl_read_integer(prm_fin,'fhramp_max',fhramp_max,'i12')
@@ -114,6 +114,10 @@ subroutine abf_control_read_abf(prm_fin)
             if( fhramp_max .lt. fhramp_min ) then
                 call pmf_utils_exit(PMF_OUT,1,'[ABF] fhramp_max must be >= fhramp_min!')
             end if
+        case(2)
+            write(PMF_OUT,52)
+            call pmf_ctrl_read_integer(prm_fin,'fsmoothupdate',fsmoothupdate,'i12')
+            call pmf_ctrl_check_integer('ABF','fsmoothupdate',fsmoothupdate,0,CND_GT)
         case default
             call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown extrapolation/interpolation mode!')
     end select
@@ -155,7 +159,10 @@ subroutine abf_control_read_abf(prm_fin)
     return
 
  10 format (' >> Adaptive biasing force method is disabled!')
- 20 format (/,'>> Linear ramp mode I (feimode == 1)')
+
+ 50 format (/,'>> Inter/Extrapolation disabled (feimode == 0)')
+ 51 format (/,'>> Linear ramp mode (feimode == 1)')
+ 52 format (/,'>> Gaussian kernel smoother (feimode == 2)')
 
 100 format (' >> Multiple-walkers ABF method is disabled!')
 

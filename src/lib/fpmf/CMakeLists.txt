@@ -26,6 +26,7 @@ SET(PMF_COM_SRC
         common/pmf_spline.f90
         common/pmf_alloc_cv.F90
         common/pmf_exit.f90
+        common/pmf_accu.f90
         )
 
 # coordinates ------------------------------------------------------------------
@@ -140,7 +141,7 @@ SET(PMF_ABF_CORE_SRC
         methods/abf/abf_control.F90
         methods/abf/abf_output.f90
         methods/abf/abf_restart.f90
-        methods/abf/abf_accumulator.f90
+        methods/abf/abf_accu.f90
         methods/abf/abf_core.f90
         methods/abf/abf_client.F90
         methods/abf/abf_trajectory.f90

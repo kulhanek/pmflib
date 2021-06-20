@@ -78,13 +78,13 @@ subroutine abf_core_force_4p()
     use pmf_dat
     use pmf_cvs
     use abf_dat
-    use abf_accumulator
+    use abf_accu
     use abf_output
 
     implicit none
     integer     :: i,j,k,m
     integer     :: ci,ck
-    real(PMFDP) :: v,avg_epot,avg_ekin
+    real(PMFDP) :: v,avg_epot
     ! --------------------------------------------------------------------------
 
     ! calculate acceleration in time t for all pmf atoms
@@ -107,26 +107,20 @@ subroutine abf_core_force_4p()
     epothist0 = epothist1
     epothist1 = epothist2
     epothist2 = epothist3
-    if( fenthalpy .or. fentropy ) then
+    if( fenthalpy ) then
         epothist3 = PotEne + fepotoffset
     else
         epothist3 = 0.0d0
     end if
 
-    ! shift ekin ene
-    ekinhist0 = ekinhist1
-    ekinhist1 = ekinhist2
-    ekinhist2 = ekinhist3
-    if( fentropy ) then
-        ekinhist3 = KinEne + fekinoffset
-    else
-        ekinhist3 = 0.0d0
-    end if
-
     ! calculate abf force to be applied -------------
     select case(feimode)
-        case(1)
-            call abf_accumulator_get_data_lramp(cvaluehist1(:),la)
+            case(0)
+                call abf_accu_get_data(cvaluehist1(:),la)
+            case(1)
+                call abf_accu_get_data_lramp(cvaluehist1(:),la)
+            case(2)
+                call abf_accu_get_data_gks(cvaluehist1(:),la)
         case default
             call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented extrapolation/interpolation mode!')
     end select
@@ -200,13 +194,12 @@ subroutine abf_core_force_4p()
         end do
 
         avg_epot = 0.5d0*(epothist1 + epothist2) ! t - 3/2*dt
-        avg_ekin = 0.5d0*(ekinhist2 + ekinhist3) ! t - 1/2*dt; ekin already shifted by -dt
 
         ! add data to accumulator
         if( fblock_size .eq. 0 ) then
-            call abf_accumulator_add_data_online(cvaluehist0,pxi0(:),pxim(:),epothist0,ekinhist1)
+            call abf_accu_add_data_online(cvaluehist0,pxi0(:),epothist0)
         else
-            call abf_accumulator_add_data_blocked(cvaluehist0,pxi0(:),pxim(:),epothist0,ekinhist1)
+            call abf_accu_add_data_blocked(cvaluehist0,pxi0(:),epothist0)
         end if
     end if
 
@@ -236,7 +229,7 @@ subroutine abf_core_force_2p()
     use pmf_dat
     use pmf_cvs
     use abf_dat
-    use abf_accumulator
+    use abf_accu
     use abf_output
 
     implicit none
@@ -256,18 +249,10 @@ subroutine abf_core_force_2p()
 
     ! shift epot ene
     epothist0 = epothist1
-    if( fenthalpy .or. fentropy ) then
+    if( fenthalpy ) then
         epothist1 = PotEne + fepotoffset
     else
         epothist1 = 0.0d0
-    end if
-
-    ! shift ekin ene
-    ekinhist0 = ekinhist1
-    if( fentropy ) then
-        ekinhist1 = KinEne + fekinoffset
-    else
-        ekinhist1 = 0.0d0
     end if
 
     ! calculate Z matrix and its inverse
@@ -316,11 +301,14 @@ subroutine abf_core_force_2p()
         pxi0(:) = pxi0(:) - pxi1(:)
         pxim(:) = 0.5d0*(pxim(:)+pxip(:))
 
+        ! total ABF force
+        pxi0(:) = pxi0(:) + pxim(:)
+
         ! add data to accumulator
         if( fblock_size .eq. 0 ) then
-            call abf_accumulator_add_data_online(cvaluehist0,pxi0(:),pxim(:),epothist0,ekinhist1)
+            call abf_accu_add_data_online(cvaluehist0,pxi0(:),epothist0)
         else
-            call abf_accumulator_add_data_blocked(cvaluehist0,pxi0(:),pxim(:),epothist0,ekinhist1)
+            call abf_accu_add_data_blocked(cvaluehist0,pxi0(:),epothist0)
         end if
     end if
 
@@ -336,8 +324,12 @@ subroutine abf_core_force_2p()
     if( fapply_abf ) then
         ! calculate abf force to be applied
         select case(feimode)
+            case(0)
+                call abf_accu_get_data(cvaluehist1(:),la)
             case(1)
-                call abf_accumulator_get_data_lramp(cvaluehist1(:),la)
+                call abf_accu_get_data_lramp(cvaluehist1(:),la)
+            case(2)
+                call abf_accu_get_data_gks(cvaluehist1(:),la)
             case default
                 call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented extrapolation/interpolation mode!')
         end select

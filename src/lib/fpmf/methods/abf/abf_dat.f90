@@ -28,6 +28,7 @@ module abf_dat
 
 use pmf_sizes
 use pmf_dat
+use pmf_accu
 
 implicit none
 
@@ -40,26 +41,26 @@ integer     :: fmode        ! 0 - disable ABF
 integer     :: fsample      ! output sample period in steps
 logical     :: frestart     ! 1 - restart job with previous data, 0 - otherwise not
 integer     :: frstupdate   ! how often is restart file written
-integer     :: feimode      ! extrapolation / interpolation mode
-                            ! 1 - linear ramp I
-                            ! 2 - linear ramp II
-                            ! 3 - block averages
 integer     :: ftrjsample   ! how often save accumulator to "accumulator evolution"
 integer     :: fmask_mode   ! 0 - disable ABF mask, 1 - enable ABF mask
 logical     :: fapply_abf   ! on - apply ABF, off - do not apply ABF
-
+integer     :: feimode      ! interpolation/extrapolation mode
+                            ! 0 - disabled
+                            ! 1 - linear ramp
+                            ! 2 - Gaussian kernel smoothing
 
 logical     :: fenthalpy    ! collect data for enthalpy calculation
-logical     :: fentropy     ! collect data for entropy calculation
 real(PMFDP) :: fepotoffset
-real(PMFDP) :: fekinoffset
-
-! linear ramp mode II (feimode .eq. 1)
-integer     :: fhramp_min   ! min value of linear ramp - ABF force is ignored below this value
-integer     :: fhramp_max   ! max  value of linear ramp
 
 ! data pre-averaging
 integer     :: fblock_size  ! block size for ABF force pre-accumulation
+
+! linear ramp
+integer     :: fhramp_min
+integer     :: fhramp_max
+
+! kernel smoothing
+integer     :: fsmoothupdate    ! how often to smooth data
 
 ! server part ------------------------------------------------------------------
 logical                 :: fserver_enabled      ! is abf-server enabled?
@@ -87,65 +88,38 @@ end type CVTypeABF
 integer                     :: NumOfABFCVs      ! number of CVs in a group
 type(CVTypeABF),allocatable :: ABFCVList(:)     ! definition of CVs
 
-! accu types -------------------------------------------------------------------
-type CVInfoTypeABF
-    integer                  :: nbins           ! number of accumulator bins
-    real(PMFDP)              :: min_value       ! left boundary of coordinate
-    real(PMFDP)              :: max_value       ! left boundary of coordinate
-    real(PMFDP)              :: bin_width       ! (right-left)/numbins
-    real(PMFDP)              :: width           ! right - left
-end type CVInfoTypeABF
-
 ! ----------------------
 
-type ABFAccuType
-    integer                       :: tot_cvs       ! total number of independent CVs
-    type(CVInfoTypeABF), pointer  :: sizes(:)      ! CV information
-    integer                       :: tot_nbins     ! number of total bins
+type,extends(PMFAccuType) :: ABFAccuType
 
-    ! biasing force
-    integer,pointer        :: bsamples(:)               ! number of hits into bins
+    ! biasing force manipulation
     real(PMFDP),pointer    :: weights(:)                ! mask weights
-    real(PMFDP),pointer    :: bicf(:,:)                 ! mean ICF - total, used to bias
 
     ! MICF
     integer,pointer        :: nsamples(:)               ! number of hits into bins
-    real(PMFDP),pointer    :: micf(:,:)                 ! mean ICF - total
-    real(PMFDP),pointer    :: m2icf(:,:)                ! M2 of ICF - total
-    real(PMFDP),pointer    :: micf_kin(:,:)             ! mean ICF - kinetic energy part
-    real(PMFDP),pointer    :: m2icf_kin(:,:)            ! M2 of ICF - kinetic energy part
-    ! ENTHALPY
-    real(PMFDP),pointer    :: metot(:)                  ! mean of total energy
-    real(PMFDP),pointer    :: m2etot(:)                 ! M2 of total energy
-    real(PMFDP),pointer    :: mepot(:)                  ! mean of total energy
-    real(PMFDP),pointer    :: m2epot(:)                 ! M2 of total energy
-    ! ENTROPY
-    real(PMFDP),pointer    :: mcds(:,:)                 ! mean of cds
-    real(PMFDP),pointer    :: m2cds(:,:)                ! M2 of mean co-moment of entropy derivative
+    real(PMFDP),pointer    :: micf(:,:)                 ! mean ICF
+    real(PMFDP),pointer    :: m2icf(:,:)                ! M2 of ICF
+    real(PMFDP),pointer    :: mepot(:)                  ! mean of pot energy
+    real(PMFDP),pointer    :: m2epot(:)                 ! M2 of pot energy
 
-!     real(PMFDP),pointer    :: icfetotsum(:,:)          ! accumulated icfsum * etotsum
-!     real(PMFDP),pointer    :: icfetotsum2(:,:)         ! accumulated square of icfsum * etotsum
+    ! smoothed ICF
+    real(PMFDP),pointer    :: smicf(:,:)                ! mean ICF, smoothed
 
-!     ! ABF force - incremental part for ABF-server
-!     integer,pointer        :: inc_nsamples(:)          ! number of hits into bins
-!     real(PMFDP),pointer    :: inc_icfsum(:,:)          ! accumulated ABF force
-!     real(PMFDP),pointer    :: inc_icfsum2(:,:)         ! accumulated square of ABF force
-!     real(PMFDP),pointer    :: inc_etotsum(:)           ! accumulated potential energy
-!     real(PMFDP),pointer    :: inc_etotsum2(:)          ! accumulated square of potential energy
-!     real(PMFDP),pointer    :: inc_icfetotsum(:,:)      ! accumulated icfsum * etotsum
-!     real(PMFDP),pointer    :: inc_icfetotsum2(:,:)     ! accumulated square of icfsum * etotsum
-!
-     ! ABF force - block pre-sampling
-     integer,pointer        :: block_nsamples(:)        ! number of hits into bins
-     real(PMFDP),pointer    :: block_micf(:,:)          ! online mean of ABF force - total
-     real(PMFDP),pointer    :: block_micf_kin(:,:)      ! online mean of ABF force - kinetic
-     real(PMFDP),pointer    :: block_metot(:)           ! online mean of Etot
-     real(PMFDP),pointer    :: block_mepot(:)           ! online mean of Epot
-     real(PMFDP),pointer    :: block_cds(:,:)           ! accumulated square of icfsum * etotsum
+    ! ABF force - incremental part for ABF-server
+    integer,pointer        :: inc_nsamples(:)           ! number of hits into bins
+    real(PMFDP),pointer    :: inc_micf(:,:)             ! accumulated mean ICF
+    real(PMFDP),pointer    :: inc_m2icf(:,:)            ! accumulated M2 of ICF
+    real(PMFDP),pointer    :: inc_mepot(:)              ! accumulated mean of pot energy
+    real(PMFDP),pointer    :: inc_m2epot(:)             ! accumulated M2 of pot energy
+
+    ! ABF force - block pre-sampling
+    integer,pointer        :: block_nsamples(:)         ! number of hits into bins
+    real(PMFDP),pointer    :: block_micf(:,:)           ! online mean of ABF force - total
+    real(PMFDP),pointer    :: block_mepot(:)            ! online mean of Epot
 end type ABFAccuType
 
 ! ----------------------
-type(ABFAccuType)           :: accumulator          ! accumulated forces
+type(ABFAccuType)           :: abfaccu                  ! accumulated forces
 integer                     :: insidesamples
 integer                     :: outsidesamples
 ! ----------------------
@@ -183,13 +157,6 @@ real(PMFDP)                 :: epothist0   ! history of Epot
 real(PMFDP)                 :: epothist1   ! history of Epot
 real(PMFDP)                 :: epothist2   ! history of Epot
 real(PMFDP)                 :: epothist3   ! history of Epot
-
-real(PMFDP)                 :: ekinhist0   ! history of Ekin
-real(PMFDP)                 :: ekinhist1   ! history of Ekin
-real(PMFDP)                 :: ekinhist2   ! history of Ekin
-real(PMFDP)                 :: ekinhist3   ! history of Ekin
-
-real(PMFDP), allocatable    :: icf_cache(:,:)   ! icf_cache(2*ncvs,fnstlim)
 
 ! ------------------------------------------------------------------------------
 

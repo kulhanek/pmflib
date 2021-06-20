@@ -38,7 +38,7 @@ subroutine abf_restart_read
     use pmf_dat
     use pmf_utils
     use abf_dat
-    use abf_accumulator
+    use abf_accu
 
     implicit none
     ! --------------------------------------------------------------------------
@@ -47,7 +47,7 @@ subroutine abf_restart_read
     if( fmask_mode .eq. 1 ) then
         write(ABF_OUT,5) trim(fabfmask)
         call pmf_utils_open(ABF_RST,fabfmask,'O')
-        call abf_accumulator_read_mask(ABF_RST)
+        call abf_accu_read_mask(ABF_RST)
         close(ABF_RST)
     end if
 
@@ -62,7 +62,7 @@ subroutine abf_restart_read
         ! open restart file ----------------------------------------------------
         call pmf_utils_open(ABF_RST,fabfrst,'O')
 
-        call abf_accumulator_read(ABF_RST)
+        call abf_accu_read(ABF_RST)
 
         close(ABF_RST)
     else
@@ -86,7 +86,7 @@ subroutine abf_restart_update
 
     use pmf_dat
     use pmf_utils
-    use abf_accumulator
+    use abf_accu
     use abf_dat
 
     implicit none
@@ -97,7 +97,7 @@ subroutine abf_restart_update
     if( mod(fstep,frstupdate) .ne. 0 ) return
 
     call pmf_utils_open(ABF_RST,fabfrst,'U')
-    call abf_accumulator_write(ABF_RST)
+    call abf_accu_write(ABF_RST)
     close(ABF_RST)
 
     write(ABF_OUT,10) fstep, insidesamples, outsidesamples
@@ -116,14 +116,14 @@ subroutine abf_restart_write
 
     use pmf_dat
     use pmf_utils
-    use abf_accumulator
+    use abf_accu
 
     implicit none
     !---------------------------------------------------------------------------
 
     call pmf_utils_open(ABF_RST,fabfrst,'U')
 
-    call abf_accumulator_write(ABF_RST)
+    call abf_accu_write(ABF_RST)
 
     close(ABF_RST)
 
