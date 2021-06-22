@@ -1,8 +1,7 @@
 // =============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
-//    Copyright (C) 2011 Petr Kulhanek, kulhanek@chemi.muni.cz
-//    Copyright (C) 2008 Petr Kulhanek, kulhanek@enzim.hu
+//    Copyright (C) 2012 Petr Kulhanek, kulhanek@chemi.muni.cz
 //
 //     This program is free software; you can redistribute it and/or modify
 //     it under the terms of the GNU General Public License as published by
@@ -19,31 +18,46 @@
 //     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 // =============================================================================
 
-#include <stdio.h>
-#include <ErrorSystem.hpp>
-#include <XMLElement.hpp>
-#include "MTDProcessor.hpp"
-#include "MTDServer.hpp"
-#include "MTDRegClient.hpp"
+#include "PMFAccuInfoOptions.hpp"
 
 //==============================================================================
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void CMTDProcessor::GetInitialData(void)
+CPMFAccuInfoOptions::CPMFAccuInfoOptions(void)
 {
-    int client_id = -1;
+    SetShowMiniUsage(true);
+}
 
-    if(CommandElement->GetAttribute("client_id",client_id) == false) {
-        LOGIC_ERROR("unable to get client_id");
+//------------------------------------------------------------------------------
+
+int CPMFAccuInfoOptions::CheckOptions(void)
+{
+    return(SO_CONTINUE);
+}
+
+//------------------------------------------------------------------------------
+
+int CPMFAccuInfoOptions::FinalizeOptions(void)
+{
+    bool ret_opt = false;
+
+    if(GetOptHelp() == true) {
+        PrintUsage();
+        ret_opt = true;
     }
 
-    CMTDRegClient* p_client = dynamic_cast<CMTDRegClient*>(MTDServer.RegClients.FindClient(client_id));
-    if(p_client == NULL) {
-        RUNTIME_ERROR("unable to find client");
+    if(GetOptVersion() == true) {
+        PrintVersion();
+        ret_opt = true;
     }
 
-    p_client->GetInitialData(Command);
+    if(ret_opt == true) {
+        printf("\n");
+        return(SO_EXIT);
+    }
+
+    return(SO_CONTINUE);
 }
 
 //==============================================================================

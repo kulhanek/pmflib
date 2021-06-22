@@ -3,26 +3,19 @@
 # ==============================================================================
 
 # program objects --------------------------------------------------------------
-SET(ABF_OPTGPRHPRMS_SRC
-        ABFOptGPRHyprms.cpp
-        ABFOptGPRHyprmsOptions.cpp
+SET(PMF_ACCUINFO_SRC
+        PMFAccuInfo.cpp
+        PMFAccuInfoOptions.cpp
         )
 
 # final build ------------------------------------------------------------------
+ADD_EXECUTABLE(accu-info ${PMF_ACCUINFO_SRC})
+ADD_DEPENDENCIES(accu-info cpmf_shared)
 
-IF(OpenMP_FOUND)
-    SET(TARGET_NAME _abf-optgprhyprms)
-ELSE()
-    SET(TARGET_NAME abf-optgprhyprms)
-ENDIF()
-
-ADD_EXECUTABLE(${TARGET_NAME} ${ABF_OPTGPRHPRMS_SRC})
-ADD_DEPENDENCIES(${TARGET_NAME} cpmf_shared)
-
-TARGET_LINK_LIBRARIES(${TARGET_NAME} ${LBFGS_LIB_NAME} ${CPMF_LIBRARIES})
+TARGET_LINK_LIBRARIES(accu-info  ${CPMF_LIBRARIES})
 
 INSTALL(TARGETS
-            ${TARGET_NAME}
+            accu-info
         RUNTIME DESTINATION
             bin
         )

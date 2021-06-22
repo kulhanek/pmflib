@@ -25,10 +25,16 @@
 #include <PMFMainHeader.hpp>
 #include <SmallString.hpp>
 #include <ostream>
+#include <memory>
 
 //------------------------------------------------------------------------------
 
 class CXMLElement;
+class CColVariable;
+
+//------------------------------------------------------------------------------
+
+typedef std::shared_ptr<CColVariable> CColVariablePtr;
 
 //------------------------------------------------------------------------------
 
@@ -129,6 +135,9 @@ public:
     /// check cv info
     bool CheckInfo(const CColVariable* p_coord) const;
 
+    /// check cv info
+    bool CheckInfo(const CColVariablePtr p_coord) const;
+
     /// save cv info
     void SaveInfo(CXMLElement* p_ele) const;
 
@@ -149,6 +158,7 @@ private:
     double          MaxMovement;    // used by STM
     double          Alpha;          // used by ABP
 
+    friend class CPMFAccumulator;
     friend class CMTDAccumulator;
     friend class CABFAccumulator;
     friend class CABPAccumulator;

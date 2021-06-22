@@ -5,6 +5,7 @@
 SET(CPMF_METHODS_SRC
         PMFMainHeader.cpp
         methods/common/ColVariable.cpp
+        methods/common/PMFAccumulator.cpp
         methods/common/EnergySurface.cpp
         methods/common/ESPrinter.cpp
         methods/abp/ABPAccumulator.cpp

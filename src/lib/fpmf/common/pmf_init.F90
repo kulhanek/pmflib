@@ -589,7 +589,8 @@ subroutine pmf_init_title(driver_name)
     write(PMF_OUT,'(A)')   '#==============================================================================#'
     write(PMF_OUT,'(A)')   '# PMFLib - Potential of Mean Force Toolkit                                     #'
     write(PMF_OUT,'(A)')   '# -----------------------------------------------------------------------------#'
-    write(PMF_OUT,'(A)')   '# Authors: (c) 2011 - 2015 Petr Kulhanek (CEITEC)                              #'
+    write(PMF_OUT,'(A)')   '# Authors: (c) 2019 - 2021 Petr Kulhanek (NCBR)                                #'
+    write(PMF_OUT,'(A)')   '#          (c) 2011 - 2015 Petr Kulhanek (CEITEC)                              #'
     write(PMF_OUT,'(A)')   '#          (c) 2013 - 2015 Letif Mones (EDUC)                                  #'
     write(PMF_OUT,'(A)')   '#          (c) 2009 - 2011 Petr Kulhanek (NCBR)                                #'
     write(PMF_OUT,'(A)')   '#          (c) 2008 Petr Kulhanek (IE), Letif Mones (IE)                       #'
@@ -607,6 +608,8 @@ subroutine pmf_init_title(driver_name)
     write(PMF_OUT,'(A)')   '#==============================================================================#'
     write(PMF_OUT,'(A,A)') '# PMFLib version : ',trim(PMFLIBVER)
     write(PMF_OUT,'(A,A)') '# Driver         : ',trim(driver_name)
+
+    DriverName = driver_name
 
 end subroutine pmf_init_title
 

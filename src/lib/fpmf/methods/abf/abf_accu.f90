@@ -162,30 +162,7 @@ subroutine abf_accu_read(iounit)
     integer                         :: iounit
     ! -----------------------------------------------
     character(len=PMF_KEYLINE)      :: keyline
-    integer                         :: ibitem
-    character(len=6)                :: spmflib
-    character(len=2)                :: sver
     ! --------------------------------------------------------------------------
-
-    read(iounit,5,end=200,err=200) keyline
-
-    ! read header --------------------------
-    read(keyline,*,end=200,err=200) spmflib, sver, ibitem
-
-    if( trim(adjustl(spmflib)) .ne. 'PMFLIB' ) then
-        write(PMF_OUT,*) '[ABF] header key = [',trim(adjustl(spmflib)),']'
-        call pmf_utils_exit(PMF_OUT,1,'[ABF] The PMFLIB keyword was not found in the accumulator!')
-    end if
-
-    if( ibitem .ne. NumOfABFCVs ) then
-        write(PMF_OUT,*) '[ABF] header nvcs = [',ibitem,'] but expected [',NumOfABFCVs,']'
-        call pmf_utils_exit(PMF_OUT,1,'[ABF] PMFLIB accumulator contains different number of CVs!')
-    end if
-
-    if( trim(adjustl(sver)) .ne. 'V6' ) then
-        write(PMF_OUT,*) '[ABF] header vers = [',trim(adjustl(sver)),'] but expected [V6]'
-        call pmf_utils_exit(PMF_OUT,1,'[ABF] Unsupported PMFLIB accumulator version!')
-    end if
 
     do while(.true.)
 
@@ -194,7 +171,7 @@ subroutine abf_accu_read(iounit)
 
         ! process keyline
         if( pmf_accu_is_header_key(keyline) ) then
-            call pmf_accu_read_header(abfaccu%PMFAccuType,iounit,keyline)
+            call pmf_accu_read_header(abfaccu%PMFAccuType,iounit,'ABF',keyline)
         else
             select case( pmf_accu_get_key(keyline) )
             ! ------------------------------------
@@ -231,7 +208,6 @@ subroutine abf_accu_read(iounit)
 
   5 format(A80)
 
-200 call pmf_utils_exit(PMF_OUT,1,'[ABF] Unable to read from the accumulator - first line!')
 300 call pmf_utils_exit(PMF_OUT,1,'[ABF] Unable to read from the accumulator - keyline!')
 
 end subroutine abf_accu_read
@@ -250,30 +226,7 @@ subroutine abf_accu_read_mask(iounit)
     integer                         :: iounit
     ! -----------------------------------------------
     character(len=PMF_KEYLINE)      :: keyline
-    integer                         :: ibitem
-    character(len=6)                :: spmflib
-    character(len=2)                :: sver
     ! --------------------------------------------------------------------------
-
-    read(iounit,5,end=200,err=200) keyline
-
-    ! read header --------------------------
-    read(keyline,*,end=200,err=200) spmflib, sver, ibitem
-
-    if( trim(adjustl(spmflib)) .ne. 'PMFLIB' ) then
-        write(PMF_OUT,*) '[ABF] header key = [',trim(adjustl(spmflib)),']'
-        call pmf_utils_exit(PMF_OUT,1,'[ABF] The PMFLIB keyword was not found in the accumulator!')
-    end if
-
-    if( ibitem .ne. NumOfABFCVs ) then
-        write(PMF_OUT,*) '[ABF] header nvcs = [',ibitem,'] but expected [',NumOfABFCVs,']'
-        call pmf_utils_exit(PMF_OUT,1,'[ABF] PMFLIB accumulator contains different number of CVs!')
-    end if
-
-    if( trim(adjustl(sver)) .ne. 'V6' ) then
-        write(PMF_OUT,*) '[ABF] header vers = [',trim(adjustl(sver)),'] but expected [V6]'
-        call pmf_utils_exit(PMF_OUT,1,'[ABF] Unsupported PMFLIB accumulator version!')
-    end if
 
     do while(.true.)
 
@@ -282,7 +235,7 @@ subroutine abf_accu_read_mask(iounit)
 
         ! process keyline
         if( pmf_accu_is_header_key(keyline) ) then
-            call pmf_accu_read_header(abfaccu%PMFAccuType,iounit,keyline)
+            call pmf_accu_read_header(abfaccu%PMFAccuType,iounit,keyline,'ABF')
         else
             select case( pmf_accu_get_key(keyline) )
             ! ------------------------------------
@@ -299,7 +252,6 @@ subroutine abf_accu_read_mask(iounit)
 
   5 format(A80)
 
-200 call pmf_utils_exit(PMF_OUT,1,'[ABFMASK] Unable to read from the accumulator - first line!')
 300 call pmf_utils_exit(PMF_OUT,1,'[ABFMASK] Unable to read from the accumulator - keyline!')
 
 end subroutine abf_accu_read_mask
@@ -316,14 +268,15 @@ subroutine abf_accu_write(iounit)
     integer                     :: iounit
     !---------------------------------------------------------------------------
 
+    abfaccu%method = 'ABF'
     call pmf_accu_write_header(abfaccu%PMFAccuType,iounit)
-    call pmf_accu_write_ibuf(abfaccu%PMFAccuType,iounit,'NSAMPLES',abfaccu%nsamples)
-    call pmf_accu_write_rbufCVs(abfaccu%PMFAccuType,iounit,'MICF',abfaccu%micf)
-    call pmf_accu_write_rbufCVs(abfaccu%PMFAccuType,iounit,'M2ICF',abfaccu%m2icf)
+    call pmf_accu_write_ibuf(abfaccu%PMFAccuType,iounit,'NSAMPLES','AD',abfaccu%nsamples)
+    call pmf_accu_write_rbufCVs(abfaccu%PMFAccuType,iounit,'MICF','WA',abfaccu%micf)
+    call pmf_accu_write_rbufCVs(abfaccu%PMFAccuType,iounit,'M2ICF','AD',abfaccu%m2icf)
 
     if( fenthalpy ) then
-        call pmf_accu_write_rbuf(abfaccu%PMFAccuType,iounit,'MEPOT',abfaccu%mepot)
-        call pmf_accu_write_rbuf(abfaccu%PMFAccuType,iounit,'M2EPOT',abfaccu%m2epot)
+        call pmf_accu_write_rbuf(abfaccu%PMFAccuType,iounit,'MEPOT','WA',abfaccu%mepot)
+        call pmf_accu_write_rbuf(abfaccu%PMFAccuType,iounit,'M2EPOT','AD',abfaccu%m2epot)
     end if
 
 end subroutine abf_accu_write

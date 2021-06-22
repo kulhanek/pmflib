@@ -60,6 +60,7 @@ real(PMFDP) :: ftime        ! actual time in [fs]
 real(PMFDP) :: ftemp        ! simulation temperature in [K]
 integer     :: fintalg      ! integration algorithm
 
+
 real(PMFDP),allocatable     :: frmass(:)     ! atom masses of all atoms, should be initialized in pmf_xxxx_end_init
 
 ! status variables -------------------------------------------------------------
@@ -94,6 +95,8 @@ logical                     :: pdrv_enabled
 logical                     :: tabf_enabled
 
 ! MASTER =======================================================================
+
+character(PMF_KEYLINE)      :: DriverName
 
 ! local atoms ------------------------------------------------------------------
 real(PMFDP),allocatable     :: InitialCrd(:,:)  ! initial coordinates of local atoms

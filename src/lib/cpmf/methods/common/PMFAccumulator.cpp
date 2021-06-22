@@ -1,0 +1,1010 @@
+// =============================================================================
+// PMFLib - Library Supporting Potential of Mean Force Calculations
+// -----------------------------------------------------------------------------
+//    Copyright (C) 2008 Petr Kulhanek, kulhanek@enzim.hu
+//                       Martin Petrek, petrek@chemi.muni.cz
+//
+//     This program is free software; you can redistribute it and/or modify
+//     it under the terms of the GNU General Public License as published by
+//     the Free Software Foundation; either version 2 of the License, or
+//     (at your option) any later version.
+//
+//     This program is distributed in the hope that it will be useful,
+//     but WITHOUT ANY WARRANTY; without even the implied warranty of
+//     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//     GNU General Public License for more details.
+//
+//     You should have received a copy of the GNU General Public License along
+//     with this program; if not, write to the Free Software Foundation, Inc.,
+//     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+// =============================================================================
+
+#include <errno.h>
+#include <string.h>
+#include <PMFAccumulator.hpp>
+#include <ErrorSystem.hpp>
+#include <XMLElement.hpp>
+#include <XMLBinData.hpp>
+#include <iomanip>
+
+//------------------------------------------------------------------------------
+
+using namespace std;
+
+//==============================================================================
+//------------------------------------------------------------------------------
+//==============================================================================
+
+CPMFAccumulator::CPMFAccumulator(void)
+{
+    NCVs            = 0;
+    TotNBins        = 0;
+    Temperature     = 300.0;
+    TemperatureFConv = 1.0;
+    TemperatureUnit = "K";
+    EnergyFConv     = 1.0;
+    EnergyUnit      = "kcal mol^-1";
+    Method          = "NONE";
+    Version         = LibBuildVersion_PMF;
+}
+
+//------------------------------------------------------------------------------
+
+CPMFAccumulator::~CPMFAccumulator(void)
+{
+}
+
+//==============================================================================
+//------------------------------------------------------------------------------
+//==============================================================================
+
+void CPMFAccumulator::Load(const CSmallString& name)
+{
+    FILE* fin = fopen(name, "r");
+
+    if(fin == NULL) {
+        CSmallString error;
+        error << "unable to open file '" << name << "' (" << strerror(errno) << ")";
+        RUNTIME_ERROR(error);
+    }
+
+    try {
+        Load(fin);
+    } catch(...) {
+        fclose(fin);
+        throw;
+    }
+
+    fclose(fin);
+}
+
+//------------------------------------------------------------------------------
+
+void CPMFAccumulator::Load(FILE* fin)
+{
+    if( fin == NULL ) {
+        INVALID_ARGUMENT("stream is not open");
+    }
+
+    CSmallString keyline;
+
+// read sections
+    while( keyline.ReadLineFromFile(fin,true,true) ){
+        if( IsHeaderSection(keyline) ){
+            ReadHeaderSection(fin,keyline);
+        } else {
+            ReadDataSection(fin,keyline);
+        }
+    }
+}
+
+//------------------------------------------------------------------------------
+
+bool CPMFAccumulator::IsHeaderSection(const CSmallString& keyline)
+{
+    if( keyline.GetLength() < 1 ) return(false);
+    if( keyline[0] == '%' ) return(true);
+    return(false);
+}
+
+//------------------------------------------------------------------------------
+
+const CSmallString CPMFAccumulator::GetSectionName(const CSmallString& keyline) const
+{
+    if( keyline.GetLength() < 1 ) return("");
+    int first = 1;
+    int last = keyline.Scan(" \t\n");
+    return( keyline.GetSubStringFromTo(first,last-1) );
+}
+
+//------------------------------------------------------------------------------
+
+void CPMFAccumulator::ReadHeaderSection(FILE* fin,const CSmallString& keyline)
+{
+    if( fin == NULL ) {
+        INVALID_ARGUMENT("stream is not open");
+    }
+
+    CSmallString    key = GetSectionName(keyline);
+    CSmallString    sbuff;
+
+// -----------------------------------------------
+    if( key == "PMFLIB-V6") {
+        CSmallString ncvs;
+        ncvs.ReadLineFromFile(fin,true,true);
+        ncvs.Trim();
+        SetNumOfCVs(ncvs.ToInt());
+// -----------------------------------------------
+    } else if( key == "VERSION") {
+        Version.ReadLineFromFile(fin,true,true);
+        Version.Trim();
+// -----------------------------------------------
+    } else if( key == "METHOD") {
+        Method.ReadLineFromFile(fin,true,true);
+        Method.Trim();
+// -----------------------------------------------
+    } else if( key == "DRIVER") {
+        Driver.ReadLineFromFile(fin,true,true);
+        Driver.Trim();
+// -----------------------------------------------
+    } else if( key == "CVS") {
+        // read coordinate specification
+        for(int i=0; i < NCVs; i++) {
+            CSmallString    type;
+            CSmallString    name;
+            CSmallString    unit;
+
+            int             id = 0;
+            double          min_value = 0.0;
+            double          max_value = 0.0;
+            double          fconv = 1.0;
+            int             nbins = 0;
+            int             tr = 0;
+
+//            20  format(I2,1X,E18.11,1X,E18.11,1X,I6,1X,A10)
+            // read item
+            sbuff.ReadLineFromFile(fin,true,true);
+            if( sbuff.GetLength() != 58 ){
+                CSmallString error;
+                error << "unable to read coordinate definition: '" << sbuff << "'";
+                RUNTIME_ERROR(error);
+            }
+            tr = sscanf(sbuff,"%d %lf %lf %d",&id,&min_value,&max_value,&nbins);
+            if( tr != 4 ) {
+                CSmallString error;
+                error << "unable to read coordinate definition, id: " << i+1 << " (" << tr << " != 4)";
+                RUNTIME_ERROR(error);
+            }
+            type = sbuff.GetSubStringFromTo(48,57);
+            type.Trim();
+            // some tests
+            if(id != i+1) {
+                CSmallString error;
+                error << "coordinate id does not match, read: " << id << ", expected: " << i+1;
+                RUNTIME_ERROR(error);
+            }
+            if(max_value <= min_value) {
+                CSmallString error;
+                error << "min value is not smaller than max value, id: " << id;
+                RUNTIME_ERROR(error);
+            }
+            if(nbins <= 0) {
+                CSmallString error;
+                error << "number of bins has to be grater than zero, id: " << id;
+                RUNTIME_ERROR(error);
+            }
+
+            // read item
+//            25  format(I2,1X,A55)
+            sbuff.ReadLineFromFile(fin,true,true);
+            if( sbuff.GetLength() != 58 ){
+                CSmallString error;
+                error << "unable to read coordinate definition: '" << sbuff << "'";
+                RUNTIME_ERROR(error);
+            }
+            tr = sscanf(sbuff,"%d",&id);
+            if( tr != 1 ) {
+                CSmallString error;
+                error << "unable to read coordinate definition, id: " << i+1 << " (" << tr << " != 1)";
+                RUNTIME_ERROR(error);
+            }
+            name = sbuff.GetSubStringFromTo(3,57);
+            name.Trim();
+            // some tests
+            if(id != i+1) {
+                CSmallString error;
+                error << "coordinate id does not match, read: " << id << ", expected: " << i+1;
+                RUNTIME_ERROR(error);
+            }
+
+            // read item
+//            26  format(I2,1X,E18.11,1X,A36)
+            sbuff.ReadLineFromFile(fin,true,true);
+            if( sbuff.GetLength() != 58 ){
+                CSmallString error;
+                error << "unable to read coordinate definition: '" << sbuff << "'";
+                RUNTIME_ERROR(error);
+            }
+            tr = sscanf(sbuff,"%d %lf",&id,&fconv);
+            if( tr != 2 ) {
+                CSmallString error;
+                error << "unable to read coordinate definition, id: " << i+1 << " (" << tr << " != 2)";
+                RUNTIME_ERROR(error);
+            }
+            unit = sbuff.GetSubStringFromTo(22,57);
+            unit.Trim();
+            // some tests
+            if(id != i+1) {
+                CSmallString error;
+                error << "coordinate id does not match, read: " << id << ", expected: " << i+1;
+                RUNTIME_ERROR(error);
+            }
+
+            // init CV
+            SetCV(i,name,type,min_value,max_value,nbins,fconv,unit);
+        }
+
+    // update TotNBins
+        TotNBins = 1;
+        for(int i=0; i < NCVs; i++) {
+            TotNBins *= CVs[i]->NBins;
+        }
+
+
+// -----------------------------------------------------
+    } else if( key == "TEMPERATURE" ) {
+        // read item
+        sbuff.ReadLineFromFile(fin,true,true);
+        int tr = sscanf(sbuff,"%lf",&Temperature);
+        if( tr != 1 ) {
+            CSmallString error;
+            error << "unable to read temperature (" << tr << " != 1)";
+            RUNTIME_ERROR(error);
+        }
+// -----------------------------------------------------
+    } else if( key == "ENERGY-UNIT" ) {
+        int             tr = 0;
+
+// 40  format(3X,E18.11,1X,A36)
+        // read item
+        sbuff.ReadLineFromFile(fin,true,true);
+        tr = sscanf(sbuff,"%lf",&EnergyFConv);
+        if( tr != 1 ) {
+            CSmallString error;
+            error << "unable to read energy unit (" << tr << " != 1)";
+            RUNTIME_ERROR(error);
+        }
+        if( sbuff.GetLength() != 58 ){
+            CSmallString error;
+            error << "unable to read energy unit: '" << sbuff << "'";
+            RUNTIME_ERROR(error);
+        }
+        EnergyUnit = sbuff.GetSubStringFromTo(22,57);
+        EnergyUnit.Trim();
+
+    // -----------------------------------------------------
+    } else if( key == "TEMPERATURE-UNIT" ) {
+        int             tr = 0;
+
+// 40  format(3X,E18.11,1X,A36)
+        // read item
+        sbuff.ReadLineFromFile(fin,true,true);
+        tr = sscanf(sbuff,"%lf",&TemperatureFConv);
+        if( tr != 1 ) {
+            CSmallString error;
+            error << "unable to read temperature unit (" << tr << " != 1)";
+            RUNTIME_ERROR(error);
+        }
+        if( sbuff.GetLength() != 58 ){
+            CSmallString error;
+            error << "unable to read temperature unit: '" << sbuff << "'";
+            RUNTIME_ERROR(error);
+        }
+        TemperatureUnit = sbuff.GetSubStringFromTo(22,57);
+        TemperatureUnit.Trim();
+
+    }else {
+        CSmallString error;
+        error << "unrecognized ABF accumulator header keyword: '" << key << "'";
+        RUNTIME_ERROR(error);
+    }
+}
+
+//------------------------------------------------------------------------------
+
+void CPMFAccumulator::ReadDataSection(FILE* fin,const CSmallString& keyline)
+{
+    CPMFAccuDataPtr data = CPMFAccuDataPtr(new CPMFAccuData(NCVs,TotNBins));
+    data->Load(fin,keyline);
+    DataBlocks[data->GetName()] = data;
+}
+
+//==============================================================================
+//------------------------------------------------------------------------------
+//==============================================================================
+
+void CPMFAccumulator::Save(const CSmallString& name)
+{
+    FILE* fout = fopen(name, "w");
+
+    if(fout == NULL) {
+        CSmallString error;
+        error << "unable to open file '" << name << "' (" << strerror(errno) << ")";
+        RUNTIME_ERROR(error);
+    }
+
+    try {
+        Save(fout);
+    } catch(...) {
+        fclose(fout);
+        throw;
+    }
+
+    fclose(fout);
+}
+
+//------------------------------------------------------------------------------
+
+void CPMFAccumulator::Save(FILE* fout)
+{
+    if(fout == NULL) {
+        INVALID_ARGUMENT("stream is not open");
+    }
+
+    if( TotNBins == 0 ) {
+        CSmallString error;
+        error << "no data in accumulator";
+        RUNTIME_ERROR(error);
+    }
+
+// write ABF accumulator header ------------------
+    if(fprintf(fout,"PMFACCU V6 %2d\n",NCVs) <= 0) {
+        CSmallString error;
+        error << "unable to write header";
+        RUNTIME_ERROR(error);
+    }
+
+    if(fprintf(fout,"%%VERSION\n%s\n",(const char*)Version) <= 0) {
+        CSmallString error;
+        error << "unable to write version";
+        RUNTIME_ERROR(error);
+    }
+
+    if(fprintf(fout,"%%METHOD\n%s\n",(const char*)Method) <= 0) {
+        CSmallString error;
+        error << "unable to write method";
+        RUNTIME_ERROR(error);
+    }
+
+    if(fprintf(fout,"%%DRIVER\n%s\n",(const char*)Driver) <= 0) {
+        CSmallString error;
+        error << "unable to write driver";
+        RUNTIME_ERROR(error);
+    }
+
+    if(fprintf(fout,"%%TEMPERATURE\n%18.11E\n",Temperature) <= 0) {
+        CSmallString error;
+        error << "unable to write temperature";
+        RUNTIME_ERROR(error);
+    }
+
+    if(fprintf(fout,"%%ENERGY-UNIT\n%18.11E %36s\n",EnergyFConv,(const char*)EnergyUnit) <= 0) {
+        CSmallString error;
+        error << "unable to write energy unit";
+        RUNTIME_ERROR(error);
+    }
+
+    if(fprintf(fout,"%%TEMPERATURE-UNIT\n%18.11E %36s\n",TemperatureFConv,(const char*)TemperatureUnit) <= 0) {
+        CSmallString error;
+        error << "unable to write temperature unit";
+        RUNTIME_ERROR(error);
+    }
+
+// write coordinate specification ----------------
+    if(fprintf(fout,"%%CVS\n") <= 0) {
+        CSmallString error;
+        error << "unable to write CVS header";
+        RUNTIME_ERROR(error);
+    }
+    for(int i=0; i < NCVs; i++) {
+        if(fprintf(fout,"%2d %10s %18.11E %18.11E %6d\n",i+1,
+                   (const char*)CVs[i]->Type,
+                   CVs[i]->MinValue,CVs[i]->MaxValue,CVs[i]->NBins) <= 0) {
+            CSmallString error;
+            error << "unable to write coordinate definition I id: " << i+1;
+            RUNTIME_ERROR(error);
+        }
+        if(fprintf(fout,"%2d %55s\n",i+1,(const char*)CVs[i]->Name) <= 0) {
+            CSmallString error;
+            error << "unable to write coordinate definition II id: " << i+1;
+            RUNTIME_ERROR(error);
+        }
+        if(fprintf(fout,"%2d %18.11E %36s\n",i+1,CVs[i]->FConv,(const char*)CVs[i]->Unit) <= 0) {
+            CSmallString error;
+            error << "unable to write coordinate definition III id: " << i+1;
+            RUNTIME_ERROR(error);
+        }
+    }
+}
+
+//------------------------------------------------------------------------------
+
+void CPMFAccumulator::GetPoint(unsigned int index,CSimpleVector<double>& point) const
+{
+    for(int k=NCVs-1; k >= 0; k--) {
+        const CColVariablePtr p_coord = CVs[k];
+        int ibin = index % p_coord->GetNumOfBins();
+        point[k] = p_coord->GetValue(ibin);
+        index = index / p_coord->GetNumOfBins();
+    }
+}
+
+void CPMFAccumulator::GetPointRValues(unsigned int index,CSimpleVector<double>& point) const
+{
+    for(int k=NCVs-1; k >= 0; k--) {
+        const CColVariablePtr p_coord = CVs[k];
+        int ibin = index % p_coord->GetNumOfBins();
+        point[k] = p_coord->GetRValue(ibin);
+        index = index / p_coord->GetNumOfBins();
+    }
+}
+
+//------------------------------------------------------------------------------
+
+void CPMFAccumulator::GetIPoint(unsigned int index,CSimpleVector<int>& point) const
+{
+    for(int k=NCVs-1; k >= 0; k--) {
+        const CColVariablePtr p_coord = CVs[k];
+        int ibin = index % p_coord->GetNumOfBins();
+        point[k] = ibin;
+        index = index / p_coord->GetNumOfBins();
+    }
+}
+
+//------------------------------------------------------------------------------
+
+void CPMFAccumulator::SetTemperature(double temp)
+{
+    Temperature = temp;
+}
+
+//------------------------------------------------------------------------------
+
+double CPMFAccumulator::GetTemperature(void)
+{
+    return(Temperature);
+}
+
+//------------------------------------------------------------------------------
+
+void CPMFAccumulator::SetEnergyUnit(double fconv,const CSmallString& unit)
+{
+    EnergyFConv = fconv;
+    EnergyUnit  = unit;
+}
+
+//==============================================================================
+//------------------------------------------------------------------------------
+//==============================================================================
+
+void CPMFAccumulator::SetNumOfCVs(int ncvs)
+{
+    if( ncvs < 0 ) {
+        INVALID_ARGUMENT("ncvs < 0");
+    }
+
+    if(NCVs > 0) {
+        // destroy all previous data
+        Clear();
+        CVs.clear();
+        NCVs = 0;
+    }
+
+// try to allocate CVs array
+    if( ncvs > 0 ) {
+        for(int i=0; i < ncvs; i++){
+            CVs.push_back(CColVariablePtr(new CColVariable));
+        }
+    }
+
+// all seems to be fine - update items
+    NCVs = ncvs;
+}
+
+//------------------------------------------------------------------------------
+
+void CPMFAccumulator::SetCV(int id,
+                            const CSmallString& name,
+                            const CSmallString& type,
+                            double min_value,double max_value,int nbins)
+{
+    if( CVs.size() == 0 ){
+        RUNTIME_ERROR("no CVs");
+    }
+    if( id < 0 || id >= NCVs ){
+        INVALID_ARGUMENT("id out-of-range");
+    }
+
+    if( nbins <= 0 ){
+        INVALID_ARGUMENT("nbins <= 0");
+    }
+    if( max_value < min_value ){
+        INVALID_ARGUMENT("max_value < min_value");
+    }
+
+    if( DataBlocks.size() != 0  ) {
+        // it was already finalized - destroy data
+        Clear();
+    }
+
+    CVs[id]->ID = id;
+    CVs[id]->Name = name;
+    CVs[id]->Type = type;
+    CVs[id]->MinValue = min_value;
+    CVs[id]->MaxValue = max_value;
+
+    CVs[id]->NBins = nbins;
+    CVs[id]->BinWidth = (max_value - min_value)/nbins;
+    CVs[id]->Width = max_value - min_value;
+}
+
+//------------------------------------------------------------------------------
+
+void CPMFAccumulator::SetCV(int id,
+                            const CSmallString& name,
+                            const CSmallString& type,
+                            double min_value,double max_value,int nbins,
+                            double fconv, const CSmallString& unit)
+{
+    if( CVs.size() == 0 ){
+        RUNTIME_ERROR("no CVs");
+    }
+    if( id < 0 || id >= NCVs ){
+        INVALID_ARGUMENT("id out-of-range");
+    }
+
+    if( nbins <= 0 ){
+        INVALID_ARGUMENT("nbins <= 0");
+    }
+    if( max_value < min_value ){
+        INVALID_ARGUMENT("max_value < min_value");
+    }
+
+    if( DataBlocks.size() != 0  ) {
+        // it was already finalized - destroy data
+        Clear();
+    }
+
+    CVs[id]->ID = id;
+    CVs[id]->Name = name;
+    CVs[id]->Type = type;
+    CVs[id]->Unit = unit;
+    CVs[id]->MinValue = min_value;
+    CVs[id]->MaxValue = max_value;
+    CVs[id]->FConv = fconv;
+
+    CVs[id]->NBins = nbins;
+    CVs[id]->BinWidth = (max_value - min_value)/nbins;
+    CVs[id]->Width = max_value - min_value;
+}
+
+//==============================================================================
+//------------------------------------------------------------------------------
+//==============================================================================
+
+int CPMFAccumulator::GetNumOfCVs(void) const
+{
+    return(NCVs);
+}
+
+//------------------------------------------------------------------------------
+
+const CColVariablePtr CPMFAccumulator::GetCV(int cv) const
+{
+    return(CVs[cv]);
+}
+
+//==============================================================================
+//------------------------------------------------------------------------------
+//==============================================================================
+
+int CPMFAccumulator::GetGlobalIndex(const CSimpleVector<int>& position) const
+{
+    int glbindex = 0;
+    for(int i=0; i < NCVs; i++) {
+        if( position[i] < 0 ) return(-1);
+        if( position[i] >= CVs[i]->GetNumOfBins() ) return(-1);
+        glbindex = glbindex*CVs[i]->GetNumOfBins() + position[i];
+    }
+    return(glbindex);
+}
+
+//==============================================================================
+//------------------------------------------------------------------------------
+//==============================================================================
+
+void CPMFAccumulator::Clear(void)
+{
+// do not destroy CVs array !
+
+// destroy only data arrays
+    DataBlocks.clear();
+    TotNBins        = 0;
+}
+
+//------------------------------------------------------------------------------
+
+void CPMFAccumulator::Reset(void)
+{
+    if( DataBlocks.size() != 0  ) {
+        return;
+    }
+
+    std::map<CSmallString,CPMFAccuDataPtr>::iterator    it =  DataBlocks.begin();
+    std::map<CSmallString,CPMFAccuDataPtr>::iterator    ie =  DataBlocks.end();
+
+    while( it != ie ){
+        it->second->Reset();
+    }
+}
+
+//==============================================================================
+//------------------------------------------------------------------------------
+//==============================================================================
+
+void CPMFAccumulator::LoadCVSInfo(CXMLElement* p_iele)
+{
+    if(p_iele == NULL) {
+        INVALID_ARGUMENT("p_iele is NULL");
+    }
+
+    Clear();
+
+    CXMLElement* p_ele = p_iele->GetFirstChildElement("CVS");
+    if(p_ele == NULL) {
+        RUNTIME_ERROR("unable to get CVS element");
+    }
+
+    int lnitems = 0;
+    if( p_ele->GetAttribute("ncvs",lnitems) == false) {
+        RUNTIME_ERROR("unable to get header attributes");
+    }
+
+    if( lnitems == 0 ) {
+        // no data
+        return;
+    }
+
+    SetNumOfCVs(lnitems);
+
+    CXMLElement*   p_cel = p_ele->GetFirstChildElement("CV");
+
+    int            ccount = 0;
+
+    while(p_cel != NULL) {
+        if( ccount >= lnitems ) {
+            LOGIC_ERROR("more CV elements than NCVs");
+        }
+        CVs[ccount]->LoadInfo(p_cel);
+        ccount++;
+        p_cel = p_cel->GetNextSiblingElement("CV");
+    }
+
+}
+
+//------------------------------------------------------------------------------
+
+bool CPMFAccumulator::CheckCVSInfo(CXMLElement* p_iele) const
+{
+    if(p_iele == NULL) {
+        INVALID_ARGUMENT("p_iele is NULL");
+    }
+
+    CXMLElement* p_ele = p_iele->GetFirstChildElement("CVS");
+    if(p_ele == NULL) {
+        ES_ERROR("unable to get CVS element");
+        return(false);
+    }
+
+    bool result = true;
+
+    int lnitems;
+
+    result &= p_ele->GetAttribute("ncvs",lnitems);
+    if(result == false) {
+        ES_ERROR("unable to get header attributes");
+        return(false);
+    }
+
+    if(lnitems != NCVs) {
+        ES_ERROR("mismatch in the number of coordinates");
+        return(false);
+    }
+
+    CXMLElement*   p_cel = NULL;
+    if(p_ele != NULL) p_cel = p_ele->GetFirstChildElement("CV");
+    int            ccount = 0;
+
+    while(p_cel != NULL) {
+        if(ccount >= lnitems) {
+            ES_ERROR("more COORD elements than NCVs");
+            return(false);
+        }
+        if( CVs[ccount]->CheckInfo(p_cel) == false ) {
+            CSmallString error;
+            error << "mismatch in cv: " << ccount+1;
+            ES_ERROR(error);
+            return(false);
+        }
+        ccount++;
+        p_cel = p_cel->GetNextSiblingElement("CV");
+    }
+
+    return(true);
+}
+
+//------------------------------------------------------------------------------
+
+bool CPMFAccumulator::CheckCVSInfo(const CPMFAccumulator* p_accu) const
+{
+    if(p_accu == NULL) {
+        INVALID_ARGUMENT("p_iele is NULL");
+    }
+
+    if(p_accu->NCVs != NCVs) {
+        ES_ERROR("mismatch in the number of coordinates");
+        return(false);
+    }
+
+    for(int i=0; i < NCVs; i++) {
+        if(CVs[i]->CheckInfo(p_accu->CVs[i]) == false) {
+            CSmallString error;
+            error << "mismatch in cv: " << i+1;
+            ES_ERROR(error);
+            return(false);
+        }
+    }
+
+    return(true);
+}
+
+//------------------------------------------------------------------------------
+
+void CPMFAccumulator::SaveCVSInfo(CXMLElement* p_tele) const
+{
+    if(p_tele == NULL) {
+        INVALID_ARGUMENT("p_tele is NULL");
+    }
+
+    CXMLElement* p_ele = p_tele->CreateChildElement("CVS");
+
+    p_ele->SetAttribute("ncvs",NCVs);
+
+    for(int i=0; i < NCVs; i++) {
+        CXMLElement* p_iele = p_ele->CreateChildElement("CV");
+        CVs[i]->SaveInfo(p_iele);
+    }
+}
+
+//------------------------------------------------------------------------------
+
+void CPMFAccumulator::PrintAccuInfo(std::ostream& vout)
+{
+    vout  << endl;
+    vout << "=== General Info ===============================================================" << endl;
+    vout << endl;
+    vout << "Method:        " << Method << endl;
+    vout << "Driver:        " << Driver << endl;
+    vout << "Version:       " << Version << endl;
+    vout << "Temperature:   " << fixed << setprecision(2) << Temperature*TemperatureFConv << " " << TemperatureUnit << endl;
+    vout << "Energy unit:   " << EnergyUnit << endl;
+    vout << "Data sections: " << DataBlocks.size() << endl;
+}
+
+//------------------------------------------------------------------------------
+
+void CPMFAccumulator::PrintCVSInfo(std::ostream& vout)
+{
+    vout  << endl;
+    vout << "=== Collective Variables =======================================================" << endl;
+    vout << endl;
+    vout << "ID P Type       Unit  Name                       Min value   Max value   NBins  " << endl;
+    vout << "-- - ---------- ----- -------------------------- ----------- ----------- -------" << endl;
+
+    for(int i=0; i < NCVs; i++) {
+        CVs[i]->PrintInfo(vout);
+    }
+}
+
+//==============================================================================
+//------------------------------------------------------------------------------
+//==============================================================================
+
+int CPMFAccumulator::map(int item,int bin) const
+{
+    return(item + bin*NCVs);
+}
+
+//==============================================================================
+//------------------------------------------------------------------------------
+//==============================================================================
+
+CPMFAccuData::CPMFAccuData(int nbins, int ncvs)
+{
+    NBins = nbins;
+    NCVs = ncvs;
+}
+
+//------------------------------------------------------------------------------
+
+void CPMFAccuData::Load(FILE* p_fin,const CSmallString& keyline)
+{
+    CSmallString skey;
+    skey.SetLength(21);
+
+    Op.SetLength(2);
+    Type.SetLength(1);
+
+    // 5  format('@',A20,1X,A2,1X,A1,1X,I10)
+    Size = 0;
+    if( sscanf(keyline,"%21c %2c %1c %d",skey.GetBuffer(),Op.GetBuffer(),Type.GetBuffer(),&Size) != 4 ){
+        CSmallString error;
+        error << "Unable to parse keyline: '" << keyline << "'";
+        RUNTIME_ERROR(error);
+    }
+    if( skey.GetLength() >= 2 ){
+        Name = skey.GetSubString(1,skey.GetLength()-1);
+    }
+
+    Name.Trim();
+    Op.Trim();
+    Type.Trim();
+
+    if( Size <= 0 ){
+        CSmallString error;
+        error << "Illegal data size for keyline: '" << keyline << "'";
+        RUNTIME_ERROR(error);
+    }
+
+    Data.CreateVector(Size);
+
+    // read data
+    if( Type == "I" ){
+        for(int i=0; i < Size; i++){
+            int value;
+            if( fscanf(p_fin,"%d",&value) != 1 ){
+                CSmallString error;
+                error << "Unable to read data record for keyline: '" << keyline << "'";
+                RUNTIME_ERROR(error);
+            }
+            Data[i] = value;
+        }
+    } else if ( Type == "R" ){
+        for(int i=0; i < Size; i++){
+            double value;
+            if( fscanf(p_fin,"%lf",&value) != 1 ){
+                CSmallString error;
+                error << "Unable to read data record for keyline: '" << keyline << "'";
+                RUNTIME_ERROR(error);
+            }
+            Data[i] = value;
+        }
+    } else {
+        CSmallString error;
+        error << "Unsupported data type for keyline: '" << keyline << "'";
+        RUNTIME_ERROR(error);
+    }
+
+    // finish reading to the end of line
+    skey.ReadLineFromFile(p_fin,true,true);
+}
+
+//------------------------------------------------------------------------------
+
+void CPMFAccuData::Save(FILE* p_fout)
+{
+    // write keyline
+    // 5  format('@',A20,1X,A2,1X,A1,1X,I10)
+    if( fprintf(p_fout,"@%20s %2s %1s %10d\n",(const char*)Name,(const char*)Op,(const char*)Type,Size) <= 0 ){
+        CSmallString error;
+        error << "Unable to write data section keyline";
+        RUNTIME_ERROR(error);
+    }
+
+    // write data
+    if( Type == "I" ){
+        for(int i=0; i < Size; i++){
+            if( i % 8 == 7 ) fprintf(p_fout,"\n");
+            int value = Data[i];
+            // 10  format(8(I9,1X))
+            if( fprintf(p_fout,"%9d ",value) <= 0 ){
+                CSmallString error;
+                error << "Unable to write data record";
+                RUNTIME_ERROR(error);
+            }
+
+        }
+    } else if ( Type == "R" ){
+        for(int i=0; i < Size; i++){
+            if( i % 4 == 3 ) fprintf(p_fout,"\n");
+            double value = Data[i];
+            // 10  format(4(E19.11,1X))
+            if( fprintf(p_fout,"%19.11le ",value) <= 0 ){
+                CSmallString error;
+                error << "Unable to write data record";
+                RUNTIME_ERROR(error);
+            }
+        }
+    } else {
+        CSmallString error;
+        error << "Unsupported data type for keyline";
+        RUNTIME_ERROR(error);
+    }
+
+    fprintf(p_fout,"\n");
+}
+
+//------------------------------------------------------------------------------
+
+void CPMFAccuData::Reset(void)
+{
+    Data.SetZero();
+}
+
+//------------------------------------------------------------------------------
+
+const CSmallString& CPMFAccuData::GetName(void) const
+{
+    return(Name);
+}
+
+//------------------------------------------------------------------------------
+
+double CPMFAccuData::GetData(int ibin, int cv)
+{
+    if( (0 > ibin) || (ibin <= NBins) ) {
+        RUNTIME_ERROR("ibin out-of-range");
+    }
+    if( (0 > cv) || (cv <= NCVs) ) {
+        RUNTIME_ERROR("cv out-of-range");
+    }
+    int idx = 0;
+    if( NBins*NCVs == Size ){
+        idx = cv*NBins + ibin;
+    } else {
+        idx = ibin;
+    }
+    return( Data[idx] );
+}
+
+//------------------------------------------------------------------------------
+
+void CPMFAccuData::SetData(int ibin, double value)
+{
+    if( (0 > ibin) || (ibin <= NBins) ) {
+        RUNTIME_ERROR("ibin out-of-range");
+    }
+    Data[ibin] = value;
+}
+
+//------------------------------------------------------------------------------
+
+void CPMFAccuData::SetData(int ibin, int cv, double value)
+{
+    if( (0 > ibin) || (ibin <= NBins) ) {
+        RUNTIME_ERROR("ibin out-of-range");
+    }
+    if( (0 > cv) || (cv <= NCVs) ) {
+        RUNTIME_ERROR("cv out-of-range");
+    }
+    int idx = 0;
+    if( NBins*NCVs == Size ){
+        idx = cv*NBins + ibin;
+    } else {
+        idx = ibin;
+    }
+    Data[idx] = value;
+}
+
+//------------------------------------------------------------------------------
+

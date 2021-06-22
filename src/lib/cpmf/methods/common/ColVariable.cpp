@@ -499,6 +499,61 @@ bool CColVariable::CheckInfo(const CColVariable* p_coord) const
 
 //------------------------------------------------------------------------------
 
+bool CColVariable::CheckInfo(const CColVariablePtr p_coord) const
+{
+    if(p_coord == NULL) {
+        INVALID_ARGUMENT("p_coord is NULL");
+    }
+
+    if(p_coord->ID != ID) {
+        ES_ERROR("mismatch in ID");
+        return(false);
+    }
+
+    if(p_coord->Name != Name) {
+        ES_ERROR("mismatch in Name");
+        return(false);
+    }
+
+    if(p_coord->Type != Type) {
+        ES_ERROR("mismatch in Type");
+        return(false);
+    }
+
+// DO NOT CHECK - we work in internal units
+//    if(p_coord->Unit != Unit) {
+//        ES_ERROR("mismatch in Unit");
+//        return(false);
+//    }
+//
+//    if(fabs(p_coord->FConv - FConv) > fabs(FConv/100000.0)) {
+//        ES_ERROR("mismatch in FConv");
+//        return(false);
+//    }
+
+    if( NBins > 0 ){
+
+        if(fabs(p_coord->MinValue-MinValue) > fabs(MinValue/100000.0)) {
+            ES_ERROR("mismatch in MinValue");
+            return(false);
+        }
+
+        if(fabs(p_coord->MaxValue-MaxValue) > fabs(MaxValue/100000.0)) {
+            ES_ERROR("mismatch in MaxValue");
+            return(false);
+        }
+
+        if(p_coord->NBins != NBins) {
+            ES_ERROR("mismatch in NBins");
+            return(false);
+        }
+    }
+
+    return(true);
+}
+
+//------------------------------------------------------------------------------
+
 void CColVariable::SaveInfo(CXMLElement* p_ele) const
 {
     if(p_ele == NULL) {
