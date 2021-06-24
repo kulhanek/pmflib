@@ -1,6 +1,7 @@
 // =============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
+//    Copyright (C) 2021 Petr Kulhanek, kulhanek@chemi.muni.cz
 //    Copyright (C) 2008 Petr Kulhanek, kulhanek@enzim.hu
 //
 //     This program is free software; you can redistribute it and/or modify
@@ -19,23 +20,25 @@
 // =============================================================================
 
 #include <errno.h>
-#include "ABFCombine.hpp"
+#include "ACCUTrajectory.hpp"
 #include <ErrorSystem.hpp>
 #include <SmallTimeAndDate.hpp>
+#include <boost/format.hpp>
 
 //------------------------------------------------------------------------------
 
 using namespace std;
+using namespace boost;
 
 //------------------------------------------------------------------------------
 
-MAIN_ENTRY(CABFCombine)
+MAIN_ENTRY(CACCUTrajectory)
 
 //==============================================================================
 //------------------------------------------------------------------------------
 //==============================================================================
 
-CABFCombine::CABFCombine(void)
+CACCUTrajectory::CACCUTrajectory(void)
 {
 }
 
@@ -43,9 +46,9 @@ CABFCombine::CABFCombine(void)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-int CABFCombine::Init(int argc,char* argv[])
+int CACCUTrajectory::Init(int argc,char* argv[])
 {
-// encode program options, all check procedures are done inside of CABFIntOpts
+// encode program options, all check procedures are done inside of CACCUIntOpts
     int result = Options.ParseCmdLine(argc,argv);
 
 // should we exit or was it error?
@@ -64,40 +67,31 @@ int CABFCombine::Init(int argc,char* argv[])
 
     vout << endl;
     vout << "# ==============================================================================" << endl;
-    vout << "# abf-combine (PMFLib utility)  started at " << dt.GetSDateAndTime() << endl;
+    vout << "# accu-trajectory (PMFLib utility)  started at " << dt.GetSDateAndTime() << endl;
     vout << "# Version: " << LibBuildVersion_PMF << endl;
     vout << "# ==============================================================================" << endl;
-    if(Options.GetArgABFAccuName1() != "-") {
-        vout << "# ABF accumulator file 1 (in) : " << Options.GetArgABFAccuName1() << endl;
-    } else {
-        vout << "# ABF accumulator file 1 (in) : - (standard input)" << endl;
-    }
 
-    if(Options.GetArgABFAccuName2() != "-") {
-        vout << "# ABF accumulator file 2 (in) : " << Options.GetArgABFAccuName2() << endl;
+    if(Options.GetArgTrjName() != "-") {
+        vout << "# PMF accumulator trajectory file (in) : " << Options.GetArgTrjName() << endl;
     } else {
-        vout << "# ABF accumulator file 2 (in) : - (standard input)" << endl;
+        vout << "# PMF accumulator trajectory file (in) : - (standard input)" << endl;
     }
-
-    if(Options.GetArgOutputName() != "-") {
-        vout << "# ABF accumulator file (out)  : " << Options.GetArgOutputName() << endl;
+    if(Options.GetArgOutName() != "-") {
+        vout << "# Output PMF accumulator file (out)    : " << Options.GetArgOutName() << endl;
     } else {
-        vout << "# ABF accumulator file (out)  : - (standard output)" << endl;
+        vout << "# Output PMF accumulator file (out)    : - (standard output)" << endl;
     }
     vout << "# ------------------------------------------------" << endl;
-    vout << "# Operation                   : " << Options.GetOptOperation() << endl;
+        vout << "# Snapshot                             : " << Options.GetOptSnapshot() << endl;
     vout << "# ------------------------------------------------------------------------------" << endl;
+    vout << endl;
 
     // open files -----------------------------------
-    if( InputFile1.Open(Options.GetArgABFAccuName1(),"r") == false ){
+    if( InputFile.Open(Options.GetArgTrjName(),"r") == false ){
         ES_ERROR("unable to open input file");
         return(SO_USER_ERROR);
     }
-    if( InputFile2.Open(Options.GetArgABFAccuName2(),"r") == false ){
-        ES_ERROR("unable to open input file");
-        return(SO_USER_ERROR);
-    }
-    if( OutputFile.Open(Options.GetArgOutputName(),"w") == false ){
+    if( OutputFile.Open(Options.GetArgOutName(),"w") == false ){
         ES_ERROR("unable to open output file");
         return(SO_USER_ERROR);
     }
@@ -109,47 +103,29 @@ int CABFCombine::Init(int argc,char* argv[])
 //------------------------------------------------------------------------------
 //==============================================================================
 
-bool CABFCombine::Run(void)
+bool CACCUTrajectory::Run(void)
 {
-// load accumulators
+    int state = 1;
+    vout << endl;
+    vout << format("%02d:Loading a snapshot from the trajectory of the PMF accumulators ...")%state << endl;
+
+// read accumulator
     try {
-        Accu1.Load(InputFile1);
+        Accu.LoadSnapshot(InputFile,Options.GetOptSnapshot());
     } catch(...) {
-        ES_ERROR("unable to load the first ABF accumulator file");
+        ES_ERROR("unable to read snapshot from input");
         return(false);
     }
 
+    state++;
+    vout << endl;
+    vout << format("%02d:Saving the snapshot as the PMF accumulator ...")%state << endl;
+
+// now write snapshot
     try {
-        Accu2.Load(InputFile2);
+        Accu.Save(OutputFile);
     } catch(...) {
-        ES_ERROR("unable to load the second ABF accumulator file");
-        return(false);
-    }
-
-    bool op_ok = false;
-
-    if(Options.GetOptOperation() == "add") {
-        Accu1.AddABFAccumulator(&Accu2);
-        op_ok = true;
-    }
-
-    if(Options.GetOptOperation() == "sub") {
-        Accu1.SubABFAccumulator(&Accu2);
-        op_ok = true;
-    }
-
-    if(op_ok == false) {
-        CSmallString error;
-        error << "operation " << Options.GetOptOperation() << " is not implemented";
-        ES_ERROR("unable to save final ABF accumulator file");
-        return(false);
-    }
-
-// save final accumulator
-    try {
-        Accu1.Save(OutputFile);
-    } catch(...) {
-        ES_ERROR("unable to save final ABF accumulator file");
+        ES_ERROR("unable to save selected snapshot");
         return(false);
     }
 
@@ -160,11 +136,10 @@ bool CABFCombine::Run(void)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void CABFCombine::Finalize(void)
+void CACCUTrajectory::Finalize(void)
 {
     // close files if they are own by program
-    InputFile1.Close();
-    InputFile2.Close();
+    InputFile.Close();
     OutputFile.Close();
 
     CSmallTimeAndDate dt;
@@ -172,7 +147,7 @@ void CABFCombine::Finalize(void)
 
     vout << endl;
     vout << "# ==============================================================================" << endl;
-    vout << "# abf-combine terminated at " << dt.GetSDateAndTime() << endl;
+    vout << "# accu-trajectory terminated at " << dt.GetSDateAndTime() << endl;
     vout << "# ==============================================================================" << endl;
 
     if( ErrorSystem.IsError() || Options.GetOptVerbose() ){

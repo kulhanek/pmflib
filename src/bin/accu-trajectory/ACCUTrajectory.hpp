@@ -1,9 +1,9 @@
-#ifndef ABFProcessorH
-#define ABFProcessorH
+#ifndef CACCUTrajectoryH
+#define CACCUTrajectoryH
 // =============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
-//    Copyright (C) 2011 Petr Kulhanek, kulhanek@chemi.muni.cz
+//    Copyright (C) 2021 Petr Kulhanek, kulhanek@chemi.muni.cz
 //    Copyright (C) 2008 Petr Kulhanek, kulhanek@enzim.hu
 //
 //     This program is free software; you can redistribute it and/or modify
@@ -21,27 +21,40 @@
 //     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 // =============================================================================
 
-#include <CmdProcessor.hpp>
+#include "ACCUTrajOptions.hpp"
+#include <PMFAccumulator.hpp>
+#include <VerboseStr.hpp>
+#include <TerminalStr.hpp>
+#include <StdIOFile.hpp>
 
 //------------------------------------------------------------------------------
 
-class CABFProcessor : public CCmdProcessor {
+/// utility to extract a single ACCU accumulator from ACCU accumulator trajectory
+
+class CACCUTrajectory {
 public:
-    // constructor
-    CABFProcessor(CServerCommand* p_cmd);
+    CACCUTrajectory(void);
+
+// main methods ---------------------------------------------------------------
+    /// init options
+    int Init(int argc,char* argv[]);
+
+    /// main part of program
+    bool Run(void);
+
+    /// finalize program
+    void Finalize(void);
 
 // section of private data ----------------------------------------------------
 private:
-    virtual bool ProcessCommand(void);
+    CACCUTrajOptions    Options;
+    CStdIOFile          InputFile;
+    CStdIOFile          OutputFile;
+    CPMFAccumulator     Accu;
 
-// implemented operations -----------------------------------------------------
-    void GetServerInfo(void);
-    void FlushServerData(void);
-    void RegisterClient(void);
-    void UnregisterClient(void);
-    void GetInitialData(void);
-    void ExchangeData(void);
-    void GetData(void);
+    // output ------------------------------------
+    CTerminalStr        Console;
+    CVerboseStr         vout;
 };
 
 //------------------------------------------------------------------------------

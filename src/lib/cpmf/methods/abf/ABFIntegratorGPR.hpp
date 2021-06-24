@@ -25,11 +25,10 @@
 #include <VerboseStr.hpp>
 #include <FortranMatrix.hpp>
 #include <stddef.h>
+#include <ABFAccumulator.hpp>
+#include <EnergySurface.hpp>
 
 //------------------------------------------------------------------------------
-
-class CABFAccumulator;
-class CEnergySurface;
 
 // linear algebra pathway
 
@@ -72,10 +71,10 @@ public:
 
 // setup methods --------------------------------------------------------------
     /// set input ABF accumulator, only ABF forces are integrated
-    void SetInputABFAccumulator(CABFAccumulator* p_accu);
+    void SetInputABFAccumulator(CABFAccumulatorPtr p_accu);
 
     /// set output free energy surface
-    void SetOutputFESurface(CEnergySurface* p_surf);
+    void SetOutputFESurface(CEnergySurfacePtr p_surf);
 
     // integrated realm
     void SetIntegratedRealm(EGPRIntegratedRealm realm);
@@ -190,12 +189,12 @@ public:
     const CSmallString GetKernelName(void);
 
     /// perform statistical reweighting
-    bool ReduceFES(const std::vector<bool>& keepcvs,double temp,CEnergySurface* p_rsurf);
+    CEnergySurfacePtr ReduceFES(const std::vector<bool>& keepcvs);
 
 // section of private data ----------------------------------------------------
 private:
-    CABFAccumulator*        Accumulator;
-    CEnergySurface*         FES;
+    CABFAccumulatorPtr      Accu;
+    CEnergySurfacePtr       FES;
     EGPRIntegratedRealm     IntRealm;
 
     int                     NumOfThreads;

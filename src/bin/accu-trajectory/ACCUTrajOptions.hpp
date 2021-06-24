@@ -1,8 +1,9 @@
-#ifndef ABFSrvOptionsH
-#define ABFSrvOptionsH
+#ifndef ACCUTrajOptionsH
+#define ACCUTrajOptionsH
 // =============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
+//    Copyright (C) 2021 Petr Kulhanek, kulhanek@chemi.muni.cz
 //    Copyright (C) 2008 Petr Kulhanek, kulhanek@enzim.hu
 //
 //     This program is free software; you can redistribute it and/or modify
@@ -25,18 +26,18 @@
 
 //------------------------------------------------------------------------------
 
-class CABFSrvOptions : public CSimpleOptions {
+class CACCUTrajOptions : public CSimpleOptions {
 public:
     // constructor - tune option setup
-    CABFSrvOptions(void);
+    CACCUTrajOptions(void);
 
 // program name and description -----------------------------------------------
     CSO_PROG_NAME_BEGIN
-    "abf-server"
+    "accu-trajectory"
     CSO_PROG_NAME_END
 
     CSO_PROG_DESC_BEGIN
-    "It is the server for the multiple walkers extension of the ABF method."
+    "<b>accu-trajectory</b> extracts a single snapshot from the trajectory of PMF accumulators."
     CSO_PROG_DESC_END
 
     CSO_PROG_VERS_BEGIN
@@ -46,22 +47,39 @@ public:
 // list of all options and arguments ------------------------------------------
     CSO_LIST_BEGIN
     // arguments ----------------------------
-    CSO_ARG(CSmallString,ControlFile)
+    CSO_ARG(CSmallString,TrjName)
+    CSO_ARG(CSmallString,OutName)
     // options ------------------------------
-    CSO_OPT(bool,DoNotShutdown)
-    CSO_OPT(bool,Help)
-    CSO_OPT(bool,Version)
+    CSO_OPT(int,Snapshot)
     CSO_OPT(bool,Verbose)
+    CSO_OPT(bool,Version)
+    CSO_OPT(bool,Help)
     CSO_LIST_END
 
     CSO_MAP_BEGIN
 // description of arguments ---------------------------------------------------
     CSO_MAP_ARG(CSmallString,                   /* argument type */
-                ControlFile,                          /* argument name */
+                TrjName,                          /* argument name */
                 NULL,                           /* default value */
                 true,                           /* is argument mandatory */
-                "control",                        /* parametr name */
-                "Name of file containing the server configuration. If the name is '-' then the configuration is read from the standard input.")   /* argument description */
+                "trjname",                        /* parameter name */
+                "Name of file containing the PMF accumulator trajectory. If the name is '-' then the trajectory is read from the standard input.")   /* argument description */
+    //----------------------------------------------------------------------
+    CSO_MAP_ARG(CSmallString,                   /* argument type */
+                OutName,                          /* argument name */
+                NULL,                           /* default value */
+                true,                           /* is argument mandatory */
+                "outname",                        /* parameter name */
+                "Name of file where a snapsphot (PMF accumulator) will be printed. If the name is '-' then the output will be written to the standard output.")   /* argument description */
+// description of options ---------------------------------------------------
+    CSO_MAP_OPT(int,                           /* option type */
+                Snapshot,                        /* option name */
+                1,                          /* default value */
+                false,                          /* is option mandatory */
+                's',                           /* short option name */
+                "snapshot",                      /* long option name */
+                "NUMBER",                           /* parameter name */
+                "Index of extracted snapshot (counted from 1).")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(bool,                           /* option type */
                 Verbose,                        /* option name */
@@ -69,7 +87,7 @@ public:
                 false,                          /* is option mandatory */
                 'v',                           /* short option name */
                 "verbose",                      /* long option name */
-                NULL,                           /* parametr name */
+                NULL,                           /* parameter name */
                 "Increase output verbosity.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(bool,                           /* option type */
@@ -78,7 +96,7 @@ public:
                 false,                          /* is option mandatory */
                 '\0',                           /* short option name */
                 "version",                      /* long option name */
-                NULL,                           /* parametr name */
+                NULL,                           /* parameter name */
                 "Output version information and exit.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(bool,                           /* option type */
@@ -87,7 +105,7 @@ public:
                 false,                          /* is option mandatory */
                 'h',                           /* short option name */
                 "help",                      /* long option name */
-                NULL,                           /* parametr name */
+                NULL,                           /* parameter name */
                 "Display this help and exit.")   /* option description */
     CSO_MAP_END
 

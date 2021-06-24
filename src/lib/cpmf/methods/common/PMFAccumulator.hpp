@@ -53,7 +53,7 @@ public:
     const CSmallString& GetName(void) const;
 
     /// get data
-    double GetData(int ibin, int cv=0);
+    double GetData(int ibin, int cv=0) const;
 
     /// set data
     void SetData(int ibin, double value);
@@ -63,13 +63,13 @@ public:
 
 // section of private data -----------------------------------------------------
 private:
-    int                     NBins;
-    int                     NCVs;
-    CSmallString            Name;   // name of the section
-    CSmallString            Op;     // data operation
-    CSmallString            Type;   // data type: R - real, I - integer
-    int                     Size;   // size of data
-    CSimpleVector<double>   Data;   // all data are kept as real numbers
+    int                     NumOfBins;
+    int                     NumOfCVs;
+    CSmallString            Name;       // name of the section
+    CSmallString            Op;         // data operation
+    CSmallString            Type;       // data type: R - real, I - integer
+    int                     Size;       // size of data
+    CSimpleVector<double>   Data;       // all data are kept as real numbers
 };
 
 typedef std::shared_ptr<CPMFAccuData>    CPMFAccuDataPtr;
@@ -83,7 +83,7 @@ class PMF_PACKAGE CPMFAccumulator {
 public:
 // constructor and destructor -------------------------------------------------
     CPMFAccumulator(void);
-    ~CPMFAccumulator(void);
+    virtual ~CPMFAccumulator(void);
 
 // input and output methods ---------------------------------------------------
     /// load accumulator data from file with name
@@ -92,11 +92,26 @@ public:
     /// load accumulator data from file
     void Load(FILE* fin);
 
+    /// load accumulator data from XML
+    void Load(CXMLElement* p_ele);
+
+    /// load accumulator data from trajectory file with name
+    void LoadSnapshot(const CSmallString& name,int index);
+
+    /// load accumulator data from trajectory file
+    void LoadSnapshot(FILE* fin,int index);
+
+    /// combine accumulator data from XML to existing data
+    void Combine(CXMLElement* p_ele);
+
     /// save accumulator data from file with name
     void Save(const CSmallString& name);
 
     /// save accumulator data from file
     void Save(FILE* fout);
+
+    /// save accumulator data to XML
+    void Save(CXMLElement* p_ele);
 
 // dimension specification ----------------------------------------------------
 
@@ -127,8 +142,14 @@ public:
 
 // access data methods --------------------------------------------------------
 
-    /// return number of bins within limit
-    int GetNumOfBins(int limit=0) const;
+    /// get method
+    const CSmallString& GetMethod(void) const;
+
+    /// get driver
+    const CSmallString& GetDriver(void) const;
+
+    /// return number of bins
+    int GetNumOfBins(void) const;
 
     /// return global index
     int GetGlobalIndex(const CSimpleVector<int>& position) const;
@@ -142,18 +163,22 @@ public:
     /// convert point index to point position
     void GetIPoint(unsigned int index,CSimpleVector<int>& point) const;
 
-    /// set temperature
-    void SetTemperature(double temp);
-
-    /// get temperature
+    /// get temperature in iu
     double GetTemperature(void);
-
-    /// set temperature
-    void SetEnergyUnit(double fconv,const CSmallString& unit);
 
 // mathematical operation -----------------------------------------------------
     /// set all data to zero
     void Reset(void);
+
+// section data access -------------------------------------------------------
+    /// get data
+    double GetData(const CSmallString& name, int ibin, int cv=0) const;
+
+    /// set data
+    void SetData(const CSmallString& name, int ibin, double value);
+
+    /// set data
+    void SetData(const CSmallString& name, int ibin, int cv, double value);
 
 // information methods --------------------------------------------------------
     /// load cvs info
@@ -175,7 +200,7 @@ public:
     void PrintCVSInfo(std::ostream& vout);
 
 // section of private data ----------------------------------------------------
-private:
+protected:
     CSmallString                    Version;
     CSmallString                    Method;
     CSmallString                    Driver;
@@ -186,9 +211,9 @@ private:
     double                          EnergyFConv;        // energy unit
     CSmallString                    EnergyUnit;
 
-    int                             NCVs;           // number of CVs
-    std::vector<CColVariablePtr>    CVs;            // collective variables
-    int                             TotNBins;       // number of total bins
+    int                             NumOfCVs;           // number of CVs
+    std::vector<CColVariablePtr>    CVs;                // collective variables
+    int                             NumOfBins;          // number of total bins
 
     std::map<CSmallString,CPMFAccuDataPtr>  DataBlocks;
 
@@ -204,12 +229,14 @@ private:
     /// get section name from keyline
     const CSmallString GetSectionName(const CSmallString& keyline) const;
 
-    ///
+    /// read header
     void ReadHeaderSection(FILE* fin,const CSmallString& keyline);
 
-    ///
+    /// read section data
     void ReadDataSection(FILE* fin,const CSmallString& keyline);
 };
+
+typedef std::shared_ptr<CPMFAccumulator>    CPMFAccumulatorPtr;
 
 //------------------------------------------------------------------------------
 

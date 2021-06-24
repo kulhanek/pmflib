@@ -1,6 +1,7 @@
 // =============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
+//    Copyright (C) 2021 Petr Kulhanek, kulhanek@chemi.muni.cz
 //    Copyright (C) 2008 Petr Kulhanek, kulhanek@enzim.hu
 //
 //     This program is free software; you can redistribute it and/or modify
@@ -21,25 +22,25 @@
 #include <stdio.h>
 #include <ErrorSystem.hpp>
 #include <XMLElement.hpp>
-#include "ABFProcessor.hpp"
-#include "ABFServer.hpp"
+#include "MWAProcessor.hpp"
+#include "MWAServer.hpp"
 #include <XMLElement.hpp>
 
 //==============================================================================
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void CABFProcessor::GetServerInfo(void)
+void CMWAProcessor::GetServerInfo(void)
 {
 // basic info is about number of transactions
-    ResultElement->SetAttribute("pt",ABFServer.GetNumberOfTransactions());
-    ResultElement->SetAttribute("it",ABFServer.GetNumberOfIllegalTransactions());
+    ResultElement->SetAttribute("pt",MWAServer.GetNumberOfTransactions());
+    ResultElement->SetAttribute("it",MWAServer.GetNumberOfIllegalTransactions());
 
 // write info about cvs
-    ABFServer.ABFAccumulator.SaveCVSInfo(ResultElement);
+    MWAServer.MWAAccumulator.SaveCVSInfo(ResultElement);
 
 // write info about clients
-    ABFServer.RegClients.SaveInfo(ResultElement);
+    MWAServer.RegClients.SaveInfo(ResultElement);
 }
 
 //==============================================================================

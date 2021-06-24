@@ -38,8 +38,9 @@ using namespace std;
 CEnergySurface::CEnergySurface(void)
 {
     NumOfCVs = 0;
-    TotNPoints = 0;
+    NumOfPoints = 0;
     SLevel = 1.0;
+    Temperature = 300;
 }
 
 //------------------------------------------------------------------------------
@@ -61,157 +62,75 @@ int CEnergySurface::GetNumOfCVs(void) const
 
 int CEnergySurface::GetNumOfPoints(void) const
 {
-    return(TotNPoints);
+    return(NumOfPoints);
 }
 
 //------------------------------------------------------------------------------
 
-const CColVariable* CEnergySurface::GetCV(unsigned int cv) const
+const CColVariablePtr CEnergySurface::GetCV(int cv) const
 {
-    return(&CVs[cv]);
+    if( (cv < 0) || (cv >= NumOfCVs) ) {
+        RUNTIME_ERROR("cv out-of-range");
+    }
+    return(CVs[cv]);
 }
 
 //==============================================================================
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void CEnergySurface::Allocate(const CMTDAccumulator* mtd_accu)
+void CEnergySurface::Allocate(CPMFAccumulatorPtr accu)
 {
     if( NumOfCVs > 0 ) Deallocate();
-    if( mtd_accu == NULL ) return;
-    if( mtd_accu->GetNumOfCVs() <= 0 ) return;
+    if( accu == NULL ) return;
+    if( accu->GetNumOfCVs() <= 0 ) return;
 
 // allocate items
-    NumOfCVs = mtd_accu->GetNumOfCVs();
-    CVs.CreateVector(NumOfCVs);
+    NumOfCVs = accu->GetNumOfCVs();
+    CVs.reserve(NumOfCVs);
 
 // copy cvs and calculate total number of points
-    TotNPoints = 1;
+    NumOfPoints = 1;
     for(int i=0; i < NumOfCVs; i++) {
-        CVs[i].CopyFrom(mtd_accu->GetCV(i));
-        TotNPoints *= CVs[i].GetNumOfBins();
+        CVs[i] = accu->GetCV(i);
+        NumOfPoints *= CVs[i]->GetNumOfBins();
     }
 
-    Energy.CreateVector(TotNPoints);
-    Error.CreateVector(TotNPoints);
-    Samples.CreateVector(TotNPoints);
+    Energy.CreateVector(NumOfPoints);
+    Error.CreateVector(NumOfPoints);
+    Samples.CreateVector(NumOfPoints);
 
     Clear();
 }
 
 //------------------------------------------------------------------------------
 
-void CEnergySurface::Allocate(const CABFAccumulator* abf_accu)
+void CEnergySurface::Allocate(CPMFAccumulatorPtr accu,const std::vector<bool>& enabled_cvs)
 {
     if( NumOfCVs > 0 ) Deallocate();
-    if( abf_accu == NULL ) return;
-    if( abf_accu->GetNumOfCVs() <= 0 ) return;
-
-// allocate items
-    NumOfCVs = abf_accu->GetNumOfCVs();
-    CVs.CreateVector(NumOfCVs);
-
-// copy cvs and calculate total number of points
-    TotNPoints = 1;
-    for(int i=0; i < NumOfCVs; i++) {
-        CVs[i].CopyFrom(abf_accu->GetCV(i));
-        TotNPoints *= CVs[i].GetNumOfBins();
-    }
-
-    Energy.CreateVector(TotNPoints);
-    Error.CreateVector(TotNPoints);
-    Samples.CreateVector(TotNPoints);
-
-    Clear();
-}
-
-//------------------------------------------------------------------------------
-
-void CEnergySurface::Allocate(const CABPAccumulator* abp_accu)
-{
-    if( NumOfCVs > 0 ) Deallocate();
-    if( abp_accu == NULL ) return;
-    if( abp_accu->GetNumOfCVs() <= 0 ) return;
-
-// allocate items
-    NumOfCVs = abp_accu->GetNumOfCVs();
-    CVs.CreateVector(NumOfCVs);
-
-// copy cvs and calculate total number of points
-    TotNPoints = 1;
-    for(int i=0; i < NumOfCVs; i++) {
-        CVs[i].CopyFrom(abp_accu->GetCV(i));
-        TotNPoints *= CVs[i].GetNumOfBins();
-    }
-
-    Energy.CreateVector(TotNPoints);
-    Error.CreateVector(TotNPoints);
-    Samples.CreateVector(TotNPoints);
-
-    Clear();
-}
-
-//------------------------------------------------------------------------------
-
-void CEnergySurface::Allocate(const CABFAccumulator* abf_accu,const std::vector<bool>& enabled_cvs)
-{
-    if( NumOfCVs > 0 ) Deallocate();
-    if( abf_accu == NULL ) return;
-    if( abf_accu->GetNumOfCVs() <= 0 ) return;
+    if( accu == NULL ) return;
+    if( accu->GetNumOfCVs() <= 0 ) return;
 
 // allocate items
     NumOfCVs = 0;
     for(size_t i = 0; i < enabled_cvs.size(); i++){
         if( enabled_cvs[i] ) NumOfCVs++;
     }
-    CVs.CreateVector(NumOfCVs);
+    CVs.reserve(NumOfCVs);
 
 // copy cvs and calculate total number of points
-    TotNPoints = 1;
+    NumOfPoints = 1;
     size_t i = 0;
     for(size_t k = 0; k < enabled_cvs.size(); k++){
         if( enabled_cvs[k] ){
-            CVs[i].CopyFrom(abf_accu->GetCV(k));
-            TotNPoints *= CVs[i].GetNumOfBins();
+            CVs[i] = accu->GetCV(k);
+            NumOfPoints *= CVs[i]->GetNumOfBins();
         }
     }
 
-    Energy.CreateVector(TotNPoints);
-    Error.CreateVector(TotNPoints);
-    Samples.CreateVector(TotNPoints);
-
-    Clear();
-}
-
-//------------------------------------------------------------------------------
-
-void CEnergySurface::Allocate(const CEnergySurface* p_surf,const std::vector<bool>& enabled_cvs)
-{
-    if( NumOfCVs > 0 ) Deallocate();
-    if( p_surf == NULL ) return;
-    if( p_surf->GetNumOfCVs() <= 0 ) return;
-
-// allocate items
-    NumOfCVs = 0;
-    for(size_t i = 0; i < enabled_cvs.size(); i++){
-        if( enabled_cvs[i] ) NumOfCVs++;
-    }
-    CVs.CreateVector(NumOfCVs);
-
-// copy cvs and calculate total number of points
-    TotNPoints = 1;
-    size_t i = 0;
-    for(size_t k = 0; k < enabled_cvs.size(); k++){
-        if( enabled_cvs[k] ){
-            CVs[i].CopyFrom(p_surf->GetCV(k));
-            TotNPoints *= CVs[i].GetNumOfBins();
-            i++;
-        }
-    }
-
-    Energy.CreateVector(TotNPoints);
-    Error.CreateVector(TotNPoints);
-    Samples.CreateVector(TotNPoints);
+    Energy.CreateVector(NumOfPoints);
+    Error.CreateVector(NumOfPoints);
+    Samples.CreateVector(NumOfPoints);
 
     Clear();
 }
@@ -220,26 +139,24 @@ void CEnergySurface::Allocate(const CEnergySurface* p_surf,const std::vector<boo
 
 void CEnergySurface::Deallocate(void)
 {
-    CVs.FreeVector();
+    CVs.clear();
     Energy.FreeVector();
     Error.FreeVector();
     Samples.FreeVector();
     NumOfCVs = 0;
-    TotNPoints = 0;
+    NumOfPoints = 0;
 }
 
 //------------------------------------------------------------------------------
 
 void CEnergySurface::Clear(void)
 {
-    for(int i=0; i < TotNPoints; i++) {
+    for(int i=0; i < NumOfPoints; i++) {
         Energy[i] = 0.0;
         Error[i] = 0.0;
         Samples[i] = 0;
     }
 }
-
-
 
 //==============================================================================
 //------------------------------------------------------------------------------
@@ -279,7 +196,7 @@ double CEnergySurface::GetSigmaF2(bool includeglued) const
     double sigmafsum2 = 0.0;
     double count = 0.0;
 
-    for(int k=0; k < TotNPoints; k++) {
+    for(int k=0; k < NumOfPoints; k++) {
         if( Samples[k] == 0 ) continue;
         if( includeglued == false ){
             if( Samples[k] < 0 ) continue;
@@ -314,7 +231,7 @@ double CEnergySurface::GetSigmaF2p(bool includeglued) const
     double sigmafsum2 = 0.0;
     double count = 0.0;
 
-    for(int k=0; k < TotNPoints; k++) {
+    for(int k=0; k < NumOfPoints; k++) {
         if( Samples[k] == 0 ) continue;
         if( includeglued == false ){
             if( Samples[k] < 0 ) continue;
@@ -349,7 +266,7 @@ double CEnergySurface::GetSigmaF2m(bool includeglued) const
     double sigmafsum2 = 0.0;
     double count = 0.0;
 
-    for(int k=0; k < TotNPoints; k++) {
+    for(int k=0; k < NumOfPoints; k++) {
         if( Samples[k] == 0 ) continue;
         if( includeglued == false ){
             if( Samples[k] < 0 ) continue;
@@ -399,7 +316,7 @@ const int& CEnergySurface::GetNumOfSamples(unsigned int index) const
 void CEnergySurface::GetPoint(unsigned int index,CSimpleVector<double>& point) const
 {
     for(int k=NumOfCVs-1; k >= 0; k--) {
-        const CColVariable* p_coord = &CVs[k];
+        const CColVariablePtr p_coord = CVs[k];
         int ibin = index % p_coord->GetNumOfBins();
         point[k] = p_coord->GetValue(ibin);
         index = index / p_coord->GetNumOfBins();
@@ -411,7 +328,7 @@ void CEnergySurface::GetPoint(unsigned int index,CSimpleVector<double>& point) c
 void CEnergySurface::GetIPoint(unsigned int index,CSimpleVector<int>& point) const
 {
     for(int k=NumOfCVs-1; k >= 0; k--) {
-        const CColVariable* p_coord = &CVs[k];
+        const CColVariablePtr p_coord = CVs[k];
         int ibin = index % p_coord->GetNumOfBins();
         point[k] = ibin;
         index = index / p_coord->GetNumOfBins();
@@ -425,12 +342,12 @@ int CEnergySurface::IPoint2Bin(const CSimpleVector<int>& point)
     int idx = 0;
 
     for(int i=0; i < NumOfCVs; i++) {
-        CColVariable cv = CVs[i];
+        CColVariablePtr cv = CVs[i];
         int idx_local = point[i];
-        if( (idx_local < 0) || (idx_local >= cv.GetNumOfBins())){
+        if( (idx_local < 0) || (idx_local >= cv->GetNumOfBins())){
             return(-1);
         }
-        idx = idx*cv.GetNumOfBins() + idx_local;
+        idx = idx*cv->GetNumOfBins() + idx_local;
     }
 
     return(idx);
@@ -442,9 +359,9 @@ double CEnergySurface::GetGlobalMinimumValue(void) const
 {
     double minimum = 0.0;
 
-    if(TotNPoints > 0) minimum = Energy[0];
+    if(NumOfPoints > 0) minimum = Energy[0];
 
-    for(int k=0; k < TotNPoints; k++) {
+    for(int k=0; k < NumOfPoints; k++) {
         if(minimum > Energy[k]) minimum = Energy[k];
     }
 
@@ -455,7 +372,7 @@ double CEnergySurface::GetGlobalMinimumValue(void) const
 
 void CEnergySurface::ApplyOffset(double offset)
 {
-    for(int k=0; k < TotNPoints; k++) {
+    for(int k=0; k < NumOfPoints; k++) {
         Energy[k] += offset;
     }
 }
@@ -482,7 +399,7 @@ void CEnergySurface::AdaptUnsampledToMaxEnergy(void)
     bool   first = true;
 
     // find maximum in sampled region
-    for(int k=0; k < TotNPoints; k++) {
+    for(int k=0; k < NumOfPoints; k++) {
         if( Samples[k] == 0 ) continue; // skip unsampled
         if( (maxe < Energy[k]) || (first == true) ){
             maxe = Energy[k];
@@ -491,7 +408,7 @@ void CEnergySurface::AdaptUnsampledToMaxEnergy(void)
     }
 
     // adapt unsampled region
-    for(int k=0; k < TotNPoints; k++) {
+    for(int k=0; k < NumOfPoints; k++) {
         if( Samples[k] == 0 ){
             Energy[k] = maxe;
         }
@@ -503,7 +420,7 @@ void CEnergySurface::AdaptUnsampledToMaxEnergy(void)
 void CEnergySurface::AdaptUnsampledToMaxEnergy(double maxene)
 {
     // adapt unsampled region
-    for(int k=0; k < TotNPoints; k++) {
+    for(int k=0; k < NumOfPoints; k++) {
         if( Samples[k] == 0 ){
             Energy[k] = maxene;
         }
@@ -516,12 +433,12 @@ void CEnergySurface::AdaptUnsampledToMaxEnergy(double maxene)
 
 void CEnergySurface::operator+=(const CEnergySurface& source)
 {
-    if(TotNPoints != source.TotNPoints) {
-        ES_ERROR("surfaceces do not match");
+    if(NumOfPoints != source.NumOfPoints) {
+        ES_ERROR("surfaces do not match");
         return;
     }
 
-    for(int k=0; k < TotNPoints; k++) {
+    for(int k=0; k < NumOfPoints; k++) {
         Energy[k] += source.Energy[k];
     }
 }
@@ -530,7 +447,7 @@ void CEnergySurface::operator+=(const CEnergySurface& source)
 
 void CEnergySurface::operator/=(const double& number)
 {
-    for(int k=0; k < TotNPoints; k++) {
+    for(int k=0; k < NumOfPoints; k++) {
         Energy[k] /= number;
     }
 }
@@ -539,60 +456,89 @@ void CEnergySurface::operator/=(const double& number)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-bool CEnergySurface::ReduceFES(const std::vector<bool>& keepcvs,double temp,CEnergySurface* p_rsurf)
+CEnergySurfacePtr CEnergySurface::ReduceFES(const std::vector<bool>& keepcvs)
 {
-    if( p_rsurf == NULL ){
-        ES_ERROR("p_rsurf == NULL");
-        return(false);
-    }
-    if( keepcvs.size() != (size_t)NumOfCVs ){
-        RUNTIME_ERROR("keepcvs.size() != NumOfCVs");
-    }
+//    if( p_rsurf == NULL ){
+//        ES_ERROR("p_rsurf == NULL");
+//        return(false);
+//    }
+//    if( keepcvs.size() != (size_t)NumOfCVs ){
+//        RUNTIME_ERROR("keepcvs.size() != NumOfCVs");
+//    }
+//
+//        if( NumOfCVs > 0 ) Deallocate();
+//    if( surf == NULL ) return;
+//    if( surf->GetNumOfCVs() <= 0 ) return;
+//
+//// allocate items
+//    NumOfCVs = 0;
+//    for(size_t i = 0; i < enabled_cvs.size(); i++){
+//        if( enabled_cvs[i] ) NumOfCVs++;
+//    }
+//    CVs.reserve(NumOfCVs);
+//
+//// copy cvs and calculate total number of points
+//    NumOfPoints = 1;
+//    size_t i = 0;
+//    for(size_t k = 0; k < enabled_cvs.size(); k++){
+//        if( enabled_cvs[k] ){
+//            CVs[i] = surf->GetCV(k);
+//            NumOfPoints *= CVs[i]->GetNumOfBins();
+//            i++;
+//        }
+//    }
+//
+//    Energy.CreateVector(NumOfPoints);
+//    Error.CreateVector(NumOfPoints);
+//    Samples.CreateVector(NumOfPoints);
+//
+//    Clear();
+//
+//    p_rsurf->Allocate(this,keepcvs);
+//    p_rsurf->Clear();
+//
+//    CSimpleVector<int>    midx;
+//    midx.CreateVector(NumOfCVs);
+//
+//    CSimpleVector<int>    ridx;
+//    ridx.CreateVector(p_rsurf->NumOfCVs);
+//
+//    const double R = 1.98720425864083e-3;
+//
+//// calculate weights
+//    for(size_t mbin = 0; mbin < (size_t)NumOfPoints; mbin++){
+//        double ene = GetEnergy(mbin);
+//        GetIPoint(mbin,midx);
+//        ReduceIPoint(keepcvs,midx,ridx);
+//        int rbin = p_rsurf->IPoint2Bin(ridx);
+//        if( rbin == -1 ){
+//            for(size_t i=0; i < ridx.GetLength(); i++){
+//                cout << ridx[i] << " ";
+//            }
+//            cout << endl;
+//            for(int i=0; i < p_rsurf->GetNumOfCVs(); i++){
+//                cout << p_rsurf->GetCV(i)->GetNumOfBins() << " ";
+//            }
+//            cout << endl;
+//            RUNTIME_ERROR("rbin == -1");
+//        }
+//        double w = exp(-ene/(R*temp));
+//        p_rsurf->SetEnergy(rbin,p_rsurf->GetEnergy(rbin) + w);
+//        p_rsurf->SetNumOfSamples(rbin,1);
+//    }
+//
+//// transform back to FE
+//    for(size_t rbin = 0; rbin < (size_t)p_rsurf->NumOfPoints; rbin++){
+//        double w = p_rsurf->GetEnergy(rbin);
+//        p_rsurf->SetEnergy(rbin,-R*temp*log(w));
+//    }
+//
+//// move global minimum
+//   double gmin = p_rsurf->GetGlobalMinimumValue();
+//   p_rsurf->ApplyOffset(-gmin);
 
-    p_rsurf->Allocate(this,keepcvs);
-    p_rsurf->Clear();
-
-    CSimpleVector<int>    midx;
-    midx.CreateVector(NumOfCVs);
-
-    CSimpleVector<int>    ridx;
-    ridx.CreateVector(p_rsurf->NumOfCVs);
-
-    const double R = 1.98720425864083e-3;
-
-// calculate weights
-    for(size_t mbin = 0; mbin < (size_t)TotNPoints; mbin++){
-        double ene = GetEnergy(mbin);
-        GetIPoint(mbin,midx);
-        ReduceIPoint(keepcvs,midx,ridx);
-        int rbin = p_rsurf->IPoint2Bin(ridx);
-        if( rbin == -1 ){
-            for(size_t i=0; i < ridx.GetLength(); i++){
-                cout << ridx[i] << " ";
-            }
-            cout << endl;
-            for(int i=0; i < p_rsurf->GetNumOfCVs(); i++){
-                cout << p_rsurf->GetCV(i)->GetNumOfBins() << " ";
-            }
-            cout << endl;
-            RUNTIME_ERROR("rbin == -1");
-        }
-        double w = exp(-ene/(R*temp));
-        p_rsurf->SetEnergy(rbin,p_rsurf->GetEnergy(rbin) + w);
-        p_rsurf->SetNumOfSamples(rbin,1);
-    }
-
-// transform back to FE
-    for(size_t rbin = 0; rbin < (size_t)p_rsurf->TotNPoints; rbin++){
-        double w = p_rsurf->GetEnergy(rbin);
-        p_rsurf->SetEnergy(rbin,-R*temp*log(w));
-    }
-
-// move global minimum
-   double gmin = p_rsurf->GetGlobalMinimumValue();
-   p_rsurf->ApplyOffset(-gmin);
-
-    return(true);
+//    return(true);
+    return(CEnergySurfacePtr());
 }
 
 //------------------------------------------------------------------------------

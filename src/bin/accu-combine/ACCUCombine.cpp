@@ -1,6 +1,7 @@
 // =============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
+//    Copyright (C) 2021 Petr Kulhanek, kulhanek@chemi.muni.cz
 //    Copyright (C) 2008 Petr Kulhanek, kulhanek@enzim.hu
 //
 //     This program is free software; you can redistribute it and/or modify
@@ -19,23 +20,25 @@
 // =============================================================================
 
 #include <errno.h>
-#include "ABFTrajectory.hpp"
+#include "ACCUCombine.hpp"
 #include <ErrorSystem.hpp>
 #include <SmallTimeAndDate.hpp>
+#include <boost/format.hpp>
 
 //------------------------------------------------------------------------------
 
 using namespace std;
+using namespace boost;
 
 //------------------------------------------------------------------------------
 
-MAIN_ENTRY(CABFTrajectory)
+MAIN_ENTRY(CACCUCombine)
 
 //==============================================================================
 //------------------------------------------------------------------------------
 //==============================================================================
 
-CABFTrajectory::CABFTrajectory(void)
+CACCUCombine::CACCUCombine(void)
 {
 }
 
@@ -43,9 +46,9 @@ CABFTrajectory::CABFTrajectory(void)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-int CABFTrajectory::Init(int argc,char* argv[])
+int CACCUCombine::Init(int argc,char* argv[])
 {
-// encode program options, all check procedures are done inside of CABFIntOpts
+// encode program options, all check procedures are done inside of CACCUIntOpts
     int result = Options.ParseCmdLine(argc,argv);
 
 // should we exit or was it error?
@@ -64,34 +67,15 @@ int CABFTrajectory::Init(int argc,char* argv[])
 
     vout << endl;
     vout << "# ==============================================================================" << endl;
-    vout << "# abf-trajectory (PMFLib utility)  started at " << dt.GetSDateAndTime() << endl;
+    vout << "# accu-combine (PMFLib utility)  started at " << dt.GetSDateAndTime() << endl;
     vout << "# Version: " << LibBuildVersion_PMF << endl;
     vout << "# ==============================================================================" << endl;
+    for(int i=0; i < Options.GetNumberOfProgArgs() - 1; i++){
+        vout << format("# Input PMF accumulator #%03 : %s")%(i+1)%Options.GetProgArg(i) << endl;
+    }
+    vout << format("# Output PMF accumulator         : %s")%Options.GetProgArg(Options.GetNumberOfProgArgs()-1) << endl;
 
-    if(Options.GetArgABFTrajName() != "-") {
-        vout << "# ABF accumulator file (in) : " << Options.GetArgABFTrajName() << endl;
-    } else {
-        vout << "# ABF accumulator file (in) : - (standard input)" << endl;
-    }
-    if(Options.GetArgABFAccuName() != "-") {
-        vout << "# Snapshot file (out)       : " << Options.GetArgABFAccuName() << endl;
-    } else {
-        vout << "# Snapshot file (out)       : - (standard output)" << endl;
-    }
-    vout << "# ------------------------------------------------" << endl;
-    vout << "# Snapshot                  : " << Options.GetOptSnapshot() << endl;
     vout << "# ------------------------------------------------------------------------------" << endl;
-    vout << endl;
-
-    // open files -----------------------------------
-    if( InputFile.Open(Options.GetArgABFTrajName(),"r") == false ){
-        ES_ERROR("unable to open input file");
-        return(SO_USER_ERROR);
-    }
-    if( OutputFile.Open(Options.GetArgABFAccuName(),"w") == false ){
-        ES_ERROR("unable to open output file");
-        return(SO_USER_ERROR);
-    }
 
     return(SO_CONTINUE);
 }
@@ -100,67 +84,41 @@ int CABFTrajectory::Init(int argc,char* argv[])
 //------------------------------------------------------------------------------
 //==============================================================================
 
-bool CABFTrajectory::Run(void)
+bool CACCUCombine::Run(void)
 {
-// read first line
-    CSmallString   title;
-    if(title.ReadLineFromFile(InputFile) == false) {
-        ES_ERROR("unable to read first line from input stream");
-        return(false);
-    }
-
-    if(title != "# ABFTRAJ\n") {
-        ES_ERROR("input file is not ABF trajectory file");
-        return(false);
-    }
-
-// read time cards
-    CSmallString   time_cards;
-    if(time_cards.ReadLineFromFile(InputFile) == false) {
-        CSmallString error;
-        error << "trajectory contains less snapshots than " << Options.GetOptSnapshot();
-        ES_ERROR(error);
-        return(false);
-    }
-
-// move to requested position
-    int position = 0;
-    while(feof(InputFile) == 0) {
-        if( time_cards.FindSubString("# ABFSNAP") != 0 ) {
-            CSmallString error;
-            error << "trajectory contains less snapshots than " << Options.GetOptSnapshot();
-            ES_ERROR(error);
-            return(false);
-        }
-        position++;
-        if(position == Options.GetOptSnapshot()) break;
-
-        // find next time card
-        while(feof(InputFile) == 0) {
-            time_cards = NULL;
-            if(time_cards.ReadLineFromFile(InputFile) == false) {
-                CSmallString error;
-                error << "trajectory contains less snapshots than " << Options.GetOptSnapshot();
-                ES_ERROR(error);
-                return(false);
-            }
-            if( time_cards.FindSubString("# ABFSNAP") == 0 ) break;
-        }
-    }
-
-// read accumulator
+// load accumulators
+    int state = 1;
+    vout << endl;
+    vout << format("%02d:Loading input ABF accumulators ...")%state << endl;
     try {
-        Accumulator.Load(InputFile);
+        for(int i=0; i < Options.GetNumberOfProgArgs() - 1; i++){
+            vout << format("  >> %03d %s")%state%string(Options.GetProgArg(i)) << endl;
+            CPMFAccumulatorPtr inaccu = CPMFAccumulatorPtr(new CPMFAccumulator);
+            inaccu->Load(Options.GetProgArg(i));
+            InAccus.push_back(inaccu);
+        }
     } catch(...) {
-        ES_ERROR("unable to read snapshot from input");
+        ES_ERROR("unable to load the input PMF accumulator");
         return(false);
     }
 
-// now write snapshot
+    state++;
+    vout << endl;
+    vout << format("%02d:Combining PMF accumulators ...")%state << endl;
+    OutAccu = CPMFAccumulatorPtr(new CPMFAccumulator);
+
+
+    // FIXME
+
+    state++;
+    vout << endl;
+    vout << format("%02d:Saving the resulting PMF accumulator: %s")%state%Options.GetProgArg(Options.GetNumberOfProgArgs()-1) << endl;
+
+// save final accumulator
     try {
-        Accumulator.Save(OutputFile);
+        OutAccu->Save(Options.GetProgArg(Options.GetNumberOfProgArgs()-1));
     } catch(...) {
-        ES_ERROR("unable to save selected snapshot");
+        ES_ERROR("unable to save final PMF accumulator file");
         return(false);
     }
 
@@ -171,18 +129,14 @@ bool CABFTrajectory::Run(void)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void CABFTrajectory::Finalize(void)
+void CACCUCombine::Finalize(void)
 {
-    // close files if they are own by program
-    InputFile.Close();
-    OutputFile.Close();
-
     CSmallTimeAndDate dt;
     dt.GetActualTimeAndDate();
 
     vout << endl;
     vout << "# ==============================================================================" << endl;
-    vout << "# abf-trajectory terminated at " << dt.GetSDateAndTime() << endl;
+    vout << "# accu-combine terminated at " << dt.GetSDateAndTime() << endl;
     vout << "# ==============================================================================" << endl;
 
     if( ErrorSystem.IsError() || Options.GetOptVerbose() ){

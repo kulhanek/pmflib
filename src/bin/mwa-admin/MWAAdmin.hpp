@@ -1,8 +1,9 @@
-#ifndef CABFCombineH
-#define CABFCombineH
-// =============================================================================
+#ifndef MWAAdminH
+#define MWAAdminH
+// ===============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
-// -----------------------------------------------------------------------------
+// -------------------------------------------------------------------------------
+//    Copyright (C) 2021 Petr Kulhanek, kulhanek@chemi.muni.cz
 //    Copyright (C) 2008 Petr Kulhanek, kulhanek@enzim.hu
 //
 //     This program is free software; you can redistribute it and/or modify
@@ -18,21 +19,19 @@
 //     You should have received a copy of the GNU General Public License along
 //     with this program; if not, write to the Free Software Foundation, Inc.,
 //     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
-// =============================================================================
+// ===============================================================================
 
-#include "ABFCombOptions.hpp"
-#include <ABFAccumulator.hpp>
+#include "MWAAdmOptions.hpp"
+#include <AdminClient.hpp>
 #include <VerboseStr.hpp>
 #include <TerminalStr.hpp>
-#include <StdIOFile.hpp>
 
 //------------------------------------------------------------------------------
 
-/// utility to combine two ABF accumulators
-
-class CABFCombine {
+class CMWAAdmin : private CAdminClient {
 public:
-    CABFCombine(void);
+    // constructor
+    CMWAAdmin(void);
 
 // main methods ---------------------------------------------------------------
     /// init options
@@ -46,17 +45,12 @@ public:
 
 // section of private data ----------------------------------------------------
 private:
-    CABFCombOptions     Options;
-    CStdIOFile          InputFile1;
-    CStdIOFile          InputFile2;
-    CStdIOFile          OutputFile;
-    CABFAccumulator     Accu1;              // input ABF accumulators
-    CABFAccumulator     Accu2;
-    CABFAccumulator     Accumulator;        // ABF accumulator
-
-    // output ------------------------------------
+    CMWAAdmOptions      Options;            // program options
     CTerminalStr        Console;
     CVerboseStr         vout;
+
+    /// get ABF accumulator - this method is specific
+    bool GetABFAccumulator(void);
 };
 
 //------------------------------------------------------------------------------

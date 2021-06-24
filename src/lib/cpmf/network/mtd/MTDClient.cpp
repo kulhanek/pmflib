@@ -147,8 +147,11 @@ bool CMTDClient::GetInitialData(void)
         ExecuteCommand(&cmd);
 
         // process results
-        p_ele = cmd.GetRootResultElement();
-        ReadMTDData(p_ele);
+        CXMLElement* p_aele = cmd.GetResultElementByPath("ACCU",false);
+        if( p_aele == NULL ){
+            throw("ACCU element not found");
+        }
+        Load(p_aele);
 
     } catch(std::exception& e) {
         ES_ERROR_FROM_EXCEPTION("unable to process command",e);
@@ -173,14 +176,19 @@ bool CMTDClient::ExchangeData(void)
         // prepare input data
         CXMLElement* p_ele = cmd.GetRootCommandElement();
         p_ele->SetAttribute("client_id",ClientID);
-        WriteMTDData(p_ele);
+
+        CXMLElement* p_aele = cmd.GetResultElementByPath("ACCU",true);
+        Save(p_aele);
 
         // execute command
         ExecuteCommand(&cmd);
 
         // process results
-        p_ele = cmd.GetRootResultElement();
-        ReadMTDData(p_ele);
+        p_aele = cmd.GetResultElementByPath("ACCU",false);
+        if( p_ele == NULL ){
+            throw("ACCU element not found");
+        }
+        Load(p_aele);
 
     } catch(std::exception& e) {
         ES_ERROR_FROM_EXCEPTION("unable to process command",e);

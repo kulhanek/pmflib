@@ -605,7 +605,7 @@ void CABFIntegratorRBF::GetRBFPosition(size_t index,CSimpleVector<double>& posit
 {
     for(long int k=NCVs-1; k >= 0; k--) {
 
-        const CColVariable* p_coord = Accumulator->GetCV(k);
+        const CColVariablePtr p_coord = Accumulator->GetCV(k);
         int ibin = index % NumOfRBFBins[k];
         // bin  = 0,...,NBins-1
         double start = p_coord->GetMinValue();
@@ -857,7 +857,7 @@ void CABFIntegratorRBF::FilterByMFZScore(double zscore,CVerboseStr& vout)
     size_t outliers = 0;
     for(size_t i=0; i < NumOfBins; i++){
         if( flags[i] == 0 ){
-            Accumulator->SetNumberOfABFSamples(i,0);
+            Accumulator->SetNumOfSamples(i,0);
             outliers++;
         }
     }

@@ -32,6 +32,11 @@
 
 //------------------------------------------------------------------------------
 
+class CEnergySurface;
+typedef std::shared_ptr<CEnergySurface>    CEnergySurfacePtr;
+
+//------------------------------------------------------------------------------
+
 /** \brief multidimensional surface
 */
 
@@ -49,23 +54,14 @@ public:
     int GetNumOfPoints(void) const;
 
     /// return coordinate definition
-    const CColVariable* GetCV(unsigned int cv) const;
+    const CColVariablePtr GetCV(int cv) const;
 
 // allocate/deallocate --------------------------------------------------------
     /// allocate array
-    void Allocate(const CMTDAccumulator* mtd_accu);
+    void Allocate(CPMFAccumulatorPtr accu);
 
     /// allocate array
-    void Allocate(const CABFAccumulator* abf_accu);
-
-    /// allocate array
-    void Allocate(const CABPAccumulator* abp_accu);
-
-    /// allocate array
-    void Allocate(const CABFAccumulator* abf_accu,const std::vector<bool>& enabled_cvs);
-
-    /// allocate array
-    void Allocate(const CEnergySurface* p_surf,const std::vector<bool>& enabled_cvs);
+    void Allocate(CPMFAccumulatorPtr accu,const std::vector<bool>& enabled_cvs);
 
     /// deallocate array
     void Deallocate(void);
@@ -102,12 +98,6 @@ public:
     /// get number of samples
     const int& GetNumOfSamples(unsigned int index) const;
 
-    /// convert point index to point position
-    void GetPoint(unsigned int index,CSimpleVector<double>& point) const;
-
-    /// convert point index to point position
-    void GetIPoint(unsigned int index,CSimpleVector<int>& point) const;
-
     /// return value of global minimum
     double GetGlobalMinimumValue(void) const;
 
@@ -126,8 +116,12 @@ public:
     /// set unsampled region to provided max energy
     void AdaptUnsampledToMaxEnergy(double maxene);
 
-    /// reduce FES
-    bool ReduceFES(const std::vector<bool>& keepcvs,double temp,CEnergySurface* p_rsurf);
+// point positions -------------------------------------------------------------
+    /// convert point index to point position
+    void GetPoint(unsigned int index,CSimpleVector<double>& point) const;
+
+    /// convert point index to point position
+    void GetIPoint(unsigned int index,CSimpleVector<int>& point) const;
 
     /// reduce ipoint
     void ReduceIPoint(const std::vector<bool>& keepcvs,CSimpleVector<int>& midx,CSimpleVector<int>& ridx);
@@ -142,22 +136,19 @@ public:
     /// divide energy surface by constant
     void operator/=(const double& number);
 
+    /// reduce FES
+    CEnergySurfacePtr ReduceFES(const std::vector<bool>& keepcvs);
+
 // section of private data ----------------------------------------------------
 private:
-    int                         NumOfCVs;       // number of cvs
-    int                         TotNPoints;     // total energy size
-    CSimpleVector<CColVariable> CVs;            // dimensions
-    CSimpleVector<double>       Energy;         // energy array
-    CSimpleVector<double>       Error;          // error array
-    CSimpleVector<int>          Samples;        // number of samples
-    double                      SLevel;         // sigma level for error calculation
-
-
-    void CalculateFES_MTDParam_Part(CSimpleVector<double>& params,
-                                    CSimpleVector<double>& point,unsigned int& loc,unsigned int cv);
-
-    double CalculateValue(const CSimpleVector<double>& params,
-                          const CSimpleVector<double>& point);
+    int                             NumOfCVs;       // number of cvs
+    int                             NumOfPoints;    // number of points
+    std::vector<CColVariablePtr>    CVs;            // collective variables
+    double                          Temperature;
+    CSimpleVector<double>           Energy;         // energy array
+    CSimpleVector<double>           Error;          // error array
+    CSimpleVector<int>              Samples;        // number of samples
+    double                          SLevel;         // sigma level for error calculation
 };
 
 //------------------------------------------------------------------------------

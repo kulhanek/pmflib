@@ -1,8 +1,9 @@
-#ifndef ABFAdmOptionsH
-#define ABFAdmOptionsH
+#ifndef MWAAdmOptionsH
+#define MWAAdmOptionsH
 // ===============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -------------------------------------------------------------------------------
+//    Copyright (C) 2021 Petr Kulhanek, kulhanek@chemi.muni.cz
 //    Copyright (C) 2008 Petr Kulhanek, kulhanek@enzim.hu
 //
 //     This program is free software; you can redistribute it and/or modify
@@ -25,18 +26,18 @@
 
 //------------------------------------------------------------------------------
 
-class CABFAdmOptions : public CSimpleOptions {
+class CMWAAdmOptions : public CSimpleOptions {
 public:
     // constructor - tune option setup
-    CABFAdmOptions(void);
+    CMWAAdmOptions(void);
 
 // program name and description -----------------------------------------------
     CSO_PROG_NAME_BEGIN
-    "abf-admin"
+    "mwa-admin"
     CSO_PROG_NAME_END
 
     CSO_PROG_DESC_BEGIN
-    "The utility that controls the behaviour and state of the server implementing the multiple walkers extension of the ABF method."
+    "This utility controls the state and behavior of the server providing the multiple walkers extension for PMFLib."
     CSO_PROG_DESC_END
 
     CSO_PROG_VERS_BEGIN
@@ -62,7 +63,7 @@ public:
                 Command,                          /* argument name */
                 NULL,                           /* default value */
                 true,                           /* is argument mandatory */
-                "abf://server[:port]/command",                        /* parametr name */
+                "mwa://server[:port]/command",                        /* parametr name */
                 "It provides the action specification. The server is either the DNS name or IP address of the server or word 'serverkey' or 'key'. In the later case, the information about the server is read from the server key file. The port number, on which the server is listen, may be optionally provided. Finally, the command is administration task, which can be one of the following:\n"
                 "info           = print information about registered clients\n"
                 "flush          = save the accumulated ABF data on the server side\n"

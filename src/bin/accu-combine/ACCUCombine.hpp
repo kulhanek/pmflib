@@ -1,9 +1,9 @@
-#ifndef ABFServerH
-#define ABFServerH
+#ifndef CACCUCombineH
+#define CACCUCombineH
 // =============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
-//    Copyright (C) 2011 Petr Kulhanek, kulhanek@chemi.muni.cz
+//    Copyright (C) 2021 Petr Kulhanek, kulhanek@chemi.muni.cz
 //    Copyright (C) 2008 Petr Kulhanek, kulhanek@enzim.hu
 //
 //     This program is free software; you can redistribute it and/or modify
@@ -21,24 +21,19 @@
 //     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 // =============================================================================
 
-#include <ExtraServer.hpp>
-#include <PrmFile.hpp>
+#include "ACCUCombOptions.hpp"
+#include <PMFAccumulator.hpp>
 #include <VerboseStr.hpp>
 #include <TerminalStr.hpp>
-#include <SimpleMutex.hpp>
-#include "ABFSrvOptions.hpp"
-#include "ABFServerAccu.hpp"
+#include <StdIOFile.hpp>
 
 //------------------------------------------------------------------------------
 
-class CABFRegClient;
+/// utility to combine two ACCU accumulators
 
-//------------------------------------------------------------------------------
-
-class CABFServer : public CExtraServer {
+class CACCUCombine {
 public:
-    // constructor
-    CABFServer(void);
+    CACCUCombine(void);
 
 // main methods ---------------------------------------------------------------
     /// init options
@@ -52,43 +47,14 @@ public:
 
 // section of private data ----------------------------------------------------
 private:
-    CABFSrvOptions      Options;        // program options
-    CPrmFile            Controls;       // controls
-    CSmallString        InputFileName;  // input file name
-    CSmallString        OutputFileName; // output file name
-    CSmallString        TrajFileName;   // output file name
-    FILE*               TrajFile;
-    bool                AutoRestart;
-    int                 AutoSaveInterval;
-    int                 SaveCounter;
-    CSimpleMutex        AutoSaveMutex;
-
-    // global data -------------------------------
-    CABFServerAccu      ABFAccumulator;     // global ABF accumulator
+    CACCUCombOptions                Options;
+    std::vector<CPMFAccumulatorPtr> InAccus;
+    CPMFAccumulatorPtr              OutAccu;
 
     // output ------------------------------------
     CTerminalStr        Console;
     CVerboseStr         vout;
-
-    /// Ctrl+C signal handler
-    static void CtrlCSignalHandler(int signal);
-
-    /// process control file
-    void ProcessFilesControl(void);
-
-    /// process data for synchronous mode
-    void ProcessSyncControl(void);
-
-    /// autosave ABF accumulator
-    void AutoSaveData(void);
-
-    friend class CABFProcessor;
-    friend class CABFServerAccu;
 };
-
-//------------------------------------------------------------------------------
-
-extern CABFServer ABFServer;
 
 //------------------------------------------------------------------------------
 

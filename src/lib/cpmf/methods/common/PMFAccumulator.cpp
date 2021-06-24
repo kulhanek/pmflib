@@ -37,15 +37,15 @@ using namespace std;
 
 CPMFAccumulator::CPMFAccumulator(void)
 {
-    NCVs            = 0;
-    TotNBins        = 0;
-    Temperature     = 300.0;
-    TemperatureFConv = 1.0;
-    TemperatureUnit = "K";
-    EnergyFConv     = 1.0;
-    EnergyUnit      = "kcal mol^-1";
-    Method          = "NONE";
-    Version         = LibBuildVersion_PMF;
+    NumOfCVs            = 0;
+    NumOfBins           = 0;
+    Temperature         = 300.0;
+    TemperatureFConv    = 1.0;
+    TemperatureUnit     = "K";
+    EnergyFConv         = 1.0;
+    EnergyUnit          = "kcal mol^-1";
+    Method              = "NONE";
+    Version             = LibBuildVersion_PMF;
 }
 
 //------------------------------------------------------------------------------
@@ -100,6 +100,36 @@ void CPMFAccumulator::Load(FILE* fin)
 
 //------------------------------------------------------------------------------
 
+void CPMFAccumulator::Load(CXMLElement* p_ele)
+{
+    // FIXME
+
+}
+
+//------------------------------------------------------------------------------
+
+void CPMFAccumulator::LoadSnapshot(const CSmallString& name,int index)
+{
+    // FIXME
+}
+
+//------------------------------------------------------------------------------
+
+void CPMFAccumulator::LoadSnapshot(FILE* fin,int index)
+{
+    // FIXME
+}
+
+//------------------------------------------------------------------------------
+
+void CPMFAccumulator::Combine(CXMLElement* p_ele)
+{
+
+
+}
+
+//------------------------------------------------------------------------------
+
 bool CPMFAccumulator::IsHeaderSection(const CSmallString& keyline)
 {
     if( keyline.GetLength() < 1 ) return(false);
@@ -149,7 +179,7 @@ void CPMFAccumulator::ReadHeaderSection(FILE* fin,const CSmallString& keyline)
 // -----------------------------------------------
     } else if( key == "CVS") {
         // read coordinate specification
-        for(int i=0; i < NCVs; i++) {
+        for(int i=0; i < NumOfCVs; i++) {
             CSmallString    type;
             CSmallString    name;
             CSmallString    unit;
@@ -244,10 +274,10 @@ void CPMFAccumulator::ReadHeaderSection(FILE* fin,const CSmallString& keyline)
             SetCV(i,name,type,min_value,max_value,nbins,fconv,unit);
         }
 
-    // update TotNBins
-        TotNBins = 1;
-        for(int i=0; i < NCVs; i++) {
-            TotNBins *= CVs[i]->NBins;
+    // update NumOfBins
+        NumOfBins = 1;
+        for(int i=0; i < NumOfCVs; i++) {
+            NumOfBins *= CVs[i]->NumOfBins;
         }
 
 
@@ -314,7 +344,7 @@ void CPMFAccumulator::ReadHeaderSection(FILE* fin,const CSmallString& keyline)
 
 void CPMFAccumulator::ReadDataSection(FILE* fin,const CSmallString& keyline)
 {
-    CPMFAccuDataPtr data = CPMFAccuDataPtr(new CPMFAccuData(NCVs,TotNBins));
+    CPMFAccuDataPtr data = CPMFAccuDataPtr(new CPMFAccuData(NumOfCVs,NumOfBins));
     data->Load(fin,keyline);
     DataBlocks[data->GetName()] = data;
 }
@@ -345,20 +375,28 @@ void CPMFAccumulator::Save(const CSmallString& name)
 
 //------------------------------------------------------------------------------
 
+void CPMFAccumulator::Save(CXMLElement* p_ele)
+{
+
+
+}
+
+//------------------------------------------------------------------------------
+
 void CPMFAccumulator::Save(FILE* fout)
 {
     if(fout == NULL) {
         INVALID_ARGUMENT("stream is not open");
     }
 
-    if( TotNBins == 0 ) {
+    if( NumOfBins == 0 ) {
         CSmallString error;
         error << "no data in accumulator";
         RUNTIME_ERROR(error);
     }
 
 // write ABF accumulator header ------------------
-    if(fprintf(fout,"PMFACCU V6 %2d\n",NCVs) <= 0) {
+    if(fprintf(fout,"PMFACCU V6 %2d\n",NumOfCVs) <= 0) {
         CSmallString error;
         error << "unable to write header";
         RUNTIME_ERROR(error);
@@ -406,10 +444,10 @@ void CPMFAccumulator::Save(FILE* fout)
         error << "unable to write CVS header";
         RUNTIME_ERROR(error);
     }
-    for(int i=0; i < NCVs; i++) {
+    for(int i=0; i < NumOfCVs; i++) {
         if(fprintf(fout,"%2d %10s %18.11E %18.11E %6d\n",i+1,
                    (const char*)CVs[i]->Type,
-                   CVs[i]->MinValue,CVs[i]->MaxValue,CVs[i]->NBins) <= 0) {
+                   CVs[i]->MinValue,CVs[i]->MaxValue,CVs[i]->NumOfBins) <= 0) {
             CSmallString error;
             error << "unable to write coordinate definition I id: " << i+1;
             RUNTIME_ERROR(error);
@@ -431,7 +469,7 @@ void CPMFAccumulator::Save(FILE* fout)
 
 void CPMFAccumulator::GetPoint(unsigned int index,CSimpleVector<double>& point) const
 {
-    for(int k=NCVs-1; k >= 0; k--) {
+    for(int k=NumOfCVs-1; k >= 0; k--) {
         const CColVariablePtr p_coord = CVs[k];
         int ibin = index % p_coord->GetNumOfBins();
         point[k] = p_coord->GetValue(ibin);
@@ -441,7 +479,7 @@ void CPMFAccumulator::GetPoint(unsigned int index,CSimpleVector<double>& point) 
 
 void CPMFAccumulator::GetPointRValues(unsigned int index,CSimpleVector<double>& point) const
 {
-    for(int k=NCVs-1; k >= 0; k--) {
+    for(int k=NumOfCVs-1; k >= 0; k--) {
         const CColVariablePtr p_coord = CVs[k];
         int ibin = index % p_coord->GetNumOfBins();
         point[k] = p_coord->GetRValue(ibin);
@@ -453,7 +491,7 @@ void CPMFAccumulator::GetPointRValues(unsigned int index,CSimpleVector<double>& 
 
 void CPMFAccumulator::GetIPoint(unsigned int index,CSimpleVector<int>& point) const
 {
-    for(int k=NCVs-1; k >= 0; k--) {
+    for(int k=NumOfCVs-1; k >= 0; k--) {
         const CColVariablePtr p_coord = CVs[k];
         int ibin = index % p_coord->GetNumOfBins();
         point[k] = ibin;
@@ -463,24 +501,9 @@ void CPMFAccumulator::GetIPoint(unsigned int index,CSimpleVector<int>& point) co
 
 //------------------------------------------------------------------------------
 
-void CPMFAccumulator::SetTemperature(double temp)
-{
-    Temperature = temp;
-}
-
-//------------------------------------------------------------------------------
-
 double CPMFAccumulator::GetTemperature(void)
 {
     return(Temperature);
-}
-
-//------------------------------------------------------------------------------
-
-void CPMFAccumulator::SetEnergyUnit(double fconv,const CSmallString& unit)
-{
-    EnergyFConv = fconv;
-    EnergyUnit  = unit;
 }
 
 //==============================================================================
@@ -493,11 +516,11 @@ void CPMFAccumulator::SetNumOfCVs(int ncvs)
         INVALID_ARGUMENT("ncvs < 0");
     }
 
-    if(NCVs > 0) {
+    if(NumOfCVs > 0) {
         // destroy all previous data
         Clear();
         CVs.clear();
-        NCVs = 0;
+        NumOfCVs = 0;
     }
 
 // try to allocate CVs array
@@ -508,7 +531,7 @@ void CPMFAccumulator::SetNumOfCVs(int ncvs)
     }
 
 // all seems to be fine - update items
-    NCVs = ncvs;
+    NumOfCVs = ncvs;
 }
 
 //------------------------------------------------------------------------------
@@ -521,7 +544,7 @@ void CPMFAccumulator::SetCV(int id,
     if( CVs.size() == 0 ){
         RUNTIME_ERROR("no CVs");
     }
-    if( id < 0 || id >= NCVs ){
+    if( id < 0 || id >= NumOfCVs ){
         INVALID_ARGUMENT("id out-of-range");
     }
 
@@ -543,7 +566,7 @@ void CPMFAccumulator::SetCV(int id,
     CVs[id]->MinValue = min_value;
     CVs[id]->MaxValue = max_value;
 
-    CVs[id]->NBins = nbins;
+    CVs[id]->NumOfBins = nbins;
     CVs[id]->BinWidth = (max_value - min_value)/nbins;
     CVs[id]->Width = max_value - min_value;
 }
@@ -559,7 +582,7 @@ void CPMFAccumulator::SetCV(int id,
     if( CVs.size() == 0 ){
         RUNTIME_ERROR("no CVs");
     }
-    if( id < 0 || id >= NCVs ){
+    if( id < 0 || id >= NumOfCVs ){
         INVALID_ARGUMENT("id out-of-range");
     }
 
@@ -583,7 +606,7 @@ void CPMFAccumulator::SetCV(int id,
     CVs[id]->MaxValue = max_value;
     CVs[id]->FConv = fconv;
 
-    CVs[id]->NBins = nbins;
+    CVs[id]->NumOfBins = nbins;
     CVs[id]->BinWidth = (max_value - min_value)/nbins;
     CVs[id]->Width = max_value - min_value;
 }
@@ -592,9 +615,30 @@ void CPMFAccumulator::SetCV(int id,
 //------------------------------------------------------------------------------
 //==============================================================================
 
+const CSmallString& CPMFAccumulator::GetMethod(void) const
+{
+    return(Method);
+}
+
+//------------------------------------------------------------------------------
+
+const CSmallString& CPMFAccumulator::GetDriver(void) const
+{
+    return(Driver);
+}
+
+//------------------------------------------------------------------------------
+
+int CPMFAccumulator::GetNumOfBins(void) const
+{
+    return(NumOfBins);
+}
+
+//------------------------------------------------------------------------------
+
 int CPMFAccumulator::GetNumOfCVs(void) const
 {
-    return(NCVs);
+    return(NumOfCVs);
 }
 
 //------------------------------------------------------------------------------
@@ -611,7 +655,7 @@ const CColVariablePtr CPMFAccumulator::GetCV(int cv) const
 int CPMFAccumulator::GetGlobalIndex(const CSimpleVector<int>& position) const
 {
     int glbindex = 0;
-    for(int i=0; i < NCVs; i++) {
+    for(int i=0; i < NumOfCVs; i++) {
         if( position[i] < 0 ) return(-1);
         if( position[i] >= CVs[i]->GetNumOfBins() ) return(-1);
         glbindex = glbindex*CVs[i]->GetNumOfBins() + position[i];
@@ -629,7 +673,7 @@ void CPMFAccumulator::Clear(void)
 
 // destroy only data arrays
     DataBlocks.clear();
-    TotNBins        = 0;
+    NumOfBins        = 0;
 }
 
 //------------------------------------------------------------------------------
@@ -683,7 +727,7 @@ void CPMFAccumulator::LoadCVSInfo(CXMLElement* p_iele)
 
     while(p_cel != NULL) {
         if( ccount >= lnitems ) {
-            LOGIC_ERROR("more CV elements than NCVs");
+            LOGIC_ERROR("more CV elements than NumOfCVs");
         }
         CVs[ccount]->LoadInfo(p_cel);
         ccount++;
@@ -716,7 +760,7 @@ bool CPMFAccumulator::CheckCVSInfo(CXMLElement* p_iele) const
         return(false);
     }
 
-    if(lnitems != NCVs) {
+    if(lnitems != NumOfCVs) {
         ES_ERROR("mismatch in the number of coordinates");
         return(false);
     }
@@ -727,7 +771,7 @@ bool CPMFAccumulator::CheckCVSInfo(CXMLElement* p_iele) const
 
     while(p_cel != NULL) {
         if(ccount >= lnitems) {
-            ES_ERROR("more COORD elements than NCVs");
+            ES_ERROR("more COORD elements than NumOfCVs");
             return(false);
         }
         if( CVs[ccount]->CheckInfo(p_cel) == false ) {
@@ -751,12 +795,12 @@ bool CPMFAccumulator::CheckCVSInfo(const CPMFAccumulator* p_accu) const
         INVALID_ARGUMENT("p_iele is NULL");
     }
 
-    if(p_accu->NCVs != NCVs) {
+    if(p_accu->NumOfCVs != NumOfCVs) {
         ES_ERROR("mismatch in the number of coordinates");
         return(false);
     }
 
-    for(int i=0; i < NCVs; i++) {
+    for(int i=0; i < NumOfCVs; i++) {
         if(CVs[i]->CheckInfo(p_accu->CVs[i]) == false) {
             CSmallString error;
             error << "mismatch in cv: " << i+1;
@@ -778,9 +822,9 @@ void CPMFAccumulator::SaveCVSInfo(CXMLElement* p_tele) const
 
     CXMLElement* p_ele = p_tele->CreateChildElement("CVS");
 
-    p_ele->SetAttribute("ncvs",NCVs);
+    p_ele->SetAttribute("ncvs",NumOfCVs);
 
-    for(int i=0; i < NCVs; i++) {
+    for(int i=0; i < NumOfCVs; i++) {
         CXMLElement* p_iele = p_ele->CreateChildElement("CV");
         CVs[i]->SaveInfo(p_iele);
     }
@@ -808,10 +852,10 @@ void CPMFAccumulator::PrintCVSInfo(std::ostream& vout)
     vout  << endl;
     vout << "=== Collective Variables =======================================================" << endl;
     vout << endl;
-    vout << "ID P Type       Unit  Name                       Min value   Max value   NBins  " << endl;
+    vout << "ID P Type       Unit  Name                       Min value   Max value   NumOfBins  " << endl;
     vout << "-- - ---------- ----- -------------------------- ----------- ----------- -------" << endl;
 
-    for(int i=0; i < NCVs; i++) {
+    for(int i=0; i < NumOfCVs; i++) {
         CVs[i]->PrintInfo(vout);
     }
 }
@@ -820,9 +864,53 @@ void CPMFAccumulator::PrintCVSInfo(std::ostream& vout)
 //------------------------------------------------------------------------------
 //==============================================================================
 
+double CPMFAccumulator::GetData(const CSmallString& name, int ibin, int cv) const
+{
+    std::map<CSmallString,CPMFAccuDataPtr>::const_iterator isec = DataBlocks.find(name);
+    if( isec == DataBlocks.end() ) {
+        CSmallString error;
+        error << "unable to find '" << name << "' data section";
+        RUNTIME_ERROR(error);
+    }
+    const CPMFAccuDataPtr sec = isec->second;
+    return( sec->GetData(ibin,cv) );
+}
+
+//------------------------------------------------------------------------------
+
+void CPMFAccumulator::SetData(const CSmallString& name, int ibin, double value)
+{
+    std::map<CSmallString,CPMFAccuDataPtr>::iterator isec = DataBlocks.find(name);
+    if( isec == DataBlocks.end() ) {
+        CSmallString error;
+        error << "unable to find '" << name << "' data section";
+        RUNTIME_ERROR(error);
+    }
+    CPMFAccuDataPtr sec = isec->second;
+    return( sec->SetData(ibin,value) );
+}
+
+//------------------------------------------------------------------------------
+
+void CPMFAccumulator::SetData(const CSmallString& name, int ibin, int cv, double value)
+{
+    std::map<CSmallString,CPMFAccuDataPtr>::iterator isec = DataBlocks.find(name);
+    if( isec == DataBlocks.end() ) {
+        CSmallString error;
+        error << "unable to find '" << name << "' data section";
+        RUNTIME_ERROR(error);
+    }
+    CPMFAccuDataPtr sec = isec->second;
+    return( sec->SetData(ibin,cv,value) );
+}
+
+//==============================================================================
+//------------------------------------------------------------------------------
+//==============================================================================
+
 int CPMFAccumulator::map(int item,int bin) const
 {
-    return(item + bin*NCVs);
+    return(item + bin*NumOfCVs);
 }
 
 //==============================================================================
@@ -831,8 +919,8 @@ int CPMFAccumulator::map(int item,int bin) const
 
 CPMFAccuData::CPMFAccuData(int nbins, int ncvs)
 {
-    NBins = nbins;
-    NCVs = ncvs;
+    NumOfBins = nbins;
+    NumOfCVs = ncvs;
 }
 
 //------------------------------------------------------------------------------
@@ -960,17 +1048,17 @@ const CSmallString& CPMFAccuData::GetName(void) const
 
 //------------------------------------------------------------------------------
 
-double CPMFAccuData::GetData(int ibin, int cv)
+double CPMFAccuData::GetData(int ibin, int cv) const
 {
-    if( (0 > ibin) || (ibin <= NBins) ) {
+    if( (0 > ibin) || (ibin <= NumOfBins) ) {
         RUNTIME_ERROR("ibin out-of-range");
     }
-    if( (0 > cv) || (cv <= NCVs) ) {
+    if( (0 > cv) || (cv <= NumOfCVs) ) {
         RUNTIME_ERROR("cv out-of-range");
     }
     int idx = 0;
-    if( NBins*NCVs == Size ){
-        idx = cv*NBins + ibin;
+    if( NumOfBins*NumOfCVs == Size ){
+        idx = cv*NumOfBins + ibin;
     } else {
         idx = ibin;
     }
@@ -981,7 +1069,7 @@ double CPMFAccuData::GetData(int ibin, int cv)
 
 void CPMFAccuData::SetData(int ibin, double value)
 {
-    if( (0 > ibin) || (ibin <= NBins) ) {
+    if( (0 > ibin) || (ibin <= NumOfBins) ) {
         RUNTIME_ERROR("ibin out-of-range");
     }
     Data[ibin] = value;
@@ -991,15 +1079,15 @@ void CPMFAccuData::SetData(int ibin, double value)
 
 void CPMFAccuData::SetData(int ibin, int cv, double value)
 {
-    if( (0 > ibin) || (ibin <= NBins) ) {
+    if( (0 > ibin) || (ibin <= NumOfBins) ) {
         RUNTIME_ERROR("ibin out-of-range");
     }
-    if( (0 > cv) || (cv <= NCVs) ) {
+    if( (0 > cv) || (cv <= NumOfCVs) ) {
         RUNTIME_ERROR("cv out-of-range");
     }
     int idx = 0;
-    if( NBins*NCVs == Size ){
-        idx = cv*NBins + ibin;
+    if( NumOfBins*NumOfCVs == Size ){
+        idx = cv*NumOfBins + ibin;
     } else {
         idx = ibin;
     }

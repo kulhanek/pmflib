@@ -152,7 +152,7 @@ private:
     double          MinValue;       // left boundary of coordinate
     double          MaxValue;       // right boundary of coordinate
     // MUST BE SIGNED VALUE
-    int             NBins;          // number of coordinate bins
+    int             NumOfBins;      // number of coordinate bins
     double          BinWidth;       // (max_value-min_value)/nbins
     double          Width;          // max_value-min_value
     double          MaxMovement;    // used by STM

@@ -132,7 +132,7 @@ public:
 
 // section of private data ----------------------------------------------------
 private:
-    CABFAccumulator*        Accumulator;
+    CABFAccumulator*        Accu;
     CEnergySurface*         FES;
 
     int                     NumOfThreads;

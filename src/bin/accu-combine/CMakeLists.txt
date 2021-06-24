@@ -3,19 +3,19 @@
 # ==============================================================================
 
 # program objects --------------------------------------------------------------
-SET(ABF_COMBINE_SRC
-        ABFCombine.cpp
-        ABFCombOptions.cpp
+SET(ACCU_COMBINE_SRC
+        ACCUCombine.cpp
+        ACCUCombOptions.cpp
         )
 
 # final build ------------------------------------------------------------------
-ADD_EXECUTABLE(abf-combine ${ABF_COMBINE_SRC})
-ADD_DEPENDENCIES(abf-combine cpmf_shared)
+ADD_EXECUTABLE(accu-combine ${ACCU_COMBINE_SRC})
+ADD_DEPENDENCIES(accu-combine cpmf_shared)
 
-TARGET_LINK_LIBRARIES(abf-combine  ${CPMF_LIBRARIES})
+TARGET_LINK_LIBRARIES(accu-combine  ${CPMF_LIBRARIES})
 
 INSTALL(TARGETS
-            abf-combine
+            accu-combine
         RUNTIME DESTINATION
             bin
         )

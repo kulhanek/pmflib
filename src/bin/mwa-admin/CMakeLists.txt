@@ -3,19 +3,19 @@
 # ==============================================================================
 
 # program objects --------------------------------------------------------------
-SET(ABF_ADMIN_SRC
-        ABFAdmin.cpp
-        ABFAdmOptions.cpp
+SET(MWA_ADMIN_SRC
+        MWAAdmin.cpp
+        MWAAdmOptions.cpp
         )
 
 # final build ------------------------------------------------------------------
-ADD_EXECUTABLE(abf-admin ${ABF_ADMIN_SRC})
-ADD_DEPENDENCIES(abf-admin cpmf_shared)
+ADD_EXECUTABLE(mwa-admin ${MWA_ADMIN_SRC})
+ADD_DEPENDENCIES(mwa-admin  cpmf_shared)
 
-TARGET_LINK_LIBRARIES(abf-admin  ${CPMF_LIBRARIES})
+TARGET_LINK_LIBRARIES(mwa-admin   ${CPMF_LIBRARIES})
 
 INSTALL(TARGETS
-            abf-admin
+            mwa-admin
         RUNTIME DESTINATION
             bin
         )

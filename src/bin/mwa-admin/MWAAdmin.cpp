@@ -1,6 +1,7 @@
 // ===============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -------------------------------------------------------------------------------
+//    Copyright (C) 2021 Petr Kulhanek, kulhanek@chemi.muni.cz
 //    Copyright (C) 2008 Petr Kulhanek, kulhanek@enzim.hu
 //
 //     This program is free software; you can redistribute it and/or modify
@@ -20,8 +21,8 @@
 
 #include <stdio.h>
 #include <ErrorSystem.hpp>
-#include <ABFAccumulator.hpp>
-#include "ABFAdmin.hpp"
+#include <PMFAccumulator.hpp>
+#include "MWAAdmin.hpp"
 #include <PMFOperation.hpp>
 
 //------------------------------------------------------------------------------
@@ -30,13 +31,13 @@ using namespace std;
 
 //------------------------------------------------------------------------------
 
-MAIN_ENTRY(CABFAdmin)
+MAIN_ENTRY(CMWAAdmin)
 
 //==============================================================================
 //------------------------------------------------------------------------------
 //==============================================================================
 
-CABFAdmin::CABFAdmin(void)
+CMWAAdmin::CMWAAdmin(void)
 {
 
 }
@@ -45,7 +46,7 @@ CABFAdmin::CABFAdmin(void)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-int CABFAdmin::Init(int argc,char* argv[])
+int CMWAAdmin::Init(int argc,char* argv[])
 {
 // encode program options, all check procedures are done inside of CABFIntOpts
     int result = Options.ParseCmdLine(argc,argv);
@@ -67,7 +68,7 @@ int CABFAdmin::Init(int argc,char* argv[])
 
     vout << endl;
     vout << "# ==============================================================================" << endl;
-    vout << "# abf-admin (PMFLib utility) started at " << dt.GetSDateAndTime() << endl;
+    vout << "# mwa-admin (PMFLib utility) started at " << dt.GetSDateAndTime() << endl;
     vout << "# Version: " << LibBuildVersion_PMF << endl;
     vout << "# ==============================================================================" << endl;
     vout << "# Server request (by user)   : " << Options.GetArgCommand() << endl;
@@ -110,7 +111,7 @@ int CABFAdmin::Init(int argc,char* argv[])
 //------------------------------------------------------------------------------
 //==============================================================================
 
-bool CABFAdmin::Run(void)
+bool CMWAAdmin::Run(void)
 {
     if( ! ( Options.IsOptServerKeySet() || ActionRequest.IsServerKey() )  ){
        if( ReadPassword(Options.IsOptPasswordSet(),Options.GetOptPassword(),
@@ -148,14 +149,14 @@ bool CABFAdmin::Run(void)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void CABFAdmin::Finalize(void)
+void CMWAAdmin::Finalize(void)
 {
     CSmallTimeAndDate dt;
     dt.GetActualTimeAndDate();
 
     vout << endl;
     vout << "# ==============================================================================" << endl;
-    vout << "# abf-admin terminated at " << dt.GetSDateAndTime() << endl;
+    vout << "# mwa-admin terminated at " << dt.GetSDateAndTime() << endl;
     vout << "# ==============================================================================" << endl;
 
     if( ErrorSystem.IsError() || Options.GetOptVerbose() ){
@@ -168,10 +169,10 @@ void CABFAdmin::Finalize(void)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-bool CABFAdmin::GetABFAccumulator(void)
+bool CMWAAdmin::GetABFAccumulator(void)
 {
     CClientCommand  cmd;
-    CABFAccumulator accu;
+    CPMFAccumulator accu;
 
     try{
 
@@ -182,19 +183,11 @@ bool CABFAdmin::GetABFAccumulator(void)
         ExecuteCommand(&cmd);
 
         // process response
-        CXMLElement* p_cvs = cmd.GetResultElementByPath("CVS",false);
-        if(p_cvs == NULL) {
-            LOGIC_ERROR("unable to open CVS element");
+        CXMLElement* p_accu = cmd.GetResultElementByPath("ACCU",false);
+        if(p_accu == NULL) {
+            LOGIC_ERROR("unable to open ACCU element");
         }
-
-        CXMLElement* p_data = cmd.GetResultElementByPath("DATA",false);
-        if(p_data == NULL) {
-            LOGIC_ERROR("unable to open DATA element");
-        }
-
-        // read cvs info
-        accu.LoadCVSInfo(p_cvs);
-        accu.ReadABFData(p_data);
+        accu.Load(p_accu);
 
     } catch(std::exception& e) {
         ES_ERROR_FROM_EXCEPTION("unable to process command",e);
@@ -207,20 +200,27 @@ bool CABFAdmin::GetABFAccumulator(void)
     CSmallString file_output;
 
     if(ActionRequest.GetParameterKeyValue("file",file_output) == false) {
-        file_output = "_abfserver.rst";
+        file_output = "_mwaserver.rst";
+        if( accu.GetMethod() == "ABF" ){
+            file_output = "_abfserver.rst";
+        } else  if( accu.GetMethod() == "ABP" ){
+            file_output = "_abpserver.rst";
+        } else  if( accu.GetMethod() == "MTD" ){
+            file_output = "_mtdserver.rst";
+        }
     }
 
 // and now save all data
     if(accu.GetNumOfCVs() > 0) {
-        vout << "Output ABF accumulator: " << file_output << endl;
+        vout << "Output PMF accumulator: " << file_output << endl;
         try {
             accu.Save(file_output);
         } catch(...) {
-            ES_ERROR("unable to save ABF output accumulator");
+            ES_ERROR("unable to save PMF output accumulator");
         }
     } else {
-        vout << "Output ABF accumulator: " << file_output << endl;
-        vout << ">>> INFO: No data in ABF accumulator." << endl;
+        vout << "Output PMF accumulator: " << file_output << endl;
+        vout << ">>> INFO: No data in PMF accumulator." << endl;
     }
 
     return(true);

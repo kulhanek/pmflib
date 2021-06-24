@@ -3,19 +3,19 @@
 # ==============================================================================
 
 # program objects --------------------------------------------------------------
-SET(ABF_TRAJECTORY_SRC
-        ABFTrajectory.cpp
-        ABFTrajOptions.cpp
+SET(ACCU_TRAJECTORY_SRC
+        ACCUTrajectory.cpp
+        ACCUTrajOptions.cpp
         )
 
 # final build ------------------------------------------------------------------
-ADD_EXECUTABLE(abf-trajectory ${ABF_TRAJECTORY_SRC})
-ADD_DEPENDENCIES(abf-trajectory cpmf_shared)
+ADD_EXECUTABLE(accu-trajectory ${ACCU_TRAJECTORY_SRC})
+ADD_DEPENDENCIES(accu-trajectory cpmf_shared)
 
-TARGET_LINK_LIBRARIES(abf-trajectory  ${CPMF_LIBRARIES})
+TARGET_LINK_LIBRARIES(accu-trajectory  ${CPMF_LIBRARIES})
 
 INSTALL(TARGETS
-            abf-trajectory
+            accu-trajectory
         RUNTIME DESTINATION
             bin
         )

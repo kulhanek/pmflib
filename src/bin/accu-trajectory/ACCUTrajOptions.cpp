@@ -1,6 +1,7 @@
 // =============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
+//    Copyright (C) 2021 Petr Kulhanek, kulhanek@chemi.muni.cz
 //    Copyright (C) 2008 Petr Kulhanek, kulhanek@enzim.hu
 //
 //     This program is free software; you can redistribute it and/or modify
@@ -18,13 +19,13 @@
 //     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 // =============================================================================
 
-#include "ABFTrajOptions.hpp"
+#include "ACCUTrajOptions.hpp"
 
 //==============================================================================
 //------------------------------------------------------------------------------
 //==============================================================================
 
-CABFTrajOptions::CABFTrajOptions(void)
+CACCUTrajOptions::CACCUTrajOptions(void)
 {
     SetShowMiniUsage(true);
 }
@@ -35,7 +36,7 @@ CABFTrajOptions::CABFTrajOptions(void)
  check validity of specified options
 */
 
-int CABFTrajOptions::CheckOptions(void)
+int CACCUTrajOptions::CheckOptions(void)
 {
 // limit has to be grater than 0
     if(GetOptSnapshot() < 0) {
@@ -54,7 +55,7 @@ int CABFTrajOptions::CheckOptions(void)
  process special options (Help, Version) before arguments will be processed
 */
 
-int CABFTrajOptions::FinalizeOptions(void)
+int CACCUTrajOptions::FinalizeOptions(void)
 {
     bool ret_opt = false;
 

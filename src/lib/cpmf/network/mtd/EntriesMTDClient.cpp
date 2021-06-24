@@ -280,7 +280,7 @@ void PMF_PACKAGE cpmf_mtd_client_get_buffer_data_(FTINT* ret_st,
 
 void PMF_PACKAGE cpmf_mtd_client_clear_buf_list_(void)
 {
-    MTDClient.Deallocate();
+    MTDClient.Clear();
 }
 
 //==============================================================================

@@ -1,8 +1,9 @@
-#ifndef ABFCombOptionsH
-#define ABFCombOptionsH
+#ifndef ACCUCombOptionsH
+#define ACCUCombOptionsH
 // =============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
+//    Copyright (C) 2021 Petr Kulhanek, kulhanek@chemi.muni.cz
 //    Copyright (C) 2008 Petr Kulhanek, kulhanek@enzim.hu
 //
 //     This program is free software; you can redistribute it and/or modify
@@ -25,19 +26,28 @@
 
 //------------------------------------------------------------------------------
 
-class CABFCombOptions : public CSimpleOptions {
+class CACCUCombOptions : public CSimpleOptions {
 public:
     // constructor - tune option setup
-    CABFCombOptions(void);
+    CACCUCombOptions(void);
 
 // program name and description -----------------------------------------------
     CSO_PROG_NAME_BEGIN
-    "abf-combine"
+    "accu-combine"
     CSO_PROG_NAME_END
 
     CSO_PROG_DESC_BEGIN
-    "It combines two ABF accumulators into one. Both input accumulators have to be of the same dimensions."
+    "<b>accu-combine</b> combines more PMF accumulators into one. All PMF accumulators have to be of the same dimensions and contain data from the same PMF method."
     CSO_PROG_DESC_END
+
+    CSO_PROG_ARGS_SHORT_DESC_BEGIN
+    "accuname1 [accuname2 [..]] outaccuname"
+    CSO_PROG_ARGS_SHORT_DESC_END
+
+    CSO_PROG_ARGS_LONG_DESC_BEGIN
+    "<cyan><b>accuname1</b></cyan>                  File name of the PMF accumulator.\n"
+    "<cyan><b>outaccuname</b></cyan>                File name of the resulting PMF accumulator."
+    CSO_PROG_ARGS_LONG_DESC_END
 
     CSO_PROG_VERS_BEGIN
     LibBuildVersion_PMF
@@ -45,56 +55,21 @@ public:
 
 // list of all options and arguments ------------------------------------------
     CSO_LIST_BEGIN
-    // arguments ----------------------------
-    CSO_ARG(CSmallString,ABFAccuName1)
-    CSO_ARG(CSmallString,ABFAccuName2)
-    CSO_ARG(CSmallString,OutputName)
     // options ------------------------------
-    CSO_OPT(CSmallString,Operation)
     CSO_OPT(bool,Verbose)
     CSO_OPT(bool,Version)
     CSO_OPT(bool,Help)
     CSO_LIST_END
 
     CSO_MAP_BEGIN
-// description of arguments ---------------------------------------------------
-    CSO_MAP_ARG(CSmallString,                   /* argument type */
-                ABFAccuName1,                          /* argument name */
-                NULL,                           /* default value */
-                true,                           /* is argument mandatory */
-                "accu1",                        /* parametr name */
-                "Name of file with the first ABF accumulator. If the name is '-' then the accumulator is read from the standard input. The standard input can be used for accu1 or accu2 but not for both.")   /* argument description */
-    //----------------------------------------------------------------------
-    CSO_MAP_ARG(CSmallString,                   /* argument type */
-                ABFAccuName2,                          /* argument name */
-                NULL,                           /* default value */
-                true,                           /* is argument mandatory */
-                "accu2",                        /* parametr name */
-                "Name of file with the second ABF accumulator. If the name is '-' then the accumulator is read from the standard input. The standard input can be used for accu1 or accu2 but not for both.")   /* argument description */
-    //----------------------------------------------------------------------
-    CSO_MAP_ARG(CSmallString,                   /* argument type */
-                OutputName,                          /* argument name */
-                NULL,                           /* default value */
-                true,                           /* is argument mandatory */
-                "output",                        /* parametr name */
-                "Name of file where the result will be writen. If the name is '-' then the output will be written to the standard output.")   /* argument description */
 // description of options ---------------------------------------------------
-    CSO_MAP_OPT(CSmallString,                           /* option type */
-                Operation,                        /* option name */
-                "add",                          /* default value */
-                false,                          /* is option mandatory */
-                0,                           /* short option name */
-                "operation",                      /* long option name */
-                "OP",                           /* parametr name */
-                "Aritihmetic operation used in the accumulator combination. Supported operations are: 'add' and 'sub'")   /* option description */
-    //----------------------------------------------------------------------
     CSO_MAP_OPT(bool,                           /* option type */
                 Verbose,                        /* option name */
                 false,                          /* default value */
                 false,                          /* is option mandatory */
                 'v',                           /* short option name */
                 "verbose",                      /* long option name */
-                NULL,                           /* parametr name */
+                NULL,                           /* parameter name */
                 "Increase output verbosity.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(bool,                           /* option type */
@@ -103,7 +78,7 @@ public:
                 false,                          /* is option mandatory */
                 '\0',                           /* short option name */
                 "version",                      /* long option name */
-                NULL,                           /* parametr name */
+                NULL,                           /* parameter name */
                 "Output version information and exit.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(bool,                           /* option type */
@@ -112,7 +87,7 @@ public:
                 false,                          /* is option mandatory */
                 'h',                           /* short option name */
                 "help",                      /* long option name */
-                NULL,                           /* parametr name */
+                NULL,                           /* parameter name */
                 "Display this help and exit.")   /* option description */
     CSO_MAP_END
 

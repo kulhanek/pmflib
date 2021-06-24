@@ -38,7 +38,7 @@ using namespace std;
 CColVariable::CColVariable(void)
 {
     ID          = 0;
-    NBins       = 0;
+    NumOfBins    = 0;
     MinValue    = 0.0;
     MaxValue    = 0.0;
     BinWidth    = 0.0;
@@ -72,10 +72,10 @@ void CColVariable::SetMinValue(double lmin)
 
     Width = MaxValue - MinValue;
     BinWidth = 0.0;
-    if(NBins > 0){
-        BinWidth = Width / ((double)NBins);
+    if(NumOfBins > 0){
+        BinWidth = Width / ((double)NumOfBins);
     } else {
-        NBins = -1;
+        NumOfBins = -1;
     }
 
 }
@@ -89,10 +89,10 @@ void CColVariable::SetMaxValue(double lmax)
     Width = MaxValue - MinValue;
     BinWidth = 0.0;
 
-    if(NBins > 0){
-        BinWidth = Width / ((double)NBins);
+    if(NumOfBins > 0){
+        BinWidth = Width / ((double)NumOfBins);
     } else {
-        NBins = -1;
+        NumOfBins = -1;
     }
 }
 
@@ -113,11 +113,11 @@ void CColVariable::SetCV(int lid,const CSmallString& lname,const CSmallString& l
     Type = ltype;
     MinValue = lmin_value;
     MaxValue = lmax_value;
-    NBins = lnbins;
+    NumOfBins = lnbins;
 
     Width = MaxValue - MinValue;
     BinWidth = 0.0;
-    if(NBins > 0) BinWidth = Width / ((double)NBins);
+    if(NumOfBins > 0) BinWidth = Width / ((double)NumOfBins);
 }
 
 //------------------------------------------------------------------------------
@@ -129,7 +129,7 @@ void CColVariable::SetCV(int lid,const CSmallString& lname,const CSmallString& l
     Type = ltype;
     MinValue = 0.0;
     MaxValue = 0.0;
-    NBins = 0;
+    NumOfBins = 0;
     Width = 0.0;
     BinWidth = 0.0;
 }
@@ -145,11 +145,11 @@ void CColVariable::SetCV(int lid,const CSmallString& lname,const CSmallString& l
     Type = ltype;
     MinValue = lmin_value;
     MaxValue = lmax_value;
-    NBins = lnbins;
+    NumOfBins = lnbins;
 
     Width = MaxValue - MinValue;
     BinWidth = 0.0;
-    if(NBins > 0) BinWidth = Width / ((double)NBins);
+    if(NumOfBins > 0) BinWidth = Width / ((double)NumOfBins);
 
     FConv = lfconv;
     Unit = lunit;
@@ -167,11 +167,11 @@ void CColVariable::SetCV(int lid,const CSmallString& lname,const CSmallString& l
     Type = ltype;
     MinValue = lmin_value;
     MaxValue = lmax_value;
-    NBins = lnbins;
+    NumOfBins = lnbins;
 
     Width = MaxValue - MinValue;
     BinWidth = 0.0;
-    if(NBins > 0) BinWidth = Width / ((double)NBins);
+    if(NumOfBins > 0) BinWidth = Width / ((double)NumOfBins);
 
     Alpha = alpha;
     FConv = lfconv;
@@ -187,7 +187,7 @@ void CColVariable::CopyFrom(const CColVariable* p_coord)
     Name      = p_coord->Name;
     Type      = p_coord->Type;
     Unit      = p_coord->Unit;
-    NBins     = p_coord->NBins;
+    NumOfBins     = p_coord->NumOfBins;
     FConv     = p_coord->FConv;
     MinValue  = p_coord->MinValue;
     MaxValue  = p_coord->MaxValue;
@@ -202,7 +202,7 @@ void CColVariable::CopyFrom(const CColVariable* p_coord)
 
 int CColVariable::GetNumOfBins(void) const
 {
-    return(NBins);
+    return(NumOfBins);
 }
 
 //------------------------------------------------------------------------------
@@ -244,8 +244,8 @@ double CColVariable::GetBinWidth(void) const
 
 double CColVariable::GetValue(unsigned int bin) const
 {
-// bin  = 0,...,NBins-1
-    return(MinValue + ((double)bin + 0.5)*(MaxValue-MinValue)/((double)NBins));
+// bin  = 0,...,NumOfBins-1
+    return(MinValue + ((double)bin + 0.5)*(MaxValue-MinValue)/((double)NumOfBins));
 }
 
 //------------------------------------------------------------------------------
@@ -303,7 +303,7 @@ bool CColVariable::IsPeriodic(void) const
 
 void CColVariable::PrintInfo(std::ostream& vout)
 {
-//    vout << "ID P Type       Unit  Name                       Min value   Max value   NBins  " << endl;
+//    vout << "ID P Type       Unit  Name                       Min value   Max value   NumOfBins  " << endl;
 //    vout << "-- - ---------- ----- -------------------------- ----------- ----------- -------" << endl;
 
     char periodic = 'F';
@@ -312,21 +312,21 @@ void CColVariable::PrintInfo(std::ostream& vout)
     vout << setw(2) << ID+1 << " " << setw(1) << periodic << " " << left << setw(10) << Type << " " << left << setw(5) << Unit << " " << setw(26) << Name << " ";
     vout << right << fixed << setw(11) << setprecision(4) << MinValue*FConv << " ";
     vout << setw(11) << setprecision(4) << MaxValue*FConv << " ";
-    vout << setw(7) << NBins << endl;
+    vout << setw(7) << NumOfBins << endl;
 }
 
 //------------------------------------------------------------------------------
 
 void CColVariable::PrintInfo(FILE* p_fout)
 {
-//    fprintf(p_fout,"# ID P Type       Unit  Name                       Min value   Max value   NBins  \n");
+//    fprintf(p_fout,"# ID P Type       Unit  Name                       Min value   Max value   NumOfBins  \n");
 //    fprintf(p_fout,"# -- - ---------- ----- -------------------------- ----------- ----------- -------\n");
 
     char periodic = 'F';
     if( IsPeriodic() ) periodic = 'T';
     fprintf(p_fout,"# %2d %1c %10s %5s %26s %11.4f %11.4f %7d\n",ID+1,periodic,
                     (const char*)Type,(const char*)Unit,(const char*)Name,
-                     MinValue*FConv,MaxValue*FConv,NBins);
+                     MinValue*FConv,MaxValue*FConv,NumOfBins);
 
 }
 
@@ -346,7 +346,7 @@ void CColVariable::LoadInfo(CXMLElement* p_ele)
     result &= p_ele->GetAttribute("Unit",Unit);
     result &= p_ele->GetAttribute("FConv",FConv);
 
-    if( p_ele->GetAttribute("NBins",NBins) ){
+    if( p_ele->GetAttribute("NumOfBins",NumOfBins) ){
         result &= p_ele->GetAttribute("MinValue",MinValue);
         result &= p_ele->GetAttribute("MaxValue",MaxValue);
     }
@@ -361,7 +361,7 @@ void CColVariable::LoadInfo(CXMLElement* p_ele)
 
     Width = MaxValue - MinValue;
     BinWidth = 0.0;
-    if(NBins > 0) BinWidth = Width/((double)NBins);
+    if(NumOfBins > 0) BinWidth = Width/((double)NumOfBins);
 }
 
 //------------------------------------------------------------------------------
@@ -385,8 +385,8 @@ bool CColVariable::CheckInfo(CXMLElement* p_ele) const
     result &= p_ele->GetAttribute("Unit",lunit);
     result &= p_ele->GetAttribute("FConv",lunit_fac);
 
-    if( NBins > 0 ){
-        result &= p_ele->GetAttribute("NBins",lnbins);
+    if( NumOfBins > 0 ){
+        result &= p_ele->GetAttribute("NumOfBins",lnbins);
         result &= p_ele->GetAttribute("MinValue",lmin_value);
         result &= p_ele->GetAttribute("MaxValue",lmax_value);
     }
@@ -422,7 +422,7 @@ bool CColVariable::CheckInfo(CXMLElement* p_ele) const
 //        return(false);
 //    }
 
-    if( NBins > 0 ){
+    if( NumOfBins > 0 ){
         if(fabs(lmin_value-MinValue) > fabs(MinValue/100000.0)) {
             ES_ERROR("mismatch in MinValue");
             return(false);
@@ -433,8 +433,8 @@ bool CColVariable::CheckInfo(CXMLElement* p_ele) const
             return(false);
         }
 
-        if(lnbins != NBins) {
-            ES_ERROR("mismatch in NBins");
+        if(lnbins != NumOfBins) {
+            ES_ERROR("mismatch in NumOfBins");
             return(false);
         }
     }
@@ -476,7 +476,7 @@ bool CColVariable::CheckInfo(const CColVariable* p_coord) const
 //        return(false);
 //    }
 
-    if( NBins > 0 ){
+    if( NumOfBins > 0 ){
 
         if(fabs(p_coord->MinValue-MinValue) > fabs(MinValue/100000.0)) {
             ES_ERROR("mismatch in MinValue");
@@ -488,8 +488,8 @@ bool CColVariable::CheckInfo(const CColVariable* p_coord) const
             return(false);
         }
 
-        if(p_coord->NBins != NBins) {
-            ES_ERROR("mismatch in NBins");
+        if(p_coord->NumOfBins != NumOfBins) {
+            ES_ERROR("mismatch in NumOfBins");
             return(false);
         }
     }
@@ -531,7 +531,7 @@ bool CColVariable::CheckInfo(const CColVariablePtr p_coord) const
 //        return(false);
 //    }
 
-    if( NBins > 0 ){
+    if( NumOfBins > 0 ){
 
         if(fabs(p_coord->MinValue-MinValue) > fabs(MinValue/100000.0)) {
             ES_ERROR("mismatch in MinValue");
@@ -543,8 +543,8 @@ bool CColVariable::CheckInfo(const CColVariablePtr p_coord) const
             return(false);
         }
 
-        if(p_coord->NBins != NBins) {
-            ES_ERROR("mismatch in NBins");
+        if(p_coord->NumOfBins != NumOfBins) {
+            ES_ERROR("mismatch in NumOfBins");
             return(false);
         }
     }
@@ -565,10 +565,10 @@ void CColVariable::SaveInfo(CXMLElement* p_ele) const
     p_ele->SetAttribute("Type",Type);
     p_ele->SetAttribute("Unit",Unit);
     p_ele->SetAttribute("FConv",FConv);
-    if( NBins != 0 ){
+    if( NumOfBins != 0 ){
         p_ele->SetAttribute("MinValue",MinValue);
         p_ele->SetAttribute("MaxValue",MaxValue);
-        p_ele->SetAttribute("NBins",NBins);
+        p_ele->SetAttribute("NumOfBins",NumOfBins);
     }
     // optional
     p_ele->SetAttribute("MaxMovement",MaxMovement);

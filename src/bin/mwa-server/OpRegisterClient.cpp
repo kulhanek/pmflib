@@ -1,6 +1,7 @@
 // =============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
+//    Copyright (C) 2021 Petr Kulhanek, kulhanek@chemi.muni.cz
 //    Copyright (C) 2008 Petr Kulhanek, kulhanek@enzim.hu
 //
 //     This program is free software; you can redistribute it and/or modify
@@ -21,8 +22,8 @@
 #include <stdio.h>
 #include <ErrorSystem.hpp>
 #include <RegClient.hpp>
-#include "ABFProcessor.hpp"
-#include "ABFServer.hpp"
+#include "MWAProcessor.hpp"
+#include "MWAServer.hpp"
 #include <XMLElement.hpp>
 #include <ServerCommand.hpp>
 
@@ -30,20 +31,20 @@
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void CABFProcessor::RegisterClient(void)
+void CMWAProcessor::RegisterClient(void)
 {
 // set or check coordinates
-    if(ABFServer.ABFAccumulator.RegisterOrCheckCoords(Command) == false) {
+    if(MWAServer.MWAAccumulator.RegisterOrCheckCoords(Command) == false) {
         LOGIC_ERROR("unable to create or check coordinates");
     }
 
 // in synchronous mode only the same number of clients can register
-    if( ABFServer.ABFAccumulator.GetNumberOfClients() > 0 ){
+    if( MWAServer.MWAAccumulator.GetNumberOfClients() > 0 ){
         // how many clients we have now?
-        int nregcl = ABFServer.RegClients.GetNumberOfRegClients();
-        if( nregcl >= ABFServer.ABFAccumulator.GetNumberOfClients() ){
+        int nregcl = MWAServer.RegClients.GetNumberOfRegClients();
+        if( nregcl >= MWAServer.MWAAccumulator.GetNumberOfClients() ){
             CSmallString error;
-            error << "in synchronous mode, only '" << ABFServer.ABFAccumulator.GetNumberOfClients() << "' clients are allowed (as requested in [sync] section)";
+            error << "in synchronous mode, only '" << MWAServer.MWAAccumulator.GetNumberOfClients() << "' clients are allowed (as requested in [sync] section)";
             LOGIC_ERROR(error);
         }
     }
@@ -52,10 +53,7 @@ void CABFProcessor::RegisterClient(void)
     CSmallString job_id;
     CommandElement->GetAttribute("job_id",job_id);
     CRegClient* p_rc = new CRegClient(Command->GetClientName(),job_id);
-    ABFServer.RegClients.RegisterClient(p_rc);
-
-    // set accu header
-    ABFServer.ABFAccumulator.SetMainHeader(Command);
+    MWAServer.RegClients.RegisterClient(p_rc);
 
 // write response
     ResultElement->SetAttribute("client_id",p_rc->GetClientID());

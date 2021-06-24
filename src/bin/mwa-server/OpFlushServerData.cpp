@@ -1,6 +1,7 @@
 // =============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
+//    Copyright (C) 2021 Petr Kulhanek, kulhanek@chemi.muni.cz
 //    Copyright (C) 2008 Petr Kulhanek, kulhanek@enzim.hu
 //
 //     This program is free software; you can redistribute it and/or modify
@@ -20,16 +21,16 @@
 
 #include <stdio.h>
 #include <ErrorSystem.hpp>
-#include "ABFProcessor.hpp"
-#include "ABFServer.hpp"
+#include "MWAProcessor.hpp"
+#include "MWAServer.hpp"
 
 //==============================================================================
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void CABFProcessor::FlushServerData(void)
+void CMWAProcessor::FlushServerData(void)
 {
-    ABFServer.ABFAccumulator.FlushData(ABFServer.OutputFileName);
+    MWAServer.MWAAccumulator.FlushData(MWAServer.OutputFileName);
 }
 
 //==============================================================================

@@ -1,7 +1,7 @@
 // =============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
-//    Copyright (C) 2011 Petr Kulhanek, kulhanek@chemi.muni.cz
+//    Copyright (C) 2021 Petr Kulhanek, kulhanek@chemi.muni.cz
 //    Copyright (C) 2008 Petr Kulhanek, kulhanek@enzim.hu
 //
 //     This program is free software; you can redistribute it and/or modify
@@ -19,20 +19,69 @@
 //     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 // =============================================================================
 
-#include "ABFFactory.hpp"
-#include "ABFProcessor.hpp"
-
-//------------------------------------------------------------------------------
-
-CABFFactory ABFFactory;
+#include "ACCUCombOptions.hpp"
 
 //==============================================================================
 //------------------------------------------------------------------------------
 //==============================================================================
 
-CCmdProcessor* CABFFactory::CreateProcessor(CServerCommand* p_command) const
+CACCUCombOptions::CACCUCombOptions(void)
 {
-    return(new CABFProcessor(p_command));
+    SetShowMiniUsage(true);
+    SetAllowProgArgs(true);
+}
+
+//------------------------------------------------------------------------------
+
+/*
+ check validity of specified options
+*/
+
+int CACCUCombOptions::CheckOptions(void)
+{
+    return(SO_CONTINUE);
+}
+
+//------------------------------------------------------------------------------
+
+/*
+ process special options (Help, Version) before arguments will be processed
+*/
+
+int CACCUCombOptions::FinalizeOptions(void)
+{
+    bool ret_opt = false;
+
+    if(GetOptHelp() == true) {
+        PrintUsage();
+        ret_opt = true;
+    }
+
+    if(GetOptVersion() == true) {
+        PrintVersion();
+        ret_opt = true;
+    }
+
+    if(ret_opt == true) {
+        printf("\n");
+        return(SO_EXIT);
+    }
+
+    return(SO_CONTINUE);
+}
+
+//------------------------------------------------------------------------------
+
+int CACCUCombOptions::CheckArguments(void)
+{
+    if( GetNumberOfProgArgs() < 3 ){
+        if(IsError == false) fprintf(stderr,"\n");
+        fprintf(stderr,"%s: at least three arguments are expected, but %d is provided\n",
+                (const char*)GetProgramName(),GetNumberOfProgArgs());
+        IsError = true;
+    }
+    if(IsError == true) return(SO_OPTS_ERROR);
+    return(SO_CONTINUE);
 }
 
 //==============================================================================

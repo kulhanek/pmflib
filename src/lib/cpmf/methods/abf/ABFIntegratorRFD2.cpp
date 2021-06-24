@@ -243,7 +243,7 @@ void CABFIntegratorRFD2::BuildEquations(bool trial)
             ifbin3 = GetFBinIndex(IPoint,ifcoord,2);
             ifbin4 = GetFBinIndex(IPoint,ifcoord,3);
 
-            const CColVariable* p_coord = Accumulator->GetCV(ifcoord);
+            const CColVariablePtr p_coord = Accumulator->GetCV(ifcoord);
             double              diff = p_coord->GetBinWidth();
 
             switch(FDLevel) {
@@ -353,7 +353,7 @@ int CABFIntegratorRFD2::GetFBinIndex(const CSimpleVector<int>& position,int ifco
 {
     int glbindex = 0;
     for(int i=0; i < Accumulator->GetNumOfCVs(); i++) {
-        const CColVariable* p_coord = Accumulator->GetCV(i);
+        const CColVariablePtr p_coord = Accumulator->GetCV(i);
         int nbins = p_coord->GetNumOfBins();
         int pos = position[i];
         if(i == ifcoord) {

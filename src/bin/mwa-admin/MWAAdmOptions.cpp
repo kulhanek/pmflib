@@ -1,6 +1,7 @@
-// =============================================================================
+// ===============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
-// -----------------------------------------------------------------------------
+// -------------------------------------------------------------------------------
+//    Copyright (C) 2021 Petr Kulhanek, kulhanek@chemi.muni.cz
 //    Copyright (C) 2008 Petr Kulhanek, kulhanek@enzim.hu
 //
 //     This program is free software; you can redistribute it and/or modify
@@ -16,44 +17,38 @@
 //     You should have received a copy of the GNU General Public License along
 //     with this program; if not, write to the Free Software Foundation, Inc.,
 //     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
-// =============================================================================
+// ===============================================================================
 
-#include "ABFCombOptions.hpp"
+#include "MWAAdmOptions.hpp"
+#include <ActionRequest.hpp>
+#include <ErrorSystem.hpp>
 
 //==============================================================================
 //------------------------------------------------------------------------------
 //==============================================================================
 
-CABFCombOptions::CABFCombOptions(void)
+CMWAAdmOptions::CMWAAdmOptions(void)
 {
     SetShowMiniUsage(true);
 }
 
 //------------------------------------------------------------------------------
 
-/*
- check validity of specified options
-*/
-
-int CABFCombOptions::CheckOptions(void)
+int CMWAAdmOptions::CheckOptions(void)
 {
-    if((GetOptOperation() != "add") && (GetOptOperation() != "sub")) {
+    if(IsOptPasswordSet() && IsOptServerKeySet()) {
         if(IsError == false) fprintf(stderr,"\n");
-        fprintf(stderr,"%s: 'add' and 'sub' operation are supported only, but '%s' is provided\n", (const char*)GetProgramName(),(const char*)GetOptOperation());
+        fprintf(stderr,"%s: --password and --serverkey options are mutually exclusive\n", (char*)GetProgramName());
         IsError = true;
+        return(SO_OPTS_ERROR);
     }
 
-    if(IsError == true) return(SO_OPTS_ERROR);
     return(SO_CONTINUE);
 }
 
 //------------------------------------------------------------------------------
 
-/*
- process special options (Help, Version) before arguments will be processed
-*/
-
-int CABFCombOptions::FinalizeOptions(void)
+int CMWAAdmOptions::FinalizeOptions(void)
 {
     bool ret_opt = false;
 
@@ -77,15 +72,44 @@ int CABFCombOptions::FinalizeOptions(void)
 
 //------------------------------------------------------------------------------
 
-int CABFCombOptions::CheckArguments(void)
+int CMWAAdmOptions::CheckArguments(void)
 {
-    if((GetArgABFAccuName1() == "-") && (GetArgABFAccuName1() == GetArgABFAccuName2())) {
-        if(IsError == false) fprintf(stderr,"\n");
-        fprintf(stderr,"%s: standard input can be used only for one input file\n", (const char*)GetProgramName());
-        IsError = true;
+    CActionRequest server_desc;
+    server_desc.SetProtocolName("mwa");
+
+    try {
+        server_desc.SetQualifiedName(GetArgCommand());
+    } catch(...) {
+        if(IsVerbose()) {
+            if(IsError == false) fprintf(stderr,"\n");
+            fprintf(stderr,"%s: %s\n", (const char*)GetProgramName(), (const char*)ErrorSystem.GetLastError());
+            IsError = true;
+        }
+        return(SO_OPTS_ERROR);
     }
 
-    if(IsError == true) return(SO_OPTS_ERROR);
+    if(server_desc.GetAction() == NULL) {
+        if(IsVerbose()) {
+            if(IsError == false) fprintf(stderr,"\n");
+            fprintf(stderr,"%s: no action is specified\n", (const char*)GetProgramName());
+            IsError = true;
+        }
+        return(SO_OPTS_ERROR);
+    }
+
+    if((server_desc.GetAction() != "info") &&
+            (server_desc.GetAction() != "shutdown") &&
+            (server_desc.GetAction() != "errors") &&
+            (server_desc.GetAction() != "get") &&
+            (server_desc.GetAction() != "flush")) {
+        if(IsVerbose()) {
+            if(IsError == false) fprintf(stderr,"\n");
+            fprintf(stderr,"%s: specified action '%s' is not supported\n", (const char*)GetProgramName(), (const char*)server_desc.GetAction());
+            IsError = true;
+        }
+        return(SO_OPTS_ERROR);
+    }
+
     return(SO_CONTINUE);
 }
 

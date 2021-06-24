@@ -3,12 +3,12 @@
 # ==============================================================================
 
 # program objects --------------------------------------------------------------
-SET(ABF_SERVER_SRC
-        ABFServer.cpp
-        ABFSrvOptions.cpp
-        ABFProcessor.cpp
-        ABFFactory.cpp
-        ABFServerAccu.cpp
+SET(MWA_SERVER_SRC
+        MWAServer.cpp
+        MWASrvOptions.cpp
+        MWAProcessor.cpp
+        MWAFactory.cpp
+        MWAServerAccu.cpp
         OpFlushServerData.cpp
         OpGetInitialData.cpp
         OpGetServerInfo.cpp
@@ -19,13 +19,13 @@ SET(ABF_SERVER_SRC
         )
 
 # final build ------------------------------------------------------------------
-ADD_EXECUTABLE(abf-server ${ABF_SERVER_SRC})
-ADD_DEPENDENCIES(abf-server cpmf_shared)
+ADD_EXECUTABLE(mwa-server ${MWA_SERVER_SRC})
+ADD_DEPENDENCIES(mwa-server cpmf_shared)
 
-TARGET_LINK_LIBRARIES(abf-server  ${CPMF_LIBRARIES})
+TARGET_LINK_LIBRARIES(mwa-server  ${CPMF_LIBRARIES})
 
 INSTALL(TARGETS
-            abf-server
+            mwa-server
         RUNTIME DESTINATION
             bin
         )
