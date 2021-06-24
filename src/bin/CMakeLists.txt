@@ -34,11 +34,8 @@ ADD_SUBDIRECTORY(accu-trajectory)
 ## ABP utilities
 #ADD_SUBDIRECTORY(abp-energy)
 #
-## general utilities
-#ADD_SUBDIRECTORY(pmf-integrate)
-#
-## metadynamics
-#ADD_SUBDIRECTORY(mtd-energy)
+# metadynamics
+ADD_SUBDIRECTORY(mtd-energy)
 
 ## string method
 #ADD_SUBDIRECTORY(stm-trajectory)

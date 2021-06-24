@@ -54,8 +54,8 @@ private:
     CMTDEneOptions          Options;            // program options
     CStdIOFile              InputFile;
     CStdIOFile              OutputFile;
-    CMTDAccumulator         MTDAccumulator;     // MTD accumulator
-    CEnergySurface          FES;                // energy surface
+    CMTDAccumulatorPtr      MTDAccu;            // MTD accumulator
+    CEnergySurfacePtr       FES;                // energy surface
     CTerminalStr            Console;
     CVerboseStr             vout;
 
