@@ -56,7 +56,7 @@ subroutine mtd_trajectory_open
 
     return
 
-    10 format('# MTDTRAJ')
+    10 format('#ACCUTRAJ')
 
 end subroutine mtd_trajectory_open
 
@@ -70,7 +70,7 @@ subroutine mtd_trajectory_write_snapshot
     use pmf_dat
     use pmf_constants
     use mtd_dat
-    use mtd_accumulator
+    use mtd_accu
 
     implicit none
     ! --------------------------------------------------------------------------
@@ -83,11 +83,11 @@ subroutine mtd_trajectory_write_snapshot
     write(MTD_TRJ,10) fstep
 
     ! write accumulator
-    call mtd_accumulator_write(MTD_TRJ)
+    call mtd_accu_write(MTD_TRJ)
 
     return
 
-10 format('# ABFSNAP',I7)
+10 format('#ACCUSNAP',1X,I7)
 
 end subroutine mtd_trajectory_write_snapshot
 

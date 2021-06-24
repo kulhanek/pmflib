@@ -85,7 +85,7 @@ subroutine mtd_core_grid
 
     use pmf_dat
     use mtd_dat
-    use mtd_accumulator
+    use mtd_accu
 
     implicit none
     integer                    :: i,j,ci
@@ -97,7 +97,7 @@ subroutine mtd_core_grid
     end do
 
     ! get current data
-    call mtd_accumulator_get_data(CVValues, TotalMTDEnergy, MTDForce)
+    call mtd_accu_get_data(CVValues, TotalMTDEnergy, MTDForce)
 
     ! put new hill if it is a time
     if( fstep .eq. meta_next_fstep ) then
@@ -122,7 +122,7 @@ subroutine mtd_core_add_new_hill(cvs,mtdpot)
 
     use pmf_dat
     use mtd_dat
-    use mtd_accumulator
+    use mtd_accu
     use pmf_utils
     use mtd_output
 
@@ -156,7 +156,7 @@ subroutine mtd_core_add_new_hill(cvs,mtdpot)
     end if
 
     ! put the hill
-    call mtd_accumulator_add_data(cvs,hill_height,CVWidths)
+    call mtd_accu_add_data(cvs,hill_height,CVWidths)
 
     ! report if required
     call mtd_output_write(cvs,hill_height,CVWidths)

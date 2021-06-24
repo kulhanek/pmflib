@@ -5,7 +5,7 @@
 !    Copyright (C) 2013-2015 Letif Mones, lam81@cam.ac.uk
 !    Copyright (C) 2007 Petr Kulhanek, kulhanek@enzim.hu
 !    Copyright (C) 2006 Petr Kulhanek, kulhanek@chemi.muni.cz &
-!                       Martin Petrek, petrek@chemi.muni.cz 
+!                       Martin Petrek, petrek@chemi.muni.cz
 !    Copyright (C) 2005 Petr Kulhanek, kulhanek@chemi.muni.cz
 !
 !    This library is free software; you can redistribute it and/or
@@ -20,7 +20,7 @@
 !
 !    You should have received a copy of the GNU Lesser General Public
 !    License along with this library; if not, write to the Free Software
-!    Foundation, Inc., 51 Franklin Street, Fifth Floor, 
+!    Foundation, Inc., 51 Franklin Street, Fifth Floor,
 !    Boston, MA  02110-1301  USA
 !===============================================================================
 
@@ -61,7 +61,7 @@ subroutine rst_core_force
     use rst_restraints
     use pmf_utils
     use pmf_cvs
-    use rst_accumulator
+    use rst_accu
 
     implicit none
     integer                :: i, ci
@@ -96,7 +96,7 @@ subroutine rst_core_force
         Frc(:,:) = Frc(:,:) - RSTCVList(i)%force_constant*RSTCVList(i)%deviation*CVContext%CVsDrvs(:,:,RSTCVList(i)%cvindx)
     end do
 
-    call rst_accumulator_add_sample(CVContext%CVsValues)
+    call rst_accu_add_sample(CVContext%CVsValues)
 
 end subroutine rst_core_force
 

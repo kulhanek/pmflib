@@ -42,14 +42,14 @@ subroutine mtd_init_method
     use mtd_output
     use mtd_restart
     use mtd_client
-    use mtd_accumulator
+    use mtd_accu
 
     implicit none
     ! -----------------------------------------------------------------------------
 
     call mtd_init_core
     call mtd_init_print_header
-    call mtd_accumulator_init
+    call mtd_accu_init
     call mtd_output_open
     call mtd_restart_read
     call mtd_client_register
@@ -201,7 +201,7 @@ subroutine mtd_init_core
     use pmf_dat
     use pmf_utils
     use mtd_dat
-    use mtd_accumulator
+    use mtd_accu
 
     implicit none
     integer     :: alloc_failed, i
@@ -230,7 +230,7 @@ subroutine mtd_init_core
     end do
 
     ! init accumulator ------------------------------
-    call mtd_accumulator_init
+    call mtd_accu_init
 
     return
 

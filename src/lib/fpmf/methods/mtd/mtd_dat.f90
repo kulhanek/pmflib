@@ -30,6 +30,7 @@ module mtd_dat
 use pmf_sizes
 use pmf_constants
 use pmf_cvs
+use pmf_accu
 
 implicit none
 
@@ -77,34 +78,22 @@ end type CVTypeMTD
 integer                     :: NumOfMTDCVs              ! number of CVs
 type(CVTypeMTD),allocatable :: MTDCVList(:)             ! list of CVs
 
-! grid list ---------------------------------------------------------------------
+! ------------------------------------------------------------------------------
 
-type CVInfoTypeMTD
-    integer                  :: nbins           ! number of grid bins
-    real(PMFDP)              :: min_value       ! left boundary of coordinate
-    real(PMFDP)              :: max_value       ! left boundary of coordinate
-    real(PMFDP)              :: bin_width       ! (right-left)/numbins
-    real(PMFDP)              :: width           ! right - left
-end type CVInfoTypeMTD
-
-! ----------------------
-
-type MTDGridType
-    integer                         :: tot_cvs              ! total number of independent CVs
-    type(CVInfoTypeMTD), pointer    :: sizes(:)             ! grid information
-    integer                         :: tot_nbins            ! number of total grids
+type,extends(PMFAccuType) :: MTDGridType
+    ! accumulated data
     real(PMFDP),pointer             :: binpositions(:,:)    ! position of grids
     integer,pointer                 :: nsamples(:)          ! number of hits into bins
     real(PMFDP),pointer             :: mtdpotential(:)      ! MTD potential
     real(PMFDP),pointer             :: mtdforce(:,:)        ! MTD forces
     ! incremental data
-    integer,pointer                 :: insamples(:)         ! number of hits into bins
-    real(PMFDP),pointer             :: imtdpotential(:)     ! MTD potential
-    real(PMFDP),pointer             :: imtdforce(:,:)       ! MTD forces
+    integer,pointer                 :: inc_nsamples(:)         ! number of hits into bins
+    real(PMFDP),pointer             :: inc_mtdpotential(:)     ! MTD potential
+    real(PMFDP),pointer             :: inc_mtdforce(:,:)       ! MTD forces
 end type MTDGridType
 
 ! ----------------------
-type(MTDGridType)           :: accumulator
+type(MTDGridType)           :: mtdaccu
 integer                     :: insidesamples
 integer                     :: outsidesamples
 ! ----------------------

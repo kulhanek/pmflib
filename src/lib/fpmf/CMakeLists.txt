@@ -207,7 +207,7 @@ SET(PMF_MTD_CORE_SRC
         methods/mtd/mtd_restart.f90
         methods/mtd/mtd_core.f90
         methods/mtd/mtd_finalize.f90
-        methods/mtd/mtd_accumulator.f90
+        methods/mtd/mtd_accu.f90
         methods/mtd/mtd_trajectory.f90
         )
 
@@ -219,7 +219,7 @@ SET(PMF_RST_CORE_SRC
         methods/rst/rst_restraints.f90
         methods/rst/rst_control.F90
         methods/rst/rst_output.f90
-        methods/rst/rst_accumulator.f90
+        methods/rst/rst_accu.f90
         methods/rst/rst_restart.f90
         methods/rst/rst_core.f90
         methods/rst/rst_finalize.f90

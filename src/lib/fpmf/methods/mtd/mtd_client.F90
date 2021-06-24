@@ -115,7 +115,7 @@ subroutine mtd_client_register
 
 #ifdef PMFLIB_NETWORK
     ! register coordinates
-    call cpmf_mtd_client_set_header(ret_st,NumOfMTDCVs,accumulator%tot_nbins)
+    call cpmf_mtd_client_set_header(ret_st,NumOfMTDCVs,mtdaccu%tot_nbins)
 
     if( ret_st .ne. 0 ) then
         call pmf_utils_exit(PMF_OUT,1)
@@ -182,7 +182,7 @@ subroutine mtd_client_get_initial_data
     use mtd_dat
     use pmf_utils
     use pmf_timers
-    use mtd_accumulator
+    use mtd_accu
 
     implicit none
 #ifdef PMFLIB_NETWORK
@@ -196,9 +196,9 @@ subroutine mtd_client_get_initial_data
 
 #ifdef PMFLIB_NETWORK
     call cpmf_mtd_client_initial_data(ret_st,                       &
-                                        accumulator%nsamples,       &
-                                        accumulator%mtdpotential,   &
-                                        accumulator%mtdforce        &
+                                        mtdaccu%nsamples,       &
+                                        mtdaccu%mtdpotential,   &
+                                        mtdaccu%mtdforce        &
                                         )
 
     if( ret_st .ne. 0 ) then
@@ -254,9 +254,9 @@ subroutine mtd_client_exchange_data(force_exchange)
 
 #ifdef PMFLIB_NETWORK
     call cpmf_mtd_client_exchange_data(ret_st,                      &
-                                        accumulator%insamples,      &
-                                        accumulator%imtdpotential,  &
-                                        accumulator%imtdforce       &
+                                        mtdaccu%inc_nsamples,      &
+                                        mtdaccu%inc_mtdpotential,  &
+                                        mtdaccu%inc_mtdforce       &
                                        )
 
     if( ret_st .ne. 0 ) then
@@ -274,15 +274,15 @@ subroutine mtd_client_exchange_data(force_exchange)
     end if
 
     ! move received data to main accumulator
-    accumulator%nsamples(:)         = accumulator%insamples(:)
-    accumulator%mtdpotential(:)     = accumulator%imtdpotential(:)
-    accumulator%mtdforce(:,:)       = accumulator%imtdforce(:,:)
+    mtdaccu%nsamples(:)         = mtdaccu%inc_nsamples(:)
+    mtdaccu%mtdpotential(:)     = mtdaccu%inc_mtdpotential(:)
+    mtdaccu%mtdforce(:,:)       = mtdaccu%inc_mtdforce(:,:)
 #endif
 
     ! and reset incremental data
-    accumulator%insamples(:)        = 0
-    accumulator%imtdpotential(:)    = 0.0d0
-    accumulator%imtdforce(:,:)      = 0.0d0
+    mtdaccu%inc_nsamples(:)        = 0
+    mtdaccu%inc_mtdpotential(:)    = 0.0d0
+    mtdaccu%inc_mtdforce(:,:)      = 0.0d0
 
     failure_counter = 0
 

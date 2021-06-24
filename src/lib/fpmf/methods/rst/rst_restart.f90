@@ -20,7 +20,7 @@
 !
 !    You should have received a copy of the GNU Lesser General Public
 !    License along with this library; if not, write to the Free Software
-!    Foundation, Inc., 51 Franklin Street, Fifth Floor, 
+!    Foundation, Inc., 51 Franklin Street, Fifth Floor,
 !    Boston, MA  02110-1301  USA
 !===============================================================================
 
@@ -38,7 +38,7 @@ subroutine rst_restart_read
     use pmf_dat
     use pmf_utils
     use rst_dat
-    use rst_accumulator
+    use rst_accu
 
     implicit none
     ! --------------------------------------------------------------------------
@@ -54,7 +54,7 @@ subroutine rst_restart_read
         ! open restart file -----------------------------------------------------------
         call pmf_utils_open(RST_RST,frsthist,'O')
 
-        call rst_accumulator_read(RST_RST)
+        call rst_accu_read(RST_RST)
 
         close(RST_RST)
     else
@@ -77,7 +77,7 @@ subroutine rst_restart_update
 
     use pmf_dat
     use pmf_utils
-    use rst_accumulator
+    use rst_accu
     use rst_dat
 
     implicit none
@@ -92,7 +92,7 @@ subroutine rst_restart_update
 
     call pmf_utils_open(RST_RST,frsthist,'U')
 
-    call rst_accumulator_write(RST_RST)
+    call rst_accu_write(RST_RST)
 
     close(RST_RST)
 
@@ -109,7 +109,7 @@ subroutine rst_restart_write
     use pmf_dat
     use rst_dat
     use pmf_utils
-    use rst_accumulator
+    use rst_accu
 
     implicit none
     !---------------------------------------------------------------------------
@@ -119,7 +119,7 @@ subroutine rst_restart_write
 
     call pmf_utils_open(RST_RST,frsthist,'U')
 
-    call rst_accumulator_write(RST_RST)
+    call rst_accu_write(RST_RST)
 
     close(RST_RST)
 

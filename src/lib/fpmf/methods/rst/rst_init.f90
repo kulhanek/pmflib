@@ -40,13 +40,13 @@ subroutine rst_init_method
 
     use rst_output
     use rst_restart
-    use rst_accumulator
+    use rst_accu
 
     implicit none
     ! --------------------------------------------------------------------------
 
     call rst_init_core
-    call rst_accumulator_init
+    call rst_accu_init
     call rst_init_print_header
     call rst_output_open
     call rst_restart_read

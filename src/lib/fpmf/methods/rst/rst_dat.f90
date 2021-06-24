@@ -5,7 +5,7 @@
 !    Copyright (C) 2013-2015 Letif Mones, lam81@cam.ac.uk
 !    Copyright (C) 2007 Petr Kulhanek, kulhanek@enzim.hu
 !    Copyright (C) 2006 Petr Kulhanek, kulhanek@chemi.muni.cz &
-!                       Martin Petrek, petrek@chemi.muni.cz 
+!                       Martin Petrek, petrek@chemi.muni.cz
 !    Copyright (C) 2005 Petr Kulhanek, kulhanek@chemi.muni.cz
 !
 !    This library is free software; you can redistribute it and/or
@@ -20,7 +20,7 @@
 !
 !    You should have received a copy of the GNU Lesser General Public
 !    License along with this library; if not, write to the Free Software
-!    Foundation, Inc., 51 Franklin Street, Fifth Floor, 
+!    Foundation, Inc., 51 Franklin Street, Fifth Floor,
 !    Boston, MA  02110-1301  USA
 !===============================================================================
 
@@ -29,6 +29,7 @@ module rst_dat
 use pmf_sizes
 use pmf_constants
 use pmf_cvs
+use pmf_accu
 
 implicit none
 
@@ -77,20 +78,9 @@ type CVTypeUM
     real(PMFDP),pointer     :: control_values(:) ! values for controlled streering
 end type CVTypeUM
 
-! accu types -------------------------------------------------------------------
-type CVInfoTypeUM
-    integer                 :: nbins            ! number of accumulator bins
-    real(PMFDP)             :: min_value        ! left boundary of coordinate
-    real(PMFDP)             :: max_value        ! left boundary of coordinate
-    real(PMFDP)             :: bin_width        ! (right-left)/numbins
-    real(PMFDP)             :: width            ! right - left
-end type CVInfoTypeUM
+! RST accumulator --------------------------------------------------------------
 
-! ----------------------
-type UMAccuType
-     integer                        :: tot_cvs      ! total number of independent CVs
-     type(CVInfoTypeUM), pointer    :: sizes(:)     ! accumulator informations
-     integer                        :: tot_nbins    ! number of total bins
+type,extends(PMFAccuType) ::  UMAccuType
 
      integer,pointer                :: nsamples(:)  ! number of hits into bins
 end type UMAccuType
@@ -100,12 +90,12 @@ end type UMAccuType
 ! ----------------------
 ! regular umbrella sampling
 integer                     :: NumOfRSTItems        ! number of restraints
-type(CVTypeUM),allocatable  :: RSTCVList(:)        ! input definition of restraints
+type(CVTypeUM),allocatable  :: RSTCVList(:)         ! input definition of restraints
 real(PMFDP)                 :: TotalRstEnergy       ! total restraints energy
 
 ! ----------------------
 ! umbrella integration
-type(UMAccuType)            :: Accumulator          ! accumulated data for TI
+type(UMAccuType)            :: rstaccu              ! accumulated data for TI
 integer                     :: insidesamples
 integer                     :: outsidesamples
 

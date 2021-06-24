@@ -39,7 +39,7 @@ subroutine mtd_restart_read
     use pmf_dat
     use pmf_utils
     use mtd_dat
-    use mtd_accumulator
+    use mtd_accu
 
     implicit none
     ! --------------------------------------------------------------------------
@@ -55,7 +55,7 @@ subroutine mtd_restart_read
         ! open restart file ----------------------------------------------------
         call pmf_utils_open(MTD_RST,fmtdrst,'O')
 
-        call mtd_accumulator_read(MTD_RST)
+        call mtd_accu_read(MTD_RST)
 
         close(MTD_RST)
     else
@@ -78,7 +78,7 @@ subroutine mtd_restart_update
 
     use pmf_dat
     use pmf_utils
-    use mtd_accumulator
+    use mtd_accu
     use mtd_dat
 
     implicit none
@@ -89,7 +89,7 @@ subroutine mtd_restart_update
     if( mod(fstep,frstupdate) .ne. 0 ) return
 
     call pmf_utils_open(MTD_RST,fmtdrst,'U')
-    call mtd_accumulator_write(MTD_RST)
+    call mtd_accu_write(MTD_RST)
     close(MTD_RST)
 
     write(MTD_OUT,10) fstep, insidesamples, outsidesamples
@@ -108,14 +108,14 @@ subroutine mtd_restart_write
 
     use pmf_dat
     use pmf_utils
-    use mtd_accumulator
+    use mtd_accu
 
     implicit none
     !---------------------------------------------------------------------------
 
     call pmf_utils_open(MTD_RST,fmtdrst,'U')
 
-    call mtd_accumulator_write(MTD_RST)
+    call mtd_accu_write(MTD_RST)
 
     close(MTD_RST)
 
