@@ -27,10 +27,13 @@
 #include <ESPrinter.hpp>
 #include "ABPEnergy.hpp"
 #include <iomanip>
+#include <ABPProxy_dG.hpp>
+#include <boost/format.hpp>
 
 //------------------------------------------------------------------------------
 
 using namespace std;
+using namespace boost;
 
 //------------------------------------------------------------------------------
 
@@ -150,26 +153,51 @@ int CABPEnergy::Init(int argc,char* argv[])
 
 bool CABPEnergy::Run(void)
 {
-// load history list
+    int State = 1;
+
+// -----------------------------------------------------------------------------
+// setup accu, energy proxy, and output FES
+    Accu        = CPMFAccumulatorPtr(new CPMFAccumulator);
+    FES         = CEnergySurfacePtr(new CEnergySurface);
+    EneProxy    = CABPProxy_dG_Ptr(new CABPProxy_dG);
+
+// load ABP accumulator
+    vout << endl;
+    vout << format("%02d:Loading ABP accumulator: %s")%State%string(Options.GetArgInput()) << endl;
     try {
-        ABPAccumulator.Load(InputFile);
+        Accu->Load(InputFile);
     } catch(...) {
         ES_ERROR("unable to load the input ABP accumulator file");
         return(false);
     }
 
+    Accu->PrintInfo(vout);
+    EneProxy->Init(Accu);
+
+// -----------------------------------------------------------------------------
+// calculate FES
+
+    vout << endl;
+    vout << format("%02d:Calculating FES ...")%State << endl;
+    State++;
+
 // print header
     if((Options.GetOptNoHeader() == false) && (Options.GetOptOutputFormat() != "fes")) {
-        // FIXME - FILL info
+        Options.PrintOptions(OutputFile);
+        Accu->PrintInfo(OutputFile);
     }
 
 // allocate surface
-    FES.Allocate(&ABPAccumulator);
+    FES->Allocate(Accu);
 
 // calculate mollified FES
+    for(int i=0; i < Accu->GetNumOfBins(); i++){
+        FES->SetNumOfSamples(i,EneProxy->GetNumOfSamples(i));
+        FES->SetEnergy(i, EneProxy->GetValue(i,E_PROXY_VALUE) );
+    }
+
     vout << endl;
-    CalculateFESMollified();
-    vout << " Mollified FES SigmaF2 = " << setprecision(5) << FES.GetSigmaF2() << endl;
+    vout << " Mollified FES SigmaF2 = " << setprecision(5) << FES->GetSigmaF2() << endl;
 
     if( Options.GetOptMode() == "rl" ){
         //deconvolution
@@ -183,20 +211,26 @@ bool CABPEnergy::Run(void)
         return(false);
     }
 
-    vout << " Final FES SigmaF2     = " << setprecision(5) << FES.GetSigmaF2() << endl;
+    vout << " Final FES SigmaF2     = " << setprecision(5) << FES->GetSigmaF2() << endl;
 
 // post-processing
-    FES.ApplyOffset(Options.GetOptOffset());
+    FES->ApplyOffset(Options.GetOptOffset());
 
     if( Options.GetOptUnsampledAsMaxE() ){
         if( Options.IsOptMaxEnergySet()){
-            FES.AdaptUnsampledToMaxEnergy(Options.GetOptMaxEnergy());
+            FES->AdaptUnsampledToMaxEnergy(Options.GetOptMaxEnergy());
         } else {
-            FES.AdaptUnsampledToMaxEnergy();
+            FES->AdaptUnsampledToMaxEnergy();
         }
     }
 
+// -----------------------------------------------------------------------------
 // print energy surface
+
+    vout << endl;
+    vout << format("%02d:Writing results to file: %s")%State%string(Options.GetArgOutput()) << endl;
+    State++;
+
     CESPrinter printer;
 
     if(Options.GetOptPrintAll()) {
@@ -207,7 +241,7 @@ bool CABPEnergy::Run(void)
 
     printer.SetIncludeBinStat(Options.GetOptIncludeBinStat());
 
-    printer.SetPrintedES(&FES);
+    printer.SetPrintedES(FES);
     printer.SetXFormat(Options.GetOptIXFormat());
     printer.SetYFormat(Options.GetOptOEFormat());
     if(Options.GetOptOutputFormat() == "plain") {
@@ -261,30 +295,6 @@ void CABPEnergy::Finalize(void)
     }
 
     vout << endl;
-}
-
-//==============================================================================
-//------------------------------------------------------------------------------
-//==============================================================================
-
-void CABPEnergy::CalculateFESMollified(void)
-{
-//! gas constant 8.314 472(15) J mol-1 K-1
-//real(PMFDP), parameter  :: PMF_Rgas     = 0.0019872065d0     ! kcal mol-1 K-1 = 8.314 472 / 4184
-
-    const double Rgas = 0.0019872065;
-
-    double m = 1.0;
-    for(int i=0; i < ABPAccumulator.GetNumOfBins(); i++){
-        double pop = ABPAccumulator.GetPop(i);
-        if( pop > m ) m = pop;
-    }
-    for(int i=0; i < ABPAccumulator.GetNumOfBins(); i++){
-        double pop = ABPAccumulator.GetPop(i);
-        double ene = - ABPAccumulator.GetTemperature()*Rgas*log(pop/m);
-        FES.SetEnergy(i,ene);
-        FES.SetNumOfSamples(i,ABPAccumulator.GetNumberOfABPSamples(i));
-    }
 }
 
 //==============================================================================

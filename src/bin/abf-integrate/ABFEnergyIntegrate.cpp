@@ -216,10 +216,11 @@ bool CABFEnergyIntegrate::Run(void)
 // load accumulator
     int state = 1;
 
+// -----------------------------------------------------------------------------
+// setup accu, energy proxy, and output FES
     Accu        = CPMFAccumulatorPtr(new CPMFAccumulator);
     FES         = CEnergySurfacePtr(new CEnergySurface);
     DerProxy    = CABFProxy_dG_Ptr(new CABFProxy_dG);
-    DerProxy->Accu = Accu;
 
     vout << endl;
     vout << format("%02d:Loading ABF accumulator: %s")%state%string(ABFAccuName) << endl;
@@ -230,15 +231,15 @@ bool CABFEnergyIntegrate::Run(void)
         ES_ERROR("unable to load the input ABF accumulator file");
         return(false);
     }
-    if( Accu->GetMethod() != "ABF" ){
-        ES_ERROR("PMF accumulator is not from ABF simulation");
-    }
     vout << "   Done." << endl;
 
     // print CVS info
-    Accu->PrintCVSInfo(vout);
+    Accu->PrintInfo(vout);
+    DerProxy->Init(Accu);
+
     // DO NOT SET IT HERE, Ncorr is now GPR hyperparameter
     // Accu->SetNCorr(Options.GetOptNCorr());
+
     FES->Allocate(Accu);
     FES->SetSLevel(Options.GetOptSLevel());
 
@@ -500,79 +501,9 @@ bool CABFEnergyIntegrate::Run(void)
 
 void CABFEnergyIntegrate::WriteHeader()
 {
-    // print header
     if((Options.GetOptNoHeader() == false) && (Options.GetOptOutputFormat() != "fes")) {
-        fprintf(OutputFile,"# PMFLib version        : %s\n",LibBuildVersion_PMF);
-        fprintf(OutputFile,"# data integrated by    : ");
-        if(Options.GetOptMethod() == "rfd" ) {
-            fprintf(OutputFile,"RFD (reverse finite differences via csparse)\n");
-        } else if( Options.GetOptMethod() == "rbf" ){
-            fprintf(OutputFile,"RBF (radial basis functions)\n");
-        } else if( Options.GetOptMethod() == "gpr" ) {
-            fprintf(OutputFile,"GPR (gaussian process)\n");
-        } else {
-            INVALID_ARGUMENT("method - not implemented");
-        }
-        if( Options.GetOptWithError() ) {
-        fprintf(OutputFile,"# Integrated domains    : force+error\n");
-        } else {
-        fprintf(OutputFile,"# Integrated domains    : force only\n");
-        }
-        fprintf(OutputFile,"# ------------------------------------------------------------------------------\n");
-            fprintf(OutputFile,"# Linear algebra        : %s\n", (const char*)Options.GetOptLAMethod());
-        if ( Options.GetOptMethod() == "rbf" ){
-            if( (Options.GetOptLAMethod() == "svd") || (Options.GetOptLAMethod() == "default") ){
-            fprintf(OutputFile,"# SVD rcond             : %5.4e\n",Options.GetOptRCond());
-            }
-        } else if ( Options.GetOptMethod() == "gpr"  ) {
-            if( (Options.GetOptLAMethod() == "svd") || (Options.GetOptLAMethod() == "svd2")  ){
-            fprintf(OutputFile,"# SVD rcond             : %5.4e\n",Options.GetOptRCond());
-            }
-        }
-        fprintf(OutputFile,"# ------------------------------------------------------------------------------\n");
-        if( Options.GetOptMethod() == "rfd" ){
-            fprintf(OutputFile,"# FD nuber of points    : %d\n", Options.GetOptFDPoints());
-            fprintf(OutputFile,"# Periodicity           : %s\n",(const char*)bool_to_str(Options.GetOptPeriodicity()));
-        } else if ( Options.GetOptMethod() == "rbf" ){
-            fprintf(OutputFile,"# Reduction factor rfac : %s\n", (const char*)Options.GetOptRFac());
-            fprintf(OutputFile,"# Width factor wfac     : %s\n", (const char*)Options.GetOptWFac());
-            fprintf(OutputFile,"# RBF overhang          : %d\n", Options.GetOptOverhang());
-        } else if ( Options.GetOptMethod() == "gpr" ) {
-            if( Options.IsOptLoadHyprmsSet() ){
-                fprintf(OutputFile,"# GPR hyperprms file    : %s\n", (const char*)Options.GetOptLoadHyprms());
-                PrintGPRHyprms(OutputFile);
-            } else {
-                fprintf(OutputFile,"# SigmaF2               : %10.4f\n", Options.GetOptSigmaF2());
-                fprintf(OutputFile,"# NCorr                 : %s\n", (const char*)Options.GetOptNCorr());
-                fprintf(OutputFile,"# Width factor wfac     : %s\n", (const char*)Options.GetOptWFac());
-                fprintf(OutputFile,"# Split NCorr mode      : %s\n", bool_to_str(Options.GetOptSplitNCorr()));
-
-            }
-        } else {
-            ES_ERROR("not implemented method");
-        }
-
-        fprintf(OutputFile,"# ------------------------------------------------------------------------------\n");
-        fprintf(OutputFile,"# Sample limit          : %d\n",Options.GetOptLimit());
-        if ( (Options.GetOptEcutMethod() == "gpr") || (Options.GetOptEcutMethod() == "rbf") ){
-            fprintf(OutputFile,"# Max MF error Z-score  : %f\n",Options.GetOptMFMaxZScore());
-            fprintf(OutputFile,"# Number of MF Z-tests  : %d\n",Options.GetOptMFZTestPasses());
-        }
-        fprintf(OutputFile,"# Glueing FES factor    : %d\n",Options.GetOptGlueingFactor());
-        fprintf(OutputFile,"# Glue holes on FES     : %s\n", bool_to_str(Options.GetOptGlueHoles()));
-        fprintf(OutputFile,"# Energy limit          : %f\n",Options.GetOptEnergyLimit());
-        fprintf(OutputFile,"# Skip last energy limit: %s\n", bool_to_str(Options.GetOptSkipLastEnergyLimit()));
-        fprintf(OutputFile,"# Skip flood fill test  : %s\n", bool_to_str(Options.GetOptNoHeader()));
-        fprintf(OutputFile,"# ------------------------------------------------------------------------------\n");
-        if( Options.IsOptGlobalMinSet() ){
-        fprintf(OutputFile,"# Global FES minimum    : %s\n",(const char*)Options.GetOptGlobalMin());
-        } else {
-        fprintf(OutputFile,"# Global FES minimum    : -auto-\n");
-        }
-        fprintf(OutputFile,"# Integration offset    : %5.3f\n", Options.GetOptOffset());
-        fprintf(OutputFile,"# Include bin statuses  : %s\n",bool_to_str(Options.GetOptIncludeBinStat()));
-        fprintf(OutputFile,"# Number of CVs         : %d\n",Accu->GetNumOfCVs());
-        fprintf(OutputFile,"# Total number of bins  : %d\n",Accu->GetNumOfBins());
+        Options.PrintOptions(OutputFile);
+        Accu->PrintInfo(OutputFile);
     }
 }
 

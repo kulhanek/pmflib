@@ -89,7 +89,7 @@ void CIntegratorGPR::SetInputEnergyDerProxy(CEnergyDerProxyPtr p_proxy)
 {
     DerProxy = p_proxy;
     if( DerProxy ){
-        Accu = DerProxy->Accu;
+        Accu = DerProxy->GetAccu();
     } else {
         Accu = CPMFAccumulatorPtr();
     }
@@ -609,7 +609,7 @@ bool CIntegratorGPR::TrainGP(CVerboseStr& vout)
     for(size_t indi=0; indi < NumOfUsedBins; indi++){
         size_t i = SampledMap[indi];
         for(size_t ii=0; ii < NCVs; ii++){
-            double mf = DerProxy->GetValue(ii,i,E_PROXY_VALUE);
+            double mf = DerProxy->GetValue(i,ii,E_PROXY_VALUE);
             Y[indi*NCVs+ii] = mf;
         }
     }
@@ -801,7 +801,7 @@ void CIntegratorGPR::CreateKS(void)
     for(size_t indi=0; indi < NumOfUsedBins; indi++){
         size_t i = SampledMap[indi];
         for(size_t ii=0; ii < NCVs; ii++){
-            double er = DerProxy->GetValue(ii,i,E_PROXY_ERROR);
+            double er = DerProxy->GetValue(i,ii,E_PROXY_ERROR);
             if( SplitNCorr ){
                 KS[indi*NCVs+ii][indi*NCVs+ii] += er*er*NCorr[ii];
             } else {
@@ -1441,7 +1441,7 @@ double CIntegratorGPR::GetRMSR(size_t cv)
 
         Accu->GetPoint(i,ipos);
 
-        double mfi = DerProxy->GetValue(cv,i,E_PROXY_VALUE);
+        double mfi = DerProxy->GetValue(i,cv,E_PROXY_VALUE);
         double mfp = GetMeanForce(ipos,cv);
         double diff = mfi - mfp;
         rmsr += diff*diff;
@@ -1482,7 +1482,7 @@ bool CIntegratorGPR::WriteMFInfo(const CSmallString& name)
         size_t i = SampledMap[indi];
         Accu->GetPoint(i,ipos);
         for(size_t k=0; k < NCVs; k++){
-            double mf = DerProxy->GetValue(k,i,E_PROXY_VALUE);
+            double mf = DerProxy->GetValue(i,k,E_PROXY_VALUE);
             mfi[indi*NCVs+k] = mf;
             mfp[indi*NCVs+k] = GetMeanForce(ipos,k);
         }
@@ -1559,7 +1559,7 @@ void CIntegratorGPR::FilterByMFZScore(double zscore,CVerboseStr& vout)
         Accu->GetPoint(i,ipos);
 
         for(size_t k=0; k < NCVs; k++){
-            double mf = DerProxy->GetValue(k,i,E_PROXY_VALUE);
+            double mf = DerProxy->GetValue(i,k,E_PROXY_VALUE);
             double diff2 = mf - GetMeanForce(ipos,k);
             diff2 *= diff2;
             mferror2[indi*NCVs+k] = diff2;
@@ -1953,7 +1953,7 @@ void CIntegratorGPR::CalcKderWRTNCorr(size_t cv)
         size_t i = SampledMap[indi];
 
         for(size_t ii=0; ii < NCVs; ii++){
-            double er = DerProxy->GetValue(ii,i,E_PROXY_ERROR);
+            double er = DerProxy->GetValue(i,ii,E_PROXY_ERROR);
             if( SplitNCorr ){
                 if( cv == ii ) Kder[indi*NCVs+ii][indi*NCVs+ii] += er*er;
             } else {

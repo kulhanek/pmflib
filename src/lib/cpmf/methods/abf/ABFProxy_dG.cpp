@@ -30,7 +30,8 @@ using namespace std;
 
 CABFProxy_dG::CABFProxy_dG(void)
 {
-    Method = "ABF dG(x)";
+    Require = "ABF";
+    Provide = "ABF dG(x)";
 }
 
 //------------------------------------------------------------------------------
@@ -58,11 +59,12 @@ void CABFProxy_dG::SetNumOfSamples(int ibin,int nsamples)
     if( Accu == NULL ){
         RUNTIME_ERROR("Accu is NULL");
     }
+    Accu->SetData("NSAMPLES",ibin,nsamples);
 }
 
 //------------------------------------------------------------------------------
 
-double CABFProxy_dG::GetValue( int ibin,int icv,EProxyRealm realm) const
+double CABFProxy_dG::GetValue(int ibin,int icv,EProxyRealm realm) const
 {
     if( Accu == NULL ){
         RUNTIME_ERROR("Accu is NULL");

@@ -62,7 +62,7 @@ void CIntegratorRFD::SetInputEnergyDerProxy(CEnergyDerProxyPtr p_proxy)
 {
     DerProxy = p_proxy;
     if( DerProxy ){
-        Accu = DerProxy->Accu;
+        Accu = DerProxy->GetAccu();
     } else {
         Accu = CPMFAccumulatorPtr();
     }
@@ -269,18 +269,18 @@ void CIntegratorRFD::BuildEquations(bool trial)
                         cs_entry(A,LocIter,XMap[ifbin1],-3.0*lfac);
                         cs_entry(A,LocIter,XMap[ifbin2],+4.0*lfac);
                         cs_entry(A,LocIter,XMap[ifbin3],-1.0*lfac);
-                        Rhs[LocIter] = DerProxy->GetValue(ifcoord,ifbin1,E_PROXY_VALUE)*rfac;
+                        Rhs[LocIter] = DerProxy->GetValue(ifbin1,ifcoord,E_PROXY_VALUE)*rfac;
                         RhsCv[LocIter] = ifcoord;
                         LocIter++;
                         cs_entry(A,LocIter,XMap[ifbin1],-1.0*lfac);
                         cs_entry(A,LocIter,XMap[ifbin3],+1.0*lfac);
-                        Rhs[LocIter] = DerProxy->GetValue(ifcoord,ifbin2,E_PROXY_VALUE)*rfac;
+                        Rhs[LocIter] = DerProxy->GetValue(ifbin2,ifcoord,E_PROXY_VALUE)*rfac;
                         RhsCv[LocIter] = ifcoord;
                         LocIter++;
                         cs_entry(A,LocIter,XMap[ifbin1],+1.0*lfac);
                         cs_entry(A,LocIter,XMap[ifbin2],-4.0*lfac);
                         cs_entry(A,LocIter,XMap[ifbin3],+3.0*lfac);
-                        Rhs[LocIter] = DerProxy->GetValue(ifcoord,ifbin3,E_PROXY_VALUE)*rfac;
+                        Rhs[LocIter] = DerProxy->GetValue(ifbin3,ifcoord,E_PROXY_VALUE)*rfac;
                         RhsCv[LocIter] = ifcoord;
                         LocIter++;
                     } else {
@@ -325,28 +325,28 @@ void CIntegratorRFD::BuildEquations(bool trial)
                         cs_entry(A,LocIter,XMap[ifbin2],+18.0*lfac);
                         cs_entry(A,LocIter,XMap[ifbin3],-9.0*lfac);
                         cs_entry(A,LocIter,XMap[ifbin4],+2.0*lfac);
-                        Rhs[LocIter] = DerProxy->GetValue(ifcoord,ifbin1,E_PROXY_VALUE)*rfac;
+                        Rhs[LocIter] = DerProxy->GetValue(ifbin1,ifcoord,E_PROXY_VALUE)*rfac;
                         RhsCv[LocIter] = ifcoord;
                         LocIter++;
                         cs_entry(A,LocIter,XMap[ifbin1],-2.0*lfac);
                         cs_entry(A,LocIter,XMap[ifbin2],-3.0*lfac);
                         cs_entry(A,LocIter,XMap[ifbin3],+6.0*lfac);
                         cs_entry(A,LocIter,XMap[ifbin4],-1.0*lfac);
-                        Rhs[LocIter] = DerProxy->GetValue(ifcoord,ifbin2,E_PROXY_VALUE)*rfac;
+                        Rhs[LocIter] = DerProxy->GetValue(ifbin2,ifcoord,E_PROXY_VALUE)*rfac;
                         RhsCv[LocIter] = ifcoord;
                         LocIter++;
                         cs_entry(A,LocIter,XMap[ifbin1],+1.0*lfac);
                         cs_entry(A,LocIter,XMap[ifbin2],-6.0*lfac);
                         cs_entry(A,LocIter,XMap[ifbin3],+3.0*lfac);
                         cs_entry(A,LocIter,XMap[ifbin4],+2.0*lfac);
-                        Rhs[LocIter] = DerProxy->GetValue(ifcoord,ifbin3,E_PROXY_VALUE)*rfac;
+                        Rhs[LocIter] = DerProxy->GetValue(ifbin3,ifcoord,E_PROXY_VALUE)*rfac;
                         RhsCv[LocIter] = ifcoord;
                         LocIter++;
                         cs_entry(A,LocIter,XMap[ifbin1],-2.0*lfac);
                         cs_entry(A,LocIter,XMap[ifbin2],+9.0*lfac);
                         cs_entry(A,LocIter,XMap[ifbin3],-18.0*lfac);
                         cs_entry(A,LocIter,XMap[ifbin4],+11.0*lfac);
-                        Rhs[LocIter] = DerProxy->GetValue(ifcoord,ifbin4,E_PROXY_VALUE);
+                        Rhs[LocIter] = DerProxy->GetValue(ifbin4,ifcoord,E_PROXY_VALUE);
                         RhsCv[LocIter] = ifcoord;
                         LocIter++;
                     } else {

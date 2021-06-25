@@ -32,7 +32,8 @@ using namespace std;
 
 CMTDProxy_dG::CMTDProxy_dG(void)
 {
-    Method = "MTD dG(x)";
+    Require = "MTD";
+    Provide = "MTD dG(x)";
 }
 
 //------------------------------------------------------------------------------

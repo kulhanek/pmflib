@@ -60,9 +60,6 @@ private:
     CEnergySurfacePtr       FES;                // energy surface
     CTerminalStr            Console;
     CVerboseStr             vout;
-
-    // calculate energy surface
-    void CalculateFES(void);
 };
 
 //------------------------------------------------------------------------------

@@ -11,20 +11,28 @@ SET(CPMF_METHODS_SRC
         common/EnergyProxy.cpp
         common/EnergyDerProxy.cpp
 
+    # integrators
         common/integrators/IntegratorRFD.cpp
         common/integrators/IntegratorRBF.cpp
         common/integrators/IntegratorGPR.cpp
 
+    # smoothers
         common/smoothers/SmootherGPR.cpp
 
+    # ABF
         methods/abf/ABFProxy_dG.cpp
         methods/abf/ABFProxy_dH.cpp
 
+    # MTD
         methods/mtd/MTDProxy_dG.cpp
 
-        methods/abp/ABPAccumulator.cpp
+    # ABP
+        methods/abp/ABPProxy_dG.cpp
+
+    # US
         methods/rst/RSTAccumulator.cpp
 
+    # STM
         methods/stm/spline.cpp
         methods/stm/Bead.cpp
         methods/stm/CVSpline.cpp

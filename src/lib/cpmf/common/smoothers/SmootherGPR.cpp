@@ -85,7 +85,7 @@ void CSmootherGPR::SetInputEnergyProxy(CEnergyProxyPtr p_prx)
 {
     EneProxy = p_prx;
     if( EneProxy ){
-        Accu = EneProxy->Accu;
+        Accu = EneProxy->GetAccu();
     } else {
         Accu = CPMFAccumulatorPtr();
     }

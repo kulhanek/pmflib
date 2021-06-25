@@ -135,10 +135,11 @@ bool CABFEnthalpy::Run(void)
 // load accumulator
     State = 1;
 
+// -----------------------------------------------------------------------------
+// setup accu, energy proxy, and output FES
     Accu        = CPMFAccumulatorPtr(new CPMFAccumulator);
     HES         = CEnergySurfacePtr(new CEnergySurface);
     EneProxy    = CABFProxy_dH_Ptr(new CABFProxy_dH);
-    EneProxy->Accu = Accu;
 
     vout << endl;
     vout << format("%02d:Loading ABF accumulator: %s")%State%string(ABFAccuName) << endl;
@@ -151,10 +152,14 @@ bool CABFEnthalpy::Run(void)
     }
     vout << "   Done." << endl;
 
-    // print CVS info
-    Accu->PrintCVSInfo(vout);
-    // DO NOT SET IT HERE, Ncorr can be GPR hyperparameter
+    // print Accu info
+    Accu->PrintInfo(vout);
+    EneProxy->Init(Accu);
+
+    // DO NOT SET IT HERE, Ncorr is now GPR hyperparameter
     // Accu->SetNCorr(Options.GetOptNCorr());
+
+// -----------------------------------------------------------------------------
     HES->Allocate(Accu);
     HES->SetSLevel(Options.GetOptSLevel());
 
@@ -229,7 +234,9 @@ bool CABFEnthalpy::Run(void)
         }
     }
 
-// print enthalpy
+// -----------------------------------------------------------------------------
+// print energy surface
+
     if(PrintHES() == false) {
         ES_ERROR("unable to print enthalpy");
         return(false);
@@ -363,37 +370,9 @@ bool CABFEnthalpy::PrintHES(void)
 
 void CABFEnthalpy::WriteHeader(void)
 {
-    // print header
     if((Options.GetOptNoHeader() == false) && (Options.GetOptOutputFormat() != "fes")) {
-        fprintf(OutputFile,"# PMFLib version        : %s\n",LibBuildVersion_PMF);
-        fprintf(OutputFile,"# Method                : ");
-        if(Options.GetOptMethod() == "raw" ) {
-            fprintf(OutputFile,"RAW (raw data from ABF accumulator)\n");
-        } else if( Options.GetOptMethod() == "gpr" ) {
-            fprintf(OutputFile,"GPR (gaussian process filtered data)\n");
-        } else {
-            INVALID_ARGUMENT("method - not implemented");
-        }
-        fprintf(OutputFile,"# Sample limit          : %d\n",Options.GetOptLimit());
-        if( Options.GetOptMethod() == "raw" ){
-            // nothing to be here
-        } else if( Options.GetOptMethod() == "gpr" ){
-            fprintf(OutputFile,"# ------------------------------------------------------------------------------\n");
-            fprintf(OutputFile,"# Linear algebra        : %s\n", (const char*)Options.GetOptLAMethod());
-            fprintf(OutputFile,"# SVD rcond             : %5.4e\n",Options.GetOptRCond());
-        } else {
-            ES_ERROR("not implemented method");
-        }
-
-        fprintf(OutputFile,"# ------------------------------------------------------------------------------\n");
-        if( Options.IsOptGlobalMinSet() ){
-        fprintf(OutputFile,"# Global FES minimum    : %s\n",(const char*)Options.GetOptGlobalMin());
-        } else {
-        fprintf(OutputFile,"# Global FES minimum    : -auto-\n");
-        }
-        fprintf(OutputFile,"# Energy offset         : %5.3f\n", Options.GetOptOffset());
-        fprintf(OutputFile,"# Number of coordinates : %d\n",Accu->GetNumOfCVs());
-        fprintf(OutputFile,"# Total number of bins  : %d\n",Accu->GetNumOfBins());
+        Options.PrintOptions(OutputFile);
+        Accu->PrintInfo(OutputFile);
     }
 }
 

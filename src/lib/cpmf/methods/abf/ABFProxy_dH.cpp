@@ -30,7 +30,8 @@ using namespace std;
 
 CABFProxy_dH::CABFProxy_dH(void)
 {
-    Method = "ABF dH(x)";
+    Require = "ABF";
+    Provide = "ABF dH(x)";
     NCorr = 1.0;
 }
 

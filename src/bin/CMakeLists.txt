@@ -20,18 +20,15 @@ ADD_SUBDIRECTORY(accu-info)
 ADD_SUBDIRECTORY(accu-combine)
 ADD_SUBDIRECTORY(accu-trajectory)
 
-# ABF
+# ABF utilities
 ADD_SUBDIRECTORY(abf-integrate)
 ADD_SUBDIRECTORY(abf-enthalpy)
 
-# metadynamics
+# MTD utilities
 ADD_SUBDIRECTORY(mtd-energy)
 
-#
-## ABP utilities
-#ADD_SUBDIRECTORY(abp-energy)
-
-
+# ABP utilities
+ADD_SUBDIRECTORY(abp-energy)
 
 ## string method
 #ADD_SUBDIRECTORY(stm-trajectory)

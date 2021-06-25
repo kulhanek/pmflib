@@ -23,9 +23,9 @@
 // =============================================================================
 
 #include <stdio.h>
-#include <ABPAccumulator.hpp>
 #include <SimpleVector.hpp>
 #include <EnergySurface.hpp>
+#include <EnergyProxy.hpp>
 #include <VerboseStr.hpp>
 #include <TerminalStr.hpp>
 #include "ABPEneOptions.hpp"
@@ -54,12 +54,11 @@ private:
     bool                    OwnInputFile;       // do we own input file handle?
     FILE*                   OutputFile;         // output file
     bool                    OwnOutputFile;      // do we own output file handle?
-    CABPAccumulator         ABPAccumulator;     // ABP accumulator
-    CEnergySurface          FES;                // energy surface
+    CPMFAccumulatorPtr      Accu;               // ABP accumulator
+    CEnergyProxyPtr         EneProxy;           // energy proxy for ABP accumulator
+    CEnergySurfacePtr       FES;                // energy surface
     CTerminalStr            Console;
     CVerboseStr             vout;
-
-    void CalculateFESMollified(void);           // get mollified FES
 };
 
 //------------------------------------------------------------------------------

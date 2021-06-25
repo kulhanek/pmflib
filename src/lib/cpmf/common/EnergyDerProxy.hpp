@@ -31,7 +31,14 @@ public:
     CEnergyDerProxy(void);
     virtual ~CEnergyDerProxy(void);
 
+// setup methods ---------------------------------------------------------------
+    // set accumulator and perform sanity checks
+    virtual void Init(CPMFAccumulatorPtr accu);
+
 // access methods -------------------------------------------------------------
+    // get PMF accumulator
+    CPMFAccumulatorPtr GetAccu(void);
+
     // get number of samples
     virtual int GetNumOfSamples(int ibin) const;
 
@@ -44,9 +51,10 @@ public:
     // set NCorr
     virtual void SetNCorr(double ncorr);
 
-// public data -----------------------------------------------------------------
-public:
-    CSmallString        Method;
+// protected data --------------------------------------------------------------
+protected:
+    CSmallString        Require;
+    CSmallString        Provide;
     CPMFAccumulatorPtr  Accu;
 };
 

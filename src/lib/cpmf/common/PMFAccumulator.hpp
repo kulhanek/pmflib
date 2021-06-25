@@ -193,8 +193,17 @@ public:
     /// save cvs info
     void SaveCVSInfo(CXMLElement* p_tele) const;
 
+    /// print all info
+    void PrintInfo(std::ostream& vout);
+
+    /// print all info
+    void PrintInfo(FILE* p_fout);
+
     /// print accu info
     void PrintAccuInfo(std::ostream& vout);
+
+    /// print accu info
+    void PrintAccuInfo(FILE* p_fout);
 
     /// print cvs info
     void PrintCVSInfo(std::ostream& vout);

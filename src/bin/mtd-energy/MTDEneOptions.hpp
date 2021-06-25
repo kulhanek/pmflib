@@ -39,7 +39,7 @@ public:
     CSO_PROG_NAME_END
 
     CSO_PROG_DESC_BEGIN
-    "<b>mtd-energy</b> calculates the free energy surface estimate from the metadynamics restart file."
+    "<b>mtd-energy</b> calculates the free energy surface estimate from the MTD accumulator file."
     CSO_PROG_DESC_END
 
     CSO_PROG_VERS_BEGIN
@@ -70,15 +70,15 @@ public:
                 Input,                          /* argument name */
                 NULL,                           /* default value */
                 true,                           /* is argument mandatory */
-                "input",                        /* parametr name */
-                "Name of the input file containing the metadynamics restart file. If the name is '-' then it is read from the standard input.")   /* argument description */
+                "input",                        /* parameter name */
+                "Input file name containing the MTD accumulator or '-' to read data from the standard input.")   /* argument description */
     //----------------------------------------------------------------------
     CSO_MAP_ARG(CSmallString,                   /* argument type */
                 Output,                          /* argument name */
                 NULL,                           /* default value */
                 true,                           /* is argument mandatory */
-                "output",                        /* parametr name */
-                "Name of the output file where the resulting free energy surface will be printed. If the name is '-' then the output will be written to the standard output.")   /* argument description */
+                "output",                        /* parameter name */
+                "Output file name for the free energy surface or '-' to write data to the standard output.")   /* argument description */
 // description of options ---------------------------------------------------
 
     CSO_MAP_OPT(bool,                           /* option type */
@@ -87,7 +87,7 @@ public:
                 false,                          /* is option mandatory */
                 '\0',                           /* short option name */
                 "floating",                      /* long option name */
-                NULL,                           /* parametr name */
+                NULL,                           /* parameter name */
                 "Keep FES floating.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(double,                           /* option type */
@@ -96,7 +96,7 @@ public:
                 false,                          /* is option mandatory */
                 '\0',                           /* short option name */
                 "offset",                      /* long option name */
-                "REAL",                           /* parametr name */
+                "REAL",                           /* parameter name */
                 "Determine position of the global minima.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(CSmallString,                           /* option type */
@@ -105,7 +105,7 @@ public:
                 false,                          /* is option mandatory */
                 0,                           /* short option name */
                 "output",                      /* long option name */
-                "FORMAT",                           /* parametr name */
+                "FORMAT",                           /* parameter name */
                 "Output FORMAT, which will be used to print free energy surface. Supported formats are: plain, gnuplot, fes.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(bool,                           /* option type */
@@ -114,7 +114,7 @@ public:
                 false,                          /* is option mandatory */
                 '\0',                           /* short option name */
                 "noheader",                      /* long option name */
-                NULL,                           /* parametr name */
+                NULL,                           /* parameter name */
                 "Do not print header to output file.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(CSmallString,                           /* option type */
@@ -123,7 +123,7 @@ public:
                 false,                          /* is option mandatory */
                 '\0',                           /* short option name */
                 "fx",                      /* long option name */
-                "FORMAT",                           /* parametr name */
+                "FORMAT",                           /* parameter name */
                 "Output FORMAT, which will be used to print values of collective variables.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(CSmallString,                           /* option type */
@@ -132,7 +132,7 @@ public:
                 false,                          /* is option mandatory */
                 '\0',                           /* short option name */
                 "fe",                      /* long option name */
-                "FORMAT",                           /* parametr name */
+                "FORMAT",                           /* parameter name */
                 "Output FORMAT, which will be used to print values of free energy.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(CSmallString,                           /* option type */
@@ -141,7 +141,7 @@ public:
                 false,                          /* is option mandatory */
                 '\0',                           /* short option name */
                 "fs",                      /* long option name */
-                "FORMAT",                           /* parametr name */
+                "FORMAT",                           /* parameter name */
                 "Output FORMAT, which will be used to print values of standard deviations.")   /* option description */
 
     //----------------------------------------------------------------------
@@ -151,7 +151,7 @@ public:
                 false,                          /* is option mandatory */
                 'v',                           /* short option name */
                 "verbose",                      /* long option name */
-                NULL,                           /* parametr name */
+                NULL,                           /* parameter name */
                 "Increase output verbosity.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(bool,                           /* option type */
@@ -160,7 +160,7 @@ public:
                 false,                          /* is option mandatory */
                 '\0',                           /* short option name */
                 "version",                      /* long option name */
-                NULL,                           /* parametr name */
+                NULL,                           /* parameter name */
                 "Output version information and exit.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(bool,                           /* option type */
@@ -169,7 +169,7 @@ public:
                 false,                          /* is option mandatory */
                 'h',                           /* short option name */
                 "help",                      /* long option name */
-                NULL,                           /* parametr name */
+                NULL,                           /* parameter name */
                 "Display this help and exit.")   /* option description */
     CSO_MAP_END
 

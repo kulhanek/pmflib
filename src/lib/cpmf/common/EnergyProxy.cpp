@@ -30,7 +30,8 @@ using namespace std;
 
 CEnergyProxy::CEnergyProxy(void)
 {
-    Method = "NONE";
+    Require = "NONE";
+    Provide = "NONE";
 }
 
 //------------------------------------------------------------------------------
@@ -43,6 +44,27 @@ CEnergyProxy::~CEnergyProxy(void)
 //==============================================================================
 //------------------------------------------------------------------------------
 //==============================================================================
+
+void CEnergyProxy::Init(CPMFAccumulatorPtr accu)
+{
+    if( Require != accu->GetMethod() ){
+        CSmallString error;
+        error << "PMF accumulator '" << accu->GetMethod() << "' is inconsistent with EnergyProxy requirements '" << Require << "'";
+        RUNTIME_ERROR(error)
+    }
+    Accu = accu;
+}
+
+//==============================================================================
+//------------------------------------------------------------------------------
+//==============================================================================
+
+CPMFAccumulatorPtr CEnergyProxy::GetAccu(void)
+{
+    return(Accu);
+}
+
+//------------------------------------------------------------------------------
 
 int CEnergyProxy::GetNumOfSamples(int ibin) const
 {

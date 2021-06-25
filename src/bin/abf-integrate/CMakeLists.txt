@@ -11,9 +11,9 @@ SET(ABF_INTEGRATE_SRC
 # final build ------------------------------------------------------------------
 
 IF(OpenMP_FOUND)
-    SET(TARGET_NAME _abf-energy)
+    SET(TARGET_NAME _abf-integrate)
 ELSE()
-    SET(TARGET_NAME abf-energy)
+    SET(TARGET_NAME abf-integrate)
 ENDIF()
 
 ADD_EXECUTABLE(${TARGET_NAME} ${ABF_INTEGRATE_SRC})

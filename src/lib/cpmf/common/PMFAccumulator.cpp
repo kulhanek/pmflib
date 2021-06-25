@@ -830,6 +830,24 @@ void CPMFAccumulator::SaveCVSInfo(CXMLElement* p_tele) const
     }
 }
 
+//==============================================================================
+//------------------------------------------------------------------------------
+//==============================================================================
+
+void CPMFAccumulator::PrintInfo(std::ostream& vout)
+{
+    PrintAccuInfo(vout);
+    PrintCVSInfo(vout);
+}
+
+//------------------------------------------------------------------------------
+
+void CPMFAccumulator::PrintInfo(FILE* p_fout)
+{
+    PrintAccuInfo(p_fout);
+    PrintCVSInfo(p_fout);
+}
+
 //------------------------------------------------------------------------------
 
 void CPMFAccumulator::PrintAccuInfo(std::ostream& vout)
@@ -854,12 +872,27 @@ void CPMFAccumulator::PrintCVSInfo(std::ostream& vout)
     vout << endl;
     vout << "=== Collective Variables =======================================================" << endl;
     vout << endl;
-    vout << "ID P Type       Unit  Name                       Min value   Max value   NumOfBins  " << endl;
+    vout << "ID P Type       Unit  Name                       Min value   Max value   NBins  " << endl;
     vout << "-- - ---------- ----- -------------------------- ----------- ----------- -------" << endl;
 
     for(int i=0; i < NumOfCVs; i++) {
         CVs[i]->PrintInfo(vout);
     }
+}
+
+//------------------------------------------------------------------------------
+
+void CPMFAccumulator::PrintAccuInfo(FILE* p_fout)
+{
+    fprintf(p_fout,"#\n");
+    fprintf(p_fout,"# === General Info ===============================================================\n");
+    fprintf(p_fout,"#\n");
+    fprintf(p_fout,"# Method:        %s\n", (const char*)Method);
+    fprintf(p_fout,"# Driver:        %s\n", (const char*)Driver);
+    fprintf(p_fout,"# Version:       %s\n", (const char*)Version);
+    fprintf(p_fout,"# Temperature:   %5.2lf %s\n", Temperature*TemperatureFConv, (const char*)TemperatureUnit);
+    fprintf(p_fout,"# Energy unit:   %s\n", (const char*)EnergyUnit);
+    fprintf(p_fout,"# Data sections: %d\n", (int)DataBlocks.size());
 }
 
 //------------------------------------------------------------------------------

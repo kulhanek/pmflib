@@ -79,7 +79,7 @@ void CIntegratorRBF::SetInputEnergyDerProxy(CEnergyDerProxyPtr p_proxy)
 {
     DerProxy = p_proxy;
     if( DerProxy ){
-        Accu = DerProxy->Accu;
+        Accu = DerProxy->GetAccu();
     } else {
         Accu = CPMFAccumulatorPtr();
     }
@@ -557,7 +557,7 @@ bool CIntegratorRBF::IntegrateByLS(CVerboseStr& vout)
         }
         // rhs
         for(size_t k=0; k < NCVs; k++){
-            rhs[indi*NCVs+k] = DerProxy->GetValue(k,i,E_PROXY_VALUE);
+            rhs[indi*NCVs+k] = DerProxy->GetValue(i,k,E_PROXY_VALUE);
         }
     }
 
@@ -667,7 +667,7 @@ double CIntegratorRBF::GetRMSR(size_t cv)
 
         Accu->GetPoint(i,ipos);
 
-        double mfi = DerProxy->GetValue(cv,i,E_PROXY_VALUE);
+        double mfi = DerProxy->GetValue(i,cv,E_PROXY_VALUE);
         double mfp = GetMeanForce(ipos,cv);
         double diff = mfi - mfp;
 
@@ -709,7 +709,7 @@ bool CIntegratorRBF::WriteMFInfo(const CSmallString& name)
         size_t i = SampledMap[indi];
         Accu->GetPoint(i,jpos);
         for(size_t k=0; k < NCVs; k++){
-            mfi[indi*NCVs+k] = DerProxy->GetValue(k,i,E_PROXY_VALUE);
+            mfi[indi*NCVs+k] = DerProxy->GetValue(i,k,E_PROXY_VALUE);
             mfp[indi*NCVs+k] = GetMeanForce(jpos,k);
         }
     }
@@ -785,7 +785,7 @@ void CIntegratorRBF::FilterByMFZScore(double zscore,CVerboseStr& vout)
         Accu->GetPoint(i,jpos);
 
         for(size_t k=0; k < NCVs; k++){
-            double diff2 = DerProxy->GetValue(k,i,E_PROXY_VALUE) - GetMeanForce(jpos,k);
+            double diff2 = DerProxy->GetValue(i,k,E_PROXY_VALUE) - GetMeanForce(jpos,k);
             diff2 *= diff2;
             mferror2[indi*NCVs+k] = diff2;
         }
