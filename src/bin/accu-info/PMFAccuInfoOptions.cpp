@@ -28,6 +28,7 @@
 CPMFAccuInfoOptions::CPMFAccuInfoOptions(void)
 {
     SetShowMiniUsage(true);
+    SetAllowProgArgs(true);
 }
 
 //------------------------------------------------------------------------------
@@ -60,6 +61,21 @@ int CPMFAccuInfoOptions::FinalizeOptions(void)
 
     return(SO_CONTINUE);
 }
+
+//------------------------------------------------------------------------------
+
+int CPMFAccuInfoOptions::CheckArguments(void)
+{
+    if( (GetNumberOfProgArgs() <= 0) ){
+        if(IsError == false) fprintf(stderr,"\n");
+        fprintf(stderr,"%s: at least one argument is expected, but %d is provided\n",
+                (const char*)GetProgramName(),GetNumberOfProgArgs());
+        IsError = true;
+    }
+    if(IsError == true) return(SO_OPTS_ERROR);
+    return(SO_CONTINUE);
+}
+
 
 //==============================================================================
 //------------------------------------------------------------------------------

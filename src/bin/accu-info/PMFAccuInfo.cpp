@@ -65,21 +65,22 @@ int CPMFAccuInfo::Init(int argc,char* argv[])
     CSmallTimeAndDate dt;
     dt.GetActualTimeAndDate();
 
+    vout << debug;
     vout << endl;
     vout << "# ==============================================================================" << endl;
     vout << "# accu-info (PMFLib utility)  started at " << dt.GetSDateAndTime() << endl;
     vout << "# Version: " << LibBuildVersion_PMF << endl;
     vout << "# ==============================================================================" << endl;
 
-    if(Options.GetArgPMFAccuName() != "-") {
-        vout << "# ABF accu file (in)    : " << Options.GetArgPMFAccuName() << endl;
+    if(Options.GetProgArg(0) != "-") {
+        vout << "# PMF accumulator (in)  : " << Options.GetProgArg(0) << endl;
     } else {
-        vout << "# ABF accu file (in)    : - (standard input)" << endl;
+        vout << "# PMF accumulator (in)  : - (standard input)" << endl;
     }
     vout << "# ------------------------------------------------------------------------------" << endl;
 
     // open files -----------------------------------
-    if( InputFile.Open(Options.GetArgPMFAccuName(),"r") == false ){
+    if( InputFile.Open(Options.GetProgArg(0),"r") == false ){
         ES_ERROR("unable to open input file");
         return(SO_USER_ERROR);
     }
@@ -92,31 +93,38 @@ int CPMFAccuInfo::Init(int argc,char* argv[])
 bool CPMFAccuInfo::Run(void)
 {
 // load accumulator
-    vout << endl;
-    vout << "1) Loading the ABF accumulator: " << Options.GetArgPMFAccuName() << endl;
+    vout << "#" << endl;
+    vout << "# 1) Loading the PMF accumulator: " << Options.GetProgArg(0) << endl;
     try {
         Accumulator.Load(InputFile);
     } catch(...) {
-        ES_ERROR("unable to load the input ABF accumulator file");
+        ES_ERROR("unable to load the input PMF accumulator file");
         return(false);
     }
-    vout << "   Done" << endl;
+    vout << "#   Done" << endl;
 
-// prepare accumulator --------------------------
-    vout << endl;
-    vout << "2) Info about the ABF accumulator."<< endl;
-
-    // print CVS info
-    Accumulator.PrintAccuInfo(vout);
-    Accumulator.PrintCVSInfo(vout);
-
-//    // calculate sampled area
-//    double maxbins = Accumulator.GetNumOfBins();
-//    double sampled = Accumulator.GetNumOfBins(Options.GetOptLimit());
-//    if( maxbins > 0 ){
-//        vout << endl;
-//        vout << "Sampled area: " << setw(5) << setprecision(1) << fixed << sampled/maxbins*100 <<"%" << endl;
-//    }
+// perform action
+    if( Options.GetNumberOfProgArgs() == 1 ) {
+        PrintInfo();
+// -----------------------------------------------
+    } else  if( Options.GetProgArg(1)  == "info" ){
+        PrintInfo();
+// -----------------------------------------------
+    } else if( Options.GetProgArg(1) == "list-sections" ){
+        ListSections();
+// -----------------------------------------------
+    } else if( Options.GetProgArg(1) == "get-section" ){
+        GetSection(Options.GetProgArg(2));
+// -----------------------------------------------
+    } else if( (Options.GetProgArg(1) == "NSAMPLES") || (Options.GetProgArg(1) == "nsamples") ){
+        GetSection("NSAMPLES");
+// -----------------------------------------------
+    } else {
+        CSmallString error;
+        error << "unrecognized action: " << Options.GetProgArg(1);
+        ES_ERROR(error);
+        return(false);
+    }
 
     return(true);
 }
@@ -133,16 +141,67 @@ void CPMFAccuInfo::Finalize(void)
     CSmallTimeAndDate dt;
     dt.GetActualTimeAndDate();
 
-    vout << endl;
+    vout << "#" << endl;
     vout << "# ==============================================================================" << endl;
     vout << "# accu-info terminated at " << dt.GetSDateAndTime() << endl;
     vout << "# ==============================================================================" << endl;
 
     if( ErrorSystem.IsError() || Options.GetOptVerbose() ){
+        vout << high;
         ErrorSystem.PrintErrors(vout);
+        vout << endl;
+        vout << debug;
+    } else {
+        vout << "#" << endl;
     }
+}
 
+//==============================================================================
+//------------------------------------------------------------------------------
+//==============================================================================
+
+void CPMFAccuInfo::PrintInfo(void)
+{
+// prepare accumulator --------------------------
+    vout << "#" << endl;
+    vout << "# 2) Info about the PMF accumulator."<< endl;
+
+    vout << high;
+    // print CVS info
+    Accumulator.PrintAccuInfo(vout);
+    Accumulator.PrintCVSInfo(vout);
     vout << endl;
+
+    vout << debug;
+}
+
+//------------------------------------------------------------------------------
+
+void CPMFAccuInfo::ListSections(void)
+{
+// prepare accumulator --------------------------
+    vout << "#" << endl;
+    vout << "# 2) List of data sections stored in the PMF accumulator."<< endl;
+
+    vout << high;
+    Accumulator.ListSections(vout);
+    vout << endl;
+
+    vout << debug;
+}
+
+//------------------------------------------------------------------------------
+
+void CPMFAccuInfo::GetSection(const CSmallString& name)
+{
+// prepare accumulator --------------------------
+    vout << "#" << endl;
+    vout << "# Data section: " << name << endl;
+
+    vout << high;
+
+
+    vout << debug;
 }
 
 //==============================================================================

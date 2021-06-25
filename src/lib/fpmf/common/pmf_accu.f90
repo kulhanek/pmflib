@@ -428,10 +428,11 @@ subroutine pmf_accu_skip_section(iounit,keyline,notify)
 end subroutine pmf_accu_skip_section
 
 !===============================================================================
-! Subroutine:  pmf_accu_read_ibuf
+! Subroutine:  pmf_accu_read_ibuf_B
+! per bin
 !===============================================================================
 
-subroutine pmf_accu_read_ibuf(accu,iounit,keyline,ibuf)
+subroutine pmf_accu_read_ibuf_B(accu,iounit,keyline,ibuf)
 
     use pmf_dat
     use pmf_utils
@@ -447,15 +448,19 @@ subroutine pmf_accu_read_ibuf(accu,iounit,keyline,ibuf)
     character(len=PMF_MAX_KEY)  :: skey
     character(len=PMF_MAX_KEY)  :: dop
     character(len=PMF_MAX_KEY)  :: dtype
+    character(len=PMF_MAX_KEY)  :: dmode
     integer                     :: dsize
     integer                     :: i
     character(len=PMF_MAX_PATH) :: serr
     !---------------------------------------------------------------------------
 
-    read(keyline,*,end=100,err=100) skey,dop,dtype,dsize
+    read(keyline,*,end=100,err=100) skey,dop,dtype,dmode,dsize
 
     if( dtype .ne. 'I' ) then
-        call pmf_utils_exit(PMF_OUT,1,'[PMFAccu] Type mismatch: require I but got "'//dtype//'" in pmf_accu_read_ibuf!')
+        call pmf_utils_exit(PMF_OUT,1,'[PMFAccu] Type mismatch: require I but got "'//trim(dtype)//'" in pmf_accu_read_ibuf_B!')
+    end if
+    if( dmode .ne. 'B' ) then
+        call pmf_utils_exit(PMF_OUT,1,'[PMFAccu] Mode mismatch: require "B" but got "'//trim(dmode)//'" in pmf_accu_read_ibuf_B!')
     end if
 
     if( dsize .ne. accu%tot_nbins ) then
@@ -469,17 +474,17 @@ subroutine pmf_accu_read_ibuf(accu,iounit,keyline,ibuf)
 
 10  format(8(I9,1X))
 
-100 call pmf_utils_exit(PMF_OUT,1,'[PMFAccu] Unable to parse keyline "'//keyline//'" in pmf_accu_read_ibuf!')
-110 call pmf_utils_exit(PMF_OUT,1,'[PMFAccu] Premature end of data block for keyline "'//keyline//'" in pmf_accu_read_ibuf!')
-120 format('[PMFAccu] Size mismatch: require ',I10,' but got ',I10,' in pmf_accu_read_ibuf!')
+100 call pmf_utils_exit(PMF_OUT,1,'[PMFAccu] Unable to parse keyline "'//keyline//'" in pmf_accu_read_ibuf_B!')
+110 call pmf_utils_exit(PMF_OUT,1,'[PMFAccu] Premature end of data block for keyline "'//keyline//'" in pmf_accu_read_ibuf_B!')
+120 format('[PMFAccu] Size mismatch: require ',I10,' but got ',I10,' in pmf_accu_read_ibuf_B!')
 
-end subroutine pmf_accu_read_ibuf
+end subroutine pmf_accu_read_ibuf_B
 
 !===============================================================================
 ! Subroutine:  pmf_accu_write_ibuf
 !===============================================================================
 
-subroutine pmf_accu_write_ibuf(accu,iounit,key,op,ibuf)
+subroutine pmf_accu_write_ibuf_B(accu,iounit,key,op,ibuf)
 
     use pmf_dat
     use pmf_utils
@@ -498,19 +503,19 @@ subroutine pmf_accu_write_ibuf(accu,iounit,key,op,ibuf)
     !---------------------------------------------------------------------------
 
     skey = key
-    write(iounit,5) adjustl(skey), trim(op), 'I', accu%tot_nbins
+    write(iounit,5) adjustl(skey), trim(op), 'I', 'B', accu%tot_nbins
     write(iounit,10) (ibuf(i),i=1,accu%tot_nbins)
 
- 5  format('@',A20,1X,A2,1X,A1,1X,I10)
+ 5  format('@',A20,1X,A2,1X,A1,1X,A1,1X,I10)
 10  format(8(I9,1X))
 
-end subroutine pmf_accu_write_ibuf
+end subroutine pmf_accu_write_ibuf_B
 
 !===============================================================================
-! Subroutine:  pmf_accu_read_rbuf
+! Subroutine:  pmf_accu_read_rbuf_B
 !===============================================================================
 
-subroutine pmf_accu_read_rbuf(accu,iounit,keyline,rbuf)
+subroutine pmf_accu_read_rbuf_B(accu,iounit,keyline,rbuf)
 
     use pmf_dat
     use pmf_utils
@@ -526,15 +531,19 @@ subroutine pmf_accu_read_rbuf(accu,iounit,keyline,rbuf)
     character(len=PMF_MAX_KEY)  :: skey
     character(len=PMF_MAX_KEY)  :: dop
     character(len=PMF_MAX_KEY)  :: dtype
+    character(len=PMF_MAX_KEY)  :: dmode
     integer                     :: dsize
     integer                     :: i
     character(len=PMF_MAX_PATH) :: serr
     !---------------------------------------------------------------------------
 
-    read(keyline,*,end=100,err=100) skey,dop,dtype,dsize
+    read(keyline,*,end=100,err=100) skey,dop,dtype,dmode,dsize
 
     if( dtype .ne. 'R' ) then
-        call pmf_utils_exit(PMF_OUT,1,'[PMFAccu] Type mismatch: require R but got "'//dtype//'" in pmf_accu_read_rbuf!')
+        call pmf_utils_exit(PMF_OUT,1,'[PMFAccu] Type mismatch: require "R" but got "'//trim(dtype)//'" in pmf_accu_read_rbuf_B!')
+    end if
+    if( dmode .ne. 'B' ) then
+        call pmf_utils_exit(PMF_OUT,1,'[PMFAccu] Mode mismatch: require "B" but got "'//trim(dmode)//'" in pmf_accu_read_rbuf_B!')
     end if
 
     if( dsize .ne. accu%tot_nbins ) then
@@ -548,17 +557,18 @@ subroutine pmf_accu_read_rbuf(accu,iounit,keyline,rbuf)
 
 10  format(4(E19.11,1X))
 
-100 call pmf_utils_exit(PMF_OUT,1,'[PMFAccu] Unable to parse keyline "'//keyline//'" in pmf_accu_read_rbuf!')
-110 call pmf_utils_exit(PMF_OUT,1,'[PMFAccu] Premature end of data block for keyline "'//keyline//'" in pmf_accu_read_rbuf!')
-120 format('[PMFAccu] Size mismatch: require ',I10,' but got ',I10,' in pmf_accu_read_rbuf!')
+100 call pmf_utils_exit(PMF_OUT,1,'[PMFAccu] Unable to parse keyline "'//keyline//'" in pmf_accu_read_rbuf_B!')
+110 call pmf_utils_exit(PMF_OUT,1,'[PMFAccu] Premature end of data block for keyline "'//keyline//'" in pmf_accu_read_rbuf_B!')
+120 format('[PMFAccu] Size mismatch: require ',I10,' but got ',I10,' in pmf_accu_read_rbuf_B')
 
-end subroutine pmf_accu_read_rbuf
+end subroutine pmf_accu_read_rbuf_B
 
 !===============================================================================
-! Subroutine:  pmf_accu_write_rbuf
+! Subroutine:  pmf_accu_write_rbuf_B
+! data per bin
 !===============================================================================
 
-subroutine pmf_accu_write_rbuf(accu,iounit,key,op,rbuf)
+subroutine pmf_accu_write_rbuf_B(accu,iounit,key,op,rbuf)
 
     use pmf_dat
     use pmf_utils
@@ -577,19 +587,20 @@ subroutine pmf_accu_write_rbuf(accu,iounit,key,op,rbuf)
     !---------------------------------------------------------------------------
 
     skey = key
-    write(iounit,5) adjustl(skey), trim(op), 'R', accu%tot_nbins
+    write(iounit,5) adjustl(skey), trim(op), 'R', 'B', accu%tot_nbins
     write(iounit,10) (rbuf(i),i=1,accu%tot_nbins)
 
- 5  format('@',A20,1X,A2,1X,A1,1X,I10)
+ 5  format('@',A20,1X,A2,1X,A1,1X,A1,1X,I10)
 10  format(4(E19.11,1X))
 
-end subroutine pmf_accu_write_rbuf
+end subroutine pmf_accu_write_rbuf_B
 
 !===============================================================================
-! Subroutine:  pmf_accu_write_rbufCVs
+! Subroutine:  pmf_accu_read_rbuf_M
+! mixed - data per bin and CV
 !===============================================================================
 
-subroutine pmf_accu_read_rbufCVs(accu,iounit,keyline,rbuf)
+subroutine pmf_accu_read_rbuf_M(accu,iounit,keyline,rbuf)
 
     use pmf_dat
     use pmf_utils
@@ -605,15 +616,19 @@ subroutine pmf_accu_read_rbufCVs(accu,iounit,keyline,rbuf)
     character(len=PMF_MAX_KEY)  :: skey
     character(len=PMF_MAX_KEY)  :: dop
     character(len=PMF_MAX_KEY)  :: dtype
+    character(len=PMF_MAX_KEY)  :: dmode
     integer                     :: dsize
     integer                     :: i,j
     character(len=PMF_MAX_PATH) :: serr
     !---------------------------------------------------------------------------
 
-    read(keyline,*,end=100,err=100) skey,dop,dtype,dsize
+    read(keyline,*,end=100,err=100) skey,dop,dtype,dmode,dsize
 
     if( dtype .ne. 'R' ) then
-        call pmf_utils_exit(PMF_OUT,1,'[PMFAccu] Type mismatch: require R but got "'//dtype//'" in pmf_accu_read_rbufCVs!')
+        call pmf_utils_exit(PMF_OUT,1,'[PMFAccu] Type mismatch: require "R" but got "'//dtype//'" in pmf_accu_read_rbuf_M!')
+    end if
+    if( dmode .ne. 'B' ) then
+        call pmf_utils_exit(PMF_OUT,1,'[PMFAccu] Mode mismatch: require "M" but got "'//trim(dmode)//'" in pmf_accu_read_rbuf_B!')
     end if
 
     if( dsize .ne. accu%tot_nbins*accu%tot_cvs ) then
@@ -629,17 +644,17 @@ subroutine pmf_accu_read_rbufCVs(accu,iounit,keyline,rbuf)
 
 10  format(4(E19.11,1X))
 
-100 call pmf_utils_exit(PMF_OUT,1,'[PMFAccu] Unable to parse keyline "'//keyline//'" in pmf_accu_read_rbufCVs!')
-110 call pmf_utils_exit(PMF_OUT,1,'[PMFAccu] Premature end of data block for keyline "'//keyline//'" in pmf_accu_read_rbufCVs!')
-120 format('[PMFAccu] Size mismatch: require ',I10,' but got ',I10,' in pmf_accu_read_rbufCVs!')
+100 call pmf_utils_exit(PMF_OUT,1,'[PMFAccu] Unable to parse keyline "'//keyline//'" in pmf_accu_read_rbuf_M!')
+110 call pmf_utils_exit(PMF_OUT,1,'[PMFAccu] Premature end of data block for keyline "'//keyline//'" in pmf_accu_read_rbuf_M!')
+120 format('[PMFAccu] Size mismatch: require ',I10,' but got ',I10,' in pmf_accu_read_rbuf_M!')
 
-end subroutine pmf_accu_read_rbufCVs
+end subroutine pmf_accu_read_rbuf_M
 
 !===============================================================================
-! Subroutine:  pmf_accu_write_rbufCVs
+! Subroutine:  pmf_accu_write_rbuf_M
 !===============================================================================
 
-subroutine pmf_accu_write_rbufCVs(accu,iounit,key,op,rbuf)
+subroutine pmf_accu_write_rbuf_M(accu,iounit,key,op,rbuf)
 
     use pmf_dat
     use pmf_utils
@@ -658,15 +673,100 @@ subroutine pmf_accu_write_rbufCVs(accu,iounit,key,op,rbuf)
     !---------------------------------------------------------------------------
 
     skey = key
-    write(iounit,5) adjustl(skey), trim(op), 'R', accu%tot_nbins*accu%tot_cvs
+    write(iounit,5) adjustl(skey), trim(op), 'R', 'M', accu%tot_nbins*accu%tot_cvs
     do i=1,accu%tot_cvs
         write(iounit,10) (rbuf(i,j),j=1,accu%tot_nbins)
     end do
 
- 5  format('@',A20,1X,A2,1X,A1,1X,I10)
+ 5  format('@',A20,1X,A2,1X,A1,1X,A1,1X,I10)
 10  format(4(E19.11,1X))
 
-end subroutine pmf_accu_write_rbufCVs
+end subroutine pmf_accu_write_rbuf_M
+
+!===============================================================================
+! Subroutine:  pmf_accu_write_rbuf_C
+! data per CVs
+!===============================================================================
+
+subroutine pmf_accu_read_rbuf_C(accu,iounit,keyline,rbuf)
+
+    use pmf_dat
+    use pmf_utils
+    use pmf_unit
+    use pmf_ver
+
+    implicit none
+    type(PMFAccuType)           :: accu
+    integer                     :: iounit
+    character(*)                :: keyline
+    real(PMFDP)                 :: rbuf(:)
+    ! -----------------------------------------------
+    character(len=PMF_MAX_KEY)  :: skey
+    character(len=PMF_MAX_KEY)  :: dop
+    character(len=PMF_MAX_KEY)  :: dtype
+    character(len=PMF_MAX_KEY)  :: dmode
+    integer                     :: dsize
+    integer                     :: i
+    character(len=PMF_MAX_PATH) :: serr
+    !---------------------------------------------------------------------------
+
+    read(keyline,*,end=100,err=100) skey,dop,dtype,dmode,dsize
+
+    if( dtype .ne. 'R' ) then
+        call pmf_utils_exit(PMF_OUT,1,'[PMFAccu] Type mismatch: require "R" but got "'//dtype//'" in pmf_accu_read_rbuf_C!')
+    end if
+    if( dmode .ne. 'C' ) then
+        call pmf_utils_exit(PMF_OUT,1,'[PMFAccu] Mode mismatch: require "C" but got "'//trim(dmode)//'" in pmf_accu_read_rbuf_B!')
+    end if
+
+    if( dsize .ne. accu%tot_cvs ) then
+        write(serr,120) accu%tot_cvs, dsize
+        call pmf_utils_exit(PMF_OUT,1,serr)
+    end if
+
+    read(iounit,10,end=110,err=110) (rbuf(i),i=1,accu%tot_cvs)
+
+    return
+
+10  format(4(E19.11,1X))
+
+100 call pmf_utils_exit(PMF_OUT,1,'[PMFAccu] Unable to parse keyline "'//keyline//'" in pmf_accu_read_rbuf_C!')
+110 call pmf_utils_exit(PMF_OUT,1,'[PMFAccu] Premature end of data block for keyline "'//keyline//'" in pmf_accu_read_rbuf_C!')
+120 format('[PMFAccu] Size mismatch: require ',I10,' but got ',I10,' in pmf_accu_read_rbuf_C!')
+
+end subroutine pmf_accu_read_rbuf_C
+
+!===============================================================================
+! Subroutine:  pmf_accu_write_rbuf_C
+! data per CVs
+!===============================================================================
+
+subroutine pmf_accu_write_rbuf_C(accu,iounit,key,op,rbuf)
+
+    use pmf_dat
+    use pmf_utils
+    use pmf_unit
+    use pmf_ver
+
+    implicit none
+    type(PMFAccuType)           :: accu
+    integer                     :: iounit
+    character(*)                :: key
+    character(*)                :: op
+    real(PMFDP)                 :: rbuf(:)
+    ! -----------------------------------------------
+    character(len=PMF_MAX_KEY)  :: skey
+    integer                     :: i
+    !---------------------------------------------------------------------------
+
+    skey = key
+    write(iounit,5) adjustl(skey), trim(op), 'R', 'C', accu%tot_cvs
+    write(iounit,10) (rbuf(i),i=1,accu%tot_cvs)
+
+ 5  format('@',A20,1X,A2,1X,A1,1X,A1,1X,I10)
+10  format(4(E19.11,1X))
+
+end subroutine pmf_accu_write_rbuf_C
 
 !===============================================================================
 

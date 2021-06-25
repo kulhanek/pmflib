@@ -44,13 +44,23 @@ public:
     LibBuildVersion_PMF
     CSO_PROG_VERS_END
 
+    CSO_PROG_ARGS_SHORT_DESC_BEGIN
+    "accuname action [section]"
+    CSO_PROG_ARGS_SHORT_DESC_END
+
+    CSO_PROG_ARGS_LONG_DESC_BEGIN
+    "<cyan><b>accuname</b></cyan>                   Input name of PMF accumulator or '-' to read it from the standard input.\n"
+    "<cyan><b>action</b></cyan>                     Requested action:\n"
+    "                                               ** <b>info</b>          - print summary about the accumulator\n"
+    "                                               ** <b>list-sections</b> - print available sections\n"
+    "                                               ** <b>get-section</b>   - get data from the section\n"
+    "                                               ** <b>nsamples</b>      - print number of samples in bins\n"
+    "                                               ** <b>micf</b>          - print mean ICF forces (only the ABF simulations)"
+    CSO_PROG_ARGS_LONG_DESC_END
+
 // list of all options and arguments ------------------------------------------
     CSO_LIST_BEGIN
-    // arguments ----------------------------
-    CSO_ARG(CSmallString,PMFAccuName)
-    CSO_ARG(CSmallString,Action)
     // options ------------------------------
-    CSO_OPT(CSmallString,Section)
     CSO_OPT(int,Limit)
     CSO_OPT(int,CV)
     CSO_OPT(bool,Sigma)
@@ -65,35 +75,7 @@ public:
     CSO_LIST_END
 
     CSO_MAP_BEGIN
-// description of arguments ---------------------------------------------------
-    CSO_MAP_ARG(CSmallString,                   /* argument type */
-                PMFAccuName,                          /* argument name */
-                NULL,                           /* default value */
-                true,                           /* is argument mandatory */
-                "accuname",                        /* parameter name */
-                "Name of file containing the PMF accumulator.  If the name is '-' then the accumulator is read from the standard input.")   /* argument description */
-// description of arguments ---------------------------------------------------
-    CSO_MAP_ARG(CSmallString,                   /* argument type */
-                Action,                          /* argument name */
-                NULL,                           /* default value */
-                true,                           /* is argument mandatory */
-                "info",                        /* parameter name */
-                "Requested action:\n"
-                " ** <b>info</b>          - print summary about the accumulator\n"
-                " ** <b>list-sections</b> - print available sections\n"
-                " ** <b>get-section</b>   - get data from the section\n"
-                " ** <b>nsamples</b>      - print number of samples in bins\n"
-                " ** <b>micf</b>          - print mean ICF forces (only the ABF simulations)")   /* argument description */
 // description of options ---------------------------------------------------
-    CSO_MAP_OPT(CSmallString,                           /* option type */
-                Section,                        /* option name */
-                "NSAMPLES",                          /* default value */
-                false,                          /* is option mandatory */
-                's',                           /* short option name */
-                "section",                      /* long option name */
-                "NAME",                           /* parameter name */
-                "print data from the section with NAME in internal units.")   /* option description */
-    //----------------------------------------------------------------------
     CSO_MAP_OPT(int,                           /* option type */
                 Limit,                        /* option name */
                 0,                          /* default value */
@@ -180,6 +162,7 @@ public:
 private:
     virtual int CheckOptions(void);
     virtual int FinalizeOptions(void);
+    virtual int CheckArguments(void);
 };
 
 //------------------------------------------------------------------------------

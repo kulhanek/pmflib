@@ -161,7 +161,7 @@ subroutine rst_accu_write(iounit)
 
     rstaccu%method = 'RST'
     call pmf_accu_write_header(rstaccu%PMFAccuType,iounit)
-    call pmf_accu_write_ibuf(rstaccu%PMFAccuType,iounit,'NSAMPLES','AD',rstaccu%nsamples)
+    call pmf_accu_write_ibuf_B(rstaccu%PMFAccuType,iounit,'NSAMPLES','AD',rstaccu%nsamples)
 
 end subroutine rst_accu_write
 

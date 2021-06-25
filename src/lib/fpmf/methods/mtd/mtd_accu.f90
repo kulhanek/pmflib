@@ -203,9 +203,9 @@ subroutine mtd_accu_write(iounit)
 
     mtdaccu%method = 'MTD'
     call pmf_accu_write_header(mtdaccu%PMFAccuType,iounit)
-    call pmf_accu_write_ibuf(mtdaccu%PMFAccuType,iounit,'NSAMPLES','AD',mtdaccu%nsamples)
-    call pmf_accu_write_rbuf(mtdaccu%PMFAccuType,iounit,'MTDPOT','WA',mtdaccu%mtdpotential)
-    call pmf_accu_write_rbufCVs(mtdaccu%PMFAccuType,iounit,'MTDFORCE','WA',mtdaccu%mtdforce)
+    call pmf_accu_write_ibuf_B(mtdaccu%PMFAccuType,iounit,'NSAMPLES','AD',mtdaccu%nsamples)
+    call pmf_accu_write_rbuf_B(mtdaccu%PMFAccuType,iounit,'MTDPOT','WA',mtdaccu%mtdpotential)
+    call pmf_accu_write_rbuf_M(mtdaccu%PMFAccuType,iounit,'MTDFORCE','WA',mtdaccu%mtdforce)
 
     return
 

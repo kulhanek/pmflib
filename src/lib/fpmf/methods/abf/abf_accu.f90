@@ -270,13 +270,13 @@ subroutine abf_accu_write(iounit)
 
     abfaccu%method = 'ABF'
     call pmf_accu_write_header(abfaccu%PMFAccuType,iounit)
-    call pmf_accu_write_ibuf(abfaccu%PMFAccuType,iounit,'NSAMPLES','AD',abfaccu%nsamples)
-    call pmf_accu_write_rbufCVs(abfaccu%PMFAccuType,iounit,'MICF','WA',abfaccu%micf)
-    call pmf_accu_write_rbufCVs(abfaccu%PMFAccuType,iounit,'M2ICF','AD',abfaccu%m2icf)
+    call pmf_accu_write_ibuf_B(abfaccu%PMFAccuType,iounit,'NSAMPLES','AD',abfaccu%nsamples)
+    call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'MICF','WA',abfaccu%micf)
+    call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'M2ICF','AD',abfaccu%m2icf)
 
     if( fenthalpy ) then
-        call pmf_accu_write_rbuf(abfaccu%PMFAccuType,iounit,'MEPOT','WA',abfaccu%mepot)
-        call pmf_accu_write_rbuf(abfaccu%PMFAccuType,iounit,'M2EPOT','AD',abfaccu%m2epot)
+        call pmf_accu_write_rbuf_B(abfaccu%PMFAccuType,iounit,'MEPOT','WA',abfaccu%mepot)
+        call pmf_accu_write_rbuf_B(abfaccu%PMFAccuType,iounit,'M2EPOT','AD',abfaccu%m2epot)
     end if
 
 end subroutine abf_accu_write

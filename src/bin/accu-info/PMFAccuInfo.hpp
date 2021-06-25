@@ -54,6 +54,16 @@ private:
     // output ------------------------------------
     CTerminalStr    Console;
     CVerboseStr     vout;
+
+// actions
+    // print overall info
+    void PrintInfo(void);
+
+    // list data sections
+    void ListSections(void);
+
+    // get data from the section
+    void GetSection(const CSmallString& name);
 };
 
 //------------------------------------------------------------------------------

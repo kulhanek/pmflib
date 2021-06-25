@@ -912,6 +912,37 @@ void CPMFAccumulator::PrintCVSInfo(FILE* p_fout)
     }
 }
 
+//------------------------------------------------------------------------------
+
+ void CPMFAccumulator::ListSections(std::ostream& vout)
+ {
+    vout << endl;
+    vout << "Number of sections : " << right << setw(10) << DataBlocks.size() << endl;
+    vout << "Number of CVs      : " << right << setw(10) << NumOfCVs << endl;
+    vout << "Number of bins     : " << right << setw(10) << NumOfBins << endl;
+    vout << endl;
+    vout << "=== Data Sections ==============================================================" << endl;
+    vout << endl;
+    vout << "Name                 Size         T M Op NBins      NCVs      " << endl;
+    vout << "-------------------- ------------ - - -- ---------- ----------" << endl;
+
+    std::map<CSmallString,CPMFAccuDataPtr>::iterator it = DataBlocks.begin();
+    std::map<CSmallString,CPMFAccuDataPtr>::iterator ie = DataBlocks.end();
+
+    while( it != ie ){
+        CPMFAccuDataPtr db = it->second;
+        vout << setw(20) << left << db->GetName() << " " << right;
+        vout << setw(12) << db->GetLength() << " ";
+        vout << setw(1)  << db->GetType() << " ";
+        vout << setw(1)  << db->GetMode() << " ";
+        vout << setw(2)  << db->GetOp() << " ";
+        vout << setw(10)  << db->GetNumOfBins() << " ";
+        vout << setw(10)  << db->GetNumOfCVs();
+        vout << endl;
+        it++;
+    }
+ }
+
 //==============================================================================
 //------------------------------------------------------------------------------
 //==============================================================================
@@ -984,10 +1015,11 @@ void CPMFAccuData::Load(FILE* p_fin,const CSmallString& keyline)
 
     Op.SetLength(2);
     Type.SetLength(1);
+    Mode.SetLength(1);
 
-    // 5  format('@',A20,1X,A2,1X,A1,1X,I10)
+    // 5  format('@',A20,1X,A2,1X,A1,1X,A1,1X,I10)
     Size = 0;
-    if( sscanf(keyline,"%21c %2c %1c %d",skey.GetBuffer(),Op.GetBuffer(),Type.GetBuffer(),&Size) != 4 ){
+    if( sscanf(keyline,"%21c %2c %1c %1c %d",skey.GetBuffer(),Op.GetBuffer(),Type.GetBuffer(),Mode.GetBuffer(),&Size) != 5 ){
         CSmallString error;
         error << "Unable to parse keyline: '" << keyline << "'";
         RUNTIME_ERROR(error);
@@ -999,10 +1031,19 @@ void CPMFAccuData::Load(FILE* p_fin,const CSmallString& keyline)
     Name.Trim();
     Op.Trim();
     Type.Trim();
+    Mode.Trim();
 
     if( Size <= 0 ){
         CSmallString error;
         error << "Illegal data size for keyline: '" << keyline << "'";
+        RUNTIME_ERROR(error);
+    }
+
+    if( ! ( ((Mode == 'B') && (Size == NumOfBins)) ||
+            ((Mode == 'M') && (Size == NumOfBins*NumOfCVs)) ||
+            ((Mode == 'C') && (Size == NumOfCVs)) ) ) {
+        CSmallString error;
+        error << "Data size and mode is not consistent: '" << keyline << "'";
         RUNTIME_ERROR(error);
     }
 
@@ -1044,8 +1085,8 @@ void CPMFAccuData::Load(FILE* p_fin,const CSmallString& keyline)
 void CPMFAccuData::Save(FILE* p_fout)
 {
     // write keyline
-    // 5  format('@',A20,1X,A2,1X,A1,1X,I10)
-    if( fprintf(p_fout,"@%20s %2s %1s %10d\n",(const char*)Name,(const char*)Op,(const char*)Type,Size) <= 0 ){
+    // 5  format('@',A20,1X,A2,1X,A1,1X,A1,1X,I10)
+    if( fprintf(p_fout,"@%20s %2s %1s %1s %10d\n",(const char*)Name,(const char*)Op,(const char*)Type,(const char*)Mode,Size) <= 0 ){
         CSmallString error;
         error << "Unable to write data section keyline";
         RUNTIME_ERROR(error);
@@ -1096,6 +1137,50 @@ void CPMFAccuData::Reset(void)
 const CSmallString& CPMFAccuData::GetName(void) const
 {
     return(Name);
+}
+
+//------------------------------------------------------------------------------
+
+int CPMFAccuData::GetLength(void) const
+{
+    return(Size);
+}
+
+//------------------------------------------------------------------------------
+
+int CPMFAccuData::GetNumOfBins(void) const
+{
+    if( (Mode == 'B') || (Mode == 'M') ) return(NumOfBins);
+    return(0);
+}
+
+//------------------------------------------------------------------------------
+
+int CPMFAccuData::GetNumOfCVs(void) const
+{
+    if( (Mode == 'C') || (Mode == 'M') ) return(NumOfCVs);
+    return(0);
+}
+
+//------------------------------------------------------------------------------
+
+const CSmallString& CPMFAccuData::GetType(void) const
+{
+    return(Type);
+}
+
+//------------------------------------------------------------------------------
+
+const CSmallString& CPMFAccuData::GetMode(void) const
+{
+    return(Mode);
+}
+
+//------------------------------------------------------------------------------
+
+const CSmallString& CPMFAccuData::GetOp(void) const
+{
+    return(Op);
 }
 
 //------------------------------------------------------------------------------

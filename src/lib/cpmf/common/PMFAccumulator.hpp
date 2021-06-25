@@ -52,6 +52,24 @@ public:
     // get data section name
     const CSmallString& GetName(void) const;
 
+    // get data length
+    int GetLength(void) const;
+
+    // get num of bins
+    int GetNumOfBins(void) const;
+
+    // get num of cvs
+    int GetNumOfCVs(void) const;
+
+    // get data section type
+    const CSmallString& GetType(void) const;
+
+    // get data section mode
+    const CSmallString& GetMode(void) const;
+
+    // get data section op
+    const CSmallString& GetOp(void) const;
+
     /// get data
     double GetData(int ibin, int cv=0) const;
 
@@ -68,6 +86,7 @@ private:
     CSmallString            Name;       // name of the section
     CSmallString            Op;         // data operation
     CSmallString            Type;       // data type: R - real, I - integer
+    CSmallString            Mode;       // data mode: B - per bins, C - per CVs, M - mixed per bins and cvs
     int                     Size;       // size of data
     CSimpleVector<double>   Data;       // all data are kept as real numbers
 };
@@ -210,6 +229,9 @@ public:
 
     /// print cvs info
     void PrintCVSInfo(FILE* p_fout);
+
+    /// print list of sections
+    void ListSections(std::ostream& vout);
 
 // section of private data ----------------------------------------------------
 protected:
