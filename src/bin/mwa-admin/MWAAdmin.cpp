@@ -134,7 +134,7 @@ bool CMWAAdmin::Run(void)
     } else if(ActionRequest.GetAction() == "errors") {
         result = GetServerErrors(vout);
     } else if(ActionRequest.GetAction() == "get") {
-        result = GetABFAccumulator();
+        result = GetPMFAccumulator();
     }  else {
         CSmallString error;
         error << "action " << ActionRequest.GetAction() << " is not implemented";
@@ -163,67 +163,6 @@ void CMWAAdmin::Finalize(void)
         ErrorSystem.PrintErrors(vout);
     }
     vout << endl;
-}
-
-//==============================================================================
-//------------------------------------------------------------------------------
-//==============================================================================
-
-bool CMWAAdmin::GetABFAccumulator(void)
-{
-    CClientCommand  cmd;
-    CPMFAccumulator accu;
-
-    try{
-
-        // init command
-        InitCommand(&cmd,OperationPMF_GetData);
-
-        // execute command
-        ExecuteCommand(&cmd);
-
-        // process response
-        CXMLElement* p_accu = cmd.GetResultElementByPath("ACCU",false);
-        if(p_accu == NULL) {
-            LOGIC_ERROR("unable to open ACCU element");
-        }
-        accu.Load(p_accu);
-
-    } catch(std::exception& e) {
-        ES_ERROR_FROM_EXCEPTION("unable to process command",e);
-        return(false);
-    }
-
-    vout << endl;
-    vout << "::::::::::::::::::::::::::::::::::: Output data ::::::::::::::::::::::::::::::::" << endl;
-
-    CSmallString file_output;
-
-    if(ActionRequest.GetParameterKeyValue("file",file_output) == false) {
-        file_output = "_mwaserver.rst";
-        if( accu.GetMethod() == "ABF" ){
-            file_output = "_abfserver.rst";
-        } else  if( accu.GetMethod() == "ABP" ){
-            file_output = "_abpserver.rst";
-        } else  if( accu.GetMethod() == "MTD" ){
-            file_output = "_mtdserver.rst";
-        }
-    }
-
-// and now save all data
-    if(accu.GetNumOfCVs() > 0) {
-        vout << "Output PMF accumulator: " << file_output << endl;
-        try {
-            accu.Save(file_output);
-        } catch(...) {
-            ES_ERROR("unable to save PMF output accumulator");
-        }
-    } else {
-        vout << "Output PMF accumulator: " << file_output << endl;
-        vout << ">>> INFO: No data in PMF accumulator." << endl;
-    }
-
-    return(true);
 }
 
 //==============================================================================

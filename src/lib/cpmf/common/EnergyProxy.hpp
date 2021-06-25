@@ -1,12 +1,9 @@
-#ifndef MTDEnergyH
-#define MTDEnergyH
+#ifndef EnergyProxyH
+#define EnergyProxyH
 // =============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
 //    Copyright (C) 2021 Petr Kulhanek, kulhanek@chemi.muni.cz
-//    Copyright (C) 2011 Petr Kulhanek, kulhanek@chemi.muni.cz
-//    Copyright (C) 2008 Petr Kulhanek, kulhanek@enzim.hu
-//    Copyright (C) 2007 Petr Kulhanek, kulhanek@enzim.hu
 //
 //     This program is free software; you can redistribute it and/or modify
 //     it under the terms of the GNU General Public License as published by
@@ -23,47 +20,48 @@
 //     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 // =============================================================================
 
-#include <stdio.h>
+#include <PMFMainHeader.hpp>
+#include <SmallString.hpp>
 #include <PMFAccumulator.hpp>
-#include <SimpleVector.hpp>
-#include <EnergySurface.hpp>
-#include <VerboseStr.hpp>
-#include <TerminalStr.hpp>
-#include <StdIOFile.hpp>
-#include <EnergyProxy.hpp>
-#include "MTDEneOptions.hpp"
 
 //------------------------------------------------------------------------------
 
-class CMTDEnergy {
-public:
-    // constructor
-    CMTDEnergy(void);
-
-// main methods ---------------------------------------------------------------
-    /// init options
-    int Init(int argc,char* argv[]);
-
-    /// main part of program
-    bool Run(void);
-
-    /// finalize program
-    void Finalize(void);
-
-// section of private data ----------------------------------------------------
-private:
-    CMTDEneOptions          Options;            // program options
-    CStdIOFile              InputFile;
-    CStdIOFile              OutputFile;
-    CPMFAccumulatorPtr      Accu;               // MTD accumulator
-    CEnergyProxyPtr         EneProxy;
-    CEnergySurfacePtr       FES;                // energy surface
-    CTerminalStr            Console;
-    CVerboseStr             vout;
-
-    // calculate energy surface
-    void CalculateFES(void);
+enum EProxyRealm {
+    E_PROXY_VALUE        = 1,  // energy
+    E_PROXY_SIGMA        = 2,  // fluctuation of energy
+    E_PROXY_ERROR        = 3,  // error of energy
 };
+
+//------------------------------------------------------------------------------
+
+class PMF_PACKAGE CEnergyProxy {
+public:
+// constructor and destructor --------------------------------------------------
+    CEnergyProxy(void);
+    virtual ~CEnergyProxy(void);
+
+// access methods -------------------------------------------------------------
+    // get number of samples
+    virtual int GetNumOfSamples(int ibin) const;
+
+    // set number of samples
+    virtual void SetNumOfSamples(int ibin,int nsamples);
+
+    // get energy and its error
+    virtual double GetValue( int ibin,EProxyRealm realm) const;
+
+    // set NCorr
+    virtual void SetNCorr(double ncorr);
+
+// public data -----------------------------------------------------------------
+public:
+    CSmallString        Method;
+    CPMFAccumulatorPtr  Accu;
+};
+
+//------------------------------------------------------------------------------
+
+typedef std::shared_ptr<CEnergyProxy>    CEnergyProxyPtr;
 
 //------------------------------------------------------------------------------
 

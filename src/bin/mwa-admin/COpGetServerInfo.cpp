@@ -21,7 +21,7 @@
 //    Boston, MA  02110-1301  USA
 // =============================================================================
 
-#include <AdminClient.hpp>
+#include "MWAAdmin.hpp"
 #include <ExtraOperation.hpp>
 #include <ErrorSystem.hpp>
 #include <ClientCommand.hpp>
@@ -39,7 +39,7 @@ using namespace std;
 //------------------------------------------------------------------------------
 //==============================================================================
 
-bool CAdminClient::GetServerInfo(std::ostream& vout)
+bool CMWAAdmin::GetServerInfo(std::ostream& vout)
 {
     CClientCommand cmd;
     try{
@@ -65,7 +65,7 @@ bool CAdminClient::GetServerInfo(std::ostream& vout)
 
 //------------------------------------------------------------------------------
 
-void CAdminClient::GetCVServerInfo(CClientCommand* p_command,std::ostream& vout)
+void CMWAAdmin::GetCVServerInfo(CClientCommand* p_command,std::ostream& vout)
 {
     if( p_command == NULL ){
         INVALID_ARGUMENT("p_command is NULL");

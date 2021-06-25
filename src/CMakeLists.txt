@@ -3,9 +3,11 @@
 # ==============================================================================
 
 INCLUDE_DIRECTORIES(lib/cpmf SYSTEM)
+INCLUDE_DIRECTORIES(lib/cpmf/common SYSTEM)
+INCLUDE_DIRECTORIES(lib/cpmf/common/integrators SYSTEM)
+INCLUDE_DIRECTORIES(lib/cpmf/common/smoothers SYSTEM)
 INCLUDE_DIRECTORIES(lib/cpmf/methods/abf SYSTEM)
 INCLUDE_DIRECTORIES(lib/cpmf/methods/abp SYSTEM)
-INCLUDE_DIRECTORIES(lib/cpmf/methods/common SYSTEM)
 INCLUDE_DIRECTORIES(lib/cpmf/methods/mtd SYSTEM)
 INCLUDE_DIRECTORIES(lib/cpmf/methods/rst SYSTEM)
 INCLUDE_DIRECTORIES(lib/cpmf/methods/stm SYSTEM)
@@ -13,10 +15,7 @@ INCLUDE_DIRECTORIES(lib/cpmf/network SYSTEM)
 INCLUDE_DIRECTORIES(lib/cpmf/network/abf SYSTEM)
 INCLUDE_DIRECTORIES(lib/cpmf/network/abp SYSTEM)
 INCLUDE_DIRECTORIES(lib/cpmf/network/mtd SYSTEM)
-INCLUDE_DIRECTORIES(lib/cpmf/network/common SYSTEM)
-INCLUDE_DIRECTORIES(lib/cpmf/network/client SYSTEM)
 INCLUDE_DIRECTORIES(lib/cpmf/network/stm SYSTEM)
-INCLUDE_DIRECTORIES(lib/cpmf/network/remd SYSTEM)
 INCLUDE_DIRECTORIES(lib/cpmf/mask SYSTEM)
 
 INCLUDE_DIRECTORIES(lib/fpmf SYSTEM)

@@ -1,6 +1,7 @@
 // =============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
+//    Copyright (C) 2021 Petr Kulhanek, kulhanek@chemi.muni.cz
 //    Copyright (C) 2018 Petr Kulhanek, kulhanek@chemi.muni.cz
 //
 //     This program is free software; you can redistribute it and/or modify
@@ -18,9 +19,7 @@
 //     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 // =============================================================================
 
-#include <ABFIntegratorRBF.hpp>
-#include <ABFAccumulator.hpp>
-#include <EnergySurface.hpp>
+#include <IntegratorRBF.hpp>
 #include <ErrorSystem.hpp>
 #include <FortranMatrix.hpp>
 #include <Vector.hpp>
@@ -46,11 +45,8 @@ using namespace boost::algorithm;
 //------------------------------------------------------------------------------
 //==============================================================================
 
-CABFIntegratorRBF::CABFIntegratorRBF(void)
+CIntegratorRBF::CIntegratorRBF(void)
 {
-    Accumulator = NULL;
-    FES = NULL;
-
     Overhang    = 2;
     Method      = ERBFLLS_SVD;
 
@@ -71,7 +67,7 @@ CABFIntegratorRBF::CABFIntegratorRBF(void)
 
 //------------------------------------------------------------------------------
 
-CABFIntegratorRBF::~CABFIntegratorRBF(void)
+CIntegratorRBF::~CIntegratorRBF(void)
 {
 }
 
@@ -79,13 +75,18 @@ CABFIntegratorRBF::~CABFIntegratorRBF(void)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void CABFIntegratorRBF::SetInputABFAccumulator(CABFAccumulator* p_accu)
+void CIntegratorRBF::SetInputEnergyDerProxy(CEnergyDerProxyPtr p_proxy)
 {
-    Accumulator = p_accu;
+    DerProxy = p_proxy;
+    if( DerProxy ){
+        Accu = DerProxy->Accu;
+    } else {
+        Accu = CPMFAccumulatorPtr();
+    }
 
-    if( Accumulator ){
-        NCVs = Accumulator->GetNumOfCVs();
-        NumOfBins = Accumulator->GetNumOfBins();
+    if( Accu ){
+        NCVs = Accu->GetNumOfCVs();
+        NumOfBins = Accu->GetNumOfBins();
     } else {
         NCVs = 0;
         NumOfBins = 0;
@@ -94,16 +95,16 @@ void CABFIntegratorRBF::SetInputABFAccumulator(CABFAccumulator* p_accu)
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorRBF::SetOutputFESurface(CEnergySurface* p_surf)
+void CIntegratorRBF::SetOutputES(CEnergySurfacePtr p_surf)
 {
-    FES = p_surf;
+    EneSurf = p_surf;
 }
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorRBF::SetWFac(const CSmallString& spec)
+void CIntegratorRBF::SetWFac(const CSmallString& spec)
 {
-    if( Accumulator == NULL ){
+    if( Accu == NULL ){
         RUNTIME_ERROR("accumulator is not set for SetWFac");
     }
 
@@ -141,9 +142,9 @@ void CABFIntegratorRBF::SetWFac(const CSmallString& spec)
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorRBF::SetRFac(const CSmallString& spec)
+void CIntegratorRBF::SetRFac(const CSmallString& spec)
 {
-    if( Accumulator == NULL ){
+    if( Accu == NULL ){
         RUNTIME_ERROR("accumulator is not set for SetRFac");
     }
 
@@ -180,21 +181,21 @@ void CABFIntegratorRBF::SetRFac(const CSmallString& spec)
 }
 //------------------------------------------------------------------------------
 
-void CABFIntegratorRBF::SetOverhang(int nrbfs)
+void CIntegratorRBF::SetOverhang(int nrbfs)
 {
     Overhang = nrbfs;
 }
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorRBF::SetLLSMethod(ERBFLLSMethod set)
+void CIntegratorRBF::SetLLSMethod(ERBFLLSMethod set)
 {
     Method = set;
 }
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorRBF::SetLLSMethod(const CSmallString& method)
+void CIntegratorRBF::SetLLSMethod(const CSmallString& method)
 {
     if( method == "svd" ){
         SetLLSMethod(ERBFLLS_SVD);
@@ -212,32 +213,32 @@ void CABFIntegratorRBF::SetLLSMethod(const CSmallString& method)
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorRBF::SetRCond(double rcond)
+void CIntegratorRBF::SetRCond(double rcond)
 {
     RCond = rcond;
 }
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorRBF::SetNoEnergy(bool set)
+void CIntegratorRBF::SetNoEnergy(bool set)
 {
     NoEnergy = set;
 }
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorRBF::IncludeGluedAreas(bool set)
+void CIntegratorRBF::IncludeGluedAreas(bool set)
 {
     IncludeGluedBins = set;
 }
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorRBF::SetGlobalMin(const CSmallString& spec)
+void CIntegratorRBF::SetGlobalMin(const CSmallString& spec)
 {
     GlobalMinSet = true;
     string sspec(spec);
-    if( Accumulator == NULL ){
+    if( Accu == NULL ){
         RUNTIME_ERROR("accumulator is not set for SetGlobalMin");
     }
 
@@ -261,27 +262,27 @@ void CABFIntegratorRBF::SetGlobalMin(const CSmallString& spec)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-bool CABFIntegratorRBF::Integrate(CVerboseStr& vout)
+bool CIntegratorRBF::Integrate(CVerboseStr& vout)
 {
     PrintExecInfo(vout);
 
-    if( Accumulator == NULL ) {
+    if( Accu == NULL ) {
         ES_ERROR("ABF accumulator is not set");
         return(false);
     }
-    if( FES == NULL ) {
-        ES_ERROR("FES is not set");
+    if( EneSurf == NULL ) {
+        ES_ERROR("EneSurf is not set");
         return(false);
     }
 
-    if( Accumulator->GetNumOfCVs() == 0 ) {
+    if( Accu->GetNumOfCVs() == 0 ) {
         RUNTIME_ERROR("number of coordinates is zero");
     }
-    if( Accumulator->GetNumOfCVs() != FES->GetNumOfCVs() ){
-        RUNTIME_ERROR("inconsistent ABF and FES - CVs");
+    if( Accu->GetNumOfCVs() != EneSurf->GetNumOfCVs() ){
+        RUNTIME_ERROR("inconsistent ABF and EneSurf - CVs");
     }
-    if( Accumulator->GetNumOfBins() != FES->GetNumOfPoints() ){
-        RUNTIME_ERROR("inconsistent ABF and FES - points");
+    if( Accu->GetNumOfBins() != EneSurf->GetNumOfPoints() ){
+        RUNTIME_ERROR("inconsistent ABF and EneSurf - points");
     }
     if( NCVs == 0 ) {
         ES_ERROR("number of coordinates is zero");
@@ -306,8 +307,8 @@ bool CABFIntegratorRBF::Integrate(CVerboseStr& vout)
     NumOfRBFs = 1;
     for(size_t i=0; i < NCVs; i++ ){
         size_t nrbfbins;
-        nrbfbins = Accumulator->GetCV(i)->GetNumOfBins()/RFac[i];
-        if( ! Accumulator->GetCV(i)->IsPeriodic() ){
+        nrbfbins = Accu->GetCV(i)->GetNumOfBins()/RFac[i];
+        if( ! Accu->GetCV(i)->IsPeriodic() ){
             nrbfbins += 2*Overhang;
         }
         NumOfRBFBins[i] = nrbfbins;
@@ -322,7 +323,7 @@ bool CABFIntegratorRBF::Integrate(CVerboseStr& vout)
         if( NumOfRBFBins[i] == 0 ){
             RUNTIME_ERROR("NumOfRBFBins[i] is zero");
         }
-        Sigmas[i] = Accumulator->GetCV(i)->GetRange()*WFac[i]/NumOfRBFBins[i];
+        Sigmas[i] = Accu->GetCV(i)->GetRange()*WFac[i]/NumOfRBFBins[i];
         // cout << Sigmas[i] << endl;
     }
 
@@ -354,14 +355,14 @@ bool CABFIntegratorRBF::Integrate(CVerboseStr& vout)
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorRBF::CalculateEnergy(CVerboseStr& vout)
+void CIntegratorRBF::CalculateEnergy(CVerboseStr& vout)
 {
-    vout << "   Calculating FES ..." << endl;
+    vout << "   Calculating EneSurf ..." << endl;
 
 // create map for bins with calculated energy and error
     NumOfValues = 0;
     for(size_t i=0; i < NumOfBins; i++){
-        int samples = Accumulator->GetNumOfSamples(i);
+        int samples = DerProxy->GetNumOfSamples(i);
         if( IncludeGluedBins ){
             if( samples == 0 ) continue;
         } else {
@@ -373,7 +374,7 @@ void CABFIntegratorRBF::CalculateEnergy(CVerboseStr& vout)
 
     size_t indi = 0;
     for(size_t i=0; i < NumOfBins; i++){
-        int samples = Accumulator->GetNumOfSamples(i);
+        int samples = DerProxy->GetNumOfSamples(i);
         if( IncludeGluedBins ){
             if( samples == 0 ) continue;
         } else {
@@ -393,25 +394,25 @@ void CABFIntegratorRBF::CalculateEnergy(CVerboseStr& vout)
     #pragma omp parallel for firstprivate(jpos)
     for(size_t indj=0; indj < NumOfValues; indj++){
         size_t j = ValueMap[indj];
-        Accumulator->GetPoint(j,jpos);
+        Accu->GetPoint(j,jpos);
         values[indj] = GetValue(jpos);
     }
 
-// basic FES update
+// basic EneSurf update
     for(size_t i=0; i < NumOfBins; i++){
-        int samples = Accumulator->GetNumOfSamples(i);
-        FES->SetNumOfSamples(i,samples);
-        FES->SetEnergy(i,0.0);
-        FES->SetError(i,0.0);
+        int samples = DerProxy->GetNumOfSamples(i);
+        EneSurf->SetNumOfSamples(i,samples);
+        EneSurf->SetEnergy(i,0.0);
+        EneSurf->SetError(i,0.0);
     }
 
-// update FES
+// update EneSurf
     if( GlobalMinSet ){
         // GPos.CreateVector(NCVs) - is created in  SetGlobalMin
-   //   vout << "   Calculating FES ..." << endl;
+   //   vout << "   Calculating EneSurf ..." << endl;
         vout << "      Global minimum provided at: ";
         vout << GPos[0];
-        for(int i=1; i < Accumulator->GetNumOfCVs(); i++){
+        for(int i=1; i < Accu->GetNumOfCVs(); i++){
             vout << "x" << GPos[i];
         }
         double glb_min = GetValue(GPos);
@@ -419,7 +420,7 @@ void CABFIntegratorRBF::CalculateEnergy(CVerboseStr& vout)
 
         for(size_t indj=0; indj < NumOfValues; indj++){
             size_t j = ValueMap[indj];
-            FES->SetEnergy(j,values[indj]-glb_min);
+            EneSurf->SetEnergy(j,values[indj]-glb_min);
         }
     } else {
         // search for global minimum
@@ -428,17 +429,17 @@ void CABFIntegratorRBF::CalculateEnergy(CVerboseStr& vout)
         double glb_min = 0.0;
         for(size_t indj=0; indj < NumOfValues; indj++){
             size_t j = ValueMap[indj];
-            int samples = Accumulator->GetNumOfSamples(j);
+            int samples = DerProxy->GetNumOfSamples(j);
             if( samples < -1 ) continue;    // include sampled areas and holes but exclude extrapolated areas
             double value = values[indj];
             if( first || (glb_min > value) ){
                 glb_min = value;
                 first = false;
-                Accumulator->GetPoint(j,GPos);
+                Accu->GetPoint(j,GPos);
             }
         }
 
-   //   vout << "   Calculating FES ..." << endl;
+   //   vout << "   Calculating EneSurf ..." << endl;
         vout << "      Global minimum found at: ";
         vout << GPos[0];
         for(size_t i=1; i < NCVs; i++){
@@ -448,19 +449,19 @@ void CABFIntegratorRBF::CalculateEnergy(CVerboseStr& vout)
 
         for(size_t indj=0; indj < NumOfValues; indj++){
             size_t j = ValueMap[indj];
-            FES->SetEnergy(j,values[indj]-glb_min);
+            EneSurf->SetEnergy(j,values[indj]-glb_min);
         }
     }
 
-    vout << "      SigmaF2   = " << setprecision(5) << FES->GetSigmaF2() << endl;
+    vout << "      SigmaF2   = " << setprecision(5) << EneSurf->GetSigmaF2() << endl;
     if( IncludeGluedBins ){
-        vout << "      SigmaF2 (including glued bins) = " << setprecision(5) << FES->GetSigmaF2(true) << endl;
+        vout << "      SigmaF2 (including glued bins) = " << setprecision(5) << EneSurf->GetSigmaF2(true) << endl;
     }
 }
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorRBF::PrintExecInfo(CVerboseStr& vout)
+void CIntegratorRBF::PrintExecInfo(CVerboseStr& vout)
 {
     NumOfThreads = 1;
 
@@ -478,14 +479,14 @@ void CABFIntegratorRBF::PrintExecInfo(CVerboseStr& vout)
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorRBF::RunBlasLapackSeq(void)
+void CIntegratorRBF::RunBlasLapackSeq(void)
 {
     CSciLapack::SetNumThreadsLocal(1);
 }
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorRBF::RunBlasLapackPar(void)
+void CIntegratorRBF::RunBlasLapackPar(void)
 {
     CSciLapack::SetNumThreadsLocal(NumOfThreads);
 }
@@ -494,14 +495,14 @@ void CABFIntegratorRBF::RunBlasLapackPar(void)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-bool CABFIntegratorRBF::IntegrateByLS(CVerboseStr& vout)
+bool CIntegratorRBF::IntegrateByLS(CVerboseStr& vout)
 {
     vout << "   Creating A and rhs ..." << endl;
 
     // number of equations
     NumOfUsedBins = 0;
     for(size_t i=0; i < NumOfBins; i++){
-        if( Accumulator->GetNumOfSamples(i) > 0 ) NumOfUsedBins++;
+        if( DerProxy->GetNumOfSamples(i) > 0 ) NumOfUsedBins++;
     }
     NumOfEq = NumOfUsedBins*NCVs;
 
@@ -509,7 +510,7 @@ bool CABFIntegratorRBF::IntegrateByLS(CVerboseStr& vout)
     SampledMap.CreateVector(NumOfUsedBins);
     size_t ind = 0;
     for(size_t i=0; i < NumOfBins; i++){
-        if( Accumulator->GetNumOfSamples(i) <= 0 ) continue;
+        if( DerProxy->GetNumOfSamples(i) <= 0 ) continue;
         SampledMap[ind] = i;
         ind++;
     }
@@ -536,19 +537,19 @@ bool CABFIntegratorRBF::IntegrateByLS(CVerboseStr& vout)
     for(size_t indi=0; indi < NumOfUsedBins; indi++){
         size_t i = SampledMap[indi];
 
-        Accumulator->GetPoint(i,ipos);
+        Accu->GetPoint(i,ipos);
         // A
         for(size_t l=0; l < NumOfRBFs; l++){
             GetRBFPosition(l,lpos);
                   //      cout << lpos[0] << " " << lpos[1] << endl;
             double av = 1.0;
             for(size_t k=0; k < NCVs; k++){
-                double dvc = Accumulator->GetCV(k)->GetDifference(ipos[k],lpos[k]);
+                double dvc = Accu->GetCV(k)->GetDifference(ipos[k],lpos[k]);
                 double sig = Sigmas[k];
                 av *= exp( - dvc*dvc/(2.0*sig*sig) );
             }
             for(size_t k=0; k < NCVs; k++){
-                double dvc = Accumulator->GetCV(k)->GetDifference(ipos[k],lpos[k]);
+                double dvc = Accu->GetCV(k)->GetDifference(ipos[k],lpos[k]);
                 double sig = Sigmas[k];
                 double fc = -dvc/(sig*sig);  // switch to derivatives
                 A[indi*NCVs+k][l] = av * fc;
@@ -556,7 +557,7 @@ bool CABFIntegratorRBF::IntegrateByLS(CVerboseStr& vout)
         }
         // rhs
         for(size_t k=0; k < NCVs; k++){
-            rhs[indi*NCVs+k] = Accumulator->GetValue(k,i,EABF_DG_VALUE);
+            rhs[indi*NCVs+k] = DerProxy->GetValue(k,i,E_PROXY_VALUE);
         }
     }
 
@@ -601,11 +602,11 @@ bool CABFIntegratorRBF::IntegrateByLS(CVerboseStr& vout)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void CABFIntegratorRBF::GetRBFPosition(size_t index,CSimpleVector<double>& position)
+void CIntegratorRBF::GetRBFPosition(size_t index,CSimpleVector<double>& position)
 {
     for(long int k=NCVs-1; k >= 0; k--) {
 
-        const CColVariablePtr p_coord = Accumulator->GetCV(k);
+        const CColVariablePtr p_coord = Accu->GetCV(k);
         int ibin = index % NumOfRBFBins[k];
         // bin  = 0,...,NBins-1
         double start = p_coord->GetMinValue();
@@ -624,7 +625,7 @@ void CABFIntegratorRBF::GetRBFPosition(size_t index,CSimpleVector<double>& posit
 
 //------------------------------------------------------------------------------
 
-double CABFIntegratorRBF::GetValue(const CSimpleVector<double>& position)
+double CIntegratorRBF::GetValue(const CSimpleVector<double>& position)
 {
     double                  energy = 0.0;
 
@@ -636,7 +637,7 @@ double CABFIntegratorRBF::GetValue(const CSimpleVector<double>& position)
         GetRBFPosition(i,rbfpos);
         double value = Weights[i];
         for(size_t j=0; j < NCVs; j++){
-            double dvc = Accumulator->GetCV(j)->GetDifference(position[j],rbfpos[j]);
+            double dvc = Accu->GetCV(j)->GetDifference(position[j],rbfpos[j]);
             double sig = Sigmas[j];
             value *= exp( - dvc*dvc/(2.0*sig*sig) );
         }
@@ -648,7 +649,7 @@ double CABFIntegratorRBF::GetValue(const CSimpleVector<double>& position)
 
 //------------------------------------------------------------------------------
 
-double CABFIntegratorRBF::GetRMSR(size_t cv)
+double CIntegratorRBF::GetRMSR(size_t cv)
 {
     if( NumOfBins == 0 ){
         ES_ERROR("number of bins is not > 0");
@@ -664,9 +665,9 @@ double CABFIntegratorRBF::GetRMSR(size_t cv)
     for(size_t indi=0; indi < NumOfUsedBins; indi++){
         size_t i = SampledMap[indi];
 
-        Accumulator->GetPoint(i,ipos);
+        Accu->GetPoint(i,ipos);
 
-        double mfi = Accumulator->GetValue(cv,i,EABF_DG_VALUE);
+        double mfi = DerProxy->GetValue(cv,i,E_PROXY_VALUE);
         double mfp = GetMeanForce(ipos,cv);
         double diff = mfi - mfp;
 
@@ -687,7 +688,7 @@ double CABFIntegratorRBF::GetRMSR(size_t cv)
 
 //------------------------------------------------------------------------------
 
-bool CABFIntegratorRBF::WriteMFInfo(const CSmallString& name)
+bool CIntegratorRBF::WriteMFInfo(const CSmallString& name)
 {
     if( NumOfBins == 0 ){
         ES_ERROR("number of bins is not > 0");
@@ -706,9 +707,9 @@ bool CABFIntegratorRBF::WriteMFInfo(const CSmallString& name)
     #pragma omp parallel for firstprivate(jpos)
     for(size_t indi=0; indi < NumOfUsedBins; indi++){
         size_t i = SampledMap[indi];
-        Accumulator->GetPoint(i,jpos);
+        Accu->GetPoint(i,jpos);
         for(size_t k=0; k < NCVs; k++){
-            mfi[indi*NCVs+k] = Accumulator->GetValue(k,i,EABF_DG_VALUE);
+            mfi[indi*NCVs+k] = DerProxy->GetValue(k,i,E_PROXY_VALUE);
             mfp[indi*NCVs+k] = GetMeanForce(jpos,k);
         }
     }
@@ -725,7 +726,7 @@ bool CABFIntegratorRBF::WriteMFInfo(const CSmallString& name)
     for(size_t indi=0; indi < NumOfUsedBins; indi++){
         size_t i = SampledMap[indi];
 
-        Accumulator->GetPoint(i,jpos);
+        Accu->GetPoint(i,jpos);
 
         for(size_t c=0; c < NCVs; c++){
             ofs << format("%20.16f ")%jpos[c];
@@ -743,7 +744,7 @@ bool CABFIntegratorRBF::WriteMFInfo(const CSmallString& name)
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorRBF::FilterByMFZScore(double zscore,CVerboseStr& vout)
+void CIntegratorRBF::FilterByMFZScore(double zscore,CVerboseStr& vout)
 {
     vout << high;
     vout << "   Running Z-test filter on MF errors ..." << endl;
@@ -781,10 +782,10 @@ void CABFIntegratorRBF::FilterByMFZScore(double zscore,CVerboseStr& vout)
     for(size_t indi=0; indi < NumOfUsedBins; indi++){
         size_t i = SampledMap[indi];
 
-        Accumulator->GetPoint(i,jpos);
+        Accu->GetPoint(i,jpos);
 
         for(size_t k=0; k < NCVs; k++){
-            double diff2 = Accumulator->GetValue(k,i,EABF_DG_VALUE) - GetMeanForce(jpos,k);
+            double diff2 = DerProxy->GetValue(k,i,E_PROXY_VALUE) - GetMeanForce(jpos,k);
             diff2 *= diff2;
             mferror2[indi*NCVs+k] = diff2;
         }
@@ -857,7 +858,7 @@ void CABFIntegratorRBF::FilterByMFZScore(double zscore,CVerboseStr& vout)
     size_t outliers = 0;
     for(size_t i=0; i < NumOfBins; i++){
         if( flags[i] == 0 ){
-            Accumulator->SetNumOfSamples(i,0);
+            DerProxy->SetNumOfSamples(i,0);
             outliers++;
         }
     }
@@ -869,7 +870,7 @@ void CABFIntegratorRBF::FilterByMFZScore(double zscore,CVerboseStr& vout)
 
 //------------------------------------------------------------------------------
 
-double CABFIntegratorRBF::GetMeanForce(const CSimpleVector<double>& ipos,size_t icoord)
+double CIntegratorRBF::GetMeanForce(const CSimpleVector<double>& ipos,size_t icoord)
 {
     CSimpleVector<double>   lpos;
     lpos.CreateVector(NCVs);
@@ -880,11 +881,11 @@ double CABFIntegratorRBF::GetMeanForce(const CSimpleVector<double>& ipos,size_t 
               //      cout << lpos[0] << " " << lpos[1] << endl;
         double av = 1.0;
         for(size_t k=0; k < NCVs; k++){
-            double dvc = Accumulator->GetCV(k)->GetDifference(ipos[k],lpos[k]);
+            double dvc = Accu->GetCV(k)->GetDifference(ipos[k],lpos[k]);
             double sig = Sigmas[k];
             av *= exp( - dvc*dvc/(2.0*sig*sig) );
         }
-        double dvc = Accumulator->GetCV(icoord)->GetDifference(ipos[icoord],lpos[icoord]);
+        double dvc = Accu->GetCV(icoord)->GetDifference(ipos[icoord],lpos[icoord]);
         double sig = Sigmas[icoord];
         double fc = -dvc/(sig*sig);  // switch to derivatives
         mf += Weights[l] * av * fc;

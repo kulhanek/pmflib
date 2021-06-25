@@ -4,19 +4,27 @@
 
 SET(CPMF_METHODS_SRC
         PMFMainHeader.cpp
-        methods/common/ColVariable.cpp
-        methods/common/PMFAccumulator.cpp
-        methods/common/EnergySurface.cpp
-        methods/common/ESPrinter.cpp
+        common/ColVariable.cpp
+        common/PMFAccumulator.cpp
+        common/EnergySurface.cpp
+        common/ESPrinter.cpp
+        common/EnergyProxy.cpp
+        common/EnergyDerProxy.cpp
+
+        common/integrators/IntegratorRFD.cpp
+        common/integrators/IntegratorRBF.cpp
+        common/integrators/IntegratorGPR.cpp
+
+        common/smoothers/SmootherGPR.cpp
+
+        methods/abf/ABFProxy_dG.cpp
+        methods/abf/ABFProxy_dH.cpp
+
+        methods/mtd/MTDProxy_dG.cpp
+
         methods/abp/ABPAccumulator.cpp
-        methods/abf/ABFAccumulator.cpp
-        methods/abf/ABFIntegratorRFD.cpp
-        methods/abf/ABFIntegratorRFD2.cpp
-        methods/abf/ABFIntegratorRBF.cpp
-        methods/abf/ABFIntegratorGPR.cpp
-        methods/abf/ABFEnthalpyGPR.cpp
-        methods/mtd/MTDAccumulator.cpp
         methods/rst/RSTAccumulator.cpp
+
         methods/stm/spline.cpp
         methods/stm/Bead.cpp
         methods/stm/CVSpline.cpp
@@ -37,10 +45,6 @@ SET(CPMF_MASK_SRC
 
 SET(CPMF_NETWORK_SRC
         network/PMFOperation.cpp
-        network/common/Snapshot.cpp
-        network/client/AdminClient.cpp
-        network/client/COpFlushServerData.cpp
-        network/client/COpGetServerInfo.cpp
     # ABF ----------------------------------------
         network/abf/ABFClient.cpp
         network/abf/EntriesABFClient.cpp
@@ -50,9 +54,6 @@ SET(CPMF_NETWORK_SRC
     # MTD ----------------------------------------
         network/mtd/MTDClient.cpp
         network/mtd/EntriesMTDClient.cpp
-    # REMD ---------------------------------------
-        network/remd/REMDClient.cpp
-        network/remd/EntriesREMDClient.cpp
     # STM ----------------------------------------
         network/stm/STMClient.cpp
         network/stm/EntriesSTMClient.cpp

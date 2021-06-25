@@ -15,27 +15,23 @@ ENDIF(PMFLIB_COMPILE_FPMF)
 
 # classical utilities ----------------------------------------------------------
 
-# PMFAccumulator
+# PMF Accumulator
 ADD_SUBDIRECTORY(accu-info)
 ADD_SUBDIRECTORY(accu-combine)
 ADD_SUBDIRECTORY(accu-trajectory)
 
 # ABF
-#ADD_SUBDIRECTORY(abf-energy)
-#ADD_SUBDIRECTORY(abf-energy-optgprhyprms)
-#ADD_SUBDIRECTORY(abf-enthalpy)
-#ADD_SUBDIRECTORY(abf-enthalpy-optgprhyprms)
+ADD_SUBDIRECTORY(abf-integrate)
+ADD_SUBDIRECTORY(abf-enthalpy)
 
-#
-#ADD_SUBDIRECTORY(abf-samples)
-#ADD_SUBDIRECTORY(abf-trajectory)
-#ADD_SUBDIRECTORY(abf-mask)
+# metadynamics
+ADD_SUBDIRECTORY(mtd-energy)
+
 #
 ## ABP utilities
 #ADD_SUBDIRECTORY(abp-energy)
-#
-# metadynamics
-ADD_SUBDIRECTORY(mtd-energy)
+
+
 
 ## string method
 #ADD_SUBDIRECTORY(stm-trajectory)
@@ -46,7 +42,7 @@ IF(PMFLIB_NETWORK)
     ADD_SUBDIRECTORY(mwa-server)
     ADD_SUBDIRECTORY(mwa-admin)
 
-    # STM MWA utilities
-    ADD_SUBDIRECTORY(stm-server)
-    ADD_SUBDIRECTORY(stm-admin)
+#    # STM MWA utilities
+#    ADD_SUBDIRECTORY(stm-server)
+#    ADD_SUBDIRECTORY(stm-admin)
 ENDIF(PMFLIB_NETWORK)

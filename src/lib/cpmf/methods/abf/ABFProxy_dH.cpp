@@ -2,8 +2,6 @@
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
 //    Copyright (C) 2021 Petr Kulhanek, kulhanek@chemi.muni.cz
-//    Copyright (C) 2008 Petr Kulhanek, kulhanek@enzim.hu
-//                       Martin Petrek, petrek@chemi.muni.cz
 //
 //     This program is free software; you can redistribute it and/or modify
 //     it under the terms of the GNU General Public License as published by
@@ -20,7 +18,7 @@
 //     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 // =============================================================================
 
-#include <MTDAccumulator.hpp>
+#include <ABFProxy_dH.hpp>
 
 //------------------------------------------------------------------------------
 
@@ -30,32 +28,78 @@ using namespace std;
 //------------------------------------------------------------------------------
 //==============================================================================
 
-CMTDAccumulator::CMTDAccumulator(void)
+CABFProxy_dH::CABFProxy_dH(void)
 {
-
+    Method = "ABF dH(x)";
+    NCorr = 1.0;
 }
 
 //------------------------------------------------------------------------------
 
-CMTDAccumulator::~CMTDAccumulator(void)
+CABFProxy_dH::~CABFProxy_dH(void)
 {
-
 }
 
 //==============================================================================
 //------------------------------------------------------------------------------
 //==============================================================================
 
-int CMTDAccumulator::GetNumOfSamples(int ibin) const
+int CABFProxy_dH::GetNumOfSamples(int ibin) const
 {
-    return( GetData("NSAMPLES",ibin) );
+    if( Accu == NULL ){
+        RUNTIME_ERROR("Accu is NULL");
+    }
+    return(Accu->GetData("NSAMPLES",ibin));
 }
 
 //------------------------------------------------------------------------------
 
-double CMTDAccumulator::GetMTDPot(int ibin) const
+void CABFProxy_dH::SetNumOfSamples(int ibin,int nsamples)
 {
-    return( GetData("MTDPOT",ibin) );
+    if( Accu == NULL ){
+        RUNTIME_ERROR("Accu is NULL");
+    }
+}
+
+//------------------------------------------------------------------------------
+
+double CABFProxy_dH::GetValue( int ibin,EProxyRealm realm) const
+{
+    if( Accu == NULL ){
+        RUNTIME_ERROR("Accu is NULL");
+    }
+
+    double  nsamples = Accu->GetData("NSAMPLES",ibin);
+    double  mepot    = Accu->GetData("MEPOT",ibin);
+    double  m2epot   = Accu->GetData("M2EPOT",ibin);
+
+    double value = 0.0;
+    if( nsamples <= 0 ) return(value);
+
+    switch(realm){
+// mean force
+        // -------------------
+        case(E_PROXY_VALUE):
+            return( mepot );
+        // -------------------
+        case(E_PROXY_SIGMA):
+            return( sqrt(m2epot / nsamples) );
+        // -------------------
+        case(E_PROXY_ERROR):
+            return( sqrt(m2epot * NCorr) / nsamples );
+        // -------------------
+        default:
+            RUNTIME_ERROR("unsupported realm");
+    }
+
+    return(value);
+}
+
+//------------------------------------------------------------------------------
+
+void CABFProxy_dH::SetNCorr(double ncorr)
+{
+    NCorr  = ncorr;
 }
 
 //==============================================================================

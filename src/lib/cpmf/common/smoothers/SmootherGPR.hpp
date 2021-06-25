@@ -1,8 +1,9 @@
-#ifndef ABFEnthalpyGPRH
-#define ABFEnthalpyGPRH
+#ifndef SmootherGPRH
+#define SmootherGPRH
 // =============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
+//    Copyright (C) 2021 Petr Kulhanek, kulhanek@chemi.muni.cz
 //    Copyright (C) 2019 Petr Kulhanek, kulhanek@chemi.muni.cz
 //
 //     This program is free software; you can redistribute it and/or modify
@@ -25,30 +26,28 @@
 #include <VerboseStr.hpp>
 #include <FortranMatrix.hpp>
 #include <stddef.h>
-#include <ABFIntegratorGPR.hpp>
+#include <EnergySurface.hpp>
+#include <EnergyProxy.hpp>
+#include <IntegratorGPR.hpp>
+
 
 //------------------------------------------------------------------------------
 
-class CABFAccumulator;
-class CEnergySurface;
-
-//------------------------------------------------------------------------------
-
-/** \brief integrator of ABF accumulator employing gaussian process
+/** \brief smooth energy by GPR
 */
 
-class PMF_PACKAGE CABFEnthalpyGPR {
+class PMF_PACKAGE CSmootherGPR {
 public:
 // constructor and destructor -------------------------------------------------
-    CABFEnthalpyGPR(void);
-    virtual ~CABFEnthalpyGPR(void);
+    CSmootherGPR(void);
+    virtual ~CSmootherGPR(void);
 
 // setup methods --------------------------------------------------------------
-    /// set input ABF accumulator
-    void SetInputABFAccumulator(CABFAccumulator* p_accu);
+    /// set input energy proxy
+    void SetInputEnergyProxy(CEnergyProxyPtr p_proxy);
 
-    /// set output enthalpy surface
-    void SetOutputHESurface(CEnergySurface* p_surf);
+    /// set output energy surface
+    void SetOutputES(CEnergySurfacePtr p_surf);
 
 // hyperparameters
     /// set sigmaf2
@@ -132,8 +131,9 @@ public:
 
 // section of private data ----------------------------------------------------
 private:
-    CABFAccumulator*        Accu;
-    CEnergySurface*         FES;
+    CPMFAccumulatorPtr      Accu;
+    CEnergyProxyPtr         EneProxy;
+    CEnergySurfacePtr       EneSurface;
 
     int                     NumOfThreads;
 

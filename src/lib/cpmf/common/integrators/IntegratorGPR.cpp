@@ -1,6 +1,7 @@
 // =============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
+//    Copyright (C) 2021 Petr Kulhanek, kulhanek@chemi.muni.cz
 //    Copyright (C) 2019 Petr Kulhanek, kulhanek@chemi.muni.cz
 //
 //     This program is free software; you can redistribute it and/or modify
@@ -18,9 +19,7 @@
 //     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 // =============================================================================
 
-#include <ABFIntegratorGPR.hpp>
-#include <ABFAccumulator.hpp>
-#include <EnergySurface.hpp>
+#include <IntegratorGPR.hpp>
 #include <ErrorSystem.hpp>
 #include <FortranMatrix.hpp>
 #include <Vector.hpp>
@@ -47,12 +46,8 @@ using namespace boost::algorithm;
 //------------------------------------------------------------------------------
 //==============================================================================
 
-CABFIntegratorGPR::CABFIntegratorGPR(void)
+CIntegratorGPR::CIntegratorGPR(void)
 {
-    Accu                = NULL;
-    FES                 = NULL;
-    IntRealm            = EGPR_REALM_DG;
-
     GPRSize             = 0;
     NumOfUsedBins       = 0;
     NumOfValues         = 0;
@@ -82,7 +77,7 @@ CABFIntegratorGPR::CABFIntegratorGPR(void)
 
 //------------------------------------------------------------------------------
 
-CABFIntegratorGPR::~CABFIntegratorGPR(void)
+CIntegratorGPR::~CIntegratorGPR(void)
 {
 }
 
@@ -90,9 +85,14 @@ CABFIntegratorGPR::~CABFIntegratorGPR(void)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void CABFIntegratorGPR::SetInputABFAccumulator(CABFAccumulatorPtr p_accu)
+void CIntegratorGPR::SetInputEnergyDerProxy(CEnergyDerProxyPtr p_proxy)
 {
-    Accu = p_accu;
+    DerProxy = p_proxy;
+    if( DerProxy ){
+        Accu = DerProxy->Accu;
+    } else {
+        Accu = CPMFAccumulatorPtr();
+    }
 
     if( Accu ){
         NCVs = Accu->GetNumOfCVs();
@@ -105,28 +105,21 @@ void CABFIntegratorGPR::SetInputABFAccumulator(CABFAccumulatorPtr p_accu)
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorGPR::SetOutputFESurface(CEnergySurfacePtr p_surf)
+void CIntegratorGPR::SetOutputES(CEnergySurfacePtr p_surf)
 {
-    FES = p_surf;
+    EneSurf = p_surf;
 }
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorGPR::SetIntegratedRealm(EGPRIntegratedRealm realm)
-{
-    IntRealm = realm;
-}
-
-//------------------------------------------------------------------------------
-
-void CABFIntegratorGPR::SetSigmaF2(double sigf2)
+void CIntegratorGPR::SetSigmaF2(double sigf2)
 {
     SigmaF2 = sigf2;
 }
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorGPR::SetNCorr(const CSmallString& spec)
+void CIntegratorGPR::SetNCorr(const CSmallString& spec)
 {
     if( Accu == NULL ){
         RUNTIME_ERROR("accumulator is not set for SetNCorr");
@@ -172,14 +165,14 @@ void CABFIntegratorGPR::SetNCorr(const CSmallString& spec)
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorGPR::SetSplitNCorr(bool set)
+void CIntegratorGPR::SetSplitNCorr(bool set)
 {
     SplitNCorr = set;
 }
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorGPR::SetNCorr(CSimpleVector<double>& ncorr)
+void CIntegratorGPR::SetNCorr(CSimpleVector<double>& ncorr)
 {
     if( Accu == NULL ){
         RUNTIME_ERROR("accumulator is not set for SetNCorr");
@@ -193,7 +186,7 @@ void CABFIntegratorGPR::SetNCorr(CSimpleVector<double>& ncorr)
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorGPR::SetNCorr(size_t cvind, double value)
+void CIntegratorGPR::SetNCorr(size_t cvind, double value)
 {
     if( Accu == NULL ){
         RUNTIME_ERROR("accumulator is not set for SetNCorr");
@@ -210,7 +203,7 @@ void CABFIntegratorGPR::SetNCorr(size_t cvind, double value)
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorGPR::SetWFac(const CSmallString& spec)
+void CIntegratorGPR::SetWFac(const CSmallString& spec)
 {
     if( Accu == NULL ){
         RUNTIME_ERROR("accumulator is not set for SetWFac");
@@ -250,7 +243,7 @@ void CABFIntegratorGPR::SetWFac(const CSmallString& spec)
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorGPR::SetWFac(CSimpleVector<double>& wfac)
+void CIntegratorGPR::SetWFac(CSimpleVector<double>& wfac)
 {
     if( Accu == NULL ){
         RUNTIME_ERROR("accumulator is not set for SetWFac");
@@ -264,7 +257,7 @@ void CABFIntegratorGPR::SetWFac(CSimpleVector<double>& wfac)
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorGPR::SetWFac(size_t cvind, double value)
+void CIntegratorGPR::SetWFac(size_t cvind, double value)
 {
     if( Accu == NULL ){
         RUNTIME_ERROR("accumulator is not set for SetWFac");
@@ -281,7 +274,7 @@ void CABFIntegratorGPR::SetWFac(size_t cvind, double value)
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorGPR::SetIncludeError(bool set)
+void CIntegratorGPR::SetIncludeError(bool set)
 {
     IncludeError = set;
     if( FastErrors == false ){
@@ -291,35 +284,35 @@ void CABFIntegratorGPR::SetIncludeError(bool set)
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorGPR::SetUseNumDiff(bool set)
+void CIntegratorGPR::SetUseNumDiff(bool set)
 {
     UseNumDiff = set;
 }
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorGPR::SetNoEnergy(bool set)
+void CIntegratorGPR::SetNoEnergy(bool set)
 {
     NoEnergy = set;
 }
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorGPR::SetRCond(double rcond)
+void CIntegratorGPR::SetRCond(double rcond)
 {
     RCond = rcond;
 }
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorGPR::SetLAMethod(EGPRLAMethod set)
+void CIntegratorGPR::SetLAMethod(EGPRLAMethod set)
 {
     Method = set;
 }
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorGPR::SetLAMethod(const CSmallString& method)
+void CIntegratorGPR::SetLAMethod(const CSmallString& method)
 {
     if( method == "svd" ){
         SetLAMethod(EGPRLA_SVD);
@@ -341,7 +334,7 @@ void CABFIntegratorGPR::SetLAMethod(const CSmallString& method)
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorGPR::SetKernel(const CSmallString& kernel)
+void CIntegratorGPR::SetKernel(const CSmallString& kernel)
 {
     if( kernel == "ardse" ){
         Kernel = EGPRK_ARDSE;
@@ -359,14 +352,14 @@ void CABFIntegratorGPR::SetKernel(const CSmallString& kernel)
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorGPR::IncludeGluedAreas(bool set)
+void CIntegratorGPR::IncludeGluedAreas(bool set)
 {
     IncludeGluedBins = set;
 }
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorGPR::SetGlobalMin(const CSmallString& spec)
+void CIntegratorGPR::SetGlobalMin(const CSmallString& spec)
 {
     GlobalMinSet = true;
     string sspec(spec);
@@ -394,7 +387,7 @@ void CABFIntegratorGPR::SetGlobalMin(const CSmallString& spec)
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorGPR::SetGlobalMin(const CSimpleVector<double>& pos)
+void CIntegratorGPR::SetGlobalMin(const CSimpleVector<double>& pos)
 {
     GlobalMinSet = true;
     GPos = pos;
@@ -403,7 +396,7 @@ void CABFIntegratorGPR::SetGlobalMin(const CSimpleVector<double>& pos)
 
 //------------------------------------------------------------------------------
 
-CSimpleVector<double> CABFIntegratorGPR::GetGlobalMin(void)
+CSimpleVector<double> CIntegratorGPR::GetGlobalMin(void)
 {
     if( GPosSet == false ){
         RUNTIME_ERROR("")
@@ -413,28 +406,28 @@ CSimpleVector<double> CABFIntegratorGPR::GetGlobalMin(void)
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorGPR::SetUseInv(bool set)
+void CIntegratorGPR::SetUseInv(bool set)
 {
     UseInv = set;
 }
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorGPR::PrepForHyprmsGrd(bool set)
+void CIntegratorGPR::PrepForHyprmsGrd(bool set)
 {
    NeedInv |= set;
 }
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorGPR::SetCalcLogPL(bool set)
+void CIntegratorGPR::SetCalcLogPL(bool set)
 {
    NeedInv |= set;
 }
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorGPR::SetUseZeroPoint(bool set)
+void CIntegratorGPR::SetUseZeroPoint(bool set)
 {
     if( set == true ){
         if( GlobalMinSet == false ){
@@ -446,7 +439,7 @@ void CABFIntegratorGPR::SetUseZeroPoint(bool set)
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorGPR::SetFastError(bool set)
+void CIntegratorGPR::SetFastError(bool set)
 {
     FastErrors = set;
 }
@@ -455,24 +448,24 @@ void CABFIntegratorGPR::SetFastError(bool set)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-bool CABFIntegratorGPR::Integrate(CVerboseStr& vout,bool nostat)
+bool CIntegratorGPR::Integrate(CVerboseStr& vout,bool nostat)
 {
     PrintExecInfo(vout);
 
     if( Accu == NULL ) {
-        RUNTIME_ERROR("ABF accumulator is not set");
+        RUNTIME_ERROR("PMF accumulator is not set");
     }
-    if( FES == NULL ) {
-        RUNTIME_ERROR("FES is not set");
+    if( EneSurf == NULL ) {
+        RUNTIME_ERROR("ES is not set");
     }
     if( Accu->GetNumOfCVs() == 0 ) {
         RUNTIME_ERROR("number of coordinates is zero");
     }
-    if( Accu->GetNumOfCVs() != FES->GetNumOfCVs() ){
-        RUNTIME_ERROR("inconsistent ABF and FES - CVs");
+    if( Accu->GetNumOfCVs() != EneSurf->GetNumOfCVs() ){
+        RUNTIME_ERROR("inconsistent PMF accumulator and ES - CVs");
     }
-    if( Accu->GetNumOfBins() != FES->GetNumOfPoints() ){
-        RUNTIME_ERROR("inconsistent ABF and FES - points");
+    if( Accu->GetNumOfBins() != EneSurf->GetNumOfPoints() ){
+        RUNTIME_ERROR("inconsistent PMF accumulator and ES - points");
     }
     if( WFac.GetLength() == 0 ){
         RUNTIME_ERROR("wfac is not set");
@@ -491,7 +484,7 @@ bool CABFIntegratorGPR::Integrate(CVerboseStr& vout,bool nostat)
     // number of data points
     NumOfUsedBins = 0;
     for(size_t i=0; i < NumOfBins; i++){
-        if( Accu->GetNumOfSamples(i) > 0 ) NumOfUsedBins++;
+        if( DerProxy->GetNumOfSamples(i) > 0 ) NumOfUsedBins++;
     }
     GPRSize = NumOfUsedBins*NCVs;
     if( UseZeroPoint ) GPRSize++;
@@ -500,7 +493,7 @@ bool CABFIntegratorGPR::Integrate(CVerboseStr& vout,bool nostat)
     SampledMap.CreateVector(NumOfUsedBins);
     size_t ind = 0;
     for(size_t i=0; i < NumOfBins; i++){
-        if( Accu->GetNumOfSamples(i) <= 0 ) continue;
+        if( DerProxy->GetNumOfSamples(i) <= 0 ) continue;
         SampledMap[ind] = i;
         ind++;
     }
@@ -545,7 +538,7 @@ bool CABFIntegratorGPR::Integrate(CVerboseStr& vout,bool nostat)
         }
     }
 
-    // finalize FES if requested
+    // finalize EneSurf if requested
     if( ! NoEnergy ){
         CalculateEnergy(vout);
         if( IncludeError ){
@@ -563,7 +556,7 @@ bool CABFIntegratorGPR::Integrate(CVerboseStr& vout,bool nostat)
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorGPR::PrintExecInfo(CVerboseStr& vout)
+void CIntegratorGPR::PrintExecInfo(CVerboseStr& vout)
 {
     NumOfThreads = 1;
 
@@ -581,14 +574,14 @@ void CABFIntegratorGPR::PrintExecInfo(CVerboseStr& vout)
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorGPR::RunBlasLapackSeq(void)
+void CIntegratorGPR::RunBlasLapackSeq(void)
 {
     CSciLapack::SetNumThreadsLocal(1);
 }
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorGPR::RunBlasLapackPar(void)
+void CIntegratorGPR::RunBlasLapackPar(void)
 {
     CSciLapack::SetNumThreadsLocal(NumOfThreads);
 }
@@ -597,7 +590,7 @@ void CABFIntegratorGPR::RunBlasLapackPar(void)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-bool CABFIntegratorGPR::TrainGP(CVerboseStr& vout)
+bool CIntegratorGPR::TrainGP(CVerboseStr& vout)
 {
     if( UseZeroPoint ){
         vout << "   Zero-point included in GPR ..." << endl;
@@ -616,17 +609,7 @@ bool CABFIntegratorGPR::TrainGP(CVerboseStr& vout)
     for(size_t indi=0; indi < NumOfUsedBins; indi++){
         size_t i = SampledMap[indi];
         for(size_t ii=0; ii < NCVs; ii++){
-            double mf = 0.0;
-
-            switch(IntRealm) {
-                case(EGPR_REALM_DG):
-                    mf = Accu->GetValue(ii,i,EABF_DG_VALUE);
-                    break;
-                case(EGPR_REALM_TDS):
-                    mf = Accu->GetValue(ii,i,EABF_TDS_VALUE);
-                    break;
-            }
-
+            double mf = DerProxy->GetValue(ii,i,E_PROXY_VALUE);
             Y[indi*NCVs+ii] = mf;
         }
     }
@@ -717,7 +700,7 @@ bool CABFIntegratorGPR::TrainGP(CVerboseStr& vout)
 
 //------------------------------------------------------------------------------
 
-const CSmallString CABFIntegratorGPR::GetKernelName(void)
+const CSmallString CIntegratorGPR::GetKernelName(void)
 {
     switch(Kernel){
     case(EGPRK_ARDSE):
@@ -731,7 +714,7 @@ const CSmallString CABFIntegratorGPR::GetKernelName(void)
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorGPR::CreateKS(void)
+void CIntegratorGPR::CreateKS(void)
 {
     CSimpleVector<double> ipos;
     CSimpleVector<double> jpos;
@@ -818,15 +801,7 @@ void CABFIntegratorGPR::CreateKS(void)
     for(size_t indi=0; indi < NumOfUsedBins; indi++){
         size_t i = SampledMap[indi];
         for(size_t ii=0; ii < NCVs; ii++){
-            double er = 0.0;
-            switch(IntRealm) {
-                case(EGPR_REALM_DG):
-                    er = Accu->GetValue(ii,i,EABF_DG_ERROR);
-                    break;
-                case(EGPR_REALM_TDS):
-                    er = Accu->GetValue(ii,i,EABF_TDS_ERROR);
-                    break;
-            }
+            double er = DerProxy->GetValue(ii,i,E_PROXY_ERROR);
             if( SplitNCorr ){
                 KS[indi*NCVs+ii][indi*NCVs+ii] += er*er*NCorr[ii];
             } else {
@@ -839,7 +814,7 @@ void CABFIntegratorGPR::CreateKS(void)
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorGPR::CreateKff(const CSimpleVector<double>& ip,CSimpleVector<double>& kff)
+void CIntegratorGPR::CreateKff(const CSimpleVector<double>& ip,CSimpleVector<double>& kff)
 {
     CSimpleVector<double> jpos;
     jpos.CreateVector(NCVs);
@@ -874,7 +849,7 @@ void CABFIntegratorGPR::CreateKff(const CSimpleVector<double>& ip,CSimpleVector<
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorGPR::CreateKff2(const CSimpleVector<double>& ip,size_t icoord,CSimpleVector<double>& kff2)
+void CIntegratorGPR::CreateKff2(const CSimpleVector<double>& ip,size_t icoord,CSimpleVector<double>& kff2)
 {
     CSimpleVector<double> jpos;
     jpos.CreateVector(NCVs);
@@ -917,7 +892,7 @@ void CABFIntegratorGPR::CreateKff2(const CSimpleVector<double>& ip,size_t icoord
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorGPR::GetKernelDerAnaI(const CSimpleVector<double>& ip,const CSimpleVector<double>& jp,CSimpleVector<double>& kder)
+void CIntegratorGPR::GetKernelDerAnaI(const CSimpleVector<double>& ip,const CSimpleVector<double>& jp,CSimpleVector<double>& kder)
 {
     // calculate scaled distance
     double scdist2 = 0.0;
@@ -956,7 +931,7 @@ void CABFIntegratorGPR::GetKernelDerAnaI(const CSimpleVector<double>& ip,const C
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorGPR::GetKernelDerNumI(const CSimpleVector<double>& ip,const CSimpleVector<double>& jp,CSimpleVector<double>& kder)
+void CIntegratorGPR::GetKernelDerNumI(const CSimpleVector<double>& ip,const CSimpleVector<double>& jp,CSimpleVector<double>& kder)
 {
     CSimpleVector<double> tip;
     tip.CreateVector(NCVs);
@@ -981,7 +956,7 @@ void CABFIntegratorGPR::GetKernelDerNumI(const CSimpleVector<double>& ip,const C
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorGPR::GetKernelDerAnaJ(const CSimpleVector<double>& ip,const CSimpleVector<double>& jp,CSimpleVector<double>& kder)
+void CIntegratorGPR::GetKernelDerAnaJ(const CSimpleVector<double>& ip,const CSimpleVector<double>& jp,CSimpleVector<double>& kder)
 {
     // calculate scaled distance
     double scdist2 = 0.0;
@@ -1020,7 +995,7 @@ void CABFIntegratorGPR::GetKernelDerAnaJ(const CSimpleVector<double>& ip,const C
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorGPR::GetKernelDerNumJ(const CSimpleVector<double>& ip,const CSimpleVector<double>& jp,CSimpleVector<double>& kder)
+void CIntegratorGPR::GetKernelDerNumJ(const CSimpleVector<double>& ip,const CSimpleVector<double>& jp,CSimpleVector<double>& kder)
 {
     CSimpleVector<double> tjp;
     tjp.CreateVector(NCVs);
@@ -1045,7 +1020,7 @@ void CABFIntegratorGPR::GetKernelDerNumJ(const CSimpleVector<double>& ip,const C
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorGPR::GetKernelDer2Ana(const CSimpleVector<double>& ip,const CSimpleVector<double>& jp,CFortranMatrix& kblock)
+void CIntegratorGPR::GetKernelDer2Ana(const CSimpleVector<double>& ip,const CSimpleVector<double>& jp,CFortranMatrix& kblock)
 {
     kblock.SetZero();
 
@@ -1098,7 +1073,7 @@ void CABFIntegratorGPR::GetKernelDer2Ana(const CSimpleVector<double>& ip,const C
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorGPR::GetKernelDer2Num(const CSimpleVector<double>& ip,const CSimpleVector<double>& jp,CFortranMatrix& kblock)
+void CIntegratorGPR::GetKernelDer2Num(const CSimpleVector<double>& ip,const CSimpleVector<double>& jp,CFortranMatrix& kblock)
 {
     CSimpleVector<double> tip;
     tip.CreateVector(NCVs);
@@ -1143,7 +1118,7 @@ void CABFIntegratorGPR::GetKernelDer2Num(const CSimpleVector<double>& ip,const C
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorGPR::GetKernelDer2AnaWFac(const CSimpleVector<double>& ip,const CSimpleVector<double>& jp,size_t cv,CFortranMatrix& kblock)
+void CIntegratorGPR::GetKernelDer2AnaWFac(const CSimpleVector<double>& ip,const CSimpleVector<double>& jp,size_t cv,CFortranMatrix& kblock)
 {
     // calculate scaled distance
     double scdist2 = 0.0;
@@ -1229,7 +1204,7 @@ void CABFIntegratorGPR::GetKernelDer2AnaWFac(const CSimpleVector<double>& ip,con
 //------------------------------------------------------------------------------
 
 // for internal debugging
-void CABFIntegratorGPR::GetKernelDer2NumWFac(const CSimpleVector<double>& ip,const CSimpleVector<double>& jp,size_t cv,CFortranMatrix& kblock)
+void CIntegratorGPR::GetKernelDer2NumWFac(const CSimpleVector<double>& ip,const CSimpleVector<double>& jp,size_t cv,CFortranMatrix& kblock)
 {
     CFortranMatrix kblock1,kblock2;
 
@@ -1275,7 +1250,7 @@ void CABFIntegratorGPR::GetKernelDer2NumWFac(const CSimpleVector<double>& ip,con
 
 //------------------------------------------------------------------------------
 
-double CABFIntegratorGPR::GetKernelValue(const CSimpleVector<double>& ip,const CSimpleVector<double>& jp)
+double CIntegratorGPR::GetKernelValue(const CSimpleVector<double>& ip,const CSimpleVector<double>& jp)
 {
     // get kernel value
     switch(Kernel){
@@ -1312,14 +1287,14 @@ double CABFIntegratorGPR::GetKernelValue(const CSimpleVector<double>& ip,const C
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void CABFIntegratorGPR::CalculateEnergy(CVerboseStr& vout)
+void CIntegratorGPR::CalculateEnergy(CVerboseStr& vout)
 {
-    vout << "   Calculating FES ..." << endl;
+    vout << "   Calculating EneSurf ..." << endl;
 
 // create map for bins with calculated energy and error
     NumOfValues = 0;
     for(size_t i=0; i < NumOfBins; i++){
-        int samples = Accu->GetNumOfSamples(i);
+        int samples = DerProxy->GetNumOfSamples(i);
         if( IncludeGluedBins ){
             if( samples == 0 ) continue;
         } else {
@@ -1331,7 +1306,7 @@ void CABFIntegratorGPR::CalculateEnergy(CVerboseStr& vout)
 
     size_t indi = 0;
     for(size_t i=0; i < NumOfBins; i++){
-        int samples = Accu->GetNumOfSamples(i);
+        int samples = DerProxy->GetNumOfSamples(i);
         if( IncludeGluedBins ){
             if( samples == 0 ) continue;
         } else {
@@ -1355,18 +1330,18 @@ void CABFIntegratorGPR::CalculateEnergy(CVerboseStr& vout)
         values[indj] = GetValue(jpos);
     }
 
-// basic FES update
+// basic EneSurf update
     for(size_t i=0; i < NumOfBins; i++){
-        int samples = Accu->GetNumOfSamples(i);
-        FES->SetNumOfSamples(i,samples);
-        FES->SetEnergy(i,0.0);
-        FES->SetError(i,0.0);
+        int samples = DerProxy->GetNumOfSamples(i);
+        EneSurf->SetNumOfSamples(i,samples);
+        EneSurf->SetEnergy(i,0.0);
+        EneSurf->SetError(i,0.0);
     }
 
-// update FES
+// update EneSurf
     if( GlobalMinSet ){
         // GPos.CreateVector(NCVs) - is created in  SetGlobalMin
-   //   vout << "   Calculating FES ..." << endl;
+   //   vout << "   Calculating EneSurf ..." << endl;
         vout << "      Global minimum provided at: ";
         vout << GPos[0];
         for(int i=1; i < Accu->GetNumOfCVs(); i++){
@@ -1377,7 +1352,7 @@ void CABFIntegratorGPR::CalculateEnergy(CVerboseStr& vout)
 
         for(size_t indj=0; indj < NumOfValues; indj++){
             size_t j = ValueMap[indj];
-            FES->SetEnergy(j,values[indj]-glb_min);
+            EneSurf->SetEnergy(j,values[indj]-glb_min);
         }
     } else {
         // search for global minimum
@@ -1386,7 +1361,7 @@ void CABFIntegratorGPR::CalculateEnergy(CVerboseStr& vout)
         double glb_min = 0.0;
         for(size_t indj=0; indj < NumOfValues; indj++){
             size_t j = ValueMap[indj];
-            int samples = Accu->GetNumOfSamples(j);
+            int samples = DerProxy->GetNumOfSamples(j);
             if( samples < -1 ) continue;    // include sampled areas and holes but exclude extrapolated areas
             double value = values[indj];
             if( first || (glb_min > value) ){
@@ -1396,7 +1371,7 @@ void CABFIntegratorGPR::CalculateEnergy(CVerboseStr& vout)
             }
         }
 
-   //   vout << "   Calculating FES ..." << endl;
+   //   vout << "   Calculating EneSurf ..." << endl;
         vout << "      Global minimum found at: ";
         vout << GPos[0];
         for(size_t i=1; i < NCVs; i++){
@@ -1406,21 +1381,21 @@ void CABFIntegratorGPR::CalculateEnergy(CVerboseStr& vout)
 
         for(size_t indj=0; indj < NumOfValues; indj++){
             size_t j = ValueMap[indj];
-            FES->SetEnergy(j,values[indj]-glb_min);
+            EneSurf->SetEnergy(j,values[indj]-glb_min);
         }
     }
 
     GPosSet = true;
 
-    vout << "      SigmaF2   = " << setprecision(5) << FES->GetSigmaF2() << endl;
+    vout << "      SigmaF2   = " << setprecision(5) << EneSurf->GetSigmaF2() << endl;
     if( IncludeGluedBins ){
-        vout << "      SigmaF2 (including glued bins) = " << setprecision(5) << FES->GetSigmaF2(true) << endl;
+        vout << "      SigmaF2 (including glued bins) = " << setprecision(5) << EneSurf->GetSigmaF2(true) << endl;
     }
 }
 
 //------------------------------------------------------------------------------
 
-double CABFIntegratorGPR::GetValue(const CSimpleVector<double>& position)
+double CIntegratorGPR::GetValue(const CSimpleVector<double>& position)
 {
     CSimpleVector<double>   kff;
     kff.CreateVector(GPRSize);
@@ -1434,7 +1409,7 @@ double CABFIntegratorGPR::GetValue(const CSimpleVector<double>& position)
 
 //------------------------------------------------------------------------------
 
-double CABFIntegratorGPR::GetMeanForce(const CSimpleVector<double>& position,size_t icoord)
+double CIntegratorGPR::GetMeanForce(const CSimpleVector<double>& position,size_t icoord)
 {
     CSimpleVector<double>   kff2;
     kff2.CreateVector(GPRSize);
@@ -1448,7 +1423,7 @@ double CABFIntegratorGPR::GetMeanForce(const CSimpleVector<double>& position,siz
 
 //------------------------------------------------------------------------------
 
-double CABFIntegratorGPR::GetRMSR(size_t cv)
+double CIntegratorGPR::GetRMSR(size_t cv)
 {
     if( NumOfBins == 0 ){
         ES_ERROR("number of bins is not > 0");
@@ -1466,15 +1441,7 @@ double CABFIntegratorGPR::GetRMSR(size_t cv)
 
         Accu->GetPoint(i,ipos);
 
-        double mfi = 0.0;
-        switch(IntRealm) {
-            case(EGPR_REALM_DG):
-                mfi = Accu->GetValue(cv,i,EABF_DG_VALUE);
-                break;
-            case(EGPR_REALM_TDS):
-                mfi = Accu->GetValue(cv,i,EABF_TDS_VALUE);
-                break;
-        }
+        double mfi = DerProxy->GetValue(cv,i,E_PROXY_VALUE);
         double mfp = GetMeanForce(ipos,cv);
         double diff = mfi - mfp;
         rmsr += diff*diff;
@@ -1494,7 +1461,7 @@ double CABFIntegratorGPR::GetRMSR(size_t cv)
 
 //------------------------------------------------------------------------------
 
-bool CABFIntegratorGPR::WriteMFInfo(const CSmallString& name)
+bool CIntegratorGPR::WriteMFInfo(const CSmallString& name)
 {
     if( NumOfBins == 0 ){
         ES_ERROR("number of bins is not > 0");
@@ -1515,15 +1482,7 @@ bool CABFIntegratorGPR::WriteMFInfo(const CSmallString& name)
         size_t i = SampledMap[indi];
         Accu->GetPoint(i,ipos);
         for(size_t k=0; k < NCVs; k++){
-            double mf = 0.0;
-            switch(IntRealm) {
-                case(EGPR_REALM_DG):
-                    mf = Accu->GetValue(k,i,EABF_DG_VALUE);
-                    break;
-                case(EGPR_REALM_TDS):
-                    mf = Accu->GetValue(k,i,EABF_TDS_VALUE);
-                    break;
-            }
+            double mf = DerProxy->GetValue(k,i,E_PROXY_VALUE);
             mfi[indi*NCVs+k] = mf;
             mfp[indi*NCVs+k] = GetMeanForce(ipos,k);
         }
@@ -1559,7 +1518,7 @@ bool CABFIntegratorGPR::WriteMFInfo(const CSmallString& name)
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorGPR::FilterByMFZScore(double zscore,CVerboseStr& vout)
+void CIntegratorGPR::FilterByMFZScore(double zscore,CVerboseStr& vout)
 {
     vout << high;
     vout << "   Running Z-test filter on MF errors ..." << endl;
@@ -1600,15 +1559,7 @@ void CABFIntegratorGPR::FilterByMFZScore(double zscore,CVerboseStr& vout)
         Accu->GetPoint(i,ipos);
 
         for(size_t k=0; k < NCVs; k++){
-            double mf = 0.0;
-            switch(IntRealm) {
-                case(EGPR_REALM_DG):
-                    mf = Accu->GetValue(k,i,EABF_DG_VALUE);
-                    break;
-                case(EGPR_REALM_TDS):
-                    mf = Accu->GetValue(k,i,EABF_TDS_VALUE);
-                    break;
-            }
+            double mf = DerProxy->GetValue(k,i,E_PROXY_VALUE);
             double diff2 = mf - GetMeanForce(ipos,k);
             diff2 *= diff2;
             mferror2[indi*NCVs+k] = diff2;
@@ -1682,7 +1633,7 @@ void CABFIntegratorGPR::FilterByMFZScore(double zscore,CVerboseStr& vout)
     size_t outliers = 0;
     for(size_t i=0; i < NumOfBins; i++){
         if( flags[i] == 0 ){
-            Accu->SetNumOfSamples(i,0);
+            DerProxy->SetNumOfSamples(i,0);
             outliers++;
         }
     }
@@ -1695,7 +1646,7 @@ void CABFIntegratorGPR::FilterByMFZScore(double zscore,CVerboseStr& vout)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-double CABFIntegratorGPR::GetLogML(void)
+double CIntegratorGPR::GetLogML(void)
 {
     double ml = 0.0;
 
@@ -1714,7 +1665,7 @@ double CABFIntegratorGPR::GetLogML(void)
 
 //------------------------------------------------------------------------------
 
-double CABFIntegratorGPR::GetLogPL(void)
+double CIntegratorGPR::GetLogPL(void)
 {
     if( ! (NeedInv || UseInv) ){
         RUNTIME_ERROR("logPL requires K+Sigma inverted matrix");
@@ -1738,17 +1689,17 @@ double CABFIntegratorGPR::GetLogPL(void)
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorGPR::GetLogMLDerivatives(const std::vector<bool>& flags,CSimpleVector<double>& der)
+void CIntegratorGPR::GetLogMLDerivatives(const std::vector<bool>& flags,CSimpleVector<double>& der)
 {
     if( ! (NeedInv || UseInv) ){
         RUNTIME_ERROR("GetLogMLDerivatives requires K+Sigma inverted matrix");
     }
 
     if( Accu == NULL ) {
-        RUNTIME_ERROR("ABF accumulator is not set");
+        RUNTIME_ERROR("PMF accumulator is not set");
     }
-    if( FES == NULL ) {
-        RUNTIME_ERROR("FES is not set");
+    if( EneSurf == NULL ) {
+        RUNTIME_ERROR("ES is not set");
     }
     if( NCVs <= 0 ){
         RUNTIME_ERROR("NCVs <= NULL");
@@ -1818,17 +1769,17 @@ void CABFIntegratorGPR::GetLogMLDerivatives(const std::vector<bool>& flags,CSimp
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorGPR::GetLogPLDerivatives(const std::vector<bool>& flags,CSimpleVector<double>& der)
+void CIntegratorGPR::GetLogPLDerivatives(const std::vector<bool>& flags,CSimpleVector<double>& der)
 {
     if( ! (NeedInv || UseInv) ){
         RUNTIME_ERROR("GetLogPLDerivatives requires K+Sigma inverted matrix");
     }
 
     if( Accu == NULL ) {
-        RUNTIME_ERROR("ABF accumulator is not set");
+        RUNTIME_ERROR("PMF accumulator is not set");
     }
-    if( FES == NULL ) {
-        RUNTIME_ERROR("FES is not set");
+    if( EneSurf == NULL ) {
+        RUNTIME_ERROR("ES is not set");
     }
     if( NCVs <= 0 ){
         RUNTIME_ERROR("NCVs <= NULL");
@@ -1906,7 +1857,7 @@ void CABFIntegratorGPR::GetLogPLDerivatives(const std::vector<bool>& flags,CSimp
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorGPR::CalcKderWRTSigmaF2(void)
+void CIntegratorGPR::CalcKderWRTSigmaF2(void)
 {
     Kder.SetZero();
 
@@ -1993,7 +1944,7 @@ void CABFIntegratorGPR::CalcKderWRTSigmaF2(void)
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorGPR::CalcKderWRTNCorr(size_t cv)
+void CIntegratorGPR::CalcKderWRTNCorr(size_t cv)
 {
     Kder.SetZero();
 
@@ -2002,15 +1953,7 @@ void CABFIntegratorGPR::CalcKderWRTNCorr(size_t cv)
         size_t i = SampledMap[indi];
 
         for(size_t ii=0; ii < NCVs; ii++){
-            double er = 0.0;
-            switch(IntRealm) {
-                case(EGPR_REALM_DG):
-                    er = Accu->GetValue(ii,i,EABF_DG_ERROR);
-                    break;
-                case(EGPR_REALM_TDS):
-                    er = Accu->GetValue(ii,i,EABF_TDS_ERROR);
-                    break;
-            }
+            double er = DerProxy->GetValue(ii,i,E_PROXY_ERROR);
             if( SplitNCorr ){
                 if( cv == ii ) Kder[indi*NCVs+ii][indi*NCVs+ii] += er*er;
             } else {
@@ -2022,7 +1965,7 @@ void CABFIntegratorGPR::CalcKderWRTNCorr(size_t cv)
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorGPR::CalcKderWRTWFac(size_t cv)
+void CIntegratorGPR::CalcKderWRTWFac(size_t cv)
 {
     Kder.SetZero();
 
@@ -2066,7 +2009,7 @@ void CABFIntegratorGPR::CalcKderWRTWFac(size_t cv)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-double CABFIntegratorGPR::GetVar(CSimpleVector<double>& lpos)
+double CIntegratorGPR::GetVar(CSimpleVector<double>& lpos)
 {
     CSimpleVector<double>   kff;
     CSimpleVector<double>   ik;
@@ -2084,7 +2027,7 @@ double CABFIntegratorGPR::GetVar(CSimpleVector<double>& lpos)
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorGPR::GetCovVar(CSimpleVector<double>& lpos,CSimpleVector<double>& rpos,double& lrcov,double& rrvar)
+void CIntegratorGPR::GetCovVar(CSimpleVector<double>& lpos,CSimpleVector<double>& rpos,double& lrcov,double& rrvar)
 {
     CSimpleVector<double>   kffr;
     CSimpleVector<double>   kffl;
@@ -2107,13 +2050,13 @@ void CABFIntegratorGPR::GetCovVar(CSimpleVector<double>& lpos,CSimpleVector<doub
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorGPR::CalculateErrors(CSimpleVector<double>& gpos,CVerboseStr& vout)
+void CIntegratorGPR::CalculateErrors(CSimpleVector<double>& gpos,CVerboseStr& vout)
 {
     if( NumOfValues == 0 ){
         RUNTIME_ERROR("NumOfValues == 0");
     }
 
-    vout << "   Calculating FES error ..." << endl;
+    vout << "   Calculating EneSurf error ..." << endl;
     CSmallTime st;
     st.GetActualTime();
 
@@ -2139,7 +2082,7 @@ void CABFIntegratorGPR::CalculateErrors(CSimpleVector<double>& gpos,CVerboseStr&
         } else {
             error = 0.0;
         }
-        FES->SetError(j,error);
+        EneSurf->SetError(j,error);
 
         #pragma omp atomic
         nbatches++;
@@ -2160,19 +2103,19 @@ void CABFIntegratorGPR::CalculateErrors(CSimpleVector<double>& gpos,CVerboseStr&
         }
     }
 
-    vout << "      SigmaF2+  = " << setprecision(5) << FES->GetSigmaF2p() << endl;
-    vout << "      SigmaF2-  = " << setprecision(5) << FES->GetSigmaF2m() << endl;
+    vout << "      SigmaF2+  = " << setprecision(5) << EneSurf->GetSigmaF2p() << endl;
+    vout << "      SigmaF2-  = " << setprecision(5) << EneSurf->GetSigmaF2m() << endl;
 }
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorGPR::CalculateErrorsFromCov(CVerboseStr& vout)
+void CIntegratorGPR::CalculateErrorsFromCov(CVerboseStr& vout)
 {
     if( NumOfValues == 0 ){
         RUNTIME_ERROR("NumOfValues == 0");
     }
 
-    vout << "   Calculating FES error ..." << endl;
+    vout << "   Calculating EneSurf error ..." << endl;
 
     // find global minimum
     size_t iglb = 0;
@@ -2184,7 +2127,7 @@ void CABFIntegratorGPR::CalculateErrorsFromCov(CVerboseStr& vout)
         double glb_min = 0.0;
         for(size_t indj=0; indj < NumOfValues; indj++){
             size_t j = ValueMap[indj];
-            double value = FES->GetEnergy(j);
+            double value = EneSurf->GetEnergy(j);
             if( first || (glb_min > value) ){
                 iglb = indj;
                 first = false;
@@ -2208,18 +2151,18 @@ void CABFIntegratorGPR::CalculateErrorsFromCov(CVerboseStr& vout)
         } else {
             error = 0.0;
         }
-        FES->SetError(j,error);
+        EneSurf->SetError(j,error);
     }
 
-    vout << "      SigmaF2+  = " << setprecision(5) << FES->GetSigmaF2p() << endl;
-    vout << "      SigmaF2-  = " << setprecision(5) << FES->GetSigmaF2m() << endl;
+    vout << "      SigmaF2+  = " << setprecision(5) << EneSurf->GetSigmaF2p() << endl;
+    vout << "      SigmaF2-  = " << setprecision(5) << EneSurf->GetSigmaF2m() << endl;
 }
 
 //==============================================================================
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void CABFIntegratorGPR::CalculateCovs(CVerboseStr& vout)
+void CIntegratorGPR::CalculateCovs(CVerboseStr& vout)
 {
     if( NumOfValues == 0 ){
         RUNTIME_ERROR("NumOfValues == 0");
@@ -2343,7 +2286,7 @@ void CABFIntegratorGPR::CalculateCovs(CVerboseStr& vout)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-CEnergySurfacePtr CABFIntegratorGPR::ReduceFES(const std::vector<bool>& keepcvs)
+CEnergySurfacePtr CIntegratorGPR::ReduceFES(const std::vector<bool>& keepcvs)
 {
     if( keepcvs.size() != NCVs ){
         RUNTIME_ERROR("keepcvs.size() != NCVs");
@@ -2371,9 +2314,9 @@ CEnergySurfacePtr CABFIntegratorGPR::ReduceFES(const std::vector<bool>& keepcvs)
 // calculate weights
     for(size_t indi=0; indi < NumOfValues; indi++){
         size_t mbin = ValueMap[indi];
-        double ene = FES->GetEnergy(mbin);
-        FES->GetIPoint(mbin,midx);
-        FES->ReduceIPoint(keepcvs,midx,ridx);
+        double ene = EneSurf->GetEnergy(mbin);
+        EneSurf->GetIPoint(mbin,midx);
+        EneSurf->ReduceIPoint(keepcvs,midx,ridx);
         size_t rbin = p_rsurf->IPoint2Bin(ridx);
         IdxMap[indi] = rbin;
         double w = exp(-ene/(R*temp));
@@ -2388,7 +2331,7 @@ CEnergySurfacePtr CABFIntegratorGPR::ReduceFES(const std::vector<bool>& keepcvs)
         for(size_t indi=0; indi < NumOfValues; indi++){
             if( IdxMap[indi] != rbin ) continue;
             size_t mbini = ValueMap[indi];
-            double enei = FES->GetEnergy(mbini);
+            double enei = EneSurf->GetEnergy(mbini);
             double wi = exp(-enei/(R*temp));
             for(size_t indj=0; indj < NumOfValues; indj++){
                 if( IdxMap[indj] != rbin ) continue;
@@ -2396,7 +2339,7 @@ CEnergySurfacePtr CABFIntegratorGPR::ReduceFES(const std::vector<bool>& keepcvs)
                     if( indi != indj ) continue;
                 }
                 size_t mbinj = ValueMap[indj];
-                double enej = FES->GetEnergy(mbinj);
+                double enej = EneSurf->GetEnergy(mbinj);
                 double wj = exp(-enej/(R*temp));
                 err = err + wi*wj*Cov[indi][indj];
             }

@@ -1,8 +1,9 @@
-#ifndef ABFIntegratorRFDH
-#define ABFIntegratorRFDH
+#ifndef IntegratorRFDH
+#define IntegratorRFDH
 // =============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
+//    Copyright (C) 2021 Petr Kulhanek, kulhanek@chemi.muni.cz
 //    Copyright (C) 2008 Petr Kulhanek, kulhanek@enzim.hu
 //                       Martin Petrek, petrek@chemi.muni.cz
 //
@@ -24,7 +25,8 @@
 #include <PMFMainHeader.hpp>
 #include <SimpleVector.hpp>
 #include <VerboseStr.hpp>
-#include <ABFAccumulator.hpp>
+#include <EnergyDerProxy.hpp>
+#include <EnergySurface.hpp>
 
 extern "C" {
 #include <cs.h>
@@ -32,28 +34,22 @@ extern "C" {
 
 //------------------------------------------------------------------------------
 
-class CABFAccumulator;
-class CEnergySurface;
-
-//------------------------------------------------------------------------------
-
-/** \brief integrator of ABF accumulator based on finite differences
-    ABF points with number of samples higher than zero are considered,
-    only ABF data part is integrated
+/** \brief integrator of PMF accumulator based on finite differences
+    only PMF points with number of samples higher than zero are considered
 */
 
-class PMF_PACKAGE CABFIntegratorRFD {
+class PMF_PACKAGE CIntegratorRFD {
 public:
 // constructor and destructor -------------------------------------------------
-    CABFIntegratorRFD(void);
-    virtual ~CABFIntegratorRFD(void);
+    CIntegratorRFD(void);
+    virtual ~CIntegratorRFD(void);
 
 // setup methods --------------------------------------------------------------
-    /// set input ABF accumulator, only ABF forces are integrated
-    void SetInputABFAccumulator(const CABFAccumulator* p_accu);
+    /// set input energy derivative proxy
+    void SetInputEnergyDerProxy(CEnergyDerProxyPtr p_proxy);
 
     /// set output free energy surface
-    void SetOutputFESurface(CEnergySurface* p_surf);
+    void SetOutputES(CEnergySurfacePtr p_surf);
 
     /// set FD number of points (3 or 4)
     void SetFDPoints(int npts);
@@ -73,8 +69,9 @@ public:
 
 // section of private data ----------------------------------------------------
 private:
-    const CABFAccumulator*  Accumulator;
-    CEnergySurface*         FES;
+    CPMFAccumulatorPtr      Accu;
+    CEnergyDerProxyPtr      DerProxy;
+    CEnergySurfacePtr       EneSurf;
 
     int                     FDLevel;
     bool                    Periodicity;

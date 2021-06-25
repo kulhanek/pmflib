@@ -29,6 +29,7 @@
 #include <iomanip>
 #include "MTDEnergy.hpp"
 #include <boost/format.hpp>
+#include <MTDProxy_dG.hpp>
 
 //------------------------------------------------------------------------------
 
@@ -111,19 +112,26 @@ bool CMTDEnergy::Run(void)
 {
     int state = 1;
 
+// setup accu, energy proxy, and output FES
+    Accu        = CPMFAccumulatorPtr(new CPMFAccumulator);
+    FES         = CEnergySurfacePtr(new CEnergySurface);
+    EneProxy    = CMTDProxy_dG_Ptr(new CMTDProxy_dG);
+    EneProxy->Accu = Accu;
+
+// load accumulator
     vout << endl;
     vout << format("%02d:Loading MTD accumulator: %s")%state%string(Options.GetArgInput()) << endl;
     state++;
 
-// load history list
+
     try {
-        MTDAccumulator.Load(InputFile);
+        Accu->Load(InputFile);
     } catch(...) {
-        ES_ERROR("unable to load the input MTD history file");
+        ES_ERROR("unable to load the input MTD accumulator file");
         return(false);
     }
 
-    MTDAccumulator.PrintCVSInfo(vout);
+    Accu->PrintCVSInfo(vout);
 
     vout << endl;
     vout << format("%02d:Calculating FES ...")%state << endl;
@@ -132,11 +140,11 @@ bool CMTDEnergy::Run(void)
 // print header
     if((Options.GetOptNoHeader() == false) && (Options.GetOptOutputFormat() != "fes")) {
         Options.PrintOptions(OutputFile);
-        MTDAccumulator.PrintCVSInfo(OutputFile);
+        Accu->PrintCVSInfo(OutputFile);
     }
 
 // allocate surface
-    FES.Allocate(&MTDAccumulator);
+    FES->Allocate(Accu);
 
 // calculate energy -----------------------------
     CalculateFES();
@@ -144,12 +152,12 @@ bool CMTDEnergy::Run(void)
 // should we apply offset?
     if(Options.GetOptKeepFloating() == false) {
         // get value of global minumum
-        double offset = Options.GetOptOffset() - FES.GetGlobalMinimumValue();
-        FES.ApplyOffset(offset);
+        double offset = Options.GetOptOffset() - FES->GetGlobalMinimumValue();
+        FES->ApplyOffset(offset);
     }
 
     vout << endl;
-    vout << "Final FES SigmaF2     = " << setprecision(5) << FES.GetSigmaF2() << endl;
+    vout << "Final FES SigmaF2     = " << setprecision(5) << FES->GetSigmaF2() << endl;
 
     vout << endl;
     vout << format("%02d:Writing results to file: %s")%state%string(Options.GetArgOutput()) << endl;
@@ -157,7 +165,7 @@ bool CMTDEnergy::Run(void)
 // print energy surface
     CESPrinter printer;
 
-    printer.SetPrintedES(&FES);
+    printer.SetPrintedES(FES);
     printer.SetXFormat(Options.GetOptIXFormat());
     printer.SetYFormat(Options.GetOptOEFormat());
     if(Options.GetOptOutputFormat() == "plain") {
@@ -211,9 +219,9 @@ void CMTDEnergy::Finalize(void)
 
 void CMTDEnergy::CalculateFES(void)
 {
-    for(int i=0; i < MTDAccumulator.GetNumOfBins(); i++){
-        FES.SetNumOfSamples(i,1);
-        FES.SetEnergy(i,- MTDAccumulator.GetMTDPot(i));
+    for(int i=0; i < Accu->GetNumOfBins(); i++){
+        FES->SetNumOfSamples(i,1);
+        FES->SetEnergy(i, EneProxy->GetValue(i,E_PROXY_VALUE) );
     }
 }
 

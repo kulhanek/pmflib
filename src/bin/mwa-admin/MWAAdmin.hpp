@@ -22,13 +22,14 @@
 // ===============================================================================
 
 #include "MWAAdmOptions.hpp"
-#include <AdminClient.hpp>
 #include <VerboseStr.hpp>
 #include <TerminalStr.hpp>
+#include <ExtraClient.hpp>
+#include <iostream>
 
 //------------------------------------------------------------------------------
 
-class CMWAAdmin : private CAdminClient {
+class CMWAAdmin : private CExtraClient {
 public:
     // constructor
     CMWAAdmin(void);
@@ -49,8 +50,18 @@ private:
     CTerminalStr        Console;
     CVerboseStr         vout;
 
-    /// get ABF accumulator - this method is specific
-    bool GetABFAccumulator(void);
+// supported operations -------------------------------------------------------
+    /// get PMF accumulator
+    bool GetPMFAccumulator(void);
+
+    /// get status information from server
+    bool GetServerInfo(std::ostream& vout);
+
+    /// flush all data to disk
+    bool FlushServerData(void);
+
+    /// server info - helper method
+    void GetCVServerInfo(CClientCommand* p_command,std::ostream& sout);
 };
 
 //------------------------------------------------------------------------------

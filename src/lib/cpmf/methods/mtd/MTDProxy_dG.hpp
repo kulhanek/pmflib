@@ -1,5 +1,5 @@
-#ifndef MTDAccumulatorH
-#define MTDAccumulatorH
+#ifndef MTDProxy_dGH
+#define MTDProxy_dGH
 // =============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
@@ -23,25 +23,30 @@
 // =============================================================================
 
 #include <PMFMainHeader.hpp>
-#include <PMFAccumulator.hpp>
+#include <EnergyProxy.hpp>
 
 //------------------------------------------------------------------------------
 
-/** \brief MTD accumulator
+/** \brief return free energy from MTD accumulator
 */
 
-class PMF_PACKAGE CMTDAccumulator : public CPMFAccumulator {
+class PMF_PACKAGE CMTDProxy_dG : public CEnergyProxy {
 public:
 // constructor and destructor -------------------------------------------------
-    CMTDAccumulator(void);
-    ~CMTDAccumulator(void);
+    CMTDProxy_dG(void);
+    ~CMTDProxy_dG(void);
 
-    /// return number of samples for a given bin index
-    int GetNumOfSamples(int ibin) const;
+//------------------------------------------------------------------------------
+    // get number of samples
+    virtual int GetNumOfSamples(int ibin) const;
 
-    /// return MTDPot
-    double GetMTDPot(int ibin) const;
+    // get energy derivative and its error
+    virtual double GetValue( int ibin,EProxyRealm realm) const;
 };
+
+//------------------------------------------------------------------------------
+
+typedef std::shared_ptr<CMTDProxy_dG>    CMTDProxy_dG_Ptr;
 
 //------------------------------------------------------------------------------
 

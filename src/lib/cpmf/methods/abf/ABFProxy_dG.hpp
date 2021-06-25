@@ -1,12 +1,9 @@
-#ifndef MTDEnergyH
-#define MTDEnergyH
+#ifndef ABFProxy_dG_H
+#define ABFProxy_dG_H
 // =============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
 //    Copyright (C) 2021 Petr Kulhanek, kulhanek@chemi.muni.cz
-//    Copyright (C) 2011 Petr Kulhanek, kulhanek@chemi.muni.cz
-//    Copyright (C) 2008 Petr Kulhanek, kulhanek@enzim.hu
-//    Copyright (C) 2007 Petr Kulhanek, kulhanek@enzim.hu
 //
 //     This program is free software; you can redistribute it and/or modify
 //     it under the terms of the GNU General Public License as published by
@@ -23,47 +20,34 @@
 //     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 // =============================================================================
 
-#include <stdio.h>
-#include <PMFAccumulator.hpp>
-#include <SimpleVector.hpp>
-#include <EnergySurface.hpp>
-#include <VerboseStr.hpp>
-#include <TerminalStr.hpp>
-#include <StdIOFile.hpp>
-#include <EnergyProxy.hpp>
-#include "MTDEneOptions.hpp"
+#include <PMFMainHeader.hpp>
+#include <EnergyDerProxy.hpp>
 
 //------------------------------------------------------------------------------
 
-class CMTDEnergy {
+/** \brief ABF proxy providing mean force for the free energy integration
+*/
+
+class PMF_PACKAGE CABFProxy_dG : public CEnergyDerProxy {
 public:
-    // constructor
-    CMTDEnergy(void);
+// constructor and destructor --------------------------------------------------
+    CABFProxy_dG(void);
+    ~CABFProxy_dG(void);
 
-// main methods ---------------------------------------------------------------
-    /// init options
-    int Init(int argc,char* argv[]);
+//------------------------------------------------------------------------------
+    // get number of samples
+    virtual int GetNumOfSamples(int ibin) const;
 
-    /// main part of program
-    bool Run(void);
+    // set number of samples
+    virtual void SetNumOfSamples(int ibin,int nsamples);
 
-    /// finalize program
-    void Finalize(void);
-
-// section of private data ----------------------------------------------------
-private:
-    CMTDEneOptions          Options;            // program options
-    CStdIOFile              InputFile;
-    CStdIOFile              OutputFile;
-    CPMFAccumulatorPtr      Accu;               // MTD accumulator
-    CEnergyProxyPtr         EneProxy;
-    CEnergySurfacePtr       FES;                // energy surface
-    CTerminalStr            Console;
-    CVerboseStr             vout;
-
-    // calculate energy surface
-    void CalculateFES(void);
+    // get energy derivative and its error
+    virtual double GetValue( int ibin,int icv,EProxyRealm realm) const;
 };
+
+//------------------------------------------------------------------------------
+
+typedef std::shared_ptr<CABFProxy_dG>    CABFProxy_dG_Ptr;
 
 //------------------------------------------------------------------------------
 

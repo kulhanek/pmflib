@@ -1,6 +1,7 @@
 // =============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
+//    Copyright (C) 2021 Petr Kulhanek, kulhanek@chemi.muni.cz
 //    Copyright (C) 2008 Petr Kulhanek, kulhanek@enzim.hu
 //                       Martin Petrek, petrek@chemi.muni.cz
 //
@@ -19,8 +20,7 @@
 //     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 // =============================================================================
 
-#include <ABFIntegratorRFD.hpp>
-#include <ABFAccumulator.hpp>
+#include <IntegratorRFD.hpp>
 #include <EnergySurface.hpp>
 #include <ErrorSystem.hpp>
 #include <iomanip>
@@ -31,11 +31,8 @@ using namespace std;
 //------------------------------------------------------------------------------
 //==============================================================================
 
-CABFIntegratorRFD::CABFIntegratorRFD(void)
+CIntegratorRFD::CIntegratorRFD(void)
 {
-    Accumulator = NULL;
-    FES = NULL;
-
     NumOfVariables = 0;
     NumOfEquations = 0;
     NumOfNonZeros = 0;
@@ -52,7 +49,7 @@ CABFIntegratorRFD::CABFIntegratorRFD(void)
 
 //------------------------------------------------------------------------------
 
-CABFIntegratorRFD::~CABFIntegratorRFD(void)
+CIntegratorRFD::~CIntegratorRFD(void)
 {
     ReleaseAllResources();
 }
@@ -61,35 +58,40 @@ CABFIntegratorRFD::~CABFIntegratorRFD(void)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void CABFIntegratorRFD::SetInputABFAccumulator(const CABFAccumulator* p_accu)
+void CIntegratorRFD::SetInputEnergyDerProxy(CEnergyDerProxyPtr p_proxy)
 {
-    Accumulator = p_accu;
+    DerProxy = p_proxy;
+    if( DerProxy ){
+        Accu = DerProxy->Accu;
+    } else {
+        Accu = CPMFAccumulatorPtr();
+    }
 }
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorRFD::SetOutputFESurface(CEnergySurface* p_surf)
+void CIntegratorRFD::SetOutputES(CEnergySurfacePtr p_surf)
 {
-    FES = p_surf;
+    EneSurf = p_surf;
 }
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorRFD::SetFDPoints(int npts)
+void CIntegratorRFD::SetFDPoints(int npts)
 {
     FDLevel = npts;
 }
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorRFD::SetPeriodicity(bool set)
+void CIntegratorRFD::SetPeriodicity(bool set)
 {
     Periodicity = set;
 }
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorRFD::SetUseOldRFDMode(bool set)
+void CIntegratorRFD::SetUseOldRFDMode(bool set)
 {
     UseOldRFDMode = set;
 }
@@ -98,28 +100,28 @@ void CABFIntegratorRFD::SetUseOldRFDMode(bool set)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-bool CABFIntegratorRFD::Integrate(CVerboseStr& vout)
+bool CIntegratorRFD::Integrate(CVerboseStr& vout)
 {
-    if( Accumulator == NULL ) {
-        ES_ERROR("ABF accumulator is not set");
+    if( Accu == NULL ) {
+        ES_ERROR("PMF accumulator is not set");
         return(false);
     }
-    if( FES == NULL ) {
-        ES_ERROR("FES is not set");
+    if( EneSurf == NULL ) {
+        ES_ERROR("ES is not set");
         return(false);
     }
 
-    if( Accumulator->GetNumOfCVs() == 0 ) {
+    if( Accu->GetNumOfCVs() == 0 ) {
         ES_ERROR("number of coordinates is zero");
         return(false);
     }
 
-    if( Accumulator->GetNumOfCVs() != FES->GetNumOfCVs() ){
-        ES_ERROR("inconsistent ABF and FES - CVs");
+    if( Accu->GetNumOfCVs() != EneSurf->GetNumOfCVs() ){
+        ES_ERROR("inconsistent PMF accumulator and ES - CVs");
         return(false);
     }
-    if( Accumulator->GetNumOfBins() != FES->GetNumOfPoints() ){
-        ES_ERROR("inconsistent ABF and FES - points");
+    if( Accu->GetNumOfBins() != EneSurf->GetNumOfPoints() ){
+        ES_ERROR("inconsistent PMF accumulator and ES - points");
         return(false);
     }
 
@@ -133,7 +135,7 @@ bool CABFIntegratorRFD::Integrate(CVerboseStr& vout)
     }
 
     // and finaly some statistics
-    for(int k=0; k < Accumulator->GetNumOfCVs(); k++ ){
+    for(int k=0; k < Accu->GetNumOfCVs(); k++ ){
     vout << "   RMSR CV#" << k+1 << " = " << setprecision(5) << GetRMSR(k) << endl;
     }
 
@@ -143,17 +145,17 @@ bool CABFIntegratorRFD::Integrate(CVerboseStr& vout)
         if(glb_min > X[i]) glb_min = X[i];
     }
 
-// load data to FES
-    for(int ipoint=0; ipoint < FES->GetNumOfPoints(); ipoint++) {
+// load data to EneSurf
+    for(int ipoint=0; ipoint < EneSurf->GetNumOfPoints(); ipoint++) {
         int x_index = XMap[ipoint];
         if(x_index >= 0) {
             double value = X[x_index]-glb_min;
-            FES->SetEnergy(ipoint,value);
-            FES->SetNumOfSamples(ipoint,Accumulator->GetNumOfSamples(ipoint));
+            EneSurf->SetEnergy(ipoint,value);
+            EneSurf->SetNumOfSamples(ipoint,DerProxy->GetNumOfSamples(ipoint));
         }
     }
 
-    vout << "   SigmaF2   = " << setprecision(5) << FES->GetSigmaF2() << endl;
+    vout << "   SigmaF2   = " << setprecision(5) << EneSurf->GetSigmaF2() << endl;
     return(true);
 }
 
@@ -161,11 +163,11 @@ bool CABFIntegratorRFD::Integrate(CVerboseStr& vout)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-bool CABFIntegratorRFD::BuildSystemOfEquations(CVerboseStr& vout)
+bool CIntegratorRFD::BuildSystemOfEquations(CVerboseStr& vout)
 {
 // initializations
-    IPoint.CreateVector(Accumulator->GetNumOfCVs());
-    XMap.CreateVector(Accumulator->GetNumOfBins());
+    IPoint.CreateVector(Accu->GetNumOfCVs());
+    XMap.CreateVector(Accu->GetNumOfBins());
 
     XMap.Set(-1);
 
@@ -213,16 +215,16 @@ bool CABFIntegratorRFD::BuildSystemOfEquations(CVerboseStr& vout)
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorRFD::BuildEquations(bool trial)
+void CIntegratorRFD::BuildEquations(bool trial)
 {
     LocIter = 0;
 
-    for(int i=0; i < Accumulator->GetNumOfBins(); i++){
+    for(int i=0; i < Accu->GetNumOfBins(); i++){
         // number of samples is controlled via GetFBinIndex
 
-        Accumulator->GetIPoint(i,IPoint);
+        Accu->GetIPoint(i,IPoint);
 
-        for(int ifcoord=0; ifcoord < Accumulator->GetNumOfCVs(); ifcoord++) {
+        for(int ifcoord=0; ifcoord < Accu->GetNumOfCVs(); ifcoord++) {
             int ifbin1,ifbin2,ifbin3,ifbin4;
 
             ifbin1 = GetFBinIndex(IPoint,ifcoord,0);
@@ -230,7 +232,7 @@ void CABFIntegratorRFD::BuildEquations(bool trial)
             ifbin3 = GetFBinIndex(IPoint,ifcoord,2);
             ifbin4 = GetFBinIndex(IPoint,ifcoord,3);
 
-            const CColVariablePtr p_coord = Accumulator->GetCV(ifcoord);
+            const CColVariablePtr p_coord = Accu->GetCV(ifcoord);
             double              diff = p_coord->GetBinWidth();
 
             switch(FDLevel) {
@@ -267,18 +269,18 @@ void CABFIntegratorRFD::BuildEquations(bool trial)
                         cs_entry(A,LocIter,XMap[ifbin1],-3.0*lfac);
                         cs_entry(A,LocIter,XMap[ifbin2],+4.0*lfac);
                         cs_entry(A,LocIter,XMap[ifbin3],-1.0*lfac);
-                        Rhs[LocIter] = Accumulator->GetValue(ifcoord,ifbin1,EABF_DG_VALUE)*rfac;
+                        Rhs[LocIter] = DerProxy->GetValue(ifcoord,ifbin1,E_PROXY_VALUE)*rfac;
                         RhsCv[LocIter] = ifcoord;
                         LocIter++;
                         cs_entry(A,LocIter,XMap[ifbin1],-1.0*lfac);
                         cs_entry(A,LocIter,XMap[ifbin3],+1.0*lfac);
-                        Rhs[LocIter] = Accumulator->GetValue(ifcoord,ifbin2,EABF_DG_VALUE)*rfac;
+                        Rhs[LocIter] = DerProxy->GetValue(ifcoord,ifbin2,E_PROXY_VALUE)*rfac;
                         RhsCv[LocIter] = ifcoord;
                         LocIter++;
                         cs_entry(A,LocIter,XMap[ifbin1],+1.0*lfac);
                         cs_entry(A,LocIter,XMap[ifbin2],-4.0*lfac);
                         cs_entry(A,LocIter,XMap[ifbin3],+3.0*lfac);
-                        Rhs[LocIter] = Accumulator->GetValue(ifcoord,ifbin3,EABF_DG_VALUE)*rfac;
+                        Rhs[LocIter] = DerProxy->GetValue(ifcoord,ifbin3,E_PROXY_VALUE)*rfac;
                         RhsCv[LocIter] = ifcoord;
                         LocIter++;
                     } else {
@@ -323,28 +325,28 @@ void CABFIntegratorRFD::BuildEquations(bool trial)
                         cs_entry(A,LocIter,XMap[ifbin2],+18.0*lfac);
                         cs_entry(A,LocIter,XMap[ifbin3],-9.0*lfac);
                         cs_entry(A,LocIter,XMap[ifbin4],+2.0*lfac);
-                        Rhs[LocIter] = Accumulator->GetValue(ifcoord,ifbin1,EABF_DG_VALUE)*rfac;
+                        Rhs[LocIter] = DerProxy->GetValue(ifcoord,ifbin1,E_PROXY_VALUE)*rfac;
                         RhsCv[LocIter] = ifcoord;
                         LocIter++;
                         cs_entry(A,LocIter,XMap[ifbin1],-2.0*lfac);
                         cs_entry(A,LocIter,XMap[ifbin2],-3.0*lfac);
                         cs_entry(A,LocIter,XMap[ifbin3],+6.0*lfac);
                         cs_entry(A,LocIter,XMap[ifbin4],-1.0*lfac);
-                        Rhs[LocIter] = Accumulator->GetValue(ifcoord,ifbin2,EABF_DG_VALUE)*rfac;
+                        Rhs[LocIter] = DerProxy->GetValue(ifcoord,ifbin2,E_PROXY_VALUE)*rfac;
                         RhsCv[LocIter] = ifcoord;
                         LocIter++;
                         cs_entry(A,LocIter,XMap[ifbin1],+1.0*lfac);
                         cs_entry(A,LocIter,XMap[ifbin2],-6.0*lfac);
                         cs_entry(A,LocIter,XMap[ifbin3],+3.0*lfac);
                         cs_entry(A,LocIter,XMap[ifbin4],+2.0*lfac);
-                        Rhs[LocIter] = Accumulator->GetValue(ifcoord,ifbin3,EABF_DG_VALUE)*rfac;
+                        Rhs[LocIter] = DerProxy->GetValue(ifcoord,ifbin3,E_PROXY_VALUE)*rfac;
                         RhsCv[LocIter] = ifcoord;
                         LocIter++;
                         cs_entry(A,LocIter,XMap[ifbin1],-2.0*lfac);
                         cs_entry(A,LocIter,XMap[ifbin2],+9.0*lfac);
                         cs_entry(A,LocIter,XMap[ifbin3],-18.0*lfac);
                         cs_entry(A,LocIter,XMap[ifbin4],+11.0*lfac);
-                        Rhs[LocIter] = Accumulator->GetValue(ifcoord,ifbin4,EABF_DG_VALUE);
+                        Rhs[LocIter] = DerProxy->GetValue(ifcoord,ifbin4,E_PROXY_VALUE);
                         RhsCv[LocIter] = ifcoord;
                         LocIter++;
                     } else {
@@ -361,11 +363,11 @@ void CABFIntegratorRFD::BuildEquations(bool trial)
 
 //------------------------------------------------------------------------------
 
-int CABFIntegratorRFD::GetFBinIndex(const CSimpleVector<int>& position,int ifcoord,int offset) const
+int CIntegratorRFD::GetFBinIndex(const CSimpleVector<int>& position,int ifcoord,int offset) const
 {
     int glbindex = 0;
-    for(int i=0; i < Accumulator->GetNumOfCVs(); i++) {
-        const CColVariablePtr p_coord = Accumulator->GetCV(i);
+    for(int i=0; i < Accu->GetNumOfCVs(); i++) {
+        const CColVariablePtr p_coord = Accu->GetCV(i);
         int nbins = p_coord->GetNumOfBins();
         int pos = position[i];
         if(i == ifcoord) {
@@ -381,7 +383,7 @@ int CABFIntegratorRFD::GetFBinIndex(const CSimpleVector<int>& position,int ifcoo
     }
 
 // check if we have sufficient number of samples
-    if(Accumulator->GetNumOfSamples(glbindex) <= 0) return(-1);
+    if(DerProxy->GetNumOfSamples(glbindex) <= 0) return(-1);
 
     return(glbindex);
 }
@@ -390,7 +392,7 @@ int CABFIntegratorRFD::GetFBinIndex(const CSimpleVector<int>& position,int ifcoo
 //------------------------------------------------------------------------------
 //==============================================================================
 
-bool CABFIntegratorRFD::SolveSystemOfEquations(void)
+bool CIntegratorRFD::SolveSystemOfEquations(void)
 {
     cs* At;    // transposed A
     cs* AtA;   // AtA
@@ -462,7 +464,7 @@ bool CABFIntegratorRFD::SolveSystemOfEquations(void)
 
 //------------------------------------------------------------------------------
 
-void CABFIntegratorRFD::ReleaseAllResources(void)
+void CIntegratorRFD::ReleaseAllResources(void)
 {
     XMap.FreeVector();
     IPoint.FreeVector();
@@ -476,7 +478,7 @@ void CABFIntegratorRFD::ReleaseAllResources(void)
 
 //------------------------------------------------------------------------------
 
-double CABFIntegratorRFD::GetRMSR(int k)
+double CIntegratorRFD::GetRMSR(int k)
 {
     CSimpleVector<double> lhs;
     lhs.CreateVector(NumOfEquations);
@@ -492,7 +494,7 @@ double CABFIntegratorRFD::GetRMSR(int k)
     double count = 0.0;
     double lv,rv,err;
 
-    const CColVariablePtr p_coord = Accumulator->GetCV(k);
+    const CColVariablePtr p_coord = Accu->GetCV(k);
     double              diff = p_coord->GetBinWidth();
 
     double rfac, lfac;

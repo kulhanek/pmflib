@@ -1,9 +1,12 @@
-#ifndef CABFEnthalpyH
-#define CABFEnthalpyH
+#ifndef CABFIntegrateH
+#define CABFIntegrateH
 // =============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
-//    Copyright (C) 2008 Petr Kulhanek, kulhanek@enzim.hu
+//    Copyright (C) 2021 Petr Kulhanek, kulhanek@chemi.muni.cz
+//    Copyright (C) 2019 Petr Kulhanek, kulhanek@chemi.muni.cz
+//    Copyright (C) 2008 Martin Petrek, petrek@chemi.muni.cz
+//                       Petr Kulhanek, kulhanek@enzim.hu
 //
 //     This program is free software; you can redistribute it and/or modify
 //     it under the terms of the GNU General Public License as published by
@@ -20,23 +23,26 @@
 //     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 // =============================================================================
 
-#include "ABFEnthalpyOptions.hpp"
-#include <SimpleVector.hpp>
+#include "ABFEnergyIntOptions.hpp"
 #include <VerboseStr.hpp>
 #include <TerminalStr.hpp>
 #include <StdIOFile.hpp>
+#include <SmallTimeAndDate.hpp>
 #include <PMFAccumulator.hpp>
+#include <EnergyDerProxy.hpp>
 #include <EnergySurface.hpp>
-#include <EnergyProxy.hpp>
-#include <SmootherGPR.hpp>
 
 //------------------------------------------------------------------------------
 
-/// utility to extract enthalpy from ABF accumulator
+class CIntegratorGPR;
 
-class CABFEnthalpy {
+//------------------------------------------------------------------------------
+
+/// utility to integrate ABF accumulator
+
+class CABFEnergyIntegrate {
 public:
-    CABFEnthalpy(void);
+    CABFEnergyIntegrate(void);
 
 // main methods ---------------------------------------------------------------
     /// init options
@@ -50,27 +56,47 @@ public:
 
 // section of private data ----------------------------------------------------
 private:
-    CABFEnthalpyOptions     Options;
+    CABFEnergyIntOptions    Options;
     CStdIOFile              InputFile;
     CStdIOFile              OutputFile;
     CPMFAccumulatorPtr      Accu;
-    CEnergyProxyPtr         EneProxy;
-    CEnergySurfacePtr       HES;
-    int                     State;
-    CSmallString            ABFAccuName;
-    CSmallString            HEOutputName;
+    CEnergySurfacePtr       FES;
+    CEnergyDerProxyPtr      DerProxy;
+    CSmallTimeAndDate       StartTime;
+    CSimpleVector<int>      FFSeeds;
+    CSimpleVector<int>      IPos;
+    CSimpleVector<int>      TPos;
+    CSimpleVector<double>   GPos;
 
     // output ------------------------------------
     CTerminalStr        Console;
     CVerboseStr         vout;
+    CSmallString        ABFAccuName;
+    CSmallString        FEOutputName;
+    CSmallString        FullFEOutputName;
+    std::vector<bool>   KeepCVs;
 
-    /// helper methods
-    void GetRawEnthalpy(void);
-    void LoadGPRHyprms(CSmootherGPR& gpr);
-    bool PrintHES(void);
-    void WriteHeader(void);
     void PrepareAccumulatorI(void);
+    void PrepareAccumulatorII(void);
     void PrintSampledStat(void);
+    void FloodFillTest(void);
+    bool InstallNewSeed(int seedid,bool unsampled);
+    int  FillSeed(int seedid,bool unsampled);
+    void GetTPoint(CSimpleVector<int>& ipos,int d,CSimpleVector<int>& tpos);
+    bool IntegrateForMFZScore(int pass);
+    bool IntegrateForEcut(void);
+    bool Integrate(void);
+    void WriteHeader(void);
+    int  GlueingFES(int factor);
+    void GlueHoles(void);
+    int  SeedSampled(int seedid);
+    bool IsHole(int seedid);
+    void MarkAsHole(int seedid);
+    void PrintGPRHyprms(FILE* p_fout);
+    void LoadGPRHyprms(CIntegratorGPR& gpr);
+    void SyncFESWithACCU(void);
+    void DecodeEList(const CSmallString& spec, std::vector<bool>& elist,const CSmallString& optionname);
+    bool ReduceFES(void);
 };
 
 //------------------------------------------------------------------------------

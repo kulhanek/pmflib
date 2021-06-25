@@ -199,6 +199,9 @@ public:
     /// print cvs info
     void PrintCVSInfo(std::ostream& vout);
 
+    /// print cvs info
+    void PrintCVSInfo(FILE* p_fout);
+
 // section of private data ----------------------------------------------------
 protected:
     CSmallString                    Version;

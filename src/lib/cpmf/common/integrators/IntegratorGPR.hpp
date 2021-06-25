@@ -1,8 +1,9 @@
-#ifndef ABFIntegratorGPRH
-#define ABFIntegratorGPRH
+#ifndef IntegratorGPRH
+#define IntegratorGPRH
 // =============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
+//    Copyright (C) 2021 Petr Kulhanek, kulhanek@chemi.muni.cz
 //    Copyright (C) 2019 Petr Kulhanek, kulhanek@chemi.muni.cz
 //
 //     This program is free software; you can redistribute it and/or modify
@@ -25,7 +26,7 @@
 #include <VerboseStr.hpp>
 #include <FortranMatrix.hpp>
 #include <stddef.h>
-#include <ABFAccumulator.hpp>
+#include <EnergyDerProxy.hpp>
 #include <EnergySurface.hpp>
 
 //------------------------------------------------------------------------------
@@ -63,18 +64,18 @@ enum EGPRIntegratedRealm {
 /** \brief integrator of ABF accumulator employing gaussian process
 */
 
-class PMF_PACKAGE CABFIntegratorGPR {
+class PMF_PACKAGE CIntegratorGPR {
 public:
 // constructor and destructor -------------------------------------------------
-    CABFIntegratorGPR(void);
-    virtual ~CABFIntegratorGPR(void);
+    CIntegratorGPR(void);
+    virtual ~CIntegratorGPR(void);
 
 // setup methods --------------------------------------------------------------
-    /// set input ABF accumulator, only ABF forces are integrated
-    void SetInputABFAccumulator(CABFAccumulatorPtr p_accu);
+    /// set input energy derivative proxy
+    void SetInputEnergyDerProxy(CEnergyDerProxyPtr p_proxy);
 
     /// set output free energy surface
-    void SetOutputFESurface(CEnergySurfacePtr p_surf);
+    void SetOutputES(CEnergySurfacePtr p_surf);
 
     // integrated realm
     void SetIntegratedRealm(EGPRIntegratedRealm realm);
@@ -193,9 +194,9 @@ public:
 
 // section of private data ----------------------------------------------------
 private:
-    CABFAccumulatorPtr      Accu;
-    CEnergySurfacePtr       FES;
-    EGPRIntegratedRealm     IntRealm;
+    CPMFAccumulatorPtr      Accu;
+    CEnergyDerProxyPtr      DerProxy;
+    CEnergySurfacePtr       EneSurf;
 
     int                     NumOfThreads;
 

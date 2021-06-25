@@ -3,22 +3,27 @@
 # ==============================================================================
 
 # program objects --------------------------------------------------------------
-SET(MWA_ADMIN_SRC
-        MWAAdmin.cpp
-        MWAAdmOptions.cpp
-        COpFlushServerData.cpp
-        COpGetPMFAccumulator.cpp
-        COpGetServerInfo.cpp
+SET(ABF_INTEGRATE_SRC
+        ABFEnergyIntegrate.cpp
+        ABFEnergyIntOptions.cpp
         )
 
 # final build ------------------------------------------------------------------
-ADD_EXECUTABLE(mwa-admin ${MWA_ADMIN_SRC})
-ADD_DEPENDENCIES(mwa-admin  cpmf_shared)
 
-TARGET_LINK_LIBRARIES(mwa-admin   ${CPMF_LIBRARIES})
+IF(OpenMP_FOUND)
+    SET(TARGET_NAME _abf-energy)
+ELSE()
+    SET(TARGET_NAME abf-energy)
+ENDIF()
+
+ADD_EXECUTABLE(${TARGET_NAME} ${ABF_INTEGRATE_SRC})
+ADD_DEPENDENCIES(${TARGET_NAME} cpmf_shared)
+
+TARGET_LINK_LIBRARIES(${TARGET_NAME} ${CPMF_LIBRARIES})
 
 INSTALL(TARGETS
-            mwa-admin
+            ${TARGET_NAME}
         RUNTIME DESTINATION
             bin
         )
+

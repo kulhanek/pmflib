@@ -1,8 +1,9 @@
-#ifndef ABFIntegratorRBFH
-#define ABFIntegratorRBFH
+#ifndef IntegratorRBFH
+#define IntegratorRBFH
 // =============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
+//    Copyright (C) 2021 Petr Kulhanek, kulhanek@chemi.muni.cz
 //    Copyright (C) 2018 Petr Kulhanek, kulhanek@chemi.muni.cz
 //
 //     This program is free software; you can redistribute it and/or modify
@@ -23,7 +24,8 @@
 #include <PMFMainHeader.hpp>
 #include <SimpleVector.hpp>
 #include <VerboseStr.hpp>
-#include <ABFAccumulator.hpp>
+#include <EnergyDerProxy.hpp>
+#include <EnergySurface.hpp>
 
 //------------------------------------------------------------------------------
 
@@ -42,18 +44,18 @@ enum ERBFLLSMethod {
 /** \brief integrator of ABF accumulator employing radial basis functions
 */
 
-class PMF_PACKAGE CABFIntegratorRBF {
+class PMF_PACKAGE CIntegratorRBF {
 public:
 // constructor and destructor -------------------------------------------------
-    CABFIntegratorRBF(void);
-    virtual ~CABFIntegratorRBF(void);
+    CIntegratorRBF(void);
+    virtual ~CIntegratorRBF(void);
 
 // setup methods --------------------------------------------------------------
-    /// set input ABF accumulator, only ABF forces are integrated
-    void SetInputABFAccumulator(CABFAccumulator* p_accu);
+    /// set input energy derivative proxy
+    void SetInputEnergyDerProxy(CEnergyDerProxyPtr p_proxy);
 
     /// set output free energy surface
-    void SetOutputFESurface(CEnergySurface* p_surf);
+    void SetOutputES(CEnergySurfacePtr p_surf);
 
     /// multiply of bin sizes
     void SetWFac(const CSmallString& spec);
@@ -104,8 +106,9 @@ public:
 
 // section of private data ----------------------------------------------------
 private:
-    CABFAccumulator*        Accumulator;
-    CEnergySurface*         FES;
+    CPMFAccumulatorPtr      Accu;
+    CEnergyDerProxyPtr      DerProxy;
+    CEnergySurfacePtr       EneSurf;
 
     int                     NumOfThreads;
 

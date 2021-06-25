@@ -28,7 +28,7 @@
 #include <boost/algorithm/string/classification.hpp>
 #include <ESPrinter.hpp>
 #include <iomanip>
-#include <ABFEnthalpyGPR.hpp>
+#include <ABFProxy_dH.hpp>
 
 //------------------------------------------------------------------------------
 
@@ -135,11 +135,16 @@ bool CABFEnthalpy::Run(void)
 // load accumulator
     State = 1;
 
+    Accu        = CPMFAccumulatorPtr(new CPMFAccumulator);
+    HES         = CEnergySurfacePtr(new CEnergySurface);
+    EneProxy    = CABFProxy_dH_Ptr(new CABFProxy_dH);
+    EneProxy->Accu = Accu;
+
     vout << endl;
     vout << format("%02d:Loading ABF accumulator: %s")%State%string(ABFAccuName) << endl;
     State++;
     try {
-        Accumulator.Load(InputFile);
+        Accu->Load(InputFile);
     } catch(...) {
         ES_ERROR("unable to load the input ABF accumulator file");
         return(false);
@@ -147,11 +152,11 @@ bool CABFEnthalpy::Run(void)
     vout << "   Done." << endl;
 
     // print CVS info
-    Accumulator.PrintCVSInfo(vout);
+    Accu->PrintCVSInfo(vout);
     // DO NOT SET IT HERE, Ncorr can be GPR hyperparameter
-    // Accumulator.SetNCorr(Options.GetOptNCorr());
-    HES.Allocate(&Accumulator);
-    HES.SetSLevel(Options.GetOptSLevel());
+    // Accu->SetNCorr(Options.GetOptNCorr());
+    HES->Allocate(Accu);
+    HES->SetSLevel(Options.GetOptSLevel());
 
     vout << endl;
     vout << format("%02d:Statistics of input ABF accumulator")%State << endl;
@@ -170,22 +175,22 @@ bool CABFEnthalpy::Run(void)
 // -----------------------------------------------------------------------------
 
     if( Options.GetOptMethod() == "raw" ){
-        Accumulator.SetNCorr(Options.GetOptNCorr());
+        EneProxy->SetNCorr(Options.GetOptNCorr());
         vout << endl;
         vout << format("%02d:Raw absolute enthalpy")%State << endl;
         GetRawEnthalpy();
-        vout << "      SigmaF2   = " << setprecision(5) << HES.GetSigmaF2() << endl;
-        vout << "      SigmaF2+  = " << setprecision(5) << HES.GetSigmaF2p() << endl;
-        vout << "      SigmaF2-  = " << setprecision(5) << HES.GetSigmaF2m() << endl;
+        vout << "      SigmaF2   = " << setprecision(5) << HES->GetSigmaF2() << endl;
+        vout << "      SigmaF2+  = " << setprecision(5) << HES->GetSigmaF2p() << endl;
+        vout << "      SigmaF2-  = " << setprecision(5) << HES->GetSigmaF2m() << endl;
         State++;
         vout << "   Done." << endl;
     } else if ( Options.GetOptMethod() == "gpr" ){
         vout << endl;
         vout << format("%02d:GPR interpolated enthalpy")%State << endl;
-        CABFEnthalpyGPR   entgpr;
+        CSmootherGPR   entgpr;
 
-        entgpr.SetInputABFAccumulator(&Accumulator);
-        entgpr.SetOutputHESurface(&HES);
+        entgpr.SetInputEnergyProxy(EneProxy);
+        entgpr.SetOutputES(HES);
 
         if( Options.IsOptLoadHyprmsSet() ){
             LoadGPRHyprms(entgpr);
@@ -217,10 +222,10 @@ bool CABFEnthalpy::Run(void)
 
     if( Options.GetOptAbsolute() == false ){
         if( ! Options.IsOptGlobalMinSet() ){
-                cout << Options.GetOptOffset() << "|" << HES.GetGlobalMinimumValue() << endl;
-            HES.ApplyOffset(Options.GetOptOffset() - HES.GetGlobalMinimumValue());
+                cout << Options.GetOptOffset() << "|" << HES->GetGlobalMinimumValue() << endl;
+            HES->ApplyOffset(Options.GetOptOffset() - HES->GetGlobalMinimumValue());
         } else {
-            HES.ApplyOffset(Options.GetOptOffset());
+            HES->ApplyOffset(Options.GetOptOffset());
         }
     }
 
@@ -235,7 +240,7 @@ bool CABFEnthalpy::Run(void)
 
 //------------------------------------------------------------------------------
 
-void CABFEnthalpy::LoadGPRHyprms(CABFEnthalpyGPR& gpr)
+void CABFEnthalpy::LoadGPRHyprms(CSmootherGPR& gpr)
 {
     ifstream fin;
     fin.open(Options.GetOptLoadHyprms());
@@ -294,14 +299,14 @@ void CABFEnthalpy::LoadGPRHyprms(CABFEnthalpyGPR& gpr)
 
 void CABFEnthalpy::GetRawEnthalpy(void)
 {
-    for(int ibin=0; ibin < Accumulator.GetNumOfBins(); ibin++){
-        int    nsamples = Accumulator.GetNumOfSamples(ibin);
-        double ent = Accumulator.GetValue(ibin,EABF_H_VALUE);
-        double error = Accumulator.GetValue(ibin,EABF_H_ERROR);
+    for(int ibin=0; ibin < Accu->GetNumOfBins(); ibin++){
+        int    nsamples = EneProxy->GetNumOfSamples(ibin);
+        double ent = EneProxy->GetValue(ibin,E_PROXY_VALUE);
+        double error = EneProxy->GetValue(ibin,E_PROXY_ERROR);
         cout << ent << endl;
-        HES.SetNumOfSamples(ibin,nsamples);
-        HES.SetEnergy(ibin,ent);
-        HES.SetError(ibin,error);
+        HES->SetNumOfSamples(ibin,nsamples);
+        HES->SetEnergy(ibin,ent);
+        HES->SetError(ibin,error);
     }
 }
 
@@ -341,7 +346,7 @@ bool CABFEnthalpy::PrintHES(void)
     }
 
     printer.SetIncludeError(Options.GetOptWithError());
-    printer.SetPrintedES(&HES);
+    printer.SetPrintedES(HES);
 
     try {
         printer.Print(OutputFile);
@@ -387,8 +392,8 @@ void CABFEnthalpy::WriteHeader(void)
         fprintf(OutputFile,"# Global FES minimum    : -auto-\n");
         }
         fprintf(OutputFile,"# Energy offset         : %5.3f\n", Options.GetOptOffset());
-        fprintf(OutputFile,"# Number of coordinates : %d\n",Accumulator.GetNumOfCVs());
-        fprintf(OutputFile,"# Total number of bins  : %d\n",Accumulator.GetNumOfBins());
+        fprintf(OutputFile,"# Number of coordinates : %d\n",Accu->GetNumOfCVs());
+        fprintf(OutputFile,"# Total number of bins  : %d\n",Accu->GetNumOfBins());
     }
 }
 
@@ -399,10 +404,10 @@ void CABFEnthalpy::WriteHeader(void)
 
 void CABFEnthalpy::PrepareAccumulatorI(void)
 {
-    for(int ibin=0; ibin < Accumulator.GetNumOfBins(); ibin++) {
+    for(int ibin=0; ibin < Accu->GetNumOfBins(); ibin++) {
         // erase datapoints not properly sampled, preserve glueing
-        if( (Accumulator.GetNumOfSamples(ibin) >= 0) && (Accumulator.GetNumOfSamples(ibin) <= Options.GetOptLimit()) ) {
-            Accumulator.SetNumberOfABFSamples(ibin,0);
+        if( (EneProxy->GetNumOfSamples(ibin) >= 0) && (EneProxy->GetNumOfSamples(ibin) <= Options.GetOptLimit()) ) {
+            EneProxy->SetNumOfSamples(ibin,0);
         }
     }
 }
@@ -412,18 +417,18 @@ void CABFEnthalpy::PrepareAccumulatorI(void)
 void CABFEnthalpy::PrintSampledStat(void)
 {
     // calculate sampled area
-    double maxbins = Accumulator.GetNumOfBins();
+    double maxbins = Accu->GetNumOfBins();
     int    sampled = 0;
     int    holes = 0;
     int    glued = 0;
-    for(int ibin=0; ibin < Accumulator.GetNumOfBins(); ibin++) {
-        if( Accumulator.GetNumOfSamples(ibin) > 0 ) {
+    for(int ibin=0; ibin < Accu->GetNumOfBins(); ibin++) {
+        if( EneProxy->GetNumOfSamples(ibin) > 0 ) {
             sampled++;
         }
-        if( Accumulator.GetNumOfSamples(ibin) < 0 ) {
+        if( EneProxy->GetNumOfSamples(ibin) < 0 ) {
             glued++;
         }
-        if( Accumulator.GetNumOfSamples(ibin) == -1 ) {
+        if( EneProxy->GetNumOfSamples(ibin) == -1 ) {
             holes++;
         }
     }

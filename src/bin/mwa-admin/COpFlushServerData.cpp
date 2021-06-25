@@ -1,9 +1,9 @@
-#ifndef SnapshotH
-#define SnapshotH
 // =============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
-//    Copyright (C) 2010 Petr Kulhanek, kulhanek@chemi.muni.cz
+//    Copyright (C) 2011 Petr Kulhanek, kulhanek@chemi.muni.cz
+//    Copyright (C) 2007,2008 Petr Kulhanek, kulhanek@enzim.hu
+//    Copyright (C) 2006      Petr Kulhanek, kulhanek@chemi.muni.cz
 //
 //    This library is free software; you can redistribute it and/or
 //    modify it under the terms of the GNU Lesser General Public
@@ -21,44 +21,37 @@
 //    Boston, MA  02110-1301  USA
 // =============================================================================
 
-#include <PMFMainHeader.hpp>
-#include <SimpleVector.hpp>
+#include <stdio.h>
+#include "MWAAdmin.hpp"
+#include <Operation.hpp>
+#include <ErrorSystem.hpp>
+#include <ClientCommand.hpp>
+#include <PMFOperation.hpp>
 
+//==============================================================================
 //------------------------------------------------------------------------------
+//==============================================================================
 
-class CXMLElement;
+bool CMWAAdmin::FlushServerData(void)
+{
+    CClientCommand cmd;
+    try{
 
+        // init command
+        InitCommand(&cmd,OperationPMF_FlushServerData);
+
+        // execute command
+        ExecuteCommand(&cmd);
+
+    } catch(std::exception& e) {
+        ES_ERROR_FROM_EXCEPTION("unable to process command",e);
+        return(false);
+    }
+
+    return(true);
+}
+
+//==============================================================================
 //------------------------------------------------------------------------------
+//==============================================================================
 
-class PMF_PACKAGE CSnapshot {
-public:
-    CSnapshot(void);
-    ~CSnapshot(void);
-
-// setup methods ---------------------------------------------------------------
-    /// set number of atoms
-    void  SetNumOfAtoms(unsigned int numofatoms);
-
-// i/o methods -----------------------------------------------------------------
-    /// load snapshot
-    bool Load(CXMLElement* p_ele);
-
-    /// save snapshot
-    void Save(CXMLElement* p_ele);
-
-// section of private data ----------------------------------------------------
-public:
-    // system snapshot
-    CSimpleVector<double>   Crds;                       // coordinates
-    CSimpleVector<double>   Vels;                       // velocities
-    double                  BoxA,BoxB,BoxC;             // box dimmensions
-    double                  BoxAlpha,BoxBeta,BoxGamma;  // box dimmensions
-};
-
-//------------------------------------------------------------------------------
-
-extern CSnapshot      Snapshot;
-
-//------------------------------------------------------------------------------
-
-#endif
