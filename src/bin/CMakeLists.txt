@@ -42,7 +42,7 @@ IF(PMFLIB_NETWORK)
     ADD_SUBDIRECTORY(mwa-server)
     ADD_SUBDIRECTORY(mwa-admin)
 
-#    # STM MWA utilities
-#    ADD_SUBDIRECTORY(stm-server)
-#    ADD_SUBDIRECTORY(stm-admin)
+    # STM MWA utilities
+    ADD_SUBDIRECTORY(stm-server)
+    ADD_SUBDIRECTORY(stm-admin)
 ENDIF(PMFLIB_NETWORK)

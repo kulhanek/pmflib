@@ -55,7 +55,7 @@ subroutine abf_trajectory_open
 
     return
 
-    10 format('# ABFTRAJ')
+10 format('#ACCUTRAJ')
 
 end subroutine abf_trajectory_open
 
@@ -86,7 +86,7 @@ subroutine abf_trajectory_write_snapshot
 
     return
 
-10 format('# ABFSNAP',I7)
+10 format('#ACCUSNAP',1X,I9)
 
 end subroutine abf_trajectory_write_snapshot
 

@@ -56,7 +56,7 @@ subroutine mtd_trajectory_open
 
     return
 
-    10 format('#ACCUTRAJ')
+10 format('#ACCUTRAJ')
 
 end subroutine mtd_trajectory_open
 
@@ -87,7 +87,7 @@ subroutine mtd_trajectory_write_snapshot
 
     return
 
-10 format('#ACCUSNAP',1X,I7)
+10 format('#ACCUSNAP',1X,I9)
 
 end subroutine mtd_trajectory_write_snapshot
 

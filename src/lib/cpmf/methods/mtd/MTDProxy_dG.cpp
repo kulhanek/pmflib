@@ -68,7 +68,7 @@ double CMTDProxy_dG::GetValue(int ibin,EProxyRealm realm) const
     switch(realm){
         // -------------------
         case(E_PROXY_VALUE):
-            return( mtdpot );
+            return( - mtdpot );
         // -------------------
         default:
             RUNTIME_ERROR("unsupported realm");

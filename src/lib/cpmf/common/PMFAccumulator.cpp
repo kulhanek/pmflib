@@ -344,7 +344,7 @@ void CPMFAccumulator::ReadHeaderSection(FILE* fin,const CSmallString& keyline)
 
 void CPMFAccumulator::ReadDataSection(FILE* fin,const CSmallString& keyline)
 {
-    CPMFAccuDataPtr data = CPMFAccuDataPtr(new CPMFAccuData(NumOfCVs,NumOfBins));
+    CPMFAccuDataPtr data = CPMFAccuDataPtr(new CPMFAccuData(NumOfBins,NumOfCVs));
     data->Load(fin,keyline);
     DataBlocks[data->GetName()] = data;
 }
@@ -1069,10 +1069,10 @@ const CSmallString& CPMFAccuData::GetName(void) const
 
 double CPMFAccuData::GetData(int ibin, int cv) const
 {
-    if( (0 > ibin) || (ibin <= NumOfBins) ) {
+    if( (ibin < 0) || (NumOfBins <= ibin) ) {
         RUNTIME_ERROR("ibin out-of-range");
     }
-    if( (0 > cv) || (cv <= NumOfCVs) ) {
+    if( (cv < 0) || (NumOfCVs <= cv) ) {
         RUNTIME_ERROR("cv out-of-range");
     }
     int idx = 0;
@@ -1088,7 +1088,7 @@ double CPMFAccuData::GetData(int ibin, int cv) const
 
 void CPMFAccuData::SetData(int ibin, double value)
 {
-    if( (0 > ibin) || (ibin <= NumOfBins) ) {
+    if( (ibin < 0) || (NumOfBins <= ibin) ) {
         RUNTIME_ERROR("ibin out-of-range");
     }
     Data[ibin] = value;
@@ -1098,10 +1098,10 @@ void CPMFAccuData::SetData(int ibin, double value)
 
 void CPMFAccuData::SetData(int ibin, int cv, double value)
 {
-    if( (0 > ibin) || (ibin <= NumOfBins) ) {
+    if( (ibin < 0) || (NumOfBins <= ibin) ) {
         RUNTIME_ERROR("ibin out-of-range");
     }
-    if( (0 > cv) || (cv <= NumOfCVs) ) {
+    if( (cv < 0) || (NumOfCVs <= cv) ) {
         RUNTIME_ERROR("cv out-of-range");
     }
     int idx = 0;

@@ -22,13 +22,13 @@
 // ===============================================================================
 
 #include "StringAdmOptions.hpp"
-#include <AdminClient.hpp>
+#include <ExtraClient.hpp>
 #include <VerboseStr.hpp>
 #include <TerminalStr.hpp>
 
 //------------------------------------------------------------------------------
 
-class CStringAdmin : private CAdminClient {
+class CStringAdmin : private CExtraClient {
 public:
     // constructor
     CStringAdmin(void);
@@ -60,6 +60,9 @@ private:
 
     /// get server info
     bool GetServerInfo(std::ostream& vout);
+
+    /// flush data on server side
+    bool FlushServerData(void);
 };
 
 //------------------------------------------------------------------------------

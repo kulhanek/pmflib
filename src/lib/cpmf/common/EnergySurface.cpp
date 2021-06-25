@@ -86,16 +86,14 @@ void CEnergySurface::Allocate(CPMFAccumulatorPtr accu)
     if( accu == NULL ) return;
     if( accu->GetNumOfCVs() <= 0 ) return;
 
-// allocate items
-    NumOfCVs = accu->GetNumOfCVs();
-    CVs.reserve(NumOfCVs);
-
 // copy cvs and calculate total number of points
     NumOfPoints = 1;
-    for(int i=0; i < NumOfCVs; i++) {
-        CVs[i] = accu->GetCV(i);
-        NumOfPoints *= CVs[i]->GetNumOfBins();
+    for(int i=0; i < accu->GetNumOfCVs(); i++) {
+        CColVariablePtr cv = accu->GetCV(i);
+        NumOfPoints *= cv->GetNumOfBins();
+        CVs.push_back(cv);
     }
+    NumOfCVs = CVs.size();
 
     Energy.CreateVector(NumOfPoints);
     Error.CreateVector(NumOfPoints);
@@ -111,23 +109,21 @@ void CEnergySurface::Allocate(CPMFAccumulatorPtr accu,const std::vector<bool>& e
     if( NumOfCVs > 0 ) Deallocate();
     if( accu == NULL ) return;
     if( accu->GetNumOfCVs() <= 0 ) return;
-
-// allocate items
-    NumOfCVs = 0;
-    for(size_t i = 0; i < enabled_cvs.size(); i++){
-        if( enabled_cvs[i] ) NumOfCVs++;
+    if( (int)enabled_cvs.size() != accu->GetNumOfCVs() ){
+        RUNTIME_ERROR("enabled_cvs and accu inconsistent");
     }
-    CVs.reserve(NumOfCVs);
 
 // copy cvs and calculate total number of points
     NumOfPoints = 1;
     size_t i = 0;
     for(size_t k = 0; k < enabled_cvs.size(); k++){
         if( enabled_cvs[k] ){
-            CVs[i] = accu->GetCV(k);
-            NumOfPoints *= CVs[i]->GetNumOfBins();
+            CColVariablePtr cv = accu->GetCV(i);
+            NumOfPoints *= cv->GetNumOfBins();
+            CVs.push_back(cv);
         }
     }
+    NumOfCVs = CVs.size();
 
     Energy.CreateVector(NumOfPoints);
     Error.CreateVector(NumOfPoints);

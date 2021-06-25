@@ -350,3 +350,26 @@ bool CStringAdmin::TerminateServer(void)
 //------------------------------------------------------------------------------
 //==============================================================================
 
+bool CStringAdmin::FlushServerData(void)
+{
+    CClientCommand cmd;
+    try{
+
+        // init command
+        InitCommand(&cmd,OperationPMF_FlushServerData);
+
+        // execute command
+        ExecuteCommand(&cmd);
+
+    } catch(std::exception& e) {
+        ES_ERROR_FROM_EXCEPTION("unable to process command",e);
+        return(false);
+    }
+
+    return(true);
+}
+
+//==============================================================================
+//------------------------------------------------------------------------------
+//==============================================================================
+
