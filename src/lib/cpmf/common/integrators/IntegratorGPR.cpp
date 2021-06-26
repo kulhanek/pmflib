@@ -464,8 +464,8 @@ bool CIntegratorGPR::Integrate(CVerboseStr& vout,bool nostat)
     if( Accu->GetNumOfCVs() != EneSurf->GetNumOfCVs() ){
         RUNTIME_ERROR("inconsistent PMF accumulator and ES - CVs");
     }
-    if( Accu->GetNumOfBins() != EneSurf->GetNumOfPoints() ){
-        RUNTIME_ERROR("inconsistent PMF accumulator and ES - points");
+    if( Accu->GetNumOfBins() != EneSurf->GetNumOfBins() ){
+        RUNTIME_ERROR("inconsistent PMF accumulator and ES - bins");
     }
     if( WFac.GetLength() == 0 ){
         RUNTIME_ERROR("wfac is not set");
@@ -2325,7 +2325,7 @@ CEnergySurfacePtr CIntegratorGPR::ReduceFES(const std::vector<bool>& keepcvs)
     }
 
 // calculate errors
-    for(size_t rbin = 0; rbin < (size_t)p_rsurf->GetNumOfPoints(); rbin++){
+    for(size_t rbin = 0; rbin < (size_t)p_rsurf->GetNumOfBins(); rbin++){
         double err = 0.0;
         // err is now variance
         for(size_t indi=0; indi < NumOfValues; indi++){
@@ -2356,7 +2356,7 @@ CEnergySurfacePtr CIntegratorGPR::ReduceFES(const std::vector<bool>& keepcvs)
     }
 
 // transform back to FE
-    for(size_t rbin = 0; rbin < (size_t)p_rsurf->GetNumOfPoints(); rbin++){
+    for(size_t rbin = 0; rbin < (size_t)p_rsurf->GetNumOfBins(); rbin++){
         double w = p_rsurf->GetEnergy(rbin);
         p_rsurf->SetEnergy(rbin,-R*temp*log(w));
     }

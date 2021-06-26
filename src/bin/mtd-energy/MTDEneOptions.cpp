@@ -37,10 +37,9 @@ CMTDEneOptions::CMTDEneOptions(void)
 int CMTDEneOptions::CheckOptions(void)
 {
     if((GetOptOutputFormat() != "plain") &&
-            (GetOptOutputFormat() != "gnuplot") &&
-            (GetOptOutputFormat() != "fes")) {
+       (GetOptOutputFormat() != "gnuplot")) {
         if(IsError == false) fprintf(stderr,"\n");
-        fprintf(stderr,"%s: output FES format has to be either plain, gnuplot, or fes, but %s is specified\n",
+        fprintf(stderr,"%s: output FES format has to be either plain or gnuplot, but %s is specified\n",
                 (const char*)GetProgramName(),(const char*)GetOptOutputFormat());
         IsError = true;
     }

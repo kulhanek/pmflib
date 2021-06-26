@@ -41,16 +41,19 @@ subroutine cst_init_method
     use cst_output
     use cst_restart
     use cst_constraints
+    use cst_trajectory
 
     implicit none
     ! --------------------------------------------------------------------------
 
+    call cst_constraints_init_all
     call cst_init_core
+
     ! we need first output then restart (writes info to output)
     call cst_output_open
     call cst_restart_read
-    call cst_restart_trajectory_open
-    call cst_constraints_init_all
+    call cst_trajectory_open
+
     ! print header need value from restart file
     call cst_init_print_header
     call cst_output_write_header
@@ -86,11 +89,11 @@ subroutine cst_init_dat
     fepotoffset     = 0.0d0
     fekinoffset     = 0.0d0
 
+    freadranges     = .true.        ! request full definitions of CVs
+
     NumOfCONs       = 0
     NumOfSHAKECONs  = 0
     NumOfConAtoms   = 0
-
-    flfsteps        = 0
 
 end subroutine cst_init_dat
 
@@ -443,7 +446,7 @@ subroutine cst_init_core
     use cst_dat
 
     implicit none
-    integer      :: alloc_failed
+    integer      :: alloc_failed, i, tot_nbins
     ! ------------------------------------------------------------------------------
 
 ! allocate arrays for LU decomposition ---------------------------------------
@@ -511,14 +514,27 @@ subroutine cst_init_core
         m2lambdav(:) = 0.0d0
     end if
 
-    ! -----------------------------------------------
-    if( fenthalpy .or. fentropy ) then
-        allocate( mlambdae(NumOfCONs),  &
-                  lambda0(NumOfCONs),   &
-                  lambda1(NumOfCONs),   &
-                  cds_hp(NumOfCONs),    &
-                  cds_hk(NumOfCONs),    &
-                  cds_hr(NumOfCONs),    &
+! history ----------------------------------------
+    allocate( lambda0(NumOfCONs),   &
+              lambda1(NumOfCONs),   &
+              stat= alloc_failed )
+
+    if( alloc_failed .ne. 0 ) then
+        call pmf_utils_exit(PMF_OUT,1,&
+                 '[CST] Unable to allocate memory for arrays used for history recording!')
+    end if
+
+    lambda0(:)  = 0.0d0
+    lambda1(:)  = 0.0d0
+
+! -----------------------------------------------
+    if( fentropy ) then
+        allocate( m11hp(NumOfCONs),     &
+                  m11hk(NumOfCONs),     &
+                  m11hr(NumOfCONs),     &
+                  m22hp(NumOfCONs),     &
+                  m22hk(NumOfCONs),     &
+                  m22hr(NumOfCONs),     &
                   stat= alloc_failed )
 
         if( alloc_failed .ne. 0 ) then
@@ -526,12 +542,12 @@ subroutine cst_init_core
                      '[CST] Unable to allocate memory for arrays used for enthalpy/entropy calculations!')
         end if
 
-        mlambdae(:) = 0.0d0
-        lambda0(:)  = 0.0d0
-        lambda1(:)  = 0.0d0
-        cds_hp(:)   = 0.0d0
-        cds_hk(:)   = 0.0d0
-        cds_hr(:)   = 0.0d0
+        m11hp(:)    = 0.0d0
+        m11hk(:)    = 0.0d0
+        m11hr(:)    = 0.0d0
+        m22hp(:)    = 0.0d0
+        m22hk(:)    = 0.0d0
+        m22hr(:)    = 0.0d0
     end if
 
     fentaccu    = 0.0d0
@@ -545,6 +561,56 @@ subroutine cst_init_core
     m2erst      = 0.0d0
     epothist0   = 0.0d0
     epothist1   = 0.0d0
+    isrz0       = 0.0d0
+    isrz1       = 0.0d0
+
+    ! init accu
+    cstaccu%tot_cvs = NumOfCONs - NumOfSHAKECONs
+
+    allocate(cstaccu%sizes(cstaccu%tot_cvs), stat = alloc_failed)
+    if( alloc_failed .ne. 0 ) then
+        call pmf_utils_exit(PMF_OUT, 1,'[CST] Unable to allocate memory for CST accumulator!')
+    endif
+
+    tot_nbins       = 1
+    fallconstant    = .true.
+
+    do i=1,cstaccu%tot_cvs
+        if( CONList(i)%mode .ne. 'C' ) then
+            fallconstant = .false.
+        end if
+        if( CONList(i)%ibin .eq. 0 ) then
+            freadranges = .false.   ! without all cv bins this cannot be enabled
+        end if
+    end do
+
+    do i=1,cstaccu%tot_cvs
+        if( freadranges ) then
+            cstaccu%sizes(i)%min_value  = CONList(i)%min_value
+            cstaccu%sizes(i)%max_value  = CONList(i)%max_value
+            cstaccu%sizes(i)%nbins      = CONList(i)%nbins
+            cstaccu%sizes(i)%width      = abs(cstaccu%sizes(i)%max_value - cstaccu%sizes(i)%min_value)
+            cstaccu%sizes(i)%bin_width  = cstaccu%sizes(i)%width / cstaccu%sizes(i)%nbins
+        else
+            cstaccu%sizes(i)%min_value  = CONList(i)%value
+            cstaccu%sizes(i)%max_value  = CONList(i)%value
+            cstaccu%sizes(i)%nbins      = 1
+            cstaccu%sizes(i)%width      = 0.0d0
+            cstaccu%sizes(i)%bin_width  = 0.0d0
+        end if
+        cstaccu%sizes(i)%cv => CONList(i)%cv
+        tot_nbins = tot_nbins * cstaccu%sizes(i)%nbins
+    end do
+
+    cstaccu%tot_nbins = tot_nbins
+
+    allocate(   ibuf_B(cstaccu%tot_nbins),                    &
+                rbuf_B(cstaccu%tot_nbins),                    &
+                rbuf_M(cstaccu%tot_cvs,cstaccu%tot_nbins),    &
+                stat = alloc_failed)
+    if( alloc_failed .ne. 0 ) then
+        call pmf_utils_exit(PMF_OUT, 1,'[CST] Unable to allocate memory for CST accumulator!')
+    endif
 
     return
 

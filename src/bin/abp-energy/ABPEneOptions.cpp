@@ -35,24 +35,11 @@ CABPEneOptions::CABPEneOptions(void)
 
 int CABPEneOptions::CheckOptions(void)
 {
-//// limit has to be grater than 0
-//    if(GetOptTime() < 0) {
-//        if(IsError == false) fprintf(stderr,"\n");
-//        fprintf(stderr,"%s: metadynamics time has to be greater or equal to zero, but %d is specified\n", (const char*)GetProgramName(),GetOptTime());
-//        IsError = true;
-//    }
-//
-//    if(GetOptSmooth() < 0) {
-//        if(IsError == false) fprintf(stderr,"\n");
-//        fprintf(stderr,"%s: beginning of smoothing (--smooth=%d) has to be greater than zero\n", (const char*)GetProgramName(),GetOptSmooth());
-//        IsError = true;
-//    }
 
     if((GetOptOutputFormat() != "plain") &&
-            (GetOptOutputFormat() != "gnuplot") &&
-            (GetOptOutputFormat() != "fes")) {
+       (GetOptOutputFormat() != "gnuplot")) {
         if(IsError == false) fprintf(stderr,"\n");
-        fprintf(stderr,"%s: output FES format has to be either plain, gnuplot, or fes, but %s is specified\n",
+        fprintf(stderr,"%s: output FES format has to be either plain or gnuplot, but %s is specified\n",
                 (const char*)GetProgramName(),(const char*)GetOptOutputFormat());
         IsError = true;
     }

@@ -176,14 +176,13 @@ bool CMTDEnergy::Run(void)
     printer.SetPrintedES(FES);
     printer.SetXFormat(Options.GetOptIXFormat());
     printer.SetYFormat(Options.GetOptOEFormat());
+
     if(Options.GetOptOutputFormat() == "plain") {
         printer.SetOutputFormat(EESPF_PLAIN);
-    }
-    if(Options.GetOptOutputFormat() == "gnuplot") {
+    } else if(Options.GetOptOutputFormat() == "gnuplot") {
         printer.SetOutputFormat(EESPF_GNUPLOT);
-    }
-    if(Options.GetOptOutputFormat() == "fes") {
-        printer.SetOutputFormat(EESPF_PMF_FES);
+    } else {
+        INVALID_ARGUMENT("output format - not implemented");
     }
 
     try {

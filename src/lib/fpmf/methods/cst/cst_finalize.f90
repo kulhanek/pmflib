@@ -40,11 +40,12 @@ subroutine cst_finalize_method
 
     use cst_output
     use cst_restart
+    use cst_trajectory
 
     implicit none
     ! --------------------------------------------------------------------------
 
-    call cst_restart_trajectory_close
+    call cst_trajectory_close
     call cst_restart_write
     call cst_output_close
 

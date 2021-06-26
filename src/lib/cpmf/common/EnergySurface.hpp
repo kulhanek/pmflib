@@ -48,8 +48,8 @@ public:
     /// return number of cvs
     int GetNumOfCVs(void) const;
 
-    /// return number of points
-    int GetNumOfPoints(void) const;
+    /// return number of bins
+    int GetNumOfBins(void) const;
 
     /// return coordinate definition
     const CColVariablePtr GetCV(int cv) const;
@@ -69,16 +69,22 @@ public:
 
 // access methods -------------------------------------------------------------
     /// set energy from point of index
-    void SetEnergy(unsigned int index,const double& value);
+    void SetEnergy(int ibin,double value);
 
     /// get energy from point of index
-    const double& GetEnergy(unsigned int index) const;
+    double GetEnergy(int ibin) const;
+
+    /// get energy from point of index
+    double GetEnergyRealValue(int ibin) const;
 
     /// set error from point of index
-    void SetError(unsigned int index,const double& value);
+    void SetError(int ibin,double value);
 
     /// get error from point of index
-    const double& GetError(unsigned int index) const;
+    double GetError(int ibin) const;
+
+    /// get error from point of index
+    double GetErrorRealValue(int ibin) const;
 
     /// get sigmaF2 from sampled area
     double GetSigmaF2(bool includeglued=false) const;
@@ -91,10 +97,10 @@ public:
 
 // access methods -------------------------------------------------------------
     /// set number of samples
-    void SetNumOfSamples(unsigned int index,const int& value);
+    void SetNumOfSamples(int ibin,int value);
 
     /// get number of samples
-    const int& GetNumOfSamples(unsigned int index) const;
+    int GetNumOfSamples(int ibin) const;
 
     /// return value of global minimum
     double GetGlobalMinimumValue(void) const;
@@ -116,10 +122,10 @@ public:
 
 // point positions -------------------------------------------------------------
     /// convert point index to point position
-    void GetPoint(unsigned int index,CSimpleVector<double>& point) const;
+    void GetPoint(int ibin,CSimpleVector<double>& point) const;
 
     /// convert point index to point position
-    void GetIPoint(unsigned int index,CSimpleVector<int>& point) const;
+    void GetIPoint(int ibin,CSimpleVector<int>& point) const;
 
     /// reduce ipoint
     void ReduceIPoint(const std::vector<bool>& keepcvs,CSimpleVector<int>& midx,CSimpleVector<int>& ridx);
@@ -140,9 +146,10 @@ public:
 // section of private data ----------------------------------------------------
 private:
     int                             NumOfCVs;       // number of cvs
-    int                             NumOfPoints;    // number of points
+    int                             NumOfBins;      // number of bins
     std::vector<CColVariablePtr>    CVs;            // collective variables
     double                          Temperature;
+    double                          EnergyFConv;
     CSimpleVector<double>           Energy;         // energy array
     CSimpleVector<double>           Error;          // error array
     CSimpleVector<int>              Samples;        // number of samples

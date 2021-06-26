@@ -128,7 +128,7 @@ subroutine rst_accu_read(iounit)
             select case( pmf_accu_get_key(keyline) )
             ! ------------------------------------
                 case('NSAMPLES')
-                    call pmf_accu_read_ibuf(rstaccu%PMFAccuType,iounit,keyline,rstaccu%nsamples)
+                    call pmf_accu_read_ibuf_B(rstaccu%PMFAccuType,iounit,keyline,rstaccu%nsamples)
             ! ------------------------------------
                 case default
                     call pmf_accu_skip_section(iounit,keyline,RST_OUT)

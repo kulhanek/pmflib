@@ -413,8 +413,6 @@ bool CABFEnergyIntegrate::Run(void)
         printer.SetOutputFormat(EESPF_PLAIN);
     } else if(Options.GetOptOutputFormat() == "gnuplot") {
         printer.SetOutputFormat(EESPF_GNUPLOT);
-    } else if(Options.GetOptOutputFormat() == "fes") {
-        printer.SetOutputFormat(EESPF_PMF_FES);
     } else {
         INVALID_ARGUMENT("output format - not implemented");
     }
@@ -458,8 +456,6 @@ bool CABFEnergyIntegrate::Run(void)
             printer.SetOutputFormat(EESPF_PLAIN);
         } else if(Options.GetOptOutputFormat() == "gnuplot") {
             printer.SetOutputFormat(EESPF_GNUPLOT);
-        } else if(Options.GetOptOutputFormat() == "fes") {
-            printer.SetOutputFormat(EESPF_PMF_FES);
         } else {
             INVALID_ARGUMENT("output format - not implemented");
         }
@@ -899,8 +895,6 @@ bool CABFEnergyIntegrate::ReduceFES(void)
         printer.SetOutputFormat(EESPF_PLAIN);
     } else if(Options.GetOptOutputFormat() == "gnuplot") {
         printer.SetOutputFormat(EESPF_GNUPLOT);
-    } else if(Options.GetOptOutputFormat() == "fes") {
-        printer.SetOutputFormat(EESPF_PMF_FES);
     } else {
         INVALID_ARGUMENT("output format - not implemented");
     }

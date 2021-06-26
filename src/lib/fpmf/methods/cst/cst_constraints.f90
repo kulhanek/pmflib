@@ -55,6 +55,12 @@ subroutine cst_constraints_reset_con(cst_item)
     cst_item%sdevtot        = 0.0d0   ! total sum of deviation squares
     cst_item%value_set      = .false. ! initial value is user provided
 
+    cst_item%min_value      = 0.0   ! left range
+    cst_item%max_value      = 0.0   ! right range
+    cst_item%nbins          = 0     ! number of bins
+
+    cst_item%ibin           = 0
+
 end subroutine cst_constraints_reset_con
 
 !===============================================================================
@@ -70,6 +76,8 @@ subroutine cst_constraints_read_con(prm_fin,cst_item)
     implicit none
     type(PRMFILE_TYPE),intent(inout)    :: prm_fin
     type(CVTypeBM)                      :: cst_item
+    ! --------------------------------------------
+    integer                             :: ibin
     ! --------------------------------------------------------------------------
 
     if( cst_item%cv%pathidx .gt. 0 ) then
@@ -79,9 +87,46 @@ subroutine cst_constraints_read_con(prm_fin,cst_item)
         end if
     end if
 
+    if( freadranges ) then
+        ! ========================
+        if( .not. prmfile_get_real8_by_key(prm_fin,'min_value',cst_item%min_value) ) then
+            call pmf_utils_exit(PMF_OUT,1,'min_value is not specified!')
+        end if
+        write(PMF_OUT,210) cst_item%min_value, trim(cst_item%cv%get_ulabel())
+        call cst_item%cv%conv_to_ivalue(cst_item%min_value)
+
+        ! ========================
+        if( .not. prmfile_get_real8_by_key(prm_fin,'max_value',cst_item%max_value) ) then
+            call pmf_utils_exit(PMF_OUT,1,'max_value is not specified!')
+        end if
+        write(PMF_OUT,220) cst_item%max_value, trim(cst_item%cv%get_ulabel())
+        call cst_item%cv%conv_to_ivalue(cst_item%max_value)
+
+        if( cst_item%max_value .le. cst_item%min_value ) then
+            call pmf_utils_exit(PMF_OUT,1,'max_value has to be greater then min_value!')
+        end if
+
+        ! ========================
+        if( .not. prmfile_get_integer_by_key(prm_fin,'nbins',cst_item%nbins) ) then
+            call pmf_utils_exit(PMF_OUT,1,'nbins is not specified!')
+        end if
+        if( cst_item%nbins .lt. 1 ) then
+            call pmf_utils_exit(PMF_OUT,1,'nbins has to be greater then zero!')
+        end if
+        write(PMF_OUT,225) cst_item%nbins
+    end if
+
     if( prmfile_get_real8_by_key(prm_fin,'value',cst_item%value) ) then
         write(PMF_OUT,90) cst_item%value, trim(cst_item%cv%get_ulabel())
         call cst_item%cv%conv_to_ivalue(cst_item%value)
+        cst_item%value_set = .true.
+    else if( prmfile_get_integer_by_key(prm_fin,'value_at_bin',ibin) ) then
+        if( (ibin .lt. 1) .or. (ibin .gt. cst_item%nbins) ) then
+            call pmf_utils_exit(PMF_OUT,1,'value_at_bin out-of-range!')
+        end if
+        cst_item%ibin  = ibin
+        cst_item%value = (real(ibin,PMFDP)-0.5d0)*(cst_item%max_value -  cst_item%min_value)/real(cst_item%nbins)
+        write(PMF_OUT,91) cst_item%cv%get_rvalue(cst_item%value), trim(cst_item%cv%get_ulabel()), ibin
         cst_item%value_set = .true.
     else
         write(PMF_OUT,95)
@@ -96,24 +141,45 @@ subroutine cst_constraints_read_con(prm_fin,cst_item)
         cst_item%mode = 'V'
         write(PMF_OUT,100) cst_item%stopvalue, trim(cst_item%cv%get_ulabel())
         call cst_item%cv%conv_to_ivalue(cst_item%stopvalue)
+    else if( prmfile_get_integer_by_key(prm_fin,'change_to_bin',ibin) ) then
+        cst_item%mode = 'V'
+        if( (ibin .lt. 1) .or. (ibin .gt. cst_item%nbins) ) then
+            call pmf_utils_exit(PMF_OUT,1,'change_to_bin out-of-range!')
+        end if
+        cst_item%stopvalue = (real(ibin,PMFDP)-0.5d0)*(cst_item%max_value -  cst_item%min_value)/real(cst_item%nbins)
+        write(PMF_OUT,101) cst_item%cv%get_rvalue(cst_item%stopvalue), trim(cst_item%cv%get_ulabel()), ibin
     end if
 
     if( prmfile_get_real8_by_key(prm_fin,'increment',cst_item%stopvalue) ) then
         if( cst_item%mode .eq. 'V' ) then
-            call pmf_utils_exit(PMF_OUT,1,'change_to and increment keywords cannot be used together!')
+            call pmf_utils_exit(PMF_OUT,1,'change_to/change_to_bin and increment keywords cannot be used together!')
         end if
         cst_item%mode = 'I'
         write(PMF_OUT,110) cst_item%stopvalue, trim(cst_item%cv%get_ulabel())
         call cst_item%cv%conv_to_ivalue(cst_item%stopvalue)
+    else if( prmfile_get_integer_by_key(prm_fin,'increment_by_bins',ibin) ) then
+        if( cst_item%mode .eq. 'V' ) then
+            call pmf_utils_exit(PMF_OUT,1,'change_to/change_to_bin and increment_by_bins keywords cannot be used together!')
+        end if
+        cst_item%stopvalue = real(ibin,PMFDP)*(cst_item%max_value -  cst_item%min_value)/real(cst_item%nbins)
+        cst_item%mode = 'I'
+        write(PMF_OUT,111) cst_item%cv%get_rvalue(cst_item%stopvalue), trim(cst_item%cv%get_ulabel()), ibin
     end if
 
     return
 
+210 format('   ** Min value          : ',F16.7,' [',A,']')
+220 format('   ** Max value          : ',F16.7,' [',A,']')
+225 format('   ** Number of bins     : ',I8)
+
  90 format('   ** Constrained value  :',E16.7,' [',A,'] (user specified)')
+ 91 format('   ** Constrained value  :',E16.7,' [',A,'] (user specified at bin: ',I2,')')
  95 format('   ** Constrained value  : value from input coordinates or CST restart file')
  96 format('   ** Constrained value  : controlled by path subsystem')
-100 format('   ** Change to value    :',E16.7' [',A,']')
-110 format('   ** Increment value    :',E16.7' [',A,']')
+100 format('   ** Change to value    :',E16.7,' [',A,']')
+101 format('   ** Change to value    :',E16.7,' [',A,'] at bin: ', I2)
+110 format('   ** Increment value    :',E16.7,' [',A,']')
+111 format('   ** Increment value    :',E16.7,' [',A,'] by ', I2, ' bins')
 
 end subroutine cst_constraints_read_con
 
@@ -154,6 +220,14 @@ subroutine cst_constraints_cst_info(cst_item)
                            trim(cst_item%cv%get_ulabel())
     end select
 
+    if( freadranges ) then
+        write(PMF_OUT,255) cst_item%cv%get_rvalue(cst_item%min_value), &
+                        trim(cst_item%cv%get_ulabel())
+        write(PMF_OUT,260) cst_item%cv%get_rvalue(cst_item%max_value), &
+                        trim(cst_item%cv%get_ulabel())
+        write(PMF_OUT,265) cst_item%nbins
+    end if
+
     return
 
  70 format('    ** Name              : ',a)
@@ -166,6 +240,10 @@ subroutine cst_constraints_cst_info(cst_item)
 110 format('    ** Start value       : ',E16.7,' [',A,']')
 120 format('    ** Increment value   : ',E16.7,' [',A,']')
 130 format('    ** Final value       : ',E16.7,' [',A,']')
+
+255 format('    ** Min value         : ',E16.7,' [',A,']')
+260 format('    ** Max value         : ',E16.7,' [',A,']')
+265 format('    ** Number of bins    : ',I9)
 
 end subroutine cst_constraints_cst_info
 

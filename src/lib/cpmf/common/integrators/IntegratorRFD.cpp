@@ -120,8 +120,8 @@ bool CIntegratorRFD::Integrate(CVerboseStr& vout)
         ES_ERROR("inconsistent PMF accumulator and ES - CVs");
         return(false);
     }
-    if( Accu->GetNumOfBins() != EneSurf->GetNumOfPoints() ){
-        ES_ERROR("inconsistent PMF accumulator and ES - points");
+    if( Accu->GetNumOfBins() != EneSurf->GetNumOfBins() ){
+        ES_ERROR("inconsistent PMF accumulator and ES - bins");
         return(false);
     }
 
@@ -146,7 +146,7 @@ bool CIntegratorRFD::Integrate(CVerboseStr& vout)
     }
 
 // load data to EneSurf
-    for(int ipoint=0; ipoint < EneSurf->GetNumOfPoints(); ipoint++) {
+    for(int ipoint=0; ipoint < EneSurf->GetNumOfBins(); ipoint++) {
         int x_index = XMap[ipoint];
         if(x_index >= 0) {
             double value = X[x_index]-glb_min;

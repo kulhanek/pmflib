@@ -76,9 +76,6 @@ public:
     /// set cv data
     void SetCV(int lid,const CSmallString& lname,const CSmallString& ltype);
 
-    /// copy from
-    void CopyFrom(const CColVariable* p_coord);
-
 // ----------------------------------------------------------------------------
     /// return number of bins
     int GetNumOfBins(void) const;
@@ -119,7 +116,7 @@ public:
     /// check periodicity
     bool IsPeriodic(void) const;
 
-// information mathods --------------------------------------------------------
+// information methods --------------------------------------------------------
     /// print info about cv
     void PrintInfo(std::ostream& vout);
 
@@ -140,6 +137,10 @@ public:
 
     /// save cv info
     void SaveInfo(CXMLElement* p_ele) const;
+
+// information methods --------------------------------------------------------
+    /// get real value of CV
+    double GetRealValue(double value) const;
 
 // section of private data ----------------------------------------------------
 private:

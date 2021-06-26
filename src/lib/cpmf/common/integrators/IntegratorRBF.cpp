@@ -281,8 +281,8 @@ bool CIntegratorRBF::Integrate(CVerboseStr& vout)
     if( Accu->GetNumOfCVs() != EneSurf->GetNumOfCVs() ){
         RUNTIME_ERROR("inconsistent ABF and EneSurf - CVs");
     }
-    if( Accu->GetNumOfBins() != EneSurf->GetNumOfPoints() ){
-        RUNTIME_ERROR("inconsistent ABF and EneSurf - points");
+    if( Accu->GetNumOfBins() != EneSurf->GetNumOfBins() ){
+        RUNTIME_ERROR("inconsistent ABF and EneSurf - bins");
     }
     if( NCVs == 0 ) {
         ES_ERROR("number of coordinates is zero");

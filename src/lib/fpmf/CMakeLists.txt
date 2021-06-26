@@ -193,6 +193,8 @@ SET(PMF_CST_CORE_SRC
         methods/cst/cst_velocities.f90
         methods/cst/cst_shake.f90
         methods/cst/cst_finalize.f90
+        methods/cst/cst_trajectory.f90
+        methods/cst/cst_accu.f90
         )
 
 # metadynamics -----------------------------------------------------------------

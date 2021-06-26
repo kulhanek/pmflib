@@ -176,24 +176,24 @@ subroutine abf_accu_read(iounit)
             select case( pmf_accu_get_key(keyline) )
             ! ------------------------------------
                 case('NSAMPLES')
-                    call pmf_accu_read_ibuf(abfaccu%PMFAccuType,iounit,keyline,abfaccu%nsamples)
+                    call pmf_accu_read_ibuf_B(abfaccu%PMFAccuType,iounit,keyline,abfaccu%nsamples)
             ! ------------------------------------
                 case('MICF')
-                    call pmf_accu_read_rbufCVs(abfaccu%PMFAccuType,iounit,keyline,abfaccu%micf)
+                    call pmf_accu_read_rbuf_M(abfaccu%PMFAccuType,iounit,keyline,abfaccu%micf)
             ! ------------------------------------
                 case('M2ICF')
-                    call pmf_accu_read_rbufCVs(abfaccu%PMFAccuType,iounit,keyline,abfaccu%m2icf)
+                    call pmf_accu_read_rbuf_M(abfaccu%PMFAccuType,iounit,keyline,abfaccu%m2icf)
             ! ------------------------------------
                 case('MEPOT')
                     if( fenthalpy ) then
-                        call pmf_accu_read_rbuf(abfaccu%PMFAccuType,iounit,keyline,abfaccu%mepot)
+                        call pmf_accu_read_rbuf_B(abfaccu%PMFAccuType,iounit,keyline,abfaccu%mepot)
                     else
                         call pmf_accu_skip_section(iounit,keyline,ABF_OUT)
                     end if
             ! ------------------------------------
                 case('M2EPOT')
                     if( fenthalpy ) then
-                        call pmf_accu_read_rbuf(abfaccu%PMFAccuType,iounit,keyline,abfaccu%m2epot)
+                        call pmf_accu_read_rbuf_B(abfaccu%PMFAccuType,iounit,keyline,abfaccu%m2epot)
                     else
                         call pmf_accu_skip_section(iounit,keyline,ABF_OUT)
                     end if
@@ -240,7 +240,7 @@ subroutine abf_accu_read_mask(iounit)
             select case( pmf_accu_get_key(keyline) )
             ! ------------------------------------
                 case('WEIGHTS')
-                    call pmf_accu_read_rbuf(abfaccu%PMFAccuType,iounit,keyline,abfaccu%mepot)
+                    call pmf_accu_read_rbuf_B(abfaccu%PMFAccuType,iounit,keyline,abfaccu%weights)
             ! ------------------------------------
                 case default
                     call pmf_accu_skip_section(iounit,keyline,ABF_OUT)

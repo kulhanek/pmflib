@@ -42,6 +42,7 @@ subroutine cst_core_main_lf
     use cst_lambdas
     use cst_output
     use cst_restart
+    use cst_trajectory
 
     implicit none
     ! --------------------------------------------------------------------------
@@ -49,10 +50,9 @@ subroutine cst_core_main_lf
     call cst_constraints_increment
     call cst_lambdas_calculate
     call cst_core_analyze
-    call cst_core_enthalpy_entropy_lf
     call cst_output_write
     call cst_restart_update
-    call cst_restart_trajectory_write_snapshot
+    call cst_trajectory_write_snapshot
 
 end subroutine cst_core_main_lf
 
@@ -69,6 +69,7 @@ subroutine cst_core_main_vv_shake
     implicit none
     ! --------------------------------------------------------------------------
 
+    ! FIXME
     call cst_lambdas_calculate
     call cst_velocities_correct_a
     call cst_core_analyze
@@ -106,12 +107,16 @@ subroutine cst_core_analyze
     implicit none
     integer                :: i,ci,j,cj,k,info
     real(PMFDP)            :: fzv,isrz,lam,mu,dval,dval2,invn
+    real(PMFDP)            :: epot, ekin, etot, erst
+    real(PMFDP)            :: detot1, detot2
+    real(PMFDP)            :: depot1, depot2
+    real(PMFDP)            :: dekin1, dekin2
+    real(PMFDP)            :: derst1, derst2
     ! --------------------------------------------------------------------------
 
     ! reset accumulators ---------------------------------------------------
     if ( faccurst .eq. 0 ) then
         faccumulation   = 0
-        flfsteps        = 0
         misrz           = 0
         m2isrz          = 0
         faccurst        = -1
@@ -124,15 +129,16 @@ subroutine cst_core_analyze
             m2lambdav(:) = 0.0d0
         end if
 
-        fentaccu    = 0.0d0
+        lambda0(:)  = 0.0d0
+        lambda1(:)  = 0.0d0
 
         if( fenthalpy .or. fentropy ) then
-            mlambdae(:) = 0.0d0
-            lambda0(:)  = 0.0d0
-            lambda1(:)  = 0.0d0
-            cds_hp(:)   = 0.0d0
-            cds_hk(:)   = 0.0d0
-            cds_hr(:)   = 0.0d0
+            m11hp(:)    = 0.0d0
+            m11hk(:)    = 0.0d0
+            m11hr(:)    = 0.0d0
+            m22hp(:)    = 0.0d0
+            m22hk(:)    = 0.0d0
+            m22hr(:)    = 0.0d0
         end if
 
         metot       = 0.0d0
@@ -150,6 +156,9 @@ subroutine cst_core_analyze
         ersthist0   = 0.0d0
         ersthist1   = 0.0d0
 
+        isrz0       = 0.0d0
+        isrz1       = 0.0d0
+
         CONList(:)%sdevtot = 0.0d0
 
         write(CST_OUT,'(A)') '#-------------------------------------------------------------------------------'
@@ -163,11 +172,10 @@ subroutine cst_core_analyze
         faccurst = faccurst - 1
     end if
 
-    ! it is not production part
-    if( fstep .le. 0 ) return
+     ! do we have enough samples?
+    if( fstep .le. 2 ) return
 
     faccumulation = faccumulation + 1
-    flfsteps = flfsteps + 1
 
     ! this will occur for velocity verlet algorithm
     if( faccumulation .le. 0 ) return
@@ -216,109 +224,86 @@ subroutine cst_core_analyze
 
     ! calculate metric tensor correction --------------------------------------------------------
     isrz    = 1.0d0/sqrt(fzdet)
+
+! record history of isrz
+    isrz0 = isrz1                       ! t-dt
+    isrz1 = isrz                        ! t
+
+! isrz
+    isrz    = isrz0                     ! t-dt
     dval    = isrz - misrz
     misrz   = misrz  + dval * invn
     dval2   = isrz - misrz
     m2isrz  = m2isrz + dval*dval2
 
+! record history of lambda
+    lambda0(:) = lambda1(:)             ! t-dt
+    lambda1(:) = lambda(:)              ! t
+
+! record history of Epot
+    epothist0  = epothist1              ! t-dt
+    epothist1  = PotEne + fepotoffset   ! t
+
+    ersthist0 = ersthist1
+    ersthist1  = PMFEne
+
+    epot = epothist0                    ! t-dt
+    ekin = KinEne + fekinoffset         ! t-dt
+    erst = ersthist0                    ! t-dt
+
+    etot = epot + ekin + erst
+
+! total energy
+    detot1 = etot - metot
+    metot  = metot  + detot1 * invn
+    detot2 = etot - metot
+    m2etot = m2etot + detot1 * detot2
+
+! potential energy
+    depot1 = epot - mepot
+    mepot  = mepot  + depot1 * invn
+    depot2 = epot - mepot
+    m2epot = m2epot + depot1 * depot2
+
+! potential energy
+    dekin1 = ekin - mekin
+    mekin  = mekin  + dekin1 * invn
+    dekin2 = ekin - mekin
+    m2ekin = m2ekin + dekin1 * dekin2
+
+! restraint energy
+    derst1 = erst - merst
+    merst  = merst  + derst1 * invn
+    derst2 = erst - merst
+    m2erst = m2erst + derst1 * derst2
+
+! lambda and entropy
     do i=1,NumOfCONs
+
         ! lambda ----------------------------------
-        lam             = lambda(i)
+        lam             = lambda0(i)        ! t-dt
         dval            = lam - mlambda(i)
         mlambda(i)      = mlambda(i) + dval * invn
         dval2           = lam - mlambda(i)
         m2lambda(i)     = m2lambda(i) + dval * dval2
 
         if( has_lambdav ) then
+            ! FIXME - lambdav is not in correct time
             mu              = lambdav(i)
             dval            = mu - mlambdav(i)
             mlambdav(i)     = mlambdav(i) + dval * invn
             dval2           = mu - mlambdav(i)
             m2lambdav(i)    = m2lambdav(i) + dval * dval2
         end if
+
+        if( fentropy ) then
+            m11hp(i)   = m11hp(i) + dval * depot2
+            m11hk(i)   = m11hk(i) + dval * dekin2
+            m11hr(i)   = m11hr(i) + dval * derst2
+        end if
     end do
 
 end subroutine cst_core_analyze
-
-!===============================================================================
-! Subroutine:  cst_core_enthalpy_entropy
-!===============================================================================
-
-subroutine cst_core_enthalpy_entropy_lf
-
-    use pmf_utils
-    use pmf_dat
-    use cst_dat
-
-    implicit none
-    integer                :: i
-    real(PMFDP)            :: invn, epot, ekin, etot, erst
-    real(PMFDP)            :: detot1, detot2
-    real(PMFDP)            :: depot1, depot2
-    real(PMFDP)            :: dekin1, dekin2
-    real(PMFDP)            :: derst1, derst2
-    real(PMFDP)            :: dlam1
-    ! --------------------------------------------------------------------------
-
-    if( .not. (fenthalpy .or. fentropy) ) return
-
-    ! record history of lambda
-    lambda0(:) = lambda1(:)   ! t-dt
-    lambda1(:) = lambda(:)    ! t
-
-    ! record history of Epot
-    epothist0  = epothist1             ! t-dt
-    epothist1  = PotEne + fepotoffset  ! t
-
-    ersthist0 = ersthist1
-    ersthist1  = PMFEne
-
-    ! do we have enough samples?
-    if( flfsteps .le. 2 ) return
-
-    fentaccu = fentaccu + 1
-    invn = 1.0d0/real(fentaccu,PMFDP)
-
-    epot = epothist0
-    ekin = KinEne + fekinoffset         ! t-dt
-    erst = ersthist0
-
-    etot = epot + ekin + erst
-
-    ! total energy
-    detot1 = etot - metot
-    metot  = metot  + detot1 * invn
-    detot2 = etot - metot
-    m2etot = m2etot + detot1 * detot2
-
-    ! potential energy
-    depot1 = epot - mepot
-    mepot  = mepot  + depot1 * invn
-    depot2 = epot - mepot
-    m2epot = m2epot + depot1 * depot2
-
-    ! potential energy
-    dekin1 = ekin - mekin
-    mekin  = mekin  + dekin1 * invn
-    dekin2 = ekin - mekin
-    m2ekin = m2ekin + dekin1 * dekin2
-
-    ! restraint energy
-    derst1 = erst - merst
-    merst  = merst  + derst1 * invn
-    derst2 = erst - merst
-    m2erst = m2erst + derst1 * derst2
-
-    ! entropy
-    do i=1,NumOfCONs
-        dlam1 = lambda0(i) - mlambdae(i)
-        mlambdae(i) = mlambdae(i)  + dlam1 * invn
-        cds_hp(i)   = cds_hp(i) + dlam1 * depot2
-        cds_hk(i)   = cds_hk(i) + dlam1 * dekin2
-        cds_hr(i)   = cds_hr(i) + dlam1 * derst2
-    end do
-
-end subroutine cst_core_enthalpy_entropy_lf
 
 !===============================================================================
 

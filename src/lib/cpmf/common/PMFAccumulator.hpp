@@ -185,11 +185,23 @@ public:
     /// get temperature in iu
     double GetTemperature(void);
 
+    /// get energy conversion factor to given unit
+    double GetEnergyFConv(void);
+
+    /// get number of samples
+    int GetNumOfSamples(int ibin) const;
+
+    /// get real value of energy
+    double GetEnergyRealValue(double value) const;
+
 // mathematical operation -----------------------------------------------------
     /// set all data to zero
     void Reset(void);
 
 // section data access -------------------------------------------------------
+    /// get access to data section
+    CPMFAccuDataPtr GetSectionData(const CSmallString& name) const;
+
     /// get data
     double GetData(const CSmallString& name, int ibin, int cv=0) const;
 

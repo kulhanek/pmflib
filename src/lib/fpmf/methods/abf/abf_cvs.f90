@@ -97,7 +97,11 @@ subroutine abf_cvs_read_cv(prm_fin,abf_item)
     if( .not. prmfile_get_integer_by_key(prm_fin,'nbins',abf_item%nbins) ) then
         call pmf_utils_exit(PMF_OUT,1,'nbins is not specified!')
     end if
+    if( abf_item%nbins .lt. 1 ) then
+        call pmf_utils_exit(PMF_OUT,1,'nbins has to be greater then zero!')
+    end if
     write(PMF_OUT,125) abf_item%nbins
+
 
     return
 

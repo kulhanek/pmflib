@@ -230,24 +230,28 @@ subroutine cst_output_write
 
         ! lambda ----------------------------------
         if( faccumulation .gt. 0 ) then
+            lam      =  lambda(i)
             alam     = mlambda(i)
             lams     = sqrt(m2lambda(i)/real(faccumulation,PMFDP))
             alams    = lams / sqrt(real(faccumulation,PMFDP))
         else
-            alam = 0.0d0
-            lams = 0.0d0
-            alams = 0.0d0
+            lam     = 0.0d0
+            alam    = 0.0d0
+            lams    = 0.0d0
+            alams   = 0.0d0
         end if
 
         if( has_lambdav ) then
             if( faccumulation .gt. 0 ) then
+                mu      =  lambdav(i)
                 amu     = mlambdav(i)
                 mus     = sqrt(m2lambdav(i)/real(faccumulation,PMFDP))
                 amus    = mus / sqrt(real(faccumulation))
             else
-                amu = 0.0d0
-                mus = 0.0d0
-                amus = 0.0d0
+                mu      = 0.0d0
+                amu     = 0.0d0
+                mus     = 0.0d0
+                amus    = 0.0d0
             end if
         end if
 

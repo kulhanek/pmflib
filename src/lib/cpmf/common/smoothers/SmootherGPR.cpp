@@ -361,8 +361,8 @@ bool CSmootherGPR::Interpolate(CVerboseStr& vout,bool nostat)
     if( Accu->GetNumOfCVs() != EneSurface->GetNumOfCVs() ){
         RUNTIME_ERROR("inconsistent PMF accumulator and ES - CVs");
     }
-    if( Accu->GetNumOfBins() != EneSurface->GetNumOfPoints() ){
-        RUNTIME_ERROR("inconsistent PMF accumulator and ES - points");
+    if( Accu->GetNumOfBins() != EneSurface->GetNumOfBins() ){
+        RUNTIME_ERROR("inconsistent PMF accumulator and ES - bins");
     }
     if( WFac.GetLength() == 0 ){
         RUNTIME_ERROR("wfac is not set");

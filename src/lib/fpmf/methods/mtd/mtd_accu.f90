@@ -164,13 +164,13 @@ subroutine mtd_accu_read(iounit)
             select case( pmf_accu_get_key(keyline) )
             ! ------------------------------------
                 case('NSAMPLES')
-                    call pmf_accu_read_ibuf(mtdaccu%PMFAccuType,iounit,keyline,mtdaccu%nsamples)
+                    call pmf_accu_read_ibuf_B(mtdaccu%PMFAccuType,iounit,keyline,mtdaccu%nsamples)
             ! ------------------------------------
                 case('MTDPOT')
-                    call pmf_accu_read_rbuf(mtdaccu%PMFAccuType,iounit,keyline,mtdaccu%mtdpotential)
+                    call pmf_accu_read_rbuf_B(mtdaccu%PMFAccuType,iounit,keyline,mtdaccu%mtdpotential)
             ! ------------------------------------
                 case('MTDFORCE')
-                    call pmf_accu_read_rbufCVs(mtdaccu%PMFAccuType,iounit,keyline,mtdaccu%mtdforce)
+                    call pmf_accu_read_rbuf_M(mtdaccu%PMFAccuType,iounit,keyline,mtdaccu%mtdforce)
             ! ------------------------------------
                 case default
                     call pmf_accu_skip_section(iounit,keyline,MTD_OUT)

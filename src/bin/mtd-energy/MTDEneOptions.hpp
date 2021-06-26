@@ -106,7 +106,7 @@ public:
                 0,                           /* short option name */
                 "output",                      /* long option name */
                 "FORMAT",                           /* parameter name */
-                "Output FORMAT, which will be used to print free energy surface. Supported formats are: plain, gnuplot, fes.")   /* option description */
+                "Output FORMAT, which will be used to print free energy surface. Supported formats are: plain and gnuplot.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(bool,                           /* option type */
                 NoHeader,                        /* option name */

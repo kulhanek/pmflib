@@ -49,11 +49,16 @@ public:
 private:
     CPMFAccuInfoOptions Options;
     CStdIOFile          InputFile;
-    CPMFAccumulator     Accumulator;
+    CPMFAccumulatorPtr  Accu;
 
     // output ------------------------------------
     CTerminalStr    Console;
     CVerboseStr     vout;
+
+    // data to print -----------------------------
+    CSimpleVector<double>   Values;
+    CSimpleVector<double>   Sigmas;
+    CSimpleVector<double>   Errors;
 
 // actions
     // print overall info
@@ -64,6 +69,18 @@ private:
 
     // get data from the section
     void GetSection(const CSmallString& name);
+
+    // get MICF from ABF
+    void GetMICF(void);
+
+    // print header
+    void PrintHeader(const CSmallString& sec_name, bool print_errors);
+
+    // print data
+    void PrintData(bool print_errors);
+
+    // print data per CV
+    void PrintDataPerCV(const CSmallString& sec_name);
 };
 
 //------------------------------------------------------------------------------

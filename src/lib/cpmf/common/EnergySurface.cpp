@@ -39,9 +39,10 @@ using namespace std;
 CEnergySurface::CEnergySurface(void)
 {
     NumOfCVs = 0;
-    NumOfPoints = 0;
+    NumOfBins = 0;
     SLevel = 1.0;
     Temperature = 300;
+    EnergyFConv = 1.0;
 }
 
 //------------------------------------------------------------------------------
@@ -61,9 +62,9 @@ int CEnergySurface::GetNumOfCVs(void) const
 
 //------------------------------------------------------------------------------
 
-int CEnergySurface::GetNumOfPoints(void) const
+int CEnergySurface::GetNumOfBins(void) const
 {
-    return(NumOfPoints);
+    return(NumOfBins);
 }
 
 //------------------------------------------------------------------------------
@@ -87,17 +88,20 @@ void CEnergySurface::Allocate(CPMFAccumulatorPtr accu)
     if( accu->GetNumOfCVs() <= 0 ) return;
 
 // copy cvs and calculate total number of points
-    NumOfPoints = 1;
+    NumOfBins = 1;
     for(int i=0; i < accu->GetNumOfCVs(); i++) {
         CColVariablePtr cv = accu->GetCV(i);
-        NumOfPoints *= cv->GetNumOfBins();
+        NumOfBins *= cv->GetNumOfBins();
         CVs.push_back(cv);
     }
     NumOfCVs = CVs.size();
 
-    Energy.CreateVector(NumOfPoints);
-    Error.CreateVector(NumOfPoints);
-    Samples.CreateVector(NumOfPoints);
+    Temperature = accu->GetTemperature();
+    EnergyFConv = accu->GetEnergyFConv();
+
+    Energy.CreateVector(NumOfBins);
+    Error.CreateVector(NumOfBins);
+    Samples.CreateVector(NumOfBins);
 
     Clear();
 }
@@ -114,20 +118,23 @@ void CEnergySurface::Allocate(CPMFAccumulatorPtr accu,const std::vector<bool>& e
     }
 
 // copy cvs and calculate total number of points
-    NumOfPoints = 1;
+    NumOfBins = 1;
     size_t i = 0;
     for(size_t k = 0; k < enabled_cvs.size(); k++){
         if( enabled_cvs[k] ){
             CColVariablePtr cv = accu->GetCV(i);
-            NumOfPoints *= cv->GetNumOfBins();
+            NumOfBins *= cv->GetNumOfBins();
             CVs.push_back(cv);
         }
     }
     NumOfCVs = CVs.size();
 
-    Energy.CreateVector(NumOfPoints);
-    Error.CreateVector(NumOfPoints);
-    Samples.CreateVector(NumOfPoints);
+    Temperature = accu->GetTemperature();
+    EnergyFConv = accu->GetEnergyFConv();
+
+    Energy.CreateVector(NumOfBins);
+    Error.CreateVector(NumOfBins);
+    Samples.CreateVector(NumOfBins);
 
     Clear();
 }
@@ -141,14 +148,14 @@ void CEnergySurface::Deallocate(void)
     Error.FreeVector();
     Samples.FreeVector();
     NumOfCVs = 0;
-    NumOfPoints = 0;
+    NumOfBins = 0;
 }
 
 //------------------------------------------------------------------------------
 
 void CEnergySurface::Clear(void)
 {
-    for(int i=0; i < NumOfPoints; i++) {
+    for(int i=0; i < NumOfBins; i++) {
         Energy[i] = 0.0;
         Error[i] = 0.0;
         Samples[i] = 0;
@@ -159,30 +166,51 @@ void CEnergySurface::Clear(void)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void CEnergySurface::SetEnergy(unsigned int index,const double& value)
+void CEnergySurface::SetEnergy(int ibin,const double value)
 {
-    Energy[index] = value;
+    if( (ibin < 0) || (ibin >= NumOfBins) ){
+        RUNTIME_ERROR("ibin out-of-range");
+    }
+
+    Energy[ibin] = value;
 }
 
 //------------------------------------------------------------------------------
 
-const double& CEnergySurface::GetEnergy(unsigned int index) const
+double CEnergySurface::GetEnergy(int ibin) const
 {
-    return(Energy[index]);
+    if( (ibin < 0) || (ibin >= NumOfBins) ){
+        RUNTIME_ERROR("ibin out-of-range");
+    }
+    return(Energy[ibin]);
 }
 
 //------------------------------------------------------------------------------
 
-void CEnergySurface::SetError(unsigned int index,const double& value)
+double CEnergySurface::GetEnergyRealValue(int ibin) const
 {
-    Error[index] = value;
+    return( GetEnergy(ibin) * EnergyFConv);
 }
 
 //------------------------------------------------------------------------------
 
-const double& CEnergySurface::GetError(unsigned int index) const
+void CEnergySurface::SetError(int ibin,double value)
 {
-    return(Error[index]);
+    Error[ibin] = value;
+}
+
+//------------------------------------------------------------------------------
+
+double CEnergySurface::GetError(int ibin) const
+{
+    return(Error[ibin]);
+}
+
+//------------------------------------------------------------------------------
+
+double  CEnergySurface::GetErrorRealValue(int ibin) const
+{
+    return(Error[ibin] * EnergyFConv);
 }
 
 //------------------------------------------------------------------------------
@@ -193,7 +221,7 @@ double CEnergySurface::GetSigmaF2(bool includeglued) const
     double sigmafsum2 = 0.0;
     double count = 0.0;
 
-    for(int k=0; k < NumOfPoints; k++) {
+    for(int k=0; k < NumOfBins; k++) {
         if( Samples[k] == 0 ) continue;
         if( includeglued == false ){
             if( Samples[k] < 0 ) continue;
@@ -228,7 +256,7 @@ double CEnergySurface::GetSigmaF2p(bool includeglued) const
     double sigmafsum2 = 0.0;
     double count = 0.0;
 
-    for(int k=0; k < NumOfPoints; k++) {
+    for(int k=0; k < NumOfBins; k++) {
         if( Samples[k] == 0 ) continue;
         if( includeglued == false ){
             if( Samples[k] < 0 ) continue;
@@ -263,7 +291,7 @@ double CEnergySurface::GetSigmaF2m(bool includeglued) const
     double sigmafsum2 = 0.0;
     double count = 0.0;
 
-    for(int k=0; k < NumOfPoints; k++) {
+    for(int k=0; k < NumOfBins; k++) {
         if( Samples[k] == 0 ) continue;
         if( includeglued == false ){
             if( Samples[k] < 0 ) continue;
@@ -294,41 +322,41 @@ double CEnergySurface::GetSigmaF2m(bool includeglued) const
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void CEnergySurface::SetNumOfSamples(unsigned int index,const int& value)
+void CEnergySurface::SetNumOfSamples(int ibin,int value)
 {
-    Samples[index] = value;
+    Samples[ibin] = value;
 }
 
 //------------------------------------------------------------------------------
 
-const int& CEnergySurface::GetNumOfSamples(unsigned int index) const
+int CEnergySurface::GetNumOfSamples(int ibin) const
 {
-    return(Samples[index]);
+    return(Samples[ibin]);
 }
 
 //==============================================================================
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void CEnergySurface::GetPoint(unsigned int index,CSimpleVector<double>& point) const
+void CEnergySurface::GetPoint(int ibin,CSimpleVector<double>& point) const
 {
     for(int k=NumOfCVs-1; k >= 0; k--) {
         const CColVariablePtr p_coord = CVs[k];
-        int ibin = index % p_coord->GetNumOfBins();
-        point[k] = p_coord->GetValue(ibin);
-        index = index / p_coord->GetNumOfBins();
+        int cvbin = ibin % p_coord->GetNumOfBins();
+        point[k] = p_coord->GetValue(cvbin);
+        ibin = ibin / p_coord->GetNumOfBins();
     }
 }
 
 //------------------------------------------------------------------------------
 
-void CEnergySurface::GetIPoint(unsigned int index,CSimpleVector<int>& point) const
+void CEnergySurface::GetIPoint(int ibin,CSimpleVector<int>& point) const
 {
     for(int k=NumOfCVs-1; k >= 0; k--) {
         const CColVariablePtr p_coord = CVs[k];
-        int ibin = index % p_coord->GetNumOfBins();
-        point[k] = ibin;
-        index = index / p_coord->GetNumOfBins();
+        int cvbin = ibin % p_coord->GetNumOfBins();
+        point[k] = cvbin;
+        ibin = ibin / p_coord->GetNumOfBins();
     }
 }
 
@@ -356,9 +384,9 @@ double CEnergySurface::GetGlobalMinimumValue(void) const
 {
     double minimum = 0.0;
 
-    if(NumOfPoints > 0) minimum = Energy[0];
+    if(NumOfBins > 0) minimum = Energy[0];
 
-    for(int k=0; k < NumOfPoints; k++) {
+    for(int k=0; k < NumOfBins; k++) {
         if(minimum > Energy[k]) minimum = Energy[k];
     }
 
@@ -369,7 +397,7 @@ double CEnergySurface::GetGlobalMinimumValue(void) const
 
 void CEnergySurface::ApplyOffset(double offset)
 {
-    for(int k=0; k < NumOfPoints; k++) {
+    for(int k=0; k < NumOfBins; k++) {
         Energy[k] += offset;
     }
 }
@@ -396,7 +424,7 @@ void CEnergySurface::AdaptUnsampledToMaxEnergy(void)
     bool   first = true;
 
     // find maximum in sampled region
-    for(int k=0; k < NumOfPoints; k++) {
+    for(int k=0; k < NumOfBins; k++) {
         if( Samples[k] == 0 ) continue; // skip unsampled
         if( (maxe < Energy[k]) || (first == true) ){
             maxe = Energy[k];
@@ -405,7 +433,7 @@ void CEnergySurface::AdaptUnsampledToMaxEnergy(void)
     }
 
     // adapt unsampled region
-    for(int k=0; k < NumOfPoints; k++) {
+    for(int k=0; k < NumOfBins; k++) {
         if( Samples[k] == 0 ){
             Energy[k] = maxe;
         }
@@ -417,7 +445,7 @@ void CEnergySurface::AdaptUnsampledToMaxEnergy(void)
 void CEnergySurface::AdaptUnsampledToMaxEnergy(double maxene)
 {
     // adapt unsampled region
-    for(int k=0; k < NumOfPoints; k++) {
+    for(int k=0; k < NumOfBins; k++) {
         if( Samples[k] == 0 ){
             Energy[k] = maxene;
         }
@@ -430,12 +458,12 @@ void CEnergySurface::AdaptUnsampledToMaxEnergy(double maxene)
 
 void CEnergySurface::operator+=(const CEnergySurface& source)
 {
-    if(NumOfPoints != source.NumOfPoints) {
+    if(NumOfBins != source.NumOfBins) {
         ES_ERROR("surfaces do not match");
         return;
     }
 
-    for(int k=0; k < NumOfPoints; k++) {
+    for(int k=0; k < NumOfBins; k++) {
         Energy[k] += source.Energy[k];
     }
 }
@@ -444,7 +472,7 @@ void CEnergySurface::operator+=(const CEnergySurface& source)
 
 void CEnergySurface::operator/=(const double& number)
 {
-    for(int k=0; k < NumOfPoints; k++) {
+    for(int k=0; k < NumOfBins; k++) {
         Energy[k] /= number;
     }
 }
@@ -475,19 +503,19 @@ CEnergySurfacePtr CEnergySurface::ReduceFES(const std::vector<bool>& keepcvs)
 //    CVs.reserve(NumOfCVs);
 //
 //// copy cvs and calculate total number of points
-//    NumOfPoints = 1;
+//    NumOfBins = 1;
 //    size_t i = 0;
 //    for(size_t k = 0; k < enabled_cvs.size(); k++){
 //        if( enabled_cvs[k] ){
 //            CVs[i] = surf->GetCV(k);
-//            NumOfPoints *= CVs[i]->GetNumOfBins();
+//            NumOfBins *= CVs[i]->GetNumOfBins();
 //            i++;
 //        }
 //    }
 //
-//    Energy.CreateVector(NumOfPoints);
-//    Error.CreateVector(NumOfPoints);
-//    Samples.CreateVector(NumOfPoints);
+//    Energy.CreateVector(NumOfBins);
+//    Error.CreateVector(NumOfBins);
+//    Samples.CreateVector(NumOfBins);
 //
 //    Clear();
 //
@@ -503,7 +531,7 @@ CEnergySurfacePtr CEnergySurface::ReduceFES(const std::vector<bool>& keepcvs)
 //    const double R = 1.98720425864083e-3;
 //
 //// calculate weights
-//    for(size_t mbin = 0; mbin < (size_t)NumOfPoints; mbin++){
+//    for(size_t mbin = 0; mbin < (size_t)NumOfBins; mbin++){
 //        double ene = GetEnergy(mbin);
 //        GetIPoint(mbin,midx);
 //        ReduceIPoint(keepcvs,midx,ridx);
@@ -525,7 +553,7 @@ CEnergySurfacePtr CEnergySurface::ReduceFES(const std::vector<bool>& keepcvs)
 //    }
 //
 //// transform back to FE
-//    for(size_t rbin = 0; rbin < (size_t)p_rsurf->NumOfPoints; rbin++){
+//    for(size_t rbin = 0; rbin < (size_t)p_rsurf->NumOfBins; rbin++){
 //        double w = p_rsurf->GetEnergy(rbin);
 //        p_rsurf->SetEnergy(rbin,-R*temp*log(w));
 //    }

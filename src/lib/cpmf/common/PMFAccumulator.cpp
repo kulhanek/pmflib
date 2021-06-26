@@ -213,7 +213,7 @@ void CPMFAccumulator::ReadHeaderSection(FILE* fin,const CSmallString& keyline)
                 error << "coordinate id does not match, read: " << id << ", expected: " << i+1;
                 RUNTIME_ERROR(error);
             }
-            if(max_value <= min_value) {
+            if(max_value < min_value) {
                 CSmallString error;
                 error << "min value is not smaller than max value, id: " << id;
                 RUNTIME_ERROR(error);
@@ -504,6 +504,27 @@ void CPMFAccumulator::GetIPoint(unsigned int index,CSimpleVector<int>& point) co
 double CPMFAccumulator::GetTemperature(void)
 {
     return(Temperature);
+}
+
+//------------------------------------------------------------------------------
+
+double CPMFAccumulator::GetEnergyFConv(void)
+{
+    return(EnergyFConv);
+}
+
+//------------------------------------------------------------------------------
+
+int CPMFAccumulator::GetNumOfSamples(int ibin) const
+{
+    return(GetData("NSAMPLES",ibin));
+}
+
+//------------------------------------------------------------------------------
+
+double CPMFAccumulator::GetEnergyRealValue(double value) const
+{
+    return(value * EnergyFConv);
 }
 
 //==============================================================================
@@ -946,6 +967,20 @@ void CPMFAccumulator::PrintCVSInfo(FILE* p_fout)
 //==============================================================================
 //------------------------------------------------------------------------------
 //==============================================================================
+
+CPMFAccuDataPtr CPMFAccumulator::GetSectionData(const CSmallString& name) const
+{
+    std::map<CSmallString,CPMFAccuDataPtr>::const_iterator isec = DataBlocks.find(name);
+    if( isec == DataBlocks.end() ) {
+        CSmallString error;
+        error << "unable to find '" << name << "' data section";
+        RUNTIME_ERROR(error);
+    }
+    const CPMFAccuDataPtr sec = isec->second;
+    return(sec);
+}
+
+//------------------------------------------------------------------------------
 
 double CPMFAccumulator::GetData(const CSmallString& name, int ibin, int cv) const
 {

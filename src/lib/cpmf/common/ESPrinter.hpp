@@ -33,7 +33,6 @@
 enum EESPrinterFormat {
     EESPF_PLAIN,
     EESPF_GNUPLOT,
-    EESPF_PMF_FES
 };
 
 //------------------------------------------------------------------------------
@@ -88,7 +87,6 @@ private:
     bool                    IncludeBinStat;
 
     void PrintPlain(FILE* fout);
-    void PrintPMF_FES(FILE* fout);
 };
 
 //------------------------------------------------------------------------------

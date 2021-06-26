@@ -81,7 +81,7 @@ subroutine abp_trajectory_write_snapshot
 
     return
 
-10 format('#ACCUSNAP',1X,I9)
+10 format('#ACCUSNAP',1X,I10)
 
 end subroutine abp_trajectory_write_snapshot
 

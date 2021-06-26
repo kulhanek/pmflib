@@ -30,9 +30,6 @@ ADD_SUBDIRECTORY(mtd-energy)
 # ABP utilities
 ADD_SUBDIRECTORY(abp-energy)
 
-## string method
-#ADD_SUBDIRECTORY(stm-trajectory)
-#
 ## network utilities ------------------------------------------------------------
 IF(PMFLIB_NETWORK)
     # PMFLib MWA utilities

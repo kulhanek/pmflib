@@ -178,24 +178,6 @@ void CColVariable::SetCV(int lid,const CSmallString& lname,const CSmallString& l
     Unit = lunit;
 }
 
-//------------------------------------------------------------------------------
-
-// for energy surface
-void CColVariable::CopyFrom(const CColVariable* p_coord)
-{
-    ID        = p_coord->ID;
-    Name      = p_coord->Name;
-    Type      = p_coord->Type;
-    Unit      = p_coord->Unit;
-    NumOfBins     = p_coord->NumOfBins;
-    FConv     = p_coord->FConv;
-    MinValue  = p_coord->MinValue;
-    MaxValue  = p_coord->MaxValue;
-    BinWidth  = p_coord->BinWidth;
-    Width     = p_coord->Width;
-    Alpha     = p_coord->Alpha;
-}
-
 //==============================================================================
 //------------------------------------------------------------------------------
 //==============================================================================
@@ -295,6 +277,13 @@ bool CColVariable::IsPeriodic(void) const
         return(true);
     }
     return(false);
+}
+
+//------------------------------------------------------------------------------
+
+double CColVariable::GetRealValue(double value) const
+{
+    return(value * FConv);
 }
 
 //==============================================================================
