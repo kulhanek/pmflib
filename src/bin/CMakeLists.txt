@@ -30,6 +30,9 @@ ADD_SUBDIRECTORY(mtd-energy)
 # ABP utilities
 ADD_SUBDIRECTORY(abp-energy)
 
+# CST utilities
+ADD_SUBDIRECTORY(cst-integrate)
+
 ## network utilities ------------------------------------------------------------
 IF(PMFLIB_NETWORK)
     # PMFLib MWA utilities

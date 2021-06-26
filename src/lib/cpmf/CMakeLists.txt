@@ -32,6 +32,10 @@ SET(CPMF_METHODS_SRC
     # US
         methods/rst/RSTAccumulator.cpp
 
+    # CST
+        methods/cst/CSTProxy_dG.cpp
+        methods/cst/CSTProxy_dH.cpp
+
     # STM
         methods/stm/spline.cpp
         methods/stm/Bead.cpp

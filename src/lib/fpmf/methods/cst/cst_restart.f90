@@ -49,7 +49,7 @@ subroutine cst_restart_read
 
     if( frestart .and. (.not. fallconstant) ) then
         frestart = .false.
-        write(CST_OUT,5) trim(fcstrst)
+        write(CST_OUT,5)
     end if
 
     ! test if restart file exists

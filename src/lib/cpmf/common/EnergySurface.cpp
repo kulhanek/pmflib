@@ -483,87 +483,70 @@ void CEnergySurface::operator/=(const double& number)
 
 CEnergySurfacePtr CEnergySurface::ReduceFES(const std::vector<bool>& keepcvs)
 {
-//    if( p_rsurf == NULL ){
-//        ES_ERROR("p_rsurf == NULL");
-//        return(false);
-//    }
-//    if( keepcvs.size() != (size_t)NumOfCVs ){
-//        RUNTIME_ERROR("keepcvs.size() != NumOfCVs");
-//    }
-//
-//        if( NumOfCVs > 0 ) Deallocate();
-//    if( surf == NULL ) return;
-//    if( surf->GetNumOfCVs() <= 0 ) return;
-//
-//// allocate items
-//    NumOfCVs = 0;
-//    for(size_t i = 0; i < enabled_cvs.size(); i++){
-//        if( enabled_cvs[i] ) NumOfCVs++;
-//    }
-//    CVs.reserve(NumOfCVs);
-//
-//// copy cvs and calculate total number of points
-//    NumOfBins = 1;
-//    size_t i = 0;
-//    for(size_t k = 0; k < enabled_cvs.size(); k++){
-//        if( enabled_cvs[k] ){
-//            CVs[i] = surf->GetCV(k);
-//            NumOfBins *= CVs[i]->GetNumOfBins();
-//            i++;
-//        }
-//    }
-//
-//    Energy.CreateVector(NumOfBins);
-//    Error.CreateVector(NumOfBins);
-//    Samples.CreateVector(NumOfBins);
-//
-//    Clear();
-//
-//    p_rsurf->Allocate(this,keepcvs);
-//    p_rsurf->Clear();
-//
-//    CSimpleVector<int>    midx;
-//    midx.CreateVector(NumOfCVs);
-//
-//    CSimpleVector<int>    ridx;
-//    ridx.CreateVector(p_rsurf->NumOfCVs);
-//
-//    const double R = 1.98720425864083e-3;
-//
-//// calculate weights
-//    for(size_t mbin = 0; mbin < (size_t)NumOfBins; mbin++){
-//        double ene = GetEnergy(mbin);
-//        GetIPoint(mbin,midx);
-//        ReduceIPoint(keepcvs,midx,ridx);
-//        int rbin = p_rsurf->IPoint2Bin(ridx);
-//        if( rbin == -1 ){
-//            for(size_t i=0; i < ridx.GetLength(); i++){
-//                cout << ridx[i] << " ";
-//            }
-//            cout << endl;
-//            for(int i=0; i < p_rsurf->GetNumOfCVs(); i++){
-//                cout << p_rsurf->GetCV(i)->GetNumOfBins() << " ";
-//            }
-//            cout << endl;
-//            RUNTIME_ERROR("rbin == -1");
-//        }
-//        double w = exp(-ene/(R*temp));
-//        p_rsurf->SetEnergy(rbin,p_rsurf->GetEnergy(rbin) + w);
-//        p_rsurf->SetNumOfSamples(rbin,1);
-//    }
-//
-//// transform back to FE
-//    for(size_t rbin = 0; rbin < (size_t)p_rsurf->NumOfBins; rbin++){
-//        double w = p_rsurf->GetEnergy(rbin);
-//        p_rsurf->SetEnergy(rbin,-R*temp*log(w));
-//    }
-//
-//// move global minimum
-//   double gmin = p_rsurf->GetGlobalMinimumValue();
-//   p_rsurf->ApplyOffset(-gmin);
+    if( keepcvs.size() != (size_t)NumOfCVs ){
+        RUNTIME_ERROR("keepcvs.size() != NumOfCVs");
+    }
 
-//    return(true);
-    return(CEnergySurfacePtr());
+    CEnergySurfacePtr p_rsurf = CEnergySurfacePtr(new CEnergySurface);
+
+// copy cvs and calculate total number of points
+    p_rsurf->NumOfBins = 1;
+    for(size_t k = 0; k < keepcvs.size(); k++){
+        if( keepcvs[k] ){
+            CColVariablePtr cv = GetCV(k);
+            p_rsurf->CVs.push_back(cv);
+            p_rsurf->NumOfBins *= cv->GetNumOfBins();
+        }
+    }
+    p_rsurf->NumOfCVs = p_rsurf->CVs.size();
+
+    p_rsurf->Energy.CreateVector(p_rsurf->NumOfBins);
+    p_rsurf->Error.CreateVector(p_rsurf->NumOfBins);
+    p_rsurf->Samples.CreateVector(p_rsurf->NumOfBins);
+
+    p_rsurf->Clear();
+
+    CSimpleVector<int>    midx;
+    midx.CreateVector(NumOfCVs);
+
+    CSimpleVector<int>    ridx;
+    ridx.CreateVector(p_rsurf->NumOfCVs);
+
+    const double R = 1.98720425864083e-3;
+
+// calculate weights
+    for(size_t mbin = 0; mbin < (size_t)NumOfBins; mbin++){
+        double ene = GetEnergy(mbin);
+        GetIPoint(mbin,midx);
+        ReduceIPoint(keepcvs,midx,ridx);
+        int rbin = p_rsurf->IPoint2Bin(ridx);
+        if( rbin == -1 ){
+            for(size_t i=0; i < ridx.GetLength(); i++){
+                cout << ridx[i] << " ";
+            }
+            cout << endl;
+            for(int i=0; i < p_rsurf->GetNumOfCVs(); i++){
+                cout << p_rsurf->GetCV(i)->GetNumOfBins() << " ";
+            }
+            cout << endl;
+            RUNTIME_ERROR("rbin == -1");
+        }
+        double w = exp(-ene/(R*Temperature));
+        p_rsurf->SetEnergy(rbin,p_rsurf->GetEnergy(rbin) + w);
+        p_rsurf->SetNumOfSamples(rbin,1);
+    }
+
+// transform back to FE
+    for(size_t rbin = 0; rbin < (size_t)p_rsurf->NumOfBins; rbin++){
+        double w = p_rsurf->GetEnergy(rbin);
+        p_rsurf->SetEnergy(rbin,-R*Temperature*log(w));
+    }
+
+// move global minimum
+    double gmin = p_rsurf->GetGlobalMinimumValue();
+    p_rsurf->ApplyOffset(-gmin);
+
+    return(p_rsurf);
 }
 
 //------------------------------------------------------------------------------

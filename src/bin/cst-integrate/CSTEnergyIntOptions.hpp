@@ -1,5 +1,5 @@
-#ifndef ABFIntOptionsH
-#define ABFIntOptionsH
+#ifndef CSTIntOptionsH
+#define CSTIntOptionsH
 // =============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
@@ -28,18 +28,18 @@
 
 //------------------------------------------------------------------------------
 
-class CABFEnergyIntOptions : public CSimpleOptions {
+class CCSTEnergyIntOptions : public CSimpleOptions {
 public:
     // constructor - tune option setup
-    CABFEnergyIntOptions(void);
+    CCSTEnergyIntOptions(void);
 
 // program name and description -----------------------------------------------
     CSO_PROG_NAME_BEGIN
-    "abf-energy"
+    "cst-energy"
     CSO_PROG_NAME_END
 
     CSO_PROG_DESC_BEGIN
-    "The program numerically integrates data from the ABF calculation. The integration is performed either by "
+    "The program numerically integrates data from the CST calculation. The integration is performed either by "
     "the reverse finite difference (RFD) method, radial basis functions (RBF), or Gaussian process (GPR)."
     CSO_PROG_DESC_END
 
@@ -52,7 +52,7 @@ public:
     CSO_PROG_ARGS_SHORT_DESC_END
 
     CSO_PROG_ARGS_LONG_DESC_BEGIN
-    "<cyan><b>accuname</b></cyan>                   Name of file containing the ABF accumulator. If the name is '-' then the accumulator is read from the standard input.\n"
+    "<cyan><b>accuname</b></cyan>                   Name of file containing the CST accumulator. If the name is '-' then the accumulator is read from the standard input.\n"
     "<cyan><b>fename</b></cyan>                     Name of file where the resulting free energy surface will be printed. If the name is '-' then the output will be written to the standard output.\n"
     "<cyan><b>fullfename</b></cyan>                 Optional name of file with free energy surface containing all regions (sampled and unsampled)."
     CSO_PROG_ARGS_LONG_DESC_END
@@ -65,13 +65,9 @@ public:
     CSO_OPT(CSmallString,EcutMethod)
     CSO_OPT(CSmallString,LAMethod)
     CSO_OPT(double,RCond)
-    CSO_OPT(int,Limit)
-    CSO_OPT(bool,SkipFFTest)
     CSO_OPT(double,EnergyLimit)
     CSO_OPT(bool,EraseNegativeEnergy)
     CSO_OPT(bool,SkipLastEnergyLimit)
-    CSO_OPT(double,MFMaxZScore)
-    CSO_OPT(int,MFZTestPasses)
     CSO_OPT(double,SigmaF2)
     CSO_OPT(CSmallString,NCorr)
     CSO_OPT(bool,SplitNCorr)
@@ -79,9 +75,6 @@ public:
     CSO_OPT(CSmallString,LoadHyprms)
     CSO_OPT(CSmallString,RFac)
     CSO_OPT(int,Overhang)
-    CSO_OPT(bool,IncludeGluedRegions)
-    CSO_OPT(int,GlueingFactor)
-    CSO_OPT(bool,GlueHoles)
     CSO_OPT(bool,Periodicity)
     CSO_OPT(CSmallString,GlobalMin)
     CSO_OPT(bool,UseRealGlobalMin)
@@ -99,7 +92,7 @@ public:
     CSO_OPT(CSmallString,IXFormat)
     CSO_OPT(CSmallString,OEFormat)
     CSO_OPT(CSmallString,MFInfo)
-    CSO_OPT(CSmallString,SaveABF)
+    CSO_OPT(CSmallString,SaveCST)
     CSO_OPT(CSmallString,GPRKernel)
     CSO_OPT(bool,GPRNumDiff)
     CSO_OPT(bool,GPRUseInv)
@@ -156,24 +149,6 @@ public:
                 "NUMBER",                           /* parametr name */
                 "RBF+GPR: Rank condition for SVD. Used value must be carefully tested. Calculation at computer precision is requested with -1 (not recommended).")   /* option description */
     //----------------------------------------------------------------------
-    CSO_MAP_OPT(int,                           /* option type */
-                Limit,                        /* option name */
-                100,                          /* default value */
-                false,                          /* is option mandatory */
-                'l',                           /* short option name */
-                "limit",                      /* long option name */
-                "NUMBER",                           /* parametr name */
-                "Only bins containing more samples than NUMBER are considered as properly sampled.")   /* option description */
-    //----------------------------------------------------------------------
-    CSO_MAP_OPT(bool,                           /* option type */
-                SkipFFTest,                        /* option name */
-                false,                          /* default value */
-                false,                          /* is option mandatory */
-                0,                           /* short option name */
-                "skipfftest",                      /* long option name */
-                NULL,                           /* parametr name */
-                "Skip flood fill test for discontinuous regions.")   /* option description */
-    //----------------------------------------------------------------------
     CSO_MAP_OPT(double,                           /* option type */
                 EnergyLimit,                        /* option name */
                 -1.0,                          /* default value */
@@ -203,25 +178,6 @@ public:
                 "Skip energy limit filter after final integration.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(double,                           /* option type */
-                MFMaxZScore,                        /* option name */
-                -1.0,                          /* default value */
-                false,                          /* is option mandatory */
-                0,                           /* short option name */
-                "mfmaxzscore",                      /* long option name */
-                "NUMBER",                           /* parametr name */
-                "RBF+GPR: Reject mean forces whose errors in prediction have z-score above NUMBER. In the test, it is assumend that mean force errors have zero mean and they follow normal distribution. "
-                "This limit is aplied in the each pass. Negative value disables the limit.")   /* option description */
-    //----------------------------------------------------------------------
-    CSO_MAP_OPT(int,                           /* option type */
-                MFZTestPasses,                        /* option name */
-                1,                          /* default value */
-                false,                          /* is option mandatory */
-                0,                           /* short option name */
-                "mfnumofztests",                      /* long option name */
-                "NUMBER",                           /* parametr name */
-                "RBF+GPR: Repeat z-score test for mean force errrors NUMBER times.")   /* option description */
-    //----------------------------------------------------------------------
-    CSO_MAP_OPT(double,                           /* option type */
                 SigmaF2,                        /* option name */
                 15.0,                          /* default value */
                 false,                          /* is option mandatory */
@@ -247,7 +203,7 @@ public:
                 0,                           /* short option name */
                 "splitncorr",                      /* long option name */
                 NULL,                           /* parametr name */
-                "Use independent ncorr for each CV.")   /* option description */
+                "Use indepenedent ncorr for each CV.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(CSmallString,                           /* option type */
                 WFac,                        /* option name */
@@ -287,33 +243,6 @@ public:
                 "overhang",                      /* long option name */
                 "NUMBER",                           /* parametr name */
                 "RBFs overhang to properly integrate areas near sampled edges. Ignored for periodic CVs.")   /* option description */
-    //----------------------------------------------------------------------
-    CSO_MAP_OPT(bool,                           /* option type */
-                IncludeGluedRegions,                        /* option name */
-                0,                          /* default value */
-                false,                          /* is option mandatory */
-                0,                           /* short option name */
-                "includeglued",                      /* long option name */
-                NULL,                           /* parametr name */
-                "RBF+GPR: Explicitly include glued regions. This options is set ON when --glueing > 0.")   /* option description */
-    //----------------------------------------------------------------------
-    CSO_MAP_OPT(int,                           /* option type */
-                GlueingFactor,                        /* option name */
-                0,                          /* default value */
-                false,                          /* is option mandatory */
-                0,                           /* short option name */
-                "glueing",                      /* long option name */
-                "NUMBER",                           /* parametr name */
-                "RBF+GPR: Calculate energy also for unsampled bins in close vicinity to sampled ones.")   /* option description */
-    //----------------------------------------------------------------------
-    CSO_MAP_OPT(bool,                           /* option type */
-                GlueHoles,                        /* option name */
-                0,                          /* default value */
-                false,                          /* is option mandatory */
-                0,                           /* short option name */
-                "glueholes",                      /* long option name */
-                NULL,                           /* parametr name */
-                "RBF+GPR: Calculate energy also for unsampled regions inside the FES.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(bool,                           /* option type */
                 Periodicity,                        /* option name */
@@ -370,13 +299,13 @@ public:
                 "GPR: Skip calculation of energy and errors (it can save some time when only logML is required).")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(CSmallString,                           /* option type */
-                SaveABF,                        /* option name */
+                SaveCST,                        /* option name */
                 NULL,                          /* default value */
                 false,                          /* is option mandatory */
                 '\0',                           /* short option name */
                 "saveabf",                      /* long option name */
                 "NAME",                           /* parametr name */
-                "Save the final ABF accumulator into the file with NAME.")   /* option description */
+                "Save the final CST accumulator into the file with NAME.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(CSmallString,                           /* option type */
                 MFInfo,                        /* option name */

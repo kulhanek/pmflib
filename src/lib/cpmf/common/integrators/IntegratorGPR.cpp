@@ -2362,8 +2362,8 @@ CEnergySurfacePtr CIntegratorGPR::ReduceFES(const std::vector<bool>& keepcvs)
     }
 
 // move global minimum
-   double gmin = p_rsurf->GetGlobalMinimumValue();
-   p_rsurf->ApplyOffset(-gmin);
+    double gmin = p_rsurf->GetGlobalMinimumValue();
+    p_rsurf->ApplyOffset(-gmin);
 
     return(p_rsurf);
 }

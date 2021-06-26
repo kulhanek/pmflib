@@ -172,15 +172,7 @@ subroutine cst_core_analyze
         faccurst = faccurst - 1
     end if
 
-     ! do we have enough samples?
-    if( fstep .le. 2 ) return
-
-    faccumulation = faccumulation + 1
-
-    ! this will occur for velocity verlet algorithm
-    if( faccumulation .le. 0 ) return
-
-    ! calculate final constraint deviations
+! calculate final constraint deviations
     do i=1,NumOfCONs
         ci = CONList(i)%cvindx
         CONList(i)%deviation = CONList(i)%cv%get_deviation(CVContextP%CVsValues(ci),CONList(i)%value)
@@ -220,21 +212,12 @@ subroutine cst_core_analyze
         fzdet = fz(1,1)
     end if
 
-    invn = 1.0d0/real(faccumulation,PMFDP)
-
     ! calculate metric tensor correction --------------------------------------------------------
     isrz    = 1.0d0/sqrt(fzdet)
 
 ! record history of isrz
     isrz0 = isrz1                       ! t-dt
     isrz1 = isrz                        ! t
-
-! isrz
-    isrz    = isrz0                     ! t-dt
-    dval    = isrz - misrz
-    misrz   = misrz  + dval * invn
-    dval2   = isrz - misrz
-    m2isrz  = m2isrz + dval*dval2
 
 ! record history of lambda
     lambda0(:) = lambda1(:)             ! t-dt
@@ -247,11 +230,29 @@ subroutine cst_core_analyze
     ersthist0 = ersthist1
     ersthist1  = PMFEne
 
+     ! do we have enough samples?
+    if( fstep .le. 2 ) return
+
+    faccumulation = faccumulation + 1
+
+    ! this will occur for velocity verlet algorithm
+    if( faccumulation .le. 0 ) return
+
+    invn = 1.0d0/real(faccumulation,PMFDP)
+
+! values
     epot = epothist0                    ! t-dt
     ekin = KinEne + fekinoffset         ! t-dt
     erst = ersthist0                    ! t-dt
+    etot = epot + ekin + erst           ! t-dt
+    isrz = isrz0                        ! t-dt
+    ! lambda0(i)                        ! t-dt
 
-    etot = epot + ekin + erst
+! isrz
+    dval    = isrz - misrz
+    misrz   = misrz  + dval * invn
+    dval2   = isrz - misrz
+    m2isrz  = m2isrz + dval*dval2
 
 ! total energy
     detot1 = etot - metot
