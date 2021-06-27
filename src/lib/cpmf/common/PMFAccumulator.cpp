@@ -330,10 +330,13 @@ bool CPMFAccumulator::IsHeaderSection(const CSmallString& keyline)
 
 const CSmallString CPMFAccumulator::GetSectionName(const CSmallString& keyline) const
 {
-    if( keyline.GetLength() < 1 ) return("");
+    if( keyline.GetLength() < 2 ) return("");
     int first = 1;
     int last = keyline.Scan(" \t\n");
-    return( keyline.GetSubStringFromTo(first,last-1) );
+    if( last-1 < 1 ){
+        last = keyline.GetLength() - 1;
+    }
+    return( keyline.GetSubStringFromTo(first,last) );
 }
 
 //------------------------------------------------------------------------------
@@ -585,7 +588,7 @@ void CPMFAccumulator::Save(FILE* fout)
     }
 
 // write ABF accumulator header ------------------
-    if(fprintf(fout,"%%PMFACCU-V6\n%3d\n",NumOfCVs) <= 0) {
+    if(fprintf(fout,"%%PMFLIB-V6\n%3d\n",NumOfCVs) <= 0) {
         CSmallString error;
         error << "unable to write header";
         RUNTIME_ERROR(error);
