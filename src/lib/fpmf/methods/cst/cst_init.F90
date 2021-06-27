@@ -394,7 +394,7 @@ subroutine cst_init_mpi_bcast_constraints
     use pmf_dat
 
     implicit none
-    integer        :: i,alloc_failed,ierr
+    integer        :: alloc_failed,ierr
     ! -----------------------------------------------------------------------------
 
     if( fdebug ) then

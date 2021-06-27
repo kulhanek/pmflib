@@ -157,12 +157,14 @@ subroutine pmf_xdynbp_force(x,v,d,E)
     type(ENERGIES)  :: E
     ! --------------------------------------------
     real(PMFDP)     :: epot
+    real(PMFDP)     :: ekin
     real(PMFDP)     :: epmf
     real(PMFDP)     :: temp,bathtemp
     logical         :: remd_updated
     ! --------------------------------------------------------------------------
 
     epot = E%potential
+    ekin = E%kinetic
     epmf = 0.0d0
     call pmf_timers_start_timer(PMFLIB_TIMER)
         call pmf_core_lf_update_xv(remd_updated,x,v,temp,bathtemp)

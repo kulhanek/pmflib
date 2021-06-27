@@ -169,7 +169,7 @@ subroutine pmf_init_bcast_dat_mpi
     use mpi
 
     implicit none
-    integer        :: i,alloc_failed,ierr
+    integer        :: alloc_failed,ierr
     ! --------------------------------------------------------------------------
 
     ierr = MPI_SUCCESS

@@ -349,25 +349,25 @@ end subroutine pmf_sander_update_box
 ! subroutine pmf_sander_force
 !===============================================================================
 
-subroutine pmf_sander_force(anatom,x,v,f,ekin,epot,epmf)
+subroutine pmf_sander_force(anatom,x,v,f,epot,ekin,epmf)
 
     use pmf_sizes
     use pmf_core_lf
     use pmf_timers
 
     implicit none
-    integer        :: anatom       ! number of atoms
-    real(PMFDP)    :: x(3,anatom)
-    real(PMFDP)    :: v(3,anatom)
-    real(PMFDP)    :: f(3,anatom)
-    real(PMFDP)    :: ekin
-    real(PMFDP)    :: epot
-    real(PMFDP)    :: epmf
+    integer         :: anatom       ! number of atoms
+    real(PMFDP)     :: x(3,anatom)  ! in
+    real(PMFDP)     :: v(3,anatom)  ! in
+    real(PMFDP)     :: f(3,anatom)  ! inout
+    real(PMFDP)     :: epot         ! in
+    real(PMFDP)     :: ekin         ! in
+    real(PMFDP)     :: epmf         ! out
     ! --------------------------------------------------------------------------
 
     call pmf_timers_start_timer(PMFLIB_TIMER)
     call pmf_core_lf_update_step
-    call pmf_core_lf_force(x,v,f,ekin,epot,epmf)
+    call pmf_core_lf_force(x,v,f,epot,ekin,epmf)
     call pmf_timers_stop_timer(PMFLIB_TIMER)
 
     return
@@ -385,11 +385,11 @@ subroutine pmf_sander_rstforce(anatom,x,f,epot,epmf)
     use pmf_timers
 
     implicit none
-    integer        :: anatom       ! number of atoms
-    real(PMFDP)    :: x(3,anatom)
-    real(PMFDP)    :: f(3,anatom)
-    real(PMFDP)    :: epot
-    real(PMFDP)    :: epmf
+    integer        :: anatom        ! in - number of atoms
+    real(PMFDP)    :: x(3,anatom)   ! in
+    real(PMFDP)    :: f(3,anatom)   ! inout
+    real(PMFDP)    :: epot          ! in
+    real(PMFDP)    :: epmf          ! out
     ! --------------------------------------------------------------------------
 
     call pmf_timers_start_timer(PMFLIB_TIMER)
@@ -435,7 +435,7 @@ end subroutine pmf_sander_constraints
 ! subroutine pmf_sander_force_mpi
 !===============================================================================
 
-subroutine pmf_sander_force_mpi(anatom,x,v,f,epot,epmf)
+subroutine pmf_sander_force_mpi(anatom,x,v,f,epot,ekin,epmf)
 
     use pmf_sizes
     use pmf_core_lf
@@ -446,12 +446,13 @@ subroutine pmf_sander_force_mpi(anatom,x,v,f,epot,epmf)
     use mpi
 
     implicit none
-    integer         :: anatom
-    real(PMFDP)     :: x(3,anatom)
-    real(PMFDP)     :: v(3,anatom)
-    real(PMFDP)     :: f(3,anatom)
-    real(PMFDP)     :: epot
-    real(PMFDP)     :: epmf
+    integer         :: anatom       ! number of atoms
+    real(PMFDP)     :: x(3,anatom)  ! in
+    real(PMFDP)     :: v(3,anatom)  ! in
+    real(PMFDP)     :: f(3,anatom)  ! inout
+    real(PMFDP)     :: epot         ! in
+    real(PMFDP)     :: ekin         ! in
+    real(PMFDP)     :: epmf         ! out
     ! ------------------------------------------------------
     integer         :: i,ierr
     ! --------------------------------------------------------------------------
@@ -474,12 +475,10 @@ subroutine pmf_sander_force_mpi(anatom,x,v,f,epot,epmf)
             write(PMF_DEBUG+fmytaskid,*)
         end if
         call pmf_core_lf_update_step
-        call pmf_core_lf_force(tmp_a,tmp_b,tmp_c,epot,epmf)
+        call pmf_core_lf_force(tmp_a,tmp_b,tmp_c,epot,ekin,epmf)
     end if
 
     ! update data
-    call pmf_sander_scatter_array_mpi(tmp_a,x,atm_owner_map,4)
-    call pmf_sander_scatter_array_mpi(tmp_b,v,atm_owner_map,5)
     call pmf_sander_scatter_array_mpi(tmp_c,f,atm_owner_map,6)
 
     ! broadcast MD exit status

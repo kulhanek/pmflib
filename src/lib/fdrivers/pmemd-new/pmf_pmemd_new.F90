@@ -348,7 +348,7 @@ end subroutine pmf_pmemd_update_box
 ! subroutine pmf_pmemd_force
 !===============================================================================
 
-subroutine pmf_pmemd_force(x,v,f,epot,epmf)
+subroutine pmf_pmemd_force(x,v,f,epot,ekin,epmf)
 
     use pmf_sizes
     use pmf_core_lf
@@ -356,18 +356,19 @@ subroutine pmf_pmemd_force(x,v,f,epot,epmf)
     use pmf_timers
 
     implicit none
-    real(PMFDP)    :: x(:,:)
-    real(PMFDP)    :: v(:,:)
-    real(PMFDP)    :: f(:,:)
-    real(PMFDP)    :: epot
-    real(PMFDP)    :: epmf
+    real(PMFDP)    :: x(:,:)            ! in
+    real(PMFDP)    :: v(:,:)            ! in
+    real(PMFDP)    :: f(:,:)            ! inout
+    real(PMFDP)    :: epot              ! in
+    real(PMFDP)    :: ekin              ! in
+    real(PMFDP)    :: epmf              ! out
     ! --------------------------------------------------------------------------
 
     if( .not. fmaster ) return
 
     call pmf_timers_start_timer(PMFLIB_TIMER)
     call pmf_core_lf_update_step
-    call pmf_core_lf_force(x,v,f,0.0d0,epot,epmf)
+    call pmf_core_lf_force(x,v,f,epot,ekin,epmf)
     call pmf_timers_stop_timer(PMFLIB_TIMER)
 
 end subroutine pmf_pmemd_force
@@ -407,7 +408,7 @@ end subroutine pmf_pmemd_constraints
 ! subroutine pmf_pmemd_force_mpi
 !===============================================================================
 
-subroutine pmf_pmemd_force_mpi(x,v,f,epot,epmf,atm_owner_map)
+subroutine pmf_pmemd_force_mpi(x,v,f,epot,ekin,epmf,atm_owner_map)
 
     use pmf_sizes
     use pmf_core_lf
@@ -420,12 +421,13 @@ subroutine pmf_pmemd_force_mpi(x,v,f,epot,epmf,atm_owner_map)
 
 INCLUDE 'mpif.h'
 
-    real(PMFDP)    :: x(:,:)
-    real(PMFDP)    :: v(:,:)
-    real(PMFDP)    :: f(:,:)
-    real(PMFDP)    :: epot
-    real(PMFDP)    :: epmf
-    integer        :: atm_owner_map(:) ! atom map among processes
+    real(PMFDP)    :: x(:,:)            ! in
+    real(PMFDP)    :: v(:,:)            ! in
+    real(PMFDP)    :: f(:,:)            ! inout
+    real(PMFDP)    :: epot              ! in
+    real(PMFDP)    :: ekin              ! in
+    real(PMFDP)    :: epmf              ! out
+    integer        :: atm_owner_map(:)  ! in - atom map among processes
     ! ------------------------------------------------------
     integer        :: i, ierr
     ! --------------------------------------------------------------------------
@@ -449,7 +451,7 @@ INCLUDE 'mpif.h'
         end if
 
         call pmf_core_lf_update_step
-        call pmf_core_lf_force(tmp_a,tmp_b,tmp_c,epot,epmf)
+        call pmf_core_lf_force(tmp_a,tmp_b,tmp_c,epot,ekin,epmf)
     end if
 
     ! broadcast MD exit status
