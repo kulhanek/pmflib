@@ -35,7 +35,7 @@
 #include <boost/format.hpp>
 #include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string/classification.hpp>
-// #include <CSTProxy_dG.hpp>
+#include <CSTProxy_dG.hpp>
 
 //------------------------------------------------------------------------------
 
@@ -204,7 +204,7 @@ bool CCSTEnergyIntegrate::Run(void)
 // setup accu, energy proxy, and output FES
     Accu        = CPMFAccumulatorPtr(new CPMFAccumulator);
     FES         = CEnergySurfacePtr(new CEnergySurface);
-    // DerProxy    = CCSTProxy_dG_Ptr(new CCSTProxy_dG);
+    DerProxy    = CCSTProxy_dG_Ptr(new CCSTProxy_dG);
 
     vout << endl;
     vout << format("%02d:Loading CST accumulator: %s")%state%string(CSTAccuName) << endl;
