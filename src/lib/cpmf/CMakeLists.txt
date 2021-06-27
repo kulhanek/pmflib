@@ -19,9 +19,11 @@ SET(CPMF_METHODS_SRC
     # smoothers
         common/smoothers/SmootherGPR.cpp
 
+    # PMF
+        methods/pmf/PMFProxy_dH.cpp
+
     # ABF
         methods/abf/ABFProxy_dG.cpp
-        methods/abf/ABFProxy_dH.cpp
 
     # MTD
         methods/mtd/MTDProxy_dG.cpp
@@ -34,7 +36,6 @@ SET(CPMF_METHODS_SRC
 
     # CST
         methods/cst/CSTProxy_dG.cpp
-        methods/cst/CSTProxy_dH.cpp
 
     # STM
         methods/stm/spline.cpp

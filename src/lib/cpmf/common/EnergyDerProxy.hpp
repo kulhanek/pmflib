@@ -22,6 +22,7 @@
 
 #include <PMFMainHeader.hpp>
 #include <EnergyProxy.hpp>
+#include <vector>
 
 //------------------------------------------------------------------------------
 
@@ -53,9 +54,9 @@ public:
 
 // protected data --------------------------------------------------------------
 protected:
-    CSmallString        Require;
-    CSmallString        Provide;
-    CPMFAccumulatorPtr  Accu;
+    std::vector<std::string>    Requires;
+    CSmallString                Provide;
+    CPMFAccumulatorPtr          Accu;
 };
 
 //------------------------------------------------------------------------------

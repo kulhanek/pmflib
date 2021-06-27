@@ -20,7 +20,7 @@
 
 #include <math.h>
 #include <errno.h>
-#include "ABFEnthalpy.hpp"
+#include "Enthalpy.hpp"
 #include <ErrorSystem.hpp>
 #include <SmallTimeAndDate.hpp>
 #include <boost/format.hpp>
@@ -28,7 +28,7 @@
 #include <boost/algorithm/string/classification.hpp>
 #include <ESPrinter.hpp>
 #include <iomanip>
-#include <ABFProxy_dH.hpp>
+#include <PMFProxy_dH.hpp>
 
 //------------------------------------------------------------------------------
 
@@ -38,13 +38,13 @@ using namespace boost::algorithm;
 
 //------------------------------------------------------------------------------
 
-MAIN_ENTRY(CABFEnthalpy)
+MAIN_ENTRY(CEnthalpy)
 
 //==============================================================================
 //------------------------------------------------------------------------------
 //==============================================================================
 
-CABFEnthalpy::CABFEnthalpy(void)
+CEnthalpy::CEnthalpy(void)
 {
     State = 1;
 }
@@ -53,9 +53,9 @@ CABFEnthalpy::CABFEnthalpy(void)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-int CABFEnthalpy::Init(int argc,char* argv[])
+int CEnthalpy::Init(int argc,char* argv[])
 {
-// encode program options, all check procedures are done inside of CABFIntOpts
+// encode program options, all check procedures are done inside of CIntOpts
     int result = Options.ParseCmdLine(argc,argv);
 
 // should we exit or was it error?
@@ -69,7 +69,7 @@ int CABFEnthalpy::Init(int argc,char* argv[])
         vout.Verbosity(CVerboseStr::high);
     }
 
-    ABFAccuName = Options.GetProgArg(0);
+    AccuName = Options.GetProgArg(0);
     HEOutputName = Options.GetProgArg(1);
 
     CSmallTimeAndDate dt;
@@ -77,14 +77,14 @@ int CABFEnthalpy::Init(int argc,char* argv[])
 
     vout << endl;
     vout << "# ==============================================================================" << endl;
-    vout << "# abf-enthalpy (PMFLib utility)  started at " << dt.GetSDateAndTime() << endl;
+    vout << "# pmf-enthalpy (PMFLib utility)  started at " << dt.GetSDateAndTime() << endl;
     vout << "# Version: " << LibBuildVersion_PMF << endl;
     vout << "# ==============================================================================" << endl;
 
-    if(ABFAccuName != "-") {
-        vout << "# ABF accumulator file (in) : " << ABFAccuName << endl;
+    if(AccuName != "-") {
+        vout << "#  accumulator file (in) : " << AccuName << endl;
     } else {
-        vout << "# ABF accumulator file (in) : - (standard input)" << endl;
+        vout << "#  accumulator file (in) : - (standard input)" << endl;
     }
     if(HEOutputName != "-") {
         vout << "# Enthalpy file (out)       : " << HEOutputName << endl;
@@ -93,7 +93,7 @@ int CABFEnthalpy::Init(int argc,char* argv[])
     }
     vout << "# ------------------------------------------------" << endl;
     if(Options.GetOptMethod() == "raw" ) {
-        vout << "# Method                    :     RAW (raw data from ABF accumulator)" << endl;
+        vout << "# Method                    :     RAW (raw data from  accumulator)" << endl;
     } else if( Options.GetOptMethod() == "gpr" ) {
         vout << "# Method                    :     GPR (gaussian process filtered data)" << endl;
     } else {
@@ -114,7 +114,7 @@ int CABFEnthalpy::Init(int argc,char* argv[])
     vout << endl;
 
     // open files -----------------------------------
-    if( InputFile.Open(Options.GetArgABFAccuName(),"r") == false ){
+    if( InputFile.Open(Options.GetArgAccuName(),"r") == false ){
         ES_ERROR("unable to open input file");
         return(SO_USER_ERROR);
     }
@@ -130,7 +130,7 @@ int CABFEnthalpy::Init(int argc,char* argv[])
 //------------------------------------------------------------------------------
 //==============================================================================
 
-bool CABFEnthalpy::Run(void)
+bool CEnthalpy::Run(void)
 {
 // load accumulator
     State = 1;
@@ -139,15 +139,15 @@ bool CABFEnthalpy::Run(void)
 // setup accu, energy proxy, and output FES
     Accu        = CPMFAccumulatorPtr(new CPMFAccumulator);
     HES         = CEnergySurfacePtr(new CEnergySurface);
-    EneProxy    = CABFProxy_dH_Ptr(new CABFProxy_dH);
+    EneProxy    = CPMFProxy_dH_Ptr(new CPMFProxy_dH);
 
     vout << endl;
-    vout << format("%02d:Loading ABF accumulator: %s")%State%string(ABFAccuName) << endl;
+    vout << format("%02d:Loading  accumulator: %s")%State%string(AccuName) << endl;
     State++;
     try {
         Accu->Load(InputFile);
     } catch(...) {
-        ES_ERROR("unable to load the input ABF accumulator file");
+        ES_ERROR("unable to load the input  accumulator file");
         return(false);
     }
     vout << "   Done." << endl;
@@ -164,14 +164,14 @@ bool CABFEnthalpy::Run(void)
     HES->SetSLevel(Options.GetOptSLevel());
 
     vout << endl;
-    vout << format("%02d:Statistics of input ABF accumulator")%State << endl;
+    vout << format("%02d:Statistics of input  accumulator")%State << endl;
     State++;
     PrintSampledStat();
     vout << "   Done." << endl;
 
 // sampling limit -------------------------------
     vout << endl;
-    vout << format("%02d:Preparing ABF accumulator for analysis (sampling limit)")%State << endl;
+    vout << format("%02d:Preparing  accumulator for analysis (sampling limit)")%State << endl;
     State++;
     PrepareAccumulatorI();
     PrintSampledStat();
@@ -247,7 +247,7 @@ bool CABFEnthalpy::Run(void)
 
 //------------------------------------------------------------------------------
 
-void CABFEnthalpy::LoadGPRHyprms(CSmootherGPR& gpr)
+void CEnthalpy::LoadGPRHyprms(CSmootherGPR& gpr)
 {
     ifstream fin;
     fin.open(Options.GetOptLoadHyprms());
@@ -304,7 +304,7 @@ void CABFEnthalpy::LoadGPRHyprms(CSmootherGPR& gpr)
 
 //------------------------------------------------------------------------------
 
-void CABFEnthalpy::GetRawEnthalpy(void)
+void CEnthalpy::GetRawEnthalpy(void)
 {
     for(int ibin=0; ibin < Accu->GetNumOfBins(); ibin++){
         int    nsamples = EneProxy->GetNumOfSamples(ibin);
@@ -319,7 +319,7 @@ void CABFEnthalpy::GetRawEnthalpy(void)
 
 //------------------------------------------------------------------------------
 
-bool CABFEnthalpy::PrintHES(void)
+bool CEnthalpy::PrintHES(void)
 {
     vout << endl;
     vout << format("%02d:Writing results to file: %s")%State%string(HEOutputName) << endl;
@@ -366,7 +366,7 @@ bool CABFEnthalpy::PrintHES(void)
 
 //------------------------------------------------------------------------------
 
-void CABFEnthalpy::WriteHeader(void)
+void CEnthalpy::WriteHeader(void)
 {
     if((Options.GetOptNoHeader() == false) && (Options.GetOptOutputFormat() != "fes")) {
         Options.PrintOptions(OutputFile);
@@ -379,7 +379,7 @@ void CABFEnthalpy::WriteHeader(void)
 // this part performs following tasks:
 //    a) bins with number of samples <= limit will be set to zero
 
-void CABFEnthalpy::PrepareAccumulatorI(void)
+void CEnthalpy::PrepareAccumulatorI(void)
 {
     for(int ibin=0; ibin < Accu->GetNumOfBins(); ibin++) {
         // erase datapoints not properly sampled, preserve glueing
@@ -391,7 +391,7 @@ void CABFEnthalpy::PrepareAccumulatorI(void)
 
 //------------------------------------------------------------------------------
 
-void CABFEnthalpy::PrintSampledStat(void)
+void CEnthalpy::PrintSampledStat(void)
 {
     // calculate sampled area
     double maxbins = Accu->GetNumOfBins();
@@ -435,7 +435,7 @@ void CABFEnthalpy::PrintSampledStat(void)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void CABFEnthalpy::Finalize(void)
+void CEnthalpy::Finalize(void)
 {
     // close files if they are own by program
     InputFile.Close();
@@ -446,7 +446,7 @@ void CABFEnthalpy::Finalize(void)
 
     vout << endl;
     vout << "# ==============================================================================" << endl;
-    vout << "# abf-enthalpy terminated at " << dt.GetSDateAndTime() << endl;
+    vout << "# pmf-enthalpy terminated at " << dt.GetSDateAndTime() << endl;
     vout << "# ==============================================================================" << endl;
 
     if( ErrorSystem.IsError() || Options.GetOptVerbose() ){

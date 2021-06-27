@@ -32,7 +32,7 @@ using namespace std;
 
 CABPProxy_dG::CABPProxy_dG(void)
 {
-    Require = "ABP";
+    Requires.push_back("ABP");
     Provide = "ABP dG(x)";
 }
 

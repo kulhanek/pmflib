@@ -30,7 +30,7 @@ using namespace std;
 
 CABFProxy_dG::CABFProxy_dG(void)
 {
-    Require = "ABF";
+    Requires.push_back("ABF");
     Provide = "ABF dG(x)";
 }
 

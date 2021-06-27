@@ -18,20 +18,20 @@
 //     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 // =============================================================================
 
-#include "ABFEnthalpyOptions.hpp"
+#include "EnthalpyOptions.hpp"
 
 //==============================================================================
 //------------------------------------------------------------------------------
 //==============================================================================
 
-CABFEnthalpyOptions::CABFEnthalpyOptions(void)
+CEnthalpyOptions::CEnthalpyOptions(void)
 {
     SetShowMiniUsage(true);
 }
 
 //------------------------------------------------------------------------------
 
-int CABFEnthalpyOptions::CheckOptions(void)
+int CEnthalpyOptions::CheckOptions(void)
 {
 // limit has to be grater than 0
     if(GetOptLimit() < 0) {
@@ -54,7 +54,7 @@ int CABFEnthalpyOptions::CheckOptions(void)
 
 //------------------------------------------------------------------------------
 
-int CABFEnthalpyOptions::FinalizeOptions(void)
+int CEnthalpyOptions::FinalizeOptions(void)
 {
     bool ret_opt = false;
 

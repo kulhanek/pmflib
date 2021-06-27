@@ -20,9 +20,11 @@ ADD_SUBDIRECTORY(accu-info)
 ADD_SUBDIRECTORY(accu-combine)
 ADD_SUBDIRECTORY(accu-trajectory)
 
+# common utilities
+ADD_SUBDIRECTORY(pmf-enthalpy)
+
 # ABF utilities
 ADD_SUBDIRECTORY(abf-integrate)
-ADD_SUBDIRECTORY(abf-enthalpy)
 
 # MTD utilities
 ADD_SUBDIRECTORY(mtd-energy)

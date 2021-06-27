@@ -18,7 +18,7 @@
 //     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 // =============================================================================
 
-#include <CSTProxy_dH.hpp>
+#include <PMFProxy_dH.hpp>
 
 //------------------------------------------------------------------------------
 
@@ -28,16 +28,17 @@ using namespace std;
 //------------------------------------------------------------------------------
 //==============================================================================
 
-CCSTProxy_dH::CCSTProxy_dH(void)
+CPMFProxy_dH::CPMFProxy_dH(void)
 {
-    Require = "CST";
-    Provide = "CST dH(x)";
+    Requires.push_back("ABF");
+    Requires.push_back("CST");
+    Provide = "PMF dH(x)";
     NCorr = 1.0;
 }
 
 //------------------------------------------------------------------------------
 
-CCSTProxy_dH::~CCSTProxy_dH(void)
+CPMFProxy_dH::~CPMFProxy_dH(void)
 {
 }
 
@@ -45,7 +46,7 @@ CCSTProxy_dH::~CCSTProxy_dH(void)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-int CCSTProxy_dH::GetNumOfSamples(int ibin) const
+int CPMFProxy_dH::GetNumOfSamples(int ibin) const
 {
     if( Accu == NULL ){
         RUNTIME_ERROR("Accu is NULL");
@@ -55,7 +56,7 @@ int CCSTProxy_dH::GetNumOfSamples(int ibin) const
 
 //------------------------------------------------------------------------------
 
-void CCSTProxy_dH::SetNumOfSamples(int ibin,int nsamples)
+void CPMFProxy_dH::SetNumOfSamples(int ibin,int nsamples)
 {
     if( Accu == NULL ){
         RUNTIME_ERROR("Accu is NULL");
@@ -64,7 +65,7 @@ void CCSTProxy_dH::SetNumOfSamples(int ibin,int nsamples)
 
 //------------------------------------------------------------------------------
 
-double CCSTProxy_dH::GetValue( int ibin,EProxyRealm realm) const
+double CPMFProxy_dH::GetValue( int ibin,EProxyRealm realm) const
 {
     if( Accu == NULL ){
         RUNTIME_ERROR("Accu is NULL");
@@ -98,7 +99,7 @@ double CCSTProxy_dH::GetValue( int ibin,EProxyRealm realm) const
 
 //------------------------------------------------------------------------------
 
-void CCSTProxy_dH::SetNCorr(double ncorr)
+void CPMFProxy_dH::SetNCorr(double ncorr)
 {
     NCorr  = ncorr;
 }

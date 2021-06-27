@@ -30,7 +30,7 @@ using namespace std;
 
 CCSTProxy_dG::CCSTProxy_dG(void)
 {
-    Require = "CST";
+    Requires.push_back("CST");
     Provide = "CST dG(x)";
 }
 

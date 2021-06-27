@@ -1,9 +1,9 @@
-#ifndef ABFProxy_dH_H
-#define ABFProxy_dH_H
+#ifndef CEnthalpyH
+#define CEnthalpyH
 // =============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
-//    Copyright (C) 2021 Petr Kulhanek, kulhanek@chemi.muni.cz
+//    Copyright (C) 2008 Petr Kulhanek, kulhanek@enzim.hu
 //
 //     This program is free software; you can redistribute it and/or modify
 //     it under the terms of the GNU General Public License as published by
@@ -20,41 +20,58 @@
 //     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 // =============================================================================
 
-#include <PMFMainHeader.hpp>
+#include "EnthalpyOptions.hpp"
+#include <SimpleVector.hpp>
+#include <VerboseStr.hpp>
+#include <TerminalStr.hpp>
+#include <StdIOFile.hpp>
+#include <PMFAccumulator.hpp>
+#include <EnergySurface.hpp>
 #include <EnergyProxy.hpp>
+#include <SmootherGPR.hpp>
 
 //------------------------------------------------------------------------------
 
-/** \brief ABF proxy providing enthalpy
-*/
+/// utility to extract enthalpy from  accumulator
 
-class PMF_PACKAGE CABFProxy_dH : public CEnergyProxy {
+class CEnthalpy {
 public:
-// constructor and destructor --------------------------------------------------
-    CABFProxy_dH(void);
-    ~CABFProxy_dH(void);
+    CEnthalpy(void);
 
-//------------------------------------------------------------------------------
-    // get number of samples
-    virtual int GetNumOfSamples(int ibin) const;
+// main methods ---------------------------------------------------------------
+    /// init options
+    int Init(int argc,char* argv[]);
 
-    // set number of samples
-    virtual void SetNumOfSamples(int ibin,int nsamples);
+    /// main part of program
+    bool Run(void);
 
-    // get energy derivative and its error
-    virtual double GetValue( int ibin,EProxyRealm realm) const;
-
-    // set NCorr
-    virtual void SetNCorr(double ncorr);
+    /// finalize program
+    void Finalize(void);
 
 // section of private data ----------------------------------------------------
 private:
-    double  NCorr;
+    CEnthalpyOptions        Options;
+    CStdIOFile              InputFile;
+    CStdIOFile              OutputFile;
+    CPMFAccumulatorPtr      Accu;
+    CEnergyProxyPtr         EneProxy;
+    CEnergySurfacePtr       HES;
+    int                     State;
+    CSmallString            AccuName;
+    CSmallString            HEOutputName;
+
+    // output ------------------------------------
+    CTerminalStr        Console;
+    CVerboseStr         vout;
+
+    /// helper methods
+    void GetRawEnthalpy(void);
+    void LoadGPRHyprms(CSmootherGPR& gpr);
+    bool PrintHES(void);
+    void WriteHeader(void);
+    void PrepareAccumulatorI(void);
+    void PrintSampledStat(void);
 };
-
-//------------------------------------------------------------------------------
-
-typedef std::shared_ptr<CABFProxy_dH>    CABFProxy_dH_Ptr;
 
 //------------------------------------------------------------------------------
 

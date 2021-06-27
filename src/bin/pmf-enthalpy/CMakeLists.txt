@@ -3,19 +3,19 @@
 # ==============================================================================
 
 # program objects --------------------------------------------------------------
-SET(ABF_ENTHALPY_SRC
-        ABFEnthalpy.cpp
-        ABFEnthalpyOptions.cpp
+SET(ENTHALPY_SRC
+        Enthalpy.cpp
+        EnthalpyOptions.cpp
         )
 
 # final build ------------------------------------------------------------------
-ADD_EXECUTABLE(abf-enthalpy ${ABF_ENTHALPY_SRC})
-ADD_DEPENDENCIES(abf-enthalpy cpmf_shared)
+ADD_EXECUTABLE(pmf-enthalpy ${ENTHALPY_SRC})
+ADD_DEPENDENCIES(pmf-enthalpy cpmf_shared)
 
-TARGET_LINK_LIBRARIES(abf-enthalpy  ${CPMF_LIBRARIES})
+TARGET_LINK_LIBRARIES(pmf-enthalpy  ${CPMF_LIBRARIES})
 
 INSTALL(TARGETS
-            abf-enthalpy
+            pmf-enthalpy
         RUNTIME DESTINATION
             bin
         )

@@ -1,5 +1,5 @@
-#ifndef ABFEnthalpyOptionsH
-#define ABFEnthalpyOptionsH
+#ifndef EnthalpyOptionsH
+#define EnthalpyOptionsH
 // =============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
@@ -25,18 +25,18 @@
 
 //------------------------------------------------------------------------------
 
-class CABFEnthalpyOptions : public CSimpleOptions {
+class CEnthalpyOptions : public CSimpleOptions {
 public:
     // constructor - tune option setup
-    CABFEnthalpyOptions(void);
+    CEnthalpyOptions(void);
 
 // program name and description -----------------------------------------------
     CSO_PROG_NAME_BEGIN
-    "abf-enthalpy"
+    "pmf-enthalpy"
     CSO_PROG_NAME_END
 
     CSO_PROG_DESC_BEGIN
-    "The program provides enthalpy from the ABF accumulator."
+    "The program provides enthalpy from the PMF accumulator."
     CSO_PROG_DESC_END
 
     CSO_PROG_VERS_BEGIN
@@ -46,7 +46,7 @@ public:
 // list of all options and arguments ------------------------------------------
     CSO_LIST_BEGIN
     // arguments ----------------------------
-    CSO_ARG(CSmallString,ABFAccuName)
+    CSO_ARG(CSmallString,AccuName)
     CSO_ARG(CSmallString,OutputName)
     // options ------------------------------
     CSO_OPT(CSmallString,Method)
@@ -76,11 +76,11 @@ public:
     CSO_MAP_BEGIN
 // description of arguments ---------------------------------------------------
     CSO_MAP_ARG(CSmallString,                   /* argument type */
-                ABFAccuName,                          /* argument name */
+                AccuName,                          /* argument name */
                 NULL,                           /* default value */
                 true,                           /* is argument mandatory */
                 "accuname",                        /* parameter name */
-                "Name of file containing the ABF accumulator. If the name is '-' then the accumulator is read from the standard input.")   /* argument description */
+                "Name of file containing the PMF accumulator. If the name is '-' then the accumulator is read from the standard input.")   /* argument description */
     //----------------------------------------------------------------------
     CSO_MAP_ARG(CSmallString,                   /* argument type */
                 OutputName,                          /* argument name */
@@ -96,7 +96,7 @@ public:
                 'm',                           /* short option name */
                 "method",                      /* long option name */
                 "NAME",                           /* parametr name */
-                "Supported methods are: raw (data taken directly from ABF accumulator) and gpr (gaussian process filtered data).")   /* option description */
+                "Supported methods are: raw (data taken directly from  accumulator) and gpr (gaussian process filtered data).")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(bool,                           /* option type */
                 Absolute,                        /* option name */
@@ -123,7 +123,7 @@ public:
                 'e',                           /* short option name */
                 "witherror",                      /* long option name */
                 NULL,                           /* parametr name */
-                "GPR: Estimate free energy errors. RAW: Print free energy errors from ABF accumulator.")   /* option description */
+                "GPR: Estimate enthalpy errors from the GPR model. RAW: Print enthalpy errors from the PMF accumulator.")   /* option description */
    //----------------------------------------------------------------------
     CSO_MAP_OPT(CSmallString,                           /* option type */
                 GPRKernel,                        /* option name */
@@ -141,7 +141,7 @@ public:
                 's',                           /* short option name */
                 "sigmaf2",                      /* long option name */
                 "NUMBER",                           /* parametr name */
-                "GPR: Variance of the reconstructed free energy surface (signal variance).")   /* option description */
+                "GPR: Variance of the reconstructed enthalpy surface (signal variance).")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(double,                           /* option type */
                 NCorr,                        /* option name */
@@ -170,7 +170,7 @@ public:
                 0,                           /* short option name */
                 "loadhyprms",                      /* long option name */
                 "NAME",                           /* parametr name */
-                "GPR: Name of file with GPR hyperparameters.")   /* option description */
+                "GPR: Name of file with the GPR hyperparameters.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(double,                           /* option type */
                 SLevel,                        /* option name */
@@ -206,7 +206,7 @@ public:
                 0,                           /* short option name */
                 "output",                      /* long option name */
                 "FORMAT",                           /* parametr name */
-                "Output FORMAT to print the free energy surface. Supported formats are: plain and gnuplot.")   /* option description */
+                "Output FORMAT to print the enthalpy surface. Supported formats are: plain and gnuplot.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(bool,                           /* option type */
                 NoHeader,                        /* option name */

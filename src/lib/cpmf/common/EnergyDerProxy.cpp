@@ -19,10 +19,13 @@
 // =============================================================================
 
 #include <EnergyDerProxy.hpp>
+#include <algorithm>
+#include <boost/algorithm/string/join.hpp>
 
 //------------------------------------------------------------------------------
 
 using namespace std;
+using namespace boost;
 
 //==============================================================================
 //------------------------------------------------------------------------------
@@ -30,7 +33,6 @@ using namespace std;
 
 CEnergyDerProxy::CEnergyDerProxy(void)
 {
-    Require = "NONE";
     Provide = "NONE";
 }
 
@@ -47,9 +49,9 @@ CEnergyDerProxy::~CEnergyDerProxy(void)
 
 void CEnergyDerProxy::Init(CPMFAccumulatorPtr accu)
 {
-    if( Require != accu->GetMethod() ){
+    if( std::find(Requires.begin(),Requires.end(),string(accu->GetMethod())) == Requires.end() ) {
         CSmallString error;
-        error << "PMF accumulator '" << accu->GetMethod() << "' is inconsistent with EnergyDerProxy requirements '" << Require << "'";
+        error << "PMF accumulator '" << accu->GetMethod() << "' is inconsistent with EnergyProxy requirements '" << join(Requires,",") << "'";
         RUNTIME_ERROR(error)
     }
     Accu = accu;
