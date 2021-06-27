@@ -125,7 +125,8 @@ subroutine cst_constraints_read_con(prm_fin,cst_item)
             call pmf_utils_exit(PMF_OUT,1,'value_at_bin out-of-range!')
         end if
         cst_item%ibin  = ibin
-        cst_item%value = (real(ibin,PMFDP)-0.5d0)*(cst_item%max_value -  cst_item%min_value)/real(cst_item%nbins)
+        cst_item%value = (real(ibin,PMFDP)-0.5d0)*(cst_item%max_value -  cst_item%min_value)/real(cst_item%nbins) &
+                       + cst_item%min_value
         write(PMF_OUT,91) cst_item%cv%get_rvalue(cst_item%value), trim(cst_item%cv%get_ulabel()), ibin
         cst_item%value_set = .true.
     else
@@ -143,7 +144,8 @@ subroutine cst_constraints_read_con(prm_fin,cst_item)
         call cst_item%cv%conv_to_ivalue(cst_item%stopvalue)
     else if( prmfile_get_integer_by_key(prm_fin,'change_to_bin',ibin) ) then
         cst_item%mode = 'V'
-        cst_item%stopvalue = (real(ibin,PMFDP)-0.5d0)*(cst_item%max_value -  cst_item%min_value)/real(cst_item%nbins)
+        cst_item%stopvalue = (real(ibin,PMFDP)-0.5d0)*(cst_item%max_value -  cst_item%min_value)/real(cst_item%nbins) &
+                           + cst_item%min_value
         write(PMF_OUT,101) cst_item%cv%get_rvalue(cst_item%stopvalue), trim(cst_item%cv%get_ulabel()), ibin
     end if
 
