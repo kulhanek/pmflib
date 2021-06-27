@@ -209,7 +209,7 @@ void CPMFAccumulator::Combine(CPMFAccumulatorPtr right)
 
     while( it != ie ){
         CPMFAccuDataPtr ldb = it->second;
-        CPMFAccuDataPtr rdb = GetSectionData(it->first);
+        CPMFAccuDataPtr rdb = right->GetSectionData(it->first);
         if( ldb->CheckCompatibility(rdb) == false ){
             CSmallString error;
             error <<  "two data sections are not compatible, name: " << it->first;

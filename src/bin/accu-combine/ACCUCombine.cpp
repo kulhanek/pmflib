@@ -92,7 +92,7 @@ bool CACCUCombine::Run(void)
     vout << format("%02d:Loading input PMF accumulators ...")%state << endl;
     try {
         for(int i=0; i < Options.GetNumberOfProgArgs() - 1; i++){
-            vout << format("  >> %03d %s")%state%string(Options.GetProgArg(i)) << endl;
+            vout << format("  >> %03d %s")%(i+1)%string(Options.GetProgArg(i)) << endl;
             CPMFAccumulatorPtr inaccu = CPMFAccumulatorPtr(new CPMFAccumulator);
             inaccu->Load(Options.GetProgArg(i));
             InAccus.push_back(inaccu);
