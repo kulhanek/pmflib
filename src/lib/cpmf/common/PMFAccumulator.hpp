@@ -30,6 +30,11 @@
 
 //------------------------------------------------------------------------------
 
+class CPMFAccuData;
+typedef std::shared_ptr<CPMFAccuData>       CPMFAccuDataPtr;
+
+//------------------------------------------------------------------------------
+
 /** \brief PMF accumulator data segment
 */
 
@@ -47,6 +52,9 @@ public:
 // setup methods ---------------------------------------------------------------
     // reset data to zero
     void Reset(void);
+
+    /// is compatible with other section data?
+    bool CheckCompatibility(CPMFAccuDataPtr right);
 
 // access methods --------------------------------------------------------------
     // get data section name
@@ -91,7 +99,10 @@ private:
     CSimpleVector<double>   Data;       // all data are kept as real numbers
 };
 
-typedef std::shared_ptr<CPMFAccuData>    CPMFAccuDataPtr;
+//------------------------------------------------------------------------------
+
+class CPMFAccumulator;
+typedef std::shared_ptr<CPMFAccumulator>    CPMFAccumulatorPtr;
 
 //------------------------------------------------------------------------------
 
@@ -119,6 +130,9 @@ public:
 
     /// load accumulator data from trajectory file
     void LoadSnapshot(FILE* fin,int index);
+
+    /// combine accumulator data from other accumulator to existing data
+    void Combine(CPMFAccumulatorPtr right);
 
     /// combine accumulator data from XML to existing data
     void Combine(CXMLElement* p_ele);
@@ -183,7 +197,13 @@ public:
     void GetIPoint(unsigned int index,CSimpleVector<int>& point) const;
 
     /// get temperature in iu
-    double GetTemperature(void);
+    double GetTemperature(void) const;
+
+    /// get temperature in unit
+    double GetRealTemperature(void) const;
+
+    /// get temperature unit
+    const CSmallString& GetTemperatureUnit(void) const;
 
     /// get energy conversion factor to given unit
     double GetEnergyFConv(void);
@@ -219,7 +239,7 @@ public:
     bool CheckCVSInfo(CXMLElement* p_iele) const;
 
     /// check cv info between two accumulators
-    bool CheckCVSInfo(const CPMFAccumulator* p_accu) const;
+    bool CheckCVSInfo(CPMFAccumulatorPtr p_accu) const;
 
     /// save cvs info
     void SaveCVSInfo(CXMLElement* p_tele) const;
@@ -281,8 +301,6 @@ protected:
     /// read section data
     void ReadDataSection(FILE* fin,const CSmallString& keyline);
 };
-
-typedef std::shared_ptr<CPMFAccumulator>    CPMFAccumulatorPtr;
 
 //------------------------------------------------------------------------------
 

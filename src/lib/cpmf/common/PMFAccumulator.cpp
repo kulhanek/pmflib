@@ -26,10 +26,12 @@
 #include <XMLElement.hpp>
 #include <XMLBinData.hpp>
 #include <iomanip>
+#include <boost/format.hpp>
 
 //------------------------------------------------------------------------------
 
 using namespace std;
+using namespace boost;
 
 //==============================================================================
 //------------------------------------------------------------------------------
@@ -110,14 +112,201 @@ void CPMFAccumulator::Load(CXMLElement* p_ele)
 
 void CPMFAccumulator::LoadSnapshot(const CSmallString& name,int index)
 {
-    // FIXME
+    FILE* fin = fopen(name, "r");
+
+    if(fin == NULL) {
+        CSmallString error;
+        error << "unable to open file '" << name << "' (" << strerror(errno) << ")";
+        RUNTIME_ERROR(error);
+    }
+
+    try {
+        LoadSnapshot(fin,index);
+    } catch(...) {
+        fclose(fin);
+        throw;
+    }
+
+    fclose(fin);
 }
 
 //------------------------------------------------------------------------------
 
 void CPMFAccumulator::LoadSnapshot(FILE* fin,int index)
 {
-    // FIXME
+    CSmallString   line;
+
+    if( line.ReadLineFromFile(fin,true,true) == false ) {
+        RUNTIME_ERROR("unable to read first line from input stream");
+    }
+
+    if( line != "#ACCUTRAJ" ) {
+        RUNTIME_ERROR("input file is not PMF accumulator trajectory file");
+    }
+
+// move to requested position
+    int     position    = 0;
+    bool    found       = false;
+
+    while( line.ReadLineFromFile(fin,true,true) ) {
+        if( line.FindSubString("#ACCUSNAP") == 0 ) {
+            position++;
+            if(position == index) {
+                found = true;
+                break;
+            }
+        }
+    }
+
+    if( found == false ){
+        CSmallString error;
+        error << "PMF accumulator trajectory contains less snapshots than " << index;
+        RUNTIME_ERROR(error);
+    }
+
+// read accumulator
+    Load(fin);
+}
+
+//------------------------------------------------------------------------------
+
+void CPMFAccumulator::Combine(CPMFAccumulatorPtr right)
+{
+// methods must be the same
+    if( GetMethod() != right->GetMethod() ){
+        CSmallString   error;
+        error << "two PMF accumulators are not compatible (methods): " << GetMethod() << " vs " << right->GetMethod();
+        RUNTIME_ERROR(error);
+    }
+
+// temperature must be the same
+    if( fabs(GetTemperature() - right->GetTemperature()) > 0.1 ){
+        stringstream serror;
+        serror << format("two PMF accumulators are not compatible (temperature): %6.2lf %s vs %6.2lf %s")
+                  %GetRealTemperature()%GetTemperatureUnit()
+                  %right->GetRealTemperature()%right->GetTemperatureUnit() << endl;
+        RUNTIME_ERROR(serror.str());
+    }
+
+// do not check for
+// DRIVER
+// VERSION
+
+// size must be consistent
+    if( CheckCVSInfo(right) == false ){
+        RUNTIME_ERROR("two PMF accumulators are not size consistent");
+    }
+
+// combine data blocks
+    if( DataBlocks.size() != right->DataBlocks.size() ){
+        CSmallString   error;
+        error << "two PMF accumulators are not compatible (number of data sections): " << DataBlocks.size()  << " vs " << right->DataBlocks.size();
+        RUNTIME_ERROR(error);
+    }
+
+    std::map<CSmallString,CPMFAccuDataPtr>::iterator  it = DataBlocks.begin();
+    std::map<CSmallString,CPMFAccuDataPtr>::iterator  ie = DataBlocks.end();
+
+    while( it != ie ){
+        CPMFAccuDataPtr ldb = it->second;
+        CPMFAccuDataPtr rdb = GetSectionData(it->first);
+        if( ldb->CheckCompatibility(rdb) == false ){
+            CSmallString error;
+            error <<  "two data sections are not compatible, name: " << it->first;
+            RUNTIME_ERROR(error);
+        }
+    // add
+        if( ldb->GetOp() == "AD" ){
+            if( ldb->GetMode() == "B" ){
+                for(int ibin=0; ibin < ldb->GetNumOfBins(); ibin++){
+                    double ld = ldb->GetData(ibin);
+                    double rd = rdb->GetData(ibin);
+                    double re = ld + rd;
+                    ldb->SetData(ibin,re);
+                }
+            } else if( ldb->GetMode() == "M" ) {
+                for(int icv=0; icv < ldb->GetNumOfCVs(); icv++){
+                    for(int ibin=0; ibin < ldb->GetNumOfBins(); ibin++){
+                        double ld = ldb->GetData(ibin,icv);
+                        double rd = rdb->GetData(ibin,icv);
+                        double re = ld + rd;
+                        ldb->SetData(ibin,icv,re);
+                    }
+                }
+            } else if( ldb->GetMode() == "C" ) {
+                for(int icv=0; icv < ldb->GetNumOfBins(); icv++){
+                    double ld = ldb->GetData(0,icv);
+                    double rd = rdb->GetData(0,icv);
+                    double re = ld + rd;
+                    ldb->SetData(0,icv,re);
+                }
+            } else {
+                CSmallString error;
+                error <<  "unsupported mode for data section, name: " << it->first << ", mode: " << ldb->GetMode();
+                RUNTIME_ERROR(error);
+            }
+    // weighted average
+        } else if( ldb->GetOp() == "WA" ){
+            // we need two NSAMPLES blocks
+            CPMFAccuDataPtr lns = GetSectionData("NSAMPLES");
+            if( lns == NULL ){
+                CSmallString error;
+                error <<  "left NSAMPLES is required for WA operation, data section name: " << it->first;
+                RUNTIME_ERROR(error);
+            }
+            CPMFAccuDataPtr rns = right->GetSectionData("NSAMPLES");
+            if( rns == NULL ){
+                CSmallString error;
+                error <<  "right NSAMPLES is required for WA operation, data section name: " << it->first;
+                RUNTIME_ERROR(error);
+            }
+
+            if( ldb->GetMode() == "B" ){
+                for(int ibin=0; ibin < ldb->GetNumOfBins(); ibin++){
+                    double ln = lns->GetData(ibin);
+                    double rn = rns->GetData(ibin);
+                    if( (ln + rn) != 0.0 ) {
+                        double lw = ln / (ln + rn);
+                        double rw = rn / (ln + rn);
+                        double ld = ldb->GetData(ibin);
+                        double rd = rdb->GetData(ibin);
+                        double re = lw*ld + rw*rd;
+                        ldb->SetData(ibin,re);
+                    }
+                }
+            } else if( ldb->GetMode() == "M" ) {
+                for(int icv=0; icv < ldb->GetNumOfCVs(); icv++){
+                    for(int ibin=0; ibin < ldb->GetNumOfBins(); ibin++){
+                        double ln = lns->GetData(ibin);
+                        double rn = rns->GetData(ibin);
+                        if( (ln + rn) != 0.0 ) {
+                            double lw = ln / (ln + rn);
+                            double rw = rn / (ln + rn);
+                            double ld = ldb->GetData(ibin,icv);
+                            double rd = rdb->GetData(ibin,icv);
+                            double re = lw*ld + rw*rd;
+                            ldb->SetData(ibin,icv,re);
+                        }
+                    }
+                }
+            } else if( ldb->GetMode() == "C" ) {
+                CSmallString error;
+                error <<  "WA operation and C mode are unsupported for data section combine operation, name: " << it->first;
+                RUNTIME_ERROR(error);
+            } else {
+                CSmallString error;
+                error <<  "unsupported mode for data section, name: " << it->first << ", mode: " << ldb->GetMode();
+                RUNTIME_ERROR(error);
+            }
+    // unsupported operation
+        } else {
+            CSmallString error;
+            error <<  "unsupported operation for data section, name: " << it->first << ", op: " << ldb->GetOp();
+            RUNTIME_ERROR(error);
+        }
+        it++;
+    }
+
 }
 
 //------------------------------------------------------------------------------
@@ -396,7 +585,7 @@ void CPMFAccumulator::Save(FILE* fout)
     }
 
 // write ABF accumulator header ------------------
-    if(fprintf(fout,"PMFACCU V6 %2d\n",NumOfCVs) <= 0) {
+    if(fprintf(fout,"%%PMFACCU-V6\n%3d\n",NumOfCVs) <= 0) {
         CSmallString error;
         error << "unable to write header";
         RUNTIME_ERROR(error);
@@ -463,6 +652,16 @@ void CPMFAccumulator::Save(FILE* fout)
             RUNTIME_ERROR(error);
         }
     }
+
+// write data section
+    std::map<CSmallString,CPMFAccuDataPtr>::iterator  it = DataBlocks.begin();
+    std::map<CSmallString,CPMFAccuDataPtr>::iterator  ie = DataBlocks.end();
+
+    while( it != ie ){
+        CPMFAccuDataPtr ds = it->second;
+        ds->Save(fout);
+        it++;
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -501,9 +700,23 @@ void CPMFAccumulator::GetIPoint(unsigned int index,CSimpleVector<int>& point) co
 
 //------------------------------------------------------------------------------
 
-double CPMFAccumulator::GetTemperature(void)
+double CPMFAccumulator::GetTemperature(void) const
 {
     return(Temperature);
+}
+
+//------------------------------------------------------------------------------
+
+double CPMFAccumulator::GetRealTemperature(void) const
+{
+    return(Temperature*TemperatureFConv);
+}
+
+//------------------------------------------------------------------------------
+
+const CSmallString& CPMFAccumulator::GetTemperatureUnit(void) const
+{
+    return(TemperatureUnit);
 }
 
 //------------------------------------------------------------------------------
@@ -810,10 +1023,10 @@ bool CPMFAccumulator::CheckCVSInfo(CXMLElement* p_iele) const
 
 //------------------------------------------------------------------------------
 
-bool CPMFAccumulator::CheckCVSInfo(const CPMFAccumulator* p_accu) const
+bool CPMFAccumulator::CheckCVSInfo(CPMFAccumulatorPtr p_accu) const
 {
     if(p_accu == NULL) {
-        INVALID_ARGUMENT("p_iele is NULL");
+        INVALID_ARGUMENT("p_accu is NULL");
     }
 
     if(p_accu->NumOfCVs != NumOfCVs) {
@@ -1056,7 +1269,7 @@ void CPMFAccuData::Load(FILE* p_fin,const CSmallString& keyline)
     Size = 0;
     if( sscanf(keyline,"%21c %2c %1c %1c %d",skey.GetBuffer(),Op.GetBuffer(),Type.GetBuffer(),Mode.GetBuffer(),&Size) != 5 ){
         CSmallString error;
-        error << "Unable to parse keyline: '" << keyline << "'";
+        error << "unable to parse keyline: '" << keyline << "'";
         RUNTIME_ERROR(error);
     }
     if( skey.GetLength() >= 2 ){
@@ -1070,7 +1283,7 @@ void CPMFAccuData::Load(FILE* p_fin,const CSmallString& keyline)
 
     if( Size <= 0 ){
         CSmallString error;
-        error << "Illegal data size for keyline: '" << keyline << "'";
+        error << "illegal data size for keyline: '" << keyline << "'";
         RUNTIME_ERROR(error);
     }
 
@@ -1078,7 +1291,7 @@ void CPMFAccuData::Load(FILE* p_fin,const CSmallString& keyline)
             ((Mode == 'M') && (Size == NumOfBins*NumOfCVs)) ||
             ((Mode == 'C') && (Size == NumOfCVs)) ) ) {
         CSmallString error;
-        error << "Data size and mode is not consistent: '" << keyline << "'";
+        error << "data size and mode is not consistent: '" << keyline << "'";
         RUNTIME_ERROR(error);
     }
 
@@ -1090,7 +1303,7 @@ void CPMFAccuData::Load(FILE* p_fin,const CSmallString& keyline)
             int value;
             if( fscanf(p_fin,"%d",&value) != 1 ){
                 CSmallString error;
-                error << "Unable to read data record for keyline: '" << keyline << "'";
+                error << "unable to read data record for keyline: '" << keyline << "'";
                 RUNTIME_ERROR(error);
             }
             Data[i] = value;
@@ -1100,14 +1313,14 @@ void CPMFAccuData::Load(FILE* p_fin,const CSmallString& keyline)
             double value;
             if( fscanf(p_fin,"%lf",&value) != 1 ){
                 CSmallString error;
-                error << "Unable to read data record for keyline: '" << keyline << "'";
+                error << "unable to read data record for keyline: '" << keyline << "'";
                 RUNTIME_ERROR(error);
             }
             Data[i] = value;
         }
     } else {
         CSmallString error;
-        error << "Unsupported data type for keyline: '" << keyline << "'";
+        error << "unsupported data type for keyline: '" << keyline << "'";
         RUNTIME_ERROR(error);
     }
 
@@ -1117,43 +1330,92 @@ void CPMFAccuData::Load(FILE* p_fin,const CSmallString& keyline)
 
 //------------------------------------------------------------------------------
 
+bool CPMFAccuData::CheckCompatibility(CPMFAccuDataPtr right)
+{
+    if( NumOfBins != right->NumOfBins ){
+        CSmallString   error;
+        error << "two data sections are not compatible (number of bins): " << NumOfBins << " vs " << right->NumOfBins;
+        ES_ERROR(error);
+        return(false);
+    }
+    if( NumOfCVs != right->NumOfCVs ){
+        CSmallString   error;
+        error << "two data sections are not compatible (number of CVs): " << NumOfCVs << " vs " << right->NumOfCVs;
+        ES_ERROR(error);
+        return(false);
+    }
+    if( Name != right->Name ){
+        CSmallString   error;
+        error << "two data sections are not compatible (name): " << Name << " vs " << right->Name;
+        ES_ERROR(error);
+        return(false);
+    }
+    if( Op != right->Op ){
+        CSmallString   error;
+        error << "two data sections are not compatible (op): " << Op << " vs " << right->Op;
+        ES_ERROR(error);
+        return(false);
+    }
+    if( Type != right->Type ){
+        CSmallString   error;
+        error << "two data sections are not compatible (type): " << Type << " vs " << right->Type;
+        ES_ERROR(error);
+        return(false);
+    }
+    if( Mode != right->Mode ){
+        CSmallString   error;
+        error << "two data sections are not compatible (mode): " << Mode << " vs " << right->Mode;
+        ES_ERROR(error);
+        return(false);
+    }
+    if( Size != right->Size ){
+        CSmallString   error;
+        error << "two data sections are not compatible (mode): " << Size << " vs " << right->Size;
+        ES_ERROR(error);
+        return(false);
+    }
+
+    return(true);
+}
+
+//------------------------------------------------------------------------------
+
 void CPMFAccuData::Save(FILE* p_fout)
 {
     // write keyline
     // 5  format('@',A20,1X,A2,1X,A1,1X,A1,1X,I10)
-    if( fprintf(p_fout,"@%20s %2s %1s %1s %10d\n",(const char*)Name,(const char*)Op,(const char*)Type,(const char*)Mode,Size) <= 0 ){
+    if( fprintf(p_fout,"@%-20s %-2s %1s %1s %10d\n",(const char*)Name,(const char*)Op,(const char*)Type,(const char*)Mode,Size) <= 0 ){
         CSmallString error;
-        error << "Unable to write data section keyline";
+        error << "unable to write data section keyline";
         RUNTIME_ERROR(error);
     }
 
     // write data
     if( Type == "I" ){
         for(int i=0; i < Size; i++){
-            if( i % 8 == 7 ) fprintf(p_fout,"\n");
             int value = Data[i];
             // 10  format(8(I9,1X))
             if( fprintf(p_fout,"%9d ",value) <= 0 ){
                 CSmallString error;
-                error << "Unable to write data record";
+                error << "unable to write data record";
                 RUNTIME_ERROR(error);
             }
-
+            if( i % 8 == 7 ) fprintf(p_fout,"\n");
         }
     } else if ( Type == "R" ){
         for(int i=0; i < Size; i++){
-            if( i % 4 == 3 ) fprintf(p_fout,"\n");
             double value = Data[i];
             // 10  format(4(E19.11,1X))
             if( fprintf(p_fout,"%19.11le ",value) <= 0 ){
                 CSmallString error;
-                error << "Unable to write data record";
+                error << "unable to write data record";
                 RUNTIME_ERROR(error);
             }
+            if( i % 4 == 3 ) fprintf(p_fout,"\n");
         }
     } else {
         CSmallString error;
-        error << "Unsupported data type for keyline";
+        error << "unsupported data type for keyline";
         RUNTIME_ERROR(error);
     }
 
