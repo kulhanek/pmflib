@@ -307,7 +307,7 @@ subroutine cst_core_analyze
         end if
     end do
 
-    write(456,*) lambda0(0), etot, epot, ekin, erst
+    write(456,*) lambda0(1), etot, epot, ekin, erst
 
 end subroutine cst_core_analyze
 
