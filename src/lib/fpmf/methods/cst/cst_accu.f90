@@ -312,6 +312,7 @@ subroutine cst_accu_write(iounit)
             idx_local = CONList(i)%ibin - 1
             glbidx = glbidx*cstaccu%sizes(i)%nbins + idx_local
         end do
+        glbidx = glbidx + 1
     else
         glbidx = 1
     end if
