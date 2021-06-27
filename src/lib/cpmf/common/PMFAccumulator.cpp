@@ -646,7 +646,7 @@ void CPMFAccumulator::Save(FILE* fout)
     //32  format(I2,1X,E18.11,1X,A36)
 
     for(int i=0; i < NumOfCVs; i++) {
-        if(fprintf(fout,"%2d %18.11E %18.11E %6d %10s \n",i+1,
+        if(fprintf(fout,"%2d %18.11E %18.11E %6d %10s\n",i+1,
                    CVs[i]->MinValue,CVs[i]->MaxValue,CVs[i]->NumOfBins,
                    (const char*)CVs[i]->Type) <= 0) {
             CSmallString error;
