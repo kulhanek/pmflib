@@ -71,8 +71,8 @@ double CCSTProxy_dG::GetValue(int ibin,int icv,EProxyRealm realm) const
     }
 
     double  nsamples = Accu->GetData("NSAMPLES",ibin);
-    double  micf     = Accu->GetData("MICF",ibin,icv);
-    double  m2icf    = Accu->GetData("M2ICF",ibin,icv);
+    double  micf     = Accu->GetData("MLAMBDA",ibin,icv);
+    double  m2icf    = Accu->GetData("M2LAMBDA",ibin,icv);
 
     double value = 0.0;
     if( nsamples <= 0 ) return(value);
@@ -81,7 +81,7 @@ double CCSTProxy_dG::GetValue(int ibin,int icv,EProxyRealm realm) const
 // mean force
         // -------------------
         case(E_PROXY_VALUE):
-            return( micf );
+            return( - micf );
         // -------------------
         case(E_PROXY_SIGMA):
             return( sqrt(m2icf / nsamples) );

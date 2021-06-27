@@ -1114,8 +1114,6 @@ void CPMFAccumulator::PrintAccuInfo(std::ostream& vout)
 void CPMFAccumulator::PrintCVSInfo(std::ostream& vout)
 {
     vout << endl;
-    vout << "# Energy unit: " << EnergyUnit << endl;
-    vout << endl;
     vout << "=== Collective Variables =======================================================" << endl;
     vout << endl;
     vout << "ID P Type       Unit  Name                       Min value   Max value   NBins  " << endl;
@@ -1145,8 +1143,6 @@ void CPMFAccumulator::PrintAccuInfo(FILE* p_fout)
 
 void CPMFAccumulator::PrintCVSInfo(FILE* p_fout)
 {
-    fprintf(p_fout,"#\n");
-    fprintf(p_fout,"# Energy unit: %s\n",(const char*)EnergyUnit);
     fprintf(p_fout,"#\n");
     fprintf(p_fout,"# == Collective Variables =======================================================\n");
     fprintf(p_fout,"#\n");

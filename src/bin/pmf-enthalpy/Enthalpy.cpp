@@ -227,7 +227,6 @@ bool CEnthalpy::Run(void)
 
     if( Options.GetOptAbsolute() == false ){
         if( ! Options.IsOptGlobalMinSet() ){
-                cout << Options.GetOptOffset() << "|" << HES->GetGlobalMinimumValue() << endl;
             HES->ApplyOffset(Options.GetOptOffset() - HES->GetGlobalMinimumValue());
         } else {
             HES->ApplyOffset(Options.GetOptOffset());
@@ -310,7 +309,6 @@ void CEnthalpy::GetRawEnthalpy(void)
         int    nsamples = EneProxy->GetNumOfSamples(ibin);
         double ent = EneProxy->GetValue(ibin,E_PROXY_VALUE);
         double error = EneProxy->GetValue(ibin,E_PROXY_ERROR);
-        cout << ent << endl;
         HES->SetNumOfSamples(ibin,nsamples);
         HES->SetEnergy(ibin,ent);
         HES->SetError(ibin,error);

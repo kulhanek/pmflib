@@ -133,12 +133,14 @@ subroutine cst_core_analyze
         lambda1(:)  = 0.0d0
 
         if( fenthalpy .or. fentropy ) then
-            m11hp(:)    = 0.0d0
-            m11hk(:)    = 0.0d0
-            m11hr(:)    = 0.0d0
-            m22hp(:)    = 0.0d0
-            m22hk(:)    = 0.0d0
-            m22hr(:)    = 0.0d0
+            c11hh(:)    = 0.0d0
+            c11hp(:)    = 0.0d0
+            c11hk(:)    = 0.0d0
+            c11hr(:)    = 0.0d0
+            c22hh(:)    = 0.0d0
+            c22hp(:)    = 0.0d0
+            c22hk(:)    = 0.0d0
+            c22hr(:)    = 0.0d0
         end if
 
         metot       = 0.0d0
@@ -289,7 +291,7 @@ subroutine cst_core_analyze
         m2lambda(i)     = m2lambda(i) + dval * dval2
 
         if( has_lambdav ) then
-            ! FIXME - lambdav is not in correct time
+            ! FIXME - lambdav is not in correct time?
             mu              = lambdav(i)
             dval            = mu - mlambdav(i)
             mlambdav(i)     = mlambdav(i) + dval * invn
@@ -298,11 +300,14 @@ subroutine cst_core_analyze
         end if
 
         if( fentropy ) then
-            m11hp(i)   = m11hp(i) + dval * depot2
-            m11hk(i)   = m11hk(i) + dval * dekin2
-            m11hr(i)   = m11hr(i) + dval * derst2
+            c11hh(i)   = c11hh(i) + dval * m2etot
+            c11hp(i)   = c11hp(i) + dval * depot2
+            c11hk(i)   = c11hk(i) + dval * dekin2
+            c11hr(i)   = c11hr(i) + dval * derst2
         end if
     end do
+
+    write(456,*) lambda0(0), etot, epot, ekin, erst
 
 end subroutine cst_core_analyze
 

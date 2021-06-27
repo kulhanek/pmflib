@@ -148,13 +148,17 @@ real(PMFDP)                 :: m2ekin           ! M2 of kinetic energy
 real(PMFDP)                 :: merst            ! mean of restraint energy
 real(PMFDP)                 :: m2erst           ! M2 of restraint energy
 
-real(PMFDP),allocatable     :: m11hp(:)
-real(PMFDP),allocatable     :: m11hk(:)
-real(PMFDP),allocatable     :: m11hr(:)
+! data for entropy, co-moments between dH/dx a H (total energy), Pot, Kin, Rst energies
+real(PMFDP),allocatable     :: c11hh(:)
+real(PMFDP),allocatable     :: c11hp(:)
+real(PMFDP),allocatable     :: c11hk(:)
+real(PMFDP),allocatable     :: c11hr(:)
 
-real(PMFDP),allocatable     :: m22hp(:)
-real(PMFDP),allocatable     :: m22hk(:)
-real(PMFDP),allocatable     :: m22hr(:)
+! data for entropy - error estimates
+real(PMFDP),allocatable     :: c22hh(:)
+real(PMFDP),allocatable     :: c22hp(:)
+real(PMFDP),allocatable     :: c22hk(:)
+real(PMFDP),allocatable     :: c22hr(:)
 
 real(PMFDP),allocatable     :: lambda0(:)       ! list of Lagrange multipliers, t-dt
 real(PMFDP),allocatable     :: lambda1(:)       ! list of Lagrange multipliers, t

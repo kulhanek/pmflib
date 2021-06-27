@@ -529,12 +529,14 @@ subroutine cst_init_core
 
 ! -----------------------------------------------
     if( fentropy ) then
-        allocate( m11hp(NumOfCONs),     &
-                  m11hk(NumOfCONs),     &
-                  m11hr(NumOfCONs),     &
-                  m22hp(NumOfCONs),     &
-                  m22hk(NumOfCONs),     &
-                  m22hr(NumOfCONs),     &
+        allocate( c11hh(NumOfCONs),     &
+                  c11hp(NumOfCONs),     &
+                  c11hk(NumOfCONs),     &
+                  c11hr(NumOfCONs),     &
+                  c22hh(NumOfCONs),     &
+                  c22hp(NumOfCONs),     &
+                  c22hk(NumOfCONs),     &
+                  c22hr(NumOfCONs),     &
                   stat= alloc_failed )
 
         if( alloc_failed .ne. 0 ) then
@@ -542,12 +544,15 @@ subroutine cst_init_core
                      '[CST] Unable to allocate memory for arrays used for enthalpy/entropy calculations!')
         end if
 
-        m11hp(:)    = 0.0d0
-        m11hk(:)    = 0.0d0
-        m11hr(:)    = 0.0d0
-        m22hp(:)    = 0.0d0
-        m22hk(:)    = 0.0d0
-        m22hr(:)    = 0.0d0
+        c11hh(:)    = 0.0d0
+        c11hp(:)    = 0.0d0
+        c11hk(:)    = 0.0d0
+        c11hr(:)    = 0.0d0
+
+        c22hh(:)    = 0.0d0
+        c22hp(:)    = 0.0d0
+        c22hk(:)    = 0.0d0
+        c22hr(:)    = 0.0d0
     end if
 
     fentaccu    = 0.0d0
