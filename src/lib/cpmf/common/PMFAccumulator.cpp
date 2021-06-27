@@ -330,10 +330,12 @@ bool CPMFAccumulator::IsHeaderSection(const CSmallString& keyline)
 
 const CSmallString CPMFAccumulator::GetSectionName(const CSmallString& keyline) const
 {
-    if( keyline.GetLength() < 2 ) return("");
+    if( keyline.GetLength() <= 1 ) return("");
     int first = 1;
     int last = keyline.Scan(" \t\n");
-    if( last-1 < 1 ){
+    if( (last - 1) >= 1 ){
+        last = last - 1;
+    } else {
         last = keyline.GetLength() - 1;
     }
     return( keyline.GetSubStringFromTo(first,last) );
