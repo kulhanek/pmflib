@@ -143,9 +143,6 @@ subroutine cst_constraints_read_con(prm_fin,cst_item)
         call cst_item%cv%conv_to_ivalue(cst_item%stopvalue)
     else if( prmfile_get_integer_by_key(prm_fin,'change_to_bin',ibin) ) then
         cst_item%mode = 'V'
-        if( (ibin .lt. 1) .or. (ibin .gt. cst_item%nbins) ) then
-            call pmf_utils_exit(PMF_OUT,1,'change_to_bin out-of-range!')
-        end if
         cst_item%stopvalue = (real(ibin,PMFDP)-0.5d0)*(cst_item%max_value -  cst_item%min_value)/real(cst_item%nbins)
         write(PMF_OUT,101) cst_item%cv%get_rvalue(cst_item%stopvalue), trim(cst_item%cv%get_ulabel()), ibin
     end if
