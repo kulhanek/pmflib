@@ -620,13 +620,15 @@ void CPMFAccumulator::Save(FILE* fout)
         RUNTIME_ERROR(error);
     }
 
-    if(fprintf(fout,"%%ENERGY-UNIT\n%18.11E %36s\n",EnergyFConv,(const char*)EnergyUnit) <= 0) {
+    // 40  format(3X,E18.11,1X,A36)
+    if(fprintf(fout,"%%ENERGY-UNIT\n   %18.11E %36s\n",EnergyFConv,(const char*)EnergyUnit) <= 0) {
         CSmallString error;
         error << "unable to write energy unit";
         RUNTIME_ERROR(error);
     }
 
-    if(fprintf(fout,"%%TEMPERATURE-UNIT\n%18.11E %36s\n",TemperatureFConv,(const char*)TemperatureUnit) <= 0) {
+    // 40  format(3X,E18.11,1X,A36)
+    if(fprintf(fout,"%%TEMPERATURE-UNIT\n   %18.11E %36s\n",TemperatureFConv,(const char*)TemperatureUnit) <= 0) {
         CSmallString error;
         error << "unable to write temperature unit";
         RUNTIME_ERROR(error);
@@ -638,10 +640,15 @@ void CPMFAccumulator::Save(FILE* fout)
         error << "unable to write CVS header";
         RUNTIME_ERROR(error);
     }
+
+    //30  format(I2,1X,E18.11,1X,E18.11,1X,I6,1X,A10)
+    //31  format(I2,1X,A55)
+    //32  format(I2,1X,E18.11,1X,A36)
+
     for(int i=0; i < NumOfCVs; i++) {
-        if(fprintf(fout,"%2d %10s %18.11E %18.11E %6d\n",i+1,
-                   (const char*)CVs[i]->Type,
-                   CVs[i]->MinValue,CVs[i]->MaxValue,CVs[i]->NumOfBins) <= 0) {
+        if(fprintf(fout,"%2d %18.11E %18.11E %6d %10s \n",i+1,
+                   CVs[i]->MinValue,CVs[i]->MaxValue,CVs[i]->NumOfBins,
+                   (const char*)CVs[i]->Type) <= 0) {
             CSmallString error;
             error << "unable to write coordinate definition I id: " << i+1;
             RUNTIME_ERROR(error);
