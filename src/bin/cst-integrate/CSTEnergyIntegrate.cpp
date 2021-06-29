@@ -108,6 +108,8 @@ int CCSTEnergyIntegrate::Init(int argc,char* argv[])
         vout << "# Free energy file (out): - (standard output)" << endl;
     }
     vout << "# ------------------------------------------------" << endl;
+        vout << "# Integrated realm      : " << Options.GetOptRealm() << endl;
+    vout << "# ------------------------------------------------" << endl;
         if(Options.GetOptMethod() == "rfd" ) {
             vout << "# Integration method    : RFD (reverse finite differences via csparse)" << endl;
         } else if( Options.GetOptMethod() == "rbf" ){
@@ -203,9 +205,6 @@ bool CCSTEnergyIntegrate::Run(void)
     int state = 1;
 
 // -----------------------------------------------------------------------------
-    vout << endl;
-    vout << format("%02d:Integrated realm: %s")%state%string(Options.GetOptRealm()) << endl;
-    state++;
 
 // setup accu, energy proxy, and output FES
     Accu        = CPMFAccumulatorPtr(new CPMFAccumulator);
@@ -213,8 +212,29 @@ bool CCSTEnergyIntegrate::Run(void)
 
     if( Options.GetOptRealm() == "dG" ){
         DerProxy    = CCSTProxy_dG_Ptr(new CCSTProxy_dG);
+// -----------------------------------------------
     } else if ( Options.GetOptRealm() == "-TdS" ) {
-        DerProxy    = CCSTProxy_mTdS_Ptr(new CCSTProxy_mTdS);
+        CCSTProxy_mTdS_Ptr proxy    = CCSTProxy_mTdS_Ptr(new CCSTProxy_mTdS);
+        DerProxy = proxy;
+// -----------------------------------------------
+    } else if ( Options.GetOptRealm() == "-TdS_HP" ) {
+        CCSTProxy_mTdS_Ptr proxy    = CCSTProxy_mTdS_Ptr(new CCSTProxy_mTdS);
+        proxy->SetType(CST_C11HP);
+        DerProxy = proxy;
+// -----------------------------------------------
+    } else if ( Options.GetOptRealm() == "-TdS_HK" ) {
+        CCSTProxy_mTdS_Ptr proxy    = CCSTProxy_mTdS_Ptr(new CCSTProxy_mTdS);
+        proxy->SetType(CST_C11HK);
+        DerProxy = proxy;
+// -----------------------------------------------
+    } else if ( Options.GetOptRealm() == "-TdS_HR" ) {
+        CCSTProxy_mTdS_Ptr proxy    = CCSTProxy_mTdS_Ptr(new CCSTProxy_mTdS);
+        proxy->SetType(CST_C11HR);
+        DerProxy = proxy;
+// -----------------------------------------------
+    } else if ( Options.GetOptRealm() == "MTC" ) {
+        DerProxy    = CCSTProxy_dG_Ptr(new CCSTProxy_dG);
+// -----------------------------------------------
     } else {
         CSmallString error;
         error << "unsupported realm: " << Options.GetOptRealm() ;
@@ -266,29 +286,35 @@ bool CCSTEnergyIntegrate::Run(void)
     }
 
 // energy limit --------------------------------
+    if( Options.GetOptRealm() != "MTC" ) {
+        if( Options.GetOptEnergyLimit() > 0.0 ){
+            vout << endl;
+            vout << format("%02d:CST accumulator integration (%s) for energy limit")%state%string(Options.GetOptEcutMethod()) << endl;
+            state++;
+            if( IntegrateForEcut() == false ) return(false);
 
-    if( Options.GetOptEnergyLimit() > 0.0 ){
-        vout << endl;
-        vout << format("%02d:CST accumulator integration (%s) for energy limit")%state%string(Options.GetOptEcutMethod()) << endl;
-        state++;
-        if( IntegrateForEcut() == false ) return(false);
+            vout << endl;
+            vout << format("%02d:Preparing CST accumulator for integration (energy limit)")%state << endl;
+            state++;
+            PrepareAccumulatorII();
+            PrintSampledStat();
+            vout << "   Done." << endl;
 
+            FES->Clear();
+        }
+
+    // integrate data ------------------------------
         vout << endl;
-        vout << format("%02d:Preparing CST accumulator for integration (energy limit)")%state << endl;
+        vout << format("%02d:CST accumulator integration (%s)")%state%string(Options.GetOptMethod()) << endl;
         state++;
-        PrepareAccumulatorII();
-        PrintSampledStat();
+        if( Integrate() == false ) return(false);
         vout << "   Done." << endl;
-
-        FES->Clear();
+    } else {
+        vout << endl;
+        vout << format("%02d:Metric tensor correction")%state << endl;
+        state++;
+        AddMTCorr();
     }
-
-// integrate data ------------------------------
-    vout << endl;
-    vout << format("%02d:CST accumulator integration (%s)")%state%string(Options.GetOptMethod()) << endl;
-    state++;
-    if( Integrate() == false ) return(false);
-    vout << "   Done." << endl;
 
  // apply offset
     if( ! Options.IsOptGlobalMinSet() ){
@@ -529,9 +555,7 @@ bool CCSTEnergyIntegrate::IntegrateForEcut(void)
     } else if ( Options.GetOptRealm() == "-TdS" ) {
         AddMTCorr();
     } else {
-        CSmallString error;
-        error << "unsupported realm: " << Options.GetOptRealm() ;
-        RUNTIME_ERROR(error);
+        // do not add MTC
     }
 
     return(true);
@@ -647,9 +671,7 @@ bool CCSTEnergyIntegrate::Integrate(void)
     } else if ( Options.GetOptRealm() == "-TdS" ) {
         AddMTCorr();
     } else {
-        CSmallString error;
-        error << "unsupported realm: " << Options.GetOptRealm() ;
-        RUNTIME_ERROR(error);
+        // do not add MTC
     }
 
     return(true);

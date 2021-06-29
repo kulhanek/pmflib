@@ -296,7 +296,7 @@ subroutine cst_core_analyze
         end if
 
         if( fentropy ) then
-            c11hh(i)   = c11hh(i) + dval * m2etot
+            c11hh(i)   = c11hh(i) + dval * detot2
             c11hp(i)   = c11hp(i) + dval * depot2
             c11hk(i)   = c11hk(i) + dval * dekin2
             c11hr(i)   = c11hr(i) + dval * derst2

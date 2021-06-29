@@ -33,12 +33,42 @@ CCSTProxy_mTdS::CCSTProxy_mTdS(void)
 {
     Requires.push_back("CST");
     Provide = "CST -TdS(x)^{c}";    // entropy of the constrained system
+    Type = CST_C11HH;
 }
 
 //------------------------------------------------------------------------------
 
 CCSTProxy_mTdS::~CCSTProxy_mTdS(void)
 {
+}
+
+//------------------------------------------------------------------------------
+
+void CCSTProxy_mTdS::SetType(ECSTType type)
+{
+    Type = type;
+
+    switch(Type){
+    // -------------------
+        case(CST_C11HH):
+            Provide = "CST -TdS(x)^{c}";    // entropy of the constrained system
+        break;
+    // -------------------
+        case(CST_C11HP):
+            Provide = "CST -TdS(x)^{c} cov(dH/dx,Epot)";    // entropy of the constrained system  - contribution
+        break;
+    // -------------------
+        case(CST_C11HK):
+            Provide = "CST -TdS(x)^{c} cov(dH/dx,Ekin)";    // entropy of the constrained system  - contribution
+        break;
+    // -------------------
+        case(CST_C11HR):
+            Provide = "CST -TdS(x)^{c} cov(dH/dx,Erst)";    // entropy of the constrained system  - contribution
+        break;
+    // -------------------
+        default:
+            RUNTIME_ERROR("unsupported type");
+    }
 }
 
 //==============================================================================
@@ -72,10 +102,36 @@ double CCSTProxy_mTdS::GetValue(int ibin,int icv,EProxyRealm realm) const
     }
 
     double  nsamples = Accu->GetData("NSAMPLES",ibin);
-    double  c11hh    = Accu->GetData("M11HH",ibin,icv);
-
     double  m2lam    = Accu->GetData("M2LAMBDA",ibin,icv);
-    double  m2etot   = Accu->GetData("M2ETOT",ibin);
+
+    double  c11     = 0.0;
+    double  m2ene   = 0.0;
+
+    switch(Type){
+    // -------------------
+        case(CST_C11HH):
+            c11     = Accu->GetData("C11HH",ibin,icv);
+            m2ene   = Accu->GetData("M2ETOT",ibin);
+        break;
+    // -------------------
+        case(CST_C11HP):
+            c11     = Accu->GetData("C11HP",ibin,icv);
+            m2ene   = Accu->GetData("M2EPOT",ibin);
+        break;
+    // -------------------
+        case(CST_C11HK):
+            c11     = Accu->GetData("C11HK",ibin,icv);
+            m2ene   = Accu->GetData("M2EKIN",ibin);
+        break;
+    // -------------------
+        case(CST_C11HR):
+            c11     = Accu->GetData("C11HR",ibin,icv);
+            m2ene   = Accu->GetData("M2ERST",ibin);
+        break;
+    // -------------------
+        default:
+            RUNTIME_ERROR("unsupported type");
+    }
 
     double  temp     = Accu->GetTemperature();
 
@@ -83,17 +139,21 @@ double CCSTProxy_mTdS::GetValue(int ibin,int icv,EProxyRealm realm) const
     if( nsamples <= 0 ) return(value);
 
     switch(realm){
-// mean force
-        // -------------------
-        case(E_PROXY_VALUE):
-            return( (c11hh / nsamples) / (temp * PMF_Rgas) );
-        // -------------------
-        case(E_PROXY_SIGMA):
-            return( sqrt(m2lam / nsamples) * sqrt( m2etot / nsamples )  / (temp * PMF_Rgas) );
-        // -------------------
-        case(E_PROXY_ERROR):
-            return( sqrt(m2lam / nsamples) * sqrt( m2etot / nsamples ) / sqrt(nsamples) / (temp * PMF_Rgas) );
-        // -------------------
+    // -------------------
+        case(E_PROXY_VALUE): {
+            return( (c11 / nsamples) / (temp * PMF_Rgas) );
+        }
+    // -------------------
+        case(E_PROXY_SIGMA): {
+            // approximation
+            return( sqrt(m2lam / nsamples) * sqrt( m2ene / nsamples )  / (temp * PMF_Rgas) );
+        }
+    // -------------------
+        case(E_PROXY_ERROR): {
+            // approximation
+            return( sqrt(m2lam / nsamples) * sqrt( m2ene / nsamples ) / sqrt(nsamples) / (temp * PMF_Rgas) );
+        }
+    // -------------------
         default:
             RUNTIME_ERROR("unsupported realm");
     }

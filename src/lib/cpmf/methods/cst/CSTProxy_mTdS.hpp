@@ -25,6 +25,15 @@
 
 //------------------------------------------------------------------------------
 
+enum ECSTType {
+    CST_C11HH,
+    CST_C11HP,
+    CST_C11HK,
+    CST_C11HR,
+};
+
+//------------------------------------------------------------------------------
+
 /** \brief CST proxy providing mean force for the free energy integration
 */
 
@@ -35,6 +44,10 @@ public:
     ~CCSTProxy_mTdS(void);
 
 //------------------------------------------------------------------------------
+    // set type
+    void SetType(ECSTType type);
+
+//------------------------------------------------------------------------------
     // get number of samples
     virtual int GetNumOfSamples(int ibin) const;
 
@@ -43,6 +56,10 @@ public:
 
     // get energy derivative and its error
     virtual double GetValue( int ibin,int icv,EProxyRealm realm) const;
+
+// section of private data -----------------------------------------------------
+private:
+    ECSTType    Type;
 };
 
 //------------------------------------------------------------------------------
