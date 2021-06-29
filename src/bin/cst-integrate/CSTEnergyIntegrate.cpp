@@ -36,6 +36,8 @@
 #include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string/classification.hpp>
 #include <CSTProxy_dG.hpp>
+#include <CSTProxy_mTdS.hpp>
+#include <CSTProxy_MTC.hpp>
 
 //------------------------------------------------------------------------------
 
@@ -201,10 +203,23 @@ bool CCSTEnergyIntegrate::Run(void)
     int state = 1;
 
 // -----------------------------------------------------------------------------
+    vout << endl;
+    vout << format("%02d:Integrated realm: %s")%state%string(Options.GetOptRealm()) << endl;
+    state++;
+
 // setup accu, energy proxy, and output FES
     Accu        = CPMFAccumulatorPtr(new CPMFAccumulator);
     FES         = CEnergySurfacePtr(new CEnergySurface);
-    DerProxy    = CCSTProxy_dG_Ptr(new CCSTProxy_dG);
+
+    if( Options.GetOptRealm() == "dG" ){
+        DerProxy    = CCSTProxy_dG_Ptr(new CCSTProxy_dG);
+    } else if ( Options.GetOptRealm() == "-TdS" ) {
+        DerProxy    = CCSTProxy_mTdS_Ptr(new CCSTProxy_mTdS);
+    } else {
+        CSmallString error;
+        error << "unsupported realm: " << Options.GetOptRealm() ;
+        RUNTIME_ERROR(error);
+    }
 
     vout << endl;
     vout << format("%02d:Loading CST accumulator: %s")%state%string(CSTAccuName) << endl;
@@ -508,6 +523,17 @@ bool CCSTEnergyIntegrate::IntegrateForEcut(void)
         INVALID_ARGUMENT("method - not implemented");
     }
 
+// add metric tensor correction
+    if( Options.GetOptRealm() == "dG" ){
+        AddMTCorr();
+    } else if ( Options.GetOptRealm() == "-TdS" ) {
+        AddMTCorr();
+    } else {
+        CSmallString error;
+        error << "unsupported realm: " << Options.GetOptRealm() ;
+        RUNTIME_ERROR(error);
+    }
+
     return(true);
 }
 
@@ -613,6 +639,17 @@ bool CCSTEnergyIntegrate::Integrate(void)
 
     } else {
         INVALID_ARGUMENT("method - not implemented");
+    }
+
+// add metric tensor correction
+    if( Options.GetOptRealm() == "dG" ){
+        AddMTCorr();
+    } else if ( Options.GetOptRealm() == "-TdS" ) {
+        AddMTCorr();
+    } else {
+        CSmallString error;
+        error << "unsupported realm: " << Options.GetOptRealm() ;
+        RUNTIME_ERROR(error);
     }
 
     return(true);
@@ -989,6 +1026,24 @@ void CCSTEnergyIntegrate::DecodeEList(const CSmallString& spec, std::vector<bool
     for(int i=slist.size(); i < ncvs; i++){
         elist[i] = last_st;
     }
+}
+
+//------------------------------------------------------------------------------
+
+void CCSTEnergyIntegrate::AddMTCorr(void)
+{
+    vout << "   Adding metric tensor correction ..." << endl;
+
+    CCSTProxy_MTC_Ptr MTCProxy    = CCSTProxy_MTC_Ptr(new CCSTProxy_MTC);
+    MTCProxy->Init(Accu);
+
+    for(int i=0; i < Accu->GetNumOfBins(); i++){
+        FES->SetNumOfSamples(i, MTCProxy->GetNumOfSamples(i) );
+        double f = FES->GetEnergy(i);
+        FES->SetEnergy(i, f + MTCProxy->GetValue(i,E_PROXY_VALUE) );
+    }
+
+    vout << "   SigmaF2   = " << setprecision(5) << FES->GetSigmaF2() << endl;
 }
 
 //==============================================================================

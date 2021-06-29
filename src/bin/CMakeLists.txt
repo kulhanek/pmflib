@@ -11,6 +11,7 @@ IF(PMFLIB_COMPILE_FPMF)
     ADD_SUBDIRECTORY(pmf-path-reconstruct)
     ADD_SUBDIRECTORY(pmf-path-derivatives)
     ADD_SUBDIRECTORY(pmf-test-coords)
+    ADD_SUBDIRECTORY(pmf-test-stat)
 ENDIF(PMFLIB_COMPILE_FPMF)
 
 # classical utilities ----------------------------------------------------------

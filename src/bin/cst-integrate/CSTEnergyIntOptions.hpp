@@ -61,6 +61,7 @@ public:
     CSO_LIST_BEGIN
 
     // options ------------------------------
+    CSO_OPT(CSmallString,Realm)
     CSO_OPT(CSmallString,Method)
     CSO_OPT(CSmallString,EcutMethod)
     CSO_OPT(CSmallString,LAMethod)
@@ -109,6 +110,17 @@ public:
 
     CSO_MAP_BEGIN
 // description of options ---------------------------------------------------
+   CSO_MAP_OPT(CSmallString,                           /* option type */
+                Realm,                        /* option name */
+                "dG",                          /* default value */
+                false,                          /* is option mandatory */
+                'r',                           /* short option name */
+                "realm",                      /* long option name */
+                "NAME",                           /* parametr name */
+                "Intended output from the integration:\n"
+                "** dG   - free energy of unbiased system\n"
+                "** -TdS - entropy contribution to the free energy of unbiased system\n")   /* option description */
+    //----------------------------------------------------------------------
     CSO_MAP_OPT(CSmallString,                           /* option type */
                 Method,                        /* option name */
                 "rfd",                          /* default value */
@@ -144,7 +156,7 @@ public:
                 RCond,                        /* option name */
                 1e-6,                          /* default value */
                 false,                          /* is option mandatory */
-                'r',                           /* short option name */
+                0,                           /* short option name */
                 "rcond",                      /* long option name */
                 "NUMBER",                           /* parametr name */
                 "RBF+GPR: Rank condition for SVD. Used value must be carefully tested. Calculation at computer precision is requested with -1 (not recommended).")   /* option description */
@@ -303,7 +315,7 @@ public:
                 NULL,                          /* default value */
                 false,                          /* is option mandatory */
                 '\0',                           /* short option name */
-                "saveabf",                      /* long option name */
+                "saveaccu",                      /* long option name */
                 "NAME",                           /* parametr name */
                 "Save the final CST accumulator into the file with NAME.")   /* option description */
     //----------------------------------------------------------------------

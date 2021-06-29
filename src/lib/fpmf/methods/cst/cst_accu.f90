@@ -258,35 +258,7 @@ subroutine cst_accu_write(iounit)
             rbuf_M(i,glbidx) = c11hr(i)
         end do
         call pmf_accu_write_rbuf_M(cstaccu,iounit,'C11HR','WA',rbuf_M)
-
-    ! errors
-        rbuf_M(:,:) = 0.0d0
-        do i=1,cstaccu%tot_cvs
-            rbuf_M(i,glbidx) = c22hh(i)
-        end do
-        call pmf_accu_write_rbuf_M(cstaccu,iounit,'C22HH','WA',rbuf_M)
-
-        rbuf_M(:,:) = 0.0d0
-        do i=1,cstaccu%tot_cvs
-            rbuf_M(i,glbidx) = c22hp(i)
-        end do
-        call pmf_accu_write_rbuf_M(cstaccu,iounit,'C22HP','WA',rbuf_M)
-
-        rbuf_M(:,:) = 0.0d0
-        do i=1,cstaccu%tot_cvs
-            rbuf_M(i,glbidx) = c22hk(i)
-        end do
-        call pmf_accu_write_rbuf_M(cstaccu,iounit,'C22HK','WA',rbuf_M)
-
-        rbuf_M(:,:) = 0.0d0
-        do i=1,cstaccu%tot_cvs
-            rbuf_M(i,glbidx) = c22hr(i)
-        end do
-        call pmf_accu_write_rbuf_M(cstaccu,iounit,'C22HR','WA',rbuf_M)
     end if
-
-
-
 
 end subroutine cst_accu_write
 

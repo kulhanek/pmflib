@@ -154,12 +154,6 @@ real(PMFDP),allocatable     :: c11hp(:)
 real(PMFDP),allocatable     :: c11hk(:)
 real(PMFDP),allocatable     :: c11hr(:)
 
-! data for entropy - error estimates
-real(PMFDP),allocatable     :: c22hh(:)
-real(PMFDP),allocatable     :: c22hp(:)
-real(PMFDP),allocatable     :: c22hk(:)
-real(PMFDP),allocatable     :: c22hr(:)
-
 real(PMFDP),allocatable     :: lambda0(:)       ! list of Lagrange multipliers, t-dt
 real(PMFDP),allocatable     :: lambda1(:)       ! list of Lagrange multipliers, t
 real(PMFDP)                 :: epothist0        ! history of Epot, t-dt

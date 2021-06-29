@@ -18,7 +18,8 @@
 //     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 // =============================================================================
 
-#include <CSTProxy_dG.hpp>
+#include <CSTProxy_mTdS.hpp>
+#include <PMFConstants.hpp>
 
 //------------------------------------------------------------------------------
 
@@ -28,15 +29,15 @@ using namespace std;
 //------------------------------------------------------------------------------
 //==============================================================================
 
-CCSTProxy_dG::CCSTProxy_dG(void)
+CCSTProxy_mTdS::CCSTProxy_mTdS(void)
 {
     Requires.push_back("CST");
-    Provide = "CST dG(x)^{c}";      // free energy of constrained (biased) system
+    Provide = "CST -TdS(x)^{c}";    // entropy of the constrained system
 }
 
 //------------------------------------------------------------------------------
 
-CCSTProxy_dG::~CCSTProxy_dG(void)
+CCSTProxy_mTdS::~CCSTProxy_mTdS(void)
 {
 }
 
@@ -44,7 +45,7 @@ CCSTProxy_dG::~CCSTProxy_dG(void)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-int CCSTProxy_dG::GetNumOfSamples(int ibin) const
+int CCSTProxy_mTdS::GetNumOfSamples(int ibin) const
 {
     if( Accu == NULL ){
         RUNTIME_ERROR("Accu is NULL");
@@ -54,7 +55,7 @@ int CCSTProxy_dG::GetNumOfSamples(int ibin) const
 
 //------------------------------------------------------------------------------
 
-void CCSTProxy_dG::SetNumOfSamples(int ibin,int nsamples)
+void CCSTProxy_mTdS::SetNumOfSamples(int ibin,int nsamples)
 {
     if( Accu == NULL ){
         RUNTIME_ERROR("Accu is NULL");
@@ -64,15 +65,19 @@ void CCSTProxy_dG::SetNumOfSamples(int ibin,int nsamples)
 
 //------------------------------------------------------------------------------
 
-double CCSTProxy_dG::GetValue(int ibin,int icv,EProxyRealm realm) const
+double CCSTProxy_mTdS::GetValue(int ibin,int icv,EProxyRealm realm) const
 {
     if( Accu == NULL ){
         RUNTIME_ERROR("Accu is NULL");
     }
 
     double  nsamples = Accu->GetData("NSAMPLES",ibin);
-    double  micf     = Accu->GetData("MLAMBDA",ibin,icv);
-    double  m2icf    = Accu->GetData("M2LAMBDA",ibin,icv);
+    double  c11hh    = Accu->GetData("M11HH",ibin,icv);
+
+    double  m2lam    = Accu->GetData("M2LAMBDA",ibin,icv);
+    double  m2etot   = Accu->GetData("M2ETOT",ibin);
+
+    double  temp     = Accu->GetTemperature();
 
     double value = 0.0;
     if( nsamples <= 0 ) return(value);
@@ -81,13 +86,13 @@ double CCSTProxy_dG::GetValue(int ibin,int icv,EProxyRealm realm) const
 // mean force
         // -------------------
         case(E_PROXY_VALUE):
-            return( - micf );
+            return( (c11hh / nsamples) / (temp * PMF_Rgas) );
         // -------------------
         case(E_PROXY_SIGMA):
-            return( sqrt(m2icf / nsamples) );
+            return( sqrt(m2lam / nsamples) * sqrt( m2etot / nsamples )  / (temp * PMF_Rgas) );
         // -------------------
         case(E_PROXY_ERROR):
-            return( sqrt(m2icf) / nsamples );
+            return( sqrt(m2lam / nsamples) * sqrt( m2etot / nsamples ) / sqrt(nsamples) / (temp * PMF_Rgas) );
         // -------------------
         default:
             RUNTIME_ERROR("unsupported realm");

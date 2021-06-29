@@ -204,109 +204,130 @@ void CPMFAccumulator::Combine(CPMFAccumulatorPtr right)
         RUNTIME_ERROR(error);
     }
 
-    std::map<CSmallString,CPMFAccuDataPtr>::iterator  it = DataBlocks.begin();
+    std::map<CSmallString,CPMFAccuDataPtr>::iterator  it;
     std::map<CSmallString,CPMFAccuDataPtr>::iterator  ie = DataBlocks.end();
 
+    it = DataBlocks.begin();
     while( it != ie ){
         CPMFAccuDataPtr ldb = it->second;
         CPMFAccuDataPtr rdb = right->GetSectionData(it->first);
-        if( ldb->CheckCompatibility(rdb) == false ){
+        if( ldb->GetName() != "NSAMPLES" ){     // skip NSAMPLES due to WA operation
+            Combine(it->first,right,ldb,rdb);
+        }
+        it++;
+    }
+
+    it = DataBlocks.begin();
+    while( it != ie ){
+        CPMFAccuDataPtr ldb = it->second;
+        CPMFAccuDataPtr rdb = right->GetSectionData(it->first);
+        if( ldb->GetName() == "NSAMPLES" ){
+            Combine(it->first,right,ldb,rdb);             // do NSAMPLES if presented
+        }
+        it++;
+    }
+
+}
+
+//------------------------------------------------------------------------------
+
+void CPMFAccumulator::Combine(const CSmallString& sname,CPMFAccumulatorPtr right,CPMFAccuDataPtr ldb,CPMFAccuDataPtr rdb)
+{
+// check compability
+    if( ldb->CheckCompatibility(rdb) == false ){
             CSmallString error;
-            error <<  "two data sections are not compatible, name: " << it->first;
+            error <<  "two data sections are not compatible, name: " << sname;
             RUNTIME_ERROR(error);
         }
-    // add
-        if( ldb->GetOp() == "AD" ){
-            if( ldb->GetMode() == "B" ){
+// add
+    if( ldb->GetOp() == "AD" ){
+        if( ldb->GetMode() == "B" ){
+            for(int ibin=0; ibin < ldb->GetNumOfBins(); ibin++){
+                double ld = ldb->GetData(ibin);
+                double rd = rdb->GetData(ibin);
+                double re = ld + rd;
+                ldb->SetData(ibin,re);
+            }
+        } else if( ldb->GetMode() == "M" ) {
+            for(int icv=0; icv < ldb->GetNumOfCVs(); icv++){
                 for(int ibin=0; ibin < ldb->GetNumOfBins(); ibin++){
+                    double ld = ldb->GetData(ibin,icv);
+                    double rd = rdb->GetData(ibin,icv);
+                    double re = ld + rd;
+                    ldb->SetData(ibin,icv,re);
+                }
+            }
+        } else if( ldb->GetMode() == "C" ) {
+            for(int icv=0; icv < ldb->GetNumOfBins(); icv++){
+                double ld = ldb->GetData(0,icv);
+                double rd = rdb->GetData(0,icv);
+                double re = ld + rd;
+                ldb->SetData(0,icv,re);
+            }
+        } else {
+            CSmallString error;
+            error <<  "unsupported mode for data section, name: " << sname << ", mode: " << ldb->GetMode();
+            RUNTIME_ERROR(error);
+        }
+// weighted average
+    } else if( ldb->GetOp() == "WA" ){
+        // we need two NSAMPLES blocks
+        CPMFAccuDataPtr lns = GetSectionData("NSAMPLES");
+        if( lns == NULL ){
+            CSmallString error;
+            error <<  "left NSAMPLES is required for WA operation, data section name: " << sname;
+            RUNTIME_ERROR(error);
+        }
+        CPMFAccuDataPtr rns = right->GetSectionData("NSAMPLES");
+        if( rns == NULL ){
+            CSmallString error;
+            error <<  "right NSAMPLES is required for WA operation, data section name: " << sname;
+            RUNTIME_ERROR(error);
+        }
+
+        if( ldb->GetMode() == "B" ){
+            for(int ibin=0; ibin < ldb->GetNumOfBins(); ibin++){
+                double ln = lns->GetData(ibin);
+                double rn = rns->GetData(ibin);
+                if( (ln + rn) != 0.0 ) {
+                    double lw = ln / (ln + rn);
+                    double rw = rn / (ln + rn);
                     double ld = ldb->GetData(ibin);
                     double rd = rdb->GetData(ibin);
-                    double re = ld + rd;
+                    double re = lw*ld + rw*rd;
                     ldb->SetData(ibin,re);
                 }
-            } else if( ldb->GetMode() == "M" ) {
-                for(int icv=0; icv < ldb->GetNumOfCVs(); icv++){
-                    for(int ibin=0; ibin < ldb->GetNumOfBins(); ibin++){
-                        double ld = ldb->GetData(ibin,icv);
-                        double rd = rdb->GetData(ibin,icv);
-                        double re = ld + rd;
-                        ldb->SetData(ibin,icv,re);
-                    }
-                }
-            } else if( ldb->GetMode() == "C" ) {
-                for(int icv=0; icv < ldb->GetNumOfBins(); icv++){
-                    double ld = ldb->GetData(0,icv);
-                    double rd = rdb->GetData(0,icv);
-                    double re = ld + rd;
-                    ldb->SetData(0,icv,re);
-                }
-            } else {
-                CSmallString error;
-                error <<  "unsupported mode for data section, name: " << it->first << ", mode: " << ldb->GetMode();
-                RUNTIME_ERROR(error);
             }
-    // weighted average
-        } else if( ldb->GetOp() == "WA" ){
-            // we need two NSAMPLES blocks
-            CPMFAccuDataPtr lns = GetSectionData("NSAMPLES");
-            if( lns == NULL ){
-                CSmallString error;
-                error <<  "left NSAMPLES is required for WA operation, data section name: " << it->first;
-                RUNTIME_ERROR(error);
-            }
-            CPMFAccuDataPtr rns = right->GetSectionData("NSAMPLES");
-            if( rns == NULL ){
-                CSmallString error;
-                error <<  "right NSAMPLES is required for WA operation, data section name: " << it->first;
-                RUNTIME_ERROR(error);
-            }
-
-            if( ldb->GetMode() == "B" ){
+        } else if( ldb->GetMode() == "M" ) {
+            for(int icv=0; icv < ldb->GetNumOfCVs(); icv++){
                 for(int ibin=0; ibin < ldb->GetNumOfBins(); ibin++){
                     double ln = lns->GetData(ibin);
                     double rn = rns->GetData(ibin);
                     if( (ln + rn) != 0.0 ) {
                         double lw = ln / (ln + rn);
                         double rw = rn / (ln + rn);
-                        double ld = ldb->GetData(ibin);
-                        double rd = rdb->GetData(ibin);
+                        double ld = ldb->GetData(ibin,icv);
+                        double rd = rdb->GetData(ibin,icv);
                         double re = lw*ld + rw*rd;
-                        ldb->SetData(ibin,re);
+                        ldb->SetData(ibin,icv,re);
                     }
                 }
-            } else if( ldb->GetMode() == "M" ) {
-                for(int icv=0; icv < ldb->GetNumOfCVs(); icv++){
-                    for(int ibin=0; ibin < ldb->GetNumOfBins(); ibin++){
-                        double ln = lns->GetData(ibin);
-                        double rn = rns->GetData(ibin);
-                        if( (ln + rn) != 0.0 ) {
-                            double lw = ln / (ln + rn);
-                            double rw = rn / (ln + rn);
-                            double ld = ldb->GetData(ibin,icv);
-                            double rd = rdb->GetData(ibin,icv);
-                            double re = lw*ld + rw*rd;
-                            ldb->SetData(ibin,icv,re);
-                        }
-                    }
-                }
-            } else if( ldb->GetMode() == "C" ) {
-                CSmallString error;
-                error <<  "WA operation and C mode are unsupported for data section combine operation, name: " << it->first;
-                RUNTIME_ERROR(error);
-            } else {
-                CSmallString error;
-                error <<  "unsupported mode for data section, name: " << it->first << ", mode: " << ldb->GetMode();
-                RUNTIME_ERROR(error);
             }
-    // unsupported operation
+        } else if( ldb->GetMode() == "C" ) {
+            CSmallString error;
+            error <<  "WA operation and C mode are unsupported for data section combine operation, name: " << sname;
+            RUNTIME_ERROR(error);
         } else {
             CSmallString error;
-            error <<  "unsupported operation for data section, name: " << it->first << ", op: " << ldb->GetOp();
+            error <<  "unsupported mode for data section, name: " << sname << ", mode: " << ldb->GetMode();
             RUNTIME_ERROR(error);
         }
-        it++;
+// unsupported operation
+    } else {
+        CSmallString error;
+        error <<  "unsupported operation for data section, name: " << sname << ", op: " << ldb->GetOp();
+        RUNTIME_ERROR(error);
     }
-
 }
 
 //------------------------------------------------------------------------------

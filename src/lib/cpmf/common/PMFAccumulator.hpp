@@ -300,6 +300,9 @@ protected:
 
     /// read section data
     void ReadDataSection(FILE* fin,const CSmallString& keyline);
+
+    /// combine two setions
+    void Combine(const CSmallString& sname,CPMFAccumulatorPtr right,CPMFAccuDataPtr ldb,CPMFAccuDataPtr rdb);
 };
 
 //------------------------------------------------------------------------------

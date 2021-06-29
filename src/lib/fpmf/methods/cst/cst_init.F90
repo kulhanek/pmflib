@@ -533,10 +533,6 @@ subroutine cst_init_core
                   c11hp(NumOfCONs),     &
                   c11hk(NumOfCONs),     &
                   c11hr(NumOfCONs),     &
-                  c22hh(NumOfCONs),     &
-                  c22hp(NumOfCONs),     &
-                  c22hk(NumOfCONs),     &
-                  c22hr(NumOfCONs),     &
                   stat= alloc_failed )
 
         if( alloc_failed .ne. 0 ) then
@@ -548,11 +544,6 @@ subroutine cst_init_core
         c11hp(:)    = 0.0d0
         c11hk(:)    = 0.0d0
         c11hr(:)    = 0.0d0
-
-        c22hh(:)    = 0.0d0
-        c22hp(:)    = 0.0d0
-        c22hk(:)    = 0.0d0
-        c22hr(:)    = 0.0d0
     end if
 
     fentaccu    = 0.0d0

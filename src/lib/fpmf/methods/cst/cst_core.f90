@@ -137,10 +137,6 @@ subroutine cst_core_analyze
             c11hp(:)    = 0.0d0
             c11hk(:)    = 0.0d0
             c11hr(:)    = 0.0d0
-            c22hh(:)    = 0.0d0
-            c22hp(:)    = 0.0d0
-            c22hk(:)    = 0.0d0
-            c22hr(:)    = 0.0d0
         end if
 
         metot       = 0.0d0
@@ -307,7 +303,9 @@ subroutine cst_core_analyze
         end if
     end do
 
-    write(456,*) lambda0(1), etot, epot, ekin, erst
+    if( fdebug ) then
+        write(PMF_DEBUG+fmytaskid,*) '>>> ', (lambda0(i), i=1,NumOfCONs), etot, epot, ekin, erst
+    end if
 
 end subroutine cst_core_analyze
 
