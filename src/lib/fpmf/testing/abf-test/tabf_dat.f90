@@ -95,6 +95,7 @@ type,extends(PMFAccuType)   :: ABFAccuType
     real(PMFDP),pointer    :: m2erst(:)                 ! M2 of restraint energy
 
     ! ENTROPY
+    real(PMFDP),pointer    :: c11hh(:,:)                ! c11 - total/total
     real(PMFDP),pointer    :: c11pp(:,:)                ! c11 - potential/potential
     real(PMFDP),pointer    :: c11pk(:,:)                ! c11 - potential/kinetic
     real(PMFDP),pointer    :: c11pr(:,:)                ! c11 - potential/restraints

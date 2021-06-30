@@ -72,10 +72,6 @@ subroutine tabf_accu_init()
             tabfaccu%nsamples(tabfaccu%tot_nbins), &
             tabfaccu%micf(tabfaccu%tot_cvs,tabfaccu%tot_nbins), &
             tabfaccu%m2icf(tabfaccu%tot_cvs,tabfaccu%tot_nbins), &
-            tabfaccu%micf_pot(tabfaccu%tot_cvs,tabfaccu%tot_nbins), &
-            tabfaccu%m2icf_pot(tabfaccu%tot_cvs,tabfaccu%tot_nbins), &
-            tabfaccu%micf_kin(tabfaccu%tot_cvs,tabfaccu%tot_nbins), &
-            tabfaccu%m2icf_kin(tabfaccu%tot_cvs,tabfaccu%tot_nbins), &
             stat = alloc_failed)
 
     if( alloc_failed .ne. 0 ) then
@@ -103,6 +99,12 @@ subroutine tabf_accu_init()
 ! entropy ----------------------------------------------------------------------
     if( fentropy ) then
         allocate(  &
+                tabfaccu%micf_pot(tabfaccu%tot_cvs,tabfaccu%tot_nbins), &
+                tabfaccu%m2icf_pot(tabfaccu%tot_cvs,tabfaccu%tot_nbins), &
+                tabfaccu%micf_kin(tabfaccu%tot_cvs,tabfaccu%tot_nbins), &
+                tabfaccu%m2icf_kin(tabfaccu%tot_cvs,tabfaccu%tot_nbins), &
+
+                tabfaccu%c11hh(tabfaccu%tot_cvs,tabfaccu%tot_nbins), &
                 tabfaccu%c11pp(tabfaccu%tot_cvs,tabfaccu%tot_nbins), &
                 tabfaccu%c11pk(tabfaccu%tot_cvs,tabfaccu%tot_nbins), &
                 tabfaccu%c11pr(tabfaccu%tot_cvs,tabfaccu%tot_nbins), &
@@ -138,10 +140,6 @@ subroutine tabf_accu_clear()
 
     tabfaccu%micf(:,:)       = 0.0d0
     tabfaccu%m2icf(:,:)      = 0.0d0
-    tabfaccu%micf_pot(:,:)   = 0.0d0
-    tabfaccu%m2icf_pot(:,:)  = 0.0d0
-    tabfaccu%micf_kin(:,:)   = 0.0d0
-    tabfaccu%m2icf_kin(:,:)  = 0.0d0
 
     if( fenthalpy .or. fentropy ) then
         tabfaccu%metot(:)        = 0.0d0
@@ -155,6 +153,12 @@ subroutine tabf_accu_clear()
     end if
 
     if( fentropy ) then
+        tabfaccu%micf_pot(:,:)   = 0.0d0
+        tabfaccu%m2icf_pot(:,:)  = 0.0d0
+        tabfaccu%micf_kin(:,:)   = 0.0d0
+        tabfaccu%m2icf_kin(:,:)  = 0.0d0
+
+        tabfaccu%c11hh(:,:)      = 0.0d0
         tabfaccu%c11pp(:,:)      = 0.0d0
         tabfaccu%c11pk(:,:)      = 0.0d0
         tabfaccu%c11pr(:,:)      = 0.0d0
@@ -179,9 +183,16 @@ subroutine tabf_accu_write(iounit)
 
     tabfaccu%method = 'TABF'
     call pmf_accu_write_header(tabfaccu%PMFAccuType,iounit)
-    call pmf_accu_write_ibuf_B(tabfaccu%PMFAccuType,iounit,'NSAMPLES','AD',tabfaccu%nsamples)
-    call pmf_accu_write_rbuf_M(tabfaccu%PMFAccuType,iounit,'MICF','WA',tabfaccu%micf)
-    call pmf_accu_write_rbuf_M(tabfaccu%PMFAccuType,iounit,'M2ICF','AD',tabfaccu%m2icf)
+    call pmf_accu_write_ibuf_B(tabfaccu%PMFAccuType,iounit,'NSAMPLES',  'AD',tabfaccu%nsamples)
+    call pmf_accu_write_rbuf_M(tabfaccu%PMFAccuType,iounit,'MICF',      'WA',tabfaccu%micf)
+    call pmf_accu_write_rbuf_M(tabfaccu%PMFAccuType,iounit,'M2ICF',     'AD',tabfaccu%m2icf)
+
+    if( fentropy ) then
+        call pmf_accu_write_rbuf_M(tabfaccu%PMFAccuType,iounit,'MICF_POT',  'WA',tabfaccu%micf_pot)
+        call pmf_accu_write_rbuf_M(tabfaccu%PMFAccuType,iounit,'M2ICF_POT', 'AD',tabfaccu%m2icf_pot)
+        call pmf_accu_write_rbuf_M(tabfaccu%PMFAccuType,iounit,'MICF_KIN',  'WA',tabfaccu%micf_kin)
+        call pmf_accu_write_rbuf_M(tabfaccu%PMFAccuType,iounit,'M2ICF_KIN', 'AD',tabfaccu%m2icf_kin)
+    end if
 
     if( fenthalpy .or. fentropy ) then
         call pmf_accu_write_rbuf_B(tabfaccu%PMFAccuType,iounit,'METOT','WA',tabfaccu%metot)
@@ -195,6 +206,7 @@ subroutine tabf_accu_write(iounit)
     end if
 
     if( fentropy ) then
+        call pmf_accu_write_rbuf_M(tabfaccu%PMFAccuType,iounit,'C11HH','AD',tabfaccu%c11hh)
         call pmf_accu_write_rbuf_M(tabfaccu%PMFAccuType,iounit,'C11PP','AD',tabfaccu%c11pp)
         call pmf_accu_write_rbuf_M(tabfaccu%PMFAccuType,iounit,'C11PK','AD',tabfaccu%c11pk)
         call pmf_accu_write_rbuf_M(tabfaccu%PMFAccuType,iounit,'C11PR','AD',tabfaccu%c11pr)
@@ -247,31 +259,33 @@ subroutine tabf_accu_add_data_online(cvs,gfx_pot,gfx_kin,epot,ekin,erst)
     tabfaccu%nsamples(gi0) = tabfaccu%nsamples(gi0) + 1
     invn = 1.0d0 / real(tabfaccu%nsamples(gi0),PMFDP)
 
-    etot = epot + ekin + erst
+    if( fenthalpy .or. fentropy ) then
+        etot = epot + ekin + erst
 
-    ! total energy
-    detot1 = etot - tabfaccu%metot(gi0)
-    tabfaccu%metot(gi0)  = tabfaccu%metot(gi0)  + detot1 * invn
-    detot2 = etot - tabfaccu%metot(gi0)
-    tabfaccu%m2etot(gi0) = tabfaccu%m2etot(gi0) + detot1 * detot2
+        ! total energy
+        detot1 = etot - tabfaccu%metot(gi0)
+        tabfaccu%metot(gi0)  = tabfaccu%metot(gi0)  + detot1 * invn
+        detot2 = etot - tabfaccu%metot(gi0)
+        tabfaccu%m2etot(gi0) = tabfaccu%m2etot(gi0) + detot1 * detot2
 
-    ! potential energy
-    depot1 = epot - tabfaccu%mepot(gi0)
-    tabfaccu%mepot(gi0)  = tabfaccu%mepot(gi0)  + depot1 * invn
-    depot2 = epot - tabfaccu%mepot(gi0)
-    tabfaccu%m2epot(gi0) = tabfaccu%m2epot(gi0) + depot1 * depot2
+        ! potential energy
+        depot1 = epot - tabfaccu%mepot(gi0)
+        tabfaccu%mepot(gi0)  = tabfaccu%mepot(gi0)  + depot1 * invn
+        depot2 = epot - tabfaccu%mepot(gi0)
+        tabfaccu%m2epot(gi0) = tabfaccu%m2epot(gi0) + depot1 * depot2
 
-    ! potential energy
-    dekin1 = ekin - tabfaccu%mekin(gi0)
-    tabfaccu%mekin(gi0)  = tabfaccu%mekin(gi0)  + dekin1 * invn
-    dekin2 = ekin - tabfaccu%mekin(gi0)
-    tabfaccu%m2ekin(gi0) = tabfaccu%m2ekin(gi0) + dekin1 * dekin2
+        ! potential energy
+        dekin1 = ekin - tabfaccu%mekin(gi0)
+        tabfaccu%mekin(gi0)  = tabfaccu%mekin(gi0)  + dekin1 * invn
+        dekin2 = ekin - tabfaccu%mekin(gi0)
+        tabfaccu%m2ekin(gi0) = tabfaccu%m2ekin(gi0) + dekin1 * dekin2
 
-    ! restraint energy
-    derst1 = erst - tabfaccu%merst(gi0)
-    tabfaccu%merst(gi0)  = tabfaccu%merst(gi0)  + derst1 * invn
-    derst2 = erst - tabfaccu%merst(gi0)
-    tabfaccu%m2erst(gi0) = tabfaccu%m2erst(gi0) + derst1 * derst2
+        ! restraint energy
+        derst1 = erst - tabfaccu%merst(gi0)
+        tabfaccu%merst(gi0)  = tabfaccu%merst(gi0)  + derst1 * invn
+        derst2 = erst - tabfaccu%merst(gi0)
+        tabfaccu%m2erst(gi0) = tabfaccu%m2erst(gi0) + derst1 * derst2
+    end if
 
     do i=1,NumOfABFCVs
         icf = gfx_pot(i) + gfx_kin(i)
@@ -291,12 +305,14 @@ subroutine tabf_accu_add_data_online(cvs,gfx_pot,gfx_kin,epot,ekin,erst)
         dicf_kin2 = - gfx_kin(i) -  tabfaccu%micf_kin(i,gi0)
         tabfaccu%m2icf_kin(i,gi0) = tabfaccu%m2icf_kin(i,gi0) + dicf_kin1 * dicf_kin2
 
-        tabfaccu%c11pp(i,gi0)  = tabfaccu%c11pp(i,gi0) + dicf_pot1 * depot2
-        tabfaccu%c11pk(i,gi0)  = tabfaccu%c11pk(i,gi0) + dicf_pot1 * dekin2
-        tabfaccu%c11pr(i,gi0)  = tabfaccu%c11pr(i,gi0) + dicf_pot1 * derst2
-        tabfaccu%c11kp(i,gi0)  = tabfaccu%c11kp(i,gi0) + dicf_kin1 * depot2
-        tabfaccu%c11kk(i,gi0)  = tabfaccu%c11kk(i,gi0) + dicf_kin1 * dekin2
-        tabfaccu%c11kr(i,gi0)  = tabfaccu%c11kr(i,gi0) + dicf_kin1 * derst2
+        if( fentropy ) then
+            tabfaccu%c11pp(i,gi0)  = tabfaccu%c11pp(i,gi0) + dicf_pot1 * depot2
+            tabfaccu%c11pk(i,gi0)  = tabfaccu%c11pk(i,gi0) + dicf_pot1 * dekin2
+            tabfaccu%c11pr(i,gi0)  = tabfaccu%c11pr(i,gi0) + dicf_pot1 * derst2
+            tabfaccu%c11kp(i,gi0)  = tabfaccu%c11kp(i,gi0) + dicf_kin1 * depot2
+            tabfaccu%c11kk(i,gi0)  = tabfaccu%c11kk(i,gi0) + dicf_kin1 * dekin2
+            tabfaccu%c11kr(i,gi0)  = tabfaccu%c11kr(i,gi0) + dicf_kin1 * derst2
+        end if
     end do
 
 end subroutine tabf_accu_add_data_online

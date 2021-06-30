@@ -34,6 +34,7 @@ CPMFProxy_dH::CPMFProxy_dH(void)
     Type = PMF_EPOT;
 
     Requires.push_back("ABF");
+    Requires.push_back("TABF");
     Requires.push_back("CST");
 }
 

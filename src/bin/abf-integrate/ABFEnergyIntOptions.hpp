@@ -61,6 +61,7 @@ public:
     CSO_LIST_BEGIN
 
     // options ------------------------------
+    CSO_OPT(CSmallString,Realm)
     CSO_OPT(CSmallString,Method)
     CSO_OPT(CSmallString,EcutMethod)
     CSO_OPT(CSmallString,LAMethod)
@@ -116,6 +117,26 @@ public:
 
     CSO_MAP_BEGIN
 // description of options ---------------------------------------------------
+   CSO_MAP_OPT(CSmallString,                           /* option type */
+                Realm,                        /* option name */
+                "dG",                          /* default value */
+                false,                          /* is option mandatory */
+                'r',                           /* short option name */
+                "realm",                      /* long option name */
+                "NAME",                           /* parameter name */
+                "Intended output from the integration:\n"
+                "**  dG     - free energy (default)\n"
+                "** -TdS    - entropy contribution to the free energy\n"
+                "**  dG_p   - free energy (potential part)\n"
+                "**  dG_k   - free energy (kinetic part)\n"
+                "** -TdS_PP - entropy contribution to the free energy, cov(dH_p/dx,Epot)\n"
+                "** -TdS_PK - entropy contribution to the free energy, cov(dH_p/dx,Ekin)\n"
+                "** -TdS_PR - entropy contribution to the free energy, cov(dH_p/dx,Erst)\n"
+                "** -TdS_KP - entropy contribution to the free energy, cov(dH_k/dx,Epot)\n"
+                "** -TdS_KK - entropy contribution to the free energy, cov(dH_k/dx,Ekin)\n"
+                "** -TdS_KR - entropy contribution to the free energy, cov(dH_k/dx,Erst)\n"
+                )   /* option description */
+    //----------------------------------------------------------------------
     CSO_MAP_OPT(CSmallString,                           /* option type */
                 Method,                        /* option name */
                 "rfd",                          /* default value */

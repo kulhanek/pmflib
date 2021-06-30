@@ -31,9 +31,8 @@ using namespace std;
 
 CCSTProxy_mTdS::CCSTProxy_mTdS(void)
 {
+    SetType(CST_C11HH);
     Requires.push_back("CST");
-    Provide = "CST -TdS(x)^{c}";    // entropy of the constrained system
-    Type = CST_C11HH;
 }
 
 //------------------------------------------------------------------------------

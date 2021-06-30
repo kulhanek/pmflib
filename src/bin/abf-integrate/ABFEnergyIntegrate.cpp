@@ -36,6 +36,7 @@
 #include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string/classification.hpp>
 #include <ABFProxy_dG.hpp>
+#include <ABFProxy_mTdS.hpp>
 
 //------------------------------------------------------------------------------
 
@@ -105,6 +106,8 @@ int CABFEnergyIntegrate::Init(int argc,char* argv[])
     } else {
         vout << "# Free energy file (out): - (standard output)" << endl;
     }
+    vout << "# ------------------------------------------------" << endl;
+        vout << "# Integrated realm      : " << Options.GetOptRealm() << endl;
     vout << "# ------------------------------------------------" << endl;
         if(Options.GetOptMethod() == "rfd" ) {
             vout << "# Integration method    : RFD (reverse finite differences via csparse)" << endl;
@@ -220,6 +223,60 @@ bool CABFEnergyIntegrate::Run(void)
 // setup accu, energy proxy, and output FES
     Accu        = CPMFAccumulatorPtr(new CPMFAccumulator);
     FES         = CEnergySurfacePtr(new CEnergySurface);
+
+if( Options.GetOptRealm() == "dG" ){
+        DerProxy    = CABFProxy_dG_Ptr(new CABFProxy_dG);
+// -----------------------------------------------
+    } else if ( Options.GetOptRealm() == "dG_p" ) {
+        CABFProxy_dG_Ptr proxy    = CABFProxy_dG_Ptr(new CABFProxy_dG);
+        proxy->SetType(ABF_MICF_POT);
+        DerProxy = proxy;
+// -----------------------------------------------
+    } else if ( Options.GetOptRealm() == "dG_k" ) {
+        CABFProxy_dG_Ptr proxy    = CABFProxy_dG_Ptr(new CABFProxy_dG);
+        proxy->SetType(ABF_MICF_KIN);
+        DerProxy = proxy;
+// -----------------------------------------------
+    } else if ( Options.GetOptRealm() == "-TdS" ) {
+        CABFProxy_mTdS_Ptr proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
+        DerProxy = proxy;
+// -----------------------------------------------
+    } else if ( Options.GetOptRealm() == "-TdS_PP" ) {
+        CABFProxy_mTdS_Ptr proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
+        proxy->SetType(ABF_C11PP);
+        DerProxy = proxy;
+// -----------------------------------------------
+    } else if ( Options.GetOptRealm() == "-TdS_PK" ) {
+        CABFProxy_mTdS_Ptr proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
+        proxy->SetType(ABF_C11PK);
+        DerProxy = proxy;
+// -----------------------------------------------
+    } else if ( Options.GetOptRealm() == "-TdS_PR" ) {
+        CABFProxy_mTdS_Ptr proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
+        proxy->SetType(ABF_C11PR);
+        DerProxy = proxy;
+// -----------------------------------------------
+    } else if ( Options.GetOptRealm() == "-TdS_KP" ) {
+        CABFProxy_mTdS_Ptr proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
+        proxy->SetType(ABF_C11KP);
+        DerProxy = proxy;
+// -----------------------------------------------
+    } else if ( Options.GetOptRealm() == "-TdS_KK" ) {
+        CABFProxy_mTdS_Ptr proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
+        proxy->SetType(ABF_C11KK);
+        DerProxy = proxy;
+// -----------------------------------------------
+    } else if ( Options.GetOptRealm() == "-TdS_KR" ) {
+        CABFProxy_mTdS_Ptr proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
+        proxy->SetType(ABF_C11KR);
+        DerProxy = proxy;
+// -----------------------------------------------
+    } else {
+        CSmallString error;
+        error << "unsupported realm: " << Options.GetOptRealm() ;
+        RUNTIME_ERROR(error);
+    }
+
     DerProxy    = CABFProxy_dG_Ptr(new CABFProxy_dG);
 
     vout << endl;

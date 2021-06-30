@@ -25,6 +25,14 @@
 
 //------------------------------------------------------------------------------
 
+enum EABFdGType {
+    ABF_MICF,
+    ABF_MICF_POT,
+    ABF_MICF_KIN,
+};
+
+//------------------------------------------------------------------------------
+
 /** \brief ABF proxy providing mean force for the free energy integration
 */
 
@@ -35,6 +43,10 @@ public:
     ~CABFProxy_dG(void);
 
 //------------------------------------------------------------------------------
+    // set type
+    void SetType(EABFdGType type);
+
+//------------------------------------------------------------------------------
     // get number of samples
     virtual int GetNumOfSamples(int ibin) const;
 
@@ -43,6 +55,10 @@ public:
 
     // get energy derivative and its error
     virtual double GetValue( int ibin,int icv,EProxyRealm realm) const;
+
+// section of private data -----------------------------------------------------
+private:
+    EABFdGType    Type;
 };
 
 //------------------------------------------------------------------------------
