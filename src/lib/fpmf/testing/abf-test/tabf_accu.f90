@@ -295,17 +295,18 @@ subroutine tabf_accu_add_data_online(cvs,gfx_pot,gfx_kin,epot,ekin,erst)
         dicf2 = - icf -  tabfaccu%micf(i,gi0)
         tabfaccu%m2icf(i,gi0) = tabfaccu%m2icf(i,gi0) + dicf1 * dicf2
 
-        dicf_pot1 = - gfx_pot(i) - tabfaccu%micf_pot(i,gi0)
-        tabfaccu%micf_pot(i,gi0)  = tabfaccu%micf_pot(i,gi0)  + dicf_pot1 * invn
-        dicf_pot2 = - gfx_pot(i) -  tabfaccu%micf_pot(i,gi0)
-        tabfaccu%m2icf_pot(i,gi0) = tabfaccu%m2icf_pot(i,gi0) + dicf_pot1 * dicf_pot2
-
-        dicf_kin1 = - gfx_kin(i) - tabfaccu%micf_kin(i,gi0)
-        tabfaccu%micf_kin(i,gi0)  = tabfaccu%micf_kin(i,gi0)  + dicf_kin1 * invn
-        dicf_kin2 = - gfx_kin(i) -  tabfaccu%micf_kin(i,gi0)
-        tabfaccu%m2icf_kin(i,gi0) = tabfaccu%m2icf_kin(i,gi0) + dicf_kin1 * dicf_kin2
-
         if( fentropy ) then
+            dicf_pot1 = - gfx_pot(i) - tabfaccu%micf_pot(i,gi0)
+            tabfaccu%micf_pot(i,gi0)  = tabfaccu%micf_pot(i,gi0)  + dicf_pot1 * invn
+            dicf_pot2 = - gfx_pot(i) -  tabfaccu%micf_pot(i,gi0)
+            tabfaccu%m2icf_pot(i,gi0) = tabfaccu%m2icf_pot(i,gi0) + dicf_pot1 * dicf_pot2
+
+            dicf_kin1 = - gfx_kin(i) - tabfaccu%micf_kin(i,gi0)
+            tabfaccu%micf_kin(i,gi0)  = tabfaccu%micf_kin(i,gi0)  + dicf_kin1 * invn
+            dicf_kin2 = - gfx_kin(i) -  tabfaccu%micf_kin(i,gi0)
+            tabfaccu%m2icf_kin(i,gi0) = tabfaccu%m2icf_kin(i,gi0) + dicf_kin1 * dicf_kin2
+
+            tabfaccu%c11hh(i,gi0)  = tabfaccu%c11hh(i,gi0) + dicf1     * detot2
             tabfaccu%c11pp(i,gi0)  = tabfaccu%c11pp(i,gi0) + dicf_pot1 * depot2
             tabfaccu%c11pk(i,gi0)  = tabfaccu%c11pk(i,gi0) + dicf_pot1 * dekin2
             tabfaccu%c11pr(i,gi0)  = tabfaccu%c11pr(i,gi0) + dicf_pot1 * derst2
