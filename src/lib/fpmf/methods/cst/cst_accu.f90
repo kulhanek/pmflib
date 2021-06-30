@@ -112,6 +112,86 @@ subroutine cst_accu_read(iounit)
                     call pmf_accu_read_rbuf_B(cstaccu,iounit,keyline,rbuf_B)
                     m2isrz = rbuf_B(glbidx)
             ! ------------------------------------
+                case('METOT')
+                    call pmf_accu_read_rbuf_B(cstaccu,iounit,keyline,rbuf_B)
+                    if( fenthalpy ) then
+                        metot = rbuf_B(glbidx)
+                    end if
+            ! ------------------------------------
+                case('M2ETOT')
+                    call pmf_accu_read_rbuf_B(cstaccu,iounit,keyline,rbuf_B)
+                    if( fenthalpy ) then
+                        m2etot = rbuf_B(glbidx)
+                    end if
+            ! ------------------------------------
+                case('MEPOT')
+                    call pmf_accu_read_rbuf_B(cstaccu,iounit,keyline,rbuf_B)
+                    if( fenthalpy ) then
+                        mepot = rbuf_B(glbidx)
+                    end if
+            ! ------------------------------------
+                case('M2EPOT')
+                    call pmf_accu_read_rbuf_B(cstaccu,iounit,keyline,rbuf_B)
+                    if( fenthalpy ) then
+                        m2epot = rbuf_B(glbidx)
+                    end if
+            ! ------------------------------------
+                case('MEKIN')
+                    call pmf_accu_read_rbuf_B(cstaccu,iounit,keyline,rbuf_B)
+                    if( fenthalpy ) then
+                        mekin = rbuf_B(glbidx)
+                    end if
+            ! ------------------------------------
+                case('M2EKIN')
+                    call pmf_accu_read_rbuf_B(cstaccu,iounit,keyline,rbuf_B)
+                    if( fenthalpy ) then
+                        m2ekin = rbuf_B(glbidx)
+                    end if
+            ! ------------------------------------
+                case('MERST')
+                    call pmf_accu_read_rbuf_B(cstaccu,iounit,keyline,rbuf_B)
+                    if( fenthalpy ) then
+                        merst = rbuf_B(glbidx)
+                    end if
+            ! ------------------------------------
+                case('M2ERST')
+                    call pmf_accu_read_rbuf_B(cstaccu,iounit,keyline,rbuf_B)
+                    if( fenthalpy ) then
+                        m2erst = rbuf_B(glbidx)
+                    end if
+            ! ------------------------------------
+                case('C11HH')
+                    call pmf_accu_read_rbuf_M(cstaccu,iounit,keyline,rbuf_M)
+                    if( fentropy ) then
+                        do i=1,cstaccu%tot_cvs
+                            c11hh(i) = rbuf_M(i,glbidx)
+                        end do
+                    end if
+           ! ------------------------------------
+                case('C11HP')
+                    call pmf_accu_read_rbuf_M(cstaccu,iounit,keyline,rbuf_M)
+                    if( fentropy ) then
+                        do i=1,cstaccu%tot_cvs
+                            c11hp(i) = rbuf_M(i,glbidx)
+                        end do
+                    end if
+           ! ------------------------------------
+                case('C11HK')
+                    call pmf_accu_read_rbuf_M(cstaccu,iounit,keyline,rbuf_M)
+                    if( fentropy ) then
+                        do i=1,cstaccu%tot_cvs
+                            c11hk(i) = rbuf_M(i,glbidx)
+                        end do
+                    end if
+           ! ------------------------------------
+                case('C11HR')
+                    call pmf_accu_read_rbuf_M(cstaccu,iounit,keyline,rbuf_M)
+                    if( fentropy ) then
+                        do i=1,cstaccu%tot_cvs
+                            c11hr(i) = rbuf_M(i,glbidx)
+                        end do
+                    end if
+            ! ------------------------------------
                 case default
                     call pmf_accu_skip_section(iounit,keyline,MTD_OUT)
             end select
@@ -129,7 +209,7 @@ subroutine cst_accu_read(iounit)
 end subroutine cst_accu_read
 
 !===============================================================================
-! Subroutine:  cst_restart_write_data
+! Subroutine:  cst_accu_write
 !===============================================================================
 
 subroutine cst_accu_write(iounit)
@@ -239,25 +319,25 @@ subroutine cst_accu_write(iounit)
         do i=1,cstaccu%tot_cvs
             rbuf_M(i,glbidx) = c11hh(i)
         end do
-        call pmf_accu_write_rbuf_M(cstaccu,iounit,'C11HH','WA',rbuf_M)
+        call pmf_accu_write_rbuf_M(cstaccu,iounit,'C11HH','AD',rbuf_M)
 
         rbuf_M(:,:) = 0.0d0
         do i=1,cstaccu%tot_cvs
             rbuf_M(i,glbidx) = c11hp(i)
         end do
-        call pmf_accu_write_rbuf_M(cstaccu,iounit,'C11HP','WA',rbuf_M)
+        call pmf_accu_write_rbuf_M(cstaccu,iounit,'C11HP','AD',rbuf_M)
 
         rbuf_M(:,:) = 0.0d0
         do i=1,cstaccu%tot_cvs
             rbuf_M(i,glbidx) = c11hk(i)
         end do
-        call pmf_accu_write_rbuf_M(cstaccu,iounit,'C11HK','WA',rbuf_M)
+        call pmf_accu_write_rbuf_M(cstaccu,iounit,'C11HK','AD',rbuf_M)
 
         rbuf_M(:,:) = 0.0d0
         do i=1,cstaccu%tot_cvs
             rbuf_M(i,glbidx) = c11hr(i)
         end do
-        call pmf_accu_write_rbuf_M(cstaccu,iounit,'C11HR','WA',rbuf_M)
+        call pmf_accu_write_rbuf_M(cstaccu,iounit,'C11HR','AD',rbuf_M)
     end if
 
 end subroutine cst_accu_write

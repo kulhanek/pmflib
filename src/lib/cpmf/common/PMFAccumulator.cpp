@@ -48,6 +48,7 @@ CPMFAccumulator::CPMFAccumulator(void)
     EnergyUnit          = "kcal mol^-1";
     Method              = "NONE";
     Version             = LibBuildVersion_PMF;
+    NCorr               = 1.0;
 }
 
 //------------------------------------------------------------------------------
@@ -773,6 +774,20 @@ double CPMFAccumulator::GetEnergyRealValue(double value) const
     return(value * EnergyFConv);
 }
 
+//------------------------------------------------------------------------------
+
+void CPMFAccumulator::SetNCorr(double ncorr)
+{
+    NCorr = ncorr;
+}
+
+//------------------------------------------------------------------------------
+
+double CPMFAccumulator::GetNCorr(void) const
+{
+    return(NCorr);
+}
+
 //==============================================================================
 //------------------------------------------------------------------------------
 //==============================================================================
@@ -1422,6 +1437,7 @@ void CPMFAccuData::Save(FILE* p_fout)
     // write data
     if( Type == "I" ){
         for(int i=0; i < Size; i++){
+            if( (i % 8 == 0) && (i != 0) ) fprintf(p_fout,"\n");
             int value = Data[i];
             // 10  format(8(I9,1X))
             if( fprintf(p_fout,"%9d ",value) <= 0 ){
@@ -1429,10 +1445,10 @@ void CPMFAccuData::Save(FILE* p_fout)
                 error << "unable to write data record";
                 RUNTIME_ERROR(error);
             }
-            if( i % 8 == 7 ) fprintf(p_fout,"\n");
         }
     } else if ( Type == "R" ){
         for(int i=0; i < Size; i++){
+            if( (i % 4 == 0) && (i != 0) ) fprintf(p_fout,"\n");
             double value = Data[i];
             // 10  format(4(E19.11,1X))
             if( fprintf(p_fout,"%19.11le ",value) <= 0 ){
@@ -1440,7 +1456,6 @@ void CPMFAccuData::Save(FILE* p_fout)
                 error << "unable to write data record";
                 RUNTIME_ERROR(error);
             }
-            if( i % 4 == 3 ) fprintf(p_fout,"\n");
         }
     } else {
         CSmallString error;

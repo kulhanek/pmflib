@@ -73,6 +73,7 @@ double CABFProxy_dG::GetValue(int ibin,int icv,EProxyRealm realm) const
     double  nsamples = Accu->GetData("NSAMPLES",ibin);
     double  micf     = Accu->GetData("MICF",ibin,icv);
     double  m2icf    = Accu->GetData("M2ICF",ibin,icv);
+    double  ncorr    = Accu->GetNCorr();
 
     double value = 0.0;
     if( nsamples <= 0 ) return(value);
@@ -87,7 +88,7 @@ double CABFProxy_dG::GetValue(int ibin,int icv,EProxyRealm realm) const
             return( sqrt(m2icf / nsamples) );
         // -------------------
         case(E_PROXY_ERROR):
-            return( sqrt(m2icf) / nsamples );
+            return( sqrt(m2icf * ncorr) / nsamples );
         // -------------------
         default:
             RUNTIME_ERROR("unsupported realm");

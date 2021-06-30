@@ -30,16 +30,48 @@ using namespace std;
 
 CPMFProxy_dH::CPMFProxy_dH(void)
 {
+    Provide = "PMF dH(x)=<Epot>";
+    Type = PMF_EPOT;
+
     Requires.push_back("ABF");
     Requires.push_back("CST");
-    Provide = "PMF dH(x)";
-    NCorr = 1.0;
 }
 
 //------------------------------------------------------------------------------
 
 CPMFProxy_dH::~CPMFProxy_dH(void)
 {
+}
+
+//==============================================================================
+//------------------------------------------------------------------------------
+//==============================================================================
+
+void CPMFProxy_dH::SetType(EPMFdHType type)
+{
+    Type = type;
+
+    switch(Type){
+    // -------------------
+        case(PMF_ETOT):
+            Provide = "PMF dH(x)=<Etot>";
+        break;
+    // -------------------
+        case(PMF_EPOT):
+            Provide = "PMF dH(x)=<Epot>";
+        break;
+    // -------------------
+        case(PMF_EKIN):
+            Provide = "PMF <Ekin>";
+        break;
+    // -------------------
+        case(PMF_ERST):
+            Provide = "PMF <Erst>";
+        break;
+    // -------------------
+        default:
+            RUNTIME_ERROR("unsupported type");
+    }
 }
 
 //==============================================================================
@@ -71,9 +103,36 @@ double CPMFProxy_dH::GetValue( int ibin,EProxyRealm realm) const
         RUNTIME_ERROR("Accu is NULL");
     }
 
-    double  nsamples = Accu->GetData("NSAMPLES",ibin);
-    double  mepot    = Accu->GetData("MEPOT",ibin);
-    double  m2epot   = Accu->GetData("M2EPOT",ibin);
+    double  nsamples    = Accu->GetData("NSAMPLES",ibin);
+    double  mene        = 0.0;
+    double  m2ene       = 0.0;
+    double  ncorr       = Accu->GetNCorr();
+
+    switch(Type){
+    // -------------------
+        case(PMF_ETOT):
+            mene    = Accu->GetData("METOT",ibin);
+            m2ene   = Accu->GetData("M2ETOT",ibin);
+        break;
+    // -------------------
+        case(PMF_EPOT):
+            mene    = Accu->GetData("MEPOT",ibin);
+            m2ene   = Accu->GetData("M2EPOT",ibin);
+        break;
+    // -------------------
+        case(PMF_EKIN):
+            mene    = Accu->GetData("MEKIN",ibin);
+            m2ene   = Accu->GetData("M2EKIN",ibin);
+        break;
+    // -------------------
+        case(PMF_ERST):
+            mene    = Accu->GetData("MERST",ibin);
+            m2ene   = Accu->GetData("M2ERST",ibin);
+        break;
+    // -------------------
+        default:
+            RUNTIME_ERROR("unsupported type");
+    }
 
     double value = 0.0;
     if( nsamples <= 0 ) return(value);
@@ -82,26 +141,19 @@ double CPMFProxy_dH::GetValue( int ibin,EProxyRealm realm) const
 // mean force
         // -------------------
         case(E_PROXY_VALUE):
-            return( mepot );
+            return( mene );
         // -------------------
         case(E_PROXY_SIGMA):
-            return( sqrt(m2epot / nsamples) );
+            return( sqrt(m2ene / nsamples) );
         // -------------------
         case(E_PROXY_ERROR):
-            return( sqrt(m2epot * NCorr) / nsamples );
+            return( sqrt(m2ene * ncorr) / nsamples );
         // -------------------
         default:
             RUNTIME_ERROR("unsupported realm");
     }
 
     return(value);
-}
-
-//------------------------------------------------------------------------------
-
-void CPMFProxy_dH::SetNCorr(double ncorr)
-{
-    NCorr  = ncorr;
 }
 
 //==============================================================================

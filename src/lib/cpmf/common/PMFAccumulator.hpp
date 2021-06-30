@@ -214,6 +214,12 @@ public:
     /// get real value of energy
     double GetEnergyRealValue(double value) const;
 
+    // set NCorr
+    void SetNCorr(double ncorr);
+
+    // get NCorr
+    double GetNCorr(void) const;
+
 // mathematical operation -----------------------------------------------------
     /// set all data to zero
     void Reset(void);
@@ -276,6 +282,8 @@ protected:
     CSmallString                    TemperatureUnit;
     double                          EnergyFConv;        // energy unit
     CSmallString                    EnergyUnit;
+
+    double                          NCorr;
 
     int                             NumOfCVs;           // number of CVs
     std::vector<CColVariablePtr>    CVs;                // collective variables

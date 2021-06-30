@@ -157,7 +157,7 @@ SET(PMF_TABF_CORE_SRC
         testing/abf-test/tabf_control.F90
         testing/abf-test/tabf_output.f90
         testing/abf-test/tabf_restart.f90
-        testing/abf-test/tabf_accumulator.f90
+        testing/abf-test/tabf_accu.f90
         testing/abf-test/tabf_core.f90
         testing/abf-test/tabf_trajectory.f90
         testing/abf-test/tabf_finalize.f90

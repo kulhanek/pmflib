@@ -49,6 +49,7 @@ public:
     CSO_ARG(CSmallString,AccuName)
     CSO_ARG(CSmallString,OutputName)
     // options ------------------------------
+    CSO_OPT(CSmallString,Realm)
     CSO_OPT(CSmallString,Method)
     CSO_OPT(int,Limit)
     CSO_OPT(bool,Absolute)
@@ -89,13 +90,27 @@ public:
                 "enthalpy",                        /* parameter name */
                 "Name of file where results will be printed. If the name is '-' then the output will be written to the standard output.")   /* argument description */
 // description of options ---------------------------------------------------
+   CSO_MAP_OPT(CSmallString,                           /* option type */
+                Realm,                        /* option name */
+                "<Epot>",                          /* default value */
+                false,                          /* is option mandatory */
+                'r',                           /* short option name */
+                "realm",                      /* long option name */
+                "NAME",                           /* parameter name */
+                "Intended output:\n"
+                "** <Epot>  - enthalpy as the ensemble average of the potential energy (default)\n"
+                "** <Ekin>  - the ensemble average of the kinetic energy (this should be a constant for simulations at a constant temperature)\n"
+                "** <Erst>  - the ensemble average of the PMFLib restrain energy\n"
+                "** <Etot>  - enthalpy as the ensemble average of the total energy\n"
+                )   /* option description */
+    //----------------------------------------------------------------------
     CSO_MAP_OPT(CSmallString,                           /* option type */
                 Method,                        /* option name */
                 "raw",                          /* default value */
                 false,                          /* is option mandatory */
                 'm',                           /* short option name */
                 "method",                      /* long option name */
-                "NAME",                           /* parametr name */
+                "NAME",                           /* parameter name */
                 "Supported methods are: raw (data taken directly from  accumulator) and gpr (gaussian process filtered data).")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(bool,                           /* option type */
@@ -104,7 +119,7 @@ public:
                 false,                          /* is option mandatory */
                 'a',                           /* short option name */
                 "absolute",                      /* long option name */
-                NULL,                           /* parametr name */
+                NULL,                           /* parameter name */
                 "absolute enthalpy.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(int,                           /* option type */
@@ -122,7 +137,7 @@ public:
                 false,                          /* is option mandatory */
                 'e',                           /* short option name */
                 "witherror",                      /* long option name */
-                NULL,                           /* parametr name */
+                NULL,                           /* parameter name */
                 "GPR: Estimate enthalpy errors from the GPR model. RAW: Print enthalpy errors from the PMF accumulator.")   /* option description */
    //----------------------------------------------------------------------
     CSO_MAP_OPT(CSmallString,                           /* option type */
@@ -131,7 +146,7 @@ public:
                 false,                          /* is option mandatory */
                 '\0',                           /* short option name */
                 "kernel",                      /* long option name */
-                "NAME",                           /* parametr name */
+                "NAME",                           /* parameter name */
                 "GPR: Kernel type. Supported types: ardse (ARD squared exponential), ardmc52 (ARD Matern class 5/2), default(=ardse)")   /* option description */
 //----------------------------------------------------------------------
     CSO_MAP_OPT(double,                           /* option type */
@@ -140,7 +155,7 @@ public:
                 false,                          /* is option mandatory */
                 's',                           /* short option name */
                 "sigmaf2",                      /* long option name */
-                "NUMBER",                           /* parametr name */
+                "NUMBER",                           /* parameter name */
                 "GPR: Variance of the reconstructed enthalpy surface (signal variance).")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(double,                           /* option type */
@@ -149,7 +164,7 @@ public:
                 false,                          /* is option mandatory */
                 'c',                           /* short option name */
                 "ncorr",                      /* long option name */
-                "VALUE",                           /* parametr name */
+                "VALUE",                           /* parameter name */
                 "Number of statistically correlated samples.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(CSmallString,                           /* option type */
@@ -158,7 +173,7 @@ public:
                 false,                          /* is option mandatory */
                 'w',                           /* short option name */
                 "wfac",                      /* long option name */
-                "SPEC",                           /* parametr name */
+                "SPEC",                           /* parameter name */
                 "GPR: Factors influencing widths of square exponential kernels. The width is distance between "
                 "the adjacent square exponential functions multiplied by this factors in the form WFac1[xWFac2x...]. "
                 "The last value pads the rest.")   /* option description */
@@ -169,7 +184,7 @@ public:
                 false,                          /* is option mandatory */
                 0,                           /* short option name */
                 "loadhyprms",                      /* long option name */
-                "NAME",                           /* parametr name */
+                "NAME",                           /* parameter name */
                 "GPR: Name of file with the GPR hyperparameters.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(double,                           /* option type */
@@ -178,7 +193,7 @@ public:
                 false,                          /* is option mandatory */
                 0,                           /* short option name */
                 "slevel",                      /* long option name */
-                "VALUE",                           /* parametr name */
+                "VALUE",                           /* parameter name */
                 "Sigma-level for confidence interval.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(CSmallString,                           /* option type */
@@ -187,7 +202,7 @@ public:
                 false,                          /* is option mandatory */
                 '\0',                           /* short option name */
                 "globalmin",                      /* long option name */
-                "SPEC",                           /* parametr name */
+                "SPEC",                           /* parameter name */
                 "GPR: position of global minimum provided as a single string in the form CV1xCV2x...xCVn (relevant for error determination), if not set the position is determined automatically.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(double,                           /* option type */
@@ -196,7 +211,7 @@ public:
                 false,                          /* is option mandatory */
                 'o',                           /* short option name */
                 "offset",                      /* long option name */
-                "NUMBER",                           /* parametr name */
+                "NUMBER",                           /* parameter name */
                 "Specify an integration constant.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(CSmallString,                           /* option type */
@@ -205,7 +220,7 @@ public:
                 false,                          /* is option mandatory */
                 0,                           /* short option name */
                 "output",                      /* long option name */
-                "FORMAT",                           /* parametr name */
+                "FORMAT",                           /* parameter name */
                 "Output FORMAT to print the enthalpy surface. Supported formats are: plain and gnuplot.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(bool,                           /* option type */
@@ -214,7 +229,7 @@ public:
                 false,                          /* is option mandatory */
                 0,                           /* short option name */
                 "noheader",                      /* long option name */
-                NULL,                           /* parametr name */
+                NULL,                           /* parameter name */
                 "Do not print header to the output file.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(bool,                           /* option type */
@@ -223,7 +238,7 @@ public:
                 false,                          /* is option mandatory */
                 0,                           /* short option name */
                 "printall",                      /* long option name */
-                NULL,                           /* parametr name */
+                NULL,                           /* parameter name */
                 "Print results for all bins even if not properly sampled.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(CSmallString,                           /* option type */
@@ -250,7 +265,7 @@ public:
                 false,                          /* is option mandatory */
                 0,                           /* short option name */
                 "lmethod",                      /* long option name */
-                "NAME",                           /* parametr name */
+                "NAME",                           /* parameter name */
                 "Linear algebra method for LLS solution or matrix inversion. Supported algorithms are: "
                 "default, svd (SVD - singular value decomposition, divide and conquer driver), "
                 "svd2 (SVD - singular value decomposition, simple driver), "
@@ -263,7 +278,7 @@ public:
                 false,                          /* is option mandatory */
                 0,                           /* short option name */
                 "rcond",                      /* long option name */
-                "NUMBER",                           /* parametr name */
+                "NUMBER",                           /* parameter name */
                 "GPR: Rank condition for SVD. Used value must be carefully tested. Calculation at computer precision is requested with -1 (not recommended).")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(bool,                           /* option type */

@@ -111,7 +111,7 @@ real(PMFDP)                 :: PMFEne           ! current PMFLib potential energ
 type(CVContextType)         :: CVContext        ! current CV context (values and derivatives) in t
 
 ! used by Blue moon
-real(PMFDP),allocatable     :: CrdP(:,:)        ! coordinates
+real(PMFDP),allocatable     :: CrdP(:,:)        ! coordinates in t+dt
 real(PMFDP),allocatable     :: VelP(:,:)        ! velocities
 type(CVContextType)         :: CVContextP
 

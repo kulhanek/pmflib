@@ -69,7 +69,7 @@ subroutine tabf_trajectory_write_snapshot
     use pmf_dat
     use pmf_constants
     use tabf_dat
-    use tabf_accumulator
+    use tabf_accu
 
     implicit none
     ! --------------------------------------------------------------------------
@@ -82,7 +82,7 @@ subroutine tabf_trajectory_write_snapshot
     write(TABF_TRJ,10) fstep
 
     ! write accumulator
-    call tabf_accumulator_write(TABF_TRJ)
+    call tabf_accu_write(TABF_TRJ)
 
     return
 

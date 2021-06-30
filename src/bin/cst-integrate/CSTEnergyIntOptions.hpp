@@ -118,7 +118,7 @@ public:
                 "realm",                      /* long option name */
                 "NAME",                           /* parameter name */
                 "Intended output from the integration:\n"
-                "** dG      - free energy of unbiased system\n"
+                "** dG      - free energy of unbiased system (default)\n"
                 "** -TdS    - entropy contribution to the free energy of unbiased system\n"
                 "** -TdS_HP - entropy contribution to the free energy of biased system, cov(dH/dx,Epot)\n"
                 "** -TdS_HK - entropy contribution to the free energy of biased system, cov(dH/dx,Ekin)\n"

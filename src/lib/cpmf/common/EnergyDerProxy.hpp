@@ -49,9 +49,6 @@ public:
     // get energy derivative and its error
     virtual double GetValue( int ibin,int cv,EProxyRealm realm) const;
 
-    // set NCorr
-    virtual void SetNCorr(double ncorr);
-
 // protected data --------------------------------------------------------------
 protected:
     std::vector<std::string>    Requires;

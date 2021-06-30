@@ -44,7 +44,7 @@ CCSTProxy_mTdS::~CCSTProxy_mTdS(void)
 
 //------------------------------------------------------------------------------
 
-void CCSTProxy_mTdS::SetType(ECSTType type)
+void CCSTProxy_mTdS::SetType(ECSTTdSType type)
 {
     Type = type;
 
@@ -103,6 +103,7 @@ double CCSTProxy_mTdS::GetValue(int ibin,int icv,EProxyRealm realm) const
 
     double  nsamples = Accu->GetData("NSAMPLES",ibin);
     double  m2lam    = Accu->GetData("M2LAMBDA",ibin,icv);
+    double  ncorr    = Accu->GetNCorr();
 
     double  c11     = 0.0;
     double  m2ene   = 0.0;
@@ -141,7 +142,8 @@ double CCSTProxy_mTdS::GetValue(int ibin,int icv,EProxyRealm realm) const
     switch(realm){
     // -------------------
         case(E_PROXY_VALUE): {
-            return( (c11 / nsamples) / (temp * PMF_Rgas) );
+            // negative value due to lambda vs dG/dx
+            return( - (c11 / nsamples) / (temp * PMF_Rgas) );
         }
     // -------------------
         case(E_PROXY_SIGMA): {
@@ -151,7 +153,7 @@ double CCSTProxy_mTdS::GetValue(int ibin,int icv,EProxyRealm realm) const
     // -------------------
         case(E_PROXY_ERROR): {
             // approximation
-            return( sqrt(m2lam / nsamples) * sqrt( m2ene / nsamples ) / sqrt(nsamples) / (temp * PMF_Rgas) );
+            return( sqrt(ncorr) * sqrt(m2lam / nsamples) * sqrt( m2ene / nsamples ) / sqrt(nsamples) / (temp * PMF_Rgas) );
         }
     // -------------------
         default:

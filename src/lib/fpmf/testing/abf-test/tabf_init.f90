@@ -203,7 +203,7 @@ subroutine tabf_init_arrays
     use pmf_utils
     use pmf_dat
     use tabf_dat
-    use tabf_accumulator
+    use tabf_accu
 
     implicit none
     integer     :: alloc_failed
@@ -270,7 +270,7 @@ subroutine tabf_init_arrays
     end if
 
     ! init accumulator ------------------------------
-    call tabf_accumulator_init
+    call tabf_accu_init
 
 end subroutine tabf_init_arrays
 

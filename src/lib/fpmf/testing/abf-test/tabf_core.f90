@@ -1,6 +1,7 @@
 !===============================================================================
 ! PMFLib - Library Supporting Potential of Mean Force Calculations
 !-------------------------------------------------------------------------------
+!    Copyright (C) 2021 Petr Kulhanek, kulhanek@chemi.muni.cz
 !    Copyright (C) 2011-2015 Petr Kulhanek, kulhanek@chemi.muni.cz
 !    Copyright (C) 2013-2015 Letif Mones, lam81@cam.ac.uk
 !    Copyright (C) 2010 Petr Kulhanek, kulhanek@chemi.muni.cz
@@ -79,7 +80,7 @@ subroutine tabf_core_force_4p()
     use pmf_dat
     use pmf_cvs
     use tabf_dat
-    use tabf_accumulator
+    use tabf_accu
     use tabf_output
 
     implicit none
@@ -137,7 +138,7 @@ subroutine tabf_core_force_4p()
     ! calculate abf force to be applied -------------
     select case(feimode)
         case(1)
-            call tabf_accumulator_get_data_lramp(cvaluehist1(:),la)
+            call tabf_accu_get_data_lramp(cvaluehist1(:),la)
         case default
             call pmf_utils_exit(PMF_OUT,1,'[TABF] Not implemented extrapolation/interpolation mode!')
     end select
@@ -217,7 +218,7 @@ subroutine tabf_core_force_4p()
         pdum(:) = 0.0d0
 
         ! add data to accumulator
-        call tabf_accumulator_add_data_online(cvaluehist0,pxi0(:),pdum(:),avg_epot,avg_ekin,avg_erst)
+        call tabf_accu_add_data_online(cvaluehist0,pxi0(:),pdum(:),avg_epot,avg_ekin,avg_erst)
 
         ! write icf
         call tabf_output_write_icf(avg_values,pxi0(:))
@@ -249,7 +250,7 @@ subroutine tabf_core_force_2p()
     use pmf_dat
     use pmf_cvs
     use tabf_dat
-    use tabf_accumulator
+    use tabf_accu
     use tabf_output
 
     implicit none
@@ -338,7 +339,7 @@ subroutine tabf_core_force_2p()
         pxim(:) = 0.5d0*(pxim(:)+pxip(:))
 
         ! add data to accumulator
-        call tabf_accumulator_add_data_online(cvaluehist0,pxi0(:),pxim(:),epothist0,ekinhist1,ersthist0)
+        call tabf_accu_add_data_online(cvaluehist0,pxi0(:),pxim(:),epothist0,ekinhist1,ersthist0)
     end if
 
     ! backup to the next step
@@ -354,7 +355,7 @@ subroutine tabf_core_force_2p()
         ! calculate abf force to be applied
         select case(feimode)
             case(1)
-                call tabf_accumulator_get_data_lramp(cvaluehist1(:),la)
+                call tabf_accu_get_data_lramp(cvaluehist1(:),la)
             case default
                 call pmf_utils_exit(PMF_OUT,1,'[TABF] Not implemented extrapolation/interpolation mode!')
         end select
@@ -386,7 +387,7 @@ subroutine tabf_core_force_2p_frc()
     use pmf_dat
     use pmf_cvs
     use tabf_dat
-    use tabf_accumulator
+    use tabf_accu
     use tabf_output
 
     implicit none
@@ -471,7 +472,7 @@ subroutine tabf_core_force_2p_frc()
         pxim(:) =  0.5d0*(pxim(:)+pxip(:))
 
         ! add data to accumulator
-        call tabf_accumulator_add_data_online(cvaluehist0,pxi0(:),pxim(:),epothist0,ekinhist1,ersthist0)
+        call tabf_accu_add_data_online(cvaluehist0,pxi0(:),pxim(:),epothist0,ekinhist1,ersthist0)
     end if
 
     ! backup to the next step
@@ -487,7 +488,7 @@ subroutine tabf_core_force_2p_frc()
         ! calculate abf force to be applied
         select case(feimode)
             case(1)
-                call tabf_accumulator_get_data_lramp(cvaluehist1(:),la)
+                call tabf_accu_get_data_lramp(cvaluehist1(:),la)
             case default
                 call pmf_utils_exit(PMF_OUT,1,'[TABF] Not implemented extrapolation/interpolation mode!')
         end select

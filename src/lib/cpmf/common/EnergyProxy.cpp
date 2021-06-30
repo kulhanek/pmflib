@@ -74,7 +74,6 @@ int CEnergyProxy::GetNumOfSamples(int ibin) const
     return(0);
 }
 
-
 //------------------------------------------------------------------------------
 
 void CEnergyProxy::SetNumOfSamples(int ibin,int nsamples)
@@ -88,13 +87,6 @@ double CEnergyProxy::GetValue(int ibin,EProxyRealm realm) const
 {
     RUNTIME_ERROR("need to be overloaded");
     return(0.0);
-}
-
-//------------------------------------------------------------------------------
-
-void CEnergyProxy::SetNCorr(double ncorr)
-{
-    RUNTIME_ERROR("need to be overloaded");
 }
 
 //==============================================================================
