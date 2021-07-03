@@ -1,9 +1,9 @@
 !===============================================================================
 ! PMFLib - Library Supporting Potential of Mean Force Calculations
 !-------------------------------------------------------------------------------
-!    Copyright (C) 2021 Petr Kulhanek, kulhanek@chemi.muni.cz
 !    Copyright (C) 2011-2015 Petr Kulhanek, kulhanek@chemi.muni.cz
 !    Copyright (C) 2013-2015 Letif Mones, lam81@cam.ac.uk
+!    Copyright (C) 2010 Petr Kulhanek, kulhanek@chemi.muni.cz
 !    Copyright (C) 2007 Martin Petrek, petrek@chemi.muni.cz &
 !                       Petr Kulhanek, kulhanek@enzim.hu
 !    Copyright (C) 2006 Petr Kulhanek, kulhanek@chemi.muni.cz &
@@ -25,110 +25,92 @@
 !    Boston, MA  02110-1301  USA
 !===============================================================================
 
-module rst_restart
+module usabf_trajectory
+
+use pmf_sizes
+use pmf_constants
 
 implicit none
 contains
 
 !===============================================================================
-! Subroutine:  rst_restart_read
+! Subroutine:  usabf_trajectory_open
 !===============================================================================
 
-subroutine rst_restart_read
+subroutine usabf_trajectory_open
 
-    use pmf_dat
     use pmf_utils
-    use rst_dat
-    use rst_accu
+    use pmf_dat
+    use pmf_constants
+    use usabf_dat
 
     implicit none
     ! --------------------------------------------------------------------------
 
-    ! test if restart file exists
-    if( frestart .and. .not. pmf_utils_fexist(frsthist) ) then
-        frestart = .false.
-        write(RST_OUT,10) trim(frsthist)
-    end if
+    if( ftrjsample .le. 0 ) return ! trajectory is written only if ftrjsample > 0
 
-    if( frestart ) then
-        write(RST_OUT,20)
-        ! open restart file -----------------------------------------------------------
-        call pmf_utils_open(RST_RST,frsthist,'O')
+    call pmf_utils_open(USABF_TRJ,ftabftrj,'R')
 
-        call rst_accu_read(RST_RST)
-
-        close(RST_RST)
-    else
-        write(RST_OUT,30)
-    end if
+    write(USABF_TRJ,10)
 
     return
 
-    10 format('# WARNING: frestart = on, but file (',A,') does not exist! => frestart = off')
-    20 format('# RST: frestart = on')
-    30 format('# RST: frestart = off')
+    10 format('# ABFTRAJ')
 
-end subroutine rst_restart_read
+end subroutine usabf_trajectory_open
 
 !===============================================================================
-! Subroutine:  rst_restart_update
+! Subroutine:  usabf_trajectory_write_snapshot
 !===============================================================================
 
-subroutine rst_restart_update
+subroutine usabf_trajectory_write_snapshot
 
-    use pmf_dat
     use pmf_utils
-    use rst_accu
-    use rst_dat
+    use pmf_dat
+    use pmf_constants
+    use usabf_dat
+    use usabf_accu
 
     implicit none
-    !---------------------------------------------------------------------------
+    ! --------------------------------------------------------------------------
 
-    ! only if we would like to update restart file or if restart is explicitly required
-    if( (fhistupdate .eq. 0) .and. (frestart .eqv. .false.) ) return
+    if( ftrjsample .le. 0 ) return ! trajectory is written only of ftrjsample > 0
 
-    if( fhistupdate .le. 0 ) return ! trajectory is written only of fhistupdate > 0
+    if( mod(fstep,ftrjsample) .ne. 0 ) return
 
-    if( mod(fstep,fhistupdate) .ne. 0 ) return
+    ! write time
+    write(USABF_TRJ,10) fstep
 
-    call pmf_utils_open(RST_RST,frsthist,'U')
-
-    call rst_accu_write(RST_RST)
-
-    close(RST_RST)
+    ! write accumulator
+    call usabf_accu_write(USABF_TRJ)
 
     return
 
-end subroutine rst_restart_update
+10 format('# ABFSNAP',I7)
+
+end subroutine usabf_trajectory_write_snapshot
 
 !===============================================================================
-! Subroutine:  rst_restart_write
+! Subroutine:  usabf_trajectory_close
 !===============================================================================
 
-subroutine rst_restart_write
+subroutine usabf_trajectory_close
 
+    use pmf_constants
     use pmf_dat
-    use rst_dat
-    use pmf_utils
-    use rst_accu
+    use usabf_dat
 
     implicit none
-    !---------------------------------------------------------------------------
+    ! --------------------------------------------------------------------------
 
-    ! only if we would like to update restart file or if restart is explicitly required
-    if( (fhistupdate .eq. 0) .and. (frestart .eqv. .false.) ) return
+    if( ftrjsample .le. 0 ) return ! trajectory is written only of ftrjsample > 0
 
-    call pmf_utils_open(RST_RST,frsthist,'U')
-
-    call rst_accu_write(RST_RST)
-
-    close(RST_RST)
+    close(USABF_TRJ)
 
     return
 
-end subroutine rst_restart_write
+end subroutine usabf_trajectory_close
 
 !===============================================================================
 
-end module rst_restart
-
+end module usabf_trajectory

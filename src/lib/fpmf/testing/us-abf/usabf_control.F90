@@ -24,7 +24,7 @@
 !    Boston, MA  02110-1301  USA
 !===============================================================================
 
-module tabf_control
+module usabf_control
 
 use pmf_sizes
 use pmf_constants
@@ -33,25 +33,25 @@ implicit none
 contains
 
 !===============================================================================
-! Subroutine:  tabf_control_read_abf
+! Subroutine:  usabf_control_read_abf
 !===============================================================================
 
-subroutine tabf_control_read_abf(prm_fin)
+subroutine usabf_control_read_abf(prm_fin)
 
     use prmfile
     use pmf_dat
     use pmf_utils
-    use tabf_dat
-    use tabf_init
+    use usabf_dat
+    use usabf_init
     use pmf_control_utils
 
     implicit none
     type(PRMFILE_TYPE),intent(inout)   :: prm_fin
     ! --------------------------------------------------------------------------
 
-    call tabf_init_dat
+    call usabf_init_dat
 
-    write(PMF_OUT,'(/,a)') '--- [tabf] ---------------------------------------------------------------------'
+    write(PMF_OUT,'(/,a)') '--- [us-abf] -------------------------------------------------------------------'
 
     ! try open group
     if( .not. prmfile_open_group(prm_fin,'PMFLIB') ) then
@@ -60,7 +60,7 @@ subroutine tabf_control_read_abf(prm_fin)
     end if
 
     ! try open section
-    if( .not. prmfile_open_section(prm_fin,'tabf') ) then
+    if( .not. prmfile_open_section(prm_fin,'us-abf') ) then
         write(PMF_OUT,10)
         return
     end if
@@ -76,11 +76,6 @@ subroutine tabf_control_read_abf(prm_fin)
         return
     end if
 
-    call pmf_ctrl_read_logical(prm_fin,'fapply_abf',fapply_abf)
-
-    call pmf_ctrl_read_integer(prm_fin,'feimode',feimode,'i12')
-    call pmf_ctrl_check_integer_in_range('ABF','feimode',feimode,1,1)
-
     call pmf_ctrl_read_integer(prm_fin,'fsample',fsample,'i12')
     call pmf_ctrl_check_integer('ABF','fsample',fsample,0,CND_GE)
 
@@ -90,46 +85,29 @@ subroutine tabf_control_read_abf(prm_fin)
     call pmf_ctrl_read_integer(prm_fin,'ftrjsample',ftrjsample,'i12')
     call pmf_ctrl_check_integer('ABF','ftrjsample',ftrjsample,0,CND_GE)
 
-    call pmf_ctrl_read_logical(prm_fin,'fprint_icf',fprint_icf)
-
     call pmf_ctrl_read_logical(prm_fin,'fenthalpy',fenthalpy)
     call pmf_ctrl_read_logical(prm_fin,'fentropy',fentropy)
 
     call pmf_ctrl_read_real8_wunit(prm_fin,'fepotoffset',EnergyUnit,fepotoffset,'F10.1')
     call pmf_ctrl_read_real8_wunit(prm_fin,'fekinoffset',EnergyUnit,fekinoffset,'F10.1')
 
-    select case(feimode)
-        case(1)
-            write(PMF_OUT,20)
-            call pmf_ctrl_read_integer(prm_fin,'fhramp_min',fhramp_min,'i12')
-            call pmf_ctrl_check_integer('ABF','fhramp_min',fhramp_min,0,CND_GE)
-            call pmf_ctrl_read_integer(prm_fin,'fhramp_max',fhramp_max,'i12')
-            call pmf_ctrl_check_integer('ABF','fhramp_max',fhramp_max,0,CND_GE)
-            if( fhramp_max .lt. fhramp_min ) then
-                call pmf_utils_exit(PMF_OUT,1,'[TABF] fhramp_max must be >= fhramp_min!')
-            end if
-        case default
-            call pmf_utils_exit(PMF_OUT,1,'[TABF] Unknown extrapolation/interpolation mode!')
-    end select
-
-    tabf_enabled = fmode .gt. 0
+    usabf_enabled = fmode .gt. 0
 
     return
 
- 10 format (' >> Adaptive Biasing Force (Testing ABF) method is disabled!')
- 20 format (/,'>> Linear ramp mode I (feimode == 1)')
+ 10 format (' >> Umbrella Sampling / Adaptive Biasing Force (US-ABF) method is disabled!')
 
-end subroutine tabf_control_read_abf
+end subroutine usabf_control_read_abf
 
 !===============================================================================
-! Subroutine:  tabf_control_read_cvs
+! Subroutine:  usabf_control_read_cvs
 !===============================================================================
 
-subroutine tabf_control_read_cvs(prm_fin)
+subroutine usabf_control_read_cvs(prm_fin)
 
     use pmf_dat
     use pmf_utils
-    use tabf_dat
+    use usabf_dat
     use prmfile
 
     implicit none
@@ -140,30 +118,30 @@ subroutine tabf_control_read_cvs(prm_fin)
     ! --------------------------------------------------------------------------
 
     write(PMF_OUT,*)
-    call pmf_utils_heading(PMF_OUT,'{TABF}',':')
+    call pmf_utils_heading(PMF_OUT,'{US-ABF}',':')
     write(PMF_OUT,*)
 
     ! get name of group
-    if( ftabfdef(1:1) .eq. '{' ) then
-        grpname = ftabfdef(2:len_trim(ftabfdef)-1)
+    if( fusabfdef(1:1) .eq. '{' ) then
+        grpname = fusabfdef(2:len_trim(fusabfdef)-1)
          write(PMF_OUT,110) trim(grpname)
         ! open goup with name from abfdef
         if( .not. prmfile_open_group(prm_fin,trim(grpname)) ) then
             write(PMF_OUT,130)
-            tabf_enabled = .false.
+            usabf_enabled = .false.
             return
         end if
-        call tabf_control_read_cvs_from_group(prm_fin)
+        call usabf_control_read_cvs_from_group(prm_fin)
     else
-        write(PMF_OUT,120) trim(ftabfdef)
+        write(PMF_OUT,120) trim(fusabfdef)
 
         call prmfile_init(locprmfile)
 
-        if( .not. prmfile_read(locprmfile,ftabfdef) ) then
-            call pmf_utils_exit(PMF_OUT,1,'[TABF] Unable to load file: ' // trim(ftabfdef) // '!')
+        if( .not. prmfile_read(locprmfile,fusabfdef) ) then
+            call pmf_utils_exit(PMF_OUT,1,'[US-ABF] Unable to load file: ' // trim(fusabfdef) // '!')
         end if
 
-        call tabf_control_read_cvs_from_group(locprmfile)
+        call usabf_control_read_cvs_from_group(locprmfile)
 
         call prmfile_clear(locprmfile)
     end if
@@ -172,22 +150,22 @@ subroutine tabf_control_read_cvs(prm_fin)
 
 110 format('Collective variables are read from group: ',A)
 120 format('Collective variables are read from file : ',A)
-130 format(' >> No {TABF} group was specified - disabling ABF method!')
+130 format(' >> No {US-ABF} group was specified - disabling ABF method!')
 
-end subroutine tabf_control_read_cvs
+end subroutine usabf_control_read_cvs
 
 !===============================================================================
-! Subroutine:  tabf_control_read_cvs_from_group
+! Subroutine:  usabf_control_read_cvs_from_group
 !===============================================================================
 
-subroutine tabf_control_read_cvs_from_group(prm_fin)
+subroutine usabf_control_read_cvs_from_group(prm_fin)
 
     use prmfile
     use pmf_dat
     use pmf_utils
     use cv_common
-    use tabf_dat
-    use tabf_cvs
+    use usabf_dat
+    use usabf_cvs
 
     implicit none
     type(PRMFILE_TYPE),intent(inout)    :: prm_fin
@@ -199,27 +177,27 @@ subroutine tabf_control_read_cvs_from_group(prm_fin)
     ! --------------------------------------------------------------------------
 
     ! count number of sections in group
-    NumOfTABFCVs = prmfile_count_group(prm_fin)
+    NumOfUSABFCVs = prmfile_count_group(prm_fin)
 
-    if( NumOfTABFCVs .le. 0 ) then
+    if( NumOfUSABFCVs .le. 0 ) then
         ! on CV in current or specified group
         fmode = 0
-        tabf_enabled = .false.
+        usabf_enabled = .false.
         write(PMF_OUT,100)
         return
     end if
 
-    write(PMF_OUT,110) NumOfTABFCVs
+    write(PMF_OUT,110) NumOfUSABFCVs
 
     ! allocate constraint list ----------------------------------------------------
-    allocate(TABFCVList(NumOfTABFCVs), stat = alloc_failed)
+    allocate(USABFCVList(NumOfUSABFCVs), stat = alloc_failed)
 
     if ( alloc_failed .ne. 0 ) then
-        call pmf_utils_exit(PMF_OUT,1,'[TABF] Unable to allocate memory for coordinate data!')
+        call pmf_utils_exit(PMF_OUT,1,'[US-ABF] Unable to allocate memory for coordinate data!')
     end if
 
-    do i=1,NumOfTABFCVs
-        call tabf_cvs_reset_cv(TABFCVList(i))
+    do i=1,NumOfUSABFCVs
+        call usabf_cvs_reset_cv(USABFCVList(i))
     end do
 
     ! enumerate sections ----------------------------------------------------------
@@ -231,42 +209,42 @@ subroutine tabf_control_read_cvs_from_group(prm_fin)
         write(PMF_OUT,130) i
         if( resname .ne. 'CV' ) then
             call pmf_utils_exit(PMF_OUT,1, &
-                 '[TABF] Illegal section name ['//trim(resname)//'] - only [CV] is allowed!')
+                 '[US-ABF] Illegal section name ['//trim(resname)//'] - only [CV] is allowed!')
         end if
         if( .not. prmfile_get_string_by_key(prm_fin,'name',cvname)) then
-            call pmf_utils_exit(PMF_OUT,1,'[TABF] CV name is not provided!')
+            call pmf_utils_exit(PMF_OUT,1,'[US-ABF] CV name is not provided!')
         end if
         write(PMF_OUT,140) trim(cvname)
 
-        TABFCVList(i)%cvindx = cv_common_find_cv(cvname)
-        TABFCVList(i)%cv     => CVList(TABFCVList(i)%cvindx)%cv
+        USABFCVList(i)%cvindx = cv_common_find_cv(cvname)
+        USABFCVList(i)%cv     => CVList(USABFCVList(i)%cvindx)%cv
 
         ! read the rest of abf CV
-        call tabf_cvs_read_cv(prm_fin,TABFCVList(i))
+        call usabf_cvs_read_cv(prm_fin,USABFCVList(i))
 
         eresult = prmfile_next_section(prm_fin)
         i = i + 1
     end do
 
     ! check if there is CV overlap
-    do i=1,NumOfTABFCVs
-        do j=i+1,NumOfTABFCVs
-            if( TABFCVList(i)%cvindx .eq. TABFCVList(j)%cvindx ) then
+    do i=1,NumOfUSABFCVs
+        do j=i+1,NumOfUSABFCVs
+            if( USABFCVList(i)%cvindx .eq. USABFCVList(j)%cvindx ) then
                 call pmf_utils_exit(PMF_OUT,1, &
-                     '[TABF] Two different ABF collective variables share the same general collective variable!')
+                     '[US-ABF] Two different ABF collective variables share the same general collective variable!')
             end if
         end do
     end do
 
     return
 
-100 format('>>> INFO: No CVs are defined. TABF method is switched off!')
+100 format('>>> INFO: No CVs are defined. US-ABF method is switched off!')
 110 format('Number of collective variables : ',I4)
 130 format('== Reading collective variable #',I4.4)
 140 format('   Collective variable name : ',a)
 
-end subroutine tabf_control_read_cvs_from_group
+end subroutine usabf_control_read_cvs_from_group
 
 !===============================================================================
 
-end module tabf_control
+end module usabf_control

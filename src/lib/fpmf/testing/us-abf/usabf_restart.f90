@@ -1,7 +1,6 @@
 !===============================================================================
 ! PMFLib - Library Supporting Potential of Mean Force Calculations
 !-------------------------------------------------------------------------------
-!    Copyright (C) 2021 Petr Kulhanek, kulhanek@chemi.muni.cz
 !    Copyright (C) 2011-2015 Petr Kulhanek, kulhanek@chemi.muni.cz
 !    Copyright (C) 2013-2015 Letif Mones, lam81@cam.ac.uk
 !    Copyright (C) 2007 Martin Petrek, petrek@chemi.muni.cz &
@@ -25,110 +24,65 @@
 !    Boston, MA  02110-1301  USA
 !===============================================================================
 
-module rst_restart
+module usabf_restart
 
 implicit none
 contains
 
 !===============================================================================
-! Subroutine:  rst_restart_read
+! Subroutine:  usabf_restart_update
 !===============================================================================
 
-subroutine rst_restart_read
+subroutine usabf_restart_update
 
     use pmf_dat
     use pmf_utils
-    use rst_dat
-    use rst_accu
-
-    implicit none
-    ! --------------------------------------------------------------------------
-
-    ! test if restart file exists
-    if( frestart .and. .not. pmf_utils_fexist(frsthist) ) then
-        frestart = .false.
-        write(RST_OUT,10) trim(frsthist)
-    end if
-
-    if( frestart ) then
-        write(RST_OUT,20)
-        ! open restart file -----------------------------------------------------------
-        call pmf_utils_open(RST_RST,frsthist,'O')
-
-        call rst_accu_read(RST_RST)
-
-        close(RST_RST)
-    else
-        write(RST_OUT,30)
-    end if
-
-    return
-
-    10 format('# WARNING: frestart = on, but file (',A,') does not exist! => frestart = off')
-    20 format('# RST: frestart = on')
-    30 format('# RST: frestart = off')
-
-end subroutine rst_restart_read
-
-!===============================================================================
-! Subroutine:  rst_restart_update
-!===============================================================================
-
-subroutine rst_restart_update
-
-    use pmf_dat
-    use pmf_utils
-    use rst_accu
-    use rst_dat
+    use usabf_accu
+    use usabf_dat
 
     implicit none
     !---------------------------------------------------------------------------
 
-    ! only if we would like to update restart file or if restart is explicitly required
-    if( (fhistupdate .eq. 0) .and. (frestart .eqv. .false.) ) return
+    if( frstupdate .le. 0 ) return ! trajectory is written only of frstupdate > 0
 
-    if( fhistupdate .le. 0 ) return ! trajectory is written only of fhistupdate > 0
+    if( mod(fstep,frstupdate) .ne. 0 ) return
 
-    if( mod(fstep,fhistupdate) .ne. 0 ) return
+    call pmf_utils_open(TABF_RST,ftabfrst,'U')
+    call usabf_accu_write(TABF_RST)
+    close(TABF_RST)
 
-    call pmf_utils_open(RST_RST,frsthist,'U')
-
-    call rst_accu_write(RST_RST)
-
-    close(RST_RST)
+    write(USABF_OUT,10) fstep, insidesamples, outsidesamples
 
     return
 
-end subroutine rst_restart_update
+ 10 format('# [ACCU] Total steps     = ',I12,' Inside samples  = ',I12,' Outside samples = ',I12  )
+
+end subroutine usabf_restart_update
 
 !===============================================================================
-! Subroutine:  rst_restart_write
+! Subroutine:  usabf_restart_write
 !===============================================================================
 
-subroutine rst_restart_write
+subroutine usabf_restart_write
 
     use pmf_dat
-    use rst_dat
     use pmf_utils
-    use rst_accu
+    use usabf_accu
 
     implicit none
     !---------------------------------------------------------------------------
 
-    ! only if we would like to update restart file or if restart is explicitly required
-    if( (fhistupdate .eq. 0) .and. (frestart .eqv. .false.) ) return
+    call pmf_utils_open(TABF_RST,ftabfrst,'U')
 
-    call pmf_utils_open(RST_RST,frsthist,'U')
+    call usabf_accu_write(TABF_RST)
 
-    call rst_accu_write(RST_RST)
-
-    close(RST_RST)
+    close(TABF_RST)
 
     return
 
-end subroutine rst_restart_write
+end subroutine usabf_restart_write
 
 !===============================================================================
 
-end module rst_restart
+end module usabf_restart
 

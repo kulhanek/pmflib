@@ -150,12 +150,18 @@ integer,parameter       :: ABF_OUT      = 171
 integer,parameter       :: ABF_RST      = 172
 integer,parameter       :: ABF_TRJ      = 173
 
-! tabf part ---------------------------------------------------------------------
+! tabf part --------------------------------------------------------------------
 integer,parameter       :: TABF_INP     = 130
 integer,parameter       :: TABF_OUT     = 131
 integer,parameter       :: TABF_RST     = 132
 integer,parameter       :: TABF_TRJ     = 133
 integer,parameter       :: TABF_ICF     = 135
+
+! us-abf part ------------------------------------------------------------------
+integer,parameter       :: USABF_INP    = 267
+integer,parameter       :: USABF_OUT    = 268
+integer,parameter       :: USABF_RST    = 272
+integer,parameter       :: USABF_TRJ    = 273
 
 ! abp part ---------------------------------------------------------------------
 integer,parameter       :: ABP_INP      = 370

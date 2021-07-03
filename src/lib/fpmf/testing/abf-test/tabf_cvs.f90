@@ -38,7 +38,7 @@ subroutine tabf_cvs_reset_cv(tabf_item)
     use tabf_dat
 
     implicit none
-    type(CVTypeABF) :: tabf_item
+    type(CVTypeTABF) :: tabf_item
     ! --------------------------------------------------------------------------
 
     tabf_item%cvindx         = 0     ! CV index
@@ -65,10 +65,7 @@ subroutine tabf_cvs_read_cv(prm_fin,tabf_item)
 
     implicit none
     type(PRMFILE_TYPE),intent(inout)    :: prm_fin
-    type(CVTypeABF)                     :: tabf_item
-    ! -----------------------------------------------
-    type(UnitType)                      :: forceunit
-    type(UnitType)                      :: forceunit_recip
+    type(CVTypeTABF)                    :: tabf_item
     ! --------------------------------------------------------------------------
 
     ! used CV cannot be controlled by the path subsystem
@@ -102,11 +99,6 @@ subroutine tabf_cvs_read_cv(prm_fin,tabf_item)
     end if
     write(PMF_OUT,125) tabf_item%nbins
 
-    ! ============================================
-    ! prepare force unit
-    forceunit = pmf_unit_div_units( EnergyUnit, tabf_item%cv%unit )
-    forceunit_recip = pmf_unit_power_unit( forceunit, -1 )
-
     return
 
 110 format('   ** Min value          : ',F16.7,' [',A,']')
@@ -127,15 +119,8 @@ subroutine tabf_cvs_cv_info(tabf_item)
     use pmf_unit
 
     implicit none
-    type(CVTypeABF) :: tabf_item
-    ! -----------------------------------------------
-    type(UnitType)  :: forceunit
-    type(UnitType)  :: forceunit_recip
+    type(CVTypeTABF)    :: tabf_item
     ! --------------------------------------------------------------------------
-
-    ! prepare force unit
-    forceunit       = pmf_unit_div_units( EnergyUnit, tabf_item%cv%unit )
-    forceunit_recip = pmf_unit_power_unit( forceunit, -1 )
 
     write(PMF_OUT,145) trim(tabf_item%cv%name)
     write(PMF_OUT,146) trim(tabf_item%cv%ctype)

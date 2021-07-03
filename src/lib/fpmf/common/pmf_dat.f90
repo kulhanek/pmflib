@@ -93,6 +93,7 @@ logical                     :: stm_enabled
 logical                     :: pdrv_enabled
 ! testing
 logical                     :: tabf_enabled
+logical                     :: usabf_enabled
 
 ! MASTER =======================================================================
 
@@ -154,6 +155,12 @@ character(PMF_MAX_PATH)     :: ftabfout
 character(PMF_MAX_PATH)     :: ftabficf
 character(PMF_MAX_PATH)     :: ftabfrst
 character(PMF_MAX_PATH)     :: ftabftrj
+
+! umbrella sampling/adaptive biasing force method (testing) --------
+character(PMF_MAX_PATH)     :: fusabfdef
+character(PMF_MAX_PATH)     :: fusabfout
+character(PMF_MAX_PATH)     :: fusabfrst
+character(PMF_MAX_PATH)     :: fusabftrj
 
 ! adaptive biasing potential method ------------------
 character(PMF_MAX_PATH)     :: fabpdef

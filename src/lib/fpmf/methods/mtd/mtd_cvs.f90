@@ -110,10 +110,10 @@ subroutine mtd_cvs_read_cv(prm_fin,mtd_item)
 
     return
 
-100 format('   ** width              : ',F16.6,' [',A,']')
-110 format('   ** min value          : ',F16.6,' [',A,']')
-120 format('   ** max value          : ',F16.6,' [',A,']')
-125 format('   ** number of bins     : ',I10)
+100 format('    ** Width             : ',F16.6,' [',A,']')
+110 format('    ** Min value         : ',F16.6,' [',A,']')
+120 format('    ** Max value         : ',F16.6,' [',A,']')
+125 format('    ** Number of bins    : ',I10)
 
 end subroutine mtd_cvs_read_cv
 

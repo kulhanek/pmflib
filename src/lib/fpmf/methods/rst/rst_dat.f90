@@ -1,6 +1,7 @@
 !===============================================================================
 ! PMFLib - Library Supporting Potential of Mean Force Calculations
 !-------------------------------------------------------------------------------
+!    Copyright (C) 2021 Petr Kulhanek, kulhanek@chemi.muni.cz
 !    Copyright (C) 2011-2015 Petr Kulhanek, kulhanek@chemi.muni.cz
 !    Copyright (C) 2013-2015 Letif Mones, lam81@cam.ac.uk
 !    Copyright (C) 2007 Petr Kulhanek, kulhanek@enzim.hu
@@ -36,7 +37,7 @@ implicit none
 ! MASTER variables =============================================================
 
 ! control section --------------------------------------------------------------
-integer     :: fmode        ! 0 - disable RST, 1 - enabled RST, 2 - enabled TI, 3 - enabled SM
+integer     :: fmode        ! 0 - disable RST, 1 - enabled RST
 integer     :: fsample      ! output sample period in steps
 integer     :: fplevel      ! print level
 logical     :: frestart     ! restart job with previous data
@@ -83,7 +84,12 @@ end type CVTypeUM
 
 type,extends(PMFAccuType) ::  UMAccuType
 
-     integer,pointer                :: nsamples(:)  ! number of hits into bins
+    integer,pointer             :: nsamples(:)          ! number of hits into bins
+    real(PMFDP),pointer         :: tvalues(:)           ! target values
+    real(PMFDP),pointer         :: fcs(:)               ! force constants
+    real(PMFDP),pointer         :: mvalues(:)           ! mean of accumulated values
+    real(PMFDP),pointer         :: m2values(:)          ! M2 of accumulated values
+    integer                     :: faccumulation        ! total number of accumulated steps
 end type UMAccuType
 
 ! global data ------------------------------------------------------------------
@@ -99,12 +105,6 @@ real(PMFDP)                 :: TotalRstEnergy       ! total restraints energy
 type(UMAccuType)            :: rstaccu              ! accumulated data for TI
 integer                     :: insidesamples
 integer                     :: outsidesamples
-
-! ----------------------
-! value accumulation
-integer                     :: faccumulation        ! total number of accumulated steps
-real(PMFDP),allocatable     :: svalues(:)           ! accumulated values
-real(PMFDP),allocatable     :: s2values(:)          ! accumulated square of values
 
 !===============================================================================
 

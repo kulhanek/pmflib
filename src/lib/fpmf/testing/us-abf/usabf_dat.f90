@@ -24,7 +24,7 @@
 !    Boston, MA  02110-1301  USA
 !===============================================================================
 
-module tabf_dat
+module usabf_dat
 
 use pmf_sizes
 use pmf_dat
@@ -35,77 +35,62 @@ implicit none
 ! MASTER variables =============================================================
 
 ! control section --------------------------------------------------------------
-integer     :: fmode        ! 0 - disable ABF
-                            ! 1 - enable ABF (standard algorithm - 4p)
-                            ! 2 - enable ABF (numerical algorithm - 2p)
-                            ! 3 - enable ABF (numerical algorithm - 2p, no SHAKE)
+integer     :: fmode        ! 0 - disable US-ABF
+                            ! 1 - enable US-ABF (standard algorithm - 4p)
+                            ! 2 - enable US-ABF (numerical algorithm - 2p)
 integer     :: fsample      ! output sample period in steps
 integer     :: frstupdate   ! how often is restart file written
-integer     :: feimode      ! extrapolation / interpolation mode
-                            ! 1 - linear ramp I
+
 integer     :: ftrjsample   ! how often save accumulator to "accumulator evolution"
-logical     :: fapply_abf   ! on - apply ABF, off - do not apply ABF
-logical     :: fprint_icf   ! T - print instantaneous collective forces (icf) and other data, F - do not print
 
 logical     :: fenthalpy    ! collect data for enthalpy calculation
 logical     :: fentropy     ! collect data for entropy calculation
 real(PMFDP) :: fepotoffset
 real(PMFDP) :: fekinoffset
 
-! linear ramp mode II (feimode .eq. 1)
-integer     :: fhramp_min   ! min value of linear ramp - ABF force is ignored below this value
-integer     :: fhramp_max   ! max  value of linear ramp
-
 ! item list --------------------------------------------------------------------
-type CVTypeTABF
+type CVTypeUSABF
     integer                 :: cvindx           ! general description of coordinate
     class(CVType),pointer   :: cv               ! cv data
     integer                 :: set              ! coordinate set index
     real(PMFDP)             :: min_value        ! left range
     real(PMFDP)             :: max_value        ! right range
     integer                 :: nbins            ! number of bins
-end type CVTypeTABF
+
+    real(PMFDP)             :: target_value     ! required value of restraint
+    real(PMFDP)             :: force_constant   ! sigma value
+
+    real(PMFDP)             :: deviation        ! deviation between real and actual value
+    real(PMFDP)             :: energy
+end type CVTypeUSABF
 
 ! ----------------------
-integer                         :: NumOfTABFCVs      ! number of CVs in a group
-type(CVTypeTABF),allocatable    :: TABFCVList(:)     ! definition of CVs
+integer                         :: NumOfUSABFCVs        ! number of CVs in a group
+type(CVTypeUSABF),allocatable   :: USABFCVList(:)       ! definition of CVs
 
+real(PMFDP)                     :: TotalUSABFEnergy
 ! ----------------------
 
-type,extends(PMFAccuType)   :: TABFAccuType
+type,extends(PMFAccuType)   :: USABFAccuType
 
-    integer,pointer         :: nsamples(:)               ! number of hits into bins
+    integer,pointer         :: nsamples(:)              ! number of hits into bins
 
     ! MICF
-    real(PMFDP),pointer     :: micf(:,:)                 ! mean ICF - total
-    real(PMFDP),pointer     :: m2icf(:,:)                ! M2 of ICF - total
-    real(PMFDP),pointer     :: micf_pot(:,:)             ! mean ICF - potential energy part
-    real(PMFDP),pointer     :: m2icf_pot(:,:)            ! M2 of ICF - potential energy part
-    real(PMFDP),pointer     :: micf_kin(:,:)             ! mean ICF - kinetic energy part
-    real(PMFDP),pointer     :: m2icf_kin(:,:)            ! M2 of ICF - kinetic energy part
+    real(PMFDP),pointer     :: micf(:,:)                ! mean ICF - total
+    real(PMFDP),pointer     :: m2icf(:,:)               ! M2 of ICF - total
 
     ! ENTHALPY
-    real(PMFDP),pointer     :: metot(:)                  ! mean of total energy
-    real(PMFDP),pointer     :: m2etot(:)                 ! M2 of total energy
-    real(PMFDP),pointer     :: mepot(:)                  ! mean of potential energy
-    real(PMFDP),pointer     :: m2epot(:)                 ! M2 of potential energy
-    real(PMFDP),pointer     :: mekin(:)                  ! mean of kinetic energy
-    real(PMFDP),pointer     :: m2ekin(:)                 ! M2 of kinetic energy
-    real(PMFDP),pointer     :: merst(:)                  ! mean of restraint energy
-    real(PMFDP),pointer     :: m2erst(:)                 ! M2 of restraint energy
+    real(PMFDP),pointer     :: metot(:)                 ! mean of total energy
+    real(PMFDP),pointer     :: m2etot(:)                ! M2 of total energy
+    real(PMFDP),pointer     :: mepot(:)                 ! mean of potential energy
+    real(PMFDP),pointer     :: m2epot(:)                ! M2 of potential energy
 
     ! ENTROPY
-    real(PMFDP),pointer     :: c11hh(:,:)                ! c11 - total/total
-    real(PMFDP),pointer     :: c11pp(:,:)                ! c11 - potential/potential
-    real(PMFDP),pointer     :: c11pk(:,:)                ! c11 - potential/kinetic
-    real(PMFDP),pointer     :: c11pr(:,:)                ! c11 - potential/restraints
-    real(PMFDP),pointer     :: c11kp(:,:)                ! c11 - kinetic/potential
-    real(PMFDP),pointer     :: c11kk(:,:)                ! c11 - kinetic/kinetic
-    real(PMFDP),pointer     :: c11kr(:,:)                ! c11 - kinetic/restraints
-end type TABFAccuType
+    real(PMFDP),pointer     :: c11hh(:,:)               ! c11 - total/total
+end type USABFAccuType
 
 ! ----------------------
-type(TABFAccuType)          :: tabfaccu         ! accumulated forces
+type(USABFAccuType)         :: usabfaccu                ! accumulated forces
 integer                     :: insidesamples
 integer                     :: outsidesamples
 ! ----------------------
@@ -131,7 +116,6 @@ real(PMFDP),allocatable     :: pxi0(:)        !
 real(PMFDP),allocatable     :: pxi1(:)        !
 real(PMFDP),allocatable     :: pxip(:)        !
 real(PMFDP),allocatable     :: pxim(:)        !
-real(PMFDP),allocatable     :: pdum(:)        !
 real(PMFDP),allocatable     :: avg_values(:)  ! average values of coordinates at t - 3/2dt
 
 real(PMFDP),allocatable     :: cvaluehist0(:)   ! history of coordinate values
@@ -154,9 +138,7 @@ real(PMFDP)                 :: ersthist1   ! history of Erst
 real(PMFDP)                 :: ersthist2   ! history of Erst
 real(PMFDP)                 :: ersthist3   ! history of Erst
 
-real(PMFDP), allocatable    :: icf_cache(:,:)   ! icf_cache(2*ncvs,fnstlim)
-
 ! ------------------------------------------------------------------------------
 
-end module tabf_dat
+end module usabf_dat
 

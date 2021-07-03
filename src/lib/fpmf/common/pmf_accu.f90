@@ -512,6 +512,90 @@ subroutine pmf_accu_write_ibuf_B(accu,iounit,key,op,ibuf)
 end subroutine pmf_accu_write_ibuf_B
 
 !===============================================================================
+! Subroutine:  pmf_accu_read_ibuf_B
+! per bin
+!===============================================================================
+
+subroutine pmf_accu_read_ibuf_D(iounit,keyline,ibuf,nsize)
+
+    use pmf_dat
+    use pmf_utils
+    use pmf_unit
+    use pmf_ver
+
+    implicit none
+    integer                     :: iounit
+    character(*)                :: keyline
+    integer                     :: ibuf(:)
+    integer                     :: nsize
+    ! -----------------------------------------------
+    character(len=PMF_MAX_KEY)  :: skey
+    character(len=PMF_MAX_KEY)  :: dop
+    character(len=PMF_MAX_KEY)  :: dtype
+    character(len=PMF_MAX_KEY)  :: dmode
+    integer                     :: dsize
+    integer                     :: i
+    character(len=PMF_MAX_PATH) :: serr
+    !---------------------------------------------------------------------------
+
+    read(keyline,*,end=100,err=100) skey,dop,dtype,dmode,dsize
+
+    if( dtype .ne. 'I' ) then
+        call pmf_utils_exit(PMF_OUT,1,'[PMFAccu] Type mismatch: require I but got "'//trim(dtype)//'" in pmf_accu_read_ibuf_D!')
+    end if
+    if( dmode .ne. 'D' ) then
+        call pmf_utils_exit(PMF_OUT,1,'[PMFAccu] Mode mismatch: require "D" but got "'//trim(dmode)//'" in pmf_accu_read_ibuf_D!')
+    end if
+
+    if( dsize .ne. nsize ) then
+        write(serr,120) nsize, dsize
+        call pmf_utils_exit(PMF_OUT,1,serr)
+    end if
+
+    read(iounit,10,end=110,err=110) (ibuf(i),i=1,nsize)
+
+    return
+
+10  format(8(I9,1X))
+
+100 call pmf_utils_exit(PMF_OUT,1,'[PMFAccu] Unable to parse keyline "'//keyline//'" in pmf_accu_read_ibuf_D!')
+110 call pmf_utils_exit(PMF_OUT,1,'[PMFAccu] Premature end of data block for keyline "'//keyline//'" in pmf_accu_read_ibuf_D!')
+120 format('[PMFAccu] Size mismatch: require ',I10,' but got ',I10,' in pmf_accu_read_ibuf_D!')
+
+end subroutine pmf_accu_read_ibuf_D
+
+!===============================================================================
+! Subroutine:  pmf_accu_write_ibuf_D
+!===============================================================================
+
+subroutine pmf_accu_write_ibuf_D(iounit,key,op,ibuf,nsize)
+
+    use pmf_dat
+    use pmf_utils
+    use pmf_unit
+    use pmf_ver
+
+    implicit none
+    integer                     :: iounit
+    character(*)                :: key
+    character(*)                :: op
+    integer                     :: ibuf(:)
+    integer                     :: nsize
+    ! -----------------------------------------------
+    character(len=PMF_MAX_KEY)  :: skey
+    integer                     :: i
+    !---------------------------------------------------------------------------
+
+    skey = key
+    write(iounit,5) adjustl(skey), trim(op), 'I', 'D', nsize
+    write(iounit,10) (ibuf(i),i=1,nsize)
+
+ 5  format('@',A20,1X,A2,1X,A1,1X,A1,1X,I10)
+10  format(8(I9,1X))
+
+end subroutine pmf_accu_write_ibuf_D
+
+!===============================================================================
 ! Subroutine:  pmf_accu_read_rbuf_B
 !===============================================================================
 

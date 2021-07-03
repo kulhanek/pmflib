@@ -62,7 +62,7 @@ subroutine tabf_output_open
 
         call tabf_output_write_header_icf
 
-        allocate(icf_cache(2*NumOfABFCVs,fnstlim), stat= alloc_failed)
+        allocate(icf_cache(2*NumOfTABFCVs,fnstlim), stat= alloc_failed)
 
         if( alloc_failed .ne. 0 ) then
             call pmf_utils_exit(PMF_OUT,1, &
@@ -97,25 +97,25 @@ subroutine tabf_output_write_header
 
     write(TABF_OUT,10,advance='NO') '#       1'
     off = 1
-    do i=off+1,off+NumOfABFCVs
+    do i=off+1,off+NumOfTABFCVs
         write(TABF_OUT,15,advance='NO') i
     end do
     write(TABF_OUT,*)
 
     write(TABF_OUT,10,advance='NO') '#   NSTEP'
-    do i=1,NumOfABFCVs
-        write(TABF_OUT,20,advance='NO') trim(ABFCVList(i)%cv%name)
+    do i=1,NumOfTABFCVs
+        write(TABF_OUT,20,advance='NO') trim(TABFCVList(i)%cv%name)
     end do
     write(TABF_OUT,*)
 
     write(TABF_OUT,10,advance='NO') '#        '
-    do i=1,NumOfABFCVs
-        write(TABF_OUT,25,advance='NO') '[' // trim(ABFCVList(i)%cv%get_ulabel()) // ']'
+    do i=1,NumOfTABFCVs
+        write(TABF_OUT,25,advance='NO') '[' // trim(TABFCVList(i)%cv%get_ulabel()) // ']'
     end do
     write(TABF_OUT,*)
 
     write(TABF_OUT,10,advance='NO') '#--------'
-    do i=1,NumOfABFCVs
+    do i=1,NumOfTABFCVs
         write(TABF_OUT,30,advance='NO') '---------------'
     end do
     write(TABF_OUT,*)
@@ -153,9 +153,9 @@ subroutine tabf_output_write
 
     write(TABF_OUT,10,advance='NO') fstep
 
-    do i=1,NumOfABFCVs
+    do i=1,NumOfTABFCVs
         write(TABF_OUT,20,advance='NO') &
-                ABFCVList(i)%cv%get_rvalue(CVContext%CVsValues(ABFCVList(i)%cvindx))
+                TABFCVList(i)%cv%get_rvalue(CVContext%CVsValues(TABFCVList(i)%cvindx))
     end do
 
     write(TABF_OUT,*)
@@ -186,28 +186,28 @@ subroutine tabf_output_write_header_icf
 
     write(TABF_ICF,10,advance='NO') '#       1'
     off = 1
-    do i=off+1,off+2*NumOfABFCVs,2
+    do i=off+1,off+2*NumOfTABFCVs,2
         write(TABF_ICF,15,advance='NO') i
         write(TABF_ICF,16,advance='NO') i+1
     end do
     write(TABF_ICF,*)
 
     write(TABF_ICF,10,advance='NO') '#   NSTEP'
-    do i=1,NumOfABFCVs
-        write(TABF_ICF,20,advance='NO') trim(ABFCVList(i)%cv%name)
-        write(TABF_ICF,25,advance='NO') 'ICF (' // trim(ABFCVList(i)%cv%name) // ')'
+    do i=1,NumOfTABFCVs
+        write(TABF_ICF,20,advance='NO') trim(TABFCVList(i)%cv%name)
+        write(TABF_ICF,25,advance='NO') 'ICF (' // trim(TABFCVList(i)%cv%name) // ')'
     end do
     write(TABF_ICF,*)
 
     write(TABF_ICF,10,advance='NO') '#        '
-    do i=1,NumOfABFCVs
+    do i=1,NumOfTABFCVs
         write(TABF_ICF,20,advance='NO') '[i.u.]'
         write(TABF_ICF,25,advance='NO') '[i.u.]'
     end do
     write(TABF_ICF,*)
 
     write(TABF_ICF,10,advance='NO') '#--------'
-    do i=1,NumOfABFCVs
+    do i=1,NumOfTABFCVs
         write(TABF_ICF,30,advance='NO') '---------------'
         write(TABF_ICF,35,advance='NO') '--------------------'
     end do
@@ -250,7 +250,7 @@ subroutine tabf_output_write_icf(cvs,gfx)
 
     ! write into memory cache
     if( (fstep .le. 0) .or. (fstep .gt. fnstlim) ) return ! out of cache size
-    do i=1,NumOfABFCVs
+    do i=1,NumOfTABFCVs
             icf_cache((i-1)*2+1,fstep) = cvs(i)
             icf_cache((i-1)*2+2,fstep) = gfx(i)
     end do
@@ -280,7 +280,7 @@ subroutine tabf_output_dump_icf()
     do j=4,fnstlim
         ! write into TABF_ICF
         write(TABF_ICF,10,advance='NO') j
-        do i=1,NumOfABFCVs
+        do i=1,NumOfTABFCVs
             write(TABF_ICF,20,advance='NO') icf_cache((i-1)*2+1,j)
             write(TABF_ICF,25,advance='NO') icf_cache((i-1)*2+2,j)
         end do

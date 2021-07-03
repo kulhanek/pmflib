@@ -24,7 +24,7 @@
 !    Boston, MA  02110-1301  USA
 !===============================================================================
 
-module tabf_init
+module usabf_init
 
 use pmf_sizes
 use pmf_constants
@@ -33,33 +33,33 @@ implicit none
 contains
 
 !===============================================================================
-! Subroutine:  tabf_init_method
+! Subroutine:  usabf_init_method
 !===============================================================================
 
-subroutine tabf_init_method
+subroutine usabf_init_method
 
-    use tabf_output
-    use tabf_restart
-    use tabf_trajectory
+    use usabf_output
+    use usabf_restart
+    use usabf_trajectory
 
     implicit none
     ! --------------------------------------------------------------------------
 
-    call tabf_init_arrays
-    call tabf_init_print_header
-    call tabf_output_open
-    call tabf_trajectory_open
-    call tabf_output_write_header
+    call usabf_init_arrays
+    call usabf_init_print_header
+    call usabf_output_open
+    call usabf_trajectory_open
+    call usabf_output_write_header
 
-end subroutine tabf_init_method
+end subroutine usabf_init_method
 
 !===============================================================================
-! Subroutine:  tabf_init_dat
+! Subroutine:  usabf_init_dat
 !===============================================================================
 
-subroutine tabf_init_dat
+subroutine usabf_init_dat
 
-    use tabf_dat
+    use usabf_dat
 
     implicit none
     ! --------------------------------------------------------------------------
@@ -67,40 +67,34 @@ subroutine tabf_init_dat
     fmode           = 0         ! 0 - disable ABF, 1 - enabled ABF
     fsample         = 5000      ! output sample period in steps
     frstupdate      = 5000      ! how often is restart file written
-    feimode         = 1         ! extrapolation / interpolation mode
-                                ! 1 - linear ramp I
+
     ftrjsample      = 0         ! how often save accumulator to "accumulator evolution"
-    fapply_abf      = .true.    ! on - apply ABF, off - do not apply ABF
-    fprint_icf      = .false.   ! T - print instantaneous collective forces, F - do not print
 
     fenthalpy       = .false.   ! accumulate enthalpy
     fentropy        = .false.   ! accumulate entropy
     fepotoffset     = 0.0d0
     fekinoffset     = 0.0d0
 
-    fhramp_min      = 100       ! definition of linear ramp
-    fhramp_max      = 200       ! definition of linear ramp
-
-    NumOfTABFCVs     = 0
+    NumOfUSABFCVs     = 0
 
     insidesamples   = 0
     outsidesamples  = 0
 
     fdtx            = 0.0d0     ! time step in internal units
 
-end subroutine tabf_init_dat
+end subroutine usabf_init_dat
 
 !===============================================================================
-! Subroutine:  tabf_print_header
+! Subroutine:  usabf_print_header
 !===============================================================================
 
-subroutine tabf_init_print_header
+subroutine usabf_init_print_header
 
     use prmfile
     use pmf_constants
     use pmf_dat
-    use tabf_dat
-    use tabf_cvs
+    use usabf_dat
+    use usabf_cvs
     use pmf_utils
 
     implicit none
@@ -123,27 +117,10 @@ subroutine tabf_init_print_header
     case(3)
     write(PMF_OUT,120)  '      |-> Analytical/Numerical ABF algorithm, SHAKE must be off'
     case default
-    call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown fmode in tabf_init_print_header!')
+    call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown fmode in usabf_init_print_header!')
     end select
     write(PMF_OUT,125)  ' Coordinate definition file (ftabfdef)   : ', trim(ftabfdef)
-    write(PMF_OUT,130)  ' Number of coordinates                   : ', NumOfTABFCVs
-    write(PMF_OUT,120)
-    write(PMF_OUT,120)  ' ABF Control'
-    write(PMF_OUT,120)  ' ------------------------------------------------------'
-    write(PMF_OUT,125)  ' Apply ABF force (fapply_abf)            : ', prmfile_onoff(fapply_abf)
-
-    write(PMF_OUT,120)
-    write(PMF_OUT,120)  ' ABF Interpolation/Extrapolation '
-    write(PMF_OUT,120)  ' ------------------------------------------------------'
-    write(PMF_OUT,130)  ' Extra/interpolation mode (feimode)      : ', feimode
-    select case(feimode)
-    case(1)
-    write(PMF_OUT,120)  '      |-> Min/Max linear ramp'
-    write(PMF_OUT,130)  ' Min of accu samples in bin (fhramp_min) : ', fhramp_min
-    write(PMF_OUT,130)  ' Max of accu samples in bin (fhramp_max) : ', fhramp_max
-    case default
-    call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown extrapolation/interpolation mode in tabf_init_print_header!')
-    end select
+    write(PMF_OUT,130)  ' Number of coordinates                   : ', NumOfUSABFCVs
 
     write(PMF_OUT,120)
     write(PMF_OUT,120)  ' Restart options:'
@@ -155,8 +132,6 @@ subroutine tabf_init_print_header
     write(PMF_OUT,120)  ' ------------------------------------------------------'
     write(PMF_OUT,125)  ' Output file (ftabfout)                  : ', trim(ftabfout)
     write(PMF_OUT,130)  ' Output sampling (fsample)               : ', fsample
-    write(PMF_OUT,125)  ' Print instantaneous forces (fprint_icf) : ', prmfile_onoff(fprint_icf)
-    write(PMF_OUT,125)  ' ICF file (ftabficf)                     : ', trim(ftabficf)
     write(PMF_OUT,125)  ' Accumulate enthalpy (fenthalpy)         : ', prmfile_onoff(fenthalpy)
     write(PMF_OUT,125)  ' Accumulate entropy (fentropy)           : ', prmfile_onoff(fentropy)
     write(PMF_OUT,150)  ' Potential energy offset (fepotoffset)   : ', pmf_unit_get_rvalue(EnergyUnit,fepotoffset),  &
@@ -169,13 +144,13 @@ subroutine tabf_init_print_header
     write(PMF_OUT,130)  ' Trajectory sampling (ftrjsample)        : ', ftrjsample
     write(PMF_OUT,125)  ' Trajectory file (ftabftrj)              : ', trim(ftabftrj)
     write(PMF_OUT,120)
-    write(PMF_OUT,120)  ' List of TABF collective variables'
+    write(PMF_OUT,120)  ' List of US-ABF collective variables'
     write(PMF_OUT,120)  ' -------------------------------------------------------'
     write(PMF_OUT,120)
 
-    do i=1,NumOfTABFCVs
+    do i=1,NumOfUSABFCVs
         write(PMF_OUT,140) i
-        call tabf_cvs_cv_info(TABFCVList(i))
+        call usabf_cvs_cv_info(USABFCVList(i))
         write(PMF_OUT,120)
     end do
 
@@ -190,18 +165,18 @@ subroutine tabf_init_print_header
 
 140 format(' == Collective variable #',I4.4)
 
-end subroutine tabf_init_print_header
+end subroutine usabf_init_print_header
 
 !===============================================================================
-! Subroutine:  tabf_init_arrays
+! Subroutine:  usabf_init_arrays
 !===============================================================================
 
-subroutine tabf_init_arrays
+subroutine usabf_init_arrays
 
     use pmf_utils
     use pmf_dat
-    use tabf_dat
-    use tabf_accu
+    use usabf_dat
+    use usabf_accu
 
     implicit none
     integer     :: alloc_failed
@@ -214,21 +189,20 @@ subroutine tabf_init_arrays
             a0(3,NumOfLAtoms),              &
             a1(3,NumOfLAtoms),              &
             v0(3,NumOfLAtoms),              &
-            pxi0(NumOfTABFCVs),              &
-            pxi1(NumOfTABFCVs),              &
-            pxip(NumOfTABFCVs),              &
-            pxim(NumOfTABFCVs),              &
-            pdum(NumOfTABFCVs),              &
-            avg_values(NumOfTABFCVs),        &
-            la(NumOfTABFCVs),                &
-            fz(NumOfTABFCVs,NumOfTABFCVs),    &
-            fzinv(NumOfTABFCVs,NumOfTABFCVs), &
-            zd0(3,NumOfLAtoms,NumOfTABFCVs), &
-            zd1(3,NumOfLAtoms,NumOfTABFCVs), &
-            cvaluehist0(NumOfTABFCVs),       &
-            cvaluehist1(NumOfTABFCVs),       &
-            cvaluehist2(NumOfTABFCVs),       &
-            cvaluehist3(NumOfTABFCVs),       &
+            pxi0(NumOfUSABFCVs),              &
+            pxi1(NumOfUSABFCVs),              &
+            pxip(NumOfUSABFCVs),              &
+            pxim(NumOfUSABFCVs),              &
+            avg_values(NumOfUSABFCVs),        &
+            la(NumOfUSABFCVs),                &
+            fz(NumOfUSABFCVs,NumOfUSABFCVs),    &
+            fzinv(NumOfUSABFCVs,NumOfUSABFCVs), &
+            zd0(3,NumOfLAtoms,NumOfUSABFCVs), &
+            zd1(3,NumOfLAtoms,NumOfUSABFCVs), &
+            cvaluehist0(NumOfUSABFCVs),       &
+            cvaluehist1(NumOfUSABFCVs),       &
+            cvaluehist2(NumOfUSABFCVs),       &
+            cvaluehist3(NumOfUSABFCVs),       &
             stat= alloc_failed )
 
     if( alloc_failed .ne. 0 ) then
@@ -243,7 +217,6 @@ subroutine tabf_init_arrays
     pxi1(:) = 0.0d0
     pxip(:) = 0.0d0
     pxim(:) = 0.0d0
-    pdum(:) = 0.0d0
     avg_values(:) = 0.0d0
     la(:) = 0.0d0
     fz(:,:) = 0.0d0
@@ -256,9 +229,9 @@ subroutine tabf_init_arrays
     cvaluehist3(:) = 0.0d0
 
     ! for Z matrix inversion, only if fnitem > 1 ----
-    if( NumOfTABFCVs .gt. 1 ) then
-        allocate( vv(NumOfTABFCVs),               &
-                  indx(NumOfTABFCVs),             &
+    if( NumOfUSABFCVs .gt. 1 ) then
+        allocate( vv(NumOfUSABFCVs),               &
+                  indx(NumOfUSABFCVs),             &
                   stat= alloc_failed )
 
         if( alloc_failed .ne. 0 ) then
@@ -268,10 +241,10 @@ subroutine tabf_init_arrays
     end if
 
     ! init accumulator ------------------------------
-    call tabf_accu_init
+    call usabf_accu_init
 
-end subroutine tabf_init_arrays
+end subroutine usabf_init_arrays
 
 !===============================================================================
 
-end module tabf_init
+end module usabf_init

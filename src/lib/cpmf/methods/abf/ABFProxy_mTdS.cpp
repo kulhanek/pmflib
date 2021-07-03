@@ -33,6 +33,7 @@ CABFProxy_mTdS::CABFProxy_mTdS(void)
 {
     SetType(ABF_C11HH);
     Requires.push_back("TABF");
+    Requires.push_back("ABF");
 }
 
 //------------------------------------------------------------------------------

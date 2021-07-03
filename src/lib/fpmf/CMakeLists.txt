@@ -148,7 +148,7 @@ SET(PMF_ABF_CORE_SRC
         methods/abf/abf_finalize.f90
         )
 
-# ABF --------------------------------------------------------------------------
+# ABF (testing) ----------------------------------------------------------------
 
 SET(PMF_TABF_CORE_SRC
         testing/abf-test/tabf_dat.f90
@@ -161,6 +161,21 @@ SET(PMF_TABF_CORE_SRC
         testing/abf-test/tabf_core.f90
         testing/abf-test/tabf_trajectory.f90
         testing/abf-test/tabf_finalize.f90
+        )
+
+# US-ABF (testing) -------------------------------------------------------------
+
+SET(PMF_USABF_CORE_SRC
+        testing/us-abf/usabf_dat.f90
+        testing/us-abf/usabf_init.f90
+        testing/us-abf/usabf_cvs.f90
+        testing/us-abf/usabf_control.F90
+        testing/us-abf/usabf_output.f90
+        testing/us-abf/usabf_restart.f90
+        testing/us-abf/usabf_accu.f90
+        testing/us-abf/usabf_core.f90
+        testing/us-abf/usabf_trajectory.f90
+        testing/us-abf/usabf_finalize.f90
         )
 
 # ABP -------------------------------------------------------------------------
@@ -270,6 +285,7 @@ SET(FPMF_SRC
         ${PMF_CVS_SRC}
         ${PMF_ABF_CORE_SRC}
         ${PMF_TABF_CORE_SRC}
+        ${PMF_USABF_CORE_SRC}
         ${PMF_ABP_CORE_SRC}
         ${PMF_CST_CORE_SRC}
         ${PMF_MTD_CORE_SRC}

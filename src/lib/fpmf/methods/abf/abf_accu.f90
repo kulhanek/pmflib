@@ -394,7 +394,7 @@ end subroutine abf_accu_add_data_online
 ! Subroutine:  abf_accu_add_data_blocked
 !===============================================================================
 
-subroutine abf_accu_add_data_blocked(cvs,gfx,epot,ekin,erst)
+subroutine abf_accu_add_data_blocked(cvs,gfx,epot)
 
     use abf_dat
     use pmf_dat
@@ -404,8 +404,6 @@ subroutine abf_accu_add_data_blocked(cvs,gfx,epot,ekin,erst)
     real(PMFDP)    :: cvs(:)
     real(PMFDP)    :: gfx(:)
     real(PMFDP)    :: epot
-    real(PMFDP)    :: ekin
-    real(PMFDP)    :: erst
     ! -----------------------------------------------
     integer        :: gi0, i
     real(PMFDP)    :: invn, icf

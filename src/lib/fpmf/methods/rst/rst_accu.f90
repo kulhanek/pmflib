@@ -71,12 +71,18 @@ subroutine rst_accu_init()
     rstaccu%tot_nbins = tot_nbins
 
     ! RST force arrays
-    allocate( rstaccu%nsamples(rstaccu%tot_nbins), &
-              stat = alloc_failed)
+    allocate(   rstaccu%nsamples(rstaccu%tot_nbins),    &
+                rstaccu%tvalues(rstaccu%tot_cvs),       &
+                rstaccu%fcs(rstaccu%tot_cvs),           &
+                rstaccu%mvalues(rstaccu%tot_cvs),       &
+                rstaccu%m2values(rstaccu%tot_cvs),      &
+                stat = alloc_failed)
 
     if( alloc_failed .ne. 0 ) then
         call pmf_utils_exit(PMF_OUT, 1,'[RST] Unable to allocate memory for rst accumulator (rstforce)!')
     endif
+
+    rstaccu%faccumulation = 0
 
     call rst_accu_clear()
 
@@ -94,9 +100,17 @@ subroutine rst_accu_clear()
     use pmf_dat
 
     implicit none
+    integer         :: i
     ! --------------------------------------------------------------------------
 
     rstaccu%nsamples(:) = 0
+    rstaccu%mvalues(:) = 0
+    rstaccu%m2values(:) = 0
+
+    do i=1,rstaccu%tot_cvs
+        rstaccu%tvalues(i)  = RSTCVList(i)%target_value
+        rstaccu%fcs(i)      = RSTCVList(i)%force_constant
+    end do
 
 end subroutine rst_accu_clear
 
@@ -114,6 +128,7 @@ subroutine rst_accu_read(iounit)
     integer                         :: iounit
     ! -----------------------------------------------
     character(len=PMF_KEYLINE)      :: keyline
+    integer                         :: ibuf(1), i
     ! --------------------------------------------------------------------------
 
     do while(.true.)
@@ -129,6 +144,28 @@ subroutine rst_accu_read(iounit)
             ! ------------------------------------
                 case('NSAMPLES')
                     call pmf_accu_read_ibuf_B(rstaccu%PMFAccuType,iounit,keyline,rstaccu%nsamples)
+            ! ------------------------------------
+                case('TVALUES')
+                    call pmf_accu_read_rbuf_C(rstaccu%PMFAccuType,iounit,keyline,rstaccu%tvalues)
+                    do i=1,rstaccu%tot_cvs
+                        RSTCVList(i)%target_value = rstaccu%tvalues(i)
+                    end do
+            ! ------------------------------------
+                case('FCS')
+                    call pmf_accu_read_rbuf_C(rstaccu%PMFAccuType,iounit,keyline,rstaccu%fcs)
+                    do i=1,rstaccu%tot_cvs
+                        RSTCVList(i)%target_value = rstaccu%fcs(i)
+                    end do
+            ! ------------------------------------
+                case('MVALUES')
+                    call pmf_accu_read_rbuf_C(rstaccu%PMFAccuType,iounit,keyline,rstaccu%mvalues)
+            ! ------------------------------------
+                case('M2VALUES')
+                    call pmf_accu_read_rbuf_C(rstaccu%PMFAccuType,iounit,keyline,rstaccu%m2values)
+            ! ------------------------------------
+                case('FACCUMULATION')
+                    call pmf_accu_read_ibuf_D(iounit,keyline,ibuf,1)
+                    rstaccu%faccumulation = ibuf(1)
             ! ------------------------------------
                 case default
                     call pmf_accu_skip_section(iounit,keyline,RST_OUT)
@@ -156,12 +193,21 @@ subroutine rst_accu_write(iounit)
     use pmf_unit
 
     implicit none
-    integer                :: iounit
+    integer                 :: iounit
+    ! --------------------------------------------
+    integer                 :: ibuf(1)
     !---------------------------------------------------------------------------
 
     rstaccu%method = 'RST'
     call pmf_accu_write_header(rstaccu%PMFAccuType,iounit)
-    call pmf_accu_write_ibuf_B(rstaccu%PMFAccuType,iounit,'NSAMPLES','AD',rstaccu%nsamples)
+    call pmf_accu_write_ibuf_B(rstaccu%PMFAccuType,iounit,'NSAMPLES'        ,'NA',rstaccu%nsamples)
+    call pmf_accu_write_rbuf_C(rstaccu%PMFAccuType,iounit,'TVALUES'         ,'NA',rstaccu%tvalues)
+    call pmf_accu_write_rbuf_C(rstaccu%PMFAccuType,iounit,'FCS'             ,'NA',rstaccu%fcs)
+
+    ibuf(1) = rstaccu%faccumulation
+    call pmf_accu_write_ibuf_D(iounit,'FACCUMULATION'   ,'NA',ibuf,1)
+    call pmf_accu_write_rbuf_C(rstaccu%PMFAccuType,iounit,'MVALUES'         ,'NA',rstaccu%mvalues)
+    call pmf_accu_write_rbuf_C(rstaccu%PMFAccuType,iounit,'M2VALUES'        ,'NA',rstaccu%m2values)
 
 end subroutine rst_accu_write
 
@@ -177,7 +223,8 @@ subroutine rst_accu_add_sample(values)
     implicit none
     real(PMFDP)    :: values(:)
     ! -----------------------------------------------
-    integer        :: gi0
+    integer        :: gi0, i, ci
+    real(PMFDP)    :: cv, dcv1, dcv2, invn
     ! --------------------------------------------------------------------------
 
     ! only if we would like to update restart file and of if restart is explicitly required
@@ -194,6 +241,18 @@ subroutine rst_accu_add_sample(values)
 
     ! increase number of samples
     rstaccu%nsamples(gi0) = rstaccu%nsamples(gi0) + 1
+    rstaccu%faccumulation = rstaccu%faccumulation + 1
+
+    invn = 1.0d0 / real(rstaccu%faccumulation,PMFDP)
+
+    do i=1,rstaccu%tot_cvs
+        ci = RSTCVList(i)%cvindx
+        cv = values(ci)
+        dcv1 = cv - rstaccu%mvalues(i)
+        rstaccu%mvalues(i)  = rstaccu%mvalues(i)  + dcv1 * invn
+        dcv2 = cv - rstaccu%mvalues(i)
+        rstaccu%m2values(i) = rstaccu%m2values(i) + dcv1 * dcv2
+    end do
 
 end subroutine rst_accu_add_sample
 

@@ -1,6 +1,7 @@
 !===============================================================================
 ! PMFLib - Library Supporting Potential of Mean Force Calculations
 !-------------------------------------------------------------------------------
+!    Copyright (C) 2021 Petr Kulhanek, kulhanek@chemi.muni.cz
 !    Copyright (C) 2011-2015 Petr Kulhanek, kulhanek@chemi.muni.cz
 !    Copyright (C) 2013-2015 Letif Mones, lam81@cam.ac.uk
 !    Copyright (C) 2007 Petr Kulhanek, kulhanek@enzim.hu
@@ -17,7 +18,7 @@
 !
 !    You should have received a copy of the GNU Lesser General Public
 !    License along with this library; if not, write to the Free Software
-!    Foundation, Inc., 51 Franklin Street, Fifth Floor, 
+!    Foundation, Inc., 51 Franklin Street, Fifth Floor,
 !    Boston, MA  02110-1301  USA
 !===============================================================================
 
@@ -89,7 +90,7 @@ subroutine rst_restraints_read_rst(prm_fin,rst_item)
     forceunit = pmf_unit_div_units( EnergyUnit, pmf_unit_power_unit(rst_item%cv%unit,2) )
 
     if( rst_item%cv%pathidx .gt. 0 ) then
-        if( PathList(rst_item%cv%pathidx)%path%driven_mode ) then        
+        if( PathList(rst_item%cv%pathidx)%path%driven_mode ) then
             write(PMF_OUT,101) '  controlled by path subsystem'
             rst_item%mode = 'P'
             ! force_constant ==============================================================
@@ -176,15 +177,14 @@ subroutine rst_restraints_read_rst(prm_fin,rst_item)
         rst_item%mode = 'S'
     end if
 
-    ! force_constant ==============================================================
+! force_constant ==============================================================
     if( .not. prmfile_get_real8_by_key(prm_fin,'force_constant',rst_item%force_constant) ) then
         call pmf_utils_exit(PMF_OUT,1,'force_constant is not specified!')
     end if
     call pmf_unit_conv_to_ivalue(forceunit,rst_item%force_constant)
     write(PMF_OUT,110) pmf_unit_get_rvalue(forceunit,rst_item%force_constant), trim(pmf_unit_label(forceunit))
 
-    ! modes =======================================================================
-
+! modes =======================================================================
     if( rst_item%mode .ne. 'W' ) then
         if( prmfile_get_real8_by_key(prm_fin,'change_to',rst_item%stopvalue) ) then
             if( rst_item%mode .eq. 'S' ) then
@@ -223,14 +223,14 @@ subroutine rst_restraints_read_rst(prm_fin,rst_item)
 
     return
 
-100 format('   ** Value          :',F16.6,' [',A,']')
-101 format('   ** Value          :',A)
-102 format('   ** Left value <=  :',F16.6,' [',A,']')
-104 format('   ** Right value >= :',F16.6,' [',A,']')
-105 format('   ** Control file   :',A)
-110 format('   ** Force constant :',F16.6,' [',A,']')
-120 format('   ** Change to      :',F16.6,' [',A,']')
-130 format('   ** Increment by   :',F16.6,' [',A,']')
+100 format('    ** Value             : ',F16.6,' [',A,']')
+101 format('    ** Value             : ',A)
+102 format('    ** Left value <=     : ',F16.6,' [',A,']')
+104 format('    ** Right value >=    : ',F16.6,' [',A,']')
+105 format('    ** Control file      : ',A)
+110 format('    ** Force constant    : ',F16.6,' [',A,']')
+120 format('    ** Change to         : ',F16.6,' [',A,']')
+130 format('    ** Increment by      : ',F16.6,' [',A,']')
 
 end subroutine rst_restraints_read_rst
 
@@ -279,9 +279,9 @@ subroutine rst_restraints_read_rst_hist(prm_fin,rst_item)
     end if
     write(PMF_OUT,225) rst_item%nbins
 
-210 format('   ** Min value      : ',F16.6,' [',A,']')
-220 format('   ** Max value      : ',F16.6,' [',A,']')
-225 format('   ** Number of bins : ',I8)
+210 format('    ** Min value         : ',F16.6,' [',A,']')
+220 format('    ** Max value         : ',F16.6,' [',A,']')
+225 format('    ** Number of bins    : ',I8)
 
 end subroutine rst_restraints_read_rst_hist
 
@@ -410,25 +410,25 @@ subroutine rst_restraints_rst_info(rst_item)
 
     return
 
-100 format('    ** Name             : ',A)
-105 format('    ** Type             : ',A)
-110 format('    ** Current value    : ',E16.9,' [',A,']')
+100 format('    ** Name              : ',A)
+105 format('    ** Type              : ',A)
+110 format('    ** Current value     : ',E16.9,' [',A,']')
 
 115 format('    ** Managed by path   : ',A)
 
-120 format('    ** Restraining mode : ',A2,' (',A,')')
-130 format('    ** Target value     : ',E16.9,' [',A,']')
-140 format('    ** Left value <=    : ',E16.9,' [',A,']')
-150 format('    ** Right value =>   : ',E16.9,' [',A,']')
-160 format('    ** Start value      : ',E16.9,' [',A,']')
-170 format('    ** Deviation        : ',E16.9,' [',A,']')
-180 format('    ** Force constant   : ',E16.9,' [',A,']')
-190 format('    ** Increment value  : ',E16.9,' [',A,']')
-200 format('    ** Final value      : ',E16.9,' [',A,']')
+120 format('    ** Restraining mode  : ',A2,' (',A,')')
+130 format('    ** Target value      : ',E16.9,' [',A,']')
+140 format('    ** Left value <=     : ',E16.9,' [',A,']')
+150 format('    ** Right value =>    : ',E16.9,' [',A,']')
+160 format('    ** Start value       : ',E16.9,' [',A,']')
+170 format('    ** Deviation         : ',E16.9,' [',A,']')
+180 format('    ** Force constant    : ',E16.9,' [',A,']')
+190 format('    ** Increment value   : ',E16.9,' [',A,']')
+200 format('    ** Final value       : ',E16.9,' [',A,']')
 
-355 format('    ** Min value        : ',E16.9,' [',A,']')
-360 format('    ** Max value        : ',E16.9,' [',A,']')
-365 format('    ** Number of bins   : ',I9)
+355 format('    ** Min value         : ',E16.9,' [',A,']')
+360 format('    ** Max value         : ',E16.9,' [',A,']')
+365 format('    ** Number of bins    : ',I9)
 
 end subroutine rst_restraints_rst_info
 
@@ -463,7 +463,7 @@ subroutine rst_restraints_increment(rst_item)
             rst_item%target_value = rst_item%control_values(fstep)
             return
         case('I','V')
-            ! incrementation is in linear mode
+            ! increments in linear mode
             difference = rst_item%cv%get_deviation(rst_item%stopvalue,rst_item%startvalue)
             rst_item%target_value = rst_item%startvalue + difference * fstep / fnstlim
         case default

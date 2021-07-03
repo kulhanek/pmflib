@@ -1,6 +1,7 @@
 !===============================================================================
 ! PMFLib - Library Supporting Potential of Mean Force Calculations
 !-------------------------------------------------------------------------------
+!    Copyright (C) 2021 Petr Kulhanek, kulhanek@chemi.muni.cz
 !    Copyright (C) 2011-2015 Petr Kulhanek, kulhanek@chemi.muni.cz
 !    Copyright (C) 2013-2015 Letif Mones, lam81@cam.ac.uk
 !    Copyright (C) 2007 Petr Kulhanek, kulhanek@enzim.hu
@@ -40,13 +41,11 @@ subroutine rst_init_method
 
     use rst_output
     use rst_restart
-    use rst_accu
 
     implicit none
     ! --------------------------------------------------------------------------
 
     call rst_init_core
-    call rst_accu_init
     call rst_init_print_header
     call rst_output_open
     call rst_restart_read
@@ -73,7 +72,6 @@ subroutine rst_init_dat
     fhistclear     = 0       ! after first 'fhistclear' steps histogram
                              ! will be reset (default 0)
     fsamplefreq   = 1        ! how often take samples
-    faccumulation = 0        ! number of accumulated data
     fwarnlevel    = 15.0     ! warning level for restraint energy
 
     NumOfRSTCVs = 0
@@ -155,24 +153,12 @@ end subroutine rst_init_print_header
 
 subroutine rst_init_core
 
- use pmf_utils
- use pmf_dat
- use rst_dat
+    use rst_accu
 
- implicit none
- integer      :: alloc_failed
+    implicit none
+    ! --------------------------------------------------------------------------
 
- ! ------------------------------------------------------------------------------
-
- ! allocate arrays for accumulating data
-
- allocate(svalues(NumOfRSTCVs), &
-          s2values(NumOfRSTCVs), &
-          stat=alloc_failed)
-
- if( alloc_failed .ne. 0 ) then
-    call pmf_utils_exit(PMF_OUT,1,'[RST] Unable to allocate memory for arrays of accumutalion!')
- end if
+    call rst_accu_init
 
 end subroutine rst_init_core
 

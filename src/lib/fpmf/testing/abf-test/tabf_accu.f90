@@ -48,7 +48,7 @@ subroutine tabf_accu_init()
     ! --------------------------------------------------------------------------
 
     ! init dimensions ------------------------------
-    tabfaccu%tot_cvs = NumOfABFCVs
+    tabfaccu%tot_cvs = NumOfTABFCVs
     allocate(tabfaccu%sizes(tabfaccu%tot_cvs), stat = alloc_failed)
     if( alloc_failed .ne. 0 ) then
         call pmf_utils_exit(PMF_OUT, 1,'[TABF] Unable to allocate memory for abf accumulator!')
@@ -56,12 +56,12 @@ subroutine tabf_accu_init()
 
     tot_nbins = 1
     do i=1,tabfaccu%tot_cvs
-        tabfaccu%sizes(i)%min_value  = ABFCVList(i)%min_value
-        tabfaccu%sizes(i)%max_value  = ABFCVList(i)%max_value
-        tabfaccu%sizes(i)%nbins      = ABFCVList(i)%nbins
+        tabfaccu%sizes(i)%min_value  = TABFCVList(i)%min_value
+        tabfaccu%sizes(i)%max_value  = TABFCVList(i)%max_value
+        tabfaccu%sizes(i)%nbins      = TABFCVList(i)%nbins
         tabfaccu%sizes(i)%width      = abs(tabfaccu%sizes(i)%max_value - tabfaccu%sizes(i)%min_value)
         tabfaccu%sizes(i)%bin_width  = tabfaccu%sizes(i)%width / tabfaccu%sizes(i)%nbins
-        tabfaccu%sizes(i)%cv         => ABFCVList(i)%cv
+        tabfaccu%sizes(i)%cv         => TABFCVList(i)%cv
         tot_nbins = tot_nbins * tabfaccu%sizes(i)%nbins
     end do
 
@@ -287,7 +287,7 @@ subroutine tabf_accu_add_data_online(cvs,gfx_pot,gfx_kin,epot,ekin,erst)
         tabfaccu%m2erst(gi0) = tabfaccu%m2erst(gi0) + derst1 * derst2
     end if
 
-    do i=1,NumOfABFCVs
+    do i=1,NumOfTABFCVs
         icf = gfx_pot(i) + gfx_kin(i)
 
         dicf1 = - icf - tabfaccu%micf(i,gi0)

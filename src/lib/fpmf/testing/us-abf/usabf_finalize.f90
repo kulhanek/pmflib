@@ -1,7 +1,6 @@
 !===============================================================================
 ! PMFLib - Library Supporting Potential of Mean Force Calculations
 !-------------------------------------------------------------------------------
-!    Copyright (C) 2021 Petr Kulhanek, kulhanek@chemi.muni.cz
 !    Copyright (C) 2011-2015 Petr Kulhanek, kulhanek@chemi.muni.cz
 !    Copyright (C) 2013-2015 Letif Mones, lam81@cam.ac.uk
 !    Copyright (C) 2007 Petr Kulhanek, kulhanek@enzim.hu
@@ -25,7 +24,7 @@
 !    Boston, MA  02110-1301  USA
 !===============================================================================
 
-module rst_finalize
+module usabf_finalize
 
 use pmf_sizes
 use pmf_constants
@@ -34,22 +33,24 @@ implicit none
 contains
 
 !===============================================================================
-! Subroutine:  rst_finalize_method
+! Subroutine:  usabf_finalize_method
 !===============================================================================
 
-subroutine rst_finalize_method
+subroutine usabf_finalize_method
 
-    use rst_output
-    use rst_restart
+    use usabf_trajectory
+    use usabf_restart
+    use usabf_output
 
     implicit none
     ! --------------------------------------------------------------------------
 
-    call rst_output_close
-    call rst_restart_write
+    call usabf_trajectory_close
+    call usabf_restart_write
+    call usabf_output_close
 
-end subroutine rst_finalize_method
+end subroutine usabf_finalize_method
 
 !===============================================================================
 
-end module rst_finalize
+end module usabf_finalize

@@ -221,7 +221,7 @@ subroutine abf_core_force_4p()
         if( fblock_size .eq. 0 ) then
             call abf_accu_add_data_online(cvaluehist0,pxi0(:),avg_epot,avg_ekin,avg_erst)
         else
-            call abf_accu_add_data_blocked(cvaluehist0,pxi0(:),avg_epot,avg_ekin,avg_erst)
+            call abf_accu_add_data_blocked(cvaluehist0,pxi0(:),avg_epot)
         end if
     end if
 
@@ -346,7 +346,7 @@ subroutine abf_core_force_2p()
         if( fblock_size .eq. 0 ) then
             call abf_accu_add_data_online(cvaluehist0,pxi0(:),epothist0,ekinhist1,ersthist0)
         else
-            call abf_accu_add_data_blocked(cvaluehist0,pxi0(:),epothist0,ekinhist1,ersthist0)
+            call abf_accu_add_data_blocked(cvaluehist0,pxi0(:),epothist0)
         end if
     end if
 

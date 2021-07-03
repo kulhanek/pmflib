@@ -35,6 +35,8 @@ integer     :: PMFLIB_TOTAL_TIMER                       = -10
         integer     :: PMFLIB_METHODS_TIMER             = -40
             integer     :: PMFLIB_ABF_TIMER             = -50
                 integer     :: PMFLIB_ABF_MWA_TIMER     = -55
+            integer     :: PMFLIB_TABF_TIMER            = -56
+            integer     :: PMFLIB_USABF_TIMER           = -57
             integer     :: PMFLIB_ABP_TIMER             = -150
                 integer     :: PMFLIB_ABP_MWA_TIMER     = -151
             integer     :: PMFLIB_MTD_TIMER             = -60
@@ -85,6 +87,8 @@ subroutine pmf_timers_init
     PMFLIB_METHODS_TIMER          = add_timer(PMFLIB_TIMER,'Methods')
         PMFLIB_ABF_TIMER            = add_timer(PMFLIB_METHODS_TIMER,'Adaptive Biasing Force')
             PMFLIB_ABF_MWA_TIMER        = add_timer(PMFLIB_ABF_TIMER,'Multiple Walkers Approach')
+        PMFLIB_TABF_TIMER           = add_timer(PMFLIB_METHODS_TIMER,'Adaptive Biasing Force (testing)')
+        PMFLIB_USABF_TIMER          = add_timer(PMFLIB_METHODS_TIMER,'Umbrella Sampling / Adaptive Biasing Force (testing)')
         PMFLIB_ABP_TIMER            = add_timer(PMFLIB_METHODS_TIMER,'Adaptive Biasing Potential')
             PMFLIB_ABP_MWA_TIMER        = add_timer(PMFLIB_ABP_TIMER,'Multiple Walkers Approach')
         PMFLIB_MTD_TIMER            = add_timer(PMFLIB_METHODS_TIMER,'Metadynamics')

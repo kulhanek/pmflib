@@ -105,9 +105,9 @@ subroutine abf_cvs_read_cv(prm_fin,abf_item)
 
     return
 
-110 format('   ** Min value          : ',F16.7,' [',A,']')
-120 format('   ** Max value          : ',F16.7,' [',A,']')
-125 format('   ** Number of bins     : ',I8)
+110 format('    ** Min value         : ',F16.7,' [',A,']')
+120 format('    ** Max value         : ',F16.7,' [',A,']')
+125 format('    ** Number of bins    : ',I8)
 
 end subroutine abf_cvs_read_cv
 
@@ -124,14 +124,7 @@ subroutine abf_cvs_cv_info(abf_item)
 
     implicit none
     type(CVTypeABF) :: abf_item
-    ! -----------------------------------------------
-    type(UnitType)  :: forceunit
-    type(UnitType)  :: forceunit_recip
     ! --------------------------------------------------------------------------
-
-    ! prepare force unit
-    forceunit       = pmf_unit_div_units( EnergyUnit, abf_item%cv%unit )
-    forceunit_recip = pmf_unit_power_unit( forceunit, -1 )
 
     write(PMF_OUT,145) trim(abf_item%cv%name)
     write(PMF_OUT,146) trim(abf_item%cv%ctype)
