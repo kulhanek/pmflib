@@ -175,9 +175,9 @@ subroutine rst_control_read_cvs_from_group(prm_fin)
     ! --------------------------------------------------------------------------
 
     ! count number of sections in group
-    NumOfRSTItems = prmfile_count_group(prm_fin)
+    NumOfRSTCVs = prmfile_count_group(prm_fin)
 
-    if( NumOfRSTItems .le. 0 ) then
+    if( NumOfRSTCVs .le. 0 ) then
         ! on CV in current or specified group
         fmode = 0
         rst_enabled = .false.
@@ -185,16 +185,16 @@ subroutine rst_control_read_cvs_from_group(prm_fin)
         return
     end if
 
-    write(PMF_OUT,110) NumOfRSTItems
+    write(PMF_OUT,110) NumOfRSTCVs
 
     ! allocate constraint list ----------------------------------------------------
-    allocate(RSTCVList(NumOfRSTItems), stat = alloc_failed)
+    allocate(RSTCVList(NumOfRSTCVs), stat = alloc_failed)
 
     if ( alloc_failed .ne. 0 ) then
         call pmf_utils_exit(PMF_OUT,1,'[RST] Unable to allocate memory for coordinate data!')
     end if
 
-    do i=1,NumOfRSTItems
+    do i=1,NumOfRSTCVs
         call rst_restraints_reset_rst(RSTCVList(i))
     end do
 
@@ -227,8 +227,8 @@ subroutine rst_control_read_cvs_from_group(prm_fin)
     end do
 
     ! check if there is CV overlap
-    do i=1,NumOfRSTItems
-        do j=i+1,NumOfRSTItems
+    do i=1,NumOfRSTCVs
+        do j=i+1,NumOfRSTCVs
             if( RSTCVList(i)%cvindx .eq. RSTCVList(j)%cvindx ) then
                 call pmf_utils_exit(PMF_OUT,1,'[RST] Two different restraints share the same general collective variable!')
             end if

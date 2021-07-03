@@ -6,7 +6,7 @@
 !    Copyright (C) 2011 Petr Kulhanek, kulhanek@chemi.muni.cz
 !    Copyright (C) 2007 Petr Kulhanek, kulhanek@enzim.hu
 !    Copyright (C) 2006 Petr Kulhanek, kulhanek@chemi.muni.cz &
-!                       Martin Petrek, petrek@chemi.muni.cz 
+!                       Martin Petrek, petrek@chemi.muni.cz
 !    Copyright (C) 2005 Petr Kulhanek, kulhanek@chemi.muni.cz
 !
 !    This library is free software; you can redistribute it and/or
@@ -21,7 +21,7 @@
 !
 !    You should have received a copy of the GNU Lesser General Public
 !    License along with this library; if not, write to the Free Software
-!    Foundation, Inc., 51 Franklin Street, Fifth Floor, 
+!    Foundation, Inc., 51 Franklin Street, Fifth Floor,
 !    Boston, MA  02110-1301  USA
 !===============================================================================
 
@@ -75,7 +75,7 @@ subroutine rst_output_write_header
     ! --------------------------------------------------------------------------
 
     write(RST_OUT,10,advance='NO') '#          '
-    do i=1,NumOfRSTItems
+    do i=1,NumOfRSTCVs
         select case(fplevel)
             case(0)
                 write(RST_OUT,20,advance='NO') trim(RSTCVList(i)%cv%name)
@@ -90,7 +90,7 @@ subroutine rst_output_write_header
     write(RST_OUT,*)
 
     write(RST_OUT,10,advance='NO') '#          '
-    do i=1,NumOfRSTItems
+    do i=1,NumOfRSTCVs
         select case(fplevel)
             case(0)
                 write(RST_OUT,21,advance='NO') '---------------'
@@ -111,7 +111,7 @@ subroutine rst_output_write_header
     write(RST_OUT,*)
 
     write(RST_OUT,10,advance='NO') '#          '
-    do i=1,NumOfRSTItems
+    do i=1,NumOfRSTCVs
         select case(fplevel)
             case(0)
                 write(RST_OUT,20,advance='NO') 'Value'
@@ -132,7 +132,7 @@ subroutine rst_output_write_header
     write(RST_OUT,*)
 
     write(RST_OUT,10,advance='NO') '#  NSTEP  F'
-    do i=1,NumOfRSTItems
+    do i=1,NumOfRSTCVs
         select case(fplevel)
             case(0)
                 write(RST_OUT,40,advance='NO') '['//trim(RSTCVList(i)%cv%get_ulabel())//']'
@@ -153,7 +153,7 @@ subroutine rst_output_write_header
     write(RST_OUT,*)
 
     write(RST_OUT,10,advance='NO') '#-------- -'
-    do i=1,NumOfRSTItems
+    do i=1,NumOfRSTCVs
         select case(fplevel)
             case(0)
                 write(RST_OUT,30,advance='NO') '---------------'
@@ -177,13 +177,13 @@ subroutine rst_output_write_header
     off = 2
     select case(fplevel)
         case(0)
-            iend = NumOfRSTItems
+            iend = NumOfRSTCVs
         case(1)
-            iend = 2*NumOfRSTItems
+            iend = 2*NumOfRSTCVs
         case(2)
-            iend = 3*NumOfRSTItems
+            iend = 3*NumOfRSTCVs
         case(3)
-            iend = 4*NumOfRSTItems
+            iend = 4*NumOfRSTCVs
     end select
     do i=off+1,off+iend
         write(RST_OUT,15,advance='NO') i
@@ -191,7 +191,7 @@ subroutine rst_output_write_header
     write(RST_OUT,*)
 
     write(RST_OUT,10,advance='NO') '#--------'
-    do i=1,NumOfRSTItems
+    do i=1,NumOfRSTCVs
         select case(fplevel)
             case(0)
                 write(RST_OUT,30,advance='NO') '---------------'
@@ -244,7 +244,7 @@ subroutine rst_output_write_data
     flag = 'N'
 
     if( fwarnlevel .ge. 0.0d0 ) then
-        do i=1,NumOfRSTItems
+        do i=1,NumOfRSTCVs
             if( RSTCVList(i)%energy .gt. fwarnlevel ) flag = 'W'
         end do
     end if
@@ -256,7 +256,7 @@ subroutine rst_output_write_data
 
     ! print data to output --------------------------
     write(RST_OUT,200,ADVANCE='NO') fstep, flag
-    do i=1,NumOfRSTItems
+    do i=1,NumOfRSTCVs
         select case(fplevel)
             case(0)
                 write(RST_OUT,210,ADVANCE='NO') RSTCVList(i)%cv%get_rvalue(CVContext%CVsValues(RSTCVList(i)%cvindx))

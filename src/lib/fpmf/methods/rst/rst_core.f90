@@ -38,6 +38,7 @@ contains
 
 subroutine rst_core_main
 
+    use rst_dat
     use rst_output
     use rst_restart
 
@@ -52,6 +53,7 @@ end subroutine rst_core_main
 
 !===============================================================================
 ! Subroutine:  rst_core_force
+! plain restraints
 !===============================================================================
 
 subroutine rst_core_force
@@ -69,13 +71,13 @@ subroutine rst_core_force
     ! --------------------------------------------------------------------------
 
     ! process increments ----------------------------
-    do i=1,NumOfRSTItems
+    do i=1,NumOfRSTCVs
         call rst_restraints_increment(RSTCVList(i))
     end do
 
     ! calculate energy and gradients ----------------
     TotalRstEnergy = 0.0
-    do i=1,NumOfRSTItems
+    do i=1,NumOfRSTCVs
         ci = RSTCVList(i)%cvindx
         rvalue = CVContext%CVsValues(ci)
         if( RSTCVList(i)%mode .ne. 'W' ) then

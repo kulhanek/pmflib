@@ -198,7 +198,7 @@ subroutine cst_core_analyze
             call pmf_utils_exit(PMF_OUT,1,'[CST] LU decomposition failed in cst_main!')
         end if
         fzdet = 1.0d0
-        ! and finaly determinant
+        ! and finally determinant
         do i=1,NumOfCONs
             if( indx(i) .ne. i ) then
                 fzdet = - fzdet * fz(i,i)

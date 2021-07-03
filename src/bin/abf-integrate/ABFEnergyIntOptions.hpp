@@ -172,7 +172,7 @@ public:
                 RCond,                        /* option name */
                 1e-6,                          /* default value */
                 false,                          /* is option mandatory */
-                'r',                           /* short option name */
+                0,                           /* short option name */
                 "rcond",                      /* long option name */
                 "NUMBER",                           /* parametr name */
                 "RBF+GPR: Rank condition for SVD. Used value must be carefully tested. Calculation at computer precision is requested with -1 (not recommended).")   /* option description */

@@ -84,7 +84,7 @@ subroutine abf_core_force_4p()
     implicit none
     integer     :: i,j,k,m
     integer     :: ci,ck
-    real(PMFDP) :: v,avg_epot
+    real(PMFDP) :: v,avg_epot,avg_ekin,avg_erst
     ! --------------------------------------------------------------------------
 
     ! calculate acceleration in time t for all pmf atoms
@@ -113,14 +113,34 @@ subroutine abf_core_force_4p()
         epothist3 = 0.0d0
     end if
 
+    ! shift ekin ene
+    ekinhist0 = ekinhist1
+    ekinhist1 = ekinhist2
+    ekinhist2 = ekinhist3
+    if( fentropy ) then
+        ekinhist3 = KinEne + fekinoffset
+    else
+        ekinhist3 = 0.0d0
+    end if
+
+    ! shift erst ene
+    ersthist0 = ersthist1
+    ersthist1 = ersthist2
+    ersthist2 = ersthist3
+    if( fentropy ) then
+        ersthist3 = PMFEne
+    else
+        ersthist3 = 0.0d0
+    end if
+
     ! calculate abf force to be applied -------------
     select case(feimode)
             case(0)
-                call abf_accu_get_data(cvaluehist1(:),la)
+                call abf_accu_get_data(cvaluehist3(:),la)
             case(1)
-                call abf_accu_get_data_lramp(cvaluehist1(:),la)
+                call abf_accu_get_data_lramp(cvaluehist3(:),la)
             case(2)
-                call abf_accu_get_data_gks(cvaluehist1(:),la)
+                call abf_accu_get_data_gks(cvaluehist3(:),la)
         case default
             call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented extrapolation/interpolation mode!')
     end select
@@ -194,12 +214,14 @@ subroutine abf_core_force_4p()
         end do
 
         avg_epot = 0.5d0*(epothist1 + epothist2) ! t - 3/2*dt
+        avg_ekin = 0.5d0*(ekinhist2 + ekinhist3) ! t - 1/2*dt; ekin already shifted by -dt
+        avg_erst = 0.5d0*(ersthist1 + ersthist2) ! t - 3/2*dt
 
         ! add data to accumulator
         if( fblock_size .eq. 0 ) then
-            call abf_accu_add_data_online(cvaluehist0,pxi0(:),epothist0)
+            call abf_accu_add_data_online(cvaluehist0,pxi0(:),avg_epot,avg_ekin,avg_erst)
         else
-            call abf_accu_add_data_blocked(cvaluehist0,pxi0(:),epothist0)
+            call abf_accu_add_data_blocked(cvaluehist0,pxi0(:),avg_epot,avg_ekin,avg_erst)
         end if
     end if
 
@@ -255,6 +277,22 @@ subroutine abf_core_force_2p()
         epothist1 = 0.0d0
     end if
 
+    ! shift ekin ene
+    ekinhist0 = ekinhist1
+    if( fentropy ) then
+        ekinhist1 = KinEne + fekinoffset
+    else
+        ekinhist1 = 0.0d0
+    end if
+
+    ! shift erst ene
+    ersthist0 = ersthist1
+    if( fentropy ) then
+        ersthist1 = PMFEne
+    else
+        ersthist1 = 0.0d0
+    end if
+
     ! calculate Z matrix and its inverse
     call abf_core_calc_Zmat
 
@@ -306,9 +344,9 @@ subroutine abf_core_force_2p()
 
         ! add data to accumulator
         if( fblock_size .eq. 0 ) then
-            call abf_accu_add_data_online(cvaluehist0,pxi0(:),epothist0)
+            call abf_accu_add_data_online(cvaluehist0,pxi0(:),epothist0,ekinhist1,ersthist0)
         else
-            call abf_accu_add_data_blocked(cvaluehist0,pxi0(:),epothist0)
+            call abf_accu_add_data_blocked(cvaluehist0,pxi0(:),epothist0,ekinhist1,ersthist0)
         end if
     end if
 

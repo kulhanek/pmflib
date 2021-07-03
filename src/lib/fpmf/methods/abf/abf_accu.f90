@@ -78,6 +78,17 @@ subroutine abf_accu_init()
         call pmf_utils_exit(PMF_OUT, 1,'[ABF] Unable to allocate memory for abf accumulator (abfforce)!')
     endif
 
+    if( fentropy ) then
+        allocate(   abfaccu%metot(abfaccu%tot_nbins), &
+                    abfaccu%m2etot(abfaccu%tot_nbins), &
+                    abfaccu%c11hh(abfaccu%tot_cvs,abfaccu%tot_nbins), &
+                    stat = alloc_failed)
+
+        if( alloc_failed .ne. 0 ) then
+            call pmf_utils_exit(PMF_OUT, 1,'[ABF] Unable to allocate memory for abf accumulator (entropy)!')
+        endif
+    end if
+
     if( fblock_size .gt. 0 ) then
         ! for block averages
         allocate(  &
@@ -130,6 +141,12 @@ subroutine abf_accu_clear()
     abfaccu%m2icf(:,:)      = 0.0d0
     abfaccu%mepot(:)        = 0.0d0
     abfaccu%m2epot(:)       = 0.0d0
+
+    if( fentropy ) then
+        abfaccu%metot(:)        = 0.0d0
+        abfaccu%m2etot(:)       = 0.0d0
+        abfaccu%c11hh(:,:)      = 0.0d0
+    end if
 
     if( fblock_size .gt. 0 ) then
         abfaccu%block_nsamples(:) = 0
@@ -197,6 +214,8 @@ subroutine abf_accu_read(iounit)
                     else
                         call pmf_accu_skip_section(iounit,keyline,ABF_OUT)
                     end if
+            ! ------------------------------------
+                ! FIXME
             ! ------------------------------------
                 case default
                     call pmf_accu_skip_section(iounit,keyline,ABF_OUT)
@@ -279,13 +298,19 @@ subroutine abf_accu_write(iounit)
         call pmf_accu_write_rbuf_B(abfaccu%PMFAccuType,iounit,'M2EPOT','AD',abfaccu%m2epot)
     end if
 
+    if( fentropy ) then
+        call pmf_accu_write_rbuf_B(abfaccu%PMFAccuType,iounit,'METOT','WA',abfaccu%metot)
+        call pmf_accu_write_rbuf_B(abfaccu%PMFAccuType,iounit,'M2ETOT','AD',abfaccu%m2etot)
+        call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'C11HH','AD',abfaccu%c11hh)
+    end if
+
 end subroutine abf_accu_write
 
 !===============================================================================
 ! Subroutine:  abf_accu_add_data_online
 !===============================================================================
 
-subroutine abf_accu_add_data_online(cvs,gfx,epot)
+subroutine abf_accu_add_data_online(cvs,gfx,epot,ekin,erst)
 
     use abf_dat
     use pmf_dat
@@ -295,10 +320,13 @@ subroutine abf_accu_add_data_online(cvs,gfx,epot)
     real(PMFDP)    :: cvs(:)
     real(PMFDP)    :: gfx(:)
     real(PMFDP)    :: epot
+    real(PMFDP)    :: ekin
+    real(PMFDP)    :: erst
     ! -----------------------------------------------
     integer        :: gi0, i
     real(PMFDP)    :: invn, icf
     real(PMFDP)    :: depot1, depot2
+    real(PMFDP)    :: detot1, detot2, etot
     real(PMFDP)    :: dicf1, dicf2
     ! --------------------------------------------------------------------------
 
@@ -321,12 +349,26 @@ subroutine abf_accu_add_data_online(cvs,gfx,epot)
     depot2 = epot - abfaccu%mepot(gi0)
     abfaccu%m2epot(gi0) = abfaccu%m2epot(gi0) + depot1 * depot2
 
+    if( fentropy ) then
+        etot = epot + ekin + erst
+        ! potential energy
+        detot1 = etot - abfaccu%metot(gi0)
+        abfaccu%metot(gi0)  = abfaccu%metot(gi0)  + detot1 * invn
+        detot2 = etot - abfaccu%metot(gi0)
+        abfaccu%m2etot(gi0) = abfaccu%m2etot(gi0) + detot1 * detot2
+    end if
+
     do i=1,abfaccu%tot_cvs
         icf = gfx(i)
         dicf1 = - icf - abfaccu%micf(i,gi0)
         abfaccu%micf(i,gi0)  = abfaccu%micf(i,gi0)  + dicf1 * invn
         dicf2 = - icf -  abfaccu%micf(i,gi0)
         abfaccu%m2icf(i,gi0) = abfaccu%m2icf(i,gi0) + dicf1 * dicf2
+
+        if( fentropy ) then
+            abfaccu%c11hh(i,gi0)  = abfaccu%c11hh(i,gi0) + dicf1     * detot2
+        end if
+
     end do
 
 
@@ -352,7 +394,7 @@ end subroutine abf_accu_add_data_online
 ! Subroutine:  abf_accu_add_data_blocked
 !===============================================================================
 
-subroutine abf_accu_add_data_blocked(cvs,gfx,epot)
+subroutine abf_accu_add_data_blocked(cvs,gfx,epot,ekin,erst)
 
     use abf_dat
     use pmf_dat
@@ -362,6 +404,8 @@ subroutine abf_accu_add_data_blocked(cvs,gfx,epot)
     real(PMFDP)    :: cvs(:)
     real(PMFDP)    :: gfx(:)
     real(PMFDP)    :: epot
+    real(PMFDP)    :: ekin
+    real(PMFDP)    :: erst
     ! -----------------------------------------------
     integer        :: gi0, i
     real(PMFDP)    :: invn, icf
@@ -408,6 +452,8 @@ subroutine abf_accu_add_data_blocked(cvs,gfx,epot)
     abfaccu%mepot(gi0)  = abfaccu%mepot(gi0)  + depot1 * invn
     depot2 = epot - abfaccu%mepot(gi0)
     abfaccu%m2epot(gi0) = abfaccu%m2epot(gi0) + depot1 * depot2
+
+    ! entropy cannot be calculated in blocked version
 
     do i=1,abfaccu%tot_cvs
         icf = abfaccu%block_micf(i,gi0)

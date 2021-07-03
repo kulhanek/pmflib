@@ -76,7 +76,7 @@ subroutine rst_init_dat
     faccumulation = 0        ! number of accumulated data
     fwarnlevel    = 15.0     ! warning level for restraint energy
 
-    NumOfRSTItems = 0
+    NumOfRSTCVs = 0
     insidesamples = 0
     outsidesamples = 0
 
@@ -105,7 +105,7 @@ subroutine rst_init_print_header
     write(PMF_OUT,120)  ' Restrained Dynamics Mode'
     write(PMF_OUT,120)  ' ------------------------------------------------------'
     write(PMF_OUT,130)  ' Restrained dynamics mode (fmode)        : ', fmode
-    write(PMF_OUT,130)  ' Number of restraints                    : ', NumOfRSTItems
+    write(PMF_OUT,130)  ' Number of restraints                    : ', NumOfRSTCVs
     write(PMF_OUT,125)  ' Restraint definition file (frstdef)     : ', trim(frstdef)
     write(PMF_OUT,120)
     write(PMF_OUT,120)  ' Output options:'
@@ -130,7 +130,7 @@ subroutine rst_init_print_header
     write(PMF_OUT,120)  ' -------------------------------------------------------'
     write(PMF_OUT,120)
 
-    do i=1,NumOfRSTItems
+    do i=1,NumOfRSTCVs
      write(PMF_OUT,140) i
         call rst_restraints_rst_info(RSTCVList(i))
         write(PMF_OUT,120)
@@ -166,8 +166,8 @@ subroutine rst_init_core
 
  ! allocate arrays for accumulating data
 
- allocate(svalues(NumOfRSTItems), &
-          s2values(NumOfRSTItems), &
+ allocate(svalues(NumOfRSTCVs), &
+          s2values(NumOfRSTCVs), &
           stat=alloc_failed)
 
  if( alloc_failed .ne. 0 ) then

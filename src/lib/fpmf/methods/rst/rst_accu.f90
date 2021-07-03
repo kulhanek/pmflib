@@ -51,7 +51,7 @@ subroutine rst_accu_init()
     if( (fhistupdate .eq. 0) .and. (frestart .eqv. .false.) ) return
 
     ! init dimensions ------------------------------
-    rstaccu%tot_cvs = NumOfRSTItems
+    rstaccu%tot_cvs = NumOfRSTCVs
     allocate(rstaccu%sizes(rstaccu%tot_cvs ), stat = alloc_failed)
     if( alloc_failed .ne. 0 ) then
         call pmf_utils_exit(PMF_OUT, 1,'[RST] Unable to allocate memory for rst accumulator!')

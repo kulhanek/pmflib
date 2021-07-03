@@ -67,10 +67,8 @@ subroutine tabf_init_dat
     fmode           = 0         ! 0 - disable ABF, 1 - enabled ABF
     fsample         = 5000      ! output sample period in steps
     frstupdate      = 5000      ! how often is restart file written
-    feimode         = 3         ! extrapolation / interpolation mode
+    feimode         = 1         ! extrapolation / interpolation mode
                                 ! 1 - linear ramp I
-                                ! 2 - linear ramp II
-                                ! 3 - block averages
     ftrjsample      = 0         ! how often save accumulator to "accumulator evolution"
     fapply_abf      = .true.    ! on - apply ABF, off - do not apply ABF
     fprint_icf      = .false.   ! T - print instantaneous collective forces, F - do not print

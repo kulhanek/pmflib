@@ -138,7 +138,7 @@ subroutine tabf_core_force_4p()
     ! calculate abf force to be applied -------------
     select case(feimode)
         case(1)
-            call tabf_accu_get_data_lramp(cvaluehist1(:),la)
+            call tabf_accu_get_data_lramp(cvaluehist3(:),la)
         case default
             call pmf_utils_exit(PMF_OUT,1,'[TABF] Not implemented extrapolation/interpolation mode!')
     end select

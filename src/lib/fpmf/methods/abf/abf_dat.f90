@@ -51,6 +51,8 @@ integer     :: feimode      ! interpolation/extrapolation mode
 
 logical     :: fenthalpy    ! collect data for enthalpy calculation
 real(PMFDP) :: fepotoffset
+logical     :: fentropy     ! collect data for entropy calculation
+real(PMFDP) :: fekinoffset
 
 ! data pre-averaging
 integer     :: fblock_size  ! block size for ABF force pre-accumulation
@@ -101,6 +103,9 @@ type,extends(PMFAccuType) :: ABFAccuType
     real(PMFDP),pointer    :: m2icf(:,:)                ! M2 of ICF
     real(PMFDP),pointer    :: mepot(:)                  ! mean of pot energy
     real(PMFDP),pointer    :: m2epot(:)                 ! M2 of pot energy
+    real(PMFDP),pointer    :: metot(:)                  ! mean of total energy
+    real(PMFDP),pointer    :: m2etot(:)                 ! M2 of total energy
+    real(PMFDP),pointer    :: c11hh(:,:)                ! cov(H,H) for entropy
 
     ! smoothed ICF
     real(PMFDP),pointer    :: smicf(:,:)                ! mean ICF, smoothed
@@ -158,6 +163,15 @@ real(PMFDP)                 :: epothist1   ! history of Epot
 real(PMFDP)                 :: epothist2   ! history of Epot
 real(PMFDP)                 :: epothist3   ! history of Epot
 
+real(PMFDP)                 :: ekinhist0   ! history of Ekin
+real(PMFDP)                 :: ekinhist1   ! history of Ekin
+real(PMFDP)                 :: ekinhist2   ! history of Ekin
+real(PMFDP)                 :: ekinhist3   ! history of Ekin
+
+real(PMFDP)                 :: ersthist0   ! history of Erst (PMFEne)
+real(PMFDP)                 :: ersthist1   ! history of Erst
+real(PMFDP)                 :: ersthist2   ! history of Erst
+real(PMFDP)                 :: ersthist3   ! history of Erst
 ! ------------------------------------------------------------------------------
 
 end module abf_dat

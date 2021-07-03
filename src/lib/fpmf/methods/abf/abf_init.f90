@@ -79,6 +79,9 @@ subroutine abf_init_dat
     fenthalpy       = .false.
     fepotoffset     = 0.0d0
 
+    fentropy        = .false.
+    fekinoffset     = 0
+
     fblock_size     = 0
 
     feimode         = 1
@@ -181,6 +184,9 @@ subroutine abf_init_print_header
     write(PMF_OUT,130)  ' Output sampling (fsample)               : ', fsample
     write(PMF_OUT,125)  ' Accumulate enthalpy (fenthalpy)         : ', prmfile_onoff(fenthalpy)
     write(PMF_OUT,150)  ' Potential energy offset (fepotoffset)   : ', pmf_unit_get_rvalue(EnergyUnit,fepotoffset),  &
+                                                                       '['//trim(pmf_unit_label(EnergyUnit))//']'
+    write(PMF_OUT,125)  ' Accumulate entropy (fentropy)           : ', prmfile_onoff(fentropy)
+    write(PMF_OUT,150)  ' Potential energy offset (fekinoffset)   : ', pmf_unit_get_rvalue(EnergyUnit,fekinoffset),  &
                                                                        '['//trim(pmf_unit_label(EnergyUnit))//']'
     write(PMF_OUT,120)
     write(PMF_OUT,120)  ' Trajectory output options:'

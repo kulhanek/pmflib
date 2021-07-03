@@ -41,10 +41,11 @@ integer     :: fsample      ! output sample period in steps
 integer     :: fplevel      ! print level
 logical     :: frestart     ! restart job with previous data
 integer     :: fhistupdate  ! how often is restart file written
-integer     :: fhistclear   ! after first 'fhistclear' steps histogram
+integer     :: fhistclear   ! after first 'fhistclear' steps RST and US-ABF accumulators will be erased
                             ! will be reset (default 0)
 integer     :: fsamplefreq  ! how often take samples
 real(PMFDP) :: fwarnlevel   ! warning level for restraint energy
+
 
 ! item list --------------------------------------------------------------------
 type CVTypeUM
@@ -89,7 +90,7 @@ end type UMAccuType
 
 ! ----------------------
 ! regular umbrella sampling
-integer                     :: NumOfRSTItems        ! number of restraints
+integer                     :: NumOfRSTCVs          ! number of restraints
 type(CVTypeUM),allocatable  :: RSTCVList(:)         ! input definition of restraints
 real(PMFDP)                 :: TotalRstEnergy       ! total restraints energy
 

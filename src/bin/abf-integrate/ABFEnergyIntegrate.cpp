@@ -277,8 +277,6 @@ if( Options.GetOptRealm() == "dG" ){
         RUNTIME_ERROR(error);
     }
 
-    DerProxy    = CABFProxy_dG_Ptr(new CABFProxy_dG);
-
     vout << endl;
     vout << format("%02d:Loading ABF accumulator: %s")%state%string(ABFAccuName) << endl;
     state++;

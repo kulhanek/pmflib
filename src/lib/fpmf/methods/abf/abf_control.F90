@@ -93,11 +93,17 @@ subroutine abf_control_read_abf(prm_fin)
     call pmf_ctrl_check_integer('ABF','ftrjsample',ftrjsample,0,CND_GE)
 
     call pmf_ctrl_read_logical(prm_fin,'fenthalpy',fenthalpy)
-
     call pmf_ctrl_read_real8_wunit(prm_fin,'fepotoffset',EnergyUnit,fepotoffset,'F10.1')
+
+    call pmf_ctrl_read_logical(prm_fin,'fentropy',fentropy)
+    call pmf_ctrl_read_real8_wunit(prm_fin,'fekinoffset',EnergyUnit,fekinoffset,'F10.1')
 
     call pmf_ctrl_read_integer(prm_fin,'fblock_size',fblock_size,'i12')
     call pmf_ctrl_check_integer('ABF','fblock_size',fblock_size,0,CND_GE)
+
+    if( fentropy .and. (fblock_size .gt. 0) ) then
+        call pmf_utils_exit(PMF_OUT,1,'[ABF] if fentropy == on, then fblock_size must be zero!')
+    end if
 
     call pmf_ctrl_read_integer(prm_fin,'feimode',feimode,'i12')
     call pmf_ctrl_check_integer_in_range('ABF','feimode',feimode,0,2)
