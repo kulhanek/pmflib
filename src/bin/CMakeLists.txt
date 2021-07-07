@@ -23,6 +23,7 @@ ADD_SUBDIRECTORY(accu-trajectory)
 
 # common utilities
 ADD_SUBDIRECTORY(pmf-enthalpy)
+ADD_SUBDIRECTORY(gpr-opthyprms)
 
 # ABF utilities
 ADD_SUBDIRECTORY(abf-integrate)

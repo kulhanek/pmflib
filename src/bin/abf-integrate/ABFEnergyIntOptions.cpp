@@ -218,13 +218,6 @@ int CABFEnergyIntOptions::CheckOptions(void)
         IsError = true;
     }
 
-    if( IsOptSplitNCorrSet() && (GetOptMethod() != "gpr") ){
-        if(IsError == false) fprintf(stderr,"\n");
-        fprintf(stderr,"%s: --splitncorr can be set only for GPR method\n",
-                (const char*)GetProgramName());
-        IsError = true;
-    }
-
     if( IsOptMaxEnergySet() && (GetOptUnsampledAsMaxE() == false) ){
         if(IsError == false) fprintf(stderr,"\n");
         fprintf(stderr,"%s: --maxenergy without --unsampledasmax does not have any effect\n",
@@ -234,13 +227,13 @@ int CABFEnergyIntOptions::CheckOptions(void)
 
     if( IsOptWithErrorSet() && (GetOptMethod() != "gpr") ){
         if(IsError == false) fprintf(stderr,"\n");
-        fprintf(stderr,"%s: --witherror can be compbined only with GPR\n",
+        fprintf(stderr,"%s: --witherror can be combined only with GPR\n",
                 (const char*)GetProgramName());
         IsError = true;
     }
     if( IsOptLoadHyprmsSet() && (GetOptMethod() != "gpr") ){
         if(IsError == false) fprintf(stderr,"\n");
-        fprintf(stderr,"%s: --loadhyprms can be compbined only with GPR\n",
+        fprintf(stderr,"%s: --loadhyprms can be combined only with GPR\n",
                 (const char*)GetProgramName());
         IsError = true;
     }
@@ -265,7 +258,7 @@ int CABFEnergyIntOptions::CheckOptions(void)
 
     if( IsOptMFInfoSet() && ((GetOptMethod() != "rbf")&&(GetOptMethod() != "gpr")) ){
         if(IsError == false) fprintf(stderr,"\n");
-        fprintf(stderr,"%s: --mfinfo can be compbined only with RBF or GPR\n",
+        fprintf(stderr,"%s: --mfinfo can be combined only with RBF or GPR\n",
                 (const char*)GetProgramName());
         IsError = true;
     }

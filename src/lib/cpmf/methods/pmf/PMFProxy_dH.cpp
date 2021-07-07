@@ -36,6 +36,7 @@ CPMFProxy_dH::CPMFProxy_dH(void)
     Requires.push_back("ABF");
     Requires.push_back("TABF");
     Requires.push_back("CST");
+    Requires.push_back("US-ABF");
 }
 
 //------------------------------------------------------------------------------

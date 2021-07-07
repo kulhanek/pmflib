@@ -1,6 +1,7 @@
 !===============================================================================
 ! PMFLib - Library Supporting Potential of Mean Force Calculations
 !-------------------------------------------------------------------------------
+!    Copyright (C) 2021 Petr Kulhanek, kulhanek@chemi.muni.cz
 !    Copyright (C) 2011-2015 Petr Kulhanek, kulhanek@chemi.muni.cz
 !    Copyright (C) 2013-2015 Letif Mones, lam81@cam.ac.uk
 !    Copyright (C) 2010 Petr Kulhanek, kulhanek@chemi.muni.cz
@@ -49,7 +50,7 @@ subroutine usabf_trajectory_open
 
     if( ftrjsample .le. 0 ) return ! trajectory is written only if ftrjsample > 0
 
-    call pmf_utils_open(USABF_TRJ,ftabftrj,'R')
+    call pmf_utils_open(USABF_TRJ,fusabftrj,'R')
 
     write(USABF_TRJ,10)
 

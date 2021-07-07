@@ -34,6 +34,7 @@ CABFProxy_dG::CABFProxy_dG(void)
 
     Requires.push_back("ABF");
     Requires.push_back("TABF");
+    Requires.push_back("US-ABF");
 }
 
 //------------------------------------------------------------------------------

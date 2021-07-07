@@ -119,86 +119,9 @@ void CIntegratorGPR::SetSigmaF2(double sigf2)
 
 //------------------------------------------------------------------------------
 
-void CIntegratorGPR::SetNCorr(const CSmallString& spec)
+void CIntegratorGPR::SetNCorr(double value)
 {
-    if( Accu == NULL ){
-        RUNTIME_ERROR("accumulator is not set for SetNCorr");
-    }
-
-    string          sspec(spec);
-    vector<string>  sncorrs;
-
-    split(sncorrs,sspec,is_any_of("x"),token_compress_on);
-
-    if( sncorrs.size() > NCVs ){
-        CSmallString error;
-        error << "too many ncorrs (" << sncorrs.size() << ") than required (" << NCVs << ")";
-        RUNTIME_ERROR(error);
-    }
-
-    if( (SplitNCorr == false) && (sncorrs.size() > 1) ){
-        CSmallString error;
-        error << "too many ncorrs (" << sncorrs.size() << ") but only one allowed without --splitncorr";
-        RUNTIME_ERROR(error);
-    }
-
-    NCorr.CreateVector(NCVs);
-
-    // parse values of ncorr
-    double last_ncorr = 1.0;
-    for(size_t i=0; i < sncorrs.size(); i++){
-        stringstream str(sncorrs[i]);
-        str >> last_ncorr;
-        if( ! str ){
-            CSmallString error;
-            error << "unable to decode ncorr value for position: " << i+1;
-            RUNTIME_ERROR(error);
-        }
-        NCorr[i] = last_ncorr;
-    }
-
-    // pad the rest with the last value
-    for(size_t i=sncorrs.size(); i < NCVs; i++){
-        NCorr[i] = last_ncorr;
-    }
-}
-
-//------------------------------------------------------------------------------
-
-void CIntegratorGPR::SetSplitNCorr(bool set)
-{
-    SplitNCorr = set;
-}
-
-//------------------------------------------------------------------------------
-
-void CIntegratorGPR::SetNCorr(CSimpleVector<double>& ncorr)
-{
-    if( Accu == NULL ){
-        RUNTIME_ERROR("accumulator is not set for SetNCorr");
-    }
-    if( ncorr.GetLength() != NCVs ){
-        RUNTIME_ERROR("ncvs inconsistent in the source and target");
-    }
-
-    NCorr = ncorr;
-}
-
-//------------------------------------------------------------------------------
-
-void CIntegratorGPR::SetNCorr(size_t cvind, double value)
-{
-    if( Accu == NULL ){
-        RUNTIME_ERROR("accumulator is not set for SetNCorr");
-    }
-    if( cvind >= NCVs ){
-        RUNTIME_ERROR("cvind out-of-range");
-    }
-    // is NCorr initialized?
-    if( NCorr.GetLength() == 0 ){
-        NCorr.CreateVector(NCVs);
-    }
-    NCorr[cvind] = value;
+    NCorr = value;
 }
 
 //------------------------------------------------------------------------------
@@ -470,9 +393,6 @@ bool CIntegratorGPR::Integrate(CVerboseStr& vout,bool nostat)
     if( WFac.GetLength() == 0 ){
         RUNTIME_ERROR("wfac is not set");
     }
-    if( NCorr.GetLength() == 0 ){
-        RUNTIME_ERROR("ncorr is not set");
-    }
 
     // GPR setup
     CVLengths2.CreateVector(NCVs);
@@ -506,13 +426,7 @@ bool CIntegratorGPR::Integrate(CVerboseStr& vout,bool nostat)
     // print hyperparameters
     vout << "   Hyperparameters ..." << endl;
         vout << format("      SigmaF2   = %10.4f")%SigmaF2 << endl;
-    if( SplitNCorr ){
-        for(size_t k=0; k < NCVs; k++ ){
-            vout << format("      NCorr#%-2d  = %10.4f")%(k+1)%NCorr[k] << endl;
-        }
-    } else {
-        vout << format("      NCorr     = %10.4f")%NCorr[0] << endl;
-    }
+        vout << format("      NCorr     = %10.4f")%NCorr << endl;
 
     for(size_t k=0; k < NCVs; k++ ){
         vout << format("      WFac#%-2d   = %10.4f")%(k+1)%WFac[k] << endl;
@@ -802,14 +716,10 @@ void CIntegratorGPR::CreateKS(void)
         size_t i = SampledMap[indi];
         for(size_t ii=0; ii < NCVs; ii++){
             double er = DerProxy->GetValue(i,ii,E_PROXY_ERROR);
-            if( SplitNCorr ){
-                KS[indi*NCVs+ii][indi*NCVs+ii] += er*er*NCorr[ii];
-            } else {
-                KS[indi*NCVs+ii][indi*NCVs+ii] += er*er*NCorr[0];
-            }
+            KS[indi*NCVs+ii][indi*NCVs+ii] += er*er*NCorr;
         }
     }
-    // zero point has no uncertainity
+    // zero point has no uncertainty
 }
 
 //------------------------------------------------------------------------------

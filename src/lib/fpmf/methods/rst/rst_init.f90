@@ -121,7 +121,6 @@ subroutine rst_init_print_header
     write(PMF_OUT,125)  ' Histogram restart enabled (frestart)    : ', prmfile_onoff(frestart)
     write(PMF_OUT,130)  ' Histogram file update (fhistupdate)     : ', fhistupdate
     write(PMF_OUT,130)  ' Histogram sampling restart (fhistclear) : ', fhistclear
-    write(PMF_OUT,120)
 
     write(PMF_OUT,120)
     write(PMF_OUT,120)  ' List of restraints'

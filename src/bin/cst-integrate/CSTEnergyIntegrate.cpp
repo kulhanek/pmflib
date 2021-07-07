@@ -145,7 +145,6 @@ int CCSTEnergyIntegrate::Init(int argc,char* argv[])
         vout << "# Width factor wfac     : " << Options.GetOptWFac() << endl;
         vout << "# RBF overhang          : " << Options.GetOptOverhang() << endl;
     } else if ( Options.GetOptMethod() == "gpr"  ) {
-            vout << "# Split NCorr mode      : " << bool_to_str(Options.GetOptSplitNCorr()) << endl;
         if( Options.IsOptLoadHyprmsSet() ){
             vout << "# GPR hyperprms file    : " << Options.GetOptLoadHyprms() << endl;
             // actual values are printed in detailed output from integrator
@@ -517,8 +516,6 @@ bool CCSTEnergyIntegrate::IntegrateForEcut(void)
         integrator.SetInputEnergyDerProxy(DerProxy);
         integrator.SetOutputES(FES);
 
-        integrator.SetSplitNCorr(Options.GetOptSplitNCorr());
-
         if( Options.IsOptLoadHyprmsSet() ){
             LoadGPRHyprms(integrator);
         } else {
@@ -622,8 +619,6 @@ bool CCSTEnergyIntegrate::Integrate(void)
         integrator.SetInputEnergyDerProxy(DerProxy);
         integrator.SetOutputES(FES);
 
-        integrator.SetSplitNCorr(Options.GetOptSplitNCorr());
-
         if( Options.IsOptLoadHyprmsSet() ){
             LoadGPRHyprms(integrator);
         } else {
@@ -719,8 +714,6 @@ bool CCSTEnergyIntegrate::ReduceFES(void)
 
         integrator.SetInputEnergyDerProxy(DerProxy);
         integrator.SetOutputES(tmp_FES);
-
-        integrator.SetSplitNCorr(Options.GetOptSplitNCorr());
 
         if( Options.IsOptLoadHyprmsSet() ){
             LoadGPRHyprms(integrator);
@@ -871,35 +864,7 @@ void CCSTEnergyIntegrate::LoadGPRHyprms(CIntegratorGPR& gpr)
         if( key == "SigmaF2" ){
             gpr.SetSigmaF2(value);
         } else if( key == "NCorr" ){
-            gpr.SetNCorr(0,value);
-            if( Options.GetOptSplitNCorr() ){
-                vout << "   >> WARNING: Expanding NCorr due to --splitncorr" << endl;
-                for(int i=0; i < Accu->GetNumOfCVs();i++){
-                    gpr.SetNCorr(i,value);
-                }
-            }
-        } else if( key.find("NCorr#") != string::npos ) {
-            std::replace( key.begin(), key.end(), '#', ' ');
-            stringstream kstr(key);
-            string sncorr;
-            int    cvind;
-            kstr >> sncorr >> cvind;
-            if( ! kstr ){
-                CSmallString error;
-                error << "GPR hyperparameters file, unable to decode ncorr key: " << key.c_str();
-                RUNTIME_ERROR(error);
-            }
-            cvind--; // transform to 0-based indexing
-            if( Options.GetOptSplitNCorr() ){
-                gpr.SetNCorr(cvind,value);
-            } else {
-                if( cvind > 0 ){
-                    vout << "   >> WARNING: NCorr with index higher than one ignored (no --splitncorr)!" << endl;
-                } else {
-                    gpr.SetNCorr(cvind,value);
-                }
-            }
-
+            gpr.SetNCorr(value);
         } else if( key.find("WFac#") != string::npos ) {
             std::replace( key.begin(), key.end(), '#', ' ');
             stringstream kstr(key);

@@ -389,15 +389,15 @@ subroutine pmf_control_read_files(prm_fin)
     return
 
  10 format('# -------- General Setup')
-100 format('# -------- Constrained Dynamics')
-200 format('# -------- Restrained Dynamics')
-300 format('# -------- Metadynamics')
-400 format('# -------- Adaptive Biasing Force Method')
-410 format('# -------- Adaptive Biasing Force Method (Testing)')
-420 format('# -------- Umbrella Sampling / Adaptive Biasing Force Method US-ABF')
-500 format('# -------- Monitoring')
-700 format('# -------- String Method')
-800 format('# -------- Path Driving')
+100 format('# -------- Constrained Dynamics (CST)')
+200 format('# -------- Restrained Dynamics (RST)')
+300 format('# -------- Metadynamics (MTD)')
+400 format('# -------- Adaptive Biasing Force Method (ABF)')
+410 format('# -------- Adaptive Biasing Force Method (Testing - TABF)')
+420 format('# -------- Umbrella Sampling / Adaptive Biasing Force Method (US-ABF)')
+500 format('# -------- Monitoring (MON)')
+700 format('# -------- String Method (STM)')
+800 format('# -------- Path Driving (PDRV)')
 
 
 end subroutine pmf_control_read_files

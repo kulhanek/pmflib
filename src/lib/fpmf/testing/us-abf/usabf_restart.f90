@@ -1,6 +1,7 @@
 !===============================================================================
 ! PMFLib - Library Supporting Potential of Mean Force Calculations
 !-------------------------------------------------------------------------------
+!    Copyright (C) 2021 Petr Kulhanek, kulhanek@chemi.muni.cz
 !    Copyright (C) 2011-2015 Petr Kulhanek, kulhanek@chemi.muni.cz
 !    Copyright (C) 2013-2015 Letif Mones, lam81@cam.ac.uk
 !    Copyright (C) 2007 Martin Petrek, petrek@chemi.muni.cz &
@@ -47,7 +48,7 @@ subroutine usabf_restart_update
 
     if( mod(fstep,frstupdate) .ne. 0 ) return
 
-    call pmf_utils_open(TABF_RST,ftabfrst,'U')
+    call pmf_utils_open(TABF_RST,fusabfrst,'U')
     call usabf_accu_write(TABF_RST)
     close(TABF_RST)
 
@@ -72,7 +73,7 @@ subroutine usabf_restart_write
     implicit none
     !---------------------------------------------------------------------------
 
-    call pmf_utils_open(TABF_RST,ftabfrst,'U')
+    call pmf_utils_open(TABF_RST,fusabfrst,'U')
 
     call usabf_accu_write(TABF_RST)
 
