@@ -108,6 +108,8 @@ private:
     CTerminalStr            Console;
     CVerboseStr             vout;
 
+    void AddRealm(CPMFAccumulatorPtr accu, const CSmallString& realm);
+
     void PrintSampledStat(void);
     void InitOptimizer(void);
     void Test(void);

@@ -40,6 +40,9 @@ public:
     // get PMF accumulator
     CPMFAccumulatorPtr GetAccu(void);
 
+    // get realm
+    CSmallString GetRealm(void);
+
     // get number of samples
     virtual int GetNumOfSamples(int ibin) const;
 

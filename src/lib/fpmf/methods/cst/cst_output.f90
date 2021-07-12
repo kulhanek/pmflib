@@ -196,9 +196,9 @@ subroutine cst_output_write
 
     if( faccumulation .gt. 0 ) then
         aisrz  = misrz
-        isrzs  = sqrt(m2isrz / real(faccumulation,PMFDP))
-        aisrzs = sqrt(isrzs / real(faccumulation,PMFDP))
-        mtc    = PMF_Rgas*ftemp*log(aisrz)
+        isrzs  = sqrt( m2isrz  / real(faccumulation,PMFDP) )
+        aisrzs = isrzs / sqrt(real(faccumulation,PMFDP))
+        mtc    = - PMF_Rgas*ftemp*log(aisrz)
     else
         aisrz  = 0.0d0
         isrzs  = 0.0d0

@@ -68,6 +68,13 @@ CPMFAccumulatorPtr CEnergyProxy::GetAccu(void)
 
 //------------------------------------------------------------------------------
 
+CSmallString CEnergyProxy::GetRealm(void)
+{
+    return(Provide);
+}
+
+//------------------------------------------------------------------------------
+
 int CEnergyProxy::GetNumOfSamples(int ibin) const
 {
     RUNTIME_ERROR("need to be overloaded");

@@ -46,11 +46,12 @@ public:
     CSO_PROG_VERS_END
 
     CSO_PROG_ARGS_SHORT_DESC_BEGIN
-    "accuname1 [accuname2 [..]] hyprmsname"
+    "accuname1 realm1 [accuname2 realm2 [..]] hyprmsname"
     CSO_PROG_ARGS_SHORT_DESC_END
 
     CSO_PROG_ARGS_LONG_DESC_BEGIN
     "<cyan><b>accuname1</b></cyan>                  Name of file containing the PMF accumulator.\n"
+    "<cyan><b>realm1</b></cyan>                     Realm of interest.\n"
     "<cyan><b>hyprmsname</b></cyan>                 Name of file where the optimized GPR hyperparameters are saved. If the name is '-' then the output will be written to the standard output."
     CSO_PROG_ARGS_LONG_DESC_END
 
@@ -64,7 +65,7 @@ public:
     CSO_OPT(double,NCorr)
     CSO_OPT(CSmallString,WFac)
     CSO_OPT(bool,SigmaF2Enabled)
-    CSO_OPT(CSmallString,NCorrEnabled)
+    CSO_OPT(bool,NCorrEnabled)
     CSO_OPT(CSmallString,WFacEnabled)
     CSO_OPT(bool,Numeric)
     CSO_OPT(int,NOptSteps)

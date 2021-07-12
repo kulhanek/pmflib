@@ -45,6 +45,16 @@ CABFProxy_dG::~CABFProxy_dG(void)
 
 //------------------------------------------------------------------------------
 
+bool CABFProxy_dG::IsCompatible(CPMFAccumulatorPtr accu)
+{
+    if( accu->GetMethod() == "ABF" ) return(true);
+    if( accu->GetMethod() == "TABF" ) return(true);
+    if( accu->GetMethod() == "US-ABF" ) return(true);
+    return(false);
+}
+
+//------------------------------------------------------------------------------
+
 void CABFProxy_dG::SetType(EABFdGType type)
 {
     Type = type;

@@ -43,6 +43,14 @@ CCSTProxy_mTdS::~CCSTProxy_mTdS(void)
 
 //------------------------------------------------------------------------------
 
+bool CCSTProxy_mTdS::IsCompatible(CPMFAccumulatorPtr accu)
+{
+    if( accu->GetMethod() == "CST" ) return(true);
+    return(false);
+}
+
+//------------------------------------------------------------------------------
+
 void CCSTProxy_mTdS::SetType(ECSTTdSType type)
 {
     Type = type;

@@ -21,13 +21,13 @@
 //     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 // =============================================================================
 
-#include "CSTEnergyIntOptions.hpp"
+#include "PMFEnergyIntOptions.hpp"
 
 //==============================================================================
 //------------------------------------------------------------------------------
 //==============================================================================
 
-CCSTEnergyIntOptions::CCSTEnergyIntOptions(void)
+CPMFEnergyIntOptions::CPMFEnergyIntOptions(void)
 {
     SetShowMiniUsage(true);
     SetAllowProgArgs(true);
@@ -35,8 +35,13 @@ CCSTEnergyIntOptions::CCSTEnergyIntOptions(void)
 
 //------------------------------------------------------------------------------
 
-int CCSTEnergyIntOptions::CheckOptions(void)
+int CPMFEnergyIntOptions::CheckOptions(void)
 {
+    if(GetOptLimit() < 0) {
+        if(IsError == false) fprintf(stderr,"\n");
+        fprintf(stderr,"%s: sampling limit has to be grater or equal to zero, but %d is specified\n", (const char*)GetProgramName(),GetOptLimit());
+        IsError = true;
+    }
 
     if((GetOptEnergyLimit() <= 0) && (GetOptEnergyLimit() != -1)) {
         if(IsError == false) fprintf(stderr,"\n");
@@ -258,6 +263,30 @@ int CCSTEnergyIntOptions::CheckOptions(void)
         IsError = true;
     }
 
+    if( IsOptMFMaxZScoreSet() && ((GetOptMethod() != "rbf")&&(GetOptMethod() != "gpr")) ){
+        if(IsError == false) fprintf(stderr,"\n");
+        fprintf(stderr,"%s: --maxzscore can be combined only with RBF or GPR\n",
+                (const char*)GetProgramName());
+        IsError = true;
+    }
+    if( IsOptMFZTestPassesSet() && ((GetOptMethod() != "rbf")&&(GetOptMethod() != "gpr")) ){
+        if(IsError == false) fprintf(stderr,"\n");
+        fprintf(stderr,"%s: --mfzpasses can be combined only with RBF or GPR\n",
+                (const char*)GetProgramName());
+        IsError = true;
+    }
+    if( IsOptGlueingFactorSet() && ((GetOptMethod() != "rbf")&&(GetOptMethod() != "gpr")) ){
+        if(IsError == false) fprintf(stderr,"\n");
+        fprintf(stderr,"%s: --glueing can be combined only with RBF or GPR\n",
+                (const char*)GetProgramName());
+        IsError = true;
+    }
+    if( IsOptGlueHolesSet() && ((GetOptMethod() != "rbf")&&(GetOptMethod() != "gpr")) ){
+        if(IsError == false) fprintf(stderr,"\n");
+        fprintf(stderr,"%s: --glueholes can be combined only with RBF or GPR\n",
+                (const char*)GetProgramName());
+        IsError = true;
+    }
     if( IsOptGlobalMinSet() && ((GetOptMethod() != "rbf")&&(GetOptMethod() != "gpr")) ){
         if(IsError == false) fprintf(stderr,"\n");
         fprintf(stderr,"%s: --globalmin can be combined only with RBF or GPR\n",
@@ -282,7 +311,7 @@ int CCSTEnergyIntOptions::CheckOptions(void)
 
 //------------------------------------------------------------------------------
 
-int CCSTEnergyIntOptions::CheckArguments(void)
+int CPMFEnergyIntOptions::CheckArguments(void)
 {
     if( (GetNumberOfProgArgs() != 2) && (GetNumberOfProgArgs() != 3) ){
         if(IsError == false) fprintf(stderr,"\n");
@@ -300,7 +329,7 @@ int CCSTEnergyIntOptions::CheckArguments(void)
  process special options (Help, Version) before arguments will be processed
 */
 
-int CCSTEnergyIntOptions::FinalizeOptions(void)
+int CPMFEnergyIntOptions::FinalizeOptions(void)
 {
     bool ret_opt = false;
 

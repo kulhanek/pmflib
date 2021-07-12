@@ -384,10 +384,15 @@ double CEnergySurface::GetGlobalMinimumValue(void) const
 {
     double minimum = 0.0;
 
-    if(NumOfBins > 0) minimum = Energy[0];
+    bool first = true;
 
     for(int k=0; k < NumOfBins; k++) {
-        if(minimum > Energy[k]) minimum = Energy[k];
+        if( Samples[k] != 0 ) {
+            if( (minimum > Energy[k]) || first) {
+                minimum = Energy[k];
+                first = false;
+            }
+        }
     }
 
     return(minimum);

@@ -21,7 +21,7 @@
 //     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 // =============================================================================
 
-#include "CSTEnergyIntegrate.hpp"
+#include "PMFEnergyIntegrate.hpp"
 #include <math.h>
 #include <errno.h>
 #include <ErrorSystem.hpp>
@@ -35,6 +35,8 @@
 #include <boost/format.hpp>
 #include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string/classification.hpp>
+#include <ABFProxy_dG.hpp>
+#include <ABFProxy_mTdS.hpp>
 #include <CSTProxy_dG.hpp>
 #include <CSTProxy_mTdS.hpp>
 #include <CSTProxy_MTC.hpp>
@@ -47,13 +49,13 @@ using namespace boost::algorithm;
 
 //------------------------------------------------------------------------------
 
-MAIN_ENTRY(CCSTEnergyIntegrate)
+MAIN_ENTRY(CPMFEnergyIntegrate)
 
 //==============================================================================
 //------------------------------------------------------------------------------
 //==============================================================================
 
-CCSTEnergyIntegrate::CCSTEnergyIntegrate(void)
+CPMFEnergyIntegrate::CPMFEnergyIntegrate(void)
 {
 }
 
@@ -61,9 +63,9 @@ CCSTEnergyIntegrate::CCSTEnergyIntegrate(void)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-int CCSTEnergyIntegrate::Init(int argc,char* argv[])
+int CPMFEnergyIntegrate::Init(int argc,char* argv[])
 {
-// encode program options, all check procedures are done inside of CCSTIntOpts
+// encode program options, all check procedures are done inside of CABFIntOpts
     int result = Options.ParseCmdLine(argc,argv);
 
 // should we exit or was it error?
@@ -74,7 +76,7 @@ int CCSTEnergyIntegrate::Init(int argc,char* argv[])
         return(SO_OPTS_ERROR);
     }
 
-    CSTAccuName = Options.GetProgArg(0);
+    PMFAccuName = Options.GetProgArg(0);
     FEOutputName = Options.GetProgArg(1);
     if( Options.GetNumberOfProgArgs() == 3 ) {
         // optional
@@ -93,14 +95,14 @@ int CCSTEnergyIntegrate::Init(int argc,char* argv[])
 
     vout << endl;
     vout << "# ==============================================================================" << endl;
-    vout << "# abf-integrate (PMFLib utility)  started at " << StartTime.GetSDateAndTime() << endl;
+    vout << "# pmf-integrate (PMFLib utility)  started at " << StartTime.GetSDateAndTime() << endl;
     vout << "# Version: " << LibBuildVersion_PMF << endl;
     vout << "# ==============================================================================" << endl;
 
-    if( CSTAccuName != "-") {
-        vout << "# CST accu file (in)    : " << CSTAccuName << endl;
+    if( PMFAccuName != "-") {
+        vout << "# ABF accu file (in)    : " << PMFAccuName << endl;
     } else {
-        vout << "# CST accu file (in)    : - (standard input)" << endl;
+        vout << "# ABF accu file (in)    : - (standard input)" << endl;
     }
     if( FEOutputName != "-") {
         vout << "# Free energy file (out): " << FEOutputName << endl;
@@ -159,12 +161,28 @@ int CCSTEnergyIntegrate::Init(int argc,char* argv[])
     }
 
     vout << "# ------------------------------------------------" << endl;
+    if(Options.GetOptLimit() == 0) {
+        vout << "# Sampling limit        : all bins will be taken into account" << endl;
+    } else {
+        vout << "# Sampling limit        : " << Options.GetOptLimit() << endl;
+    }
+    if( (Options.GetOptEcutMethod() == "gpr") || (Options.GetOptEcutMethod() == "rbf") ){
+    if(Options.GetOptMFMaxZScore() == -1) {
+        vout << "# Max MF error Z-score  : not applied" << endl;
+    } else {
+        vout << "# Max MF error Z-score  : " << Options.GetOptMFMaxZScore() << endl;
+        vout << "# Number of MF Z-tests  : " << Options.GetOptMFZTestPasses() << endl;
+    }
+    }
+        vout << "# Glueing FES factor    : " << Options.GetOptGlueingFactor() << endl;
+        vout << "# Glue holes on FES     : " << bool_to_str(Options.GetOptGlueHoles()) << endl;
     if(Options.GetOptEnergyLimit() == -1) {
         vout << "# Energy limit          : not applied" << endl;
     } else {
         vout << "# Energy limit          : " << Options.GetOptEnergyLimit() << endl;
     }
         vout << "# Skip last energy limit: " << bool_to_str(Options.GetOptSkipLastEnergyLimit()) << endl;
+        vout << "# Skip flood fill test  : " << bool_to_str(Options.GetOptNoHeader()) << endl;
 
     vout << "# ------------------------------------------------" << endl;
 
@@ -188,7 +206,7 @@ int CCSTEnergyIntegrate::Init(int argc,char* argv[])
     vout << "# ------------------------------------------------------------------------------" << endl;
 
     // open files -----------------------------------
-    if( InputFile.Open(CSTAccuName,"r") == false ){
+    if( InputFile.Open(PMFAccuName,"r") == false ){
         ES_ERROR("unable to open input file");
         return(SO_USER_ERROR);
     }
@@ -198,22 +216,92 @@ int CCSTEnergyIntegrate::Init(int argc,char* argv[])
 
 //------------------------------------------------------------------------------
 
-bool CCSTEnergyIntegrate::Run(void)
+bool CPMFEnergyIntegrate::Run(void)
 {
 // load accumulator
     int state = 1;
 
 // -----------------------------------------------------------------------------
-
 // setup accu, energy proxy, and output FES
     Accu        = CPMFAccumulatorPtr(new CPMFAccumulator);
     FES         = CEnergySurfacePtr(new CEnergySurface);
 
+    vout << endl;
+    vout << format("%02d:Loading ABF accumulator: %s")%state%string(PMFAccuName) << endl;
+    state++;
+    try {
+        Accu->Load(InputFile);
+    } catch(...) {
+        ES_ERROR("unable to load the input ABF accumulator file");
+        return(false);
+    }
+    vout << "   Done." << endl;
+
+    // print CVS info
+    Accu->PrintInfo(vout);
+
+
+// init energyder proxy
     if( Options.GetOptRealm() == "dG" ){
-        DerProxy    = CCSTProxy_dG_Ptr(new CCSTProxy_dG);
+        if( CABFProxy_dG::IsCompatible(Accu) ){
+            DerProxy    = CABFProxy_dG_Ptr(new CABFProxy_dG);
+        } else if (CCSTProxy_dG::IsCompatible(Accu) ) {
+            DerProxy    = CCSTProxy_dG_Ptr(new CCSTProxy_dG);
+        } else {
+            CSmallString error;
+            error << "incompatible method: " << Accu->GetMethod() << " with requested realm: " <<  Options.GetOptRealm();
+            RUNTIME_ERROR(error);
+        }
+// -----------------------------------------------
+    } else if ( Options.GetOptRealm() == "dG_p" ) {
+        CABFProxy_dG_Ptr proxy    = CABFProxy_dG_Ptr(new CABFProxy_dG);
+        proxy->SetType(ABF_MICF_POT);
+        DerProxy = proxy;
+// -----------------------------------------------
+    } else if ( Options.GetOptRealm() == "dG_k" ) {
+        CABFProxy_dG_Ptr proxy    = CABFProxy_dG_Ptr(new CABFProxy_dG);
+        proxy->SetType(ABF_MICF_KIN);
+        DerProxy = proxy;
 // -----------------------------------------------
     } else if ( Options.GetOptRealm() == "-TdS" ) {
-        CCSTProxy_mTdS_Ptr proxy    = CCSTProxy_mTdS_Ptr(new CCSTProxy_mTdS);
+        if( CABFProxy_mTdS::IsCompatible(Accu) ){
+            DerProxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
+        } else if (CCSTProxy_mTdS::IsCompatible(Accu) ) {
+            DerProxy    = CCSTProxy_mTdS_Ptr(new CCSTProxy_mTdS);
+        } else {
+            CSmallString error;
+            error << "incompatible method: " << Accu->GetMethod() << " with requested realm: " <<  Options.GetOptRealm();
+            RUNTIME_ERROR(error);
+        }
+// -----------------------------------------------
+    } else if ( Options.GetOptRealm() == "-TdS_PP" ) {
+        CABFProxy_mTdS_Ptr proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
+        proxy->SetType(ABF_C11PP);
+        DerProxy = proxy;
+// -----------------------------------------------
+    } else if ( Options.GetOptRealm() == "-TdS_PK" ) {
+        CABFProxy_mTdS_Ptr proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
+        proxy->SetType(ABF_C11PK);
+        DerProxy = proxy;
+// -----------------------------------------------
+    } else if ( Options.GetOptRealm() == "-TdS_PR" ) {
+        CABFProxy_mTdS_Ptr proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
+        proxy->SetType(ABF_C11PR);
+        DerProxy = proxy;
+// -----------------------------------------------
+    } else if ( Options.GetOptRealm() == "-TdS_KP" ) {
+        CABFProxy_mTdS_Ptr proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
+        proxy->SetType(ABF_C11KP);
+        DerProxy = proxy;
+// -----------------------------------------------
+    } else if ( Options.GetOptRealm() == "-TdS_KK" ) {
+        CABFProxy_mTdS_Ptr proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
+        proxy->SetType(ABF_C11KK);
+        DerProxy = proxy;
+// -----------------------------------------------
+    } else if ( Options.GetOptRealm() == "-TdS_KR" ) {
+        CABFProxy_mTdS_Ptr proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
+        proxy->SetType(ABF_C11KR);
         DerProxy = proxy;
 // -----------------------------------------------
     } else if ( Options.GetOptRealm() == "-TdS_HP" ) {
@@ -231,28 +319,12 @@ bool CCSTEnergyIntegrate::Run(void)
         proxy->SetType(CST_C11HR);
         DerProxy = proxy;
 // -----------------------------------------------
-    } else if ( Options.GetOptRealm() == "MTC" ) {
-        DerProxy    = CCSTProxy_dG_Ptr(new CCSTProxy_dG);
-// -----------------------------------------------
     } else {
         CSmallString error;
-        error << "unsupported realm: " << Options.GetOptRealm() ;
+        error << "unsupported realm: " << Options.GetOptRealm();
         RUNTIME_ERROR(error);
     }
 
-    vout << endl;
-    vout << format("%02d:Loading CST accumulator: %s")%state%string(CSTAccuName) << endl;
-    state++;
-    try {
-        Accu->Load(InputFile);
-    } catch(...) {
-        ES_ERROR("unable to load the input CST accumulator file");
-        return(false);
-    }
-    vout << "   Done." << endl;
-
-    // print CVS info
-    Accu->PrintInfo(vout);
     DerProxy->Init(Accu);
 
     // DO NOT SET IT HERE, Ncorr is now GPR hyperparameter
@@ -267,7 +339,7 @@ bool CCSTEnergyIntegrate::Run(void)
     }
 
     vout << endl;
-    vout << format("%02d:Statistics of input CST accumulator")%state << endl;
+    vout << format("%02d:Statistics of input ABF accumulator")%state << endl;
     state++;
     PrintSampledStat();
     vout << "   Done." << endl;
@@ -284,36 +356,92 @@ bool CCSTEnergyIntegrate::Run(void)
         }
     }
 
-// energy limit --------------------------------
-    if( Options.GetOptRealm() != "MTC" ) {
-        if( Options.GetOptEnergyLimit() > 0.0 ){
+// sampling limit -------------------------------
+    vout << endl;
+    vout << format("%02d:Preparing ABF accumulator for integration (sampling limit)")%state << endl;
+    state++;
+    PrepareAccumulatorI();
+    if( ! Options.GetOptSkipFFTest() ){
+        FloodFillTest();
+    }
+    PrintSampledStat();
+    vout << "   Done." << endl;
+
+    if( Options.GetOptMFMaxZScore() > 0.0 ){
+        for(int i=1; i <= Options.GetOptMFZTestPasses(); i++ ){
             vout << endl;
-            vout << format("%02d:CST accumulator integration (%s) for energy limit")%state%string(Options.GetOptEcutMethod()) << endl;
+            vout << format("%02d:ABF accumulator integration (%s) for mean force error Z-score test #%d")%state%string(Options.GetOptEcutMethod())%i << endl;
             state++;
-            if( IntegrateForEcut() == false ) return(false);
+            if( IntegrateForMFZScore(i) == false ) return(false);
 
             vout << endl;
-            vout << format("%02d:Preparing CST accumulator for integration (energy limit)")%state << endl;
+            vout << format("%02d:Preparing ABF accumulator for integration (mean force error z-score test #%d")%state%i << ")"<< endl;
             state++;
-            PrepareAccumulatorII();
+            PrepareAccumulatorI();
+            if( ! Options.GetOptSkipFFTest() ){
+                FloodFillTest();
+            }
             PrintSampledStat();
             vout << "   Done." << endl;
 
             FES->Clear();
         }
-
-    // integrate data ------------------------------
-        vout << endl;
-        vout << format("%02d:CST accumulator integration (%s)")%state%string(Options.GetOptMethod()) << endl;
-        state++;
-        if( Integrate() == false ) return(false);
-        vout << "   Done." << endl;
-    } else {
-        vout << endl;
-        vout << format("%02d:Metric tensor correction")%state << endl;
-        state++;
-        AddMTCorr();
     }
+
+// glue fes ------------------------------------
+    if( Options.GetOptGlueHoles() ){
+        vout << endl;
+        vout << format("%02d:Preparing ABF accumulator for integration (glue holes on FES)")%state << endl;
+        state++;
+        GlueHoles();
+        PrintSampledStat();
+        vout << "   Done." << endl;
+        FES->Clear();
+    }
+
+    if( Options.GetOptGlueingFactor() > 0 ){
+        vout << endl;
+        vout << format("%02d:Preparing ABF accumulator for integration (glueing FES)")%state << endl;
+        state++;
+        vout << "   Searching for border regions in close vicinity of sampled areas ..." << endl;
+        int tg = 0;
+        for(int i=1; i <= Options.GetOptGlueingFactor(); i++ ){
+            tg += GlueingFES(i);
+        }
+        vout << "   -- Total glued bins: " << tg << endl;
+        PrintSampledStat();
+        vout << "   Done." << endl;
+
+        FES->Clear();
+    }
+
+// energy limit --------------------------------
+
+    if( Options.GetOptEnergyLimit() > 0.0 ){
+        vout << endl;
+        vout << format("%02d:ABF accumulator integration (%s) for energy limit")%state%string(Options.GetOptEcutMethod()) << endl;
+        state++;
+        if( IntegrateForEcut() == false ) return(false);
+
+        vout << endl;
+        vout << format("%02d:Preparing ABF accumulator for integration (energy limit)")%state << endl;
+        state++;
+        PrepareAccumulatorII();
+        if( ! Options.GetOptSkipFFTest() ){
+            FloodFillTest();
+        }
+        PrintSampledStat();
+        vout << "   Done." << endl;
+
+        FES->Clear();
+    }
+
+// integrate data ------------------------------
+    vout << endl;
+    vout << format("%02d:ABF accumulator integration (%s)")%state%string(Options.GetOptMethod()) << endl;
+    state++;
+    if( Integrate() == false ) return(false);
+    vout << "   Done." << endl;
 
  // apply offset
     if( ! Options.IsOptGlobalMinSet() ){
@@ -329,6 +457,9 @@ bool CCSTEnergyIntegrate::Run(void)
         vout << format("%02d:Cleaning FES (energy limit)")%state << endl;
         state++;
         PrepareAccumulatorII();
+        if( ! Options.GetOptSkipFFTest() ){
+            FloodFillTest();
+        }
         PrintSampledStat();
         SyncFESWithACCU();
         vout << "   Done." << endl;
@@ -378,8 +509,11 @@ bool CCSTEnergyIntegrate::Run(void)
 
     if(Options.GetOptPrintAll()) {
         printer.SetSampleLimit(0);
+    } else {
+        printer.SetSampleLimit(Options.GetOptLimit());
     }
 
+    printer.IncludeGluedAreas((Options.GetOptGlueingFactor() > 0)||Options.GetOptGlueHoles()||Options.GetOptIncludeGluedRegions());
     printer.SetIncludeError(Options.GetOptWithError());
     printer.SetIncludeBinStat(Options.GetOptIncludeBinStat());
     printer.SetPrintedES(FES);
@@ -418,6 +552,7 @@ bool CCSTEnergyIntegrate::Run(void)
 
         // print all
         printer.SetSampleLimit(0);
+        printer.IncludeGluedAreas((Options.GetOptGlueingFactor() > 0)||Options.GetOptGlueHoles()||Options.GetOptIncludeGluedRegions());
         printer.SetIncludeError(Options.GetOptWithError());
         printer.SetIncludeBinStat(Options.GetOptIncludeBinStat());
         printer.SetPrintedES(FES);
@@ -432,14 +567,14 @@ bool CCSTEnergyIntegrate::Run(void)
     }
 
 // save accumulator if requested
-    if( Options.GetOptSaveCST() != NULL ){
+    if( Options.GetOptSaveABF() != NULL ){
         vout << endl;
-        vout << format("%02d:Saving CST accumulator to : %s")%state%string(Options.GetOptSaveCST()) << endl;
+        vout << format("%02d:Saving ABF accumulator to : %s")%state%string(Options.GetOptSaveABF()) << endl;
         state++;
         try {
-            Accu->Save(Options.GetOptSaveCST());
+            Accu->Save(Options.GetOptSaveABF());
         } catch(...) {
-            ES_ERROR("unable to save the CST accumulator file");
+            ES_ERROR("unable to save the ABF accumulator file");
             return(false);
         }
         vout << "   Done." << endl;
@@ -450,7 +585,7 @@ bool CCSTEnergyIntegrate::Run(void)
 
 //------------------------------------------------------------------------------
 
-void CCSTEnergyIntegrate::WriteHeader()
+void CPMFEnergyIntegrate::WriteHeader()
 {
     if((Options.GetOptNoHeader() == false) && (Options.GetOptOutputFormat() != "fes")) {
         Options.PrintOptions(OutputFile);
@@ -462,31 +597,11 @@ void CCSTEnergyIntegrate::WriteHeader()
 //------------------------------------------------------------------------------
 //==============================================================================
 
-bool CCSTEnergyIntegrate::IntegrateForEcut(void)
+bool CPMFEnergyIntegrate::IntegrateForMFZScore(int pass)
 {
     if(Options.GetOptEcutMethod() == "rfd" ) {
-        CIntegratorRFD   integrator;
-
-        integrator.SetPeriodicity(Options.GetOptPeriodicity());
-        integrator.SetFDPoints(Options.GetOptFDPoints());
-
-        if( Options.GetOptEcutMethod() == Options.GetOptMethod() ){
-            if( Options.GetOptLAMethod() == "lu" ){
-                // nothing to do - LU is default
-            } else if( Options.GetOptLAMethod() == "default" ) {
-                // nothing to do - use default method set in constructor of integrator
-            } else {
-                INVALID_ARGUMENT("algorithm - not implemented");
-            }
-        }
-
-        integrator.SetInputEnergyDerProxy(DerProxy);
-        integrator.SetOutputES(FES);
-
-        if(integrator.Integrate(vout) == false) {
-            ES_ERROR("unable to integrate CST accumulator");
-            return(false);
-        }
+        ES_ERROR("illegal combination: --emethod=rfd and --maxzscore");
+        return(false);
     } else if( Options.GetOptEcutMethod() == "rbf" ){
         CIntegratorRBF   integrator;
 
@@ -502,14 +617,22 @@ bool CCSTEnergyIntegrate::IntegrateForEcut(void)
             integrator.SetLLSMethod(Options.GetOptLAMethod());
         }
 
-        if( Options.IsOptGlobalMinSet() ){
-            integrator.SetGlobalMin(Options.GetOptGlobalMin());
-        }
+        integrator.SetNoEnergy(true);
 
         if(integrator.Integrate(vout) == false) {
-            ES_ERROR("unable to integrate CST accumulator");
+            ES_ERROR("unable to integrate ABF accumulator");
             return(false);
         }
+
+        if( Options.IsOptMFInfoSet() ){
+            CSmallString mfinfo = Options.GetOptMFInfo();
+            mfinfo << ".mflimit" << pass;
+            if( integrator.WriteMFInfo(mfinfo) == false ) return(false);
+        }
+
+        // apply mean force limit
+        integrator.FilterByMFZScore(Options.GetOptMFMaxZScore(),vout);
+
     } else if( Options.GetOptEcutMethod() == "gpr" ){
         CIntegratorGPR   integrator;
 
@@ -534,19 +657,27 @@ bool CCSTEnergyIntegrate::IntegrateForEcut(void)
         integrator.SetUseInv(Options.GetOptGPRUseInv());
         integrator.SetKernel(Options.GetOptGPRKernel());
 
-        if( Options.IsOptGlobalMinSet() ){
-            integrator.SetGlobalMin(Options.GetOptGlobalMin());
-        }
+        integrator.SetNoEnergy(true);
 
         if(integrator.Integrate(vout) == false) {
-            ES_ERROR("unable to integrate CST accumulator");
+            ES_ERROR("unable to integrate ABF accumulator");
             return(false);
         }
+
+        if( Options.IsOptMFInfoSet() ){
+            CSmallString mfinfo = Options.GetOptMFInfo();
+            mfinfo << ".mflimit" << pass;
+            if( integrator.WriteMFInfo(mfinfo) == false ) return(false);
+        }
+
+        // apply mean force limit
+        integrator.FilterByMFZScore(Options.GetOptMFMaxZScore(),vout);
+
     } else {
         INVALID_ARGUMENT("method - not implemented");
     }
 
-// add metric tensor correction
+    // add metric tensor correction
     if( Options.GetOptRealm() == "dG" ){
         AddMTCorr();
     } else if ( Options.GetOptRealm() == "-TdS" ) {
@@ -560,7 +691,107 @@ bool CCSTEnergyIntegrate::IntegrateForEcut(void)
 
 //------------------------------------------------------------------------------
 
-bool CCSTEnergyIntegrate::Integrate(void)
+bool CPMFEnergyIntegrate::IntegrateForEcut(void)
+{
+    if(Options.GetOptEcutMethod() == "rfd" ) {
+        CIntegratorRFD   integrator;
+
+        integrator.SetPeriodicity(Options.GetOptPeriodicity());
+        integrator.SetFDPoints(Options.GetOptFDPoints());
+
+        if( Options.GetOptEcutMethod() == Options.GetOptMethod() ){
+            if( Options.GetOptLAMethod() == "lu" ){
+                // nothing to do - LU is default
+            } else if( Options.GetOptLAMethod() == "default" ) {
+                // nothing to do - use default method set in constructor of integrator
+            } else {
+                INVALID_ARGUMENT("algorithm - not implemented");
+            }
+        }
+
+        integrator.SetInputEnergyDerProxy(DerProxy);
+        integrator.SetOutputES(FES);
+
+        if(integrator.Integrate(vout) == false) {
+            ES_ERROR("unable to integrate ABF accumulator");
+            return(false);
+        }
+    } else if( Options.GetOptEcutMethod() == "rbf" ){
+        CIntegratorRBF   integrator;
+
+        integrator.SetInputEnergyDerProxy(DerProxy);
+        integrator.SetOutputES(FES);
+
+        integrator.SetWFac(Options.GetOptWFac());
+        integrator.SetRCond(Options.GetOptRCond());
+        integrator.SetRFac(Options.GetOptRFac());
+        integrator.SetOverhang(Options.GetOptOverhang());
+        integrator.IncludeGluedAreas((Options.GetOptGlueingFactor() > 0)||Options.GetOptGlueHoles()||Options.GetOptIncludeGluedRegions());
+
+        if( Options.GetOptEcutMethod() == Options.GetOptMethod() ){
+            integrator.SetLLSMethod(Options.GetOptLAMethod());
+        }
+
+        if( Options.IsOptGlobalMinSet() ){
+            integrator.SetGlobalMin(Options.GetOptGlobalMin());
+        }
+
+        if(integrator.Integrate(vout) == false) {
+            ES_ERROR("unable to integrate ABF accumulator");
+            return(false);
+        }
+    } else if( Options.GetOptEcutMethod() == "gpr" ){
+        CIntegratorGPR   integrator;
+
+        integrator.SetInputEnergyDerProxy(DerProxy);
+        integrator.SetOutputES(FES);
+
+        if( Options.IsOptLoadHyprmsSet() ){
+            LoadGPRHyprms(integrator);
+        } else {
+            integrator.SetSigmaF2(Options.GetOptSigmaF2());
+            integrator.SetNCorr(Options.GetOptNCorr());
+            integrator.SetWFac(Options.GetOptWFac());
+        }
+
+        integrator.SetUseNumDiff(Options.GetOptGPRNumDiff());
+        integrator.IncludeGluedAreas((Options.GetOptGlueingFactor() > 0)||Options.GetOptGlueHoles()||Options.GetOptIncludeGluedRegions());
+        integrator.SetIncludeError(false);
+
+        integrator.SetRCond(Options.GetOptRCond());
+        if( Options.GetOptEcutMethod() == Options.GetOptMethod() ){
+            integrator.SetLAMethod(Options.GetOptLAMethod());
+        }
+        integrator.SetUseInv(Options.GetOptGPRUseInv());
+        integrator.SetKernel(Options.GetOptGPRKernel());
+
+        if( Options.IsOptGlobalMinSet() ){
+            integrator.SetGlobalMin(Options.GetOptGlobalMin());
+        }
+
+        if(integrator.Integrate(vout) == false) {
+            ES_ERROR("unable to integrate ABF accumulator");
+            return(false);
+        }
+    } else {
+        INVALID_ARGUMENT("method - not implemented");
+    }
+
+    // add metric tensor correction
+    if( Options.GetOptRealm() == "dG" ){
+        AddMTCorr();
+    } else if ( Options.GetOptRealm() == "-TdS" ) {
+        AddMTCorr();
+    } else {
+        // do not add MTC
+    }
+
+    return(true);
+}
+
+//------------------------------------------------------------------------------
+
+bool CPMFEnergyIntegrate::Integrate(void)
 {
     if(Options.GetOptMethod() == "rfd" ) {
         CIntegratorRFD   integrator;
@@ -582,7 +813,7 @@ bool CCSTEnergyIntegrate::Integrate(void)
         integrator.SetUseOldRFDMode(Options.GetOptUseOldRFD());
 
         if(integrator.Integrate(vout) == false) {
-            ES_ERROR("unable to integrate CST accumulator");
+            ES_ERROR("unable to integrate ABF accumulator");
             return(false);
         }
     } else if( Options.GetOptMethod() == "rbf" ){
@@ -595,6 +826,7 @@ bool CCSTEnergyIntegrate::Integrate(void)
         integrator.SetRCond(Options.GetOptRCond());
         integrator.SetRFac(Options.GetOptRFac());
         integrator.SetOverhang(Options.GetOptOverhang());
+        integrator.IncludeGluedAreas((Options.GetOptGlueingFactor() > 0)||Options.GetOptGlueHoles()||Options.GetOptIncludeGluedRegions());
 
         integrator.SetLLSMethod(Options.GetOptLAMethod());
 
@@ -605,7 +837,7 @@ bool CCSTEnergyIntegrate::Integrate(void)
         }
 
         if(integrator.Integrate(vout) == false) {
-            ES_ERROR("unable to integrate CST accumulator");
+            ES_ERROR("unable to integrate ABF accumulator");
             return(false);
         }
 
@@ -631,6 +863,7 @@ bool CCSTEnergyIntegrate::Integrate(void)
         integrator.SetIncludeError(Options.GetOptWithError());
         integrator.SetNoEnergy(Options.GetOptNoEnergy());
         integrator.SetUseNumDiff(Options.GetOptGPRNumDiff());
+        integrator.IncludeGluedAreas((Options.GetOptGlueingFactor() > 0)||Options.GetOptGlueHoles()||Options.GetOptIncludeGluedRegions());
 
         if( Options.GetOptUseRealGlobalMin() == false ){
             if( Options.IsOptGlobalMinSet() ){
@@ -646,7 +879,7 @@ bool CCSTEnergyIntegrate::Integrate(void)
         integrator.SetUseZeroPoint(Options.GetOptGPRIncludeZPE());
 
         if(integrator.Integrate(vout) == false) {
-            ES_ERROR("unable to integrate CST accumulator");
+            ES_ERROR("unable to integrate ABF accumulator");
             return(false);
         }
 
@@ -660,7 +893,7 @@ bool CCSTEnergyIntegrate::Integrate(void)
         INVALID_ARGUMENT("method - not implemented");
     }
 
-// add metric tensor correction
+    // add metric tensor correction
     if( Options.GetOptRealm() == "dG" ){
         AddMTCorr();
     } else if ( Options.GetOptRealm() == "-TdS" ) {
@@ -674,7 +907,7 @@ bool CCSTEnergyIntegrate::Integrate(void)
 
 //------------------------------------------------------------------------------
 
-bool CCSTEnergyIntegrate::ReduceFES(void)
+bool CPMFEnergyIntegrate::ReduceFES(void)
 {
     vout << format("   Reduced FES : %s")%string(Options.GetOptReducedFES()) << endl;
 
@@ -727,6 +960,7 @@ bool CCSTEnergyIntegrate::ReduceFES(void)
         integrator.SetIncludeError(true);
         integrator.SetNoEnergy(false);
         integrator.SetUseNumDiff(Options.GetOptGPRNumDiff());
+        integrator.IncludeGluedAreas((Options.GetOptGlueingFactor() > 0)||Options.GetOptGlueHoles()||Options.GetOptIncludeGluedRegions());
         integrator.SetGlobalMin(GPos);
         integrator.SetRCond(Options.GetOptRCond());
         integrator.SetLAMethod(Options.GetOptLAMethod());
@@ -736,7 +970,7 @@ bool CCSTEnergyIntegrate::ReduceFES(void)
         integrator.SetUseZeroPoint(true);
 
         if(integrator.Integrate(vout) == false) {
-            ES_ERROR("unable to integrate CST accumulator");
+            ES_ERROR("unable to integrate ABF accumulator");
             return(false);
         }
         reducedFES = integrator.ReduceFES(KeepCVs);
@@ -793,7 +1027,7 @@ bool CCSTEnergyIntegrate::ReduceFES(void)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void CCSTEnergyIntegrate::PrintGPRHyprms(FILE* p_fout)
+void CPMFEnergyIntegrate::PrintGPRHyprms(FILE* p_fout)
 {
     ifstream fin;
     fin.open(Options.GetOptLoadHyprms());
@@ -836,7 +1070,7 @@ void CCSTEnergyIntegrate::PrintGPRHyprms(FILE* p_fout)
 
 //------------------------------------------------------------------------------
 
-void CCSTEnergyIntegrate::LoadGPRHyprms(CIntegratorGPR& gpr)
+void CPMFEnergyIntegrate::LoadGPRHyprms(CIntegratorGPR& gpr)
 {
     ifstream fin;
     fin.open(Options.GetOptLoadHyprms());
@@ -890,11 +1124,25 @@ void CCSTEnergyIntegrate::LoadGPRHyprms(CIntegratorGPR& gpr)
 //------------------------------------------------------------------------------
 //==============================================================================
 
+// this part performs following tasks:
+//    a) bins with number of samples <= limit will be set to zero
+
+void CPMFEnergyIntegrate::PrepareAccumulatorI(void)
+{
+    for(int ibin=0; ibin < Accu->GetNumOfBins(); ibin++) {
+        // erase datapoints not properly sampled, preserve glueing
+        if( (DerProxy->GetNumOfSamples(ibin) >= 0) && (DerProxy->GetNumOfSamples(ibin) <= Options.GetOptLimit()) ) {
+            DerProxy->SetNumOfSamples(ibin,0);
+        }
+    }
+}
+
+//------------------------------------------------------------------------------
 
 // this part performs following tasks:
 //    a) erase data points with large energy
 
-void CCSTEnergyIntegrate::PrepareAccumulatorII(void)
+void CPMFEnergyIntegrate::PrepareAccumulatorII(void)
 {
     // filter by energy
     for(int ibin=0; ibin < Accu->GetNumOfBins(); ibin++) {
@@ -916,7 +1164,7 @@ void CCSTEnergyIntegrate::PrepareAccumulatorII(void)
 
 //------------------------------------------------------------------------------
 
-void CCSTEnergyIntegrate::SyncFESWithACCU(void)
+void CPMFEnergyIntegrate::SyncFESWithACCU(void)
 {
     for(int ibin=0; ibin < Accu->GetNumOfBins(); ibin++) {
         if( DerProxy->GetNumOfSamples(ibin) == 0 ) {
@@ -929,7 +1177,7 @@ void CCSTEnergyIntegrate::SyncFESWithACCU(void)
 
 //------------------------------------------------------------------------------
 
-void CCSTEnergyIntegrate::PrintSampledStat(void)
+void CPMFEnergyIntegrate::PrintSampledStat(void)
 {
     // calculate sampled area
     double maxbins = Accu->GetNumOfBins();
@@ -969,11 +1217,313 @@ void CCSTEnergyIntegrate::PrintSampledStat(void)
     }
 }
 
+//------------------------------------------------------------------------------
+
+void CPMFEnergyIntegrate::FloodFillTest(void)
+{
+    vout << "   Searching for discontinuous regions ..." << endl;
+    int seedid = 1;
+
+    FFSeeds.CreateVector(Accu->GetNumOfBins());
+    FFSeeds.SetZero();
+    IPos.CreateVector(Accu->GetNumOfCVs());
+    TPos.CreateVector(Accu->GetNumOfCVs());
+
+    double maxbins = Accu->GetNumOfBins();
+    int    maxseedid = 0;
+    int    maxsampled = 0;
+    bool   first = true;
+
+    while( InstallNewSeed(seedid,false) ){
+        int sampled = 1;    // for initial seed set by InstallNewSeed
+        int newsamples = 0;
+
+        while( (newsamples = FillSeed(seedid,false)) > 0 ){
+            sampled += newsamples;
+        }
+
+        if( maxbins > 0 ){
+            vout << "   Region: " << setw(6) << seedid << " - sampled area: "
+                 << setw(6) << sampled << " / " << (int)maxbins << " | " << setw(5) << setprecision(1) << fixed << sampled/maxbins*100 <<"%" << endl;
+        }
+
+        if( first || (maxsampled < sampled) ){
+            first = false;
+            maxsampled = sampled;
+            maxseedid = seedid;
+        }
+
+        seedid++;
+    }
+    seedid--;
+
+    // quit if one or none region
+    if( seedid <= 1 ){
+        vout << "   -- All is continuous." << endl;
+        return;
+    }
+
+        vout << "   -- Clearing all except region: " << maxseedid <<  endl;
+
+    for(int ibin=0; ibin < Accu->GetNumOfBins(); ibin++) {
+        if( FFSeeds[ibin] != maxseedid ) {
+            DerProxy->SetNumOfSamples(ibin,0);
+        }
+    }
+}
+
+//------------------------------------------------------------------------------
+
+bool CPMFEnergyIntegrate::InstallNewSeed(int seedid,bool unsampled)
+{
+    for(int ibin=0; ibin < Accu->GetNumOfBins(); ibin++) {
+        if( unsampled ){
+            if( (FFSeeds[ibin] == 0) && ( DerProxy->GetNumOfSamples(ibin) == 0 ) ) {
+                FFSeeds[ibin] = seedid;
+                return(true);
+            }
+        } else {
+            if( (FFSeeds[ibin] == 0) && ( DerProxy->GetNumOfSamples(ibin) != 0 ) ) {
+                FFSeeds[ibin] = seedid;
+                return(true);
+            }
+        }
+    }
+
+    return(false);
+}
+
+//------------------------------------------------------------------------------
+
+int CPMFEnergyIntegrate::FillSeed(int seedid,bool unsampled)
+{
+    int newsamples = 0;
+    int ndir = 1;
+    for(int j=0; j < Accu->GetNumOfCVs(); j++){
+        ndir *= 3;
+    }
+
+    for(int ibin=0; ibin < Accu->GetNumOfBins(); ibin++) {
+        if( unsampled ){
+            if( DerProxy->GetNumOfSamples(ibin) > 0 ) continue; // skip sampled regions
+        } else {
+            if( DerProxy->GetNumOfSamples(ibin) == 0 ) continue; // skip unsampled regions
+        }
+        if( FFSeeds[ibin] != seedid ) continue; // skip different regions
+
+        // convert to ipont
+        Accu->GetIPoint(ibin,IPos);
+
+        // in each direction
+        for(int j=0; j < ndir; j++){
+            GetTPoint(IPos,j,TPos);
+            int tbin = Accu->GetGlobalIndex(TPos);
+            if( tbin >= 0 ){
+                if( FFSeeds[tbin] == 0 ){
+                    if( unsampled ){
+                        if( DerProxy->GetNumOfSamples(tbin) == 0 ){
+                            FFSeeds[tbin] = seedid;
+                            newsamples++;
+                        }
+                    } else {
+                        if( DerProxy->GetNumOfSamples(tbin) != 0 ){
+                            FFSeeds[tbin] = seedid;
+                            newsamples++;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    return(newsamples);
+}
+
+//------------------------------------------------------------------------------
+
+void CPMFEnergyIntegrate::GetTPoint(CSimpleVector<int>& ipos,int d,CSimpleVector<int>& tpos)
+{
+    for(int k=Accu->GetNumOfCVs()-1; k >= 0; k--) {
+        int ibin = d % 3 - 1;
+        tpos[k] = ibin + ipos[k];
+        d = d / 3;
+    }
+}
+
+//------------------------------------------------------------------------------
+
+int CPMFEnergyIntegrate::GlueingFES(int factor)
+{
+    IPos.CreateVector(Accu->GetNumOfCVs());
+    TPos.CreateVector(Accu->GetNumOfCVs());
+
+    int ndir = 1;
+    for(int j=0; j < Accu->GetNumOfCVs(); j++){
+        ndir *= 3;
+    }
+
+    vout << "   Gluing FES: factor = " << factor;
+
+    int glued = 0;
+
+    for(int ibin=0; ibin < Accu->GetNumOfBins(); ibin++) {
+        if( DerProxy->GetNumOfSamples(ibin) != 0 ) continue; // skip glued or sampled bins
+
+        // convert to ipont
+        Accu->GetIPoint(ibin,IPos);
+
+        // is sampled or glued region in close vicinty?
+
+        // in each direction
+        for(int j=0; j < ndir; j++){
+            GetTPoint(IPos,j,TPos);
+            int tbin = Accu->GetGlobalIndex(TPos);
+            if( tbin >= 0 ){
+                if( factor == 1 ){
+                    if( DerProxy->GetNumOfSamples(tbin) > 0 ){
+                        DerProxy->SetNumOfSamples(ibin,-(factor+1));
+                        glued++;
+                        break;
+                    }
+                } else {
+                    if( DerProxy->GetNumOfSamples(tbin) == -factor ){
+                        DerProxy->SetNumOfSamples(ibin,-(factor+1));
+                        glued++;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    vout << ", glued bins = " << glued << endl;
+
+    return(glued);
+}
+
+//------------------------------------------------------------------------------
+
+void CPMFEnergyIntegrate::GlueHoles(void)
+{
+    vout << "   Searching for holes on FES ..." << endl;
+    int seedid = 1;
+
+    FFSeeds.CreateVector(Accu->GetNumOfBins());
+    FFSeeds.SetZero();
+    IPos.CreateVector(Accu->GetNumOfCVs());
+    TPos.CreateVector(Accu->GetNumOfCVs());
+
+    double maxbins = Accu->GetNumOfBins();
+    int    numofholes = 0;
+
+    int sampled = SeedSampled(seedid);
+
+    vout << "   Region: " << setw(6) << seedid << " - area:         "
+         << setw(6) << sampled << " / " << (int)maxbins << " | " << setw(5) << setprecision(1) << fixed << sampled/maxbins*100 <<"% sampled." << endl;
+
+    seedid++;
+
+    int tg = 0;
+
+    while( InstallNewSeed(seedid,true) ){
+        int sampled = 1;    // for initial seed set by InstallNewSeed
+        int newsamples = 0;
+
+        while( (newsamples = FillSeed(seedid,true)) > 0 ){
+            sampled += newsamples;
+        }
+
+        // detect type of area
+        bool hole = false;
+        if( IsHole(seedid) ){
+            MarkAsHole(seedid);
+            numofholes++;
+            hole = true;
+        }
+
+        if( maxbins > 0 ){
+            vout << "   Region: " << setw(6) << seedid << " - area:         "
+                 << setw(6) << sampled << " / " << (int)maxbins << " | " << setw(5) << setprecision(1) << fixed << sampled/maxbins*100 <<"%";
+            if( hole ){
+                vout << " hole - glued." << endl;
+                tg += sampled;
+            } else {
+                vout << " edge." << endl;
+            }
+        }
+        seedid++;
+    }
+
+    // print stat
+    vout << "   -- Number of holes      : " <<  numofholes << endl;
+    vout << "   -- Number of glued bins : " <<  tg << endl;
+}
+
+//------------------------------------------------------------------------------
+
+int CPMFEnergyIntegrate::SeedSampled(int seedid)
+{
+    int sampled = 0;
+
+    for(int ibin=0; ibin < Accu->GetNumOfBins(); ibin++) {
+        if( DerProxy->GetNumOfSamples(ibin) > 0 ) {
+            FFSeeds[ibin] = seedid;
+            sampled++;
+        }
+    }
+
+    return(sampled);
+}
+
+//------------------------------------------------------------------------------
+
+bool CPMFEnergyIntegrate::IsHole(int seedid)
+{
+    IPos.CreateVector(Accu->GetNumOfCVs());
+    TPos.CreateVector(Accu->GetNumOfCVs());
+
+    int ndir = 1;
+    for(int j=0; j < Accu->GetNumOfCVs(); j++){
+        ndir *= 3;
+    }
+
+    for(int ibin=0; ibin < Accu->GetNumOfBins(); ibin++) {
+        if( FFSeeds[ibin] != seedid ) continue;
+
+        // convert to ipont
+        Accu->GetIPoint(ibin,IPos);
+
+        // test neighbouring of the point in each direction
+        for(int j=0; j < ndir; j++){
+            GetTPoint(IPos,j,TPos);
+            int tbin = Accu->GetGlobalIndex(TPos);
+            if( tbin < 0 ){
+                // outside of ABF accumulator - it is not a hole
+                return(false);
+            }
+        }
+    }
+
+    // it is a hole - all points are confined in sampled regions.
+    return(true);
+}
+
+//------------------------------------------------------------------------------
+
+void CPMFEnergyIntegrate::MarkAsHole(int seedid)
+{
+    for(int ibin=0; ibin < Accu->GetNumOfBins(); ibin++) {
+        if( FFSeeds[ibin] == seedid ){
+            DerProxy->SetNumOfSamples(ibin,-1);
+        }
+    }
+}
+
 //==============================================================================
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void CCSTEnergyIntegrate::DecodeEList(const CSmallString& spec, std::vector<bool>& elist,const CSmallString& optionname)
+void CPMFEnergyIntegrate::DecodeEList(const CSmallString& spec, std::vector<bool>& elist,const CSmallString& optionname)
 {
     int ncvs = Accu->GetNumOfCVs();
 
@@ -1017,8 +1567,10 @@ void CCSTEnergyIntegrate::DecodeEList(const CSmallString& spec, std::vector<bool
 
 //------------------------------------------------------------------------------
 
-void CCSTEnergyIntegrate::AddMTCorr(void)
+void CPMFEnergyIntegrate::AddMTCorr(void)
 {
+    if( CCSTProxy_MTC::IsCompatible(Accu) == false ) return;
+
     vout << "   Adding metric tensor correction ..." << endl;
 
     CCSTProxy_MTC_Ptr MTCProxy    = CCSTProxy_MTC_Ptr(new CCSTProxy_MTC);
@@ -1037,7 +1589,7 @@ void CCSTEnergyIntegrate::AddMTCorr(void)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void CCSTEnergyIntegrate::Finalize(void)
+void CPMFEnergyIntegrate::Finalize(void)
 {
     // close files if they are own by program
     InputFile.Close();
@@ -1051,7 +1603,7 @@ void CCSTEnergyIntegrate::Finalize(void)
 
     vout << endl;
     vout << "# ==============================================================================" << endl;
-    vout << "# abf-integrate terminated at " << dt.GetSDateAndTime() << ". Total time: " << dur.GetSTimeAndDay() << endl;
+    vout << "# pmf-integrate terminated at " << dt.GetSDateAndTime() << ". Total time: " << dur.GetSTimeAndDay() << endl;
     vout << "# ==============================================================================" << endl;
 
     if( ErrorSystem.IsError() || Options.GetOptVerbose() ){

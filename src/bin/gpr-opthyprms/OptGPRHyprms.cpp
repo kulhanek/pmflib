@@ -29,6 +29,11 @@
 #include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string/classification.hpp>
 #include <SciLapack.hpp>
+#include <ABFProxy_dG.hpp>
+#include <ABFProxy_mTdS.hpp>
+#include <CSTProxy_dG.hpp>
+#include <CSTProxy_mTdS.hpp>
+#include <PMFProxy_dH.hpp>
 
 //------------------------------------------------------------------------------
 
@@ -77,8 +82,17 @@ int COptGPRHyprms::Init(int argc,char* argv[])
     vout << "# Version: " << LibBuildVersion_PMF << endl;
     vout << "# ==============================================================================" << endl;
 
-    for(int i=0; i < Options.GetNumberOfProgArgs()-1; i++){
-        vout << format("# PMF accu file #%02d (in)    : %s")%(i+1)%string(Options.GetProgArg(i)) << endl;
+    if(  Options.GetNumberOfProgArgs() < 3 ) {
+        RUNTIME_ERROR("at least three arguments are required");
+    }
+
+    if(  Options.GetNumberOfProgArgs()%2 != 1 ) {
+        RUNTIME_ERROR("odd number of arguments is required");
+    }
+
+    for(int i=0; i < Options.GetNumberOfProgArgs()-1; i+=2){
+        vout << format("# PMF accu file #%02d (in)    : %s")%(i/2+1)%string(Options.GetProgArg(i)) << endl;
+        vout << format("  ------------> realm (in)    : %s")%string(Options.GetProgArg(i+1)) << endl;
     }
 
     CSmallString output = Options.GetProgArg(Options.GetNumberOfProgArgs()-1);
@@ -129,9 +143,9 @@ bool COptGPRHyprms::Run(void)
     vout << endl;
     vout << format("%02d:Loading PMF accumulators ...")%State << endl;
     State++;
-    for(int i=0; i < Options.GetNumberOfProgArgs()-1; i++){
+    for(int i=0; i < Options.GetNumberOfProgArgs()-1; i+=2){
         CSmallString name = Options.GetProgArg(i);
-        vout << format("** PMFAccumulator #%02d: %s")%(i+1)%string(name) << endl;
+        vout << format("** PMFAccumulator #%02d: %s")%(i/2+1)%string(name) << endl;
         CPMFAccumulatorPtr p_accu(new CPMFAccumulator);
         try {
             p_accu->Load(name);
@@ -149,9 +163,22 @@ bool COptGPRHyprms::Run(void)
     vout << endl;
     vout << format("%02d:Initializing realms ...")%State << endl;
     State++;
-
-
-
+    std::vector<CPMFAccumulatorPtr>::iterator   it = Accumulators.begin();
+    for(int i=0; i < Options.GetNumberOfProgArgs()-1; i+=2){
+        CSmallString realm = Options.GetProgArg(i+1);
+        AddRealm(*it,realm);
+    }
+    for(size_t i=0; i < RealmProxies.size(); i++){
+        CProxyRealm proxy = RealmProxies[i];
+        CSmallString name;
+        if( proxy.DerProxy ){
+            name = proxy.DerProxy->GetRealm();
+        }
+        if( proxy.EnergyProxy ){
+            name = proxy.EnergyProxy->GetRealm();
+        }
+        vout << format("** -------> Realm #%02d: %s")%(i+1)%name << endl;
+    }
 
 // statistics
     vout << endl;
@@ -195,6 +222,50 @@ bool COptGPRHyprms::Run(void)
     }
 
     return(result);
+}
+
+//------------------------------------------------------------------------------
+
+void COptGPRHyprms::AddRealm(CPMFAccumulatorPtr accu, const CSmallString& realm)
+{
+    CProxyRealm proxy;
+    proxy.Name = realm;
+
+// init energyder proxy
+    if( realm == "dG" ){
+        if( CABFProxy_dG::IsCompatible(accu) ){
+            proxy.DerProxy    = CABFProxy_dG_Ptr(new CABFProxy_dG);
+        } else if (CCSTProxy_dG::IsCompatible(accu) ) {
+            proxy.DerProxy    = CCSTProxy_dG_Ptr(new CCSTProxy_dG);
+        } else {
+            CSmallString error;
+            error << "incompatible method: " << accu->GetMethod() << " with requested realm: " <<  realm;
+            RUNTIME_ERROR(error);
+        }
+        proxy.DerProxy->Init(accu);
+// -----------------------------------------------
+    } else if ( realm == "-TdS" ) {
+        if( CABFProxy_mTdS::IsCompatible(accu) ){
+            proxy.DerProxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
+        } else if (CCSTProxy_mTdS::IsCompatible(accu) ) {
+            proxy.DerProxy    = CCSTProxy_mTdS_Ptr(new CCSTProxy_mTdS);
+        } else {
+            CSmallString error;
+            error << "incompatible method: " << accu->GetMethod() << " with requested realm: " <<  realm;
+            RUNTIME_ERROR(error);
+        }
+        proxy.DerProxy->Init(accu);
+    } else if ( realm == "dH" ) {
+        proxy.EnergyProxy    = CPMFProxy_dH_Ptr(new CPMFProxy_dH);
+        proxy.EnergyProxy->Init(accu);
+// -----------------------------------------------
+    } else {
+        CSmallString error;
+        error << "unsupported realm: " << realm;
+        RUNTIME_ERROR(error);
+    }
+
+    RealmProxies.push_back(proxy);
 }
 
 //------------------------------------------------------------------------------

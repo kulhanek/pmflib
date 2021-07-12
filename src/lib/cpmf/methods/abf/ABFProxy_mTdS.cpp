@@ -45,6 +45,16 @@ CABFProxy_mTdS::~CABFProxy_mTdS(void)
 
 //------------------------------------------------------------------------------
 
+bool CABFProxy_mTdS::IsCompatible(CPMFAccumulatorPtr accu)
+{
+    if( accu->GetMethod() == "ABF" ) return(true);
+    if( accu->GetMethod() == "TABF" ) return(true);
+    if( accu->GetMethod() == "US-ABF" ) return(true);
+    return(false);
+}
+
+//------------------------------------------------------------------------------
+
 void CABFProxy_mTdS::SetType(EABFTdSType type)
 {
     Type = type;
