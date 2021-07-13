@@ -116,6 +116,9 @@ type,extends(PMFAccuType) :: ABFAccuType
     real(PMFDP),pointer    :: inc_m2icf(:,:)            ! accumulated M2 of ICF
     real(PMFDP),pointer    :: inc_mepot(:)              ! accumulated mean of pot energy
     real(PMFDP),pointer    :: inc_m2epot(:)             ! accumulated M2 of pot energy
+    real(PMFDP),pointer    :: inc_metot(:)              ! accumulated mean of total energy
+    real(PMFDP),pointer    :: inc_m2etot(:)             ! accumulated M2 of total energy
+    real(PMFDP),pointer    :: inc_c11hh(:,:)            ! accumulated cov(H,H) for entropy
 
     ! ABF force - block pre-sampling
     integer,pointer        :: block_nsamples(:)         ! number of hits into bins

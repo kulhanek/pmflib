@@ -98,13 +98,6 @@ int COptGPRHyprmsOptions::CheckOptions(void)
         IsError = true;
     }
 
-    if( IsOptGPRIncludeZPESet() && (IsOptGlobalMinSet() == false) ){
-        if(IsError == false) fprintf(stderr,"\n");
-        fprintf(stderr,"%s: --inczpe can be set only alongside with --globalmin\n",
-                (const char*)GetProgramName());
-        IsError = true;
-    }
-
     if(IsError == true) return(SO_OPTS_ERROR);
     return(SO_CONTINUE);
 }
@@ -113,9 +106,15 @@ int COptGPRHyprmsOptions::CheckOptions(void)
 
 int COptGPRHyprmsOptions::CheckArguments(void)
 {
-    if( GetNumberOfProgArgs() < 2 ){
+    if( GetNumberOfProgArgs() < 3 ){
         if(IsError == false) fprintf(stderr,"\n");
-        fprintf(stderr,"%s: at least two arguments are expected, but %d is provided\n",
+        fprintf(stderr,"%s: at least three arguments are expected, but %d is provided\n",
+                (const char*)GetProgramName(),GetNumberOfProgArgs());
+        IsError = true;
+    }
+    if( GetNumberOfProgArgs()%2 != 1){
+        if(IsError == false) fprintf(stderr,"\n");
+        fprintf(stderr,"%s: odd number of arguments are expected, but %d is provided\n",
                 (const char*)GetProgramName(),GetNumberOfProgArgs());
         IsError = true;
     }

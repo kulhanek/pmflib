@@ -215,7 +215,26 @@ subroutine abf_accu_read(iounit)
                         call pmf_accu_skip_section(iounit,keyline,ABF_OUT)
                     end if
             ! ------------------------------------
-                ! FIXME
+                case('METOT')
+                    if( fentropy ) then
+                        call pmf_accu_read_rbuf_B(abfaccu%PMFAccuType,iounit,keyline,abfaccu%metot)
+                    else
+                        call pmf_accu_skip_section(iounit,keyline,ABF_OUT)
+                    end if
+            ! ------------------------------------
+                case('M2ETOT')
+                    if( fentropy ) then
+                        call pmf_accu_read_rbuf_B(abfaccu%PMFAccuType,iounit,keyline,abfaccu%m2etot)
+                    else
+                        call pmf_accu_skip_section(iounit,keyline,ABF_OUT)
+                    end if
+           ! ------------------------------------
+                case('C11HH')
+                    if( fentropy ) then
+                        call pmf_accu_read_rbuf_M(abfaccu%PMFAccuType,iounit,keyline,abfaccu%c11hh)
+                    else
+                        call pmf_accu_skip_section(iounit,keyline,ABF_OUT)
+                    end if
             ! ------------------------------------
                 case default
                     call pmf_accu_skip_section(iounit,keyline,ABF_OUT)

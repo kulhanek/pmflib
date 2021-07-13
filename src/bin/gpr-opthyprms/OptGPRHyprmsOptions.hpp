@@ -79,11 +79,9 @@ public:
     CSO_OPT(bool,CD5)
     CSO_OPT(CSmallString,LoadHyprms)
     CSO_OPT(CSmallString,GPRKernel)
-    CSO_OPT(bool,GPRNumDiff)
     CSO_OPT(bool,GPRUseInv)
     CSO_OPT(bool,GPRCalcLogPL)
     CSO_OPT(CSmallString,GlobalMin)
-    CSO_OPT(bool,GPRIncludeZPE)
     CSO_OPT(bool,Verbose)
     CSO_OPT(bool,Version)
     CSO_OPT(bool,Help)
@@ -278,15 +276,6 @@ public:
                 NULL,                           /* parameter name */
                 "Determine type of stationary point.")   /* option description */
     //----------------------------------------------------------------------
-    CSO_MAP_OPT(bool,                           /* option type */
-                GPRNumDiff,                        /* option name */
-                false,                          /* default value */
-                false,                          /* is option mandatory */
-                0,                           /* short option name */
-                "numdiff",                      /* long option name */
-                NULL,                           /* parameter name */
-                "Use numerical differentiation of kernel function (for testing only).")   /* option description */
-    //----------------------------------------------------------------------
     CSO_MAP_OPT(CSmallString,                           /* option type */
                 GPRKernel,                        /* option name */
                 "default",                          /* default value */
@@ -322,15 +311,6 @@ public:
                 "globalmin",                      /* long option name */
                 "SPEC",                           /* parameter name */
                 "position of global minimum provided as a single string in the form CV1xCV2x...xCVn (relevant for error determination), if not set the position is determined automatically.")   /* option description */
-    //----------------------------------------------------------------------
-    CSO_MAP_OPT(bool,                           /* option type */
-                GPRIncludeZPE,                        /* option name */
-                false,                          /* default value */
-                false,                          /* is option mandatory */
-                0,                           /* short option name */
-                "inczpe",                      /* long option name */
-                NULL,                           /* parameter name */
-                "Include zero-point energy at position specified by --globalmin.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(bool,                           /* option type */
                 Verbose,                        /* option name */

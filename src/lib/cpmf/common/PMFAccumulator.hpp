@@ -49,6 +49,12 @@ public:
     /// save data section
     void Save(FILE* p_fout);
 
+    /// load data section
+    void Load(CXMLElement* p_ele);
+
+    /// save data section
+    void Save(CXMLElement* p_ele);
+
 // setup methods ---------------------------------------------------------------
     // reset data to zero
     void Reset(void);
@@ -86,6 +92,12 @@ public:
 
     /// set data
     void SetData(int ibin, int cv, double value);
+
+    /// get blob data
+    void GetDataBlob(double* p_blob);
+
+    /// set blob data
+    void SetDataBlob(double* p_blob);
 
 // section of private data -----------------------------------------------------
 private:
@@ -145,6 +157,12 @@ public:
 
     /// save accumulator data to XML
     void Save(CXMLElement* p_ele);
+
+// setup methods --------------------------------------------------------------
+    /// set headers
+    void SetHeaders(const CSmallString& method, const CSmallString& version, const CSmallString& driver,
+                    double temp, const CSmallString& temp_unit, double temp_fconv,
+                    const CSmallString& ene_unit, double ene_fconv);
 
 // dimension specification ----------------------------------------------------
 

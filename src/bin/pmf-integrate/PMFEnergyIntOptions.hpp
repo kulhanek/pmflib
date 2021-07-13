@@ -123,7 +123,6 @@ public:
                 'r',                           /* short option name */
                 "realm",                      /* long option name */
                 "NAME",                           /* parameter name */
-                // FIXME - CST and entropy?
                 "Intended output from the integration:\n"
                 "**  dG     - free energy (default)\n"
                 "** -TdS    - entropy contribution to the free energy\n"
@@ -138,7 +137,6 @@ public:
                 "** -TdS_HP - entropy contribution to the free energy, cov(dH/dx,Epot) - CST\n"
                 "** -TdS_HK - entropy contribution to the free energy, cov(dH/dx,Ekin) - CST\n"
                 "** -TdS_HR - entropy contribution to the free energy, cov(dH/dx,Erst) - CST\n"
-                "** MTC     - metric tensor correction - CST\n"
                 )   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(CSmallString,                           /* option type */

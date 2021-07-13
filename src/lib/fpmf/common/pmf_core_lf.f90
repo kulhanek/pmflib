@@ -78,7 +78,7 @@ subroutine pmf_core_lf_force(x,v,f,epot,ekin,epmf)
     real(PMFDP)    :: v(:,:)       ! velocities in t-dt/2
     real(PMFDP)    :: f(:,:)       ! forces in t
     real(PMFDP)    :: epot         ! potential energy in t
-    real(PMFDP)    :: ekin         ! kinetic energy in t???? - FIXME
+    real(PMFDP)    :: ekin         ! kinetic energy in t-dt
     real(PMFDP)    :: epmf         ! energy from PMFLib
     ! -----------------------------------------------
     integer        :: i

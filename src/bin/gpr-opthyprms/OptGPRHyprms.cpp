@@ -82,14 +82,6 @@ int COptGPRHyprms::Init(int argc,char* argv[])
     vout << "# Version: " << LibBuildVersion_PMF << endl;
     vout << "# ==============================================================================" << endl;
 
-    if(  Options.GetNumberOfProgArgs() < 3 ) {
-        RUNTIME_ERROR("at least three arguments are required");
-    }
-
-    if(  Options.GetNumberOfProgArgs()%2 != 1 ) {
-        RUNTIME_ERROR("odd number of arguments is required");
-    }
-
     for(int i=0; i < Options.GetNumberOfProgArgs()-1; i+=2){
         vout << format("# PMF accu file #%02d (in)    : %s")%(i/2+1)%string(Options.GetProgArg(i)) << endl;
         vout << format("  ------------> realm (in)    : %s")%string(Options.GetProgArg(i+1)) << endl;
@@ -973,7 +965,6 @@ void COptGPRHyprms::ShowGPRStat(void)
             gpr.IncludeGluedAreas(false);
 
             gpr.SetLAMethod(Options.GetOptLAMethod());
-            gpr.SetUseNumDiff(Options.GetOptGPRNumDiff());
             gpr.SetKernel(Options.GetOptGPRKernel());
             gpr.SetUseInv(Options.GetOptGPRUseInv());
             gpr.SetCalcLogPL(Options.GetOptGPRCalcLogPL() || Target == EGOT_LOGPL);
@@ -981,7 +972,6 @@ void COptGPRHyprms::ShowGPRStat(void)
             if( Options.IsOptGlobalMinSet() ){
                 gpr.SetGlobalMin(Options.GetOptGlobalMin());
             }
-            gpr.SetUseZeroPoint(Options.GetOptGPRIncludeZPE());
 
         // run integrator
             gpr.SetSigmaF2(SigmaF2);
@@ -1001,9 +991,6 @@ void COptGPRHyprms::ShowGPRStat(void)
             gpr.SetRCond(Options.GetOptRCond());
 
             gpr.SetIncludeError(false);
-
-            // FIXME
-            // gpr.SetUseNumDiff(Options.GetOptGPRNumDiff());
 
             gpr.SetLAMethod(Options.GetOptLAMethod());
 
@@ -1304,13 +1291,11 @@ double COptGPRHyprms::GetTargetFromIntegrator(CIntegratorGPR& gpr,CEnergyDerProx
 
     gpr.SetLAMethod(Options.GetOptLAMethod());
     gpr.SetUseInv(Options.GetOptGPRUseInv());
-    gpr.SetUseNumDiff(Options.GetOptGPRNumDiff());
     gpr.SetKernel(Options.GetOptGPRKernel());
 
     if( Options.IsOptGlobalMinSet() ){
         gpr.SetGlobalMin(Options.GetOptGlobalMin());
     }
-    gpr.SetUseZeroPoint(Options.GetOptGPRIncludeZPE());
 
     if( Target == EGOT_LOGPL) gpr.SetCalcLogPL(true);
 
@@ -1354,15 +1339,11 @@ double  COptGPRHyprms::GetTargetFromSmoother(CSmootherGPR& gpr,CEnergyProxyPtr p
     gpr.SetLAMethod(Options.GetOptLAMethod());
     gpr.SetUseInv(Options.GetOptGPRUseInv());
 
-    // FIXME
-    // gpr.SetUseNumDiff(Options.GetOptGPRNumDiff());
     gpr.SetKernel(Options.GetOptGPRKernel());
 
     if( Options.IsOptGlobalMinSet() ){
         gpr.SetGlobalMin(Options.GetOptGlobalMin());
     }
-    // FIXME
-    // gpr.SetUseZeroPoint(Options.GetOptGPRIncludeZPE());
 
     if( Target == EGOT_LOGPL) gpr.SetCalcLogPL(true);
 

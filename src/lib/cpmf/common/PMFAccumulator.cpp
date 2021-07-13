@@ -1,6 +1,7 @@
 // =============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
+//    Copyright (C) 2021 Petr Kulhanek, kulhanek@chemi.muni.cz
 //    Copyright (C) 2008 Petr Kulhanek, kulhanek@enzim.hu
 //                       Martin Petrek, petrek@chemi.muni.cz
 //
@@ -103,10 +104,81 @@ void CPMFAccumulator::Load(FILE* fin)
 
 //------------------------------------------------------------------------------
 
-void CPMFAccumulator::Load(CXMLElement* p_ele)
+void CPMFAccumulator::Load(CXMLElement* p_root)
 {
-    // FIXME
+    if( p_root == NULL ) {
+        INVALID_ARGUMENT("p_root is NULL");
+    }
+    if( p_root->GetName() != "PMFLIB-V6" ){
+        CSmallString error;
+        error << "root XML element is not PMFLIB-V6 but: " << p_root->GetName() ;
+        RUNTIME_ERROR(error);
+    }
 
+// root element
+    int ncvs = 0;
+    p_root->GetAttribute("numofcvs",ncvs);
+    if( ncvs <= 0 ){
+        RUNTIME_ERROR("no CVs");
+    }
+    SetNumOfCVs(ncvs);
+
+    CXMLElement* p_item;
+
+// header items ----------------------------------
+    p_item = p_root->GetFirstChildElement("HEADER");
+    while( p_item != NULL ){
+        CSmallString name;
+        bool result = true;
+        result &= p_item->GetAttribute("name",name);
+    // -------------------------------------------
+        if( name == "VERSION" ){
+            result &= p_item->GetAttribute("value",Version);
+    // -------------------------------------------
+        } else if (  name == "METHOD" ) {
+            result &= p_item->GetAttribute("value",Method);
+    // -------------------------------------------
+        } else if (  name == "DRIVER" ) {
+            result &= p_item->GetAttribute("value",Driver);
+    // -------------------------------------------
+        } else if (  name == "TEMPERATURE" ) {
+            result &= p_item->GetAttribute("value",Temperature);
+    // -------------------------------------------
+        } else if (  name == "ENERGY-UNIT" ) {
+            result &= p_item->GetAttribute("value",EnergyUnit);
+            result &= p_item->GetAttribute("fconv",EnergyFConv);
+    // -------------------------------------------
+        } else if (  name == "TEMPERATURE-UNIT" ) {
+            result &= p_item->GetAttribute("value",TemperatureUnit);
+            result &= p_item->GetAttribute("fconv",TemperatureFConv);
+    // -------------------------------------------
+        } else {
+            CSmallString error;
+            error << "unrecognized header item: " << name;
+            RUNTIME_ERROR(name);
+        }
+        if( result == false ){
+            RUNTIME_ERROR("unable to get some HEADER attributes");
+        }
+        p_item = p_item->GetNextSiblingElement("HEADER");
+    }
+
+// load CVs
+    LoadCVSInfo(p_root);
+
+// load data sections
+    p_item = p_root->GetFirstChildElement("DATA");
+    while( p_item != NULL ){
+        CSmallString name;
+        p_item->GetAttribute("name",name);
+        if( name == NULL ){
+            RUNTIME_ERROR("DATA element does not have name");
+        }
+        CPMFAccuDataPtr data = CPMFAccuDataPtr(new CPMFAccuData(NumOfBins,NumOfCVs));
+        data->Load(p_item);
+        DataBlocks[name] = data;
+        p_item = p_item->GetNextSiblingElement("DATA");
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -234,7 +306,7 @@ void CPMFAccumulator::Combine(CPMFAccumulatorPtr right)
 
 void CPMFAccumulator::Combine(const CSmallString& sname,CPMFAccumulatorPtr right,CPMFAccuDataPtr ldb,CPMFAccuDataPtr rdb)
 {
-// check compability
+// check compatibility
     if( ldb->CheckCompatibility(rdb) == false ){
             CSmallString error;
             error <<  "two data sections are not compatible, name: " << sname;
@@ -335,8 +407,9 @@ void CPMFAccumulator::Combine(const CSmallString& sname,CPMFAccumulatorPtr right
 
 void CPMFAccumulator::Combine(CXMLElement* p_ele)
 {
-
-
+    CPMFAccumulatorPtr right = CPMFAccumulatorPtr(new CPMFAccumulator);
+    right->Load(p_ele);
+    Combine(right);
 }
 
 //------------------------------------------------------------------------------
@@ -593,8 +666,66 @@ void CPMFAccumulator::Save(const CSmallString& name)
 
 void CPMFAccumulator::Save(CXMLElement* p_ele)
 {
+    if(p_ele == NULL) {
+        INVALID_ARGUMENT("p_ele is NULL");
+    }
+    if( NumOfBins == 0 ) {
+        CSmallString error;
+        error << "no data in accumulator";
+        RUNTIME_ERROR(error);
+    }
 
+// root element
+    CXMLElement* p_root = p_ele->CreateChildElement("PMFLIB-V6");
+    p_root->SetAttribute("numofcvs",NumOfCVs);
 
+    CXMLElement* p_item;
+
+// header item -----------------------------------
+    p_item = p_root->CreateChildElement("HEADER");
+    p_item->SetAttribute("name","VERSION");
+    p_item->SetAttribute("value",Version);
+
+// header item -----------------------------------
+    p_item = p_root->CreateChildElement("HEADER");
+    p_item->SetAttribute("name","METHOD");
+    p_item->SetAttribute("value",Method);
+
+// header item -----------------------------------
+    p_item = p_root->CreateChildElement("HEADER");
+    p_item->SetAttribute("name","DRIVER");
+    p_item->SetAttribute("value",Driver);
+
+// header item -----------------------------------
+    p_item = p_root->CreateChildElement("HEADER");
+    p_item->SetAttribute("name","TEMPERATURE");
+    p_item->SetAttribute("value",Temperature);
+
+// header item -----------------------------------
+    p_item = p_root->CreateChildElement("HEADER");
+    p_item->SetAttribute("name","ENERGY-UNIT");
+    p_item->SetAttribute("value",EnergyUnit);
+    p_item->SetAttribute("fconv",EnergyFConv);
+
+// header item -----------------------------------
+    p_item = p_root->CreateChildElement("HEADER");
+    p_item->SetAttribute("name","TEMPERATURE-UNIT");
+    p_item->SetAttribute("value",TemperatureUnit);
+    p_item->SetAttribute("fconv",TemperatureFConv);
+
+// save CVs
+    SaveCVSInfo(p_root);
+
+// write data sections
+    std::map<CSmallString,CPMFAccuDataPtr>::iterator  dit = DataBlocks.begin();
+    std::map<CSmallString,CPMFAccuDataPtr>::iterator  die = DataBlocks.end();
+
+    while( dit != die ){
+        CXMLElement*    p_block = p_root->CreateChildElement("DATA");
+        CPMFAccuDataPtr ds = dit->second;
+        ds->Save(p_block);
+        dit++;
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -696,6 +827,22 @@ void CPMFAccumulator::Save(FILE* fout)
         ds->Save(fout);
         it++;
     }
+}
+
+//------------------------------------------------------------------------------
+
+void CPMFAccumulator::SetHeaders(const CSmallString& method, const CSmallString& version, const CSmallString& driver,
+                double temp, const CSmallString& temp_unit, double temp_fconv,
+                const CSmallString& ene_unit, double ene_fconv)
+{
+    Method = method;
+    Version = version;
+    Driver = driver;
+    Temperature = temp;
+    TemperatureUnit = temp_unit;
+    TemperatureFConv = temp_fconv;
+    EnergyUnit  = ene_unit;
+    EnergyFConv = ene_fconv;
 }
 
 //------------------------------------------------------------------------------
@@ -1468,6 +1615,71 @@ void CPMFAccuData::Save(FILE* p_fout)
 
 //------------------------------------------------------------------------------
 
+void CPMFAccuData::Load(CXMLElement* p_ele)
+{
+    if( p_ele == NULL ) {
+        INVALID_ARGUMENT("p_ele is NULL");
+    }
+    if( p_ele->GetName() != "DATA" ){
+        RUNTIME_ERROR("element is not DATA");
+    }
+
+// set in constructor
+// NumOfCVs
+// NumOfBins
+
+    bool result = true;
+
+    result &= p_ele->GetAttribute("name",Name);
+    result &= p_ele->GetAttribute("op",Op);
+    result &= p_ele->GetAttribute("type",Type);
+    result &= p_ele->GetAttribute("mode",Mode);
+    result &= p_ele->GetAttribute("size",Size);
+
+    if( result == false ){
+        RUNTIME_ERROR("unable to get DATA attributes");
+    }
+
+    CXMLBinData* p_bitem = p_ele->GetFirstChildBinData("BLOB");
+    if( p_bitem == NULL ){
+        RUNTIME_ERROR("unable to get BLOB");
+    }
+    int     len = p_bitem->GetLength<double>();
+    double* ptr = p_bitem->GetData<double>();
+    Data.CreateVector(len);
+    for(int i=0; i < len; i++){
+        Data[i] = *ptr;
+        ptr++;
+    }
+}
+
+//------------------------------------------------------------------------------
+
+void CPMFAccuData::Save(CXMLElement* p_ele)
+{
+    if( p_ele == NULL ) {
+        INVALID_ARGUMENT("p_ele is NULL");
+    }
+    if( p_ele->GetName() != "DATA" ){
+        RUNTIME_ERROR("element is not DATA");
+    }
+
+// set in constructor
+// NumOfCVs
+// NumOfBins
+
+    p_ele->SetAttribute("name",Name);
+    p_ele->SetAttribute("op",Op);
+    p_ele->SetAttribute("type",Type);
+    p_ele->SetAttribute("mode",Mode);
+    p_ele->SetAttribute("size",Size);
+
+    CXMLBinData* p_bitem = p_ele->CreateChildBinData("BLOB");
+    p_bitem->CopyData(Data,Data.GetLength(),EXBDT_DOUBLE);
+}
+
+//------------------------------------------------------------------------------
+
 void CPMFAccuData::Reset(void)
 {
     Data.SetZero();
@@ -1570,6 +1782,22 @@ void CPMFAccuData::SetData(int ibin, int cv, double value)
         idx = ibin;
     }
     Data[idx] = value;
+}
+
+//------------------------------------------------------------------------------
+
+void CPMFAccuData::GetDataBlob(double* p_blob)
+{
+    // FIXME
+
+}
+
+//------------------------------------------------------------------------------
+
+void CPMFAccuData::SetDataBlob(double* p_blob)
+{
+    // FIXME
+
 }
 
 //------------------------------------------------------------------------------

@@ -21,14 +21,10 @@
 //    Boston, MA  02110-1301  USA
 // =============================================================================
 
+#include <vector>
 #include <PMFMainHeader.hpp>
 #include <Client.hpp>
-#include <vector>
-
-//------------------------------------------------------------------------------
-
-class CColVariable;
-class CXMLElement;
+#include <PMFAccumulator.hpp>
 
 //------------------------------------------------------------------------------
 
@@ -41,26 +37,6 @@ public:
     CABFClient(void);
     ~CABFClient(void);
 
-// access methods -------------------------------------------------------------
-    /// set number of cvs
-    void SetNumberOfItems(int ncvs,int ntotbins);
-
-    /// set temperature
-    void SetTemperature(double temp);
-
-    /// set energy unit
-    void SetEnergyUnit(double fconv,const CSmallString& unit);
-
-    /// set etot enabled
-    void SetEtotEnabled(bool enabled);
-
-    /// set cv
-    void SetCV(int id,const CSmallString& name,const CSmallString& type,
-               double min_value,double max_value,int nbins,double fconv,const CSmallString& unit);
-
-    /// get number of bins
-    int GetNumOfBins(void);
-
 // commands -------------------------------------------------------------------
     /// register client on server side
     int RegisterClient(void);
@@ -69,65 +45,44 @@ public:
     bool UnregisterClient(void);
 
     /// get initial data
-    bool GetInitialData(int* nisamples,
-                        double* inc_icfsum,
-                        double* inc_icfsum2,
-                        double* inc_etotsum,
-                        double* inc_etotsum2,
-                        double* inc_icfetotsum,
-                        double* inc_icfetotsum2);
+    bool GetInitialData(double* nsamples,
+                        double* micf,
+                        double* m2icf,
+                        double* mepot,
+                        double* m2epot,
+                        double* metot,
+                        double* m2etot,
+                        double* c11hh);
 
     /// exchange data with server
-    bool ExchangeData(int* nisamples,
-                        double* inc_icfsum,
-                        double* inc_icfsum2,
-                        double* inc_etotsum,
-                        double* inc_etotsum2,
-                        double* inc_icfetotsum,
-                        double* inc_icfetotsum2);
+    bool ExchangeData(  double* inc_nsamples,
+                        double* inc_micf,
+                        double* inc_m2icf,
+                        double* inc_mepot,
+                        double* inc_m2epot,
+                        double* inc_metot,
+                        double* inc_m2etot,
+                        double* inc_c11hh);
 
+// section of public data -----------------------------------------------------
+public:
+   CPMFAccumulatorPtr   Accu;
+   bool                 EnthalpyEnabled;
+   bool                 EntropyEnabled;
+   int                  NumOfCVs;
+   int                  NumOfBins;
 // section of private data ----------------------------------------------------
 private:
-    int                         ClientID;       // client ID
-    int                         NCVs;           // number of CVs
-    int                         NTotBins;       // total number of bins
-    std::vector<CColVariable>   CVs;            // list of CVs
-    double                      Temperature;
-    double                      EnergyFConv;
-    CSmallString                EnergyUnit;
-    bool                        EtotEnabled;
+    int                 ClientID;       // client ID
 
-    /// write data for exchange
-    void WriteExchangeData(CXMLElement* p_cele,
-                            int* nisamples,
-                            double* inc_icfsum,
-                            double* inc_icfsum2,
-                            double* inc_etotsum,
-                            double* inc_etotsum2,
-                            double* inc_icfetotsum,
-                            double* inc_icfetotsum2);
-
-    /// read data from exchange
-    void ReadExchangeData(CXMLElement* p_rele,
-                            int* nisamples,
-                            double* inc_icfsum,
-                            double* inc_icfsum2,
-                            double* inc_etotsum,
-                            double* inc_etotsum2,
-                            double* inc_icfetotsum,
-                            double* inc_icfetotsum2);
-
-    /// clear data
-    void ClearExchangeData(int* nisamples,
-                            double* inc_icfsum,
-                            double* inc_icfsum2,
-                            double* inc_etotsum,
-                            double* inc_etotsum2,
-                            double* inc_icfetotsum,
-                            double* inc_icfetotsum2);
-
-    /// save cvs into XML
-    void SaveCVSInfo(CXMLElement* p_tele);
+    void ClearExchangeData( double* inc_nsamples,
+                            double* inc_micf,
+                            double* inc_m2icf,
+                            double* inc_mepot,
+                            double* inc_m2epot,
+                            double* inc_metot,
+                            double* inc_m2etot,
+                            double* inc_c11hh);
 };
 
 //------------------------------------------------------------------------------
