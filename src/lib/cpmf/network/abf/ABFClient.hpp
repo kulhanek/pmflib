@@ -45,14 +45,14 @@ public:
     bool UnregisterClient(void);
 
     /// get initial data
-    bool GetInitialData(double* nsamples,
-                        double* micf,
-                        double* m2icf,
-                        double* mepot,
-                        double* m2epot,
-                        double* metot,
-                        double* m2etot,
-                        double* c11hh);
+    bool GetInitialData(double* inc_nsamples,
+                        double* inc_micf,
+                        double* inc_m2icf,
+                        double* inc_mepot,
+                        double* inc_m2epot,
+                        double* inc_metot,
+                        double* inc_m2etot,
+                        double* inc_c11hh);
 
     /// exchange data with server
     bool ExchangeData(  double* inc_nsamples,

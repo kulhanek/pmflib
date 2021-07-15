@@ -82,8 +82,6 @@ subroutine abf_init_dat
     fentropy        = .false.
     fekinoffset     = 0
 
-    fblock_size     = 0
-
     feimode         = 1
     fhramp_min      = 100
     fhramp_max      = 200
@@ -151,7 +149,6 @@ subroutine abf_init_print_header
     write(PMF_OUT,130)  ' ABF mask mode (fmask_mode)              : ', fmask_mode
     write(PMF_OUT,125)  ' ABF mask file (fabfmask)                : ', trim(fabfmask)
     write(PMF_OUT,125)  ' Apply ABF force (fapply_abf)            : ', prmfile_onoff(fapply_abf)
-    write(PMF_OUT,130)  ' Block size (fblock_size)                : ', fblock_size
 
     write(PMF_OUT,120)
     write(PMF_OUT,120)  ' ABF Interpolation/Extrapolation '

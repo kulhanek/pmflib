@@ -150,6 +150,9 @@ void PMF_PACKAGE cpmf_abf_client_reg_by_key_(char* fserverkey,char* fserver,
 
     try {
 
+        // finalize accumulator after CVs update
+        ABFClient.Accu->UpdateNumOfBins();
+
         // server name and protocol
         serverkey_name.SetFromFortran(fserverkey,fserverkey_len);
         ABFClient.ActionRequest.SetProtocolName("abf");
@@ -185,10 +188,9 @@ void PMF_PACKAGE cpmf_abf_client_initial_data_( FTINT* ret_st,
 
     l_inc_nsamples.CreateVector(ABFClient.NumOfBins);
 
-    if(ABFClient.GetInitialData(l_inc_nsamples,inc_micf,inc_m2icf,
-                                inc_mepot,inc_m2epot,
-                                inc_metot,inc_m2etot,inc_c11hh) == false) {
-        ES_ERROR("unable to get initial data");
+    if(ABFClient.GetInitialData(l_inc_nsamples,inc_micf,inc_m2icf,inc_mepot,inc_m2epot,
+                                    inc_metot,inc_m2etot,inc_c11hh) == false) {
+        ES_ERROR("unable to get initial data - core");
         *ret_st = 1;
         return;
     }

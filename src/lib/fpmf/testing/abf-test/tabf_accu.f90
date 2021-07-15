@@ -185,34 +185,34 @@ subroutine tabf_accu_write(iounit)
     call pmf_accu_write_header(tabfaccu%PMFAccuType,iounit)
     call pmf_accu_write_ibuf_B(tabfaccu%PMFAccuType,iounit,'NSAMPLES',  'AD',tabfaccu%nsamples)
     call pmf_accu_write_rbuf_M(tabfaccu%PMFAccuType,iounit,'MICF',      'WA',tabfaccu%micf)
-    call pmf_accu_write_rbuf_M(tabfaccu%PMFAccuType,iounit,'M2ICF',     'AD',tabfaccu%m2icf)
+    call pmf_accu_write_rbuf_M(tabfaccu%PMFAccuType,iounit,'M2ICF',     'M2',tabfaccu%m2icf, 'MICF')
 
     if( fentropy ) then
         call pmf_accu_write_rbuf_M(tabfaccu%PMFAccuType,iounit,'MICF_POT',  'WA',tabfaccu%micf_pot)
-        call pmf_accu_write_rbuf_M(tabfaccu%PMFAccuType,iounit,'M2ICF_POT', 'AD',tabfaccu%m2icf_pot)
+        call pmf_accu_write_rbuf_M(tabfaccu%PMFAccuType,iounit,'M2ICF_POT', 'M2',tabfaccu%m2icf_pot, 'MICF_POT')
         call pmf_accu_write_rbuf_M(tabfaccu%PMFAccuType,iounit,'MICF_KIN',  'WA',tabfaccu%micf_kin)
-        call pmf_accu_write_rbuf_M(tabfaccu%PMFAccuType,iounit,'M2ICF_KIN', 'AD',tabfaccu%m2icf_kin)
+        call pmf_accu_write_rbuf_M(tabfaccu%PMFAccuType,iounit,'M2ICF_KIN', 'M2',tabfaccu%m2icf_kin, 'MICF_KIN')
     end if
 
     if( fenthalpy .or. fentropy ) then
-        call pmf_accu_write_rbuf_B(tabfaccu%PMFAccuType,iounit,'METOT','WA',tabfaccu%metot)
-        call pmf_accu_write_rbuf_B(tabfaccu%PMFAccuType,iounit,'M2ETOT','AD',tabfaccu%m2etot)
-        call pmf_accu_write_rbuf_B(tabfaccu%PMFAccuType,iounit,'MEPOT','WA',tabfaccu%mepot)
-        call pmf_accu_write_rbuf_B(tabfaccu%PMFAccuType,iounit,'M2EPOT','AD',tabfaccu%m2epot)
-        call pmf_accu_write_rbuf_B(tabfaccu%PMFAccuType,iounit,'MEKIN','WA',tabfaccu%mekin)
-        call pmf_accu_write_rbuf_B(tabfaccu%PMFAccuType,iounit,'M2EKIN','AD',tabfaccu%m2ekin)
-        call pmf_accu_write_rbuf_B(tabfaccu%PMFAccuType,iounit,'MERST','WA',tabfaccu%merst)
-        call pmf_accu_write_rbuf_B(tabfaccu%PMFAccuType,iounit,'M2ERST','AD',tabfaccu%m2erst)
+        call pmf_accu_write_rbuf_B(tabfaccu%PMFAccuType,iounit,'METOT', 'WA',tabfaccu%metot)
+        call pmf_accu_write_rbuf_B(tabfaccu%PMFAccuType,iounit,'M2ETOT','M2',tabfaccu%m2etot, 'METOT')
+        call pmf_accu_write_rbuf_B(tabfaccu%PMFAccuType,iounit,'MEPOT', 'WA',tabfaccu%mepot)
+        call pmf_accu_write_rbuf_B(tabfaccu%PMFAccuType,iounit,'M2EPOT','M2',tabfaccu%m2epot, 'MEPOT')
+        call pmf_accu_write_rbuf_B(tabfaccu%PMFAccuType,iounit,'MEKIN', 'WA',tabfaccu%mekin)
+        call pmf_accu_write_rbuf_B(tabfaccu%PMFAccuType,iounit,'M2EKIN','M2',tabfaccu%m2ekin, 'MEKIN')
+        call pmf_accu_write_rbuf_B(tabfaccu%PMFAccuType,iounit,'MERST', 'WA',tabfaccu%merst)
+        call pmf_accu_write_rbuf_B(tabfaccu%PMFAccuType,iounit,'M2ERST','M2',tabfaccu%m2erst, 'MERST')
     end if
 
     if( fentropy ) then
-        call pmf_accu_write_rbuf_M(tabfaccu%PMFAccuType,iounit,'C11HH','AD',tabfaccu%c11hh)
-        call pmf_accu_write_rbuf_M(tabfaccu%PMFAccuType,iounit,'C11PP','AD',tabfaccu%c11pp)
-        call pmf_accu_write_rbuf_M(tabfaccu%PMFAccuType,iounit,'C11PK','AD',tabfaccu%c11pk)
-        call pmf_accu_write_rbuf_M(tabfaccu%PMFAccuType,iounit,'C11PR','AD',tabfaccu%c11pr)
-        call pmf_accu_write_rbuf_M(tabfaccu%PMFAccuType,iounit,'C11KP','AD',tabfaccu%c11kp)
-        call pmf_accu_write_rbuf_M(tabfaccu%PMFAccuType,iounit,'C11KK','AD',tabfaccu%c11kk)
-        call pmf_accu_write_rbuf_M(tabfaccu%PMFAccuType,iounit,'C11KR','AD',tabfaccu%c11kr)
+        call pmf_accu_write_rbuf_M(tabfaccu%PMFAccuType,iounit,'C11HH', 'CO',tabfaccu%c11hh, 'MICF',    'METOT')
+        call pmf_accu_write_rbuf_M(tabfaccu%PMFAccuType,iounit,'C11PP', 'CO',tabfaccu%c11pp, 'MICF_POT','MEPOT')
+        call pmf_accu_write_rbuf_M(tabfaccu%PMFAccuType,iounit,'C11PK', 'CO',tabfaccu%c11pk, 'MICF_POT','MEKIN')
+        call pmf_accu_write_rbuf_M(tabfaccu%PMFAccuType,iounit,'C11PR', 'CO',tabfaccu%c11pr, 'MICF_POT','MERST')
+        call pmf_accu_write_rbuf_M(tabfaccu%PMFAccuType,iounit,'C11KP', 'CO',tabfaccu%c11kp, 'MICF_KIN','MEPOT')
+        call pmf_accu_write_rbuf_M(tabfaccu%PMFAccuType,iounit,'C11KK', 'CO',tabfaccu%c11kk, 'MICF_KIN','MEKIN')
+        call pmf_accu_write_rbuf_M(tabfaccu%PMFAccuType,iounit,'C11KR', 'CO',tabfaccu%c11kr, 'MICF_KIN','MERST')
     end if
 
 end subroutine tabf_accu_write

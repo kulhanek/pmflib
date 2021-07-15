@@ -51,7 +51,7 @@ subroutine usabf_accu_init()
     usabfaccu%tot_cvs = NumOfUSABFCVs
     allocate(usabfaccu%sizes(usabfaccu%tot_cvs), stat = alloc_failed)
     if( alloc_failed .ne. 0 ) then
-        call pmf_utils_exit(PMF_OUT, 1,'[TABF] Unable to allocate memory for abf accumulator!')
+        call pmf_utils_exit(PMF_OUT, 1,'[US-ABF] Unable to allocate memory for abf accumulator!')
     endif
 
     tot_nbins = 1
@@ -75,7 +75,7 @@ subroutine usabf_accu_init()
             stat = alloc_failed)
 
     if( alloc_failed .ne. 0 ) then
-        call pmf_utils_exit(PMF_OUT, 1,'[TABF] Unable to allocate memory for abf accumulator (icf)!')
+        call pmf_utils_exit(PMF_OUT, 1,'[US-ABF] Unable to allocate memory for abf accumulator (icf)!')
     endif
 
 ! enthalpy ---------------------------------------------------------------------
@@ -86,7 +86,7 @@ subroutine usabf_accu_init()
                 stat = alloc_failed)
 
         if( alloc_failed .ne. 0 ) then
-            call pmf_utils_exit(PMF_OUT, 1,'[TABF] Unable to allocate memory for abf accumulator (emthalpy)!')
+            call pmf_utils_exit(PMF_OUT, 1,'[US-ABF] Unable to allocate memory for abf accumulator (emthalpy)!')
         endif
     end if
 
@@ -99,7 +99,7 @@ subroutine usabf_accu_init()
                 stat = alloc_failed)
 
         if( alloc_failed .ne. 0 ) then
-            call pmf_utils_exit(PMF_OUT, 1,'[TABF] Unable to allocate memory for abf accumulator (abfforce)!')
+            call pmf_utils_exit(PMF_OUT, 1,'[US-ABF] Unable to allocate memory for abf accumulator (abfforce)!')
         endif
     end if
 
@@ -155,17 +155,17 @@ subroutine usabf_accu_write(iounit)
     call pmf_accu_write_header(usabfaccu%PMFAccuType,iounit)
     call pmf_accu_write_ibuf_B(usabfaccu%PMFAccuType,iounit,'NSAMPLES',     'AD',usabfaccu%nsamples)
     call pmf_accu_write_rbuf_M(usabfaccu%PMFAccuType,iounit,'MICF',         'WA',usabfaccu%micf)
-    call pmf_accu_write_rbuf_M(usabfaccu%PMFAccuType,iounit,'M2ICF',        'AD',usabfaccu%m2icf)
+    call pmf_accu_write_rbuf_M(usabfaccu%PMFAccuType,iounit,'M2ICF',        'M2',usabfaccu%m2icf,'MICF')
 
     if( fenthalpy ) then
         call pmf_accu_write_rbuf_B(usabfaccu%PMFAccuType,iounit,'MEPOT',    'WA',usabfaccu%mepot)
-        call pmf_accu_write_rbuf_B(usabfaccu%PMFAccuType,iounit,'M2EPOT',   'AD',usabfaccu%m2epot)
+        call pmf_accu_write_rbuf_B(usabfaccu%PMFAccuType,iounit,'M2EPOT',   'M2',usabfaccu%m2epot,'MEPOT')
     end if
 
     if( fentropy ) then
         call pmf_accu_write_rbuf_B(usabfaccu%PMFAccuType,iounit,'METOT',    'WA',usabfaccu%metot)
-        call pmf_accu_write_rbuf_B(usabfaccu%PMFAccuType,iounit,'M2ETOT',   'AD',usabfaccu%m2etot)
-        call pmf_accu_write_rbuf_M(usabfaccu%PMFAccuType,iounit,'C11HH',    'AD',usabfaccu%c11hh)
+        call pmf_accu_write_rbuf_B(usabfaccu%PMFAccuType,iounit,'M2ETOT',   'M2',usabfaccu%m2etot,'METOT')
+        call pmf_accu_write_rbuf_M(usabfaccu%PMFAccuType,iounit,'C11HH',    'CO',usabfaccu%c11hh,'MICF','METOT')
     end if
 
 end subroutine usabf_accu_write

@@ -54,9 +54,6 @@ real(PMFDP) :: fepotoffset
 logical     :: fentropy     ! collect data for entropy calculation
 real(PMFDP) :: fekinoffset
 
-! data pre-averaging
-integer     :: fblock_size  ! block size for ABF force pre-accumulation
-
 ! linear ramp
 integer     :: fhramp_min
 integer     :: fhramp_max

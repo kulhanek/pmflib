@@ -71,15 +71,10 @@ void CMWAServerAccu::SetServerTerminated(void)
 
 bool CMWAServerAccu::RegisterOrCheckCoords(CServerCommand* p_cmd)
 {
-    CXMLElement* p_accu = p_cmd->GetCommandElementByPath("ACCU",false);
+    CXMLElement* p_accu = p_cmd->GetCommandElementByPath("PMFLIB-V6",false);
     if(p_accu == NULL) {
-        LOGIC_ERROR("unable to open ACCU element");
+        LOGIC_ERROR("unable to open PMFLIB-V6 element");
     }
-    CXMLElement* p_cvs = p_cmd->GetCommandElementByPath("ACCU/CVS",false);
-    if(p_cvs == NULL) {
-        LOGIC_ERROR("unable to open ACCU/CVS element");
-    }
-
     bool result = true;
 
     AccuMutex.Lock();
@@ -98,8 +93,15 @@ bool CMWAServerAccu::RegisterOrCheckCoords(CServerCommand* p_cmd)
             result = false;
         }
     } else {
-        // coordinates have been loaded - so check if other clients are the same
-        result = CheckCVSInfo(p_cvs);
+        try {
+            CPMFAccumulatorPtr accu = CPMFAccumulatorPtr(new CPMFAccumulator);
+            accu->Load(p_accu);
+            // coordinates have been loaded - so check if other clients are the same
+            result = CheckCVSInfo(accu);
+        } catch(std::exception& e) {
+            CMD_ERROR_FROM_EXCEPTION(p_cmd,"unable to check coordinates",e);
+            result = false;
+        }
         if( result == false ){
             // copy last reason to command error stack
             CMD_ERROR(p_cmd,ErrorSystem.GetLastError());
@@ -119,11 +121,11 @@ void CMWAServerAccu::GetInitialData(CServerCommand* p_command)
         INVALID_ARGUMENT("p_command is NULL");
     }
 
-    CXMLElement* p_accu = p_command->GetResultElementByPath("ACCU",true);
+    CXMLElement* p_root = p_command->GetRootResultElement();
 
     AccuMutex.Lock();
         try {
-            Save(p_accu);
+            Save(p_root);
         } catch(...) {
             AccuMutex.Unlock();
             throw;
@@ -163,11 +165,11 @@ void CMWAServerAccu::ExchangeDataAsynchronousMode(CRegClient* p_client)
         RUNTIME_ERROR("p_commad is NULL");
     }
 
-    CXMLElement* p_cele = p_command->GetCommandElementByPath("ACCU",false);
+    CXMLElement* p_cele = p_command->GetCommandElementByPath("PMFLIB-V6",false);
     if(p_cele == NULL) {
-        LOGIC_ERROR("unable to open ACCU element");
+        LOGIC_ERROR("unable to open PMFLIB-V6 element");
     }
-    CXMLElement* p_rele = p_command->GetResultElementByPath("ACCU",true);
+    CXMLElement* p_rele = p_command->GetRootResultElement();
 
     AccuMutex.Lock();
     try {
@@ -216,7 +218,7 @@ void CMWAServerAccu::ExchangeDataSynchronousMode(CRegClient* p_client)
 
                 // for each client add data to central accumulator
                 while( (p_cmd = I.Current()) != NULL ){
-                    CXMLElement* p_cele = p_cmd->GetCommandElementByPath("ACCU",false);
+                    CXMLElement* p_cele = p_cmd->GetCommandElementByPath("PMFLIB-V6",false);
                     if( p_cele ){
                         Combine(p_cele);
                     }
@@ -226,7 +228,7 @@ void CMWAServerAccu::ExchangeDataSynchronousMode(CRegClient* p_client)
                 // then for each client return back the whole MWA accumulator
                 I.SetToBegin();
                 while( (p_cmd = I.Current()) != NULL ){
-                    CXMLElement* p_rele = p_cmd->GetResultElementByPath("ACCU",true);
+                    CXMLElement* p_rele = p_cmd->GetResultElementByPath("PMFLIB-V6",true);
                     Save(p_rele);
                     I++;
                 }
@@ -256,7 +258,7 @@ void CMWAServerAccu::GetData(CServerCommand* p_command)
         INVALID_ARGUMENT("p_command is NULL");
     }
 
-    CXMLElement* p_accu = p_command->GetResultElementByPath("ACCU",true);
+    CXMLElement* p_accu = p_command->GetResultElementByPath("PMFLIB-V6",true);
 
     AccuMutex.Lock();
     try {

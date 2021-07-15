@@ -230,21 +230,45 @@ subroutine abf_client_get_initial_data
     call pmf_timers_start_timer(PMFLIB_ABF_MWA_TIMER)
 
 #ifdef PMFLIB_NETWORK
-        call cpmf_abf_client_initial_data(ret_st,               &
-                                            abfaccu%nsamples,   &
-                                            abfaccu%micf,       &
-                                            abfaccu%m2icf,      &
-                                            abfaccu%mepot,      &
-                                            abfaccu%m2epot,     &
-                                            abfaccu%metot,      &
-                                            abfaccu%m2etot,     &
-                                            abfaccu%c11hh       &
-                                            )
-
+    call cpmf_abf_client_initial_data(ret_st,           &
+                                    abfaccu%inc_nsamples,   &
+                                    abfaccu%inc_micf,       &
+                                    abfaccu%inc_m2icf,      &
+                                    abfaccu%inc_mepot,      &
+                                    abfaccu%inc_m2epot,     &
+                                    abfaccu%inc_metot,      &
+                                    abfaccu%inc_m2etot,     &
+                                    abfaccu%inc_c11hh)
     if( ret_st .ne. 0 ) then
         write(ABF_OUT,20)
         write(PMF_OUT,*)
         call pmf_utils_exit(PMF_OUT,1)
+    end if
+
+    ! move received data to main abfaccu
+    abfaccu%nsamples(:)         = abfaccu%inc_nsamples(:)
+    abfaccu%micf(:,:)           = abfaccu%inc_micf(:,:)
+    abfaccu%m2icf(:,:)          = abfaccu%inc_m2icf(:,:)
+
+    abfaccu%inc_nsamples(:)     = 0
+    abfaccu%inc_micf(:,:)       = 0.0d0
+    abfaccu%inc_m2icf(:,:)      = 0.0d0
+
+    if( fenthalpy ) then
+        abfaccu%mepot(:)        = abfaccu%inc_mepot(:)
+        abfaccu%m2epot(:)       = abfaccu%inc_m2epot(:)
+        abfaccu%inc_mepot(:)    = 0.0d0
+        abfaccu%inc_m2epot(:)   = 0.0d0
+    end if
+
+    if( fentropy ) then
+        abfaccu%metot(:)        = abfaccu%inc_metot(:)
+        abfaccu%m2etot(:)       = abfaccu%inc_m2etot(:)
+        abfaccu%c11hh(:,:)      = abfaccu%inc_c11hh(:,:)
+
+        abfaccu%inc_metot(:)    = 0.0d0
+        abfaccu%inc_m2etot(:)   = 0.0d0
+        abfaccu%inc_c11hh(:,:)  = 0.0d0
     end if
 
     write(ABF_OUT,10)
@@ -300,8 +324,7 @@ subroutine abf_client_exchange_data(force_exchange)
                                         abfaccu%inc_m2epot,     &
                                         abfaccu%inc_metot,      &
                                         abfaccu%inc_m2etot,     &
-                                        abfaccu%inc_c11hh       &
-                                        )
+                                        abfaccu%inc_c11hh )
 
     if( ret_st .ne. 0 ) then
         failure_counter = failure_counter + 1
@@ -317,39 +340,33 @@ subroutine abf_client_exchange_data(force_exchange)
         return
     end if
 
-    ! move received data to main abfaccu
-    abfaccu%nsamples(:)       = abfaccu%inc_nsamples(:)
-    abfaccu%micf(:,:)         = abfaccu%inc_micf(:,:)
-    abfaccu%m2icf(:,:)        = abfaccu%inc_m2icf(:,:)
+! move received data to main abfaccu
+    abfaccu%nsamples(:)         = abfaccu%inc_nsamples(:)
+    abfaccu%micf(:,:)           = abfaccu%inc_micf(:,:)
+    abfaccu%m2icf(:,:)          = abfaccu%inc_m2icf(:,:)
+
+    abfaccu%inc_nsamples(:)     = 0
+    abfaccu%inc_micf(:,:)       = 0.0d0
+    abfaccu%inc_m2icf(:,:)      = 0.0d0
 
     if( fenthalpy ) then
-    abfaccu%mepot(:)          = abfaccu%inc_mepot(:)
-    abfaccu%m2epot(:)         = abfaccu%inc_m2epot(:)
+        abfaccu%mepot(:)        = abfaccu%inc_mepot(:)
+        abfaccu%m2epot(:)       = abfaccu%inc_m2epot(:)
+        abfaccu%inc_mepot(:)    = 0.0d0
+        abfaccu%inc_m2epot(:)   = 0.0d0
     end if
 
     if( fentropy ) then
-    abfaccu%metot(:)          = abfaccu%inc_metot(:)
-    abfaccu%m2etot(:)         = abfaccu%inc_m2etot(:)
-    abfaccu%c11hh(:,:)        = abfaccu%inc_c11hh(:,:)
+        abfaccu%metot(:)        = abfaccu%inc_metot(:)
+        abfaccu%m2etot(:)       = abfaccu%inc_m2etot(:)
+        abfaccu%c11hh(:,:)      = abfaccu%inc_c11hh(:,:)
+
+        abfaccu%inc_metot(:)    = 0.0d0
+        abfaccu%inc_m2etot(:)   = 0.0d0
+        abfaccu%inc_c11hh(:,:)  = 0.0d0
     end if
 
 #endif
-
- ! and reset incremental data
-    abfaccu%inc_nsamples(:) = 0
-    abfaccu%inc_micf(:,:)   = 0.0d0
-    abfaccu%inc_m2icf(:,:)  = 0.0d0
-
-    if( fenthalpy ) then
-    abfaccu%inc_mepot(:)    = 0.0d0
-    abfaccu%inc_m2epot(:)   = 0.0d0
-    end if
-
-    if( fentropy ) then
-    abfaccu%inc_metot(:)    = 0.0d0
-    abfaccu%inc_m2etot(:)   = 0.0d0
-    abfaccu%inc_c11hh(:,:)  = 0.0d0
-    end if
 
     failure_counter = 0
 

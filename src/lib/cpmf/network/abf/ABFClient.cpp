@@ -77,7 +77,22 @@ int CABFClient::RegisterClient(void)
             p_ele->SetAttribute("job_id",job_id);
         }
 
-        p_ele = cmd.GetCommandElementByPath("PMFLIB-V6",true);
+        // create sections
+        Accu->CreateSectionData("NSAMPLES", "AD","I","B");
+        Accu->CreateSectionData("MICF",     "WA","R","M");
+        Accu->CreateSectionData("M2ICF",    "AD","R","M");
+
+        if( EnthalpyEnabled ){
+            Accu->CreateSectionData("MEPOT",    "WA","R","B");
+            Accu->CreateSectionData("M2EPOT",   "AD","R","B");
+        }
+
+        if( EnthalpyEnabled ){
+            Accu->CreateSectionData("METOT",    "WA","R","B");
+            Accu->CreateSectionData("M2ETOT",   "AD","R","B");
+            Accu->CreateSectionData("C11HH",    "AD","R","M");
+        }
+
         Accu->Save(p_ele);
 
         // execute command
@@ -156,47 +171,57 @@ bool CABFClient::GetInitialData(double* nsamples,
             accu->Load(p_ele);
 
             // check dimensions
-            // FIXME
+            if( (NumOfBins != accu->GetNumOfBins()) ||
+                (NumOfCVs  != accu->GetNumOfCVs()) ) {
+                RUNTIME_ERROR("size inconsistency");
+            }
+
+            if( Accu->CheckCVSInfo(accu) == false ){
+                RUNTIME_ERROR("inconsistent CVs");
+            }
 
             // core data
             CPMFAccuDataPtr data;
-            data = accu->GetSectionData("NSAMPLES");
-            if( data != NULL ){
+            if( accu->HasSectionData("NSAMPLES") ){
+                data = accu->GetSectionData("NSAMPLES");
                 data->GetDataBlob(nsamples);
             }
-            data = accu->GetSectionData("MICF");
-            if( data != NULL ){
+
+            if( accu->HasSectionData("MICF") ){
+                data = accu->GetSectionData("MICF");
                 data->GetDataBlob(micf);
             }
-            data = accu->GetSectionData("M2ICF");
-            if( data != NULL ){
+
+            if( accu->HasSectionData("M2ICF") ){
+                data = accu->GetSectionData("M2ICF");
                 data->GetDataBlob(m2icf);
             }
 
-            // enthalpy
-            if( EnthalpyEnabled ){
-                data = accu->GetSectionData("MEPOT");
-                if( data != NULL ){
+            if( EnthalpyEnabled ) {
+                if( accu->HasSectionData("MEPOT") ){
+                    data = accu->GetSectionData("MEPOT");
                     data->GetDataBlob(mepot);
                 }
-                data = accu->GetSectionData("M2EPOT");
-                if( data != NULL ){
+
+                if( accu->HasSectionData("M2EPOT") ){
+                    data = accu->GetSectionData("M2EPOT");
                     data->GetDataBlob(m2epot);
                 }
             }
 
-            // entropy
-            if( EntropyEnabled ){
-                data = accu->GetSectionData("METOT");
-                if( data != NULL ){
+            if( EntropyEnabled ) {
+                if( accu->HasSectionData("METOT") ){
+                    data = accu->GetSectionData("METOT");
                     data->GetDataBlob(metot);
                 }
-                data = accu->GetSectionData("M2ETOT");
-                if( data != NULL ){
+
+                if( accu->HasSectionData("M2ETOT") ){
+                    data = accu->GetSectionData("M2ETOT");
                     data->GetDataBlob(m2etot);
                 }
-                data = accu->GetSectionData("C11HH");
-                if( data != NULL ){
+
+                if( accu->HasSectionData("C11HH") ){
+                    data = accu->GetSectionData("C11HH");
                     data->GetDataBlob(c11hh);
                 }
             }
@@ -233,49 +258,38 @@ bool CABFClient::ExchangeData(  double* inc_nsamples,
         p_ele = cmd.GetRootCommandElement();
         p_ele->SetAttribute("client_id",ClientID);
 
-        p_ele = cmd.GetCommandElementByPath("PMFLIB-V6",true);
-
         CPMFAccuDataPtr data;
         data = Accu->GetSectionData("NSAMPLES");
-        if( data != NULL ){
-            data->SetDataBlob(inc_nsamples);
-        }
+        data->SetDataBlob(inc_nsamples);
+
         data = Accu->GetSectionData("MICF");
-        if( data != NULL ){
-            data->SetDataBlob(inc_micf);
-        }
+        data->SetDataBlob(inc_micf);
+
         data = Accu->GetSectionData("M2ICF");
-        if( data != NULL ){
-            data->SetDataBlob(inc_m2icf);
-        }
+        data->SetDataBlob(inc_m2icf);
 
         // enthalpy
         if( EnthalpyEnabled ){
             data = Accu->GetSectionData("MEPOT");
-            if( data != NULL ){
-                data->SetDataBlob(inc_mepot);
-            }
+            data->SetDataBlob(inc_mepot);
+
             data = Accu->GetSectionData("M2EPOT");
-            if( data != NULL ){
-                data->SetDataBlob(inc_m2epot);
-            }
+            data->SetDataBlob(inc_m2epot);
         }
 
         // entropy
         if( EntropyEnabled ){
             data = Accu->GetSectionData("METOT");
-            if( data != NULL ){
-                data->SetDataBlob(inc_metot);
-            }
+            data->SetDataBlob(inc_metot);
+
             data = Accu->GetSectionData("M2ETOT");
-            if( data != NULL ){
-                data->SetDataBlob(inc_m2etot);
-            }
+            data->SetDataBlob(inc_m2etot);
+
             data = Accu->GetSectionData("C11HH");
-            if( data != NULL ){
-                data->SetDataBlob(inc_c11hh);
-            }
+            data->SetDataBlob(inc_c11hh);
         }
+
+        Accu->Save(p_ele);
 
 // execute command
         ExecuteCommand(&cmd);
@@ -287,48 +301,57 @@ bool CABFClient::ExchangeData(  double* inc_nsamples,
             CPMFAccumulatorPtr accu = CPMFAccumulatorPtr(new CPMFAccumulator);
             accu->Load(p_ele);
 
-            // check dimensions
-            // FIXME
+            if( (NumOfBins != accu->GetNumOfBins()) ||
+                (NumOfCVs  != accu->GetNumOfCVs()) ) {
+                RUNTIME_ERROR("size inconsistency");
+            }
+
+            if( Accu->CheckCVSInfo(accu) == false ){
+                RUNTIME_ERROR("inconsistent CVs");
+            }
 
             // core data
             CPMFAccuDataPtr data;
-            data = accu->GetSectionData("NSAMPLES");
-            if( data != NULL ){
+            if( accu->HasSectionData("NSAMPLES") ){
+                data = accu->GetSectionData("NSAMPLES");
                 data->GetDataBlob(inc_nsamples);
             }
-            data = accu->GetSectionData("MICF");
-            if( data != NULL ){
+
+            if( accu->HasSectionData("MICF") ){
+                data = accu->GetSectionData("MICF");
                 data->GetDataBlob(inc_micf);
             }
-            data = accu->GetSectionData("M2ICF");
-            if( data != NULL ){
+
+            if( accu->HasSectionData("M2ICF") ){
+                data = accu->GetSectionData("M2ICF");
                 data->GetDataBlob(inc_m2icf);
             }
 
-            // enthalpy
-            if( EnthalpyEnabled ){
-                data = accu->GetSectionData("MEPOT");
-                if( data != NULL ){
+            if( EnthalpyEnabled ) {
+                if( accu->HasSectionData("MEPOT") ){
+                    data = accu->GetSectionData("MEPOT");
                     data->GetDataBlob(inc_mepot);
                 }
-                data = accu->GetSectionData("M2EPOT");
-                if( data != NULL ){
+
+                if( accu->HasSectionData("M2EPOT") ){
+                    data = accu->GetSectionData("M2EPOT");
                     data->GetDataBlob(inc_m2epot);
                 }
             }
 
-            // entropy
-            if( EntropyEnabled ){
-                data = accu->GetSectionData("METOT");
-                if( data != NULL ){
+            if( EntropyEnabled ) {
+                if( accu->HasSectionData("METOT") ){
+                    data = accu->GetSectionData("METOT");
                     data->GetDataBlob(inc_metot);
                 }
-                data = accu->GetSectionData("M2ETOT");
-                if( data != NULL ){
+
+                if( accu->HasSectionData("M2ETOT") ){
+                    data = accu->GetSectionData("M2ETOT");
                     data->GetDataBlob(inc_m2etot);
                 }
-                data = accu->GetSectionData("C11HH");
-                if( data != NULL ){
+
+                if( accu->HasSectionData("C11HH") ){
+                    data = accu->GetSectionData("C11HH");
                     data->GetDataBlob(inc_c11hh);
                 }
             }
@@ -353,11 +376,8 @@ void CABFClient::ClearExchangeData( double* inc_nsamples,
                                     double* inc_m2etot,
                                     double* inc_c11hh)
 {
-    size_t nsamples_size   = NumOfBins*sizeof(double);
-    size_t micf_size       = NumOfBins*NumOfCVs*sizeof(double);
-    size_t mepot_size      = NumOfBins*sizeof(double);
-    size_t metot_size      = NumOfBins*sizeof(double);
-    size_t c11hh_size      = NumOfBins*NumOfCVs*sizeof(double);
+    size_t nsamples_size   = NumOfBins;
+    size_t micf_size       = NumOfBins*NumOfCVs;
 
     for(size_t i=0; i < nsamples_size; i++) {
         inc_nsamples[i] = 0.0;
@@ -368,14 +388,23 @@ void CABFClient::ClearExchangeData( double* inc_nsamples,
         inc_m2icf[i] = 0.0;
     }
 
+// ----------------------------------------------
+
     if( EnthalpyEnabled ){
+        size_t mepot_size      = NumOfBins;
+
         for(size_t i=0; i < mepot_size; i++) {
             inc_mepot[i]  = 0.0;
             inc_m2epot[i] = 0.0;
         }
     }
 
-    if( EntropyEnabled ){
+// ----------------------------------------------
+
+    if( EntropyEnabled ) {
+        size_t metot_size      = NumOfBins;
+        size_t c11hh_size      = NumOfBins*NumOfCVs;
+
         for(size_t i=0; i < metot_size; i++) {
             inc_metot[i]  = 0.0;
             inc_m2etot[i] = 0.0;
@@ -384,6 +413,7 @@ void CABFClient::ClearExchangeData( double* inc_nsamples,
             inc_c11hh[i]  = 0.0;
         }
     }
+
 }
 
 //==============================================================================

@@ -27,89 +27,7 @@
 #include <SimpleVector.hpp>
 #include <vector>
 #include <map>
-
-//------------------------------------------------------------------------------
-
-class CPMFAccuData;
-typedef std::shared_ptr<CPMFAccuData>       CPMFAccuDataPtr;
-
-//------------------------------------------------------------------------------
-
-/** \brief PMF accumulator data segment
-*/
-
-class PMF_PACKAGE CPMFAccuData {
-public:
-    CPMFAccuData(int nbins, int ncvs);
-
-// I/O operation ---------------------------------------------------------------
-    /// load data section
-    void Load(FILE* p_fin,const CSmallString& keyline);
-
-    /// save data section
-    void Save(FILE* p_fout);
-
-    /// load data section
-    void Load(CXMLElement* p_ele);
-
-    /// save data section
-    void Save(CXMLElement* p_ele);
-
-// setup methods ---------------------------------------------------------------
-    // reset data to zero
-    void Reset(void);
-
-    /// is compatible with other section data?
-    bool CheckCompatibility(CPMFAccuDataPtr right);
-
-// access methods --------------------------------------------------------------
-    // get data section name
-    const CSmallString& GetName(void) const;
-
-    // get data length
-    int GetLength(void) const;
-
-    // get num of bins
-    int GetNumOfBins(void) const;
-
-    // get num of cvs
-    int GetNumOfCVs(void) const;
-
-    // get data section type
-    const CSmallString& GetType(void) const;
-
-    // get data section mode
-    const CSmallString& GetMode(void) const;
-
-    // get data section op
-    const CSmallString& GetOp(void) const;
-
-    /// get data
-    double GetData(int ibin, int cv=0) const;
-
-    /// set data
-    void SetData(int ibin, double value);
-
-    /// set data
-    void SetData(int ibin, int cv, double value);
-
-    /// get blob data
-    void GetDataBlob(double* p_blob);
-
-    /// set blob data
-    void SetDataBlob(double* p_blob);
-
-// section of private data -----------------------------------------------------
-private:
-    int                     NumOfBins;
-    int                     NumOfCVs;
-    CSmallString            Name;       // name of the section
-    CSmallString            Op;         // data operation
-    CSmallString            Type;       // data type: R - real, I - integer
-    CSmallString            Mode;       // data mode: B - per bins, C - per CVs, M - mixed per bins and cvs
-    int                     Size;       // size of data
-    CSimpleVector<double>   Data;       // all data are kept as real numbers
-};
+#include <PMFAccuData.hpp>
 
 //------------------------------------------------------------------------------
 
@@ -243,6 +161,12 @@ public:
     void Reset(void);
 
 // section data access -------------------------------------------------------
+    /// check if the section data exists
+    bool HasSectionData(const CSmallString& name) const;
+
+    /// create section
+    void CreateSectionData(const CSmallString& name,const CSmallString& op,const CSmallString& type,const CSmallString& mode,int len=0);
+
     /// get access to data section
     CPMFAccuDataPtr GetSectionData(const CSmallString& name) const;
 
@@ -267,6 +191,9 @@ public:
 
     /// save cvs info
     void SaveCVSInfo(CXMLElement* p_tele) const;
+
+    /// update number of bins
+    void UpdateNumOfBins(void);
 
     /// print all info
     void PrintInfo(std::ostream& vout);
@@ -327,8 +254,8 @@ protected:
     /// read section data
     void ReadDataSection(FILE* fin,const CSmallString& keyline);
 
-    /// combine two setions
-    void Combine(const CSmallString& sname,CPMFAccumulatorPtr right,CPMFAccuDataPtr ldb,CPMFAccuDataPtr rdb);
+    /// combine two sections
+    CPMFAccuDataPtr Combine(CPMFAccumulatorPtr right,CPMFAccuDataPtr ldb,CPMFAccuDataPtr rdb);
 };
 
 //------------------------------------------------------------------------------

@@ -652,7 +652,7 @@ end subroutine pmf_accu_read_rbuf_B
 ! data per bin
 !===============================================================================
 
-subroutine pmf_accu_write_rbuf_B(accu,iounit,key,op,rbuf)
+subroutine pmf_accu_write_rbuf_B(accu,iounit,key,op,rbuf,xmean,ymean)
 
     use pmf_dat
     use pmf_utils
@@ -665,16 +665,30 @@ subroutine pmf_accu_write_rbuf_B(accu,iounit,key,op,rbuf)
     character(*)                :: key
     character(*)                :: op
     real(PMFDP)                 :: rbuf(:)
+    character(*),optional       :: xmean
+    character(*),optional       :: ymean
     ! -----------------------------------------------
     character(len=PMF_MAX_KEY)  :: skey
     integer                     :: i
     !---------------------------------------------------------------------------
 
     skey = key
-    write(iounit,5) adjustl(skey), trim(op), 'R', 'B', accu%tot_nbins
+    write(iounit,5,ADVANCE='NO') adjustl(skey), trim(op), 'R', 'B', accu%tot_nbins
+
+    if( present(xmean) ) then
+        skey = xmean
+        write(iounit,6,ADVANCE='NO') adjustl(skey)
+    end if
+    if( present(ymean) ) then
+        skey = ymean
+        write(iounit,6,ADVANCE='NO') adjustl(skey)
+    end if
+    write(iounit,*)
+
     write(iounit,10) (rbuf(i),i=1,accu%tot_nbins)
 
  5  format('@',A20,1X,A2,1X,A1,1X,A1,1X,I10)
+ 6  format(1X,A20)
 10  format(4(E19.11,1X))
 
 end subroutine pmf_accu_write_rbuf_B
@@ -738,7 +752,7 @@ end subroutine pmf_accu_read_rbuf_M
 ! Subroutine:  pmf_accu_write_rbuf_M
 !===============================================================================
 
-subroutine pmf_accu_write_rbuf_M(accu,iounit,key,op,rbuf)
+subroutine pmf_accu_write_rbuf_M(accu,iounit,key,op,rbuf,xmean,ymean)
 
     use pmf_dat
     use pmf_utils
@@ -751,18 +765,32 @@ subroutine pmf_accu_write_rbuf_M(accu,iounit,key,op,rbuf)
     character(*)                :: key
     character(*)                :: op
     real(PMFDP)                 :: rbuf(:,:)
+    character(*),optional       :: xmean
+    character(*),optional       :: ymean
     ! -----------------------------------------------
     character(len=PMF_MAX_KEY)  :: skey
     integer                     :: i,j
     !---------------------------------------------------------------------------
 
     skey = key
-    write(iounit,5) adjustl(skey), trim(op), 'R', 'M', accu%tot_nbins*accu%tot_cvs
+    write(iounit,5,ADVANCE='NO') adjustl(skey), trim(op), 'R', 'M', accu%tot_nbins*accu%tot_cvs
+
+    if( present(xmean) ) then
+        skey = xmean
+        write(iounit,6,ADVANCE='NO') adjustl(skey)
+    end if
+    if( present(ymean) ) then
+        skey = ymean
+        write(iounit,6,ADVANCE='NO') adjustl(skey)
+    end if
+    write(iounit,*)
+
     do i=1,accu%tot_cvs
         write(iounit,10) (rbuf(i,j),j=1,accu%tot_nbins)
     end do
 
  5  format('@',A20,1X,A2,1X,A1,1X,A1,1X,I10)
+ 6  format(1X,A20)
 10  format(4(E19.11,1X))
 
 end subroutine pmf_accu_write_rbuf_M

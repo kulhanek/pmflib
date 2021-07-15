@@ -218,11 +218,7 @@ subroutine abf_core_force_4p()
         avg_erst = 0.5d0*(ersthist1 + ersthist2) ! t - 3/2*dt
 
         ! add data to accumulator
-        if( fblock_size .eq. 0 ) then
-            call abf_accu_add_data_online(cvaluehist0,pxi0(:),avg_epot,avg_ekin,avg_erst)
-        else
-            call abf_accu_add_data_blocked(cvaluehist0,pxi0(:),avg_epot)
-        end if
+        call abf_accu_add_data_online(cvaluehist0,pxi0(:),avg_epot,avg_ekin,avg_erst)
     end if
 
     ! pxi0 <--- -pxip + pxim + pxi1 - la/2
@@ -343,11 +339,7 @@ subroutine abf_core_force_2p()
         pxi0(:) = pxi0(:) + pxim(:)
 
         ! add data to accumulator
-        if( fblock_size .eq. 0 ) then
-            call abf_accu_add_data_online(cvaluehist0,pxi0(:),epothist0,ekinhist1,ersthist0)
-        else
-            call abf_accu_add_data_blocked(cvaluehist0,pxi0(:),epothist0)
-        end if
+        call abf_accu_add_data_online(cvaluehist0,pxi0(:),epothist0,ekinhist1,ersthist0)
     end if
 
     ! backup to the next step
