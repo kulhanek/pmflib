@@ -126,7 +126,7 @@ public:
     /// convert point index to point position
     void GetPoint(unsigned int index,CSimpleVector<double>& point) const;
 
-    /// convert point index to point position
+    /// convert point index to point position - real values
     void GetPointRValues(unsigned int index,CSimpleVector<double>& point) const;
 
     /// convert point index to point position

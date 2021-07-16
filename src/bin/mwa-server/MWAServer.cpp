@@ -52,10 +52,10 @@ MAIN_ENTRY_OBJECT(MWAServer)
 
 CMWAServer::CMWAServer(void)
 {
-    SetProtocolName("abf");
-    OutputFileName = "_abfserver.rst";
+    SetProtocolName("mwa");
+    OutputFileName = "_mwaserver.rst";
     AutoRestart =  true;
-    AutoSaveInterval = 500;
+    AutoSaveInterval = 50;
     SaveCounter = 0;
     TrajFile = NULL;
 }
@@ -85,7 +85,7 @@ int CMWAServer::Init(int argc,char* argv[])
 
     vout << endl;
     vout << "# ==============================================================================" << endl;
-    vout << "# abf-server (PMFLib utility)  started at " << dt.GetSDateAndTime() << endl;
+    vout << "# mwa-server (PMFLib utility)  started at " << dt.GetSDateAndTime() << endl;
     vout << "# Version: " << LibBuildVersion_PMF << endl;
     vout << "# ==============================================================================" << endl;
 
@@ -375,7 +375,7 @@ void CMWAServer::Finalize(void)
 
     vout << endl;
     vout << "# ==============================================================================" << endl;
-    vout << "# abf-server terminated at " << dt.GetSDateAndTime() << endl;
+    vout << "# mwa-server terminated at " << dt.GetSDateAndTime() << endl;
     vout << "# ==============================================================================" << endl;
 
     if( ErrorSystem.IsError() || Options.GetOptVerbose() ){

@@ -120,7 +120,7 @@ void PMF_PACKAGE cpmf_abp_client_reg_by_key_(char* fserverkey,char* fserver,
 
         // server name and protocol
         serverkey_name.SetFromFortran(fserverkey,fserverkey_len);
-        ABPClient.ActionRequest.SetProtocolName("abp");
+        ABPClient.ActionRequest.SetProtocolName("mwa");
         ABPClient.ActionRequest.ReadServerKey(serverkey_name);
 
         // get server name

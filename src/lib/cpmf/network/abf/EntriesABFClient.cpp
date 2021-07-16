@@ -155,7 +155,7 @@ void PMF_PACKAGE cpmf_abf_client_reg_by_key_(char* fserverkey,char* fserver,
 
         // server name and protocol
         serverkey_name.SetFromFortran(fserverkey,fserverkey_len);
-        ABFClient.ActionRequest.SetProtocolName("abf");
+        ABFClient.ActionRequest.SetProtocolName("mwa");
         ABFClient.ActionRequest.ReadServerKey(serverkey_name);
 
         // get server name

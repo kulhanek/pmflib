@@ -81,6 +81,7 @@ type CVTypeABF
     real(PMFDP)             :: min_value        ! left range
     real(PMFDP)             :: max_value        ! right range
     integer                 :: nbins            ! number of bins
+    real(PMFDP)             :: wfac             ! smoothing factor
 end type CVTypeABF
 
 ! ----------------------
@@ -106,6 +107,7 @@ type,extends(PMFAccuType) :: ABFAccuType
 
     ! smoothed ICF
     real(PMFDP),pointer    :: smicf(:,:)                ! mean ICF, smoothed
+    real(PMFDP),pointer    :: gksfac(:,:)               ! smoothing factors, nbinsxnbins
 
     ! ABF force - incremental part for ABF-server
     integer,pointer        :: inc_nsamples(:)           ! number of hits into bins

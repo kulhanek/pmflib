@@ -119,6 +119,34 @@ integer function pmf_accu_globalindex(accu,lvalues)
 end function pmf_accu_globalindex
 
 !===============================================================================
+! Subroutine:  pmf_accu_get_point
+!===============================================================================
+
+subroutine pmf_accu_get_point(accu,gidx,point)
+
+    use pmf_dat
+
+    implicit none
+    type(PMFAccuType)   :: accu
+    integer             :: gidx
+    real(PMFDP)         :: point(:)
+    ! --------------------------------------------
+    integer             :: idx
+    integer             :: k, cvbin
+    ! --------------------------------------------------------------------------
+
+    idx = gidx - 1
+
+    do k=accu%tot_cvs,1,-1
+        ! from 0 to nbins-1
+        cvbin    = mod(idx,accu%sizes(k)%nbins)
+        point(k) = accu%sizes(k)%min_value + (cvbin+0.5d0)*accu%sizes(k)%bin_width
+        idx      = idx / accu%sizes(k)%nbins
+    end do
+
+end subroutine pmf_accu_get_point
+
+!===============================================================================
 ! Subroutine:  pmf_accu_read_header
 !===============================================================================
 
@@ -639,7 +667,7 @@ subroutine pmf_accu_read_rbuf_B(accu,iounit,keyline,rbuf)
 
     return
 
-10  format(4(E19.11,1X))
+10  format(4(ES23.15E3,1X))
 
 100 call pmf_utils_exit(PMF_OUT,1,'[PMFAccu] Unable to parse keyline "'//keyline//'" in pmf_accu_read_rbuf_B!')
 110 call pmf_utils_exit(PMF_OUT,1,'[PMFAccu] Premature end of data block for keyline "'//keyline//'" in pmf_accu_read_rbuf_B!')
@@ -689,7 +717,7 @@ subroutine pmf_accu_write_rbuf_B(accu,iounit,key,op,rbuf,xmean,ymean)
 
  5  format('@',A20,1X,A2,1X,A1,1X,A1,1X,I10)
  6  format(1X,A20)
-10  format(4(E19.11,1X))
+10  format(4(ES23.15E3,1X))
 
 end subroutine pmf_accu_write_rbuf_B
 
@@ -740,7 +768,7 @@ subroutine pmf_accu_read_rbuf_M(accu,iounit,keyline,rbuf)
 
     return
 
-10  format(4(E19.11,1X))
+10  format(4(ES23.15E3,1X))
 
 100 call pmf_utils_exit(PMF_OUT,1,'[PMFAccu] Unable to parse keyline "'//keyline//'" in pmf_accu_read_rbuf_M!')
 110 call pmf_utils_exit(PMF_OUT,1,'[PMFAccu] Premature end of data block for keyline "'//keyline//'" in pmf_accu_read_rbuf_M!')
@@ -791,7 +819,7 @@ subroutine pmf_accu_write_rbuf_M(accu,iounit,key,op,rbuf,xmean,ymean)
 
  5  format('@',A20,1X,A2,1X,A1,1X,A1,1X,I10)
  6  format(1X,A20)
-10  format(4(E19.11,1X))
+10  format(4(ES23.15E3,1X))
 
 end subroutine pmf_accu_write_rbuf_M
 
@@ -840,7 +868,7 @@ subroutine pmf_accu_read_rbuf_C(accu,iounit,keyline,rbuf)
 
     return
 
-10  format(4(E19.11,1X))
+10  format(4(ES23.15E3,1X))
 
 100 call pmf_utils_exit(PMF_OUT,1,'[PMFAccu] Unable to parse keyline "'//keyline//'" in pmf_accu_read_rbuf_C!')
 110 call pmf_utils_exit(PMF_OUT,1,'[PMFAccu] Premature end of data block for keyline "'//keyline//'" in pmf_accu_read_rbuf_C!')
@@ -876,7 +904,7 @@ subroutine pmf_accu_write_rbuf_C(accu,iounit,key,op,rbuf)
     write(iounit,10) (rbuf(i),i=1,accu%tot_cvs)
 
  5  format('@',A20,1X,A2,1X,A1,1X,A1,1X,I10)
-10  format(4(E19.11,1X))
+10  format(4(ES23.15E3,1X))
 
 end subroutine pmf_accu_write_rbuf_C
 

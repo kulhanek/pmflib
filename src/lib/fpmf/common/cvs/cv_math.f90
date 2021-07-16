@@ -816,7 +816,7 @@ subroutine superimpose_str(cv_item,gi,gj,x,str,simpdat,u,o)
     ! resulting rotational matrix
     u(:,:) = simpdat%u(:,:)
 
-    ! get origins of bases
+    ! get origin
     simpdat%o(:) = 0.0d0
     ! move reference point to origin
     simpdat%o(:) = simpdat%o(:) - simpdat%xr(:)
@@ -860,7 +860,7 @@ subroutine superimpose_str_der(cv_item,gi,gj,ctx,str,simpdat,a_u,a_o)
     l_u(:,:) = a_u(:,:)
 
 ! origin
-!    ! get origins of bases
+!    ! get origin
 !    o(:) = 0.0d0
 !    ! move reference point to origin
 !    o(:) = o(:) - simpdat%xr(:)

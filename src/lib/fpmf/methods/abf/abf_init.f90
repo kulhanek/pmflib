@@ -92,7 +92,7 @@ subroutine abf_init_dat
     fserver_enabled = .false.
     fserverkey      = ''
     fserver         = ''
-    fserverupdate   = 500
+    fserverupdate   = 20000
     fconrepeats     = 0
     fabortonmwaerr  = .true.
 

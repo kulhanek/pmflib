@@ -102,12 +102,23 @@ subroutine abf_cvs_read_cv(prm_fin,abf_item)
     end if
     write(PMF_OUT,125) abf_item%nbins
 
+    if( feimode .eq. 2 ) then
+    ! ========================
+    if( .not. prmfile_get_real8_by_key(prm_fin,'wfac',abf_item%wfac) ) then
+        call pmf_utils_exit(PMF_OUT,1,'wfac is not specified!')
+    end if
+    if( abf_item%wfac .lt. 1 ) then
+        call pmf_utils_exit(PMF_OUT,1,'wfac has to be greater then zero!')
+    end if
+    write(PMF_OUT,170) abf_item%wfac
+    end if
 
     return
 
 110 format('    ** Min value         : ',F16.7,' [',A,']')
 120 format('    ** Max value         : ',F16.7,' [',A,']')
 125 format('    ** Number of bins    : ',I8)
+170 format('    ** GKS Wfactor       : ',F16.7)
 
 end subroutine abf_cvs_read_cv
 
@@ -136,6 +147,10 @@ subroutine abf_cvs_cv_info(abf_item)
                     trim(abf_item%cv%get_ulabel())
     write(PMF_OUT,165) abf_item%nbins
 
+    if( feimode .eq. 2 ) then
+    write(PMF_OUT,170) abf_item%wfac
+    end if
+
     return
 
 145 format('    ** Name              : ',a)
@@ -144,6 +159,7 @@ subroutine abf_cvs_cv_info(abf_item)
 155 format('    ** Min value         : ',E16.7,' [',A,']')
 160 format('    ** Max value         : ',E16.7,' [',A,']')
 165 format('    ** Number of bins    : ',I9)
+170 format('    ** GKS Wfactor       : ',F16.7)
 
 end subroutine abf_cvs_cv_info
 

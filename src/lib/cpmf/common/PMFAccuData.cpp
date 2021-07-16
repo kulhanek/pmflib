@@ -53,9 +53,9 @@ void CPMFAccuData::Load(FILE* p_fin,const CSmallString& keyline)
     Type.SetLength(1);
     Mode.SetLength(1);
 
-    // 5  format('@',A20,1X,A2,1X,A1,1X,A1,1X,I10)
+    // 5  format('@',A20,1X,A2,1X,A1,1X,A1,1X,I10[,1X,A20[,1X,A20]])
     Size = 0;
-    if( sscanf(keyline,"%21c %2c %1c %1c %d",skey.GetBuffer(),Op.GetBuffer(),Type.GetBuffer(),Mode.GetBuffer(),&Size) != 5 ){
+    if( sscanf(keyline,"%21c %2c %1c %1c %10d",skey.GetBuffer(),Op.GetBuffer(),Type.GetBuffer(),Mode.GetBuffer(),&Size) != 5 ){
         CSmallString error;
         error << "unable to parse keyline: '" << keyline << "'";
         RUNTIME_ERROR(error);
@@ -68,6 +68,15 @@ void CPMFAccuData::Load(FILE* p_fin,const CSmallString& keyline)
     Op.Trim();
     Type.Trim();
     Mode.Trim();
+
+    if( keyline.GetLength() >= 60 ){
+        MXName = keyline.GetSubStringFromTo(40,59);
+    }
+    if( keyline.GetLength() >= 81 ){
+        MYName = keyline.GetSubStringFromTo(61,80);
+    }
+    MXName.Trim();
+    MYName.Trim();
 
     if( Size <= 0 ){
         CSmallString error;
@@ -164,7 +173,7 @@ void CPMFAccuData::Save(FILE* p_fout)
             if( (i % 4 == 0) && (i != 0) ) fprintf(p_fout,"\n");
             double value = Data[i];
             // 10  format(4(E19.11,1X))
-            if( fprintf(p_fout,"%19.11le ",value) <= 0 ){
+            if( fprintf(p_fout,"%23.15le ",value) <= 0 ){
                 CSmallString error;
                 error << "unable to write data record";
                 RUNTIME_ERROR(error);
@@ -491,10 +500,10 @@ CPMFAccuDataPtr CPMFAccuData::CreateTheSame(void) const
 
 void CPMFAccuData::CombineAD(CPMFAccuDataPtr left,CPMFAccuDataPtr right)
 {
-    if( CheckCompatibility(left) ){
+    if( CheckCompatibility(left) == false ){
         RUNTIME_ERROR("incompatible with left");
     }
-    if( CheckCompatibility(right) ){
+    if( CheckCompatibility(right) == false ){
         RUNTIME_ERROR("incompatible with right");
     }
 
@@ -513,10 +522,10 @@ void CPMFAccuData::CombineAD(CPMFAccuDataPtr left,CPMFAccuDataPtr right)
 
 void CPMFAccuData::CombineWA(CPMFAccuDataPtr left,CPMFAccuDataPtr left_nsamples,CPMFAccuDataPtr right,CPMFAccuDataPtr right_nsamples)
 {
-    if( CheckCompatibility(left) ){
+    if( CheckCompatibility(left) == false ){
         RUNTIME_ERROR("incompatible with left");
     }
-    if( CheckCompatibility(right) ){
+    if( CheckCompatibility(right) == false ){
         RUNTIME_ERROR("incompatible with right");
     }
 
@@ -564,10 +573,10 @@ void CPMFAccuData::CombineWA(CPMFAccuDataPtr left,CPMFAccuDataPtr left_nsamples,
 void CPMFAccuData::CombineM2(CPMFAccuDataPtr left,CPMFAccuDataPtr left_nsamples,CPMFAccuDataPtr left_mean,
                              CPMFAccuDataPtr right,CPMFAccuDataPtr right_nsamples,CPMFAccuDataPtr right_mean)
 {
-    if( CheckCompatibility(left) ){
+    if( CheckCompatibility(left) == false ){
         RUNTIME_ERROR("incompatible with left");
     }
-    if( CheckCompatibility(right) ){
+    if( CheckCompatibility(right) == false ){
         RUNTIME_ERROR("incompatible with right");
     }
 
@@ -615,10 +624,10 @@ void CPMFAccuData::CombineM2(CPMFAccuDataPtr left,CPMFAccuDataPtr left_nsamples,
 void CPMFAccuData::CombineCO(CPMFAccuDataPtr left,CPMFAccuDataPtr left_nsamples,CPMFAccuDataPtr left_xmean,CPMFAccuDataPtr left_ymean,
                              CPMFAccuDataPtr right,CPMFAccuDataPtr right_nsamples,CPMFAccuDataPtr right_xmean,CPMFAccuDataPtr right_ymean)
 {
-    if( CheckCompatibility(left) ){
+    if( CheckCompatibility(left) == false ){
         RUNTIME_ERROR("incompatible with left");
     }
-    if( CheckCompatibility(right) ){
+    if( CheckCompatibility(right) == false ){
         RUNTIME_ERROR("incompatible with right");
     }
 

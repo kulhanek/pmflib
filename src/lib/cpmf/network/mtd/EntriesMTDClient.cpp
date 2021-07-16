@@ -138,7 +138,7 @@ void PMF_PACKAGE cpmf_mtd_client_reg_by_key_(char* fserverkey,char* fserver,
 
         // server name and protocol
         serverkey_name.SetFromFortran(fserverkey,fserverkey_len);
-        MTDClient.ActionRequest.SetProtocolName("mtd");
+        MTDClient.ActionRequest.SetProtocolName("mwa");
         MTDClient.ActionRequest.ReadServerKey(serverkey_name);
 
         // get server name
