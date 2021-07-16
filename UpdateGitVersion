@@ -26,5 +26,5 @@ end module pmf_ver
 EOF
 
 echo ""
-echo "PMFLib Revision: 5.$GITREVS.$GITHASH ($DATE)"
+echo "PMFLib Revision: 6.$GITREVS.$GITHASH ($DATE)"
 
