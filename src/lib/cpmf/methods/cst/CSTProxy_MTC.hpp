@@ -50,7 +50,7 @@ public:
 
 //------------------------------------------------------------------------------
 
-typedef std::shared_ptr<CCSTProxy_MTC>    CCSTProxy_MTC_Ptr;
+typedef boost::shared_ptr<CCSTProxy_MTC>    CCSTProxy_MTC_Ptr;
 
 //------------------------------------------------------------------------------
 

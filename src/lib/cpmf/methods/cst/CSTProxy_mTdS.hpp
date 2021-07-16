@@ -67,7 +67,7 @@ private:
 
 //------------------------------------------------------------------------------
 
-typedef std::shared_ptr<CCSTProxy_mTdS>    CCSTProxy_mTdS_Ptr;
+typedef boost::shared_ptr<CCSTProxy_mTdS>    CCSTProxy_mTdS_Ptr;
 
 //------------------------------------------------------------------------------
 

@@ -61,7 +61,7 @@ protected:
 
 //------------------------------------------------------------------------------
 
-typedef std::shared_ptr<CEnergyDerProxy>    CEnergyDerProxyPtr;
+typedef boost::shared_ptr<CEnergyDerProxy>    CEnergyDerProxyPtr;
 
 //------------------------------------------------------------------------------
 

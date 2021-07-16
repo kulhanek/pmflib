@@ -70,7 +70,7 @@ private:
 
 //------------------------------------------------------------------------------
 
-typedef std::shared_ptr<CABFProxy_mTdS>    CABFProxy_mTdS_Ptr;
+typedef boost::shared_ptr<CABFProxy_mTdS>    CABFProxy_mTdS_Ptr;
 
 //------------------------------------------------------------------------------
 

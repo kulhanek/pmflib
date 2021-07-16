@@ -64,7 +64,7 @@ private:
 
 //------------------------------------------------------------------------------
 
-typedef std::shared_ptr<CPMFProxy_dH>    CPMFProxy_dH_Ptr;
+typedef boost::shared_ptr<CPMFProxy_dH>    CPMFProxy_dH_Ptr;
 
 //------------------------------------------------------------------------------
 

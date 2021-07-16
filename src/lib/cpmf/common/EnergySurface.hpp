@@ -31,7 +31,7 @@
 //------------------------------------------------------------------------------
 
 class CEnergySurface;
-typedef std::shared_ptr<CEnergySurface>    CEnergySurfacePtr;
+typedef boost::shared_ptr<CEnergySurface>    CEnergySurfacePtr;
 
 //------------------------------------------------------------------------------
 

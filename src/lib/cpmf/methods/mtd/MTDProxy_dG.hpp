@@ -46,7 +46,7 @@ public:
 
 //------------------------------------------------------------------------------
 
-typedef std::shared_ptr<CMTDProxy_dG>    CMTDProxy_dG_Ptr;
+typedef boost::shared_ptr<CMTDProxy_dG>    CMTDProxy_dG_Ptr;
 
 //------------------------------------------------------------------------------
 

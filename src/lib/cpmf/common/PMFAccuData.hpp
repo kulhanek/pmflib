@@ -25,11 +25,12 @@
 #include <SimpleVector.hpp>
 #include <stdio.h>
 #include <memory>
+#include <boost/shared_ptr.hpp>
 
 //------------------------------------------------------------------------------
 
 class CPMFAccuData;
-typedef std::shared_ptr<CPMFAccuData>       CPMFAccuDataPtr;
+typedef boost::shared_ptr<CPMFAccuData>       CPMFAccuDataPtr;
 
 //------------------------------------------------------------------------------
 

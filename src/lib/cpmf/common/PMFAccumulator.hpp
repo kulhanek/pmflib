@@ -32,7 +32,7 @@
 //------------------------------------------------------------------------------
 
 class CPMFAccumulator;
-typedef std::shared_ptr<CPMFAccumulator>    CPMFAccumulatorPtr;
+typedef boost::shared_ptr<CPMFAccumulator>    CPMFAccumulatorPtr;
 
 //------------------------------------------------------------------------------
 

@@ -70,7 +70,7 @@ protected:
 
 //------------------------------------------------------------------------------
 
-typedef std::shared_ptr<CEnergyProxy>    CEnergyProxyPtr;
+typedef boost::shared_ptr<CEnergyProxy>    CEnergyProxyPtr;
 
 //------------------------------------------------------------------------------
 

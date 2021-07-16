@@ -46,7 +46,7 @@ public:
 
 //------------------------------------------------------------------------------
 
-typedef std::shared_ptr<CABPProxy_dG>    CABPProxy_dG_Ptr;
+typedef boost::shared_ptr<CABPProxy_dG>    CABPProxy_dG_Ptr;
 
 //------------------------------------------------------------------------------
 

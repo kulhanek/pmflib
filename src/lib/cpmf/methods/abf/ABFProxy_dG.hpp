@@ -66,7 +66,7 @@ private:
 
 //------------------------------------------------------------------------------
 
-typedef std::shared_ptr<CABFProxy_dG>    CABFProxy_dG_Ptr;
+typedef boost::shared_ptr<CABFProxy_dG>    CABFProxy_dG_Ptr;
 
 //------------------------------------------------------------------------------
 
