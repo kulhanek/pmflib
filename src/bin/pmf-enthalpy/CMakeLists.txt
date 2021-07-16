@@ -9,13 +9,20 @@ SET(ENTHALPY_SRC
         )
 
 # final build ------------------------------------------------------------------
-ADD_EXECUTABLE(pmf-enthalpy ${ENTHALPY_SRC})
-ADD_DEPENDENCIES(pmf-enthalpy cpmf_shared)
 
-TARGET_LINK_LIBRARIES(pmf-enthalpy  ${CPMF_LIBRARIES})
+IF(OpenMP_FOUND)
+    SET(TARGET_NAME _pmf-enthalpy)
+ELSE()
+    SET(TARGET_NAME pmf-enthalpy)
+ENDIF()
+
+ADD_EXECUTABLE(${TARGET_NAME} ${ENTHALPY_SRC})
+ADD_DEPENDENCIES(${TARGET_NAME} cpmf_shared)
+
+TARGET_LINK_LIBRARIES(${TARGET_NAME} ${CPMF_LIBRARIES})
 
 INSTALL(TARGETS
-            pmf-enthalpy
+            ${TARGET_NAME}
         RUNTIME DESTINATION
             bin
         )
