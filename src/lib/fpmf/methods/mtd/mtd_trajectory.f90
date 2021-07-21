@@ -50,7 +50,7 @@ subroutine mtd_trajectory_open
 
     if( ftrjsample .le. 0 ) return ! trajectory is written only if ftrjsample > 0
 
-    call pmf_utils_open(MTD_TRJ,fabftrj,'R')
+    call pmf_utils_open(MTD_TRJ,fmtdtrj,'R')
 
     write(MTD_TRJ,10)
 
@@ -77,10 +77,10 @@ subroutine mtd_trajectory_write_snapshot
 
     if( ftrjsample .le. 0 ) return ! trajectory is written only of ftrjsample > 0
 
-    if( mod(fstep,ftrjsample) .ne. 0 ) return
+    if( mod(numofhills,ftrjsample) .ne. 0 ) return
 
     ! write time
-    write(MTD_TRJ,10) fstep
+    write(MTD_TRJ,10) numofhills
 
     ! write accumulator
     call mtd_accu_write(MTD_TRJ)

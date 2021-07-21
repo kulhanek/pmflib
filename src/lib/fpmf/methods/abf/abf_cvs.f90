@@ -62,6 +62,7 @@ subroutine abf_cvs_read_cv(prm_fin,abf_item)
     use pmf_unit
     use pmf_utils
     use pmf_paths
+    use pmf_control_utils
 
     implicit none
     type(PRMFILE_TYPE),intent(inout)    :: prm_fin
@@ -102,12 +103,21 @@ subroutine abf_cvs_read_cv(prm_fin,abf_item)
     end if
     write(PMF_OUT,125) abf_item%nbins
 
+    if( feimode .eq. 2 ) then
+    ! ========================
+        if( .not. prmfile_get_real8_by_key(prm_fin,'wfac',abf_item%wfac) ) then
+            call pmf_utils_exit(PMF_OUT,1,'wfac is not specified!')
+        end if
+        call pmf_ctrl_check_real8('ABF','wfac',abf_item%wfac,0.0d0,CND_GT,'f12.2')
+        write(PMF_OUT,170) abf_item%wfac
+    end if
 
     return
 
-110 format('   ** Min value          : ',F16.7,' [',A,']')
-120 format('   ** Max value          : ',F16.7,' [',A,']')
-125 format('   ** Number of bins     : ',I8)
+110 format('    ** Min value         : ',F16.7,' [',A,']')
+120 format('    ** Max value         : ',F16.7,' [',A,']')
+125 format('    ** Number of bins    : ',I8)
+170 format('    ** GKS Wfactor       : ',F16.7)
 
 end subroutine abf_cvs_read_cv
 
@@ -124,14 +134,7 @@ subroutine abf_cvs_cv_info(abf_item)
 
     implicit none
     type(CVTypeABF) :: abf_item
-    ! -----------------------------------------------
-    type(UnitType)  :: forceunit
-    type(UnitType)  :: forceunit_recip
     ! --------------------------------------------------------------------------
-
-    ! prepare force unit
-    forceunit       = pmf_unit_div_units( EnergyUnit, abf_item%cv%unit )
-    forceunit_recip = pmf_unit_power_unit( forceunit, -1 )
 
     write(PMF_OUT,145) trim(abf_item%cv%name)
     write(PMF_OUT,146) trim(abf_item%cv%ctype)
@@ -143,6 +146,10 @@ subroutine abf_cvs_cv_info(abf_item)
                     trim(abf_item%cv%get_ulabel())
     write(PMF_OUT,165) abf_item%nbins
 
+    if( feimode .eq. 2 ) then
+    write(PMF_OUT,170) abf_item%wfac
+    end if
+
     return
 
 145 format('    ** Name              : ',a)
@@ -151,6 +158,7 @@ subroutine abf_cvs_cv_info(abf_item)
 155 format('    ** Min value         : ',E16.7,' [',A,']')
 160 format('    ** Max value         : ',E16.7,' [',A,']')
 165 format('    ** Number of bins    : ',I9)
+170 format('    ** GKS Wfactor       : ',F16.7)
 
 end subroutine abf_cvs_cv_info
 

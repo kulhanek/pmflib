@@ -26,83 +26,14 @@
 #include <stdio.h>
 #include <SimpleVector.hpp>
 #include <vector>
+#include <list>
 #include <map>
-
-//------------------------------------------------------------------------------
-
-class CPMFAccuData;
-typedef std::shared_ptr<CPMFAccuData>       CPMFAccuDataPtr;
-
-//------------------------------------------------------------------------------
-
-/** \brief PMF accumulator data segment
-*/
-
-class PMF_PACKAGE CPMFAccuData {
-public:
-    CPMFAccuData(int nbins, int ncvs);
-
-// I/O operation ---------------------------------------------------------------
-    /// load data section
-    void Load(FILE* p_fin,const CSmallString& keyline);
-
-    /// save data section
-    void Save(FILE* p_fout);
-
-// setup methods ---------------------------------------------------------------
-    // reset data to zero
-    void Reset(void);
-
-    /// is compatible with other section data?
-    bool CheckCompatibility(CPMFAccuDataPtr right);
-
-// access methods --------------------------------------------------------------
-    // get data section name
-    const CSmallString& GetName(void) const;
-
-    // get data length
-    int GetLength(void) const;
-
-    // get num of bins
-    int GetNumOfBins(void) const;
-
-    // get num of cvs
-    int GetNumOfCVs(void) const;
-
-    // get data section type
-    const CSmallString& GetType(void) const;
-
-    // get data section mode
-    const CSmallString& GetMode(void) const;
-
-    // get data section op
-    const CSmallString& GetOp(void) const;
-
-    /// get data
-    double GetData(int ibin, int cv=0) const;
-
-    /// set data
-    void SetData(int ibin, double value);
-
-    /// set data
-    void SetData(int ibin, int cv, double value);
-
-// section of private data -----------------------------------------------------
-private:
-    int                     NumOfBins;
-    int                     NumOfCVs;
-    CSmallString            Name;       // name of the section
-    CSmallString            Op;         // data operation
-    CSmallString            Type;       // data type: R - real, I - integer
-    CSmallString            Mode;       // data mode: B - per bins, C - per CVs, M - mixed per bins and cvs
-    int                     Size;       // size of data
-    CSimpleVector<double>   Data;       // all data are kept as real numbers
-};
+#include <PMFAccuData.hpp>
 
 //------------------------------------------------------------------------------
 
 class CPMFAccumulator;
-typedef std::shared_ptr<CPMFAccumulator>    CPMFAccumulatorPtr;
+typedef boost::shared_ptr<CPMFAccumulator>    CPMFAccumulatorPtr;
 
 //------------------------------------------------------------------------------
 
@@ -125,6 +56,12 @@ public:
     /// load accumulator data from XML
     void Load(CXMLElement* p_ele);
 
+    /// load either single PMF accumulator or set of PMF accumulators from the trajectory and store only last "number' of them
+    static std::list<CPMFAccumulatorPtr> LoadFinalSnapshots(const CSmallString& name, size_t number);
+
+    /// load either single PMF accumulator or set of PMF accumulators from the trajectory and store only last "number' of them
+    static std::list<CPMFAccumulatorPtr> LoadFinalSnapshots(FILE* fin, size_t number);
+
     /// load accumulator data from trajectory file with name
     void LoadSnapshot(const CSmallString& name,int index);
 
@@ -145,6 +82,12 @@ public:
 
     /// save accumulator data to XML
     void Save(CXMLElement* p_ele);
+
+// setup methods --------------------------------------------------------------
+    /// set headers
+    void SetHeaders(const CSmallString& method, const CSmallString& version, const CSmallString& driver,
+                    double temp, const CSmallString& temp_unit, double temp_fconv,
+                    const CSmallString& ene_unit, double ene_fconv);
 
 // dimension specification ----------------------------------------------------
 
@@ -190,7 +133,7 @@ public:
     /// convert point index to point position
     void GetPoint(unsigned int index,CSimpleVector<double>& point) const;
 
-    /// convert point index to point position
+    /// convert point index to point position - real values
     void GetPointRValues(unsigned int index,CSimpleVector<double>& point) const;
 
     /// convert point index to point position
@@ -211,14 +154,32 @@ public:
     /// get number of samples
     int GetNumOfSamples(int ibin) const;
 
+    /// get total number of samples
+    int GetTotalNumOfSamples(void) const;
+
     /// get real value of energy
     double GetEnergyRealValue(double value) const;
+
+    // set NCorr
+    void SetNCorr(double ncorr);
+
+    // get NCorr
+    double GetNCorr(void) const;
 
 // mathematical operation -----------------------------------------------------
     /// set all data to zero
     void Reset(void);
 
 // section data access -------------------------------------------------------
+    /// check if the section data exists
+    bool HasSectionData(const CSmallString& name) const;
+
+    /// delete section data
+    void DeleteSectionData(const CSmallString& name);
+
+    /// create section
+    void CreateSectionData(const CSmallString& name,const CSmallString& op,const CSmallString& type,const CSmallString& mode,int len=0);
+
     /// get access to data section
     CPMFAccuDataPtr GetSectionData(const CSmallString& name) const;
 
@@ -243,6 +204,9 @@ public:
 
     /// save cvs info
     void SaveCVSInfo(CXMLElement* p_tele) const;
+
+    /// update number of bins
+    void UpdateNumOfBins(void);
 
     /// print all info
     void PrintInfo(std::ostream& vout);
@@ -277,6 +241,8 @@ protected:
     double                          EnergyFConv;        // energy unit
     CSmallString                    EnergyUnit;
 
+    double                          NCorr;
+
     int                             NumOfCVs;           // number of CVs
     std::vector<CColVariablePtr>    CVs;                // collective variables
     int                             NumOfBins;          // number of total bins
@@ -290,7 +256,13 @@ protected:
     void Load_v6(char* fline,FILE* fin);
 
     /// is it a header section?
-    bool IsHeaderSection(const CSmallString& keyline);
+    static bool IsHeaderSection(const CSmallString& keyline);
+
+    /// is it a trajectory header?
+    static bool IsTrajectoryHeader(const CSmallString& keyline);
+
+    /// is it a trajectory snapshot?
+    static bool IsTrajectorySnapshot(const CSmallString& keyline);
 
     /// get section name from keyline
     const CSmallString GetSectionName(const CSmallString& keyline) const;
@@ -301,8 +273,8 @@ protected:
     /// read section data
     void ReadDataSection(FILE* fin,const CSmallString& keyline);
 
-    /// combine two setions
-    void Combine(const CSmallString& sname,CPMFAccumulatorPtr right,CPMFAccuDataPtr ldb,CPMFAccuDataPtr rdb);
+    /// combine two sections
+    CPMFAccuDataPtr Combine(CPMFAccumulatorPtr right,CPMFAccuDataPtr ldb,CPMFAccuDataPtr rdb);
 };
 
 //------------------------------------------------------------------------------

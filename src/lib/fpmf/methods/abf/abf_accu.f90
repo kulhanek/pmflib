@@ -70,35 +70,53 @@ subroutine abf_accu_init()
                 abfaccu%nsamples(abfaccu%tot_nbins), &
                 abfaccu%micf(abfaccu%tot_cvs,abfaccu%tot_nbins), &
                 abfaccu%m2icf(abfaccu%tot_cvs,abfaccu%tot_nbins), &
-                abfaccu%mepot(abfaccu%tot_nbins), &
-                abfaccu%m2epot(abfaccu%tot_nbins), &
                 stat = alloc_failed)
 
     if( alloc_failed .ne. 0 ) then
         call pmf_utils_exit(PMF_OUT, 1,'[ABF] Unable to allocate memory for abf accumulator (abfforce)!')
     endif
 
-    if( fblock_size .gt. 0 ) then
-        ! for block averages
-        allocate(  &
-            abfaccu%block_nsamples(abfaccu%tot_nbins), &
-            abfaccu%block_micf(abfaccu%tot_cvs,abfaccu%tot_nbins), &
-            abfaccu%block_mepot(abfaccu%tot_nbins), &
-            stat = alloc_failed)
+    if( fenthalpy ) then
+        allocate(   abfaccu%mepot(abfaccu%tot_nbins), &
+                    abfaccu%m2epot(abfaccu%tot_nbins), &
+                    stat = alloc_failed)
 
         if( alloc_failed .ne. 0 ) then
-            call pmf_utils_exit(PMF_OUT, 1,'[ABF] Unable to allocate memory for abf accumulator (block_micf)!')
+            call pmf_utils_exit(PMF_OUT, 1,'[ABF] Unable to allocate memory for abf accumulator (enthalpy)!')
         endif
+    end if
 
+    if( fentropy ) then
+        allocate(   abfaccu%metot(abfaccu%tot_nbins), &
+                    abfaccu%m2etot(abfaccu%tot_nbins), &
+                    abfaccu%c11hh(abfaccu%tot_cvs,abfaccu%tot_nbins), &
+                    stat = alloc_failed)
+
+        if( alloc_failed .ne. 0 ) then
+            call pmf_utils_exit(PMF_OUT, 1,'[ABF] Unable to allocate memory for abf accumulator (entropy)!')
+        endif
+    end if
+
+    if( feimode .eq. 2 ) then
+        allocate(   abfaccu%smicf(abfaccu%tot_cvs,abfaccu%tot_nbins), &
+                    abfaccu%gksfac(abfaccu%tot_nbins,abfaccu%tot_nbins), &
+                    stat = alloc_failed)
+
+        if( alloc_failed .ne. 0 ) then
+            call pmf_utils_exit(PMF_OUT, 1,'[ABF] Unable to allocate memory for abf accumulator (gks)!')
+        endif
     end if
 
     if( fserver_enabled ) then
-        ! ABF incremental force arrays
+        ! ABF incremental force arrays - allocate all to simplify F90/C++ interface
         allocate(   abfaccu%inc_nsamples(abfaccu%tot_nbins), &
                     abfaccu%inc_micf(abfaccu%tot_cvs,abfaccu%tot_nbins), &
                     abfaccu%inc_m2icf(abfaccu%tot_cvs,abfaccu%tot_nbins), &
                     abfaccu%inc_mepot(abfaccu%tot_nbins), &
                     abfaccu%inc_m2epot(abfaccu%tot_nbins), &
+                    abfaccu%inc_metot(abfaccu%tot_nbins), &
+                    abfaccu%inc_m2etot(abfaccu%tot_nbins), &
+                    abfaccu%inc_c11hh(abfaccu%tot_cvs,abfaccu%tot_nbins), &
                     stat = alloc_failed)
 
         if( alloc_failed .ne. 0 ) then
@@ -128,24 +146,76 @@ subroutine abf_accu_clear()
     abfaccu%nsamples(:)     = 0
     abfaccu%micf(:,:)       = 0.0d0
     abfaccu%m2icf(:,:)      = 0.0d0
-    abfaccu%mepot(:)        = 0.0d0
-    abfaccu%m2epot(:)       = 0.0d0
 
-    if( fblock_size .gt. 0 ) then
-        abfaccu%block_nsamples(:) = 0
-        abfaccu%block_micf(:,:) = 0.0d0
-        abfaccu%block_mepot(:) = 0.0d0
+    if( fenthalpy ) then
+        abfaccu%mepot(:)        = 0.0d0
+        abfaccu%m2epot(:)       = 0.0d0
+    end if
+
+    if( fentropy ) then
+        abfaccu%metot(:)        = 0.0d0
+        abfaccu%m2etot(:)       = 0.0d0
+        abfaccu%c11hh(:,:)      = 0.0d0
+    end if
+
+    if( feimode .eq. 2 ) then
+        abfaccu%smicf(:,:)      = 0.0d0
+        call abf_accu_gen_gks_wfac
     end if
 
     if( fserver_enabled ) then
         abfaccu%inc_nsamples(:) = 0
-        abfaccu%inc_micf(:,:) = 0.0d0
-        abfaccu%inc_m2icf(:,:) = 0.0d0
-        abfaccu%inc_mepot(:) = 0
-        abfaccu%inc_m2epot(:) = 0
+        abfaccu%inc_micf(:,:)   = 0.0d0
+        abfaccu%inc_m2icf(:,:)  = 0.0d0
+        abfaccu%inc_mepot(:)    = 0.0d0
+        abfaccu%inc_m2epot(:)   = 0.0d0
+        abfaccu%inc_metot(:)    = 0.0d0
+        abfaccu%inc_m2etot(:)   = 0.0d0
+        abfaccu%inc_c11hh(:,:)  = 0.0d0
     end if
 
 end subroutine abf_accu_clear
+
+!===============================================================================
+! Subroutine:  abf_accu_gen_gks_wfac
+!===============================================================================
+
+subroutine abf_accu_gen_gks_wfac()
+
+    use abf_dat
+    use pmf_dat
+
+    implicit none
+    integer     :: i,j,k
+    real(PMFDP) :: posa(NumOfABFCVs)
+    real(PMFDP) :: posb(NumOfABFCVs)
+    real(PMFDP) :: totw, w, arg, norm, dcv
+    ! --------------------------------------------------------------------------
+
+    do i=1,abfaccu%tot_nbins
+        call pmf_accu_get_point(abfaccu%PMFAccuType,i,posa)
+        totw = 0.0d0
+        do j=1,abfaccu%tot_nbins
+            call pmf_accu_get_point(abfaccu%PMFAccuType,j,posb)
+            arg = 0.0d0
+            do k=1,abfaccu%tot_cvs
+                dcv = abfaccu%sizes(k)%cv%get_deviation(posa(k),posb(k)) / (ABFCVList(k)%wfac * abfaccu%sizes(k)%bin_width)
+                arg = arg + dcv**2
+            end do
+            w = exp(-0.5d0*arg)
+            abfaccu%gksfac(i,j) = w
+            totw = totw + w
+        end do
+        norm = 1.0d0
+        if( totw .ne. 0 ) then
+            norm = 1.0d0 / totw
+        end if
+        do j=1,abfaccu%tot_nbins
+            abfaccu%gksfac(i,j) = abfaccu%gksfac(i,j) * norm
+        end do
+    end do
+
+end subroutine abf_accu_gen_gks_wfac
 
 !===============================================================================
 ! Subroutine:  abf_accu_read
@@ -194,6 +264,27 @@ subroutine abf_accu_read(iounit)
                 case('M2EPOT')
                     if( fenthalpy ) then
                         call pmf_accu_read_rbuf_B(abfaccu%PMFAccuType,iounit,keyline,abfaccu%m2epot)
+                    else
+                        call pmf_accu_skip_section(iounit,keyline,ABF_OUT)
+                    end if
+            ! ------------------------------------
+                case('METOT')
+                    if( fentropy ) then
+                        call pmf_accu_read_rbuf_B(abfaccu%PMFAccuType,iounit,keyline,abfaccu%metot)
+                    else
+                        call pmf_accu_skip_section(iounit,keyline,ABF_OUT)
+                    end if
+            ! ------------------------------------
+                case('M2ETOT')
+                    if( fentropy ) then
+                        call pmf_accu_read_rbuf_B(abfaccu%PMFAccuType,iounit,keyline,abfaccu%m2etot)
+                    else
+                        call pmf_accu_skip_section(iounit,keyline,ABF_OUT)
+                    end if
+           ! ------------------------------------
+                case('C11HH')
+                    if( fentropy ) then
+                        call pmf_accu_read_rbuf_M(abfaccu%PMFAccuType,iounit,keyline,abfaccu%c11hh)
                     else
                         call pmf_accu_skip_section(iounit,keyline,ABF_OUT)
                     end if
@@ -272,11 +363,21 @@ subroutine abf_accu_write(iounit)
     call pmf_accu_write_header(abfaccu%PMFAccuType,iounit)
     call pmf_accu_write_ibuf_B(abfaccu%PMFAccuType,iounit,'NSAMPLES','AD',abfaccu%nsamples)
     call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'MICF','WA',abfaccu%micf)
-    call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'M2ICF','AD',abfaccu%m2icf)
+    call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'M2ICF','M2',abfaccu%m2icf,'MICF')
 
     if( fenthalpy ) then
         call pmf_accu_write_rbuf_B(abfaccu%PMFAccuType,iounit,'MEPOT','WA',abfaccu%mepot)
-        call pmf_accu_write_rbuf_B(abfaccu%PMFAccuType,iounit,'M2EPOT','AD',abfaccu%m2epot)
+        call pmf_accu_write_rbuf_B(abfaccu%PMFAccuType,iounit,'M2EPOT','M2',abfaccu%m2epot,'MEPOT')
+    end if
+
+    if( fentropy ) then
+        call pmf_accu_write_rbuf_B(abfaccu%PMFAccuType,iounit,'METOT','WA',abfaccu%metot)
+        call pmf_accu_write_rbuf_B(abfaccu%PMFAccuType,iounit,'M2ETOT','M2',abfaccu%m2etot,'METOT')
+        call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'C11HH','CO',abfaccu%c11hh,'MICF','METOT')
+    end if
+
+    if( feimode .eq. 2 ) then
+        call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'SMICF','WA',abfaccu%smicf)
     end if
 
 end subroutine abf_accu_write
@@ -285,7 +386,7 @@ end subroutine abf_accu_write
 ! Subroutine:  abf_accu_add_data_online
 !===============================================================================
 
-subroutine abf_accu_add_data_online(cvs,gfx,epot)
+subroutine abf_accu_add_data_online(cvs,gfx,epot,ekin,erst)
 
     use abf_dat
     use pmf_dat
@@ -295,10 +396,13 @@ subroutine abf_accu_add_data_online(cvs,gfx,epot)
     real(PMFDP)    :: cvs(:)
     real(PMFDP)    :: gfx(:)
     real(PMFDP)    :: epot
+    real(PMFDP)    :: ekin
+    real(PMFDP)    :: erst
     ! -----------------------------------------------
     integer        :: gi0, i
     real(PMFDP)    :: invn, icf
     real(PMFDP)    :: depot1, depot2
+    real(PMFDP)    :: detot1, detot2, etot
     real(PMFDP)    :: dicf1, dicf2
     ! --------------------------------------------------------------------------
 
@@ -315,11 +419,21 @@ subroutine abf_accu_add_data_online(cvs,gfx,epot)
     abfaccu%nsamples(gi0) = abfaccu%nsamples(gi0) + 1
     invn = 1.0d0 / real(abfaccu%nsamples(gi0),PMFDP)
 
-    ! potential energy
-    depot1 = epot - abfaccu%mepot(gi0)
-    abfaccu%mepot(gi0)  = abfaccu%mepot(gi0)  + depot1 * invn
-    depot2 = epot - abfaccu%mepot(gi0)
-    abfaccu%m2epot(gi0) = abfaccu%m2epot(gi0) + depot1 * depot2
+    if( fenthalpy ) then
+        depot1 = epot - abfaccu%mepot(gi0)
+        abfaccu%mepot(gi0)  = abfaccu%mepot(gi0)  + depot1 * invn
+        depot2 = epot - abfaccu%mepot(gi0)
+        abfaccu%m2epot(gi0) = abfaccu%m2epot(gi0) + depot1 * depot2
+    end if
+
+    if( fentropy ) then
+        etot = epot + ekin + erst
+        ! potential energy
+        detot1 = etot - abfaccu%metot(gi0)
+        abfaccu%metot(gi0)  = abfaccu%metot(gi0)  + detot1 * invn
+        detot2 = etot - abfaccu%metot(gi0)
+        abfaccu%m2etot(gi0) = abfaccu%m2etot(gi0) + detot1 * detot2
+    end if
 
     do i=1,abfaccu%tot_cvs
         icf = gfx(i)
@@ -327,133 +441,47 @@ subroutine abf_accu_add_data_online(cvs,gfx,epot)
         abfaccu%micf(i,gi0)  = abfaccu%micf(i,gi0)  + dicf1 * invn
         dicf2 = - icf -  abfaccu%micf(i,gi0)
         abfaccu%m2icf(i,gi0) = abfaccu%m2icf(i,gi0) + dicf1 * dicf2
+
+        if( fentropy ) then
+            abfaccu%c11hh(i,gi0)  = abfaccu%c11hh(i,gi0) + dicf1     * detot2
+        end if
     end do
 
+    if( fserver_enabled ) then
+        abfaccu%inc_nsamples(gi0) = abfaccu%inc_nsamples(gi0) + 1
+        invn = 1.0d0 / real(abfaccu%inc_nsamples(gi0),PMFDP)
 
-!    if( fserver_enabled ) then
-!        abfaccu%inc_nsamples(gi0) = abfaccu%inc_nsamples(gi0) + 1
-!        do i=1,NumOfABFCVs
-!            a = gfx(i)
-!            abfaccu%inc_micf(i,gi0)  = abfaccu%inc_micf(i,gi0) - a
-!            abfaccu%inc_m2icf(i,gi0) = abfaccu%inc_m2icf(i,gi0) + a**2
-!
-!            a = a * lpotene
-!            abfaccu%inc_icfmetot(i,gi0)  = abfaccu%inc_icfmetot(i,gi0) - a
-!            abfaccu%inc_icfm2etot(i,gi0) = abfaccu%inc_icfm2etot(i,gi0) + a**2
-!        end do
-!        ! potential energy
-!        abfaccu%inc_metot(gi0)  = abfaccu%inc_metot(gi0)  + lpotene
-!        abfaccu%inc_m2etot(gi0) = abfaccu%inc_m2etot(gi0) + lpotene**2
-!    end if
+        if( fenthalpy ) then
+            depot1 = epot - abfaccu%inc_mepot(gi0)
+            abfaccu%inc_mepot(gi0)  = abfaccu%inc_mepot(gi0)  + depot1 * invn
+            depot2 = epot - abfaccu%inc_mepot(gi0)
+            abfaccu%inc_m2epot(gi0) = abfaccu%inc_m2epot(gi0) + depot1 * depot2
+        end if
+
+        if( fentropy ) then
+            etot = epot + ekin + erst
+            ! potential energy
+            detot1 = etot - abfaccu%inc_metot(gi0)
+            abfaccu%inc_metot(gi0)  = abfaccu%inc_metot(gi0)  + detot1 * invn
+            detot2 = etot - abfaccu%inc_metot(gi0)
+            abfaccu%inc_m2etot(gi0) = abfaccu%inc_m2etot(gi0) + detot1 * detot2
+        end if
+
+        do i=1,NumOfABFCVs
+            icf = gfx(i)
+            dicf1 = - icf - abfaccu%inc_micf(i,gi0)
+            abfaccu%inc_micf(i,gi0)  = abfaccu%inc_micf(i,gi0)  + dicf1 * invn
+            dicf2 = - icf -  abfaccu%inc_micf(i,gi0)
+            abfaccu%inc_m2icf(i,gi0) = abfaccu%inc_m2icf(i,gi0) + dicf1 * dicf2
+
+            if( fentropy ) then
+                abfaccu%inc_c11hh(i,gi0)  = abfaccu%inc_c11hh(i,gi0) + dicf1     * detot2
+            end if
+        end do
+
+    end if
 
 end subroutine abf_accu_add_data_online
-
-!===============================================================================
-! Subroutine:  abf_accu_add_data_blocked
-!===============================================================================
-
-subroutine abf_accu_add_data_blocked(cvs,gfx,epot)
-
-    use abf_dat
-    use pmf_dat
-    use pmf_utils
-
-    implicit none
-    real(PMFDP)    :: cvs(:)
-    real(PMFDP)    :: gfx(:)
-    real(PMFDP)    :: epot
-    ! -----------------------------------------------
-    integer        :: gi0, i
-    real(PMFDP)    :: invn, icf
-    real(PMFDP)    :: depot1, depot2
-    real(PMFDP)    :: dicf1, dicf2
-    ! --------------------------------------------------------------------------
-
-    ! get global index to accumulator for average values within the set
-    gi0 = pmf_accu_globalindex(abfaccu%PMFAccuType,cvs)
-    if( gi0 .le. 0 ) then
-        outsidesamples = outsidesamples + 1
-        return ! out of valid area
-    end if
-    insidesamples = insidesamples + 1
-
-    abfaccu%block_nsamples(gi0)    = abfaccu%block_nsamples(gi0)    + 1
-    invn = 1.0d0 / real(abfaccu%block_nsamples(gi0),PMFDP)
-
-    ! potential energy
-    depot1 = epot - abfaccu%block_mepot(gi0)
-    abfaccu%block_mepot(gi0)  = abfaccu%block_mepot(gi0)  + depot1 * invn
-
-    do i=1,abfaccu%tot_cvs
-        icf = gfx(i)
-        dicf1 = - icf - abfaccu%block_micf(i,gi0)
-        abfaccu%block_micf(i,gi0)  = abfaccu%block_micf(i,gi0)  + dicf1 * invn
-    end do
-
-    ! is block filled?
-    if( abfaccu%block_nsamples(gi0) .lt. fblock_size ) then
-        ! NO -> exit
-        return
-    end if
-
-   ! populate abf accumulator
-
-    ! increase number of samples
-    abfaccu%nsamples(gi0) = abfaccu%nsamples(gi0) + 1
-    invn = 1.0d0 / real(abfaccu%nsamples(gi0),PMFDP)
-
-    ! potential energy
-    epot = abfaccu%block_mepot(gi0)
-    depot1 = epot - abfaccu%mepot(gi0)
-    abfaccu%mepot(gi0)  = abfaccu%mepot(gi0)  + depot1 * invn
-    depot2 = epot - abfaccu%mepot(gi0)
-    abfaccu%m2epot(gi0) = abfaccu%m2epot(gi0) + depot1 * depot2
-
-    do i=1,abfaccu%tot_cvs
-        icf = abfaccu%block_micf(i,gi0)
-        dicf1 = icf - abfaccu%micf(i,gi0)
-        abfaccu%micf(i,gi0)  = abfaccu%micf(i,gi0)  + dicf1 * invn
-        dicf2 = icf -  abfaccu%micf(i,gi0)
-        abfaccu%m2icf(i,gi0) = abfaccu%m2icf(i,gi0) + dicf1 * dicf2
-    end do
-
-!    ! increase number of samples
-!    abfaccu%nsamples(gi0) = abfaccu%nsamples(gi0) + 1
-!    do i=1,NumOfABFCVs
-!        a = abfaccu%block_micf(i,gi0) / real(abfaccu%block_nsamples(gi0),PMFDP)
-!        abfaccu%micf(i,gi0)  = abfaccu%micf(i,gi0)  - a
-!        abfaccu%m2icf(i,gi0) = abfaccu%m2icf(i,gi0) + a**2
-!
-!        a = abfaccu%block_icfmetot(i,gi0) / real(abfaccu%block_nsamples(gi0),PMFDP)
-!        abfaccu%icfmetot(i,gi0)  = abfaccu%icfmetot(i,gi0)  - a
-!        abfaccu%icfm2etot(i,gi0) = abfaccu%icfm2etot(i,gi0) + a**2
-!    end do
-!    a = abfaccu%block_metot(gi0) / real(abfaccu%block_nsamples(gi0),PMFDP)
-!    abfaccu%metot(gi0)  = abfaccu%metot(gi0) + a
-!    abfaccu%m2etot(gi0) = abfaccu%m2etot(gi0) + a**2
-!
-!!    if( fserver_enabled ) then
-!!        abfaccu%inc_nsamples(gi0) = abfaccu%inc_nsamples(gi0) + 1
-!!        do i=1,NumOfABFCVs
-!!            a = abfaccu%block_micf(i,gi0) / real(abfaccu%block_nsamples(gi0),PMFDP)
-!!            abfaccu%inc_micf(i,gi0)  = abfaccu%inc_micf(i,gi0) - a
-!!            abfaccu%inc_m2icf(i,gi0) = abfaccu%inc_m2icf(i,gi0) + a**2
-!!
-!!            a = abfaccu%block_icfmetot(i,gi0) / real(abfaccu%block_nsamples(gi0),PMFDP)
-!!            abfaccu%inc_icfmetot(i,gi0)  = abfaccu%inc_icfmetot(i,gi0)  - a
-!!            abfaccu%inc_icfm2etot(i,gi0) = abfaccu%inc_icfm2etot(i,gi0) + a**2
-!!        end do
-!!        a = abfaccu%block_metot(gi0) / real(abfaccu%block_nsamples(gi0),PMFDP)
-!!        abfaccu%inc_metot(gi0)  = abfaccu%inc_metot(gi0) + a
-!!        abfaccu%inc_m2etot(gi0) = abfaccu%inc_m2etot(gi0) + a**2
-!!    end if
-!
-    ! reset the block
-    abfaccu%block_nsamples(gi0)         = 0
-    abfaccu%block_micf(:,gi0)           = 0.0d0
-    abfaccu%block_mepot(gi0)            = 0.0d0
-
-end subroutine abf_accu_add_data_blocked
 
 !===============================================================================
 ! Subroutine:  abf_accu_get_data
@@ -543,7 +571,11 @@ subroutine abf_accu_get_data_gks(values,gfx)
     real(PMFDP)    :: w
     ! --------------------------------------------------------------------------
 
-    ! FIXME
+    if( fsmoothupdate .gt. 0 ) then
+        if( mod(fstep,fsmoothupdate) .eq. 0 ) then
+            call abf_accu_get_data_gks_smooth
+        end if
+    end if
 
     gfx(:) = 0.0d0
 
@@ -551,10 +583,43 @@ subroutine abf_accu_get_data_gks(values,gfx)
     gi0 = pmf_accu_globalindex(abfaccu%PMFAccuType,values)
     if( gi0 .le. 0 ) return ! out of valid area
 
+    ! get smoothed ICF
     w      = abfaccu%weights(gi0)
-    gfx(:) = w * abfaccu%micf(:,gi0)
+    gfx(:) = w * abfaccu%smicf(:,gi0)
 
 end subroutine abf_accu_get_data_gks
+
+!===============================================================================
+! Subroutine:  abf_accu_get_data_gks
+!===============================================================================
+
+subroutine abf_accu_get_data_gks_smooth
+
+    use abf_dat
+    use pmf_dat
+    use pmf_utils
+    use pmf_timers
+
+    implicit none
+    integer        :: i,j,k
+    real(PMFDP)    :: sm
+    ! --------------------------------------------------------------------------
+
+    call pmf_timers_start_timer(PMFLIB_ABF_GKS_TIMER)
+
+    do i=1,abfaccu%tot_cvs
+        do j=1,abfaccu%tot_nbins
+            sm = 0.0d0
+            do k=1,abfaccu%tot_nbins
+                sm = sm + abfaccu%micf(i,k)*abfaccu%gksfac(k,j)
+            end do
+            abfaccu%smicf(i,j) = sm
+        end do
+    end do
+
+    call pmf_timers_stop_timer(PMFLIB_ABF_GKS_TIMER)
+
+end subroutine abf_accu_get_data_gks_smooth
 
 !===============================================================================
 

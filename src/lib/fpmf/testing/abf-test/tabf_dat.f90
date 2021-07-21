@@ -28,6 +28,7 @@ module tabf_dat
 
 use pmf_sizes
 use pmf_dat
+use pmf_accu
 
 implicit none
 
@@ -56,65 +57,55 @@ integer     :: fhramp_min   ! min value of linear ramp - ABF force is ignored be
 integer     :: fhramp_max   ! max  value of linear ramp
 
 ! item list --------------------------------------------------------------------
-type CVTypeABF
+type CVTypeTABF
     integer                 :: cvindx           ! general description of coordinate
     class(CVType),pointer   :: cv               ! cv data
     integer                 :: set              ! coordinate set index
     real(PMFDP)             :: min_value        ! left range
     real(PMFDP)             :: max_value        ! right range
     integer                 :: nbins            ! number of bins
-end type CVTypeABF
+end type CVTypeTABF
 
 ! ----------------------
-integer                     :: NumOfABFCVs      ! number of CVs in a group
-type(CVTypeABF),allocatable :: ABFCVList(:)     ! definition of CVs
-
-! accu types -------------------------------------------------------------------
-type CVInfoTypeABF
-    integer                  :: nbins           ! number of accumulator bins
-    real(PMFDP)              :: min_value       ! left boundary of coordinate
-    real(PMFDP)              :: max_value       ! left boundary of coordinate
-    real(PMFDP)              :: bin_width       ! (right-left)/numbins
-    real(PMFDP)              :: width           ! right - left
-end type CVInfoTypeABF
+integer                         :: NumOfTABFCVs      ! number of CVs in a group
+type(CVTypeTABF),allocatable    :: TABFCVList(:)     ! definition of CVs
 
 ! ----------------------
 
-type ABFAccuType
-    integer                       :: tot_cvs       ! total number of independent CVs
-    type(CVInfoTypeABF), pointer  :: sizes(:)      ! CV information
-    integer                       :: tot_nbins     ! number of total bins
+type,extends(PMFAccuType)   :: TABFAccuType
 
-    ! biasing force
-    integer,pointer        :: nsamples(:)               ! number of hits into bins
+    integer,pointer         :: nsamples(:)               ! number of hits into bins
 
     ! MICF
-    real(PMFDP),pointer    :: micf(:,:)                 ! mean ICF - total
-    real(PMFDP),pointer    :: m2icf(:,:)                ! M2 of ICF - total
-    real(PMFDP),pointer    :: micf_pot(:,:)             ! mean ICF - potential energy part
-    real(PMFDP),pointer    :: m2icf_pot(:,:)            ! M2 of ICF - potential energy part
-    real(PMFDP),pointer    :: micf_kin(:,:)             ! mean ICF - kinetic energy part
-    real(PMFDP),pointer    :: m2icf_kin(:,:)            ! M2 of ICF - kinetic energy part
+    real(PMFDP),pointer     :: micf(:,:)                 ! mean ICF - total
+    real(PMFDP),pointer     :: m2icf(:,:)                ! M2 of ICF - total
+    real(PMFDP),pointer     :: micf_pot(:,:)             ! mean ICF - potential energy part
+    real(PMFDP),pointer     :: m2icf_pot(:,:)            ! M2 of ICF - potential energy part
+    real(PMFDP),pointer     :: micf_kin(:,:)             ! mean ICF - kinetic energy part
+    real(PMFDP),pointer     :: m2icf_kin(:,:)            ! M2 of ICF - kinetic energy part
+
     ! ENTHALPY
-    real(PMFDP),pointer    :: metot(:)                  ! mean of total energy
-    real(PMFDP),pointer    :: m2etot(:)                 ! M2 of total energy
-    real(PMFDP),pointer    :: mepot(:)                  ! mean of potential energy
-    real(PMFDP),pointer    :: m2epot(:)                 ! M2 of potential energy
-    real(PMFDP),pointer    :: mekin(:)                  ! mean of kinetic energy
-    real(PMFDP),pointer    :: m2ekin(:)                 ! M2 of kinetic energy
-    real(PMFDP),pointer    :: merst(:)                  ! mean of restraint energy
-    real(PMFDP),pointer    :: m2erst(:)                 ! M2 of restraint energy
+    real(PMFDP),pointer     :: metot(:)                  ! mean of total energy
+    real(PMFDP),pointer     :: m2etot(:)                 ! M2 of total energy
+    real(PMFDP),pointer     :: mepot(:)                  ! mean of potential energy
+    real(PMFDP),pointer     :: m2epot(:)                 ! M2 of potential energy
+    real(PMFDP),pointer     :: mekin(:)                  ! mean of kinetic energy
+    real(PMFDP),pointer     :: m2ekin(:)                 ! M2 of kinetic energy
+    real(PMFDP),pointer     :: merst(:)                  ! mean of restraint energy
+    real(PMFDP),pointer     :: m2erst(:)                 ! M2 of restraint energy
+
     ! ENTROPY
-    real(PMFDP),pointer    :: cds_pp(:,:)               ! cds - potential/potential
-    real(PMFDP),pointer    :: cds_pk(:,:)               ! cds - potential/kinetic
-    real(PMFDP),pointer    :: cds_pr(:,:)               ! cds - potential/restraints
-    real(PMFDP),pointer    :: cds_kp(:,:)               ! cds - kinetic/potential
-    real(PMFDP),pointer    :: cds_kk(:,:)               ! cds - kinetic/kinetic
-    real(PMFDP),pointer    :: cds_kr(:,:)               ! cds - kinetic/restraints
-end type ABFAccuType
+    real(PMFDP),pointer     :: c11hh(:,:)                ! c11 - total/total
+    real(PMFDP),pointer     :: c11pp(:,:)                ! c11 - potential/potential
+    real(PMFDP),pointer     :: c11pk(:,:)                ! c11 - potential/kinetic
+    real(PMFDP),pointer     :: c11pr(:,:)                ! c11 - potential/restraints
+    real(PMFDP),pointer     :: c11kp(:,:)                ! c11 - kinetic/potential
+    real(PMFDP),pointer     :: c11kk(:,:)                ! c11 - kinetic/kinetic
+    real(PMFDP),pointer     :: c11kr(:,:)                ! c11 - kinetic/restraints
+end type TABFAccuType
 
 ! ----------------------
-type(ABFAccuType)           :: accumulator          ! accumulated forces
+type(TABFAccuType)          :: tabfaccu         ! accumulated forces
 integer                     :: insidesamples
 integer                     :: outsidesamples
 ! ----------------------

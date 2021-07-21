@@ -85,9 +85,9 @@ subroutine mon_init_print_header
     write(PMF_OUT,120)  ' ******************* COLLECTIVE VARIABLE MONITORING METHOD ******************** '
     write(PMF_OUT,120)  '================================================================================'
     write(PMF_OUT,120)
-    write(PMF_OUT,120)  ' MONITORING Mode'
+    write(PMF_OUT,120)  ' MON Mode'
     write(PMF_OUT,120)  ' ------------------------------------------------------'
-    write(PMF_OUT,130)  ' MONITORING mode (fmode)                 : ', fmode
+    write(PMF_OUT,130)  ' MON mode (fmode)                        : ', fmode
     write(PMF_OUT,130)  ' Number of collective variables          : ', NumOfMONItems
     write(PMF_OUT,125)  ' CV definition file (fmondef)            : ', trim(fmondef)
     write(PMF_OUT,120)
@@ -96,7 +96,7 @@ subroutine mon_init_print_header
     write(PMF_OUT,125)  ' Output file (fmonout)                   : ', trim(fmonout)
     write(PMF_OUT,130)  ' Output sampling (fsample)               : ', fsample
     write(PMF_OUT,120)
-    write(PMF_OUT,120)  ' List of MONITORING collective variables'
+    write(PMF_OUT,120)  ' List of MON collective variables'
     write(PMF_OUT,120)  ' -------------------------------------------------------'
     write(PMF_OUT,120)
 

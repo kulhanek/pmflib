@@ -210,7 +210,7 @@ void CESPrinter::PrintPlain(FILE* fout)
 
         CSmallString yform = YFormat + " ";
         // and value
-        double value = EnergySurface->GetEnergyRealValue(ibin); // FIXME - unit
+        double value = EnergySurface->GetEnergyRealValue(ibin);
         if(fprintf(fout,yform,value) <= 0) {
             CSmallString error;
             error << "unable to print Y data to the file (" << strerror(errno) << ")";

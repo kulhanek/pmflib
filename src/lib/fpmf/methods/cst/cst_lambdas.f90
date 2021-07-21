@@ -6,7 +6,7 @@
 !    Copyright (C) 2010 Petr Kulhanek, kulhanek@chemi.muni.cz
 !    Copyright (C) 2007 Petr Kulhanek, kulhanek@enzim.hu
 !    Copyright (C) 2006 Petr Kulhanek, kulhanek@chemi.muni.cz &
-!                       Martin Petrek, petrek@chemi.muni.cz 
+!                       Martin Petrek, petrek@chemi.muni.cz
 !    Copyright (C) 2005 Petr Kulhanek, kulhanek@chemi.muni.cz
 !
 !    This library is free software; you can redistribute it and/or
@@ -21,7 +21,7 @@
 !
 !    You should have received a copy of the GNU Lesser General Public
 !    License along with this library; if not, write to the Free Software
-!    Foundation, Inc., 51 Franklin Street, Fifth Floor, 
+!    Foundation, Inc., 51 Franklin Street, Fifth Floor,
 !    Boston, MA  02110-1301  USA
 !===============================================================================
 
@@ -149,7 +149,7 @@ subroutine cst_lambdas_calculate_nm(iter)
  if( iter .eq. fmaxiter ) then
     call pmf_utils_exit(PMF_OUT,1, &
                      '[CST] Maximum number of iterations in lambda calculation exceeded!')
- end if 
+ end if
 
  return
 
@@ -242,7 +242,7 @@ subroutine cst_lambdas_calculate_cm(iter)
  if( iter .ge. fmaxiter ) then
     call pmf_utils_exit(PMF_OUT,1, &
                      '[CST] Maximum number of iterations in lambda calculation exceeded!')
- end if 
+ end if
 
  return
 
@@ -263,7 +263,7 @@ subroutine cst_lambdas_calc_jacobian
  real(PMFDP)            :: jacv
  ! ------------------------------------------------------------------------------
 
- ! go throught constraint list and calculate first derivative matrixes and constraint values
+ ! go through constraint list and calculate first derivative matrices and constraint values
  call cst_constraints_calc_fdxp
 
  ! complete Jacobian matrix

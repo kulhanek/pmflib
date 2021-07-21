@@ -93,6 +93,7 @@ logical                     :: stm_enabled
 logical                     :: pdrv_enabled
 ! testing
 logical                     :: tabf_enabled
+logical                     :: usabf_enabled
 
 ! MASTER =======================================================================
 
@@ -111,7 +112,7 @@ real(PMFDP)                 :: PMFEne           ! current PMFLib potential energ
 type(CVContextType)         :: CVContext        ! current CV context (values and derivatives) in t
 
 ! used by Blue moon
-real(PMFDP),allocatable     :: CrdP(:,:)        ! coordinates
+real(PMFDP),allocatable     :: CrdP(:,:)        ! coordinates in t+dt
 real(PMFDP),allocatable     :: VelP(:,:)        ! velocities
 type(CVContextType)         :: CVContextP
 
@@ -140,6 +141,7 @@ character(PMF_MAX_PATH)     :: fmtddef
 character(PMF_MAX_PATH)     :: fmtdout
 character(PMF_MAX_PATH)     :: fmtdrst
 character(PMF_MAX_PATH)     :: fmtdtrj
+character(PMF_MAX_PATH)     :: fmtdhills
 
 ! adaptive biasing force method ------------------
 character(PMF_MAX_PATH)     :: fabfdef
@@ -154,6 +156,12 @@ character(PMF_MAX_PATH)     :: ftabfout
 character(PMF_MAX_PATH)     :: ftabficf
 character(PMF_MAX_PATH)     :: ftabfrst
 character(PMF_MAX_PATH)     :: ftabftrj
+
+! umbrella sampling/adaptive biasing force method (testing) --------
+character(PMF_MAX_PATH)     :: fusabfdef
+character(PMF_MAX_PATH)     :: fusabfout
+character(PMF_MAX_PATH)     :: fusabfrst
+character(PMF_MAX_PATH)     :: fusabftrj
 
 ! adaptive biasing potential method ------------------
 character(PMF_MAX_PATH)     :: fabpdef

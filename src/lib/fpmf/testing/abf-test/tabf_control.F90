@@ -116,7 +116,7 @@ subroutine tabf_control_read_abf(prm_fin)
 
     return
 
- 10 format (' >> Adaptive biasing force method is disabled!')
+ 10 format (' >> Adaptive Biasing Force (Testing ABF) method is disabled!')
  20 format (/,'>> Linear ramp mode I (feimode == 1)')
 
 end subroutine tabf_control_read_abf
@@ -199,9 +199,9 @@ subroutine tabf_control_read_cvs_from_group(prm_fin)
     ! --------------------------------------------------------------------------
 
     ! count number of sections in group
-    NumOfABFCVs = prmfile_count_group(prm_fin)
+    NumOfTABFCVs = prmfile_count_group(prm_fin)
 
-    if( NumOfABFCVs .le. 0 ) then
+    if( NumOfTABFCVs .le. 0 ) then
         ! on CV in current or specified group
         fmode = 0
         tabf_enabled = .false.
@@ -209,17 +209,17 @@ subroutine tabf_control_read_cvs_from_group(prm_fin)
         return
     end if
 
-    write(PMF_OUT,110) NumOfABFCVs
+    write(PMF_OUT,110) NumOfTABFCVs
 
     ! allocate constraint list ----------------------------------------------------
-    allocate(ABFCVList(NumOfABFCVs), stat = alloc_failed)
+    allocate(TABFCVList(NumOfTABFCVs), stat = alloc_failed)
 
     if ( alloc_failed .ne. 0 ) then
         call pmf_utils_exit(PMF_OUT,1,'[TABF] Unable to allocate memory for coordinate data!')
     end if
 
-    do i=1,NumOfABFCVs
-        call tabf_cvs_reset_cv(ABFCVList(i))
+    do i=1,NumOfTABFCVs
+        call tabf_cvs_reset_cv(TABFCVList(i))
     end do
 
     ! enumerate sections ----------------------------------------------------------
@@ -238,20 +238,20 @@ subroutine tabf_control_read_cvs_from_group(prm_fin)
         end if
         write(PMF_OUT,140) trim(cvname)
 
-        ABFCVList(i)%cvindx = cv_common_find_cv(cvname)
-        ABFCVList(i)%cv     => CVList(ABFCVList(i)%cvindx)%cv
+        TABFCVList(i)%cvindx = cv_common_find_cv(cvname)
+        TABFCVList(i)%cv     => CVList(TABFCVList(i)%cvindx)%cv
 
         ! read the rest of abf CV
-        call tabf_cvs_read_cv(prm_fin,ABFCVList(i))
+        call tabf_cvs_read_cv(prm_fin,TABFCVList(i))
 
         eresult = prmfile_next_section(prm_fin)
         i = i + 1
     end do
 
     ! check if there is CV overlap
-    do i=1,NumOfABFCVs
-        do j=i+1,NumOfABFCVs
-            if( ABFCVList(i)%cvindx .eq. ABFCVList(j)%cvindx ) then
+    do i=1,NumOfTABFCVs
+        do j=i+1,NumOfTABFCVs
+            if( TABFCVList(i)%cvindx .eq. TABFCVList(j)%cvindx ) then
                 call pmf_utils_exit(PMF_OUT,1, &
                      '[TABF] Two different ABF collective variables share the same general collective variable!')
             end if
@@ -260,7 +260,7 @@ subroutine tabf_control_read_cvs_from_group(prm_fin)
 
     return
 
-100 format('>>> INFO: No CVs are defined. Adaptive Biasing Force method is switched off!')
+100 format('>>> INFO: No CVs are defined. TABF method is switched off!')
 110 format('Number of collective variables : ',I4)
 130 format('== Reading collective variable #',I4.4)
 140 format('   Collective variable name : ',a)

@@ -49,6 +49,9 @@ public:
     // get PMF accumulator
     CPMFAccumulatorPtr GetAccu(void);
 
+    // get realm
+    CSmallString GetRealm(void);
+
     // get number of samples
     virtual int GetNumOfSamples(int ibin) const;
 
@@ -57,9 +60,6 @@ public:
 
     // get energy and its error
     virtual double GetValue( int ibin,EProxyRealm realm) const;
-
-    // set NCorr
-    virtual void SetNCorr(double ncorr);
 
 // protected data --------------------------------------------------------------
 protected:
@@ -70,7 +70,7 @@ protected:
 
 //------------------------------------------------------------------------------
 
-typedef std::shared_ptr<CEnergyProxy>    CEnergyProxyPtr;
+typedef boost::shared_ptr<CEnergyProxy>    CEnergyProxyPtr;
 
 //------------------------------------------------------------------------------
 

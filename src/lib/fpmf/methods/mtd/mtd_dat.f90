@@ -40,17 +40,14 @@ implicit none
 integer     :: fmode            ! mode of metadynamics:
                                     ! 0 - disable MTD
                                     ! 1 - grid MTD
-
+integer     :: fsample          ! output sample period in steps
 integer     :: fmetastep        ! step size of metadynamics
 real(PMFDP) :: fheight          ! height of gaussian
-real(PMFDP) :: fmetatemp        ! temperature for well-tempered mtd
-integer     :: fmetavary        ! what to vary when well-tempered mtd is on
-                                    ! 0 - nothing
-                                    ! 1 - height
-                                    ! 2 - step
+real(PMFDP) :: fmetatemp        ! temperature for well-tempered mtd, if 0 K MTD-WT is disabled
 logical     :: frestart         ! restart job with previous data
 integer     :: frstupdate       ! how often is restart file written
 integer     :: ftrjsample       ! how often save accumulator to "accumulator evolution"
+logical     :: fwritehills      ! record deposition of gaussians
 
 ! server part ------------------------------------------------------------------
 logical                 :: fserver_enabled      ! is abf-server enabled?
@@ -69,8 +66,12 @@ type CVTypeMTD
     integer                 :: cvindx           ! CV index
     class(CVType),pointer   :: cv               ! cv data
 
-    real(PMFDP)             :: min_value        ! min value for wall rest.
-    real(PMFDP)             :: max_value        ! max value for wall rest.
+    real(PMFDP)             :: min_value        ! min value for recorded region
+    real(PMFDP)             :: max_value        ! max value for recorded region
+
+    real(PMFDP)             :: min_deposit      ! min value for deposited region
+    real(PMFDP)             :: max_deposit      ! max value for deposited region
+
     real(PMFDP)             :: width            ! gaussian width
     integer                 :: nbins            ! number of bins (for mtd-energy)
 end type CVTypeMTD
@@ -82,14 +83,18 @@ type(CVTypeMTD),allocatable :: MTDCVList(:)             ! list of CVs
 
 type,extends(PMFAccuType) :: MTDGridType
     ! accumulated data
-    real(PMFDP),pointer             :: binpositions(:,:)    ! position of grids
-    integer,pointer                 :: nsamples(:)          ! number of hits into bins
-    real(PMFDP),pointer             :: mtdpotential(:)      ! MTD potential
-    real(PMFDP),pointer             :: mtdforce(:,:)        ! MTD forces
+    real(PMFDP),pointer             :: binpos(:,:)              ! position of grids
+    integer,pointer                 :: nsamples(:)              ! number of hits into bins
+    real(PMFDP),pointer             :: mtdpot(:)                ! MTD potential
+    real(PMFDP),pointer             :: mtdforce(:,:)            ! MTD forces
+
+    real(PMFDP),pointer             :: widths(:)
+    real(PMFDP),pointer             :: iwidths2(:)
+
     ! incremental data
-    integer,pointer                 :: inc_nsamples(:)         ! number of hits into bins
-    real(PMFDP),pointer             :: inc_mtdpotential(:)     ! MTD potential
-    real(PMFDP),pointer             :: inc_mtdforce(:,:)       ! MTD forces
+    integer,pointer                 :: inc_nsamples(:)          ! number of hits into bins
+    real(PMFDP),pointer             :: inc_mtdpot(:)            ! MTD potential
+    real(PMFDP),pointer             :: inc_mtdforce(:,:)        ! MTD forces
 end type MTDGridType
 
 ! ----------------------
@@ -101,11 +106,10 @@ integer                     :: outsidesamples
 real(PMFDP),allocatable     :: CVValues(:)          ! current CV values
 real(PMFDP)                 :: TotalMTDEnergy       ! imposed MTD energy
 real(PMFDP),allocatable     :: MTDForce(:)          ! imposed MTD force
-real(PMFDP),allocatable     :: CVWidths(:)          ! current Gaussian widths
 
 ! run-time information
 integer                     :: meta_next_fstep  = 0
-integer                     :: meta_step        = 0
+integer                     :: numofhills       = 0
 
 !===============================================================================
 

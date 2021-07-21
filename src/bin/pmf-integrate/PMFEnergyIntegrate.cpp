@@ -21,7 +21,7 @@
 //     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 // =============================================================================
 
-#include "ABFEnergyIntegrate.hpp"
+#include "PMFEnergyIntegrate.hpp"
 #include <math.h>
 #include <errno.h>
 #include <ErrorSystem.hpp>
@@ -36,6 +36,10 @@
 #include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string/classification.hpp>
 #include <ABFProxy_dG.hpp>
+#include <ABFProxy_mTdS.hpp>
+#include <CSTProxy_dG.hpp>
+#include <CSTProxy_mTdS.hpp>
+#include <CSTProxy_MTC.hpp>
 
 //------------------------------------------------------------------------------
 
@@ -45,13 +49,13 @@ using namespace boost::algorithm;
 
 //------------------------------------------------------------------------------
 
-MAIN_ENTRY(CABFEnergyIntegrate)
+MAIN_ENTRY(CPMFEnergyIntegrate)
 
 //==============================================================================
 //------------------------------------------------------------------------------
 //==============================================================================
 
-CABFEnergyIntegrate::CABFEnergyIntegrate(void)
+CPMFEnergyIntegrate::CPMFEnergyIntegrate(void)
 {
 }
 
@@ -59,7 +63,7 @@ CABFEnergyIntegrate::CABFEnergyIntegrate(void)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-int CABFEnergyIntegrate::Init(int argc,char* argv[])
+int CPMFEnergyIntegrate::Init(int argc,char* argv[])
 {
 // encode program options, all check procedures are done inside of CABFIntOpts
     int result = Options.ParseCmdLine(argc,argv);
@@ -72,7 +76,7 @@ int CABFEnergyIntegrate::Init(int argc,char* argv[])
         return(SO_OPTS_ERROR);
     }
 
-    ABFAccuName = Options.GetProgArg(0);
+    PMFAccuName = Options.GetProgArg(0);
     FEOutputName = Options.GetProgArg(1);
     if( Options.GetNumberOfProgArgs() == 3 ) {
         // optional
@@ -91,12 +95,12 @@ int CABFEnergyIntegrate::Init(int argc,char* argv[])
 
     vout << endl;
     vout << "# ==============================================================================" << endl;
-    vout << "# abf-integrate (PMFLib utility)  started at " << StartTime.GetSDateAndTime() << endl;
+    vout << "# pmf-integrate (PMFLib utility)  started at " << StartTime.GetSDateAndTime() << endl;
     vout << "# Version: " << LibBuildVersion_PMF << endl;
     vout << "# ==============================================================================" << endl;
 
-    if( ABFAccuName != "-") {
-        vout << "# ABF accu file (in)    : " << ABFAccuName << endl;
+    if( PMFAccuName != "-") {
+        vout << "# ABF accu file (in)    : " << PMFAccuName << endl;
     } else {
         vout << "# ABF accu file (in)    : - (standard input)" << endl;
     }
@@ -105,6 +109,8 @@ int CABFEnergyIntegrate::Init(int argc,char* argv[])
     } else {
         vout << "# Free energy file (out): - (standard output)" << endl;
     }
+    vout << "# ------------------------------------------------" << endl;
+        vout << "# Integrated realm      : " << Options.GetOptRealm() << endl;
     vout << "# ------------------------------------------------" << endl;
         if(Options.GetOptMethod() == "rfd" ) {
             vout << "# Integration method    : RFD (reverse finite differences via csparse)" << endl;
@@ -141,7 +147,6 @@ int CABFEnergyIntegrate::Init(int argc,char* argv[])
         vout << "# Width factor wfac     : " << Options.GetOptWFac() << endl;
         vout << "# RBF overhang          : " << Options.GetOptOverhang() << endl;
     } else if ( Options.GetOptMethod() == "gpr"  ) {
-            vout << "# Split NCorr mode      : " << bool_to_str(Options.GetOptSplitNCorr()) << endl;
         if( Options.IsOptLoadHyprmsSet() ){
             vout << "# GPR hyperprms file    : " << Options.GetOptLoadHyprms() << endl;
             // actual values are printed in detailed output from integrator
@@ -201,7 +206,7 @@ int CABFEnergyIntegrate::Init(int argc,char* argv[])
     vout << "# ------------------------------------------------------------------------------" << endl;
 
     // open files -----------------------------------
-    if( InputFile.Open(ABFAccuName,"r") == false ){
+    if( InputFile.Open(PMFAccuName,"r") == false ){
         ES_ERROR("unable to open input file");
         return(SO_USER_ERROR);
     }
@@ -211,7 +216,7 @@ int CABFEnergyIntegrate::Init(int argc,char* argv[])
 
 //------------------------------------------------------------------------------
 
-bool CABFEnergyIntegrate::Run(void)
+bool CPMFEnergyIntegrate::Run(void)
 {
 // load accumulator
     int state = 1;
@@ -220,10 +225,9 @@ bool CABFEnergyIntegrate::Run(void)
 // setup accu, energy proxy, and output FES
     Accu        = CPMFAccumulatorPtr(new CPMFAccumulator);
     FES         = CEnergySurfacePtr(new CEnergySurface);
-    DerProxy    = CABFProxy_dG_Ptr(new CABFProxy_dG);
 
     vout << endl;
-    vout << format("%02d:Loading ABF accumulator: %s")%state%string(ABFAccuName) << endl;
+    vout << format("%02d:Loading ABF accumulator: %s")%state%string(PMFAccuName) << endl;
     state++;
     try {
         Accu->Load(InputFile);
@@ -235,6 +239,92 @@ bool CABFEnergyIntegrate::Run(void)
 
     // print CVS info
     Accu->PrintInfo(vout);
+
+
+// init energyder proxy
+    if( Options.GetOptRealm() == "dG" ){
+        if( CABFProxy_dG::IsCompatible(Accu) ){
+            DerProxy    = CABFProxy_dG_Ptr(new CABFProxy_dG);
+        } else if (CCSTProxy_dG::IsCompatible(Accu) ) {
+            DerProxy    = CCSTProxy_dG_Ptr(new CCSTProxy_dG);
+        } else {
+            CSmallString error;
+            error << "incompatible method: " << Accu->GetMethod() << " with requested realm: " <<  Options.GetOptRealm();
+            RUNTIME_ERROR(error);
+        }
+// -----------------------------------------------
+    } else if ( Options.GetOptRealm() == "dG_p" ) {
+        CABFProxy_dG_Ptr proxy    = CABFProxy_dG_Ptr(new CABFProxy_dG);
+        proxy->SetType(ABF_MICF_POT);
+        DerProxy = proxy;
+// -----------------------------------------------
+    } else if ( Options.GetOptRealm() == "dG_k" ) {
+        CABFProxy_dG_Ptr proxy    = CABFProxy_dG_Ptr(new CABFProxy_dG);
+        proxy->SetType(ABF_MICF_KIN);
+        DerProxy = proxy;
+// -----------------------------------------------
+    } else if ( Options.GetOptRealm() == "-TdS" ) {
+        if( CABFProxy_mTdS::IsCompatible(Accu) ){
+            DerProxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
+        } else if (CCSTProxy_mTdS::IsCompatible(Accu) ) {
+            DerProxy    = CCSTProxy_mTdS_Ptr(new CCSTProxy_mTdS);
+        } else {
+            CSmallString error;
+            error << "incompatible method: " << Accu->GetMethod() << " with requested realm: " <<  Options.GetOptRealm();
+            RUNTIME_ERROR(error);
+        }
+// -----------------------------------------------
+    } else if ( Options.GetOptRealm() == "-TdS_PP" ) {
+        CABFProxy_mTdS_Ptr proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
+        proxy->SetType(ABF_C11PP);
+        DerProxy = proxy;
+// -----------------------------------------------
+    } else if ( Options.GetOptRealm() == "-TdS_PK" ) {
+        CABFProxy_mTdS_Ptr proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
+        proxy->SetType(ABF_C11PK);
+        DerProxy = proxy;
+// -----------------------------------------------
+    } else if ( Options.GetOptRealm() == "-TdS_PR" ) {
+        CABFProxy_mTdS_Ptr proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
+        proxy->SetType(ABF_C11PR);
+        DerProxy = proxy;
+// -----------------------------------------------
+    } else if ( Options.GetOptRealm() == "-TdS_KP" ) {
+        CABFProxy_mTdS_Ptr proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
+        proxy->SetType(ABF_C11KP);
+        DerProxy = proxy;
+// -----------------------------------------------
+    } else if ( Options.GetOptRealm() == "-TdS_KK" ) {
+        CABFProxy_mTdS_Ptr proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
+        proxy->SetType(ABF_C11KK);
+        DerProxy = proxy;
+// -----------------------------------------------
+    } else if ( Options.GetOptRealm() == "-TdS_KR" ) {
+        CABFProxy_mTdS_Ptr proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
+        proxy->SetType(ABF_C11KR);
+        DerProxy = proxy;
+// -----------------------------------------------
+    } else if ( Options.GetOptRealm() == "-TdS_HP" ) {
+        CCSTProxy_mTdS_Ptr proxy    = CCSTProxy_mTdS_Ptr(new CCSTProxy_mTdS);
+        proxy->SetType(CST_C11HP);
+        DerProxy = proxy;
+// -----------------------------------------------
+    } else if ( Options.GetOptRealm() == "-TdS_HK" ) {
+        CCSTProxy_mTdS_Ptr proxy    = CCSTProxy_mTdS_Ptr(new CCSTProxy_mTdS);
+        proxy->SetType(CST_C11HK);
+        DerProxy = proxy;
+// -----------------------------------------------
+    } else if ( Options.GetOptRealm() == "-TdS_HR" ) {
+        CCSTProxy_mTdS_Ptr proxy    = CCSTProxy_mTdS_Ptr(new CCSTProxy_mTdS);
+        proxy->SetType(CST_C11HR);
+        DerProxy = proxy;
+// -----------------------------------------------
+    } else {
+        CSmallString error;
+        error << "unsupported realm: " << Options.GetOptRealm();
+        RUNTIME_ERROR(error);
+    }
+
     DerProxy->Init(Accu);
 
     // DO NOT SET IT HERE, Ncorr is now GPR hyperparameter
@@ -495,7 +585,7 @@ bool CABFEnergyIntegrate::Run(void)
 
 //------------------------------------------------------------------------------
 
-void CABFEnergyIntegrate::WriteHeader()
+void CPMFEnergyIntegrate::WriteHeader()
 {
     if((Options.GetOptNoHeader() == false) && (Options.GetOptOutputFormat() != "fes")) {
         Options.PrintOptions(OutputFile);
@@ -507,7 +597,7 @@ void CABFEnergyIntegrate::WriteHeader()
 //------------------------------------------------------------------------------
 //==============================================================================
 
-bool CABFEnergyIntegrate::IntegrateForMFZScore(int pass)
+bool CPMFEnergyIntegrate::IntegrateForMFZScore(int pass)
 {
     if(Options.GetOptEcutMethod() == "rfd" ) {
         ES_ERROR("illegal combination: --emethod=rfd and --maxzscore");
@@ -549,8 +639,6 @@ bool CABFEnergyIntegrate::IntegrateForMFZScore(int pass)
         integrator.SetInputEnergyDerProxy(DerProxy);
         integrator.SetOutputES(FES);
 
-        integrator.SetSplitNCorr(Options.GetOptSplitNCorr());
-
         if( Options.IsOptLoadHyprmsSet() ){
             LoadGPRHyprms(integrator);
         } else {
@@ -589,12 +677,21 @@ bool CABFEnergyIntegrate::IntegrateForMFZScore(int pass)
         INVALID_ARGUMENT("method - not implemented");
     }
 
+    // add metric tensor correction
+    if( Options.GetOptRealm() == "dG" ){
+        AddMTCorr();
+    } else if ( Options.GetOptRealm() == "-TdS" ) {
+        AddMTCorr();
+    } else {
+        // do not add MTC
+    }
+
     return(true);
 }
 
 //------------------------------------------------------------------------------
 
-bool CABFEnergyIntegrate::IntegrateForEcut(void)
+bool CPMFEnergyIntegrate::IntegrateForEcut(void)
 {
     if(Options.GetOptEcutMethod() == "rfd" ) {
         CIntegratorRFD   integrator;
@@ -649,8 +746,6 @@ bool CABFEnergyIntegrate::IntegrateForEcut(void)
         integrator.SetInputEnergyDerProxy(DerProxy);
         integrator.SetOutputES(FES);
 
-        integrator.SetSplitNCorr(Options.GetOptSplitNCorr());
-
         if( Options.IsOptLoadHyprmsSet() ){
             LoadGPRHyprms(integrator);
         } else {
@@ -682,12 +777,21 @@ bool CABFEnergyIntegrate::IntegrateForEcut(void)
         INVALID_ARGUMENT("method - not implemented");
     }
 
+    // add metric tensor correction
+    if( Options.GetOptRealm() == "dG" ){
+        AddMTCorr();
+    } else if ( Options.GetOptRealm() == "-TdS" ) {
+        AddMTCorr();
+    } else {
+        // do not add MTC
+    }
+
     return(true);
 }
 
 //------------------------------------------------------------------------------
 
-bool CABFEnergyIntegrate::Integrate(void)
+bool CPMFEnergyIntegrate::Integrate(void)
 {
     if(Options.GetOptMethod() == "rfd" ) {
         CIntegratorRFD   integrator;
@@ -747,8 +851,6 @@ bool CABFEnergyIntegrate::Integrate(void)
         integrator.SetInputEnergyDerProxy(DerProxy);
         integrator.SetOutputES(FES);
 
-        integrator.SetSplitNCorr(Options.GetOptSplitNCorr());
-
         if( Options.IsOptLoadHyprmsSet() ){
             LoadGPRHyprms(integrator);
         } else {
@@ -791,12 +893,21 @@ bool CABFEnergyIntegrate::Integrate(void)
         INVALID_ARGUMENT("method - not implemented");
     }
 
+    // add metric tensor correction
+    if( Options.GetOptRealm() == "dG" ){
+        AddMTCorr();
+    } else if ( Options.GetOptRealm() == "-TdS" ) {
+        AddMTCorr();
+    } else {
+        // do not add MTC
+    }
+
     return(true);
 }
 
 //------------------------------------------------------------------------------
 
-bool CABFEnergyIntegrate::ReduceFES(void)
+bool CPMFEnergyIntegrate::ReduceFES(void)
 {
     vout << format("   Reduced FES : %s")%string(Options.GetOptReducedFES()) << endl;
 
@@ -836,8 +947,6 @@ bool CABFEnergyIntegrate::ReduceFES(void)
 
         integrator.SetInputEnergyDerProxy(DerProxy);
         integrator.SetOutputES(tmp_FES);
-
-        integrator.SetSplitNCorr(Options.GetOptSplitNCorr());
 
         if( Options.IsOptLoadHyprmsSet() ){
             LoadGPRHyprms(integrator);
@@ -918,7 +1027,7 @@ bool CABFEnergyIntegrate::ReduceFES(void)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void CABFEnergyIntegrate::PrintGPRHyprms(FILE* p_fout)
+void CPMFEnergyIntegrate::PrintGPRHyprms(FILE* p_fout)
 {
     ifstream fin;
     fin.open(Options.GetOptLoadHyprms());
@@ -961,7 +1070,7 @@ void CABFEnergyIntegrate::PrintGPRHyprms(FILE* p_fout)
 
 //------------------------------------------------------------------------------
 
-void CABFEnergyIntegrate::LoadGPRHyprms(CIntegratorGPR& gpr)
+void CPMFEnergyIntegrate::LoadGPRHyprms(CIntegratorGPR& gpr)
 {
     ifstream fin;
     fin.open(Options.GetOptLoadHyprms());
@@ -989,35 +1098,7 @@ void CABFEnergyIntegrate::LoadGPRHyprms(CIntegratorGPR& gpr)
         if( key == "SigmaF2" ){
             gpr.SetSigmaF2(value);
         } else if( key == "NCorr" ){
-            gpr.SetNCorr(0,value);
-            if( Options.GetOptSplitNCorr() ){
-                vout << "   >> WARNING: Expanding NCorr due to --splitncorr" << endl;
-                for(int i=0; i < Accu->GetNumOfCVs();i++){
-                    gpr.SetNCorr(i,value);
-                }
-            }
-        } else if( key.find("NCorr#") != string::npos ) {
-            std::replace( key.begin(), key.end(), '#', ' ');
-            stringstream kstr(key);
-            string sncorr;
-            int    cvind;
-            kstr >> sncorr >> cvind;
-            if( ! kstr ){
-                CSmallString error;
-                error << "GPR hyperparameters file, unable to decode ncorr key: " << key.c_str();
-                RUNTIME_ERROR(error);
-            }
-            cvind--; // transform to 0-based indexing
-            if( Options.GetOptSplitNCorr() ){
-                gpr.SetNCorr(cvind,value);
-            } else {
-                if( cvind > 0 ){
-                    vout << "   >> WARNING: NCorr with index higher than one ignored (no --splitncorr)!" << endl;
-                } else {
-                    gpr.SetNCorr(cvind,value);
-                }
-            }
-
+            gpr.SetNCorr(value);
         } else if( key.find("WFac#") != string::npos ) {
             std::replace( key.begin(), key.end(), '#', ' ');
             stringstream kstr(key);
@@ -1046,7 +1127,7 @@ void CABFEnergyIntegrate::LoadGPRHyprms(CIntegratorGPR& gpr)
 // this part performs following tasks:
 //    a) bins with number of samples <= limit will be set to zero
 
-void CABFEnergyIntegrate::PrepareAccumulatorI(void)
+void CPMFEnergyIntegrate::PrepareAccumulatorI(void)
 {
     for(int ibin=0; ibin < Accu->GetNumOfBins(); ibin++) {
         // erase datapoints not properly sampled, preserve glueing
@@ -1061,7 +1142,7 @@ void CABFEnergyIntegrate::PrepareAccumulatorI(void)
 // this part performs following tasks:
 //    a) erase data points with large energy
 
-void CABFEnergyIntegrate::PrepareAccumulatorII(void)
+void CPMFEnergyIntegrate::PrepareAccumulatorII(void)
 {
     // filter by energy
     for(int ibin=0; ibin < Accu->GetNumOfBins(); ibin++) {
@@ -1083,7 +1164,7 @@ void CABFEnergyIntegrate::PrepareAccumulatorII(void)
 
 //------------------------------------------------------------------------------
 
-void CABFEnergyIntegrate::SyncFESWithACCU(void)
+void CPMFEnergyIntegrate::SyncFESWithACCU(void)
 {
     for(int ibin=0; ibin < Accu->GetNumOfBins(); ibin++) {
         if( DerProxy->GetNumOfSamples(ibin) == 0 ) {
@@ -1096,7 +1177,7 @@ void CABFEnergyIntegrate::SyncFESWithACCU(void)
 
 //------------------------------------------------------------------------------
 
-void CABFEnergyIntegrate::PrintSampledStat(void)
+void CPMFEnergyIntegrate::PrintSampledStat(void)
 {
     // calculate sampled area
     double maxbins = Accu->GetNumOfBins();
@@ -1138,7 +1219,7 @@ void CABFEnergyIntegrate::PrintSampledStat(void)
 
 //------------------------------------------------------------------------------
 
-void CABFEnergyIntegrate::FloodFillTest(void)
+void CPMFEnergyIntegrate::FloodFillTest(void)
 {
     vout << "   Searching for discontinuous regions ..." << endl;
     int seedid = 1;
@@ -1193,7 +1274,7 @@ void CABFEnergyIntegrate::FloodFillTest(void)
 
 //------------------------------------------------------------------------------
 
-bool CABFEnergyIntegrate::InstallNewSeed(int seedid,bool unsampled)
+bool CPMFEnergyIntegrate::InstallNewSeed(int seedid,bool unsampled)
 {
     for(int ibin=0; ibin < Accu->GetNumOfBins(); ibin++) {
         if( unsampled ){
@@ -1214,7 +1295,7 @@ bool CABFEnergyIntegrate::InstallNewSeed(int seedid,bool unsampled)
 
 //------------------------------------------------------------------------------
 
-int CABFEnergyIntegrate::FillSeed(int seedid,bool unsampled)
+int CPMFEnergyIntegrate::FillSeed(int seedid,bool unsampled)
 {
     int newsamples = 0;
     int ndir = 1;
@@ -1260,7 +1341,7 @@ int CABFEnergyIntegrate::FillSeed(int seedid,bool unsampled)
 
 //------------------------------------------------------------------------------
 
-void CABFEnergyIntegrate::GetTPoint(CSimpleVector<int>& ipos,int d,CSimpleVector<int>& tpos)
+void CPMFEnergyIntegrate::GetTPoint(CSimpleVector<int>& ipos,int d,CSimpleVector<int>& tpos)
 {
     for(int k=Accu->GetNumOfCVs()-1; k >= 0; k--) {
         int ibin = d % 3 - 1;
@@ -1271,7 +1352,7 @@ void CABFEnergyIntegrate::GetTPoint(CSimpleVector<int>& ipos,int d,CSimpleVector
 
 //------------------------------------------------------------------------------
 
-int CABFEnergyIntegrate::GlueingFES(int factor)
+int CPMFEnergyIntegrate::GlueingFES(int factor)
 {
     IPos.CreateVector(Accu->GetNumOfCVs());
     TPos.CreateVector(Accu->GetNumOfCVs());
@@ -1322,7 +1403,7 @@ int CABFEnergyIntegrate::GlueingFES(int factor)
 
 //------------------------------------------------------------------------------
 
-void CABFEnergyIntegrate::GlueHoles(void)
+void CPMFEnergyIntegrate::GlueHoles(void)
 {
     vout << "   Searching for holes on FES ..." << endl;
     int seedid = 1;
@@ -1380,7 +1461,7 @@ void CABFEnergyIntegrate::GlueHoles(void)
 
 //------------------------------------------------------------------------------
 
-int CABFEnergyIntegrate::SeedSampled(int seedid)
+int CPMFEnergyIntegrate::SeedSampled(int seedid)
 {
     int sampled = 0;
 
@@ -1396,7 +1477,7 @@ int CABFEnergyIntegrate::SeedSampled(int seedid)
 
 //------------------------------------------------------------------------------
 
-bool CABFEnergyIntegrate::IsHole(int seedid)
+bool CPMFEnergyIntegrate::IsHole(int seedid)
 {
     IPos.CreateVector(Accu->GetNumOfCVs());
     TPos.CreateVector(Accu->GetNumOfCVs());
@@ -1429,7 +1510,7 @@ bool CABFEnergyIntegrate::IsHole(int seedid)
 
 //------------------------------------------------------------------------------
 
-void CABFEnergyIntegrate::MarkAsHole(int seedid)
+void CPMFEnergyIntegrate::MarkAsHole(int seedid)
 {
     for(int ibin=0; ibin < Accu->GetNumOfBins(); ibin++) {
         if( FFSeeds[ibin] == seedid ){
@@ -1442,7 +1523,7 @@ void CABFEnergyIntegrate::MarkAsHole(int seedid)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void CABFEnergyIntegrate::DecodeEList(const CSmallString& spec, std::vector<bool>& elist,const CSmallString& optionname)
+void CPMFEnergyIntegrate::DecodeEList(const CSmallString& spec, std::vector<bool>& elist,const CSmallString& optionname)
 {
     int ncvs = Accu->GetNumOfCVs();
 
@@ -1484,11 +1565,31 @@ void CABFEnergyIntegrate::DecodeEList(const CSmallString& spec, std::vector<bool
     }
 }
 
+//------------------------------------------------------------------------------
+
+void CPMFEnergyIntegrate::AddMTCorr(void)
+{
+    if( CCSTProxy_MTC::IsCompatible(Accu) == false ) return;
+
+    vout << "   Adding metric tensor correction ..." << endl;
+
+    CCSTProxy_MTC_Ptr MTCProxy    = CCSTProxy_MTC_Ptr(new CCSTProxy_MTC);
+    MTCProxy->Init(Accu);
+
+    for(int i=0; i < Accu->GetNumOfBins(); i++){
+        FES->SetNumOfSamples(i, MTCProxy->GetNumOfSamples(i) );
+        double f = FES->GetEnergy(i);
+        FES->SetEnergy(i, f + MTCProxy->GetValue(i,E_PROXY_VALUE) );
+    }
+
+    vout << "   SigmaF2   = " << setprecision(5) << FES->GetSigmaF2() << endl;
+}
+
 //==============================================================================
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void CABFEnergyIntegrate::Finalize(void)
+void CPMFEnergyIntegrate::Finalize(void)
 {
     // close files if they are own by program
     InputFile.Close();
@@ -1502,7 +1603,7 @@ void CABFEnergyIntegrate::Finalize(void)
 
     vout << endl;
     vout << "# ==============================================================================" << endl;
-    vout << "# abf-integrate terminated at " << dt.GetSDateAndTime() << ". Total time: " << dur.GetSTimeAndDay() << endl;
+    vout << "# pmf-integrate terminated at " << dt.GetSDateAndTime() << ". Total time: " << dur.GetSTimeAndDay() << endl;
     vout << "# ==============================================================================" << endl;
 
     if( ErrorSystem.IsError() || Options.GetOptVerbose() ){

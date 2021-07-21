@@ -1,6 +1,7 @@
 !===============================================================================
 ! PMFLib - Library Supporting Potential of Mean Force Calculations
 !-------------------------------------------------------------------------------
+!    Copyright (C) 2021 Petr Kulhanek, kulhanek@chemi.muni.cz
 !    Copyright (C) 2011-2015 Petr Kulhanek, kulhanek@chemi.muni.cz
 !    Copyright (C) 2013-2015 Letif Mones, lam81@cam.ac.uk
 !    Copyright (C) 2007 Petr Kulhanek, kulhanek@enzim.hu
@@ -38,6 +39,7 @@ contains
 
 subroutine rst_core_main
 
+    use rst_dat
     use rst_output
     use rst_restart
 
@@ -52,6 +54,7 @@ end subroutine rst_core_main
 
 !===============================================================================
 ! Subroutine:  rst_core_force
+! plain restraints
 !===============================================================================
 
 subroutine rst_core_force
@@ -69,13 +72,13 @@ subroutine rst_core_force
     ! --------------------------------------------------------------------------
 
     ! process increments ----------------------------
-    do i=1,NumOfRSTItems
+    do i=1,NumOfRSTCVs
         call rst_restraints_increment(RSTCVList(i))
     end do
 
-    ! calculate energy and gradients ----------------
+! calculate energy and gradients ----------------
     TotalRstEnergy = 0.0
-    do i=1,NumOfRSTItems
+    do i=1,NumOfRSTCVs
         ci = RSTCVList(i)%cvindx
         rvalue = CVContext%CVsValues(ci)
         if( RSTCVList(i)%mode .ne. 'W' ) then
@@ -96,7 +99,19 @@ subroutine rst_core_force
         Frc(:,:) = Frc(:,:) - RSTCVList(i)%force_constant*RSTCVList(i)%deviation*CVContext%CVsDrvs(:,:,RSTCVList(i)%cvindx)
     end do
 
+! update histogram accumulator ------------------
     call rst_accu_add_sample(CVContext%CVsValues)
+
+    if( fhistclear .gt. 0 ) then
+        fhistclear =  fhistclear - 1
+        if( fhistclear .eq. 0 ) then
+            write(RST_OUT,'(A)') '#-------------------------------------------------------------------------------'
+            write(RST_OUT,'(A)') '# INFO: ALL ACCUMULATORS WERE RESETED                                           '
+            write(RST_OUT,'(A)') '#       PRODUCTION STAGE OF ACCUMULATION IS STARTED                             '
+            write(RST_OUT,'(A)') '#-------------------------------------------------------------------------------'
+            call rst_accu_clear
+        end if
+    end if
 
 end subroutine rst_core_force
 

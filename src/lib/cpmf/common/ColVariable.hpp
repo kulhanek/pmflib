@@ -26,6 +26,7 @@
 #include <SmallString.hpp>
 #include <ostream>
 #include <memory>
+#include <boost/shared_ptr.hpp>
 
 //------------------------------------------------------------------------------
 
@@ -34,7 +35,7 @@ class CColVariable;
 
 //------------------------------------------------------------------------------
 
-typedef std::shared_ptr<CColVariable> CColVariablePtr;
+typedef boost::shared_ptr<CColVariable> CColVariablePtr;
 
 //------------------------------------------------------------------------------
 

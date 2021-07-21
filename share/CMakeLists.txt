@@ -7,8 +7,9 @@ ADD_SUBDIRECTORY(tests)
 # OpenMP wrappers
 IF(OpenMP_FOUND)
     INSTALL(FILES
-                bin/abf-integrate
-                bin/abf-optgprhyprms
+                bin/pmf-integrate
+                bin/pmf-enthalpy
+                bin/gpr-opthyprms
             DESTINATION
                 bin
             PERMISSIONS

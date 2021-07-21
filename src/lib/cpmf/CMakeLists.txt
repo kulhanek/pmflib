@@ -5,6 +5,7 @@
 SET(CPMF_METHODS_SRC
         PMFMainHeader.cpp
         common/ColVariable.cpp
+        common/PMFAccuData.cpp
         common/PMFAccumulator.cpp
         common/EnergySurface.cpp
         common/ESPrinter.cpp
@@ -24,6 +25,7 @@ SET(CPMF_METHODS_SRC
 
     # ABF
         methods/abf/ABFProxy_dG.cpp
+        methods/abf/ABFProxy_mTdS.cpp
 
     # MTD
         methods/mtd/MTDProxy_dG.cpp

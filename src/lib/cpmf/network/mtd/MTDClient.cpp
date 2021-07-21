@@ -42,22 +42,16 @@ CMTDClient      MTDClient;
 
 CMTDClient::CMTDClient(void)
 {
-    ClientID = 0;
+    ClientID        = -1;
+    Accu            = CPMFAccumulatorPtr(new CPMFAccumulator);
+    NumOfCVs        = 0;
+    NumOfBins       = 0;
 }
 
 //------------------------------------------------------------------------------
 
 CMTDClient::~CMTDClient(void)
 {
-}
-
-//==============================================================================
-//------------------------------------------------------------------------------
-//==============================================================================
-
-int CMTDClient::GetClientID(void)
-{
-    return(ClientID);
 }
 
 //==============================================================================
@@ -80,8 +74,15 @@ int CMTDClient::RegisterClient(void)
         if( job_id != NULL ) {
             p_ele->SetAttribute("job_id",job_id);
         }
-        p_ele = cmd.GetCommandElementByPath("CVS",true);
-        SaveCVSInfo(p_ele);
+
+        // create sections
+        Accu->CreateSectionData("NSAMPLES", "AD","I","B");
+        Accu->CreateSectionData("MTDFORCE", "WA","R","M");
+        Accu->CreateSectionData("MTDPOT",   "AD","R","M");
+
+        // FIXME - CV widths
+
+        Accu->Save(p_ele);
 
         // execute command
         ExecuteCommand(&cmd);
@@ -127,12 +128,14 @@ bool CMTDClient::UnregisterClient(void)
     return(true);
 }
 
-//==============================================================================
 //------------------------------------------------------------------------------
-//==============================================================================
 
-bool CMTDClient::GetInitialData(void)
+bool CMTDClient::GetInitialData(double* nsamples,
+                                double* mtdforce,
+                                double* mtdpot)
 {
+    ClearExchangeData(nsamples,mtdforce,mtdpot);
+
     CClientCommand cmd;
     try{
 
@@ -146,12 +149,40 @@ bool CMTDClient::GetInitialData(void)
         // execute command
         ExecuteCommand(&cmd);
 
-        // process results
-        CXMLElement* p_aele = cmd.GetResultElementByPath("ACCU",false);
-        if( p_aele == NULL ){
-            throw("ACCU element not found");
+// process results
+        p_ele = cmd.GetResultElementByPath("PMFLIB-V6",false);
+        if( p_ele != NULL ){
+
+            CPMFAccumulatorPtr accu = CPMFAccumulatorPtr(new CPMFAccumulator);
+            accu->Load(p_ele);
+
+            // check dimensions
+            if( (NumOfBins != accu->GetNumOfBins()) ||
+                (NumOfCVs  != accu->GetNumOfCVs()) ) {
+                RUNTIME_ERROR("size inconsistency");
+            }
+
+            if( Accu->CheckCVSInfo(accu) == false ){
+                RUNTIME_ERROR("inconsistent CVs");
+            }
+
+            // core data
+            CPMFAccuDataPtr data;
+            if( accu->HasSectionData("NSAMPLES") ){
+                data = accu->GetSectionData("NSAMPLES");
+                data->GetDataBlob(nsamples);
+            }
+
+            if( accu->HasSectionData("MTDFORCE") ){
+                data = accu->GetSectionData("MTDFORCE");
+                data->GetDataBlob(mtdforce);
+            }
+
+            if( accu->HasSectionData("MTDPOT") ){
+                data = accu->GetSectionData("MTDPOT");
+                data->GetDataBlob(mtdpot);
+            }
         }
-        Load(p_aele);
 
     } catch(std::exception& e) {
         ES_ERROR_FROM_EXCEPTION("unable to process command",e);
@@ -161,34 +192,73 @@ bool CMTDClient::GetInitialData(void)
     return(true);
 }
 
-//==============================================================================
 //------------------------------------------------------------------------------
-//==============================================================================
 
-bool CMTDClient::ExchangeData(void)
+bool CMTDClient::ExchangeData(  double* inc_nsamples,
+                                double* inc_mtdforce,
+                                double* inc_mtdpot)
 {
     CClientCommand cmd;
     try{
 
-        // init command
+    // init command
         InitCommand(&cmd,OperationPMF_ExchangeData);
 
-        // prepare input data
-        CXMLElement* p_ele = cmd.GetRootCommandElement();
+    // prepare input data
+        CXMLElement* p_ele;
+
+        p_ele = cmd.GetRootCommandElement();
         p_ele->SetAttribute("client_id",ClientID);
 
-        CXMLElement* p_aele = cmd.GetResultElementByPath("ACCU",true);
-        Save(p_aele);
+        CPMFAccuDataPtr data;
+        data = Accu->GetSectionData("NSAMPLES");
+        data->SetDataBlob(inc_nsamples);
 
-        // execute command
+        data = Accu->GetSectionData("DPOP");
+        data->SetDataBlob(inc_mtdforce);
+
+        data = Accu->GetSectionData("POP");
+        data->SetDataBlob(inc_mtdpot);
+
+        Accu->Save(p_ele);
+
+    // execute command
         ExecuteCommand(&cmd);
 
-        // process results
-        p_aele = cmd.GetResultElementByPath("ACCU",false);
-        if( p_ele == NULL ){
-            throw("ACCU element not found");
+    // process results
+        p_ele = cmd.GetResultElementByPath("PMFLIB-V6",false);
+        if( p_ele != NULL ){
+
+            CPMFAccumulatorPtr accu = CPMFAccumulatorPtr(new CPMFAccumulator);
+            accu->Load(p_ele);
+
+            if( (NumOfBins != accu->GetNumOfBins()) ||
+                (NumOfCVs  != accu->GetNumOfCVs()) ) {
+                RUNTIME_ERROR("size inconsistency");
+            }
+
+            if( Accu->CheckCVSInfo(accu) == false ){
+                RUNTIME_ERROR("inconsistent CVs");
+            }
+
+            // core data
+            CPMFAccuDataPtr data;
+            if( accu->HasSectionData("NSAMPLES") ){
+                data = accu->GetSectionData("NSAMPLES");
+                data->GetDataBlob(inc_nsamples);
+            }
+
+            if( accu->HasSectionData("MTDFORCE") ){
+                data = accu->GetSectionData("MTDFORCE");
+                data->GetDataBlob(inc_mtdforce);
+            }
+
+            if( accu->HasSectionData("MTDPOT") ){
+                data = accu->GetSectionData("MTDPOT");
+                data->GetDataBlob(inc_mtdpot);
+            }
         }
-        Load(p_aele);
+
 
     } catch(std::exception& e) {
         ES_ERROR_FROM_EXCEPTION("unable to process command",e);
@@ -196,6 +266,29 @@ bool CMTDClient::ExchangeData(void)
     }
 
     return(true);
+}
+
+//------------------------------------------------------------------------------
+
+void CMTDClient::ClearExchangeData( double* inc_nsamples,
+                                    double* inc_mtdforce,
+                                    double* inc_mtdpot)
+{
+    int inc_nsamples_size   = NumOfBins;
+    int inc_mtdforce_size   = NumOfBins*NumOfCVs;
+    int inc_mtdpot_size     = NumOfBins;
+
+    for(int i=0; i < inc_nsamples_size; i++) {
+        inc_nsamples[i] = 0;
+    }
+
+    for(int i=0; i < inc_mtdforce_size; i++) {
+        inc_mtdforce[i] = 0.0;
+    }
+
+    for(int i=0; i < inc_mtdpot_size; i++) {
+        inc_mtdpot[i] = 0.0;
+    }
 }
 
 //==============================================================================

@@ -1,5 +1,5 @@
-#ifndef CCSTIntegrateH
-#define CCSTIntegrateH
+#ifndef CABFIntegrateH
+#define CABFIntegrateH
 // =============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
@@ -23,7 +23,7 @@
 //     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 // =============================================================================
 
-#include "CSTEnergyIntOptions.hpp"
+#include "PMFEnergyIntOptions.hpp"
 #include <VerboseStr.hpp>
 #include <TerminalStr.hpp>
 #include <StdIOFile.hpp>
@@ -38,11 +38,11 @@ class CIntegratorGPR;
 
 //------------------------------------------------------------------------------
 
-/// utility to integrate CST accumulator
+/// utility to integrate ABF accumulator
 
-class CCSTEnergyIntegrate {
+class CPMFEnergyIntegrate {
 public:
-    CCSTEnergyIntegrate(void);
+    CPMFEnergyIntegrate(void);
 
 // main methods ---------------------------------------------------------------
     /// init options
@@ -56,36 +56,47 @@ public:
 
 // section of private data ----------------------------------------------------
 private:
-    CCSTEnergyIntOptions    Options;
+    CPMFEnergyIntOptions    Options;
     CStdIOFile              InputFile;
     CStdIOFile              OutputFile;
     CPMFAccumulatorPtr      Accu;
     CEnergySurfacePtr       FES;
     CEnergyDerProxyPtr      DerProxy;
     CSmallTimeAndDate       StartTime;
+    CSimpleVector<int>      FFSeeds;
+    CSimpleVector<int>      IPos;
+    CSimpleVector<int>      TPos;
     CSimpleVector<double>   GPos;
 
     // output ------------------------------------
     CTerminalStr        Console;
     CVerboseStr         vout;
-    CSmallString        CSTAccuName;
+    CSmallString        PMFAccuName;
     CSmallString        FEOutputName;
     CSmallString        FullFEOutputName;
     std::vector<bool>   KeepCVs;
 
+    void PrepareAccumulatorI(void);
     void PrepareAccumulatorII(void);
     void PrintSampledStat(void);
-
+    void FloodFillTest(void);
+    bool InstallNewSeed(int seedid,bool unsampled);
+    int  FillSeed(int seedid,bool unsampled);
+    void GetTPoint(CSimpleVector<int>& ipos,int d,CSimpleVector<int>& tpos);
+    bool IntegrateForMFZScore(int pass);
     bool IntegrateForEcut(void);
     bool Integrate(void);
     void WriteHeader(void);
-
+    int  GlueingFES(int factor);
+    void GlueHoles(void);
+    int  SeedSampled(int seedid);
+    bool IsHole(int seedid);
+    void MarkAsHole(int seedid);
     void PrintGPRHyprms(FILE* p_fout);
     void LoadGPRHyprms(CIntegratorGPR& gpr);
     void SyncFESWithACCU(void);
     void DecodeEList(const CSmallString& spec, std::vector<bool>& elist,const CSmallString& optionname);
     bool ReduceFES(void);
-
     void AddMTCorr(void);
 };
 

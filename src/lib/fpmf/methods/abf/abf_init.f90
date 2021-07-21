@@ -79,7 +79,8 @@ subroutine abf_init_dat
     fenthalpy       = .false.
     fepotoffset     = 0.0d0
 
-    fblock_size     = 0
+    fentropy        = .false.
+    fekinoffset     = 0
 
     feimode         = 1
     fhramp_min      = 100
@@ -91,7 +92,7 @@ subroutine abf_init_dat
     fserver_enabled = .false.
     fserverkey      = ''
     fserver         = ''
-    fserverupdate   = 500
+    fserverupdate   = 20000
     fconrepeats     = 0
     fabortonmwaerr  = .true.
 
@@ -148,7 +149,6 @@ subroutine abf_init_print_header
     write(PMF_OUT,130)  ' ABF mask mode (fmask_mode)              : ', fmask_mode
     write(PMF_OUT,125)  ' ABF mask file (fabfmask)                : ', trim(fabfmask)
     write(PMF_OUT,125)  ' Apply ABF force (fapply_abf)            : ', prmfile_onoff(fapply_abf)
-    write(PMF_OUT,130)  ' Block size (fblock_size)                : ', fblock_size
 
     write(PMF_OUT,120)
     write(PMF_OUT,120)  ' ABF Interpolation/Extrapolation '
@@ -182,13 +182,16 @@ subroutine abf_init_print_header
     write(PMF_OUT,125)  ' Accumulate enthalpy (fenthalpy)         : ', prmfile_onoff(fenthalpy)
     write(PMF_OUT,150)  ' Potential energy offset (fepotoffset)   : ', pmf_unit_get_rvalue(EnergyUnit,fepotoffset),  &
                                                                        '['//trim(pmf_unit_label(EnergyUnit))//']'
+    write(PMF_OUT,125)  ' Accumulate entropy (fentropy)           : ', prmfile_onoff(fentropy)
+    write(PMF_OUT,150)  ' Potential energy offset (fekinoffset)   : ', pmf_unit_get_rvalue(EnergyUnit,fekinoffset),  &
+                                                                       '['//trim(pmf_unit_label(EnergyUnit))//']'
     write(PMF_OUT,120)
     write(PMF_OUT,120)  ' Trajectory output options:'
     write(PMF_OUT,120)  ' ------------------------------------------------------'
     write(PMF_OUT,130)  ' Trajectory sampling (ftrjsample)        : ', ftrjsample
     write(PMF_OUT,125)  ' Trajectory file (fabftrj)               : ', trim(fabftrj)
     write(PMF_OUT,120)
-    write(PMF_OUT,120)  ' ABF server options:'
+    write(PMF_OUT,120)  ' MWA server options:'
     write(PMF_OUT,120)  ' ------------------------------------------------------'
     write(PMF_OUT,125)  ' Server communication is                      : ', prmfile_onoff(fserver_enabled)
     if( fserver_enabled ) then

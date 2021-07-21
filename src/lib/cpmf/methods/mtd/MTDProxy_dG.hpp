@@ -37,6 +37,10 @@ public:
     ~CMTDProxy_dG(void);
 
 //------------------------------------------------------------------------------
+    // is well-tempered metadynamics
+    bool IsWTMeta(void);
+
+//------------------------------------------------------------------------------
     // get number of samples
     virtual int GetNumOfSamples(int ibin) const;
 
@@ -46,7 +50,7 @@ public:
 
 //------------------------------------------------------------------------------
 
-typedef std::shared_ptr<CMTDProxy_dG>    CMTDProxy_dG_Ptr;
+typedef boost::shared_ptr<CMTDProxy_dG>    CMTDProxy_dG_Ptr;
 
 //------------------------------------------------------------------------------
 

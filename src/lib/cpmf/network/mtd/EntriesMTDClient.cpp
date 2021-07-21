@@ -32,14 +32,44 @@ extern "C" {
 //------------------------------------------------------------------------------
 //==============================================================================
 
-// set number items in cpmf part
-
-void PMF_PACKAGE cpmf_mtd_client_set_header_(FTINT* ret_st,FTINT* nitems)
+void PMF_PACKAGE cpmf_mtd_client_set_header_(FTINT* ret_st,
+                                 FTINT*     ncvs,
+                                 FTINT*     nbins,
+                                 char*      version,
+                                 char*      driver,
+                                 double*    temp,
+                                 char*      temp_unit,
+                                 double*    temp_fconv,
+                                 char*      ene_unit,
+                                 double*    ene_fconv,
+                                 UFTINT     version_len,
+                                 UFTINT     driver_len,
+                                 UFTINT     temp_unit_len,
+                                 UFTINT     ene_unit_len
+                                 )
 {
-    int l_nitems = *nitems;
+    int             l_ncvs          = *ncvs;
+    int             l_nbins         = *nbins;
+    double          l_temp          = *temp;
+    double          l_temp_fconv    = *temp_fconv;
+    double          l_ene_fconv     = *ene_fconv;
+    CSmallString    l_version;
+    CSmallString    l_driver;
+    CSmallString    l_temp_unit;
+    CSmallString    l_ene_unit;
 
     try {
-        MTDClient.SetNumOfCVs(l_nitems);
+        l_version.SetFromFortran(version,version_len);
+        l_driver.SetFromFortran(driver,driver_len);
+        l_temp_unit.SetFromFortran(temp_unit,temp_unit_len);
+        l_ene_unit.SetFromFortran(ene_unit,ene_unit_len);
+
+        MTDClient.NumOfCVs = l_ncvs;
+        MTDClient.NumOfBins = l_nbins;
+
+        MTDClient.Accu->SetNumOfCVs(l_ncvs);
+        MTDClient.Accu->SetHeaders("MTD",l_version,l_driver,l_temp,l_temp_unit,l_temp_fconv,l_ene_unit,l_ene_fconv);
+
     } catch(std::exception& e) {
         ES_ERROR_FROM_EXCEPTION("unable to set the number of items",e);
         *ret_st = 1;
@@ -54,28 +84,35 @@ void PMF_PACKAGE cpmf_mtd_client_set_header_(FTINT* ret_st,FTINT* nitems)
 //==============================================================================
 
 void PMF_PACKAGE cpmf_mtd_client_set_coord_(FTINT* ret_st,
-                                FTINT* id,
-                                char* type,
-                                char* name,
+                                FTINT*  id,
+                                char*   name,
+                                char*   type,
                                 double* min_value,
                                 double* max_value,
-                                FTINT* nbins,
-                                UFTINT type_len,
-                                UFTINT name_len
-                                )
+                                FTINT*  nbins,
+                                double* fconv,
+                                char*   unit,
+                                UFTINT  name_len,
+                                UFTINT  type_len,
+                                UFTINT  unit_len
+)
 {
     int            l_id = *id - 1;
-    CSmallString   l_type;
     CSmallString   l_name;
-    int            l_nbins = *nbins;
+    CSmallString   l_type;
+    CSmallString   l_unit;
     double         l_min_value = *min_value;
     double         l_max_value = *max_value;
+    double         l_fconv = *fconv;
+    int            l_nbins = *nbins;
 
     try {
-        l_type.SetFromFortran(type,type_len);
-        l_name.SetFromFortran(name,name_len);
 
-        MTDClient.SetCV(l_id,l_name,l_type,l_min_value,l_max_value,l_nbins);
+        l_name.SetFromFortran(name,name_len);
+        l_type.SetFromFortran(type,type_len);
+        l_unit.SetFromFortran(unit,unit_len);
+
+        MTDClient.Accu->SetCV(l_id,l_name,l_type,l_min_value,l_max_value,l_nbins,l_fconv,l_unit);
 
     } catch(std::exception& e) {
         CSmallString error;
@@ -86,39 +123,6 @@ void PMF_PACKAGE cpmf_mtd_client_set_coord_(FTINT* ret_st,
     }
 
     *ret_st = 0;
-}
-
-//==============================================================================
-//------------------------------------------------------------------------------
-//==============================================================================
-
-void PMF_PACKAGE cpmf_mtd_client_reg_by_name_(char* fserver,char* fpassword,
-                                  FTINT* client_id,
-                                  UFTINT fserver_len,
-                                  UFTINT fpassword_len)
-{
-// setup info about server
-    CSmallString   server_name;
-    CSmallString   server_password;
-
-    try {
-
-        // server name and protocol
-        server_name.SetFromFortran(fserver,fserver_len);
-        MTDClient.ActionRequest.SetProtocolName("mtd");
-        MTDClient.ActionRequest.SetQualifiedName(server_name);
-
-        // password
-        server_password.SetFromFortran(fpassword,fpassword_len);
-        MTDClient.ActionRequest.SetPassword(server_password);
-
-    } catch(...) {
-        *client_id = -1;
-        return;
-    }
-
-// register client
-    *client_id = MTDClient.RegisterClient();
 }
 
 //==============================================================================
@@ -138,7 +142,7 @@ void PMF_PACKAGE cpmf_mtd_client_reg_by_key_(char* fserverkey,char* fserver,
 
         // server name and protocol
         serverkey_name.SetFromFortran(fserverkey,fserverkey_len);
-        MTDClient.ActionRequest.SetProtocolName("mtd");
+        MTDClient.ActionRequest.SetProtocolName("mwa");
         MTDClient.ActionRequest.ReadServerKey(serverkey_name);
 
         // get server name
@@ -157,12 +161,25 @@ void PMF_PACKAGE cpmf_mtd_client_reg_by_key_(char* fserverkey,char* fserver,
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void PMF_PACKAGE cpmf_mtd_client_initial_data_(FTINT* ret_st)
+void PMF_PACKAGE cpmf_mtd_client_initial_data_(FTINT* ret_st,
+                                    FTINT*  nsamples,
+                                    double* mtdforce,
+                                    double* mtdpot)
 {
-    if(MTDClient.GetInitialData() == false) {
+    CSimpleVector<double> l_nsamples;
+
+    l_nsamples.CreateVector(MTDClient.NumOfBins);
+
+    if(MTDClient.GetInitialData(l_nsamples,mtdforce,mtdpot) == false) {
+        ES_ERROR("unable to get initial data");
         *ret_st = 1;
         return;
     }
+
+    for(int i = 0; i < MTDClient.NumOfBins; i++){
+        nsamples[i] = l_nsamples[i];
+    }
+
     *ret_st = 0;
 }
 
@@ -170,117 +187,30 @@ void PMF_PACKAGE cpmf_mtd_client_initial_data_(FTINT* ret_st)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void PMF_PACKAGE cpmf_mtd_client_exchange_data_(FTINT* ret_st)
+void PMF_PACKAGE cpmf_mtd_client_exchange_data_(FTINT* ret_st,
+                                    FTINT*  inc_nsamples,
+                                    double* inc_mtdforce,
+                                    double* inc_mtdpot)
 {
-    if(MTDClient.ExchangeData() == false) {
+    CSimpleVector<double> l_inc_nsamples;
+
+    l_inc_nsamples.CreateVector(MTDClient.NumOfBins);
+
+    for(int i = 0; i < MTDClient.NumOfBins; i++){
+        l_inc_nsamples[i] = inc_nsamples[i];
+    }
+
+    if(MTDClient.ExchangeData(l_inc_nsamples,inc_mtdforce,inc_mtdpot) == false) {
+        ES_ERROR("unable to exchange data");
         *ret_st = 1;
         return;
     }
-    *ret_st = 0;
-}
 
-//==============================================================================
-//------------------------------------------------------------------------------
-//==============================================================================
-
-void PMF_PACKAGE cpmf_mtd_client_get_buffer_info_(FTINT* ret_st,
-                                      FTINT* id,
-                                      FTINT* level,
-                                      FTINT* start,
-                                      FTINT* num_of_hills)
-{
-    *level = 0;
-    *start = 0;
-    *num_of_hills = 0;
-
-// is there a buffer with index id?
-//    CMTDBuffer* p_buffer = MTDClient.GetBuffer(*id-1);
-//    if(p_buffer == NULL) {
-//        *ret_st = 1;
-//        return;
-//    }
-
-//    *level = p_buffer->GetLevel();
-//    *start = p_buffer->GetStart();
-//    *num_of_hills = p_buffer->GetNumOfHills();
+    for(int i = 0; i < MTDClient.NumOfBins; i++){
+        inc_nsamples[i] = l_inc_nsamples[i];
+    }
 
     *ret_st = 0;
-}
-
-//==============================================================================
-//------------------------------------------------------------------------------
-//==============================================================================
-
-void PMF_PACKAGE cpmf_mtd_client_add_buffer_data_(FTINT* ret_st,
-                                      FTINT* level,
-                                      FTINT* start,
-                                      FTINT* num_of_hills,
-                                      double* data)
-{
-//    int l_num_of_hills = *num_of_hills;
-
-//// create new buffer
-//    CMTDBuffer* p_buffer = MTDClient.GetNewBuffer(l_num_of_hills);
-//    if(p_buffer == NULL) {
-//        *ret_st = 1;
-//        return;
-//    }
-//
-//    p_buffer->SetLevel(*level);
-//    p_buffer->SetStart(*start);
-//
-//// set data
-//    double* src = data;
-//
-//    for(int i=0; i < l_num_of_hills; i++) {
-//        p_buffer->SetHeight(i,*src++);
-//        for(int j=0; j < p_buffer->GetNumOfCVs(); j++) {
-//            p_buffer->SetValue(i,j,*src++);
-//            p_buffer->SetWidth(i,j,*src++);
-//        }
-//        p_buffer->IncNumberOfHills();
-//    }
-
-    *ret_st = 0;
-}
-
-//==============================================================================
-//------------------------------------------------------------------------------
-//==============================================================================
-
-void PMF_PACKAGE cpmf_mtd_client_get_buffer_data_(FTINT* ret_st,
-                                      FTINT* id,
-                                      double* data)
-{
-//// is there a buffer with index id?
-//    CMTDBuffer* p_buffer = MTDClient.GetBuffer(*id-1);
-//    if(p_buffer == NULL) {
-//        *ret_st = 1;
-//        return;
-//    }
-//
-//// copy all data
-//    double* dst = data;
-//
-//// copy data
-//    for(int i=0; i < p_buffer->GetNumOfHills(); i++) {
-//        *dst++ = p_buffer->GetHeight(i);
-//        for(int j=0; j < p_buffer->GetNumOfCVs(); j++) {
-//            *dst++ = p_buffer->GetValue(i,j);
-//            *dst++ = p_buffer->GetWidth(i,j);
-//        }
-//    }
-
-    *ret_st = 0;
-}
-
-//==============================================================================
-//------------------------------------------------------------------------------
-//==============================================================================
-
-void PMF_PACKAGE cpmf_mtd_client_clear_buf_list_(void)
-{
-    MTDClient.Clear();
 }
 
 //==============================================================================

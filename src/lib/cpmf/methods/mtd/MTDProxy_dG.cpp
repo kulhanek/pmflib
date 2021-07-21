@@ -47,6 +47,17 @@ CMTDProxy_dG::~CMTDProxy_dG(void)
 //------------------------------------------------------------------------------
 //==============================================================================
 
+bool CMTDProxy_dG::IsWTMeta(void)
+{
+    if( Accu == NULL ){
+        RUNTIME_ERROR("Accu is NULL");
+    }
+
+    return( Accu->HasSectionData("MTD-WT") );
+}
+
+//------------------------------------------------------------------------------
+
 int CMTDProxy_dG::GetNumOfSamples(int ibin) const
 {
     if( Accu == NULL ){
@@ -65,11 +76,23 @@ double CMTDProxy_dG::GetValue(int ibin,EProxyRealm realm) const
     }
 
     double mtdpot = Accu->GetData("MTDPOT",ibin);
+    double fact = 1.0;
+
+    if( Accu->HasSectionData("MTD-WT") ){
+        // well-tempered metadynamics
+        double temp = Accu->GetTemperature();
+        double wtem = Accu->GetData("MTD-WT",0);
+        if( wtem > 0 ){
+            fact = (temp + wtem) / wtem;
+        } else {
+            RUNTIME_ERROR("MTD-WT temerature is not greater than zero");
+        }
+    }
 
     switch(realm){
         // -------------------
         case(E_PROXY_VALUE):
-            return( - mtdpot );
+            return( - mtdpot * fact );
         // -------------------
         default:
             RUNTIME_ERROR("unsupported realm");

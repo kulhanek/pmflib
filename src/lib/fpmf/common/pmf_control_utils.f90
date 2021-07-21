@@ -232,6 +232,74 @@ subroutine pmf_ctrl_read_real8(prm_fin, name, value, fmt)
 end subroutine pmf_ctrl_read_real8
 
 !===============================================================================
+! Subroutine:   pmf_ctrl_check_real8
+!===============================================================================
+
+subroutine pmf_ctrl_check_real8(sec,name,value,testv,cond,fmt)
+
+    use prmfile
+    use pmf_constants
+    use pmf_unit
+    use pmf_utils
+
+    implicit none
+    character(*)                        :: sec
+    character(*)                        :: name
+    real(PMFDP)                         :: value
+    real(PMFDP)                         :: testv
+    integer                             :: cond
+    character(*)                        :: fmt
+    ! -------------------------------------------
+    character(len=PMF_MAX_PATH)         :: buffer
+    character(len=37)                   :: buf1,buf2
+    ! --------------------------------------------------------------------------
+
+    write(buf1,'('//trim(fmt)//')') value
+    write(buf2,'('//trim(fmt)//')') testv
+
+    select case(cond)
+        case(CND_GT)
+            if( value .le. testv ) then
+                write(buffer,10) trim(sec),trim(name),trim(adjustl(buf1)),trim(adjustl(buf2))
+                call pmf_utils_exit(PMF_OUT,1,trim(buffer))
+            end if
+        case(CND_GE)
+            if( value .lt. testv ) then
+                write(buffer,20) trim(sec),trim(name),trim(adjustl(buf1)),trim(adjustl(buf2))
+                call pmf_utils_exit(PMF_OUT,1,trim(buffer))
+            end if
+         case(CND_LT)
+            if( value .ge. testv ) then
+                write(buffer,30) trim(sec),trim(name),trim(adjustl(buf1)),trim(adjustl(buf2))
+                call pmf_utils_exit(PMF_OUT,1,trim(buffer))
+            end if
+        case(CND_LE)
+            if( value .gt. testv ) then
+                write(buffer,40) trim(sec),trim(name),trim(adjustl(buf1)),trim(adjustl(buf2))
+                call pmf_utils_exit(PMF_OUT,1,trim(buffer))
+            end if
+        case(CND_EQ)
+            if( value .ne. testv ) then
+                write(buffer,50) trim(sec),trim(name),trim(adjustl(buf1)),trim(adjustl(buf2))
+                call pmf_utils_exit(PMF_OUT,1,trim(buffer))
+            end if
+        case(CND_NE)
+            if( value .eq. testv ) then
+                write(buffer,60) trim(sec),trim(name),trim(adjustl(buf1)),trim(adjustl(buf2))
+                call pmf_utils_exit(PMF_OUT,1,trim(buffer))
+            end if
+    end select
+
+ 10 format('[',A,']',1X,A,1X,'parameter: ',A,' value has to be grater than ',A)
+ 20 format('[',A,']',1X,A,1X,'parameter: ',A,' value has to be grater than or equal to ',A)
+ 30 format('[',A,']',1X,A,1X,'parameter: ',A,' value has to be lesser than ',A)
+ 40 format('[',A,']',1X,A,1X,'parameter: ',A,' value has to be lesser than or equal to ',A)
+ 50 format('[',A,']',1X,A,1X,'parameter: ',A,' value has to equal to ',A)
+ 60 format('[',A,']',1X,A,1X,'parameter: ',A,' value does not have to be ',A)
+
+end subroutine pmf_ctrl_check_real8
+
+!===============================================================================
 ! Subroutine:   pmf_ctrl_read_integer
 !===============================================================================
 
@@ -479,12 +547,12 @@ subroutine pmf_ctrl_check_real8_wunit(sec,name, iunit,value,testv,cond,fmt)
             end if
     end select
 
- 10 format('[',A,']',1X,A,1X,'parameter: ',A,' value has to be grater than ',A,1X,'[',A,']')
- 20 format('[',A,']',1X,A,1X,'parameter: ',A,' value has to be grater than or equal to ',A,1X,'[',A,']')
- 30 format('[',A,']',1X,A,1X,'parameter: ',A,' value has to be lesser than ',I3,1X,'[',A,']')
- 40 format('[',A,']',1X,A,1X,'parameter: ',A,' value has to be lesser than or equal to ',A,1X,'[',A,']')
- 50 format('[',A,']',1X,A,1X,'parameter: ',A,' value has to equal to ',A,1X,'[',A,']')
- 60 format('[',A,']',1X,A,1X,'parameter: ',A,' value does not have to be ',A,1X,'[',A,']')
+ 10 format('[',A,']',1X,A,1X,'parameter: ',A,' value has to be grater than ',A              ,1X,'[',A,']')
+ 20 format('[',A,']',1X,A,1X,'parameter: ',A,' value has to be grater than or equal to ',A  ,1X,'[',A,']')
+ 30 format('[',A,']',1X,A,1X,'parameter: ',A,' value has to be lesser than ',A              ,1X,'[',A,']')
+ 40 format('[',A,']',1X,A,1X,'parameter: ',A,' value has to be lesser than or equal to ',A  ,1X,'[',A,']')
+ 50 format('[',A,']',1X,A,1X,'parameter: ',A,' value has to equal to ',A                    ,1X,'[',A,']')
+ 60 format('[',A,']',1X,A,1X,'parameter: ',A,' value does not have to be ',A                ,1X,'[',A,']')
 
 end subroutine pmf_ctrl_check_real8_wunit
 

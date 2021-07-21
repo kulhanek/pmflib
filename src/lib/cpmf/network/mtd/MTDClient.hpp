@@ -31,7 +31,7 @@
  *
  */
 
-class PMF_PACKAGE CMTDClient : public CClient, public CPMFAccumulator {
+class PMF_PACKAGE CMTDClient : public CClient {
 public:
     CMTDClient(void);
     ~CMTDClient(void);
@@ -43,18 +43,29 @@ public:
     /// unregister client on server side
     bool UnregisterClient(void);
 
-    /// get initial data to local buffer
-    bool GetInitialData(void);
+    /// get initial data
+    bool GetInitialData(double* nsamples,
+                        double* mtdforce,
+                        double* mtdpot);
 
     /// exchange data with server
-    bool ExchangeData(void);
+    bool ExchangeData(  double* inc_nsamples,
+                        double* inc_mtdforce,
+                        double* inc_mtdpot);
 
-    /// return client ID
-    int GetClientID(void);
+// section of public data -----------------------------------------------------
+public:
+   CPMFAccumulatorPtr   Accu;
+   int                  NumOfCVs;
+   int                  NumOfBins;
 
 // section of private data ----------------------------------------------------
 private:
-    int             ClientID;
+    int                 ClientID;
+
+    void ClearExchangeData( double* inc_nsamples,
+                            double* inc_mtdforce,
+                            double* inc_mtdpot);
 };
 
 //------------------------------------------------------------------------------

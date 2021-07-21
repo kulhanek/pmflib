@@ -43,11 +43,11 @@ subroutine mtd_core_main
     use mtd_output
     use mtd_client
     use mtd_restart
-    use mtd_trajectory
+    use mtd_output
     ! --------------------------------------------------------------------------
 
     call mtd_core_force
-    call mtd_trajectory_write_snapshot
+    call mtd_output_write
     call mtd_restart_update
     call mtd_client_exchange_data(.false.)
 
@@ -88,7 +88,7 @@ subroutine mtd_core_grid
     use mtd_accu
 
     implicit none
-    integer                    :: i,j,ci
+    integer                     :: i,j,ci
     ! --------------------------------------------------------------------------
 
     do i = 1,NumOfMTDCVs
@@ -99,8 +99,8 @@ subroutine mtd_core_grid
     ! get current data
     call mtd_accu_get_data(CVValues, TotalMTDEnergy, MTDForce)
 
-    ! put new hill if it is a time
     if( fstep .eq. meta_next_fstep ) then
+        ! put new hill
         call mtd_core_add_new_hill(CVValues, TotalMTDEnergy)
     end if
 
@@ -124,42 +124,32 @@ subroutine mtd_core_add_new_hill(cvs,mtdpot)
     use mtd_dat
     use mtd_accu
     use pmf_utils
-    use mtd_output
+    use mtd_trajectory
 
     implicit none
     real(PMFDP)     :: cvs(:)
     real(PMFDP)     :: mtdpot
     ! --------------------------------------------
     real(PMFDP)     :: hill_height
+    logical         :: added
     ! --------------------------------------------------------------------------
 
     ! default
-    hill_height = fheight
     meta_next_fstep = fstep + fmetastep
-    meta_step = meta_step + 1
 
-    ! well-tempered MTD
+    hill_height = fheight
     if( fmetatemp .gt. 0 ) then
-        ! what to change?
-        select case(fmetavary)
-            case(0)
-                ! no metavary
-            case(1)
-                ! vary the height
-                hill_height = fheight * exp( - mtdpot / (PMF_Rgas*fmetatemp) )
-            case(2)
-                ! vary the step
-                meta_next_fstep = fstep + nint( fmetastep * exp( mtdpot / (PMF_Rgas*fmetatemp) ) )
-            case default
-                call pmf_utils_exit(PMF_OUT,1,'[MTD] Unsupported fmetavary in mtd_core_add_new_hill!')
-        end select
+        ! well-tempered MTD
+        hill_height = fheight * exp( - mtdpot / (PMF_Rgas*fmetatemp) )
     end if
 
     ! put the hill
-    call mtd_accu_add_data(cvs,hill_height,CVWidths)
+    call mtd_accu_add_data(cvs,hill_height,added)
 
-    ! report if required
-    call mtd_output_write(cvs,hill_height,CVWidths)
+    if( added ) then
+        ! record accu trajectory
+        call mtd_trajectory_write_snapshot
+    end if
 
 end subroutine mtd_core_add_new_hill
 

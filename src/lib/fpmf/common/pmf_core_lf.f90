@@ -62,6 +62,7 @@ subroutine pmf_core_lf_force(x,v,f,epot,ekin,epmf)
     use rst_dat
     use abf_core
     use tabf_core
+    use usabf_core
     use abp_core
     use stm_core
     use stm_dat
@@ -77,7 +78,7 @@ subroutine pmf_core_lf_force(x,v,f,epot,ekin,epmf)
     real(PMFDP)    :: v(:,:)       ! velocities in t-dt/2
     real(PMFDP)    :: f(:,:)       ! forces in t
     real(PMFDP)    :: epot         ! potential energy in t
-    real(PMFDP)    :: ekin         ! kinetic energy in t???? - FIXME
+    real(PMFDP)    :: ekin         ! kinetic energy in t-dt
     real(PMFDP)    :: epmf         ! energy from PMFLib
     ! -----------------------------------------------
     integer        :: i
@@ -129,13 +130,6 @@ subroutine pmf_core_lf_force(x,v,f,epot,ekin,epmf)
         call pmf_timers_stop_timer(PMFLIB_PDRV_TIMER)
      end if
 
-     if( mtd_enabled ) then
-        call pmf_timers_start_timer(PMFLIB_MTD_TIMER)
-        call mtd_core_main
-        PMFEne = PMFEne + TotalMTDEnergy
-        call pmf_timers_stop_timer(PMFLIB_MTD_TIMER)
-     end if
-
      if( rst_enabled ) then
         call pmf_timers_start_timer(PMFLIB_RST_TIMER)
         call rst_core_main
@@ -156,6 +150,13 @@ subroutine pmf_core_lf_force(x,v,f,epot,ekin,epmf)
         call pmf_timers_stop_timer(PMFLIB_MON_TIMER)
      end if
 
+     if( mtd_enabled ) then
+        call pmf_timers_start_timer(PMFLIB_MTD_TIMER)
+        call mtd_core_main
+        PMFEne = PMFEne + TotalMTDEnergy
+        call pmf_timers_stop_timer(PMFLIB_MTD_TIMER)
+     end if
+
      ! ABF has to be here because it could be influenced by US restraints (wall restraints, etc.)
      if( abf_enabled ) then
         call pmf_timers_start_timer(PMFLIB_ABF_TIMER)
@@ -164,12 +165,17 @@ subroutine pmf_core_lf_force(x,v,f,epot,ekin,epmf)
      end if
 
      if( tabf_enabled ) then
-        call pmf_timers_start_timer(PMFLIB_ABF_TIMER)
+        call pmf_timers_start_timer(PMFLIB_TABF_TIMER)
         call tabf_core_main
-        call pmf_timers_stop_timer(PMFLIB_ABF_TIMER)
+        call pmf_timers_stop_timer(PMFLIB_TABF_TIMER)
      end if
 
-     ! ABP has to be here because it could be influenced by US restraints (wall restraints, etc.)
+     if( usabf_enabled ) then
+        call pmf_timers_start_timer(PMFLIB_USABF_TIMER)
+        call usabf_core_main
+        call pmf_timers_stop_timer(PMFLIB_USABF_TIMER)
+     end if
+
      if( abp_enabled ) then
         call pmf_timers_start_timer(PMFLIB_ABP_TIMER)
         call abp_core_main

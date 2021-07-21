@@ -1,6 +1,7 @@
 !===============================================================================
 ! PMFLib - Library Supporting Potential of Mean Force Calculations
 !-------------------------------------------------------------------------------
+!    Copyright (C) 2021 Petr Kulhanek, kulhanek@chemi.muni.cz
 !    Copyright (C) 2011-2015 Petr Kulhanek, kulhanek@chemi.muni.cz
 !    Copyright (C) 2013-2015 Letif Mones, lam81@cam.ac.uk
 !    Copyright (C) 2010 Petr Kulhanek, kulhanek@chemi.muni.cz
@@ -79,7 +80,7 @@ subroutine tabf_core_force_4p()
     use pmf_dat
     use pmf_cvs
     use tabf_dat
-    use tabf_accumulator
+    use tabf_accu
     use tabf_output
 
     implicit none
@@ -99,8 +100,8 @@ subroutine tabf_core_force_4p()
     cvaluehist2(:) = cvaluehist3(:)
 
     ! save coordinate value to history
-    do i=1,NumOfABFCVs
-        ci = ABFCVList(i)%cvindx
+    do i=1,NumOfTABFCVs
+        ci = TABFCVList(i)%cvindx
         cvaluehist3(i) = CVContext%CVsValues(ci)
     end do
 
@@ -137,7 +138,7 @@ subroutine tabf_core_force_4p()
     ! calculate abf force to be applied -------------
     select case(feimode)
         case(1)
-            call tabf_accumulator_get_data_lramp(cvaluehist1(:),la)
+            call tabf_accu_get_data_lramp(cvaluehist3(:),la)
         case default
             call pmf_utils_exit(PMF_OUT,1,'[TABF] Not implemented extrapolation/interpolation mode!')
     end select
@@ -149,8 +150,8 @@ subroutine tabf_core_force_4p()
     end if
 
     ! project abf force along coordinate ------------
-    do i=1,NumOfABFCVs
-        ci = ABFCVList(i)%cvindx
+    do i=1,NumOfTABFCVs
+        ci = TABFCVList(i)%cvindx
         do j=1,NumOfLAtoms
             a1(:,j) = a1(:,j) + la(i) * MassInv(j) * CVContext%CVsDrvs(:,j,ci)
         end do
@@ -162,7 +163,7 @@ subroutine tabf_core_force_4p()
     call tabf_core_calc_Zmat
 
     ! pxip = zd0(t-dt)*[v(t-dt/2)/2 - dt*a1(t)/12]
-    do i=1,NumOfABFCVs
+    do i=1,NumOfTABFCVs
         v = 0.0d0
         do j=1,NumOfLAtoms
             do m=1,3
@@ -172,13 +173,13 @@ subroutine tabf_core_force_4p()
         pxip(i) = v
     end do
 
-    ! ZD0(3, NumOfLAtoms, NumOfABFCVs)   <-- 1/dt * m_ksi grad ksi(r0)
-    do i=1,NumOfABFCVs
+    ! ZD0(3, NumOfLAtoms, NumOfTABFCVs)   <-- 1/dt * m_ksi grad ksi(r0)
+    do i=1,NumOfTABFCVs
         do j=1,NumOfLAtoms
             do m=1,3
                 v = 0.0d0
-                do k=1,NumOfABFCVs
-                    ck = ABFCVList(k)%cvindx
+                do k=1,NumOfTABFCVs
+                    ck = TABFCVList(k)%cvindx
                     v = v + fzinv(i,k) * CVContext%CVsDrvs(m,j,ck)
                 end do
                 zd0(m,j,i) = v / fdtx
@@ -187,7 +188,7 @@ subroutine tabf_core_force_4p()
     end do
 
     ! pxim = zd0(t)*[v(t-dt/2)/2 + dt*a0(t-dt)/12]
-    do i=1,NumOfABFCVs
+    do i=1,NumOfTABFCVs
         v = 0.0d0
         do j=1,NumOfLAtoms
             do m=1,3
@@ -206,8 +207,8 @@ subroutine tabf_core_force_4p()
     ! update accumulator - we need at least four samples
     if( fstep .ge. 4 ) then
         ! calculate coordinate values at time t-3/2dt
-        do i=1,NumOfABFCVs
-            avg_values(i) = ABFCVList(i)%cv%get_average_value(cvaluehist1(i),cvaluehist2(i))
+        do i=1,NumOfTABFCVs
+            avg_values(i) = TABFCVList(i)%cv%get_average_value(cvaluehist1(i),cvaluehist2(i))
         end do
 
         avg_epot = 0.5d0*(epothist1 + epothist2) ! t - 3/2*dt
@@ -217,7 +218,7 @@ subroutine tabf_core_force_4p()
         pdum(:) = 0.0d0
 
         ! add data to accumulator
-        call tabf_accumulator_add_data_online(cvaluehist0,pxi0(:),pdum(:),avg_epot,avg_ekin,avg_erst)
+        call tabf_accu_add_data_online(cvaluehist0,pxi0(:),pdum(:),avg_epot,avg_ekin,avg_erst)
 
         ! write icf
         call tabf_output_write_icf(avg_values,pxi0(:))
@@ -249,7 +250,7 @@ subroutine tabf_core_force_2p()
     use pmf_dat
     use pmf_cvs
     use tabf_dat
-    use tabf_accumulator
+    use tabf_accu
     use tabf_output
 
     implicit none
@@ -262,8 +263,8 @@ subroutine tabf_core_force_2p()
     cvaluehist0(:) = cvaluehist1(:)
 
     ! save coordinate value to history
-    do i=1,NumOfABFCVs
-        ci = ABFCVList(i)%cvindx
+    do i=1,NumOfTABFCVs
+        ci = TABFCVList(i)%cvindx
         cvaluehist1(i) = CVContext%CVsValues(ci)
     end do
 
@@ -294,12 +295,12 @@ subroutine tabf_core_force_2p()
     ! calculate Z matrix and its inverse
     call tabf_core_calc_Zmat
 
-    do i=1,NumOfABFCVs
+    do i=1,NumOfTABFCVs
         do j=1,NumOfLAtoms
             do m=1,3
                 v = 0.0d0
-                do k=1,NumOfABFCVs
-                    ki = ABFCVList(k)%cvindx
+                do k=1,NumOfTABFCVs
+                    ki = TABFCVList(k)%cvindx
                     v = v + fzinv(i,k)*CVContext%CVsDrvs(m,j,ki)
                 end do
                 zd1(m,j,i) = v
@@ -307,7 +308,7 @@ subroutine tabf_core_force_2p()
         end do
     end do
 
-    do i=1,NumOfABFCVs
+    do i=1,NumOfTABFCVs
         v = 0.0d0
         e = 0.0d0
         do j=1,NumOfLAtoms
@@ -338,7 +339,7 @@ subroutine tabf_core_force_2p()
         pxim(:) = 0.5d0*(pxim(:)+pxip(:))
 
         ! add data to accumulator
-        call tabf_accumulator_add_data_online(cvaluehist0,pxi0(:),pxim(:),epothist0,ekinhist1,ersthist0)
+        call tabf_accu_add_data_online(cvaluehist0,pxi0(:),pxim(:),epothist0,ekinhist1,ersthist0)
     end if
 
     ! backup to the next step
@@ -354,14 +355,14 @@ subroutine tabf_core_force_2p()
         ! calculate abf force to be applied
         select case(feimode)
             case(1)
-                call tabf_accumulator_get_data_lramp(cvaluehist1(:),la)
+                call tabf_accu_get_data_lramp(cvaluehist1(:),la)
             case default
                 call pmf_utils_exit(PMF_OUT,1,'[TABF] Not implemented extrapolation/interpolation mode!')
         end select
 
         ! project abf force along coordinate
-        do i=1,NumOfABFCVs
-            ci = ABFCVList(i)%cvindx
+        do i=1,NumOfTABFCVs
+            ci = TABFCVList(i)%cvindx
             do j=1,NumOfLAtoms
                 Frc(:,j) = Frc(:,j) + la(i) * CVContext%CVsDrvs(:,j,ci)
             end do
@@ -386,7 +387,7 @@ subroutine tabf_core_force_2p_frc()
     use pmf_dat
     use pmf_cvs
     use tabf_dat
-    use tabf_accumulator
+    use tabf_accu
     use tabf_output
 
     implicit none
@@ -399,8 +400,8 @@ subroutine tabf_core_force_2p_frc()
     cvaluehist0(:) = cvaluehist1(:)
 
     ! save coordinate value to history
-    do i=1,NumOfABFCVs
-        ci = ABFCVList(i)%cvindx
+    do i=1,NumOfTABFCVs
+        ci = TABFCVList(i)%cvindx
         cvaluehist1(i) = CVContext%CVsValues(ci)
     end do
 
@@ -431,12 +432,12 @@ subroutine tabf_core_force_2p_frc()
     ! calculate Z matrix and its inverse
     call tabf_core_calc_Zmat
 
-    do i=1,NumOfABFCVs
+    do i=1,NumOfTABFCVs
         do j=1,NumOfLAtoms
             do m=1,3
                 v = 0.0d0
-                do k=1,NumOfABFCVs
-                    ki = ABFCVList(k)%cvindx
+                do k=1,NumOfTABFCVs
+                    ki = TABFCVList(k)%cvindx
                     v = v + fzinv(i,k)*CVContext%CVsDrvs(m,j,ki)
                 end do
                 zd1(m,j,i) = v
@@ -444,7 +445,7 @@ subroutine tabf_core_force_2p_frc()
         end do
     end do
 
-    do i=1,NumOfABFCVs
+    do i=1,NumOfTABFCVs
         v = 0.0d0
         e = 0.0d0
         do j=1,NumOfLAtoms
@@ -471,7 +472,7 @@ subroutine tabf_core_force_2p_frc()
         pxim(:) =  0.5d0*(pxim(:)+pxip(:))
 
         ! add data to accumulator
-        call tabf_accumulator_add_data_online(cvaluehist0,pxi0(:),pxim(:),epothist0,ekinhist1,ersthist0)
+        call tabf_accu_add_data_online(cvaluehist0,pxi0(:),pxim(:),epothist0,ekinhist1,ersthist0)
     end if
 
     ! backup to the next step
@@ -487,14 +488,14 @@ subroutine tabf_core_force_2p_frc()
         ! calculate abf force to be applied
         select case(feimode)
             case(1)
-                call tabf_accumulator_get_data_lramp(cvaluehist1(:),la)
+                call tabf_accu_get_data_lramp(cvaluehist1(:),la)
             case default
                 call pmf_utils_exit(PMF_OUT,1,'[TABF] Not implemented extrapolation/interpolation mode!')
         end select
 
         ! project abf force along coordinate
-        do i=1,NumOfABFCVs
-            ci = ABFCVList(i)%cvindx
+        do i=1,NumOfTABFCVs
+            ci = TABFCVList(i)%cvindx
             do j=1,NumOfLAtoms
                 Frc(:,j) = Frc(:,j) + la(i) * CVContext%CVsDrvs(:,j,ci)
             end do
@@ -519,10 +520,10 @@ subroutine tabf_core_calc_Zmat()
     ! -----------------------------------------------------------------------------
 
     ! calculate Z matrix
-    do i=1,NumOfABFCVs
-        ci = ABFCVList(i)%cvindx
-        do j=1,NumOfABFCVs
-            cj = ABFCVList(j)%cvindx
+    do i=1,NumOfTABFCVs
+        ci = TABFCVList(i)%cvindx
+        do j=1,NumOfTABFCVs
+            cj = TABFCVList(j)%cvindx
             fz(i,j) = 0.0d0
             do k=1,NumOfLAtoms
                 fz(i,j) = fz(i,j) + MassInv(k)*dot_product(CVContext%CVsDrvs(:,k,ci),CVContext%CVsDrvs(:,k,cj))
@@ -532,13 +533,13 @@ subroutine tabf_core_calc_Zmat()
     end do
 
     ! and now its inversion - we will use LAPAC and LU decomposition
-    if (NumOfABFCVs .gt. 1) then
-        call dgetrf(NumOfABFCVs,NumOfABFCVs,fzinv,NumOfABFCVs,indx,info)
+    if (NumOfTABFCVs .gt. 1) then
+        call dgetrf(NumOfTABFCVs,NumOfTABFCVs,fzinv,NumOfTABFCVs,indx,info)
         if( info .ne. 0 ) then
             call pmf_utils_exit(PMF_OUT,1,'[TABF] LU decomposition failed in tabf_calc_Zmat!')
         end if
 
-        call dgetri(NumOfABFCVs,fzinv,NumOfABFCVs,indx,vv,NumOfABFCVs,info)
+        call dgetri(NumOfTABFCVs,fzinv,NumOfTABFCVs,indx,vv,NumOfTABFCVs,info)
         if( info .ne. 0 ) then
             call pmf_utils_exit(PMF_OUT,1,'[TABF] Matrix inversion failed in tabf_calc_Zmat!')
         end if

@@ -30,14 +30,52 @@ using namespace std;
 
 CABFProxy_dG::CABFProxy_dG(void)
 {
+    SetType(ABF_MICF);
+
     Requires.push_back("ABF");
-    Provide = "ABF dG(x)";
+    Requires.push_back("TABF");
+    Requires.push_back("US-ABF");
 }
 
 //------------------------------------------------------------------------------
 
 CABFProxy_dG::~CABFProxy_dG(void)
 {
+}
+
+//------------------------------------------------------------------------------
+
+bool CABFProxy_dG::IsCompatible(CPMFAccumulatorPtr accu)
+{
+    if( accu->GetMethod() == "ABF" ) return(true);
+    if( accu->GetMethod() == "TABF" ) return(true);
+    if( accu->GetMethod() == "US-ABF" ) return(true);
+    return(false);
+}
+
+//------------------------------------------------------------------------------
+
+void CABFProxy_dG::SetType(EABFdGType type)
+{
+    Type = type;
+
+    switch(Type){
+    // -------------------
+        case(ABF_MICF):
+            Provide = "ABF dG(x)";
+        break;
+    // -------------------
+        case(ABF_MICF_POT):
+            Provide = "ABF dG_p(x)";
+        break;
+    // -------------------
+        case(ABF_MICF_KIN):
+            Provide = "ABF dG_k(x)";
+        break;
+    // -------------------
+        default:
+            RUNTIME_ERROR("unsupported type");
+    }
 }
 
 //==============================================================================
@@ -71,8 +109,30 @@ double CABFProxy_dG::GetValue(int ibin,int icv,EProxyRealm realm) const
     }
 
     double  nsamples = Accu->GetData("NSAMPLES",ibin);
-    double  micf     = Accu->GetData("MICF",ibin,icv);
-    double  m2icf    = Accu->GetData("M2ICF",ibin,icv);
+    double  micf     = 0.0;
+    double  m2icf    = 0.0;
+    double  ncorr    = Accu->GetNCorr();
+
+    switch(Type){
+    // -------------------
+        case(ABF_MICF):
+            micf     = Accu->GetData("MICF",ibin,icv);
+            m2icf    = Accu->GetData("M2ICF",ibin,icv);
+        break;
+    // -------------------
+        case(ABF_MICF_POT):
+            micf     = Accu->GetData("MICF_POT",ibin,icv);
+            m2icf    = Accu->GetData("M2ICF_POT",ibin,icv);
+        break;
+    // -------------------
+        case(ABF_MICF_KIN):
+            micf     = Accu->GetData("MICF_KIN",ibin,icv);
+            m2icf    = Accu->GetData("M2ICF_KIN",ibin,icv);
+        break;
+    // -------------------
+        default:
+            RUNTIME_ERROR("unsupported type");
+    }
 
     double value = 0.0;
     if( nsamples <= 0 ) return(value);
@@ -87,7 +147,7 @@ double CABFProxy_dG::GetValue(int ibin,int icv,EProxyRealm realm) const
             return( sqrt(m2icf / nsamples) );
         // -------------------
         case(E_PROXY_ERROR):
-            return( sqrt(m2icf) / nsamples );
+            return( sqrt(m2icf * ncorr) / nsamples );
         // -------------------
         default:
             RUNTIME_ERROR("unsupported realm");

@@ -35,13 +35,21 @@ implicit none
 
 interface
     ! set number of coordinates
-    subroutine cpmf_abf_client_set_header(ret_st,nitems,totnbins,temp,fconv,unit)
+    subroutine cpmf_abf_client_set_header(ret_st,ncvs,nbins,version,driver, &
+                    temp,temp_unit,temp_fconv, &
+                    ene_unit,ene_fconv,enthalpy_enabled,entropy_enabled)
         integer         :: ret_st
-        integer         :: nitems
-        integer         :: totnbins
+        integer         :: ncvs
+        integer         :: nbins
+        character(*)    :: version
+        character(*)    :: driver
         real(8)         :: temp
-        real(8)         :: fconv
-        character(*)    :: unit
+        character(*)    :: temp_unit
+        real(8)         :: temp_fconv
+        character(*)    :: ene_unit
+        real(8)         :: ene_fconv
+        integer         :: enthalpy_enabled
+        integer         :: entropy_enabled
     end subroutine cpmf_abf_client_set_header
 
     ! set coordinate data
@@ -65,25 +73,31 @@ interface
     end subroutine cpmf_abf_client_reg_by_key
 
     ! get initial data from server
-    subroutine cpmf_abf_client_initial_data(ret_st,nisamples,inc_micf,inc_m2icf, &
-                                            inc_metot,inc_m2etot)
+    subroutine cpmf_abf_client_initial_data(ret_st,inc_nsamples,inc_micf,inc_m2icf, &
+                                            inc_mepot,inc_m2epot,inc_metot,inc_m2etot,inc_c11hh)
         integer         :: ret_st
-        integer         :: nisamples(*)
+        integer         :: inc_nsamples(*)
         real(8)         :: inc_micf(*)
         real(8)         :: inc_m2icf(*)
+        real(8)         :: inc_mepot(*)
+        real(8)         :: inc_m2epot(*)
         real(8)         :: inc_metot(*)
         real(8)         :: inc_m2etot(*)
+        real(8)         :: inc_c11hh(*)
     end subroutine cpmf_abf_client_initial_data
 
     ! exchange data with server
-    subroutine cpmf_abf_client_exchange_data(ret_st,nisamples,inc_micf,inc_m2icf, &
-                                            inc_metot,inc_m2etot)
+    subroutine cpmf_abf_client_exchange_data(ret_st,inc_nsamples,inc_micf,inc_m2icf, &
+                                            inc_mepot,inc_m2epot,inc_metot,inc_m2etot,inc_c11hh)
         integer         :: ret_st
-        integer         :: nisamples(*)
+        integer         :: inc_nsamples(*)
         real(8)         :: inc_micf(*)
         real(8)         :: inc_m2icf(*)
+        real(8)         :: inc_mepot(*)
+        real(8)         :: inc_m2epot(*)
         real(8)         :: inc_metot(*)
         real(8)         :: inc_m2etot(*)
+        real(8)         :: inc_c11hh(*)
     end subroutine cpmf_abf_client_exchange_data
 
     ! unregister client on server
@@ -103,12 +117,15 @@ subroutine abf_client_register
     use pmf_utils
     use pmf_timers
     use pmf_unit
+    use pmf_ver
 
     implicit none
 #ifdef PMFLIB_NETWORK
     integer        :: i
     integer        :: ret_st = 0
 #endif
+    integer        :: enthalpy_enabled
+    integer        :: entropy_enabled
     ! --------------------------------------------------------------------------
 
     if( .not. fserver_enabled ) return
@@ -122,19 +139,26 @@ subroutine abf_client_register
     write(PMF_OUT,*)
     write(PMF_OUT,20)
 
+    enthalpy_enabled = 0
+    if( fenthalpy ) enthalpy_enabled = 1
+    entropy_enabled = 0
+    if( fentropy ) entropy_enabled = 1
+
 #ifdef PMFLIB_NETWORK
 
         ! register coordinates
-        call cpmf_abf_client_set_header(ret_st,abfaccu%tot_cvs,abfaccu%tot_nbins,ftemp, &
-                                        pmf_unit_get_rvalue(EnergyUnit,1.0d0),trim(pmf_unit_label(EnergyUnit)))
+        call cpmf_abf_client_set_header(ret_st,abfaccu%tot_cvs,abfaccu%tot_nbins,PMFLIBVER,DriverName, &
+                                        ftemp,trim(pmf_unit_label(TemperatureUnit)),pmf_unit_get_rvalue(TemperatureUnit,1.0d0), &
+                                        trim(pmf_unit_label(EnergyUnit)),pmf_unit_get_rvalue(EnergyUnit,1.0d0), &
+                                        enthalpy_enabled,entropy_enabled)
 
         if( ret_st .ne. 0 ) then
             call pmf_utils_exit(PMF_OUT,1)
         end if
 
         do i=1,abfaccu%tot_cvs
-            call cpmf_abf_client_set_coord(ret_st,  &
-                            i,                      &
+            call cpmf_abf_client_set_coord(ret_st,      &
+                            i,                          &
                             abfaccu%sizes(i)%cv%name,   &
                             abfaccu%sizes(i)%cv%ctype,  &
                             abfaccu%sizes(i)%min_value, &
@@ -206,20 +230,45 @@ subroutine abf_client_get_initial_data
     call pmf_timers_start_timer(PMFLIB_ABF_MWA_TIMER)
 
 #ifdef PMFLIB_NETWORK
-    !    call cpmf_abf_client_initial_data(ret_st,                       &
-    !                                        abfaccu%nsamples,       &
-    !                                        abfaccu%icfsum,         &
-    !                                        abfaccu%icfsum2,        &
-    !                                        abfaccu%etotsum,        &
-    !                                        abfaccu%etotsum2,       &
-    !                                        abfaccu%icfetotsum,     &
-    !                                        abfaccu%icfetotsum2     &
-    !                                        )
-
+    call cpmf_abf_client_initial_data(ret_st,           &
+                                    abfaccu%inc_nsamples,   &
+                                    abfaccu%inc_micf,       &
+                                    abfaccu%inc_m2icf,      &
+                                    abfaccu%inc_mepot,      &
+                                    abfaccu%inc_m2epot,     &
+                                    abfaccu%inc_metot,      &
+                                    abfaccu%inc_m2etot,     &
+                                    abfaccu%inc_c11hh)
     if( ret_st .ne. 0 ) then
         write(ABF_OUT,20)
         write(PMF_OUT,*)
         call pmf_utils_exit(PMF_OUT,1)
+    end if
+
+    ! move received data to main abfaccu
+    abfaccu%nsamples(:)         = abfaccu%inc_nsamples(:)
+    abfaccu%micf(:,:)           = abfaccu%inc_micf(:,:)
+    abfaccu%m2icf(:,:)          = abfaccu%inc_m2icf(:,:)
+
+    abfaccu%inc_nsamples(:)     = 0
+    abfaccu%inc_micf(:,:)       = 0.0d0
+    abfaccu%inc_m2icf(:,:)      = 0.0d0
+
+    if( fenthalpy ) then
+        abfaccu%mepot(:)        = abfaccu%inc_mepot(:)
+        abfaccu%m2epot(:)       = abfaccu%inc_m2epot(:)
+        abfaccu%inc_mepot(:)    = 0.0d0
+        abfaccu%inc_m2epot(:)   = 0.0d0
+    end if
+
+    if( fentropy ) then
+        abfaccu%metot(:)        = abfaccu%inc_metot(:)
+        abfaccu%m2etot(:)       = abfaccu%inc_m2etot(:)
+        abfaccu%c11hh(:,:)      = abfaccu%inc_c11hh(:,:)
+
+        abfaccu%inc_metot(:)    = 0.0d0
+        abfaccu%inc_m2etot(:)   = 0.0d0
+        abfaccu%inc_c11hh(:,:)  = 0.0d0
     end if
 
     write(ABF_OUT,10)
@@ -267,13 +316,15 @@ subroutine abf_client_exchange_data(force_exchange)
     write(ABF_OUT,10) fstep
 
 #ifdef PMFLIB_NETWORK
-    call cpmf_abf_client_exchange_data(ret_st,                &
-                                        abfaccu%inc_nsamples, &
-                                        abfaccu%inc_micf,     &
-                                        abfaccu%inc_m2icf,    &
-                                        abfaccu%inc_mepot,    &
-                                        abfaccu%inc_m2epot    &
-                                        )
+    call cpmf_abf_client_exchange_data(ret_st,                  &
+                                        abfaccu%inc_nsamples,   &
+                                        abfaccu%inc_micf,       &
+                                        abfaccu%inc_m2icf,      &
+                                        abfaccu%inc_mepot,      &
+                                        abfaccu%inc_m2epot,     &
+                                        abfaccu%inc_metot,      &
+                                        abfaccu%inc_m2etot,     &
+                                        abfaccu%inc_c11hh )
 
     if( ret_st .ne. 0 ) then
         failure_counter = failure_counter + 1
@@ -289,20 +340,33 @@ subroutine abf_client_exchange_data(force_exchange)
         return
     end if
 
-    ! move received data to main abfaccu
-    abfaccu%nsamples(:)       = abfaccu%inc_nsamples(:)
-    abfaccu%micf(:,:)         = abfaccu%inc_micf(:,:)
-    abfaccu%m2icf(:,:)        = abfaccu%inc_m2icf(:,:)
-    abfaccu%mepot(:)          = abfaccu%inc_mepot(:)
-    abfaccu%m2epot(:)         = abfaccu%inc_m2epot(:)
-#endif
+! move received data to main abfaccu
+    abfaccu%nsamples(:)         = abfaccu%inc_nsamples(:)
+    abfaccu%micf(:,:)           = abfaccu%inc_micf(:,:)
+    abfaccu%m2icf(:,:)          = abfaccu%inc_m2icf(:,:)
 
- ! and reset incremental data
-    abfaccu%inc_nsamples(:)   = 0
-    abfaccu%inc_micf(:,:)     = 0.0d0
-    abfaccu%inc_m2icf(:,:)    = 0.0d0
-    abfaccu%inc_mepot(:)      = 0.0d0
-    abfaccu%inc_m2epot(:)     = 0.0d0
+    abfaccu%inc_nsamples(:)     = 0
+    abfaccu%inc_micf(:,:)       = 0.0d0
+    abfaccu%inc_m2icf(:,:)      = 0.0d0
+
+    if( fenthalpy ) then
+        abfaccu%mepot(:)        = abfaccu%inc_mepot(:)
+        abfaccu%m2epot(:)       = abfaccu%inc_m2epot(:)
+        abfaccu%inc_mepot(:)    = 0.0d0
+        abfaccu%inc_m2epot(:)   = 0.0d0
+    end if
+
+    if( fentropy ) then
+        abfaccu%metot(:)        = abfaccu%inc_metot(:)
+        abfaccu%m2etot(:)       = abfaccu%inc_m2etot(:)
+        abfaccu%c11hh(:,:)      = abfaccu%inc_c11hh(:,:)
+
+        abfaccu%inc_metot(:)    = 0.0d0
+        abfaccu%inc_m2etot(:)   = 0.0d0
+        abfaccu%inc_c11hh(:,:)  = 0.0d0
+    end if
+
+#endif
 
     failure_counter = 0
 

@@ -84,6 +84,9 @@ subroutine abp_init_dat
     fconrepeats     = 0
     fabortonmwaerr  = .true.
 
+    insidesamples   = 0
+    outsidesamples  = 0
+
     client_id       = -1
     failure_counter = 0
 
@@ -147,7 +150,19 @@ subroutine abp_init_print_header
     write(PMF_OUT,130)  ' Trajectory sampling (ftrjsample)        : ', ftrjsample
     write(PMF_OUT,125)  ' Trajectory file (fabptrj)               : ', trim(fabptrj)
     write(PMF_OUT,120)
-    write(PMF_OUT,120)  ' List of ABP coordinates'
+    write(PMF_OUT,120)  ' MWA server options:'
+    write(PMF_OUT,120)  ' ------------------------------------------------------'
+    write(PMF_OUT,125)  ' Server communication is                      : ', prmfile_onoff(fserver_enabled)
+    if( fserver_enabled ) then
+    write(PMF_OUT,125)  ' Server key file name (fserverkey)            : ', trim(fserverkey)
+    else
+    write(PMF_OUT,125)  ' Server key file name (fserverkey)            : ', 'none'
+    end if
+    write(PMF_OUT,130)  ' Server update interval (fserverupdate)       : ', fserverupdate
+    write(PMF_OUT,130)  ' Number of connection repeats (fconrepeats)   : ', fconrepeats
+    write(PMF_OUT,125)  ' Abort on MWA failure (fabortonmwaerr)        : ', prmfile_onoff(fabortonmwaerr)
+    write(PMF_OUT,120)
+    write(PMF_OUT,120)  ' List of ABP collective variables'
     write(PMF_OUT,120)  ' -------------------------------------------------------'
     write(PMF_OUT,120)
 
@@ -183,17 +198,17 @@ subroutine abp_init_arrays
     use pmf_utils
     use pmf_dat
     use abp_dat
-    use abp_accumulator
+    use abp_accu
 
     implicit none
     integer        :: alloc_failed
     ! --------------------------------------------------------------------------
 
     ! general arrays --------------------------------
-    allocate(la(NumOfABPCVs),               &
-            cvvalues(NumOfABPCVs),          &
-            diffvalues(NumOfABPCVs),        &
-            stat= alloc_failed )
+    allocate(   la(NumOfABPCVs),                &
+                cvvalues(NumOfABPCVs),          &
+                diffvalues(NumOfABPCVs),        &
+                stat= alloc_failed )
 
     if( alloc_failed .ne. 0 ) then
         call pmf_utils_exit(PMF_OUT,1, &
@@ -204,7 +219,7 @@ subroutine abp_init_arrays
     cvvalues(:) = 0.0d0
 
     ! init accumulator ------------------------------
-    call abp_accumulator_init
+    call abp_accu_init
 
 end subroutine abp_init_arrays
 

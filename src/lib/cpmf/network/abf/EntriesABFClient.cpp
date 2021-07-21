@@ -32,33 +32,53 @@ extern "C" {
 //------------------------------------------------------------------------------
 //==============================================================================
 
-// set number items in cpmf part
-
 void PMF_PACKAGE cpmf_abf_client_set_header_(FTINT* ret_st,
                                  FTINT*     ncvs,
-                                 FTINT*     tot_nbins,
-                                 double*    ftemp,
-                                 double*    ene_fconv,
+                                 FTINT*     nbins,
+                                 char*      version,
+                                 char*      driver,
+                                 double*    temp,
+                                 char*      temp_unit,
+                                 double*    temp_fconv,
                                  char*      ene_unit,
-                                 FTINT*     etot_enabled,
+                                 double*    ene_fconv,
+                                 FTINT*     enthalpy_enabled,
+                                 FTINT*     entropy_enabled,
+                                 UFTINT     version_len,
+                                 UFTINT     driver_len,
+                                 UFTINT     temp_unit_len,
                                  UFTINT     ene_unit_len
                                  )
 {
-    int             l_ncvs      = *ncvs;
-    int             l_tot_nbins = *tot_nbins;
-    double          l_temp      = *ftemp;
-    double          l_ene_fconv = *ene_fconv;
+    int             l_ncvs          = *ncvs;
+    int             l_nbins         = *nbins;
+    double          l_temp          = *temp;
+    double          l_temp_fconv    = *temp_fconv;
+    double          l_ene_fconv     = *ene_fconv;
+    CSmallString    l_version;
+    CSmallString    l_driver;
+    CSmallString    l_temp_unit;
     CSmallString    l_ene_unit;
-    bool            l_etot_enabled = false;
-    if( *etot_enabled > 0 ) l_etot_enabled = true;
+
+    bool            l_enthalpy_enabled = false;
+    if( *enthalpy_enabled > 0 ) l_enthalpy_enabled = true;
+
+    bool            l_entropy_enabled = false;
+    if( *entropy_enabled > 0 ) l_entropy_enabled = true;
 
     try {
+        l_version.SetFromFortran(version,version_len);
+        l_driver.SetFromFortran(driver,driver_len);
+        l_temp_unit.SetFromFortran(temp_unit,temp_unit_len);
         l_ene_unit.SetFromFortran(ene_unit,ene_unit_len);
 
-        ABFClient.SetNumberOfItems(l_ncvs,l_tot_nbins);
-        ABFClient.SetTemperature(l_temp);
-        ABFClient.SetEnergyUnit(l_ene_fconv,l_ene_unit);
-        ABFClient.SetEtotEnabled(l_etot_enabled);
+        ABFClient.NumOfCVs = l_ncvs;
+        ABFClient.NumOfBins = l_nbins;
+        ABFClient.EnthalpyEnabled = l_enthalpy_enabled;
+        ABFClient.EntropyEnabled = l_entropy_enabled;
+
+        ABFClient.Accu->SetNumOfCVs(l_ncvs);
+        ABFClient.Accu->SetHeaders("ABF",l_version,l_driver,l_temp,l_temp_unit,l_temp_fconv,l_ene_unit,l_ene_fconv);
 
     } catch(std::exception& e) {
         ES_ERROR_FROM_EXCEPTION("unable to set the number of items",e);
@@ -102,7 +122,7 @@ void PMF_PACKAGE cpmf_abf_client_set_coord_(FTINT* ret_st,
         l_type.SetFromFortran(type,type_len);
         l_unit.SetFromFortran(unit,unit_len);
 
-        ABFClient.SetCV(l_id,l_name,l_type,l_min_value,l_max_value,l_nbins,l_fconv,l_unit);
+        ABFClient.Accu->SetCV(l_id,l_name,l_type,l_min_value,l_max_value,l_nbins,l_fconv,l_unit);
 
     } catch(std::exception& e) {
         CSmallString error;
@@ -130,9 +150,12 @@ void PMF_PACKAGE cpmf_abf_client_reg_by_key_(char* fserverkey,char* fserver,
 
     try {
 
+        // finalize accumulator after CVs update
+        ABFClient.Accu->UpdateNumOfBins();
+
         // server name and protocol
         serverkey_name.SetFromFortran(fserverkey,fserverkey_len);
-        ABFClient.ActionRequest.SetProtocolName("abf");
+        ABFClient.ActionRequest.SetProtocolName("mwa");
         ABFClient.ActionRequest.ReadServerKey(serverkey_name);
 
         // get server name
@@ -151,28 +174,29 @@ void PMF_PACKAGE cpmf_abf_client_reg_by_key_(char* fserverkey,char* fserver,
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void PMF_PACKAGE cpmf_abf_client_initial_data_(FTINT* ret_st,
-                                    FTINT*  inc_nsamples,
-                                    double* inc_icfsum,
-                                    double* inc_icfsum2,
-                                    double* inc_etotsum,
-                                    double* inc_etotsum2,
-                                    double* inc_icfetotsum,
-                                    double* inc_icfetotsum2)
+void PMF_PACKAGE cpmf_abf_client_initial_data_( FTINT* ret_st,
+                                                FTINT*  inc_nsamples,
+                                                double* inc_micf,
+                                                double* inc_m2icf,
+                                                double* inc_mepot,
+                                                double* inc_m2epot,
+                                                double* inc_metot,
+                                                double* inc_m2etot,
+                                                double* inc_c11hh)
 {
-    CSimpleVector<int> isamples;
+    CSimpleVector<double> l_inc_nsamples;
 
-    isamples.CreateVector(ABFClient.GetNumOfBins());
+    l_inc_nsamples.CreateVector(ABFClient.NumOfBins);
 
-    if(ABFClient.GetInitialData(isamples,inc_icfsum,inc_icfsum2,
-                                inc_etotsum,inc_etotsum2,inc_icfetotsum,inc_icfetotsum2) == false) {
-        ES_ERROR("unable to get initial data");
+    if(ABFClient.GetInitialData(l_inc_nsamples,inc_micf,inc_m2icf,inc_mepot,inc_m2epot,
+                                    inc_metot,inc_m2etot,inc_c11hh) == false) {
+        ES_ERROR("unable to get initial data - core");
         *ret_st = 1;
         return;
     }
 
-    for(int i = 0; i < ABFClient.GetNumOfBins(); i++){
-        inc_nsamples[i] = isamples[i];
+    for(int i = 0; i < ABFClient.NumOfBins; i++){
+        inc_nsamples[i] = l_inc_nsamples[i];
     }
 
     *ret_st = 0;
@@ -183,31 +207,33 @@ void PMF_PACKAGE cpmf_abf_client_initial_data_(FTINT* ret_st,
 //==============================================================================
 
 void PMF_PACKAGE cpmf_abf_client_exchange_data_(FTINT* ret_st,
-                                    FTINT*  inc_nsamples,
-                                    double* inc_icfsum,
-                                    double* inc_icfsum2,
-                                    double* inc_etotsum,
-                                    double* inc_etotsum2,
-                                    double* inc_icfetotsum,
-                                    double* inc_icfetotsum2)
+                                                FTINT*  inc_nsamples,
+                                                double* inc_micf,
+                                                double* inc_m2icf,
+                                                double* inc_mepot,
+                                                double* inc_m2epot,
+                                                double* inc_metot,
+                                                double* inc_m2etot,
+                                                double* inc_c11hh)
 {
-    CSimpleVector<int> isamples;
+    CSimpleVector<double> l_inc_nsamples;
 
-    isamples.CreateVector(ABFClient.GetNumOfBins());
+    l_inc_nsamples.CreateVector(ABFClient.NumOfBins);
 
-    for(int i = 0; i < ABFClient.GetNumOfBins(); i++){
-        isamples[i] = inc_nsamples[i];
+    for(int i = 0; i < ABFClient.NumOfBins; i++){
+        l_inc_nsamples[i] = inc_nsamples[i];
     }
 
-    if(ABFClient.ExchangeData(isamples,inc_icfsum,inc_icfsum2,
-                              inc_etotsum,inc_etotsum2,inc_icfetotsum,inc_icfetotsum2) == false) {
+    if(ABFClient.ExchangeData(l_inc_nsamples,inc_micf,inc_m2icf,
+                              inc_mepot,inc_m2epot,
+                              inc_metot,inc_m2etot,inc_c11hh) == false) {
         ES_ERROR("unable to exchange data");
         *ret_st = 1;
         return;
     }
 
-    for(int i = 0; i < ABFClient.GetNumOfBins(); i++){
-        inc_nsamples[i] = isamples[i];
+    for(int i = 0; i < ABFClient.NumOfBins; i++){
+        inc_nsamples[i] = l_inc_nsamples[i];
     }
 
     *ret_st = 0;

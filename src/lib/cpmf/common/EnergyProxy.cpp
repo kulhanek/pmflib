@@ -68,12 +68,18 @@ CPMFAccumulatorPtr CEnergyProxy::GetAccu(void)
 
 //------------------------------------------------------------------------------
 
+CSmallString CEnergyProxy::GetRealm(void)
+{
+    return(Provide);
+}
+
+//------------------------------------------------------------------------------
+
 int CEnergyProxy::GetNumOfSamples(int ibin) const
 {
     RUNTIME_ERROR("need to be overloaded");
     return(0);
 }
-
 
 //------------------------------------------------------------------------------
 
@@ -88,13 +94,6 @@ double CEnergyProxy::GetValue(int ibin,EProxyRealm realm) const
 {
     RUNTIME_ERROR("need to be overloaded");
     return(0.0);
-}
-
-//------------------------------------------------------------------------------
-
-void CEnergyProxy::SetNCorr(double ncorr)
-{
-    RUNTIME_ERROR("need to be overloaded");
 }
 
 //==============================================================================

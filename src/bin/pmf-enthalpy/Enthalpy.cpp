@@ -92,6 +92,8 @@ int CEnthalpy::Init(int argc,char* argv[])
         vout << "# Enthalpy file (out)       : - (standard output)" << endl;
     }
     vout << "# ------------------------------------------------" << endl;
+        vout << "# Processed realm           : " << Options.GetOptRealm() << endl;
+    vout << "# ------------------------------------------------" << endl;
     if(Options.GetOptMethod() == "raw" ) {
         vout << "# Method                    :     RAW (raw data from  accumulator)" << endl;
     } else if( Options.GetOptMethod() == "gpr" ) {
@@ -139,7 +141,33 @@ bool CEnthalpy::Run(void)
 // setup accu, energy proxy, and output FES
     Accu        = CPMFAccumulatorPtr(new CPMFAccumulator);
     HES         = CEnergySurfacePtr(new CEnergySurface);
-    EneProxy    = CPMFProxy_dH_Ptr(new CPMFProxy_dH);
+    EneProxy    = CPMFProxy_dH_Ptr();
+
+if( Options.GetOptRealm() == "<Etot>" ){
+        CPMFProxy_dH_Ptr proxy    = CPMFProxy_dH_Ptr(new CPMFProxy_dH);
+        proxy->SetType(PMF_ETOT);
+        EneProxy = proxy;
+// -----------------------------------------------
+    } else if ( Options.GetOptRealm() == "<Epot>" ) {
+        CPMFProxy_dH_Ptr proxy    = CPMFProxy_dH_Ptr(new CPMFProxy_dH);
+        proxy->SetType(PMF_EPOT);
+        EneProxy = proxy;
+// -----------------------------------------------
+    } else if ( Options.GetOptRealm() == "<Ekin>" ) {
+        CPMFProxy_dH_Ptr proxy    = CPMFProxy_dH_Ptr(new CPMFProxy_dH);
+        proxy->SetType(PMF_EKIN);
+        EneProxy = proxy;
+// -----------------------------------------------
+    } else if ( Options.GetOptRealm() == "<Erst>" ) {
+        CPMFProxy_dH_Ptr proxy    = CPMFProxy_dH_Ptr(new CPMFProxy_dH);
+        proxy->SetType(PMF_ERST);
+        EneProxy = proxy;
+// -----------------------------------------------
+    } else {
+        CSmallString error;
+        error << "unsupported realm: " << Options.GetOptRealm() ;
+        RUNTIME_ERROR(error);
+    }
 
     vout << endl;
     vout << format("%02d:Loading  accumulator: %s")%State%string(AccuName) << endl;
@@ -180,7 +208,7 @@ bool CEnthalpy::Run(void)
 // -----------------------------------------------------------------------------
 
     if( Options.GetOptMethod() == "raw" ){
-        EneProxy->SetNCorr(Options.GetOptNCorr());
+        Accu->SetNCorr(Options.GetOptNCorr());
         vout << endl;
         vout << format("%02d:Raw absolute enthalpy")%State << endl;
         GetRawEnthalpy();
@@ -189,6 +217,7 @@ bool CEnthalpy::Run(void)
         vout << "      SigmaF2-  = " << setprecision(5) << HES->GetSigmaF2m() << endl;
         State++;
         vout << "   Done." << endl;
+        Accu->SetNCorr(1.0);    // to prevent possible errors if used later
     } else if ( Options.GetOptMethod() == "gpr" ){
         vout << endl;
         vout << format("%02d:GPR interpolated enthalpy")%State << endl;
@@ -230,6 +259,14 @@ bool CEnthalpy::Run(void)
             HES->ApplyOffset(Options.GetOptOffset() - HES->GetGlobalMinimumValue());
         } else {
             HES->ApplyOffset(Options.GetOptOffset());
+        }
+    }
+
+    if( Options.GetOptUnsampledAsMaxE() ){
+        if( Options.IsOptMaxEnergySet()){
+            HES->AdaptUnsampledToMaxEnergy(Options.GetOptMaxEnergy());
+        } else {
+            HES->AdaptUnsampledToMaxEnergy();
         }
     }
 
@@ -329,6 +366,14 @@ bool CEnthalpy::PrintHES(void)
 
     State++;
     CESPrinter printer;
+
+    if(Options.GetOptPrintAll()) {
+        printer.SetSampleLimit(0);
+    } else {
+        printer.SetSampleLimit(Options.GetOptLimit());
+    }
+
+    printer.SetIncludeBinStat(Options.GetOptIncludeBinStat());
 
     WriteHeader();
 

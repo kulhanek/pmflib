@@ -26,8 +26,6 @@
 #include <ErrorSystem.hpp>
 #include <ColVariable.hpp>
 #include <string.h>
-#include <XMLElement.hpp>
-#include <XMLBinData.hpp>
 #include <ExtraOperation.hpp>
 #include <cstdlib>
 
@@ -43,54 +41,16 @@ CABPClient      ABPClient;
 
 CABPClient::CABPClient(void)
 {
-    ClientID = -1;
-    NCVs   = 0;
-    NTotBins = 0;
+    ClientID        = -1;
+    Accu            = CPMFAccumulatorPtr(new CPMFAccumulator);
+    NumOfCVs        = 0;
+    NumOfBins       = 0;
 }
 
 //------------------------------------------------------------------------------
 
 CABPClient::~CABPClient(void)
 {
-}
-
-//==============================================================================
-//------------------------------------------------------------------------------
-//==============================================================================
-
-void CABPClient::SetNumberOfItems(int NCVs,int ntotbins)
-{
-    if(NCVs <= 0) {
-        INVALID_ARGUMENT("number of items has to be grater than zero");
-    }
-
-    if(ntotbins <= 0) {
-        INVALID_ARGUMENT("number of bins has to be grater than zero");
-    }
-
-    NCVs = 0;
-    CVs.resize(NCVs);
-    NCVs = NCVs;
-    NTotBins = ntotbins;
-}
-
-//------------------------------------------------------------------------------
-
-int CABPClient::GetNumOfBins(void)
-{
-    return(NTotBins);
-}
-
-//------------------------------------------------------------------------------
-
-void CABPClient::SetCV(int id,const CSmallString& name,const CSmallString& type,
-                       double min_value,double max_value,int nbins,double alpha,double fconv,const CSmallString& unit)
-{
-    if((id < 0) || (id >= NCVs)) {
-        INVALID_ARGUMENT("cv id is out of range");
-    }
-
-    CVs[id].SetCV(id,name,type,min_value,max_value,nbins,alpha,fconv,unit);
 }
 
 //==============================================================================
@@ -113,8 +73,15 @@ int CABPClient::RegisterClient(void)
         if( job_id != NULL ) {
             p_ele->SetAttribute("job_id",job_id);
         }
-        p_ele = cmd.GetCommandElementByPath("CVS",true);
-        SaveCVSInfo(p_ele);
+
+        // create sections
+        Accu->CreateSectionData("NSAMPLES", "AD","I","B");
+        Accu->CreateSectionData("MICF",     "WA","R","M");
+        Accu->CreateSectionData("M2ICF",    "AD","R","M");
+
+        // FIXME - CV widths
+
+        Accu->Save(p_ele);
 
         // execute command
         ExecuteCommand(&cmd);
@@ -160,11 +127,11 @@ bool CABPClient::UnregisterClient(void)
 
 //------------------------------------------------------------------------------
 
-bool CABPClient::GetInitialData(int* nisamples,
-                                double* idpop,
-                                double* ipop)
+bool CABPClient::GetInitialData(double* nsamples,
+                                double* dpop,
+                                double* pop)
 {
-    ClearExchangeData(nisamples,idpop,ipop);
+    ClearExchangeData(nsamples,dpop,pop);
 
     CClientCommand cmd;
     try{
@@ -179,9 +146,40 @@ bool CABPClient::GetInitialData(int* nisamples,
         // execute command
         ExecuteCommand(&cmd);
 
-        // process results
-        p_ele = cmd.GetRootResultElement();
-        ReadExchangeData(p_ele,nisamples,idpop,ipop);
+// process results
+        p_ele = cmd.GetResultElementByPath("PMFLIB-V6",false);
+        if( p_ele != NULL ){
+
+            CPMFAccumulatorPtr accu = CPMFAccumulatorPtr(new CPMFAccumulator);
+            accu->Load(p_ele);
+
+            // check dimensions
+            if( (NumOfBins != accu->GetNumOfBins()) ||
+                (NumOfCVs  != accu->GetNumOfCVs()) ) {
+                RUNTIME_ERROR("size inconsistency");
+            }
+
+            if( Accu->CheckCVSInfo(accu) == false ){
+                RUNTIME_ERROR("inconsistent CVs");
+            }
+
+            // core data
+            CPMFAccuDataPtr data;
+            if( accu->HasSectionData("NSAMPLES") ){
+                data = accu->GetSectionData("NSAMPLES");
+                data->GetDataBlob(nsamples);
+            }
+
+            if( accu->HasSectionData("DPOP") ){
+                data = accu->GetSectionData("DPOP");
+                data->GetDataBlob(dpop);
+            }
+
+            if( accu->HasSectionData("POP") ){
+                data = accu->GetSectionData("POP");
+                data->GetDataBlob(pop);
+            }
+        }
 
     } catch(std::exception& e) {
         ES_ERROR_FROM_EXCEPTION("unable to process command",e);
@@ -193,27 +191,71 @@ bool CABPClient::GetInitialData(int* nisamples,
 
 //------------------------------------------------------------------------------
 
-bool CABPClient::ExchangeData(int* nisamples,
-                                double* idpop,
-                                double* ipop)
+bool CABPClient::ExchangeData(  double* inc_nsamples,
+                                double* inc_dpop,
+                                double* inc_pop)
 {
     CClientCommand cmd;
     try{
 
-        // init command
+    // init command
         InitCommand(&cmd,OperationPMF_ExchangeData);
 
-        // prepare input data
-        CXMLElement* p_ele = cmd.GetRootCommandElement();
-        p_ele->SetAttribute("client_id",ClientID);
-        WriteExchangeData(p_ele,nisamples,idpop,ipop);
+    // prepare input data
+        CXMLElement* p_ele;
 
-        // execute command
+        p_ele = cmd.GetRootCommandElement();
+        p_ele->SetAttribute("client_id",ClientID);
+
+        CPMFAccuDataPtr data;
+        data = Accu->GetSectionData("NSAMPLES");
+        data->SetDataBlob(inc_nsamples);
+
+        data = Accu->GetSectionData("DPOP");
+        data->SetDataBlob(inc_dpop);
+
+        data = Accu->GetSectionData("POP");
+        data->SetDataBlob(inc_pop);
+
+        Accu->Save(p_ele);
+
+    // execute command
         ExecuteCommand(&cmd);
 
-        // process results
-        p_ele = cmd.GetRootResultElement();
-        ReadExchangeData(p_ele,nisamples,idpop,ipop);
+    // process results
+        p_ele = cmd.GetResultElementByPath("PMFLIB-V6",false);
+        if( p_ele != NULL ){
+
+            CPMFAccumulatorPtr accu = CPMFAccumulatorPtr(new CPMFAccumulator);
+            accu->Load(p_ele);
+
+            if( (NumOfBins != accu->GetNumOfBins()) ||
+                (NumOfCVs  != accu->GetNumOfCVs()) ) {
+                RUNTIME_ERROR("size inconsistency");
+            }
+
+            if( Accu->CheckCVSInfo(accu) == false ){
+                RUNTIME_ERROR("inconsistent CVs");
+            }
+
+            // core data
+            CPMFAccuDataPtr data;
+            if( accu->HasSectionData("NSAMPLES") ){
+                data = accu->GetSectionData("NSAMPLES");
+                data->GetDataBlob(inc_nsamples);
+            }
+
+            if( accu->HasSectionData("DPOP") ){
+                data = accu->GetSectionData("DPOP");
+                data->GetDataBlob(inc_dpop);
+            }
+
+            if( accu->HasSectionData("POP") ){
+                data = accu->GetSectionData("POP");
+                data->GetDataBlob(inc_pop);
+            }
+        }
+
 
     } catch(std::exception& e) {
         ES_ERROR_FROM_EXCEPTION("unable to process command",e);
@@ -223,132 +265,26 @@ bool CABPClient::ExchangeData(int* nisamples,
     return(true);
 }
 
-//==============================================================================
-//------------------------------------------------------------------------------
-//==============================================================================
-
-void CABPClient::SaveCVSInfo(CXMLElement* p_tele)
-{
-    if(p_tele == NULL) {
-        INVALID_ARGUMENT("p_tele is NULL");
-    }
-
-    CXMLElement* p_ele = p_tele->CreateChildElement("CVS");
-
-    p_ele->SetAttribute("NCVs",NCVs);
-
-    for(int i=0; i < NCVs; i++) {
-        CXMLElement* p_iele = p_ele->CreateChildElement("COORD");
-        CVs[i].SaveInfo(p_iele);
-    }
-}
-
 //------------------------------------------------------------------------------
 
-void CABPClient::WriteExchangeData(CXMLElement* p_cele,
-                                    int* nisamples,
-                                    double* idpop,
-                                    double* ipop)
+void CABPClient::ClearExchangeData( double* inc_nsamples,
+                                    double* inc_dpop,
+                                    double* inc_pop)
 {
-    if(p_cele == NULL) {
-        INVALID_ARGUMENT("p_cele is NULL");
+    int inc_nsamples_size = NumOfBins;
+    int inc_dpop_size = NumOfBins*NumOfCVs;
+    int inc_pop_size = NumOfBins;
+
+    for(int i=0; i < inc_nsamples_size; i++) {
+        inc_nsamples[i] = 0;
     }
 
-    int nisamples_size  = NTotBins*sizeof(int);
-    int idpop_size      = NTotBins*NCVs*sizeof(double);
-    int ipop_size       = NTotBins*sizeof(double);
-
-    if( (nisamples_size == 0) || (idpop_size == 0) || (ipop_size == 0) ) {
-        LOGIC_ERROR("size(s) is(are) zero");
+    for(int i=0; i < inc_dpop_size; i++) {
+        inc_dpop[i] = 0.0;
     }
 
-// write new data -------------------------------
-    CXMLBinData* p_nisamples = p_cele->CreateChildBinData("NISAMPLES");
-    p_nisamples->SetData(nisamples,nisamples_size);
-
-    CXMLBinData* p_idpop = p_cele->CreateChildBinData("IDPOP");
-    p_idpop->SetData(idpop,idpop_size);
-
-    CXMLBinData* p_ipop = p_cele->CreateChildBinData("IPOP");
-    p_ipop->SetData(ipop,ipop_size);
-}
-
-//------------------------------------------------------------------------------
-
-void CABPClient::ReadExchangeData(CXMLElement* p_rele,
-                                    int* nisamples,
-                                    double* idpop,
-                                    double* ipop)
-{
-    if(p_rele == NULL) {
-        INVALID_ARGUMENT("p_rele is NULL");
-    }
-
-    unsigned int nisamples_size = NTotBins*sizeof(int);
-    unsigned int idpop_size     = NTotBins*NCVs*sizeof(double);
-    unsigned int ipop_size      = NTotBins*sizeof(double);
-
-    if( (nisamples_size == 0) || (idpop_size == 0) || (ipop_size == 0) ) {
-        LOGIC_ERROR("size(s) is(are) zero");
-    }
-
-// --------------------------
-    CXMLBinData* p_nisamples = p_rele->GetFirstChildBinData("NISAMPLES");
-    if(p_nisamples == NULL) {
-        LOGIC_ERROR("unable to open NISAMPLES element");
-    }
-
-    void* p_data = p_nisamples->GetData();
-    if((p_data == NULL) || (p_nisamples->GetLength() != nisamples_size)) {
-        LOGIC_ERROR("inconsistent NISAMPLES element data");
-    }
-    memcpy(nisamples,p_data,nisamples_size);
-
-// --------------------------
-    CXMLBinData* p_idpop= p_rele->GetFirstChildBinData("IDPOP");
-    if(p_idpop == NULL) {
-        LOGIC_ERROR("unable to open IDPOP element");
-    }
-
-    p_data = p_idpop->GetData();
-    if((p_data == NULL) || (p_idpop->GetLength() != idpop_size)) {
-        LOGIC_ERROR("inconsistent IDPOP element data");
-    }
-    memcpy(idpop,p_data,idpop_size);
-
-// --------------------------
-    CXMLBinData* p_ipop = p_rele->GetFirstChildBinData("IPOP");
-    if(p_ipop == NULL) {
-        LOGIC_ERROR("unable to open IPOP element");
-    }
-
-    p_data = p_ipop->GetData();
-    if((p_data == NULL) || (p_ipop->GetLength() != ipop_size)) {
-        LOGIC_ERROR("inconsistent IPOP element data");
-    }
-    memcpy(ipop,p_data,ipop_size);
-}
-
-//------------------------------------------------------------------------------
-
-void CABPClient::ClearExchangeData(int* nisamples,
-                                    double* idpop,
-                                    double* ipop)
-{
-    int nisamples_size = NTotBins;
-    int idpop_size = NTotBins*NCVs;
-    int ipop_size = NTotBins;
-
-    for(int i=0; i < nisamples_size; i++) {
-        nisamples[i] = 0;
-    }
-
-    for(int i=0; i < idpop_size; i++) {
-        idpop[i] = 0.0;
-    }
-
-    for(int i=0; i < ipop_size; i++) {
-        ipop[i] = 0.0;
+    for(int i=0; i < inc_pop_size; i++) {
+        inc_pop[i] = 0.0;
     }
 }
 

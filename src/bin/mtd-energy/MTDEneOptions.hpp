@@ -53,6 +53,12 @@ public:
     CSO_ARG(CSmallString,Output)
     // options ------------------------------
     CSO_OPT(bool,KeepFloating)
+    CSO_OPT(int,Smooth)
+    CSO_OPT(int,Limit)
+    CSO_OPT(bool,PrintAll)
+    CSO_OPT(bool,UnsampledAsMaxE)
+    CSO_OPT(double,MaxEnergy)
+    CSO_OPT(bool,IncludeBinStat)
     CSO_OPT(double,Offset)
     CSO_OPT(CSmallString,OutputFormat)
     CSO_OPT(bool,NoHeader)
@@ -71,7 +77,7 @@ public:
                 NULL,                           /* default value */
                 true,                           /* is argument mandatory */
                 "input",                        /* parameter name */
-                "Input file name containing the MTD accumulator or '-' to read data from the standard input.")   /* argument description */
+                "Input file name containing the MTD accumulator or trajectory file with MTD accumulators or '-' to read data from the standard input.")   /* argument description */
     //----------------------------------------------------------------------
     CSO_MAP_ARG(CSmallString,                   /* argument type */
                 Output,                          /* argument name */
@@ -80,7 +86,6 @@ public:
                 "output",                        /* parameter name */
                 "Output file name for the free energy surface or '-' to write data to the standard output.")   /* argument description */
 // description of options ---------------------------------------------------
-
     CSO_MAP_OPT(bool,                           /* option type */
                 KeepFloating,                        /* option name */
                 false,                          /* default value */
@@ -89,15 +94,69 @@ public:
                 "floating",                      /* long option name */
                 NULL,                           /* parameter name */
                 "Keep FES floating.")   /* option description */
+ //----------------------------------------------------------------------
+    CSO_MAP_OPT(int,                           /* option type */
+                Smooth,                        /* option name */
+                1,                          /* default value */
+                false,                          /* is option mandatory */
+                's',                           /* short option name */
+                "smooth",                      /* long option name */
+                "NUMBER",                           /* parameter name */
+                "Calculate average from specified number of MTD accumulators counted from the end of the trajectory file.")   /* option description */
+ //----------------------------------------------------------------------
+    CSO_MAP_OPT(int,                           /* option type */
+                Limit,                        /* option name */
+                0,                          /* default value */
+                false,                          /* is option mandatory */
+                'l',                           /* short option name */
+                "limit",                      /* long option name */
+                "NUMBER",                           /* parameter name */
+                "Only bins containing more samples than NUMBER are considered as properly sampled.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(double,                           /* option type */
                 Offset,                        /* option name */
                 0.0,                          /* default value */
                 false,                          /* is option mandatory */
-                '\0',                           /* short option name */
+                'o',                           /* short option name */
                 "offset",                      /* long option name */
-                "REAL",                           /* parameter name */
-                "Determine position of the global minima.")   /* option description */
+                "NUMBER",                           /* parameter name */
+                "Specify an integration constant.")   /* option description */
+    //----------------------------------------------------------------------
+    CSO_MAP_OPT(bool,                           /* option type */
+                PrintAll,                        /* option name */
+                false,                          /* default value */
+                false,                          /* is option mandatory */
+                0,                           /* short option name */
+                "printall",                      /* long option name */
+                NULL,                           /* parameter name */
+                "Print results for all bins even if not properly sampled.")   /* option description */
+    //----------------------------------------------------------------------
+    CSO_MAP_OPT(bool,                           /* option type */
+                UnsampledAsMaxE,                        /* option name */
+                false,                          /* default value */
+                false,                          /* is option mandatory */
+                0,                           /* short option name */
+                "unsampledasmax",                      /* long option name */
+                NULL,                           /* parameter name */
+                "Set energy values in unsampled region to maximum energy from sampled region or to value provided by --maxenergy.")   /* option description */
+    //----------------------------------------------------------------------
+    CSO_MAP_OPT(double,                           /* option type */
+                MaxEnergy,                        /* option name */
+                0.0,                          /* default value */
+                false,                          /* is option mandatory */
+                0,                           /* short option name */
+                "maxenergy",                      /* long option name */
+                "NUMBER",                           /* parameter name */
+                "If set, this is the energy used of unsampled regions.")   /* option description */
+    //----------------------------------------------------------------------
+    CSO_MAP_OPT(bool,                           /* option type */
+                IncludeBinStat,                        /* option name */
+                false,                          /* default value */
+                false,                          /* is option mandatory */
+                0,                           /* short option name */
+                "includebinstat",                      /* long option name */
+                NULL,                           /* parameter name */
+                "Include bin statuses (1=sampled, 0=unsampled, -1=glued) into resulting FES.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(CSmallString,                           /* option type */
                 OutputFormat,                        /* option name */

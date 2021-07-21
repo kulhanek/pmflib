@@ -43,11 +43,14 @@ public:
 
     // get energy derivative and its error
     virtual double GetValue( int ibin,EProxyRealm realm) const;
+
+    // is compatible with PMFAccumulator method
+    static bool IsCompatible(CPMFAccumulatorPtr accu);
 };
 
 //------------------------------------------------------------------------------
 
-typedef std::shared_ptr<CCSTProxy_MTC>    CCSTProxy_MTC_Ptr;
+typedef boost::shared_ptr<CCSTProxy_MTC>    CCSTProxy_MTC_Ptr;
 
 //------------------------------------------------------------------------------
 

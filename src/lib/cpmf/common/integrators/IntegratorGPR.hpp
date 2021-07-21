@@ -52,15 +52,6 @@ enum EGPRKernel {
 
 //------------------------------------------------------------------------------
 
-// integrated realm
-
-enum EGPRIntegratedRealm {
-    EGPR_REALM_DG  = 1,    // dG
-    EGPR_REALM_TDS = 2,    // -TdS
-};
-
-//------------------------------------------------------------------------------
-
 /** \brief integrator of ABF accumulator employing gaussian process
 */
 
@@ -77,21 +68,12 @@ public:
     /// set output free energy surface
     void SetOutputES(CEnergySurfacePtr p_surf);
 
-    // integrated realm
-    void SetIntegratedRealm(EGPRIntegratedRealm realm);
-
 // hyperparameters
     /// set sigmaf2
     void SetSigmaF2(double sigf2);
 
     /// set ncorr
-    void SetNCorr(const CSmallString& spec);
-
-    /// set ncorr
-    void SetNCorr(CSimpleVector<double>& wfac);
-
-    /// set ncorr
-    void SetNCorr(size_t cvind, double value);
+    void SetNCorr(double value);
 
     /// multiply of bin sizes
     void SetWFac(const CSmallString& spec);
@@ -111,9 +93,6 @@ public:
 
     /// switch to numerical evaluation of kernel fce derivatives
     void SetUseNumDiff(bool set);
-
-    /// use split ncorr
-    void SetSplitNCorr(bool set);
 
     /// set algorithm for LA
     void SetLAMethod(EGPRLAMethod set);
@@ -219,7 +198,7 @@ private:
     // hyperparameters
     bool                    SplitNCorr;     // ncorr for each cv / all cvs
     double                  SigmaF2;
-    CSimpleVector<double>   NCorr;
+    double                  NCorr;
     CSimpleVector<double>   WFac;
     CSimpleVector<double>   CVLengths2;
 

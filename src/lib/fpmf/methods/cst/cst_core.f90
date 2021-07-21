@@ -106,7 +106,7 @@ subroutine cst_core_analyze
 
     implicit none
     integer                :: i,ci,j,cj,k,info
-    real(PMFDP)            :: fzv,isrz,lam,mu,dval,dval2,invn
+    real(PMFDP)            :: fzv,isrz,lam,mu,dval1,dval2,invn
     real(PMFDP)            :: epot, ekin, etot, erst
     real(PMFDP)            :: detot1, detot2
     real(PMFDP)            :: depot1, depot2
@@ -198,7 +198,7 @@ subroutine cst_core_analyze
             call pmf_utils_exit(PMF_OUT,1,'[CST] LU decomposition failed in cst_main!')
         end if
         fzdet = 1.0d0
-        ! and finaly determinant
+        ! and finally determinant
         do i=1,NumOfCONs
             if( indx(i) .ne. i ) then
                 fzdet = - fzdet * fz(i,i)
@@ -247,10 +247,10 @@ subroutine cst_core_analyze
     ! lambda0(i)                        ! t-dt
 
 ! isrz
-    dval    = isrz - misrz
-    misrz   = misrz  + dval * invn
+    dval1   = isrz - misrz
+    misrz   = misrz  + dval1 * invn
     dval2   = isrz - misrz
-    m2isrz  = m2isrz + dval*dval2
+    m2isrz  = m2isrz + dval1*dval2
 
 ! total energy
     detot1 = etot - metot
@@ -279,27 +279,28 @@ subroutine cst_core_analyze
 ! lambda and entropy
     do i=1,NumOfCONs
 
-        ! lambda ----------------------------------
-        lam             = lambda0(i)        ! t-dt
-        dval            = lam - mlambda(i)
-        mlambda(i)      = mlambda(i) + dval * invn
-        dval2           = lam - mlambda(i)
-        m2lambda(i)     = m2lambda(i) + dval * dval2
-
         if( has_lambdav ) then
             ! FIXME - lambdav is not in correct time?
             mu              = lambdav(i)
-            dval            = mu - mlambdav(i)
-            mlambdav(i)     = mlambdav(i) + dval * invn
+            dval1           = mu - mlambdav(i)
+            mlambdav(i)     = mlambdav(i)  + dval1 * invn
             dval2           = mu - mlambdav(i)
-            m2lambdav(i)    = m2lambdav(i) + dval * dval2
+            m2lambdav(i)    = m2lambdav(i) + dval1 * dval2
         end if
 
+
+        ! lambda ----------------------------------
+        lam             = lambda0(i)        ! t-dt
+        dval1           = lam - mlambda(i)
+        mlambda(i)      = mlambda(i)  + dval1 * invn
+        dval2           = lam - mlambda(i)
+        m2lambda(i)     = m2lambda(i) + dval1 * dval2
+
         if( fentropy ) then
-            c11hh(i)   = c11hh(i) + dval * detot2
-            c11hp(i)   = c11hp(i) + dval * depot2
-            c11hk(i)   = c11hk(i) + dval * dekin2
-            c11hr(i)   = c11hr(i) + dval * derst2
+            c11hh(i)   = c11hh(i) + dval1 * detot2
+            c11hp(i)   = c11hp(i) + dval1 * depot2
+            c11hk(i)   = c11hk(i) + dval1 * dekin2
+            c11hr(i)   = c11hr(i) + dval1 * derst2
         end if
     end do
 

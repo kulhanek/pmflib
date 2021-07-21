@@ -37,7 +37,7 @@ subroutine tabf_restart_update
 
     use pmf_dat
     use pmf_utils
-    use tabf_accumulator
+    use tabf_accu
     use tabf_dat
 
     implicit none
@@ -48,7 +48,7 @@ subroutine tabf_restart_update
     if( mod(fstep,frstupdate) .ne. 0 ) return
 
     call pmf_utils_open(TABF_RST,ftabfrst,'U')
-    call tabf_accumulator_write(TABF_RST)
+    call tabf_accu_write(TABF_RST)
     close(TABF_RST)
 
     write(TABF_OUT,10) fstep, insidesamples, outsidesamples
@@ -67,14 +67,14 @@ subroutine tabf_restart_write
 
     use pmf_dat
     use pmf_utils
-    use tabf_accumulator
+    use tabf_accu
 
     implicit none
     !---------------------------------------------------------------------------
 
     call pmf_utils_open(TABF_RST,ftabfrst,'U')
 
-    call tabf_accumulator_write(TABF_RST)
+    call tabf_accu_write(TABF_RST)
 
     close(TABF_RST)
 

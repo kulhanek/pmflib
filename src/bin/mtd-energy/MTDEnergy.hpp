@@ -32,6 +32,7 @@
 #include <StdIOFile.hpp>
 #include <EnergyProxy.hpp>
 #include "MTDEneOptions.hpp"
+#include <list>
 
 //------------------------------------------------------------------------------
 
@@ -52,14 +53,13 @@ public:
 
 // section of private data ----------------------------------------------------
 private:
-    CMTDEneOptions          Options;            // program options
-    CStdIOFile              InputFile;
-    CStdIOFile              OutputFile;
-    CPMFAccumulatorPtr      Accu;               // MTD accumulator
-    CEnergyProxyPtr         EneProxy;
-    CEnergySurfacePtr       FES;                // energy surface
-    CTerminalStr            Console;
-    CVerboseStr             vout;
+    CMTDEneOptions                  Options;            // program options
+    CStdIOFile                      InputFile;
+    CStdIOFile                      OutputFile;
+    std::list<CPMFAccumulatorPtr>   Accus;
+    CEnergySurfacePtr               FES;                // energy surface
+    CTerminalStr                    Console;
+    CVerboseStr                     vout;
 };
 
 //------------------------------------------------------------------------------

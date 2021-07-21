@@ -25,7 +25,7 @@
 
 //------------------------------------------------------------------------------
 
-enum ECSTType {
+enum ECSTTdSType {
     CST_C11HH,
     CST_C11HP,
     CST_C11HK,
@@ -45,7 +45,7 @@ public:
 
 //------------------------------------------------------------------------------
     // set type
-    void SetType(ECSTType type);
+    void SetType(ECSTTdSType type);
 
 //------------------------------------------------------------------------------
     // get number of samples
@@ -57,14 +57,17 @@ public:
     // get energy derivative and its error
     virtual double GetValue( int ibin,int icv,EProxyRealm realm) const;
 
+    // is compatible with PMFAccumulator method
+    static bool IsCompatible(CPMFAccumulatorPtr accu);
+
 // section of private data -----------------------------------------------------
 private:
-    ECSTType    Type;
+    ECSTTdSType    Type;
 };
 
 //------------------------------------------------------------------------------
 
-typedef std::shared_ptr<CCSTProxy_mTdS>    CCSTProxy_mTdS_Ptr;
+typedef boost::shared_ptr<CCSTProxy_mTdS>    CCSTProxy_mTdS_Ptr;
 
 //------------------------------------------------------------------------------
 

@@ -51,7 +51,7 @@ void CEnergyDerProxy::Init(CPMFAccumulatorPtr accu)
 {
     if( std::find(Requires.begin(),Requires.end(),string(accu->GetMethod())) == Requires.end() ) {
         CSmallString error;
-        error << "PMF accumulator '" << accu->GetMethod() << "' is inconsistent with EnergyProxy requirements '" << join(Requires,",") << "'";
+        error << "PMF accumulator '" << accu->GetMethod() << "' is inconsistent with EnergyDerProxy requirements '" << join(Requires,",") << "'";
         RUNTIME_ERROR(error)
     }
     Accu = accu;
@@ -64,6 +64,13 @@ void CEnergyDerProxy::Init(CPMFAccumulatorPtr accu)
 CPMFAccumulatorPtr CEnergyDerProxy::GetAccu(void)
 {
     return(Accu);
+}
+
+//------------------------------------------------------------------------------
+
+CSmallString CEnergyDerProxy::GetRealm(void)
+{
+    return(Provide);
 }
 
 //------------------------------------------------------------------------------
@@ -88,14 +95,6 @@ double CEnergyDerProxy::GetValue(int ibin,int cv,EProxyRealm realm) const
     RUNTIME_ERROR("need to be overloaded");
     return(0.0);
 }
-
-//------------------------------------------------------------------------------
-
-void CEnergyDerProxy::SetNCorr(double ncorr)
-{
-    RUNTIME_ERROR("need to be overloaded");
-}
-
 
 //==============================================================================
 //------------------------------------------------------------------------------

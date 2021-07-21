@@ -22,19 +22,15 @@ ADD_SUBDIRECTORY(accu-combine)
 ADD_SUBDIRECTORY(accu-trajectory)
 
 # common utilities
+ADD_SUBDIRECTORY(pmf-integrate)
 ADD_SUBDIRECTORY(pmf-enthalpy)
-
-# ABF utilities
-ADD_SUBDIRECTORY(abf-integrate)
+ADD_SUBDIRECTORY(gpr-opthyprms)
 
 # MTD utilities
 ADD_SUBDIRECTORY(mtd-energy)
 
 # ABP utilities
 ADD_SUBDIRECTORY(abp-energy)
-
-# CST utilities
-ADD_SUBDIRECTORY(cst-integrate)
 
 ## network utilities ------------------------------------------------------------
 IF(PMFLIB_NETWORK)

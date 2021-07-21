@@ -25,6 +25,15 @@
 
 //------------------------------------------------------------------------------
 
+enum EPMFdHType {
+    PMF_ETOT,
+    PMF_EPOT,
+    PMF_EKIN,
+    PMF_ERST,
+};
+
+//------------------------------------------------------------------------------
+
 /** \brief PMF proxy providing enthalpy
 */
 
@@ -33,6 +42,10 @@ public:
 // constructor and destructor --------------------------------------------------
     CPMFProxy_dH(void);
     ~CPMFProxy_dH(void);
+
+//------------------------------------------------------------------------------
+    // set type
+    void SetType(EPMFdHType type);
 
 //------------------------------------------------------------------------------
     // get number of samples
@@ -44,17 +57,14 @@ public:
     // get energy derivative and its error
     virtual double GetValue( int ibin,EProxyRealm realm) const;
 
-    // set NCorr
-    virtual void SetNCorr(double ncorr);
-
 // section of private data ----------------------------------------------------
 private:
-    double  NCorr;
+    EPMFdHType  Type;
 };
 
 //------------------------------------------------------------------------------
 
-typedef std::shared_ptr<CPMFProxy_dH>    CPMFProxy_dH_Ptr;
+typedef boost::shared_ptr<CPMFProxy_dH>    CPMFProxy_dH_Ptr;
 
 //------------------------------------------------------------------------------
 
