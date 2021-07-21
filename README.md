@@ -1,10 +1,10 @@
 # PMFLib - A Toolkit for Free Energy Calculations
 PMFLib implements free energy calculation methods employing biased molecular dynamics (MD) simulations. The following methods are available:
 * Adaptive Biasing Force (ABF) and combination of Umbrella Sampling and Adaptive Biasing Force (US-ABF)
-* Constrained Dynamics (CST) also known as Blue Moon
+* Constrained Dynamics (CST), also known as Blue Moon
 * Direct and Well-tempered Metadynamics (MTD)
 * Adaptive Biasing Potential (ABP)
-*
+
 Some methods provide mean forces, which need to be integrated to get free energies. PMFLib offers the following integration techniques:
 * Reverse Finite Differences (RDF)
 * Radial Basis Functions (RBF)
@@ -12,11 +12,11 @@ Some methods provide mean forces, which need to be integrated to get free energi
 
 In addition to the free energy, some methods can provide enthalpy and entropy from the same biased MD simulation.
 
-Suplementary methods include:
-* Monitorinf of collective variables
+Supplementary  methods include:
+* Monitoring of collective variables
 * Restrained Dynamics
 
-Sampling can be improved by Multiple-walker Approach (MWA), which uses server/client with fully asynchronous communications.
+Sampling can be improved by Multiple-walker Approach (MWA), which uses server/client architecture with fully asynchronous communications.
 MWA is available for ABF, ABP, and MTD.
 
 Further details: [https://pmflib.ncbr.muni.cz](https://pmflib.ncbr.muni.cz)
