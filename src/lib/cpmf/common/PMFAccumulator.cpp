@@ -94,12 +94,86 @@ void CPMFAccumulator::Load(FILE* fin)
 
 // read sections
     while( keyline.ReadLineFromFile(fin,true,true) ){
+        if( IsTrajectorySnapshot(keyline) ) return;
         if( IsHeaderSection(keyline) ){
             ReadHeaderSection(fin,keyline);
         } else {
             ReadDataSection(fin,keyline);
         }
     }
+}
+
+//------------------------------------------------------------------------------
+
+std::list<CPMFAccumulatorPtr> CPMFAccumulator::LoadFinalSnapshots(const CSmallString& name, size_t number)
+{
+    std::list<CPMFAccumulatorPtr> accus;
+
+    FILE* fin = fopen(name, "r");
+
+    if(fin == NULL) {
+        CSmallString error;
+        error << "unable to open file '" << name << "' (" << strerror(errno) << ")";
+        RUNTIME_ERROR(error);
+    }
+
+    try {
+        accus = LoadFinalSnapshots(fin,number);
+    } catch(...) {
+        fclose(fin);
+        throw;
+    }
+
+    fclose(fin);
+
+    return(accus);
+}
+
+
+//------------------------------------------------------------------------------
+
+std::list<CPMFAccumulatorPtr> CPMFAccumulator::LoadFinalSnapshots(FILE* fin, size_t number)
+{
+    if( fin == NULL ) {
+        INVALID_ARGUMENT("stream is not open");
+    }
+
+    std::list<CPMFAccumulatorPtr> accus;
+
+    CSmallString keyline;
+
+    CPMFAccumulatorPtr accu;
+
+// read sections
+    while( keyline.ReadLineFromFile(fin,true,true) ){
+        if( IsTrajectoryHeader(keyline) ) {
+            continue;   // skip
+        }
+        if( IsTrajectorySnapshot(keyline) ){
+            accu = CPMFAccumulatorPtr(new CPMFAccumulator);
+            accus.push_back(accu);
+            if( accus.size() > number ){
+                accus.pop_front();
+            }
+            continue;
+        } else {
+            if( accu == NULL ){
+                accu = CPMFAccumulatorPtr(new CPMFAccumulator);
+                accus.push_back(accu);
+                if( accus.size() > number ){
+                    accus.pop_front();
+                }
+            }
+        }
+
+        if( IsHeaderSection(keyline) ){
+            accu->ReadHeaderSection(fin,keyline);
+        } else {
+            accu->ReadDataSection(fin,keyline);
+        }
+    }
+
+    return(accus);
 }
 
 //------------------------------------------------------------------------------
@@ -303,6 +377,9 @@ CPMFAccuDataPtr CPMFAccumulator::Combine(CPMFAccumulatorPtr right,CPMFAccuDataPt
 // add
     if( result->GetOp() == "AD" ){
         result->CombineAD(ldb,rdb);
+// keep the same value
+    } else if( result->GetOp() == "SA" ){
+        result->CombineSA(ldb,rdb);
 // weighted average
     } else if( result->GetOp() == "WA" ){
         // we need two NSAMPLES blocks
@@ -406,6 +483,22 @@ void CPMFAccumulator::Combine(CXMLElement* p_ele)
     CPMFAccumulatorPtr right = CPMFAccumulatorPtr(new CPMFAccumulator);
     right->Load(p_ele);
     Combine(right);
+}
+
+//------------------------------------------------------------------------------
+
+bool CPMFAccumulator::IsTrajectoryHeader(const CSmallString& keyline)
+{
+    if( keyline == "#ACCUTRAJ" ) return(true);
+    return(false);
+}
+
+//------------------------------------------------------------------------------
+
+bool CPMFAccumulator::IsTrajectorySnapshot(const CSmallString& keyline)
+{
+    if( keyline.FindSubString("#ACCUSNAP") == 0 ) return(true);
+    return(false);
 }
 
 //------------------------------------------------------------------------------
@@ -920,6 +1013,17 @@ int CPMFAccumulator::GetNumOfSamples(int ibin) const
 
 //------------------------------------------------------------------------------
 
+int CPMFAccumulator::GetTotalNumOfSamples(void) const
+{
+    int nsamples = 0;
+    for(int ibin=0; ibin < NumOfBins; ibin++){
+        nsamples += GetData("NSAMPLES",ibin);
+    }
+    return(nsamples);
+}
+
+//------------------------------------------------------------------------------
+
 double CPMFAccumulator::GetEnergyRealValue(double value) const
 {
     return(value * EnergyFConv);
@@ -1358,6 +1462,13 @@ bool CPMFAccumulator::HasSectionData(const CSmallString& name) const
         return(false);
     }
     return(true);
+}
+
+//------------------------------------------------------------------------------
+
+void CPMFAccumulator::DeleteSectionData(const CSmallString& name)
+{
+    DataBlocks.erase(name);
 }
 
 //------------------------------------------------------------------------------

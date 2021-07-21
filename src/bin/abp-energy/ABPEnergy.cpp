@@ -196,12 +196,12 @@ bool CABPEnergy::Run(void)
         FES->SetEnergy(i, EneProxy->GetValue(i,E_PROXY_VALUE) );
     }
 
-    vout << endl;
-    vout << " Mollified FES SigmaF2 = " << setprecision(5) << FES->GetSigmaF2() << endl;
+    vout << format("   Mollified FES SigmaF2         = %10.5f")%FES->GetSigmaF2() << endl;
 
     if( Options.GetOptMode() == "rl" ){
         //deconvolution
-        // FIXME
+        RunRLDeconvolution();
+        vout << "   -------------------------------------" << endl;
     } else if( Options.GetOptMode() == "mollified" ) {
         // nothing to be here
     } else {
@@ -211,7 +211,14 @@ bool CABPEnergy::Run(void)
         return(false);
     }
 
-    vout << " Final FES SigmaF2     = " << setprecision(5) << FES->GetSigmaF2() << endl;
+// should we apply offset?
+    if(Options.GetOptKeepFloating() == false) {
+        // get value of global minimum
+        double offset = - FES->GetGlobalMinimumValue();
+        FES->ApplyOffset(offset);
+    }
+
+    vout << format("   Final FES SigmaF2             = %10.5f")%FES->GetSigmaF2() << endl;
 
 // post-processing
     FES->ApplyOffset(Options.GetOptOffset());
@@ -261,6 +268,90 @@ bool CABPEnergy::Run(void)
     }
 
     return(true);
+}
+
+//==============================================================================
+//------------------------------------------------------------------------------
+//==============================================================================
+
+void CABPEnergy::RunRLDeconvolution(void)
+{
+    vout << "   Initiating Lucy-Richardson deconvolution ..." << endl;
+    // POP is de-convoluted
+    // create copy of original data
+    CPMFAccuDataPtr upop = Accu->GetSectionData("POP");
+    Accu->DeleteSectionData("DPOP"); // this will not be valid after deconvolution
+
+    // normalize POP
+    double popsum = 0.0;
+    for(int ibin = 0; ibin < upop->GetNumOfBins(); ibin++){
+        popsum = popsum + upop->GetData(ibin);
+    }
+    if( popsum != 0.0 ){
+        for(int ibin = 0; ibin < upop->GetNumOfBins(); ibin++){
+            double pop = upop->GetData(ibin) / popsum;
+            upop->SetData(ibin,pop);
+        }
+    }
+
+    CPMFAccuDataPtr dpop = upop->Duplicate();
+
+    for(int i=0; i < Options.GetOptRLIter(); i++){
+
+    // run iteration
+        for(int jbin=0; jbin < upop->GetNumOfBins(); jbin++){
+            double u  = upop->GetData(jbin);
+            double f = 0.0;
+            for(int ibin=0; ibin < upop->GetNumOfBins(); ibin++){
+                double di  = dpop->GetData(ibin);
+                double pij = PSF(ibin,jbin);
+                double ci  = 0.0;
+                for(int kbin=0; kbin < upop->GetNumOfBins(); kbin++){
+                    double uk  = upop->GetData(kbin);
+                    double pik = PSF(kbin,ibin);
+                    ci = ci + uk * pik;
+                }
+                f = f + di * pij / ci;
+            }
+            u = u * f;
+            upop->SetData(jbin,u);
+        }
+
+    // calculate deconvoluted FES
+        for(int i=0; i < Accu->GetNumOfBins(); i++){
+            FES->SetNumOfSamples(i,EneProxy->GetNumOfSamples(i));
+            FES->SetEnergy(i, EneProxy->GetValue(i,E_PROXY_VALUE) );
+        }
+        vout << format("   #%03d Deconvoluted FES SigmaF2 = %10.5f")%(i+1)%FES->GetSigmaF2() << endl;
+    }
+}
+
+//------------------------------------------------------------------------------
+
+double CABPEnergy::PSF(int ibin,int jbin)
+{
+    CSimpleVector<double> ipos;
+    CSimpleVector<double> jpos;
+
+    ipos.CreateVector(Accu->GetNumOfCVs());
+    Accu->GetPoint(ibin,ipos);
+
+    jpos.CreateVector(Accu->GetNumOfCVs());
+    Accu->GetPoint(jbin,jpos);
+
+    CPMFAccuDataPtr widths = Accu->GetSectionData("WIDTHS");
+
+    double arg = 0.0;
+    double dnorm = 1.0;
+
+    for(int icv=0; icv < Accu->GetNumOfCVs(); icv++){
+        double diff     = Accu->GetCV(icv)->GetDifference(ipos[icv],jpos[icv]);
+        double width    = widths->GetData(icv);
+        arg             = arg + diff*diff / (width*width);
+        dnorm           = dnorm / (width * sqrt(2.0*M_PI));
+    }
+
+    return( dnorm * exp( - 0.5*arg) );
 }
 
 //==============================================================================

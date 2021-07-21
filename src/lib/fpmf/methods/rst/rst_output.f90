@@ -75,6 +75,7 @@ subroutine rst_output_write_header
     integer        :: i, off, iend
     ! --------------------------------------------------------------------------
 
+    write(RST_OUT,1) '#'
     write(RST_OUT,10,advance='NO') '#          '
     do i=1,NumOfRSTCVs
         select case(fplevel)
@@ -214,6 +215,7 @@ subroutine rst_output_write_header
 
     return
 
+ 1 format(A)
 10 format(A11)
 15 format(1X,I15)
 20 format(1X,A15)

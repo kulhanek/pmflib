@@ -98,6 +98,7 @@ subroutine pmf_init_dat
     fmtdout     = '_mtd.out'
     fmtdrst     = '_mtd.rst'
     fmtdtrj     = '_mtd.trj'
+    fmtdhills   = '_mtd.hills'
 
     fabfdef     = '{ABF}'
     fabfmask    = '_abf.mask'

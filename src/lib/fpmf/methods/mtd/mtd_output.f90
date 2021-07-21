@@ -55,6 +55,16 @@ subroutine mtd_output_open
     write(MTD_OUT,20)
     write(MTD_OUT,30)
 
+    if( fwritehills ) then
+        ! open output file
+        call pmf_utils_open(MTD_HILLS,fmtdhills,'R')
+
+        ! method header --------------------------------
+        write(MTD_HILLS,10)
+        write(MTD_HILLS,20)
+        write(MTD_HILLS,30)
+    end if
+
  return
 
  10 format('#===============================================================================')
@@ -73,64 +83,153 @@ subroutine mtd_output_write_header
     use pmf_dat
     use mtd_dat
     use pmf_cvs
+
+    implicit none
+    integer        :: i, off
+    ! --------------------------------------------------------------------------
+
+    write(MTD_HILLS,1) '#'
+    write(MTD_OUT,10,advance='NO') '#       1'
+    off = 1
+    do i=off+1,off+NumOfMTDCVs
+        write(MTD_OUT,15,advance='NO') i
+    end do
+    write(MTD_OUT,*)
+
+    write(MTD_OUT,10,advance='NO') '#   NSTEP'
+    do i=1,NumOfMTDCVs
+        write(MTD_OUT,20,advance='NO') trim(MTDCVList(i)%cv%name)
+    end do
+    write(MTD_OUT,*)
+
+    write(MTD_OUT,10,advance='NO') '#        '
+    do i=1,NumOfMTDCVs
+        write(MTD_OUT,25,advance='NO') '[' // trim(MTDCVList(i)%cv%get_ulabel()) // ']'
+    end do
+    write(MTD_OUT,*)
+
+    write(MTD_OUT,10,advance='NO') '#--------'
+    do i=1,NumOfMTDCVs
+        write(MTD_OUT,30,advance='NO') '---------------'
+    end do
+    write(MTD_OUT,*)
+
+    if( fwritehills ) then
+        call mtd_output_write_hills_header
+    end if
+
+    return
+
+ 1 format(A)
+10 format(A9)
+15 format(1X,I15)
+20 format(1X,A15)
+25 format(1X,A15)
+30 format(1X,A15)
+
+end subroutine mtd_output_write_header
+
+!===============================================================================
+! Subroutine:  mtd_output_write
+!===============================================================================
+
+subroutine mtd_output_write
+
+    use pmf_constants
+    use pmf_dat
+    use mtd_dat
+    use pmf_cvs
+
+    implicit none
+    integer     :: i
+    ! --------------------------------------------------------------------------
+
+    if( fsample .le. 0 ) return ! output is written only of fsample > 0
+    if( mod(fstep,fsample) .ne. 0 ) return
+
+    write(MTD_OUT,10,advance='NO') fstep
+
+    do i=1,NumOfMTDCVs
+        write(MTD_OUT,20,advance='NO') &
+                MTDCVList(i)%cv%get_rvalue(CVContext%CVsValues(MTDCVList(i)%cvindx))
+    end do
+
+    write(MTD_OUT,*)
+
+    return
+
+10 format(I9)
+20 format(1X,F15.8)
+
+end subroutine mtd_output_write
+
+!===============================================================================
+! Subroutine:  mtd_output_write_hills_header
+!===============================================================================
+
+subroutine mtd_output_write_hills_header
+
+    use pmf_constants
+    use pmf_dat
+    use mtd_dat
+    use pmf_cvs
     use pmf_utils
 
     implicit none
     integer        :: i,off
     ! -----------------------------------------------------------------------------
 
-    write(MTD_OUT,*)
+    write(MTD_HILLS,100) '#'
 
-
-    write(MTD_OUT,100,advance='NO') '#   NSTEP'
-    write(MTD_OUT,300,advance='NO') 'HEIGHT'
+    write(MTD_HILLS,100,advance='NO') '#   NSTEP'
+    write(MTD_HILLS,300,advance='NO') 'HEIGHT'
     do i=1,NumOfMTDCVs
-        write(MTD_OUT,300,advance='NO') 'x('//trim(MTDCVList(i)%cv%name)//')'
-        write(MTD_OUT,300,advance='NO') 'w('//trim(MTDCVList(i)%cv%name)//')'
+        write(MTD_HILLS,300,advance='NO') 'x('//trim(MTDCVList(i)%cv%name)//')'
+        write(MTD_HILLS,300,advance='NO') 'w('//trim(MTDCVList(i)%cv%name)//')'
     end do
-    write(MTD_OUT,*)
+    write(MTD_HILLS,*)
 
-    write(MTD_OUT,100,advance='NO') '#--------'
-    write(MTD_OUT,300,advance='NO') '---------------'
+    write(MTD_HILLS,100,advance='NO') '#--------'
+    write(MTD_HILLS,300,advance='NO') '---------------'
     do i=1,NumOfMTDCVs
-        write(MTD_OUT,300,advance='NO') '---------------'
-        write(MTD_OUT,300,advance='NO') '---------------'
+        write(MTD_HILLS,300,advance='NO') '---------------'
+        write(MTD_HILLS,300,advance='NO') '---------------'
     end do
-    write(MTD_OUT,*)
+    write(MTD_HILLS,*)
 
-    write(MTD_OUT,100,advance='NO') '#        '
-    write(MTD_OUT,300,advance='NO') '['//trim(pmf_unit_label(EnergyUnit))//']'
+    write(MTD_HILLS,100,advance='NO') '#        '
+    write(MTD_HILLS,300,advance='NO') '['//trim(pmf_unit_label(EnergyUnit))//']'
     do i=1,NumOfMTDCVs
-        write(MTD_OUT,305,advance='NO') '['//trim(MTDCVList(i)%cv%get_ulabel())//']'
+        write(MTD_HILLS,305,advance='NO') '['//trim(MTDCVList(i)%cv%get_ulabel())//']'
     end do
-    write(MTD_OUT,*)
+    write(MTD_HILLS,*)
 
-    write(MTD_OUT,100,advance='NO') '#--------'
-    write(MTD_OUT,300,advance='NO') '---------------'
+    write(MTD_HILLS,100,advance='NO') '#--------'
+    write(MTD_HILLS,300,advance='NO') '---------------'
     do i=1,NumOfMTDCVs
-        write(MTD_OUT,100,advance='NO') ' -------------------------------'
+        write(MTD_HILLS,100,advance='NO') ' -------------------------------'
     end do
-    write(MTD_OUT,*)
+    write(MTD_HILLS,*)
 
 
-    write(MTD_OUT,100,advance='NO') '#       1'
-    write(MTD_OUT,205,advance='NO') 2
+    write(MTD_HILLS,100,advance='NO') '#       1'
+    write(MTD_HILLS,205,advance='NO') 2
     off = 3
     do i=off+1,off+NumOfMTDCVs
-        write(MTD_OUT,205,advance='NO') off
+        write(MTD_HILLS,205,advance='NO') off
         off = off + 1
-        write(MTD_OUT,205,advance='NO') off
+        write(MTD_HILLS,205,advance='NO') off
         off = off + 1
     end do
-    write(MTD_OUT,*)
+    write(MTD_HILLS,*)
 
-    write(MTD_OUT,100,advance='NO') '#--------'
-    write(MTD_OUT,300,advance='NO') '---------------'
+    write(MTD_HILLS,100,advance='NO') '#--------'
+    write(MTD_HILLS,300,advance='NO') '---------------'
     do i=1,NumOfMTDCVs
-        write(MTD_OUT,300,advance='NO') '---------------'
-        write(MTD_OUT,300,advance='NO') '---------------'
+        write(MTD_HILLS,300,advance='NO') '---------------'
+        write(MTD_HILLS,300,advance='NO') '---------------'
     end do
-    write(MTD_OUT,*)
+    write(MTD_HILLS,*)
 
     return
 
@@ -139,13 +238,13 @@ subroutine mtd_output_write_header
 300 format(1X,A15)
 305 format(1X,A31)
 
-end subroutine mtd_output_write_header
+end subroutine mtd_output_write_hills_header
 
 !===============================================================================
-! Subroutine:  mtd_output_write
+! Subroutine:  mtd_output_write_hill
 !===============================================================================
 
-subroutine mtd_output_write(cvs,height,widths)
+subroutine mtd_output_write_hill(cvs,height,widths)
 
     use pmf_constants
     use pmf_dat
@@ -160,16 +259,18 @@ subroutine mtd_output_write(cvs,height,widths)
     integer         :: i
     ! -----------------------------------------------------------------------------
 
-    write(MTD_OUT,10,advance='NO') fstep
-    write(MTD_OUT,15,advance='NO') height
+    if( .not. fwritehills ) return
+
+    write(MTD_HILLS,10,advance='NO') fstep
+    write(MTD_HILLS,15,advance='NO') height
 
     do i=1,NumOfMTDCVs
-        write(MTD_OUT,20,advance='NO') &
+        write(MTD_HILLS,20,advance='NO') &
             MTDCVList(i)%cv%get_rvalue(cvs(MTDCVList(i)%cvindx)), &
             MTDCVList(i)%cv%get_rvalue(widths(MTDCVList(i)%cvindx))
     end do
 
-    write(MTD_OUT,*)
+    write(MTD_HILLS,*)
 
     return
 
@@ -177,7 +278,7 @@ subroutine mtd_output_write(cvs,height,widths)
 15 format(1X,F15.8)
 20 format(1X,F15.8,1X,F15.8)
 
-end subroutine mtd_output_write
+end subroutine mtd_output_write_hill
 
 !===============================================================================
 ! Subroutine:  mtd_output_close
@@ -194,6 +295,9 @@ subroutine mtd_output_close
 
     if( .not. mtd_enabled ) return ! method is not enabled
     close(MTD_OUT)
+    if( fwritehills ) then
+        close(MTD_HILLS)
+    end if
 
     return
 

@@ -34,7 +34,7 @@ subroutine abp_restart_read
     use pmf_dat
     use pmf_utils
     use abp_dat
-    use abp_accumulator
+    use abp_accu
 
     implicit none
     ! --------------------------------------------------------------------------
@@ -50,7 +50,7 @@ subroutine abp_restart_read
         ! open restart file ----------------------------------------------------
         call pmf_utils_open(ABP_RST,fabprst,'O')
 
-        call abp_accumulator_read(ABP_RST)
+        call abp_accu_read(ABP_RST)
 
         close(ABP_RST)
     else
@@ -73,7 +73,7 @@ subroutine abp_restart_update
 
     use pmf_dat
     use pmf_utils
-    use abp_accumulator
+    use abp_accu
     use abp_dat
 
     implicit none
@@ -85,7 +85,7 @@ subroutine abp_restart_update
 
     call pmf_utils_open(ABP_RST,fabprst,'U')
 
-    call abp_accumulator_write(ABP_RST)
+    call abp_accu_write(ABP_RST)
 
     close(ABP_RST)
 
@@ -101,14 +101,14 @@ subroutine abp_restart_write
 
     use pmf_dat
     use pmf_utils
-    use abp_accumulator
+    use abp_accu
 
     implicit none
     !---------------------------------------------------------------------------
 
     call pmf_utils_open(ABP_RST,fabprst,'U')
 
-    call abp_accumulator_write(ABP_RST)
+    call abp_accu_write(ABP_RST)
 
     close(ABP_RST)
 

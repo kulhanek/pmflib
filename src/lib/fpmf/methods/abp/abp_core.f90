@@ -62,7 +62,7 @@ subroutine abp_core_force
     use pmf_dat
     use pmf_cvs
     use abp_dat
-    use abp_accumulator
+    use abp_accu
 
     implicit none
     integer                :: i,j,ci
@@ -77,7 +77,7 @@ subroutine abp_core_force
     ! calculate abp force to be applied -------------
     select case(feimode)
         case(1)
-            call abp_accumulator_get_la_hramp
+            call abp_accu_get_la_hramp
         case default
             call pmf_utils_exit(PMF_OUT,1, &
                         '[ABP] Not implemented extrapolation/interpolation mode!')
@@ -94,7 +94,7 @@ subroutine abp_core_force
     ! rest of ABP stuff -----------------------------
     select case(fmode)
         case(1)
-            call abp_accumulator_update_direct
+            call abp_accu_update_direct
         case default
             call pmf_utils_exit(PMF_OUT,1,'[ABP] Not implemented fmode in abp_core_force!')
     end select

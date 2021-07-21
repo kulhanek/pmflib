@@ -141,6 +141,7 @@ character(PMF_MAX_PATH)     :: fmtddef
 character(PMF_MAX_PATH)     :: fmtdout
 character(PMF_MAX_PATH)     :: fmtdrst
 character(PMF_MAX_PATH)     :: fmtdtrj
+character(PMF_MAX_PATH)     :: fmtdhills
 
 ! adaptive biasing force method ------------------
 character(PMF_MAX_PATH)     :: fabfdef

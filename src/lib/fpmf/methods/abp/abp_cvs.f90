@@ -43,7 +43,7 @@ subroutine abp_cvs_reset_cv(abp_item)
     abp_item%min_value       = 0.0 ! left range
     abp_item%max_value       = 0.0 ! right range
     abp_item%nbins           = 0.0 ! number of bins
-    abp_item%alpha           = 0.1 ! alpha factor
+    abp_item%width           = 0.0 ! width factor
 
 end subroutine abp_cvs_reset_cv
 
@@ -57,6 +57,7 @@ subroutine abp_cvs_read_cv(prm_fin,abp_item)
     use abp_dat
     use pmf_cvs
     use pmf_paths
+    use pmf_control_utils
 
     implicit none
     type(PRMFILE_TYPE),intent(inout)   :: prm_fin
@@ -90,12 +91,12 @@ subroutine abp_cvs_read_cv(prm_fin,abp_item)
     end if
 
     ! ========================
-    if( .not. prmfile_get_real8_by_key(prm_fin,'alpha',abp_item%alpha) ) then
-        call pmf_utils_exit(PMF_OUT,1,'>>> ERROR: alpha is not specified!')
+    if( .not. prmfile_get_real8_by_key(prm_fin,'width',abp_item%width) ) then
+        call pmf_utils_exit(PMF_OUT,1,'>>> ERROR: width is not specified!')
     end if
-
-    write(PMF_OUT,130) abp_item%alpha, trim(abp_item%cv%get_ulabel())
-    call abp_item%cv%conv_to_ivalue(abp_item%alpha)
+    write(PMF_OUT,130) abp_item%width, trim(abp_item%cv%get_ulabel())
+    call pmf_ctrl_check_real8_wunit('ABP','width',abp_item%cv%unit,abp_item%width,0.0d0,CND_GT,'f12.2')
+    call abp_item%cv%conv_to_ivalue(abp_item%width)
 
     ! ========================
     if( .not. prmfile_get_integer_by_key(prm_fin,'nbins',abp_item%nbins) ) then
@@ -107,7 +108,7 @@ subroutine abp_cvs_read_cv(prm_fin,abp_item)
 
 110 format('   ** Min value          : ',F16.6,' [',A,']')
 120 format('   ** Max value          : ',F16.6,' [',A,']')
-130 format('   ** Alpha              : ',F16.6,' [',A,']')
+130 format('   ** Width              : ',F16.6,' [',A,']')
 140 format('   ** Number of bins     : ',I9)
 
 end subroutine abp_cvs_read_cv
@@ -138,7 +139,7 @@ subroutine abp_cvs_cv_info(abp_item)
                     trim(abp_item%cv%get_ulabel())
     write(PMF_OUT,160) abp_item%cv%get_rvalue(abp_item%max_value), &
                     trim(abp_item%cv%get_ulabel())
-    write(PMF_OUT,170) abp_item%cv%get_rvalue(abp_item%alpha), &
+    write(PMF_OUT,170) abp_item%cv%get_rvalue(abp_item%width), &
                     trim(abp_item%cv%get_ulabel())
     write(PMF_OUT,180) abp_item%nbins
 
@@ -149,7 +150,7 @@ subroutine abp_cvs_cv_info(abp_item)
 150 format('    ** Current value     : ',E16.7,' [',A,']')
 155 format('    ** Min value         : ',E16.7,' [',A,']')
 160 format('    ** Max value         : ',E16.7,' [',A,']')
-170 format('    ** Alpha             : ',E16.7,' [',A,']')
+170 format('    ** Width             : ',E16.7,' [',A,']')
 180 format('    ** Number of bins    : ',I8)
 
 end subroutine abp_cvs_cv_info

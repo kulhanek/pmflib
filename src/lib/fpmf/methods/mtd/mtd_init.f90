@@ -43,6 +43,7 @@ subroutine mtd_init_method
     use mtd_restart
     use mtd_client
     use mtd_accu
+    use mtd_trajectory
 
     implicit none
     ! -----------------------------------------------------------------------------
@@ -51,6 +52,7 @@ subroutine mtd_init_method
     call mtd_init_print_header
     call mtd_accu_init
     call mtd_output_open
+    call mtd_trajectory_open
     call mtd_restart_read
     call mtd_client_register
     call mtd_client_get_initial_data
@@ -74,8 +76,8 @@ subroutine mtd_init_dat
     fmetastep       = 1000
     fheight         = 0.10d0
     fmetatemp       = 0.0d0
-    fmetavary       = 0
-    fmetavary       = 0
+    fsample         = 5000
+    fwritehills     = .false.
 
     frestart        = .false.
     frstupdate      = 5000
@@ -88,6 +90,11 @@ subroutine mtd_init_dat
     fserverupdate   = 500
     fconrepeats     = 0
     fabortonmwaerr  = .true.
+
+    insidesamples   = 0
+    outsidesamples  = 0
+
+    numofhills      = 0
 
     NumOfMTDCVs     = 0
 
@@ -127,16 +134,6 @@ subroutine mtd_init_print_header
                                                                        '['//trim(pmf_unit_label(EnergyUnit))//']'
     write(PMF_OUT,135)  ' Meta temperature (fmetatemp)            : ', pmf_unit_get_rvalue(TemperatureUnit,fmetatemp), &
                                                                        '['//trim(pmf_unit_label(TemperatureUnit))//']'
-    write(PMF_OUT,130)  ' Varying quantity (fmetavary)            : ', fmetavary
-    select case(fmetavary)
-     case(0)
-        write(PMF_OUT,120)  '  == varying quantity is not applied'
-     case(1)
-        write(PMF_OUT,120)  '  == varying quantity is fheight'
-     case(2)
-        write(PMF_OUT,120)  '  == varying quantity is fmetastep'
-    end select
-
     write(PMF_OUT,120)
     write(PMF_OUT,120)  ' Restart options:'
     write(PMF_OUT,120)  ' ------------------------------------------------------'
@@ -148,15 +145,19 @@ subroutine mtd_init_print_header
     write(PMF_OUT,120)  ' Output options:'
     write(PMF_OUT,120)  ' ------------------------------------------------------'
     write(PMF_OUT,125)  ' Output file (fmtdout)                   : ', trim(fmtdout)
+    write(PMF_OUT,130)  ' Output sampling (fsample)               : ', fsample
+    write(PMF_OUT,125)  ' Output file (fmtdhills)                 : ', trim(fmtdhills)
+    write(PMF_OUT,125)  ' Output MTD hills (fwritehills)          : ', prmfile_onoff(fwritehills)
     write(PMF_OUT,120)
 
     write(PMF_OUT,120)  ' Trajectory output options:'
     write(PMF_OUT,120)  ' ------------------------------------------------------'
-    write(PMF_OUT,130)  ' Trajectory sampling (ftrjsample)        : ', ftrjsample
     write(PMF_OUT,125)  ' Trajectory file (fmtdtrj)               : ', trim(fmtdtrj)
+    write(PMF_OUT,130)  ' Trajectory sampling (ftrjsample)        : ', ftrjsample
+
     write(PMF_OUT,120)
 
-    write(PMF_OUT,120)  ' MTD server options:'
+    write(PMF_OUT,120)  ' MWA server options:'
     write(PMF_OUT,120)  ' ------------------------------------------------------'
     write(PMF_OUT,125)  ' Server communication is                      : ', prmfile_onoff(fserver_enabled)
     if( fserver_enabled ) then
@@ -204,17 +205,15 @@ subroutine mtd_init_core
     use mtd_accu
 
     implicit none
-    integer     :: alloc_failed, i
+    integer     :: alloc_failed
     ! -----------------------------------------------------------------------------
 
-    meta_step       = 0
     meta_next_fstep = fmetastep ! initial value
 
 ! general arrays --------------------------------
     allocate(                               &
             CVValues(NumOfMTDCVs),          &
             MTDForce(NumOfMTDCVs),          &
-            CVWidths(NumOfMTDCVs),          &
             stat= alloc_failed )
 
     if( alloc_failed .ne. 0 ) then
@@ -224,10 +223,6 @@ subroutine mtd_init_core
 
     CVValues(:) = 0.0d0
     MTDForce(:) = 0.0d0
-
-    do i=1,NumOfMTDCVs
-        CVWidths(i) = MTDCVList(i)%width
-    end do
 
     ! init accumulator ------------------------------
     call mtd_accu_init

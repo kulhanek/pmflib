@@ -293,6 +293,7 @@ subroutine pmf_control_read_files(prm_fin)
             call pmf_ctrl_print_default_stritem('fmtdout',fmtdout)
             call pmf_ctrl_print_default_stritem('fmtdrst',fmtdrst)
             call pmf_ctrl_print_default_stritem('fmtdtrj',fmtdtrj)
+            call pmf_ctrl_print_default_stritem('fmtdhills',fmtdhills)
         end if
         if( stm_enabled ) then
             write(PMF_OUT,700)
@@ -355,6 +356,7 @@ subroutine pmf_control_read_files(prm_fin)
         call  pmf_ctrl_read_stritem(prm_fin,'fmtdout',fmtdout)
         call  pmf_ctrl_read_stritem(prm_fin,'fmtdrst',fmtdrst)
         call  pmf_ctrl_read_stritem(prm_fin,'fmtdtrj',fmtdtrj)
+        call  pmf_ctrl_read_stritem(prm_fin,'fmtdhills',fmtdhills)
     end if
     if( stm_enabled ) then
         write(PMF_OUT,700)

@@ -130,13 +130,6 @@ subroutine pmf_core_lf_force(x,v,f,epot,ekin,epmf)
         call pmf_timers_stop_timer(PMFLIB_PDRV_TIMER)
      end if
 
-     if( mtd_enabled ) then
-        call pmf_timers_start_timer(PMFLIB_MTD_TIMER)
-        call mtd_core_main
-        PMFEne = PMFEne + TotalMTDEnergy
-        call pmf_timers_stop_timer(PMFLIB_MTD_TIMER)
-     end if
-
      if( rst_enabled ) then
         call pmf_timers_start_timer(PMFLIB_RST_TIMER)
         call rst_core_main
@@ -155,6 +148,13 @@ subroutine pmf_core_lf_force(x,v,f,epot,ekin,epmf)
         call pmf_timers_start_timer(PMFLIB_MON_TIMER)
         call mon_output_write_output
         call pmf_timers_stop_timer(PMFLIB_MON_TIMER)
+     end if
+
+     if( mtd_enabled ) then
+        call pmf_timers_start_timer(PMFLIB_MTD_TIMER)
+        call mtd_core_main
+        PMFEne = PMFEne + TotalMTDEnergy
+        call pmf_timers_stop_timer(PMFLIB_MTD_TIMER)
      end if
 
      ! ABF has to be here because it could be influenced by US restraints (wall restraints, etc.)
@@ -176,7 +176,6 @@ subroutine pmf_core_lf_force(x,v,f,epot,ekin,epmf)
         call pmf_timers_stop_timer(PMFLIB_USABF_TIMER)
      end if
 
-     ! ABP has to be here because it could be influenced by US restraints (wall restraints, etc.)
      if( abp_enabled ) then
         call pmf_timers_start_timer(PMFLIB_ABP_TIMER)
         call abp_core_main

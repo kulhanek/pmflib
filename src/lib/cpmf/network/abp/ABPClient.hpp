@@ -24,12 +24,7 @@
 
 #include <PMFMainHeader.hpp>
 #include <Client.hpp>
-#include <vector>
-
-//------------------------------------------------------------------------------
-
-class CColVariable;
-class CXMLElement;
+#include <PMFAccumulator.hpp>
 
 //------------------------------------------------------------------------------
 
@@ -42,17 +37,6 @@ public:
     CABPClient(void);
     ~CABPClient(void);
 
-// access methods -------------------------------------------------------------
-    /// set number of cvs
-    void SetNumberOfItems(int nitems,int ntotbins);
-
-    /// set cv
-    void SetCV(int id,const CSmallString& name,const CSmallString& type,
-                  double min_value,double max_value,int nbins,double alpha,double fconv,const CSmallString& unit);
-
-    /// get number of bins
-    int GetNumOfBins(void);
-
 // commands -------------------------------------------------------------------
     /// register client on server side
     int RegisterClient(void);
@@ -61,41 +45,28 @@ public:
     bool UnregisterClient(void);
 
     /// get initial data
-    bool GetInitialData(int* nisamples,
-                        double* idpop,
-                        double* ipop);
+    bool GetInitialData(double* nsamples,
+                        double* dpop,
+                        double* pop);
 
     /// exchange data with server
-    bool ExchangeData(int* nisamples,
-                        double* idpop,
-                        double* ipop);
+    bool ExchangeData(  double* inc_nsamples,
+                        double* inc_dpop,
+                        double* inc_pop);
+
+// section of public data -----------------------------------------------------
+public:
+   CPMFAccumulatorPtr   Accu;
+   int                  NumOfCVs;
+   int                  NumOfBins;
 
 // section of private data ----------------------------------------------------
 private:
     int                         ClientID;       // client ID
-    int                         NCVs;           // number of items
-    int                         NTotBins;       // total number of bins
-    std::vector<CColVariable>   CVs;            // list of CVs
 
-    /// write data for exchange
-    void WriteExchangeData(CXMLElement* p_cele,
-                            int* nisamples,
-                            double* idpop,
-                            double* ipop);
-
-    /// read data from exchange
-    void ReadExchangeData(CXMLElement* p_rele,
-                            int* nisamples,
-                            double* idpop,
-                            double* ipop);
-
-    /// clear data
-    void ClearExchangeData(int* nisamples,
-                            double* idpop,
-                            double* ipop);
-
-    /// save cvs into XML
-    void SaveCVSInfo(CXMLElement* p_tele);
+    void ClearExchangeData( double* inc_nsamples,
+                            double* inc_dpop,
+                            double* inc_pop);
 };
 
 //------------------------------------------------------------------------------

@@ -64,7 +64,7 @@ subroutine abp_trajectory_write_snapshot
     use pmf_dat
     use pmf_constants
     use abp_dat
-    use abp_accumulator
+    use abp_accu
 
     implicit none
     ! --------------------------------------------------------------------------
@@ -77,7 +77,7 @@ subroutine abp_trajectory_write_snapshot
     write(ABP_TRJ,10) fstep
 
     ! write accumulator
-    call abp_accumulator_write(ABP_TRJ)
+    call abp_accu_write(ABP_TRJ)
 
     return
 

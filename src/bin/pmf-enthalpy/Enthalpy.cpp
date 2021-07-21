@@ -262,6 +262,14 @@ if( Options.GetOptRealm() == "<Etot>" ){
         }
     }
 
+    if( Options.GetOptUnsampledAsMaxE() ){
+        if( Options.IsOptMaxEnergySet()){
+            HES->AdaptUnsampledToMaxEnergy(Options.GetOptMaxEnergy());
+        } else {
+            HES->AdaptUnsampledToMaxEnergy();
+        }
+    }
+
 // -----------------------------------------------------------------------------
 // print energy surface
 
@@ -358,6 +366,14 @@ bool CEnthalpy::PrintHES(void)
 
     State++;
     CESPrinter printer;
+
+    if(Options.GetOptPrintAll()) {
+        printer.SetSampleLimit(0);
+    } else {
+        printer.SetSampleLimit(Options.GetOptLimit());
+    }
+
+    printer.SetIncludeBinStat(Options.GetOptIncludeBinStat());
 
     WriteHeader();
 

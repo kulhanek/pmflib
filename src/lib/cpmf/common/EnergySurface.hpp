@@ -89,6 +89,9 @@ public:
     /// get sigmaF2 from sampled area
     double GetSigmaF2(bool includeglued=false) const;
 
+    /// get sigmaF2 from all area
+    double GetSigmaF2All(void) const;
+
     /// get sigmaF2+ from sampled area
     double GetSigmaF2p(bool includeglued=false) const;
 
@@ -135,10 +138,10 @@ public:
 
 // operators ------------------------------------------------------------------
     /// add energy surface
-    void operator+=(const CEnergySurface& source);
+    void AddFES(CEnergySurfacePtr source);
 
     /// divide energy surface by constant
-    void operator/=(const double& number);
+    void DivideFES(double number);
 
     /// reduce FES
     CEnergySurfacePtr ReduceFES(const std::vector<bool>& keepcvs);

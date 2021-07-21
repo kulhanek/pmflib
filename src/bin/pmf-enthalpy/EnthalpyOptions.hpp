@@ -52,6 +52,9 @@ public:
     CSO_OPT(CSmallString,Realm)
     CSO_OPT(CSmallString,Method)
     CSO_OPT(int,Limit)
+    CSO_OPT(bool,UnsampledAsMaxE)
+    CSO_OPT(double,MaxEnergy)
+    CSO_OPT(bool,IncludeBinStat)
     CSO_OPT(bool,Absolute)
     CSO_OPT(bool,WithError)
     CSO_OPT(CSmallString,GlobalMin)
@@ -213,6 +216,33 @@ public:
                 "offset",                      /* long option name */
                 "NUMBER",                           /* parameter name */
                 "Specify an integration constant.")   /* option description */
+//----------------------------------------------------------------------
+    CSO_MAP_OPT(bool,                           /* option type */
+                UnsampledAsMaxE,                        /* option name */
+                false,                          /* default value */
+                false,                          /* is option mandatory */
+                0,                           /* short option name */
+                "unsampledasmax",                      /* long option name */
+                NULL,                           /* parameter name */
+                "Set energy values in unsampled region to maximum energy from sampled region or to value provided by --maxenergy.")   /* option description */
+    //----------------------------------------------------------------------
+    CSO_MAP_OPT(double,                           /* option type */
+                MaxEnergy,                        /* option name */
+                0.0,                          /* default value */
+                false,                          /* is option mandatory */
+                0,                           /* short option name */
+                "maxenergy",                      /* long option name */
+                "NUMBER",                           /* parameter name */
+                "If set, this is the energy used of unsampled regions.")   /* option description */
+    //----------------------------------------------------------------------
+    CSO_MAP_OPT(bool,                           /* option type */
+                IncludeBinStat,                        /* option name */
+                false,                          /* default value */
+                false,                          /* is option mandatory */
+                0,                           /* short option name */
+                "includebinstat",                      /* long option name */
+                NULL,                           /* parameter name */
+                "Include bin statuses (1=sampled, 0=unsampled, -1=glued) into resulting FES.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(CSmallString,                           /* option type */
                 OutputFormat,                        /* option name */

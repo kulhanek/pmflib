@@ -35,14 +35,23 @@ implicit none
 
 interface
     ! set number of coordinates
-    subroutine cpmf_abp_client_set_header(ret_st,nitems,totnbins)
+    subroutine cpmf_abp_client_set_header(ret_st,ncvs,nbins,version,driver, &
+                    temp,temp_unit,temp_fconv, &
+                    ene_unit,ene_fconv)
         integer         :: ret_st
-        integer         :: nitems
-        integer         :: totnbins
+        integer         :: ncvs
+        integer         :: nbins
+        character(*)    :: version
+        character(*)    :: driver
+        real(8)         :: temp
+        character(*)    :: temp_unit
+        real(8)         :: temp_fconv
+        character(*)    :: ene_unit
+        real(8)         :: ene_fconv
     end subroutine cpmf_abp_client_set_header
 
     ! set coordinate data
-    subroutine cpmf_abp_client_set_coord(ret_st,id,name,ctype,min_value,max_value,nbins,alpha,fconv,unit)
+    subroutine cpmf_abp_client_set_coord(ret_st,id,name,ctype,min_value,max_value,nbins,fconv,unit)
         integer         :: ret_st
         integer         :: id
         character(*)    :: ctype
@@ -50,7 +59,6 @@ interface
         real(8)         :: min_value
         real(8)         :: max_value
         integer         :: nbins
-        real(8)         :: alpha
         real(8)         :: fconv
         character(*)    :: unit
     end subroutine cpmf_abp_client_set_coord
@@ -91,48 +99,50 @@ contains
 
 subroutine abp_client_register
 
- use abp_dat
- use pmf_utils
- use pmf_timers
- use pmf_unit
+    use abp_dat
+    use pmf_utils
+    use pmf_timers
+    use pmf_unit
+    use pmf_ver
 
- implicit none
+    implicit none
 #ifdef PMFLIB_NETWORK
- integer        :: i
- integer        :: ret_st = 0
+    integer        :: i
+    integer        :: ret_st = 0
 #endif
- ! -----------------------------------------------------------------------------
+    ! --------------------------------------------------------------------------
 
- if( .not. fserver_enabled ) return
+    if( .not. fserver_enabled ) return
 
- call pmf_timers_start_timer(PMFLIB_ABP_MWA_TIMER)
+    call pmf_timers_start_timer(PMFLIB_ABP_MWA_TIMER)
 
- write(PMF_OUT,*)
- call pmf_utils_heading(PMF_OUT,'Multiple-walkers ABP method','=')
- write(PMF_OUT,15) trim(fserverkey)
+    write(PMF_OUT,*)
+    call pmf_utils_heading(PMF_OUT,'Multiple-walkers ABP method','=')
+    write(PMF_OUT,15) trim(fserverkey)
 
- write(PMF_OUT,*)
- write(PMF_OUT,20)
+    write(PMF_OUT,*)
+    write(PMF_OUT,20)
 
 #ifdef PMFLIB_NETWORK
     ! register coordinates
-    call cpmf_abp_client_set_header(ret_st,NumOfABPCVs,accumulator%tot_nbins)
+    call cpmf_abp_client_set_header(ret_st,abpaccu%tot_cvs,abpaccu%tot_nbins,PMFLIBVER,DriverName, &
+                                    ftemp,trim(pmf_unit_label(TemperatureUnit)),pmf_unit_get_rvalue(TemperatureUnit,1.0d0), &
+                                    trim(pmf_unit_label(EnergyUnit)),pmf_unit_get_rvalue(EnergyUnit,1.0d0))
 
     if( ret_st .ne. 0 ) then
         call pmf_utils_exit(PMF_OUT,1)
     end if
 
-    do i=1,NumOfABPCVs
-        call cpmf_abp_client_set_coord(ret_st,  &
-                        i,                      &
-                        ABPCVList(i)%cv%name,   &
-                        ABPCVList(i)%cv%ctype,  &
-                        ABPCVList(i)%min_value, &
-                        ABPCVList(i)%max_value, &
-                        ABPCVList(i)%nbins,     &
-                        ABPCVList(i)%alpha,     &
-                        pmf_unit_get_rvalue(ABPCVList(i)%cv%unit,1.0d0), &
-                        pmf_unit_label(ABPCVList(i)%cv%unit)             &
+    do i=1,abpaccu%tot_cvs
+        call cpmf_abp_client_set_coord(ret_st,      &
+                        i,                          &
+                        abpaccu%sizes(i)%cv%name,   &
+                        abpaccu%sizes(i)%cv%ctype,  &
+                        abpaccu%sizes(i)%min_value, &
+                        abpaccu%sizes(i)%max_value, &
+                        abpaccu%sizes(i)%nbins,     &
+                        pmf_unit_get_rvalue(abpaccu%sizes(i)%cv%unit,1.0d0), &
+                        pmf_unit_label(abpaccu%sizes(i)%cv%unit)             &
                         )
 
         if( ret_st .ne. 0 ) then
@@ -159,9 +169,9 @@ subroutine abp_client_register
 
 #endif
 
- call pmf_timers_stop_timer(PMFLIB_ABP_MWA_TIMER)
+    call pmf_timers_stop_timer(PMFLIB_ABP_MWA_TIMER)
 
- return
+    return
 
  15 format(' ABP Server Key file : ', A)
  20 format(' Registering client on server, please wait .... ')
@@ -181,27 +191,27 @@ end subroutine abp_client_register
 
 subroutine abp_client_get_initial_data
 
- use abp_dat
- use pmf_utils
- use pmf_timers
- use abp_accumulator
+    use abp_dat
+    use pmf_utils
+    use pmf_timers
+    use abp_accu
 
- implicit none
+    implicit none
 #ifdef PMFLIB_NETWORK
- integer        :: ret_st = 0
+    integer        :: ret_st = 0
 #endif
- integer        :: i
- ! -----------------------------------------------------------------------------
+    integer        :: i
+    ! -----------------------------------------------------------------------------
 
- if( .not. fserver_enabled ) return
+    if( .not. fserver_enabled ) return
 
- call pmf_timers_start_timer(PMFLIB_ABP_MWA_TIMER)
+    call pmf_timers_start_timer(PMFLIB_ABP_MWA_TIMER)
 
 #ifdef PMFLIB_NETWORK
-    call cpmf_abp_client_initial_data(ret_st,                   &
-                                        accumulator%nsamples,   &
-                                        accumulator%dpop,       &
-                                        accumulator%pop         &
+    call cpmf_abp_client_initial_data(ret_st,               &
+                                        abpaccu%nsamples,   &
+                                        abpaccu%dpop,       &
+                                        abpaccu%pop         &
                                         )
 
     if( ret_st .ne. 0 ) then
@@ -214,14 +224,14 @@ subroutine abp_client_get_initial_data
     write(PMF_OUT,*)
 #endif
 
- ! update M
- do i=1,accumulator%tot_nbins
-    if( accumulator%pop(i) .gt. accumulator%M ) accumulator%M = accumulator%pop(i)
- end do
+    ! update M
+    do i=1,abpaccu%tot_nbins
+        if( (abpaccu%pop(i)+1.0d0) .gt. abpaccu%M ) abpaccu%M = abpaccu%pop(i) + 1.0d0
+    end do
 
- call pmf_timers_stop_timer(PMFLIB_ABP_MWA_TIMER)
+    call pmf_timers_stop_timer(PMFLIB_ABP_MWA_TIMER)
 
- return
+    return
 
  10 format('# [ABP-CLIENT] Initial data from server were uploaded')
  20 format('# [ABP-CLIENT] Unable to get initial data from server - disabling method')
@@ -234,37 +244,37 @@ end subroutine abp_client_get_initial_data
 
 subroutine abp_client_exchange_data(force_exchange)
 
- use abp_dat
- use pmf_utils
- use pmf_timers
- use pmf_exit
+    use abp_dat
+    use pmf_utils
+    use pmf_timers
+    use pmf_exit
 
- implicit none
- logical        :: force_exchange       ! do exchange even if mod(fstep,fserverupdate) .ne. 0
- ! -----------------------------------------------
+    implicit none
+    logical        :: force_exchange       ! do exchange even if mod(fstep,fserverupdate) .ne. 0
+    ! -----------------------------------------------
 #ifdef PMFLIB_NETWORK
- integer        :: ret_st = 0
+    integer        :: ret_st = 0
 #endif
- integer        :: i
- ! -----------------------------------------------------------------------------
+    integer        :: i
+    ! --------------------------------------------------------------------------
 
- if( .not. fserver_enabled ) return
+    if( .not. fserver_enabled ) return
 
- if( .not. force_exchange ) then
-    ! do we need to exchange data?
-    if( fserverupdate .le. 0 ) return
-    if( mod(fstep,fserverupdate) .ne. 0 ) return
- end if
+    if( .not. force_exchange ) then
+        ! do we need to exchange data?
+        if( fserverupdate .le. 0 ) return
+        if( mod(fstep,fserverupdate) .ne. 0 ) return
+    end if
 
- call pmf_timers_start_timer(PMFLIB_ABP_MWA_TIMER)
+    call pmf_timers_start_timer(PMFLIB_ABP_MWA_TIMER)
 
- write(ABP_OUT,10) fstep
+    write(ABP_OUT,10) fstep
 
 #ifdef PMFLIB_NETWORK
-    call cpmf_abp_client_exchange_data(ret_st,                  &
-                                       accumulator%nisamples,   &
-                                       accumulator%idpop,       &
-                                       accumulator%ipop         &
+    call cpmf_abp_client_exchange_data(ret_st,                 &
+                                       abpaccu%inc_nsamples,   &
+                                       abpaccu%inc_dpop,       &
+                                       abpaccu%inc_pop         &
                                        )
 
     if( ret_st .ne. 0 ) then
@@ -281,27 +291,27 @@ subroutine abp_client_exchange_data(force_exchange)
         return
     end if
 
-    ! move received data to main accumulator
-    accumulator%nsamples(:)    = accumulator%nisamples(:)
-    accumulator%dpop(:,:)      = accumulator%idpop(:,:)
-    accumulator%pop(:)         = accumulator%ipop(:)
+    ! move received data to main abpaccu
+    abpaccu%nsamples(:)    = abpaccu%inc_nsamples(:)
+    abpaccu%dpop(:,:)      = abpaccu%inc_dpop(:,:)
+    abpaccu%pop(:)         = abpaccu%inc_pop(:)
 #endif
 
- ! update M
- do i=1,accumulator%tot_nbins
-    if( accumulator%pop(i) .gt. accumulator%M ) accumulator%M = accumulator%pop(i)
- end do
+    ! update M
+    do i=1,abpaccu%tot_nbins
+        if( (abpaccu%pop(i)+1.0d0) .gt. abpaccu%M ) abpaccu%M = abpaccu%pop(i) + 1.0d0
+    end do
 
- ! and reset incremental data
- accumulator%nisamples(:)       = 0
- accumulator%idpop(:,:)         = 0.0d0
- accumulator%ipop(:)            = 0.0d0
+    ! and reset incremental data
+    abpaccu%inc_nsamples(:)       = 0
+    abpaccu%inc_dpop(:,:)         = 0.0d0
+    abpaccu%inc_pop(:)            = 0.0d0
 
- failure_counter = 0
+    failure_counter = 0
 
- call pmf_timers_stop_timer(PMFLIB_ABP_MWA_TIMER)
+    call pmf_timers_stop_timer(PMFLIB_ABP_MWA_TIMER)
 
- return
+    return
 
  10 format('# [ABP-CLIENT] ',I9,' Exchanging data with server')
  20 format('# [ABP-CLIENT] Unable to exchange data with server - number of connection failures: ',I3,' (Treshold:',I3,')')
@@ -314,32 +324,32 @@ end subroutine abp_client_exchange_data
 
 subroutine abp_client_unregister
 
- use abp_dat
- use pmf_utils
- use pmf_timers
+    use abp_dat
+    use pmf_utils
+    use pmf_timers
 
- implicit none
+    implicit none
 #ifdef PMFLIB_NETWORK
- integer        :: i
- logical        :: new_data
+    integer        :: i
+    logical        :: new_data
 #endif
- ! -----------------------------------------------------------------------------
+    ! --------------------------------------------------------------------------
 
- if( .not. fserver_enabled ) return
+    if( .not. fserver_enabled ) return
 
- call pmf_timers_start_timer(PMFLIB_ABP_MWA_TIMER)
+    call pmf_timers_start_timer(PMFLIB_ABP_MWA_TIMER)
 
- write(PMF_OUT,*)
- write(PMF_OUT,10) trim(fserver)
+    write(PMF_OUT,*)
+    write(PMF_OUT,10) trim(fserver)
 
- write(ABP_OUT,*)
- write(ABP_OUT,20)
+    write(ABP_OUT,*)
+    write(ABP_OUT,20)
 
 #ifdef PMFLIB_NETWORK
     ! test if there are new accumulated data
     new_data = .false.
-    do i=1,accumulator%tot_nbins
-        if( accumulator%nisamples(i) .gt. 0 ) new_data = .true.
+    do i=1,abpaccu%tot_nbins
+        if( abpaccu%inc_nsamples(i) .gt. 0 ) new_data = .true.
     end do
     if( new_data ) then
         write(ABP_OUT,30)
@@ -352,9 +362,9 @@ subroutine abp_client_unregister
     write(ABP_OUT,40)
 #endif
 
- call pmf_timers_stop_timer(PMFLIB_ABP_MWA_TIMER)
+    call pmf_timers_stop_timer(PMFLIB_ABP_MWA_TIMER)
 
- return
+    return
 
  10 format('>>> INFO: Removing registration from ABP server ',A)
  20 format('# [ABP-CLIENT] Removing registration from server')

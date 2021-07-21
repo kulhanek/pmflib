@@ -18,7 +18,7 @@
 !
 !    You should have received a copy of the GNU Lesser General Public
 !    License along with this library; if not, write to the Free Software
-!    Foundation, Inc., 51 Franklin Street, Fifth Floor, 
+!    Foundation, Inc., 51 Franklin Street, Fifth Floor,
 !    Boston, MA  02110-1301  USA
 !===============================================================================
 
@@ -72,6 +72,7 @@ subroutine mon_output_write_header
     integer        :: i,off
     ! --------------------------------------------------------------------------
 
+    write(MON_OUT,1) '#'
     write(MON_OUT,10,advance='NO') '#  NSTEP '
     do i=1,NumOfMONItems
         write(MON_OUT,20,advance='NO') trim(MONCVList(i)%cv%name)
@@ -105,6 +106,7 @@ subroutine mon_output_write_header
 
     return
 
+ 1 format(A)
 10 format(A9)
 15 format(1X,I15)
 20 format(1X,A15)

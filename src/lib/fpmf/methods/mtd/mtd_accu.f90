@@ -47,7 +47,6 @@ subroutine mtd_accu_init()
     implicit none
     integer              :: i,tot_nbins
     integer              :: alloc_failed
-    integer              :: j,k,multibins
     ! --------------------------------------------------------------------------
 
     ! init dimensions ------------------------------
@@ -71,33 +70,21 @@ subroutine mtd_accu_init()
     mtdaccu%tot_nbins = tot_nbins
 
     ! MTD potential and force array
-    allocate( mtdaccu%nsamples(mtdaccu%tot_nbins), &
-              mtdaccu%binpositions(mtdaccu%tot_cvs,mtdaccu%tot_nbins), &
-              mtdaccu%mtdpotential(mtdaccu%tot_nbins), &
-              mtdaccu%mtdforce(mtdaccu%tot_cvs,mtdaccu%tot_nbins), &
+    allocate( mtdaccu%nsamples(mtdaccu%tot_nbins),                  &
+              mtdaccu%binpos(mtdaccu%tot_cvs,mtdaccu%tot_nbins),    &
+              mtdaccu%mtdpot(mtdaccu%tot_nbins),                    &
+              mtdaccu%mtdforce(mtdaccu%tot_cvs,mtdaccu%tot_nbins),  &
+              mtdaccu%widths(mtdaccu%tot_cvs),                      &
+              mtdaccu%iwidths2(mtdaccu%tot_cvs),                    &
               stat = alloc_failed)
 
     if( alloc_failed .ne. 0 ) then
         call pmf_utils_exit(PMF_OUT, 1,'[MTD] Unable to allocate memory for mtd accumulator!')
     endif
 
-    do i=1,mtdaccu%tot_cvs
-        multibins = 1
-
-        do j=i+1,mtdaccu%tot_cvs
-            multibins = multibins * mtdaccu%sizes(j)%nbins
-        end do
-
-        do j=1,mtdaccu%tot_nbins
-            k = mod(((j-1)/multibins),mtdaccu%sizes(i)%nbins)
-            mtdaccu%binpositions(i,j) = mtdaccu%sizes(i)%min_value + &
-                                            real(k)*mtdaccu%sizes(i)%bin_width + mtdaccu%sizes(i)%bin_width / 2.0d0
-        end do
-    end do
-
     if( fserver_enabled ) then
         allocate( mtdaccu%inc_nsamples(mtdaccu%tot_nbins), &
-                  mtdaccu%inc_mtdpotential(mtdaccu%tot_nbins), &
+                  mtdaccu%inc_mtdpot(mtdaccu%tot_nbins), &
                   mtdaccu%inc_mtdforce(mtdaccu%tot_cvs,mtdaccu%tot_nbins), &
                   stat = alloc_failed)
 
@@ -122,16 +109,29 @@ subroutine mtd_accu_clear()
     use pmf_dat
 
     implicit none
+    integer         :: i
     ! --------------------------------------------------------------------------
 
     mtdaccu%nsamples(:)     = 0.0d0
-    mtdaccu%mtdpotential(:) = 0.0d0
+    mtdaccu%mtdpot(:)       = 0.0d0
     mtdaccu%mtdforce(:,:)   = 0.0d0
 
+    ! init binpos
+    do i=1,mtdaccu%tot_nbins
+        ! get CV values on a grid point
+        call pmf_accu_get_point(mtdaccu%PMFAccuType,i,mtdaccu%binpos(:,i))
+    end do
+
+    ! widths
+    do i=1,mtdaccu%tot_cvs
+        mtdaccu%widths(i)   = MTDCVList(i)%width
+        mtdaccu%iwidths2(i) = 1.0d0 / mtdaccu%widths(i)**2
+    end do
+
     if( fserver_enabled ) then
-        mtdaccu%inc_nsamples(:) = 0
-        mtdaccu%inc_mtdpotential(:) = 0.0d0
-        mtdaccu%inc_mtdforce(:,:) = 0.0d0
+        mtdaccu%inc_nsamples(:)     = 0
+        mtdaccu%inc_mtdpot(:)       = 0.0d0
+        mtdaccu%inc_mtdforce(:,:)   = 0.0d0
     end if
 
 end subroutine mtd_accu_clear
@@ -167,7 +167,7 @@ subroutine mtd_accu_read(iounit)
                     call pmf_accu_read_ibuf_B(mtdaccu%PMFAccuType,iounit,keyline,mtdaccu%nsamples)
             ! ------------------------------------
                 case('MTDPOT')
-                    call pmf_accu_read_rbuf_B(mtdaccu%PMFAccuType,iounit,keyline,mtdaccu%mtdpotential)
+                    call pmf_accu_read_rbuf_B(mtdaccu%PMFAccuType,iounit,keyline,mtdaccu%mtdpot)
             ! ------------------------------------
                 case('MTDFORCE')
                     call pmf_accu_read_rbuf_M(mtdaccu%PMFAccuType,iounit,keyline,mtdaccu%mtdforce)
@@ -199,13 +199,19 @@ subroutine mtd_accu_write(iounit)
 
     implicit none
     integer                     :: iounit
+    real(PMFDP)                 :: mtdwt(1)
     !---------------------------------------------------------------------------
 
     mtdaccu%method = 'MTD'
     call pmf_accu_write_header(mtdaccu%PMFAccuType,iounit)
-    call pmf_accu_write_ibuf_B(mtdaccu%PMFAccuType,iounit,'NSAMPLES','AD',mtdaccu%nsamples)
-    call pmf_accu_write_rbuf_B(mtdaccu%PMFAccuType,iounit,'MTDPOT','WA',mtdaccu%mtdpotential)
-    call pmf_accu_write_rbuf_M(mtdaccu%PMFAccuType,iounit,'MTDFORCE','WA',mtdaccu%mtdforce)
+    call pmf_accu_write_ibuf_B(mtdaccu%PMFAccuType,iounit,'NSAMPLES',   'AD',mtdaccu%nsamples)
+    call pmf_accu_write_rbuf_B(mtdaccu%PMFAccuType,iounit,'MTDPOT',     'WA',mtdaccu%mtdpot)
+    call pmf_accu_write_rbuf_M(mtdaccu%PMFAccuType,iounit,'MTDFORCE',   'WA',mtdaccu%mtdforce)
+    call pmf_accu_write_rbuf_C(mtdaccu%PMFAccuType,iounit,'WIDTHS',     'SA',mtdaccu%widths)
+    if( fmetatemp .gt. 0.0d0 ) then
+        mtdwt(1) = fmetatemp
+        call pmf_accu_write_rbuf_D(iounit,'MTD-WT','SA',mtdwt,1)
+    end if
 
     return
 
@@ -215,45 +221,69 @@ end subroutine mtd_accu_write
 ! Subroutine:  mtd_accu_add_data
 !===============================================================================
 
-subroutine mtd_accu_add_data(cvs, height, widths)
+subroutine mtd_accu_add_data(cvs, height,added)
 
     use mtd_dat
     use pmf_dat
     use pmf_utils
+    use mtd_output
 
     implicit none
-    real(PMFDP)    :: cvs(:)
-    real(PMFDP)    :: height
-    real(PMFDP)    :: widths(:)
+    real(PMFDP)     :: cvs(:)
+    real(PMFDP)     :: height
+    logical         :: added
     ! -----------------------------------------------
-    integer        :: n, i, gi0
-    real(PMFDP)    :: diff, fexparg, fh
+    integer         :: n, i, gi0
+    real(PMFDP)     :: diff, fexparg, fh
     ! --------------------------------------------------------------------------
 
-    ! get global index to accumulator for average values within the set
+    added = .false.
+
+    ! is it inside deposition box?
+    ! deposition box is smaller than sampling box to avoid bouncing problem due to discontinuous potential
+    ! at grid boundary
+    do i=1, mtdaccu%tot_cvs
+        if( cvs(i) .lt. MTDCVList(i)%min_deposit ) then
+            outsidesamples = outsidesamples + 1
+            return
+        end if
+        if( cvs(i) .gt. MTDCVList(i)%max_deposit) then
+            outsidesamples = outsidesamples + 1
+            return
+        end if
+    end do
+
+    ! get global index to accumulator
     gi0 = pmf_accu_globalindex(mtdaccu%PMFAccuType, cvs)
     if( gi0 .le. 0 ) then
+        ! this can happen for one boundary if the deposit box is the exactly the same as sampling box
         outsidesamples = outsidesamples + 1
-    else
-        insidesamples = insidesamples + 1
-        ! increase number of samples
-        mtdaccu%nsamples(gi0) = mtdaccu%nsamples(gi0) + 1
+        return
     end if
+
+    insidesamples           = insidesamples + 1
+    numofhills              = numofhills + 1
+    mtdaccu%nsamples(gi0)   = mtdaccu%nsamples(gi0) + 1
 
     ! update grid data
     do n=1,mtdaccu%tot_nbins
         fexparg = 0.0d0
-        do i=1,NumOfMTDCVs
-            diff = MTDCVList(i)%cv%get_deviation(mtdaccu%binpositions(i,n), cvs(i))
-            fexparg = fexparg + diff**2 / (2.0d0 * widths(i)**2)
+        do i=1,mtdaccu%tot_cvs
+            diff = MTDCVList(i)%cv%get_deviation(mtdaccu%binpos(i,n), cvs(i))
+            fexparg = fexparg + diff**2 * mtdaccu%iwidths2(i)
         end do
-        fh = height * exp(-fexparg)
-        mtdaccu%mtdpotential(n) = mtdaccu%mtdpotential(n) + fh
-        do i=1,NumOfMTDCVs
-            diff = MTDCVList(i)%cv%get_deviation(mtdaccu%binpositions(i,n), cvs(i))
-            mtdaccu%mtdforce(i,n) = mtdaccu%mtdforce(i,n) + fh * diff / widths(i)**2
+        fh = height * exp(- 0.5d0 * fexparg)
+        mtdaccu%mtdpot(n) = mtdaccu%mtdpot(n) + fh
+
+        do i=1,mtdaccu%tot_cvs
+            diff = MTDCVList(i)%cv%get_deviation(mtdaccu%binpos(i,n), cvs(i))
+            mtdaccu%mtdforce(i,n) = mtdaccu%mtdforce(i,n) + fh * diff *  mtdaccu%iwidths2(i)
         end do
     end do
+
+    ! record hill
+    call mtd_output_write_hill(cvs,height,mtdaccu%widths)
+    added = .true.
 
     return
 
@@ -282,10 +312,12 @@ subroutine mtd_accu_get_data(cvs,potential,forces)
 
     ! get global index to grid for cvs
     gi0 = pmf_accu_globalindex(mtdaccu%PMFAccuType, cvs)
-    if( gi0 .le. 0 ) return ! out of valid area
+    if( gi0 .le. 0 ) then
+        return ! out of valid area
+    end if
 
     ! get potential
-    potential = mtdaccu%mtdpotential(gi0)
+    potential = mtdaccu%mtdpot(gi0)
 
     ! get forces
     forces(:) = mtdaccu%mtdforce(:,gi0)

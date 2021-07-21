@@ -65,17 +65,23 @@ public:
     /// duplicate without data
     CPMFAccuDataPtr CreateTheSame(void) const;
 
-    // combine - AD
+    /// duplicate with data
+    CPMFAccuDataPtr Duplicate(void) const;
+
+    // combine - AD - add two data
     void CombineAD(CPMFAccuDataPtr left,CPMFAccuDataPtr right);
 
-    // combine - WA
+    // combine - SA - same contents
+    void CombineSA(CPMFAccuDataPtr left,CPMFAccuDataPtr right);
+
+    // combine - WA - weighted add
     void CombineWA(CPMFAccuDataPtr left,CPMFAccuDataPtr left_nsamples,CPMFAccuDataPtr right,CPMFAccuDataPtr right_nsamples);
 
-    // combine - M2
+    // combine - M2 - add two second moments
     void CombineM2(CPMFAccuDataPtr left,CPMFAccuDataPtr left_nsamples,CPMFAccuDataPtr left_mean,
                    CPMFAccuDataPtr right,CPMFAccuDataPtr right_nsamples,CPMFAccuDataPtr right_mean);
 
-    // combine - CO
+    // combine - CO - add two covariances
     void CombineCO(CPMFAccuDataPtr left,CPMFAccuDataPtr left_nsamples,CPMFAccuDataPtr left_xmean,CPMFAccuDataPtr left_ymean,
                    CPMFAccuDataPtr right,CPMFAccuDataPtr right_nsamples,CPMFAccuDataPtr right_xmean,CPMFAccuDataPtr right_ymean);
 

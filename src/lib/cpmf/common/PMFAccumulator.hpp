@@ -26,6 +26,7 @@
 #include <stdio.h>
 #include <SimpleVector.hpp>
 #include <vector>
+#include <list>
 #include <map>
 #include <PMFAccuData.hpp>
 
@@ -54,6 +55,12 @@ public:
 
     /// load accumulator data from XML
     void Load(CXMLElement* p_ele);
+
+    /// load either single PMF accumulator or set of PMF accumulators from the trajectory and store only last "number' of them
+    static std::list<CPMFAccumulatorPtr> LoadFinalSnapshots(const CSmallString& name, size_t number);
+
+    /// load either single PMF accumulator or set of PMF accumulators from the trajectory and store only last "number' of them
+    static std::list<CPMFAccumulatorPtr> LoadFinalSnapshots(FILE* fin, size_t number);
 
     /// load accumulator data from trajectory file with name
     void LoadSnapshot(const CSmallString& name,int index);
@@ -147,6 +154,9 @@ public:
     /// get number of samples
     int GetNumOfSamples(int ibin) const;
 
+    /// get total number of samples
+    int GetTotalNumOfSamples(void) const;
+
     /// get real value of energy
     double GetEnergyRealValue(double value) const;
 
@@ -163,6 +173,9 @@ public:
 // section data access -------------------------------------------------------
     /// check if the section data exists
     bool HasSectionData(const CSmallString& name) const;
+
+    /// delete section data
+    void DeleteSectionData(const CSmallString& name);
 
     /// create section
     void CreateSectionData(const CSmallString& name,const CSmallString& op,const CSmallString& type,const CSmallString& mode,int len=0);
@@ -243,7 +256,13 @@ protected:
     void Load_v6(char* fline,FILE* fin);
 
     /// is it a header section?
-    bool IsHeaderSection(const CSmallString& keyline);
+    static bool IsHeaderSection(const CSmallString& keyline);
+
+    /// is it a trajectory header?
+    static bool IsTrajectoryHeader(const CSmallString& keyline);
+
+    /// is it a trajectory snapshot?
+    static bool IsTrajectorySnapshot(const CSmallString& keyline);
 
     /// get section name from keyline
     const CSmallString GetSectionName(const CSmallString& keyline) const;

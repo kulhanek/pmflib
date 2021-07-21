@@ -21,6 +21,7 @@
 // =============================================================================
 
 #include <ABPProxy_dG.hpp>
+#include <PMFConstants.hpp>
 
 //------------------------------------------------------------------------------
 
@@ -64,33 +65,23 @@ double CABPProxy_dG::GetValue(int ibin,EProxyRealm realm) const
         RUNTIME_ERROR("Accu is NULL");
     }
 
-    double mtdpot = Accu->GetData("MTDPOT",ibin);
+    double pop  = Accu->GetData("POP",ibin);
+    double temp = Accu->GetTemperature();
+    double ene  = 0.0;
 
     switch(realm){
         // -------------------
         case(E_PROXY_VALUE):
-            return( - mtdpot );
+            ene = - temp*PMF_Rgas*log(pop);
+            return( ene );
         // -------------------
         default:
             RUNTIME_ERROR("unsupported realm");
     }
 
-    return( mtdpot );
+    return( ene );
 }
 
-//    const double Rgas = 0.0019872065;
-//
-//    double m = 1.0;
-//    for(int i=0; i < Accu->GetNumOfBins(); i++){
-//        double pop = Accu->GetPop(i);
-//        if( pop > m ) m = pop;
-//    }
-//    for(int i=0; i < Accu->GetNumOfBins(); i++){
-//        double pop = Accu->GetPop(i);
-//        double ene = - Accu->GetTemperature()*Rgas*log(pop/m);
-//        FES->SetEnergy(i,ene);
-//        FES->SetNumOfSamples(i,Accu->GetNumberOfABPSamples(i));
-//    }
 
 //==============================================================================
 //------------------------------------------------------------------------------

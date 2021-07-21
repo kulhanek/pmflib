@@ -62,6 +62,7 @@ subroutine abf_cvs_read_cv(prm_fin,abf_item)
     use pmf_unit
     use pmf_utils
     use pmf_paths
+    use pmf_control_utils
 
     implicit none
     type(PRMFILE_TYPE),intent(inout)    :: prm_fin
@@ -104,13 +105,11 @@ subroutine abf_cvs_read_cv(prm_fin,abf_item)
 
     if( feimode .eq. 2 ) then
     ! ========================
-    if( .not. prmfile_get_real8_by_key(prm_fin,'wfac',abf_item%wfac) ) then
-        call pmf_utils_exit(PMF_OUT,1,'wfac is not specified!')
-    end if
-    if( abf_item%wfac .lt. 1 ) then
-        call pmf_utils_exit(PMF_OUT,1,'wfac has to be greater then zero!')
-    end if
-    write(PMF_OUT,170) abf_item%wfac
+        if( .not. prmfile_get_real8_by_key(prm_fin,'wfac',abf_item%wfac) ) then
+            call pmf_utils_exit(PMF_OUT,1,'wfac is not specified!')
+        end if
+        call pmf_ctrl_check_real8('ABF','wfac',abf_item%wfac,0.0d0,CND_GT,'f12.2')
+        write(PMF_OUT,170) abf_item%wfac
     end if
 
     return

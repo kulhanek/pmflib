@@ -59,6 +59,9 @@ private:
     CEnergySurfacePtr       FES;                // energy surface
     CTerminalStr            Console;
     CVerboseStr             vout;
+
+    void RunRLDeconvolution(void);
+    double PSF(int ibin,int jbin); // PSF = point spread function
 };
 
 //------------------------------------------------------------------------------

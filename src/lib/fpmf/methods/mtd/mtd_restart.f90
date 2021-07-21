@@ -96,7 +96,7 @@ subroutine mtd_restart_update
 
     return
 
- 10 format('# [ACCU] Total steps     = ',I12,' Inside samples  = ',I12,' Outside samples = ',I12  )
+ 10 format('# [ACCU] Total steps     = ',I12,' Inside gaussians  = ',I12,' Outside gaussians = ',I12  )
 
 end subroutine mtd_restart_update
 

@@ -80,14 +80,14 @@ subroutine mtd_control_read_mtd(prm_fin)
     call pmf_ctrl_read_real8_wunit(prm_fin,'fheight',EnergyUnit,fheight,'F10.5')
     call pmf_ctrl_check_real8_wunit('MTD','fheight',EnergyUnit,fheight,0.0d0,CND_GE,'F10.5')
 
-    call pmf_ctrl_read_integer(prm_fin,'fmetavary',fmetavary,'i12')
-    call pmf_ctrl_check_integer_in_range('MTD','fmetavary',fmetavary,0,2)
+    call pmf_ctrl_read_integer(prm_fin,'fmetastep',fmetastep,'i12')
+    call pmf_ctrl_check_integer('MTD','fmetastep',fmetastep,0,CND_GE)
 
     call pmf_ctrl_read_real8_wunit(prm_fin,'fmetatemp',TemperatureUnit,fmetatemp,'F10.1')
     call pmf_ctrl_check_real8_wunit('MTD','fmetatemp',TemperatureUnit,fmetatemp,0.0d0,CND_GE,'F10.1')
 
-    call pmf_ctrl_read_integer(prm_fin,'fmetastep',fmetastep,'i12')
-    call pmf_ctrl_check_integer('MTD','fmetastep',fmetastep,0,CND_GE)
+    call pmf_ctrl_read_integer(prm_fin,'fsample',fsample,'i12')
+    call pmf_ctrl_check_integer('ABF','fsample',fsample,0,CND_GE)
 
     call pmf_ctrl_read_logical(prm_fin,'frestart',frestart)
 
@@ -96,6 +96,8 @@ subroutine mtd_control_read_mtd(prm_fin)
 
     call pmf_ctrl_read_integer(prm_fin,'ftrjsample',ftrjsample,'i12')
     call pmf_ctrl_check_integer('ABF','ftrjsample',ftrjsample,0,CND_GE)
+
+    call pmf_ctrl_read_logical(prm_fin,'fwritehills',fwritehills)
 
     ! network setup ----------------------------------------------------------------
 

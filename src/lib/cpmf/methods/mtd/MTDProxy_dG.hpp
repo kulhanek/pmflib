@@ -37,6 +37,10 @@ public:
     ~CMTDProxy_dG(void);
 
 //------------------------------------------------------------------------------
+    // is well-tempered metadynamics
+    bool IsWTMeta(void);
+
+//------------------------------------------------------------------------------
     // get number of samples
     virtual int GetNumOfSamples(int ibin) const;
 

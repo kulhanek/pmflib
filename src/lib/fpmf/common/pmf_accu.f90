@@ -150,7 +150,7 @@ end subroutine pmf_accu_get_point
 ! Subroutine:  pmf_accu_read_header
 !===============================================================================
 
-subroutine pmf_accu_read_header(accu,iounit,keyline,method)
+subroutine pmf_accu_read_header(accu,iounit,method,keyline)
 
     use pmf_dat
     use pmf_utils
@@ -158,12 +158,11 @@ subroutine pmf_accu_read_header(accu,iounit,keyline,method)
     implicit none
     type(PMFAccuType)               :: accu
     integer                         :: iounit
-    character(*)                    :: keyline
     character(*)                    :: method
+    character(*)                    :: keyline
     ! -----------------------------------------------
     integer                         :: i,it,nbins,ncvs
     character(len=PMF_MAX_TYPE)     :: stype,sunit
-    character(len=PMF_MAX_KEY)      :: key
     character(len=PMF_MAX_CV_NAME)  :: sname
     character(len=PMF_MAX_PATH)     :: sbuff
     real(PMFDP)                     :: min_value,max_value,fconv
@@ -187,6 +186,9 @@ subroutine pmf_accu_read_header(accu,iounit,keyline,method)
                 call pmf_utils_exit(PMF_OUT,1, &
                                     '[PMFAccu] Provided method "'//trim(sbuff)//'" is not requested one "'//trim(method)//'"!')
             end if
+        case('DRIVER')
+            ! read but do not use
+            read(iounit,10,end=104,err=104) sbuff
         case('CVS')
             ! read header --------------------------
             do i=1, accu%tot_cvs
@@ -229,9 +231,12 @@ subroutine pmf_accu_read_header(accu,iounit,keyline,method)
                 end if
                 ! ignore values fconv and sunit
             end do
-        case('TEMP')
-            ! read but do not use
+        case('TEMPERATURE')
+            ! read and test
             read(iounit,6,end=302,err=302) fconv
+            if( (fconv - ftemp) .gt. 1.0d0 ) then
+                call pmf_utils_exit(PMF_OUT,1,'[PMFAccu] Inconsistent temperatures!')
+            end if
         case('ENERGY-UNIT')
             ! read but do not use
             read(iounit,27,end=301,err=301) fconv, sunit
@@ -240,7 +245,7 @@ subroutine pmf_accu_read_header(accu,iounit,keyline,method)
             read(iounit,27,end=301,err=301) fconv, sunit
         case default
             call pmf_utils_exit(PMF_OUT,1, &
-                 '[PMFAccu] Unable to read from the accumulator - unrecognized header keyword: "'//trim(key)//'"')
+                 '[PMFAccu] Unable to read from the accumulator - unrecognized header keyword on keyline: "'//trim(keyline)//'"')
     end select
 
     return
@@ -258,6 +263,7 @@ subroutine pmf_accu_read_header(accu,iounit,keyline,method)
 101 call pmf_utils_exit(PMF_OUT,1,'[PMFAccu] Unable to read from the accumulator - number of CVS!')
 102 call pmf_utils_exit(PMF_OUT,1,'[PMFAccu] Unable to read from the accumulator - version!')
 103 call pmf_utils_exit(PMF_OUT,1,'[PMFAccu] Unable to read from the accumulator - method!')
+104 call pmf_utils_exit(PMF_OUT,1,'[PMFAccu] Unable to read from the accumulator - driver!')
 
 110 format('[PMFAccu] Incorrect number of CVs: ',I3,' but ',I3,' is expected!')
 
@@ -333,7 +339,7 @@ subroutine pmf_accu_write_header(accu,iounit)
 
  5  format(A20)
 10  format(A)
-15  format(I3)
+15  format(I2)
 20  format(F10.4)
 
 30  format(I2,1X,E18.11,1X,E18.11,1X,I6,1X,A10)
@@ -425,13 +431,15 @@ subroutine pmf_accu_skip_section(iounit,keyline,notify)
     character(len=PMF_MAX_KEY)  :: skey
     character(len=PMF_MAX_KEY)  :: dop
     character(len=PMF_MAX_KEY)  :: dtype
+    character(len=PMF_MAX_KEY)  :: dmode
     integer                     :: dsize
     integer                     :: i
     integer                     :: ibuf
     real(PMFDP)                 :: rbuf
     !---------------------------------------------------------------------------
 
-    read(keyline,*,end=100,err=100) skey,dop,dtype,dsize
+    read(keyline,*,end=100,err=100) skey,dop,dtype,dmode,dsize
+
     write(notify,50) trim(skey),dtype,dsize
 
     select case(dtype)
@@ -448,7 +456,7 @@ subroutine pmf_accu_skip_section(iounit,keyline,notify)
 10  format(8(I9,1X))
 20  format(4(E19.11,1X))
 
-50  format('[PMFAccu] Ignoring section [',A,'] of type "',A1,'" with length: ',I10)
+50  format('# [PMFAccu] Ignoring section [',A,'] of type "',A1,'" with length: ',I10)
 
 100 call pmf_utils_exit(PMF_OUT,1,'[PMFAccu] Unable to parse keyline "'//keyline//'" in pmf_accu_skip_section!')
 110 call pmf_utils_exit(PMF_OUT,1,'[PMFAccu] Premature end of data block for keyline "'//keyline//'" in pmf_accu_skip_section!')
@@ -753,8 +761,8 @@ subroutine pmf_accu_read_rbuf_M(accu,iounit,keyline,rbuf)
     if( dtype .ne. 'R' ) then
         call pmf_utils_exit(PMF_OUT,1,'[PMFAccu] Type mismatch: require "R" but got "'//dtype//'" in pmf_accu_read_rbuf_M!')
     end if
-    if( dmode .ne. 'B' ) then
-        call pmf_utils_exit(PMF_OUT,1,'[PMFAccu] Mode mismatch: require "M" but got "'//trim(dmode)//'" in pmf_accu_read_rbuf_B!')
+    if( dmode .ne. 'M' ) then
+        call pmf_utils_exit(PMF_OUT,1,'[PMFAccu] Mode mismatch: require "M" but got "'//trim(dmode)//'" in pmf_accu_read_rbuf_M!')
     end if
 
     if( dsize .ne. accu%tot_nbins*accu%tot_cvs ) then
@@ -856,7 +864,7 @@ subroutine pmf_accu_read_rbuf_C(accu,iounit,keyline,rbuf)
         call pmf_utils_exit(PMF_OUT,1,'[PMFAccu] Type mismatch: require "R" but got "'//dtype//'" in pmf_accu_read_rbuf_C!')
     end if
     if( dmode .ne. 'C' ) then
-        call pmf_utils_exit(PMF_OUT,1,'[PMFAccu] Mode mismatch: require "C" but got "'//trim(dmode)//'" in pmf_accu_read_rbuf_B!')
+        call pmf_utils_exit(PMF_OUT,1,'[PMFAccu] Mode mismatch: require "C" but got "'//trim(dmode)//'" in pmf_accu_read_rbuf_C!')
     end if
 
     if( dsize .ne. accu%tot_cvs ) then
@@ -907,6 +915,39 @@ subroutine pmf_accu_write_rbuf_C(accu,iounit,key,op,rbuf)
 10  format(4(ES23.15E3,1X))
 
 end subroutine pmf_accu_write_rbuf_C
+
+
+!===============================================================================
+! Subroutine:  pmf_accu_write_rbuf_D
+! data per CVs
+!===============================================================================
+
+subroutine pmf_accu_write_rbuf_D(iounit,key,op,rbuf,nsize)
+
+    use pmf_dat
+    use pmf_utils
+    use pmf_unit
+    use pmf_ver
+
+    implicit none
+    integer                     :: iounit
+    character(*)                :: key
+    character(*)                :: op
+    real(PMFDP)                 :: rbuf(:)
+    integer                     :: nsize
+    ! -----------------------------------------------
+    character(len=PMF_MAX_KEY)  :: skey
+    integer                     :: i
+    !---------------------------------------------------------------------------
+
+    skey = key
+    write(iounit,5) adjustl(skey), trim(op), 'R', 'D', nsize
+    write(iounit,10) (rbuf(i),i=1,nsize)
+
+ 5  format('@',A20,1X,A2,1X,A1,1X,A1,1X,I10)
+10  format(4(ES23.15E3,1X))
+
+end subroutine pmf_accu_write_rbuf_D
 
 !===============================================================================
 

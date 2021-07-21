@@ -63,6 +63,7 @@ subroutine mtd_cvs_read_cv(prm_fin,mtd_item)
     use pmf_cvs
     use pmf_utils
     use pmf_paths
+    use pmf_control_utils
 
     implicit none
     type(PRMFILE_TYPE),intent(inout)   :: prm_fin
@@ -79,9 +80,9 @@ subroutine mtd_cvs_read_cv(prm_fin,mtd_item)
     ! load rest of definition
     if( .not. prmfile_get_real8_by_key(prm_fin,'width',mtd_item%width) ) then
         call pmf_utils_exit(PMF_OUT,1,'width is not specified!')
-    else
-        write(PMF_OUT,100) mtd_item%width, trim(mtd_item%cv%get_ulabel())
     end if
+    write(PMF_OUT,100) mtd_item%width, trim(mtd_item%cv%get_ulabel())
+    call pmf_ctrl_check_real8_wunit('MTD','alpha',mtd_item%cv%unit,mtd_item%width,0.0d0,CND_GT,'f12.2')
     call mtd_item%cv%conv_to_ivalue(mtd_item%width)
 
     ! ========================
@@ -90,6 +91,18 @@ subroutine mtd_cvs_read_cv(prm_fin,mtd_item)
     end if
     write(PMF_OUT,110) mtd_item%min_value, trim(mtd_item%cv%get_ulabel())
     call mtd_item%cv%conv_to_ivalue(mtd_item%min_value)
+
+    ! ========================
+    if( .not. prmfile_get_real8_by_key(prm_fin,'min_deposit',mtd_item%min_deposit) ) then
+        mtd_item%min_deposit = mtd_item%min_value    ! already in internal units
+        write(PMF_OUT,115) mtd_item%cv%get_rvalue(mtd_item%min_deposit), trim(mtd_item%cv%get_ulabel())
+        if( mtd_item%min_deposit .lt. mtd_item%min_value ) then
+            call pmf_utils_exit(PMF_OUT,1,'min_deposit >= min_value')
+        end if
+    else
+        write(PMF_OUT,115) mtd_item%min_deposit, trim(mtd_item%cv%get_ulabel())
+        call mtd_item%cv%conv_to_ivalue(mtd_item%min_deposit)
+    end if
 
     ! ========================
     if( .not. prmfile_get_real8_by_key(prm_fin,'max_value',mtd_item%max_value) ) then
@@ -103,17 +116,31 @@ subroutine mtd_cvs_read_cv(prm_fin,mtd_item)
     end if
 
     ! ========================
+    if( .not. prmfile_get_real8_by_key(prm_fin,'max_deposit',mtd_item%max_deposit) ) then
+        mtd_item%max_deposit = mtd_item%max_value    ! already in internal units
+        write(PMF_OUT,125) mtd_item%cv%get_rvalue(mtd_item%max_deposit), trim(mtd_item%cv%get_ulabel())
+        if( mtd_item%max_deposit .gt. mtd_item%max_value ) then
+            call pmf_utils_exit(PMF_OUT,1,'max_deposit <= max_value')
+        end if
+    else
+        write(PMF_OUT,125) mtd_item%max_deposit, trim(mtd_item%cv%get_ulabel())
+        call mtd_item%cv%conv_to_ivalue(mtd_item%max_deposit)
+    end if
+
+    ! ========================
     if( .not. prmfile_get_integer_by_key(prm_fin,'nbins',mtd_item%nbins) ) then
         call pmf_utils_exit(PMF_OUT,1,'nbins is not specified!')
     end if
-    write(PMF_OUT,125) mtd_item%nbins
+    write(PMF_OUT,130) mtd_item%nbins
 
     return
 
 100 format('    ** Width             : ',F16.6,' [',A,']')
 110 format('    ** Min value         : ',F16.6,' [',A,']')
+115 format('    ** Min deposit value : ',F16.6,' [',A,']')
 120 format('    ** Max value         : ',F16.6,' [',A,']')
-125 format('    ** Number of bins    : ',I10)
+125 format('    ** Max deposit value : ',F16.6,' [',A,']')
+130 format('    ** Number of bins    : ',I10)
 
 end subroutine mtd_cvs_read_cv
 
@@ -139,6 +166,10 @@ subroutine mtd_cvs_cv_info(mtd_item)
                     trim(mtd_item%cv%get_ulabel())
     write(PMF_OUT,155) mtd_item%cv%get_rvalue(mtd_item%min_value), &
                     trim(mtd_item%cv%get_ulabel())
+    write(PMF_OUT,156) mtd_item%cv%get_rvalue(mtd_item%min_deposit), &
+                    trim(mtd_item%cv%get_ulabel())
+    write(PMF_OUT,157) mtd_item%cv%get_rvalue(mtd_item%max_deposit), &
+                    trim(mtd_item%cv%get_ulabel())
     write(PMF_OUT,160) mtd_item%cv%get_rvalue(mtd_item%max_value), &
                     trim(mtd_item%cv%get_ulabel())
     write(PMF_OUT,165) mtd_item%nbins
@@ -150,6 +181,8 @@ subroutine mtd_cvs_cv_info(mtd_item)
 150 format('    ** Current value     : ',E16.7,' [',A,']')
 152 format('    ** Width             : ',E16.7,' [',A,']')
 155 format('    ** Min value         : ',E16.7,' [',A,']')
+156 format('    ** Min deposit value : ',E16.7,' [',A,']')
+157 format('    ** Max deposit value : ',E16.7,' [',A,']')
 160 format('    ** Max value         : ',E16.7,' [',A,']')
 165 format('    ** Number of bins    : ',I8)
 

@@ -35,10 +35,19 @@ implicit none
 
 interface
     ! set number of coordinates
-    subroutine cpmf_mtd_client_set_header(ret_st,nitems,totnbins)
+    subroutine cpmf_mtd_client_set_header(ret_st,ncvs,nbins,version,driver, &
+                    temp,temp_unit,temp_fconv, &
+                    ene_unit,ene_fconv)
         integer         :: ret_st
-        integer         :: nitems
-        integer         :: totnbins
+        integer         :: ncvs
+        integer         :: nbins
+        character(*)    :: version
+        character(*)    :: driver
+        real(8)         :: temp
+        character(*)    :: temp_unit
+        real(8)         :: temp_fconv
+        character(*)    :: ene_unit
+        real(8)         :: ene_fconv
     end subroutine cpmf_mtd_client_set_header
 
     ! set coordinate data
@@ -94,6 +103,8 @@ subroutine mtd_client_register
     use pmf_utils
     use pmf_timers
     use pmf_unit
+    use pmf_ver
+    use pmf_dat
 
     implicit none
 #ifdef PMFLIB_NETWORK
@@ -115,22 +126,24 @@ subroutine mtd_client_register
 
 #ifdef PMFLIB_NETWORK
     ! register coordinates
-    call cpmf_mtd_client_set_header(ret_st,NumOfMTDCVs,mtdaccu%tot_nbins)
+    call cpmf_mtd_client_set_header(ret_st,mtdaccu%tot_cvs,mtdaccu%tot_nbins,PMFLIBVER,DriverName, &
+                                    ftemp,trim(pmf_unit_label(TemperatureUnit)),pmf_unit_get_rvalue(TemperatureUnit,1.0d0), &
+                                    trim(pmf_unit_label(EnergyUnit)),pmf_unit_get_rvalue(EnergyUnit,1.0d0))
 
     if( ret_st .ne. 0 ) then
         call pmf_utils_exit(PMF_OUT,1)
     end if
 
     do i=1,NumOfMTDCVs
-        call cpmf_mtd_client_set_coord(ret_st,  &
-                        i,                      &
-                        MTDCVList(i)%cv%name,   &
-                        MTDCVList(i)%cv%ctype,  &
-                        MTDCVList(i)%min_value, &
-                        MTDCVList(i)%max_value, &
-                        MTDCVList(i)%nbins,     &
-                        pmf_unit_get_rvalue(MTDCVList(i)%cv%unit,1.0d0), &
-                        pmf_unit_label(MTDCVList(i)%cv%unit)             &
+        call cpmf_mtd_client_set_coord(ret_st,      &
+                        i,                          &
+                        mtdaccu%sizes(i)%cv%name,   &
+                        mtdaccu%sizes(i)%cv%ctype,  &
+                        mtdaccu%sizes(i)%min_value, &
+                        mtdaccu%sizes(i)%max_value, &
+                        mtdaccu%sizes(i)%nbins,     &
+                        pmf_unit_get_rvalue(mtdaccu%sizes(i)%cv%unit,1.0d0), &
+                        pmf_unit_label(mtdaccu%sizes(i)%cv%unit)             &
                         )
 
         if( ret_st .ne. 0 ) then
@@ -195,10 +208,10 @@ subroutine mtd_client_get_initial_data
     call pmf_timers_start_timer(PMFLIB_MTD_MWA_TIMER)
 
 #ifdef PMFLIB_NETWORK
-    call cpmf_mtd_client_initial_data(ret_st,                       &
-                                        mtdaccu%nsamples,       &
-                                        mtdaccu%mtdpotential,   &
-                                        mtdaccu%mtdforce        &
+    call cpmf_mtd_client_initial_data(ret_st,               &
+                                        mtdaccu%nsamples,   &
+                                        mtdaccu%mtdpot,     &
+                                        mtdaccu%mtdforce    &
                                         )
 
     if( ret_st .ne. 0 ) then
@@ -255,7 +268,7 @@ subroutine mtd_client_exchange_data(force_exchange)
 #ifdef PMFLIB_NETWORK
     call cpmf_mtd_client_exchange_data(ret_st,                      &
                                         mtdaccu%inc_nsamples,      &
-                                        mtdaccu%inc_mtdpotential,  &
+                                        mtdaccu%inc_mtdpot,  &
                                         mtdaccu%inc_mtdforce       &
                                        )
 
@@ -275,14 +288,14 @@ subroutine mtd_client_exchange_data(force_exchange)
 
     ! move received data to main accumulator
     mtdaccu%nsamples(:)         = mtdaccu%inc_nsamples(:)
-    mtdaccu%mtdpotential(:)     = mtdaccu%inc_mtdpotential(:)
+    mtdaccu%mtdpot(:)     = mtdaccu%inc_mtdpot(:)
     mtdaccu%mtdforce(:,:)       = mtdaccu%inc_mtdforce(:,:)
 #endif
 
     ! and reset incremental data
-    mtdaccu%inc_nsamples(:)        = 0
-    mtdaccu%inc_mtdpotential(:)    = 0.0d0
-    mtdaccu%inc_mtdforce(:,:)      = 0.0d0
+    mtdaccu%inc_nsamples(:)         = 0
+    mtdaccu%inc_mtdpot(:)           = 0.0d0
+    mtdaccu%inc_mtdforce(:,:)       = 0.0d0
 
     failure_counter = 0
 

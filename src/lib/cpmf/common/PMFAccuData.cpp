@@ -86,7 +86,8 @@ void CPMFAccuData::Load(FILE* p_fin,const CSmallString& keyline)
 
     if( ! ( ((Mode == 'B') && (Size == NumOfBins)) ||
             ((Mode == 'M') && (Size == NumOfBins*NumOfCVs)) ||
-            ((Mode == 'C') && (Size == NumOfCVs)) ) ) {
+            ((Mode == 'C') && (Size == NumOfCVs)) ||
+            ( Mode == 'D') ) ) {
         CSmallString error;
         error << "data size and mode is not consistent: '" << keyline << "'";
         RUNTIME_ERROR(error);
@@ -498,6 +499,17 @@ CPMFAccuDataPtr CPMFAccuData::CreateTheSame(void) const
 
 //------------------------------------------------------------------------------
 
+CPMFAccuDataPtr CPMFAccuData::Duplicate(void) const
+{
+    CPMFAccuDataPtr data = CreateTheSame();
+    for(int i=0; i < Size; i++){
+        data->Data[i] = Data[i];
+    }
+    return(data);
+}
+
+//------------------------------------------------------------------------------
+
 void CPMFAccuData::CombineAD(CPMFAccuDataPtr left,CPMFAccuDataPtr right)
 {
     if( CheckCompatibility(left) == false ){
@@ -515,6 +527,28 @@ void CPMFAccuData::CombineAD(CPMFAccuDataPtr left,CPMFAccuDataPtr right)
 
     for(int i=0; i < Size; i++){
         Data[i] = left->Data[i] + right->Data[i];
+    }
+}
+
+//------------------------------------------------------------------------------
+
+void CPMFAccuData::CombineSA(CPMFAccuDataPtr left,CPMFAccuDataPtr right)
+{
+    if( CheckCompatibility(left) == false ){
+        RUNTIME_ERROR("incompatible with left");
+    }
+    if( CheckCompatibility(right) == false ){
+        RUNTIME_ERROR("incompatible with right");
+    }
+
+    for(int i=0; i < Size; i++){
+        // FIXME - should we allow some difference?
+        if( left->Data[i] != right->Data[i] ){
+            stringstream serror;
+            serror << "data are not the same for '" << GetName() << "', item: " << (i+1) << ", values: " << left->Data[i] << ", " << right->Data[i];
+            RUNTIME_ERROR(serror.str());
+        }
+        Data[i] = left->Data[i];
     }
 }
 

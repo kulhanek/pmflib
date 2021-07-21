@@ -52,6 +52,8 @@ public:
     CSO_ARG(CSmallString,Output)
     // options ------------------------------
     CSO_OPT(CSmallString,Mode)
+    CSO_OPT(int,RLIter)
+    CSO_OPT(bool,KeepFloating)
     CSO_OPT(int,Limit)
     CSO_OPT(bool,PrintAll)
     CSO_OPT(bool,UnsampledAsMaxE)
@@ -84,7 +86,6 @@ public:
                 "output",                        /* parameter name */
                 "Name of file where the resulting free energy surface will be printed. If the name is '-' then the output will be written to the standard output.")   /* argument description */
 // description of options ---------------------------------------------------
-    //----------------------------------------------------------------------
     CSO_MAP_OPT(CSmallString,                           /* option type */
                 Mode,                        /* option name */
                 "rl",                          /* default value */
@@ -92,11 +93,29 @@ public:
                 'm',                           /* short option name */
                 "mode",                      /* long option name */
                 "NAME",                           /* parameter name */
-                "Energy calculation mode: mollified (use raw mollified FES), rl (Lucy–Richardson deconvolution)")   /* option description */
+                "Energy calculation mode: mollified (use raw mollified FES), rl (Lucy-Richardson deconvolution)")   /* option description */
+    //----------------------------------------------------------------------
+    CSO_MAP_OPT(int,                           /* option type */
+                RLIter,                        /* option name */
+                10,                          /* default value */
+                false,                          /* is option mandatory */
+                0,                           /* short option name */
+                "rliter",                      /* long option name */
+                "NUMBER",                           /* parameter name */
+                "Number of Lucy-Richardson deconvolution iteration.")   /* option description */
+    //----------------------------------------------------------------------
+    CSO_MAP_OPT(bool,                           /* option type */
+                KeepFloating,                        /* option name */
+                false,                          /* default value */
+                false,                          /* is option mandatory */
+                '\0',                           /* short option name */
+                "floating",                      /* long option name */
+                NULL,                           /* parameter name */
+                "Keep FES floating.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(int,                           /* option type */
                 Limit,                        /* option name */
-                100,                          /* default value */
+                0,                          /* default value */
                 false,                          /* is option mandatory */
                 'l',                           /* short option name */
                 "limit",                      /* long option name */

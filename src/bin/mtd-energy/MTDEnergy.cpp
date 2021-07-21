@@ -113,25 +113,27 @@ bool CMTDEnergy::Run(void)
     int State = 1;
 
 // -----------------------------------------------------------------------------
-// setup accu, energy proxy, and output FES
-    Accu        = CPMFAccumulatorPtr(new CPMFAccumulator);
-    FES         = CEnergySurfacePtr(new CEnergySurface);
-    EneProxy    = CMTDProxy_dG_Ptr(new CMTDProxy_dG);
 
 // load accumulator
     vout << endl;
-    vout << format("%02d:Loading MTD accumulator: %s")%State%string(Options.GetArgInput()) << endl;
+    vout << format("%02d:Loading MTD accumulator/trajectory: %s")%State%string(Options.GetArgInput()) << endl;
     State++;
 
     try {
-        Accu->Load(InputFile);
+        Accus = CPMFAccumulator::LoadFinalSnapshots(InputFile,Options.GetOptSmooth());
     } catch(...) {
         ES_ERROR("unable to load the input MTD accumulator file");
         return(false);
     }
 
-    Accu->PrintInfo(vout);
-    EneProxy->Init(Accu);
+    vout << format("   Number of PMF accumulators read:      %ld")%Accus.size() << endl;
+
+    CPMFAccumulatorPtr accu = Accus.back();
+    if( accu == NULL ) {
+        RUNTIME_ERROR("no PMF accumulators were read");
+    }
+
+    accu->PrintInfo(vout);
 
 // -----------------------------------------------------------------------------
 // calculate FES
@@ -139,30 +141,64 @@ bool CMTDEnergy::Run(void)
     vout << format("%02d:Calculating FES ...")%State << endl;
     State++;
 
-// print header
-    if((Options.GetOptNoHeader() == false) && (Options.GetOptOutputFormat() != "fes")) {
-        Options.PrintOptions(OutputFile);
-        Accu->PrintInfo(OutputFile);
-    }
+    CEnergySurfacePtr tmp_FES   = CEnergySurfacePtr(new CEnergySurface);
+    CMTDProxy_dG_Ptr  eneproxy  = CMTDProxy_dG_Ptr(new CMTDProxy_dG);
+    FES                         = CEnergySurfacePtr(new CEnergySurface);
 
 // allocate surface
-    FES->Allocate(Accu);
+    FES->Allocate(accu);
+    tmp_FES->Allocate(accu);
 
-// calculate energy
-    for(int i=0; i < Accu->GetNumOfBins(); i++){
-        FES->SetNumOfSamples(i,1);
-        FES->SetEnergy(i, EneProxy->GetValue(i,E_PROXY_VALUE) );
+    std::list<CPMFAccumulatorPtr>::iterator it = Accus.begin();
+    std::list<CPMFAccumulatorPtr>::iterator ie = Accus.end();
+
+    int i = 1;
+    while( it != ie ){
+        accu = *it;
+        eneproxy->Init(accu);
+    // calculate energy
+        for(int i=0; i < accu->GetNumOfBins(); i++){
+            tmp_FES->SetNumOfSamples(i,eneproxy->GetNumOfSamples(i));
+            tmp_FES->SetEnergy(i, eneproxy->GetValue(i,E_PROXY_VALUE) );
+        }
+        int numofhills = accu->GetTotalNumOfSamples();
+        CSmallString type = "MTD";
+        if( eneproxy->IsWTMeta() ){
+            type << "-WT";
+        }
+        vout << format("   #%03d FES SigmaF2     = %12.5lf, #hills = %10d, Type: %s")%i%tmp_FES->GetSigmaF2All()%numofhills%type << endl;
+        FES->AddFES(tmp_FES);
+        it++;
+        i++;
     }
+    vout << "   -----------------------------------" << endl;
+    double num = Accus.size();
+    if( num > 0 ){
+        FES->DivideFES(num);
+    }
+
+    vout << format("   Smoothed FES SigmaF2 = %12.5f")%FES->GetSigmaF2All() << endl;
+    vout << "   >> FES post processing ..." << endl;
 
 // should we apply offset?
     if(Options.GetOptKeepFloating() == false) {
-        // get value of global minumum
-        double offset = Options.GetOptOffset() - FES->GetGlobalMinimumValue();
+        // get value of global minimum
+        double offset = - FES->GetGlobalMinimumValue();
         FES->ApplyOffset(offset);
     }
 
-    vout << endl;
-    vout << "Final FES SigmaF2     = " << setprecision(5) << FES->GetSigmaF2() << endl;
+// post-processing
+    FES->ApplyOffset(Options.GetOptOffset());
+
+    if( Options.GetOptUnsampledAsMaxE() ){
+        if( Options.IsOptMaxEnergySet()){
+            FES->AdaptUnsampledToMaxEnergy(Options.GetOptMaxEnergy());
+        } else {
+            FES->AdaptUnsampledToMaxEnergy();
+        }
+    }
+
+    vout << format("   Final FES SigmaF2    = %12.5f")%FES->GetSigmaF2All() << endl;
 
 // -----------------------------------------------------------------------------
 // print energy surface
@@ -171,7 +207,22 @@ bool CMTDEnergy::Run(void)
     vout << format("%02d:Writing results to file: %s")%State%string(Options.GetArgOutput()) << endl;
     State++;
 
+// print header
+    if((Options.GetOptNoHeader() == false) && (Options.GetOptOutputFormat() != "fes")) {
+        Options.PrintOptions(OutputFile);
+        accu = Accus.back();
+        accu->PrintInfo(OutputFile);
+    }
+
     CESPrinter printer;
+
+    if(Options.GetOptPrintAll()) {
+        printer.SetSampleLimit(0);
+    } else {
+        printer.SetSampleLimit(Options.GetOptLimit());
+    }
+
+    printer.SetIncludeBinStat(Options.GetOptIncludeBinStat());
 
     printer.SetPrintedES(FES);
     printer.SetXFormat(Options.GetOptIXFormat());

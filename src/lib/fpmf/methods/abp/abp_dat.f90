@@ -24,6 +24,7 @@ module abp_dat
 
 use pmf_sizes
 use pmf_dat
+use pmf_accu
 
 implicit none
 
@@ -67,46 +68,40 @@ type CVTypeABP
     real(PMFDP)             :: min_value        ! left range
     real(PMFDP)             :: max_value        ! right range
     integer                 :: nbins            ! number of bins
-    real(PMFDP)             :: alpha            ! alpha factor
+    real(PMFDP)             :: width            ! width factor
 end type CVTypeABP
 
 ! ----------------------
 integer                     :: NumOfABPCVs      ! number of CVs in a group
 type(CVTypeABP),allocatable :: ABPCVList(:)     ! definition of CVs
 
-! accu types -------------------------------------------------------------------
-type CVInfoTypeABP
-    integer                  :: nbins           ! number of accumulator bins
-    real(PMFDP)              :: min_value       ! left boundary of coordinate
-    real(PMFDP)              :: max_value       ! left boundary of coordinate
-    real(PMFDP)              :: bin_width       ! (right-left)/numbins
-    real(PMFDP)              :: width           ! right - left
-end type CVInfoTypeABP
-
 ! ----------------------
 
-type ABPAccuType
-    integer                         :: tot_cvs      ! total number of independent CVs
-    type(CVInfoTypeABP), pointer    :: sizes(:)     ! accumulator information
-    integer                         :: tot_nbins    ! number of total bins
-
-    ! helper data
-    real(PMFDP),pointer             :: binpos(:,:)  ! CV values in bin centers
-
+type,extends(PMFAccuType)   :: ABPAccuType
     ! ABP data
     real(PMFDP)                     :: M            ! max value of pop
     integer,pointer                 :: nsamples(:)  !
     real(PMFDP),pointer             :: dpop(:,:)    !
-    real(PMFDP),pointer             :: pop(:)       !
+    real(PMFDP),pointer             :: pop(:)       ! without 1.0
+    real(PMFDP),pointer             :: widths(:)    ! widths
+    real(PMFDP),pointer             :: iwidths2(:)  ! inverse width squares
 
-     ! ABP data - incremental part for ABP-server
-     integer,pointer                :: nisamples(:)
-     real(PMFDP),pointer            :: idpop(:,:)
-     real(PMFDP),pointer            :: ipop(:)
+    ! helper data
+    real(PMFDP),pointer             :: binpos(:,:)  ! CV values in bin centers
+    real(PMFDP)                     :: dnorm
+
+    ! ABP data - incremental part for ABP-server
+    integer,pointer                 :: inc_nsamples(:)
+    real(PMFDP),pointer             :: inc_dpop(:,:)
+    real(PMFDP),pointer             :: inc_pop(:)
 end type ABPAccuType
 
 ! ----------------------
-type(ABPAccuType)           :: accumulator      ! accumulated forces
+type(ABPAccuType)           :: abpaccu          ! accumulated forces
+integer                     :: insidesamples
+integer                     :: outsidesamples
+
+! ----------------------
 real(PMFDP),allocatable     :: cvvalues(:)      ! CV values
 real(PMFDP),allocatable     :: la(:)            ! ABP force in coordinate direction
 

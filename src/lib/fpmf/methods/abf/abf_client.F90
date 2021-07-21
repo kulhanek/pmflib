@@ -157,8 +157,8 @@ subroutine abf_client_register
         end if
 
         do i=1,abfaccu%tot_cvs
-            call cpmf_abf_client_set_coord(ret_st,  &
-                            i,                      &
+            call cpmf_abf_client_set_coord(ret_st,      &
+                            i,                          &
                             abfaccu%sizes(i)%cv%name,   &
                             abfaccu%sizes(i)%cv%ctype,  &
                             abfaccu%sizes(i)%min_value, &

@@ -187,7 +187,7 @@ SET(PMF_ABP_CORE_SRC
         methods/abp/abp_control.F90
         methods/abp/abp_output.f90
         methods/abp/abp_restart.f90
-        methods/abp/abp_accumulator.f90
+        methods/abp/abp_accu.f90
         methods/abp/abp_core.f90
         methods/abp/abp_client.F90
         methods/abp/abp_trajectory.f90

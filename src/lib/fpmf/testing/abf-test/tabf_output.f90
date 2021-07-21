@@ -95,6 +95,7 @@ subroutine tabf_output_write_header
     integer        :: i, off
     ! --------------------------------------------------------------------------
 
+    write(TABF_OUT,1) '#'
     write(TABF_OUT,10,advance='NO') '#       1'
     off = 1
     do i=off+1,off+NumOfTABFCVs
@@ -125,6 +126,7 @@ subroutine tabf_output_write_header
 
     return
 
+ 1 format(A)
 10 format(A9)
 15 format(1X,I15)
 20 format(1X,A15)

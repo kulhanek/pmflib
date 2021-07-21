@@ -174,6 +174,7 @@ integer,parameter       :: MTD_INP      = 180
 integer,parameter       :: MTD_OUT      = 181
 integer,parameter       :: MTD_RST      = 182
 integer,parameter       :: MTD_TRJ      = 183
+integer,parameter       :: MTD_HILLS    = 184
 
 ! string method ----------------------------------------------------------------
 integer,parameter       :: STM_INP      = 310

@@ -191,7 +191,7 @@ subroutine abf_init_print_header
     write(PMF_OUT,130)  ' Trajectory sampling (ftrjsample)        : ', ftrjsample
     write(PMF_OUT,125)  ' Trajectory file (fabftrj)               : ', trim(fabftrj)
     write(PMF_OUT,120)
-    write(PMF_OUT,120)  ' ABF server options:'
+    write(PMF_OUT,120)  ' MWA server options:'
     write(PMF_OUT,120)  ' ------------------------------------------------------'
     write(PMF_OUT,125)  ' Server communication is                      : ', prmfile_onoff(fserver_enabled)
     if( fserver_enabled ) then

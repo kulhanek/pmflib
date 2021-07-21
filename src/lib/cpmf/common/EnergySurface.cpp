@@ -250,6 +250,37 @@ double CEnergySurface::GetSigmaF2(bool includeglued) const
 
 //------------------------------------------------------------------------------
 
+double CEnergySurface::GetSigmaF2All(void) const
+{
+    double sigmafsum = 0.0;
+    double sigmafsum2 = 0.0;
+    double count = 0.0;
+
+    for(int k=0; k < NumOfBins; k++) {
+        double ene = Energy[k];
+        sigmafsum += ene;
+        sigmafsum2 += ene*ene;
+        count++;
+    }
+
+    double sigmaf2 = 0.0;
+
+    if( count > 0 ){
+        sigmaf2 = count*sigmafsum2 - sigmafsum*sigmafsum;
+        if(sigmaf2 > 0) {
+            sigmaf2 = sqrt(sigmaf2) / count;
+        } else {
+            sigmaf2 = 0.0;
+        }
+    }
+
+    sigmaf2 *= sigmaf2;
+
+    return(sigmaf2);
+}
+
+//------------------------------------------------------------------------------
+
 double CEnergySurface::GetSigmaF2p(bool includeglued) const
 {
     double sigmafsum = 0.0;
@@ -461,24 +492,26 @@ void CEnergySurface::AdaptUnsampledToMaxEnergy(double maxene)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void CEnergySurface::operator+=(const CEnergySurface& source)
+void CEnergySurface::AddFES(CEnergySurfacePtr source)
 {
-    if(NumOfBins != source.NumOfBins) {
+    if(NumOfBins != source->NumOfBins) {
         ES_ERROR("surfaces do not match");
         return;
     }
 
     for(int k=0; k < NumOfBins; k++) {
-        Energy[k] += source.Energy[k];
+        Energy[k]   += source->Energy[k];
+        Samples[k]  += source->Samples[k];
     }
 }
 
 //------------------------------------------------------------------------------
 
-void CEnergySurface::operator/=(const double& number)
+void CEnergySurface::DivideFES(double number)
 {
     for(int k=0; k < NumOfBins; k++) {
         Energy[k] /= number;
+        // do not divide Samples
     }
 }
 
