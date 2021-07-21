@@ -46,12 +46,26 @@ ADD_TEST(CVDerRand02-OPOS ${EXECUTABLE_OUTPUT_PATH}/pmf-test-cvs
 ADD_TEST(CVDerRand03-OPOS ${EXECUTABLE_OUTPUT_PATH}/pmf-test-cvs
                         ../random03.in opos.in)
 
+ADD_TEST(CVDerRand01-OPOS2 ${EXECUTABLE_OUTPUT_PATH}/pmf-test-cvs
+                        ../random01.in opos2.in)
+ADD_TEST(CVDerRand02-OPOS2 ${EXECUTABLE_OUTPUT_PATH}/pmf-test-cvs
+                        ../random02.in opos2.in)
+ADD_TEST(CVDerRand03-OPOS2 ${EXECUTABLE_OUTPUT_PATH}/pmf-test-cvs
+                        ../random03.in opos2.in)
+
 ADD_TEST(CVDerRand01-ORAD ${EXECUTABLE_OUTPUT_PATH}/pmf-test-cvs
                         ../random01.in orad.in)
 ADD_TEST(CVDerRand02-ORAD ${EXECUTABLE_OUTPUT_PATH}/pmf-test-cvs
                         ../random02.in orad.in)
 ADD_TEST(CVDerRand03-ORAD ${EXECUTABLE_OUTPUT_PATH}/pmf-test-cvs
                         ../random03.in orad.in)
+
+ADD_TEST(CVDerRand01-ORAD2 ${EXECUTABLE_OUTPUT_PATH}/pmf-test-cvs
+                        ../random01.in orad2.in)
+ADD_TEST(CVDerRand02-ORAD2 ${EXECUTABLE_OUTPUT_PATH}/pmf-test-cvs
+                        ../random02.in orad2.in)
+ADD_TEST(CVDerRand03-ORAD2 ${EXECUTABLE_OUTPUT_PATH}/pmf-test-cvs
+                        ../random03.in orad2.in)
 
 ADD_TEST(CVDerRand01-MDIS ${EXECUTABLE_OUTPUT_PATH}/pmf-test-cvs
                         ../random01.in mdis.in)

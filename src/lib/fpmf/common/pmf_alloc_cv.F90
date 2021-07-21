@@ -41,7 +41,9 @@ subroutine pmf_alloc_cv_allocate(cv_type,cv_item)
     use cv_pos
     use cv_rad
     use cv_opos
+    use cv_opos2
     use cv_orad
+    use cv_orad2
     use cv_dis
     use cv_odis
     use cv_mdis
@@ -139,8 +141,12 @@ subroutine pmf_alloc_cv_allocate(cv_type,cv_item)
             allocate(CVTypeRAD::cv_item)
         case('OPOS')
             allocate(CVTypeOPOS::cv_item)
+        case('OPOS2')
+            allocate(CVTypeOPOS2::cv_item)
         case('ORAD')
             allocate(CVTypeORAD::cv_item)
+        case('ORAD2')
+            allocate(CVTypeORAD2::cv_item)
         case('DIS')
             allocate(CVTypeDIS::cv_item)
         case('ODIS')

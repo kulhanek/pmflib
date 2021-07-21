@@ -39,7 +39,9 @@ SET(PMF_CVS_SRC
         common/cvs/distance/cv_pos.f90
         common/cvs/distance/cv_rad.f90
         common/cvs/distance/cv_opos.f90
+        common/cvs/distance/cv_opos2.f90
         common/cvs/distance/cv_orad.f90
+        common/cvs/distance/cv_orad2.f90
         common/cvs/distance/cv_dis.f90
         common/cvs/distance/cv_odis.f90
         common/cvs/distance/cv_mdis.f90

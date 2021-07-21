@@ -1,0 +1,43 @@
+[ORAD2]
+name        cv1
+group_a     @1,2,3,4
+reference_a str001.xyz
+group_b     @5
+direction   x
+
+[ORAD2]
+name        cv2
+group_a     @1,2,3,4
+reference_a str001.xyz
+group_b     @5,2,3
+direction   x
+
+[ORAD2]
+name        cv3
+group_a     @1,2,3,4
+reference_a str001.xyz
+group_b     @5
+direction   y
+
+[ORAD2]
+name        cv4
+group_a     @1,2,3,4
+reference_a str001.xyz
+group_b     @5,2,3
+direction   y
+
+[ORAD2]
+name        cv5
+group_a     @1,2,3,4
+reference_a str001.xyz
+group_b     @5
+direction   z
+
+[ORAD2]
+name        cv6
+group_a     @1,2,3,4
+reference_a str001.xyz
+group_b     @5,2,3
+direction   z
+
+
