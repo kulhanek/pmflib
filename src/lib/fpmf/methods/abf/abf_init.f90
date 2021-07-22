@@ -73,7 +73,7 @@ subroutine abf_init_dat
     frestart        = .false.
     frstupdate      = 5000
     ftrjsample      = 0
-    fmask_mode      = 0
+    fapply_mask     = .false.
     fapply_abf      = .true.
 
     fenthalpy       = .false.
@@ -146,9 +146,9 @@ subroutine abf_init_print_header
     write(PMF_OUT,120)
     write(PMF_OUT,120)  ' ABF Control'
     write(PMF_OUT,120)  ' ------------------------------------------------------'
-    write(PMF_OUT,130)  ' ABF mask mode (fmask_mode)              : ', fmask_mode
-    write(PMF_OUT,125)  ' ABF mask file (fabfmask)                : ', trim(fabfmask)
     write(PMF_OUT,125)  ' Apply ABF force (fapply_abf)            : ', prmfile_onoff(fapply_abf)
+    write(PMF_OUT,125)  ' ABF mask mode (fapply_mask)             : ', prmfile_onoff(fapply_mask)
+    write(PMF_OUT,125)  ' ABF mask file (fabfmask)                : ', trim(fabfmask)
 
     write(PMF_OUT,120)
     write(PMF_OUT,120)  ' ABF Interpolation/Extrapolation '

@@ -76,10 +76,9 @@ subroutine abf_control_read_abf(prm_fin)
         return
     end if
 
-    call pmf_ctrl_read_integer(prm_fin,'fmask_mode',fmask_mode,'i12')
-    call pmf_ctrl_check_integer_in_range('ABF','fmask_mode',fmask_mode,0,1)
 
     call pmf_ctrl_read_logical(prm_fin,'fapply_abf',fapply_abf)
+    call pmf_ctrl_read_logical(prm_fin,'fapply_mask',fapply_mask)
 
     call pmf_ctrl_read_integer(prm_fin,'fsample',fsample,'i12')
     call pmf_ctrl_check_integer('ABF','fsample',fsample,0,CND_GE)

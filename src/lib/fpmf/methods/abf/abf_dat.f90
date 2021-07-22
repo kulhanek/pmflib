@@ -42,7 +42,7 @@ integer     :: fsample      ! output sample period in steps
 logical     :: frestart     ! 1 - restart job with previous data, 0 - otherwise not
 integer     :: frstupdate   ! how often is restart file written
 integer     :: ftrjsample   ! how often save accumulator to "accumulator evolution"
-integer     :: fmask_mode   ! 0 - disable ABF mask, 1 - enable ABF mask
+logical     :: fapply_mask  ! off - disable ABF mask, on - enable ABF mask
 logical     :: fapply_abf   ! on - apply ABF, off - do not apply ABF
 integer     :: feimode      ! interpolation/extrapolation mode
                             ! 0 - disabled
@@ -50,8 +50,8 @@ integer     :: feimode      ! interpolation/extrapolation mode
                             ! 2 - Gaussian kernel smoothing
 
 logical     :: fenthalpy    ! collect data for enthalpy calculation
-real(PMFDP) :: fepotoffset
 logical     :: fentropy     ! collect data for entropy calculation
+real(PMFDP) :: fepotoffset
 real(PMFDP) :: fekinoffset
 
 ! linear ramp

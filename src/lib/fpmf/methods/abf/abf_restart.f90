@@ -44,7 +44,7 @@ subroutine abf_restart_read
     ! --------------------------------------------------------------------------
 
     ! read mask
-    if( fmask_mode .eq. 1 ) then
+    if( fapply_mask ) then
         write(ABF_OUT,5) trim(fabfmask)
         call pmf_utils_open(ABF_RST,fabfmask,'O')
         call abf_accu_read_mask(ABF_RST)
