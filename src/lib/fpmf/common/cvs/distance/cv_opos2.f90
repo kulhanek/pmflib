@@ -66,7 +66,7 @@ subroutine load_opos2(cv_item,prm_fin)
 
     integer                             :: i,ar
     character(len=PRMFILE_MAX_VALUE)    :: tmpstr
-    logical                             :: skiptest
+    logical                             :: skiptest,lresult
     ! --------------------------------------------------------------------------
 
     ! unit and CV name initialization ---------------
@@ -78,6 +78,10 @@ subroutine load_opos2(cv_item,prm_fin)
     ! init groups and control array -----------------
     cv_item%ngrps = 2
     call cv_common_init_groups(cv_item,prm_fin)
+
+    ! this is important for testing
+    skiptest = .false.
+    lresult = prmfile_get_logical_by_key(prm_fin,'skip_mass_test',skiptest)
 
     ! read group a ----------------------------------
     write(PMF_OUT,50)
@@ -157,7 +161,7 @@ subroutine calculate_opos2(cv_item,x,ctx)
     real(PMFDP)         :: x(:,:)
     type(CVContextType) :: ctx
     ! -----------------------------------------------
-    integer             :: i,j,k,mi,mj,ai,info,best
+    integer             :: i,mi,mj,ai,info,best
     real(PMFDP)         :: px(3)
     real(PMFDP)         :: f(4,4), work(26*4)
     real(PMFDP)         :: r11,r12,r13,r21,r22,r23,r31,r32,r33
