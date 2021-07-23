@@ -84,7 +84,6 @@ int CACCUTrajectory::Init(int argc,char* argv[])
     vout << "# ------------------------------------------------" << endl;
         vout << "# Snapshot                             : " << Options.GetOptSnapshot() << endl;
     vout << "# ------------------------------------------------------------------------------" << endl;
-    vout << endl;
 
     // open files -----------------------------------
     if( InputFile.Open(Options.GetArgTrjName(),"r") == false ){
@@ -118,7 +117,6 @@ bool CACCUTrajectory::Run(void)
     }
 
     state++;
-    vout << endl;
     vout << format("%02d:Saving the snapshot as the PMF accumulator ...")%state << endl;
 
 // now write snapshot

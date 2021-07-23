@@ -217,7 +217,7 @@ void CESPrinter::PrintPlain(FILE* fout)
             RUNTIME_ERROR(error);
         }
         if( IncludeError ){
-            double error = EnergySurface->GetErrorRealValue(ibin);
+            double error = EnergySurface->GetErrorRealValueWithSLevel(ibin);
             if(fprintf(fout,yform,error) <= 0) {
                 CSmallString error;
                 error << "unable to print Y (error) data to the file (" << strerror(errno) << ")";

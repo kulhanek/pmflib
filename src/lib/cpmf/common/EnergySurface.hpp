@@ -86,6 +86,9 @@ public:
     /// get error from point of index
     double GetErrorRealValue(int ibin) const;
 
+    /// get error from point of index including sigma level
+    double GetErrorRealValueWithSLevel(int ibin) const;
+
     /// get sigmaF2 from sampled area
     double GetSigmaF2(bool includeglued=false) const;
 

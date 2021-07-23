@@ -1199,7 +1199,7 @@ double CIntegratorGPR::GetKernelValue(const CSimpleVector<double>& ip,const CSim
 
 void CIntegratorGPR::CalculateEnergy(CVerboseStr& vout)
 {
-    vout << "   Calculating EneSurf ..." << endl;
+    vout << "   Calculating FES ..." << endl;
 
 // create map for bins with calculated energy and error
     NumOfValues = 0;
@@ -1248,10 +1248,10 @@ void CIntegratorGPR::CalculateEnergy(CVerboseStr& vout)
         EneSurf->SetError(i,0.0);
     }
 
-// update EneSurf
+// update FES
     if( GlobalMinSet ){
         // GPos.CreateVector(NCVs) - is created in  SetGlobalMin
-   //   vout << "   Calculating EneSurf ..." << endl;
+   //   vout << "   Calculating FES ..." << endl;
         vout << "      Global minimum provided at: ";
         vout << GPos[0];
         for(int i=1; i < Accu->GetNumOfCVs(); i++){
@@ -1281,7 +1281,7 @@ void CIntegratorGPR::CalculateEnergy(CVerboseStr& vout)
             }
         }
 
-   //   vout << "   Calculating EneSurf ..." << endl;
+   //   vout << "   Calculating FES ..." << endl;
         vout << "      Global minimum found at: ";
         vout << GPos[0];
         for(size_t i=1; i < NCVs; i++){
@@ -1966,7 +1966,7 @@ void CIntegratorGPR::CalculateErrors(CSimpleVector<double>& gpos,CVerboseStr& vo
         RUNTIME_ERROR("NumOfValues == 0");
     }
 
-    vout << "   Calculating EneSurf error ..." << endl;
+    vout << "   Calculating FES error ..." << endl;
     CSmallTime st;
     st.GetActualTime();
 
@@ -2025,7 +2025,7 @@ void CIntegratorGPR::CalculateErrorsFromCov(CVerboseStr& vout)
         RUNTIME_ERROR("NumOfValues == 0");
     }
 
-    vout << "   Calculating EneSurf error ..." << endl;
+    vout << "   Calculating FES error ..." << endl;
 
     // find global minimum
     size_t iglb = 0;

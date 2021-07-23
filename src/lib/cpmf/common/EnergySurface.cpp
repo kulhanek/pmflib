@@ -215,6 +215,13 @@ double  CEnergySurface::GetErrorRealValue(int ibin) const
 
 //------------------------------------------------------------------------------
 
+double  CEnergySurface::GetErrorRealValueWithSLevel(int ibin) const
+{
+    return(Error[ibin] * EnergyFConv);
+}
+
+//------------------------------------------------------------------------------
+
 double CEnergySurface::GetSigmaF2(bool includeglued) const
 {
     double sigmafsum = 0.0;
