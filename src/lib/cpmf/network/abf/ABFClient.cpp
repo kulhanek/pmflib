@@ -77,22 +77,20 @@ int CABFClient::RegisterClient(void)
             p_ele->SetAttribute("job_id",job_id);
         }
 
-        // FIXME - relationships
-
         // create sections
         Accu->CreateSectionData("NSAMPLES", "AD","I","B");
         Accu->CreateSectionData("MICF",     "WA","R","M");
-        Accu->CreateSectionData("M2ICF",    "AD","R","M");
+        Accu->CreateSectionData("M2ICF",    "M2","R","M", "MICF");
 
         if( EnthalpyEnabled ){
             Accu->CreateSectionData("MEPOT",    "WA","R","B");
-            Accu->CreateSectionData("M2EPOT",   "AD","R","B");
+            Accu->CreateSectionData("M2EPOT",   "M2","R","B", "M2EPOT");
         }
 
         if( EnthalpyEnabled ){
             Accu->CreateSectionData("METOT",    "WA","R","B");
-            Accu->CreateSectionData("M2ETOT",   "AD","R","B");
-            Accu->CreateSectionData("C11HH",    "AD","R","M");
+            Accu->CreateSectionData("M2ETOT",   "M2","R","B", "METOT");
+            Accu->CreateSectionData("C11HH",    "CO","R","M", "METOT", "MICF");
         }
 
         Accu->Save(p_ele);

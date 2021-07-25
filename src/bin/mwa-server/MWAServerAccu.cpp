@@ -84,7 +84,8 @@ bool CMWAServerAccu::RegisterOrCheckCoords(CServerCommand* p_cmd)
             // load coordinates from first client
             Load(p_accu);
 
-            // print info about CVs
+            // print info about PMF accumulator and CVs
+            PrintAccuInfo(MWAServer.vout);
             PrintCVSInfo(MWAServer.vout);
             MWAServer.vout << std::endl;
 

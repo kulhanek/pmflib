@@ -36,8 +36,8 @@ implicit none
 
 ! control section --------------------------------------------------------------
 integer     :: fmode        ! 0 - disable ABF
-                            ! 1 - enable ABF (standard algorithm - 4p)
-                            ! 2 - enable ABF (numerical algorithm - 2p)
+                            ! 1 - enable ABF (simple ABF algorithm - 2p)
+                            ! 2 - enable ABF (original ABF algorithm - 4p)
 integer     :: fsample      ! output sample period in steps
 logical     :: frestart     ! 1 - restart job with previous data, 0 - otherwise not
 integer     :: frstupdate   ! how often is restart file written

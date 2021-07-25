@@ -51,11 +51,11 @@ subroutine abf_core_main
 
     select case(fmode)
         case(1)
-            ! standard ABF algorithm
-            call abf_core_force_4p
-        case(2)
-            ! numerical differentiation
+            ! simplified ABF algorithm
             call abf_core_force_2p
+        case(2)
+            ! original ABF algorithm
+            call abf_core_force_4p
         case default
             call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented fmode in abf_core_main!')
     end select
@@ -238,7 +238,7 @@ end subroutine abf_core_force_4p
 
 !===============================================================================
 ! Subroutine:  abf_core_force_2p
-! this is leap-frog ABF version
+! this is leap-frog ABF version, simplified algorithm
 !===============================================================================
 
 subroutine abf_core_force_2p()

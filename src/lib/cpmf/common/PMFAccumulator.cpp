@@ -1501,6 +1501,63 @@ void CPMFAccumulator::CreateSectionData(const CSmallString& name,const CSmallStr
 
 //------------------------------------------------------------------------------
 
+void CPMFAccumulator::CreateSectionData(const CSmallString& name,const CSmallString& op,const CSmallString& type,
+                       const CSmallString& mode,const CSmallString& mxname)
+{
+    CPMFAccuDataPtr data = CPMFAccuDataPtr(new CPMFAccuData(NumOfBins,NumOfCVs));
+    data->Name      = name;
+    data->Op        = op;
+    data->Type      = type;
+    data->Mode      = mode;
+    data->MXName    = mxname;
+
+    data->Size  = 0;
+    if( data->Mode == "B" ){
+        data->Size  = NumOfBins;
+    } else if ( data->Mode == "C" ) {
+        data->Size  = NumOfCVs;
+    } else if ( data->Mode == "M" ) {
+        data->Size  = NumOfCVs * NumOfBins;
+    }
+    if( data->Size > 0 ) {
+        data->Data.CreateVector(data->Size);
+        data->Data.SetZero();
+    }
+
+    DataBlocks[name] = data;
+}
+
+//------------------------------------------------------------------------------
+
+void CPMFAccumulator::CreateSectionData(const CSmallString& name,const CSmallString& op,const CSmallString& type,
+                       const CSmallString& mode,const CSmallString& mxname,const CSmallString& myname)
+{
+    CPMFAccuDataPtr data = CPMFAccuDataPtr(new CPMFAccuData(NumOfBins,NumOfCVs));
+    data->Name      = name;
+    data->Op        = op;
+    data->Type      = type;
+    data->Mode      = mode;
+    data->MXName    = mxname;
+    data->MYName    = myname;
+
+    data->Size  = 0;
+    if( data->Mode == "B" ){
+        data->Size  = NumOfBins;
+    } else if ( data->Mode == "C" ) {
+        data->Size  = NumOfCVs;
+    } else if ( data->Mode == "M" ) {
+        data->Size  = NumOfCVs * NumOfBins;
+    }
+    if( data->Size > 0 ) {
+        data->Data.CreateVector(data->Size);
+        data->Data.SetZero();
+    }
+
+    DataBlocks[name] = data;
+}
+
+//------------------------------------------------------------------------------
+
 CPMFAccuDataPtr CPMFAccumulator::GetSectionData(const CSmallString& name) const
 {
     std::map<CSmallString,CPMFAccuDataPtr>::const_iterator isec = DataBlocks.find(name);

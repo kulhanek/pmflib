@@ -178,7 +178,16 @@ public:
     void DeleteSectionData(const CSmallString& name);
 
     /// create section
-    void CreateSectionData(const CSmallString& name,const CSmallString& op,const CSmallString& type,const CSmallString& mode,int len=0);
+    void CreateSectionData(const CSmallString& name,const CSmallString& op,const CSmallString& type,
+                           const CSmallString& mode,int len=0);
+
+    /// create section
+    void CreateSectionData(const CSmallString& name,const CSmallString& op,const CSmallString& type,
+                           const CSmallString& mode,const CSmallString& mxname);
+
+    /// create section
+    void CreateSectionData(const CSmallString& name,const CSmallString& op,const CSmallString& type,
+                           const CSmallString& mode,const CSmallString& mxname,const CSmallString& myname);
 
     /// get access to data section
     CPMFAccuDataPtr GetSectionData(const CSmallString& name) const;

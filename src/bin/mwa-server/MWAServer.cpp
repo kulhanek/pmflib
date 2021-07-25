@@ -294,6 +294,11 @@ bool CMWAServer::Run(void)
         }
     }
 
+    if( MWAAccumulator.GetNumOfCVs() > 0 ){
+        MWAAccumulator.PrintAccuInfo(vout);
+        MWAAccumulator.PrintCVSInfo(vout);
+    }
+
     if(TrajFileName != NULL) {
         vout << "Output MWA trajectory: " << TrajFileName << endl;
         TrajFile = fopen(TrajFileName,"w");

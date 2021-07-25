@@ -51,11 +51,11 @@ subroutine usabf_core_main
 
     select case(fmode)
         case(1)
-            ! standard ABF algorithm
-            call usabf_core_force_4p
-        case(2)
-            ! numerical differentiation
+            ! simplified ABF algorithm
             call usabf_core_force_2p
+        case(2)
+            ! original ABF algorithm
+            call usabf_core_force_4p
         case default
             call pmf_utils_exit(PMF_OUT,1,'[TABF] Not implemented fmode in usabf_core_main!')
     end select
