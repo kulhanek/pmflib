@@ -56,9 +56,10 @@ public:
 
 // section of public data -----------------------------------------------------
 public:
-   CPMFAccumulatorPtr   Accu;
-   int                  NumOfCVs;
-   int                  NumOfBins;
+   CPMFAccumulatorPtr       Accu;
+   int                      NumOfCVs;
+   int                      NumOfBins;
+   CSimpleVector<double>    Widths;
 
 // section of private data ----------------------------------------------------
 private:

@@ -179,7 +179,11 @@ public:
 
     /// create section
     void CreateSectionData(const CSmallString& name,const CSmallString& op,const CSmallString& type,
-                           const CSmallString& mode,int len=0);
+                           const CSmallString& mode);
+
+    /// create section
+    void CreateSectionData(const CSmallString& name,const CSmallString& op,const CSmallString& type,
+                           const CSmallString& mode,int len);
 
     /// create section
     void CreateSectionData(const CSmallString& name,const CSmallString& op,const CSmallString& type,

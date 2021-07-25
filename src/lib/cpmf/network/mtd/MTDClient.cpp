@@ -46,6 +46,7 @@ CMTDClient::CMTDClient(void)
     Accu            = CPMFAccumulatorPtr(new CPMFAccumulator);
     NumOfCVs        = 0;
     NumOfBins       = 0;
+    WTemp           = 0.0;
 }
 
 //------------------------------------------------------------------------------
@@ -75,12 +76,23 @@ int CMTDClient::RegisterClient(void)
             p_ele->SetAttribute("job_id",job_id);
         }
 
+        Accu->UpdateNumOfBins();
+
         // create sections
         Accu->CreateSectionData("NSAMPLES", "AD","I","B");
-        Accu->CreateSectionData("MTDFORCE", "WA","R","M");
+        Accu->CreateSectionData("MTDFORCE", "AD","R","M");
         Accu->CreateSectionData("MTDPOT",   "AD","R","M");
 
-        // FIXME - CV widths
+        // set widths
+        Accu->CreateSectionData("WIDTHS","SA","R","C");
+        for(int i=0; i < NumOfCVs; i++){
+           Accu->SetData("WIDTHS",i,Widths[i]);
+        }
+
+        if( WTemp > 0.0 ){
+            Accu->CreateSectionData("WT-MTD","SA","R","D",1);
+            Accu->SetData("WT-MTD",0,WTemp);
+        }
 
         Accu->Save(p_ele);
 
@@ -214,10 +226,10 @@ bool CMTDClient::ExchangeData(  double* inc_nsamples,
         data = Accu->GetSectionData("NSAMPLES");
         data->SetDataBlob(inc_nsamples);
 
-        data = Accu->GetSectionData("DPOP");
+        data = Accu->GetSectionData("MTDFORCE");
         data->SetDataBlob(inc_mtdforce);
 
-        data = Accu->GetSectionData("POP");
+        data = Accu->GetSectionData("MTDPOT");
         data->SetDataBlob(inc_mtdpot);
 
         Accu->Save(p_ele);

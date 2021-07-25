@@ -74,12 +74,18 @@ int CABPClient::RegisterClient(void)
             p_ele->SetAttribute("job_id",job_id);
         }
 
+        Accu->UpdateNumOfBins();
+
         // create sections
         Accu->CreateSectionData("NSAMPLES", "AD","I","B");
-        Accu->CreateSectionData("MICF",     "WA","R","M");
-        Accu->CreateSectionData("M2ICF",    "AD","R","M");
+        Accu->CreateSectionData("POP",      "AD","R","M");
+        Accu->CreateSectionData("DPOP",     "AD","R","M");
 
-        // FIXME - CV widths
+        // set widths
+        Accu->CreateSectionData("WIDTHS","SA","R","C");
+        for(int i=0; i < NumOfCVs; i++){
+           Accu->SetData("WIDTHS",i,Widths[i]);
+        }
 
         Accu->Save(p_ele);
 

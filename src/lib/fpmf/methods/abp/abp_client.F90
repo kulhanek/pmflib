@@ -37,7 +37,7 @@ interface
     ! set number of coordinates
     subroutine cpmf_abp_client_set_header(ret_st,ncvs,nbins,version,driver, &
                     temp,temp_unit,temp_fconv, &
-                    ene_unit,ene_fconv)
+                    ene_unit,ene_fconv,widths)
         integer         :: ret_st
         integer         :: ncvs
         integer         :: nbins
@@ -48,6 +48,7 @@ interface
         real(8)         :: temp_fconv
         character(*)    :: ene_unit
         real(8)         :: ene_fconv
+        real(8)         :: widths(*)
     end subroutine cpmf_abp_client_set_header
 
     ! set coordinate data
@@ -127,7 +128,8 @@ subroutine abp_client_register
     ! register coordinates
     call cpmf_abp_client_set_header(ret_st,abpaccu%tot_cvs,abpaccu%tot_nbins,PMFLIBVER,DriverName, &
                                     ftemp,trim(pmf_unit_label(TemperatureUnit)),pmf_unit_get_rvalue(TemperatureUnit,1.0d0), &
-                                    trim(pmf_unit_label(EnergyUnit)),pmf_unit_get_rvalue(EnergyUnit,1.0d0))
+                                    trim(pmf_unit_label(EnergyUnit)),pmf_unit_get_rvalue(EnergyUnit,1.0d0), &
+                                    abpaccu%widths)
 
     if( ret_st .ne. 0 ) then
         call pmf_utils_exit(PMF_OUT,1)

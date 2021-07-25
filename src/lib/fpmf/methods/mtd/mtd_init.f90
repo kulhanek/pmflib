@@ -73,8 +73,8 @@ subroutine mtd_init_dat
 
     ! control section ----------------------------------------------------------
     fmode           = 0
-    fmetastep       = 1000
-    fheight         = 0.10d0
+    fmetastep       = 500
+    fheight         = 0.010d0
     fmetatemp       = 0.0d0
     fsample         = 5000
     fwritehills     = .false.
@@ -87,7 +87,7 @@ subroutine mtd_init_dat
     fserver_enabled = .false.
     fserverkey      = ''
     fserver         = ''
-    fserverupdate   = 500
+    fserverupdate   = 20000
     fconrepeats     = 0
     fabortonmwaerr  = .true.
 

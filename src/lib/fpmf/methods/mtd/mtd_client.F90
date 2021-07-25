@@ -37,7 +37,7 @@ interface
     ! set number of coordinates
     subroutine cpmf_mtd_client_set_header(ret_st,ncvs,nbins,version,driver, &
                     temp,temp_unit,temp_fconv, &
-                    ene_unit,ene_fconv)
+                    ene_unit,ene_fconv,widths,wt_temp)
         integer         :: ret_st
         integer         :: ncvs
         integer         :: nbins
@@ -48,6 +48,8 @@ interface
         real(8)         :: temp_fconv
         character(*)    :: ene_unit
         real(8)         :: ene_fconv
+        real(8)         :: widths(*)
+        real(8)         :: wt_temp
     end subroutine cpmf_mtd_client_set_header
 
     ! set coordinate data
@@ -128,7 +130,8 @@ subroutine mtd_client_register
     ! register coordinates
     call cpmf_mtd_client_set_header(ret_st,mtdaccu%tot_cvs,mtdaccu%tot_nbins,PMFLIBVER,DriverName, &
                                     ftemp,trim(pmf_unit_label(TemperatureUnit)),pmf_unit_get_rvalue(TemperatureUnit,1.0d0), &
-                                    trim(pmf_unit_label(EnergyUnit)),pmf_unit_get_rvalue(EnergyUnit,1.0d0))
+                                    trim(pmf_unit_label(EnergyUnit)),pmf_unit_get_rvalue(EnergyUnit,1.0d0), &
+                                    mtdaccu%widths,fmetatemp)
 
     if( ret_st .ne. 0 ) then
         call pmf_utils_exit(PMF_OUT,1)
@@ -266,10 +269,10 @@ subroutine mtd_client_exchange_data(force_exchange)
     write(MTD_OUT,10) fstep
 
 #ifdef PMFLIB_NETWORK
-    call cpmf_mtd_client_exchange_data(ret_st,                      &
-                                        mtdaccu%inc_nsamples,      &
-                                        mtdaccu%inc_mtdpot,  &
-                                        mtdaccu%inc_mtdforce       &
+    call cpmf_mtd_client_exchange_data(ret_st,                  &
+                                        mtdaccu%inc_nsamples,   &
+                                        mtdaccu%inc_mtdpot,     &
+                                        mtdaccu%inc_mtdforce    &
                                        )
 
     if( ret_st .ne. 0 ) then
@@ -287,15 +290,15 @@ subroutine mtd_client_exchange_data(force_exchange)
     end if
 
     ! move received data to main accumulator
-    mtdaccu%nsamples(:)         = mtdaccu%inc_nsamples(:)
-    mtdaccu%mtdpot(:)     = mtdaccu%inc_mtdpot(:)
-    mtdaccu%mtdforce(:,:)       = mtdaccu%inc_mtdforce(:,:)
+    mtdaccu%nsamples(:)     = mtdaccu%inc_nsamples(:)
+    mtdaccu%mtdpot(:)       = mtdaccu%inc_mtdpot(:)
+    mtdaccu%mtdforce(:,:)   = mtdaccu%inc_mtdforce(:,:)
 #endif
 
     ! and reset incremental data
-    mtdaccu%inc_nsamples(:)         = 0
-    mtdaccu%inc_mtdpot(:)           = 0.0d0
-    mtdaccu%inc_mtdforce(:,:)       = 0.0d0
+    mtdaccu%inc_nsamples(:)     = 0
+    mtdaccu%inc_mtdpot(:)       = 0.0d0
+    mtdaccu%inc_mtdforce(:,:)   = 0.0d0
 
     failure_counter = 0
 

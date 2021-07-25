@@ -77,6 +77,8 @@ int CABFClient::RegisterClient(void)
             p_ele->SetAttribute("job_id",job_id);
         }
 
+        Accu->UpdateNumOfBins();
+
         // create sections
         Accu->CreateSectionData("NSAMPLES", "AD","I","B");
         Accu->CreateSectionData("MICF",     "WA","R","M");

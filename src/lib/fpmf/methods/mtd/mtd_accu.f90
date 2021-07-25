@@ -205,8 +205,8 @@ subroutine mtd_accu_write(iounit)
     mtdaccu%method = 'MTD'
     call pmf_accu_write_header(mtdaccu%PMFAccuType,iounit)
     call pmf_accu_write_ibuf_B(mtdaccu%PMFAccuType,iounit,'NSAMPLES',   'AD',mtdaccu%nsamples)
-    call pmf_accu_write_rbuf_B(mtdaccu%PMFAccuType,iounit,'MTDPOT',     'WA',mtdaccu%mtdpot)
-    call pmf_accu_write_rbuf_M(mtdaccu%PMFAccuType,iounit,'MTDFORCE',   'WA',mtdaccu%mtdforce)
+    call pmf_accu_write_rbuf_B(mtdaccu%PMFAccuType,iounit,'MTDPOT',     'AD',mtdaccu%mtdpot)
+    call pmf_accu_write_rbuf_M(mtdaccu%PMFAccuType,iounit,'MTDFORCE',   'AD',mtdaccu%mtdforce)
     call pmf_accu_write_rbuf_C(mtdaccu%PMFAccuType,iounit,'WIDTHS',     'SA',mtdaccu%widths)
     if( fmetatemp .gt. 0.0d0 ) then
         mtdwt(1) = fmetatemp
@@ -265,6 +265,10 @@ subroutine mtd_accu_add_data(cvs, height,added)
     numofhills              = numofhills + 1
     mtdaccu%nsamples(gi0)   = mtdaccu%nsamples(gi0) + 1
 
+    if( fserver_enabled ) then
+        mtdaccu%inc_nsamples(gi0) = mtdaccu%inc_nsamples(gi0) + 1
+    end if
+
     ! update grid data
     do n=1,mtdaccu%tot_nbins
         fexparg = 0.0d0
@@ -275,9 +279,16 @@ subroutine mtd_accu_add_data(cvs, height,added)
         fh = height * exp(- 0.5d0 * fexparg)
         mtdaccu%mtdpot(n) = mtdaccu%mtdpot(n) + fh
 
+        if( fserver_enabled ) then
+            mtdaccu%inc_mtdpot(n) = mtdaccu%inc_mtdpot(n) + fh
+        end if
+
         do i=1,mtdaccu%tot_cvs
             diff = MTDCVList(i)%cv%get_deviation(mtdaccu%binpos(i,n), cvs(i))
             mtdaccu%mtdforce(i,n) = mtdaccu%mtdforce(i,n) + fh * diff *  mtdaccu%iwidths2(i)
+            if( fserver_enabled ) then
+                mtdaccu%inc_mtdforce(i,n) = mtdaccu%inc_mtdforce(i,n) + fh * diff *  mtdaccu%iwidths2(i)
+            end if
         end do
     end do
 

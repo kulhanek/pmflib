@@ -42,6 +42,8 @@ void PMF_PACKAGE cpmf_mtd_client_set_header_(FTINT* ret_st,
                                  double*    temp_fconv,
                                  char*      ene_unit,
                                  double*    ene_fconv,
+                                 double*    widths,
+                                 double*    wt_temp,
                                  UFTINT     version_len,
                                  UFTINT     driver_len,
                                  UFTINT     temp_unit_len,
@@ -53,6 +55,7 @@ void PMF_PACKAGE cpmf_mtd_client_set_header_(FTINT* ret_st,
     double          l_temp          = *temp;
     double          l_temp_fconv    = *temp_fconv;
     double          l_ene_fconv     = *ene_fconv;
+    double          l_wt_temp       = *wt_temp;
     CSmallString    l_version;
     CSmallString    l_driver;
     CSmallString    l_temp_unit;
@@ -69,6 +72,12 @@ void PMF_PACKAGE cpmf_mtd_client_set_header_(FTINT* ret_st,
 
         MTDClient.Accu->SetNumOfCVs(l_ncvs);
         MTDClient.Accu->SetHeaders("MTD",l_version,l_driver,l_temp,l_temp_unit,l_temp_fconv,l_ene_unit,l_ene_fconv);
+        MTDClient.WTemp = l_wt_temp;
+
+        MTDClient.Widths.CreateVector(l_ncvs);
+        for(int i=0; i < l_ncvs; i++){
+            MTDClient.Widths[i] = widths[i];
+        }
 
     } catch(std::exception& e) {
         ES_ERROR_FROM_EXCEPTION("unable to set the number of items",e);

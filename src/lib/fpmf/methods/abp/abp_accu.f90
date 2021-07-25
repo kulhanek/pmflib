@@ -198,8 +198,8 @@ subroutine abp_accu_write(iounit)
     abpaccu%method = 'ABP'
     call pmf_accu_write_header(abpaccu%PMFAccuType,iounit)
     call pmf_accu_write_ibuf_B(abpaccu%PMFAccuType,iounit,'NSAMPLES','AD',abpaccu%nsamples)
-    call pmf_accu_write_rbuf_M(abpaccu%PMFAccuType,iounit,'DPOP',    'WA',abpaccu%dpop)
-    call pmf_accu_write_rbuf_B(abpaccu%PMFAccuType,iounit,'POP',     'WA',abpaccu%pop)
+    call pmf_accu_write_rbuf_M(abpaccu%PMFAccuType,iounit,'DPOP',    'AD',abpaccu%dpop)
+    call pmf_accu_write_rbuf_B(abpaccu%PMFAccuType,iounit,'POP',     'AD',abpaccu%pop)
     call pmf_accu_write_rbuf_C(abpaccu%PMFAccuType,iounit,'WIDTHS',  'SA',abpaccu%widths)
 
 end subroutine abp_accu_write
@@ -258,6 +258,7 @@ subroutine abp_accu_update_direct
     insidesamples = insidesamples + 1
 
     abpaccu%nsamples(gi0) = abpaccu%nsamples(gi0) + 1
+
     if( fserver_enabled ) then
         abpaccu%inc_nsamples(gi0) = abpaccu%inc_nsamples(gi0) + 1
     end if
@@ -279,6 +280,7 @@ subroutine abp_accu_update_direct
         ew = w * abpaccu%dnorm * exp(- 0.5d0 * s)
 
         abpaccu%pop(gi) = abpaccu%pop(gi) + ew
+
         if( (abpaccu%pop(gi) + 1.0d0) .gt. abpaccu%M ) then
             abpaccu%M = abpaccu%pop(gi) + 1.0d0
         end if

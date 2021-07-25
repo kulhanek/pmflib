@@ -43,6 +43,7 @@ void PMF_PACKAGE cpmf_abp_client_set_header_(FTINT* ret_st,
                                  double*    temp_fconv,
                                  char*      ene_unit,
                                  double*    ene_fconv,
+                                 double*    widths,
                                  UFTINT     version_len,
                                  UFTINT     driver_len,
                                  UFTINT     temp_unit_len,
@@ -70,6 +71,11 @@ void PMF_PACKAGE cpmf_abp_client_set_header_(FTINT* ret_st,
 
         ABPClient.Accu->SetNumOfCVs(l_ncvs);
         ABPClient.Accu->SetHeaders("ABP",l_version,l_driver,l_temp,l_temp_unit,l_temp_fconv,l_ene_unit,l_ene_fconv);
+
+        ABPClient.Widths.CreateVector(l_ncvs);
+        for(int i=0; i < l_ncvs; i++){
+            ABPClient.Widths[i] = widths[i];
+        }
 
     } catch(std::exception& e) {
         ES_ERROR_FROM_EXCEPTION("unable to set the number of items",e);
