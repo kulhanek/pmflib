@@ -112,11 +112,9 @@ subroutine usabf_init_print_header
     write(PMF_OUT,130)  ' ABF mode (fmode)                        : ', fmode
     select case(fmode)
     case(1)
-    write(PMF_OUT,120)  '      |-> Standard ABF algorithm'
+    write(PMF_OUT,120)  '      |-> Simplified ABF algorithm'
     case(2)
-    write(PMF_OUT,120)  '      |-> Numerical ABF algorithm'
-    case(3)
-    write(PMF_OUT,120)  '      |-> Analytical/Numerical ABF algorithm, SHAKE must be off'
+    write(PMF_OUT,120)  '      |-> Original ABF algorithm'
     case default
     call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown fmode in usabf_init_print_header!')
     end select
