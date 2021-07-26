@@ -263,9 +263,6 @@ protected:
     std::map<CSmallString,CPMFAccuDataPtr>  DataBlocks;
 
 // helper methods -------------------------------------------------------------
-    /// return index to MICF array for particular item and bin
-    int map(int item,int bin) const;
-
     void Load_v6(char* fline,FILE* fin);
 
     /// is it a header section?

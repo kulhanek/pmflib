@@ -47,9 +47,9 @@ bool CMWAAdmin::GetPMFAccumulator(void)
         ExecuteCommand(&cmd);
 
         // process response
-        CXMLElement* p_accu = cmd.GetResultElementByPath("ACCU",false);
+        CXMLElement* p_accu = cmd.GetResultElementByPath("PMFLIB-V6",false);
         if(p_accu == NULL) {
-            LOGIC_ERROR("unable to open ACCU element");
+            LOGIC_ERROR("unable to open PMFLIB-V6 element");
         }
         accu.Load(p_accu);
 

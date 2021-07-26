@@ -230,7 +230,7 @@ subroutine abf_client_get_initial_data
     call pmf_timers_start_timer(PMFLIB_ABF_MWA_TIMER)
 
 #ifdef PMFLIB_NETWORK
-    call cpmf_abf_client_initial_data(ret_st,           &
+    call cpmf_abf_client_initial_data(ret_st,               &
                                     abfaccu%inc_nsamples,   &
                                     abfaccu%inc_micf,       &
                                     abfaccu%inc_m2icf,      &

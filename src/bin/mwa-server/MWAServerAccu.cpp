@@ -259,7 +259,7 @@ void CMWAServerAccu::GetData(CServerCommand* p_command)
         INVALID_ARGUMENT("p_command is NULL");
     }
 
-    CXMLElement* p_accu = p_command->GetResultElementByPath("PMFLIB-V6",true);
+    CXMLElement* p_accu = p_command->GetRootResultElement();
 
     AccuMutex.Lock();
     try {

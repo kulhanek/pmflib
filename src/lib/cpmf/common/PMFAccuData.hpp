@@ -114,13 +114,16 @@ public:
     const CSmallString& GetMYName(void) const;
 
     /// get data
-    double GetData(int ibin, int cv=0) const;
+    double GetData(int ibin) const;
+
+    /// get data
+    double GetData(int ibin, int icv) const;
 
     /// set data
     void SetData(int ibin, double value);
 
     /// set data
-    void SetData(int ibin, int cv, double value);
+    void SetData(int ibin, int icv, double value);
 
     /// get blob data
     void GetDataBlob(double* p_blob);
@@ -149,6 +152,9 @@ private:
     CSmallString            MYName;     // name of data section with mean of Y
 
     friend class CPMFAccumulator;
+
+    /// return index to mixed array
+    int map(int ibin,int icv) const;
 };
 
 //------------------------------------------------------------------------------

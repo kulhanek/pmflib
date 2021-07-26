@@ -339,19 +339,39 @@ const CSmallString& CPMFAccuData::GetOp(void) const
     return(Op);
 }
 
+
+//==============================================================================
+//------------------------------------------------------------------------------
+//==============================================================================
+
+int CPMFAccuData::map(int ibin,int icv) const
+{
+    return(icv + ibin*NumOfCVs);
+}
+
 //------------------------------------------------------------------------------
 
-double CPMFAccuData::GetData(int ibin, int cv) const
+double CPMFAccuData::GetData(int ibin) const
 {
     if( (ibin < 0) || (NumOfBins <= ibin) ) {
         RUNTIME_ERROR("ibin out-of-range");
     }
-    if( (cv < 0) || (NumOfCVs <= cv) ) {
-        RUNTIME_ERROR("cv out-of-range");
+    return( Data[ibin] );
+}
+
+//------------------------------------------------------------------------------
+
+double CPMFAccuData::GetData(int ibin, int icv) const
+{
+    if( (ibin < 0) || (NumOfBins <= ibin) ) {
+        RUNTIME_ERROR("ibin out-of-range");
+    }
+    if( (icv < 0) || (NumOfCVs <= icv) ) {
+        RUNTIME_ERROR("icv out-of-range");
     }
     int idx = 0;
     if( NumOfBins*NumOfCVs == Size ){
-        idx = cv*NumOfBins + ibin;
+        idx = map(ibin,icv);
     } else {
         idx = ibin;
     }
@@ -370,17 +390,17 @@ void CPMFAccuData::SetData(int ibin, double value)
 
 //------------------------------------------------------------------------------
 
-void CPMFAccuData::SetData(int ibin, int cv, double value)
+void CPMFAccuData::SetData(int ibin, int icv, double value)
 {
     if( (ibin < 0) || (NumOfBins <= ibin) ) {
         RUNTIME_ERROR("ibin out-of-range");
     }
-    if( (cv < 0) || (NumOfCVs <= cv) ) {
-        RUNTIME_ERROR("cv out-of-range");
+    if( (icv < 0) || (NumOfCVs <= icv) ) {
+        RUNTIME_ERROR("icv out-of-range");
     }
     int idx = 0;
     if( NumOfBins*NumOfCVs == Size ){
-        idx = cv*NumOfBins + ibin;
+        idx = map(ibin,icv);
     } else {
         idx = ibin;
     }
@@ -587,6 +607,7 @@ void CPMFAccuData::CombineWA(CPMFAccuDataPtr left,CPMFAccuDataPtr left_nsamples,
                     double ld = left->GetData(ibin,icv);
                     double rd = right->GetData(ibin,icv);
                     double re = lw*ld + rw*rd;
+                    // cout << ln << " " << lw << " " << ld << " " << rn << " " << rw << " " << rd << " " << re << endl;
                     SetData(ibin,icv,re);
                 }
             }
