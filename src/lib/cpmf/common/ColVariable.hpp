@@ -143,6 +143,9 @@ public:
     /// get real value of CV
     double GetRealValue(double value) const;
 
+    /// get internal value of CV
+    double GetIntValue(double value) const;
+
 // section of private data ----------------------------------------------------
 private:
     // all values are in internal units

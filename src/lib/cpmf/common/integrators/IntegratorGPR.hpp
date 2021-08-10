@@ -109,13 +109,13 @@ public:
     /// should we include glued area to energy calculation?
     void IncludeGluedAreas(bool set);
 
-    /// set position of global minimum
+    /// set position of global minimum - spec in real units
     void SetGlobalMin(const CSmallString& spec);
 
-    /// set position of global minimum
+    /// set position of global minimum - in internal units
     void SetGlobalMin(const CSimpleVector<double>& pos);
 
-    /// get position of global minima
+    /// get position of global minima - in internal units
     CSimpleVector<double> GetGlobalMin(void);
 
     /// use inversion alg

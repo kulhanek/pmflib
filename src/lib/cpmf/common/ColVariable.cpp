@@ -283,7 +283,15 @@ bool CColVariable::IsPeriodic(void) const
 
 double CColVariable::GetRealValue(double value) const
 {
+    // cout << value << " " << FConv << endl;
     return(value * FConv);
+}
+
+//------------------------------------------------------------------------------
+
+double CColVariable::GetIntValue(double value) const
+{
+    return(value / FConv);
 }
 
 //==============================================================================

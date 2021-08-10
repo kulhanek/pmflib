@@ -35,6 +35,7 @@
 //------------------------------------------------------------------------------
 
 class CIntegratorGPR;
+class CSmootherGPR;
 
 //------------------------------------------------------------------------------
 
@@ -94,6 +95,7 @@ private:
     void MarkAsHole(int seedid);
     void PrintGPRHyprms(FILE* p_fout);
     void LoadGPRHyprms(CIntegratorGPR& gpr);
+    void LoadGPRHyprms(CSmootherGPR& gpr);
     void SyncFESWithACCU(void);
     void DecodeEList(const CSmallString& spec, std::vector<bool>& elist,const CSmallString& optionname);
     bool ReduceFES(void);

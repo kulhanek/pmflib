@@ -69,6 +69,8 @@ CSmootherGPR::CSmootherGPR(void)
 
     UseInv              = false;
     NeedInv             = false;
+
+    GlbMinValue         = 0.0;
 }
 
 //------------------------------------------------------------------------------
@@ -311,12 +313,14 @@ void CSmootherGPR::SetGlobalMin(const CSmallString& spec)
     GPos.CreateVector(NCVs);
     stringstream str(sspec);
     for(size_t i=0; i < NCVs; i++){
-        str >> GPos[i];
+        double val;
+        str >> val;
         if( ! str ){
             CSmallString error;
             error << "unable to decode CV value for position: " << i+1;
             RUNTIME_ERROR(error);
         }
+        GPos[i] = Accu->GetCV(i)->GetIntValue(val);
     }
 
     GPosSet = true;
@@ -339,6 +343,13 @@ CSimpleVector<double> CSmootherGPR::GetGlobalMin(void)
         RUNTIME_ERROR("")
     }
     return(GPos);
+}
+
+//------------------------------------------------------------------------------
+
+double CSmootherGPR::GetGlobalMinValue(void) const
+{
+    return(GlbMinValue);
 }
 
 //==============================================================================
@@ -687,31 +698,31 @@ void CSmootherGPR::CalculateEnergy(CVerboseStr& vout)
         // GPos.CreateVector(NCVs) - is created in  SetGlobalMin
    //   vout << "   Calculating EneSurface ..." << endl;
         vout << "      Global minimum provided at: ";
-        vout << GPos[0];
+        vout << setprecision(5) << Accu->GetCV(0)->GetRealValue(GPos[0]);
         for(int i=1; i < Accu->GetNumOfCVs(); i++){
-            vout << "x" << GPos[i];
+            vout << "x" << setprecision(5) << Accu->GetCV(i)->GetRealValue(GPos[i]);
         }
-        double glb_min = GetValue(GPos);
-        vout << " (" << glb_min << ")" << endl;
-        vout << "      Offset    = " << glb_min << endl;
+        GlbMinValue = GetValue(GPos);
+        vout << " (" << setprecision(5) << GlbMinValue << ")" << endl;
+        vout << "      Offset    = " << setprecision(5) << GlbMinValue << endl;
 
         for(size_t indj=0; indj < NumOfValues; indj++){
             size_t j = ValueMap[indj];
-            EneSurface->SetEnergy(j,values[indj]-glb_min);
+            EneSurface->SetEnergy(j,values[indj]-GlbMinValue);
         }
     } else {
         // search for global minimum
         GPos.CreateVector(NCVs);
         bool   first = true;
-        double glb_min = 0.0;
+        GlbMinValue = 0.0;
 
         for(size_t indj=0; indj < NumOfValues; indj++){
             size_t j = ValueMap[indj];
             int samples = EneProxy->GetNumOfSamples(j);
             if( samples < -1 ) continue;    // include sampled areas and holes but exclude extrapolated areas
             double value = values[indj];
-            if( first || (glb_min > value) ){
-                glb_min = value;
+            if( first || (GlbMinValue > value) ){
+                GlbMinValue = value;
                 first = false;
                 Accu->GetPoint(j,GPos);
             }
@@ -719,16 +730,16 @@ void CSmootherGPR::CalculateEnergy(CVerboseStr& vout)
 
    //   vout << "   Calculating EneSurface ..." << endl;
         vout << "      Global minimum found at: ";
-        vout << GPos[0];
+        vout << setprecision(5) << Accu->GetCV(0)->GetRealValue(GPos[0]);
         for(size_t i=1; i < NCVs; i++){
-            vout << "x" << GPos[i];
+            vout << "x" << setprecision(5) << Accu->GetCV(i)->GetRealValue(GPos[i]);
         }
-        vout << " (" << glb_min << ")" << endl;
-        vout << "      Offset    = " << glb_min << endl;
+        vout << " (" << setprecision(5) << GlbMinValue << ")" << endl;
+        vout << "      Offset    = " << setprecision(5) << GlbMinValue << endl;
 
         for(size_t indj=0; indj < NumOfValues; indj++){
             size_t j = ValueMap[indj];
-            EneSurface->SetEnergy(j,values[indj]-glb_min);
+            EneSurface->SetEnergy(j,values[indj]-GlbMinValue);
         }
     }
 
@@ -838,7 +849,7 @@ void CSmootherGPR::CalculateCovs(CVerboseStr& vout)
 
     size_t nvals = NumOfValues;
     if( GlobalMinSet ){
-        nvals++; // include explicitly set global minumum
+        nvals++; // include explicitly set global minimum
     }
 
     CFortranMatrix  Kr;

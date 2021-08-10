@@ -249,12 +249,14 @@ void CIntegratorRBF::SetGlobalMin(const CSmallString& spec)
     GPos.CreateVector(NCVs);
     stringstream str(sspec);
     for(size_t i=0; i < NCVs; i++){
-        str >> GPos[i];
+        double val;
+        str >> val;
         if( ! str ){
             CSmallString error;
             error << "unable to decode CV value for position: " << i+1;
             RUNTIME_ERROR(error);
         }
+        GPos[i] = Accu->GetCV(i)->GetIntValue(val);
     }
 }
 
@@ -411,12 +413,12 @@ void CIntegratorRBF::CalculateEnergy(CVerboseStr& vout)
         // GPos.CreateVector(NCVs) - is created in  SetGlobalMin
    //   vout << "   Calculating EneSurf ..." << endl;
         vout << "      Global minimum provided at: ";
-        vout << GPos[0];
+        vout << setprecision(5) << Accu->GetCV(0)->GetRealValue(GPos[0]);
         for(int i=1; i < Accu->GetNumOfCVs(); i++){
-            vout << "x" << GPos[i];
+            vout << "x" << setprecision(5) << Accu->GetCV(i)->GetRealValue(GPos[i]);
         }
         double glb_min = GetValue(GPos);
-        vout << " (" << glb_min << ")" << endl;
+        vout << " (" << setprecision(5) << glb_min << ")" << endl;
 
         for(size_t indj=0; indj < NumOfValues; indj++){
             size_t j = ValueMap[indj];
@@ -441,11 +443,11 @@ void CIntegratorRBF::CalculateEnergy(CVerboseStr& vout)
 
    //   vout << "   Calculating EneSurf ..." << endl;
         vout << "      Global minimum found at: ";
-        vout << GPos[0];
+        vout << setprecision(5) << Accu->GetCV(0)->GetRealValue(GPos[0]);
         for(size_t i=1; i < NCVs; i++){
-            vout << "x" << GPos[i];
+            vout << "x" << setprecision(5) << Accu->GetCV(i)->GetRealValue(GPos[i]);
         }
-        vout << " (" << glb_min << ")" << endl;
+        vout << " (" << setprecision(5) << glb_min << ")" << endl;
 
         for(size_t indj=0; indj < NumOfValues; indj++){
             size_t j = ValueMap[indj];

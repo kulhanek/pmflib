@@ -94,6 +94,12 @@ double CCSTProxy_MTC::GetValue(int ibin,EProxyRealm realm) const
             return( value );
         }
         // -------------------
+        case(E_PROXY_SIGMA):
+            return( 0.0 );      // FIXME
+        // -------------------
+        case(E_PROXY_ERROR):
+            return( 0.0 );      // FIXME
+        // -------------------
         default:
             RUNTIME_ERROR("unsupported realm");
     }

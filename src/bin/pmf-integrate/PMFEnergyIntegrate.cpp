@@ -28,6 +28,7 @@
 #include <IntegratorRFD.hpp>
 #include <IntegratorRBF.hpp>
 #include <IntegratorGPR.hpp>
+#include <SmootherGPR.hpp>
 #include <EnergySurface.hpp>
 #include <ESPrinter.hpp>
 #include <iomanip>
@@ -1120,6 +1121,58 @@ void CPMFEnergyIntegrate::LoadGPRHyprms(CIntegratorGPR& gpr)
     }
 }
 
+//------------------------------------------------------------------------------
+
+void CPMFEnergyIntegrate::LoadGPRHyprms(CSmootherGPR& gpr)
+{
+    ifstream fin;
+    fin.open(Options.GetOptLoadHyprms());
+    if( ! fin ){
+        CSmallString error;
+        error << "unable to open file with GPR hyperparameters: " << Options.GetOptLoadHyprms();
+        RUNTIME_ERROR(error);
+    }
+
+    string line;
+    while( getline(fin,line) ){
+        // is it comment?
+        if( (line.size() > 0) && (line[0] == '#') ) continue;
+
+        // parse line
+        stringstream str(line);
+        string key, buf;
+        double value;
+        str >> key >> buf >> value;
+        if( ! str ){
+            CSmallString error;
+            error << "GPR hyperparameters file, unable to decode line: " << line.c_str();
+            RUNTIME_ERROR(error);
+        }
+        if( key == "SigmaF2" ){
+            gpr.SetSigmaF2(value);
+        } else if( key == "NCorr" ){
+            gpr.SetNCorr(value);
+        } else if( key.find("WFac#") != string::npos ) {
+            std::replace( key.begin(), key.end(), '#', ' ');
+            stringstream kstr(key);
+            string swfac;
+            int    cvind;
+            kstr >> swfac >> cvind;
+            if( ! kstr ){
+                CSmallString error;
+                error << "GPR hyperparameters file, unable to decode wfac key: " << key.c_str();
+                RUNTIME_ERROR(error);
+            }
+            cvind--; // transform to 0-based indexing
+            gpr.SetWFac(cvind,value);
+        } else {
+            CSmallString error;
+            error << "GPR hyperparameters file, unrecognized key: " << key.c_str();
+            RUNTIME_ERROR(error);
+        }
+    }
+}
+
 //==============================================================================
 //------------------------------------------------------------------------------
 //==============================================================================
@@ -1582,7 +1635,81 @@ void CPMFEnergyIntegrate::AddMTCorr(void)
         FES->SetEnergy(i, f + MTCProxy->GetValue(i,E_PROXY_VALUE) );
     }
 
-    vout << "   SigmaF2   = " << setprecision(5) << FES->GetSigmaF2() << endl;
+    if( Options.IsOptGlobalMinSet() ){
+
+        CSmootherGPR        mtcgpr;
+        CEnergySurfacePtr   mtc = CEnergySurfacePtr(new CEnergySurface);
+        mtc->Allocate(Accu);
+
+        mtcgpr.SetInputEnergyProxy(MTCProxy);
+        mtcgpr.SetOutputES(mtc);
+
+        if( Options.IsOptLoadHyprmsSet() ){
+            LoadGPRHyprms(mtcgpr);
+        } else {
+            mtcgpr.SetSigmaF2(Options.GetOptSigmaF2());
+            mtcgpr.SetNCorr(Options.GetOptNCorr());
+            mtcgpr.SetWFac(Options.GetOptWFac());
+        }
+
+        mtcgpr.SetGlobalMin(Options.GetOptGlobalMin());
+
+        mtcgpr.SetRCond(Options.GetOptRCond());
+        mtcgpr.SetLAMethod(Options.GetOptLAMethod());
+        mtcgpr.SetKernel(Options.GetOptGPRKernel());
+
+        if(mtcgpr.Interpolate(vout) == false) {
+            RUNTIME_ERROR("unable to interpolate MTC");
+        }
+
+        vout << "      Adjusting global minimum for metric tensor correction ..." << endl;
+        for(int i=0; i < Accu->GetNumOfBins(); i++){
+            FES->SetNumOfSamples(i, MTCProxy->GetNumOfSamples(i) );
+            double f = FES->GetEnergy(i);
+            FES->SetEnergy(i, f - mtcgpr.GetGlobalMinValue() );
+        }
+    } else {
+        // search for global minimum
+        CSimpleVector<double> gpos;
+        gpos.CreateVector(Accu->GetNumOfCVs());
+        bool   first = true;
+        double glb_min = 0.0;
+        for(int i=0; i < FES->GetNumOfBins(); i++){
+            int samples = FES->GetNumOfSamples(i);
+            if( samples < -1 ) continue;    // include sampled areas and holes but exclude extrapolated areas
+            double value = FES->GetEnergy(i);
+            if( first || (glb_min > value) ){
+                glb_min = value;
+                first = false;
+                Accu->GetPoint(i,gpos);
+            }
+        }
+
+   //   vout << "   Calculating FES ..." << endl;
+        vout << "      Global minimum found at: ";
+        vout << setprecision(5) << Accu->GetCV(0)->GetRealValue(gpos[0]);
+        for(int i=1; i < Accu->GetNumOfCVs(); i++){
+            vout << "x" << setprecision(5) << Accu->GetCV(i)->GetRealValue(gpos[i]);
+        }
+        vout << " (" << setprecision(5) << glb_min << ")" << endl;
+
+        for(int i=0; i < FES->GetNumOfBins(); i++){
+            if( FES->GetNumOfSamples(i) != 0 ) {
+                double value = FES->GetEnergy(i);
+                FES->SetEnergy(i,value-glb_min);
+            }
+        }
+    }
+
+        vout << "      SigmaF2   = " << setprecision(5) << FES->GetSigmaF2() << endl;
+    if( Options.GetOptIncludeGluedRegions() ){
+        vout << "      SigmaF2 (including glued bins) = " << setprecision(5) << FES->GetSigmaF2(true) << endl;
+    }
+
+    if( Options.GetOptWithError() ){
+        vout << "      SigmaF2+  = " << setprecision(5) << FES->GetSigmaF2p() << endl;
+        vout << "      SigmaF2-  = " << setprecision(5) << FES->GetSigmaF2m() << endl;
+    }
 }
 
 //==============================================================================
