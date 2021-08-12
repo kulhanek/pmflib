@@ -1705,10 +1705,11 @@ void CPMFEnergyIntegrate::AddMTCorr(void)
     if( Options.GetOptIncludeGluedRegions() ){
         vout << "      SigmaF2 (including glued bins) = " << setprecision(5) << FES->GetSigmaF2(true) << endl;
     }
+        vout << "      SigmaF    = " << setprecision(5) << FES->GetSigmaF() << endl;
 
     if( Options.GetOptWithError() ){
-        vout << "      SigmaF2+  = " << setprecision(5) << FES->GetSigmaF2p() << endl;
-        vout << "      SigmaF2-  = " << setprecision(5) << FES->GetSigmaF2m() << endl;
+        vout << "      RMSError  = " << setprecision(5) << FES->GetRMSError() << endl;
+        vout << "      MaxError  = " << setprecision(5) << FES->GetMaxError() << endl;
     }
 }
 

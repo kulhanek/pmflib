@@ -224,9 +224,11 @@ double  CEnergySurface::GetErrorRealValueWithSLevel(int ibin) const
 
 double CEnergySurface::GetSigmaF2(bool includeglued) const
 {
-    double sigmafsum = 0.0;
-    double sigmafsum2 = 0.0;
-    double count = 0.0;
+    double mf = 0.0;
+    double m2 = 0.0;
+    double n  = 0.0;
+
+    // https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Welford's_online_algorithm
 
     for(int k=0; k < NumOfBins; k++) {
         if( Samples[k] == 0 ) continue;
@@ -234,124 +236,118 @@ double CEnergySurface::GetSigmaF2(bool includeglued) const
             if( Samples[k] < 0 ) continue;
         }
         double ene = Energy[k];
-        sigmafsum += ene;
-        sigmafsum2 += ene*ene;
-        count++;
+        n++;
+        double dx1 = (ene - mf);
+        mf = mf + dx1/n;
+        double dx2 = (ene - mf);
+        m2 = m2 + dx1*dx2;
     }
 
     double sigmaf2 = 0.0;
+    if( n > 0 ) {
+        sigmaf2 = m2/n;
+    }
 
-    if( count > 0 ){
-        sigmaf2 = count*sigmafsum2 - sigmafsum*sigmafsum;
-        if(sigmaf2 > 0) {
-            sigmaf2 = sqrt(sigmaf2) / count;
-        } else {
-            sigmaf2 = 0.0;
+    return(sigmaf2);
+}
+
+//------------------------------------------------------------------------------
+
+double CEnergySurface::GetSigmaF(bool includeglued) const
+{
+    double mf = 0.0;
+    double m2 = 0.0;
+    double n  = 0.0;
+
+    // https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Welford's_online_algorithm
+
+    for(int k=0; k < NumOfBins; k++) {
+        if( Samples[k] == 0 ) continue;
+        if( includeglued == false ){
+            if( Samples[k] < 0 ) continue;
+        }
+        double ene = Energy[k];
+        n++;
+        double dx1 = (ene - mf);
+        mf = mf + dx1/n;
+        double dx2 = (ene - mf);
+        m2 = m2 + dx1*dx2;
+    }
+
+    double sigmaf = 0.0;
+    if( n > 0 ) {
+        sigmaf = sqrt(m2/n);
+    }
+
+    return(sigmaf);
+}
+
+//------------------------------------------------------------------------------
+
+double CEnergySurface::GetRMSError(bool includeglued) const
+{
+    double mf = 0.0;
+    double m2 = 0.0;
+    double n  = 0.0;
+
+    // https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Welford's_online_algorithm
+
+    for(int k=0; k < NumOfBins; k++) {
+        double err = SLevel*Error[k];
+        n++;
+        double dx1 = (err - mf);
+        mf = mf + dx1/n;
+        double dx2 = (err - mf);
+        m2 = m2 + dx1*dx2;
+    }
+
+    double rmserr = 0.0;
+    if( n > 0 ) {
+        rmserr = sqrt(m2/n);
+    }
+
+    return(rmserr);
+}
+
+//------------------------------------------------------------------------------
+
+double CEnergySurface::GetMaxError(bool includeglued) const
+{
+    double maxerr = 0.0;
+
+    for(int k=0; k < NumOfBins; k++) {
+        double err = SLevel*Error[k];
+        if( maxerr < err ){
+            maxerr = err;
         }
     }
 
-    sigmaf2 *= sigmaf2;
-
-    return(sigmaf2);
+    return(maxerr);
 }
 
 //------------------------------------------------------------------------------
 
 double CEnergySurface::GetSigmaF2All(void) const
 {
-    double sigmafsum = 0.0;
-    double sigmafsum2 = 0.0;
-    double count = 0.0;
+    double mf = 0.0;
+    double m2 = 0.0;
+    double n  = 0.0;
+
+    // https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Welford's_online_algorithm
 
     for(int k=0; k < NumOfBins; k++) {
         double ene = Energy[k];
-        sigmafsum += ene;
-        sigmafsum2 += ene*ene;
-        count++;
+        n++;
+        double dx1 = (ene - mf);
+        mf = mf + dx1/n;
+        double dx2 = (ene - mf);
+        m2 = m2 + dx1*dx2;
     }
 
     double sigmaf2 = 0.0;
-
-    if( count > 0 ){
-        sigmaf2 = count*sigmafsum2 - sigmafsum*sigmafsum;
-        if(sigmaf2 > 0) {
-            sigmaf2 = sqrt(sigmaf2) / count;
-        } else {
-            sigmaf2 = 0.0;
-        }
+    if( n > 0 ) {
+        sigmaf2 = m2/n;
     }
-
-    sigmaf2 *= sigmaf2;
-
-    return(sigmaf2);
-}
-
-//------------------------------------------------------------------------------
-
-double CEnergySurface::GetSigmaF2p(bool includeglued) const
-{
-    double sigmafsum = 0.0;
-    double sigmafsum2 = 0.0;
-    double count = 0.0;
-
-    for(int k=0; k < NumOfBins; k++) {
-        if( Samples[k] == 0 ) continue;
-        if( includeglued == false ){
-            if( Samples[k] < 0 ) continue;
-        }
-        double ene = Energy[k] + SLevel*Error[k];
-        sigmafsum += ene;
-        sigmafsum2 += ene*ene;
-        count++;
-    }
-
-    double sigmaf2 = 0.0;
-
-    if( count > 0 ){
-        sigmaf2 = count*sigmafsum2 - sigmafsum*sigmafsum;
-        if(sigmaf2 > 0) {
-            sigmaf2 = sqrt(sigmaf2) / count;
-        } else {
-            sigmaf2 = 0.0;
-        }
-    }
-
-    sigmaf2 *= sigmaf2;
-
-    return(sigmaf2);
-}
-
-//------------------------------------------------------------------------------
-
-double CEnergySurface::GetSigmaF2m(bool includeglued) const
-{
-    double sigmafsum = 0.0;
-    double sigmafsum2 = 0.0;
-    double count = 0.0;
-
-    for(int k=0; k < NumOfBins; k++) {
-        if( Samples[k] == 0 ) continue;
-        if( includeglued == false ){
-            if( Samples[k] < 0 ) continue;
-        }
-        double ene = Energy[k] - SLevel*Error[k];
-        sigmafsum += ene;
-        sigmafsum2 += ene*ene;
-        count++;
-    }
-
-    double sigmaf2 = 0.0;
-
-    if( count > 0 ){
-        sigmaf2 = count*sigmafsum2 - sigmafsum*sigmafsum;
-        if(sigmaf2 > 0) {
-            sigmaf2 = sqrt(sigmaf2) / count;
-        } else {
-            sigmaf2 = 0.0;
-        }
-    }
-
-    sigmaf2 *= sigmaf2;
 
     return(sigmaf2);
 }

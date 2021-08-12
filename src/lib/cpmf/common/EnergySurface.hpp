@@ -92,14 +92,17 @@ public:
     /// get sigmaF2 from sampled area
     double GetSigmaF2(bool includeglued=false) const;
 
+    /// get sigmaF from sampled area
+    double GetSigmaF(bool includeglued=false) const;
+
+    /// get RMS error from sampled area at slevel
+    double GetRMSError(bool includeglued=false) const;
+
+    /// get max error at slevel
+    double GetMaxError(bool includeglued=false) const;
+
     /// get sigmaF2 from all area
     double GetSigmaF2All(void) const;
-
-    /// get sigmaF2+ from sampled area
-    double GetSigmaF2p(bool includeglued=false) const;
-
-    /// get sigmaF2- from sampled area
-    double GetSigmaF2m(bool includeglued=false) const;
 
 // access methods -------------------------------------------------------------
     /// set number of samples

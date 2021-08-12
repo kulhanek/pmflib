@@ -1299,10 +1299,11 @@ void CIntegratorGPR::CalculateEnergy(CVerboseStr& vout)
 
     GPosSet = true;
 
-    vout << "      SigmaF2   = " << setprecision(5) << EneSurf->GetSigmaF2() << endl;
+        vout << "      SigmaF2   = " << setprecision(5) << EneSurf->GetSigmaF2() << endl;
     if( IncludeGluedBins ){
         vout << "      SigmaF2 (including glued bins) = " << setprecision(5) << EneSurf->GetSigmaF2(true) << endl;
     }
+        vout << "      SigmaF    = " << setprecision(5) << EneSurf->GetSigmaF() << endl;
 }
 
 //------------------------------------------------------------------------------
@@ -2015,8 +2016,8 @@ void CIntegratorGPR::CalculateErrors(CSimpleVector<double>& gpos,CVerboseStr& vo
         }
     }
 
-    vout << "      SigmaF2+  = " << setprecision(5) << EneSurf->GetSigmaF2p() << endl;
-    vout << "      SigmaF2-  = " << setprecision(5) << EneSurf->GetSigmaF2m() << endl;
+    vout << "      RMSError  = " << setprecision(5) << EneSurf->GetRMSError() << endl;
+    vout << "      MaxError  = " << setprecision(5) << EneSurf->GetMaxError() << endl;
 }
 
 //------------------------------------------------------------------------------
@@ -2066,8 +2067,8 @@ void CIntegratorGPR::CalculateErrorsFromCov(CVerboseStr& vout)
         EneSurf->SetError(j,error);
     }
 
-    vout << "      SigmaF2+  = " << setprecision(5) << EneSurf->GetSigmaF2p() << endl;
-    vout << "      SigmaF2-  = " << setprecision(5) << EneSurf->GetSigmaF2m() << endl;
+    vout << "      RMSError  = " << setprecision(5) << EneSurf->GetRMSError() << endl;
+    vout << "      MaxError  = " << setprecision(5) << EneSurf->GetMaxError() << endl;
 }
 
 //==============================================================================

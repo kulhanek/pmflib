@@ -746,6 +746,7 @@ void CSmootherGPR::CalculateEnergy(CVerboseStr& vout)
     GPosSet = true;
 
     vout << "      SigmaF2   = " << setprecision(5) << EneSurface->GetSigmaF2() << endl;
+    vout << "      SigmaF    = " << setprecision(5) << EneSurface->GetSigmaF() << endl;
 }
 
 //------------------------------------------------------------------------------
@@ -811,8 +812,8 @@ void CSmootherGPR::CalculateErrorsFromCov(CVerboseStr& vout)
         EneSurface->SetError(j,error);
     }
 
-    vout << "      SigmaF2+  = " << setprecision(5) << EneSurface->GetSigmaF2p() << endl;
-    vout << "      SigmaF2-  = " << setprecision(5) << EneSurface->GetSigmaF2m() << endl;
+    vout << "      RMSError  = " << setprecision(5) << EneSurface->GetRMSError() << endl;
+    vout << "      MaxError  = " << setprecision(5) << EneSurface->GetMaxError() << endl;
 }
 
 //==============================================================================

@@ -748,143 +748,175 @@ void COptGPRHyprms::Test(void)
 
 void COptGPRHyprms::CalcHessian(void)
 {
-//    vout << endl;
-//    vout << format("%02d:Calculating numerical hessian by central differences ... ")%State << endl;
-//    State++;
-//
-//    Hessian.CreateMatrix(NumOfOptPrms,NumOfOptPrms);
-//    Hessian.SetZero();
-//    EigenValues.CreateVector(NumOfOptPrms);
-//    EigenValues.SetZero();
-//
-//    CSimpleVector<double>   tmp_prms;
-//    tmp_prms.CreateVector(NumOfOptPrms);
-//
-//    CSimpleVector< CSimpleVector<double> >   grd1;
-//    grd1.CreateVector(NumOfOptPrms);
-//    for(int i=0; i < NumOfOptPrms; i++){
-//        grd1[i].CreateVector(NumOfOptPrms);
-//    }
-//
-//    CSimpleVector< CSimpleVector<double> >   grd2;
-//    grd2.CreateVector(NumOfOptPrms);
-//    for(int i=0; i < NumOfOptPrms; i++){
-//        grd2[i].CreateVector(NumOfOptPrms);
-//    }
-//
-//// derivatives
-//    double dh = 1e-3;
-//
-//    for(int i=0; i < NumOfOptPrms; i++){
-//
-//        vout << "   + perturbation for hyprm: " << setw(3) << (i+1) << endl;
-//        grd1[i].SetZero();
-//        tmp_prms = Hyprms;
-//        tmp_prms[i] += dh;
-//        ScatterHyprms(tmp_prms);
-//        for(size_t c=0; c < Accumulators.size(); c++){
-//            CPMFAccumulatorP accu = Accumulators[c];
-//            CPMFIntegratorGPR gpr;
-//            gpr.PrepForHyprmsGrd(true);
-//            GetTarget(gpr,accu);
-//            switch(Target){
-//                case(EGOT_LOGML):
-//                    gpr.GetLogMLDerivatives(HyprmsEnabled,grd1[i]);
-//                break;
-//                case(EGOT_LOGPL):
-//                    gpr.GetLogPLDerivatives(HyprmsEnabled,grd1[i]);
-//                break;
-//            }
-//        }
-//
-//        vout << "   - perturbation for hyprm: " << setw(3) << (i+1) << endl;
-//        grd2[i].SetZero();
-//        tmp_prms = Hyprms;
-//        tmp_prms[i] -= dh;
-//        ScatterHyprms(tmp_prms);
-//
-//        for(size_t c=0; c < Accumulators.size(); c++){
-//            CPMFAccumulatorP accu = Accumulators[c];
-//            CPMFIntegratorGPR gpr;
-//            gpr.PrepForHyprmsGrd(true);
-//            GetTarget(gpr,accu);
-//            switch(Target){
-//                case(EGOT_LOGML):
-//                    gpr.GetLogMLDerivatives(HyprmsEnabled,grd2[i]);
-//                break;
-//                case(EGOT_LOGPL):
-//                    gpr.GetLogPLDerivatives(HyprmsEnabled,grd2[i]);
-//                break;
-//            }
-//        }
-//    }
-//
-//// hessian by central differences from gradients
-//// https://v8doc.sas.com/sashtml/ormp/chap5/sect28.htm
-//    for(int i=0; i < NumOfOptPrms; i++){
-//        for(int j=0; j < NumOfOptPrms; j++){
-//            Hessian[i][j] = (grd1[j][i] - grd2[j][i])/(4.0*dh) + (grd1[i][j] - grd2[i][j])/(4.0*dh);
-//        }
-//    }
-//
-//// find eigenvalues
-//    CSciLapack::syev('V','U',Hessian,EigenValues);
-//
-//    vout << endl;
-//    vout << "# idx    hess eigval";
-//
-//    int soffset = 0;
-//    int noffset;
-//    int woffset;
-//
-//    if( SplitNCorr ){
-//        noffset = soffset+1;
-//        woffset = noffset+NCorr.GetLength();
-//    } else {
-//        noffset = soffset+1;
-//        woffset = noffset+1;
-//    }
-//
-//    int ind = 0;
-//    for(int prm=0; prm < (int)HyprmsEnabled.size(); prm++){
-//        if( HyprmsEnabled[prm] ){
-//            if( prm == 0 ){
-//                vout << " SigmaF2   ";
-//            } else if( (prm >= noffset) && (prm < woffset) ){
-//                if( SplitNCorr ){
-//               int cv = prm - noffset;
-//                vout << format("NCorr#%-2d  ")%(cv+1);
-//                } else {
-//                vout << " NCorr     ";
-//                }
-//            } else {
-//                int cv = prm - woffset;
-//                vout << format(" WFac#%-2d   ")%(cv+1);
-//            }
-//            ind++;
-//        }
-//    }
-//    vout << endl;
-//
-//    vout << "# --- --------------";
-//    for(int prm=0; prm < (int)HyprmsEnabled.size(); prm++){
-//        if( HyprmsEnabled[prm] ){
-//            vout << " ----------";
-//        }
-//    }
-//    vout << endl;
-//
-//    for(int i=0; i < NumOfOptPrms; i++){
-//        vout << format("%5d %14.6e")%(i+1)%EigenValues[i];
-//        ind = 0;
-//        for(int prm=0; prm < (int)HyprmsEnabled.size(); prm++){
-//            if( HyprmsEnabled[prm] ){
-//                vout << format(" %10.4f")%Hessian[ind][i];
-//                ind++;
-//            }
-//        }
-//        vout << endl;
-//    }
+    vout << endl;
+    vout << format("%02d:Calculating numerical hessian by central differences ... ")%State << endl;
+    State++;
+
+    Hessian.CreateMatrix(NumOfOptPrms,NumOfOptPrms);
+    Hessian.SetZero();
+    EigenValues.CreateVector(NumOfOptPrms);
+    EigenValues.SetZero();
+
+    CSimpleVector<double>   tmp_prms;
+    tmp_prms.CreateVector(NumOfOptPrms);
+
+    CSimpleVector< CSimpleVector<double> >   grd1;
+    grd1.CreateVector(NumOfOptPrms);
+    for(int i=0; i < NumOfOptPrms; i++){
+        grd1[i].CreateVector(NumOfOptPrms);
+    }
+
+    CSimpleVector< CSimpleVector<double> >   grd2;
+    grd2.CreateVector(NumOfOptPrms);
+    for(int i=0; i < NumOfOptPrms; i++){
+        grd2[i].CreateVector(NumOfOptPrms);
+    }
+
+// derivatives
+    double dh = 1e-3;
+
+    for(int i=0; i < NumOfOptPrms; i++){
+
+        vout << "   + perturbation for hyprm: " << setw(3) << (i+1) << endl;
+        grd1[i].SetZero();
+        tmp_prms = Hyprms;
+        tmp_prms[i] += dh;
+        ScatterHyprms(tmp_prms);
+
+        // calculate gradient and logML
+        for(size_t j=0; j < RealmProxies.size(); j++){
+            CProxyRealm proxy = RealmProxies[j];
+
+        // IntegratorGPR
+            if( proxy.DerProxy != NULL ) {
+                CIntegratorGPR gpr;
+                gpr.PrepForHyprmsGrd(true);
+                GetTargetFromIntegrator(gpr,proxy.DerProxy);
+                switch(Target){
+                    case(EGOT_LOGML):
+                        gpr.GetLogMLDerivatives(HyprmsEnabled,grd1[i]);
+                    break;
+                    case(EGOT_LOGPL):
+                        gpr.GetLogPLDerivatives(HyprmsEnabled,grd1[i]);
+                    break;
+                }
+        // SmootherGPR
+            } else if( proxy.EnergyProxy != NULL ) {
+                CSmootherGPR gpr;
+                gpr.PrepForHyprmsGrd(true);
+                GetTargetFromSmoother(gpr,proxy.EnergyProxy);
+                switch(Target){
+                    case(EGOT_LOGML):
+                        gpr.GetLogMLDerivatives(HyprmsEnabled,grd1[i]);
+                    break;
+                    case(EGOT_LOGPL):
+                        gpr.GetLogPLDerivatives(HyprmsEnabled,grd1[i]);
+                    break;
+                }
+            } else {
+                RUNTIME_ERROR("undefined proxy")
+            }
+        }
+
+        vout << "   - perturbation for hyprm: " << setw(3) << (i+1) << endl;
+        grd2[i].SetZero();
+        tmp_prms = Hyprms;
+        tmp_prms[i] -= dh;
+        ScatterHyprms(tmp_prms);
+
+
+// calculate gradient and logML
+        for(size_t j=0; j < RealmProxies.size(); j++){
+            CProxyRealm proxy = RealmProxies[j];
+
+        // IntegratorGPR
+            if( proxy.DerProxy != NULL ) {
+                CIntegratorGPR gpr;
+                gpr.PrepForHyprmsGrd(true);
+                GetTargetFromIntegrator(gpr,proxy.DerProxy);
+                switch(Target){
+                    case(EGOT_LOGML):
+                        gpr.GetLogMLDerivatives(HyprmsEnabled,grd2[i]);
+                    break;
+                    case(EGOT_LOGPL):
+                        gpr.GetLogPLDerivatives(HyprmsEnabled,grd2[i]);
+                    break;
+                }
+        // SmootherGPR
+            } else if( proxy.EnergyProxy != NULL ) {
+                CSmootherGPR gpr;
+                gpr.PrepForHyprmsGrd(true);
+                GetTargetFromSmoother(gpr,proxy.EnergyProxy);
+                switch(Target){
+                    case(EGOT_LOGML):
+                        gpr.GetLogMLDerivatives(HyprmsEnabled,grd2[i]);
+                    break;
+                    case(EGOT_LOGPL):
+                        gpr.GetLogPLDerivatives(HyprmsEnabled,grd2[i]);
+                    break;
+                }
+            } else {
+                RUNTIME_ERROR("undefined proxy")
+            }
+        }
+    }
+
+// hessian by central differences from gradients
+// https://v8doc.sas.com/sashtml/ormp/chap5/sect28.htm
+    for(int i=0; i < NumOfOptPrms; i++){
+        for(int j=0; j < NumOfOptPrms; j++){
+            Hessian[i][j] = (grd1[j][i] - grd2[j][i])/(4.0*dh) + (grd1[i][j] - grd2[i][j])/(4.0*dh);
+        }
+    }
+
+// find eigenvalues
+    CSciLapack::syev('V','U',Hessian,EigenValues);
+
+    vout << endl;
+    vout << "# idx    hess eigval";
+
+    int soffset = 0;
+    int noffset;
+    int woffset;
+
+    noffset = soffset+1;
+    woffset = noffset+1;
+
+    int ind = 0;
+    for(int prm=0; prm < (int)HyprmsEnabled.size(); prm++){
+        if( HyprmsEnabled[prm] ){
+            if( prm == 0 ){
+                vout << " SigmaF2   ";
+            } else if( (prm >= noffset) && (prm < woffset) ){
+                vout << " NCorr     ";
+            } else {
+                int cv = prm - woffset;
+                vout << format(" WFac#%-2d   ")%(cv+1);
+            }
+            ind++;
+        }
+    }
+    vout << endl;
+
+    vout << "# --- --------------";
+    for(int prm=0; prm < (int)HyprmsEnabled.size(); prm++){
+        if( HyprmsEnabled[prm] ){
+            vout << " ----------";
+        }
+    }
+    vout << endl;
+
+    for(int i=0; i < NumOfOptPrms; i++){
+        vout << format("%5d %14.6e")%(i+1)%EigenValues[i];
+        ind = 0;
+        for(int prm=0; prm < (int)HyprmsEnabled.size(); prm++){
+            if( HyprmsEnabled[prm] ){
+                vout << format(" %10.4f")%Hessian[ind][i];
+                ind++;
+            }
+        }
+        vout << endl;
+    }
 }
 
 //------------------------------------------------------------------------------

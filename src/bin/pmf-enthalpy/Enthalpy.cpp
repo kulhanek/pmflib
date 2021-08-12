@@ -213,8 +213,9 @@ if( Options.GetOptRealm() == "<Etot>" ){
         vout << format("%02d:Raw absolute enthalpy")%State << endl;
         GetRawEnthalpy();
         vout << "      SigmaF2   = " << setprecision(5) << HES->GetSigmaF2() << endl;
-        vout << "      SigmaF2+  = " << setprecision(5) << HES->GetSigmaF2p() << endl;
-        vout << "      SigmaF2-  = " << setprecision(5) << HES->GetSigmaF2m() << endl;
+        vout << "      SigmaF    = " << setprecision(5) << HES->GetSigmaF() << endl;
+        vout << "      RMSError  = " << setprecision(5) << HES->GetRMSError() << endl;
+        vout << "      MaxError- = " << setprecision(5) << HES->GetMaxError() << endl;
         State++;
         vout << "   Done." << endl;
         Accu->SetNCorr(1.0);    // to prevent possible errors if used later
