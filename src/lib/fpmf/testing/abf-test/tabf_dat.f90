@@ -36,8 +36,8 @@ implicit none
 
 ! control section --------------------------------------------------------------
 integer     :: fmode        ! 0 - disable ABF
-                            ! 1 - enable ABF (standard algorithm - 4p)
-                            ! 2 - enable ABF (numerical algorithm - 2p)
+                            ! 1 - enable ABF (simple ABF algorithm - 2p)
+                            ! 2 - enable ABF (original ABF algorithm - 4p)
                             ! 3 - enable ABF (numerical algorithm - 2p, no SHAKE)
 integer     :: fsample      ! output sample period in steps
 integer     :: frstupdate   ! how often is restart file written
@@ -51,6 +51,8 @@ logical     :: fenthalpy    ! collect data for enthalpy calculation
 logical     :: fentropy     ! collect data for entropy calculation
 real(PMFDP) :: fepotoffset
 real(PMFDP) :: fekinoffset
+
+integer     :: fblock_size  ! pre-blocking
 
 ! linear ramp mode II (feimode .eq. 1)
 integer     :: fhramp_min   ! min value of linear ramp - ABF force is ignored below this value
@@ -102,6 +104,39 @@ type,extends(PMFAccuType)   :: TABFAccuType
     real(PMFDP),pointer     :: c11kp(:,:)                ! c11 - kinetic/potential
     real(PMFDP),pointer     :: c11kk(:,:)                ! c11 - kinetic/kinetic
     real(PMFDP),pointer     :: c11kr(:,:)                ! c11 - kinetic/restraints
+
+    real(PMFDP),pointer     :: mcovhh(:,:)               ! c11 - total/total
+    real(PMFDP),pointer     :: mcovpp(:,:)               ! c11 - potential/potential
+    real(PMFDP),pointer     :: mcovpk(:,:)               ! c11 - potential/kinetic
+    real(PMFDP),pointer     :: mcovpr(:,:)               ! c11 - potential/restraints
+    real(PMFDP),pointer     :: mcovkp(:,:)               ! c11 - kinetic/potential
+    real(PMFDP),pointer     :: mcovkk(:,:)               ! c11 - kinetic/kinetic
+    real(PMFDP),pointer     :: mcovkr(:,:)               ! c11 - kinetic/restraints
+
+    real(PMFDP),pointer     :: m2covhh(:,:)              ! c11 - total/total
+    real(PMFDP),pointer     :: m2covpp(:,:)              ! c11 - potential/potential
+    real(PMFDP),pointer     :: m2covpk(:,:)              ! c11 - potential/kinetic
+    real(PMFDP),pointer     :: m2covpr(:,:)              ! c11 - potential/restraints
+    real(PMFDP),pointer     :: m2covkp(:,:)              ! c11 - kinetic/potential
+    real(PMFDP),pointer     :: m2covkk(:,:)              ! c11 - kinetic/kinetic
+    real(PMFDP),pointer     :: m2covkr(:,:)              ! c11 - kinetic/restraints
+
+    ! pre-blocking
+    integer,pointer         :: block_nsamples(:)        ! number of hits into bins
+    real(PMFDP),pointer     :: block_micf(:,:)          ! mean ICF - total
+    real(PMFDP),pointer     :: block_micf_pot(:,:)      ! mean ICF - potential energy part
+    real(PMFDP),pointer     :: block_micf_kin(:,:)      ! mean ICF - kinetic energy part
+    real(PMFDP),pointer     :: block_metot(:)           ! mean of total energy
+    real(PMFDP),pointer     :: block_mepot(:)           ! mean of potential energy
+    real(PMFDP),pointer     :: block_mekin(:)           ! mean of kinetic energy
+    real(PMFDP),pointer     :: block_merst(:)           ! mean of restraint energy
+    real(PMFDP),pointer     :: block_c11hh(:,:)         ! c11 - total/total
+    real(PMFDP),pointer     :: block_c11pp(:,:)         ! c11 - potential/potential
+    real(PMFDP),pointer     :: block_c11pk(:,:)         ! c11 - potential/kinetic
+    real(PMFDP),pointer     :: block_c11pr(:,:)         ! c11 - potential/restraints
+    real(PMFDP),pointer     :: block_c11kp(:,:)         ! c11 - kinetic/potential
+    real(PMFDP),pointer     :: block_c11kk(:,:)         ! c11 - kinetic/kinetic
+    real(PMFDP),pointer     :: block_c11kr(:,:)         ! c11 - kinetic/restraints
 end type TABFAccuType
 
 ! ----------------------

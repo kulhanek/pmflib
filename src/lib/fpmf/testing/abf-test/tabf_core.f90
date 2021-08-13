@@ -51,11 +51,11 @@ subroutine tabf_core_main
 
     select case(fmode)
         case(1)
-            ! standard ABF algorithm
-            call tabf_core_force_4p
-        case(2)
             ! numerical differentiation
             call tabf_core_force_2p
+        case(2)
+            ! standard ABF algorithm
+            call tabf_core_force_4p
         case(3)
             ! analytical/numerical differentiation
             call tabf_core_force_2p_frc  ! SHAKE must be off
@@ -137,6 +137,8 @@ subroutine tabf_core_force_4p()
 
     ! calculate abf force to be applied -------------
     select case(feimode)
+        case(0)
+            call tabf_accu_get_data(cvaluehist3(:),la)
         case(1)
             call tabf_accu_get_data_lramp(cvaluehist3(:),la)
         case default
@@ -218,7 +220,11 @@ subroutine tabf_core_force_4p()
         pdum(:) = 0.0d0
 
         ! add data to accumulator
-        call tabf_accu_add_data_online(cvaluehist0,pxi0(:),pdum(:),avg_epot,avg_ekin,avg_erst)
+        if( fblock_size .gt. 0 ) then
+            call tabf_accu_add_data_blocking(cvaluehist0,pxi0(:),pdum(:),avg_epot,avg_ekin,avg_erst)
+        else
+            call tabf_accu_add_data_online(cvaluehist0,pxi0(:),pdum(:),avg_epot,avg_ekin,avg_erst)
+        end if
 
         ! write icf
         call tabf_output_write_icf(avg_values,pxi0(:))
@@ -339,7 +345,11 @@ subroutine tabf_core_force_2p()
         pxim(:) = 0.5d0*(pxim(:)+pxip(:))
 
         ! add data to accumulator
-        call tabf_accu_add_data_online(cvaluehist0,pxi0(:),pxim(:),epothist0,ekinhist1,ersthist0)
+        if( fblock_size .gt. 0 ) then
+            call tabf_accu_add_data_blocking(cvaluehist0,pxi0(:),pxim(:),epothist0,ekinhist1,ersthist0)
+        else
+            call tabf_accu_add_data_online(cvaluehist0,pxi0(:),pxim(:),epothist0,ekinhist1,ersthist0)
+        end if
     end if
 
     ! backup to the next step
@@ -354,6 +364,8 @@ subroutine tabf_core_force_2p()
     if( fapply_abf ) then
         ! calculate abf force to be applied
         select case(feimode)
+            case(0)
+                call tabf_accu_get_data(cvaluehist1(:),la)
             case(1)
                 call tabf_accu_get_data_lramp(cvaluehist1(:),la)
             case default
@@ -472,7 +484,11 @@ subroutine tabf_core_force_2p_frc()
         pxim(:) =  0.5d0*(pxim(:)+pxip(:))
 
         ! add data to accumulator
-        call tabf_accu_add_data_online(cvaluehist0,pxi0(:),pxim(:),epothist0,ekinhist1,ersthist0)
+        if( fblock_size .gt. 0 ) then
+            call tabf_accu_add_data_blocking(cvaluehist0,pxi0(:),pxim(:),epothist0,ekinhist1,ersthist0)
+        else
+            call tabf_accu_add_data_online(cvaluehist0,pxi0(:),pxim(:),epothist0,ekinhist1,ersthist0)
+        end if
     end if
 
     ! backup to the next step
@@ -487,6 +503,8 @@ subroutine tabf_core_force_2p_frc()
     if( fapply_abf ) then
         ! calculate abf force to be applied
         select case(feimode)
+            case(0)
+                call tabf_accu_get_data(cvaluehist1(:),la)
             case(1)
                 call tabf_accu_get_data_lramp(cvaluehist1(:),la)
             case default

@@ -217,7 +217,7 @@ double  CEnergySurface::GetErrorRealValue(int ibin) const
 
 double  CEnergySurface::GetErrorRealValueWithSLevel(int ibin) const
 {
-    return(Error[ibin] * EnergyFConv);
+    return(SLevel * Error[ibin] * EnergyFConv);
 }
 
 //------------------------------------------------------------------------------
@@ -286,19 +286,17 @@ double CEnergySurface::GetSigmaF(bool includeglued) const
 
 double CEnergySurface::GetRMSError(bool includeglued) const
 {
-    double mf = 0.0;
     double m2 = 0.0;
     double n  = 0.0;
 
-    // https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Welford's_online_algorithm
-
     for(int k=0; k < NumOfBins; k++) {
+        if( Samples[k] == 0 ) continue;
+        if( includeglued == false ){
+            if( Samples[k] < 0 ) continue;
+        }
         double err = SLevel*Error[k];
+        m2 = m2 + err*err;
         n++;
-        double dx1 = (err - mf);
-        mf = mf + dx1/n;
-        double dx2 = (err - mf);
-        m2 = m2 + dx1*dx2;
     }
 
     double rmserr = 0.0;
@@ -316,6 +314,10 @@ double CEnergySurface::GetMaxError(bool includeglued) const
     double maxerr = 0.0;
 
     for(int k=0; k < NumOfBins; k++) {
+        if( Samples[k] == 0 ) continue;
+        if( includeglued == false ){
+            if( Samples[k] < 0 ) continue;
+        }
         double err = SLevel*Error[k];
         if( maxerr < err ){
             maxerr = err;

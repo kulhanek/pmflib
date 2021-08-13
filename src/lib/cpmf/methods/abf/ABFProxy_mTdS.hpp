@@ -26,13 +26,13 @@
 //------------------------------------------------------------------------------
 
 enum EABFTdSType {
-    ABF_C11HH,
-    ABF_C11PP,
-    ABF_C11PK,
-    ABF_C11PR,
-    ABF_C11KP,
-    ABF_C11KK,
-    ABF_C11KR,
+    ABF_TdS_HH,
+    ABF_TdS_PP,
+    ABF_TdS_PK,
+    ABF_TdS_PR,
+    ABF_TdS_KP,
+    ABF_TdS_KK,
+    ABF_TdS_KR,
 };
 
 //------------------------------------------------------------------------------
@@ -66,6 +66,9 @@ public:
 // section of private data -----------------------------------------------------
 private:
     EABFTdSType    Type;
+
+    double GetValueFromCov(int ibin,int icv,EProxyRealm realm) const;
+    double GetValueFromMean(int ibin,int icv,EProxyRealm realm) const;
 };
 
 //------------------------------------------------------------------------------

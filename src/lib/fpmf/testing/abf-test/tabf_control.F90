@@ -1,6 +1,7 @@
 !===============================================================================
 ! PMFLib - Library Supporting Potential of Mean Force Calculations
 !-------------------------------------------------------------------------------
+!    Copyright (C) 2021 Petr Kulhanek, kulhanek@chemi.muni.cz
 !    Copyright (C) 2011-2015 Petr Kulhanek, kulhanek@chemi.muni.cz
 !    Copyright (C) 2013-2015 Letif Mones, lam81@cam.ac.uk
 !    Copyright (C) 2007 Petr Kulhanek, kulhanek@enzim.hu
@@ -79,16 +80,19 @@ subroutine tabf_control_read_abf(prm_fin)
     call pmf_ctrl_read_logical(prm_fin,'fapply_abf',fapply_abf)
 
     call pmf_ctrl_read_integer(prm_fin,'feimode',feimode,'i12')
-    call pmf_ctrl_check_integer_in_range('ABF','feimode',feimode,1,1)
+    call pmf_ctrl_check_integer_in_range('TABF','feimode',feimode,0,1)
 
     call pmf_ctrl_read_integer(prm_fin,'fsample',fsample,'i12')
-    call pmf_ctrl_check_integer('ABF','fsample',fsample,0,CND_GE)
+    call pmf_ctrl_check_integer('TABF','fsample',fsample,0,CND_GE)
+
+    call pmf_ctrl_read_integer(prm_fin,'fblock_size',fblock_size,'i12')
+    call pmf_ctrl_check_integer('TABF','fblock_size',fblock_size,0,CND_GE)
 
     call pmf_ctrl_read_integer(prm_fin,'frstupdate',frstupdate,'i12')
-    call pmf_ctrl_check_integer('ABF','frstupdate',frstupdate,0,CND_GE)
+    call pmf_ctrl_check_integer('TABF','frstupdate',frstupdate,0,CND_GE)
 
     call pmf_ctrl_read_integer(prm_fin,'ftrjsample',ftrjsample,'i12')
-    call pmf_ctrl_check_integer('ABF','ftrjsample',ftrjsample,0,CND_GE)
+    call pmf_ctrl_check_integer('TABF','ftrjsample',ftrjsample,0,CND_GE)
 
     call pmf_ctrl_read_logical(prm_fin,'fprint_icf',fprint_icf)
 
@@ -99,12 +103,14 @@ subroutine tabf_control_read_abf(prm_fin)
     call pmf_ctrl_read_real8_wunit(prm_fin,'fekinoffset',EnergyUnit,fekinoffset,'F10.1')
 
     select case(feimode)
+        case(0)
+            ! nothing to be here
         case(1)
             write(PMF_OUT,20)
             call pmf_ctrl_read_integer(prm_fin,'fhramp_min',fhramp_min,'i12')
-            call pmf_ctrl_check_integer('ABF','fhramp_min',fhramp_min,0,CND_GE)
+            call pmf_ctrl_check_integer('TABF','fhramp_min',fhramp_min,0,CND_GE)
             call pmf_ctrl_read_integer(prm_fin,'fhramp_max',fhramp_max,'i12')
-            call pmf_ctrl_check_integer('ABF','fhramp_max',fhramp_max,0,CND_GE)
+            call pmf_ctrl_check_integer('TABF','fhramp_max',fhramp_max,0,CND_GE)
             if( fhramp_max .lt. fhramp_min ) then
                 call pmf_utils_exit(PMF_OUT,1,'[TABF] fhramp_max must be >= fhramp_min!')
             end if

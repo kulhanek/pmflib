@@ -277,32 +277,32 @@ bool CPMFEnergyIntegrate::Run(void)
 // -----------------------------------------------
     } else if ( Options.GetOptRealm() == "-TdS_PP" ) {
         CABFProxy_mTdS_Ptr proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
-        proxy->SetType(ABF_C11PP);
+        proxy->SetType(ABF_TdS_PP);
         DerProxy = proxy;
 // -----------------------------------------------
     } else if ( Options.GetOptRealm() == "-TdS_PK" ) {
         CABFProxy_mTdS_Ptr proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
-        proxy->SetType(ABF_C11PK);
+        proxy->SetType(ABF_TdS_PK);
         DerProxy = proxy;
 // -----------------------------------------------
     } else if ( Options.GetOptRealm() == "-TdS_PR" ) {
         CABFProxy_mTdS_Ptr proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
-        proxy->SetType(ABF_C11PR);
+        proxy->SetType(ABF_TdS_PR);
         DerProxy = proxy;
 // -----------------------------------------------
     } else if ( Options.GetOptRealm() == "-TdS_KP" ) {
         CABFProxy_mTdS_Ptr proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
-        proxy->SetType(ABF_C11KP);
+        proxy->SetType(ABF_TdS_KP);
         DerProxy = proxy;
 // -----------------------------------------------
     } else if ( Options.GetOptRealm() == "-TdS_KK" ) {
         CABFProxy_mTdS_Ptr proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
-        proxy->SetType(ABF_C11KK);
+        proxy->SetType(ABF_TdS_KK);
         DerProxy = proxy;
 // -----------------------------------------------
     } else if ( Options.GetOptRealm() == "-TdS_KR" ) {
         CABFProxy_mTdS_Ptr proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
-        proxy->SetType(ABF_C11KR);
+        proxy->SetType(ABF_TdS_KR);
         DerProxy = proxy;
 // -----------------------------------------------
     } else if ( Options.GetOptRealm() == "-TdS_HP" ) {

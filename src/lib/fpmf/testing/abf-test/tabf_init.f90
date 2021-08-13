@@ -78,6 +78,8 @@ subroutine tabf_init_dat
     fepotoffset     = 0.0d0
     fekinoffset     = 0.0d0
 
+    fblock_size     = 0
+
     fhramp_min      = 100       ! definition of linear ramp
     fhramp_max      = 200       ! definition of linear ramp
 
@@ -109,7 +111,7 @@ subroutine tabf_init_print_header
 
     write(PMF_OUT,120)
     write(PMF_OUT,120)  '================================================================================'
-    write(PMF_OUT,120)  ' *********************** ADAPTIVE BIASING FORCE METHOD ************************ '
+    write(PMF_OUT,120)  ' ****************** ADAPTIVE BIASING FORCE METHOD (TESTING) ******************* '
     write(PMF_OUT,120)  '================================================================================'
     write(PMF_OUT,120)
     write(PMF_OUT,120)  ' ABF Mode'
@@ -117,9 +119,9 @@ subroutine tabf_init_print_header
     write(PMF_OUT,130)  ' ABF mode (fmode)                        : ', fmode
     select case(fmode)
     case(1)
-    write(PMF_OUT,120)  '      |-> Standard ABF algorithm'
+    write(PMF_OUT,120)  '      |-> Simplified ABF algorithm'
     case(2)
-    write(PMF_OUT,120)  '      |-> Numerical ABF algorithm'
+    write(PMF_OUT,120)  '      |-> Original ABF algorithm'
     case(3)
     write(PMF_OUT,120)  '      |-> Analytical/Numerical ABF algorithm, SHAKE must be off'
     case default
@@ -135,8 +137,11 @@ subroutine tabf_init_print_header
     write(PMF_OUT,120)
     write(PMF_OUT,120)  ' ABF Interpolation/Extrapolation '
     write(PMF_OUT,120)  ' ------------------------------------------------------'
+    write(PMF_OUT,130)  ' Data pre-blocking (fblock_size)         : ', fblock_size
     write(PMF_OUT,130)  ' Extra/interpolation mode (feimode)      : ', feimode
     select case(feimode)
+    case(0)
+    write(PMF_OUT,120)  '      |-> Direct application'
     case(1)
     write(PMF_OUT,120)  '      |-> Min/Max linear ramp'
     write(PMF_OUT,130)  ' Min of accu samples in bin (fhramp_min) : ', fhramp_min
