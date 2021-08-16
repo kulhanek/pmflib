@@ -27,6 +27,11 @@
 #include <iomanip>
 #include <boost/format.hpp>
 #include <ABFProxy_dG.hpp>
+#include <ABFProxy_mTdS.hpp>
+#include <CSTProxy_dG.hpp>
+#include <CSTProxy_mTdS.hpp>
+#include <CSTProxy_MTC.hpp>
+#include <PMFProxy_dH.hpp>
 
 //------------------------------------------------------------------------------
 
@@ -122,11 +127,17 @@ bool CPMFAccuInfo::Run(void)
     } else if( Options.GetProgArg(1) == "get-section" ){
         GetSection(Options.GetProgArg(2));
 // -----------------------------------------------
+    } else if( Options.GetProgArg(1) == "get-derivative" ){
+        GetDerivative(Options.GetProgArg(2));
+// -----------------------------------------------
+    } else if( Options.GetProgArg(1) == "get-energy" ){
+        GetEnergy(Options.GetProgArg(2));
+// -----------------------------------------------
+    } else if( Options.GetProgArg(1) == "get-mtc" ){
+        GetMTC();
+// -----------------------------------------------
     } else if( (Options.GetProgArg(1) == "NSAMPLES") || (Options.GetProgArg(1) == "nsamples") ){
         GetSection("NSAMPLES");
-// -----------------------------------------------
-    } else if( Options.GetProgArg(1) == "micf" ){
-        GetMICF();
 // -----------------------------------------------
     } else {
         CSmallString error;
@@ -255,29 +266,203 @@ void CPMFAccuInfo::GetSection(const CSmallString& name)
 
 //------------------------------------------------------------------------------
 
-void CPMFAccuInfo::GetMICF(void)
+void CPMFAccuInfo::GetDerivative(const CSmallString& name)
 {
-// prepare accumulator --------------------------
-    vout << "#" << endl;
-    vout << "# Data section: MICF (from ABF)" << endl;
+    CEnergyDerProxyPtr      der_proxy;
+
+// init energy-der proxy
+    if( name == "dG" ){
+        if( CABFProxy_dG::IsCompatible(Accu) ){
+            der_proxy    = CABFProxy_dG_Ptr(new CABFProxy_dG);
+        } else if (CCSTProxy_dG::IsCompatible(Accu) ) {
+            der_proxy    = CCSTProxy_dG_Ptr(new CCSTProxy_dG);
+        } else {
+            CSmallString error;
+            error << "incompatible method: " << Accu->GetMethod() << " with requested realm: " <<  name;
+            RUNTIME_ERROR(error);
+        }
+// -----------------------------------------------
+    } else if ( name == "dG_p" ) {
+        CABFProxy_dG_Ptr proxy    = CABFProxy_dG_Ptr(new CABFProxy_dG);
+        proxy->SetType(ABF_MICF_POT);
+        der_proxy = proxy;
+// -----------------------------------------------
+    } else if ( name == "dG_k" ) {
+        CABFProxy_dG_Ptr proxy    = CABFProxy_dG_Ptr(new CABFProxy_dG);
+        proxy->SetType(ABF_MICF_KIN);
+        der_proxy = proxy;
+// -----------------------------------------------
+    } else if ( name == "-TdS" ) {
+        if( CABFProxy_mTdS::IsCompatible(Accu) ){
+            der_proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
+        } else if (CCSTProxy_mTdS::IsCompatible(Accu) ) {
+            der_proxy    = CCSTProxy_mTdS_Ptr(new CCSTProxy_mTdS);
+        } else {
+            CSmallString error;
+            error << "incompatible method: " << Accu->GetMethod() << " with requested realm: " <<  name;
+            RUNTIME_ERROR(error);
+        }
+// -----------------------------------------------
+    } else if ( name == "-TdS_PP" ) {
+        CABFProxy_mTdS_Ptr proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
+        proxy->SetType(ABF_TdS_PP);
+        der_proxy = proxy;
+// -----------------------------------------------
+    } else if ( name == "-TdS_PK" ) {
+        CABFProxy_mTdS_Ptr proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
+        proxy->SetType(ABF_TdS_PK);
+        der_proxy = proxy;
+// -----------------------------------------------
+    } else if ( name == "-TdS_PR" ) {
+        CABFProxy_mTdS_Ptr proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
+        proxy->SetType(ABF_TdS_PR);
+        der_proxy = proxy;
+// -----------------------------------------------
+    } else if ( name == "-TdS_KP" ) {
+        CABFProxy_mTdS_Ptr proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
+        proxy->SetType(ABF_TdS_KP);
+        der_proxy = proxy;
+// -----------------------------------------------
+    } else if ( name == "-TdS_KK" ) {
+        CABFProxy_mTdS_Ptr proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
+        proxy->SetType(ABF_TdS_KK);
+        der_proxy = proxy;
+// -----------------------------------------------
+    } else if ( name == "-TdS_KR" ) {
+        CABFProxy_mTdS_Ptr proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
+        proxy->SetType(ABF_TdS_KR);
+        der_proxy = proxy;
+// -----------------------------------------------
+    } else if ( name == "-TdS_HP" ) {
+        CCSTProxy_mTdS_Ptr proxy    = CCSTProxy_mTdS_Ptr(new CCSTProxy_mTdS);
+        proxy->SetType(CST_C11HP);
+        der_proxy = proxy;
+// -----------------------------------------------
+    } else if ( name == "-TdS_HK" ) {
+        CCSTProxy_mTdS_Ptr proxy    = CCSTProxy_mTdS_Ptr(new CCSTProxy_mTdS);
+        proxy->SetType(CST_C11HK);
+        der_proxy = proxy;
+// -----------------------------------------------
+    } else if ( name == "-TdS_HR" ) {
+        CCSTProxy_mTdS_Ptr proxy    = CCSTProxy_mTdS_Ptr(new CCSTProxy_mTdS);
+        proxy->SetType(CST_C11HR);
+        der_proxy = proxy;
+// -----------------------------------------------
+    } else {
+        CSmallString error;
+        error << "unsupported realm: " << name;
+        RUNTIME_ERROR(error);
+    }
+
+    der_proxy->Init(Accu);
 
     vout << high;
-
-    CABFProxy_dG der_proxy;
-    der_proxy.Init(Accu);
 
     Values.CreateVector(Accu->GetNumOfBins());
     Sigmas.CreateVector(Accu->GetNumOfBins());
     Errors.CreateVector(Accu->GetNumOfBins());
 
     for(int ibin=0; ibin < Accu->GetNumOfBins(); ibin++){
-        Values[ibin] = der_proxy.GetValue(ibin,Options.GetOptCV()-1,E_PROXY_VALUE);
-        Sigmas[ibin] = der_proxy.GetValue(ibin,Options.GetOptCV()-1,E_PROXY_SIGMA);
-        Errors[ibin] = der_proxy.GetValue(ibin,Options.GetOptCV()-1,E_PROXY_ERROR);
+        Values[ibin] = der_proxy->GetValue(ibin,Options.GetOptCV()-1,E_PROXY_VALUE);
+        Sigmas[ibin] = der_proxy->GetValue(ibin,Options.GetOptCV()-1,E_PROXY_SIGMA);
+        Errors[ibin] = der_proxy->GetValue(ibin,Options.GetOptCV()-1,E_PROXY_ERROR);
     }
 
     if( Options.GetOptNoHeader() == false ){
-        PrintHeader("MICF (from ABF)",true);
+        CSmallString title;
+        title << "derivative for: " << name;
+        PrintHeader(title,true);
+    }
+
+    // print data
+    PrintData(true);
+
+    vout << debug;
+}
+
+//------------------------------------------------------------------------------
+
+void CPMFAccuInfo::GetEnergy(const CSmallString& name)
+{
+    CPMFProxy_dH_Ptr    ene_proxy;
+
+    if( name == "<Etot>" ){
+        CPMFProxy_dH_Ptr proxy    = CPMFProxy_dH_Ptr(new CPMFProxy_dH);
+        proxy->SetType(PMF_ETOT);
+        ene_proxy = proxy;
+// -----------------------------------------------
+    } else if ( name == "<Epot>" ) {
+        CPMFProxy_dH_Ptr proxy    = CPMFProxy_dH_Ptr(new CPMFProxy_dH);
+        proxy->SetType(PMF_EPOT);
+        ene_proxy = proxy;
+// -----------------------------------------------
+    } else if ( name == "<Ekin>" ) {
+        CPMFProxy_dH_Ptr proxy    = CPMFProxy_dH_Ptr(new CPMFProxy_dH);
+        proxy->SetType(PMF_EKIN);
+        ene_proxy = proxy;
+// -----------------------------------------------
+    } else if ( name == "<Erst>" ) {
+        CPMFProxy_dH_Ptr proxy    = CPMFProxy_dH_Ptr(new CPMFProxy_dH);
+        proxy->SetType(PMF_ERST);
+        ene_proxy = proxy;
+// -----------------------------------------------
+    } else {
+        CSmallString error;
+        error << "unsupported realm: " << name ;
+        RUNTIME_ERROR(error);
+    }
+
+    ene_proxy->Init(Accu);
+
+    vout << high;
+
+    Values.CreateVector(Accu->GetNumOfBins());
+    Sigmas.CreateVector(Accu->GetNumOfBins());
+    Errors.CreateVector(Accu->GetNumOfBins());
+
+    for(int ibin=0; ibin < Accu->GetNumOfBins(); ibin++){
+        Values[ibin] = ene_proxy->GetValue(ibin,E_PROXY_VALUE);
+        Sigmas[ibin] = ene_proxy->GetValue(ibin,E_PROXY_SIGMA);
+        Errors[ibin] = ene_proxy->GetValue(ibin,E_PROXY_ERROR);
+    }
+
+    if( Options.GetOptNoHeader() == false ){
+        CSmallString title;
+        title << "derivative for: " << name;
+        PrintHeader(title,true);
+    }
+
+    // print data
+    PrintData(true);
+
+    vout << debug;
+}
+
+//------------------------------------------------------------------------------
+
+void CPMFAccuInfo::GetMTC(void)
+{
+// prepare accumulator --------------------------
+    vout << "#" << endl;
+    vout << "# Data section: MTC (from CST)" << endl;
+
+    vout << high;
+
+    CCSTProxy_MTC_Ptr mtc_proxy   = CCSTProxy_MTC_Ptr(new CCSTProxy_MTC);
+    mtc_proxy->Init(Accu);
+
+    Values.CreateVector(Accu->GetNumOfBins());
+    Sigmas.CreateVector(Accu->GetNumOfBins());
+    Errors.CreateVector(Accu->GetNumOfBins());
+
+    for(int ibin=0; ibin < Accu->GetNumOfBins(); ibin++){
+        Values[ibin] = mtc_proxy->GetValue(ibin,E_PROXY_VALUE);
+        Sigmas[ibin] = mtc_proxy->GetValue(ibin,E_PROXY_SIGMA);
+        Errors[ibin] = mtc_proxy->GetValue(ibin,E_PROXY_ERROR);
+    }
+
+    if( Options.GetOptNoHeader() == false ){
+        PrintHeader("MTC (from CST)",true);
     }
 
     // print data

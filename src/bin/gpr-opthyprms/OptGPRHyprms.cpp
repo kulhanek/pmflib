@@ -109,7 +109,7 @@ int COptGPRHyprms::Init(int argc,char* argv[])
     vout << "# Optimized target      : " << Options.GetOptTarget() << endl;
 
     // here we assume that kernels in IntegratorGPR and SmootherGPR are the same
-    CIntegratorGPR gpr;
+    CSmootherGPR gpr;
     gpr.SetKernel(Options.GetOptGPRKernel());
     vout << "# GPR Kernel            : " << gpr.GetKernelName() << endl;
     vout << "# ------------------------------------------------" << endl;

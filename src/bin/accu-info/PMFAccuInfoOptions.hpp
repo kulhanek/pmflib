@@ -51,11 +51,13 @@ public:
     CSO_PROG_ARGS_LONG_DESC_BEGIN
     "<cyan><b>accuname</b></cyan>                   Input name of PMF accumulator or '-' to read it from the standard input.\n"
     "<cyan><b>action</b></cyan>                     Requested action:\n"
-    "                                               ** <b>info</b>          - print summary about the accumulator\n"
-    "                                               ** <b>list-sections</b> - print available sections\n"
-    "                                               ** <b>get-section</b>   - get data from the section\n"
-    "                                               ** <b>nsamples</b>      - print number of samples in bins\n"
-    "                                               ** <b>micf</b>          - print mean ICF forces (only the ABF simulations)"
+    "                                               ** <b>info</b>              - print summary about the accumulator\n"
+    "                                               ** <b>list-sections</b>     - print available sections\n"
+    "                                               ** <b>get-section</b>       - get data from the section\n"
+    "                                               ** <b>get-derivative</b>    - get derivative for given realm\n"
+    "                                               ** <b>get-energy</b>        - get energy for given realm\n"
+    "                                               ** <b>get-mtc</b>           - get MTC correction\n"
+    "                                               ** <b>nsamples</b>          - print number of samples in bins\n"
     CSO_PROG_ARGS_LONG_DESC_END
 
 // list of all options and arguments ------------------------------------------

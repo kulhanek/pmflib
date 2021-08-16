@@ -143,7 +143,7 @@ bool CEnthalpy::Run(void)
     HES         = CEnergySurfacePtr(new CEnergySurface);
     EneProxy    = CPMFProxy_dH_Ptr();
 
-if( Options.GetOptRealm() == "<Etot>" ){
+    if( Options.GetOptRealm() == "<Etot>" ){
         CPMFProxy_dH_Ptr proxy    = CPMFProxy_dH_Ptr(new CPMFProxy_dH);
         proxy->SetType(PMF_ETOT);
         EneProxy = proxy;
@@ -212,13 +212,21 @@ if( Options.GetOptRealm() == "<Etot>" ){
         vout << endl;
         vout << format("%02d:Raw absolute enthalpy")%State << endl;
         GetRawEnthalpy();
+
+        if( ! Options.GetOptAbsolute() ){
+            AdjustGlobalMin();
+        }
+
         vout << "      SigmaF2   = " << setprecision(5) << HES->GetSigmaF2() << endl;
         vout << "      SigmaF    = " << setprecision(5) << HES->GetSigmaF() << endl;
+        if( Options.GetOptWithError() ){
         vout << "      RMSError  = " << setprecision(5) << HES->GetRMSError() << endl;
         vout << "      MaxError  = " << setprecision(5) << HES->GetMaxError() << endl;
+        }
         State++;
         vout << "   Done." << endl;
         Accu->SetNCorr(1.0);    // to prevent possible errors if used later
+
     } else if ( Options.GetOptMethod() == "gpr" ){
         vout << endl;
         vout << format("%02d:GPR interpolated enthalpy")%State << endl;
@@ -280,6 +288,113 @@ if( Options.GetOptRealm() == "<Etot>" ){
     }
 
     return(true);
+}
+
+//------------------------------------------------------------------------------
+
+void CEnthalpy::AdjustGlobalMin(void)
+{
+    string sspec(Options.GetOptGlobalMin());
+
+    // remove "x" from the string
+    replace (sspec.begin(), sspec.end(), 'x' , ' ');
+
+    // parse values of CVs
+    CSimpleVector<double>  GPos;
+    GPos.CreateVector(Accu->GetNumOfCVs());
+    stringstream str(sspec);
+    for(int i=0; i < Accu->GetNumOfCVs(); i++){
+        double val;
+        str >> val;
+        if( ! str ){
+            CSmallString error;
+            error << "unable to decode CV value for position: " << i+1;
+            RUNTIME_ERROR(error);
+        }
+        GPos[i] = Accu->GetCV(i)->GetIntValue(val);
+    }
+
+// adjust global minimum
+    if( Options.IsOptGlobalMinSet()  ){
+        // GPos.CreateVector(NCVs) - is created in  SetGlobalMin
+   //   vout << "   Calculating FES ..." << endl;
+        vout << "      Global minimum provided at: ";
+        vout << setprecision(5) << Accu->GetCV(0)->GetRealValue(GPos[0]);
+        for(int i=1; i < Accu->GetNumOfCVs(); i++){
+            vout << "x" << setprecision(5) << Accu->GetCV(i)->GetRealValue(GPos[i]);
+        }
+        vout << endl;
+
+        vout << "      Closest global minimum found at: ";
+        // find the closest bin
+        CSimpleVector<double>   pos;
+        pos.CreateVector(Accu->GetNumOfCVs());
+        double minv = 0.0;
+        int    glb_bin = 0;
+        for(int ibin=0; ibin < Accu->GetNumOfBins(); ibin++){
+            Accu->GetPoint(ibin,pos);
+            double dist2 = 0.0;
+            for(int cv=0; cv < Accu->GetNumOfCVs(); cv++){
+                dist2 = dist2 + (pos[cv]-GPos[cv])*(pos[cv]-GPos[cv]);
+            }
+            if( ibin == 0 ){
+                minv = dist2;
+                glb_bin = 0;
+            }
+            if( dist2 < minv ){
+                minv = dist2;
+                glb_bin = ibin;
+            }
+        }
+
+        Accu->GetPoint(glb_bin,GPos);
+
+        vout << setprecision(5) << Accu->GetCV(0)->GetRealValue(GPos[0]);
+        for(int i=1; i < Accu->GetNumOfCVs(); i++){
+            vout << "x" << setprecision(5) << Accu->GetCV(i)->GetRealValue(GPos[i]);
+        }
+
+        double glb_min = HES->GetEnergy(glb_bin);
+        vout << " (" << setprecision(5) << glb_min << ")" << endl;
+
+        for(int ibin=0; ibin < HES->GetNumOfBins(); ibin++){
+            int samples = HES->GetNumOfSamples(ibin);
+            if( samples != 0 ){
+                double ene = HES->GetEnergy(ibin);
+                HES->SetEnergy(ibin,ene-glb_min);
+            }
+        }
+
+    } else {
+        // search for global minimum
+        GPos.CreateVector(Accu->GetNumOfCVs());
+        double glb_min = 0.0;
+        for(int ibin=0; ibin < HES->GetNumOfBins(); ibin++){
+            int samples = HES->GetNumOfSamples(ibin);
+            if( samples < -1 ) continue;    // include sampled areas and holes but exclude extrapolated areas
+            double value = HES->GetEnergy(ibin);
+            if( (ibin == 0) || (glb_min > value) ){
+                glb_min = value;
+                Accu->GetPoint(ibin,GPos);
+            }
+        }
+
+   //   vout << "   Calculating FES ..." << endl;
+        vout << "      Global minimum found at: ";
+        vout << setprecision(5) << Accu->GetCV(0)->GetRealValue(GPos[0]);
+        for(int i=1; i < Accu->GetNumOfCVs(); i++){
+            vout << "x" << setprecision(5) << Accu->GetCV(i)->GetRealValue(GPos[i]);
+        }
+        vout << " (" << setprecision(5) << glb_min << ")" << endl;
+
+        for(int ibin=0; ibin < HES->GetNumOfBins(); ibin++){
+            int samples = HES->GetNumOfSamples(ibin);
+            if( samples != 0 ){
+                double ene = HES->GetEnergy(ibin);
+                HES->SetEnergy(ibin,ene-glb_min);
+            }
+        }
+    }
 }
 
 //------------------------------------------------------------------------------

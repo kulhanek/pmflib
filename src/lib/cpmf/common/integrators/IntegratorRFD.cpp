@@ -45,6 +45,9 @@ CIntegratorRFD::CIntegratorRFD(void)
     FDLevel = 4;
 
     UseOldRFDMode = false;
+
+    GlobalMinSet        = false;
+    GPosSet             = false;
 }
 
 //------------------------------------------------------------------------------
@@ -96,6 +99,55 @@ void CIntegratorRFD::SetUseOldRFDMode(bool set)
     UseOldRFDMode = set;
 }
 
+//------------------------------------------------------------------------------
+
+void CIntegratorRFD::SetGlobalMin(const CSmallString& spec)
+{
+    GlobalMinSet = true;
+    string sspec(spec);
+    if( Accu == NULL ){
+        RUNTIME_ERROR("accumulator is not set for SetGlobalMin");
+    }
+
+    // remove "x" from the string
+    replace (sspec.begin(), sspec.end(), 'x' , ' ');
+
+    // parse values of CVs
+    GPos.CreateVector(Accu->GetNumOfCVs());
+    stringstream str(sspec);
+    for(int i=0; i < Accu->GetNumOfCVs(); i++){
+        double val;
+        str >> val;
+        if( ! str ){
+            CSmallString error;
+            error << "unable to decode CV value for position: " << i+1;
+            RUNTIME_ERROR(error);
+        }
+        GPos[i] = Accu->GetCV(i)->GetIntValue(val);
+    }
+
+    GPosSet = true;
+}
+
+//------------------------------------------------------------------------------
+
+void CIntegratorRFD::SetGlobalMin(const CSimpleVector<double>& pos)
+{
+    GlobalMinSet = true;
+    GPos = pos;
+    GPosSet = true;
+}
+
+//------------------------------------------------------------------------------
+
+CSimpleVector<double> CIntegratorRFD::GetGlobalMin(void)
+{
+    if( GPosSet == false ){
+        RUNTIME_ERROR("no global min set")
+    }
+    return(GPos);
+}
+
 //==============================================================================
 //------------------------------------------------------------------------------
 //==============================================================================
@@ -134,25 +186,103 @@ bool CIntegratorRFD::Integrate(CVerboseStr& vout)
         return(false);
     }
 
-    // and finaly some statistics
+    // and finally some statistics
     for(int k=0; k < Accu->GetNumOfCVs(); k++ ){
     vout << "   RMSR CV#" << k+1 << " = " << setprecision(5) << GetRMSR(k) << endl;
     }
 
-// find global minimum
-    double glb_min = X[0];
-    for(size_t i=0; i < X.GetLength(); i++) {
-        if(glb_min > X[i]) glb_min = X[i];
+// update FES
+    for(int ibin=0; ibin < EneSurf->GetNumOfBins(); ibin++) {
+        int x_index = XMap[ibin];
+        if(x_index >= 0) {
+            EneSurf->SetEnergy(ibin, X[x_index]);
+            EneSurf->SetNumOfSamples(ibin, DerProxy->GetNumOfSamples(ibin));
+        }
     }
 
-// load data to EneSurf
-    for(int ipoint=0; ipoint < EneSurf->GetNumOfBins(); ipoint++) {
-        int x_index = XMap[ipoint];
-        if(x_index >= 0) {
-            double value = X[x_index]-glb_min;
-            EneSurf->SetEnergy(ipoint,value);
-            EneSurf->SetNumOfSamples(ipoint,DerProxy->GetNumOfSamples(ipoint));
+// adjust global minimum
+    if( GlobalMinSet ){
+        // GPos.CreateVector(NCVs) - is created in  SetGlobalMin
+   //   vout << "   Calculating FES ..." << endl;
+        vout << "      Global minimum provided at: ";
+        vout << setprecision(5) << Accu->GetCV(0)->GetRealValue(GPos[0]);
+        for(int i=1; i < Accu->GetNumOfCVs(); i++){
+            vout << "x" << setprecision(5) << Accu->GetCV(i)->GetRealValue(GPos[i]);
         }
+        vout << endl;
+
+        // find the closest bin
+        CSimpleVector<double>   pos;
+        pos.CreateVector(Accu->GetNumOfCVs());
+        double minv = 0.0;
+        int    glb_bin = 0;
+        for(int ibin=0; ibin < Accu->GetNumOfBins(); ibin++){
+            Accu->GetPoint(ibin,pos);
+            double dist2 = 0.0;
+            for(int cv=0; cv < Accu->GetNumOfCVs(); cv++){
+                dist2 = dist2 + (pos[cv]-GPos[cv])*(pos[cv]-GPos[cv]);
+            }
+            if( ibin == 0 ){
+                minv = dist2;
+                glb_bin = 0;
+            }
+            if( dist2 < minv ){
+                minv = dist2;
+                glb_bin = ibin;
+            }
+        }
+
+        Accu->GetPoint(glb_bin,GPos);
+        GPosSet = true;
+
+        vout << "      Closest global minimum found at: ";
+        vout << setprecision(5) << Accu->GetCV(0)->GetRealValue(GPos[0]);
+        for(int i=1; i < Accu->GetNumOfCVs(); i++){
+            vout << "x" << setprecision(5) << Accu->GetCV(i)->GetRealValue(GPos[i]);
+        }
+
+        double glb_min = EneSurf->GetEnergy(glb_bin);
+        vout << " (" << setprecision(5) << glb_min << ")" << endl;
+
+        for(int ibin=0; ibin < EneSurf->GetNumOfBins(); ibin++){
+            int samples = EneSurf->GetNumOfSamples(ibin);
+            if( samples != 0 ){
+                double ene = EneSurf->GetEnergy(ibin);
+                EneSurf->SetEnergy(ibin,ene-glb_min);
+            }
+        }
+
+    } else {
+        // search for global minimum
+        GPos.CreateVector(Accu->GetNumOfCVs());
+        double glb_min = 0.0;
+        for(int ibin=0; ibin < EneSurf->GetNumOfBins(); ibin++){
+            int samples = EneSurf->GetNumOfSamples(ibin);
+            if( samples < -1 ) continue;    // include sampled areas and holes but exclude extrapolated areas
+            double value = EneSurf->GetEnergy(ibin);
+            if( (ibin == 0) || (glb_min > value) ){
+                glb_min = value;
+                Accu->GetPoint(ibin,GPos);
+            }
+        }
+
+   //   vout << "   Calculating FES ..." << endl;
+        vout << "      Global minimum found at: ";
+        vout << setprecision(5) << Accu->GetCV(0)->GetRealValue(GPos[0]);
+        for(int i=1; i < Accu->GetNumOfCVs(); i++){
+            vout << "x" << setprecision(5) << Accu->GetCV(i)->GetRealValue(GPos[i]);
+        }
+        vout << " (" << setprecision(5) << glb_min << ")" << endl;
+
+        for(int ibin=0; ibin < EneSurf->GetNumOfBins(); ibin++){
+            int samples = EneSurf->GetNumOfSamples(ibin);
+            if( samples != 0 ){
+                double ene = EneSurf->GetEnergy(ibin);
+                EneSurf->SetEnergy(ibin,ene-glb_min);
+            }
+        }
+
+        GPosSet = true;
     }
 
     vout << "   SigmaF2   = " << setprecision(5) << EneSurf->GetSigmaF2() << endl;

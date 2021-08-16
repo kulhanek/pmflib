@@ -286,12 +286,16 @@ void CSmootherGPR::SetKernel(const CSmallString& kernel)
         Kernel = EGPRK_ARDSE;
     } else if( kernel == "ardmc52" ) {
         Kernel = EGPRK_ARDMC52;
+    } else if( kernel == "ardmc32" ) {
+        Kernel = EGPRK_ARDMC32;
+    } else if( kernel == "ardmc12" ) {
+        Kernel = EGPRK_ARDMC12;
     } else if( kernel == "default" ) {
         Kernel = EGPRK_ARDSE;
     } else {
         CSmallString error;
         error << "Specified kernel '" << kernel << "' is not supported. "
-                 "Supported kernels are: ardse (ARD squared exponential), ardmc52 (ARD Matern class 5/2), default(=ardse)";
+                 "Supported kernels are: ardse (ARD squared exponential), ardmc52 (ARD Matern class 5/2), ardmc32 (ARD Matern class 3/2), ardmc12 (ARD Matern class 1/2), default(=ardse)";
         INVALID_ARGUMENT(error);
     }
 }
@@ -590,6 +594,10 @@ const CSmallString CSmootherGPR::GetKernelName(void)
         return("ARD squared exponential");
     case(EGPRK_ARDMC52):
         return("ARD Matern class 5/2");
+    case(EGPRK_ARDMC32):
+        return("ARD Matern class 3/2");
+    case(EGPRK_ARDMC12):
+        return("ARD Matern class 1/2");
     default:
         RUNTIME_ERROR("not implemented");
     }
@@ -652,7 +660,7 @@ void CSmootherGPR::CreateKff(const CSimpleVector<double>& ip,CSimpleVector<doubl
 
 void CSmootherGPR::CalculateEnergy(CVerboseStr& vout)
 {
-    vout << "   Calculating enthalpy ..." << endl;
+    vout << "   Calculating energy ..." << endl;
 
 // create map for bins with calculated energy and error
     NumOfValues = 0;
@@ -1198,7 +1206,12 @@ void CSmootherGPR::CalcKderWRTWFac(size_t cv)
             size_t j = SampledMap[indj];
             Accu->GetPoint(j,jpos);
 
-            Kder[indi][indj] = GetKernelValueWFacDer(ipos,jpos,cv);
+            if( indi != indj ){
+                Kder[indi][indj] = GetKernelValueWFacDer(ipos,jpos,cv);
+            } else {
+                // FIXME - check validity - this avoids division by zero in GetKernelValueWFacDer
+                Kder[indi][indj] = 0.0;
+            }
         }
     }
 }
@@ -1221,11 +1234,25 @@ double CSmootherGPR::GetKernelValue(const CSimpleVector<double>& ip,const CSimpl
             return(SigmaF2*exp(-0.5*scdist2));
         }
         break;
+    // -----------------------
         case(EGPRK_ARDMC52):{
             double scdist = sqrt(scdist2);
             return(SigmaF2*(1.0+sqrt(5.0)*scdist+(5.0/3.0)*scdist2)*exp(-sqrt(5.0)*scdist));
         }
         break;
+    // -----------------------
+        case(EGPRK_ARDMC32):{
+            double scdist = sqrt(scdist2);
+            return(SigmaF2*(1.0+sqrt(3.0)*scdist)*exp(-sqrt(3.0)*scdist));
+        }
+        break;
+    // -----------------------
+        case(EGPRK_ARDMC12):{
+            double scdist = sqrt(scdist2);
+            return(SigmaF2*exp(-scdist));
+        }
+        break;
+    // -----------------------
         default:
             RUNTIME_ERROR("not implemented");
         break;
@@ -1245,22 +1272,59 @@ double CSmootherGPR::GetKernelValueWFacDer(const CSimpleVector<double>& ip,const
     }
 
     switch(Kernel){
-    case(EGPRK_ARDSE): {
-            double arg = SigmaF2*exp(-0.5*scdist2);
+        case(EGPRK_ARDSE): {
+                double val = SigmaF2*exp(-0.5*scdist2);
+                double du = Accu->GetCV(cv)->GetDifference(ip[cv],jp[cv]);
+                double dd = CVLengths2[cv];
+                double wf = WFac[cv];
+                double der = val * du*du / (dd * wf);
+                return(der);
+            }
+            break;
+    // -----------------------
+        case(EGPRK_ARDMC52): {
+            // possible division by zero is solved in CalcKderWRTWFac
+            double scdist = sqrt(scdist2);
+            double vex = SigmaF2*exp(-sqrt(5.0)*scdist);
+            double val = vex*(1.0+sqrt(5.0)*scdist+(5.0/3.0)*scdist2);
             double du = Accu->GetCV(cv)->GetDifference(ip[cv],jp[cv]);
             double dd = CVLengths2[cv];
             double wf = WFac[cv];
-            arg = arg * du*du / (dd * wf);
-            return(arg);
-        }
-        break;
-    case(EGPRK_ARDMC52): {
+            double dexp =   val * sqrt(5.0) * du*du / (dd * wf) / scdist;       // exponential part
+            double dpol = - vex * ( sqrt(5.0) * du*du / (dd * wf) / scdist + 2.0 * (5.0/3.0)* du*du / (dd * wf) );   // polynomial part
+            return(dexp+dpol);
+            }
+            break;
+    // -----------------------
+        case(EGPRK_ARDMC32): {
+            // possible division by zero is solved in CalcKderWRTWFac
+            double scdist = sqrt(scdist2);
+            double vex = SigmaF2*exp(-sqrt(3.0)*scdist);
+            double val = vex*(1.0+sqrt(3.0)*scdist);
+            double du = Accu->GetCV(cv)->GetDifference(ip[cv],jp[cv]);
+            double dd = CVLengths2[cv];
+            double wf = WFac[cv];
+            double dexp =   val * sqrt(3.0) * du*du / (dd * wf) / scdist;   // exponential part
+            double dpol = - vex * sqrt(3.0) * du*du / (dd * wf) / scdist;   // polynomial part
+            return(dexp+dpol);
+            }
+            break;
+    // -----------------------
+        case(EGPRK_ARDMC12): {
+            // possible division by zero is solved in CalcKderWRTWFac
+            double scdist = sqrt(scdist2);
+            double val = SigmaF2*exp(-scdist);
+            double du = Accu->GetCV(cv)->GetDifference(ip[cv],jp[cv]);
+            double dd = CVLengths2[cv];
+            double wf = WFac[cv];
+            double der = val * du*du / (dd * wf) / scdist;
+            return(der);
+            }
+            break;
+    // -----------------------
+        default:
             RUNTIME_ERROR("not implemented");
-        }
-        break;
-    default:
-        RUNTIME_ERROR("not implemented");
-        break;
+            break;
     }
 }
 

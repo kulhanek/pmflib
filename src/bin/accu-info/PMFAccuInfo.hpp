@@ -70,8 +70,14 @@ private:
     // get data from the section
     void GetSection(const CSmallString& name);
 
-    // get MICF from ABF
-    void GetMICF(void);
+    // get derivative
+    void GetDerivative(const CSmallString& name);
+
+    // get energy
+    void GetEnergy(const CSmallString& name);
+
+    // get MTC from CST
+    void GetMTC(void);
 
     // print header
     void PrintHeader(const CSmallString& sec_name, bool print_errors);

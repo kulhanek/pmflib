@@ -60,6 +60,15 @@ public:
     /// use old fit
     void SetUseOldRFDMode(bool set);
 
+    /// set position of global minimum - spec in real units
+    void SetGlobalMin(const CSmallString& spec);
+
+    /// set position of global minimum - in internal units
+    void SetGlobalMin(const CSimpleVector<double>& pos);
+
+    /// get position of global minima - in internal units
+    CSimpleVector<double> GetGlobalMin(void);
+
 // execution method -----------------------------------------------------------
     /// integrate data, for errors the FES must be already allocated!!!
     bool Integrate(CVerboseStr& vout);
@@ -80,6 +89,10 @@ private:
     int                     NumOfVariables;
     int                     NumOfEquations;
     int                     NumOfNonZeros;
+
+    bool                    GlobalMinSet;   // true if gpos set by SetGlobalMin()
+    CSimpleVector<double>   GPos;           // global position, either detected or use
+    bool                    GPosSet;        // true is gpos set by any means, either SetGlobalMin() or from FES
 
     CSimpleVector<int>      XMap;       // translation between global index and X index
     CSimpleVector<int>      IPoint;     // index points

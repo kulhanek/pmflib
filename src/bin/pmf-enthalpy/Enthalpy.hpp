@@ -71,6 +71,7 @@ private:
     void WriteHeader(void);
     void PrepareAccumulatorI(void);
     void PrintSampledStat(void);
+    void AdjustGlobalMin(void);
 };
 
 //------------------------------------------------------------------------------

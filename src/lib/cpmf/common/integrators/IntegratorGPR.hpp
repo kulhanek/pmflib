@@ -47,7 +47,9 @@ enum EGPRLAMethod {
 
 enum EGPRKernel {
     EGPRK_ARDSE   = 1,    // ARD squared exponential (radial basis function)
-    EGPRK_ARDMC52 = 3,    // ARD Matern class 5/2 function
+    EGPRK_ARDMC52 = 2,    // ARD Matern class 5/2 function
+    EGPRK_ARDMC32 = 3,    // ARD Matern class 3/2 function
+    EGPRK_ARDMC12 = 4,    // ARD Matern class 1/2 function
 };
 
 //------------------------------------------------------------------------------

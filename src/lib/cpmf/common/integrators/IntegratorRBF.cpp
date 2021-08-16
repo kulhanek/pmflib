@@ -60,6 +60,7 @@ CIntegratorRBF::CIntegratorRBF(void)
     NumOfValues = 0;
 
     GlobalMinSet    = false;
+    GPosSet         = false;
     NoEnergy        = false;
 
     NumOfThreads    = 1;
@@ -258,6 +259,18 @@ void CIntegratorRBF::SetGlobalMin(const CSmallString& spec)
         }
         GPos[i] = Accu->GetCV(i)->GetIntValue(val);
     }
+
+    GPosSet = true;
+}
+
+//------------------------------------------------------------------------------
+
+CSimpleVector<double> CIntegratorRBF::GetGlobalMin(void)
+{
+    if( GPosSet == false ){
+        RUNTIME_ERROR("no global min set")
+    }
+    return(GPos);
 }
 
 //==============================================================================
@@ -453,6 +466,8 @@ void CIntegratorRBF::CalculateEnergy(CVerboseStr& vout)
             size_t j = ValueMap[indj];
             EneSurf->SetEnergy(j,values[indj]-glb_min);
         }
+
+        GPosSet = true;
     }
 
     vout << "      SigmaF2   = " << setprecision(5) << EneSurf->GetSigmaF2() << endl;

@@ -345,7 +345,7 @@ bool CPMFEnergyIntegrate::Run(void)
     PrintSampledStat();
     vout << "   Done." << endl;
 
-    if( (Options.GetOptMethod() == "gpr") || (Options.GetOptMethod() == "rbf") ){
+    if( (Options.GetOptMethod() == "rfd") || (Options.GetOptMethod() == "gpr") || (Options.GetOptMethod() == "rbf") ){
         // test early stage parsing of --globalmin
         CIntegratorGPR   integrator;
 
@@ -713,6 +713,10 @@ bool CPMFEnergyIntegrate::IntegrateForEcut(void)
         integrator.SetInputEnergyDerProxy(DerProxy);
         integrator.SetOutputES(FES);
 
+        if( Options.IsOptGlobalMinSet() ){
+            integrator.SetGlobalMin(Options.GetOptGlobalMin());
+        }
+
         if(integrator.Integrate(vout) == false) {
             ES_ERROR("unable to integrate ABF accumulator");
             return(false);
@@ -811,12 +815,21 @@ bool CPMFEnergyIntegrate::Integrate(void)
             INVALID_ARGUMENT("algorithm - not implemented");
         }
 
+        if( Options.GetOptUseRealGlobalMin() == false ){
+            if( Options.IsOptGlobalMinSet() ){
+                integrator.SetGlobalMin(Options.GetOptGlobalMin());
+            }
+        }
+
         integrator.SetUseOldRFDMode(Options.GetOptUseOldRFD());
 
         if(integrator.Integrate(vout) == false) {
             ES_ERROR("unable to integrate ABF accumulator");
             return(false);
         }
+
+        GPos = integrator.GetGlobalMin();
+
     } else if( Options.GetOptMethod() == "rbf" ){
         CIntegratorRBF   integrator;
 
@@ -845,6 +858,8 @@ bool CPMFEnergyIntegrate::Integrate(void)
         if( Options.IsOptMFInfoSet() ){
             if( integrator.WriteMFInfo(Options.GetOptMFInfo()) == false ) return(false);
         }
+
+        GPos = integrator.GetGlobalMin();
 
     } else if( Options.GetOptMethod() == "gpr" ){
         CIntegratorGPR   integrator;

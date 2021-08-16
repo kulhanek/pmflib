@@ -344,7 +344,7 @@ public:
                 '\0',                           /* short option name */
                 "globalmin",                      /* long option name */
                 "SPEC",                           /* parameter name */
-                "RBF+GPR: position of global minimum provided as a single string in the form CV1xCV2x...xCVn (relevant for error determination), if not set the position is determined automatically.")   /* option description */
+                "RFD+RBF+GPR: position of global minimum provided as a single string in the form CV1xCV2x...xCVn (relevant for error determination), if not set the position is determined automatically.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(bool,                           /* option type */
                 UseRealGlobalMin,                        /* option name */

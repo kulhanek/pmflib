@@ -324,7 +324,7 @@ void CIntegratorGPR::SetGlobalMin(const CSimpleVector<double>& pos)
 CSimpleVector<double> CIntegratorGPR::GetGlobalMin(void)
 {
     if( GPosSet == false ){
-        RUNTIME_ERROR("")
+        RUNTIME_ERROR("no global min set")
     }
     return(GPos);
 }

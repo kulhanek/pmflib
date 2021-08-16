@@ -150,7 +150,8 @@ public:
                 '\0',                           /* short option name */
                 "kernel",                      /* long option name */
                 "NAME",                           /* parameter name */
-                "GPR: Kernel type. Supported types: ardse (ARD squared exponential), ardmc52 (ARD Matern class 5/2), default(=ardse)")   /* option description */
+                "GPR: Kernel type. Supported types: ardse (ARD squared exponential), ardmc52 (ARD Matern class 5/2), "
+                "ardmc32 (ARD Matern class 3/2), ardmc12 (ARD Matern class 1/2), default(=ardse)")   /* option description */
 //----------------------------------------------------------------------
     CSO_MAP_OPT(double,                           /* option type */
                 SigmaF2,                        /* option name */
