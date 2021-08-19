@@ -678,15 +678,6 @@ bool CPMFEnergyIntegrate::IntegrateForMFZScore(int pass)
         INVALID_ARGUMENT("method - not implemented");
     }
 
-    // add metric tensor correction
-    if( Options.GetOptRealm() == "dG" ){
-        AddMTCorr();
-    } else if ( Options.GetOptRealm() == "-TdS" ) {
-        AddMTCorr();
-    } else {
-        // do not add MTC
-    }
-
     return(true);
 }
 
@@ -721,6 +712,7 @@ bool CPMFEnergyIntegrate::IntegrateForEcut(void)
             ES_ERROR("unable to integrate ABF accumulator");
             return(false);
         }
+
     } else if( Options.GetOptEcutMethod() == "rbf" ){
         CIntegratorRBF   integrator;
 
@@ -745,6 +737,7 @@ bool CPMFEnergyIntegrate::IntegrateForEcut(void)
             ES_ERROR("unable to integrate ABF accumulator");
             return(false);
         }
+
     } else if( Options.GetOptEcutMethod() == "gpr" ){
         CIntegratorGPR   integrator;
 
@@ -1652,36 +1645,50 @@ void CPMFEnergyIntegrate::AddMTCorr(void)
 
     if( Options.IsOptGlobalMinSet() ){
 
-        CSmootherGPR        mtcgpr;
-        CEnergySurfacePtr   mtc = CEnergySurfacePtr(new CEnergySurface);
-        mtc->Allocate(Accu);
+        vout << "      Global minimum provided at: ";
+        vout << setprecision(5) << Accu->GetCV(0)->GetRealValue(GPos[0]);
+        for(int i=1; i < Accu->GetNumOfCVs(); i++){
+            vout << "x" << setprecision(5) << Accu->GetCV(i)->GetRealValue(GPos[i]);
+        }
+        vout << endl;
 
-        mtcgpr.SetInputEnergyProxy(MTCProxy);
-        mtcgpr.SetOutputES(mtc);
-
-        if( Options.IsOptLoadHyprmsSet() ){
-            LoadGPRHyprms(mtcgpr);
-        } else {
-            mtcgpr.SetSigmaF2(Options.GetOptSigmaF2());
-            mtcgpr.SetNCorr(Options.GetOptNCorr());
-            mtcgpr.SetWFac(Options.GetOptWFac());
+        // find the closest bin
+        CSimpleVector<double>   pos;
+        pos.CreateVector(Accu->GetNumOfCVs());
+        double minv = 0.0;
+        int glb_bin = 0;
+        for(int ibin=0; ibin < Accu->GetNumOfBins(); ibin++){
+            Accu->GetPoint(ibin,pos);
+            double dist2 = 0.0;
+            for(int cv=0; cv < Accu->GetNumOfCVs(); cv++){
+                dist2 = dist2 + (pos[cv]-GPos[cv])*(pos[cv]-GPos[cv]);
+            }
+            if( ibin == 0 ){
+                minv = dist2;
+                glb_bin = 0;
+            }
+            if( dist2 < minv ){
+                minv = dist2;
+                glb_bin = ibin;
+            }
         }
 
-        mtcgpr.SetGlobalMin(Options.GetOptGlobalMin());
+        Accu->GetPoint(glb_bin,pos);
 
-        mtcgpr.SetRCond(Options.GetOptRCond());
-        mtcgpr.SetLAMethod(Options.GetOptLAMethod());
-        mtcgpr.SetKernel(Options.GetOptGPRKernel());
-
-        if(mtcgpr.Interpolate(vout) == false) {
-            RUNTIME_ERROR("unable to interpolate MTC");
+        vout << "      Closest bin found at: ";
+        vout << setprecision(5) << Accu->GetCV(0)->GetRealValue(pos[0]);
+        for(int i=1; i < Accu->GetNumOfCVs(); i++){
+            vout << "x" << setprecision(5) << Accu->GetCV(i)->GetRealValue(pos[i]);
         }
 
-        vout << "      Adjusting global minimum for metric tensor correction ..." << endl;
-        for(int i=0; i < Accu->GetNumOfBins(); i++){
-            FES->SetNumOfSamples(i, MTCProxy->GetNumOfSamples(i) );
-            double f = FES->GetEnergy(i);
-            FES->SetEnergy(i, f - mtcgpr.GetGlobalMinValue() );
+        double glb_min = FES->GetEnergy(glb_bin);
+        vout << " (" << setprecision(5) << glb_min << ")" << endl;
+
+        for(int i=0; i < FES->GetNumOfBins(); i++){
+            if( FES->GetNumOfSamples(i) != 0 ) {
+                double value = FES->GetEnergy(i);
+                FES->SetEnergy(i,value-glb_min);
+            }
         }
     } else {
         // search for global minimum

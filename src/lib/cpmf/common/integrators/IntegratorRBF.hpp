@@ -90,6 +90,9 @@ public:
     /// get position of global minima - in internal units
     CSimpleVector<double> GetGlobalMin(void);
 
+    /// get position of global minima - bin
+    int GetGlobalMinBin(void);
+
 // execution method -----------------------------------------------------------
     /// integrate data
     bool Integrate(CVerboseStr& vout);
@@ -137,6 +140,7 @@ private:
     bool                    GlobalMinSet;
     CSimpleVector<double>   GPos;           // global position, either detected or use
     bool                    GPosSet;        // true is gpos set by any means, either SetGlobalMin() or from FES
+    int                     GPosBin;
 
     size_t                  NumOfValues;
     CSimpleVector<size_t>   ValueMap;

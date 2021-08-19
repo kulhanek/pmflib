@@ -93,6 +93,9 @@ public:
     /// get position of global minima
     CSimpleVector<double> GetGlobalMin(void);
 
+    /// get position of global minima - bin
+    int GetGlobalMinBin(void);
+
     /// get position of global minima
     double GetGlobalMinValue(void) const;
 
@@ -172,6 +175,7 @@ private:
     CSimpleVector<double>   GPos;           // global position, either detected or use
     bool                    GPosSet;        // true is gpos set by any means, either SetGlobalMin() or from FES
     double                  GlbMinValue;
+    int                     GPosBin;
 
     // derivatives
     CFortranMatrix          Kder;           // derivative of kernels w.r.t. a hyperparameter

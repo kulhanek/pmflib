@@ -294,28 +294,29 @@ bool CEnthalpy::Run(void)
 
 void CEnthalpy::AdjustGlobalMin(void)
 {
-    string sspec(Options.GetOptGlobalMin());
-
-    // remove "x" from the string
-    replace (sspec.begin(), sspec.end(), 'x' , ' ');
-
-    // parse values of CVs
     CSimpleVector<double>  GPos;
     GPos.CreateVector(Accu->GetNumOfCVs());
-    stringstream str(sspec);
-    for(int i=0; i < Accu->GetNumOfCVs(); i++){
-        double val;
-        str >> val;
-        if( ! str ){
-            CSmallString error;
-            error << "unable to decode CV value for position: " << i+1;
-            RUNTIME_ERROR(error);
-        }
-        GPos[i] = Accu->GetCV(i)->GetIntValue(val);
-    }
 
 // adjust global minimum
     if( Options.IsOptGlobalMinSet()  ){
+        string sspec(Options.GetOptGlobalMin());
+
+        // remove "x" from the string
+        replace (sspec.begin(), sspec.end(), 'x' , ' ');
+
+        // parse values of CVs
+        stringstream str(sspec);
+        for(int i=0; i < Accu->GetNumOfCVs(); i++){
+            double val;
+            str >> val;
+            if( ! str ){
+                CSmallString error;
+                error << "unable to decode CV value for position: " << i+1;
+                RUNTIME_ERROR(error);
+            }
+            GPos[i] = Accu->GetCV(i)->GetIntValue(val);
+        }
+
         // GPos.CreateVector(NCVs) - is created in  SetGlobalMin
    //   vout << "   Calculating FES ..." << endl;
         vout << "      Global minimum provided at: ";
@@ -325,7 +326,7 @@ void CEnthalpy::AdjustGlobalMin(void)
         }
         vout << endl;
 
-        vout << "      Closest global minimum found at: ";
+        vout << "      Closest bin found at: ";
         // find the closest bin
         CSimpleVector<double>   pos;
         pos.CreateVector(Accu->GetNumOfCVs());
@@ -367,7 +368,6 @@ void CEnthalpy::AdjustGlobalMin(void)
 
     } else {
         // search for global minimum
-        GPos.CreateVector(Accu->GetNumOfCVs());
         double glb_min = 0.0;
         for(int ibin=0; ibin < HES->GetNumOfBins(); ibin++){
             int samples = HES->GetNumOfSamples(ibin);

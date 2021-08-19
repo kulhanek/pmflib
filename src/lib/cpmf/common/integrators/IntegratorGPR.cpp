@@ -62,6 +62,7 @@ CIntegratorGPR::CIntegratorGPR(void)
     NoEnergy            = false;
     GlobalMinSet        = false;
     GPosSet             = false;
+    GPosBin             = 0;
 
     UseNumDiff          = false;
     Method              = EGPRLA_LU;
@@ -327,6 +328,16 @@ CSimpleVector<double> CIntegratorGPR::GetGlobalMin(void)
         RUNTIME_ERROR("no global min set")
     }
     return(GPos);
+}
+
+//------------------------------------------------------------------------------
+
+int CIntegratorGPR::GetGlobalMinBin(void)
+{
+    if( GPosSet == false ){
+        RUNTIME_ERROR("no global min set")
+    }
+    return(GPosBin);
 }
 
 //------------------------------------------------------------------------------
@@ -1201,7 +1212,7 @@ double CIntegratorGPR::GetKernelValue(const CSimpleVector<double>& ip,const CSim
 
 void CIntegratorGPR::CalculateEnergy(CVerboseStr& vout)
 {
-    vout << "   Calculating FES ..." << endl;
+    vout << "   Calculating EneSurf ..." << endl;
 
 // create map for bins with calculated energy and error
     NumOfValues = 0;
@@ -1251,6 +1262,12 @@ void CIntegratorGPR::CalculateEnergy(CVerboseStr& vout)
     }
 
 // update FES
+    for(size_t indj=0; indj < NumOfValues; indj++){
+        size_t j = ValueMap[indj];
+        EneSurf->SetEnergy(j,values[indj]);
+    }
+
+// update FES
     if( GlobalMinSet ){
         // GPos.CreateVector(NCVs) - is created in  SetGlobalMin
    //   vout << "   Calculating FES ..." << endl;
@@ -1259,12 +1276,44 @@ void CIntegratorGPR::CalculateEnergy(CVerboseStr& vout)
         for(int i=1; i < Accu->GetNumOfCVs(); i++){
             vout << "x" << setprecision(5) << Accu->GetCV(i)->GetRealValue(GPos[i]);
         }
-        double glb_min = GetValue(GPos);
+        vout << endl;
+
+        // find the closest bin
+        CSimpleVector<double>   pos;
+        pos.CreateVector(Accu->GetNumOfCVs());
+        double minv = 0.0;
+        GPosBin = 0;
+        for(int ibin=0; ibin < Accu->GetNumOfBins(); ibin++){
+            Accu->GetPoint(ibin,pos);
+            double dist2 = 0.0;
+            for(int cv=0; cv < Accu->GetNumOfCVs(); cv++){
+                dist2 = dist2 + (pos[cv]-GPos[cv])*(pos[cv]-GPos[cv]);
+            }
+            if( ibin == 0 ){
+                minv = dist2;
+                GPosBin = 0;
+            }
+            if( dist2 < minv ){
+                minv = dist2;
+                GPosBin = ibin;
+            }
+        }
+
+        Accu->GetPoint(GPosBin,GPos);
+        GPosSet = true;
+
+        vout << "      Closest bin found at: ";
+        vout << setprecision(5) << Accu->GetCV(0)->GetRealValue(GPos[0]);
+        for(int i=1; i < Accu->GetNumOfCVs(); i++){
+            vout << "x" << setprecision(5) << Accu->GetCV(i)->GetRealValue(GPos[i]);
+        }
+
+        double glb_min = EneSurf->GetEnergy(GPosBin);
         vout << " (" << setprecision(5) << glb_min << ")" << endl;
 
         for(size_t indj=0; indj < NumOfValues; indj++){
             size_t j = ValueMap[indj];
-            EneSurf->SetEnergy(j,values[indj]-glb_min);
+            EneSurf->SetEnergy(j,EneSurf->GetEnergy(j)-glb_min);
         }
     } else {
         // search for global minimum
@@ -1279,6 +1328,7 @@ void CIntegratorGPR::CalculateEnergy(CVerboseStr& vout)
             if( first || (glb_min > value) ){
                 glb_min = value;
                 first = false;
+                GPosBin = j;
                 Accu->GetPoint(j,GPos);
             }
         }
