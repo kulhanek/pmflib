@@ -86,7 +86,7 @@ int CABFClient::RegisterClient(void)
 
         if( EnthalpyEnabled ){
             Accu->CreateSectionData("MEPOT",    "WA","R","B");
-            Accu->CreateSectionData("M2EPOT",   "M2","R","B", "M2EPOT");
+            Accu->CreateSectionData("M2EPOT",   "M2","R","B", "MEPOT");
         }
 
         if( EnthalpyEnabled ){
