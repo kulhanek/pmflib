@@ -72,12 +72,10 @@ subroutine usabf_cvs_read_cv(prm_fin,usabf_item)
     type(CVTypeUSABF)                   :: usabf_item
     ! -----------------------------------------------
     type(UnitType)                      :: forceunit
-    type(UnitType)                      :: forceunit_recip
     ! --------------------------------------------------------------------------
 
     ! prepare force unit
-    forceunit       = pmf_unit_div_units( EnergyUnit, usabf_item%cv%unit )
-    forceunit_recip = pmf_unit_power_unit( forceunit, -1 )
+    forceunit       = pmf_unit_div_units( EnergyUnit, pmf_unit_power_unit(usabf_item%cv%unit,2) )
 
     ! used CV cannot be controlled by the path subsystem
     if( usabf_item%cv%pathidx .gt. 0 ) then
@@ -124,11 +122,6 @@ subroutine usabf_cvs_read_cv(prm_fin,usabf_item)
     end if
     write(PMF_OUT,125) usabf_item%nbins
 
-    ! ============================================
-    ! prepare force unit
-    forceunit = pmf_unit_div_units( EnergyUnit, usabf_item%cv%unit )
-    forceunit_recip = pmf_unit_power_unit( forceunit, -1 )
-
     return
 
 110 format('    ** Min value         : ',F16.7,' [',A,']')
@@ -155,12 +148,10 @@ subroutine usabf_cvs_cv_info(usabf_item)
     type(CVTypeUSABF)   :: usabf_item
     ! -----------------------------------------------
     type(UnitType)      :: forceunit
-    type(UnitType)      :: forceunit_recip
     ! --------------------------------------------------------------------------
 
     ! prepare force unit
-    forceunit       = pmf_unit_div_units( EnergyUnit, usabf_item%cv%unit )
-    forceunit_recip = pmf_unit_power_unit( forceunit, -1 )
+    forceunit       = pmf_unit_div_units( EnergyUnit, pmf_unit_power_unit(usabf_item%cv%unit,2) )
 
     write(PMF_OUT,145) trim(usabf_item%cv%name)
     write(PMF_OUT,146) trim(usabf_item%cv%ctype)
