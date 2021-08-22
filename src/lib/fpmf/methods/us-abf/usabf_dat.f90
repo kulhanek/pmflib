@@ -39,6 +39,7 @@ implicit none
 integer     :: fmode        ! 0 - disable US-ABF
                             ! 1 - enable ABF (simple ABF algorithm - 2p)
                             ! 2 - enable ABF (original ABF algorithm - 4p)
+logical     :: frestart     ! 1 - restart job with previous data, 0 - otherwise not
 integer     :: fsample      ! output sample period in steps
 integer     :: frstupdate   ! how often is restart file written
 
@@ -60,6 +61,8 @@ type CVTypeUSABF
     real(PMFDP)             :: max_value        ! right range
     integer                 :: nbins            ! number of bins
 
+
+    logical                 :: set_value        ! set target value to start value
     real(PMFDP)             :: target_value     ! required value of restraint
     real(PMFDP)             :: force_constant   ! sigma value
 
@@ -77,6 +80,10 @@ real(PMFDP)                     :: TotalUSABFEnergy
 type,extends(PMFAccuType)   :: USABFAccuType
 
     integer,pointer         :: nsamples(:)              ! number of hits into bins
+
+    ! target values and force constants
+    real(PMFDP),pointer     :: tvalues(:)
+    real(PMFDP),pointer     :: fcs(:)
 
     ! MICF
     real(PMFDP),pointer     :: micf(:,:)                ! mean ICF - total

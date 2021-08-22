@@ -51,6 +51,7 @@ subroutine usabf_cvs_reset_cv(usabf_item)
     usabf_item%target_value     = 0
     usabf_item%force_constant   = 0
     usabf_item%deviation        = 0
+    usabf_item%set_value        = .false.
 
 end subroutine usabf_cvs_reset_cv
 
@@ -72,6 +73,7 @@ subroutine usabf_cvs_read_cv(prm_fin,usabf_item)
     type(CVTypeUSABF)                   :: usabf_item
     ! -----------------------------------------------
     type(UnitType)                      :: forceunit
+    character(1)                        :: buffer
     ! --------------------------------------------------------------------------
 
     ! prepare force unit
@@ -84,11 +86,20 @@ subroutine usabf_cvs_read_cv(prm_fin,usabf_item)
         end if
     end if
 
-    if( prmfile_get_real8_by_key(prm_fin,'value',usabf_item%target_value) ) then
-        call usabf_item%cv%conv_to_ivalue(usabf_item%target_value)
-        write(PMF_OUT,200) usabf_item%cv%get_rvalue(usabf_item%target_value), trim(usabf_item%cv%get_ulabel())
-    else
-        call pmf_utils_exit(PMF_OUT,1,'Target value is not specified (required by US-ABF)!')
+    if( prmfile_get_string_by_key(prm_fin,'value',buffer) ) then
+        if( trim(buffer) .eq. '@' ) then
+            usabf_item%set_value = .true.
+            write(PMF_OUT,201) '  @initial value'
+        end if
+    end if
+
+    if( usabf_item%set_value .eqv. .false. ) then
+        if( prmfile_get_real8_by_key(prm_fin,'value',usabf_item%target_value) ) then
+            call usabf_item%cv%conv_to_ivalue(usabf_item%target_value)
+            write(PMF_OUT,200) usabf_item%cv%get_rvalue(usabf_item%target_value), trim(usabf_item%cv%get_ulabel())
+        else
+            call pmf_utils_exit(PMF_OUT,1,'Target value is not specified (required by US-ABF)!')
+        end if
     end if
 
     ! force constant =========
@@ -129,6 +140,7 @@ subroutine usabf_cvs_read_cv(prm_fin,usabf_item)
 125 format('    ** Number of bins    : ',I8)
 
 200 format('    ** Value             : ',F16.7,' [',A,']')
+201 format('    ** Value             : ',A)
 210 format('    ** Force constant    : ',F16.7,' [',A,']')
 
 end subroutine usabf_cvs_read_cv
@@ -153,6 +165,10 @@ subroutine usabf_cvs_cv_info(usabf_item)
     ! prepare force unit
     forceunit       = pmf_unit_div_units( EnergyUnit, pmf_unit_power_unit(usabf_item%cv%unit,2) )
 
+    if( usabf_item%set_value ) then
+        usabf_item%target_value = CVContext%CVsValues(usabf_item%cvindx)
+    end if
+
     write(PMF_OUT,145) trim(usabf_item%cv%name)
     write(PMF_OUT,146) trim(usabf_item%cv%ctype)
     write(PMF_OUT,150) usabf_item%cv%get_rvalue(CVContext%CVsValues(usabf_item%cvindx)), &
@@ -175,8 +191,8 @@ subroutine usabf_cvs_cv_info(usabf_item)
 146 format('    ** Type              : ',a)
 150 format('    ** Current value     : ',E16.7,' [',A,']')
 
-130 format('    ** Target value      : ',E16.9,' [',A,']')
-180 format('    ** Force constant    : ',E16.9,' [',A,']')
+130 format('    ** Target value      : ',E16.7,' [',A,']')
+180 format('    ** Force constant    : ',E16.7,' [',A,']')
 
 155 format('    ** Min value         : ',E16.7,' [',A,']')
 160 format('    ** Max value         : ',E16.7,' [',A,']')

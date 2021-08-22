@@ -77,6 +77,8 @@ subroutine usabf_control_read_abf(prm_fin)
         return
     end if
 
+    call pmf_ctrl_read_logical(prm_fin,'frestart',frestart)
+
     call pmf_ctrl_read_integer(prm_fin,'fblock_size',fblock_size,'i12')
     call pmf_ctrl_check_integer('TABF','fblock_size',fblock_size,0,CND_GE)
 

@@ -360,7 +360,9 @@ void CPMFAccumulator::Combine(CPMFAccumulatorPtr right)
         CPMFAccuDataPtr ldb = it->second;
         CPMFAccuDataPtr rdb = right->GetSectionData(it->first);
         CPMFAccuDataPtr result = Combine(right,ldb,rdb);
-        combined[it->first] = result;
+        if( result != NULL ){
+            combined[it->first] = result;
+        }
         it++;
     }
 
@@ -372,6 +374,11 @@ void CPMFAccumulator::Combine(CPMFAccumulatorPtr right)
 
 CPMFAccuDataPtr CPMFAccumulator::Combine(CPMFAccumulatorPtr right,CPMFAccuDataPtr ldb,CPMFAccuDataPtr rdb)
 {
+    if( (ldb->GetOp() == "IG") && (ldb->GetOp() == "IG") ){
+        CPMFAccuDataPtr result;
+        return(result);
+    }
+
     CPMFAccuDataPtr result = ldb->CreateTheSame();
 
 // add

@@ -72,6 +72,8 @@ subroutine usabf_accu_init()
             usabfaccu%nsamples(usabfaccu%tot_nbins), &
             usabfaccu%micf(usabfaccu%tot_cvs,usabfaccu%tot_nbins), &
             usabfaccu%m2icf(usabfaccu%tot_cvs,usabfaccu%tot_nbins), &
+            usabfaccu%tvalues(usabfaccu%tot_cvs), &
+            usabfaccu%fcs(usabfaccu%tot_cvs), &
             stat = alloc_failed)
 
     if( alloc_failed .ne. 0 ) then
@@ -215,6 +217,175 @@ subroutine usabf_accu_clear()
 end subroutine usabf_accu_clear
 
 !===============================================================================
+! Subroutine:  usabf_accu_read
+!===============================================================================
+
+subroutine usabf_accu_read(iounit)
+
+    use usabf_dat
+    use pmf_dat
+    use pmf_utils
+    use pmf_accu
+
+    implicit none
+    integer                         :: iounit
+    ! -----------------------------------------------
+    character(len=PMF_KEYLINE)      :: keyline
+    integer                         :: i
+    ! --------------------------------------------------------------------------
+
+    do while(.true.)
+
+        ! read keyline
+        read(iounit,5,end=500,err=300) keyline
+
+        ! process keyline
+        if( pmf_accu_is_header_key(keyline) ) then
+            call pmf_accu_read_header(usabfaccu%PMFAccuType,iounit,'US-ABF',keyline)
+        else
+            select case( pmf_accu_get_key(keyline) )
+            ! ------------------------------------
+                case('NSAMPLES')
+                    call pmf_accu_read_ibuf_B(usabfaccu%PMFAccuType,iounit,keyline,usabfaccu%nsamples)
+            ! ------------------------------------
+                case('MICF')
+                    call pmf_accu_read_rbuf_M(usabfaccu%PMFAccuType,iounit,keyline,usabfaccu%micf)
+            ! ------------------------------------
+                case('M2ICF')
+                    call pmf_accu_read_rbuf_M(usabfaccu%PMFAccuType,iounit,keyline,usabfaccu%m2icf)
+            ! ------------------------------------
+                case('TVALUES')
+                    call pmf_accu_read_rbuf_C(usabfaccu%PMFAccuType,iounit,keyline,usabfaccu%tvalues)
+                    do i=1,usabfaccu%tot_cvs
+                        USABFCVList(i)%target_value = usabfaccu%tvalues(i)
+                    end do
+            ! ------------------------------------
+                case('FCS')
+                    call pmf_accu_read_rbuf_C(usabfaccu%PMFAccuType,iounit,keyline,usabfaccu%fcs)
+                    do i=1,usabfaccu%tot_cvs
+                        USABFCVList(i)%target_value = usabfaccu%fcs(i)
+                    end do
+            ! ------------------------------------
+                case('MEPOT')
+                    if( fenthalpy .or. fentropy ) then
+                        call pmf_accu_read_rbuf_B(usabfaccu%PMFAccuType,iounit,keyline,usabfaccu%mepot)
+                    else
+                        call pmf_accu_skip_section(iounit,keyline,USABF_OUT)
+                    end if
+            ! ------------------------------------
+                case('M2EPOT')
+                    if( fenthalpy .or. fentropy ) then
+                        call pmf_accu_read_rbuf_B(usabfaccu%PMFAccuType,iounit,keyline,usabfaccu%m2epot)
+                    else
+                        call pmf_accu_skip_section(iounit,keyline,USABF_OUT)
+                    end if
+            ! ------------------------------------
+                case('METOT')
+                    if( fenthalpy .or. fentropy ) then
+                        call pmf_accu_read_rbuf_B(usabfaccu%PMFAccuType,iounit,keyline,usabfaccu%metot)
+                    else
+                        call pmf_accu_skip_section(iounit,keyline,USABF_OUT)
+                    end if
+            ! ------------------------------------
+                case('M2ETOT')
+                    if( fenthalpy .or. fentropy ) then
+                        call pmf_accu_read_rbuf_B(usabfaccu%PMFAccuType,iounit,keyline,usabfaccu%m2etot)
+                    else
+                        call pmf_accu_skip_section(iounit,keyline,USABF_OUT)
+                    end if
+            ! ------------------------------------
+                case('MERST')
+                    if( fenthalpy .or. fentropy ) then
+                        call pmf_accu_read_rbuf_B(usabfaccu%PMFAccuType,iounit,keyline,usabfaccu%merst)
+                    else
+                        call pmf_accu_skip_section(iounit,keyline,USABF_OUT)
+                    end if
+            ! ------------------------------------
+                case('M2ERST')
+                    if( fenthalpy  .or. fentropy ) then
+                        call pmf_accu_read_rbuf_B(usabfaccu%PMFAccuType,iounit,keyline,usabfaccu%m2erst)
+                    else
+                        call pmf_accu_skip_section(iounit,keyline,USABF_OUT)
+                    end if
+           ! ------------------------------------
+                case('C11HH')
+                    if( fentropy .and. (fblock_size .eq. 0) ) then
+                        call pmf_accu_read_rbuf_M(usabfaccu%PMFAccuType,iounit,keyline,usabfaccu%c11hh)
+                    else
+                        call pmf_accu_skip_section(iounit,keyline,USABF_OUT)
+                    end if
+           ! ------------------------------------
+                case('MCOVHH')
+                    if( fentropy .and. (fblock_size .gt. 0) ) then
+                        call pmf_accu_read_rbuf_M(usabfaccu%PMFAccuType,iounit,keyline,usabfaccu%mcovhh)
+                    else
+                        call pmf_accu_skip_section(iounit,keyline,USABF_OUT)
+                    end if
+           ! ------------------------------------
+                case('M2COVHH')
+                    if( fentropy .and. (fblock_size .gt. 0) ) then
+                        call pmf_accu_read_rbuf_M(usabfaccu%PMFAccuType,iounit,keyline,usabfaccu%m2covhh)
+                    else
+                        call pmf_accu_skip_section(iounit,keyline,USABF_OUT)
+                    end if
+            ! ------------------------------------
+                case('B_NSAMPLES')
+                    if( fblock_size .gt. 0 ) then
+                        call pmf_accu_read_ibuf_B(usabfaccu%PMFAccuType,iounit,keyline,usabfaccu%block_nsamples)
+                     else
+                        call pmf_accu_skip_section(iounit,keyline,USABF_OUT)
+                    end if
+           ! ------------------------------------
+                case('B_MICF')
+                    if( fblock_size .gt. 0 ) then
+                        call pmf_accu_read_rbuf_M(usabfaccu%PMFAccuType,iounit,keyline,usabfaccu%block_micf)
+                    else
+                        call pmf_accu_skip_section(iounit,keyline,USABF_OUT)
+                    end if
+            ! ------------------------------------
+                case('B_METOT')
+                    if( (fentropy .or. fentropy) .and. (fblock_size .gt. 0) ) then
+                        call pmf_accu_read_rbuf_B(usabfaccu%PMFAccuType,iounit,keyline,usabfaccu%block_metot)
+                    else
+                        call pmf_accu_skip_section(iounit,keyline,USABF_OUT)
+                    end if
+            ! ------------------------------------
+                case('B_MEPOT')
+                    if( (fentropy .or. fentropy) .and. (fblock_size .gt. 0) ) then
+                        call pmf_accu_read_rbuf_B(usabfaccu%PMFAccuType,iounit,keyline,usabfaccu%block_mepot)
+                    else
+                        call pmf_accu_skip_section(iounit,keyline,USABF_OUT)
+                    end if
+            ! ------------------------------------
+                case('B_MERST')
+                    if( (fentropy .or. fentropy) .and. (fblock_size .gt. 0) ) then
+                        call pmf_accu_read_rbuf_B(usabfaccu%PMFAccuType,iounit,keyline,usabfaccu%block_merst)
+                    else
+                        call pmf_accu_skip_section(iounit,keyline,USABF_OUT)
+                    end if
+           ! ------------------------------------
+                case('B_C11HH')
+                    if( fentropy .and. (fblock_size .gt. 0) ) then
+                        call pmf_accu_read_rbuf_M(usabfaccu%PMFAccuType,iounit,keyline,usabfaccu%block_c11hh)
+                    else
+                        call pmf_accu_skip_section(iounit,keyline,USABF_OUT)
+                    end if
+            ! ------------------------------------
+                case default
+                    call pmf_accu_skip_section(iounit,keyline,USABF_OUT)
+            end select
+        end if
+    end do
+
+500 return
+
+  5 format(A80)
+
+300 call pmf_utils_exit(PMF_OUT,1,'[US-ABF] Unable to read from the accumulator - keyline!')
+
+end subroutine usabf_accu_read
+
+!===============================================================================
 ! Subroutine:  usabf_accu_write
 !===============================================================================
 
@@ -223,14 +394,23 @@ subroutine usabf_accu_write(iounit)
     use usabf_dat
 
     implicit none
-    integer                     :: iounit
+    integer     :: iounit
+    ! --------------------------------------------
+    integer     :: i
     !---------------------------------------------------------------------------
+
+    do i=1,usabfaccu%tot_cvs
+        usabfaccu%tvalues(i)  = USABFCVList(i)%target_value
+        usabfaccu%fcs(i)      = USABFCVList(i)%force_constant
+    end do
 
     usabfaccu%method = 'US-ABF'
     call pmf_accu_write_header(usabfaccu%PMFAccuType,iounit)
     call pmf_accu_write_ibuf_B(usabfaccu%PMFAccuType,iounit,'NSAMPLES',     'AD',usabfaccu%nsamples)
     call pmf_accu_write_rbuf_M(usabfaccu%PMFAccuType,iounit,'MICF',         'WA',usabfaccu%micf)
     call pmf_accu_write_rbuf_M(usabfaccu%PMFAccuType,iounit,'M2ICF',        'M2',usabfaccu%m2icf,'MICF')
+    call pmf_accu_write_rbuf_C(usabfaccu%PMFAccuType,iounit,'TVALUES',      'IG',usabfaccu%tvalues)
+    call pmf_accu_write_rbuf_C(usabfaccu%PMFAccuType,iounit,'FCS',          'IG',usabfaccu%fcs)
 
     if( fenthalpy .or. fentropy ) then
         call pmf_accu_write_rbuf_B(usabfaccu%PMFAccuType,iounit,'METOT',    'WA',usabfaccu%metot)
@@ -249,6 +429,19 @@ subroutine usabf_accu_write(iounit)
         else
             call pmf_accu_write_rbuf_M(usabfaccu%PMFAccuType,iounit,'MCOVHH',   'WA',usabfaccu%mcovhh)
             call pmf_accu_write_rbuf_M(usabfaccu%PMFAccuType,iounit,'M2COVHH',  'M2',usabfaccu%m2covhh, 'MCOVHH')
+        end if
+    end if
+
+    if( fblock_size .gt. 0 ) then
+        call pmf_accu_write_ibuf_B(usabfaccu%PMFAccuType,iounit,'B_NSAMPLES', 'IG',usabfaccu%block_nsamples)
+        call pmf_accu_write_rbuf_M(usabfaccu%PMFAccuType,iounit,'B_MICF',     'IG',usabfaccu%block_micf)
+        if( fenthalpy .or. fentropy ) then
+            call pmf_accu_write_rbuf_B(usabfaccu%PMFAccuType,iounit,'B_METOT','IG',usabfaccu%block_metot)
+            call pmf_accu_write_rbuf_B(usabfaccu%PMFAccuType,iounit,'B_MEPOT','IG',usabfaccu%block_mepot)
+            call pmf_accu_write_rbuf_B(usabfaccu%PMFAccuType,iounit,'B_MERST','IG',usabfaccu%block_merst)
+        end if
+        if( fentropy ) then
+            call pmf_accu_write_rbuf_M(usabfaccu%PMFAccuType,iounit,'B_C11HH','IG',usabfaccu%block_c11hh)
         end if
     end if
 

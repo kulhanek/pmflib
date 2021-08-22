@@ -200,14 +200,14 @@ subroutine rst_accu_write(iounit)
 
     rstaccu%method = 'RST'
     call pmf_accu_write_header(rstaccu%PMFAccuType,iounit)
-    call pmf_accu_write_ibuf_B(rstaccu%PMFAccuType,iounit,'NSAMPLES'        ,'NA',rstaccu%nsamples)
-    call pmf_accu_write_rbuf_C(rstaccu%PMFAccuType,iounit,'TVALUES'         ,'NA',rstaccu%tvalues)
-    call pmf_accu_write_rbuf_C(rstaccu%PMFAccuType,iounit,'FCS'             ,'NA',rstaccu%fcs)
+    call pmf_accu_write_ibuf_B(rstaccu%PMFAccuType,iounit,'NSAMPLES'        ,'AD',rstaccu%nsamples)
+    call pmf_accu_write_rbuf_C(rstaccu%PMFAccuType,iounit,'TVALUES'         ,'IG',rstaccu%tvalues)
+    call pmf_accu_write_rbuf_C(rstaccu%PMFAccuType,iounit,'FCS'             ,'IG',rstaccu%fcs)
 
     ibuf(1) = rstaccu%faccumulation
-    call pmf_accu_write_ibuf_D(iounit,'FACCUMULATION'   ,'NA',ibuf,1)
-    call pmf_accu_write_rbuf_C(rstaccu%PMFAccuType,iounit,'MVALUES'         ,'NA',rstaccu%mvalues)
-    call pmf_accu_write_rbuf_C(rstaccu%PMFAccuType,iounit,'M2VALUES'        ,'NA',rstaccu%m2values)
+    call pmf_accu_write_ibuf_D(iounit,'FACCUMULATION'   ,'IG',ibuf,1)
+    call pmf_accu_write_rbuf_C(rstaccu%PMFAccuType,iounit,'MVALUES'         ,'IG',rstaccu%mvalues)
+    call pmf_accu_write_rbuf_C(rstaccu%PMFAccuType,iounit,'M2VALUES'        ,'IG',rstaccu%m2values)
 
 end subroutine rst_accu_write
 

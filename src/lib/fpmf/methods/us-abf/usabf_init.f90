@@ -49,6 +49,7 @@ subroutine usabf_init_method
     call usabf_init_arrays
     call usabf_init_print_header
     call usabf_output_open
+    call usabf_restart_read
     call usabf_trajectory_open
     call usabf_output_write_header
 
@@ -66,6 +67,9 @@ subroutine usabf_init_dat
     ! --------------------------------------------------------------------------
 
     fmode           = 0         ! 0 - disable ABF, 1 - enabled ABF
+
+    frestart        = .false.
+
     fsample         = 5000      ! output sample period in steps
     frstupdate      = 5000      ! how often is restart file written
 
@@ -120,18 +124,19 @@ subroutine usabf_init_print_header
     case default
     call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown fmode in usabf_init_print_header!')
     end select
-    write(PMF_OUT,125)  ' Coordinate definition file (ftabfdef)   : ', trim(ftabfdef)
+    write(PMF_OUT,125)  ' Coordinate definition file (fusabfdef)  : ', trim(fusabfdef)
     write(PMF_OUT,130)  ' Number of coordinates                   : ', NumOfUSABFCVs
 
     write(PMF_OUT,120)
     write(PMF_OUT,120)  ' Restart options:'
     write(PMF_OUT,120)  ' ------------------------------------------------------'
-    write(PMF_OUT,125)  ' Restart file (ftabfrst)                 : ', trim(ftabfrst)
+    write(PMF_OUT,125)  ' Restart file (fusabfrst)                : ', trim(fusabfrst)
+    write(PMF_OUT,125)  ' Restart enabled (frestart)              : ', prmfile_onoff(frestart)
     write(PMF_OUT,130)  ' Final restart update (frstupdate)       : ', frstupdate
     write(PMF_OUT,120)
     write(PMF_OUT,120)  ' Output options:'
     write(PMF_OUT,120)  ' ------------------------------------------------------'
-    write(PMF_OUT,125)  ' Output file (ftabfout)                  : ', trim(ftabfout)
+    write(PMF_OUT,125)  ' Output file (fusabfout)                 : ', trim(fusabfout)
     write(PMF_OUT,130)  ' Output sampling (fsample)               : ', fsample
     write(PMF_OUT,130)  ' Data pre-blocking (fblock_size)         : ', fblock_size
     write(PMF_OUT,125)  ' Accumulate enthalpy (fenthalpy)         : ', prmfile_onoff(fenthalpy)
@@ -144,7 +149,7 @@ subroutine usabf_init_print_header
     write(PMF_OUT,120)  ' Trajectory output options:'
     write(PMF_OUT,120)  ' ------------------------------------------------------'
     write(PMF_OUT,130)  ' Trajectory sampling (ftrjsample)        : ', ftrjsample
-    write(PMF_OUT,125)  ' Trajectory file (ftabftrj)              : ', trim(ftabftrj)
+    write(PMF_OUT,125)  ' Trajectory file (fusabftrj)             : ', trim(fusabftrj)
     write(PMF_OUT,120)
     write(PMF_OUT,120)  ' List of US-ABF collective variables'
     write(PMF_OUT,120)  ' -------------------------------------------------------'
