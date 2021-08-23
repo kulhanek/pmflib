@@ -174,6 +174,12 @@ public:
     /// check if the section data exists
     bool HasSectionData(const CSmallString& name) const;
 
+    /// get number of section data
+    int GetNumOfSections(void) const;
+
+    /// get number of section data with valuable data
+    int GetNumOfSectionsNoIG(void) const;
+
     /// delete section data
     void DeleteSectionData(const CSmallString& name);
 

@@ -345,9 +345,9 @@ void CPMFAccumulator::Combine(CPMFAccumulatorPtr right)
     }
 
 // combine data blocks
-    if( DataBlocks.size() != right->DataBlocks.size() ){
+    if( GetNumOfSectionsNoIG() != right->GetNumOfSectionsNoIG() ){
         CSmallString   error;
-        error << "two PMF accumulators are not compatible (number of data sections): " << DataBlocks.size()  << " vs " << right->DataBlocks.size();
+        error << "two PMF accumulators are not compatible (number of data sections): " << GetNumOfSectionsNoIG()  << " vs " << right->GetNumOfSectionsNoIG();
         RUNTIME_ERROR(error);
     }
 
@@ -1469,6 +1469,29 @@ bool CPMFAccumulator::HasSectionData(const CSmallString& name) const
         return(false);
     }
     return(true);
+}
+
+//------------------------------------------------------------------------------
+
+int CPMFAccumulator::GetNumOfSections(void) const
+{
+    return(DataBlocks.size());
+}
+
+//------------------------------------------------------------------------------
+
+int CPMFAccumulator::GetNumOfSectionsNoIG(void) const
+{
+    std::map<CSmallString,CPMFAccuDataPtr>::const_iterator it = DataBlocks.begin();
+    std::map<CSmallString,CPMFAccuDataPtr>::const_iterator ie = DataBlocks.end();
+
+    int count = 0;
+    while( it != ie ){
+        CPMFAccuDataPtr db = it->second;
+        if( db->GetOp() != "IG" ) count++;
+        it++;
+    }
+    return(count);
 }
 
 //------------------------------------------------------------------------------

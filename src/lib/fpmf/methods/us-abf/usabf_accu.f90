@@ -263,7 +263,7 @@ subroutine usabf_accu_read(iounit)
                 case('FCS')
                     call pmf_accu_read_rbuf_C(usabfaccu%PMFAccuType,iounit,keyline,usabfaccu%fcs)
                     do i=1,usabfaccu%tot_cvs
-                        USABFCVList(i)%target_value = usabfaccu%fcs(i)
+                        USABFCVList(i)%force_constant = usabfaccu%fcs(i)
                     end do
             ! ------------------------------------
                 case('MEPOT')
