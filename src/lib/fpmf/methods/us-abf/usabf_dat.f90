@@ -40,6 +40,7 @@ integer     :: fmode        ! 0 - disable US-ABF
                             ! 1 - enable ABF (simple ABF algorithm - 2p)
                             ! 2 - enable ABF (original ABF algorithm - 4p)
 logical     :: frestart     ! 1 - restart job with previous data, 0 - otherwise not
+integer     :: faccurst     ! number of steps after which the accumulated data are set to zero
 integer     :: fsample      ! output sample period in steps
 integer     :: frstupdate   ! how often is restart file written
 

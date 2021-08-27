@@ -472,6 +472,12 @@ subroutine usabf_accu_add_data_online(cvs,gfx,epot,ekin,erst)
     real(PMFDP)    :: dicf1, dicf2
     ! --------------------------------------------------------------------------
 
+    ! reset the accumulated data if requested
+    if( (faccurst .ge. 0) .and. (faccurst .eq. fstep) ) then
+        write(USABF_OUT,10) fstep
+        call usabf_accu_clear
+    end if
+
     ! get global index to accumulator for average values within the set
     gi0 = pmf_accu_globalindex(usabfaccu%PMFAccuType,cvs)
     if( gi0 .le. 0 ) then
@@ -516,9 +522,11 @@ subroutine usabf_accu_add_data_online(cvs,gfx,epot,ekin,erst)
         usabfaccu%m2icf(i,gi0) = usabfaccu%m2icf(i,gi0) + dicf1 * dicf2
 
         if( fentropy ) then
-            usabfaccu%c11hh(i,gi0)  = usabfaccu%c11hh(i,gi0) + dicf1     * detot2
+            usabfaccu%c11hh(i,gi0)  = usabfaccu%c11hh(i,gi0) + dicf1 * detot2
         end if
     end do
+
+ 10 format('# Resetting the accumulator at: ', I9)
 
 end subroutine usabf_accu_add_data_online
 
@@ -547,6 +555,12 @@ subroutine usabf_accu_add_data_block(cvs,gfx,epot,ekin,erst)
     real(PMFDP)    :: derst1, derst2
     real(PMFDP)    :: dc11hh1, dc11hh2
     ! --------------------------------------------------------------------------
+
+    ! reset the accumulated data if requested
+    if( (faccurst .ge. 0) .and. (faccurst .eq. fstep) ) then
+        write(USABF_OUT,10) fstep
+        call usabf_accu_clear
+    end if
 
     ! get global index to accumulator for average values within the set
     gi0 = pmf_accu_globalindex(usabfaccu%PMFAccuType,cvs)
@@ -587,7 +601,7 @@ subroutine usabf_accu_add_data_block(cvs,gfx,epot,ekin,erst)
         dicf2 = - icf -  usabfaccu%block_micf(i,gi0)
 
         if( fentropy ) then
-            usabfaccu%block_c11hh(i,gi0)  = usabfaccu%block_c11hh(i,gi0) + dicf1     * detot2
+            usabfaccu%block_c11hh(i,gi0)  = usabfaccu%block_c11hh(i,gi0) + dicf1 * detot2
         end if
     end do
 
@@ -626,7 +640,6 @@ subroutine usabf_accu_add_data_block(cvs,gfx,epot,ekin,erst)
 
     do i=1,NumOfUSABFCVs
         icf = usabfaccu%block_micf(i,gi0)
-
         dicf1 = icf - usabfaccu%micf(i,gi0)
         usabfaccu%micf(i,gi0)  = usabfaccu%micf(i,gi0)  + dicf1 * invn
         dicf2 = icf -  usabfaccu%micf(i,gi0)
@@ -653,6 +666,8 @@ subroutine usabf_accu_add_data_block(cvs,gfx,epot,ekin,erst)
     if( fentropy ) then
         usabfaccu%block_c11hh(:,gi0)    = 0.0d0
     end if
+
+ 10 format('# Resetting the accumulator at: ', I9)
 
 end subroutine usabf_accu_add_data_block
 

@@ -42,7 +42,7 @@ integer         :: fplevel          ! print level
 logical         :: frestart         ! 1 - restart job with previous data, 0 - otherwise not
 integer         :: frstupdate       ! how often is restart file written
 integer         :: ftrjsample       ! how often save restart to "restart evolution"
-integer         :: flambdasolver    ! 0 - Newton method, 1 - chord method
+integer         :: flambdasolver    ! 0 - Newton method, 1 - chord method, 2 - Newton + SVD
 real(PMFDP)     :: flambdatol       ! tolerance for lambda optimization
 integer         :: fmaxiter         ! maximum of iteration in lambda optimization
 integer         :: fsamplefreq      ! how often take samples
@@ -52,6 +52,8 @@ logical         :: fenthalpy        ! collect data for enthalpy calculation
 logical         :: fentropy         ! collect data for entropy calculation
 real(PMFDP)     :: fepotoffset
 real(PMFDP)     :: fekinoffset
+
+real(PMFDP)     :: frcond
 
 ! item list --------------------------------------------------------------------
 type CVTypeBM
@@ -107,8 +109,9 @@ real(PMFDP),allocatable     :: rbuf_B(:)
 real(PMFDP),allocatable     :: rbuf_M(:,:)
 
 ! constants --------------------------------------------------------------------
-integer, parameter  :: CON_LS_NM         = 0    ! Newton method lambda solver
+integer, parameter  :: CON_LS_NM         = 0    ! Newton method lambda solver - LU
 integer, parameter  :: CON_LS_CM         = 1    ! Chord method lambda solver
+integer, parameter  :: CON_LS_NM_SVD     = 2    ! Newton method lambda solver - SVD
 
 ! global variables for lambda calculation -----------------------------------
 integer                     :: fliter           ! number of iterations in lambda solver
@@ -119,6 +122,8 @@ logical                     :: has_lambdav      ! mu values (lambdav)
 
 ! global variables for LU decomposition  -----------------------------------
 real(PMFDP),allocatable     :: vv(:)            ! for LU decomposition
+integer                     :: lwork            ! for SVD decomposition
+real(PMFDP),allocatable     :: work(:)          ! for SVD decomposition
 integer,allocatable         :: indx(:)
 
 ! global variables for blue moon - results ---------------------------------

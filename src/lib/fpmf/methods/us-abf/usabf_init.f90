@@ -69,6 +69,7 @@ subroutine usabf_init_dat
     fmode           = 0         ! 0 - disable ABF, 1 - enabled ABF
 
     frestart        = .false.
+    faccurst        = -1
 
     fsample         = 5000      ! output sample period in steps
     frstupdate      = 5000      ! how often is restart file written

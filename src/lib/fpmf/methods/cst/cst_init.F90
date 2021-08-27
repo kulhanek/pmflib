@@ -81,8 +81,9 @@ subroutine cst_init_dat
     ftrjsample      = 0             ! how often save accumulator to "accumulator evolution"
 
     flambdasolver   = CON_LS_NM     ! Newton-Rapson solver
-    flambdatol      = 1.0d-4        ! tolerance for lambda optimization
+    flambdatol      = 1.0d-6        ! tolerance for lambda optimization
     fmaxiter        = 50            ! maximum of iteration in lambda optimization
+    frcond          = 1e-7
 
     fenthalpy       = .false.       ! accumulate enthalpy
     fentropy        = .false.       ! accumulate entropy
@@ -129,6 +130,9 @@ subroutine cst_init_print_header
     write(PMF_OUT,120)  ' ------------------------------------------------------'
     write(PMF_OUT,140)  ' Lambda solver (flambdasolver)        : ', flambdasolver, &
                                                                  trim(cst_init_get_lsolver_name(flambdasolver))
+    if( flambdasolver .eq. 2 ) then
+    write(PMF_OUT,135)  ' Condition number for SVD (frcond)    : ', frcond
+    end if
     write(PMF_OUT,135)  ' Lambda tolerance (flambdatol)        : ', flambdatol
     write(PMF_OUT,130)  ' Maximum of iteration (fmaxiter)      : ', fmaxiter
     write(PMF_OUT,120)
@@ -197,9 +201,11 @@ character(80) function cst_init_get_lsolver_name(solver_id)
 
     select case(solver_id)
         case(CON_LS_NM)
-            cst_init_get_lsolver_name = "Newton method"
+            cst_init_get_lsolver_name = "Newton method - LU"
         case(CON_LS_CM)
             cst_init_get_lsolver_name = "Chord method"
+        case(CON_LS_NM_SVD)
+            cst_init_get_lsolver_name = "Newton method - SVD"
         case default
             cst_init_get_lsolver_name = "unknown"
     end select
@@ -449,13 +455,34 @@ subroutine cst_init_core
     integer      :: alloc_failed, i, tot_nbins
     ! ------------------------------------------------------------------------------
 
-! allocate arrays for LU decomposition ---------------------------------------
-    allocate(vv(NumOfCONs), indx(NumOfCONs), stat= alloc_failed)
+    select case(flambdasolver)
+        case(CON_LS_NM)
+            ! allocate arrays for LU decomposition
+            allocate(vv(NumOfCONs), indx(NumOfCONs), stat= alloc_failed)
+            if( alloc_failed .ne. 0 ) then
+                call pmf_utils_exit(PMF_OUT,1,&
+                         '[CST] Unable to allocate memory for arrays used in LU decomposition!')
+            end if
+        case(CON_LS_CM)
+            ! allocate arrays for LU decomposition
+            allocate(vv(NumOfCONs), indx(NumOfCONs), stat= alloc_failed)
+            if( alloc_failed .ne. 0 ) then
+                call pmf_utils_exit(PMF_OUT,1,&
+                         '[CST] Unable to allocate memory for arrays used in LU decomposition!')
+            end if
+        case(CON_LS_NM_SVD)
+            ! allocate arrays for SVD decomposition
+            lwork = (3*NumOfCONs + max( 2*NumOfCONs, NumOfCONs, 1 ))*10
+            allocate(vv(NumOfCONs), work(lwork), indx(NumOfCONs), stat= alloc_failed)
+            if( alloc_failed .ne. 0 ) then
+                call pmf_utils_exit(PMF_OUT,1,&
+                         '[CST] Unable to allocate memory for arrays used in LU decomposition!')
+            end if
+        case default
+            call pmf_utils_exit(PMF_OUT,1,'[CST] solver is not implemented!')
+    end select
 
-    if( alloc_failed .ne. 0 ) then
-        call pmf_utils_exit(PMF_OUT,1,&
-                 '[CST] Unable to allocate memory for arrays used in LU decomposition!')
-    end if
+
 
 ! allocate arrays for lambda calculation ---------------------------------------
     allocate(lambda(NumOfCONs), &

@@ -46,12 +46,14 @@ subroutine cst_lambdas_calculate
     ! --------------------------------------------------------------------------
 
     select case(flambdasolver)
-    case(CON_LS_NM)
-        call cst_lambdas_calculate_nm(fliter)
-    case(CON_LS_CM)
-        call cst_lambdas_calculate_cm(fliter)
-    case default
-        call pmf_utils_exit(PMF_OUT,1,'[CST] solver is not implemented!')
+        case(CON_LS_NM)
+            call cst_lambdas_calculate_nm(fliter)
+        case(CON_LS_CM)
+            call cst_lambdas_calculate_cm(fliter)
+        case(CON_LS_NM_SVD)
+            call cst_lambdas_calculate_nm_svd(fliter)
+        case default
+            call pmf_utils_exit(PMF_OUT,1,'[CST] solver is not implemented!')
     end select
 
 end subroutine cst_lambdas_calculate
@@ -62,98 +64,191 @@ end subroutine cst_lambdas_calculate
 
 subroutine cst_lambdas_calculate_nm(iter)
 
- use pmf_dat
- use pmf_utils
- use cst_dat
- use cst_constraints
+    use pmf_dat
+    use pmf_utils
+    use cst_dat
+    use cst_constraints
 
- implicit none
- integer            :: iter  ! number of iteration to achieve flambdatol
- ! -----------------------------------------------
- integer            :: i,k,info,ci
- real(PMFDP)        :: isfdt
- logical            :: done
- ! -----------------------------------------------------------------------------
+    implicit none
+    integer            :: iter  ! number of iteration to achieve flambdatol
+    ! -----------------------------------------------
+    integer            :: i,k,info,ci
+    real(PMFDP)        :: isfdt
+    logical            :: done
+    ! -----------------------------------------------------------------------------
 
- lambda(:) = 0.0d0
+    lambda(:) = 0.0d0
 
- select case(fintalg)
-    case(IA_LEAP_FROG)
-        isfdt = 1.0d0/(fdt*fdt) * PMF_L2CL
-    case(IA_VEL_VERLET)
-        isfdt = 2.0d0/(fdt*fdt) * PMF_L2CL
-    case default
-        call pmf_utils_exit(PMF_OUT,1,'Unsupported integration algorithm!')
- end select
+    select case(fintalg)
+        case(IA_LEAP_FROG)
+            isfdt = 1.0d0/(fdt*fdt) * PMF_L2CL
+        case(IA_VEL_VERLET)
+            isfdt = 2.0d0/(fdt*fdt) * PMF_L2CL
+        case default
+            call pmf_utils_exit(PMF_OUT,1,'Unsupported integration algorithm!')
+    end select
 
- ! do Newton step -----------------------------------------------------------
- do iter=1,fmaxiter
+    ! do Newton step -----------------------------------------------------------
+    do iter=1,fmaxiter
 
-    ! calculate Jacobian matrix ------------------------
-    call cst_lambdas_calc_jacobian ! it calculates jac and cv
+        ! calculate Jacobian matrix ------------------------
+        call cst_lambdas_calc_jacobian ! it calculates jac and cv
+
+        ! DEBUG
+        ! write(*,*) 'A', iter, cv(1)
+
+        if ( NumOfCONs .gt. 1 ) then
+            ! LU decomposition
+            indx(:) = 0
+            call dgetrf(NumOfCONs,NumOfCONs,jac,NumOfCONs,indx,info)
+            if( info .ne. 0 ) then
+                call pmf_utils_exit(PMF_OUT,1,&
+                                 '[CST] LU decomposition failed in cst_calculate_lambda_nm!')
+            end if
+            call dgetrs('N',NumOfCONs,1,jac,NumOfCONs,indx,cv,NumOfCONs,info)
+            if( info .ne. 0 ) then
+                call pmf_utils_exit(PMF_OUT,1, &
+                                 '[CST] Solution of LE failed in cst_calculate_lambda_nm!')
+            end if
+        else
+            cv(1)=cv(1)/jac(1,1)
+        end if
+
+        ! DEBUG
+        ! write(*,*) 'B', iter, cv(1)
+
+        ! correct lambda vector -------------------------
+        lambda = lambda + cv
+
+        ! calculate new position vector
+        do i=1,NumOfCONs
+            ci = CONList(i)%cvindx
+            do k=1,NumOfLAtoms
+                CrdP(:,k) = CrdP(:,k) - MassInv(k)*cv(i)*CVContextP%CVsDrvs(:,k,ci)
+            end do
+        end do
+
+        ! check convergence criteria in lambdax
+        done = .true.
+        do i=1,NumOfCONs
+            if( abs(cv(i)*isfdt) .gt. flambdatol ) done = .false.
+        end do
+
+        if( done ) exit
+
+    end do
 
     ! DEBUG
-    ! write(*,*) 'A', iter, cv(1)
+    !write(*,*)
 
-    if ( NumOfCONs .gt. 1 ) then
-        ! LU decomposition
-        indx(:) = 0
-        call dgetrf(NumOfCONs,NumOfCONs,jac,NumOfCONs,indx,info)
-        if( info .ne. 0 ) then
-            call pmf_utils_exit(PMF_OUT,1,&
-                             '[CST] LU decomposition failed in cst_calculate_lambda_nm!')
-        end if
-        call dgetrs('N',NumOfCONs,1,jac,NumOfCONs,indx,cv,NumOfCONs,info)
-        if( info .ne. 0 ) then
-            call pmf_utils_exit(PMF_OUT,1, &
-                             '[CST] Solution of LE failed in cst_calculate_lambda_nm!')
-        end if
-    else
-        cv(1)=cv(1)/jac(1,1)
+    do i=1,NumOfCONs
+        lambda(i) = lambda(i)*isfdt
+    end do
+
+    ! final derivatives and values
+    call cst_constraints_calc_fdxp
+
+    if( iter .eq. fmaxiter ) then
+        call pmf_utils_exit(PMF_OUT,1, &
+                         '[CST] Maximum number of iterations in lambda calculation exceeded!')
     end if
 
-    ! DEBUG
-    ! write(*,*) 'B', iter, cv(1)
-
-    ! correct lambda vector -------------------------
-    lambda = lambda + cv
-
-    ! calculate new position vector
-    do i=1,NumOfCONs
-        ci = CONList(i)%cvindx
-        do k=1,NumOfLAtoms
-            CrdP(:,k) = CrdP(:,k) - MassInv(k)*cv(i)*CVContextP%CVsDrvs(:,k,ci)
-        end do
-    end do
-
-    ! check convergence criteria in lambdax
-    done = .true.
-    do i=1,NumOfCONs
-        if( abs(cv(i)*isfdt) .gt. flambdatol ) done = .false.
-    end do
-
-    if( done ) exit
-
- end do
-
- ! DEBUG
- !write(*,*)
-
- do i=1,NumOfCONs
-    lambda(i) = lambda(i)*isfdt
- end do
-
- ! final derivatives and values
- call cst_constraints_calc_fdxp
-
- if( iter .eq. fmaxiter ) then
-    call pmf_utils_exit(PMF_OUT,1, &
-                     '[CST] Maximum number of iterations in lambda calculation exceeded!')
- end if
-
- return
+    return
 
 end subroutine cst_lambdas_calculate_nm
+
+!===============================================================================
+! Subroutine:  cst_lambdas_calculate_nm_svd
+!===============================================================================
+
+subroutine cst_lambdas_calculate_nm_svd(iter)
+
+    use pmf_dat
+    use pmf_utils
+    use cst_dat
+    use cst_constraints
+
+    implicit none
+    integer            :: iter  ! number of iteration to achieve flambdatol
+    ! -----------------------------------------------
+    integer            :: i,k,info,ci,orank
+    real(PMFDP)        :: isfdt
+    logical            :: done
+    ! -----------------------------------------------------------------------------
+
+    lambda(:) = 0.0d0
+
+    select case(fintalg)
+        case(IA_LEAP_FROG)
+            isfdt = 1.0d0/(fdt*fdt) * PMF_L2CL
+        case(IA_VEL_VERLET)
+            isfdt = 2.0d0/(fdt*fdt) * PMF_L2CL
+        case default
+            call pmf_utils_exit(PMF_OUT,1,'Unsupported integration algorithm!')
+    end select
+
+    ! do Newton step -----------------------------------------------------------
+    do iter=1,fmaxiter
+
+        ! calculate Jacobian matrix ------------------------
+        call cst_lambdas_calc_jacobian ! it calculates jac and cv
+
+        ! DEBUG
+        ! write(*,*) 'A', iter, cv(1)
+
+        if ( NumOfCONs .gt. 1 ) then
+            ! SVD decomposition
+            call dgelss(NumOfCONs,NumOfCONs,1,jac,NumOfCONs,cv,NumOfCONs,vv,frcond,orank,work,lwork,info)
+            if( info .ne. 0 ) then
+                call pmf_utils_exit(PMF_OUT,1,&
+                                 '[CST] SVD decomposition failed in cst_calculate_lambda_nm_svd!')
+            end if
+        else
+            cv(1)=cv(1)/jac(1,1)
+        end if
+
+        ! DEBUG
+        ! write(100,*) 'B', iter, cv(1)
+
+        ! correct lambda vector -------------------------
+        lambda = lambda + cv
+
+        ! calculate new position vector
+        do i=1,NumOfCONs
+            ci = CONList(i)%cvindx
+            do k=1,NumOfLAtoms
+                CrdP(:,k) = CrdP(:,k) - MassInv(k)*cv(i)*CVContextP%CVsDrvs(:,k,ci)
+            end do
+        end do
+
+        ! check convergence criteria in lambdax
+        done = .true.
+        do i=1,NumOfCONs
+            if( abs(cv(i)*isfdt) .gt. flambdatol ) done = .false.
+        end do
+
+        if( done ) exit
+
+    end do
+
+    ! DEBUG
+    !write(*,*)
+
+    do i=1,NumOfCONs
+        lambda(i) = lambda(i)*isfdt
+    end do
+
+    ! final derivatives and values
+    call cst_constraints_calc_fdxp
+
+    if( iter .eq. fmaxiter ) then
+        call pmf_utils_exit(PMF_OUT,1, &
+                         '[CST] Maximum number of iterations in lambda calculation exceeded!')
+    end if
+
+    return
+
+end subroutine cst_lambdas_calculate_nm_svd
 
 !===============================================================================
 ! Subroutine:  cst_lambdas_calculate_cm
@@ -161,90 +256,90 @@ end subroutine cst_lambdas_calculate_nm
 
 subroutine cst_lambdas_calculate_cm(iter)
 
- use pmf_utils
- use pmf_dat
- use cst_dat
- use cst_constraints
+    use pmf_utils
+    use pmf_dat
+    use cst_dat
+    use cst_constraints
 
- implicit none
- integer            :: iter  ! number of iteration to achieve flambdatol
- ! -----------------------------------------------
- integer            :: i,k,info,ci
- real(PMFDP)        :: isfdt
- logical            :: done
- ! -----------------------------------------------------------------------------
+    implicit none
+    integer            :: iter  ! number of iteration to achieve flambdatol
+    ! -----------------------------------------------
+    integer            :: i,k,info,ci
+    real(PMFDP)        :: isfdt
+    logical            :: done
+    ! --------------------------------------------------------------------------
 
- lambda(:) = 0.0d0
+    lambda(:) = 0.0d0
 
- select case(fintalg)
-    case(IA_LEAP_FROG)
-        isfdt = 1.0d0/(fdt*fdt) * PMF_L2CL
-    case(IA_VEL_VERLET)
-        isfdt = 2.0d0/(fdt*fdt) * PMF_L2CL
-    case default
-        call pmf_utils_exit(PMF_OUT,1,'Unsupported integration algorithm!')
- end select
+    select case(fintalg)
+        case(IA_LEAP_FROG)
+            isfdt = 1.0d0/(fdt*fdt) * PMF_L2CL
+        case(IA_VEL_VERLET)
+            isfdt = 2.0d0/(fdt*fdt) * PMF_L2CL
+        case default
+            call pmf_utils_exit(PMF_OUT,1,'Unsupported integration algorithm!')
+    end select
 
- ! calculate Jacobian matrix ------------------------
- call cst_lambdas_calc_jacobian ! it calculates jac and cv
-
- if ( NumOfCONs .gt. 1 ) then
-    ! LU decomposition
-    indx(:) = 0
-    call dgetrf(NumOfCONs,NumOfCONs,jac,NumOfCONs,indx,info)
-    if( info .ne. 0 ) then
-        call pmf_utils_exit(PMF_OUT,1,&
-                            '[CST] LU decomposition failed in cst_calculate_lambda_cm!')
-    end if
- end if
-
- ! do Newton step -----------------------------------------------------------
- do iter=1,fmaxiter
+    ! calculate Jacobian matrix ------------------------
+    call cst_lambdas_calc_jacobian ! it calculates jac and cv
 
     if ( NumOfCONs .gt. 1 ) then
-        call dgetrs('N',NumOfCONs,1,jac,NumOfCONs,indx,cv,NumOfCONs,info)
+        ! LU decomposition
+        indx(:) = 0
+        call dgetrf(NumOfCONs,NumOfCONs,jac,NumOfCONs,indx,info)
         if( info .ne. 0 ) then
-            call pmf_utils_exit(PMF_OUT,1, &
-                             '[CST] Solution of LE failed in cst_calculate_lambda_cm!')
+            call pmf_utils_exit(PMF_OUT,1,&
+                                '[CST] LU decomposition failed in cst_calculate_lambda_cm!')
         end if
-    else
-        cv(1)=cv(1)/jac(1,1)
     end if
 
-    ! correct lambda vector -------------------------
-    lambda = lambda + cv
+    ! do Newton step -----------------------------------------------------------
+    do iter=1,fmaxiter
 
-    ! calculate new position vector
-    do i=1,NumOfCONs
-        ci = CONList(i)%cvindx
-        do k=1,NumOfLAtoms
-            CrdP(:,k) = CrdP(:,k) - MassInv(k)*cv(i)*CVContextP%CVsDrvs(:,k,ci)
+        if ( NumOfCONs .gt. 1 ) then
+            call dgetrs('N',NumOfCONs,1,jac,NumOfCONs,indx,cv,NumOfCONs,info)
+            if( info .ne. 0 ) then
+                call pmf_utils_exit(PMF_OUT,1, &
+                                 '[CST] Solution of LE failed in cst_calculate_lambda_cm!')
+            end if
+        else
+            cv(1)=cv(1)/jac(1,1)
+        end if
+
+        ! correct lambda vector -------------------------
+        lambda = lambda + cv
+
+        ! calculate new position vector
+        do i=1,NumOfCONs
+            ci = CONList(i)%cvindx
+            do k=1,NumOfLAtoms
+                CrdP(:,k) = CrdP(:,k) - MassInv(k)*cv(i)*CVContextP%CVsDrvs(:,k,ci)
+            end do
         end do
+
+        ! check convergence criteria in lambdax
+        done = .true.
+        do i=1,NumOfCONs
+            if( abs(cv(i)*isfdt) .gt. flambdatol ) done = .false.
+        end do
+
+        if( done ) exit
+
     end do
 
-    ! check convergence criteria in lambdax
-    done = .true.
     do i=1,NumOfCONs
-        if( abs(cv(i)*isfdt) .gt. flambdatol ) done = .false.
+    lambda(i) = lambda(i)*isfdt
     end do
 
-    if( done ) exit
+    ! final derivatives
+    call cst_constraints_calc_fdxp
 
- end do
-
- do i=1,NumOfCONs
-    lambda(i) = lambda(i)*isfdt
- end do
-
- ! final derivatives
- call cst_constraints_calc_fdxp
-
- if( iter .ge. fmaxiter ) then
+    if( iter .ge. fmaxiter ) then
     call pmf_utils_exit(PMF_OUT,1, &
                      '[CST] Maximum number of iterations in lambda calculation exceeded!')
- end if
+    end if
 
- return
+    return
 
 end subroutine cst_lambdas_calculate_cm
 
@@ -254,30 +349,30 @@ end subroutine cst_lambdas_calculate_cm
 
 subroutine cst_lambdas_calc_jacobian
 
- use pmf_dat
- use cst_dat
- use cst_constraints
+    use pmf_dat
+    use cst_dat
+    use cst_constraints
 
- implicit none
- integer                :: i,ci,j,cj,k
- real(PMFDP)            :: jacv
- ! ------------------------------------------------------------------------------
+    implicit none
+    integer                :: i,ci,j,cj,k
+    real(PMFDP)            :: jacv
+    ! --------------------------------------------------------------------------
 
- ! go through constraint list and calculate first derivative matrices and constraint values
- call cst_constraints_calc_fdxp
+    ! go through constraint list and calculate first derivative matrices and constraint values
+    call cst_constraints_calc_fdxp
 
- ! complete Jacobian matrix
- do i=1,NumOfCONs
-    ci = CONList(i)%cvindx
-    do j=1,NumOfCONs
-        cj = CONList(j)%cvindx
-        jacv = 0.0d0
-        do k=1,NumOfLAtoms
-            jacv = jacv - MassInv(k)*dot_product(CVContext%CVsDrvs(:,k,ci),CVContext%CVsDrvs(:,k,cj))
+    ! complete Jacobian matrix
+    do i=1,NumOfCONs
+        ci = CONList(i)%cvindx
+        do j=1,NumOfCONs
+            cj = CONList(j)%cvindx
+            jacv = 0.0d0
+            do k=1,NumOfLAtoms
+                jacv = jacv - MassInv(k)*dot_product(CVContext%CVsDrvs(:,k,ci),CVContext%CVsDrvs(:,k,cj))
+            end do
+            jac(i,j)=jacv
         end do
-        jac(i,j)=jacv
     end do
- end do
 
 end subroutine cst_lambdas_calc_jacobian
 

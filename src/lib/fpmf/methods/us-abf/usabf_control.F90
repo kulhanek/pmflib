@@ -68,7 +68,7 @@ subroutine usabf_control_read_abf(prm_fin)
 
     ! read configuration
     call pmf_ctrl_read_integer(prm_fin,'fmode',fmode,'i12')
-    call pmf_ctrl_check_integer_in_range('ABF','fmode',fmode,0,2)
+    call pmf_ctrl_check_integer_in_range('US-ABF','fmode',fmode,0,2)
 
     if( fmode .eq. 0 ) then
         write(PMF_OUT,10)
@@ -79,17 +79,20 @@ subroutine usabf_control_read_abf(prm_fin)
 
     call pmf_ctrl_read_logical(prm_fin,'frestart',frestart)
 
+    call pmf_ctrl_read_integer(prm_fin,'faccurst',faccurst,'i12')
+    call pmf_ctrl_check_integer('US-ABF','faccurst',faccurst,-1,CND_GE)
+
     call pmf_ctrl_read_integer(prm_fin,'fblock_size',fblock_size,'i12')
-    call pmf_ctrl_check_integer('TABF','fblock_size',fblock_size,0,CND_GE)
+    call pmf_ctrl_check_integer('US-ABF','fblock_size',fblock_size,0,CND_GE)
 
     call pmf_ctrl_read_integer(prm_fin,'fsample',fsample,'i12')
-    call pmf_ctrl_check_integer('ABF','fsample',fsample,0,CND_GE)
+    call pmf_ctrl_check_integer('US-ABF','fsample',fsample,0,CND_GE)
 
     call pmf_ctrl_read_integer(prm_fin,'frstupdate',frstupdate,'i12')
-    call pmf_ctrl_check_integer('ABF','frstupdate',frstupdate,0,CND_GE)
+    call pmf_ctrl_check_integer('US-ABF','frstupdate',frstupdate,0,CND_GE)
 
     call pmf_ctrl_read_integer(prm_fin,'ftrjsample',ftrjsample,'i12')
-    call pmf_ctrl_check_integer('ABF','ftrjsample',ftrjsample,0,CND_GE)
+    call pmf_ctrl_check_integer('US-ABF','ftrjsample',ftrjsample,0,CND_GE)
 
     call pmf_ctrl_read_logical(prm_fin,'fenthalpy',fenthalpy)
     call pmf_ctrl_read_logical(prm_fin,'fentropy',fentropy)

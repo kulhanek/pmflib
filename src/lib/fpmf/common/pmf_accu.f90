@@ -454,7 +454,7 @@ subroutine pmf_accu_skip_section(iounit,keyline,notify)
     return
 
 10  format(8(I9,1X))
-20  format(4(E19.11,1X))
+20  format(4(ES23.15E3,1X))
 
 50  format('# [PMFAccu] Ignoring section [',A,'] of type "',A1,'" with length: ',I10)
 
