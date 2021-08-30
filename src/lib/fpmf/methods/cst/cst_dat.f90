@@ -92,7 +92,7 @@ type CVTypeSHAKE
     real(PMFDP)             :: value
 end type CVTypeSHAKE
 
-integer                         :: NumOfSHAKECONs  = 0       ! number of shake constraints in collision
+integer                         :: NumOfSHAKECONs            ! number of shake constraints in collision
 type(CVTypeSHAKE),allocatable   :: SHAKECONList(:)           ! SHAKE definition of constraints
 
 ! serial/MPI variables ---------------------------------------------------------

@@ -106,7 +106,7 @@ subroutine cst_control_read_con(prm_fin)
         call pmf_ctrl_read_real8(prm_fin,'frcond',frcond,'E12.4')
     end if
 
-    call pmf_ctrl_read_real8(prm_fin,'flambdatol',fepotoffset,'E12.4')
+    call pmf_ctrl_read_real8(prm_fin,'flambdatol',flambdatol,'E12.4')
     call pmf_ctrl_read_integer(prm_fin,'fmaxiter',fmaxiter,'I12')
 
     cst_enabled = fmode .gt. 0

@@ -58,7 +58,6 @@ type CVType
     logical                     :: gradforanycrd    ! is gradient available for any coordinates?
     logical                     :: isalgebraic      ! this CV combines other CVs
     integer,pointer             :: algebraicidxs(:) ! which CV indexes are used in algebra
-    logical                     :: processed        ! used by CST - see cst_constraints_calc_fdxp
 
     contains
         ! executive methods
@@ -117,7 +116,6 @@ subroutine reset_cv(cv_item)
     cv_item%indlindexes     => NULL()
     cv_item%isalgebraic     = .false.
     cv_item%algebraicidxs   => NULL()
-    cv_item%processed     = .false.
 
 end subroutine reset_cv
 

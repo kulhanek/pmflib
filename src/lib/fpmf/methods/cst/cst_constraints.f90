@@ -344,7 +344,7 @@ subroutine cst_constraints_cst_increment(cst_item)
         ! set corresponding value
         cst_item%value = cst_item%control_values(fstep)
     else
-        ! incrementation is in linear mode
+        ! an increment is in linear mode
         cst_item%value = cst_item%startvalue + (cst_item%stopvalue - cst_item%startvalue)*fstep/fnstlim
     end if
 
@@ -369,56 +369,22 @@ subroutine cst_constraints_calc_fdxp
     CVContextP%CVsValues(:) = 0.0d0
     CVContextP%CVsDrvs(:,:,:) = 0.0d0
 
-    do i=1,NumOfCVs
-        CVList(i)%cv%processed = .false.
-    end do
-
-    ! timer cannot be in cst_constraints_calc_fdxp_cvitem
-    ! which is called recursively
     call pmf_timers_start_timer(PMFLIB_CVS_TIMER)
 
+    ! get CVs at CrdP
+    do i=1,NumOfCVs
+        call CVList(i)%cv%calculate_cv(CrdP,CVContextP)
+    end do
+
+    ! get constrain deviations
     do i=1,NumOfCONs
         ci = CONList(i)%cvindx
-        call cst_constraints_calc_fdxp_cvitem(ci)
         cv(i) = get_deviation(CONList(i)%cv,CONList(i)%value,CVContextP%CVsValues(ci))
     end do
 
     call pmf_timers_stop_timer(PMFLIB_CVS_TIMER)
 
 end subroutine cst_constraints_calc_fdxp
-
-!===============================================================================
-! Subroutine:  cst_constraints_calc_fdxp_cvitem
-!===============================================================================
-
-recursive subroutine cst_constraints_calc_fdxp_cvitem(ci)
-
-    implicit none
-    integer             :: ci
-    ! --------------------------------------------
-    integer             :: i
-    ! --------------------------------------------------------------------------
-
-    ! already processed CV
-    if( CVList(ci)%cv%processed ) return
-
-    ! is it algebraic CV?
-    if( .not. CVList(ci)%cv%isalgebraic ) then
-        call CVList(ci)%cv%calculate_cv(CrdP,CVContextP)
-        CVList(ci)%cv%processed = .true.
-    else
-        ! first dependent CVs
-        if( associated(CVList(ci)%cv%algebraicidxs) ) then
-            do i=1,size(CVList(ci)%cv%algebraicidxs)
-                call cst_constraints_calc_fdxp_cvitem(CVList(ci)%cv%algebraicidxs(i))
-            end do
-        end if
-        ! then the CV
-        call CVList(ci)%cv%calculate_cv(CrdP,CVContextP)
-        CVList(ci)%cv%processed = .true.
-    end if
-
-end subroutine cst_constraints_calc_fdxp_cvitem
 
 !===============================================================================
 

@@ -173,18 +173,18 @@ subroutine cst_core_analyze
 ! calculate final constraint deviations
     do i=1,NumOfCONs
         ci = CONList(i)%cvindx
-        CONList(i)%deviation = CONList(i)%cv%get_deviation(CVContextP%CVsValues(ci),CONList(i)%value)
-        CONList(i)%sdevtot = CONList(i)%sdevtot + CONList(i)%deviation**2
+        CONList(i)%deviation = CONList(i)%cv%get_deviation(CVContextP%CVsValues(ci),CONList(i)%value)   ! t+dt
+        CONList(i)%sdevtot = CONList(i)%sdevtot + CONList(i)%deviation**2                               ! t+dt
     end do
 
-    ! calculate Z matrix --------------------------------------------------------
+    ! calculate Z matrix at Crd (in t)
     do i=1,NumOfCONs
         ci = CONList(i)%cvindx
         do j=1,NumOfCONs
             cj = CONList(j)%cvindx
             fzv = 0.0
             do k=1,NumOfLAtoms
-                fzv = fzv + MassInv(k)*dot_product(CVContextP%CVsDrvs(:,k,ci),CVContextP%CVsDrvs(:,k,cj))
+                fzv = fzv + MassInv(k)*dot_product(CVContext%CVsDrvs(:,k,ci),CVContext%CVsDrvs(:,k,cj))
             end do
             fz(i,j) = fzv
         end do
@@ -211,7 +211,7 @@ subroutine cst_core_analyze
     end if
 
     ! calculate metric tensor correction --------------------------------------------------------
-    isrz    = 1.0d0/sqrt(fzdet)
+    isrz    = 1.0d0/sqrt(fzdet)         ! t
 
 ! record history of isrz
     isrz0 = isrz1                       ! t-dt
@@ -225,8 +225,10 @@ subroutine cst_core_analyze
     epothist0  = epothist1              ! t-dt
     epothist1  = PotEne + fepotoffset   ! t
 
-    ersthist0 = ersthist1
-    ersthist1  = PMFEne
+    ersthist0 = ersthist1               ! t-dt
+    ersthist1  = PMFEne                 ! t
+
+    ! KinEne                            ! t-dt
 
      ! do we have enough samples?
     if( fstep .le. 2 ) return

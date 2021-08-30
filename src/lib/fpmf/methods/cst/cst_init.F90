@@ -81,7 +81,7 @@ subroutine cst_init_dat
     ftrjsample      = 0             ! how often save accumulator to "accumulator evolution"
 
     flambdasolver   = CON_LS_NM     ! Newton-Rapson solver
-    flambdatol      = 1.0d-6        ! tolerance for lambda optimization
+    flambdatol      = 1.0d-7        ! tolerance for lambda optimization
     fmaxiter        = 50            ! maximum of iteration in lambda optimization
     frcond          = 1e-7
 

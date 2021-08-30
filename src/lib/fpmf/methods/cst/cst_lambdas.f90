@@ -91,6 +91,9 @@ subroutine cst_lambdas_calculate_nm(iter)
     ! do Newton step -----------------------------------------------------------
     do iter=1,fmaxiter
 
+        ! go through constraint list and calculate first derivative and constraint values at CrdP
+        call cst_constraints_calc_fdxp
+
         ! calculate Jacobian matrix ------------------------
         call cst_lambdas_calc_jacobian ! it calculates jac and cv
 
@@ -124,7 +127,7 @@ subroutine cst_lambdas_calculate_nm(iter)
         do i=1,NumOfCONs
             ci = CONList(i)%cvindx
             do k=1,NumOfLAtoms
-                CrdP(:,k) = CrdP(:,k) - MassInv(k)*cv(i)*CVContextP%CVsDrvs(:,k,ci)
+                CrdP(:,k) = CrdP(:,k) - MassInv(k)*cv(i)*CVContext%CVsDrvs(:,k,ci)
             end do
         end do
 
@@ -190,6 +193,9 @@ subroutine cst_lambdas_calculate_nm_svd(iter)
     ! do Newton step -----------------------------------------------------------
     do iter=1,fmaxiter
 
+        ! go through constraint list and calculate first derivative and constraint values at CrdP
+        call cst_constraints_calc_fdxp
+
         ! calculate Jacobian matrix ------------------------
         call cst_lambdas_calc_jacobian ! it calculates jac and cv
 
@@ -217,7 +223,7 @@ subroutine cst_lambdas_calculate_nm_svd(iter)
         do i=1,NumOfCONs
             ci = CONList(i)%cvindx
             do k=1,NumOfLAtoms
-                CrdP(:,k) = CrdP(:,k) - MassInv(k)*cv(i)*CVContextP%CVsDrvs(:,k,ci)
+                CrdP(:,k) = CrdP(:,k) - MassInv(k)*cv(i)*CVContext%CVsDrvs(:,k,ci)
             end do
         end do
 
@@ -280,6 +286,9 @@ subroutine cst_lambdas_calculate_cm(iter)
             call pmf_utils_exit(PMF_OUT,1,'Unsupported integration algorithm!')
     end select
 
+    ! go through constraint list and calculate first derivative and constraint values at CrdP
+    call cst_constraints_calc_fdxp
+
     ! calculate Jacobian matrix ------------------------
     call cst_lambdas_calc_jacobian ! it calculates jac and cv
 
@@ -313,7 +322,7 @@ subroutine cst_lambdas_calculate_cm(iter)
         do i=1,NumOfCONs
             ci = CONList(i)%cvindx
             do k=1,NumOfLAtoms
-                CrdP(:,k) = CrdP(:,k) - MassInv(k)*cv(i)*CVContextP%CVsDrvs(:,k,ci)
+                CrdP(:,k) = CrdP(:,k) - MassInv(k)*cv(i)*CVContext%CVsDrvs(:,k,ci)
             end do
         end do
 
@@ -323,20 +332,20 @@ subroutine cst_lambdas_calculate_cm(iter)
             if( abs(cv(i)*isfdt) .gt. flambdatol ) done = .false.
         end do
 
+        ! go through constraint list and calculate first derivative and constraint values at CrdP
+        call cst_constraints_calc_fdxp
+
         if( done ) exit
 
     end do
 
     do i=1,NumOfCONs
-    lambda(i) = lambda(i)*isfdt
+        lambda(i) = lambda(i)*isfdt
     end do
 
-    ! final derivatives
-    call cst_constraints_calc_fdxp
-
     if( iter .ge. fmaxiter ) then
-    call pmf_utils_exit(PMF_OUT,1, &
-                     '[CST] Maximum number of iterations in lambda calculation exceeded!')
+        call pmf_utils_exit(PMF_OUT,1, &
+                         '[CST] Maximum number of iterations in lambda calculation exceeded!')
     end if
 
     return
@@ -358,9 +367,6 @@ subroutine cst_lambdas_calc_jacobian
     real(PMFDP)            :: jacv
     ! --------------------------------------------------------------------------
 
-    ! go through constraint list and calculate first derivative matrices and constraint values
-    call cst_constraints_calc_fdxp
-
     ! complete Jacobian matrix
     do i=1,NumOfCONs
         ci = CONList(i)%cvindx
@@ -368,7 +374,7 @@ subroutine cst_lambdas_calc_jacobian
             cj = CONList(j)%cvindx
             jacv = 0.0d0
             do k=1,NumOfLAtoms
-                jacv = jacv - MassInv(k)*dot_product(CVContext%CVsDrvs(:,k,ci),CVContext%CVsDrvs(:,k,cj))
+                jacv = jacv - MassInv(k)*dot_product(CVContextP%CVsDrvs(:,k,ci),CVContextP%CVsDrvs(:,k,cj))
             end do
             jac(i,j)=jacv
         end do

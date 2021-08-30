@@ -404,6 +404,26 @@ end subroutine pmf_sander_rstforce
 ! Subroutine: pmf_sander_constraints
 !===============================================================================
 
+subroutine pmf_sander_num_of_pmflib_cst(numofcst)
+
+    use cst_dat
+
+    implicit none
+    real(PMFDP)    :: numofcst       ! number of CST constraints
+    ! --------------------------------------------------------------------------
+
+    numofcst = 0
+    if( .not. cst_enabled ) return
+
+    numofcst = NumOfCONs - NumOfSHAKECONs
+    return
+
+end subroutine pmf_sander_num_of_pmflib_cst
+
+!===============================================================================
+! Subroutine: pmf_sander_constraints
+!===============================================================================
+
 subroutine pmf_sander_constraints(anatom,x,modified)
 
     use pmf_sizes
