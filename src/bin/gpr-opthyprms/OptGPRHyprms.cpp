@@ -128,7 +128,7 @@ bool COptGPRHyprms::Run(void)
 
 // load accumulator
     vout << endl;
-    CProxyRealmPtr curr = NULL;
+    CProxyRealmPtr curr;
     vout << format("%02d:Loading PMF accumulators ...")%State << endl;
     State++;
     int naccu = 1;
@@ -142,7 +142,7 @@ bool COptGPRHyprms::Run(void)
                 return(false);
             }
             curr->Name = name;
-            curr = NULL;
+            curr = CProxyRealmPtr();
         } else {
             vout << format("** PMFAccumulator #%05d: %s")%(naccu)%string(name) << endl;
             CPMFAccumulatorPtr p_accu(new CPMFAccumulator);
