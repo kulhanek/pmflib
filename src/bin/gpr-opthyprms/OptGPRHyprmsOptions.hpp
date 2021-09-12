@@ -59,6 +59,7 @@ public:
     CSO_LIST_BEGIN
     // options ------------------------------
     CSO_OPT(CSmallString,Target)
+    CSO_OPT(int,Limit)
     CSO_OPT(CSmallString,LAMethod)
     CSO_OPT(double,RCond)
     CSO_OPT(double,SigmaF2)
@@ -98,6 +99,15 @@ public:
                 "NAME",                           /* parameter name */
                 "Specify optimized targed, which can be either logml (log of marginal likelihood) "
                 "or logpl (log of pseudo-likelihood from leave-one-out cross-validation (LOO-CV)).")   /* option description */
+    //----------------------------------------------------------------------
+    CSO_MAP_OPT(int,                           /* option type */
+                Limit,                        /* option name */
+                0,                          /* default value */
+                false,                          /* is option mandatory */
+                'l',                           /* short option name */
+                "limit",                      /* long option name */
+                "LIMIT",                           /* parameter name */
+                "Only bins containing more samples than NUMBER are considered as properly sampled.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(CSmallString,                           /* option type */
                 LAMethod,                        /* option name */

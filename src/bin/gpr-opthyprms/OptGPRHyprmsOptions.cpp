@@ -112,12 +112,6 @@ int COptGPRHyprmsOptions::CheckArguments(void)
                 (const char*)GetProgramName(),GetNumberOfProgArgs());
         IsError = true;
     }
-    if( GetNumberOfProgArgs()%2 != 1){
-        if(IsError == false) fprintf(stderr,"\n");
-        fprintf(stderr,"%s: odd number of arguments are expected, but %d is provided\n",
-                (const char*)GetProgramName(),GetNumberOfProgArgs());
-        IsError = true;
-    }
     if(IsError == true) return(SO_OPTS_ERROR);
     return(SO_CONTINUE);
 }

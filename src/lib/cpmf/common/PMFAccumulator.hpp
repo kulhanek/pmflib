@@ -154,6 +154,9 @@ public:
     /// get number of samples
     int GetNumOfSamples(int ibin) const;
 
+    /// set number of samples
+    void SetNumOfSamples(int ibin,int nsamples);
+
     /// get total number of samples
     int GetTotalNumOfSamples(void) const;
 

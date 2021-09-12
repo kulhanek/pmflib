@@ -67,7 +67,7 @@ public:
                 "It provides the action specification. The server is either the DNS name or IP address of the server or word 'serverkey' or 'key'. In the later case, the information about the server is read from the server key file. The port number, on which the server is listen, may be optionally provided. Finally, the command is administration task, which can be one of the following:\n"
                 "info           = print information about registered clients\n"
                 "flush          = save the accumulated ABF data on the server side\n"
-                "get?file=NAME  = get the accumulated ABF data and saves them locally to the NAME file (the default name is _abfserver.rst)\n"
+                "get?file=NAME  = get the accumulated ABF data and saves them locally to the NAME file (the default name is _mwaserver.rst)\n"
                 "shutdown       = stop the server execution (use --force to skip protection by passphrase)\n"
                 "errors         = print errors from the server stack\n")   /* argument description */
 // description of options -----------------------------------------------------

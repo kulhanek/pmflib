@@ -1192,8 +1192,8 @@ void CPMFEnergyIntegrate::PrepareAccumulatorI(void)
 {
     for(int ibin=0; ibin < Accu->GetNumOfBins(); ibin++) {
         // erase datapoints not properly sampled, preserve glueing
-        if( (DerProxy->GetNumOfSamples(ibin) >= 0) && (DerProxy->GetNumOfSamples(ibin) <= Options.GetOptLimit()) ) {
-            DerProxy->SetNumOfSamples(ibin,0);
+        if( (Accu->GetNumOfSamples(ibin) >= 0) && (Accu->GetNumOfSamples(ibin) <= Options.GetOptLimit()) ) {
+            Accu->SetNumOfSamples(ibin,0);
         }
     }
 }
@@ -1211,12 +1211,12 @@ void CPMFEnergyIntegrate::PrepareAccumulatorII(void)
             // consider only properly sampled data points
             if( FES->GetEnergy(ibin) > Options.GetOptEnergyLimit() ){
                 // erase datapoints with too large energy
-                DerProxy->SetNumOfSamples(ibin,0);
+                Accu->SetNumOfSamples(ibin,0);
             }
             if( Options.GetOptEraseNegativeEnergy() ){
                 if( FES->GetEnergy(ibin) < 0 ){
                     // erase datapoints with negative energy
-                    DerProxy->SetNumOfSamples(ibin,0);
+                    Accu->SetNumOfSamples(ibin,0);
                 }
             }
         }
@@ -1228,7 +1228,7 @@ void CPMFEnergyIntegrate::PrepareAccumulatorII(void)
 void CPMFEnergyIntegrate::SyncFESWithACCU(void)
 {
     for(int ibin=0; ibin < Accu->GetNumOfBins(); ibin++) {
-        if( DerProxy->GetNumOfSamples(ibin) == 0 ) {
+        if( Accu->GetNumOfSamples(ibin) == 0 ) {
             FES->SetEnergy(ibin,0.0);
             FES->SetEnergy(ibin,0.0);
             FES->SetNumOfSamples(ibin,0);
@@ -1328,7 +1328,7 @@ void CPMFEnergyIntegrate::FloodFillTest(void)
 
     for(int ibin=0; ibin < Accu->GetNumOfBins(); ibin++) {
         if( FFSeeds[ibin] != maxseedid ) {
-            DerProxy->SetNumOfSamples(ibin,0);
+            Accu->SetNumOfSamples(ibin,0);
         }
     }
 }
@@ -1428,7 +1428,7 @@ int CPMFEnergyIntegrate::GlueingFES(int factor)
     int glued = 0;
 
     for(int ibin=0; ibin < Accu->GetNumOfBins(); ibin++) {
-        if( DerProxy->GetNumOfSamples(ibin) != 0 ) continue; // skip glued or sampled bins
+        if( Accu->GetNumOfSamples(ibin) != 0 ) continue; // skip glued or sampled bins
 
         // convert to ipont
         Accu->GetIPoint(ibin,IPos);
@@ -1441,14 +1441,14 @@ int CPMFEnergyIntegrate::GlueingFES(int factor)
             int tbin = Accu->GetGlobalIndex(TPos);
             if( tbin >= 0 ){
                 if( factor == 1 ){
-                    if( DerProxy->GetNumOfSamples(tbin) > 0 ){
-                        DerProxy->SetNumOfSamples(ibin,-(factor+1));
+                    if( Accu->GetNumOfSamples(tbin) > 0 ){
+                        Accu->SetNumOfSamples(ibin,-(factor+1));
                         glued++;
                         break;
                     }
                 } else {
-                    if( DerProxy->GetNumOfSamples(tbin) == -factor ){
-                        DerProxy->SetNumOfSamples(ibin,-(factor+1));
+                    if( Accu->GetNumOfSamples(tbin) == -factor ){
+                        Accu->SetNumOfSamples(ibin,-(factor+1));
                         glued++;
                         break;
                     }
@@ -1575,7 +1575,7 @@ void CPMFEnergyIntegrate::MarkAsHole(int seedid)
 {
     for(int ibin=0; ibin < Accu->GetNumOfBins(); ibin++) {
         if( FFSeeds[ibin] == seedid ){
-            DerProxy->SetNumOfSamples(ibin,-1);
+            Accu->SetNumOfSamples(ibin,-1);
         }
     }
 }

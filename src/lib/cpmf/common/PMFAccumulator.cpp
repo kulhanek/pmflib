@@ -1020,6 +1020,13 @@ int CPMFAccumulator::GetNumOfSamples(int ibin) const
 
 //------------------------------------------------------------------------------
 
+void CPMFAccumulator::SetNumOfSamples(int ibin,int nsamples)
+{
+    SetData("NSAMPLES",ibin,nsamples);
+}
+
+//------------------------------------------------------------------------------
+
 int CPMFAccumulator::GetTotalNumOfSamples(void) const
 {
     int nsamples = 0;

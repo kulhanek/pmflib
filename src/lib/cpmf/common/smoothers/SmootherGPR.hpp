@@ -29,7 +29,8 @@
 #include <EnergySurface.hpp>
 #include <EnergyProxy.hpp>
 #include <IntegratorGPR.hpp>
-
+#include <vector>
+#include <set>
 
 //------------------------------------------------------------------------------
 
@@ -44,7 +45,10 @@ public:
 
 // setup methods --------------------------------------------------------------
     /// set input energy proxy
-    void SetInputEnergyProxy(CEnergyProxyPtr p_proxy);
+    void AddInputEnergyProxy(CEnergyProxyPtr p_proxy);
+
+    /// clear energy proxies
+    void ClearInputEnergyProxies(void);
 
     /// set output energy surface
     void SetOutputES(CEnergySurfacePtr p_surf);
@@ -137,20 +141,18 @@ public:
 
 // section of private data ----------------------------------------------------
 private:
-    CPMFAccumulatorPtr      Accu;
-    CEnergyProxyPtr         EneProxy;
-    CEnergySurfacePtr       EneSurface;
-
-    int                     NumOfThreads;
+    std::vector<CEnergyProxyPtr>    EneProxyItems;
+    CEnergySurfacePtr               EneSurface;
+    int                             NumOfThreads;
 
     // GPR data, sizes and index maps
-    size_t                  NCVs;
-    size_t                  NumOfBins;
-    size_t                  GPRSize;
-    size_t                  NumOfUsedBins;
-    CSimpleVector<size_t>   SampledMap;
-    size_t                  NumOfValues;
-    CSimpleVector<size_t>   ValueMap;
+    size_t                          NumOfCVs;
+    size_t                          NumOfBins;
+    size_t                          GPRSize;
+    std::vector<size_t>             SampledMap;
+    std::vector<size_t>             EneProxyMap;
+    size_t                          NumOfValues;
+    std::vector<size_t>             ValueMap;
 
     // setup
     bool                    IncludeError;

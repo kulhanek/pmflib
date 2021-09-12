@@ -75,17 +75,26 @@ CSmallString CEnergyProxy::GetRealm(void)
 
 //------------------------------------------------------------------------------
 
-int CEnergyProxy::GetNumOfSamples(int ibin) const
+int CEnergyProxy::GetNumOfCVs(void) const
 {
-    RUNTIME_ERROR("need to be overloaded");
-    return(0);
+    if( Accu == NULL ) return(0);
+    return(Accu->GetNumOfCVs());
 }
 
 //------------------------------------------------------------------------------
 
-void CEnergyProxy::SetNumOfSamples(int ibin,int nsamples)
+int CEnergyProxy::GetNumOfBins(void) const
+{
+    if( Accu == NULL ) return(0);
+    return(Accu->GetNumOfBins());
+}
+
+//------------------------------------------------------------------------------
+
+int CEnergyProxy::GetNumOfSamples(int ibin) const
 {
     RUNTIME_ERROR("need to be overloaded");
+    return(0);
 }
 
 //------------------------------------------------------------------------------

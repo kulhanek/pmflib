@@ -39,15 +39,21 @@ public:
     "The program provides enthalpy from the PMF accumulator."
     CSO_PROG_DESC_END
 
+    CSO_PROG_ARGS_SHORT_DESC_BEGIN
+    "accuname1 [accuname2 ...] enthalpy"
+    CSO_PROG_ARGS_SHORT_DESC_END
+
+    CSO_PROG_ARGS_LONG_DESC_BEGIN
+    "<cyan><b>accuname1</b></cyan>                  Name of file containing the PMF accumulator.\n"
+    "<cyan><b>enthalpy</b></cyan>                   Resulting enthalpy.\n"
+    CSO_PROG_ARGS_LONG_DESC_END
+
     CSO_PROG_VERS_BEGIN
     LibBuildVersion_PMF
     CSO_PROG_VERS_END
 
 // list of all options and arguments ------------------------------------------
     CSO_LIST_BEGIN
-    // arguments ----------------------------
-    CSO_ARG(CSmallString,AccuName)
-    CSO_ARG(CSmallString,OutputName)
     // options ------------------------------
     CSO_OPT(CSmallString,Realm)
     CSO_OPT(CSmallString,Method)
@@ -78,20 +84,6 @@ public:
     CSO_LIST_END
 
     CSO_MAP_BEGIN
-// description of arguments ---------------------------------------------------
-    CSO_MAP_ARG(CSmallString,                   /* argument type */
-                AccuName,                          /* argument name */
-                NULL,                           /* default value */
-                true,                           /* is argument mandatory */
-                "accuname",                        /* parameter name */
-                "Name of file containing the PMF accumulator. If the name is '-' then the accumulator is read from the standard input.")   /* argument description */
-    //----------------------------------------------------------------------
-    CSO_MAP_ARG(CSmallString,                   /* argument type */
-                OutputName,                          /* argument name */
-                NULL,                           /* default value */
-                true,                           /* is argument mandatory */
-                "enthalpy",                        /* parameter name */
-                "Name of file where results will be printed. If the name is '-' then the output will be written to the standard output.")   /* argument description */
 // description of options ---------------------------------------------------
    CSO_MAP_OPT(CSmallString,                           /* option type */
                 Realm,                        /* option name */

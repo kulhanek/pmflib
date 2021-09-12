@@ -1596,7 +1596,8 @@ void CIntegratorGPR::FilterByMFZScore(double zscore,CVerboseStr& vout)
     size_t outliers = 0;
     for(size_t i=0; i < NumOfBins; i++){
         if( flags[i] == 0 ){
-            DerProxy->SetNumOfSamples(i,0);
+            RUNTIME_ERROR("FIXME");
+            // DerProxy->SetNumOfSamples(i,0);
             outliers++;
         }
     }

@@ -27,6 +27,7 @@
 CEnthalpyOptions::CEnthalpyOptions(void)
 {
     SetShowMiniUsage(true);
+    SetAllowProgArgs(true);
 }
 
 //------------------------------------------------------------------------------

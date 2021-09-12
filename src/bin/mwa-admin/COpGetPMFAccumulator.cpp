@@ -65,13 +65,6 @@ bool CMWAAdmin::GetPMFAccumulator(void)
 
     if(ActionRequest.GetParameterKeyValue("file",file_output) == false) {
         file_output = "_mwaserver.rst";
-        if( accu.GetMethod() == "ABF" ){
-            file_output = "_abfserver.rst";
-        } else  if( accu.GetMethod() == "ABP" ){
-            file_output = "_abpserver.rst";
-        } else  if( accu.GetMethod() == "MTD" ){
-            file_output = "_mtdserver.rst";
-        }
     }
 
 // and now save all data

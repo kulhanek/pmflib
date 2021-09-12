@@ -50,15 +50,13 @@ public:
 
 // section of private data ----------------------------------------------------
 private:
-    CEnthalpyOptions        Options;
-    CStdIOFile              InputFile;
-    CStdIOFile              OutputFile;
-    CPMFAccumulatorPtr      Accu;
-    CEnergyProxyPtr         EneProxy;
-    CEnergySurfacePtr       HES;
-    int                     State;
-    CSmallString            AccuName;
-    CSmallString            HEOutputName;
+    CEnthalpyOptions                Options;
+    CSmallString                    HEOutputName;
+    CStdIOFile                      OutputFile;
+    std::vector<CEnergyProxyPtr>    EnergyProxies;
+    std::vector<CPMFAccumulatorPtr> Accumulators;
+    CEnergySurfacePtr               HES;
+    int                             State;
 
     // output ------------------------------------
     CTerminalStr        Console;
@@ -69,7 +67,6 @@ private:
     void LoadGPRHyprms(CSmootherGPR& gpr);
     bool PrintHES(void);
     void WriteHeader(void);
-    void PrepareAccumulatorI(void);
     void PrintSampledStat(void);
     void AdjustGlobalMin(void);
 };

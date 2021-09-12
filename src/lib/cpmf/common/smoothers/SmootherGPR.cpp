@@ -43,6 +43,28 @@ using namespace std;
 using namespace boost;
 using namespace boost::algorithm;
 
+
+//void CEneProxyItem::InitSampledMap(void)
+//{
+//    if( EneProxy == NULL ) return;
+//    if( EneProxy->GetAccu() == NULL ) return;
+//
+//    // number of data points
+//    GPRSize = 0;
+//    for(int i=0; i < EneProxy->GetAccu()->GetNumOfBins(); i++){
+//        if( EneProxy->GetNumOfSamples(i) > 0 ) GPRSize++;
+//    }
+//
+//    // create sampled map
+//    SampledMap.resize(GPRSize);
+//    size_t ind = 0;
+//    for(int i=0; i < EneProxy->GetAccu()->GetNumOfBins(); i++){
+//        if( EneProxy->GetNumOfSamples(i) <= 0 ) continue;
+//        SampledMap[ind] = i;
+//        ind++;
+//    }
+//}
+
 //==============================================================================
 //------------------------------------------------------------------------------
 //==============================================================================
@@ -50,9 +72,9 @@ using namespace boost::algorithm;
 CSmootherGPR::CSmootherGPR(void)
 {
     GPRSize             = 0;
-    NumOfUsedBins       = 0;
+//    NumOfUsedBins       = 0;
     NumOfValues         = 0;
-    NCVs                = 0;
+    NumOfCVs                = 0;
     NumOfBins           = 0;
 
     SigmaF2             = 15.0;
@@ -84,29 +106,40 @@ CSmootherGPR::~CSmootherGPR(void)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void CSmootherGPR::SetInputEnergyProxy(CEnergyProxyPtr p_prx)
+void CSmootherGPR::AddInputEnergyProxy(CEnergyProxyPtr p_prx)
 {
-    EneProxy = p_prx;
-    if( EneProxy ){
-        Accu = EneProxy->GetAccu();
-    } else {
-        Accu = CPMFAccumulatorPtr();
+    if( p_prx == NULL ) return;                 // no-proxy
+    if( p_prx->GetAccu() == NULL ) return;      // no PMFAccu
+
+    if( NumOfCVs != (size_t)p_prx->GetAccu()->GetNumOfCVs() ){
+        RUNTIME_ERROR("inconsistent NumOfCVs");
+    }
+    if( NumOfBins != (size_t)p_prx->GetAccu()->GetNumOfBins() ){
+        RUNTIME_ERROR("inconsistent NumOfBins");
     }
 
-    if( Accu ){
-        NCVs = Accu->GetNumOfCVs();
-        NumOfBins = Accu->GetNumOfBins();
-    } else {
-        NCVs = 0;
-        NumOfBins = 0;
-    }
+    EneProxyItems.push_back(p_prx);
+}
+
+//------------------------------------------------------------------------------
+
+void CSmootherGPR::ClearInputEnergyProxies(void)
+{
+    EneProxyItems.clear();
 }
 
 //------------------------------------------------------------------------------
 
 void CSmootherGPR::SetOutputES(CEnergySurfacePtr p_surf)
 {
+    NumOfCVs = 0;
+    NumOfBins = 0;
     EneSurface = p_surf;
+
+    if( EneSurface != NULL ){
+        NumOfCVs = EneSurface->GetNumOfCVs();
+        NumOfBins = EneSurface->GetNumOfBins();
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -120,7 +153,7 @@ void CSmootherGPR::SetSigmaF2(double sigf2)
 
 void CSmootherGPR::SetNCorr(const CSmallString& spec)
 {
-if( Accu == NULL ){
+    if( NumOfCVs == 0 ){
         RUNTIME_ERROR("accumulator is not set for SetNCorr");
     }
 
@@ -129,9 +162,9 @@ if( Accu == NULL ){
 
     split(sncorrs,sspec,is_any_of("x"),token_compress_on);
 
-    if( sncorrs.size() > NCVs ){
+    if( sncorrs.size() > NumOfCVs ){
         CSmallString error;
-        error << "too many ncorrs (" << sncorrs.size() << ") than required (" << NCVs << ")";
+        error << "too many ncorrs (" << sncorrs.size() << ") than required (" << NumOfCVs << ")";
         RUNTIME_ERROR(error);
     }
 
@@ -169,7 +202,7 @@ void CSmootherGPR::SetNCorr(double value)
 
 void CSmootherGPR::SetWFac(const CSmallString& spec)
 {
-    if( Accu == NULL ){
+    if( NumOfCVs == 0 ){
         RUNTIME_ERROR("accumulator is not set for SetWFac");
     }
 
@@ -178,13 +211,13 @@ void CSmootherGPR::SetWFac(const CSmallString& spec)
 
     split(swfacs,sspec,is_any_of("x"),token_compress_on);
 
-    if( swfacs.size() > NCVs ){
+    if( swfacs.size() > NumOfCVs ){
         CSmallString error;
-        error << "too many wfacs (" << swfacs.size() << ") than required (" << NCVs << ")";
+        error << "too many wfacs (" << swfacs.size() << ") than required (" << NumOfCVs << ")";
         RUNTIME_ERROR(error);
     }
 
-    WFac.CreateVector(NCVs);
+    WFac.CreateVector(NumOfCVs);
 
     // parse values of wfac
     double last_wfac = 3.0;
@@ -200,7 +233,7 @@ void CSmootherGPR::SetWFac(const CSmallString& spec)
     }
 
     // pad the rest with the last value
-    for(size_t i=swfacs.size(); i < NCVs; i++){
+    for(size_t i=swfacs.size(); i < NumOfCVs; i++){
         WFac[i] = last_wfac;
     }
 }
@@ -209,10 +242,10 @@ void CSmootherGPR::SetWFac(const CSmallString& spec)
 
 void CSmootherGPR::SetWFac(CSimpleVector<double>& wfac)
 {
-    if( Accu == NULL ){
+    if( NumOfCVs == 0 ){
         RUNTIME_ERROR("accumulator is not set for SetWFac");
     }
-    if( wfac.GetLength() != NCVs ){
+    if( wfac.GetLength() != NumOfCVs ){
         RUNTIME_ERROR("ncvs inconsistent in the source and target");
     }
 
@@ -223,15 +256,15 @@ void CSmootherGPR::SetWFac(CSimpleVector<double>& wfac)
 
 void CSmootherGPR::SetWFac(size_t cvind, double value)
 {
-    if( Accu == NULL ){
+    if( NumOfCVs == 0 ){
         RUNTIME_ERROR("accumulator is not set for SetWFac");
     }
-    if( cvind >= NCVs ){
+    if( cvind >= NumOfCVs ){
         RUNTIME_ERROR("cvind out-of-range");
     }
     // is wfac initialized?
     if( WFac.GetLength() == 0 ){
-        WFac.CreateVector(NCVs);
+        WFac.CreateVector(NumOfCVs);
     }
     WFac[cvind] = value;
 }
@@ -307,7 +340,7 @@ void CSmootherGPR::SetGlobalMin(const CSmallString& spec)
 {
     GlobalMinSet = true;
     string sspec(spec);
-    if( Accu == NULL ){
+    if( NumOfCVs == 0 ){
         RUNTIME_ERROR("accumulator is not set for SetGlobalMin");
     }
 
@@ -315,9 +348,9 @@ void CSmootherGPR::SetGlobalMin(const CSmallString& spec)
     replace (sspec.begin(), sspec.end(), 'x' , ' ');
 
     // parse values of CVs
-    GPos.CreateVector(NCVs);
+    GPos.CreateVector(NumOfCVs);
     stringstream str(sspec);
-    for(size_t i=0; i < NCVs; i++){
+    for(size_t i=0; i < NumOfCVs; i++){
         double val;
         str >> val;
         if( ! str ){
@@ -325,7 +358,7 @@ void CSmootherGPR::SetGlobalMin(const CSmallString& spec)
             error << "unable to decode CV value for position: " << i+1;
             RUNTIME_ERROR(error);
         }
-        GPos[i] = Accu->GetCV(i)->GetIntValue(val);
+        GPos[i] = EneSurface->GetCV(i)->GetIntValue(val);
     }
 
     GPosSet = true;
@@ -375,46 +408,48 @@ bool CSmootherGPR::Interpolate(CVerboseStr& vout,bool nostat)
 {
     PrintExecInfo(vout);
 
-    if( Accu == NULL ) {
-        RUNTIME_ERROR("PMF accumulator is not set");
+    if( EneProxyItems.size() == 0 ){
+        RUNTIME_ERROR("no input data");
     }
     if( EneSurface == NULL ) {
         RUNTIME_ERROR("ES is not set");
     }
-    if( Accu->GetNumOfCVs() == 0 ) {
-        RUNTIME_ERROR("number of coordinates is zero");
+    if( NumOfCVs == 0 ) {
+        RUNTIME_ERROR("number of CVs is zero");
     }
-    if( Accu->GetNumOfCVs() != EneSurface->GetNumOfCVs() ){
-        RUNTIME_ERROR("inconsistent PMF accumulator and ES - CVs");
-    }
-    if( Accu->GetNumOfBins() != EneSurface->GetNumOfBins() ){
-        RUNTIME_ERROR("inconsistent PMF accumulator and ES - bins");
+    if( NumOfBins == 0 ) {
+        RUNTIME_ERROR("number of bins is zero");
     }
     if( WFac.GetLength() == 0 ){
         RUNTIME_ERROR("wfac is not set");
     }
 
     // GPR setup
-    CVLengths2.CreateVector(NCVs);
-    for(size_t i=0; i < NCVs; i++){
-        double l = WFac[i]*Accu->GetCV(i)->GetRange()/Accu->GetCV(i)->GetNumOfBins();
+    CVLengths2.CreateVector(NumOfCVs);
+    for(size_t i=0; i < NumOfCVs; i++){
+        double l = WFac[i]*EneSurface->GetCV(i)->GetRange()/EneSurface->GetCV(i)->GetNumOfBins();
         CVLengths2[i] = l*l;
     }
 
     // number of data points
-    NumOfUsedBins = 0;
-    for(size_t i=0; i < NumOfBins; i++){
-        if( EneProxy->GetNumOfSamples(i) > 0 ) NumOfUsedBins++;
+    GPRSize = 0;
+    for(size_t i=0; i < EneProxyItems.size(); i++){
+        for(size_t ibin=0; ibin < NumOfBins; ibin++){
+            if( EneProxyItems[i]->GetNumOfSamples(ibin) > 0 ) GPRSize++;
+        }
     }
-    GPRSize = NumOfUsedBins;
 
     // create sampled map
-    SampledMap.CreateVector(NumOfUsedBins);
+    SampledMap.resize(GPRSize);
+    EneProxyMap.resize(GPRSize);
     size_t ind = 0;
-    for(size_t i=0; i < NumOfBins; i++){
-        if( EneProxy->GetNumOfSamples(i) <= 0 ) continue;
-        SampledMap[ind] = i;
-        ind++;
+    for(size_t i=0; i < EneProxyItems.size(); i++){
+        for(size_t ibin=0; ibin < NumOfBins; ibin++){
+            if( EneProxyItems[i]->GetNumOfSamples(ibin) <= 0 ) continue;
+            SampledMap[ind] = ibin;
+            EneProxyMap[ind] = i;
+            ind++;
+        }
     }
 
     // init GPR arrays
@@ -427,7 +462,7 @@ bool CSmootherGPR::Interpolate(CVerboseStr& vout,bool nostat)
         vout << format("      SigmaF2   = %10.4f")%SigmaF2 << endl;
         vout << format("      NCorr     = %10.4f")%NCorr << endl;
 
-    for(size_t k=0; k < NCVs; k++ ){
+    for(size_t k=0; k < NumOfCVs; k++ ){
         vout << format("      WFac#%-2d   = %10.4f")%(k+1)%WFac[k] << endl;
     }
 
@@ -500,19 +535,20 @@ bool CSmootherGPR::TrainGP(CVerboseStr& vout)
     vout << "      Dim       = " << GPRSize << " x " << GPRSize << endl;
 
     Mean = 0.0;
-    for(size_t indi=0; indi < NumOfUsedBins; indi++){
-        size_t i = SampledMap[indi];
-        double mf = EneProxy->GetValue(i,E_PROXY_VALUE);
-        Mean += mf;
+    for(size_t indi=0; indi < GPRSize; indi++){
+        CEnergyProxyPtr item = EneProxyItems[EneProxyMap[indi]];
+        size_t          ibin = SampledMap[indi];
+        Mean += item->GetValue(ibin,E_PROXY_VALUE);
     }
     Mean /= (double)GPRSize;
 
 // construct Y
     #pragma omp parallel for
-    for(size_t indi=0; indi < NumOfUsedBins; indi++){
-        size_t i = SampledMap[indi];
-        double mf = EneProxy->GetValue(i,E_PROXY_VALUE);
-        Y[indi] = mf - Mean;
+    for(size_t indi=0; indi < GPRSize; indi++){
+        CEnergyProxyPtr item = EneProxyItems[EneProxyMap[indi]];
+        size_t          ibin = SampledMap[indi];
+        double mf   = item->GetValue(ibin,E_PROXY_VALUE);
+        Y[indi]     = mf - Mean;
     }
 
 // construct KS
@@ -620,30 +656,30 @@ void CSmootherGPR::CreateKS(void)
 {
     CSimpleVector<double> ipos;
     CSimpleVector<double> jpos;
-    ipos.CreateVector(NCVs);
-    jpos.CreateVector(NCVs);
+    ipos.CreateVector(NumOfCVs);
+    jpos.CreateVector(NumOfCVs);
 
     // main kernel matrix
     #pragma omp parallel for firstprivate(ipos,jpos)
-    for(size_t indi=0; indi < NumOfUsedBins; indi++){
-        size_t i = SampledMap[indi];
+    for(size_t indi=0; indi < GPRSize; indi++){
+        size_t ibini = SampledMap[indi];
 
-        Accu->GetPoint(i,ipos);
+        EneSurface->GetPoint(ibini,ipos);
 
-        for(size_t indj=0; indj < NumOfUsedBins; indj++){
-            size_t j = SampledMap[indj];
+        for(size_t indj=0; indj < GPRSize; indj++){
+            size_t ibinj = SampledMap[indj];
 
-            Accu->GetPoint(j,jpos);
-
+            EneSurface->GetPoint(ibinj,jpos);
             KS[indi][indj] = GetKernelValue(ipos,jpos);
         }
     }
 
 // error of data points
     #pragma omp parallel for
-    for(size_t indi=0; indi < NumOfUsedBins; indi++){
-        size_t i = SampledMap[indi];
-        double er = EneProxy->GetValue(i,E_PROXY_ERROR);
+    for(size_t indi=0; indi < GPRSize; indi++){
+        size_t          ibin = SampledMap[indi];
+        CEnergyProxyPtr item = EneProxyItems[EneProxyMap[indi]];
+        double er = item->GetValue(ibin,E_PROXY_ERROR);
         KS[indi][indi] += er*er*NCorr;
     }
 }
@@ -653,13 +689,13 @@ void CSmootherGPR::CreateKS(void)
 void CSmootherGPR::CreateKff(const CSimpleVector<double>& ip,CSimpleVector<double>& kff)
 {
     CSimpleVector<double> jpos;
-    jpos.CreateVector(NCVs);
+    jpos.CreateVector(NumOfCVs);
 
     // main kernel matrix
-    for(size_t indj=0; indj < NumOfUsedBins; indj++){
-        size_t j = SampledMap[indj];
+    for(size_t indj=0; indj < GPRSize; indj++){
+        size_t  ibinj = SampledMap[indj];
 
-        Accu->GetPoint(j,jpos);
+        EneSurface->GetPoint(ibinj,jpos);
         kff[indj] = GetKernelValue(ip,jpos);
     }
 
@@ -674,19 +710,23 @@ void CSmootherGPR::CalculateEnergy(CVerboseStr& vout)
     vout << "   Calculating energy ..." << endl;
 
 // create map for bins with calculated energy and error
-    NumOfValues = 0;
-    for(size_t i=0; i < NumOfBins; i++){
-        int samples = EneProxy->GetNumOfSamples(i);
-        if( samples <= 0 ) continue;
-        NumOfValues++;
+    std::set<size_t>    vset;
+    for(size_t i=0; i < EneProxyItems.size(); i++){
+        for(size_t ibin=0; ibin < NumOfBins; ibin++){
+            if( EneProxyItems[i]->GetNumOfSamples(ibin) <= 0 ) continue;
+            vset.insert(ibin);
+        }
     }
-    ValueMap.CreateVector(NumOfValues);
+    NumOfValues = vset.size();
+    ValueMap.resize(NumOfValues);
 
     size_t indi = 0;
-    for(size_t i=0; i < NumOfBins; i++){
-        int samples = EneProxy->GetNumOfSamples(i);
-        if( samples <= 0 ) continue;
-        ValueMap[indi]=i;
+    std::set<size_t>::iterator  it = vset.begin();
+    std::set<size_t>::iterator  ie = vset.end();
+
+    while( it != ie ){
+        ValueMap[indi] = *it;
+        it++;
         indi++;
     }
 
@@ -694,22 +734,25 @@ void CSmootherGPR::CalculateEnergy(CVerboseStr& vout)
     CSimpleVector<double> jpos;
     CSimpleVector<double> values;
 
-    jpos.CreateVector(NCVs);
+    jpos.CreateVector(NumOfCVs);
     values.CreateVector(NumOfValues);
 
     #pragma omp parallel for firstprivate(jpos)
     for(size_t indj=0; indj < NumOfValues; indj++){
         size_t j = ValueMap[indj];
-        Accu->GetPoint(j,jpos);
+        EneSurface->GetPoint(j,jpos);
         values[indj] = GetValue(jpos);
     }
 
 // basic HES update
-    for(size_t i=0; i < NumOfBins; i++){
-        int samples = EneProxy->GetNumOfSamples(i);
-        EneSurface->SetNumOfSamples(i,samples);
-        EneSurface->SetEnergy(i,0.0);
-        EneSurface->SetError(i,0.0);
+    for(size_t i=0; i < EneProxyItems.size(); i++){
+        for(size_t ibin=0; ibin < NumOfBins; ibin++){
+            int nsamples = EneProxyItems[i]->GetNumOfSamples(ibin);
+            int osamples = EneSurface->GetNumOfSamples(ibin);
+            EneSurface->SetNumOfSamples(ibin,nsamples+osamples);
+            EneSurface->SetEnergy(ibin,0.0);
+            EneSurface->SetError(ibin,0.0);
+        }
     }
 
 // update HES
@@ -720,24 +763,24 @@ void CSmootherGPR::CalculateEnergy(CVerboseStr& vout)
 
 // update HES
     if( GlobalMinSet ){
-        // GPos.CreateVector(NCVs) - is created in  SetGlobalMin
+        // GPos.CreateVector(NumOfCVs) - is created in  SetGlobalMin
    //   vout << "   Calculating EneSurface ..." << endl;
         vout << "      Global minimum provided at: ";
-        vout << setprecision(5) << Accu->GetCV(0)->GetRealValue(GPos[0]);
-        for(int i=1; i < Accu->GetNumOfCVs(); i++){
-            vout << "x" << setprecision(5) << Accu->GetCV(i)->GetRealValue(GPos[i]);
+        vout << setprecision(5) << EneSurface->GetCV(0)->GetRealValue(GPos[0]);
+        for(size_t i=1; i < NumOfCVs; i++){
+            vout << "x" << setprecision(5) << EneSurface->GetCV(i)->GetRealValue(GPos[i]);
         }
         vout << endl;
 
 // find the closest bin
         CSimpleVector<double>   pos;
-        pos.CreateVector(Accu->GetNumOfCVs());
+        pos.CreateVector(NumOfBins);
         double minv = 0.0;
         GPosBin = 0;
-        for(int ibin=0; ibin < Accu->GetNumOfBins(); ibin++){
-            Accu->GetPoint(ibin,pos);
+        for(size_t ibin=0; ibin < NumOfBins; ibin++){
+            EneSurface->GetPoint(ibin,pos);
             double dist2 = 0.0;
-            for(int cv=0; cv < Accu->GetNumOfCVs(); cv++){
+            for(size_t cv=0; cv < NumOfCVs; cv++){
                 dist2 = dist2 + (pos[cv]-GPos[cv])*(pos[cv]-GPos[cv]);
             }
             if( ibin == 0 ){
@@ -750,13 +793,13 @@ void CSmootherGPR::CalculateEnergy(CVerboseStr& vout)
             }
         }
 
-        Accu->GetPoint(GPosBin,GPos);
+        EneSurface->GetPoint(GPosBin,GPos);
         GPosSet = true;
 
         vout << "      Closest bin found at: ";
-        vout << setprecision(5) << Accu->GetCV(0)->GetRealValue(GPos[0]);
-        for(int i=1; i < Accu->GetNumOfCVs(); i++){
-            vout << "x" << setprecision(5) << Accu->GetCV(i)->GetRealValue(GPos[i]);
+        vout << setprecision(5) << EneSurface->GetCV(0)->GetRealValue(GPos[0]);
+        for(size_t i=1; i < NumOfCVs; i++){
+            vout << "x" << setprecision(5) << EneSurface->GetCV(i)->GetRealValue(GPos[i]);
         }
 
         double GlbMinValue = EneSurface->GetEnergy(GPosBin);
@@ -771,27 +814,27 @@ void CSmootherGPR::CalculateEnergy(CVerboseStr& vout)
         }
     } else {
         // search for global minimum
-        GPos.CreateVector(NCVs);
+        GPos.CreateVector(NumOfCVs);
         bool   first = true;
         GlbMinValue = 0.0;
 
         for(size_t indj=0; indj < NumOfValues; indj++){
             size_t j = ValueMap[indj];
-            int samples = EneProxy->GetNumOfSamples(j);
+            int samples = EneSurface->GetNumOfSamples(j);
             if( samples < -1 ) continue;    // include sampled areas and holes but exclude extrapolated areas
             double value = values[indj];
             if( first || (GlbMinValue > value) ){
                 GlbMinValue = value;
                 first = false;
-                Accu->GetPoint(j,GPos);
+                EneSurface->GetPoint(j,GPos);
             }
         }
 
    //   vout << "   Calculating EneSurface ..." << endl;
         vout << "      Global minimum found at: ";
-        vout << setprecision(5) << Accu->GetCV(0)->GetRealValue(GPos[0]);
-        for(size_t i=1; i < NCVs; i++){
-            vout << "x" << setprecision(5) << Accu->GetCV(i)->GetRealValue(GPos[i]);
+        vout << setprecision(5) << EneSurface->GetCV(0)->GetRealValue(GPos[0]);
+        for(size_t i=1; i < NumOfCVs; i++){
+            vout << "x" << setprecision(5) << EneSurface->GetCV(i)->GetRealValue(GPos[i]);
         }
         vout << " (" << setprecision(5) << GlbMinValue << ")" << endl;
         vout << "      Offset    = " << setprecision(5) << GlbMinValue << endl;
@@ -887,8 +930,8 @@ void CSmootherGPR::CalculateCovs(CVerboseStr& vout)
     if( GPRSize == 0 ){
         RUNTIME_ERROR("GPRSize == 0");
     }
-    if( NCVs == 0 ){
-        RUNTIME_ERROR("NCVs == 0");
+    if( NumOfCVs == 0 ){
+        RUNTIME_ERROR("NumOfCVs == 0");
     }
 
 // ------------------------------------
@@ -898,10 +941,10 @@ void CSmootherGPR::CalculateCovs(CVerboseStr& vout)
     CreateKS();
 
     CSimpleVector<double> ipos;
-    ipos.CreateVector(NCVs);
+    ipos.CreateVector(NumOfCVs);
 
     CSimpleVector<double> jpos;
-    jpos.CreateVector(NCVs);
+    jpos.CreateVector(NumOfCVs);
 
 // ------------------------------------
     CSimpleVector<double> kff;
@@ -921,7 +964,7 @@ void CSmootherGPR::CalculateCovs(CVerboseStr& vout)
     #pragma omp parallel for firstprivate(ipos,kff)
     for(size_t indi=0; indi < NumOfValues; indi++){
         size_t i = ValueMap[indi];
-        Accu->GetPoint(i,ipos);
+        EneSurface->GetPoint(i,ipos);
         CreateKff(ipos,kff);
         for(size_t k=0; k < GPRSize; k++){
             Kr[k][indi] = kff[k];
@@ -965,10 +1008,10 @@ void CSmootherGPR::CalculateCovs(CVerboseStr& vout)
     #pragma omp parallel for firstprivate(ipos,jpos)
     for(size_t indi=0; indi < NumOfValues; indi++){
         size_t i = ValueMap[indi];
-        Accu->GetPoint(i,ipos);
+        EneSurface->GetPoint(i,ipos);
         for(size_t indj=0; indj < NumOfValues; indj++){
             size_t j = ValueMap[indj];
-            Accu->GetPoint(j,jpos);
+            EneSurface->GetPoint(j,jpos);
             Cov[indi][indj] = GetKernelValue(ipos,jpos);
 
         }
@@ -977,7 +1020,7 @@ void CSmootherGPR::CalculateCovs(CVerboseStr& vout)
         #pragma omp parallel for firstprivate(ipos)
         for(size_t indi=0; indi < NumOfValues; indi++){
             size_t i = ValueMap[indi];
-            Accu->GetPoint(i,ipos);
+            EneSurface->GetPoint(i,ipos);
             Cov[indi][nvals-1] = GetKernelValue(ipos,GPos);
             Cov[nvals-1][indi] = Cov[indi][nvals-1];
         }
@@ -1037,15 +1080,11 @@ void CSmootherGPR::GetLogMLDerivatives(const std::vector<bool>& flags,CSimpleVec
 if( ! (NeedInv || UseInv) ){
         RUNTIME_ERROR("GetLogMLDerivatives requires K+Sigma inverted matrix");
     }
-
-    if( Accu == NULL ) {
-        RUNTIME_ERROR("PMF accumulator is not set");
-    }
     if( EneSurface == NULL ) {
         RUNTIME_ERROR("ES is not set");
     }
-    if( NCVs <= 0 ){
-        RUNTIME_ERROR("NCVs <= NULL");
+    if( NumOfCVs <= 0 ){
+        RUNTIME_ERROR("NumOfCVs <= NULL");
     }
     if( GPRSize <= 0 ){
         RUNTIME_ERROR("GPRSize <= NULL");
@@ -1126,18 +1165,14 @@ double CSmootherGPR::GetLogPL(void)
 
 void CSmootherGPR::GetLogPLDerivatives(const std::vector<bool>& flags,CSimpleVector<double>& der)
 {
-if( ! (NeedInv || UseInv) ){
+    if( ! (NeedInv || UseInv) ){
         RUNTIME_ERROR("GetLogPLDerivatives requires K+Sigma inverted matrix");
-    }
-
-    if( Accu == NULL ) {
-        RUNTIME_ERROR("PMF accumulator is not set");
     }
     if( EneSurface == NULL ) {
         RUNTIME_ERROR("ES is not set");
     }
-    if( NCVs <= 0 ){
-        RUNTIME_ERROR("NCVs <= NULL");
+    if( NumOfCVs <= 0 ){
+        RUNTIME_ERROR("NumOfCVs <= NULL");
     }
     if( GPRSize <= 0 ){
         RUNTIME_ERROR("GPRSize <= NULL");
@@ -1206,17 +1241,17 @@ void CSmootherGPR::CalcKderWRTSigmaF2(void)
 
     CSimpleVector<double> ipos;
     CSimpleVector<double> jpos;
-    ipos.CreateVector(NCVs);
-    jpos.CreateVector(NCVs);
+    ipos.CreateVector(NumOfCVs);
+    jpos.CreateVector(NumOfCVs);
 
     #pragma omp parallel for firstprivate(ipos,jpos)
-    for(size_t indi=0; indi < NumOfUsedBins; indi++){
+    for(size_t indi=0; indi < GPRSize; indi++){
         size_t i = SampledMap[indi];
-        Accu->GetPoint(i,ipos);
+        EneSurface->GetPoint(i,ipos);
 
-        for(size_t indj=0; indj < NumOfUsedBins; indj++){
+        for(size_t indj=0; indj < GPRSize; indj++){
             size_t j = SampledMap[indj];
-            Accu->GetPoint(j,jpos);
+            EneSurface->GetPoint(j,jpos);
 
             Kder[indi][indj] = GetKernelValue(ipos,jpos) / SigmaF2;
         }
@@ -1230,9 +1265,10 @@ void CSmootherGPR::CalcKderWRTNCorr(void)
     Kder.SetZero();
 
     #pragma omp parallel for
-    for(size_t indi=0; indi < NumOfUsedBins; indi++){
-        size_t i = SampledMap[indi];
-        double er = EneProxy->GetValue(i,E_PROXY_ERROR);
+    for(size_t indi=0; indi < GPRSize; indi++){
+        size_t          ibini = SampledMap[indi];
+        CEnergyProxyPtr itemi = EneProxyItems[EneProxyMap[indi]];
+        double er = itemi->GetValue(ibini,E_PROXY_ERROR);
         Kder[indi][indi] += er*er;
     }
 }
@@ -1245,17 +1281,17 @@ void CSmootherGPR::CalcKderWRTWFac(size_t cv)
 
     CSimpleVector<double> ipos;
     CSimpleVector<double> jpos;
-    ipos.CreateVector(NCVs);
-    jpos.CreateVector(NCVs);
+    ipos.CreateVector(NumOfCVs);
+    jpos.CreateVector(NumOfCVs);
 
     #pragma omp parallel for firstprivate(ipos,jpos)
-    for(size_t indi=0; indi < NumOfUsedBins; indi++){
+    for(size_t indi=0; indi < GPRSize; indi++){
         size_t i = SampledMap[indi];
-        Accu->GetPoint(i,ipos);
+        EneSurface->GetPoint(i,ipos);
 
-        for(size_t indj=0; indj < NumOfUsedBins; indj++){
+        for(size_t indj=0; indj < GPRSize; indj++){
             size_t j = SampledMap[indj];
-            Accu->GetPoint(j,jpos);
+            EneSurface->GetPoint(j,jpos);
 
             if( indi != indj ){
                 Kder[indi][indj] = GetKernelValueWFacDer(ipos,jpos,cv);
@@ -1273,8 +1309,8 @@ double CSmootherGPR::GetKernelValue(const CSimpleVector<double>& ip,const CSimpl
 {
     // calculate scaled distance
     double scdist2 = 0.0;
-    for(size_t ii=0; ii < NCVs; ii++){
-        double du = Accu->GetCV(ii)->GetDifference(ip[ii],jp[ii]);
+    for(size_t ii=0; ii < NumOfCVs; ii++){
+        double du = EneSurface->GetCV(ii)->GetDifference(ip[ii],jp[ii]);
         double dd = CVLengths2[ii];
         scdist2 += du*du/dd;
     }
@@ -1316,8 +1352,8 @@ double CSmootherGPR::GetKernelValueWFacDer(const CSimpleVector<double>& ip,const
 {
     // calculate scaled distance
     double scdist2 = 0.0;
-    for(size_t ii=0; ii < NCVs; ii++){
-        double du = Accu->GetCV(ii)->GetDifference(ip[ii],jp[ii]);
+    for(size_t ii=0; ii < NumOfCVs; ii++){
+        double du = EneSurface->GetCV(ii)->GetDifference(ip[ii],jp[ii]);
         double dd = CVLengths2[ii];
         scdist2 += du*du/dd;
     }
@@ -1325,7 +1361,7 @@ double CSmootherGPR::GetKernelValueWFacDer(const CSimpleVector<double>& ip,const
     switch(Kernel){
         case(EGPRK_ARDSE): {
                 double val = SigmaF2*exp(-0.5*scdist2);
-                double du = Accu->GetCV(cv)->GetDifference(ip[cv],jp[cv]);
+                double du = EneSurface->GetCV(cv)->GetDifference(ip[cv],jp[cv]);
                 double dd = CVLengths2[cv];
                 double wf = WFac[cv];
                 double der = val * du*du / (dd * wf);
@@ -1338,7 +1374,7 @@ double CSmootherGPR::GetKernelValueWFacDer(const CSimpleVector<double>& ip,const
             double scdist = sqrt(scdist2);
             double vex = SigmaF2*exp(-sqrt(5.0)*scdist);
             double val = vex*(1.0+sqrt(5.0)*scdist+(5.0/3.0)*scdist2);
-            double du = Accu->GetCV(cv)->GetDifference(ip[cv],jp[cv]);
+            double du = EneSurface->GetCV(cv)->GetDifference(ip[cv],jp[cv]);
             double dd = CVLengths2[cv];
             double wf = WFac[cv];
             double dexp =   val * sqrt(5.0) * du*du / (dd * wf) / scdist;       // exponential part
@@ -1352,7 +1388,7 @@ double CSmootherGPR::GetKernelValueWFacDer(const CSimpleVector<double>& ip,const
             double scdist = sqrt(scdist2);
             double vex = SigmaF2*exp(-sqrt(3.0)*scdist);
             double val = vex*(1.0+sqrt(3.0)*scdist);
-            double du = Accu->GetCV(cv)->GetDifference(ip[cv],jp[cv]);
+            double du = EneSurface->GetCV(cv)->GetDifference(ip[cv],jp[cv]);
             double dd = CVLengths2[cv];
             double wf = WFac[cv];
             double dexp =   val * sqrt(3.0) * du*du / (dd * wf) / scdist;   // exponential part
@@ -1365,7 +1401,7 @@ double CSmootherGPR::GetKernelValueWFacDer(const CSimpleVector<double>& ip,const
             // possible division by zero is solved in CalcKderWRTWFac
             double scdist = sqrt(scdist2);
             double val = SigmaF2*exp(-scdist);
-            double du = Accu->GetCV(cv)->GetDifference(ip[cv],jp[cv]);
+            double du = EneSurface->GetCV(cv)->GetDifference(ip[cv],jp[cv]);
             double dd = CVLengths2[cv];
             double wf = WFac[cv];
             double der = val * du*du / (dd * wf) / scdist;

@@ -38,10 +38,13 @@
 
 class CProxyRealm {
 public:
-    CSmallString        Name;
-    CEnergyProxyPtr     EnergyProxy;
-    CEnergyDerProxyPtr  DerProxy;
+    CSmallString                        Name;
+    std::vector<CEnergyProxyPtr>        EnergyProxies;
+    std::vector<CEnergyDerProxyPtr>     DerProxies;
+    std::vector<CPMFAccumulatorPtr>     Accumulators;
 };
+
+typedef boost::shared_ptr<CProxyRealm>    CProxyRealmPtr;
 
 //------------------------------------------------------------------------------
 
@@ -72,8 +75,7 @@ public:
 private:
     COptGPRHyprmsOptions                Options;
     CStdIOFile                          OutputFile;
-    std::vector<CPMFAccumulatorPtr>     Accumulators;
-    std::vector<CProxyRealm>            RealmProxies;
+    std::vector<CProxyRealmPtr>         RealmProxies;
     CSmallTimeAndDate                   StartTime;
 
 // hyperparameters
@@ -108,7 +110,7 @@ private:
     CTerminalStr            Console;
     CVerboseStr             vout;
 
-    void AddRealm(CPMFAccumulatorPtr accu, const CSmallString& realm);
+    void InitRealm(CProxyRealmPtr realm);
 
     void PrintSampledStat(void);
     void InitOptimizer(void);
@@ -129,10 +131,12 @@ private:
     void    DecodeVList(const CSmallString& spec, CSimpleVector<double>& vlist,const CSmallString& optionname,double defv);
     bool    ResetOpt(int& numofreset);
 
-    double  GetTargetFromIntegrator(CIntegratorGPR& gpr,CEnergyDerProxyPtr proxy);
-    double  RunGPRNumericalIntegrator(CEnergyDerProxyPtr derproxy,CSimpleVector<double>& der);
-    double  GetTargetFromSmoother(CSmootherGPR& gpr,CEnergyProxyPtr proxy);
-    double  RunGPRNumericalSmoother(CEnergyProxyPtr eneproxy,CSimpleVector<double>& der);
+    double  GetTargetFromIntegrator(CIntegratorGPR& gpr,CProxyRealmPtr derproxy);
+    double  RunGPRNumericalIntegrator(CProxyRealmPtr derproxy,CSimpleVector<double>& der);
+    double  GetTargetFromSmoother(CSmootherGPR& gpr,CProxyRealmPtr eneproxy);
+    double  RunGPRNumericalSmoother(CProxyRealmPtr eneproxy,CSimpleVector<double>& der);
+
+    bool    IsRealm(const CSmallString& name);
 };
 
 //------------------------------------------------------------------------------

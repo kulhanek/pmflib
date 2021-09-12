@@ -52,11 +52,14 @@ public:
     // get realm
     CSmallString GetRealm(void);
 
+    /// return number of cvs
+    int GetNumOfCVs(void) const;
+
+    /// return number of bins
+    int GetNumOfBins(void) const;
+
     // get number of samples
     virtual int GetNumOfSamples(int ibin) const;
-
-    // set number of samples
-    virtual void SetNumOfSamples(int ibin,int nsamples);
 
     // get energy and its error
     virtual double GetValue( int ibin,EProxyRealm realm) const;

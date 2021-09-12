@@ -82,11 +82,6 @@ int COptGPRHyprms::Init(int argc,char* argv[])
     vout << "# Version: " << LibBuildVersion_PMF << endl;
     vout << "# ==============================================================================" << endl;
 
-    for(int i=0; i < Options.GetNumberOfProgArgs()-1; i+=2){
-        vout << format("# PMF accu file #%02d (in)    : %s")%(i/2+1)%string(Options.GetProgArg(i)) << endl;
-        vout << format("  ------------> realm (in)    : %s")%string(Options.GetProgArg(i+1)) << endl;
-    }
-
     CSmallString output = Options.GetProgArg(Options.GetNumberOfProgArgs()-1);
     if( output != "-") {
         vout << "# Optimized GPR hyprms (out): " << output << endl;
@@ -133,21 +128,39 @@ bool COptGPRHyprms::Run(void)
 
 // load accumulator
     vout << endl;
+    CProxyRealmPtr curr = NULL;
     vout << format("%02d:Loading PMF accumulators ...")%State << endl;
     State++;
-    for(int i=0; i < Options.GetNumberOfProgArgs()-1; i+=2){
+    int naccu = 1;
+    for(int i=0; i < Options.GetNumberOfProgArgs()-1; i++){
         CSmallString name = Options.GetProgArg(i);
-        vout << format("** PMFAccumulator #%02d: %s")%(i/2+1)%string(name) << endl;
-        CPMFAccumulatorPtr p_accu(new CPMFAccumulator);
-        try {
-            p_accu->Load(name);
-        } catch(...) {
-            CSmallString error;
-            error << "unable to load the input PMF accumulator file '" << name << "'";
-            ES_ERROR(error);
-            return(false);
+        if( IsRealm(name) ){
+            if( curr == NULL ){
+                CSmallString error;
+                error << "no accumulators defined for realm'" << name << "'";
+                ES_ERROR(error);
+                return(false);
+            }
+            curr->Name = name;
+            curr = NULL;
+        } else {
+            vout << format("** PMFAccumulator #%05d: %s")%(naccu)%string(name) << endl;
+            CPMFAccumulatorPtr p_accu(new CPMFAccumulator);
+            try {
+                p_accu->Load(name);
+            } catch(...) {
+                CSmallString error;
+                error << "unable to load the input PMF accumulator file '" << name << "'";
+                ES_ERROR(error);
+                return(false);
+            }
+            if( curr == NULL ){
+                curr = CProxyRealmPtr(new CProxyRealm);
+                RealmProxies.push_back(curr);
+            }
+            curr->Accumulators.push_back(p_accu);
+            naccu++;
         }
-        Accumulators.push_back(p_accu);
     }
     vout << "   Done" << endl;
 
@@ -155,21 +168,10 @@ bool COptGPRHyprms::Run(void)
     vout << endl;
     vout << format("%02d:Initializing realms ...")%State << endl;
     State++;
-    std::vector<CPMFAccumulatorPtr>::iterator   it = Accumulators.begin();
-    for(int i=0; i < Options.GetNumberOfProgArgs()-1; i+=2){
-        CSmallString realm = Options.GetProgArg(i+1);
-        AddRealm(*it,realm);
-    }
     for(size_t i=0; i < RealmProxies.size(); i++){
-        CProxyRealm proxy = RealmProxies[i];
-        CSmallString name;
-        if( proxy.DerProxy ){
-            name = proxy.DerProxy->GetRealm();
-        }
-        if( proxy.EnergyProxy ){
-            name = proxy.EnergyProxy->GetRealm();
-        }
-        vout << format("** -------> Realm #%02d: %s")%(i+1)%name << endl;
+        CProxyRealmPtr realm = RealmProxies[i];
+        vout << format("** -------> Realm #%02d: %s")%(i+1)%realm->Name << endl;
+        InitRealm(realm);
     }
 
 // statistics
@@ -218,46 +220,66 @@ bool COptGPRHyprms::Run(void)
 
 //------------------------------------------------------------------------------
 
-void COptGPRHyprms::AddRealm(CPMFAccumulatorPtr accu, const CSmallString& realm)
+bool COptGPRHyprms::IsRealm(const CSmallString& name)
 {
-    CProxyRealm proxy;
-    proxy.Name = realm;
+    if( name == "dG" )      return(true);
+    if( name == "-TdS" )    return(true);
+    if( name == "dH" )      return(true);
+    return(false);
+}
+
+//------------------------------------------------------------------------------
+
+void COptGPRHyprms::InitRealm(CProxyRealmPtr realm)
+{
 
 // init energyder proxy
-    if( realm == "dG" ){
-        if( CABFProxy_dG::IsCompatible(accu) ){
-            proxy.DerProxy    = CABFProxy_dG_Ptr(new CABFProxy_dG);
-        } else if (CCSTProxy_dG::IsCompatible(accu) ) {
-            proxy.DerProxy    = CCSTProxy_dG_Ptr(new CCSTProxy_dG);
-        } else {
-            CSmallString error;
-            error << "incompatible method: " << accu->GetMethod() << " with requested realm: " <<  realm;
-            RUNTIME_ERROR(error);
+    if( realm->Name == "dG" ){
+        for(size_t i=0; i < realm->Accumulators.size(); i++){
+            CPMFAccumulatorPtr accu = realm->Accumulators[i];
+            CEnergyDerProxyPtr proxy;
+            if( CABFProxy_dG::IsCompatible(accu) ){
+               proxy    = CABFProxy_dG_Ptr(new CABFProxy_dG);
+            } else if (CCSTProxy_dG::IsCompatible(accu) ) {
+                proxy    = CCSTProxy_dG_Ptr(new CCSTProxy_dG);
+            } else {
+                CSmallString error;
+                error << "incompatible method: " << accu->GetMethod() << " with requested realm: " <<  realm->Name;
+                RUNTIME_ERROR(error);
+            }
+            proxy->Init(accu);
+            realm->DerProxies.push_back(proxy);
         }
-        proxy.DerProxy->Init(accu);
 // -----------------------------------------------
-    } else if ( realm == "-TdS" ) {
-        if( CABFProxy_mTdS::IsCompatible(accu) ){
-            proxy.DerProxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
-        } else if (CCSTProxy_mTdS::IsCompatible(accu) ) {
-            proxy.DerProxy    = CCSTProxy_mTdS_Ptr(new CCSTProxy_mTdS);
-        } else {
-            CSmallString error;
-            error << "incompatible method: " << accu->GetMethod() << " with requested realm: " <<  realm;
-            RUNTIME_ERROR(error);
+    } else if ( realm->Name == "-TdS" ) {
+        for(size_t i=0; i < realm->Accumulators.size(); i++){
+            CPMFAccumulatorPtr accu = realm->Accumulators[i];
+            CEnergyDerProxyPtr proxy;
+            if( CABFProxy_mTdS::IsCompatible(accu) ){
+                proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
+            } else if (CCSTProxy_mTdS::IsCompatible(accu) ) {
+                proxy    = CCSTProxy_mTdS_Ptr(new CCSTProxy_mTdS);
+            } else {
+                CSmallString error;
+                error << "incompatible method: " << accu->GetMethod() << " with requested realm: " <<  realm->Name;
+                RUNTIME_ERROR(error);
+            }
+            proxy->Init(accu);
+            realm->DerProxies.push_back(proxy);
         }
-        proxy.DerProxy->Init(accu);
-    } else if ( realm == "dH" ) {
-        proxy.EnergyProxy    = CPMFProxy_dH_Ptr(new CPMFProxy_dH);
-        proxy.EnergyProxy->Init(accu);
+    } else if ( realm->Name == "dH" ) {
+        for(size_t i=0; i < realm->Accumulators.size(); i++){
+            CPMFAccumulatorPtr accu = realm->Accumulators[i];
+            CEnergyProxyPtr proxy    = CPMFProxy_dH_Ptr(new CPMFProxy_dH);
+            proxy->Init(accu);
+            realm->EnergyProxies.push_back(proxy);
+        }
 // -----------------------------------------------
     } else {
         CSmallString error;
-        error << "unsupported realm: " << realm;
+        error << "unsupported realm: " << realm->Name;
         RUNTIME_ERROR(error);
     }
-
-    RealmProxies.push_back(proxy);
 }
 
 //------------------------------------------------------------------------------
@@ -785,13 +807,13 @@ void COptGPRHyprms::CalcHessian(void)
 
         // calculate gradient and logML
         for(size_t j=0; j < RealmProxies.size(); j++){
-            CProxyRealm proxy = RealmProxies[j];
+            CProxyRealmPtr proxy = RealmProxies[j];
 
         // IntegratorGPR
-            if( proxy.DerProxy != NULL ) {
+            if( proxy->DerProxies.size() > 0 ) {
                 CIntegratorGPR gpr;
                 gpr.PrepForHyprmsGrd(true);
-                GetTargetFromIntegrator(gpr,proxy.DerProxy);
+                GetTargetFromIntegrator(gpr,proxy);
                 switch(Target){
                     case(EGOT_LOGML):
                         gpr.GetLogMLDerivatives(HyprmsEnabled,grd1[i]);
@@ -801,10 +823,10 @@ void COptGPRHyprms::CalcHessian(void)
                     break;
                 }
         // SmootherGPR
-            } else if( proxy.EnergyProxy != NULL ) {
+            } else if( proxy->EnergyProxies.size() > 0 ) {
                 CSmootherGPR gpr;
                 gpr.PrepForHyprmsGrd(true);
-                GetTargetFromSmoother(gpr,proxy.EnergyProxy);
+                GetTargetFromSmoother(gpr,proxy);
                 switch(Target){
                     case(EGOT_LOGML):
                         gpr.GetLogMLDerivatives(HyprmsEnabled,grd1[i]);
@@ -827,13 +849,13 @@ void COptGPRHyprms::CalcHessian(void)
 
 // calculate gradient and logML
         for(size_t j=0; j < RealmProxies.size(); j++){
-            CProxyRealm proxy = RealmProxies[j];
+            CProxyRealmPtr proxy = RealmProxies[j];
 
         // IntegratorGPR
-            if( proxy.DerProxy != NULL ) {
+            if( proxy->DerProxies.size() > 0  ) {
                 CIntegratorGPR gpr;
                 gpr.PrepForHyprmsGrd(true);
-                GetTargetFromIntegrator(gpr,proxy.DerProxy);
+                GetTargetFromIntegrator(gpr,proxy);
                 switch(Target){
                     case(EGOT_LOGML):
                         gpr.GetLogMLDerivatives(HyprmsEnabled,grd2[i]);
@@ -843,10 +865,10 @@ void COptGPRHyprms::CalcHessian(void)
                     break;
                 }
         // SmootherGPR
-            } else if( proxy.EnergyProxy != NULL ) {
+            } else if( proxy->EnergyProxies.size() > 0 ) {
                 CSmootherGPR gpr;
                 gpr.PrepForHyprmsGrd(true);
-                GetTargetFromSmoother(gpr,proxy.EnergyProxy);
+                GetTargetFromSmoother(gpr,proxy);
                 switch(Target){
                     case(EGOT_LOGML):
                         gpr.GetLogMLDerivatives(HyprmsEnabled,grd2[i]);
@@ -972,78 +994,78 @@ void COptGPRHyprms::ShowGPRStat(void)
     vout << format("%02d:Statistics per PMF accumulator ...")%State << endl;
     State++;
 
-// setup parameters
-    ScatterHyprms(Hyprms);
-
-// run GPR integration
-    for(size_t i=0; i < Accumulators.size(); i++){
-        vout << format("** PMF Accumulator #%02d ...")%(i+1) << endl;
-        CProxyRealm proxy = RealmProxies[i];
-
-    // IntegratorGPR
-        if( proxy.DerProxy != NULL ) {
-            CIntegratorGPR   gpr;
-
-            CEnergySurfacePtr fes(new CEnergySurface);
-            fes->Allocate(proxy.DerProxy->GetAccu());
-
-            gpr.SetInputEnergyDerProxy(proxy.DerProxy);
-            gpr.SetOutputES(fes);
-
-            gpr.SetRCond(Options.GetOptRCond());
-
-            gpr.SetIncludeError(false);
-            gpr.SetNoEnergy(false);
-            gpr.IncludeGluedAreas(false);
-
-            gpr.SetLAMethod(Options.GetOptLAMethod());
-            gpr.SetKernel(Options.GetOptGPRKernel());
-            gpr.SetUseInv(Options.GetOptGPRUseInv());
-            gpr.SetCalcLogPL(Options.GetOptGPRCalcLogPL() || Target == EGOT_LOGPL);
-
-            if( Options.IsOptGlobalMinSet() ){
-                gpr.SetGlobalMin(Options.GetOptGlobalMin());
-            }
-
-        // run integrator
-            gpr.SetSigmaF2(SigmaF2);
-            gpr.SetNCorr(NCorr);
-            gpr.SetWFac(WFac);
-            gpr.Integrate(vout,false);
-    // SmootherGPR
-        } else if( proxy.EnergyProxy != NULL ) {
-            CSmootherGPR   gpr;
-
-            CEnergySurfacePtr fes(new CEnergySurface);
-            fes->Allocate(proxy.EnergyProxy->GetAccu());
-
-            gpr.SetInputEnergyProxy(proxy.EnergyProxy);
-            gpr.SetOutputES(fes);
-
-            gpr.SetRCond(Options.GetOptRCond());
-
-            gpr.SetIncludeError(false);
-
-            gpr.SetLAMethod(Options.GetOptLAMethod());
-
-            gpr.SetKernel(Options.GetOptGPRKernel());
-            gpr.SetUseInv(Options.GetOptGPRUseInv());
-            gpr.SetCalcLogPL(Options.GetOptGPRCalcLogPL() || Target == EGOT_LOGPL);
-
-            if( Options.IsOptGlobalMinSet() ){
-                gpr.SetGlobalMin(Options.GetOptGlobalMin());
-            }
-
-        // run integrator
-            gpr.SetSigmaF2(SigmaF2);
-            gpr.SetNCorr(NCorr);
-            gpr.SetWFac(WFac);
-            gpr.Interpolate(vout,false);
-        } else {
-            RUNTIME_ERROR("undefined proxy")
-        }
-
-   }
+//// setup parameters
+//    ScatterHyprms(Hyprms);
+//
+//// run GPR integration
+//    for(size_t i=0; i < Accumulators.size(); i++){
+//        vout << format("** PMF Accumulator #%02d ...")%(i+1) << endl;
+//        CProxyRealm proxy = RealmProxies[i];
+//
+//    // IntegratorGPR
+//        if( proxy.DerProxy != NULL ) {
+//            CIntegratorGPR   gpr;
+//
+//            CEnergySurfacePtr fes(new CEnergySurface);
+//            fes->Allocate(proxy.DerProxy->GetAccu());
+//
+//            gpr.SetInputEnergyDerProxy(proxy.DerProxy);
+//            gpr.SetOutputES(fes);
+//
+//            gpr.SetRCond(Options.GetOptRCond());
+//
+//            gpr.SetIncludeError(false);
+//            gpr.SetNoEnergy(false);
+//            gpr.IncludeGluedAreas(false);
+//
+//            gpr.SetLAMethod(Options.GetOptLAMethod());
+//            gpr.SetKernel(Options.GetOptGPRKernel());
+//            gpr.SetUseInv(Options.GetOptGPRUseInv());
+//            gpr.SetCalcLogPL(Options.GetOptGPRCalcLogPL() || Target == EGOT_LOGPL);
+//
+//            if( Options.IsOptGlobalMinSet() ){
+//                gpr.SetGlobalMin(Options.GetOptGlobalMin());
+//            }
+//
+//        // run integrator
+//            gpr.SetSigmaF2(SigmaF2);
+//            gpr.SetNCorr(NCorr);
+//            gpr.SetWFac(WFac);
+//            gpr.Integrate(vout,false);
+//    // SmootherGPR
+//        } else if( proxy.EnergyProxy != NULL ) {
+//            CSmootherGPR   gpr;
+//
+//            CEnergySurfacePtr fes(new CEnergySurface);
+//            fes->Allocate(proxy.EnergyProxy->GetAccu());
+//
+//            gpr.AddInputEnergyProxy(proxy.EnergyProxy);
+//            gpr.SetOutputES(fes);
+//
+//            gpr.SetRCond(Options.GetOptRCond());
+//
+//            gpr.SetIncludeError(false);
+//
+//            gpr.SetLAMethod(Options.GetOptLAMethod());
+//
+//            gpr.SetKernel(Options.GetOptGPRKernel());
+//            gpr.SetUseInv(Options.GetOptGPRUseInv());
+//            gpr.SetCalcLogPL(Options.GetOptGPRCalcLogPL() || Target == EGOT_LOGPL);
+//
+//            if( Options.IsOptGlobalMinSet() ){
+//                gpr.SetGlobalMin(Options.GetOptGlobalMin());
+//            }
+//
+//        // run integrator
+//            gpr.SetSigmaF2(SigmaF2);
+//            gpr.SetNCorr(NCorr);
+//            gpr.SetWFac(WFac);
+//            gpr.Interpolate(vout,false);
+//        } else {
+//            RUNTIME_ERROR("undefined proxy")
+//        }
+//
+//   }
 }
 
 //------------------------------------------------------------------------------
@@ -1058,13 +1080,13 @@ void COptGPRHyprms::RunGPRAnalytical(void)
 
 // calculate gradient and logML
     for(size_t i=0; i < RealmProxies.size(); i++){
-        CProxyRealm proxy = RealmProxies[i];
+        CProxyRealmPtr proxy = RealmProxies[i];
 
     // IntegratorGPR
-        if( proxy.DerProxy != NULL ) {
+        if( proxy->DerProxies.size() > 0 ) {
             CIntegratorGPR gpr;
             gpr.PrepForHyprmsGrd(true);
-            logTarget += GetTargetFromIntegrator(gpr,proxy.DerProxy);
+            logTarget += GetTargetFromIntegrator(gpr,proxy);
             switch(Target){
                 case(EGOT_LOGML):
                     gpr.GetLogMLDerivatives(HyprmsEnabled,HyprmsGrd);
@@ -1074,10 +1096,10 @@ void COptGPRHyprms::RunGPRAnalytical(void)
                 break;
             }
     // SmootherGPR
-        } else if( proxy.EnergyProxy != NULL ) {
+        } else if( proxy->EnergyProxies.size() > 0 ) {
             CSmootherGPR gpr;
             gpr.PrepForHyprmsGrd(true);
-            logTarget += GetTargetFromSmoother(gpr,proxy.EnergyProxy);
+            logTarget += GetTargetFromSmoother(gpr,proxy);
             switch(Target){
                 case(EGOT_LOGML):
                     gpr.GetLogMLDerivatives(HyprmsEnabled,HyprmsGrd);
@@ -1099,14 +1121,14 @@ void COptGPRHyprms::RunGPRNumerical(void)
     logTarget = 0;
     HyprmsGrd.SetZero();
     for(size_t i=0; i < RealmProxies.size(); i++){
-        CProxyRealm proxy = RealmProxies[i];
+        CProxyRealmPtr proxy = RealmProxies[i];
 
     // IntegratorGPR
-        if( proxy.DerProxy != NULL ) {
-            logTarget += RunGPRNumericalIntegrator(proxy.DerProxy ,HyprmsGrd);
+        if( proxy->DerProxies.size() > 0 ) {
+            logTarget += RunGPRNumericalIntegrator(proxy,HyprmsGrd);
     // SmootherGPR
-        } else if( proxy.EnergyProxy != NULL ) {
-            logTarget += RunGPRNumericalSmoother(proxy.EnergyProxy ,HyprmsGrd);
+        } else if( proxy->EnergyProxies.size() > 0 ) {
+            logTarget += RunGPRNumericalSmoother(proxy,HyprmsGrd);
         } else {
             RUNTIME_ERROR("undefined proxy")
         }
@@ -1115,7 +1137,7 @@ void COptGPRHyprms::RunGPRNumerical(void)
 
 //------------------------------------------------------------------------------
 
-double COptGPRHyprms::RunGPRNumericalIntegrator(CEnergyDerProxyPtr derproxy,CSimpleVector<double>& der)
+double COptGPRHyprms::RunGPRNumericalIntegrator(CProxyRealmPtr derproxy,CSimpleVector<double>& der)
 {
     CSimpleVector<double>   tmp_prms;
     tmp_prms.CreateVector(NumOfOptPrms);
@@ -1191,7 +1213,7 @@ double COptGPRHyprms::RunGPRNumericalIntegrator(CEnergyDerProxyPtr derproxy,CSim
 
 //------------------------------------------------------------------------------
 
-double COptGPRHyprms::RunGPRNumericalSmoother(CEnergyProxyPtr eneproxy,CSimpleVector<double>& der)
+double COptGPRHyprms::RunGPRNumericalSmoother(CProxyRealmPtr eneproxy,CSimpleVector<double>& der)
 {
     CSimpleVector<double>   tmp_prms;
     tmp_prms.CreateVector(NumOfOptPrms);
@@ -1307,12 +1329,13 @@ void COptGPRHyprms::ScatterHyprms(CSimpleVector<double>& hyprsm)
 
 //------------------------------------------------------------------------------
 
-double COptGPRHyprms::GetTargetFromIntegrator(CIntegratorGPR& gpr,CEnergyDerProxyPtr proxy)
+double COptGPRHyprms::GetTargetFromIntegrator(CIntegratorGPR& gpr,CProxyRealmPtr proxy)
 {
     CEnergySurfacePtr fes(new CEnergySurface);
-    fes->Allocate(proxy->GetAccu());
+    fes->Allocate(proxy->Accumulators.front());
 
-    gpr.SetInputEnergyDerProxy(proxy);
+    // EXTEND
+    gpr.SetInputEnergyDerProxy(proxy->DerProxies.front());
     gpr.SetOutputES(fes);
 
     gpr.SetRCond(Options.GetOptRCond());
@@ -1356,13 +1379,15 @@ double COptGPRHyprms::GetTargetFromIntegrator(CIntegratorGPR& gpr,CEnergyDerProx
 
 //------------------------------------------------------------------------------
 
-double  COptGPRHyprms::GetTargetFromSmoother(CSmootherGPR& gpr,CEnergyProxyPtr proxy)
+double  COptGPRHyprms::GetTargetFromSmoother(CSmootherGPR& gpr,CProxyRealmPtr proxy)
 {
     CEnergySurfacePtr fes(new CEnergySurface);
-    fes->Allocate(proxy->GetAccu());
+    fes->Allocate(proxy->Accumulators.front());
 
-    gpr.SetInputEnergyProxy(proxy);
     gpr.SetOutputES(fes);
+    for(size_t i=0; i < proxy->EnergyProxies.size(); i++){
+        gpr.AddInputEnergyProxy(proxy->EnergyProxies[i]);
+    }
 
     gpr.SetRCond(Options.GetOptRCond());
 
@@ -1420,39 +1445,42 @@ void COptGPRHyprms::WriteResults(int istep)
 
 void COptGPRHyprms::PrintSampledStat(void)
 {
-    for(size_t i=0; i < Accumulators.size(); i++){
-        CPMFAccumulatorPtr accu = Accumulators[i];
-        vout << format("** PMF Accumulator #%02d ...")%(i+1) << endl;
-        // calculate sampled area
-        double maxbins = accu->GetNumOfBins();
-        int    sampled = 0;
-        int    glued = 0;
-        for(int ibin=0; ibin < accu->GetNumOfBins(); ibin++) {
-            if( accu->GetNumOfSamples(ibin) > 0 ) {
-                sampled++;
+    for(size_t r=0; r < RealmProxies.size(); r++){
+        vout << format("** -------> Realm #%02d: %s")%(r+1)%RealmProxies[r]->Name << endl;
+        for(size_t i=0; i < RealmProxies[r]->Accumulators.size(); i++){
+            CPMFAccumulatorPtr accu = RealmProxies[r]->Accumulators[i];
+            vout << format("** PMF Accumulator #%05d ...")%(i+1) << endl;
+            // calculate sampled area
+            double maxbins = accu->GetNumOfBins();
+            int    sampled = 0;
+            int    limit = 0;
+            for(int ibin=0; ibin < accu->GetNumOfBins(); ibin++) {
+                if( accu->GetNumOfSamples(ibin) > 0 ) {
+                    sampled++;
+                }
+                if( accu->GetNumOfSamples(ibin) > Options.GetOptLimit() ) {
+                    limit++;
+                } else {
+                    accu->SetNumOfSamples(ibin,0);
+                }
             }
-            if( accu->GetNumOfSamples(ibin) < 0 ) {
-                glued++;
+            if( maxbins > 0 ){
+                vout << "   Sampled area: "
+                     << setw(6) << sampled << " / " << (int)maxbins << " | " << setw(5) << setprecision(1) << fixed << sampled/maxbins*100 <<"%" << endl;
+                vout << "   Sampled area (within limit): "
+                     << setw(6) << limit << " / " << (int)maxbins << " | " << setw(5) << setprecision(1) << fixed << limit/maxbins*100 <<"%" << endl;
             }
-        }
-        if( maxbins > 0 ){
-            vout << "   Sampled area: "
-                 << setw(6) << sampled << " / " << (int)maxbins << " | " << setw(5) << setprecision(1) << fixed << sampled/maxbins*100 <<"%" << endl;
-        }
-        if( glued > 0 ){
-            vout << "   Glued area:   "
-                 << setw(6) << glued << " / " << (int)maxbins << " | " << setw(5) << setprecision(1) << fixed << glued/maxbins*100 <<"%" << endl;
-        }
-        int ncvs = accu->GetNumOfCVs();
-        if( i == 0 ){
-            NCVs = ncvs;
-        }
-        if( NCVs != ncvs ){
-            CSmallString error;
-            error << "inconsistent dimensions (NCVs) of PMF accumulator: " << ncvs << "; the first accu: " << NCVs;
-            RUNTIME_ERROR(error);
-        }
-   }
+            int ncvs = accu->GetNumOfCVs();
+            if( i == 0 ){
+                NCVs = ncvs;
+            }
+            if( NCVs != ncvs ){
+                CSmallString error;
+                error << "inconsistent dimensions (NCVs) of PMF accumulator: " << ncvs << "; the first accu: " << NCVs;
+                RUNTIME_ERROR(error);
+            }
+       }
+    }
 }
 
 //------------------------------------------------------------------------------
