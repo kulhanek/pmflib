@@ -31,6 +31,7 @@
 #include <boost/format.hpp>
 #include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string/classification.hpp>
+#include <set>
 
 // OpenMP support
 #if defined(_OPENMP)
@@ -42,28 +43,6 @@
 using namespace std;
 using namespace boost;
 using namespace boost::algorithm;
-
-
-//void CEneProxyItem::InitSampledMap(void)
-//{
-//    if( EneProxy == NULL ) return;
-//    if( EneProxy->GetAccu() == NULL ) return;
-//
-//    // number of data points
-//    GPRSize = 0;
-//    for(int i=0; i < EneProxy->GetAccu()->GetNumOfBins(); i++){
-//        if( EneProxy->GetNumOfSamples(i) > 0 ) GPRSize++;
-//    }
-//
-//    // create sampled map
-//    SampledMap.resize(GPRSize);
-//    size_t ind = 0;
-//    for(int i=0; i < EneProxy->GetAccu()->GetNumOfBins(); i++){
-//        if( EneProxy->GetNumOfSamples(i) <= 0 ) continue;
-//        SampledMap[ind] = i;
-//        ind++;
-//    }
-//}
 
 //==============================================================================
 //------------------------------------------------------------------------------
@@ -662,14 +641,14 @@ void CSmootherGPR::CreateKS(void)
     // main kernel matrix
     #pragma omp parallel for firstprivate(ipos,jpos)
     for(size_t indi=0; indi < GPRSize; indi++){
-        size_t ibini = SampledMap[indi];
+        size_t ibin = SampledMap[indi];
 
-        EneSurface->GetPoint(ibini,ipos);
+        EneSurface->GetPoint(ibin,ipos);
 
         for(size_t indj=0; indj < GPRSize; indj++){
-            size_t ibinj = SampledMap[indj];
+            size_t jbin = SampledMap[indj];
 
-            EneSurface->GetPoint(ibinj,jpos);
+            EneSurface->GetPoint(jbin,jpos);
             KS[indi][indj] = GetKernelValue(ipos,jpos);
         }
     }
@@ -693,9 +672,9 @@ void CSmootherGPR::CreateKff(const CSimpleVector<double>& ip,CSimpleVector<doubl
 
     // main kernel matrix
     for(size_t indj=0; indj < GPRSize; indj++){
-        size_t  ibinj = SampledMap[indj];
+        size_t  jbin = SampledMap[indj];
 
-        EneSurface->GetPoint(ibinj,jpos);
+        EneSurface->GetPoint(jbin,jpos);
         kff[indj] = GetKernelValue(ip,jpos);
     }
 
@@ -1266,9 +1245,9 @@ void CSmootherGPR::CalcKderWRTNCorr(void)
 
     #pragma omp parallel for
     for(size_t indi=0; indi < GPRSize; indi++){
-        size_t          ibini = SampledMap[indi];
-        CEnergyProxyPtr itemi = EneProxyItems[EneProxyMap[indi]];
-        double er = itemi->GetValue(ibini,E_PROXY_ERROR);
+        size_t          ibin = SampledMap[indi];
+        CEnergyProxyPtr item = EneProxyItems[EneProxyMap[indi]];
+        double er = item->GetValue(ibin,E_PROXY_ERROR);
         Kder[indi][indi] += er*er;
     }
 }

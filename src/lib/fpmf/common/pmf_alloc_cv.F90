@@ -102,6 +102,7 @@ subroutine pmf_alloc_cv_allocate(cv_type,cv_item)
     use cv_nasbo
     use cv_nalbpp
     use cv_nasbpp
+    use cv_naybpp
     use cv_nasbppold
     use cv_naspsxy
     use cv_nalstp
@@ -256,6 +257,8 @@ subroutine pmf_alloc_cv_allocate(cv_type,cv_item)
             allocate(CVTypeNALBPP::cv_item)
         case('NASBPP')
             allocate(CVTypeNASBPP::cv_item)
+        case('NAYBPP')
+            allocate(CVTypeNAYBPP::cv_item)
         case('NASBPPOLD')
             allocate(CVTypeNASBPPOLD::cv_item)
         case('NASPSXY')

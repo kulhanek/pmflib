@@ -48,13 +48,12 @@ public:
     CSO_PROG_VERS_END
 
     CSO_PROG_ARGS_SHORT_DESC_BEGIN
-    "accuname fename [fullfename]"
+    "accuname1 [accuname2 [...]] fename"
     CSO_PROG_ARGS_SHORT_DESC_END
 
     CSO_PROG_ARGS_LONG_DESC_BEGIN
     "<cyan><b>accuname</b></cyan>                   Name of file containing the ABF accumulator. If the name is '-' then the accumulator is read from the standard input.\n"
     "<cyan><b>fename</b></cyan>                     Name of file where the resulting free energy surface will be printed. If the name is '-' then the output will be written to the standard output.\n"
-    "<cyan><b>fullfename</b></cyan>                 Optional name of file with free energy surface containing all regions (sampled and unsampled)."
     CSO_PROG_ARGS_LONG_DESC_END
 
 // list of all options and arguments ------------------------------------------
@@ -89,7 +88,7 @@ public:
     CSO_OPT(bool,WithError)
     CSO_OPT(bool,NoEnergy)
     CSO_OPT(CSmallString,OutputFormat)
-    CSO_OPT(bool,PrintAll)
+    CSO_OPT(CSmallString,PrintAll)
     CSO_OPT(bool,UnsampledAsMaxE)
     CSO_OPT(double,MaxEnergy)
     CSO_OPT(bool,NoHeader)
@@ -409,13 +408,13 @@ public:
                 "FORMAT",                           /* parameter name */
                 "Output FORMAT to print the free energy surface. Supported formats are: plain, and gnuplot.")   /* option description */
     //----------------------------------------------------------------------
-    CSO_MAP_OPT(bool,                           /* option type */
+    CSO_MAP_OPT(CSmallString,                           /* option type */
                 PrintAll,                        /* option name */
                 false,                          /* default value */
-                false,                          /* is option mandatory */
+                NULL,                          /* is option mandatory */
                 0,                           /* short option name */
                 "printall",                      /* long option name */
-                NULL,                           /* parameter name */
+                "NAME",                           /* parameter name */
                 "Print results for all bins even if not properly sampled.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(bool,                           /* option type */

@@ -148,8 +148,14 @@ public:
     /// get temperature unit
     const CSmallString& GetTemperatureUnit(void) const;
 
+    /// get temperature conversion factor to given unit
+    double GetTemperatureFConv(void);
+
     /// get energy conversion factor to given unit
     double GetEnergyFConv(void);
+
+    /// get energy unit
+    const CSmallString& GetEnergyUnit(void) const;
 
     /// get number of samples
     int GetNumOfSamples(int ibin) const;

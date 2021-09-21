@@ -59,7 +59,7 @@ public:
     void Allocate(CPMFAccumulatorPtr accu);
 
     /// allocate array
-    void Allocate(CPMFAccumulatorPtr accu,const std::vector<bool>& enabled_cvs);
+    void Allocate(CEnergySurfacePtr surf,const std::vector<bool>& enabled_cvs);
 
     /// deallocate array
     void Deallocate(void);
@@ -104,6 +104,26 @@ public:
     /// get sigmaF2 from all area
     double GetSigmaF2All(void) const;
 
+
+    /// get temperature in iu
+    double GetTemperature(void) const;
+
+    /// get temperature in unit
+    double GetRealTemperature(void) const;
+
+    /// get temperature unit
+    const CSmallString& GetTemperatureUnit(void) const;
+
+    /// get temperature conversion factor to given unit
+    double GetTemperatureFConv(void);
+
+
+    /// get energy conversion factor to given unit
+    double GetEnergyFConv(void);
+
+    /// get energy unit
+    const CSmallString& GetEnergyUnit(void) const;
+
 // access methods -------------------------------------------------------------
     /// set number of samples
     void SetNumOfSamples(int ibin,int value);
@@ -136,6 +156,9 @@ public:
     /// convert point index to point position
     void GetIPoint(int ibin,CSimpleVector<int>& point) const;
 
+    /// return global index
+    int GetGlobalIndex(const CSimpleVector<int>& position) const;
+
     /// reduce ipoint
     void ReduceIPoint(const std::vector<bool>& keepcvs,CSimpleVector<int>& midx,CSimpleVector<int>& ridx);
 
@@ -157,8 +180,14 @@ private:
     int                             NumOfCVs;       // number of cvs
     int                             NumOfBins;      // number of bins
     std::vector<CColVariablePtr>    CVs;            // collective variables
+
     double                          Temperature;
+    double                          TemperatureFConv;
+    CSmallString                    TemperatureUnit;
+
     double                          EnergyFConv;
+    CSmallString                    EnergyUnit;
+
     CSimpleVector<double>           Energy;         // energy array
     CSimpleVector<double>           Error;          // error array
     CSimpleVector<int>              Samples;        // number of samples

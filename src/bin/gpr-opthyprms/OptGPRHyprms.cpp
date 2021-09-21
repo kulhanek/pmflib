@@ -170,7 +170,8 @@ bool COptGPRHyprms::Run(void)
     State++;
     for(size_t i=0; i < RealmProxies.size(); i++){
         CProxyRealmPtr realm = RealmProxies[i];
-        vout << format("** -------> Realm #%02d: %s")%(i+1)%realm->Name << endl;
+        vout << format("   ** ----------> Realm #%02d: %s")%(i+1)%realm->Name << endl;
+        vout << format("      # of PMF accumulators: %d")%realm->Accumulators.size() << endl;
         InitRealm(realm);
     }
 
@@ -994,78 +995,83 @@ void COptGPRHyprms::ShowGPRStat(void)
     vout << format("%02d:Statistics per PMF accumulator ...")%State << endl;
     State++;
 
-//// setup parameters
-//    ScatterHyprms(Hyprms);
-//
-//// run GPR integration
-//    for(size_t i=0; i < Accumulators.size(); i++){
-//        vout << format("** PMF Accumulator #%02d ...")%(i+1) << endl;
-//        CProxyRealm proxy = RealmProxies[i];
-//
-//    // IntegratorGPR
-//        if( proxy.DerProxy != NULL ) {
-//            CIntegratorGPR   gpr;
-//
-//            CEnergySurfacePtr fes(new CEnergySurface);
-//            fes->Allocate(proxy.DerProxy->GetAccu());
-//
-//            gpr.SetInputEnergyDerProxy(proxy.DerProxy);
-//            gpr.SetOutputES(fes);
-//
-//            gpr.SetRCond(Options.GetOptRCond());
-//
-//            gpr.SetIncludeError(false);
-//            gpr.SetNoEnergy(false);
-//            gpr.IncludeGluedAreas(false);
-//
-//            gpr.SetLAMethod(Options.GetOptLAMethod());
-//            gpr.SetKernel(Options.GetOptGPRKernel());
-//            gpr.SetUseInv(Options.GetOptGPRUseInv());
-//            gpr.SetCalcLogPL(Options.GetOptGPRCalcLogPL() || Target == EGOT_LOGPL);
-//
-//            if( Options.IsOptGlobalMinSet() ){
-//                gpr.SetGlobalMin(Options.GetOptGlobalMin());
-//            }
-//
-//        // run integrator
-//            gpr.SetSigmaF2(SigmaF2);
-//            gpr.SetNCorr(NCorr);
-//            gpr.SetWFac(WFac);
-//            gpr.Integrate(vout,false);
-//    // SmootherGPR
-//        } else if( proxy.EnergyProxy != NULL ) {
-//            CSmootherGPR   gpr;
-//
-//            CEnergySurfacePtr fes(new CEnergySurface);
-//            fes->Allocate(proxy.EnergyProxy->GetAccu());
-//
-//            gpr.AddInputEnergyProxy(proxy.EnergyProxy);
-//            gpr.SetOutputES(fes);
-//
-//            gpr.SetRCond(Options.GetOptRCond());
-//
-//            gpr.SetIncludeError(false);
-//
-//            gpr.SetLAMethod(Options.GetOptLAMethod());
-//
-//            gpr.SetKernel(Options.GetOptGPRKernel());
-//            gpr.SetUseInv(Options.GetOptGPRUseInv());
-//            gpr.SetCalcLogPL(Options.GetOptGPRCalcLogPL() || Target == EGOT_LOGPL);
-//
-//            if( Options.IsOptGlobalMinSet() ){
-//                gpr.SetGlobalMin(Options.GetOptGlobalMin());
-//            }
-//
-//        // run integrator
-//            gpr.SetSigmaF2(SigmaF2);
-//            gpr.SetNCorr(NCorr);
-//            gpr.SetWFac(WFac);
-//            gpr.Interpolate(vout,false);
-//        } else {
-//            RUNTIME_ERROR("undefined proxy")
-//        }
-//
-//   }
+// setup parameters
+    ScatterHyprms(Hyprms);
+
+// run GPR integration
+    for(size_t i=0; i < RealmProxies.size(); i++){
+        CProxyRealmPtr proxy = RealmProxies[i];
+
+        vout << format("** PMF Realm Set #%02d ...")%(i+1) << endl;
+
+    // IntegratorGPR
+        if( proxy->DerProxies.size() > 0 ) {
+            CIntegratorGPR   gpr;
+
+            CEnergySurfacePtr fes(new CEnergySurface);
+            fes->Allocate(proxy->Accumulators.front());
+
+            gpr.SetOutputES(fes);
+            for(size_t i=0; i < proxy->DerProxies.size(); i++){
+                gpr.AddInputEnergyDerProxy(proxy->DerProxies[i]);
+            }
+
+            gpr.SetRCond(Options.GetOptRCond());
+
+            gpr.SetIncludeError(false);
+            gpr.SetNoEnergy(false);
+            gpr.IncludeGluedAreas(false);
+
+            gpr.SetLAMethod(Options.GetOptLAMethod());
+            gpr.SetKernel(Options.GetOptGPRKernel());
+            gpr.SetUseInv(Options.GetOptGPRUseInv());
+            gpr.SetCalcLogPL(Options.GetOptGPRCalcLogPL() || Target == EGOT_LOGPL);
+
+            if( Options.IsOptGlobalMinSet() ){
+                gpr.SetGlobalMin(Options.GetOptGlobalMin());
+            }
+
+        // run integrator
+            gpr.SetSigmaF2(SigmaF2);
+            gpr.SetNCorr(NCorr);
+            gpr.SetWFac(WFac);
+            gpr.Integrate(vout,false);
+    // SmootherGPR
+        } else if( proxy->EnergyProxies.size() > 0 ) {
+            CSmootherGPR   gpr;
+
+            CEnergySurfacePtr fes(new CEnergySurface);
+            fes->Allocate(proxy->Accumulators.front());
+
+            gpr.SetOutputES(fes);
+            for(size_t i=0; i < proxy->EnergyProxies.size(); i++){
+                gpr.AddInputEnergyProxy(proxy->EnergyProxies[i]);
+            }
+
+            gpr.SetRCond(Options.GetOptRCond());
+
+            gpr.SetIncludeError(false);
+
+            gpr.SetLAMethod(Options.GetOptLAMethod());
+
+            gpr.SetKernel(Options.GetOptGPRKernel());
+            gpr.SetUseInv(Options.GetOptGPRUseInv());
+            gpr.SetCalcLogPL(Options.GetOptGPRCalcLogPL() || Target == EGOT_LOGPL);
+
+            if( Options.IsOptGlobalMinSet() ){
+                gpr.SetGlobalMin(Options.GetOptGlobalMin());
+            }
+
+        // run integrator
+            gpr.SetSigmaF2(SigmaF2);
+            gpr.SetNCorr(NCorr);
+            gpr.SetWFac(WFac);
+            gpr.Interpolate(vout,false);
+        } else {
+            RUNTIME_ERROR("undefined proxy")
+        }
+
+   }
 }
 
 //------------------------------------------------------------------------------
@@ -1334,9 +1340,10 @@ double COptGPRHyprms::GetTargetFromIntegrator(CIntegratorGPR& gpr,CProxyRealmPtr
     CEnergySurfacePtr fes(new CEnergySurface);
     fes->Allocate(proxy->Accumulators.front());
 
-    // EXTEND
-    gpr.SetInputEnergyDerProxy(proxy->DerProxies.front());
     gpr.SetOutputES(fes);
+    for(size_t i=0; i < proxy->DerProxies.size(); i++){
+        gpr.AddInputEnergyDerProxy(proxy->DerProxies[i]);
+    }
 
     gpr.SetRCond(Options.GetOptRCond());
 
@@ -1449,7 +1456,7 @@ void COptGPRHyprms::PrintSampledStat(void)
         vout << format("** -------> Realm #%02d: %s")%(r+1)%RealmProxies[r]->Name << endl;
         for(size_t i=0; i < RealmProxies[r]->Accumulators.size(); i++){
             CPMFAccumulatorPtr accu = RealmProxies[r]->Accumulators[i];
-            vout << format("** PMF Accumulator #%05d ...")%(i+1) << endl;
+            vout << format("   ** PMF Accumulator #%05d ...")%(i+1);
             // calculate sampled area
             double maxbins = accu->GetNumOfBins();
             int    sampled = 0;
@@ -1465,11 +1472,12 @@ void COptGPRHyprms::PrintSampledStat(void)
                 }
             }
             if( maxbins > 0 ){
-                vout << "   Sampled area: "
-                     << setw(6) << sampled << " / " << (int)maxbins << " | " << setw(5) << setprecision(1) << fixed << sampled/maxbins*100 <<"%" << endl;
-                vout << "   Sampled area (within limit): "
-                     << setw(6) << limit << " / " << (int)maxbins << " | " << setw(5) << setprecision(1) << fixed << limit/maxbins*100 <<"%" << endl;
+                vout << " Sampled area: "
+                     << setw(6) << sampled << " / " << (int)maxbins << " | " << setw(5) << setprecision(1) << fixed << sampled/maxbins*100 <<"%" ;
+                vout << " ... Within limit: "
+                     << setw(6) << limit << " / " << (int)maxbins << " | " << setw(5) << setprecision(1) << fixed << limit/maxbins*100 <<"%";
             }
+            vout << endl;
             int ncvs = accu->GetNumOfCVs();
             if( i == 0 ){
                 NCVs = ncvs;

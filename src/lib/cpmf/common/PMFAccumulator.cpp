@@ -1004,11 +1004,27 @@ const CSmallString& CPMFAccumulator::GetTemperatureUnit(void) const
     return(TemperatureUnit);
 }
 
+
+//------------------------------------------------------------------------------
+
+double CPMFAccumulator::GetTemperatureFConv(void)
+{
+    return(TemperatureFConv);
+}
+
 //------------------------------------------------------------------------------
 
 double CPMFAccumulator::GetEnergyFConv(void)
 {
     return(EnergyFConv);
+}
+
+
+//------------------------------------------------------------------------------
+
+const CSmallString& CPMFAccumulator::GetEnergyUnit(void) const
+{
+    return(EnergyUnit);
 }
 
 //------------------------------------------------------------------------------

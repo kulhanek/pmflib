@@ -313,9 +313,9 @@ int CPMFEnergyIntOptions::CheckOptions(void)
 
 int CPMFEnergyIntOptions::CheckArguments(void)
 {
-    if( (GetNumberOfProgArgs() != 2) && (GetNumberOfProgArgs() != 3) ){
+    if( GetNumberOfProgArgs() < 2 ){
         if(IsError == false) fprintf(stderr,"\n");
-        fprintf(stderr,"%s: two or three arguments are expected, but %d is provided\n",
+        fprintf(stderr,"%s: at least two arguments are expected, but %d is provided\n",
                 (const char*)GetProgramName(),GetNumberOfProgArgs());
         IsError = true;
     }

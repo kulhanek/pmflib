@@ -71,7 +71,7 @@ int CACCUCombine::Init(int argc,char* argv[])
     vout << "# Version: " << LibBuildVersion_PMF << endl;
     vout << "# ==============================================================================" << endl;
     for(int i=0; i < Options.GetNumberOfProgArgs() - 1; i++){
-        vout << format("# Input PMF accumulator #%03d : %s")%(i+1)%Options.GetProgArg(i) << endl;
+        vout << format("# Input PMF accumulator #%05d : %s")%(i+1)%Options.GetProgArg(i) << endl;
     }
     vout << format("# Output PMF accumulator     : %s")%Options.GetProgArg(Options.GetNumberOfProgArgs()-1) << endl;
 
@@ -92,7 +92,7 @@ bool CACCUCombine::Run(void)
     vout << format("%02d:Loading input PMF accumulators ...")%state << endl;
     try {
         for(int i=0; i < Options.GetNumberOfProgArgs() - 1; i++){
-            vout << format("  >> %03d %s")%(i+1)%string(Options.GetProgArg(i)) << endl;
+            vout << format("  >> %05d %s")%(i+1)%string(Options.GetProgArg(i)) << endl;
             CPMFAccumulatorPtr inaccu = CPMFAccumulatorPtr(new CPMFAccumulator);
             inaccu->Load(Options.GetProgArg(i));
             InAccus.push_back(inaccu);

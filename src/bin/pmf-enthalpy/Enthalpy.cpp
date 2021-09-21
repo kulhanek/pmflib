@@ -155,7 +155,8 @@ bool CEnthalpy::Run(void)
 
 // realms
     vout << endl;
-    vout << format("%02d:Initializing dH realm ...")%State << endl;
+    vout << format("%02d:Initializing %s realm ...")%State%Options.GetOptRealm() << endl;
+    vout << format(  "   Number of loaded PMF accumulators = %d")%Accumulators.size() << endl;
     State++;
     for(size_t i=0; i < Accumulators.size(); i++){
         CPMFAccumulatorPtr accu = Accumulators[i];

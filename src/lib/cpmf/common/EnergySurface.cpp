@@ -41,8 +41,13 @@ CEnergySurface::CEnergySurface(void)
     NumOfCVs = 0;
     NumOfBins = 0;
     SLevel = 1.0;
+
     Temperature = 300;
+    TemperatureUnit = "K";
+    TemperatureFConv = 1.0;
+
     EnergyFConv = 1.0;
+    EnergyUnit = "kcal/mol";
 }
 
 //------------------------------------------------------------------------------
@@ -97,7 +102,11 @@ void CEnergySurface::Allocate(CPMFAccumulatorPtr accu)
     NumOfCVs = CVs.size();
 
     Temperature = accu->GetTemperature();
+    TemperatureFConv = accu->GetTemperatureFConv();
+    TemperatureUnit = accu->GetTemperatureUnit();
+
     EnergyFConv = accu->GetEnergyFConv();
+    EnergyUnit = accu->GetEnergyUnit();
 
     Energy.CreateVector(NumOfBins);
     Error.CreateVector(NumOfBins);
@@ -108,13 +117,13 @@ void CEnergySurface::Allocate(CPMFAccumulatorPtr accu)
 
 //------------------------------------------------------------------------------
 
-void CEnergySurface::Allocate(CPMFAccumulatorPtr accu,const std::vector<bool>& enabled_cvs)
+void CEnergySurface::Allocate(CEnergySurfacePtr surf,const std::vector<bool>& enabled_cvs)
 {
     if( NumOfCVs > 0 ) Deallocate();
-    if( accu == NULL ) return;
-    if( accu->GetNumOfCVs() <= 0 ) return;
-    if( (int)enabled_cvs.size() != accu->GetNumOfCVs() ){
-        RUNTIME_ERROR("enabled_cvs and accu inconsistent");
+    if( surf == NULL ) return;
+    if( surf->GetNumOfCVs() <= 0 ) return;
+    if( (int)enabled_cvs.size() != surf->GetNumOfCVs() ){
+        RUNTIME_ERROR("enabled_cvs and surf inconsistent");
     }
 
 // copy cvs and calculate total number of points
@@ -122,15 +131,19 @@ void CEnergySurface::Allocate(CPMFAccumulatorPtr accu,const std::vector<bool>& e
     size_t i = 0;
     for(size_t k = 0; k < enabled_cvs.size(); k++){
         if( enabled_cvs[k] ){
-            CColVariablePtr cv = accu->GetCV(i);
+            CColVariablePtr cv = surf->GetCV(i);
             NumOfBins *= cv->GetNumOfBins();
             CVs.push_back(cv);
         }
     }
     NumOfCVs = CVs.size();
 
-    Temperature = accu->GetTemperature();
-    EnergyFConv = accu->GetEnergyFConv();
+    Temperature         = surf->GetTemperature();
+    TemperatureFConv    = surf->GetTemperatureFConv();
+    TemperatureUnit     = surf->GetTemperatureUnit();
+
+    EnergyFConv = surf->GetEnergyFConv();
+    EnergyUnit  = surf->GetEnergyUnit();
 
     Energy.CreateVector(NumOfBins);
     Error.CreateVector(NumOfBins);
@@ -354,6 +367,48 @@ double CEnergySurface::GetSigmaF2All(void) const
     return(sigmaf2);
 }
 
+//------------------------------------------------------------------------------
+
+double CEnergySurface::GetTemperature(void) const
+{
+    return(Temperature);
+}
+
+//------------------------------------------------------------------------------
+
+double CEnergySurface::GetRealTemperature(void) const
+{
+    return(Temperature*TemperatureFConv);
+}
+
+//------------------------------------------------------------------------------
+
+const CSmallString& CEnergySurface::GetTemperatureUnit(void) const
+{
+    return(TemperatureUnit);
+}
+
+//------------------------------------------------------------------------------
+
+double CEnergySurface::GetTemperatureFConv(void)
+{
+    return(TemperatureFConv);
+}
+
+//------------------------------------------------------------------------------
+
+double CEnergySurface::GetEnergyFConv(void)
+{
+    return(EnergyFConv);
+}
+
+//------------------------------------------------------------------------------
+
+const CSmallString& CEnergySurface::GetEnergyUnit(void) const
+{
+    return(EnergyUnit);
+}
+
 //==============================================================================
 //------------------------------------------------------------------------------
 //==============================================================================
@@ -394,6 +449,19 @@ void CEnergySurface::GetIPoint(int ibin,CSimpleVector<int>& point) const
         point[k] = cvbin;
         ibin = ibin / p_coord->GetNumOfBins();
     }
+}
+
+//------------------------------------------------------------------------------
+
+int CEnergySurface::GetGlobalIndex(const CSimpleVector<int>& position) const
+{
+    int glbindex = 0;
+    for(int i=0; i < NumOfCVs; i++) {
+        if( position[i] < 0 ) return(-1);
+        if( position[i] >= CVs[i]->GetNumOfBins() ) return(-1);
+        glbindex = glbindex*CVs[i]->GetNumOfBins() + position[i];
+    }
+    return(glbindex);
 }
 
 //------------------------------------------------------------------------------

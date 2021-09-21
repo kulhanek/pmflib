@@ -30,7 +30,6 @@
 #include <EnergyProxy.hpp>
 #include <IntegratorGPR.hpp>
 #include <vector>
-#include <set>
 
 //------------------------------------------------------------------------------
 

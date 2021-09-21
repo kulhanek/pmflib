@@ -57,28 +57,27 @@ public:
 
 // section of private data ----------------------------------------------------
 private:
-    CPMFEnergyIntOptions    Options;
-    CStdIOFile              InputFile;
-    CStdIOFile              OutputFile;
-    CPMFAccumulatorPtr      Accu;
-    CEnergySurfacePtr       FES;
-    CEnergyDerProxyPtr      DerProxy;
-    CSmallTimeAndDate       StartTime;
-    CSimpleVector<int>      FFSeeds;
-    CSimpleVector<int>      IPos;
-    CSimpleVector<int>      TPos;
-    CSimpleVector<double>   GPos;
+    CPMFEnergyIntOptions                Options;
+    CStdIOFile                          OutputFile;
+    std::vector<CEnergyDerProxyPtr>     DerProxies;
+    std::vector<CPMFAccumulatorPtr>     Accumulators;
+    CEnergySurfacePtr                   FES;
+    CSmallTimeAndDate                   StartTime;
+    CSimpleVector<int>                  FFSeeds;
+    CSimpleVector<int>                  IPos;
+    CSimpleVector<int>                  TPos;
+    CSimpleVector<double>               GPos;
+    int                                 State;
 
     // output ------------------------------------
     CTerminalStr        Console;
     CVerboseStr         vout;
-    CSmallString        PMFAccuName;
     CSmallString        FEOutputName;
-    CSmallString        FullFEOutputName;
     std::vector<bool>   KeepCVs;
 
     void PrepareAccumulatorI(void);
     void PrepareAccumulatorII(void);
+    void PrintAccuStat(void);
     void PrintSampledStat(void);
     void FloodFillTest(void);
     bool InstallNewSeed(int seedid,bool unsampled);
@@ -96,7 +95,8 @@ private:
     void PrintGPRHyprms(FILE* p_fout);
     void LoadGPRHyprms(CIntegratorGPR& gpr);
     void LoadGPRHyprms(CSmootherGPR& gpr);
-    void SyncFESWithACCU(void);
+    void SyncFESWithAccu(void);
+    void SyncAccuWithFES(void);
     void DecodeEList(const CSmallString& spec, std::vector<bool>& elist,const CSmallString& optionname);
     bool ReduceFES(void);
     void AddMTCorr(void);

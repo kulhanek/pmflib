@@ -97,6 +97,7 @@ SET(PMF_CVS_SRC
         common/cvs/na/cv_nasbo.f90
         common/cvs/na/cv_nalbpp.f90
         common/cvs/na/cv_nasbpp.f90
+        common/cvs/na/cv_naybpp.f90
         common/cvs/na/cv_nasbppold.f90
         common/cvs/na/cv_naspsxy.f90
         common/cvs/na/cv_nalstp.f90

@@ -64,8 +64,11 @@ public:
     virtual ~CIntegratorGPR(void);
 
 // setup methods --------------------------------------------------------------
-    /// set input energy derivative proxy
-    void SetInputEnergyDerProxy(CEnergyDerProxyPtr p_proxy);
+    /// set input energy der proxy
+    void AddInputEnergyDerProxy(CEnergyDerProxyPtr p_proxy);
+
+    /// clear energy proxies
+    void ClearInputEnergyProxies(void);
 
     /// set output free energy surface
     void SetOutputES(CEnergySurfacePtr p_surf);
@@ -178,20 +181,19 @@ public:
 
 // section of private data ----------------------------------------------------
 private:
-    CPMFAccumulatorPtr      Accu;
-    CEnergyDerProxyPtr      DerProxy;
-    CEnergySurfacePtr       EneSurf;
-
-    int                     NumOfThreads;
+    std::vector<CEnergyDerProxyPtr> DerProxyItems;
+    CEnergySurfacePtr               EneSurface;
+    int                             NumOfThreads;
 
     // GPR data, sizes and index maps
-    size_t                  NCVs;
+    size_t                  NumOfCVs;
     size_t                  NumOfBins;
     size_t                  GPRSize;
     size_t                  NumOfUsedBins;
-    CSimpleVector<size_t>   SampledMap;
+    std::vector<size_t>     SampledMap;
+    std::vector<size_t>     DerProxyMap;
     size_t                  NumOfValues;
-    CSimpleVector<size_t>   ValueMap;
+    std::vector<size_t>     ValueMap;
 
     // setup
     bool                    UseNumDiff;

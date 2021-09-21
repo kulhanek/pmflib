@@ -8,7 +8,7 @@
 
 export OMP_NUM_THREADS=${INF_NCPUS:-1}
 export MKL_NUM_THREADS=${INF_NCPUS:-1}
-export OMP_PLACES=${OMP_PLACES:cores}
+export OMP_PLACES=${OMP_PLACES:-cores}
 
 _gpr-opthyprms "$@"
 
