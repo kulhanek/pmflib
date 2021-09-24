@@ -585,28 +585,28 @@ void CPMFAccuData::CombineWA(CPMFAccuDataPtr left,CPMFAccuDataPtr left_nsamples,
 
     if( Mode == "B" ){
         for(int ibin=0; ibin < NumOfBins; ibin++){
-            double ln = left_nsamples->GetData(ibin);
-            double rn = right_nsamples->GetData(ibin);
+            long double ln = left_nsamples->GetData(ibin);
+            long double rn = right_nsamples->GetData(ibin);
             if( (ln + rn) != 0.0 ) {
-                double lw = ln / (ln + rn);
-                double rw = rn / (ln + rn);
-                double ld = left->GetData(ibin);
-                double rd = right->GetData(ibin);
-                double re = lw*ld + rw*rd;
+                long double lw = ln / (ln + rn);
+                long double rw = rn / (ln + rn);
+                long double ld = left->GetData(ibin);
+                long double rd = right->GetData(ibin);
+                long double re = lw*ld + rw*rd;
                 SetData(ibin,re);
             }
         }
     } else if( Mode == "M" ) {
         for(int icv=0; icv < NumOfCVs; icv++){
             for(int ibin=0; ibin < NumOfBins; ibin++){
-                double ln = left_nsamples->GetData(ibin);
-                double rn = right_nsamples->GetData(ibin);
+                long double ln = left_nsamples->GetData(ibin);
+                long double rn = right_nsamples->GetData(ibin);
                 if( (ln + rn) != 0.0 ) {
-                    double lw = ln / (ln + rn);
-                    double rw = rn / (ln + rn);
-                    double ld = left->GetData(ibin,icv);
-                    double rd = right->GetData(ibin,icv);
-                    double re = lw*ld + rw*rd;
+                    long double lw = ln / (ln + rn);
+                    long double rw = rn / (ln + rn);
+                    long double ld = left->GetData(ibin,icv);
+                    long double rd = right->GetData(ibin,icv);
+                    long double re = lw*ld + rw*rd;
                     // cout << ln << " " << lw << " " << ld << " " << rn << " " << rw << " " << rd << " " << re << endl;
                     SetData(ibin,icv,re);
                 }
@@ -637,28 +637,28 @@ void CPMFAccuData::CombineM2(CPMFAccuDataPtr left,CPMFAccuDataPtr left_nsamples,
 
     if( Mode == "B" ){
         for(int ibin=0; ibin < NumOfBins; ibin++){
-            double ln = left_nsamples->GetData(ibin);
-            double rn = right_nsamples->GetData(ibin);
+            long double ln = left_nsamples->GetData(ibin);
+            long double rn = right_nsamples->GetData(ibin);
             if( (ln + rn) != 0.0 ) {
-                double w  = ln * rn / (ln + rn);
-                double dx = left_mean->GetData(ibin) - right_mean->GetData(ibin);
-                double ld = left->GetData(ibin);
-                double rd = right->GetData(ibin);
-                double re = ld + rd + dx*dx*w;
+                long double w  = ln * rn / (ln + rn);
+                long double dx = left_mean->GetData(ibin) - right_mean->GetData(ibin);
+                long double ld = left->GetData(ibin);
+                long double rd = right->GetData(ibin);
+                long double re = ld + rd + dx*dx*w;
                 SetData(ibin,re);
             }
         }
     } else if( Mode == "M" ) {
         for(int icv=0; icv < NumOfCVs; icv++){
             for(int ibin=0; ibin < NumOfBins; ibin++){
-                double ln = left_nsamples->GetData(ibin);
-                double rn = right_nsamples->GetData(ibin);
+                long double ln = left_nsamples->GetData(ibin);
+                long double rn = right_nsamples->GetData(ibin);
                 if( (ln + rn) != 0.0 ) {
-                    double w  = ln * rn / (ln + rn);
-                    double dx = left_mean->GetData(ibin,icv) - right_mean->GetData(ibin,icv);
-                    double ld = left->GetData(ibin,icv);
-                    double rd = right->GetData(ibin,icv);
-                    double re = ld + rd + dx*dx*w;
+                    long double w  = ln * rn / (ln + rn);
+                    long double dx = left_mean->GetData(ibin,icv) - right_mean->GetData(ibin,icv);
+                    long double ld = left->GetData(ibin,icv);
+                    long double rd = right->GetData(ibin,icv);
+                    long double re = ld + rd + dx*dx*w;
                     SetData(ibin,icv,re);
                 }
             }
@@ -688,30 +688,30 @@ void CPMFAccuData::CombineCO(CPMFAccuDataPtr left,CPMFAccuDataPtr left_nsamples,
 
     if( Mode == "B" ){
         for(int ibin=0; ibin < NumOfBins; ibin++){
-            double ln = left_nsamples->GetData(ibin);
-            double rn = right_nsamples->GetData(ibin);
+            long double ln = left_nsamples->GetData(ibin);
+            long double rn = right_nsamples->GetData(ibin);
             if( (ln + rn) != 0.0 ) {
-                double w  = ln * rn / (ln + rn);
-                double dx = left_xmean->GetData(ibin) - right_xmean->GetData(ibin);
-                double dy = left_ymean->GetData(ibin) - right_ymean->GetData(ibin);
-                double ld = left->GetData(ibin);
-                double rd = right->GetData(ibin);
-                double re = ld + rd + dx*dy*w;
+                long double w  = ln * rn / (ln + rn);
+                long double dx = left_xmean->GetData(ibin) - right_xmean->GetData(ibin);
+                long double dy = left_ymean->GetData(ibin) - right_ymean->GetData(ibin);
+                long double ld = left->GetData(ibin);
+                long double rd = right->GetData(ibin);
+                long double re = ld + rd + dx*dy*w;
                 SetData(ibin,re);
             }
         }
     } else if( Mode == "M" ) {
         for(int icv=0; icv < NumOfCVs; icv++){
             for(int ibin=0; ibin < NumOfBins; ibin++){
-                double ln = left_nsamples->GetData(ibin);
-                double rn = right_nsamples->GetData(ibin);
+                long double ln = left_nsamples->GetData(ibin);
+                long double rn = right_nsamples->GetData(ibin);
                 if( (ln + rn) != 0.0 ) {
-                    double w  = ln * rn / (ln + rn);
-                    double dx = left_xmean->GetData(ibin,icv) - right_xmean->GetData(ibin,icv);
-                    double dy = left_ymean->GetData(ibin,icv) - right_ymean->GetData(ibin,icv);
-                    double ld = left->GetData(ibin,icv);
-                    double rd = right->GetData(ibin,icv);
-                    double re = ld + rd + dx*dy*w;
+                    long double w  = ln * rn / (ln + rn);
+                    long double dx = left_xmean->GetData(ibin,icv) - right_xmean->GetData(ibin,icv);
+                    long double dy = left_ymean->GetData(ibin,icv) - right_ymean->GetData(ibin,icv);
+                    long double ld = left->GetData(ibin,icv);
+                    long double rd = right->GetData(ibin,icv);
+                    long double re = ld + rd + dx*dy*w;
                     SetData(ibin,icv,re);
                 }
             }

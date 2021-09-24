@@ -54,6 +54,10 @@ private:
     // output ------------------------------------
     CTerminalStr        Console;
     CVerboseStr         vout;
+
+    void PrintSampledStat(void);
+    void CombineLinear(void);
+    void CombineAsTree(void);
 };
 
 //------------------------------------------------------------------------------

@@ -56,6 +56,8 @@ public:
 // list of all options and arguments ------------------------------------------
     CSO_LIST_BEGIN
     // options ------------------------------
+    CSO_OPT(bool,Linear)
+    CSO_OPT(int,Limit)
     CSO_OPT(bool,Verbose)
     CSO_OPT(bool,Version)
     CSO_OPT(bool,Help)
@@ -63,6 +65,24 @@ public:
 
     CSO_MAP_BEGIN
 // description of options ---------------------------------------------------
+    CSO_MAP_OPT(bool,                           /* option type */
+                Linear,                        /* option name */
+                false,                          /* default value */
+                false,                          /* is option mandatory */
+                0,                           /* short option name */
+                "linear",                      /* long option name */
+                NULL,                           /* parameter name */
+                "Combine PMF accumulators by step-by-step algorithm.")   /* option description */
+    //----------------------------------------------------------------------
+    CSO_MAP_OPT(int,                           /* option type */
+                Limit,                        /* option name */
+                0,                          /* default value */
+                false,                          /* is option mandatory */
+                'l',                           /* short option name */
+                "limit",                      /* long option name */
+                "LIMIT",                           /* parameter name */
+                "Only bins containing more samples than NUMBER are considered as properly sampled.")   /* option description */
+    //----------------------------------------------------------------------
     CSO_MAP_OPT(bool,                           /* option type */
                 Verbose,                        /* option name */
                 false,                          /* default value */

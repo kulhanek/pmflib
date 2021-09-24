@@ -24,6 +24,7 @@
 #include <ErrorSystem.hpp>
 #include <SmallTimeAndDate.hpp>
 #include <boost/format.hpp>
+#include <iomanip>
 
 //------------------------------------------------------------------------------
 
@@ -90,6 +91,7 @@ bool CACCUCombine::Run(void)
     int state = 1;
     vout << endl;
     vout << format("%02d:Loading input PMF accumulators ...")%state << endl;
+    state++;
     try {
         for(int i=0; i < Options.GetNumberOfProgArgs() - 1; i++){
             vout << format("  >> %05d %s")%(i+1)%string(Options.GetProgArg(i)) << endl;
@@ -102,19 +104,28 @@ bool CACCUCombine::Run(void)
         return(false);
     }
 
-    state++;
+// -----------------------------------------------------------------------------
     vout << endl;
-    vout << format("%02d:Combining PMF accumulators ...")%state << endl;
-    OutAccu = InAccus.front();  // the first accumulator becomes the output one
-
-    // combine the others into the first one
-    for(int i=1; i < Options.GetNumberOfProgArgs() - 1; i++){
-        OutAccu->Combine(InAccus[i]);
-    }
-
+    vout << format("%02d:Statistics of input accumulators")%state << endl;
     state++;
+    PrintSampledStat();
+    vout << "   Done." << endl;
+
+// -----------------------------------------------------------------------------
+
+    vout << endl;
+    if( Options.GetOptLinear() ){
+        vout << format("%02d:Combining PMF accumulators ... (linear mode)")%state << endl;
+        CombineLinear();
+    } else {
+        vout << format("%02d:Combining PMF accumulators ... (tree mode)")%state << endl;
+        CombineAsTree();
+    }
+    state++;
+
     vout << endl;
     vout << format("%02d:Saving the resulting PMF accumulator: %s")%state%Options.GetProgArg(Options.GetNumberOfProgArgs()-1) << endl;
+    state++;
 
 // save final accumulator
     try {
@@ -125,6 +136,96 @@ bool CACCUCombine::Run(void)
     }
 
     return(true);
+}
+
+//------------------------------------------------------------------------------
+
+void CACCUCombine::CombineLinear(void)
+{
+    OutAccu = InAccus.front();  // the first accumulator becomes the output one
+    // combine the others into the first one
+    for(int i=1; i < Options.GetNumberOfProgArgs() - 1; i++){
+        OutAccu->Combine(InAccus[i]);
+    }
+}
+
+//------------------------------------------------------------------------------
+
+void CACCUCombine::CombineAsTree(void)
+{
+    int pass = 1;
+    while( InAccus.size() > 1 ){
+        vout << format("   Pass: %5d - number of accumulators: %5d")%pass%InAccus.size() << endl;
+        std::vector<CPMFAccumulatorPtr> newset;
+        std::vector<CPMFAccumulatorPtr>::iterator it = InAccus.begin();
+        std::vector<CPMFAccumulatorPtr>::iterator ie = InAccus.end();
+        CPMFAccumulatorPtr combined;
+        bool first = true;
+        while( it != ie ){
+            CPMFAccumulatorPtr accu = *it;
+            if( first ){
+                // first
+                combined = accu;
+                newset.push_back(combined);
+                it++;
+                first = false;
+            } else {
+                // second - combine
+                combined->Combine(accu);
+                it++;
+                if(  it != ie ){
+                    // third - combine if it is the last item
+                    CPMFAccumulatorPtr accu = *it;
+                    if( accu == InAccus.back() ){
+                        combined->Combine(accu);
+                        it++;
+                    }
+                }
+                first = true;
+            }
+        }
+        InAccus = newset;
+        pass++;
+    }
+
+    // final accumulator
+    OutAccu = InAccus.front();
+}
+
+//------------------------------------------------------------------------------
+
+void CACCUCombine::PrintSampledStat(void)
+{
+    for(size_t i=0; i < InAccus.size(); i++){
+        CPMFAccumulatorPtr accu = InAccus[i];
+        vout << format("** PMF Accumulator #%05d ...")%(i+1);
+        // calculate sampled area
+        double maxbins = accu->GetNumOfBins();
+        int    sampled = 0;
+        int    limit = 0;
+        for(int ibin=0; ibin < accu->GetNumOfBins(); ibin++) {
+            if( accu->GetNumOfSamples(ibin) > 0 ) {
+                sampled++;
+            }
+            if( accu->GetNumOfSamples(ibin) > Options.GetOptLimit() ) {
+                limit++;
+            } else {
+                accu->SetNumOfSamples(ibin,0);
+            }
+        }
+        if( maxbins > 0 ){
+            vout << " Sampled area: "
+                 << setw(6) << sampled << " / " << (int)maxbins << " | " << setw(5) << setprecision(1) << fixed << sampled/maxbins*100 <<"%";
+            vout << " Within limit: "
+                 << setw(6) << limit << " / " << (int)maxbins << " | " << setw(5) << setprecision(1) << fixed << limit/maxbins*100 <<"%";
+        }
+        vout << endl;
+        if( accu->CheckCVSInfo(InAccus[0]) == false ){
+            CSmallString error;
+            error << "inconsistent dimensions of two PMF accumulators";
+            RUNTIME_ERROR(error);
+        }
+    }
 }
 
 //==============================================================================

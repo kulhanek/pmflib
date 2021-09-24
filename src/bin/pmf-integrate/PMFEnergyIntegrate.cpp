@@ -228,10 +228,12 @@ bool CPMFEnergyIntegrate::Run(void)
     }
 
     if( (Options.GetOptMethod() == "rfd") || (Options.GetOptMethod() == "rbf") ){
-        CSmallString error;
-        error << "RFD/RBF: only one PMF accumulator can be provided";
-        ES_ERROR(error);
-        return(false);
+        if( Accumulators.size() != 1 ){
+            CSmallString error;
+            error << "RFD/RBF: only one PMF accumulator can be provided";
+            ES_ERROR(error);
+            return(false);
+        }
     }
 
 // realms

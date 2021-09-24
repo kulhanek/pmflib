@@ -558,11 +558,12 @@ void CEnthalpy::PrintSampledStat(void)
             }
         }
         if( maxbins > 0 ){
-            vout << "   Sampled area: "
+            vout << " Sampled area: "
                  << setw(6) << sampled << " / " << (int)maxbins << " | " << setw(5) << setprecision(1) << fixed << sampled/maxbins*100 <<"%" << endl;
-            vout << "   Sampled area (within limit): "
+            vout << " Within limit: "
                  << setw(6) << limit << " / " << (int)maxbins << " | " << setw(5) << setprecision(1) << fixed << limit/maxbins*100 <<"%" << endl;
         }
+        vout << endl;
         if( accu->CheckCVSInfo(Accumulators[0]) == false ){
             CSmallString error;
             error << "inconsistent dimensions of two PMF accumulators";
