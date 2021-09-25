@@ -81,8 +81,6 @@ subroutine usabf_init_dat
     fepotoffset     = 0.0d0
     fekinoffset     = 0.0d0
 
-    fblock_size     = 0
-
     NumOfUSABFCVs     = 0
 
     insidesamples   = 0
@@ -139,7 +137,6 @@ subroutine usabf_init_print_header
     write(PMF_OUT,120)  ' ------------------------------------------------------'
     write(PMF_OUT,125)  ' Output file (fusabfout)                 : ', trim(fusabfout)
     write(PMF_OUT,130)  ' Output sampling (fsample)               : ', fsample
-    write(PMF_OUT,130)  ' Data pre-blocking (fblock_size)         : ', fblock_size
     write(PMF_OUT,125)  ' Accumulate enthalpy (fenthalpy)         : ', prmfile_onoff(fenthalpy)
     write(PMF_OUT,125)  ' Accumulate entropy (fentropy)           : ', prmfile_onoff(fentropy)
     write(PMF_OUT,150)  ' Potential energy offset (fepotoffset)   : ', pmf_unit_get_rvalue(EnergyUnit,fepotoffset),  &

@@ -68,6 +68,7 @@ subroutine abf_accu_init()
     ! ABF force arrays
     allocate(   abfaccu%weights(abfaccu%tot_nbins), &
                 abfaccu%nsamples(abfaccu%tot_nbins), &
+                abfaccu%smicf(abfaccu%tot_cvs,abfaccu%tot_nbins), &
                 abfaccu%micf(abfaccu%tot_cvs,abfaccu%tot_nbins), &
                 abfaccu%m2icf(abfaccu%tot_cvs,abfaccu%tot_nbins), &
                 stat = alloc_failed)
@@ -94,16 +95,6 @@ subroutine abf_accu_init()
 
         if( alloc_failed .ne. 0 ) then
             call pmf_utils_exit(PMF_OUT, 1,'[ABF] Unable to allocate memory for abf accumulator (entropy)!')
-        endif
-    end if
-
-    if( feimode .eq. 2 ) then
-        allocate(   abfaccu%smicf(abfaccu%tot_cvs,abfaccu%tot_nbins), &
-                    abfaccu%gksfac(abfaccu%tot_nbins,abfaccu%tot_nbins), &
-                    stat = alloc_failed)
-
-        if( alloc_failed .ne. 0 ) then
-            call pmf_utils_exit(PMF_OUT, 1,'[ABF] Unable to allocate memory for abf accumulator (gks)!')
         endif
     end if
 
@@ -144,6 +135,7 @@ subroutine abf_accu_clear()
 
     abfaccu%weights(:)      = 1.0d0
     abfaccu%nsamples(:)     = 0
+    abfaccu%smicf(:,:)      = 0.0d0
     abfaccu%micf(:,:)       = 0.0d0
     abfaccu%m2icf(:,:)      = 0.0d0
 
@@ -158,11 +150,6 @@ subroutine abf_accu_clear()
         abfaccu%c11hh(:,:)      = 0.0d0
     end if
 
-    if( feimode .eq. 2 ) then
-        abfaccu%smicf(:,:)      = 0.0d0
-        call abf_accu_gen_gks_wfac
-    end if
-
     if( fserver_enabled ) then
         abfaccu%inc_nsamples(:) = 0
         abfaccu%inc_micf(:,:)   = 0.0d0
@@ -175,47 +162,6 @@ subroutine abf_accu_clear()
     end if
 
 end subroutine abf_accu_clear
-
-!===============================================================================
-! Subroutine:  abf_accu_gen_gks_wfac
-!===============================================================================
-
-subroutine abf_accu_gen_gks_wfac()
-
-    use abf_dat
-    use pmf_dat
-
-    implicit none
-    integer     :: i,j,k
-    real(PMFDP) :: posa(NumOfABFCVs)
-    real(PMFDP) :: posb(NumOfABFCVs)
-    real(PMFDP) :: totw, w, arg, norm, dcv
-    ! --------------------------------------------------------------------------
-
-    do i=1,abfaccu%tot_nbins
-        call pmf_accu_get_point(abfaccu%PMFAccuType,i,posa)
-        totw = 0.0d0
-        do j=1,abfaccu%tot_nbins
-            call pmf_accu_get_point(abfaccu%PMFAccuType,j,posb)
-            arg = 0.0d0
-            do k=1,abfaccu%tot_cvs
-                dcv = abfaccu%sizes(k)%cv%get_deviation(posa(k),posb(k)) / (ABFCVList(k)%wfac * abfaccu%sizes(k)%bin_width)
-                arg = arg + dcv**2
-            end do
-            w = exp(-0.5d0*arg)
-            abfaccu%gksfac(i,j) = w
-            totw = totw + w
-        end do
-        norm = 1.0d0
-        if( totw .ne. 0 ) then
-            norm = 1.0d0 / totw
-        end if
-        do j=1,abfaccu%tot_nbins
-            abfaccu%gksfac(i,j) = abfaccu%gksfac(i,j) * norm
-        end do
-    end do
-
-end subroutine abf_accu_gen_gks_wfac
 
 !===============================================================================
 ! Subroutine:  abf_accu_read
@@ -552,74 +498,6 @@ subroutine abf_accu_get_data_lramp(values,gfx)
     end if
 
 end subroutine abf_accu_get_data_lramp
-
-!===============================================================================
-! Subroutine:  abf_accu_get_data_gks
-!===============================================================================
-
-subroutine abf_accu_get_data_gks(values,gfx)
-
-    use abf_dat
-    use pmf_dat
-    use pmf_utils
-
-    implicit none
-    real(PMFDP)    :: values(:)
-    real(PMFDP)    :: gfx(:)
-    ! -----------------------------------------------
-    integer        :: gi0
-    real(PMFDP)    :: w
-    ! --------------------------------------------------------------------------
-
-    if( fsmoothupdate .gt. 0 ) then
-        if( mod(fstep,fsmoothupdate) .eq. 0 ) then
-            call abf_accu_get_data_gks_smooth
-        end if
-    end if
-
-    gfx(:) = 0.0d0
-
-    ! get global index to accumulator for average values within the set
-    gi0 = pmf_accu_globalindex(abfaccu%PMFAccuType,values)
-    if( gi0 .le. 0 ) return ! out of valid area
-
-    ! get smoothed ICF
-    w      = abfaccu%weights(gi0)
-    gfx(:) = w * abfaccu%smicf(:,gi0)
-
-end subroutine abf_accu_get_data_gks
-
-!===============================================================================
-! Subroutine:  abf_accu_get_data_gks
-!===============================================================================
-
-subroutine abf_accu_get_data_gks_smooth
-
-    use abf_dat
-    use pmf_dat
-    use pmf_utils
-    use pmf_timers
-
-    implicit none
-    integer        :: i,j,k
-    real(PMFDP)    :: sm
-    ! --------------------------------------------------------------------------
-
-    call pmf_timers_start_timer(PMFLIB_ABF_GKS_TIMER)
-
-    do i=1,abfaccu%tot_cvs
-        do j=1,abfaccu%tot_nbins
-            sm = 0.0d0
-            do k=1,abfaccu%tot_nbins
-                sm = sm + abfaccu%micf(i,k)*abfaccu%gksfac(k,j)
-            end do
-            abfaccu%smicf(i,j) = sm
-        end do
-    end do
-
-    call pmf_timers_stop_timer(PMFLIB_ABF_GKS_TIMER)
-
-end subroutine abf_accu_get_data_gks_smooth
 
 !===============================================================================
 

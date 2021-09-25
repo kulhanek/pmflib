@@ -139,8 +139,6 @@ subroutine abf_core_force_4p()
                 call abf_accu_get_data(cvaluehist3(:),la)
             case(1)
                 call abf_accu_get_data_lramp(cvaluehist3(:),la)
-            case(2)
-                call abf_accu_get_data_gks(cvaluehist3(:),la)
         case default
             call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented extrapolation/interpolation mode!')
     end select
@@ -358,8 +356,6 @@ subroutine abf_core_force_2p()
                 call abf_accu_get_data(cvaluehist1(:),la)
             case(1)
                 call abf_accu_get_data_lramp(cvaluehist1(:),la)
-            case(2)
-                call abf_accu_get_data_gks(cvaluehist1(:),la)
             case default
                 call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented extrapolation/interpolation mode!')
         end select

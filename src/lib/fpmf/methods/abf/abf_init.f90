@@ -85,7 +85,6 @@ subroutine abf_init_dat
     feimode         = 1
     fhramp_min      = 100
     fhramp_max      = 200
-    fsmoothupdate   = 5000
 
     NumOfABFCVs     = 0
 
@@ -159,9 +158,6 @@ subroutine abf_init_print_header
     write(PMF_OUT,120)  '      |-> Min/Max linear ramp'
     write(PMF_OUT,130)  ' Min of accu samples in bin (fhramp_min) : ', fhramp_min
     write(PMF_OUT,130)  ' Max of accu samples in bin (fhramp_max) : ', fhramp_max
-    case(2)
-    write(PMF_OUT,120)  '      |-> Smoothing using Gaussian kernel'
-    write(PMF_OUT,130)  ' Smoothing interval                      : ', fsmoothupdate
     case default
     call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown extrapolation/interpolation mode in abf_init_print_header!')
     end select

@@ -98,7 +98,7 @@ subroutine abf_control_read_abf(prm_fin)
     call pmf_ctrl_read_real8_wunit(prm_fin,'fekinoffset',EnergyUnit,fekinoffset,'F10.1')
 
     call pmf_ctrl_read_integer(prm_fin,'feimode',feimode,'i12')
-    call pmf_ctrl_check_integer_in_range('ABF','feimode',feimode,0,2)
+    call pmf_ctrl_check_integer_in_range('ABF','feimode',feimode,0,1)
 
     select case(feimode)
         case(0)
@@ -112,10 +112,6 @@ subroutine abf_control_read_abf(prm_fin)
             if( fhramp_max .lt. fhramp_min ) then
                 call pmf_utils_exit(PMF_OUT,1,'[ABF] fhramp_max must be >= fhramp_min!')
             end if
-        case(2)
-            write(PMF_OUT,52)
-            call pmf_ctrl_read_integer(prm_fin,'fsmoothupdate',fsmoothupdate,'i12')
-            call pmf_ctrl_check_integer('ABF','fsmoothupdate',fsmoothupdate,0,CND_GT)
         case default
             call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown extrapolation/interpolation mode!')
     end select

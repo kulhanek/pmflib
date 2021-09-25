@@ -82,9 +82,6 @@ subroutine usabf_control_read_abf(prm_fin)
     call pmf_ctrl_read_integer(prm_fin,'faccurst',faccurst,'i12')
     call pmf_ctrl_check_integer('US-ABF','faccurst',faccurst,-1,CND_GE)
 
-    call pmf_ctrl_read_integer(prm_fin,'fblock_size',fblock_size,'i12')
-    call pmf_ctrl_check_integer('US-ABF','fblock_size',fblock_size,0,CND_GE)
-
     call pmf_ctrl_read_integer(prm_fin,'fsample',fsample,'i12')
     call pmf_ctrl_check_integer('US-ABF','fsample',fsample,0,CND_GE)
 

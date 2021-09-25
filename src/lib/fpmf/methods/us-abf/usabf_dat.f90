@@ -51,8 +51,6 @@ logical     :: fentropy     ! collect data for entropy calculation
 real(PMFDP) :: fepotoffset
 real(PMFDP) :: fekinoffset
 
-integer     :: fblock_size  ! pre-blocking
-
 ! item list --------------------------------------------------------------------
 type CVTypeUSABF
     integer                 :: cvindx           ! general description of coordinate
@@ -103,14 +101,6 @@ type,extends(PMFAccuType)   :: USABFAccuType
 
     real(PMFDP),pointer     :: mcovhh(:,:)
     real(PMFDP),pointer     :: m2covhh(:,:)
-
-    ! pre-blocking
-    integer,pointer         :: block_nsamples(:)        ! number of hits into bins
-    real(PMFDP),pointer     :: block_micf(:,:)          ! mean ICF - total
-    real(PMFDP),pointer     :: block_metot(:)           ! mean of total energy
-    real(PMFDP),pointer     :: block_mepot(:)           ! mean of potential energy
-    real(PMFDP),pointer     :: block_merst(:)           ! mean of restraint energy
-    real(PMFDP),pointer     :: block_c11hh(:,:)         ! c11 - total/total
 
 end type USABFAccuType
 

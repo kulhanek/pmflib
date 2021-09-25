@@ -47,7 +47,6 @@ logical     :: fapply_abf   ! on - apply ABF, off - do not apply ABF
 integer     :: feimode      ! interpolation/extrapolation mode
                             ! 0 - disabled
                             ! 1 - linear ramp
-                            ! 2 - Gaussian kernel smoothing
 
 logical     :: fenthalpy    ! collect data for enthalpy calculation
 logical     :: fentropy     ! collect data for entropy calculation
@@ -57,9 +56,6 @@ real(PMFDP) :: fekinoffset
 ! linear ramp
 integer     :: fhramp_min
 integer     :: fhramp_max
-
-! kernel smoothing
-integer     :: fsmoothupdate    ! how often to smooth data
 
 ! server part ------------------------------------------------------------------
 logical                 :: fserver_enabled      ! is abf-server enabled?
@@ -105,9 +101,8 @@ type,extends(PMFAccuType) :: ABFAccuType
     real(PMFDP),pointer    :: m2etot(:)                 ! M2 of total energy
     real(PMFDP),pointer    :: c11hh(:,:)                ! cov(H,H) for entropy
 
-    ! smoothed ICF
-    real(PMFDP),pointer    :: smicf(:,:)                ! mean ICF, smoothed
-    real(PMFDP),pointer    :: gksfac(:,:)               ! smoothing factors, nbinsxnbins
+    ! applied ICF
+    real(PMFDP),pointer    :: smicf(:,:)                ! applied MICF
 
     ! ABF force - incremental part for ABF-server
     integer,pointer        :: inc_nsamples(:)           ! number of hits into bins
