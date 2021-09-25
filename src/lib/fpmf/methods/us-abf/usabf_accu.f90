@@ -91,6 +91,9 @@ subroutine usabf_accu_init()
 
                 usabfaccu%merst(usabfaccu%tot_nbins), &
                 usabfaccu%m2erst(usabfaccu%tot_nbins), &
+
+                usabfaccu%mebias(usabfaccu%tot_nbins), &
+                usabfaccu%m2ebias(usabfaccu%tot_nbins), &
                 stat = alloc_failed)
 
         if( alloc_failed .ne. 0 ) then
@@ -102,6 +105,7 @@ subroutine usabf_accu_init()
     if( fentropy ) then
         allocate(  &
                 usabfaccu%c11hh(usabfaccu%tot_cvs,usabfaccu%tot_nbins), &
+                usabfaccu%c11hb(usabfaccu%tot_cvs,usabfaccu%tot_nbins), &
                 stat = alloc_failed)
 
         if( alloc_failed .ne. 0 ) then
@@ -141,10 +145,14 @@ subroutine usabf_accu_clear()
 
         usabfaccu%merst(:)      = 0.0d0
         usabfaccu%m2erst(:)     = 0.0d0
+
+        usabfaccu%mebias(:)     = 0.0d0
+        usabfaccu%m2ebias(:)    = 0.0d0
     end if
 
     if( fentropy ) then
         usabfaccu%c11hh(:,:)    = 0.0d0
+        usabfaccu%c11hb(:,:)    = 0.0d0
     end if
 
 end subroutine usabf_accu_clear
@@ -240,10 +248,31 @@ subroutine usabf_accu_read(iounit)
                     else
                         call pmf_accu_skip_section(iounit,keyline,USABF_OUT)
                     end if
+            ! ------------------------------------
+                case('MEBIAS')
+                    if( fenthalpy .or. fentropy ) then
+                        call pmf_accu_read_rbuf_B(usabfaccu%PMFAccuType,iounit,keyline,usabfaccu%mebias)
+                    else
+                        call pmf_accu_skip_section(iounit,keyline,USABF_OUT)
+                    end if
+            ! ------------------------------------
+                case('M2EBIAS')
+                    if( fenthalpy  .or. fentropy ) then
+                        call pmf_accu_read_rbuf_B(usabfaccu%PMFAccuType,iounit,keyline,usabfaccu%m2ebias)
+                    else
+                        call pmf_accu_skip_section(iounit,keyline,USABF_OUT)
+                    end if
            ! ------------------------------------
                 case('C11HH')
                     if( fentropy ) then
                         call pmf_accu_read_rbuf_M(usabfaccu%PMFAccuType,iounit,keyline,usabfaccu%c11hh)
+                    else
+                        call pmf_accu_skip_section(iounit,keyline,USABF_OUT)
+                    end if
+           ! ------------------------------------
+                case('C11HB')
+                    if( fentropy ) then
+                        call pmf_accu_read_rbuf_M(usabfaccu%PMFAccuType,iounit,keyline,usabfaccu%c11hb)
                     else
                         call pmf_accu_skip_section(iounit,keyline,USABF_OUT)
                     end if
@@ -298,10 +327,14 @@ subroutine usabf_accu_write(iounit)
 
         call pmf_accu_write_rbuf_B(usabfaccu%PMFAccuType,iounit,'MERST',    'WA',usabfaccu%merst)
         call pmf_accu_write_rbuf_B(usabfaccu%PMFAccuType,iounit,'M2ERST',   'M2',usabfaccu%m2erst,'MERST')
+
+        call pmf_accu_write_rbuf_B(usabfaccu%PMFAccuType,iounit,'MEBIAS',    'WA',usabfaccu%mebias)
+        call pmf_accu_write_rbuf_B(usabfaccu%PMFAccuType,iounit,'M2EBIAS',   'M2',usabfaccu%m2ebias,'MEBIAS')
     end if
 
     if( fentropy ) then
         call pmf_accu_write_rbuf_M(usabfaccu%PMFAccuType,iounit,'C11HH',    'CO',usabfaccu%c11hh,'MICF','METOT')
+        call pmf_accu_write_rbuf_M(usabfaccu%PMFAccuType,iounit,'C11HB',    'CO',usabfaccu%c11hb,'MICF','MEBIAS')
     end if
 
 end subroutine usabf_accu_write
@@ -310,7 +343,7 @@ end subroutine usabf_accu_write
 ! Subroutine:  usabf_accu_add_data_online
 !===============================================================================
 
-subroutine usabf_accu_add_data_online(cvs,gfx,epot,ekin,erst)
+subroutine usabf_accu_add_data_online(cvs,gfx,epot,ekin,erst,ebias)
 
     use usabf_dat
     use pmf_dat
@@ -322,12 +355,14 @@ subroutine usabf_accu_add_data_online(cvs,gfx,epot,ekin,erst)
     real(PMFDP)    :: epot
     real(PMFDP)    :: ekin
     real(PMFDP)    :: erst
+    real(PMFDP)    :: ebias
     ! -----------------------------------------------
     integer        :: gi0, i
     real(PMFDP)    :: invn, etot, icf
     real(PMFDP)    :: detot1, detot2
     real(PMFDP)    :: depot1, depot2
     real(PMFDP)    :: derst1, derst2
+    real(PMFDP)    :: debias1, debias2
     real(PMFDP)    :: dicf1, dicf2
     ! --------------------------------------------------------------------------
 
@@ -370,6 +405,12 @@ subroutine usabf_accu_add_data_online(cvs,gfx,epot,ekin,erst)
         derst2 = erst - usabfaccu%merst(gi0)
         usabfaccu%m2erst(gi0) = usabfaccu%m2erst(gi0) + derst1 * derst2
 
+        ! biasing energy
+        debias1 = ebias - usabfaccu%mebias(gi0)
+        usabfaccu%mebias(gi0)  = usabfaccu%mebias(gi0)  + debias1 * invn
+        debias2 = ebias - usabfaccu%mebias(gi0)
+        usabfaccu%m2ebias(gi0) = usabfaccu%m2ebias(gi0) + debias1 * debias2
+
     end if
 
     do i=1,NumOfUSABFCVs
@@ -382,6 +423,7 @@ subroutine usabf_accu_add_data_online(cvs,gfx,epot,ekin,erst)
 
         if( fentropy ) then
             usabfaccu%c11hh(i,gi0)  = usabfaccu%c11hh(i,gi0) + dicf1 * detot2
+            usabfaccu%c11hb(i,gi0)  = usabfaccu%c11hb(i,gi0) + dicf1 * debias2
         end if
     end do
 

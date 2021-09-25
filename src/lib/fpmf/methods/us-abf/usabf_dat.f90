@@ -95,9 +95,12 @@ type,extends(PMFAccuType)   :: USABFAccuType
     real(PMFDP),pointer     :: m2epot(:)                ! M2 of potential energy
     real(PMFDP),pointer     :: merst(:)                 ! mean of restraint energy
     real(PMFDP),pointer     :: m2erst(:)                ! M2 of restraint energy
+    real(PMFDP),pointer     :: mebias(:)                ! mean of biasing energy
+    real(PMFDP),pointer     :: m2ebias(:)               ! M2 of biasing energy
 
     ! ENTROPY
     real(PMFDP),pointer     :: c11hh(:,:)               ! c11 - total/total
+    real(PMFDP),pointer     :: c11hb(:,:)               ! c11 - total/biasing
 
     real(PMFDP),pointer     :: mcovhh(:,:)
     real(PMFDP),pointer     :: m2covhh(:,:)
@@ -152,6 +155,11 @@ real(PMFDP)                 :: ersthist0   ! history of Erst (PMFEne)
 real(PMFDP)                 :: ersthist1   ! history of Erst
 real(PMFDP)                 :: ersthist2   ! history of Erst
 real(PMFDP)                 :: ersthist3   ! history of Erst
+
+real(PMFDP)                 :: ebiashist0  ! history of EBias (US-ABF)
+real(PMFDP)                 :: ebiashist1  ! history of EBias
+real(PMFDP)                 :: ebiashist2  ! history of EBias
+real(PMFDP)                 :: ebiashist3  ! history of EBias
 
 ! ------------------------------------------------------------------------------
 

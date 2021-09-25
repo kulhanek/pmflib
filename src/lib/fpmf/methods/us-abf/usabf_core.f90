@@ -116,7 +116,7 @@ subroutine usabf_core_force_4p()
     implicit none
     integer     :: i,j,k,m
     integer     :: ci,ck
-    real(PMFDP) :: v,avg_epot,avg_ekin,avg_erst
+    real(PMFDP) :: v,avg_epot,avg_ekin,avg_erst,avg_ebias
     ! --------------------------------------------------------------------------
 
     ! calculate acceleration in time t for all pmf atoms
@@ -149,7 +149,7 @@ subroutine usabf_core_force_4p()
     ekinhist0 = ekinhist1
     ekinhist1 = ekinhist2
     ekinhist2 = ekinhist3
-    if( fentropy ) then
+    if( fentropy .or. fentropy ) then
         ekinhist3 = KinEne + fekinoffset
     else
         ekinhist3 = 0.0d0
@@ -159,7 +159,7 @@ subroutine usabf_core_force_4p()
     ersthist0 = ersthist1
     ersthist1 = ersthist2
     ersthist2 = ersthist3
-    if( fentropy ) then
+    if( fentropy .or. fentropy ) then
         ersthist3 = PMFEne
     else
         ersthist3 = 0.0d0
@@ -167,6 +167,16 @@ subroutine usabf_core_force_4p()
 
     ! get us force to be applied --------------------
     call usabf_core_get_us_bias(cvaluehist3(:),la)
+
+    ! shift erst ene
+    ebiashist0 = ebiashist1
+    ebiashist1 = ebiashist2
+    ebiashist2 = ebiashist3
+    if( fentropy .or. fentropy ) then
+        ebiashist3 = TotalUSABFEnergy
+    else
+        ebiashist3 = 0.0d0
+    end if
 
     ! project abf force along coordinate ------------
     do i=1,NumOfUSABFCVs
@@ -230,12 +240,13 @@ subroutine usabf_core_force_4p()
             avg_values(i) = USABFCVList(i)%cv%get_average_value(cvaluehist1(i),cvaluehist2(i))
         end do
 
-        avg_epot = 0.5d0*(epothist1 + epothist2) ! t - 3/2*dt
-        avg_ekin = 0.5d0*(ekinhist2 + ekinhist3) ! t - 1/2*dt; ekin already shifted by -dt
-        avg_erst = 0.5d0*(ersthist1 + ersthist2) ! t - 3/2*dt
+        avg_epot  = 0.5d0*(epothist1 + epothist2)    ! t - 3/2*dt
+        avg_ekin  = 0.5d0*(ekinhist2 + ekinhist3)    ! t - 1/2*dt; ekin already shifted by -dt
+        avg_erst  = 0.5d0*(ersthist1 + ersthist2)    ! t - 3/2*dt
+        avg_ebias = 0.5d0*(ebiashist1 + ebiashist2)  ! t - 3/2*dt
 
         ! add data to accumulator
-        call usabf_accu_add_data_online(cvaluehist0,pxi0(:),avg_epot,avg_ekin,avg_erst)
+        call usabf_accu_add_data_online(cvaluehist0,pxi0(:),avg_epot,avg_ekin,avg_erst,avg_ebias)
     end if
 
     ! pxi0 <--- -pxip + pxim + pxi1 - la/2
@@ -292,7 +303,7 @@ subroutine usabf_core_force_2p()
 
     ! shift ekin ene
     ekinhist0 = ekinhist1
-    if( fentropy ) then
+    if( fentropy .or. fentropy ) then
         ekinhist1 = KinEne + fekinoffset
     else
         ekinhist1 = 0.0d0
@@ -300,7 +311,7 @@ subroutine usabf_core_force_2p()
 
     ! shift erst ene
     ersthist0 = ersthist1
-    if( fentropy ) then
+    if( fentropy .or. fentropy ) then
         ersthist1 = PMFEne
     else
         ersthist1 = 0.0d0
@@ -356,7 +367,7 @@ subroutine usabf_core_force_2p()
         pxi0(:) = pxi0(:) + pxim(:)
 
         ! add data to accumulator
-        call usabf_accu_add_data_online(cvaluehist0,pxi0(:),epothist0,ekinhist1,ersthist0)
+        call usabf_accu_add_data_online(cvaluehist0,pxi0(:),epothist0,ekinhist1,ersthist0,ebiashist0)
     end if
 
     ! backup to the next step
@@ -366,6 +377,14 @@ subroutine usabf_core_force_2p()
 
     ! get us force to be applied --------------------
     call usabf_core_get_us_bias(cvaluehist1(:),la)
+
+    ! shift erst ene
+    ebiashist0 = ebiashist1
+    if( fentropy .or. fentropy ) then
+        ebiashist1 = TotalUSABFEnergy
+    else
+        ebiashist1 = 0.0d0
+    end if
 
     ! project us force along coordinate
     do i=1,NumOfUSABFCVs
