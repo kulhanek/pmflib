@@ -56,6 +56,9 @@ subroutine usabf_core_main
         case(2)
             ! original ABF algorithm
             call usabf_core_force_4p
+        case(3)
+            ! 7-points
+            call usabf_core_force_7p
         case default
             call pmf_utils_exit(PMF_OUT,1,'[TABF] Not implemented fmode in usabf_core_main!')
     end select
@@ -100,6 +103,127 @@ subroutine usabf_core_get_us_bias(values,gfx)
 end subroutine usabf_core_get_us_bias
 
 !===============================================================================
+! Subroutine:  usabf_core_force_2p
+! this is leap-frog ABF version
+!===============================================================================
+
+subroutine usabf_core_force_2p()
+
+    use pmf_utils
+    use pmf_dat
+    use pmf_cvs
+    use usabf_dat
+    use usabf_accu
+    use usabf_output
+
+    implicit none
+    integer                :: i,j,k,m
+    integer                :: ci,ki
+    real(PMFDP)            :: v,e
+    ! --------------------------------------------------------------------------
+
+    ! shift accuvalue history
+    cvhist0(:) = cvhist1(:)
+
+    ! save coordinate value to history
+    do i=1,NumOfUSABFCVs
+        ci = USABFCVList(i)%cvindx
+        cvhist1(i) = CVContext%CVsValues(ci)
+    end do
+
+    ! shift epot ene
+    epothist0 = epothist1
+    if( fenthalpy ) then
+        epothist1 = PotEne + PMFEne - fepotaverage
+    else
+        epothist1 = 0.0d0
+    end if
+
+    ! shift etot ene
+    etothist0 = etothist1 + KinEne - fekinaverage
+    if( fentropy ) then
+        etothist1 = PotEne + PMFEne - fepotaverage
+    else
+        etothist1 = 0.0d0
+    end if
+
+    ! calculate Z matrix and its inverse
+    call usabf_core_calc_Zmat
+
+    do i=1,NumOfUSABFCVs
+        do j=1,NumOfLAtoms
+            do m=1,3
+                v = 0.0d0
+                do k=1,NumOfUSABFCVs
+                    ki = USABFCVList(k)%cvindx
+                    v = v + fzinv(i,k)*CVContext%CVsDrvs(m,j,ki)
+                end do
+                zd1(m,j,i) = v
+            end do
+        end do
+    end do
+
+    do i=1,NumOfUSABFCVs
+        v = 0.0d0
+        e = 0.0d0
+        do j=1,NumOfLAtoms
+            do m=1,3
+                ! zd0 in t-dt
+                ! Vel in t-1/2dt
+                ! v0 (OldVel) in t-3/2dt
+                ! a <- Vel(m,j)-v0(m,j))/fdtx in t-dt, do not use forces (Frc) because of SHAKE
+                v = v + zd0(m,j,i)*(Vel(m,j)-v0(m,j))
+                ! zd1 in t
+                ! zd0 in t-dt
+                ! vel in t-1/2dt
+                e = e + (zd1(m,j,i)-zd0(m,j,i))* Vel(m,j)
+            end do
+        end do
+        pxi0(i) = v / fdtx ! in t-dt
+        pxip(i) = e / fdtx ! in t-1/2dt
+    end do
+
+    if( fstep .ge. 4 ) then
+
+        ! complete ICF in t-dt
+        ! pxi0 in t-dt
+        ! pxi1 - old ABF forces in t-dt
+        ! pxip in t-1/2dt
+        ! pxim in t-3/2dt
+        pxi0(:) = pxi0(:) - pxi1(:)
+        pxim(:) = 0.5d0*(pxim(:)+pxip(:))
+
+        ! get sum
+        pxi0(:) = pxi0(:) + pxim(:)
+
+        ! add data to accumulator
+        call usabf_accu_add_data_online(cvhist0,pxi0(:),epothist0,etothist0)
+    end if
+
+    ! backup to the next step
+    zd0  = zd1
+    pxim = pxip
+    v0   = Vel
+
+    ! get us force to be applied --------------------
+    call usabf_core_get_us_bias(cvhist1(:),la)
+
+    ! project us force along coordinate
+    do i=1,NumOfUSABFCVs
+        ci = USABFCVList(i)%cvindx
+        do j=1,NumOfLAtoms
+            Frc(:,j) = Frc(:,j) + la(i) * CVContext%CVsDrvs(:,j,ci)
+        end do
+    end do
+
+    ! keep US forces to subtract them in the next step
+    pxi1 = la
+
+    return
+
+end subroutine usabf_core_force_2p
+
+!===============================================================================
 ! Subroutine:  usabf_core_force_4p
 ! this is leap-frog ABF version, original implementation
 !===============================================================================
@@ -116,7 +240,7 @@ subroutine usabf_core_force_4p()
     implicit none
     integer     :: i,j,k,m
     integer     :: ci,ck
-    real(PMFDP) :: v,avg_epot,avg_ekin,avg_erst,avg_ebias
+    real(PMFDP) :: v,avg_epot,avg_etot
     ! --------------------------------------------------------------------------
 
     ! calculate acceleration in time t for all pmf atoms
@@ -125,58 +249,38 @@ subroutine usabf_core_force_4p()
     end do
 
     ! shift accuvalue history
-    cvaluehist0(:) = cvaluehist1(:)
-    cvaluehist1(:) = cvaluehist2(:)
-    cvaluehist2(:) = cvaluehist3(:)
+    cvhist0(:) = cvhist1(:)
+    cvhist1(:) = cvhist2(:)
+    cvhist2(:) = cvhist3(:)
 
     ! save coordinate value to history
     do i=1,NumOfUSABFCVs
         ci = USABFCVList(i)%cvindx
-        cvaluehist3(i) = CVContext%CVsValues(ci)
+        cvhist3(i) = CVContext%CVsValues(ci)
     end do
 
     ! shift epot ene
     epothist0 = epothist1
     epothist1 = epothist2
     epothist2 = epothist3
-    if( fenthalpy .or. fentropy ) then
-        epothist3 = PotEne + fepotoffset
+    if( fenthalpy ) then
+        epothist3 = PotEne + PMFEne - fepotaverage
     else
         epothist3 = 0.0d0
     end if
 
-    ! shift ekin ene
-    ekinhist0 = ekinhist1
-    ekinhist1 = ekinhist2
-    ekinhist2 = ekinhist3
-    if( fentropy .or. fentropy ) then
-        ekinhist3 = KinEne + fekinoffset
+    ! shift etot ene
+    etothist0 = etothist1
+    etothist1 = etothist2
+    etothist2 = etothist3 + KinEne - fekinaverage ! KinEne is delayed by dt
+    if( fentropy ) then
+        etothist3 = PotEne + PMFEne - fepotaverage
     else
-        ekinhist3 = 0.0d0
-    end if
-
-    ! shift erst ene
-    ersthist0 = ersthist1
-    ersthist1 = ersthist2
-    ersthist2 = ersthist3
-    if( fentropy .or. fentropy ) then
-        ersthist3 = PMFEne
-    else
-        ersthist3 = 0.0d0
+        etothist3 = 0.0d0
     end if
 
     ! get us force to be applied --------------------
-    call usabf_core_get_us_bias(cvaluehist3(:),la)
-
-    ! shift erst ene
-    ebiashist0 = ebiashist1
-    ebiashist1 = ebiashist2
-    ebiashist2 = ebiashist3
-    if( fentropy .or. fentropy ) then
-        ebiashist3 = TotalUSABFEnergy
-    else
-        ebiashist3 = 0.0d0
-    end if
+    call usabf_core_get_us_bias(cvhist3(:),la)
 
     ! project abf force along coordinate ------------
     do i=1,NumOfUSABFCVs
@@ -237,16 +341,14 @@ subroutine usabf_core_force_4p()
     if( fstep .ge. 4 ) then
         ! calculate coordinate values at time t-3/2dt
         do i=1,NumOfUSABFCVs
-            avg_values(i) = USABFCVList(i)%cv%get_average_value(cvaluehist1(i),cvaluehist2(i))
+            avg_values(i) = USABFCVList(i)%cv%get_average_value(cvhist1(i),cvhist2(i))
         end do
 
         avg_epot  = 0.5d0*(epothist1 + epothist2)    ! t - 3/2*dt
-        avg_ekin  = 0.5d0*(ekinhist2 + ekinhist3)    ! t - 1/2*dt; ekin already shifted by -dt
-        avg_erst  = 0.5d0*(ersthist1 + ersthist2)    ! t - 3/2*dt
-        avg_ebias = 0.5d0*(ebiashist1 + ebiashist2)  ! t - 3/2*dt
+        avg_etot  = 0.5d0*(etothist1 + etothist2)    ! t - 3/2*dt
 
         ! add data to accumulator
-        call usabf_accu_add_data_online(cvaluehist0,pxi0(:),avg_epot,avg_ekin,avg_erst,avg_ebias)
+        call usabf_accu_add_data_online(cvhist0,pxi0(:),avg_epot,avg_etot)
     end if
 
     ! pxi0 <--- -pxip + pxim + pxi1 - la/2
@@ -265,11 +367,11 @@ subroutine usabf_core_force_4p()
 end subroutine usabf_core_force_4p
 
 !===============================================================================
-! Subroutine:  usabf_core_force_2p
-! this is leap-frog ABF version
+! Subroutine:  usabf_core_force_7p
+! 7-points from CV values only
 !===============================================================================
 
-subroutine usabf_core_force_2p()
+subroutine usabf_core_force_7p()
 
     use pmf_utils
     use pmf_dat
@@ -279,114 +381,74 @@ subroutine usabf_core_force_2p()
     use usabf_output
 
     implicit none
-    integer                :: i,j,k,m
-    integer                :: ci,ki
-    real(PMFDP)            :: v,e
+    integer     :: i,j
+    integer     :: ci
     ! --------------------------------------------------------------------------
 
     ! shift accuvalue history
-    cvaluehist0(:) = cvaluehist1(:)
+    cvhist2(:) = cvhist3(:)
+    cvhist3(:) = cvhist4(:)
+    cvhist4(:) = cvhist5(:)
+    cvhist5(:) = cvhist6(:)
 
     ! save coordinate value to history
     do i=1,NumOfUSABFCVs
         ci = USABFCVList(i)%cvindx
-        cvaluehist1(i) = CVContext%CVsValues(ci)
+        cvhist6(i) = CVContext%CVsValues(ci)
     end do
 
     ! shift epot ene
-    epothist0 = epothist1
-    if( fenthalpy .or. fentropy ) then
-        epothist1 = PotEne + fepotoffset
+    epothist2 = epothist3
+    epothist3 = epothist4
+    epothist4 = epothist5
+    epothist5 = epothist6
+    if( fenthalpy ) then
+        epothist6 = PotEne + PMFEne - fepotaverage
     else
-        epothist1 = 0.0d0
+        epothist6 = 0.0d0
     end if
 
-    ! shift ekin ene
-    ekinhist0 = ekinhist1
-    if( fentropy .or. fentropy ) then
-        ekinhist1 = KinEne + fekinoffset
+    etothist2 = etothist3
+    etothist3 = etothist4
+    etothist4 = etothist5
+    etothist5 = etothist6 + KinEne - fekinaverage  ! kinetic energy is delayed by dt
+    if( fentropy ) then
+        etothist6 = PotEne + PMFEne - fepotaverage
     else
-        ekinhist1 = 0.0d0
+        etothist6 = 0.0d0
     end if
 
-    ! shift erst ene
-    ersthist0 = ersthist1
-    if( fentropy .or. fentropy ) then
-        ersthist1 = PMFEne
-    else
-        ersthist1 = 0.0d0
-    end if
+    if( fstep .ge. 5 ) then
+        ! calculate CV momenta
+        pcvhist0(:) = pcvhist1(:)
+        pcvhist1(:) = pcvhist2(:)
+        pcvhist2(:) = pcvhist3(:)
+        pcvhist3(:) = pcvhist4(:)
 
-    ! calculate Z matrix and its inverse
-    call usabf_core_calc_Zmat
+        call usabf_core_calc_Zmat
 
-    do i=1,NumOfUSABFCVs
-        do j=1,NumOfLAtoms
-            do m=1,3
-                v = 0.0d0
-                do k=1,NumOfUSABFCVs
-                    ki = USABFCVList(k)%cvindx
-                    v = v + fzinv(i,k)*CVContext%CVsDrvs(m,j,ki)
-                end do
-                zd1(m,j,i) = v
+        do i=1,NumOfUSABFCVs
+            do j=1,NumOfUSABFCVs
+                pcvhist4(i) = fzinv(i,j) * ( 1.0/12.0*cvhist2(j) - 2.0/3.0*cvhist3(j) &
+                                           + 2.0/3.0*cvhist5(j) - 1.0/12.0*cvhist6(j)) / fdtx
             end do
         end do
-    end do
+    end if
 
-    do i=1,NumOfUSABFCVs
-        v = 0.0d0
-        e = 0.0d0
-        do j=1,NumOfLAtoms
-            do m=1,3
-                ! zd0 in t-dt
-                ! Vel in t-1/2dt
-                ! v0 (OldVel) in t-3/2dt
-                ! a <- Vel(m,j)-v0(m,j))/fdtx in t-dt, do not use forces (Frc) because of SHAKE
-                v = v + zd0(m,j,i)*(Vel(m,j)-v0(m,j))
-                ! zd1 in t
-                ! zd0 in t-dt
-                ! vel in t-1/2dt
-                e = e + (zd1(m,j,i)-zd0(m,j,i))* Vel(m,j)
-            end do
+    if( fstep .ge. 7 ) then
+        ! calculated ICF
+        do i=1,NumOfUSABFCVs
+            icf2(i) = ( 1.0/12.0*pcvhist0(i) - 2.0/3.0*pcvhist1(i) &
+                      + 2.0/3.0*pcvhist3(i) - 1.0/12.0*pcvhist4(i)) / fdtx
         end do
-        pxi0(i) = v / fdtx ! in t-dt
-        pxip(i) = e / fdtx ! in t-1/2dt
-    end do
 
-    if( fstep .ge. 4 ) then
-
-        ! complete ICF in t-dt
-        ! pxi0 in t-dt
-        ! pxi1 - old ABF forces in t-dt
-        ! pxip in t-1/2dt
-        ! pxim in t-3/2dt
-        pxi0(:) = pxi0(:) - pxi1(:)
-        pxim(:) = 0.5d0*(pxim(:)+pxip(:))
-
-        ! get sum
-        pxi0(:) = pxi0(:) + pxim(:)
-
-        ! add data to accumulator
-        call usabf_accu_add_data_online(cvaluehist0,pxi0(:),epothist0,ekinhist1,ersthist0,ebiashist0)
+        call usabf_accu_add_data_online(cvhist2,icf2(:),epothist2,etothist2)
     end if
 
-    ! backup to the next step
-    zd0  = zd1
-    pxim = pxip
-    v0   = Vel
+    ! get US force to be applied --------------------
+    call usabf_core_get_us_bias(cvhist6(:),la)
 
-    ! get us force to be applied --------------------
-    call usabf_core_get_us_bias(cvaluehist1(:),la)
-
-    ! shift erst ene
-    ebiashist0 = ebiashist1
-    if( fentropy .or. fentropy ) then
-        ebiashist1 = TotalUSABFEnergy
-    else
-        ebiashist1 = 0.0d0
-    end if
-
-    ! project us force along coordinate
+    ! project abf force along coordinate ------------
     do i=1,NumOfUSABFCVs
         ci = USABFCVList(i)%cvindx
         do j=1,NumOfLAtoms
@@ -394,12 +456,7 @@ subroutine usabf_core_force_2p()
         end do
     end do
 
-    ! keep US forces to subtract them in the next step
-    pxi1 = la
-
-    return
-
-end subroutine usabf_core_force_2p
+end subroutine usabf_core_force_7p
 
 !===============================================================================
 ! subroutine:  usabf_core_calc_Zmat

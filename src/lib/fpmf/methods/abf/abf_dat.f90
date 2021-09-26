@@ -48,8 +48,12 @@ integer     :: feimode      ! interpolation/extrapolation mode
                             ! 0 - disabled
                             ! 1 - linear ramp
 
+integer     :: fmwamode     ! 0 - all is transferred
+                            ! 1 - only MICF is transfered
+
 logical     :: fenthalpy    ! collect data for enthalpy calculation
 logical     :: fentropy     ! collect data for entropy calculation
+
 real(PMFDP) :: fepotoffset
 real(PMFDP) :: fekinoffset
 
@@ -113,11 +117,6 @@ type,extends(PMFAccuType) :: ABFAccuType
     real(PMFDP),pointer    :: inc_metot(:)              ! accumulated mean of total energy
     real(PMFDP),pointer    :: inc_m2etot(:)             ! accumulated M2 of total energy
     real(PMFDP),pointer    :: inc_c11hh(:,:)            ! accumulated cov(H,H) for entropy
-
-    ! ABF force - block pre-sampling
-    integer,pointer        :: block_nsamples(:)         ! number of hits into bins
-    real(PMFDP),pointer    :: block_micf(:,:)           ! online mean of ABF force - total
-    real(PMFDP),pointer    :: block_mepot(:)            ! online mean of Epot
 end type ABFAccuType
 
 ! ----------------------

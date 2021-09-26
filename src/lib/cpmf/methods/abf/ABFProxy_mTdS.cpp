@@ -65,6 +65,10 @@ void CABFProxy_mTdS::SetType(EABFTdSType type)
             Provide = "ABF -TdS(x)";
         break;
     // -------------------
+        case(ABF_TdS_HB):
+            Provide = "ABF -TdS(x) cov(dH_h/dx,Ebias)";
+        break;
+    // -------------------
         case(ABF_TdS_PP):
             Provide = "ABF -TdS(x) cov(dH_p/dx,Epot)";
         break;
@@ -124,17 +128,6 @@ double CABFProxy_mTdS::GetValue(int ibin,int icv,EProxyRealm realm) const
         RUNTIME_ERROR("Accu is NULL");
     }
 
-    if( Accu->HasSectionData("MCOVHH") ){
-        return( GetValueFromMean(ibin,icv,realm) );
-    } else {
-        return( GetValueFromCov(ibin,icv,realm) );
-    }
-}
-
-//------------------------------------------------------------------------------
-
-double CABFProxy_mTdS::GetValueFromCov(int ibin,int icv,EProxyRealm realm) const
-{
     double  nsamples = Accu->GetData("NSAMPLES",ibin);
     double  ncorr    = Accu->GetNCorr();
     double  temp     = Accu->GetTemperature();
@@ -152,6 +145,12 @@ double CABFProxy_mTdS::GetValueFromCov(int ibin,int icv,EProxyRealm realm) const
             c11     = Accu->GetData("C11HH",ibin,icv);
             m2icf   = Accu->GetData("M2ICF",ibin,icv);
             m2ene   = Accu->GetData("M2ETOT",ibin);
+        break;
+    // -------------------
+        case(ABF_TdS_HB):
+            c11     = Accu->GetData("C11HB",ibin,icv);
+            m2icf   = Accu->GetData("M2ICF",ibin,icv);
+            m2ene   = Accu->GetData("M2EBIAS",ibin);
         break;
     // -------------------
         case(ABF_TdS_PP):
@@ -210,80 +209,6 @@ double CABFProxy_mTdS::GetValueFromCov(int ibin,int icv,EProxyRealm realm) const
             return( sqrt(ncorr) * sqrt(m2icf / nsamples) * sqrt( m2ene / nsamples ) / sqrt(nsamples) / (temp * PMF_Rgas) );
         }
     // -------------------
-        default:
-            RUNTIME_ERROR("unsupported realm");
-    }
-
-    return(value);
-}
-
-//------------------------------------------------------------------------------
-
-double CABFProxy_mTdS::GetValueFromMean(int ibin,int icv,EProxyRealm realm) const
-{
-    double  nsamples = Accu->GetData("NSAMPLES",ibin);
-    double  ncorr    = Accu->GetNCorr();
-    double  temp     = Accu->GetTemperature();
-
-    double value = 0.0;
-    if( nsamples <= 0 ) return(value);
-
-    double  mtds     = 0.0;
-    double  m2tds    = 0.0;
-
-    switch(Type){
-    // -------------------
-        case(ABF_TdS_HH):
-            mtds     = Accu->GetData("MCOVHH",ibin,icv);
-            m2tds    = Accu->GetData("M2COVHH",ibin,icv);
-        break;
-    // -------------------
-        case(ABF_TdS_PP):
-            mtds     = Accu->GetData("MCOVPP",ibin,icv);
-            m2tds    = Accu->GetData("M2COVPP",ibin,icv);
-        break;
-    // -------------------
-        case(ABF_TdS_PK):
-            mtds     = Accu->GetData("MCOVPK",ibin,icv);
-            m2tds    = Accu->GetData("M2COVPK",ibin,icv);
-        break;
-    // -------------------
-        case(ABF_TdS_PR):
-            mtds     = Accu->GetData("MCOVPR",ibin,icv);
-            m2tds    = Accu->GetData("M2COVPR",ibin,icv);
-        break;
-    // -------------------
-        case(ABF_TdS_KP):
-            mtds     = Accu->GetData("MCOVKP",ibin,icv);
-            m2tds    = Accu->GetData("M2COVKP",ibin,icv);
-        break;
-    // -------------------
-        case(ABF_TdS_KK):
-            mtds     = Accu->GetData("MCOVKK",ibin,icv);
-            m2tds    = Accu->GetData("M2COVKK",ibin,icv);
-        break;
-    // -------------------
-        case(ABF_TdS_KR):
-            mtds     = Accu->GetData("MCOVKR",ibin,icv);
-            m2tds    = Accu->GetData("M2COVKR",ibin,icv);
-        break;
-    // -------------------
-        default:
-            RUNTIME_ERROR("unsupported type");
-    }
-
-    switch(realm){
-// mean force
-        // -------------------
-        case(E_PROXY_VALUE):
-            return( mtds / (temp * PMF_Rgas) );
-        // -------------------
-        case(E_PROXY_SIGMA):
-            return( sqrt(m2tds / nsamples) / (temp * PMF_Rgas) );
-        // -------------------
-        case(E_PROXY_ERROR):
-            return( sqrt(m2tds * ncorr) / nsamples / (temp * PMF_Rgas) );
-        // -------------------
         default:
             RUNTIME_ERROR("unsupported realm");
     }

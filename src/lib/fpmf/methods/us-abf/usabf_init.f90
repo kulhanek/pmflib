@@ -78,8 +78,8 @@ subroutine usabf_init_dat
 
     fenthalpy       = .false.   ! accumulate enthalpy
     fentropy        = .false.   ! accumulate entropy
-    fepotoffset     = 0.0d0
-    fekinoffset     = 0.0d0
+    fepotaverage    = 0.0d0
+    fekinaverage    = 0.0d0
 
     NumOfUSABFCVs     = 0
 
@@ -120,6 +120,8 @@ subroutine usabf_init_print_header
     write(PMF_OUT,120)  '      |-> Simplified ABF algorithm'
     case(2)
     write(PMF_OUT,120)  '      |-> Original ABF algorithm'
+    case(3)
+    write(PMF_OUT,120)  '      |-> 7-points ABF'
     case default
     call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown fmode in usabf_init_print_header!')
     end select
@@ -139,9 +141,9 @@ subroutine usabf_init_print_header
     write(PMF_OUT,130)  ' Output sampling (fsample)               : ', fsample
     write(PMF_OUT,125)  ' Accumulate enthalpy (fenthalpy)         : ', prmfile_onoff(fenthalpy)
     write(PMF_OUT,125)  ' Accumulate entropy (fentropy)           : ', prmfile_onoff(fentropy)
-    write(PMF_OUT,150)  ' Potential energy offset (fepotoffset)   : ', pmf_unit_get_rvalue(EnergyUnit,fepotoffset),  &
+    write(PMF_OUT,150)  ' Potential energy offset (fepotaverage)  : ', pmf_unit_get_rvalue(EnergyUnit,fepotaverage),  &
                                                                        '['//trim(pmf_unit_label(EnergyUnit))//']'
-    write(PMF_OUT,150)  ' Kinetic energy offset (fekinoffset)     : ', pmf_unit_get_rvalue(EnergyUnit,fekinoffset), &
+    write(PMF_OUT,150)  ' Kinetic energy offset (fekinaverage)    : ', pmf_unit_get_rvalue(EnergyUnit,fekinaverage), &
                                                                        '['//trim(pmf_unit_label(EnergyUnit))//']'
     write(PMF_OUT,120)
     write(PMF_OUT,120)  ' Trajectory output options:'
@@ -190,24 +192,33 @@ subroutine usabf_init_arrays
     fdtx = fdt*PMF_DT2VDT
 
     ! general arrays --------------------------------
-    allocate(                               &
-            a0(3,NumOfLAtoms),              &
-            a1(3,NumOfLAtoms),              &
-            v0(3,NumOfLAtoms),              &
-            pxi0(NumOfUSABFCVs),              &
-            pxi1(NumOfUSABFCVs),              &
-            pxip(NumOfUSABFCVs),              &
-            pxim(NumOfUSABFCVs),              &
-            avg_values(NumOfUSABFCVs),        &
-            la(NumOfUSABFCVs),                &
+    allocate(                                   &
+            a0(3,NumOfLAtoms),                  &
+            a1(3,NumOfLAtoms),                  &
+            v0(3,NumOfLAtoms),                  &
+            pxi0(NumOfUSABFCVs),                &
+            pxi1(NumOfUSABFCVs),                &
+            pxip(NumOfUSABFCVs),                &
+            pxim(NumOfUSABFCVs),                &
+            avg_values(NumOfUSABFCVs),          &
+            la(NumOfUSABFCVs),                  &
             fz(NumOfUSABFCVs,NumOfUSABFCVs),    &
             fzinv(NumOfUSABFCVs,NumOfUSABFCVs), &
-            zd0(3,NumOfLAtoms,NumOfUSABFCVs), &
-            zd1(3,NumOfLAtoms,NumOfUSABFCVs), &
-            cvaluehist0(NumOfUSABFCVs),       &
-            cvaluehist1(NumOfUSABFCVs),       &
-            cvaluehist2(NumOfUSABFCVs),       &
-            cvaluehist3(NumOfUSABFCVs),       &
+            zd0(3,NumOfLAtoms,NumOfUSABFCVs),   &
+            zd1(3,NumOfLAtoms,NumOfUSABFCVs),   &
+            cvhist0(NumOfUSABFCVs),             &
+            cvhist1(NumOfUSABFCVs),             &
+            cvhist2(NumOfUSABFCVs),             &
+            cvhist3(NumOfUSABFCVs),             &
+            cvhist4(NumOfUSABFCVs),             &
+            cvhist5(NumOfUSABFCVs),             &
+            cvhist6(NumOfUSABFCVs),             &
+            pcvhist0(NumOfUSABFCVs),            &
+            pcvhist1(NumOfUSABFCVs),            &
+            pcvhist2(NumOfUSABFCVs),            &
+            pcvhist3(NumOfUSABFCVs),            &
+            pcvhist4(NumOfUSABFCVs),            &
+            icf2(NumOfUSABFCVs),                 &
             stat= alloc_failed )
 
     if( alloc_failed .ne. 0 ) then
@@ -228,10 +239,38 @@ subroutine usabf_init_arrays
     fzinv(:,:) = 0.0d0
     zd0(:,:,:) = 0.0d0
     zd1(:,:,:) = 0.0d0
-    cvaluehist0(:) = 0.0d0
-    cvaluehist1(:) = 0.0d0
-    cvaluehist2(:) = 0.0d0
-    cvaluehist3(:) = 0.0d0
+
+    cvhist0(:) = 0.0d0
+    cvhist1(:) = 0.0d0
+    cvhist2(:) = 0.0d0
+    cvhist3(:) = 0.0d0
+    cvhist4(:) = 0.0d0
+    cvhist5(:) = 0.0d0
+    cvhist6(:) = 0.0d0
+
+    pcvhist0(:) = 0.0d0
+    pcvhist1(:) = 0.0d0
+    pcvhist2(:) = 0.0d0
+    pcvhist3(:) = 0.0d0
+    pcvhist4(:) = 0.0d0
+
+    icf2(:) = 0.0d0
+
+    epothist0 = 0.0d0
+    epothist1 = 0.0d0
+    epothist2 = 0.0d0
+    epothist3 = 0.0d0
+    epothist4 = 0.0d0
+    epothist5 = 0.0d0
+    epothist6 = 0.0d0
+
+    etothist0 = 0.0d0
+    etothist1 = 0.0d0
+    etothist2 = 0.0d0
+    etothist3 = 0.0d0
+    etothist4 = 0.0d0
+    etothist5 = 0.0d0
+    etothist6 = 0.0d0
 
     ! for Z matrix inversion, only if fnitem > 1 ----
     if( NumOfUSABFCVs .gt. 1 ) then

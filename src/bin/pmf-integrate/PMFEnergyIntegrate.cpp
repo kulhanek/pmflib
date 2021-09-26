@@ -321,6 +321,11 @@ bool CPMFEnergyIntegrate::Run(void)
             proxy->SetType(CST_C11HR);
             lproxy = proxy;
     // -----------------------------------------------
+        } else if ( Options.GetOptRealm() == "-TdS_HB" ) {
+            CABFProxy_mTdS_Ptr proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
+            proxy->SetType(ABF_TdS_HB);
+            lproxy = proxy;
+    // -----------------------------------------------
         } else {
             CSmallString error;
             error << "unsupported realm: " << Options.GetOptRealm();

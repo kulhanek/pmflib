@@ -156,7 +156,6 @@ subroutine abf_control_read_abf(prm_fin)
 
  50 format (/,'>> Inter/Extrapolation disabled (feimode == 0)')
  51 format (/,'>> Linear ramp mode (feimode == 1)')
- 52 format (/,'>> Gaussian kernel smoother (feimode == 2)')
 
 100 format (' >> Multiple-walkers ABF method is disabled!')
 

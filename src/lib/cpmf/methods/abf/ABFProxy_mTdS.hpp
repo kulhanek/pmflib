@@ -27,6 +27,7 @@
 
 enum EABFTdSType {
     ABF_TdS_HH,
+    ABF_TdS_HB,
     ABF_TdS_PP,
     ABF_TdS_PK,
     ABF_TdS_PR,
@@ -60,15 +61,12 @@ public:
     // get energy derivative and its error
     virtual double GetValue( int ibin,int icv,EProxyRealm realm) const;
 
-    // is compatible with PMFAccumulator method
+    // is compatible with PMF Accumulator method
     static bool IsCompatible(CPMFAccumulatorPtr accu);
 
 // section of private data -----------------------------------------------------
 private:
     EABFTdSType    Type;
-
-    double GetValueFromCov(int ibin,int icv,EProxyRealm realm) const;
-    double GetValueFromMean(int ibin,int icv,EProxyRealm realm) const;
 };
 
 //------------------------------------------------------------------------------

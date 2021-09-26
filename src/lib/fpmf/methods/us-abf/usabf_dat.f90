@@ -48,8 +48,9 @@ integer     :: ftrjsample   ! how often save accumulator to "accumulator evoluti
 
 logical     :: fenthalpy    ! collect data for enthalpy calculation
 logical     :: fentropy     ! collect data for entropy calculation
-real(PMFDP) :: fepotoffset
-real(PMFDP) :: fekinoffset
+
+real(PMFDP) :: fepotaverage
+real(PMFDP) :: fekinaverage
 
 ! item list --------------------------------------------------------------------
 type CVTypeUSABF
@@ -89,21 +90,13 @@ type,extends(PMFAccuType)   :: USABFAccuType
     real(PMFDP),pointer     :: m2icf(:,:)               ! M2 of ICF - total
 
     ! ENTHALPY
-    real(PMFDP),pointer     :: metot(:)                 ! mean of total energy
-    real(PMFDP),pointer     :: m2etot(:)                ! M2 of total energy
     real(PMFDP),pointer     :: mepot(:)                 ! mean of potential energy
     real(PMFDP),pointer     :: m2epot(:)                ! M2 of potential energy
-    real(PMFDP),pointer     :: merst(:)                 ! mean of restraint energy
-    real(PMFDP),pointer     :: m2erst(:)                ! M2 of restraint energy
-    real(PMFDP),pointer     :: mebias(:)                ! mean of biasing energy
-    real(PMFDP),pointer     :: m2ebias(:)               ! M2 of biasing energy
 
     ! ENTROPY
+    real(PMFDP),pointer     :: metot(:)                 ! mean of total energy
+    real(PMFDP),pointer     :: m2etot(:)                ! M2 of total energy
     real(PMFDP),pointer     :: c11hh(:,:)               ! c11 - total/total
-    real(PMFDP),pointer     :: c11hb(:,:)               ! c11 - total/biasing
-
-    real(PMFDP),pointer     :: mcovhh(:,:)
-    real(PMFDP),pointer     :: m2covhh(:,:)
 
 end type USABFAccuType
 
@@ -135,31 +128,37 @@ real(PMFDP),allocatable     :: pxi1(:)        !
 real(PMFDP),allocatable     :: pxip(:)        !
 real(PMFDP),allocatable     :: pxim(:)        !
 real(PMFDP),allocatable     :: avg_values(:)  ! average values of coordinates at t - 3/2dt
+real(PMFDP),allocatable     :: icf2(:)        !
 
-real(PMFDP),allocatable     :: cvaluehist0(:)   ! history of coordinate values
-real(PMFDP),allocatable     :: cvaluehist1(:)   ! history of coordinate values
-real(PMFDP),allocatable     :: cvaluehist2(:)   ! history of coordinate values
-real(PMFDP),allocatable     :: cvaluehist3(:)   ! history of coordinate values
+real(PMFDP),allocatable     :: cvhist0(:)       ! history of CV values
+real(PMFDP),allocatable     :: cvhist1(:)
+real(PMFDP),allocatable     :: cvhist2(:)
+real(PMFDP),allocatable     :: cvhist3(:)
+real(PMFDP),allocatable     :: cvhist4(:)
+real(PMFDP),allocatable     :: cvhist5(:)
+real(PMFDP),allocatable     :: cvhist6(:)
 
-real(PMFDP)                 :: epothist0   ! history of Epot
-real(PMFDP)                 :: epothist1   ! history of Epot
-real(PMFDP)                 :: epothist2   ! history of Epot
-real(PMFDP)                 :: epothist3   ! history of Epot
+real(PMFDP),allocatable     :: pcvhist0(:)
+real(PMFDP),allocatable     :: pcvhist1(:)
+real(PMFDP),allocatable     :: pcvhist2(:)
+real(PMFDP),allocatable     :: pcvhist3(:)
+real(PMFDP),allocatable     :: pcvhist4(:)
 
-real(PMFDP)                 :: ekinhist0   ! history of Ekin
-real(PMFDP)                 :: ekinhist1   ! history of Ekin
-real(PMFDP)                 :: ekinhist2   ! history of Ekin
-real(PMFDP)                 :: ekinhist3   ! history of Ekin
+real(PMFDP)                 :: epothist0        ! history of Epot
+real(PMFDP)                 :: epothist1
+real(PMFDP)                 :: epothist2
+real(PMFDP)                 :: epothist3
+real(PMFDP)                 :: epothist4
+real(PMFDP)                 :: epothist5
+real(PMFDP)                 :: epothist6
 
-real(PMFDP)                 :: ersthist0   ! history of Erst (PMFEne)
-real(PMFDP)                 :: ersthist1   ! history of Erst
-real(PMFDP)                 :: ersthist2   ! history of Erst
-real(PMFDP)                 :: ersthist3   ! history of Erst
-
-real(PMFDP)                 :: ebiashist0  ! history of EBias (US-ABF)
-real(PMFDP)                 :: ebiashist1  ! history of EBias
-real(PMFDP)                 :: ebiashist2  ! history of EBias
-real(PMFDP)                 :: ebiashist3  ! history of EBias
+real(PMFDP)                 :: etothist0        ! history of Etot
+real(PMFDP)                 :: etothist1
+real(PMFDP)                 :: etothist2
+real(PMFDP)                 :: etothist3
+real(PMFDP)                 :: etothist4
+real(PMFDP)                 :: etothist5
+real(PMFDP)                 :: etothist6
 
 ! ------------------------------------------------------------------------------
 

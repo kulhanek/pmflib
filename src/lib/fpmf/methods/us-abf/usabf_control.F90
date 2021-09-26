@@ -68,7 +68,7 @@ subroutine usabf_control_read_abf(prm_fin)
 
     ! read configuration
     call pmf_ctrl_read_integer(prm_fin,'fmode',fmode,'i12')
-    call pmf_ctrl_check_integer_in_range('US-ABF','fmode',fmode,0,2)
+    call pmf_ctrl_check_integer_in_range('US-ABF','fmode',fmode,0,3)
 
     if( fmode .eq. 0 ) then
         write(PMF_OUT,10)
@@ -94,8 +94,8 @@ subroutine usabf_control_read_abf(prm_fin)
     call pmf_ctrl_read_logical(prm_fin,'fenthalpy',fenthalpy)
     call pmf_ctrl_read_logical(prm_fin,'fentropy',fentropy)
 
-    call pmf_ctrl_read_real8_wunit(prm_fin,'fepotoffset',EnergyUnit,fepotoffset,'F10.1')
-    call pmf_ctrl_read_real8_wunit(prm_fin,'fekinoffset',EnergyUnit,fekinoffset,'F10.1')
+    call pmf_ctrl_read_real8_wunit(prm_fin,'fepotaverage',EnergyUnit,fepotaverage,'F10.1')
+    call pmf_ctrl_read_real8_wunit(prm_fin,'fekinaverage',EnergyUnit,fekinaverage,'F10.1')
 
     usabf_enabled = fmode .gt. 0
 

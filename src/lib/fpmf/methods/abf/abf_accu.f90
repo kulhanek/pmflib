@@ -311,6 +311,8 @@ subroutine abf_accu_write(iounit)
     call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'MICF','WA',abfaccu%micf)
     call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'M2ICF','M2',abfaccu%m2icf,'MICF')
 
+    call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'SMICF','WA',abfaccu%smicf)
+
     if( fenthalpy ) then
         call pmf_accu_write_rbuf_B(abfaccu%PMFAccuType,iounit,'MEPOT','WA',abfaccu%mepot)
         call pmf_accu_write_rbuf_B(abfaccu%PMFAccuType,iounit,'M2EPOT','M2',abfaccu%m2epot,'MEPOT')
@@ -320,10 +322,6 @@ subroutine abf_accu_write(iounit)
         call pmf_accu_write_rbuf_B(abfaccu%PMFAccuType,iounit,'METOT','WA',abfaccu%metot)
         call pmf_accu_write_rbuf_B(abfaccu%PMFAccuType,iounit,'M2ETOT','M2',abfaccu%m2etot,'METOT')
         call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'C11HH','CO',abfaccu%c11hh,'MICF','METOT')
-    end if
-
-    if( feimode .eq. 2 ) then
-        call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'SMICF','WA',abfaccu%smicf)
     end if
 
 end subroutine abf_accu_write
