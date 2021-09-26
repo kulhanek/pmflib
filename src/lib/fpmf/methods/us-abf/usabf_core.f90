@@ -442,6 +442,11 @@ subroutine usabf_core_force_7p()
                       + 2.0/3.0*pcvhist3(i) - 1.0/12.0*pcvhist4(i)) / fdtx
         end do
 
+        ! substract biasing force
+        call usabf_core_get_us_bias(cvhist2(:),la)
+        icf2 = icf2 - la
+
+        ! record the data
         call usabf_accu_add_data_online(cvhist2,icf2(:),epothist2,etothist2)
     end if
 

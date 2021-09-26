@@ -341,6 +341,8 @@ subroutine usabf_accu_add_data_online(cvs,gfx,epot,etot)
     do i=1,NumOfUSABFCVs
         icf = gfx(i)
 
+        write(12458,*) icf
+
         dicf1 = - icf - usabfaccu%micf(i,gi0)
         usabfaccu%micf(i,gi0)  = usabfaccu%micf(i,gi0)  + dicf1 * invn
         dicf2 = - icf -  usabfaccu%micf(i,gi0)
