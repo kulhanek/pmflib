@@ -197,7 +197,8 @@ subroutine usabf_core_force_2p()
         pxi0(:) = pxi0(:) + pxim(:)
 
         ! add data to accumulator
-        call usabf_accu_add_data_online(cvhist0,pxi0(:),epothist0,etothist0)
+        ! FIXME - pxi0
+        call usabf_accu_add_data_online(cvhist0,pxi0(:),epothist0,pxi0,etothist0)
     end if
 
     ! backup to the next step
@@ -348,7 +349,8 @@ subroutine usabf_core_force_4p()
         avg_etot  = 0.5d0*(etothist1 + etothist2)    ! t - 3/2*dt
 
         ! add data to accumulator
-        call usabf_accu_add_data_online(cvhist0,pxi0(:),avg_epot,avg_etot)
+        ! FIXME - pxi0
+        call usabf_accu_add_data_online(cvhist0,pxi0(:),avg_epot,pxi0(:),avg_etot)
     end if
 
     ! pxi0 <--- -pxip + pxim + pxi1 - la/2
@@ -444,10 +446,10 @@ subroutine usabf_core_force_7p()
 
         ! substract biasing force
         call usabf_core_get_us_bias(cvhist2(:),la)
-        icf2 = icf2 - la
+        pxi0 = icf2 - la
 
         ! record the data
-        call usabf_accu_add_data_online(cvhist2,icf2(:),epothist2,etothist2)
+        call usabf_accu_add_data_online(cvhist2,pxi0(:),epothist2,icf2,etothist2)
     end if
 
     ! get US force to be applied --------------------
