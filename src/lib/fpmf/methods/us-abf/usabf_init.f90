@@ -117,11 +117,13 @@ subroutine usabf_init_print_header
     write(PMF_OUT,130)  ' ABF mode (fmode)                        : ', fmode
     select case(fmode)
     case(1)
-    write(PMF_OUT,120)  '      |-> Simplified ABF algorithm'
+    write(PMF_OUT,120)  '      |-> Simplified ABF algorithm (2-points ABF)'
     case(2)
-    write(PMF_OUT,120)  '      |-> Original ABF algorithm'
+    write(PMF_OUT,120)  '      |-> Original ABF algorithm (4-points ABF)'
     case(3)
     write(PMF_OUT,120)  '      |-> 7-points ABF'
+    case(4)
+    write(PMF_OUT,120)  '      |-> 10-points ABF'
     case default
     call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown fmode in usabf_init_print_header!')
     end select
@@ -213,12 +215,18 @@ subroutine usabf_init_arrays
             cvhist4(NumOfUSABFCVs),             &
             cvhist5(NumOfUSABFCVs),             &
             cvhist6(NumOfUSABFCVs),             &
+            cvhist7(NumOfUSABFCVs),             &
+            cvhist8(NumOfUSABFCVs),             &
+            cvhist9(NumOfUSABFCVs),             &
             pcvhist0(NumOfUSABFCVs),            &
             pcvhist1(NumOfUSABFCVs),            &
             pcvhist2(NumOfUSABFCVs),            &
             pcvhist3(NumOfUSABFCVs),            &
             pcvhist4(NumOfUSABFCVs),            &
-            icf2(NumOfUSABFCVs),                 &
+            pcvhist5(NumOfUSABFCVs),            &
+            pcvhist6(NumOfUSABFCVs),            &
+            icf2(NumOfUSABFCVs),                &
+            icf3(NumOfUSABFCVs),                &
             stat= alloc_failed )
 
     if( alloc_failed .ne. 0 ) then
@@ -247,14 +255,20 @@ subroutine usabf_init_arrays
     cvhist4(:) = 0.0d0
     cvhist5(:) = 0.0d0
     cvhist6(:) = 0.0d0
+    cvhist7(:) = 0.0d0
+    cvhist8(:) = 0.0d0
+    cvhist9(:) = 0.0d0
 
     pcvhist0(:) = 0.0d0
     pcvhist1(:) = 0.0d0
     pcvhist2(:) = 0.0d0
     pcvhist3(:) = 0.0d0
     pcvhist4(:) = 0.0d0
+    pcvhist5(:) = 0.0d0
+    pcvhist6(:) = 0.0d0
 
     icf2(:) = 0.0d0
+    icf3(:) = 0.0d0
 
     epothist0 = 0.0d0
     epothist1 = 0.0d0
@@ -263,6 +277,9 @@ subroutine usabf_init_arrays
     epothist4 = 0.0d0
     epothist5 = 0.0d0
     epothist6 = 0.0d0
+    epothist7 = 0.0d0
+    epothist8 = 0.0d0
+    epothist9 = 0.0d0
 
     etothist0 = 0.0d0
     etothist1 = 0.0d0
@@ -271,6 +288,9 @@ subroutine usabf_init_arrays
     etothist4 = 0.0d0
     etothist5 = 0.0d0
     etothist6 = 0.0d0
+    etothist7 = 0.0d0
+    etothist8 = 0.0d0
+    etothist9 = 0.0d0
 
     ! for Z matrix inversion, only if fnitem > 1 ----
     if( NumOfUSABFCVs .gt. 1 ) then

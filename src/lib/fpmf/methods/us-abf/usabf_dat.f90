@@ -132,6 +132,7 @@ real(PMFDP),allocatable     :: pxip(:)        !
 real(PMFDP),allocatable     :: pxim(:)        !
 real(PMFDP),allocatable     :: avg_values(:)  ! average values of coordinates at t - 3/2dt
 real(PMFDP),allocatable     :: icf2(:)        !
+real(PMFDP),allocatable     :: icf3(:)        !
 
 real(PMFDP),allocatable     :: cvhist0(:)       ! history of CV values
 real(PMFDP),allocatable     :: cvhist1(:)
@@ -140,12 +141,17 @@ real(PMFDP),allocatable     :: cvhist3(:)
 real(PMFDP),allocatable     :: cvhist4(:)
 real(PMFDP),allocatable     :: cvhist5(:)
 real(PMFDP),allocatable     :: cvhist6(:)
+real(PMFDP),allocatable     :: cvhist7(:)
+real(PMFDP),allocatable     :: cvhist8(:)
+real(PMFDP),allocatable     :: cvhist9(:)
 
 real(PMFDP),allocatable     :: pcvhist0(:)
 real(PMFDP),allocatable     :: pcvhist1(:)
 real(PMFDP),allocatable     :: pcvhist2(:)
 real(PMFDP),allocatable     :: pcvhist3(:)
 real(PMFDP),allocatable     :: pcvhist4(:)
+real(PMFDP),allocatable     :: pcvhist5(:)
+real(PMFDP),allocatable     :: pcvhist6(:)
 
 real(PMFDP)                 :: epothist0        ! history of Epot
 real(PMFDP)                 :: epothist1
@@ -154,6 +160,9 @@ real(PMFDP)                 :: epothist3
 real(PMFDP)                 :: epothist4
 real(PMFDP)                 :: epothist5
 real(PMFDP)                 :: epothist6
+real(PMFDP)                 :: epothist7
+real(PMFDP)                 :: epothist8
+real(PMFDP)                 :: epothist9
 
 real(PMFDP)                 :: etothist0        ! history of Etot
 real(PMFDP)                 :: etothist1
@@ -162,6 +171,9 @@ real(PMFDP)                 :: etothist3
 real(PMFDP)                 :: etothist4
 real(PMFDP)                 :: etothist5
 real(PMFDP)                 :: etothist6
+real(PMFDP)                 :: etothist7
+real(PMFDP)                 :: etothist8
+real(PMFDP)                 :: etothist9
 
 ! ------------------------------------------------------------------------------
 
