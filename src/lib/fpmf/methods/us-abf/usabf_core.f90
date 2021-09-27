@@ -425,6 +425,8 @@ subroutine usabf_core_force_7p()
         etothist6 = 0.0d0
     end if
 
+    write(1489,*) PotEne, KinEne, etothist5
+
     if( fstep .ge. 5 ) then
         ! calculate CV momenta
         pcvhist0(:) = pcvhist1(:)
@@ -486,7 +488,7 @@ subroutine usabf_core_force_10p()
 
     implicit none
     integer     :: i,j,ci
-    real(PMFDP) :: invh
+    real(PMFDP) :: invh,etot3
     ! --------------------------------------------------------------------------
 
     invh = 1.0d0 / (252.0d0 * fdtx)
@@ -519,6 +521,8 @@ subroutine usabf_core_force_10p()
         epothist9 = 0.0d0
     end if
 
+    etothist0 = etothist1
+    etothist1 = etothist2
     etothist2 = etothist3
     etothist3 = etothist4
     etothist4 = etothist5
@@ -564,8 +568,12 @@ subroutine usabf_core_force_10p()
         call usabf_core_get_us_bias(cvhist3(:),la)
         pxi0 = icf3 - la
 
+        ! smooth etot
+        etot3 = ( 5.0d0*etothist0 - 30.0d0*etothist1 + 75.0d0*etothist2 + 131.0d0*etothist3 &
+               + 75.0d0*etothist4 - 30.0d0*etothist5 +  5.0d0*etothist6)/231.0d0
+
         ! record the data
-        call usabf_accu_add_data_online(cvhist3,pxi0,epothist3,etothist3)
+        call usabf_accu_add_data_online(cvhist3,pxi0,epothist3,etot3)
     end if
 
     ! get US force to be applied --------------------
