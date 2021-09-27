@@ -286,7 +286,7 @@ end subroutine usabf_accu_write
 ! Subroutine:  usabf_accu_add_data_online
 !===============================================================================
 
-subroutine usabf_accu_add_data_online(cvs,gfx,epot,rgfx,etot)
+subroutine usabf_accu_add_data_online(cvs,gfx,epot,etot)
 
     use usabf_dat
     use pmf_dat
@@ -296,15 +296,13 @@ subroutine usabf_accu_add_data_online(cvs,gfx,epot,rgfx,etot)
     real(PMFDP)    :: cvs(:)
     real(PMFDP)    :: gfx(:)
     real(PMFDP)    :: epot
-    real(PMFDP)    :: rgfx(:)
     real(PMFDP)    :: etot
     ! -----------------------------------------------
     integer        :: gi0, i
-    real(PMFDP)    :: invn, icf, ricf
+    real(PMFDP)    :: invn, icf
     real(PMFDP)    :: detot1, detot2
     real(PMFDP)    :: depot1, depot2
     real(PMFDP)    :: dicf1, dicf2
-    real(PMFDP)    :: rdicf1
     ! --------------------------------------------------------------------------
 
     ! reset the accumulated data if requested
@@ -344,18 +342,13 @@ subroutine usabf_accu_add_data_online(cvs,gfx,epot,rgfx,etot)
 
     do i=1,NumOfUSABFCVs
         icf = gfx(i)
-
-        !write(12458,*) icf
-
         dicf1 = - icf - usabfaccu%micf(i,gi0)
         usabfaccu%micf(i,gi0)  = usabfaccu%micf(i,gi0)  + dicf1 * invn
         dicf2 = - icf -  usabfaccu%micf(i,gi0)
         usabfaccu%m2icf(i,gi0) = usabfaccu%m2icf(i,gi0) + dicf1 * dicf2
 
         if( fentropy ) then
-            ricf = rgfx(i)
-            rdicf1 = - ricf - usabfaccu%rmicf(i,gi0)
-            usabfaccu%c11hh(i,gi0)  = usabfaccu%c11hh(i,gi0) + rdicf1 * detot2
+            usabfaccu%c11hh(i,gi0)  = usabfaccu%c11hh(i,gi0) + dicf1 * detot2
         end if
     end do
 
