@@ -556,8 +556,8 @@ subroutine usabf_core_force_10p()
     if( fstep .ge. 10 ) then
         ! calculated ICF
         do i=1,NumOfUSABFCVs
-            icf3(i) = ( 22.0d0*pcvhist0(j) - 67.0d0*pcvhist1(j) - 58.0d0*pcvhist2(j) &
-                      + 58.0d0*pcvhist4(j) + 67.0d0*pcvhist5(j) - 22.0d0*pcvhist6(j)) * invh
+            icf3(i) = ( 22.0d0*pcvhist0(i) - 67.0d0*pcvhist1(i) - 58.0d0*pcvhist2(i) &
+                      + 58.0d0*pcvhist4(i) + 67.0d0*pcvhist5(i) - 22.0d0*pcvhist6(i)) * invh
         end do
 
         ! substract biasing force
