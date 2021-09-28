@@ -121,10 +121,8 @@ subroutine usabf_init_print_header
     case(1)
     write(PMF_OUT,120)  '      |-> Simplified ABF algorithm (2-points ABF)'
     case(2)
-    write(PMF_OUT,120)  '      |-> Original ABF algorithm (4-points ABF)'
-    case(3)
     write(PMF_OUT,120)  '      |-> 7-points ABF'
-    case(4)
+    case(3)
     write(PMF_OUT,120)  '      |-> 10-points ABF'
     case default
     call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown fmode in usabf_init_print_header!')
