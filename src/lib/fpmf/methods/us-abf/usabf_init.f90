@@ -81,6 +81,8 @@ subroutine usabf_init_dat
     fepotaverage    = 0.0d0
     fekinaverage    = 0.0d0
 
+    fsmoothetot     = .false.
+
     NumOfUSABFCVs     = 0
 
     insidesamples   = 0

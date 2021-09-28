@@ -38,7 +38,8 @@ implicit none
 ! control section --------------------------------------------------------------
 integer     :: fmode        ! 0 - disable US-ABF
                             ! 1 - enable ABF (simple ABF algorithm - 2p)
-                            ! 2 - enable ABF (original ABF algorithm - 4p)
+                            ! 2 - enable ABF (Savitzky–Golay_filter ABF algorithm - 7p)
+                            ! 3 - enable ABF (Savitzky–Golay_filter ABF algorithm - 10p)
 logical     :: frestart     ! 1 - restart job with previous data, 0 - otherwise not
 integer     :: faccurst     ! number of steps after which the accumulated data are set to zero
 integer     :: fsample      ! output sample period in steps
@@ -51,6 +52,8 @@ logical     :: fentropy     ! collect data for entropy calculation
 
 real(PMFDP) :: fepotaverage
 real(PMFDP) :: fekinaverage
+
+logical     :: fsmoothetot  ! smooth etot prior covariance calculation
 
 ! item list --------------------------------------------------------------------
 type CVTypeUSABF
@@ -145,7 +148,7 @@ real(PMFDP),allocatable     :: cvhist7(:)
 real(PMFDP),allocatable     :: cvhist8(:)
 real(PMFDP),allocatable     :: cvhist9(:)
 
-real(PMFDP),allocatable     :: pcvhist0(:)
+real(PMFDP),allocatable     :: pcvhist0(:)      ! history of CV momenta
 real(PMFDP),allocatable     :: pcvhist1(:)
 real(PMFDP),allocatable     :: pcvhist2(:)
 real(PMFDP),allocatable     :: pcvhist3(:)

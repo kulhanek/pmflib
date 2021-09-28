@@ -51,15 +51,12 @@ subroutine usabf_core_main
 
     select case(fmode)
         case(1)
-            ! simplified ABF algorithm
+            ! simplified ABF algorithm - 2-points
             call usabf_core_force_2p
         case(2)
-            ! original ABF algorithm
-            call usabf_core_force_4p
-        case(3)
             ! 7-points
             call usabf_core_force_7p
-        case(4)
+        case(3)
             ! 10-points
             call usabf_core_force_10p
         case default
@@ -77,7 +74,7 @@ end subroutine usabf_core_main
 ! get bias from restraints
 !===============================================================================
 
-subroutine usabf_core_get_us_bias(values,gfx)
+subroutine usabf_core_get_us_bias(values,gfx,bene)
 
     use usabf_dat
     use pmf_dat
@@ -87,18 +84,19 @@ subroutine usabf_core_get_us_bias(values,gfx)
     implicit none
     real(PMFDP)     :: values(:)
     real(PMFDP)     :: gfx(:)
+    real(PMFDP)     :: bene
     ! --------------------------------------------
     integer         :: i
     ! --------------------------------------------------------------------------
 
-    TotalUSABFEnergy = 0.0
+    bene = 0.0
 
     do i=1,NumOfUSABFCVs
 
         USABFCVList(i)%deviation = USABFCVList(i)%cv%get_deviation(values(i),USABFCVList(i)%target_value)
 
         USABFCVList(i)%energy = 0.5d0*USABFCVList(i)%force_constant*USABFCVList(i)%deviation**2
-        TotalUSABFEnergy = TotalUSABFEnergy + USABFCVList(i)%energy
+        bene = bene + USABFCVList(i)%energy
 
         gfx(i) = - USABFCVList(i)%force_constant*USABFCVList(i)%deviation
     end do
@@ -193,14 +191,16 @@ subroutine usabf_core_force_2p()
         ! pxi1 - old ABF forces in t-dt
         ! pxip in t-1/2dt
         ! pxim in t-3/2dt
-        pxi0(:) = pxi0(:) - pxi1(:)
-        pxim(:) = 0.5d0*(pxim(:)+pxip(:))
 
         ! get sum
+        pxim(:) = 0.5d0*(pxim(:)+pxip(:))
         pxi0(:) = pxi0(:) + pxim(:)
 
+        ! correct for applied bias
+        icf2(:) = pxi0(:) - pxi1(:)
+
         ! add data to accumulator
-        call usabf_accu_add_data_online(cvhist0,pxi0(:),epothist0,etothist0)
+        call usabf_accu_add_data_online(cvhist0,icf2,epothist0,pxi0,etothist0)
     end if
 
     ! backup to the next step
@@ -209,7 +209,7 @@ subroutine usabf_core_force_2p()
     v0   = Vel
 
     ! get us force to be applied --------------------
-    call usabf_core_get_us_bias(cvhist1(:),la)
+    call usabf_core_get_us_bias(cvhist1(:),la,TotalUSABFEnergy)
 
     ! project us force along coordinate
     do i=1,NumOfUSABFCVs
@@ -227,149 +227,6 @@ subroutine usabf_core_force_2p()
 end subroutine usabf_core_force_2p
 
 !===============================================================================
-! Subroutine:  usabf_core_force_4p
-! this is leap-frog ABF version, original implementation
-!===============================================================================
-
-subroutine usabf_core_force_4p()
-
-    use pmf_utils
-    use pmf_dat
-    use pmf_cvs
-    use usabf_dat
-    use usabf_accu
-    use usabf_output
-
-    implicit none
-    integer     :: i,j,k,m
-    integer     :: ci,ck
-    real(PMFDP) :: v,avg_epot,avg_etot
-    ! --------------------------------------------------------------------------
-
-    ! calculate acceleration in time t for all pmf atoms
-    do i=1,NumOfLAtoms
-        a1(:,i) = MassInv(i)*Frc(:,i)
-    end do
-
-    ! shift accuvalue history
-    cvhist0(:) = cvhist1(:)
-    cvhist1(:) = cvhist2(:)
-    cvhist2(:) = cvhist3(:)
-
-    ! save coordinate value to history
-    do i=1,NumOfUSABFCVs
-        ci = USABFCVList(i)%cvindx
-        cvhist3(i) = CVContext%CVsValues(ci)
-    end do
-
-    ! shift epot ene
-    epothist0 = epothist1
-    epothist1 = epothist2
-    epothist2 = epothist3
-    if( fenthalpy ) then
-        epothist3 = PotEne + PMFEne - fepotaverage
-    else
-        epothist3 = 0.0d0
-    end if
-
-    ! shift etot ene
-    etothist0 = etothist1
-    etothist1 = etothist2
-    etothist2 = etothist3 + KinEne - fekinaverage ! KinEne is delayed by dt
-    if( fentropy ) then
-        etothist3 = PotEne + PMFEne - fepotaverage
-    else
-        etothist3 = 0.0d0
-    end if
-
-    ! get us force to be applied --------------------
-    call usabf_core_get_us_bias(cvhist3(:),la)
-
-    ! project abf force along coordinate ------------
-    do i=1,NumOfUSABFCVs
-        ci = USABFCVList(i)%cvindx
-        do j=1,NumOfLAtoms
-            a1(:,j) = a1(:,j) + la(i) * MassInv(j) * CVContext%CVsDrvs(:,j,ci)
-        end do
-    end do
-
-    ! rest of ABF stuff -----------------------------
-
-    ! calculate Z matrix and its inverse
-    call usabf_core_calc_Zmat
-
-    ! pxip = zd0(t-dt)*[v(t-dt/2)/2 - dt*a1(t)/12]
-    do i=1,NumOfUSABFCVs
-        v = 0.0d0
-        do j=1,NumOfLAtoms
-            do m=1,3
-                v = v + zd0(m,j,i) * (0.5d0*Vel(m,j) - fdtx*a1(m,j)/12.0)
-            end do
-        end do
-        pxip(i) = v
-    end do
-
-    ! ZD0(3, NumOfLAtoms, NumOfUSABFCVs)   <-- 1/dt * m_ksi grad ksi(r0)
-    do i=1,NumOfUSABFCVs
-        do j=1,NumOfLAtoms
-            do m=1,3
-                v = 0.0d0
-                do k=1,NumOfUSABFCVs
-                    ck = USABFCVList(k)%cvindx
-                    v = v + fzinv(i,k) * CVContext%CVsDrvs(m,j,ck)
-                end do
-                zd0(m,j,i) = v / fdtx
-            end do
-        end do
-    end do
-
-    ! pxim = zd0(t)*[v(t-dt/2)/2 + dt*a0(t-dt)/12]
-    do i=1,NumOfUSABFCVs
-        v = 0.0d0
-        do j=1,NumOfLAtoms
-            do m=1,3
-                v = v + zd0(m,j,i) * (0.5d0*Vel(m,j) + fdtx*a0(m,j)/12.0)
-            end do
-        end do
-        pxim(i) = v
-    end do
-
-    !a0 <-- a1
-    a0(:,:) = a1(:,:)
-
-    ! pxi0 <--- pxi0 + pxip
-    pxi0(:) = pxi0(:) + pxip(:)
-
-    ! update accumulator - we need at least four samples
-    if( fstep .ge. 4 ) then
-        ! calculate coordinate values at time t-3/2dt
-        do i=1,NumOfUSABFCVs
-            avg_values(i) = USABFCVList(i)%cv%get_average_value(cvhist1(i),cvhist2(i))
-        end do
-
-        avg_epot  = 0.5d0*(epothist1 + epothist2)    ! t - 3/2*dt
-        avg_etot  = 0.5d0*(etothist1 + etothist2)    ! t - 3/2*dt
-
-        ! add data to accumulator
-        call usabf_accu_add_data_online(cvhist0,pxi0(:),avg_epot,avg_etot)
-    end if
-
-    ! pxi0 <--- -pxip + pxim + pxi1 - la/2
-    pxi0(:) = -pxip(:) + pxim(:) + pxi1(:) - 0.5d0*la(:)
-
-    ! pxi1 <--- -pxim - la/2
-    pxi1(:) = -pxim(:) - 0.5d0*la(:)
-
-    ! project updated acceleration back
-    do i=1,NumOfLAtoms
-        Frc(:,i) = a1(:,i)*Mass(i)
-    end do
-
-    return
-
-end subroutine usabf_core_force_4p
-
-!===============================================================================
 ! Subroutine:  usabf_core_force_7p
 ! 7-points from CV values only
 !===============================================================================
@@ -384,13 +241,11 @@ subroutine usabf_core_force_7p()
     use usabf_output
 
     implicit none
-    integer     :: i,j
-    integer     :: ci
-    real(PMFDP) :: invh
+    integer     :: i,j,ci
+    real(PMFDP) :: invh,etot2,bene
     ! --------------------------------------------------------------------------
 
     invh = 1.0d0 / (12.0d0 * fdtx)
-
 
     ! shift accuvalue history
     cvhist2(:) = cvhist3(:)
@@ -438,6 +293,7 @@ subroutine usabf_core_force_7p()
 
         do i=1,NumOfUSABFCVs
             do j=1,NumOfUSABFCVs
+                ! https://en.wikipedia.org/wiki/Savitzky%E2%80%93Golay_filter
                 pcvhist4(i) = fzinv(i,j) * (cvhist2(j) - 8.0d0*cvhist3(j) + 8.0d0*cvhist5(j) - cvhist6(j)) * invh
             end do
         end do
@@ -448,19 +304,29 @@ subroutine usabf_core_force_7p()
     if( fstep .ge. 7 ) then
         ! calculated ICF
         do i=1,NumOfUSABFCVs
+            ! https://en.wikipedia.org/wiki/Savitzky%E2%80%93Golay_filter
             icf2(i) = (pcvhist0(i) - 8.0d0*pcvhist1(i) + 8.0d0*pcvhist3(i) - pcvhist4(i)) * invh
         end do
 
         ! substract biasing force
-        call usabf_core_get_us_bias(cvhist2(:),la)
+        call usabf_core_get_us_bias(cvhist2(:),la,bene)
         pxi0 = icf2 - la
 
+        ! smooth etot
+        if( fsmoothetot ) then
+            ! https://en.wikipedia.org/wiki/Savitzky%E2%80%93Golay_filter
+            etot2 = ( - 3.0d0*etothist0 + 12.0d0*etothist1 + 17.0d0*etothist2  &
+                     + 12.0d0*etothist3 -  3.0d0*etothist4)/35.0d0
+        else
+            etot2 = etothist2
+        end if
+
         ! record the data
-        call usabf_accu_add_data_online(cvhist2,pxi0,epothist2,etothist2)
+        call usabf_accu_add_data_online(cvhist2,pxi0,epothist2,icf2,etot2)
     end if
 
     ! get US force to be applied --------------------
-    call usabf_core_get_us_bias(cvhist6(:),la)
+    call usabf_core_get_us_bias(cvhist6(:),la,TotalUSABFEnergy)
 
     ! project abf force along coordinate ------------
     do i=1,NumOfUSABFCVs
@@ -488,7 +354,7 @@ subroutine usabf_core_force_10p()
 
     implicit none
     integer     :: i,j,ci
-    real(PMFDP) :: invh,etot3
+    real(PMFDP) :: invh,etot3,bene
     ! --------------------------------------------------------------------------
 
     invh = 1.0d0 / (252.0d0 * fdtx)
@@ -549,6 +415,7 @@ subroutine usabf_core_force_10p()
 
         do i=1,NumOfUSABFCVs
             do j=1,NumOfUSABFCVs
+                ! https://en.wikipedia.org/wiki/Savitzky%E2%80%93Golay_filter
                 pcvhist6(i) = fzinv(i,j) * ( 22.0d0*cvhist3(j) - 67.0d0*cvhist4(j) - 58.0d0*cvhist5(j) &
                                            + 58.0d0*cvhist7(j) + 67.0d0*cvhist8(j) - 22.0d0*cvhist9(j)) * invh
             end do
@@ -560,24 +427,30 @@ subroutine usabf_core_force_10p()
     if( fstep .ge. 10 ) then
         ! calculated ICF
         do i=1,NumOfUSABFCVs
+            ! https://en.wikipedia.org/wiki/Savitzky%E2%80%93Golay_filter
             icf3(i) = ( 22.0d0*pcvhist0(i) - 67.0d0*pcvhist1(i) - 58.0d0*pcvhist2(i) &
                       + 58.0d0*pcvhist4(i) + 67.0d0*pcvhist5(i) - 22.0d0*pcvhist6(i)) * invh
         end do
 
         ! substract biasing force
-        call usabf_core_get_us_bias(cvhist3(:),la)
+        call usabf_core_get_us_bias(cvhist3(:),la,bene)
         pxi0 = icf3 - la
 
         ! smooth etot
-        etot3 = ( 5.0d0*etothist0 - 30.0d0*etothist1 + 75.0d0*etothist2 + 131.0d0*etothist3 &
-               + 75.0d0*etothist4 - 30.0d0*etothist5 +  5.0d0*etothist6)/231.0d0
+        if( fsmoothetot ) then
+            ! https://en.wikipedia.org/wiki/Savitzky%E2%80%93Golay_filter
+            etot3 = ( 5.0d0*etothist0 - 30.0d0*etothist1 + 75.0d0*etothist2 + 131.0d0*etothist3 &
+                   + 75.0d0*etothist4 - 30.0d0*etothist5 +  5.0d0*etothist6)/231.0d0
+        else
+            etot3 = etothist3
+        end if
 
         ! record the data
-        call usabf_accu_add_data_online(cvhist3,pxi0,epothist3,etot3)
+        call usabf_accu_add_data_online(cvhist3,pxi0,epothist3,icf3,etot3)
     end if
 
     ! get US force to be applied --------------------
-    call usabf_core_get_us_bias(cvhist9(:),la)
+    call usabf_core_get_us_bias(cvhist9(:),la,TotalUSABFEnergy)
 
     ! project abf force along coordinate ------------
     do i=1,NumOfUSABFCVs
