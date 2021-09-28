@@ -92,9 +92,6 @@ type,extends(PMFAccuType)   :: USABFAccuType
     real(PMFDP),pointer     :: micf(:,:)                ! mean ICF - total
     real(PMFDP),pointer     :: m2icf(:,:)               ! M2 of ICF - total
 
-    ! RMICF
-    real(PMFDP),pointer     :: rmicf(:,:)                ! mean ICF - total
-
     ! ENTHALPY
     real(PMFDP),pointer     :: mepot(:)                 ! mean of potential energy
     real(PMFDP),pointer     :: m2epot(:)                ! M2 of potential energy

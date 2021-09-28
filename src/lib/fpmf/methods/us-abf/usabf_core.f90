@@ -200,7 +200,7 @@ subroutine usabf_core_force_2p()
         icf2(:) = pxi0(:) - pxi1(:)
 
         ! add data to accumulator
-        call usabf_accu_add_data_online(cvhist0,icf2,epothist0,pxi0,etothist0)
+        call usabf_accu_add_data_online(cvhist0,icf2,epothist0,etothist0)
     end if
 
     ! backup to the next step
@@ -322,7 +322,7 @@ subroutine usabf_core_force_7p()
         end if
 
         ! record the data
-        call usabf_accu_add_data_online(cvhist2,pxi0,epothist2,icf2,etot2)
+        call usabf_accu_add_data_online(cvhist2,pxi0,epothist2,etot2)
     end if
 
     ! get US force to be applied --------------------
@@ -446,7 +446,7 @@ subroutine usabf_core_force_10p()
         end if
 
         ! record the data
-        call usabf_accu_add_data_online(cvhist3,pxi0,epothist3,icf3,etot3)
+        call usabf_accu_add_data_online(cvhist3,pxi0,epothist3,etot3)
     end if
 
     ! get US force to be applied --------------------

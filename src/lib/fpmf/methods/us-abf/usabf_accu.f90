@@ -97,7 +97,6 @@ subroutine usabf_accu_init()
         allocate(  &
                 usabfaccu%metot(usabfaccu%tot_nbins), &
                 usabfaccu%m2etot(usabfaccu%tot_nbins), &
-                usabfaccu%rmicf(usabfaccu%tot_cvs,usabfaccu%tot_nbins), &
                 usabfaccu%c11hh(usabfaccu%tot_cvs,usabfaccu%tot_nbins), &
                 stat = alloc_failed)
 
@@ -138,7 +137,6 @@ subroutine usabf_accu_clear()
         usabfaccu%metot(:)      = 0.0d0
         usabfaccu%m2etot(:)     = 0.0d0
         usabfaccu%c11hh(:,:)    = 0.0d0
-        usabfaccu%rmicf(:,:)    = 0.0d0
     end if
 
 end subroutine usabf_accu_clear
@@ -227,13 +225,6 @@ subroutine usabf_accu_read(iounit)
                     else
                         call pmf_accu_skip_section(iounit,keyline,USABF_OUT)
                     end if
-           ! ------------------------------------
-                case('RMICF')
-                    if( fentropy ) then
-                        call pmf_accu_read_rbuf_M(usabfaccu%PMFAccuType,iounit,keyline,usabfaccu%rmicf)
-                    else
-                        call pmf_accu_skip_section(iounit,keyline,USABF_OUT)
-                    end if
             ! ------------------------------------
                 case default
                     call pmf_accu_skip_section(iounit,keyline,USABF_OUT)
@@ -285,7 +276,6 @@ subroutine usabf_accu_write(iounit)
         call pmf_accu_write_rbuf_B(usabfaccu%PMFAccuType,iounit,'METOT',    'WA',usabfaccu%metot)
         call pmf_accu_write_rbuf_B(usabfaccu%PMFAccuType,iounit,'M2ETOT',   'M2',usabfaccu%m2etot,'METOT')
         call pmf_accu_write_rbuf_M(usabfaccu%PMFAccuType,iounit,'C11HH',    'CO',usabfaccu%c11hh,'MICF','METOT')
-        call pmf_accu_write_rbuf_M(usabfaccu%PMFAccuType,iounit,'RMICF',    'WA',usabfaccu%rmicf)
     end if
 
 end subroutine usabf_accu_write
@@ -294,7 +284,7 @@ end subroutine usabf_accu_write
 ! Subroutine:  usabf_accu_add_data_online
 !===============================================================================
 
-subroutine usabf_accu_add_data_online(cvs,gfx,epot,rgfx,etot)
+subroutine usabf_accu_add_data_online(cvs,gfx,epot,etot)
 
     use usabf_dat
     use pmf_dat
@@ -304,14 +294,13 @@ subroutine usabf_accu_add_data_online(cvs,gfx,epot,rgfx,etot)
     real(PMFDP)    :: cvs(:)
     real(PMFDP)    :: gfx(:)
     real(PMFDP)    :: epot
-    real(PMFDP)    :: rgfx(:)
     real(PMFDP)    :: etot
     ! -----------------------------------------------
     integer        :: gi0, i
-    real(PMFDP)    :: invn, icf, ricf
+    real(PMFDP)    :: invn, icf
     real(PMFDP)    :: detot1, detot2
     real(PMFDP)    :: depot1, depot2
-    real(PMFDP)    :: dicf1, dicf2, rdicf1
+    real(PMFDP)    :: dicf1, dicf2
     ! --------------------------------------------------------------------------
 
     ! reset the accumulated data if requested
@@ -357,10 +346,7 @@ subroutine usabf_accu_add_data_online(cvs,gfx,epot,rgfx,etot)
         usabfaccu%m2icf(i,gi0) = usabfaccu%m2icf(i,gi0) + dicf1 * dicf2
 
         if( fentropy ) then
-            ricf = - rgfx(i)
-            rdicf1 = ricf - usabfaccu%rmicf(i,gi0)
-            usabfaccu%rmicf(i,gi0)  = usabfaccu%rmicf(i,gi0) + rdicf1 * invn
-            usabfaccu%c11hh(i,gi0)  = usabfaccu%c11hh(i,gi0) + rdicf1 * detot2
+            usabfaccu%c11hh(i,gi0)  = usabfaccu%c11hh(i,gi0) + dicf1 * detot2
         end if
     end do
 
