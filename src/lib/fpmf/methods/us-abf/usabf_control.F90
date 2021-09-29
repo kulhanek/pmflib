@@ -102,6 +102,12 @@ subroutine usabf_control_read_abf(prm_fin)
     call pmf_ctrl_read_real8_wunit(prm_fin,'fepotaverage',EnergyUnit,fepotaverage,'F10.1')
     call pmf_ctrl_read_real8_wunit(prm_fin,'fekinaverage',EnergyUnit,fekinaverage,'F10.1')
 
+    if( fmode .eq. 4 ) then
+        call pmf_ctrl_read_integer(prm_fin,'gpr_len',gpr_len,'i12')
+        call pmf_ctrl_read_real8(prm_fin,'gpr_width',gpr_width,'F12.3')
+        call pmf_ctrl_read_real8(prm_fin,'gpr_noise',gpr_noise,'F12.3')
+    end if
+
     usabf_enabled = fmode .gt. 0
 
     return

@@ -550,6 +550,8 @@ subroutine usabf_core_force_gpr()
     real(PMFDP) :: bene,mean,etot_dt_index
     ! --------------------------------------------------------------------------
 
+    dt_index = gpr_len/2+1
+
 ! shift history buffers
     do i=1,hist_len-1
         cvhist(:,i) = cvhist(:,i+1)
@@ -601,7 +603,7 @@ subroutine usabf_core_force_gpr()
             end if
 
             ! calculate CV derivative in time - derivative is shift invariant
-            pxi0(i) = dot_product(gpr_model,gpr_kff)
+            pxi0(i) = dot_product(gpr_model,gpr_kdf)
         end do
 
         ! shift history buffer
@@ -627,8 +629,6 @@ subroutine usabf_core_force_gpr()
 
         do i=1,NumOfUSABFCVs
 
-            dt_index = gpr_len/2+1
-
             ! input data
             do j=1,gpr_len
                 gpr_model(j) = pcvhist(i,gpr_len-j+1)
@@ -643,7 +643,7 @@ subroutine usabf_core_force_gpr()
             end if
 
             ! calculate mean force - derivative is shift invariant
-            pxi0(i) = dot_product(gpr_model,gpr_kff)
+            pxi0(i) = dot_product(gpr_model,gpr_kdf)
         end do
 
         ! substract biasing force
@@ -678,8 +678,7 @@ subroutine usabf_core_force_gpr()
             etot_dt_index = etothist(dt_index)
         end if
 
-
-        ! write(789,*) cvhist(:,dt_index),pxi0,epothist(dt_index),etot_dt_index
+        write(789,*) cvhist(:,dt_index),pxi0,epothist(dt_index),etothist(dt_index),etot_dt_index
 
         ! record the data
         call usabf_accu_add_data_online(cvhist(:,dt_index),pxi0,epothist(dt_index),etot_dt_index)

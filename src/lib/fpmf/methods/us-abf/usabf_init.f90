@@ -89,8 +89,9 @@ subroutine usabf_init_dat
     insidesamples   = 0
     outsidesamples  = 0
 
-    gpr_len         = 5
-    gpr_width       = 3.0
+    gpr_len         = 7
+    gpr_width       = 6.0
+    gpr_noise       = 0.05
 
     fdtx            = 0.0d0     ! time step in internal units
 
@@ -130,6 +131,9 @@ subroutine usabf_init_print_header
     write(PMF_OUT,120)  '      |-> 10-points ABF'
     case(4)
     write(PMF_OUT,120)  '      |-> GPR ABF'
+    write(PMF_OUT,130)  '          gpr_len                        : ', gpr_len
+    write(PMF_OUT,145)  '          gpr_width                      : ', gpr_width
+    write(PMF_OUT,145)  '          gpr_noise                      : ', gpr_noise
     case default
     call pmf_utils_exit(PMF_OUT,1,'[US-ABF] Unknown fmode in usabf_init_print_header!')
     end select
@@ -183,6 +187,7 @@ subroutine usabf_init_print_header
 120 format(A)
 125 format(A,A)
 130 format(A,I6)
+145 format(A,F10.3)
 150 format(A,F10.1,1X,A)
 
 140 format(' == Collective variable #',I4.4)
@@ -293,7 +298,7 @@ subroutine usabf_init_gpr
     real(PMFDP) :: dt,dt2,idw2
     ! --------------------------------------------------------------------------
 
-    idw2 = 1.0d0/(gpr_width * PMF_DT2VDT)**2
+    idw2 = 1.0d0/(2.0d0*(gpr_width * PMF_DT2VDT)**2)
 
 ! gpr_len must be an odd number
     if( mod(gpr_len,2) .ne. 1 ) then
@@ -305,6 +310,7 @@ subroutine usabf_init_gpr
             gpr_K(gpr_len,gpr_len),     &
             gpr_model(gpr_len),         &
             gpr_kff(gpr_len),           &
+            gpr_kdf(gpr_len),           &
             gpr_indx(gpr_len),          &
             stat= alloc_failed )
 
@@ -321,6 +327,10 @@ subroutine usabf_init_gpr
         end do
     end do
 
+    do i=1,gpr_len
+        gpr_K(i,i) = gpr_K(i,i) + gpr_noise
+    end do
+
 ! run LU decomposition
     call dgetrf(gpr_len,gpr_len,gpr_K,gpr_len,gpr_indx,gpr_info)
 
@@ -333,7 +343,8 @@ subroutine usabf_init_gpr
     j = gpr_len / 2 + 1
     do i=1,gpr_len
         dt = real(i-j,PMFDP) * fdtx
-        gpr_kff(i) = - 2.0d0 * exp(- dt**2 * idw2) * dt * idw2
+        gpr_kdf(i) = - 2.0d0 * exp(- dt**2 * idw2) * dt * idw2
+        gpr_kff(i) = exp(- dt**2 * idw2)
     end do
 
     hist_len = gpr_len + gpr_len/2

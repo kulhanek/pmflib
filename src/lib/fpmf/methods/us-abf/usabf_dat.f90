@@ -140,10 +140,12 @@ real(PMFDP),allocatable     :: epothist(:)      ! history of Epot
 real(PMFDP),allocatable     :: etothist(:)      ! history of Etot
 
 integer                     :: gpr_len          ! MUST be odd number
-integer                     :: gpr_width        ! SE width in fs
+real(PMFDP)                 :: gpr_width        ! SE width in fs
+real(PMFDP)                 :: gpr_noise        !
 real(PMFDP),allocatable     :: gpr_K(:,:)       ! covariance matrix
 real(PMFDP),allocatable     :: gpr_model(:)     ! GPR model
 real(PMFDP),allocatable     :: gpr_kff(:)
+real(PMFDP),allocatable     :: gpr_kdf(:)
 integer,allocatable         :: gpr_indx(:)
 integer                     :: gpr_info
 
