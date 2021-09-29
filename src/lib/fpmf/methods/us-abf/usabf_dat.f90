@@ -103,6 +103,7 @@ type,extends(PMFAccuType)   :: USABFAccuType
     real(PMFDP),pointer     :: metot(:)                 ! mean of total energy
     real(PMFDP),pointer     :: m2etot(:)                ! M2 of total energy
     real(PMFDP),pointer     :: c11hh(:,:)               ! c11 - total/total
+    real(PMFDP),pointer     :: rmicf(:,:)               ! raw mean ICF - total
 
 end type USABFAccuType
 

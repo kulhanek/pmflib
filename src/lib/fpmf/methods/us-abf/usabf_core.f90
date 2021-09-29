@@ -266,10 +266,10 @@ subroutine usabf_core_force_2p()
         pxi0(:) = pxi0(:) + pxim(:)
 
         ! correct for applied bias
-        pxi0(:) = pxi0(:) - pxi1(:)
+        pxi1(:) = pxi0(:) - pxi1(:)
 
         ! add data to accumulator
-        call usabf_accu_add_data_online(cvhist(:,1),pxi0,epothist(1),etothist(1))
+        call usabf_accu_add_data_online(cvhist(:,1),pxi1,epothist(1),pxi0,etothist(1))
     end if
 
     ! backup to the next step
@@ -377,7 +377,7 @@ subroutine usabf_core_force_7p()
 
         ! substract biasing force
         call usabf_core_get_us_bias(cvhist(:,3),la,bene)
-        pxi0 = pxi0 - la
+        pxi1 = pxi0 - la
 
         ! smooth etot
         if( fsmoothetot ) then
@@ -391,7 +391,7 @@ subroutine usabf_core_force_7p()
         ! write(790,*) cvhist(:,3),pxi0,epothist(3),etothist(3)
 
         ! record the data
-        call usabf_accu_add_data_online(cvhist(:,3),pxi0,epothist(3),etot3)
+        call usabf_accu_add_data_online(cvhist(:,3),pxi1,epothist(3),pxi0,etot3)
     end if
 
     ! get US force to be applied --------------------
@@ -502,7 +502,7 @@ subroutine usabf_core_force_10p()
 
         ! substract biasing force
         call usabf_core_get_us_bias(cvhist(:,4),la,bene)
-        pxi0 = pxi0 - la
+        pxi1 = pxi0 - la
 
         ! smooth etot
         if( fsmoothetot ) then
@@ -514,7 +514,7 @@ subroutine usabf_core_force_10p()
         end if
 
         ! record the data
-        call usabf_accu_add_data_online(cvhist(:,4),pxi0,epothist(4),etot4)
+        call usabf_accu_add_data_online(cvhist(:,4),pxi1,epothist(4),pxi0,etot4)
     end if
 
 
@@ -648,7 +648,7 @@ subroutine usabf_core_force_gpr()
 
         ! substract biasing force
         call usabf_core_get_us_bias(cvhist(:,dt_index),la,bene)
-        pxi0 = pxi0 - la
+        pxi1 = pxi0 - la
 
         ! smooth etot
         if( fsmoothetot ) then
@@ -678,10 +678,10 @@ subroutine usabf_core_force_gpr()
             etot_dt_index = etothist(dt_index)
         end if
 
-        write(789,*) cvhist(:,dt_index),pxi0,epothist(dt_index),etothist(dt_index),etot_dt_index
+        ! write(789,*) cvhist(:,dt_index),pxi1,epothist(dt_index),etothist(dt_index),pxi0,etot_dt_index
 
         ! record the data
-        call usabf_accu_add_data_online(cvhist(:,dt_index),pxi0,epothist(dt_index),etot_dt_index)
+        call usabf_accu_add_data_online(cvhist(:,dt_index),pxi1,epothist(dt_index),pxi0,etot_dt_index)
 
     end if
 
