@@ -89,6 +89,9 @@ subroutine usabf_init_dat
     insidesamples   = 0
     outsidesamples  = 0
 
+    gpr_len         = 5
+    gpr_width       = 3.0
+
     fdtx            = 0.0d0     ! time step in internal units
 
 end subroutine usabf_init_dat
@@ -125,8 +128,10 @@ subroutine usabf_init_print_header
     write(PMF_OUT,120)  '      |-> 7-points ABF'
     case(3)
     write(PMF_OUT,120)  '      |-> 10-points ABF'
+    case(4)
+    write(PMF_OUT,120)  '      |-> GPR ABF'
     case default
-    call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown fmode in usabf_init_print_header!')
+    call pmf_utils_exit(PMF_OUT,1,'[US-ABF] Unknown fmode in usabf_init_print_header!')
     end select
     write(PMF_OUT,125)  ' Coordinate definition file (fusabfdef)  : ', trim(fusabfdef)
     write(PMF_OUT,130)  ' Number of coordinates                   : ', NumOfUSABFCVs
@@ -201,104 +206,59 @@ subroutine usabf_init_arrays
 
     fdtx = fdt*PMF_DT2VDT
 
+    select case(fmode)
+        case(1)
+            hist_len = 2
+        case(2)
+            hist_len = 7
+        case(3)
+            hist_len = 10
+        case(4)
+            call usabf_init_gpr()
+        case default
+            call pmf_utils_exit(PMF_OUT,1,'[US-ABF] Not implemented fmode in usabf_init_arrays!')
+    end select
+
     ! general arrays --------------------------------
     allocate(                                   &
             a0(3,NumOfLAtoms),                  &
-            a1(3,NumOfLAtoms),                  &
             v0(3,NumOfLAtoms),                  &
             pxi0(NumOfUSABFCVs),                &
             pxi1(NumOfUSABFCVs),                &
             pxip(NumOfUSABFCVs),                &
             pxim(NumOfUSABFCVs),                &
-            avg_values(NumOfUSABFCVs),          &
             la(NumOfUSABFCVs),                  &
             fz(NumOfUSABFCVs,NumOfUSABFCVs),    &
             fzinv(NumOfUSABFCVs,NumOfUSABFCVs), &
             zd0(3,NumOfLAtoms,NumOfUSABFCVs),   &
             zd1(3,NumOfLAtoms,NumOfUSABFCVs),   &
-            cvhist0(NumOfUSABFCVs),             &
-            cvhist1(NumOfUSABFCVs),             &
-            cvhist2(NumOfUSABFCVs),             &
-            cvhist3(NumOfUSABFCVs),             &
-            cvhist4(NumOfUSABFCVs),             &
-            cvhist5(NumOfUSABFCVs),             &
-            cvhist6(NumOfUSABFCVs),             &
-            cvhist7(NumOfUSABFCVs),             &
-            cvhist8(NumOfUSABFCVs),             &
-            cvhist9(NumOfUSABFCVs),             &
-            pcvhist0(NumOfUSABFCVs),            &
-            pcvhist1(NumOfUSABFCVs),            &
-            pcvhist2(NumOfUSABFCVs),            &
-            pcvhist3(NumOfUSABFCVs),            &
-            pcvhist4(NumOfUSABFCVs),            &
-            pcvhist5(NumOfUSABFCVs),            &
-            pcvhist6(NumOfUSABFCVs),            &
-            icf2(NumOfUSABFCVs),                &
-            icf3(NumOfUSABFCVs),                &
+            cvhist(NumOfUSABFCVs,hist_len),     &
+            pcvhist(NumOfUSABFCVs,hist_len),    &
+            epothist(hist_len),                 &
+            etothist(hist_len),                 &
             stat= alloc_failed )
 
     if( alloc_failed .ne. 0 ) then
         call pmf_utils_exit(PMF_OUT,1, &
-            '[ABF] Unable to allocate memory for arrays used in ABF calculation!')
+            '[US-ABF] Unable to allocate memory for arrays used in ABF calculation in usabf_init_arrays!')
     end if
 
     a0(:,:) = 0.0d0
-    a1(:,:) = 0.0d0
     v0(:,:) = 0.0d0
     pxi0(:) = 0.0d0
     pxi1(:) = 0.0d0
     pxip(:) = 0.0d0
     pxim(:) = 0.0d0
-    avg_values(:) = 0.0d0
     la(:) = 0.0d0
     fz(:,:) = 0.0d0
     fzinv(:,:) = 0.0d0
     zd0(:,:,:) = 0.0d0
     zd1(:,:,:) = 0.0d0
 
-    cvhist0(:) = 0.0d0
-    cvhist1(:) = 0.0d0
-    cvhist2(:) = 0.0d0
-    cvhist3(:) = 0.0d0
-    cvhist4(:) = 0.0d0
-    cvhist5(:) = 0.0d0
-    cvhist6(:) = 0.0d0
-    cvhist7(:) = 0.0d0
-    cvhist8(:) = 0.0d0
-    cvhist9(:) = 0.0d0
-
-    pcvhist0(:) = 0.0d0
-    pcvhist1(:) = 0.0d0
-    pcvhist2(:) = 0.0d0
-    pcvhist3(:) = 0.0d0
-    pcvhist4(:) = 0.0d0
-    pcvhist5(:) = 0.0d0
-    pcvhist6(:) = 0.0d0
-
-    icf2(:) = 0.0d0
-    icf3(:) = 0.0d0
-
-    epothist0 = 0.0d0
-    epothist1 = 0.0d0
-    epothist2 = 0.0d0
-    epothist3 = 0.0d0
-    epothist4 = 0.0d0
-    epothist5 = 0.0d0
-    epothist6 = 0.0d0
-    epothist7 = 0.0d0
-    epothist8 = 0.0d0
-    epothist9 = 0.0d0
-
-    etothist0 = 0.0d0
-    etothist1 = 0.0d0
-    etothist2 = 0.0d0
-    etothist3 = 0.0d0
-    etothist4 = 0.0d0
-    etothist5 = 0.0d0
-    etothist6 = 0.0d0
-    etothist7 = 0.0d0
-    etothist8 = 0.0d0
-    etothist9 = 0.0d0
+    cvhist(:,:) = 0.0d0
+    pcvhist(:,:) = 0.0d0
+    epothist(:) = 0.0d0
+    etothist(:) = 0.0d0
 
     ! for Z matrix inversion, only if fnitem > 1 ----
     if( NumOfUSABFCVs .gt. 1 ) then
@@ -308,7 +268,7 @@ subroutine usabf_init_arrays
 
         if( alloc_failed .ne. 0 ) then
             call pmf_utils_exit(PMF_OUT,1, &
-                 '[ABF] Unable to allocate memory for arrays used in Z matrix inversion!')
+                 '[US-ABF] Unable to allocate memory for arrays used in Z matrix inversion in usabf_init_arrays!')
         end if
     end if
 
@@ -316,6 +276,69 @@ subroutine usabf_init_arrays
     call usabf_accu_init
 
 end subroutine usabf_init_arrays
+
+!===============================================================================
+! Subroutine:  usabf_init_gpr
+!===============================================================================
+
+subroutine usabf_init_gpr
+
+    use pmf_utils
+    use pmf_dat
+    use usabf_dat
+    use usabf_accu
+
+    implicit none
+    integer     :: i,j,alloc_failed
+    real(PMFDP) :: dt,dt2,idw2
+    ! --------------------------------------------------------------------------
+
+    idw2 = 1.0d0/(gpr_width * PMF_DT2VDT)**2
+
+! gpr_len must be an odd number
+    if( mod(gpr_len,2) .ne. 1 ) then
+        call pmf_utils_exit(PMF_OUT,1,'[US-ABF] gpr_len must be an odd number in usabf_init_gpr!')
+    end if
+
+! allocate arrays
+    allocate(                           &
+            gpr_K(gpr_len,gpr_len),     &
+            gpr_model(gpr_len),         &
+            gpr_kff(gpr_len),           &
+            gpr_indx(gpr_len),          &
+            stat= alloc_failed )
+
+    if( alloc_failed .ne. 0 ) then
+        call pmf_utils_exit(PMF_OUT,1, &
+            '[US-ABF] Unable to allocate memory for GPR arrays in usabf_init_gpr!')
+    end if
+
+! init covariance matrix
+    do i=1,gpr_len
+        do j=1,gpr_len
+            dt2 = (real(i-j,PMFDP) * fdtx)**2
+            gpr_K(i,j) = exp(- dt2 * idw2)
+        end do
+    end do
+
+! run LU decomposition
+    call dgetrf(gpr_len,gpr_len,gpr_K,gpr_len,gpr_indx,gpr_info)
+
+    if( gpr_info .ne. 0 ) then
+        ! throw error
+        call pmf_utils_exit(PMF_OUT,1,'[US-ABF] Unable to run LU decomposition in usabf_init_gpr!')
+    end if
+
+! construct kff
+    j = gpr_len / 2 + 1
+    do i=1,gpr_len
+        dt = real(i-j,PMFDP) * fdtx
+        gpr_kff(i) = - 2.0d0 * exp(- dt**2 * idw2) * dt * idw2
+    end do
+
+    hist_len = gpr_len + gpr_len/2
+
+end subroutine usabf_init_gpr
 
 !===============================================================================
 

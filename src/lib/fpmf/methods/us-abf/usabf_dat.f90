@@ -122,61 +122,30 @@ real(PMFDP),allocatable     :: vv(:)                ! for LU decomposition
 integer,allocatable         :: indx(:)
 
 ! helper arrays -------
-real(PMFDP),allocatable     :: a0(:,:)        ! acceleration from previous step (t-dt)
-real(PMFDP),allocatable     :: a1(:,:)        ! acceleration in current step (t)
-real(PMFDP),allocatable     :: v0(:,:)        ! velocity in previous step
+real(PMFDP),allocatable     :: a0(:,:)          ! acceleration from previous step (t-dt)
+real(PMFDP),allocatable     :: v0(:,:)          ! velocity in previous step
 
-real(PMFDP),allocatable     :: la(:)          ! ABF force in coordinate direction
-real(PMFDP),allocatable     :: zd0(:,:,:)     ! ZD0
-real(PMFDP),allocatable     :: zd1(:,:,:)     ! ZD1
-real(PMFDP),allocatable     :: pxi0(:)        !
-real(PMFDP),allocatable     :: pxi1(:)        !
-real(PMFDP),allocatable     :: pxip(:)        !
-real(PMFDP),allocatable     :: pxim(:)        !
-real(PMFDP),allocatable     :: avg_values(:)  ! average values of coordinates at t - 3/2dt
-real(PMFDP),allocatable     :: icf2(:)        !
-real(PMFDP),allocatable     :: icf3(:)        !
+real(PMFDP),allocatable     :: la(:)            ! ABF force in coordinate direction
+real(PMFDP),allocatable     :: zd0(:,:,:)       ! ZD0
+real(PMFDP),allocatable     :: zd1(:,:,:)       ! ZD1
+real(PMFDP),allocatable     :: pxi0(:)          !
+real(PMFDP),allocatable     :: pxi1(:)          !
+real(PMFDP),allocatable     :: pxip(:)          !
+real(PMFDP),allocatable     :: pxim(:)          !
 
-real(PMFDP),allocatable     :: cvhist0(:)       ! history of CV values
-real(PMFDP),allocatable     :: cvhist1(:)
-real(PMFDP),allocatable     :: cvhist2(:)
-real(PMFDP),allocatable     :: cvhist3(:)
-real(PMFDP),allocatable     :: cvhist4(:)
-real(PMFDP),allocatable     :: cvhist5(:)
-real(PMFDP),allocatable     :: cvhist6(:)
-real(PMFDP),allocatable     :: cvhist7(:)
-real(PMFDP),allocatable     :: cvhist8(:)
-real(PMFDP),allocatable     :: cvhist9(:)
+integer                     :: hist_len
+real(PMFDP),allocatable     :: cvhist(:,:)      ! history of CV values
+real(PMFDP),allocatable     :: pcvhist(:,:)     ! history of CV momenta
+real(PMFDP),allocatable     :: epothist(:)      ! history of Epot
+real(PMFDP),allocatable     :: etothist(:)      ! history of Etot
 
-real(PMFDP),allocatable     :: pcvhist0(:)      ! history of CV momenta
-real(PMFDP),allocatable     :: pcvhist1(:)
-real(PMFDP),allocatable     :: pcvhist2(:)
-real(PMFDP),allocatable     :: pcvhist3(:)
-real(PMFDP),allocatable     :: pcvhist4(:)
-real(PMFDP),allocatable     :: pcvhist5(:)
-real(PMFDP),allocatable     :: pcvhist6(:)
-
-real(PMFDP)                 :: epothist0        ! history of Epot
-real(PMFDP)                 :: epothist1
-real(PMFDP)                 :: epothist2
-real(PMFDP)                 :: epothist3
-real(PMFDP)                 :: epothist4
-real(PMFDP)                 :: epothist5
-real(PMFDP)                 :: epothist6
-real(PMFDP)                 :: epothist7
-real(PMFDP)                 :: epothist8
-real(PMFDP)                 :: epothist9
-
-real(PMFDP)                 :: etothist0        ! history of Etot
-real(PMFDP)                 :: etothist1
-real(PMFDP)                 :: etothist2
-real(PMFDP)                 :: etothist3
-real(PMFDP)                 :: etothist4
-real(PMFDP)                 :: etothist5
-real(PMFDP)                 :: etothist6
-real(PMFDP)                 :: etothist7
-real(PMFDP)                 :: etothist8
-real(PMFDP)                 :: etothist9
+integer                     :: gpr_len          ! MUST be odd number
+integer                     :: gpr_width        ! SE width in fs
+real(PMFDP),allocatable     :: gpr_K(:,:)       ! covariance matrix
+real(PMFDP),allocatable     :: gpr_model(:)     ! GPR model
+real(PMFDP),allocatable     :: gpr_kff(:)
+integer,allocatable         :: gpr_indx(:)
+integer                     :: gpr_info
 
 ! ------------------------------------------------------------------------------
 
