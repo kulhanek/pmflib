@@ -559,12 +559,25 @@ subroutine usabf_core_force_gpr()
         etothist(i) = etothist(i+1)
     end do
 
-! update new history values
+! update new history values - CVs
     do i=1,NumOfUSABFCVs
         ci = USABFCVList(i)%cvindx
         cvhist(i,hist_len) = CVContext%CVsValues(ci)
     end do
 
+! apply US bias
+    ! get US force to be applied --------------------
+    call usabf_core_get_us_bias(cvhist(:,hist_len),la,TotalUSABFEnergy)
+
+    ! project abf force along coordinate ------------
+    do i=1,NumOfUSABFCVs
+        ci = USABFCVList(i)%cvindx
+        do j=1,NumOfLAtoms
+            Frc(:,j) = Frc(:,j) + la(i) * CVContext%CVsDrvs(:,j,ci)
+        end do
+    end do
+
+! update new history values - energy
     if( fenthalpy ) then
         epothist(hist_len) = PotEne + PMFEne - fepotaverage
     else
@@ -573,7 +586,7 @@ subroutine usabf_core_force_gpr()
 
     etothist(hist_len-1) = etothist(hist_len-1) + KinEne - fekinaverage  ! kinetic energy is delayed by dt
     if( fentropy ) then
-        etothist(hist_len) = PotEne + PMFEne - fepotaverage
+        etothist(hist_len) = PotEne + PMFEne + TotalUSABFEnergy - fepotaverage
     else
         etothist(hist_len) = 0.0d0
     end if
@@ -685,17 +698,7 @@ subroutine usabf_core_force_gpr()
 
     end if
 
-! apply US bias
-    ! get US force to be applied --------------------
-    call usabf_core_get_us_bias(cvhist(:,hist_len),la,TotalUSABFEnergy)
 
-    ! project abf force along coordinate ------------
-    do i=1,NumOfUSABFCVs
-        ci = USABFCVList(i)%cvindx
-        do j=1,NumOfLAtoms
-            Frc(:,j) = Frc(:,j) + la(i) * CVContext%CVsDrvs(:,j,ci)
-        end do
-    end do
 
 end subroutine usabf_core_force_gpr
 
