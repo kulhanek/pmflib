@@ -54,6 +54,7 @@ real(PMFDP) :: fepotaverage
 real(PMFDP) :: fekinaverage
 
 logical     :: fsmoothetot  ! smooth etot prior covariance calculation
+logical     :: fcontbias    ! use continuous or discrete biasing potential
 
 ! item list --------------------------------------------------------------------
 type CVTypeUSABF
@@ -83,6 +84,8 @@ real(PMFDP)                     :: TotalUSABFEnergy
 type,extends(PMFAccuType)   :: USABFAccuType
 
     integer,pointer         :: nsamples(:)              ! number of hits into bins
+
+    real(PMFDP),pointer     :: binpos(:,:)  ! CV values in bin centers
 
     ! target values and force constants
     real(PMFDP),pointer     :: tvalues(:)

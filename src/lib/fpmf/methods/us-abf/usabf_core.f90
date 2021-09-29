@@ -77,6 +77,29 @@ end subroutine usabf_core_main
 subroutine usabf_core_get_us_bias(values,gfx,bene)
 
     use usabf_dat
+
+    implicit none
+    real(PMFDP)     :: values(:)
+    real(PMFDP)     :: gfx(:)
+    real(PMFDP)     :: bene
+    ! --------------------------------------------------------------------------
+
+    if( fcontbias ) then
+        call usabf_core_get_us_bias_cont(values,gfx,bene)
+    else
+        call usabf_core_get_us_bias_disc(values,gfx,bene)
+    end if
+
+end subroutine usabf_core_get_us_bias
+
+!===============================================================================
+! Subroutine:  usabf_core_get_us_bias_cont
+! get bias from restraints
+!===============================================================================
+
+subroutine usabf_core_get_us_bias_cont(values,gfx,bene)
+
+    use usabf_dat
     use pmf_dat
     use usabf_cvs
     use pmf_cvs
@@ -101,7 +124,50 @@ subroutine usabf_core_get_us_bias(values,gfx,bene)
         gfx(i) = - USABFCVList(i)%force_constant*USABFCVList(i)%deviation
     end do
 
-end subroutine usabf_core_get_us_bias
+end subroutine usabf_core_get_us_bias_cont
+
+!===============================================================================
+! Subroutine:  usabf_core_get_us_bias_disc
+! get bias from restraints
+!===============================================================================
+
+subroutine usabf_core_get_us_bias_disc(values,gfx,bene)
+
+    use usabf_dat
+    use pmf_dat
+    use usabf_cvs
+    use pmf_cvs
+
+    implicit none
+    real(PMFDP)     :: values(:)
+    real(PMFDP)     :: gfx(:)
+    real(PMFDP)     :: bene
+    ! --------------------------------------------
+    integer         :: i, gi0
+    ! --------------------------------------------------------------------------
+
+    ! get global index to accumulator
+    gi0 = pmf_accu_globalindex(usabfaccu%PMFAccuType,values)
+    if( gi0 .le. 0 ) then
+        ! out of valid area - use continuous bias
+        call usabf_core_get_us_bias_cont(values,gfx,bene)
+        return
+    end if
+
+    ! calculate position of the bin
+    bene = 0.0
+
+    do i=1,NumOfUSABFCVs
+
+        USABFCVList(i)%deviation = USABFCVList(i)%cv%get_deviation(usabfaccu%binpos(i,gi0),USABFCVList(i)%target_value)
+
+        USABFCVList(i)%energy = 0.5d0*USABFCVList(i)%force_constant*USABFCVList(i)%deviation**2
+        bene = bene + USABFCVList(i)%energy
+
+        gfx(i) = - USABFCVList(i)%force_constant*USABFCVList(i)%deviation
+    end do
+
+end subroutine usabf_core_get_us_bias_disc
 
 !===============================================================================
 ! Subroutine:  usabf_core_force_2p
@@ -209,7 +275,7 @@ subroutine usabf_core_force_2p()
     v0   = Vel
 
     ! get us force to be applied --------------------
-    call usabf_core_get_us_bias(cvhist1(:),la,TotalUSABFEnergy)
+    call usabf_core_get_us_bias(cvhist1,la,TotalUSABFEnergy)
 
     ! project us force along coordinate
     do i=1,NumOfUSABFCVs
@@ -309,7 +375,7 @@ subroutine usabf_core_force_7p()
         end do
 
         ! substract biasing force
-        call usabf_core_get_us_bias(cvhist2(:),la,bene)
+        call usabf_core_get_us_bias(cvhist2,la,bene)
         pxi0 = icf2 - la
 
         ! smooth etot
@@ -326,7 +392,7 @@ subroutine usabf_core_force_7p()
     end if
 
     ! get US force to be applied --------------------
-    call usabf_core_get_us_bias(cvhist6(:),la,TotalUSABFEnergy)
+    call usabf_core_get_us_bias(cvhist6,la,TotalUSABFEnergy)
 
     ! project abf force along coordinate ------------
     do i=1,NumOfUSABFCVs
@@ -433,7 +499,7 @@ subroutine usabf_core_force_10p()
         end do
 
         ! substract biasing force
-        call usabf_core_get_us_bias(cvhist3(:),la,bene)
+        call usabf_core_get_us_bias(cvhist3,la,bene)
         pxi0 = icf3 - la
 
         ! smooth etot
@@ -450,7 +516,7 @@ subroutine usabf_core_force_10p()
     end if
 
     ! get US force to be applied --------------------
-    call usabf_core_get_us_bias(cvhist9(:),la,TotalUSABFEnergy)
+    call usabf_core_get_us_bias(cvhist9,la,TotalUSABFEnergy)
 
     ! project abf force along coordinate ------------
     do i=1,NumOfUSABFCVs

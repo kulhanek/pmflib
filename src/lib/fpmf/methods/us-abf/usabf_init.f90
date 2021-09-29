@@ -82,6 +82,7 @@ subroutine usabf_init_dat
     fekinaverage    = 0.0d0
 
     fsmoothetot     = .false.
+    fcontbias       = .true.
 
     NumOfUSABFCVs     = 0
 
@@ -129,6 +130,7 @@ subroutine usabf_init_print_header
     end select
     write(PMF_OUT,125)  ' Coordinate definition file (fusabfdef)  : ', trim(fusabfdef)
     write(PMF_OUT,130)  ' Number of coordinates                   : ', NumOfUSABFCVs
+    write(PMF_OUT,125)  ' Use continuous US bias (fcontbias)      : ', prmfile_onoff(fcontbias)
 
     write(PMF_OUT,120)
     write(PMF_OUT,120)  ' Restart options:'
@@ -136,17 +138,23 @@ subroutine usabf_init_print_header
     write(PMF_OUT,125)  ' Restart file (fusabfrst)                : ', trim(fusabfrst)
     write(PMF_OUT,125)  ' Restart enabled (frestart)              : ', prmfile_onoff(frestart)
     write(PMF_OUT,130)  ' Final restart update (frstupdate)       : ', frstupdate
+
+    write(PMF_OUT,120)
+    write(PMF_OUT,120)  ' Enthalpy/entropy options:'
+    write(PMF_OUT,120)  ' ------------------------------------------------------'
+    write(PMF_OUT,125)  ' Accumulate enthalpy (fenthalpy)         : ', prmfile_onoff(fenthalpy)
+    write(PMF_OUT,125)  ' Accumulate entropy (fentropy)           : ', prmfile_onoff(fentropy)
+    write(PMF_OUT,125)  ' Smooth Etot (fsmoothetot)               : ', prmfile_onoff(fsmoothetot)
+    write(PMF_OUT,150)  ' Potential energy offset (fepotaverage)  : ', pmf_unit_get_rvalue(EnergyUnit,fepotaverage),  &
+                                                                       '['//trim(pmf_unit_label(EnergyUnit))//']'
+    write(PMF_OUT,150)  ' Kinetic energy offset (fekinaverage)    : ', pmf_unit_get_rvalue(EnergyUnit,fekinaverage), &
+                                                                       '['//trim(pmf_unit_label(EnergyUnit))//']'
     write(PMF_OUT,120)
     write(PMF_OUT,120)  ' Output options:'
     write(PMF_OUT,120)  ' ------------------------------------------------------'
     write(PMF_OUT,125)  ' Output file (fusabfout)                 : ', trim(fusabfout)
     write(PMF_OUT,130)  ' Output sampling (fsample)               : ', fsample
-    write(PMF_OUT,125)  ' Accumulate enthalpy (fenthalpy)         : ', prmfile_onoff(fenthalpy)
-    write(PMF_OUT,125)  ' Accumulate entropy (fentropy)           : ', prmfile_onoff(fentropy)
-    write(PMF_OUT,150)  ' Potential energy offset (fepotaverage)  : ', pmf_unit_get_rvalue(EnergyUnit,fepotaverage),  &
-                                                                       '['//trim(pmf_unit_label(EnergyUnit))//']'
-    write(PMF_OUT,150)  ' Kinetic energy offset (fekinaverage)    : ', pmf_unit_get_rvalue(EnergyUnit,fekinaverage), &
-                                                                       '['//trim(pmf_unit_label(EnergyUnit))//']'
+
     write(PMF_OUT,120)
     write(PMF_OUT,120)  ' Trajectory output options:'
     write(PMF_OUT,120)  ' ------------------------------------------------------'

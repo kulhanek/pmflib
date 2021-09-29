@@ -70,6 +70,7 @@ subroutine usabf_accu_init()
     ! ABF force arrays
     allocate(  &
             usabfaccu%nsamples(usabfaccu%tot_nbins), &
+            usabfaccu%binpos(usabfaccu%tot_cvs,usabfaccu%tot_nbins),  &
             usabfaccu%micf(usabfaccu%tot_cvs,usabfaccu%tot_nbins), &
             usabfaccu%m2icf(usabfaccu%tot_cvs,usabfaccu%tot_nbins), &
             usabfaccu%tvalues(usabfaccu%tot_cvs), &
@@ -121,12 +122,19 @@ subroutine usabf_accu_clear()
     use pmf_dat
 
     implicit none
+    integer         :: i
     ! --------------------------------------------------------------------------
 
     usabfaccu%nsamples(:)       = 0
 
     usabfaccu%micf(:,:)         = 0.0d0
     usabfaccu%m2icf(:,:)        = 0.0d0
+
+    ! init binpos
+    do i=1,usabfaccu%tot_nbins
+        ! get CV values on a grid point
+        call pmf_accu_get_point(usabfaccu%PMFAccuType,i,usabfaccu%binpos(:,i))
+    end do
 
     if( fenthalpy ) then
         usabfaccu%mepot(:)      = 0.0d0
