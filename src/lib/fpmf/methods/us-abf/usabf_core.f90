@@ -694,11 +694,9 @@ subroutine usabf_core_force_gpr()
         ! write(789,*) cvhist(:,dt_index),pxi1,epothist(dt_index),etothist(dt_index),pxi0,etot_dt_index
 
         ! record the data
-        call usabf_accu_add_data_online(cvhist(:,dt_index),pxi1,epothist(dt_index),pxi0,etot_dt_index)
+        call usabf_accu_add_data_online(cvhist(:,dt_index),pxi1,epothist(dt_index),pxi1,etot_dt_index)
 
     end if
-
-
 
 end subroutine usabf_core_force_gpr
 
