@@ -586,7 +586,7 @@ subroutine usabf_core_force_gpr()
 
     etothist(hist_len-1) = etothist(hist_len-1) + KinEne - fekinaverage  ! kinetic energy is delayed by dt
     if( fentropy ) then
-        etothist(hist_len) = PotEne + PMFEne + TotalUSABFEnergy - fepotaverage
+        etothist(hist_len) = PotEne + PMFEne - fepotaverage
     else
         etothist(hist_len) = 0.0d0
     end if
