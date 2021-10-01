@@ -62,6 +62,9 @@ subroutine usabf_core_main
         case(4)
             ! via GPR
             call usabf_core_force_gpr
+        case(5)
+            ! via GPR
+            call usabf_core_force_gpr2
         case default
             call pmf_utils_exit(PMF_OUT,1,'[US-ABF] Not implemented fmode in usabf_core_main!')
     end select
@@ -218,7 +221,7 @@ subroutine usabf_core_force_2p()
     end if
 
     ! calculate Z matrix and its inverse
-    call usabf_core_calc_Zmat
+    call usabf_core_calc_Zmat(CVContext)
 
     do i=1,NumOfUSABFCVs
         do j=1,NumOfLAtoms
@@ -269,7 +272,7 @@ subroutine usabf_core_force_2p()
         pxi1(:) = pxi0(:) - pxi1(:)
 
         ! add data to accumulator
-        call usabf_accu_add_data_online(cvhist(:,1),pxi1,epothist(1),pxi0,etothist(1))
+        call usabf_accu_add_data_online(cvhist(:,1),pxi1,epothist(1),etothist(1))
     end if
 
     ! backup to the next step
@@ -356,7 +359,7 @@ subroutine usabf_core_force_7p()
         pcvhist(:,3) = pcvhist(:,4)
         pcvhist(:,4) = pcvhist(:,5)
 
-        call usabf_core_calc_Zmat
+        call usabf_core_calc_Zmat(CVContext)
 
         do i=1,NumOfUSABFCVs
             do j=1,NumOfUSABFCVs
@@ -391,7 +394,7 @@ subroutine usabf_core_force_7p()
         ! write(790,*) cvhist(:,3),pxi0,epothist(3),etothist(3)
 
         ! record the data
-        call usabf_accu_add_data_online(cvhist(:,3),pxi1,epothist(3),pxi0,etot3)
+        call usabf_accu_add_data_online(cvhist(:,3),pxi1,epothist(3),etot3)
     end if
 
     ! get US force to be applied --------------------
@@ -480,7 +483,7 @@ subroutine usabf_core_force_10p()
         pcvhist(:,5) = pcvhist(:,6)
         pcvhist(:,6) = pcvhist(:,7)
 
-        call usabf_core_calc_Zmat
+        call usabf_core_calc_Zmat(CVContext)
 
         do i=1,NumOfUSABFCVs
             do j=1,NumOfUSABFCVs
@@ -514,7 +517,7 @@ subroutine usabf_core_force_10p()
         end if
 
         ! record the data
-        call usabf_accu_add_data_online(cvhist(:,4),pxi1,epothist(4),pxi0,etot4)
+        call usabf_accu_add_data_online(cvhist(:,4),pxi1,epothist(4),etot4)
     end if
 
 
@@ -565,18 +568,6 @@ subroutine usabf_core_force_gpr()
         cvhist(i,hist_len) = CVContext%CVsValues(ci)
     end do
 
-! apply US bias
-    ! get US force to be applied --------------------
-    call usabf_core_get_us_bias(cvhist(:,hist_len),la,TotalUSABFEnergy)
-
-    ! project abf force along coordinate ------------
-    do i=1,NumOfUSABFCVs
-        ci = USABFCVList(i)%cvindx
-        do j=1,NumOfLAtoms
-            Frc(:,j) = Frc(:,j) + la(i) * CVContext%CVsDrvs(:,j,ci)
-        end do
-    end do
-
 ! update new history values - energy
     if( fenthalpy ) then
         epothist(hist_len) = PotEne + PMFEne - fepotaverage
@@ -625,7 +616,7 @@ subroutine usabf_core_force_gpr()
         end do
 
         ! get Zmat
-        call usabf_core_calc_Zmat
+        call usabf_core_calc_Zmat(CVContext)
 
         ! calculate CV momenta
         do i=1,NumOfUSABFCVs
@@ -694,23 +685,192 @@ subroutine usabf_core_force_gpr()
         ! write(789,*) cvhist(:,dt_index),pxi1,epothist(dt_index),etothist(dt_index),pxi0,etot_dt_index
 
         ! record the data
-        call usabf_accu_add_data_online(cvhist(:,dt_index),pxi1,epothist(dt_index),pxi1,etot_dt_index)
+        call usabf_accu_add_data_online(cvhist(:,dt_index),pxi1,epothist(dt_index),etot_dt_index)
 
     end if
 
+! apply US bias
+    ! get US force to be applied --------------------
+    call usabf_core_get_us_bias(cvhist(:,hist_len),la,TotalUSABFEnergy)
+
+    ! project abf force along coordinate ------------
+    do i=1,NumOfUSABFCVs
+        ci = USABFCVList(i)%cvindx
+        do j=1,NumOfLAtoms
+            Frc(:,j) = Frc(:,j) + la(i) * CVContext%CVsDrvs(:,j,ci)
+        end do
+    end do
+
 end subroutine usabf_core_force_gpr
+
+!===============================================================================
+! Subroutine:  usabf_core_force_gpr
+! using Gaussian Process Regression
+!===============================================================================
+
+subroutine usabf_core_force_gpr2()
+
+    use pmf_utils
+    use pmf_dat
+    use pmf_cvs
+    use usabf_dat
+    use usabf_accu
+    use usabf_output
+
+    implicit none
+    integer     :: i,j,m,ci,dt_index
+    real(PMFDP) :: bene,mean,etot_dt_index,v
+    ! --------------------------------------------------------------------------
+
+    dt_index = gpr_len/2+1
+
+! shift history buffers
+    do i=1,hist_len-1
+        cvhist(:,i) = cvhist(:,i+1)
+        epothist(i) = epothist(i+1)
+        etothist(i) = etothist(i+1)
+    end do
+
+! update new history values - CVs
+    do i=1,NumOfUSABFCVs
+        ci = USABFCVList(i)%cvindx
+        cvhist(i,hist_len) = CVContext%CVsValues(ci)
+    end do
+
+! update new history values - energy
+    if( fenthalpy ) then
+        epothist(hist_len) = PotEne + PMFEne - fepotaverage
+    else
+        epothist(hist_len) = 0.0d0
+    end if
+
+    etothist(hist_len-1) = etothist(hist_len-1) + KinEne - fekinaverage  ! kinetic energy is delayed by dt
+    if( fentropy ) then
+        etothist(hist_len) = PotEne + PMFEne - fepotaverage
+    else
+        etothist(hist_len) = 0.0d0
+    end if
+
+! get first derivative of CV values in time
+    if( fstep .ge. 2 ) then
+
+        do i=1,NumOfUSABFCVs
+            ci = USABFCVList(i)%cvindx
+            v = 0.0d0
+            do j=1,NumOfLAtoms
+                do m=1,3
+                    v = v + 0.5d0*cvcontex0%CVsDrvs(m,j,ci)*(Vel(m,j) + v0(m,j))
+                end do
+            end do
+            pxi0(i) = v
+        end do
+
+        ! shift history buffer
+        do i=1,gpr_len-1
+            pcvhist(:,i) = pcvhist(:,i+1)
+        end do
+
+        ! get Zmat
+        call usabf_core_calc_Zmat(cvcontex0)
+
+        ! calculate CV momenta
+        do i=1,NumOfUSABFCVs
+            do j=1,NumOfUSABFCVs
+                pcvhist(i,gpr_len) = fzinv(i,j) * pxi0(j)
+            end do
+        end do
+    end if
+
+    v0 = Vel                ! backup velocities
+    cvcontex0 = CVContext   ! backup context
+
+! get first derivative of CV momenta
+    if( fstep .ge. hist_len ) then
+
+        do i=1,NumOfUSABFCVs
+
+            ! input data
+            do j=1,gpr_len
+                gpr_model(j) = pcvhist(i,gpr_len-j+1)
+            end do
+
+            ! solve GPR
+            call dgetrs('N',gpr_len,1,gpr_K,gpr_len,gpr_indx,gpr_model,gpr_len,gpr_info)
+
+            if( gpr_info .ne. 0 ) then
+                ! throw error
+                call pmf_utils_exit(PMF_OUT,1,'[US-ABF] Unable to solve GPR model for CV momenta time derivatives!')
+            end if
+
+            ! calculate mean force - derivative is shift invariant
+            pxi0(i) = dot_product(gpr_model,gpr_kdf)
+        end do
+
+        ! substract biasing force
+        call usabf_core_get_us_bias(cvhist(:,dt_index),la,bene)
+        pxi1 = pxi0 - la
+
+        ! smooth etot
+        if( fsmoothetot ) then
+            ! calculate mean value
+            mean = 0.0d0
+            do j=1,gpr_len
+                mean = mean + etothist(gpr_len-j+1)
+            end do
+            mean = mean / real(gpr_len,PMFDP)
+
+            ! shift data
+            do j=1,gpr_len
+                gpr_model(j) = etothist(gpr_len-j+1) - mean
+            end do
+
+            ! solve GPR
+            call dgetrs('N',gpr_len,1,gpr_K,gpr_len,gpr_indx,gpr_model,gpr_len,gpr_info)
+
+            if( gpr_info .ne. 0 ) then
+                ! throw error
+                call pmf_utils_exit(PMF_OUT,1,'[US-ABF] Unable to solve GPR model for CV time derivatives!')
+            end if
+
+            ! calculate CV derivative in time - derivative is shift invariant
+            etot_dt_index = dot_product(gpr_model,gpr_kff) + mean
+        else
+            etot_dt_index = etothist(dt_index)
+        end if
+
+        ! write(790,*) cvhist(:,dt_index),pxi1,epothist(dt_index),etothist(dt_index),pxi0,etot_dt_index
+
+        ! record the data
+        call usabf_accu_add_data_online(cvhist(:,dt_index),pxi1,epothist(dt_index),etot_dt_index)
+
+    end if
+
+! apply US bias
+    ! get US force to be applied --------------------
+    call usabf_core_get_us_bias(cvhist(:,hist_len),la,TotalUSABFEnergy)
+
+    ! project abf force along coordinate ------------
+    do i=1,NumOfUSABFCVs
+        ci = USABFCVList(i)%cvindx
+        do j=1,NumOfLAtoms
+            Frc(:,j) = Frc(:,j) + la(i) * CVContext%CVsDrvs(:,j,ci)
+        end do
+    end do
+
+end subroutine usabf_core_force_gpr2
 
 !===============================================================================
 ! subroutine:  usabf_core_calc_Zmat
 !===============================================================================
 
-subroutine usabf_core_calc_Zmat()
+subroutine usabf_core_calc_Zmat(ctx)
 
     use pmf_utils
     use usabf_dat
 
     implicit none
-    integer         :: i,ci,j,cj,k,info
+    type(CVContextType) :: ctx
+    integer             :: i,ci,j,cj,k,info
     ! -----------------------------------------------------------------------------
 
     ! calculate Z matrix
@@ -720,7 +880,7 @@ subroutine usabf_core_calc_Zmat()
             cj = USABFCVList(j)%cvindx
             fz(i,j) = 0.0d0
             do k=1,NumOfLAtoms
-                fz(i,j) = fz(i,j) + MassInv(k)*dot_product(CVContext%CVsDrvs(:,k,ci),CVContext%CVsDrvs(:,k,cj))
+                fz(i,j) = fz(i,j) + MassInv(k)*dot_product(ctx%CVsDrvs(:,k,ci),ctx%CVsDrvs(:,k,cj))
             end do
             fzinv(i,j) = fz(i,j)            ! we need this for LAPACK
         end do

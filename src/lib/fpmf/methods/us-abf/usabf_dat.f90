@@ -125,6 +125,7 @@ integer,allocatable         :: indx(:)
 ! helper arrays -------
 real(PMFDP),allocatable     :: a0(:,:)          ! acceleration from previous step (t-dt)
 real(PMFDP),allocatable     :: v0(:,:)          ! velocity in previous step
+type(CVContextType)         :: cvcontex0        ! t-dt
 
 real(PMFDP),allocatable     :: la(:)            ! ABF force in coordinate direction
 real(PMFDP),allocatable     :: zd0(:,:,:)       ! ZD0

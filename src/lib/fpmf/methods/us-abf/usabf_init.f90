@@ -134,6 +134,11 @@ subroutine usabf_init_print_header
     write(PMF_OUT,130)  '          gpr_len                        : ', gpr_len
     write(PMF_OUT,145)  '          gpr_width                      : ', gpr_width
     write(PMF_OUT,145)  '          gpr_noise                      : ', gpr_noise
+    case(5)
+    write(PMF_OUT,120)  '      |-> GPR ABF II'
+    write(PMF_OUT,130)  '          gpr_len                        : ', gpr_len
+    write(PMF_OUT,145)  '          gpr_width                      : ', gpr_width
+    write(PMF_OUT,145)  '          gpr_noise                      : ', gpr_noise
     case default
     call pmf_utils_exit(PMF_OUT,1,'[US-ABF] Unknown fmode in usabf_init_print_header!')
     end select
@@ -218,7 +223,7 @@ subroutine usabf_init_arrays
             hist_len = 7
         case(3)
             hist_len = 10
-        case(4)
+        case(4,5)
             call usabf_init_gpr()
         case default
             call pmf_utils_exit(PMF_OUT,1,'[US-ABF] Not implemented fmode in usabf_init_arrays!')
@@ -347,7 +352,26 @@ subroutine usabf_init_gpr
         gpr_kff(i) = exp(- dt**2 * idw2)
     end do
 
-    hist_len = gpr_len + gpr_len/2
+    hist_len = 0
+
+    if( fmode .eq. 4 ) then
+        hist_len = gpr_len + gpr_len/2
+    end if
+
+    if( fmode .eq. 5 ) then
+        hist_len = gpr_len + 1
+
+        allocate(                                           &
+                cvcontex0%CVsValues(NumOfCVs),              &
+                cvcontex0%CVsDrvs(3,NumOfLAtoms,NumOfCVs),  &
+                stat= alloc_failed )
+
+        if( alloc_failed .ne. 0 ) then
+            call pmf_utils_exit(PMF_OUT,1, &
+                '[US-ABF] Unable to allocate memory for GPR arrays in usabf_init_gpr!')
+        end if
+
+    end if
 
 end subroutine usabf_init_gpr
 
