@@ -193,6 +193,7 @@ subroutine usabf_accu_read(iounit)
                     call pmf_accu_read_rbuf_C(usabfaccu%PMFAccuType,iounit,keyline,usabfaccu%tvalues)
                     do i=1,usabfaccu%tot_cvs
                         USABFCVList(i)%target_value = usabfaccu%tvalues(i)
+                        USABFCVList(i)%set_value = .false.
                     end do
             ! ------------------------------------
                 case('FCS')

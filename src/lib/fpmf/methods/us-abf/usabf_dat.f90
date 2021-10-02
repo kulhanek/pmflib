@@ -55,6 +55,7 @@ real(PMFDP) :: fekinaverage
 
 logical     :: fsmoothetot  ! smooth etot prior covariance calculation
 logical     :: fcontbias    ! use continuous or discrete biasing potential
+logical     :: falignbias   ! move bottom of the biasing potential into the closest bin position
 
 ! item list --------------------------------------------------------------------
 type CVTypeUSABF

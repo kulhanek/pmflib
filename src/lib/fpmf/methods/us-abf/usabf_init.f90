@@ -42,16 +42,18 @@ subroutine usabf_init_method
     use usabf_output
     use usabf_restart
     use usabf_trajectory
+    use usabf_cvs
 
     implicit none
     ! --------------------------------------------------------------------------
 
     call usabf_init_arrays
-    call usabf_init_print_header
     call usabf_output_open
     call usabf_restart_read
     call usabf_trajectory_open
     call usabf_output_write_header
+    call usabf_cvs_init_values
+    call usabf_init_print_header
 
 end subroutine usabf_init_method
 
@@ -83,6 +85,7 @@ subroutine usabf_init_dat
 
     fsmoothetot     = .false.
     fcontbias       = .true.
+    falignbias      = .false.
 
     NumOfUSABFCVs     = 0
 
@@ -145,6 +148,7 @@ subroutine usabf_init_print_header
     write(PMF_OUT,125)  ' Coordinate definition file (fusabfdef)  : ', trim(fusabfdef)
     write(PMF_OUT,130)  ' Number of coordinates                   : ', NumOfUSABFCVs
     write(PMF_OUT,125)  ' Use continuous US bias (fcontbias)      : ', prmfile_onoff(fcontbias)
+    write(PMF_OUT,125)  ' Align bias by a bin (falignbias)        : ', prmfile_onoff(falignbias)
 
     write(PMF_OUT,120)
     write(PMF_OUT,120)  ' Restart options:'

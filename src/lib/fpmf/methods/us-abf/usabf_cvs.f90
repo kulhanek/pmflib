@@ -146,6 +146,42 @@ subroutine usabf_cvs_read_cv(prm_fin,usabf_item)
 end subroutine usabf_cvs_read_cv
 
 !===============================================================================
+! Subroutine:  usabf_cvs_init_values
+!===============================================================================
+
+subroutine usabf_cvs_init_values()
+
+    use usabf_dat
+    use pmf_dat
+    use pmf_cvs
+    use pmf_unit
+
+    implicit none
+    integer             :: i,gi0
+    ! --------------------------------------------------------------------------
+
+    do i=1,NumOfUSABFCVs
+        if( USABFCVList(i)%set_value ) then
+            USABFCVList(i)%target_value = CVContext%CVsValues(USABFCVList(i)%cvindx)
+        end if
+    end do
+
+    ! align bias if requested
+    if( falignbias ) then
+        do i=1,NumOfUSABFCVs
+            cvhist(i,1) = USABFCVList(i)%target_value
+        end do
+        gi0 = pmf_accu_globalindex(usabfaccu%PMFAccuType,cvhist(:,1))
+        if( gi0 .ne. 0 ) then
+            do i=1,NumOfUSABFCVs
+                USABFCVList(i)%target_value = usabfaccu%binpos(i,gi0)
+            end do
+        end if
+    end if
+
+end subroutine usabf_cvs_init_values
+
+!===============================================================================
 ! Subroutine:  usabf_cvs_cv_info
 !===============================================================================
 
@@ -164,10 +200,6 @@ subroutine usabf_cvs_cv_info(usabf_item)
 
     ! prepare force unit
     forceunit       = pmf_unit_div_units( EnergyUnit, pmf_unit_power_unit(usabf_item%cv%unit,2) )
-
-    if( usabf_item%set_value ) then
-        usabf_item%target_value = CVContext%CVsValues(usabf_item%cvindx)
-    end if
 
     write(PMF_OUT,145) trim(usabf_item%cv%name)
     write(PMF_OUT,146) trim(usabf_item%cv%ctype)
