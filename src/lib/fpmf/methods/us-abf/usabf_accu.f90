@@ -99,7 +99,7 @@ subroutine usabf_accu_init()
                 usabfaccu%metot(usabfaccu%tot_nbins), &
                 usabfaccu%m2etot(usabfaccu%tot_nbins), &
                 usabfaccu%c11hh(usabfaccu%tot_cvs,usabfaccu%tot_nbins), &
-                usabfaccu%rmicf(usabfaccu%tot_cvs,usabfaccu%tot_nbins), &
+                usabfaccu%bmicf(usabfaccu%tot_cvs,usabfaccu%tot_nbins), &
                 stat = alloc_failed)
 
         if( alloc_failed .ne. 0 ) then
@@ -146,7 +146,7 @@ subroutine usabf_accu_clear()
         usabfaccu%metot(:)      = 0.0d0
         usabfaccu%m2etot(:)     = 0.0d0
         usabfaccu%c11hh(:,:)    = 0.0d0
-        usabfaccu%rmicf(:,:)    = 0.0d0
+        usabfaccu%bmicf(:,:)    = 0.0d0
     end if
 
 end subroutine usabf_accu_clear
@@ -237,9 +237,9 @@ subroutine usabf_accu_read(iounit)
                         call pmf_accu_skip_section(iounit,keyline,USABF_OUT)
                     end if
            ! ------------------------------------
-                case('RMICF')
-                    if( fentropy ) then
-                        call pmf_accu_read_rbuf_M(usabfaccu%PMFAccuType,iounit,keyline,usabfaccu%rmicf)
+                case('BMICF')
+                    if( fentropy .and. ftdsbiased ) then
+                        call pmf_accu_read_rbuf_M(usabfaccu%PMFAccuType,iounit,keyline,usabfaccu%bmicf)
                     else
                         call pmf_accu_skip_section(iounit,keyline,USABF_OUT)
                     end if
@@ -294,7 +294,9 @@ subroutine usabf_accu_write(iounit)
         call pmf_accu_write_rbuf_B(usabfaccu%PMFAccuType,iounit,'METOT',    'WA',usabfaccu%metot)
         call pmf_accu_write_rbuf_B(usabfaccu%PMFAccuType,iounit,'M2ETOT',   'M2',usabfaccu%m2etot,'METOT')
         call pmf_accu_write_rbuf_M(usabfaccu%PMFAccuType,iounit,'C11HH',    'CO',usabfaccu%c11hh,'MICF','METOT')
-        call pmf_accu_write_rbuf_M(usabfaccu%PMFAccuType,iounit,'RMICF',    'WA',usabfaccu%rmicf)
+        if( ftdsbiased ) then
+            call pmf_accu_write_rbuf_M(usabfaccu%PMFAccuType,iounit,'BMICF',    'WA',usabfaccu%bmicf)
+        end if
     end if
 
 end subroutine usabf_accu_write
@@ -303,7 +305,7 @@ end subroutine usabf_accu_write
 ! Subroutine:  usabf_accu_add_data_online
 !===============================================================================
 
-subroutine usabf_accu_add_data_online(cvs,gfx,epot,etot)
+subroutine usabf_accu_add_data_online(cvs,gfx,epot,bgfx,etot,ebias)
 
     use usabf_dat
     use pmf_dat
@@ -313,13 +315,15 @@ subroutine usabf_accu_add_data_online(cvs,gfx,epot,etot)
     real(PMFDP)    :: cvs(:)
     real(PMFDP)    :: gfx(:)
     real(PMFDP)    :: epot
+    real(PMFDP)    :: bgfx(:)
     real(PMFDP)    :: etot
+    real(PMFDP)    :: ebias
     ! -----------------------------------------------
     integer        :: gi0, i
-    real(PMFDP)    :: invn, icf
+    real(PMFDP)    :: invn, icf, bicf
     real(PMFDP)    :: detot1, detot2
     real(PMFDP)    :: depot1, depot2
-    real(PMFDP)    :: dicf1, dicf2
+    real(PMFDP)    :: dicf1, dicf2, bdicf1
     ! --------------------------------------------------------------------------
 
     ! reset the accumulated data if requested
@@ -350,6 +354,9 @@ subroutine usabf_accu_add_data_online(cvs,gfx,epot,etot)
     end if
 
     if( fentropy ) then
+        if( ftdsbiased ) then
+            etot = etot + ebias
+        end if
         ! total energy
         detot1 = etot - usabfaccu%metot(gi0)
         usabfaccu%metot(gi0)  = usabfaccu%metot(gi0)  + detot1 * invn
@@ -365,7 +372,14 @@ subroutine usabf_accu_add_data_online(cvs,gfx,epot,etot)
         usabfaccu%m2icf(i,gi0) = usabfaccu%m2icf(i,gi0) + dicf1 * dicf2
 
         if( fentropy ) then
-            usabfaccu%c11hh(i,gi0)  = usabfaccu%c11hh(i,gi0) + dicf1 * detot2
+            if( ftdsbiased ) then
+                bicf = - bgfx(i)
+                bdicf1 = bicf - usabfaccu%bmicf(i,gi0)
+                usabfaccu%bmicf(i,gi0)  = usabfaccu%bmicf(i,gi0) + bdicf1 * invn
+                usabfaccu%c11hh(i,gi0)  = usabfaccu%c11hh(i,gi0) + bdicf1 * detot2
+            else
+                usabfaccu%c11hh(i,gi0)  = usabfaccu%c11hh(i,gi0) + dicf1 * detot2
+            end if
         end if
     end do
 

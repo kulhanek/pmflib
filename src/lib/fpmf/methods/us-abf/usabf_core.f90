@@ -204,6 +204,17 @@ subroutine usabf_core_force_2p()
         cvhist(i,2) = CVContext%CVsValues(ci)
     end do
 
+    ! get us force to be applied --------------------
+    call usabf_core_get_us_bias(cvhist(:,2),la,TotalUSABFEnergy)
+
+    ! project us force along coordinate
+    do i=1,NumOfUSABFCVs
+        ci = USABFCVList(i)%cvindx
+        do j=1,NumOfLAtoms
+            Frc(:,j) = Frc(:,j) + la(i) * CVContext%CVsDrvs(:,j,ci)
+        end do
+    end do
+
     ! shift epot ene
     epothist(1) = epothist(2)
     if( fenthalpy ) then
@@ -272,24 +283,13 @@ subroutine usabf_core_force_2p()
         pxi1(:) = pxi0(:) - pxi1(:)
 
         ! add data to accumulator
-        call usabf_accu_add_data_online(cvhist(:,1),pxi1,epothist(1),etothist(1))
+        call usabf_accu_add_data_online(cvhist(:,1),pxi1,epothist(1),pxi0,etothist(1),TotalUSABFEnergy)
     end if
 
     ! backup to the next step
     zd0  = zd1
     pxim = pxip
     v0   = Vel
-
-    ! get us force to be applied --------------------
-    call usabf_core_get_us_bias(cvhist(:,2),la,TotalUSABFEnergy)
-
-    ! project us force along coordinate
-    do i=1,NumOfUSABFCVs
-        ci = USABFCVList(i)%cvindx
-        do j=1,NumOfLAtoms
-            Frc(:,j) = Frc(:,j) + la(i) * CVContext%CVsDrvs(:,j,ci)
-        end do
-    end do
 
     ! keep US forces to subtract them in the next step
     pxi1 = la
@@ -329,6 +329,17 @@ subroutine usabf_core_force_7p()
     do i=1,NumOfUSABFCVs
         ci = USABFCVList(i)%cvindx
         cvhist(i,7) = CVContext%CVsValues(ci)
+    end do
+
+! get US force to be applied --------------------
+    call usabf_core_get_us_bias(cvhist(:,7),la,TotalUSABFEnergy)
+
+    ! project abf force along coordinate ------------
+    do i=1,NumOfUSABFCVs
+        ci = USABFCVList(i)%cvindx
+        do j=1,NumOfLAtoms
+            Frc(:,j) = Frc(:,j) + la(i) * CVContext%CVsDrvs(:,j,ci)
+        end do
     end do
 
     ! shift epot ene
@@ -394,19 +405,8 @@ subroutine usabf_core_force_7p()
         ! write(790,*) cvhist(:,3),pxi0,epothist(3),etothist(3)
 
         ! record the data
-        call usabf_accu_add_data_online(cvhist(:,3),pxi1,epothist(3),etot3)
+        call usabf_accu_add_data_online(cvhist(:,3),pxi1,epothist(3),pxi0,etot3,TotalUSABFEnergy)
     end if
-
-    ! get US force to be applied --------------------
-    call usabf_core_get_us_bias(cvhist(:,7),la,TotalUSABFEnergy)
-
-    ! project abf force along coordinate ------------
-    do i=1,NumOfUSABFCVs
-        ci = USABFCVList(i)%cvindx
-        do j=1,NumOfLAtoms
-            Frc(:,j) = Frc(:,j) + la(i) * CVContext%CVsDrvs(:,j,ci)
-        end do
-    end do
 
 end subroutine usabf_core_force_7p
 
@@ -443,6 +443,17 @@ subroutine usabf_core_force_10p()
     do i=1,NumOfUSABFCVs
         ci = USABFCVList(i)%cvindx
         cvhist(i,10) = CVContext%CVsValues(ci)
+    end do
+
+    ! get US force to be applied --------------------
+    call usabf_core_get_us_bias(cvhist(:,10),la,TotalUSABFEnergy)
+
+    ! project abf force along coordinate ------------
+    do i=1,NumOfUSABFCVs
+        ci = USABFCVList(i)%cvindx
+        do j=1,NumOfLAtoms
+            Frc(:,j) = Frc(:,j) + la(i) * CVContext%CVsDrvs(:,j,ci)
+        end do
     end do
 
     ! shift epot ene
@@ -517,20 +528,8 @@ subroutine usabf_core_force_10p()
         end if
 
         ! record the data
-        call usabf_accu_add_data_online(cvhist(:,4),pxi1,epothist(4),etot4)
+        call usabf_accu_add_data_online(cvhist(:,4),pxi1,epothist(4),pxi0,etot4,TotalUSABFEnergy)
     end if
-
-
-    ! get US force to be applied --------------------
-    call usabf_core_get_us_bias(cvhist(:,10),la,TotalUSABFEnergy)
-
-    ! project abf force along coordinate ------------
-    do i=1,NumOfUSABFCVs
-        ci = USABFCVList(i)%cvindx
-        do j=1,NumOfLAtoms
-            Frc(:,j) = Frc(:,j) + la(i) * CVContext%CVsDrvs(:,j,ci)
-        end do
-    end do
 
 end subroutine usabf_core_force_10p
 
@@ -566,6 +565,18 @@ subroutine usabf_core_force_gpr()
     do i=1,NumOfUSABFCVs
         ci = USABFCVList(i)%cvindx
         cvhist(i,hist_len) = CVContext%CVsValues(ci)
+    end do
+
+! apply US bias
+    ! get US force to be applied --------------------
+    call usabf_core_get_us_bias(cvhist(:,hist_len),la,TotalUSABFEnergy)
+
+    ! project abf force along coordinate ------------
+    do i=1,NumOfUSABFCVs
+        ci = USABFCVList(i)%cvindx
+        do j=1,NumOfLAtoms
+            Frc(:,j) = Frc(:,j) + la(i) * CVContext%CVsDrvs(:,j,ci)
+        end do
     end do
 
 ! update new history values - energy
@@ -685,21 +696,9 @@ subroutine usabf_core_force_gpr()
         ! write(789,*) cvhist(:,dt_index),pxi1,epothist(dt_index),etothist(dt_index),pxi0,etot_dt_index
 
         ! record the data
-        call usabf_accu_add_data_online(cvhist(:,dt_index),pxi1,epothist(dt_index),etot_dt_index)
+        call usabf_accu_add_data_online(cvhist(:,dt_index),pxi1,epothist(dt_index),pxi0,etot_dt_index,TotalUSABFEnergy)
 
     end if
-
-! apply US bias
-    ! get US force to be applied --------------------
-    call usabf_core_get_us_bias(cvhist(:,hist_len),la,TotalUSABFEnergy)
-
-    ! project abf force along coordinate ------------
-    do i=1,NumOfUSABFCVs
-        ci = USABFCVList(i)%cvindx
-        do j=1,NumOfLAtoms
-            Frc(:,j) = Frc(:,j) + la(i) * CVContext%CVsDrvs(:,j,ci)
-        end do
-    end do
 
 end subroutine usabf_core_force_gpr
 
@@ -735,6 +734,18 @@ subroutine usabf_core_force_gpr2()
     do i=1,NumOfUSABFCVs
         ci = USABFCVList(i)%cvindx
         cvhist(i,hist_len) = CVContext%CVsValues(ci)
+    end do
+
+! apply US bias
+    ! get US force to be applied --------------------
+    call usabf_core_get_us_bias(cvhist(:,hist_len),la,TotalUSABFEnergy)
+
+    ! project abf force along coordinate ------------
+    do i=1,NumOfUSABFCVs
+        ci = USABFCVList(i)%cvindx
+        do j=1,NumOfLAtoms
+            Frc(:,j) = Frc(:,j) + la(i) * CVContext%CVsDrvs(:,j,ci)
+        end do
     end do
 
 ! update new history values - energy
@@ -841,21 +852,9 @@ subroutine usabf_core_force_gpr2()
         ! write(790,*) cvhist(:,dt_index),pxi1,epothist(dt_index),etothist(dt_index),pxi0,etot_dt_index
 
         ! record the data
-        call usabf_accu_add_data_online(cvhist(:,dt_index),pxi1,epothist(dt_index),etot_dt_index)
+        call usabf_accu_add_data_online(cvhist(:,dt_index),pxi1,epothist(dt_index),pxi0,etot_dt_index,TotalUSABFEnergy)
 
     end if
-
-! apply US bias
-    ! get US force to be applied --------------------
-    call usabf_core_get_us_bias(cvhist(:,hist_len),la,TotalUSABFEnergy)
-
-    ! project abf force along coordinate ------------
-    do i=1,NumOfUSABFCVs
-        ci = USABFCVList(i)%cvindx
-        do j=1,NumOfLAtoms
-            Frc(:,j) = Frc(:,j) + la(i) * CVContext%CVsDrvs(:,j,ci)
-        end do
-    end do
 
 end subroutine usabf_core_force_gpr2
 

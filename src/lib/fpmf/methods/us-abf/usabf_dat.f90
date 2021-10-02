@@ -56,6 +56,7 @@ real(PMFDP) :: fekinaverage
 logical     :: fsmoothetot  ! smooth etot prior covariance calculation
 logical     :: fcontbias    ! use continuous or discrete biasing potential
 logical     :: falignbias   ! move bottom of the biasing potential into the closest bin position
+logical     :: ftdsbiased   ! calculate d(TdS)/dx for biased system (should be the same as unbiased)
 
 ! item list --------------------------------------------------------------------
 type CVTypeUSABF
@@ -104,7 +105,7 @@ type,extends(PMFAccuType)   :: USABFAccuType
     real(PMFDP),pointer     :: metot(:)                 ! mean of total energy
     real(PMFDP),pointer     :: m2etot(:)                ! M2 of total energy
     real(PMFDP),pointer     :: c11hh(:,:)               ! c11 - total/total
-    real(PMFDP),pointer     :: rmicf(:,:)               ! raw mean ICF - total
+    real(PMFDP),pointer     :: bmicf(:,:)               ! mean ICF of biased system
 
 end type USABFAccuType
 
