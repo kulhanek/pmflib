@@ -305,7 +305,7 @@ end subroutine usabf_accu_write
 ! Subroutine:  usabf_accu_add_data_online
 !===============================================================================
 
-subroutine usabf_accu_add_data_online(cvs,gfx,epot,bgfx,etot,ebias)
+subroutine usabf_accu_add_data_online(cvs,gfx,epot,bgfx,etot)
 
     use usabf_dat
     use pmf_dat
@@ -317,7 +317,6 @@ subroutine usabf_accu_add_data_online(cvs,gfx,epot,bgfx,etot,ebias)
     real(PMFDP)    :: epot
     real(PMFDP)    :: bgfx(:)
     real(PMFDP)    :: etot
-    real(PMFDP)    :: ebias
     ! -----------------------------------------------
     integer        :: gi0, i
     real(PMFDP)    :: invn, icf, bicf
@@ -354,9 +353,6 @@ subroutine usabf_accu_add_data_online(cvs,gfx,epot,bgfx,etot,ebias)
     end if
 
     if( fentropy ) then
-        if( ftdsbiased ) then
-            etot = etot + ebias
-        end if
         ! total energy
         detot1 = etot - usabfaccu%metot(gi0)
         usabfaccu%metot(gi0)  = usabfaccu%metot(gi0)  + detot1 * invn
@@ -372,14 +368,10 @@ subroutine usabf_accu_add_data_online(cvs,gfx,epot,bgfx,etot,ebias)
         usabfaccu%m2icf(i,gi0) = usabfaccu%m2icf(i,gi0) + dicf1 * dicf2
 
         if( fentropy ) then
-            if( ftdsbiased ) then
-                bicf = - bgfx(i)
-                bdicf1 = bicf - usabfaccu%bmicf(i,gi0)
-                usabfaccu%bmicf(i,gi0)  = usabfaccu%bmicf(i,gi0) + bdicf1 * invn
-                usabfaccu%c11hh(i,gi0)  = usabfaccu%c11hh(i,gi0) + bdicf1 * detot2
-            else
-                usabfaccu%c11hh(i,gi0)  = usabfaccu%c11hh(i,gi0) + dicf1 * detot2
-            end if
+            bicf = - bgfx(i)
+            bdicf1 = bicf - usabfaccu%bmicf(i,gi0)
+            usabfaccu%bmicf(i,gi0)  = usabfaccu%bmicf(i,gi0) + bdicf1 * invn
+            usabfaccu%c11hh(i,gi0)  = usabfaccu%c11hh(i,gi0) + bdicf1 * detot2
         end if
     end do
 

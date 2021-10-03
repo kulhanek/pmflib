@@ -226,7 +226,11 @@ subroutine usabf_core_force_2p()
     ! shift etot ene
     etothist(1) = etothist(2) + KinEne - fekinaverage
     if( fentropy ) then
-        etothist(2) = PotEne + PMFEne - fepotaverage
+        if( ftdsbiased ) then
+            etothist(2) = PotEne + PMFEne + TotalUSABFEnergy - fepotaverage
+        else
+            etothist(2) = PotEne + PMFEne - fepotaverage
+        end if
     else
         etothist(2) = 0.0d0
     end if
@@ -282,8 +286,14 @@ subroutine usabf_core_force_2p()
         ! correct for applied bias
         pxi1(:) = pxi0(:) - pxi1(:)
 
+        ! write(456,*) fstep, etothist(1)
+
         ! add data to accumulator
-        call usabf_accu_add_data_online(cvhist(:,1),pxi1,epothist(1),pxi0,etothist(1),TotalUSABFEnergy)
+        if( ftdsbiased ) then
+            call usabf_accu_add_data_online(cvhist(:,1),pxi1,epothist(1),pxi0,etothist(1))
+        else
+            call usabf_accu_add_data_online(cvhist(:,1),pxi1,epothist(1),pxi1,etothist(1))
+        end if
     end if
 
     ! backup to the next step
@@ -358,7 +368,11 @@ subroutine usabf_core_force_7p()
     etothist(5) = etothist(6)
     etothist(6) = etothist(7) + KinEne - fekinaverage  ! kinetic energy is delayed by dt
     if( fentropy ) then
-        etothist(7) = PotEne + PMFEne - fepotaverage
+        if( ftdsbiased ) then
+            etothist(7) = PotEne + PMFEne + TotalUSABFEnergy - fepotaverage
+        else
+            etothist(7) = PotEne + PMFEne - fepotaverage
+        end if
     else
         etothist(7) = 0.0d0
     end if
@@ -405,7 +419,11 @@ subroutine usabf_core_force_7p()
         ! write(790,*) cvhist(:,3),pxi0,epothist(3),etothist(3)
 
         ! record the data
-        call usabf_accu_add_data_online(cvhist(:,3),pxi1,epothist(3),pxi0,etot3,TotalUSABFEnergy)
+        if( ftdsbiased ) then
+            call usabf_accu_add_data_online(cvhist(:,3),pxi1,epothist(3),pxi0,etot3)
+        else
+            call usabf_accu_add_data_online(cvhist(:,3),pxi1,epothist(3),pxi1,etot3)
+        end if
     end if
 
 end subroutine usabf_core_force_7p
@@ -465,7 +483,11 @@ subroutine usabf_core_force_10p()
     epothist(8) = epothist(9)
     epothist(9) = epothist(10)
     if( fenthalpy ) then
-        epothist(10) = PotEne + PMFEne - fepotaverage
+        if( ftdsbiased ) then
+            etothist(10) = PotEne + PMFEne + TotalUSABFEnergy - fepotaverage
+        else
+            etothist(10) = PotEne + PMFEne - fepotaverage
+        end if
     else
         epothist(10) = 0.0d0
     end if
@@ -528,7 +550,11 @@ subroutine usabf_core_force_10p()
         end if
 
         ! record the data
-        call usabf_accu_add_data_online(cvhist(:,4),pxi1,epothist(4),pxi0,etot4,TotalUSABFEnergy)
+        if( ftdsbiased ) then
+            call usabf_accu_add_data_online(cvhist(:,4),pxi1,epothist(4),pxi0,etot4)
+        else
+            call usabf_accu_add_data_online(cvhist(:,4),pxi1,epothist(4),pxi1,etot4)
+        end if
     end if
 
 end subroutine usabf_core_force_10p
@@ -581,7 +607,11 @@ subroutine usabf_core_force_gpr()
 
 ! update new history values - energy
     if( fenthalpy ) then
-        epothist(hist_len) = PotEne + PMFEne - fepotaverage
+        if( ftdsbiased ) then
+            etothist(hist_len) = PotEne + PMFEne + TotalUSABFEnergy - fepotaverage
+        else
+            etothist(hist_len) = PotEne + PMFEne - fepotaverage
+        end if
     else
         epothist(hist_len) = 0.0d0
     end if
@@ -696,14 +726,18 @@ subroutine usabf_core_force_gpr()
         ! write(789,*) cvhist(:,dt_index),pxi1,epothist(dt_index),etothist(dt_index),pxi0,etot_dt_index
 
         ! record the data
-        call usabf_accu_add_data_online(cvhist(:,dt_index),pxi1,epothist(dt_index),pxi0,etot_dt_index,TotalUSABFEnergy)
+        if( ftdsbiased ) then
+            call usabf_accu_add_data_online(cvhist(:,dt_index),pxi1,epothist(dt_index),pxi0,etot_dt_index)
+        else
+            call usabf_accu_add_data_online(cvhist(:,dt_index),pxi1,epothist(dt_index),pxi1,etot_dt_index)
+        end if
 
     end if
 
 end subroutine usabf_core_force_gpr
 
 !===============================================================================
-! Subroutine:  usabf_core_force_gpr
+! Subroutine:  usabf_core_force_gpr2
 ! using Gaussian Process Regression
 !===============================================================================
 
@@ -757,7 +791,11 @@ subroutine usabf_core_force_gpr2()
 
     etothist(hist_len-1) = etothist(hist_len-1) + KinEne - fekinaverage  ! kinetic energy is delayed by dt
     if( fentropy ) then
-        etothist(hist_len) = PotEne + PMFEne - fepotaverage
+        if( ftdsbiased ) then
+            etothist(hist_len) = PotEne + PMFEne + TotalUSABFEnergy - fepotaverage
+        else
+            etothist(hist_len) = PotEne + PMFEne - fepotaverage
+        end if
     else
         etothist(hist_len) = 0.0d0
     end if
@@ -852,7 +890,11 @@ subroutine usabf_core_force_gpr2()
         ! write(790,*) cvhist(:,dt_index),pxi1,epothist(dt_index),etothist(dt_index),pxi0,etot_dt_index
 
         ! record the data
-        call usabf_accu_add_data_online(cvhist(:,dt_index),pxi1,epothist(dt_index),pxi0,etot_dt_index,TotalUSABFEnergy)
+        if( ftdsbiased ) then
+            call usabf_accu_add_data_online(cvhist(:,dt_index),pxi1,epothist(dt_index),pxi0,etot_dt_index)
+        else
+            call usabf_accu_add_data_online(cvhist(:,dt_index),pxi1,epothist(dt_index),pxi1,etot_dt_index)
+        end if
 
     end if
 
