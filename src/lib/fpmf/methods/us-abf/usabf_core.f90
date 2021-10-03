@@ -483,11 +483,7 @@ subroutine usabf_core_force_10p()
     epothist(8) = epothist(9)
     epothist(9) = epothist(10)
     if( fenthalpy ) then
-        if( ftdsbiased ) then
-            etothist(10) = PotEne + PMFEne + TotalUSABFEnergy - fepotaverage
-        else
-            etothist(10) = PotEne + PMFEne - fepotaverage
-        end if
+        epothist(10) = PotEne + PMFEne - fepotaverage
     else
         epothist(10) = 0.0d0
     end if
@@ -502,7 +498,11 @@ subroutine usabf_core_force_10p()
     etothist(8) = etothist(9)
     etothist(9) = etothist(10) + KinEne - fekinaverage  ! kinetic energy is delayed by dt
     if( fentropy ) then
-        etothist(10) = PotEne + PMFEne - fepotaverage
+        if( ftdsbiased ) then
+            etothist(10) = PotEne + PMFEne + TotalUSABFEnergy - fepotaverage
+        else
+            etothist(10) = PotEne + PMFEne - fepotaverage
+        end if
     else
         etothist(10) = 0.0d0
     end if
@@ -607,18 +607,18 @@ subroutine usabf_core_force_gpr()
 
 ! update new history values - energy
     if( fenthalpy ) then
-        if( ftdsbiased ) then
-            etothist(hist_len) = PotEne + PMFEne + TotalUSABFEnergy - fepotaverage
-        else
-            etothist(hist_len) = PotEne + PMFEne - fepotaverage
-        end if
+        epothist(hist_len) = PotEne + PMFEne - fepotaverage
     else
         epothist(hist_len) = 0.0d0
     end if
 
     etothist(hist_len-1) = etothist(hist_len-1) + KinEne - fekinaverage  ! kinetic energy is delayed by dt
     if( fentropy ) then
-        etothist(hist_len) = PotEne + PMFEne - fepotaverage
+        if( ftdsbiased ) then
+            etothist(hist_len) = PotEne + PMFEne + TotalUSABFEnergy - fepotaverage
+        else
+            etothist(hist_len) = PotEne + PMFEne - fepotaverage
+        end if
     else
         etothist(hist_len) = 0.0d0
     end if
