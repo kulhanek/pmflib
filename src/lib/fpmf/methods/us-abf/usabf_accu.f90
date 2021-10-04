@@ -293,9 +293,12 @@ subroutine usabf_accu_write(iounit)
     if( fentropy ) then
         call pmf_accu_write_rbuf_B(usabfaccu%PMFAccuType,iounit,'METOT',    'WA',usabfaccu%metot)
         call pmf_accu_write_rbuf_B(usabfaccu%PMFAccuType,iounit,'M2ETOT',   'M2',usabfaccu%m2etot,'METOT')
-        call pmf_accu_write_rbuf_M(usabfaccu%PMFAccuType,iounit,'C11HH',    'CO',usabfaccu%c11hh,'MICF','METOT')
+
         if( ftdsbiased ) then
             call pmf_accu_write_rbuf_M(usabfaccu%PMFAccuType,iounit,'BMICF',    'WA',usabfaccu%bmicf)
+            call pmf_accu_write_rbuf_M(usabfaccu%PMFAccuType,iounit,'C11HH',    'CO',usabfaccu%c11hh,'BMICF','METOT')
+        else
+            call pmf_accu_write_rbuf_M(usabfaccu%PMFAccuType,iounit,'C11HH',    'CO',usabfaccu%c11hh,'MICF','METOT')
         end if
     end if
 
