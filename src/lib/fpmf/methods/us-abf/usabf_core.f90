@@ -226,11 +226,7 @@ subroutine usabf_core_force_2p()
     ! shift etot ene
     etothist(1) = etothist(2) + KinEne - fekinaverage
     if( fentropy ) then
-        if( ftdsbiased ) then
-            etothist(2) = PotEne + PMFEne + TotalUSABFEnergy - fepotaverage
-        else
-            etothist(2) = PotEne + PMFEne - fepotaverage
-        end if
+        etothist(2) = PotEne + PMFEne - fepotaverage
     else
         etothist(2) = 0.0d0
     end if
@@ -289,11 +285,7 @@ subroutine usabf_core_force_2p()
         ! write(456,*) fstep, etothist(1)
 
         ! add data to accumulator
-        if( ftdsbiased ) then
-            call usabf_accu_add_data_online(cvhist(:,1),pxi1,epothist(1),pxi0,etothist(1))
-        else
-            call usabf_accu_add_data_online(cvhist(:,1),pxi1,epothist(1),pxi1,etothist(1))
-        end if
+        call usabf_accu_add_data_online(cvhist(:,1),pxi1,epothist(1),etothist(1))
     end if
 
     ! backup to the next step
@@ -368,11 +360,7 @@ subroutine usabf_core_force_7p()
     etothist(5) = etothist(6)
     etothist(6) = etothist(7) + KinEne - fekinaverage  ! kinetic energy is delayed by dt
     if( fentropy ) then
-        if( ftdsbiased ) then
-            etothist(7) = PotEne + PMFEne + TotalUSABFEnergy - fepotaverage
-        else
-            etothist(7) = PotEne + PMFEne - fepotaverage
-        end if
+        etothist(7) = PotEne + PMFEne - fepotaverage
     else
         etothist(7) = 0.0d0
     end if
@@ -404,7 +392,7 @@ subroutine usabf_core_force_7p()
         end do
 
         ! substract biasing force
-        call usabf_core_get_us_bias(cvhist(:,3),la,bene)
+        call usabf_core_get_us_bias_disc(cvhist(:,3),la,bene)
         pxi1 = pxi0 - la
 
         ! smooth etot
@@ -419,11 +407,7 @@ subroutine usabf_core_force_7p()
         ! write(790,*) cvhist(:,3),pxi0,epothist(3),etothist(3)
 
         ! record the data
-        if( ftdsbiased ) then
-            call usabf_accu_add_data_online(cvhist(:,3),pxi1,epothist(3),pxi0,etot3)
-        else
-            call usabf_accu_add_data_online(cvhist(:,3),pxi1,epothist(3),pxi1,etot3)
-        end if
+        call usabf_accu_add_data_online(cvhist(:,3),pxi1,epothist(3),etot3)
     end if
 
 end subroutine usabf_core_force_7p
@@ -498,11 +482,7 @@ subroutine usabf_core_force_10p()
     etothist(8) = etothist(9)
     etothist(9) = etothist(10) + KinEne - fekinaverage  ! kinetic energy is delayed by dt
     if( fentropy ) then
-        if( ftdsbiased ) then
-            etothist(10) = PotEne + PMFEne + TotalUSABFEnergy - fepotaverage
-        else
-            etothist(10) = PotEne + PMFEne - fepotaverage
-        end if
+        etothist(10) = PotEne + PMFEne - fepotaverage
     else
         etothist(10) = 0.0d0
     end if
@@ -537,7 +517,7 @@ subroutine usabf_core_force_10p()
         end do
 
         ! substract biasing force
-        call usabf_core_get_us_bias(cvhist(:,4),la,bene)
+        call usabf_core_get_us_bias_disc(cvhist(:,4),la,bene)
         pxi1 = pxi0 - la
 
         ! smooth etot
@@ -550,11 +530,7 @@ subroutine usabf_core_force_10p()
         end if
 
         ! record the data
-        if( ftdsbiased ) then
-            call usabf_accu_add_data_online(cvhist(:,4),pxi1,epothist(4),pxi0,etot4)
-        else
-            call usabf_accu_add_data_online(cvhist(:,4),pxi1,epothist(4),pxi1,etot4)
-        end if
+        call usabf_accu_add_data_online(cvhist(:,4),pxi1,epothist(4),etot4)
     end if
 
 end subroutine usabf_core_force_10p
@@ -614,11 +590,7 @@ subroutine usabf_core_force_gpr()
 
     etothist(hist_len-1) = etothist(hist_len-1) + KinEne - fekinaverage  ! kinetic energy is delayed by dt
     if( fentropy ) then
-        if( ftdsbiased ) then
-            etothist(hist_len) = PotEne + PMFEne + TotalUSABFEnergy - fepotaverage
-        else
-            etothist(hist_len) = PotEne + PMFEne - fepotaverage
-        end if
+        etothist(hist_len) = PotEne + PMFEne - fepotaverage
     else
         etothist(hist_len) = 0.0d0
     end if
@@ -692,7 +664,7 @@ subroutine usabf_core_force_gpr()
         end do
 
         ! substract biasing force
-        call usabf_core_get_us_bias(cvhist(:,dt_index),la,bene)
+        call usabf_core_get_us_bias_disc(cvhist(:,dt_index),la,bene)
         pxi1 = pxi0 - la
 
         ! smooth etot
@@ -726,11 +698,7 @@ subroutine usabf_core_force_gpr()
         ! write(789,*) cvhist(:,dt_index),pxi1,epothist(dt_index),etothist(dt_index),pxi0,etot_dt_index
 
         ! record the data
-        if( ftdsbiased ) then
-            call usabf_accu_add_data_online(cvhist(:,dt_index),pxi1,epothist(dt_index),pxi0,etot_dt_index)
-        else
-            call usabf_accu_add_data_online(cvhist(:,dt_index),pxi1,epothist(dt_index),pxi1,etot_dt_index)
-        end if
+        call usabf_accu_add_data_online(cvhist(:,dt_index),pxi1,epothist(dt_index),etot_dt_index)
 
     end if
 
@@ -791,11 +759,7 @@ subroutine usabf_core_force_gpr2()
 
     etothist(hist_len-1) = etothist(hist_len-1) + KinEne - fekinaverage  ! kinetic energy is delayed by dt
     if( fentropy ) then
-        if( ftdsbiased ) then
-            etothist(hist_len) = PotEne + PMFEne + TotalUSABFEnergy - fepotaverage
-        else
-            etothist(hist_len) = PotEne + PMFEne - fepotaverage
-        end if
+        etothist(hist_len) = PotEne + PMFEne - fepotaverage
     else
         etothist(hist_len) = 0.0d0
     end if
@@ -856,7 +820,7 @@ subroutine usabf_core_force_gpr2()
         end do
 
         ! substract biasing force
-        call usabf_core_get_us_bias(cvhist(:,dt_index),la,bene)
+        call usabf_core_get_us_bias_disc(cvhist(:,dt_index),la,bene)
         pxi1 = pxi0 - la
 
         ! smooth etot
@@ -890,11 +854,7 @@ subroutine usabf_core_force_gpr2()
         ! write(790,*) cvhist(:,dt_index),pxi1,epothist(dt_index),etothist(dt_index),pxi0,etot_dt_index
 
         ! record the data
-        if( ftdsbiased ) then
-            call usabf_accu_add_data_online(cvhist(:,dt_index),pxi1,epothist(dt_index),pxi0,etot_dt_index)
-        else
-            call usabf_accu_add_data_online(cvhist(:,dt_index),pxi1,epothist(dt_index),pxi1,etot_dt_index)
-        end if
+        call usabf_accu_add_data_online(cvhist(:,dt_index),pxi1,epothist(dt_index),etot_dt_index)
 
     end if
 
