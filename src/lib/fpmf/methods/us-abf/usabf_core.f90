@@ -224,12 +224,12 @@ subroutine usabf_core_force_2p()
     end if
 
     ! shift etot ene
-    etothist(1) = etothist(2) + KinEne - fekinaverage
+    etothist(1) = etothist(2)
     if( fentropy ) then
         if( ftdsbias ) then
-            etothist(2) = PotEne + PMFEne + TotalUSABFEnergy - fepotaverage
+            etothist(2) = PotEne + PMFEne + TotalUSABFEnergy - fepotaverage + KinEne - fekinaverage
         else
-            etothist(2) = PotEne + PMFEne - fepotaverage
+            etothist(2) = PotEne + PMFEne - fepotaverage + KinEne - fekinaverage
         end if
     else
         etothist(2) = 0.0d0
