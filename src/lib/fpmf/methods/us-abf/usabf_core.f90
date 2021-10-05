@@ -224,12 +224,12 @@ subroutine usabf_core_force_2p()
     end if
 
     ! shift etot ene
-    etothist(1) = etothist(2)
+    etothist(1) = etothist(2) + KinEne - fekinaverage
     if( fentropy ) then
         if( ftdsbias ) then
-            etothist(2) = PotEne + PMFEne + TotalUSABFEnergy - fepotaverage + KinEne - fekinaverage
+            etothist(2) = PotEne + PMFEne + TotalUSABFEnergy - fepotaverage
         else
-            etothist(2) = PotEne + PMFEne - fepotaverage + KinEne - fekinaverage
+            etothist(2) = PotEne + PMFEne - fepotaverage
         end if
     else
         etothist(2) = 0.0d0
@@ -289,13 +289,19 @@ subroutine usabf_core_force_2p()
         ! write(456,*) fstep, etothist(1)
 
         ! add data to accumulator
-        call usabf_accu_add_data_online(cvhist(:,1),pxi1,epothist(1),etothist(1))
+        if( ftdsbias ) then
+            etothist(1) = etothist(1) - bene0
+            call usabf_accu_add_data_online(cvhist(:,1),pxi1,epothist(1),etothist(1))
+        else
+            call usabf_accu_add_data_online(cvhist(:,1),pxi1,epothist(1),etothist(1))
+        end if
     end if
 
     ! backup to the next step
     zd0  = zd1
     pxim = pxip
     v0   = Vel
+    bene0 = TotalUSABFEnergy
 
     ! keep US forces to subtract them in the next step
     pxi1 = la

@@ -135,6 +135,7 @@ real(PMFDP),allocatable     :: pxi0(:)          !
 real(PMFDP),allocatable     :: pxi1(:)          !
 real(PMFDP),allocatable     :: pxip(:)          !
 real(PMFDP),allocatable     :: pxim(:)          !
+real(PMFDP),allocatable     :: bene0
 
 integer                     :: hist_len
 real(PMFDP),allocatable     :: cvhist(:,:)      ! history of CV values
