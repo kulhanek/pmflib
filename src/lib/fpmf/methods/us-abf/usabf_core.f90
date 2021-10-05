@@ -226,7 +226,11 @@ subroutine usabf_core_force_2p()
     ! shift etot ene
     etothist(1) = etothist(2) + KinEne - fekinaverage
     if( fentropy ) then
-        etothist(2) = PotEne + PMFEne - fepotaverage
+        if( ftdsbias ) then
+            etothist(2) = PotEne + PMFEne + TotalUSABFEnergy - fepotaverage
+        else
+            etothist(2) = PotEne + PMFEne - fepotaverage
+        end if
     else
         etothist(2) = 0.0d0
     end if
@@ -360,7 +364,11 @@ subroutine usabf_core_force_7p()
     etothist(5) = etothist(6)
     etothist(6) = etothist(7) + KinEne - fekinaverage  ! kinetic energy is delayed by dt
     if( fentropy ) then
-        etothist(7) = PotEne + PMFEne - fepotaverage
+        if( ftdsbias ) then
+            etothist(7) = PotEne + PMFEne + TotalUSABFEnergy - fepotaverage
+        else
+            etothist(7) = PotEne + PMFEne - fepotaverage
+        end if
     else
         etothist(7) = 0.0d0
     end if
@@ -482,7 +490,11 @@ subroutine usabf_core_force_10p()
     etothist(8) = etothist(9)
     etothist(9) = etothist(10) + KinEne - fekinaverage  ! kinetic energy is delayed by dt
     if( fentropy ) then
-        etothist(10) = PotEne + PMFEne - fepotaverage
+        if( ftdsbias ) then
+            etothist(10) = PotEne + PMFEne + TotalUSABFEnergy - fepotaverage
+        else
+            etothist(10) = PotEne + PMFEne - fepotaverage
+        end if
     else
         etothist(10) = 0.0d0
     end if
@@ -590,7 +602,11 @@ subroutine usabf_core_force_gpr()
 
     etothist(hist_len-1) = etothist(hist_len-1) + KinEne - fekinaverage  ! kinetic energy is delayed by dt
     if( fentropy ) then
-        etothist(hist_len) = PotEne + PMFEne - fepotaverage
+        if( ftdsbias ) then
+            etothist(hist_len) = PotEne + PMFEne + TotalUSABFEnergy - fepotaverage
+        else
+            etothist(hist_len) = PotEne + PMFEne - fepotaverage
+        end if
     else
         etothist(hist_len) = 0.0d0
     end if
@@ -759,7 +775,11 @@ subroutine usabf_core_force_gpr2()
 
     etothist(hist_len-1) = etothist(hist_len-1) + KinEne - fekinaverage  ! kinetic energy is delayed by dt
     if( fentropy ) then
-        etothist(hist_len) = PotEne + PMFEne - fepotaverage
+        if( ftdsbias ) then
+            etothist(hist_len) = PotEne + PMFEne + TotalUSABFEnergy - fepotaverage
+        else
+            etothist(hist_len) = PotEne + PMFEne - fepotaverage
+        end if
     else
         etothist(hist_len) = 0.0d0
     end if
