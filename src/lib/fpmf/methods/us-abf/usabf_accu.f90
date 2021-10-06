@@ -192,6 +192,12 @@ subroutine usabf_accu_read(iounit)
                 case('M2ICF')
                     call pmf_accu_read_rbuf_M(usabfaccu%PMFAccuType,iounit,keyline,usabfaccu%m2icf)
             ! ------------------------------------
+                case('BSAMPLES')
+                    call pmf_accu_read_ibuf_B(usabfaccu%PMFAccuType,iounit,keyline,usabfaccu%bsamples)
+            ! ------------------------------------
+                case('MBCF')
+                    call pmf_accu_read_rbuf_M(usabfaccu%PMFAccuType,iounit,keyline,usabfaccu%mbcf)
+            ! ------------------------------------
                 case('TVALUES')
                     call pmf_accu_read_rbuf_C(usabfaccu%PMFAccuType,iounit,keyline,usabfaccu%tvalues)
                     do i=1,usabfaccu%tot_cvs
@@ -291,6 +297,9 @@ subroutine usabf_accu_write(iounit)
         call pmf_accu_write_rbuf_B(usabfaccu%PMFAccuType,iounit,'M2ETOT',   'M2',usabfaccu%m2etot,'METOT')
         call pmf_accu_write_rbuf_M(usabfaccu%PMFAccuType,iounit,'C11HH',    'CO',usabfaccu%c11hh,'MICF','METOT')
     end if
+
+    call pmf_accu_write_ibuf_B(usabfaccu%PMFAccuType,iounit,'BSAMPLES',     'AD',usabfaccu%bsamples)
+    call pmf_accu_write_rbuf_M(usabfaccu%PMFAccuType,iounit,'MBCF',         'WA',usabfaccu%mbcf)
 
 end subroutine usabf_accu_write
 
