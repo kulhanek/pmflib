@@ -84,9 +84,7 @@ subroutine usabf_init_dat
     fekinaverage    = 0.0d0
 
     fsmoothetot     = .false.
-    fcontbias       = .true.
     falignbias      = .false.
-    ftdsbias        = .false.
 
     NumOfUSABFCVs     = 0
 
@@ -148,9 +146,7 @@ subroutine usabf_init_print_header
     end select
     write(PMF_OUT,125)  ' Coordinate definition file (fusabfdef)  : ', trim(fusabfdef)
     write(PMF_OUT,130)  ' Number of coordinates                   : ', NumOfUSABFCVs
-    write(PMF_OUT,125)  ' Use continuous US bias (fcontbias)      : ', prmfile_onoff(fcontbias)
     write(PMF_OUT,125)  ' Align bias by a bin (falignbias)        : ', prmfile_onoff(falignbias)
-    write(PMF_OUT,125)  ' Include bias into -TdS (ftdsbias)       : ', prmfile_onoff(ftdsbias)
 
     write(PMF_OUT,120)
     write(PMF_OUT,120)  ' Restart options:'

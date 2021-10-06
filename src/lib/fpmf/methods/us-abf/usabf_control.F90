@@ -77,10 +77,7 @@ subroutine usabf_control_read_abf(prm_fin)
         return
     end if
 
-
-    call pmf_ctrl_read_logical(prm_fin,'fcontbias',fcontbias)
     call pmf_ctrl_read_logical(prm_fin,'falignbias',falignbias)
-    call pmf_ctrl_read_logical(prm_fin,'ftdsbias',ftdsbias)
 
     call pmf_ctrl_read_logical(prm_fin,'frestart',frestart)
 

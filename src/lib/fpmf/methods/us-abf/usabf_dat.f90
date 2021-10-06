@@ -54,9 +54,8 @@ real(PMFDP) :: fepotaverage
 real(PMFDP) :: fekinaverage
 
 logical     :: fsmoothetot  ! smooth etot prior covariance calculation
-logical     :: fcontbias    ! use continuous or discrete biasing potential
 logical     :: falignbias   ! move bottom of the biasing potential into the closest bin position
-logical     :: ftdsbias     ! include bias into -TdS calculation
+
 
 ! item list --------------------------------------------------------------------
 type CVTypeUSABF
@@ -105,6 +104,10 @@ type,extends(PMFAccuType)   :: USABFAccuType
     real(PMFDP),pointer     :: metot(:)                 ! mean of total energy
     real(PMFDP),pointer     :: m2etot(:)                ! M2 of total energy
     real(PMFDP),pointer     :: c11hh(:,:)               ! c11 - total/total
+
+    ! mean bias force
+    integer,pointer         :: bsamples(:)
+    real(PMFDP),pointer     :: mbcf(:,:)
 
 end type USABFAccuType
 

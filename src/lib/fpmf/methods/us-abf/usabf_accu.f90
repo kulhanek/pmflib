@@ -75,6 +75,8 @@ subroutine usabf_accu_init()
             usabfaccu%m2icf(usabfaccu%tot_cvs,usabfaccu%tot_nbins), &
             usabfaccu%tvalues(usabfaccu%tot_cvs), &
             usabfaccu%fcs(usabfaccu%tot_cvs), &
+            usabfaccu%bsamples(usabfaccu%tot_nbins), &
+            usabfaccu%mbcf(usabfaccu%tot_cvs,usabfaccu%tot_nbins), &
             stat = alloc_failed)
 
     if( alloc_failed .ne. 0 ) then
@@ -129,6 +131,9 @@ subroutine usabf_accu_clear()
 
     usabfaccu%micf(:,:)         = 0.0d0
     usabfaccu%m2icf(:,:)        = 0.0d0
+
+    usabfaccu%bsamples(:)       = 0
+    usabfaccu%mbcf(:,:)         = 0.0d0
 
     ! init binpos
     do i=1,usabfaccu%tot_nbins
@@ -362,6 +367,70 @@ subroutine usabf_accu_add_data_online(cvs,gfx,epot,etot)
  10 format('# Resetting the accumulator at: ', I9)
 
 end subroutine usabf_accu_add_data_online
+
+!===============================================================================
+! Subroutine:  usabf_accu_get_mbcf
+!===============================================================================
+
+subroutine usabf_accu_add_mbcf(cvs,gfx)
+
+    use usabf_dat
+    use pmf_dat
+    use pmf_utils
+
+    implicit none
+    real(PMFDP)    :: cvs(:)
+    real(PMFDP)    :: gfx(:)
+    ! -----------------------------------------------
+    integer        :: gi0, i
+    real(PMFDP)    :: invn, bcf
+    real(PMFDP)    :: dbcf1
+    ! --------------------------------------------------------------------------
+
+    ! get global index to accumulator for average values within the set
+    gi0 = pmf_accu_globalindex(usabfaccu%PMFAccuType,cvs)
+    if( gi0 .le. 0 ) then
+        return ! out of valid area
+    end if
+
+    ! increase number of samples
+    usabfaccu%bsamples(gi0) = usabfaccu%bsamples(gi0) + 1
+    invn = 1.0d0 / real(usabfaccu%bsamples(gi0),PMFDP)
+
+    do i=1,NumOfUSABFCVs
+        bcf = gfx(i)
+        dbcf1 = bcf - usabfaccu%mbcf(i,gi0)
+        usabfaccu%mbcf(i,gi0)  = usabfaccu%mbcf(i,gi0)  + dbcf1 * invn
+    end do
+
+end subroutine usabf_accu_add_mbcf
+
+!===============================================================================
+! Subroutine:  usabf_accu_get_mbcf
+!===============================================================================
+
+subroutine usabf_accu_get_mbcf(cvs,gfx)
+
+    use usabf_dat
+    use pmf_dat
+    use pmf_utils
+
+    implicit none
+    real(PMFDP)    :: cvs(:)
+    real(PMFDP)    :: gfx(:)
+    ! -----------------------------------------------
+    integer        :: gi0
+    ! --------------------------------------------------------------------------
+
+    gfx(:) = 0.0d0
+
+    ! get global index to accumulator for average values within the set
+    gi0 = pmf_accu_globalindex(usabfaccu%PMFAccuType,cvs)
+    if( gi0 .le. 0 ) return ! out of valid area
+
+    gfx(:) = usabfaccu%mbcf(:,gi0)
+
+end subroutine usabf_accu_get_mbcf
 
 !===============================================================================
 
