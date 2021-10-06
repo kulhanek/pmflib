@@ -55,7 +55,7 @@ subroutine usabf_core_main
             call usabf_core_force_2p
         case(2)
             ! 7-points
-            call usabf_core_force_7p
+            call usabf_core_force_5p_kin
         case(3)
             ! 10-points
             call usabf_core_force_10p
@@ -203,7 +203,7 @@ subroutine usabf_core_force_2p()
         call usabf_accu_get_mbcf(cvhist(:,1),la)
         pxi1(:) = pxi0(:) - la(:)
 
-        ! write(456,*) fstep, etothist(1)
+        write(489,*) fstep-1, pxi0
 
         ! add data to accumulator
         call usabf_accu_add_data_online(cvhist(:,1),pxi1,epothist(1),etothist(1))
@@ -229,6 +229,132 @@ subroutine usabf_core_force_2p()
     return
 
 end subroutine usabf_core_force_2p
+
+!===============================================================================
+! Subroutine:  usabf_core_force_5p_kin
+! 5-points from CV momenta
+!===============================================================================
+
+subroutine usabf_core_force_5p_kin()
+
+    use pmf_utils
+    use pmf_dat
+    use pmf_cvs
+    use usabf_dat
+    use usabf_accu
+    use usabf_output
+
+    implicit none
+    integer     :: i,j,ci,m
+    real(PMFDP) :: invh,etot3,v
+    ! --------------------------------------------------------------------------
+
+    invh = 1.0d0 / (12.0d0 * fdtx)
+
+! shift accuvalue history
+    do i=1,5
+        cvhist(:,i) = cvhist(:,i+1)
+    end do
+    do i=1,NumOfUSABFCVs
+        ci = USABFCVList(i)%cvindx
+        cvhist(i,6) = CVContext%CVsValues(ci)
+    end do
+
+! shift epot ene
+    do i=1,5
+        epothist(i) = epothist(i+1)
+    end do
+    if( fenthalpy ) then
+        epothist(6) = PotEne + PMFEne - fepotaverage
+    else
+        epothist(6) = 0.0d0
+    end if
+
+! shift etot ene
+    do i=1,5
+        etothist(i) = etothist(i+1)
+    end do
+    etothist(5) = etothist(5) + KinEne - fekinaverage  ! kinetic energy is delayed by dt
+    if( fentropy ) then
+        etothist(6) = PotEne + PMFEne - fepotaverage
+    else
+        etothist(6) = 0.0d0
+    end if
+
+! get CV momenta from velocities
+    if( fstep .ge. 2 ) then
+
+        do i=1,NumOfUSABFCVs
+            ci = USABFCVList(i)%cvindx
+            v = 0.0d0
+            do j=1,NumOfLAtoms
+                do m=1,3
+                    v = v + 0.5d0*cvcontex0%CVsDrvs(m,j,ci)*(Vel(m,j) + v0(m,j)) ! in t-dt
+                end do
+            end do
+            pxi0(i) = v
+        end do
+
+        ! shift history buffer
+        do i=1,4
+            pcvhist(:,i) = pcvhist(:,i+1)
+        end do
+
+        ! get Zmat
+        call usabf_core_calc_Zmat(cvcontex0)
+
+        ! calculate CV momenta
+        do i=1,NumOfUSABFCVs
+            do j=1,NumOfUSABFCVs
+                pcvhist(i,5) = fzinv(i,j) * pxi0(j)     ! in t-dt
+            end do
+        end do
+    end if
+
+    v0 = Vel                ! backup velocities
+    cvcontex0 = CVContext   ! backup context
+
+    if( fstep .ge. 6 ) then
+        ! calculated ICF
+        do i=1,NumOfUSABFCVs
+            ! https://en.wikipedia.org/wiki/Savitzky%E2%80%93Golay_filter
+            pxi0(i) = (pcvhist(i,1) - 8.0d0*pcvhist(i,2) + 8.0d0*pcvhist(i,4) - pcvhist(i,5)) * invh
+        end do
+
+        ! subtract biasing force
+        call usabf_accu_get_mbcf(cvhist(:,3),la)
+        pxi1 = pxi0 - la
+
+        ! smooth etot
+        if( fsmoothetot ) then
+            ! https://en.wikipedia.org/wiki/Savitzky%E2%80%93Golay_filter
+            etot3 = ( - 3.0d0*etothist(1) + 12.0d0*etothist(2) + 17.0d0*etothist(3)  &
+                     + 12.0d0*etothist(4) -  3.0d0*etothist(5))/35.0d0
+        else
+            etot3 = etothist(3)
+        end if
+
+        ! write(790,*) cvhist(:,3),pxi0,epothist(3),etothist(3)
+
+        write(790,*) fstep-1-1-1, pxi0
+
+        ! record the data
+        call usabf_accu_add_data_online(cvhist(:,3),pxi1,epothist(3),etot3)
+    end if
+
+    ! calculate bias force to be applied
+    call usabf_core_get_us_bias(cvhist(:,6),la,TotalUSABFEnergy)
+    call usabf_accu_add_mbcf(cvhist(:,6),la)
+
+    ! project abf force along coordinate
+    do i=1,NumOfUSABFCVs
+        ci = USABFCVList(i)%cvindx
+        do j=1,NumOfLAtoms
+            Frc(:,j) = Frc(:,j) + la(i) * CVContext%CVsDrvs(:,j,ci)
+        end do
+    end do
+
+end subroutine usabf_core_force_5p_kin
 
 !===============================================================================
 ! Subroutine:  usabf_core_force_7p
