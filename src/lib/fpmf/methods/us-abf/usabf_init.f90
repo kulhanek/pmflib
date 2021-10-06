@@ -92,8 +92,8 @@ subroutine usabf_init_dat
     outsidesamples  = 0
 
     gpr_len         = 7
-    gpr_width       = 6.0
-    gpr_noise       = 0.05
+    gpr_width       = 4.0
+    gpr_noise       = 0.01
 
     fdtx            = 0.0d0     ! time step in internal units
 
@@ -137,10 +137,12 @@ subroutine usabf_init_print_header
     write(PMF_OUT,145)  '          gpr_width                      : ', gpr_width
     write(PMF_OUT,145)  '          gpr_noise                      : ', gpr_noise
     case(5)
-    write(PMF_OUT,120)  '      |-> GPR ABF II'
+    write(PMF_OUT,120)  '      |-> GPR ABF - CV momenta'
     write(PMF_OUT,130)  '          gpr_len                        : ', gpr_len
     write(PMF_OUT,145)  '          gpr_width                      : ', gpr_width
     write(PMF_OUT,145)  '          gpr_noise                      : ', gpr_noise
+    case(6)
+    write(PMF_OUT,120)  '      |-> 6-points ABF - CV momenta'
     case default
     call pmf_utils_exit(PMF_OUT,1,'[US-ABF] Unknown fmode in usabf_init_print_header!')
     end select
@@ -227,6 +229,8 @@ subroutine usabf_init_arrays
             hist_len = 10
         case(4,5)
             call usabf_init_gpr()
+        case(6)
+            hist_len = 6
         case default
             call pmf_utils_exit(PMF_OUT,1,'[US-ABF] Not implemented fmode in usabf_init_arrays!')
     end select
@@ -272,6 +276,16 @@ subroutine usabf_init_arrays
     epothist(:) = 0.0d0
     etothist(:) = 0.0d0
 
+    allocate(                                           &
+            cvcontex0%CVsValues(NumOfCVs),              &
+            cvcontex0%CVsDrvs(3,NumOfLAtoms,NumOfCVs),  &
+            stat= alloc_failed )
+
+    if( alloc_failed .ne. 0 ) then
+        call pmf_utils_exit(PMF_OUT,1, &
+            '[US-ABF] Unable to allocate memory for GPR arrays in usabf_init_arrays!')
+    end if
+
     ! for Z matrix inversion, only if fnitem > 1 ----
     if( NumOfUSABFCVs .gt. 1 ) then
         allocate( vv(NumOfUSABFCVs),               &
@@ -305,7 +319,7 @@ subroutine usabf_init_gpr
     real(PMFDP) :: dt,dt2,idw2
     ! --------------------------------------------------------------------------
 
-    idw2 = 1.0d0/(2.0d0*(gpr_width * PMF_DT2VDT)**2)
+    idw2 = 1.0d0/(2.0d0*(gpr_width)**2)
 
 ! gpr_len must be an odd number
     if( mod(gpr_len,2) .ne. 1 ) then
@@ -329,7 +343,7 @@ subroutine usabf_init_gpr
 ! init covariance matrix
     do i=1,gpr_len
         do j=1,gpr_len
-            dt2 = (real(i-j,PMFDP) * fdtx)**2
+            dt2 = (real(i-j,PMFDP))**2
             gpr_K(i,j) = exp(- dt2 * idw2)
         end do
     end do
@@ -349,8 +363,8 @@ subroutine usabf_init_gpr
 ! construct kff
     j = gpr_len / 2 + 1
     do i=1,gpr_len
-        dt = real(i-j,PMFDP) * fdtx
-        gpr_kdf(i) = - 2.0d0 * exp(- dt**2 * idw2) * dt * idw2
+        dt = real(i-j,PMFDP)
+        gpr_kdf(i) = - 2.0d0 * exp(- dt**2 * idw2) * dt * idw2 / fdtx
         gpr_kff(i) = exp(- dt**2 * idw2)
     end do
 
@@ -360,19 +374,9 @@ subroutine usabf_init_gpr
         hist_len = gpr_len + gpr_len/2
     end if
 
-    if( fmode .eq. 5 ) then
+    if( fmode .eq. 5) then
+        ! with CV momenta
         hist_len = gpr_len + 1
-
-        allocate(                                           &
-                cvcontex0%CVsValues(NumOfCVs),              &
-                cvcontex0%CVsDrvs(3,NumOfLAtoms,NumOfCVs),  &
-                stat= alloc_failed )
-
-        if( alloc_failed .ne. 0 ) then
-            call pmf_utils_exit(PMF_OUT,1, &
-                '[US-ABF] Unable to allocate memory for GPR arrays in usabf_init_gpr!')
-        end if
-
     end if
 
 end subroutine usabf_init_gpr

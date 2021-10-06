@@ -55,7 +55,7 @@ subroutine usabf_core_main
             call usabf_core_force_2p
         case(2)
             ! 7-points
-            call usabf_core_force_5p_kin
+            call usabf_core_force_7p
         case(3)
             ! 10-points
             call usabf_core_force_10p
@@ -63,8 +63,11 @@ subroutine usabf_core_main
             ! via GPR
             call usabf_core_force_gpr
         case(5)
-            ! via GPR
-            call usabf_core_force_gpr2
+            ! via GPR - CV momenta
+            call usabf_core_force_gpr_kin
+        case(6)
+            ! 6-points - CV momenta
+            call usabf_core_force_6p_kin
         case default
             call pmf_utils_exit(PMF_OUT,1,'[US-ABF] Not implemented fmode in usabf_core_main!')
     end select
@@ -203,7 +206,7 @@ subroutine usabf_core_force_2p()
         call usabf_accu_get_mbcf(cvhist(:,1),la)
         pxi1(:) = pxi0(:) - la(:)
 
-        write(489,*) fstep-1, pxi0
+        ! write(701,*) fstep-1, pxi0
 
         ! add data to accumulator
         call usabf_accu_add_data_online(cvhist(:,1),pxi1,epothist(1),etothist(1))
@@ -231,132 +234,6 @@ subroutine usabf_core_force_2p()
 end subroutine usabf_core_force_2p
 
 !===============================================================================
-! Subroutine:  usabf_core_force_5p_kin
-! 5-points from CV momenta
-!===============================================================================
-
-subroutine usabf_core_force_5p_kin()
-
-    use pmf_utils
-    use pmf_dat
-    use pmf_cvs
-    use usabf_dat
-    use usabf_accu
-    use usabf_output
-
-    implicit none
-    integer     :: i,j,ci,m
-    real(PMFDP) :: invh,etot3,v
-    ! --------------------------------------------------------------------------
-
-    invh = 1.0d0 / (12.0d0 * fdtx)
-
-! shift accuvalue history
-    do i=1,5
-        cvhist(:,i) = cvhist(:,i+1)
-    end do
-    do i=1,NumOfUSABFCVs
-        ci = USABFCVList(i)%cvindx
-        cvhist(i,6) = CVContext%CVsValues(ci)
-    end do
-
-! shift epot ene
-    do i=1,5
-        epothist(i) = epothist(i+1)
-    end do
-    if( fenthalpy ) then
-        epothist(6) = PotEne + PMFEne - fepotaverage
-    else
-        epothist(6) = 0.0d0
-    end if
-
-! shift etot ene
-    do i=1,5
-        etothist(i) = etothist(i+1)
-    end do
-    etothist(5) = etothist(5) + KinEne - fekinaverage  ! kinetic energy is delayed by dt
-    if( fentropy ) then
-        etothist(6) = PotEne + PMFEne - fepotaverage
-    else
-        etothist(6) = 0.0d0
-    end if
-
-! get CV momenta from velocities
-    if( fstep .ge. 2 ) then
-
-        do i=1,NumOfUSABFCVs
-            ci = USABFCVList(i)%cvindx
-            v = 0.0d0
-            do j=1,NumOfLAtoms
-                do m=1,3
-                    v = v + 0.5d0*cvcontex0%CVsDrvs(m,j,ci)*(Vel(m,j) + v0(m,j)) ! in t-dt
-                end do
-            end do
-            pxi0(i) = v
-        end do
-
-        ! shift history buffer
-        do i=1,4
-            pcvhist(:,i) = pcvhist(:,i+1)
-        end do
-
-        ! get Zmat
-        call usabf_core_calc_Zmat(cvcontex0)
-
-        ! calculate CV momenta
-        do i=1,NumOfUSABFCVs
-            do j=1,NumOfUSABFCVs
-                pcvhist(i,5) = fzinv(i,j) * pxi0(j)     ! in t-dt
-            end do
-        end do
-    end if
-
-    v0 = Vel                ! backup velocities
-    cvcontex0 = CVContext   ! backup context
-
-    if( fstep .ge. 6 ) then
-        ! calculated ICF
-        do i=1,NumOfUSABFCVs
-            ! https://en.wikipedia.org/wiki/Savitzky%E2%80%93Golay_filter
-            pxi0(i) = (pcvhist(i,1) - 8.0d0*pcvhist(i,2) + 8.0d0*pcvhist(i,4) - pcvhist(i,5)) * invh
-        end do
-
-        ! subtract biasing force
-        call usabf_accu_get_mbcf(cvhist(:,3),la)
-        pxi1 = pxi0 - la
-
-        ! smooth etot
-        if( fsmoothetot ) then
-            ! https://en.wikipedia.org/wiki/Savitzky%E2%80%93Golay_filter
-            etot3 = ( - 3.0d0*etothist(1) + 12.0d0*etothist(2) + 17.0d0*etothist(3)  &
-                     + 12.0d0*etothist(4) -  3.0d0*etothist(5))/35.0d0
-        else
-            etot3 = etothist(3)
-        end if
-
-        ! write(790,*) cvhist(:,3),pxi0,epothist(3),etothist(3)
-
-        write(790,*) fstep-1-1-1, pxi0
-
-        ! record the data
-        call usabf_accu_add_data_online(cvhist(:,3),pxi1,epothist(3),etot3)
-    end if
-
-    ! calculate bias force to be applied
-    call usabf_core_get_us_bias(cvhist(:,6),la,TotalUSABFEnergy)
-    call usabf_accu_add_mbcf(cvhist(:,6),la)
-
-    ! project abf force along coordinate
-    do i=1,NumOfUSABFCVs
-        ci = USABFCVList(i)%cvindx
-        do j=1,NumOfLAtoms
-            Frc(:,j) = Frc(:,j) + la(i) * CVContext%CVsDrvs(:,j,ci)
-        end do
-    end do
-
-end subroutine usabf_core_force_5p_kin
-
-!===============================================================================
 ! Subroutine:  usabf_core_force_7p
 ! 7-points from CV values only
 !===============================================================================
@@ -372,7 +249,7 @@ subroutine usabf_core_force_7p()
 
     implicit none
     integer     :: i,j,ci
-    real(PMFDP) :: invh,etot3,bene
+    real(PMFDP) :: invh,etot3
     ! --------------------------------------------------------------------------
 
     invh = 1.0d0 / (12.0d0 * fdtx)
@@ -387,17 +264,6 @@ subroutine usabf_core_force_7p()
     do i=1,NumOfUSABFCVs
         ci = USABFCVList(i)%cvindx
         cvhist(i,7) = CVContext%CVsValues(ci)
-    end do
-
-! get US force to be applied --------------------
-    call usabf_core_get_us_bias(cvhist(:,7),la,TotalUSABFEnergy)
-
-    ! project abf force along coordinate ------------
-    do i=1,NumOfUSABFCVs
-        ci = USABFCVList(i)%cvindx
-        do j=1,NumOfLAtoms
-            Frc(:,j) = Frc(:,j) + la(i) * CVContext%CVsDrvs(:,j,ci)
-        end do
     end do
 
     ! shift epot ene
@@ -448,7 +314,7 @@ subroutine usabf_core_force_7p()
         end do
 
         ! substract biasing force
-        call usabf_core_get_us_bias(cvhist(:,3),la,bene)
+        call usabf_accu_get_mbcf(cvhist(:,3),la)
         pxi1 = pxi0 - la
 
         ! smooth etot
@@ -461,10 +327,23 @@ subroutine usabf_core_force_7p()
         end if
 
         ! write(790,*) cvhist(:,3),pxi0,epothist(3),etothist(3)
+        ! write(702,*) fstep-1-1-1-1, pxi0
 
         ! record the data
         call usabf_accu_add_data_online(cvhist(:,3),pxi1,epothist(3),etot3)
     end if
+
+! get US force to be applied --------------------
+    call usabf_core_get_us_bias(cvhist(:,7),la,TotalUSABFEnergy)
+    call usabf_accu_add_mbcf(cvhist(:,7),la)
+
+    ! project abf force along coordinate ------------
+    do i=1,NumOfUSABFCVs
+        ci = USABFCVList(i)%cvindx
+        do j=1,NumOfLAtoms
+            Frc(:,j) = Frc(:,j) + la(i) * CVContext%CVsDrvs(:,j,ci)
+        end do
+    end do
 
 end subroutine usabf_core_force_7p
 
@@ -484,12 +363,12 @@ subroutine usabf_core_force_10p()
 
     implicit none
     integer     :: i,j,ci
-    real(PMFDP) :: invh,etot4,bene
+    real(PMFDP) :: invh,etot4
     ! --------------------------------------------------------------------------
 
     invh = 1.0d0 / (252.0d0 * fdtx)
 
-    ! shift accuvalue history
+! shift accuvalue history
     cvhist(:,4) = cvhist(:,5)
     cvhist(:,5) = cvhist(:,6)
     cvhist(:,6) = cvhist(:,7)
@@ -497,24 +376,12 @@ subroutine usabf_core_force_10p()
     cvhist(:,8) = cvhist(:,9)
     cvhist(:,9) = cvhist(:,10)
 
-    ! save coordinate value to history
     do i=1,NumOfUSABFCVs
         ci = USABFCVList(i)%cvindx
         cvhist(i,10) = CVContext%CVsValues(ci)
     end do
 
-    ! get US force to be applied --------------------
-    call usabf_core_get_us_bias(cvhist(:,10),la,TotalUSABFEnergy)
-
-    ! project abf force along coordinate ------------
-    do i=1,NumOfUSABFCVs
-        ci = USABFCVList(i)%cvindx
-        do j=1,NumOfLAtoms
-            Frc(:,j) = Frc(:,j) + la(i) * CVContext%CVsDrvs(:,j,ci)
-        end do
-    end do
-
-    ! shift epot ene
+! shift epot ene
     epothist(3) = epothist(4)
     epothist(4) = epothist(5)
     epothist(5) = epothist(6)
@@ -573,7 +440,7 @@ subroutine usabf_core_force_10p()
         end do
 
         ! substract biasing force
-        call usabf_core_get_us_bias(cvhist(:,4),la,bene)
+        call usabf_accu_get_mbcf(cvhist(:,4),la)
         pxi1 = pxi0 - la
 
         ! smooth etot
@@ -585,9 +452,23 @@ subroutine usabf_core_force_10p()
             etot4 = etothist(4)
         end if
 
+        ! write(703,*) fstep-1-1-1-1-1-1, pxi0
+
         ! record the data
         call usabf_accu_add_data_online(cvhist(:,4),pxi1,epothist(4),etot4)
     end if
+
+! get US force to be applied --------------------
+    call usabf_core_get_us_bias(cvhist(:,10),la,TotalUSABFEnergy)
+    call usabf_accu_add_mbcf(cvhist(:,10),la)
+
+    ! project abf force along coordinate ------------
+    do i=1,NumOfUSABFCVs
+        ci = USABFCVList(i)%cvindx
+        do j=1,NumOfLAtoms
+            Frc(:,j) = Frc(:,j) + la(i) * CVContext%CVsDrvs(:,j,ci)
+        end do
+    end do
 
 end subroutine usabf_core_force_10p
 
@@ -607,7 +488,7 @@ subroutine usabf_core_force_gpr()
 
     implicit none
     integer     :: i,j,ci,dt_index
-    real(PMFDP) :: bene,mean,etot_dt_index
+    real(PMFDP) :: mean,etot_dt_index
     ! --------------------------------------------------------------------------
 
     dt_index = gpr_len/2+1
@@ -618,23 +499,9 @@ subroutine usabf_core_force_gpr()
         epothist(i) = epothist(i+1)
         etothist(i) = etothist(i+1)
     end do
-
-! update new history values - CVs
     do i=1,NumOfUSABFCVs
         ci = USABFCVList(i)%cvindx
         cvhist(i,hist_len) = CVContext%CVsValues(ci)
-    end do
-
-! apply US bias
-    ! get US force to be applied --------------------
-    call usabf_core_get_us_bias(cvhist(:,hist_len),la,TotalUSABFEnergy)
-
-    ! project abf force along coordinate ------------
-    do i=1,NumOfUSABFCVs
-        ci = USABFCVList(i)%cvindx
-        do j=1,NumOfLAtoms
-            Frc(:,j) = Frc(:,j) + la(i) * CVContext%CVsDrvs(:,j,ci)
-        end do
     end do
 
 ! update new history values - energy
@@ -720,7 +587,7 @@ subroutine usabf_core_force_gpr()
         end do
 
         ! substract biasing force
-        call usabf_core_get_us_bias(cvhist(:,dt_index),la,bene)
+        call usabf_accu_get_mbcf(cvhist(:,dt_index),la)
         pxi1 = pxi0 - la
 
         ! smooth etot
@@ -752,20 +619,35 @@ subroutine usabf_core_force_gpr()
         end if
 
         ! write(789,*) cvhist(:,dt_index),pxi1,epothist(dt_index),etothist(dt_index),pxi0,etot_dt_index
+        ! write(704,*) fstep-hist_len+dt_index, pxi0
+
 
         ! record the data
         call usabf_accu_add_data_online(cvhist(:,dt_index),pxi1,epothist(dt_index),etot_dt_index)
 
     end if
 
+! apply US bias
+    ! get US force to be applied --------------------
+    call usabf_core_get_us_bias(cvhist(:,hist_len),la,TotalUSABFEnergy)
+    call usabf_accu_add_mbcf(cvhist(:,hist_len),la)
+
+    ! project abf force along coordinate ------------
+    do i=1,NumOfUSABFCVs
+        ci = USABFCVList(i)%cvindx
+        do j=1,NumOfLAtoms
+            Frc(:,j) = Frc(:,j) + la(i) * CVContext%CVsDrvs(:,j,ci)
+        end do
+    end do
+
 end subroutine usabf_core_force_gpr
 
 !===============================================================================
-! Subroutine:  usabf_core_force_gpr2
-! using Gaussian Process Regression
+! Subroutine:  usabf_core_force_gpr_kin
+! using Gaussian Process Regression - with CV momenta
 !===============================================================================
 
-subroutine usabf_core_force_gpr2()
+subroutine usabf_core_force_gpr_kin()
 
     use pmf_utils
     use pmf_dat
@@ -776,7 +658,7 @@ subroutine usabf_core_force_gpr2()
 
     implicit none
     integer     :: i,j,m,ci,dt_index
-    real(PMFDP) :: bene,mean,etot_dt_index,v
+    real(PMFDP) :: mean,etot_dt_index,v
     ! --------------------------------------------------------------------------
 
     dt_index = gpr_len/2+1
@@ -792,18 +674,6 @@ subroutine usabf_core_force_gpr2()
     do i=1,NumOfUSABFCVs
         ci = USABFCVList(i)%cvindx
         cvhist(i,hist_len) = CVContext%CVsValues(ci)
-    end do
-
-! apply US bias
-    ! get US force to be applied --------------------
-    call usabf_core_get_us_bias(cvhist(:,hist_len),la,TotalUSABFEnergy)
-
-    ! project abf force along coordinate ------------
-    do i=1,NumOfUSABFCVs
-        ci = USABFCVList(i)%cvindx
-        do j=1,NumOfLAtoms
-            Frc(:,j) = Frc(:,j) + la(i) * CVContext%CVsDrvs(:,j,ci)
-        end do
     end do
 
 ! update new history values - energy
@@ -851,7 +721,8 @@ subroutine usabf_core_force_gpr2()
     end if
 
     v0 = Vel                ! backup velocities
-    cvcontex0 = CVContext   ! backup context
+    cvcontex0%CVsDrvs(:,:,:) = CVContext%CVsDrvs(:,:,:)   ! backup context
+    cvcontex0%CVsValues(:)   = CVContext%CVsValues(:)
 
 ! get first derivative of CV momenta
     if( fstep .ge. hist_len ) then
@@ -876,7 +747,7 @@ subroutine usabf_core_force_gpr2()
         end do
 
         ! substract biasing force
-        call usabf_core_get_us_bias(cvhist(:,dt_index),la,bene)
+        call usabf_accu_get_mbcf(cvhist(:,dt_index),la)
         pxi1 = pxi0 - la
 
         ! smooth etot
@@ -908,13 +779,153 @@ subroutine usabf_core_force_gpr2()
         end if
 
         ! write(790,*) cvhist(:,dt_index),pxi1,epothist(dt_index),etothist(dt_index),pxi0,etot_dt_index
+        ! write(705,*) fstep-hist_len+dt_index, pxi0
 
         ! record the data
         call usabf_accu_add_data_online(cvhist(:,dt_index),pxi1,epothist(dt_index),etot_dt_index)
 
     end if
 
-end subroutine usabf_core_force_gpr2
+! apply US bias
+    ! get US force to be applied --------------------
+    call usabf_core_get_us_bias(cvhist(:,hist_len),la,TotalUSABFEnergy)
+    call usabf_accu_add_mbcf(cvhist(:,hist_len),la)
+
+    ! project abf force along coordinate ------------
+    do i=1,NumOfUSABFCVs
+        ci = USABFCVList(i)%cvindx
+        do j=1,NumOfLAtoms
+            Frc(:,j) = Frc(:,j) + la(i) * CVContext%CVsDrvs(:,j,ci)
+        end do
+    end do
+
+end subroutine usabf_core_force_gpr_kin
+
+!===============================================================================
+! Subroutine:  usabf_core_force_6p_kin
+! 6-points from CV momenta
+!===============================================================================
+
+subroutine usabf_core_force_6p_kin()
+
+    use pmf_utils
+    use pmf_dat
+    use pmf_cvs
+    use usabf_dat
+    use usabf_accu
+    use usabf_output
+
+    implicit none
+    integer     :: i,j,ci,m
+    real(PMFDP) :: invh,etot3,v
+    ! --------------------------------------------------------------------------
+
+    invh = 1.0d0 / (12.0d0 * fdtx)
+
+! shift accuvalue history
+    do i=1,5
+        cvhist(:,i) = cvhist(:,i+1)
+    end do
+    do i=1,NumOfUSABFCVs
+        ci = USABFCVList(i)%cvindx
+        cvhist(i,6) = CVContext%CVsValues(ci)
+    end do
+
+! shift epot ene
+    do i=1,5
+        epothist(i) = epothist(i+1)
+    end do
+    if( fenthalpy ) then
+        epothist(6) = PotEne + PMFEne - fepotaverage
+    else
+        epothist(6) = 0.0d0
+    end if
+
+! shift etot ene
+    do i=1,5
+        etothist(i) = etothist(i+1)
+    end do
+    etothist(5) = etothist(5) + KinEne - fekinaverage  ! kinetic energy is delayed by dt
+    if( fentropy ) then
+        etothist(6) = PotEne + PMFEne - fepotaverage
+    else
+        etothist(6) = 0.0d0
+    end if
+
+! get CV momenta from velocities
+    if( fstep .ge. 2 ) then
+
+        do i=1,NumOfUSABFCVs
+            ci = USABFCVList(i)%cvindx
+            v = 0.0d0
+            do j=1,NumOfLAtoms
+                do m=1,3
+                    v = v + 0.5d0*cvcontex0%CVsDrvs(m,j,ci)*(Vel(m,j) + v0(m,j)) ! in t-dt
+                end do
+            end do
+            pxi0(i) = v
+        end do
+
+        ! shift history buffer
+        do i=1,4
+            pcvhist(:,i) = pcvhist(:,i+1)
+        end do
+
+        ! get Zmat
+        call usabf_core_calc_Zmat(cvcontex0)
+
+        ! calculate CV momenta
+        do i=1,NumOfUSABFCVs
+            do j=1,NumOfUSABFCVs
+                pcvhist(i,5) = fzinv(i,j) * pxi0(j)     ! in t-dt
+            end do
+        end do
+    end if
+
+    v0 = Vel                ! backup velocities
+    cvcontex0%CVsDrvs(:,:,:) = CVContext%CVsDrvs(:,:,:)   ! backup context
+    cvcontex0%CVsValues(:)   = CVContext%CVsValues(:)
+
+    if( fstep .ge. 6 ) then
+        ! calculated ICF
+        do i=1,NumOfUSABFCVs
+            ! https://en.wikipedia.org/wiki/Savitzky%E2%80%93Golay_filter
+            pxi0(i) = (pcvhist(i,1) - 8.0d0*pcvhist(i,2) + 8.0d0*pcvhist(i,4) - pcvhist(i,5)) * invh
+        end do
+
+        ! subtract biasing force
+        call usabf_accu_get_mbcf(cvhist(:,3),la)
+        pxi1 = pxi0 - la
+
+        ! smooth etot
+        if( fsmoothetot ) then
+            ! https://en.wikipedia.org/wiki/Savitzky%E2%80%93Golay_filter
+            etot3 = ( - 3.0d0*etothist(1) + 12.0d0*etothist(2) + 17.0d0*etothist(3)  &
+                     + 12.0d0*etothist(4) -  3.0d0*etothist(5))/35.0d0
+        else
+            etot3 = etothist(3)
+        end if
+
+        ! write(790,*) cvhist(:,3),pxi0,epothist(3),etothist(3)
+        ! write(706,*) fstep-1-1-1, pxi0
+
+        ! record the data
+        call usabf_accu_add_data_online(cvhist(:,3),pxi1,epothist(3),etot3)
+    end if
+
+    ! calculate bias force to be applied
+    call usabf_core_get_us_bias(cvhist(:,6),la,TotalUSABFEnergy)
+    call usabf_accu_add_mbcf(cvhist(:,6),la)
+
+    ! project abf force along coordinate
+    do i=1,NumOfUSABFCVs
+        ci = USABFCVList(i)%cvindx
+        do j=1,NumOfLAtoms
+            Frc(:,j) = Frc(:,j) + la(i) * CVContext%CVsDrvs(:,j,ci)
+        end do
+    end do
+
+end subroutine usabf_core_force_6p_kin
 
 !===============================================================================
 ! subroutine:  usabf_core_calc_Zmat
