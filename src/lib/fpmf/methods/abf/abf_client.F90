@@ -37,7 +37,7 @@ interface
     ! set number of coordinates
     subroutine cpmf_abf_client_set_header(ret_st,ncvs,nbins,version,driver, &
                     temp,temp_unit,temp_fconv, &
-                    ene_unit,ene_fconv,enthalpy_enabled,entropy_enabled)
+                    ene_unit,ene_fconv,enthalpy_enabled,entropy_enabled,mwa_mode)
         integer         :: ret_st
         integer         :: ncvs
         integer         :: nbins
@@ -50,6 +50,7 @@ interface
         real(8)         :: ene_fconv
         integer         :: enthalpy_enabled
         integer         :: entropy_enabled
+        integer         :: mwa_mode
     end subroutine cpmf_abf_client_set_header
 
     ! set coordinate data
@@ -150,7 +151,7 @@ subroutine abf_client_register
         call cpmf_abf_client_set_header(ret_st,abfaccu%tot_cvs,abfaccu%tot_nbins,PMFLIBVER,DriverName, &
                                         ftemp,trim(pmf_unit_label(TemperatureUnit)),pmf_unit_get_rvalue(TemperatureUnit,1.0d0), &
                                         trim(pmf_unit_label(EnergyUnit)),pmf_unit_get_rvalue(EnergyUnit,1.0d0), &
-                                        enthalpy_enabled,entropy_enabled)
+                                        enthalpy_enabled,entropy_enabled,fmwamode)
 
         if( ret_st .ne. 0 ) then
             call pmf_utils_exit(PMF_OUT,1)
@@ -245,31 +246,41 @@ subroutine abf_client_get_initial_data
         call pmf_utils_exit(PMF_OUT,1)
     end if
 
-    ! move received data to main abfaccu
-    abfaccu%nsamples(:)         = abfaccu%inc_nsamples(:)
-    abfaccu%micf(:,:)           = abfaccu%inc_micf(:,:)
-    abfaccu%m2icf(:,:)          = abfaccu%inc_m2icf(:,:)
+    select case(fmwamode)
+        case(0)
+            ! move received data to main abfaccu
+            abfaccu%nsamples(:)         = abfaccu%inc_nsamples(:)
+            abfaccu%micf(:,:)           = abfaccu%inc_micf(:,:)
+            abfaccu%m2icf(:,:)          = abfaccu%inc_m2icf(:,:)
 
-    abfaccu%inc_nsamples(:)     = 0
-    abfaccu%inc_micf(:,:)       = 0.0d0
-    abfaccu%inc_m2icf(:,:)      = 0.0d0
+            abfaccu%bnsamples(:)        = abfaccu%inc_nsamples(:)
+            abfaccu%bmicf(:,:)          = abfaccu%inc_micf(:,:)
 
-    if( fenthalpy ) then
-        abfaccu%mepot(:)        = abfaccu%inc_mepot(:)
-        abfaccu%m2epot(:)       = abfaccu%inc_m2epot(:)
-        abfaccu%inc_mepot(:)    = 0.0d0
-        abfaccu%inc_m2epot(:)   = 0.0d0
-    end if
+            if( fenthalpy ) then
+                abfaccu%mepot(:)        = abfaccu%inc_mepot(:)
+                abfaccu%m2epot(:)       = abfaccu%inc_m2epot(:)
+            end if
 
-    if( fentropy ) then
-        abfaccu%metot(:)        = abfaccu%inc_metot(:)
-        abfaccu%m2etot(:)       = abfaccu%inc_m2etot(:)
-        abfaccu%c11hh(:,:)      = abfaccu%inc_c11hh(:,:)
+            if( fentropy ) then
+                abfaccu%metot(:)        = abfaccu%inc_metot(:)
+                abfaccu%m2etot(:)       = abfaccu%inc_m2etot(:)
+                abfaccu%c11hh(:,:)      = abfaccu%inc_c11hh(:,:)
+            end if
+        case(1)
+            abfaccu%bnsamples(:)        = abfaccu%inc_nsamples(:)
+            abfaccu%bmicf(:,:)          = abfaccu%inc_micf(:,:)
+        case default
+            call pmf_utils_exit(PMF_OUT,1,'fmwamode not implemented in abf_client_get_initial_data')
+    end select
 
-        abfaccu%inc_metot(:)    = 0.0d0
-        abfaccu%inc_m2etot(:)   = 0.0d0
-        abfaccu%inc_c11hh(:,:)  = 0.0d0
-    end if
+    abfaccu%inc_nsamples(:) = 0
+    abfaccu%inc_micf(:,:)   = 0.0d0
+    abfaccu%inc_m2icf(:,:)  = 0.0d0
+    abfaccu%inc_mepot(:)    = 0.0d0
+    abfaccu%inc_m2epot(:)   = 0.0d0
+    abfaccu%inc_metot(:)    = 0.0d0
+    abfaccu%inc_m2etot(:)   = 0.0d0
+    abfaccu%inc_c11hh(:,:)  = 0.0d0
 
     write(ABF_OUT,10)
     write(PMF_OUT,*)
@@ -341,30 +352,40 @@ subroutine abf_client_exchange_data(force_exchange)
     end if
 
 ! move received data to main abfaccu
-    abfaccu%nsamples(:)         = abfaccu%inc_nsamples(:)
-    abfaccu%micf(:,:)           = abfaccu%inc_micf(:,:)
-    abfaccu%m2icf(:,:)          = abfaccu%inc_m2icf(:,:)
+    select case(fmwamode)
+        case(0)
+            abfaccu%nsamples(:)         = abfaccu%inc_nsamples(:)
+            abfaccu%micf(:,:)           = abfaccu%inc_micf(:,:)
+            abfaccu%m2icf(:,:)          = abfaccu%inc_m2icf(:,:)
 
-    abfaccu%inc_nsamples(:)     = 0
-    abfaccu%inc_micf(:,:)       = 0.0d0
-    abfaccu%inc_m2icf(:,:)      = 0.0d0
+            abfaccu%bnsamples(:)        = abfaccu%inc_nsamples(:)
+            abfaccu%bmicf(:,:)          = abfaccu%inc_micf(:,:)
 
-    if( fenthalpy ) then
-        abfaccu%mepot(:)        = abfaccu%inc_mepot(:)
-        abfaccu%m2epot(:)       = abfaccu%inc_m2epot(:)
-        abfaccu%inc_mepot(:)    = 0.0d0
-        abfaccu%inc_m2epot(:)   = 0.0d0
-    end if
+            if( fenthalpy ) then
+                abfaccu%mepot(:)        = abfaccu%inc_mepot(:)
+                abfaccu%m2epot(:)       = abfaccu%inc_m2epot(:)
+            end if
 
-    if( fentropy ) then
-        abfaccu%metot(:)        = abfaccu%inc_metot(:)
-        abfaccu%m2etot(:)       = abfaccu%inc_m2etot(:)
-        abfaccu%c11hh(:,:)      = abfaccu%inc_c11hh(:,:)
+            if( fentropy ) then
+                abfaccu%metot(:)        = abfaccu%inc_metot(:)
+                abfaccu%m2etot(:)       = abfaccu%inc_m2etot(:)
+                abfaccu%c11hh(:,:)      = abfaccu%inc_c11hh(:,:)
+            end if
+        case(1)
+            abfaccu%bnsamples(:)        = abfaccu%inc_nsamples(:)
+            abfaccu%bmicf(:,:)          = abfaccu%inc_micf(:,:)
+        case default
+            call pmf_utils_exit(PMF_OUT,1,'fmwamode not implemented in abf_client_get_initial_data')
+    end select
 
-        abfaccu%inc_metot(:)    = 0.0d0
-        abfaccu%inc_m2etot(:)   = 0.0d0
-        abfaccu%inc_c11hh(:,:)  = 0.0d0
-    end if
+    abfaccu%inc_nsamples(:) = 0
+    abfaccu%inc_micf(:,:)   = 0.0d0
+    abfaccu%inc_m2icf(:,:)  = 0.0d0
+    abfaccu%inc_mepot(:)    = 0.0d0
+    abfaccu%inc_m2epot(:)   = 0.0d0
+    abfaccu%inc_metot(:)    = 0.0d0
+    abfaccu%inc_m2etot(:)   = 0.0d0
+    abfaccu%inc_c11hh(:,:)  = 0.0d0
 
 #endif
 

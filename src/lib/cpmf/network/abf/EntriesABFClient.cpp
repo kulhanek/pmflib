@@ -44,6 +44,7 @@ void PMF_PACKAGE cpmf_abf_client_set_header_(FTINT* ret_st,
                                  double*    ene_fconv,
                                  FTINT*     enthalpy_enabled,
                                  FTINT*     entropy_enabled,
+                                 FTINT*     mwa_mode,
                                  UFTINT     version_len,
                                  UFTINT     driver_len,
                                  UFTINT     temp_unit_len,
@@ -55,6 +56,7 @@ void PMF_PACKAGE cpmf_abf_client_set_header_(FTINT* ret_st,
     double          l_temp          = *temp;
     double          l_temp_fconv    = *temp_fconv;
     double          l_ene_fconv     = *ene_fconv;
+    int             l_mwa_mode      = *mwa_mode;
     CSmallString    l_version;
     CSmallString    l_driver;
     CSmallString    l_temp_unit;
@@ -76,6 +78,7 @@ void PMF_PACKAGE cpmf_abf_client_set_header_(FTINT* ret_st,
         ABFClient.NumOfBins = l_nbins;
         ABFClient.EnthalpyEnabled = l_enthalpy_enabled;
         ABFClient.EntropyEnabled = l_entropy_enabled;
+        ABFClient.MWAMode = l_mwa_mode;
 
         ABFClient.Accu->SetNumOfCVs(l_ncvs);
         ABFClient.Accu->SetHeaders("ABF",l_version,l_driver,l_temp,l_temp_unit,l_temp_fconv,l_ene_unit,l_ene_fconv);

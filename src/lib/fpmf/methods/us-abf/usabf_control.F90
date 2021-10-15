@@ -95,7 +95,6 @@ subroutine usabf_control_read_abf(prm_fin)
 
     call pmf_ctrl_read_logical(prm_fin,'fenthalpy',fenthalpy)
     call pmf_ctrl_read_logical(prm_fin,'fentropy',fentropy)
-
     call pmf_ctrl_read_logical(prm_fin,'fsmoothetot',fsmoothetot)
 
     call pmf_ctrl_read_real8_wunit(prm_fin,'fepotaverage',EnergyUnit,fepotaverage,'F10.1')

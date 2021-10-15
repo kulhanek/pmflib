@@ -294,7 +294,7 @@ subroutine usabf_core_force_7p()
         pcvhist(:,3) = pcvhist(:,4)
         pcvhist(:,4) = pcvhist(:,5)
 
-        call usabf_core_calc_Zmat(CVContext)
+        call abf_core_calc_Zmat(CVContext)
 
         do i=1,NumOfUSABFCVs
             do j=1,NumOfUSABFCVs

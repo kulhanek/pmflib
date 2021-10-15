@@ -48,14 +48,13 @@ integer     :: feimode      ! interpolation/extrapolation mode
                             ! 0 - disabled
                             ! 1 - linear ramp
 
-integer     :: fmwamode     ! 0 - all is transferred
-                            ! 1 - only MICF is transfered
-
 logical     :: fenthalpy    ! collect data for enthalpy calculation
 logical     :: fentropy     ! collect data for entropy calculation
 
-real(PMFDP) :: fepotoffset
-real(PMFDP) :: fekinoffset
+logical     :: fsmoothetot  ! smooth etot prior covariance calculation
+
+real(PMFDP) :: fepotaverage
+real(PMFDP) :: fekinaverage
 
 ! linear ramp
 integer     :: fhramp_min
@@ -68,6 +67,8 @@ character(PMF_MAX_PATH) :: fserver              ! abf-server name
 integer                 :: fserverupdate        ! how often to communicate with server
 integer                 :: fconrepeats          ! how many times to repeat connection
 logical                 :: fabortonmwaerr       ! abort if communication with MWA fails
+integer                 :: fmwamode             ! 0 - all is transferred
+                                                ! 1 - only MICF is transfered
 
 ! abf server -----------------
 integer                 :: client_id            ! abf walker client ID
@@ -105,8 +106,9 @@ type,extends(PMFAccuType) :: ABFAccuType
     real(PMFDP),pointer    :: m2etot(:)                 ! M2 of total energy
     real(PMFDP),pointer    :: c11hh(:,:)                ! cov(H,H) for entropy
 
-    ! applied ICF
-    real(PMFDP),pointer    :: smicf(:,:)                ! applied MICF
+    ! applied ICF - this is not stored in PMF accumulator
+    integer,pointer        :: bnsamples(:)              ! number of hits into bins
+    real(PMFDP),pointer    :: bmicf(:,:)                ! applied MICF
 
     ! ABF force - incremental part for ABF-server
     integer,pointer        :: inc_nsamples(:)           ! number of hits into bins
@@ -149,25 +151,22 @@ real(PMFDP),allocatable     :: pxim(:)        !
 real(PMFDP),allocatable     :: pdum(:)        !
 real(PMFDP),allocatable     :: avg_values(:)  ! average values of coordinates at t - 3/2dt
 
-real(PMFDP),allocatable     :: cvaluehist0(:)   ! history of coordinate values
-real(PMFDP),allocatable     :: cvaluehist1(:)   ! history of coordinate values
-real(PMFDP),allocatable     :: cvaluehist2(:)   ! history of coordinate values
-real(PMFDP),allocatable     :: cvaluehist3(:)   ! history of coordinate values
+integer                     :: hist_len
+real(PMFDP),allocatable     :: cvhist(:,:)      ! history of CV values
+real(PMFDP),allocatable     :: pcvhist(:,:)     ! history of CV momenta
+real(PMFDP),allocatable     :: epothist(:)      ! history of Epot
+real(PMFDP),allocatable     :: etothist(:)      ! history of Etot
 
-real(PMFDP)                 :: epothist0   ! history of Epot
-real(PMFDP)                 :: epothist1   ! history of Epot
-real(PMFDP)                 :: epothist2   ! history of Epot
-real(PMFDP)                 :: epothist3   ! history of Epot
+integer                     :: gpr_len          ! MUST be odd number
+real(PMFDP)                 :: gpr_width        ! SE width time steps
+real(PMFDP)                 :: gpr_noise        !
+real(PMFDP),allocatable     :: gpr_K(:,:)       ! covariance matrix
+real(PMFDP),allocatable     :: gpr_model(:)     ! GPR model
+real(PMFDP),allocatable     :: gpr_kff(:)
+real(PMFDP),allocatable     :: gpr_kdf(:)
+integer,allocatable         :: gpr_indx(:)
+integer                     :: gpr_info
 
-real(PMFDP)                 :: ekinhist0   ! history of Ekin
-real(PMFDP)                 :: ekinhist1   ! history of Ekin
-real(PMFDP)                 :: ekinhist2   ! history of Ekin
-real(PMFDP)                 :: ekinhist3   ! history of Ekin
-
-real(PMFDP)                 :: ersthist0   ! history of Erst (PMFEne)
-real(PMFDP)                 :: ersthist1   ! history of Erst
-real(PMFDP)                 :: ersthist2   ! history of Erst
-real(PMFDP)                 :: ersthist3   ! history of Erst
 ! ------------------------------------------------------------------------------
 
 end module abf_dat

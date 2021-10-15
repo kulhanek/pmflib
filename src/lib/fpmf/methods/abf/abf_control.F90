@@ -67,7 +67,7 @@ subroutine abf_control_read_abf(prm_fin)
 
     ! read configuration
     call pmf_ctrl_read_integer(prm_fin,'fmode',fmode,'i12')
-    call pmf_ctrl_check_integer_in_range('ABF','fmode',fmode,0,2)
+    call pmf_ctrl_check_integer_in_range('ABF','fmode',fmode,0,3)
 
     if( fmode .eq. 0 ) then
         write(PMF_OUT,10)
@@ -92,10 +92,11 @@ subroutine abf_control_read_abf(prm_fin)
     call pmf_ctrl_check_integer('ABF','ftrjsample',ftrjsample,0,CND_GE)
 
     call pmf_ctrl_read_logical(prm_fin,'fenthalpy',fenthalpy)
-    call pmf_ctrl_read_real8_wunit(prm_fin,'fepotoffset',EnergyUnit,fepotoffset,'F10.1')
-
     call pmf_ctrl_read_logical(prm_fin,'fentropy',fentropy)
-    call pmf_ctrl_read_real8_wunit(prm_fin,'fekinoffset',EnergyUnit,fekinoffset,'F10.1')
+    call pmf_ctrl_read_logical(prm_fin,'fsmoothetot',fsmoothetot)
+
+    call pmf_ctrl_read_real8_wunit(prm_fin,'fepotaverage',EnergyUnit,fepotaverage,'F10.1')
+    call pmf_ctrl_read_real8_wunit(prm_fin,'fekinaverage',EnergyUnit,fekinaverage,'F10.1')
 
     call pmf_ctrl_read_integer(prm_fin,'feimode',feimode,'i12')
     call pmf_ctrl_check_integer_in_range('ABF','feimode',feimode,0,1)
@@ -116,6 +117,12 @@ subroutine abf_control_read_abf(prm_fin)
             call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown extrapolation/interpolation mode!')
     end select
 
+    if( fmode .eq. 3 ) then
+        call pmf_ctrl_read_integer(prm_fin,'gpr_len',gpr_len,'i12')
+        call pmf_ctrl_read_real8(prm_fin,'gpr_width',gpr_width,'F12.3')
+        call pmf_ctrl_read_real8(prm_fin,'gpr_noise',gpr_noise,'F12.3')
+    end if
+
     ! network setup ----------------------------------------------------------------
 
     write(PMF_OUT,'(/,a)') '--- [abf-walker] ---------------------------------------------------------------'
@@ -133,6 +140,9 @@ subroutine abf_control_read_abf(prm_fin)
     call pmf_ctrl_check_integer('ABF','fserverupdate',fserverupdate,0,CND_GT)
 
     call pmf_ctrl_read_logical(prm_fin,'fabortonmwaerr',fabortonmwaerr)
+
+    call pmf_ctrl_read_integer(prm_fin,'fmwamode',fmwamode,'i12')
+    call pmf_ctrl_check_integer_in_range('ABF','fmwamode',fmwamode,0,1)
 #else
     fserver_enabled = .false.
     write(PMF_OUT,105)

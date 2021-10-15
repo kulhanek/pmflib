@@ -71,6 +71,7 @@ public:
    bool                 EntropyEnabled;
    int                  NumOfCVs;
    int                  NumOfBins;
+   int                  MWAMode;
 // section of private data ----------------------------------------------------
 private:
     int                 ClientID;       // client ID

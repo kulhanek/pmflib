@@ -48,6 +48,7 @@ CABFClient::CABFClient(void)
     EntropyEnabled  = false;
     NumOfCVs        = 0;
     NumOfBins       = 0;
+    MWAMode         = 0;
 }
 
 //------------------------------------------------------------------------------
@@ -84,15 +85,17 @@ int CABFClient::RegisterClient(void)
         Accu->CreateSectionData("MICF",     "WA","R","M");
         Accu->CreateSectionData("M2ICF",    "M2","R","M", "MICF");
 
-        if( EnthalpyEnabled ){
-            Accu->CreateSectionData("MEPOT",    "WA","R","B");
-            Accu->CreateSectionData("M2EPOT",   "M2","R","B", "MEPOT");
-        }
+        if( MWAMode == 0 ) {
+            if( EnthalpyEnabled ){
+                Accu->CreateSectionData("MEPOT",    "WA","R","B");
+                Accu->CreateSectionData("M2EPOT",   "M2","R","B", "MEPOT");
+            }
 
-        if( EnthalpyEnabled ){
-            Accu->CreateSectionData("METOT",    "WA","R","B");
-            Accu->CreateSectionData("M2ETOT",   "M2","R","B", "METOT");
-            Accu->CreateSectionData("C11HH",    "CO","R","M", "METOT", "MICF");
+            if( EnthalpyEnabled ){
+                Accu->CreateSectionData("METOT",    "WA","R","B");
+                Accu->CreateSectionData("M2ETOT",   "M2","R","B", "METOT");
+                Accu->CreateSectionData("C11HH",    "CO","R","M", "METOT", "MICF");
+            }
         }
 
         Accu->Save(p_ele);
@@ -270,31 +273,35 @@ bool CABFClient::ExchangeData(  double* inc_nsamples,
         data = Accu->GetSectionData("M2ICF");
         data->SetDataBlob(inc_m2icf);
 
-        // enthalpy
-        if( EnthalpyEnabled ){
-            data = Accu->GetSectionData("MEPOT");
-            data->SetDataBlob(inc_mepot);
+        if( MWAMode == 0 ) {
+            // enthalpy
+            if( EnthalpyEnabled ){
+                data = Accu->GetSectionData("MEPOT");
+                data->SetDataBlob(inc_mepot);
 
-            data = Accu->GetSectionData("M2EPOT");
-            data->SetDataBlob(inc_m2epot);
-        }
+                data = Accu->GetSectionData("M2EPOT");
+                data->SetDataBlob(inc_m2epot);
+            }
 
-        // entropy
-        if( EntropyEnabled ){
-            data = Accu->GetSectionData("METOT");
-            data->SetDataBlob(inc_metot);
+            // entropy
+            if( EntropyEnabled ){
+                data = Accu->GetSectionData("METOT");
+                data->SetDataBlob(inc_metot);
 
-            data = Accu->GetSectionData("M2ETOT");
-            data->SetDataBlob(inc_m2etot);
+                data = Accu->GetSectionData("M2ETOT");
+                data->SetDataBlob(inc_m2etot);
 
-            data = Accu->GetSectionData("C11HH");
-            data->SetDataBlob(inc_c11hh);
+                data = Accu->GetSectionData("C11HH");
+                data->SetDataBlob(inc_c11hh);
+            }
         }
 
         Accu->Save(p_ele);
 
 // execute command
         ExecuteCommand(&cmd);
+
+        ClearExchangeData(inc_nsamples,inc_micf,inc_m2icf,inc_mepot,inc_m2epot,inc_metot,inc_m2etot,inc_c11hh);
 
 // process results
         p_ele = cmd.GetResultElementByPath("PMFLIB-V6",false);
@@ -329,32 +336,34 @@ bool CABFClient::ExchangeData(  double* inc_nsamples,
                 data->GetDataBlob(inc_m2icf);
             }
 
-            if( EnthalpyEnabled ) {
-                if( accu->HasSectionData("MEPOT") ){
-                    data = accu->GetSectionData("MEPOT");
-                    data->GetDataBlob(inc_mepot);
+            if( MWAMode == 0 ) {
+                if( EnthalpyEnabled ) {
+                    if( accu->HasSectionData("MEPOT") ){
+                        data = accu->GetSectionData("MEPOT");
+                        data->GetDataBlob(inc_mepot);
+                    }
+
+                    if( accu->HasSectionData("M2EPOT") ){
+                        data = accu->GetSectionData("M2EPOT");
+                        data->GetDataBlob(inc_m2epot);
+                    }
                 }
 
-                if( accu->HasSectionData("M2EPOT") ){
-                    data = accu->GetSectionData("M2EPOT");
-                    data->GetDataBlob(inc_m2epot);
-                }
-            }
+                if( EntropyEnabled ) {
+                    if( accu->HasSectionData("METOT") ){
+                        data = accu->GetSectionData("METOT");
+                        data->GetDataBlob(inc_metot);
+                    }
 
-            if( EntropyEnabled ) {
-                if( accu->HasSectionData("METOT") ){
-                    data = accu->GetSectionData("METOT");
-                    data->GetDataBlob(inc_metot);
-                }
+                    if( accu->HasSectionData("M2ETOT") ){
+                        data = accu->GetSectionData("M2ETOT");
+                        data->GetDataBlob(inc_m2etot);
+                    }
 
-                if( accu->HasSectionData("M2ETOT") ){
-                    data = accu->GetSectionData("M2ETOT");
-                    data->GetDataBlob(inc_m2etot);
-                }
-
-                if( accu->HasSectionData("C11HH") ){
-                    data = accu->GetSectionData("C11HH");
-                    data->GetDataBlob(inc_c11hh);
+                    if( accu->HasSectionData("C11HH") ){
+                        data = accu->GetSectionData("C11HH");
+                        data->GetDataBlob(inc_c11hh);
+                    }
                 }
             }
         }

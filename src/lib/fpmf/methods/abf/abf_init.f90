@@ -77,10 +77,11 @@ subroutine abf_init_dat
     fapply_abf      = .true.
 
     fenthalpy       = .false.
-    fepotoffset     = 0.0d0
-
     fentropy        = .false.
-    fekinoffset     = 0
+    fsmoothetot     = .false.
+
+    fepotaverage    = 0.0d0
+    fekinaverage    = 0.0d0
 
     feimode         = 1
     fhramp_min      = 100
@@ -94,12 +95,17 @@ subroutine abf_init_dat
     fserverupdate   = 20000
     fconrepeats     = 0
     fabortonmwaerr  = .true.
+    fmwamode        = 0
 
     client_id       = -1
     failure_counter = 0
 
     insidesamples   = 0
     outsidesamples  = 0
+
+    gpr_len         = 7
+    gpr_width       = 4.0
+    gpr_noise       = 0.01
 
     fdtx            = 0.0d0
 
@@ -135,6 +141,8 @@ subroutine abf_init_print_header
     write(PMF_OUT,120)  '      |-> Simplified ABF algorithm'
     case(2)
     write(PMF_OUT,120)  '      |-> Original ABF algorithm'
+    case(3)
+    write(PMF_OUT,120)  '      |-> GPR ABF algorithm'
     case default
     call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown fmode in abf_init_print_header!')
     end select
@@ -174,10 +182,11 @@ subroutine abf_init_print_header
     write(PMF_OUT,125)  ' Output file (fabfout)                   : ', trim(fabfout)
     write(PMF_OUT,130)  ' Output sampling (fsample)               : ', fsample
     write(PMF_OUT,125)  ' Accumulate enthalpy (fenthalpy)         : ', prmfile_onoff(fenthalpy)
-    write(PMF_OUT,150)  ' Potential energy offset (fepotoffset)   : ', pmf_unit_get_rvalue(EnergyUnit,fepotoffset),  &
-                                                                       '['//trim(pmf_unit_label(EnergyUnit))//']'
     write(PMF_OUT,125)  ' Accumulate entropy (fentropy)           : ', prmfile_onoff(fentropy)
-    write(PMF_OUT,150)  ' Potential energy offset (fekinoffset)   : ', pmf_unit_get_rvalue(EnergyUnit,fekinoffset),  &
+    write(PMF_OUT,125)  ' Smooth Etot (fsmoothetot)               : ', prmfile_onoff(fsmoothetot)
+    write(PMF_OUT,150)  ' Potential energy offset (fepotaverage)  : ', pmf_unit_get_rvalue(EnergyUnit,fepotaverage),  &
+                                                                       '['//trim(pmf_unit_label(EnergyUnit))//']'
+    write(PMF_OUT,150)  ' Kinetic energy offset (fekinaverage)    : ', pmf_unit_get_rvalue(EnergyUnit,fekinaverage), &
                                                                        '['//trim(pmf_unit_label(EnergyUnit))//']'
     write(PMF_OUT,120)
     write(PMF_OUT,120)  ' Trajectory output options:'
@@ -196,6 +205,7 @@ subroutine abf_init_print_header
     write(PMF_OUT,130)  ' Server update interval (fserverupdate)       : ', fserverupdate
     write(PMF_OUT,130)  ' Number of connection repeats (fconrepeats)   : ', fconrepeats
     write(PMF_OUT,125)  ' Abort on MWA failure (fabortonmwaerr)        : ', prmfile_onoff(fabortonmwaerr)
+    write(PMF_OUT,130)  ' MWA mode (fmwamode)                          : ', fmwamode
     write(PMF_OUT,120)
     write(PMF_OUT,120)  ' List of ABF collective variables'
     write(PMF_OUT,120)  ' -------------------------------------------------------'
@@ -237,6 +247,17 @@ subroutine abf_init_arrays
 
     fdtx = fdt*PMF_DT2VDT
 
+    select case(fmode)
+        case(1)
+            hist_len = 2
+        case(2)
+            hist_len = 4
+        case(3)
+            call abf_init_gpr()
+        case default
+            call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented fmode in abf_init_arrays!')
+    end select
+
     ! general arrays --------------------------------
     allocate(                               &
             a0(3,NumOfLAtoms),              &
@@ -253,10 +274,10 @@ subroutine abf_init_arrays
             fzinv(NumOfABFCVs,NumOfABFCVs), &
             zd0(3,NumOfLAtoms,NumOfABFCVs), &
             zd1(3,NumOfLAtoms,NumOfABFCVs), &
-            cvaluehist0(NumOfABFCVs),       &
-            cvaluehist1(NumOfABFCVs),       &
-            cvaluehist2(NumOfABFCVs),       &
-            cvaluehist3(NumOfABFCVs),       &
+            cvhist(NumOfABFCVs,hist_len),   &
+            pcvhist(NumOfABFCVs,hist_len),  &
+            epothist(hist_len),             &
+            etothist(hist_len),             &
             stat= alloc_failed )
 
     if( alloc_failed .ne. 0 ) then
@@ -278,10 +299,11 @@ subroutine abf_init_arrays
     fzinv(:,:) = 0.0d0
     zd0(:,:,:) = 0.0d0
     zd1(:,:,:) = 0.0d0
-    cvaluehist0(:) = 0.0d0
-    cvaluehist1(:) = 0.0d0
-    cvaluehist2(:) = 0.0d0
-    cvaluehist3(:) = 0.0d0
+
+    cvhist(:,:) = 0.0d0
+    pcvhist(:,:) = 0.0d0
+    epothist(:) = 0.0d0
+    etothist(:) = 0.0d0
 
     ! for Z matrix inversion, only if fnitem > 1 ----
     if( NumOfABFCVs .gt. 1 ) then
@@ -299,6 +321,79 @@ subroutine abf_init_arrays
     call abf_accu_init
 
 end subroutine abf_init_arrays
+
+!===============================================================================
+! Subroutine:  abf_init_gpr
+!===============================================================================
+
+subroutine abf_init_gpr
+
+    use pmf_utils
+    use pmf_dat
+    use abf_dat
+    use abf_accu
+
+    implicit none
+    integer     :: i,j,alloc_failed
+    real(PMFDP) :: dt,dt2,idw2
+    ! --------------------------------------------------------------------------
+
+    idw2 = 1.0d0/(2.0d0*(gpr_width)**2)
+
+! gpr_len must be an odd number
+    if( mod(gpr_len,2) .ne. 1 ) then
+        call pmf_utils_exit(PMF_OUT,1,'[US-ABF] gpr_len must be an odd number in abf_init_gpr!')
+    end if
+
+! allocate arrays
+    allocate(                           &
+            gpr_K(gpr_len,gpr_len),     &
+            gpr_model(gpr_len),         &
+            gpr_kff(gpr_len),           &
+            gpr_kdf(gpr_len),           &
+            gpr_indx(gpr_len),          &
+            stat= alloc_failed )
+
+    if( alloc_failed .ne. 0 ) then
+        call pmf_utils_exit(PMF_OUT,1, &
+            '[US-ABF] Unable to allocate memory for GPR arrays in abf_init_gpr!')
+    end if
+
+! init covariance matrix
+    do i=1,gpr_len
+        do j=1,gpr_len
+            dt2 = (real(i-j,PMFDP))**2
+            gpr_K(i,j) = exp(- dt2 * idw2)
+        end do
+    end do
+
+    do i=1,gpr_len
+        gpr_K(i,i) = gpr_K(i,i) + gpr_noise
+    end do
+
+! run LU decomposition
+    call dgetrf(gpr_len,gpr_len,gpr_K,gpr_len,gpr_indx,gpr_info)
+
+    if( gpr_info .ne. 0 ) then
+        ! throw error
+        call pmf_utils_exit(PMF_OUT,1,'[US-ABF] Unable to run LU decomposition in abf_init_gpr!')
+    end if
+
+! construct kff
+    j = gpr_len / 2 + 1
+    do i=1,gpr_len
+        dt = real(i-j,PMFDP)
+        gpr_kdf(i) = - 2.0d0 * exp(- dt**2 * idw2) * dt * idw2 / fdtx
+        gpr_kff(i) = exp(- dt**2 * idw2)
+    end do
+
+    hist_len = 0
+
+    if( fmode .eq. 3 ) then
+        hist_len = gpr_len + gpr_len/2
+    end if
+
+end subroutine abf_init_gpr
 
 !===============================================================================
 
