@@ -526,6 +526,7 @@ bool CSmootherGPR::WriteMFInfo(const CSmallString& name)
         CEnergyProxyPtr  item = EneProxyItems[EneProxyMap[indi]];
         size_t           ibin = SampledMap[indi];
 
+        EneSurface->GetPoint(ibin,ipos);
         mfi[indi] = item->GetValue(ibin,E_PROXY_VALUE);
         mfp[indi] = GetValue(ipos);
     }
