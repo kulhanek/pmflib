@@ -160,6 +160,9 @@ real(PMFDP),allocatable     :: etothist(:)      ! history of Etot
 integer                     :: gpr_len          ! MUST be odd number
 real(PMFDP)                 :: gpr_width        ! SE width time steps
 real(PMFDP)                 :: gpr_noise        !
+integer                     :: gpr_kernel       ! 0 - MC(3/2)
+                                                ! 1 - MC(5/2)
+                                                ! 2 - ARDSE
 real(PMFDP),allocatable     :: gpr_K(:,:)       ! covariance matrix
 real(PMFDP),allocatable     :: gpr_model(:)     ! GPR model
 real(PMFDP),allocatable     :: gpr_kff(:)

@@ -204,6 +204,13 @@ int CPMFEnergyIntOptions::CheckOptions(void)
         IsError = true;
     }
 
+    if( IsOptSigmaF2Set() && (GetOptMethod() != "gpr") ){
+        if(IsError == false) fprintf(stderr,"\n");
+        fprintf(stderr,"%s: --sigmaf2 can be set only for GPR method\n",
+                (const char*)GetProgramName());
+        IsError = true;
+    }
+
     if( IsOptWFacSet() && ( (GetOptMethod() != "rbf") && (GetOptMethod() != "gpr")) ){
         if(IsError == false) fprintf(stderr,"\n");
         fprintf(stderr,"%s: --wfac can be set only for RBF or GPR method\n",

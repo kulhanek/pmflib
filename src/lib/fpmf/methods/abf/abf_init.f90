@@ -106,6 +106,7 @@ subroutine abf_init_dat
     gpr_len         = 7
     gpr_width       = 4.0
     gpr_noise       = 0.01
+    gpr_kernel      = 2
 
     fdtx            = 0.0d0
 
@@ -143,8 +144,22 @@ subroutine abf_init_print_header
     write(PMF_OUT,120)  '      |-> Original ABF algorithm'
     case(3)
     write(PMF_OUT,120)  '      |-> GPR ABF algorithm'
+    write(PMF_OUT,130)  '          gpr_len                        : ', gpr_len
+    write(PMF_OUT,145)  '          gpr_width                      : ', gpr_width
+    write(PMF_OUT,145)  '          gpr_noise                      : ', gpr_noise
+
+    select case(gpr_kernel)
+        case(0)
+    write(PMF_OUT,125)  '          gpr_kernel                      : ', '0 - Matern class v=3/2'
+        case(1)
+    write(PMF_OUT,125)  '          gpr_kernel                      : ', '1 - Matern class v=5/2'
+        case(2)
+    write(PMF_OUT,125)  '          gpr_kernel                      : ', '2 - Squared exponential'
+        case default
+            call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown gpr_kernel in abf_init_print_header!')
+    end select
     case default
-    call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown fmode in abf_init_print_header!')
+        call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown fmode in abf_init_print_header!')
     end select
     write(PMF_OUT,125)  ' Coordinate definition file (fabfdef)    : ', trim(fabfdef)
     write(PMF_OUT,130)  ' Number of coordinates                   : ', NumOfABFCVs
@@ -171,16 +186,8 @@ subroutine abf_init_print_header
     end select
 
     write(PMF_OUT,120)
-    write(PMF_OUT,120)  ' Restart options:'
+    write(PMF_OUT,120)  ' Enthalpy/entropy options:'
     write(PMF_OUT,120)  ' ------------------------------------------------------'
-    write(PMF_OUT,125)  ' Restart file (fabfrst)                  : ', trim(fabfrst)
-    write(PMF_OUT,125)  ' Restart enabled (frestart)              : ', prmfile_onoff(frestart)
-    write(PMF_OUT,130)  ' Restart file update (frstupdate)        : ', frstupdate
-    write(PMF_OUT,120)
-    write(PMF_OUT,120)  ' Output options:'
-    write(PMF_OUT,120)  ' ------------------------------------------------------'
-    write(PMF_OUT,125)  ' Output file (fabfout)                   : ', trim(fabfout)
-    write(PMF_OUT,130)  ' Output sampling (fsample)               : ', fsample
     write(PMF_OUT,125)  ' Accumulate enthalpy (fenthalpy)         : ', prmfile_onoff(fenthalpy)
     write(PMF_OUT,125)  ' Accumulate entropy (fentropy)           : ', prmfile_onoff(fentropy)
     write(PMF_OUT,125)  ' Smooth Etot (fsmoothetot)               : ', prmfile_onoff(fsmoothetot)
@@ -188,6 +195,19 @@ subroutine abf_init_print_header
                                                                        '['//trim(pmf_unit_label(EnergyUnit))//']'
     write(PMF_OUT,150)  ' Kinetic energy offset (fekinaverage)    : ', pmf_unit_get_rvalue(EnergyUnit,fekinaverage), &
                                                                        '['//trim(pmf_unit_label(EnergyUnit))//']'
+    write(PMF_OUT,120)
+    write(PMF_OUT,120)  ' Restart options:'
+    write(PMF_OUT,120)  ' ------------------------------------------------------'
+    write(PMF_OUT,125)  ' Restart file (fabfrst)                  : ', trim(fabfrst)
+    write(PMF_OUT,125)  ' Restart enabled (frestart)              : ', prmfile_onoff(frestart)
+    write(PMF_OUT,130)  ' Restart file update (frstupdate)        : ', frstupdate
+
+    write(PMF_OUT,120)
+    write(PMF_OUT,120)  ' Output options:'
+    write(PMF_OUT,120)  ' ------------------------------------------------------'
+    write(PMF_OUT,125)  ' Output file (fabfout)                   : ', trim(fabfout)
+    write(PMF_OUT,130)  ' Output sampling (fsample)               : ', fsample
+
     write(PMF_OUT,120)
     write(PMF_OUT,120)  ' Trajectory output options:'
     write(PMF_OUT,120)  ' ------------------------------------------------------'
@@ -224,6 +244,7 @@ subroutine abf_init_print_header
 120 format(A)
 125 format(A,A)
 130 format(A,I6)
+145 format(A,F10.3)
 150 format(A,F10.1,1X,A)
 
 140 format(' == Collective variable #',I4.4)
@@ -335,10 +356,8 @@ subroutine abf_init_gpr
 
     implicit none
     integer     :: i,j,alloc_failed
-    real(PMFDP) :: dt,dt2,idw2
+    real(PMFDP) :: r
     ! --------------------------------------------------------------------------
-
-    idw2 = 1.0d0/(2.0d0*(gpr_width)**2)
 
 ! gpr_len must be an odd number
     if( mod(gpr_len,2) .ne. 1 ) then
@@ -362,8 +381,17 @@ subroutine abf_init_gpr
 ! init covariance matrix
     do i=1,gpr_len
         do j=1,gpr_len
-            dt2 = (real(i-j,PMFDP))**2
-            gpr_K(i,j) = exp(- dt2 * idw2)
+            r = abs(real(i-j,PMFDP)/gpr_width)
+            select case(gpr_kernel)
+                case(0)
+                    gpr_K(i,j) = (1.0d0 + sqrt(3.0) * r) * exp(- sqrt(3.0d0) * r)
+                case(1)
+                    gpr_K(i,j) = (1.0d0 + sqrt(5.0) * r + 5.0d0/3.0d0 * r**2) * exp(- sqrt(5.0d0) * r)
+                case(2)
+                    gpr_K(i,j) = exp(- 0.5d0 * r**2)
+                case default
+                    call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown gpr_kernel in abf_init_gpr I!')
+            end select
         end do
     end do
 
@@ -382,9 +410,21 @@ subroutine abf_init_gpr
 ! construct kff
     j = gpr_len / 2 + 1
     do i=1,gpr_len
-        dt = real(i-j,PMFDP)
-        gpr_kdf(i) = - 2.0d0 * exp(- dt**2 * idw2) * dt * idw2 / fdtx
-        gpr_kff(i) = exp(- dt**2 * idw2)
+        r = abs(real(i-j,PMFDP)/gpr_width)
+        select case(gpr_kernel)
+            case(0)
+                gpr_kdf(i) = 3.0d0 * r * exp(- sqrt(3.0d0) * r) / (gpr_width * fdtx) * sign(1.0d0,real(i-j,PMFDP))
+                gpr_kff(i) = (1.0d0 + sqrt(3.0) * r) * exp(- sqrt(3.0d0) * r)
+            case(1)
+                gpr_kdf(i) = 5.0d0/3.0d0 * r * (1.0d0 + sqrt(5.0d0) * r) * exp(- sqrt(5.0d0) * r ) / (gpr_width * fdtx) &
+                           * sign(1.0d0,real(i-j,PMFDP))
+                gpr_kff(i) = (1.0d0 + sqrt(5.0d0) * r + 5.0d0/3.0d0 * r**2) * exp(- sqrt(5.0d0) * r)
+            case(2)
+                gpr_kdf(i) = exp(- 0.5d0 * r**2) * r / (gpr_width * fdtx) * sign(1.0d0,real(i-j,PMFDP))
+                gpr_kff(i) = exp(- 0.5d0 * r**2)
+            case default
+                call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown gpr_kernel in abf_init_gpr II!')
+        end select
     end do
 
     hist_len = 0

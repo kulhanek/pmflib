@@ -115,6 +115,9 @@ public:
     /// get kernel name
     const CSmallString GetKernelName(void);
 
+    /// write file with derivatives
+    bool WriteMFInfo(const CSmallString& name);
+
 // GPR model optimization ----------------------------------------------------
     /// calc hyprms grd
     void PrepForHyprmsGrd(bool set);

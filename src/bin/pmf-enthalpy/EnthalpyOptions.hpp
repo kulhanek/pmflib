@@ -66,12 +66,14 @@ public:
     CSO_OPT(CSmallString,GlobalMin)
     CSO_OPT(double,Offset)
     CSO_OPT(CSmallString,GPRKernel)
+    CSO_OPT(bool,GPRCalcLogPL)
     CSO_OPT(double,SigmaF2)
     CSO_OPT(double,NCorr)
     CSO_OPT(CSmallString,WFac)
     CSO_OPT(CSmallString,LoadHyprms)
-    CSO_OPT(CSmallString,OutputFormat)
     CSO_OPT(double,SLevel)
+    CSO_OPT(CSmallString,MFInfo)
+    CSO_OPT(CSmallString,OutputFormat)
     CSO_OPT(bool,NoHeader)
     CSO_OPT(bool,PrintAll)
     CSO_OPT(CSmallString,IXFormat)
@@ -144,6 +146,15 @@ public:
                 "NAME",                           /* parameter name */
                 "GPR: Kernel type. Supported types: ardse (ARD squared exponential), ardmc52 (ARD Matern class 5/2), "
                 "ardmc32 (ARD Matern class 3/2), ardmc12 (ARD Matern class 1/2), default(=ardse)")   /* option description */
+    //----------------------------------------------------------------------
+    CSO_MAP_OPT(bool,                           /* option type */
+                GPRCalcLogPL,                        /* option name */
+                false,                          /* default value */
+                false,                          /* is option mandatory */
+                0,                           /* short option name */
+                "calclogpl",                      /* long option name */
+                NULL,                           /* parameter name */
+                "GPR: Calculate logPL.")   /* option description */
 //----------------------------------------------------------------------
     CSO_MAP_OPT(double,                           /* option type */
                 SigmaF2,                        /* option name */
@@ -191,6 +202,15 @@ public:
                 "slevel",                      /* long option name */
                 "VALUE",                           /* parameter name */
                 "Sigma-level for confidence interval.")   /* option description */
+    //----------------------------------------------------------------------
+    CSO_MAP_OPT(CSmallString,                           /* option type */
+                MFInfo,                        /* option name */
+                NULL,                          /* default value */
+                false,                          /* is option mandatory */
+                '\0',                           /* short option name */
+                "mfinfo",                      /* long option name */
+                "NAME",                           /* parameter name */
+                "GPR: name of file with input and predicted enthalpy.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(CSmallString,                           /* option type */
                 GlobalMin,                        /* option name */
@@ -289,8 +309,8 @@ public:
                 0,                           /* short option name */
                 "lmethod",                      /* long option name */
                 "NAME",                           /* parameter name */
-                "Linear algebra method for LLS solution or matrix inversion. Supported algorithms are: "
-                "default, svd (SVD - singular value decomposition, divide and conquer driver), "
+                "GPR: Linear algebra method for LLS solution or matrix inversion. Supported algorithms are: "
+                "svd (SVD - singular value decomposition, divide and conquer driver), "
                 "svd2 (SVD - singular value decomposition, simple driver), "
                 "lu (LU factorization), ll (LL - Cholesky factorization). "
                 "Possible combinations are: GPR(LU,SVD,SVD2,LL,default).")   /* option description */

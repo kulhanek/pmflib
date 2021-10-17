@@ -121,6 +121,7 @@ subroutine abf_control_read_abf(prm_fin)
         call pmf_ctrl_read_integer(prm_fin,'gpr_len',gpr_len,'i12')
         call pmf_ctrl_read_real8(prm_fin,'gpr_width',gpr_width,'F12.3')
         call pmf_ctrl_read_real8(prm_fin,'gpr_noise',gpr_noise,'F12.3')
+        call pmf_ctrl_read_integer(prm_fin,'gpr_kernel',gpr_kernel,'i12')
     end if
 
     ! network setup ----------------------------------------------------------------

@@ -503,6 +503,66 @@ void CSmootherGPR::RunBlasLapackPar(void)
     CSciLapack::SetNumThreadsLocal(NumOfThreads);
 }
 
+//------------------------------------------------------------------------------
+
+bool CSmootherGPR::WriteMFInfo(const CSmallString& name)
+{
+    if( NumOfBins == 0 ){
+        ES_ERROR("number of bins is not > 0");
+        return(false);
+    }
+
+    CSimpleVector<double> ipos;
+    CSimpleVector<double> mfi;
+    CSimpleVector<double> mfp;
+
+    ipos.CreateVector(NumOfCVs);
+    mfi.CreateVector(GPRSize);
+    mfp.CreateVector(GPRSize);
+
+    // calculate
+    #pragma omp parallel for firstprivate(ipos)
+    for(size_t indi=0; indi < GPRSize; indi++){
+        CEnergyProxyPtr  item = EneProxyItems[EneProxyMap[indi]];
+        size_t           ibin = SampledMap[indi];
+
+        mfi[indi] = item->GetValue(ibin,E_PROXY_VALUE);
+        mfp[indi] = GetValue(ipos);
+    }
+
+    ofstream ofs(name);
+    if( ! ofs ){
+        CSmallString error;
+        error << "unable to open file '" << name << "' for derivatives";
+        ES_ERROR(error);
+        return(false);
+    }
+
+    // print
+    size_t accu_prev = EneProxyMap[0];
+    for(size_t indi=0; indi < GPRSize; indi++){
+        size_t ibin = SampledMap[indi];
+        size_t accu = EneProxyMap[indi];
+
+        if( accu != accu_prev ){
+            ofs << endl;
+            accu_prev = accu;
+        }
+
+        EneSurface->GetPoint(ibin,ipos);
+
+        for(size_t c=0; c < NumOfCVs; c++){
+            ofs << format("%20.16f ")%ipos[c];
+        }
+
+        ofs << format(" %20.16f %20.16f")%mfi[indi]%mfp[indi];
+
+        ofs << endl;
+    }
+
+    return(true);
+}
+
 //==============================================================================
 //------------------------------------------------------------------------------
 //==============================================================================

@@ -163,7 +163,7 @@ subroutine abf_core_force_2p()
         ! total ABF force
         pxi1(:) = pxi0(:) + pxim(:)
 
-        ! write(456,*) fstep, epothist0 + ekinhist1 + ersthist0
+         write(456,*) fstep-3.0/2.0, pxi1, etothist(1)
 
         ! add data to accumulator
         call abf_accu_add_data_online(cvhist(:,1),pxi1,epothist(1),etothist(1))
@@ -517,7 +517,9 @@ subroutine abf_core_force_gpr()
         end if
 
         ! write(789,*) cvhist(:,dt_index),pxi1,epothist(dt_index),etothist(dt_index),pxi0,etot_dt_index
-        ! write(704,*) fstep-hist_len+dt_index, pxi0
+
+
+        write(704,*) fstep-hist_len+dt_index, pxi0, etot_dt_index
 
 
         ! record the data
