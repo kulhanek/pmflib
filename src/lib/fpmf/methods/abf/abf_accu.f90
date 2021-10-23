@@ -92,6 +92,10 @@ subroutine abf_accu_init()
         allocate(   abfaccu%metot(abfaccu%tot_nbins), &
                     abfaccu%m2etot(abfaccu%tot_nbins), &
                     abfaccu%c11hh(abfaccu%tot_cvs,abfaccu%tot_nbins), &
+                    abfaccu%mpp(abfaccu%tot_cvs,abfaccu%tot_nbins), &
+                    abfaccu%m2pp(abfaccu%tot_cvs,abfaccu%tot_nbins), &
+                    abfaccu%mpn(abfaccu%tot_cvs,abfaccu%tot_nbins), &
+                    abfaccu%m2pn(abfaccu%tot_cvs,abfaccu%tot_nbins) , &
                     stat = alloc_failed)
 
         if( alloc_failed .ne. 0 ) then
@@ -151,6 +155,10 @@ subroutine abf_accu_clear()
         abfaccu%metot(:)        = 0.0d0
         abfaccu%m2etot(:)       = 0.0d0
         abfaccu%c11hh(:,:)      = 0.0d0
+        abfaccu%mpp(:,:)        = 0.0d0
+        abfaccu%m2pp(:,:)       = 0.0d0
+        abfaccu%mpn(:,:)        = 0.0d0
+        abfaccu%m2pn(:,:)       = 0.0d0
     end if
 
     if( fserver_enabled ) then
@@ -323,6 +331,10 @@ subroutine abf_accu_write(iounit)
         call pmf_accu_write_rbuf_B(abfaccu%PMFAccuType,iounit,'METOT',  'WA',abfaccu%metot)
         call pmf_accu_write_rbuf_B(abfaccu%PMFAccuType,iounit,'M2ETOT', 'M2',abfaccu%m2etot,'METOT')
         call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'C11HH',  'CO',abfaccu%c11hh,'MICF','METOT')
+        call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'MPP',    'WA',abfaccu%mpp)
+        call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'M2PP',   'M2',abfaccu%m2pp,'MPP')
+        call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'MPN',    'WA',abfaccu%mpn)
+        call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'M2PN',   'M2',abfaccu%m2pn,'MPN')
     end if
 
     call pmf_accu_write_ibuf_B(abfaccu%PMFAccuType,iounit,'BNSAMPLES',  'IG',abfaccu%bnsamples)
@@ -351,6 +363,8 @@ subroutine abf_accu_add_data_online(cvs,gfx,epot,etot)
     real(PMFDP)    :: detot1, detot2
     real(PMFDP)    :: depot1, depot2
     real(PMFDP)    :: dicf1, dicf2
+    real(PMFDP)    :: pp, dpp1, dpp2
+    real(PMFDP)    :: pn, dpn1, dpn2
     ! --------------------------------------------------------------------------
 
     ! get global index to accumulator for average values within the set
@@ -391,7 +405,22 @@ subroutine abf_accu_add_data_online(cvs,gfx,epot,etot)
 
         if( fentropy ) then
             abfaccu%c11hh(i,gi0)  = abfaccu%c11hh(i,gi0) + dicf1 * detot2
+
+            pp = etot + icf
+            dpp1 = pp - abfaccu%mpp(i,gi0)
+            abfaccu%mpp(i,gi0)  = abfaccu%mpp(i,gi0)  + dpp1 * invn
+            dpp2 = pp -  abfaccu%mpp(i,gi0)
+            abfaccu%m2pp(i,gi0) = abfaccu%m2pp(i,gi0) + dpp1 * dpp2
+
+            pn = etot - icf
+            dpn1 = pn - abfaccu%mpn(i,gi0)
+            abfaccu%mpn(i,gi0)  = abfaccu%mpn(i,gi0)  + dpn1 * invn
+            dpn2 = pn -  abfaccu%mpn(i,gi0)
+            abfaccu%m2pn(i,gi0) = abfaccu%m2pn(i,gi0) + dpn1 * dpn2
+
         end if
+
+        ! write(600+gi0,*) icf, etot, etot+icf, etot-icf
     end do
 
     if( fserver_enabled ) then
@@ -423,6 +452,7 @@ subroutine abf_accu_add_data_online(cvs,gfx,epot,etot)
             if( fentropy ) then
                 abfaccu%inc_c11hh(i,gi0)  = abfaccu%inc_c11hh(i,gi0) + dicf1     * detot2
             end if
+
         end do
 
     end if

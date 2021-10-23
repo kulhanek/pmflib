@@ -877,6 +877,7 @@ subroutine usabf_core_force_6p_kin()
         ! calculate CV momenta
         do i=1,NumOfUSABFCVs
             do j=1,NumOfUSABFCVs
+                ! FIXME - ERROR
                 pcvhist(i,5) = fzinv(i,j) * pxi0(j)     ! in t-dt
             end do
         end do

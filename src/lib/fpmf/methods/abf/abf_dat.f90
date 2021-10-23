@@ -60,6 +60,8 @@ real(PMFDP) :: fekinaverage
 integer     :: fhramp_min
 integer     :: fhramp_max
 
+integer     :: fblock_size
+
 ! server part ------------------------------------------------------------------
 logical                 :: fserver_enabled      ! is abf-server enabled?
 character(PMF_MAX_PATH) :: fserverkey           ! abf-server key file name
@@ -106,6 +108,11 @@ type,extends(PMFAccuType) :: ABFAccuType
     real(PMFDP),pointer    :: m2etot(:)                 ! M2 of total energy
     real(PMFDP),pointer    :: c11hh(:,:)                ! cov(H,H) for entropy
 
+    real(PMFDP),pointer    :: mpp(:,:)
+    real(PMFDP),pointer    :: m2pp(:,:)
+    real(PMFDP),pointer    :: mpn(:,:)
+    real(PMFDP),pointer    :: m2pn(:,:)
+
     ! applied ICF - this is not stored in PMF accumulator
     integer,pointer        :: bnsamples(:)              ! number of hits into bins
     real(PMFDP),pointer    :: bmicf(:,:)                ! applied MICF
@@ -137,23 +144,32 @@ real(PMFDP),allocatable     :: vv(:)                ! for LU decomposition
 integer,allocatable         :: indx(:)
 
 ! helper arrays -------
-real(PMFDP),allocatable     :: a0(:,:)        ! acceleration from previous step (t-dt)
-real(PMFDP),allocatable     :: a1(:,:)        ! acceleration in current step (t)
-real(PMFDP),allocatable     :: v0(:,:)        ! velocity in previous step
+real(PMFDP),allocatable     :: cvval1(:)        ! CVs in t
+real(PMFDP),allocatable     :: a1(:,:)          ! acceleration in current step (t)
+real(PMFDP),allocatable     :: a0(:,:)          ! acceleration from previous step (t-dt)
+real(PMFDP),allocatable     :: v0(:,:)          ! velocity in previous step (t-dt)
+type(CVContextType)         :: cvcontex0        ! t-dt
+real(PMFDP)                 :: epot0            ! t-dt
+real(PMFDP)                 :: etot0            ! t-dt
 
-real(PMFDP),allocatable     :: la(:)          ! ABF force in coordinate direction
-real(PMFDP),allocatable     :: zd0(:,:,:)     ! ZD0
-real(PMFDP),allocatable     :: zd1(:,:,:)     ! ZD1
-real(PMFDP),allocatable     :: pxi0(:)        !
-real(PMFDP),allocatable     :: pxi1(:)        !
-real(PMFDP),allocatable     :: pxip(:)        !
-real(PMFDP),allocatable     :: pxim(:)        !
-real(PMFDP),allocatable     :: pdum(:)        !
-real(PMFDP),allocatable     :: avg_values(:)  ! average values of coordinates at t - 3/2dt
+real(PMFDP),allocatable     :: la(:)            ! ABF force in coordinate direction
+real(PMFDP),allocatable     :: zd0(:,:,:)       ! ZD0
+real(PMFDP),allocatable     :: zd1(:,:,:)       ! ZD1
+real(PMFDP),allocatable     :: pxi0(:)          !
+real(PMFDP),allocatable     :: pxi1(:)          !
+real(PMFDP),allocatable     :: pxip(:)          !
+real(PMFDP),allocatable     :: pxim(:)          !
+
+real(PMFDP),allocatable     :: cvave(:)         ! average values of CVs
+real(PMFDP),allocatable     :: pcave(:)         ! average values of CV momentas
+real(PMFDP)                 :: epotave
+real(PMFDP)                 :: etotave
+integer                     :: bnsamples
+integer                     :: hsamples
 
 integer                     :: hist_len
 real(PMFDP),allocatable     :: cvhist(:,:)      ! history of CV values
-real(PMFDP),allocatable     :: pcvhist(:,:)     ! history of CV momenta
+real(PMFDP),allocatable     :: pchist(:,:)      ! history of CV momenta
 real(PMFDP),allocatable     :: epothist(:)      ! history of Epot
 real(PMFDP),allocatable     :: etothist(:)      ! history of Etot
 

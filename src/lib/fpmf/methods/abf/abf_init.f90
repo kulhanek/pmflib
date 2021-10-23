@@ -108,6 +108,8 @@ subroutine abf_init_dat
     gpr_noise       = 0.01
     gpr_kernel      = 2
 
+    fblock_size     = 20
+
     fdtx            = 0.0d0
 
 end subroutine abf_init_dat
@@ -155,9 +157,13 @@ subroutine abf_init_print_header
     write(PMF_OUT,125)  '          gpr_kernel                      : ', '1 - Matern class v=5/2'
         case(2)
     write(PMF_OUT,125)  '          gpr_kernel                      : ', '2 - Squared exponential'
+
         case default
             call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown gpr_kernel in abf_init_print_header!')
     end select
+    case(4)
+    write(PMF_OUT,120)  '      |-> ABF test'
+    write(PMF_OUT,130)  '          Size of block (fblock_size)    : ', fblock_size
     case default
         call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown fmode in abf_init_print_header!')
     end select
@@ -275,28 +281,33 @@ subroutine abf_init_arrays
             hist_len = 4
         case(3)
             call abf_init_gpr()
+        case(4)
+            hist_len = 5
         case default
             call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented fmode in abf_init_arrays!')
     end select
 
     ! general arrays --------------------------------
     allocate(                               &
-            a0(3,NumOfLAtoms),              &
+            cvval1(NumOfABFCVs),            &
             a1(3,NumOfLAtoms),              &
+            a0(3,NumOfLAtoms),              &
             v0(3,NumOfLAtoms),              &
+            cvcontex0%CVsValues(NumOfCVs),              &
+            cvcontex0%CVsDrvs(3,NumOfLAtoms,NumOfCVs),  &
+            la(NumOfABFCVs),                &
+            zd0(3,NumOfLAtoms,NumOfABFCVs), &
+            zd1(3,NumOfLAtoms,NumOfABFCVs), &
             pxi0(NumOfABFCVs),              &
             pxi1(NumOfABFCVs),              &
             pxip(NumOfABFCVs),              &
             pxim(NumOfABFCVs),              &
-            pdum(NumOfABFCVs),              &
-            avg_values(NumOfABFCVs),        &
-            la(NumOfABFCVs),                &
+            cvave(NumOfABFCVs),             &
+            pcave(NumOfABFCVs),             &
             fz(NumOfABFCVs,NumOfABFCVs),    &
             fzinv(NumOfABFCVs,NumOfABFCVs), &
-            zd0(3,NumOfLAtoms,NumOfABFCVs), &
-            zd1(3,NumOfLAtoms,NumOfABFCVs), &
             cvhist(NumOfABFCVs,hist_len),   &
-            pcvhist(NumOfABFCVs,hist_len),  &
+            pchist(NumOfABFCVs,hist_len),   &
             epothist(hist_len),             &
             etothist(hist_len),             &
             stat= alloc_failed )
@@ -306,23 +317,34 @@ subroutine abf_init_arrays
             '[ABF] Unable to allocate memory for arrays used in ABF calculation!')
     end if
 
-    a0(:,:) = 0.0d0
-    a1(:,:) = 0.0d0
-    v0(:,:) = 0.0d0
-    pxi0(:) = 0.0d0
-    pxi1(:) = 0.0d0
-    pxip(:) = 0.0d0
-    pxim(:) = 0.0d0
-    pdum(:) = 0.0d0
-    avg_values(:) = 0.0d0
-    la(:) = 0.0d0
-    fz(:,:) = 0.0d0
-    fzinv(:,:) = 0.0d0
-    zd0(:,:,:) = 0.0d0
-    zd1(:,:,:) = 0.0d0
+    cvval1(:)   = 0.0d0
+    a1(:,:)     = 0.0d0
+    a0(:,:)     = 0.0d0
+    v0(:,:)     = 0.0d0
+    epot0       = 0.0d0
+    etot0       = 0.0d0
+
+    la(:)       = 0.0d0
+    zd0(:,:,:)  = 0.0d0
+    zd1(:,:,:)  = 0.0d0
+    pxi0(:)     = 0.0d0
+    pxi1(:)     = 0.0d0
+    pxip(:)     = 0.0d0
+    pxim(:)     = 0.0d0
+
+    cvave(:)    = 0.0d0
+    pcave(:)    = 0.0d0
+    epotave     = 0.0d0
+    etotave     = 0.0d0
+    bnsamples   = 0
+
+    hsamples    = 0
+
+    fz(:,:)     = 0.0d0
+    fzinv(:,:)  = 0.0d0
 
     cvhist(:,:) = 0.0d0
-    pcvhist(:,:) = 0.0d0
+    pchist(:,:) = 0.0d0
     epothist(:) = 0.0d0
     etothist(:) = 0.0d0
 
