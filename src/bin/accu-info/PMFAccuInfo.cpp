@@ -136,6 +136,9 @@ bool CPMFAccuInfo::Run(void)
     } else if( Options.GetProgArg(1) == "get-mtc" ){
         GetMTC();
 // -----------------------------------------------
+    } else if( Options.GetProgArg(1) == "get-mean" ){
+        GetMean(Options.GetProgArg(2));
+// -----------------------------------------------
     } else if( (Options.GetProgArg(1) == "NSAMPLES") || (Options.GetProgArg(1) == "nsamples") ){
         GetSection("NSAMPLES");
 // -----------------------------------------------
@@ -463,6 +466,56 @@ void CPMFAccuInfo::GetMTC(void)
 
     if( Options.GetOptNoHeader() == false ){
         PrintHeader("MTC (from CST)",true);
+    }
+
+    // print data
+    PrintData(true);
+
+    vout << debug;
+}
+
+//------------------------------------------------------------------------------
+
+void CPMFAccuInfo::GetMean(const CSmallString& name)
+{
+    CSmallString mean;
+    CSmallString m2;
+
+    mean << "M" << name;
+    m2   << "M2" << name;
+
+    vout << "#" << endl;
+    vout << "# mean for : " << mean << " (" << m2 << ")" << endl;
+
+    vout << high;
+
+    Values.CreateVector(Accu->GetNumOfBins());
+    Sigmas.CreateVector(Accu->GetNumOfBins());
+    Errors.CreateVector(Accu->GetNumOfBins());
+
+    double  ncorr       = Accu->GetNCorr();
+
+    for(int ibin=0; ibin < Accu->GetNumOfBins(); ibin++){
+
+        double  nsamples    = Accu->GetData("NSAMPLES",ibin);
+        double  mene        = Accu->GetData(mean,ibin);
+        double  m2ene       = Accu->GetData(m2,ibin);
+
+        if( nsamples > 0 ) {
+            Values[ibin] = mene;
+            Sigmas[ibin] = sqrt(m2ene / nsamples);
+            Errors[ibin] = sqrt(m2ene * ncorr) / nsamples;
+        } else {
+            Values[ibin] = 0.0;
+            Sigmas[ibin] = 0.0;
+            Errors[ibin] = 0.0;
+        }
+    }
+
+    if( Options.GetOptNoHeader() == false ){
+        CSmallString title;
+        title << "mean for: " << name;
+        PrintHeader(title,true);
     }
 
     // print data

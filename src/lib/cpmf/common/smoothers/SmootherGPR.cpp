@@ -514,11 +514,15 @@ bool CSmootherGPR::WriteMFInfo(const CSmallString& name)
 
     CSimpleVector<double> ipos;
     CSimpleVector<double> mfi;
+    CSimpleVector<double> mfie;
     CSimpleVector<double> mfp;
+    CSimpleVector<double> mfpe;
 
     ipos.CreateVector(NumOfCVs);
     mfi.CreateVector(GPRSize);
+    mfie.CreateVector(GPRSize);
     mfp.CreateVector(GPRSize);
+    mfpe.CreateVector(GPRSize);
 
     // calculate
     #pragma omp parallel for firstprivate(ipos)
@@ -527,14 +531,16 @@ bool CSmootherGPR::WriteMFInfo(const CSmallString& name)
         size_t           ibin = SampledMap[indi];
 
         EneSurface->GetPoint(ibin,ipos);
-        mfi[indi] = item->GetValue(ibin,E_PROXY_VALUE);
-        mfp[indi] = GetValue(ipos);
+        mfi[indi]  = item->GetValue(ibin,E_PROXY_VALUE);
+        mfie[indi] = item->GetValue(ibin,E_PROXY_ERROR)*item->GetValue(ibin,E_PROXY_ERROR);
+        mfp[indi]  = GetValue(ipos);
+        mfpe[indi] = Cov[indi][indi];
     }
 
     ofstream ofs(name);
     if( ! ofs ){
         CSmallString error;
-        error << "unable to open file '" << name << "' for derivatives";
+        error << "unable to open file '" << name << "' for energy";
         ES_ERROR(error);
         return(false);
     }
@@ -556,7 +562,7 @@ bool CSmootherGPR::WriteMFInfo(const CSmallString& name)
             ofs << format("%20.16f ")%ipos[c];
         }
 
-        ofs << format(" %20.16f %20.16f")%mfi[indi]%mfp[indi];
+        ofs << format(" %20.16f %20.16f %20.16f %20.16f")%mfi[indi]%mfie[indi]%mfp[indi]%mfpe[indi];
 
         ofs << endl;
     }

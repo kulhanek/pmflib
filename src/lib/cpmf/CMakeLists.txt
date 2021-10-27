@@ -26,6 +26,7 @@ SET(CPMF_METHODS_SRC
     # ABF
         methods/abf/ABFProxy_dG.cpp
         methods/abf/ABFProxy_mTdS.cpp
+        methods/abf/ABFProxy_PP.cpp
 
     # MTD
         methods/mtd/MTDProxy_dG.cpp

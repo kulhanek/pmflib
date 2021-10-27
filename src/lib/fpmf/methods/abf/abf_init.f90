@@ -108,8 +108,6 @@ subroutine abf_init_dat
     gpr_noise       = 0.01
     gpr_kernel      = 2
 
-    fblock_size     = 20
-
     fdtx            = 0.0d0
 
 end subroutine abf_init_dat
@@ -162,8 +160,22 @@ subroutine abf_init_print_header
             call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown gpr_kernel in abf_init_print_header!')
     end select
     case(4)
-    write(PMF_OUT,120)  '      |-> ABF test'
-    write(PMF_OUT,130)  '          Size of block (fblock_size)    : ', fblock_size
+    write(PMF_OUT,120)  '      |-> GPR ABF algorithm (CV momenta)'
+    write(PMF_OUT,130)  '          gpr_len                        : ', gpr_len
+    write(PMF_OUT,145)  '          gpr_width                      : ', gpr_width
+    write(PMF_OUT,145)  '          gpr_noise                      : ', gpr_noise
+
+    select case(gpr_kernel)
+        case(0)
+    write(PMF_OUT,125)  '          gpr_kernel                      : ', '0 - Matern class v=3/2'
+        case(1)
+    write(PMF_OUT,125)  '          gpr_kernel                      : ', '1 - Matern class v=5/2'
+        case(2)
+    write(PMF_OUT,125)  '          gpr_kernel                      : ', '2 - Squared exponential'
+
+        case default
+            call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown gpr_kernel in abf_init_print_header!')
+    end select
     case default
         call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown fmode in abf_init_print_header!')
     end select
@@ -282,14 +294,13 @@ subroutine abf_init_arrays
         case(3)
             call abf_init_gpr()
         case(4)
-            hist_len = 5
+            call abf_init_gpr()
         case default
             call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented fmode in abf_init_arrays!')
     end select
 
     ! general arrays --------------------------------
     allocate(                               &
-            cvval1(NumOfABFCVs),            &
             a1(3,NumOfLAtoms),              &
             a0(3,NumOfLAtoms),              &
             v0(3,NumOfLAtoms),              &
@@ -303,7 +314,6 @@ subroutine abf_init_arrays
             pxip(NumOfABFCVs),              &
             pxim(NumOfABFCVs),              &
             cvave(NumOfABFCVs),             &
-            pcave(NumOfABFCVs),             &
             fz(NumOfABFCVs,NumOfABFCVs),    &
             fzinv(NumOfABFCVs,NumOfABFCVs), &
             cvhist(NumOfABFCVs,hist_len),   &
@@ -317,12 +327,9 @@ subroutine abf_init_arrays
             '[ABF] Unable to allocate memory for arrays used in ABF calculation!')
     end if
 
-    cvval1(:)   = 0.0d0
     a1(:,:)     = 0.0d0
     a0(:,:)     = 0.0d0
     v0(:,:)     = 0.0d0
-    epot0       = 0.0d0
-    etot0       = 0.0d0
 
     la(:)       = 0.0d0
     zd0(:,:,:)  = 0.0d0
@@ -333,12 +340,6 @@ subroutine abf_init_arrays
     pxim(:)     = 0.0d0
 
     cvave(:)    = 0.0d0
-    pcave(:)    = 0.0d0
-    epotave     = 0.0d0
-    etotave     = 0.0d0
-    bnsamples   = 0
-
-    hsamples    = 0
 
     fz(:,:)     = 0.0d0
     fzinv(:,:)  = 0.0d0
@@ -453,6 +454,11 @@ subroutine abf_init_gpr
 
     if( fmode .eq. 3 ) then
         hist_len = gpr_len + gpr_len/2
+    end if
+
+    if( fmode .eq. 4) then
+        ! with CV momenta
+        hist_len = gpr_len + 1
     end if
 
 end subroutine abf_init_gpr

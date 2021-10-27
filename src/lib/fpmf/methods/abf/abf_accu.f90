@@ -245,6 +245,34 @@ subroutine abf_accu_read(iounit)
                     else
                         call pmf_accu_skip_section(iounit,keyline,ABF_OUT)
                     end if
+           ! ------------------------------------
+                case('MPP')
+                    if( fentropy ) then
+                        call pmf_accu_read_rbuf_M(abfaccu%PMFAccuType,iounit,keyline,abfaccu%mpp)
+                    else
+                        call pmf_accu_skip_section(iounit,keyline,ABF_OUT)
+                    end if
+           ! ------------------------------------
+                case('M2PP')
+                    if( fentropy ) then
+                        call pmf_accu_read_rbuf_M(abfaccu%PMFAccuType,iounit,keyline,abfaccu%m2pp)
+                    else
+                        call pmf_accu_skip_section(iounit,keyline,ABF_OUT)
+                    end if
+           ! ------------------------------------
+                case('MPN')
+                    if( fentropy ) then
+                        call pmf_accu_read_rbuf_M(abfaccu%PMFAccuType,iounit,keyline,abfaccu%mpn)
+                    else
+                        call pmf_accu_skip_section(iounit,keyline,ABF_OUT)
+                    end if
+           ! ------------------------------------
+                case('M2PN')
+                    if( fentropy ) then
+                        call pmf_accu_read_rbuf_M(abfaccu%PMFAccuType,iounit,keyline,abfaccu%m2pn)
+                    else
+                        call pmf_accu_skip_section(iounit,keyline,ABF_OUT)
+                    end if
             ! ------------------------------------
                 case default
                     call pmf_accu_skip_section(iounit,keyline,ABF_OUT)
@@ -359,7 +387,7 @@ subroutine abf_accu_add_data_online(cvs,gfx,epot,etot)
     real(PMFDP)    :: etot
     ! -----------------------------------------------
     integer        :: gi0, i
-    real(PMFDP)    :: invn, icf
+    real(PMFDP)    :: invn, icf, ekin
     real(PMFDP)    :: detot1, detot2
     real(PMFDP)    :: depot1, depot2
     real(PMFDP)    :: dicf1, dicf2
@@ -420,7 +448,9 @@ subroutine abf_accu_add_data_online(cvs,gfx,epot,etot)
 
         end if
 
-        ! write(600+gi0,*) icf, etot, etot+icf, etot-icf
+        ekin = etot - epot
+        write(600+gi0,*) cvs, icf, etot, epot, ekin, etot+icf, etot-icf, epot+icf, epot-icf, ekin+icf, ekin-icf
+        write(600,*) cvs, icf, etot, epot, ekin, etot+icf, etot-icf, epot+icf, epot-icf, ekin+icf, ekin-icf
     end do
 
     if( fserver_enabled ) then

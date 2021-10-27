@@ -57,6 +57,7 @@ public:
     "                                               ** <b>get-derivative</b>    - get derivative for given realm\n"
     "                                               ** <b>get-energy</b>        - get energy for given realm\n"
     "                                               ** <b>get-mtc</b>           - get MTC correction\n"
+    "                                               ** <b>get-mean</b>          - get sample mean, variance, and mean error\n"
     "                                               ** <b>nsamples</b>          - print number of samples in bins\n"
     CSO_PROG_ARGS_LONG_DESC_END
 
