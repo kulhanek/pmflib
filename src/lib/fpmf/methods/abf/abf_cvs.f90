@@ -103,28 +103,20 @@ subroutine abf_cvs_read_cv(prm_fin,abf_item)
     end if
     write(PMF_OUT,125) abf_item%nbins
 
-    select case(feimode)
-        case(0,1)
-            ! nothing to be here
-        !------------------------------
-        case(2)
-            if( .not. prmfile_get_integer_by_key(prm_fin,'wfac',abf_item%wfac) ) then
-                call pmf_utils_exit(PMF_OUT,1,'wfac is not specified!')
-            end if
-            call pmf_ctrl_check_integer('ABF','wfac',abf_item%wfac,0,CND_GT)
-            write(PMF_OUT,170) abf_item%wfac
-        !------------------------------
-        case default
-            ! nothing to be here
-    end select
-
+    if( fsmooth_enable ) then
+        if( .not. prmfile_get_real8_by_key(prm_fin,'wfac',abf_item%wfac) ) then
+            call pmf_utils_exit(PMF_OUT,1,'wfac is not specified!')
+        end if
+        call pmf_ctrl_check_real8('ABF','wfac',abf_item%wfac,0.0d0,CND_GT,'f12.2')
+        write(PMF_OUT,170) abf_item%wfac
+    end if
 
     return
 
 110 format('    ** Min value         : ',F16.7,' [',A,']')
 120 format('    ** Max value         : ',F16.7,' [',A,']')
 125 format('    ** Number of bins    : ',I8)
-170 format('    ** Smoothing W-fac   : ',I8)
+170 format('    ** KS W-factor       : ',F16.7)
 
 end subroutine abf_cvs_read_cv
 

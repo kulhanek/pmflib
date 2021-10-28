@@ -67,6 +67,7 @@ subroutine abf_accu_init()
 
     ! ABF force arrays
     allocate(   abfaccu%weights(abfaccu%tot_nbins), &
+                abfaccu%binpos(abfaccu%tot_cvs,abfaccu%tot_nbins),    &
                 abfaccu%nsamples(abfaccu%tot_nbins), &
                 abfaccu%micf(abfaccu%tot_cvs,abfaccu%tot_nbins), &
                 abfaccu%m2icf(abfaccu%tot_cvs,abfaccu%tot_nbins), &
@@ -133,7 +134,14 @@ subroutine abf_accu_clear()
     use pmf_dat
 
     implicit none
+    integer :: i
     ! --------------------------------------------------------------------------
+
+    ! init binpos
+    do i=1,abfaccu%tot_nbins
+        ! get CV values on a grid point
+        call pmf_accu_get_point(abfaccu%PMFAccuType,i,abfaccu%binpos(:,i))
+    end do
 
     abfaccu%weights(:)      = 1.0d0
     abfaccu%nsamples(:)     = 0
@@ -322,86 +330,15 @@ end subroutine abf_accu_write
 ! Subroutine:  abf_accu_add_data_online
 !===============================================================================
 
-subroutine abf_accu_add_data_online_simple(cvs,gfx)
+subroutine abf_accu_add_data_online(cvs,gfx,epot)
 
     use abf_dat
     use pmf_dat
-    use pmf_utils
 
     implicit none
     real(PMFDP)    :: cvs(:)
     real(PMFDP)    :: gfx(:)    ! ICF
-    ! -----------------------------------------------
-    integer        :: gi0, i
-    real(PMFDP)    :: invn, icf
-    real(PMFDP)    :: dicf1, dicf2
-    ! --------------------------------------------------------------------------
-
-    ! get global index to accumulator for average values within the set
-    gi0 = pmf_accu_globalindex(abfaccu%PMFAccuType,cvs)
-    if( gi0 .le. 0 ) then
-        outsidesamples = outsidesamples + 1
-        return ! out of valid area
-    else
-        insidesamples = insidesamples + 1
-    end if
-
-    ! increase number of samples
-    abfaccu%nsamples(gi0) = abfaccu%nsamples(gi0) + 1.0d0
-    invn = 1.0d0 / abfaccu%nsamples(gi0)
-
-    do i=1,NumOfABFCVs
-        icf = - gfx(i)
-        dicf1 = icf - abfaccu%micf(i,gi0)
-        abfaccu%micf(i,gi0)  = abfaccu%micf(i,gi0)  + dicf1 * invn
-        dicf2 = icf -  abfaccu%micf(i,gi0)
-        abfaccu%m2icf(i,gi0) = abfaccu%m2icf(i,gi0) + dicf1 * dicf2
-    end do
-
-    if( fserver_enabled ) then
-        abfaccu%inc_nsamples(gi0) = abfaccu%inc_nsamples(gi0) + 1.0d0
-        invn = 1.0d0 / abfaccu%inc_nsamples(gi0)
-
-        do i=1,NumOfABFCVs
-            icf = - gfx(i)
-            dicf1 = icf - abfaccu%inc_micf(i,gi0)
-            abfaccu%inc_micf(i,gi0)  = abfaccu%inc_micf(i,gi0)  + dicf1 * invn
-            dicf2 = icf - abfaccu%inc_micf(i,gi0)
-            abfaccu%inc_m2icf(i,gi0) = abfaccu%inc_m2icf(i,gi0) + dicf1 * dicf2
-        end do
-
-    end if
-
-    ! increase number of samples for applied bias - this uses different counter for number of samples
-    abfaccu%bnsamples(gi0) = abfaccu%bnsamples(gi0) + 1.0d0
-    invn = 1.0d0 / abfaccu%bnsamples(gi0)
-
-    do i=1,NumOfABFCVs
-        icf = - gfx(i)
-        dicf1 = icf - abfaccu%bmicf(i,gi0)
-        abfaccu%bmicf(i,gi0)  = abfaccu%bmicf(i,gi0)  + dicf1 * invn
-    end do
-
-end subroutine abf_accu_add_data_online_simple
-
-!===============================================================================
-! Subroutine:  abf_accu_add_data_online
-!===============================================================================
-
-subroutine abf_accu_add_data_online(cvs,zinv,gfx,abf,epot,erst,ekin)
-
-    use abf_dat
-    use pmf_dat
-    use pmf_utils
-
-    implicit none
-    real(PMFDP)    :: cvs(:)
-    real(PMFDP)    :: zinv(:,:)
-    real(PMFDP)    :: gfx(:)    ! ICF
-    real(PMFDP)    :: abf(:)    ! MICF
     real(PMFDP)    :: epot
-    real(PMFDP)    :: erst
-    real(PMFDP)    :: ekin
     ! -----------------------------------------------
     integer        :: gi0, i
     real(PMFDP)    :: invn, icf
@@ -409,7 +346,7 @@ subroutine abf_accu_add_data_online(cvs,zinv,gfx,abf,epot,erst,ekin)
     real(PMFDP)    :: dicf1, dicf2
     ! --------------------------------------------------------------------------
 
-    ! get global index to accumulator for average values within the set
+    ! get global index to accumulator for cvs values
     gi0 = pmf_accu_globalindex(abfaccu%PMFAccuType,cvs)
     if( gi0 .le. 0 ) then
         outsidesamples = outsidesamples + 1
@@ -428,16 +365,6 @@ subroutine abf_accu_add_data_online(cvs,zinv,gfx,abf,epot,erst,ekin)
         abfaccu%mepot(gi0)  = abfaccu%mepot(gi0)  + depot1 * invn
         depot2 = epot - abfaccu%mepot(gi0)
         abfaccu%m2epot(gi0) = abfaccu%m2epot(gi0) + depot1 * depot2
-    end if
-
-    if( fentropy ) then
-        abfaccu%cvs(:,fstep)    = cvs(:)
-        abfaccu%zinv(:,:,fstep) = zinv(:,:)
-        abfaccu%icf(:,fstep)    = gfx(:)
-        abfaccu%abf(:,fstep)    = abf(:)
-        abfaccu%epot(fstep)     = epot
-        abfaccu%erst(fstep)     = erst
-        abfaccu%ekin(fstep)     = ekin
     end if
 
     do i=1,NumOfABFCVs
@@ -480,6 +407,189 @@ subroutine abf_accu_add_data_online(cvs,zinv,gfx,abf,epot,erst,ekin)
     end do
 
 end subroutine abf_accu_add_data_online
+
+!===============================================================================
+! Function:  abf_get_skernel
+!===============================================================================
+
+function abf_get_skernel(cvs1,cvs2) result(kval)
+
+    use abf_dat
+    use pmf_dat
+    use pmf_utils
+
+    implicit none
+    real(PMFDP)    :: cvs1(:)
+    real(PMFDP)    :: cvs2(:)
+    real(PMFDP)    :: kval
+    ! -----------------------------------------------
+    integer        :: i
+    real(PMFDP)    :: dx,u2
+    ! --------------------------------------------------------------------------
+
+! calculate length between two points
+    u2 = 0.0d0
+    do i=1,NumOfABFCVs
+        dx = (cvs1(i) - cvs2(i))/(ABFCVList(i)%wfac*abfaccu%PMFAccuType%sizes(i)%bin_width)
+        u2 = u2 + dx**2
+    end do
+
+! get value of kernel
+! https://en.wikipedia.org/wiki/Kernel_(statistics)#Kernel_functions_in_common_use
+    kval = 0.0d0
+    select case(fsmooth_kernel)
+    ! Epanechnikov (parabolic)
+        case(0)
+            if( u2 .lt.  1.0d0 ) then
+                kval = 3.0d0/4.0d0*(1-u2)
+            end if
+     ! Triweight
+        case(1)
+            if( u2 .lt.  1.0d0 ) then
+                kval = 35.0d0/32.0d0*(1-u2)**3
+            end if
+        case default
+            call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented smoothing kernel in abf_get_skernel!')
+    end select
+
+end function abf_get_skernel
+
+!===============================================================================
+! Subroutine:  abf_accu_add_data_ksmooth
+!===============================================================================
+
+subroutine abf_accu_add_data_ksmooth(cvs,gfx,epot)
+
+    use abf_dat
+    use pmf_dat
+
+    implicit none
+    real(PMFDP)    :: cvs(:)
+    real(PMFDP)    :: gfx(:)    ! ICF
+    real(PMFDP)    :: epot
+    ! -----------------------------------------------
+    integer        :: gi0, si0, i, ni
+    real(PMFDP)    :: w, stot_weight, invn, icf
+    real(PMFDP)    :: depot1, depot2
+    real(PMFDP)    :: dicf1, dicf2
+    ! --------------------------------------------------------------------------
+
+! get global index to accumulator for cvs values
+    gi0 = pmf_accu_globalindex(abfaccu%PMFAccuType,cvs)
+    if( gi0 .le. 0 ) then
+        outsidesamples = outsidesamples + 1
+        return ! out of valid area
+    else
+        insidesamples = insidesamples + 1
+    end if
+
+! first calculate kernel values
+    stot_weight = 0.0d0
+    do ni=1,max_snb_size
+        if( snb_list(ni,gi0) .le. 0 ) cycle
+        w = abf_get_skernel(abfaccu%binpos(:,snb_list(ni,gi0)),cvs(:))
+        stot_weight  = stot_weight + w
+        sweights(ni) = w
+    end do
+    if( stot_weight .eq. 0.0d0 ) return ! out of valid area
+
+! normalize weights
+    do ni=1,max_snb_size
+        if( snb_list(ni,gi0) .le. 0 ) cycle
+        sweights(ni) = sweights(ni) / stot_weight
+    end do
+
+! apply distributed sample
+    do ni=1,max_snb_size
+        si0 = snb_list(ni,gi0)
+        if( si0 .le. 0 ) cycle
+        w = sweights(ni)
+        if( sweights(ni) .le. 0.0d0 ) cycle
+
+        ! increase number of samples
+        abfaccu%nsamples(si0) = abfaccu%nsamples(si0) + w
+        invn = w / abfaccu%nsamples(si0)
+
+        if( fenthalpy ) then
+            ! potential energy
+            depot1 = epot - abfaccu%mepot(si0)
+            abfaccu%mepot(si0)  = abfaccu%mepot(si0)  + depot1 * invn
+            depot2 = epot - abfaccu%mepot(si0)
+            abfaccu%m2epot(si0) = abfaccu%m2epot(si0) + w * depot1 * depot2
+        end if
+
+        do i=1,NumOfABFCVs
+            icf = - gfx(i)
+            dicf1 = icf - abfaccu%micf(i,si0)
+            abfaccu%micf(i,si0)  = abfaccu%micf(i,si0)  + dicf1 * invn
+            dicf2 = icf - abfaccu%micf(i,si0)
+            abfaccu%m2icf(i,si0) = abfaccu%m2icf(i,si0) + w * dicf1 * dicf2
+        end do
+
+        if( fserver_enabled ) then
+            abfaccu%inc_nsamples(si0) = abfaccu%inc_nsamples(si0) + w
+            invn = w / abfaccu%inc_nsamples(si0)
+
+            if( fenthalpy ) then
+                depot1 = epot - abfaccu%inc_mepot(si0)
+                abfaccu%inc_mepot(si0)  = abfaccu%inc_mepot(si0)  + depot1 * invn
+                depot2 = epot - abfaccu%inc_mepot(si0)
+                abfaccu%inc_m2epot(si0) = abfaccu%inc_m2epot(si0) + w * depot1 * depot2
+            end if
+
+            do i=1,NumOfABFCVs
+                icf = - gfx(i)
+                dicf1 = icf - abfaccu%inc_micf(i,si0)
+                abfaccu%inc_micf(i,si0)  = abfaccu%inc_micf(i,si0)  + dicf1 * invn
+                dicf2 = icf -  abfaccu%inc_micf(i,si0)
+                abfaccu%inc_m2icf(i,si0) = abfaccu%inc_m2icf(i,si0) + w * dicf1 * dicf2
+            end do
+
+        end if
+
+        ! increase number of samples for applied bias - this uses different counter for number of samples
+        abfaccu%bnsamples(si0) = abfaccu%bnsamples(si0) + w
+        invn = w / abfaccu%bnsamples(si0)
+
+        do i=1,NumOfABFCVs
+            icf = - gfx(i)
+            dicf1 = icf - abfaccu%bmicf(i,si0)
+            abfaccu%bmicf(i,si0)  = abfaccu%bmicf(i,si0)  + dicf1 * invn
+        end do
+    end do
+
+end subroutine abf_accu_add_data_ksmooth
+
+!===============================================================================
+! Subroutine:  abf_accu_add_data_entropy
+!===============================================================================
+
+subroutine abf_accu_add_data_entropy(cvs,zinv,gfx,abf,epot,erst,ekin)
+
+    use abf_dat
+    use pmf_dat
+
+    implicit none
+    real(PMFDP)    :: cvs(:)
+    real(PMFDP)    :: zinv(:,:)
+    real(PMFDP)    :: gfx(:)    ! ICF
+    real(PMFDP)    :: abf(:)    ! MICF
+    real(PMFDP)    :: epot
+    real(PMFDP)    :: erst
+    real(PMFDP)    :: ekin
+    ! --------------------------------------------------------------------------
+
+    if( fentropy ) then
+        abfaccu%cvs(:,fstep)    = cvs(:)
+        abfaccu%zinv(:,:,fstep) = zinv(:,:)
+        abfaccu%icf(:,fstep)    = gfx(:)
+        abfaccu%abf(:,fstep)    = abf(:)
+        abfaccu%epot(fstep)     = epot
+        abfaccu%erst(fstep)     = erst
+        abfaccu%ekin(fstep)     = ekin
+    end if
+
+end subroutine abf_accu_add_data_entropy
 
 !===============================================================================
 ! Subroutine:  abf_accu_get_data

@@ -79,7 +79,7 @@ subroutine abf_core_force_2p()
     use pmf_cvs
     use abf_dat
     use abf_accu
-    use abf_output
+    use pmf_timers
 
     implicit none
     integer                :: i,j,k,m
@@ -167,7 +167,15 @@ subroutine abf_core_force_2p()
         pxi0(:) = pxi0(:) + pxim(:)
 
         ! add data to accumulator
-        call abf_accu_add_data_online(cvhist(:,1),fzinv0,pxi0,pxi1,epothist(1),ersthist(1),ekinhist(1))
+        if( fsmooth_enable ) then
+            call pmf_timers_start_timer(PMFLIB_ABF_KS_TIMER)
+                call abf_accu_add_data_ksmooth(cvhist(:,1),pxi0,epothist(1))
+            call pmf_timers_stop_timer(PMFLIB_ABF_KS_TIMER)
+        else
+            call abf_accu_add_data_online(cvhist(:,1),pxi0,epothist(1))
+        end if
+
+        call abf_accu_add_data_entropy(cvhist(:,1),fzinv0,pxi0,pxi1,epothist(1),ersthist(1),ekinhist(1))
     end if
 
     ! backup to the next step
@@ -219,7 +227,7 @@ subroutine abf_core_force_4p()
     use pmf_cvs
     use abf_dat
     use abf_accu
-    use abf_output
+    use pmf_timers
 
     implicit none
     integer     :: i,j,k,m
@@ -320,7 +328,13 @@ subroutine abf_core_force_4p()
         end do
 
         ! add data to accumulator
-        call abf_accu_add_data_online_simple(cvave,pxi0)
+        if( fsmooth_enable ) then
+            call pmf_timers_start_timer(PMFLIB_ABF_KS_TIMER)
+                call abf_accu_add_data_ksmooth(cvhist(:,1),pxi0,0.0d0)
+            call pmf_timers_stop_timer(PMFLIB_ABF_KS_TIMER)
+        else
+            call abf_accu_add_data_online(cvhist(:,1),pxi0,0.0d0)
+        end if
     end if
 
     ! pxi0 <--- -pxip + pxim + pxi1 - la/2

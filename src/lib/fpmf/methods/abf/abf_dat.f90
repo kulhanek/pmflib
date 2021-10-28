@@ -58,6 +58,10 @@ real(PMFDP) :: fekinaverage
 integer     :: fhramp_min
 integer     :: fhramp_max
 
+! kernel smoothing
+logical     :: fsmooth_enable
+integer     :: fsmooth_kernel
+
 ! server part ------------------------------------------------------------------
 logical                 :: fserver_enabled      ! is abf-server enabled?
 character(PMF_MAX_PATH) :: fserverkey           ! abf-server key file name
@@ -80,7 +84,7 @@ type CVTypeABF
     real(PMFDP)             :: min_value        ! left range
     real(PMFDP)             :: max_value        ! right range
     integer                 :: nbins            ! number of bins
-    integer                 :: wfac             ! smoothing factor in number of bins
+    real(PMFDP)             :: wfac             ! smoothing factor in number of bins
 end type CVTypeABF
 
 ! ----------------------
@@ -90,6 +94,8 @@ type(CVTypeABF),allocatable :: ABFCVList(:)     ! definition of CVs
 ! ----------------------
 
 type,extends(PMFAccuType) :: ABFAccuType
+
+    real(PMFDP),pointer    :: binpos(:,:)              ! position of grids
 
     ! biasing force manipulation
     real(PMFDP),pointer    :: weights(:)                ! mask weights
@@ -158,6 +164,11 @@ real(PMFDP),allocatable     :: cvhist(:,:)      ! history of CV values
 real(PMFDP),allocatable     :: epothist(:)      ! history of Epot
 real(PMFDP),allocatable     :: ersthist(:)      ! history of Erst
 real(PMFDP),allocatable     :: ekinhist(:)      ! history of Ekin
+
+! smoothing facility
+integer                     :: max_snb_size
+integer,allocatable         :: snb_list(:,:)
+real(PMFDP),allocatable     :: sweights(:)
 
 ! ------------------------------------------------------------------------------
 

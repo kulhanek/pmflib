@@ -100,6 +100,10 @@ subroutine abf_control_read_abf(prm_fin)
     call pmf_ctrl_read_integer(prm_fin,'feimode',feimode,'i12')
     call pmf_ctrl_check_integer_in_range('ABF','feimode',feimode,0,1)
 
+    call pmf_ctrl_read_logical(prm_fin,'fsmooth_enable',fsmooth_enable)
+    call pmf_ctrl_read_integer(prm_fin,'fsmooth_kernel',fsmooth_kernel,'i12')
+    call pmf_ctrl_check_integer_in_range('ABF','fsmooth_kernel',fsmooth_kernel,0,1)
+
     select case(feimode)
         case(0)
             write(PMF_OUT,50)

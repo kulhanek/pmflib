@@ -102,6 +102,9 @@ subroutine abf_init_dat
     insidesamples   = 0
     outsidesamples  = 0
 
+    fsmooth_enable  = .false.
+    fsmooth_kernel  = 0
+
     fdtx            = 0.0d0
 
 end subroutine abf_init_dat
@@ -151,6 +154,16 @@ subroutine abf_init_print_header
     write(PMF_OUT,120)
     write(PMF_OUT,120)  ' ABF Interpolation/Extrapolation '
     write(PMF_OUT,120)  ' ------------------------------------------------------'
+    write(PMF_OUT,125)  ' Use kernel smoother (fsmooth_enable)    : ', prmfile_onoff(fsmooth_enable)
+    write(PMF_OUT,130)  ' kernel type (fsmooth_kernel)            : ', fsmooth_kernel
+    select case(fsmooth_kernel)
+    case(0)
+    write(PMF_OUT,120)  '      |-> Epanechnikov (parabolic)'
+    case(1)
+    write(PMF_OUT,120)  '      |-> Triweight'
+    case default
+        call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown kernel in abf_init_print_header!')
+    end select
     write(PMF_OUT,130)  ' Extra/interpolation mode (feimode)      : ', feimode
     select case(feimode)
     case(0)
@@ -315,10 +328,70 @@ subroutine abf_init_arrays
         end if
     end if
 
-    ! init accumulator ------------------------------
+    ! init accumulator
     call abf_accu_init
 
+    if( fsmooth_enable ) then
+        call abf_init_snb_list
+    end if
+
 end subroutine abf_init_arrays
+
+!===============================================================================
+! Subroutine:  abf_init_arrays
+!===============================================================================
+
+subroutine abf_init_snb_list
+
+    use pmf_utils
+    use pmf_dat
+    use abf_dat
+    use abf_accu
+
+    implicit none
+    integer         :: i,j,k,dcv,idx,alloc_failed
+    real(PMFDP)     :: dx,u2
+    ! --------------------------------------------------------------------------
+
+    max_snb_size = 1
+    do i=1,NumOfABFCVs
+        dcv = 2*ceiling(ABFCVList(i)%wfac) + 1
+        max_snb_size = max_snb_size * dcv
+    end do
+
+    allocate(                                                       &
+            snb_list(max_snb_size,abfaccu%PMFAccuType%tot_nbins),   &
+            sweights(max_snb_size),                                 &
+            stat= alloc_failed )
+
+    if( alloc_failed .ne. 0 ) then
+        call pmf_utils_exit(PMF_OUT,1, &
+            '[ABF] Unable to allocate memory for arrays for kernel smoothing in abf_init_snb_list!')
+    end if
+
+    sweights(:)   = 0.0d0
+    snb_list(:,:) = 0
+
+    do i=1,abfaccu%PMFAccuType%tot_nbins
+        idx = 0
+        do j=1,abfaccu%PMFAccuType%tot_nbins
+            u2 = 0.0d0
+            do k=1,abfaccu%PMFAccuType%tot_cvs
+                dx = (abfaccu%binpos(k,i) - abfaccu%binpos(k,j)) / (ABFCVList(k)%wfac * abfaccu%PMFAccuType%sizes(k)%bin_width)
+                u2 = u2 + dx**2
+            end do
+            if( u2 .lt. 1.0d0 ) then
+                idx = idx + 1
+                if( idx .gt. max_snb_size ) then
+                    call pmf_utils_exit(PMF_OUT,1, &
+                                '[ABF] Max index into snb_list overflow in abf_init_snb_list!')
+                end if
+                snb_list(idx,i) = j
+            end if
+        end do
+    end do
+
+end subroutine abf_init_snb_list
 
 !===============================================================================
 
