@@ -98,11 +98,7 @@ subroutine abf_control_read_abf(prm_fin)
     call pmf_ctrl_read_real8_wunit(prm_fin,'fekinaverage',EnergyUnit,fekinaverage,'F10.1')
 
     call pmf_ctrl_read_integer(prm_fin,'feimode',feimode,'i12')
-    call pmf_ctrl_check_integer_in_range('ABF','feimode',feimode,0,1)
-
-    call pmf_ctrl_read_logical(prm_fin,'fsmooth_enable',fsmooth_enable)
-    call pmf_ctrl_read_integer(prm_fin,'fsmooth_kernel',fsmooth_kernel,'i12')
-    call pmf_ctrl_check_integer_in_range('ABF','fsmooth_kernel',fsmooth_kernel,0,1)
+    call pmf_ctrl_check_integer_in_range('ABF','feimode',feimode,0,2)
 
     select case(feimode)
         case(0)
@@ -116,9 +112,15 @@ subroutine abf_control_read_abf(prm_fin)
             if( fhramp_max .lt. fhramp_min ) then
                 call pmf_utils_exit(PMF_OUT,1,'[ABF] fhramp_max must be >= fhramp_min!')
             end if
+        case(2)
+            write(PMF_OUT,52)
         case default
             call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown extrapolation/interpolation mode!')
     end select
+
+    call pmf_ctrl_read_logical(prm_fin,'fsmooth_enable',fsmooth_enable)
+    call pmf_ctrl_read_integer(prm_fin,'fsmooth_kernel',fsmooth_kernel,'i12')
+    call pmf_ctrl_check_integer_in_range('ABF','fsmooth_kernel',fsmooth_kernel,0,1)
 
     ! network setup ----------------------------------------------------------------
 
@@ -163,6 +165,7 @@ subroutine abf_control_read_abf(prm_fin)
 
  50 format (/,'>> Inter/Extrapolation disabled (feimode == 0)')
  51 format (/,'>> Linear ramp mode (feimode == 1)')
+ 52 format (/,'>> Kernel smoother (feimode == 2)')
 
 100 format (' >> Multiple-walkers ABF method is disabled!')
 

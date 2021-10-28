@@ -485,6 +485,7 @@ subroutine abf_accu_add_data_ksmooth(cvs,gfx,epot)
 
 ! first calculate kernel values
     stot_weight = 0.0d0
+    sweights(:) = 0.0d0
     do ni=1,max_snb_size
         if( snb_list(ni,gi0) .le. 0 ) cycle
         w = abf_get_skernel(abfaccu%binpos(:,snb_list(ni,gi0)),cvs(:))
@@ -595,14 +596,14 @@ end subroutine abf_accu_add_data_entropy
 ! Subroutine:  abf_accu_get_data
 !===============================================================================
 
-subroutine abf_accu_get_data(values,gfx)
+subroutine abf_accu_get_data(cvs,gfx)
 
     use abf_dat
     use pmf_dat
     use pmf_utils
 
     implicit none
-    real(PMFDP)    :: values(:)
+    real(PMFDP)    :: cvs(:)
     real(PMFDP)    :: gfx(:)
     ! -----------------------------------------------
     integer        :: gi0
@@ -612,7 +613,7 @@ subroutine abf_accu_get_data(values,gfx)
     gfx(:) = 0.0d0
 
     ! get global index to accumulator for average values within the set
-    gi0 = pmf_accu_globalindex(abfaccu%PMFAccuType,values)
+    gi0 = pmf_accu_globalindex(abfaccu%PMFAccuType,cvs)
     if( gi0 .le. 0 ) return ! out of valid area
 
     w      = abfaccu%weights(gi0)
@@ -624,7 +625,7 @@ end subroutine abf_accu_get_data
 ! Subroutine:  abf_accu_get_data_lramp
 !===============================================================================
 
-subroutine abf_accu_get_data_lramp(values,gfx)
+subroutine abf_accu_get_data_lramp(cvs,gfx)
 
     use abf_dat
     use pmf_dat
@@ -632,7 +633,7 @@ subroutine abf_accu_get_data_lramp(values,gfx)
     use pmf_accu
 
     implicit none
-    real(PMFDP)    :: values(:)
+    real(PMFDP)    :: cvs(:)
     real(PMFDP)    :: gfx(:)
     ! -----------------------------------------------
     integer        :: gi0
@@ -642,7 +643,7 @@ subroutine abf_accu_get_data_lramp(values,gfx)
     gfx(:) = 0.0d0
 
     ! get global index to accumulator for average values within the set
-    gi0 = pmf_accu_globalindex(abfaccu%PMFAccuType,values)
+    gi0 = pmf_accu_globalindex(abfaccu%PMFAccuType,cvs)
     if( gi0 .le. 0 ) return ! out of valid area
 
     ! get number of samples
@@ -660,6 +661,63 @@ subroutine abf_accu_get_data_lramp(values,gfx)
     end if
 
 end subroutine abf_accu_get_data_lramp
+
+!===============================================================================
+! Subroutine:  abf_accu_get_data_ksmooth
+!===============================================================================
+
+subroutine abf_accu_get_data_ksmooth(cvs,gfx)
+
+    use abf_dat
+    use pmf_dat
+    use pmf_utils
+    use pmf_accu
+
+    implicit none
+    real(PMFDP)    :: cvs(:)
+    real(PMFDP)    :: gfx(:)
+    ! -----------------------------------------------
+    integer        :: gi0,si0,ni
+    real(PMFDP)    :: stot_weight,w
+    ! --------------------------------------------------------------------------
+
+    gfx(:) = 0.0d0
+
+! get global index to accumulator for average values within the set
+    gi0 = pmf_accu_globalindex(abfaccu%PMFAccuType,cvs)
+    if( gi0 .le. 0 ) return ! out of valid area
+
+! first calculate kernel values
+    sweights(:) = 0.0d0
+    stot_weight = 0.0d0
+    do ni=1,max_snb_size
+        if( snb_list(ni,gi0) .le. 0 ) cycle
+        w = abf_get_skernel(abfaccu%binpos(:,snb_list(ni,gi0)),cvs(:))
+        stot_weight  = stot_weight + w
+        sweights(ni) = w
+    end do
+    if( stot_weight .eq. 0.0d0 ) return ! out of valid area
+
+! normalize weights
+    do ni=1,max_snb_size
+        if( snb_list(ni,gi0) .le. 0 ) cycle
+        sweights(ni) = sweights(ni) / stot_weight
+    end do
+
+    write(84621,*) sweights
+
+! get smoothed mean forces
+    do ni=1,max_snb_size
+        si0 = snb_list(ni,gi0)
+        if( si0 .le. 0 ) cycle
+        w = sweights(ni)
+        if( sweights(ni) .le. 0.0d0 ) cycle
+
+        w = w * abfaccu%weights(si0)
+        gfx(:) = gfx(:) + w * abfaccu%bmicf(:,si0)
+    end do
+
+end subroutine abf_accu_get_data_ksmooth
 
 !===============================================================================
 

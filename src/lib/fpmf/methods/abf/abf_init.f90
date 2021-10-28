@@ -172,6 +172,8 @@ subroutine abf_init_print_header
     write(PMF_OUT,120)  '      |-> Min/Max linear ramp'
     write(PMF_OUT,130)  ' Min of accu samples in bin (fhramp_min) : ', fhramp_min
     write(PMF_OUT,130)  ' Max of accu samples in bin (fhramp_max) : ', fhramp_max
+    case(2)
+    write(PMF_OUT,120)  '      |-> Kernel smoother'
     case default
     call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown extrapolation/interpolation mode in abf_init_print_header!')
     end select
@@ -331,7 +333,7 @@ subroutine abf_init_arrays
     ! init accumulator
     call abf_accu_init
 
-    if( fsmooth_enable ) then
+    if( fsmooth_enable .or. (feimode .eq. 2) ) then
         call abf_init_snb_list
     end if
 

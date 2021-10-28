@@ -195,6 +195,10 @@ subroutine abf_core_force_2p()
                 call abf_accu_get_data(cvhist(:,2),la)
             case(1)
                 call abf_accu_get_data_lramp(cvhist(:,2),la)
+            case(2)
+                call pmf_timers_start_timer(PMFLIB_ABF_KS_TIMER)
+                    call abf_accu_get_data_ksmooth(cvhist(:,2),la)
+                call pmf_timers_stop_timer(PMFLIB_ABF_KS_TIMER)
             case default
                 call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented extrapolation/interpolation mode!')
         end select
@@ -258,6 +262,10 @@ subroutine abf_core_force_4p()
                     call abf_accu_get_data(cvhist(:,4),la)
                 case(1)
                     call abf_accu_get_data_lramp(cvhist(:,4),la)
+                case(2)
+                    call pmf_timers_start_timer(PMFLIB_ABF_KS_TIMER)
+                        call abf_accu_get_data_ksmooth(cvhist(:,4),la)
+                    call pmf_timers_stop_timer(PMFLIB_ABF_KS_TIMER)
             case default
                 call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented extrapolation/interpolation mode!')
         end select
