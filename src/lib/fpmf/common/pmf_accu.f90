@@ -161,7 +161,7 @@ subroutine pmf_accu_read_header(accu,iounit,method,keyline)
     character(*)                    :: method
     character(*)                    :: keyline
     ! -----------------------------------------------
-    integer                         :: i,it,nbins,ncvs
+    integer                         :: i,it,nbins,ncvs,itmp
     character(len=PMF_MAX_TYPE)     :: stype,sunit
     character(len=PMF_MAX_CV_NAME)  :: sname
     character(len=PMF_MAX_PATH)     :: sbuff
@@ -231,18 +231,27 @@ subroutine pmf_accu_read_header(accu,iounit,method,keyline)
                 end if
                 ! ignore values fconv and sunit
             end do
+        case('ENERGY-UNIT')
+            ! read but do not use
+            read(iounit,27,end=301,err=301) fconv, sunit
         case('TEMPERATURE')
             ! read and test
             read(iounit,6,end=302,err=302) fconv
             if( (fconv - ftemp) .gt. 1.0d0 ) then
                 call pmf_utils_exit(PMF_OUT,1,'[PMFAccu] Inconsistent temperatures!')
             end if
-        case('ENERGY-UNIT')
-            ! read but do not use
-            read(iounit,27,end=301,err=301) fconv, sunit
         case('TEMPERATURE-UNIT')
             ! read but do not use
-            read(iounit,27,end=301,err=301) fconv, sunit
+            read(iounit,27,end=303,err=303) fconv, sunit
+        case('NSTLIMIT')
+            ! read but do not use
+            read(iounit,30,end=304,err=304) itmp
+        case('TIMESTEP')
+            ! read but do not use
+            read(iounit,6,end=305,err=305) fconv
+        case('CURRSTEP')
+            ! read but do not use
+            read(iounit,30,end=304,err=304) itmp
         case default
             call pmf_utils_exit(PMF_OUT,1, &
                  '[PMFAccu] Unable to read from the accumulator - unrecognized header keyword on keyline: "'//trim(keyline)//'"')
@@ -258,7 +267,8 @@ subroutine pmf_accu_read_header(accu,iounit,method,keyline)
 20  format(I2,1X,E18.11,1X,E18.11,1X,I6,1X,A10)
 25  format(I2,1X,A55)
 26  format(I2,1X,E18.11,1X,A36)
-27  format(E18.11,1X,A36)
+27  format(3X,E18.11,1X,A36)
+30  format(I15)
 
 101 call pmf_utils_exit(PMF_OUT,1,'[PMFAccu] Unable to read from the accumulator - number of CVS!')
 102 call pmf_utils_exit(PMF_OUT,1,'[PMFAccu] Unable to read from the accumulator - version!')
@@ -273,6 +283,9 @@ subroutine pmf_accu_read_header(accu,iounit,method,keyline)
 
 301 call pmf_utils_exit(PMF_OUT,1,'[PMFAccu] Unable to read from the accumulator - energy unit!')
 302 call pmf_utils_exit(PMF_OUT,1,'[PMFAccu] Unable to read from the accumulator - temperature!')
+303 call pmf_utils_exit(PMF_OUT,1,'[PMFAccu] Unable to read from the accumulator - temperature unit!')
+304 call pmf_utils_exit(PMF_OUT,1,'[PMFAccu] Unable to read from the accumulator - number of MD steps!')
+305 call pmf_utils_exit(PMF_OUT,1,'[PMFAccu] Unable to read from the accumulator - time step!')
 
 end subroutine pmf_accu_read_header
 
@@ -335,6 +348,18 @@ subroutine pmf_accu_write_header(accu,iounit)
     write(iounit,5) adjustl(key)
     write(iounit,40) pmf_unit_get_rvalue(TemperatureUnit,1.0d0),trim(pmf_unit_label(TemperatureUnit))
 
+    key = '%NSTLIMIT'
+    write(iounit,5) adjustl(key)
+    write(iounit,41) fnstlim
+
+    key = '%TIMESTEP'
+    write(iounit,5) adjustl(key)
+    write(iounit,20) fdt
+
+    key = '%CURRSTEP'
+    write(iounit,5) adjustl(key)
+    write(iounit,41) fstep
+
     return
 
  5  format(A20)
@@ -347,6 +372,7 @@ subroutine pmf_accu_write_header(accu,iounit)
 32  format(I2,1X,E18.11,1X,A36)
 
 40  format(3X,E18.11,1X,A36)
+41  format(I15)
 
 end subroutine pmf_accu_write_header
 
@@ -916,7 +942,6 @@ subroutine pmf_accu_write_rbuf_C(accu,iounit,key,op,rbuf)
 
 end subroutine pmf_accu_write_rbuf_C
 
-
 !===============================================================================
 ! Subroutine:  pmf_accu_write_rbuf_D
 ! data per CVs
@@ -948,6 +973,104 @@ subroutine pmf_accu_write_rbuf_D(iounit,key,op,rbuf,nsize)
 10  format(4(ES23.15E3,1X))
 
 end subroutine pmf_accu_write_rbuf_D
+
+!===============================================================================
+! Subroutine:  pmf_accu_write_rbuf_T
+! data per time
+!===============================================================================
+
+subroutine pmf_accu_write_rbuf_T(iounit,key,rbuf)
+
+    use pmf_dat
+    use pmf_utils
+    use pmf_unit
+    use pmf_ver
+
+    implicit none
+    integer                     :: iounit
+    character(*)                :: key
+    real(PMFDP)                 :: rbuf(:)
+    ! -----------------------------------------------
+    character(len=PMF_MAX_KEY)  :: skey
+    integer                     :: i
+    !---------------------------------------------------------------------------
+
+    skey = key
+    write(iounit,5) adjustl(skey), 'IG', 'R', 'T', fnstlim
+    write(iounit,10) (rbuf(i),i=1,fnstlim)
+
+ 5  format('@',A20,1X,A2,1X,A1,1X,A1,1X,I10)
+10  format(4(ES23.15E3,1X))
+
+end subroutine pmf_accu_write_rbuf_T
+
+!===============================================================================
+! Subroutine:  pmf_accu_write_rbuf_TC
+! data per time and cvs
+!===============================================================================
+
+subroutine pmf_accu_write_rbuf_TC(accu,iounit,key,rbuf)
+
+    use pmf_dat
+    use pmf_utils
+    use pmf_unit
+    use pmf_ver
+
+    implicit none
+    type(PMFAccuType)           :: accu
+    integer                     :: iounit
+    character(*)                :: key
+    real(PMFDP)                 :: rbuf(:,:)
+    ! -----------------------------------------------
+    character(len=PMF_MAX_KEY)  :: skey
+    integer                     :: i,j
+    !---------------------------------------------------------------------------
+
+    skey = key
+    write(iounit,5) adjustl(skey), 'IG', 'R', 'S', fnstlim
+    do i=1,accu%tot_cvs
+        write(iounit,10) (rbuf(i,j),j=1,fnstlim)
+    end do
+
+ 5  format('@',A20,1X,A2,1X,A1,1X,A1,1X,I10)
+10  format(4(ES23.15E3,1X))
+
+end subroutine pmf_accu_write_rbuf_TC
+
+!===============================================================================
+! Subroutine:  pmf_accu_write_rbuf_TC
+! data per time and cvs x cvs
+!===============================================================================
+
+subroutine pmf_accu_write_rbuf_TCC(accu,iounit,key,rbuf)
+
+    use pmf_dat
+    use pmf_utils
+    use pmf_unit
+    use pmf_ver
+
+    implicit none
+    type(PMFAccuType)           :: accu
+    integer                     :: iounit
+    character(*)                :: key
+    real(PMFDP)                 :: rbuf(:,:,:)
+    ! -----------------------------------------------
+    character(len=PMF_MAX_KEY)  :: skey
+    integer                     :: i,j,t
+    !---------------------------------------------------------------------------
+
+    skey = key
+    write(iounit,5) adjustl(skey), 'IG', 'R', 'Z', fnstlim
+    do i=1,accu%tot_cvs
+        do j=1,accu%tot_cvs
+            write(iounit,10) (rbuf(i,j,t),t=1,fnstlim)
+        end do
+    end do
+
+ 5  format('@',A20,1X,A2,1X,A1,1X,A1,1X,I10)
+10  format(4(ES23.15E3,1X))
+
+end subroutine pmf_accu_write_rbuf_TCC
 
 !===============================================================================
 

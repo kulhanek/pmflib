@@ -36,10 +36,11 @@ using namespace std;
 //------------------------------------------------------------------------------
 //==============================================================================
 
-CPMFAccuData::CPMFAccuData(int nbins, int ncvs)
+CPMFAccuData::CPMFAccuData(int nbins, int ncvs,int nstlim)
 {
     NumOfBins = nbins;
     NumOfCVs = ncvs;
+    NSTLimit = nstlim;
 }
 
 //------------------------------------------------------------------------------
@@ -70,11 +71,15 @@ void CPMFAccuData::Load(FILE* p_fin,const CSmallString& keyline)
     Mode.Trim();
 
     if( keyline.GetLength() >= 60 ){
-        MXName = keyline.GetSubStringFromTo(40,59);
+        MSName = keyline.GetSubStringFromTo(40,59);
     }
     if( keyline.GetLength() >= 81 ){
-        MYName = keyline.GetSubStringFromTo(61,80);
+        MXName = keyline.GetSubStringFromTo(61,80);
     }
+    if( keyline.GetLength() >= 102 ){
+        MYName = keyline.GetSubStringFromTo(82,101);
+    }
+    MSName.Trim();
     MXName.Trim();
     MYName.Trim();
 
@@ -87,6 +92,9 @@ void CPMFAccuData::Load(FILE* p_fin,const CSmallString& keyline)
     if( ! ( ((Mode == 'B') && (Size == NumOfBins)) ||
             ((Mode == 'M') && (Size == NumOfBins*NumOfCVs)) ||
             ((Mode == 'C') && (Size == NumOfCVs)) ||
+            ((Mode == 'T') && (Size == NSTLimit)) ||
+            ((Mode == 'S') && (Size == NSTLimit*NumOfCVs)) ||
+            ((Mode == 'Z') && (Size == NSTLimit*NumOfCVs*NumOfCVs)) ||
             ( Mode == 'D') ) ) {
         CSmallString error;
         error << "data size and mode is not consistent: '" << keyline << "'";
@@ -136,6 +144,13 @@ void CPMFAccuData::Save(FILE* p_fout)
         CSmallString error;
         error << "unable to write data section keyline";
         RUNTIME_ERROR(error);
+    }
+    if( MSName != NULL ){
+        if( fprintf(p_fout," %-20s",(const char*)MSName) <= 0 ){
+            CSmallString error;
+            error << "unable to write data section keyline - msname";
+            RUNTIME_ERROR(error);
+        }
     }
     if( MXName != NULL ){
         if( fprintf(p_fout," %-20s",(const char*)MXName) <= 0 ){
@@ -211,6 +226,7 @@ void CPMFAccuData::Load(CXMLElement* p_ele)
     result &= p_ele->GetAttribute("type",Type);
     result &= p_ele->GetAttribute("mode",Mode);
     result &= p_ele->GetAttribute("size",Size);
+    result &= p_ele->GetAttribute("msname",MSName);
     result &= p_ele->GetAttribute("mxname",MXName);
     result &= p_ele->GetAttribute("myname",MYName);
 
@@ -258,6 +274,7 @@ void CPMFAccuData::Save(CXMLElement* p_ele)
     p_ele->SetAttribute("type",Type);
     p_ele->SetAttribute("mode",Mode);
     p_ele->SetAttribute("size",Size);
+    p_ele->SetAttribute("msname",MSName);
     p_ele->SetAttribute("mxname",MXName);
     p_ele->SetAttribute("myname",MYName);
 
@@ -279,6 +296,13 @@ void CPMFAccuData::Reset(void)
 const CSmallString& CPMFAccuData::GetName(void) const
 {
     return(Name);
+}
+
+//------------------------------------------------------------------------------
+
+const CSmallString& CPMFAccuData::GetMSName(void) const
+{
+    return(MSName);
 }
 
 //------------------------------------------------------------------------------
@@ -482,6 +506,12 @@ bool CPMFAccuData::CheckCompatibility(CPMFAccuDataPtr right) const
         return(false);
     }
 
+    if( MSName != right->MSName ){
+        CSmallString   error;
+        error << "two data sections are not compatible (msname): " << MSName << " vs " << right->MSName;
+        ES_ERROR(error);
+        return(false);
+    }
     if( MXName != right->MXName ){
         CSmallString   error;
         error << "two data sections are not compatible (mxname): " << MXName << " vs " << right->MXName;
@@ -502,12 +532,13 @@ bool CPMFAccuData::CheckCompatibility(CPMFAccuDataPtr right) const
 
 CPMFAccuDataPtr CPMFAccuData::CreateTheSame(void) const
 {
-    CPMFAccuDataPtr ptr = CPMFAccuDataPtr(new CPMFAccuData(NumOfBins,NumOfCVs));
+    CPMFAccuDataPtr ptr = CPMFAccuDataPtr(new CPMFAccuData(NumOfBins,NumOfCVs,NSTLimit));
     ptr->Name   = Name;
     ptr->Op     = Op;
     ptr->Type   = Type;
     ptr->Mode   = Mode;
     ptr->Size   = Size;
+    ptr->MSName = MSName;
     ptr->MXName = MXName;
     ptr->MYName = MYName;
 

@@ -78,7 +78,6 @@ subroutine abf_init_dat
 
     fenthalpy       = .false.
     fentropy        = .false.
-    fsmoothetot     = .false.
 
     fepotaverage    = 0.0d0
     fekinaverage    = 0.0d0
@@ -102,11 +101,6 @@ subroutine abf_init_dat
 
     insidesamples   = 0
     outsidesamples  = 0
-
-    gpr_len         = 7
-    gpr_width       = 4.0
-    gpr_noise       = 0.01
-    gpr_kernel      = 2
 
     fdtx            = 0.0d0
 
@@ -142,40 +136,6 @@ subroutine abf_init_print_header
     write(PMF_OUT,120)  '      |-> Simplified ABF algorithm'
     case(2)
     write(PMF_OUT,120)  '      |-> Original ABF algorithm'
-    case(3)
-    write(PMF_OUT,120)  '      |-> GPR ABF algorithm'
-    write(PMF_OUT,130)  '          gpr_len                        : ', gpr_len
-    write(PMF_OUT,145)  '          gpr_width                      : ', gpr_width
-    write(PMF_OUT,145)  '          gpr_noise                      : ', gpr_noise
-
-    select case(gpr_kernel)
-        case(0)
-    write(PMF_OUT,125)  '          gpr_kernel                      : ', '0 - Matern class v=3/2'
-        case(1)
-    write(PMF_OUT,125)  '          gpr_kernel                      : ', '1 - Matern class v=5/2'
-        case(2)
-    write(PMF_OUT,125)  '          gpr_kernel                      : ', '2 - Squared exponential'
-
-        case default
-            call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown gpr_kernel in abf_init_print_header!')
-    end select
-    case(4)
-    write(PMF_OUT,120)  '      |-> GPR ABF algorithm (CV momenta)'
-    write(PMF_OUT,130)  '          gpr_len                        : ', gpr_len
-    write(PMF_OUT,145)  '          gpr_width                      : ', gpr_width
-    write(PMF_OUT,145)  '          gpr_noise                      : ', gpr_noise
-
-    select case(gpr_kernel)
-        case(0)
-    write(PMF_OUT,125)  '          gpr_kernel                      : ', '0 - Matern class v=3/2'
-        case(1)
-    write(PMF_OUT,125)  '          gpr_kernel                      : ', '1 - Matern class v=5/2'
-        case(2)
-    write(PMF_OUT,125)  '          gpr_kernel                      : ', '2 - Squared exponential'
-
-        case default
-            call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown gpr_kernel in abf_init_print_header!')
-    end select
     case default
         call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown fmode in abf_init_print_header!')
     end select
@@ -208,7 +168,6 @@ subroutine abf_init_print_header
     write(PMF_OUT,120)  ' ------------------------------------------------------'
     write(PMF_OUT,125)  ' Accumulate enthalpy (fenthalpy)         : ', prmfile_onoff(fenthalpy)
     write(PMF_OUT,125)  ' Accumulate entropy (fentropy)           : ', prmfile_onoff(fentropy)
-    write(PMF_OUT,125)  ' Smooth Etot (fsmoothetot)               : ', prmfile_onoff(fsmoothetot)
     write(PMF_OUT,150)  ' Potential energy offset (fepotaverage)  : ', pmf_unit_get_rvalue(EnergyUnit,fepotaverage),  &
                                                                        '['//trim(pmf_unit_label(EnergyUnit))//']'
     write(PMF_OUT,150)  ' Kinetic energy offset (fekinaverage)    : ', pmf_unit_get_rvalue(EnergyUnit,fekinaverage), &
@@ -262,7 +221,6 @@ subroutine abf_init_print_header
 120 format(A)
 125 format(A,A)
 130 format(A,I6)
-145 format(A,F10.3)
 150 format(A,F10.1,1X,A)
 
 140 format(' == Collective variable #',I4.4)
@@ -291,35 +249,30 @@ subroutine abf_init_arrays
             hist_len = 2
         case(2)
             hist_len = 4
-        case(3)
-            call abf_init_gpr()
-        case(4)
-            call abf_init_gpr()
         case default
             call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented fmode in abf_init_arrays!')
     end select
 
     ! general arrays --------------------------------
-    allocate(                               &
-            a1(3,NumOfLAtoms),              &
-            a0(3,NumOfLAtoms),              &
-            v0(3,NumOfLAtoms),              &
-            cvcontex0%CVsValues(NumOfCVs),              &
-            cvcontex0%CVsDrvs(3,NumOfLAtoms,NumOfCVs),  &
-            la(NumOfABFCVs),                &
-            zd0(3,NumOfLAtoms,NumOfABFCVs), &
-            zd1(3,NumOfLAtoms,NumOfABFCVs), &
-            pxi0(NumOfABFCVs),              &
-            pxi1(NumOfABFCVs),              &
-            pxip(NumOfABFCVs),              &
-            pxim(NumOfABFCVs),              &
-            cvave(NumOfABFCVs),             &
-            fz(NumOfABFCVs,NumOfABFCVs),    &
-            fzinv(NumOfABFCVs,NumOfABFCVs), &
-            cvhist(NumOfABFCVs,hist_len),   &
-            pchist(NumOfABFCVs,hist_len),   &
-            epothist(hist_len),             &
-            etothist(hist_len),             &
+    allocate(                                   &
+            a1(3,NumOfLAtoms),                  &
+            a0(3,NumOfLAtoms),                  &
+            v0(3,NumOfLAtoms),                  &
+            la(NumOfABFCVs),                    &
+            zd0(3,NumOfLAtoms,NumOfABFCVs),     &
+            zd1(3,NumOfLAtoms,NumOfABFCVs),     &
+            pxi0(NumOfABFCVs),                  &
+            pxi1(NumOfABFCVs),                  &
+            pxip(NumOfABFCVs),                  &
+            pxim(NumOfABFCVs),                  &
+            cvave(NumOfABFCVs),                 &
+            fz(NumOfABFCVs,NumOfABFCVs),        &
+            fzinv(NumOfABFCVs,NumOfABFCVs),     &
+            fzinv0(NumOfABFCVs,NumOfABFCVs),    &
+            cvhist(NumOfABFCVs,hist_len),       &
+            epothist(hist_len),                 &
+            ersthist(hist_len),                 &
+            ekinhist(hist_len),                 &
             stat= alloc_failed )
 
     if( alloc_failed .ne. 0 ) then
@@ -343,11 +296,12 @@ subroutine abf_init_arrays
 
     fz(:,:)     = 0.0d0
     fzinv(:,:)  = 0.0d0
+    fzinv0(:,:) = 0.0d0
 
     cvhist(:,:) = 0.0d0
-    pchist(:,:) = 0.0d0
     epothist(:) = 0.0d0
-    etothist(:) = 0.0d0
+    ersthist(:) = 0.0d0
+    ekinhist(:) = 0.0d0
 
     ! for Z matrix inversion, only if fnitem > 1 ----
     if( NumOfABFCVs .gt. 1 ) then
@@ -365,103 +319,6 @@ subroutine abf_init_arrays
     call abf_accu_init
 
 end subroutine abf_init_arrays
-
-!===============================================================================
-! Subroutine:  abf_init_gpr
-!===============================================================================
-
-subroutine abf_init_gpr
-
-    use pmf_utils
-    use pmf_dat
-    use abf_dat
-    use abf_accu
-
-    implicit none
-    integer     :: i,j,alloc_failed
-    real(PMFDP) :: r
-    ! --------------------------------------------------------------------------
-
-! gpr_len must be an odd number
-    if( mod(gpr_len,2) .ne. 1 ) then
-        call pmf_utils_exit(PMF_OUT,1,'[US-ABF] gpr_len must be an odd number in abf_init_gpr!')
-    end if
-
-! allocate arrays
-    allocate(                           &
-            gpr_K(gpr_len,gpr_len),     &
-            gpr_model(gpr_len),         &
-            gpr_kff(gpr_len),           &
-            gpr_kdf(gpr_len),           &
-            gpr_indx(gpr_len),          &
-            stat= alloc_failed )
-
-    if( alloc_failed .ne. 0 ) then
-        call pmf_utils_exit(PMF_OUT,1, &
-            '[US-ABF] Unable to allocate memory for GPR arrays in abf_init_gpr!')
-    end if
-
-! init covariance matrix
-    do i=1,gpr_len
-        do j=1,gpr_len
-            r = abs(real(i-j,PMFDP)/gpr_width)
-            select case(gpr_kernel)
-                case(0)
-                    gpr_K(i,j) = (1.0d0 + sqrt(3.0) * r) * exp(- sqrt(3.0d0) * r)
-                case(1)
-                    gpr_K(i,j) = (1.0d0 + sqrt(5.0) * r + 5.0d0/3.0d0 * r**2) * exp(- sqrt(5.0d0) * r)
-                case(2)
-                    gpr_K(i,j) = exp(- 0.5d0 * r**2)
-                case default
-                    call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown gpr_kernel in abf_init_gpr I!')
-            end select
-        end do
-    end do
-
-    do i=1,gpr_len
-        gpr_K(i,i) = gpr_K(i,i) + gpr_noise
-    end do
-
-! run LU decomposition
-    call dgetrf(gpr_len,gpr_len,gpr_K,gpr_len,gpr_indx,gpr_info)
-
-    if( gpr_info .ne. 0 ) then
-        ! throw error
-        call pmf_utils_exit(PMF_OUT,1,'[US-ABF] Unable to run LU decomposition in abf_init_gpr!')
-    end if
-
-! construct kff
-    j = gpr_len / 2 + 1
-    do i=1,gpr_len
-        r = abs(real(i-j,PMFDP)/gpr_width)
-        select case(gpr_kernel)
-            case(0)
-                gpr_kdf(i) = 3.0d0 * r * exp(- sqrt(3.0d0) * r) / (gpr_width * fdtx) * sign(1.0d0,real(i-j,PMFDP))
-                gpr_kff(i) = (1.0d0 + sqrt(3.0) * r) * exp(- sqrt(3.0d0) * r)
-            case(1)
-                gpr_kdf(i) = 5.0d0/3.0d0 * r * (1.0d0 + sqrt(5.0d0) * r) * exp(- sqrt(5.0d0) * r ) / (gpr_width * fdtx) &
-                           * sign(1.0d0,real(i-j,PMFDP))
-                gpr_kff(i) = (1.0d0 + sqrt(5.0d0) * r + 5.0d0/3.0d0 * r**2) * exp(- sqrt(5.0d0) * r)
-            case(2)
-                gpr_kdf(i) = exp(- 0.5d0 * r**2) * r / (gpr_width * fdtx) * sign(1.0d0,real(i-j,PMFDP))
-                gpr_kff(i) = exp(- 0.5d0 * r**2)
-            case default
-                call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown gpr_kernel in abf_init_gpr II!')
-        end select
-    end do
-
-    hist_len = 0
-
-    if( fmode .eq. 3 ) then
-        hist_len = gpr_len + gpr_len/2
-    end if
-
-    if( fmode .eq. 4) then
-        ! with CV momenta
-        hist_len = gpr_len + 1
-    end if
-
-end subroutine abf_init_gpr
 
 !===============================================================================
 

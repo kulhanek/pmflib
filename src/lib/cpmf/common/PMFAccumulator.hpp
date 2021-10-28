@@ -274,6 +274,9 @@ protected:
     int                             NumOfCVs;           // number of CVs
     std::vector<CColVariablePtr>    CVs;                // collective variables
     int                             NumOfBins;          // number of total bins
+    int                             NSTLimit;           // number of MD steps
+    int                             CurrStep;           // current MD step
+    double                          TimeStep;           // time step in fs
 
     std::map<CSmallString,CPMFAccuDataPtr>  DataBlocks;
 

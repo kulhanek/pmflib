@@ -50,6 +50,9 @@ CPMFAccumulator::CPMFAccumulator(void)
     Method              = "NONE";
     Version             = LibBuildVersion_PMF;
     NCorr               = 1.0;
+    NSTLimit            = 0;
+    CurrStep            = 0;
+    TimeStep            = 0.0;
 }
 
 //------------------------------------------------------------------------------
@@ -128,7 +131,6 @@ std::list<CPMFAccumulatorPtr> CPMFAccumulator::LoadFinalSnapshots(const CSmallSt
 
     return(accus);
 }
-
 
 //------------------------------------------------------------------------------
 
@@ -248,7 +250,7 @@ void CPMFAccumulator::Load(CXMLElement* p_root)
         if( name == NULL ){
             RUNTIME_ERROR("DATA element does not have name");
         }
-        CPMFAccuDataPtr data = CPMFAccuDataPtr(new CPMFAccuData(NumOfBins,NumOfCVs));
+        CPMFAccuDataPtr data = CPMFAccuDataPtr(new CPMFAccuData(NumOfBins,NumOfCVs,NSTLimit));
         data->Load(p_item);
         DataBlocks[name] = data;
         p_item = p_item->GetNextSiblingElement("DATA");
@@ -390,32 +392,32 @@ CPMFAccuDataPtr CPMFAccumulator::Combine(CPMFAccumulatorPtr right,CPMFAccuDataPt
 // weighted average
     } else if( result->GetOp() == "WA" ){
         // we need two NSAMPLES blocks
-        CPMFAccuDataPtr lns = GetSectionData("NSAMPLES");
+        CPMFAccuDataPtr lns = GetSectionData(result->GetMSName());
         if( lns == NULL ){
             CSmallString error;
-            error <<  "left NSAMPLES is required for WA operation, data section name: " << result->GetName();
+            error <<  "left NSAMPLES section (" << result->GetMSName() << ") is required for WA operation, data section name: " << result->GetName();
             RUNTIME_ERROR(error);
         }
-        CPMFAccuDataPtr rns = right->GetSectionData("NSAMPLES");
+        CPMFAccuDataPtr rns = right->GetSectionData(result->GetMSName());
         if( rns == NULL ){
             CSmallString error;
-            error <<  "right NSAMPLES is required for WA operation, data section name: " << result->GetName();
+            error <<  "left NSAMPLES section (" << result->GetMSName() << ") is required for WA operation, data section name: " << result->GetName();
             RUNTIME_ERROR(error);
         }
         result->CombineWA(ldb,lns,rdb,rns);
 // M2 - combine
     } else if( result->GetOp() == "M2" ){
         // we need two NSAMPLES blocks
-        CPMFAccuDataPtr lns = GetSectionData("NSAMPLES");
+        CPMFAccuDataPtr lns = GetSectionData(result->GetMSName());
         if( lns == NULL ){
             CSmallString error;
-            error <<  "left NSAMPLES is required for M2 operation, data section name: " << result->GetName();
+            error <<  "left NSAMPLES section (" << result->GetMSName() << ") is required for M2 operation, data section name: " << result->GetName();
             RUNTIME_ERROR(error);
         }
-        CPMFAccuDataPtr rns = right->GetSectionData("NSAMPLES");
+        CPMFAccuDataPtr rns = right->GetSectionData(result->GetMSName());
         if( rns == NULL ){
             CSmallString error;
-            error <<  "right NSAMPLES is required for M2 operation, data section name: " << result->GetName();
+            error <<  "left NSAMPLES section (" << result->GetMSName() << ") is required for M2 operation, data section name: " << result->GetName();
             RUNTIME_ERROR(error);
         }
         // in addition, we also need two MEAN blocks
@@ -435,16 +437,16 @@ CPMFAccuDataPtr CPMFAccumulator::Combine(CPMFAccumulatorPtr right,CPMFAccuDataPt
 // CO - combine
     } else if( result->GetOp() == "CO" ){
         // we need two NSAMPLES blocks
-        CPMFAccuDataPtr lns = GetSectionData("NSAMPLES");
+        CPMFAccuDataPtr lns = GetSectionData(result->GetMSName());
         if( lns == NULL ){
             CSmallString error;
-            error <<  "left NSAMPLES is required for CO operation, data section name: " << result->GetName();
+            error <<  "left NSAMPLES section (" << result->GetMSName() << ") is required for CO operation, data section name: " << result->GetName();
             RUNTIME_ERROR(error);
         }
-        CPMFAccuDataPtr rns = right->GetSectionData("NSAMPLES");
+        CPMFAccuDataPtr rns = right->GetSectionData(result->GetMSName());
         if( rns == NULL ){
             CSmallString error;
-            error <<  "right NSAMPLES is required for CO operation, data section name: " << result->GetName();
+            error <<  "left NSAMPLES section (" << result->GetMSName() << ") is required for CO operation, data section name: " << result->GetName();
             RUNTIME_ERROR(error);
         }
         // in addition, we also need two MEAN blocks for X and Y
@@ -713,14 +715,42 @@ void CPMFAccumulator::ReadHeaderSection(FILE* fin,const CSmallString& keyline)
         }
         TemperatureUnit = sbuff.GetSubStringFromTo(22,57);
         TemperatureUnit.Trim();
-
+// -----------------------------------------------------
+    } else if( key == "NSTLIMIT" ) {
+        // read item
+        sbuff.ReadLineFromFile(fin,true,true);
+        int tr = sscanf(sbuff,"%d",&NSTLimit);
+        if( tr != 1 ) {
+            CSmallString error;
+            error << "unable to read nstlimit (" << tr << " != 1)";
+            RUNTIME_ERROR(error);
+        }
+// -----------------------------------------------------
+    } else if( key == "CURRSTEP" ) {
+        // read item
+        sbuff.ReadLineFromFile(fin,true,true);
+        int tr = sscanf(sbuff,"%d",&CurrStep);
+        if( tr != 1 ) {
+            CSmallString error;
+            error << "unable to read current MD step (" << tr << " != 1)";
+            RUNTIME_ERROR(error);
+        }
+// -----------------------------------------------------
+    } else if( key == "TIMESTEP" ) {
+        // read item
+        sbuff.ReadLineFromFile(fin,true,true);
+        int tr = sscanf(sbuff,"%lf",&TimeStep);
+        if( tr != 1 ) {
+            CSmallString error;
+            error << "unable to read timestep (" << tr << " != 1)";
+            RUNTIME_ERROR(error);
+        }
     }else {
         CSmallString error;
         error << "unrecognized ABF accumulator header keyword: '" << key << "'";
         RUNTIME_ERROR(error);
     }
 }
-
 
 //------------------------------------------------------------------------------
 
@@ -737,7 +767,7 @@ void CPMFAccumulator::UpdateNumOfBins(void)
 
 void CPMFAccumulator::ReadDataSection(FILE* fin,const CSmallString& keyline)
 {
-    CPMFAccuDataPtr data = CPMFAccuDataPtr(new CPMFAccuData(NumOfBins,NumOfCVs));
+    CPMFAccuDataPtr data = CPMFAccuDataPtr(new CPMFAccuData(NumOfBins,NumOfCVs,NSTLimit));
     data->Load(fin,keyline);
     DataBlocks[data->GetName()] = data;
 }
@@ -817,6 +847,21 @@ void CPMFAccumulator::Save(CXMLElement* p_ele)
     p_item->SetAttribute("value",TemperatureUnit);
     p_item->SetAttribute("fconv",TemperatureFConv);
 
+// header item -----------------------------------
+    p_item = p_root->CreateChildElement("HEADER");
+    p_item->SetAttribute("name","NSTLIMIT");
+    p_item->SetAttribute("value",NSTLimit);
+
+// header item -----------------------------------
+    p_item = p_root->CreateChildElement("HEADER");
+    p_item->SetAttribute("name","TIMESTEP");
+    p_item->SetAttribute("value",TimeStep);
+
+// header item -----------------------------------
+    p_item = p_root->CreateChildElement("HEADER");
+    p_item->SetAttribute("name","CURRSTEP");
+    p_item->SetAttribute("value",CurrStep);
+
 // save CVs
     SaveCVSInfo(p_root);
 
@@ -871,7 +916,7 @@ void CPMFAccumulator::Save(FILE* fout)
         RUNTIME_ERROR(error);
     }
 
-    if(fprintf(fout,"%%TEMPERATURE\n%18.11E\n",Temperature) <= 0) {
+    if(fprintf(fout,"%%TEMPERATURE\n%10.4f\n",Temperature) <= 0) {
         CSmallString error;
         error << "unable to write temperature";
         RUNTIME_ERROR(error);
@@ -888,6 +933,27 @@ void CPMFAccumulator::Save(FILE* fout)
     if(fprintf(fout,"%%TEMPERATURE-UNIT\n   %18.11E %36s\n",TemperatureFConv,(const char*)TemperatureUnit) <= 0) {
         CSmallString error;
         error << "unable to write temperature unit";
+        RUNTIME_ERROR(error);
+    }
+
+    // 21  format(I15)
+    if(fprintf(fout,"%%NSTLIMIT\n%15d\n",NSTLimit) <= 0) {
+        CSmallString error;
+        error << "unable to write nstlimit";
+        RUNTIME_ERROR(error);
+    }
+
+    // 21  format(I15)
+    if(fprintf(fout,"%%CURRSTEP\n%15d\n",CurrStep) <= 0) {
+        CSmallString error;
+        error << "unable to write current MD step";
+        RUNTIME_ERROR(error);
+    }
+
+    // 22  format(F10.41)
+    if(fprintf(fout,"%%TIMESTEP\n%10.4f\n",TimeStep) <= 0) {
+        CSmallString error;
+        error << "unable to write timestep";
         RUNTIME_ERROR(error);
     }
 
@@ -1528,7 +1594,7 @@ void CPMFAccumulator::DeleteSectionData(const CSmallString& name)
 
 void CPMFAccumulator::CreateSectionData(const CSmallString& name,const CSmallString& op,const CSmallString& type,const CSmallString& mode)
 {
-    CPMFAccuDataPtr data = CPMFAccuDataPtr(new CPMFAccuData(NumOfBins,NumOfCVs));
+    CPMFAccuDataPtr data = CPMFAccuDataPtr(new CPMFAccuData(NumOfBins,NumOfCVs,NSTLimit));
     data->Name  = name;
     data->Op    = op;
     data->Type  = type;
@@ -1555,7 +1621,7 @@ void CPMFAccumulator::CreateSectionData(const CSmallString& name,const CSmallStr
 
 void CPMFAccumulator::CreateSectionData(const CSmallString& name,const CSmallString& op,const CSmallString& type,const CSmallString& mode,int len)
 {
-    CPMFAccuDataPtr data = CPMFAccuDataPtr(new CPMFAccuData(NumOfBins,NumOfCVs));
+    CPMFAccuDataPtr data = CPMFAccuDataPtr(new CPMFAccuData(NumOfBins,NumOfCVs,NSTLimit));
     data->Name  = name;
     data->Op    = op;
     data->Type  = type;
@@ -1585,7 +1651,7 @@ void CPMFAccumulator::CreateSectionData(const CSmallString& name,const CSmallStr
 void CPMFAccumulator::CreateSectionData(const CSmallString& name,const CSmallString& op,const CSmallString& type,
                        const CSmallString& mode,const CSmallString& mxname)
 {
-    CPMFAccuDataPtr data = CPMFAccuDataPtr(new CPMFAccuData(NumOfBins,NumOfCVs));
+    CPMFAccuDataPtr data = CPMFAccuDataPtr(new CPMFAccuData(NumOfBins,NumOfCVs,NSTLimit));
     data->Name      = name;
     data->Op        = op;
     data->Type      = type;
@@ -1613,7 +1679,7 @@ void CPMFAccumulator::CreateSectionData(const CSmallString& name,const CSmallStr
 void CPMFAccumulator::CreateSectionData(const CSmallString& name,const CSmallString& op,const CSmallString& type,
                        const CSmallString& mode,const CSmallString& mxname,const CSmallString& myname)
 {
-    CPMFAccuDataPtr data = CPMFAccuDataPtr(new CPMFAccuData(NumOfBins,NumOfCVs));
+    CPMFAccuDataPtr data = CPMFAccuDataPtr(new CPMFAccuData(NumOfBins,NumOfCVs,NSTLimit));
     data->Name      = name;
     data->Op        = op;
     data->Type      = type;

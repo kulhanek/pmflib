@@ -51,8 +51,6 @@ integer     :: feimode      ! interpolation/extrapolation mode
 logical     :: fenthalpy    ! collect data for enthalpy calculation
 logical     :: fentropy     ! collect data for entropy calculation
 
-logical     :: fsmoothetot  ! smooth etot prior covariance calculation
-
 real(PMFDP) :: fepotaverage
 real(PMFDP) :: fekinaverage
 
@@ -82,7 +80,7 @@ type CVTypeABF
     real(PMFDP)             :: min_value        ! left range
     real(PMFDP)             :: max_value        ! right range
     integer                 :: nbins            ! number of bins
-    real(PMFDP)             :: wfac             ! smoothing factor
+    integer                 :: wfac             ! smoothing factor in number of bins
 end type CVTypeABF
 
 ! ----------------------
@@ -97,33 +95,31 @@ type,extends(PMFAccuType) :: ABFAccuType
     real(PMFDP),pointer    :: weights(:)                ! mask weights
 
     ! MICF
-    integer,pointer        :: nsamples(:)               ! number of hits into bins
+    real(PMFDP),pointer    :: nsamples(:)               ! number of hits into bins
     real(PMFDP),pointer    :: micf(:,:)                 ! mean ICF
     real(PMFDP),pointer    :: m2icf(:,:)                ! M2 of ICF
     real(PMFDP),pointer    :: mepot(:)                  ! mean of pot energy
     real(PMFDP),pointer    :: m2epot(:)                 ! M2 of pot energy
-    real(PMFDP),pointer    :: metot(:)                  ! mean of total energy
-    real(PMFDP),pointer    :: m2etot(:)                 ! M2 of total energy
-    real(PMFDP),pointer    :: c11hh(:,:)                ! cov(H,H) for entropy
 
-    real(PMFDP),pointer    :: mpp(:,:)                  ! alternative co-variance data
-    real(PMFDP),pointer    :: m2pp(:,:)
-    real(PMFDP),pointer    :: mpn(:,:)
-    real(PMFDP),pointer    :: m2pn(:,:)
+    ! entropy - time recording for post-processing
+    real(PMFDP),pointer    :: cvs(:,:)
+    real(PMFDP),pointer    :: zinv(:,:,:)
+    real(PMFDP),pointer    :: icf(:,:)
+    real(PMFDP),pointer    :: abf(:,:)
+    real(PMFDP),pointer    :: epot(:)
+    real(PMFDP),pointer    :: erst(:)
+    real(PMFDP),pointer    :: ekin(:)
 
-    ! applied ICF - this is not stored in PMF accumulator
-    integer,pointer        :: bnsamples(:)              ! number of hits into bins
+    ! applied ICF - this is stored in accu but ignored
+    real(PMFDP),pointer    :: bnsamples(:)              ! number of hits into bins
     real(PMFDP),pointer    :: bmicf(:,:)                ! applied MICF
 
     ! ABF force - incremental part for ABF-server
-    integer,pointer        :: inc_nsamples(:)           ! number of hits into bins
+    real(PMFDP),pointer    :: inc_nsamples(:)           ! number of hits into bins
     real(PMFDP),pointer    :: inc_micf(:,:)             ! accumulated mean ICF
     real(PMFDP),pointer    :: inc_m2icf(:,:)            ! accumulated M2 of ICF
     real(PMFDP),pointer    :: inc_mepot(:)              ! accumulated mean of pot energy
     real(PMFDP),pointer    :: inc_m2epot(:)             ! accumulated M2 of pot energy
-    real(PMFDP),pointer    :: inc_metot(:)              ! accumulated mean of total energy
-    real(PMFDP),pointer    :: inc_m2etot(:)             ! accumulated M2 of total energy
-    real(PMFDP),pointer    :: inc_c11hh(:,:)            ! accumulated cov(H,H) for entropy
 end type ABFAccuType
 
 ! ----------------------
@@ -136,18 +132,18 @@ integer                     :: outsidesamples
 real(PMFDP)                 :: fdtx                 ! timestep
 
 ! global variables for abf - results -------------------------------------------
-real(PMFDP),allocatable     :: fz(:,:)              ! Z matrix
-real(PMFDP),allocatable     :: fzinv(:,:)           ! inverse of Z matrix
+real(PMFDP),allocatable     :: fz(:,:)              ! Z matrix              in t
+real(PMFDP),allocatable     :: fzinv(:,:)           ! inverse of Z matrix   in t
 real(PMFDP),allocatable     :: vv(:)                ! for LU decomposition
-integer,allocatable         :: indx(:)
+integer,allocatable         :: indx(:)              ! for LU decomposition
+real(PMFDP),allocatable     :: fzinv0(:,:)          ! inverse of Z matrix   in t-dt
 
 ! helper arrays -------
 real(PMFDP),allocatable     :: a1(:,:)          ! acceleration in current step (t)
 real(PMFDP),allocatable     :: a0(:,:)          ! acceleration from previous step (t-dt)
 real(PMFDP),allocatable     :: v0(:,:)          ! velocity in previous step (t-dt)
-type(CVContextType)         :: cvcontex0        ! t-dt
 
-real(PMFDP),allocatable     :: la(:)            ! ABF force in coordinate direction
+real(PMFDP),allocatable     :: la(:)            ! ABF force in CV direction
 real(PMFDP),allocatable     :: zd0(:,:,:)       ! ZD0
 real(PMFDP),allocatable     :: zd1(:,:,:)       ! ZD1
 real(PMFDP),allocatable     :: pxi0(:)          !
@@ -159,22 +155,9 @@ real(PMFDP),allocatable     :: cvave(:)         ! average values of CVs
 
 integer                     :: hist_len
 real(PMFDP),allocatable     :: cvhist(:,:)      ! history of CV values
-real(PMFDP),allocatable     :: pchist(:,:)      ! history of CV momenta
 real(PMFDP),allocatable     :: epothist(:)      ! history of Epot
-real(PMFDP),allocatable     :: etothist(:)      ! history of Etot
-
-integer                     :: gpr_len          ! MUST be odd number
-real(PMFDP)                 :: gpr_width        ! SE width time steps
-real(PMFDP)                 :: gpr_noise        !
-integer                     :: gpr_kernel       ! 0 - MC(3/2)
-                                                ! 1 - MC(5/2)
-                                                ! 2 - ARDSE
-real(PMFDP),allocatable     :: gpr_K(:,:)       ! covariance matrix
-real(PMFDP),allocatable     :: gpr_model(:)     ! GPR model
-real(PMFDP),allocatable     :: gpr_kff(:)
-real(PMFDP),allocatable     :: gpr_kdf(:)
-integer,allocatable         :: gpr_indx(:)
-integer                     :: gpr_info
+real(PMFDP),allocatable     :: ersthist(:)      ! history of Erst
+real(PMFDP),allocatable     :: ekinhist(:)      ! history of Ekin
 
 ! ------------------------------------------------------------------------------
 

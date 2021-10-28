@@ -75,30 +75,24 @@ interface
 
     ! get initial data from server
     subroutine cpmf_abf_client_initial_data(ret_st,inc_nsamples,inc_micf,inc_m2icf, &
-                                            inc_mepot,inc_m2epot,inc_metot,inc_m2etot,inc_c11hh)
+                                            inc_mepot,inc_m2epot)
         integer         :: ret_st
-        integer         :: inc_nsamples(*)
+        real(8)         :: inc_nsamples(*)
         real(8)         :: inc_micf(*)
         real(8)         :: inc_m2icf(*)
         real(8)         :: inc_mepot(*)
         real(8)         :: inc_m2epot(*)
-        real(8)         :: inc_metot(*)
-        real(8)         :: inc_m2etot(*)
-        real(8)         :: inc_c11hh(*)
     end subroutine cpmf_abf_client_initial_data
 
     ! exchange data with server
     subroutine cpmf_abf_client_exchange_data(ret_st,inc_nsamples,inc_micf,inc_m2icf, &
-                                            inc_mepot,inc_m2epot,inc_metot,inc_m2etot,inc_c11hh)
+                                            inc_mepot,inc_m2epot)
         integer         :: ret_st
-        integer         :: inc_nsamples(*)
+        real(8)         :: inc_nsamples(*)
         real(8)         :: inc_micf(*)
         real(8)         :: inc_m2icf(*)
         real(8)         :: inc_mepot(*)
         real(8)         :: inc_m2epot(*)
-        real(8)         :: inc_metot(*)
-        real(8)         :: inc_m2etot(*)
-        real(8)         :: inc_c11hh(*)
     end subroutine cpmf_abf_client_exchange_data
 
     ! unregister client on server
@@ -236,10 +230,7 @@ subroutine abf_client_get_initial_data
                                     abfaccu%inc_micf,       &
                                     abfaccu%inc_m2icf,      &
                                     abfaccu%inc_mepot,      &
-                                    abfaccu%inc_m2epot,     &
-                                    abfaccu%inc_metot,      &
-                                    abfaccu%inc_m2etot,     &
-                                    abfaccu%inc_c11hh)
+                                    abfaccu%inc_m2epot)
     if( ret_st .ne. 0 ) then
         write(ABF_OUT,20)
         write(PMF_OUT,*)
@@ -261,11 +252,6 @@ subroutine abf_client_get_initial_data
                 abfaccu%m2epot(:)       = abfaccu%inc_m2epot(:)
             end if
 
-            if( fentropy ) then
-                abfaccu%metot(:)        = abfaccu%inc_metot(:)
-                abfaccu%m2etot(:)       = abfaccu%inc_m2etot(:)
-                abfaccu%c11hh(:,:)      = abfaccu%inc_c11hh(:,:)
-            end if
         case(1)
             abfaccu%bnsamples(:)        = abfaccu%inc_nsamples(:)
             abfaccu%bmicf(:,:)          = abfaccu%inc_micf(:,:)
@@ -278,9 +264,6 @@ subroutine abf_client_get_initial_data
     abfaccu%inc_m2icf(:,:)  = 0.0d0
     abfaccu%inc_mepot(:)    = 0.0d0
     abfaccu%inc_m2epot(:)   = 0.0d0
-    abfaccu%inc_metot(:)    = 0.0d0
-    abfaccu%inc_m2etot(:)   = 0.0d0
-    abfaccu%inc_c11hh(:,:)  = 0.0d0
 
     write(ABF_OUT,10)
     write(PMF_OUT,*)
@@ -332,10 +315,7 @@ subroutine abf_client_exchange_data(force_exchange)
                                         abfaccu%inc_micf,       &
                                         abfaccu%inc_m2icf,      &
                                         abfaccu%inc_mepot,      &
-                                        abfaccu%inc_m2epot,     &
-                                        abfaccu%inc_metot,      &
-                                        abfaccu%inc_m2etot,     &
-                                        abfaccu%inc_c11hh )
+                                        abfaccu%inc_m2epot )
 
     if( ret_st .ne. 0 ) then
         failure_counter = failure_counter + 1
@@ -365,12 +345,6 @@ subroutine abf_client_exchange_data(force_exchange)
                 abfaccu%mepot(:)        = abfaccu%inc_mepot(:)
                 abfaccu%m2epot(:)       = abfaccu%inc_m2epot(:)
             end if
-
-            if( fentropy ) then
-                abfaccu%metot(:)        = abfaccu%inc_metot(:)
-                abfaccu%m2etot(:)       = abfaccu%inc_m2etot(:)
-                abfaccu%c11hh(:,:)      = abfaccu%inc_c11hh(:,:)
-            end if
         case(1)
             abfaccu%bnsamples(:)        = abfaccu%inc_nsamples(:)
             abfaccu%bmicf(:,:)          = abfaccu%inc_micf(:,:)
@@ -383,9 +357,6 @@ subroutine abf_client_exchange_data(force_exchange)
     abfaccu%inc_m2icf(:,:)  = 0.0d0
     abfaccu%inc_mepot(:)    = 0.0d0
     abfaccu%inc_m2epot(:)   = 0.0d0
-    abfaccu%inc_metot(:)    = 0.0d0
-    abfaccu%inc_m2etot(:)   = 0.0d0
-    abfaccu%inc_c11hh(:,:)  = 0.0d0
 
 #endif
 

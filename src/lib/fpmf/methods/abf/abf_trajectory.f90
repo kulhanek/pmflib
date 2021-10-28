@@ -82,7 +82,7 @@ subroutine abf_trajectory_write_snapshot
     write(ABF_TRJ,10) fstep
 
     ! write accumulator
-    call abf_accu_write(ABF_TRJ)
+    call abf_accu_write(ABF_TRJ,.false.)
 
     return
 

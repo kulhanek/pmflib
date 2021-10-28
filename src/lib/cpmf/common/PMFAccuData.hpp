@@ -39,7 +39,7 @@ typedef boost::shared_ptr<CPMFAccuData>       CPMFAccuDataPtr;
 
 class PMF_PACKAGE CPMFAccuData {
 public:
-    CPMFAccuData(int nbins, int ncvs);
+    CPMFAccuData(int nbins, int ncvs,int nstlim);
 
 // I/O operation ---------------------------------------------------------------
     /// load data section
@@ -107,6 +107,9 @@ public:
     // get data section op
     const CSmallString& GetOp(void) const;
 
+    // get data section name for number of samples
+    const CSmallString& GetMSName(void) const;
+
     // get data section name for complementary mean
     const CSmallString& GetMXName(void) const;
 
@@ -135,6 +138,7 @@ public:
 private:
     int                     NumOfBins;
     int                     NumOfCVs;
+    int                     NSTLimit;
     CSmallString            Name;       // name of the section
     CSmallString            Op;         // data operation
                                         // AD - add
@@ -148,6 +152,7 @@ private:
     CSimpleVector<double>   Data;       // all data are kept as real numbers
 
     // required for combine operation of variance and co-variance
+    CSmallString            MSName;     // name of data section with number of samples
     CSmallString            MXName;     // name of data section with mean of X
     CSmallString            MYName;     // name of data section with mean of Y
 

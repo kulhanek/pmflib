@@ -48,7 +48,7 @@ subroutine abf_finalize_method
 
     call abf_client_unregister
     call abf_trajectory_close
-    call abf_restart_write
+    call abf_restart_write(.true.)
     call abf_output_close
 
 end subroutine abf_finalize_method

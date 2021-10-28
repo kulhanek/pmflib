@@ -97,7 +97,7 @@ subroutine abf_restart_update
     if( mod(fstep,frstupdate) .ne. 0 ) return
 
     call pmf_utils_open(ABF_RST,fabfrst,'U')
-    call abf_accu_write(ABF_RST)
+    call abf_accu_write(ABF_RST,.false.)
     close(ABF_RST)
 
     write(ABF_OUT,10) fstep, insidesamples, outsidesamples
@@ -112,18 +112,19 @@ end subroutine abf_restart_update
 ! Subroutine:  abf_restart_write
 !===============================================================================
 
-subroutine abf_restart_write
+subroutine abf_restart_write(full)
 
     use pmf_dat
     use pmf_utils
     use abf_accu
 
     implicit none
+    logical     :: full
     !---------------------------------------------------------------------------
 
     call pmf_utils_open(ABF_RST,fabfrst,'U')
 
-    call abf_accu_write(ABF_RST)
+    call abf_accu_write(ABF_RST,full)
 
     close(ABF_RST)
 

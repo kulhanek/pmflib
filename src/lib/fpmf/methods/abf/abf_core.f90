@@ -56,12 +56,6 @@ subroutine abf_core_main
         case(2)
             ! original ABF algorithm
             call abf_core_force_4p
-        case(3)
-            ! GPr ABF
-            call abf_core_force_gpr
-        case(4)
-            ! GPr ABF - CV momenta
-            call abf_core_force_gpr_kin
         case default
             call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented fmode in abf_core_main!')
     end select
@@ -104,17 +98,23 @@ subroutine abf_core_force_2p()
 ! shift epot ene
     epothist(1) = epothist(2)
     if( fenthalpy ) then
-        epothist(2) = PotEne + PMFEne - fepotaverage
+        epothist(2) = PotEne - fepotaverage
     else
         epothist(2) = 0.0d0
     end if
 
-! shift etot ene
-    etothist(1) = etothist(2) + KinEne - fekinaverage
-    if( fentropy ) then
-        etothist(2) = PotEne + PMFEne - fepotaverage
+    ersthist(1) = ersthist(2)
+    if( fenthalpy ) then
+        ersthist(2) = PMFEne
     else
-        etothist(2) = 0.0d0
+        ersthist(2) = 0.0d0
+    end if
+
+! shift etot ene
+    if( fentropy ) then
+        ekinhist(1) = KinEne - fekinaverage ! shifted by -dt
+    else
+        ekinhist(1) = 0.0d0
     end if
 
 ! calculate Z matrix and its inverse
@@ -164,18 +164,17 @@ subroutine abf_core_force_2p()
         pxim(:) = 0.5d0*(pxim(:)+pxip(:))
 
         ! total ABF force
-        pxi1(:) = pxi0(:) + pxim(:)
-
-        write(456,*) fstep-1.0, cvhist(:,1), pxi1, etothist(1)
+        pxi0(:) = pxi0(:) + pxim(:)
 
         ! add data to accumulator
-        call abf_accu_add_data_online(cvhist(:,1),pxi1,epothist(1),etothist(1))
+        call abf_accu_add_data_online(cvhist(:,1),fzinv0,pxi0,pxi1,epothist(1),ersthist(1),ekinhist(1))
     end if
 
     ! backup to the next step
-    zd0  = zd1
-    pxim = pxip
-    v0   = Vel
+    zd0     = zd1
+    pxim    = pxip
+    v0      = Vel
+    fzinv0  = fzinv
 
     ! apply ABF bias
     la(:) = 0.0d0
@@ -225,7 +224,7 @@ subroutine abf_core_force_4p()
     implicit none
     integer     :: i,j,k,m
     integer     :: ci,ck
-    real(PMFDP) :: v,avg_epot,avg_etot
+    real(PMFDP) :: v
     ! --------------------------------------------------------------------------
 
 ! calculate acceleration in time t for all pmf atoms
@@ -243,50 +242,30 @@ subroutine abf_core_force_4p()
         cvhist(i,4) = CVContext%CVsValues(ci)
     end do
 
-! shift epot ene
-    epothist(1) = epothist(2)
-    epothist(2) = epothist(3)
-    epothist(3) = epothist(4)
-    if( fenthalpy ) then
-        epothist(4) = PotEne + PMFEne - fepotaverage
+! apply force filters
+    if( fapply_abf ) then
+    ! calculate abf force to be applied -------------
+        select case(feimode)
+                case(0)
+                    call abf_accu_get_data(cvhist(:,4),la)
+                case(1)
+                    call abf_accu_get_data_lramp(cvhist(:,4),la)
+            case default
+                call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented extrapolation/interpolation mode!')
+        end select
+    ! project abf force along coordinate ------------
+        do i=1,NumOfABFCVs
+            ci = ABFCVList(i)%cvindx
+            do j=1,NumOfLAtoms
+                a1(:,j) = a1(:,j) + la(i) * MassInv(j) * CVContext%CVsDrvs(:,j,ci)
+            end do
+        end do
     else
-        epothist(4) = 0.0d0
-    end if
-
-    etothist(1) = etothist(2)
-    etothist(2) = etothist(3)
-    etothist(3) = etothist(4) + KinEne - fekinaverage  ! kinetic energy is delayed by dt
-    if( fentropy ) then
-        etothist(4) = PotEne + PMFEne - fepotaverage
-    else
-        etothist(4) = 0.0d0
-    end if
-
-! calculate abf force to be applied -------------
-    select case(feimode)
-            case(0)
-                call abf_accu_get_data(cvhist(:,4),la)
-            case(1)
-                call abf_accu_get_data_lramp(cvhist(:,4),la)
-        case default
-            call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented extrapolation/interpolation mode!')
-    end select
-
-    ! apply force filters
-    if( .not. fapply_abf ) then
         ! we do not want to apply ABF force - set the forces to zero
         la(:) = 0.0d0
-    end if
+   end if
 
-    ! project abf force along coordinate ------------
-    do i=1,NumOfABFCVs
-        ci = ABFCVList(i)%cvindx
-        do j=1,NumOfLAtoms
-            a1(:,j) = a1(:,j) + la(i) * MassInv(j) * CVContext%CVsDrvs(:,j,ci)
-        end do
-    end do
-
-    ! rest of ABF stuff -----------------------------
+! rest of ABF stuff -----------------------------
 
     ! calculate Z matrix and its inverse
     call abf_core_calc_Zmat(CVContext)
@@ -340,11 +319,8 @@ subroutine abf_core_force_4p()
             cvave(i) = ABFCVList(i)%cv%get_average_value(cvhist(i,2),cvhist(i,3))
         end do
 
-        avg_epot = 0.5d0*(epothist(2) + epothist(3))
-        avg_etot = 0.5d0*(etothist(2) + etothist(3))
-
         ! add data to accumulator
-        call abf_accu_add_data_online(cvave,pxi0(:),avg_epot,avg_etot)
+        call abf_accu_add_data_online_simple(cvave,pxi0)
     end if
 
     ! pxi0 <--- -pxip + pxim + pxi1 - la/2
@@ -361,373 +337,6 @@ subroutine abf_core_force_4p()
     return
 
 end subroutine abf_core_force_4p
-
-!===============================================================================
-! Subroutine:  abf_core_force_gpr
-! using Gaussian Process Regression
-!===============================================================================
-
-subroutine abf_core_force_gpr()
-
-    use pmf_utils
-    use pmf_dat
-    use pmf_cvs
-    use abf_dat
-    use abf_accu
-    use abf_output
-
-    implicit none
-    integer     :: i,j,ci,dt_index
-    real(PMFDP) :: mean,etot_dt_index
-    ! --------------------------------------------------------------------------
-
-    dt_index = gpr_len/2+1
-
-! shift history buffers
-    do i=1,hist_len-1
-        cvhist(:,i) = cvhist(:,i+1)
-        epothist(i) = epothist(i+1)
-        etothist(i) = etothist(i+1)
-    end do
-    do i=1,NumOfABFCVs
-        ci = ABFCVList(i)%cvindx
-        cvhist(i,hist_len) = CVContext%CVsValues(ci)
-    end do
-
-! update new history values - energy
-    if( fenthalpy ) then
-        epothist(hist_len) = PotEne + PMFEne - fepotaverage
-    else
-        epothist(hist_len) = 0.0d0
-    end if
-
-    etothist(hist_len-1) = etothist(hist_len-1) + KinEne - fekinaverage  ! kinetic energy is delayed by dt
-    if( fentropy ) then
-        etothist(hist_len) = PotEne + PMFEne - fepotaverage
-    else
-        etothist(hist_len) = 0.0d0
-    end if
-
-! get first derivative of CV values in time
-    if( fstep .ge. gpr_len ) then
-
-        do i=1,NumOfABFCVs
-            ! calculate mean value
-            mean = 0.0d0
-            do j=1,gpr_len
-                mean = mean + cvhist(i,hist_len-j+1)
-            end do
-            mean = mean / real(gpr_len,PMFDP)
-
-            ! shift data
-            do j=1,gpr_len
-                gpr_model(j) = cvhist(i,hist_len-j+1) - mean
-            end do
-
-            ! solve GPR
-            call dgetrs('N',gpr_len,1,gpr_K,gpr_len,gpr_indx,gpr_model,gpr_len,gpr_info)
-
-            if( gpr_info .ne. 0 ) then
-                ! throw error
-                call pmf_utils_exit(PMF_OUT,1,'[US-ABF] Unable to solve GPR model for CV time derivatives!')
-            end if
-
-            ! calculate CV derivative in time - derivative is shift invariant
-            pxi0(i) = dot_product(gpr_model,gpr_kdf)
-        end do
-
-        ! shift history buffer
-        do i=1,gpr_len-1
-            pchist(:,i) = pchist(:,i+1)
-        end do
-
-        ! get Zmat
-        call abf_core_calc_Zmat(CVContext)
-
-        ! calculate CV momenta
-        do i=1,NumOfABFCVs
-            do j=1,NumOfABFCVs
-                pchist(i,gpr_len) = fzinv(i,j) * pxi0(j)
-            end do
-        end do
-
-        ! write(78947,*) pchist(:,5)
-    end if
-
-! get first derivative of CV momenta
-    if( fstep .ge. hist_len ) then
-
-        do i=1,NumOfABFCVs
-
-            ! input data
-            do j=1,gpr_len
-                gpr_model(j) = pchist(i,gpr_len-j+1)
-            end do
-
-            ! solve GPR
-            call dgetrs('N',gpr_len,1,gpr_K,gpr_len,gpr_indx,gpr_model,gpr_len,gpr_info)
-
-            if( gpr_info .ne. 0 ) then
-                ! throw error
-                call pmf_utils_exit(PMF_OUT,1,'[ABF] Unable to solve GPR model for CV momenta time derivatives!')
-            end if
-
-            ! calculate mean force - derivative is shift invariant
-            pxi0(i) = dot_product(gpr_model,gpr_kdf)
-        end do
-
-        ! subtract biasing force
-        la(:) = 0.0d0
-        if( fapply_abf ) then
-            ! get ABF force
-            select case(feimode)
-                case(0)
-                    call abf_accu_get_data(cvhist(:,dt_index),la)
-                case(1)
-                    call abf_accu_get_data_lramp(cvhist(:,dt_index),la)
-                case default
-                    call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented extrapolation/interpolation mode!')
-            end select
-        end if
-        pxi1 = pxi0 - la
-
-        ! smooth etot
-        if( fsmoothetot ) then
-            ! calculate mean value
-            mean = 0.0d0
-            do j=1,gpr_len
-                mean = mean + etothist(gpr_len-j+1)
-            end do
-            mean = mean / real(gpr_len,PMFDP)
-
-            ! shift data
-            do j=1,gpr_len
-                gpr_model(j) = etothist(gpr_len-j+1) - mean
-            end do
-
-            ! solve GPR
-            call dgetrs('N',gpr_len,1,gpr_K,gpr_len,gpr_indx,gpr_model,gpr_len,gpr_info)
-
-            if( gpr_info .ne. 0 ) then
-                ! throw error
-                call pmf_utils_exit(PMF_OUT,1,'[ABF] Unable to solve GPR model for CV time derivatives!')
-            end if
-
-            ! calculate CV derivative in time - derivative is shift invariant
-            etot_dt_index = dot_product(gpr_model,gpr_kff) + mean
-        else
-            etot_dt_index = etothist(dt_index)
-        end if
-
-        ! write(704,*) fstep-hist_len+dt_index, cvhist(:,dt_index), pchist(:,dt_index), pxi0, etot_dt_index
-
-        ! record the data
-        call abf_accu_add_data_online(cvhist(:,dt_index),pxi1,epothist(dt_index),etot_dt_index)
-
-    end if
-
-! calculate abf force to be applied -------------
-    if( fapply_abf ) then
-        ! get ABF force
-        select case(feimode)
-            case(0)
-                call abf_accu_get_data(cvhist(:,hist_len),la)
-            case(1)
-                call abf_accu_get_data_lramp(cvhist(:,hist_len),la)
-            case default
-                call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented extrapolation/interpolation mode!')
-        end select
-
-        ! project abf force along coordinate
-        do i=1,NumOfABFCVs
-            ci = ABFCVList(i)%cvindx
-            do j=1,NumOfLAtoms
-                Frc(:,j) = Frc(:,j) + la(i) * CVContext%CVsDrvs(:,j,ci)
-            end do
-        end do
-    end if
-
-end subroutine abf_core_force_gpr
-
-!===============================================================================
-! Subroutine:  abf_core_force_gpr_kin
-! using Gaussian Process Regression - with CV momenta
-!===============================================================================
-
-subroutine abf_core_force_gpr_kin()
-
-    use pmf_utils
-    use pmf_dat
-    use pmf_cvs
-    use abf_dat
-    use abf_accu
-    use abf_output
-
-    implicit none
-    integer     :: i,j,m,ci,dt_index
-    real(PMFDP) :: mean,etot_dt_index,v
-    ! --------------------------------------------------------------------------
-
-    dt_index = gpr_len/2+1
-
-! shift history buffers
-    do i=1,hist_len-1
-        cvhist(:,i) = cvhist(:,i+1)
-        epothist(i) = epothist(i+1)
-        etothist(i) = etothist(i+1)
-    end do
-
-! update new history values - CVs
-    do i=1,NumOfABFCVs
-        ci = ABFCVList(i)%cvindx
-        cvhist(i,hist_len) = CVContext%CVsValues(ci)
-    end do
-
-! update new history values - energy
-    if( fenthalpy ) then
-        epothist(hist_len) = PotEne + PMFEne - fepotaverage
-    else
-        epothist(hist_len) = 0.0d0
-    end if
-
-    etothist(hist_len-1) = etothist(hist_len-1) + KinEne - fekinaverage  ! kinetic energy is delayed by dt
-    if( fentropy ) then
-        etothist(hist_len) = PotEne + PMFEne - fepotaverage
-    else
-        etothist(hist_len) = 0.0d0
-    end if
-
-! get first derivative of CV values in time
-    if( fstep .ge. 2 ) then
-
-        do i=1,NumOfABFCVs
-            ci = ABFCVList(i)%cvindx
-            v = 0.0d0
-            do j=1,NumOfLAtoms
-                do m=1,3
-                    v = v + 0.5d0*cvcontex0%CVsDrvs(m,j,ci)*(Vel(m,j) + v0(m,j))
-                end do
-            end do
-            pxi0(i) = v
-        end do
-
-        ! shift history buffer
-        do i=1,gpr_len-1
-            pchist(:,i) = pchist(:,i+1)
-        end do
-
-        ! get Zmat
-        call abf_core_calc_Zmat(cvcontex0)
-
-        ! calculate CV momenta
-        do i=1,NumOfABFCVs
-            v = 0.0d0
-            do j=1,NumOfABFCVs
-                 v = v + fzinv(i,j) * pxi0(j)
-            end do
-            pchist(i,gpr_len) = v
-        end do
-    end if
-
-    v0 = Vel                ! backup velocities
-    cvcontex0%CVsDrvs(:,:,:) = CVContext%CVsDrvs(:,:,:)   ! backup context
-    cvcontex0%CVsValues(:)   = CVContext%CVsValues(:)
-
-! get first derivative of CV momenta
-    if( fstep .ge. hist_len ) then
-
-        do i=1,NumOfABFCVs
-
-            ! input data
-            do j=1,gpr_len
-                gpr_model(j) = pchist(i,j)
-            end do
-
-            ! solve GPR
-            call dgetrs('N',gpr_len,1,gpr_K,gpr_len,gpr_indx,gpr_model,gpr_len,gpr_info)
-
-            if( gpr_info .ne. 0 ) then
-                ! throw error
-                call pmf_utils_exit(PMF_OUT,1,'[US-ABF] Unable to solve GPR model for CV momenta time derivatives!')
-            end if
-
-            ! calculate mean force - derivative is shift invariant
-            pxi0(i) = dot_product(gpr_model,gpr_kdf)
-        end do
-
-        ! subtract biasing force
-        la(:) = 0.0d0
-        if( fapply_abf ) then
-            ! get ABF force
-            select case(feimode)
-                case(0)
-                    call abf_accu_get_data(cvhist(:,dt_index),la)
-                case(1)
-                    call abf_accu_get_data_lramp(cvhist(:,dt_index),la)
-                case default
-                    call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented extrapolation/interpolation mode!')
-            end select
-        end if
-        pxi1 = pxi0 - la
-
-        ! smooth etot
-        if( fsmoothetot ) then
-            ! calculate mean value
-            mean = 0.0d0
-            do j=1,gpr_len
-                mean = mean + etothist(gpr_len-j+1)
-            end do
-            mean = mean / real(gpr_len,PMFDP)
-
-            ! shift data
-            do j=1,gpr_len
-                gpr_model(j) = etothist(gpr_len-j+1) - mean
-            end do
-
-            ! solve GPR
-            call dgetrs('N',gpr_len,1,gpr_K,gpr_len,gpr_indx,gpr_model,gpr_len,gpr_info)
-
-            if( gpr_info .ne. 0 ) then
-                ! throw error
-                call pmf_utils_exit(PMF_OUT,1,'[US-ABF] Unable to solve GPR model for CV time derivatives!')
-            end if
-
-            ! calculate CV derivative in time - derivative is shift invariant
-            etot_dt_index = dot_product(gpr_model,gpr_kff) + mean
-        else
-            etot_dt_index = etothist(dt_index)
-        end if
-
-        ! write(790,*) cvhist(:,dt_index),pxi1,epothist(dt_index),etothist(dt_index),pxi0,etot_dt_index
-        ! write(705,*) fstep-hist_len+dt_index, cvhist(:,dt_index), pchist(:,dt_index), pxi0, etot_dt_index
-
-        ! record the data
-        call abf_accu_add_data_online(cvhist(:,dt_index),pxi1,epothist(dt_index),etot_dt_index)
-
-    end if
-
-! calculate abf force to be applied -------------
-    if( fapply_abf ) then
-        ! get ABF force
-        select case(feimode)
-            case(0)
-                call abf_accu_get_data(cvhist(:,hist_len),la)
-            case(1)
-                call abf_accu_get_data_lramp(cvhist(:,hist_len),la)
-            case default
-                call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented extrapolation/interpolation mode!')
-        end select
-
-        ! project abf force along coordinate
-        do i=1,NumOfABFCVs
-            ci = ABFCVList(i)%cvindx
-            do j=1,NumOfLAtoms
-                Frc(:,j) = Frc(:,j) + la(i) * CVContext%CVsDrvs(:,j,ci)
-            end do
-        end do
-    end if
-
-end subroutine abf_core_force_gpr_kin
 
 !===============================================================================
 ! subroutine:  abf_core_calc_Zmat
