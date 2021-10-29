@@ -430,7 +430,7 @@ function abf_get_skernel(cvs1,cvs2) result(kval)
 ! calculate length between two points
     u2 = 0.0d0
     do i=1,NumOfABFCVs
-        dx = (cvs1(i) - cvs2(i))/(ABFCVList(i)%wfac*abfaccu%PMFAccuType%sizes(i)%bin_width)
+        dx = ABFCVList(i)%cv%get_deviation(cvs1(i),cvs2(i)) / (ABFCVList(i)%wfac*abfaccu%PMFAccuType%sizes(i)%bin_width)
         u2 = u2 + dx**2
     end do
 
@@ -703,8 +703,6 @@ subroutine abf_accu_get_data_ksmooth(cvs,gfx)
         if( snb_list(ni,gi0) .le. 0 ) cycle
         sweights(ni) = sweights(ni) / stot_weight
     end do
-
-    write(84621,*) sweights
 
 ! get smoothed mean forces
     do ni=1,max_snb_size

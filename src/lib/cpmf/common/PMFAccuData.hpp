@@ -117,16 +117,19 @@ public:
     const CSmallString& GetMYName(void) const;
 
     /// get data
-    double GetData(int ibin) const;
+    double GetData(int indi) const;
 
     /// get data
-    double GetData(int ibin, int icv) const;
+    double GetData(int indi, int icv) const;
+
+    /// get data
+    void GetData(int indi, CSimpleVector<double>& data) const;
 
     /// set data
-    void SetData(int ibin, double value);
+    void SetData(int indi, double value);
 
     /// set data
-    void SetData(int ibin, int icv, double value);
+    void SetData(int indi, int icv, double value);
 
     /// get blob data
     void GetDataBlob(double* p_blob);
@@ -148,6 +151,7 @@ private:
 
     CSmallString            Type;       // data type: R - real, I - integer
     CSmallString            Mode;       // data mode: B - per bins, C - per CVs, M - mixed per bins and cvs
+                                        //            T - per time step, S - per time step and CVs, Z - per time step and NCVS^2
     int                     Size;       // size of data
     CSimpleVector<double>   Data;       // all data are kept as real numbers
 
@@ -158,8 +162,14 @@ private:
 
     friend class CPMFAccumulator;
 
-    /// return index to mixed array
-    int map(int ibin,int icv) const;
+    /// return index to mixed array for the M mode
+    int map_M(int ibin,int icv) const;
+
+    /// return index to mixed array for the S mode
+    int map_S(int itime,int icv) const;
+
+    /// calculate size and init data block
+    void InitDataBlock(int len=0);
 };
 
 //------------------------------------------------------------------------------

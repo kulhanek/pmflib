@@ -144,9 +144,9 @@ double CABFProxy_mTdS::GetValue(int ibin,int icv,EProxyRealm realm) const
         case(ABF_TdS_HH):
             // c11     = Accu->GetData("C11HH",ibin,icv);
             // FIXME
-            c11 = 0.5*(Accu->GetData("M2PP",ibin,icv) - Accu->GetData("M2ICF",ibin,icv) - Accu->GetData("M2ETOT",ibin));
+            c11 = -0.25*(Accu->GetData("M2TDS_PP",ibin,icv) - Accu->GetData("M2TDS_PN",ibin,icv));
             m2icf   = Accu->GetData("M2ICF",ibin,icv);
-            m2ene   = Accu->GetData("M2ETOT",ibin);
+            m2ene   = 1.0; // Accu->GetData("M2ETOT",ibin);
         break;
     // -------------------
         case(ABF_TdS_HB):

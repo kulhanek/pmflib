@@ -489,6 +489,15 @@ void CPMFAccuInfo::GetMean(const CSmallString& name)
 
     vout << high;
 
+    CPMFAccuDataPtr mval_sd  = Accu->GetSectionData(mean);
+    CPMFAccuDataPtr m2val_sd = Accu->GetSectionData(m2);
+
+    if( mval_sd->GetMSName() != m2val_sd->GetMSName() ){
+        RUNTIME_ERROR("inconsistent MSName");
+    }
+
+    CPMFAccuDataPtr nsamples_sd = Accu->GetSectionData(mval_sd->GetMSName());
+
     Values.CreateVector(Accu->GetNumOfBins());
     Sigmas.CreateVector(Accu->GetNumOfBins());
     Errors.CreateVector(Accu->GetNumOfBins());
@@ -497,9 +506,9 @@ void CPMFAccuInfo::GetMean(const CSmallString& name)
 
     for(int ibin=0; ibin < Accu->GetNumOfBins(); ibin++){
 
-        double  nsamples    = Accu->GetData("NSAMPLES",ibin);
-        double  mene        = Accu->GetData(mean,ibin);
-        double  m2ene       = Accu->GetData(m2,ibin);
+        double  nsamples    = nsamples_sd->GetData(ibin);
+        double  mene        = mval_sd->GetData(ibin,Options.GetOptCV()-1);
+        double  m2ene       = m2val_sd->GetData(ibin,Options.GetOptCV()-1);
 
         if( nsamples > 0 ) {
             Values[ibin] = mene;

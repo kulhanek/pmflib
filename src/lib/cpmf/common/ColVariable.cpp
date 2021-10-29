@@ -237,6 +237,19 @@ double CColVariable::GetRValue(unsigned int bin) const
   return( GetValue(bin)*FConv );
 }
 
+
+//------------------------------------------------------------------------------
+
+int CColVariable::GetIndex(double value) const
+{
+    if( BinWidth == 0.0 ) RUNTIME_ERROR("BinWidth is zero");
+
+    int local_idx = floor( (value - MinValue) / BinWidth );
+    if( local_idx < 0 ) return(-1);
+    if( local_idx >= NumOfBins ) return(-1);
+    return(local_idx);
+}
+
 //------------------------------------------------------------------------------
 
 const CSmallString& CColVariable::GetType(void) const

@@ -1001,6 +1001,52 @@ void CPMFAccumulator::Save(FILE* fout)
 
 //------------------------------------------------------------------------------
 
+CPMFAccumulatorPtr CPMFAccumulator::Duplicate(void)
+{
+    CPMFAccumulatorPtr outaccu = CPMFAccumulatorPtr(new CPMFAccumulator);
+
+// header
+    outaccu->Version            = Version;
+    outaccu->Method             = Method;
+    outaccu->Driver             = Driver;
+    outaccu->Temperature        = Temperature;
+    outaccu->TemperatureFConv   = TemperatureFConv;
+    outaccu->TemperatureUnit    = TemperatureUnit;
+    outaccu->EnergyFConv        = EnergyFConv;
+    outaccu->EnergyUnit         = EnergyUnit;
+
+    outaccu->NCorr              = NCorr;
+
+    outaccu->NumOfCVs           = NumOfCVs;
+    outaccu->SetNumOfCVs(NumOfCVs);
+
+    outaccu->NSTLimit           = NSTLimit;
+    outaccu->CurrStep           = CurrStep;
+    outaccu->TimeStep           = TimeStep;
+
+// CVs
+    CXMLElement cvs_info(NULL);
+    SaveCVSInfo(&cvs_info);
+    outaccu->LoadCVSInfo(&cvs_info);
+
+// data sections
+    std::map<CSmallString,CPMFAccuDataPtr>::iterator  it = DataBlocks.begin();
+    std::map<CSmallString,CPMFAccuDataPtr>::iterator  ie = DataBlocks.end();
+
+    while( it != ie ){
+        CPMFAccuDataPtr ids = it->second;
+        if( ids->GetOp() != "IG" ){
+            CPMFAccuDataPtr ods = ids->Duplicate();
+            outaccu->DataBlocks[it->first] = ods;
+        }
+        it++;
+    }
+
+    return(outaccu);
+}
+
+//------------------------------------------------------------------------------
+
 void CPMFAccumulator::SetHeaders(const CSmallString& method, const CSmallString& version, const CSmallString& driver,
                 double temp, const CSmallString& temp_unit, double temp_fconv,
                 const CSmallString& ene_unit, double ene_fconv)
@@ -1248,6 +1294,20 @@ void CPMFAccumulator::SetCV(int id,
 //------------------------------------------------------------------------------
 //==============================================================================
 
+int CPMFAccumulator::GetNSTLimit(void) const
+{
+    return(NSTLimit);
+}
+
+//------------------------------------------------------------------------------
+
+double CPMFAccumulator::GetTimeStep(void) const
+{
+    return(TimeStep);
+}
+
+//------------------------------------------------------------------------------
+
 const CSmallString& CPMFAccumulator::GetMethod(void) const
 {
     return(Method);
@@ -1288,11 +1348,26 @@ const CColVariablePtr CPMFAccumulator::GetCV(int cv) const
 int CPMFAccumulator::GetGlobalIndex(const CSimpleVector<int>& position) const
 {
     int glbindex = 0;
-    for(int i=0; i < NumOfCVs; i++) {
-        if( position[i] < 0 ) return(-1);
-        if( position[i] >= CVs[i]->GetNumOfBins() ) return(-1);
-        glbindex = glbindex*CVs[i]->GetNumOfBins() + position[i];
+    for(int icv=0; icv < NumOfCVs; icv++) {
+        if( position[icv] < 0 ) return(-1);
+        if( position[icv] >= CVs[icv]->GetNumOfBins() ) return(-1);
+        glbindex = glbindex*CVs[icv]->GetNumOfBins() + position[icv];
     }
+    return(glbindex);
+}
+
+//------------------------------------------------------------------------------
+
+int CPMFAccumulator::GetGlobalIndex(const CSimpleVector<double>& point) const
+{
+    int glbindex = 0;
+
+    for(int icv=0; icv < NumOfCVs; icv++) {
+        int idx_local = CVs[icv]->GetIndex(point[icv]);
+        if( idx_local < 0 ) return(-1);
+        glbindex = glbindex * CVs[icv]->GetNumOfBins() + idx_local;
+    }
+
     return(glbindex);
 }
 
@@ -1592,7 +1667,7 @@ void CPMFAccumulator::DeleteSectionData(const CSmallString& name)
 
 //------------------------------------------------------------------------------
 
-void CPMFAccumulator::CreateSectionData(const CSmallString& name,const CSmallString& op,const CSmallString& type,const CSmallString& mode)
+CPMFAccuDataPtr CPMFAccumulator::CreateSectionData(const CSmallString& name,const CSmallString& op,const CSmallString& type,const CSmallString& mode)
 {
     CPMFAccuDataPtr data = CPMFAccuDataPtr(new CPMFAccuData(NumOfBins,NumOfCVs,NSTLimit));
     data->Name  = name;
@@ -1600,26 +1675,16 @@ void CPMFAccumulator::CreateSectionData(const CSmallString& name,const CSmallStr
     data->Type  = type;
     data->Mode  = mode;
 
-    data->Size  = 0;
-    if( data->Mode == "B" ){
-        data->Size  = NumOfBins;
-    } else if ( data->Mode == "C" ) {
-        data->Size  = NumOfCVs;
-    } else if ( data->Mode == "M" ) {
-        data->Size  = NumOfCVs * NumOfBins;
-    }
-
-    if( data->Size > 0 ) {
-        data->Data.CreateVector(data->Size);
-        data->Data.SetZero();
-    }
+    data->InitDataBlock();
 
     DataBlocks[name] = data;
+
+    return(data);
 }
 
 //------------------------------------------------------------------------------
 
-void CPMFAccumulator::CreateSectionData(const CSmallString& name,const CSmallString& op,const CSmallString& type,const CSmallString& mode,int len)
+CPMFAccuDataPtr CPMFAccumulator::CreateSectionData(const CSmallString& name,const CSmallString& op,const CSmallString& type,const CSmallString& mode,int len)
 {
     CPMFAccuDataPtr data = CPMFAccuDataPtr(new CPMFAccuData(NumOfBins,NumOfCVs,NSTLimit));
     data->Name  = name;
@@ -1627,80 +1692,71 @@ void CPMFAccumulator::CreateSectionData(const CSmallString& name,const CSmallStr
     data->Type  = type;
     data->Mode  = mode;
 
-    data->Size  = 0;
-    if( data->Mode == "B" ){
-        data->Size  = NumOfBins;
-    } else if ( data->Mode == "C" ) {
-        data->Size  = NumOfCVs;
-    } else if ( data->Mode == "M" ) {
-        data->Size  = NumOfCVs * NumOfBins;
-    } else {
-        data->Size = len;
-    }
-
-    if( data->Size > 0 ) {
-        data->Data.CreateVector(data->Size);
-        data->Data.SetZero();
-    }
+    data->InitDataBlock(len);
 
     DataBlocks[name] = data;
+
+    return(data);
 }
 
 //------------------------------------------------------------------------------
 
-void CPMFAccumulator::CreateSectionData(const CSmallString& name,const CSmallString& op,const CSmallString& type,
-                       const CSmallString& mode,const CSmallString& mxname)
+CPMFAccuDataPtr CPMFAccumulator::CreateSectionData(const CSmallString& name,const CSmallString& op,const CSmallString& type,
+                       const CSmallString& mode,const CSmallString& msname)
 {
     CPMFAccuDataPtr data = CPMFAccuDataPtr(new CPMFAccuData(NumOfBins,NumOfCVs,NSTLimit));
     data->Name      = name;
     data->Op        = op;
     data->Type      = type;
     data->Mode      = mode;
+    data->MSName    = msname;
+
+    data->InitDataBlock();
+
+    DataBlocks[name] = data;
+
+    return(data);
+}
+
+//------------------------------------------------------------------------------
+
+CPMFAccuDataPtr CPMFAccumulator::CreateSectionData(const CSmallString& name,const CSmallString& op,const CSmallString& type,
+                       const CSmallString& mode,const CSmallString& msname,const CSmallString& mxname)
+{
+    CPMFAccuDataPtr data = CPMFAccuDataPtr(new CPMFAccuData(NumOfBins,NumOfCVs,NSTLimit));
+    data->Name      = name;
+    data->Op        = op;
+    data->Type      = type;
+    data->Mode      = mode;
+    data->MSName    = msname;
     data->MXName    = mxname;
 
-    data->Size  = 0;
-    if( data->Mode == "B" ){
-        data->Size  = NumOfBins;
-    } else if ( data->Mode == "C" ) {
-        data->Size  = NumOfCVs;
-    } else if ( data->Mode == "M" ) {
-        data->Size  = NumOfCVs * NumOfBins;
-    }
-    if( data->Size > 0 ) {
-        data->Data.CreateVector(data->Size);
-        data->Data.SetZero();
-    }
+    data->InitDataBlock();
 
     DataBlocks[name] = data;
+
+    return(data);
 }
 
 //------------------------------------------------------------------------------
 
-void CPMFAccumulator::CreateSectionData(const CSmallString& name,const CSmallString& op,const CSmallString& type,
-                       const CSmallString& mode,const CSmallString& mxname,const CSmallString& myname)
+CPMFAccuDataPtr CPMFAccumulator::CreateSectionData(const CSmallString& name,const CSmallString& op,const CSmallString& type,
+                       const CSmallString& mode,const CSmallString& msname,const CSmallString& mxname,const CSmallString& myname)
 {
     CPMFAccuDataPtr data = CPMFAccuDataPtr(new CPMFAccuData(NumOfBins,NumOfCVs,NSTLimit));
     data->Name      = name;
     data->Op        = op;
     data->Type      = type;
     data->Mode      = mode;
+    data->MSName    = msname;
     data->MXName    = mxname;
     data->MYName    = myname;
 
-    data->Size  = 0;
-    if( data->Mode == "B" ){
-        data->Size  = NumOfBins;
-    } else if ( data->Mode == "C" ) {
-        data->Size  = NumOfCVs;
-    } else if ( data->Mode == "M" ) {
-        data->Size  = NumOfCVs * NumOfBins;
-    }
-    if( data->Size > 0 ) {
-        data->Data.CreateVector(data->Size);
-        data->Data.SetZero();
-    }
+    data->InitDataBlock();
 
     DataBlocks[name] = data;
+
+    return(data);
 }
 
 //------------------------------------------------------------------------------

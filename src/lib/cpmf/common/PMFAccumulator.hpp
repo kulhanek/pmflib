@@ -83,6 +83,9 @@ public:
     /// save accumulator data to XML
     void Save(CXMLElement* p_ele);
 
+    /// duplicate PMF accumulator except of IG data sections
+    CPMFAccumulatorPtr Duplicate(void);
+
 // setup methods --------------------------------------------------------------
     /// set headers
     void SetHeaders(const CSmallString& method, const CSmallString& version, const CSmallString& driver,
@@ -117,6 +120,13 @@ public:
     void Clear(void);
 
 // access data methods --------------------------------------------------------
+    /// get number of time steps
+    int GetNSTLimit(void) const;
+
+    /// get time step in [fs]
+    double GetTimeStep(void) const;
+
+// access data methods --------------------------------------------------------
 
     /// get method
     const CSmallString& GetMethod(void) const;
@@ -129,6 +139,9 @@ public:
 
     /// return global index
     int GetGlobalIndex(const CSimpleVector<int>& position) const;
+
+    /// return global index
+    int GetGlobalIndex(const CSimpleVector<double>& point) const;
 
     /// convert point index to point position
     void GetPoint(unsigned int index,CSimpleVector<double>& point) const;
@@ -193,20 +206,24 @@ public:
     void DeleteSectionData(const CSmallString& name);
 
     /// create section
-    void CreateSectionData(const CSmallString& name,const CSmallString& op,const CSmallString& type,
+    CPMFAccuDataPtr CreateSectionData(const CSmallString& name,const CSmallString& op,const CSmallString& type,
                            const CSmallString& mode);
 
     /// create section
-    void CreateSectionData(const CSmallString& name,const CSmallString& op,const CSmallString& type,
+    CPMFAccuDataPtr CreateSectionData(const CSmallString& name,const CSmallString& op,const CSmallString& type,
                            const CSmallString& mode,int len);
 
     /// create section
-    void CreateSectionData(const CSmallString& name,const CSmallString& op,const CSmallString& type,
-                           const CSmallString& mode,const CSmallString& mxname);
+    CPMFAccuDataPtr CreateSectionData(const CSmallString& name,const CSmallString& op,const CSmallString& type,
+                           const CSmallString& mode,const CSmallString& msname);
 
     /// create section
-    void CreateSectionData(const CSmallString& name,const CSmallString& op,const CSmallString& type,
-                           const CSmallString& mode,const CSmallString& mxname,const CSmallString& myname);
+    CPMFAccuDataPtr CreateSectionData(const CSmallString& name,const CSmallString& op,const CSmallString& type,
+                           const CSmallString& mode,const CSmallString& msname,const CSmallString& mxname);
+
+    /// create section
+    CPMFAccuDataPtr CreateSectionData(const CSmallString& name,const CSmallString& op,const CSmallString& type,
+                           const CSmallString& mode,const CSmallString& msname,const CSmallString& mxname,const CSmallString& myname);
 
     /// get access to data section
     CPMFAccuDataPtr GetSectionData(const CSmallString& name) const;

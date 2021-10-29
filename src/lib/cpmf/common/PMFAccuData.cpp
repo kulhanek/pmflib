@@ -45,6 +45,31 @@ CPMFAccuData::CPMFAccuData(int nbins, int ncvs,int nstlim)
 
 //------------------------------------------------------------------------------
 
+void CPMFAccuData::InitDataBlock(int len)
+{
+    Size  = len;
+    if( Mode == "B" ){
+        Size  = NumOfBins;
+    } else if ( Mode == "C" ) {
+        Size  = NumOfCVs;
+    } else if ( Mode == "M" ) {
+        Size  = NumOfCVs * NumOfBins;
+    } else if ( Mode == "T" ) {
+        Size  = NSTLimit;
+    } else if ( Mode == "S" ) {
+        Size  = NSTLimit*NumOfCVs;
+    } else if ( Mode == "Z" ) {
+        Size  = NSTLimit*NumOfCVs*NumOfCVs;
+    }
+
+    if( Size > 0 ) {
+        Data.CreateVector(Size);
+        Data.SetZero();
+    }
+}
+
+//------------------------------------------------------------------------------
+
 void CPMFAccuData::Load(FILE* p_fin,const CSmallString& keyline)
 {
     CSmallString skey;
@@ -368,67 +393,213 @@ const CSmallString& CPMFAccuData::GetOp(void) const
 //------------------------------------------------------------------------------
 //==============================================================================
 
-int CPMFAccuData::map(int ibin,int icv) const
+int CPMFAccuData::map_M(int ibin,int icv) const
 {
     return(icv + ibin*NumOfCVs);
 }
 
 //------------------------------------------------------------------------------
 
-double CPMFAccuData::GetData(int ibin) const
+int CPMFAccuData::map_S(int itime,int icv) const
 {
-    if( (ibin < 0) || (NumOfBins <= ibin) ) {
-        RUNTIME_ERROR("ibin out-of-range");
-    }
-    return( Data[ibin] );
+    return(icv + itime*NumOfCVs);
 }
 
 //------------------------------------------------------------------------------
 
-double CPMFAccuData::GetData(int ibin, int icv) const
+double CPMFAccuData::GetData(int indi) const
 {
-    if( (ibin < 0) || (NumOfBins <= ibin) ) {
-        RUNTIME_ERROR("ibin out-of-range");
+    if( Mode == "M" ) RUNTIME_ERROR("not applicable for the M mode");
+    if( Mode == "S" ) RUNTIME_ERROR("not applicable for the S mode");
+    if( Mode == "Z" ) RUNTIME_ERROR("not applicable for the Z mode");
+
+    if( Mode == "B" ){
+        if( (indi < 0) || (NumOfBins <= indi) ) {
+            RUNTIME_ERROR("indi out-of-range for the B mode");
+        }
+        return( Data[indi] );
     }
-    if( (icv < 0) || (NumOfCVs <= icv) ) {
-        RUNTIME_ERROR("icv out-of-range");
+
+    if( Mode == "T" ){
+        if( (indi < 0) || (NSTLimit <= indi) ) {
+            RUNTIME_ERROR("indi out-of-range for the T mode");
+        }
+        return( Data[indi] );
     }
+
+    if( Mode == "C" ){
+        if( (indi < 0) || (NumOfCVs <= indi) ) {
+            RUNTIME_ERROR("indi out-of-range for the C mode");
+        }
+        return( Data[indi] );
+    }
+
+    CSmallString error;
+    error << "unsupported mode '" << Mode << "'";
+    RUNTIME_ERROR(error);
+}
+
+//------------------------------------------------------------------------------
+
+double CPMFAccuData::GetData(int indi, int icv) const
+{
+    if( Mode == "C" ) RUNTIME_ERROR("not applicable for the C mode");
+    if( Mode == "Z" ) RUNTIME_ERROR("not applicable for the Z mode");
+
     int idx = 0;
-    if( NumOfBins*NumOfCVs == Size ){
-        idx = map(ibin,icv);
-    } else {
-        idx = ibin;
+
+    if( Mode == "B" ){
+        if( (indi < 0) || (NumOfBins <= indi) ) {
+            RUNTIME_ERROR("indi out-of-range for the B mode");
+        }
+        return( Data[indi] );
     }
-    return( Data[idx] );
+
+    if( Mode == "M" ){
+        if( (indi < 0) || (NumOfBins <= indi) ) {
+            RUNTIME_ERROR("indi out-of-range for the M mode");
+        }
+        if( (icv < 0) || (NumOfCVs <= icv) ) {
+            RUNTIME_ERROR("icv out-of-range for the M mode");
+        }
+        idx = map_M(indi,icv);
+        return( Data[idx] );
+    }
+
+    if( Mode == "T" ){
+        if( (indi < 0) || (NSTLimit <= indi) ) {
+            RUNTIME_ERROR("indi out-of-range for the T mode");
+        }
+        return( Data[indi] );
+    }
+
+    if( Mode == "S" ){
+        if( (indi < 0) || (NSTLimit <= indi) ) {
+            RUNTIME_ERROR("indi out-of-range for the S mode");
+        }
+        if( (icv < 0) || (NumOfCVs <= icv) ) {
+            RUNTIME_ERROR("icv out-of-range for the S mode");
+        }
+        idx = map_S(indi,icv);
+        return( Data[idx] );
+    }
+
+    CSmallString error;
+    error << "unsupported mode '" << Mode << "'";
+    RUNTIME_ERROR(error);
 }
 
 //------------------------------------------------------------------------------
 
-void CPMFAccuData::SetData(int ibin, double value)
+void CPMFAccuData::SetData(int indi, double value)
 {
-    if( (ibin < 0) || (NumOfBins <= ibin) ) {
-        RUNTIME_ERROR("ibin out-of-range");
+    if( Mode == "M" ) RUNTIME_ERROR("not applicable for the M mode");
+    if( Mode == "S" ) RUNTIME_ERROR("not applicable for the S mode");
+    if( Mode == "Z" ) RUNTIME_ERROR("not applicable for the Z mode");
+
+    if( Mode == "B" ){
+        if( (indi < 0) || (NumOfBins <= indi) ) {
+            RUNTIME_ERROR("indi out-of-range for the B mode");
+        }
+        Data[indi] = value;
+        return;
     }
-    Data[ibin] = value;
+
+    if( Mode == "T" ){
+        if( (indi < 0) || (NSTLimit <= indi) ) {
+            RUNTIME_ERROR("indi out-of-range for the T mode");
+        }
+        Data[indi] = value;
+        return;
+    }
+
+    if( Mode == "C" ){
+        if( (indi < 0) || (NumOfCVs <= indi) ) {
+            RUNTIME_ERROR("indi out-of-range for the C mode");
+        }
+        Data[indi] = value;
+        return;
+    }
+
+    CSmallString error;
+    error << "unsupported mode '" << Mode << "'";
+    RUNTIME_ERROR(error);
 }
 
 //------------------------------------------------------------------------------
 
-void CPMFAccuData::SetData(int ibin, int icv, double value)
+void CPMFAccuData::SetData(int indi, int icv, double value)
 {
-    if( (ibin < 0) || (NumOfBins <= ibin) ) {
-        RUNTIME_ERROR("ibin out-of-range");
-    }
-    if( (icv < 0) || (NumOfCVs <= icv) ) {
-        RUNTIME_ERROR("icv out-of-range");
-    }
+    if( Mode == "B" ) RUNTIME_ERROR("not applicable for the B mode");
+    if( Mode == "T" ) RUNTIME_ERROR("not applicable for the T mode");
+    if( Mode == "C" ) RUNTIME_ERROR("not applicable for the C mode");
+    if( Mode == "Z" ) RUNTIME_ERROR("not applicable for the Z mode");
+
     int idx = 0;
-    if( NumOfBins*NumOfCVs == Size ){
-        idx = map(ibin,icv);
-    } else {
-        idx = ibin;
+
+    if( Mode == "M" ){
+        if( (indi < 0) || (NumOfBins <= indi) ) {
+            RUNTIME_ERROR("indi out-of-range for the M mode");
+        }
+        if( (icv < 0) || (NumOfCVs <= icv) ) {
+            RUNTIME_ERROR("icv out-of-range for the M mode");
+        }
+        idx = map_M(indi,icv);
+        Data[idx] = value;
+        return;
     }
-    Data[idx] = value;
+
+    if( Mode == "S" ){
+        if( (indi < 0) || (NSTLimit <= indi) ) {
+            RUNTIME_ERROR("indi out-of-range for the S mode");
+        }
+        if( (icv < 0) || (NumOfCVs <= icv) ) {
+            RUNTIME_ERROR("icv out-of-range for the S mode");
+        }
+        idx = map_S(indi,icv);
+        Data[idx] = value;
+        return;
+    }
+
+    CSmallString error;
+    error << "unsupported mode '" << Mode << "'";
+    RUNTIME_ERROR(error);
+}
+
+//------------------------------------------------------------------------------
+
+void CPMFAccuData::GetData(int indi, CSimpleVector<double>& vec) const
+{
+    if( Mode == "C" ) RUNTIME_ERROR("not applicable for the C mode");
+    if( Mode == "B" ) RUNTIME_ERROR("not applicable for the B mode");
+    if( Mode == "T" ) RUNTIME_ERROR("not applicable for the T mode");
+    if( Mode == "Z" ) RUNTIME_ERROR("not applicable for the Z mode");
+
+    if( Mode == "M" ) {
+        if( vec.GetLength() != (size_t)NumOfCVs ){
+            RUNTIME_ERROR("inconsistent vector size for the B mode");
+        }
+        for(int icv=0; icv < NumOfCVs; icv++){
+            int idx = map_M(indi,icv);
+            vec[icv] = Data[idx];
+        }
+        return;
+    }
+
+    if( Mode == "S" ) {
+        if( vec.GetLength() != (size_t)NumOfCVs ){
+            RUNTIME_ERROR("inconsistent vector size for the S mode");
+        }
+        for(int icv=0; icv < NumOfCVs; icv++){
+            int idx = map_S(indi,icv);
+            vec[icv] = Data[idx];
+        }
+        return;
+    }
+
+    CSmallString error;
+    error << "unsupported mode '" << Mode << "'";
+    RUNTIME_ERROR(error);
 }
 
 //------------------------------------------------------------------------------

@@ -102,6 +102,9 @@ public:
     /// return value in user specified unit for particular bin
     double GetRValue(unsigned int bin) const;
 
+    /// get bin index
+    int GetIndex(double value) const;
+
     /// get difference between two CVs
     double GetDifference(double left,double right) const;
 
