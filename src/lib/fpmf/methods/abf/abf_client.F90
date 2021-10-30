@@ -37,7 +37,7 @@ interface
     ! set number of coordinates
     subroutine cpmf_abf_client_set_header(ret_st,ncvs,nbins,version,driver, &
                     temp,temp_unit,temp_fconv, &
-                    ene_unit,ene_fconv,enthalpy_enabled,entropy_enabled,mwa_mode)
+                    ene_unit,ene_fconv,enthalpy_enabled,mwa_mode)
         integer         :: ret_st
         integer         :: ncvs
         integer         :: nbins
@@ -49,7 +49,6 @@ interface
         character(*)    :: ene_unit
         real(8)         :: ene_fconv
         integer         :: enthalpy_enabled
-        integer         :: entropy_enabled
         integer         :: mwa_mode
     end subroutine cpmf_abf_client_set_header
 
@@ -120,7 +119,6 @@ subroutine abf_client_register
     integer        :: ret_st = 0
 #endif
     integer        :: enthalpy_enabled
-    integer        :: entropy_enabled
     ! --------------------------------------------------------------------------
 
     if( .not. fserver_enabled ) return
@@ -136,8 +134,6 @@ subroutine abf_client_register
 
     enthalpy_enabled = 0
     if( fenthalpy ) enthalpy_enabled = 1
-    entropy_enabled = 0
-    if( fentropy ) entropy_enabled = 1
 
 #ifdef PMFLIB_NETWORK
 
@@ -145,7 +141,7 @@ subroutine abf_client_register
         call cpmf_abf_client_set_header(ret_st,abfaccu%tot_cvs,abfaccu%tot_nbins,PMFLIBVER,DriverName, &
                                         ftemp,trim(pmf_unit_label(TemperatureUnit)),pmf_unit_get_rvalue(TemperatureUnit,1.0d0), &
                                         trim(pmf_unit_label(EnergyUnit)),pmf_unit_get_rvalue(EnergyUnit,1.0d0), &
-                                        enthalpy_enabled,entropy_enabled,fmwamode)
+                                        enthalpy_enabled,fmwamode)
 
         if( ret_st .ne. 0 ) then
             call pmf_utils_exit(PMF_OUT,1)

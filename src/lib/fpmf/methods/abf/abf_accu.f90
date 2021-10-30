@@ -233,6 +233,10 @@ subroutine abf_accu_read(iounit)
         end if
     end do
 
+    ! copy MICF and NSAMPLES into
+    abfaccu%bnsamples(:)    = abfaccu%nsamples(:)
+    abfaccu%bmicf(:,:)      = abfaccu%micf(:,:)
+
 500 return
 
   5 format(A80)

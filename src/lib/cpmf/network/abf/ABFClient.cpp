@@ -45,7 +45,6 @@ CABFClient::CABFClient(void)
     ClientID        = -1;
     Accu            = CPMFAccumulatorPtr(new CPMFAccumulator);
     EnthalpyEnabled = false;
-    EntropyEnabled  = false;
     NumOfCVs        = 0;
     NumOfBins       = 0;
     MWAMode         = 0;
@@ -81,20 +80,14 @@ int CABFClient::RegisterClient(void)
         Accu->UpdateNumOfBins();
 
         // create sections
-        Accu->CreateSectionData("NSAMPLES", "AD","I","B");
-        Accu->CreateSectionData("MICF",     "WA","R","M");
-        Accu->CreateSectionData("M2ICF",    "M2","R","M", "MICF");
+        Accu->CreateSectionData("NSAMPLES", "AD","R","B");
+        Accu->CreateSectionData("MICF",     "WA","R","M", "NSAMPLES");
+        Accu->CreateSectionData("M2ICF",    "M2","R","M", "NSAMPLES","MICF");
 
         if( MWAMode == 0 ) {
             if( EnthalpyEnabled ){
-                Accu->CreateSectionData("MEPOT",    "WA","R","B");
-                Accu->CreateSectionData("M2EPOT",   "M2","R","B", "MEPOT");
-            }
-
-            if( EnthalpyEnabled ){
-                Accu->CreateSectionData("METOT",    "WA","R","B");
-                Accu->CreateSectionData("M2ETOT",   "M2","R","B", "METOT");
-                Accu->CreateSectionData("C11HH",    "CO","R","M", "METOT", "MICF");
+                Accu->CreateSectionData("MEPOT",    "WA","R","B", "NSAMPLES");
+                Accu->CreateSectionData("M2EPOT",   "M2","R","B", "NSAMPLES","MEPOT");
             }
         }
 
@@ -148,12 +141,9 @@ bool CABFClient::GetInitialData(double* nsamples,
                                 double* micf,
                                 double* m2icf,
                                 double* mepot,
-                                double* m2epot,
-                                double* metot,
-                                double* m2etot,
-                                double* c11hh)
+                                double* m2epot)
 {
-    ClearExchangeData(nsamples,micf,m2icf,mepot,m2epot,metot,m2etot,c11hh);
+    ClearExchangeData(nsamples,micf,m2icf,mepot,m2epot);
 
     CClientCommand cmd;
     try{
@@ -213,23 +203,6 @@ bool CABFClient::GetInitialData(double* nsamples,
                     data->GetDataBlob(m2epot);
                 }
             }
-
-            if( EntropyEnabled ) {
-                if( accu->HasSectionData("METOT") ){
-                    data = accu->GetSectionData("METOT");
-                    data->GetDataBlob(metot);
-                }
-
-                if( accu->HasSectionData("M2ETOT") ){
-                    data = accu->GetSectionData("M2ETOT");
-                    data->GetDataBlob(m2etot);
-                }
-
-                if( accu->HasSectionData("C11HH") ){
-                    data = accu->GetSectionData("C11HH");
-                    data->GetDataBlob(c11hh);
-                }
-            }
         }
 
     } catch(std::exception& e) {
@@ -246,10 +219,7 @@ bool CABFClient::ExchangeData(  double* inc_nsamples,
                                 double* inc_micf,
                                 double* inc_m2icf,
                                 double* inc_mepot,
-                                double* inc_m2epot,
-                                double* inc_metot,
-                                double* inc_m2etot,
-                                double* inc_c11hh)
+                                double* inc_m2epot)
 {
     CClientCommand cmd;
     try{
@@ -282,18 +252,6 @@ bool CABFClient::ExchangeData(  double* inc_nsamples,
                 data = Accu->GetSectionData("M2EPOT");
                 data->SetDataBlob(inc_m2epot);
             }
-
-            // entropy
-            if( EntropyEnabled ){
-                data = Accu->GetSectionData("METOT");
-                data->SetDataBlob(inc_metot);
-
-                data = Accu->GetSectionData("M2ETOT");
-                data->SetDataBlob(inc_m2etot);
-
-                data = Accu->GetSectionData("C11HH");
-                data->SetDataBlob(inc_c11hh);
-            }
         }
 
         Accu->Save(p_ele);
@@ -301,7 +259,7 @@ bool CABFClient::ExchangeData(  double* inc_nsamples,
 // execute command
         ExecuteCommand(&cmd);
 
-        ClearExchangeData(inc_nsamples,inc_micf,inc_m2icf,inc_mepot,inc_m2epot,inc_metot,inc_m2etot,inc_c11hh);
+        ClearExchangeData(inc_nsamples,inc_micf,inc_m2icf,inc_mepot,inc_m2epot);
 
 // process results
         p_ele = cmd.GetResultElementByPath("PMFLIB-V6",false);
@@ -348,23 +306,6 @@ bool CABFClient::ExchangeData(  double* inc_nsamples,
                         data->GetDataBlob(inc_m2epot);
                     }
                 }
-
-                if( EntropyEnabled ) {
-                    if( accu->HasSectionData("METOT") ){
-                        data = accu->GetSectionData("METOT");
-                        data->GetDataBlob(inc_metot);
-                    }
-
-                    if( accu->HasSectionData("M2ETOT") ){
-                        data = accu->GetSectionData("M2ETOT");
-                        data->GetDataBlob(inc_m2etot);
-                    }
-
-                    if( accu->HasSectionData("C11HH") ){
-                        data = accu->GetSectionData("C11HH");
-                        data->GetDataBlob(inc_c11hh);
-                    }
-                }
             }
         }
 
@@ -382,10 +323,7 @@ void CABFClient::ClearExchangeData( double* inc_nsamples,
                                     double* inc_micf,
                                     double* inc_m2icf,
                                     double* inc_mepot,
-                                    double* inc_m2epot,
-                                    double* inc_metot,
-                                    double* inc_m2etot,
-                                    double* inc_c11hh)
+                                    double* inc_m2epot)
 {
     size_t nsamples_size   = NumOfBins;
     size_t micf_size       = NumOfBins*NumOfCVs;
@@ -409,22 +347,6 @@ void CABFClient::ClearExchangeData( double* inc_nsamples,
             inc_m2epot[i] = 0.0;
         }
     }
-
-// ----------------------------------------------
-
-    if( EntropyEnabled ) {
-        size_t metot_size      = NumOfBins;
-        size_t c11hh_size      = NumOfBins*NumOfCVs;
-
-        for(size_t i=0; i < metot_size; i++) {
-            inc_metot[i]  = 0.0;
-            inc_m2etot[i] = 0.0;
-        }
-        for(size_t i=0; i < c11hh_size; i++) {
-            inc_c11hh[i]  = 0.0;
-        }
-    }
-
 }
 
 //==============================================================================

@@ -228,6 +228,17 @@ void CPMFAccumulator::Load(CXMLElement* p_root)
             result &= p_item->GetAttribute("value",TemperatureUnit);
             result &= p_item->GetAttribute("fconv",TemperatureFConv);
     // -------------------------------------------
+        } else if (  name == "NSTLIMIT" ) {
+            int tmp;  // read but ignored
+            result &= p_item->GetAttribute("value",tmp);
+    // -------------------------------------------
+        } else if (  name == "TIMESTEP" ) {
+            result &= p_item->GetAttribute("value",TimeStep);
+    // -------------------------------------------
+        } else if (  name == "CURRSTEP" ) {
+            int tmp;  // read but ignored
+            result &= p_item->GetAttribute("value",tmp);
+    // -------------------------------------------
         } else {
             CSmallString error;
             error << "unrecognized header item: " << name;
@@ -936,25 +947,31 @@ void CPMFAccumulator::Save(FILE* fout)
         RUNTIME_ERROR(error);
     }
 
-    // 21  format(I15)
-    if(fprintf(fout,"%%NSTLIMIT\n%15d\n",NSTLimit) <= 0) {
-        CSmallString error;
-        error << "unable to write nstlimit";
-        RUNTIME_ERROR(error);
+    if( NSTLimit > 0 ){
+        // 21  format(I15)
+        if(fprintf(fout,"%%NSTLIMIT\n%15d\n",NSTLimit) <= 0) {
+            CSmallString error;
+            error << "unable to write nstlimit";
+            RUNTIME_ERROR(error);
+        }
     }
 
     // 21  format(I15)
-    if(fprintf(fout,"%%CURRSTEP\n%15d\n",CurrStep) <= 0) {
-        CSmallString error;
-        error << "unable to write current MD step";
-        RUNTIME_ERROR(error);
+    if( CurrStep > 0 ) {
+        if(fprintf(fout,"%%CURRSTEP\n%15d\n",CurrStep) <= 0) {
+            CSmallString error;
+            error << "unable to write current MD step";
+            RUNTIME_ERROR(error);
+        }
     }
 
-    // 22  format(F10.41)
-    if(fprintf(fout,"%%TIMESTEP\n%10.4f\n",TimeStep) <= 0) {
-        CSmallString error;
-        error << "unable to write timestep";
-        RUNTIME_ERROR(error);
+    if( TimeStep > 0 ){
+        // 22  format(F10.41)
+        if(fprintf(fout,"%%TIMESTEP\n%10.4f\n",TimeStep) <= 0) {
+            CSmallString error;
+            error << "unable to write timestep";
+            RUNTIME_ERROR(error);
+        }
     }
 
 // write coordinate specification ----------------

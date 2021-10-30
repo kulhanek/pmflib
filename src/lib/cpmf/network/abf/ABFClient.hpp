@@ -49,26 +49,19 @@ public:
                         double* inc_micf,
                         double* inc_m2icf,
                         double* inc_mepot,
-                        double* inc_m2epot,
-                        double* inc_metot,
-                        double* inc_m2etot,
-                        double* inc_c11hh);
+                        double* inc_m2epot);
 
     /// exchange data with server
     bool ExchangeData(  double* inc_nsamples,
                         double* inc_micf,
                         double* inc_m2icf,
                         double* inc_mepot,
-                        double* inc_m2epot,
-                        double* inc_metot,
-                        double* inc_m2etot,
-                        double* inc_c11hh);
+                        double* inc_m2epot);
 
 // section of public data -----------------------------------------------------
 public:
    CPMFAccumulatorPtr   Accu;
    bool                 EnthalpyEnabled;
-   bool                 EntropyEnabled;
    int                  NumOfCVs;
    int                  NumOfBins;
    int                  MWAMode;
@@ -80,10 +73,7 @@ private:
                             double* inc_micf,
                             double* inc_m2icf,
                             double* inc_mepot,
-                            double* inc_m2epot,
-                            double* inc_metot,
-                            double* inc_m2etot,
-                            double* inc_c11hh);
+                            double* inc_m2epot);
 };
 
 //------------------------------------------------------------------------------
