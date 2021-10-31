@@ -463,13 +463,13 @@ void CEntropyDer::CalculateKSWeights(CSimpleVector<double>& jpos,CSimpleVector<d
         weights[indi] = w;
         tot_w += w;
     }
-
-    if( tot_w <= 0.0 ) return;
-
-    // normalize
-    for(size_t indi=0; indi < NumOfBins; indi++) {
-        weights[indi] /= tot_w;
-    }
+//
+//    if( tot_w <= 0.0 ) return;
+//
+//    // normalize
+//    for(size_t indi=0; indi < NumOfBins; indi++) {
+//        weights[indi] /= tot_w;
+//    }
 }
 
 //------------------------------------------------------------------------------
@@ -480,16 +480,16 @@ double CEntropyDer::GetKSKernelValue(double u2)
     switch(KSKernel){
         case(EKSKT_PARABOLIC):
             if( u2 < 1.0 ){
-                return( (1-u2)*(1-u2) );
+                return( 3.0/4.0*(1-u2)*(1-u2) );
             }
             return(0.0);
         case(EKSKT_TRIWEIGHT):
             if( u2 < 1.0 ){
-                return( (1-u2)*(1-u2)*(1-u2) );
+                return( 35.0/32.0*(1-u2)*(1-u2)*(1-u2) );
             }
             return(0.0);
         case(EKSKT_GAUSSIAN):
-            return( exp(-0.5*u2) );
+            return( 1.0/sqrt(2.0*M_PI)*exp(-0.5*u2) );
         default:
             RUNTIME_ERROR("not implemented");
             break;
