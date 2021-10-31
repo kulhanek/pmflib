@@ -251,6 +251,10 @@ void CEntropyDer::CalculatePPandPN(void)
 
 // output data
     CPMFAccuDataPtr outnsamples    = OutAccu->CreateSectionData("TDS_NSAMPLES",  "AD","R","B");
+    CPMFAccuDataPtr outmicf        = OutAccu->CreateSectionData("MTDS_ICF",      "WA","R","M","TDS_NSAMPLES");
+    CPMFAccuDataPtr outm2icf       = OutAccu->CreateSectionData("M2TDS_ICF",     "M2","R","M","TDS_NSAMPLES","MTDS_ICF");
+    CPMFAccuDataPtr outmetot       = OutAccu->CreateSectionData("MTDS_ETOT",     "WA","R","B","TDS_NSAMPLES");
+    CPMFAccuDataPtr outm2etot      = OutAccu->CreateSectionData("M2TDS_ETOT",    "M2","R","B","TDS_NSAMPLES","MTDS_ETOT");
     CPMFAccuDataPtr outmpp         = OutAccu->CreateSectionData("MTDS_PP",       "WA","R","M","TDS_NSAMPLES");
     CPMFAccuDataPtr outm2pp        = OutAccu->CreateSectionData("M2TDS_PP",      "M2","R","M","TDS_NSAMPLES","MTDS_PP");
     CPMFAccuDataPtr outmpn         = OutAccu->CreateSectionData("MTDS_PN",       "WA","R","M","TDS_NSAMPLES");
@@ -267,6 +271,8 @@ void CEntropyDer::CalculatePPandPN(void)
         double erst = inerst->GetData(t);
         double ekin = inekin->GetData(t);
 
+        double etot = epot+erst+ekin;
+
         // increase number of samples
         double n    = outnsamples->GetData(gi0);
         n++;
@@ -274,10 +280,33 @@ void CEntropyDer::CalculatePPandPN(void)
 
         double inv = 1.0 / n;
 
+        double metot  = outmetot->GetData(gi0);
+        double m2etot = outm2etot->GetData(gi0);
+
+        double detot1 = etot - metot;
+        metot = metot + detot1 * inv;
+        double detot2 = etot - metot;
+        m2etot = m2etot + detot1 * detot2;
+
+        outmetot->SetData(gi0,metot);
+        outm2etot->SetData(gi0,m2etot);
+
         for(size_t icv=0; icv < NumOfCVs; icv++){
             double icf  = inicf->GetData(t,icv);
-            double pp   = epot+erst+ekin+icf;
-            double pn   = epot+erst+ekin-icf;
+            double pp   = etot+icf;
+            double pn   = etot-icf;
+
+        // ---------------------------------------
+            double micf  = outmicf->GetData(gi0,icv);
+            double m2icf = outm2icf->GetData(gi0,icv);
+
+            double dicf1 = icf - micf;
+            micf  = micf + dicf1 * inv;
+            double dicf2 = icf - micf;
+            m2icf = m2icf + dicf1 * dicf2;
+
+            outmicf->SetData(gi0,icv,micf);
+            outm2icf->SetData(gi0,icv,m2icf);
 
         // ---------------------------------------
             double mpp  = outmpp->GetData(gi0,icv);
