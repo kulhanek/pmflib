@@ -49,9 +49,6 @@ CEntropyDer::CEntropyDer(void)
     NSTLimit    = 0;
     NumOfBins   = 0;
     NumOfCVs    = 0;
-
-    KSWfac.CreateVector(1);
-    KSWfac[0] = 2.0;
 }
 
 //==============================================================================
@@ -95,15 +92,6 @@ int CEntropyDer::Init(int argc,char* argv[])
     }
     vout << "# ------------------------------------------------------------------------------" << endl;
 
-    // open files -----------------------------------
-    if( InputFile.Open(Options.GetArgInAccuName(),"r") == false ){
-        ES_ERROR("unable to open input file");
-        return(SO_USER_ERROR);
-    }
-    if( OutputFile.Open(Options.GetArgOutAccuName(),"w") == false ){
-        ES_ERROR("unable to open output file");
-        return(SO_USER_ERROR);
-    }
     return(SO_CONTINUE);
 }
 
@@ -118,6 +106,12 @@ bool CEntropyDer::Run(void)
     vout << format("%02d:Loading the input PMF accumulator ...")%State << endl;
     State++;
 
+    // open files -----------------------------------
+    if( InputFile.Open(Options.GetArgInAccuName(),"r") == false ){
+        ES_ERROR("unable to open input file");
+        return(SO_USER_ERROR);
+    }
+
     InAccu = CPMFAccumulatorPtr(new CPMFAccumulator);
     try {
         InAccu->Load(InputFile);
@@ -125,6 +119,8 @@ bool CEntropyDer::Run(void)
         ES_ERROR("unable to load the input PMF accumulator file");
         return(false);
     }
+    InputFile.Close();
+
     NSTLimit    = InAccu->GetNSTLimit();
     NumOfBins   = InAccu->GetNumOfBins();
     NumOfCVs    = InAccu->GetNumOfCVs();
@@ -139,8 +135,17 @@ bool CEntropyDer::Run(void)
     vout << endl;
     vout << format("%02d:Processing data ...")%State << endl;
     State++;
-    // CalculatePPandPN();
-    CalculatePPandPN_KS();
+    if( Options.IsOptKSKernelSet() || Options.IsOptKSWFacSet() ){
+        vout << "   Employing kernel smoothing (KS) for data binning ..." << endl;
+        vout << "      Kernel: " << Options.GetOptKSKernel() << endl;
+        SetKSKernel(Options.GetOptKSKernel());
+        vout << "      Wfac:   " << Options.GetOptKSWFac() << endl;
+        SetKSWFac(Options.GetOptKSWFac());
+        CalculatePPandPN_KS();
+    } else {
+        vout << "   Employing native approach for data binning ..."  << endl;
+        CalculatePPandPN();
+    }
     vout << "   Done." << endl;
 
 // save results
@@ -148,15 +153,84 @@ bool CEntropyDer::Run(void)
     vout << format("%02d:Saving the resulting PMF accumulator ...")%State << endl;
     State++;
 
+    if( OutputFile.Open(Options.GetArgOutAccuName(),"w") == false ){
+        ES_ERROR("unable to open output file");
+        return(SO_USER_ERROR);
+    }
+
     try {
         OutAccu->Save(OutputFile);
     } catch(...) {
         ES_ERROR("unable to save the resulting PMF accumulator file");
         return(false);
     }
+    OutputFile.Close();
     vout << "   Done." << endl;
 
     return(true);
+}
+
+//==============================================================================
+//------------------------------------------------------------------------------
+//==============================================================================
+
+void CEntropyDer::SetKSWFac(const CSmallString& spec)
+{
+    if( NumOfCVs == 0 ){
+        RUNTIME_ERROR("accumulator is not set for SetKSWFac");
+    }
+
+    string          sspec(spec);
+    vector<string>  swfacs;
+
+    split(swfacs,sspec,is_any_of("x"),token_compress_on);
+
+    if( swfacs.size() > NumOfCVs ){
+        CSmallString error;
+        error << "too many kswfacs (" << swfacs.size() << ") than required (" << NumOfCVs << ")";
+        RUNTIME_ERROR(error);
+    }
+
+    KSWFac.CreateVector(NumOfCVs);
+
+    // parse values of wfac
+    double last_wfac = 1.0;
+    for(size_t i=0; i < swfacs.size(); i++){
+        stringstream str(swfacs[i]);
+        str >> last_wfac;
+        if( ! str ){
+            CSmallString error;
+            error << "unable to decode kswfac value for position: " << i+1;
+            RUNTIME_ERROR(error);
+        }
+        KSWFac[i] = last_wfac;
+    }
+
+    // pad the rest with the last value
+    for(size_t i=swfacs.size(); i < NumOfCVs; i++){
+        KSWFac[i] = last_wfac;
+    }
+}
+
+
+//------------------------------------------------------------------------------
+
+void CEntropyDer::SetKSKernel(const CSmallString& kskernel)
+{
+    if( kskernel == "parabolic" ){
+        KSKernel = EKSKT_PARABOLIC;
+    } else if( kskernel == "triweight" ) {
+        KSKernel = EKSKT_TRIWEIGHT;
+    } else if( kskernel == "gaussian" ) {
+        KSKernel = EKSKT_GAUSSIAN;
+    } else if( kskernel == "default" ) {
+        KSKernel = EKSKT_TRIWEIGHT;
+    } else {
+        CSmallString error;
+        error << "Specified kernel '" << kskernel << "' is not supported. "
+                 "Supported kernels are: parabolic, triweight, gaussian, and default(=triweight)";
+        INVALID_ARGUMENT(error);
+    }
 }
 
 //==============================================================================
@@ -251,6 +325,10 @@ void CEntropyDer::CalculatePPandPN_KS(void)
 
 // output data
     CPMFAccuDataPtr outnsamples    = OutAccu->CreateSectionData("TDS_NSAMPLES",  "AD","R","B");
+    CPMFAccuDataPtr outmicf        = OutAccu->CreateSectionData("MTDS_ICF",      "WA","R","M","TDS_NSAMPLES");
+    CPMFAccuDataPtr outm2icf       = OutAccu->CreateSectionData("M2TDS_ICF",     "M2","R","M","TDS_NSAMPLES","MTDS_ICF");
+    CPMFAccuDataPtr outmetot       = OutAccu->CreateSectionData("MTDS_ETOT",     "WA","R","B","TDS_NSAMPLES");
+    CPMFAccuDataPtr outm2etot      = OutAccu->CreateSectionData("M2TDS_ETOT",    "M2","R","B","TDS_NSAMPLES","MTDS_ETOT");
     CPMFAccuDataPtr outmpp         = OutAccu->CreateSectionData("MTDS_PP",       "WA","R","M","TDS_NSAMPLES");
     CPMFAccuDataPtr outm2pp        = OutAccu->CreateSectionData("M2TDS_PP",      "M2","R","M","TDS_NSAMPLES","MTDS_PP");
     CPMFAccuDataPtr outmpn         = OutAccu->CreateSectionData("MTDS_PN",       "WA","R","M","TDS_NSAMPLES");
@@ -265,6 +343,8 @@ void CEntropyDer::CalculatePPandPN_KS(void)
         double erst = inerst->GetData(t);
         double ekin = inekin->GetData(t);
 
+        double etot = epot+erst+ekin;
+
         for(size_t ibin=0; ibin < NumOfBins; ibin++){
         // increase number of samples
             double w    = weights[ibin];
@@ -276,10 +356,33 @@ void CEntropyDer::CalculatePPandPN_KS(void)
 
             double inv = w / n;
 
+            double metot  = outmetot->GetData(ibin);
+            double m2etot = outm2etot->GetData(ibin);
+
+            double detot1 = etot - metot;
+            metot = metot + detot1 * inv;
+            double detot2 = etot - metot;
+            m2etot = m2etot + detot1 * detot2;
+
+            outmetot->SetData(ibin,metot);
+            outm2etot->SetData(ibin,m2etot);
+
             for(size_t icv=0; icv < NumOfCVs; icv++){
                 double icf  = inicf->GetData(t,icv);
-                double pp   = epot+erst+ekin+icf;
-                double pn   = epot+erst+ekin-icf;
+                double pp   = etot+icf;
+                double pn   = etot-icf;
+
+            // ---------------------------------------
+                double micf  = outmicf->GetData(ibin,icv);
+                double m2icf = outm2icf->GetData(ibin,icv);
+
+                double dicf1 = icf - micf;
+                micf  = micf + dicf1 * inv;
+                double dicf2 = icf - micf;
+                m2icf = m2icf + dicf1 * dicf2;
+
+                outmicf->SetData(ibin,icv,micf);
+                outm2icf->SetData(ibin,icv,m2icf);
 
             // ---------------------------------------
                 double mpp  = outmpp->GetData(ibin,icv);
@@ -324,7 +427,7 @@ void CEntropyDer::CalculateKSWeights(CSimpleVector<double>& jpos,CSimpleVector<d
         InAccu->GetPoint(indi,ipos);
         double u2 = 0.0;
         for(size_t icv=0; icv < NumOfCVs; icv++){
-            double dx = (InAccu->GetCV(icv)->GetDifference(ipos[icv],jpos[icv])) / (KSWfac[icv] * InAccu->GetCV(icv)->GetBinWidth());
+            double dx = (InAccu->GetCV(icv)->GetDifference(ipos[icv],jpos[icv])) / (KSWFac[icv] * InAccu->GetCV(icv)->GetBinWidth());
             u2 += dx*dx;
         }
         double w = GetKSKernelValue(u2);
@@ -344,10 +447,24 @@ void CEntropyDer::CalculateKSWeights(CSimpleVector<double>& jpos,CSimpleVector<d
 
 double CEntropyDer::GetKSKernelValue(double u2)
 {
-    if( u2 < 1.0 ){
-        return(35.0/32.0*(1-u2)*(1-u2)*(1-u2));
+    // prefactor is ommited as weights are normalized later
+    switch(KSKernel){
+        case(EKSKT_PARABOLIC):
+            if( u2 < 1.0 ){
+                return( (1-u2)*(1-u2) );
+            }
+            return(0.0);
+        case(EKSKT_TRIWEIGHT):
+            if( u2 < 1.0 ){
+                return( (1-u2)*(1-u2)*(1-u2) );
+            }
+            return(0.0);
+        case(EKSKT_GAUSSIAN):
+            return( exp(-0.5*u2) );
+        default:
+            RUNTIME_ERROR("not implemented");
+            break;
     }
-
     return(0.0);
 }
 
@@ -357,9 +474,6 @@ double CEntropyDer::GetKSKernelValue(double u2)
 
 void CEntropyDer::Finalize(void)
 {
-    // close files if they are own by program
-    OutputFile.Close();
-
     CSmallTimeAndDate dt;
     dt.GetActualTimeAndDate();
 

@@ -58,6 +58,8 @@ public:
     CSO_ARG(CSmallString,InAccuName)
     CSO_ARG(CSmallString,OutAccuName)
     // options ------------------------------
+    CSO_OPT(CSmallString,KSKernel)
+    CSO_OPT(CSmallString,KSWFac)
     CSO_OPT(bool,Verbose)
     CSO_OPT(bool,Version)
     CSO_OPT(bool,Help)
@@ -79,6 +81,26 @@ public:
                 "outaccu",                        /* parameter name */
                 "Name of resulting PMF accumulator. If the name is '-' then the PFM accumulator will be written to the standard output.")   /* argument description */
 // description of options ---------------------------------------------------
+    CSO_MAP_OPT(CSmallString,                           /* option type */
+                KSKernel,                        /* option name */
+                "default",                          /* default value */
+                false,                          /* is option mandatory */
+                '\0',                           /* short option name */
+                "kskernel",                      /* long option name */
+                "NAME",                           /* parameter name */
+                "Kernel for data smoothing. Supported types: epanechnikov, triweight, gaussian, and default(=triweight)")   /* option description */
+    //----------------------------------------------------------------------
+    CSO_MAP_OPT(CSmallString,                           /* option type */
+                KSWFac,                        /* option name */
+                "1.0",                          /* default value */
+                false,                          /* is option mandatory */
+                'w',                           /* short option name */
+                "kswfac",                      /* long option name */
+                "SPEC",                           /* parameter name */
+                "Factors influencing kernel smoothing for data histogram construction. The CV width is distance between "
+                "the adjacent bins multiplied by this factors in the form WFac1[xWFac2x...]. "
+                "The last value pads the rest.")   /* option description */
+    //----------------------------------------------------------------------
     CSO_MAP_OPT(bool,                           /* option type */
                 Verbose,                        /* option name */
                 false,                          /* default value */

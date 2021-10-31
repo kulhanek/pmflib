@@ -27,6 +27,12 @@
 #include <StdIOFile.hpp>
 #include <PMFAccumulator.hpp>
 
+enum EKSKernelType {
+    EKSKT_PARABOLIC = 1,
+    EKSKT_TRIWEIGHT = 2,
+    EKSKT_GAUSSIAN  = 3,
+};
+
 //------------------------------------------------------------------------------
 
 /// utility to extract enthalpy from  accumulator
@@ -61,7 +67,8 @@ private:
     size_t                  NSTLimit;
     size_t                  NumOfBins;
     size_t                  NumOfCVs;
-    CSimpleVector<double>   KSWfac;
+    EKSKernelType           KSKernel;
+    CSimpleVector<double>   KSWFac;
 
 
     void CalculatePPandPN(void);
@@ -69,6 +76,9 @@ private:
 
     void CalculateKSWeights(CSimpleVector<double>& weights,CSimpleVector<double>& jpos);
     double GetKSKernelValue(double u2);
+
+    void SetKSWFac(const CSmallString& spec);
+    void SetKSKernel(const CSmallString& kskernel);
 };
 
 //------------------------------------------------------------------------------

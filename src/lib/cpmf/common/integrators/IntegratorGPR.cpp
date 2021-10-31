@@ -142,7 +142,7 @@ void CIntegratorGPR::SetNCorr(double value)
 void CIntegratorGPR::SetWFac(const CSmallString& spec)
 {
     if( NumOfCVs == 0 ){
-        RUNTIME_ERROR("accumulator is not set for SetNCorr");
+        RUNTIME_ERROR("accumulator is not set for SetWFac");
     }
 
     string          sspec(spec);
