@@ -463,20 +463,19 @@ void CEntropyDer::CalculateKSWeights(CSimpleVector<double>& jpos,CSimpleVector<d
         weights[indi] = w;
         tot_w += w;
     }
-//
-//    if( tot_w <= 0.0 ) return;
-//
-//    // normalize
-//    for(size_t indi=0; indi < NumOfBins; indi++) {
-//        weights[indi] /= tot_w;
-//    }
+
+    if( tot_w <= 0.0 ) return;
+
+    // normalize
+    for(size_t indi=0; indi < NumOfBins; indi++) {
+        weights[indi] /= tot_w;
+    }
 }
 
 //------------------------------------------------------------------------------
 
 double CEntropyDer::GetKSKernelValue(double u2)
 {
-    // prefactor is ommited as weights are normalized later
     switch(KSKernel){
         case(EKSKT_PARABOLIC):
             if( u2 < 1.0 ){
