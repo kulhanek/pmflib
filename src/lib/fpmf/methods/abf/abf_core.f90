@@ -358,7 +358,7 @@ subroutine abf_core_force_lpf_sg()
 
     implicit none
     integer                :: i, j, ci
-    real(PMFDP)            :: v, epot, erst, ekin
+    real(PMFDP)            :: v, epot, erst, ekin, etot
     ! --------------------------------------------------------------------------
 
 !    if( mod(fstep,10000) .eq. 0 ) then
@@ -427,7 +427,6 @@ subroutine abf_core_force_lpf_sg()
 
     do i=1,NumOfABFCVs
         cvcur(i) = dot_product(sg_c0(:),xihist(1:hist_len-1,i))
-        pxi1(i)  = dot_product(sg_c0(:),micfhist(1:hist_len-1,i))
         cv1dr(i) = dot_product(sg_c1(:),xihist(1:hist_len-1,i))
         cv2dr(i) = dot_product(sg_c2(:),xihist(1:hist_len-1,i))
         do j=1,NumOfABFCVs
@@ -439,9 +438,10 @@ subroutine abf_core_force_lpf_sg()
     ! write(4789,*) fstep, CVContext%CVsValues(1), fstep-(cbuff_len/2 +(hist_len-1)/2+1), xihist((hist_len-1)/2+1,1), cvcur(1)
     ! write(4789,*) fstep, la
 
-    epot = dot_product(sg_c0(:),epothist(1:hist_len-1))
-    erst = dot_product(sg_c0(:),ersthist(1:hist_len-1))
-    ekin = dot_product(sg_c0(:),ekinhist(2:hist_len))
+    epot = epothist(3)
+    erst = ersthist(3)
+    ekin = ekinhist(4)
+    etot = epot + erst + ekin
 
     do i=1,NumOfABFCVs
         v = 0.0d0
@@ -451,10 +451,10 @@ subroutine abf_core_force_lpf_sg()
         pxi0(i) = v
     end do
 
-    pxi0(:) = pxi0(:) - pxi1(:)
+    pxi0(:) = pxi0(:) - micfhist(3,:)
 
     ! add data to accumulator
-    call abf_accu_add_data_online(cvcur,pxi0,epot,erst,epot+erst+ekin)
+    call abf_accu_add_data_online(cvcur,pxi0,epot,erst,etot)
 
 !    call abf_accu_add_data_record(cvhist(:,hist_len-1),fzinv0,pxi0,pxi1, &
 !         epothist(hist_len-1),ersthist(1),ekinhist(1))
