@@ -496,6 +496,7 @@ end subroutine abf_init_filter_lpf_none
 subroutine abf_init_filter_lpf_ma
 
     use abf_dat
+    use pmf_utils
 
     implicit none
     integer         :: alloc_failed

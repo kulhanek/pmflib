@@ -444,15 +444,15 @@ subroutine abf_core_force_lpf_sg()
     real(PMFDP)            :: v, epot, erst, ekin, c
     ! --------------------------------------------------------------------------
 
-    if( mod(fstep,10000) .eq. 0 ) then
-        rewind(789)
-        do c=3.0,11.5,0.01
-            cvcur(1) = c
-            call abf_accu_get_data(cvcur,pxi0)
-            call abf_accu_get_data_ksmooth(cvcur,pxi1)
-            write(789,*) c, pxi0(1), pxi1(1)
-        end do
-    end if
+!    if( mod(fstep,10000) .eq. 0 ) then
+!        rewind(789)
+!        do c=3.0,11.5,0.01
+!            cvcur(1) = c
+!            call abf_accu_get_data(cvcur,pxi0)
+!            call abf_accu_get_data_ksmooth(cvcur,pxi1)
+!            write(789,*) c, pxi0(1), pxi1(1)
+!        end do
+!    end if
 
 ! get current value of CVs
     do i=1,NumOfABFCVs
