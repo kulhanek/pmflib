@@ -87,7 +87,7 @@ subroutine abf_core_force_2p()
     implicit none
     integer                :: i,j,k,m
     integer                :: ci,ki
-    real(PMFDP)            :: v,e
+    real(PMFDP)            :: v,e,etot
     ! --------------------------------------------------------------------------
 
 ! shift accuvalue history
@@ -158,9 +158,8 @@ subroutine abf_core_force_2p()
         pxi0(:) = pxi0(:) + pxim(:)
 
         ! add data to accumulator
-
-! FIXME
-!       call abf_accu_add_data_online(cvhist(:,1),pxi0,epothist(1))
+        etot = epothist(1) + ersthist(1) + ekinhist(1)
+        call abf_accu_add_data_online(cvhist(:,1),pxi0,epothist(1),ersthist(1),etot)
 
         call abf_accu_add_data_record(cvhist(:,1),fzinv0,pxi0,pxi1,epothist(1),ersthist(1),ekinhist(1))
     end if
