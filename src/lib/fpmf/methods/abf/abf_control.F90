@@ -115,20 +115,20 @@ subroutine abf_control_read_abf(prm_fin)
             end if
         case(2)
             write(PMF_OUT,52)
+            call pmf_ctrl_read_integer(prm_fin,'fhramp_min',fhramp_min,'i12')
+            call pmf_ctrl_check_integer('ABF','fhramp_min',fhramp_min,0,CND_GE)
+            call pmf_ctrl_read_integer(prm_fin,'fhramp_max',fhramp_max,'i12')
+            call pmf_ctrl_check_integer('ABF','fhramp_max',fhramp_max,0,CND_GE)
+            if( fhramp_max .lt. fhramp_min ) then
+                call pmf_utils_exit(PMF_OUT,1,'[ABF] fhramp_max must be >= fhramp_min!')
+            end if
+            call pmf_ctrl_read_integer(prm_fin,'fsmooth_kernel',fsmooth_kernel,'i12')
+            call pmf_ctrl_check_integer_in_range('ABF','fsmooth_kernel',fsmooth_kernel,0,1)
         case default
             call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown extrapolation/interpolation mode!')
     end select
 
-    call pmf_ctrl_read_logical(prm_fin,'fsmooth_enable',fsmooth_enable)
-    call pmf_ctrl_read_integer(prm_fin,'fsmooth_kernel',fsmooth_kernel,'i12')
-    call pmf_ctrl_check_integer_in_range('ABF','fsmooth_kernel',fsmooth_kernel,0,1)
-
     if( fmode .eq. 3 ) then
-        call pmf_ctrl_read_integer(prm_fin,'flowpassfilter',flowpassfilter,'i12')
-        call pmf_ctrl_check_integer_in_range('ABF','flowpassfilter',flowpassfilter,0,1)
-
-        call pmf_ctrl_read_real8(prm_fin,'flpfcutofffreq',flpfcutofffreq,'F10.5')
-        call pmf_ctrl_check_real8('ABF','flpfcutofffreq',flpfcutofffreq,0.0d0,CND_GT,'F10.5')
         call pmf_ctrl_read_integer(prm_fin,'fsgframelen',fsgframelen,'i12')
         call pmf_ctrl_read_integer(prm_fin,'fsgorder',fsgorder,'i12')
     end if

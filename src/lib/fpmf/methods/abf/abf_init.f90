@@ -103,11 +103,8 @@ subroutine abf_init_dat
     insidesamples   = 0
     outsidesamples  = 0
 
-    fsmooth_enable  = .false.
     fsmooth_kernel  = 0
 
-    flowpassfilter  = 1     ! MA
-    flpfcutofffreq  = 500   ! cut-off frequency
     fsgframelen     = 5
     fsgorder        = 3
 
@@ -139,33 +136,21 @@ subroutine abf_init_print_header
     write(PMF_OUT,120)
     write(PMF_OUT,120)  ' ABF Mode'
     write(PMF_OUT,120)  ' ------------------------------------------------------'
-    write(PMF_OUT,130)  ' ABF mode (fmode)                               : ', fmode
+    write(PMF_OUT,130)  ' ABF mode (fmode)                        : ', fmode
     select case(fmode)
     case(1)
     write(PMF_OUT,120)  '      |-> Simplified ABF algorithm'
     case(2)
     write(PMF_OUT,120)  '      |-> Original ABF algorithm'
     case(3)
-    write(PMF_OUT,120)  '      |-> Low-pass filter plus Savitzky-Golay differentiation ABF algorithm'
-    select case(flowpassfilter)
-    case(0)
-    write(PMF_OUT,120)  '          \-> No low-pass filter'
-    case(1)
-    write(PMF_OUT,120)  '          \-> Moving average low-pass filter'
-    write(PMF_OUT,150)  '              Sampling frequency                : ',samplfreq,' [cm^-1]'
-    write(PMF_OUT,150)  '              Cutoff frequency (flpfcutofffreq) : ',flpfcutofffreq,' [cm^-1]'
-    write(PMF_OUT,130)  '              Frame length                      : ',cbuff_len
-    case default
-        call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown flowpassfilter in abf_init_print_header!')
-    end select
-    write(PMF_OUT,120)  '          \-> Savitzky-Golay filter'
-    write(PMF_OUT,130)  '              Frame length (fsgframelen)        : ', fsgframelen
-    write(PMF_OUT,130)  '              Polynomial order (fsgorder)       : ', fsgorder
+    write(PMF_OUT,120)  '      |-> Savitzky-Golay differentiation ABF algorithm'
+    write(PMF_OUT,130)  '          Frame length (fsgframelen)     : ', fsgframelen
+    write(PMF_OUT,130)  '          Polynomial order (fsgorder)    : ', fsgorder
     case default
         call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown fmode in abf_init_print_header!')
     end select
-    write(PMF_OUT,125)  ' Coordinate definition file (fabfdef)           : ', trim(fabfdef)
-    write(PMF_OUT,130)  ' Number of coordinates                          : ', NumOfABFCVs
+    write(PMF_OUT,125)  ' Coordinate definition file (fabfdef)    : ', trim(fabfdef)
+    write(PMF_OUT,130)  ' Number of coordinates                   : ', NumOfABFCVs
     write(PMF_OUT,120)
     write(PMF_OUT,120)  ' ABF Control'
     write(PMF_OUT,120)  ' ------------------------------------------------------'
@@ -176,16 +161,6 @@ subroutine abf_init_print_header
     write(PMF_OUT,120)
     write(PMF_OUT,120)  ' ABF Interpolation/Extrapolation '
     write(PMF_OUT,120)  ' ------------------------------------------------------'
-    write(PMF_OUT,125)  ' Use kernel smoother (fsmooth_enable)    : ', prmfile_onoff(fsmooth_enable)
-    write(PMF_OUT,130)  ' Kernel type (fsmooth_kernel)            : ', fsmooth_kernel
-    select case(fsmooth_kernel)
-    case(0)
-    write(PMF_OUT,120)  '      |-> Epanechnikov (parabolic)'
-    case(1)
-    write(PMF_OUT,120)  '      |-> Triweight'
-    case default
-        call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown kernel in abf_init_print_header!')
-    end select
     write(PMF_OUT,130)  ' Extra/interpolation mode (feimode)      : ', feimode
     select case(feimode)
     case(0)
@@ -196,6 +171,15 @@ subroutine abf_init_print_header
     write(PMF_OUT,130)  ' Max of accu samples in bin (fhramp_max) : ', fhramp_max
     case(2)
     write(PMF_OUT,120)  '      |-> Kernel smoother'
+    write(PMF_OUT,130)  '          Kernel type (fsmooth_kernel)   : ', fsmooth_kernel
+    select case(fsmooth_kernel)
+    case(0)
+    write(PMF_OUT,120)  '          |-> Epanechnikov (parabolic)'
+    case(1)
+    write(PMF_OUT,120)  '          |-> Triweight'
+    case default
+        call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown kernel in abf_init_print_header!')
+    end select
     case default
     call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown extrapolation/interpolation mode in abf_init_print_header!')
     end select
@@ -349,14 +333,6 @@ subroutine abf_init_arrays
         case(2)
             hist_len = 4
         case(3)
-            select case(flowpassfilter)
-                case(0)
-                    call abf_init_filter_lpf_none
-                case(1)
-                    call abf_init_filter_lpf_ma
-                case default
-                    call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented flowpassfilter in abf_init_arrays!')
-            end select
             call abf_init_filter_sg
         case default
             call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented fmode in abf_init_arrays!')
@@ -385,31 +361,12 @@ subroutine abf_init_arrays
     ekinhist(:)     = 0.0d0
     zinvhist(:,:,:) = 0.0d0
 
-! filtered data
-    allocate(                                   &
-            cvfilt(NumOfABFCVs),                &
-            icffilt(NumOfABFCVs),               &
-            zinvfilt(NumOfABFCVs,NumOfABFCVs),  &
-            stat= alloc_failed )
-
-    if( alloc_failed .ne. 0 ) then
-        call pmf_utils_exit(PMF_OUT,1, &
-            '[ABF] Unable to allocate memory for buffers used in ABF calculation!')
-    end if
-
-    cvfilt(:)       = 0.0d0
-    icffilt(:)      = 0.0d0
-    epotfilt        = 0.0d0
-    erstfilt        = 0.0d0
-    ekinfilt        = 0.0d0
-    zinvfilt(:,:)   = 0.0d0
-
 ! other setup ----------------------------------------------
 
     ! init accumulator
     call abf_accu_init
 
-    if( fsmooth_enable .or. (feimode .eq. 2) ) then
+    if( feimode .eq. 2 ) then
         call abf_init_snb_list
     end if
 
@@ -473,78 +430,6 @@ subroutine abf_init_snb_list
     end do
 
 end subroutine abf_init_snb_list
-
-!===============================================================================
-! Subroutine:  abf_init_filter_lpf_none
-!===============================================================================
-
-subroutine abf_init_filter_lpf_none
-
-    use abf_dat
-
-    implicit none
-    ! --------------------------------------------------------------------------
-
-    cbuff_len = 0
-
-end subroutine abf_init_filter_lpf_none
-
-!===============================================================================
-! Subroutine:  abf_init_filter_lpf_ma
-!===============================================================================
-
-subroutine abf_init_filter_lpf_ma
-
-    use abf_dat
-    use pmf_utils
-
-    implicit none
-    integer         :: alloc_failed
-    real(PMFDP)     :: normfreq
-    ! --------------------------------------------------------------------------
-
-    ! set sampling frequencies
-    samplfreq = 1.0d6 / (29.9792458*fdt)
-
-    if( (flpfcutofffreq .le. 0.0) .and. (flpfcutofffreq .gt. samplfreq) ) then
-         call pmf_utils_exit(PMF_OUT,1, '[ABF] Illegal value of cut-off frequency in abf_init_filter_lpf_ma!')
-    end if
-
-    normfreq = flpfcutofffreq / samplfreq
-
-    ! setup the length
-    ! https://dsp.stackexchange.com/questions/9966/what-is-the-cut-off-frequency-of-a-moving-average-filter
-
-    cbuff_len = ceiling( sqrt((0.442947d0/normfreq)*(0.442947d0/normfreq) + 1.0d0) )
-
-    if( cbuff_len .lt. 2 ) then
-         call pmf_utils_exit(PMF_OUT,1, '[ABF] Illegal value of cbuff_len frequency in abf_init_filter_lpf_ma!')
-    end if
-
-    inv_ma_flen = 1.0d0 / real(cbuff_len,PMFDP)
-
-    cbuff_top = 1
-
-    allocate(   cvbuffer(NumOfABFCVs,cbuff_len),                &
-                icfbuffer(NumOfABFCVs,cbuff_len),               &
-                epotbuffer(cbuff_len),                          &
-                erstbuffer(cbuff_len),                          &
-                ekinbuffer(cbuff_len),                          &
-                zinvbuffer(NumOfABFCVs,NumOfABFCVs,cbuff_len),  &
-                stat= alloc_failed )
-
-    if( alloc_failed .ne. 0 ) then
-        call pmf_utils_exit(PMF_OUT,1, '[ABF] Unable to allocate memory in abf_init_sg!')
-    end if
-
-    cvbuffer(:,:)       = 0.0d0
-    icfbuffer(:,:)      = 0.0d0
-    epotbuffer(:)       = 0.0d0
-    erstbuffer(:)       = 0.0d0
-    ekinbuffer(:)       = 0.0d0
-    zinvbuffer(:,:,:)   = 0.0d0
-
-end subroutine abf_init_filter_lpf_ma
 
 !===============================================================================
 ! Subroutine:  abf_init_filter_sg
@@ -654,7 +539,7 @@ subroutine abf_init_filter_sg
     sg_c2(:) = sg_c2(:) * invfdtx * invfdtx
 
     ! define history length
-    hist_len = np
+    hist_len = np + 1 ! add +1 for ekin delay
 
 end subroutine abf_init_filter_sg
 

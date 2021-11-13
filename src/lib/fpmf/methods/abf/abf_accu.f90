@@ -513,6 +513,37 @@ subroutine abf_accu_add_data_online(cvs,gfx,epot,erst,etot)
 end subroutine abf_accu_add_data_online
 
 !===============================================================================
+! Subroutine:  abf_accu_add_data_record
+!===============================================================================
+
+subroutine abf_accu_add_data_record(cvs,zinv,gfx,micf,epot,erst,ekin)
+
+    use abf_dat
+    use pmf_dat
+
+    implicit none
+    real(PMFDP)    :: cvs(:)
+    real(PMFDP)    :: zinv(:,:)
+    real(PMFDP)    :: gfx(:)        ! ICF
+    real(PMFDP)    :: micf(:)       ! MICF
+    real(PMFDP)    :: epot
+    real(PMFDP)    :: erst
+    real(PMFDP)    :: ekin
+    ! --------------------------------------------------------------------------
+
+    if( frecord ) then
+        abfaccu%tcvs(:,fstep)    = cvs(:)
+        abfaccu%tzinv(:,:,fstep) = zinv(:,:)
+        abfaccu%ticf(:,fstep)    = gfx(:)
+        abfaccu%tmicf(:,fstep)   = micf(:)
+        abfaccu%tepot(fstep)     = epot
+        abfaccu%terst(fstep)     = erst
+        abfaccu%tekin(fstep)     = ekin
+    end if
+
+end subroutine abf_accu_add_data_record
+
+!===============================================================================
 ! Function:  abf_get_skernel
 !===============================================================================
 
@@ -557,144 +588,6 @@ function abf_get_skernel(cvs1,cvs2) result(kval)
     end select
 
 end function abf_get_skernel
-
-!===============================================================================
-! Subroutine:  abf_accu_add_data_ksmooth
-!===============================================================================
-
-subroutine abf_accu_add_data_ksmooth(cvs,gfx,epot)
-
-    use abf_dat
-    use pmf_dat
-
-    implicit none
-    real(PMFDP)    :: cvs(:)
-    real(PMFDP)    :: gfx(:)    ! ICF
-    real(PMFDP)    :: epot
-    ! -----------------------------------------------
-    integer        :: gi0, si0, i, ni
-    real(PMFDP)    :: w, stot_weight, invn, icf
-    real(PMFDP)    :: depot1, depot2
-    real(PMFDP)    :: dicf1, dicf2
-    ! --------------------------------------------------------------------------
-
-! get global index to accumulator for cvs values
-    gi0 = pmf_accu_globalindex(abfaccu%PMFAccuType,cvs)
-    if( gi0 .le. 0 ) then
-        outsidesamples = outsidesamples + 1
-        return ! out of valid area
-    else
-        insidesamples = insidesamples + 1
-    end if
-
-! first calculate kernel values
-    stot_weight = 0.0d0
-    sweights(:) = 0.0d0
-    do ni=1,max_snb_size
-        if( snb_list(ni,gi0) .le. 0 ) cycle
-        w = abf_get_skernel(abfaccu%binpos(:,snb_list(ni,gi0)),cvs(:))
-        stot_weight  = stot_weight + w
-        sweights(ni) = w
-    end do
-    if( stot_weight .eq. 0.0d0 ) return ! out of valid area
-
-! normalize weights
-    do ni=1,max_snb_size
-        if( snb_list(ni,gi0) .le. 0 ) cycle
-        sweights(ni) = sweights(ni) / stot_weight
-    end do
-
-! apply distributed sample
-    do ni=1,max_snb_size
-        si0 = snb_list(ni,gi0)
-        if( si0 .le. 0 ) cycle
-        w = sweights(ni)
-        if( sweights(ni) .le. 0.0d0 ) cycle
-
-        ! increase number of samples
-        abfaccu%nsamples(si0) = abfaccu%nsamples(si0) + w
-        invn = w / abfaccu%nsamples(si0)
-
-        if( fenthalpy ) then
-            ! potential energy
-            depot1 = epot - abfaccu%mepot(si0)
-            abfaccu%mepot(si0)  = abfaccu%mepot(si0)  + depot1 * invn
-            depot2 = epot - abfaccu%mepot(si0)
-            abfaccu%m2epot(si0) = abfaccu%m2epot(si0) + w * depot1 * depot2
-        end if
-
-        do i=1,NumOfABFCVs
-            icf = - gfx(i)
-            dicf1 = icf - abfaccu%micf(i,si0)
-            abfaccu%micf(i,si0)  = abfaccu%micf(i,si0)  + dicf1 * invn
-            dicf2 = icf - abfaccu%micf(i,si0)
-            abfaccu%m2icf(i,si0) = abfaccu%m2icf(i,si0) + w * dicf1 * dicf2
-        end do
-
-        if( fserver_enabled ) then
-            abfaccu%inc_nsamples(si0) = abfaccu%inc_nsamples(si0) + w
-            invn = w / abfaccu%inc_nsamples(si0)
-
-            if( fenthalpy ) then
-                depot1 = epot - abfaccu%inc_mepot(si0)
-                abfaccu%inc_mepot(si0)  = abfaccu%inc_mepot(si0)  + depot1 * invn
-                depot2 = epot - abfaccu%inc_mepot(si0)
-                abfaccu%inc_m2epot(si0) = abfaccu%inc_m2epot(si0) + w * depot1 * depot2
-            end if
-
-            do i=1,NumOfABFCVs
-                icf = - gfx(i)
-                dicf1 = icf - abfaccu%inc_micf(i,si0)
-                abfaccu%inc_micf(i,si0)  = abfaccu%inc_micf(i,si0)  + dicf1 * invn
-                dicf2 = icf -  abfaccu%inc_micf(i,si0)
-                abfaccu%inc_m2icf(i,si0) = abfaccu%inc_m2icf(i,si0) + w * dicf1 * dicf2
-            end do
-
-        end if
-
-        ! increase number of samples for applied bias - this uses different counter for number of samples
-        abfaccu%bnsamples(si0) = abfaccu%bnsamples(si0) + w
-        invn = w / abfaccu%bnsamples(si0)
-
-        do i=1,NumOfABFCVs
-            icf = - gfx(i)
-            dicf1 = icf - abfaccu%bmicf(i,si0)
-            abfaccu%bmicf(i,si0)  = abfaccu%bmicf(i,si0)  + dicf1 * invn
-        end do
-    end do
-
-end subroutine abf_accu_add_data_ksmooth
-
-!===============================================================================
-! Subroutine:  abf_accu_add_data_record
-!===============================================================================
-
-subroutine abf_accu_add_data_record(cvs,zinv,gfx,micf,epot,erst,ekin)
-
-    use abf_dat
-    use pmf_dat
-
-    implicit none
-    real(PMFDP)    :: cvs(:)
-    real(PMFDP)    :: zinv(:,:)
-    real(PMFDP)    :: gfx(:)        ! ICF
-    real(PMFDP)    :: micf(:)       ! MICF
-    real(PMFDP)    :: epot
-    real(PMFDP)    :: erst
-    real(PMFDP)    :: ekin
-    ! --------------------------------------------------------------------------
-
-    if( frecord ) then
-        abfaccu%tcvs(:,fstep)    = cvs(:)
-        abfaccu%tzinv(:,:,fstep) = zinv(:,:)
-        abfaccu%ticf(:,fstep)    = gfx(:)
-        abfaccu%tmicf(:,fstep)   = micf(:)
-        abfaccu%tepot(fstep)     = epot
-        abfaccu%terst(fstep)     = erst
-        abfaccu%tekin(fstep)     = ekin
-    end if
-
-end subroutine abf_accu_add_data_record
 
 !===============================================================================
 ! Subroutine:  abf_accu_get_data
@@ -765,65 +658,6 @@ subroutine abf_accu_get_data_lramp(cvs,gfx)
     end if
 
 end subroutine abf_accu_get_data_lramp
-
-!!===============================================================================
-!! Subroutine:  abf_accu_get_data_ksmooth
-!!===============================================================================
-!
-!subroutine abf_accu_get_data_ksmooth(cvs,gfx)
-!
-!    use abf_dat
-!    use pmf_dat
-!    use pmf_utils
-!    use pmf_accu
-!
-!    implicit none
-!    real(PMFDP)    :: cvs(:)
-!    real(PMFDP)    :: gfx(:)
-!    ! -----------------------------------------------
-!    integer        :: gi0,si0,ni
-!    real(PMFDP)    :: stot_weight,w,kw,rw,n
-!    ! --------------------------------------------------------------------------
-!
-!    gfx(:) = 0.0d0
-!
-!! get global index to accumulator for average values within the set
-!    gi0 = pmf_accu_globalindex(abfaccu%PMFAccuType,cvs)
-!    if( gi0 .le. 0 ) return ! out of valid area
-!
-!! first calculate kernel values
-!    sweights(:) = 0.0d0
-!    stot_weight = 0.0d0
-!    do si0=1,abfaccu%PMFAccuType%tot_nbins
-!        w = abf_get_skernel(abfaccu%binpos(:,si0),cvs(:))
-!        stot_weight  = stot_weight + w
-!        sweights(si0) = w
-!    end do
-!    if( stot_weight .eq. 0.0d0 ) return ! out of valid area
-!
-!   ! write(4781,*) sweights
-!
-!! normalize weights
-!    do si0=1,abfaccu%PMFAccuType%tot_nbins
-!        sweights(si0) = sweights(si0) / stot_weight
-!    end do
-!
-!! get smoothed mean forces
-!    do si0=1,abfaccu%PMFAccuType%tot_nbins
-!        kw = sweights(si0)
-!        rw = 1.0d0
-!        n = abfaccu%bnsamples(si0)
-!        if( n .le. fhramp_max ) then
-!            rw = 0.0d0
-!            if( n .gt. fhramp_min ) then
-!                rw = real(n-fhramp_min)/real(fhramp_max-fhramp_min)
-!            end if
-!        end if
-!        w = rw * kw * abfaccu%weights(si0)
-!        gfx(:) = gfx(:) + w * abfaccu%bmicf(:,si0)
-!    end do
-!
-!end subroutine abf_accu_get_data_ksmooth
 
 !===============================================================================
 ! Subroutine:  abf_accu_get_data_ksmooth

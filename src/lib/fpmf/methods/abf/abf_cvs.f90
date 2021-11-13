@@ -103,7 +103,7 @@ subroutine abf_cvs_read_cv(prm_fin,abf_item)
     end if
     write(PMF_OUT,125) abf_item%nbins
 
-    if( fsmooth_enable .or. (feimode .eq. 2) ) then
+    if( feimode .eq. 2 ) then
         if( .not. prmfile_get_real8_by_key(prm_fin,'wfac',abf_item%wfac) ) then
             call pmf_utils_exit(PMF_OUT,1,'wfac is not specified!')
         end if

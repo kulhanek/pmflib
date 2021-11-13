@@ -48,8 +48,7 @@ integer     :: feimode      ! interpolation/extrapolation mode
                             ! 0 - disabled
                             ! 1 - linear ramp
 
-integer     :: flowpassfilter   ! low-pass filter for lpf_sg mode
-real(PMFDP) :: flpfcutofffreq   ! cut-off frequency
+! fmode == 3
 integer     :: fsgframelen
 integer     :: fsgorder
 
@@ -65,7 +64,6 @@ integer     :: fhramp_min
 integer     :: fhramp_max
 
 ! kernel smoothing
-logical     :: fsmooth_enable
 integer     :: fsmooth_kernel
 
 ! server part ------------------------------------------------------------------
@@ -180,32 +178,6 @@ real(PMFDP),allocatable     :: cv2dr(:)
 
 ! ------------------------------------------------------------------------------
 
-! circular buffer for low-pass filters
-integer                     :: cbuff_len
-integer                     :: cbuff_top
-
-real(PMFDP)                 :: inv_ma_flen
-
-real(PMFDP),allocatable     :: cvbuffer(:,:)        ! history of CV values
-real(PMFDP),allocatable     :: icfbuffer(:,:)
-real(PMFDP),allocatable     :: epotbuffer(:)        ! history of Epot
-real(PMFDP),allocatable     :: erstbuffer(:)        ! history of Erst
-real(PMFDP),allocatable     :: ekinbuffer(:)        ! history of Ekin
-real(PMFDP),allocatable     :: zinvbuffer(:,:,:)    ! history of zinv
-
-real(PMFDP),allocatable     :: cvfilt(:)            ! filtered values
-real(PMFDP),allocatable     :: icffilt(:)
-real(PMFDP)                 :: epotfilt
-real(PMFDP)                 :: erstfilt
-real(PMFDP)                 :: ekinfilt
-real(PMFDP),allocatable     :: zinvfilt(:,:)
-
-real(PMFDP)                 :: samplfreq
-real(PMFDP)                 :: cutofffreq
-real(PMFDP)                 :: invfdtx
-
-! ------------------------------------------------------------------------------
-
 integer                     :: hist_len
 real(PMFDP),allocatable     :: cvhist(:,:)          ! history of CV values (nCVS,hist_len)
 real(PMFDP),allocatable     :: xihist(:,:)          ! history of CV values (hist_len,nCVs)
@@ -220,6 +192,7 @@ real(PMFDP),allocatable     :: zinvhist(:,:,:)      ! history of zinv
 real(PMFDP),allocatable     :: sg_c0(:)
 real(PMFDP),allocatable     :: sg_c1(:)
 real(PMFDP),allocatable     :: sg_c2(:)
+real(PMFDP)                 :: invfdtx
 
 ! ------------------------------------------------------------------------------
 
