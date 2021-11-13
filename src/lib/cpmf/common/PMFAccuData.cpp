@@ -45,26 +45,57 @@ CPMFAccuData::CPMFAccuData(int nbins, int ncvs,int nstlim)
 
 //------------------------------------------------------------------------------
 
-void CPMFAccuData::InitDataBlock(int len)
+void CPMFAccuData::InitDataBlock(void)
 {
-    Size  = len;
+    Data.clear();
+
+    Size = 0;
     if( Mode == "B" ){
+        CVectorDataPtr data = CVectorDataPtr(new CSimpleVector<double>);
+        data->CreateVector(NumOfBins);
+        Data.push_back(data);
         Size  = NumOfBins;
     } else if ( Mode == "C" ) {
+        CVectorDataPtr data = CVectorDataPtr(new CSimpleVector<double>);
+        data->CreateVector(NumOfCVs);
+        Data.push_back(data);
         Size  = NumOfCVs;
     } else if ( Mode == "M" ) {
+        for(int icv=0; icv < NumOfCVs; icv++){
+            CVectorDataPtr data = CVectorDataPtr(new CSimpleVector<double>);
+            data->CreateVector(NumOfBins);
+            Data.push_back(data);
+        }
         Size  = NumOfCVs * NumOfBins;
     } else if ( Mode == "T" ) {
+        CVectorDataPtr data = CVectorDataPtr(new CSimpleVector<double>);
+        data->CreateVector(NSTLimit);
+        Data.push_back(data);
         Size  = NSTLimit;
     } else if ( Mode == "S" ) {
+        for(int icv=0; icv < NumOfCVs; icv++){
+            CVectorDataPtr data = CVectorDataPtr(new CSimpleVector<double>);
+            data->CreateVector(NSTLimit);
+            Data.push_back(data);
+        }
         Size  = NSTLimit*NumOfCVs;
     } else if ( Mode == "Z" ) {
+        for(int icv=0; icv < NumOfCVs; icv++){
+            for(int icv=0; icv < NumOfCVs; icv++){
+                CVectorDataPtr data = CVectorDataPtr(new CSimpleVector<double>);
+                data->CreateVector(NSTLimit);
+                Data.push_back(data);
+            }
+        }
         Size  = NSTLimit*NumOfCVs*NumOfCVs;
+    } else {
+        CSmallString error;
+        error << "unsupported mode '" << Mode << "'";
+        RUNTIME_ERROR(error);
     }
 
-    if( Size > 0 ) {
-        Data.CreateVector(Size);
-        Data.SetZero();
+    for(size_t idx=0; idx < Data.size(); idx++){
+        Data[idx]->SetZero();
     }
 }
 
@@ -80,8 +111,8 @@ void CPMFAccuData::Load(FILE* p_fin,const CSmallString& keyline)
     Mode.SetLength(1);
 
     // 5  format('@',A20,1X,A2,1X,A1,1X,A1,1X,I10[,1X,A20[,1X,A20]])
-    Size = 0;
-    if( sscanf(keyline,"%21c %2c %1c %1c %10d",skey.GetBuffer(),Op.GetBuffer(),Type.GetBuffer(),Mode.GetBuffer(),&Size) != 5 ){
+    int len = 0;
+    if( sscanf(keyline,"%21c %2c %1c %1c %10d",skey.GetBuffer(),Op.GetBuffer(),Type.GetBuffer(),Mode.GetBuffer(),&len) != 5 ){
         CSmallString error;
         error << "unable to parse keyline: '" << keyline << "'";
         RUNTIME_ERROR(error);
@@ -108,46 +139,56 @@ void CPMFAccuData::Load(FILE* p_fin,const CSmallString& keyline)
     MXName.Trim();
     MYName.Trim();
 
-    if( Size <= 0 ){
+    if( len <= 0 ){
         CSmallString error;
         error << "illegal data size for keyline: '" << keyline << "'";
         RUNTIME_ERROR(error);
     }
 
-    if( ! ( ((Mode == 'B') && (Size == NumOfBins)) ||
-            ((Mode == 'M') && (Size == NumOfBins*NumOfCVs)) ||
-            ((Mode == 'C') && (Size == NumOfCVs)) ||
-            ((Mode == 'T') && (Size == NSTLimit)) ||
-            ((Mode == 'S') && (Size == NSTLimit*NumOfCVs)) ||
-            ((Mode == 'Z') && (Size == NSTLimit*NumOfCVs*NumOfCVs)) ||
-            ( Mode == 'D') ) ) {
+    InitDataBlock();
+
+    if( len != Size ){
         CSmallString error;
-        error << "data size and mode is not consistent: '" << keyline << "'";
+        error << "inconsistent size " << len << " != " << Size;
         RUNTIME_ERROR(error);
     }
 
-    Data.CreateVector(Size);
+    size_t seg = 0;
+    size_t idx = 0;
+    CVectorDataPtr data = Data[seg];
 
     // read data
     if( Type == "I" ){
         for(int i=0; i < Size; i++){
+            if( idx == data->GetLength() ){
+                idx = 0;
+                seg++;
+                data = Data[seg];
+            }
             int value;
             if( fscanf(p_fin,"%d",&value) != 1 ){
                 CSmallString error;
                 error << "unable to read data record for keyline: '" << keyline << "'";
                 RUNTIME_ERROR(error);
             }
-            Data[i] = value;
+            data->GetRawDataField()[idx] = value;
+            idx++;
         }
     } else if ( Type == "R" ){
         for(int i=0; i < Size; i++){
+            if( idx == data->GetLength() ){
+                idx = 0;
+                seg++;
+                data = Data[seg];
+            }
             double value;
             if( fscanf(p_fin,"%lf",&value) != 1 ){
                 CSmallString error;
                 error << "unable to read data record for keyline: '" << keyline << "'";
                 RUNTIME_ERROR(error);
             }
-            Data[i] = value;
+            data->GetRawDataField()[idx] = value;
+            idx++;
         }
     } else {
         CSmallString error;
@@ -197,11 +238,23 @@ void CPMFAccuData::Save(FILE* p_fout)
         RUNTIME_ERROR(error);
     }
 
+    size_t seg = 0;
+    size_t idx = 0;
+    CVectorDataPtr data = Data[seg];
+
     // write data
     if( Type == "I" ){
         for(int i=0; i < Size; i++){
-            if( (i % 8 == 0) && (i != 0) ) fprintf(p_fout,"\n");
-            int value = Data[i];
+            if( idx == data->GetLength() ){
+                idx = 0;
+                seg++;
+                data = Data[seg];
+                fprintf(p_fout,"\n");
+            } else {
+                if( (i % 8 == 0) && (i != 0) ) fprintf(p_fout,"\n");
+            }
+            int value = data->GetRawDataField()[idx];
+            idx++;
             // 10  format(8(I9,1X))
             if( fprintf(p_fout,"%9d ",value) <= 0 ){
                 CSmallString error;
@@ -211,8 +264,17 @@ void CPMFAccuData::Save(FILE* p_fout)
         }
     } else if ( Type == "R" ){
         for(int i=0; i < Size; i++){
-            if( (i % 4 == 0) && (i != 0) ) fprintf(p_fout,"\n");
-            double value = Data[i];
+            if( idx == data->GetLength() ){
+                idx = 0;
+                seg++;
+                data = Data[seg];
+                fprintf(p_fout,"\n");
+            } else {
+                if( (i % 4 == 0) && (i != 0) ) fprintf(p_fout,"\n");
+            }
+
+            double value = data->GetRawDataField()[idx];
+            idx++;
             // 10  format(4(E19.11,1X))
             if( fprintf(p_fout,"%23.15le ",value) <= 0 ){
                 CSmallString error;
@@ -245,12 +307,13 @@ void CPMFAccuData::Load(CXMLElement* p_ele)
 // NumOfBins
 
     bool result = true;
+    int  len = 0;
 
     result &= p_ele->GetAttribute("name",Name);
     result &= p_ele->GetAttribute("op",Op);
     result &= p_ele->GetAttribute("type",Type);
     result &= p_ele->GetAttribute("mode",Mode);
-    result &= p_ele->GetAttribute("size",Size);
+    result &= p_ele->GetAttribute("size",len);
     result &= p_ele->GetAttribute("msname",MSName);
     result &= p_ele->GetAttribute("mxname",MXName);
     result &= p_ele->GetAttribute("myname",MYName);
@@ -259,11 +322,19 @@ void CPMFAccuData::Load(CXMLElement* p_ele)
         RUNTIME_ERROR("unable to get DATA attributes");
     }
 
+    InitDataBlock();
+
+    if( len != Size ){
+        CSmallString error;
+        error << "inconsistent size " << len << " != " << Size;
+        RUNTIME_ERROR(error);
+    }
+
     CXMLBinData* p_bitem = p_ele->GetFirstChildBinData("BLOB");
     if( p_bitem == NULL ){
         RUNTIME_ERROR("unable to get BLOB");
     }
-    int     len = p_bitem->GetLength<double>();
+    len = p_bitem->GetLength<double>();
     double* ptr = p_bitem->GetData<double>();
 
     if( len != Size ){
@@ -272,10 +343,19 @@ void CPMFAccuData::Load(CXMLElement* p_ele)
         RUNTIME_ERROR(error);
     }
 
-    Data.CreateVector(len);
+    size_t seg = 0;
+    size_t idx = 0;
+    CVectorDataPtr data = Data[seg];
+
     for(int i=0; i < len; i++){
-        Data[i] = *ptr;
+        if( idx == data->GetLength() ){
+            idx = 0;
+            seg++;
+            data = Data[seg];
+        }
+        data->GetRawDataField()[idx] = *ptr;
         ptr++;
+        idx++;
     }
 }
 
@@ -303,8 +383,25 @@ void CPMFAccuData::Save(CXMLElement* p_ele)
     p_ele->SetAttribute("mxname",MXName);
     p_ele->SetAttribute("myname",MYName);
 
+    CSimpleVector<double>   lcopy;
+    lcopy.CreateVector(Size);
+
+    size_t seg = 0;
+    size_t idx = 0;
+    CVectorDataPtr data = Data[seg];
+
+    for(int i=0; i < Size; i++){
+        if( idx == data->GetLength() ){
+            idx = 0;
+            seg++;
+            data = Data[seg];
+        }
+        lcopy[i] = data->GetRawDataField()[idx];
+        idx++;
+    }
+
     CXMLBinData* p_bitem = p_ele->CreateChildBinData("BLOB");
-    p_bitem->CopyData(Data,Data.GetLength()*sizeof(double),EXBDT_DOUBLE);
+    p_bitem->CopyData(lcopy,lcopy.GetLength()*sizeof(double),EXBDT_DOUBLE);
 }
 
 //==============================================================================
@@ -313,7 +410,9 @@ void CPMFAccuData::Save(CXMLElement* p_ele)
 
 void CPMFAccuData::Reset(void)
 {
-    Data.SetZero();
+    for(size_t idx=0; idx < Data.size(); idx++){
+        Data[idx]->SetZero();
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -388,24 +487,9 @@ const CSmallString& CPMFAccuData::GetOp(void) const
     return(Op);
 }
 
-
 //==============================================================================
 //------------------------------------------------------------------------------
 //==============================================================================
-
-int CPMFAccuData::map_M(int ibin,int icv) const
-{
-    return(icv + ibin*NumOfCVs);
-}
-
-//------------------------------------------------------------------------------
-
-int CPMFAccuData::map_S(int itime,int icv) const
-{
-    return(icv + itime*NumOfCVs);
-}
-
-//------------------------------------------------------------------------------
 
 double CPMFAccuData::GetData(int indi) const
 {
@@ -417,21 +501,24 @@ double CPMFAccuData::GetData(int indi) const
         if( (indi < 0) || (NumOfBins <= indi) ) {
             RUNTIME_ERROR("indi out-of-range for the B mode");
         }
-        return( Data[indi] );
+        CVectorDataPtr data = Data[0];
+        return( data->GetRawDataField()[indi] );
     }
 
     if( Mode == "T" ){
         if( (indi < 0) || (NSTLimit <= indi) ) {
             RUNTIME_ERROR("indi out-of-range for the T mode");
         }
-        return( Data[indi] );
+        CVectorDataPtr data = Data[0];
+        return( data->GetRawDataField()[indi] );
     }
 
     if( Mode == "C" ){
         if( (indi < 0) || (NumOfCVs <= indi) ) {
             RUNTIME_ERROR("indi out-of-range for the C mode");
         }
-        return( Data[indi] );
+        CVectorDataPtr data = Data[0];
+        return( data->GetRawDataField()[indi] );
     }
 
     CSmallString error;
@@ -446,13 +533,13 @@ double CPMFAccuData::GetData(int indi, int icv) const
     if( Mode == "C" ) RUNTIME_ERROR("not applicable for the C mode");
     if( Mode == "Z" ) RUNTIME_ERROR("not applicable for the Z mode");
 
-    int idx = 0;
-
     if( Mode == "B" ){
         if( (indi < 0) || (NumOfBins <= indi) ) {
             RUNTIME_ERROR("indi out-of-range for the B mode");
         }
-        return( Data[indi] );
+        // ignore icv
+        CVectorDataPtr data = Data[0];
+        return( data->GetRawDataField()[indi] );
     }
 
     if( Mode == "M" ){
@@ -462,15 +549,17 @@ double CPMFAccuData::GetData(int indi, int icv) const
         if( (icv < 0) || (NumOfCVs <= icv) ) {
             RUNTIME_ERROR("icv out-of-range for the M mode");
         }
-        idx = map_M(indi,icv);
-        return( Data[idx] );
+        CVectorDataPtr data = Data[icv];
+        return( data->GetRawDataField()[indi] );
     }
 
     if( Mode == "T" ){
         if( (indi < 0) || (NSTLimit <= indi) ) {
             RUNTIME_ERROR("indi out-of-range for the T mode");
         }
-        return( Data[indi] );
+        // ignore icv
+        CVectorDataPtr data = Data[0];
+        return( data->GetRawDataField()[indi] );
     }
 
     if( Mode == "S" ){
@@ -480,8 +569,38 @@ double CPMFAccuData::GetData(int indi, int icv) const
         if( (icv < 0) || (NumOfCVs <= icv) ) {
             RUNTIME_ERROR("icv out-of-range for the S mode");
         }
-        idx = map_S(indi,icv);
-        return( Data[idx] );
+        CVectorDataPtr data = Data[icv];
+        return( data->GetRawDataField()[indi] );
+    }
+
+    CSmallString error;
+    error << "unsupported mode '" << Mode << "'";
+    RUNTIME_ERROR(error);
+}
+
+//------------------------------------------------------------------------------
+
+double CPMFAccuData::GetData(int indi, int icv,int jcv) const
+{
+    if( Mode == "C" ) RUNTIME_ERROR("not applicable for the C mode");
+    if( Mode == "B" ) RUNTIME_ERROR("not applicable for the B mode");
+    if( Mode == "M" ) RUNTIME_ERROR("not applicable for the M mode");
+    if( Mode == "T" ) RUNTIME_ERROR("not applicable for the T mode");
+    if( Mode == "S" ) RUNTIME_ERROR("not applicable for the S mode");
+
+    if( Mode == "Z" ){
+        if( (indi < 0) || (NSTLimit <= indi) ) {
+            RUNTIME_ERROR("indi out-of-range for the Z mode");
+        }
+        if( (icv < 0) || (NumOfCVs <= icv) ) {
+            RUNTIME_ERROR("icv out-of-range for the Z mode");
+        }
+        if( (jcv < 0) || (NumOfCVs <= jcv) ) {
+            RUNTIME_ERROR("jcv out-of-range for the Z mode");
+        }
+        size_t seg = icv + NumOfCVs*jcv;
+        CVectorDataPtr data = Data[seg];
+        return( data->GetRawDataField()[indi] );
     }
 
     CSmallString error;
@@ -501,7 +620,8 @@ void CPMFAccuData::SetData(int indi, double value)
         if( (indi < 0) || (NumOfBins <= indi) ) {
             RUNTIME_ERROR("indi out-of-range for the B mode");
         }
-        Data[indi] = value;
+        CVectorDataPtr data = Data[0];
+        data->GetRawDataField()[indi] = value;
         return;
     }
 
@@ -509,7 +629,8 @@ void CPMFAccuData::SetData(int indi, double value)
         if( (indi < 0) || (NSTLimit <= indi) ) {
             RUNTIME_ERROR("indi out-of-range for the T mode");
         }
-        Data[indi] = value;
+        CVectorDataPtr data = Data[0];
+        data->GetRawDataField()[indi] = value;
         return;
     }
 
@@ -517,7 +638,8 @@ void CPMFAccuData::SetData(int indi, double value)
         if( (indi < 0) || (NumOfCVs <= indi) ) {
             RUNTIME_ERROR("indi out-of-range for the C mode");
         }
-        Data[indi] = value;
+        CVectorDataPtr data = Data[0];
+        data->GetRawDataField()[indi] = value;
         return;
     }
 
@@ -535,8 +657,6 @@ void CPMFAccuData::SetData(int indi, int icv, double value)
     if( Mode == "C" ) RUNTIME_ERROR("not applicable for the C mode");
     if( Mode == "Z" ) RUNTIME_ERROR("not applicable for the Z mode");
 
-    int idx = 0;
-
     if( Mode == "M" ){
         if( (indi < 0) || (NumOfBins <= indi) ) {
             RUNTIME_ERROR("indi out-of-range for the M mode");
@@ -544,8 +664,8 @@ void CPMFAccuData::SetData(int indi, int icv, double value)
         if( (icv < 0) || (NumOfCVs <= icv) ) {
             RUNTIME_ERROR("icv out-of-range for the M mode");
         }
-        idx = map_M(indi,icv);
-        Data[idx] = value;
+        CVectorDataPtr data = Data[icv];
+        data->GetRawDataField()[indi] = value;
         return;
     }
 
@@ -556,44 +676,8 @@ void CPMFAccuData::SetData(int indi, int icv, double value)
         if( (icv < 0) || (NumOfCVs <= icv) ) {
             RUNTIME_ERROR("icv out-of-range for the S mode");
         }
-        idx = map_S(indi,icv);
-        Data[idx] = value;
-        return;
-    }
-
-    CSmallString error;
-    error << "unsupported mode '" << Mode << "'";
-    RUNTIME_ERROR(error);
-}
-
-//------------------------------------------------------------------------------
-
-void CPMFAccuData::GetData(int indi, CSimpleVector<double>& vec) const
-{
-    if( Mode == "C" ) RUNTIME_ERROR("not applicable for the C mode");
-    if( Mode == "B" ) RUNTIME_ERROR("not applicable for the B mode");
-    if( Mode == "T" ) RUNTIME_ERROR("not applicable for the T mode");
-    if( Mode == "Z" ) RUNTIME_ERROR("not applicable for the Z mode");
-
-    if( Mode == "M" ) {
-        if( vec.GetLength() != (size_t)NumOfCVs ){
-            RUNTIME_ERROR("inconsistent vector size for the B mode");
-        }
-        for(int icv=0; icv < NumOfCVs; icv++){
-            int idx = map_M(indi,icv);
-            vec[icv] = Data[idx];
-        }
-        return;
-    }
-
-    if( Mode == "S" ) {
-        if( vec.GetLength() != (size_t)NumOfCVs ){
-            RUNTIME_ERROR("inconsistent vector size for the S mode");
-        }
-        for(int icv=0; icv < NumOfCVs; icv++){
-            int idx = map_S(indi,icv);
-            vec[icv] = Data[idx];
-        }
+        CVectorDataPtr data = Data[icv];
+        data->GetRawDataField()[indi] = value;
         return;
     }
 
@@ -606,12 +690,12 @@ void CPMFAccuData::GetData(int indi, CSimpleVector<double>& vec) const
 
 void CPMFAccuData::GetDataBlob(double* p_blob)
 {
-    double* p_source = Data;
-
-    for(size_t i=0; i < Data.GetLength(); i++){
-        *p_blob = *p_source;
-        p_blob++;
-        p_source++;
+    for(size_t seg = 0; seg < Data.size(); seg++){
+        CVectorDataPtr data  = Data[seg];
+        for(size_t idx = 0; idx < data->GetLength(); idx++){
+            *p_blob = data->GetRawDataField()[idx];
+            p_blob++;
+        }
     }
 }
 
@@ -619,12 +703,29 @@ void CPMFAccuData::GetDataBlob(double* p_blob)
 
 void CPMFAccuData::SetDataBlob(double* p_blob)
 {
-    double* p_dest = Data;
+    for(size_t seg = 0; seg < Data.size(); seg++){
+        CVectorDataPtr data  = Data[seg];
+        for(size_t idx = 0; idx < data->GetLength(); idx++){
+            data->GetRawDataField()[idx] = *p_blob;
+            p_blob++;
+        }
+    }
+}
 
-    for(size_t i=0; i < Data.GetLength(); i++){
-        *p_dest = *p_blob;
-        p_blob++;
-        p_dest++;
+//------------------------------------------------------------------------------
+
+CVectorDataPtr CPMFAccuData::GetDataBlob(int icv,int jcv)
+{
+    int seg = icv + NumOfCVs*jcv;
+    return(Data[seg]);
+}
+
+//------------------------------------------------------------------------------
+
+void CPMFAccuData::GetDataBlob(int indi,CSimpleVector<double>& data) const
+{
+    for(size_t indj=0; indj < data.GetLength(); indj++){
+        data[indj] = Data[indj]->GetRawDataField()[indi];
     }
 }
 
@@ -708,13 +809,17 @@ CPMFAccuDataPtr CPMFAccuData::CreateTheSame(void) const
     ptr->Op     = Op;
     ptr->Type   = Type;
     ptr->Mode   = Mode;
-    ptr->Size   = Size;
     ptr->MSName = MSName;
     ptr->MXName = MXName;
     ptr->MYName = MYName;
 
-    ptr->Data.CreateVector(Size);
-    ptr->Data.SetZero();
+    ptr->InitDataBlock();
+
+    if(  ptr->Size != Size ){
+        CSmallString error;
+        error << "inconsistent size " << ptr->Size << " != " << Size;
+        RUNTIME_ERROR(error);
+    }
 
     return(ptr);
 }
@@ -723,11 +828,17 @@ CPMFAccuDataPtr CPMFAccuData::CreateTheSame(void) const
 
 CPMFAccuDataPtr CPMFAccuData::Duplicate(void) const
 {
-    CPMFAccuDataPtr data = CreateTheSame();
-    for(int i=0; i < Size; i++){
-        data->Data[i] = Data[i];
+    CPMFAccuDataPtr dup = CreateTheSame();
+
+    for(size_t seg = 0; seg < Data.size(); seg++){
+        CVectorDataPtr indata  = Data[seg];
+        CVectorDataPtr outdata = dup->Data[seg];
+        for(size_t idx = 0; idx < indata->GetLength(); idx++){
+            outdata->GetRawDataField()[idx] = indata->GetRawDataField()[idx];
+        }
     }
-    return(data);
+
+    return(dup);
 }
 
 //------------------------------------------------------------------------------
@@ -747,8 +858,14 @@ void CPMFAccuData::CombineAD(CPMFAccuDataPtr left,CPMFAccuDataPtr right)
         RUNTIME_ERROR(error);
     }
 
-    for(int i=0; i < Size; i++){
-        Data[i] = left->Data[i] + right->Data[i];
+    for(size_t seg = 0; seg < Data.size(); seg++){
+        CVectorDataPtr out    = Data[seg];
+        CVectorDataPtr ldata  = left->Data[seg];
+        CVectorDataPtr rdata  = right->Data[seg];
+
+        for(size_t idx = 0; idx < out->GetLength(); idx++){
+            out->GetRawDataField()[idx] = ldata->GetRawDataField()[idx] + rdata->GetRawDataField()[idx];
+        }
     }
 }
 
@@ -763,14 +880,20 @@ void CPMFAccuData::CombineSA(CPMFAccuDataPtr left,CPMFAccuDataPtr right)
         RUNTIME_ERROR("incompatible with right");
     }
 
-    for(int i=0; i < Size; i++){
-        // FIXME - should we allow some difference?
-        if( left->Data[i] != right->Data[i] ){
-            stringstream serror;
-            serror << "data are not the same for '" << GetName() << "', item: " << (i+1) << ", values: " << left->Data[i] << ", " << right->Data[i];
-            RUNTIME_ERROR(serror.str());
+    for(size_t seg = 0; seg < Data.size(); seg++){
+        CVectorDataPtr out    = Data[seg];
+        CVectorDataPtr ldata  = left->Data[seg];
+        CVectorDataPtr rdata  = right->Data[seg];
+
+        for(size_t idx = 0; idx < out->GetLength(); idx++){
+            if( ldata->GetRawDataField()[idx] != rdata->GetRawDataField()[idx] ){
+                stringstream serror;
+                serror << "data are not the same for '" << GetName() << "', item: " << (idx+1) << ", values: "
+                       << ldata->GetRawDataField()[idx] << ", " << rdata->GetRawDataField()[idx];
+                RUNTIME_ERROR(serror.str());
+            }
+            out->GetRawDataField()[idx] = ldata->GetRawDataField()[idx];
         }
-        Data[i] = left->Data[i];
     }
 }
 

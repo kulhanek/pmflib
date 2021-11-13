@@ -1701,23 +1701,6 @@ CPMFAccuDataPtr CPMFAccumulator::CreateSectionData(const CSmallString& name,cons
 
 //------------------------------------------------------------------------------
 
-CPMFAccuDataPtr CPMFAccumulator::CreateSectionData(const CSmallString& name,const CSmallString& op,const CSmallString& type,const CSmallString& mode,int len)
-{
-    CPMFAccuDataPtr data = CPMFAccuDataPtr(new CPMFAccuData(NumOfBins,NumOfCVs,NSTLimit));
-    data->Name  = name;
-    data->Op    = op;
-    data->Type  = type;
-    data->Mode  = mode;
-
-    data->InitDataBlock(len);
-
-    DataBlocks[name] = data;
-
-    return(data);
-}
-
-//------------------------------------------------------------------------------
-
 CPMFAccuDataPtr CPMFAccumulator::CreateSectionData(const CSmallString& name,const CSmallString& op,const CSmallString& type,
                        const CSmallString& mode,const CSmallString& msname)
 {

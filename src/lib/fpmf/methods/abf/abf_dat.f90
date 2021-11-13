@@ -48,8 +48,14 @@ integer     :: feimode      ! interpolation/extrapolation mode
                             ! 0 - disabled
                             ! 1 - linear ramp
 
+integer     :: flowpassfilter   ! low-pass filter for lpf_sg mode
+real(PMFDP) :: flpfcutofffreq   ! cut-off frequency
+integer     :: fsgframelen
+integer     :: fsgorder
+
 logical     :: fenthalpy    ! collect data for enthalpy calculation
 logical     :: fentropy     ! collect data for entropy calculation
+logical     :: frecord      ! record time progress
 
 real(PMFDP) :: fepotaverage
 real(PMFDP) :: fekinaverage
@@ -95,32 +101,42 @@ type(CVTypeABF),allocatable :: ABFCVList(:)     ! definition of CVs
 
 type,extends(PMFAccuType) :: ABFAccuType
 
-    real(PMFDP),pointer    :: binpos(:,:)              ! position of grids
-
-    ! biasing force manipulation
+    real(PMFDP),pointer    :: binpos(:,:)               ! position of grids
     real(PMFDP),pointer    :: weights(:)                ! mask weights
-
-    ! MICF
     real(PMFDP),pointer    :: nsamples(:)               ! number of hits into bins
+
+! free energy
     real(PMFDP),pointer    :: micf(:,:)                 ! mean ICF
     real(PMFDP),pointer    :: m2icf(:,:)                ! M2 of ICF
+
+! enthalpy
     real(PMFDP),pointer    :: mepot(:)                  ! mean of pot energy
     real(PMFDP),pointer    :: m2epot(:)                 ! M2 of pot energy
+    real(PMFDP),pointer    :: merst(:)                  ! mean of rst energy
+    real(PMFDP),pointer    :: m2erst(:)                 ! M2 of rst energy
 
-    ! entropy - time recording for post-processing
-    real(PMFDP),pointer    :: cvs(:,:)
-    real(PMFDP),pointer    :: zinv(:,:,:)
-    real(PMFDP),pointer    :: icf(:,:)
-    real(PMFDP),pointer    :: abf(:,:)
-    real(PMFDP),pointer    :: epot(:)
-    real(PMFDP),pointer    :: erst(:)
-    real(PMFDP),pointer    :: ekin(:)
+! entropy
+    real(PMFDP),pointer    :: metot(:)                  ! mean of tot energy
+    real(PMFDP),pointer    :: m2etot(:)                 ! M2 of tot energy
+    real(PMFDP),pointer    :: mpp(:,:)                  ! ICF+ETOT
+    real(PMFDP),pointer    :: m2pp(:,:)                 !
+    real(PMFDP),pointer    :: mpn(:,:)                  ! ICF-ETOT
+    real(PMFDP),pointer    :: m2pn(:,:)                 !
 
-    ! applied ICF - this is stored in accu but ignored
+! time recording for post-processing
+    real(PMFDP),pointer    :: tcvs(:,:)
+    real(PMFDP),pointer    :: tzinv(:,:,:)
+    real(PMFDP),pointer    :: ticf(:,:)
+    real(PMFDP),pointer    :: tmicf(:,:)
+    real(PMFDP),pointer    :: tepot(:)
+    real(PMFDP),pointer    :: terst(:)
+    real(PMFDP),pointer    :: tekin(:)
+
+! applied ICF - this is stored in accu but ignored
     real(PMFDP),pointer    :: bnsamples(:)              ! number of hits into bins
     real(PMFDP),pointer    :: bmicf(:,:)                ! applied MICF
 
-    ! ABF force - incremental part for ABF-server
+! ABF force - incremental part for ABF-server
     real(PMFDP),pointer    :: inc_nsamples(:)           ! number of hits into bins
     real(PMFDP),pointer    :: inc_micf(:,:)             ! accumulated mean ICF
     real(PMFDP),pointer    :: inc_m2icf(:,:)            ! accumulated M2 of ICF
@@ -157,13 +173,55 @@ real(PMFDP),allocatable     :: pxi1(:)          !
 real(PMFDP),allocatable     :: pxip(:)          !
 real(PMFDP),allocatable     :: pxim(:)          !
 
-real(PMFDP),allocatable     :: cvave(:)         ! average values of CVs
+real(PMFDP),allocatable     :: cvave(:)         ! CV values or their derivatives
+real(PMFDP),allocatable     :: cvcur(:)
+real(PMFDP),allocatable     :: cv1dr(:)
+real(PMFDP),allocatable     :: cv2dr(:)
+
+! ------------------------------------------------------------------------------
+
+! circular buffer for low-pass filters
+integer                     :: cbuff_len
+integer                     :: cbuff_top
+
+real(PMFDP)                 :: inv_ma_flen
+
+real(PMFDP),allocatable     :: cvbuffer(:,:)        ! history of CV values
+real(PMFDP),allocatable     :: icfbuffer(:,:)
+real(PMFDP),allocatable     :: epotbuffer(:)        ! history of Epot
+real(PMFDP),allocatable     :: erstbuffer(:)        ! history of Erst
+real(PMFDP),allocatable     :: ekinbuffer(:)        ! history of Ekin
+real(PMFDP),allocatable     :: zinvbuffer(:,:,:)    ! history of zinv
+
+real(PMFDP),allocatable     :: cvfilt(:)            ! filtered values
+real(PMFDP),allocatable     :: icffilt(:)
+real(PMFDP)                 :: epotfilt
+real(PMFDP)                 :: erstfilt
+real(PMFDP)                 :: ekinfilt
+real(PMFDP),allocatable     :: zinvfilt(:,:)
+
+real(PMFDP)                 :: samplfreq
+real(PMFDP)                 :: cutofffreq
+real(PMFDP)                 :: invfdtx
+
+! ------------------------------------------------------------------------------
 
 integer                     :: hist_len
-real(PMFDP),allocatable     :: cvhist(:,:)      ! history of CV values
-real(PMFDP),allocatable     :: epothist(:)      ! history of Epot
-real(PMFDP),allocatable     :: ersthist(:)      ! history of Erst
-real(PMFDP),allocatable     :: ekinhist(:)      ! history of Ekin
+real(PMFDP),allocatable     :: cvhist(:,:)          ! history of CV values (nCVS,hist_len)
+real(PMFDP),allocatable     :: xihist(:,:)          ! history of CV values (hist_len,nCVs)
+real(PMFDP),allocatable     :: micfhist(:,:)        ! history of ABF bias
+real(PMFDP),allocatable     :: epothist(:)          ! history of Epot
+real(PMFDP),allocatable     :: ersthist(:)          ! history of Erst
+real(PMFDP),allocatable     :: ekinhist(:)          ! history of Ekin
+real(PMFDP),allocatable     :: zinvhist(:,:,:)      ! history of zinv
+
+! ------------------------------------------------------------------------------
+
+real(PMFDP),allocatable     :: sg_c0(:)
+real(PMFDP),allocatable     :: sg_c1(:)
+real(PMFDP),allocatable     :: sg_c2(:)
+
+! ------------------------------------------------------------------------------
 
 ! smoothing facility
 integer                     :: max_snb_size

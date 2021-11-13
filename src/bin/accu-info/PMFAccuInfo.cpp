@@ -139,6 +139,9 @@ bool CPMFAccuInfo::Run(void)
     } else if( Options.GetProgArg(1) == "get-mean" ){
         GetMean(Options.GetProgArg(2));
 // -----------------------------------------------
+    } else if( Options.GetProgArg(1) == "get-tseries" ){
+        GetTSeries(Options.GetProgArg(2));
+// -----------------------------------------------
     } else if( (Options.GetProgArg(1) == "NSAMPLES") || (Options.GetProgArg(1) == "nsamples") ){
         GetSection("NSAMPLES");
 // -----------------------------------------------
@@ -529,6 +532,28 @@ void CPMFAccuInfo::GetMean(const CSmallString& name)
 
     // print data
     PrintData(true);
+
+    vout << debug;
+}
+
+//------------------------------------------------------------------------------
+
+void CPMFAccuInfo::GetTSeries(const CSmallString& name)
+{
+    vout << "#" << endl;
+    vout << "# time series for : " << name << endl;
+
+    vout << high;
+
+    CPMFAccuDataPtr tser  = Accu->GetSectionData(name);
+    double          dt    = Accu->GetTimeStep();
+
+    double time = 0.0;
+    for(int tstep=0; tstep < Accu->GetNSTLimit(); tstep++){
+        double  value   = tser->GetData(tstep,Options.GetOptCV()-1);
+        vout << format("%15d %15.2f ")%tstep%time << format(Options.GetOptOSFormat())%value << endl;;
+        time += dt;
+    }
 
     vout << debug;
 }

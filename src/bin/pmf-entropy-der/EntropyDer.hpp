@@ -70,6 +70,12 @@ private:
     EKSKernelType           KSKernel;
     CSimpleVector<double>   KSWFac;
 
+    void GetEtot(void);
+
+    void RunLowPassFilter(void);
+
+    void GetNativeData(void);
+    void RecalcICFBySGF(void);
 
     void CalculatePPandPN(void);
     void CalculatePPandPN_KS(void);

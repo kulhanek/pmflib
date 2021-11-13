@@ -82,6 +82,9 @@ private:
     // get mean, sample variance, and mean error
     void GetMean(const CSmallString& name);
 
+    // get time series
+    void GetTSeries(const CSmallString& name);
+
     // print header
     void PrintHeader(const CSmallString& sec_name, bool print_errors);
 

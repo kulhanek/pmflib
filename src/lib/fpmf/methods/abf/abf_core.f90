@@ -56,6 +56,9 @@ subroutine abf_core_main
         case(2)
             ! original ABF algorithm
             call abf_core_force_4p
+        case(3)
+            ! LPF+SG ABF algorithm
+            call abf_core_force_lpf_sg
         case default
             call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented fmode in abf_core_main!')
     end select
@@ -97,25 +100,13 @@ subroutine abf_core_force_2p()
 
 ! shift epot ene
     epothist(1) = epothist(2)
-    if( fenthalpy ) then
-        epothist(2) = PotEne - fepotaverage
-    else
-        epothist(2) = 0.0d0
-    end if
+    epothist(2) = PotEne - fepotaverage
 
     ersthist(1) = ersthist(2)
-    if( fenthalpy ) then
-        ersthist(2) = PMFEne
-    else
-        ersthist(2) = 0.0d0
-    end if
+    ersthist(2) = PMFEne
 
 ! shift etot ene
-    if( fentropy ) then
-        ekinhist(1) = KinEne - fekinaverage ! shifted by -dt
-    else
-        ekinhist(1) = 0.0d0
-    end if
+    ekinhist(1) = KinEne - fekinaverage ! shifted by -dt
 
 ! calculate Z matrix and its inverse
     call abf_core_calc_Zmat(CVContext)
@@ -172,10 +163,11 @@ subroutine abf_core_force_2p()
                 call abf_accu_add_data_ksmooth(cvhist(:,1),pxi0,epothist(1))
             call pmf_timers_stop_timer(PMFLIB_ABF_KS_TIMER)
         else
-            call abf_accu_add_data_online(cvhist(:,1),pxi0,epothist(1))
+! FIXME
+!            call abf_accu_add_data_online(cvhist(:,1),pxi0,epothist(1))
         end if
 
-        call abf_accu_add_data_entropy(cvhist(:,1),fzinv0,pxi0,pxi1,epothist(1),ersthist(1),ekinhist(1))
+        call abf_accu_add_data_record(cvhist(:,1),fzinv0,pxi0,pxi1,epothist(1),ersthist(1),ekinhist(1))
     end if
 
     ! backup to the next step
@@ -341,7 +333,8 @@ subroutine abf_core_force_4p()
                 call abf_accu_add_data_ksmooth(cvhist(:,1),pxi0,0.0d0)
             call pmf_timers_stop_timer(PMFLIB_ABF_KS_TIMER)
         else
-            call abf_accu_add_data_online(cvhist(:,1),pxi0,0.0d0)
+! FIXME
+!            call abf_accu_add_data_online(cvhist(:,1),pxi0,0.0d0)
         end if
     end if
 
@@ -359,6 +352,218 @@ subroutine abf_core_force_4p()
     return
 
 end subroutine abf_core_force_4p
+
+!===============================================================================
+! Subroutine:  abf_core_lpf_none
+! no filter
+!===============================================================================
+
+subroutine abf_core_lpf_none
+
+    use pmf_dat
+    use pmf_cvs
+    use abf_dat
+
+    implicit none
+    ! --------------------------------------------------------------------------
+
+! update circular buffer
+    cvfilt(:)     = cvcur(:)
+    icffilt(:)    = la(:)
+    epotfilt      = PotEne - fepotaverage
+    erstfilt      = PMFEne
+    ekinfilt      = KinEne - fekinaverage ! shifted by -dt
+    zinvfilt(:,:) = fzinv(:,:)
+
+end subroutine abf_core_lpf_none
+
+!===============================================================================
+! Subroutine:  abf_core_ma_filter
+! moving average low-pass filter
+!===============================================================================
+
+subroutine abf_core_lpf_ma
+
+    use pmf_dat
+    use pmf_cvs
+    use abf_dat
+
+    implicit none
+    ! --------------------------------------------------------------------------
+
+    ! write(1248963,*) cbuff_top
+
+! update low-pass filter values - remove previous value
+    cvfilt(:)       = cvfilt(:)     - cvbuffer(:,cbuff_top)
+    icffilt(:)      = icffilt(:)    - icfbuffer(:,cbuff_top)
+    epotfilt        = epotfilt      - epotbuffer(cbuff_top)
+    erstfilt        = erstfilt      - erstbuffer(cbuff_top)
+    ekinfilt        = ekinfilt      - ekinbuffer(cbuff_top)
+    zinvfilt(:,:)   = zinvfilt(:,:) - zinvbuffer(:,:,cbuff_top)
+
+! update circular buffer
+    cvbuffer(:,cbuff_top)      = cvcur(:)                   * inv_ma_flen
+    icfbuffer(:,cbuff_top)     = la(:)                      * inv_ma_flen
+    epotbuffer(cbuff_top)      = (PotEne - fepotaverage)    * inv_ma_flen
+    erstbuffer(cbuff_top)      = PMFEne                     * inv_ma_flen
+    ekinbuffer(cbuff_top)      = (KinEne - fekinaverage)    * inv_ma_flen
+    zinvbuffer(:,:,cbuff_top)  = fzinv(:,:)                 * inv_ma_flen
+
+! update low-pass filter values
+    cvfilt(:)       = cvfilt(:)     + cvbuffer(:,cbuff_top)
+    icffilt(:)      = icffilt(:)    + icfbuffer(:,cbuff_top)
+    epotfilt        = epotfilt      + epotbuffer(cbuff_top)
+    erstfilt        = erstfilt      + erstbuffer(cbuff_top)
+    ekinfilt        = ekinfilt      + ekinbuffer(cbuff_top)
+    zinvfilt(:,:)   = zinvfilt(:,:) + zinvbuffer(:,:,cbuff_top)
+
+    cbuff_top = cbuff_top + 1
+    if( cbuff_top .gt. cbuff_len ) then
+        cbuff_top = 1
+    end if
+
+end subroutine abf_core_lpf_ma
+
+!===============================================================================
+! Subroutine:  abf_core_force_lpf_sg
+! this is leap-frog ABF version
+! low-pass filter + SG filter for differentiation
+!===============================================================================
+
+subroutine abf_core_force_lpf_sg()
+
+    use pmf_utils
+    use pmf_dat
+    use pmf_cvs
+    use abf_dat
+    use abf_accu
+    use pmf_timers
+
+    implicit none
+    integer                :: i, j, ci
+    real(PMFDP)            :: v, epot, erst, ekin, c
+    ! --------------------------------------------------------------------------
+
+    if( mod(fstep,10000) .eq. 0 ) then
+        rewind(789)
+        do c=3.0,11.5,0.01
+            cvcur(1) = c
+            call abf_accu_get_data(cvcur,pxi0)
+            call abf_accu_get_data_ksmooth(cvcur,pxi1)
+            write(789,*) c, pxi0(1), pxi1(1)
+        end do
+    end if
+
+! get current value of CVs
+    do i=1,NumOfABFCVs
+        ci = ABFCVList(i)%cvindx
+        cvcur(i)  = CVContext%CVsValues(ci)
+    end do
+
+! apply force filters
+    la(:) = 0.0d0
+    if( fapply_abf ) then
+        ! calculate abf force to be applied
+        select case(feimode)
+            case(0)
+                call abf_accu_get_data(cvcur,la)
+            case(1)
+                call abf_accu_get_data_lramp(cvcur,la)
+            case(2)
+                call pmf_timers_start_timer(PMFLIB_ABF_KS_TIMER)
+                    call abf_accu_get_data_ksmooth(cvcur,la)
+                call pmf_timers_stop_timer(PMFLIB_ABF_KS_TIMER)
+            case default
+                call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented extrapolation/interpolation mode in abf_core_force_lpf_sg!')
+        end select
+
+        ! project abf force along coordinate
+        do i=1,NumOfABFCVs
+            ci = ABFCVList(i)%cvindx
+            do j=1,NumOfLAtoms
+                Frc(:,j) = Frc(:,j) + la(i) * CVContext%CVsDrvs(:,j,ci)
+            end do
+        end do
+    end if
+
+   ! write(4789,*) fstep, cvcur, la
+
+! get zvinv
+    call abf_core_calc_Zmat(CVContext)
+
+    select case(flowpassfilter)
+        case(0)
+            call abf_core_lpf_none
+        case(1)
+            call abf_core_lpf_ma
+        case default
+            call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented flowpassfilter in abf_core_force_lpf_sg!')
+    end select
+
+! we need at least cbuff_len samples
+    if( fstep .lt. cbuff_len ) return
+
+! update history buffers
+    do i=1,hist_len-1
+        xihist(i,:)     = xihist(i+1,:)
+        micfhist(i,:)   = micfhist(i+1,:)
+        epothist(i)     = epothist(i+1)
+        ersthist(i)     = ersthist(i+1)
+        ekinhist(i)     = ekinhist(i+1)
+        zinvhist(i,:,:) = zinvhist(i+1,:,:)
+    end do
+
+    xihist(hist_len,:)      = cvfilt(:)
+    micfhist(hist_len,:)    = icffilt(:)
+    epothist(hist_len)      = epotfilt
+    ersthist(hist_len)      = erstfilt
+    ekinhist(hist_len)      = ekinfilt
+    zinvhist(hist_len,:,:)  = zinvfilt(:,:)
+
+! we need at least cbuff_len + hist_len samples
+    if( fstep .lt. (cbuff_len + hist_len) ) return
+
+    do i=1,NumOfABFCVs
+        cvcur(i) = dot_product(sg_c0(:),xihist(:,i))
+        pxi1(i)  = dot_product(sg_c0(:),micfhist(:,i))
+        cv1dr(i) = dot_product(sg_c1(:),xihist(:,i))
+        cv2dr(i) = dot_product(sg_c2(:),xihist(:,i))
+        do j=1,NumOfABFCVs
+            fzinv(i,j)     = dot_product(sg_c0(:),zinvhist(:,i,j))
+            fzinv0(i,j)    = dot_product(sg_c1(:),zinvhist(:,i,j))
+        end do
+    end do
+
+    ! write(4789,*) fstep, CVContext%CVsValues(1), fstep-(cbuff_len/2 +(hist_len-1)/2+1), xihist((hist_len-1)/2+1,1), cvcur(1)
+    ! write(4789,*) fstep, la
+
+    epot = dot_product(sg_c0(:),epothist(:))
+    erst = dot_product(sg_c0(:),ersthist(:))
+    ekin = dot_product(sg_c0(:),ekinhist(:))
+
+    do i=1,NumOfABFCVs
+        v = 0.0d0
+        do j=1,NumOfABFCVs
+            v = v +  fzinv0(j,i)*cv1dr(j) + fzinv(j,i)*cv2dr(j)
+        end do
+        pxi0(i) = v
+    end do
+
+    pxi0(:) = pxi0(:) - pxi1(:)
+
+    ! add data to accumulator
+    if( fsmooth_enable ) then
+        call pmf_timers_start_timer(PMFLIB_ABF_KS_TIMER)
+            call abf_accu_add_data_ksmooth(cvcur,pxi0,epot)
+        call pmf_timers_stop_timer(PMFLIB_ABF_KS_TIMER)
+    else
+        call abf_accu_add_data_online(cvcur,pxi0,epot,erst,epot+erst+ekin)
+    end if
+
+!    call abf_accu_add_data_record(cvhist(:,hist_len-1),fzinv0,pxi0,pxi1, &
+!         epothist(hist_len-1),ersthist(1),ekinhist(1))
+
+end subroutine abf_core_force_lpf_sg
 
 !===============================================================================
 ! subroutine:  abf_core_calc_Zmat

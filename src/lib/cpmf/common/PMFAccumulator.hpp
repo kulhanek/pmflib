@@ -211,10 +211,6 @@ public:
 
     /// create section
     CPMFAccuDataPtr CreateSectionData(const CSmallString& name,const CSmallString& op,const CSmallString& type,
-                           const CSmallString& mode,int len);
-
-    /// create section
-    CPMFAccuDataPtr CreateSectionData(const CSmallString& name,const CSmallString& op,const CSmallString& type,
                            const CSmallString& mode,const CSmallString& msname);
 
     /// create section

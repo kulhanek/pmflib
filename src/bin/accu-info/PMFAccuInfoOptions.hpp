@@ -58,6 +58,7 @@ public:
     "                                               ** <b>get-energy</b>        - get energy for given realm\n"
     "                                               ** <b>get-mtc</b>           - get MTC correction\n"
     "                                               ** <b>get-mean</b>          - get sample mean, variance, and mean error\n"
+    "                                               ** <b>get-tseries</b>       - get time series\n"
     "                                               ** <b>nsamples</b>          - print number of samples in bins\n"
     CSO_PROG_ARGS_LONG_DESC_END
 

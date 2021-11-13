@@ -78,13 +78,14 @@ subroutine abf_init_dat
 
     fenthalpy       = .false.
     fentropy        = .false.
+    frecord         = .false.
 
     fepotaverage    = 0.0d0
     fekinaverage    = 0.0d0
 
     feimode         = 1
     fhramp_min      = 100
-    fhramp_max      = 200
+    fhramp_max      = 500
 
     NumOfABFCVs     = 0
 
@@ -104,6 +105,11 @@ subroutine abf_init_dat
 
     fsmooth_enable  = .false.
     fsmooth_kernel  = 0
+
+    flowpassfilter  = 1     ! MA
+    flpfcutofffreq  = 500   ! cut-off frequency
+    fsgframelen     = 5
+    fsgorder        = 3
 
     fdtx            = 0.0d0
 
@@ -133,17 +139,33 @@ subroutine abf_init_print_header
     write(PMF_OUT,120)
     write(PMF_OUT,120)  ' ABF Mode'
     write(PMF_OUT,120)  ' ------------------------------------------------------'
-    write(PMF_OUT,130)  ' ABF mode (fmode)                        : ', fmode
+    write(PMF_OUT,130)  ' ABF mode (fmode)                               : ', fmode
     select case(fmode)
     case(1)
     write(PMF_OUT,120)  '      |-> Simplified ABF algorithm'
     case(2)
     write(PMF_OUT,120)  '      |-> Original ABF algorithm'
+    case(3)
+    write(PMF_OUT,120)  '      |-> Low-pass filter plus Savitzky-Golay differentiation ABF algorithm'
+    select case(flowpassfilter)
+    case(0)
+    write(PMF_OUT,120)  '          \-> No low-pass filter'
+    case(1)
+    write(PMF_OUT,120)  '          \-> Moving average low-pass filter'
+    write(PMF_OUT,150)  '              Sampling frequency                : ',samplfreq,' [cm^-1]'
+    write(PMF_OUT,150)  '              Cutoff frequency (flpfcutofffreq) : ',flpfcutofffreq,' [cm^-1]'
+    write(PMF_OUT,130)  '              Frame length                      : ',cbuff_len
+    case default
+        call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown flowpassfilter in abf_init_print_header!')
+    end select
+    write(PMF_OUT,120)  '          \-> Savitzky-Golay filter'
+    write(PMF_OUT,130)  '              Frame length (fsgframelen)        : ', fsgframelen
+    write(PMF_OUT,130)  '              Polynomial order (fsgorder)       : ', fsgorder
     case default
         call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown fmode in abf_init_print_header!')
     end select
-    write(PMF_OUT,125)  ' Coordinate definition file (fabfdef)    : ', trim(fabfdef)
-    write(PMF_OUT,130)  ' Number of coordinates                   : ', NumOfABFCVs
+    write(PMF_OUT,125)  ' Coordinate definition file (fabfdef)           : ', trim(fabfdef)
+    write(PMF_OUT,130)  ' Number of coordinates                          : ', NumOfABFCVs
     write(PMF_OUT,120)
     write(PMF_OUT,120)  ' ABF Control'
     write(PMF_OUT,120)  ' ------------------------------------------------------'
@@ -155,7 +177,7 @@ subroutine abf_init_print_header
     write(PMF_OUT,120)  ' ABF Interpolation/Extrapolation '
     write(PMF_OUT,120)  ' ------------------------------------------------------'
     write(PMF_OUT,125)  ' Use kernel smoother (fsmooth_enable)    : ', prmfile_onoff(fsmooth_enable)
-    write(PMF_OUT,130)  ' kernel type (fsmooth_kernel)            : ', fsmooth_kernel
+    write(PMF_OUT,130)  ' Kernel type (fsmooth_kernel)            : ', fsmooth_kernel
     select case(fsmooth_kernel)
     case(0)
     write(PMF_OUT,120)  '      |-> Epanechnikov (parabolic)'
@@ -181,6 +203,7 @@ subroutine abf_init_print_header
     write(PMF_OUT,120)
     write(PMF_OUT,120)  ' Enthalpy/entropy options:'
     write(PMF_OUT,120)  ' ------------------------------------------------------'
+    write(PMF_OUT,125)  ' Record time progress (frecord)          : ', prmfile_onoff(frecord)
     write(PMF_OUT,125)  ' Accumulate enthalpy (fenthalpy)         : ', prmfile_onoff(fenthalpy)
     write(PMF_OUT,125)  ' Accumulate entropy (fentropy)           : ', prmfile_onoff(fentropy)
     write(PMF_OUT,150)  ' Potential energy offset (fepotaverage)  : ', pmf_unit_get_rvalue(EnergyUnit,fepotaverage),  &
@@ -259,16 +282,7 @@ subroutine abf_init_arrays
 
     fdtx = fdt*PMF_DT2VDT
 
-    select case(fmode)
-        case(1)
-            hist_len = 2
-        case(2)
-            hist_len = 4
-        case default
-            call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented fmode in abf_init_arrays!')
-    end select
-
-    ! general arrays --------------------------------
+! general arrays --------------------------------
     allocate(                                   &
             a1(3,NumOfLAtoms),                  &
             a0(3,NumOfLAtoms),                  &
@@ -281,13 +295,12 @@ subroutine abf_init_arrays
             pxip(NumOfABFCVs),                  &
             pxim(NumOfABFCVs),                  &
             cvave(NumOfABFCVs),                 &
+            cvcur(NumOfABFCVs),                 &
+            cv1dr(NumOfABFCVs),                 &
+            cv2dr(NumOfABFCVs),                 &
             fz(NumOfABFCVs,NumOfABFCVs),        &
             fzinv(NumOfABFCVs,NumOfABFCVs),     &
             fzinv0(NumOfABFCVs,NumOfABFCVs),    &
-            cvhist(NumOfABFCVs,hist_len),       &
-            epothist(hist_len),                 &
-            ersthist(hist_len),                 &
-            ekinhist(hist_len),                 &
             stat= alloc_failed )
 
     if( alloc_failed .ne. 0 ) then
@@ -308,15 +321,13 @@ subroutine abf_init_arrays
     pxim(:)     = 0.0d0
 
     cvave(:)    = 0.0d0
+    cvcur(:)    = 0.0d0
+    cv1dr(:)    = 0.0d0
+    cv2dr(:)    = 0.0d0
 
     fz(:,:)     = 0.0d0
     fzinv(:,:)  = 0.0d0
     fzinv0(:,:) = 0.0d0
-
-    cvhist(:,:) = 0.0d0
-    epothist(:) = 0.0d0
-    ersthist(:) = 0.0d0
-    ekinhist(:) = 0.0d0
 
     ! for Z matrix inversion, only if fnitem > 1 ----
     if( NumOfABFCVs .gt. 1 ) then
@@ -329,6 +340,71 @@ subroutine abf_init_arrays
                  '[ABF] Unable to allocate memory for arrays used in Z matrix inversion!')
         end if
     end if
+
+! history buffers ------------------------------------------
+
+    select case(fmode)
+        case(1)
+            hist_len = 2
+        case(2)
+            hist_len = 4
+        case(3)
+            select case(flowpassfilter)
+                case(0)
+                    call abf_init_filter_lpf_none
+                case(1)
+                    call abf_init_filter_lpf_ma
+                case default
+                    call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented flowpassfilter in abf_init_arrays!')
+            end select
+            call abf_init_filter_sg
+        case default
+            call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented fmode in abf_init_arrays!')
+    end select
+
+    allocate(                                           &
+            cvhist(NumOfABFCVs,hist_len),               &
+            xihist(hist_len,NumOfABFCVs),               &
+            micfhist(hist_len,NumOfABFCVs),             &
+            epothist(hist_len),                         &
+            ersthist(hist_len),                         &
+            ekinhist(hist_len),                         &
+            zinvhist(hist_len,NumOfABFCVs,NumOfABFCVs), &
+            stat= alloc_failed )
+
+    if( alloc_failed .ne. 0 ) then
+        call pmf_utils_exit(PMF_OUT,1, &
+            '[ABF] Unable to allocate memory for buffers used in ABF calculation!')
+    end if
+
+    cvhist(:,:)     = 0.0d0
+    xihist(:,:)     = 0.0d0
+    micfhist(:,:)   = 0.0d0
+    epothist(:)     = 0.0d0
+    ersthist(:)     = 0.0d0
+    ekinhist(:)     = 0.0d0
+    zinvhist(:,:,:) = 0.0d0
+
+! filtered data
+    allocate(                                   &
+            cvfilt(NumOfABFCVs),                &
+            icffilt(NumOfABFCVs),               &
+            zinvfilt(NumOfABFCVs,NumOfABFCVs),  &
+            stat= alloc_failed )
+
+    if( alloc_failed .ne. 0 ) then
+        call pmf_utils_exit(PMF_OUT,1, &
+            '[ABF] Unable to allocate memory for buffers used in ABF calculation!')
+    end if
+
+    cvfilt(:)       = 0.0d0
+    icffilt(:)      = 0.0d0
+    epotfilt        = 0.0d0
+    erstfilt        = 0.0d0
+    ekinfilt        = 0.0d0
+    zinvfilt(:,:)   = 0.0d0
+
+! other setup ----------------------------------------------
 
     ! init accumulator
     call abf_accu_init
@@ -351,13 +427,16 @@ subroutine abf_init_snb_list
     use abf_accu
 
     implicit none
-    integer         :: i,j,k,dcv,idx,alloc_failed
+    integer         :: i,j,k,dcv,idx,alloc_failed,fac
     real(PMFDP)     :: dx,u2
     ! --------------------------------------------------------------------------
 
+    ! use bigger distance buffer, fac is square of this buffer
+    fac = 2**2 ! 2^2 = 4
+
     max_snb_size = 1
     do i=1,NumOfABFCVs
-        dcv = 2*ceiling(ABFCVList(i)%wfac) + 1
+        dcv = fac*ceiling(ABFCVList(i)%wfac) + 1
         max_snb_size = max_snb_size * dcv
     end do
 
@@ -382,7 +461,7 @@ subroutine abf_init_snb_list
                 dx = (abfaccu%binpos(k,i) - abfaccu%binpos(k,j)) / (ABFCVList(k)%wfac * abfaccu%PMFAccuType%sizes(k)%bin_width)
                 u2 = u2 + dx**2
             end do
-            if( u2 .lt. 1.0d0 ) then
+            if( u2 .le. real(fac,PMFDP) ) then
                 idx = idx + 1
                 if( idx .gt. max_snb_size ) then
                     call pmf_utils_exit(PMF_OUT,1, &
@@ -394,6 +473,189 @@ subroutine abf_init_snb_list
     end do
 
 end subroutine abf_init_snb_list
+
+!===============================================================================
+! Subroutine:  abf_init_filter_lpf_none
+!===============================================================================
+
+subroutine abf_init_filter_lpf_none
+
+    use abf_dat
+
+    implicit none
+    ! --------------------------------------------------------------------------
+
+    cbuff_len = 0
+
+end subroutine abf_init_filter_lpf_none
+
+!===============================================================================
+! Subroutine:  abf_init_filter_lpf_ma
+!===============================================================================
+
+subroutine abf_init_filter_lpf_ma
+
+    use abf_dat
+
+    implicit none
+    integer         :: alloc_failed
+    real(PMFDP)     :: normfreq
+    ! --------------------------------------------------------------------------
+
+    ! set sampling frequencies
+    samplfreq = 1.0d6 / (29.9792458*fdt)
+
+    if( (flpfcutofffreq .le. 0.0) .and. (flpfcutofffreq .gt. samplfreq) ) then
+         call pmf_utils_exit(PMF_OUT,1, '[ABF] Illegal value of cut-off frequency in abf_init_filter_lpf_ma!')
+    end if
+
+    normfreq = flpfcutofffreq / samplfreq
+
+    ! setup the length
+    ! https://dsp.stackexchange.com/questions/9966/what-is-the-cut-off-frequency-of-a-moving-average-filter
+
+    cbuff_len = ceiling( sqrt((0.442947d0/normfreq)*(0.442947d0/normfreq) + 1.0d0) )
+
+    if( cbuff_len .lt. 2 ) then
+         call pmf_utils_exit(PMF_OUT,1, '[ABF] Illegal value of cbuff_len frequency in abf_init_filter_lpf_ma!')
+    end if
+
+    inv_ma_flen = 1.0d0 / real(cbuff_len,PMFDP)
+
+    cbuff_top = 1
+
+    allocate(   cvbuffer(NumOfABFCVs,cbuff_len),                &
+                icfbuffer(NumOfABFCVs,cbuff_len),               &
+                epotbuffer(cbuff_len),                          &
+                erstbuffer(cbuff_len),                          &
+                ekinbuffer(cbuff_len),                          &
+                zinvbuffer(NumOfABFCVs,NumOfABFCVs,cbuff_len),  &
+                stat= alloc_failed )
+
+    if( alloc_failed .ne. 0 ) then
+        call pmf_utils_exit(PMF_OUT,1, '[ABF] Unable to allocate memory in abf_init_sg!')
+    end if
+
+    cvbuffer(:,:)       = 0.0d0
+    icfbuffer(:,:)      = 0.0d0
+    epotbuffer(:)       = 0.0d0
+    erstbuffer(:)       = 0.0d0
+    ekinbuffer(:)       = 0.0d0
+    zinvbuffer(:,:,:)   = 0.0d0
+
+end subroutine abf_init_filter_lpf_ma
+
+!===============================================================================
+! Subroutine:  abf_init_filter_sg
+!===============================================================================
+
+subroutine abf_init_filter_sg
+
+    use pmf_utils
+    use pmf_dat
+    use abf_dat
+
+    implicit none
+    integer                     :: m, np, nr, nl, ipj, k, imj, mm, info, ld, j, kk
+    integer                     :: alloc_failed
+    integer, allocatable        :: lindx(:)
+    real(PMFDP)                 :: s, fac
+    real(PMFDP),allocatable     :: a(:,:), b(:)
+    ! --------------------------------------------------------------------------
+
+    m = fsgorder
+    if( m .le. 1 ) then
+        call pmf_utils_exit(PMF_OUT,1, '[ABF] fsgorder too low in abf_init_sg!')
+    end if
+
+    np = fsgframelen
+
+    if( mod(np,2) .ne. 1 ) then
+        call pmf_utils_exit(PMF_OUT,1, '[ABF] fsgframelen must be an odd number in abf_init_sg!')
+    end if
+
+    if( np .le. 2 ) then
+        call pmf_utils_exit(PMF_OUT,1, '[ABF] fsgframelen too low in abf_init_sg!')
+    end if
+
+    nr = (np-1)/2
+    nl = nr
+
+    allocate( a(m+1,m+1), b(m+1), lindx(m+1), sg_c0(np), sg_c1(np), sg_c2(np), stat= alloc_failed )
+
+    if( alloc_failed .ne. 0 ) then
+        call pmf_utils_exit(PMF_OUT,1, '[ABF] Unable to allocate memory in abf_init_sg!')
+    end if
+
+    a(:,:) = 0.0d0
+
+    do ipj=0,2*m        !Set up the normal equations of the desired leastsquares fit.
+        s = 0.0d0
+        if( ipj .eq. 0 ) s = 1.0d0
+
+        do k=1,nr
+            s = s + real(k,PMFDP)**ipj
+        end do
+
+        do k=1,nl
+            s = s + real(-k,PMFDP)**ipj
+        end do
+
+        mm = min(ipj,2*m-ipj)
+        do imj=-mm,mm,2
+            a(1+(ipj+imj)/2,1+(ipj-imj)/2) = s
+        end do
+    end do
+
+    call dgetrf(m+1,m+1,a,m+1,lindx,info)
+    if( info .ne. 0 ) then
+        call pmf_utils_exit(PMF_OUT,1,'[ABF] LU decomposition failed in abf_init_sg!')
+    end if
+
+    sg_c0(:) = 0.0d0
+    sg_c1(:) = 0.0d0
+    sg_c2(:) = 0.0d0
+
+    do ld=0,2
+        do j=1,m+1
+            b(j) = 0.0d0
+        end do
+        b(ld+1) = 1.0d0      !Right-hand side vector is unit vector, depending on which derivative we want.
+
+        call dgetrs('N',m+1,1,a,m+1,lindx,b,m+1,info)
+        if( info .ne. 0 ) then
+            call pmf_utils_exit(PMF_OUT,1,'[ABF] Matrix inversion failed in abf_init_sg!')
+        end if
+
+        do k=-nl,nr                        ! Each Savitzky-Golay coefficient is the dot product
+            s   = b(1)                     ! of powers of an integer with the inverse matrix row.
+            fac = 1.0d0
+            do mm=1,m
+                fac = fac*k
+                s   = s + b(mm+1)*fac
+            end do
+            kk = k+nl+1
+            select case(ld)
+                case(0)
+                    sg_c0(kk) = s
+                case(1)
+                    sg_c1(kk) = s
+                case(2)
+                    sg_c2(kk) = s * 2.0d0
+            end select
+
+        end do
+    end do
+
+    invfdtx = 1.0d0 / (fdt * PMF_DT2VDT)
+
+    sg_c1(:) = sg_c1(:) * invfdtx
+    sg_c2(:) = sg_c2(:) * invfdtx * invfdtx
+
+    ! define history length
+    hist_len = np
+
+end subroutine abf_init_filter_sg
 
 !===============================================================================
 

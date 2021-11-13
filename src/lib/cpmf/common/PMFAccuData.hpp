@@ -30,7 +30,9 @@
 //------------------------------------------------------------------------------
 
 class CPMFAccuData;
-typedef boost::shared_ptr<CPMFAccuData>       CPMFAccuDataPtr;
+typedef boost::shared_ptr<CPMFAccuData>             CPMFAccuDataPtr;
+
+typedef boost::shared_ptr< CSimpleVector<double>  > CVectorDataPtr;
 
 //------------------------------------------------------------------------------
 
@@ -119,11 +121,12 @@ public:
     /// get data
     double GetData(int indi) const;
 
+
     /// get data
     double GetData(int indi, int icv) const;
 
     /// get data
-    void GetData(int indi, CSimpleVector<double>& data) const;
+    double GetData(int indi, int icv,int jcv) const;
 
     /// set data
     void SetData(int indi, double value);
@@ -136,6 +139,12 @@ public:
 
     /// set blob data
     void SetDataBlob(double* p_blob);
+
+    /// get data blob
+    CVectorDataPtr GetDataBlob(int icv=0,int jcv=0);
+
+    /// get data
+    void GetDataBlob(int indi,CSimpleVector<double>& data) const;
 
 // section of private data -----------------------------------------------------
 private:
@@ -152,8 +161,8 @@ private:
     CSmallString            Type;       // data type: R - real, I - integer
     CSmallString            Mode;       // data mode: B - per bins, C - per CVs, M - mixed per bins and cvs
                                         //            T - per time step, S - per time step and CVs, Z - per time step and NCVS^2
-    int                     Size;       // size of data
-    CSimpleVector<double>   Data;       // all data are kept as real numbers
+    int                         Size;       // size of data
+    std::vector<CVectorDataPtr> Data;       // all data are kept as real numbers
 
     // required for combine operation of variance and co-variance
     CSmallString            MSName;     // name of data section with number of samples
@@ -162,14 +171,8 @@ private:
 
     friend class CPMFAccumulator;
 
-    /// return index to mixed array for the M mode
-    int map_M(int ibin,int icv) const;
-
-    /// return index to mixed array for the S mode
-    int map_S(int itime,int icv) const;
-
     /// calculate size and init data block
-    void InitDataBlock(int len=0);
+    void InitDataBlock(void);
 };
 
 //------------------------------------------------------------------------------

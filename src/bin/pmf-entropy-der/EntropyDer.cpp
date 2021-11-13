@@ -28,6 +28,9 @@
 #include <boost/algorithm/string/classification.hpp>
 #include <iomanip>
 #include <Vector.hpp>
+#include <FortranMatrix.hpp>
+#include <MAFilter.hpp>
+#include <SGFilter.hpp>
 
 //------------------------------------------------------------------------------
 
@@ -133,6 +136,18 @@ bool CEntropyDer::Run(void)
     OutAccu = InAccu->Duplicate();
 
     vout << endl;
+    vout << format("%02d:Preparing input data ...")%State << endl;
+    vout << "   Calculating Etot ..." << endl;
+    GetEtot();
+    vout << "   Low-pass filter ..." << endl;
+    RunLowPassFilter();
+
+    vout << "   Numerical differentiation ..." << endl;
+    //GetNativeData();
+    RecalcICFBySGF();
+    vout << "   Done." << endl;
+
+    vout << endl;
     vout << format("%02d:Processing data ...")%State << endl;
     State++;
     if( Options.IsOptKSKernelSet() || Options.IsOptKSWFacSet() ){
@@ -168,6 +183,179 @@ bool CEntropyDer::Run(void)
     vout << "   Done." << endl;
 
     return(true);
+}
+
+//==============================================================================
+//------------------------------------------------------------------------------
+//==============================================================================
+
+void CEntropyDer::GetEtot(void)
+{
+// input data
+    CVectorDataPtr inepot  = InAccu->GetSectionData("TEPOT")->GetDataBlob();
+    CVectorDataPtr inerst  = InAccu->GetSectionData("TERST")->GetDataBlob();
+    CVectorDataPtr inekin  = InAccu->GetSectionData("TEKIN")->GetDataBlob();
+
+    CVectorDataPtr outetot = InAccu->CreateSectionData("TETOT", "IG","R","S")->GetDataBlob();;
+
+    for(size_t t=10; t < NSTLimit; t++){
+        double epot = inepot->GetRawDataField()[t];
+        double erst = inerst->GetRawDataField()[t];
+        double ekin = inekin->GetRawDataField()[t];
+
+        double etot = epot + erst + ekin;
+        outetot->GetRawDataField()[t] = etot;
+    }
+}
+
+//==============================================================================
+//------------------------------------------------------------------------------
+//==============================================================================
+
+void CEntropyDer::RunLowPassFilter(void)
+{
+    CMAFilterPtr mafilter(new CMAFilter);
+    mafilter->SetFilter(InAccu->GetTimeStep(),50);
+    vout << "      Frame length = " << mafilter->GetFrameLen() << endl;
+
+    CFilterPtr   filter;
+    filter =  mafilter;
+
+// ---------------------------
+    for(size_t icv=0; icv < NumOfCVs; icv++){
+        CVectorDataPtr cvs  = InAccu->GetSectionData("TCVS")->GetDataBlob(icv);
+        filter->RunFilter(cvs);
+
+        CVectorDataPtr icf  = InAccu->GetSectionData("TICF")->GetDataBlob(icv);
+        filter->RunFilter(icf);
+    }
+
+// ---------------------------
+    CVectorDataPtr etot = InAccu->GetSectionData("TETOT")->GetDataBlob();
+    filter->RunFilter(etot);
+
+// ---------------------------
+    for(size_t icv=0; icv < NumOfCVs; icv++){
+        for(size_t jcv=0; jcv < NumOfCVs; jcv++){
+            CVectorDataPtr zinv = InAccu->GetSectionData("TZINV")->GetDataBlob(icv,jcv);
+            filter->RunFilter(zinv);
+        }
+    }
+}
+
+//==============================================================================
+//------------------------------------------------------------------------------
+//==============================================================================
+
+void CEntropyDer::GetNativeData(void)
+{
+// input data
+    CVectorDataPtr inetot = InAccu->GetSectionData("TETOT")->GetDataBlob();
+    CVectorDataPtr outetot = InAccu->CreateSectionData("USE_ETOT","IG","R","T")->GetDataBlob();
+
+    for(size_t t=0; t < NSTLimit; t++){
+        outetot->GetRawDataField()[t] = inetot->GetRawDataField()[t];
+    }
+
+    for(size_t icv=0; icv < NumOfCVs; icv++){
+        CVectorDataPtr inicf  = InAccu->GetSectionData("TICF")->GetDataBlob(icv);
+        CVectorDataPtr outicf  = InAccu->CreateSectionData("USE_ICF", "IG","R","S")->GetDataBlob(icv);
+
+        CVectorDataPtr incvs  = InAccu->GetSectionData("TCVS")->GetDataBlob(icv);
+        CVectorDataPtr outcvs  = InAccu->CreateSectionData("USE_CVS", "IG","R","S")->GetDataBlob(icv);
+
+        for(size_t t=0; t < NSTLimit; t++){
+            outcvs->GetRawDataField()[t] = incvs->GetRawDataField()[t];
+            outicf->GetRawDataField()[t] = inicf->GetRawDataField()[t];
+        }
+    }
+}
+
+//==============================================================================
+//------------------------------------------------------------------------------
+//==============================================================================
+
+void CEntropyDer::RecalcICFBySGF(void)
+{
+    CSGFilterPtr sgfilter(new CSGFilter);
+    sgfilter->SetFilter(InAccu->GetTimeStep(),5,3);
+
+    CSimpleVector<double> cvsva;
+    CSimpleVector<double> cvs1d;
+    CSimpleVector<double> cvs2d;
+
+    CSimpleVector<double> gfx;
+
+    cvsva.CreateVector(NumOfCVs);
+    cvs1d.CreateVector(NumOfCVs);
+    cvs2d.CreateVector(NumOfCVs);
+
+    gfx.CreateVector(NumOfCVs);
+
+    CFortranMatrix zinvva;
+    CFortranMatrix zinv1d;
+
+    zinvva.CreateMatrix(NumOfCVs,NumOfCVs);
+    zinv1d.CreateMatrix(NumOfCVs,NumOfCVs);
+
+// input data
+    CPMFAccuDataPtr insdcvs     = InAccu->GetSectionData("TCVS");
+    CPMFAccuDataPtr insdzinv    = InAccu->GetSectionData("TZINV");
+    CVectorDataPtr  inetot      = InAccu->GetSectionData("TETOT")->GetDataBlob();
+    CPMFAccuDataPtr insdmicf    = InAccu->GetSectionData("TMICF");
+
+    CVectorDataPtr  outetot     = InAccu->CreateSectionData("USE_ETOT","IG","R","T")->GetDataBlob();
+    CPMFAccuDataPtr outsdcvs    = InAccu->CreateSectionData("USE_CVS", "IG","R","S");
+    CPMFAccuDataPtr outsdicf    = InAccu->CreateSectionData("USE_ICF", "IG","R","S");
+
+    for(size_t t=2000; t < NSTLimit-5; t++){
+
+        outetot->GetRawDataField()[t] = sgfilter->GetValue(inetot,t);
+
+    // get force components
+        for(size_t icv=0; icv < NumOfCVs; icv++){
+            CVectorDataPtr incvs  = insdcvs->GetDataBlob(icv);
+
+            cvsva[icv] = sgfilter->GetValue(incvs,t);
+            cvs1d[icv] = sgfilter->Get1stDer(incvs,t);
+            cvs2d[icv] = sgfilter->Get2ndDer(incvs,t);
+
+            for(size_t jcv=0; jcv < NumOfCVs; jcv++){
+                CVectorDataPtr inzinv  = insdzinv->GetDataBlob(icv,jcv);
+                zinvva[icv][jcv] = sgfilter->GetValue(inzinv,t);
+                zinv1d[icv][jcv] = sgfilter->Get1stDer(inzinv,t);
+            }
+        }
+
+    // complete forces
+        gfx.SetZero();
+        for(size_t icv=0; icv < NumOfCVs; icv++){
+            for(size_t jcv=0; jcv < NumOfCVs; jcv++){
+                gfx[icv] = gfx[icv] + zinv1d[icv][jcv]*cvs1d[jcv] + zinvva[icv][jcv]*cvs2d[jcv];
+            }
+        }
+
+    // apply biasing force
+        for(size_t icv=0; icv < NumOfCVs; icv++){
+            CVectorDataPtr inmicf  = insdmicf->GetDataBlob(icv);
+            gfx[icv] = gfx[icv] - inmicf->GetRawDataField()[t+2];
+        }
+
+    // save
+        for(size_t icv=0; icv < NumOfCVs; icv++){
+            CVectorDataPtr outcvs  = outsdcvs->GetDataBlob(icv);
+            outcvs->GetRawDataField()[t] = cvsva[icv];
+            CVectorDataPtr outicf  = outsdicf->GetDataBlob(icv);
+            outicf->GetRawDataField()[t] = gfx[icv];
+        }
+    }
+
+    ofstream tout("icf");
+    CVectorDataPtr inicf  = InAccu->GetSectionData("TICF")->GetDataBlob(0);
+    CVectorDataPtr outicf = outsdicf->GetDataBlob(0);
+    for(int t=200; t< 50000; t++){
+        tout << inicf->GetRawDataField()[t] << " " <<  outicf->GetRawDataField()[t+2] << endl;
+    }
 }
 
 //==============================================================================
@@ -212,7 +400,6 @@ void CEntropyDer::SetKSWFac(const CSmallString& spec)
     }
 }
 
-
 //------------------------------------------------------------------------------
 
 void CEntropyDer::SetKSKernel(const CSmallString& kskernel)
@@ -243,11 +430,9 @@ void CEntropyDer::CalculatePPandPN(void)
     ipos.CreateVector(NumOfCVs);
 
 // input data
-    CPMFAccuDataPtr incvs  = InAccu->GetSectionData("TCVS");
-    CPMFAccuDataPtr inepot = InAccu->GetSectionData("TEPOT");
-    CPMFAccuDataPtr inerst = InAccu->GetSectionData("TERST");
-    CPMFAccuDataPtr inekin = InAccu->GetSectionData("TEKIN");
-    CPMFAccuDataPtr inicf  = InAccu->GetSectionData("TICF");
+    CPMFAccuDataPtr incvs  = InAccu->GetSectionData("USE_CVS");
+    CPMFAccuDataPtr inetot = InAccu->GetSectionData("USE_ETOT");
+    CPMFAccuDataPtr inicf  = InAccu->GetSectionData("USE_ICF");
 
 // output data
     CPMFAccuDataPtr outnsamples    = OutAccu->CreateSectionData("TDS_NSAMPLES",  "AD","R","B");
@@ -261,17 +446,13 @@ void CEntropyDer::CalculatePPandPN(void)
     CPMFAccuDataPtr outm2pn        = OutAccu->CreateSectionData("M2TDS_PN",      "M2","R","M","TDS_NSAMPLES","MTDS_PN");
 
     for(size_t t=10; t < NSTLimit; t++){
-        incvs->GetData(t,ipos);
+        incvs->GetDataBlob(t,ipos);
         int gi0 = InAccu->GetGlobalIndex(ipos);
         if( gi0 == -1 ) continue;
 
         // cout << t << " " << gi0 << " " << ipos[0] << endl;
 
-        double epot = inepot->GetData(t);
-        double erst = inerst->GetData(t);
-        double ekin = inekin->GetData(t);
-
-        double etot = epot+erst+ekin;
+        double etot = inetot->GetData(t);
 
         // increase number of samples
         double n    = outnsamples->GetData(gi0);
@@ -293,6 +474,7 @@ void CEntropyDer::CalculatePPandPN(void)
 
         for(size_t icv=0; icv < NumOfCVs; icv++){
             double icf  = inicf->GetData(t,icv);
+
             double pp   = etot+icf;
             double pn   = etot-icf;
 
@@ -346,11 +528,9 @@ void CEntropyDer::CalculatePPandPN_KS(void)
     ipos.CreateVector(NumOfCVs);
 
 // input data
-    CPMFAccuDataPtr incvs  = InAccu->GetSectionData("TCVS");
-    CPMFAccuDataPtr inepot = InAccu->GetSectionData("TEPOT");
-    CPMFAccuDataPtr inerst = InAccu->GetSectionData("TERST");
-    CPMFAccuDataPtr inekin = InAccu->GetSectionData("TEKIN");
-    CPMFAccuDataPtr inicf  = InAccu->GetSectionData("TICF");
+    CPMFAccuDataPtr incvs  = InAccu->GetSectionData("USE_CVS");
+    CPMFAccuDataPtr inetot = InAccu->GetSectionData("USE_ETOT");
+    CPMFAccuDataPtr inicf  = InAccu->GetSectionData("USE_ICF");
 
 // output data
     CPMFAccuDataPtr outnsamples    = OutAccu->CreateSectionData("TDS_NSAMPLES",  "AD","R","B");
@@ -365,14 +545,10 @@ void CEntropyDer::CalculatePPandPN_KS(void)
 
     for(size_t t=10; t < NSTLimit; t++){
 
-        incvs->GetData(t,ipos);
+        incvs->GetDataBlob(t,ipos);
         CalculateKSWeights(ipos,weights);
 
-        double epot = inepot->GetData(t);
-        double erst = inerst->GetData(t);
-        double ekin = inekin->GetData(t);
-
-        double etot = epot+erst+ekin;
+        double etot = inetot->GetData(t);
 
         for(size_t ibin=0; ibin < NumOfBins; ibin++){
         // increase number of samples

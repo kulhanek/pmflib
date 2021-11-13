@@ -67,7 +67,7 @@ subroutine abf_control_read_abf(prm_fin)
 
     ! read configuration
     call pmf_ctrl_read_integer(prm_fin,'fmode',fmode,'i12')
-    call pmf_ctrl_check_integer_in_range('ABF','fmode',fmode,0,2)
+    call pmf_ctrl_check_integer_in_range('ABF','fmode',fmode,0,3)
 
     if( fmode .eq. 0 ) then
         write(PMF_OUT,10)
@@ -93,6 +93,7 @@ subroutine abf_control_read_abf(prm_fin)
 
     call pmf_ctrl_read_logical(prm_fin,'fenthalpy',fenthalpy)
     call pmf_ctrl_read_logical(prm_fin,'fentropy',fentropy)
+    call pmf_ctrl_read_logical(prm_fin,'frecord',frecord)
 
     call pmf_ctrl_read_real8_wunit(prm_fin,'fepotaverage',EnergyUnit,fepotaverage,'F10.1')
     call pmf_ctrl_read_real8_wunit(prm_fin,'fekinaverage',EnergyUnit,fekinaverage,'F10.1')
@@ -121,6 +122,16 @@ subroutine abf_control_read_abf(prm_fin)
     call pmf_ctrl_read_logical(prm_fin,'fsmooth_enable',fsmooth_enable)
     call pmf_ctrl_read_integer(prm_fin,'fsmooth_kernel',fsmooth_kernel,'i12')
     call pmf_ctrl_check_integer_in_range('ABF','fsmooth_kernel',fsmooth_kernel,0,1)
+
+    if( fmode .eq. 3 ) then
+        call pmf_ctrl_read_integer(prm_fin,'flowpassfilter',flowpassfilter,'i12')
+        call pmf_ctrl_check_integer_in_range('ABF','flowpassfilter',flowpassfilter,0,1)
+
+        call pmf_ctrl_read_real8(prm_fin,'flpfcutofffreq',flpfcutofffreq,'F10.5')
+        call pmf_ctrl_check_real8('ABF','flpfcutofffreq',flpfcutofffreq,0.0d0,CND_GT,'F10.5')
+        call pmf_ctrl_read_integer(prm_fin,'fsgframelen',fsgframelen,'i12')
+        call pmf_ctrl_read_integer(prm_fin,'fsgorder',fsgorder,'i12')
+    end if
 
     ! network setup ----------------------------------------------------------------
 
