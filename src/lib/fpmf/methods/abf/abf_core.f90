@@ -241,6 +241,7 @@ subroutine abf_core_force_4p()
     end do
 
 ! apply force filters
+    la(:) = 0.0d0
     if( fapply_abf ) then
     ! calculate abf force to be applied -------------
         select case(feimode)
@@ -262,9 +263,6 @@ subroutine abf_core_force_4p()
                 a1(:,j) = a1(:,j) + la(i) * MassInv(j) * CVContext%CVsDrvs(:,j,ci)
             end do
         end do
-    else
-        ! we do not want to apply ABF force - set the forces to zero
-        la(:) = 0.0d0
    end if
 
 ! rest of ABF stuff -----------------------------
@@ -322,8 +320,7 @@ subroutine abf_core_force_4p()
         end do
 
         ! add data to accumulator
-! FIXME
-!       call abf_accu_add_data_online(cvhist(:,1),pxi0,0.0d0)
+        call abf_accu_add_data_online(cvave(:),pxi0,0.0d0,0.0d0,0.0d0)
     end if
 
     ! pxi0 <--- -pxip + pxim + pxi1 - la/2
@@ -378,17 +375,17 @@ subroutine abf_core_force_lpf_sg()
     end do
 
 ! apply force filters
-    pxi0(:) = 0.0d0
+    pxi1(:) = 0.0d0
     if( fapply_abf ) then
         ! calculate abf force to be applied
         select case(feimode)
             case(0)
-                call abf_accu_get_data(cvcur,la)
+                call abf_accu_get_data(cvcur,pxi1)
             case(1)
-                call abf_accu_get_data_lramp(cvcur,la)
+                call abf_accu_get_data_lramp(cvcur,pxi1)
             case(2)
                 call pmf_timers_start_timer(PMFLIB_ABF_KS_TIMER)
-                    call abf_accu_get_data_ksmooth(cvcur,pxi0)
+                    call abf_accu_get_data_ksmooth(cvcur,pxi1)
                 call pmf_timers_stop_timer(PMFLIB_ABF_KS_TIMER)
             case default
                 call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented extrapolation/interpolation mode in abf_core_force_lpf_sg!')
@@ -398,7 +395,7 @@ subroutine abf_core_force_lpf_sg()
         do i=1,NumOfABFCVs
             ci = ABFCVList(i)%cvindx
             do j=1,NumOfLAtoms
-                Frc(:,j) = Frc(:,j) + pxi0(i) * CVContext%CVsDrvs(:,j,ci)
+                Frc(:,j) = Frc(:,j) + pxi1(i) * CVContext%CVsDrvs(:,j,ci)
             end do
         end do
     end if
@@ -417,21 +414,20 @@ subroutine abf_core_force_lpf_sg()
     end do
 
     xihist(hist_len,:)      = cvcur(:)
-    micfhist(hist_len,:)    = pxi0(:)
+    micfhist(hist_len,:)    = pxi1(:)
     epothist(hist_len)      = PotEne - fepotaverage
     ersthist(hist_len)      = PMFEne
-    ekinhist(hist_len)      = KinEne - fekinaverage   ! in t-dt
+    ekinhist(hist_len-1)    = KinEne - fekinaverage   ! in t-dt
     zinvhist(hist_len,:,:)  = fzinv(:,:)
 
     if( fstep .lt. hist_len ) return
 
     do i=1,NumOfABFCVs
-        cvcur(i) = dot_product(sg_c0(:),xihist(1:hist_len-1,i))
-        cv1dr(i) = dot_product(sg_c1(:),xihist(1:hist_len-1,i))
-        cv2dr(i) = dot_product(sg_c2(:),xihist(1:hist_len-1,i))
+        cv1dr(i) = dot_product(sg_c1(:),xihist(:,i))
+        cv2dr(i) = dot_product(sg_c2(:),xihist(:,i))
         do j=1,NumOfABFCVs
-            fzinv(i,j)     = dot_product(sg_c0(:),zinvhist(1:hist_len-1,i,j))
-            fzinv0(i,j)    = dot_product(sg_c1(:),zinvhist(1:hist_len-1,i,j))
+            fzinv(i,j)     = dot_product(sg_c0(:),zinvhist(:,i,j))
+            fzinv0(i,j)    = dot_product(sg_c1(:),zinvhist(:,i,j))
         end do
     end do
 
@@ -440,7 +436,7 @@ subroutine abf_core_force_lpf_sg()
 
     epot = epothist(3)
     erst = ersthist(3)
-    ekin = ekinhist(4)
+    ekin = ekinhist(3)
     etot = epot + erst + ekin
 
     do i=1,NumOfABFCVs
@@ -451,7 +447,8 @@ subroutine abf_core_force_lpf_sg()
         pxi0(i) = v
     end do
 
-    pxi0(:) = pxi0(:) - micfhist(3,:)
+    pxi0(:)     = pxi0(:) - micfhist(3,:)
+    cvcur(:)    = xihist(3,:)
 
     ! add data to accumulator
     call abf_accu_add_data_online(cvcur,pxi0,epot,erst,etot)

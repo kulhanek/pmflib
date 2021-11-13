@@ -539,7 +539,7 @@ subroutine abf_init_filter_sg
     sg_c2(:) = sg_c2(:) * invfdtx * invfdtx
 
     ! define history length
-    hist_len = np + 1 ! add +1 for ekin delay
+    hist_len = np
 
 end subroutine abf_init_filter_sg
 
