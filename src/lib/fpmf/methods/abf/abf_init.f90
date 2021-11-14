@@ -107,6 +107,7 @@ subroutine abf_init_dat
 
     fsgframelen     = 5
     fsgorder        = 3
+    fsgsmoothall    = .false.
 
     fdtx            = 0.0d0
 
@@ -550,7 +551,7 @@ subroutine abf_init_filter_sg
     sg_c2(:) = sg_c2(:) * invfdtx * invfdtx
 
     ! define history length
-    hist_len = np
+    hist_len = np + 1 ! +1 for delayed velocity
 
 end subroutine abf_init_filter_sg
 

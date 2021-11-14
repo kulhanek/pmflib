@@ -137,6 +137,7 @@ subroutine abf_control_read_abf(prm_fin)
     if( fmode .eq. 3 ) then
         call pmf_ctrl_read_integer(prm_fin,'fsgframelen',fsgframelen,'i12')
         call pmf_ctrl_read_integer(prm_fin,'fsgorder',fsgorder,'i12')
+        call pmf_ctrl_read_logical(prm_fin,'fsgsmoothall',fsgsmoothall)
     end if
 
     ! network setup ----------------------------------------------------------------

@@ -423,41 +423,69 @@ subroutine abf_core_force_lpf_sg()
     micfhist(hist_len,:)    = pxi1(:)
     epothist(hist_len)      = PotEne - fepotaverage
     ersthist(hist_len)      = PMFEne
-    ekinhist(hist_len-1)    = KinEne - fekinaverage   ! in t-dt
+    ekinhist(hist_len)      = KinEne - fekinaverage   ! in t-dt
     zinvhist(hist_len,:,:)  = fzinv(:,:)
 
     if( fstep .lt. hist_len ) return
 
-    do i=1,NumOfABFCVs
-        cv1dr(i) = dot_product(sg_c1(:),xihist(:,i))
-        cv2dr(i) = dot_product(sg_c2(:),xihist(:,i))
-        do j=1,NumOfABFCVs
-            fzinv(i,j)     = dot_product(sg_c0(:),zinvhist(:,i,j))
-            fzinv0(i,j)    = dot_product(sg_c1(:),zinvhist(:,i,j))
+    if( fsgsmoothall ) then
+        do i=1,NumOfABFCVs
+            cvcur(i) = dot_product(sg_c0(:),xihist(1:hist_len-1,i))
+            cv1dr(i) = dot_product(sg_c1(:),xihist(1:hist_len-1,i))
+            cv2dr(i) = dot_product(sg_c2(:),xihist(1:hist_len-1,i))
+            pxi1(i)  = dot_product(sg_c0(:),micfhist(1:hist_len-1,i))
+            do j=1,NumOfABFCVs
+                fzinv(i,j)     = dot_product(sg_c0(:),zinvhist(1:hist_len-1,i,j))
+                fzinv0(i,j)    = dot_product(sg_c1(:),zinvhist(1:hist_len-1,i,j))
+            end do
         end do
-    end do
 
-    ! write(4789,*) fstep, CVContext%CVsValues(1), fstep-(cbuff_len/2 +(hist_len-1)/2+1), xihist((hist_len-1)/2+1,1), cvcur(1)
-    ! write(4789,*) fstep, la
+        epot = dot_product(sg_c0(:),epothist(1:hist_len-1))
+        erst = dot_product(sg_c0(:),ersthist(1:hist_len-1))
+        ekin = dot_product(sg_c0(:),ekinhist(2:hist_len))
+        etot = epot + erst + ekin
 
-    epot = epothist(3)
-    erst = ersthist(3)
-    ekin = ekinhist(3)
-    etot = epot + erst + ekin
-
-    do i=1,NumOfABFCVs
-        v = 0.0d0
-        do j=1,NumOfABFCVs
-            v = v +  fzinv0(j,i)*cv1dr(j) + fzinv(j,i)*cv2dr(j)
+        do i=1,NumOfABFCVs
+            v = 0.0d0
+            do j=1,NumOfABFCVs
+                v = v +  fzinv0(j,i)*cv1dr(j) + fzinv(j,i)*cv2dr(j)
+            end do
+            pxi0(i) = v
         end do
-        pxi0(i) = v
-    end do
 
-    pxi0(:)     = pxi0(:) - micfhist(3,:)
-    cvcur(:)    = xihist(3,:)
+        pxi0(:) = pxi0(:) - pxi1(:)
 
-    ! add data to accumulator
-    call abf_accu_add_data_online(cvcur,pxi0,epot,erst,etot)
+        ! add data to accumulator
+        call abf_accu_add_data_online(cvcur,pxi0,epot,erst,etot)
+    else
+        do i=1,NumOfABFCVs
+            cv1dr(i) = dot_product(sg_c1(:),xihist(1:hist_len-1,i))
+            cv2dr(i) = dot_product(sg_c2(:),xihist(1:hist_len-1,i))
+            do j=1,NumOfABFCVs
+                fzinv(i,j)     = dot_product(sg_c0(:),zinvhist(1:hist_len-1,i,j))
+                fzinv0(i,j)    = dot_product(sg_c1(:),zinvhist(1:hist_len-1,i,j))
+            end do
+        end do
+
+        epot = epothist(3)
+        erst = ersthist(3)
+        ekin = ekinhist(4)  ! delayed
+        etot = epot + erst + ekin
+
+        do i=1,NumOfABFCVs
+            v = 0.0d0
+            do j=1,NumOfABFCVs
+                v = v +  fzinv0(j,i)*cv1dr(j) + fzinv(j,i)*cv2dr(j)
+            end do
+            pxi0(i) = v
+        end do
+
+        pxi0(:)     = pxi0(:) - micfhist(3,:)
+        cvcur(:)    = xihist(3,:)
+
+        ! add data to accumulator
+        call abf_accu_add_data_online(cvcur,pxi0,epot,erst,etot)
+    end if
 
 !    call abf_accu_add_data_record(cvhist(:,hist_len-1),fzinv0,pxi0,pxi1, &
 !         epothist(hist_len-1),ersthist(1),ekinhist(1))

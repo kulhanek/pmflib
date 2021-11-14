@@ -51,6 +51,7 @@ integer     :: feimode      ! interpolation/extrapolation mode
 ! fmode == 3
 integer     :: fsgframelen
 integer     :: fsgorder
+logical     :: fsgsmoothall
 
 logical     :: fenthalpy    ! collect data for enthalpy calculation
 logical     :: fentropy     ! collect data for entropy calculation
