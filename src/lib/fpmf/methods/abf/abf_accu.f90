@@ -724,6 +724,70 @@ subroutine abf_accu_get_data_ksmooth(cvs,gfx)
 end subroutine abf_accu_get_data_ksmooth
 
 !===============================================================================
+! Subroutine:  abf_accu_get_data_lsmooth
+!===============================================================================
+
+subroutine abf_accu_get_data_lsmooth(cvs,gfx)
+
+    use abf_dat
+    use pmf_dat
+    use pmf_utils
+    use pmf_accu
+
+    implicit none
+    real(PMFDP)    :: cvs(:)
+    real(PMFDP)    :: gfx(:)
+    ! -----------------------------------------------
+    integer        :: gi0,gi1
+    real(PMFDP)    :: f0,f1,dx,rw,n,c0,c1
+    ! --------------------------------------------------------------------------
+
+    gfx(:) = 0.0d0
+
+! get global index to accumulator for average values within the set
+    gi0 = pmf_accu_globalindex(abfaccu%PMFAccuType,cvs)
+    if( gi0 .le. 0 ) return ! out of valid area
+
+    rw = 1.0d0
+    n = abfaccu%bnsamples(gi0)
+    if( n .le. fhramp_max ) then
+        rw = 0.0d0
+        if( n .gt. fhramp_min ) then
+            rw = real(n-fhramp_min)/real(fhramp_max-fhramp_min)
+        end if
+    end if
+    f0 = rw * abfaccu%bmicf(1,gi0)
+
+    dx = cvs(1) - abfaccu%binpos(1,gi0)
+    if( dx .gt. 0 ) then
+        gi1 = gi0 + 1
+        c1 = dx / abfaccu%PMFAccuType%sizes(1)%bin_width
+        c0 = 1.0d0 - c1
+    else
+        gi1 = gi0 - 1
+        c0 = 1.0d0 + dx / abfaccu%PMFAccuType%sizes(1)%bin_width
+        c1 = 1.0d0 - c0
+    end if
+
+    if( (gi1 .gt. 1) .and. (gi1 .le. abfaccu%PMFAccuType%tot_nbins) ) then
+        rw = 1.0d0
+        n = abfaccu%bnsamples(gi1)
+        if( n .le. fhramp_max ) then
+            rw = 0.0d0
+            if( n .gt. fhramp_min ) then
+                rw = real(n-fhramp_min)/real(fhramp_max-fhramp_min)
+            end if
+        end if
+        f1 = rw * abfaccu%bmicf(1,gi1)
+    else
+        f1 = 0.0d0
+    end if
+
+    gfx(1) = c0 * f0 + c1 * f1
+
+end subroutine abf_accu_get_data_lsmooth
+
+!===============================================================================
 
 end module abf_accu
 

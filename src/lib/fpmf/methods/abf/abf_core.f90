@@ -185,6 +185,8 @@ subroutine abf_core_force_2p()
                 call pmf_timers_start_timer(PMFLIB_ABF_KS_TIMER)
                     call abf_accu_get_data_ksmooth(cvhist(:,2),la)
                 call pmf_timers_stop_timer(PMFLIB_ABF_KS_TIMER)
+            case(3)
+                call abf_accu_get_data_lsmooth(cvhist(:,2),la)
             case default
                 call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented extrapolation/interpolation mode!')
         end select
@@ -253,6 +255,8 @@ subroutine abf_core_force_4p()
                     call pmf_timers_start_timer(PMFLIB_ABF_KS_TIMER)
                         call abf_accu_get_data_ksmooth(cvhist(:,4),la)
                     call pmf_timers_stop_timer(PMFLIB_ABF_KS_TIMER)
+                case(3)
+                    call abf_accu_get_data_lsmooth(cvhist(:,4),la)
             case default
                 call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented extrapolation/interpolation mode!')
         end select
@@ -360,10 +364,10 @@ subroutine abf_core_force_lpf_sg()
 
 !    if( mod(fstep,10000) .eq. 0 ) then
 !        rewind(789)
-!        do c=3.0,11.5,0.01
+!        do c=0.87,3.05,0.001
 !            cvcur(1) = c
 !            call abf_accu_get_data(cvcur,pxi0)
-!            call abf_accu_get_data_ksmooth(cvcur,pxi1)
+!            call abf_accu_get_data_lsmooth(cvcur,pxi1)
 !            write(789,*) c, pxi0(1), pxi1(1)
 !        end do
 !    end if
@@ -387,6 +391,8 @@ subroutine abf_core_force_lpf_sg()
                 call pmf_timers_start_timer(PMFLIB_ABF_KS_TIMER)
                     call abf_accu_get_data_ksmooth(cvcur,pxi1)
                 call pmf_timers_stop_timer(PMFLIB_ABF_KS_TIMER)
+            case(3)
+                call abf_accu_get_data_lsmooth(cvcur,pxi1)
             case default
                 call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented extrapolation/interpolation mode in abf_core_force_lpf_sg!')
         end select

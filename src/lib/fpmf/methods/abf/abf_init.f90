@@ -180,6 +180,12 @@ subroutine abf_init_print_header
     case default
         call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown kernel in abf_init_print_header!')
     end select
+    write(PMF_OUT,130)  ' Min of accu samples in bin (fhramp_min) : ', fhramp_min
+    write(PMF_OUT,130)  ' Max of accu samples in bin (fhramp_max) : ', fhramp_max
+    case(3)
+    write(PMF_OUT,120)  '      |-> Linear interpolation'
+    write(PMF_OUT,130)  ' Min of accu samples in bin (fhramp_min) : ', fhramp_min
+    write(PMF_OUT,130)  ' Max of accu samples in bin (fhramp_max) : ', fhramp_max
     case default
     call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown extrapolation/interpolation mode in abf_init_print_header!')
     end select
@@ -368,6 +374,11 @@ subroutine abf_init_arrays
 
     if( feimode .eq. 2 ) then
         call abf_init_snb_list
+    end if
+
+    if( (feimode .eq. 3) .and. (NumOfABFCVs .gt. 1) ) then
+        call pmf_utils_exit(PMF_OUT,1, &
+            '[ABF] feimode == 3 can be used only with one CV!')
     end if
 
 end subroutine abf_init_arrays

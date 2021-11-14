@@ -99,7 +99,7 @@ subroutine abf_control_read_abf(prm_fin)
     call pmf_ctrl_read_real8_wunit(prm_fin,'fekinaverage',EnergyUnit,fekinaverage,'F10.1')
 
     call pmf_ctrl_read_integer(prm_fin,'feimode',feimode,'i12')
-    call pmf_ctrl_check_integer_in_range('ABF','feimode',feimode,0,2)
+    call pmf_ctrl_check_integer_in_range('ABF','feimode',feimode,0,3)
 
     select case(feimode)
         case(0)
@@ -124,6 +124,12 @@ subroutine abf_control_read_abf(prm_fin)
             end if
             call pmf_ctrl_read_integer(prm_fin,'fsmooth_kernel',fsmooth_kernel,'i12')
             call pmf_ctrl_check_integer_in_range('ABF','fsmooth_kernel',fsmooth_kernel,0,1)
+        case(3)
+            write(PMF_OUT,53)
+            call pmf_ctrl_read_integer(prm_fin,'fhramp_min',fhramp_min,'i12')
+            call pmf_ctrl_check_integer('ABF','fhramp_min',fhramp_min,0,CND_GE)
+            call pmf_ctrl_read_integer(prm_fin,'fhramp_max',fhramp_max,'i12')
+            call pmf_ctrl_check_integer('ABF','fhramp_max',fhramp_max,0,CND_GE)
         case default
             call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown extrapolation/interpolation mode!')
     end select
@@ -177,6 +183,7 @@ subroutine abf_control_read_abf(prm_fin)
  50 format (/,'>> Inter/Extrapolation disabled (feimode == 0)')
  51 format (/,'>> Linear ramp mode (feimode == 1)')
  52 format (/,'>> Kernel smoother (feimode == 2)')
+ 53 format (/,'>> Linear interpolation (feimode == 3)')
 
 100 format (' >> Multiple-walkers ABF method is disabled!')
 
