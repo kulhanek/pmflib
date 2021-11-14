@@ -467,9 +467,9 @@ subroutine abf_core_force_lpf_sg()
             end do
         end do
 
-        epot = epothist(3)
-        erst = ersthist(3)
-        ekin = ekinhist(4)  ! delayed
+        epot = epothist(hist_len/2)     ! hist_len is +1 bigger than fsgframelen
+        erst = ersthist(hist_len/2)
+        ekin = ekinhist(hist_len/2+1)   ! delayed
         etot = epot + erst + ekin
 
         do i=1,NumOfABFCVs
@@ -480,8 +480,8 @@ subroutine abf_core_force_lpf_sg()
             pxi0(i) = v
         end do
 
-        pxi0(:)     = pxi0(:) - micfhist(3,:)
-        cvcur(:)    = xihist(3,:)
+        pxi0(:)     = pxi0(:) - micfhist(hist_len/2,:)
+        cvcur(:)    = xihist(hist_len/2,:)
 
         ! add data to accumulator
         call abf_accu_add_data_online(cvcur,pxi0,epot,erst,etot)
