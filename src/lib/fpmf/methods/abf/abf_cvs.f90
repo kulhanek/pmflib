@@ -41,12 +41,14 @@ subroutine abf_cvs_reset_cv(abf_item)
     type(CVTypeABF) :: abf_item
     ! --------------------------------------------------------------------------
 
-    abf_item%cvindx         = 0     ! CV index
+    abf_item%cvindx         = 0         ! CV index
     abf_item%cv             => null()
     abf_item%set            = 0
-    abf_item%min_value      = 0.0   ! left range
-    abf_item%max_value      = 0.0   ! right range
-    abf_item%nbins          = 0     ! number of bins
+    abf_item%min_value      = 0.0       ! left range
+    abf_item%max_value      = 0.0       ! right range
+    abf_item%nbins          = 0         ! number of bins
+    abf_item%wfac           = 1.0d0
+    abf_item%nobias         = .false.
 
 end subroutine abf_cvs_reset_cv
 
@@ -69,13 +71,20 @@ subroutine abf_cvs_read_cv(prm_fin,abf_item)
     type(CVTypeABF)                     :: abf_item
     ! --------------------------------------------------------------------------
 
-    ! used CV cannot be controlled by the path subsystem
+! used CV cannot be controlled by the path subsystem
     if( abf_item%cv%pathidx .gt. 0 ) then
         if( PathList(abf_item%cv%pathidx)%path%driven_mode ) then
             call pmf_utils_exit(PMF_OUT,1,'Requested CV is connected with the path that is in a driven mode!')
         end if
     end if
 
+! optional
+    if( prmfile_get_logical_by_key(prm_fin,'nobias',abf_item%nobias) ) then
+        write(PMF_OUT,180)
+    end if
+
+! main CV setup
+    if( .not. abf_item%nobias ) then
     ! ========================
     if( .not. prmfile_get_real8_by_key(prm_fin,'min_value',abf_item%min_value) ) then
         call pmf_utils_exit(PMF_OUT,1,'min_value is not specified!')
@@ -103,12 +112,14 @@ subroutine abf_cvs_read_cv(prm_fin,abf_item)
     end if
     write(PMF_OUT,125) abf_item%nbins
 
+    ! ========================
     if( feimode .eq. 2 ) then
         if( .not. prmfile_get_real8_by_key(prm_fin,'wfac',abf_item%wfac) ) then
             call pmf_utils_exit(PMF_OUT,1,'wfac is not specified!')
         end if
         call pmf_ctrl_check_real8('ABF','wfac',abf_item%wfac,0.0d0,CND_GT,'f12.2')
         write(PMF_OUT,170) abf_item%wfac
+    end if
     end if
 
     return
@@ -117,6 +128,7 @@ subroutine abf_cvs_read_cv(prm_fin,abf_item)
 120 format('    ** Max value         : ',F16.7,' [',A,']')
 125 format('    ** Number of bins    : ',I8)
 170 format('    ** KS W-factor       : ',F16.7)
+180 format('    ** Included in bias  :              off')
 
 end subroutine abf_cvs_read_cv
 
@@ -139,6 +151,8 @@ subroutine abf_cvs_cv_info(abf_item)
     write(PMF_OUT,146) trim(abf_item%cv%ctype)
     write(PMF_OUT,150) abf_item%cv%get_rvalue(CVContext%CVsValues(abf_item%cvindx)), &
                     trim(abf_item%cv%get_ulabel())
+
+    if( abf_item%nobias .eqv. .false. ) then
     write(PMF_OUT,155) abf_item%cv%get_rvalue(abf_item%min_value), &
                     trim(abf_item%cv%get_ulabel())
     write(PMF_OUT,160) abf_item%cv%get_rvalue(abf_item%max_value), &
@@ -147,6 +161,11 @@ subroutine abf_cvs_cv_info(abf_item)
 
     if( feimode .eq. 2 ) then
     write(PMF_OUT,170) abf_item%wfac
+    end if
+    end if
+
+    if( abf_item%nobias .eqv. .true. ) then
+    write(PMF_OUT,180)
     end if
 
     return
@@ -157,7 +176,8 @@ subroutine abf_cvs_cv_info(abf_item)
 155 format('    ** Min value         : ',E16.7,' [',A,']')
 160 format('    ** Max value         : ',E16.7,' [',A,']')
 165 format('    ** Number of bins    : ',I9)
-170 format('    ** GKS Wfactor       : ',F16.7)
+170 format('    ** KS W-factor       : ',F16.7)
+180 format('    ** Included in bias  :              off')
 
 end subroutine abf_cvs_cv_info
 

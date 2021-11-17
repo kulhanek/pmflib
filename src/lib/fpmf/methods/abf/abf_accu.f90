@@ -48,12 +48,12 @@ subroutine abf_accu_init()
     ! --------------------------------------------------------------------------
 
     ! init dimensions ------------------------------
-    allocate(abfaccu%sizes(NumOfABFCVs), stat = alloc_failed)
+    allocate(abfaccu%sizes(NumOfBiasedABFCVs), stat = alloc_failed)
     if( alloc_failed .ne. 0 ) then
         call pmf_utils_exit(PMF_OUT, 1,'[ABF] Unable to allocate memory for abf accumulator!')
     endif
 
-    abfaccu%tot_cvs     = NumOfABFCVs
+    abfaccu%tot_cvs     = NumOfBiasedABFCVs
     abfaccu%tot_nbins   = 1
     do i=1, abfaccu%tot_cvs
         abfaccu%sizes(i)%min_value  = ABFCVList(i)%min_value
@@ -457,7 +457,7 @@ subroutine abf_accu_add_data_online(cvs,gfx,epot,erst,etot)
         abfaccu%m2etot(gi0) = abfaccu%m2etot(gi0) + detot1 * detot2
     end if
 
-    do i=1,NumOfABFCVs
+    do i=1,NumOfBiasedABFCVs
         icf = - gfx(i)
         dicf1 = icf - abfaccu%micf(i,gi0)
         abfaccu%micf(i,gi0)  = abfaccu%micf(i,gi0)  + dicf1 * invn
@@ -490,7 +490,7 @@ subroutine abf_accu_add_data_online(cvs,gfx,epot,erst,etot)
             abfaccu%inc_m2epot(gi0) = abfaccu%inc_m2epot(gi0) + depot1 * depot2
         end if
 
-        do i=1,NumOfABFCVs
+        do i=1,NumOfBiasedABFCVs
             icf = - gfx(i)
             dicf1 = icf - abfaccu%inc_micf(i,gi0)
             abfaccu%inc_micf(i,gi0)  = abfaccu%inc_micf(i,gi0)  + dicf1 * invn
@@ -504,7 +504,7 @@ subroutine abf_accu_add_data_online(cvs,gfx,epot,erst,etot)
     abfaccu%bnsamples(gi0) = abfaccu%bnsamples(gi0) + 1.0d0
     invn = 1.0d0 / abfaccu%bnsamples(gi0)
 
-    do i=1,NumOfABFCVs
+    do i=1,NumOfBiasedABFCVs
         icf = - gfx(i)
         dicf1 = icf - abfaccu%bmicf(i,gi0)
         abfaccu%bmicf(i,gi0)  = abfaccu%bmicf(i,gi0)  + dicf1 * invn
@@ -564,7 +564,7 @@ function abf_get_skernel(cvs1,cvs2) result(kval)
 
 ! calculate length between two points
     u2 = 0.0d0
-    do i=1,NumOfABFCVs
+    do i=1,NumOfBiasedABFCVs
         dx = ABFCVList(i)%cv%get_deviation(cvs1(i),cvs2(i)) / (ABFCVList(i)%wfac*abfaccu%PMFAccuType%sizes(i)%bin_width)
         u2 = u2 + dx**2
     end do
@@ -614,7 +614,7 @@ subroutine abf_accu_get_data(cvs,gfx)
     if( gi0 .le. 0 ) return ! out of valid area
 
     w      = abfaccu%weights(gi0)
-    gfx(:) = w * abfaccu%bmicf(:,gi0)
+    gfx(1:NumOfBiasedABFCVs) = w * abfaccu%bmicf(:,gi0)
 
 end subroutine abf_accu_get_data
 
@@ -654,7 +654,7 @@ subroutine abf_accu_get_data_lramp(cvs,gfx)
             end if
         end if
         w      = abfaccu%weights(gi0)
-        gfx(:) = w * sc_ramp * abfaccu%bmicf(:,gi0)
+        gfx(1:NumOfBiasedABFCVs) = w * sc_ramp * abfaccu%bmicf(:,gi0)
     end if
 
 end subroutine abf_accu_get_data_lramp
@@ -718,7 +718,7 @@ subroutine abf_accu_get_data_ksmooth(cvs,gfx)
             end if
         end if
         w = rw * kw * abfaccu%weights(si0)
-        gfx(:) = gfx(:) + w * abfaccu%bmicf(:,si0)
+        gfx(1:NumOfBiasedABFCVs) = gfx(1:NumOfBiasedABFCVs) + w * abfaccu%bmicf(:,si0)
     end do
 
 end subroutine abf_accu_get_data_ksmooth

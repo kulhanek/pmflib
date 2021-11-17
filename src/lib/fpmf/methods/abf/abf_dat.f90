@@ -90,11 +90,13 @@ type CVTypeABF
     real(PMFDP)             :: max_value        ! right range
     integer                 :: nbins            ! number of bins
     real(PMFDP)             :: wfac             ! smoothing factor in number of bins
+    logical                 :: nobias           ! do not use for bias and do not include in PMFAccumulator
 end type CVTypeABF
 
 ! ----------------------
-integer                     :: NumOfABFCVs      ! number of CVs in a group
-type(CVTypeABF),allocatable :: ABFCVList(:)     ! definition of CVs
+integer                     :: NumOfABFCVs          ! number of ALL CVs in a group
+type(CVTypeABF),allocatable :: ABFCVList(:)         ! definition of CVs
+integer                     :: NumOfBiasedABFCVs    ! number of biased CVS
 
 ! ----------------------
 

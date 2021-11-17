@@ -268,10 +268,16 @@ subroutine abf_init_arrays
     use abf_accu
 
     implicit none
-    integer     :: alloc_failed
+    integer     :: alloc_failed, i
     ! --------------------------------------------------------------------------
 
     fdtx = fdt*PMF_DT2VDT
+
+    NumOfBiasedABFCVs = 0
+    do i=1,NumOfABFCVs
+        if( ABFCVList(i)%nobias ) cycle
+        NumOfBiasedABFCVs = NumOfBiasedABFCVs + 1
+    end do
 
 ! general arrays --------------------------------
     allocate(                                   &
