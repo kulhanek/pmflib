@@ -204,6 +204,10 @@ integer                     :: max_snb_size
 integer,allocatable         :: snb_list(:,:)
 real(PMFDP),allocatable     :: sweights(:)
 
+! FIXME - test
+real(PMFDP)                 :: fzdet
+real(PMFDP)                 :: fzdet0
+
 ! ------------------------------------------------------------------------------
 
 end module abf_dat

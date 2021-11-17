@@ -158,7 +158,7 @@ subroutine abf_core_force_2p()
         pxi0(:) = pxi0(:) + pxim(:)
 
         ! add data to accumulator
-        etot = epothist(1) + ersthist(1) + ekinhist(1)
+        etot = epothist(1) + ersthist(1) + ekinhist(1) + 0.5d0*PMF_Rgas*ftemp*log(fzdet0)
         call abf_accu_add_data_online(cvhist(:,1),pxi0,epothist(1),ersthist(1),etot)
 
         call abf_accu_add_data_record(cvhist(:,1),fzinv0,pxi0,pxi1,epothist(1),ersthist(1),ekinhist(1))
@@ -169,6 +169,7 @@ subroutine abf_core_force_2p()
     pxim    = pxip
     v0      = Vel
     fzinv0  = fzinv
+    fzdet0  = fzdet
 
     ! apply ABF bias
     la(:) = 0.0d0
@@ -526,11 +527,24 @@ subroutine abf_core_calc_Zmat(ctx)
             call pmf_utils_exit(PMF_OUT,1,'[ABF] LU decomposition failed in abf_core_calc_Zmat!')
         end if
 
+        ! FIXME - fzdet - test
+        fzdet = 1.0d0
+        ! and finally determinant
+        do i=1,NumOfABFCVs
+            if( indx(i) .ne. i ) then
+                fzdet = - fzdet * fzinv(i,i)
+            else
+                fzdet = fzdet * fzinv(i,i)
+            end if
+        end do
+
         call dgetri(NumOfABFCVs,fzinv,NumOfABFCVs,indx,vv,NumOfABFCVs,info)
         if( info .ne. 0 ) then
             call pmf_utils_exit(PMF_OUT,1,'[ABF] Matrix inversion failed in abf_core_calc_Zmat!')
         end if
     else
+        ! FIXME - fzdet - test
+        fzdet = fz(1,1)
         fzinv(1,1)=1.0d0/fz(1,1)
     end if
 
