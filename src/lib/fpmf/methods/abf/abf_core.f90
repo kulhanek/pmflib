@@ -157,8 +157,10 @@ subroutine abf_core_force_2p()
         ! total ABF force
         pxi0(:) = pxi0(:) + pxim(:)
 
+       ! write(789,*) fstep-1,fzdet0,fzdetA0,fzdet0/fzdetA0
+
         ! add data to accumulator
-        etot = epothist(1) + ersthist(1) + ekinhist(1) - 0.5d0*PMF_Rgas*ftemp*log(fzdet0/fzdetA0)
+        etot = epothist(1) + ersthist(1) + ekinhist(1) - 0.5d0*PMF_Rgas*ftemp*log(fzdet0)
         call abf_accu_add_data_online(cvhist(:,1),pxi0,epothist(1),ersthist(1),etot)
 
         call abf_accu_add_data_record(cvhist(:,1),fzinv0,pxi0,pxi1,epothist(1),ersthist(1),ekinhist(1))
@@ -520,6 +522,10 @@ subroutine abf_core_calc_Zmat(ctx)
             fzinv(i,j) = fz(i,j)            ! we need this for LAPACK
         end do
     end do
+
+!    do i=1,NumOfABFCVs
+!    write(7128,*) (fz(i,j), j=1,NumOfABFCVs)
+!    end do
 
     ! FIXME - fzdet - test
     fzdetA = fz(1,1)
