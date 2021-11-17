@@ -208,6 +208,9 @@ real(PMFDP),allocatable     :: sweights(:)
 real(PMFDP)                 :: fzdet
 real(PMFDP)                 :: fzdet0
 
+real(PMFDP)                 :: fzdetA
+real(PMFDP)                 :: fzdetA0
+
 ! ------------------------------------------------------------------------------
 
 end module abf_dat
