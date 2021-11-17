@@ -158,7 +158,7 @@ subroutine abf_core_force_2p()
         pxi0(:) = pxi0(:) + pxim(:)
 
         ! add data to accumulator
-        etot = epothist(1) + ersthist(1) + ekinhist(1) + 0.5d0*PMF_Rgas*ftemp*log(fzdet0/fzdetA0)
+        etot = epothist(1) + ersthist(1) + ekinhist(1) - 0.5d0*PMF_Rgas*ftemp*log(fzdet0/fzdetA0)
         call abf_accu_add_data_online(cvhist(:,1),pxi0,epothist(1),ersthist(1),etot)
 
         call abf_accu_add_data_record(cvhist(:,1),fzinv0,pxi0,pxi1,epothist(1),ersthist(1),ekinhist(1))
