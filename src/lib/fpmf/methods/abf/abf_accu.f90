@@ -400,24 +400,25 @@ end subroutine abf_accu_write
 ! Subroutine:  abf_accu_add_data_online
 !===============================================================================
 
-subroutine abf_accu_add_data_online(cvs,gfx,epot,erst,etot)
+subroutine abf_accu_add_data_online(cvs,bgfx,ugfx,epot,erst,etot)
 
     use abf_dat
     use pmf_dat
 
     implicit none
     real(PMFDP)    :: cvs(:)
-    real(PMFDP)    :: gfx(:)    ! ICF
+    real(PMFDP)    :: bgfx(:)    ! biased ICF
+    real(PMFDP)    :: ugfx(:)    ! unbiased ICF
     real(PMFDP)    :: epot
     real(PMFDP)    :: erst
     real(PMFDP)    :: etot
     ! -----------------------------------------------
     integer        :: gi0, i
-    real(PMFDP)    :: invn, icf, pn, pp
+    real(PMFDP)    :: invn, bicf, uicf, pn, pp
     real(PMFDP)    :: depot1, depot2
     real(PMFDP)    :: derst1, derst2
     real(PMFDP)    :: detot1, detot2
-    real(PMFDP)    :: dicf1, dicf2
+    real(PMFDP)    :: duicf1, duicf2
     real(PMFDP)    :: dpp1, dpp2
     real(PMFDP)    :: dpn1, dpn2
     ! --------------------------------------------------------------------------
@@ -458,20 +459,21 @@ subroutine abf_accu_add_data_online(cvs,gfx,epot,erst,etot)
     end if
 
     do i=1,NumOfBiasedABFCVs
-        icf = - gfx(i)
-        dicf1 = icf - abfaccu%micf(i,gi0)
-        abfaccu%micf(i,gi0)  = abfaccu%micf(i,gi0)  + dicf1 * invn
-        dicf2 = icf - abfaccu%micf(i,gi0)
-        abfaccu%m2icf(i,gi0) = abfaccu%m2icf(i,gi0) + dicf1 * dicf2
+        uicf = - ugfx(i)
+        duicf1 = uicf - abfaccu%micf(i,gi0)
+        abfaccu%micf(i,gi0)  = abfaccu%micf(i,gi0)  + duicf1 * invn
+        duicf2 = uicf - abfaccu%micf(i,gi0)
+        abfaccu%m2icf(i,gi0) = abfaccu%m2icf(i,gi0) + duicf1 * duicf2
 
         if( fentropy ) then
-            pp = etot + icf
+            bicf = - bgfx(i)
+            pp = etot + bicf
             dpp1 = pp - abfaccu%mpp(i,gi0)
             abfaccu%mpp(i,gi0)  = abfaccu%mpp(i,gi0)  + dpp1 * invn
             dpp2 = pp - abfaccu%mpp(i,gi0)
             abfaccu%m2pp(i,gi0) = abfaccu%m2pp(i,gi0) + dpp1 * dpp2
 
-            pn = etot - icf
+            pn = etot - bicf
             dpn1 = pn - abfaccu%mpn(i,gi0)
             abfaccu%mpn(i,gi0)  = abfaccu%mpn(i,gi0)  + dpn1 * invn
             dpn2 = pn - abfaccu%mpn(i,gi0)
@@ -479,35 +481,35 @@ subroutine abf_accu_add_data_online(cvs,gfx,epot,erst,etot)
         end if
     end do
 
-    if( fserver_enabled ) then
-        abfaccu%inc_nsamples(gi0) = abfaccu%inc_nsamples(gi0) + 1.0d0
-        invn = 1.0d0 / abfaccu%inc_nsamples(gi0)
-
-        if( fenthalpy ) then
-            depot1 = epot - abfaccu%inc_mepot(gi0)
-            abfaccu%inc_mepot(gi0)  = abfaccu%inc_mepot(gi0)  + depot1 * invn
-            depot2 = epot - abfaccu%inc_mepot(gi0)
-            abfaccu%inc_m2epot(gi0) = abfaccu%inc_m2epot(gi0) + depot1 * depot2
-        end if
-
-        do i=1,NumOfBiasedABFCVs
-            icf = - gfx(i)
-            dicf1 = icf - abfaccu%inc_micf(i,gi0)
-            abfaccu%inc_micf(i,gi0)  = abfaccu%inc_micf(i,gi0)  + dicf1 * invn
-            dicf2 = icf -  abfaccu%inc_micf(i,gi0)
-            abfaccu%inc_m2icf(i,gi0) = abfaccu%inc_m2icf(i,gi0) + dicf1 * dicf2
-        end do
-
-    end if
+!    if( fserver_enabled ) then
+!        abfaccu%inc_nsamples(gi0) = abfaccu%inc_nsamples(gi0) + 1.0d0
+!        invn = 1.0d0 / abfaccu%inc_nsamples(gi0)
+!
+!        if( fenthalpy ) then
+!            depot1 = epot - abfaccu%inc_mepot(gi0)
+!            abfaccu%inc_mepot(gi0)  = abfaccu%inc_mepot(gi0)  + depot1 * invn
+!            depot2 = epot - abfaccu%inc_mepot(gi0)
+!            abfaccu%inc_m2epot(gi0) = abfaccu%inc_m2epot(gi0) + depot1 * depot2
+!        end if
+!
+!        do i=1,NumOfBiasedABFCVs
+!            icf = - gfx(i)
+!            dicf1 = icf - abfaccu%inc_micf(i,gi0)
+!            abfaccu%inc_micf(i,gi0)  = abfaccu%inc_micf(i,gi0)  + dicf1 * invn
+!            dicf2 = icf -  abfaccu%inc_micf(i,gi0)
+!            abfaccu%inc_m2icf(i,gi0) = abfaccu%inc_m2icf(i,gi0) + dicf1 * dicf2
+!        end do
+!
+!    end if
 
     ! increase number of samples for applied bias - this uses different counter for number of samples
     abfaccu%bnsamples(gi0) = abfaccu%bnsamples(gi0) + 1.0d0
     invn = 1.0d0 / abfaccu%bnsamples(gi0)
 
     do i=1,NumOfBiasedABFCVs
-        icf = - gfx(i)
-        dicf1 = icf - abfaccu%bmicf(i,gi0)
-        abfaccu%bmicf(i,gi0)  = abfaccu%bmicf(i,gi0)  + dicf1 * invn
+        uicf = - ugfx(i)
+        duicf1 = uicf - abfaccu%bmicf(i,gi0)
+        abfaccu%bmicf(i,gi0)  = abfaccu%bmicf(i,gi0)  + duicf1 * invn
     end do
 
 end subroutine abf_accu_add_data_online
