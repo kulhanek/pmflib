@@ -141,10 +141,14 @@ double CABFProxy_mTdS::GetValue(int ibin,int icv,EProxyRealm realm) const
 
     switch(Type){
     // -------------------
-        case(ABF_TdS_HH):
-            c11 = 0.25*(Accu->GetData("M2PP",ibin,icv) - Accu->GetData("M2PN",ibin,icv));
+        case(ABF_TdS_HH):{
+            double micfetot = Accu->GetData("MICFETOT",ibin,icv);
+            double metot    = Accu->GetData("METOT",ibin);
+            double micf     = Accu->GetData("MICF",ibin,icv);
+            c11 = micfetot - metot*micf;
             m2icf   = Accu->GetData("M2ICF",ibin,icv);
             m2ene   = Accu->GetData("M2ETOT",ibin);
+        }
         break;
     // -------------------
         case(ABF_TdS_HB):
@@ -196,7 +200,7 @@ double CABFProxy_mTdS::GetValue(int ibin,int icv,EProxyRealm realm) const
     switch(realm){
     // -------------------
         case(E_PROXY_VALUE): {
-            return( (c11 / nsamples) / (temp * PMF_Rgas) );
+            return( c11  / (temp * PMF_Rgas) );
         }
     // -------------------
         case(E_PROXY_SIGMA): {

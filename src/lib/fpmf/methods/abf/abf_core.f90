@@ -155,14 +155,14 @@ subroutine abf_core_force_2p()
 
         ! total ABF force
         pxi0(:) = pxi0(:) + pxim(:)     ! biased estimate
-        pxim(:) = pxi0(:) - pxi1(:)     ! unbiased estimate
+        pxi0(:) = pxi0(:) - pxi1(:)     ! unbiased estimate
 
         !write(789,*) fstep-1,fzdet0,fzdetA0,fzdetA0/fzdet0
 
         ! add data to accumulator
         etot = epothist(1) + ersthist(1) + ekinhist(1)
 
-        call abf_accu_add_data_online(cvhist(:,1),pxi0,pxim,epothist(1),ersthist(1),etot)
+        call abf_accu_add_data_online(cvhist(:,1),pxi0,epothist(1),ersthist(1),etot)
 
         ! call abf_accu_add_data_record(cvhist(:,1),fzinv0,pxi0,pxi1,epothist(1),ersthist(1),ekinhist(1))
     end if

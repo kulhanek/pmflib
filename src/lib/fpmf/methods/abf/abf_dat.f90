@@ -117,14 +117,10 @@ type,extends(PMFAccuType) :: ABFAccuType
     real(PMFDP),pointer    :: m2erst(:)                 ! M2 of rst energy
 
 ! entropy
-    real(PMFDP),pointer    :: mbicf(:,:)                ! mean ICF - biased estimate
-    real(PMFDP),pointer    :: m2bicf(:,:)               ! M2 of ICF - biased estimate
     real(PMFDP),pointer    :: metot(:)                  ! mean of tot energy
     real(PMFDP),pointer    :: m2etot(:)                 ! M2 of tot energy
-    real(PMFDP),pointer    :: mpp(:,:)                  ! ICF+ETOT
-    real(PMFDP),pointer    :: m2pp(:,:)                 !
-    real(PMFDP),pointer    :: mpn(:,:)                  ! ICF-ETOT
-    real(PMFDP),pointer    :: m2pn(:,:)                 !
+    real(PMFDP),pointer    :: micfetot(:,:)             ! mean of tot energy * icf
+    real(PMFDP),pointer    :: m2icfetot(:,:)            ! M2 of tot energy * icf
 
 ! time recording for post-processing
     real(PMFDP),pointer    :: tcvs(:,:)

@@ -92,14 +92,10 @@ subroutine abf_accu_init()
     end if
 
     if( fentropy ) then
-        allocate(   abfaccu%mbicf(abfaccu%tot_cvs,abfaccu%tot_nbins),   &
-                    abfaccu%m2bicf(abfaccu%tot_cvs,abfaccu%tot_nbins),  &
-                    abfaccu%metot(abfaccu%tot_nbins),                   &
-                    abfaccu%m2etot(abfaccu%tot_nbins),                  &
-                    abfaccu%mpp(abfaccu%tot_cvs,abfaccu%tot_nbins),     &
-                    abfaccu%m2pp(abfaccu%tot_cvs,abfaccu%tot_nbins),    &
-                    abfaccu%mpn(abfaccu%tot_cvs,abfaccu%tot_nbins),     &
-                    abfaccu%m2pn(abfaccu%tot_cvs,abfaccu%tot_nbins),    &
+        allocate(   abfaccu%micfetot(abfaccu%tot_cvs,abfaccu%tot_nbins),    &
+                    abfaccu%m2icfetot(abfaccu%tot_cvs,abfaccu%tot_nbins),   &
+                    abfaccu%metot(abfaccu%tot_nbins),                       &
+                    abfaccu%m2etot(abfaccu%tot_nbins),                      &
                     stat = alloc_failed)
 
         if( alloc_failed .ne. 0 ) then
@@ -177,14 +173,10 @@ subroutine abf_accu_clear()
     end if
 
     if( fentropy ) then
-        abfaccu%mbicf(:,:)      = 0.0d0
-        abfaccu%m2bicf(:,:)     = 0.0d0
+        abfaccu%micfetot(:,:)   = 0.0d0
+        abfaccu%m2icfetot(:,:)  = 0.0d0
         abfaccu%metot(:)        = 0.0d0
         abfaccu%m2etot(:)       = 0.0d0
-        abfaccu%mpp(:,:)        = 0.0d0
-        abfaccu%m2pp(:,:)       = 0.0d0
-        abfaccu%mpn(:,:)        = 0.0d0
-        abfaccu%m2pn(:,:)       = 0.0d0
     end if
 
     if( frecord ) then
@@ -375,14 +367,10 @@ subroutine abf_accu_write(iounit,full)
     end if
 
     if( fentropy ) then
-        call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'MBICF',  'WA',abfaccu%mbicf, 'NSAMPLES')
-        call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'M2BICF', 'M2',abfaccu%m2bicf,'NSAMPLES','MBICF')
-        call pmf_accu_write_rbuf_B(abfaccu%PMFAccuType,iounit,'METOT',  'WA',abfaccu%metot, 'NSAMPLES')
-        call pmf_accu_write_rbuf_B(abfaccu%PMFAccuType,iounit,'M2ETOT', 'M2',abfaccu%m2etot,'NSAMPLES','METOT')
-        call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'MPP',    'WA',abfaccu%mpp,   'NSAMPLES')
-        call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'M2PP',   'M2',abfaccu%m2pp,  'NSAMPLES','MPP')
-        call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'MPN',    'WA',abfaccu%mpn,   'NSAMPLES')
-        call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'M2PN',   'M2',abfaccu%m2pn,  'NSAMPLES','MPN')
+        call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'MICFETOT',   'WA',abfaccu%micfetot,  'NSAMPLES')
+        call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'M2ICFETOT',  'M2',abfaccu%m2icfetot, 'NSAMPLES','MICFETOT')
+        call pmf_accu_write_rbuf_B(abfaccu%PMFAccuType,iounit,'METOT',      'WA',abfaccu%metot,     'NSAMPLES')
+        call pmf_accu_write_rbuf_B(abfaccu%PMFAccuType,iounit,'M2ETOT',     'M2',abfaccu%m2etot,    'NSAMPLES','METOT')
     end if
 
     call pmf_accu_write_rbuf_B(abfaccu%PMFAccuType,iounit,'BNSAMPLES',  'IG',abfaccu%bnsamples)
@@ -406,27 +394,25 @@ end subroutine abf_accu_write
 ! Subroutine:  abf_accu_add_data_online
 !===============================================================================
 
-subroutine abf_accu_add_data_online(cvs,bgfx,ugfx,epot,erst,etot)
+subroutine abf_accu_add_data_online(cvs,gfx,epot,erst,etot)
 
     use abf_dat
     use pmf_dat
 
     implicit none
     real(PMFDP)    :: cvs(:)
-    real(PMFDP)    :: bgfx(:)    ! biased ICF
-    real(PMFDP)    :: ugfx(:)    ! unbiased ICF
+    real(PMFDP)    :: gfx(:)
     real(PMFDP)    :: epot
     real(PMFDP)    :: erst
     real(PMFDP)    :: etot
     ! -----------------------------------------------
     integer        :: gi0, i
-    real(PMFDP)    :: invn, bicf, uicf, pn, pp
+    real(PMFDP)    :: invn, icf, ei
     real(PMFDP)    :: depot1, depot2
     real(PMFDP)    :: derst1, derst2
     real(PMFDP)    :: detot1, detot2
-    real(PMFDP)    :: duicf1, duicf2
-    real(PMFDP)    :: dpp1, dpp2
-    real(PMFDP)    :: dpn1, dpn2
+    real(PMFDP)    :: dicf1, dicf2
+    real(PMFDP)    :: dei1, dei2
     ! --------------------------------------------------------------------------
 
     ! get global index to accumulator for cvs values
@@ -465,25 +451,18 @@ subroutine abf_accu_add_data_online(cvs,bgfx,ugfx,epot,erst,etot)
     end if
 
     do i=1,NumOfBiasedABFCVs
-        uicf = - ugfx(i)
-        duicf1 = uicf - abfaccu%micf(i,gi0)
-        abfaccu%micf(i,gi0)  = abfaccu%micf(i,gi0)  + duicf1 * invn
-        duicf2 = uicf - abfaccu%micf(i,gi0)
-        abfaccu%m2icf(i,gi0) = abfaccu%m2icf(i,gi0) + duicf1 * duicf2
+        icf = - gfx(i)
+        dicf1 = icf - abfaccu%micf(i,gi0)
+        abfaccu%micf(i,gi0)  = abfaccu%micf(i,gi0)  + dicf1 * invn
+        dicf2 = icf - abfaccu%micf(i,gi0)
+        abfaccu%m2icf(i,gi0) = abfaccu%m2icf(i,gi0) + dicf1 * dicf2
 
         if( fentropy ) then
-            bicf = - bgfx(i)
-            pp = etot + bicf
-            dpp1 = pp - abfaccu%mpp(i,gi0)
-            abfaccu%mpp(i,gi0)  = abfaccu%mpp(i,gi0)  + dpp1 * invn
-            dpp2 = pp - abfaccu%mpp(i,gi0)
-            abfaccu%m2pp(i,gi0) = abfaccu%m2pp(i,gi0) + dpp1 * dpp2
-
-            pn = etot - bicf
-            dpn1 = pn - abfaccu%mpn(i,gi0)
-            abfaccu%mpn(i,gi0)  = abfaccu%mpn(i,gi0)  + dpn1 * invn
-            dpn2 = pn - abfaccu%mpn(i,gi0)
-            abfaccu%m2pn(i,gi0) = abfaccu%m2pn(i,gi0) + dpn1 * dpn2
+            ei = icf * etot
+            dei1 = ei - abfaccu%micfetot(i,gi0)
+            abfaccu%micfetot(i,gi0)  = abfaccu%micfetot(i,gi0)  + dei1 * invn
+            dei2 = ei - abfaccu%micfetot(i,gi0)
+            abfaccu%m2icfetot(i,gi0) = abfaccu%m2icfetot(i,gi0) + dei1 * dei2
         end if
     end do
 
@@ -499,11 +478,11 @@ subroutine abf_accu_add_data_online(cvs,bgfx,ugfx,epot,erst,etot)
         end if
 
         do i=1,NumOfBiasedABFCVs
-            uicf = - ugfx(i)
-            duicf1 = uicf - abfaccu%inc_micf(i,gi0)
-            abfaccu%inc_micf(i,gi0)  = abfaccu%inc_micf(i,gi0)  + duicf1 * invn
-            duicf2 = uicf -  abfaccu%inc_micf(i,gi0)
-            abfaccu%inc_m2icf(i,gi0) = abfaccu%inc_m2icf(i,gi0) + duicf1 * duicf2
+            icf = - gfx(i)
+            dicf1 = icf - abfaccu%inc_micf(i,gi0)
+            abfaccu%inc_micf(i,gi0)  = abfaccu%inc_micf(i,gi0)  + dicf1 * invn
+            dicf2 = icf -  abfaccu%inc_micf(i,gi0)
+            abfaccu%inc_m2icf(i,gi0) = abfaccu%inc_m2icf(i,gi0) + dicf1 * dicf2
         end do
 
     end if
@@ -513,9 +492,9 @@ subroutine abf_accu_add_data_online(cvs,bgfx,ugfx,epot,erst,etot)
     invn = 1.0d0 / abfaccu%bnsamples(gi0)
 
     do i=1,NumOfBiasedABFCVs
-        uicf = - ugfx(i)
-        duicf1 = uicf - abfaccu%bmicf(i,gi0)
-        abfaccu%bmicf(i,gi0)  = abfaccu%bmicf(i,gi0)  + duicf1 * invn
+        icf = - gfx(i)
+        dicf1 = icf - abfaccu%bmicf(i,gi0)
+        abfaccu%bmicf(i,gi0)  = abfaccu%bmicf(i,gi0)  + dicf1 * invn
     end do
 
 end subroutine abf_accu_add_data_online
