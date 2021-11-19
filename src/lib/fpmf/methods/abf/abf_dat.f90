@@ -117,6 +117,8 @@ type,extends(PMFAccuType) :: ABFAccuType
     real(PMFDP),pointer    :: m2erst(:)                 ! M2 of rst energy
 
 ! entropy
+    real(PMFDP),pointer    :: mbicf(:,:)                ! mean ICF - biased estimate
+    real(PMFDP),pointer    :: m2bicf(:,:)               ! M2 of ICF - biased estimate
     real(PMFDP),pointer    :: metot(:)                  ! mean of tot energy
     real(PMFDP),pointer    :: m2etot(:)                 ! M2 of tot energy
     real(PMFDP),pointer    :: mpp(:,:)                  ! ICF+ETOT

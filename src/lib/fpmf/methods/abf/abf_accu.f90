@@ -92,7 +92,9 @@ subroutine abf_accu_init()
     end if
 
     if( fentropy ) then
-        allocate(   abfaccu%metot(abfaccu%tot_nbins),                   &
+        allocate(   abfaccu%mbicf(abfaccu%tot_cvs,abfaccu%tot_nbins),   &
+                    abfaccu%m2bicf(abfaccu%tot_cvs,abfaccu%tot_nbins),  &
+                    abfaccu%metot(abfaccu%tot_nbins),                   &
                     abfaccu%m2etot(abfaccu%tot_nbins),                  &
                     abfaccu%mpp(abfaccu%tot_cvs,abfaccu%tot_nbins),     &
                     abfaccu%m2pp(abfaccu%tot_cvs,abfaccu%tot_nbins),    &
@@ -175,6 +177,8 @@ subroutine abf_accu_clear()
     end if
 
     if( fentropy ) then
+        abfaccu%mbicf(:,:)      = 0.0d0
+        abfaccu%m2bicf(:,:)     = 0.0d0
         abfaccu%metot(:)        = 0.0d0
         abfaccu%m2etot(:)       = 0.0d0
         abfaccu%mpp(:,:)        = 0.0d0
@@ -371,6 +375,8 @@ subroutine abf_accu_write(iounit,full)
     end if
 
     if( fentropy ) then
+        call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'MBICF',  'WA',abfaccu%mbicf, 'NSAMPLES')
+        call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'M2BICF', 'M2',abfaccu%m2bicf,'NSAMPLES','MBICF')
         call pmf_accu_write_rbuf_B(abfaccu%PMFAccuType,iounit,'METOT',  'WA',abfaccu%metot, 'NSAMPLES')
         call pmf_accu_write_rbuf_B(abfaccu%PMFAccuType,iounit,'M2ETOT', 'M2',abfaccu%m2etot,'NSAMPLES','METOT')
         call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'MPP',    'WA',abfaccu%mpp,   'NSAMPLES')
@@ -481,26 +487,26 @@ subroutine abf_accu_add_data_online(cvs,bgfx,ugfx,epot,erst,etot)
         end if
     end do
 
-!    if( fserver_enabled ) then
-!        abfaccu%inc_nsamples(gi0) = abfaccu%inc_nsamples(gi0) + 1.0d0
-!        invn = 1.0d0 / abfaccu%inc_nsamples(gi0)
-!
-!        if( fenthalpy ) then
-!            depot1 = epot - abfaccu%inc_mepot(gi0)
-!            abfaccu%inc_mepot(gi0)  = abfaccu%inc_mepot(gi0)  + depot1 * invn
-!            depot2 = epot - abfaccu%inc_mepot(gi0)
-!            abfaccu%inc_m2epot(gi0) = abfaccu%inc_m2epot(gi0) + depot1 * depot2
-!        end if
-!
-!        do i=1,NumOfBiasedABFCVs
-!            icf = - gfx(i)
-!            dicf1 = icf - abfaccu%inc_micf(i,gi0)
-!            abfaccu%inc_micf(i,gi0)  = abfaccu%inc_micf(i,gi0)  + dicf1 * invn
-!            dicf2 = icf -  abfaccu%inc_micf(i,gi0)
-!            abfaccu%inc_m2icf(i,gi0) = abfaccu%inc_m2icf(i,gi0) + dicf1 * dicf2
-!        end do
-!
-!    end if
+    if( fserver_enabled ) then
+        abfaccu%inc_nsamples(gi0) = abfaccu%inc_nsamples(gi0) + 1.0d0
+        invn = 1.0d0 / abfaccu%inc_nsamples(gi0)
+
+        if( fenthalpy ) then
+            depot1 = epot - abfaccu%inc_mepot(gi0)
+            abfaccu%inc_mepot(gi0)  = abfaccu%inc_mepot(gi0)  + depot1 * invn
+            depot2 = epot - abfaccu%inc_mepot(gi0)
+            abfaccu%inc_m2epot(gi0) = abfaccu%inc_m2epot(gi0) + depot1 * depot2
+        end if
+
+        do i=1,NumOfBiasedABFCVs
+            uicf = - ugfx(i)
+            duicf1 = uicf - abfaccu%inc_micf(i,gi0)
+            abfaccu%inc_micf(i,gi0)  = abfaccu%inc_micf(i,gi0)  + duicf1 * invn
+            duicf2 = uicf -  abfaccu%inc_micf(i,gi0)
+            abfaccu%inc_m2icf(i,gi0) = abfaccu%inc_m2icf(i,gi0) + duicf1 * duicf2
+        end do
+
+    end if
 
     ! increase number of samples for applied bias - this uses different counter for number of samples
     abfaccu%bnsamples(gi0) = abfaccu%bnsamples(gi0) + 1.0d0
