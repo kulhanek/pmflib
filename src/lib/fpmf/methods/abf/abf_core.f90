@@ -163,7 +163,7 @@ subroutine abf_core_force_2p()
         ! add data to accumulator
         etot = epothist(1) + ersthist(1) + ekinhist(1)
 
-        zc = sqrt(fzdet0/fzdetall0)
+        zc = sqrt(fzdetall0/fzdet0)
         ! write(4589,*) fstep-1, zc, fzdet0, fzdetall0
 
         call abf_accu_add_data_online(cvhist(:,1),pxi0,epothist(1),ersthist(1),etot,zc)
