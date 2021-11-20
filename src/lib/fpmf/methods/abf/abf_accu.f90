@@ -66,13 +66,15 @@ subroutine abf_accu_init()
     end do
 
     ! ABF force arrays
-    allocate(   abfaccu%weights(abfaccu%tot_nbins), &
-                abfaccu%binpos(abfaccu%tot_cvs,abfaccu%tot_nbins),    &
-                abfaccu%nsamples(abfaccu%tot_nbins), &
-                abfaccu%micf(abfaccu%tot_cvs,abfaccu%tot_nbins), &
-                abfaccu%m2icf(abfaccu%tot_cvs,abfaccu%tot_nbins), &
-                abfaccu%bnsamples(abfaccu%tot_nbins), &
-                abfaccu%bmicf(abfaccu%tot_cvs,abfaccu%tot_nbins), &
+    allocate(   abfaccu%weights(abfaccu%tot_nbins),                 &
+                abfaccu%binpos(abfaccu%tot_cvs,abfaccu%tot_nbins),  &
+                abfaccu%nsamples(abfaccu%tot_nbins),                &
+                abfaccu%micf(abfaccu%tot_cvs,abfaccu%tot_nbins),    &
+                abfaccu%m2icf(abfaccu%tot_cvs,abfaccu%tot_nbins),   &
+                abfaccu%bnsamples(abfaccu%tot_nbins),               &
+                abfaccu%bmicf(abfaccu%tot_cvs,abfaccu%tot_nbins),   &
+                abfaccu%mzc(abfaccu%tot_nbins),                     &
+                abfaccu%m2zc(abfaccu%tot_nbins),                    &
                 stat = alloc_failed)
 
     if( alloc_failed .ne. 0 ) then
@@ -80,10 +82,10 @@ subroutine abf_accu_init()
     endif
 
     if( fenthalpy ) then
-        allocate(   abfaccu%mepot(abfaccu%tot_nbins), &
-                    abfaccu%m2epot(abfaccu%tot_nbins), &
-                    abfaccu%merst(abfaccu%tot_nbins), &
-                    abfaccu%m2erst(abfaccu%tot_nbins), &
+        allocate(   abfaccu%mepot(abfaccu%tot_nbins),   &
+                    abfaccu%m2epot(abfaccu%tot_nbins),  &
+                    abfaccu%merst(abfaccu%tot_nbins),   &
+                    abfaccu%m2erst(abfaccu%tot_nbins),  &
                     stat = alloc_failed)
 
         if( alloc_failed .ne. 0 ) then
@@ -120,11 +122,9 @@ subroutine abf_accu_init()
 
     if( fserver_enabled ) then
         ! ABF incremental force arrays - allocate all to simplify F90/C++ interface
-        allocate(   abfaccu%inc_nsamples(abfaccu%tot_nbins), &
-                    abfaccu%inc_micf(abfaccu%tot_cvs,abfaccu%tot_nbins), &
-                    abfaccu%inc_m2icf(abfaccu%tot_cvs,abfaccu%tot_nbins), &
-                    abfaccu%inc_mepot(abfaccu%tot_nbins), &
-                    abfaccu%inc_m2epot(abfaccu%tot_nbins), &
+        allocate(   abfaccu%inc_nsamples(abfaccu%tot_nbins),                &
+                    abfaccu%inc_micf(abfaccu%tot_cvs,abfaccu%tot_nbins),    &
+                    abfaccu%inc_m2icf(abfaccu%tot_cvs,abfaccu%tot_nbins),   &
                     stat = alloc_failed)
 
         if( alloc_failed .ne. 0 ) then
@@ -158,9 +158,12 @@ subroutine abf_accu_clear()
     end do
 
     abfaccu%weights(:)      = 1.0d0
-    abfaccu%nsamples(:)     = 0
+    abfaccu%nsamples(:)     = 0.0d0
     abfaccu%micf(:,:)       = 0.0d0
     abfaccu%m2icf(:,:)      = 0.0d0
+
+    abfaccu%mzc(:)          = 0.0d0
+    abfaccu%m2zc(:)         = 0.0d0
 
     abfaccu%bnsamples(:)    = 0
     abfaccu%bmicf(:,:)      = 0.0d0
@@ -183,7 +186,7 @@ subroutine abf_accu_clear()
         abfaccu%tcvs(:,:)        = 0.0d0
         abfaccu%tzinv(:,:,:)     = 0.0d0
         abfaccu%ticf(:,:)        = 0.0d0
-        abfaccu%tmicf(:,:)        = 0.0d0
+        abfaccu%tmicf(:,:)       = 0.0d0
         abfaccu%tepot(:)         = 0.0d0
         abfaccu%terst(:)         = 0.0d0
         abfaccu%tekin(:)         = 0.0d0
@@ -193,8 +196,6 @@ subroutine abf_accu_clear()
         abfaccu%inc_nsamples(:) = 0
         abfaccu%inc_micf(:,:)   = 0.0d0
         abfaccu%inc_m2icf(:,:)  = 0.0d0
-        abfaccu%inc_mepot(:)    = 0.0d0
-        abfaccu%inc_m2epot(:)   = 0.0d0
     end if
 
 end subroutine abf_accu_clear
@@ -358,6 +359,8 @@ subroutine abf_accu_write(iounit,full)
     call pmf_accu_write_rbuf_B(abfaccu%PMFAccuType,iounit,'NSAMPLES',   'AD',abfaccu%nsamples)
     call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'MICF',       'WA',abfaccu%micf,  'NSAMPLES')
     call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'M2ICF',      'M2',abfaccu%m2icf, 'NSAMPLES','MICF')
+    call pmf_accu_write_rbuf_B(abfaccu%PMFAccuType,iounit,'MZC',        'WA',abfaccu%mzc,   'NSAMPLES')
+    call pmf_accu_write_rbuf_B(abfaccu%PMFAccuType,iounit,'M2ZC',       'M2',abfaccu%m2zc,  'NSAMPLES','MZC')
 
     if( fenthalpy ) then
         call pmf_accu_write_rbuf_B(abfaccu%PMFAccuType,iounit,'MEPOT',  'WA',abfaccu%mepot, 'NSAMPLES')
@@ -394,25 +397,27 @@ end subroutine abf_accu_write
 ! Subroutine:  abf_accu_add_data_online
 !===============================================================================
 
-subroutine abf_accu_add_data_online(cvs,gfx,epot,erst,etot)
+subroutine abf_accu_add_data_online(cvs,gfx,epot,erst,etot,zc)
 
     use abf_dat
     use pmf_dat
 
     implicit none
-    real(PMFDP)    :: cvs(:)
-    real(PMFDP)    :: gfx(:)
-    real(PMFDP)    :: epot
-    real(PMFDP)    :: erst
-    real(PMFDP)    :: etot
+    real(PMFDP),intent(in)  :: cvs(:)
+    real(PMFDP),intent(in)  :: gfx(:)
+    real(PMFDP),intent(in)  :: epot
+    real(PMFDP),intent(in)  :: erst
+    real(PMFDP),intent(in)  :: etot
+    real(PMFDP),intent(in)  :: zc       ! mass metric correction
     ! -----------------------------------------------
     integer        :: gi0, i
-    real(PMFDP)    :: invn, icf, ei
+    real(PMFDP)    :: invn, icf, rval
     real(PMFDP)    :: depot1, depot2
     real(PMFDP)    :: derst1, derst2
     real(PMFDP)    :: detot1, detot2
     real(PMFDP)    :: dicf1, dicf2
     real(PMFDP)    :: dei1, dei2
+    real(PMFDP)    :: dzc1, dzc2
     ! --------------------------------------------------------------------------
 
     ! get global index to accumulator for cvs values
@@ -428,40 +433,49 @@ subroutine abf_accu_add_data_online(cvs,gfx,epot,erst,etot)
     abfaccu%nsamples(gi0) = abfaccu%nsamples(gi0) + 1.0d0
     invn = 1.0d0 / abfaccu%nsamples(gi0)
 
+    ! mass metric correction
+    dzc1 = zc - abfaccu%mzc(gi0)
+    abfaccu%mzc(gi0)  = abfaccu%mzc(gi0)  + dzc1 * invn
+    dzc2 = zc - abfaccu%mzc(gi0)
+    abfaccu%m2zc(gi0) = abfaccu%m2zc(gi0) + dzc1 * dzc2
+
     if( fenthalpy ) then
+        rval = epot * zc
         ! potential energy
-        depot1 = epot - abfaccu%mepot(gi0)
+        depot1 = rval - abfaccu%mepot(gi0)
         abfaccu%mepot(gi0)  = abfaccu%mepot(gi0)  + depot1 * invn
-        depot2 = epot - abfaccu%mepot(gi0)
+        depot2 = rval - abfaccu%mepot(gi0)
         abfaccu%m2epot(gi0) = abfaccu%m2epot(gi0) + depot1 * depot2
 
+        rval = erst * zc
         ! restraint energy
-        derst1 = erst - abfaccu%merst(gi0)
+        derst1 = rval - abfaccu%merst(gi0)
         abfaccu%merst(gi0)  = abfaccu%merst(gi0)  + derst1 * invn
-        derst2 = erst - abfaccu%merst(gi0)
+        derst2 = rval - abfaccu%merst(gi0)
         abfaccu%m2erst(gi0) = abfaccu%m2erst(gi0) + derst1 * derst2
     end if
 
     if( fentropy ) then
+        rval = etot * zc
         ! total energy
-        detot1 = etot - abfaccu%metot(gi0)
+        detot1 = rval - abfaccu%metot(gi0)
         abfaccu%metot(gi0)  = abfaccu%metot(gi0)  + detot1 * invn
-        detot2 = etot - abfaccu%metot(gi0)
+        detot2 = rval - abfaccu%metot(gi0)
         abfaccu%m2etot(gi0) = abfaccu%m2etot(gi0) + detot1 * detot2
     end if
 
     do i=1,NumOfBiasedABFCVs
-        icf = - gfx(i)
+        icf = - gfx(i) * zc
         dicf1 = icf - abfaccu%micf(i,gi0)
         abfaccu%micf(i,gi0)  = abfaccu%micf(i,gi0)  + dicf1 * invn
         dicf2 = icf - abfaccu%micf(i,gi0)
         abfaccu%m2icf(i,gi0) = abfaccu%m2icf(i,gi0) + dicf1 * dicf2
 
         if( fentropy ) then
-            ei = icf * etot
-            dei1 = ei - abfaccu%micfetot(i,gi0)
+            rval = icf * etot
+            dei1 = rval - abfaccu%micfetot(i,gi0)
             abfaccu%micfetot(i,gi0)  = abfaccu%micfetot(i,gi0)  + dei1 * invn
-            dei2 = ei - abfaccu%micfetot(i,gi0)
+            dei2 = rval - abfaccu%micfetot(i,gi0)
             abfaccu%m2icfetot(i,gi0) = abfaccu%m2icfetot(i,gi0) + dei1 * dei2
         end if
     end do
@@ -469,13 +483,6 @@ subroutine abf_accu_add_data_online(cvs,gfx,epot,erst,etot)
     if( fserver_enabled ) then
         abfaccu%inc_nsamples(gi0) = abfaccu%inc_nsamples(gi0) + 1.0d0
         invn = 1.0d0 / abfaccu%inc_nsamples(gi0)
-
-        if( fenthalpy ) then
-            depot1 = epot - abfaccu%inc_mepot(gi0)
-            abfaccu%inc_mepot(gi0)  = abfaccu%inc_mepot(gi0)  + depot1 * invn
-            depot2 = epot - abfaccu%inc_mepot(gi0)
-            abfaccu%inc_m2epot(gi0) = abfaccu%inc_m2epot(gi0) + depot1 * depot2
-        end if
 
         do i=1,NumOfBiasedABFCVs
             icf = - gfx(i)

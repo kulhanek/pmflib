@@ -113,6 +113,8 @@ double CABFProxy_dG::GetValue(int ibin,int icv,EProxyRealm realm) const
     double  m2icf    = 0.0;
     double  ncorr    = Accu->GetNCorr();
 
+    double  mzc      = Accu->GetData("MZC",ibin);
+
     switch(Type){
     // -------------------
         case(ABF_MICF):
@@ -141,7 +143,7 @@ double CABFProxy_dG::GetValue(int ibin,int icv,EProxyRealm realm) const
 // mean force
         // -------------------
         case(E_PROXY_VALUE):
-            return( micf );
+            return( micf / mzc );
         // -------------------
         case(E_PROXY_SIGMA):
             return( sqrt(m2icf / nsamples) );

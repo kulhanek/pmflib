@@ -42,8 +42,6 @@ void PMF_PACKAGE cpmf_abf_client_set_header_(FTINT* ret_st,
                                  double*    temp_fconv,
                                  char*      ene_unit,
                                  double*    ene_fconv,
-                                 FTINT*     enthalpy_enabled,
-                                 FTINT*     mwa_mode,
                                  UFTINT     version_len,
                                  UFTINT     driver_len,
                                  UFTINT     temp_unit_len,
@@ -55,14 +53,10 @@ void PMF_PACKAGE cpmf_abf_client_set_header_(FTINT* ret_st,
     double          l_temp          = *temp;
     double          l_temp_fconv    = *temp_fconv;
     double          l_ene_fconv     = *ene_fconv;
-    int             l_mwa_mode      = *mwa_mode;
     CSmallString    l_version;
     CSmallString    l_driver;
     CSmallString    l_temp_unit;
     CSmallString    l_ene_unit;
-
-    bool            l_enthalpy_enabled = false;
-    if( *enthalpy_enabled > 0 ) l_enthalpy_enabled = true;
 
     try {
         l_version.SetFromFortran(version,version_len);
@@ -72,8 +66,6 @@ void PMF_PACKAGE cpmf_abf_client_set_header_(FTINT* ret_st,
 
         ABFClient.NumOfCVs = l_ncvs;
         ABFClient.NumOfBins = l_nbins;
-        ABFClient.EnthalpyEnabled = l_enthalpy_enabled;
-        ABFClient.MWAMode = l_mwa_mode;
 
         ABFClient.Accu->SetNumOfCVs(l_ncvs);
         ABFClient.Accu->SetHeaders("ABF",l_version,l_driver,l_temp,l_temp_unit,l_temp_fconv,l_ene_unit,l_ene_fconv);
@@ -175,11 +167,9 @@ void PMF_PACKAGE cpmf_abf_client_reg_by_key_(char* fserverkey,char* fserver,
 void PMF_PACKAGE cpmf_abf_client_initial_data_( FTINT* ret_st,
                                                 double* inc_nsamples,
                                                 double* inc_micf,
-                                                double* inc_m2icf,
-                                                double* inc_mepot,
-                                                double* inc_m2epot)
+                                                double* inc_m2icf)
 {
-    if(ABFClient.GetInitialData(inc_nsamples,inc_micf,inc_m2icf,inc_mepot,inc_m2epot) == false) {
+    if(ABFClient.GetInitialData(inc_nsamples,inc_micf,inc_m2icf) == false) {
         ES_ERROR("unable to get initial data - core");
         *ret_st = 1;
         return;
@@ -195,12 +185,9 @@ void PMF_PACKAGE cpmf_abf_client_initial_data_( FTINT* ret_st,
 void PMF_PACKAGE cpmf_abf_client_exchange_data_(FTINT* ret_st,
                                                 double* inc_nsamples,
                                                 double* inc_micf,
-                                                double* inc_m2icf,
-                                                double* inc_mepot,
-                                                double* inc_m2epot)
+                                                double* inc_m2icf)
 {
-    if(ABFClient.ExchangeData(inc_nsamples,inc_micf,inc_m2icf,
-                              inc_mepot,inc_m2epot) == false) {
+    if(ABFClient.ExchangeData(inc_nsamples,inc_micf,inc_m2icf) == false) {
         ES_ERROR("unable to exchange data");
         *ret_st = 1;
         return;

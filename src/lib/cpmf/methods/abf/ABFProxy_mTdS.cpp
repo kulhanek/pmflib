@@ -139,13 +139,15 @@ double CABFProxy_mTdS::GetValue(int ibin,int icv,EProxyRealm realm) const
     double  m2icf   = 0.0;
     double  m2ene   = 0.0;
 
+    double  mzc      = Accu->GetData("MZC",ibin);
+
     switch(Type){
     // -------------------
         case(ABF_TdS_HH):{
             double micfetot = Accu->GetData("MICFETOT",ibin,icv);
             double metot    = Accu->GetData("METOT",ibin);
             double micf     = Accu->GetData("MICF",ibin,icv);
-            c11 = micfetot - metot*micf;
+            c11 = micfetot/mzc - metot*micf/(mzc*mzc);
             m2icf   = Accu->GetData("M2ICF",ibin,icv);
             m2ene   = Accu->GetData("M2ETOT",ibin);
         }

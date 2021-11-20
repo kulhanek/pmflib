@@ -48,7 +48,7 @@ subroutine abf_cvs_reset_cv(abf_item)
     abf_item%max_value      = 0.0       ! right range
     abf_item%nbins          = 0         ! number of bins
     abf_item%wfac           = 1.0d0
-    abf_item%nobias         = .false.
+    abf_item%shake         = .false.
 
 end subroutine abf_cvs_reset_cv
 
@@ -79,12 +79,12 @@ subroutine abf_cvs_read_cv(prm_fin,abf_item)
     end if
 
 ! optional
-    if( prmfile_get_logical_by_key(prm_fin,'nobias',abf_item%nobias) ) then
+    if( prmfile_get_logical_by_key(prm_fin,'shake',abf_item%shake) ) then
         write(PMF_OUT,180)
     end if
 
 ! main CV setup
-    if( .not. abf_item%nobias ) then
+    if( .not. abf_item%shake ) then
     ! ========================
     if( .not. prmfile_get_real8_by_key(prm_fin,'min_value',abf_item%min_value) ) then
         call pmf_utils_exit(PMF_OUT,1,'min_value is not specified!')
@@ -152,7 +152,7 @@ subroutine abf_cvs_cv_info(abf_item)
     write(PMF_OUT,150) abf_item%cv%get_rvalue(CVContext%CVsValues(abf_item%cvindx)), &
                     trim(abf_item%cv%get_ulabel())
 
-    if( abf_item%nobias .eqv. .false. ) then
+    if( abf_item%shake .eqv. .false. ) then
     write(PMF_OUT,155) abf_item%cv%get_rvalue(abf_item%min_value), &
                     trim(abf_item%cv%get_ulabel())
     write(PMF_OUT,160) abf_item%cv%get_rvalue(abf_item%max_value), &
@@ -164,7 +164,7 @@ subroutine abf_cvs_cv_info(abf_item)
     end if
     end if
 
-    if( abf_item%nobias .eqv. .true. ) then
+    if( abf_item%shake .eqv. .true. ) then
     write(PMF_OUT,180)
     end if
 

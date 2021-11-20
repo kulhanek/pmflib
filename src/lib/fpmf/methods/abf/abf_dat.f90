@@ -90,13 +90,13 @@ type CVTypeABF
     real(PMFDP)             :: max_value        ! right range
     integer                 :: nbins            ! number of bins
     real(PMFDP)             :: wfac             ! smoothing factor in number of bins
-    logical                 :: nobias           ! do not use for bias and do not include in PMFAccumulator
+    logical                 :: shake            ! for mass-metric correction only
 end type CVTypeABF
 
 ! ----------------------
 integer                     :: NumOfABFCVs          ! number of ALL CVs in a group
-type(CVTypeABF),allocatable :: ABFCVList(:)         ! definition of CVs
 integer                     :: NumOfBiasedABFCVs    ! number of biased CVS
+type(CVTypeABF),allocatable :: ABFCVList(:)         ! definition of CVs
 
 ! ----------------------
 
@@ -105,6 +105,8 @@ type,extends(PMFAccuType) :: ABFAccuType
     real(PMFDP),pointer    :: binpos(:,:)               ! position of grids
     real(PMFDP),pointer    :: weights(:)                ! mask weights
     real(PMFDP),pointer    :: nsamples(:)               ! number of hits into bins
+    real(PMFDP),pointer    :: mzc(:)                    ! mean of sqrt(det(Zall)/det(Z))
+    real(PMFDP),pointer    :: m2zc(:)                   ! M2 of sqrt(det(Zall)/det(Z))
 
 ! free energy
     real(PMFDP),pointer    :: micf(:,:)                 ! mean ICF
@@ -139,8 +141,6 @@ type,extends(PMFAccuType) :: ABFAccuType
     real(PMFDP),pointer    :: inc_nsamples(:)           ! number of hits into bins
     real(PMFDP),pointer    :: inc_micf(:,:)             ! accumulated mean ICF
     real(PMFDP),pointer    :: inc_m2icf(:,:)            ! accumulated M2 of ICF
-    real(PMFDP),pointer    :: inc_mepot(:)              ! accumulated mean of pot energy
-    real(PMFDP),pointer    :: inc_m2epot(:)             ! accumulated M2 of pot energy
 end type ABFAccuType
 
 ! ----------------------
@@ -158,6 +158,16 @@ real(PMFDP),allocatable     :: fzinv(:,:)           ! inverse of Z matrix   in t
 real(PMFDP),allocatable     :: vv(:)                ! for LU decomposition
 integer,allocatable         :: indx(:)              ! for LU decomposition
 real(PMFDP),allocatable     :: fzinv0(:,:)          ! inverse of Z matrix   in t-dt
+
+real(PMFDP),allocatable     :: fzall(:,:)           ! Z matrix for all CVs   in t
+integer,allocatable         :: indxall(:)           ! for LU decomposition
+
+! determinant of mass metric tensors
+real(PMFDP)                 :: fzdet
+real(PMFDP)                 :: fzdet0
+
+real(PMFDP)                 :: fzdetall
+real(PMFDP)                 :: fzdetall0
 
 ! helper arrays -------
 real(PMFDP),allocatable     :: a1(:,:)          ! acceleration in current step (t)
@@ -201,13 +211,6 @@ real(PMFDP)                 :: invfdtx
 integer                     :: max_snb_size
 integer,allocatable         :: snb_list(:,:)
 real(PMFDP),allocatable     :: sweights(:)
-
-! FIXME - test
-real(PMFDP)                 :: fzdet
-real(PMFDP)                 :: fzdet0
-
-real(PMFDP)                 :: fzdetA
-real(PMFDP)                 :: fzdetA0
 
 ! ------------------------------------------------------------------------------
 

@@ -110,6 +110,8 @@ double CPMFProxy_dH::GetValue( int ibin,EProxyRealm realm) const
     double  m2ene       = 0.0;
     double  ncorr       = Accu->GetNCorr();
 
+    double  mzc      = Accu->GetData("MZC",ibin);
+
     switch(Type){
     // -------------------
         case(PMF_ETOT):
@@ -143,7 +145,7 @@ double CPMFProxy_dH::GetValue( int ibin,EProxyRealm realm) const
 // mean force
         // -------------------
         case(E_PROXY_VALUE):
-            return( mene );
+            return( mene / mzc );
         // -------------------
         case(E_PROXY_SIGMA):
             return( sqrt(m2ene / nsamples) );

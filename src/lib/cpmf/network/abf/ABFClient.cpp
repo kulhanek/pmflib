@@ -44,10 +44,8 @@ CABFClient::CABFClient(void)
 {
     ClientID        = -1;
     Accu            = CPMFAccumulatorPtr(new CPMFAccumulator);
-    EnthalpyEnabled = false;
     NumOfCVs        = 0;
     NumOfBins       = 0;
-    MWAMode         = 0;
 }
 
 //------------------------------------------------------------------------------
@@ -83,13 +81,6 @@ int CABFClient::RegisterClient(void)
         Accu->CreateSectionData("NSAMPLES", "AD","R","B");
         Accu->CreateSectionData("MICF",     "WA","R","M", "NSAMPLES");
         Accu->CreateSectionData("M2ICF",    "M2","R","M", "NSAMPLES","MICF");
-
-        if( MWAMode == 0 ) {
-            if( EnthalpyEnabled ){
-                Accu->CreateSectionData("MEPOT",    "WA","R","B", "NSAMPLES");
-                Accu->CreateSectionData("M2EPOT",   "M2","R","B", "NSAMPLES","MEPOT");
-            }
-        }
 
         Accu->Save(p_ele);
 
@@ -139,11 +130,9 @@ bool CABFClient::UnregisterClient(void)
 
 bool CABFClient::GetInitialData(double* nsamples,
                                 double* micf,
-                                double* m2icf,
-                                double* mepot,
-                                double* m2epot)
+                                double* m2icf)
 {
-    ClearExchangeData(nsamples,micf,m2icf,mepot,m2epot);
+    ClearExchangeData(nsamples,micf,m2icf);
 
     CClientCommand cmd;
     try{
@@ -191,18 +180,6 @@ bool CABFClient::GetInitialData(double* nsamples,
                 data = accu->GetSectionData("M2ICF");
                 data->GetDataBlob(m2icf);
             }
-
-            if( EnthalpyEnabled ) {
-                if( accu->HasSectionData("MEPOT") ){
-                    data = accu->GetSectionData("MEPOT");
-                    data->GetDataBlob(mepot);
-                }
-
-                if( accu->HasSectionData("M2EPOT") ){
-                    data = accu->GetSectionData("M2EPOT");
-                    data->GetDataBlob(m2epot);
-                }
-            }
         }
 
     } catch(std::exception& e) {
@@ -217,9 +194,7 @@ bool CABFClient::GetInitialData(double* nsamples,
 
 bool CABFClient::ExchangeData(  double* inc_nsamples,
                                 double* inc_micf,
-                                double* inc_m2icf,
-                                double* inc_mepot,
-                                double* inc_m2epot)
+                                double* inc_m2icf)
 {
     CClientCommand cmd;
     try{
@@ -243,23 +218,12 @@ bool CABFClient::ExchangeData(  double* inc_nsamples,
         data = Accu->GetSectionData("M2ICF");
         data->SetDataBlob(inc_m2icf);
 
-        if( MWAMode == 0 ) {
-            // enthalpy
-            if( EnthalpyEnabled ){
-                data = Accu->GetSectionData("MEPOT");
-                data->SetDataBlob(inc_mepot);
-
-                data = Accu->GetSectionData("M2EPOT");
-                data->SetDataBlob(inc_m2epot);
-            }
-        }
-
         Accu->Save(p_ele);
 
 // execute command
         ExecuteCommand(&cmd);
 
-        ClearExchangeData(inc_nsamples,inc_micf,inc_m2icf,inc_mepot,inc_m2epot);
+        ClearExchangeData(inc_nsamples,inc_micf,inc_m2icf);
 
 // process results
         p_ele = cmd.GetResultElementByPath("PMFLIB-V6",false);
@@ -293,20 +257,6 @@ bool CABFClient::ExchangeData(  double* inc_nsamples,
                 data = accu->GetSectionData("M2ICF");
                 data->GetDataBlob(inc_m2icf);
             }
-
-            if( MWAMode == 0 ) {
-                if( EnthalpyEnabled ) {
-                    if( accu->HasSectionData("MEPOT") ){
-                        data = accu->GetSectionData("MEPOT");
-                        data->GetDataBlob(inc_mepot);
-                    }
-
-                    if( accu->HasSectionData("M2EPOT") ){
-                        data = accu->GetSectionData("M2EPOT");
-                        data->GetDataBlob(inc_m2epot);
-                    }
-                }
-            }
         }
 
     } catch(std::exception& e) {
@@ -321,9 +271,7 @@ bool CABFClient::ExchangeData(  double* inc_nsamples,
 
 void CABFClient::ClearExchangeData( double* inc_nsamples,
                                     double* inc_micf,
-                                    double* inc_m2icf,
-                                    double* inc_mepot,
-                                    double* inc_m2epot)
+                                    double* inc_m2icf)
 {
     size_t nsamples_size   = NumOfBins;
     size_t micf_size       = NumOfBins*NumOfCVs;
@@ -335,17 +283,6 @@ void CABFClient::ClearExchangeData( double* inc_nsamples,
     for(size_t i=0; i < micf_size; i++) {
         inc_micf[i]  = 0.0;
         inc_m2icf[i] = 0.0;
-    }
-
-// ----------------------------------------------
-
-    if( EnthalpyEnabled ){
-        size_t mepot_size      = NumOfBins;
-
-        for(size_t i=0; i < mepot_size; i++) {
-            inc_mepot[i]  = 0.0;
-            inc_m2epot[i] = 0.0;
-        }
     }
 }
 

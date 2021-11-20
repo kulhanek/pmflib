@@ -47,33 +47,25 @@ public:
     /// get initial data
     bool GetInitialData(double* inc_nsamples,
                         double* inc_micf,
-                        double* inc_m2icf,
-                        double* inc_mepot,
-                        double* inc_m2epot);
+                        double* inc_m2icf);
 
     /// exchange data with server
     bool ExchangeData(  double* inc_nsamples,
                         double* inc_micf,
-                        double* inc_m2icf,
-                        double* inc_mepot,
-                        double* inc_m2epot);
+                        double* inc_m2icf);
 
 // section of public data -----------------------------------------------------
 public:
    CPMFAccumulatorPtr   Accu;
-   bool                 EnthalpyEnabled;
    int                  NumOfCVs;
    int                  NumOfBins;
-   int                  MWAMode;
 // section of private data ----------------------------------------------------
 private:
     int                 ClientID;       // client ID
 
     void ClearExchangeData( double* inc_nsamples,
                             double* inc_micf,
-                            double* inc_m2icf,
-                            double* inc_mepot,
-                            double* inc_m2epot);
+                            double* inc_m2icf);
 };
 
 //------------------------------------------------------------------------------
