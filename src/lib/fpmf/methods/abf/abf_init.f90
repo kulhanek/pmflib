@@ -88,7 +88,7 @@ subroutine abf_init_dat
     fhramp_max      = 500
 
     NumOfABFCVs         = 0
-    NumOfBiasedABFCVs   = 0
+    NumOfABFCVs   = 0
 
     fserver_enabled = .false.
     fserverkey      = ''
@@ -152,7 +152,7 @@ subroutine abf_init_print_header
         call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown fmode in abf_init_print_header!')
     end select
     write(PMF_OUT,125)  ' Coordinate definition file (fabfdef)    : ', trim(fabfdef)
-    write(PMF_OUT,130)  ' Number of coordinates                   : ', NumOfBiasedABFCVs
+    write(PMF_OUT,130)  ' Number of coordinates                   : ', NumOfABFCVs
     write(PMF_OUT,120)
     write(PMF_OUT,120)  ' ABF Control'
     write(PMF_OUT,120)  ' ------------------------------------------------------'
@@ -269,38 +269,32 @@ subroutine abf_init_arrays
     use abf_accu
 
     implicit none
-    integer     :: alloc_failed, i
+    integer     :: alloc_failed
     ! --------------------------------------------------------------------------
 
     fdtx = fdt*PMF_DT2VDT
-
-    NumOfBiasedABFCVs = 0
-    do i=1,NumOfABFCVs
-        if( ABFCVList(i)%shake ) cycle
-        NumOfBiasedABFCVs = NumOfBiasedABFCVs + 1
-    end do
 
 ! general arrays --------------------------------
     allocate(                                   &
             a1(3,NumOfLAtoms),                  &
             a0(3,NumOfLAtoms),                  &
             v0(3,NumOfLAtoms),                  &
-            la(NumOfBiasedABFCVs),                    &
-            zd0(3,NumOfLAtoms,NumOfBiasedABFCVs),     &
-            zd1(3,NumOfLAtoms,NumOfBiasedABFCVs),     &
-            pxi0(NumOfBiasedABFCVs),                  &
-            pxi1(NumOfBiasedABFCVs),                  &
-            pxip(NumOfBiasedABFCVs),                  &
-            pxim(NumOfBiasedABFCVs),                  &
-            cvave(NumOfBiasedABFCVs),                 &
-            cvcur(NumOfBiasedABFCVs),                 &
-            cv1dr(NumOfBiasedABFCVs),                 &
-            cv2dr(NumOfBiasedABFCVs),                 &
-            fz(NumOfBiasedABFCVs,NumOfBiasedABFCVs),        &
-            fzinv(NumOfBiasedABFCVs,NumOfBiasedABFCVs),     &
-            fzinv0(NumOfBiasedABFCVs,NumOfBiasedABFCVs),    &
-            indx(NumOfBiasedABFCVs),                        &
-            vv(NumOfBiasedABFCVs),                          &
+            la(NumOfABFCVs),                    &
+            zd0(3,NumOfLAtoms,NumOfABFCVs),     &
+            zd1(3,NumOfLAtoms,NumOfABFCVs),     &
+            pxi0(NumOfABFCVs),                  &
+            pxi1(NumOfABFCVs),                  &
+            pxip(NumOfABFCVs),                  &
+            pxim(NumOfABFCVs),                  &
+            cvave(NumOfABFCVs),                 &
+            cvcur(NumOfABFCVs),                 &
+            cv1dr(NumOfABFCVs),                 &
+            cv2dr(NumOfABFCVs),                 &
+            fz(NumOfABFCVs,NumOfABFCVs),        &
+            fzinv(NumOfABFCVs,NumOfABFCVs),     &
+            fzinv0(NumOfABFCVs,NumOfABFCVs),    &
+            indx(NumOfABFCVs),                        &
+            vv(NumOfABFCVs),                          &
             stat= alloc_failed )
 
     if( alloc_failed .ne. 0 ) then
@@ -329,18 +323,6 @@ subroutine abf_init_arrays
     fzinv(:,:)  = 0.0d0
     fzinv0(:,:) = 0.0d0
 
-! allocate for all Cvs
-    allocate(   fzall(NumOfABFCVs,NumOfABFCVs),         &
-                indxall(NumOfABFCVs),                   &
-                stat= alloc_failed )
-
-    if( alloc_failed .ne. 0 ) then
-        call pmf_utils_exit(PMF_OUT,1, &
-             '[ABF] Unable to allocate memory for all CVs')
-    end if
-
-    fzall(:,:)  = 0.0d0
-
 ! history buffers ------------------------------------------
 
     select case(fmode)
@@ -355,13 +337,13 @@ subroutine abf_init_arrays
     end select
 
     allocate(                                           &
-            cvhist(NumOfBiasedABFCVs,hist_len),         &
-            xihist(hist_len,NumOfBiasedABFCVs),         &
-            micfhist(hist_len,NumOfBiasedABFCVs),       &
+            cvhist(NumOfABFCVs,hist_len),         &
+            xihist(hist_len,NumOfABFCVs),         &
+            micfhist(hist_len,NumOfABFCVs),       &
             epothist(hist_len),                         &
             ersthist(hist_len),                         &
             ekinhist(hist_len),                         &
-            zinvhist(hist_len,NumOfBiasedABFCVs,NumOfBiasedABFCVs), &
+            zinvhist(hist_len,NumOfABFCVs,NumOfABFCVs), &
             stat= alloc_failed )
 
     if( alloc_failed .ne. 0 ) then
@@ -386,7 +368,7 @@ subroutine abf_init_arrays
         call abf_init_snb_list
     end if
 
-    if( (feimode .eq. 3) .and. (NumOfBiasedABFCVs .gt. 1) ) then
+    if( (feimode .eq. 3) .and. (NumOfABFCVs .gt. 1) ) then
         call pmf_utils_exit(PMF_OUT,1, &
             '[ABF] feimode == 3 can be used only with one CV!')
     end if
@@ -413,7 +395,7 @@ subroutine abf_init_snb_list
     fac = 2**2 ! 2^2 = 4
 
     max_snb_size = 1
-    do i=1,NumOfBiasedABFCVs
+    do i=1,NumOfABFCVs
         dcv = fac*ceiling(ABFCVList(i)%wfac) + 1
         max_snb_size = max_snb_size * dcv
     end do

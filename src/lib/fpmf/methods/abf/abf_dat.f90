@@ -90,12 +90,10 @@ type CVTypeABF
     real(PMFDP)             :: max_value        ! right range
     integer                 :: nbins            ! number of bins
     real(PMFDP)             :: wfac             ! smoothing factor in number of bins
-    logical                 :: shake            ! for mass-metric correction only
 end type CVTypeABF
 
 ! ----------------------
 integer                     :: NumOfABFCVs          ! number of ALL CVs in a group
-integer                     :: NumOfBiasedABFCVs    ! number of biased CVS
 type(CVTypeABF),allocatable :: ABFCVList(:)         ! definition of CVs
 
 ! ----------------------
@@ -105,8 +103,6 @@ type,extends(PMFAccuType) :: ABFAccuType
     real(PMFDP),pointer    :: binpos(:,:)               ! position of grids
     real(PMFDP),pointer    :: weights(:)                ! mask weights
     real(PMFDP),pointer    :: nsamples(:)               ! number of hits into bins
-    real(PMFDP),pointer    :: mzc(:)                    ! mean of sqrt(det(Zall)/det(Z))
-    real(PMFDP),pointer    :: m2zc(:)                   ! M2 of sqrt(det(Zall)/det(Z))
 
 ! free energy
     real(PMFDP),pointer    :: micf(:,:)                 ! mean ICF
@@ -158,16 +154,6 @@ real(PMFDP),allocatable     :: fzinv(:,:)           ! inverse of Z matrix   in t
 real(PMFDP),allocatable     :: vv(:)                ! for LU decomposition
 integer,allocatable         :: indx(:)              ! for LU decomposition
 real(PMFDP),allocatable     :: fzinv0(:,:)          ! inverse of Z matrix   in t-dt
-
-real(PMFDP),allocatable     :: fzall(:,:)           ! Z matrix for all CVs   in t
-integer,allocatable         :: indxall(:)           ! for LU decomposition
-
-! determinant of mass metric tensors
-real(PMFDP)                 :: fzdet
-real(PMFDP)                 :: fzdet0
-
-real(PMFDP)                 :: fzdetall
-real(PMFDP)                 :: fzdetall0
 
 ! helper arrays -------
 real(PMFDP),allocatable     :: a1(:,:)          ! acceleration in current step (t)

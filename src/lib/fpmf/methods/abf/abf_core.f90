@@ -87,13 +87,13 @@ subroutine abf_core_force_2p()
     implicit none
     integer                :: i,j,k,m
     integer                :: ci,ki
-    real(PMFDP)            :: v,e,etot,zc
+    real(PMFDP)            :: v,e,etot
     ! --------------------------------------------------------------------------
 
 ! shift accuvalue history
     cvhist(:,1) = cvhist(:,2)
 
-    do i=1,NumOfBiasedABFCVs
+    do i=1,NumOfABFCVs
         ci = ABFCVList(i)%cvindx
         cvhist(i,2) = CVContext%CVsValues(ci)
     end do
@@ -112,11 +112,11 @@ subroutine abf_core_force_2p()
     call abf_core_calc_Zmat(CVContext)
     call abf_core_calc_Zmat_all(CVContext)
 
-    do i=1,NumOfBiasedABFCVs
+    do i=1,NumOfABFCVs
         do j=1,NumOfLAtoms
             do m=1,3
                 v = 0.0d0
-                do k=1,NumOfBiasedABFCVs
+                do k=1,NumOfABFCVs
                     ki = ABFCVList(k)%cvindx
                     v = v + fzinv(i,k)*CVContext%CVsDrvs(m,j,ki)
                 end do
@@ -125,7 +125,7 @@ subroutine abf_core_force_2p()
         end do
     end do
 
-    do i=1,NumOfBiasedABFCVs
+    do i=1,NumOfABFCVs
         v = 0.0d0
         e = 0.0d0
         do j=1,NumOfLAtoms
@@ -163,10 +163,7 @@ subroutine abf_core_force_2p()
         ! add data to accumulator
         etot = epothist(1) + ersthist(1) + ekinhist(1)
 
-        zc = sqrt(fzdet0/fzdetall0)
-        ! write(4589,*) fstep-1, zc, fzdet0, fzdetall0
-
-        call abf_accu_add_data_online(cvhist(:,1),pxi0,epothist(1),ersthist(1),etot,zc)
+        call abf_accu_add_data_online(cvhist(:,1),pxi0,epothist(1),ersthist(1),etot)
 
         ! call abf_accu_add_data_record(cvhist(:,1),fzinv0,pxi0,pxi1,epothist(1),ersthist(1),ekinhist(1))
     end if
@@ -176,8 +173,6 @@ subroutine abf_core_force_2p()
     pxim        = pxip
     v0          = Vel
     fzinv0      = fzinv
-    fzdet0      = fzdet
-    fzdetall0   = fzdetall
 
     ! apply ABF bias
     la(:) = 0.0d0
@@ -201,7 +196,7 @@ subroutine abf_core_force_2p()
         end select
 
         ! project abf force along coordinate
-        do i=1,NumOfBiasedABFCVs
+        do i=1,NumOfABFCVs
             ci = ABFCVList(i)%cvindx
             do j=1,NumOfLAtoms
                 Frc(:,j) = Frc(:,j) + la(i) * CVContext%CVsDrvs(:,j,ci)
@@ -246,7 +241,7 @@ subroutine abf_core_force_4p()
     cvhist(:,2) = cvhist(:,3)
     cvhist(:,3) = cvhist(:,4)
 
-    do i=1,NumOfBiasedABFCVs
+    do i=1,NumOfABFCVs
         ci = ABFCVList(i)%cvindx
         cvhist(i,4) = CVContext%CVsValues(ci)
     end do
@@ -270,7 +265,7 @@ subroutine abf_core_force_4p()
                 call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented extrapolation/interpolation mode!')
         end select
     ! project abf force along coordinate ------------
-        do i=1,NumOfBiasedABFCVs
+        do i=1,NumOfABFCVs
             ci = ABFCVList(i)%cvindx
             do j=1,NumOfLAtoms
                 a1(:,j) = a1(:,j) + la(i) * MassInv(j) * CVContext%CVsDrvs(:,j,ci)
@@ -284,7 +279,7 @@ subroutine abf_core_force_4p()
     call abf_core_calc_Zmat(CVContext)
 
     ! pxip = zd0(t-dt)*[v(t-dt/2)/2 - dt*a1(t)/12]
-    do i=1,NumOfBiasedABFCVs
+    do i=1,NumOfABFCVs
         v = 0.0d0
         do j=1,NumOfLAtoms
             do m=1,3
@@ -294,12 +289,12 @@ subroutine abf_core_force_4p()
         pxip(i) = v
     end do
 
-    ! ZD0(3, NumOfLAtoms, NumOfBiasedABFCVs)   <-- 1/dt * m_ksi grad ksi(r0)
-    do i=1,NumOfBiasedABFCVs
+    ! ZD0(3, NumOfLAtoms, NumOfABFCVs)   <-- 1/dt * m_ksi grad ksi(r0)
+    do i=1,NumOfABFCVs
         do j=1,NumOfLAtoms
             do m=1,3
                 v = 0.0d0
-                do k=1,NumOfBiasedABFCVs
+                do k=1,NumOfABFCVs
                     ck = ABFCVList(k)%cvindx
                     v = v + fzinv(i,k) * CVContext%CVsDrvs(m,j,ck)
                 end do
@@ -309,7 +304,7 @@ subroutine abf_core_force_4p()
     end do
 
     ! pxim = zd0(t)*[v(t-dt/2)/2 + dt*a0(t-dt)/12]
-    do i=1,NumOfBiasedABFCVs
+    do i=1,NumOfABFCVs
         v = 0.0d0
         do j=1,NumOfLAtoms
             do m=1,3
@@ -328,7 +323,7 @@ subroutine abf_core_force_4p()
     ! update accumulator - we need at least four samples
     if( fstep .ge. 4 ) then
         ! calculate coordinate values at time t-3/2dt
-        do i=1,NumOfBiasedABFCVs
+        do i=1,NumOfABFCVs
             cvave(i) = ABFCVList(i)%cv%get_average_value(cvhist(i,2),cvhist(i,3))
         end do
 
@@ -383,7 +378,7 @@ subroutine abf_core_force_lpf_sg()
 !    end if
 
 ! get current value of CVs
-    do i=1,NumOfBiasedABFCVs
+    do i=1,NumOfABFCVs
         ci = ABFCVList(i)%cvindx
         cvcur(i)  = CVContext%CVsValues(ci)
     end do
@@ -408,7 +403,7 @@ subroutine abf_core_force_lpf_sg()
         end select
 
         ! project abf force along coordinate
-        do i=1,NumOfBiasedABFCVs
+        do i=1,NumOfABFCVs
             ci = ABFCVList(i)%cvindx
             do j=1,NumOfLAtoms
                 Frc(:,j) = Frc(:,j) + pxi1(i) * CVContext%CVsDrvs(:,j,ci)
@@ -439,12 +434,12 @@ subroutine abf_core_force_lpf_sg()
     if( fstep .lt. hist_len ) return
 
     if( fsgsmoothall ) then
-        do i=1,NumOfBiasedABFCVs
+        do i=1,NumOfABFCVs
             cvcur(i) = dot_product(sg_c0(:),xihist(1:hist_len-1,i))
             cv1dr(i) = dot_product(sg_c1(:),xihist(1:hist_len-1,i))
             cv2dr(i) = dot_product(sg_c2(:),xihist(1:hist_len-1,i))
             pxi1(i)  = dot_product(sg_c0(:),micfhist(1:hist_len-1,i))
-            do j=1,NumOfBiasedABFCVs
+            do j=1,NumOfABFCVs
                 fzinv(i,j)     = dot_product(sg_c0(:),zinvhist(1:hist_len-1,i,j))
                 fzinv0(i,j)    = dot_product(sg_c1(:),zinvhist(1:hist_len-1,i,j))
             end do
@@ -455,9 +450,9 @@ subroutine abf_core_force_lpf_sg()
         ekin = dot_product(sg_c0(:),ekinhist(2:hist_len))
         etot = epot + erst + ekin
 
-        do i=1,NumOfBiasedABFCVs
+        do i=1,NumOfABFCVs
             v = 0.0d0
-            do j=1,NumOfBiasedABFCVs
+            do j=1,NumOfABFCVs
                 v = v +  fzinv0(j,i)*cv1dr(j) + fzinv(j,i)*cv2dr(j)
             end do
             pxi0(i) = v
@@ -468,10 +463,10 @@ subroutine abf_core_force_lpf_sg()
         ! add data to accumulator
         ! FIXME call abf_accu_add_data_online(cvcur,pxi0,epot,erst,etot)
     else
-        do i=1,NumOfBiasedABFCVs
+        do i=1,NumOfABFCVs
             cv1dr(i) = dot_product(sg_c1(:),xihist(1:hist_len-1,i))
             cv2dr(i) = dot_product(sg_c2(:),xihist(1:hist_len-1,i))
-            do j=1,NumOfBiasedABFCVs
+            do j=1,NumOfABFCVs
                 fzinv(i,j)     = dot_product(sg_c0(:),zinvhist(1:hist_len-1,i,j))
                 fzinv0(i,j)    = dot_product(sg_c1(:),zinvhist(1:hist_len-1,i,j))
             end do
@@ -482,9 +477,9 @@ subroutine abf_core_force_lpf_sg()
         ekin = ekinhist(hist_len/2+1)   ! delayed
         etot = epot + erst + ekin
 
-        do i=1,NumOfBiasedABFCVs
+        do i=1,NumOfABFCVs
             v = 0.0d0
-            do j=1,NumOfBiasedABFCVs
+            do j=1,NumOfABFCVs
                 v = v +  fzinv0(j,i)*cv1dr(j) + fzinv(j,i)*cv2dr(j)
             end do
             pxi0(i) = v
@@ -517,9 +512,9 @@ subroutine abf_core_calc_Zmat(ctx)
     ! -----------------------------------------------------------------------------
 
     ! calculate Z matrix
-    do i=1,NumOfBiasedABFCVs
+    do i=1,NumOfABFCVs
         ci = ABFCVList(i)%cvindx
-        do j=1,NumOfBiasedABFCVs
+        do j=1,NumOfABFCVs
             cj = ABFCVList(j)%cvindx
             fz(i,j) = 0.0d0
             do k=1,NumOfLAtoms
@@ -529,88 +524,26 @@ subroutine abf_core_calc_Zmat(ctx)
     end do
 
     ! and now its inversion - we will use LAPAC and LU decomposition
-    if (NumOfBiasedABFCVs .gt. 1) then
+    if (NumOfABFCVs .gt. 1) then
 
         fzinv(:,:)  = fz(:,:)
 
-        call dgetrf(NumOfBiasedABFCVs,NumOfBiasedABFCVs,fzinv,NumOfBiasedABFCVs,indx,info)
+        call dgetrf(NumOfABFCVs,NumOfABFCVs,fzinv,NumOfABFCVs,indx,info)
         if( info .ne. 0 ) then
             call pmf_utils_exit(PMF_OUT,1,'[ABF] LU decomposition failed in abf_core_calc_Zmat!')
         end if
 
-        fzdet = 1.0d0
-        ! and finally determinant
-        do i=1,NumOfBiasedABFCVs
-            if( indx(i) .ne. i ) then
-                fzdet = - fzdet * fzinv(i,i)
-            else
-                fzdet = fzdet * fzinv(i,i)
-            end if
-        end do
-
-        call dgetri(NumOfBiasedABFCVs,fzinv,NumOfBiasedABFCVs,indx,vv,NumOfBiasedABFCVs,info)
+        call dgetri(NumOfABFCVs,fzinv,NumOfABFCVs,indx,vv,NumOfABFCVs,info)
         if( info .ne. 0 ) then
             call pmf_utils_exit(PMF_OUT,1,'[ABF] Matrix inversion failed in abf_core_calc_Zmat!')
         end if
     else
-        fzdet       = fz(1,1)
         fzinv(1,1)  = 1.0d0/fz(1,1)
     end if
 
     return
 
 end subroutine abf_core_calc_Zmat
-
-!===============================================================================
-! subroutine:  abf_core_calc_Zmat_all
-!===============================================================================
-
-subroutine abf_core_calc_Zmat_all(ctx)
-
-    use pmf_utils
-    use abf_dat
-
-    implicit none
-    type(CVContextType) :: ctx
-    integer             :: i,ci,j,cj,k,info
-    ! -----------------------------------------------------------------------------
-
-    ! calculate Z matrix
-    do i=1,NumOfABFCVs
-        ci = ABFCVList(i)%cvindx
-        do j=1,NumOfABFCVs
-            cj = ABFCVList(j)%cvindx
-            fzall(i,j) = 0.0d0
-            do k=1,NumOfLAtoms
-                fzall(i,j) = fzall(i,j) + MassInv(k)*dot_product(ctx%CVsDrvs(:,k,ci),ctx%CVsDrvs(:,k,cj))
-            end do
-        end do
-    end do
-
-    ! and get determinant - we will use LAPAC and LU decomposition
-    if (NumOfABFCVs .gt. 1) then
-
-        call dgetrf(NumOfABFCVs,NumOfABFCVs,fzall,NumOfABFCVs,indxall,info)
-        if( info .ne. 0 ) then
-            call pmf_utils_exit(PMF_OUT,1,'[ABF] LU decomposition failed in abf_core_calc_Zmat_all!')
-        end if
-
-        fzdetall = 1.0d0
-        ! and finally determinant
-        do i=1,NumOfABFCVs
-            if( indxall(i) .ne. i ) then
-                fzdetall = - fzdetall * fzall(i,i)
-            else
-                fzdetall = fzdetall * fzall(i,i)
-            end if
-        end do
-    else
-        fzdetall = fzall(1,1)
-    end if
-
-    return
-
-end subroutine abf_core_calc_Zmat_all
 
 !===============================================================================
 
