@@ -110,7 +110,6 @@ subroutine abf_core_force_2p()
 
 ! calculate Z matrix and its inverse
     call abf_core_calc_Zmat(CVContext)
-    call abf_core_calc_Zmat_all(CVContext)
 
     do i=1,NumOfABFCVs
         do j=1,NumOfLAtoms
@@ -157,8 +156,6 @@ subroutine abf_core_force_2p()
         ! total ABF force
         pxi0(:) = pxi0(:) + pxim(:)     ! biased estimate
         pxi0(:) = pxi0(:) - pxi1(:)     ! unbiased estimate
-
-        !write(789,*) fstep-1,fzdet0,fzdetA0,fzdetA0/fzdet0
 
         ! add data to accumulator
         etot = epothist(1) + ersthist(1) + ekinhist(1)
@@ -328,8 +325,7 @@ subroutine abf_core_force_4p()
         end do
 
         ! add data to accumulator
-        ! FIXME
-        ! call abf_accu_add_data_online(cvave(:),pxi0,0.0d0,0.0d0,0.0d0)
+        call abf_accu_add_data_online(cvave,pxi0,0.0d0,0.0d0,0.0d0)
     end if
 
     ! pxi0 <--- -pxip + pxim + pxi1 - la/2
@@ -350,7 +346,7 @@ end subroutine abf_core_force_4p
 !===============================================================================
 ! Subroutine:  abf_core_force_lpf_sg
 ! this is leap-frog ABF version
-! low-pass filter + SG filter for differentiation
+! SG filter for differentiation
 !===============================================================================
 
 subroutine abf_core_force_lpf_sg()
@@ -461,7 +457,7 @@ subroutine abf_core_force_lpf_sg()
         pxi0(:) = pxi0(:) - pxi1(:)
 
         ! add data to accumulator
-        ! FIXME call abf_accu_add_data_online(cvcur,pxi0,epot,erst,etot)
+        call abf_accu_add_data_online(cvcur,pxi0,epot,erst,etot)
     else
         do i=1,NumOfABFCVs
             cv1dr(i) = dot_product(sg_c1(:),xihist(1:hist_len-1,i))
@@ -489,7 +485,7 @@ subroutine abf_core_force_lpf_sg()
         cvcur(:)    = xihist(hist_len/2,:)
 
         ! add data to accumulator
-        ! FIXME call abf_accu_add_data_online(cvcur,pxi0,epot,erst,etot)
+        call abf_accu_add_data_online(cvcur,pxi0,epot,erst,etot)
     end if
 
 !    call abf_accu_add_data_record(cvhist(:,hist_len-1),fzinv0,pxi0,pxi1, &
