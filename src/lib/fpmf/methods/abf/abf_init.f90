@@ -83,6 +83,8 @@ subroutine abf_init_dat
     fepotaverage    = 0.0d0
     fekinaverage    = 0.0d0
 
+    fekinsrc        = 0
+
     feimode         = 1
     fhramp_min      = 100
     fhramp_max      = 500
@@ -148,6 +150,7 @@ subroutine abf_init_print_header
     write(PMF_OUT,120)  '      |-> Savitzky-Golay differentiation ABF algorithm'
     write(PMF_OUT,130)  '          Frame length (fsgframelen)     : ', fsgframelen
     write(PMF_OUT,130)  '          Polynomial order (fsgorder)    : ', fsgorder
+    write(PMF_OUT,125)  '          Smooth all (fsgsmoothall)      : ', prmfile_onoff(fsgsmoothall)
     case default
         call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown fmode in abf_init_print_header!')
     end select
@@ -202,6 +205,7 @@ subroutine abf_init_print_header
                                                                        '['//trim(pmf_unit_label(EnergyUnit))//']'
     write(PMF_OUT,150)  ' Kinetic energy offset (fekinaverage)    : ', pmf_unit_get_rvalue(EnergyUnit,fekinaverage), &
                                                                        '['//trim(pmf_unit_label(EnergyUnit))//']'
+    write(PMF_OUT,130)  ' Kinetic energy source (fekinsrc)        : ', fekinsrc
     write(PMF_OUT,120)
     write(PMF_OUT,120)  ' Restart options:'
     write(PMF_OUT,120)  ' ------------------------------------------------------'

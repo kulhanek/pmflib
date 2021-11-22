@@ -53,7 +53,7 @@ end subroutine pmf_core_lf_update_step
 ! leap-frog version
 !===============================================================================
 
-subroutine pmf_core_lf_force(x,v,f,epot,ekin,epmf)
+subroutine pmf_core_lf_force(x,v,f,epot,ekin,ekpbs,ekph,epmf)
 
     use pmf_dat
     use pmf_cvs
@@ -74,12 +74,14 @@ subroutine pmf_core_lf_force(x,v,f,epot,ekin,epmf)
     use pdrv_core
 
     implicit none
-    real(PMFDP)    :: x(:,:)       ! position in t
-    real(PMFDP)    :: v(:,:)       ! velocities in t-dt/2
-    real(PMFDP)    :: f(:,:)       ! forces in t
-    real(PMFDP)    :: epot         ! potential energy in t
-    real(PMFDP)    :: ekin         ! kinetic energy in t-dt
-    real(PMFDP)    :: epmf         ! energy from PMFLib
+    real(PMFDP)    :: x(:,:)        ! position in t
+    real(PMFDP)    :: v(:,:)        ! velocities in t-dt/2
+    real(PMFDP)    :: f(:,:)        ! forces in t
+    real(PMFDP)    :: epot          ! potential energy in t
+    real(PMFDP)    :: ekin          ! kinetic energy in t-dt
+    real(PMFDP)    :: ekpbs         ! kinetic energy in t-dt
+    real(PMFDP)    :: ekph          ! kinetic energy in t-dt/2
+    real(PMFDP)    :: epmf          ! energy from PMFLib
     ! -----------------------------------------------
     integer        :: i
     ! --------------------------------------------------------------------------
@@ -89,9 +91,11 @@ subroutine pmf_core_lf_force(x,v,f,epot,ekin,epmf)
     if( .not. pmf_enabled ) return
 
     ! convert potential energy
-    PotEne = epot *EnergyConv
-    ! convert kinetic energy
-    KinEne = ekin *EnergyConv
+    PotEne = epot * EnergyConv
+    ! convert kinetic energies
+    KinEne      = ekin * EnergyConv
+    KinEneVV    = ekpbs * EnergyConv
+    KinEneH     = ekph * EnergyConv
 
     PMFEne = 0.0d0
 

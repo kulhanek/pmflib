@@ -106,7 +106,17 @@ subroutine abf_core_force_2p()
     ersthist(2) = PMFEne
 
 ! shift etot ene
-    ekinhist(1) = KinEne - fekinaverage ! shifted by -dt
+    select case(fekinsrc)
+        case(0)
+            ekinhist(1) = KinEne - fekinaverage ! shifted by -dt
+        case(1)
+            ekinhist(1) = KinEneVV - fekinaverage ! shifted by -dt
+        case(2)
+            ekinhist(1) = ekinhist(2)
+            ekinhist(2) = KinEneH - fekinaverage ! shifted by -dt/2
+    end select
+
+    ! write(6587,*) fstep,KinEne, KinEneVV, KinEneH
 
 ! calculate Z matrix and its inverse
     call abf_core_calc_Zmat(CVContext)
@@ -158,7 +168,14 @@ subroutine abf_core_force_2p()
         pxi0(:) = pxi0(:) - pxi1(:)     ! unbiased estimate
 
         ! add data to accumulator
-        etot = epothist(1) + ersthist(1) + ekinhist(1)
+        select case(fekinsrc)
+            case(0)
+                etot = epothist(1) + ersthist(1) + ekinhist(1)
+            case(1)
+                etot = epothist(1) + ersthist(1) + ekinhist(1)
+            case(2)
+                etot = epothist(1) + ersthist(1) + 0.5d0*(ekinhist(1) + ekinhist(2))
+        end select
 
         call abf_accu_add_data_online(cvhist(:,1),pxi0,epothist(1),ersthist(1),etot)
 

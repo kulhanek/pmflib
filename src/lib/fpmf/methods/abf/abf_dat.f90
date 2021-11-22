@@ -56,6 +56,7 @@ logical     :: fsgsmoothall
 logical     :: fenthalpy    ! collect data for enthalpy calculation
 logical     :: fentropy     ! collect data for entropy calculation
 logical     :: frecord      ! record time progress
+integer     :: fekinsrc
 
 real(PMFDP) :: fepotaverage
 real(PMFDP) :: fekinaverage
