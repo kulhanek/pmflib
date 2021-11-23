@@ -91,31 +91,31 @@ subroutine abf_core_force_2p()
     ! --------------------------------------------------------------------------
 
 ! shift accuvalue history
-    cvhist(:,1) = cvhist(:,2)
+    do i=1,hist_len-1
+        cvhist(:,i) = cvhist(:,i+1)
+        epothist(i) = epothist(i+1)
+        ersthist(i) = ersthist(i+1)
+        ersthist(i) = ersthist(i+1)
+    end do
 
     do i=1,NumOfABFCVs
         ci = ABFCVList(i)%cvindx
-        cvhist(i,2) = CVContext%CVsValues(ci)
+        cvhist(i,hist_len) = CVContext%CVsValues(ci)
     end do
 
 ! shift epot ene
-    epothist(1) = epothist(2)
-    epothist(2) = PotEne - fepotaverage
 
-    ersthist(1) = ersthist(2)
-    ersthist(2) = PMFEne
+    epothist(hist_len) = PotEne - fepotaverage
+    ersthist(hist_len) = PMFEne
 
 ! shift etot ene
     select case(fekinsrc)
         case(0)
-            ekinhist(1) = KinEne - fekinaverage ! shifted by -dt
+            ekinhist(hist_len-1)    = KinEne - fekinaverage    ! shifted by -dt
         case(1)
-            ekinhist(1) = KinEneVV - fekinaverage ! shifted by -dt
+            ekinhist(hist_len-1)    = KinEneVV - fekinaverage  ! shifted by -dt
         case(2,3,4)
-            ekinhist(1) = ekinhist(2)
-            ekinhist(2) = KinEneH - fekinaverage ! shifted by -dt/2
-        case(5)
-            ekinhist(1) = (0.5d0*KinEneVV + KinEne)/1.5d0 - fekinaverage
+            ekinhist(hist_len)      = KinEneH - fekinaverage     ! shifted by -dt/2
     end select
 
     ! write(6587,*) fstep,KinEne, KinEneVV, KinEneH
@@ -171,23 +171,20 @@ subroutine abf_core_force_2p()
 
         ! add data to accumulator
         select case(fekinsrc)
-            case(0)
-                etot = epothist(1) + ersthist(1) + ekinhist(1)
-            case(1)
-                etot = epothist(1) + ersthist(1) + ekinhist(1)
+            case(0,1)
+                etot = epothist(hist_len-1) + ersthist(hist_len-1) + ekinhist(hist_len-1)
             case(2)
-                etot = epothist(1) + ersthist(1) + 0.5d0*(ekinhist(1) + ekinhist(2))
+                etot = epothist(hist_len-1) + ersthist(hist_len-1) + 0.5d0*(ekinhist(hist_len) + ekinhist(hist_len-1))
             case(3)
-                etot = epothist(1) + ersthist(1) + ekinhist(1)
+                etot = epothist(hist_len-1) + ersthist(hist_len-1) &
+                     + (1.0d0/8.0d0)*(3.0d0*ekinhist(hist_len) + 6.0d0*ekinhist(hist_len-1) - ekinhist(hist_len-1))
             case(4)
-                etot = epothist(1) + ersthist(1) + ekinhist(2)
-            case(5)
-                etot = epothist(1) + ersthist(1) + ekinhist(1)
+                etot = epothist(hist_len-1) + ersthist(hist_len-1) &
+                     + (1.0d0/48.0d0)*(  15.0d0*ekinhist(hist_len)   + 45.0d0*ekinhist(hist_len-1) &
+                                       - 15.0d0*ekinhist(hist_len-2) +  3.0d0*ekinhist(hist_len-3) )
         end select
 
-        write(47825,*) fstep, ekinhist(1), ekinhist(2)
-
-        call abf_accu_add_data_online(cvhist(:,1),pxi0,epothist(1),ersthist(1),etot)
+        call abf_accu_add_data_online(cvhist(:,hist_len-1),pxi0,epothist(hist_len-1),ersthist(hist_len-1),etot)
 
         ! call abf_accu_add_data_record(cvhist(:,1),fzinv0,pxi0,pxi1,epothist(1),ersthist(1),ekinhist(1))
     end if
@@ -206,15 +203,15 @@ subroutine abf_core_force_2p()
         ! calculate abf force to be applied
         select case(feimode)
             case(0)
-                call abf_accu_get_data(cvhist(:,2),la)
+                call abf_accu_get_data(cvhist(:,hist_len),la)
             case(1)
-                call abf_accu_get_data_lramp(cvhist(:,2),la)
+                call abf_accu_get_data_lramp(cvhist(:,hist_len),la)
             case(2)
                 call pmf_timers_start_timer(PMFLIB_ABF_KS_TIMER)
-                    call abf_accu_get_data_ksmooth(cvhist(:,2),la)
+                    call abf_accu_get_data_ksmooth(cvhist(:,hist_len),la)
                 call pmf_timers_stop_timer(PMFLIB_ABF_KS_TIMER)
             case(3)
-                call abf_accu_get_data_lsmooth(cvhist(:,2),la)
+                call abf_accu_get_data_lsmooth(cvhist(:,hist_len),la)
             case default
                 call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented extrapolation/interpolation mode!')
         end select

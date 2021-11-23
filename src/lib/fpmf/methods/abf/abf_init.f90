@@ -331,7 +331,7 @@ subroutine abf_init_arrays
 
     select case(fmode)
         case(1)
-            hist_len = 2
+            hist_len = 4
         case(2)
             hist_len = 4
         case(3)
