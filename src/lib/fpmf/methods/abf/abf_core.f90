@@ -115,7 +115,7 @@ subroutine abf_core_force_2p()
             ekinhist(1) = ekinhist(2)
             ekinhist(2) = KinEneH - fekinaverage ! shifted by -dt/2
         case(5)
-            ekinhist(1) = 0.5d0*KinEneVV + KinEne - fekinaverage
+            ekinhist(1) = (0.5d0*KinEneVV + KinEne)/1.5d0 - fekinaverage
     end select
 
     ! write(6587,*) fstep,KinEne, KinEneVV, KinEneH
