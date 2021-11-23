@@ -157,40 +157,20 @@ integer,allocatable         :: indx(:)              ! for LU decomposition
 real(PMFDP),allocatable     :: fzinv0(:,:)          ! inverse of Z matrix   in t-dt
 
 ! helper arrays -------
-real(PMFDP),allocatable     :: a1(:,:)          ! acceleration in current step (t)
-real(PMFDP),allocatable     :: a0(:,:)          ! acceleration from previous step (t-dt)
-real(PMFDP),allocatable     :: v0(:,:)          ! velocity in previous step (t-dt)
-
 real(PMFDP),allocatable     :: la(:)            ! ABF force in CV direction
-real(PMFDP),allocatable     :: zd0(:,:,:)       ! ZD0
-real(PMFDP),allocatable     :: zd1(:,:,:)       ! ZD1
 real(PMFDP),allocatable     :: pxi0(:)          !
-real(PMFDP),allocatable     :: pxi1(:)          !
-real(PMFDP),allocatable     :: pxip(:)          !
-real(PMFDP),allocatable     :: pxim(:)          !
-
-real(PMFDP),allocatable     :: cvave(:)         ! CV values or their derivatives
-real(PMFDP),allocatable     :: cvcur(:)
-real(PMFDP),allocatable     :: cv1dr(:)
-real(PMFDP),allocatable     :: cv2dr(:)
 
 ! ------------------------------------------------------------------------------
 
 integer                     :: hist_len
 real(PMFDP),allocatable     :: cvhist(:,:)          ! history of CV values (nCVS,hist_len)
-real(PMFDP),allocatable     :: xihist(:,:)          ! history of CV values (hist_len,nCVs)
+real(PMFDP),allocatable     :: xhist(:,:,:)         ! history of coordinates
+real(PMFDP),allocatable     :: vhist(:,:,:)         ! history of velocities
+real(PMFDP),allocatable     :: zdhist(:,:,:,:)      ! history of ZD
 real(PMFDP),allocatable     :: micfhist(:,:)        ! history of ABF bias
 real(PMFDP),allocatable     :: epothist(:)          ! history of Epot
 real(PMFDP),allocatable     :: ersthist(:)          ! history of Erst
 real(PMFDP),allocatable     :: ekinhist(:)          ! history of Ekin
-real(PMFDP),allocatable     :: zinvhist(:,:,:)      ! history of zinv
-
-! ------------------------------------------------------------------------------
-
-real(PMFDP),allocatable     :: sg_c0(:)
-real(PMFDP),allocatable     :: sg_c1(:)
-real(PMFDP),allocatable     :: sg_c2(:)
-real(PMFDP)                 :: invfdtx
 
 ! ------------------------------------------------------------------------------
 

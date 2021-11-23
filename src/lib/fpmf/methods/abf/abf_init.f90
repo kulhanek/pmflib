@@ -280,25 +280,12 @@ subroutine abf_init_arrays
 
 ! general arrays --------------------------------
     allocate(                                   &
-            a1(3,NumOfLAtoms),                  &
-            a0(3,NumOfLAtoms),                  &
-            v0(3,NumOfLAtoms),                  &
             la(NumOfABFCVs),                    &
-            zd0(3,NumOfLAtoms,NumOfABFCVs),     &
-            zd1(3,NumOfLAtoms,NumOfABFCVs),     &
             pxi0(NumOfABFCVs),                  &
-            pxi1(NumOfABFCVs),                  &
-            pxip(NumOfABFCVs),                  &
-            pxim(NumOfABFCVs),                  &
-            cvave(NumOfABFCVs),                 &
-            cvcur(NumOfABFCVs),                 &
-            cv1dr(NumOfABFCVs),                 &
-            cv2dr(NumOfABFCVs),                 &
             fz(NumOfABFCVs,NumOfABFCVs),        &
             fzinv(NumOfABFCVs,NumOfABFCVs),     &
-            fzinv0(NumOfABFCVs,NumOfABFCVs),    &
-            indx(NumOfABFCVs),                        &
-            vv(NumOfABFCVs),                          &
+            indx(NumOfABFCVs),                  &
+            vv(NumOfABFCVs),                    &
             stat= alloc_failed )
 
     if( alloc_failed .ne. 0 ) then
@@ -306,26 +293,11 @@ subroutine abf_init_arrays
             '[ABF] Unable to allocate memory for arrays used in ABF calculation!')
     end if
 
-    a1(:,:)     = 0.0d0
-    a0(:,:)     = 0.0d0
-    v0(:,:)     = 0.0d0
-
     la(:)       = 0.0d0
-    zd0(:,:,:)  = 0.0d0
-    zd1(:,:,:)  = 0.0d0
     pxi0(:)     = 0.0d0
-    pxi1(:)     = 0.0d0
-    pxip(:)     = 0.0d0
-    pxim(:)     = 0.0d0
-
-    cvave(:)    = 0.0d0
-    cvcur(:)    = 0.0d0
-    cv1dr(:)    = 0.0d0
-    cv2dr(:)    = 0.0d0
 
     fz(:,:)     = 0.0d0
     fzinv(:,:)  = 0.0d0
-    fzinv0(:,:) = 0.0d0
 
 ! history buffers ------------------------------------------
 
@@ -334,20 +306,19 @@ subroutine abf_init_arrays
             hist_len = 4
         case(2)
             hist_len = 4
-        case(3)
-            call abf_init_filter_sg
         case default
             call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented fmode in abf_init_arrays!')
     end select
 
     allocate(                                           &
-            cvhist(NumOfABFCVs,hist_len),         &
-            xihist(hist_len,NumOfABFCVs),         &
-            micfhist(hist_len,NumOfABFCVs),       &
+            cvhist(NumOfABFCVs,hist_len),               &
+            micfhist(NumOfABFCVs,hist_len),             &
+            xhist(3,NumOfLAtoms,hist_len),              &
+            vhist(3,NumOfLAtoms,hist_len),              &
+            zdhist(3,NumOfLAtoms,NumOfABFCVs,hist_len), &
             epothist(hist_len),                         &
             ersthist(hist_len),                         &
             ekinhist(hist_len),                         &
-            zinvhist(hist_len,NumOfABFCVs,NumOfABFCVs), &
             stat= alloc_failed )
 
     if( alloc_failed .ne. 0 ) then
@@ -356,12 +327,13 @@ subroutine abf_init_arrays
     end if
 
     cvhist(:,:)     = 0.0d0
-    xihist(:,:)     = 0.0d0
     micfhist(:,:)   = 0.0d0
+    xhist(:,:,:)    = 0.0d0
+    vhist(:,:,:)    = 0.0d0
+    zdhist(:,:,:,:) = 0.0d0
     epothist(:)     = 0.0d0
     ersthist(:)     = 0.0d0
     ekinhist(:)     = 0.0d0
-    zinvhist(:,:,:) = 0.0d0
 
 ! other setup ----------------------------------------------
 
@@ -437,118 +409,6 @@ subroutine abf_init_snb_list
     end do
 
 end subroutine abf_init_snb_list
-
-!===============================================================================
-! Subroutine:  abf_init_filter_sg
-!===============================================================================
-
-subroutine abf_init_filter_sg
-
-    use pmf_utils
-    use pmf_dat
-    use abf_dat
-
-    implicit none
-    integer                     :: m, np, nr, nl, ipj, k, imj, mm, info, ld, j, kk
-    integer                     :: alloc_failed
-    integer, allocatable        :: lindx(:)
-    real(PMFDP)                 :: s, fac
-    real(PMFDP),allocatable     :: a(:,:), b(:)
-    ! --------------------------------------------------------------------------
-
-    m = fsgorder
-    if( m .le. 1 ) then
-        call pmf_utils_exit(PMF_OUT,1, '[ABF] fsgorder too low in abf_init_sg!')
-    end if
-
-    np = fsgframelen
-
-    if( mod(np,2) .ne. 1 ) then
-        call pmf_utils_exit(PMF_OUT,1, '[ABF] fsgframelen must be an odd number in abf_init_sg!')
-    end if
-
-    if( np .le. 2 ) then
-        call pmf_utils_exit(PMF_OUT,1, '[ABF] fsgframelen too low in abf_init_sg!')
-    end if
-
-    nr = (np-1)/2
-    nl = nr
-
-    allocate( a(m+1,m+1), b(m+1), lindx(m+1), sg_c0(np), sg_c1(np), sg_c2(np), stat= alloc_failed )
-
-    if( alloc_failed .ne. 0 ) then
-        call pmf_utils_exit(PMF_OUT,1, '[ABF] Unable to allocate memory in abf_init_sg!')
-    end if
-
-    a(:,:) = 0.0d0
-
-    do ipj=0,2*m        !Set up the normal equations of the desired leastsquares fit.
-        s = 0.0d0
-        if( ipj .eq. 0 ) s = 1.0d0
-
-        do k=1,nr
-            s = s + real(k,PMFDP)**ipj
-        end do
-
-        do k=1,nl
-            s = s + real(-k,PMFDP)**ipj
-        end do
-
-        mm = min(ipj,2*m-ipj)
-        do imj=-mm,mm,2
-            a(1+(ipj+imj)/2,1+(ipj-imj)/2) = s
-        end do
-    end do
-
-    call dgetrf(m+1,m+1,a,m+1,lindx,info)
-    if( info .ne. 0 ) then
-        call pmf_utils_exit(PMF_OUT,1,'[ABF] LU decomposition failed in abf_init_sg!')
-    end if
-
-    sg_c0(:) = 0.0d0
-    sg_c1(:) = 0.0d0
-    sg_c2(:) = 0.0d0
-
-    do ld=0,2
-        do j=1,m+1
-            b(j) = 0.0d0
-        end do
-        b(ld+1) = 1.0d0      !Right-hand side vector is unit vector, depending on which derivative we want.
-
-        call dgetrs('N',m+1,1,a,m+1,lindx,b,m+1,info)
-        if( info .ne. 0 ) then
-            call pmf_utils_exit(PMF_OUT,1,'[ABF] Matrix inversion failed in abf_init_sg!')
-        end if
-
-        do k=-nl,nr                        ! Each Savitzky-Golay coefficient is the dot product
-            s   = b(1)                     ! of powers of an integer with the inverse matrix row.
-            fac = 1.0d0
-            do mm=1,m
-                fac = fac*k
-                s   = s + b(mm+1)*fac
-            end do
-            kk = k+nl+1
-            select case(ld)
-                case(0)
-                    sg_c0(kk) = s
-                case(1)
-                    sg_c1(kk) = s
-                case(2)
-                    sg_c2(kk) = s * 2.0d0
-            end select
-
-        end do
-    end do
-
-    invfdtx = 1.0d0 / (fdt * PMF_DT2VDT)
-
-    sg_c1(:) = sg_c1(:) * invfdtx
-    sg_c2(:) = sg_c2(:) * invfdtx * invfdtx
-
-    ! define history length
-    hist_len = np + 1 ! +1 for delayed velocity
-
-end subroutine abf_init_filter_sg
 
 !===============================================================================
 
