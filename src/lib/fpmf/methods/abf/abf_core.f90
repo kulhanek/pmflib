@@ -111,7 +111,7 @@ subroutine abf_core_force_2p()
             ekinhist(1) = KinEne - fekinaverage ! shifted by -dt
         case(1)
             ekinhist(1) = KinEneVV - fekinaverage ! shifted by -dt
-        case(2)
+        case(2,3,4)
             ekinhist(1) = ekinhist(2)
             ekinhist(2) = KinEneH - fekinaverage ! shifted by -dt/2
     end select
@@ -175,6 +175,10 @@ subroutine abf_core_force_2p()
                 etot = epothist(1) + ersthist(1) + ekinhist(1)
             case(2)
                 etot = epothist(1) + ersthist(1) + 0.5d0*(ekinhist(1) + ekinhist(2))
+            case(3)
+                etot = epothist(1) + ersthist(1) + ekinhist(1)
+            case(4)
+                etot = epothist(1) + ersthist(1) + ekinhist(2)
         end select
 
         call abf_accu_add_data_online(cvhist(:,1),pxi0,epothist(1),ersthist(1),etot)
