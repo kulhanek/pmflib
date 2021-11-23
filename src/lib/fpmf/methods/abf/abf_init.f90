@@ -307,7 +307,7 @@ subroutine abf_init_arrays
         case(2)
             hist_len = 4
         case(3)
-            hist_len = 5
+            hist_len = 4
         case default
             call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented fmode in abf_init_arrays!')
     end select
