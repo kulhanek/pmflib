@@ -330,9 +330,9 @@ subroutine pmf_core_lf_shake_forces(xbar,xp)
         end if
         call pmf_core_in_data_xbar(xbar)
 
-        ! get SHAKE forces
+        ! get SHAKE forces in t
         do i=1,NumOfLAtoms
-            SHAKEFrc(:,i) =  Mass(i) * (CrdP(:,i)-CrdBar(:,i)) * ifdtx**2
+            SHAKEFrc(:,i)  = Mass(i) * (CrdP(:,i) - CrdBar(:,i)) * ifdtx**2
         end do
 
         !write(788,*) CrdBar
