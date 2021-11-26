@@ -50,14 +50,18 @@ subroutine pmf_init_dat
     fenable_pbc    = .false.
     fmonitor_paths = .false.
 
-    fnatoms = 0
-    fnstlim = 0
-    fdt = 0.0d0
-    ftime = 0.0d0
-    ftemp = 0.0d0
-    fstep = 0
-    fsystype = SYS_UNK
-    fintalg = IA_LEAP_FROG
+    fnatoms     = 0
+    fnstlim     = 0
+    fdt         = 0.0d0
+    ftime       = 0.0d0
+    ftemp       = 0.0d0
+    fstep       = 0
+    fsystype    = SYS_UNK
+    fintalg     = IA_LEAP_FROG
+    fshake      = .false.
+
+    fdtx        = 0.0d0
+    ifdtx       = 0.0d0
 
     fcanexmdloop = .false.
     fexit_mdloop = 0
@@ -74,6 +78,8 @@ subroutine pmf_init_dat
 
     tabf_enabled    = .false.
     usabf_enabled   = .false.
+
+    shake_force_required = .false.
 
     fucell(:,:) = 0.0d0
     frecip(:,:) = 0.0d0
@@ -243,6 +249,7 @@ subroutine pmf_init_variables(intalg,natom,systype,nstlim,dt,time,temp)
 
     use pmf_dat
     use pmf_core
+    use pmf_utils
 
     implicit none
     integer        :: intalg
@@ -255,13 +262,21 @@ subroutine pmf_init_variables(intalg,natom,systype,nstlim,dt,time,temp)
     ! --------------------------------------------------------------------------
 
     ! MD setup --------------------------------------
-    fintalg = intalg
-    fnatoms = natom
-    fnstlim = nstlim
-    fdt = dt*TimeConv
-    ftime = time*TimeConv
-    ftemp = temp
-    fsystype = systype
+    fintalg     = intalg
+    fnatoms     = natom
+    fnstlim     = nstlim
+    fdt         = dt*TimeConv
+    ftime       = time*TimeConv
+    ftemp       = temp
+    fsystype    = systype
+
+    fdtx  = fdt*PMF_DT2VDT
+
+    if( fdtx .le. 0.0d0 ) then
+        call pmf_utils_exit(PMF_OUT, 1,'[PMF] fdt must be greater than zero!')
+    end if
+
+    ifdtx = 1.0d0 /  fdtx
 
 end subroutine pmf_init_variables
 
@@ -483,6 +498,7 @@ subroutine pmf_init_pmf
           MassInv(NumOfLAtoms), &
           Crd(3,NumOfLAtoms), &
           Frc(3,NumOfLAtoms), &
+          SHAKEFrc(3,NumOfLAtoms), &
           Vel(3,NumOfLAtoms), &
           CVContext%CVsValues(NumOfCVs), &
           CVContext%CVsDrvs(3,NumOfLAtoms,NumOfCVs), &
@@ -492,11 +508,12 @@ subroutine pmf_init_pmf
         call pmf_utils_exit(PMF_OUT, 1,'[PMFLIB] Unable to allocate memory for common arrays!')
     endif
 
-    if( cst_enabled ) then
+    if( cst_enabled .or. shake_force_required ) then
         ! allocate arrays used by bluemoon
-        allocate(CrdP(3,NumOfLAtoms), &
+        allocate( CrdP(3,NumOfLAtoms), &
                   CVContextP%CVsValues(NumOfCVs), &
                   CVContextP%CVsDrvs(3,NumOfLAtoms,NumOfCVs), &
+                  CrdBar(3,NumOfLAtoms), &
                   stat=alloc_failed)
 
         if( alloc_failed .ne. 0 ) then
@@ -635,6 +652,7 @@ subroutine pmf_init_sys_summary()
     use pmf_dat
     use pmf_utils
     use pmf_unit
+    use prmfile
 
     implicit none
     character(20)       :: form_str
@@ -655,6 +673,8 @@ subroutine pmf_init_sys_summary()
 
     write(form_str,'(I7)') NumOfLAtoms
     write(PMF_OUT,30) adjustl(form_str)
+
+    write(PMF_OUT,35) prmfile_onoff(fshake)
 
     write(form_str,'(F10.1)') pmf_unit_get_rvalue(TemperatureUnit,ftemp)
     write(PMF_OUT,40)  trim(adjustl(form_str)), '['//trim(pmf_unit_label(TemperatureUnit))//']'
@@ -713,6 +733,7 @@ subroutine pmf_init_sys_summary()
  10 format('# Total number of atoms    : ',A)
  20 format('# Total number of CVs      : ',A)
  30 format('# Number of atoms involved : ',A)
+ 35 format('# SHAKE                    : ',A)
  40 format('# Temperature              : ',A,1X,A)
  50 format('# Time step                : ',A,1X,A)
  60 format('# Number of steps          : ',A)

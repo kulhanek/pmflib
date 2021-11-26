@@ -46,6 +46,7 @@ integer     :: PMFLIB_TOTAL_TIMER                       = -10
             integer     :: PMFLIB_RST_TIMER             = -80
             integer     :: PMFLIB_STM_TIMER             = -82
                 integer     :: PMFLIB_STM_NET_TIMER     = -84
+            integer     :: PMFLIB_SACCEL_TIMER          = -85
         integer     :: PMFLIB_EXTENSIONS_TIMER          = -90
             integer     :: PMFLIB_MON_TIMER             = -120
             integer     :: PMFLIB_PDRV_TIMER            = -130
@@ -99,6 +100,7 @@ subroutine pmf_timers_init
             PMFLIB_STM_NET_TIMER        = add_timer(PMFLIB_STM_TIMER,'Network Communication')
         PMFLIB_CON_TIMER            = add_timer(PMFLIB_METHODS_TIMER,'Constrained Dynamics')
         PMFLIB_RST_TIMER            = add_timer(PMFLIB_METHODS_TIMER,'Restrained Dynamics')
+        PMFLIB_SACCEL_TIMER         = add_timer(PMFLIB_METHODS_TIMER,'SHAKE Accelerations')
     PMFLIB_EXTENSIONS_TIMER          = add_timer(PMFLIB_TIMER,'Extensions')
         PMFLIB_MON_TIMER        = add_timer(PMFLIB_EXTENSIONS_TIMER,'Monitoring')
         PMFLIB_PDRV_TIMER       = add_timer(PMFLIB_EXTENSIONS_TIMER,'Path Driving')

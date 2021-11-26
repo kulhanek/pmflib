@@ -2,6 +2,11 @@
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
 
+broadcast fshake
+broadcast shake_force_required
+
+
+
 remove CNGFC - wrong concept
 
 CVs - coordination numbers (fermi like, 6/12 form)
@@ -13,8 +18,5 @@ CVs - coordination numbers (fermi like, 6/12 form)
 Timers
 
 
-void __hipolyspec CEnergySurface::GetPoint(unsigned int index,CSimpleVector<double>& point)
-{
- /* !!!! WRONG !!! */
 
 

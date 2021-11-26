@@ -83,8 +83,6 @@ subroutine abf_init_dat
     fepotaverage    = 0.0d0
     fekinaverage    = 0.0d0
 
-    fekinsrc        = 0
-
     feimode         = 1
     fhramp_min      = 100
     fhramp_max      = 500
@@ -107,12 +105,6 @@ subroutine abf_init_dat
     outsidesamples  = 0
 
     fsmooth_kernel  = 0
-
-    fsgframelen     = 5
-    fsgorder        = 3
-    fsgsmoothall    = .false.
-
-    fdtx            = 0.0d0
 
 end subroutine abf_init_dat
 
@@ -146,11 +138,6 @@ subroutine abf_init_print_header
     write(PMF_OUT,120)  '      |-> Simplified ABF algorithm'
     case(2)
     write(PMF_OUT,120)  '      |-> Original ABF algorithm'
-    case(3)
-    write(PMF_OUT,120)  '      |-> Savitzky-Golay differentiation ABF algorithm'
-    write(PMF_OUT,130)  '          Frame length (fsgframelen)     : ', fsgframelen
-    write(PMF_OUT,130)  '          Polynomial order (fsgorder)    : ', fsgorder
-    write(PMF_OUT,125)  '          Smooth all (fsgsmoothall)      : ', prmfile_onoff(fsgsmoothall)
     case default
         call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown fmode in abf_init_print_header!')
     end select
@@ -205,7 +192,6 @@ subroutine abf_init_print_header
                                                                        '['//trim(pmf_unit_label(EnergyUnit))//']'
     write(PMF_OUT,150)  ' Kinetic energy offset (fekinaverage)    : ', pmf_unit_get_rvalue(EnergyUnit,fekinaverage), &
                                                                        '['//trim(pmf_unit_label(EnergyUnit))//']'
-    write(PMF_OUT,130)  ' Kinetic energy source (fekinsrc)        : ', fekinsrc
     write(PMF_OUT,120)
     write(PMF_OUT,120)  ' Restart options:'
     write(PMF_OUT,120)  ' ------------------------------------------------------'
@@ -276,8 +262,6 @@ subroutine abf_init_arrays
     integer     :: alloc_failed
     ! --------------------------------------------------------------------------
 
-    fdtx = fdt*PMF_DT2VDT
-
 ! general arrays --------------------------------
     allocate(                                   &
             la(NumOfABFCVs),                    &
@@ -306,8 +290,6 @@ subroutine abf_init_arrays
             hist_len = 4
         case(2)
             hist_len = 4
-        case(3)
-            hist_len = 4
         case default
             call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented fmode in abf_init_arrays!')
     end select
@@ -315,7 +297,7 @@ subroutine abf_init_arrays
     allocate(                                           &
             cvhist(NumOfABFCVs,hist_len),               &
             micfhist(NumOfABFCVs,hist_len),             &
-            xhist(3,NumOfLAtoms,hist_len),              &
+            fhist(3,NumOfLAtoms,hist_len),              &
             vhist(3,NumOfLAtoms,hist_len),              &
             zdhist(3,NumOfLAtoms,NumOfABFCVs,hist_len), &
             epothist(hist_len),                         &
@@ -330,7 +312,7 @@ subroutine abf_init_arrays
 
     cvhist(:,:)     = 0.0d0
     micfhist(:,:)   = 0.0d0
-    xhist(:,:,:)    = 0.0d0
+    fhist(:,:,:)    = 0.0d0
     vhist(:,:,:)    = 0.0d0
     zdhist(:,:,:,:) = 0.0d0
     epothist(:)     = 0.0d0

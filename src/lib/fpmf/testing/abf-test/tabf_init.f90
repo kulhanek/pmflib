@@ -88,8 +88,6 @@ subroutine tabf_init_dat
     insidesamples   = 0
     outsidesamples  = 0
 
-    fdtx            = 0.0d0     ! time step in internal units
-
 end subroutine tabf_init_dat
 
 !===============================================================================
@@ -211,8 +209,6 @@ subroutine tabf_init_arrays
     implicit none
     integer     :: alloc_failed
     ! --------------------------------------------------------------------------
-
-    fdtx = fdt*PMF_DT2VDT
 
     ! general arrays --------------------------------
     allocate(                               &

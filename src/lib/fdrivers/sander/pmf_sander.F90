@@ -22,7 +22,7 @@
 
 !sander.F90:   use pmf_sander
 !sander.F90:    call pmf_sander_init_taskid_mpi(mytaskid)
-!sander.F90:        call pmf_sander_init_preinit(mdin,natom,nres,ntb,nstlim,dt,temp0,a,b,c,alpha,beta,gamma)
+!sander.F90:        call pmf_sander_init_preinit(mdin,natom,nres,ntb,ntc,nstlim,dt,temp0,a,b,c,alpha,beta,gamma)
 !sander.F90:            call pmf_sander_set_residue(i,ih(m02-1+i),ix(i02-1+i))
 !sander.F90:            call pmf_sander_set_atom(i,ih(m04-1+i),ih(m06-1+i))
 !sander.F90:        call pmf_sander_finalize_preinit(natom,x(lmass),x(lcrd))
@@ -72,7 +72,7 @@ end subroutine pmf_sander_init_taskid_mpi
 !===============================================================================
 
 subroutine pmf_sander_init_preinit(mdin,anatom,anres, &
-                            antb,ansteps,astepsize,atemp0, &
+                            antb,antc,ansteps,astepsize,atemp0, &
                             box_a,box_b,box_c,box_alpha,box_beta,box_gamma)
 
     use pmf_utils
@@ -90,6 +90,7 @@ subroutine pmf_sander_init_preinit(mdin,anatom,anres, &
     integer        :: anatom                       ! number of atoms in AMBER topology
     integer        :: anres                        ! number of residues in AMBER topology
     integer        :: antb                         ! BOX type
+    integer        :: antc                         ! shake mode
     integer        :: ansteps                      ! number of MD steps
     real(PMFDP)    :: astepsize                    ! step size
     real(PMFDP)    :: atemp0                       ! temperature
@@ -126,6 +127,12 @@ subroutine pmf_sander_init_preinit(mdin,anatom,anres, &
 
     ! rewrite the setup
     fcanexmdloop     = .true.       ! the client is able to terminate md loop
+
+    ! SHAKE
+    fshake = .false.
+    if( antc .ne. 1 ) then
+        fshake = .true.
+    end if
 
     return
 
@@ -349,7 +356,7 @@ end subroutine pmf_sander_update_box
 ! subroutine pmf_sander_force
 !===============================================================================
 
-subroutine pmf_sander_force(anatom,x,v,f,epot,ekin,ekpbs,ekph,epmf)
+subroutine pmf_sander_force(anatom,x,v,f,epot,ekin,epmf)
 
     use pmf_sizes
     use pmf_core_lf
@@ -362,14 +369,12 @@ subroutine pmf_sander_force(anatom,x,v,f,epot,ekin,ekpbs,ekph,epmf)
     real(PMFDP)     :: f(3,anatom)  ! inout
     real(PMFDP)     :: epot         ! in
     real(PMFDP)     :: ekin         ! in
-    real(PMFDP)     :: ekpbs        ! in
-    real(PMFDP)     :: ekph         ! in
     real(PMFDP)     :: epmf         ! out
     ! --------------------------------------------------------------------------
 
     call pmf_timers_start_timer(PMFLIB_TIMER)
     call pmf_core_lf_update_step
-    call pmf_core_lf_force(x,v,f,epot,ekin,ekpbs,ekph,epmf)
+    call pmf_core_lf_force(x,v,f,epot,ekin,epmf)
     call pmf_timers_stop_timer(PMFLIB_TIMER)
 
     return
@@ -426,27 +431,37 @@ end subroutine pmf_sander_num_of_pmflib_cst
 ! Subroutine: pmf_sander_constraints
 !===============================================================================
 
-subroutine pmf_sander_constraints(anatom,x,modified)
+subroutine pmf_sander_constraints(leapfrog_mode,anatom,xbar,x,modified)
 
     use pmf_sizes
     use pmf_dat
     use pmf_core_lf
     use pmf_timers
+    use pmf_utils
 
     implicit none
-    integer        :: anatom       ! number of atoms
-    real(PMFDP)    :: x(3,anatom)  ! positions in t+dt
-    logical        :: modified     ! was constraint applied?
+    integer        :: leapfrog_mode
+    integer        :: anatom            ! number of atoms
+    real(PMFDP)    :: xbar(3,anatom)    ! positions in t+dt - without shake for leapfrog_mode .eq. 1, otherwise position in t
+    real(PMFDP)    :: x(3,anatom)       ! positions in t+dt
+    logical        :: modified          ! was constraint applied?
     ! --------------------------------------------------------------------------
 
     modified = .false.
-    if( .not. cst_enabled ) return
+    if( .not. (cst_enabled .or. shake_force_required) ) return
 
     call pmf_timers_start_timer(PMFLIB_TIMER)
     call pmf_core_lf_shake(x)
+    if( shake_force_required .and. (fshake .or. cst_enabled) ) then
+        if( leapfrog_mode .eq. 1 ) then
+             call pmf_core_lf_shake_forces(xbar,x)
+        else
+            call pmf_utils_exit(PMF_OUT,1,'leapfrog_mode .eq. 1 is required in pmf_sander_constraints and shake_force_required')
+        end if
+    end if
     call pmf_timers_stop_timer(PMFLIB_TIMER)
 
-    modified = .true.
+    modified = cst_enabled
     return
 
 end subroutine pmf_sander_constraints
@@ -529,7 +544,9 @@ subroutine pmf_sander_constraints_mpi(anatom,x,modified)
     use pmf_timers
 
     implicit none
+    integer         :: leapfrog_mode
     integer         :: anatom
+    real(PMFDP)     :: xbar(3,anatom)       ! positions in t+dt - without shake for leapfrog_mode .eq. 1, otherwise position in t
     real(PMFDP)     :: x(3,anatom)          ! positions in t+dt
     logical         :: modified             ! was constraint applied?
     ! ------------------------------------------------------
@@ -537,7 +554,7 @@ subroutine pmf_sander_constraints_mpi(anatom,x,modified)
     ! --------------------------------------------------------------------------
 
     modified = .false.
-    if( .not. cst_enabled ) return
+    if( .not. (cst_enabled .or. shake_force_required) ) return
 
     if(fmaster) then
         call pmf_timers_start_timer(PMFLIB_TIMER)
@@ -560,11 +577,25 @@ subroutine pmf_sander_constraints_mpi(anatom,x,modified)
     ! update data
     call pmf_sander_scatter_array_mpi(tmp_a,x,atm_owner_map,4)
 
+    if( shake_force_required .and. (fshake .or. cst_enabled) ) then
+        if( leapfrog_mode .eq. 1 ) then
+
+            ! gather data
+            call pmf_sander_gather_array_mpi(tmp_b,xbar,atm_owner_map,5)
+
+            if( famster ) then
+                call pmf_core_lf_shake_accel(tmp_b)
+            end if
+        else
+            call pmf_utils_exit(PMF_OUT,1,'leapfrog_mode .eq. 1 is required in pmf_sander_constraints')
+        end if
+    end if
+
     if(fmaster) then
         call pmf_timers_stop_timer(PMFLIB_TIMER)
     end if
 
-    modified = .true.
+    modified = cst_enabled
 
 end subroutine pmf_sander_constraints_mpi
 !===============================================================================
@@ -598,7 +629,7 @@ subroutine pmf_sander_cst_init_collisions(ntc,nbt,ifstwt,ib,jb,conp)
     if( ntc .eq. 1 ) return    ! no SHAKE
 
     if( ntc .ne. 2 ) then
-        call pmf_utils_exit(PMF_OUT,1,'ntc has to be either zero or one for PMFLib constrained dynamics!')
+        call pmf_utils_exit(PMF_OUT,1,'ntc has to be either one or two for PMFLib constrained dynamics!')
     end if
 
     ! determine number of SHAKE constraints in collision

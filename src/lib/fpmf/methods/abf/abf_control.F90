@@ -98,9 +98,6 @@ subroutine abf_control_read_abf(prm_fin)
     call pmf_ctrl_read_real8_wunit(prm_fin,'fepotaverage',EnergyUnit,fepotaverage,'F10.1')
     call pmf_ctrl_read_real8_wunit(prm_fin,'fekinaverage',EnergyUnit,fekinaverage,'F10.1')
 
-    call pmf_ctrl_read_integer(prm_fin,'fekinsrc',fekinsrc,'i12')
-    call pmf_ctrl_check_integer_in_range('ABF','fekinsrc',fekinsrc,0,2)
-
     call pmf_ctrl_read_integer(prm_fin,'feimode',feimode,'i12')
     call pmf_ctrl_check_integer_in_range('ABF','feimode',feimode,0,3)
 
@@ -137,12 +134,6 @@ subroutine abf_control_read_abf(prm_fin)
             call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown extrapolation/interpolation mode!')
     end select
 
-    if( fmode .eq. 3 ) then
-        call pmf_ctrl_read_integer(prm_fin,'fsgframelen',fsgframelen,'i12')
-        call pmf_ctrl_read_integer(prm_fin,'fsgorder',fsgorder,'i12')
-        call pmf_ctrl_read_logical(prm_fin,'fsgsmoothall',fsgsmoothall)
-    end if
-
     ! network setup ----------------------------------------------------------------
 
     write(PMF_OUT,'(/,a)') '--- [abf-walker] ---------------------------------------------------------------'
@@ -178,7 +169,8 @@ subroutine abf_control_read_abf(prm_fin)
         call pmf_utils_exit(PMF_OUT,1,'[ABF] frestart cannot be ON if multiple-walkers approach is used!')
     end if
 
-    abf_enabled = fmode .gt. 0
+    abf_enabled          = fmode .gt. 0
+    shake_force_required = fmode .eq. 1
 
     return
 

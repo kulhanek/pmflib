@@ -35,22 +35,22 @@ contains
 
 subroutine pmf_core_in_data_xvf(x,v,f)
 
- use pmf_dat
+    use pmf_dat
 
- implicit none
- real(PMFDP),intent(in)     :: x(:,:)
- real(PMFDP),intent(in)     :: v(:,:)
- real(PMFDP),intent(in)     :: f(:,:)
- ! -----------------------------------------------
- integer                    :: i,ridx
- ! -----------------------------------------------------------------------------
+    implicit none
+    real(PMFDP),intent(in)     :: x(:,:)
+    real(PMFDP),intent(in)     :: v(:,:)
+    real(PMFDP),intent(in)     :: f(:,:)
+    ! -----------------------------------------------
+    integer                    :: i,ridx
+    ! --------------------------------------------------------------------------
 
- do i=1,NumOfLAtoms
-    ridx = RIndexes(i)
-    Crd(:,i) = x(:,ridx)*LengthConv
-    Vel(:,i) = v(:,ridx)*VelocityConv
-    Frc(:,i) = f(:,ridx)*ForceConv
- end do
+    do i=1,NumOfLAtoms
+        ridx = RIndexes(i)
+        Crd(:,i) = x(:,ridx)*LengthConv
+        Vel(:,i) = v(:,ridx)*VelocityConv
+        Frc(:,i) = f(:,ridx)*ForceConv
+    end do
 
 end subroutine pmf_core_in_data_xvf
 
@@ -60,20 +60,20 @@ end subroutine pmf_core_in_data_xvf
 
 subroutine pmf_core_in_data_xf(x,f)
 
- use pmf_dat
+    use pmf_dat
 
- implicit none
- real(PMFDP),intent(in)     :: x(:,:)
- real(PMFDP),intent(in)     :: f(:,:)
- ! -----------------------------------------------
- integer                    :: i,ridx
- ! -----------------------------------------------------------------------------
+    implicit none
+    real(PMFDP),intent(in)     :: x(:,:)
+    real(PMFDP),intent(in)     :: f(:,:)
+    ! -----------------------------------------------
+    integer                    :: i,ridx
+    ! --------------------------------------------------------------------------
 
- do i=1,NumOfLAtoms
-    ridx = RIndexes(i)
-    Crd(:,i) = x(:,ridx)*LengthConv
-    Frc(:,i) = f(:,ridx)*ForceConv
- end do
+    do i=1,NumOfLAtoms
+        ridx = RIndexes(i)
+        Crd(:,i) = x(:,ridx)*LengthConv
+        Frc(:,i) = f(:,ridx)*ForceConv
+    end do
 
 end subroutine pmf_core_in_data_xf
 
@@ -83,20 +83,20 @@ end subroutine pmf_core_in_data_xf
 
 subroutine pmf_core_in_data_xv(x,v)
 
- use pmf_dat
+    use pmf_dat
 
- implicit none
- real(PMFDP),intent(in)     :: x(:,:)
- real(PMFDP),intent(in)     :: v(:,:)
- ! -----------------------------------------------
- integer                    :: i,ridx
- ! -----------------------------------------------------------------------------
+    implicit none
+    real(PMFDP),intent(in)     :: x(:,:)
+    real(PMFDP),intent(in)     :: v(:,:)
+    ! -----------------------------------------------
+    integer                    :: i,ridx
+    ! --------------------------------------------------------------------------
 
- do i=1,NumOfLAtoms
-    ridx = RIndexes(i)
-    Crd(:,i) = x(:,ridx)*LengthConv
-    Vel(:,i) = v(:,ridx)*VelocityConv
- end do
+    do i=1,NumOfLAtoms
+        ridx = RIndexes(i)
+        Crd(:,i) = x(:,ridx)*LengthConv
+        Vel(:,i) = v(:,ridx)*VelocityConv
+    end do
 
 end subroutine pmf_core_in_data_xv
 
@@ -106,20 +106,41 @@ end subroutine pmf_core_in_data_xv
 
 subroutine pmf_core_in_data_xp(xp)
 
- use pmf_dat
+    use pmf_dat
 
- implicit none
- real(PMFDP),intent(in)     :: xp(:,:)
- ! -----------------------------------------------
- integer                    :: i,ridx
- ! -----------------------------------------------------------------------------
+    implicit none
+    real(PMFDP),intent(in)     :: xp(:,:)
+    ! -----------------------------------------------
+    integer                    :: i,ridx
+    ! --------------------------------------------------------------------------
 
- do i=1,NumOfLAtoms
-    ridx = RIndexes(i)
-    CrdP(:,i) = xp(:,ridx)*LengthConv
- end do
+    do i=1,NumOfLAtoms
+        ridx = RIndexes(i)
+        CrdP(:,i) = xp(:,ridx)*LengthConv
+    end do
 
 end subroutine pmf_core_in_data_xp
+
+!===============================================================================
+! Subroutine:  pmf_core_in_data_xp
+!===============================================================================
+
+subroutine pmf_core_in_data_xbar(xbar)
+
+    use pmf_dat
+
+    implicit none
+    real(PMFDP),intent(in)     :: xbar(:,:)
+    ! -----------------------------------------------
+    integer                    :: i,ridx
+    ! --------------------------------------------------------------------------
+
+    do i=1,NumOfLAtoms
+        ridx = RIndexes(i)
+        CrdBar(:,i) = xbar(:,ridx)*LengthConv
+    end do
+
+end subroutine pmf_core_in_data_xbar
 
 !===============================================================================
 ! Subroutine:  pmf_core_in_data_vp
@@ -127,18 +148,18 @@ end subroutine pmf_core_in_data_xp
 
 subroutine pmf_core_in_data_vp(vp)
 
- use pmf_dat
+    use pmf_dat
 
- implicit none
- real(PMFDP),intent(in)     :: vp(:,:)
- ! -----------------------------------------------
- integer                    :: i,ridx
- ! -----------------------------------------------------------------------------
+    implicit none
+    real(PMFDP),intent(in)     :: vp(:,:)
+    ! -----------------------------------------------
+    integer                    :: i,ridx
+    ! --------------------------------------------------------------------------
 
- do i=1,NumOfLAtoms
-    ridx = RIndexes(i)
-    VelP(:,i) = vp(:,ridx)*VelocityConv
- end do
+    do i=1,NumOfLAtoms
+        ridx = RIndexes(i)
+        VelP(:,i) = vp(:,ridx)*VelocityConv
+    end do
 
 end subroutine pmf_core_in_data_vp
 
@@ -148,20 +169,20 @@ end subroutine pmf_core_in_data_vp
 
 subroutine pmf_core_in_data_xpvp(xp,vp)
 
- use pmf_dat
+    use pmf_dat
 
- implicit none
- real(PMFDP),intent(in)     :: xp(:,:)
- real(PMFDP),intent(in)     :: vp(:,:)
- ! -----------------------------------------------
- integer                    :: i,ridx
- ! -----------------------------------------------------------------------------
+    implicit none
+    real(PMFDP),intent(in)     :: xp(:,:)
+    real(PMFDP),intent(in)     :: vp(:,:)
+    ! -----------------------------------------------
+    integer                    :: i,ridx
+    ! --------------------------------------------------------------------------
 
- do i=1,NumOfLAtoms
-    ridx = RIndexes(i)
-    CrdP(:,i) = xp(:,ridx)*LengthConv
-    VelP(:,i) = vp(:,ridx)*VelocityConv
- end do
+    do i=1,NumOfLAtoms
+        ridx = RIndexes(i)
+        CrdP(:,i) = xp(:,ridx)*LengthConv
+        VelP(:,i) = vp(:,ridx)*VelocityConv
+    end do
 
 end subroutine pmf_core_in_data_xpvp
 
@@ -171,21 +192,21 @@ end subroutine pmf_core_in_data_xpvp
 
 subroutine pmf_core_out_data_f(f)
 
- use pmf_dat
+    use pmf_dat
 
- implicit none
- real(PMFDP),intent(out)    :: f(:,:)
- ! -----------------------------------------------
- integer                    :: i,ridx
- real(PMFDP)                :: fconv
- ! -----------------------------------------------------------------------------
+    implicit none
+    real(PMFDP),intent(out)    :: f(:,:)
+    ! -----------------------------------------------
+    integer                    :: i,ridx
+    real(PMFDP)                :: fconv
+    ! --------------------------------------------------------------------------
 
- fconv = 1.0d0 / ForceConv
+    fconv = 1.0d0 / ForceConv
 
- do i=1,NumOfLAtoms
-    ridx = RIndexes(i)
-    f(:,ridx) = Frc(:,i)*fconv
- end do
+    do i=1,NumOfLAtoms
+        ridx = RIndexes(i)
+        f(:,ridx) = Frc(:,i)*fconv
+    end do
 
 end subroutine pmf_core_out_data_f
 
@@ -195,24 +216,24 @@ end subroutine pmf_core_out_data_f
 
 subroutine pmf_core_out_data_xv(x,v)
 
- use pmf_dat
+    use pmf_dat
 
- implicit none
- real(PMFDP),intent(out)    :: x(:,:)
- real(PMFDP),intent(out)    :: v(:,:)
- ! -----------------------------------------------
- integer                    :: i,ridx
- real(PMFDP)                :: xconv,vconv
- ! -----------------------------------------------------------------------------
+    implicit none
+    real(PMFDP),intent(out)    :: x(:,:)
+    real(PMFDP),intent(out)    :: v(:,:)
+    ! -----------------------------------------------
+    integer                    :: i,ridx
+    real(PMFDP)                :: xconv,vconv
+    ! --------------------------------------------------------------------------
 
- xconv = 1.0d0 / LengthConv
- vconv = 1.0d0 / VelocityConv
+    xconv = 1.0d0 / LengthConv
+    vconv = 1.0d0 / VelocityConv
 
- do i=1,NumOfLAtoms
-    ridx = RIndexes(i)
-    x(:,ridx) = Crd(:,i)*xconv
-    v(:,ridx) = Vel(:,i)*vconv
- end do
+    do i=1,NumOfLAtoms
+        ridx = RIndexes(i)
+        x(:,ridx) = Crd(:,i)*xconv
+        v(:,ridx) = Vel(:,i)*vconv
+    end do
 
 end subroutine pmf_core_out_data_xv
 
@@ -222,21 +243,21 @@ end subroutine pmf_core_out_data_xv
 
 subroutine pmf_core_out_data_xp(xp)
 
- use pmf_dat
+    use pmf_dat
 
- implicit none
- real(PMFDP),intent(out)    :: xp(:,:)
- ! -----------------------------------------------
- integer                    :: i,ridx
- real(PMFDP)                :: xconv
- ! -----------------------------------------------------------------------------
+    implicit none
+    real(PMFDP),intent(out)    :: xp(:,:)
+    ! -----------------------------------------------
+    integer                    :: i,ridx
+    real(PMFDP)                :: xconv
+    ! --------------------------------------------------------------------------
 
- xconv = 1.0d0 / LengthConv
+    xconv = 1.0d0 / LengthConv
 
- do i=1,NumOfLAtoms
-    ridx = RIndexes(i)
-    xp(:,ridx) = CrdP(:,i)*xconv
- end do
+    do i=1,NumOfLAtoms
+        ridx = RIndexes(i)
+        xp(:,ridx) = CrdP(:,i)*xconv
+    end do
 
 end subroutine pmf_core_out_data_xp
 
@@ -246,21 +267,21 @@ end subroutine pmf_core_out_data_xp
 
 subroutine pmf_core_out_data_vp(vp)
 
- use pmf_dat
+    use pmf_dat
 
- implicit none
- real(PMFDP),intent(out)    :: vp(:,:)
- ! -----------------------------------------------
- integer                    :: i,ridx
- real(PMFDP)                :: vconv
- ! -----------------------------------------------------------------------------
+    implicit none
+    real(PMFDP),intent(out)    :: vp(:,:)
+    ! -----------------------------------------------
+    integer                    :: i,ridx
+    real(PMFDP)                :: vconv
+    ! --------------------------------------------------------------------------
 
- vconv = 1.0d0 / VelocityConv
+    vconv = 1.0d0 / VelocityConv
 
- do i=1,NumOfLAtoms
-    ridx = RIndexes(i)
-    vp(:,ridx) = VelP(:,i)*vconv
- end do
+    do i=1,NumOfLAtoms
+        ridx = RIndexes(i)
+        vp(:,ridx) = VelP(:,i)*vconv
+    end do
 
 end subroutine pmf_core_out_data_vp
 
@@ -270,24 +291,24 @@ end subroutine pmf_core_out_data_vp
 
 subroutine pmf_core_out_data_xpvp(xp,vp)
 
- use pmf_dat
+    use pmf_dat
 
- implicit none
- real(PMFDP),intent(out)    :: xp(:,:)
- real(PMFDP),intent(out)    :: vp(:,:)
- ! -----------------------------------------------
- integer                    :: i,ridx
- real(PMFDP)                :: xconv,vconv
- ! -----------------------------------------------------------------------------
+    implicit none
+    real(PMFDP),intent(out)    :: xp(:,:)
+    real(PMFDP),intent(out)    :: vp(:,:)
+    ! -----------------------------------------------
+    integer                    :: i,ridx
+    real(PMFDP)                :: xconv,vconv
+    ! --------------------------------------------------------------------------
 
- xconv = 1.0d0 / LengthConv
- vconv = 1.0d0 / VelocityConv
+    xconv = 1.0d0 / LengthConv
+    vconv = 1.0d0 / VelocityConv
 
- do i=1,NumOfLAtoms
-    ridx = RIndexes(i)
-    xp(:,ridx) = CrdP(:,i)*xconv
-    vp(:,ridx) = VelP(:,i)*vconv
- end do
+    do i=1,NumOfLAtoms
+        ridx = RIndexes(i)
+        xp(:,ridx) = CrdP(:,i)*xconv
+        vp(:,ridx) = VelP(:,i)*vconv
+    end do
 
 end subroutine pmf_core_out_data_xpvp
 
@@ -297,19 +318,19 @@ end subroutine pmf_core_out_data_xpvp
 
 integer function pmf_core_get_num_of_constraints()
 
- use pmf_dat
- use cst_dat
+    use pmf_dat
+    use cst_dat
 
- implicit none
- ! -----------------------------------------------------------------------------
+    implicit none
+    ! --------------------------------------------------------------------------
 
- pmf_core_get_num_of_constraints = 0
+    pmf_core_get_num_of_constraints = 0
 
- if ( .not. cst_enabled) return
+    if ( .not. cst_enabled) return
 
- pmf_core_get_num_of_constraints = NumOfCONs
+    pmf_core_get_num_of_constraints = NumOfCONs
 
- return
+    return
 
 end function pmf_core_get_num_of_constraints
 

@@ -53,7 +53,7 @@ end subroutine pmf_core_lf_update_step
 ! leap-frog version
 !===============================================================================
 
-subroutine pmf_core_lf_force(x,v,f,epot,ekin,ekpbs,ekph,epmf)
+subroutine pmf_core_lf_force(x,v,f,epot,ekin,epmf)
 
     use pmf_dat
     use pmf_cvs
@@ -79,8 +79,6 @@ subroutine pmf_core_lf_force(x,v,f,epot,ekin,ekpbs,ekph,epmf)
     real(PMFDP)    :: f(:,:)        ! forces in t
     real(PMFDP)    :: epot          ! potential energy in t
     real(PMFDP)    :: ekin          ! kinetic energy in t-dt
-    real(PMFDP)    :: ekpbs         ! kinetic energy in t-dt
-    real(PMFDP)    :: ekph          ! kinetic energy in t-dt/2
     real(PMFDP)    :: epmf          ! energy from PMFLib
     ! -----------------------------------------------
     integer        :: i
@@ -94,8 +92,6 @@ subroutine pmf_core_lf_force(x,v,f,epot,ekin,ekpbs,ekph,epmf)
     PotEne = epot * EnergyConv
     ! convert kinetic energies
     KinEne      = ekin * EnergyConv
-    KinEneVV    = ekpbs * EnergyConv
-    KinEneH     = ekph * EnergyConv
 
     PMFEne = 0.0d0
 
@@ -270,7 +266,6 @@ end subroutine pmf_core_lf_rstforce
 !===============================================================================
 ! Subroutine:  pmf_core_lf_shake
 ! leap-frog version
-! Force(t) -> Shake(t)
 !===============================================================================
 
 subroutine pmf_core_lf_shake(xp)
@@ -282,7 +277,7 @@ subroutine pmf_core_lf_shake(xp)
     use pmf_timers
 
     implicit none
-    real(PMFDP)    :: xp(:,:)      ! position in t + dt
+    real(PMFDP)     :: xp(:,:)       ! position in t + dt
     ! --------------------------------------------------------------------------
 
     if( .not. cst_enabled ) return
@@ -302,6 +297,57 @@ subroutine pmf_core_lf_shake(xp)
     call pmf_timers_stop_timer(PMFLIB_METHODS_TIMER)
 
 end subroutine pmf_core_lf_shake
+
+
+!===============================================================================
+! Subroutine:  pmf_core_lf_shake_accel
+! leap-frog version
+!===============================================================================
+
+subroutine pmf_core_lf_shake_forces(xbar,xp)
+
+    use pmf_dat
+    use pmf_cvs
+    use pmf_core
+    use pmf_timers
+    use abf_core
+
+    implicit none
+    real(PMFDP)     :: xbar(:,:)     ! positions in t+dt - without shake
+    real(PMFDP)     :: xp(:,:)       ! position in t + dt
+    ! --------------------------------------------
+    integer         :: i
+    ! --------------------------------------------------------------------------
+
+    if( .not. shake_force_required ) return
+
+    call pmf_timers_start_timer(PMFLIB_METHODS_TIMER)
+        call pmf_timers_start_timer(PMFLIB_SACCEL_TIMER)
+
+        ! update local data
+        if( .not. cst_enabled ) then
+            call pmf_core_in_data_xp(xp)
+        end if
+        call pmf_core_in_data_xbar(xbar)
+
+        ! get SHAKE forces
+        do i=1,NumOfLAtoms
+            SHAKEFrc(:,i) =  Mass(i) * (CrdP(:,i)-CrdBar(:,i)) * ifdtx**2
+        end do
+
+        !write(788,*) CrdBar
+        !write(789,*) CrdP
+
+         if( abf_enabled ) then
+            call pmf_timers_start_timer(PMFLIB_ABF_TIMER)
+            call abf_core_shake
+            call pmf_timers_stop_timer(PMFLIB_ABF_TIMER)
+         end if
+
+        call pmf_timers_stop_timer(PMFLIB_SACCEL_TIMER)
+    call pmf_timers_stop_timer(PMFLIB_METHODS_TIMER)
+
+end subroutine pmf_core_lf_shake_forces
 
 !===============================================================================
 

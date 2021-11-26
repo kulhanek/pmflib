@@ -48,15 +48,9 @@ integer     :: feimode      ! interpolation/extrapolation mode
                             ! 0 - disabled
                             ! 1 - linear ramp
 
-! fmode == 3
-integer     :: fsgframelen
-integer     :: fsgorder
-logical     :: fsgsmoothall
-
 logical     :: fenthalpy    ! collect data for enthalpy calculation
 logical     :: fentropy     ! collect data for entropy calculation
 logical     :: frecord      ! record time progress
-integer     :: fekinsrc
 
 real(PMFDP) :: fepotaverage
 real(PMFDP) :: fekinaverage
@@ -146,9 +140,6 @@ integer                     :: insidesamples
 integer                     :: outsidesamples
 ! ----------------------
 
-! global variables for force calculation ---------------------------------------
-real(PMFDP)                 :: fdtx                 ! timestep
-
 ! global variables for abf - results -------------------------------------------
 real(PMFDP),allocatable     :: fz(:,:)              ! Z matrix              in t
 real(PMFDP),allocatable     :: fzinv(:,:)           ! inverse of Z matrix   in t
@@ -164,7 +155,7 @@ real(PMFDP),allocatable     :: pxi0(:)          !
 
 integer                     :: hist_len
 real(PMFDP),allocatable     :: cvhist(:,:)          ! history of CV values (nCVS,hist_len)
-real(PMFDP),allocatable     :: xhist(:,:,:)         ! history of coordinates
+real(PMFDP),allocatable     :: fhist(:,:,:)         ! history of forces
 real(PMFDP),allocatable     :: vhist(:,:,:)         ! history of velocities
 real(PMFDP),allocatable     :: zdhist(:,:,:,:)      ! history of ZD
 real(PMFDP),allocatable     :: micfhist(:,:)        ! history of ABF bias

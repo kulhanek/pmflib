@@ -117,9 +117,6 @@ integer                     :: insidesamples
 integer                     :: outsidesamples
 ! ----------------------
 
-! global variables for force calculation ---------------------------------------
-real(PMFDP)                 :: fdtx                 ! timestep
-
 ! global variables for abf - results -------------------------------------------
 real(PMFDP),allocatable     :: fz(:,:)              ! Z matrix
 real(PMFDP),allocatable     :: fzinv(:,:)           ! inverse of Z matrix

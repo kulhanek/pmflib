@@ -95,8 +95,6 @@ subroutine usabf_init_dat
     gpr_width       = 4.0
     gpr_noise       = 0.01
 
-    fdtx            = 0.0d0     ! time step in internal units
-
 end subroutine usabf_init_dat
 
 !===============================================================================
@@ -217,8 +215,6 @@ subroutine usabf_init_arrays
     implicit none
     integer     :: alloc_failed
     ! --------------------------------------------------------------------------
-
-    fdtx = fdt*PMF_DT2VDT
 
     select case(fmode)
         case(1)

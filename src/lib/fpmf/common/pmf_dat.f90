@@ -59,7 +59,10 @@ real(PMFDP) :: fdt          ! dt of step in [fs]
 real(PMFDP) :: ftime        ! actual time in [fs]
 real(PMFDP) :: ftemp        ! simulation temperature in [K]
 integer     :: fintalg      ! integration algorithm
+logical     :: fshake       ! SHAKE or different constraint algorithm in use in main MD engine
 
+real(PMFDP) :: fdtx         ! timestep in internal units
+real(PMFDP) :: ifdtx        ! reciprocal timestep
 
 real(PMFDP),allocatable     :: frmass(:)     ! atom masses of all atoms, should be initialized in pmf_xxxx_end_init
 
@@ -95,6 +98,9 @@ logical                     :: pdrv_enabled
 logical                     :: tabf_enabled
 logical                     :: usabf_enabled
 
+! requests
+logical                     :: shake_force_required  ! we need force due to SHAKE
+
 ! MASTER =======================================================================
 
 character(PMF_KEYLINE)      :: DriverName
@@ -104,12 +110,10 @@ real(PMFDP),allocatable     :: InitialCrd(:,:)  ! initial coordinates of local a
 real(PMFDP),allocatable     :: Mass(:)          ! local atom masses
 real(PMFDP),allocatable     :: MassInv(:)       ! mass inverse
 real(PMFDP),allocatable     :: Crd(:,:)         ! current coordinates in t
-real(PMFDP),allocatable     :: Frc(:,:)         ! current system forces in t
+real(PMFDP),allocatable     :: Frc(:,:)         ! current system forces in t due to potential energy
 real(PMFDP),allocatable     :: Vel(:,:)         ! current system velocities in t-dt/2
 ! FIXME - better description
 real(PMFDP)                 :: KinEne           ! current system kinetic energy in t-dt
-real(PMFDP)                 :: KinEneVV         ! current system kinetic energy in t-dt
-real(PMFDP)                 :: KinEneH          ! current system kinetic energy in t-dt/2
 real(PMFDP)                 :: PotEne           ! current system potential energy in t
 real(PMFDP)                 :: PMFEne           ! current PMFLib potential energy in t (from RST, MTD, STM)
 type(CVContextType)         :: CVContext        ! current CV context (values and derivatives) in t
@@ -118,6 +122,9 @@ type(CVContextType)         :: CVContext        ! current CV context (values and
 real(PMFDP),allocatable     :: CrdP(:,:)        ! coordinates in t+dt
 real(PMFDP),allocatable     :: VelP(:,:)        ! velocities
 type(CVContextType)         :: CVContextP
+
+real(PMFDP),allocatable     :: CrdBar(:,:)      ! coordinates in t+dt without SHAKE
+real(PMFDP),allocatable     :: SHAKEFrc(:,:)    ! current SHAKE forces in t
 
 ! MASTER =======================================================================
 
