@@ -58,7 +58,7 @@ subroutine abf_core_main
             call abf_core_force_3pB
         case(3)
             ! simplified ABF algorithm
-            call abf_core_force_5p
+            call abf_core_force_4p
         case default
             call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented fmode in abf_core_main!')
     end select
