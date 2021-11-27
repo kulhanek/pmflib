@@ -58,7 +58,7 @@ subroutine abf_core_main
             call abf_core_force_3pB
         case(3)
             ! simplified ABF algorithm
-            call abf_core_force_4p
+            call abf_core_force_5p
         case default
             call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented fmode in abf_core_main!')
     end select
@@ -83,11 +83,14 @@ subroutine abf_core_shake
     ! --------------------------------------------------------------------------
 
     select case(fmode)
-        case(1,3)
+        case(1)
             ! fix forces
             fhist(:,:,hist_len) =  fhist(:,:,hist_len) + SHAKEFrc(:,:)
         case(2)
             ! nothing to be done
+        case(3)
+            ! fix forces
+            fshist(:,:,hist_len) = SHAKEFrc(:,:)
         case default
             call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented fmode in abf_core_main_shake!')
     end select
@@ -360,6 +363,7 @@ subroutine abf_core_force_5p()
         ekinhist(i)     = ekinhist(i+1)
         vhist(:,:,i)    = vhist(:,:,i+1)
         fhist(:,:,i)    = fhist(:,:,i+1)
+        fshist(:,:,i)   = fshist(:,:,i+1)
         zdhist(:,:,:,i) = zdhist(:,:,:,i+1)
         micfhist(:,i)   = micfhist(:,i+1)
     end do
@@ -433,7 +437,8 @@ subroutine abf_core_force_5p()
             do j=1,NumOfLAtoms
                 do m=1,3
                     ! force part
-                    f = f + zdhist(m,j,i,hist_len-2)*fhist(m,j,hist_len-2)*MassInv(j)
+                    f = f + zdhist(m,j,i,hist_len-2)*( fhist(m,j,hist_len-2) &
+                      + 1.0d0/3.0d0*(fshist(m,j,hist_len-1) + fshist(m,j,hist_len-2) + fshist(m,j,hist_len-3)) )*MassInv(j)
                     ! velocity part
                     v1 = v1 + (zdhist(m,j,i,hist_len-0)-zdhist(m,j,i,hist_len-1)) * vhist(m,j,hist_len-0)
                     v2 = v2 + (zdhist(m,j,i,hist_len-1)-zdhist(m,j,i,hist_len-2)) * vhist(m,j,hist_len-1)
@@ -449,8 +454,7 @@ subroutine abf_core_force_5p()
         pxi0(:) = pxi0(:) - micfhist(:,hist_len-2)  ! unbiased estimate
 
         ! add data to accumulator
-        etot = epothist(hist_len-2) + ersthist(hist_len-2) &
-             + (1.0d0/3.0d0)*(ekinhist(hist_len-1)+ekinhist(hist_len-2)+ekinhist(hist_len-3))
+        etot = epothist(hist_len-2) + ersthist(hist_len-2) + ekinhist(hist_len-2)
         call abf_accu_add_data_online(cvhist(:,hist_len-2),pxi0,epothist(hist_len-2),ersthist(hist_len-2),etot)
     end if
 
