@@ -58,7 +58,7 @@ subroutine abf_core_main
             call abf_core_force_3pB
         case(3)
             ! simplified ABF algorithm
-            call abf_core_force_5p
+            call abf_core_force_6p
         case default
             call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented fmode in abf_core_main!')
     end select
@@ -335,12 +335,12 @@ subroutine abf_core_force_3pB()
 end subroutine abf_core_force_3pB
 
 !===============================================================================
-! Subroutine:  abf_core_force_5p
+! Subroutine:  abf_core_force_6p
 ! this is leap-frog ABF version, simplified algorithm
 ! employing forces from potential and SHAKE
 !===============================================================================
 
-subroutine abf_core_force_5p()
+subroutine abf_core_force_6p()
 
     use pmf_utils
     use pmf_dat
@@ -352,7 +352,7 @@ subroutine abf_core_force_5p()
     implicit none
     integer                :: i,j,k,m
     integer                :: ci,ki
-    real(PMFDP)            :: v,v1,v2,v3,v4,f,etot
+    real(PMFDP)            :: v,v1,v2,fp,fs,fs1,fs2,fs3,fs4,fs5,etot,epot,erst,ekin
     ! --------------------------------------------------------------------------
 
 ! shift values
@@ -429,38 +429,52 @@ subroutine abf_core_force_5p()
     if( fstep .ge. hist_len ) then
 
         do i=1,NumOfABFCVs
-            f  = 0.0d0
+            fp = 0.0d0
+            fs1 = 0.0d0
+            fs2 = 0.0d0
+            fs3 = 0.0d0
+            fs4 = 0.0d0
+            fs5 = 0.0d0
             v1 = 0.0d0
             v2 = 0.0d0
-            v3 = 0.0d0
-            v4 = 0.0d0
             do j=1,NumOfLAtoms
                 do m=1,3
                     ! force part
-                    f = f + zdhist(m,j,i,hist_len-2)*( fhist(m,j,hist_len-2) &
-                      + 1.0d0/3.0d0*(fshist(m,j,hist_len-1) + fshist(m,j,hist_len-2) + fshist(m,j,hist_len-3)) )*MassInv(j)
+                    fp = fp + zdhist(m,j,i,hist_len-3) * fhist(m,j,hist_len-3)  * MassInv(j)
+
+                    fs1 = fs1 + zdhist(m,j,i,hist_len-1) * fshist(m,j,hist_len-1) * MassInv(j)
+                    fs2 = fs2 + zdhist(m,j,i,hist_len-2) * fshist(m,j,hist_len-2) * MassInv(j)
+                    fs3 = fs3 + zdhist(m,j,i,hist_len-3) * fshist(m,j,hist_len-3) * MassInv(j)
+                    fs4 = fs4 + zdhist(m,j,i,hist_len-4) * fshist(m,j,hist_len-4) * MassInv(j)
+                    fs5 = fs5 + zdhist(m,j,i,hist_len-5) * fshist(m,j,hist_len-5) * MassInv(j)
+
                     ! velocity part
-                    v1 = v1 + (zdhist(m,j,i,hist_len-0)-zdhist(m,j,i,hist_len-1)) * vhist(m,j,hist_len-0)
-                    v2 = v2 + (zdhist(m,j,i,hist_len-1)-zdhist(m,j,i,hist_len-2)) * vhist(m,j,hist_len-1)
-                    v3 = v3 + (zdhist(m,j,i,hist_len-2)-zdhist(m,j,i,hist_len-3)) * vhist(m,j,hist_len-2)
-                    v4 = v4 + (zdhist(m,j,i,hist_len-3)-zdhist(m,j,i,hist_len-4)) * vhist(m,j,hist_len-3)
+                    v1 = v1 + (zdhist(m,j,i,hist_len-2)-zdhist(m,j,i,hist_len-3)) * vhist(m,j,hist_len-2)
+                    v2 = v2 + (zdhist(m,j,i,hist_len-3)-zdhist(m,j,i,hist_len-4)) * vhist(m,j,hist_len-3)
                 end do
             end do
-            pxi0(i) = f + 0.25d0*(v1+v2+v3+v4)*ifdtx
+            ! fs = (-3.0d0*fs1 + 12.0d0*fs2 + 17.0d0*fs3 + 12.0d0*fs4 - 3.0d0*fs5)/35.0d0
+            fs = (fs1+fs2+fs3+fs4+fs5)/5.0d0
+            pxi0(i) = fp + fs + 0.5d0*(v1+v2)*ifdtx
         end do
 
+        ! write(7894,*) fp, fs, fs3
 
         ! total ABF force
-        pxi0(:) = pxi0(:) - micfhist(:,hist_len-2)  ! unbiased estimate
+        pxi0(:) = pxi0(:) - micfhist(:,hist_len-3)  ! unbiased estimate
+
+        epot = epothist(hist_len-3)
+        erst = ersthist(hist_len-3)
+        ekin = ekinhist(hist_len-3)
+        etot = epot + erst + ekin
 
         ! add data to accumulator
-        etot = epothist(hist_len-2) + ersthist(hist_len-2) + ekinhist(hist_len-2)
-        call abf_accu_add_data_online(cvhist(:,hist_len-2),pxi0,epothist(hist_len-2),ersthist(hist_len-2),etot)
+        call abf_accu_add_data_online(cvhist(:,hist_len-3),pxi0,epot,erst,etot)
     end if
 
     return
 
-end subroutine abf_core_force_5p
+end subroutine abf_core_force_6p
 
 !===============================================================================
 ! Subroutine:  abf_core_force_4p
