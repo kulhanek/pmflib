@@ -454,7 +454,7 @@ subroutine abf_core_force_6p()
                 end do
             end do
             ! fs = (-3.0d0*fs1 + 12.0d0*fs2 + 17.0d0*fs3 + 12.0d0*fs4 - 3.0d0*fs5)/35.0d0
-            fs = (fs1+fs2+fs3+fs4+fs5)/5.0d0
+            fs = (fs2+fs3+fs4)/3.0d0
             pxi0(i) = fp + fs + 0.5d0*(v1+v2)*ifdtx
         end do
 
