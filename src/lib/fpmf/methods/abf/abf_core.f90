@@ -444,11 +444,9 @@ subroutine abf_core_force_6p()
 !                           +12.0d0*fshist(m,j,hist_len-4) &
 !                            -3.0d0*fshist(m,j,hist_len-5))/35.0d0
 
-                    asf = ( fshist(m,j,hist_len-1) &
-                           +fshist(m,j,hist_len-2) &
+                    asf = ( fshist(m,j,hist_len-2) &
                            +fshist(m,j,hist_len-3) &
-                           +fshist(m,j,hist_len-4) &
-                           +fshist(m,j,hist_len-5))/5.0d0
+                           +fshist(m,j,hist_len-4))/3.0d0
 
                     fs = fs + zdhist(m,j,i,hist_len-3) * asf * MassInv(j)
 
