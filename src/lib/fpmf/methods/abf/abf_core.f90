@@ -352,7 +352,7 @@ subroutine abf_core_force_6p()
     implicit none
     integer                :: i,j,k,m
     integer                :: ci,ki
-    real(PMFDP)            :: v,v1,v2,fp,fs,fs1,fs2,fs3,fs4,fs5,etot,epot,erst,ekin
+    real(PMFDP)            :: v,v1,v2,fp,fs,asf,etot,epot,erst,ekin
     ! --------------------------------------------------------------------------
 
 ! shift values
@@ -430,11 +430,7 @@ subroutine abf_core_force_6p()
 
         do i=1,NumOfABFCVs
             fp = 0.0d0
-            fs1 = 0.0d0
-            fs2 = 0.0d0
-            fs3 = 0.0d0
-            fs4 = 0.0d0
-            fs5 = 0.0d0
+            fs = 0.0d0
             v1 = 0.0d0
             v2 = 0.0d0
             do j=1,NumOfLAtoms
@@ -442,19 +438,19 @@ subroutine abf_core_force_6p()
                     ! force part
                     fp = fp + zdhist(m,j,i,hist_len-3) * fhist(m,j,hist_len-3)  * MassInv(j)
 
-                    fs1 = fs1 + zdhist(m,j,i,hist_len-1) * fshist(m,j,hist_len-1) * MassInv(j)
-                    fs2 = fs2 + zdhist(m,j,i,hist_len-2) * fshist(m,j,hist_len-2) * MassInv(j)
-                    fs3 = fs3 + zdhist(m,j,i,hist_len-3) * fshist(m,j,hist_len-3) * MassInv(j)
-                    fs4 = fs4 + zdhist(m,j,i,hist_len-4) * fshist(m,j,hist_len-4) * MassInv(j)
-                    fs5 = fs5 + zdhist(m,j,i,hist_len-5) * fshist(m,j,hist_len-5) * MassInv(j)
+                    asf = ( -3.0d0*fshist(m,j,hist_len-1) &
+                           +12.0d0*fshist(m,j,hist_len-2) &
+                           +17.0d0*fshist(m,j,hist_len-3) &
+                           +12.0d0*fshist(m,j,hist_len-4) &
+                            -3.0d0*fshist(m,j,hist_len-5))/35.0d0
+
+                    fs = fs + zdhist(m,j,i,hist_len-3) * asf * MassInv(j)
 
                     ! velocity part
                     v1 = v1 + (zdhist(m,j,i,hist_len-2)-zdhist(m,j,i,hist_len-3)) * vhist(m,j,hist_len-2)
                     v2 = v2 + (zdhist(m,j,i,hist_len-3)-zdhist(m,j,i,hist_len-4)) * vhist(m,j,hist_len-3)
                 end do
             end do
-            ! fs = (-3.0d0*fs1 + 12.0d0*fs2 + 17.0d0*fs3 + 12.0d0*fs4 - 3.0d0*fs5)/35.0d0
-            fs = (fs2+fs3+fs4)/3.0d0
             pxi0(i) = fp + fs + 0.5d0*(v1+v2)*ifdtx
         end do
 
