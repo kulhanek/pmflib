@@ -449,7 +449,8 @@ subroutine abf_core_force_5p()
         pxi0(:) = pxi0(:) - micfhist(:,hist_len-2)  ! unbiased estimate
 
         ! add data to accumulator
-        etot = epothist(hist_len-2) + ersthist(hist_len-2) + ekinhist(hist_len-2)
+        etot = epothist(hist_len-2) + ersthist(hist_len-2) &
+             + (1.0d0/3.0d0)*(ekinhist(hist_len-1)+ekinhist(hist_len-2)+ekinhist(hist_len-3))
         call abf_accu_add_data_online(cvhist(:,hist_len-2),pxi0,epothist(hist_len-2),ersthist(hist_len-2),etot)
     end if
 
