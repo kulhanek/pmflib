@@ -170,7 +170,9 @@ subroutine abf_control_read_abf(prm_fin)
     end if
 
     abf_enabled          = fmode .gt. 0
-    shake_force_required = fmode .eq. 1
+
+    shake_force_required = shake_force_required .or. (fmode .eq. 1)
+    shake_force_required = shake_force_required .or. (fmode .eq. 3)
 
     return
 

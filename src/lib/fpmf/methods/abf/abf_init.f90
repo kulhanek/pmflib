@@ -138,6 +138,8 @@ subroutine abf_init_print_header
     write(PMF_OUT,120)  '      |-> Simplified ABF algorithm'
     case(2)
     write(PMF_OUT,120)  '      |-> Original ABF algorithm'
+    case(3)
+    write(PMF_OUT,120)  '      |-> Original ABF algorithm'
     case default
         call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown fmode in abf_init_print_header!')
     end select
@@ -266,6 +268,10 @@ subroutine abf_init_arrays
     allocate(                                   &
             la(NumOfABFCVs),                    &
             pxi0(NumOfABFCVs),                  &
+            pxi1(NumOfABFCVs),                  &
+            pxip(NumOfABFCVs),                  &
+            pxim(NumOfABFCVs),                  &
+            cvave(NumOfABFCVs),                 &
             fz(NumOfABFCVs,NumOfABFCVs),        &
             fzinv(NumOfABFCVs,NumOfABFCVs),     &
             indx(NumOfABFCVs),                  &
@@ -279,7 +285,10 @@ subroutine abf_init_arrays
 
     la(:)       = 0.0d0
     pxi0(:)     = 0.0d0
-
+    pxi1(:)     = 0.0d0
+    pxip(:)     = 0.0d0
+    pxim(:)     = 0.0d0
+    cvave(:)    = 0.0d0
     fz(:,:)     = 0.0d0
     fzinv(:,:)  = 0.0d0
 
@@ -287,9 +296,11 @@ subroutine abf_init_arrays
 
     select case(fmode)
         case(1)
-            hist_len = 4
+            hist_len = 3
         case(2)
-            hist_len = 4
+            hist_len = 3
+        case(3)
+            hist_len = 5
         case default
             call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented fmode in abf_init_arrays!')
     end select

@@ -148,8 +148,12 @@ integer,allocatable         :: indx(:)              ! for LU decomposition
 real(PMFDP),allocatable     :: fzinv0(:,:)          ! inverse of Z matrix   in t-dt
 
 ! helper arrays -------
-real(PMFDP),allocatable     :: la(:)            ! ABF force in CV direction
-real(PMFDP),allocatable     :: pxi0(:)          !
+real(PMFDP),allocatable     :: la(:)
+real(PMFDP),allocatable     :: cvave(:)
+real(PMFDP),allocatable     :: pxi0(:)
+real(PMFDP),allocatable     :: pxi1(:)
+real(PMFDP),allocatable     :: pxip(:)
+real(PMFDP),allocatable     :: pxim(:)           !
 
 ! ------------------------------------------------------------------------------
 
