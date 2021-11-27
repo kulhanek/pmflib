@@ -352,7 +352,7 @@ subroutine abf_core_force_6p()
     implicit none
     integer                :: i,j,k,m
     integer                :: ci,ki
-    real(PMFDP)            :: v,v1,v2,fp,fs,asf,etot,epot,erst,ekin
+    real(PMFDP)            :: v,v1,v2,v3,v4,fp,fs,asf,etot,epot,erst,ekin
     ! --------------------------------------------------------------------------
 
 ! shift values
@@ -433,6 +433,8 @@ subroutine abf_core_force_6p()
             fs = 0.0d0
             v1 = 0.0d0
             v2 = 0.0d0
+            v3 = 0.0d0
+            v4 = 0.0d0
             do j=1,NumOfLAtoms
                 do m=1,3
                     ! force part
@@ -451,11 +453,13 @@ subroutine abf_core_force_6p()
                     fs = fs + zdhist(m,j,i,hist_len-3) * asf * MassInv(j)
 
                     ! velocity part
-                    v1 = v1 + (zdhist(m,j,i,hist_len-2)-zdhist(m,j,i,hist_len-3)) * vhist(m,j,hist_len-2)
-                    v2 = v2 + (zdhist(m,j,i,hist_len-3)-zdhist(m,j,i,hist_len-4)) * vhist(m,j,hist_len-3)
+                    v1 = v1 + (zdhist(m,j,i,hist_len-1)-zdhist(m,j,i,hist_len-2)) * vhist(m,j,hist_len-1)
+                    v2 = v2 + (zdhist(m,j,i,hist_len-2)-zdhist(m,j,i,hist_len-3)) * vhist(m,j,hist_len-2)
+                    v3 = v3 + (zdhist(m,j,i,hist_len-3)-zdhist(m,j,i,hist_len-4)) * vhist(m,j,hist_len-3)
+                    v4 = v4 + (zdhist(m,j,i,hist_len-4)-zdhist(m,j,i,hist_len-5)) * vhist(m,j,hist_len-4)
                 end do
             end do
-            pxi0(i) = fp + fs + 0.5d0*(v1+v2)*ifdtx
+            pxi0(i) = fp + fs + 0.25d0*(v1+v2+v3+v4)*ifdtx
         end do
 
         ! write(7894,*) fp, fs, fs3
