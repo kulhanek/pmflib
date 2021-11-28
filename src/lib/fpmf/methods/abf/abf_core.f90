@@ -469,7 +469,7 @@ subroutine abf_core_force_6p()
 
         epot = epothist(hist_len-3)
         erst = ersthist(hist_len-3)
-        ekin = ekinhist(hist_len-3)
+        ekin = (ekinhist(hist_len-2)+ekinhist(hist_len-3)+ekinhist(hist_len-4))/3.0d0
         etot = epot + erst + ekin
 
         ! add data to accumulator
