@@ -462,14 +462,14 @@ subroutine abf_core_force_6p()
             pxi0(i) = fp + fs + 0.25d0*(v1+v2+v3+v4)*ifdtx
         end do
 
-        ! write(7894,*) fp, fs, fs3
+        ! write(7894,*) fp, fs
 
         ! total ABF force
         pxi0(:) = pxi0(:) - micfhist(:,hist_len-3)  ! unbiased estimate
 
         epot = epothist(hist_len-3)
         erst = ersthist(hist_len-3)
-        ekin = (ekinhist(hist_len-2)+ekinhist(hist_len-3)+ekinhist(hist_len-4))/3.0d0
+        ekin = ekinhist(hist_len-3)
         etot = epot + erst + ekin
 
         ! add data to accumulator
