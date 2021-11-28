@@ -102,6 +102,8 @@ type,extends(PMFAccuType) :: ABFAccuType
 ! free energy
     real(PMFDP),pointer    :: micf(:,:)                 ! mean ICF
     real(PMFDP),pointer    :: m2icf(:,:)                ! M2 of ICF
+    real(PMFDP),pointer    :: mbicf(:,:)                 ! mean ICF
+    real(PMFDP),pointer    :: m2bicf(:,:)                ! M2 of ICF
 
 ! enthalpy
     real(PMFDP),pointer    :: mepot(:)                  ! mean of pot energy
@@ -162,6 +164,7 @@ real(PMFDP),allocatable     :: cvhist(:,:)          ! history of CV values (nCVS
 real(PMFDP),allocatable     :: fhist(:,:,:)         ! history of forces
 real(PMFDP),allocatable     :: fshist(:,:,:)         ! history of forces - shake
 real(PMFDP),allocatable     :: vhist(:,:,:)         ! history of velocities
+real(PMFDP),allocatable     :: vshist(:,:,:)         ! history of velocities - shake
 real(PMFDP),allocatable     :: zdhist(:,:,:,:)      ! history of ZD
 real(PMFDP),allocatable     :: micfhist(:,:)        ! history of ABF bias
 real(PMFDP),allocatable     :: epothist(:)          ! history of Epot

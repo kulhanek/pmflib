@@ -71,6 +71,8 @@ subroutine abf_accu_init()
                 abfaccu%nsamples(abfaccu%tot_nbins),                &
                 abfaccu%micf(abfaccu%tot_cvs,abfaccu%tot_nbins),    &
                 abfaccu%m2icf(abfaccu%tot_cvs,abfaccu%tot_nbins),   &
+                abfaccu%mbicf(abfaccu%tot_cvs,abfaccu%tot_nbins),    &
+                abfaccu%m2bicf(abfaccu%tot_cvs,abfaccu%tot_nbins),   &
                 abfaccu%bnsamples(abfaccu%tot_nbins),               &
                 abfaccu%bmicf(abfaccu%tot_cvs,abfaccu%tot_nbins),   &
                 stat = alloc_failed)
@@ -159,6 +161,8 @@ subroutine abf_accu_clear()
     abfaccu%nsamples(:)     = 0.0d0
     abfaccu%micf(:,:)       = 0.0d0
     abfaccu%m2icf(:,:)      = 0.0d0
+    abfaccu%mbicf(:,:)       = 0.0d0
+    abfaccu%m2bicf(:,:)      = 0.0d0
 
     abfaccu%bnsamples(:)    = 0
     abfaccu%bmicf(:,:)      = 0.0d0
@@ -354,6 +358,8 @@ subroutine abf_accu_write(iounit,full)
     call pmf_accu_write_rbuf_B(abfaccu%PMFAccuType,iounit,'NSAMPLES',   'AD',abfaccu%nsamples)
     call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'MICF',       'WA',abfaccu%micf,  'NSAMPLES')
     call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'M2ICF',      'M2',abfaccu%m2icf, 'NSAMPLES','MICF')
+    call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'MBICF',      'WA',abfaccu%mbicf,  'NSAMPLES')
+    call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'M2BICF',     'M2',abfaccu%m2bicf, 'NSAMPLES','MBICF')
 
     if( fenthalpy ) then
         call pmf_accu_write_rbuf_B(abfaccu%PMFAccuType,iounit,'MEPOT',  'WA',abfaccu%mepot, 'NSAMPLES')
@@ -390,7 +396,7 @@ end subroutine abf_accu_write
 ! Subroutine:  abf_accu_add_data_online
 !===============================================================================
 
-subroutine abf_accu_add_data_online(cvs,gfx,epot,erst,etot)
+subroutine abf_accu_add_data_online(cvs,gfx,bfx,epot,erst,etot)
 
     use abf_dat
     use pmf_dat
@@ -398,6 +404,7 @@ subroutine abf_accu_add_data_online(cvs,gfx,epot,erst,etot)
     implicit none
     real(PMFDP),intent(in)  :: cvs(:)
     real(PMFDP),intent(in)  :: gfx(:)
+    real(PMFDP),intent(in)  :: bfx(:)
     real(PMFDP),intent(in)  :: epot
     real(PMFDP),intent(in)  :: erst
     real(PMFDP),intent(in)  :: etot
@@ -452,6 +459,12 @@ subroutine abf_accu_add_data_online(cvs,gfx,epot,erst,etot)
         abfaccu%micf(i,gi0)  = abfaccu%micf(i,gi0)  + dicf1 * invn
         dicf2 = icf - abfaccu%micf(i,gi0)
         abfaccu%m2icf(i,gi0) = abfaccu%m2icf(i,gi0) + dicf1 * dicf2
+
+        icf = - bfx(i)
+        dicf1 = icf - abfaccu%mbicf(i,gi0)
+        abfaccu%mbicf(i,gi0)  = abfaccu%mbicf(i,gi0)  + dicf1 * invn
+        dicf2 = icf - abfaccu%mbicf(i,gi0)
+        abfaccu%m2bicf(i,gi0) = abfaccu%m2bicf(i,gi0) + dicf1 * dicf2
 
         if( fentropy ) then
             ei = icf * etot
