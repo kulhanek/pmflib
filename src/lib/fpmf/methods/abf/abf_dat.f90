@@ -102,8 +102,6 @@ type,extends(PMFAccuType) :: ABFAccuType
 ! free energy
     real(PMFDP),pointer    :: micf(:,:)                 ! mean ICF
     real(PMFDP),pointer    :: m2icf(:,:)                ! M2 of ICF
-    real(PMFDP),pointer    :: mbicf(:,:)                 ! mean ICF
-    real(PMFDP),pointer    :: m2bicf(:,:)                ! M2 of ICF
 
 ! enthalpy
     real(PMFDP),pointer    :: mepot(:)                  ! mean of pot energy
@@ -162,14 +160,32 @@ real(PMFDP),allocatable     :: pxim(:)           !
 integer                     :: hist_len
 real(PMFDP),allocatable     :: cvhist(:,:)          ! history of CV values (nCVS,hist_len)
 real(PMFDP),allocatable     :: fhist(:,:,:)         ! history of forces
-real(PMFDP),allocatable     :: fshist(:,:,:)         ! history of forces - shake
+real(PMFDP),allocatable     :: fshist(:,:,:)        ! history of forces - shake
 real(PMFDP),allocatable     :: vhist(:,:,:)         ! history of velocities
-real(PMFDP),allocatable     :: vshist(:,:,:)         ! history of velocities - shake
 real(PMFDP),allocatable     :: zdhist(:,:,:,:)      ! history of ZD
 real(PMFDP),allocatable     :: micfhist(:,:)        ! history of ABF bias
 real(PMFDP),allocatable     :: epothist(:)          ! history of Epot
 real(PMFDP),allocatable     :: ersthist(:)          ! history of Erst
 real(PMFDP),allocatable     :: ekinhist(:)          ! history of Ekin
+
+! GPR facility -----------------------------------------------------------------
+integer                     :: gpr_len          ! MUST be odd number
+real(PMFDP)                 :: gpr_width        ! kernel width time steps
+real(PMFDP)                 :: gpr_noise        !
+integer                     :: gpr_kernel       ! 0 - MC(3/2)
+                                                ! 1 - MC(5/2)
+                                                ! 2 - ARDSE
+real(PMFDP),allocatable     :: gpr_K(:,:)       ! covariance matrix
+real(PMFDP),allocatable     :: gpr_model(:)     ! GPR model
+real(PMFDP),allocatable     :: gpr_kff(:)       ! at t
+real(PMFDP),allocatable     :: gpr_kffhp(:)      ! at t+dt/2
+real(PMFDP),allocatable     :: gpr_kffhm(:)      ! at t+dt/2
+integer,allocatable         :: gpr_indx(:)
+integer                     :: gpr_info
+
+real(PMFDP),allocatable     :: fpgprhist(:,:)
+real(PMFDP),allocatable     :: fsgprhist(:,:)
+real(PMFDP),allocatable     :: v1gprhist(:,:)
 
 ! ------------------------------------------------------------------------------
 
