@@ -381,9 +381,7 @@ subroutine abf_core_force_gpr()
 
     epothist(hist_len)      = PotEne - fepotaverage
     ersthist(hist_len)      = PMFEne
-    ! FIXME
-    !ekinhist(hist_len-1)    = KinEne - fekinaverage    ! shifted by -dt
-    ekinhist(hist_len)      = KinEne - fekinaverage
+    ekinhist(hist_len-1)    = KinEne - fekinaverage    ! shifted by -dt
 
 ! apply ABF force
     la(:) = 0.0d0
@@ -520,9 +518,7 @@ subroutine abf_core_force_gpr()
         end if
 
         ! predict
-        ekin = dot_product(gpr_model,gpr_kffhp)
-
-        ! write(9845,*) ekinhist(hi), ekin
+        ekin = dot_product(gpr_model,gpr_kff)
 
         etot = epot + erst + ekin
 
