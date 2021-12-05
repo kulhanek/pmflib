@@ -112,7 +112,7 @@ subroutine abf_core_force_3pA()
     implicit none
     integer                :: i,j,k,m
     integer                :: ci,ki
-    real(PMFDP)            :: v,v1,v2,f,etot,epot,erst,ekin
+    real(PMFDP)            :: v,v1,v2,v3,f,etot,epot,erst,ekin
     ! --------------------------------------------------------------------------
 
 ! shift values
@@ -191,6 +191,7 @@ subroutine abf_core_force_3pA()
             f = 0.0d0
             v1 = 0.0d0
             v2 = 0.0d0
+            v3 = 0.0d0
             do j=1,NumOfLAtoms
                 do m=1,3
                     ! force part
@@ -198,9 +199,11 @@ subroutine abf_core_force_3pA()
                     ! velocity part
                     v1 = v1 + (zdhist(m,j,i,hist_len-0)-zdhist(m,j,i,hist_len-1)) * vhist(m,j,hist_len-0)
                     v2 = v2 + (zdhist(m,j,i,hist_len-1)-zdhist(m,j,i,hist_len-2)) * vhist(m,j,hist_len-1)
+                    v3 = v3 + (zdhist(m,j,i,hist_len-0)-zdhist(m,j,i,hist_len-2)) * (vhist(m,j,hist_len-0)+vhist(m,j,hist_len-1))
                 end do
             end do
-            pxi0(i) = f + 0.5d0*(v1+v2)*ifdtx
+            ! FIXME
+            pxi0(i) = f + (0.5d0*(v1+v2)*ifdtx + 0.25d0*v3*ifdtx)*0.5d0
         end do
 
         ! total ABF force
