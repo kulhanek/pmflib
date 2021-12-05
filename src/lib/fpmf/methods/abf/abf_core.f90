@@ -462,28 +462,11 @@ subroutine abf_core_force_gpr()
 
         gi = gpr_len/2 + 1
 
-        pxi0(:) = fpgprhist(:,gi) + (v1gprhist(:,gi)+v1gprhist(:,gi-1))*0.5d0
+        pxi0(:) = fpgprhist(:,gi) + fsgprhist(:,gi) ! + (v1gprhist(:,gi)+v1gprhist(:,gi-1))*0.5d0
 
         do i=1,NumOfABFCVs
-!            ! shift data
-!            gpr_model(:) = v1gprhist(i,:)
-!
-!            ! solve GPR
-!            call dgetrs('N',gpr_len,1,gpr_K,gpr_len,gpr_indx,gpr_model,gpr_len,gpr_info)
-!
-!            if( gpr_info .ne. 0 ) then
-!                ! throw error
-!                call pmf_utils_exit(PMF_OUT,1,'[US-ABF] Unable to solve GPR model in abf_core_force_gpr!')
-!            end if
-!
-!            ! predict
-!            v1 = dot_product(gpr_model,gpr_kffhm)
-!            pxi0(i) = pxi0(i) + v1
-
-            ! write(458,*) v1, (v1gprhist(:,gi)+v1gprhist(:,gi-1))*0.5d0
-
             ! shift data
-            gpr_model(:) = fsgprhist(i,:)
+            gpr_model(:) = v1gprhist(i,:)
 
             ! solve GPR
             call dgetrs('N',gpr_len,1,gpr_K,gpr_len,gpr_indx,gpr_model,gpr_len,gpr_info)
@@ -494,8 +477,25 @@ subroutine abf_core_force_gpr()
             end if
 
             ! predict
-            v1 = dot_product(gpr_model,gpr_kff)
+            v1 = dot_product(gpr_model,gpr_kffhm)
             pxi0(i) = pxi0(i) + v1
+
+            ! write(458,*) v1, (v1gprhist(:,gi)+v1gprhist(:,gi-1))*0.5d0
+
+!            ! shift data
+!            gpr_model(:) = fsgprhist(i,:)
+!
+!            ! solve GPR
+!            call dgetrs('N',gpr_len,1,gpr_K,gpr_len,gpr_indx,gpr_model,gpr_len,gpr_info)
+!
+!            if( gpr_info .ne. 0 ) then
+!                ! throw error
+!                call pmf_utils_exit(PMF_OUT,1,'[US-ABF] Unable to solve GPR model in abf_core_force_gpr!')
+!            end if
+!
+!            ! predict
+!            v1 = dot_product(gpr_model,gpr_kff)
+!            pxi0(i) = pxi0(i) + v1
 
             ! write(459,*) v1,  fsgprhist(:,gi)
         end do
