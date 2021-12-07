@@ -82,7 +82,8 @@ subroutine abf_core_shake
     select case(fmode)
         case(1)
             ! fix total forces from SHAKE
-            fhist(:,:,hist_len) =  fhist(:,:,hist_len) + SHAKEFrc(:,:)
+            ! fhist(:,:,hist_len) =  fhist(:,:,hist_len) + SHAKEFrc(:,:)
+            fshist(:,:,hist_len) = SHAKEFrc(:,:)
         case(2)
             ! nothing to be done
         case(3)
@@ -112,7 +113,7 @@ subroutine abf_core_force_3pA()
     implicit none
     integer                :: i,j,k,m
     integer                :: ci,ki
-    real(PMFDP)            :: v,v1,v2,v3,f,etot,epot,erst,ekin
+    real(PMFDP)            :: v,v1,v2,fp,fs,etot,epot,erst,ekin,ekincorr
     ! --------------------------------------------------------------------------
 
 ! shift values
@@ -123,6 +124,7 @@ subroutine abf_core_force_3pA()
         ekinhist(i)     = ekinhist(i+1)
         vhist(:,:,i)    = vhist(:,:,i+1)
         fhist(:,:,i)    = fhist(:,:,i+1)
+        fshist(:,:,i)   = fshist(:,:,i+1)
         zdhist(:,:,:,i) = zdhist(:,:,:,i+1)
         micfhist(:,i)   = micfhist(:,i+1)
     end do
@@ -188,23 +190,34 @@ subroutine abf_core_force_3pA()
     if( fstep .ge. hist_len ) then
 
         do i=1,NumOfABFCVs
-            f = 0.0d0
+            fp = 0.0d0
+            fs = 0.0d0
             v1 = 0.0d0
             v2 = 0.0d0
-            v3 = 0.0d0
             do j=1,NumOfLAtoms
                 do m=1,3
                     ! force part
-                    f  = f  + zdhist(m,j,i,hist_len-1)*fhist(m,j,hist_len-1)  * MassInv(j)
+                    fp = fp + zdhist(m,j,i,hist_len-1)*fhist(m,j,hist_len-1)  * MassInv(j)
+                    fs = fs + zdhist(m,j,i,hist_len-1)*fshist(m,j,hist_len-1) * MassInv(j)
                     ! velocity part
                     v1 = v1 + (zdhist(m,j,i,hist_len-0)-zdhist(m,j,i,hist_len-1)) * vhist(m,j,hist_len-0)
                     v2 = v2 + (zdhist(m,j,i,hist_len-1)-zdhist(m,j,i,hist_len-2)) * vhist(m,j,hist_len-1)
-                    v3 = v3 + (zdhist(m,j,i,hist_len-0)-zdhist(m,j,i,hist_len-2)) * (vhist(m,j,hist_len-0)+vhist(m,j,hist_len-1))
                 end do
             end do
-            ! FIXME
-            pxi0(i) = f + (0.5d0*(v1+v2)*ifdtx + 0.25d0*v3*ifdtx)*0.5d0
+            pxi0(i) = fp + fs + 0.5d0*(v1+v2)*ifdtx
+
+            ! write(7894,*) fstep, fp, fs, 0.5d0*(v1+v2)*ifdtx
         end do
+
+        ! calculate Ekin correction
+        ekincorr = 0.0d0
+        do j=1,NumOfLAtoms
+            do m=1,3
+                ekincorr = ekincorr + Mass(j)*(vhist(m,j,hist_len-0) + vhist(m,j,hist_len-1)) &
+                         * (vhist(m,j,hist_len-0)-2.0d0*vhist(m,j,hist_len-1)+vhist(m,j,hist_len-2))
+             end do
+        end do
+        ekincorr = 0.5d0*ekincorr
 
         ! total ABF force
         pxi0(:) = pxi0(:) - micfhist(:,hist_len-1)
@@ -212,7 +225,9 @@ subroutine abf_core_force_3pA()
         epot = epothist(hist_len-1)
         erst = ersthist(hist_len-1)
         ekin = ekinhist(hist_len-1)
-        etot = epot + erst + ekin
+        etot = epot + erst + ekin - ekincorr
+
+        ! write(35489,*) fstep, ekin, ekincorr, ekin-ekincorr
 
         ! add data to accumulator
         call abf_accu_add_data_online(cvhist(:,hist_len-1),pxi0,epot,erst,etot)
