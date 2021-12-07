@@ -217,7 +217,7 @@ subroutine abf_core_force_3pA()
                          * (vhist(m,j,hist_len-0)-2.0d0*vhist(m,j,hist_len-1)+vhist(m,j,hist_len-2))
              end do
         end do
-        ekincorr = 0.5d0*ekincorr
+        ekincorr = 0.5d0*(1.0d0/8.0d0)*ekincorr
 
         ! total ABF force
         pxi0(:) = pxi0(:) - micfhist(:,hist_len-1)
