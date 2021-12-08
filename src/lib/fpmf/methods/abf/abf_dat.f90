@@ -161,6 +161,7 @@ integer                     :: hist_len
 real(PMFDP),allocatable     :: cvhist(:,:)          ! history of CV values (nCVS,hist_len)
 real(PMFDP),allocatable     :: fhist(:,:,:)         ! history of forces
 real(PMFDP),allocatable     :: fshist(:,:,:)        ! history of forces - shake
+real(PMFDP),allocatable     :: xhist(:,:,:)         ! history of velocities
 real(PMFDP),allocatable     :: vhist(:,:,:)         ! history of velocities
 real(PMFDP),allocatable     :: zdhist(:,:,:,:)      ! history of ZD
 real(PMFDP),allocatable     :: micfhist(:,:)        ! history of ABF bias

@@ -113,7 +113,7 @@ subroutine abf_core_force_3pA()
     implicit none
     integer                :: i,j,k,m
     integer                :: ci,ki
-    real(PMFDP)            :: v,v1,v2,fp,fs,etot,epot,erst,ekin,ekincorr
+    real(PMFDP)            :: v,v1,vn,fp,fs,etot,epot,erst,ekin,ekincorr
     ! --------------------------------------------------------------------------
 
 ! shift values
@@ -122,6 +122,7 @@ subroutine abf_core_force_3pA()
         epothist(i)     = epothist(i+1)
         ersthist(i)     = ersthist(i+1)
         ekinhist(i)     = ekinhist(i+1)
+        xhist(:,:,i)    = xhist(:,:,i+1)
         vhist(:,:,i)    = vhist(:,:,i+1)
         fhist(:,:,i)    = fhist(:,:,i+1)
         fshist(:,:,i)   = fshist(:,:,i+1)
@@ -134,7 +135,8 @@ subroutine abf_core_force_3pA()
         ci = ABFCVList(i)%cvindx
         cvhist(i,hist_len) = CVContext%CVsValues(ci)
     end do
-    vhist(:,:,hist_len)    = Vel(:,:)   ! in t-dt/2
+    xhist(:,:,hist_len)     = Crd(:,:)
+    vhist(:,:,hist_len)     = Vel(:,:)   ! in t-dt/2
 
     epothist(hist_len)      = PotEne - fepotaverage
     ersthist(hist_len)      = PMFEne
@@ -193,18 +195,20 @@ subroutine abf_core_force_3pA()
             fp = 0.0d0
             fs = 0.0d0
             v1 = 0.0d0
-            v2 = 0.0d0
             do j=1,NumOfLAtoms
                 do m=1,3
                     ! force part
                     fp = fp + zdhist(m,j,i,hist_len-1)*fhist(m,j,hist_len-1)  * MassInv(j)
                     fs = fs + zdhist(m,j,i,hist_len-1)*fshist(m,j,hist_len-1) * MassInv(j)
                     ! velocity part
-                    v1 = v1 + (zdhist(m,j,i,hist_len-0)-zdhist(m,j,i,hist_len-1)) * vhist(m,j,hist_len-0)
-                    v2 = v2 + (zdhist(m,j,i,hist_len-1)-zdhist(m,j,i,hist_len-2)) * vhist(m,j,hist_len-1)
+                    vn = 2.0d0*(vhist(m,j,hist_len-0) + vhist(m,j,hist_len-1)) &
+                       - (3.0d0/2.0d0)*(xhist(m,j,hist_len-0) - xhist(m,j,hist_len-2))*ifdtx
+!                    v1 = v1 + (zdhist(m,j,i,hist_len-0)-zdhist(m,j,i,hist_len-1)) * vhist(m,j,hist_len-0)
+!                    v2 = v2 + (zdhist(m,j,i,hist_len-1)-zdhist(m,j,i,hist_len-2)) * vhist(m,j,hist_len-1)
+                    v1 = v1 + (zdhist(m,j,i,hist_len-0)-zdhist(m,j,i,hist_len-2)) * vn
                 end do
             end do
-            pxi0(i) = fp + fs + 0.5d0*(v1+v2)*ifdtx
+            pxi0(i) = fp + fs + 0.5d0*v1*ifdtx ! 0.5d0*(v1+v2)*ifdtx
 
             ! write(7894,*) fstep, fp, fs, 0.5d0*(v1+v2)*ifdtx
         end do
