@@ -521,7 +521,7 @@ subroutine abf_core_force_gpr()
 !        ! predict
 !        ekin = dot_product(gpr_model,gpr_kff)
 
-        etot = epot + erst + ekin
+        etot = epot + erst + 0.93d0*ekin
 
         ! add data to accumulator
         call abf_accu_add_data_online(cvhist(:,gi),pxi0,epot,erst,etot)
