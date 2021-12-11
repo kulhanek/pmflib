@@ -135,11 +135,13 @@ subroutine abf_init_print_header
     write(PMF_OUT,130)  ' ABF mode (fmode)                        : ', fmode
     select case(fmode)
     case(1)
-    write(PMF_OUT,120)  '      |-> Simplified ABF algorithm'
+    write(PMF_OUT,120)  '      |-> Simplified ABF algorithm (F+V)'
     case(2)
-    write(PMF_OUT,120)  '      |-> Original ABF algorithm'
+    write(PMF_OUT,120)  '      |-> Simplified ABF algorithm (V)'
     case(3)
-    write(PMF_OUT,120)  '      |-> Original ABF algorithm'
+    write(PMF_OUT,120)  '      |-> Simplified ABF algorithm (X)'
+    case(4)
+    write(PMF_OUT,120)  '      |-> Simplified ABF algorithm (GPR)'
     case default
         call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown fmode in abf_init_print_header!')
     end select
@@ -300,6 +302,8 @@ subroutine abf_init_arrays
         case(2)
             hist_len = 3
         case(3)
+            hist_len = 3
+        case(4)
             hist_len = 2 + gpr_len
             call abf_init_gpr
         case default

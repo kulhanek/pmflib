@@ -67,7 +67,7 @@ subroutine abf_control_read_abf(prm_fin)
 
     ! read configuration
     call pmf_ctrl_read_integer(prm_fin,'fmode',fmode,'i12')
-    call pmf_ctrl_check_integer_in_range('ABF','fmode',fmode,0,3)
+    call pmf_ctrl_check_integer_in_range('ABF','fmode',fmode,0,4)
 
     if( fmode .eq. 0 ) then
         write(PMF_OUT,10)
@@ -134,7 +134,7 @@ subroutine abf_control_read_abf(prm_fin)
             call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown extrapolation/interpolation mode!')
     end select
 
-    if( fmode .eq. 3 ) then
+    if( fmode .eq. 4 ) then
         call pmf_ctrl_read_integer(prm_fin,'gpr_len',gpr_len,'i12')
         call pmf_ctrl_read_real8(prm_fin,'gpr_width',gpr_width,'F12.3')
         call pmf_ctrl_read_real8(prm_fin,'gpr_noise',gpr_noise,'F12.3')
