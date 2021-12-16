@@ -136,9 +136,19 @@ subroutine abf_control_read_abf(prm_fin)
 
     if( fmode .eq. 4 ) then
         call pmf_ctrl_read_integer(prm_fin,'gpr_len',gpr_len,'i12')
+        call pmf_ctrl_check_integer('ABF','gpr_len',gpr_len,3,CND_GE)
         call pmf_ctrl_read_real8(prm_fin,'gpr_width',gpr_width,'F12.3')
         call pmf_ctrl_read_real8(prm_fin,'gpr_noise',gpr_noise,'F12.3')
         call pmf_ctrl_read_integer(prm_fin,'gpr_kernel',gpr_kernel,'i12')
+        call pmf_ctrl_check_integer_in_range('ABF','gpr_kernel',gpr_kernel,1,3)
+        call pmf_ctrl_read_real8(prm_fin,'gpr_rcond',gpr_rcond,'E12.5')
+        call pmf_ctrl_read_integer(prm_fin,'gpr_buffer',gpr_buffer,'i12')
+        call pmf_ctrl_read_logical(prm_fin,'gpr_smoothekin',gpr_smoothekin)
+        call pmf_ctrl_read_logical(prm_fin,'gpr_smoothetot',gpr_smoothetot)
+        if( gpr_smoothetot .and. gpr_smoothekin ) then
+            call pmf_utils_exit(PMF_OUT,1,'[ABF] gpr_smoothekin and gpr_smoothetot are mutually exclusive options!')
+        end if
+        call pmf_ctrl_read_logical(prm_fin,'gpr_cdf',gpr_cdf)
     end if
 
     ! network setup ----------------------------------------------------------------

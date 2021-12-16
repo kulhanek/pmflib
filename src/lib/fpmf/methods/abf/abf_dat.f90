@@ -163,6 +163,10 @@ real(PMFDP),allocatable     :: fhist(:,:,:)         ! history of forces
 real(PMFDP),allocatable     :: fshist(:,:,:)        ! history of forces - shake
 real(PMFDP),allocatable     :: xhist(:,:,:)         ! history of velocities
 real(PMFDP),allocatable     :: vhist(:,:,:)         ! history of velocities
+real(PMFDP),allocatable     :: fzinvhist(:,:,:)     ! history of fzinv
+real(PMFDP),allocatable     :: xvelhist(:,:)        ! history of CV velocities
+real(PMFDP),allocatable     :: xphist(:,:)          ! history of CV momenta
+real(PMFDP),allocatable     :: icfhist(:,:)         ! history of ICF forces
 real(PMFDP),allocatable     :: zdhist(:,:,:,:)      ! history of ZD
 real(PMFDP),allocatable     :: micfhist(:,:)        ! history of ABF bias
 real(PMFDP),allocatable     :: epothist(:)          ! history of Epot
@@ -176,17 +180,18 @@ real(PMFDP)                 :: gpr_noise        !
 integer                     :: gpr_kernel       ! 0 - MC(3/2)
                                                 ! 1 - MC(5/2)
                                                 ! 2 - ARDSE
-real(PMFDP),allocatable     :: gpr_K(:,:)       ! covariance matrix
-real(PMFDP),allocatable     :: gpr_model(:)     ! GPR model
-real(PMFDP),allocatable     :: gpr_kff(:)       ! at t
-real(PMFDP),allocatable     :: gpr_kffhp(:)      ! at t+dt/2
-real(PMFDP),allocatable     :: gpr_kffhm(:)      ! at t+dt/2
-integer,allocatable         :: gpr_indx(:)
-integer                     :: gpr_info
+real(PMFDP)                 :: gpr_rcond        ! rcond for SVD
+integer                     :: gpr_buffer       ! skip analysis at boundaries of gpr_len
+logical                     :: gpr_smoothekin
+logical                     :: gpr_smoothetot
+logical                     :: gpr_cdf
 
-real(PMFDP),allocatable     :: fpgprhist(:,:)
-real(PMFDP),allocatable     :: fsgprhist(:,:)
-real(PMFDP),allocatable     :: v1gprhist(:,:)
+real(PMFDP),allocatable     :: gpr_K(:,:)       ! covariance matrix
+real(PMFDP),allocatable     :: gpr_data(:)      ! GPR input data
+real(PMFDP),allocatable     :: gpr_model(:)     ! GPR model
+real(PMFDP),allocatable     :: gpr_kff(:,:)     !
+real(PMFDP),allocatable     :: gpr_kfd(:,:)     !
+
 
 ! ------------------------------------------------------------------------------
 

@@ -106,6 +106,16 @@ subroutine abf_init_dat
 
     fsmooth_kernel  = 0
 
+    gpr_len         = 100
+    gpr_width       = 30.0
+    gpr_noise       =   0.0
+    gpr_kernel      = 1
+    gpr_rcond       = 1e-7
+    gpr_buffer      = 0
+    gpr_smoothekin  = .false.
+    gpr_smoothetot  = .false.
+    gpr_cdf         = .false.
+
 end subroutine abf_init_dat
 
 !===============================================================================
@@ -142,6 +152,24 @@ subroutine abf_init_print_header
     write(PMF_OUT,120)  '      |-> Simplified ABF algorithm (X)'
     case(4)
     write(PMF_OUT,120)  '      |-> Simplified ABF algorithm (GPR)'
+    write(PMF_OUT,130)  '          gpr_len                        : ', gpr_len
+    write(PMF_OUT,155)  '          gpr_width                      : ', gpr_width
+    write(PMF_OUT,155)  '          gpr_noise                      : ', gpr_noise
+    write(PMF_OUT,130)  '          gpr_kernel                     : ', gpr_kernel
+    select case(gpr_kernel)
+    case(1)
+    write(PMF_OUT,120)  '          \-> MC(3/2) (Matern kernel v=3/2)'
+    case(2)
+    write(PMF_OUT,120)  '          \-> MC(5/2) (Matern kernel v=5/2)'
+    case(3)
+    write(PMF_OUT,120)  '          \-> SE (squared exponential kernel)'
+    case default
+    end select
+    write(PMF_OUT,160)  '          gpr_rcond                      : ', gpr_rcond
+    write(PMF_OUT,130)  '          gpr_buffer                     : ', gpr_buffer
+    write(PMF_OUT,125)  '          gpr_smoothekin                 : ', prmfile_onoff(gpr_smoothekin)
+    write(PMF_OUT,125)  '          gpr_smoothetot                 : ', prmfile_onoff(gpr_smoothetot)
+    write(PMF_OUT,125)  '          gpr_cdf                        : ', prmfile_onoff(gpr_cdf)
     case default
         call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown fmode in abf_init_print_header!')
     end select
@@ -246,6 +274,8 @@ subroutine abf_init_print_header
 125 format(A,A)
 130 format(A,I6)
 150 format(A,F10.1,1X,A)
+155 format(A,F10.5)
+160 format(A,E10.4)
 
 140 format(' == Collective variable #',I4.4)
 
@@ -304,7 +334,7 @@ subroutine abf_init_arrays
         case(3)
             hist_len = 3
         case(4)
-            hist_len = 2 + gpr_len
+            hist_len = gpr_len + 1 ! for ekin delay
             call abf_init_gpr
         case default
             call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented fmode in abf_init_arrays!')
@@ -318,6 +348,10 @@ subroutine abf_init_arrays
             xhist(3,NumOfLAtoms,hist_len),              &
             vhist(3,NumOfLAtoms,hist_len),              &
             zdhist(3,NumOfLAtoms,NumOfABFCVs,hist_len), &
+            fzinvhist(NumOfABFCVs,NumOfABFCVs,hist_len),&
+            xvelhist(NumOfABFCVs,hist_len),             &
+            xphist(NumOfABFCVs,hist_len),               &
+            icfhist(NumOfABFCVs,hist_len),              &
             epothist(hist_len),                         &
             ersthist(hist_len),                         &
             ekinhist(hist_len),                         &
@@ -338,6 +372,10 @@ subroutine abf_init_arrays
     epothist(:)     = 0.0d0
     ersthist(:)     = 0.0d0
     ekinhist(:)     = 0.0d0
+    fzinvhist(:,:,:)= 0.0d0
+    xvelhist(:,:)   = 0.0d0
+    xphist(:,:)     = 0.0d0
+    icfhist(:,:)    = 0.0d0
 
 ! other setup ----------------------------------------------
 
@@ -356,6 +394,69 @@ subroutine abf_init_arrays
 end subroutine abf_init_arrays
 
 !===============================================================================
+! Function:  abf_init_gpr_kernel
+!===============================================================================
+
+real(PMFDP) function abf_init_gpr_kernel(t1,t2)
+
+    use pmf_utils
+    use pmf_dat
+    use abf_dat
+
+    implicit none
+    real(PMFDP) :: t1,t2
+    real(PMFDP) :: r
+    ! --------------------------------------------------------------------------
+
+    r = abs((t1-t2)/gpr_width)
+
+    select case(gpr_kernel)
+        case(1)
+            abf_init_gpr_kernel = (1.0d0 + sqrt(3.0) * r) * exp(- sqrt(3.0d0) * r)
+        case(2)
+            abf_init_gpr_kernel = (1.0d0 + sqrt(5.0d0) * r + 5.0d0/3.0d0 * r**2) * exp(- sqrt(5.0d0) * r)
+        case(3)
+            abf_init_gpr_kernel = exp(- 0.5d0 * r**2)
+        case default
+            call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown gpr_kernel in abf_init_gpr_kernel!')
+    end select
+
+
+end function abf_init_gpr_kernel
+
+!===============================================================================
+! Function:  abf_init_gpr_kernel
+! first derivative
+!===============================================================================
+
+real(PMFDP) function abf_init_gpr_kernel_1d(t1,t2)
+
+    use pmf_utils
+    use pmf_dat
+    use abf_dat
+
+    implicit none
+    real(PMFDP) :: t1,t2
+    real(PMFDP) :: r
+    ! --------------------------------------------------------------------------
+
+    r = abs((t1-t2)/gpr_width)
+
+    select case(gpr_kernel)
+        case(1)
+            abf_init_gpr_kernel_1d = - 3.0d0 * r * exp(- sqrt(3.0d0) * r) / (gpr_width * fdtx) * sign(1.0d0,t1-t2)
+        case(2)
+            abf_init_gpr_kernel_1d = - 5.0d0/3.0d0 * r * (1.0d0 + sqrt(5.0d0) * r) * exp(- sqrt(5.0d0) * r ) / (gpr_width * fdtx) &
+                       * sign(1.0d0,t1-t2)
+        case(3)
+            abf_init_gpr_kernel_1d = - exp(- 0.5d0 * r**2) * r / (gpr_width * fdtx) * sign(1.0d0,t1-t2)
+        case default
+            call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown gpr_kernel in abf_init_gpr_kernel_1d!')
+    end select
+
+end function abf_init_gpr_kernel_1d
+
+!===============================================================================
 ! Subroutine:  abf_init_gpr
 !===============================================================================
 
@@ -368,25 +469,20 @@ subroutine abf_init_gpr
 
     implicit none
     integer     :: i,j,alloc_failed
-    real(PMFDP) :: r
     ! --------------------------------------------------------------------------
 
 ! gpr_len must be an odd number
-    if( mod(gpr_len,2) .ne. 1 ) then
-        call pmf_utils_exit(PMF_OUT,1,'[ABF] gpr_len must be an odd number in abf_init_gpr!')
+    if( gpr_len  .le. 3 ) then
+        call pmf_utils_exit(PMF_OUT,1,'[ABF] gpr_len must be >= 3 in abf_init_gpr!')
     end if
 
 ! allocate arrays
     allocate(                               &
             gpr_K(gpr_len,gpr_len),         &
+            gpr_data(gpr_len),              &
             gpr_model(gpr_len),             &
-            gpr_kff(gpr_len),               &
-            gpr_kffhp(gpr_len),             &
-            gpr_kffhm(gpr_len),             &
-            gpr_indx(gpr_len),              &
-            fpgprhist(NumOfABFCVs,gpr_len), &
-            fsgprhist(NumOfABFCVs,gpr_len), &
-            v1gprhist(NumOfABFCVs,gpr_len), &
+            gpr_kff(gpr_len,gpr_len),       &
+            gpr_kfd(gpr_len,gpr_len),       &
             stat= alloc_failed )
 
     if( alloc_failed .ne. 0 ) then
@@ -397,17 +493,7 @@ subroutine abf_init_gpr
 ! init covariance matrix
     do i=1,gpr_len
         do j=1,gpr_len
-            r = abs(real(i-j,PMFDP)/gpr_width)
-            select case(gpr_kernel)
-                case(0)
-                    gpr_K(i,j) = (1.0d0 + sqrt(3.0) * r) * exp(- sqrt(3.0d0) * r)
-                case(1)
-                    gpr_K(i,j) = (1.0d0 + sqrt(5.0) * r + 5.0d0/3.0d0 * r**2) * exp(- sqrt(5.0d0) * r)
-                case(2)
-                    gpr_K(i,j) = exp(- 0.5d0 * r**2)
-                case default
-                    call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown gpr_kernel in abf_init_gpr I!')
-            end select
+            gpr_K(i,j) = abf_init_gpr_kernel(real(i,PMFDP),real(j,PMFDP))
         end do
     end do
 
@@ -415,67 +501,128 @@ subroutine abf_init_gpr
         gpr_K(i,i) = gpr_K(i,i) + gpr_noise
     end do
 
-! run LU decomposition
-    call dgetrf(gpr_len,gpr_len,gpr_K,gpr_len,gpr_indx,gpr_info)
+    call abf_init_gpr_invK
 
-    if( gpr_info .ne. 0 ) then
-        ! throw error
-        call pmf_utils_exit(PMF_OUT,1,'[ABF] Unable to run LU decomposition in abf_init_gpr!')
-    end if
-
-! construct kff
-    j = gpr_len / 2 + 1
+! init kff and kfd
     do i=1,gpr_len
-        r = abs(real(i-j,PMFDP)/gpr_width)
-        select case(gpr_kernel)
-            case(0)
-                gpr_kff(i) = (1.0d0 + sqrt(3.0) * r) * exp(- sqrt(3.0d0) * r)
-            case(1)
-                gpr_kff(i) = (1.0d0 + sqrt(5.0d0) * r + 5.0d0/3.0d0 * r**2) * exp(- sqrt(5.0d0) * r)
-            case(2)
-                gpr_kff(i) = exp(- 0.5d0 * r**2)
-            case default
-                call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown gpr_kernel in abf_init_gpr II!')
-        end select
+        do j=1,gpr_len
+            gpr_kff(j,i) = abf_init_gpr_kernel(real(i,PMFDP),real(j,PMFDP))
+            gpr_kfd(j,i) = abf_init_gpr_kernel_1d(real(i,PMFDP),real(j,PMFDP))
+        end do
     end do
-
-! construct kffhm
-    j = gpr_len / 2 + 1
-    do i=1,gpr_len
-        r = abs((real(i-j,PMFDP) + 0.5d0)/gpr_width)
-        select case(gpr_kernel)
-            case(0)
-                gpr_kffhm(i) = (1.0d0 + sqrt(3.0) * r) * exp(- sqrt(3.0d0) * r)
-            case(1)
-                gpr_kffhm(i) = (1.0d0 + sqrt(5.0d0) * r + 5.0d0/3.0d0 * r**2) * exp(- sqrt(5.0d0) * r)
-            case(2)
-                gpr_kffhm(i) = exp(- 0.5d0 * r**2)
-            case default
-                call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown gpr_kernel in abf_init_gpr II!')
-        end select
-    end do
-
-! construct kffhp
-    j = gpr_len / 2 + 1
-    do i=1,gpr_len
-        r = abs((real(i-j,PMFDP) - 0.5d0)/gpr_width)
-        select case(gpr_kernel)
-            case(0)
-                gpr_kffhp(i) = (1.0d0 + sqrt(3.0) * r) * exp(- sqrt(3.0d0) * r)
-            case(1)
-                gpr_kffhp(i) = (1.0d0 + sqrt(5.0d0) * r + 5.0d0/3.0d0 * r**2) * exp(- sqrt(5.0d0) * r)
-            case(2)
-                gpr_kffhp(i) = exp(- 0.5d0 * r**2)
-            case default
-                call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown gpr_kernel in abf_init_gpr II!')
-        end select
-    end do
-
-    write(1258,*) gpr_kff
-    write(1258,*) gpr_kffhp
-    write(1258,*) gpr_kffhm
 
 end subroutine abf_init_gpr
+
+!===============================================================================
+! Subroutine:  abf_init_gpr_invK
+!===============================================================================
+
+subroutine abf_init_gpr_invK
+
+    use pmf_dat
+    use abf_dat
+    use pmf_utils
+
+    implicit none
+    integer                     :: i,alloc_failed,info,lwork,irank
+    real(PMFDP)                 :: minv, maxv, a_rcond
+    real(PMFDP),allocatable     :: sig(:)
+    real(PMFDP),allocatable     :: u(:,:)
+    real(PMFDP),allocatable     :: vt(:,:)
+    real(PMFDP),allocatable     :: sig_plus(:,:)
+    real(PMFDP),allocatable     :: temp_mat(:,:)
+    real(PMFDP),allocatable     :: twork(:)
+    integer,allocatable         :: iwork(:)
+    ! --------------------------------------------------------------------------
+
+! allocate arrays
+    allocate(                           &
+            sig(gpr_len),               &
+            u(gpr_len,gpr_len),         &
+            vt(gpr_len,gpr_len),        &
+            sig_plus(gpr_len,gpr_len),  &
+            temp_mat(gpr_len,gpr_len),  &
+            iwork(8*gpr_len),           &
+            twork(1),                   &
+            stat= alloc_failed )
+
+    if( alloc_failed .ne. 0 ) then
+        call pmf_utils_exit(PMF_OUT,1, &
+            '[ABF] Unable to allocate memory I for GPR arrays in abf_init_gpr_invK!')
+    end if
+
+    sig(:)          = 0.0d0
+    u(:,:)          = 0.0d0
+    vt(:,:)         = 0.0d0
+    sig_plus(:,:)   = 0.0d0
+    temp_mat(:,:)   = 0.0d0
+
+! query work size
+    lwork = -1
+    call dgesdd('A', gpr_len, gpr_len, gpr_K, gpr_len, sig, u, gpr_len, vt, gpr_len, twork, lwork, iwork, info)
+
+    if( info .ne. 0 ) then
+        call pmf_utils_exit(PMF_OUT,1, &
+            '[ABF] Unable to run SVD I in abf_init_gpr_invK!')
+    end if
+
+
+    lwork = int(twork(1)) + 1
+    if( lwork < 0 ) then
+        call pmf_utils_exit(PMF_OUT,1, &
+            '[ABF] Unable to illegal work size in abf_init_gpr_invK!')
+    end if
+
+    deallocate(twork)
+    allocate(   twork(lwork),   &
+                stat= alloc_failed )
+
+    if( alloc_failed .ne. 0 ) then
+        call pmf_utils_exit(PMF_OUT,1, &
+            '[ABF] Unable to allocate memory II for GPR arrays in abf_init_gpr_invK!')
+    end if
+
+! run SVD
+    call dgesdd('A', gpr_len, gpr_len, gpr_K, gpr_len, sig, u, gpr_len, vt, gpr_len, twork, lwork, iwork, info)
+
+    if( info .ne. 0 )  then
+        call pmf_utils_exit(PMF_OUT,1, &
+            '[ABF] Unable to run SVD II in abf_init_gpr_invK!')
+    end if
+
+    deallocate(iwork,twork)
+
+! invert singular numbers
+    maxv = sig(1)
+    minv = sig(1)
+    do i=1,gpr_len
+        if( maxv .lt. sig(i) ) then
+            maxv = sig(i)
+        end if
+        if( minv .gt. sig(i) ) then
+            minv = sig(i)
+        end if
+    end do
+
+    a_rcond = minv/maxv
+
+    irank = 0
+    do i=1,gpr_len
+        if( sig(i) .gt. gpr_rcond*maxv ) then
+           sig_plus(i,i) = 1.0d0/sig(i)
+           irank = irank + 1
+        else
+           sig_plus(i,i) = 0.0d0
+        end if
+    end do
+
+! build pseudoinverse: V*sig_plus*UT
+    call dgemm('N', 'T', gpr_len, gpr_len, gpr_len, 1.0d0, sig_plus, gpr_len, u, gpr_len, 0.0d0, temp_mat, gpr_len)
+    call dgemm('T', 'N', gpr_len, gpr_len, gpr_len, 1.0d0, vt, gpr_len, temp_mat, gpr_len, 0.0d0, gpr_K, gpr_len)
+
+    deallocate(sig,sig_plus,u,vt,temp_mat)
+
+end subroutine abf_init_gpr_invK
 
 !===============================================================================
 ! Subroutine:  abf_init_arrays
