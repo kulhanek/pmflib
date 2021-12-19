@@ -98,6 +98,7 @@ subroutine abf_control_read_abf(prm_fin)
     call pmf_ctrl_read_real8_wunit(prm_fin,'fepotaverage',EnergyUnit,fepotaverage,'F10.1')
     call pmf_ctrl_read_real8_wunit(prm_fin,'fekinaverage',EnergyUnit,fekinaverage,'F10.1')
 
+    call pmf_ctrl_read_logical(prm_fin,'fswitch2zero',fswitch2zero)
     call pmf_ctrl_read_integer(prm_fin,'feimode',feimode,'i12')
     call pmf_ctrl_check_integer_in_range('ABF','feimode',feimode,0,3)
 

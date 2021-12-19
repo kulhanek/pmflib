@@ -61,6 +61,7 @@ integer     :: fhramp_max
 
 ! kernel smoothing
 integer     :: fsmooth_kernel
+logical     :: fswitch2zero
 
 ! server part ------------------------------------------------------------------
 logical                 :: fserver_enabled      ! is abf-server enabled?
@@ -85,6 +86,7 @@ type CVTypeABF
     real(PMFDP)             :: max_value        ! right range
     integer                 :: nbins            ! number of bins
     real(PMFDP)             :: wfac             ! smoothing factor in number of bins
+    real(PMFDP)             :: buffer           ! switch biasing potential to zero at CV boundary
 end type CVTypeABF
 
 ! ----------------------
@@ -153,7 +155,8 @@ real(PMFDP),allocatable     :: cvave(:)
 real(PMFDP),allocatable     :: pxi0(:)
 real(PMFDP),allocatable     :: pxi1(:)
 real(PMFDP),allocatable     :: pxip(:)
-real(PMFDP),allocatable     :: pxim(:)           !
+real(PMFDP),allocatable     :: pxim(:)
+real(PMFDP),allocatable     :: sfac(:)              ! switching factors
 
 ! ------------------------------------------------------------------------------
 

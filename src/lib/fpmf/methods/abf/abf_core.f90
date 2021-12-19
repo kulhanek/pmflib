@@ -119,10 +119,38 @@ subroutine abf_core_force_3pA()
     use pmf_timers
 
     implicit none
-    integer                :: i,j,k,m
+    integer                :: i,j,k,m,ifac
     integer                :: ci,ki
     real(PMFDP)            :: v,v1,v2,f,etot,epot,erst,ekin
     ! --------------------------------------------------------------------------
+
+    if( fdebug .and. (mod(fstep,5000) .eq. 0) ) then
+        open(unit=4789,file='abf-fmode1.bicf',status='UNKNOWN')
+        ifac = 10
+        do i=1,ABFCVList(1)%nbins*ifac
+            cvave(1) = ABFCVList(1)%min_value &
+                     + real(i,PMFDP) * (ABFCVList(1)%max_value-ABFCVList(1)%min_value)/(ABFCVList(1)%nbins * ifac)
+            la(:) = 0.0d0
+            pxi0(:) = 0.0d0
+            call abf_accu_get_data(cvave,pxi0)
+            select case(feimode)
+                case(0)
+                    call abf_accu_get_data(cvave,la)
+                case(1)
+                    call abf_accu_get_data_lramp(cvave,la)
+                case(2)
+                    call pmf_timers_start_timer(PMFLIB_ABF_KS_TIMER)
+                        call abf_accu_get_data_ksmooth(cvave,la)
+                    call pmf_timers_stop_timer(PMFLIB_ABF_KS_TIMER)
+                case(3)
+                    call abf_accu_get_data_lsmooth(cvave,la)
+                case default
+                    call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented extrapolation/interpolation mode!')
+            end select
+            write(4789,*) cvave, pxi0, la, sfac
+        end do
+        close(4789)
+    end if
 
 ! shift values
     do i=1,hist_len-1

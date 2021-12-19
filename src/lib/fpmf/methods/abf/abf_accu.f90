@@ -619,6 +619,10 @@ subroutine abf_accu_get_data_lramp(cvs,gfx)
     gi0 = pmf_accu_globalindex(abfaccu%PMFAccuType,cvs)
     if( gi0 .le. 0 ) return ! out of valid area
 
+    if( fswitch2zero ) then
+        call abf_get_switching_factors(cvs)
+    end if
+
     ! get number of samples
     n = abfaccu%bnsamples(gi0)
     if( n .gt. 0 ) then
@@ -630,7 +634,7 @@ subroutine abf_accu_get_data_lramp(cvs,gfx)
             end if
         end if
         w      = abfaccu%weights(gi0)
-        gfx(:) = w * sc_ramp * abfaccu%bmicf(:,gi0)
+        gfx(:) = w * sc_ramp * abfaccu%bmicf(:,gi0) * sfac(:)
     end if
 
 end subroutine abf_accu_get_data_lramp
@@ -659,6 +663,10 @@ subroutine abf_accu_get_data_ksmooth(cvs,gfx)
 ! get global index to accumulator for average values within the set
     gi0 = pmf_accu_globalindex(abfaccu%PMFAccuType,cvs)
     if( gi0 .le. 0 ) return ! out of valid area
+
+    if( fswitch2zero ) then
+        call abf_get_switching_factors(cvs)
+    end if
 
 ! first calculate kernel values
     sweights(:) = 0.0d0
@@ -697,6 +705,9 @@ subroutine abf_accu_get_data_ksmooth(cvs,gfx)
         gfx(:) = gfx(:) + w * abfaccu%bmicf(:,si0)
     end do
 
+    ! apply switching factors
+    gfx(:) = gfx(:) * sfac(:)
+
 end subroutine abf_accu_get_data_ksmooth
 
 !===============================================================================
@@ -723,6 +734,10 @@ subroutine abf_accu_get_data_lsmooth(cvs,gfx)
 ! get global index to accumulator for average values within the set
     gi0 = pmf_accu_globalindex(abfaccu%PMFAccuType,cvs)
     if( gi0 .le. 0 ) return ! out of valid area
+
+    if( fswitch2zero ) then
+        call abf_get_switching_factors(cvs)
+    end if
 
     rw = 1.0d0
     n = abfaccu%bnsamples(gi0)
@@ -761,7 +776,50 @@ subroutine abf_accu_get_data_lsmooth(cvs,gfx)
 
     gfx(1) = c0 * f0 + c1 * f1
 
+    ! apply switching factors
+    gfx(:) = gfx(:) * sfac(:)
+
 end subroutine abf_accu_get_data_lsmooth
+
+!===============================================================================
+! Function:  abf_get_switching_factors
+!===============================================================================
+
+subroutine abf_get_switching_factors(vals)
+
+    use abf_dat
+    use pmf_dat
+
+    implicit none
+    real(PMFDP)     :: vals(:)
+    ! -----------------------------------------------
+    integer         :: i
+    real(PMFDP)     :: r
+    ! --------------------------------------------------------------------------
+
+    sfac(:) = 0.0d0
+    do i=1,NumOfABFCVs
+        if( vals(i) .le. ABFCVList(i)%min_value ) cycle
+        if( vals(i) .ge. ABFCVList(i)%max_value ) cycle
+
+        if( vals(i) .lt. (ABFCVList(i)%min_value + ABFCVList(i)%buffer) ) then
+            r = ABFCVList(i)%buffer - (vals(i) - ABFCVList(i)%min_value)
+        else if ( vals(i) .ge. (ABFCVList(i)%max_value - ABFCVList(i)%buffer) ) then
+            r = ABFCVList(i)%buffer + (vals(i) - ABFCVList(i)%max_value)
+        else
+            sfac(i) = 1.0d0
+            cycle
+        end if
+
+    ! normalize
+        r = r / ABFCVList(i)%buffer
+
+    ! get switching function
+        sfac(i) = 1.0d0 - 10.0d0*r**3 + 15.0d0*r**4 - 6.0d0*r**5
+
+    end do
+
+end subroutine abf_get_switching_factors
 
 !===============================================================================
 

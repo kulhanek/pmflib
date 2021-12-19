@@ -105,6 +105,7 @@ subroutine abf_init_dat
     outsidesamples  = 0
 
     fsmooth_kernel  = 0
+    fswitch2zero    = .false.
 
     gpr_len         = 100
     gpr_width       = 30.0
@@ -185,6 +186,7 @@ subroutine abf_init_print_header
     write(PMF_OUT,120)
     write(PMF_OUT,120)  ' ABF Interpolation/Extrapolation '
     write(PMF_OUT,120)  ' ------------------------------------------------------'
+    write(PMF_OUT,125)  ' Switch ICF to zero (fswitch2zero)       : ', prmfile_onoff(fswitch2zero)
     write(PMF_OUT,130)  ' Extra/interpolation mode (feimode)      : ', feimode
     select case(feimode)
     case(0)
@@ -303,6 +305,7 @@ subroutine abf_init_arrays
             pxi1(NumOfABFCVs),                  &
             pxip(NumOfABFCVs),                  &
             pxim(NumOfABFCVs),                  &
+            sfac(NumOfABFCVs),                  &
             cvave(NumOfABFCVs),                 &
             fz(NumOfABFCVs,NumOfABFCVs),        &
             fzinv(NumOfABFCVs,NumOfABFCVs),     &
@@ -323,6 +326,8 @@ subroutine abf_init_arrays
     cvave(:)    = 0.0d0
     fz(:,:)     = 0.0d0
     fzinv(:,:)  = 0.0d0
+
+    sfac(:)     = 1.0d0
 
 ! history buffers ------------------------------------------
 
@@ -648,6 +653,8 @@ subroutine abf_init_snb_list
         dcv = fac*ceiling(ABFCVList(i)%wfac) + 1
         max_snb_size = max_snb_size * dcv
     end do
+
+    max_snb_size = max_snb_size + 1 ! terminating null
 
     allocate(                                                       &
             snb_list(max_snb_size,abfaccu%PMFAccuType%tot_nbins),   &

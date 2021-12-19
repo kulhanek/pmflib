@@ -48,6 +48,7 @@ subroutine abf_cvs_reset_cv(abf_item)
     abf_item%max_value      = 0.0       ! right range
     abf_item%nbins          = 0         ! number of bins
     abf_item%wfac           = 1.0d0
+    abf_item%buffer         = 0.0d0
 
 end subroutine abf_cvs_reset_cv
 
@@ -106,6 +107,17 @@ subroutine abf_cvs_read_cv(prm_fin,abf_item)
     write(PMF_OUT,125) abf_item%nbins
 
     ! ========================
+    abf_item%buffer = 0.0
+    if( prmfile_get_real8_by_key(prm_fin,'buffer',abf_item%buffer) ) then
+        write(PMF_OUT,180) abf_item%buffer, trim(abf_item%cv%get_ulabel())
+        call abf_item%cv%conv_to_ivalue(abf_item%buffer)
+
+        if( abf_item%buffer .lt. 0.0d0 ) then
+            call pmf_utils_exit(PMF_OUT,1,'buffer has to be greater or equal to zero!')
+        end if
+    end if
+
+    ! ========================
     if( feimode .eq. 2 ) then
         if( .not. prmfile_get_real8_by_key(prm_fin,'wfac',abf_item%wfac) ) then
             call pmf_utils_exit(PMF_OUT,1,'wfac is not specified!')
@@ -120,6 +132,7 @@ subroutine abf_cvs_read_cv(prm_fin,abf_item)
 120 format('    ** Max value         : ',F16.7,' [',A,']')
 125 format('    ** Number of bins    : ',I8)
 170 format('    ** KS W-factor       : ',F16.7)
+180 format('    ** Buffer width      : ',E16.7,' [',A,']')
 
 end subroutine abf_cvs_read_cv
 
@@ -148,6 +161,8 @@ subroutine abf_cvs_cv_info(abf_item)
     write(PMF_OUT,160) abf_item%cv%get_rvalue(abf_item%max_value), &
                     trim(abf_item%cv%get_ulabel())
     write(PMF_OUT,165) abf_item%nbins
+    write(PMF_OUT,180) abf_item%cv%get_rvalue(abf_item%buffer), &
+                    trim(abf_item%cv%get_ulabel())
 
     if( feimode .eq. 2 ) then
     write(PMF_OUT,170) abf_item%wfac
@@ -162,6 +177,7 @@ subroutine abf_cvs_cv_info(abf_item)
 160 format('    ** Max value         : ',E16.7,' [',A,']')
 165 format('    ** Number of bins    : ',I9)
 170 format('    ** KS W-factor       : ',F16.7)
+180 format('    ** Buffer width      : ',E16.7,' [',A,']')
 
 end subroutine abf_cvs_cv_info
 
