@@ -29,7 +29,7 @@
 #include <iomanip>
 #include <Vector.hpp>
 #include <FortranMatrix.hpp>
-#include <MAFilter.hpp>
+#include <GPFilter.hpp>
 #include <SGFilter.hpp>
 
 //------------------------------------------------------------------------------
@@ -139,13 +139,18 @@ bool CEntropyDer::Run(void)
     vout << format("%02d:Preparing input data ...")%State << endl;
     vout << "   Calculating Etot ..." << endl;
     GetEtot();
-    vout << "   Low-pass filter ..." << endl;
-    RunLowPassFilter();
 
     vout << "   Numerical differentiation ..." << endl;
     //GetNativeData();
-    RecalcICFBySGF();
+    //for(double wfac=10.0; wfac < 200; wfac += 10.0){
+        GetICFByGPF(100);
+    //}
+
     vout << "   Done." << endl;
+
+    InAccu->Save("test.rst");
+
+    exit(1);
 
     vout << endl;
     vout << format("%02d:Processing data ...")%State << endl;
@@ -212,70 +217,7 @@ void CEntropyDer::GetEtot(void)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void CEntropyDer::RunLowPassFilter(void)
-{
-    CMAFilterPtr mafilter(new CMAFilter);
-    mafilter->SetFilter(InAccu->GetTimeStep(),50);
-    vout << "      Frame length = " << mafilter->GetFrameLen() << endl;
-
-    CFilterPtr   filter;
-    filter =  mafilter;
-
-// ---------------------------
-    for(size_t icv=0; icv < NumOfCVs; icv++){
-        CVectorDataPtr cvs  = InAccu->GetSectionData("TCVS")->GetDataBlob(icv);
-        filter->RunFilter(cvs);
-
-        CVectorDataPtr icf  = InAccu->GetSectionData("TICF")->GetDataBlob(icv);
-        filter->RunFilter(icf);
-    }
-
-// ---------------------------
-    CVectorDataPtr etot = InAccu->GetSectionData("TETOT")->GetDataBlob();
-    filter->RunFilter(etot);
-
-// ---------------------------
-    for(size_t icv=0; icv < NumOfCVs; icv++){
-        for(size_t jcv=0; jcv < NumOfCVs; jcv++){
-            CVectorDataPtr zinv = InAccu->GetSectionData("TZINV")->GetDataBlob(icv,jcv);
-            filter->RunFilter(zinv);
-        }
-    }
-}
-
-//==============================================================================
-//------------------------------------------------------------------------------
-//==============================================================================
-
-void CEntropyDer::GetNativeData(void)
-{
-// input data
-    CVectorDataPtr inetot = InAccu->GetSectionData("TETOT")->GetDataBlob();
-    CVectorDataPtr outetot = InAccu->CreateSectionData("USE_ETOT","IG","R","T")->GetDataBlob();
-
-    for(size_t t=0; t < NSTLimit; t++){
-        outetot->GetRawDataField()[t] = inetot->GetRawDataField()[t];
-    }
-
-    for(size_t icv=0; icv < NumOfCVs; icv++){
-        CVectorDataPtr inicf  = InAccu->GetSectionData("TICF")->GetDataBlob(icv);
-        CVectorDataPtr outicf  = InAccu->CreateSectionData("USE_ICF", "IG","R","S")->GetDataBlob(icv);
-
-        CVectorDataPtr incvs  = InAccu->GetSectionData("TCVS")->GetDataBlob(icv);
-        CVectorDataPtr outcvs  = InAccu->CreateSectionData("USE_CVS", "IG","R","S")->GetDataBlob(icv);
-
-        for(size_t t=0; t < NSTLimit; t++){
-            outcvs->GetRawDataField()[t] = incvs->GetRawDataField()[t];
-            outicf->GetRawDataField()[t] = inicf->GetRawDataField()[t];
-        }
-    }
-}
-
-//==============================================================================
-//------------------------------------------------------------------------------
-//==============================================================================
-
-void CEntropyDer::RecalcICFBySGF(void)
+void CEntropyDer::GetICFBySGF(void)
 {
     CSGFilterPtr sgfilter(new CSGFilter);
     sgfilter->SetFilter(InAccu->GetTimeStep(),5,3);
@@ -302,7 +244,7 @@ void CEntropyDer::RecalcICFBySGF(void)
     CPMFAccuDataPtr insdcvs     = InAccu->GetSectionData("TCVS");
     CPMFAccuDataPtr insdzinv    = InAccu->GetSectionData("TZINV");
     CVectorDataPtr  inetot      = InAccu->GetSectionData("TETOT")->GetDataBlob();
-    CPMFAccuDataPtr insdmicf    = InAccu->GetSectionData("TMICF");
+    CPMFAccuDataPtr insdmicf    = InAccu->GetSectionData("TBICF");
 
     CVectorDataPtr  outetot     = InAccu->CreateSectionData("USE_ETOT","IG","R","T")->GetDataBlob();
     CPMFAccuDataPtr outsdcvs    = InAccu->CreateSectionData("USE_CVS", "IG","R","S");
@@ -356,6 +298,81 @@ void CEntropyDer::RecalcICFBySGF(void)
     for(int t=200; t< 50000; t++){
         tout << inicf->GetRawDataField()[t] << " " <<  outicf->GetRawDataField()[t+2] << endl;
     }
+}
+
+//==============================================================================
+//------------------------------------------------------------------------------
+//==============================================================================
+
+void CEntropyDer::GetICFByGPF(double wfac)
+{
+    CGPFilterPtr gpfilter(new CGPFilter);
+
+    int    gplen    = 300;
+    double gpwfac   = 50;
+    double gpnoise  = 0.01;
+
+
+    gpfilter->SetKernel("ardmc32");
+    gpfilter->SetFilter(InAccu->GetTimeStep(),gplen,gpwfac,gpnoise,vout);
+
+    CSimpleVector<double> cvsva;
+    CSimpleVector<double> cvs1d;
+    CSimpleVector<double> cvs2d;
+
+    CSimpleVector<double> gfx;
+
+    cvsva.CreateVector(NumOfCVs);
+    cvs1d.CreateVector(NumOfCVs);
+    cvs2d.CreateVector(NumOfCVs);
+
+    gfx.CreateVector(NumOfCVs);
+
+    CFortranMatrix zinvva;
+    CFortranMatrix zinv1d;
+
+    zinvva.CreateMatrix(NumOfCVs,NumOfCVs);
+    zinv1d.CreateMatrix(NumOfCVs,NumOfCVs);
+
+// input data
+    CPMFAccuDataPtr insdcvs     = InAccu->GetSectionData("TCVS");
+    CPMFAccuDataPtr insdzinv    = InAccu->GetSectionData("TZINV");
+    CVectorDataPtr  inetot      = InAccu->GetSectionData("TETOT")->GetDataBlob();
+    CPMFAccuDataPtr insdmicf    = InAccu->GetSectionData("TBICF");
+
+    CVectorDataPtr  outetot     = InAccu->CreateSectionData("USE_ETOT","IG","R","T")->GetDataBlob();
+    CPMFAccuDataPtr outsdcvs    = InAccu->CreateSectionData("USE_CVS", "IG","R","S");
+    CPMFAccuDataPtr outsdicf    = InAccu->CreateSectionData("USE_ICF", "IG","R","S");
+
+    double totlogml = 0.0;
+    double lsize    = 0.0;
+
+   for(size_t t=10; t < NSTLimit-gplen; t += gplen){
+//
+//    // get force components
+//        for(size_t icv=0; icv < NumOfCVs; icv++){
+//            CVectorDataPtr incvs  = insdcvs->GetDataBlob(icv);
+//
+//            gpfilter->TrainProcess(incvs,t);
+//            double logml = gpfilter->GetLogPL();
+//            totlogml += logml;
+//            lsize++;
+//
+//            CVectorDataPtr outcvs  = outsdcvs->GetDataBlob(icv);
+//            gpfilter->PredictData(outcvs,t);
+//        }
+
+        gpfilter->TrainProcess(inetot,t);
+        double logml = gpfilter->GetLogPL();
+        totlogml += logml;
+        lsize++;
+
+        gpfilter->PredictData(outetot,t);
+   }
+
+    totlogml /= lsize;
+    vout << "   wfac = " << wfac << " avelogml= " << totlogml << endl;
+
 }
 
 //==============================================================================
@@ -683,7 +700,7 @@ void CEntropyDer::Finalize(void)
 
     vout << endl;
     vout << "# ==============================================================================" << endl;
-    vout << "# pmf-entropy terminated at " << dt.GetSDateAndTime() << endl;
+    vout << "# pmf-entropy-der terminated at " << dt.GetSDateAndTime() << endl;
     vout << "# ==============================================================================" << endl;
 
     if( ErrorSystem.IsError() || Options.GetOptVerbose() ){

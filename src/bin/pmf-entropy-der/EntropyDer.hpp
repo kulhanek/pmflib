@@ -71,11 +71,8 @@ private:
     CSimpleVector<double>   KSWFac;
 
     void GetEtot(void);
-
-    void RunLowPassFilter(void);
-
-    void GetNativeData(void);
-    void RecalcICFBySGF(void);
+    void GetICFBySGF(void);
+    void GetICFByGPF(double wfac);
 
     void CalculatePPandPN(void);
     void CalculatePPandPN_KS(void);

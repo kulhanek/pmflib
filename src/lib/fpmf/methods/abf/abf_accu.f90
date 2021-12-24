@@ -104,13 +104,12 @@ subroutine abf_accu_init()
     end if
 
     if( frecord ) then
-        allocate(   abfaccu%tcvs(abfaccu%tot_cvs,fnstlim),  &
+        allocate(   abfaccu%tcvs(abfaccu%tot_cvs,fnstlim),      &
                     abfaccu%tzinv(abfaccu%tot_cvs,abfaccu%tot_cvs,fnstlim), &
-                    abfaccu%ticf(abfaccu%tot_cvs,fnstlim),  &
-                    abfaccu%tmicf(abfaccu%tot_cvs,fnstlim), &
-                    abfaccu%tepot(fnstlim),                 &
-                    abfaccu%terst(fnstlim),                 &
-                    abfaccu%tekin(fnstlim),                 &
+                    abfaccu%tbicf(abfaccu%tot_cvs,fnstlim),     &
+                    abfaccu%tepot(fnstlim),                     &
+                    abfaccu%terst(fnstlim),                     &
+                    abfaccu%tekin(fnstlim),                     &
                     stat = alloc_failed)
 
         if( alloc_failed .ne. 0 ) then
@@ -180,8 +179,7 @@ subroutine abf_accu_clear()
     if( frecord ) then
         abfaccu%tcvs(:,:)        = 0.0d0
         abfaccu%tzinv(:,:,:)     = 0.0d0
-        abfaccu%ticf(:,:)        = 0.0d0
-        abfaccu%tmicf(:,:)       = 0.0d0
+        abfaccu%tbicf(:,:)       = 0.0d0
         abfaccu%tepot(:)         = 0.0d0
         abfaccu%terst(:)         = 0.0d0
         abfaccu%tekin(:)         = 0.0d0
@@ -376,8 +374,7 @@ subroutine abf_accu_write(iounit,full)
         if( frecord ) then
             call pmf_accu_write_rbuf_TC(abfaccu%PMFAccuType,iounit,     'TCVS', abfaccu%tcvs)
             call pmf_accu_write_rbuf_TCC(abfaccu%PMFAccuType,iounit,    'TZINV',abfaccu%tzinv)
-            call pmf_accu_write_rbuf_TC(abfaccu%PMFAccuType,iounit,     'TICF', abfaccu%ticf)
-            call pmf_accu_write_rbuf_TC(abfaccu%PMFAccuType,iounit,     'TMICF',abfaccu%tmicf)
+            call pmf_accu_write_rbuf_TC(abfaccu%PMFAccuType,iounit,     'TBICF',abfaccu%tbicf)
             call pmf_accu_write_rbuf_T(iounit,                          'TEPOT',abfaccu%tepot)
             call pmf_accu_write_rbuf_T(iounit,                          'TERST',abfaccu%terst)
             call pmf_accu_write_rbuf_T(iounit,                          'TEKIN',abfaccu%tekin)
@@ -489,10 +486,10 @@ subroutine abf_accu_add_data_online(cvs,gfx,epot,erst,etot)
 end subroutine abf_accu_add_data_online
 
 !===============================================================================
-! Subroutine:  abf_accu_add_data_record
+! Subroutine:  abf_accu_add_data_record_lf
 !===============================================================================
 
-subroutine abf_accu_add_data_record(cvs,zinv,gfx,micf,epot,erst,ekin)
+subroutine abf_accu_add_data_record_lf(cvs,zinv,bicf,epot,erst,ekin)
 
     use abf_dat
     use pmf_dat
@@ -500,24 +497,24 @@ subroutine abf_accu_add_data_record(cvs,zinv,gfx,micf,epot,erst,ekin)
     implicit none
     real(PMFDP)    :: cvs(:)
     real(PMFDP)    :: zinv(:,:)
-    real(PMFDP)    :: gfx(:)        ! ICF
-    real(PMFDP)    :: micf(:)       ! MICF
+    real(PMFDP)    :: bicf(:)       ! applied bias
     real(PMFDP)    :: epot
     real(PMFDP)    :: erst
     real(PMFDP)    :: ekin
     ! --------------------------------------------------------------------------
 
     if( frecord ) then
-        abfaccu%tcvs(:,fstep)    = cvs(:)
-        abfaccu%tzinv(:,:,fstep) = zinv(:,:)
-        abfaccu%ticf(:,fstep)    = gfx(:)
-        abfaccu%tmicf(:,fstep)   = micf(:)
-        abfaccu%tepot(fstep)     = epot
-        abfaccu%terst(fstep)     = erst
-        abfaccu%tekin(fstep)     = ekin
+        abfaccu%tcvs(:,fstep)       = cvs(:)
+        abfaccu%tzinv(:,:,fstep)    = zinv(:,:)
+        abfaccu%tbicf(:,fstep)      = bicf(:)
+        abfaccu%tepot(fstep)        = epot
+        abfaccu%terst(fstep)        = erst
+        if( fstep .gt. 1 ) then
+            abfaccu%tekin(fstep-1)  = ekin
+        end if
     end if
 
-end subroutine abf_accu_add_data_record
+end subroutine abf_accu_add_data_record_lf
 
 !===============================================================================
 ! Function:  abf_get_skernel

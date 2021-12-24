@@ -222,6 +222,10 @@ subroutine abf_core_force_3pA()
         end do
     end do
 
+    ! record time progress of data
+    call abf_accu_add_data_record_lf(cvhist(:,hist_len),fzinv,la, &
+                                     epothist(hist_len),ersthist(hist_len),ekinhist(hist_len-1))
+
 ! ABF part
     if( fstep .ge. hist_len ) then
 
@@ -349,6 +353,10 @@ subroutine abf_core_force_3pB()
     end if
     micfhist(:,hist_len) = la(:)
 
+    ! record time progress of data
+    call abf_accu_add_data_record_lf(cvhist(:,hist_len),fzinv,la, &
+                                     epothist(hist_len),ersthist(hist_len),ekinhist(hist_len-1))
+
 ! ABF part
     if( fstep .ge. hist_len ) then
         do i=1,NumOfABFCVs
@@ -471,6 +479,11 @@ subroutine abf_core_force_3pC()
     end if
     micfhist(:,hist_len) = la(:)
 
+    ! record time progress of data
+    call abf_accu_add_data_record_lf(cvhist(:,hist_len),fzinv,la, &
+                                     epothist(hist_len),ersthist(hist_len),ekinhist(hist_len-1))
+
+
 ! ABF part
     if( fstep .ge. hist_len ) then
         do i=1,NumOfABFCVs
@@ -579,6 +592,11 @@ subroutine abf_core_force_gpr()
     end if
     micfhist(:,hist_len)    = la(:)
 
+    ! record time progress of data
+    call abf_accu_add_data_record_lf(cvhist(:,hist_len),fzinv,la, &
+                                     epothist(hist_len),ersthist(hist_len),ekinhist(hist_len-1))
+
+
     ! use hist_len not gpr_len here, hist_len = gpr_len + 1 due to ekin delay
     if( mod(fstep,hist_len) .ne. 0 )  return
 
@@ -597,7 +615,7 @@ subroutine abf_core_force_gpr()
         end do
 
         ! solve GPR
-        call dgemv('N',gpr_len,gpr_len,1.0d0,gpr_K,gpr_len,gpr_data,1,0.0d0,gpr_model,1)
+        call dgemv('N',gpr_len,gpr_len,1.0d0,gpr_K_icf,gpr_len,gpr_data,1,0.0d0,gpr_model,1)
 
         do k=1,gpr_len
             ! calculate CV derivative in time - derivative is shift invariant
@@ -648,7 +666,7 @@ subroutine abf_core_force_gpr()
             end do
 
             ! solve GPR
-            call dgemv('N',gpr_len,gpr_len,1.0d0,gpr_K,gpr_len,gpr_data,1,0.0d0,gpr_model,1)
+            call dgemv('N',gpr_len,gpr_len,1.0d0,gpr_K_icf,gpr_len,gpr_data,1,0.0d0,gpr_model,1)
 
             do k=1,gpr_len
                 ! calculate momenta derivative in time - derivative is shift invariant
@@ -701,7 +719,7 @@ subroutine abf_core_force_gpr()
         end if
 
         ! solve GPR
-        call dgemv('N',gpr_len,gpr_len,1.0d0,gpr_K,gpr_len,gpr_data,1,0.0d0,gpr_model,1)
+        call dgemv('N',gpr_len,gpr_len,1.0d0,gpr_K_ene,gpr_len,gpr_data,1,0.0d0,gpr_model,1)
 
         if( fdebug .and. gpr_smoothekin ) then
             open(unit=4789,file='abf-gpr.ekin',status='UNKNOWN')

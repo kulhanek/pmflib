@@ -120,8 +120,7 @@ type,extends(PMFAccuType) :: ABFAccuType
 ! time recording for post-processing
     real(PMFDP),pointer    :: tcvs(:,:)
     real(PMFDP),pointer    :: tzinv(:,:,:)
-    real(PMFDP),pointer    :: ticf(:,:)
-    real(PMFDP),pointer    :: tmicf(:,:)
+    real(PMFDP),pointer    :: tbicf(:,:)
     real(PMFDP),pointer    :: tepot(:)
     real(PMFDP),pointer    :: terst(:)
     real(PMFDP),pointer    :: tekin(:)
@@ -178,8 +177,10 @@ real(PMFDP),allocatable     :: ekinhist(:)          ! history of Ekin
 
 ! GPR facility -----------------------------------------------------------------
 integer                     :: gpr_len          ! MUST be odd number
-real(PMFDP)                 :: gpr_width        ! kernel width time steps
-real(PMFDP)                 :: gpr_noise        !
+real(PMFDP)                 :: gpr_width_icf    ! kernel width time steps
+real(PMFDP)                 :: gpr_noise_icf    !
+real(PMFDP)                 :: gpr_width_ene    ! kernel width time steps
+real(PMFDP)                 :: gpr_noise_ene    !
 integer                     :: gpr_kernel       ! 0 - MC(3/2)
                                                 ! 1 - MC(5/2)
                                                 ! 2 - ARDSE
@@ -189,12 +190,12 @@ logical                     :: gpr_smoothekin
 logical                     :: gpr_smoothetot
 logical                     :: gpr_cdf
 
-real(PMFDP),allocatable     :: gpr_K(:,:)       ! covariance matrix
+real(PMFDP),allocatable     :: gpr_K_icf(:,:)   ! covariance matrix
+real(PMFDP),allocatable     :: gpr_K_ene(:,:)   ! covariance matrix
 real(PMFDP),allocatable     :: gpr_data(:)      ! GPR input data
 real(PMFDP),allocatable     :: gpr_model(:)     ! GPR model
 real(PMFDP),allocatable     :: gpr_kff(:,:)     !
 real(PMFDP),allocatable     :: gpr_kfd(:,:)     !
-
 
 ! ------------------------------------------------------------------------------
 
