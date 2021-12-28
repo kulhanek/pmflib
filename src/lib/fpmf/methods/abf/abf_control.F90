@@ -136,14 +136,15 @@ subroutine abf_control_read_abf(prm_fin)
     end select
 
     if( fmode .eq. 4 ) then
+        write(PMF_OUT,63)
         call pmf_ctrl_read_integer(prm_fin,'gpr_len',gpr_len,'i12')
         call pmf_ctrl_check_integer('ABF','gpr_len',gpr_len,3,CND_GE)
-        call pmf_ctrl_read_real8(prm_fin,'gpr_width_icf',gpr_width_icf,'F12.3')
-        call pmf_ctrl_read_real8(prm_fin,'gpr_noise_icf',gpr_noise_icf,'F12.3')
+        call pmf_ctrl_read_real8(prm_fin,'gpr_width_cvs',gpr_width_cvs,'F12.3')
+        call pmf_ctrl_read_real8(prm_fin,'gpr_noise_cvs',gpr_noise_cvs,'F12.3')
         call pmf_ctrl_read_real8(prm_fin,'gpr_width_ene',gpr_width_ene,'F12.3')
         call pmf_ctrl_read_real8(prm_fin,'gpr_noise_ene',gpr_noise_ene,'F12.3')
         call pmf_ctrl_read_integer(prm_fin,'gpr_kernel',gpr_kernel,'i12')
-        call pmf_ctrl_check_integer_in_range('ABF','gpr_kernel',gpr_kernel,1,3)
+        call pmf_ctrl_check_integer_in_range('ABF','gpr_kernel',gpr_kernel,1,6)
         call pmf_ctrl_read_real8(prm_fin,'gpr_rcond',gpr_rcond,'E12.5')
         call pmf_ctrl_read_integer(prm_fin,'gpr_buffer',gpr_buffer,'i12')
         call pmf_ctrl_read_logical(prm_fin,'gpr_smoothekin',gpr_smoothekin)
@@ -202,6 +203,8 @@ subroutine abf_control_read_abf(prm_fin)
  51 format (/,'>> Linear ramp mode (feimode == 1)')
  52 format (/,'>> Kernel smoother (feimode == 2)')
  53 format (/,'>> Linear interpolation (feimode == 3)')
+
+ 63 format (/,'>> Gaussian Process Regression ABF (fmode == 4)')
 
 100 format (' >> Multiple-walkers ABF method is disabled!')
 

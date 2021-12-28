@@ -46,8 +46,9 @@ subroutine abf_init_method
     implicit none
     ! --------------------------------------------------------------------------
 
-    call abf_init_arrays
     call abf_init_print_header
+    call abf_init_arrays
+    call abf_init_print_summary
     call abf_output_open
     call abf_restart_read
     call abf_trajectory_open
@@ -108,8 +109,8 @@ subroutine abf_init_dat
     fswitch2zero    = .false.
 
     gpr_len         = 100
-    gpr_width_icf   = 30.0
-    gpr_noise_icf   =   0.0
+    gpr_width_cvs   = 30.0
+    gpr_width_cvs   =   0.0
     gpr_width_ene   = 30.0
     gpr_noise_ene   =   0.0
     gpr_kernel      = 1
@@ -127,6 +128,28 @@ end subroutine abf_init_dat
 
 subroutine abf_init_print_header
 
+    use pmf_constants
+    use pmf_utils
+
+    implicit none
+    ! --------------------------------------------------------------------------
+
+    write(PMF_OUT,120)
+    write(PMF_OUT,120)  '================================================================================'
+    write(PMF_OUT,120)  ' *********************** ADAPTIVE BIASING FORCE METHOD ************************ '
+    write(PMF_OUT,120)  '================================================================================'
+    write(PMF_OUT,120)
+
+120 format(A)
+
+end subroutine abf_init_print_header
+
+!===============================================================================
+! Subroutine:  abf_init_print_summary
+!===============================================================================
+
+subroutine abf_init_print_summary
+
     use prmfile
     use pmf_constants
     use pmf_dat
@@ -138,10 +161,6 @@ subroutine abf_init_print_header
     integer        :: i
     ! --------------------------------------------------------------------------
 
-    write(PMF_OUT,120)
-    write(PMF_OUT,120)  '================================================================================'
-    write(PMF_OUT,120)  ' *********************** ADAPTIVE BIASING FORCE METHOD ************************ '
-    write(PMF_OUT,120)  '================================================================================'
     write(PMF_OUT,120)
     write(PMF_OUT,120)  ' ABF Mode'
     write(PMF_OUT,120)  ' ------------------------------------------------------'
@@ -156,8 +175,8 @@ subroutine abf_init_print_header
     case(4)
     write(PMF_OUT,120)  '      |-> Simplified ABF algorithm (GPR)'
     write(PMF_OUT,130)  '          gpr_len                        : ', gpr_len
-    write(PMF_OUT,155)  '          gpr_width_icf                  : ', gpr_width_icf
-    write(PMF_OUT,155)  '          gpr_noise_icf                  : ', gpr_noise_icf
+    write(PMF_OUT,155)  '          gpr_width_cvs                  : ', gpr_width_cvs
+    write(PMF_OUT,155)  '          gpr_noise_cvs                  : ', gpr_noise_cvs
     write(PMF_OUT,155)  '          gpr_width_ene                  : ', gpr_width_ene
     write(PMF_OUT,155)  '          gpr_noise_ene                  : ', gpr_noise_ene
     write(PMF_OUT,130)  '          gpr_kernel                     : ', gpr_kernel
@@ -168,6 +187,12 @@ subroutine abf_init_print_header
     write(PMF_OUT,120)  '          \-> MC(5/2) (Matern kernel v=5/2)'
     case(3)
     write(PMF_OUT,120)  '          \-> SE (squared exponential kernel)'
+    case(4)
+    write(PMF_OUT,120)  '          \-> Epanechnikov (parabolic)'
+    case(5)
+    write(PMF_OUT,120)  '          \-> Quartic (biweight)'
+    case(6)
+    write(PMF_OUT,120)  '          \-> Triweight'
     case default
     end select
     write(PMF_OUT,160)  '          gpr_rcond                      : ', gpr_rcond
@@ -285,7 +310,7 @@ subroutine abf_init_print_header
 
 140 format(' == Collective variable #',I4.4)
 
-end subroutine abf_init_print_header
+end subroutine abf_init_print_summary
 
 !===============================================================================
 ! Subroutine:  abf_init_arrays
@@ -426,6 +451,24 @@ real(PMFDP) function abf_init_gpr_kernel(t1,t2,wfac)
             abf_init_gpr_kernel = (1.0d0 + sqrt(5.0d0) * r + 5.0d0/3.0d0 * r**2) * exp(- sqrt(5.0d0) * r)
         case(3)
             abf_init_gpr_kernel = exp(- 0.5d0 * r**2)
+        case(4)
+            if( r .le. 1.0d0 ) then
+                abf_init_gpr_kernel = (1.0d0 - r**2)
+            else
+                abf_init_gpr_kernel = 0.0d0
+            end if
+        case(5)
+            if( r .le. 1.0d0 ) then
+                abf_init_gpr_kernel = (1.0d0 - r**2)**2
+            else
+                abf_init_gpr_kernel = 0.0d0
+            end if
+        case(6)
+            if( r .le. 1.0d0 ) then
+                abf_init_gpr_kernel = (1.0d0 - r**2)**3
+            else
+                abf_init_gpr_kernel = 0.0d0
+            end if
         case default
             call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown gpr_kernel in abf_init_gpr_kernel!')
     end select
@@ -459,6 +502,24 @@ real(PMFDP) function abf_init_gpr_kernel_1d(t1,t2,wfac)
                        * sign(1.0d0,t1-t2)
         case(3)
             abf_init_gpr_kernel_1d = - exp(- 0.5d0 * r**2) * r / (wfac * fdtx) * sign(1.0d0,t1-t2)
+        case(4)
+            if( r .le. 1.0d0 ) then
+                abf_init_gpr_kernel_1d = -2.0d0 * r / (wfac * fdtx) * sign(1.0d0,t1-t2)
+            else
+                abf_init_gpr_kernel_1d = 0.0d0
+            end if
+        case(5)
+            if( r .le. 1.0d0 ) then
+                abf_init_gpr_kernel_1d = -4.0d0 * r * (1.0d0 - r**2) / (wfac * fdtx) * sign(1.0d0,t1-t2)
+            else
+                abf_init_gpr_kernel_1d = 0.0d0
+            end if
+        case(6)
+            if( r .le. 1.0d0 ) then
+                abf_init_gpr_kernel_1d = -6.0d0 * r * (1.0d0 - r**2)**2 / (wfac * fdtx) * sign(1.0d0,t1-t2)
+            else
+                abf_init_gpr_kernel_1d = 0.0d0
+            end if
         case default
             call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown gpr_kernel in abf_init_gpr_kernel_1d!')
     end select
@@ -487,7 +548,7 @@ subroutine abf_init_gpr
 
 ! allocate arrays
     allocate(                               &
-            gpr_K_icf(gpr_len,gpr_len),     &
+            gpr_K_cvs(gpr_len,gpr_len),     &
             gpr_K_ene(gpr_len,gpr_len),     &
             gpr_data(gpr_len),              &
             gpr_model(gpr_len),             &
@@ -503,26 +564,32 @@ subroutine abf_init_gpr
 ! init covariance matrix
     do i=1,gpr_len
         do j=1,gpr_len
-            gpr_K_icf(i,j) = abf_init_gpr_kernel(real(i,PMFDP),real(j,PMFDP),gpr_width_icf)
+            gpr_K_cvs(i,j) = abf_init_gpr_kernel(real(i,PMFDP),real(j,PMFDP),gpr_width_cvs)
             gpr_K_ene(i,j) = abf_init_gpr_kernel(real(i,PMFDP),real(j,PMFDP),gpr_width_ene)
         end do
     end do
 
     do i=1,gpr_len
-        gpr_K_icf(i,i) = gpr_K_icf(i,i) + gpr_noise_icf
+        gpr_K_cvs(i,i) = gpr_K_cvs(i,i) + gpr_noise_cvs
         gpr_K_ene(i,i) = gpr_K_ene(i,i) + gpr_noise_ene
     end do
 
-    call abf_init_gpr_invK(gpr_K_icf)
+    write(PMF_OUT,10)
+    call abf_init_gpr_invK(gpr_K_cvs)
+
+    write(PMF_OUT,20)
     call abf_init_gpr_invK(gpr_K_ene)
 
 ! init kff and kfd
     do i=1,gpr_len
         do j=1,gpr_len
             gpr_kff(j,i) = abf_init_gpr_kernel(real(i,PMFDP),real(j,PMFDP),gpr_width_ene)
-            gpr_kfd(j,i) = abf_init_gpr_kernel_1d(real(i,PMFDP),real(j,PMFDP),gpr_width_icf)
+            gpr_kfd(j,i) = abf_init_gpr_kernel_1d(real(i,PMFDP),real(j,PMFDP),gpr_width_cvs)
         end do
     end do
+
+10 format('>>> ABF GPR - CVS: (K+S)^-1')
+20 format('>>> ABF GPR - ENE: (K+S)^-1')
 
 end subroutine abf_init_gpr
 
@@ -635,6 +702,11 @@ subroutine abf_init_gpr_invK(mat)
     call dgemm('T', 'N', gpr_len, gpr_len, gpr_len, 1.0d0, vt, gpr_len, temp_mat, gpr_len, 0.0d0, mat, gpr_len)
 
     deallocate(sig,sig_plus,u,vt,temp_mat)
+
+    write(PMF_OUT,10) gpr_len,irank,a_rcond
+
+!10 format('>>> ABF GPR - CVS: (K+S)^-1')
+ 10 format('    Size = ',I5,'; Rank = ',I5,'; Real rcond = ',E10.5)
 
 end subroutine abf_init_gpr_invK
 

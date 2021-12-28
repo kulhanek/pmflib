@@ -38,7 +38,7 @@ CGPFilter::CGPFilter(void)
     SigmaF2         = 1.0;
     WFac            = 1.0;
     Noise           = 0.0;
-    RCond           = 1e-7;
+    RCond           = 1e-9;
     Kernel          = EGPFK_ARDMC32;
 
 }

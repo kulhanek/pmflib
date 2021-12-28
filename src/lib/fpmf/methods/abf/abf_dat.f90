@@ -177,8 +177,8 @@ real(PMFDP),allocatable     :: ekinhist(:)          ! history of Ekin
 
 ! GPR facility -----------------------------------------------------------------
 integer                     :: gpr_len          ! MUST be odd number
-real(PMFDP)                 :: gpr_width_icf    ! kernel width time steps
-real(PMFDP)                 :: gpr_noise_icf    !
+real(PMFDP)                 :: gpr_width_cvs    ! kernel width time steps
+real(PMFDP)                 :: gpr_noise_cvs    !
 real(PMFDP)                 :: gpr_width_ene    ! kernel width time steps
 real(PMFDP)                 :: gpr_noise_ene    !
 integer                     :: gpr_kernel       ! 0 - MC(3/2)
@@ -190,7 +190,7 @@ logical                     :: gpr_smoothekin
 logical                     :: gpr_smoothetot
 logical                     :: gpr_cdf
 
-real(PMFDP),allocatable     :: gpr_K_icf(:,:)   ! covariance matrix
+real(PMFDP),allocatable     :: gpr_K_cvs(:,:)   ! covariance matrix
 real(PMFDP),allocatable     :: gpr_K_ene(:,:)   ! covariance matrix
 real(PMFDP),allocatable     :: gpr_data(:)      ! GPR input data
 real(PMFDP),allocatable     :: gpr_model(:)     ! GPR model

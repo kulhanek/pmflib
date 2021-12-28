@@ -615,7 +615,7 @@ subroutine abf_core_force_gpr()
         end do
 
         ! solve GPR
-        call dgemv('N',gpr_len,gpr_len,1.0d0,gpr_K_icf,gpr_len,gpr_data,1,0.0d0,gpr_model,1)
+        call dgemv('N',gpr_len,gpr_len,1.0d0,gpr_K_cvs,gpr_len,gpr_data,1,0.0d0,gpr_model,1)
 
         do k=1,gpr_len
             ! calculate CV derivative in time - derivative is shift invariant
@@ -666,7 +666,7 @@ subroutine abf_core_force_gpr()
             end do
 
             ! solve GPR
-            call dgemv('N',gpr_len,gpr_len,1.0d0,gpr_K_icf,gpr_len,gpr_data,1,0.0d0,gpr_model,1)
+            call dgemv('N',gpr_len,gpr_len,1.0d0,gpr_K_cvs,gpr_len,gpr_data,1,0.0d0,gpr_model,1)
 
             do k=1,gpr_len
                 ! calculate momenta derivative in time - derivative is shift invariant

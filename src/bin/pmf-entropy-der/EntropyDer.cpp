@@ -142,13 +142,12 @@ bool CEntropyDer::Run(void)
 
     vout << "   Numerical differentiation ..." << endl;
     //GetNativeData();
-    //for(double wfac=10.0; wfac < 200; wfac += 10.0){
-        GetICFByGPF(100);
-    //}
+    for(double wfac=10.0; wfac < 200; wfac += 10.0){
+        GetICFByGPF(wfac);
+    }
 
     vout << "   Done." << endl;
 
-    InAccu->Save("test.rst");
 
     exit(1);
 
@@ -308,9 +307,9 @@ void CEntropyDer::GetICFByGPF(double wfac)
 {
     CGPFilterPtr gpfilter(new CGPFilter);
 
-    int    gplen    = 300;
-    double gpwfac   = 50;
-    double gpnoise  = 0.01;
+    int    gplen    = 1000;
+    double gpwfac   = wfac;
+    double gpnoise  = 0.00;
 
 
     gpfilter->SetKernel("ardmc32");
@@ -348,24 +347,24 @@ void CEntropyDer::GetICFByGPF(double wfac)
     double lsize    = 0.0;
 
    for(size_t t=10; t < NSTLimit-gplen; t += gplen){
-//
-//    // get force components
-//        for(size_t icv=0; icv < NumOfCVs; icv++){
-//            CVectorDataPtr incvs  = insdcvs->GetDataBlob(icv);
-//
-//            gpfilter->TrainProcess(incvs,t);
-//            double logml = gpfilter->GetLogPL();
-//            totlogml += logml;
-//            lsize++;
-//
-//            CVectorDataPtr outcvs  = outsdcvs->GetDataBlob(icv);
-//            gpfilter->PredictData(outcvs,t);
-//        }
 
-        gpfilter->TrainProcess(inetot,t);
-        double logml = gpfilter->GetLogPL();
-        totlogml += logml;
-        lsize++;
+    // get force components
+        for(size_t icv=0; icv < NumOfCVs; icv++){
+            CVectorDataPtr incvs  = insdcvs->GetDataBlob(icv);
+
+            gpfilter->TrainProcess(incvs,t);
+            double logml = gpfilter->GetLogML();
+            totlogml += logml;
+            lsize++;
+
+            CVectorDataPtr outcvs  = outsdcvs->GetDataBlob(icv);
+            gpfilter->PredictData(outcvs,t);
+        }
+
+//        gpfilter->TrainProcess(inetot,t);
+//        double logml = gpfilter->GetLogPL();
+//        totlogml += logml;
+//        lsize++;
 
         gpfilter->PredictData(outetot,t);
    }
