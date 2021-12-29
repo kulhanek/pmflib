@@ -154,6 +154,7 @@ subroutine abf_control_read_abf(prm_fin)
         call pmf_ctrl_check_integer_in_range('ABF','gpr_kernel',gpr_kernel,1,6)
 
         call pmf_ctrl_read_real8(prm_fin,'gpr_rcond',gpr_rcond,'E12.5')
+        call pmf_ctrl_read_real8(prm_fin,'gpr_rank_frac',gpr_rank_frac,'F12.3')
 
         call pmf_ctrl_read_integer(prm_fin,'gpr_buffer',gpr_buffer,'i12')
         call pmf_ctrl_read_logical(prm_fin,'gpr_smoothekin',gpr_smoothekin)

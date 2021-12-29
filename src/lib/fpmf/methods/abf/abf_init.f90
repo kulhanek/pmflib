@@ -119,6 +119,7 @@ subroutine abf_init_dat
     gpr_fsinc_ene   =   0.0
     gpr_kernel      = 1
     gpr_rcond       = 1e-7
+    gpr_rank_frac   = 0.0
     gpr_buffer      = 0
     gpr_smoothekin  = .false.
     gpr_smoothetot  = .false.
@@ -204,6 +205,7 @@ subroutine abf_init_print_summary
     case default
     end select
     write(PMF_OUT,160)  '          gpr_rcond                      : ', gpr_rcond
+    write(PMF_OUT,155)  '          gpr_rank_frac                  : ', gpr_rank_frac
     write(PMF_OUT,130)  '          gpr_buffer                     : ', gpr_buffer
     write(PMF_OUT,125)  '          gpr_smoothekin                 : ', prmfile_onoff(gpr_smoothekin)
     write(PMF_OUT,125)  '          gpr_smoothetot                 : ', prmfile_onoff(gpr_smoothetot)
@@ -727,16 +729,29 @@ subroutine abf_init_gpr_invK(mat)
     end do
 
     a_rcond = minv/maxv
-
     irank = 0
-    do i=1,gpr_len
-        if( sig(i) .gt. gpr_rcond*maxv ) then
-           sig_plus(i,i) = 1.0d0/sig(i)
-           irank = irank + 1
-        else
-           sig_plus(i,i) = 0.0d0
-        end if
-    end do
+
+    if( gpr_rank_frac .eq. 0.0d0 ) then
+        do i=1,gpr_len
+            if( sig(i) .gt. gpr_rcond*maxv ) then
+               sig_plus(i,i) = 1.0d0/sig(i)
+               irank = irank + 1
+            else
+               sig_plus(i,i) = 0.0d0
+            end if
+        end do
+    else
+        irank = int(gpr_rank_frac * real(gpr_len,PMFDP))
+        if( irank .lt. 0 ) irank = 0
+        if( irank .gt. gpr_len ) irank = gpr_len
+        do i=1,gpr_len
+            if( i .le. irank ) then
+               sig_plus(i,i) = 1.0d0/sig(i)
+            else
+               sig_plus(i,i) = 0.0d0
+            end if
+        end do
+    end if
 
 ! build pseudoinverse: V*sig_plus*UT
     call dgemm('N', 'T', gpr_len, gpr_len, gpr_len, 1.0d0, sig_plus, gpr_len, u, gpr_len, 0.0d0, temp_mat, gpr_len)

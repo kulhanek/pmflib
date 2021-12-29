@@ -189,6 +189,7 @@ integer                     :: gpr_kernel       ! 0 - MC(3/2)
                                                 ! 1 - MC(5/2)
                                                 ! 2 - ARDSE
 real(PMFDP)                 :: gpr_rcond        ! rcond for SVD
+real(PMFDP)                 :: gpr_rank_frac
 integer                     :: gpr_buffer       ! skip analysis at boundaries of gpr_len
 logical                     :: gpr_smoothekin
 logical                     :: gpr_smoothetot
