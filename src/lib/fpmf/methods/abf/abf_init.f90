@@ -452,6 +452,11 @@ real(PMFDP) function abf_init_gpr_kernel(t1,t2,wfac)
     real(PMFDP) :: r
     ! --------------------------------------------------------------------------
 
+    if( wfac .eq. 0.0d0 ) then
+        abf_init_gpr_kernel = 0.0d0
+        return
+    end if
+
     r = abs((t1-t2)/wfac)
 
     select case(gpr_kernel)
@@ -512,8 +517,8 @@ real(PMFDP) function abf_init_sinc_kernel(t1,t2,freq)
         return
     end if
 
-    arg = 2.0d0 * freq * fdt * t
-    abf_init_sinc_kernel = sin(PMF_PI*arg)/(PMF_PI*arg)
+    arg = PMF_PI * 2.0d0 * freq * fdt * t
+    abf_init_sinc_kernel = sin(arg)/arg
 
 end function abf_init_sinc_kernel
 
@@ -532,6 +537,11 @@ real(PMFDP) function abf_init_gpr_kernel_1d(t1,t2,wfac)
     real(PMFDP) :: t1,t2,wfac
     real(PMFDP) :: r
     ! --------------------------------------------------------------------------
+
+    if( wfac .eq. 0.0d0 ) then
+        abf_init_gpr_kernel_1d = 0.0d0
+        return
+    end if
 
     r = abs((t1-t2)/wfac)
 
@@ -566,6 +576,37 @@ real(PMFDP) function abf_init_gpr_kernel_1d(t1,t2,wfac)
     end select
 
 end function abf_init_gpr_kernel_1d
+
+!===============================================================================
+! Function:  abf_init_sinc_kernel_1d
+!===============================================================================
+
+real(PMFDP) function abf_init_sinc_kernel_1d(t1,t2,freq)
+
+    use pmf_utils
+    use pmf_dat
+    use abf_dat
+
+    implicit none
+    real(PMFDP) :: t1,t2,freq
+    real(PMFDP) :: t,arg
+    ! --------------------------------------------------------------------------
+
+    if( freq .eq. 0.0d0 ) then
+        abf_init_sinc_kernel_1d = 0.0d0
+        return
+    end if
+
+    t = t1-t2
+    if( t .eq. 0.0d0 ) then
+        abf_init_sinc_kernel_1d = 0.0d0
+        return
+    end if
+
+    arg = PMF_PI * 2.0d0 * freq * fdt * t
+    abf_init_sinc_kernel_1d = (arg*cos(arg)-sin(arg))/arg**2 * PMF_PI * 2.0d0 * freq * fdt / fdtx
+
+end function abf_init_sinc_kernel_1d
 
 !===============================================================================
 ! Subroutine:  abf_init_gpr
@@ -617,6 +658,16 @@ subroutine abf_init_gpr
         gpr_K_ene(i,i) = gpr_K_ene(i,i) + gpr_noise_ene
     end do
 
+    if( fdebug ) then
+        j = gpr_len/2
+        do i=1,gpr_len
+            write(7812,*) i, gpr_K_cvs(i,j)
+            write(7813,*) i, gpr_K_ene(i,j)
+        end do
+        close(7812)
+        close(7813)
+    end if
+
     write(PMF_OUT,10)
     call abf_init_gpr_invK(gpr_K_cvs)
 
@@ -626,8 +677,11 @@ subroutine abf_init_gpr
 ! init kff and kfd
     do i=1,gpr_len
         do j=1,gpr_len
-            gpr_kff(j,i) = abf_init_gpr_kernel(real(i,PMFDP),real(j,PMFDP),gpr_width_ene)
-            gpr_kfd(j,i) = abf_init_gpr_kernel_1d(real(i,PMFDP),real(j,PMFDP),gpr_width_cvs)
+            gpr_kfd(j,i) = abf_init_gpr_kernel_1d(real(i,PMFDP),real(j,PMFDP),gpr_width_cvs) &
+                         + gpr_msinc_cvs * abf_init_sinc_kernel_1d(real(i,PMFDP),real(j,PMFDP),gpr_fsinc_cvs)
+
+            gpr_kff(j,i) = abf_init_gpr_kernel(real(i,PMFDP),real(j,PMFDP),gpr_width_ene) &
+                         + gpr_msinc_ene * abf_init_sinc_kernel(real(i,PMFDP),real(j,PMFDP),gpr_fsinc_ene)
         end do
     end do
 
@@ -729,8 +783,8 @@ subroutine abf_init_gpr_invK(mat)
     end do
 
     a_rcond = minv/maxv
-    irank = 0
 
+    irank = 0
     if( gpr_rank_frac .eq. 0.0d0 ) then
         do i=1,gpr_len
             if( sig(i) .gt. gpr_rcond*maxv ) then
