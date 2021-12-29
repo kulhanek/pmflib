@@ -178,9 +178,13 @@ real(PMFDP),allocatable     :: ekinhist(:)          ! history of Ekin
 ! GPR facility -----------------------------------------------------------------
 integer                     :: gpr_len          ! MUST be odd number
 real(PMFDP)                 :: gpr_width_cvs    ! kernel width time steps
-real(PMFDP)                 :: gpr_noise_cvs    !
+real(PMFDP)                 :: gpr_noise_cvs
+real(PMFDP)                 :: gpr_msinc_cvs
+real(PMFDP)                 :: gpr_fsinc_cvs    !
 real(PMFDP)                 :: gpr_width_ene    ! kernel width time steps
 real(PMFDP)                 :: gpr_noise_ene    !
+real(PMFDP)                 :: gpr_msinc_ene
+real(PMFDP)                 :: gpr_fsinc_ene
 integer                     :: gpr_kernel       ! 0 - MC(3/2)
                                                 ! 1 - MC(5/2)
                                                 ! 2 - ARDSE

@@ -111,8 +111,12 @@ subroutine abf_init_dat
     gpr_len         = 100
     gpr_width_cvs   = 30.0
     gpr_width_cvs   =   0.0
+    gpr_msinc_cvs   =   0.0
+    gpr_fsinc_cvs   =   0.0
     gpr_width_ene   = 30.0
     gpr_noise_ene   =   0.0
+    gpr_msinc_ene   =   0.0
+    gpr_fsinc_ene   =   0.0
     gpr_kernel      = 1
     gpr_rcond       = 1e-7
     gpr_buffer      = 0
@@ -176,9 +180,13 @@ subroutine abf_init_print_summary
     write(PMF_OUT,120)  '      |-> Simplified ABF algorithm (GPR)'
     write(PMF_OUT,130)  '          gpr_len                        : ', gpr_len
     write(PMF_OUT,155)  '          gpr_width_cvs                  : ', gpr_width_cvs
-    write(PMF_OUT,155)  '          gpr_noise_cvs                  : ', gpr_noise_cvs
+    write(PMF_OUT,160)  '          gpr_noise_cvs                  : ', gpr_noise_cvs
+    write(PMF_OUT,160)  '          gpr_msinc_cvs                  : ', gpr_msinc_cvs
+    write(PMF_OUT,155)  '          gpr_fsinc_cvs                  : ', gpr_fsinc_cvs
     write(PMF_OUT,155)  '          gpr_width_ene                  : ', gpr_width_ene
-    write(PMF_OUT,155)  '          gpr_noise_ene                  : ', gpr_noise_ene
+    write(PMF_OUT,160)  '          gpr_noise_ene                  : ', gpr_noise_ene
+    write(PMF_OUT,160)  '          gpr_msinc_ene                  : ', gpr_msinc_ene
+    write(PMF_OUT,155)  '          gpr_fsinc_ene                  : ', gpr_fsinc_ene
     write(PMF_OUT,130)  '          gpr_kernel                     : ', gpr_kernel
     select case(gpr_kernel)
     case(1)
@@ -478,6 +486,37 @@ end function abf_init_gpr_kernel
 
 !===============================================================================
 ! Function:  abf_init_gpr_kernel
+!===============================================================================
+
+real(PMFDP) function abf_init_sinc_kernel(t1,t2,freq)
+
+    use pmf_utils
+    use pmf_dat
+    use abf_dat
+
+    implicit none
+    real(PMFDP) :: t1,t2,freq
+    real(PMFDP) :: t,arg
+    ! --------------------------------------------------------------------------
+
+    if( freq .eq. 0.0d0 ) then
+        abf_init_sinc_kernel = 0.0d0
+        return
+    end if
+
+    t = t1-t2
+    if( t .eq. 0.0d0 ) then
+        abf_init_sinc_kernel = 1.0d0
+        return
+    end if
+
+    arg = 2.0d0 * freq * fdt * t
+    abf_init_sinc_kernel = sin(PMF_PI*arg)/(PMF_PI*arg)
+
+end function abf_init_sinc_kernel
+
+!===============================================================================
+! Function:  abf_init_gpr_kernel
 ! first derivative
 !===============================================================================
 
@@ -564,8 +603,10 @@ subroutine abf_init_gpr
 ! init covariance matrix
     do i=1,gpr_len
         do j=1,gpr_len
-            gpr_K_cvs(i,j) = abf_init_gpr_kernel(real(i,PMFDP),real(j,PMFDP),gpr_width_cvs)
-            gpr_K_ene(i,j) = abf_init_gpr_kernel(real(i,PMFDP),real(j,PMFDP),gpr_width_ene)
+            gpr_K_cvs(i,j) = abf_init_gpr_kernel(real(i,PMFDP),real(j,PMFDP),gpr_width_cvs) &
+                           + gpr_msinc_cvs * abf_init_sinc_kernel(real(i,PMFDP),real(j,PMFDP),gpr_fsinc_cvs)
+            gpr_K_ene(i,j) = abf_init_gpr_kernel(real(i,PMFDP),real(j,PMFDP),gpr_width_ene) &
+                           + gpr_msinc_ene * abf_init_sinc_kernel(real(i,PMFDP),real(j,PMFDP),gpr_fsinc_ene)
         end do
     end do
 

@@ -142,9 +142,9 @@ bool CEntropyDer::Run(void)
 
     vout << "   Numerical differentiation ..." << endl;
     //GetNativeData();
-    for(double wfac=10.0; wfac < 200; wfac += 10.0){
-        GetICFByGPF(wfac);
-    }
+    //for(double wfac=10.0; wfac < 200; wfac += 10.0){
+        GetICFByGPF(75.0);
+    //}
 
     vout << "   Done." << endl;
 
@@ -307,9 +307,9 @@ void CEntropyDer::GetICFByGPF(double wfac)
 {
     CGPFilterPtr gpfilter(new CGPFilter);
 
-    int    gplen    = 1000;
-    double gpwfac   = wfac;
-    double gpnoise  = 0.00;
+    int    gplen    = 301;
+    double gpwfac   = 153;
+    double gpnoise  = 0;
 
 
     gpfilter->SetKernel("ardmc32");

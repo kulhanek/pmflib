@@ -22,6 +22,7 @@
 #include <iostream>
 #include <SciLapack.hpp>
 #include <SciBlas.hpp>
+#include <iomanip>
 
 //------------------------------------------------------------------------------
 
@@ -38,7 +39,7 @@ CGPFilter::CGPFilter(void)
     SigmaF2         = 1.0;
     WFac            = 1.0;
     Noise           = 0.0;
-    RCond           = 1e-9;
+    RCond           = 1e-7;
     Kernel          = EGPFK_ARDMC32;
 
 }
@@ -102,6 +103,12 @@ void CGPFilter::SetFilter(double timestep,int framelen, double wfac, double nois
         KS[indi][indi] += Noise;
     }
 
+    ofstream ofs("kernel.orig");
+    for(size_t i=0; i < GPRSize; i++){
+            ofs << i << " " << setprecision(16) << KS[70][i] << endl;
+    }
+    ofs.close();
+
     RunBlasLapackPar();
 
 // inverting the K+Sigma
@@ -115,6 +122,16 @@ void CGPFilter::SetFilter(double timestep,int framelen, double wfac, double nois
     if( result != 0 ){
         RUNTIME_ERROR("unable to invert K+Sigma");
     }
+
+    result = CSciLapack::invSVD2(KS,logdetK,RCond,rank,realRCond);
+    vout << "      Rank = " << rank << "; Info = " << result << "; Real rcond = " << scientific << realRCond << fixed << endl;
+
+    ofstream ofs1("kernel.proc");
+    for(size_t i=0; i < GPRSize; i++){
+            ofs1 << i << " " << setprecision(16) << KS[70][i] << endl;
+    }
+    ofs1.close();
+
 }
 
 //------------------------------------------------------------------------------

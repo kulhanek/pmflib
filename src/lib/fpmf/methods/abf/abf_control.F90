@@ -139,13 +139,22 @@ subroutine abf_control_read_abf(prm_fin)
         write(PMF_OUT,63)
         call pmf_ctrl_read_integer(prm_fin,'gpr_len',gpr_len,'i12')
         call pmf_ctrl_check_integer('ABF','gpr_len',gpr_len,3,CND_GE)
+
         call pmf_ctrl_read_real8(prm_fin,'gpr_width_cvs',gpr_width_cvs,'F12.3')
-        call pmf_ctrl_read_real8(prm_fin,'gpr_noise_cvs',gpr_noise_cvs,'F12.3')
+        call pmf_ctrl_read_real8(prm_fin,'gpr_noise_cvs',gpr_noise_cvs,'E12.5')
+        call pmf_ctrl_read_real8(prm_fin,'gpr_msinc_cvs',gpr_msinc_cvs,'E12.5')
+        call pmf_ctrl_read_real8(prm_fin,'gpr_fsinc_cvs',gpr_fsinc_cvs,'F12.3')
+
         call pmf_ctrl_read_real8(prm_fin,'gpr_width_ene',gpr_width_ene,'F12.3')
-        call pmf_ctrl_read_real8(prm_fin,'gpr_noise_ene',gpr_noise_ene,'F12.3')
+        call pmf_ctrl_read_real8(prm_fin,'gpr_noise_ene',gpr_noise_ene,'E12.5')
+        call pmf_ctrl_read_real8(prm_fin,'gpr_msinc_ene',gpr_msinc_ene,'E12.5')
+        call pmf_ctrl_read_real8(prm_fin,'gpr_fsinc_ene',gpr_fsinc_ene,'F12.3')
+
         call pmf_ctrl_read_integer(prm_fin,'gpr_kernel',gpr_kernel,'i12')
         call pmf_ctrl_check_integer_in_range('ABF','gpr_kernel',gpr_kernel,1,6)
+
         call pmf_ctrl_read_real8(prm_fin,'gpr_rcond',gpr_rcond,'E12.5')
+
         call pmf_ctrl_read_integer(prm_fin,'gpr_buffer',gpr_buffer,'i12')
         call pmf_ctrl_read_logical(prm_fin,'gpr_smoothekin',gpr_smoothekin)
         call pmf_ctrl_read_logical(prm_fin,'gpr_smoothetot',gpr_smoothetot)
