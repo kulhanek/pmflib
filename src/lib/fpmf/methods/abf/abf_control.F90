@@ -66,7 +66,7 @@ subroutine abf_control_read_abf(prm_fin)
     end if
 
     ! read configuration
-    call pmf_ctrl_read_integer(prm_fin,'fmode',fmode,'i12')
+    call pmf_ctrl_read_integer(prm_fin,'fmode',fmode,'I12')
     call pmf_ctrl_check_integer_in_range('ABF','fmode',fmode,0,4)
 
     if( fmode .eq. 0 ) then
@@ -80,15 +80,15 @@ subroutine abf_control_read_abf(prm_fin)
     call pmf_ctrl_read_logical(prm_fin,'fapply_abf',fapply_abf)
     call pmf_ctrl_read_logical(prm_fin,'fapply_mask',fapply_mask)
 
-    call pmf_ctrl_read_integer(prm_fin,'fsample',fsample,'i12')
+    call pmf_ctrl_read_integer(prm_fin,'fsample',fsample,'I12')
     call pmf_ctrl_check_integer('ABF','fsample',fsample,0,CND_GE)
 
     call pmf_ctrl_read_logical(prm_fin,'frestart',frestart)
 
-    call pmf_ctrl_read_integer(prm_fin,'frstupdate',frstupdate,'i12')
+    call pmf_ctrl_read_integer(prm_fin,'frstupdate',frstupdate,'I12')
     call pmf_ctrl_check_integer('ABF','frstupdate',frstupdate,0,CND_GE)
 
-    call pmf_ctrl_read_integer(prm_fin,'ftrjsample',ftrjsample,'i12')
+    call pmf_ctrl_read_integer(prm_fin,'ftrjsample',ftrjsample,'I12')
     call pmf_ctrl_check_integer('ABF','ftrjsample',ftrjsample,0,CND_GE)
 
     call pmf_ctrl_read_logical(prm_fin,'fenthalpy',fenthalpy)
@@ -99,7 +99,7 @@ subroutine abf_control_read_abf(prm_fin)
     call pmf_ctrl_read_real8_wunit(prm_fin,'fekinaverage',EnergyUnit,fekinaverage,'F10.1')
 
     call pmf_ctrl_read_logical(prm_fin,'fswitch2zero',fswitch2zero)
-    call pmf_ctrl_read_integer(prm_fin,'feimode',feimode,'i12')
+    call pmf_ctrl_read_integer(prm_fin,'feimode',feimode,'I12')
     call pmf_ctrl_check_integer_in_range('ABF','feimode',feimode,0,3)
 
     select case(feimode)
@@ -107,29 +107,29 @@ subroutine abf_control_read_abf(prm_fin)
             write(PMF_OUT,50)
         case(1)
             write(PMF_OUT,51)
-            call pmf_ctrl_read_integer(prm_fin,'fhramp_min',fhramp_min,'i12')
+            call pmf_ctrl_read_integer(prm_fin,'fhramp_min',fhramp_min,'I12')
             call pmf_ctrl_check_integer('ABF','fhramp_min',fhramp_min,0,CND_GE)
-            call pmf_ctrl_read_integer(prm_fin,'fhramp_max',fhramp_max,'i12')
+            call pmf_ctrl_read_integer(prm_fin,'fhramp_max',fhramp_max,'I12')
             call pmf_ctrl_check_integer('ABF','fhramp_max',fhramp_max,0,CND_GE)
             if( fhramp_max .lt. fhramp_min ) then
                 call pmf_utils_exit(PMF_OUT,1,'[ABF] fhramp_max must be >= fhramp_min!')
             end if
         case(2)
             write(PMF_OUT,52)
-            call pmf_ctrl_read_integer(prm_fin,'fhramp_min',fhramp_min,'i12')
+            call pmf_ctrl_read_integer(prm_fin,'fhramp_min',fhramp_min,'I12')
             call pmf_ctrl_check_integer('ABF','fhramp_min',fhramp_min,0,CND_GE)
-            call pmf_ctrl_read_integer(prm_fin,'fhramp_max',fhramp_max,'i12')
+            call pmf_ctrl_read_integer(prm_fin,'fhramp_max',fhramp_max,'I12')
             call pmf_ctrl_check_integer('ABF','fhramp_max',fhramp_max,0,CND_GE)
             if( fhramp_max .lt. fhramp_min ) then
                 call pmf_utils_exit(PMF_OUT,1,'[ABF] fhramp_max must be >= fhramp_min!')
             end if
-            call pmf_ctrl_read_integer(prm_fin,'fsmooth_kernel',fsmooth_kernel,'i12')
+            call pmf_ctrl_read_integer(prm_fin,'fsmooth_kernel',fsmooth_kernel,'I12')
             call pmf_ctrl_check_integer_in_range('ABF','fsmooth_kernel',fsmooth_kernel,0,1)
         case(3)
             write(PMF_OUT,53)
-            call pmf_ctrl_read_integer(prm_fin,'fhramp_min',fhramp_min,'i12')
+            call pmf_ctrl_read_integer(prm_fin,'fhramp_min',fhramp_min,'I12')
             call pmf_ctrl_check_integer('ABF','fhramp_min',fhramp_min,0,CND_GE)
-            call pmf_ctrl_read_integer(prm_fin,'fhramp_max',fhramp_max,'i12')
+            call pmf_ctrl_read_integer(prm_fin,'fhramp_max',fhramp_max,'I12')
             call pmf_ctrl_check_integer('ABF','fhramp_max',fhramp_max,0,CND_GE)
         case default
             call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown extrapolation/interpolation mode!')
@@ -137,32 +137,39 @@ subroutine abf_control_read_abf(prm_fin)
 
     if( fmode .eq. 4 ) then
         write(PMF_OUT,63)
-        call pmf_ctrl_read_integer(prm_fin,'gpr_len',gpr_len,'i12')
+        call pmf_ctrl_read_integer(prm_fin,'gpr_len',gpr_len,'I12')
         call pmf_ctrl_check_integer('ABF','gpr_len',gpr_len,3,CND_GE)
 
-        call pmf_ctrl_read_real8(prm_fin,'gpr_width_cvs',gpr_width_cvs,'F12.3')
-        call pmf_ctrl_read_real8(prm_fin,'gpr_noise_cvs',gpr_noise_cvs,'E12.5')
-        call pmf_ctrl_read_real8(prm_fin,'gpr_msinc_cvs',gpr_msinc_cvs,'E12.5')
-        call pmf_ctrl_read_real8(prm_fin,'gpr_fsinc_cvs',gpr_fsinc_cvs,'F12.3')
-
-        call pmf_ctrl_read_real8(prm_fin,'gpr_width_ene',gpr_width_ene,'F12.3')
-        call pmf_ctrl_read_real8(prm_fin,'gpr_noise_ene',gpr_noise_ene,'E12.5')
-        call pmf_ctrl_read_real8(prm_fin,'gpr_msinc_ene',gpr_msinc_ene,'E12.5')
-        call pmf_ctrl_read_real8(prm_fin,'gpr_fsinc_ene',gpr_fsinc_ene,'F12.3')
-
-        call pmf_ctrl_read_integer(prm_fin,'gpr_kernel',gpr_kernel,'i12')
+    ! main kernel
+        call pmf_ctrl_read_integer(prm_fin,'gpr_kernel',gpr_kernel,'I12')
         call pmf_ctrl_check_integer_in_range('ABF','gpr_kernel',gpr_kernel,1,6)
+        call pmf_ctrl_read_real8_wunit(prm_fin,'gpr_width',TimeUnit,gpr_width,'F12.3')
 
-        call pmf_ctrl_read_real8(prm_fin,'gpr_rcond',gpr_rcond,'E12.5')
-        call pmf_ctrl_read_real8(prm_fin,'gpr_rank_frac',gpr_rank_frac,'F12.3')
+    ! sinc kernel
+        call pmf_ctrl_read_real8(prm_fin,'gpr_sinc_s2',gpr_sinc_s2,'E12.5')
+        call pmf_ctrl_read_real8_wunit(prm_fin,'gpr_sinc_T',TimeUnit,gpr_sinc_T,'F12.3')
 
-        call pmf_ctrl_read_integer(prm_fin,'gpr_buffer',gpr_buffer,'i12')
-        call pmf_ctrl_read_logical(prm_fin,'gpr_smoothekin',gpr_smoothekin)
-        call pmf_ctrl_read_logical(prm_fin,'gpr_smoothetot',gpr_smoothetot)
-        if( gpr_smoothetot .and. gpr_smoothekin ) then
-            call pmf_utils_exit(PMF_OUT,1,'[ABF] gpr_smoothekin and gpr_smoothetot are mutually exclusive options!')
-        end if
+        call pmf_ctrl_read_integer(prm_fin,'gpr_sinc_mode',gpr_sinc_mode,'I12')
+        call pmf_ctrl_check_integer_in_range('ABF','gpr_sinc_mode',gpr_sinc_mode,0,2)
+
+        call pmf_ctrl_read_logical(prm_fin,'gpr_sinc_infer',gpr_sinc_infer)
+
+        call pmf_ctrl_read_integer(prm_fin,'gpr_sinc_op',gpr_sinc_op,'I12')
+        call pmf_ctrl_check_integer_in_range('ABF','gpr_sinc_op',gpr_sinc_op,0,2)
+
+    ! noise
+        call pmf_ctrl_read_real8(prm_fin,'gpr_noise_s2',gpr_noise_s2,'E12.5')
+
+    ! other setup
         call pmf_ctrl_read_logical(prm_fin,'gpr_cdf',gpr_cdf)
+        call pmf_ctrl_read_integer(prm_fin,'gpr_boundary',gpr_boundary,'I12')
+        call pmf_ctrl_read_integer(prm_fin,'gpr_smooth_ene',gpr_smooth_ene,'I12')
+        call pmf_ctrl_check_integer_in_range('ABF','gpr_smooth_ene',gpr_smooth_ene,0,2)
+
+    ! SVD setup
+        call pmf_ctrl_read_real8(prm_fin,'gpr_rcond',gpr_rcond,'E12.5')
+        call pmf_ctrl_read_integer(prm_fin,'gpr_rank',gpr_rank,'I12')
+        call pmf_ctrl_read_real8_wunit(prm_fin,'gpr_rank_T',TimeUnit,gpr_rank_T,'F12.3')
     end if
 
     ! network setup ----------------------------------------------------------------
@@ -178,12 +185,12 @@ subroutine abf_control_read_abf(prm_fin)
         fserver_enabled = .true.
     end if
 
-    call pmf_ctrl_read_integer(prm_fin,'fserverupdate',fserverupdate,'i12')
+    call pmf_ctrl_read_integer(prm_fin,'fserverupdate',fserverupdate,'I12')
     call pmf_ctrl_check_integer('ABF','fserverupdate',fserverupdate,0,CND_GT)
 
     call pmf_ctrl_read_logical(prm_fin,'fabortonmwaerr',fabortonmwaerr)
 
-    call pmf_ctrl_read_integer(prm_fin,'fmwamode',fmwamode,'i12')
+    call pmf_ctrl_read_integer(prm_fin,'fmwamode',fmwamode,'I12')
     call pmf_ctrl_check_integer_in_range('ABF','fmwamode',fmwamode,0,1)
 #else
     fserver_enabled = .false.

@@ -615,7 +615,7 @@ subroutine abf_core_force_gpr()
         end do
 
         ! solve GPR
-        call dgemv('N',gpr_len,gpr_len,1.0d0,gpr_K_cvs,gpr_len,gpr_data,1,0.0d0,gpr_model,1)
+        call dgemv('N',gpr_len,gpr_len,1.0d0,gpr_K,gpr_len,gpr_data,1,0.0d0,gpr_model,1)
 
         do k=1,gpr_len
             ! calculate CV derivative in time - derivative is shift invariant
@@ -666,7 +666,7 @@ subroutine abf_core_force_gpr()
             end do
 
             ! solve GPR
-            call dgemv('N',gpr_len,gpr_len,1.0d0,gpr_K_cvs,gpr_len,gpr_data,1,0.0d0,gpr_model,1)
+            call dgemv('N',gpr_len,gpr_len,1.0d0,gpr_K,gpr_len,gpr_data,1,0.0d0,gpr_model,1)
 
             do k=1,gpr_len
                 ! calculate momenta derivative in time - derivative is shift invariant
@@ -692,49 +692,53 @@ subroutine abf_core_force_gpr()
         end do
     end if
 ! record data
-    if( gpr_smoothekin .or. gpr_smoothetot ) then
+    if( gpr_smooth_ene .gt. 0 ) then
+        select case(gpr_smooth_ene)
+            case(1)
+                mean = 0.0d0
+                do k=1,gpr_len
+                    mean = mean + epothist(k) + ersthist(k) + ekinhist(k)
+                end do
+                mean = mean / real(gpr_len,PMFDP)
 
-        if( gpr_smoothekin ) then
-            mean = 0.0d0
-            do k=1,gpr_len
-                mean = mean + ekinhist(k)
-            end do
-            mean = mean / real(gpr_len,PMFDP)
+                ! shift data
+                do k=1,gpr_len
+                    gpr_data(k) = epothist(k) + ersthist(k) + ekinhist(k) - mean
+                end do
+            case(2)
+                mean = 0.0d0
+                do k=1,gpr_len
+                    mean = mean + ekinhist(k)
+                end do
+                mean = mean / real(gpr_len,PMFDP)
 
-            ! shift data
-            do k=1,gpr_len
-                gpr_data(k) = ekinhist(k) - mean
-            end do
-        else
-            mean = 0.0d0
-            do k=1,gpr_len
-                mean = mean + epothist(k) + ersthist(k) + ekinhist(k)
-            end do
-            mean = mean / real(gpr_len,PMFDP)
-
-            ! shift data
-            do k=1,gpr_len
-                gpr_data(k) = epothist(k) + ersthist(k) + ekinhist(k) - mean
-            end do
-        end if
+                ! shift data
+                do k=1,gpr_len
+                    gpr_data(k) = ekinhist(k) - mean
+                end do
+            case default
+                call pmf_utils_exit(PMF_OUT,1,'[ABF] Unsupported gpr_smooth_ene in abf_core_force_gpr!')
+        end select
 
         ! solve GPR
-        call dgemv('N',gpr_len,gpr_len,1.0d0,gpr_K_ene,gpr_len,gpr_data,1,0.0d0,gpr_model,1)
+        call dgemv('N',gpr_len,gpr_len,1.0d0,gpr_K,gpr_len,gpr_data,1,0.0d0,gpr_model,1)
 
-        if( fdebug .and. gpr_smoothekin ) then
-            open(unit=4789,file='abf-gpr.ekin',status='UNKNOWN')
-            do k=1,gpr_len
-                write(4789,*) k, dot_product(gpr_model,gpr_kff(:,k))+mean, gpr_data(k)+mean
-            end do
-            close(4789)
-        end if
-        if( fdebug .and. gpr_smoothetot ) then
-            open(unit=4789,file='abf-gpr.etot',status='UNKNOWN')
-            do k=1,gpr_len
-                write(4789,*) k, dot_product(gpr_model,gpr_kff(:,k))+mean, gpr_data(k)+mean
-            end do
-            close(4789)
-        end if
+        select case(gpr_smooth_ene)
+            case(1)
+                open(unit=4789,file='abf-gpr.etot',status='UNKNOWN')
+                do k=1,gpr_len
+                    write(4789,*) k, dot_product(gpr_model,gpr_kff(:,k))+mean, gpr_data(k)+mean
+                end do
+                close(4789)
+            case(2)
+                open(unit=4789,file='abf-gpr.ekin',status='UNKNOWN')
+                do k=1,gpr_len
+                    write(4789,*) k, dot_product(gpr_model,gpr_kff(:,k))+mean, gpr_data(k)+mean
+                end do
+                close(4789)
+            case default
+                call pmf_utils_exit(PMF_OUT,1,'[ABF] Unsupported gpr_smooth_ene in abf_core_force_gpr!')
+        end select
     end if
 
     skip = 0
@@ -742,7 +746,7 @@ subroutine abf_core_force_gpr()
         skip = 1
     end if
 
-    do k=1+gpr_buffer+skip,gpr_len-gpr_buffer-skip
+    do k=1+gpr_boundary+skip,gpr_len-gpr_boundary-skip
 
         ! total ABF force
         pxi0(:) = icfhist(:,k) - micfhist(:,k)
@@ -750,17 +754,18 @@ subroutine abf_core_force_gpr()
         epot = epothist(k)
         erst = ersthist(k)
 
-        if( gpr_smoothekin .or. gpr_smoothetot ) then
-            if( gpr_smoothekin ) then
+        select case(gpr_smooth_ene)
+            case(0)
+                ekin = ekinhist(k)
+                etot = epot + erst + ekin
+            case(1)
+                etot = dot_product(gpr_model,gpr_kff(:,k)) + mean
+            case(2)
                 ekin = dot_product(gpr_model,gpr_kff(:,k)) + mean
                 etot = epot + erst + ekin
-            else
-                etot =  dot_product(gpr_model,gpr_kff(:,k)) + mean
-            end if
-        else
-            ekin = ekinhist(k)
-            etot = epot + erst + ekin
-        end if
+            case default
+                call pmf_utils_exit(PMF_OUT,1,'[ABF] Unsupported gpr_smooth_ene in abf_core_force_gpr!')
+        end select
 
         if( fdebug ) then
             write(DEBUG_ABF_FMODE4,*) fstep-hist_len+k, cvhist(:,k), pxi0, etot

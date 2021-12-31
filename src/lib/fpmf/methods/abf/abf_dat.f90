@@ -177,26 +177,43 @@ real(PMFDP),allocatable     :: ekinhist(:)          ! history of Ekin
 
 ! GPR facility -----------------------------------------------------------------
 integer                     :: gpr_len          ! MUST be odd number
-real(PMFDP)                 :: gpr_width_cvs    ! kernel width time steps
-real(PMFDP)                 :: gpr_noise_cvs
-real(PMFDP)                 :: gpr_msinc_cvs
-real(PMFDP)                 :: gpr_fsinc_cvs    !
-real(PMFDP)                 :: gpr_width_ene    ! kernel width time steps
-real(PMFDP)                 :: gpr_noise_ene    !
-real(PMFDP)                 :: gpr_msinc_ene
-real(PMFDP)                 :: gpr_fsinc_ene
-integer                     :: gpr_kernel       ! 0 - MC(3/2)
-                                                ! 1 - MC(5/2)
-                                                ! 2 - ARDSE
-real(PMFDP)                 :: gpr_rcond        ! rcond for SVD
-real(PMFDP)                 :: gpr_rank_frac
-integer                     :: gpr_buffer       ! skip analysis at boundaries of gpr_len
-logical                     :: gpr_smoothekin
-logical                     :: gpr_smoothetot
-logical                     :: gpr_cdf
 
-real(PMFDP),allocatable     :: gpr_K_cvs(:,:)   ! covariance matrix
-real(PMFDP),allocatable     :: gpr_K_ene(:,:)   ! covariance matrix
+! main kernel
+real(PMFDP)                 :: gpr_width        ! kernel width in fs
+integer                     :: gpr_kernel       ! 0 - Exponential
+                                                ! 1 - MC(3/2)
+                                                ! 2 - MC(5/2)
+                                                ! 3 - ARDSE
+                                                ! 4 - Epanechnikov (parabolic)
+                                                ! 5 - Quartic (biweight)
+                                                ! 6 - Triweight
+! sinc kernel
+real(PMFDP)                 :: gpr_sinc_s2      ! sinc kernel magnitude
+real(PMFDP)                 :: gpr_sinc_T       ! sinc kernel period in fs
+integer                     :: gpr_sinc_mode    ! 0 - low-pass filter - normal sinc filter
+                                                ! 1 - high-pass filter - spectral reversal of sinc filter
+                                                ! 2 - high-pass filter - spectral inversion of sinc filter
+logical                     :: gpr_sinc_infer   ! use sinc kernel in GPR inference
+integer                     :: gpr_sinc_op      ! 0 - do not use
+                                                ! 1 - add to main kernel
+                                                ! 2 - multiply with main kernel
+
+! noise magnitude
+real(PMFDP)                 :: gpr_noise_s2     ! noise magnitude
+
+! other setup
+logical                     :: gpr_cdf          ! use central differences for the second differentiation in ICF calc.
+integer                     :: gpr_boundary     ! skip analysis at boundaries of gpr_len
+integer                     :: gpr_smooth_ene   ! 0 - no smoothing
+                                                ! 1 - smooth etot
+                                                ! 2 - smooth ekin
+
+integer                     :: gpr_rank         ! rank for SVD inversion
+real(PMFDP)                 :: gpr_rcond        ! rcond for automatic rank determination
+real(PMFDP)                 :: gpr_rank_T       ! period in fs fro automatic rank determination
+
+
+real(PMFDP),allocatable     :: gpr_K(:,:)       ! co-variance matrix
 real(PMFDP),allocatable     :: gpr_data(:)      ! GPR input data
 real(PMFDP),allocatable     :: gpr_model(:)     ! GPR model
 real(PMFDP),allocatable     :: gpr_kff(:,:)     !
