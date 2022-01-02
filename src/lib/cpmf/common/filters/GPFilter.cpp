@@ -39,7 +39,7 @@ CGPFilter::CGPFilter(void)
     SigmaF2         = 1.0;
     WFac            = 1.0;
     Noise           = 0.0;
-    RCond           = 1e-7;
+    RCond           = 1e-16;
     Kernel          = EGPFK_ARDMC32;
 
 }
@@ -123,14 +123,14 @@ void CGPFilter::SetFilter(double timestep,int framelen, double wfac, double nois
         RUNTIME_ERROR("unable to invert K+Sigma");
     }
 
-    result = CSciLapack::invSVD2(KS,logdetK,RCond,rank,realRCond);
-    vout << "      Rank = " << rank << "; Info = " << result << "; Real rcond = " << scientific << realRCond << fixed << endl;
-
-    ofstream ofs1("kernel.proc");
-    for(size_t i=0; i < GPRSize; i++){
-            ofs1 << i << " " << setprecision(16) << KS[70][i] << endl;
-    }
-    ofs1.close();
+//    result = CSciLapack::invSVD2(KS,logdetK,RCond,rank,realRCond);
+//    vout << "      Rank = " << rank << "; Info = " << result << "; Real rcond = " << scientific << realRCond << fixed << endl;
+//
+//    ofstream ofs1("kernel.proc");
+//    for(size_t i=0; i < GPRSize; i++){
+//            ofs1 << i << " " << setprecision(16) << KS[70][i] << endl;
+//    }
+//    ofs1.close();
 
 }
 

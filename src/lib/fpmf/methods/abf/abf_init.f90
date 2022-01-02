@@ -110,22 +110,19 @@ subroutine abf_init_dat
 
     gpr_len         = 1001
 
-    gpr_width       = 30.0
-    gpr_kernel      = 1
-    gpr_sinc_s2     = 0.0
-    gpr_sinc_T      = 20.0
-    gpr_sinc_mode   = 0
-    gpr_sinc_infer  = .true.
-    gpr_sinc_op     = 0
-    gpr_noise_s2    = 0
+    gpr_cvs_kernel  = 1
+    gpr_cvs_width   = 30.0
+    gpr_cvs_noise   = 0.0
+    gpr_cvs_cdf     = .true.
 
-    gpr_cdf         = .true.
+    gpr_ene_smooth  = 0
+    gpr_ene_kernel  = 1
+    gpr_ene_width   = 30.0
+    gpr_ene_noise   = 0.0
+
     gpr_boundary    = 50
-    gpr_smooth_ene  = 0
-
     gpr_rank        = -1
     gpr_rcond       = 1e-16
-    gpr_rank_T      = -1.0
 
 end subroutine abf_init_dat
 
@@ -182,9 +179,10 @@ subroutine abf_init_print_summary
     case(4)
     write(PMF_OUT,120)  '      |-> Simplified ABF algorithm (GPR)'
     write(PMF_OUT,130)  '          gpr_len                        : ', gpr_len
-    write(PMF_OUT,120)  '          === Main kernel'
-    write(PMF_OUT,130)  '              gpr_kernel                 : ', gpr_kernel
-    select case(gpr_kernel)
+    write(PMF_OUT,130)  '          gpr_boundary                   : ', gpr_boundary
+    write(PMF_OUT,120)  '          === CVS GPR'
+    write(PMF_OUT,130)  '              gpr_cvs_kernel             : ', gpr_cvs_kernel
+    select case(gpr_cvs_kernel)
     case(0)
     write(PMF_OUT,120)  '              \-> EXP (exponential kernel)'
     case(1)
@@ -198,46 +196,18 @@ subroutine abf_init_print_summary
     case(5)
     write(PMF_OUT,120)  '              \-> Quartic (biweight) kernel'
     case(6)
-    write(PMF_OUT,120)  '              \-> Triweigh tkernel'
+    write(PMF_OUT,120)  '              \-> Triweigh kernel'
     case default
-        call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown gpr_kernel in abf_init_print_summary!')
+        call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown gpr_cvs_kernel in abf_init_print_summary!')
     end select
-    write(PMF_OUT,152)  '              gpr_width                  : ', gpr_width,  &
+    write(PMF_OUT,152)  '              gpr_cvs_width              : ', gpr_cvs_width,  &
                                        '['//trim(pmf_unit_label(TimeUnit))//']'
-    write(PMF_OUT,120)  '          === sinc kernel'
-    write(PMF_OUT,160)  '              gpr_sinc_s2                : ', gpr_sinc_s2
-    write(PMF_OUT,152)  '              gpr_sinc_T                 : ', gpr_sinc_T,  &
-                                       '['//trim(pmf_unit_label(TimeUnit))//']'
-    write(PMF_OUT,125)  '              gpr_sinc_infer             : ', prmfile_onoff(gpr_sinc_infer)
-    write(PMF_OUT,130)  '              gpr_sinc_mode              : ', gpr_sinc_mode
-    select case(gpr_sinc_mode)
-    case(0)
-    write(PMF_OUT,120)  '              \-> low-pass filter - normal sinc filter'
-    case(1)
-    write(PMF_OUT,120)  '              \-> high-pass filter - spectral reversal of sinc filter'
-    case(2)
-    write(PMF_OUT,120)  '              \-> high-pass filter - spectral inversion of sinc filter'
-    case default
-        call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown gpr_sinc_mode in abf_init_print_summary!')
-    end select
-    write(PMF_OUT,130)  '              gpr_sinc_op                : ', gpr_sinc_op
-    select case(gpr_sinc_op)
-    case(0)
-    write(PMF_OUT,120)  '              \-> ignore'
-    case(1)
-    write(PMF_OUT,120)  '              \-> ADD to main kernel'
-    case(2)
-    write(PMF_OUT,120)  '              \-> MULT with main kernel'
-    case default
-        call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown gpr_sinc_op in abf_init_print_summary!')
-    end select
-    write(PMF_OUT,120)  '          === noise'
-    write(PMF_OUT,160)  '              gpr_noise_s2               : ', gpr_noise_s2
-    write(PMF_OUT,120)  '          === miscellaneous'
-    write(PMF_OUT,125)  '              gpr_cdf                    : ', prmfile_onoff(gpr_cdf)
-    write(PMF_OUT,130)  '              gpr_boundary               : ', gpr_boundary
-    write(PMF_OUT,130)  '              gpr_smooth_ene             : ', gpr_smooth_ene
-    select case(gpr_smooth_ene)
+    write(PMF_OUT,160)  '              gpr_cvs_noise              : ', gpr_cvs_noise
+    write(PMF_OUT,125)  '              gpr_cvs_cdf                : ', prmfile_onoff(gpr_cvs_cdf)
+
+    write(PMF_OUT,120)  '          === ENE GPR'
+    write(PMF_OUT,130)  '              gpr_ene_smooth             : ', gpr_ene_smooth
+    select case(gpr_ene_smooth)
     case(0)
     write(PMF_OUT,120)  '              \-> no energy smoothing'
     case(1)
@@ -245,13 +215,34 @@ subroutine abf_init_print_summary
     case(2)
     write(PMF_OUT,120)  '              \-> smooth Ekin'
     case default
-        call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown gpr_smooth_ene in abf_init_print_summary!')
+        call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown gpr_ene_smooth in abf_init_print_summary!')
     end select
+write(PMF_OUT,130)  '              gpr_ene_kernel             : ', gpr_ene_kernel
+    select case(gpr_ene_kernel)
+    case(0)
+    write(PMF_OUT,120)  '              \-> EXP (exponential kernel)'
+    case(1)
+    write(PMF_OUT,120)  '              \-> MC(3/2) (Matern kernel v=3/2)'
+    case(2)
+    write(PMF_OUT,120)  '              \-> MC(5/2) (Matern kernel v=5/2)'
+    case(3)
+    write(PMF_OUT,120)  '              \-> SE (squared exponential kernel)'
+    case(4)
+    write(PMF_OUT,120)  '              \-> Epanechnikov (parabolic) kernel'
+    case(5)
+    write(PMF_OUT,120)  '              \-> Quartic (biweight) kernel'
+    case(6)
+    write(PMF_OUT,120)  '              \-> Triweigh kernel'
+    case default
+        call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown gpr_ene_kernel in abf_init_print_summary!')
+    end select
+    write(PMF_OUT,152)  '              gpr_ene_width              : ', gpr_ene_width,  &
+                                       '['//trim(pmf_unit_label(TimeUnit))//']'
+    write(PMF_OUT,160)  '              gpr_ene_noise              : ', gpr_ene_noise
+
     write(PMF_OUT,120)  '          === K+Sigma inversion'
     write(PMF_OUT,130)  '              gpr_rank                   : ', gpr_rank
     write(PMF_OUT,160)  '              gpr_rcond                  : ', gpr_rcond
-    write(PMF_OUT,152)  '              gpr_rank_T                 : ', gpr_rank_T,  &
-                                       '['//trim(pmf_unit_label(TimeUnit))//']'
     case default
         call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown fmode in abf_init_print_summary!')
     end select
@@ -483,305 +474,117 @@ end subroutine abf_init_arrays
 ! Function:  abf_init_gpr_kernel
 !===============================================================================
 
-real(PMFDP) function abf_init_gpr_covar(t1,t2,infer)
+real(PMFDP) function abf_init_gpr_kernel(ktype,t1,t2,width)
 
     use pmf_utils
     use pmf_dat
     use abf_dat
 
     implicit none
-    integer     :: t1,t2
-    logical     :: infer
-    ! --------------------------------------------------------------------------
-
-! start with main kernel
-    abf_init_gpr_covar = abf_init_gpr_main_kernel(t1,t2)
-
-    if( infer ) then
-        if( gpr_sinc_infer ) then
-            ! add sinc kernel if requested
-            select case(gpr_sinc_op)
-                case(0)
-                    ! nothing
-                case(1)
-                    abf_init_gpr_covar = abf_init_gpr_covar + gpr_sinc_s2 * abf_init_sinc_kernel(t1,t2)
-                case(2)
-                    abf_init_gpr_covar = abf_init_gpr_covar * abf_init_sinc_kernel(t1,t2)
-                case default
-                    call pmf_utils_exit(PMF_OUT,1,'[ABF] Unsupported gpr_sinc_op in abf_init_gpr_covar_1d!')
-            end select
-        end if
-    else
-        ! add sinc kernel if requested
-        select case(gpr_sinc_op)
-            case(0)
-                ! nothing
-            case(1)
-                abf_init_gpr_covar = abf_init_gpr_covar + gpr_sinc_s2 * abf_init_sinc_kernel(t1,t2)
-            case(2)
-                abf_init_gpr_covar = abf_init_gpr_covar * abf_init_sinc_kernel(t1,t2)
-            case default
-                call pmf_utils_exit(PMF_OUT,1,'[ABF] Unsupported gpr_sinc_op in abf_init_gpr_covar_1d!')
-        end select
-
-        ! add noise
-        if( t1 .eq. t2 ) then
-            abf_init_gpr_covar = abf_init_gpr_covar + gpr_noise_s2
-        end if
-    end if
-
-end function abf_init_gpr_covar
-
-!===============================================================================
-! Function:  abf_init_gpr_covar_1d
-!===============================================================================
-
-real(PMFDP) function abf_init_gpr_covar_1d(t1,t2,infer)
-
-    use pmf_utils
-    use pmf_dat
-    use abf_dat
-
-    implicit none
-    integer     :: t1,t2
-    logical     :: infer
-    ! --------------------------------------------------------------------------
-
-! start with main kernel
-    abf_init_gpr_covar_1d = abf_init_gpr_main_kernel_1d(t1,t2)
-
-    if( infer ) then
-        if( gpr_sinc_infer ) then
-            ! add sinc kernel if requested
-            select case(gpr_sinc_op)
-                case(0)
-                    ! nothing
-                case(1)
-                    abf_init_gpr_covar_1d = abf_init_gpr_covar_1d + gpr_sinc_s2 * abf_init_sinc_kernel_1d(t1,t2)
-                case(2)
-                    abf_init_gpr_covar_1d = abf_init_gpr_covar_1d * abf_init_sinc_kernel(t1,t2) &
-                                          + abf_init_gpr_main_kernel(t1,t2) * abf_init_sinc_kernel_1d(t1,t2)
-                case default
-                    call pmf_utils_exit(PMF_OUT,1,'[ABF] Unsupported gpr_sinc_op in abf_init_gpr_covar_1d!')
-            end select
-        end if
-    else
-        call pmf_utils_exit(PMF_OUT,1,'[ABF] Only inference is supported by abf_init_gpr_covar_1d!')
-    end if
-
-end function abf_init_gpr_covar_1d
-
-!===============================================================================
-! Function:  abf_init_gpr_kernel
-!===============================================================================
-
-real(PMFDP) function abf_init_gpr_main_kernel(t1,t2)
-
-    use pmf_utils
-    use pmf_dat
-    use abf_dat
-
-    implicit none
-    integer     :: t1,t2
+    integer     :: ktype,t1,t2
+    real(PMFDP) :: width
     real(PMFDP) :: r,wfac
     ! --------------------------------------------------------------------------
 
-    ! convert gpr_width to time steps
-    wfac = gpr_width / fdt
+    ! convert width to time steps
+    wfac = width / fdt
 
     if( wfac .eq. 0.0d0 ) then
-        abf_init_gpr_main_kernel = 0.0d0
+        abf_init_gpr_kernel = 0.0d0
         return
     end if
 
     r = abs(real(t1-t2,PMFDP)/wfac)
 
-    select case(gpr_kernel)
+    select case(ktype)
         case(1)
-            abf_init_gpr_main_kernel = (1.0d0 + sqrt(3.0) * r) * exp(- sqrt(3.0d0) * r)
+            abf_init_gpr_kernel = (1.0d0 + sqrt(3.0) * r) * exp(- sqrt(3.0d0) * r)
         case(2)
-            abf_init_gpr_main_kernel = (1.0d0 + sqrt(5.0d0) * r + 5.0d0/3.0d0 * r**2) * exp(- sqrt(5.0d0) * r)
+            abf_init_gpr_kernel = (1.0d0 + sqrt(5.0d0) * r + 5.0d0/3.0d0 * r**2) * exp(- sqrt(5.0d0) * r)
         case(3)
-            abf_init_gpr_main_kernel = exp(- 0.5d0 * r**2)
+            abf_init_gpr_kernel = exp(- 0.5d0 * r**2)
         case(4)
             if( r .le. 1.0d0 ) then
-                abf_init_gpr_main_kernel = (1.0d0 - r**2)
+                abf_init_gpr_kernel = (1.0d0 - r**2)
             else
-                abf_init_gpr_main_kernel = 0.0d0
+                abf_init_gpr_kernel = 0.0d0
             end if
         case(5)
             if( r .le. 1.0d0 ) then
-                abf_init_gpr_main_kernel = (1.0d0 - r**2)**2
+                abf_init_gpr_kernel = (1.0d0 - r**2)**2
             else
-                abf_init_gpr_main_kernel = 0.0d0
+                abf_init_gpr_kernel = 0.0d0
             end if
         case(6)
             if( r .le. 1.0d0 ) then
-                abf_init_gpr_main_kernel = (1.0d0 - r**2)**3
+                abf_init_gpr_kernel = (1.0d0 - r**2)**3
             else
-                abf_init_gpr_main_kernel = 0.0d0
+                abf_init_gpr_kernel = 0.0d0
             end if
         case default
-            call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown gpr_kernel in abf_init_gpr_main_kernel!')
+            call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown ktype in abf_init_gpr_kernel!')
     end select
 
-
-end function abf_init_gpr_main_kernel
+end function abf_init_gpr_kernel
 
 !===============================================================================
 ! Function:  abf_init_gpr_main_kernel_1d
 ! first derivative
 !===============================================================================
 
-real(PMFDP) function abf_init_gpr_main_kernel_1d(t1,t2)
+real(PMFDP) function abf_init_gpr_kernel_1d(ktype,t1,t2,width)
 
     use pmf_utils
     use pmf_dat
     use abf_dat
 
     implicit none
-    integer     :: t1,t2
+    integer     :: ktype,t1,t2
+    real(PMFDP) :: width
     real(PMFDP) :: r,wfac
     ! --------------------------------------------------------------------------
 
-    ! convert gpr_width to time steps
-    wfac = gpr_width / fdt
+    ! convert width to time steps
+    wfac = width / fdt
 
     if( wfac .eq. 0.0d0 ) then
-        abf_init_gpr_main_kernel_1d = 0.0d0
+        abf_init_gpr_kernel_1d = 0.0d0
         return
     end if
 
     r = abs(real(t1-t2,PMFDP)/wfac)
 
-    select case(gpr_kernel)
+    select case(ktype)
         case(1)
-            abf_init_gpr_main_kernel_1d = - 3.0d0 * r * exp(- sqrt(3.0d0) * r) / (wfac * fdtx) * sign(1.0d0,real(t1-t2,PMFDP))
+            abf_init_gpr_kernel_1d = - 3.0d0 * r * exp(- sqrt(3.0d0) * r) / (wfac * fdtx) * sign(1.0d0,real(t1-t2,PMFDP))
         case(2)
-            abf_init_gpr_main_kernel_1d = - 5.0d0/3.0d0 * r * (1.0d0 + sqrt(5.0d0) * r) * exp(- sqrt(5.0d0) * r ) / (wfac * fdtx) &
+            abf_init_gpr_kernel_1d = - 5.0d0/3.0d0 * r * (1.0d0 + sqrt(5.0d0) * r) * exp(- sqrt(5.0d0) * r ) / (wfac * fdtx) &
                        * sign(1.0d0,real(t1-t2,PMFDP))
         case(3)
-            abf_init_gpr_main_kernel_1d = - exp(- 0.5d0 * r**2) * r / (wfac * fdtx) * sign(1.0d0,real(t1-t2,PMFDP))
+            abf_init_gpr_kernel_1d = - exp(- 0.5d0 * r**2) * r / (wfac * fdtx) * sign(1.0d0,real(t1-t2,PMFDP))
         case(4)
             if( r .le. 1.0d0 ) then
-                abf_init_gpr_main_kernel_1d = -2.0d0 * r / (wfac * fdtx) * sign(1.0d0,real(t1-t2,PMFDP))
+                abf_init_gpr_kernel_1d = -2.0d0 * r / (wfac * fdtx) * sign(1.0d0,real(t1-t2,PMFDP))
             else
-                abf_init_gpr_main_kernel_1d = 0.0d0
+                abf_init_gpr_kernel_1d = 0.0d0
             end if
         case(5)
             if( r .le. 1.0d0 ) then
-                abf_init_gpr_main_kernel_1d = -4.0d0 * r * (1.0d0 - r**2) / (wfac * fdtx) * sign(1.0d0,real(t1-t2,PMFDP))
+                abf_init_gpr_kernel_1d = -4.0d0 * r * (1.0d0 - r**2) / (wfac * fdtx) * sign(1.0d0,real(t1-t2,PMFDP))
             else
-                abf_init_gpr_main_kernel_1d = 0.0d0
+                abf_init_gpr_kernel_1d = 0.0d0
             end if
         case(6)
             if( r .le. 1.0d0 ) then
-                abf_init_gpr_main_kernel_1d = -6.0d0 * r * (1.0d0 - r**2)**2 / (wfac * fdtx) * sign(1.0d0,real(t1-t2,PMFDP))
+                abf_init_gpr_kernel_1d = -6.0d0 * r * (1.0d0 - r**2)**2 / (wfac * fdtx) * sign(1.0d0,real(t1-t2,PMFDP))
             else
-                abf_init_gpr_main_kernel_1d = 0.0d0
+                abf_init_gpr_kernel_1d = 0.0d0
             end if
         case default
-            call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown gpr_kernel in abf_init_gpr_main_kernel_1d!')
+            call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown ktype in abf_init_gpr_kernel_1d!')
     end select
 
-end function abf_init_gpr_main_kernel_1d
-
-!===============================================================================
-! Function:  abf_init_gpr_kernel
-!===============================================================================
-
-real(PMFDP) function abf_init_sinc_kernel(t1,t2)
-
-    use pmf_utils
-    use pmf_dat
-    use abf_dat
-
-    implicit none
-    integer     :: t1,t2,t
-    real(PMFDP) :: freq,amp,arg
-    ! --------------------------------------------------------------------------
-
-    if( gpr_sinc_T .eq. 0.0d0 ) then
-        abf_init_sinc_kernel = 0.0d0
-        return
-    end if
-
-! convert period into frequency
-    freq = 1.0d0 / gpr_sinc_T
-
-    if( gpr_sinc_mode .eq. 1 ) then
-        ! reverse for 1 - high-pass filter - spectral reversal of sinc filter
-        freq = 1.0d0 / (2.0d0 * fdt) - freq
-    end if
-
-    t = t1-t2
-    amp = 2.0d0 * freq * fdt
-    arg = PMF_PI * amp * real(t,PMFDP)
-
-    select case(gpr_sinc_mode)
-        case(0)
-            if( t .eq. 0.0d0 ) then
-                abf_init_sinc_kernel = amp
-            else
-                abf_init_sinc_kernel = amp * sin(arg)/arg
-            end if
-        case(1)
-            if( t .eq. 0.0d0 ) then
-                abf_init_sinc_kernel = amp
-            else
-                abf_init_sinc_kernel = amp * sin(arg)/arg * (-1.0d0)**t
-            end if
-        case(2)
-            if( t .eq. 0.0d0 ) then
-                abf_init_sinc_kernel = 1.0d0 - amp
-            else
-                abf_init_sinc_kernel = - amp * sin(arg)/arg
-            end if
-        case default
-            call pmf_utils_exit(PMF_OUT,1,'[ABF] Unsupported gpr_sinc_mode in abf_init_sinc_kernel!')
-    end select
-
-end function abf_init_sinc_kernel
-
-!===============================================================================
-! Function:  abf_init_sinc_kernel_1d
-!===============================================================================
-
-real(PMFDP) function abf_init_sinc_kernel_1d(t1,t2)
-
-    use pmf_utils
-    use pmf_dat
-    use abf_dat
-
-    implicit none
-    integer     :: t1,t2,t
-    real(PMFDP) :: freq,amp,arg
-    ! --------------------------------------------------------------------------
-
-    if( gpr_sinc_T .eq. 0.0d0 ) then
-        abf_init_sinc_kernel_1d = 0.0d0
-        return
-    end if
-
-! convert period into frequency
-    freq = 1.0d0 / gpr_sinc_T
-
-    t = t1-t2
-    amp = 2.0d0 * freq * fdt
-    arg = PMF_PI * amp * real(t,PMFDP)
-
-    select case(gpr_sinc_mode)
-        case(0)
-            if( t .eq. 0.0d0 ) then
-                abf_init_sinc_kernel_1d = 0.0d0
-            else
-                abf_init_sinc_kernel_1d = amp * (arg*cos(arg)-sin(arg))/arg**2 * PMF_PI * 2.0d0 * freq * fdt / fdtx
-            end if
-        case default
-            call pmf_utils_exit(PMF_OUT,1,'[ABF] Unsupported gpr_sinc_mode in abf_init_sinc_kernel_1d!')
-    end select
-
-end function abf_init_sinc_kernel_1d
+end function abf_init_gpr_kernel_1d
 
 !===============================================================================
 ! Subroutine:  abf_init_gpr
@@ -804,12 +607,13 @@ subroutine abf_init_gpr
     end if
 
 ! allocate arrays
-    allocate(                               &
-            gpr_K(gpr_len,gpr_len),         &
-            gpr_data(gpr_len),              &
-            gpr_model(gpr_len),             &
-            gpr_kff(gpr_len,gpr_len),       &
-            gpr_kfd(gpr_len,gpr_len),       &
+    allocate(                                   &
+            gpr_K_cvs(gpr_len,gpr_len),         &
+            gpr_K_ene(gpr_len,gpr_len),         &
+            gpr_data(gpr_len),                  &
+            gpr_model(gpr_len),                 &
+            gpr_kfd_cvs(gpr_len,gpr_len),       &
+            gpr_kff_ene(gpr_len,gpr_len),       &
             stat= alloc_failed )
 
     if( alloc_failed .ne. 0 ) then
@@ -820,27 +624,43 @@ subroutine abf_init_gpr
 ! init covariance matrix
     do i=1,gpr_len
         do j=1,gpr_len
-            gpr_K(i,j) = abf_init_gpr_covar(i,j,.false.)
+            gpr_K_cvs(i,j) = abf_init_gpr_kernel(gpr_cvs_kernel,i,j,gpr_cvs_width)
+            gpr_K_ene(i,j) = abf_init_gpr_kernel(gpr_ene_kernel,i,j,gpr_ene_width)
         end do
+    end do
+
+! add noise
+    do i=1,gpr_len
+        gpr_K_cvs(i,i) = gpr_K_cvs(i,i) + gpr_cvs_noise
+        gpr_K_ene(i,i) = gpr_K_ene(i,i) + gpr_ene_noise
     end do
 
     if( fdebug ) then
         j = gpr_len/2
         do i=1,gpr_len
-            write(7812,*) i, gpr_K(i,j)
+            write(7812,*) i, gpr_K_cvs(i,j)
+            write(7813,*) i, gpr_K_ene(i,j)
         end do
         close(7812)
+        close(7813)
     end if
 
-    call abf_init_gpr_invK()
+    write(PMF_OUT,10)
+    call abf_init_gpr_invK(gpr_K_cvs)
+
+    write(PMF_OUT,20)
+    call abf_init_gpr_invK(gpr_K_ene)
 
 ! init kff and kfd
     do i=1,gpr_len
         do j=1,gpr_len
-            gpr_kff(j,i) = abf_init_gpr_covar(i,j,.true.)
-            gpr_kfd(j,i) = abf_init_gpr_covar_1d(i,j,.true.)
+            gpr_kfd_cvs(j,i) = abf_init_gpr_kernel_1d(gpr_cvs_kernel,i,j,gpr_cvs_width)
+            gpr_kff_ene(j,i) = abf_init_gpr_kernel(gpr_ene_kernel,i,j,gpr_ene_width)
         end do
     end do
+
+ 10 format('>>> ABF GPR - CVS: (K+Sigma)^-1')
+ 20 format('>>> ABF GPR - ENE: (K+Sigma)^-1')
 
 end subroutine abf_init_gpr
 
@@ -848,13 +668,14 @@ end subroutine abf_init_gpr
 ! Subroutine:  abf_init_gpr_invK
 !===============================================================================
 
-subroutine abf_init_gpr_invK
+subroutine abf_init_gpr_invK(mat)
 
     use pmf_dat
     use abf_dat
     use pmf_utils
 
     implicit none
+    real(PMFDP)                 :: mat(:,:)
     integer                     :: i,alloc_failed,info,lwork,irank
     real(PMFDP)                 :: minv, maxv, a_rcond
     real(PMFDP),allocatable     :: sig(:)
@@ -890,7 +711,7 @@ subroutine abf_init_gpr_invK
 
 ! query work size
     lwork = -1
-    call dgesdd('A', gpr_len, gpr_len, gpr_K, gpr_len, sig, u, gpr_len, vt, gpr_len, twork, lwork, iwork, info)
+    call dgesdd('A', gpr_len, gpr_len, mat, gpr_len, sig, u, gpr_len, vt, gpr_len, twork, lwork, iwork, info)
 
     if( info .ne. 0 ) then
         call pmf_utils_exit(PMF_OUT,1, &
@@ -914,7 +735,7 @@ subroutine abf_init_gpr_invK
     end if
 
 ! run SVD
-    call dgesdd('A', gpr_len, gpr_len, gpr_K, gpr_len, sig, u, gpr_len, vt, gpr_len, twork, lwork, iwork, info)
+    call dgesdd('A', gpr_len, gpr_len, mat, gpr_len, sig, u, gpr_len, vt, gpr_len, twork, lwork, iwork, info)
 
     if( info .ne. 0 )  then
         call pmf_utils_exit(PMF_OUT,1, &
@@ -960,14 +781,12 @@ subroutine abf_init_gpr_invK
 
 ! build pseudoinverse: V*sig_plus*UT
     call dgemm('N', 'T', gpr_len, gpr_len, gpr_len, 1.0d0, sig_plus, gpr_len, u, gpr_len, 0.0d0, temp_mat, gpr_len)
-    call dgemm('T', 'N', gpr_len, gpr_len, gpr_len, 1.0d0, vt, gpr_len, temp_mat, gpr_len, 0.0d0, gpr_K, gpr_len)
+    call dgemm('T', 'N', gpr_len, gpr_len, gpr_len, 1.0d0, vt, gpr_len, temp_mat, gpr_len, 0.0d0, mat, gpr_len)
 
     deallocate(sig,sig_plus,u,vt,temp_mat)
 
-    write(PMF_OUT,5)
     write(PMF_OUT,10) gpr_len,irank,a_rcond
 
-  5 format('>>> ABF GPR: (K+Sigma)^-1')
  10 format('    Size = ',I5,'; Rank = ',I5,'; Real rcond = ',E10.5)
 
 end subroutine abf_init_gpr_invK

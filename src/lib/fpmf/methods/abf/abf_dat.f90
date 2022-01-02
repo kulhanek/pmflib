@@ -178,46 +178,43 @@ real(PMFDP),allocatable     :: ekinhist(:)          ! history of Ekin
 ! GPR facility -----------------------------------------------------------------
 integer                     :: gpr_len          ! MUST be odd number
 
-! main kernel
-real(PMFDP)                 :: gpr_width        ! kernel width in fs
-integer                     :: gpr_kernel       ! 0 - Exponential
+! CVS GPR
+real(PMFDP)                 :: gpr_cvs_width    ! kernel width in fs
+integer                     :: gpr_cvs_kernel   ! 0 - Exponential
                                                 ! 1 - MC(3/2)
                                                 ! 2 - MC(5/2)
                                                 ! 3 - ARDSE
                                                 ! 4 - Epanechnikov (parabolic)
                                                 ! 5 - Quartic (biweight)
                                                 ! 6 - Triweight
-! sinc kernel
-real(PMFDP)                 :: gpr_sinc_s2      ! sinc kernel magnitude
-real(PMFDP)                 :: gpr_sinc_T       ! sinc kernel period in fs
-integer                     :: gpr_sinc_mode    ! 0 - low-pass filter - normal sinc filter
-                                                ! 1 - high-pass filter - spectral reversal of sinc filter
-                                                ! 2 - high-pass filter - spectral inversion of sinc filter
-logical                     :: gpr_sinc_infer   ! use sinc kernel in GPR inference
-integer                     :: gpr_sinc_op      ! 0 - do not use
-                                                ! 1 - add to main kernel
-                                                ! 2 - multiply with main kernel
+real(PMFDP)                 :: gpr_cvs_noise    ! noise magnitude
+logical                     :: gpr_cvs_cdf      ! use central differences for the second differentiation in ICF calc.
 
-! noise magnitude
-real(PMFDP)                 :: gpr_noise_s2     ! noise magnitude
-
-! other setup
-logical                     :: gpr_cdf          ! use central differences for the second differentiation in ICF calc.
-integer                     :: gpr_boundary     ! skip analysis at boundaries of gpr_len
-integer                     :: gpr_smooth_ene   ! 0 - no smoothing
+! ENE GPR
+integer                     :: gpr_ene_smooth   ! 0 - no smoothing
                                                 ! 1 - smooth etot
                                                 ! 2 - smooth ekin
+real(PMFDP)                 :: gpr_ene_width    ! kernel width in fs
+integer                     :: gpr_ene_kernel   ! 0 - Exponential
+                                                ! 1 - MC(3/2)
+                                                ! 2 - MC(5/2)
+                                                ! 3 - ARDSE
+                                                ! 4 - Epanechnikov (parabolic)
+                                                ! 5 - Quartic (biweight)
+                                                ! 6 - Triweight
+real(PMFDP)                 :: gpr_ene_noise    ! noise magnitude
 
+integer                     :: gpr_boundary     ! skip analysis at boundaries of gpr_len
 integer                     :: gpr_rank         ! rank for SVD inversion
 real(PMFDP)                 :: gpr_rcond        ! rcond for automatic rank determination
-real(PMFDP)                 :: gpr_rank_T       ! period in fs fro automatic rank determination
 
 
-real(PMFDP),allocatable     :: gpr_K(:,:)       ! co-variance matrix
+real(PMFDP),allocatable     :: gpr_K_cvs(:,:)   ! co-variance matrix for Ene
+real(PMFDP),allocatable     :: gpr_K_ene(:,:)   ! co-variance matrix for Ene
 real(PMFDP),allocatable     :: gpr_data(:)      ! GPR input data
 real(PMFDP),allocatable     :: gpr_model(:)     ! GPR model
-real(PMFDP),allocatable     :: gpr_kff(:,:)     !
-real(PMFDP),allocatable     :: gpr_kfd(:,:)     !
+real(PMFDP),allocatable     :: gpr_kfd_cvs(:,:) ! inference for cvs
+real(PMFDP),allocatable     :: gpr_kff_ene(:,:) ! inference for ene
 
 ! ------------------------------------------------------------------------------
 

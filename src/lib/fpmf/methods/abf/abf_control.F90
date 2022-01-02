@@ -139,37 +139,28 @@ subroutine abf_control_read_abf(prm_fin)
         write(PMF_OUT,63)
         call pmf_ctrl_read_integer(prm_fin,'gpr_len',gpr_len,'I12')
         call pmf_ctrl_check_integer('ABF','gpr_len',gpr_len,3,CND_GE)
-
-    ! main kernel
-        call pmf_ctrl_read_integer(prm_fin,'gpr_kernel',gpr_kernel,'I12')
-        call pmf_ctrl_check_integer_in_range('ABF','gpr_kernel',gpr_kernel,1,6)
-        call pmf_ctrl_read_real8_wunit(prm_fin,'gpr_width',TimeUnit,gpr_width,'F12.3')
-
-    ! sinc kernel
-        call pmf_ctrl_read_real8(prm_fin,'gpr_sinc_s2',gpr_sinc_s2,'E12.5')
-        call pmf_ctrl_read_real8_wunit(prm_fin,'gpr_sinc_T',TimeUnit,gpr_sinc_T,'F12.3')
-
-        call pmf_ctrl_read_integer(prm_fin,'gpr_sinc_mode',gpr_sinc_mode,'I12')
-        call pmf_ctrl_check_integer_in_range('ABF','gpr_sinc_mode',gpr_sinc_mode,0,2)
-
-        call pmf_ctrl_read_logical(prm_fin,'gpr_sinc_infer',gpr_sinc_infer)
-
-        call pmf_ctrl_read_integer(prm_fin,'gpr_sinc_op',gpr_sinc_op,'I12')
-        call pmf_ctrl_check_integer_in_range('ABF','gpr_sinc_op',gpr_sinc_op,0,2)
-
-    ! noise
-        call pmf_ctrl_read_real8(prm_fin,'gpr_noise_s2',gpr_noise_s2,'E12.5')
-
-    ! other setup
-        call pmf_ctrl_read_logical(prm_fin,'gpr_cdf',gpr_cdf)
         call pmf_ctrl_read_integer(prm_fin,'gpr_boundary',gpr_boundary,'I12')
-        call pmf_ctrl_read_integer(prm_fin,'gpr_smooth_ene',gpr_smooth_ene,'I12')
-        call pmf_ctrl_check_integer_in_range('ABF','gpr_smooth_ene',gpr_smooth_ene,0,2)
+        call pmf_ctrl_check_integer('ABF','gpr_boundary',gpr_boundary,0,CND_GE)
+        call pmf_ctrl_check_integer('ABF','gpr_boundary',gpr_boundary,gpr_len,CND_LT)
+
+    ! CVS GPR
+        call pmf_ctrl_read_integer(prm_fin,'gpr_cvs_kernel',gpr_cvs_kernel,'I12')
+        call pmf_ctrl_check_integer_in_range('ABF','gpr_cvs_kernel',gpr_cvs_kernel,1,6)
+        call pmf_ctrl_read_real8_wunit(prm_fin,'gpr_cvs_width',TimeUnit,gpr_cvs_width,'F12.3')
+        call pmf_ctrl_read_real8(prm_fin,'gpr_cvs_noise',gpr_cvs_noise,'E12.5')
+        call pmf_ctrl_read_logical(prm_fin,'gpr_cvs_cdf',gpr_cvs_cdf)
+
+    ! ENE GPR
+        call pmf_ctrl_read_integer(prm_fin,'gpr_ene_smooth',gpr_ene_smooth,'I12')
+        call pmf_ctrl_check_integer_in_range('ABF','gpr_ene_smooth',gpr_ene_smooth,0,2)
+        call pmf_ctrl_read_integer(prm_fin,'gpr_ene_kernel',gpr_ene_kernel,'I12')
+        call pmf_ctrl_check_integer_in_range('ABF','gpr_ene_kernel',gpr_ene_kernel,1,6)
+        call pmf_ctrl_read_real8_wunit(prm_fin,'gpr_ene_width',TimeUnit,gpr_ene_width,'F12.3')
+        call pmf_ctrl_read_real8(prm_fin,'gpr_ene_noise',gpr_ene_noise,'E12.5')
 
     ! SVD setup
         call pmf_ctrl_read_real8(prm_fin,'gpr_rcond',gpr_rcond,'E12.5')
         call pmf_ctrl_read_integer(prm_fin,'gpr_rank',gpr_rank,'I12')
-        call pmf_ctrl_read_real8_wunit(prm_fin,'gpr_rank_T',TimeUnit,gpr_rank_T,'F12.3')
     end if
 
     ! network setup ----------------------------------------------------------------
