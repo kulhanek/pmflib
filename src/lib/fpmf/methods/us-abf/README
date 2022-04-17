@@ -1,0 +1,3 @@
+- entropy of biased and unbiased systems are the same
+- calculating cov(dH/dx,H) for biased and unbiased is easy
+- however combining cov(dH/dx,H) for different biased systems is not easy because different mean values of <micf> and <etot> (due to bias)

@@ -252,7 +252,7 @@ subroutine abf_core_force_3pA()
         etot = epot + erst + ekin
 
         if( fdebug ) then
-            write(DEBUG_ABF_FMODE1,*) fstep-1, cvhist(:,hist_len-1), pxi0, etot
+            write(DEBUG_ABF_FMODE1,*) fstep-1, cvhist(:,hist_len-1), pxi0, epot, erst, ekin, etot
         end if
 
         ! add data to accumulator
@@ -380,6 +380,9 @@ subroutine abf_core_force_3pB()
         erst = ersthist(hist_len-1)
         ekin = ekinhist(hist_len-1)
         etot = epot + erst + ekin
+
+        ! debug
+        ! write(1225,*) epot,erst,ekin,etot
 
         ! add data to accumulator
         call abf_accu_add_data_online(cvhist(:,hist_len-1),pxi0,epot,erst,ekin,etot)
