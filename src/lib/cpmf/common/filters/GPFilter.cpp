@@ -41,7 +41,7 @@ CGPFilter::CGPFilter(void)
     Noise           = 0.0;
     RCond           = 1e-16;
     Kernel          = EGPFK_ARDMC32;
-
+    KRank           = 0;
 }
 
 //------------------------------------------------------------------------------
@@ -64,29 +64,55 @@ void CGPFilter::RunFilter(const CVectorDataPtr& in, CVectorDataPtr& out)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void CGPFilter::SetFilter(double timestep,int framelen, double wfac, double noise,CVerboseStr& vout)
+void CGPFilter::SetFilter(double timestep,int framelen)
 {
     SetTimeStep(timestep);
+    GPRSize = framelen;
+}
 
-    PrintExecInfo(vout);
+//------------------------------------------------------------------------------
 
+void CGPFilter::SetWidth(double width)
+{
+    WFac = width / TimeStep;
+}
+
+//------------------------------------------------------------------------------
+
+void CGPFilter::SetNoise(double noise)
+{
+    Noise = noise;
+}
+
+//------------------------------------------------------------------------------
+
+void CGPFilter::SetRCond(double rcond)
+{
+    RCond = rcond;
+}
+
+//------------------------------------------------------------------------------
+
+void CGPFilter::PrepareProcess(CVerboseStr& vout)
+{
     vout << "   Creating K+Sigma ..." << endl;
 
-    if( framelen <= 0 ) {
-        RUNTIME_ERROR("framelen has to be greater than zero");
+    if( GPRSize <= 0 ) {
+        RUNTIME_ERROR("GPRSize has to be greater than zero");
     }
-
-    GPRSize = framelen;
-    WFac    = wfac;
-    Noise   = noise;
 
     vout << "      Kernel    = " << GetKernelName() << endl;
     vout << "      Dim       = " << GPRSize << " x " << GPRSize << endl;
+    vout << "      Width     = " << WFac * TimeStep << endl;
     vout << "      WFac      = " << WFac << endl;
     vout << "      Noise     = " << Noise << endl;
 
     GPRModel.CreateVector(GPRSize);
+    GPRModel.SetZero();
+
     Y.CreateVector(GPRSize);
+    Y.SetZero();
+
     KS.CreateMatrix(GPRSize,GPRSize);
 
 // main kernel matrix
@@ -103,35 +129,26 @@ void CGPFilter::SetFilter(double timestep,int framelen, double wfac, double nois
         KS[indi][indi] += Noise;
     }
 
-    ofstream ofs("kernel.orig");
-    for(size_t i=0; i < GPRSize; i++){
-            ofs << i << " " << setprecision(16) << KS[70][i] << endl;
-    }
-    ofs.close();
-
     RunBlasLapackPar();
 
 // inverting the K+Sigma
     int result = 0;
     vout << "   Inverting K+Sigma by SVD (divide and conquer driver) ..." << endl;
-    int rank = 0;
+    KRank = 0;
     double realRCond = 0;
-    result = CSciLapack::invSVD2(KS,logdetK,RCond,rank,realRCond);
-    vout << "      Rank = " << rank << "; Info = " << result << "; Real rcond = " << scientific << realRCond << fixed << endl;
+    result = CSciLapack::invSVD2(KS,logdetK,RCond,KRank,realRCond);
+    vout << "      Rank = " << KRank << "; Info = " << result << "; Real rcond = " << scientific << realRCond << fixed << endl;
 
     if( result != 0 ){
         RUNTIME_ERROR("unable to invert K+Sigma");
     }
+}
 
-//    result = CSciLapack::invSVD2(KS,logdetK,RCond,rank,realRCond);
-//    vout << "      Rank = " << rank << "; Info = " << result << "; Real rcond = " << scientific << realRCond << fixed << endl;
-//
-//    ofstream ofs1("kernel.proc");
-//    for(size_t i=0; i < GPRSize; i++){
-//            ofs1 << i << " " << setprecision(16) << KS[70][i] << endl;
-//    }
-//    ofs1.close();
+//------------------------------------------------------------------------------
 
+int CGPFilter::GetKRank(void)
+{
+    return(KRank);
 }
 
 //------------------------------------------------------------------------------
@@ -281,6 +298,14 @@ double CGPFilter::GetLogML(void)
 
 //------------------------------------------------------------------------------
 
+void CGPFilter::GetLogMLDerivatives(const std::vector<bool>& flags,CSimpleVector<double>& der)
+{
+
+
+}
+
+//------------------------------------------------------------------------------
+
 double CGPFilter::GetLogPL(void)
 {
     double loo = 0.0;
@@ -297,6 +322,13 @@ double CGPFilter::GetLogPL(void)
     loo *= 0.5;
 
     return(loo);
+}
+
+//------------------------------------------------------------------------------
+
+void CGPFilter::GetLogPLDerivatives(const std::vector<bool>& flags,CSimpleVector<double>& der)
+{
+
 }
 
 //==============================================================================

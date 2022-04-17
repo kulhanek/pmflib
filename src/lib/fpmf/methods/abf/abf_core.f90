@@ -57,14 +57,16 @@ subroutine abf_core_main
     ! --------------------------------------------------------------------------
 
     select case(fmode)
+        ! standard algorithms
         case(1)
-            call abf_core_force_3pA
-        case(2)
             call abf_core_force_3pB
-        case(3)
-            call abf_core_force_3pC
-        case(4)
+        case(2)
             call abf_core_force_gpr
+        ! experimental algorithms
+        case(10)
+            call abf_core_force_3pA
+        case(11)
+            call abf_core_force_3pC
         case default
             call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented fmode in abf_core_main!')
     end select
@@ -89,14 +91,11 @@ subroutine abf_core_shake
     ! --------------------------------------------------------------------------
 
     select case(fmode)
-        case(1)
+        case(10)
             ! fix total forces from SHAKE
             fhist(:,:,hist_len) =  fhist(:,:,hist_len) + SHAKEFrc(:,:)
-        case(2)
+        case(1,2,11)
             ! nothing to be done
-        case(3)
-            ! record SHAKE forces
-            fshist(:,:,hist_len) = SHAKEFrc(:,:)
         case default
             call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented fmode in abf_core_main_shake!')
     end select
@@ -160,7 +159,6 @@ subroutine abf_core_force_3pA()
         ekinhist(i)     = ekinhist(i+1)
         vhist(:,:,i)    = vhist(:,:,i+1)
         fhist(:,:,i)    = fhist(:,:,i+1)
-        fshist(:,:,i)   = fshist(:,:,i+1)
         zdhist(:,:,:,i) = zdhist(:,:,:,i+1)
         micfhist(:,i)   = micfhist(:,i+1)
     end do
@@ -258,7 +256,7 @@ subroutine abf_core_force_3pA()
         end if
 
         ! add data to accumulator
-        call abf_accu_add_data_online(cvhist(:,hist_len-1),pxi0,epot,erst,etot)
+        call abf_accu_add_data_online(cvhist(:,hist_len-1),pxi0,epot,erst,ekin,etot)
     end if
 
     return
@@ -384,7 +382,7 @@ subroutine abf_core_force_3pB()
         etot = epot + erst + ekin
 
         ! add data to accumulator
-        call abf_accu_add_data_online(cvhist(:,hist_len-1),pxi0,epot,erst,etot)
+        call abf_accu_add_data_online(cvhist(:,hist_len-1),pxi0,epot,erst,ekin,etot)
     end if
 
     return
@@ -511,7 +509,7 @@ subroutine abf_core_force_3pC()
         etot = epot + erst + ekin
 
         ! add data to accumulator
-        call abf_accu_add_data_online(cvhist(:,hist_len-1),pxi0,epot,erst,etot)
+        call abf_accu_add_data_online(cvhist(:,hist_len-1),pxi0,epot,erst,ekin,etot)
     end if
 
     return
@@ -520,6 +518,8 @@ end subroutine abf_core_force_3pC
 
 !===============================================================================
 ! Subroutine:  abf_core_force_gpr
+! this is leap-frog ABF version, simplified algorithm
+! forces GPR process
 !===============================================================================
 
 subroutine abf_core_force_gpr()
@@ -626,7 +626,7 @@ subroutine abf_core_force_gpr()
             write(cvid,'(I0.3)') i
             open(unit=4789,file='abf-gpr.cvhist_'//trim(cvid),status='UNKNOWN')
             do k=1,gpr_len
-                write(4789,*) k, dot_product(gpr_model,gpr_kff_ene(:,k))+mean, cvhist(i,k)
+                write(4789,*) k, dot_product(gpr_model,gpr_kff_cvs(:,k))+mean, cvhist(i,k)
             end do
             close(4789)
             open(unit=4789,file='abf-gpr.xvelhist_'//trim(cvid),status='UNKNOWN')
@@ -651,7 +651,7 @@ subroutine abf_core_force_gpr()
     end do
 
 ! calculate derivatives of CV momenta
-    if( gpr_cvs_cdf ) then
+    if( gpr_icf_cdf ) then
         do i=1,NumOfABFCVs
             do k=2,gpr_len-1
                 icfhist(i,k) = 0.5d0*(xphist(i,k+1)-xphist(i,k-1))*ifdtx
@@ -666,11 +666,11 @@ subroutine abf_core_force_gpr()
             end do
 
             ! solve GPR
-            call dgemv('N',gpr_len,gpr_len,1.0d0,gpr_K_cvs,gpr_len,gpr_data,1,0.0d0,gpr_model,1)
+            call dgemv('N',gpr_len,gpr_len,1.0d0,gpr_K_icf,gpr_len,gpr_data,1,0.0d0,gpr_model,1)
 
             do k=1,gpr_len
                 ! calculate momenta derivative in time - derivative is shift invariant
-                icfhist(i,k) = dot_product(gpr_model,gpr_kfd_cvs(:,k))
+                icfhist(i,k) = dot_product(gpr_model,gpr_kfd_icf(:,k))
 
             end do
 
@@ -678,7 +678,7 @@ subroutine abf_core_force_gpr()
                 write(cvid,'(I0.3)') i
                 open(unit=4789,file='abf-gpr.xphist_'//trim(cvid),status='UNKNOWN')
                 do k=1,gpr_len
-                    write(4789,*) k, dot_product(gpr_model,gpr_kff_ene(:,k)), xphist(i,k)
+                    write(4789,*) k, dot_product(gpr_model,gpr_kff_icf(:,k)), xphist(i,k)
                 end do
                 close(4789)
                 open(unit=4789,file='abf-gpr.icfhist_'//trim(cvid),status='UNKNOWN')
@@ -742,7 +742,7 @@ subroutine abf_core_force_gpr()
     end if
 
     skip = 0
-    if( gpr_cvs_cdf ) then
+    if( gpr_icf_cdf ) then
         skip = 1
     end if
 
@@ -772,7 +772,7 @@ subroutine abf_core_force_gpr()
         end if
 
         ! add data to accumulator
-        call abf_accu_add_data_online(cvhist(:,k),pxi0,epot,erst,etot)
+        call abf_accu_add_data_online(cvhist(:,k),pxi0,epot,erst,ekin,etot)
     end do
 
 end subroutine abf_core_force_gpr

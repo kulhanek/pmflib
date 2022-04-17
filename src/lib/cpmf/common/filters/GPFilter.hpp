@@ -53,8 +53,23 @@ public:
     /// get kernel name
     const CSmallString GetKernelName(void);
 
-    /// setup Gaussian process
-    void SetFilter(double timestep,int framelen, double wfac, double noise,CVerboseStr& vout);
+    /// set filter block size
+    void SetFilter(double timestep,int framelen);
+
+    /// set GPR width
+    void SetWidth(double width);
+
+    /// set GPR noise
+    void SetNoise(double noise);
+
+    /// set rcond
+    void SetRCond(double rcond);
+
+    /// prepare process
+    void PrepareProcess(CVerboseStr& vout);
+
+    /// get real rank
+    int GetKRank(void);
 
     /// train process
     void TrainProcess(const CVectorDataPtr& in, size_t offset);
@@ -62,14 +77,29 @@ public:
     /// predict data
     void PredictData(CVectorDataPtr& out, size_t offset);
 
-    /// get logML
+    /// get log of Marginal Likelihood
     double GetLogML(void);
 
-    /// get logPL
+    /// get derivative of logML wrt hyperparameters
+    /// order sigmaf2, ncorr, wfac, only requested ders are calculated
+    /// derivatives are ADDED to der
+    void GetLogMLDerivatives(const std::vector<bool>& flags,CSimpleVector<double>& der);
+
+    /// get the log of pseudo-likelihood from leave-one-out cross-validation (LOO-CV)
     double GetLogPL(void);
+
+    /// get derivative of logPL wrt hyperparameters
+    /// order sigmaf2, ncorr, wfac, only requested ders are calculated
+    /// derivatives are ADDED to der
+    void GetLogPLDerivatives(const std::vector<bool>& flags,CSimpleVector<double>& der);
 
     /// filter data
     virtual void RunFilter(const CVectorDataPtr& in, CVectorDataPtr& out);
+
+    // parallel processing
+    void PrintExecInfo(CVerboseStr& vout);
+    void RunBlasLapackSeq(void);
+    void RunBlasLapackPar(void);
 
 // section of private data ----------------------------------------------------
 protected:
@@ -79,6 +109,7 @@ protected:
     double                  WFac;
     double                  Noise;
     double                  RCond;
+    int                     KRank;
     EGPFilterKernel         Kernel;
 
     CFortranMatrix          KS;              // kernel matrix
@@ -87,11 +118,6 @@ protected:
     CSimpleVector<double>   Y;              // mean forces
     CSimpleVector<double>   GPRModel;       // weights
     CSimpleVector<double>   KFF;
-
-    // parallel processing
-    void PrintExecInfo(CVerboseStr& vout);
-    void RunBlasLapackSeq(void);
-    void RunBlasLapackPar(void);
 
     // kernel values
     double GetKernelValue(double indi,double indj);

@@ -24,7 +24,6 @@ ADD_SUBDIRECTORY(accu-trajectory)
 # common utilities
 ADD_SUBDIRECTORY(pmf-integrate)
 ADD_SUBDIRECTORY(pmf-enthalpy)
-ADD_SUBDIRECTORY(pmf-entropy-der)
 ADD_SUBDIRECTORY(gpr-opthyprms)
 
 # MTD utilities
@@ -32,6 +31,10 @@ ADD_SUBDIRECTORY(mtd-energy)
 
 # ABP utilities
 ADD_SUBDIRECTORY(abp-energy)
+
+# ABF utilities
+#ADD_SUBDIRECTORY(abf-gpr-entropy-der)
+ADD_SUBDIRECTORY(abf-gpr-opthyprms)
 
 ## network utilities ------------------------------------------------------------
 IF(PMFLIB_NETWORK)

@@ -110,12 +110,16 @@ type,extends(PMFAccuType) :: ABFAccuType
     real(PMFDP),pointer    :: m2epot(:)                 ! M2 of pot energy
     real(PMFDP),pointer    :: merst(:)                  ! mean of rst energy
     real(PMFDP),pointer    :: m2erst(:)                 ! M2 of rst energy
+    real(PMFDP),pointer    :: mekin(:)                  ! mean of kin energy
+    real(PMFDP),pointer    :: m2ekin(:)                 ! M2 of kin energy
 
 ! entropy
     real(PMFDP),pointer    :: metot(:)                  ! mean of tot energy
     real(PMFDP),pointer    :: m2etot(:)                 ! M2 of tot energy
-    real(PMFDP),pointer    :: micfetot(:,:)             ! mean of tot energy * icf
-    real(PMFDP),pointer    :: m2icfetot(:,:)            ! M2 of tot energy * icf
+    real(PMFDP),pointer    :: mpp(:,:)                  ! mean of tot energy + icf
+    real(PMFDP),pointer    :: m2pp(:,:)                 ! M2 of tot energy + icf
+    real(PMFDP),pointer    :: mpn(:,:)                  ! mean of tot energy - icf
+    real(PMFDP),pointer    :: m2pn(:,:)                 ! M2 of tot energy - icf
 
 ! time recording for post-processing
     real(PMFDP),pointer    :: tcvs(:,:)
@@ -162,7 +166,6 @@ real(PMFDP),allocatable     :: sfac(:)              ! switching factors
 integer                     :: hist_len
 real(PMFDP),allocatable     :: cvhist(:,:)          ! history of CV values (nCVS,hist_len)
 real(PMFDP),allocatable     :: fhist(:,:,:)         ! history of forces
-real(PMFDP),allocatable     :: fshist(:,:,:)        ! history of forces - shake
 real(PMFDP),allocatable     :: xhist(:,:,:)         ! history of velocities
 real(PMFDP),allocatable     :: vhist(:,:,:)         ! history of velocities
 real(PMFDP),allocatable     :: fzinvhist(:,:,:)     ! history of fzinv
@@ -188,32 +191,34 @@ integer                     :: gpr_cvs_kernel   ! 0 - Exponential
                                                 ! 5 - Quartic (biweight)
                                                 ! 6 - Triweight
 real(PMFDP)                 :: gpr_cvs_noise    ! noise magnitude
-logical                     :: gpr_cvs_cdf      ! use central differences for the second differentiation in ICF calc.
+
+! ICF GPR
+logical                     :: gpr_icf_cdf      ! use central differences for the second differentiation in ICF calc.
+real(PMFDP)                 :: gpr_icf_width    ! kernel width in fs
+integer                     :: gpr_icf_kernel   ! kernel type
+real(PMFDP)                 :: gpr_icf_noise    ! noise magnitude
 
 ! ENE GPR
 integer                     :: gpr_ene_smooth   ! 0 - no smoothing
                                                 ! 1 - smooth etot
                                                 ! 2 - smooth ekin
 real(PMFDP)                 :: gpr_ene_width    ! kernel width in fs
-integer                     :: gpr_ene_kernel   ! 0 - Exponential
-                                                ! 1 - MC(3/2)
-                                                ! 2 - MC(5/2)
-                                                ! 3 - ARDSE
-                                                ! 4 - Epanechnikov (parabolic)
-                                                ! 5 - Quartic (biweight)
-                                                ! 6 - Triweight
+integer                     :: gpr_ene_kernel   ! kernel type
 real(PMFDP)                 :: gpr_ene_noise    ! noise magnitude
 
 integer                     :: gpr_boundary     ! skip analysis at boundaries of gpr_len
 integer                     :: gpr_rank         ! rank for SVD inversion
 real(PMFDP)                 :: gpr_rcond        ! rcond for automatic rank determination
 
-
-real(PMFDP),allocatable     :: gpr_K_cvs(:,:)   ! co-variance matrix for Ene
-real(PMFDP),allocatable     :: gpr_K_ene(:,:)   ! co-variance matrix for Ene
+real(PMFDP),allocatable     :: gpr_K_cvs(:,:)   ! co-variance matrix for CVS
+real(PMFDP),allocatable     :: gpr_K_icf(:,:)   ! co-variance matrix for ICF
+real(PMFDP),allocatable     :: gpr_K_ene(:,:)   ! co-variance matrix for ENE
 real(PMFDP),allocatable     :: gpr_data(:)      ! GPR input data
 real(PMFDP),allocatable     :: gpr_model(:)     ! GPR model
+real(PMFDP),allocatable     :: gpr_kff_cvs(:,:) ! inference for cvs
 real(PMFDP),allocatable     :: gpr_kfd_cvs(:,:) ! inference for cvs
+real(PMFDP),allocatable     :: gpr_kff_icf(:,:) ! inference for icf
+real(PMFDP),allocatable     :: gpr_kfd_icf(:,:) ! inference for icf
 real(PMFDP),allocatable     :: gpr_kff_ene(:,:) ! inference for ene
 
 ! ------------------------------------------------------------------------------

@@ -79,7 +79,7 @@ int CEntropyDer::Init(int argc,char* argv[])
 
     vout << endl;
     vout << "# ==============================================================================" << endl;
-    vout << "# pmf-entropy-der (PMFLib utility)  started at " << dt.GetSDateAndTime() << endl;
+    vout << "# abf-gpr-entropy-der (PMFLib utility)  started at " << dt.GetSDateAndTime() << endl;
     vout << "# Version: " << LibBuildVersion_PMF << endl;
     vout << "# ==============================================================================" << endl;
 
@@ -142,7 +142,7 @@ bool CEntropyDer::Run(void)
 
     vout << "   Numerical differentiation ..." << endl;
     //GetNativeData();
-    for(double wfac=1.0; wfac < 200.0; wfac += 5.0){
+    for(double wfac=.1; wfac < 12.0; wfac += 0.3){
         GetICFByGPF(wfac);
     }
 
@@ -216,103 +216,16 @@ void CEntropyDer::GetEtot(void)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void CEntropyDer::GetICFBySGF(void)
-{
-    CSGFilterPtr sgfilter(new CSGFilter);
-    sgfilter->SetFilter(InAccu->GetTimeStep(),5,3);
-
-    CSimpleVector<double> cvsva;
-    CSimpleVector<double> cvs1d;
-    CSimpleVector<double> cvs2d;
-
-    CSimpleVector<double> gfx;
-
-    cvsva.CreateVector(NumOfCVs);
-    cvs1d.CreateVector(NumOfCVs);
-    cvs2d.CreateVector(NumOfCVs);
-
-    gfx.CreateVector(NumOfCVs);
-
-    CFortranMatrix zinvva;
-    CFortranMatrix zinv1d;
-
-    zinvva.CreateMatrix(NumOfCVs,NumOfCVs);
-    zinv1d.CreateMatrix(NumOfCVs,NumOfCVs);
-
-// input data
-    CPMFAccuDataPtr insdcvs     = InAccu->GetSectionData("TCVS");
-    CPMFAccuDataPtr insdzinv    = InAccu->GetSectionData("TZINV");
-    CVectorDataPtr  inetot      = InAccu->GetSectionData("TETOT")->GetDataBlob();
-    CPMFAccuDataPtr insdmicf    = InAccu->GetSectionData("TBICF");
-
-    CVectorDataPtr  outetot     = InAccu->CreateSectionData("USE_ETOT","IG","R","T")->GetDataBlob();
-    CPMFAccuDataPtr outsdcvs    = InAccu->CreateSectionData("USE_CVS", "IG","R","S");
-    CPMFAccuDataPtr outsdicf    = InAccu->CreateSectionData("USE_ICF", "IG","R","S");
-
-    for(size_t t=2000; t < NSTLimit-5; t++){
-
-        outetot->GetRawDataField()[t] = sgfilter->GetValue(inetot,t);
-
-    // get force components
-        for(size_t icv=0; icv < NumOfCVs; icv++){
-            CVectorDataPtr incvs  = insdcvs->GetDataBlob(icv);
-
-            cvsva[icv] = sgfilter->GetValue(incvs,t);
-            cvs1d[icv] = sgfilter->Get1stDer(incvs,t);
-            cvs2d[icv] = sgfilter->Get2ndDer(incvs,t);
-
-            for(size_t jcv=0; jcv < NumOfCVs; jcv++){
-                CVectorDataPtr inzinv  = insdzinv->GetDataBlob(icv,jcv);
-                zinvva[icv][jcv] = sgfilter->GetValue(inzinv,t);
-                zinv1d[icv][jcv] = sgfilter->Get1stDer(inzinv,t);
-            }
-        }
-
-    // complete forces
-        gfx.SetZero();
-        for(size_t icv=0; icv < NumOfCVs; icv++){
-            for(size_t jcv=0; jcv < NumOfCVs; jcv++){
-                gfx[icv] = gfx[icv] + zinv1d[icv][jcv]*cvs1d[jcv] + zinvva[icv][jcv]*cvs2d[jcv];
-            }
-        }
-
-    // apply biasing force
-        for(size_t icv=0; icv < NumOfCVs; icv++){
-            CVectorDataPtr inmicf  = insdmicf->GetDataBlob(icv);
-            gfx[icv] = gfx[icv] - inmicf->GetRawDataField()[t+2];
-        }
-
-    // save
-        for(size_t icv=0; icv < NumOfCVs; icv++){
-            CVectorDataPtr outcvs  = outsdcvs->GetDataBlob(icv);
-            outcvs->GetRawDataField()[t] = cvsva[icv];
-            CVectorDataPtr outicf  = outsdicf->GetDataBlob(icv);
-            outicf->GetRawDataField()[t] = gfx[icv];
-        }
-    }
-
-    ofstream tout("icf");
-    CVectorDataPtr inicf  = InAccu->GetSectionData("TICF")->GetDataBlob(0);
-    CVectorDataPtr outicf = outsdicf->GetDataBlob(0);
-    for(int t=200; t< 50000; t++){
-        tout << inicf->GetRawDataField()[t] << " " <<  outicf->GetRawDataField()[t+2] << endl;
-    }
-}
-
-//==============================================================================
-//------------------------------------------------------------------------------
-//==============================================================================
-
-void CEntropyDer::GetICFByGPF(double wfac)
+void CEntropyDer::GetICF(void)
 {
     CGPFilterPtr gpfilter(new CGPFilter);
 
     int    gplen    = 1001;
     double gpwfac   = wfac;
-    double gpnoise  = 5.0;
+    double gpnoise  = 5e-4;
 
 
-    gpfilter->SetKernel("ardmc32");
+    gpfilter->SetKernel("ardse");
     gpfilter->SetFilter(InAccu->GetTimeStep(),gplen,gpwfac,gpnoise,vout);
 
     CSimpleVector<double> cvsva;
@@ -348,23 +261,23 @@ void CEntropyDer::GetICFByGPF(double wfac)
 
    for(size_t t=10; t < NSTLimit-gplen; t += gplen){
 
-//    // get force components
-//        for(size_t icv=0; icv < NumOfCVs; icv++){
-//            CVectorDataPtr incvs  = insdcvs->GetDataBlob(icv);
-//
-//            gpfilter->TrainProcess(incvs,t);
-//            double logml = gpfilter->GetLogML();
-//            totlogml += logml;
-//            lsize++;
-//
-//            CVectorDataPtr outcvs  = outsdcvs->GetDataBlob(icv);
-//            gpfilter->PredictData(outcvs,t);
-//        }
+    // get force components
+        for(size_t icv=0; icv < NumOfCVs; icv++){
+            CVectorDataPtr incvs  = insdcvs->GetDataBlob(icv);
 
-        gpfilter->TrainProcess(inetot,t);
-        double logml = gpfilter->GetLogML();
-        totlogml += logml;
-        lsize++;
+            gpfilter->TrainProcess(incvs,t);
+            double logml = gpfilter->GetLogML();
+            totlogml += logml;
+            lsize++;
+
+            CVectorDataPtr outcvs  = outsdcvs->GetDataBlob(icv);
+            gpfilter->PredictData(outcvs,t);
+        }
+
+//        gpfilter->TrainProcess(inetot,t);
+//        double logml = gpfilter->GetLogML();
+//        totlogml += logml;
+//        lsize++;
 
         gpfilter->PredictData(outetot,t);
    }
@@ -699,7 +612,7 @@ void CEntropyDer::Finalize(void)
 
     vout << endl;
     vout << "# ==============================================================================" << endl;
-    vout << "# pmf-entropy-der terminated at " << dt.GetSDateAndTime() << endl;
+    vout << "# abf-gpr-entropy-der terminated at " << dt.GetSDateAndTime() << endl;
     vout << "# ==============================================================================" << endl;
 
     if( ErrorSystem.IsError() || Options.GetOptVerbose() ){

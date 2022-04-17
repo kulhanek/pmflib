@@ -67,7 +67,6 @@ subroutine abf_control_read_abf(prm_fin)
 
     ! read configuration
     call pmf_ctrl_read_integer(prm_fin,'fmode',fmode,'I12')
-    call pmf_ctrl_check_integer_in_range('ABF','fmode',fmode,0,4)
 
     if( fmode .eq. 0 ) then
         write(PMF_OUT,10)
@@ -135,7 +134,7 @@ subroutine abf_control_read_abf(prm_fin)
             call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown extrapolation/interpolation mode!')
     end select
 
-    if( fmode .eq. 4 ) then
+    if( fmode .eq. 2 ) then
         write(PMF_OUT,63)
         call pmf_ctrl_read_integer(prm_fin,'gpr_len',gpr_len,'I12')
         call pmf_ctrl_check_integer('ABF','gpr_len',gpr_len,3,CND_GE)
@@ -148,7 +147,13 @@ subroutine abf_control_read_abf(prm_fin)
         call pmf_ctrl_check_integer_in_range('ABF','gpr_cvs_kernel',gpr_cvs_kernel,1,6)
         call pmf_ctrl_read_real8_wunit(prm_fin,'gpr_cvs_width',TimeUnit,gpr_cvs_width,'F12.3')
         call pmf_ctrl_read_real8(prm_fin,'gpr_cvs_noise',gpr_cvs_noise,'E12.5')
-        call pmf_ctrl_read_logical(prm_fin,'gpr_cvs_cdf',gpr_cvs_cdf)
+
+    ! ICF GPR
+        call pmf_ctrl_read_logical(prm_fin,'gpr_icf_cdf',gpr_icf_cdf)
+        call pmf_ctrl_read_integer(prm_fin,'gpr_icf_kernel',gpr_icf_kernel,'I12')
+        call pmf_ctrl_check_integer_in_range('ABF','gpr_icf_kernel',gpr_icf_kernel,1,6)
+        call pmf_ctrl_read_real8_wunit(prm_fin,'gpr_icf_width',TimeUnit,gpr_icf_width,'F12.3')
+        call pmf_ctrl_read_real8(prm_fin,'gpr_icf_noise',gpr_icf_noise,'E12.5')
 
     ! ENE GPR
         call pmf_ctrl_read_integer(prm_fin,'gpr_ene_smooth',gpr_ene_smooth,'I12')
@@ -200,8 +205,7 @@ subroutine abf_control_read_abf(prm_fin)
 
     abf_enabled          = fmode .gt. 0
 
-    shake_force_required = shake_force_required .or. (fmode .eq. 1)
-    shake_force_required = shake_force_required .or. (fmode .eq. 3)
+    shake_force_required = shake_force_required .or. (fmode .eq. 10)
 
     return
 
@@ -212,7 +216,7 @@ subroutine abf_control_read_abf(prm_fin)
  52 format (/,'>> Kernel smoother (feimode == 2)')
  53 format (/,'>> Linear interpolation (feimode == 3)')
 
- 63 format (/,'>> Gaussian Process Regression ABF (fmode == 4)')
+ 63 format (/,'>> Gaussian Process Regression ABF (fmode == 2)')
 
 100 format (' >> Multiple-walkers ABF method is disabled!')
 

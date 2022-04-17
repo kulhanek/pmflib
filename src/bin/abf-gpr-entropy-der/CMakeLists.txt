@@ -11,9 +11,9 @@ SET(ENTROPYDER_SRC
 # final build ------------------------------------------------------------------
 
 IF(OpenMP_FOUND)
-    SET(TARGET_NAME _pmf-entropy-der)
+    SET(TARGET_NAME _abf-gpr-entropy-der)
 ELSE()
-    SET(TARGET_NAME pmf-entropy-der)
+    SET(TARGET_NAME abf-gpr-entropy-der)
 ENDIF()
 
 ADD_EXECUTABLE(${TARGET_NAME} ${ENTROPYDER_SRC})

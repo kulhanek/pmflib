@@ -53,12 +53,12 @@ public:
 
 // section of private data ----------------------------------------------------
 private:
-    CEntropyDerOptions              Options;
-    CStdIOFile                      InputFile;
-    CStdIOFile                      OutputFile;
-    CPMFAccumulatorPtr              InAccu;
-    CPMFAccumulatorPtr              OutAccu;
-    int                             State;
+    CEntropyDerOptions       Options;
+    CStdIOFile               InputFile;
+    CStdIOFile               OutputFile;
+    CPMFAccumulatorPtr       InAccu;
+    CPMFAccumulatorPtr       OutAccu;
+    int                      State;
 
     // output ------------------------------------
     CTerminalStr            Console;
@@ -70,12 +70,34 @@ private:
     EKSKernelType           KSKernel;
     CSimpleVector<double>   KSWFac;
 
+    int                     gpr_len;
+    int                     gpr_boundary;
+
+// CVS GPR
+    double                  gpr_cvs_width;
+    int                     gpr_cvs_kernel;
+    double                  gpr_cvs_noise;
+
+// ICF GPR
+    bool                    gpr_icf_cdf;
+    double                  gpr_icf_width;
+    int                     gpr_icf_kernel;
+    double                  gpr_icf_noise;
+
+// ENE GPR
+    int                     gpr_ene_smooth;
+    double                  gpr_ene_width;
+    int                     gpr_ene_kernel;
+    double                  gpr_ene_noise;
+
+// SVD inversion
+    int                     gpr_rank;
+    double                  gpr_rcond;
+
     void GetEtot(void);
-    void GetICFBySGF(void);
-    void GetICFByGPF(double wfac);
+    void GetICF(void);
 
     void CalculatePPandPN(void);
-    void CalculatePPandPN_KS(void);
 
     void CalculateKSWeights(CSimpleVector<double>& weights,CSimpleVector<double>& jpos);
     double GetKSKernelValue(double u2);

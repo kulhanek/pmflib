@@ -84,6 +84,8 @@ subroutine abf_accu_init()
                     abfaccu%m2epot(abfaccu%tot_nbins),  &
                     abfaccu%merst(abfaccu%tot_nbins),   &
                     abfaccu%m2erst(abfaccu%tot_nbins),  &
+                    abfaccu%mekin(abfaccu%tot_nbins),   &
+                    abfaccu%m2ekin(abfaccu%tot_nbins),  &
                     stat = alloc_failed)
 
         if( alloc_failed .ne. 0 ) then
@@ -92,10 +94,12 @@ subroutine abf_accu_init()
     end if
 
     if( fentropy ) then
-        allocate(   abfaccu%micfetot(abfaccu%tot_cvs,abfaccu%tot_nbins),    &
-                    abfaccu%m2icfetot(abfaccu%tot_cvs,abfaccu%tot_nbins),   &
-                    abfaccu%metot(abfaccu%tot_nbins),                       &
-                    abfaccu%m2etot(abfaccu%tot_nbins),                      &
+        allocate(   abfaccu%metot(abfaccu%tot_nbins),                   &
+                    abfaccu%m2etot(abfaccu%tot_nbins),                  &
+                    abfaccu%mpp(abfaccu%tot_cvs,abfaccu%tot_nbins),     &
+                    abfaccu%m2pp(abfaccu%tot_cvs,abfaccu%tot_nbins),    &
+                    abfaccu%mpn(abfaccu%tot_cvs,abfaccu%tot_nbins),     &
+                    abfaccu%m2pn(abfaccu%tot_cvs,abfaccu%tot_nbins),    &
                     stat = alloc_failed)
 
         if( alloc_failed .ne. 0 ) then
@@ -167,13 +171,17 @@ subroutine abf_accu_clear()
         abfaccu%m2epot(:)       = 0.0d0
         abfaccu%merst(:)        = 0.0d0
         abfaccu%m2erst(:)       = 0.0d0
+        abfaccu%mekin(:)        = 0.0d0
+        abfaccu%m2ekin(:)       = 0.0d0
     end if
 
     if( fentropy ) then
-        abfaccu%micfetot(:,:)   = 0.0d0
-        abfaccu%m2icfetot(:,:)  = 0.0d0
         abfaccu%metot(:)        = 0.0d0
         abfaccu%m2etot(:)       = 0.0d0
+        abfaccu%mpp(:,:)        = 0.0d0
+        abfaccu%m2pp(:,:)       = 0.0d0
+        abfaccu%mpn(:,:)        = 0.0d0
+        abfaccu%m2pn(:,:)       = 0.0d0
     end if
 
     if( frecord ) then
@@ -258,6 +266,20 @@ subroutine abf_accu_read(iounit)
                         call pmf_accu_skip_section(iounit,keyline,ABF_OUT)
                     end if
             ! ------------------------------------
+                case('MEKIN')
+                    if( fenthalpy ) then
+                        call pmf_accu_read_rbuf_B(abfaccu%PMFAccuType,iounit,keyline,abfaccu%mekin)
+                    else
+                        call pmf_accu_skip_section(iounit,keyline,ABF_OUT)
+                    end if
+            ! ------------------------------------
+                case('M2EKIN')
+                    if( fenthalpy ) then
+                        call pmf_accu_read_rbuf_B(abfaccu%PMFAccuType,iounit,keyline,abfaccu%m2ekin)
+                    else
+                        call pmf_accu_skip_section(iounit,keyline,ABF_OUT)
+                    end if
+            ! ------------------------------------
                 case('METOT')
                     if( fentropy ) then
                         call pmf_accu_read_rbuf_B(abfaccu%PMFAccuType,iounit,keyline,abfaccu%metot)
@@ -268,6 +290,34 @@ subroutine abf_accu_read(iounit)
                 case('M2ETOT')
                     if( fentropy ) then
                         call pmf_accu_read_rbuf_B(abfaccu%PMFAccuType,iounit,keyline,abfaccu%m2etot)
+                    else
+                        call pmf_accu_skip_section(iounit,keyline,ABF_OUT)
+                    end if
+            ! ------------------------------------
+                case('MPP')
+                    if( fentropy ) then
+                        call pmf_accu_read_rbuf_M(abfaccu%PMFAccuType,iounit,keyline,abfaccu%mpp)
+                    else
+                        call pmf_accu_skip_section(iounit,keyline,ABF_OUT)
+                    end if
+            ! ------------------------------------
+                case('M2PP')
+                    if( fentropy ) then
+                        call pmf_accu_read_rbuf_M(abfaccu%PMFAccuType,iounit,keyline,abfaccu%m2pp)
+                    else
+                        call pmf_accu_skip_section(iounit,keyline,ABF_OUT)
+                    end if
+           ! ------------------------------------
+                case('MPN')
+                    if( fentropy ) then
+                        call pmf_accu_read_rbuf_M(abfaccu%PMFAccuType,iounit,keyline,abfaccu%mpn)
+                    else
+                        call pmf_accu_skip_section(iounit,keyline,ABF_OUT)
+                    end if
+            ! ------------------------------------
+                case('M2PN')
+                    if( fentropy ) then
+                        call pmf_accu_read_rbuf_M(abfaccu%PMFAccuType,iounit,keyline,abfaccu%m2pn)
                     else
                         call pmf_accu_skip_section(iounit,keyline,ABF_OUT)
                     end if
@@ -358,13 +408,17 @@ subroutine abf_accu_write(iounit,full)
         call pmf_accu_write_rbuf_B(abfaccu%PMFAccuType,iounit,'M2EPOT', 'M2',abfaccu%m2epot,'NSAMPLES','MEPOT')
         call pmf_accu_write_rbuf_B(abfaccu%PMFAccuType,iounit,'MERST',  'WA',abfaccu%merst, 'NSAMPLES')
         call pmf_accu_write_rbuf_B(abfaccu%PMFAccuType,iounit,'M2ERST', 'M2',abfaccu%m2erst,'NSAMPLES','MERST')
+        call pmf_accu_write_rbuf_B(abfaccu%PMFAccuType,iounit,'MEKIN',  'WA',abfaccu%merst, 'NSAMPLES')
+        call pmf_accu_write_rbuf_B(abfaccu%PMFAccuType,iounit,'M2EKIN', 'M2',abfaccu%m2erst,'NSAMPLES','MEKIN')
     end if
 
     if( fentropy ) then
-        call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'MICFETOT',   'WA',abfaccu%micfetot,  'NSAMPLES')
-        call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'M2ICFETOT',  'M2',abfaccu%m2icfetot, 'NSAMPLES','MICFETOT')
         call pmf_accu_write_rbuf_B(abfaccu%PMFAccuType,iounit,'METOT',      'WA',abfaccu%metot,     'NSAMPLES')
         call pmf_accu_write_rbuf_B(abfaccu%PMFAccuType,iounit,'M2ETOT',     'M2',abfaccu%m2etot,    'NSAMPLES','METOT')
+        call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'MPP',        'WA',abfaccu%mpp,       'NSAMPLES')
+        call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'M2PP',       'M2',abfaccu%m2pp,      'NSAMPLES','MPP')
+        call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'MPN',        'WA',abfaccu%mpn,       'NSAMPLES')
+        call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'M2PN',       'M2',abfaccu%m2pn,      'NSAMPLES','MPN')
     end if
 
     call pmf_accu_write_rbuf_B(abfaccu%PMFAccuType,iounit,'BNSAMPLES',  'IG',abfaccu%bnsamples)
@@ -387,7 +441,7 @@ end subroutine abf_accu_write
 ! Subroutine:  abf_accu_add_data_online
 !===============================================================================
 
-subroutine abf_accu_add_data_online(cvs,gfx,epot,erst,etot)
+subroutine abf_accu_add_data_online(cvs,gfx,epot,erst,ekin,etot)
 
     use abf_dat
     use pmf_dat
@@ -397,15 +451,18 @@ subroutine abf_accu_add_data_online(cvs,gfx,epot,erst,etot)
     real(PMFDP),intent(in)  :: gfx(:)
     real(PMFDP),intent(in)  :: epot
     real(PMFDP),intent(in)  :: erst
-    real(PMFDP),intent(in)  :: etot
+    real(PMFDP),intent(in)  :: ekin
+    real(PMFDP),intent(in)  :: etot     ! etot can be smoothed by GPR
     ! -----------------------------------------------
     integer        :: gi0, i
-    real(PMFDP)    :: invn, icf, ei
+    real(PMFDP)    :: invn, icf
     real(PMFDP)    :: depot1, depot2
     real(PMFDP)    :: derst1, derst2
+    real(PMFDP)    :: dekin1, dekin2
     real(PMFDP)    :: detot1, detot2
     real(PMFDP)    :: dicf1, dicf2
-    real(PMFDP)    :: dei1, dei2
+    real(PMFDP)    :: dpp, dpp1, dpp2
+    real(PMFDP)    :: dpn, dpn1, dpn2
     ! --------------------------------------------------------------------------
 
     ! get global index to accumulator for cvs values
@@ -433,6 +490,12 @@ subroutine abf_accu_add_data_online(cvs,gfx,epot,erst,etot)
         abfaccu%merst(gi0)  = abfaccu%merst(gi0)  + derst1 * invn
         derst2 = erst - abfaccu%merst(gi0)
         abfaccu%m2erst(gi0) = abfaccu%m2erst(gi0) + derst1 * derst2
+
+        ! kinetic energy
+        dekin1 = ekin - abfaccu%mekin(gi0)
+        abfaccu%mekin(gi0)  = abfaccu%mekin(gi0)  + dekin1 * invn
+        dekin2 = ekin - abfaccu%mekin(gi0)
+        abfaccu%m2ekin(gi0) = abfaccu%m2ekin(gi0) + dekin1 * dekin2
     end if
 
     if( fentropy ) then
@@ -451,11 +514,17 @@ subroutine abf_accu_add_data_online(cvs,gfx,epot,erst,etot)
         abfaccu%m2icf(i,gi0) = abfaccu%m2icf(i,gi0) + dicf1 * dicf2
 
         if( fentropy ) then
-            ei = icf * etot
-            dei1 = ei - abfaccu%micfetot(i,gi0)
-            abfaccu%micfetot(i,gi0)  = abfaccu%micfetot(i,gi0)  + dei1 * invn
-            dei2 = ei - abfaccu%micfetot(i,gi0)
-            abfaccu%m2icfetot(i,gi0) = abfaccu%m2icfetot(i,gi0) + dei1 * dei2
+            dpp = icf + etot
+            dpp1 = dpp - abfaccu%mpp(i,gi0)
+            abfaccu%mpp(i,gi0)  = abfaccu%mpp(i,gi0)  + dpp1 * invn
+            dpp2 = dpp - abfaccu%mpp(i,gi0)
+            abfaccu%m2pp(i,gi0) = abfaccu%m2pp(i,gi0) + dpp1 * dpp2
+
+            dpn = icf - etot
+            dpn1 = dpn - abfaccu%mpn(i,gi0)
+            abfaccu%mpn(i,gi0)  = abfaccu%mpn(i,gi0)  + dpn1 * invn
+            dpn2 = dpn - abfaccu%mpn(i,gi0)
+            abfaccu%m2pn(i,gi0) = abfaccu%m2pn(i,gi0) + dpn1 * dpn2
         end if
     end do
 
