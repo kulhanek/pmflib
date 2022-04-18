@@ -35,8 +35,100 @@ group_a        @14-19
 reference_a    T_ring_only.xyz
 group_b        @5-13
 reference_b    G_ring_only.xyz
-group_c        @1
-group_d        @13
+group_c        @1-5
+group_d        @13-19
+
+! ----------------------------
+
+[NASPSXY]
+name  cv12
+skip_mass_test on
+group_a        @1-9
+reference_a    G_ring_only.xyz
+group_b        @10-15
+reference_b    T_ring_only.xyz
+group_c        @16
+group_d        @17
+opfac          3.0
+
+[NASPSXY]
+name  cv22
+skip_mass_test on
+group_b        @1-9
+reference_b    G_ring_only.xyz
+group_a        @9-14
+reference_a    T_ring_only.xyz
+group_c        @16
+group_d        @17
+opfac          1.0
+
+[NASPSXY]
+name  cv32
+skip_mass_test on
+group_a        @5-13
+reference_a    G_ring_only.xyz
+group_b        @14-19
+reference_b    T_ring_only.xyz
+group_c        @6
+group_d        @5
+opfac          3.5
+
+[NASPSXY]
+name  cv42
+skip_mass_test on
+group_a        @14-19
+reference_a    T_ring_only.xyz
+group_b        @5-13
+reference_b    G_ring_only.xyz
+group_c        @1-5
+group_d        @13-19
+opfac          1.5
+
+! ----------------------------
+
+[NASPSXY]
+name  cv13
+skip_mass_test on
+group_a        @1-9
+reference_a    G_ring_only.xyz
+group_b        @10-15
+reference_b    T_ring_only.xyz
+group_c        @16
+group_d        @17
+opabs          off
+
+[NASPSXY]
+name  cv23
+skip_mass_test on
+group_b        @1-9
+reference_b    G_ring_only.xyz
+group_a        @9-14
+reference_a    T_ring_only.xyz
+group_c        @16
+group_d        @17
+opabs          off
+
+[NASPSXY]
+name  cv33
+skip_mass_test on
+group_a        @5-13
+reference_a    G_ring_only.xyz
+group_b        @14-19
+reference_b    T_ring_only.xyz
+group_c        @6
+group_d        @5
+opabs          off
+
+[NASPSXY]
+name  cv43
+skip_mass_test on
+group_a        @14-19
+reference_a    T_ring_only.xyz
+group_b        @5-13
+reference_b    G_ring_only.xyz
+group_c        @1-5
+group_d        @13-19
+opabs          off
 
 
 

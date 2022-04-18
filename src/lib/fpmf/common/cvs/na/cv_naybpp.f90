@@ -358,7 +358,7 @@ subroutine calculate_naybpp(cv_item,x,ctx)
     call superimpose_str_der(cv_item,0,              cv_item%grps(1),ctx,cv_item%xyz_str_a,cv_item%simpdat_a,a_ua,a_oa)
     call superimpose_str_der(cv_item,cv_item%grps(1),cv_item%grps(2),ctx,cv_item%xyz_str_b,cv_item%simpdat_b,a_ub,a_ob)
 
-! finaly gradients for group_c, group_d ==========
+! finally, gradients for group_c, group_d ==========
     call get_com_der(cv_item,3,a_y0axis,y1tmass, 1.0d0,ctx)
     call get_com_der(cv_item,4,a_y0axis,y2tmass,-1.0d0,ctx)
 

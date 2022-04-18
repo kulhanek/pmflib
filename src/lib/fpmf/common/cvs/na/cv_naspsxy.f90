@@ -31,6 +31,9 @@ use cv_math
 
 implicit none
 
+! NASPSXY - Nucleic Acid Simple Base-Pair Parameters
+! Shear and Stagger modulated by Opening
+
 !===============================================================================
 
 type, extends(CVType) :: CVTypeNASPSXY
@@ -40,6 +43,7 @@ type, extends(CVType) :: CVTypeNASPSXY
     type(XYZFILE_TYPE)  :: xyz_str_b
     type(SImpStrData)   :: simpdat_b
     real(PMFDP)         :: opfac
+    logical             :: opabs
 
     contains
         procedure :: load_cv        => load_naspsxy
@@ -150,19 +154,23 @@ subroutine load_naspsxy(cv_item,prm_fin)
     ! read group c,d ----------------------------------
     write(PMF_OUT,75)
     call cv_common_read_group(cv_item,prm_fin,3)
-    if( cv_get_group_natoms(cv_item,3) .ne.1 ) then
-        call pmf_utils_exit(PMF_OUT,1,'group_c can contain only one atom!')
-    end if
-
     call cv_common_read_group(cv_item,prm_fin,4)
-    if( cv_get_group_natoms(cv_item,4) .ne.1 ) then
-        call pmf_utils_exit(PMF_OUT,1,'group_d can contain only one atom!')
+
+    ! opfac parameter
+    write(PMF_OUT,80)
+    cv_item%opfac = 0.5d0
+    if( prmfile_get_real8_by_key(prm_fin,'opfac',cv_item%opfac) ) then
+        write(PMF_OUT,85) cv_item%opfac
+    else
+        write(PMF_OUT,86) cv_item%opfac
     end if
 
-    ! FIXME - tunable?
-    write(PMF_OUT,80)
-    cv_item%opfac = 2.0d0
-    write(PMF_OUT,85) cv_item%opfac
+    cv_item%opabs = .true.
+    if( prmfile_get_logical_by_key(prm_fin,'opabs',cv_item%opabs) ) then
+        write(PMF_OUT,95) prmfile_onoff(cv_item%opabs)
+    else
+        write(PMF_OUT,96) prmfile_onoff(cv_item%opabs)
+    end if
 
     return
 
@@ -172,6 +180,9 @@ subroutine load_naspsxy(cv_item,prm_fin)
  75 format('   == y-axis  ====================================')
  80 format('   -----------------------------------------------')
  85 format('   ** Scaling of Opening:  ',F10.2)
+ 86 format('   ** Scaling of Opening:  ',F10.2, ' (default)')
+ 95 format('   ** Absolute Opening:    ',A10)
+ 96 format('   ** Absolute Opening:    ',A10, ' (default)')
 100 format('Atom mismatch between group A and reference A atoms! atom: ',I6,', group mass: ',F10.3, ', ref mass: ',F10.3)
 110 format('Atom mismatch between group B and reference B atoms! atom: ',I6,', group mass: ',F10.3, ', ref mass: ',F10.3)
 
@@ -202,7 +213,8 @@ subroutine calculate_naspsxy(cv_item,x,ctx)
     real(PMFDP)         :: a_yaxisr(3),a_zaxisr(3),a_y0axis(3)
     real(PMFDP)         :: d(3),t1,zsc
     real(PMFDP)         :: sx,sy,op,cop,sop,a_op
-    integer             :: ai
+    real(PMFDP)         :: y1com(3),y1tmass
+    real(PMFDP)         :: y2com(3),y2tmass
     ! --------------------------------------------------------------------------
 
     ! ALL a_xxx must be initialized to zero due to additive function of _der methods from cv_math
@@ -230,7 +242,11 @@ subroutine calculate_naspsxy(cv_item,x,ctx)
     call norm_vec(zaxisr,zaxis)
 
 ! y-axis =========================================
-    y0axis(:) = x(:,cv_item%lindexes(cv_item%grps(3))) - x(:,cv_item%lindexes(cv_item%grps(4)))
+    call get_com(cv_item,3,x,y1com,y1tmass)
+    call get_com(cv_item,4,x,y2com,y2tmass)
+
+    y0axis(:) = y1com(:) - y2com(:)
+
     ! remove projections to z-axis
     yaxisr(:) = y0axis(:) - (y0axis(1)*zaxis(1)+y0axis(2)*zaxis(2)+y0axis(3)*zaxis(3))*zaxis(:)
     ! normalize
@@ -247,7 +263,12 @@ subroutine calculate_naspsxy(cv_item,x,ctx)
     sy = d(1)*yaxis(1) + d(2)*yaxis(2) + d(3)*yaxis(3)
     ! opening
     call get_vtors(ua(:,2),ub(:,2),zaxis,op)
-    op = cv_item%opfac * op
+
+    if( cv_item%opabs ) then
+        op = cv_item%opfac * abs(op)
+    else
+        op = cv_item%opfac * op
+    end if
 
     ! final value
     cop = cos(op)
@@ -323,11 +344,9 @@ subroutine calculate_naspsxy(cv_item,x,ctx)
 
     call superimpose_str_der(cv_item,cv_item%grps(1),cv_item%grps(2),ctx,cv_item%xyz_str_b,cv_item%simpdat_b,a_ub,a_ob)
 
-! finaly gradients for group_c, group_d ==========
-    ai = cv_item%lindexes(cv_item%grps(3))
-    ctx%CVsDrvs(:,ai,cv_item%idx) = ctx%CVsDrvs(:,ai,cv_item%idx) + a_y0axis(:)
-    ai = cv_item%lindexes(cv_item%grps(4))
-    ctx%CVsDrvs(:,ai,cv_item%idx) = ctx%CVsDrvs(:,ai,cv_item%idx) - a_y0axis(:)
+! finally, gradients for group_c, group_d ==========
+    call get_com_der(cv_item,3,a_y0axis,y1tmass, 1.0d0,ctx)
+    call get_com_der(cv_item,4,a_y0axis,y2tmass,-1.0d0,ctx)
 
 end subroutine calculate_naspsxy
 
