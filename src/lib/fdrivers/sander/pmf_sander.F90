@@ -583,7 +583,7 @@ subroutine pmf_sander_constraints_mpi(anatom,x,modified)
             ! gather data
             call pmf_sander_gather_array_mpi(tmp_b,xbar,atm_owner_map,5)
 
-            if( famster ) then
+            if( fmaster ) then
                 call pmf_core_lf_shake_accel(tmp_b)
             end if
         else
