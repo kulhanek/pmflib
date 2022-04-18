@@ -5,8 +5,6 @@
 # test CV derivatives ----------------------------
 ADD_SUBDIRECTORY(cvder)
 
-# test restart readers ---------------------------
-ADD_SUBDIRECTORY(readers)
 
 
 
