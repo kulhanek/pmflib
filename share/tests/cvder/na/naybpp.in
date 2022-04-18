@@ -1,0 +1,276 @@
+[NAYBPP]
+name  cv1
+skip_mass_test on
+group_a        @1-9
+reference_a    G_ring_only.xyz
+group_b        @10-15
+reference_b    T_ring_only.xyz
+group_c        @16
+group_d        @17
+parameter      shear
+
+[NAYBPP]
+name  cv2
+skip_mass_test on
+group_b        @1-9
+reference_b    G_ring_only.xyz
+group_a        @9-14
+reference_a    T_ring_only.xyz
+group_c        @16
+group_d        @17-19
+parameter      shear
+
+[NAYBPP]
+name  cv3
+skip_mass_test on
+group_a        @5-13
+reference_a    G_ring_only.xyz
+group_b        @14-19
+reference_b    T_ring_only.xyz
+group_c        @1-6
+group_d        @5-7
+parameter      shear
+
+[NAYBPP]
+name  cv4
+skip_mass_test on
+group_a        @14-19
+reference_a    T_ring_only.xyz
+group_b        @5-13
+reference_b    G_ring_only.xyz
+group_c        @1-2
+group_d        @13-19
+parameter      shear
+
+! ----------------------------
+
+[NAYBPP]
+name  cv12
+skip_mass_test on
+group_a        @1-9
+reference_a    G_ring_only.xyz
+group_b        @10-15
+reference_b    T_ring_only.xyz
+group_c        @16
+group_d        @17
+parameter      stretch
+
+[NAYBPP]
+name  cv22
+skip_mass_test on
+group_b        @1-9
+reference_b    G_ring_only.xyz
+group_a        @9-14
+reference_a    T_ring_only.xyz
+group_c        @16
+group_d        @17-19
+parameter      stretch
+
+[NAYBPP]
+name  cv32
+skip_mass_test on
+group_a        @5-13
+reference_a    G_ring_only.xyz
+group_b        @14-19
+reference_b    T_ring_only.xyz
+group_c        @1-6
+group_d        @5-7
+parameter      stretch
+
+[NAYBPP]
+name  cv42
+skip_mass_test on
+group_a        @14-19
+reference_a    T_ring_only.xyz
+group_b        @5-13
+reference_b    G_ring_only.xyz
+group_c        @1-2
+group_d        @13-19
+parameter      stretch
+
+! ----------------------------
+
+[NAYBPP]
+name  cv13
+skip_mass_test on
+group_a        @1-9
+reference_a    G_ring_only.xyz
+group_b        @10-15
+reference_b    T_ring_only.xyz
+group_c        @16
+group_d        @17
+parameter      stagger
+
+[NAYBPP]
+name  cv23
+skip_mass_test on
+group_b        @1-9
+reference_b    G_ring_only.xyz
+group_a        @9-14
+reference_a    T_ring_only.xyz
+group_c        @16
+group_d        @17-19
+parameter      stagger
+
+[NAYBPP]
+name  cv33
+skip_mass_test on
+group_a        @5-13
+reference_a    G_ring_only.xyz
+group_b        @14-19
+reference_b    T_ring_only.xyz
+group_c        @1-6
+group_d        @5-7
+parameter      stagger
+
+[NAYBPP]
+name  cv43
+skip_mass_test on
+group_a        @14-19
+reference_a    T_ring_only.xyz
+group_b        @5-13
+reference_b    G_ring_only.xyz
+group_c        @1-2
+group_d        @13-19
+parameter      stagger
+
+! ----------------------------
+
+[NAYBPP]
+name  cv14
+skip_mass_test on
+group_a        @1-9
+reference_a    G_ring_only.xyz
+group_b        @10-15
+reference_b    T_ring_only.xyz
+group_c        @16
+group_d        @17
+parameter      buckle
+
+[NAYBPP]
+name  cv24
+skip_mass_test on
+group_b        @1-9
+reference_b    G_ring_only.xyz
+group_a        @9-14
+reference_a    T_ring_only.xyz
+group_c        @16
+group_d        @17-19
+parameter      buckle
+
+[NAYBPP]
+name  cv34
+skip_mass_test on
+group_a        @5-13
+reference_a    G_ring_only.xyz
+group_b        @14-19
+reference_b    T_ring_only.xyz
+group_c        @1-6
+group_d        @5-7
+parameter      buckle
+
+[NAYBPP]
+name  cv44
+skip_mass_test on
+group_a        @14-19
+reference_a    T_ring_only.xyz
+group_b        @5-13
+reference_b    G_ring_only.xyz
+group_c        @1-2
+group_d        @13-19
+parameter      buckle
+
+! ----------------------------
+
+[NAYBPP]
+name  cv15
+skip_mass_test on
+group_a        @1-9
+reference_a    G_ring_only.xyz
+group_b        @10-15
+reference_b    T_ring_only.xyz
+group_c        @16
+group_d        @17
+parameter      propeller
+
+[NAYBPP]
+name  cv25
+skip_mass_test on
+group_b        @1-9
+reference_b    G_ring_only.xyz
+group_a        @9-14
+reference_a    T_ring_only.xyz
+group_c        @16
+group_d        @17-19
+parameter      propeller
+
+[NAYBPP]
+name  cv35
+skip_mass_test on
+group_a        @5-13
+reference_a    G_ring_only.xyz
+group_b        @14-19
+reference_b    T_ring_only.xyz
+group_c        @1-6
+group_d        @5-7
+parameter      propeller
+
+[NAYBPP]
+name  cv45
+skip_mass_test on
+group_a        @14-19
+reference_a    T_ring_only.xyz
+group_b        @5-13
+reference_b    G_ring_only.xyz
+group_c        @1-2
+group_d        @13-19
+parameter      propeller
+
+! ----------------------------
+
+[NAYBPP]
+name  cv16
+skip_mass_test on
+group_a        @1-9
+reference_a    G_ring_only.xyz
+group_b        @10-15
+reference_b    T_ring_only.xyz
+group_c        @16
+group_d        @17
+parameter      opening
+
+[NAYBPP]
+name  cv26
+skip_mass_test on
+group_b        @1-9
+reference_b    G_ring_only.xyz
+group_a        @9-14
+reference_a    T_ring_only.xyz
+group_c        @16
+group_d        @17-19
+parameter      opening
+
+[NAYBPP]
+name  cv36
+skip_mass_test on
+group_a        @5-13
+reference_a    G_ring_only.xyz
+group_b        @14-19
+reference_b    T_ring_only.xyz
+group_c        @1-6
+group_d        @5-7
+parameter      opening
+
+[NAYBPP]
+name  cv46
+skip_mass_test on
+group_a        @14-19
+reference_a    T_ring_only.xyz
+group_b        @5-13
+reference_b    G_ring_only.xyz
+group_c        @1-2
+group_d        @13-19
+parameter      opening
+
+
+
