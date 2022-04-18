@@ -39,6 +39,88 @@ end type SImpStrData
 contains
 
 !===============================================================================
+! Subroutine:  get_com
+! Input: CV, group index, and coordinates
+! Output COM and its tmass
+!===============================================================================
+
+subroutine get_com(cv_item,grpid,x,com,tmass)
+
+    use pmf_cvs
+    use pmf_dat
+    use pmf_utils
+
+    implicit none
+    class(CVType),intent(in)    :: cv_item
+    integer,intent(in)          :: grpid
+    real(PMFDP),intent(in)      :: x(:,:)
+    real(PMFDP),intent(out)     :: com(3)
+    real(PMFDP),intent(out)     :: tmass
+    ! --------------------------------------------
+    integer                     :: m, ai, istart, istop
+    real(PMFDP)                 :: amass
+    ! --------------------------------------------------------------------------
+
+    ! calculate actual value
+    tmass   = 0.0d0
+    com(:)  = 0.0d0
+
+    istart = 1
+    if( grpid - 1 .gt. 0 ) istart = cv_item%grps(grpid - 1)
+    istop  = cv_item%grps(grpid)
+
+    do  m = istart, istop
+        ai     = cv_item%lindexes(m)
+        amass  = mass(ai)
+        com(:) = com(:) + x(:,ai)*amass
+        tmass  = tmass + amass
+    end do
+    if( tmass .le. 0 ) then
+        call pmf_utils_exit(PMF_OUT,1,'tmass is zero in get_com (CV: ' // trim(cv_item%name) // ')!')
+    end if
+    com(:) = com(:) / tmass
+
+end subroutine get_com
+
+!===============================================================================
+! Subroutine:  get_com_der
+! Input: CV, group index, comder, tmass
+! Output: updated ctx
+!===============================================================================
+
+subroutine get_com_der(cv_item,grpid,comder,tmass,sc,ctx)
+
+    use pmf_cvs
+    use pmf_dat
+    use pmf_utils
+
+    implicit none
+    class(CVType),intent(in)    :: cv_item
+    integer,intent(in)          :: grpid
+    real(PMFDP),intent(in)      :: comder(3)
+    real(PMFDP),intent(in)      :: tmass
+    real(PMFDP),intent(in)      :: sc
+    type(CVContextType)         :: ctx
+    ! --------------------------------------------
+    integer                     :: m, ai, istart, istop
+    real(PMFDP)                 :: amass, itmass
+    ! --------------------------------------------------------------------------
+
+    istart = 1
+    if( grpid - 1 .gt. 0 ) istart = cv_item%grps(grpid - 1)
+    istop  = cv_item%grps(grpid)
+
+    itmass = 1.0d0 / tmass
+
+    do  m = istart, istop
+        ai    = cv_item%lindexes(m)
+        amass = mass(ai)
+        ctx%CVsDrvs(:,ai,cv_item%idx) = ctx%CVsDrvs(:,ai,cv_item%idx) + sc * comder(:) * amass * itmass
+    end do
+
+end subroutine get_com_der
+
+!===============================================================================
 ! Subroutine:  get_vlen
 ! Input vectors:        a
 ! Output vector size:    v

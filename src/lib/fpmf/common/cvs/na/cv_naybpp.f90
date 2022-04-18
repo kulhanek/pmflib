@@ -31,6 +31,9 @@ use cv_math
 
 implicit none
 
+! NAYBPP - Nucleic Acid Y-axis Base-Pair Parameters
+! y-axis can be defined by two COMs instead of two atoms as in NASBPP
+
 !===============================================================================
 
 type, extends(CVType) :: CVTypeNAYBPP
@@ -219,7 +222,8 @@ subroutine calculate_naybpp(cv_item,x,ctx)
     real(PMFDP)         :: a_xaxis(3),a_yaxis(3),a_zaxis(3)
     real(PMFDP)         :: a_yaxisr(3),a_zaxisr(3),a_y0axis(3)
     real(PMFDP)         :: d(3),t1,zsc
-    integer             :: ai
+    real(PMFDP)         :: y1com(3),y1tmass
+    real(PMFDP)         :: y2com(3),y2tmass
     ! --------------------------------------------------------------------------
 
     ! ALL a_xxx must be initialized to zero due to additive function of _der methods from cv_math
@@ -246,7 +250,10 @@ subroutine calculate_naybpp(cv_item,x,ctx)
     call norm_vec(zaxisr,zaxis)
 
 ! y-axis =========================================
-    y0axis(:) = x(:,cv_item%lindexes(cv_item%grps(3))) - x(:,cv_item%lindexes(cv_item%grps(4)))
+    call get_com(cv_item,3,x,y1com,y1tmass)
+    call get_com(cv_item,4,x,y2com,y2tmass)
+
+    y0axis(:) = y1com(:) - y2com(:)
 
     ! remove projections to z-axis
     yaxisr(:) = y0axis(:) - (y0axis(1)*zaxis(1)+y0axis(2)*zaxis(2)+y0axis(3)*zaxis(3))*zaxis(:)
@@ -352,10 +359,8 @@ subroutine calculate_naybpp(cv_item,x,ctx)
     call superimpose_str_der(cv_item,cv_item%grps(1),cv_item%grps(2),ctx,cv_item%xyz_str_b,cv_item%simpdat_b,a_ub,a_ob)
 
 ! finaly gradients for group_c, group_d ==========
-    ai = cv_item%lindexes(cv_item%grps(3))
-    ctx%CVsDrvs(:,ai,cv_item%idx) = ctx%CVsDrvs(:,ai,cv_item%idx) + a_y0axis(:)
-    ai = cv_item%lindexes(cv_item%grps(4))
-    ctx%CVsDrvs(:,ai,cv_item%idx) = ctx%CVsDrvs(:,ai,cv_item%idx) - a_y0axis(:)
+    call get_com_der(cv_item,3,a_y0axis,y1tmass, 1.0d0,ctx)
+    call get_com_der(cv_item,4,a_y0axis,y2tmass,-1.0d0,ctx)
 
 end subroutine calculate_naybpp
 

@@ -33,6 +33,8 @@ use cv_math
 
 implicit none
 
+! NASBPP - Nucleic Acid Simple Base-Pair Parameters
+
 !===============================================================================
 
 type, extends(CVType) :: CVTypeNASBPP
