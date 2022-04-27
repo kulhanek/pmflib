@@ -544,6 +544,7 @@ subroutine pmf_sander_constraints_mpi(leapfrog_mode,anatom,xbar,x,modified)
     use pmf_sander_dat
     use pmf_dat
     use pmf_timers
+    use pmf_utils
 
     implicit none
     integer         :: leapfrog_mode
@@ -586,10 +587,9 @@ subroutine pmf_sander_constraints_mpi(leapfrog_mode,anatom,xbar,x,modified)
             call pmf_sander_gather_array_mpi(tmp_b,xbar,atm_owner_map,5)
 
             if( fmaster ) then
-                call pmf_core_lf_shake_accel(tmp_b)
             end if
         else
-            call pmf_utils_exit(PMF_OUT,1,'leapfrog_mode .eq. 1 is required in pmf_sander_constraints')
+            call pmf_utils_exit(PMF_OUT,1,'leapfrog_mode .eq. 1 is required in pmf_sander_constraints_mpi')
         end if
     end if
 

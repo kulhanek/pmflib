@@ -300,7 +300,7 @@ end subroutine pmf_core_lf_shake
 
 
 !===============================================================================
-! Subroutine:  pmf_core_lf_shake_accel
+! Subroutine:  pmf_core_lf_shake_forces
 ! leap-frog version
 !===============================================================================
 
