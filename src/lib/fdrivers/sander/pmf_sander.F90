@@ -534,7 +534,9 @@ end subroutine pmf_sander_force_mpi
 ! Subroutine: pmf_sander_constraints_mpi
 !===============================================================================
 
-subroutine pmf_sander_constraints_mpi(anatom,x,modified)
+! subroutine pmf_sander_constraints(leapfrog_mode,anatom,xbar,x,modified)
+
+subroutine pmf_sander_constraints_mpi(leapfrog_mode,anatom,xbar,x,modified)
 
     use pmf_sizes
     use pmf_dat
