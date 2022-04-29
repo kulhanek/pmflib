@@ -281,7 +281,7 @@ subroutine abf_core_force_3pB()
     implicit none
     integer                :: i,j,k,m
     integer                :: ci,ki
-    real(PMFDP)            :: v,v1,v2,f,etot,epot,erst,ekin
+    real(PMFDP)            :: v,v1,v2,f,etot,epot,erst,ekin,mtc
     ! --------------------------------------------------------------------------
 
 ! shift accuvalue history
@@ -308,6 +308,9 @@ subroutine abf_core_force_3pB()
 
 ! calculate Z matrix and its inverse
     call abf_core_calc_Zmat(CVContext)
+    call abf_core_calc_Zmat_all(CVContext)
+
+    mtchist(hist_len)       = PMF_Rgas * ftemp * log(sqrt(fzdet/fzdetall))
 
     do i=1,NumOfABFCVs
         do j=1,NumOfLAtoms
@@ -379,7 +382,8 @@ subroutine abf_core_force_3pB()
         epot = epothist(hist_len-1)
         erst = ersthist(hist_len-1)
         ekin = ekinhist(hist_len-1)
-        etot = epot + erst + ekin
+        mtc  = mtchist(hist_len-1)
+        etot = epot + erst + ekin + mtc
 
         ! debug
         ! write(1225,*) epot,erst,ekin,etot
@@ -816,17 +820,79 @@ subroutine abf_core_calc_Zmat(ctx)
             call pmf_utils_exit(PMF_OUT,1,'[ABF] LU decomposition failed in abf_core_calc_Zmat!')
         end if
 
+        fzdet = 1.0d0
+        ! and finally determinant
+        do i=1,NumOfABFCVs
+            if( indx(i) .ne. i ) then
+                fzdet = - fzdet * fzinv(i,i)
+            else
+                fzdet = fzdet * fzinv(i,i)
+            end if
+        end do
+
         call dgetri(NumOfABFCVs,fzinv,NumOfABFCVs,indx,vv,NumOfABFCVs,info)
         if( info .ne. 0 ) then
             call pmf_utils_exit(PMF_OUT,1,'[ABF] Matrix inversion failed in abf_core_calc_Zmat!')
         end if
     else
+        fzdet       = fz(1,1)
         fzinv(1,1)  = 1.0d0/fz(1,1)
     end if
 
     return
 
 end subroutine abf_core_calc_Zmat
+
+!===============================================================================
+! subroutine:  abf_core_calc_Zmat_all
+!===============================================================================
+
+subroutine abf_core_calc_Zmat_all(ctx)
+
+    use pmf_utils
+    use abf_dat
+
+    implicit none
+    type(CVContextType) :: ctx
+    integer             :: i,ci,j,cj,k,info
+    ! -----------------------------------------------------------------------------
+
+    ! calculate Z matrix
+    do i=1,NumOfAllABFCVs
+        ci = ABFCVList(i)%cvindx
+        do j=1,NumOfAllABFCVs
+            cj = ABFCVList(j)%cvindx
+            fzall(i,j) = 0.0d0
+            do k=1,NumOfLAtoms
+                fzall(i,j) = fzall(i,j) + MassInv(k)*dot_product(ctx%CVsDrvs(:,k,ci),ctx%CVsDrvs(:,k,cj))
+            end do
+        end do
+    end do
+
+    ! and get determinant - we will use LAPAC and LU decomposition
+    if (NumOfAllABFCVs .gt. 1) then
+
+        call dgetrf(NumOfAllABFCVs,NumOfAllABFCVs,fzall,NumOfAllABFCVs,indxall,info)
+        if( info .ne. 0 ) then
+            call pmf_utils_exit(PMF_OUT,1,'[ABF] LU decomposition failed in abf_core_calc_Zmat_all!')
+        end if
+
+        fzdetall = 1.0d0
+        ! and finally determinant
+        do i=1,NumOfAllABFCVs
+            if( indxall(i) .ne. i ) then
+                fzdetall = - fzdetall * fzall(i,i)
+            else
+                fzdetall = fzdetall * fzall(i,i)
+            end if
+        end do
+    else
+        fzdetall = fzall(1,1)
+    end if
+
+    return
+
+end subroutine abf_core_calc_Zmat_all
 
 !===============================================================================
 

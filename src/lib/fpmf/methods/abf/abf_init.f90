@@ -416,6 +416,10 @@ subroutine abf_init_arrays
             fz(NumOfABFCVs,NumOfABFCVs),        &
             fzinv(NumOfABFCVs,NumOfABFCVs),     &
             indx(NumOfABFCVs),                  &
+
+            fzall(NumOfAllABFCVs,NumOfAllABFCVs),   &
+            indxall(NumOfAllABFCVs),                &
+
             vv(NumOfABFCVs),                    &
             stat= alloc_failed )
 
@@ -432,6 +436,8 @@ subroutine abf_init_arrays
     cvave(:)    = 0.0d0
     fz(:,:)     = 0.0d0
     fzinv(:,:)  = 0.0d0
+
+    fzall(:,:)  = 0.0d0
 
     sfac(:)     = 1.0d0
 
@@ -467,6 +473,7 @@ subroutine abf_init_arrays
             epothist(hist_len),                         &
             ersthist(hist_len),                         &
             ekinhist(hist_len),                         &
+            mtchist(hist_len),                          &
             stat= alloc_failed )
 
     if( alloc_failed .ne. 0 ) then
@@ -483,6 +490,7 @@ subroutine abf_init_arrays
     epothist(:)     = 0.0d0
     ersthist(:)     = 0.0d0
     ekinhist(:)     = 0.0d0
+    mtchist(:)      = 0.0d0
     fzinvhist(:,:,:)= 0.0d0
     xvelhist(:,:)   = 0.0d0
     xphist(:,:)     = 0.0d0
