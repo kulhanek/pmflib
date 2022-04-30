@@ -87,11 +87,9 @@ type CVTypeABF
     integer                 :: nbins            ! number of bins
     real(PMFDP)             :: wfac             ! smoothing factor in number of bins
     real(PMFDP)             :: buffer           ! switch biasing potential to zero at CV boundary
-    logical                 :: shake            ! shaken CV not for bias
 end type CVTypeABF
 
 ! ----------------------
-integer                     :: NumOfAllABFCVs
 integer                     :: NumOfABFCVs          ! number of ALL CVs in a group
 type(CVTypeABF),allocatable :: ABFCVList(:)         ! definition of CVs
 
@@ -154,9 +152,6 @@ real(PMFDP),allocatable     :: vv(:)                ! for LU decomposition
 integer,allocatable         :: indx(:)              ! for LU decomposition
 real(PMFDP),allocatable     :: fzinv0(:,:)          ! inverse of Z matrix   in t-dt
 
-real(PMFDP),allocatable     :: fzall(:,:)           ! Z matrix for all CVs  in t
-integer,allocatable         :: indxall(:)           ! for LU decomposition  in t
-
 ! determinant of mass metric tensors
 real(PMFDP)                 :: fzdet
 real(PMFDP)                 :: fzdetall
@@ -186,7 +181,6 @@ real(PMFDP),allocatable     :: micfhist(:,:)        ! history of ABF bias
 real(PMFDP),allocatable     :: epothist(:)          ! history of Epot
 real(PMFDP),allocatable     :: ersthist(:)          ! history of Erst
 real(PMFDP),allocatable     :: ekinhist(:)          ! history of Ekin
-real(PMFDP),allocatable     :: mtchist(:)           ! history of MTC correction
 
 ! GPR facility -----------------------------------------------------------------
 integer                     :: gpr_len          ! MUST be odd number
@@ -230,6 +224,14 @@ real(PMFDP),allocatable     :: gpr_kfd_cvs(:,:) ! inference for cvs
 real(PMFDP),allocatable     :: gpr_kff_icf(:,:) ! inference for icf
 real(PMFDP),allocatable     :: gpr_kfd_icf(:,:) ! inference for icf
 real(PMFDP),allocatable     :: gpr_kff_ene(:,:) ! inference for ene
+
+! SG setup ---------------------------------------------------------------------
+integer     :: fsgframelen
+integer     :: fsgorder
+
+real(PMFDP),allocatable     :: sg_c0(:)
+real(PMFDP),allocatable     :: sg_c1(:)
+real(PMFDP),allocatable     :: sg_c2(:)
 
 ! ------------------------------------------------------------------------------
 

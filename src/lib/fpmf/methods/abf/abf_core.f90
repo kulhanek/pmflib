@@ -62,6 +62,8 @@ subroutine abf_core_main
             call abf_core_force_3pB
         case(2)
             call abf_core_force_gpr
+        case(3)
+            call abf_core_force_sg
         ! experimental algorithms
         case(10)
             call abf_core_force_3pA
@@ -281,7 +283,7 @@ subroutine abf_core_force_3pB()
     implicit none
     integer                :: i,j,k,m
     integer                :: ci,ki
-    real(PMFDP)            :: v,v1,v2,f,etot,epot,erst,ekin,mtc
+    real(PMFDP)            :: v,v1,v2,f,etot,epot,erst,ekin
     ! --------------------------------------------------------------------------
 
 ! shift accuvalue history
@@ -292,7 +294,6 @@ subroutine abf_core_force_3pB()
         ekinhist(i)     = ekinhist(i+1)
         vhist(:,:,i)    = vhist(:,:,i+1)
         zdhist(:,:,:,i) = zdhist(:,:,:,i+1)
-        micfhist(:,i)   = micfhist(:,i+1)
     end do
 
     do i=1,NumOfABFCVs
@@ -308,9 +309,6 @@ subroutine abf_core_force_3pB()
 
 ! calculate Z matrix and its inverse
     call abf_core_calc_Zmat(CVContext)
-    call abf_core_calc_Zmat_all(CVContext)
-
-    mtchist(hist_len)       = PMF_Rgas * ftemp * log(sqrt(fzdet/fzdetall))
 
     do i=1,NumOfABFCVs
         do j=1,NumOfLAtoms
@@ -382,8 +380,7 @@ subroutine abf_core_force_3pB()
         epot = epothist(hist_len-1)
         erst = ersthist(hist_len-1)
         ekin = ekinhist(hist_len-1)
-        mtc  = mtchist(hist_len-1)
-        etot = epot + erst + ekin + mtc
+        etot = epot + erst + ekin
 
         ! debug
         ! write(1225,*) epot,erst,ekin,etot
@@ -785,6 +782,119 @@ subroutine abf_core_force_gpr()
 end subroutine abf_core_force_gpr
 
 !===============================================================================
+! Subroutine:  abf_core_force_sg
+! this is leap-frog ABF version
+! SG filter for differentiation
+!===============================================================================
+
+subroutine abf_core_force_sg()
+
+    use pmf_utils
+    use pmf_dat
+    use pmf_cvs
+    use abf_dat
+    use abf_accu
+    use pmf_timers
+
+    implicit none
+    integer                :: i, j, ci
+    real(PMFDP)            :: vp, vm, epot, erst, ekin, etot
+    ! --------------------------------------------------------------------------
+
+! shift values
+    do i=1,hist_len-1
+        cvhist(:,i)         = cvhist(:,i+1)
+        epothist(i)         = epothist(i+1)
+        ersthist(i)         = ersthist(i+1)
+        ekinhist(i)         = ekinhist(i+1)
+        fzinvhist(:,:,i)    = fzinvhist(:,:,i+1)
+        micfhist(:,i)       = micfhist(:,i+1)
+    end do
+
+! update values
+    do i=1,NumOfABFCVs
+        ci = ABFCVList(i)%cvindx
+        cvhist(i,hist_len)  = CVContext%CVsValues(ci)
+    end do
+
+    epothist(hist_len)      = PotEne - fepotaverage
+    ersthist(hist_len)      = PMFEne
+    ekinhist(hist_len-1)    = KinEne - fekinaverage    ! shifted by -dt
+
+! calculate Z matrix and its inverse
+    call abf_core_calc_Zmat(CVContext)
+    fzinvhist(:,:,hist_len) = fzinv(:,:)
+
+! apply ABF force
+    la(:) = 0.0d0
+    if( fapply_abf ) then
+        ! calculate abf force to be applied
+        select case(feimode)
+            case(0)
+                call abf_accu_get_data(cvhist(:,hist_len),la)
+            case(1)
+                call abf_accu_get_data_lramp(cvhist(:,hist_len),la)
+            case(2)
+                call pmf_timers_start_timer(PMFLIB_ABF_KS_TIMER)
+                    call abf_accu_get_data_ksmooth(cvhist(:,hist_len),la)
+                call pmf_timers_stop_timer(PMFLIB_ABF_KS_TIMER)
+            case(3)
+                call abf_accu_get_data_lsmooth(cvhist(:,hist_len),la)
+            case default
+                call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented extrapolation/interpolation mode!')
+        end select
+
+        ! project abf force along coordinate
+        do i=1,NumOfABFCVs
+            ci = ABFCVList(i)%cvindx
+            do j=1,NumOfLAtoms
+                Frc(:,j) = Frc(:,j) + la(i) * CVContext%CVsDrvs(:,j,ci)
+            end do
+        end do
+    end if
+    micfhist(:,hist_len)    = la(:)
+
+    ! record time progress of data
+    call abf_accu_add_data_record_lf(cvhist(:,hist_len),fzinv,la, &
+                                     epothist(hist_len),ersthist(hist_len),ekinhist(hist_len-1))
+
+    if( fstep .lt. hist_len ) return
+
+    do i=1,NumOfABFCVs
+        pxi0(i) = dot_product(sg_c1(:),cvhist(i,1:hist_len-2))
+        pxi1(i) = dot_product(sg_c1(:),cvhist(i,3:hist_len-0))
+    end do
+
+! calculate momenta
+    do i=1,NumOfABFCVs
+        vm = 0.0d0
+        vp = 0.0d0
+        do j=1,NumOfABFCVs
+            vm = vm + fzinvhist(i,j,hist_len/2+0) * pxi0(j)
+            vp = vp + fzinvhist(i,j,hist_len/2+2) * pxi1(j)
+        end do
+        pxip(i) = vp
+        pxim(i) = vm
+    end do
+
+! calculate derivatives of CV momenta
+    do i=1,NumOfABFCVs
+        pxi0(i) = 0.5d0*(pxip(i)-pxim(i))*ifdtx
+    end do
+
+    epot = epothist(hist_len/2+1)   ! hist_len is +2 bigger than fsgframelen
+    erst = ersthist(hist_len/2+1)
+    ekin = ekinhist(hist_len/2+1)
+    etot = epot + erst + ekin
+
+    pxi0(:)     = pxi0(:) - micfhist(:,hist_len/2+1)
+
+    ! add data to accumulator
+    call abf_accu_add_data_online(cvhist(hist_len/2+1,:),pxi0,epot,erst,ekin,etot)
+
+end subroutine abf_core_force_sg
+
+!===============================================================================
 ! subroutine:  abf_core_calc_Zmat
 !===============================================================================
 
@@ -842,57 +952,6 @@ subroutine abf_core_calc_Zmat(ctx)
     return
 
 end subroutine abf_core_calc_Zmat
-
-!===============================================================================
-! subroutine:  abf_core_calc_Zmat_all
-!===============================================================================
-
-subroutine abf_core_calc_Zmat_all(ctx)
-
-    use pmf_utils
-    use abf_dat
-
-    implicit none
-    type(CVContextType) :: ctx
-    integer             :: i,ci,j,cj,k,info
-    ! -----------------------------------------------------------------------------
-
-    ! calculate Z matrix
-    do i=1,NumOfAllABFCVs
-        ci = ABFCVList(i)%cvindx
-        do j=1,NumOfAllABFCVs
-            cj = ABFCVList(j)%cvindx
-            fzall(i,j) = 0.0d0
-            do k=1,NumOfLAtoms
-                fzall(i,j) = fzall(i,j) + MassInv(k)*dot_product(ctx%CVsDrvs(:,k,ci),ctx%CVsDrvs(:,k,cj))
-            end do
-        end do
-    end do
-
-    ! and get determinant - we will use LAPAC and LU decomposition
-    if (NumOfAllABFCVs .gt. 1) then
-
-        call dgetrf(NumOfAllABFCVs,NumOfAllABFCVs,fzall,NumOfAllABFCVs,indxall,info)
-        if( info .ne. 0 ) then
-            call pmf_utils_exit(PMF_OUT,1,'[ABF] LU decomposition failed in abf_core_calc_Zmat_all!')
-        end if
-
-        fzdetall = 1.0d0
-        ! and finally determinant
-        do i=1,NumOfAllABFCVs
-            if( indxall(i) .ne. i ) then
-                fzdetall = - fzdetall * fzall(i,i)
-            else
-                fzdetall = fzdetall * fzall(i,i)
-            end if
-        end do
-    else
-        fzdetall = fzall(1,1)
-    end if
-
-    return
-
-end subroutine abf_core_calc_Zmat_all
 
 !===============================================================================
 

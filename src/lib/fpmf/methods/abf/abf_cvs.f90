@@ -69,7 +69,6 @@ subroutine abf_cvs_read_cv(prm_fin,abf_item)
     implicit none
     type(PRMFILE_TYPE),intent(inout)    :: prm_fin
     type(CVTypeABF)                     :: abf_item
-    logical                             :: lres
     ! --------------------------------------------------------------------------
 
 ! used CV cannot be controlled by the path subsystem
@@ -127,10 +126,6 @@ subroutine abf_cvs_read_cv(prm_fin,abf_item)
         write(PMF_OUT,170) abf_item%wfac
     end if
 
-    abf_item%shake = .false.
-    lres = prmfile_get_logical_by_key(prm_fin,'shake',abf_item%shake)
-    write(PMF_OUT,190) prmfile_onoff(abf_item%shake)
-
     return
 
 110 format('    ** Min value         : ',F16.7,' [',A,']')
@@ -138,7 +133,6 @@ subroutine abf_cvs_read_cv(prm_fin,abf_item)
 125 format('    ** Number of bins    : ',I8)
 170 format('    ** KS W-factor       : ',F16.7)
 180 format('    ** Buffer width      : ',E16.7,' [',A,']')
-190 format('    ** SHAKE             : ',A8)
 
 end subroutine abf_cvs_read_cv
 
@@ -175,8 +169,6 @@ subroutine abf_cvs_cv_info(abf_item)
     write(PMF_OUT,170) abf_item%wfac
     end if
 
-    write(PMF_OUT,190) prmfile_onoff(abf_item%shake)
-
     return
 
 145 format('    ** Name              : ',a)
@@ -187,7 +179,6 @@ subroutine abf_cvs_cv_info(abf_item)
 165 format('    ** Number of bins    : ',I9)
 170 format('    ** KS W-factor       : ',F16.7)
 180 format('    ** Buffer width      : ',E16.7,' [',A,']')
-190 format('    ** SHAKE             : ',A8)
 
 end subroutine abf_cvs_cv_info
 

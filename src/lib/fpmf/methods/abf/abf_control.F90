@@ -168,6 +168,12 @@ subroutine abf_control_read_abf(prm_fin)
         call pmf_ctrl_read_integer(prm_fin,'gpr_rank',gpr_rank,'I12')
     end if
 
+    if( fmode .eq. 3 ) then
+        write(PMF_OUT,64)
+        call pmf_ctrl_read_integer(prm_fin,'fsgframelen',fsgframelen,'i12')
+        call pmf_ctrl_read_integer(prm_fin,'fsgorder',fsgorder,'i12')
+    end if
+
     ! network setup ----------------------------------------------------------------
 
     write(PMF_OUT,'(/,a)') '--- [abf-walker] ---------------------------------------------------------------'
@@ -217,6 +223,7 @@ subroutine abf_control_read_abf(prm_fin)
  53 format (/,'>> Linear interpolation (feimode == 3)')
 
  63 format (/,'>> Gaussian Process Regression ABF (fmode == 2)')
+ 64 format (/,'>> Savitzky–Golay Differentiation ABF (fmode == 3)')
 
 100 format (' >> Multiple-walkers ABF method is disabled!')
 
@@ -307,9 +314,9 @@ subroutine abf_control_read_cvs_from_group(prm_fin)
     ! --------------------------------------------------------------------------
 
     ! count number of sections in group
-    NumOfAllABFCVs = prmfile_count_group(prm_fin)
+    NumOfABFCVs = prmfile_count_group(prm_fin)
 
-    if( NumOfAllABFCVs .le. 0 ) then
+    if( NumOfABFCVs .le. 0 ) then
         ! on CV in current or specified group
         fmode = 0
         abf_enabled = .false.
@@ -317,16 +324,16 @@ subroutine abf_control_read_cvs_from_group(prm_fin)
         return
     end if
 
-    write(PMF_OUT,110) NumOfAllABFCVs
+    write(PMF_OUT,110) NumOfABFCVs
 
     ! allocate constraint list ----------------------------------------------------
-    allocate(ABFCVList(NumOfAllABFCVs), stat = alloc_failed)
+    allocate(ABFCVList(NumOfABFCVs), stat = alloc_failed)
 
     if ( alloc_failed .ne. 0 ) then
         call pmf_utils_exit(PMF_OUT,1,'[ABF] Unable to allocate memory for coordinate data!')
     end if
 
-    do i=1,NumOfAllABFCVs
+    do i=1,NumOfABFCVs
         call abf_cvs_reset_cv(ABFCVList(i))
     end do
 
@@ -357,26 +364,14 @@ subroutine abf_control_read_cvs_from_group(prm_fin)
     end do
 
     ! check if there is CV overlap
-    NumOfABFCVs = 0
-    do i=1,NumOfAllABFCVs
-        if( ABFCVList(i)%shake .eqv. .false. ) then
-            NumOfABFCVs = NumOfABFCVs + 1
-        end if
-        do j=i+1,NumOfAllABFCVs
+    do i=1,NumOfABFCVs
+        do j=i+1,NumOfABFCVs
             if( ABFCVList(i)%cvindx .eq. ABFCVList(j)%cvindx ) then
                 call pmf_utils_exit(PMF_OUT,1, &
                      '[ABF] Two different ABF collective variables share the same general collective variable!')
             end if
         end do
     end do
-
-    if( NumOfABFCVs .le. 0 ) then
-        ! on CV in current or specified group
-        fmode = 0
-        abf_enabled = .false.
-        write(PMF_OUT,100)
-        return
-    end if
 
     return
 

@@ -128,6 +128,9 @@ subroutine abf_init_dat
     gpr_rank        = -1
     gpr_rcond       = 1e-16
 
+    fsgframelen     = 11
+    fsgorder        = 5
+
 end subroutine abf_init_dat
 
 !===============================================================================
@@ -270,6 +273,11 @@ subroutine abf_init_print_summary
     write(PMF_OUT,120)  '          === K+Sigma inversion'
     write(PMF_OUT,130)  '              gpr_rank                   : ', gpr_rank
     write(PMF_OUT,160)  '              gpr_rcond                  : ', gpr_rcond
+
+    case(3)
+    write(PMF_OUT,120)  '      |-> Savitzky-Golay differentiation ABF algorithm'
+    write(PMF_OUT,130)  '          Frame length (fsgframelen)     : ', fsgframelen
+    write(PMF_OUT,130)  '          Polynomial order (fsgorder)    : ', fsgorder
 
     case(10)
     write(PMF_OUT,120)  '      |-> Simplified ABF algorithm (F+V)'
@@ -416,10 +424,6 @@ subroutine abf_init_arrays
             fz(NumOfABFCVs,NumOfABFCVs),        &
             fzinv(NumOfABFCVs,NumOfABFCVs),     &
             indx(NumOfABFCVs),                  &
-
-            fzall(NumOfAllABFCVs,NumOfAllABFCVs),   &
-            indxall(NumOfAllABFCVs),                &
-
             vv(NumOfABFCVs),                    &
             stat= alloc_failed )
 
@@ -437,8 +441,6 @@ subroutine abf_init_arrays
     fz(:,:)     = 0.0d0
     fzinv(:,:)  = 0.0d0
 
-    fzall(:,:)  = 0.0d0
-
     sfac(:)     = 1.0d0
 
 ! history buffers ------------------------------------------
@@ -450,6 +452,9 @@ subroutine abf_init_arrays
         case(2)
             hist_len = gpr_len + 1 ! for ekin delay
             call abf_init_gpr
+        case(3)
+            hist_len = fsgframelen + 2
+            call abf_init_filter_sg
         ! experimental
         case(10)
             hist_len = 3
@@ -473,7 +478,6 @@ subroutine abf_init_arrays
             epothist(hist_len),                         &
             ersthist(hist_len),                         &
             ekinhist(hist_len),                         &
-            mtchist(hist_len),                          &
             stat= alloc_failed )
 
     if( alloc_failed .ne. 0 ) then
@@ -490,7 +494,6 @@ subroutine abf_init_arrays
     epothist(:)     = 0.0d0
     ersthist(:)     = 0.0d0
     ekinhist(:)     = 0.0d0
-    mtchist(:)      = 0.0d0
     fzinvhist(:,:,:)= 0.0d0
     xvelhist(:,:)   = 0.0d0
     xphist(:,:)     = 0.0d0
@@ -914,6 +917,113 @@ subroutine abf_init_snb_list
     end do
 
 end subroutine abf_init_snb_list
+
+!===============================================================================
+! Subroutine:  abf_init_filter_sg
+!===============================================================================
+
+subroutine abf_init_filter_sg
+
+    use pmf_utils
+    use pmf_dat
+    use abf_dat
+
+    implicit none
+    integer                     :: m, np, nr, nl, ipj, k, imj, mm, info, ld, j, kk
+    integer                     :: alloc_failed
+    integer, allocatable        :: lindx(:)
+    real(PMFDP)                 :: s, fac
+    real(PMFDP),allocatable     :: a(:,:), b(:)
+    ! --------------------------------------------------------------------------
+
+    m = fsgorder
+    if( m .le. 1 ) then
+        call pmf_utils_exit(PMF_OUT,1, '[ABF] fsgorder too low in abf_init_sg!')
+    end if
+
+    np = fsgframelen
+
+    if( mod(np,2) .ne. 1 ) then
+        call pmf_utils_exit(PMF_OUT,1, '[ABF] fsgframelen must be an odd number in abf_init_sg!')
+    end if
+
+    if( np .le. 2 ) then
+        call pmf_utils_exit(PMF_OUT,1, '[ABF] fsgframelen too low in abf_init_sg!')
+    end if
+
+    nr = (np-1)/2
+    nl = nr
+
+    allocate( a(m+1,m+1), b(m+1), lindx(m+1), sg_c0(np), sg_c1(np), sg_c2(np), stat= alloc_failed )
+
+    if( alloc_failed .ne. 0 ) then
+        call pmf_utils_exit(PMF_OUT,1, '[ABF] Unable to allocate memory in abf_init_sg!')
+    end if
+
+    a(:,:) = 0.0d0
+
+    do ipj=0,2*m        !Set up the normal equations of the desired leastsquares fit.
+        s = 0.0d0
+        if( ipj .eq. 0 ) s = 1.0d0
+
+        do k=1,nr
+            s = s + real(k,PMFDP)**ipj
+        end do
+
+        do k=1,nl
+            s = s + real(-k,PMFDP)**ipj
+        end do
+
+        mm = min(ipj,2*m-ipj)
+        do imj=-mm,mm,2
+            a(1+(ipj+imj)/2,1+(ipj-imj)/2) = s
+        end do
+    end do
+
+    call dgetrf(m+1,m+1,a,m+1,lindx,info)
+    if( info .ne. 0 ) then
+        call pmf_utils_exit(PMF_OUT,1,'[ABF] LU decomposition failed in abf_init_sg!')
+    end if
+
+    sg_c0(:) = 0.0d0
+    sg_c1(:) = 0.0d0
+    sg_c2(:) = 0.0d0
+
+    do ld=0,2
+        do j=1,m+1
+            b(j) = 0.0d0
+        end do
+        b(ld+1) = 1.0d0      !Right-hand side vector is unit vector, depending on which derivative we want.
+
+        call dgetrs('N',m+1,1,a,m+1,lindx,b,m+1,info)
+        if( info .ne. 0 ) then
+            call pmf_utils_exit(PMF_OUT,1,'[ABF] Matrix inversion failed in abf_init_sg!')
+        end if
+
+        do k=-nl,nr                        ! Each Savitzky-Golay coefficient is the dot product
+            s   = b(1)                     ! of powers of an integer with the inverse matrix row.
+            fac = 1.0d0
+            do mm=1,m
+                fac = fac*k
+                s   = s + b(mm+1)*fac
+            end do
+            kk = k+nl+1
+            select case(ld)
+                case(0)
+                    sg_c0(kk) = s
+                case(1)
+                    sg_c1(kk) = s
+                case(2)
+                    sg_c2(kk) = s * 2.0d0
+            end select
+
+        end do
+    end do
+
+    sg_c1(:) = sg_c1(:) * ifdtx
+    sg_c2(:) = sg_c2(:) * ifdtx * ifdtx
+
+end subroutine abf_init_filter_sg
 
 !===============================================================================
 
