@@ -188,6 +188,58 @@ real(PMFDP)                 :: ersthist3   ! history of Erst
 
 real(PMFDP), allocatable    :: icf_cache(:,:)   ! icf_cache(2*ncvs,fnstlim)
 
+
+!! GPR facility -----------------------------------------------------------------
+!integer                     :: gpr_len          ! MUST be odd number
+!
+!! CVS GPR
+!real(PMFDP)                 :: gpr_cvs_width    ! kernel width in fs
+!integer                     :: gpr_cvs_kernel   ! 0 - Exponential
+!                                                ! 1 - MC(3/2)
+!                                                ! 2 - MC(5/2)
+!                                                ! 3 - ARDSE
+!                                                ! 4 - Epanechnikov (parabolic)
+!                                                ! 5 - Quartic (biweight)
+!                                                ! 6 - Triweight
+!real(PMFDP)                 :: gpr_cvs_noise    ! noise magnitude
+!
+!! ICF GPR
+!logical                     :: gpr_icf_cdf      ! use central differences for the second differentiation in ICF calc.
+!real(PMFDP)                 :: gpr_icf_width    ! kernel width in fs
+!integer                     :: gpr_icf_kernel   ! kernel type
+!real(PMFDP)                 :: gpr_icf_noise    ! noise magnitude
+!
+!! ENE GPR
+!integer                     :: gpr_ene_smooth   ! 0 - no smoothing
+!                                                ! 1 - smooth etot
+!                                                ! 2 - smooth ekin
+!real(PMFDP)                 :: gpr_ene_width    ! kernel width in fs
+!integer                     :: gpr_ene_kernel   ! kernel type
+!real(PMFDP)                 :: gpr_ene_noise    ! noise magnitude
+!
+!integer                     :: gpr_boundary     ! skip analysis at boundaries of gpr_len
+!integer                     :: gpr_rank         ! rank for SVD inversion
+!real(PMFDP)                 :: gpr_rcond        ! rcond for automatic rank determination
+!
+!real(PMFDP),allocatable     :: gpr_K_cvs(:,:)   ! co-variance matrix for CVS
+!real(PMFDP),allocatable     :: gpr_K_icf(:,:)   ! co-variance matrix for ICF
+!real(PMFDP),allocatable     :: gpr_K_ene(:,:)   ! co-variance matrix for ENE
+!real(PMFDP),allocatable     :: gpr_data(:)      ! GPR input data
+!real(PMFDP),allocatable     :: gpr_model(:)     ! GPR model
+!real(PMFDP),allocatable     :: gpr_kff_cvs(:,:) ! inference for cvs
+!real(PMFDP),allocatable     :: gpr_kfd_cvs(:,:) ! inference for cvs
+!real(PMFDP),allocatable     :: gpr_kff_icf(:,:) ! inference for icf
+!real(PMFDP),allocatable     :: gpr_kfd_icf(:,:) ! inference for icf
+!real(PMFDP),allocatable     :: gpr_kff_ene(:,:) ! inference for ene
+!
+!! SG setup ---------------------------------------------------------------------
+!integer     :: fsgframelen
+!integer     :: fsgorder
+!
+!real(PMFDP),allocatable     :: sg_c0(:)
+!real(PMFDP),allocatable     :: sg_c1(:)
+!real(PMFDP),allocatable     :: sg_c2(:)
+
 ! ------------------------------------------------------------------------------
 
 end module tabf_dat

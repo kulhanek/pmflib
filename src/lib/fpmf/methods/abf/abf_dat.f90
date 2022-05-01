@@ -168,12 +168,12 @@ real(PMFDP),allocatable     :: sfac(:)              ! switching factors
 ! ------------------------------------------------------------------------------
 
 integer                     :: hist_len
+integer                     :: cbuff_pos
 real(PMFDP),allocatable     :: cvhist(:,:)          ! history of CV values (nCVS,hist_len)
 real(PMFDP),allocatable     :: fhist(:,:,:)         ! history of forces
 real(PMFDP),allocatable     :: xhist(:,:,:)         ! history of velocities
 real(PMFDP),allocatable     :: vhist(:,:,:)         ! history of velocities
 real(PMFDP),allocatable     :: fzinvhist(:,:,:)     ! history of fzinv
-real(PMFDP),allocatable     :: xvelhist(:,:)        ! history of CV velocities
 real(PMFDP),allocatable     :: xphist(:,:)          ! history of CV momenta
 real(PMFDP),allocatable     :: icfhist(:,:)         ! history of ICF forces
 real(PMFDP),allocatable     :: zdhist(:,:,:,:)      ! history of ZD
@@ -197,41 +197,24 @@ integer                     :: gpr_cvs_kernel   ! 0 - Exponential
 real(PMFDP)                 :: gpr_cvs_noise    ! noise magnitude
 
 ! ICF GPR
-logical                     :: gpr_icf_cdf      ! use central differences for the second differentiation in ICF calc.
-real(PMFDP)                 :: gpr_icf_width    ! kernel width in fs
-integer                     :: gpr_icf_kernel   ! kernel type
-real(PMFDP)                 :: gpr_icf_noise    ! noise magnitude
+integer                     :: gpr_icf_cdf      ! 0 - use central differences for the second differentiation in ICF calc.
 
-! ENE GPR
-integer                     :: gpr_ene_smooth   ! 0 - no smoothing
-                                                ! 1 - smooth etot
-                                                ! 2 - smooth ekin
-real(PMFDP)                 :: gpr_ene_width    ! kernel width in fs
-integer                     :: gpr_ene_kernel   ! kernel type
-real(PMFDP)                 :: gpr_ene_noise    ! noise magnitude
-
-integer                     :: gpr_boundary     ! skip analysis at boundaries of gpr_len
 integer                     :: gpr_rank         ! rank for SVD inversion
 real(PMFDP)                 :: gpr_rcond        ! rcond for automatic rank determination
 
-real(PMFDP),allocatable     :: gpr_K_cvs(:,:)   ! co-variance matrix for CVS
-real(PMFDP),allocatable     :: gpr_K_icf(:,:)   ! co-variance matrix for ICF
-real(PMFDP),allocatable     :: gpr_K_ene(:,:)   ! co-variance matrix for ENE
+real(PMFDP),allocatable     :: gpr_K_cvs(:,:)   ! co-variance matrix for CVS, it contains the inverse
+real(PMFDP)                 :: gpr_K_cvs_logdet ! logarithm of K determinant
 real(PMFDP),allocatable     :: gpr_data(:)      ! GPR input data
 real(PMFDP),allocatable     :: gpr_model(:)     ! GPR model
-real(PMFDP),allocatable     :: gpr_kff_cvs(:,:) ! inference for cvs
-real(PMFDP),allocatable     :: gpr_kfd_cvs(:,:) ! inference for cvs
-real(PMFDP),allocatable     :: gpr_kff_icf(:,:) ! inference for icf
-real(PMFDP),allocatable     :: gpr_kfd_icf(:,:) ! inference for icf
-real(PMFDP),allocatable     :: gpr_kff_ene(:,:) ! inference for ene
+real(PMFDP),allocatable     :: gpr_kfd_cvs(:)   ! inference for cvs
 
-! SG setup ---------------------------------------------------------------------
-integer     :: fsgframelen
-integer     :: fsgorder
+logical                     :: gpr_calc_pml     ! we want to get logarithm of marginal likelihood
 
-real(PMFDP),allocatable     :: sg_c0(:)
-real(PMFDP),allocatable     :: sg_c1(:)
-real(PMFDP),allocatable     :: sg_c2(:)
+real(PMFDP),allocatable     :: gpr_pml(:)       ! marginal likelihood for each CV
+
+real(PMFDP)                 :: gpr_npml         ! number of data
+real(PMFDP),allocatable     :: gpr_mpml(:)      ! average
+real(PMFDP),allocatable     :: gpr_m2pml(:)     ! M2
 
 ! ------------------------------------------------------------------------------
 

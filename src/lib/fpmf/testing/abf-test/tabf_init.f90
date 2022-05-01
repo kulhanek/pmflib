@@ -88,6 +88,29 @@ subroutine tabf_init_dat
     insidesamples   = 0
     outsidesamples  = 0
 
+!    gpr_len         = 1001
+!    gpr_boundary    = 50
+!
+!    gpr_cvs_kernel  = 1
+!    gpr_cvs_width   = 30.0
+!    gpr_cvs_noise   = 0.0
+!
+!    gpr_icf_cdf     = .true.
+!    gpr_icf_kernel  = 1
+!    gpr_icf_width   = 30.0
+!    gpr_icf_noise   = 0.0
+!
+!    gpr_ene_smooth  = 0
+!    gpr_ene_kernel  = 1
+!    gpr_ene_width   = 30.0
+!    gpr_ene_noise   = 0.0
+!
+!    gpr_rank        = -1
+!    gpr_rcond       = 1e-16
+!
+!    fsgframelen     = 11
+!    fsgorder        = 5
+
 end subroutine tabf_init_dat
 
 !===============================================================================
@@ -272,6 +295,338 @@ subroutine tabf_init_arrays
     call tabf_accu_init
 
 end subroutine tabf_init_arrays
+
+!!===============================================================================
+!! Subroutine:  abf_init_gpr
+!!===============================================================================
+!
+!subroutine abf_init_gpr
+!
+!    use pmf_utils
+!    use pmf_dat
+!    use abf_dat
+!    use abf_accu
+!
+!    implicit none
+!    integer             :: i,j,alloc_failed
+!    ! --------------------------------------------------------------------------
+!
+!! gpr_len must be long enough
+!    if( gpr_len  .le. 3 ) then
+!        call pmf_utils_exit(PMF_OUT,1,'[ABF] gpr_len must be >= 3 in abf_init_gpr!')
+!    end if
+!
+!! allocate arrays
+!    allocate(                                   &
+!            gpr_K_cvs(gpr_len,gpr_len),         &
+!            gpr_K_icf(gpr_len,gpr_len),         &
+!            gpr_K_ene(gpr_len,gpr_len),         &
+!            gpr_data(gpr_len),                  &
+!            gpr_model(gpr_len),                 &
+!            gpr_kff_cvs(gpr_len,gpr_len),       &
+!            gpr_kfd_cvs(gpr_len,gpr_len),       &
+!            gpr_kff_icf(gpr_len,gpr_len),       &
+!            gpr_kfd_icf(gpr_len,gpr_len),       &
+!            gpr_kff_ene(gpr_len,gpr_len),       &
+!            stat= alloc_failed )
+!
+!    if( alloc_failed .ne. 0 ) then
+!        call pmf_utils_exit(PMF_OUT,1, &
+!            '[ABF] Unable to allocate memory for GPR arrays in abf_init_gpr!')
+!    end if
+!
+!! init covariance matrix
+!    do i=1,gpr_len
+!        do j=1,gpr_len
+!            gpr_K_cvs(i,j) = abf_init_gpr_kernel(gpr_cvs_kernel,i,j,gpr_cvs_width)
+!            gpr_K_icf(i,j) = abf_init_gpr_kernel(gpr_icf_kernel,i,j,gpr_icf_width)
+!            gpr_K_ene(i,j) = abf_init_gpr_kernel(gpr_ene_kernel,i,j,gpr_ene_width)
+!        end do
+!    end do
+!
+!! add noise
+!    do i=1,gpr_len
+!        gpr_K_cvs(i,i) = gpr_K_cvs(i,i) + gpr_cvs_noise
+!        gpr_K_icf(i,i) = gpr_K_icf(i,i) + gpr_icf_noise
+!        gpr_K_ene(i,i) = gpr_K_ene(i,i) + gpr_ene_noise
+!    end do
+!
+!    if( fdebug ) then
+!        j = gpr_len/2
+!        open(unit=7812,file='gpr-kernel.cvs',status='UNKNOWN')
+!        open(unit=7813,file='gpr-kernel.icf',status='UNKNOWN')
+!        open(unit=7814,file='gpr-kernel.ene',status='UNKNOWN')
+!        do i=1,gpr_len
+!            write(7812,*) i, gpr_K_cvs(i,j)
+!            write(7813,*) i, gpr_K_icf(i,j)
+!            write(7814,*) i, gpr_K_ene(i,j)
+!        end do
+!        close(7812)
+!        close(7813)
+!        close(7814)
+!    end if
+!
+!    write(PMF_OUT,10)
+!    call abf_init_gpr_invK(gpr_K_cvs)
+!
+!    write(PMF_OUT,20)
+!    call abf_init_gpr_invK(gpr_K_icf)
+!
+!    write(PMF_OUT,30)
+!    call abf_init_gpr_invK(gpr_K_ene)
+!
+!! init kff and kfd
+!    do i=1,gpr_len
+!        do j=1,gpr_len
+!            gpr_kff_cvs(j,i) = abf_init_gpr_kernel(gpr_cvs_kernel,i,j,gpr_cvs_width)
+!            gpr_kfd_cvs(j,i) = abf_init_gpr_kernel_1d(gpr_cvs_kernel,i,j,gpr_cvs_width)
+!
+!            gpr_kff_icf(j,i) = abf_init_gpr_kernel(gpr_icf_kernel,i,j,gpr_icf_width)
+!            gpr_kfd_icf(j,i) = abf_init_gpr_kernel_1d(gpr_icf_kernel,i,j,gpr_icf_width)
+!
+!            gpr_kff_ene(j,i) = abf_init_gpr_kernel(gpr_ene_kernel,i,j,gpr_ene_width)
+!        end do
+!    end do
+!
+! 10 format('>>> ABF GPR - CVS: (K+Sigma)^-1')
+! 20 format('>>> ABF GPR - ICF: (K+Sigma)^-1')
+! 30 format('>>> ABF GPR - ENE: (K+Sigma)^-1')
+!
+!end subroutine abf_init_gpr
+!
+!!===============================================================================
+!! Subroutine:  abf_init_gpr_invK
+!!===============================================================================
+!
+!subroutine abf_init_gpr_invK(mat)
+!
+!    use pmf_dat
+!    use abf_dat
+!    use pmf_utils
+!
+!    implicit none
+!    real(PMFDP)                 :: mat(:,:)
+!    integer                     :: i,alloc_failed,info,lwork,irank
+!    real(PMFDP)                 :: minv, maxv, a_rcond
+!    real(PMFDP),allocatable     :: sig(:)
+!    real(PMFDP),allocatable     :: u(:,:)
+!    real(PMFDP),allocatable     :: vt(:,:)
+!    real(PMFDP),allocatable     :: sig_plus(:,:)
+!    real(PMFDP),allocatable     :: temp_mat(:,:)
+!    real(PMFDP),allocatable     :: twork(:)
+!    integer,allocatable         :: iwork(:)
+!    ! --------------------------------------------------------------------------
+!
+!! allocate arrays
+!    allocate(                           &
+!            sig(gpr_len),               &
+!            u(gpr_len,gpr_len),         &
+!            vt(gpr_len,gpr_len),        &
+!            sig_plus(gpr_len,gpr_len),  &
+!            temp_mat(gpr_len,gpr_len),  &
+!            iwork(8*gpr_len),           &
+!            twork(1),                   &
+!            stat= alloc_failed )
+!
+!    if( alloc_failed .ne. 0 ) then
+!        call pmf_utils_exit(PMF_OUT,1, &
+!            '[ABF] Unable to allocate memory I for GPR arrays in abf_init_gpr_invK!')
+!    end if
+!
+!    sig(:)          = 0.0d0
+!    u(:,:)          = 0.0d0
+!    vt(:,:)         = 0.0d0
+!    sig_plus(:,:)   = 0.0d0
+!    temp_mat(:,:)   = 0.0d0
+!
+!! query work size
+!    lwork = -1
+!    call dgesdd('A', gpr_len, gpr_len, mat, gpr_len, sig, u, gpr_len, vt, gpr_len, twork, lwork, iwork, info)
+!
+!    if( info .ne. 0 ) then
+!        call pmf_utils_exit(PMF_OUT,1, &
+!            '[ABF] Unable to run SVD I in abf_init_gpr_invK!')
+!    end if
+!
+!
+!    lwork = int(twork(1)) + 1
+!    if( lwork < 0 ) then
+!        call pmf_utils_exit(PMF_OUT,1, &
+!            '[ABF] Unable to illegal work size in abf_init_gpr_invK!')
+!    end if
+!
+!    deallocate(twork)
+!    allocate(   twork(lwork),   &
+!                stat= alloc_failed )
+!
+!    if( alloc_failed .ne. 0 ) then
+!        call pmf_utils_exit(PMF_OUT,1, &
+!            '[ABF] Unable to allocate memory II for GPR arrays in abf_init_gpr_invK!')
+!    end if
+!
+!! run SVD
+!    call dgesdd('A', gpr_len, gpr_len, mat, gpr_len, sig, u, gpr_len, vt, gpr_len, twork, lwork, iwork, info)
+!
+!    if( info .ne. 0 )  then
+!        call pmf_utils_exit(PMF_OUT,1, &
+!            '[ABF] Unable to run SVD II in abf_init_gpr_invK!')
+!    end if
+!
+!    deallocate(iwork,twork)
+!
+!! invert singular numbers
+!    maxv = sig(1)
+!    minv = sig(1)
+!    do i=1,gpr_len
+!        if( maxv .lt. sig(i) ) then
+!            maxv = sig(i)
+!        end if
+!        if( minv .gt. sig(i) ) then
+!            minv = sig(i)
+!        end if
+!    end do
+!
+!    a_rcond = minv/maxv
+!
+!    irank = 0
+!    if( gpr_rank .gt. 1 ) then
+!        do i=1,gpr_len
+!            if( i .le. gpr_rank ) then
+!               sig_plus(i,i) = 1.0d0/sig(i)
+!               irank = irank + 1
+!            else
+!               sig_plus(i,i) = 0.0d0
+!            end if
+!        end do
+!    else
+!        do i=1,gpr_len
+!            if( sig(i) .gt. gpr_rcond*maxv ) then
+!               sig_plus(i,i) = 1.0d0/sig(i)
+!               irank = irank + 1
+!            else
+!               sig_plus(i,i) = 0.0d0
+!            end if
+!        end do
+!    end if
+!
+!! build pseudoinverse: V*sig_plus*UT
+!    call dgemm('N', 'T', gpr_len, gpr_len, gpr_len, 1.0d0, sig_plus, gpr_len, u, gpr_len, 0.0d0, temp_mat, gpr_len)
+!    call dgemm('T', 'N', gpr_len, gpr_len, gpr_len, 1.0d0, vt, gpr_len, temp_mat, gpr_len, 0.0d0, mat, gpr_len)
+!
+!    deallocate(sig,sig_plus,u,vt,temp_mat)
+!
+!    write(PMF_OUT,10) gpr_len,irank,a_rcond
+!
+! 10 format('    Size = ',I5,'; Rank = ',I5,'; Real rcond = ',E10.5)
+!
+!end subroutine abf_init_gpr_invK
+!
+!!===============================================================================
+!! Subroutine:  abf_init_filter_sg
+!!===============================================================================
+!
+!subroutine abf_init_filter_sg
+!
+!    use pmf_utils
+!    use pmf_dat
+!    use abf_dat
+!
+!    implicit none
+!    integer                     :: m, np, nr, nl, ipj, k, imj, mm, info, ld, j, kk
+!    integer                     :: alloc_failed
+!    integer, allocatable        :: lindx(:)
+!    real(PMFDP)                 :: s, fac
+!    real(PMFDP),allocatable     :: a(:,:), b(:)
+!    ! --------------------------------------------------------------------------
+!
+!    m = fsgorder
+!    if( m .le. 1 ) then
+!        call pmf_utils_exit(PMF_OUT,1, '[ABF] fsgorder too low in abf_init_sg!')
+!    end if
+!
+!    np = fsgframelen
+!
+!    if( mod(np,2) .ne. 1 ) then
+!        call pmf_utils_exit(PMF_OUT,1, '[ABF] fsgframelen must be an odd number in abf_init_sg!')
+!    end if
+!
+!    if( np .le. 2 ) then
+!        call pmf_utils_exit(PMF_OUT,1, '[ABF] fsgframelen too low in abf_init_sg!')
+!    end if
+!
+!    nr = (np-1)/2
+!    nl = nr
+!
+!    allocate( a(m+1,m+1), b(m+1), lindx(m+1), sg_c0(np), sg_c1(np), sg_c2(np), stat= alloc_failed )
+!
+!    if( alloc_failed .ne. 0 ) then
+!        call pmf_utils_exit(PMF_OUT,1, '[ABF] Unable to allocate memory in abf_init_sg!')
+!    end if
+!
+!    a(:,:) = 0.0d0
+!
+!    do ipj=0,2*m        !Set up the normal equations of the desired leastsquares fit.
+!        s = 0.0d0
+!        if( ipj .eq. 0 ) s = 1.0d0
+!
+!        do k=1,nr
+!            s = s + real(k,PMFDP)**ipj
+!        end do
+!
+!        do k=1,nl
+!            s = s + real(-k,PMFDP)**ipj
+!        end do
+!
+!        mm = min(ipj,2*m-ipj)
+!        do imj=-mm,mm,2
+!            a(1+(ipj+imj)/2,1+(ipj-imj)/2) = s
+!        end do
+!    end do
+!
+!    call dgetrf(m+1,m+1,a,m+1,lindx,info)
+!    if( info .ne. 0 ) then
+!        call pmf_utils_exit(PMF_OUT,1,'[ABF] LU decomposition failed in abf_init_sg!')
+!    end if
+!
+!    sg_c0(:) = 0.0d0
+!    sg_c1(:) = 0.0d0
+!    sg_c2(:) = 0.0d0
+!
+!    do ld=0,2
+!        do j=1,m+1
+!            b(j) = 0.0d0
+!        end do
+!        b(ld+1) = 1.0d0      !Right-hand side vector is unit vector, depending on which derivative we want.
+!
+!        call dgetrs('N',m+1,1,a,m+1,lindx,b,m+1,info)
+!        if( info .ne. 0 ) then
+!            call pmf_utils_exit(PMF_OUT,1,'[ABF] Matrix inversion failed in abf_init_sg!')
+!        end if
+!
+!        do k=-nl,nr                        ! Each Savitzky-Golay coefficient is the dot product
+!            s   = b(1)                     ! of powers of an integer with the inverse matrix row.
+!            fac = 1.0d0
+!            do mm=1,m
+!                fac = fac*k
+!                s   = s + b(mm+1)*fac
+!            end do
+!            kk = k+nl+1
+!            select case(ld)
+!                case(0)
+!                    sg_c0(kk) = s
+!                case(1)
+!                    sg_c1(kk) = s
+!                case(2)
+!                    sg_c2(kk) = s * 2.0d0
+!            end select
+!
+!        end do
+!    end do
+!
+!    sg_c1(:) = sg_c1(:) * ifdtx
+!    sg_c2(:) = sg_c2(:) * ifdtx * ifdtx
+!
+!end subroutine abf_init_filter_sg
 
 !===============================================================================
 

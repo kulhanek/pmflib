@@ -109,27 +109,19 @@ subroutine abf_init_dat
     fswitch2zero    = .false.
 
     gpr_len         = 1001
-    gpr_boundary    = 50
 
     gpr_cvs_kernel  = 1
     gpr_cvs_width   = 30.0
     gpr_cvs_noise   = 0.0
 
-    gpr_icf_cdf     = .true.
-    gpr_icf_kernel  = 1
-    gpr_icf_width   = 30.0
-    gpr_icf_noise   = 0.0
-
-    gpr_ene_smooth  = 0
-    gpr_ene_kernel  = 1
-    gpr_ene_width   = 30.0
-    gpr_ene_noise   = 0.0
+    gpr_icf_cdf     = 0
 
     gpr_rank        = -1
     gpr_rcond       = 1e-16
 
-    fsgframelen     = 11
-    fsgorder        = 5
+    gpr_calc_pml    = .true.
+
+    cbuff_pos       = 0
 
 end subroutine abf_init_dat
 
@@ -184,7 +176,6 @@ subroutine abf_init_print_summary
     case(2)
     write(PMF_OUT,120)  '      |-> Simplified ABF algorithm (GPR)'
     write(PMF_OUT,130)  '          gpr_len                        : ', gpr_len
-    write(PMF_OUT,130)  '          gpr_boundary                   : ', gpr_boundary
 
     write(PMF_OUT,120)  '          === CVS GPR'
     write(PMF_OUT,130)  '              gpr_cvs_kernel             : ', gpr_cvs_kernel
@@ -211,79 +202,12 @@ subroutine abf_init_print_summary
     write(PMF_OUT,160)  '              gpr_cvs_noise              : ', gpr_cvs_noise
 
     write(PMF_OUT,120)  '          === ICF GPR'
-    write(PMF_OUT,125)  '              gpr_icf_cdf                : ', prmfile_onoff(gpr_icf_cdf)
-    write(PMF_OUT,130)  '              gpr_icf_kernel             : ', gpr_icf_kernel
-    select case(gpr_icf_kernel)
-    case(0)
-    write(PMF_OUT,120)  '              \-> EXP (exponential kernel)'
-    case(1)
-    write(PMF_OUT,120)  '              \-> MC(3/2) (Matern kernel v=3/2)'
-    case(2)
-    write(PMF_OUT,120)  '              \-> MC(5/2) (Matern kernel v=5/2)'
-    case(3)
-    write(PMF_OUT,120)  '              \-> SE (squared exponential kernel)'
-    case(4)
-    write(PMF_OUT,120)  '              \-> Epanechnikov (parabolic) kernel'
-    case(5)
-    write(PMF_OUT,120)  '              \-> Quartic (biweight) kernel'
-    case(6)
-    write(PMF_OUT,120)  '              \-> Triweigh kernel'
-    case default
-        call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown gpr_icf_kernel in abf_init_print_summary!')
-    end select
-    write(PMF_OUT,152)  '              gpr_icf_width              : ', gpr_icf_width,  &
-                                       '['//trim(pmf_unit_label(TimeUnit))//']'
-    write(PMF_OUT,160)  '              gpr_icf_noise              : ', gpr_icf_noise
+    write(PMF_OUT,130)  '              gpr_icf_cdf                : ', gpr_icf_cdf
 
-    write(PMF_OUT,120)  '          === ENE GPR'
-    write(PMF_OUT,130)  '              gpr_ene_smooth             : ', gpr_ene_smooth
-    select case(gpr_ene_smooth)
-    case(0)
-    write(PMF_OUT,120)  '              \-> no energy smoothing'
-    case(1)
-    write(PMF_OUT,120)  '              \-> smooth Etot'
-    case(2)
-    write(PMF_OUT,120)  '              \-> smooth Ekin'
-    case default
-        call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown gpr_ene_smooth in abf_init_print_summary!')
-    end select
-    write(PMF_OUT,130)  '              gpr_ene_kernel             : ', gpr_ene_kernel
-    select case(gpr_ene_kernel)
-    case(0)
-    write(PMF_OUT,120)  '              \-> EXP (exponential kernel)'
-    case(1)
-    write(PMF_OUT,120)  '              \-> MC(3/2) (Matern kernel v=3/2)'
-    case(2)
-    write(PMF_OUT,120)  '              \-> MC(5/2) (Matern kernel v=5/2)'
-    case(3)
-    write(PMF_OUT,120)  '              \-> SE (squared exponential kernel)'
-    case(4)
-    write(PMF_OUT,120)  '              \-> Epanechnikov (parabolic) kernel'
-    case(5)
-    write(PMF_OUT,120)  '              \-> Quartic (biweight) kernel'
-    case(6)
-    write(PMF_OUT,120)  '              \-> Triweigh kernel'
-    case default
-        call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown gpr_ene_kernel in abf_init_print_summary!')
-    end select
-    write(PMF_OUT,152)  '              gpr_ene_width              : ', gpr_ene_width,  &
-                                       '['//trim(pmf_unit_label(TimeUnit))//']'
-    write(PMF_OUT,160)  '              gpr_ene_noise              : ', gpr_ene_noise
 
     write(PMF_OUT,120)  '          === K+Sigma inversion'
     write(PMF_OUT,130)  '              gpr_rank                   : ', gpr_rank
     write(PMF_OUT,160)  '              gpr_rcond                  : ', gpr_rcond
-
-    case(3)
-    write(PMF_OUT,120)  '      |-> Savitzky-Golay differentiation ABF algorithm'
-    write(PMF_OUT,130)  '          Frame length (fsgframelen)     : ', fsgframelen
-    write(PMF_OUT,130)  '          Polynomial order (fsgorder)    : ', fsgorder
-
-    case(10)
-    write(PMF_OUT,120)  '      |-> Simplified ABF algorithm (F+V)'
-
-    case(11)
-    write(PMF_OUT,120)  '      |-> Simplified ABF algorithm (X)'
 
     case default
         call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown fmode in abf_init_print_summary!')
@@ -449,17 +373,10 @@ subroutine abf_init_arrays
         ! standard
         case(1)
             hist_len = 3
+        ! GPR
         case(2)
-            hist_len = gpr_len + 1 ! for ekin delay
             call abf_init_gpr
-        case(3)
-            hist_len = fsgframelen + 2
-            call abf_init_filter_sg
-        ! experimental
-        case(10)
-            hist_len = 3
-        case(11)
-            hist_len = 3
+            hist_len = gpr_len
         case default
             call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented fmode in abf_init_arrays!')
     end select
@@ -472,7 +389,6 @@ subroutine abf_init_arrays
             vhist(3,NumOfLAtoms,hist_len),              &
             zdhist(3,NumOfLAtoms,NumOfABFCVs,hist_len), &
             fzinvhist(NumOfABFCVs,NumOfABFCVs,hist_len),&
-            xvelhist(NumOfABFCVs,hist_len),             &
             xphist(NumOfABFCVs,hist_len),               &
             icfhist(NumOfABFCVs,hist_len),              &
             epothist(hist_len),                         &
@@ -495,7 +411,6 @@ subroutine abf_init_arrays
     ersthist(:)     = 0.0d0
     ekinhist(:)     = 0.0d0
     fzinvhist(:,:,:)= 0.0d0
-    xvelhist(:,:)   = 0.0d0
     xphist(:,:)     = 0.0d0
     icfhist(:,:)    = 0.0d0
 
@@ -644,7 +559,8 @@ subroutine abf_init_gpr
     use abf_accu
 
     implicit none
-    integer             :: i,j,alloc_failed
+    integer     :: i,j,alloc_failed,gpr_mid
+    real(PMFDP) :: v
     ! --------------------------------------------------------------------------
 
 ! gpr_len must be long enough
@@ -652,18 +568,19 @@ subroutine abf_init_gpr
         call pmf_utils_exit(PMF_OUT,1,'[ABF] gpr_len must be >= 3 in abf_init_gpr!')
     end if
 
+    if( mod(gpr_len,2) .ne. 1 ) then
+        call pmf_utils_exit(PMF_OUT,1, '[ABF] gpr_len must be an odd number in abf_init_gpr!')
+    end if
+
 ! allocate arrays
     allocate(                                   &
             gpr_K_cvs(gpr_len,gpr_len),         &
-            gpr_K_icf(gpr_len,gpr_len),         &
-            gpr_K_ene(gpr_len,gpr_len),         &
             gpr_data(gpr_len),                  &
             gpr_model(gpr_len),                 &
-            gpr_kff_cvs(gpr_len,gpr_len),       &
-            gpr_kfd_cvs(gpr_len,gpr_len),       &
-            gpr_kff_icf(gpr_len,gpr_len),       &
-            gpr_kfd_icf(gpr_len,gpr_len),       &
-            gpr_kff_ene(gpr_len,gpr_len),       &
+            gpr_kfd_cvs(gpr_len),               &
+            gpr_pml(NumOfABFCVs),               &
+            gpr_mpml(NumOfABFCVs),              &
+            gpr_m2pml(NumOfABFCVs),             &
             stat= alloc_failed )
 
     if( alloc_failed .ne. 0 ) then
@@ -671,62 +588,50 @@ subroutine abf_init_gpr
             '[ABF] Unable to allocate memory for GPR arrays in abf_init_gpr!')
     end if
 
-! init covariance matrix
+    gpr_npml        = 0
+    gpr_mpml(:)     = 0.0d0      ! average
+    gpr_m2pml(:)    = 0.0d0      ! M2
+
+! init co-variance matrix
     do i=1,gpr_len
         do j=1,gpr_len
             gpr_K_cvs(i,j) = abf_init_gpr_kernel(gpr_cvs_kernel,i,j,gpr_cvs_width)
-            gpr_K_icf(i,j) = abf_init_gpr_kernel(gpr_icf_kernel,i,j,gpr_icf_width)
-            gpr_K_ene(i,j) = abf_init_gpr_kernel(gpr_ene_kernel,i,j,gpr_ene_width)
         end do
     end do
 
 ! add noise
     do i=1,gpr_len
         gpr_K_cvs(i,i) = gpr_K_cvs(i,i) + gpr_cvs_noise
-        gpr_K_icf(i,i) = gpr_K_icf(i,i) + gpr_icf_noise
-        gpr_K_ene(i,i) = gpr_K_ene(i,i) + gpr_ene_noise
     end do
 
     if( fdebug ) then
         j = gpr_len/2
         open(unit=7812,file='gpr-kernel.cvs',status='UNKNOWN')
-        open(unit=7813,file='gpr-kernel.icf',status='UNKNOWN')
-        open(unit=7814,file='gpr-kernel.ene',status='UNKNOWN')
         do i=1,gpr_len
             write(7812,*) i, gpr_K_cvs(i,j)
-            write(7813,*) i, gpr_K_icf(i,j)
-            write(7814,*) i, gpr_K_ene(i,j)
         end do
         close(7812)
-        close(7813)
-        close(7814)
     end if
 
     write(PMF_OUT,10)
-    call abf_init_gpr_invK(gpr_K_cvs)
+    call abf_init_gpr_invK(gpr_K_cvs,gpr_K_cvs_logdet)
 
-    write(PMF_OUT,20)
-    call abf_init_gpr_invK(gpr_K_icf)
+! init kfd
+    gpr_mid = gpr_len/2 + 1
+    do j=1,gpr_len
+        gpr_data(j) = abf_init_gpr_kernel_1d(gpr_cvs_kernel,gpr_mid,j,gpr_cvs_width)
+    end do
 
-    write(PMF_OUT,30)
-    call abf_init_gpr_invK(gpr_K_ene)
-
-! init kff and kfd
+! multiply by Kinv from right
     do i=1,gpr_len
+        v = 0.0d0
         do j=1,gpr_len
-            gpr_kff_cvs(j,i) = abf_init_gpr_kernel(gpr_cvs_kernel,i,j,gpr_cvs_width)
-            gpr_kfd_cvs(j,i) = abf_init_gpr_kernel_1d(gpr_cvs_kernel,i,j,gpr_cvs_width)
-
-            gpr_kff_icf(j,i) = abf_init_gpr_kernel(gpr_icf_kernel,i,j,gpr_icf_width)
-            gpr_kfd_icf(j,i) = abf_init_gpr_kernel_1d(gpr_icf_kernel,i,j,gpr_icf_width)
-
-            gpr_kff_ene(j,i) = abf_init_gpr_kernel(gpr_ene_kernel,i,j,gpr_ene_width)
+            v = v + gpr_data(j) * gpr_K_cvs(j,i)
         end do
+        gpr_kfd_cvs(i) = v
     end do
 
  10 format('>>> ABF GPR - CVS: (K+Sigma)^-1')
- 20 format('>>> ABF GPR - ICF: (K+Sigma)^-1')
- 30 format('>>> ABF GPR - ENE: (K+Sigma)^-1')
 
 end subroutine abf_init_gpr
 
@@ -734,7 +639,7 @@ end subroutine abf_init_gpr
 ! Subroutine:  abf_init_gpr_invK
 !===============================================================================
 
-subroutine abf_init_gpr_invK(mat)
+subroutine abf_init_gpr_invK(mat,logdet)
 
     use pmf_dat
     use abf_dat
@@ -742,6 +647,7 @@ subroutine abf_init_gpr_invK(mat)
 
     implicit none
     real(PMFDP)                 :: mat(:,:)
+    real(PMFDP)                 :: logdet
     integer                     :: i,alloc_failed,info,lwork,irank
     real(PMFDP)                 :: minv, maxv, a_rcond
     real(PMFDP),allocatable     :: sig(:)
@@ -825,10 +731,12 @@ subroutine abf_init_gpr_invK(mat)
     a_rcond = minv/maxv
 
     irank = 0
+    logdet = 0.0d0  ! this is logarithm of the determinant of original matrix
     if( gpr_rank .gt. 1 ) then
         do i=1,gpr_len
             if( i .le. gpr_rank ) then
                sig_plus(i,i) = 1.0d0/sig(i)
+               logdet        = logdet +  log(sig(i))
                irank = irank + 1
             else
                sig_plus(i,i) = 0.0d0
@@ -838,6 +746,7 @@ subroutine abf_init_gpr_invK(mat)
         do i=1,gpr_len
             if( sig(i) .gt. gpr_rcond*maxv ) then
                sig_plus(i,i) = 1.0d0/sig(i)
+               logdet        = logdet +  log(sig(i))
                irank = irank + 1
             else
                sig_plus(i,i) = 0.0d0
@@ -917,113 +826,6 @@ subroutine abf_init_snb_list
     end do
 
 end subroutine abf_init_snb_list
-
-!===============================================================================
-! Subroutine:  abf_init_filter_sg
-!===============================================================================
-
-subroutine abf_init_filter_sg
-
-    use pmf_utils
-    use pmf_dat
-    use abf_dat
-
-    implicit none
-    integer                     :: m, np, nr, nl, ipj, k, imj, mm, info, ld, j, kk
-    integer                     :: alloc_failed
-    integer, allocatable        :: lindx(:)
-    real(PMFDP)                 :: s, fac
-    real(PMFDP),allocatable     :: a(:,:), b(:)
-    ! --------------------------------------------------------------------------
-
-    m = fsgorder
-    if( m .le. 1 ) then
-        call pmf_utils_exit(PMF_OUT,1, '[ABF] fsgorder too low in abf_init_sg!')
-    end if
-
-    np = fsgframelen
-
-    if( mod(np,2) .ne. 1 ) then
-        call pmf_utils_exit(PMF_OUT,1, '[ABF] fsgframelen must be an odd number in abf_init_sg!')
-    end if
-
-    if( np .le. 2 ) then
-        call pmf_utils_exit(PMF_OUT,1, '[ABF] fsgframelen too low in abf_init_sg!')
-    end if
-
-    nr = (np-1)/2
-    nl = nr
-
-    allocate( a(m+1,m+1), b(m+1), lindx(m+1), sg_c0(np), sg_c1(np), sg_c2(np), stat= alloc_failed )
-
-    if( alloc_failed .ne. 0 ) then
-        call pmf_utils_exit(PMF_OUT,1, '[ABF] Unable to allocate memory in abf_init_sg!')
-    end if
-
-    a(:,:) = 0.0d0
-
-    do ipj=0,2*m        !Set up the normal equations of the desired leastsquares fit.
-        s = 0.0d0
-        if( ipj .eq. 0 ) s = 1.0d0
-
-        do k=1,nr
-            s = s + real(k,PMFDP)**ipj
-        end do
-
-        do k=1,nl
-            s = s + real(-k,PMFDP)**ipj
-        end do
-
-        mm = min(ipj,2*m-ipj)
-        do imj=-mm,mm,2
-            a(1+(ipj+imj)/2,1+(ipj-imj)/2) = s
-        end do
-    end do
-
-    call dgetrf(m+1,m+1,a,m+1,lindx,info)
-    if( info .ne. 0 ) then
-        call pmf_utils_exit(PMF_OUT,1,'[ABF] LU decomposition failed in abf_init_sg!')
-    end if
-
-    sg_c0(:) = 0.0d0
-    sg_c1(:) = 0.0d0
-    sg_c2(:) = 0.0d0
-
-    do ld=0,2
-        do j=1,m+1
-            b(j) = 0.0d0
-        end do
-        b(ld+1) = 1.0d0      !Right-hand side vector is unit vector, depending on which derivative we want.
-
-        call dgetrs('N',m+1,1,a,m+1,lindx,b,m+1,info)
-        if( info .ne. 0 ) then
-            call pmf_utils_exit(PMF_OUT,1,'[ABF] Matrix inversion failed in abf_init_sg!')
-        end if
-
-        do k=-nl,nr                        ! Each Savitzky-Golay coefficient is the dot product
-            s   = b(1)                     ! of powers of an integer with the inverse matrix row.
-            fac = 1.0d0
-            do mm=1,m
-                fac = fac*k
-                s   = s + b(mm+1)*fac
-            end do
-            kk = k+nl+1
-            select case(ld)
-                case(0)
-                    sg_c0(kk) = s
-                case(1)
-                    sg_c1(kk) = s
-                case(2)
-                    sg_c2(kk) = s * 2.0d0
-            end select
-
-        end do
-    end do
-
-    sg_c1(:) = sg_c1(:) * ifdtx
-    sg_c2(:) = sg_c2(:) * ifdtx * ifdtx
-
-end subroutine abf_init_filter_sg
 
 !===============================================================================
 

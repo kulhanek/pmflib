@@ -572,15 +572,13 @@ subroutine abf_accu_add_data_record_lf(cvs,zinv,bicf,epot,erst,ekin)
     real(PMFDP)    :: ekin
     ! --------------------------------------------------------------------------
 
-    if( frecord ) then
-        abfaccu%tcvs(:,fstep)       = cvs(:)
-        abfaccu%tzinv(:,:,fstep)    = zinv(:,:)
-        abfaccu%tbicf(:,fstep)      = bicf(:)
-        abfaccu%tepot(fstep)        = epot
-        abfaccu%terst(fstep)        = erst
-        if( fstep .gt. 1 ) then
-            abfaccu%tekin(fstep-1)  = ekin
-        end if
+    abfaccu%tcvs(:,fstep)       = cvs(:)
+    abfaccu%tzinv(:,:,fstep)    = zinv(:,:)
+    abfaccu%tbicf(:,fstep)      = bicf(:)
+    abfaccu%tepot(fstep)        = epot
+    abfaccu%terst(fstep)        = erst
+    if( fstep .gt. 1 ) then
+        abfaccu%tekin(fstep-1)  = ekin
     end if
 
 end subroutine abf_accu_add_data_record_lf

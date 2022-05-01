@@ -67,6 +67,7 @@ subroutine abf_control_read_abf(prm_fin)
 
     ! read configuration
     call pmf_ctrl_read_integer(prm_fin,'fmode',fmode,'I12')
+    call pmf_ctrl_check_integer_in_range('ABF','fmode',fmode,0,2)
 
     if( fmode .eq. 0 ) then
         write(PMF_OUT,10)
@@ -138,9 +139,6 @@ subroutine abf_control_read_abf(prm_fin)
         write(PMF_OUT,63)
         call pmf_ctrl_read_integer(prm_fin,'gpr_len',gpr_len,'I12')
         call pmf_ctrl_check_integer('ABF','gpr_len',gpr_len,3,CND_GE)
-        call pmf_ctrl_read_integer(prm_fin,'gpr_boundary',gpr_boundary,'I12')
-        call pmf_ctrl_check_integer('ABF','gpr_boundary',gpr_boundary,0,CND_GE)
-        call pmf_ctrl_check_integer('ABF','gpr_boundary',gpr_boundary,gpr_len,CND_LT)
 
     ! CVS GPR
         call pmf_ctrl_read_integer(prm_fin,'gpr_cvs_kernel',gpr_cvs_kernel,'I12')
@@ -149,29 +147,15 @@ subroutine abf_control_read_abf(prm_fin)
         call pmf_ctrl_read_real8(prm_fin,'gpr_cvs_noise',gpr_cvs_noise,'E12.5')
 
     ! ICF GPR
-        call pmf_ctrl_read_logical(prm_fin,'gpr_icf_cdf',gpr_icf_cdf)
-        call pmf_ctrl_read_integer(prm_fin,'gpr_icf_kernel',gpr_icf_kernel,'I12')
-        call pmf_ctrl_check_integer_in_range('ABF','gpr_icf_kernel',gpr_icf_kernel,1,6)
-        call pmf_ctrl_read_real8_wunit(prm_fin,'gpr_icf_width',TimeUnit,gpr_icf_width,'F12.3')
-        call pmf_ctrl_read_real8(prm_fin,'gpr_icf_noise',gpr_icf_noise,'E12.5')
-
-    ! ENE GPR
-        call pmf_ctrl_read_integer(prm_fin,'gpr_ene_smooth',gpr_ene_smooth,'I12')
-        call pmf_ctrl_check_integer_in_range('ABF','gpr_ene_smooth',gpr_ene_smooth,0,2)
-        call pmf_ctrl_read_integer(prm_fin,'gpr_ene_kernel',gpr_ene_kernel,'I12')
-        call pmf_ctrl_check_integer_in_range('ABF','gpr_ene_kernel',gpr_ene_kernel,1,6)
-        call pmf_ctrl_read_real8_wunit(prm_fin,'gpr_ene_width',TimeUnit,gpr_ene_width,'F12.3')
-        call pmf_ctrl_read_real8(prm_fin,'gpr_ene_noise',gpr_ene_noise,'E12.5')
+        call pmf_ctrl_read_integer(prm_fin,'gpr_icf_cdf',gpr_icf_cdf,'I12')
+        call pmf_ctrl_check_integer_in_range('ABF','gpr_icf_cdf',gpr_icf_cdf,0,1)
 
     ! SVD setup
         call pmf_ctrl_read_real8(prm_fin,'gpr_rcond',gpr_rcond,'E12.5')
         call pmf_ctrl_read_integer(prm_fin,'gpr_rank',gpr_rank,'I12')
-    end if
 
-    if( fmode .eq. 3 ) then
-        write(PMF_OUT,64)
-        call pmf_ctrl_read_integer(prm_fin,'fsgframelen',fsgframelen,'i12')
-        call pmf_ctrl_read_integer(prm_fin,'fsgorder',fsgorder,'i12')
+    ! quality
+        call pmf_ctrl_read_logical(prm_fin,'gpr_calc_pml',gpr_calc_pml)
     end if
 
     ! network setup ----------------------------------------------------------------
@@ -223,7 +207,6 @@ subroutine abf_control_read_abf(prm_fin)
  53 format (/,'>> Linear interpolation (feimode == 3)')
 
  63 format (/,'>> Gaussian Process Regression ABF (fmode == 2)')
- 64 format (/,'>> Savitzky–Golay Differentiation ABF (fmode == 3)')
 
 100 format (' >> Multiple-walkers ABF method is disabled!')
 

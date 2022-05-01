@@ -335,15 +335,6 @@ subroutine pmf_core_lf_shake_forces(xbar,xp)
             SHAKEFrc(:,i)  = Mass(i) * (CrdP(:,i) - CrdBar(:,i)) * ifdtx**2
         end do
 
-        !write(788,*) CrdBar
-        !write(789,*) CrdP
-
-         if( abf_enabled ) then
-            call pmf_timers_start_timer(PMFLIB_ABF_TIMER)
-            call abf_core_shake
-            call pmf_timers_stop_timer(PMFLIB_ABF_TIMER)
-         end if
-
         call pmf_timers_stop_timer(PMFLIB_SACCEL_TIMER)
     call pmf_timers_stop_timer(PMFLIB_METHODS_TIMER)
 

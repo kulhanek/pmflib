@@ -157,11 +157,31 @@ subroutine abf_output_close
     use abf_dat
 
     implicit none
+    integer         :: i
+    real(PMFDP)     :: mpml, spml
     ! --------------------------------------------------------------------------
+
+    if( gpr_calc_pml ) then
+        write(ABF_OUT,*)
+        write(ABF_OUT,5)
+        write(ABF_OUT,10)
+        write(ABF_OUT,20)
+        do i=1,NumOfABFCVs
+            mpml = gpr_mpml(i)
+            spml = sqrt(gpr_m2pml(i)/gpr_npml)
+            write(ABF_OUT,30) i, trim(CVList(ABFCVList(i)%cvindx)%cv%name), mpml, spml
+
+        end do
+    end if
 
     close(ABF_OUT)
 
     return
+
+  5 format('# GPR log(ML)')
+ 10 format('# N  CV name    <logML>    s(logML) ')
+ 20 format('#-- ---------- ---------- ----------')
+ 30 format(I3,1X,A10,1X,F10.1,1X,F10.1)
 
 end subroutine abf_output_close
 
