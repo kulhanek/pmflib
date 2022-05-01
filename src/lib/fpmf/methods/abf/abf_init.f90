@@ -649,7 +649,7 @@ subroutine abf_init_gpr_invK(mat,logdet)
     real(PMFDP)                 :: mat(:,:)
     real(PMFDP)                 :: logdet
     integer                     :: i,alloc_failed,info,lwork,irank
-    real(PMFDP)                 :: minv, maxv, a_rcond
+    real(PMFDP)                 :: minv, maxv, a_rcond, r_sigma
     real(PMFDP),allocatable     :: sig(:)
     real(PMFDP),allocatable     :: u(:,:)
     real(PMFDP),allocatable     :: vt(:,:)
@@ -740,9 +740,11 @@ subroutine abf_init_gpr_invK(mat,logdet)
 
     irank = 0
     logdet = 0.0d0  ! this is logarithm of the determinant of original matrix
+    r_sigma = 0.0d0
     if( gpr_rank .gt. 1 ) then
         do i=1,gpr_len
             if( i .le. gpr_rank ) then
+               r_sigma = sig(i)
                sig_plus(i,i) = 1.0d0/sig(i)
                logdet        = logdet +  log(sig(i))
                irank = irank + 1
@@ -753,6 +755,7 @@ subroutine abf_init_gpr_invK(mat,logdet)
     else
         do i=1,gpr_len
             if( sig(i) .gt. gpr_rcond*maxv ) then
+               r_sigma = sig(i)
                sig_plus(i,i) = 1.0d0/sig(i)
                logdet        = logdet +  log(sig(i))
                irank = irank + 1
@@ -768,9 +771,9 @@ subroutine abf_init_gpr_invK(mat,logdet)
 
     deallocate(sig,sig_plus,u,vt,temp_mat)
 
-    write(PMF_OUT,10) gpr_len,irank,a_rcond
+    write(PMF_OUT,10) gpr_len,irank,r_sigma,a_rcond
 
- 10 format('    Size = ',I5,'; Rank = ',I5,'; Real rcond = ',E10.5)
+ 10 format('    Size = ',I5,'; Rank = ',I5,'; Rank sigma = ',E10.5,'; Real rcond = ',E10.5)
 
 end subroutine abf_init_gpr_invK
 
