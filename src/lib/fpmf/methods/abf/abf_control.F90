@@ -152,6 +152,7 @@ subroutine abf_control_read_abf(prm_fin)
 
     ! SVD setup
         call pmf_ctrl_read_real8(prm_fin,'gpr_rcond',gpr_rcond,'E12.5')
+        call pmf_ctrl_read_real8(prm_fin,'gpr_rsigma',gpr_rsigma,'E12.5')
         call pmf_ctrl_read_integer(prm_fin,'gpr_rank',gpr_rank,'I12')
 
     ! quality

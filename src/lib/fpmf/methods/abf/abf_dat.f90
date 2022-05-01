@@ -201,6 +201,7 @@ integer                     :: gpr_icf_cdf      ! 0 - use central differences fo
 
 integer                     :: gpr_rank         ! rank for SVD inversion
 real(PMFDP)                 :: gpr_rcond        ! rcond for automatic rank determination
+real(PMFDP)                 :: gpr_rsigma       ! min value of sigma for ranking
 
 real(PMFDP),allocatable     :: gpr_K_cvs(:,:)   ! co-variance matrix for CVS, it contains the inverse
 real(PMFDP)                 :: gpr_K_cvs_logdet ! logarithm of K determinant

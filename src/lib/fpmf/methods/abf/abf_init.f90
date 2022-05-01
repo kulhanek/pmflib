@@ -118,6 +118,7 @@ subroutine abf_init_dat
 
     gpr_rank        = -1
     gpr_rcond       = 1e-16
+    gpr_rsigma      = 1e-5
 
     gpr_calc_pml    = .false.
 
@@ -208,6 +209,7 @@ subroutine abf_init_print_summary
     write(PMF_OUT,120)  '          === K+Sigma inversion'
     write(PMF_OUT,130)  '              gpr_rank                   : ', gpr_rank
     write(PMF_OUT,160)  '              gpr_rcond                  : ', gpr_rcond
+    write(PMF_OUT,160)  '              gpr_rsigma                 : ', gpr_rsigma
 
     case default
         call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown fmode in abf_init_print_summary!')
@@ -744,6 +746,17 @@ subroutine abf_init_gpr_invK(mat,logdet)
     if( gpr_rank .gt. 1 ) then
         do i=1,gpr_len
             if( i .le. gpr_rank ) then
+               r_sigma = sig(i)
+               sig_plus(i,i) = 1.0d0/sig(i)
+               logdet        = logdet +  log(sig(i))
+               irank = irank + 1
+            else
+               sig_plus(i,i) = 0.0d0
+            end if
+        end do
+    else if( gpr_rsigma .ne. 0.0d0 ) then
+        do i=1,gpr_len
+            if( sig(i) .gt. gpr_rsigma ) then
                r_sigma = sig(i)
                sig_plus(i,i) = 1.0d0/sig(i)
                logdet        = logdet +  log(sig(i))
