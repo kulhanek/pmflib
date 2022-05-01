@@ -119,7 +119,7 @@ subroutine abf_init_dat
     gpr_rank        = -1
     gpr_rcond       = 1e-16
 
-    gpr_calc_pml    = .true.
+    gpr_calc_pml    = .false.
 
     cbuff_pos       = 0
 
