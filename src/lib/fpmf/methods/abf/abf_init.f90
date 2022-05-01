@@ -716,6 +716,14 @@ subroutine abf_init_gpr_invK(mat,logdet)
 
     deallocate(iwork,twork)
 
+    if( fdebug ) then
+        open(unit=7812,file='gpr-kernel.isigma',status='UNKNOWN')
+        do i=1,gpr_len
+            write(7812,*) i, 1.0d0/sig(i)
+        end do
+        close(7812)
+    end if
+
 ! invert singular numbers
     maxv = sig(1)
     minv = sig(1)
