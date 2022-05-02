@@ -209,13 +209,16 @@ real(PMFDP),allocatable     :: gpr_data(:)      ! GPR input data
 real(PMFDP),allocatable     :: gpr_model(:)     ! GPR model
 real(PMFDP),allocatable     :: gpr_kfd_cvs(:)   ! inference for cvs
 
-logical                     :: gpr_calc_pml     ! we want to get logarithm of marginal likelihood
+logical                     :: gpr_calc_logxx   ! we want to get logml and logpl
 
-real(PMFDP),allocatable     :: gpr_pml(:)       ! marginal likelihood for each CV
+real(PMFDP),allocatable     :: gpr_logml(:)     ! marginal likelihood for each CV
+real(PMFDP),allocatable     :: gpr_logpl(:)     ! pseudo-likelihood for each CV
 
-real(PMFDP)                 :: gpr_npml         ! number of data
-real(PMFDP),allocatable     :: gpr_mpml(:)      ! average
-real(PMFDP),allocatable     :: gpr_m2pml(:)     ! M2
+real(PMFDP)                 :: gpr_nlogxx       ! number of data
+real(PMFDP),allocatable     :: gpr_mlogml(:)    ! average
+real(PMFDP),allocatable     :: gpr_m2logml(:)   ! M2
+real(PMFDP),allocatable     :: gpr_mlogpl(:)    ! average
+real(PMFDP),allocatable     :: gpr_m2logpl(:)   ! M2
 
 ! ------------------------------------------------------------------------------
 

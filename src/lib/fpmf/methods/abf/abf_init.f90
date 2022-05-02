@@ -120,7 +120,7 @@ subroutine abf_init_dat
     gpr_rcond       = 1e-16
     gpr_rsigma      = 1e-5
 
-    gpr_calc_pml    = .false.
+    gpr_calc_logxx  = .false.
 
     cbuff_pos       = 0
 
@@ -204,7 +204,6 @@ subroutine abf_init_print_summary
 
     write(PMF_OUT,120)  '          === ICF GPR'
     write(PMF_OUT,130)  '              gpr_icf_cdf                : ', gpr_icf_cdf
-
 
     write(PMF_OUT,120)  '          === K+Sigma inversion'
     write(PMF_OUT,130)  '              gpr_rank                   : ', gpr_rank
@@ -580,9 +579,12 @@ subroutine abf_init_gpr
             gpr_data(gpr_len),                  &
             gpr_model(gpr_len),                 &
             gpr_kfd_cvs(gpr_len),               &
-            gpr_pml(NumOfABFCVs),               &
-            gpr_mpml(NumOfABFCVs),              &
-            gpr_m2pml(NumOfABFCVs),             &
+            gpr_logml(NumOfABFCVs),             &
+            gpr_mlogml(NumOfABFCVs),            &
+            gpr_m2logml(NumOfABFCVs),           &
+            gpr_logpl(NumOfABFCVs),             &
+            gpr_mlogpl(NumOfABFCVs),            &
+            gpr_m2logpl(NumOfABFCVs),           &
             stat= alloc_failed )
 
     if( alloc_failed .ne. 0 ) then
@@ -590,9 +592,11 @@ subroutine abf_init_gpr
             '[ABF] Unable to allocate memory for GPR arrays in abf_init_gpr!')
     end if
 
-    gpr_npml        = 0
-    gpr_mpml(:)     = 0.0d0      ! average
-    gpr_m2pml(:)    = 0.0d0      ! M2
+    gpr_nlogxx        = 0
+    gpr_mlogml(:)     = 0.0d0      ! average
+    gpr_m2logml(:)    = 0.0d0      ! M2
+    gpr_mlogpl(:)     = 0.0d0      ! average
+    gpr_m2logpl(:)    = 0.0d0      ! M2
 
 ! init co-variance matrix
     do i=1,gpr_len

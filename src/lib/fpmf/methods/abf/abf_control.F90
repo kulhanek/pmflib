@@ -156,7 +156,7 @@ subroutine abf_control_read_abf(prm_fin)
         call pmf_ctrl_read_integer(prm_fin,'gpr_rank',gpr_rank,'I12')
 
     ! quality
-        call pmf_ctrl_read_logical(prm_fin,'gpr_calc_pml',gpr_calc_pml)
+        call pmf_ctrl_read_logical(prm_fin,'gpr_calc_logxx',gpr_calc_logxx)
     end if
 
     ! network setup ----------------------------------------------------------------

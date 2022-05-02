@@ -317,25 +317,38 @@ subroutine abf_core_force_gpr()
 
         pxi1(i) = dot_product(gpr_data,gpr_kfd_cvs)
 
-        if( gpr_calc_pml ) then
+        if( gpr_calc_logxx ) then
             ! calculate logML
             ! solve GPR
             call dgemv('N',gpr_len,gpr_len,1.0d0,gpr_K_cvs,gpr_len,gpr_data,1,0.0d0,gpr_model,1)
 
                 ! calculate CV derivative in time - derivative is shift invariant
-            gpr_pml(i) = -0.5d0*dot_product(gpr_data,gpr_model)     &
+            gpr_logml(i) = -0.5d0*dot_product(gpr_data,gpr_model)   &
                         - 0.5d0*gpr_K_cvs_logdet                    &
                         - 0.5d0*real(gpr_len,PMFDP)*log(2.0*PMF_PI)
 
+            gpr_logpl(i) = - 0.5d0*real(gpr_len,PMFDP)*log(2.0*PMF_PI)
+            do k=1,gpr_len
+                gpr_logpl(i) = gpr_logpl(i) + 0.5d0*log(gpr_K_cvs(k,k)) - 0.5d0*gpr_model(k)**2/gpr_K_cvs(k,k)
+            end do
+
+            write(789,*) fstep, gpr_logml(1), gpr_logpl(1)
+
             ! increase number of samples
-            gpr_npml = gpr_npml + 1.0d0
-            invn = 1.0d0 / gpr_npml
+            gpr_nlogxx = gpr_nlogxx + 1.0d0
+            invn = 1.0d0 / gpr_nlogxx
 
             ! statistics
-            depot1 = gpr_pml(i) - gpr_mpml(i)
-            gpr_mpml(i)  = gpr_mpml(i)  + depot1 * invn
-            depot2 = gpr_pml(i) - gpr_mpml(i)
-            gpr_m2pml(i) = gpr_m2pml(i) + depot1 * depot2
+            depot1 = gpr_logml(i) - gpr_mlogml(i)
+            gpr_mlogml(i)  = gpr_mlogml(i)  + depot1 * invn
+            depot2 = gpr_logml(i) - gpr_mlogml(i)
+            gpr_m2logml(i) = gpr_m2logml(i) + depot1 * depot2
+
+            ! statistics
+            depot1 = gpr_logpl(i) - gpr_mlogpl(i)
+            gpr_mlogpl(i)  = gpr_mlogpl(i)  + depot1 * invn
+            depot2 = gpr_logpl(i) - gpr_mlogpl(i)
+            gpr_m2logpl(i) = gpr_m2logpl(i) + depot1 * depot2
         end if
     end do
 

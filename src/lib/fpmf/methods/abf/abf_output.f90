@@ -158,18 +158,20 @@ subroutine abf_output_close
 
     implicit none
     integer         :: i
-    real(PMFDP)     :: mpml, spml
+    real(PMFDP)     :: mlogml, slogml, mlogpl, slogpl
     ! --------------------------------------------------------------------------
 
-    if( gpr_calc_pml ) then
+    if( gpr_calc_logxx ) then
         write(ABF_OUT,*)
         write(ABF_OUT,5)
         write(ABF_OUT,10)
         write(ABF_OUT,20)
         do i=1,NumOfABFCVs
-            mpml = gpr_mpml(i)
-            spml = sqrt(gpr_m2pml(i)/gpr_npml)
-            write(ABF_OUT,30) i, trim(CVList(ABFCVList(i)%cvindx)%cv%name), mpml, spml
+            mlogml = gpr_mlogml(i)
+            slogml = sqrt(gpr_m2logml(i)/gpr_nlogxx)
+            mlogpl = gpr_mlogpl(i)
+            slogpl = sqrt(gpr_m2logpl(i)/gpr_nlogxx)
+            write(ABF_OUT,30) i, trim(CVList(ABFCVList(i)%cvindx)%cv%name), mlogml, slogml, mlogpl, slogpl
 
         end do
     end if
@@ -179,9 +181,9 @@ subroutine abf_output_close
     return
 
   5 format('# GPR log(ML)')
- 10 format('# N  CV name    <logML>    s(logML) ')
- 20 format('#-- ---------- ---------- ----------')
- 30 format(I3,1X,A10,1X,F10.1,1X,F10.1)
+ 10 format('# N  CV name    <logML>    s(logML)   <logPL>    s(logPL) ')
+ 20 format('#-- ---------- ---------- ---------- ---------- ----------')
+ 30 format(I3,1X,A10,1X,F10.1,1X,F10.1,1X,F10.1,1X,F10.1)
 
 end subroutine abf_output_close
 
