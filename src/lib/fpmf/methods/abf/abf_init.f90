@@ -114,6 +114,9 @@ subroutine abf_init_dat
     gpr_cvs_width   = 30.0
     gpr_cvs_noise   = 0.0
 
+    gpr_sinc_amp    = 0.0
+    gpr_sinc_width  = 10.0
+
     gpr_icf_cdf     = 0
 
     gpr_rank        = -1
@@ -505,6 +508,40 @@ real(PMFDP) function abf_init_gpr_kernel(ktype,t1,t2,width)
 end function abf_init_gpr_kernel
 
 !===============================================================================
+! Function:  abf_init_gpr_kernel_sinc
+!===============================================================================
+
+real(PMFDP) function abf_init_gpr_kernel_sinc(t1,t2)
+
+    use pmf_utils
+    use pmf_dat
+    use abf_dat
+
+    implicit none
+    integer     :: t1,t2
+    real(PMFDP) :: r,wfac
+    ! --------------------------------------------------------------------------
+
+    ! convert gpr_sinc_width to time steps
+    wfac = gpr_sinc_width / fdt
+
+    if( wfac .eq. 0.0d0 ) then
+        abf_init_gpr_kernel_sinc = 0.0d0
+        return
+    end if
+
+    r = abs(real(t1-t2,PMFDP)/wfac)
+
+    ! sinc(x)
+    if( r .eq. 0.0d0 ) then
+        abf_init_gpr_kernel_sinc = 1.0d0
+    else
+        abf_init_gpr_kernel_sinc = 2.0d0/wfac*sin(2.0d0*PMF_PI*r)/(2.0d0*PMF_PI*r)
+    end if
+
+end function abf_init_gpr_kernel_sinc
+
+!===============================================================================
 ! Function:  abf_init_gpr_main_kernel_1d
 ! first derivative
 !===============================================================================
@@ -635,6 +672,15 @@ subroutine abf_init_gpr
             gpr_K_cvs(i,j) = abf_init_gpr_kernel(gpr_cvs_kernel,i,j,gpr_cvs_width)
         end do
     end do
+
+    if( gpr_sinc_amp .ne. 0.0d0 ) then
+        ! add sinc kernel if neccessary
+        do i=1,gpr_len
+            do j=1,gpr_len
+                gpr_K_cvs(i,j) = gpr_K_cvs(i,j) + gpr_sinc_amp * abf_init_gpr_kernel_sinc(i,j)
+            end do
+        end do
+    end if
 
 ! add noise
     do i=1,gpr_len

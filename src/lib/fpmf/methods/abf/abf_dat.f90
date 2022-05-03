@@ -196,6 +196,10 @@ integer                     :: gpr_cvs_kernel   ! 0 - Exponential
                                                 ! 6 - Triweight
 real(PMFDP)                 :: gpr_cvs_noise    ! noise magnitude
 
+real(PMFDP)                 :: gpr_sinc_amp
+real(PMFDP)                 :: gpr_sinc_width
+
+
 ! ICF GPR
 integer                     :: gpr_icf_cdf      ! 0 - use central differences for the second differentiation in ICF calc.
 
