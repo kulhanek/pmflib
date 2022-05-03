@@ -146,6 +146,9 @@ subroutine abf_control_read_abf(prm_fin)
         call pmf_ctrl_read_real8_wunit(prm_fin,'gpr_cvs_width',TimeUnit,gpr_cvs_width,'F12.3')
         call pmf_ctrl_read_real8(prm_fin,'gpr_cvs_noise',gpr_cvs_noise,'E12.5')
 
+        call pmf_ctrl_read_real8(prm_fin,'gpr_sinc_amp',gpr_sinc_amp,'E12.5')
+        call pmf_ctrl_read_real8_wunit(prm_fin,'gpr_sinc_width',TimeUnit,gpr_sinc_width,'F12.3')
+
     ! ICF GPR
         call pmf_ctrl_read_integer(prm_fin,'gpr_icf_cdf',gpr_icf_cdf,'I12')
         call pmf_ctrl_check_integer_in_range('ABF','gpr_icf_cdf',gpr_icf_cdf,0,1)
