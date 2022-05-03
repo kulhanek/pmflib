@@ -332,7 +332,9 @@ subroutine abf_core_force_gpr()
                 gpr_logpl(i) = gpr_logpl(i) + 0.5d0*log(gpr_K_cvs(k,k)) - 0.5d0*gpr_model(k)**2/gpr_K_cvs(k,k)
             end do
 
-            write(789,*) fstep, gpr_logml(1), gpr_logpl(1)
+            if ( fdebug ) then
+                write(789,*) fstep, gpr_logml(1), gpr_logpl(1)
+            end if
 
             ! increase number of samples
             gpr_nlogxx = gpr_nlogxx + 1.0d0

@@ -195,6 +195,8 @@ subroutine abf_init_print_summary
     write(PMF_OUT,120)  '              \-> Quartic (biweight) kernel'
     case(6)
     write(PMF_OUT,120)  '              \-> Triweigh kernel'
+    case(7)
+    write(PMF_OUT,120)  '              \-> sinc kernel'
     case default
         call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown gpr_cvs_kernel in abf_init_print_summary!')
     end select
@@ -460,28 +462,41 @@ real(PMFDP) function abf_init_gpr_kernel(ktype,t1,t2,width)
 
     select case(ktype)
         case(1)
+            ! MC(3/2)
             abf_init_gpr_kernel = (1.0d0 + sqrt(3.0) * r) * exp(- sqrt(3.0d0) * r)
         case(2)
+            ! MC(5/2)
             abf_init_gpr_kernel = (1.0d0 + sqrt(5.0d0) * r + 5.0d0/3.0d0 * r**2) * exp(- sqrt(5.0d0) * r)
         case(3)
+            ! SE
             abf_init_gpr_kernel = exp(- 0.5d0 * r**2)
         case(4)
+            ! Epanechnikov (parabolic) kernel
             if( r .le. 1.0d0 ) then
                 abf_init_gpr_kernel = (1.0d0 - r**2)
             else
                 abf_init_gpr_kernel = 0.0d0
             end if
         case(5)
+            ! Quartic (biweight) kernel
             if( r .le. 1.0d0 ) then
                 abf_init_gpr_kernel = (1.0d0 - r**2)**2
             else
                 abf_init_gpr_kernel = 0.0d0
             end if
         case(6)
+            ! Triweigh kernel
             if( r .le. 1.0d0 ) then
                 abf_init_gpr_kernel = (1.0d0 - r**2)**3
             else
                 abf_init_gpr_kernel = 0.0d0
+            end if
+        case(7)
+            ! sinc(x)
+            if( r .eq. 0.0d0 ) then
+                abf_init_gpr_kernel = 1.0d0
+            else
+                abf_init_gpr_kernel = 2.0d0/wfac*sin(2.0d0*PMF_PI*r)/(2.0d0*PMF_PI*r)
             end if
         case default
             call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown ktype in abf_init_gpr_kernel!')
@@ -518,29 +533,44 @@ real(PMFDP) function abf_init_gpr_kernel_1d(ktype,t1,t2,width)
 
     select case(ktype)
         case(1)
+            ! MC(3/2)
             abf_init_gpr_kernel_1d = - 3.0d0 * r * exp(- sqrt(3.0d0) * r) / (wfac * fdtx) * sign(1.0d0,real(t1-t2,PMFDP))
         case(2)
+            ! MC(5/2)
             abf_init_gpr_kernel_1d = - 5.0d0/3.0d0 * r * (1.0d0 + sqrt(5.0d0) * r) * exp(- sqrt(5.0d0) * r ) / (wfac * fdtx) &
                        * sign(1.0d0,real(t1-t2,PMFDP))
         case(3)
+            ! SE
             abf_init_gpr_kernel_1d = - exp(- 0.5d0 * r**2) * r / (wfac * fdtx) * sign(1.0d0,real(t1-t2,PMFDP))
         case(4)
+            ! Epanechnikov (parabolic) kernel
             if( r .le. 1.0d0 ) then
                 abf_init_gpr_kernel_1d = -2.0d0 * r / (wfac * fdtx) * sign(1.0d0,real(t1-t2,PMFDP))
             else
                 abf_init_gpr_kernel_1d = 0.0d0
             end if
         case(5)
+             ! Quartic (biweight) kernel
             if( r .le. 1.0d0 ) then
                 abf_init_gpr_kernel_1d = -4.0d0 * r * (1.0d0 - r**2) / (wfac * fdtx) * sign(1.0d0,real(t1-t2,PMFDP))
             else
                 abf_init_gpr_kernel_1d = 0.0d0
             end if
         case(6)
+            ! Triweigh kernel
             if( r .le. 1.0d0 ) then
                 abf_init_gpr_kernel_1d = -6.0d0 * r * (1.0d0 - r**2)**2 / (wfac * fdtx) * sign(1.0d0,real(t1-t2,PMFDP))
             else
                 abf_init_gpr_kernel_1d = 0.0d0
+            end if
+        case(7)
+            ! sinc(x)
+            if( r .eq. 0.0d0 ) then
+                abf_init_gpr_kernel_1d = 2.0d0/wfac * (cos(2.0d0*PMF_PI*r) - 1.0d0) * 2.0d0*PMF_PI &
+                                       / (wfac * fdtx) * sign(1.0d0,real(t1-t2,PMFDP))
+            else
+                abf_init_gpr_kernel_1d = 2.0d0/wfac * (cos(2.0d0*PMF_PI*r) - sin(2.0d0*PMF_PI*r)/(2.0d0*PMF_PI*r)) * 2.0d0*PMF_PI &
+                                       / (wfac * fdtx) * sign(1.0d0,real(t1-t2,PMFDP))
             end if
         case default
             call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown ktype in abf_init_gpr_kernel_1d!')

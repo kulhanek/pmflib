@@ -142,7 +142,7 @@ subroutine abf_control_read_abf(prm_fin)
 
     ! CVS GPR
         call pmf_ctrl_read_integer(prm_fin,'gpr_cvs_kernel',gpr_cvs_kernel,'I12')
-        call pmf_ctrl_check_integer_in_range('ABF','gpr_cvs_kernel',gpr_cvs_kernel,1,6)
+        call pmf_ctrl_check_integer_in_range('ABF','gpr_cvs_kernel',gpr_cvs_kernel,1,7)
         call pmf_ctrl_read_real8_wunit(prm_fin,'gpr_cvs_width',TimeUnit,gpr_cvs_width,'F12.3')
         call pmf_ctrl_read_real8(prm_fin,'gpr_cvs_noise',gpr_cvs_noise,'E12.5')
 
