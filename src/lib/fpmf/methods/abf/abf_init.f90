@@ -566,10 +566,11 @@ real(PMFDP) function abf_init_gpr_kernel_1d(ktype,t1,t2,width)
         case(7)
             ! sinc(x)
             if( r .eq. 0.0d0 ) then
-                abf_init_gpr_kernel_1d = 2.0d0/wfac * (cos(2.0d0*PMF_PI*r) - 1.0d0) * 2.0d0*PMF_PI &
-                                       / (wfac * fdtx) * sign(1.0d0,real(t1-t2,PMFDP))
+                abf_init_gpr_kernel_1d = 0.0d0
             else
-                abf_init_gpr_kernel_1d = 2.0d0/wfac * (cos(2.0d0*PMF_PI*r) - sin(2.0d0*PMF_PI*r)/(2.0d0*PMF_PI*r)) * 2.0d0*PMF_PI &
+                abf_init_gpr_kernel_1d = 2.0d0/wfac * &
+                                       ( (cos(2.0d0*PMF_PI*r)*2.0d0*PMF_PI*r - sin(2.0d0*PMF_PI*r) ) / (2.0d0*PMF_PI*r)**2 ) &
+                                       * 2.0d0*PMF_PI &
                                        / (wfac * fdtx) * sign(1.0d0,real(t1-t2,PMFDP))
             end if
         case default
