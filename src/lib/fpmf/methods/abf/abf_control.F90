@@ -152,6 +152,8 @@ subroutine abf_control_read_abf(prm_fin)
         call pmf_ctrl_read_real8(prm_fin,'gpr_wiener_amp',gpr_wiener_amp,'E12.5')
         call pmf_ctrl_read_real8_wunit(prm_fin,'gpr_wiener_width',TimeUnit,gpr_wiener_width,'F12.3')
 
+        call pmf_ctrl_read_logical(prm_fin,'gpr_cvs_nomean',gpr_cvs_nomean)
+
     ! ICF GPR
         call pmf_ctrl_read_integer(prm_fin,'gpr_icf_cdf',gpr_icf_cdf,'I12')
         call pmf_ctrl_check_integer_in_range('ABF','gpr_icf_cdf',gpr_icf_cdf,0,1)

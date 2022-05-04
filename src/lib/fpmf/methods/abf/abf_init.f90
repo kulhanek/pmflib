@@ -126,6 +126,8 @@ subroutine abf_init_dat
     gpr_rcond       = 1e-16
     gpr_rsigma      = 1e-5
 
+    gpr_cvs_nomean  = .false.
+
     gpr_calc_logxx  = .false.
 
     cbuff_pos       = 0

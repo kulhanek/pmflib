@@ -302,10 +302,13 @@ subroutine abf_core_force_gpr()
     do i=1,NumOfABFCVs
         ! calculate mean value
         mean = 0.0d0
-        do k=1,gpr_len
-            mean = mean + cvhist(i,k)
-        end do
-        mean = mean / real(gpr_len,PMFDP)
+
+        if( .not. gpr_cvs_nomean ) then
+            do k=1,gpr_len
+                mean = mean + cvhist(i,k)
+            end do
+            mean = mean / real(gpr_len,PMFDP)
+        end if
 
         ! shift data
         l1 = cbuff_pos

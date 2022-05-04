@@ -202,6 +202,8 @@ real(PMFDP)                 :: gpr_sinc_width
 real(PMFDP)                 :: gpr_wiener_amp
 real(PMFDP)                 :: gpr_wiener_width
 
+logical                     :: gpr_cvs_nomean
+
 
 ! ICF GPR
 integer                     :: gpr_icf_cdf      ! 0 - use central differences for the second differentiation in ICF calc.
