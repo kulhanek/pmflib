@@ -396,7 +396,6 @@ subroutine abf_init_arrays
             cvhist(NumOfABFCVs,hist_len),               &
             micfhist(NumOfABFCVs,hist_len),             &
             fhist(3,NumOfLAtoms,hist_len),              &
-            xhist(3,NumOfLAtoms,hist_len),              &
             vhist(3,NumOfLAtoms,hist_len),              &
             zdhist(3,NumOfLAtoms,NumOfABFCVs,hist_len), &
             fzinvhist(NumOfABFCVs,NumOfABFCVs,hist_len),&
@@ -405,6 +404,11 @@ subroutine abf_init_arrays
             epothist(hist_len),                         &
             ersthist(hist_len),                         &
             ekinhist(hist_len),                         &
+            zd0(3,NumOfLAtoms,NumOfABFCVs), &
+            zd1(3,NumOfLAtoms,NumOfABFCVs), &
+            cvaluehist0(NumOfABFCVs),       &
+            cvaluehist1(NumOfABFCVs),       &
+            v0(3,NumOfLAtoms),              &
             stat= alloc_failed )
 
     if( alloc_failed .ne. 0 ) then
@@ -415,7 +419,6 @@ subroutine abf_init_arrays
     cvhist(:,:)     = 0.0d0
     micfhist(:,:)   = 0.0d0
     fhist(:,:,:)    = 0.0d0
-    xhist(:,:,:)    = 0.0d0
     vhist(:,:,:)    = 0.0d0
     zdhist(:,:,:,:) = 0.0d0
     epothist(:)     = 0.0d0

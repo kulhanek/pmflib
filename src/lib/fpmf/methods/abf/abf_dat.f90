@@ -171,7 +171,6 @@ integer                     :: hist_len
 integer                     :: cbuff_pos
 real(PMFDP),allocatable     :: cvhist(:,:)          ! history of CV values (nCVS,hist_len)
 real(PMFDP),allocatable     :: fhist(:,:,:)         ! history of forces
-real(PMFDP),allocatable     :: xhist(:,:,:)         ! history of velocities
 real(PMFDP),allocatable     :: vhist(:,:,:)         ! history of velocities
 real(PMFDP),allocatable     :: fzinvhist(:,:,:)     ! history of fzinv
 real(PMFDP),allocatable     :: xphist(:,:)          ! history of CV momenta
@@ -235,6 +234,31 @@ real(PMFDP),allocatable     :: gpr_m2logpl(:)   ! M2
 integer                     :: max_snb_size
 integer,allocatable         :: snb_list(:,:)
 real(PMFDP),allocatable     :: sweights(:)
+
+
+real(PMFDP),allocatable     :: v0(:,:)        ! velocity in previous step
+
+real(PMFDP),allocatable     :: zd0(:,:,:)     ! ZD0
+real(PMFDP),allocatable     :: zd1(:,:,:)     ! ZD1
+
+
+real(PMFDP),allocatable     :: cvaluehist0(:)   ! history of coordinate values
+real(PMFDP),allocatable     :: cvaluehist1(:)   ! history of coordinate values
+
+real(PMFDP)                 :: epothist0   ! history of Epot
+real(PMFDP)                 :: epothist1   ! history of Epot
+real(PMFDP)                 :: epothist2   ! history of Epot
+real(PMFDP)                 :: epothist3   ! history of Epot
+
+real(PMFDP)                 :: ekinhist0   ! history of Ekin
+real(PMFDP)                 :: ekinhist1   ! history of Ekin
+real(PMFDP)                 :: ekinhist2   ! history of Ekin
+real(PMFDP)                 :: ekinhist3   ! history of Ekin
+
+real(PMFDP)                 :: ersthist0   ! history of Erst (PMFEne)
+real(PMFDP)                 :: ersthist1   ! history of Erst
+real(PMFDP)                 :: ersthist2   ! history of Erst
+real(PMFDP)                 :: ersthist3   ! history of Erst
 
 ! ------------------------------------------------------------------------------
 
