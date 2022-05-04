@@ -117,6 +117,9 @@ subroutine abf_init_dat
     gpr_sinc_amp    = 0.0
     gpr_sinc_width  = 10.0
 
+    gpr_wiener_amp   = 0.0
+    gpr_wiener_width = 10.0
+
     gpr_icf_cdf     = 0
 
     gpr_rank        = -1
@@ -542,6 +545,33 @@ real(PMFDP) function abf_init_gpr_kernel_sinc(t1,t2)
 end function abf_init_gpr_kernel_sinc
 
 !===============================================================================
+! Function:  abf_init_gpr_kernel_wiener
+!===============================================================================
+
+real(PMFDP) function abf_init_gpr_kernel_wiener(t1,t2)
+
+    use pmf_utils
+    use pmf_dat
+    use abf_dat
+
+    implicit none
+    integer     :: t1,t2
+    real(PMFDP) :: wfac
+    ! --------------------------------------------------------------------------
+
+    ! convert gpr_sinc_width to time steps
+    wfac = gpr_wiener_width / fdt
+
+    if( wfac .eq. 0.0d0 ) then
+        abf_init_gpr_kernel_wiener = 0.0d0
+        return
+    end if
+
+    abf_init_gpr_kernel_wiener = real(min(t1,t2),PMFDP)/wfac
+
+end function abf_init_gpr_kernel_wiener
+
+!===============================================================================
 ! Function:  abf_init_gpr_main_kernel_1d
 ! first derivative
 !===============================================================================
@@ -674,10 +704,19 @@ subroutine abf_init_gpr
     end do
 
     if( gpr_sinc_amp .ne. 0.0d0 ) then
-        ! add sinc kernel if neccessary
+        ! add sinc kernel if necessary
         do i=1,gpr_len
             do j=1,gpr_len
                 gpr_K_cvs(i,j) = gpr_K_cvs(i,j) + gpr_sinc_amp * abf_init_gpr_kernel_sinc(i,j)
+            end do
+        end do
+    end if
+
+    if( gpr_wiener_amp .ne. 0.0d0 ) then
+        ! add wiener process if necessary
+        do i=1,gpr_len
+            do j=1,gpr_len
+                gpr_K_cvs(i,j) = gpr_K_cvs(i,j) + gpr_wiener_amp * abf_init_gpr_kernel_wiener(i,j)
             end do
         end do
     end if
@@ -705,6 +744,14 @@ subroutine abf_init_gpr
         gpr_data(j) = abf_init_gpr_kernel_1d(gpr_cvs_kernel,gpr_mid,j,gpr_cvs_width)
     end do
 
+    if( fdebug ) then
+        open(unit=7812,file='gpr-kernel.kfd',status='UNKNOWN')
+        do i=1,gpr_len
+            write(7812,*) i, gpr_data(i)
+        end do
+        close(7812)
+    end if
+
 ! multiply by Kinv from right
     do i=1,gpr_len
         v = 0.0d0
@@ -713,6 +760,14 @@ subroutine abf_init_gpr
         end do
         gpr_kfd_cvs(i) = v
     end do
+
+    if( fdebug ) then
+        open(unit=7812,file='gpr-kernel.kfd-K',status='UNKNOWN')
+        do i=1,gpr_len
+            write(7812,*) i, gpr_kfd_cvs(i)
+        end do
+        close(7812)
+    end if
 
  10 format('>>> ABF GPR - CVS: (K+Sigma)^-1')
 

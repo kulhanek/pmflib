@@ -199,6 +199,9 @@ real(PMFDP)                 :: gpr_cvs_noise    ! noise magnitude
 real(PMFDP)                 :: gpr_sinc_amp
 real(PMFDP)                 :: gpr_sinc_width
 
+real(PMFDP)                 :: gpr_wiener_amp
+real(PMFDP)                 :: gpr_wiener_width
+
 
 ! ICF GPR
 integer                     :: gpr_icf_cdf      ! 0 - use central differences for the second differentiation in ICF calc.
