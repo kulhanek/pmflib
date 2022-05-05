@@ -91,7 +91,7 @@ subroutine pmf_core_lf_force(x,v,f,epot,ekin,epmf)
     ! convert potential energy
     PotEne = epot * EnergyConv
     ! convert kinetic energies
-    KinEne      = ekin * EnergyConv
+    KinEne = ekin * EnergyConv
 
     PMFEne = 0.0d0
 

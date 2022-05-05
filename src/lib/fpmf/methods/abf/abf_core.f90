@@ -60,7 +60,7 @@ subroutine abf_core_main
         ! standard algorithms
         case(1)
             !call abf_core_force_2p
-            call abf_core_force_3pB
+            call abf_core_force_3pA
         case(2)
             call abf_core_force_gpr
         case default
@@ -87,10 +87,10 @@ subroutine abf_core_shake
     ! --------------------------------------------------------------------------
 
     select case(fmode)
-        case(10)
+        case(1)
             ! fix total forces from SHAKE
-            shist(:,:,hist_len) =  SHAKEFrc(:,:)
-        case(1,2,11)
+            shist(:,:,hist_len) = SHAKEFrc(:,:)
+        case(2)
             ! nothing to be done
         case default
             call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented fmode in abf_core_shake!')
@@ -261,6 +261,155 @@ subroutine abf_core_force_3pB()
     return
 
 end subroutine abf_core_force_3pB
+
+!===============================================================================
+! Subroutine:  abf_core_force_3pB
+! this is leap-frog ABF version, simplified algorithm
+! forces
+!===============================================================================
+
+subroutine abf_core_force_3pA()
+
+    use pmf_utils
+    use pmf_dat
+    use pmf_cvs
+    use abf_dat
+    use abf_accu
+    use pmf_timers
+
+    implicit none
+    integer                :: i,j,k,m
+    integer                :: ci,ki
+    real(PMFDP)            :: v1,v2,s1,f1,epot,erst,ekin
+    ! --------------------------------------------------------------------------
+
+! shift accuvalue history
+    do i=1,hist_len-1
+        cvhist(:,i)     = cvhist(:,i+1)
+        epothist(i)     = epothist(i+1)
+        ersthist(i)     = ersthist(i+1)
+        ekinhist(i)     = ekinhist(i+1)
+        vhist(:,:,i)    = vhist(:,:,i+1)
+        zdhist(:,:,:,i) = zdhist(:,:,:,i+1)
+        micfhist(:,i)   = micfhist(:,i+1)
+        fhist(:,:,i)    = fhist(:,:,i+1)
+        shist(:,:,i)    = shist(:,:,i+1)
+        lhist(:,:,i)    = lhist(:,:,i+1)
+    end do
+
+    do i=1,NumOfABFCVs
+        ci = ABFCVList(i)%cvindx
+        cvhist(i,hist_len) = CVContext%CVsValues(ci)
+    end do
+    vhist(:,:,hist_len)    = Vel(:,:)
+
+! shift epot ene
+    epothist(hist_len)      = PotEne - fepotaverage
+    ersthist(hist_len)      = PMFEne
+    ekinhist(hist_len-1)    = KinEne - fekinaverage    ! shifted by -dt
+
+! calculate Z matrix and its inverse
+    call abf_core_calc_Zmat(CVContext)
+
+    do i=1,NumOfABFCVs
+        do j=1,NumOfLAtoms
+            do m=1,3
+                v1 = 0.0d0
+                do k=1,NumOfABFCVs
+                    ki = ABFCVList(k)%cvindx
+                    v1 = v1 + fzinv(i,k)*CVContext%CVsDrvs(m,j,ki)
+                end do
+                zdhist(m,j,i,hist_len) = v1
+            end do
+        end do
+    end do
+
+! apply force filters
+    la(:) = 0.0d0
+    if( fapply_abf ) then
+        ! calculate abf force to be applied
+        select case(feimode)
+            case(0)
+                call abf_accu_get_data(cvhist(:,hist_len),la)
+            case(1)
+                call abf_accu_get_data_lramp(cvhist(:,hist_len),la)
+            case(2)
+                call pmf_timers_start_timer(PMFLIB_ABF_KS_TIMER)
+                    call abf_accu_get_data_ksmooth(cvhist(:,hist_len),la)
+                call pmf_timers_stop_timer(PMFLIB_ABF_KS_TIMER)
+            case(3)
+                call abf_accu_get_data_lsmooth(cvhist(:,hist_len),la)
+            case default
+                call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented extrapolation/interpolation mode!')
+        end select
+
+        ! project abf force along coordinate
+        do i=1,NumOfABFCVs
+            ci = ABFCVList(i)%cvindx
+            do j=1,NumOfLAtoms
+                Frc(:,j) = Frc(:,j) + la(i) * CVContext%CVsDrvs(:,j,ci)
+            end do
+        end do
+    end if
+    micfhist(:,hist_len) = la(:)
+
+    fhist(:,:,hist_len)  = Frc(:,:)
+
+    if( frecord ) then
+        ! record time progress of data
+        call abf_accu_add_data_record_lf(cvhist(:,hist_len),fzinv,la, &
+                                         epothist(hist_len),ersthist(hist_len),ekinhist(hist_len-1))
+     end if
+
+! ABF part
+    if( fstep .ge. hist_len ) then
+        do i=1,NumOfABFCVs
+            f1 = 0.0d0
+            s1 = 0.0d0
+            v1 = 0.0d0
+            v2 = 0.0d0
+            do j=1,NumOfLAtoms
+                do m=1,3
+                    ! force part
+                    f1 = f1 + zdhist(m,j,i,hist_len-1) * fhist(m,j,hist_len-1) * MassInv(j)
+                    s1 = s1 + zdhist(m,j,i,hist_len-1) * shist(m,j,hist_len-1) * MassInv(j)
+                    ! velocity part
+                    v1 = v1 + (zdhist(m,j,i,hist_len-0)-zdhist(m,j,i,hist_len-1)) * vhist(m,j,hist_len-0)
+                    v2 = v2 + (zdhist(m,j,i,hist_len-1)-zdhist(m,j,i,hist_len-2)) * vhist(m,j,hist_len-1)
+                end do
+            end do
+            pxi0(i) = f1 + s1
+            pxi1(i) = 0.5d0*(v1+v2)*ifdtx
+        end do
+
+        ! write(4789,*) fstep-1, f1, l1, s1*ifdtx
+
+!        do i=1,hist_len
+!            write(4789,*) fhist(:,:,i)
+!        end do
+!        write(4789,*)
+
+        ! total ABF force
+        pxip(:) = pxi0(:) + pxi1(:) - micfhist(:,hist_len-1)  ! unbiased estimate
+
+        epot = epothist(hist_len-1)
+        erst = ersthist(hist_len-1)
+        ekin = ekinhist(hist_len-1)
+
+        ! debug
+        ! write(1225,*) epot,erst,ekin
+
+        ! add data to accumulator
+        call abf_accu_add_data_online(cvhist(:,hist_len-1),pxip,epot,erst,ekin)
+
+        if( fentropy .and. fentdecomp ) then
+     !       call abf_accu_add_data_entropy_decompose(cvhist(:,hist_len-1),pxi0,pxi1,micfhist(:,hist_len-1),epot,erst,ekin)
+        end if
+    end if
+
+    return
+
+end subroutine abf_core_force_3pA
 
 !===============================================================================
 ! Subroutine:  abf_core_force_2p

@@ -80,7 +80,7 @@ subroutine pmf_init_dat
     usabf_enabled   = .false.
 
     lng_force_required      = .true. ! FIXME
-    shake_force_required    = .false.
+    shake_force_required    = .true. ! FIXME
 
 
     LNG_c_implic    = 1.0d0
