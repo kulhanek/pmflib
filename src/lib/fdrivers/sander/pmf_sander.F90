@@ -356,7 +356,7 @@ end subroutine pmf_sander_update_box
 ! subroutine pmf_sander_force
 !===============================================================================
 
-subroutine pmf_sander_force(anatom,x,v,f,epot,ekin,epmf,c_implic)
+subroutine pmf_sander_force(anatom,x,v,f,epot,ekin,epmf,c_implic,c_explic)
 
     use pmf_sizes
     use pmf_core_lf
@@ -372,9 +372,11 @@ subroutine pmf_sander_force(anatom,x,v,f,epot,ekin,epmf,c_implic)
     real(PMFDP)     :: ekin         ! in
     real(PMFDP)     :: epmf         ! out
     real(PMFDP)     :: c_implic     ! in, unitless
+    real(PMFDP)     :: c_explic     ! in, unitless
     ! --------------------------------------------------------------------------
 
     LNG_c_implic = c_implic
+    LNG_c_explic = c_explic
 
     call pmf_timers_start_timer(PMFLIB_TIMER)
     call pmf_core_lf_update_step

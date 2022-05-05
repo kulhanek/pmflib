@@ -84,6 +84,7 @@ subroutine pmf_init_dat
 
 
     LNG_c_implic    = 1.0d0
+    LNG_c_explic    = 0.0d0
 
     fucell(:,:) = 0.0d0
     frecip(:,:) = 0.0d0
