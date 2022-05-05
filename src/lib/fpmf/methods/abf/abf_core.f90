@@ -89,7 +89,7 @@ subroutine abf_core_shake
     select case(fmode)
         case(10)
             ! fix total forces from SHAKE
-            shist(:,:,hist_len) =  fhist(:,:,hist_len) + SHAKEFrc(:,:)
+            shist(:,:,hist_len) =  SHAKEFrc(:,:)
         case(1,2,11)
             ! nothing to be done
         case default
@@ -113,7 +113,7 @@ subroutine abf_core_flng
     select case(fmode)
         case(1)
             ! fix total forces from SHAKE
-            lhist(:,:,hist_len) =  fhist(:,:,hist_len) + LNGFrc(:,:)
+            lhist(:,:,hist_len) =  LNGFrc(:,:)
         case(2)
         case default
             call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented fmode in abf_core_flng!')
@@ -226,9 +226,7 @@ subroutine abf_core_force_3pB()
             do j=1,NumOfLAtoms
                 do m=1,3
                     ! force part
-                    f1 = f1 + zdhist(m,j,i,hist_len-1) * ( &
-                         (vhist(m,j,hist_len-0)-vhist(m,j,hist_len-1) ) / LNG_c_implic &
-                         - lhist(m,j,hist_len-1)*MassInv(j) )
+                    f1 = f1 + zdhist(m,j,i,hist_len-1) * (vhist(m,j,hist_len-0)-vhist(m,j,hist_len-1))
                     ! force part
                     l1 = l1 + zdhist(m,j,i,hist_len-1) * lhist(m,j,hist_len-1)*MassInv(j)
                     ! velocity part
@@ -236,11 +234,11 @@ subroutine abf_core_force_3pB()
                     v2 = v2 + (zdhist(m,j,i,hist_len-1)-zdhist(m,j,i,hist_len-2)) * vhist(m,j,hist_len-1)
                 end do
             end do
-            pxi0(i) = (f1 + l1)*ifdtx
+            pxi0(i) = f1*ifdtx - l1
             pxi1(i) = 0.5d0*(v1+v2)*ifdtx
         end do
 
-        !write(4789,*) fstep-1, f1, l1
+        ! write(4789,*) fstep-1, f1*ifdtx, l1
 
         ! total ABF force
         pxip(:) = pxi0(:) + pxi1(:) - micfhist(:,hist_len-1)  ! unbiased estimate
