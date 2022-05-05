@@ -171,7 +171,7 @@ double CABFProxy_mTdS::GetValue(int ibin,int icv,EProxyRealm realm) const
 
     // -------------------
         case(ABF_TdS_FP):
-            c11     = Accu->GetData("C11FP",ibin,icv)/nsamples;
+            c11     = Accu->GetData("C11TDSFP",ibin,icv)/nsamples;
             m2icf   = Accu->GetData("M2TDSFX",ibin,icv);
             m2ene   = Accu->GetData("M2TDSEPOT",ibin);
         break;
