@@ -121,15 +121,15 @@ subroutine abf_accu_init()
                     abfaccu%m2tdsvx(abfaccu%tot_cvs,abfaccu%tot_nbins),     &
                     abfaccu%mtdsbx(abfaccu%tot_cvs,abfaccu%tot_nbins),      &
                     abfaccu%m2tdsbx(abfaccu%tot_cvs,abfaccu%tot_nbins),     &
-                    abfaccu%c11fp(abfaccu%tot_cvs,abfaccu%tot_nbins),       &
-                    abfaccu%c11fk(abfaccu%tot_cvs,abfaccu%tot_nbins),       &
-                    abfaccu%c11fr(abfaccu%tot_cvs,abfaccu%tot_nbins),       &
-                    abfaccu%c11vp(abfaccu%tot_cvs,abfaccu%tot_nbins),       &
-                    abfaccu%c11vk(abfaccu%tot_cvs,abfaccu%tot_nbins),       &
-                    abfaccu%c11vr(abfaccu%tot_cvs,abfaccu%tot_nbins),       &
-                    abfaccu%c11bp(abfaccu%tot_cvs,abfaccu%tot_nbins),       &
-                    abfaccu%c11bk(abfaccu%tot_cvs,abfaccu%tot_nbins),       &
-                    abfaccu%c11br(abfaccu%tot_cvs,abfaccu%tot_nbins),       &
+                    abfaccu%c11tdsfp(abfaccu%tot_cvs,abfaccu%tot_nbins),    &
+                    abfaccu%c11tdsfk(abfaccu%tot_cvs,abfaccu%tot_nbins),    &
+                    abfaccu%c11tdsfr(abfaccu%tot_cvs,abfaccu%tot_nbins),    &
+                    abfaccu%c11tdsvp(abfaccu%tot_cvs,abfaccu%tot_nbins),    &
+                    abfaccu%c11tdsvk(abfaccu%tot_cvs,abfaccu%tot_nbins),    &
+                    abfaccu%c11tdsvr(abfaccu%tot_cvs,abfaccu%tot_nbins),    &
+                    abfaccu%c11tdsbp(abfaccu%tot_cvs,abfaccu%tot_nbins),    &
+                    abfaccu%c11tdsbk(abfaccu%tot_cvs,abfaccu%tot_nbins),    &
+                    abfaccu%c11tdsbr(abfaccu%tot_cvs,abfaccu%tot_nbins),    &
                     stat = alloc_failed)
 
         if( alloc_failed .ne. 0 ) then
@@ -228,15 +228,15 @@ subroutine abf_accu_clear()
         abfaccu%m2tdsvx(:,:)    = 0.0d0
         abfaccu%mtdsbx(:,:)     = 0.0d0
         abfaccu%m2tdsbx(:,:)    = 0.0d0
-        abfaccu%c11fp(:,:)      = 0.0d0
-        abfaccu%c11fr(:,:)      = 0.0d0
-        abfaccu%c11fk(:,:)      = 0.0d0
-        abfaccu%c11vp(:,:)      = 0.0d0
-        abfaccu%c11vr(:,:)      = 0.0d0
-        abfaccu%c11vk(:,:)      = 0.0d0
-        abfaccu%c11bp(:,:)      = 0.0d0
-        abfaccu%c11br(:,:)      = 0.0d0
-        abfaccu%c11bk(:,:)      = 0.0d0
+        abfaccu%c11tdsfp(:,:)   = 0.0d0
+        abfaccu%c11tdsfr(:,:)   = 0.0d0
+        abfaccu%c11tdsfk(:,:)   = 0.0d0
+        abfaccu%c11tdsvp(:,:)   = 0.0d0
+        abfaccu%c11tdsvr(:,:)   = 0.0d0
+        abfaccu%c11tdsvk(:,:)   = 0.0d0
+        abfaccu%c11tdsbp(:,:)   = 0.0d0
+        abfaccu%c11tdsbr(:,:)   = 0.0d0
+        abfaccu%c11tdsbk(:,:)   = 0.0d0
     end if
 
     if( frecord ) then
@@ -486,13 +486,23 @@ subroutine abf_accu_write(iounit,full)
         call pmf_accu_write_rbuf_B(abfaccu%PMFAccuType,iounit,'M2TDSEKIN',  'M2',abfaccu%m2tdsekin, 'NTDS','MTDSEKIN')
 
         call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'MTDSFX',     'WA',abfaccu%mtdsfx,    'NTDS')
-        call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'M2TDSFX',    'M2',abfaccu%m2tdsfx,   'NTDS','MFX')
+        call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'M2TDSFX',    'M2',abfaccu%m2tdsfx,   'NTDS','MTDSFX')
         call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'MTDSVX',     'WA',abfaccu%mtdsvx,    'NTDS')
-        call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'M2TDSVX',    'M2',abfaccu%m2tdsvx,   'NTDS','MVX')
+        call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'M2TDSVX',    'M2',abfaccu%m2tdsvx,   'NTDS','MTDSVX')
         call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'MTDSBX',     'WA',abfaccu%mtdsbx,    'NTDS')
-        call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'M2TDSBX',    'M2',abfaccu%m2tdsbx,   'NTDS','MBX')
+        call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'M2TDSBX',    'M2',abfaccu%m2tdsbx,   'NTDS','MTDSBX')
 
-        call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'C11FP',      'CO',abfaccu%c11fp,     'NTDS','MTDSEPOT','MFX')
+        call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'C11TDSFP',   'CO',abfaccu%c11tdsfp,  'NTDS','MTDSFX','MTDSEPOT')
+        call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'C11TDSFR',   'CO',abfaccu%c11tdsfr,  'NTDS','MTDSFX','MTDSERST')
+        call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'C11TDSFK',   'CO',abfaccu%c11tdsfk,  'NTDS','MTDSFX','MTDSEKIN')
+
+        call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'C11TDSVP',   'CO',abfaccu%c11tdsvp,  'NTDS','MTDSVX','MTDSEPOT')
+        call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'C11TDSVR',   'CO',abfaccu%c11tdsvr,  'NTDS','MTDSVX','MTDSERST')
+        call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'C11TDSVK',   'CO',abfaccu%c11tdsvk,  'NTDS','MTDSVX','MTDSEKIN')
+
+        call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'C11TDSBP',   'CO',abfaccu%c11tdsbp,  'NTDS','MTDSBX','MTDSEPOT')
+        call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'C11TDSBR',   'CO',abfaccu%c11tdsbr,  'NTDS','MTDSBX','MTDSERST')
+        call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'C11TDSBK',   'CO',abfaccu%c11tdsbk,  'NTDS','MTDSBX','MTDSEKIN')
     end if
 
     call pmf_accu_write_rbuf_B(abfaccu%PMFAccuType,iounit,'BNSAMPLES',  'IG',abfaccu%bnsamples)
@@ -702,18 +712,17 @@ subroutine abf_accu_add_data_entropy_decompose(cvs,fx,vx,bx,epot,erst,ekin)
         dibx2 = ibx - abfaccu%mtdsbx(i,gi0)
         abfaccu%m2tdsbx(i,gi0) = abfaccu%m2tdsbx(i,gi0) + dibx1 * dibx2
 
-        abfaccu%c11fp(i,gi0)  = abfaccu%c11fp(i,gi0) + difx1 * depot2
-        abfaccu%c11fk(i,gi0)  = abfaccu%c11fk(i,gi0) + difx1 * dekin2
-        abfaccu%c11fr(i,gi0)  = abfaccu%c11fr(i,gi0) + difx1 * derst2
+        abfaccu%c11tdsfp(i,gi0)  = abfaccu%c11tdsfp(i,gi0) + difx1 * depot2
+        abfaccu%c11tdsfr(i,gi0)  = abfaccu%c11tdsfr(i,gi0) + difx1 * derst2
+        abfaccu%c11tdsfk(i,gi0)  = abfaccu%c11tdsfk(i,gi0) + difx1 * dekin2
 
-        abfaccu%c11vp(i,gi0)  = abfaccu%c11vp(i,gi0) + divx1 * depot2
-        abfaccu%c11vk(i,gi0)  = abfaccu%c11vk(i,gi0) + divx1 * dekin2
-        abfaccu%c11vr(i,gi0)  = abfaccu%c11vr(i,gi0) + divx1 * derst2
+        abfaccu%c11tdsvp(i,gi0)  = abfaccu%c11tdsvp(i,gi0) + divx1 * depot2
+        abfaccu%c11tdsvr(i,gi0)  = abfaccu%c11tdsvr(i,gi0) + divx1 * derst2
+        abfaccu%c11tdsvk(i,gi0)  = abfaccu%c11tdsvk(i,gi0) + divx1 * dekin2
 
-        abfaccu%c11bp(i,gi0)  = abfaccu%c11bp(i,gi0) + dibx1 * depot2
-        abfaccu%c11bk(i,gi0)  = abfaccu%c11bk(i,gi0) + dibx1 * dekin2
-        abfaccu%c11br(i,gi0)  = abfaccu%c11br(i,gi0) + dibx1 * derst2
-
+        abfaccu%c11tdsbp(i,gi0)  = abfaccu%c11tdsbp(i,gi0) + dibx1 * depot2
+        abfaccu%c11tdsbr(i,gi0)  = abfaccu%c11tdsbr(i,gi0) + dibx1 * derst2
+        abfaccu%c11tdsbk(i,gi0)  = abfaccu%c11tdsbk(i,gi0) + dibx1 * dekin2
     end do
 
 end subroutine abf_accu_add_data_entropy_decompose

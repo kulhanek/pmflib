@@ -139,15 +139,15 @@ type,extends(PMFAccuType) :: ABFAccuType
     real(PMFDP),pointer    :: mtdsbx(:,:)               ! mean of ICF - bias
     real(PMFDP),pointer    :: m2tdsbx(:,:)              ! M2 of ICF - bias
 
-    real(PMFDP),pointer    :: c11fp(:,:)                ! co-variances
-    real(PMFDP),pointer    :: c11fr(:,:)
-    real(PMFDP),pointer    :: c11fk(:,:)
-    real(PMFDP),pointer    :: c11vp(:,:)
-    real(PMFDP),pointer    :: c11vr(:,:)
-    real(PMFDP),pointer    :: c11vk(:,:)
-    real(PMFDP),pointer    :: c11bp(:,:)
-    real(PMFDP),pointer    :: c11br(:,:)
-    real(PMFDP),pointer    :: c11bk(:,:)
+    real(PMFDP),pointer    :: c11tdsfp(:,:)                ! co-variances
+    real(PMFDP),pointer    :: c11tdsfr(:,:)
+    real(PMFDP),pointer    :: c11tdsfk(:,:)
+    real(PMFDP),pointer    :: c11tdsvp(:,:)
+    real(PMFDP),pointer    :: c11tdsvr(:,:)
+    real(PMFDP),pointer    :: c11tdsvk(:,:)
+    real(PMFDP),pointer    :: c11tdsbp(:,:)
+    real(PMFDP),pointer    :: c11tdsbr(:,:)
+    real(PMFDP),pointer    :: c11tdsbk(:,:)
 
 ! time recording for post-processing
     real(PMFDP),pointer    :: tcvs(:,:)
