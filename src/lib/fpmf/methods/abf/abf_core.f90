@@ -75,6 +75,53 @@ subroutine abf_core_main
 end subroutine abf_core_main
 
 !===============================================================================
+! Subroutine:  abf_core_shake
+! correct for forces from SHAKE
+!===============================================================================
+
+subroutine abf_core_shake
+
+    use abf_dat
+    use pmf_utils
+
+    ! --------------------------------------------------------------------------
+
+    select case(fmode)
+        case(10)
+            ! fix total forces from SHAKE
+            shist(:,:,hist_len) =  fhist(:,:,hist_len) + SHAKEFrc(:,:)
+        case(1,2,11)
+            ! nothing to be done
+        case default
+            call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented fmode in abf_core_shake!')
+    end select
+
+end subroutine abf_core_shake
+
+!===============================================================================
+! Subroutine:  abf_core_flng
+! correct for forces from Langevin
+!===============================================================================
+
+subroutine abf_core_flng
+
+    use abf_dat
+    use pmf_utils
+
+    ! --------------------------------------------------------------------------
+
+    select case(fmode)
+        case(1)
+            ! fix total forces from SHAKE
+            lhist(:,:,hist_len) =  fhist(:,:,hist_len) + LNGFrc(:,:)
+        case(2)
+        case default
+            call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented fmode in abf_core_flng!')
+    end select
+
+end subroutine abf_core_flng
+
+!===============================================================================
 ! Subroutine:  abf_core_force_3pB
 ! this is leap-frog ABF version, simplified algorithm
 ! forces from velocities
@@ -92,7 +139,7 @@ subroutine abf_core_force_3pB()
     implicit none
     integer                :: i,j,k,m
     integer                :: ci,ki
-    real(PMFDP)            :: v1,v2,f1,epot,erst,ekin
+    real(PMFDP)            :: v1,v2,l1,f1,epot,erst,ekin
     ! --------------------------------------------------------------------------
 
 ! shift accuvalue history
@@ -104,6 +151,7 @@ subroutine abf_core_force_3pB()
         vhist(:,:,i)    = vhist(:,:,i+1)
         zdhist(:,:,:,i) = zdhist(:,:,:,i+1)
         micfhist(:,i)   = micfhist(:,i+1)
+        lhist(:,:,i)    = lhist(:,:,i+1)
     end do
 
     do i=1,NumOfABFCVs
@@ -171,22 +219,28 @@ subroutine abf_core_force_3pB()
 ! ABF part
     if( fstep .ge. hist_len ) then
         do i=1,NumOfABFCVs
-            f1  = 0.0d0
+            f1 = 0.0d0
+            l1 = 0.0d0
             v1 = 0.0d0
             v2 = 0.0d0
             do j=1,NumOfLAtoms
                 do m=1,3
                     ! force part
                     f1 = f1 + zdhist(m,j,i,hist_len-1) * ( &
-                         (vhist(m,j,hist_len-0)-vhist(m,j,hist_len-1) / LNG_c_explic) / LNG_c_implic )
+                         (vhist(m,j,hist_len-0)-vhist(m,j,hist_len-1) ) / LNG_c_implic &
+                         - lhist(m,j,hist_len-1)*MassInv(j) )
+                    ! force part
+                    l1 = l1 + zdhist(m,j,i,hist_len-1) * lhist(m,j,hist_len-1)*MassInv(j)
                     ! velocity part
                     v1 = v1 + (zdhist(m,j,i,hist_len-0)-zdhist(m,j,i,hist_len-1)) * vhist(m,j,hist_len-0)
                     v2 = v2 + (zdhist(m,j,i,hist_len-1)-zdhist(m,j,i,hist_len-2)) * vhist(m,j,hist_len-1)
                 end do
             end do
-            pxi0(i) = f1*ifdtx
+            pxi0(i) = (f1 + l1)*ifdtx
             pxi1(i) = 0.5d0*(v1+v2)*ifdtx
         end do
+
+        !write(4789,*) fstep-1, f1, l1
 
         ! total ABF force
         pxip(:) = pxi0(:) + pxi1(:) - micfhist(:,hist_len-1)  ! unbiased estimate

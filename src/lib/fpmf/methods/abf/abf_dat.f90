@@ -198,7 +198,9 @@ real(PMFDP),allocatable     :: sfac(:)              ! switching factors
 integer                     :: hist_len
 integer                     :: cbuff_pos
 real(PMFDP),allocatable     :: cvhist(:,:)          ! history of CV values (nCVS,hist_len)
-real(PMFDP),allocatable     :: fhist(:,:,:)         ! history of forces
+real(PMFDP),allocatable     :: fhist(:,:,:)         ! history of forces (potential)
+real(PMFDP),allocatable     :: shist(:,:,:)         ! history of forces (shake)
+real(PMFDP),allocatable     :: lhist(:,:,:)         ! history of forces (langevin)
 real(PMFDP),allocatable     :: vhist(:,:,:)         ! history of velocities
 real(PMFDP),allocatable     :: fzinvhist(:,:,:)     ! history of fzinv
 real(PMFDP),allocatable     :: xphist(:,:)          ! history of CV momenta

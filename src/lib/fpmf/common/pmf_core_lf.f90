@@ -279,12 +279,14 @@ subroutine pmf_core_lf_langevin_forces(flng)
     real(PMFDP)     :: flng(:,:)     ! forces in t(+dt) (but after potential forces)
     ! --------------------------------------------------------------------------
 
-    if( .not. shake_force_required ) return
+    if( .not. lng_force_required ) return
 
     call pmf_timers_start_timer(PMFLIB_METHODS_TIMER)
         call pmf_timers_start_timer(PMFLIB_LNGFRC_TIMER)
 
         call pmf_core_in_data_flng(flng)
+
+        call abf_core_flng()
 
         call pmf_timers_stop_timer(PMFLIB_LNGFRC_TIMER)
     call pmf_timers_stop_timer(PMFLIB_METHODS_TIMER)
@@ -361,6 +363,8 @@ subroutine pmf_core_lf_shake_forces(xbar,xp)
         do i=1,NumOfLAtoms
             SHAKEFrc(:,i)  = Mass(i) * (CrdP(:,i) - CrdBar(:,i)) * ifdtx**2
         end do
+
+        call abf_core_shake()
 
         call pmf_timers_stop_timer(PMFLIB_SHKFRC_TIMER)
     call pmf_timers_stop_timer(PMFLIB_METHODS_TIMER)

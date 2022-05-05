@@ -79,7 +79,7 @@ subroutine pmf_init_dat
     tabf_enabled    = .false.
     usabf_enabled   = .false.
 
-    lng_force_required      = .false.
+    lng_force_required      = .true. ! FIXME
     shake_force_required    = .false.
 
 
@@ -503,6 +503,7 @@ subroutine pmf_init_pmf
           MassInv(NumOfLAtoms), &
           Crd(3,NumOfLAtoms), &
           Frc(3,NumOfLAtoms), &
+          LNGFrc(3,NumOfLAtoms), &
           SHAKEFrc(3,NumOfLAtoms), &
           Vel(3,NumOfLAtoms), &
           CVContext%CVsValues(NumOfCVs), &
