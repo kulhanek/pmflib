@@ -814,7 +814,7 @@ end subroutine pmf_accu_read_rbuf_M
 ! Subroutine:  pmf_accu_write_rbuf_M
 !===============================================================================
 
-subroutine pmf_accu_write_rbuf_M(accu,iounit,key,op,rbuf,xmean,ymean)
+subroutine pmf_accu_write_rbuf_M(accu,iounit,key,op,rbuf,nsamples,xmean,ymean)
 
     use pmf_dat
     use pmf_utils
@@ -827,6 +827,7 @@ subroutine pmf_accu_write_rbuf_M(accu,iounit,key,op,rbuf,xmean,ymean)
     character(*)                :: key
     character(*)                :: op
     real(PMFDP)                 :: rbuf(:,:)
+    character(*),optional       :: nsamples
     character(*),optional       :: xmean
     character(*),optional       :: ymean
     ! -----------------------------------------------
@@ -837,6 +838,10 @@ subroutine pmf_accu_write_rbuf_M(accu,iounit,key,op,rbuf,xmean,ymean)
     skey = key
     write(iounit,5,ADVANCE='NO') adjustl(skey), trim(op), 'R', 'M', accu%tot_nbins*accu%tot_cvs
 
+    if( present(nsamples) ) then
+        skey = nsamples
+        write(iounit,6,ADVANCE='NO') adjustl(skey)
+    end if
     if( present(xmean) ) then
         skey = xmean
         write(iounit,6,ADVANCE='NO') adjustl(skey)

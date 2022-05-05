@@ -50,6 +50,7 @@ integer     :: feimode      ! interpolation/extrapolation mode
 
 logical     :: fenthalpy    ! collect data for enthalpy calculation
 logical     :: fentropy     ! collect data for entropy calculation
+logical     :: fentdecomp   ! collect additional correlation terms
 logical     :: frecord      ! record time progress
 
 real(PMFDP) :: fepotaverage
@@ -120,6 +121,33 @@ type,extends(PMFAccuType) :: ABFAccuType
     real(PMFDP),pointer    :: m2pp(:,:)                 ! M2 of tot energy + icf
     real(PMFDP),pointer    :: mpn(:,:)                  ! mean of tot energy - icf
     real(PMFDP),pointer    :: m2pn(:,:)                 ! M2 of tot energy - icf
+
+! entropy - decomposition
+    real(PMFDP),pointer    :: ntds(:)                   ! number of hits into bins
+
+    real(PMFDP),pointer    :: mtdsepot(:)               ! mean of pot energy
+    real(PMFDP),pointer    :: m2tdsepot(:)              ! M2 of pot energy
+    real(PMFDP),pointer    :: mtdserst(:)               ! mean of rst energy
+    real(PMFDP),pointer    :: m2tdserst(:)              ! M2 of rst energy
+    real(PMFDP),pointer    :: mtdsekin(:)               ! mean of kin energy
+    real(PMFDP),pointer    :: m2tdsekin(:)              ! M2 of kin energy
+
+    real(PMFDP),pointer    :: mtdsfx(:,:)               ! mean of ICF - force
+    real(PMFDP),pointer    :: m2tdsfx(:,:)              ! M2 of ICF - force
+    real(PMFDP),pointer    :: mtdsvx(:,:)               ! mean of ICF - velocity
+    real(PMFDP),pointer    :: m2tdsvx(:,:)              ! M2 of ICF - velocity
+    real(PMFDP),pointer    :: mtdsbx(:,:)               ! mean of ICF - bias
+    real(PMFDP),pointer    :: m2tdsbx(:,:)              ! M2 of ICF - bias
+
+    real(PMFDP),pointer    :: c11fp(:,:)                ! co-variances
+    real(PMFDP),pointer    :: c11fr(:,:)
+    real(PMFDP),pointer    :: c11fk(:,:)
+    real(PMFDP),pointer    :: c11vp(:,:)
+    real(PMFDP),pointer    :: c11vr(:,:)
+    real(PMFDP),pointer    :: c11vk(:,:)
+    real(PMFDP),pointer    :: c11bp(:,:)
+    real(PMFDP),pointer    :: c11br(:,:)
+    real(PMFDP),pointer    :: c11bk(:,:)
 
 ! time recording for post-processing
     real(PMFDP),pointer    :: tcvs(:,:)

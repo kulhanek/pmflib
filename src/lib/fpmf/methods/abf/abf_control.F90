@@ -93,6 +93,7 @@ subroutine abf_control_read_abf(prm_fin)
 
     call pmf_ctrl_read_logical(prm_fin,'fenthalpy',fenthalpy)
     call pmf_ctrl_read_logical(prm_fin,'fentropy',fentropy)
+    call pmf_ctrl_read_logical(prm_fin,'fentdecomp',fentdecomp)
     call pmf_ctrl_read_logical(prm_fin,'frecord',frecord)
 
     call pmf_ctrl_read_real8_wunit(prm_fin,'fepotaverage',EnergyUnit,fepotaverage,'F10.1')

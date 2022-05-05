@@ -92,7 +92,7 @@ subroutine abf_core_force_3pB()
     implicit none
     integer                :: i,j,k,m
     integer                :: ci,ki
-    real(PMFDP)            :: v1,v2,f1,etot,epot,erst,ekin
+    real(PMFDP)            :: v1,v2,f1,epot,erst,ekin
     ! --------------------------------------------------------------------------
 
 ! shift accuvalue history
@@ -183,22 +183,26 @@ subroutine abf_core_force_3pB()
                     v2 = v2 + (zdhist(m,j,i,hist_len-1)-zdhist(m,j,i,hist_len-2)) * vhist(m,j,hist_len-1)
                 end do
             end do
-            pxi0(i) = f1*ifdtx + 0.5d0*(v1+v2)*ifdtx
+            pxi0(i) = f1*ifdtx
+            pxi1(i) = 0.5d0*(v1+v2)*ifdtx
         end do
 
         ! total ABF force
-        pxi0(:) = pxi0(:) - micfhist(:,hist_len-1)  ! unbiased estimate
+        pxip(:) = pxi0(:) + pxi1(:) - micfhist(:,hist_len-1)  ! unbiased estimate
 
         epot = epothist(hist_len-1)
         erst = ersthist(hist_len-1)
         ekin = ekinhist(hist_len-1)
-        etot = epot + erst + ekin
 
         ! debug
-        ! write(1225,*) epot,erst,ekin,etot
+        ! write(1225,*) epot,erst,ekin
 
         ! add data to accumulator
-        call abf_accu_add_data_online(cvhist(:,hist_len-1),pxi0,epot,erst,ekin,etot)
+        call abf_accu_add_data_online(cvhist(:,hist_len-1),pxi0,epot,erst,ekin)
+
+        if( fentropy .and. fentdecomp ) then
+            call abf_accu_add_data_entropy_decompose(cvhist(:,hist_len-1),pxi0,pxi1,micfhist(:,hist_len-1),epot,erst,ekin)
+        end if
     end if
 
     return
@@ -310,7 +314,7 @@ subroutine abf_core_force_2p()
         pxi0(:) = pxi0(:) + pxim(:)
 
         ! add data to accumulator
-        call abf_accu_add_data_online(cvaluehist0,pxi0(:),epothist0,ekinhist1,ersthist0,epothist0+ekinhist1+ersthist0)
+        call abf_accu_add_data_online(cvaluehist0,pxi0(:),epothist0,ekinhist1,ersthist0)
     end if
 
     ! backup to the next step
@@ -330,7 +334,7 @@ subroutine abf_core_force_2p()
             case(1)
                 call abf_accu_get_data_lramp(cvaluehist1(:),la)
             case(2)
-                call abf_accu_get_data_gks(cvaluehist1(:),la)
+                ! call abf_accu_get_data_gks(cvaluehist1(:),la)
             case default
                 call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented extrapolation/interpolation mode!')
         end select
@@ -370,7 +374,7 @@ subroutine abf_core_force_gpr()
     implicit none
     integer     :: i,j,k,l1,l2,p1,p2
     integer     :: ci,gpr_mid
-    real(PMFDP) :: v,etot,epot,erst,ekin,mean
+    real(PMFDP) :: v,epot,erst,ekin,mean
     real(PMFDP) :: invn,depot1,depot2
     ! --------------------------------------------------------------------------
 
@@ -563,14 +567,12 @@ subroutine abf_core_force_gpr()
     erst = ersthist(gpr_mid)
     ekin = ekinhist(gpr_mid)
 
-    etot = epot + erst + ekin
-
     if( fdebug ) then
-        write(DEBUG_ABF_FMODE4,*) fstep-hist_len+k, cvhist(:,k), pxi0, etot
+        write(DEBUG_ABF_FMODE4,*) fstep-hist_len+k, cvhist(:,k), pxi0, epot, erst, ekin
     end if
 
     ! add data to accumulator
-    call abf_accu_add_data_online(cvhist(:,gpr_mid),pxi0,epot,erst,ekin,etot)
+    call abf_accu_add_data_online(cvhist(:,gpr_mid),pxi0,epot,erst,ekin)
 
 end subroutine abf_core_force_gpr
 

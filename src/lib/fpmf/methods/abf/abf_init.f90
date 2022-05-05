@@ -79,6 +79,7 @@ subroutine abf_init_dat
 
     fenthalpy       = .false.
     fentropy        = .false.
+    fentdecomp      = .false.
     frecord         = .false.
 
     fepotaverage    = 0.0d0
