@@ -177,37 +177,53 @@ double CABFProxy_mTdS::GetValue(int ibin,int icv,EProxyRealm realm) const
         break;
     // -------------------
         case(ABF_TdS_FR):
-
+            c11     = Accu->GetData("C11TDSFR",ibin,icv)/nsamples;
+            m2icf   = Accu->GetData("M2TDSFX",ibin,icv);
+            m2ene   = Accu->GetData("M2TDSERST",ibin);
         break;
     // -------------------
         case(ABF_TdS_FK):
-
+            c11     = Accu->GetData("C11TDSFK",ibin,icv)/nsamples;
+            m2icf   = Accu->GetData("M2TDSFX",ibin,icv);
+            m2ene   = Accu->GetData("M2TDSEKIN",ibin);
         break;
 
     // -------------------
         case(ABF_TdS_VP):
-
+            c11     = Accu->GetData("C11TDSVP",ibin,icv)/nsamples;
+            m2icf   = Accu->GetData("M2TDSVX",ibin,icv);
+            m2ene   = Accu->GetData("M2TDSEPOT",ibin);
         break;
     // -------------------
         case(ABF_TdS_VR):
-
+            c11     = Accu->GetData("C11TDSVR",ibin,icv)/nsamples;
+            m2icf   = Accu->GetData("M2TDSVX",ibin,icv);
+            m2ene   = Accu->GetData("M2TDSERST",ibin);
         break;
     // -------------------
         case(ABF_TdS_VK):
-
+            c11     = Accu->GetData("C11TDSVK",ibin,icv)/nsamples;
+            m2icf   = Accu->GetData("M2TDSVX",ibin,icv);
+            m2ene   = Accu->GetData("M2TDSEKIN",ibin);
         break;
 
     // -------------------
         case(ABF_TdS_BP):
-
+            c11     = Accu->GetData("C11TDSBP",ibin,icv)/nsamples;
+            m2icf   = Accu->GetData("M2TDSBX",ibin,icv);
+            m2ene   = Accu->GetData("M2TDSEPOT",ibin);
         break;
     // -------------------
         case(ABF_TdS_BR):
-
+            c11     = Accu->GetData("C11TDSBR",ibin,icv)/nsamples;
+            m2icf   = Accu->GetData("M2TDSBX",ibin,icv);
+            m2ene   = Accu->GetData("M2TDSERST",ibin);
         break;
     // -------------------
         case(ABF_TdS_BK):
-
+            c11     = Accu->GetData("C11TDSBK",ibin,icv)/nsamples;
+            m2icf   = Accu->GetData("M2TDSBX",ibin,icv);
+            m2ene   = Accu->GetData("M2TDSEKIN",ibin);
         break;
 
     // -------------------
