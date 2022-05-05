@@ -356,11 +356,12 @@ end subroutine pmf_sander_update_box
 ! subroutine pmf_sander_force
 !===============================================================================
 
-subroutine pmf_sander_force(anatom,x,v,f,epot,ekin,epmf)
+subroutine pmf_sander_force(anatom,x,v,f,epot,ekin,epmf,c_implic)
 
     use pmf_sizes
     use pmf_core_lf
     use pmf_timers
+    use pmf_dat
 
     implicit none
     integer         :: anatom       ! number of atoms
@@ -370,7 +371,10 @@ subroutine pmf_sander_force(anatom,x,v,f,epot,ekin,epmf)
     real(PMFDP)     :: epot         ! in
     real(PMFDP)     :: ekin         ! in
     real(PMFDP)     :: epmf         ! out
+    real(PMFDP)     :: c_implic     ! in, unitless
     ! --------------------------------------------------------------------------
+
+    LNG_c_implic = c_implic
 
     call pmf_timers_start_timer(PMFLIB_TIMER)
     call pmf_core_lf_update_step
@@ -380,6 +384,32 @@ subroutine pmf_sander_force(anatom,x,v,f,epot,ekin,epmf)
     return
 
 end subroutine pmf_sander_force
+
+!===============================================================================
+! Subroutine: pmf_sander_force_lng
+!===============================================================================
+
+subroutine pmf_sander_force_lng(anatom,flng)
+
+    use pmf_sizes
+    use pmf_dat
+    use pmf_core_lf
+    use pmf_timers
+
+    implicit none
+    integer        :: anatom            ! number of atoms
+    real(PMFDP)    :: flng(3,anatom)    ! forces from Langevin
+    ! --------------------------------------------------------------------------
+
+    if( .not. lng_force_required ) return
+
+    call pmf_timers_start_timer(PMFLIB_TIMER)
+    call pmf_core_lf_langevin_forces(flng)
+    call pmf_timers_stop_timer(PMFLIB_TIMER)
+
+    return
+
+end subroutine pmf_sander_force_lng
 
 !===============================================================================
 ! subroutine pmf_sander_rstforce
@@ -529,6 +559,39 @@ subroutine pmf_sander_force_mpi(anatom,x,v,f,epot,ekin,epmf)
     end if
 
 end subroutine pmf_sander_force_mpi
+
+!===============================================================================
+! Subroutine: pmf_sander_force_lng_mpi
+!===============================================================================
+
+subroutine pmf_sander_force_lng_mpi(anatom,flng)
+
+    use pmf_sizes
+    use pmf_dat
+    use pmf_core_lf
+    use pmf_timers
+
+    implicit none
+    integer        :: anatom            ! number of atoms
+    real(PMFDP)    :: flng(3,anatom)    ! forces from Langevin
+    ! --------------------------------------------------------------------------
+
+    if( .not. lng_force_required ) return
+
+    if(fmaster) then
+        call pmf_timers_start_timer(PMFLIB_TIMER)
+    end if
+
+    call pmf_sander_gather_array_mpi(tmp_a,flng,atm_owner_map,1)
+    call pmf_core_lf_langevin_forces(tmp_a)
+
+    if(fmaster) then
+        call pmf_timers_stop_timer(PMFLIB_TIMER)
+    end if
+
+    return
+
+end subroutine pmf_sander_force_lng_mpi
 
 !===============================================================================
 ! Subroutine: pmf_sander_constraints_mpi

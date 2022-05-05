@@ -264,6 +264,34 @@ subroutine pmf_core_lf_rstforce(x,f,epot,epmf)
 end subroutine pmf_core_lf_rstforce
 
 !===============================================================================
+! Subroutine:  pmf_core_lf_langevin_forces
+! leap-frog version
+!===============================================================================
+
+subroutine pmf_core_lf_langevin_forces(flng)
+
+    use pmf_dat
+    use pmf_core
+    use pmf_timers
+    use abf_core
+
+    implicit none
+    real(PMFDP)     :: flng(:,:)     ! forces in t(+dt) (but after potential forces)
+    ! --------------------------------------------------------------------------
+
+    if( .not. shake_force_required ) return
+
+    call pmf_timers_start_timer(PMFLIB_METHODS_TIMER)
+        call pmf_timers_start_timer(PMFLIB_LNGFRC_TIMER)
+
+        call pmf_core_in_data_flng(flng)
+
+        call pmf_timers_stop_timer(PMFLIB_LNGFRC_TIMER)
+    call pmf_timers_stop_timer(PMFLIB_METHODS_TIMER)
+
+end subroutine pmf_core_lf_langevin_forces
+
+!===============================================================================
 ! Subroutine:  pmf_core_lf_shake
 ! leap-frog version
 !===============================================================================
@@ -298,7 +326,6 @@ subroutine pmf_core_lf_shake(xp)
 
 end subroutine pmf_core_lf_shake
 
-
 !===============================================================================
 ! Subroutine:  pmf_core_lf_shake_forces
 ! leap-frog version
@@ -322,7 +349,7 @@ subroutine pmf_core_lf_shake_forces(xbar,xp)
     if( .not. shake_force_required ) return
 
     call pmf_timers_start_timer(PMFLIB_METHODS_TIMER)
-        call pmf_timers_start_timer(PMFLIB_SACCEL_TIMER)
+        call pmf_timers_start_timer(PMFLIB_SHKFRC_TIMER)
 
         ! update local data
         if( .not. cst_enabled ) then
@@ -335,7 +362,7 @@ subroutine pmf_core_lf_shake_forces(xbar,xp)
             SHAKEFrc(:,i)  = Mass(i) * (CrdP(:,i) - CrdBar(:,i)) * ifdtx**2
         end do
 
-        call pmf_timers_stop_timer(PMFLIB_SACCEL_TIMER)
+        call pmf_timers_stop_timer(PMFLIB_SHKFRC_TIMER)
     call pmf_timers_stop_timer(PMFLIB_METHODS_TIMER)
 
 end subroutine pmf_core_lf_shake_forces

@@ -79,7 +79,11 @@ subroutine pmf_init_dat
     tabf_enabled    = .false.
     usabf_enabled   = .false.
 
-    shake_force_required = .false.
+    lng_force_required      = .false.
+    shake_force_required    = .false.
+
+
+    LNG_c_implic    = 1.0d0
 
     fucell(:,:) = 0.0d0
     frecip(:,:) = 0.0d0

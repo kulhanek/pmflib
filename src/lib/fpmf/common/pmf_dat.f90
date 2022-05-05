@@ -99,7 +99,8 @@ logical                     :: tabf_enabled
 logical                     :: usabf_enabled
 
 ! requests
-logical                     :: shake_force_required  ! we need force due to SHAKE
+logical                     :: shake_force_required     ! we need force due to SHAKE
+logical                     :: lng_force_required       ! collect Langevin forces
 
 ! MASTER =======================================================================
 
@@ -124,7 +125,10 @@ real(PMFDP),allocatable     :: VelP(:,:)        ! velocities
 type(CVContextType)         :: CVContextP
 
 real(PMFDP),allocatable     :: CrdBar(:,:)      ! coordinates in t+dt without SHAKE
-real(PMFDP),allocatable     :: SHAKEFrc(:,:)    ! current SHAKE forces in t
+real(PMFDP),allocatable     :: SHAKEFrc(:,:)    ! current SHAKE forces in t(+dt) - after PotForce
+
+real(PMFDP)                 :: LNG_c_implic     ! Langevin setup from AMBER
+real(PMFDP),allocatable     :: LNGFrc(:,:)      ! current Langevin forces in t(+dt) - after PotForce
 
 ! MASTER =======================================================================
 
