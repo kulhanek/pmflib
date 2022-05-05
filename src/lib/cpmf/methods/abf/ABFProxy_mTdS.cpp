@@ -64,6 +64,46 @@ void CABFProxy_mTdS::SetType(EABFTdSType type)
         case(ABF_TdS_HH):
             Provide = "ABF -TdS(x)";
         break;
+
+    // -------------------
+        case(ABF_TdS_FP):
+            Provide = "ABF -TdS(x) - FP";
+        break;
+    // -------------------
+        case(ABF_TdS_FR):
+            Provide = "ABF -TdS(x) - FR";
+        break;
+    // -------------------
+        case(ABF_TdS_FK):
+            Provide = "ABF -TdS(x) - FK";
+        break;
+
+    // -------------------
+        case(ABF_TdS_VP):
+            Provide = "ABF -TdS(x) - VP";
+        break;
+    // -------------------
+        case(ABF_TdS_VR):
+            Provide = "ABF -TdS(x) - VR";
+        break;
+    // -------------------
+        case(ABF_TdS_VK):
+            Provide = "ABF -TdS(x) - VK";
+        break;
+
+    // -------------------
+        case(ABF_TdS_BP):
+            Provide = "ABF -TdS(x) - BP";
+        break;
+    // -------------------
+        case(ABF_TdS_BR):
+            Provide = "ABF -TdS(x) - BR";
+        break;
+    // -------------------
+        case(ABF_TdS_BK):
+            Provide = "ABF -TdS(x) - BK";
+        break;
+
     // -------------------
         default:
             RUNTIME_ERROR("unsupported type");
@@ -100,7 +140,14 @@ double CABFProxy_mTdS::GetValue(int ibin,int icv,EProxyRealm realm) const
         RUNTIME_ERROR("Accu is NULL");
     }
 
-    double  nsamples = Accu->GetData("NSAMPLES",ibin);
+    double  nsamples = 0.0;
+
+    if( ABF_TdS_HH ) {
+        nsamples = Accu->GetData("NSAMPLES",ibin);
+    } else {
+        nsamples = Accu->GetData("NTDS",ibin);
+    }
+
     double  ncorr    = Accu->GetNCorr();
     double  temp     = Accu->GetTemperature();
 
@@ -121,6 +168,48 @@ double CABFProxy_mTdS::GetValue(int ibin,int icv,EProxyRealm realm) const
             m2ene   = Accu->GetData("M2ETOT",ibin);
         }
         break;
+
+    // -------------------
+        case(ABF_TdS_FP):
+            c11     = Accu->GetData("C11FP",ibin,icv)/nsamples;
+            m2icf   = Accu->GetData("M2TDSFX",ibin,icv);
+            m2ene   = Accu->GetData("M2TDSEPOT",ibin);
+        break;
+    // -------------------
+        case(ABF_TdS_FR):
+
+        break;
+    // -------------------
+        case(ABF_TdS_FK):
+
+        break;
+
+    // -------------------
+        case(ABF_TdS_VP):
+
+        break;
+    // -------------------
+        case(ABF_TdS_VR):
+
+        break;
+    // -------------------
+        case(ABF_TdS_VK):
+
+        break;
+
+    // -------------------
+        case(ABF_TdS_BP):
+
+        break;
+    // -------------------
+        case(ABF_TdS_BR):
+
+        break;
+    // -------------------
+        case(ABF_TdS_BK):
+
+        break;
+
     // -------------------
         default:
             RUNTIME_ERROR("unsupported type");

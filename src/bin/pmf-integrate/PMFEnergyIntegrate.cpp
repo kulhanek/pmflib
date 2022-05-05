@@ -276,35 +276,53 @@ bool CPMFEnergyIntegrate::Run(void)
                 RUNTIME_ERROR(error);
             }
     // -----------------------------------------------
-        } else if ( Options.GetOptRealm() == "-TdS_PP" ) {
+        } else if ( Options.GetOptRealm() == "-TdS_FP" ) {
             CABFProxy_mTdS_Ptr proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
-            proxy->SetType(ABF_TdS_PP);
+            proxy->SetType(ABF_TdS_FP);
             lproxy = proxy;
     // -----------------------------------------------
-        } else if ( Options.GetOptRealm() == "-TdS_PK" ) {
+        } else if ( Options.GetOptRealm() == "-TdS_FR" ) {
             CABFProxy_mTdS_Ptr proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
-            proxy->SetType(ABF_TdS_PK);
+            proxy->SetType(ABF_TdS_FR);
             lproxy = proxy;
     // -----------------------------------------------
-        } else if ( Options.GetOptRealm() == "-TdS_PR" ) {
+        } else if ( Options.GetOptRealm() == "-TdS_FK" ) {
             CABFProxy_mTdS_Ptr proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
-            proxy->SetType(ABF_TdS_PR);
+            proxy->SetType(ABF_TdS_FK);
+            lproxy = proxy;
+
+    // -----------------------------------------------
+        } else if ( Options.GetOptRealm() == "-TdS_VP" ) {
+            CABFProxy_mTdS_Ptr proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
+            proxy->SetType(ABF_TdS_VP);
             lproxy = proxy;
     // -----------------------------------------------
-        } else if ( Options.GetOptRealm() == "-TdS_KP" ) {
+        } else if ( Options.GetOptRealm() == "-TdS_VR" ) {
             CABFProxy_mTdS_Ptr proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
-            proxy->SetType(ABF_TdS_KP);
+            proxy->SetType(ABF_TdS_VR);
             lproxy = proxy;
     // -----------------------------------------------
-        } else if ( Options.GetOptRealm() == "-TdS_KK" ) {
+        } else if ( Options.GetOptRealm() == "-TdS_VK" ) {
             CABFProxy_mTdS_Ptr proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
-            proxy->SetType(ABF_TdS_KK);
+            proxy->SetType(ABF_TdS_VK);
+            lproxy = proxy;
+
+    // -----------------------------------------------
+        } else if ( Options.GetOptRealm() == "-TdS_BP" ) {
+            CABFProxy_mTdS_Ptr proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
+            proxy->SetType(ABF_TdS_BP);
             lproxy = proxy;
     // -----------------------------------------------
-        } else if ( Options.GetOptRealm() == "-TdS_KR" ) {
+        } else if ( Options.GetOptRealm() == "-TdS_BR" ) {
             CABFProxy_mTdS_Ptr proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
-            proxy->SetType(ABF_TdS_KR);
+            proxy->SetType(ABF_TdS_BR);
             lproxy = proxy;
+    // -----------------------------------------------
+        } else if ( Options.GetOptRealm() == "-TdS_BK" ) {
+            CABFProxy_mTdS_Ptr proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
+            proxy->SetType(ABF_TdS_BK);
+            lproxy = proxy;
+
     // -----------------------------------------------
         } else if ( Options.GetOptRealm() == "-TdS_HP" ) {
             CCSTProxy_mTdS_Ptr proxy    = CCSTProxy_mTdS_Ptr(new CCSTProxy_mTdS);
@@ -320,11 +338,11 @@ bool CPMFEnergyIntegrate::Run(void)
             CCSTProxy_mTdS_Ptr proxy    = CCSTProxy_mTdS_Ptr(new CCSTProxy_mTdS);
             proxy->SetType(CST_C11HR);
             lproxy = proxy;
-    // -----------------------------------------------
-        } else if ( Options.GetOptRealm() == "-TdS_HB" ) {
-            CABFProxy_mTdS_Ptr proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
-            proxy->SetType(ABF_TdS_HB);
-            lproxy = proxy;
+//    // -----------------------------------------------
+//        } else if ( Options.GetOptRealm() == "-TdS_HB" ) {
+//            CABFProxy_mTdS_Ptr proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
+//            proxy->SetType(ABF_TdS_HB);
+//            lproxy = proxy;
     // -----------------------------------------------
         } else {
             CSmallString error;
