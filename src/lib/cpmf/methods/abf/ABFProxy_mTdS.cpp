@@ -227,6 +227,44 @@ double CABFProxy_mTdS::GetValue(int ibin,int icv,EProxyRealm realm) const
         break;
 
     // -------------------
+        case(ABF_TdS_SP):
+            c11     = Accu->GetData("C11TDSSP",ibin,icv)/nsamples;
+            m2icf   = Accu->GetData("M2TDSSX",ibin,icv);
+            m2ene   = Accu->GetData("M2TDSEPOT",ibin);
+        break;
+    // -------------------
+        case(ABF_TdS_SR):
+            c11     = Accu->GetData("C11TDSSR",ibin,icv)/nsamples;
+            m2icf   = Accu->GetData("M2TDSSX",ibin,icv);
+            m2ene   = Accu->GetData("M2TDSERST",ibin);
+        break;
+    // -------------------
+        case(ABF_TdS_SK):
+            c11     = Accu->GetData("C11TDSSK",ibin,icv)/nsamples;
+            m2icf   = Accu->GetData("M2TDSSX",ibin,icv);
+            m2ene   = Accu->GetData("M2TDSEKIN",ibin);
+        break;
+
+                    // -------------------
+        case(ABF_TdS_LP):
+            c11     = Accu->GetData("C11TDSLP",ibin,icv)/nsamples;
+            m2icf   = Accu->GetData("M2TDSLX",ibin,icv);
+            m2ene   = Accu->GetData("M2TDSEPOT",ibin);
+        break;
+    // -------------------
+        case(ABF_TdS_LR):
+            c11     = Accu->GetData("C11TDSLR",ibin,icv)/nsamples;
+            m2icf   = Accu->GetData("M2TDSLX",ibin,icv);
+            m2ene   = Accu->GetData("M2TDSERST",ibin);
+        break;
+    // -------------------
+        case(ABF_TdS_LK):
+            c11     = Accu->GetData("C11TDSLK",ibin,icv)/nsamples;
+            m2icf   = Accu->GetData("M2TDSLX",ibin,icv);
+            m2ene   = Accu->GetData("M2TDSEKIN",ibin);
+        break;
+
+    // -------------------
         default:
             RUNTIME_ERROR("unsupported type");
     }

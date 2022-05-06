@@ -324,6 +324,38 @@ bool CPMFEnergyIntegrate::Run(void)
             lproxy = proxy;
 
     // -----------------------------------------------
+        } else if ( Options.GetOptRealm() == "-TdS_SP" ) {
+            CABFProxy_mTdS_Ptr proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
+            proxy->SetType(ABF_TdS_SP);
+            lproxy = proxy;
+    // -----------------------------------------------
+        } else if ( Options.GetOptRealm() == "-TdS_SR" ) {
+            CABFProxy_mTdS_Ptr proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
+            proxy->SetType(ABF_TdS_SR);
+            lproxy = proxy;
+    // -----------------------------------------------
+        } else if ( Options.GetOptRealm() == "-TdS_SK" ) {
+            CABFProxy_mTdS_Ptr proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
+            proxy->SetType(ABF_TdS_SK);
+            lproxy = proxy;
+
+    // -----------------------------------------------
+        } else if ( Options.GetOptRealm() == "-TdS_LP" ) {
+            CABFProxy_mTdS_Ptr proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
+            proxy->SetType(ABF_TdS_LP);
+            lproxy = proxy;
+    // -----------------------------------------------
+        } else if ( Options.GetOptRealm() == "-TdS_LR" ) {
+            CABFProxy_mTdS_Ptr proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
+            proxy->SetType(ABF_TdS_LR);
+            lproxy = proxy;
+    // -----------------------------------------------
+        } else if ( Options.GetOptRealm() == "-TdS_LK" ) {
+            CABFProxy_mTdS_Ptr proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
+            proxy->SetType(ABF_TdS_LK);
+            lproxy = proxy;
+
+    // -----------------------------------------------
         } else if ( Options.GetOptRealm() == "-TdS_HP" ) {
             CCSTProxy_mTdS_Ptr proxy    = CCSTProxy_mTdS_Ptr(new CCSTProxy_mTdS);
             proxy->SetType(CST_C11HP);
@@ -338,6 +370,7 @@ bool CPMFEnergyIntegrate::Run(void)
             CCSTProxy_mTdS_Ptr proxy    = CCSTProxy_mTdS_Ptr(new CCSTProxy_mTdS);
             proxy->SetType(CST_C11HR);
             lproxy = proxy;
+
 //    // -----------------------------------------------
 //        } else if ( Options.GetOptRealm() == "-TdS_HB" ) {
 //            CABFProxy_mTdS_Ptr proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);

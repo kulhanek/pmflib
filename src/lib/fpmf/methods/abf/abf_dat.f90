@@ -138,6 +138,10 @@ type,extends(PMFAccuType) :: ABFAccuType
     real(PMFDP),pointer    :: m2tdsvx(:,:)              ! M2 of ICF - velocity
     real(PMFDP),pointer    :: mtdsbx(:,:)               ! mean of ICF - bias
     real(PMFDP),pointer    :: m2tdsbx(:,:)              ! M2 of ICF - bias
+    real(PMFDP),pointer    :: mtdssx(:,:)               ! mean of ICF - shake
+    real(PMFDP),pointer    :: m2tdssx(:,:)              ! M2 of ICF - shake
+    real(PMFDP),pointer    :: mtdslx(:,:)               ! mean of ICF - lng
+    real(PMFDP),pointer    :: m2tdslx(:,:)              ! M2 of ICF - lng
 
     real(PMFDP),pointer    :: c11tdsfp(:,:)                ! co-variances
     real(PMFDP),pointer    :: c11tdsfr(:,:)
@@ -148,6 +152,12 @@ type,extends(PMFAccuType) :: ABFAccuType
     real(PMFDP),pointer    :: c11tdsbp(:,:)
     real(PMFDP),pointer    :: c11tdsbr(:,:)
     real(PMFDP),pointer    :: c11tdsbk(:,:)
+    real(PMFDP),pointer    :: c11tdssp(:,:)
+    real(PMFDP),pointer    :: c11tdssr(:,:)
+    real(PMFDP),pointer    :: c11tdssk(:,:)
+    real(PMFDP),pointer    :: c11tdslp(:,:)
+    real(PMFDP),pointer    :: c11tdslr(:,:)
+    real(PMFDP),pointer    :: c11tdslk(:,:)
 
 ! time recording for post-processing
     real(PMFDP),pointer    :: tcvs(:,:)
@@ -189,8 +199,9 @@ real(PMFDP),allocatable     :: la(:)
 real(PMFDP),allocatable     :: cvave(:)
 real(PMFDP),allocatable     :: pxi0(:)
 real(PMFDP),allocatable     :: pxi1(:)
+real(PMFDP),allocatable     :: pxi2(:)
+real(PMFDP),allocatable     :: pxi3(:)
 real(PMFDP),allocatable     :: pxip(:)
-real(PMFDP),allocatable     :: pxim(:)
 real(PMFDP),allocatable     :: sfac(:)              ! switching factors
 
 ! ------------------------------------------------------------------------------

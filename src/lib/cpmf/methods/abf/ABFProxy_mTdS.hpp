@@ -36,6 +36,12 @@ enum EABFTdSType {
     ABF_TdS_BP,
     ABF_TdS_BR,
     ABF_TdS_BK,
+    ABF_TdS_SP,
+    ABF_TdS_SR,
+    ABF_TdS_SK,
+    ABF_TdS_LP,
+    ABF_TdS_LR,
+    ABF_TdS_LK,
 };
 
 //------------------------------------------------------------------------------
