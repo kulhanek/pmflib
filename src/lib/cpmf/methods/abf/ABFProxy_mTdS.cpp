@@ -105,6 +105,32 @@ void CABFProxy_mTdS::SetType(EABFTdSType type)
         break;
 
     // -------------------
+        case(ABF_TdS_SP):
+            Provide = "ABF -TdS(x) - SP";
+        break;
+    // -------------------
+        case(ABF_TdS_SR):
+            Provide = "ABF -TdS(x) - SR";
+        break;
+    // -------------------
+        case(ABF_TdS_SK):
+            Provide = "ABF -TdS(x) - SK";
+        break;
+
+    // -------------------
+        case(ABF_TdS_LP):
+            Provide = "ABF -TdS(x) - LP";
+        break;
+    // -------------------
+        case(ABF_TdS_LR):
+            Provide = "ABF -TdS(x) - LR";
+        break;
+    // -------------------
+        case(ABF_TdS_LK):
+            Provide = "ABF -TdS(x) - LK";
+        break;
+
+    // -------------------
         default:
             RUNTIME_ERROR("unsupported type");
     }
