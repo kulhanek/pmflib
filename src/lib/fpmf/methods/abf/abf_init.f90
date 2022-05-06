@@ -82,6 +82,8 @@ subroutine abf_init_dat
     fentdecomp      = .false.
     frecord         = .false.
 
+    ftds_alpha      = 1.0d0
+
     fepotaverage    = 0.0d0
     fekinaverage    = 0.0d0
 

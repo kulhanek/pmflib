@@ -280,7 +280,7 @@ subroutine abf_core_force_3pA()
     implicit none
     integer                :: i,j,k,m
     integer                :: ci,ki
-    real(PMFDP)            :: v1,v2,s1,l1,f1,epot,erst,ekin
+    real(PMFDP)            :: v1,v2,s1,l1,f1,epot1,erst1,ekin1,epot0,erst0,ekin0,epot,erst,ekin
     ! --------------------------------------------------------------------------
 
 ! shift accuvalue history
@@ -396,9 +396,17 @@ subroutine abf_core_force_3pA()
         ! total ABF force
         pxip(:) = pxi0(:) + pxi1(:) + pxi3(:) - micfhist(:,hist_len-1)  ! unbiased estimate
 
-        epot = epothist(hist_len-1)
-        erst = ersthist(hist_len-1)
-        ekin = ekinhist(hist_len-1)
+        epot1 = epothist(hist_len-1)
+        erst1 = ersthist(hist_len-1)
+        ekin1 = ekinhist(hist_len-1)
+
+        epot0 = epothist(hist_len-1)
+        erst0 = ersthist(hist_len-1)
+        ekin0 = ekinhist(hist_len-1)
+
+        epot = ftds_alpha*epot1 + (1.0d0-ftds_alpha)*epot0
+        erst = ftds_alpha*erst1 + (1.0d0-ftds_alpha)*erst0
+        ekin = ftds_alpha*epot1 + (1.0d0-ftds_alpha)*ekin0
 
         ! debug
         ! write(1225,*) epot,erst,ekin

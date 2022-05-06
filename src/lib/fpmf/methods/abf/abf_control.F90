@@ -96,6 +96,8 @@ subroutine abf_control_read_abf(prm_fin)
     call pmf_ctrl_read_logical(prm_fin,'fentdecomp',fentdecomp)
     call pmf_ctrl_read_logical(prm_fin,'frecord',frecord)
 
+    call pmf_ctrl_read_real8(prm_fin,'ftds_alpha',ftds_alpha,'E10.4')
+
     call pmf_ctrl_read_real8_wunit(prm_fin,'fepotaverage',EnergyUnit,fepotaverage,'F10.1')
     call pmf_ctrl_read_real8_wunit(prm_fin,'fekinaverage',EnergyUnit,fekinaverage,'F10.1')
 
