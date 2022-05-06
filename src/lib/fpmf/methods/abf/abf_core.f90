@@ -400,13 +400,13 @@ subroutine abf_core_force_3pA()
         erst1 = ersthist(hist_len-1)
         ekin1 = ekinhist(hist_len-1)
 
-        epot0 = epothist(hist_len-1)
-        erst0 = ersthist(hist_len-1)
-        ekin0 = ekinhist(hist_len-1)
+        epot0 = epothist(hist_len-2)
+        erst0 = ersthist(hist_len-2)
+        ekin0 = ekinhist(hist_len-2)
 
         epot = ftds_alpha*epot1 + (1.0d0-ftds_alpha)*epot0
         erst = ftds_alpha*erst1 + (1.0d0-ftds_alpha)*erst0
-        ekin = ftds_alpha*epot1 + (1.0d0-ftds_alpha)*ekin0
+        ekin = ftds_alpha*ekin1 + (1.0d0-ftds_alpha)*ekin0
 
         ! debug
         ! write(1225,*) epot,erst,ekin
