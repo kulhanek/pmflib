@@ -406,7 +406,7 @@ subroutine abf_core_force_3pA()
 
         epot = ftds_alpha*epot1 + (1.0d0-ftds_alpha)*epot0
         erst = ftds_alpha*erst1 + (1.0d0-ftds_alpha)*erst0
-        ekin = ftds_alpha*ekin1 + (1.0d0-ftds_alpha)*ekin0
+        ekin = ftds_alpha*ekin1 + (1.0d0-ftds_alpha_ekin)*ekin0
 
         ! debug
         ! write(1225,*) epot,erst,ekin
