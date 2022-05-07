@@ -85,6 +85,8 @@ subroutine abf_init_dat
     ftds_alpha_ekin = 1.0d0
     ftds_beta_ekin  = 1.0d0
 
+    ftds_ekin_src   = 1
+
     fepotaverage    = 0.0d0
     fekinaverage    = 0.0d0
 

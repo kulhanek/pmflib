@@ -306,7 +306,13 @@ subroutine abf_core_force_3pA()
 ! shift epot ene
     epothist(hist_len)      = PotEne - fepotaverage
     ersthist(hist_len)      = PMFEne
-    ekinhist(hist_len-1)    = KinEne - fekinaverage    ! shifted by -dt
+
+    select case(ftds_ekin_src)
+        case(1)
+            ekinhist(hist_len-1)    = KinEne - fekinaverage    ! shifted by -dt
+        case(2)
+            ekinhist(hist_len-1)    = KinEneH - fekinaverage    ! shifted by -dt
+    end select
 
 ! calculate Z matrix and its inverse
     call abf_core_calc_Zmat(CVContext)

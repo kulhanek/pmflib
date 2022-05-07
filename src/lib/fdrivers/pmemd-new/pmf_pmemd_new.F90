@@ -368,7 +368,8 @@ subroutine pmf_pmemd_force(x,v,f,epot,ekin,epmf)
 
     call pmf_timers_start_timer(PMFLIB_TIMER)
     call pmf_core_lf_update_step
-    call pmf_core_lf_force(x,v,f,epot,ekin,epmf)
+! FIXME
+!    call pmf_core_lf_force(x,v,f,epot,ekin,epmf)
     call pmf_timers_stop_timer(PMFLIB_TIMER)
 
 end subroutine pmf_pmemd_force

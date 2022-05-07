@@ -115,6 +115,7 @@ real(PMFDP),allocatable     :: Frc(:,:)         ! current system forces in t due
 real(PMFDP),allocatable     :: Vel(:,:)         ! current system velocities in t-dt/2
 ! FIXME - better description
 real(PMFDP)                 :: KinEne           ! current system kinetic energy in t-dt
+real(PMFDP)                 :: KinEneH          ! current system kinetic energy in t-dt/2
 real(PMFDP)                 :: PotEne           ! current system potential energy in t
 real(PMFDP)                 :: PMFEne           ! current PMFLib potential energy in t (from RST, MTD, STM)
 type(CVContextType)         :: CVContext        ! current CV context (values and derivatives) in t

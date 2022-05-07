@@ -99,6 +99,8 @@ subroutine abf_control_read_abf(prm_fin)
     call pmf_ctrl_read_real8(prm_fin,'ftds_alpha_ekin',ftds_alpha_ekin,'E10.4')
     call pmf_ctrl_read_real8(prm_fin,'ftds_beta_ekin',ftds_beta_ekin,'E10.4')
 
+    call pmf_ctrl_read_integer(prm_fin,'ftds_ekin_src',ftds_ekin_src,'I12')
+
     call pmf_ctrl_read_real8_wunit(prm_fin,'fepotaverage',EnergyUnit,fepotaverage,'F10.1')
     call pmf_ctrl_read_real8_wunit(prm_fin,'fekinaverage',EnergyUnit,fekinaverage,'F10.1')
 

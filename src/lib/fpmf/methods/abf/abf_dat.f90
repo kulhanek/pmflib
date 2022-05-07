@@ -55,6 +55,7 @@ logical     :: frecord      ! record time progress
 
 real(PMFDP) :: ftds_alpha_ekin ! mixing parameter for kinetic energy
 real(PMFDP) :: ftds_beta_ekin
+integer     :: ftds_ekin_src
 
 real(PMFDP) :: fepotaverage
 real(PMFDP) :: fekinaverage
