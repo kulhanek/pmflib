@@ -280,7 +280,7 @@ subroutine abf_core_force_3pA()
     implicit none
     integer                :: i,j,k,m
     integer                :: ci,ki
-    real(PMFDP)            :: v1,v2,s1,l1,f1,epot1,erst1,ekin1,epot0,erst0,ekin0,epot,erst,ekin
+    real(PMFDP)            :: v1,v2,s1,l1,f1,ekin2,ekin1,ekin0,epot,erst,ekin
     ! --------------------------------------------------------------------------
 
 ! shift accuvalue history
@@ -372,12 +372,12 @@ subroutine abf_core_force_3pA()
             do j=1,NumOfLAtoms
                 do m=1,3
                     ! force part
-                    f1 = f1 + zdhist(m,j,i,hist_len-1) * fhist(m,j,hist_len-1) * MassInv(j)
-                    s1 = s1 + zdhist(m,j,i,hist_len-1) * shist(m,j,hist_len-1) * MassInv(j)
-                    l1 = l1 + zdhist(m,j,i,hist_len-1) * lhist(m,j,hist_len-1) * MassInv(j)
+                    f1 = f1 + zdhist(m,j,i,hist_len-2) * fhist(m,j,hist_len-2) * MassInv(j)
+                    s1 = s1 + zdhist(m,j,i,hist_len-2) * shist(m,j,hist_len-2) * MassInv(j)
+                    l1 = l1 + zdhist(m,j,i,hist_len-2) * lhist(m,j,hist_len-2) * MassInv(j)
                     ! velocity part
-                    v1 = v1 + (zdhist(m,j,i,hist_len-0)-zdhist(m,j,i,hist_len-1)) * vhist(m,j,hist_len-0)
-                    v2 = v2 + (zdhist(m,j,i,hist_len-1)-zdhist(m,j,i,hist_len-2)) * vhist(m,j,hist_len-1)
+                    v1 = v1 + (zdhist(m,j,i,hist_len-1)-zdhist(m,j,i,hist_len-2)) * vhist(m,j,hist_len-1)
+                    v2 = v2 + (zdhist(m,j,i,hist_len-2)-zdhist(m,j,i,hist_len-3)) * vhist(m,j,hist_len-2)
                 end do
             end do
             pxi0(i) = f1
@@ -394,28 +394,29 @@ subroutine abf_core_force_3pA()
 !        write(4789,*)
 
         ! total ABF force
-        pxip(:) = pxi0(:) + pxi1(:) + pxi3(:) - micfhist(:,hist_len-1)  ! unbiased estimate
+        pxip(:) = pxi0(:) + pxi1(:) + pxi3(:) - micfhist(:,hist_len-2)  ! unbiased estimate
 
-        epot1 = epothist(hist_len-1)
-        erst1 = ersthist(hist_len-1)
-        ekin1 = ekinhist(hist_len-1)
+        epot = epothist(hist_len-2)
+        erst = ersthist(hist_len-2)
 
-        epot0 = epothist(hist_len-2)
-        erst0 = ersthist(hist_len-2)
-        ekin0 = ekinhist(hist_len-2)
+        ekin2 = ekinhist(hist_len-1)
+        ekin1 = ekinhist(hist_len-2)
+        ekin0 = ekinhist(hist_len-3)
 
-        epot = ftds_alpha*epot1 + (1.0d0-ftds_alpha)*epot0
-        erst = ftds_alpha*erst1 + (1.0d0-ftds_alpha)*erst0
-        ekin = ftds_alpha_ekin*ekin1 + (1.0d0-ftds_alpha_ekin)*ekin0
+        if( ftds_alpha_ekin .le. 1.0d0 ) then
+            ekin = ftds_alpha_ekin*ekin1 + (1.0d0-ftds_alpha_ekin)*ekin0
+        else
+            ekin = (ftds_alpha_ekin-1.0d0)*ekin2 + (2.0d0-ftds_alpha_ekin)*ekin1
+        end if
 
         ! debug
         ! write(1225,*) epot,erst,ekin
 
         ! add data to accumulator
-        call abf_accu_add_data_online(cvhist(:,hist_len-1),pxip,epot,erst,ekin)
+        call abf_accu_add_data_online(cvhist(:,hist_len-2),pxip,epot,erst,ekin)
 
         if( fentropy .and. fentdecomp ) then
-            call abf_accu_add_data_entropy_decompose(cvhist(:,hist_len-1),pxi0,pxi3,micfhist(:,hist_len-1),pxi1,pxi2,epot,erst,ekin)
+            call abf_accu_add_data_entropy_decompose(cvhist(:,hist_len-2),pxi0,pxi3,micfhist(:,hist_len-2),pxi1,pxi2,epot,erst,ekin)
         end if
     end if
 

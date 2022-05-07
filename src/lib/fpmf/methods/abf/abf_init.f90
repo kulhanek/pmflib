@@ -82,7 +82,6 @@ subroutine abf_init_dat
     fentdecomp      = .false.
     frecord         = .false.
 
-    ftds_alpha      = 1.0d0
     ftds_alpha_ekin = 1.0d0
 
     fepotaverage    = 0.0d0
@@ -389,7 +388,7 @@ subroutine abf_init_arrays
     select case(fmode)
         ! standard
         case(1)
-            hist_len = 3
+            hist_len = 4
         ! GPR
         case(2)
             call abf_init_gpr

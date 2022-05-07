@@ -52,8 +52,8 @@ logical     :: fenthalpy    ! collect data for enthalpy calculation
 logical     :: fentropy     ! collect data for entropy calculation
 logical     :: fentdecomp   ! collect additional correlation terms
 logical     :: frecord      ! record time progress
-real(PMFDP) :: ftds_alpha   ! mixing parameter for energy
-real(PMFDP) :: ftds_alpha_ekin
+
+real(PMFDP) :: ftds_alpha_ekin ! mixing parameter for kinetic energy
 
 real(PMFDP) :: fepotaverage
 real(PMFDP) :: fekinaverage
