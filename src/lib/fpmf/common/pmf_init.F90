@@ -82,10 +82,6 @@ subroutine pmf_init_dat
     lng_force_required      = .true. ! FIXME
     shake_force_required    = .true. ! FIXME
 
-
-    LNG_c_implic    = 1.0d0
-    LNG_c_explic    = 0.0d0
-
     fucell(:,:) = 0.0d0
     frecip(:,:) = 0.0d0
     fbox_volume = 0.0d0

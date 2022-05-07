@@ -83,6 +83,7 @@ subroutine abf_init_dat
     frecord         = .false.
 
     ftds_alpha_ekin = 1.0d0
+    ftds_beta_ekin  = 1.0d0
 
     fepotaverage    = 0.0d0
     fekinaverage    = 0.0d0

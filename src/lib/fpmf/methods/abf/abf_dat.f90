@@ -54,6 +54,7 @@ logical     :: fentdecomp   ! collect additional correlation terms
 logical     :: frecord      ! record time progress
 
 real(PMFDP) :: ftds_alpha_ekin ! mixing parameter for kinetic energy
+real(PMFDP) :: ftds_beta_ekin
 
 real(PMFDP) :: fepotaverage
 real(PMFDP) :: fekinaverage

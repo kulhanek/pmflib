@@ -127,8 +127,6 @@ type(CVContextType)         :: CVContextP
 real(PMFDP),allocatable     :: CrdBar(:,:)      ! coordinates in t+dt without SHAKE
 real(PMFDP),allocatable     :: SHAKEFrc(:,:)    ! current SHAKE forces in t(+dt) - after PotForce
 
-real(PMFDP)                 :: LNG_c_implic     ! Langevin setup from AMBER
-real(PMFDP)                 :: LNG_c_explic
 real(PMFDP),allocatable     :: LNGFrc(:,:)      ! current Langevin forces in t(+dt) - after PotForce
 
 ! MASTER =======================================================================

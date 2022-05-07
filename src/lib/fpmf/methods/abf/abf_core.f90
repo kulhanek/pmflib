@@ -409,6 +409,8 @@ subroutine abf_core_force_3pA()
             ekin = (ftds_alpha_ekin-1.0d0)*ekin2 + (2.0d0-ftds_alpha_ekin)*ekin1
         end if
 
+        ekin = ekin / ftds_beta_ekin
+
         ! debug
         ! write(1225,*) epot,erst,ekin
 
