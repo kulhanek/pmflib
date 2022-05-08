@@ -601,7 +601,7 @@ subroutine abf_core_force_3pA()
         ekin = ekinhist(hist_len-0)
 
         ! add data to accumulator
-        call abf_accu_add_data_online(cvhist(:,hist_len-2),pxip,epot,erst,ekin)
+        call abf_accu_add_data_online(cvave,pxip,epot,erst,ekin)
 
         if( fentropy .and. fentdecomp ) then
             call abf_accu_add_data_entropy_decompose(cvave,pxi0,pxi3,la(:),pxi1,pxi2,epot,erst,ekin)
