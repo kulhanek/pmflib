@@ -557,7 +557,7 @@ end subroutine abf_accu_write
 ! Subroutine:  abf_accu_add_data_online
 !===============================================================================
 
-subroutine abf_accu_add_data_online(cvs,gfx,epot,erst,ekin)
+subroutine abf_accu_add_data_online(cvs,gfx,epot,erst,ekin,etot)
 
     use abf_dat
     use pmf_dat
@@ -568,9 +568,9 @@ subroutine abf_accu_add_data_online(cvs,gfx,epot,erst,ekin)
     real(PMFDP),intent(in)  :: epot
     real(PMFDP),intent(in)  :: erst
     real(PMFDP),intent(in)  :: ekin
+    real(PMFDP),intent(in)  :: etot
     ! -----------------------------------------------
     integer        :: gi0, i
-    real(PMFDP)    :: etot
     real(PMFDP)    :: invn, icf
     real(PMFDP)    :: depot1, depot2
     real(PMFDP)    :: derst1, derst2
@@ -613,8 +613,6 @@ subroutine abf_accu_add_data_online(cvs,gfx,epot,erst,ekin)
         dekin2 = ekin - abfaccu%mekin(gi0)
         abfaccu%m2ekin(gi0) = abfaccu%m2ekin(gi0) + dekin1 * dekin2
     end if
-
-    etot = epot + erst + ekin
 
     if( fentropy ) then
         ! total energy

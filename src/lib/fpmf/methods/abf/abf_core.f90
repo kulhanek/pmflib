@@ -627,7 +627,7 @@ subroutine abf_core_force_gpr()
     implicit none
     integer                :: i,j,k,m
     integer                :: ci,ki,gpr_mid
-    real(PMFDP)            :: v1,v2,s1,l1,f1,epot,erst,ekin,depot1,depot2,invn,mean
+    real(PMFDP)            :: v1,v2,s1,l1,f1,epot,erst,ekin,depot1,depot2,invn,mean,etot
     ! --------------------------------------------------------------------------
 
 ! shift accuvalue history
@@ -757,7 +757,6 @@ subroutine abf_core_force_gpr()
         mean = mean / real(gpr_len,PMFDP)
 
         ! shift data
-        l1 = cbuff_pos
         do k=1,gpr_len
             gpr_data(k) = icfhist(i,k) - mean
         end do
@@ -805,14 +804,38 @@ subroutine abf_core_force_gpr()
         end if
     end do
 
+    mean = 0.0d0
+
+    do k=1,gpr_len
+        epot = epothist(k)
+        erst = ersthist(k)
+        ekin = ekinhist(k)
+        mean = mean + epot + erst + ekin
+    end do
+    mean = mean / real(gpr_len,PMFDP)
+
+    ! shift data
+    do k=1,gpr_len
+        epot = epothist(k)
+        erst = ersthist(k)
+        ekin = ekinhist(k)
+        gpr_data(k) = epot + erst + ekin - mean
+    end do
+
+    etot = dot_product(gpr_data,gpr_kff_icf) + mean
+
     epot = epothist(gpr_mid)
     erst = ersthist(gpr_mid)
     ekin = ekinhist(gpr_mid)
 
+    if( fdebug ) then
+        write(7813,*) fstep-gpr_len-3+gpr_mid, epot+erst+ekin, etot
+    end if
+
     ! write(5289,*) fstep,pxip(1),epot,erst,ekin
 
     ! add data to accumulator
-    call abf_accu_add_data_online(cvhist(:,gpr_mid),pxip,epot,erst,ekin)
+    call abf_accu_add_data_online(cvhist(:,gpr_mid),pxip,epot,erst,ekin,etot)
 
     if( fentropy .and. fentdecomp ) then
         ! call abf_accu_add_data_entropy_decompose(cvhist(:,hist_len-1),pxi0,pxi3,micfhist(:,hist_len-1),pxi1,pxi2,epot,erst,ekin)
