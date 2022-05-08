@@ -183,7 +183,7 @@ subroutine abf_init_print_summary
     write(PMF_OUT,130)  '          gpr_len                        : ', gpr_len
 
     write(PMF_OUT,120)  '          === ICF GPR'
-    write(PMF_OUT,130)  '              gpr_cvs_kernel             : ', gpr_icf_kernel
+    write(PMF_OUT,130)  '              gpr_icf_kernel             : ', gpr_icf_kernel
     select case(gpr_icf_kernel)
     case(0)
     write(PMF_OUT,120)  '              \-> EXP (exponential kernel)'
@@ -202,16 +202,17 @@ subroutine abf_init_print_summary
     case(7)
     write(PMF_OUT,120)  '              \-> sinc kernel'
     case default
-        call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown gpr_cvs_kernel in abf_init_print_summary!')
+        call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown gpr_icf_kernel in abf_init_print_summary!')
     end select
-    write(PMF_OUT,152)  '              gpr_cvs_width              : ', gpr_icf_width,  &
+    write(PMF_OUT,152)  '              gpr_icf_width              : ', gpr_icf_width,  &
                                        '['//trim(pmf_unit_label(TimeUnit))//']'
-    write(PMF_OUT,160)  '              gpr_cvs_noise              : ', gpr_icf_noise
+    write(PMF_OUT,160)  '              gpr_icf_noise              : ', gpr_icf_noise
 
     write(PMF_OUT,120)  '          === K+Sigma inversion'
     write(PMF_OUT,130)  '              gpr_rank                   : ', gpr_rank
     write(PMF_OUT,160)  '              gpr_rcond                  : ', gpr_rcond
     write(PMF_OUT,160)  '              gpr_rsigma                 : ', gpr_rsigma
+    write(PMF_OUT,125)  '              gpr_calc_logxx             : ', prmfile_onoff(gpr_calc_logxx)
 
     case default
         call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown fmode in abf_init_print_summary!')
