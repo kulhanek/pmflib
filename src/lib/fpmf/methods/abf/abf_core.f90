@@ -809,7 +809,7 @@ subroutine abf_core_force_gpr()
     erst = ersthist(gpr_mid)
     ekin = ekinhist(gpr_mid)
 
-    write(5289,*) fstep,pxip(1),epot,erst,ekin
+    ! write(5289,*) fstep,pxip(1),epot,erst,ekin
 
     ! add data to accumulator
     call abf_accu_add_data_online(cvhist(:,gpr_mid),pxip,epot,erst,ekin)
