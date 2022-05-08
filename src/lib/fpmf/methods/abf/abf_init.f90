@@ -391,7 +391,7 @@ subroutine abf_init_arrays
     select case(fmode)
         ! standard
         case(1)
-            hist_len = 4
+            hist_len = 5
         ! GPR
         case(2)
             call abf_init_gpr

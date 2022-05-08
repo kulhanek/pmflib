@@ -280,7 +280,7 @@ subroutine abf_core_force_3pA()
     implicit none
     integer                :: i,j,k,m
     integer                :: ci,ki
-    real(PMFDP)            :: v1,v2,s1,l1,f1,ekin2,ekin1,ekin0,epot,erst,ekin
+    real(PMFDP)            :: v1,v2,v3,s1,l1,f1,ekin2,ekin1,ekin0,epot,erst,ekin
     ! --------------------------------------------------------------------------
 
 ! shift accuvalue history
@@ -375,6 +375,7 @@ subroutine abf_core_force_3pA()
             l1 = 0.0d0
             v1 = 0.0d0
             v2 = 0.0d0
+            v3 = 0.0d0
             do j=1,NumOfLAtoms
                 do m=1,3
                     ! force part
@@ -384,13 +385,17 @@ subroutine abf_core_force_3pA()
                     ! velocity part
                     v1 = v1 + (zdhist(m,j,i,hist_len-1)-zdhist(m,j,i,hist_len-2)) * vhist(m,j,hist_len-1)
                     v2 = v2 + (zdhist(m,j,i,hist_len-2)-zdhist(m,j,i,hist_len-3)) * vhist(m,j,hist_len-2)
+                    v3 = v3 + (zdhist(m,j,i,hist_len-3)-zdhist(m,j,i,hist_len-4)) * vhist(m,j,hist_len-3)
                 end do
             end do
             pxi0(i) = f1
             pxi1(i) = s1
             pxi2(i) = l1
-            pxi3(i) = 0.5d0*(v1+v2)*ifdtx
+            ! pxi3(i) = 0.5d0*(v1+v2)*ifdtx
+            pxi3(i) = (2.0d0*v1 + 5.0d0*v2 - v3)/6.0d0*ifdtx
         end do
+
+        !write(4789,*) fstep-2+0.5, v1, fstep-2, 0.5d0*(v1+v2), fstep-2, (2.0d0*v1 + 5.0d0*v2 - v3)/6.0d0
 
         ! write(4789,*) fstep-1, pxi0(1), pxi1(1), pxi2(1), pxi3(1)
 
