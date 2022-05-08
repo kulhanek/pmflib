@@ -314,6 +314,10 @@ subroutine abf_core_force_3pA()
             ekinhist(hist_len-1)    = KinEneH - fekinaverage    ! shifted by -dt
     end select
 
+!    write(4751,*) fstep-1, KinEne, fstep-1.0/2.0, KinEneH, &
+!                  fstep-1,  (15.0*ekinhist(hist_len-1)+45.0*ekinhist(hist_len-2)&
+!                            -15.0*ekinhist(hist_len-3)+3.0*ekinhist(hist_len-4))/48.0
+
 ! calculate Z matrix and its inverse
     call abf_core_calc_Zmat(CVContext)
 
@@ -414,13 +418,15 @@ subroutine abf_core_force_3pA()
         ekin1 = ekinhist(hist_len-2)
         ekin0 = ekinhist(hist_len-3)
 
-        if( ftds_alpha_ekin .le. 1.0d0 ) then
-            ekin = ftds_alpha_ekin*ekin1 + (1.0d0-ftds_alpha_ekin)*ekin0
-        else
-            ekin = (ftds_alpha_ekin-1.0d0)*ekin2 + (2.0d0-ftds_alpha_ekin)*ekin1
-        end if
+        ekin = (3.0d0*ekinhist(hist_len-2) + 6.0d0*ekinhist(hist_len-3) - ekinhist(hist_len-4))/8.0d0
 
-        ekin = ekin / ftds_beta_ekin
+!        if( ftds_alpha_ekin .le. 1.0d0 ) then
+!            ekin = ftds_alpha_ekin*ekin1 + (1.0d0-ftds_alpha_ekin)*ekin0
+!        else
+!            ekin = (ftds_alpha_ekin-1.0d0)*ekin2 + (2.0d0-ftds_alpha_ekin)*ekin1
+!        end if
+
+        ! ekin = ekin / ftds_beta_ekin
 
         ! debug
         ! write(1225,*) epot,erst,ekin
