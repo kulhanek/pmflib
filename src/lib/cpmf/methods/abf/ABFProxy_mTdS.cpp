@@ -168,7 +168,7 @@ double CABFProxy_mTdS::GetValue(int ibin,int icv,EProxyRealm realm) const
 
     double  nsamples = 0.0;
 
-    if( ABF_TdS_HH ) {
+    if( Type == ABF_TdS_HH ) {
         nsamples = Accu->GetData("NSAMPLES",ibin);
     } else {
         nsamples = Accu->GetData("NTDS",ibin);

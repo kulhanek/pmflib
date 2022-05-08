@@ -116,23 +116,13 @@ subroutine abf_init_dat
 
     gpr_len         = 1001
 
-    gpr_cvs_kernel  = 1
-    gpr_cvs_width   = 30.0
-    gpr_cvs_noise   = 0.0
-
-    gpr_sinc_amp    = 0.0
-    gpr_sinc_width  = 10.0
-
-    gpr_wiener_amp   = 0.0
-    gpr_wiener_width = 10.0
-
-    gpr_icf_cdf     = 0
+    gpr_icf_kernel  = 1
+    gpr_icf_width   = 30.0
+    gpr_icf_noise   = 0.0
 
     gpr_rank        = -1
     gpr_rcond       = 1e-16
     gpr_rsigma      = 1e-5
-
-    gpr_cvs_nomean  = .false.
 
     gpr_calc_logxx  = .false.
 
@@ -192,9 +182,9 @@ subroutine abf_init_print_summary
     write(PMF_OUT,120)  '      |-> Simplified ABF algorithm (GPR)'
     write(PMF_OUT,130)  '          gpr_len                        : ', gpr_len
 
-    write(PMF_OUT,120)  '          === CVS GPR'
-    write(PMF_OUT,130)  '              gpr_cvs_kernel             : ', gpr_cvs_kernel
-    select case(gpr_cvs_kernel)
+    write(PMF_OUT,120)  '          === ICF GPR'
+    write(PMF_OUT,130)  '              gpr_cvs_kernel             : ', gpr_icf_kernel
+    select case(gpr_icf_kernel)
     case(0)
     write(PMF_OUT,120)  '              \-> EXP (exponential kernel)'
     case(1)
@@ -214,12 +204,9 @@ subroutine abf_init_print_summary
     case default
         call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown gpr_cvs_kernel in abf_init_print_summary!')
     end select
-    write(PMF_OUT,152)  '              gpr_cvs_width              : ', gpr_cvs_width,  &
+    write(PMF_OUT,152)  '              gpr_cvs_width              : ', gpr_icf_width,  &
                                        '['//trim(pmf_unit_label(TimeUnit))//']'
-    write(PMF_OUT,160)  '              gpr_cvs_noise              : ', gpr_cvs_noise
-
-    write(PMF_OUT,120)  '          === ICF GPR'
-    write(PMF_OUT,130)  '              gpr_icf_cdf                : ', gpr_icf_cdf
+    write(PMF_OUT,160)  '              gpr_cvs_noise              : ', gpr_icf_noise
 
     write(PMF_OUT,120)  '          === K+Sigma inversion'
     write(PMF_OUT,130)  '              gpr_rank                   : ', gpr_rank
@@ -394,8 +381,8 @@ subroutine abf_init_arrays
             hist_len = 5
         ! GPR
         case(2)
+            hist_len = gpr_len + 3
             call abf_init_gpr
-            hist_len = gpr_len
         case default
             call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented fmode in abf_init_arrays!')
     end select
@@ -528,67 +515,6 @@ real(PMFDP) function abf_init_gpr_kernel(ktype,t1,t2,width)
 end function abf_init_gpr_kernel
 
 !===============================================================================
-! Function:  abf_init_gpr_kernel_sinc
-!===============================================================================
-
-real(PMFDP) function abf_init_gpr_kernel_sinc(t1,t2)
-
-    use pmf_utils
-    use pmf_dat
-    use abf_dat
-
-    implicit none
-    integer     :: t1,t2
-    real(PMFDP) :: r,wfac
-    ! --------------------------------------------------------------------------
-
-    ! convert gpr_sinc_width to time steps
-    wfac = gpr_sinc_width / fdt
-
-    if( wfac .eq. 0.0d0 ) then
-        abf_init_gpr_kernel_sinc = 0.0d0
-        return
-    end if
-
-    r = abs(real(t1-t2,PMFDP)/wfac)
-
-    ! sinc(x)
-    if( r .eq. 0.0d0 ) then
-        abf_init_gpr_kernel_sinc = 1.0d0
-    else
-        abf_init_gpr_kernel_sinc = 2.0d0/wfac*sin(2.0d0*PMF_PI*r)/(2.0d0*PMF_PI*r)
-    end if
-
-end function abf_init_gpr_kernel_sinc
-
-!===============================================================================
-! Function:  abf_init_gpr_kernel_wiener
-!===============================================================================
-
-real(PMFDP) function abf_init_gpr_kernel_wiener(t1,t2)
-
-    use pmf_utils
-    use pmf_dat
-    use abf_dat
-
-    implicit none
-    integer     :: t1,t2
-    real(PMFDP) :: wfac
-    ! --------------------------------------------------------------------------
-
-    ! convert gpr_sinc_width to time steps
-    wfac = gpr_wiener_width / fdt
-
-    if( wfac .eq. 0.0d0 ) then
-        abf_init_gpr_kernel_wiener = 0.0d0
-        return
-    end if
-
-    abf_init_gpr_kernel_wiener = real(min(t1,t2),PMFDP)/wfac
-
-end function abf_init_gpr_kernel_wiener
-
-!===============================================================================
 ! Function:  abf_init_gpr_main_kernel_1d
 ! first derivative
 !===============================================================================
@@ -690,10 +616,10 @@ subroutine abf_init_gpr
 
 ! allocate arrays
     allocate(                                   &
-            gpr_K_cvs(gpr_len,gpr_len),         &
+            gpr_K_icf(gpr_len,gpr_len),         &
             gpr_data(gpr_len),                  &
             gpr_model(gpr_len),                 &
-            gpr_kfd_cvs(gpr_len),               &
+            gpr_kff_icf(gpr_len),               &
             gpr_logml(NumOfABFCVs),             &
             gpr_mlogml(NumOfABFCVs),            &
             gpr_m2logml(NumOfABFCVs),           &
@@ -716,53 +642,35 @@ subroutine abf_init_gpr
 ! init co-variance matrix
     do i=1,gpr_len
         do j=1,gpr_len
-            gpr_K_cvs(i,j) = abf_init_gpr_kernel(gpr_cvs_kernel,i,j,gpr_cvs_width)
+            gpr_K_icf(i,j) = abf_init_gpr_kernel(gpr_icf_kernel,i,j,gpr_icf_width)
         end do
     end do
 
-    if( gpr_sinc_amp .ne. 0.0d0 ) then
-        ! add sinc kernel if necessary
-        do i=1,gpr_len
-            do j=1,gpr_len
-                gpr_K_cvs(i,j) = gpr_K_cvs(i,j) + gpr_sinc_amp * abf_init_gpr_kernel_sinc(i,j)
-            end do
-        end do
-    end if
-
-    if( gpr_wiener_amp .ne. 0.0d0 ) then
-        ! add wiener process if necessary
-        do i=1,gpr_len
-            do j=1,gpr_len
-                gpr_K_cvs(i,j) = gpr_K_cvs(i,j) + gpr_wiener_amp * abf_init_gpr_kernel_wiener(i,j)
-            end do
-        end do
-    end if
-
 ! add noise
     do i=1,gpr_len
-        gpr_K_cvs(i,i) = gpr_K_cvs(i,i) + gpr_cvs_noise
+        gpr_K_icf(i,i) = gpr_K_icf(i,i) + gpr_icf_noise
     end do
 
     if( fdebug ) then
         j = gpr_len/2
-        open(unit=7812,file='gpr-kernel.cvs',status='UNKNOWN')
+        open(unit=7812,file='gpr-kernel.icf',status='UNKNOWN')
         do i=1,gpr_len
-            write(7812,*) i, gpr_K_cvs(i,j)
+            write(7812,*) i, gpr_K_icf(i,j)
         end do
         close(7812)
     end if
 
     write(PMF_OUT,10)
-    call abf_init_gpr_invK(gpr_K_cvs,gpr_K_cvs_logdet)
+    call abf_init_gpr_invK(gpr_K_icf,gpr_K_icf_logdet)
 
 ! init kfd
     gpr_mid = gpr_len/2 + 1
     do j=1,gpr_len
-        gpr_data(j) = abf_init_gpr_kernel_1d(gpr_cvs_kernel,gpr_mid,j,gpr_cvs_width)
+        gpr_data(j) = abf_init_gpr_kernel(gpr_icf_kernel,gpr_mid,j,gpr_icf_width)
     end do
 
     if( fdebug ) then
-        open(unit=7812,file='gpr-kernel.kfd',status='UNKNOWN')
+        open(unit=7812,file='gpr-kernel.kff-icf',status='UNKNOWN')
         do i=1,gpr_len
             write(7812,*) i, gpr_data(i)
         end do
@@ -773,20 +681,20 @@ subroutine abf_init_gpr
     do i=1,gpr_len
         v = 0.0d0
         do j=1,gpr_len
-            v = v + gpr_data(j) * gpr_K_cvs(j,i)
+            v = v + gpr_data(j) * gpr_K_icf(j,i)
         end do
-        gpr_kfd_cvs(i) = v
+        gpr_kff_icf(i) = v
     end do
 
     if( fdebug ) then
-        open(unit=7812,file='gpr-kernel.kfd-K',status='UNKNOWN')
+        open(unit=7812,file='gpr-kernel.kfd-icf-K',status='UNKNOWN')
         do i=1,gpr_len
-            write(7812,*) i, gpr_kfd_cvs(i)
+            write(7812,*) i, gpr_kff_icf(i)
         end do
         close(7812)
     end if
 
- 10 format('>>> ABF GPR - CVS: (K+Sigma)^-1')
+ 10 format('>>> ABF GPR - ICF: (K+Sigma)^-1')
 
 end subroutine abf_init_gpr
 

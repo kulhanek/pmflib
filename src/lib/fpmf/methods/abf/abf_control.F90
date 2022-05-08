@@ -146,23 +146,11 @@ subroutine abf_control_read_abf(prm_fin)
         call pmf_ctrl_read_integer(prm_fin,'gpr_len',gpr_len,'I12')
         call pmf_ctrl_check_integer('ABF','gpr_len',gpr_len,3,CND_GE)
 
-    ! CVS GPR
-        call pmf_ctrl_read_integer(prm_fin,'gpr_cvs_kernel',gpr_cvs_kernel,'I12')
-        call pmf_ctrl_check_integer_in_range('ABF','gpr_cvs_kernel',gpr_cvs_kernel,1,7)
-        call pmf_ctrl_read_real8_wunit(prm_fin,'gpr_cvs_width',TimeUnit,gpr_cvs_width,'F12.3')
-        call pmf_ctrl_read_real8(prm_fin,'gpr_cvs_noise',gpr_cvs_noise,'E12.5')
-
-        call pmf_ctrl_read_real8(prm_fin,'gpr_sinc_amp',gpr_sinc_amp,'E12.5')
-        call pmf_ctrl_read_real8_wunit(prm_fin,'gpr_sinc_width',TimeUnit,gpr_sinc_width,'F12.3')
-
-        call pmf_ctrl_read_real8(prm_fin,'gpr_wiener_amp',gpr_wiener_amp,'E12.5')
-        call pmf_ctrl_read_real8_wunit(prm_fin,'gpr_wiener_width',TimeUnit,gpr_wiener_width,'F12.3')
-
-        call pmf_ctrl_read_logical(prm_fin,'gpr_cvs_nomean',gpr_cvs_nomean)
-
     ! ICF GPR
-        call pmf_ctrl_read_integer(prm_fin,'gpr_icf_cdf',gpr_icf_cdf,'I12')
-        call pmf_ctrl_check_integer_in_range('ABF','gpr_icf_cdf',gpr_icf_cdf,0,1)
+        call pmf_ctrl_read_integer(prm_fin,'gpr_icf_kernel',gpr_icf_kernel,'I12')
+        call pmf_ctrl_check_integer_in_range('ABF','gpr_icf_kernel',gpr_icf_kernel,1,7)
+        call pmf_ctrl_read_real8_wunit(prm_fin,'gpr_icf_width',TimeUnit,gpr_icf_width,'F12.3')
+        call pmf_ctrl_read_real8(prm_fin,'gpr_icf_noise',gpr_icf_noise,'E12.5')
 
     ! SVD setup
         call pmf_ctrl_read_real8(prm_fin,'gpr_rcond',gpr_rcond,'E12.5')

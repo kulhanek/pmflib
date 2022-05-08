@@ -229,38 +229,23 @@ real(PMFDP),allocatable     :: ekinhist(:)          ! history of Ekin
 ! GPR facility -----------------------------------------------------------------
 integer                     :: gpr_len          ! MUST be odd number
 
-! CVS GPR
-real(PMFDP)                 :: gpr_cvs_width    ! kernel width in fs
-integer                     :: gpr_cvs_kernel   ! 0 - Exponential
+real(PMFDP)                 :: gpr_icf_width    ! kernel width in fs
+integer                     :: gpr_icf_kernel   ! 0 - Exponential
                                                 ! 1 - MC(3/2)
                                                 ! 2 - MC(5/2)
                                                 ! 3 - ARDSE
                                                 ! 4 - Epanechnikov (parabolic)
                                                 ! 5 - Quartic (biweight)
                                                 ! 6 - Triweight
-real(PMFDP)                 :: gpr_cvs_noise    ! noise magnitude
-
-real(PMFDP)                 :: gpr_sinc_amp
-real(PMFDP)                 :: gpr_sinc_width
-
-real(PMFDP)                 :: gpr_wiener_amp
-real(PMFDP)                 :: gpr_wiener_width
-
-logical                     :: gpr_cvs_nomean
-
-
-! ICF GPR
-integer                     :: gpr_icf_cdf      ! 0 - use central differences for the second differentiation in ICF calc.
+real(PMFDP)                 :: gpr_icf_noise    ! noise magnitude
 
 integer                     :: gpr_rank         ! rank for SVD inversion
 real(PMFDP)                 :: gpr_rcond        ! rcond for automatic rank determination
 real(PMFDP)                 :: gpr_rsigma       ! min value of sigma for ranking
 
-real(PMFDP),allocatable     :: gpr_K_cvs(:,:)   ! co-variance matrix for CVS, it contains the inverse
-real(PMFDP)                 :: gpr_K_cvs_logdet ! logarithm of K determinant
-real(PMFDP),allocatable     :: gpr_data(:)      ! GPR input data
-real(PMFDP),allocatable     :: gpr_model(:)     ! GPR model
-real(PMFDP),allocatable     :: gpr_kfd_cvs(:)   ! inference for cvs
+real(PMFDP),allocatable     :: gpr_K_icf(:,:)   ! co-variance matrix for CVS, it contains the inverse
+real(PMFDP)                 :: gpr_K_icf_logdet ! logarithm of K determinant
+real(PMFDP),allocatable     :: gpr_kff_icf(:)   ! inference for cvs
 
 logical                     :: gpr_calc_logxx   ! we want to get logml and logpl
 
@@ -272,6 +257,10 @@ real(PMFDP),allocatable     :: gpr_mlogml(:)    ! average
 real(PMFDP),allocatable     :: gpr_m2logml(:)   ! M2
 real(PMFDP),allocatable     :: gpr_mlogpl(:)    ! average
 real(PMFDP),allocatable     :: gpr_m2logpl(:)   ! M2
+
+
+real(PMFDP),allocatable     :: gpr_data(:)      ! GPR input data
+real(PMFDP),allocatable     :: gpr_model(:)     ! GPR model
 
 ! ------------------------------------------------------------------------------
 

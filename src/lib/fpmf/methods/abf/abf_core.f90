@@ -60,7 +60,7 @@ subroutine abf_core_main
         ! standard algorithms
         case(1)
             !call abf_core_force_2p
-            call abf_core_force_3pA
+            !call abf_core_force_3pA
         case(2)
             call abf_core_force_gpr
         case default
@@ -87,11 +87,9 @@ subroutine abf_core_shake
     ! --------------------------------------------------------------------------
 
     select case(fmode)
-        case(1)
+        case(1,2)
             ! fix total forces from SHAKE
             shist(:,:,hist_len) = SHAKEFrc(:,:)
-        case(2)
-            ! nothing to be done
         case default
             call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented fmode in abf_core_shake!')
     end select
@@ -111,10 +109,9 @@ subroutine abf_core_flng
     ! --------------------------------------------------------------------------
 
     select case(fmode)
-        case(1)
+        case(1,2)
             ! fix total forces from SHAKE
             lhist(:,:,hist_len) =  LNGFrc(:,:)
-        case(2)
         case default
             call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented fmode in abf_core_flng!')
     end select
@@ -447,13 +444,178 @@ end subroutine abf_core_flng
 !
 !end subroutine abf_core_force_3pA
 
+!!===============================================================================
+!! Subroutine:  abf_core_force_3pB
+!! this is leap-frog ABF version, simplified algorithm
+!! forces
+!!===============================================================================
+!
+!subroutine abf_core_force_3pA()
+!
+!    use pmf_utils
+!    use pmf_dat
+!    use pmf_cvs
+!    use abf_dat
+!    use abf_accu
+!    use pmf_timers
+!
+!    implicit none
+!    integer                :: i,j,k,m
+!    integer                :: ci,ki
+!    real(PMFDP)            :: v1,s1,s2,f1,f2,epot,erst,ekin
+!    ! --------------------------------------------------------------------------
+!
+!! shift accuvalue history
+!    do i=1,hist_len-1
+!        cvhist(:,i)     = cvhist(:,i+1)
+!        epothist(i)     = epothist(i+1)
+!        ersthist(i)     = ersthist(i+1)
+!        ekinhist(i)     = ekinhist(i+1)
+!        vhist(:,:,i)    = vhist(:,:,i+1)
+!        zdhist(:,:,:,i) = zdhist(:,:,:,i+1)
+!        micfhist(:,i)   = micfhist(:,i+1)
+!        fhist(:,:,i)    = fhist(:,:,i+1)
+!        shist(:,:,i)    = shist(:,:,i+1)
+!        lhist(:,:,i)    = lhist(:,:,i+1)
+!    end do
+!
+!    do i=1,NumOfABFCVs
+!        ci = ABFCVList(i)%cvindx
+!        cvhist(i,hist_len) = CVContext%CVsValues(ci)
+!    end do
+!    vhist(:,:,hist_len)    = Vel(:,:)
+!
+!! shift epot ene
+!    epothist(hist_len)      = PotEne - fepotaverage  ! t
+!    ersthist(hist_len)      = PMFEne                 ! t
+!    ekinhist(hist_len)      = KinEneH - fekinaverage ! t-dt/2
+!
+!! calculate Z matrix and its inverse
+!    call abf_core_calc_Zmat(CVContext)
+!
+!    do i=1,NumOfABFCVs
+!        do j=1,NumOfLAtoms
+!            do m=1,3
+!                v1 = 0.0d0
+!                do k=1,NumOfABFCVs
+!                    ki = ABFCVList(k)%cvindx
+!                    v1 = v1 + fzinv(i,k)*CVContext%CVsDrvs(m,j,ki)
+!                end do
+!                zdhist(m,j,i,hist_len) = v1
+!            end do
+!        end do
+!    end do
+!
+!! apply force filters
+!    la(:) = 0.0d0
+!    if( fapply_abf ) then
+!        ! calculate abf force to be applied
+!        select case(feimode)
+!            case(0)
+!                call abf_accu_get_data(cvhist(:,hist_len),la)
+!            case(1)
+!                call abf_accu_get_data_lramp(cvhist(:,hist_len),la)
+!            case(2)
+!                call pmf_timers_start_timer(PMFLIB_ABF_KS_TIMER)
+!                    call abf_accu_get_data_ksmooth(cvhist(:,hist_len),la)
+!                call pmf_timers_stop_timer(PMFLIB_ABF_KS_TIMER)
+!            case(3)
+!                call abf_accu_get_data_lsmooth(cvhist(:,hist_len),la)
+!            case default
+!                call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented extrapolation/interpolation mode!')
+!        end select
+!
+!        ! project abf force along coordinate
+!        do i=1,NumOfABFCVs
+!            ci = ABFCVList(i)%cvindx
+!            do j=1,NumOfLAtoms
+!                Frc(:,j) = Frc(:,j) + la(i) * CVContext%CVsDrvs(:,j,ci)
+!            end do
+!        end do
+!    end if
+!    micfhist(:,hist_len) = la(:)
+!
+!    fhist(:,:,hist_len)  = Frc(:,:)
+!
+!    if( frecord ) then
+!        ! record time progress of data
+!        call abf_accu_add_data_record_lf(cvhist(:,hist_len),fzinv,la, &
+!                                         epothist(hist_len),ersthist(hist_len),ekinhist(hist_len-1))
+!     end if
+!
+!! ABF part
+!    if( fstep .ge. hist_len ) then
+!        do i=1,NumOfABFCVs
+!            f1 = 0.0d0
+!            f2 = 0.0d0
+!            s1 = 0.0d0
+!            s2 = 0.0d0
+!            v1 = 0.0d0
+!            do j=1,NumOfLAtoms
+!                do m=1,3
+!                    ! force part
+!                    f1 = f1 + zdhist(m,j,i,hist_len-0) * fhist(m,j,hist_len-0) * MassInv(j)
+!                    f2 = f2 + zdhist(m,j,i,hist_len-1) * fhist(m,j,hist_len-1) * MassInv(j)
+!                    s1 = s1 + zdhist(m,j,i,hist_len-0) * shist(m,j,hist_len-0) * MassInv(j)
+!                    s2 = s2 + zdhist(m,j,i,hist_len-1) * shist(m,j,hist_len-1) * MassInv(j)
+!                    ! velocity part
+!                    v1 = v1 + (zdhist(m,j,i,hist_len-0)-zdhist(m,j,i,hist_len-1)) * vhist(m,j,hist_len-0)
+!                end do
+!            end do
+!            pxi0(i) = (f1+f2)*0.5d0
+!            pxi1(i) = (s1+s2)*0.5d0
+!            pxi2(i) = 0.0
+!            pxi3(i) = v1*ifdtx
+!        end do
+!
+!        cvave(:) = (cvhist(:,hist_len-0) + cvhist(:,hist_len-1))*0.5d0
+!
+!
+!        la(:) = 0.0d0
+!        if( fapply_abf ) then
+!            ! calculate abf force to be applied
+!            select case(feimode)
+!                case(0)
+!                    call abf_accu_get_data(cvave,la)
+!                case(1)
+!                    call abf_accu_get_data_lramp(cvave,la)
+!                case(2)
+!                    call pmf_timers_start_timer(PMFLIB_ABF_KS_TIMER)
+!                        call abf_accu_get_data_ksmooth(cvave,la)
+!                    call pmf_timers_stop_timer(PMFLIB_ABF_KS_TIMER)
+!                case(3)
+!                    call abf_accu_get_data_lsmooth(cvave,la)
+!                case default
+!                    call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented extrapolation/interpolation mode!')
+!            end select
+!        end if
+!
+!        ! total ABF force
+!        pxip(:) = pxi0(:) + pxi1(:) + pxi3(:) - la(:)  ! unbiased estimate
+!
+!        epot = 0.5d0*(epothist(hist_len-0)+epothist(hist_len-1))
+!        erst = 0.5d0*(ersthist(hist_len-0)+ersthist(hist_len-1))
+!        ekin = ekinhist(hist_len-0)
+!
+!        ! add data to accumulator
+!        call abf_accu_add_data_online(cvave,pxip,epot,erst,ekin)
+!
+!        if( fentropy .and. fentdecomp ) then
+!            call abf_accu_add_data_entropy_decompose(cvave,pxi0,pxi3,la(:),pxi1,pxi2,epot,erst,ekin)
+!        end if
+!    end if
+!
+!    return
+!
+!end subroutine abf_core_force_3pA
+
 !===============================================================================
 ! Subroutine:  abf_core_force_3pB
 ! this is leap-frog ABF version, simplified algorithm
 ! forces
 !===============================================================================
 
-subroutine abf_core_force_3pA()
+subroutine abf_core_force_gpr()
 
     use pmf_utils
     use pmf_dat
@@ -464,8 +626,8 @@ subroutine abf_core_force_3pA()
 
     implicit none
     integer                :: i,j,k,m
-    integer                :: ci,ki
-    real(PMFDP)            :: v1,s1,s2,f1,f2,epot,erst,ekin
+    integer                :: ci,ki,gpr_mid
+    real(PMFDP)            :: v1,v2,s1,l1,f1,epot,erst,ekin,depot1,depot2,invn,mean
     ! --------------------------------------------------------------------------
 
 ! shift accuvalue history
@@ -477,6 +639,7 @@ subroutine abf_core_force_3pA()
         vhist(:,:,i)    = vhist(:,:,i+1)
         zdhist(:,:,:,i) = zdhist(:,:,:,i+1)
         micfhist(:,i)   = micfhist(:,i+1)
+        icfhist(:,i)   = icfhist(:,i+1)
         fhist(:,:,i)    = fhist(:,:,i+1)
         shist(:,:,i)    = shist(:,:,i+1)
         lhist(:,:,i)    = lhist(:,:,i+1)
@@ -489,9 +652,11 @@ subroutine abf_core_force_3pA()
     vhist(:,:,hist_len)    = Vel(:,:)
 
 ! shift epot ene
-    epothist(hist_len)      = PotEne - fepotaverage  ! t
-    ersthist(hist_len)      = PMFEne                 ! t
-    ekinhist(hist_len)      = KinEneH - fekinaverage ! t-dt/2
+    epothist(hist_len)      = PotEne - fepotaverage
+    ersthist(hist_len)      = PMFEne
+
+    ! ekinhist(hist_len-1)    = KinEne - fekinaverage    ! shifted by -dt
+    ekinhist(hist_len-1)    = KinEne - fekinaverage    ! shifted by -dt
 
 ! calculate Z matrix and its inverse
     call abf_core_calc_Zmat(CVContext)
@@ -547,70 +712,115 @@ subroutine abf_core_force_3pA()
      end if
 
 ! ABF part
-    if( fstep .ge. hist_len ) then
-        do i=1,NumOfABFCVs
-            f1 = 0.0d0
-            f2 = 0.0d0
-            s1 = 0.0d0
-            s2 = 0.0d0
-            v1 = 0.0d0
-            do j=1,NumOfLAtoms
-                do m=1,3
-                    ! force part
-                    f1 = f1 + zdhist(m,j,i,hist_len-0) * fhist(m,j,hist_len-0) * MassInv(j)
-                    f2 = f2 + zdhist(m,j,i,hist_len-1) * fhist(m,j,hist_len-1) * MassInv(j)
-                    s1 = s1 + zdhist(m,j,i,hist_len-0) * shist(m,j,hist_len-0) * MassInv(j)
-                    s2 = s2 + zdhist(m,j,i,hist_len-1) * shist(m,j,hist_len-1) * MassInv(j)
-                    ! velocity part
-                    v1 = v1 + (zdhist(m,j,i,hist_len-0)-zdhist(m,j,i,hist_len-1)) * vhist(m,j,hist_len-0)
-                end do
+    if( fstep .lt. 3 ) return
+
+    do i=1,NumOfABFCVs
+        f1 = 0.0d0
+        s1 = 0.0d0
+        l1 = 0.0d0
+        v1 = 0.0d0
+        v2 = 0.0d0
+        do j=1,NumOfLAtoms
+            do m=1,3
+                ! force part
+                f1 = f1 + zdhist(m,j,i,hist_len-1) * fhist(m,j,hist_len-1) * MassInv(j)
+                s1 = s1 + zdhist(m,j,i,hist_len-1) * shist(m,j,hist_len-1) * MassInv(j)
+                l1 = l1 + zdhist(m,j,i,hist_len-1) * lhist(m,j,hist_len-1) * MassInv(j)
+                ! velocity part
+                v1 = v1 + (zdhist(m,j,i,hist_len-0)-zdhist(m,j,i,hist_len-1)) * vhist(m,j,hist_len-0)
+                v2 = v2 + (zdhist(m,j,i,hist_len-1)-zdhist(m,j,i,hist_len-2)) * vhist(m,j,hist_len-1)
             end do
-            pxi0(i) = (f1+f2)*0.5d0
-            pxi1(i) = (s1+s2)*0.5d0
-            pxi2(i) = 0.0
-            pxi3(i) = v1*ifdtx
+        end do
+        pxi0(i) = f1
+        pxi1(i) = s1
+        pxi2(i) = l1
+        pxi3(i) = 0.5d0*(v1+v2)*ifdtx
+    end do
+
+    !write(369,*) fstep, f1,s1,l1,0.5d0*(v1+v2)*ifdtx
+
+    ! total ABF force
+    icfhist(:,hist_len-1) = pxi0(:) + pxi1(:) + pxi3(:) - micfhist(:,hist_len-1)  ! unbiased estimate
+
+    if( fstep .lt. gpr_len ) return
+
+    gpr_mid = gpr_len/2+1
+
+    ! put CV velocities in pxi1
+    do i=1,NumOfABFCVs
+        ! calculate mean value
+        mean = 0.0d0
+
+        do k=1,gpr_len
+            mean = mean + icfhist(i,k)
+        end do
+        mean = mean / real(gpr_len,PMFDP)
+
+        ! shift data
+        l1 = cbuff_pos
+        do k=1,gpr_len
+            gpr_data(k) = icfhist(i,k) - mean
         end do
 
-        cvave(:) = (cvhist(:,hist_len-0) + cvhist(:,hist_len-1))*0.5d0
+        pxip(i) = dot_product(gpr_data,gpr_kff_icf) + mean
 
-
-        la(:) = 0.0d0
-        if( fapply_abf ) then
-            ! calculate abf force to be applied
-            select case(feimode)
-                case(0)
-                    call abf_accu_get_data(cvave,la)
-                case(1)
-                    call abf_accu_get_data_lramp(cvave,la)
-                case(2)
-                    call pmf_timers_start_timer(PMFLIB_ABF_KS_TIMER)
-                        call abf_accu_get_data_ksmooth(cvave,la)
-                    call pmf_timers_stop_timer(PMFLIB_ABF_KS_TIMER)
-                case(3)
-                    call abf_accu_get_data_lsmooth(cvave,la)
-                case default
-                    call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented extrapolation/interpolation mode!')
-            end select
+        if( fdebug ) then
+            write(7812,*) fstep-gpr_len-3+gpr_mid, icfhist(1,gpr_mid), pxip(1)
         end if
 
-        ! total ABF force
-        pxip(:) = pxi0(:) + pxi1(:) + pxi3(:) - la(:)  ! unbiased estimate
+        if( gpr_calc_logxx ) then
+            ! calculate logML
+            ! solve GPR
+            call dgemv('N',gpr_len,gpr_len,1.0d0,gpr_K_icf,gpr_len,gpr_data,1,0.0d0,gpr_model,1)
 
-        epot = 0.5d0*(epothist(hist_len-0)+epothist(hist_len-1))
-        erst = 0.5d0*(ersthist(hist_len-0)+ersthist(hist_len-1))
-        ekin = ekinhist(hist_len-0)
+                ! calculate CV derivative in time - derivative is shift invariant
+            gpr_logml(i) = -0.5d0*dot_product(gpr_data,gpr_model)   &
+                        - 0.5d0*gpr_K_icf_logdet                    &
+                        - 0.5d0*real(gpr_len,PMFDP)*log(2.0*PMF_PI)
 
-        ! add data to accumulator
-        call abf_accu_add_data_online(cvave,pxip,epot,erst,ekin)
+            gpr_logpl(i) = - 0.5d0*real(gpr_len,PMFDP)*log(2.0*PMF_PI)
+            do k=1,gpr_len
+                gpr_logpl(i) = gpr_logpl(i) + 0.5d0*log(gpr_K_icf(k,k)) - 0.5d0*gpr_model(k)**2/gpr_K_icf(k,k)
+            end do
 
-        if( fentropy .and. fentdecomp ) then
-            call abf_accu_add_data_entropy_decompose(cvave,pxi0,pxi3,la(:),pxi1,pxi2,epot,erst,ekin)
+            if ( fdebug ) then
+                write(789,*) fstep, gpr_logml(1), gpr_logpl(1)
+            end if
+
+            ! increase number of samples
+            gpr_nlogxx = gpr_nlogxx + 1.0d0
+            invn = 1.0d0 / gpr_nlogxx
+
+            ! statistics
+            depot1 = gpr_logml(i) - gpr_mlogml(i)
+            gpr_mlogml(i)  = gpr_mlogml(i)  + depot1 * invn
+            depot2 = gpr_logml(i) - gpr_mlogml(i)
+            gpr_m2logml(i) = gpr_m2logml(i) + depot1 * depot2
+
+            ! statistics
+            depot1 = gpr_logpl(i) - gpr_mlogpl(i)
+            gpr_mlogpl(i)  = gpr_mlogpl(i)  + depot1 * invn
+            depot2 = gpr_logpl(i) - gpr_mlogpl(i)
+            gpr_m2logpl(i) = gpr_m2logpl(i) + depot1 * depot2
         end if
+    end do
+
+    epot = epothist(gpr_mid)
+    erst = ersthist(gpr_mid)
+    ekin = ekinhist(gpr_mid)
+
+    write(5289,*) fstep,pxip(1),epot,erst,ekin
+
+    ! add data to accumulator
+    call abf_accu_add_data_online(cvhist(:,gpr_mid),pxip,epot,erst,ekin)
+
+    if( fentropy .and. fentdecomp ) then
+        ! call abf_accu_add_data_entropy_decompose(cvhist(:,hist_len-1),pxi0,pxi3,micfhist(:,hist_len-1),pxi1,pxi2,epot,erst,ekin)
     end if
 
     return
 
-end subroutine abf_core_force_3pA
+end subroutine abf_core_force_gpr
 
 !!===============================================================================
 !! Subroutine:  abf_core_force_2p
@@ -758,226 +968,447 @@ end subroutine abf_core_force_3pA
 !
 !end subroutine abf_core_force_2p
 
-!===============================================================================
-! Subroutine:  abf_core_force_gpr
-! this is leap-frog ABF version, GPR algorithm
-! forces GPR process
-!===============================================================================
+!!===============================================================================
+!! Subroutine:  abf_core_force_gpr
+!! this is leap-frog ABF version, GPR algorithm
+!! forces GPR process
+!!===============================================================================
+!
+!subroutine abf_core_force_gpr()
+!
+!    use pmf_utils
+!    use pmf_dat
+!    use pmf_cvs
+!    use abf_dat
+!    use abf_accu
+!    use pmf_timers
+!    use abf_init
+!
+!    implicit none
+!    integer     :: i,j,k,l1,l2,p1,p2
+!    integer     :: ci,gpr_mid
+!    real(PMFDP) :: v,epot,erst,ekin,mean
+!    real(PMFDP) :: invn,depot1,depot2
+!    ! --------------------------------------------------------------------------
+!
+!    ! in this algorithm, we use circular buffer
+!    cbuff_pos = cbuff_pos + 1
+!    if( cbuff_pos .gt. gpr_len ) then
+!        cbuff_pos = 1
+!    end if
+!
+!! update values
+!    do i=1,NumOfABFCVs
+!        ci = ABFCVList(i)%cvindx
+!        cvhist(i,cbuff_pos)  = CVContext%CVsValues(ci)
+!    end do
+!
+!    epothist(cbuff_pos)     = PotEne - fepotaverage
+!    ersthist(cbuff_pos)     = PMFEne
+!    if( cbuff_pos-1 .le. 0 ) then
+!        ekinhist(gpr_len)    = KinEne - fekinaverage    ! shifted by -dt
+!    else
+!        ekinhist(cbuff_pos-1) = KinEne - fekinaverage    ! shifted by -dt
+!    end if
+!
+!! calculate Z matrix and its inverse
+!    call abf_core_calc_Zmat(CVContext)
+!    fzinvhist(:,:,cbuff_pos) = fzinv(:,:)
+!
+!! apply ABF force
+!    la(:) = 0.0d0
+!    if( fapply_abf ) then
+!        ! calculate abf force to be applied
+!        select case(feimode)
+!            case(0)
+!                call abf_accu_get_data(cvhist(:,cbuff_pos),la)
+!            case(1)
+!                call abf_accu_get_data_lramp(cvhist(:,cbuff_pos),la)
+!            case(2)
+!                call pmf_timers_start_timer(PMFLIB_ABF_KS_TIMER)
+!                    call abf_accu_get_data_ksmooth(cvhist(:,cbuff_pos),la)
+!                call pmf_timers_stop_timer(PMFLIB_ABF_KS_TIMER)
+!            case(3)
+!                call abf_accu_get_data_lsmooth(cvhist(:,cbuff_pos),la)
+!            case default
+!                call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented extrapolation/interpolation mode!')
+!        end select
+!
+!        ! project abf force along coordinate
+!        do i=1,NumOfABFCVs
+!            ci = ABFCVList(i)%cvindx
+!            do j=1,NumOfLAtoms
+!                Frc(:,j) = Frc(:,j) + la(i) * CVContext%CVsDrvs(:,j,ci)
+!            end do
+!        end do
+!    end if
+!    micfhist(:,cbuff_pos)    = la(:)
+!
+!    if( frecord ) then
+!        ! record time progress of data
+!        if( cbuff_pos-1 .le. 0 ) then
+!            ekin = ekinhist(gpr_len)
+!        else
+!            ekin = ekinhist(cbuff_pos-1)
+!        end if
+!        call abf_accu_add_data_record_lf(cvhist(:,cbuff_pos),fzinvhist(:,:,cbuff_pos),micfhist(:,cbuff_pos), &
+!                                         epothist(cbuff_pos),ersthist(cbuff_pos),ekin)
+!     end if
+!
+!    if( fstep .le. gpr_len )  return
+!
+!    ! predict cv velocity at gpr_len/2+1 centered around cbuff_pos - gpr_len/2
+!    gpr_mid = cbuff_pos - gpr_len/2
+!    if( gpr_mid .le. 0 ) then
+!        gpr_mid = gpr_mid + gpr_len
+!    end if
+!
+!    ! put CV velocities in pxi1
+!    do i=1,NumOfABFCVs
+!        ! calculate mean value
+!        mean = 0.0d0
+!
+!        if( .not. gpr_cvs_nomean ) then
+!            do k=1,gpr_len
+!                mean = mean + cvhist(i,k)
+!            end do
+!            mean = mean / real(gpr_len,PMFDP)
+!        end if
+!
+!        ! shift data
+!        l1 = cbuff_pos
+!        do k=gpr_len,1,-1
+!            gpr_data(k) = cvhist(i,l1) - mean
+!            l1 = l1 - 1
+!            if( l1 .le. 0 ) l1 = l1 + gpr_len
+!        end do
+!
+!        pxi1(i) = dot_product(gpr_data,gpr_kfd_cvs)
+!
+!        if( gpr_calc_logxx ) then
+!            ! calculate logML
+!            ! solve GPR
+!            call dgemv('N',gpr_len,gpr_len,1.0d0,gpr_K_cvs,gpr_len,gpr_data,1,0.0d0,gpr_model,1)
+!
+!                ! calculate CV derivative in time - derivative is shift invariant
+!            gpr_logml(i) = -0.5d0*dot_product(gpr_data,gpr_model)   &
+!                        - 0.5d0*gpr_K_cvs_logdet                    &
+!                        - 0.5d0*real(gpr_len,PMFDP)*log(2.0*PMF_PI)
+!
+!            gpr_logpl(i) = - 0.5d0*real(gpr_len,PMFDP)*log(2.0*PMF_PI)
+!            do k=1,gpr_len
+!                gpr_logpl(i) = gpr_logpl(i) + 0.5d0*log(gpr_K_cvs(k,k)) - 0.5d0*gpr_model(k)**2/gpr_K_cvs(k,k)
+!            end do
+!
+!            if ( fdebug ) then
+!                write(789,*) fstep, gpr_logml(1), gpr_logpl(1)
+!            end if
+!
+!            ! increase number of samples
+!            gpr_nlogxx = gpr_nlogxx + 1.0d0
+!            invn = 1.0d0 / gpr_nlogxx
+!
+!            ! statistics
+!            depot1 = gpr_logml(i) - gpr_mlogml(i)
+!            gpr_mlogml(i)  = gpr_mlogml(i)  + depot1 * invn
+!            depot2 = gpr_logml(i) - gpr_mlogml(i)
+!            gpr_m2logml(i) = gpr_m2logml(i) + depot1 * depot2
+!
+!            ! statistics
+!            depot1 = gpr_logpl(i) - gpr_mlogpl(i)
+!            gpr_mlogpl(i)  = gpr_mlogpl(i)  + depot1 * invn
+!            depot2 = gpr_logpl(i) - gpr_mlogpl(i)
+!            gpr_m2logpl(i) = gpr_m2logpl(i) + depot1 * depot2
+!        end if
+!    end do
+!
+!! calculate momenta
+!    do i=1,NumOfABFCVs
+!        v = 0.0d0
+!        do j=1,NumOfABFCVs
+!            v = v + fzinvhist(i,j,gpr_mid) * pxi1(j)
+!        end do
+!        xphist(i,gpr_mid) = v
+!    end do
+!
+!    ! write(148569,*) fstep, gpr_mid, cvhist(1,gpr_mid), pxi1(1), xphist(1,gpr_mid)
+!
+!! calculate derivatives of CV momenta
+!    select case(gpr_icf_cdf)
+!        case(0)
+!            ! move gpr_mid by one element left so we have three valid points
+!            gpr_mid = gpr_mid - 1
+!            if( gpr_mid .le. 0 ) gpr_mid = gpr_mid + gpr_len
+!
+!            ! central differences - 2p+1 - indexes
+!            l1 = gpr_mid - 1
+!            if( l1 .le. 0 ) l1 = l1 + gpr_len
+!            p1 = gpr_mid + 1
+!            if( p1 .gt. gpr_len ) p1 = p1 - gpr_len
+!
+!            ! central differences - 2p+1
+!            do i=1,NumOfABFCVs
+!                icfhist(i,gpr_mid) = 0.5d0*(xphist(i,p1)-xphist(i,l1))*ifdtx
+!            end do
+!        case(1)
+!            ! move gpr_mid by two elements left so we have five valid points
+!            gpr_mid = gpr_mid - 2
+!            if( gpr_mid .le. 0 ) gpr_mid = gpr_mid + gpr_len
+!
+!            ! central differences - 4p+1 - indexes
+!            l2 = gpr_mid - 2
+!            if( l2 .le. 0 ) l2 = l2 + gpr_len
+!            l1 = gpr_mid - 1
+!            if( l1 .le. 0 ) l1 = l1 + gpr_len
+!            p1 = gpr_mid + 1
+!            if( p1 .gt. gpr_len ) p1 = p1 - gpr_len
+!            p2 = gpr_mid + 2
+!            if( p2 .gt. gpr_len ) p2 = p2 - gpr_len
+!
+!            ! central differences - 4p+1
+!            do i=1,NumOfABFCVs
+!                icfhist(i,gpr_mid) = (1.0d0/12.0d0)*(-xphist(i,p2) +8.0d0*xphist(i,p1) -8.0d0*xphist(i,l1) +xphist(i,l2))*ifdtx
+!            end do
+!        case default
+!            call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented gpr_icf_cdf mode!')
+!    end select
+!
+!! record new data
+!    pxi0(:) = icfhist(:,gpr_mid) - micfhist(:,gpr_mid)
+!
+!    epot = epothist(gpr_mid)
+!    erst = ersthist(gpr_mid)
+!    ekin = ekinhist(gpr_mid)
+!
+!    if( fdebug ) then
+!        write(DEBUG_ABF_FMODE4,*) fstep-hist_len+k, cvhist(:,k), pxi0, epot, erst, ekin
+!    end if
+!
+!    ! add data to accumulator
+!    call abf_accu_add_data_online(cvhist(:,gpr_mid),pxi0,epot,erst,ekin)
+!
+!end subroutine abf_core_force_gpr
 
-subroutine abf_core_force_gpr()
-
-    use pmf_utils
-    use pmf_dat
-    use pmf_cvs
-    use abf_dat
-    use abf_accu
-    use pmf_timers
-    use abf_init
-
-    implicit none
-    integer     :: i,j,k,l1,l2,p1,p2
-    integer     :: ci,gpr_mid
-    real(PMFDP) :: v,epot,erst,ekin,mean
-    real(PMFDP) :: invn,depot1,depot2
-    ! --------------------------------------------------------------------------
-
-    ! in this algorithm, we use circular buffer
-    cbuff_pos = cbuff_pos + 1
-    if( cbuff_pos .gt. gpr_len ) then
-        cbuff_pos = 1
-    end if
-
-! update values
-    do i=1,NumOfABFCVs
-        ci = ABFCVList(i)%cvindx
-        cvhist(i,cbuff_pos)  = CVContext%CVsValues(ci)
-    end do
-
-    epothist(cbuff_pos)     = PotEne - fepotaverage
-    ersthist(cbuff_pos)     = PMFEne
-    if( cbuff_pos-1 .le. 0 ) then
-        ekinhist(gpr_len)    = KinEne - fekinaverage    ! shifted by -dt
-    else
-        ekinhist(cbuff_pos-1) = KinEne - fekinaverage    ! shifted by -dt
-    end if
-
-! calculate Z matrix and its inverse
-    call abf_core_calc_Zmat(CVContext)
-    fzinvhist(:,:,cbuff_pos) = fzinv(:,:)
-
-! apply ABF force
-    la(:) = 0.0d0
-    if( fapply_abf ) then
-        ! calculate abf force to be applied
-        select case(feimode)
-            case(0)
-                call abf_accu_get_data(cvhist(:,cbuff_pos),la)
-            case(1)
-                call abf_accu_get_data_lramp(cvhist(:,cbuff_pos),la)
-            case(2)
-                call pmf_timers_start_timer(PMFLIB_ABF_KS_TIMER)
-                    call abf_accu_get_data_ksmooth(cvhist(:,cbuff_pos),la)
-                call pmf_timers_stop_timer(PMFLIB_ABF_KS_TIMER)
-            case(3)
-                call abf_accu_get_data_lsmooth(cvhist(:,cbuff_pos),la)
-            case default
-                call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented extrapolation/interpolation mode!')
-        end select
-
-        ! project abf force along coordinate
-        do i=1,NumOfABFCVs
-            ci = ABFCVList(i)%cvindx
-            do j=1,NumOfLAtoms
-                Frc(:,j) = Frc(:,j) + la(i) * CVContext%CVsDrvs(:,j,ci)
-            end do
-        end do
-    end if
-    micfhist(:,cbuff_pos)    = la(:)
-
-    if( frecord ) then
-        ! record time progress of data
-        if( cbuff_pos-1 .le. 0 ) then
-            ekin = ekinhist(gpr_len)
-        else
-            ekin = ekinhist(cbuff_pos-1)
-        end if
-        call abf_accu_add_data_record_lf(cvhist(:,cbuff_pos),fzinvhist(:,:,cbuff_pos),micfhist(:,cbuff_pos), &
-                                         epothist(cbuff_pos),ersthist(cbuff_pos),ekin)
-     end if
-
-    if( fstep .le. gpr_len )  return
-
-    ! predict cv velocity at gpr_len/2+1 centered around cbuff_pos - gpr_len/2
-    gpr_mid = cbuff_pos - gpr_len/2
-    if( gpr_mid .le. 0 ) then
-        gpr_mid = gpr_mid + gpr_len
-    end if
-
-    ! put CV velocities in pxi1
-    do i=1,NumOfABFCVs
-        ! calculate mean value
-        mean = 0.0d0
-
-        if( .not. gpr_cvs_nomean ) then
-            do k=1,gpr_len
-                mean = mean + cvhist(i,k)
-            end do
-            mean = mean / real(gpr_len,PMFDP)
-        end if
-
-        ! shift data
-        l1 = cbuff_pos
-        do k=gpr_len,1,-1
-            gpr_data(k) = cvhist(i,l1) - mean
-            l1 = l1 - 1
-            if( l1 .le. 0 ) l1 = l1 + gpr_len
-        end do
-
-        pxi1(i) = dot_product(gpr_data,gpr_kfd_cvs)
-
-        if( gpr_calc_logxx ) then
-            ! calculate logML
-            ! solve GPR
-            call dgemv('N',gpr_len,gpr_len,1.0d0,gpr_K_cvs,gpr_len,gpr_data,1,0.0d0,gpr_model,1)
-
-                ! calculate CV derivative in time - derivative is shift invariant
-            gpr_logml(i) = -0.5d0*dot_product(gpr_data,gpr_model)   &
-                        - 0.5d0*gpr_K_cvs_logdet                    &
-                        - 0.5d0*real(gpr_len,PMFDP)*log(2.0*PMF_PI)
-
-            gpr_logpl(i) = - 0.5d0*real(gpr_len,PMFDP)*log(2.0*PMF_PI)
-            do k=1,gpr_len
-                gpr_logpl(i) = gpr_logpl(i) + 0.5d0*log(gpr_K_cvs(k,k)) - 0.5d0*gpr_model(k)**2/gpr_K_cvs(k,k)
-            end do
-
-            if ( fdebug ) then
-                write(789,*) fstep, gpr_logml(1), gpr_logpl(1)
-            end if
-
-            ! increase number of samples
-            gpr_nlogxx = gpr_nlogxx + 1.0d0
-            invn = 1.0d0 / gpr_nlogxx
-
-            ! statistics
-            depot1 = gpr_logml(i) - gpr_mlogml(i)
-            gpr_mlogml(i)  = gpr_mlogml(i)  + depot1 * invn
-            depot2 = gpr_logml(i) - gpr_mlogml(i)
-            gpr_m2logml(i) = gpr_m2logml(i) + depot1 * depot2
-
-            ! statistics
-            depot1 = gpr_logpl(i) - gpr_mlogpl(i)
-            gpr_mlogpl(i)  = gpr_mlogpl(i)  + depot1 * invn
-            depot2 = gpr_logpl(i) - gpr_mlogpl(i)
-            gpr_m2logpl(i) = gpr_m2logpl(i) + depot1 * depot2
-        end if
-    end do
-
-! calculate momenta
-    do i=1,NumOfABFCVs
-        v = 0.0d0
-        do j=1,NumOfABFCVs
-            v = v + fzinvhist(i,j,gpr_mid) * pxi1(j)
-        end do
-        xphist(i,gpr_mid) = v
-    end do
-
-    ! write(148569,*) fstep, gpr_mid, cvhist(1,gpr_mid), pxi1(1), xphist(1,gpr_mid)
-
-! calculate derivatives of CV momenta
-    select case(gpr_icf_cdf)
-        case(0)
-            ! move gpr_mid by one element left so we have three valid points
-            gpr_mid = gpr_mid - 1
-            if( gpr_mid .le. 0 ) gpr_mid = gpr_mid + gpr_len
-
-            ! central differences - 2p+1 - indexes
-            l1 = gpr_mid - 1
-            if( l1 .le. 0 ) l1 = l1 + gpr_len
-            p1 = gpr_mid + 1
-            if( p1 .gt. gpr_len ) p1 = p1 - gpr_len
-
-            ! central differences - 2p+1
-            do i=1,NumOfABFCVs
-                icfhist(i,gpr_mid) = 0.5d0*(xphist(i,p1)-xphist(i,l1))*ifdtx
-            end do
-        case(1)
-            ! move gpr_mid by two elements left so we have five valid points
-            gpr_mid = gpr_mid - 2
-            if( gpr_mid .le. 0 ) gpr_mid = gpr_mid + gpr_len
-
-            ! central differences - 4p+1 - indexes
-            l2 = gpr_mid - 2
-            if( l2 .le. 0 ) l2 = l2 + gpr_len
-            l1 = gpr_mid - 1
-            if( l1 .le. 0 ) l1 = l1 + gpr_len
-            p1 = gpr_mid + 1
-            if( p1 .gt. gpr_len ) p1 = p1 - gpr_len
-            p2 = gpr_mid + 2
-            if( p2 .gt. gpr_len ) p2 = p2 - gpr_len
-
-            ! central differences - 4p+1
-            do i=1,NumOfABFCVs
-                icfhist(i,gpr_mid) = (1.0d0/12.0d0)*(-xphist(i,p2) +8.0d0*xphist(i,p1) -8.0d0*xphist(i,l1) +xphist(i,l2))*ifdtx
-            end do
-        case default
-            call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented gpr_icf_cdf mode!')
-    end select
-
-! record new data
-    pxi0(:) = icfhist(:,gpr_mid) - micfhist(:,gpr_mid)
-
-    epot = epothist(gpr_mid)
-    erst = ersthist(gpr_mid)
-    ekin = ekinhist(gpr_mid)
-
-    if( fdebug ) then
-        write(DEBUG_ABF_FMODE4,*) fstep-hist_len+k, cvhist(:,k), pxi0, epot, erst, ekin
-    end if
-
-    ! add data to accumulator
-    call abf_accu_add_data_online(cvhist(:,gpr_mid),pxi0,epot,erst,ekin)
-
-end subroutine abf_core_force_gpr
+!!===============================================================================
+!! Subroutine:  abf_core_force_gpr
+!! this is leap-frog ABF version, GPR algorithm
+!! forces GPR process
+!!===============================================================================
+!
+!subroutine abf_core_force_gpr()
+!
+!    use pmf_utils
+!    use pmf_dat
+!    use pmf_cvs
+!    use abf_dat
+!    use abf_accu
+!    use pmf_timers
+!    use abf_init
+!
+!    implicit none
+!    integer     :: i,j,k,l1,l2,p1,p2
+!    integer     :: ci,gpr_mid
+!    real(PMFDP) :: v,epot,erst,ekin,mean
+!    real(PMFDP) :: invn,depot1,depot2
+!    ! --------------------------------------------------------------------------
+!
+!    ! in this algorithm, we use circular buffer
+!    cbuff_pos = cbuff_pos + 1
+!    if( cbuff_pos .gt. gpr_len ) then
+!        cbuff_pos = 1
+!    end if
+!
+!! update values
+!    do i=1,NumOfABFCVs
+!        ci = ABFCVList(i)%cvindx
+!        cvhist(i,cbuff_pos)  = CVContext%CVsValues(ci)
+!    end do
+!
+!    epothist(cbuff_pos)     = PotEne - fepotaverage
+!    ersthist(cbuff_pos)     = PMFEne
+!    if( cbuff_pos-1 .le. 0 ) then
+!        ekinhist(gpr_len)    = KinEne - fekinaverage    ! shifted by -dt
+!    else
+!        ekinhist(cbuff_pos-1) = KinEne - fekinaverage    ! shifted by -dt
+!    end if
+!
+!! calculate Z matrix and its inverse
+!    call abf_core_calc_Zmat(CVContext)
+!    fzinvhist(:,:,cbuff_pos) = fzinv(:,:)
+!
+!! apply ABF force
+!    la(:) = 0.0d0
+!    if( fapply_abf ) then
+!        ! calculate abf force to be applied
+!        select case(feimode)
+!            case(0)
+!                call abf_accu_get_data(cvhist(:,cbuff_pos),la)
+!            case(1)
+!                call abf_accu_get_data_lramp(cvhist(:,cbuff_pos),la)
+!            case(2)
+!                call pmf_timers_start_timer(PMFLIB_ABF_KS_TIMER)
+!                    call abf_accu_get_data_ksmooth(cvhist(:,cbuff_pos),la)
+!                call pmf_timers_stop_timer(PMFLIB_ABF_KS_TIMER)
+!            case(3)
+!                call abf_accu_get_data_lsmooth(cvhist(:,cbuff_pos),la)
+!            case default
+!                call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented extrapolation/interpolation mode!')
+!        end select
+!
+!        ! project abf force along coordinate
+!        do i=1,NumOfABFCVs
+!            ci = ABFCVList(i)%cvindx
+!            do j=1,NumOfLAtoms
+!                Frc(:,j) = Frc(:,j) + la(i) * CVContext%CVsDrvs(:,j,ci)
+!            end do
+!        end do
+!    end if
+!    micfhist(:,cbuff_pos)    = la(:)
+!
+!    if( frecord ) then
+!        ! record time progress of data
+!        if( cbuff_pos-1 .le. 0 ) then
+!            ekin = ekinhist(gpr_len)
+!        else
+!            ekin = ekinhist(cbuff_pos-1)
+!        end if
+!        call abf_accu_add_data_record_lf(cvhist(:,cbuff_pos),fzinvhist(:,:,cbuff_pos),micfhist(:,cbuff_pos), &
+!                                         epothist(cbuff_pos),ersthist(cbuff_pos),ekin)
+!     end if
+!
+!    if( fstep .le. gpr_len )  return
+!
+!    ! predict cv velocity at gpr_len/2+1 centered around cbuff_pos - gpr_len/2
+!    gpr_mid = cbuff_pos - gpr_len/2
+!    if( gpr_mid .le. 0 ) then
+!        gpr_mid = gpr_mid + gpr_len
+!    end if
+!
+!    ! put CV velocities in pxi1
+!    do i=1,NumOfABFCVs
+!        ! calculate mean value
+!        mean = 0.0d0
+!
+!        if( .not. gpr_cvs_nomean ) then
+!            do k=1,gpr_len
+!                mean = mean + cvhist(i,k)
+!            end do
+!            mean = mean / real(gpr_len,PMFDP)
+!        end if
+!
+!        ! shift data
+!        l1 = cbuff_pos
+!        do k=gpr_len,1,-1
+!            gpr_data(k) = cvhist(i,l1) - mean
+!            l1 = l1 - 1
+!            if( l1 .le. 0 ) l1 = l1 + gpr_len
+!        end do
+!
+!        pxi1(i) = dot_product(gpr_data,gpr_kfd_cvs)
+!
+!        if( gpr_calc_logxx ) then
+!            ! calculate logML
+!            ! solve GPR
+!            call dgemv('N',gpr_len,gpr_len,1.0d0,gpr_K_cvs,gpr_len,gpr_data,1,0.0d0,gpr_model,1)
+!
+!                ! calculate CV derivative in time - derivative is shift invariant
+!            gpr_logml(i) = -0.5d0*dot_product(gpr_data,gpr_model)   &
+!                        - 0.5d0*gpr_K_cvs_logdet                    &
+!                        - 0.5d0*real(gpr_len,PMFDP)*log(2.0*PMF_PI)
+!
+!            gpr_logpl(i) = - 0.5d0*real(gpr_len,PMFDP)*log(2.0*PMF_PI)
+!            do k=1,gpr_len
+!                gpr_logpl(i) = gpr_logpl(i) + 0.5d0*log(gpr_K_cvs(k,k)) - 0.5d0*gpr_model(k)**2/gpr_K_cvs(k,k)
+!            end do
+!
+!            if ( fdebug ) then
+!                write(789,*) fstep, gpr_logml(1), gpr_logpl(1)
+!            end if
+!
+!            ! increase number of samples
+!            gpr_nlogxx = gpr_nlogxx + 1.0d0
+!            invn = 1.0d0 / gpr_nlogxx
+!
+!            ! statistics
+!            depot1 = gpr_logml(i) - gpr_mlogml(i)
+!            gpr_mlogml(i)  = gpr_mlogml(i)  + depot1 * invn
+!            depot2 = gpr_logml(i) - gpr_mlogml(i)
+!            gpr_m2logml(i) = gpr_m2logml(i) + depot1 * depot2
+!
+!            ! statistics
+!            depot1 = gpr_logpl(i) - gpr_mlogpl(i)
+!            gpr_mlogpl(i)  = gpr_mlogpl(i)  + depot1 * invn
+!            depot2 = gpr_logpl(i) - gpr_mlogpl(i)
+!            gpr_m2logpl(i) = gpr_m2logpl(i) + depot1 * depot2
+!        end if
+!    end do
+!
+!! calculate momenta
+!    do i=1,NumOfABFCVs
+!        v = 0.0d0
+!        do j=1,NumOfABFCVs
+!            v = v + fzinvhist(i,j,gpr_mid) * pxi1(j)
+!        end do
+!        xphist(i,gpr_mid) = v
+!    end do
+!
+!    ! write(148569,*) fstep, gpr_mid, cvhist(1,gpr_mid), pxi1(1), xphist(1,gpr_mid)
+!
+!! calculate derivatives of CV momenta
+!    select case(gpr_icf_cdf)
+!        case(0)
+!            ! move gpr_mid by one element left so we have three valid points
+!            gpr_mid = gpr_mid - 1
+!            if( gpr_mid .le. 0 ) gpr_mid = gpr_mid + gpr_len
+!
+!            ! central differences - 2p+1 - indexes
+!            l1 = gpr_mid - 1
+!            if( l1 .le. 0 ) l1 = l1 + gpr_len
+!            p1 = gpr_mid + 1
+!            if( p1 .gt. gpr_len ) p1 = p1 - gpr_len
+!
+!            ! central differences - 2p+1
+!            do i=1,NumOfABFCVs
+!                icfhist(i,gpr_mid) = 0.5d0*(xphist(i,p1)-xphist(i,l1))*ifdtx
+!            end do
+!        case(1)
+!            ! move gpr_mid by two elements left so we have five valid points
+!            gpr_mid = gpr_mid - 2
+!            if( gpr_mid .le. 0 ) gpr_mid = gpr_mid + gpr_len
+!
+!            ! central differences - 4p+1 - indexes
+!            l2 = gpr_mid - 2
+!            if( l2 .le. 0 ) l2 = l2 + gpr_len
+!            l1 = gpr_mid - 1
+!            if( l1 .le. 0 ) l1 = l1 + gpr_len
+!            p1 = gpr_mid + 1
+!            if( p1 .gt. gpr_len ) p1 = p1 - gpr_len
+!            p2 = gpr_mid + 2
+!            if( p2 .gt. gpr_len ) p2 = p2 - gpr_len
+!
+!            ! central differences - 4p+1
+!            do i=1,NumOfABFCVs
+!                icfhist(i,gpr_mid) = (1.0d0/12.0d0)*(-xphist(i,p2) +8.0d0*xphist(i,p1) -8.0d0*xphist(i,l1) +xphist(i,l2))*ifdtx
+!            end do
+!        case default
+!            call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented gpr_icf_cdf mode!')
+!    end select
+!
+!! record new data
+!    pxi0(:) = icfhist(:,gpr_mid) - micfhist(:,gpr_mid)
+!
+!    epot = epothist(gpr_mid)
+!    erst = ersthist(gpr_mid)
+!    ekin = ekinhist(gpr_mid)
+!
+!    if( fdebug ) then
+!        write(DEBUG_ABF_FMODE4,*) fstep-hist_len+k, cvhist(:,k), pxi0, epot, erst, ekin
+!    end if
+!
+!    ! add data to accumulator
+!    call abf_accu_add_data_online(cvhist(:,gpr_mid),pxi0,epot,erst,ekin)
+!
+!end subroutine abf_core_force_gpr
 
 !===============================================================================
 ! subroutine:  abf_core_calc_Zmat
