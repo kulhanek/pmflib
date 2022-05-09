@@ -155,6 +155,7 @@ subroutine abf_control_read_abf(prm_fin)
 
     ! ENE GPR
         call pmf_ctrl_read_logical(prm_fin,'gpr_ene_enabled',gpr_ene_enabled)
+        call pmf_ctrl_read_integer(prm_fin,'gpr_ene_mode',gpr_ene_mode,'I12')
         call pmf_ctrl_read_integer(prm_fin,'gpr_ene_kernel',gpr_ene_kernel,'I12')
         call pmf_ctrl_check_integer_in_range('ABF','gpr_ene_kernel',gpr_ene_kernel,1,7)
         call pmf_ctrl_read_real8_wunit(prm_fin,'gpr_ene_width',TimeUnit,gpr_ene_width,'F12.3')

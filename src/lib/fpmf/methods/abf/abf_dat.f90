@@ -241,6 +241,7 @@ integer                     :: gpr_icf_kernel   ! 0 - Exponential
 real(PMFDP)                 :: gpr_icf_noise    ! noise magnitude
 
 logical                     :: gpr_ene_enabled
+integer                     :: gpr_ene_mode
 real(PMFDP)                 :: gpr_ene_width    ! kernel width in fs
 integer                     :: gpr_ene_kernel   ! 0 - Exponential
                                                 ! 1 - MC(3/2)

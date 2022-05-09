@@ -122,6 +122,7 @@ subroutine abf_init_dat
     gpr_icf_noise   = 0.0
 
     gpr_ene_enabled = .false.
+    gpr_ene_mode    = 1
     gpr_ene_kernel  = 1
     gpr_ene_width   = 30.0
     gpr_ene_noise   = 0.0

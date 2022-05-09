@@ -510,6 +510,8 @@ subroutine pmf_init_pmf
         call pmf_utils_exit(PMF_OUT, 1,'[PMFLIB] Unable to allocate memory for common arrays!')
     endif
 
+    SHAKEFrc(:,:) = 0.0d0
+
     if( cst_enabled .or. shake_force_required ) then
         ! allocate arrays used by bluemoon
         allocate( CrdP(3,NumOfLAtoms), &
