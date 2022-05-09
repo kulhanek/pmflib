@@ -229,6 +229,7 @@ real(PMFDP),allocatable     :: ekinhist(:)          ! history of Ekin
 ! GPR facility -----------------------------------------------------------------
 integer                     :: gpr_len          ! MUST be odd number
 
+logical                     :: gpr_icf_enabled
 real(PMFDP)                 :: gpr_icf_width    ! kernel width in fs
 integer                     :: gpr_icf_kernel   ! 0 - Exponential
                                                 ! 1 - MC(3/2)
@@ -239,25 +240,48 @@ integer                     :: gpr_icf_kernel   ! 0 - Exponential
                                                 ! 6 - Triweight
 real(PMFDP)                 :: gpr_icf_noise    ! noise magnitude
 
+logical                     :: gpr_ene_enabled
+real(PMFDP)                 :: gpr_ene_width    ! kernel width in fs
+integer                     :: gpr_ene_kernel   ! 0 - Exponential
+                                                ! 1 - MC(3/2)
+                                                ! 2 - MC(5/2)
+                                                ! 3 - ARDSE
+                                                ! 4 - Epanechnikov (parabolic)
+                                                ! 5 - Quartic (biweight)
+                                                ! 6 - Triweight
+real(PMFDP)                 :: gpr_ene_noise    ! noise magnitude
+
 integer                     :: gpr_rank         ! rank for SVD inversion
 real(PMFDP)                 :: gpr_rcond        ! rcond for automatic rank determination
 real(PMFDP)                 :: gpr_rsigma       ! min value of sigma for ranking
 
-real(PMFDP),allocatable     :: gpr_K_icf(:,:)   ! co-variance matrix for CVS, it contains the inverse
+real(PMFDP),allocatable     :: gpr_K_icf(:,:)   ! co-variance matrix for ICF, it contains the inverse
 real(PMFDP)                 :: gpr_K_icf_logdet ! logarithm of K determinant
-real(PMFDP),allocatable     :: gpr_kff_icf(:)   ! inference for cvs
+real(PMFDP),allocatable     :: gpr_kff_icf(:)   ! inference for ICF
+
+real(PMFDP),allocatable     :: gpr_K_ene(:,:)   ! co-variance matrix for ENE, it contains the inverse
+real(PMFDP)                 :: gpr_K_ene_logdet ! logarithm of K determinant
+real(PMFDP),allocatable     :: gpr_kff_ene(:)   ! inference for ENE
 
 logical                     :: gpr_calc_logxx   ! we want to get logml and logpl
 
-real(PMFDP),allocatable     :: gpr_logml(:)     ! marginal likelihood for each CV
-real(PMFDP),allocatable     :: gpr_logpl(:)     ! pseudo-likelihood for each CV
+real(PMFDP),allocatable     :: gpr_icf_logml(:)     ! marginal likelihood for each ICF
+real(PMFDP),allocatable     :: gpr_icf_logpl(:)     ! pseudo-likelihood for each ICF
 
-real(PMFDP)                 :: gpr_nlogxx       ! number of data
-real(PMFDP),allocatable     :: gpr_mlogml(:)    ! average
-real(PMFDP),allocatable     :: gpr_m2logml(:)   ! M2
-real(PMFDP),allocatable     :: gpr_mlogpl(:)    ! average
-real(PMFDP),allocatable     :: gpr_m2logpl(:)   ! M2
+real(PMFDP)                 :: gpr_ene_logml        ! marginal likelihood for ENE
+real(PMFDP)                 :: gpr_ene_logpl        ! pseudo-likelihood for ENE
 
+real(PMFDP)                 :: gpr_icf_nlogxx       ! number of data
+real(PMFDP),allocatable     :: gpr_icf_mlogml(:)    ! average
+real(PMFDP),allocatable     :: gpr_icf_m2logml(:)   ! M2
+real(PMFDP),allocatable     :: gpr_icf_mlogpl(:)    ! average
+real(PMFDP),allocatable     :: gpr_icf_m2logpl(:)   ! M2
+
+real(PMFDP)                 :: gpr_ene_nlogxx       ! number of data
+real(PMFDP)                 :: gpr_ene_mlogml       ! average
+real(PMFDP)                 :: gpr_ene_m2logml      ! M2
+real(PMFDP)                 :: gpr_ene_mlogpl       ! average
+real(PMFDP)                 :: gpr_ene_m2logpl      ! M2
 
 real(PMFDP),allocatable     :: gpr_data(:)      ! GPR input data
 real(PMFDP),allocatable     :: gpr_model(:)     ! GPR model

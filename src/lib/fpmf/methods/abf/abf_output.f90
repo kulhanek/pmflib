@@ -166,24 +166,33 @@ subroutine abf_output_close
         write(ABF_OUT,5)
         write(ABF_OUT,10)
         write(ABF_OUT,20)
-        do i=1,NumOfABFCVs
-            mlogml = gpr_mlogml(i)
-            slogml = sqrt(gpr_m2logml(i)/gpr_nlogxx)
-            mlogpl = gpr_mlogpl(i)
-            slogpl = sqrt(gpr_m2logpl(i)/gpr_nlogxx)
-            write(ABF_OUT,30) i, trim(CVList(ABFCVList(i)%cvindx)%cv%name), mlogml, slogml, mlogpl, slogpl
+        if( gpr_icf_enabled ) then
+            do i=1,NumOfABFCVs
+                mlogml = gpr_icf_mlogml(i)
+                slogml = sqrt(gpr_icf_m2logml(i)/gpr_icf_nlogxx)
+                mlogpl = gpr_icf_mlogpl(i)
+                slogpl = sqrt(gpr_icf_m2logpl(i)/gpr_icf_nlogxx)
+                write(ABF_OUT,30) i, trim(CVList(ABFCVList(i)%cvindx)%cv%name), mlogml, slogml, mlogpl, slogpl
 
-        end do
+            end do
+        end if
+        if( gpr_ene_enabled ) then
+            mlogml = gpr_ene_mlogml
+            slogml = sqrt(gpr_ene_m2logml/gpr_ene_nlogxx)
+            mlogpl = gpr_ene_mlogpl
+            slogpl = sqrt(gpr_ene_m2logpl/gpr_ene_nlogxx)
+            write(ABF_OUT,30) i, 'etot', mlogml, slogml, mlogpl, slogpl
+        end if
     end if
 
     close(ABF_OUT)
 
     return
 
-  5 format('# GPR log(ML)')
- 10 format('# N  CV name    <logML>    s(logML)   <logPL>    s(logPL) ')
- 20 format('#-- ---------- ---------- ---------- ---------- ----------')
- 30 format(I3,1X,A10,1X,F10.1,1X,F10.1,1X,F10.1,1X,F10.1)
+  5 format('# GPR statistics')
+ 10 format('# N  CV name     <logML>      s(logML)     <logPL>      s(logPL)  ')
+ 20 format('#-- ---------- ------------ ------------ ------------ ------------')
+ 30 format(I3,1X,A10,1X,E12.5,1X,E12.5,1X,E12.5,1X,E12.5)
 
 end subroutine abf_output_close
 

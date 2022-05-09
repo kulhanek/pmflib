@@ -744,102 +744,148 @@ subroutine abf_core_force_gpr()
 
     if( fstep .lt. gpr_len ) return
 
+! GPR part
+
     gpr_mid = gpr_len/2+1
 
-    ! put CV velocities in pxi1
-    do i=1,NumOfABFCVs
-        ! calculate mean value
+    if( gpr_icf_enabled ) then
+        ! put CV velocities in pxi1
+        do i=1,NumOfABFCVs
+            ! calculate mean value
+            mean = 0.0d0
+
+            do k=1,gpr_len
+                mean = mean + icfhist(i,k)
+            end do
+            mean = mean / real(gpr_len,PMFDP)
+
+            ! shift data
+            do k=1,gpr_len
+                gpr_data(k) = icfhist(i,k) - mean
+            end do
+
+            pxip(i) = dot_product(gpr_data,gpr_kff_icf) + mean
+
+            if( fdebug ) then
+                write(7812,*) fstep-gpr_len-3+gpr_mid, icfhist(1,gpr_mid), pxip(1)
+            end if
+
+            if( gpr_calc_logxx ) then
+                ! calculate logML
+                ! solve GPR
+                call dgemv('N',gpr_len,gpr_len,1.0d0,gpr_K_icf,gpr_len,gpr_data,1,0.0d0,gpr_model,1)
+
+                    ! calculate CV derivative in time - derivative is shift invariant
+                gpr_icf_logml(i) = -0.5d0*dot_product(gpr_data,gpr_model)   &
+                            - 0.5d0*gpr_K_icf_logdet                    &
+                            - 0.5d0*real(gpr_len,PMFDP)*log(2.0*PMF_PI)
+
+                gpr_icf_logpl(i) = - 0.5d0*real(gpr_len,PMFDP)*log(2.0*PMF_PI)
+                do k=1,gpr_len
+                    gpr_icf_logpl(i) = gpr_icf_logpl(i) + 0.5d0*log(gpr_K_icf(k,k)) - 0.5d0*gpr_model(k)**2/gpr_K_icf(k,k)
+                end do
+
+                if ( fdebug ) then
+                    write(789,*) fstep, gpr_icf_logml(1), gpr_icf_logpl(1)
+                end if
+
+                ! increase number of samples
+                gpr_icf_nlogxx = gpr_icf_nlogxx + 1.0d0
+                invn = 1.0d0 / gpr_icf_nlogxx
+
+                ! statistics
+                depot1 = gpr_icf_logml(i) - gpr_icf_mlogml(i)
+                gpr_icf_mlogml(i)  = gpr_icf_mlogml(i)  + depot1 * invn
+                depot2 = gpr_icf_logml(i) - gpr_icf_mlogml(i)
+                gpr_icf_m2logml(i) = gpr_icf_m2logml(i) + depot1 * depot2
+
+                ! statistics
+                depot1 = gpr_icf_logpl(i) - gpr_icf_mlogpl(i)
+                gpr_icf_mlogpl(i)  = gpr_icf_mlogpl(i)  + depot1 * invn
+                depot2 = gpr_icf_logpl(i) - gpr_icf_mlogpl(i)
+                gpr_icf_m2logpl(i) = gpr_icf_m2logpl(i) + depot1 * depot2
+            end if
+        end do
+    else
+        pxip(:) = icfhist(:,gpr_mid)
+    end if
+
+! -------------------------------------------------
+
+    if( gpr_ene_enabled ) then
         mean = 0.0d0
 
         do k=1,gpr_len
-            mean = mean + icfhist(i,k)
+            epot = epothist(k)
+            erst = ersthist(k)
+            ekin = ekinhist(k)
+            mean = mean + epot + erst + ekin
         end do
         mean = mean / real(gpr_len,PMFDP)
 
         ! shift data
         do k=1,gpr_len
-            gpr_data(k) = icfhist(i,k) - mean
+            epot = epothist(k)
+            erst = ersthist(k)
+            ekin = ekinhist(k)
+            gpr_data(k) = epot + erst + ekin - mean
         end do
 
-        pxip(i) = dot_product(gpr_data,gpr_kff_icf) + mean
+        etot = dot_product(gpr_data,gpr_kff_ene) + mean
 
-        if( fdebug ) then
-            write(7812,*) fstep-gpr_len-3+gpr_mid, icfhist(1,gpr_mid), pxip(1)
-        end if
 
         if( gpr_calc_logxx ) then
             ! calculate logML
             ! solve GPR
-            call dgemv('N',gpr_len,gpr_len,1.0d0,gpr_K_icf,gpr_len,gpr_data,1,0.0d0,gpr_model,1)
+            call dgemv('N',gpr_len,gpr_len,1.0d0,gpr_K_ene,gpr_len,gpr_data,1,0.0d0,gpr_model,1)
 
                 ! calculate CV derivative in time - derivative is shift invariant
-            gpr_logml(i) = -0.5d0*dot_product(gpr_data,gpr_model)   &
-                        - 0.5d0*gpr_K_icf_logdet                    &
+            gpr_ene_logml = -0.5d0*dot_product(gpr_data,gpr_model)   &
+                        - 0.5d0*gpr_K_ene_logdet                    &
                         - 0.5d0*real(gpr_len,PMFDP)*log(2.0*PMF_PI)
 
-            gpr_logpl(i) = - 0.5d0*real(gpr_len,PMFDP)*log(2.0*PMF_PI)
+            gpr_ene_logpl = - 0.5d0*real(gpr_len,PMFDP)*log(2.0*PMF_PI)
             do k=1,gpr_len
-                gpr_logpl(i) = gpr_logpl(i) + 0.5d0*log(gpr_K_icf(k,k)) - 0.5d0*gpr_model(k)**2/gpr_K_icf(k,k)
+                gpr_ene_logpl = gpr_ene_logpl + 0.5d0*log(gpr_K_ene(k,k)) - 0.5d0*gpr_model(k)**2/gpr_K_ene(k,k)
             end do
 
             if ( fdebug ) then
-                write(789,*) fstep, gpr_logml(1), gpr_logpl(1)
+                write(790,*) fstep, gpr_ene_logml, gpr_ene_logpl
             end if
 
             ! increase number of samples
-            gpr_nlogxx = gpr_nlogxx + 1.0d0
-            invn = 1.0d0 / gpr_nlogxx
+            gpr_ene_nlogxx = gpr_ene_nlogxx + 1.0d0
+            invn = 1.0d0 / gpr_ene_nlogxx
 
             ! statistics
-            depot1 = gpr_logml(i) - gpr_mlogml(i)
-            gpr_mlogml(i)  = gpr_mlogml(i)  + depot1 * invn
-            depot2 = gpr_logml(i) - gpr_mlogml(i)
-            gpr_m2logml(i) = gpr_m2logml(i) + depot1 * depot2
+            depot1 = gpr_ene_logml - gpr_ene_mlogml
+            gpr_ene_mlogml  = gpr_ene_mlogml  + depot1 * invn
+            depot2 = gpr_ene_logml - gpr_ene_mlogml
+            gpr_ene_m2logml = gpr_ene_m2logml + depot1 * depot2
 
             ! statistics
-            depot1 = gpr_logpl(i) - gpr_mlogpl(i)
-            gpr_mlogpl(i)  = gpr_mlogpl(i)  + depot1 * invn
-            depot2 = gpr_logpl(i) - gpr_mlogpl(i)
-            gpr_m2logpl(i) = gpr_m2logpl(i) + depot1 * depot2
+            depot1 = gpr_ene_logpl - gpr_ene_mlogpl
+            gpr_ene_mlogpl  = gpr_ene_mlogpl  + depot1 * invn
+            depot2 = gpr_ene_logpl - gpr_ene_mlogpl
+            gpr_ene_m2logpl = gpr_ene_m2logpl + depot1 * depot2
         end if
-    end do
 
-    mean = 0.0d0
+        epot = epothist(gpr_mid)
+        erst = ersthist(gpr_mid)
+        ekin = ekinhist(gpr_mid)
 
-    do k=1,gpr_len
-        epot = epothist(k)
-        erst = ersthist(k)
-        ekin = ekinhist(k)
-        mean = mean + epot + erst + ekin
-    end do
-    mean = mean / real(gpr_len,PMFDP)
-
-    ! shift data
-    do k=1,gpr_len
-        epot = epothist(k)
-        erst = ersthist(k)
-        ekin = ekinhist(k)
-        gpr_data(k) = epot + erst + ekin - mean
-    end do
-
-    etot = dot_product(gpr_data,gpr_kff_icf) + mean
-
-    epot = epothist(gpr_mid)
-    erst = ersthist(gpr_mid)
-    ekin = ekinhist(gpr_mid)
-
-    if( fdebug ) then
-        write(7813,*) fstep-gpr_len-3+gpr_mid, epot+erst+ekin, etot
+        if( fdebug ) then
+            write(7813,*) fstep-gpr_len-3+gpr_mid, epot+erst+ekin, etot
+        end if
+    else
+        epot = epothist(gpr_mid)
+        erst = ersthist(gpr_mid)
+        ekin = ekinhist(gpr_mid)
+        etot = epot+erst+ekin
     end if
-
-    ! write(5289,*) fstep,pxip(1),epot,erst,ekin
 
     ! add data to accumulator
     call abf_accu_add_data_online(cvhist(:,gpr_mid),pxip,epot,erst,ekin,etot)
-
-    if( fentropy .and. fentdecomp ) then
-        ! call abf_accu_add_data_entropy_decompose(cvhist(:,hist_len-1),pxi0,pxi3,micfhist(:,hist_len-1),pxi1,pxi2,epot,erst,ekin)
-    end if
 
     return
 

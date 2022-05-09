@@ -116,9 +116,15 @@ subroutine abf_init_dat
 
     gpr_len         = 1001
 
+    gpr_icf_enabled = .false.
     gpr_icf_kernel  = 1
     gpr_icf_width   = 30.0
     gpr_icf_noise   = 0.0
+
+    gpr_ene_enabled = .false.
+    gpr_ene_kernel  = 1
+    gpr_ene_width   = 30.0
+    gpr_ene_noise   = 0.0
 
     gpr_rank        = -1
     gpr_rcond       = 1e-16
@@ -183,6 +189,7 @@ subroutine abf_init_print_summary
     write(PMF_OUT,130)  '          gpr_len                        : ', gpr_len
 
     write(PMF_OUT,120)  '          === ICF GPR'
+    write(PMF_OUT,125)  '              gpr_icf_enabled            : ', prmfile_onoff(gpr_icf_enabled)
     write(PMF_OUT,130)  '              gpr_icf_kernel             : ', gpr_icf_kernel
     select case(gpr_icf_kernel)
     case(0)
@@ -207,6 +214,33 @@ subroutine abf_init_print_summary
     write(PMF_OUT,152)  '              gpr_icf_width              : ', gpr_icf_width,  &
                                        '['//trim(pmf_unit_label(TimeUnit))//']'
     write(PMF_OUT,160)  '              gpr_icf_noise              : ', gpr_icf_noise
+
+write(PMF_OUT,120)  '          === ENE GPR'
+    write(PMF_OUT,125)  '              gpr_ene_enabled            : ', prmfile_onoff(gpr_ene_enabled)
+    write(PMF_OUT,130)  '              gpr_ene_kernel             : ', gpr_ene_kernel
+    select case(gpr_icf_kernel)
+    case(0)
+    write(PMF_OUT,120)  '              \-> EXP (exponential kernel)'
+    case(1)
+    write(PMF_OUT,120)  '              \-> MC(3/2) (Matern kernel v=3/2)'
+    case(2)
+    write(PMF_OUT,120)  '              \-> MC(5/2) (Matern kernel v=5/2)'
+    case(3)
+    write(PMF_OUT,120)  '              \-> SE (squared exponential kernel)'
+    case(4)
+    write(PMF_OUT,120)  '              \-> Epanechnikov (parabolic) kernel'
+    case(5)
+    write(PMF_OUT,120)  '              \-> Quartic (biweight) kernel'
+    case(6)
+    write(PMF_OUT,120)  '              \-> Triweigh kernel'
+    case(7)
+    write(PMF_OUT,120)  '              \-> sinc kernel'
+    case default
+        call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown gpr_ene_kernel in abf_init_print_summary!')
+    end select
+    write(PMF_OUT,152)  '              gpr_ene_width              : ', gpr_ene_width,  &
+                                       '['//trim(pmf_unit_label(TimeUnit))//']'
+    write(PMF_OUT,160)  '              gpr_ene_noise              : ', gpr_ene_noise
 
     write(PMF_OUT,120)  '          === K+Sigma inversion'
     write(PMF_OUT,130)  '              gpr_rank                   : ', gpr_rank
@@ -516,81 +550,6 @@ real(PMFDP) function abf_init_gpr_kernel(ktype,t1,t2,width)
 end function abf_init_gpr_kernel
 
 !===============================================================================
-! Function:  abf_init_gpr_main_kernel_1d
-! first derivative
-!===============================================================================
-
-real(PMFDP) function abf_init_gpr_kernel_1d(ktype,t1,t2,width)
-
-    use pmf_utils
-    use pmf_dat
-    use abf_dat
-
-    implicit none
-    integer     :: ktype,t1,t2
-    real(PMFDP) :: width
-    real(PMFDP) :: r,wfac
-    ! --------------------------------------------------------------------------
-
-    ! convert width to time steps
-    wfac = width / fdt
-
-    if( wfac .eq. 0.0d0 ) then
-        abf_init_gpr_kernel_1d = 0.0d0
-        return
-    end if
-
-    r = abs(real(t1-t2,PMFDP)/wfac)
-
-    select case(ktype)
-        case(1)
-            ! MC(3/2)
-            abf_init_gpr_kernel_1d = - 3.0d0 * r * exp(- sqrt(3.0d0) * r) / (wfac * fdtx) * sign(1.0d0,real(t1-t2,PMFDP))
-        case(2)
-            ! MC(5/2)
-            abf_init_gpr_kernel_1d = - 5.0d0/3.0d0 * r * (1.0d0 + sqrt(5.0d0) * r) * exp(- sqrt(5.0d0) * r ) / (wfac * fdtx) &
-                       * sign(1.0d0,real(t1-t2,PMFDP))
-        case(3)
-            ! SE
-            abf_init_gpr_kernel_1d = - exp(- 0.5d0 * r**2) * r / (wfac * fdtx) * sign(1.0d0,real(t1-t2,PMFDP))
-        case(4)
-            ! Epanechnikov (parabolic) kernel
-            if( r .le. 1.0d0 ) then
-                abf_init_gpr_kernel_1d = -2.0d0 * r / (wfac * fdtx) * sign(1.0d0,real(t1-t2,PMFDP))
-            else
-                abf_init_gpr_kernel_1d = 0.0d0
-            end if
-        case(5)
-             ! Quartic (biweight) kernel
-            if( r .le. 1.0d0 ) then
-                abf_init_gpr_kernel_1d = -4.0d0 * r * (1.0d0 - r**2) / (wfac * fdtx) * sign(1.0d0,real(t1-t2,PMFDP))
-            else
-                abf_init_gpr_kernel_1d = 0.0d0
-            end if
-        case(6)
-            ! Triweigh kernel
-            if( r .le. 1.0d0 ) then
-                abf_init_gpr_kernel_1d = -6.0d0 * r * (1.0d0 - r**2)**2 / (wfac * fdtx) * sign(1.0d0,real(t1-t2,PMFDP))
-            else
-                abf_init_gpr_kernel_1d = 0.0d0
-            end if
-        case(7)
-            ! sinc(x)
-            if( r .eq. 0.0d0 ) then
-                abf_init_gpr_kernel_1d = 0.0d0
-            else
-                abf_init_gpr_kernel_1d = 2.0d0/wfac * &
-                                       ( (cos(2.0d0*PMF_PI*r)*2.0d0*PMF_PI*r - sin(2.0d0*PMF_PI*r) ) / (2.0d0*PMF_PI*r)**2 ) &
-                                       * 2.0d0*PMF_PI &
-                                       / (wfac * fdtx) * sign(1.0d0,real(t1-t2,PMFDP))
-            end if
-        case default
-            call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown ktype in abf_init_gpr_kernel_1d!')
-    end select
-
-end function abf_init_gpr_kernel_1d
-
-!===============================================================================
 ! Subroutine:  abf_init_gpr
 !===============================================================================
 
@@ -618,15 +577,17 @@ subroutine abf_init_gpr
 ! allocate arrays
     allocate(                                   &
             gpr_K_icf(gpr_len,gpr_len),         &
+            gpr_K_ene(gpr_len,gpr_len),         &
             gpr_data(gpr_len),                  &
             gpr_model(gpr_len),                 &
             gpr_kff_icf(gpr_len),               &
-            gpr_logml(NumOfABFCVs),             &
-            gpr_mlogml(NumOfABFCVs),            &
-            gpr_m2logml(NumOfABFCVs),           &
-            gpr_logpl(NumOfABFCVs),             &
-            gpr_mlogpl(NumOfABFCVs),            &
-            gpr_m2logpl(NumOfABFCVs),           &
+            gpr_kff_ene(gpr_len),               &
+            gpr_icf_logml(NumOfABFCVs),         &
+            gpr_icf_mlogml(NumOfABFCVs),        &
+            gpr_icf_m2logml(NumOfABFCVs),       &
+            gpr_icf_logpl(NumOfABFCVs),         &
+            gpr_icf_mlogpl(NumOfABFCVs),        &
+            gpr_icf_m2logpl(NumOfABFCVs),       &
             stat= alloc_failed )
 
     if( alloc_failed .ne. 0 ) then
@@ -634,11 +595,18 @@ subroutine abf_init_gpr
             '[ABF] Unable to allocate memory for GPR arrays in abf_init_gpr!')
     end if
 
-    gpr_nlogxx        = 0
-    gpr_mlogml(:)     = 0.0d0      ! average
-    gpr_m2logml(:)    = 0.0d0      ! M2
-    gpr_mlogpl(:)     = 0.0d0      ! average
-    gpr_m2logpl(:)    = 0.0d0      ! M2
+! reset statistics counters
+    gpr_icf_nlogxx          = 0.0d0
+    gpr_icf_mlogml(:)       = 0.0d0      ! average
+    gpr_icf_m2logml(:)      = 0.0d0      ! M2
+    gpr_icf_mlogpl(:)       = 0.0d0      ! average
+    gpr_icf_m2logpl(:)      = 0.0d0      ! M2
+
+    gpr_ene_nlogxx          = 0.0d0
+    gpr_ene_mlogml          = 0.0d0      ! average
+    gpr_ene_m2logml         = 0.0d0      ! M2
+    gpr_ene_mlogpl          = 0.0d0      ! average
+    gpr_ene_m2logpl         = 0.0d0      ! M2
 
 ! init co-variance matrix
     do i=1,gpr_len
@@ -695,7 +663,65 @@ subroutine abf_init_gpr
         close(7812)
     end if
 
+! ===================================================================================
+
+! init co-variance matrix
+    do i=1,gpr_len
+        do j=1,gpr_len
+            gpr_K_ene(i,j) = abf_init_gpr_kernel(gpr_ene_kernel,i,j,gpr_ene_width)
+        end do
+    end do
+
+! add noise
+    do i=1,gpr_len
+        gpr_K_ene(i,i) = gpr_K_ene(i,i) + gpr_ene_noise
+    end do
+
+    if( fdebug ) then
+        j = gpr_len/2
+        open(unit=7812,file='gpr-kernel.ene',status='UNKNOWN')
+        do i=1,gpr_len
+            write(7812,*) i, gpr_K_ene(i,j)
+        end do
+        close(7812)
+    end if
+
+    write(PMF_OUT,20)
+    call abf_init_gpr_invK(gpr_K_ene,gpr_K_ene_logdet)
+
+! init kfd
+    gpr_mid = gpr_len/2 + 1
+    do j=1,gpr_len
+        gpr_data(j) = abf_init_gpr_kernel(gpr_ene_kernel,gpr_mid,j,gpr_ene_width)
+    end do
+
+    if( fdebug ) then
+        open(unit=7812,file='gpr-kernel.kff-ene',status='UNKNOWN')
+        do i=1,gpr_len
+            write(7812,*) i, gpr_data(i)
+        end do
+        close(7812)
+    end if
+
+! multiply by Kinv from right
+    do i=1,gpr_len
+        v = 0.0d0
+        do j=1,gpr_len
+            v = v + gpr_data(j) * gpr_K_ene(j,i)
+        end do
+        gpr_kff_ene(i) = v
+    end do
+
+    if( fdebug ) then
+        open(unit=7812,file='gpr-kernel.kfd-ene-K',status='UNKNOWN')
+        do i=1,gpr_len
+            write(7812,*) i, gpr_kff_ene(i)
+        end do
+        close(7812)
+    end if
+
  10 format('>>> ABF GPR - ICF: (K+Sigma)^-1')
+ 20 format('>>> ABF GPR - ENE: (K+Sigma)^-1')
 
 end subroutine abf_init_gpr
 
