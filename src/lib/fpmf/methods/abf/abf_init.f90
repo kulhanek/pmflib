@@ -186,6 +186,9 @@ subroutine abf_init_print_summary
     write(PMF_OUT,120)  '      |-> Simplified ABF algorithm (V)'
 
     case(2)
+    write(PMF_OUT,120)  '      |-> Simplified ABF algorithm (F)'
+
+    case(10)
     write(PMF_OUT,120)  '      |-> Simplified ABF algorithm (GPR)'
     write(PMF_OUT,130)  '          gpr_len                        : ', gpr_len
 
@@ -412,11 +415,14 @@ subroutine abf_init_arrays
 ! history buffers ------------------------------------------
 
     select case(fmode)
-        ! standard
+        ! standard - 3pV
         case(1)
-            hist_len = 5
-        ! GPR
+            hist_len = 3
+        ! standard - 3pF
         case(2)
+            hist_len = 3
+        ! GPR
+        case(10)
             hist_len = gpr_len + 3
             call abf_init_gpr
         case default
@@ -437,11 +443,6 @@ subroutine abf_init_arrays
             epothist(hist_len),                         &
             ersthist(hist_len),                         &
             ekinhist(hist_len),                         &
-            zd0(3,NumOfLAtoms,NumOfABFCVs), &
-            zd1(3,NumOfLAtoms,NumOfABFCVs), &
-            cvaluehist0(NumOfABFCVs),       &
-            cvaluehist1(NumOfABFCVs),       &
-            v0(3,NumOfLAtoms),              &
             stat= alloc_failed )
 
     if( alloc_failed .ne. 0 ) then
