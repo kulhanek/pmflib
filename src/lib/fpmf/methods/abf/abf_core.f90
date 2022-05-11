@@ -91,7 +91,7 @@ subroutine abf_core_shake
         case(2)
             ! get forces from SHAKE - abf_core_force_3pF
             shist(:,:,hist_len) = SHAKEFrc(:,:)
-        case(1)
+        case(1,10)
             ! ignored
         case default
             call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented fmode in abf_core_shake!')
@@ -115,7 +115,7 @@ subroutine abf_core_flng
         case(2)
             ! get langevin forces -  - abf_core_force_3pF
             lhist(:,:,hist_len) =  LNGFrc(:,:)
-        case(1)
+        case(1,10)
             ! ignored
         case default
             call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented fmode in abf_core_flng!')

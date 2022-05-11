@@ -141,7 +141,7 @@ subroutine abf_control_read_abf(prm_fin)
             call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown extrapolation/interpolation mode!')
     end select
 
-    if( fmode .eq. 2 ) then
+    if( fmode .eq. 10 ) then
         write(PMF_OUT,63)
         call pmf_ctrl_read_integer(prm_fin,'gpr_len',gpr_len,'I12')
         call pmf_ctrl_check_integer('ABF','gpr_len',gpr_len,3,CND_GE)
