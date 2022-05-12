@@ -88,10 +88,10 @@ subroutine abf_core_shake
     ! --------------------------------------------------------------------------
 
     select case(fmode)
-        case(2)
+        case(2,10)
             ! get forces from SHAKE - abf_core_force_3pF
             shist(:,:,hist_len) = SHAKEFrc(:,:)
-        case(1,10)
+        case(1)
             ! ignored
         case default
             call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented fmode in abf_core_shake!')
@@ -112,10 +112,10 @@ subroutine abf_core_flng
     ! --------------------------------------------------------------------------
 
     select case(fmode)
-        case(2)
+        case(2,10)
             ! get langevin forces -  - abf_core_force_3pF
             lhist(:,:,hist_len) =  LNGFrc(:,:)
-        case(1,10)
+        case(1)
             ! ignored
         case default
             call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented fmode in abf_core_flng!')
