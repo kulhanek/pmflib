@@ -45,6 +45,15 @@ void CMWAProcessor::UnregisterClient(void)
     if(MWAServer.RegClients.GetNumberOfActiveRegistration() == 0) {
         if(MWAServer.DoNotShutdown == false) MWAServer.TerminateServer();
     }
+
+// did we reach the target number of processed clients?
+    if( MWAServer.TargetRegs > 0 ){
+        if( (MWAServer.RegClients.GetNumberOfClients() >= MWAServer.TargetRegs) &&
+            (MWAServer.RegClients.GetNumberOfActiveRegistration() == 0) ){
+            MWAServer.TerminateServer();
+        }
+    }
+
 }
 
 //==============================================================================
