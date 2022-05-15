@@ -892,17 +892,27 @@ subroutine abf_init_snb_list
     use abf_accu
 
     implicit none
-    integer         :: i,j,k,dcv,idx,alloc_failed,fac
-    real(PMFDP)     :: dx,u2
+    integer         :: i,j,k,idx,alloc_failed
+    real(PMFDP)     :: dx,u2,fac
     ! --------------------------------------------------------------------------
 
-    ! use bigger distance buffer, fac is square of this buffer
+! use bigger distance buffer, fac is square of this buffer
     fac = 2**2 ! 2^2 = 4
 
-    max_snb_size = 1
-    do i=1,NumOfABFCVs
-        dcv = fac*ceiling(ABFCVList(i)%wfac) + 1
-        max_snb_size = max_snb_size * dcv
+! calculate the number of required pairs
+    max_snb_size = 0
+    do i=1,abfaccu%PMFAccuType%tot_nbins
+        do j=1,abfaccu%PMFAccuType%tot_nbins
+            u2 = 0.0d0
+            do k=1,abfaccu%PMFAccuType%tot_cvs
+                dx = abfaccu%PMFAccuType%sizes(k)%cv%get_deviation(abfaccu%binpos(k,i),abfaccu%binpos(k,j)) &
+                   / (ABFCVList(k)%wfac * abfaccu%PMFAccuType%sizes(k)%bin_width)
+                u2 = u2 + dx**2
+            end do
+            if( u2 .le. fac ) then
+                max_snb_size = max_snb_size + 1
+            end if
+        end do
     end do
 
     max_snb_size = max_snb_size + 1 ! terminating null
@@ -925,10 +935,11 @@ subroutine abf_init_snb_list
         do j=1,abfaccu%PMFAccuType%tot_nbins
             u2 = 0.0d0
             do k=1,abfaccu%PMFAccuType%tot_cvs
-                dx = (abfaccu%binpos(k,i) - abfaccu%binpos(k,j)) / (ABFCVList(k)%wfac * abfaccu%PMFAccuType%sizes(k)%bin_width)
+                dx = abfaccu%PMFAccuType%sizes(k)%cv%get_deviation(abfaccu%binpos(k,i),abfaccu%binpos(k,j)) &
+                   / (ABFCVList(k)%wfac * abfaccu%PMFAccuType%sizes(k)%bin_width)
                 u2 = u2 + dx**2
             end do
-            if( u2 .le. real(fac,PMFDP) ) then
+            if( u2 .le. fac ) then
                 idx = idx + 1
                 if( idx .gt. max_snb_size ) then
                     call pmf_utils_exit(PMF_OUT,1, &
