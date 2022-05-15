@@ -82,17 +82,14 @@ subroutine abf_init_dat
     fentdecomp      = .false.
     frecord         = .false.
 
-    ftds_alpha_ekin = 1.0d0
-    ftds_beta_ekin  = 1.0d0
-
     ftds_ekin_src   = 1
 
     fepotaverage    = 0.0d0
     fekinaverage    = 0.0d0
 
     feimode         = 1
-    fhramp_min      = 100
-    fhramp_max      = 500
+    fhramp_min      = 20000
+    fhramp_max      = 30000
 
     NumOfABFCVs         = 0
     NumOfABFCVs   = 0
@@ -183,74 +180,12 @@ subroutine abf_init_print_summary
     select case(fmode)
 
     case(1)
-    write(PMF_OUT,120)  '      |-> Simplified ABF algorithm (V)'
+    write(PMF_OUT,120)  '      |-> Simplified ABF algorithm (3pV)'
 
     case(2)
-    write(PMF_OUT,120)  '      |-> Simplified ABF algorithm (F)'
+    write(PMF_OUT,120)  '      |-> Simplified ABF algorithm (3pF)'
 
-    case(10)
-    write(PMF_OUT,120)  '      |-> Simplified ABF algorithm (GPR)'
-    write(PMF_OUT,130)  '          gpr_len                        : ', gpr_len
 
-    write(PMF_OUT,120)  '          === ICF GPR'
-    write(PMF_OUT,125)  '              gpr_icf_enabled            : ', prmfile_onoff(gpr_icf_enabled)
-    write(PMF_OUT,130)  '              gpr_icf_kernel             : ', gpr_icf_kernel
-    select case(gpr_icf_kernel)
-    case(0)
-    write(PMF_OUT,120)  '              \-> EXP (exponential kernel)'
-    case(1)
-    write(PMF_OUT,120)  '              \-> MC(3/2) (Matern kernel v=3/2)'
-    case(2)
-    write(PMF_OUT,120)  '              \-> MC(5/2) (Matern kernel v=5/2)'
-    case(3)
-    write(PMF_OUT,120)  '              \-> SE (squared exponential kernel)'
-    case(4)
-    write(PMF_OUT,120)  '              \-> Epanechnikov (parabolic) kernel'
-    case(5)
-    write(PMF_OUT,120)  '              \-> Quartic (biweight) kernel'
-    case(6)
-    write(PMF_OUT,120)  '              \-> Triweigh kernel'
-    case(7)
-    write(PMF_OUT,120)  '              \-> sinc kernel'
-    case default
-        call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown gpr_icf_kernel in abf_init_print_summary!')
-    end select
-    write(PMF_OUT,152)  '              gpr_icf_width              : ', gpr_icf_width,  &
-                                       '['//trim(pmf_unit_label(TimeUnit))//']'
-    write(PMF_OUT,160)  '              gpr_icf_noise              : ', gpr_icf_noise
-
-write(PMF_OUT,120)  '          === ENE GPR'
-    write(PMF_OUT,125)  '              gpr_ene_enabled            : ', prmfile_onoff(gpr_ene_enabled)
-    write(PMF_OUT,130)  '              gpr_ene_kernel             : ', gpr_ene_kernel
-    select case(gpr_icf_kernel)
-    case(0)
-    write(PMF_OUT,120)  '              \-> EXP (exponential kernel)'
-    case(1)
-    write(PMF_OUT,120)  '              \-> MC(3/2) (Matern kernel v=3/2)'
-    case(2)
-    write(PMF_OUT,120)  '              \-> MC(5/2) (Matern kernel v=5/2)'
-    case(3)
-    write(PMF_OUT,120)  '              \-> SE (squared exponential kernel)'
-    case(4)
-    write(PMF_OUT,120)  '              \-> Epanechnikov (parabolic) kernel'
-    case(5)
-    write(PMF_OUT,120)  '              \-> Quartic (biweight) kernel'
-    case(6)
-    write(PMF_OUT,120)  '              \-> Triweigh kernel'
-    case(7)
-    write(PMF_OUT,120)  '              \-> sinc kernel'
-    case default
-        call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown gpr_ene_kernel in abf_init_print_summary!')
-    end select
-    write(PMF_OUT,152)  '              gpr_ene_width              : ', gpr_ene_width,  &
-                                       '['//trim(pmf_unit_label(TimeUnit))//']'
-    write(PMF_OUT,160)  '              gpr_ene_noise              : ', gpr_ene_noise
-
-    write(PMF_OUT,120)  '          === K+Sigma inversion'
-    write(PMF_OUT,130)  '              gpr_rank                   : ', gpr_rank
-    write(PMF_OUT,160)  '              gpr_rcond                  : ', gpr_rcond
-    write(PMF_OUT,160)  '              gpr_rsigma                 : ', gpr_rsigma
-    write(PMF_OUT,125)  '              gpr_calc_logxx             : ', prmfile_onoff(gpr_calc_logxx)
 
     case default
         call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown fmode in abf_init_print_summary!')
@@ -307,6 +242,16 @@ write(PMF_OUT,120)  '          === ENE GPR'
                                                                        '['//trim(pmf_unit_label(EnergyUnit))//']'
     write(PMF_OUT,150)  ' Kinetic energy offset (fekinaverage)    : ', pmf_unit_get_rvalue(EnergyUnit,fekinaverage), &
                                                                        '['//trim(pmf_unit_label(EnergyUnit))//']'
+    write(PMF_OUT,130)  ' Kinetic energy source (ftds_ekin_src)   : ', ftds_ekin_src
+    select case(ftds_ekin_src)
+    case(1)
+    write(PMF_OUT,120)  '      |-> VV (velocity Verlet)'
+    case(2)
+    write(PMF_OUT,120)  '      |-> LF (leap-frog)'
+    case default
+    call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown kinetic energy source in abf_init_print_summary!')
+    end select
+
     write(PMF_OUT,120)
     write(PMF_OUT,120)  ' Restart options:'
     write(PMF_OUT,120)  ' ------------------------------------------------------'
@@ -361,6 +306,71 @@ write(PMF_OUT,120)  '          === ENE GPR'
 160 format(A,E10.4)
 
 140 format(' == Collective variable #',I4.4)
+
+
+!case(10)
+!    write(PMF_OUT,120)  '      |-> Simplified ABF algorithm (GPR)'
+!    write(PMF_OUT,130)  '          gpr_len                        : ', gpr_len
+!
+!    write(PMF_OUT,120)  '          === ICF GPR'
+!    write(PMF_OUT,125)  '              gpr_icf_enabled            : ', prmfile_onoff(gpr_icf_enabled)
+!    write(PMF_OUT,130)  '              gpr_icf_kernel             : ', gpr_icf_kernel
+!    select case(gpr_icf_kernel)
+!    case(0)
+!    write(PMF_OUT,120)  '              \-> EXP (exponential kernel)'
+!    case(1)
+!    write(PMF_OUT,120)  '              \-> MC(3/2) (Matern kernel v=3/2)'
+!    case(2)
+!    write(PMF_OUT,120)  '              \-> MC(5/2) (Matern kernel v=5/2)'
+!    case(3)
+!    write(PMF_OUT,120)  '              \-> SE (squared exponential kernel)'
+!    case(4)
+!    write(PMF_OUT,120)  '              \-> Epanechnikov (parabolic) kernel'
+!    case(5)
+!    write(PMF_OUT,120)  '              \-> Quartic (biweight) kernel'
+!    case(6)
+!    write(PMF_OUT,120)  '              \-> Triweigh kernel'
+!    case(7)
+!    write(PMF_OUT,120)  '              \-> sinc kernel'
+!    case default
+!        call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown gpr_icf_kernel in abf_init_print_summary!')
+!    end select
+!    write(PMF_OUT,152)  '              gpr_icf_width              : ', gpr_icf_width,  &
+!                                       '['//trim(pmf_unit_label(TimeUnit))//']'
+!    write(PMF_OUT,160)  '              gpr_icf_noise              : ', gpr_icf_noise
+!
+!write(PMF_OUT,120)  '          === ENE GPR'
+!    write(PMF_OUT,125)  '              gpr_ene_enabled            : ', prmfile_onoff(gpr_ene_enabled)
+!    write(PMF_OUT,130)  '              gpr_ene_kernel             : ', gpr_ene_kernel
+!    select case(gpr_icf_kernel)
+!    case(0)
+!    write(PMF_OUT,120)  '              \-> EXP (exponential kernel)'
+!    case(1)
+!    write(PMF_OUT,120)  '              \-> MC(3/2) (Matern kernel v=3/2)'
+!    case(2)
+!    write(PMF_OUT,120)  '              \-> MC(5/2) (Matern kernel v=5/2)'
+!    case(3)
+!    write(PMF_OUT,120)  '              \-> SE (squared exponential kernel)'
+!    case(4)
+!    write(PMF_OUT,120)  '              \-> Epanechnikov (parabolic) kernel'
+!    case(5)
+!    write(PMF_OUT,120)  '              \-> Quartic (biweight) kernel'
+!    case(6)
+!    write(PMF_OUT,120)  '              \-> Triweigh kernel'
+!    case(7)
+!    write(PMF_OUT,120)  '              \-> sinc kernel'
+!    case default
+!        call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown gpr_ene_kernel in abf_init_print_summary!')
+!    end select
+!    write(PMF_OUT,152)  '              gpr_ene_width              : ', gpr_ene_width,  &
+!                                       '['//trim(pmf_unit_label(TimeUnit))//']'
+!    write(PMF_OUT,160)  '              gpr_ene_noise              : ', gpr_ene_noise
+!
+!    write(PMF_OUT,120)  '          === K+Sigma inversion'
+!    write(PMF_OUT,130)  '              gpr_rank                   : ', gpr_rank
+!    write(PMF_OUT,160)  '              gpr_rcond                  : ', gpr_rcond
+!    write(PMF_OUT,160)  '              gpr_rsigma                 : ', gpr_rsigma
+!    write(PMF_OUT,125)  '              gpr_calc_logxx             : ', prmfile_onoff(gpr_calc_logxx)
 
 end subroutine abf_init_print_summary
 

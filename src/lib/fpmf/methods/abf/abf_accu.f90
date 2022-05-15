@@ -149,7 +149,6 @@ subroutine abf_accu_init()
 
     if( frecord ) then
         allocate(   abfaccu%tcvs(abfaccu%tot_cvs,fnstlim),      &
-                    abfaccu%tzinv(abfaccu%tot_cvs,abfaccu%tot_cvs,fnstlim), &
                     abfaccu%tbicf(abfaccu%tot_cvs,fnstlim),     &
                     abfaccu%tepot(fnstlim),                     &
                     abfaccu%terst(fnstlim),                     &
@@ -261,7 +260,6 @@ subroutine abf_accu_clear()
 
     if( frecord ) then
         abfaccu%tcvs(:,:)        = 0.0d0
-        abfaccu%tzinv(:,:,:)     = 0.0d0
         abfaccu%tbicf(:,:)       = 0.0d0
         abfaccu%tepot(:)         = 0.0d0
         abfaccu%terst(:)         = 0.0d0
@@ -543,7 +541,6 @@ subroutine abf_accu_write(iounit,full)
     if( full ) then
         if( frecord ) then
             call pmf_accu_write_rbuf_TC(abfaccu%PMFAccuType,iounit,     'TCVS', abfaccu%tcvs)
-            call pmf_accu_write_rbuf_TCC(abfaccu%PMFAccuType,iounit,    'TZINV',abfaccu%tzinv)
             call pmf_accu_write_rbuf_TC(abfaccu%PMFAccuType,iounit,     'TBICF',abfaccu%tbicf)
             call pmf_accu_write_rbuf_T(iounit,                          'TEPOT',abfaccu%tepot)
             call pmf_accu_write_rbuf_T(iounit,                          'TERST',abfaccu%terst)
@@ -674,7 +671,7 @@ end subroutine abf_accu_add_data_online
 ! Subroutine:  abf_accu_add_data_entropy_decompose
 !===============================================================================
 
-subroutine abf_accu_add_data_entropy_decompose(cvs,fx,vx,bx,sx,lx,epot,erst,ekin)
+subroutine abf_accu_add_data_entropy_decompose(cvs,fx,sx,vx,lx,bx,epot,erst,ekin)
 
     use abf_dat
     use pmf_dat
@@ -682,10 +679,10 @@ subroutine abf_accu_add_data_entropy_decompose(cvs,fx,vx,bx,sx,lx,epot,erst,ekin
     implicit none
     real(PMFDP),intent(in)  :: cvs(:)
     real(PMFDP),intent(in)  :: fx(:)
-    real(PMFDP),intent(in)  :: vx(:)
-    real(PMFDP),intent(in)  :: bx(:)
     real(PMFDP),intent(in)  :: sx(:)
+    real(PMFDP),intent(in)  :: vx(:)
     real(PMFDP),intent(in)  :: lx(:)
+    real(PMFDP),intent(in)  :: bx(:)
     real(PMFDP),intent(in)  :: epot
     real(PMFDP),intent(in)  :: erst
     real(PMFDP),intent(in)  :: ekin
@@ -785,14 +782,13 @@ end subroutine abf_accu_add_data_entropy_decompose
 ! Subroutine:  abf_accu_add_data_record_lf
 !===============================================================================
 
-subroutine abf_accu_add_data_record_lf(cvs,zinv,bicf,epot,erst,ekin)
+subroutine abf_accu_add_data_record_lf(cvs,bicf,epot,erst,ekin)
 
     use abf_dat
     use pmf_dat
 
     implicit none
     real(PMFDP)    :: cvs(:)
-    real(PMFDP)    :: zinv(:,:)
     real(PMFDP)    :: bicf(:)       ! applied bias
     real(PMFDP)    :: epot
     real(PMFDP)    :: erst
@@ -800,7 +796,6 @@ subroutine abf_accu_add_data_record_lf(cvs,zinv,bicf,epot,erst,ekin)
     ! --------------------------------------------------------------------------
 
     abfaccu%tcvs(:,fstep)       = cvs(:)
-    abfaccu%tzinv(:,:,fstep)    = zinv(:,:)
     abfaccu%tbicf(:,fstep)      = bicf(:)
     abfaccu%tepot(fstep)        = epot
     abfaccu%terst(fstep)        = erst

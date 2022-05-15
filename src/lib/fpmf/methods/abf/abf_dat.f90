@@ -53,8 +53,6 @@ logical     :: fentropy     ! collect data for entropy calculation
 logical     :: fentdecomp   ! collect additional correlation terms
 logical     :: frecord      ! record time progress
 
-real(PMFDP) :: ftds_alpha_ekin ! mixing parameter for kinetic energy
-real(PMFDP) :: ftds_beta_ekin
 integer     :: ftds_ekin_src
 
 real(PMFDP) :: fepotaverage
@@ -165,7 +163,6 @@ type,extends(PMFAccuType) :: ABFAccuType
 
 ! time recording for post-processing
     real(PMFDP),pointer    :: tcvs(:,:)
-    real(PMFDP),pointer    :: tzinv(:,:,:)
     real(PMFDP),pointer    :: tbicf(:,:)
     real(PMFDP),pointer    :: tepot(:)
     real(PMFDP),pointer    :: terst(:)
