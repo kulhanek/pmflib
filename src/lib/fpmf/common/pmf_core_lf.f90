@@ -288,7 +288,9 @@ subroutine pmf_core_lf_langevin_forces(flng)
 
         call pmf_core_in_data_flng(flng)
 
-        call abf_core_flng()
+        if( abf_enabled ) then
+            call abf_core_flng()
+        end if
 
         call pmf_timers_stop_timer(PMFLIB_LNGFRC_TIMER)
     call pmf_timers_stop_timer(PMFLIB_METHODS_TIMER)
@@ -366,7 +368,9 @@ subroutine pmf_core_lf_shake_forces(xbar,xp)
             SHAKEFrc(:,i)  = Mass(i) * (CrdP(:,i) - CrdBar(:,i)) * ifdtx**2
         end do
 
-        call abf_core_shake()
+        if( abf_enabled ) then
+            call abf_core_shake()
+        end if
 
         call pmf_timers_stop_timer(PMFLIB_SHKFRC_TIMER)
     call pmf_timers_stop_timer(PMFLIB_METHODS_TIMER)
