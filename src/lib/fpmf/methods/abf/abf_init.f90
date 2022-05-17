@@ -399,6 +399,7 @@ subroutine abf_init_arrays
             pxi2(NumOfABFCVs),                  &
             pxi3(NumOfABFCVs),                  &
             pxip(NumOfABFCVs),                  &
+            pxif(NumOfABFCVs),                  &
             sfac(NumOfABFCVs),                  &
             cvave(NumOfABFCVs),                 &
             fz(NumOfABFCVs,NumOfABFCVs),        &
@@ -420,6 +421,7 @@ subroutine abf_init_arrays
     pxi2(:)     = 0.0d0
     pxi3(:)     = 0.0d0
     pxip(:)     = 0.0d0
+    pxif(:)     = 0.0d0
     cvave(:)    = 0.0d0
     fz(:,:)     = 0.0d0
     fzinv(:,:)  = 0.0d0

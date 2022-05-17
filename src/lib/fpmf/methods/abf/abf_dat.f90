@@ -222,6 +222,7 @@ real(PMFDP),allocatable     :: pxi1(:)
 real(PMFDP),allocatable     :: pxi2(:)
 real(PMFDP),allocatable     :: pxi3(:)
 real(PMFDP),allocatable     :: pxip(:)
+real(PMFDP),allocatable     :: pxif(:)
 real(PMFDP),allocatable     :: sfac(:)              ! switching factors
 
 ! ------------------------------------------------------------------------------
