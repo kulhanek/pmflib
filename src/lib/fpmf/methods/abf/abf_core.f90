@@ -448,7 +448,7 @@ subroutine abf_core_register_rawdata(cvs,ficf,sicf,vicf,licf,bicf,mtc,epot,erst,
     ! --------------------------------------------------------------------------
 
     ! total ABF force
-    pxip(:) = ficf(:) + sicf(:) + vicf(:) ! adaptive coorection
+    pxip(:) = ficf(:) + sicf(:) + vicf(:) ! adaptive correction
     ! bicf  ! current bias
 
     ! total energy

@@ -95,6 +95,7 @@ subroutine abf_control_read_abf(prm_fin)
     call pmf_ctrl_read_logical(prm_fin,'fentropy',fentropy)
     call pmf_ctrl_read_logical(prm_fin,'fentdecomp',fentdecomp)
     call pmf_ctrl_read_logical(prm_fin,'frecord',frecord)
+    call pmf_ctrl_read_logical(prm_fin,'ftds_add_bias',ftds_add_bias)
 
     call pmf_ctrl_read_integer(prm_fin,'ftds_ekin_src',ftds_ekin_src,'I12')
     call pmf_ctrl_check_integer_in_range('ABF','ftds_ekin_src',ftds_ekin_src,1,2)
