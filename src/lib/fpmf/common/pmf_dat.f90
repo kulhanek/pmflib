@@ -159,6 +159,7 @@ character(PMF_MAX_PATH)     :: fmtdhills
 
 ! adaptive biasing force method ------------------
 character(PMF_MAX_PATH)     :: fabfdef
+character(PMF_MAX_PATH)     :: fabfshakedef
 character(PMF_MAX_PATH)     :: fabfmask
 character(PMF_MAX_PATH)     :: fabfout
 character(PMF_MAX_PATH)     :: fabfrst

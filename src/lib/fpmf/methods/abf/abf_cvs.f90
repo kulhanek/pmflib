@@ -183,5 +183,30 @@ subroutine abf_cvs_cv_info(abf_item)
 end subroutine abf_cvs_cv_info
 
 !===============================================================================
+! Subroutine:  abf_cvs_cv_info_shake
+!===============================================================================
+
+subroutine abf_cvs_cv_info_shake(abf_item)
+
+    use abf_dat
+    use pmf_dat
+    use pmf_cvs
+    use prmfile
+
+    implicit none
+    type(CVTypeABF) :: abf_item
+    ! --------------------------------------------------------------------------
+
+    write(PMF_OUT,145) trim(abf_item%cv%name)
+    write(PMF_OUT,146) trim(abf_item%cv%ctype)
+
+    return
+
+145 format('    ** Name              : ',a)
+146 format('    ** Type              : ',a)
+
+end subroutine abf_cvs_cv_info_shake
+
+!===============================================================================
 
 end module abf_cvs

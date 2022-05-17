@@ -53,7 +53,10 @@ logical     :: fentropy     ! collect data for entropy calculation
 logical     :: fentdecomp   ! collect additional correlation terms
 logical     :: frecord      ! record time progress
 
-integer     :: ftds_ekin_src
+integer     :: ftds_ekin_src    ! source of kinetic energy
+                                ! 1 - EkinVV
+                                ! 2 - EkinLF
+logical     :: ftds_add_bias    ! include ABF bias into TdS calculation
 
 real(PMFDP) :: fepotaverage
 real(PMFDP) :: fekinaverage
@@ -96,6 +99,8 @@ end type CVTypeABF
 integer                     :: NumOfABFCVs          ! number of ALL CVs in a group
 type(CVTypeABF),allocatable :: ABFCVList(:)         ! definition of CVs
 
+integer                     :: NumOfABFSHAKECVs     ! constraints in collisions
+type(CVTypeABF),allocatable :: ABFSHAKECVList(:)    ! definition of CVs
 ! ----------------------
 
 type,extends(PMFAccuType) :: ABFAccuType
@@ -123,6 +128,15 @@ type,extends(PMFAccuType) :: ABFAccuType
     real(PMFDP),pointer    :: m2pp(:,:)                 ! M2 of tot energy + icf
     real(PMFDP),pointer    :: mpn(:,:)                  ! mean of tot energy - icf
     real(PMFDP),pointer    :: m2pn(:,:)                 ! M2 of tot energy - icf
+
+    real(PMFDP),pointer    :: micf_mtc(:,:)             ! mean ICF
+    real(PMFDP),pointer    :: m2icf_mtc(:,:)            ! M2 of ICF
+    real(PMFDP),pointer    :: metot_mtc(:)              ! mean of tot energy
+    real(PMFDP),pointer    :: m2etot_mtc(:)             ! M2 of tot energy
+    real(PMFDP),pointer    :: micfetot_mtc(:,:)         ! mean of tot energy
+    real(PMFDP),pointer    :: m2icfetot_mtc(:,:)        ! M2 of tot energy
+    real(PMFDP),pointer    :: mmtc(:)                   ! mean MTC
+    real(PMFDP),pointer    :: m2mtc(:)                  ! M2 of MTC
 
 ! entropy - decomposition
     real(PMFDP),pointer    :: ntds(:)                   ! number of hits into bins
@@ -195,6 +209,11 @@ real(PMFDP),allocatable     :: fzinv0(:,:)          ! inverse of Z matrix   in t
 real(PMFDP)                 :: fzdet
 real(PMFDP)                 :: fzdetall
 
+! SHAKE correction
+real(PMFDP),allocatable     :: fzshake(:,:)           ! Z matrix for SHAKE CVs  in t
+integer,allocatable         :: indxshake(:)           ! for LU decomposition  in t
+real(PMFDP)                 :: fzdetshake
+
 ! helper arrays -------
 real(PMFDP),allocatable     :: la(:)
 real(PMFDP),allocatable     :: cvave(:)
@@ -222,6 +241,7 @@ real(PMFDP),allocatable     :: micfhist(:,:)        ! history of ABF bias
 real(PMFDP),allocatable     :: epothist(:)          ! history of Epot
 real(PMFDP),allocatable     :: ersthist(:)          ! history of Erst
 real(PMFDP),allocatable     :: ekinhist(:)          ! history of Ekin
+real(PMFDP),allocatable     :: mtchist(:)           ! history of MTC correction
 
 ! GPR facility -----------------------------------------------------------------
 integer                     :: gpr_len          ! MUST be odd number

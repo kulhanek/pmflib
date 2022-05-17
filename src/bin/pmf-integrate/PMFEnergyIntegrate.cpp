@@ -255,6 +255,11 @@ bool CPMFEnergyIntegrate::Run(void)
                 RUNTIME_ERROR(error);
             }
     // -----------------------------------------------
+        } else if ( Options.GetOptRealm() == "dG_MTC" ) {
+            CABFProxy_dG_Ptr proxy    = CABFProxy_dG_Ptr(new CABFProxy_dG);
+            proxy->SetType(ABF_MICF_MTC);
+            lproxy = proxy;
+    // -----------------------------------------------
         } else if ( Options.GetOptRealm() == "dG_p" ) {
             CABFProxy_dG_Ptr proxy    = CABFProxy_dG_Ptr(new CABFProxy_dG);
             proxy->SetType(ABF_MICF_POT);
@@ -275,6 +280,11 @@ bool CPMFEnergyIntegrate::Run(void)
                 error << "incompatible method: " << accu->GetMethod() << " with requested realm: " <<  Options.GetOptRealm();
                 RUNTIME_ERROR(error);
             }
+    // -----------------------------------------------
+        } else if ( Options.GetOptRealm() == "-TdS_MTC" ) {
+            CABFProxy_mTdS_Ptr proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
+            proxy->SetType(ABF_TdS_HH_MTC);
+            lproxy = proxy;
     // -----------------------------------------------
         } else if ( Options.GetOptRealm() == "-TdS_FP" ) {
             CABFProxy_mTdS_Ptr proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);

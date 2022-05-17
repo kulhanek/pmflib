@@ -83,6 +83,7 @@ subroutine abf_init_dat
     frecord         = .false.
 
     ftds_ekin_src   = 1
+    ftds_add_bias   = .false.
 
     fepotaverage    = 0.0d0
     fekinaverage    = 0.0d0
@@ -251,6 +252,7 @@ subroutine abf_init_print_summary
     case default
     call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown kinetic energy source in abf_init_print_summary!')
     end select
+    write(PMF_OUT,125)  ' Incl. ABF bias into -TdS (ftds_add_bias): ', prmfile_onoff(ftds_add_bias)
 
     write(PMF_OUT,120)
     write(PMF_OUT,120)  ' Restart options:'
@@ -401,6 +403,8 @@ subroutine abf_init_arrays
             cvave(NumOfABFCVs),                 &
             fz(NumOfABFCVs,NumOfABFCVs),        &
             fzinv(NumOfABFCVs,NumOfABFCVs),     &
+            fzshake(NumOfABFSHAKECVs,NumOfABFSHAKECVs),     &
+            indxshake(NumOfABFSHAKECVs),                    &
             indx(NumOfABFCVs),                  &
             vv(NumOfABFCVs),                    &
             stat= alloc_failed )
@@ -420,7 +424,8 @@ subroutine abf_init_arrays
     fz(:,:)     = 0.0d0
     fzinv(:,:)  = 0.0d0
 
-    sfac(:)     = 1.0d0
+    fzshake(:,:)    = 0.0d0
+    sfac(:)         = 1.0d0
 
 ! history buffers ------------------------------------------
 
@@ -453,6 +458,7 @@ subroutine abf_init_arrays
             epothist(hist_len),                         &
             ersthist(hist_len),                         &
             ekinhist(hist_len),                         &
+            mtchist(hist_len),                          &
             stat= alloc_failed )
 
     if( alloc_failed .ne. 0 ) then

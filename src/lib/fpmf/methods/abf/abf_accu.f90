@@ -147,6 +147,31 @@ subroutine abf_accu_init()
         endif
     end if
 
+    if( NumOfABFSHAKECVs .gt. 0 ) then
+
+        allocate(   abfaccu%mmtc(abfaccu%tot_nbins),                            &
+                    abfaccu%m2mtc(abfaccu%tot_nbins),                           &
+                    abfaccu%micf_mtc(abfaccu%tot_cvs,abfaccu%tot_nbins),        &
+                    abfaccu%m2icf_mtc(abfaccu%tot_cvs,abfaccu%tot_nbins),       &
+                    stat = alloc_failed)
+
+        if( alloc_failed .ne. 0 ) then
+            call pmf_utils_exit(PMF_OUT, 1,'[ABF] Unable to allocate memory for abf accumulator (NumOfABFSHAKECVs)!')
+        endif
+
+        if( fentropy ) then
+            allocate(   abfaccu%metot_mtc(abfaccu%tot_nbins),                       &
+                        abfaccu%m2etot_mtc(abfaccu%tot_nbins),                      &
+                        abfaccu%micfetot_mtc(abfaccu%tot_cvs,abfaccu%tot_nbins),    &
+                        abfaccu%m2icfetot_mtc(abfaccu%tot_cvs,abfaccu%tot_nbins),   &
+                        stat = alloc_failed)
+
+            if( alloc_failed .ne. 0 ) then
+                call pmf_utils_exit(PMF_OUT, 1,'[ABF] Unable to allocate memory for abf accumulator (NumOfABFSHAKECVs)!')
+            endif
+        end if
+    end if
+
     if( frecord ) then
         allocate(   abfaccu%tcvs(abfaccu%tot_cvs,fnstlim),      &
                     abfaccu%tbicf(abfaccu%tot_cvs,fnstlim),     &
@@ -256,6 +281,20 @@ subroutine abf_accu_clear()
         abfaccu%c11tdslp(:,:)   = 0.0d0
         abfaccu%c11tdslr(:,:)   = 0.0d0
         abfaccu%c11tdslk(:,:)   = 0.0d0
+    end if
+
+    if( NumOfABFSHAKECVs .gt. 0 ) then
+        abfaccu%mmtc(:)             = 0.0d0
+        abfaccu%m2mtc(:)            = 0.0d0
+        abfaccu%micf_mtc(:,:)       = 0.0d0
+        abfaccu%m2icf_mtc(:,:)      = 0.0d0
+
+        if( fentropy ) then
+            abfaccu%metot_mtc(:)        = 0.0d0
+            abfaccu%m2etot_mtc(:)       = 0.0d0
+            abfaccu%micfetot_mtc(:,:)   = 0.0d0
+            abfaccu%m2icfetot_mtc(:,:)  = 0.0d0
+        end if
     end if
 
     if( frecord ) then
@@ -494,6 +533,23 @@ subroutine abf_accu_write(iounit,full)
         call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'M2PN',       'M2',abfaccu%m2pn,      'NSAMPLES','MPN')
     end if
 
+    if( NumOfABFSHAKECVs .gt. 0 ) then
+        call pmf_accu_write_rbuf_B(abfaccu%PMFAccuType,iounit,'MMTC',       'WA',abfaccu%mmtc,      'NSAMPLES')
+        call pmf_accu_write_rbuf_B(abfaccu%PMFAccuType,iounit,'M2MTC',      'M2',abfaccu%m2mtc,     'NSAMPLES','MMTC')
+        call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'MICF_MTC',   'WA',abfaccu%micf_mtc,  'NSAMPLES')
+        call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'M2ICF_MTC',  'M2',abfaccu%m2icf_mtc, 'NSAMPLES','MICF_MTC')
+
+        if( fentropy ) then
+        call pmf_accu_write_rbuf_B(abfaccu%PMFAccuType,iounit,'METOT_MTC',      'WA',abfaccu%metot_mtc,     'NSAMPLES')
+        call pmf_accu_write_rbuf_B(abfaccu%PMFAccuType,iounit,'M2ETOT_MTC',     'M2',abfaccu%m2etot_mtc,    'NSAMPLES','METOT_MTC')
+        call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'MICFETOT_MTC',   'WA',abfaccu%micfetot_mtc, &
+                                                              'NSAMPLES')
+        call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'M2ICFETOT_MTC',  'M2',abfaccu%m2icfetot_mtc, &
+                                                              'NSAMPLES','MICFETOT_MTC')
+        end if
+
+    end if
+
     if( fentropy .and. fentdecomp ) then
         call pmf_accu_write_rbuf_B(abfaccu%PMFAccuType,iounit,'NTDS',       'AD',abfaccu%ntds)
         call pmf_accu_write_rbuf_B(abfaccu%PMFAccuType,iounit,'MTDSEPOT',   'WA',abfaccu%mtdsepot,  'NTDS')
@@ -554,7 +610,7 @@ end subroutine abf_accu_write
 ! Subroutine:  abf_accu_add_data_online
 !===============================================================================
 
-subroutine abf_accu_add_data_online(cvs,gfx,epot,erst,ekin,etot)
+subroutine abf_accu_add_data_online(cvs,gfx,bfx,mtc,epot,erst,ekin,etot)
 
     use abf_dat
     use pmf_dat
@@ -562,6 +618,8 @@ subroutine abf_accu_add_data_online(cvs,gfx,epot,erst,ekin,etot)
     implicit none
     real(PMFDP),intent(in)  :: cvs(:)
     real(PMFDP),intent(in)  :: gfx(:)
+    real(PMFDP),intent(in)  :: bfx(:)
+    real(PMFDP),intent(in)  :: mtc
     real(PMFDP),intent(in)  :: epot
     real(PMFDP),intent(in)  :: erst
     real(PMFDP),intent(in)  :: ekin
@@ -576,6 +634,8 @@ subroutine abf_accu_add_data_online(cvs,gfx,epot,erst,ekin,etot)
     real(PMFDP)    :: dicf1, dicf2
     real(PMFDP)    :: dpp, dpp1, dpp2
     real(PMFDP)    :: dpn, dpn1, dpn2
+    real(PMFDP)    :: ie, die1, die2
+    real(PMFDP)    :: dmtc1, dmtc2
     ! --------------------------------------------------------------------------
 
     ! get global index to accumulator for cvs values
@@ -617,16 +677,46 @@ subroutine abf_accu_add_data_online(cvs,gfx,epot,erst,ekin,etot)
         abfaccu%metot(gi0)  = abfaccu%metot(gi0)  + detot1 * invn
         detot2 = etot - abfaccu%metot(gi0)
         abfaccu%m2etot(gi0) = abfaccu%m2etot(gi0) + detot1 * detot2
+
+        if( NumOfABFSHAKECVs .gt. 0 ) then
+            ! total energy - MTC corrected
+            detot1 = etot*mtc - abfaccu%metot_mtc(gi0)
+            abfaccu%metot_mtc(gi0)  = abfaccu%metot_mtc(gi0)  + detot1 * invn
+            detot2 = etot*mtc - abfaccu%metot_mtc(gi0)
+            abfaccu%m2etot_mtc(gi0) = abfaccu%m2etot_mtc(gi0) + detot1 * detot2
+        end if
+    end if
+
+    if( NumOfABFSHAKECVs .gt. 0 ) then
+        ! MTC
+        dmtc1 = mtc - abfaccu%mmtc(gi0)
+        abfaccu%mmtc(gi0)  = abfaccu%mmtc(gi0)  + dmtc1 * invn
+        dmtc2 = mtc - abfaccu%mmtc(gi0)
+        abfaccu%m2mtc(gi0) = abfaccu%m2mtc(gi0) + dmtc1 * dmtc2
     end if
 
     do i=1,NumOfABFCVs
-        icf = - gfx(i)
+        icf = - gfx(i) + bfx(i)
         dicf1 = icf - abfaccu%micf(i,gi0)
         abfaccu%micf(i,gi0)  = abfaccu%micf(i,gi0)  + dicf1 * invn
         dicf2 = icf - abfaccu%micf(i,gi0)
         abfaccu%m2icf(i,gi0) = abfaccu%m2icf(i,gi0) + dicf1 * dicf2
 
+        if( NumOfABFSHAKECVs .gt. 0 ) then
+            icf = icf * mtc
+            dicf1 = icf - abfaccu%micf_mtc(i,gi0)
+            abfaccu%micf_mtc(i,gi0)  = abfaccu%micf_mtc(i,gi0)  + dicf1 * invn
+            dicf2 = icf - abfaccu%micf_mtc(i,gi0)
+            abfaccu%m2icf_mtc(i,gi0) = abfaccu%m2icf_mtc(i,gi0) + dicf1 * dicf2
+         end if
+
         if( fentropy ) then
+            if( ftds_add_bias ) then
+                icf = - gfx(i) + bfx(i)
+            else
+                icf = - gfx(i)
+            end if
+
             dpp = icf + etot
             dpp1 = dpp - abfaccu%mpp(i,gi0)
             abfaccu%mpp(i,gi0)  = abfaccu%mpp(i,gi0)  + dpp1 * invn
@@ -638,6 +728,14 @@ subroutine abf_accu_add_data_online(cvs,gfx,epot,erst,ekin,etot)
             abfaccu%mpn(i,gi0)  = abfaccu%mpn(i,gi0)  + dpn1 * invn
             dpn2 = dpn - abfaccu%mpn(i,gi0)
             abfaccu%m2pn(i,gi0) = abfaccu%m2pn(i,gi0) + dpn1 * dpn2
+
+            if( NumOfABFSHAKECVs .gt. 0 ) then
+                ie = icf*etot*mtc
+                die1 = ie - abfaccu%micfetot_mtc(i,gi0)
+                abfaccu%micfetot_mtc(i,gi0)  = abfaccu%micfetot_mtc(i,gi0)  + die1 * invn
+                die2 = ie - abfaccu%micfetot_mtc(i,gi0)
+                abfaccu%m2icfetot_mtc(i,gi0) = abfaccu%m2icfetot_mtc(i,gi0) + die1 * die2
+            end if
         end if
     end do
 

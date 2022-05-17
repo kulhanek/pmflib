@@ -66,6 +66,11 @@ void CABFProxy_mTdS::SetType(EABFTdSType type)
         break;
 
     // -------------------
+        case(ABF_TdS_HH_MTC):
+            Provide = "ABF -TdS(x) MTC";
+        break;
+
+    // -------------------
         case(ABF_TdS_FP):
             Provide = "ABF -TdS(x) - FP";
         break;
@@ -192,6 +197,19 @@ double CABFProxy_mTdS::GetValue(int ibin,int icv,EProxyRealm realm) const
             c11 = 0.25*(m2pp-m2pn)/nsamples;
             m2icf   = Accu->GetData("M2ICF",ibin,icv);
             m2ene   = Accu->GetData("M2ETOT",ibin);
+        }
+        break;
+
+    // -------------------
+        case(ABF_TdS_HH_MTC):{
+            double micfetot = Accu->GetData("MICFETOT_MTC",ibin,icv);
+            double micf     = Accu->GetData("MICF_MTC",ibin,icv);
+            double metot    = Accu->GetData("METOT_MTC",ibin);
+            double mmtc     = Accu->GetData("MMTC",ibin);
+
+            c11     = micfetot/mmtc - metot*micf/(mmtc*mmtc);
+            m2icf   = Accu->GetData("M2ICF_MTC",ibin,icv);
+            m2ene   = Accu->GetData("M2ETOT_MTC",ibin);
         }
         break;
 

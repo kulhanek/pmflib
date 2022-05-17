@@ -144,13 +144,14 @@ subroutine abf_core_force_3pV()
 
 ! shift accuvalue history
     do i=1,hist_len-1
-        cvhist(:,i)     = cvhist(:,i+1)
-        epothist(i)     = epothist(i+1)
-        ersthist(i)     = ersthist(i+1)
-        ekinhist(i)     = ekinhist(i+1)
-        vhist(:,:,i)    = vhist(:,:,i+1)
-        zdhist(:,:,:,i) = zdhist(:,:,:,i+1)
-        micfhist(:,i)   = micfhist(:,i+1)
+        cvhist(:,i)         = cvhist(:,i+1)
+        epothist(i)         = epothist(i+1)
+        ersthist(i)         = ersthist(i+1)
+        ekinhist(i)         = ekinhist(i+1)
+        vhist(:,:,i)        = vhist(:,:,i+1)
+        zdhist(:,:,:,i)     = zdhist(:,:,:,i+1)
+        micfhist(:,i)       = micfhist(:,i+1)
+        mtchist(i)          = mtchist(i+1)
     end do
 
     do i=1,NumOfABFCVs
@@ -174,6 +175,15 @@ subroutine abf_core_force_3pV()
 
 ! calculate Z matrix and its inverse
     call abf_core_calc_Zmat(CVContext)
+
+    if( NumOfABFSHAKECVs .gt. 0 ) then
+        call abf_core_calc_Zmat_shake(CVContext)
+        mtchist(hist_len) = sqrt(1.0d0/fzdetshake)
+    else
+        mtchist(hist_len) = 1.0d0
+    end if
+
+    ! write(4789,*) fstep, mtchist(hist_len)
 
     do i=1,NumOfABFCVs
         do j=1,NumOfLAtoms
@@ -248,6 +258,7 @@ subroutine abf_core_force_3pV()
 
         ! subroutine abf_core_register_rawdata(cvs,ficf,sicf,vicf,licf,bicf,epot,erst,ekin)
         call abf_core_register_rawdata(cvhist(:,hist_len-1),pxi0,pxi1,pxi2,pxi3,micfhist(:,hist_len-1), &
+                                       mtchist(hist_len-1), &
                                        epothist(hist_len-1),ersthist(hist_len-1),ekinhist(hist_len-1))
     end if
 
@@ -288,6 +299,7 @@ subroutine abf_core_force_3pF()
         fhist(:,:,i)    = fhist(:,:,i+1)
         shist(:,:,i)    = shist(:,:,i+1)
         lhist(:,:,i)    = lhist(:,:,i+1)
+        mtchist(i)          = mtchist(i+1)
     end do
 
     do i=1,NumOfABFCVs
@@ -312,6 +324,13 @@ subroutine abf_core_force_3pF()
 
 ! calculate Z matrix and its inverse
     call abf_core_calc_Zmat(CVContext)
+
+    if( NumOfABFSHAKECVs .gt. 0 ) then
+        call abf_core_calc_Zmat_shake(CVContext)
+        mtchist(hist_len) = sqrt(1.0d0/fzdetshake)
+    else
+        mtchist(hist_len) = 1.0d0
+    end if
 
     do i=1,NumOfABFCVs
         do j=1,NumOfLAtoms
@@ -390,6 +409,7 @@ subroutine abf_core_force_3pF()
 
         ! subroutine abf_core_register_rawdata(cvs,ficf,sicf,vicf,licf,bicf,epot,erst,ekin)
         call abf_core_register_rawdata(cvhist(:,hist_len-1),pxi0,pxi1,pxi2,pxi3,micfhist(:,hist_len-1), &
+                                       mtchist(hist_len-1), &
                                        epothist(hist_len-1),ersthist(hist_len-1),ekinhist(hist_len-1))
 
     end if
@@ -403,7 +423,7 @@ end subroutine abf_core_force_3pF
 ! Subroutine:  abf_core_register_rawdata
 !===============================================================================
 
-subroutine abf_core_register_rawdata(cvs,ficf,sicf,vicf,licf,bicf,epot,erst,ekin)
+subroutine abf_core_register_rawdata(cvs,ficf,sicf,vicf,licf,bicf,mtc,epot,erst,ekin)
 
     use pmf_utils
     use pmf_dat
@@ -419,6 +439,7 @@ subroutine abf_core_register_rawdata(cvs,ficf,sicf,vicf,licf,bicf,epot,erst,ekin
     real(PMFDP),intent(in)  :: vicf(:)
     real(PMFDP),intent(in)  :: licf(:)
     real(PMFDP),intent(in)  :: bicf(:)
+    real(PMFDP),intent(in)  :: mtc
     real(PMFDP),intent(in)  :: epot
     real(PMFDP),intent(in)  :: erst
     real(PMFDP),intent(in)  :: ekin
@@ -427,14 +448,15 @@ subroutine abf_core_register_rawdata(cvs,ficf,sicf,vicf,licf,bicf,epot,erst,ekin
     ! --------------------------------------------------------------------------
 
     ! total ABF force
-    pxip(:) = ficf(:) + sicf(:) + vicf(:) - bicf  ! unbiased estimate
+    pxip(:) = ficf(:) + sicf(:) + vicf(:) ! adaptive coorection
+    ! bicf  ! current bias
 
     ! total energy
     etot = epot + erst + ekin
 
     ! add data to accumulator
     ! subroutine abf_accu_add_data_online(cvs,gfx,epot,erst,ekin,etot)
-    call abf_accu_add_data_online(cvs,pxip,epot,erst,ekin,etot)
+    call abf_accu_add_data_online(cvs,pxip,bicf,mtc,epot,erst,ekin,etot)
 
     if( fentropy .and. fentdecomp ) then
         ! subroutine abf_accu_add_data_entropy_decompose(cvs,fx,sx,vx,lx,bx,epot,erst,ekin)
@@ -1396,6 +1418,57 @@ subroutine abf_core_calc_Zmat(ctx)
     return
 
 end subroutine abf_core_calc_Zmat
+
+!===============================================================================
+! subroutine:  abf_core_calc_Zmat_shake
+!===============================================================================
+
+subroutine abf_core_calc_Zmat_shake(ctx)
+
+    use pmf_utils
+    use abf_dat
+
+    implicit none
+    type(CVContextType) :: ctx
+    integer             :: i,ci,j,cj,k,info
+    ! -----------------------------------------------------------------------------
+
+    ! calculate Z matrix
+    do i=1,NumOfABFSHAKECVs
+        ci = ABFSHAKECVList(i)%cvindx
+        do j=1,NumOfABFSHAKECVs
+            cj = ABFSHAKECVList(j)%cvindx
+            fzshake(i,j) = 0.0d0
+            do k=1,NumOfLAtoms
+                fzshake(i,j) = fzshake(i,j) + MassInv(k)*dot_product(ctx%CVsDrvs(:,k,ci),ctx%CVsDrvs(:,k,cj))
+            end do
+        end do
+    end do
+
+    ! and get determinant - we will use LAPAC and LU decomposition
+    if( NumOfABFSHAKECVs .gt. 1 ) then
+
+        call dgetrf(NumOfABFSHAKECVs,NumOfABFSHAKECVs,fzshake,NumOfABFSHAKECVs,indxshake,info)
+        if( info .ne. 0 ) then
+            call pmf_utils_exit(PMF_OUT,1,'[ABF] LU decomposition failed in abf_core_calc_Zmat_shake!')
+        end if
+
+        fzdetshake = 1.0d0
+        ! and finally determinant
+        do i=1,NumOfABFSHAKECVs
+            if( indxshake(i) .ne. i ) then
+                fzdetshake = - fzdetshake * fzshake(i,i)
+            else
+                fzdetshake = fzdetshake * fzshake(i,i)
+            end if
+        end do
+    else
+        fzdetshake = fzshake(1,1)
+    end if
+
+    return
+
+end subroutine abf_core_calc_Zmat_shake
 
 !===============================================================================
 

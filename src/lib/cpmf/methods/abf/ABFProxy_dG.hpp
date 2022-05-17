@@ -27,6 +27,7 @@
 
 enum EABFdGType {
     ABF_MICF,
+    ABF_MICF_MTC,
     ABF_MICF_POT,
     ABF_MICF_KIN,
 };

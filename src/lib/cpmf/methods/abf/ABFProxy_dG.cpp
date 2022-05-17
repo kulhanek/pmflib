@@ -65,6 +65,10 @@ void CABFProxy_dG::SetType(EABFdGType type)
             Provide = "ABF dG(x)";
         break;
     // -------------------
+        case(ABF_MICF_MTC):
+            Provide = "ABF dG(x) - MTC";
+        break;
+    // -------------------
         case(ABF_MICF_POT):
             Provide = "ABF dG_p(x)";
         break;
@@ -118,6 +122,16 @@ double CABFProxy_dG::GetValue(int ibin,int icv,EProxyRealm realm) const
         case(ABF_MICF):
             micf     = Accu->GetData("MICF",ibin,icv);
             m2icf    = Accu->GetData("M2ICF",ibin,icv);
+        break;
+    // -------------------
+        case(ABF_MICF_MTC):{
+            micf     = Accu->GetData("MICF_MTC",ibin,icv);
+            m2icf    = Accu->GetData("M2ICF_MTC",ibin,icv);
+            double mmtc     = Accu->GetData("MMTC",ibin);
+            double m2mtc    = Accu->GetData("M2MTC",ibin);
+            micf     = micf / mmtc;         // finalize mtc correction
+            m2icf    = m2icf / m2mtc;       // approximation - assume zero correlation between MTC an ICF
+        }
         break;
     // -------------------
         case(ABF_MICF_POT):

@@ -108,6 +108,7 @@ subroutine pmf_init_dat
     fmtdhills   = '_mtd.hills'
 
     fabfdef     = '{ABF}'
+    fabfshakedef= '{ABF-SHAKE}'
     fabfmask    = '_abf.mask'
     fabfout     = '_abf.out'
     fabfrst     = '_abf.rst'
