@@ -205,7 +205,10 @@ double CABFProxy_mTdS::GetValue(int ibin,int icv,EProxyRealm realm) const
             double micfetot = Accu->GetData("MICFETOT_MTC",ibin,icv);
             double micf     = Accu->GetData("MICF_MTC",ibin,icv);
             double metot    = Accu->GetData("METOT_MTC",ibin);
-            double mmtc     = Accu->GetData("MMTC",ibin);
+            double mmtc     = 1.0;
+            if( Accu->HasSectionData("MMTC") ){
+                mmtc     = Accu->GetData("MMTC",ibin);
+            }
 
             c11     = micfetot/mmtc - metot*micf/(mmtc*mmtc);
             m2icf   = Accu->GetData("M2ICF_MTC",ibin,icv);
