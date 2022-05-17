@@ -140,34 +140,33 @@ subroutine abf_control_read_abf(prm_fin)
             call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown extrapolation/interpolation mode!')
     end select
 
-    if( fmode .eq. 10 ) then
-        write(PMF_OUT,63)
-        call pmf_ctrl_read_integer(prm_fin,'gpr_len',gpr_len,'I12')
-        call pmf_ctrl_check_integer('ABF','gpr_len',gpr_len,3,CND_GE)
+    call pmf_ctrl_read_integer(prm_fin,'flpfilter',flpfilter,'I12')
+    call pmf_ctrl_check_integer_in_range('ABF','flpfilter',flpfilter,0,1)
 
-    ! ICF GPR
-        call pmf_ctrl_read_logical(prm_fin,'gpr_icf_enabled',gpr_icf_enabled)
-        call pmf_ctrl_read_integer(prm_fin,'gpr_icf_kernel',gpr_icf_kernel,'I12')
-        call pmf_ctrl_check_integer_in_range('ABF','gpr_icf_kernel',gpr_icf_kernel,1,7)
-        call pmf_ctrl_read_real8_wunit(prm_fin,'gpr_icf_width',TimeUnit,gpr_icf_width,'F12.3')
-        call pmf_ctrl_read_real8(prm_fin,'gpr_icf_noise',gpr_icf_noise,'E12.5')
+    select case(flpfilter)
+        case(0)
+            ! nothing
+        case(1)
+            write(PMF_OUT,63)
+            call pmf_ctrl_read_integer(prm_fin,'gpr_len',gpr_len,'I12')
+            call pmf_ctrl_check_integer('ABF','gpr_len',gpr_len,3,CND_GE)
 
-    ! ENE GPR
-        call pmf_ctrl_read_logical(prm_fin,'gpr_ene_enabled',gpr_ene_enabled)
-        call pmf_ctrl_read_integer(prm_fin,'gpr_ene_mode',gpr_ene_mode,'I12')
-        call pmf_ctrl_read_integer(prm_fin,'gpr_ene_kernel',gpr_ene_kernel,'I12')
-        call pmf_ctrl_check_integer_in_range('ABF','gpr_ene_kernel',gpr_ene_kernel,1,7)
-        call pmf_ctrl_read_real8_wunit(prm_fin,'gpr_ene_width',TimeUnit,gpr_ene_width,'F12.3')
-        call pmf_ctrl_read_real8(prm_fin,'gpr_ene_noise',gpr_ene_noise,'E12.5')
+            call pmf_ctrl_read_logical(prm_fin,'gpr_filter_ficf',gpr_filter_ficf)
+            call pmf_ctrl_read_logical(prm_fin,'gpr_filter_epot',gpr_filter_epot)
 
-    ! SVD setup
-        call pmf_ctrl_read_real8(prm_fin,'gpr_rcond',gpr_rcond,'E12.5')
-        call pmf_ctrl_read_real8(prm_fin,'gpr_rsigma',gpr_rsigma,'E12.5')
-        call pmf_ctrl_read_integer(prm_fin,'gpr_rank',gpr_rank,'I12')
+        ! GPR
+            call pmf_ctrl_read_integer(prm_fin,'gpr_kernel',gpr_kernel,'I12')
+            call pmf_ctrl_check_integer_in_range('ABF','gpr_kernel',gpr_kernel,1,7)
+            call pmf_ctrl_read_real8_wunit(prm_fin,'gpr_width',TimeUnit,gpr_width,'F12.3')
+            call pmf_ctrl_read_real8(prm_fin,'gpr_noise',gpr_noise,'E12.5')
 
-    ! quality
-        call pmf_ctrl_read_logical(prm_fin,'gpr_calc_logxx',gpr_calc_logxx)
-    end if
+        ! SVD setup
+            call pmf_ctrl_read_real8(prm_fin,'gpr_rcond',gpr_rcond,'E12.5')
+            call pmf_ctrl_read_real8(prm_fin,'gpr_rsigma',gpr_rsigma,'E12.5')
+            call pmf_ctrl_read_integer(prm_fin,'gpr_rank',gpr_rank,'I12')
+        case default
+            call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown flpfilter mode!')
+    end select
 
     ! network setup ----------------------------------------------------------------
 
@@ -206,7 +205,7 @@ subroutine abf_control_read_abf(prm_fin)
 
     abf_enabled          = fmode .gt. 0
 
-    shake_force_required = shake_force_required .or. (fmode .eq. 10)
+    shake_force_required = shake_force_required .or. (fmode .eq. 2)
 
     return
 
@@ -217,7 +216,7 @@ subroutine abf_control_read_abf(prm_fin)
  52 format (/,'>> Kernel smoother (feimode == 2)')
  53 format (/,'>> Linear interpolation (feimode == 3)')
 
- 63 format (/,'>> Gaussian Process Regression ABF (fmode == 2)')
+ 63 format (/,'>> Gaussian Process Regression Low-pass Filter')
 
 100 format (' >> Multiple-walkers ABF method is disabled!')
 
@@ -226,7 +225,6 @@ subroutine abf_control_read_abf(prm_fin)
 #else
 110 format ('fserverkey                             = ',a)
 #endif
-
 
 end subroutine abf_control_read_abf
 

@@ -256,10 +256,22 @@ subroutine abf_core_force_3pV()
             pxi3(i) = l1
         end do
 
-        ! subroutine abf_core_register_rawdata(cvs,ficf,sicf,vicf,licf,bicf,epot,erst,ekin)
-        call abf_core_register_rawdata(cvhist(:,hist_len-1),pxi0,pxi1,pxi2,pxi3,micfhist(:,hist_len-1), &
+        select case(flpfilter)
+            case(0)
+                ! no filter
+                ! subroutine abf_core_register_rawdata(cvs,ficf,sicf,vicf,licf,bicf,epot,erst,ekin)
+                call abf_core_register_rawdata(cvhist(:,hist_len-1),pxi0,pxi1,pxi2,pxi3,micfhist(:,hist_len-1), &
                                        mtchist(hist_len-1), &
                                        epothist(hist_len-1),ersthist(hist_len-1),ekinhist(hist_len-1))
+            case(1)
+                ! GPR low pass filter
+                call abf_core_register_gprlp_simple(cvhist(:,hist_len-1),pxi0,pxi1,pxi2,pxi3,micfhist(:,hist_len-1), &
+                                       mtchist(hist_len-1), &
+                                       epothist(hist_len-1),ersthist(hist_len-1),ekinhist(hist_len-1))
+            case default
+                call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented flpfilter mode in abf_core_force_3pF!')
+        end select
+
     end if
 
     return
@@ -299,7 +311,7 @@ subroutine abf_core_force_3pF()
         fhist(:,:,i)    = fhist(:,:,i+1)
         shist(:,:,i)    = shist(:,:,i+1)
         lhist(:,:,i)    = lhist(:,:,i+1)
-        mtchist(i)          = mtchist(i+1)
+        mtchist(i)      = mtchist(i+1)
     end do
 
     do i=1,NumOfABFCVs
@@ -407,17 +419,27 @@ subroutine abf_core_force_3pF()
             pxi3(i) = l1
         end do
 
-        ! subroutine abf_core_register_rawdata(cvs,ficf,sicf,vicf,licf,bicf,epot,erst,ekin)
-        call abf_core_register_rawdata(cvhist(:,hist_len-1),pxi0,pxi1,pxi2,pxi3,micfhist(:,hist_len-1), &
+        select case(flpfilter)
+            case(0)
+                ! no filter
+                ! subroutine abf_core_register_rawdata(cvs,ficf,sicf,vicf,licf,bicf,epot,erst,ekin)
+                call abf_core_register_rawdata(cvhist(:,hist_len-1),pxi0,pxi1,pxi2,pxi3,micfhist(:,hist_len-1), &
                                        mtchist(hist_len-1), &
                                        epothist(hist_len-1),ersthist(hist_len-1),ekinhist(hist_len-1))
+            case(1)
+                ! GPR low pass filter
+                call abf_core_register_gprlp_simple(cvhist(:,hist_len-1),pxi0,pxi1,pxi2,pxi3,micfhist(:,hist_len-1), &
+                                       mtchist(hist_len-1), &
+                                       epothist(hist_len-1),ersthist(hist_len-1),ekinhist(hist_len-1))
+            case default
+                call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented flpfilter mode in abf_core_force_3pF!')
+        end select
 
     end if
 
     return
 
 end subroutine abf_core_force_3pF
-
 
 !===============================================================================
 ! Subroutine:  abf_core_register_rawdata
@@ -464,6 +486,124 @@ subroutine abf_core_register_rawdata(cvs,ficf,sicf,vicf,licf,bicf,mtc,epot,erst,
     end if
 
 end subroutine abf_core_register_rawdata
+
+!===============================================================================
+! Subroutine:  abf_core_register_gprlp_simple
+!===============================================================================
+
+subroutine abf_core_register_gprlp_simple(cvs,ficf,sicf,vicf,licf,bicf,mtc,epot,erst,ekin)
+
+    use pmf_utils
+    use pmf_dat
+    use pmf_cvs
+    use abf_dat
+    use abf_accu
+    use pmf_timers
+
+    implicit none
+    real(PMFDP),intent(in)  :: cvs(:)
+    real(PMFDP),intent(in)  :: ficf(:)
+    real(PMFDP),intent(in)  :: sicf(:)
+    real(PMFDP),intent(in)  :: vicf(:)
+    real(PMFDP),intent(in)  :: licf(:)
+    real(PMFDP),intent(in)  :: bicf(:)
+    real(PMFDP),intent(in)  :: mtc
+    real(PMFDP),intent(in)  :: epot
+    real(PMFDP),intent(in)  :: erst
+    real(PMFDP),intent(in)  :: ekin
+    ! --------------------------------------------
+    real(PMFDP)             :: fepot,ferst,fekin,fetot,mean
+    integer                 :: i,gpr_mid,k
+    ! --------------------------------------------------------------------------
+
+! shift accuvalue history
+    do i=1,gpr_len-1
+        cvlph(:,i)      = cvlph(:,i+1)
+        flph(:,i)       = flph(:,i+1)
+        slph(:,i)       = slph(:,i+1)
+        vlph(:,i)       = vlph(:,i+1)
+        llph(:,i)       = llph(:,i+1)
+        blph(:,i)       = blph(:,i+1)
+        mtclph(i)       = mtclph(i+1)
+        epotlph(i)      = epotlph(i+1)
+        erstlph(i)      = erstlph(i+1)
+        ekinlph(i)      = ekinlph(i+1)
+    end do
+
+    cvlph(:,gpr_len)     = cvs(:)
+    flph(:,gpr_len)      = ficf(:)
+    slph(:,gpr_len)      = sicf(:)
+    vlph(:,gpr_len)      = vicf(:)
+    llph(:,gpr_len)      = licf(:)
+    blph(:,gpr_len)      = bicf(:)
+    mtclph(gpr_len)      = mtc
+    epotlph(gpr_len)     = epot
+    erstlph(gpr_len)     = erst
+    ekinlph(gpr_len)     = ekin
+
+    if( fstep .le. (gpr_len + hist_len) ) return
+
+! we have enough samples
+
+    gpr_mid = gpr_len / 2 + 1
+
+    ! total ABF force
+    ! first ficf
+    if( gpr_filter_ficf ) then
+        do i=1,NumOfABFCVs
+            mean = 0.0d0
+            do k=1,gpr_len
+                mean = mean + flph(i,k)
+            end do
+            mean = mean / real(gpr_len,PMFDP)
+
+            do k=1,gpr_len
+                gpr_data(k) = flph(i,k) - mean
+            end do
+
+            pxip(i) = dot_product(gpr_data,gpr_kff) + mean
+        end do
+    else
+        pxip(:) = flph(:,gpr_mid)
+    end if
+
+    ! add remaining contributions
+    pxip(:) = pxip(:) + slph(:,gpr_mid) + vlph(:,gpr_mid) ! adaptive correction
+    ! bicf  ! current bias
+
+    ! total energy
+    if( gpr_filter_epot ) then
+        mean = 0.0d0
+        do k=1,gpr_len
+            mean = mean + epotlph(k)
+        end do
+        mean = mean / real(gpr_len,PMFDP)
+
+        do k=1,gpr_len
+            gpr_data(k) = epotlph(k) - mean
+        end do
+
+        fepot = dot_product(gpr_data,gpr_kff) + mean
+    else
+        fepot = epotlph(gpr_mid)
+    end if
+
+    ferst = erstlph(gpr_mid)
+    fekin = ekinlph(gpr_mid)
+    fetot = fepot + ferst + fekin
+
+    ! add data to accumulator
+    ! subroutine abf_accu_add_data_online(cvs,gfx,epot,erst,ekin,etot)
+    call abf_accu_add_data_online(cvlph(:,gpr_mid),pxip,blph(:,gpr_mid),mtclph(gpr_mid),&
+                                  fepot,ferst,fekin,fetot)
+
+    if( fentropy .and. fentdecomp ) then
+        ! subroutine abf_accu_add_data_entropy_decompose(cvs,fx,sx,vx,lx,bx,epot,erst,ekin)
+        call abf_accu_add_data_entropy_decompose(cvlph(:,gpr_mid),flph(:,gpr_mid),slph(:,gpr_mid),vlph(:,gpr_mid),&
+                                                llph(:,gpr_mid),blph(:,gpr_mid),fepot,ferst,fekin)
+    end if
+
+end subroutine abf_core_register_gprlp_simple
 
 !!===============================================================================
 !! Subroutine:  abf_core_force_3pB
@@ -772,151 +912,6 @@ end subroutine abf_core_register_rawdata
 !
 !end subroutine abf_core_force_gpr
 
-!!===============================================================================
-!! Subroutine:  abf_core_force_2p
-!! this is leap-frog ABF version, simplified algorithm
-!!===============================================================================
-!
-!subroutine abf_core_force_2p()
-!
-!    use pmf_utils
-!    use pmf_dat
-!    use pmf_cvs
-!    use abf_dat
-!    use abf_accu
-!    use abf_output
-!
-!    implicit none
-!    integer                :: i,j,k,m
-!    integer                :: ci,ki
-!    real(PMFDP)            :: v,e
-!    ! --------------------------------------------------------------------------
-!
-!    ! shift accuvalue history
-!    cvaluehist0(:) = cvaluehist1(:)
-!
-!    ! save coordinate value to history
-!    do i=1,NumOfABFCVs
-!        ci = ABFCVList(i)%cvindx
-!        cvaluehist1(i) = CVContext%CVsValues(ci)
-!    end do
-!
-!    ! shift epot ene
-!    epothist0 = epothist1
-!    if( fenthalpy ) then
-!        epothist1 = PotEne - fepotaverage
-!    else
-!        epothist1 = 0.0d0
-!    end if
-!
-!    ! shift ekin ene
-!    ekinhist0 = ekinhist1
-!    if( fentropy ) then
-!        ekinhist1 = KinEne - fekinaverage
-!    else
-!        ekinhist1 = 0.0d0
-!    end if
-!
-!    ! shift erst ene
-!    ersthist0 = ersthist1
-!    if( fentropy ) then
-!        ersthist1 = PMFEne
-!    else
-!        ersthist1 = 0.0d0
-!    end if
-!
-!    ! calculate Z matrix and its inverse
-!    call abf_core_calc_Zmat(CVContext)
-!
-!    do i=1,NumOfABFCVs
-!        do j=1,NumOfLAtoms
-!            do m=1,3
-!                v = 0.0d0
-!                do k=1,NumOfABFCVs
-!                    ki = ABFCVList(k)%cvindx
-!                    v = v + fzinv(i,k)*CVContext%CVsDrvs(m,j,ki)
-!                end do
-!                zd1(m,j,i) = v
-!            end do
-!        end do
-!    end do
-!
-!    do i=1,NumOfABFCVs
-!        v = 0.0d0
-!        e = 0.0d0
-!        do j=1,NumOfLAtoms
-!            do m=1,3
-!                ! zd0 in t-dt
-!                ! Vel in t-1/2dt
-!                ! v0 (OldVel) in t-3/2dt
-!                ! a <- Vel(m,j)-v0(m,j))/fdtx in t-dt, do not use forces (Frc) because of SHAKE
-!                v = v + zd0(m,j,i)*(Vel(m,j)-v0(m,j))
-!                ! zd1 in t
-!                ! zd0 in t-dt
-!                ! vel in t-1/2dt
-!                e = e + (zd1(m,j,i)-zd0(m,j,i))* Vel(m,j)
-!            end do
-!        end do
-!        pxi0(i) = v / fdtx ! in t-dt
-!        pxip(i) = e / fdtx ! in t-1/2dt
-!    end do
-!
-!    write(1225,*) fstep-1,v,e
-!
-!    if( fstep .ge. 4 ) then
-!
-!        ! complete ICF in t-dt
-!        ! pxi0 in t-dt
-!        ! pxi1 - old ABF forces in t-dt
-!        ! pxip in t-1/2dt
-!        ! pxim in t-3/2dt
-!        pxi0(:) = pxi0(:) - pxi1(:)
-!        pxim(:) = 0.5d0*(pxim(:)+pxip(:))
-!
-!        ! total ABF force
-!        pxi0(:) = pxi0(:) + pxim(:)
-!
-!        ! add data to accumulator
-!        call abf_accu_add_data_online(cvaluehist0,pxi0(:),epothist0,ekinhist1,ersthist0)
-!    end if
-!
-!    ! backup to the next step
-!    zd0  = zd1
-!    pxim = pxip
-!    v0   = Vel
-!
-!    ! apply ABF bias
-!    la(:) = 0.0d0
-!
-!    ! apply force filters
-!    if( fapply_abf ) then
-!        ! calculate abf force to be applied
-!        select case(feimode)
-!            case(0)
-!                call abf_accu_get_data(cvaluehist1(:),la)
-!            case(1)
-!                call abf_accu_get_data_lramp(cvaluehist1(:),la)
-!            case(2)
-!                ! call abf_accu_get_data_gks(cvaluehist1(:),la)
-!            case default
-!                call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented extrapolation/interpolation mode!')
-!        end select
-!
-!        ! project abf force along coordinate
-!        do i=1,NumOfABFCVs
-!            ci = ABFCVList(i)%cvindx
-!            do j=1,NumOfLAtoms
-!                Frc(:,j) = Frc(:,j) + la(i) * CVContext%CVsDrvs(:,j,ci)
-!            end do
-!        end do
-!    end if
-!
-!    ! keep ABF forces to subtract them in the next step
-!    pxi1 = la
-!
-!    return
-!
-!end subroutine abf_core_force_2p
 
 !!===============================================================================
 !! Subroutine:  abf_core_force_gpr

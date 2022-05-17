@@ -275,20 +275,31 @@ const CSmallString& CColVariable::GetUnit(void) const
 
 double CColVariable::GetDifference(double left,double right) const
 {
-    // FIXME
-    return(left-right);
+
+    if( ! IsPeriodic() ) {
+        return(left-right);
+    }
+
+    if( abs(left-right) < 0.5*(MaxValue-MinValue) ) {
+        return(left-right);
+    } else {
+        // get vector
+        double vec = left-right;
+        // shift to box center
+        vec = vec + 0.5*(MaxValue+MinValue);
+        // image as point
+        vec = vec - (MaxValue-MinValue)*floor((vec-MinValue)/(MaxValue-MinValue));
+        // return vector back
+        return(vec - 0.5*(MaxValue+MinValue));
+    }
 }
 
 //------------------------------------------------------------------------------
 
 bool CColVariable::IsPeriodic(void) const
 {
-    if(strstr(Type,"DIH") == NULL) return(false);
-    // FIXME - TODO !!!
-// currently only dihedral angle can be periodic
-    if(fabs(MaxValue - MinValue - 2*M_PI) <= 0.1) {
-        return(true);
-    }
+    // FIXME - make list of other CVs
+    if(strstr(Type,"DIH") != NULL) return(true);
     return(false);
 }
 

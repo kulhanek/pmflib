@@ -41,7 +41,7 @@ subroutine init_thermostat_subsystem(x,v)
     real(PMFDP)     :: x(:,:)
     real(PMFDP)     :: v(:,:)
     !----------------------------------------------------
-    real(PMFDP)     :: ncom, nbm, tmpE
+    real(PMFDP)     :: ncom, nbm, tmpE, tmpEh
     !---------------------------------------------------------------------------
 
     write(PMF_OUT,10)
@@ -112,7 +112,7 @@ subroutine init_thermostat_subsystem(x,v)
 
     call adjust_thermostat_controls(v)
 
-    call get_temperature(v,v,tmpE)
+    call get_temperature(v,v,tmpE,tmpEh)
 
     write(PMF_OUT,90) TempA
 
@@ -154,7 +154,7 @@ subroutine generate_MB_velocities(x,v)
     !----------------------------------------------------
     integer         :: i,j
     real(PMFDP)     :: sd,scale_fac
-    real(PMFDP)     :: tmpE
+    real(PMFDP)     :: tmpE,tmpEh
     ! --------------------------------------------------------------------------
 
     write(PMF_OUT,10) Tmaxw
@@ -168,7 +168,7 @@ subroutine generate_MB_velocities(x,v)
     end do
 
     ! get current temp -----------------------------------
-    call get_temperature(v,v,tmpE)
+    call get_temperature(v,v,tmpE,tmpEh)
     write(PMF_OUT,20) TempA
 
     ! remove COM translational and rotational moments -----
@@ -176,7 +176,7 @@ subroutine generate_MB_velocities(x,v)
     call stop_com(x,v)
 
     ! get current temp ------------------------------------
-    call get_temperature(v,v,tmpE)
+    call get_temperature(v,v,tmpE,tmpEh)
     write(PMF_OUT,20) TempA
 
     ! fix temperature -------------------------------------
@@ -248,7 +248,7 @@ end subroutine adjust_thermostat_controls
 !-------------------------------------------------------------------------------
 !===============================================================================
 
-subroutine get_temperature(oldv,v,E)
+subroutine get_temperature(oldv,v,EVV,ELF)
 
     use pmfdyn_thermostat_dat
     use pmfdyn_system_dat
@@ -256,14 +256,16 @@ subroutine get_temperature(oldv,v,E)
     implicit none
     real(PMFDP)     :: oldv(:,:)
     real(PMFDP)     :: v(:,:)
-    real(PMFDP)     :: E
+    real(PMFDP)     :: EVV
+    real(PMFDP)     :: ELF
     !----------------------------------------------------
     integer         :: i
-    real(PMFDP)     :: ekin0,temp_fac
+    real(PMFDP)     :: ekin0,ekin1,temp_fac
     ! -----------------------------------------------------------------------------
 
     ! calculate kinetic energies
-    E = 0.0
+    EVV = 0.0d0
+    ELF = 0.0d0
 
     temp_fac = 1.0d0
     if( ThermostatType .eq. THERMOSTAT_LANGEVIN ) temp_fac = lgam_c
@@ -272,11 +274,16 @@ subroutine get_temperature(oldv,v,E)
         ekin0 = temp_fac*0.5d0*0.25d0*mass(i)*((oldv(1,i)+v(1,i))**2 + &
                                            (oldv(2,i)+v(2,i))**2 + &
                                            (oldv(3,i)+v(3,i))**2)
-        E = E + ekin0
+        EVV = EVV + ekin0
+
+        ekin1 = temp_fac*0.5d0*mass(i)*(oldv(1,i)**2+v(1,i)**2 + &
+                                        oldv(2,i)**2+v(2,i)**2 + &
+                                        oldv(3,i)**2+v(3,i)**2)
+        EVV = EVV + ekin1
     end do
 
     ! calculate temperatures
-    TempA = 2.0*E / (PMF_Rgas*real(NOF))
+    TempA = 2.0*EVV / (PMF_Rgas*real(NOF))
 
     return
 

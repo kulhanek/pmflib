@@ -88,6 +88,8 @@ subroutine abf_init_dat
     fepotaverage    = 0.0d0
     fekinaverage    = 0.0d0
 
+    flpfilter       = 0
+
     feimode         = 1
     fhramp_min      = 20000
     fhramp_max      = 30000
@@ -112,24 +114,18 @@ subroutine abf_init_dat
     fsmooth_kernel  = 0
     fswitch2zero    = .false.
 
-    gpr_len         = 1001
+    gpr_len         = 51
 
-    gpr_icf_enabled = .false.
-    gpr_icf_kernel  = 1
-    gpr_icf_width   = 30.0
-    gpr_icf_noise   = 0.0
+    gpr_filter_ficf = .false.
+    gpr_filter_epot = .false.
 
-    gpr_ene_enabled = .false.
-    gpr_ene_mode    = 1
-    gpr_ene_kernel  = 1
-    gpr_ene_width   = 30.0
-    gpr_ene_noise   = 0.0
+    gpr_kernel      = 3
+    gpr_width       = 12.0
+    gpr_noise       = 1e-6
 
     gpr_rank        = -1
     gpr_rcond       = 1e-16
     gpr_rsigma      = 1e-5
-
-    gpr_calc_logxx  = .false.
 
     cbuff_pos       = 0
 
@@ -254,6 +250,53 @@ subroutine abf_init_print_summary
     end select
     write(PMF_OUT,125)  ' Incl. ABF bias into -TdS (ftds_add_bias): ', prmfile_onoff(ftds_add_bias)
 
+
+! LP filter
+    write(PMF_OUT,120)
+    write(PMF_OUT,120)  ' Low-pass filters:'
+    write(PMF_OUT,120)  ' ------------------------------------------------------'
+    select case(flpfilter)
+    case(0)
+    write(PMF_OUT,120)  '      |-> No filter'
+    case(1)
+    write(PMF_OUT,120)  '      |-> GPR (Gaussian Process Regression)'
+    write(PMF_OUT,130)  '          gpr_len                        : ', gpr_len
+    write(PMF_OUT,125)  '          gpr_filter_ficf                : ', prmfile_onoff(gpr_filter_ficf)
+    write(PMF_OUT,125)  '          gpr_filter_epot                : ', prmfile_onoff(gpr_filter_epot)
+
+    write(PMF_OUT,130)  '          gpr_kernel                     : ', gpr_kernel
+    select case(gpr_kernel)
+    case(0)
+    write(PMF_OUT,120)  '              \-> EXP (exponential kernel)'
+    case(1)
+    write(PMF_OUT,120)  '              \-> MC(3/2) (Matern kernel v=3/2)'
+    case(2)
+    write(PMF_OUT,120)  '              \-> MC(5/2) (Matern kernel v=5/2)'
+    case(3)
+    write(PMF_OUT,120)  '              \-> SE (squared exponential kernel)'
+    case(4)
+    write(PMF_OUT,120)  '              \-> Epanechnikov (parabolic) kernel'
+    case(5)
+    write(PMF_OUT,120)  '              \-> Quartic (biweight) kernel'
+    case(6)
+    write(PMF_OUT,120)  '              \-> Triweigh kernel'
+    case(7)
+    write(PMF_OUT,120)  '              \-> sinc kernel'
+    case default
+        call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown gpr_kernel in abf_init_print_summary!')
+    end select
+    write(PMF_OUT,152)  '              gpr_width                  : ', gpr_width,  &
+                                       '['//trim(pmf_unit_label(TimeUnit))//']'
+    write(PMF_OUT,160)  '              gpr_noise                  : ', gpr_noise
+
+    write(PMF_OUT,120)  '          === K+Sigma inversion'
+    write(PMF_OUT,130)  '              gpr_rank                   : ', gpr_rank
+    write(PMF_OUT,160)  '              gpr_rcond                  : ', gpr_rcond
+    write(PMF_OUT,160)  '              gpr_rsigma                 : ', gpr_rsigma
+    case default
+    call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown flpfilter mode in abf_init_print_summary!')
+    end select
+
     write(PMF_OUT,120)
     write(PMF_OUT,120)  ' Restart options:'
     write(PMF_OUT,120)  ' ------------------------------------------------------'
@@ -308,71 +351,6 @@ subroutine abf_init_print_summary
 160 format(A,E10.4)
 
 140 format(' == Collective variable #',I4.4)
-
-
-!case(10)
-!    write(PMF_OUT,120)  '      |-> Simplified ABF algorithm (GPR)'
-!    write(PMF_OUT,130)  '          gpr_len                        : ', gpr_len
-!
-!    write(PMF_OUT,120)  '          === ICF GPR'
-!    write(PMF_OUT,125)  '              gpr_icf_enabled            : ', prmfile_onoff(gpr_icf_enabled)
-!    write(PMF_OUT,130)  '              gpr_icf_kernel             : ', gpr_icf_kernel
-!    select case(gpr_icf_kernel)
-!    case(0)
-!    write(PMF_OUT,120)  '              \-> EXP (exponential kernel)'
-!    case(1)
-!    write(PMF_OUT,120)  '              \-> MC(3/2) (Matern kernel v=3/2)'
-!    case(2)
-!    write(PMF_OUT,120)  '              \-> MC(5/2) (Matern kernel v=5/2)'
-!    case(3)
-!    write(PMF_OUT,120)  '              \-> SE (squared exponential kernel)'
-!    case(4)
-!    write(PMF_OUT,120)  '              \-> Epanechnikov (parabolic) kernel'
-!    case(5)
-!    write(PMF_OUT,120)  '              \-> Quartic (biweight) kernel'
-!    case(6)
-!    write(PMF_OUT,120)  '              \-> Triweigh kernel'
-!    case(7)
-!    write(PMF_OUT,120)  '              \-> sinc kernel'
-!    case default
-!        call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown gpr_icf_kernel in abf_init_print_summary!')
-!    end select
-!    write(PMF_OUT,152)  '              gpr_icf_width              : ', gpr_icf_width,  &
-!                                       '['//trim(pmf_unit_label(TimeUnit))//']'
-!    write(PMF_OUT,160)  '              gpr_icf_noise              : ', gpr_icf_noise
-!
-!write(PMF_OUT,120)  '          === ENE GPR'
-!    write(PMF_OUT,125)  '              gpr_ene_enabled            : ', prmfile_onoff(gpr_ene_enabled)
-!    write(PMF_OUT,130)  '              gpr_ene_kernel             : ', gpr_ene_kernel
-!    select case(gpr_icf_kernel)
-!    case(0)
-!    write(PMF_OUT,120)  '              \-> EXP (exponential kernel)'
-!    case(1)
-!    write(PMF_OUT,120)  '              \-> MC(3/2) (Matern kernel v=3/2)'
-!    case(2)
-!    write(PMF_OUT,120)  '              \-> MC(5/2) (Matern kernel v=5/2)'
-!    case(3)
-!    write(PMF_OUT,120)  '              \-> SE (squared exponential kernel)'
-!    case(4)
-!    write(PMF_OUT,120)  '              \-> Epanechnikov (parabolic) kernel'
-!    case(5)
-!    write(PMF_OUT,120)  '              \-> Quartic (biweight) kernel'
-!    case(6)
-!    write(PMF_OUT,120)  '              \-> Triweigh kernel'
-!    case(7)
-!    write(PMF_OUT,120)  '              \-> sinc kernel'
-!    case default
-!        call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown gpr_ene_kernel in abf_init_print_summary!')
-!    end select
-!    write(PMF_OUT,152)  '              gpr_ene_width              : ', gpr_ene_width,  &
-!                                       '['//trim(pmf_unit_label(TimeUnit))//']'
-!    write(PMF_OUT,160)  '              gpr_ene_noise              : ', gpr_ene_noise
-!
-!    write(PMF_OUT,120)  '          === K+Sigma inversion'
-!    write(PMF_OUT,130)  '              gpr_rank                   : ', gpr_rank
-!    write(PMF_OUT,160)  '              gpr_rcond                  : ', gpr_rcond
-!    write(PMF_OUT,160)  '              gpr_rsigma                 : ', gpr_rsigma
-!    write(PMF_OUT,125)  '              gpr_calc_logxx             : ', prmfile_onoff(gpr_calc_logxx)
 
 end subroutine abf_init_print_summary
 
@@ -438,10 +416,6 @@ subroutine abf_init_arrays
         ! standard - 3pF
         case(2)
             hist_len = 3
-        ! GPR
-        case(10)
-            hist_len = gpr_len + 3
-            call abf_init_gpr
         case default
             call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented fmode in abf_init_arrays!')
     end select
@@ -481,6 +455,48 @@ subroutine abf_init_arrays
     fzinvhist(:,:,:)= 0.0d0
     xphist(:,:)     = 0.0d0
     icfhist(:,:)    = 0.0d0
+
+! filter setup
+    select case(flpfilter)
+        case(0)
+            ! nothing
+        case(1)
+            ! GPR LP filter
+            lp_len = gpr_len
+            allocate(      &
+                cvlph(NumOfABFCVs,lp_len),            &
+                flph(NumOfABFCVs,lp_len),             &
+                slph(NumOfABFCVs,lp_len),             &
+                vlph(NumOfABFCVs,lp_len),             &
+                llph(NumOfABFCVs,lp_len),             &
+                blph(NumOfABFCVs,lp_len),             &
+                mtclph(lp_len),                       &
+                epotlph(lp_len),                      &
+                erstlph(lp_len),                      &
+                ekinlph(lp_len),                      &
+                stat= alloc_failed )
+
+                if( alloc_failed .ne. 0 ) then
+                    call pmf_utils_exit(PMF_OUT,1, &
+                        '[ABF] Unable to allocate memory for LP buffers used in ABF calculation!')
+                end if
+
+                cvlph(:,:)  = 0.0d0
+                flph(:,:)   = 0.0d0
+                slph(:,:)   = 0.0d0
+                vlph(:,:)   = 0.0d0
+                llph(:,:)   = 0.0d0
+                blph(:,:)   = 0.0d0
+                mtclph(:)   = 0.0d0
+                epotlph(:)  = 0.0d0
+                erstlph(:)  = 0.0d0
+                ekinlph(:)  = 0.0d0
+
+                call abf_init_gpr()
+
+        case default
+            call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented flpfilter mode in abf_init_arrays!')
+    end select
 
 ! other setup ----------------------------------------------
 
@@ -596,18 +612,10 @@ subroutine abf_init_gpr
 
 ! allocate arrays
     allocate(                                   &
-            gpr_K_icf(gpr_len,gpr_len),         &
-            gpr_K_ene(gpr_len,gpr_len),         &
+            gpr_K(gpr_len,gpr_len),             &
             gpr_data(gpr_len),                  &
             gpr_model(gpr_len),                 &
-            gpr_kff_icf(gpr_len),               &
-            gpr_kff_ene(gpr_len),               &
-            gpr_icf_logml(NumOfABFCVs),         &
-            gpr_icf_mlogml(NumOfABFCVs),        &
-            gpr_icf_m2logml(NumOfABFCVs),       &
-            gpr_icf_logpl(NumOfABFCVs),         &
-            gpr_icf_mlogpl(NumOfABFCVs),        &
-            gpr_icf_m2logpl(NumOfABFCVs),       &
+            gpr_kff(gpr_len),                   &
             stat= alloc_failed )
 
     if( alloc_failed .ne. 0 ) then
@@ -615,51 +623,38 @@ subroutine abf_init_gpr
             '[ABF] Unable to allocate memory for GPR arrays in abf_init_gpr!')
     end if
 
-! reset statistics counters
-    gpr_icf_nlogxx          = 0.0d0
-    gpr_icf_mlogml(:)       = 0.0d0      ! average
-    gpr_icf_m2logml(:)      = 0.0d0      ! M2
-    gpr_icf_mlogpl(:)       = 0.0d0      ! average
-    gpr_icf_m2logpl(:)      = 0.0d0      ! M2
-
-    gpr_ene_nlogxx          = 0.0d0
-    gpr_ene_mlogml          = 0.0d0      ! average
-    gpr_ene_m2logml         = 0.0d0      ! M2
-    gpr_ene_mlogpl          = 0.0d0      ! average
-    gpr_ene_m2logpl         = 0.0d0      ! M2
-
 ! init co-variance matrix
     do i=1,gpr_len
         do j=1,gpr_len
-            gpr_K_icf(i,j) = abf_init_gpr_kernel(gpr_icf_kernel,i,j,gpr_icf_width)
+            gpr_K(i,j) = abf_init_gpr_kernel(gpr_kernel,i,j,gpr_width)
         end do
     end do
 
 ! add noise
     do i=1,gpr_len
-        gpr_K_icf(i,i) = gpr_K_icf(i,i) + gpr_icf_noise
+        gpr_K(i,i) = gpr_K(i,i) + gpr_noise
     end do
 
     if( fdebug ) then
         j = gpr_len/2
-        open(unit=7812,file='gpr-kernel.icf',status='UNKNOWN')
+        open(unit=7812,file='gpr-kernel.K',status='UNKNOWN')
         do i=1,gpr_len
-            write(7812,*) i, gpr_K_icf(i,j)
+            write(7812,*) i, gpr_K(i,j)
         end do
         close(7812)
     end if
 
     write(PMF_OUT,10)
-    call abf_init_gpr_invK(gpr_K_icf,gpr_K_icf_logdet)
+    call abf_init_gpr_invK(gpr_K,gpr_K_logdet)
 
 ! init kfd
     gpr_mid = gpr_len/2 + 1
     do j=1,gpr_len
-        gpr_data(j) = abf_init_gpr_kernel(gpr_icf_kernel,gpr_mid,j,gpr_icf_width)
+        gpr_data(j) = abf_init_gpr_kernel(gpr_kernel,gpr_mid,j,gpr_width)
     end do
 
     if( fdebug ) then
-        open(unit=7812,file='gpr-kernel.kff-icf',status='UNKNOWN')
+        open(unit=7812,file='gpr-kernel.kff',status='UNKNOWN')
         do i=1,gpr_len
             write(7812,*) i, gpr_data(i)
         end do
@@ -670,78 +665,20 @@ subroutine abf_init_gpr
     do i=1,gpr_len
         v = 0.0d0
         do j=1,gpr_len
-            v = v + gpr_data(j) * gpr_K_icf(j,i)
+            v = v + gpr_data(j) * gpr_K(j,i)
         end do
-        gpr_kff_icf(i) = v
+        gpr_kff(i) = v
     end do
 
     if( fdebug ) then
-        open(unit=7812,file='gpr-kernel.kfd-icf-K',status='UNKNOWN')
+        open(unit=7812,file='gpr-kernel.kff-K',status='UNKNOWN')
         do i=1,gpr_len
-            write(7812,*) i, gpr_kff_icf(i)
+            write(7812,*) i, gpr_kff(i)
         end do
         close(7812)
     end if
 
-! ===================================================================================
-
-! init co-variance matrix
-    do i=1,gpr_len
-        do j=1,gpr_len
-            gpr_K_ene(i,j) = abf_init_gpr_kernel(gpr_ene_kernel,i,j,gpr_ene_width)
-        end do
-    end do
-
-! add noise
-    do i=1,gpr_len
-        gpr_K_ene(i,i) = gpr_K_ene(i,i) + gpr_ene_noise
-    end do
-
-    if( fdebug ) then
-        j = gpr_len/2
-        open(unit=7812,file='gpr-kernel.ene',status='UNKNOWN')
-        do i=1,gpr_len
-            write(7812,*) i, gpr_K_ene(i,j)
-        end do
-        close(7812)
-    end if
-
-    write(PMF_OUT,20)
-    call abf_init_gpr_invK(gpr_K_ene,gpr_K_ene_logdet)
-
-! init kfd
-    gpr_mid = gpr_len/2 + 1
-    do j=1,gpr_len
-        gpr_data(j) = abf_init_gpr_kernel(gpr_ene_kernel,gpr_mid,j,gpr_ene_width)
-    end do
-
-    if( fdebug ) then
-        open(unit=7812,file='gpr-kernel.kff-ene',status='UNKNOWN')
-        do i=1,gpr_len
-            write(7812,*) i, gpr_data(i)
-        end do
-        close(7812)
-    end if
-
-! multiply by Kinv from right
-    do i=1,gpr_len
-        v = 0.0d0
-        do j=1,gpr_len
-            v = v + gpr_data(j) * gpr_K_ene(j,i)
-        end do
-        gpr_kff_ene(i) = v
-    end do
-
-    if( fdebug ) then
-        open(unit=7812,file='gpr-kernel.kfd-ene-K',status='UNKNOWN')
-        do i=1,gpr_len
-            write(7812,*) i, gpr_kff_ene(i)
-        end do
-        close(7812)
-    end if
-
- 10 format('>>> ABF GPR - ICF: (K+Sigma)^-1')
- 20 format('>>> ABF GPR - ENE: (K+Sigma)^-1')
+ 10 format('>>> ABF GPR: (K+Sigma)^-1')
 
 end subroutine abf_init_gpr
 

@@ -61,6 +61,9 @@ logical     :: ftds_add_bias    ! include ABF bias into TdS calculation
 real(PMFDP) :: fepotaverage
 real(PMFDP) :: fekinaverage
 
+integer     :: flpfilter        ! 0 - no filter
+                                ! 1 - GPR low-pass
+
 ! linear ramp
 integer     :: fhramp_min
 integer     :: fhramp_max
@@ -244,63 +247,41 @@ real(PMFDP),allocatable     :: ersthist(:)          ! history of Erst
 real(PMFDP),allocatable     :: ekinhist(:)          ! history of Ekin
 real(PMFDP),allocatable     :: mtchist(:)           ! history of MTC correction
 
+integer                     :: lp_len
+real(PMFDP),allocatable     :: cvlph(:,:)
+real(PMFDP),allocatable     :: flph(:,:)
+real(PMFDP),allocatable     :: slph(:,:)
+real(PMFDP),allocatable     :: vlph(:,:)
+real(PMFDP),allocatable     :: llph(:,:)
+real(PMFDP),allocatable     :: blph(:,:)
+real(PMFDP),allocatable     :: mtclph(:)
+real(PMFDP),allocatable     :: epotlph(:)
+real(PMFDP),allocatable     :: erstlph(:)
+real(PMFDP),allocatable     :: ekinlph(:)
+
 ! GPR facility -----------------------------------------------------------------
 integer                     :: gpr_len          ! MUST be odd number
 
-logical                     :: gpr_icf_enabled
-real(PMFDP)                 :: gpr_icf_width    ! kernel width in fs
-integer                     :: gpr_icf_kernel   ! 0 - Exponential
-                                                ! 1 - MC(3/2)
-                                                ! 2 - MC(5/2)
-                                                ! 3 - ARDSE
-                                                ! 4 - Epanechnikov (parabolic)
-                                                ! 5 - Quartic (biweight)
-                                                ! 6 - Triweight
-real(PMFDP)                 :: gpr_icf_noise    ! noise magnitude
+logical                     :: gpr_filter_ficf
+logical                     :: gpr_filter_epot
 
-logical                     :: gpr_ene_enabled
-integer                     :: gpr_ene_mode
-real(PMFDP)                 :: gpr_ene_width    ! kernel width in fs
-integer                     :: gpr_ene_kernel   ! 0 - Exponential
-                                                ! 1 - MC(3/2)
-                                                ! 2 - MC(5/2)
-                                                ! 3 - ARDSE
-                                                ! 4 - Epanechnikov (parabolic)
-                                                ! 5 - Quartic (biweight)
-                                                ! 6 - Triweight
-real(PMFDP)                 :: gpr_ene_noise    ! noise magnitude
+real(PMFDP)                 :: gpr_width    ! kernel width in fs
+integer                     :: gpr_kernel   ! 0 - Exponential
+                                            ! 1 - MC(3/2)
+                                            ! 2 - MC(5/2)
+                                            ! 3 - ARDSE
+                                            ! 4 - Epanechnikov (parabolic)
+                                            ! 5 - Quartic (biweight)
+                                            ! 6 - Triweight
+real(PMFDP)                 :: gpr_noise    ! noise magnitude
 
 integer                     :: gpr_rank         ! rank for SVD inversion
 real(PMFDP)                 :: gpr_rcond        ! rcond for automatic rank determination
 real(PMFDP)                 :: gpr_rsigma       ! min value of sigma for ranking
 
-real(PMFDP),allocatable     :: gpr_K_icf(:,:)   ! co-variance matrix for ICF, it contains the inverse
-real(PMFDP)                 :: gpr_K_icf_logdet ! logarithm of K determinant
-real(PMFDP),allocatable     :: gpr_kff_icf(:)   ! inference for ICF
-
-real(PMFDP),allocatable     :: gpr_K_ene(:,:)   ! co-variance matrix for ENE, it contains the inverse
-real(PMFDP)                 :: gpr_K_ene_logdet ! logarithm of K determinant
-real(PMFDP),allocatable     :: gpr_kff_ene(:)   ! inference for ENE
-
-logical                     :: gpr_calc_logxx   ! we want to get logml and logpl
-
-real(PMFDP),allocatable     :: gpr_icf_logml(:)     ! marginal likelihood for each ICF
-real(PMFDP),allocatable     :: gpr_icf_logpl(:)     ! pseudo-likelihood for each ICF
-
-real(PMFDP)                 :: gpr_ene_logml        ! marginal likelihood for ENE
-real(PMFDP)                 :: gpr_ene_logpl        ! pseudo-likelihood for ENE
-
-real(PMFDP)                 :: gpr_icf_nlogxx       ! number of data
-real(PMFDP),allocatable     :: gpr_icf_mlogml(:)    ! average
-real(PMFDP),allocatable     :: gpr_icf_m2logml(:)   ! M2
-real(PMFDP),allocatable     :: gpr_icf_mlogpl(:)    ! average
-real(PMFDP),allocatable     :: gpr_icf_m2logpl(:)   ! M2
-
-real(PMFDP)                 :: gpr_ene_nlogxx       ! number of data
-real(PMFDP)                 :: gpr_ene_mlogml       ! average
-real(PMFDP)                 :: gpr_ene_m2logml      ! M2
-real(PMFDP)                 :: gpr_ene_mlogpl       ! average
-real(PMFDP)                 :: gpr_ene_m2logpl      ! M2
+real(PMFDP),allocatable     :: gpr_K(:,:)   ! co-variance matrix, it contains the inverse
+real(PMFDP),allocatable     :: gpr_kff(:)   ! inference
+real(PMFDP)                 :: gpr_K_logdet
 
 real(PMFDP),allocatable     :: gpr_data(:)      ! GPR input data
 real(PMFDP),allocatable     :: gpr_model(:)     ! GPR model

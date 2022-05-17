@@ -714,6 +714,15 @@ subroutine abf_accu_add_data_online(cvs,gfx,bfx,mtc,epot,erst,ekin,etot)
          end if
 
         if( fentropy ) then
+            ! here we need all ICF
+            if( NumOfABFSHAKECVs .gt. 0 ) then
+                ie = icf*etot*mtc
+                die1 = ie - abfaccu%micfetot_mtc(i,gi0)
+                abfaccu%micfetot_mtc(i,gi0)  = abfaccu%micfetot_mtc(i,gi0)  + die1 * invn
+                die2 = ie - abfaccu%micfetot_mtc(i,gi0)
+                abfaccu%m2icfetot_mtc(i,gi0) = abfaccu%m2icfetot_mtc(i,gi0) + die1 * die2
+            end if
+
             if( ftds_add_bias ) then
                 icf = pxif(i)
             else
@@ -731,14 +740,6 @@ subroutine abf_accu_add_data_online(cvs,gfx,bfx,mtc,epot,erst,ekin,etot)
             abfaccu%mpn(i,gi0)  = abfaccu%mpn(i,gi0)  + dpn1 * invn
             dpn2 = dpn - abfaccu%mpn(i,gi0)
             abfaccu%m2pn(i,gi0) = abfaccu%m2pn(i,gi0) + dpn1 * dpn2
-
-            if( NumOfABFSHAKECVs .gt. 0 ) then
-                ie = icf*etot*mtc
-                die1 = ie - abfaccu%micfetot_mtc(i,gi0)
-                abfaccu%micfetot_mtc(i,gi0)  = abfaccu%micfetot_mtc(i,gi0)  + die1 * invn
-                die2 = ie - abfaccu%micfetot_mtc(i,gi0)
-                abfaccu%m2icfetot_mtc(i,gi0) = abfaccu%m2icfetot_mtc(i,gi0) + die1 * die2
-            end if
         end if
     end do
 

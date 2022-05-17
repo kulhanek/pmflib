@@ -272,7 +272,7 @@ subroutine md_run
         call adjust_thermostat_controls(md_v)
 
         ! calculate temperature
-        call get_temperature(md_old_v,md_v,Ekin)
+        call get_temperature(md_old_v,md_v,Ekin,EkinH)
 
 
         Etot = Epot+Ekin+Erst+Epmf

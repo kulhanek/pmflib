@@ -79,8 +79,8 @@ subroutine pmf_init_dat
     tabf_enabled    = .false.
     usabf_enabled   = .false.
 
-    lng_force_required      = .true. ! FIXME
-    shake_force_required    = .true. ! FIXME
+    shake_force_required    = .false.
+    lng_force_required      = .false. ! FIXME
 
     fucell(:,:) = 0.0d0
     frecip(:,:) = 0.0d0

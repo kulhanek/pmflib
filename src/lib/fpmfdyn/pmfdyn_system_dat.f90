@@ -70,6 +70,7 @@ logical, allocatable                        :: heavy(:)         ! heavy or light
 ! system energies ----------------------
 real(PMFDP)                 :: Etot
 real(PMFDP)                 :: Ekin
+real(PMFDP)                 :: EkinH
 real(PMFDP)                 :: Epot
 real(PMFDP)                 :: Erst
 real(PMFDP)                 :: Epmf
