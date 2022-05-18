@@ -517,7 +517,7 @@ subroutine pmf_pmemd_force_mpi(x,v,f,epot,ekin,epmf,atm_owner_map)
             write(PMF_DEBUG+fmytaskid,*)
         end if
 
-        call pmf_core_lf_force(tmp_a,tmp_b,tmp_c,epot,ekin,epmf)
+        call pmf_core_lf_force(tmp_a,tmp_b,tmp_c,epot,ekin,0.0d0,epmf)
     end if
 
     ! broadcast MD exit status

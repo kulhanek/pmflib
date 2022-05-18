@@ -451,7 +451,7 @@ INCLUDE 'mpif.h'
         end if
 
         call pmf_core_lf_update_step
-        call pmf_core_lf_force(tmp_a,tmp_b,tmp_c,epot,ekin,epmf)
+        call pmf_core_lf_force(tmp_a,tmp_b,tmp_c,epot,ekin,0.0d0,epmf)
     end if
 
     ! broadcast MD exit status
