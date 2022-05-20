@@ -123,6 +123,7 @@ subroutine abf_init_dat
 
     gpr_kernel      = 3
     gpr_width       = 12.0
+    gpr_delay       = 0d0
     gpr_noise       = 1e-6
 
     gpr_rank        = -1
