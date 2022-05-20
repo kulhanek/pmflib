@@ -291,6 +291,7 @@ subroutine abf_init_print_summary
     end select
     write(PMF_OUT,152)  '              gpr_width                  : ', gpr_width,  &
                                        '['//trim(pmf_unit_label(TimeUnit))//']'
+    write(PMF_OUT,160)  '              gpr_delay                  : ', gpr_delay
     write(PMF_OUT,160)  '              gpr_noise                  : ', gpr_noise
 
     write(PMF_OUT,120)  '          === K+Sigma inversion'
@@ -530,7 +531,8 @@ real(PMFDP) function abf_init_gpr_kernel(ktype,t1,t2,width)
     use abf_dat
 
     implicit none
-    integer     :: ktype,t1,t2
+    integer     :: ktype
+    real(PMFDP) :: t1,t2
     real(PMFDP) :: width
     real(PMFDP) :: r,wfac
     ! --------------------------------------------------------------------------
@@ -543,7 +545,7 @@ real(PMFDP) function abf_init_gpr_kernel(ktype,t1,t2,width)
         return
     end if
 
-    r = abs(real(t1-t2,PMFDP)/wfac)
+    r = abs((t1-t2)/wfac)
 
     select case(ktype)
         case(1)
@@ -619,7 +621,8 @@ subroutine abf_init_gpr
             gpr_K(gpr_len,gpr_len),             &
             gpr_data(gpr_len),                  &
             gpr_model(gpr_len),                 &
-            gpr_kff(gpr_len),                   &
+            gpr_kff1(gpr_len),                  &
+            gpr_kff2(gpr_len),                  &
             stat= alloc_failed )
 
     if( alloc_failed .ne. 0 ) then
@@ -630,7 +633,7 @@ subroutine abf_init_gpr
 ! init co-variance matrix
     do i=1,gpr_len
         do j=1,gpr_len
-            gpr_K(i,j) = abf_init_gpr_kernel(gpr_kernel,i,j,gpr_width)
+            gpr_K(i,j) = abf_init_gpr_kernel(gpr_kernel,real(i,PMFDP),real(j,PMFDP),gpr_width)
         end do
     end do
 
@@ -651,14 +654,15 @@ subroutine abf_init_gpr
     write(PMF_OUT,10)
     call abf_init_gpr_invK(gpr_K,gpr_K_logdet)
 
-! init kfd
     gpr_mid = gpr_len/2 + 1
+
+! init kff1
     do j=1,gpr_len
-        gpr_data(j) = abf_init_gpr_kernel(gpr_kernel,gpr_mid,j,gpr_width)
+        gpr_data(j) = abf_init_gpr_kernel(gpr_kernel,real(gpr_mid,PMFDP),real(j,PMFDP),gpr_width)
     end do
 
     if( fdebug ) then
-        open(unit=7812,file='gpr-kernel.kff',status='UNKNOWN')
+        open(unit=7812,file='gpr-kernel.kff1',status='UNKNOWN')
         do i=1,gpr_len
             write(7812,*) i, gpr_data(i)
         end do
@@ -671,13 +675,43 @@ subroutine abf_init_gpr
         do j=1,gpr_len
             v = v + gpr_data(j) * gpr_K(j,i)
         end do
-        gpr_kff(i) = v
+        gpr_kff1(i) = v
     end do
 
     if( fdebug ) then
-        open(unit=7812,file='gpr-kernel.kff-K',status='UNKNOWN')
+        open(unit=7812,file='gpr-kernel.kff1-K',status='UNKNOWN')
         do i=1,gpr_len
-            write(7812,*) i, gpr_kff(i)
+            write(7812,*) i, gpr_kff1(i)
+        end do
+        close(7812)
+    end if
+
+! -----------------------------
+    do j=1,gpr_len
+        gpr_data(j) = abf_init_gpr_kernel(gpr_kernel,real(gpr_mid,PMFDP)+gpr_delay,real(j,PMFDP),gpr_width)
+    end do
+
+    if( fdebug ) then
+        open(unit=7812,file='gpr-kernel.kff2',status='UNKNOWN')
+        do i=1,gpr_len
+            write(7812,*) i, gpr_data(i)
+        end do
+        close(7812)
+    end if
+
+! multiply by Kinv from right
+    do i=1,gpr_len
+        v = 0.0d0
+        do j=1,gpr_len
+            v = v + gpr_data(j) * gpr_K(j,i)
+        end do
+        gpr_kff2(i) = v
+    end do
+
+    if( fdebug ) then
+        open(unit=7812,file='gpr-kernel.kff2-K',status='UNKNOWN')
+        do i=1,gpr_len
+            write(7812,*) i, gpr_kff2(i)
         end do
         close(7812)
     end if

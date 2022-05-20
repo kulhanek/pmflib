@@ -268,6 +268,7 @@ logical                     :: gpr_filter_epot
 logical                     :: gpr_filter_etot
 
 real(PMFDP)                 :: gpr_width    ! kernel width in fs
+real(PMFDP)                 :: gpr_delay    ! delay between two domains
 integer                     :: gpr_kernel   ! 0 - Exponential
                                             ! 1 - MC(3/2)
                                             ! 2 - MC(5/2)
@@ -282,7 +283,8 @@ real(PMFDP)                 :: gpr_rcond        ! rcond for automatic rank deter
 real(PMFDP)                 :: gpr_rsigma       ! min value of sigma for ranking
 
 real(PMFDP),allocatable     :: gpr_K(:,:)   ! co-variance matrix, it contains the inverse
-real(PMFDP),allocatable     :: gpr_kff(:)   ! inference
+real(PMFDP),allocatable     :: gpr_kff1(:)   ! inference
+real(PMFDP),allocatable     :: gpr_kff2(:)   ! inference
 real(PMFDP)                 :: gpr_K_logdet
 
 real(PMFDP),allocatable     :: gpr_data(:)      ! GPR input data

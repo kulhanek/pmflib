@@ -160,6 +160,7 @@ subroutine abf_control_read_abf(prm_fin)
             call pmf_ctrl_read_integer(prm_fin,'gpr_kernel',gpr_kernel,'I12')
             call pmf_ctrl_check_integer_in_range('ABF','gpr_kernel',gpr_kernel,1,7)
             call pmf_ctrl_read_real8_wunit(prm_fin,'gpr_width',TimeUnit,gpr_width,'F12.3')
+            call pmf_ctrl_read_real8(prm_fin,'gpr_delay',gpr_delay,'E12.5')
             call pmf_ctrl_read_real8(prm_fin,'gpr_noise',gpr_noise,'E12.5')
 
         ! SVD setup

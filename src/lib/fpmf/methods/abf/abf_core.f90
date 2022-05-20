@@ -560,7 +560,7 @@ subroutine abf_core_register_gprlp_simple(cvs,ficf,sicf,vicf,licf,bicf,mtc,epot,
                 gpr_data(k) = flph(i,k) + slph(i,k) + vlph(i,k) - mean
             end do
 
-            pxip(i) = dot_product(gpr_data,gpr_kff) + mean
+            pxip(i) = dot_product(gpr_data,gpr_kff1) + mean
         end do
     else
         ! first ficf
@@ -576,7 +576,7 @@ subroutine abf_core_register_gprlp_simple(cvs,ficf,sicf,vicf,licf,bicf,mtc,epot,
                     gpr_data(k) = flph(i,k) - mean
                 end do
 
-                pxip(i) = dot_product(gpr_data,gpr_kff) + mean
+                pxip(i) = dot_product(gpr_data,gpr_kff1) + mean
             end do
         else
             pxip(:) = flph(:,gpr_mid)
@@ -602,7 +602,7 @@ subroutine abf_core_register_gprlp_simple(cvs,ficf,sicf,vicf,licf,bicf,mtc,epot,
         ferst = erstlph(gpr_mid)
         fekin = ekinlph(gpr_mid)
 
-        fetot = dot_product(gpr_data,gpr_kff) + mean
+        fetot = dot_product(gpr_data,gpr_kff2) + mean
     else
         if( gpr_filter_epot ) then
             mean = 0.0d0
@@ -615,7 +615,7 @@ subroutine abf_core_register_gprlp_simple(cvs,ficf,sicf,vicf,licf,bicf,mtc,epot,
                 gpr_data(k) = epotlph(k) - mean
             end do
 
-            fepot = dot_product(gpr_data,gpr_kff) + mean
+            fepot = dot_product(gpr_data,gpr_kff2) + mean
         else
             fepot = epotlph(gpr_mid)
         end if
