@@ -548,49 +548,78 @@ subroutine abf_core_register_gprlp_simple(cvs,ficf,sicf,vicf,licf,bicf,mtc,epot,
     gpr_mid = gpr_len / 2 + 1
 
     ! total ABF force
-    ! first ficf
-    if( gpr_filter_ficf ) then
+    if( gpr_filter_aicf ) then
         do i=1,NumOfABFCVs
             mean = 0.0d0
             do k=1,gpr_len
-                mean = mean + flph(i,k)
+                mean = mean + flph(i,k) + slph(i,k) + vlph(i,k)
             end do
             mean = mean / real(gpr_len,PMFDP)
 
             do k=1,gpr_len
-                gpr_data(k) = flph(i,k) - mean
+                gpr_data(k) = flph(i,k) + slph(i,k) + vlph(i,k) - mean
             end do
 
             pxip(i) = dot_product(gpr_data,gpr_kff) + mean
         end do
     else
-        pxip(:) = flph(:,gpr_mid)
+        ! first ficf
+        if( gpr_filter_ficf ) then
+            do i=1,NumOfABFCVs
+                mean = 0.0d0
+                do k=1,gpr_len
+                    mean = mean + flph(i,k)
+                end do
+                mean = mean / real(gpr_len,PMFDP)
+
+                do k=1,gpr_len
+                    gpr_data(k) = flph(i,k) - mean
+                end do
+
+                pxip(i) = dot_product(gpr_data,gpr_kff) + mean
+            end do
+        else
+            pxip(:) = flph(:,gpr_mid)
+        end if
+        ! add remaining contributions
+        pxip(:) = pxip(:) + slph(:,gpr_mid) + vlph(:,gpr_mid) ! adaptive correction
+        ! bicf  ! current bias
     end if
 
-    ! add remaining contributions
-    pxip(:) = pxip(:) + slph(:,gpr_mid) + vlph(:,gpr_mid) ! adaptive correction
-    ! bicf  ! current bias
-
     ! total energy
-    if( gpr_filter_epot ) then
+    if( gpr_filter_etot ) then
         mean = 0.0d0
         do k=1,gpr_len
-            mean = mean + epotlph(k)
+            mean = mean + epotlph(k) + erstlph(k) + ekinlph(k)
         end do
         mean = mean / real(gpr_len,PMFDP)
 
         do k=1,gpr_len
-            gpr_data(k) = epotlph(k) - mean
+            gpr_data(k) = epotlph(k) + erstlph(k) + ekinlph(k) - mean
         end do
 
-        fepot = dot_product(gpr_data,gpr_kff) + mean
+        fetot = dot_product(gpr_data,gpr_kff) + mean
     else
-        fepot = epotlph(gpr_mid)
-    end if
+        if( gpr_filter_epot ) then
+            mean = 0.0d0
+            do k=1,gpr_len
+                mean = mean + epotlph(k)
+            end do
+            mean = mean / real(gpr_len,PMFDP)
 
-    ferst = erstlph(gpr_mid)
-    fekin = ekinlph(gpr_mid)
-    fetot = fepot + ferst + fekin
+            do k=1,gpr_len
+                gpr_data(k) = epotlph(k) - mean
+            end do
+
+            fepot = dot_product(gpr_data,gpr_kff) + mean
+        else
+            fepot = epotlph(gpr_mid)
+        end if
+
+        ferst = erstlph(gpr_mid)
+        fekin = ekinlph(gpr_mid)
+        fetot = fepot + ferst + fekin
+    end if
 
     ! add data to accumulator
     ! subroutine abf_accu_add_data_online(cvs,gfx,epot,erst,ekin,etot)

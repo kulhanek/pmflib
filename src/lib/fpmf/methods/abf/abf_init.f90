@@ -116,6 +116,8 @@ subroutine abf_init_dat
 
     gpr_len         = 51
 
+    gpr_filter_aicf = .false.
+    gpr_filter_etot = .false.
     gpr_filter_ficf = .false.
     gpr_filter_epot = .false.
 
@@ -261,6 +263,8 @@ subroutine abf_init_print_summary
     case(1)
     write(PMF_OUT,120)  '      |-> GPR (Gaussian Process Regression)'
     write(PMF_OUT,130)  '          gpr_len                        : ', gpr_len
+    write(PMF_OUT,125)  '          gpr_filter_aicf                : ', prmfile_onoff(gpr_filter_aicf)
+    write(PMF_OUT,125)  '          gpr_filter_etot                : ', prmfile_onoff(gpr_filter_etot)
     write(PMF_OUT,125)  '          gpr_filter_ficf                : ', prmfile_onoff(gpr_filter_ficf)
     write(PMF_OUT,125)  '          gpr_filter_epot                : ', prmfile_onoff(gpr_filter_epot)
 

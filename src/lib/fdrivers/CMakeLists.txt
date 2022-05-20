@@ -13,7 +13,7 @@ ENDIF(PMFLIB_SANDER_DRV)
 
 # pmemd drv =================
 IF(PMFLIB_PMEMD_DRV)
-    ADD_SUBDIRECTORY(pmemd)
+    #ADD_SUBDIRECTORY(pmemd)
     ADD_SUBDIRECTORY(pmemd-new)
 ENDIF(PMFLIB_PMEMD_DRV)
 
