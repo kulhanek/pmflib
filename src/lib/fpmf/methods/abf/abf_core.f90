@@ -598,6 +598,10 @@ subroutine abf_core_register_gprlp_simple(cvs,ficf,sicf,vicf,licf,bicf,mtc,epot,
             gpr_data(k) = epotlph(k) + erstlph(k) + ekinlph(k) - mean
         end do
 
+        fepot = epotlph(gpr_mid)
+        ferst = erstlph(gpr_mid)
+        fekin = ekinlph(gpr_mid)
+
         fetot = dot_product(gpr_data,gpr_kff) + mean
     else
         if( gpr_filter_epot ) then
