@@ -265,6 +265,7 @@ integer                     :: gpr_len          ! MUST be odd number
 logical                     :: gpr_filter_ficf
 logical                     :: gpr_filter_aicf
 logical                     :: gpr_filter_epot
+logical                     :: gpr_filter_ekin
 logical                     :: gpr_filter_etot
 
 real(PMFDP)                 :: gpr_width    ! kernel width in fs

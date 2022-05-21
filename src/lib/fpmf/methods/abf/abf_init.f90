@@ -120,6 +120,7 @@ subroutine abf_init_dat
     gpr_filter_etot = .false.
     gpr_filter_ficf = .false.
     gpr_filter_epot = .false.
+    gpr_filter_ekin = .false.
 
     gpr_kernel      = 3
     gpr_width       = 12.0
@@ -268,6 +269,7 @@ subroutine abf_init_print_summary
     write(PMF_OUT,125)  '          gpr_filter_etot                : ', prmfile_onoff(gpr_filter_etot)
     write(PMF_OUT,125)  '          gpr_filter_ficf                : ', prmfile_onoff(gpr_filter_ficf)
     write(PMF_OUT,125)  '          gpr_filter_epot                : ', prmfile_onoff(gpr_filter_epot)
+    write(PMF_OUT,125)  '          gpr_filter_ekin                : ', prmfile_onoff(gpr_filter_ekin)
 
     write(PMF_OUT,130)  '          gpr_kernel                     : ', gpr_kernel
     select case(gpr_kernel)

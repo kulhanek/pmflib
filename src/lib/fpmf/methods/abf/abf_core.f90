@@ -620,8 +620,23 @@ subroutine abf_core_register_gprlp_simple(cvs,ficf,sicf,vicf,licf,bicf,mtc,epot,
             fepot = epotlph(gpr_mid)
         end if
 
+        if( gpr_filter_ekin ) then
+            mean = 0.0d0
+            do k=1,gpr_len
+                mean = mean + ekinlph(k)
+            end do
+            mean = mean / real(gpr_len,PMFDP)
+
+            do k=1,gpr_len
+                gpr_data(k) = ekinlph(k) - mean
+            end do
+
+            fekin = dot_product(gpr_data,gpr_kff2) + mean
+        else
+            fekin = ekinlph(gpr_mid)
+        end if
+
         ferst = erstlph(gpr_mid)
-        fekin = ekinlph(gpr_mid)
         fetot = fepot + ferst + fekin
     end if
 

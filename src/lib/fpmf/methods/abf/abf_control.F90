@@ -155,6 +155,7 @@ subroutine abf_control_read_abf(prm_fin)
             call pmf_ctrl_read_logical(prm_fin,'gpr_filter_etot',gpr_filter_etot)
             call pmf_ctrl_read_logical(prm_fin,'gpr_filter_ficf',gpr_filter_ficf)
             call pmf_ctrl_read_logical(prm_fin,'gpr_filter_epot',gpr_filter_epot)
+            call pmf_ctrl_read_logical(prm_fin,'gpr_filter_ekin',gpr_filter_ekin)
 
         ! GPR
             call pmf_ctrl_read_integer(prm_fin,'gpr_kernel',gpr_kernel,'I12')
