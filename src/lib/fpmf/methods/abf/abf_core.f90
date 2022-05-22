@@ -186,6 +186,12 @@ subroutine abf_core_force_3pV()
                                   ! t-dt, t-2dt, t-3dt
         ekinhist(hist_len-2)    = 0.5d0*(ekinlfhist(hist_len-2)+ekinlfhist(hist_len-3))  &
                                 - 1.0d0/8.0d0*(ekinvvhist(hist_len-1)-2.0d0*ekinvvhist(hist_len-2)+ekinvvhist(hist_len-3))
+    case(5)
+        ekinvvhist(hist_len-1)  = KinEne - fekinaverage    ! shifted by t-dt
+        ekinlfhist(hist_len-1)  = KinEneH - fekinaverage   ! shifted by t-dt/2
+                                  ! t-1/2dt t-3/2dt and t-5/2dt t-7/2dt
+        ekinhist(hist_len-2)    = 1.0d0/10.0d0*(-ekinlfhist(hist_len-1)+6.0d0*ekinlfhist(hist_len-2)&
+                                                +6.0d0*ekinlfhist(hist_len-3)-ekinlfhist(hist_len-4))
     case default
         call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented ftds_ekin_src mode in abf_core_force_3pV!')
     end select
@@ -261,10 +267,10 @@ subroutine abf_core_force_3pV()
             do j=1,NumOfLAtoms
                 do m=1,3
                     ! force part
-                    f1 = f1 + zdhist(m,j,i,hist_len-2) * (vhist(m,j,hist_len-1) - vhist(m,j,hist_len-2))
+                    f1 = f1 + zdhist(m,j,i,hist_len-3) * (vhist(m,j,hist_len-2) - vhist(m,j,hist_len-3))
                     ! velocity part
-                    v1 = v1 + (zdhist(m,j,i,hist_len-1)-zdhist(m,j,i,hist_len-2)) * vhist(m,j,hist_len-1)
-                    v2 = v2 + (zdhist(m,j,i,hist_len-2)-zdhist(m,j,i,hist_len-3)) * vhist(m,j,hist_len-2)
+                    v1 = v1 + (zdhist(m,j,i,hist_len-2)-zdhist(m,j,i,hist_len-3)) * vhist(m,j,hist_len-2)
+                    v2 = v2 + (zdhist(m,j,i,hist_len-3)-zdhist(m,j,i,hist_len-4)) * vhist(m,j,hist_len-3)
                 end do
             end do
             pxi0(i) = f1*ifdtx
@@ -277,14 +283,14 @@ subroutine abf_core_force_3pV()
             case(0)
                 ! no filter
                 ! subroutine abf_core_register_rawdata(cvs,ficf,sicf,vicf,licf,bicf,epot,erst,ekin)
-                call abf_core_register_rawdata(cvhist(:,hist_len-2),pxi0,pxi1,pxi2,pxi3,micfhist(:,hist_len-2), &
-                                       mtchist(hist_len-2), &
-                                       epothist(hist_len-2),ersthist(hist_len-2),ekinhist(hist_len-2))
+                call abf_core_register_rawdata(cvhist(:,hist_len-3),pxi0,pxi1,pxi2,pxi3,micfhist(:,hist_len-3), &
+                                       mtchist(hist_len-3), &
+                                       epothist(hist_len-3),ersthist(hist_len-3),ekinhist(hist_len-3))
             case(1)
                 ! GPR low pass filter
-                call abf_core_register_gprlp_simple(cvhist(:,hist_len-2),pxi0,pxi1,pxi2,pxi3,micfhist(:,hist_len-2), &
-                                       mtchist(hist_len-2), &
-                                       epothist(hist_len-2),ersthist(hist_len-2),ekinhist(hist_len-2))
+                call abf_core_register_gprlp_simple(cvhist(:,hist_len-3),pxi0,pxi1,pxi2,pxi3,micfhist(:,hist_len-3), &
+                                       mtchist(hist_len-3), &
+                                       epothist(hist_len-3),ersthist(hist_len-3),ekinhist(hist_len-3))
             case default
                 call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented flpfilter mode in abf_core_force_3pF!')
         end select

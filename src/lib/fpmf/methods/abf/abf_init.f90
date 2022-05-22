@@ -253,6 +253,8 @@ subroutine abf_init_print_summary
     write(PMF_OUT,120)  '      |-> PE (potential energy corrected)'
     case(4)
     write(PMF_OUT,120)  '      |-> LF (corrected)'
+    case(5)
+    write(PMF_OUT,120)  '      |-> KIE12 '
     case default
     call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown kinetic energy source in abf_init_print_summary!')
     end select
@@ -424,7 +426,7 @@ subroutine abf_init_arrays
     select case(fmode)
         ! standard - 3pV
         case(1)
-            hist_len = 4
+            hist_len = 5
         ! standard - 3pF
         case(2)
             hist_len = 3
