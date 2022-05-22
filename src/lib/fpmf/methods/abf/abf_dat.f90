@@ -245,6 +245,8 @@ real(PMFDP),allocatable     :: micfhist(:,:)        ! history of ABF bias
 real(PMFDP),allocatable     :: epothist(:)          ! history of Epot
 real(PMFDP),allocatable     :: ersthist(:)          ! history of Erst
 real(PMFDP),allocatable     :: ekinhist(:)          ! history of Ekin
+real(PMFDP),allocatable     :: ekinvvhist(:)          ! history of EkinVV
+real(PMFDP),allocatable     :: ekinlfhist(:)          ! history of EkinLF
 real(PMFDP),allocatable     :: mtchist(:)           ! history of MTC correction
 
 integer                     :: lp_len
