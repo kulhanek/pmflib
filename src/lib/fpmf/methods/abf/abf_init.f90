@@ -249,6 +249,8 @@ subroutine abf_init_print_summary
     write(PMF_OUT,120)  '      |-> VV (velocity Verlet)'
     case(2)
     write(PMF_OUT,120)  '      |-> LF (leap-frog)'
+    case(3)
+    write(PMF_OUT,120)  '      |-> PE (potential energy corrected)'
     case default
     call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown kinetic energy source in abf_init_print_summary!')
     end select

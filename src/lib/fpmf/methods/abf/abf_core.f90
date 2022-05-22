@@ -169,6 +169,14 @@ subroutine abf_core_force_3pV()
     case(2)
         ekinhist(hist_len-1)    = ekinhist(hist_len-1) + 0.5d0*(KinEneH - fekinaverage)    ! in t-dt/2, this is completed
         ekinhist(hist_len-0)    =                      + 0.5d0*(KinEneH - fekinaverage)    ! in t-dt/2, this will be completed in the next step
+    case(3)
+        ! kinetic part
+        ekinhist(hist_len-1)    = ekinhist(hist_len-1) + 0.5d0*(KinEneH - fekinaverage)    ! in t-dt/2, this is completed
+        ekinhist(hist_len-0)    =                      + 0.5d0*(KinEneH - fekinaverage)    ! in t-dt/2, this will be completed in the next step
+        ! correction
+        ekinhist(hist_len-1)    = ekinhist(hist_len-1) &
+                                + 1.0d0/8.0d0*(epothist(hist_len)+ersthist(hist_len) + epothist(hist_len-2)+ersthist(hist_len-2)) &
+                                - 2.0d0/8.0d0*(epothist(hist_len-1)+ersthist(hist_len-1))
     case default
         call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented ftds_ekin_src mode in abf_core_force_3pV!')
     end select
@@ -329,6 +337,14 @@ subroutine abf_core_force_3pF()
     case(2)
         ekinhist(hist_len-1)    = ekinhist(hist_len-1) + 0.5d0*(KinEneH - fekinaverage)    ! in t-dt/2, this is completed
         ekinhist(hist_len-0)    =                      + 0.5d0*(KinEneH - fekinaverage)    ! in t-dt/2, this will be completed in the next step
+    case(3)
+        ! kinetic part
+        ekinhist(hist_len-1)    = ekinhist(hist_len-1) + 0.5d0*(KinEneH - fekinaverage)    ! in t-dt/2, this is completed
+        ekinhist(hist_len-0)    =                      + 0.5d0*(KinEneH - fekinaverage)    ! in t-dt/2, this will be completed in the next step
+        ! correction
+        ekinhist(hist_len-1)    = ekinhist(hist_len-1) &
+                                + 1.0d0/8.0d0*(epothist(hist_len)+ersthist(hist_len) + epothist(hist_len-2)+ersthist(hist_len-2)) &
+                                - 2.0d0/8.0d0*(epothist(hist_len-1)+ersthist(hist_len-1))
     case default
         call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented ftds_ekin_src mode in abf_core_force_3pF!')
     end select
