@@ -254,9 +254,11 @@ subroutine abf_init_print_summary
     case(4)
     write(PMF_OUT,120)  '      |-> LF (corrected)'
     case(5)
-    write(PMF_OUT,120)  '      |-> KIE12 '
+    write(PMF_OUT,120)  '      |-> KIE12'
     case(6)
-    write(PMF_OUT,120)  '      |-> KIE11 '
+    write(PMF_OUT,120)  '      |-> KIE11'
+    case(7)
+    write(PMF_OUT,120)  '      |-> EkinH'
     case default
     call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown kinetic energy source in abf_init_print_summary!')
     end select
