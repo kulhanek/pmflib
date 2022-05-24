@@ -392,6 +392,13 @@ select case(ftds_ekin_src)
         ekinhist(hist_len-2)    = 0.5d0*(ekinhist(hist_len-2) + ekinvvhist(hist_len-2))
     case(7)
         ekinhist(hist_len-1)  = KinEneH - fekinaverage   ! shifted by t-dt/2
+    case(8)
+        ekinvvhist(hist_len-1)  = KinEne - fekinaverage    ! shifted by t-dt
+        ekinlfhist(hist_len-1)  = KinEneH - fekinaverage   ! shifted by t-dt/2
+                                  ! t-3/2dt and t-5/2dt
+                                  ! t-dt, t-2dt, t-3dt
+        ekinhist(hist_len-2)    = (4.0d0/6.0d0)*(ekinlfhist(hist_len-2)+ekinlfhist(hist_len-3))  &
+                                - (1.0d0/6.0d0)*(ekinvvhist(hist_len-1)+ekinvvhist(hist_len-3))
     case default
         call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented ftds_ekin_src mode in abf_core_force_3pV!')
     end select
