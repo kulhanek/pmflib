@@ -354,7 +354,45 @@ subroutine abf_core_force_3pV4()
 ! shift ene
     epothist(hist_len)      = PotEne - fepotaverage
     ersthist(hist_len)      = PMFEne
-    ekinhist(hist_len-1)    = KinEne - fekinaverage    ! shifted by -dt
+select case(ftds_ekin_src)
+    case(1)
+        ekinhist(hist_len-1)    = KinEne - fekinaverage    ! shifted by -dt
+    case(2)
+        ekinhist(hist_len-1)    = ekinhist(hist_len-1) + 0.5d0*(KinEneH - fekinaverage)    ! in t-dt/2, this is completed
+        ekinhist(hist_len-0)    =                      + 0.5d0*(KinEneH - fekinaverage)    ! in t-dt/2, this will be completed in the next step
+    case(3)
+        ! kinetic part
+        ekinhist(hist_len-1)    = ekinhist(hist_len-1) + 0.5d0*(KinEneH - fekinaverage)    ! in t-dt/2, this is completed
+        ekinhist(hist_len-0)    =                      + 0.5d0*(KinEneH - fekinaverage)    ! in t-dt/2, this will be completed in the next step
+        ! correction
+        ekinhist(hist_len-1)    = ekinhist(hist_len-1) &
+                                + 1.0d0/8.0d0*(epothist(hist_len)+ersthist(hist_len) + epothist(hist_len-2)+ersthist(hist_len-2)) &
+                                - 2.0d0/8.0d0*(epothist(hist_len-1)+ersthist(hist_len-1))
+    case(4)
+        ekinvvhist(hist_len-1)  = KinEne - fekinaverage    ! shifted by t-dt
+        ekinlfhist(hist_len-1)  = KinEneH - fekinaverage   ! shifted by t-dt/2
+                                  ! t-3/2dt and t-5/2dt
+                                  ! t-dt, t-2dt, t-3dt
+        ekinhist(hist_len-2)    = 0.5d0*(ekinlfhist(hist_len-2)+ekinlfhist(hist_len-3))  &
+                                - 1.0d0/8.0d0*(ekinvvhist(hist_len-1)-2.0d0*ekinvvhist(hist_len-2)+ekinvvhist(hist_len-3))
+    case(5)
+        ekinvvhist(hist_len-1)  = KinEne - fekinaverage    ! shifted by t-dt
+        ekinlfhist(hist_len-1)  = KinEneH - fekinaverage   ! shifted by t-dt/2
+                                  ! t-1/2dt t-3/2dt and t-5/2dt t-7/2dt
+        ekinhist(hist_len-2)    = 1.0d0/10.0d0*(-ekinlfhist(hist_len-1)+6.0d0*ekinlfhist(hist_len-2)&
+                                                +6.0d0*ekinlfhist(hist_len-3)-ekinlfhist(hist_len-4))
+    case(6)
+        ekinvvhist(hist_len-1)  = KinEne - fekinaverage    ! shifted by t-dt
+        ekinlfhist(hist_len-1)  = KinEneH - fekinaverage   ! shifted by t-dt/2
+                                  ! t-1/2dt t-3/2dt and t-5/2dt t-7/2dt
+        ekinhist(hist_len-2)    = 1.0d0/10.0d0*(-ekinlfhist(hist_len-1)+6.0d0*ekinlfhist(hist_len-2)&
+                                                +6.0d0*ekinlfhist(hist_len-3)-ekinlfhist(hist_len-4))
+        ekinhist(hist_len-2)    = 0.5d0*(ekinhist(hist_len-2) + ekinvvhist(hist_len-2))
+    case(7)
+        ekinhist(hist_len-1)  = KinEneH - fekinaverage   ! shifted by t-dt/2
+    case default
+        call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented ftds_ekin_src mode in abf_core_force_3pV!')
+    end select
 
 ! calculate Z matrix and its inverse
     call abf_core_calc_Zmat(CVContext)
