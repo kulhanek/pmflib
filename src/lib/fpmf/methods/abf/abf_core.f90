@@ -466,8 +466,8 @@ select case(ftds_ekin_src)
             do j=1,NumOfLAtoms
                 do m=1,3
                     ! force part
-                    f1 = f1 + zdhist(m,j,i,hist_len-2) * (+ vhist(m,j,hist_len-0) + vhist(m,j,hist_len-1) &
-                                                          - vhist(m,j,hist_len-2) - vhist(m,j,hist_len-3))
+                    f1 = f1 + zdhist(m,j,i,hist_len-2) * (- vhist(m,j,hist_len-0) + 27.0d0*vhist(m,j,hist_len-1) &
+                                                          - 27.0d0*vhist(m,j,hist_len-2) + vhist(m,j,hist_len-3))
                     ! velocity part
                     v1 = v1 + (     - zdhist(m,j,i,hist_len-0) + 8.0d0*zdhist(m,j,i,hist_len-1) &
                                -8.0d0*zdhist(m,j,i,hist_len-3)       + zdhist(m,j,i,hist_len-4) ) * &
@@ -475,7 +475,7 @@ select case(ftds_ekin_src)
                                  + 9.0d0*vhist(m,j,hist_len-2)       - vhist(m,j,hist_len-3))
                 end do
             end do
-            pxi0(i) = (1.0d0/4.0d0)*f1*ifdtx
+            pxi0(i) = (1.0d0/24.0d0)*f1*ifdtx
             pxi1(i) = s1
             pxi2(i) = (1.0d0/192.0d0)*v1*ifdtx
             pxi3(i) = l1
