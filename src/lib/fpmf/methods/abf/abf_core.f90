@@ -330,7 +330,7 @@ subroutine abf_core_force_3pV4()
     implicit none
     integer                :: i,j,k,m
     integer                :: ci,ki
-    real(PMFDP)            :: v1,v2,s1,l1,f1
+    real(PMFDP)            :: v1,s1,l1,f1
     ! --------------------------------------------------------------------------
 
 ! shift accuvalue history
@@ -423,20 +423,21 @@ subroutine abf_core_force_3pV4()
             s1 = 0.0d0 ! zero - partly in f1
             l1 = 0.0d0 ! zero
             v1 = 0.0d0
-            v2 = 0.0d0
             do j=1,NumOfLAtoms
                 do m=1,3
                     ! force part
-                    f1 = f1 + zdhist(m,j,i,hist_len-3) * (+ vhist(m,j,hist_len-1) + vhist(m,j,hist_len-2) &
-                                                          - vhist(m,j,hist_len-3) - vhist(m,j,hist_len-4))
+                    f1 = f1 + zdhist(m,j,i,hist_len-2) * (+ vhist(m,j,hist_len-0) + vhist(m,j,hist_len-1) &
+                                                          - vhist(m,j,hist_len-2) - vhist(m,j,hist_len-3))
                     ! velocity part
-                    v1 = v1 + (zdhist(m,j,i,hist_len-2)-zdhist(m,j,i,hist_len-3)) * vhist(m,j,hist_len-2)
-                    v2 = v2 + (zdhist(m,j,i,hist_len-3)-zdhist(m,j,i,hist_len-4)) * vhist(m,j,hist_len-3)
+                    v1 = v1 + (     - zdhist(m,j,i,hist_len-0) + 8.0d0*zdhist(m,j,i,hist_len-1) &
+                               -8.0d0*zdhist(m,j,i,hist_len-3)       + zdhist(m,j,i,hist_len-4) ) * &
+                               (       - vhist(m,j,hist_len-0) + 9.0d0*vhist(m,j,hist_len-1) &
+                                 + 9.0d0*vhist(m,j,hist_len-2)       - vhist(m,j,hist_len-3))
                 end do
             end do
             pxi0(i) = (1.0d0/4.0d0)*f1*ifdtx
             pxi1(i) = s1
-            pxi2(i) = 0.5d0*(v1+v2)*ifdtx
+            pxi2(i) = (1.0d0/192.0d0)*v1*ifdtx
             pxi3(i) = l1
         end do
 
@@ -444,14 +445,14 @@ subroutine abf_core_force_3pV4()
             case(0)
                 ! no filter
                 ! subroutine abf_core_register_rawdata(cvs,ficf,sicf,vicf,licf,bicf,epot,erst,ekin)
-                call abf_core_register_rawdata(cvhist(:,hist_len-3),pxi0,pxi1,pxi2,pxi3,micfhist(:,hist_len-3), &
-                                       mtchist(hist_len-3), &
-                                       epothist(hist_len-3),ersthist(hist_len-3),ekinhist(hist_len-3))
+                call abf_core_register_rawdata(cvhist(:,hist_len-2),pxi0,pxi1,pxi2,pxi3,micfhist(:,hist_len-2), &
+                                       mtchist(hist_len-2), &
+                                       epothist(hist_len-2),ersthist(hist_len-2),ekinhist(hist_len-2))
             case(1)
                 ! GPR low pass filter
-                call abf_core_register_gprlp_simple(cvhist(:,hist_len-3),pxi0,pxi1,pxi2,pxi3,micfhist(:,hist_len-3), &
-                                       mtchist(hist_len-3), &
-                                       epothist(hist_len-3),ersthist(hist_len-3),ekinhist(hist_len-3))
+                call abf_core_register_gprlp_simple(cvhist(:,hist_len-3),pxi0,pxi1,pxi2,pxi3,micfhist(:,hist_len-2), &
+                                       mtchist(hist_len-2), &
+                                       epothist(hist_len-2),ersthist(hist_len-2),ekinhist(hist_len-2))
             case default
                 call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented flpfilter mode in abf_core_force_3pF!')
         end select
