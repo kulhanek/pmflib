@@ -339,6 +339,8 @@ subroutine abf_core_force_3pV4()
         epothist(i)         = epothist(i+1)
         ersthist(i)         = ersthist(i+1)
         ekinhist(i)         = ekinhist(i+1)
+        ekinvvhist(i)         = ekinvvhist(i+1)
+        ekinlfhist(i)         = ekinlfhist(i+1)
         vhist(:,:,i)        = vhist(:,:,i+1)
         zdhist(:,:,:,i)     = zdhist(:,:,:,i+1)
         micfhist(:,i)       = micfhist(:,i+1)
@@ -478,6 +480,8 @@ select case(ftds_ekin_src)
             pxi2(i) = (1.0d0/192.0d0)*v1*ifdtx
             pxi3(i) = l1
         end do
+
+        write(7894,*) fstep, ekinhist(hist_len-2)
 
         select case(flpfilter)
             case(0)
