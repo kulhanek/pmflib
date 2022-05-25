@@ -144,7 +144,7 @@ subroutine tabf_core_force_4p()
     ekinhist1 = ekinhist2
     ekinhist2 = ekinhist3
     if( fentropy ) then
-        ekinhist3 = KinEne + fekinoffset
+        ekinhist3 = KinEneVV + fekinoffset
     else
         ekinhist3 = 0.0d0
     end if
@@ -309,7 +309,7 @@ subroutine tabf_core_force_2p()
     ! shift ekin ene
     ekinhist0 = ekinhist1
     if( fentropy ) then
-        ekinhist1 = KinEne + fekinoffset
+        ekinhist1 = KinEneVV + fekinoffset
     else
         ekinhist1 = 0.0d0
     end if
@@ -452,7 +452,7 @@ subroutine tabf_core_force_2p_frc()
     ! shift ekin ene
     ekinhist0 = ekinhist1
     if( fentropy ) then
-        ekinhist1 = KinEne + fekinoffset
+        ekinhist1 = KinEneVV + fekinoffset
     else
         ekinhist1 = 0.0d0
     end if

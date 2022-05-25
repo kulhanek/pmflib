@@ -242,7 +242,7 @@ subroutine cst_core_analyze
 
 ! values
     epot = epothist0                    ! t-dt
-    ekin = KinEne + fekinoffset         ! t-dt
+    ekin = KinEneVV + fekinoffset         ! t-dt
     erst = ersthist0                    ! t-dt
     etot = epot + ekin + erst           ! t-dt
     isrz = isrz0                        ! t-dt

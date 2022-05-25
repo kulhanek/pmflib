@@ -147,7 +147,7 @@ subroutine usabf_core_force_2p()
     end if
 
     ! shift etot ene
-    etothist(1) = etothist(2) + KinEne - fekinaverage
+    etothist(1) = etothist(2) + KinEneVV - fekinaverage
     if( fentropy ) then
         etothist(2) = PotEne + PMFEne - fepotaverage
     else
@@ -280,7 +280,7 @@ subroutine usabf_core_force_7p()
     etothist(3) = etothist(4)
     etothist(4) = etothist(5)
     etothist(5) = etothist(6)
-    etothist(6) = etothist(7) + KinEne - fekinaverage  ! kinetic energy is delayed by dt
+    etothist(6) = etothist(7) + KinEneVV - fekinaverage  ! kinetic energy is delayed by dt
     if( fentropy ) then
         etothist(7) = PotEne + PMFEne - fepotaverage
     else
@@ -403,7 +403,7 @@ subroutine usabf_core_force_10p()
     etothist(6) = etothist(7)
     etothist(7) = etothist(8)
     etothist(8) = etothist(9)
-    etothist(9) = etothist(10) + KinEne - fekinaverage  ! kinetic energy is delayed by dt
+    etothist(9) = etothist(10) + KinEneVV - fekinaverage  ! kinetic energy is delayed by dt
     if( fentropy ) then
         etothist(10) = PotEne + PMFEne - fepotaverage
     else
@@ -511,7 +511,7 @@ subroutine usabf_core_force_gpr()
         epothist(hist_len) = 0.0d0
     end if
 
-    etothist(hist_len-1) = etothist(hist_len-1) + KinEne - fekinaverage  ! kinetic energy is delayed by dt
+    etothist(hist_len-1) = etothist(hist_len-1) + KinEneVV - fekinaverage  ! kinetic energy is delayed by dt
     if( fentropy ) then
         etothist(hist_len) = PotEne + PMFEne - fepotaverage
     else
@@ -683,7 +683,7 @@ subroutine usabf_core_force_gpr_kin()
         epothist(hist_len) = 0.0d0
     end if
 
-    etothist(hist_len-1) = etothist(hist_len-1) + KinEne - fekinaverage  ! kinetic energy is delayed by dt
+    etothist(hist_len-1) = etothist(hist_len-1) + KinEneVV - fekinaverage  ! kinetic energy is delayed by dt
     if( fentropy ) then
         etothist(hist_len) = PotEne + PMFEne - fepotaverage
     else
@@ -845,7 +845,7 @@ subroutine usabf_core_force_6p_kin()
     do i=1,5
         etothist(i) = etothist(i+1)
     end do
-    etothist(5) = etothist(5) + KinEne - fekinaverage  ! kinetic energy is delayed by dt
+    etothist(5) = etothist(5) + KinEneVV - fekinaverage  ! kinetic energy is delayed by dt
     if( fentropy ) then
         etothist(6) = PotEne + PMFEne - fepotaverage
     else

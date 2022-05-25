@@ -53,7 +53,7 @@ end subroutine pmf_core_lf_update_step
 ! leap-frog version
 !===============================================================================
 
-subroutine pmf_core_lf_force(x,v,f,epot,ekin,ekinh,epmf)
+subroutine pmf_core_lf_force(x,v,f,epot,ekinvv,ekinlf,ekinv4,epmf)
 
     use pmf_dat
     use pmf_cvs
@@ -78,8 +78,9 @@ subroutine pmf_core_lf_force(x,v,f,epot,ekin,ekinh,epmf)
     real(PMFDP)    :: v(:,:)        ! velocities in t-dt/2
     real(PMFDP)    :: f(:,:)        ! forces in t
     real(PMFDP)    :: epot          ! potential energy in t
-    real(PMFDP)    :: ekin          ! kinetic energy in t-dt
-    real(PMFDP)    :: ekinh         ! kinetic energy in t-dt/2
+    real(PMFDP)    :: ekinvv        ! kinetic energy in t-dt
+    real(PMFDP)    :: ekinlf        ! kinetic energy in t-dt/2
+    real(PMFDP)    :: ekinv4        ! kinetic energy in t-2*dt
     real(PMFDP)    :: epmf          ! energy from PMFLib
     ! -----------------------------------------------
     integer        :: i
@@ -92,8 +93,9 @@ subroutine pmf_core_lf_force(x,v,f,epot,ekin,ekinh,epmf)
     ! convert potential energy
     PotEne = epot * EnergyConv
     ! convert kinetic energies
-    KinEne = ekin * EnergyConv
-    KinEneH = ekinh * EnergyConv
+    KinEneVV = ekinvv * EnergyConv
+    KinEneLF = ekinlf * EnergyConv
+    KinEneV4 = ekinv4 * EnergyConv
 
     PMFEne = 0.0d0
 

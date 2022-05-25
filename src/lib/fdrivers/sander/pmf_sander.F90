@@ -45,7 +45,21 @@
 
 module pmf_sander
 
+use pmf_sizes
+
 implicit none
+
+! energy blob
+type PMFSanderEnergy
+    ! input
+    real(PMFDP) :: epot         ! potential energy in t
+    real(PMFDP) :: ekinvv       ! velocity-verlet kinetic energy in t-dt
+    real(PMFDP) :: ekinlf       ! leapfrog kinetic energy in t-dt/2
+    real(PMFDP) :: ekinv4       ! high-accuracy kinetic energy in t-2*dt
+    ! output
+    real(PMFDP) :: erst         ! PMF restrain energy
+end type PMFSanderEnergy
+
 contains
 
 #ifdef MPI
@@ -356,7 +370,7 @@ end subroutine pmf_sander_update_box
 ! subroutine pmf_sander_force
 !===============================================================================
 
-subroutine pmf_sander_force(anatom,x,v,f,epot,ekin,ekinh,epmf)
+subroutine pmf_sander_force(anatom,x,v,f,spmfene)
 
     use pmf_sizes
     use pmf_core_lf
@@ -364,19 +378,18 @@ subroutine pmf_sander_force(anatom,x,v,f,epot,ekin,ekinh,epmf)
     use pmf_dat
 
     implicit none
-    integer         :: anatom       ! number of atoms
-    real(PMFDP)     :: x(3,anatom)  ! in
-    real(PMFDP)     :: v(3,anatom)  ! in
-    real(PMFDP)     :: f(3,anatom)  ! inout
-    real(PMFDP)     :: epot         ! in
-    real(PMFDP)     :: ekin         ! in
-    real(PMFDP)     :: ekinh        ! in
-    real(PMFDP)     :: epmf         ! out
+    integer                 :: anatom       ! number of atoms
+    real(PMFDP)             :: x(3,anatom)  ! in
+    real(PMFDP)             :: v(3,anatom)  ! in
+    real(PMFDP)             :: f(3,anatom)  ! inout
+    type(PMFSanderEnergy)   :: spmfene      ! inout
     ! --------------------------------------------------------------------------
+
+    spmfene%erst = 0.0d0
 
     call pmf_timers_start_timer(PMFLIB_TIMER)
     call pmf_core_lf_update_step
-    call pmf_core_lf_force(x,v,f,epot,ekin,ekinh,epmf)
+    call pmf_core_lf_force(x,v,f,spmfene%epot,spmfene%ekinvv,spmfene%ekinlf,spmfene%ekinv4,spmfene%erst)
     call pmf_timers_stop_timer(PMFLIB_TIMER)
 
     return
@@ -500,7 +513,7 @@ end subroutine pmf_sander_constraints
 ! subroutine pmf_sander_force_mpi
 !===============================================================================
 
-subroutine pmf_sander_force_mpi(anatom,x,v,f,epot,ekin,epmf)
+subroutine pmf_sander_force_mpi(anatom,x,v,f,spmfene)
 
     use pmf_sizes
     use pmf_core_lf
@@ -511,13 +524,11 @@ subroutine pmf_sander_force_mpi(anatom,x,v,f,epot,ekin,epmf)
     use mpi
 
     implicit none
-    integer         :: anatom       ! number of atoms
-    real(PMFDP)     :: x(3,anatom)  ! in
-    real(PMFDP)     :: v(3,anatom)  ! in
-    real(PMFDP)     :: f(3,anatom)  ! inout
-    real(PMFDP)     :: epot         ! in
-    real(PMFDP)     :: ekin         ! in
-    real(PMFDP)     :: epmf         ! out
+    integer                 :: anatom       ! number of atoms
+    real(PMFDP)             :: x(3,anatom)  ! in
+    real(PMFDP)             :: v(3,anatom)  ! in
+    real(PMFDP)             :: f(3,anatom)  ! inout
+    type(PMFSanderEnergy)   :: spmfene      ! inout
     ! ------------------------------------------------------
     integer         :: i,ierr
     ! --------------------------------------------------------------------------
@@ -540,7 +551,7 @@ subroutine pmf_sander_force_mpi(anatom,x,v,f,epot,ekin,epmf)
             write(PMF_DEBUG+fmytaskid,*)
         end if
         call pmf_core_lf_update_step
-        call pmf_core_lf_force(tmp_a,tmp_b,tmp_c,epot,ekin,epmf)
+        call pmf_core_lf_force(tmp_a,tmp_b,tmp_c,spmfene%epot,spmfene%ekinvv,spmfene%ekinlf,spmfene%ekinv4,spmfene%erst)
     end if
 
     ! update data

@@ -114,8 +114,9 @@ real(PMFDP),allocatable     :: Crd(:,:)         ! current coordinates in t
 real(PMFDP),allocatable     :: Frc(:,:)         ! current system forces in t due to potential energy
 real(PMFDP),allocatable     :: Vel(:,:)         ! current system velocities in t-dt/2
 ! FIXME - better description
-real(PMFDP)                 :: KinEne           ! current system kinetic energy in t-dt
-real(PMFDP)                 :: KinEneH          ! current system kinetic energy in t-dt/2
+real(PMFDP)                 :: KinEneVV         ! velocity verlet kinetic energy in t-dt
+real(PMFDP)                 :: KinEneLF         ! leapfrog kinetic energy in t-dt/2
+real(PMFDP)                 :: KinEneV4         ! accurate kinetic energy in t-2*dt
 real(PMFDP)                 :: PotEne           ! current system potential energy in t
 real(PMFDP)                 :: PMFEne           ! current PMFLib potential energy in t (from RST, MTD, STM)
 type(CVContextType)         :: CVContext        ! current CV context (values and derivatives) in t
