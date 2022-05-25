@@ -480,13 +480,13 @@ select case(ftds_ekin_src)
                     ! velocity part
                     v1 = v1 + (     - zdhist(m,j,i,hist_len-0) + 8.0d0*zdhist(m,j,i,hist_len-1) &
                                -8.0d0*zdhist(m,j,i,hist_len-3)       + zdhist(m,j,i,hist_len-4) ) * &
-                               (       - vhist(m,j,hist_len-0) + 9.0d0*vhist(m,j,hist_len-1) &
-                                 + 9.0d0*vhist(m,j,hist_len-2)       - vhist(m,j,hist_len-3))
+                               (       - vhist(m,j,hist_len-0) + 7.0d0*vhist(m,j,hist_len-1) &
+                                 + 7.0d0*vhist(m,j,hist_len-2)       - vhist(m,j,hist_len-3))
                 end do
             end do
             pxi0(i) = (1.0d0/24.0d0)*f1*ifdtx
             pxi1(i) = s1
-            pxi2(i) = (1.0d0/192.0d0)*v1*ifdtx
+            pxi2(i) = (1.0d0/144.0d0)*v1*ifdtx
             pxi3(i) = l1
         end do
 
