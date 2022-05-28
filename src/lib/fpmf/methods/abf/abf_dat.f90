@@ -101,9 +101,6 @@ end type CVTypeABF
 ! ----------------------
 integer                     :: NumOfABFCVs          ! number of ALL CVs in a group
 type(CVTypeABF),allocatable :: ABFCVList(:)         ! definition of CVs
-
-integer                     :: NumOfABFSHAKECVs     ! constraints in collisions
-type(CVTypeABF),allocatable :: ABFSHAKECVList(:)    ! definition of CVs
 ! ----------------------
 
 type,extends(PMFAccuType) :: ABFAccuType
@@ -131,15 +128,6 @@ type,extends(PMFAccuType) :: ABFAccuType
     real(PMFDP),pointer    :: m2pp(:,:)                 ! M2 of tot energy + icf
     real(PMFDP),pointer    :: mpn(:,:)                  ! mean of tot energy - icf
     real(PMFDP),pointer    :: m2pn(:,:)                 ! M2 of tot energy - icf
-
-    real(PMFDP),pointer    :: micf_mtc(:,:)             ! mean ICF
-    real(PMFDP),pointer    :: m2icf_mtc(:,:)            ! M2 of ICF
-    real(PMFDP),pointer    :: metot_mtc(:)              ! mean of tot energy
-    real(PMFDP),pointer    :: m2etot_mtc(:)             ! M2 of tot energy
-    real(PMFDP),pointer    :: micfetot_mtc(:,:)         ! mean of tot energy
-    real(PMFDP),pointer    :: m2icfetot_mtc(:,:)        ! M2 of tot energy
-    real(PMFDP),pointer    :: mmtc(:)                   ! mean MTC
-    real(PMFDP),pointer    :: m2mtc(:)                  ! M2 of MTC
 
 ! entropy - decomposition
     real(PMFDP),pointer    :: ntds(:)                   ! number of hits into bins
@@ -247,7 +235,6 @@ real(PMFDP),allocatable     :: ersthist(:)          ! history of Erst
 real(PMFDP),allocatable     :: ekinhist(:)          ! history of Ekin
 real(PMFDP),allocatable     :: ekinvvhist(:)          ! history of EkinVV
 real(PMFDP),allocatable     :: ekinlfhist(:)          ! history of EkinLF
-real(PMFDP),allocatable     :: mtchist(:)           ! history of MTC correction
 
 integer                     :: lp_len
 real(PMFDP),allocatable     :: cvlph(:,:)
@@ -256,7 +243,6 @@ real(PMFDP),allocatable     :: slph(:,:)
 real(PMFDP),allocatable     :: vlph(:,:)
 real(PMFDP),allocatable     :: llph(:,:)
 real(PMFDP),allocatable     :: blph(:,:)
-real(PMFDP),allocatable     :: mtclph(:)
 real(PMFDP),allocatable     :: epotlph(:)
 real(PMFDP),allocatable     :: erstlph(:)
 real(PMFDP),allocatable     :: ekinlph(:)

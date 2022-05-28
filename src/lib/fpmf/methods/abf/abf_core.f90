@@ -157,7 +157,6 @@ subroutine abf_core_force_3pV()
         vhist(:,:,i)        = vhist(:,:,i+1)
         zdhist(:,:,:,i)     = zdhist(:,:,:,i+1)
         micfhist(:,i)       = micfhist(:,i+1)
-        mtchist(i)          = mtchist(i+1)
     end do
 
     do i=1,NumOfABFCVs
@@ -211,15 +210,6 @@ subroutine abf_core_force_3pV()
 
 ! calculate Z matrix and its inverse
     call abf_core_calc_Zmat(CVContext)
-
-    if( NumOfABFSHAKECVs .gt. 0 ) then
-        call abf_core_calc_Zmat_shake(CVContext)
-        mtchist(hist_len) = sqrt(1.0d0/fzdetshake)
-    else
-        mtchist(hist_len) = 1.0d0
-    end if
-
-    ! write(4789,*) fstep, mtchist(hist_len)
 
     do i=1,NumOfABFCVs
         do j=1,NumOfLAtoms
@@ -297,12 +287,10 @@ subroutine abf_core_force_3pV()
                 ! no filter
                 ! subroutine abf_core_register_rawdata(cvs,ficf,sicf,vicf,licf,bicf,epot,erst,ekin)
                 call abf_core_register_rawdata(cvhist(:,hist_len-3),pxi0,pxi1,pxi2,pxi3,micfhist(:,hist_len-3), &
-                                       mtchist(hist_len-3), &
                                        epothist(hist_len-3),ersthist(hist_len-3),ekinhist(hist_len-3))
             case(1)
                 ! GPR low pass filter
                 call abf_core_register_gprlp_simple(cvhist(:,hist_len-3),pxi0,pxi1,pxi2,pxi3,micfhist(:,hist_len-3), &
-                                       mtchist(hist_len-3), &
                                        epothist(hist_len-3),ersthist(hist_len-3),ekinhist(hist_len-3))
             case default
                 call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented flpfilter mode in abf_core_force_3pF!')
@@ -346,7 +334,6 @@ subroutine abf_core_force_3pV4()
         vhist(:,:,i)        = vhist(:,:,i+1)
         zdhist(:,:,:,i)     = zdhist(:,:,:,i+1)
         micfhist(:,i)       = micfhist(:,i+1)
-        mtchist(i)          = mtchist(i+1)
     end do
 
     do i=1,NumOfABFCVs
@@ -409,15 +396,6 @@ select case(ftds_ekin_src)
 
 ! calculate Z matrix and its inverse
     call abf_core_calc_Zmat(CVContext)
-
-    if( NumOfABFSHAKECVs .gt. 0 ) then
-        call abf_core_calc_Zmat_shake(CVContext)
-        mtchist(hist_len) = sqrt(1.0d0/fzdetshake)
-    else
-        mtchist(hist_len) = 1.0d0
-    end if
-
-    ! write(4789,*) fstep, mtchist(hist_len)
 
     do i=1,NumOfABFCVs
         do j=1,NumOfLAtoms
@@ -499,12 +477,10 @@ select case(ftds_ekin_src)
                 ! no filter
                 ! subroutine abf_core_register_rawdata(cvs,ficf,sicf,vicf,licf,bicf,epot,erst,ekin)
                 call abf_core_register_rawdata(cvhist(:,hist_len-2),pxi0,pxi1,pxi2,pxi3,micfhist(:,hist_len-2), &
-                                       mtchist(hist_len-2), &
                                        epothist(hist_len-2),ersthist(hist_len-2),ekinhist(hist_len-2))
             case(1)
                 ! GPR low pass filter
                 call abf_core_register_gprlp_simple(cvhist(:,hist_len-2),pxi0,pxi1,pxi2,pxi3,micfhist(:,hist_len-2), &
-                                       mtchist(hist_len-2), &
                                        epothist(hist_len-2),ersthist(hist_len-2),ekinhist(hist_len-2))
             case default
                 call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented flpfilter mode in abf_core_force_3pF!')
@@ -548,7 +524,6 @@ subroutine abf_core_force_3pV6()
         vhist(:,:,i)        = vhist(:,:,i+1)
         zdhist(:,:,:,i)     = zdhist(:,:,:,i+1)
         micfhist(:,i)       = micfhist(:,i+1)
-        mtchist(i)          = mtchist(i+1)
     end do
 
     do i=1,NumOfABFCVs
@@ -611,15 +586,6 @@ select case(ftds_ekin_src)
 
 ! calculate Z matrix and its inverse
     call abf_core_calc_Zmat(CVContext)
-
-    if( NumOfABFSHAKECVs .gt. 0 ) then
-        call abf_core_calc_Zmat_shake(CVContext)
-        mtchist(hist_len) = sqrt(1.0d0/fzdetshake)
-    else
-        mtchist(hist_len) = 1.0d0
-    end if
-
-    ! write(4789,*) fstep, mtchist(hist_len)
 
     do i=1,NumOfABFCVs
         do j=1,NumOfLAtoms
@@ -702,12 +668,10 @@ select case(ftds_ekin_src)
                 ! no filter
                 ! subroutine abf_core_register_rawdata(cvs,ficf,sicf,vicf,licf,bicf,epot,erst,ekin)
                 call abf_core_register_rawdata(cvhist(:,hist_len-3),pxi0,pxi1,pxi2,pxi3,micfhist(:,hist_len-3), &
-                                       mtchist(hist_len-3), &
                                        epothist(hist_len-3),ersthist(hist_len-3),ekinhist(hist_len-3))
             case(1)
                 ! GPR low pass filter
                 call abf_core_register_gprlp_simple(cvhist(:,hist_len-3),pxi0,pxi1,pxi2,pxi3,micfhist(:,hist_len-3), &
-                                       mtchist(hist_len-3), &
                                        epothist(hist_len-3),ersthist(hist_len-3),ekinhist(hist_len-3))
             case default
                 call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented flpfilter mode in abf_core_force_3pF!')
@@ -752,7 +716,6 @@ subroutine abf_core_force_3pF()
         fhist(:,:,i)    = fhist(:,:,i+1)
         shist(:,:,i)    = shist(:,:,i+1)
         lhist(:,:,i)    = lhist(:,:,i+1)
-        mtchist(i)      = mtchist(i+1)
     end do
 
     do i=1,NumOfABFCVs
@@ -785,13 +748,6 @@ subroutine abf_core_force_3pF()
 
 ! calculate Z matrix and its inverse
     call abf_core_calc_Zmat(CVContext)
-
-    if( NumOfABFSHAKECVs .gt. 0 ) then
-        call abf_core_calc_Zmat_shake(CVContext)
-        mtchist(hist_len) = sqrt(1.0d0/fzdetshake)
-    else
-        mtchist(hist_len) = 1.0d0
-    end if
 
     do i=1,NumOfABFCVs
         do j=1,NumOfLAtoms
@@ -873,12 +829,10 @@ subroutine abf_core_force_3pF()
                 ! no filter
                 ! subroutine abf_core_register_rawdata(cvs,ficf,sicf,vicf,licf,bicf,epot,erst,ekin)
                 call abf_core_register_rawdata(cvhist(:,hist_len-1),pxi0,pxi1,pxi2,pxi3,micfhist(:,hist_len-1), &
-                                       mtchist(hist_len-1), &
                                        epothist(hist_len-1),ersthist(hist_len-1),ekinhist(hist_len-1))
             case(1)
                 ! GPR low pass filter
                 call abf_core_register_gprlp_simple(cvhist(:,hist_len-1),pxi0,pxi1,pxi2,pxi3,micfhist(:,hist_len-1), &
-                                       mtchist(hist_len-1), &
                                        epothist(hist_len-1),ersthist(hist_len-1),ekinhist(hist_len-1))
             case default
                 call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented flpfilter mode in abf_core_force_3pF!')
@@ -894,7 +848,7 @@ end subroutine abf_core_force_3pF
 ! Subroutine:  abf_core_register_rawdata
 !===============================================================================
 
-subroutine abf_core_register_rawdata(cvs,ficf,sicf,vicf,licf,bicf,mtc,epot,erst,ekin)
+subroutine abf_core_register_rawdata(cvs,ficf,sicf,vicf,licf,bicf,epot,erst,ekin)
 
     use pmf_utils
     use pmf_dat
@@ -910,7 +864,6 @@ subroutine abf_core_register_rawdata(cvs,ficf,sicf,vicf,licf,bicf,mtc,epot,erst,
     real(PMFDP),intent(in)  :: vicf(:)
     real(PMFDP),intent(in)  :: licf(:)
     real(PMFDP),intent(in)  :: bicf(:)
-    real(PMFDP),intent(in)  :: mtc
     real(PMFDP),intent(in)  :: epot
     real(PMFDP),intent(in)  :: erst
     real(PMFDP),intent(in)  :: ekin
@@ -927,7 +880,7 @@ subroutine abf_core_register_rawdata(cvs,ficf,sicf,vicf,licf,bicf,mtc,epot,erst,
 
     ! add data to accumulator
     ! subroutine abf_accu_add_data_online(cvs,gfx,epot,erst,ekin,etot)
-    call abf_accu_add_data_online(cvs,pxip,bicf,mtc,epot,erst,ekin,etot)
+    call abf_accu_add_data_online(cvs,pxip,bicf,epot,erst,ekin,etot)
 
     if( fentropy .and. fentdecomp ) then
         ! subroutine abf_accu_add_data_entropy_decompose(cvs,fx,sx,vx,lx,bx,epot,erst,ekin)
@@ -940,7 +893,7 @@ end subroutine abf_core_register_rawdata
 ! Subroutine:  abf_core_register_gprlp_simple
 !===============================================================================
 
-subroutine abf_core_register_gprlp_simple(cvs,ficf,sicf,vicf,licf,bicf,mtc,epot,erst,ekin)
+subroutine abf_core_register_gprlp_simple(cvs,ficf,sicf,vicf,licf,bicf,epot,erst,ekin)
 
     use pmf_utils
     use pmf_dat
@@ -956,7 +909,6 @@ subroutine abf_core_register_gprlp_simple(cvs,ficf,sicf,vicf,licf,bicf,mtc,epot,
     real(PMFDP),intent(in)  :: vicf(:)
     real(PMFDP),intent(in)  :: licf(:)
     real(PMFDP),intent(in)  :: bicf(:)
-    real(PMFDP),intent(in)  :: mtc
     real(PMFDP),intent(in)  :: epot
     real(PMFDP),intent(in)  :: erst
     real(PMFDP),intent(in)  :: ekin
@@ -973,7 +925,6 @@ subroutine abf_core_register_gprlp_simple(cvs,ficf,sicf,vicf,licf,bicf,mtc,epot,
         vlph(:,i)       = vlph(:,i+1)
         llph(:,i)       = llph(:,i+1)
         blph(:,i)       = blph(:,i+1)
-        mtclph(i)       = mtclph(i+1)
         epotlph(i)      = epotlph(i+1)
         erstlph(i)      = erstlph(i+1)
         ekinlph(i)      = ekinlph(i+1)
@@ -985,7 +936,6 @@ subroutine abf_core_register_gprlp_simple(cvs,ficf,sicf,vicf,licf,bicf,mtc,epot,
     vlph(:,gpr_len)      = vicf(:)
     llph(:,gpr_len)      = licf(:)
     blph(:,gpr_len)      = bicf(:)
-    mtclph(gpr_len)      = mtc
     epotlph(gpr_len)     = epot
     erstlph(gpr_len)     = erst
     ekinlph(gpr_len)     = ekin
@@ -1091,7 +1041,7 @@ subroutine abf_core_register_gprlp_simple(cvs,ficf,sicf,vicf,licf,bicf,mtc,epot,
 
     ! add data to accumulator
     ! subroutine abf_accu_add_data_online(cvs,gfx,epot,erst,ekin,etot)
-    call abf_accu_add_data_online(cvlph(:,gpr_mid),pxip,blph(:,gpr_mid),mtclph(gpr_mid),&
+    call abf_accu_add_data_online(cvlph(:,gpr_mid),pxip,blph(:,gpr_mid),&
                                   fepot,ferst,fekin,fetot)
 
     if( fentropy .and. fentdecomp ) then
@@ -1910,57 +1860,6 @@ subroutine abf_core_calc_Zmat(ctx)
     return
 
 end subroutine abf_core_calc_Zmat
-
-!===============================================================================
-! subroutine:  abf_core_calc_Zmat_shake
-!===============================================================================
-
-subroutine abf_core_calc_Zmat_shake(ctx)
-
-    use pmf_utils
-    use abf_dat
-
-    implicit none
-    type(CVContextType) :: ctx
-    integer             :: i,ci,j,cj,k,info
-    ! -----------------------------------------------------------------------------
-
-    ! calculate Z matrix
-    do i=1,NumOfABFSHAKECVs
-        ci = ABFSHAKECVList(i)%cvindx
-        do j=1,NumOfABFSHAKECVs
-            cj = ABFSHAKECVList(j)%cvindx
-            fzshake(i,j) = 0.0d0
-            do k=1,NumOfLAtoms
-                fzshake(i,j) = fzshake(i,j) + MassInv(k)*dot_product(ctx%CVsDrvs(:,k,ci),ctx%CVsDrvs(:,k,cj))
-            end do
-        end do
-    end do
-
-    ! and get determinant - we will use LAPAC and LU decomposition
-    if( NumOfABFSHAKECVs .gt. 1 ) then
-
-        call dgetrf(NumOfABFSHAKECVs,NumOfABFSHAKECVs,fzshake,NumOfABFSHAKECVs,indxshake,info)
-        if( info .ne. 0 ) then
-            call pmf_utils_exit(PMF_OUT,1,'[ABF] LU decomposition failed in abf_core_calc_Zmat_shake!')
-        end if
-
-        fzdetshake = 1.0d0
-        ! and finally determinant
-        do i=1,NumOfABFSHAKECVs
-            if( indxshake(i) .ne. i ) then
-                fzdetshake = - fzdetshake * fzshake(i,i)
-            else
-                fzdetshake = fzdetshake * fzshake(i,i)
-            end if
-        end do
-    else
-        fzdetshake = fzshake(1,1)
-    end if
-
-    return
-
-end subroutine abf_core_calc_Zmat_shake
 
 !===============================================================================
 
