@@ -61,9 +61,6 @@ logical     :: ftds_add_bias    ! include ABF bias into TdS calculation
 real(PMFDP) :: fepotaverage
 real(PMFDP) :: fekinaverage
 
-integer     :: flpfilter        ! 0 - no filter
-                                ! 1 - GPR low-pass
-
 ! linear ramp
 integer     :: fhramp_min
 integer     :: fhramp_max
@@ -202,7 +199,6 @@ real(PMFDP)                 :: fzdetall
 
 ! helper arrays -------
 real(PMFDP),allocatable     :: la(:)
-real(PMFDP),allocatable     :: cvave(:)
 real(PMFDP),allocatable     :: pxi0(:)
 real(PMFDP),allocatable     :: pxi1(:)
 real(PMFDP),allocatable     :: pxi2(:)
@@ -219,8 +215,6 @@ real(PMFDP),allocatable     :: fhist(:,:,:)         ! history of forces (potenti
 real(PMFDP),allocatable     :: shist(:,:,:)         ! history of forces (shake)
 real(PMFDP),allocatable     :: lhist(:,:,:)         ! history of forces (langevin)
 real(PMFDP),allocatable     :: vhist(:,:,:)         ! history of velocities
-real(PMFDP),allocatable     :: fzinvhist(:,:,:)     ! history of fzinv
-real(PMFDP),allocatable     :: xphist(:,:)          ! history of CV momenta
 real(PMFDP),allocatable     :: icfhist(:,:)         ! history of ICF forces
 real(PMFDP),allocatable     :: zdhist(:,:,:,:)      ! history of ZD
 real(PMFDP),allocatable     :: micfhist(:,:)        ! history of ABF bias
@@ -229,17 +223,6 @@ real(PMFDP),allocatable     :: ersthist(:)          ! history of Erst
 real(PMFDP),allocatable     :: ekinhist(:)          ! history of Ekin
 real(PMFDP),allocatable     :: ekinvvhist(:)          ! history of EkinVV
 real(PMFDP),allocatable     :: ekinlfhist(:)          ! history of EkinLF
-
-integer                     :: lp_len
-real(PMFDP),allocatable     :: cvlph(:,:)
-real(PMFDP),allocatable     :: flph(:,:)
-real(PMFDP),allocatable     :: slph(:,:)
-real(PMFDP),allocatable     :: vlph(:,:)
-real(PMFDP),allocatable     :: llph(:,:)
-real(PMFDP),allocatable     :: blph(:,:)
-real(PMFDP),allocatable     :: epotlph(:)
-real(PMFDP),allocatable     :: erstlph(:)
-real(PMFDP),allocatable     :: ekinlph(:)
 
 ! ------------------------------------------------------------------------------
 

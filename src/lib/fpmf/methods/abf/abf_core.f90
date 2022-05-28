@@ -282,15 +282,9 @@ subroutine abf_core_force_3pV()
             pxi3(i) = l1
         end do
 
-        select case(flpfilter)
-            case(0)
-                ! no filter
-                ! subroutine abf_core_register_rawdata(cvs,ficf,sicf,vicf,licf,bicf,epot,erst,ekin)
-                call abf_core_register_rawdata(cvhist(:,hist_len-3),pxi0,pxi1,pxi2,pxi3,micfhist(:,hist_len-3), &
-                                       epothist(hist_len-3),ersthist(hist_len-3),ekinhist(hist_len-3))
-            case default
-                call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented flpfilter mode in abf_core_force_3pF!')
-        end select
+        ! subroutine abf_core_register_rawdata(cvs,ficf,sicf,vicf,licf,bicf,epot,erst,ekin)
+        call abf_core_register_rawdata(cvhist(:,hist_len-3),pxi0,pxi1,pxi2,pxi3,micfhist(:,hist_len-3), &
+                               epothist(hist_len-3),ersthist(hist_len-3),ekinhist(hist_len-3))
 
     end if
 
@@ -468,16 +462,9 @@ select case(ftds_ekin_src)
 
         ! write(7894,*) fstep, ekinhist(hist_len-2)
 
-        select case(flpfilter)
-            case(0)
-                ! no filter
-                ! subroutine abf_core_register_rawdata(cvs,ficf,sicf,vicf,licf,bicf,epot,erst,ekin)
-                call abf_core_register_rawdata(cvhist(:,hist_len-2),pxi0,pxi1,pxi2,pxi3,micfhist(:,hist_len-2), &
-                                       epothist(hist_len-2),ersthist(hist_len-2),ekinhist(hist_len-2))
-            case default
-                call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented flpfilter mode in abf_core_force_3pF!')
-        end select
-
+        ! subroutine abf_core_register_rawdata(cvs,ficf,sicf,vicf,licf,bicf,epot,erst,ekin)
+        call abf_core_register_rawdata(cvhist(:,hist_len-2),pxi0,pxi1,pxi2,pxi3,micfhist(:,hist_len-2), &
+                               epothist(hist_len-2),ersthist(hist_len-2),ekinhist(hist_len-2))
     end if
 
     return
@@ -655,16 +642,10 @@ select case(ftds_ekin_src)
 
         ! write(7894,*) fstep, ekinhist(hist_len-2)
 
-        select case(flpfilter)
-            case(0)
-                ! no filter
-                ! subroutine abf_core_register_rawdata(cvs,ficf,sicf,vicf,licf,bicf,epot,erst,ekin)
-                call abf_core_register_rawdata(cvhist(:,hist_len-3),pxi0,pxi1,pxi2,pxi3,micfhist(:,hist_len-3), &
-                                       epothist(hist_len-3),ersthist(hist_len-3),ekinhist(hist_len-3))
-            case default
-                call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented flpfilter mode in abf_core_force_3pF!')
-        end select
-
+        ! no filter
+        ! subroutine abf_core_register_rawdata(cvs,ficf,sicf,vicf,licf,bicf,epot,erst,ekin)
+        call abf_core_register_rawdata(cvhist(:,hist_len-3),pxi0,pxi1,pxi2,pxi3,micfhist(:,hist_len-3), &
+                               epothist(hist_len-3),ersthist(hist_len-3),ekinhist(hist_len-3))
     end if
 
     return
@@ -811,16 +792,9 @@ subroutine abf_core_force_3pF()
             pxi2(i) = 0.5d0*(v1+v2)*ifdtx
             pxi3(i) = l1
         end do
-
-        select case(flpfilter)
-            case(0)
-                ! no filter
-                ! subroutine abf_core_register_rawdata(cvs,ficf,sicf,vicf,licf,bicf,epot,erst,ekin)
-                call abf_core_register_rawdata(cvhist(:,hist_len-1),pxi0,pxi1,pxi2,pxi3,micfhist(:,hist_len-1), &
-                                       epothist(hist_len-1),ersthist(hist_len-1),ekinhist(hist_len-1))
-            case default
-                call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented flpfilter mode in abf_core_force_3pF!')
-        end select
+        ! subroutine abf_core_register_rawdata(cvs,ficf,sicf,vicf,licf,bicf,epot,erst,ekin)
+        call abf_core_register_rawdata(cvhist(:,hist_len-1),pxi0,pxi1,pxi2,pxi3,micfhist(:,hist_len-1), &
+                               epothist(hist_len-1),ersthist(hist_len-1),ekinhist(hist_len-1))
 
     end if
 

@@ -140,16 +140,6 @@ subroutine abf_control_read_abf(prm_fin)
             call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown extrapolation/interpolation mode!')
     end select
 
-    call pmf_ctrl_read_integer(prm_fin,'flpfilter',flpfilter,'I12')
-    call pmf_ctrl_check_integer_in_range('ABF','flpfilter',flpfilter,0,1)
-
-    select case(flpfilter)
-        case(0)
-            ! nothing
-        case default
-            call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown flpfilter mode!')
-    end select
-
     ! network setup ----------------------------------------------------------------
 
     write(PMF_OUT,'(/,a)') '--- [abf-walker] ---------------------------------------------------------------'

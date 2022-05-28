@@ -88,8 +88,6 @@ subroutine abf_init_dat
     fepotaverage    = 0.0d0
     fekinaverage    = 0.0d0
 
-    flpfilter       = 0
-
     feimode         = 1
     fhramp_min      = 20000
     fhramp_max      = 30000
@@ -253,18 +251,6 @@ subroutine abf_init_print_summary
     end select
     write(PMF_OUT,125)  ' Incl. ABF bias into -TdS (ftds_add_bias): ', prmfile_onoff(ftds_add_bias)
 
-
-! LP filter
-    write(PMF_OUT,120)
-    write(PMF_OUT,120)  ' Low-pass filters:'
-    write(PMF_OUT,120)  ' ------------------------------------------------------'
-    select case(flpfilter)
-    case(0)
-    write(PMF_OUT,120)  '      |-> No filter'
-    case default
-    call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown flpfilter mode in abf_init_print_summary!')
-    end select
-
     write(PMF_OUT,120)
     write(PMF_OUT,120)  ' Restart options:'
     write(PMF_OUT,120)  ' ------------------------------------------------------'
@@ -347,7 +333,6 @@ subroutine abf_init_arrays
             pxip(NumOfABFCVs),                  &
             pxif(NumOfABFCVs),                  &
             sfac(NumOfABFCVs),                  &
-            cvave(NumOfABFCVs),                 &
             fz(NumOfABFCVs,NumOfABFCVs),        &
             fzinv(NumOfABFCVs,NumOfABFCVs),     &
             indx(NumOfABFCVs),                  &
@@ -366,7 +351,6 @@ subroutine abf_init_arrays
     pxi3(:)     = 0.0d0
     pxip(:)     = 0.0d0
     pxif(:)     = 0.0d0
-    cvave(:)    = 0.0d0
     fz(:,:)     = 0.0d0
     fzinv(:,:)  = 0.0d0
 
@@ -398,8 +382,6 @@ subroutine abf_init_arrays
             lhist(3,NumOfLAtoms,hist_len),              &
             vhist(3,NumOfLAtoms,hist_len),              &
             zdhist(3,NumOfLAtoms,NumOfABFCVs,hist_len), &
-            fzinvhist(NumOfABFCVs,NumOfABFCVs,hist_len),&
-            xphist(NumOfABFCVs,hist_len),               &
             icfhist(NumOfABFCVs,hist_len),              &
             epothist(hist_len),                         &
             ersthist(hist_len),                         &
@@ -423,17 +405,8 @@ subroutine abf_init_arrays
     epothist(:)     = 0.0d0
     ersthist(:)     = 0.0d0
     ekinhist(:)     = 0.0d0
-    fzinvhist(:,:,:)= 0.0d0
-    xphist(:,:)     = 0.0d0
     icfhist(:,:)    = 0.0d0
 
-! filter setup
-    select case(flpfilter)
-        case(0)
-            ! nothing
-        case default
-            call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented flpfilter mode in abf_init_arrays!')
-    end select
 
 ! other setup ----------------------------------------------
 
