@@ -100,7 +100,6 @@ logical                     :: usabf_enabled
 
 ! requests
 logical                     :: shake_force_required     ! we need force due to SHAKE
-logical                     :: lng_force_required       ! collect Langevin forces
 
 ! MASTER =======================================================================
 

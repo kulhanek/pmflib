@@ -397,32 +397,6 @@ subroutine pmf_sander_force(anatom,x,v,f,spmfene)
 end subroutine pmf_sander_force
 
 !===============================================================================
-! Subroutine: pmf_sander_force_lng
-!===============================================================================
-
-subroutine pmf_sander_force_lng(anatom,flng)
-
-    use pmf_sizes
-    use pmf_dat
-    use pmf_core_lf
-    use pmf_timers
-
-    implicit none
-    integer        :: anatom            ! number of atoms
-    real(PMFDP)    :: flng(3,anatom)    ! forces from Langevin
-    ! --------------------------------------------------------------------------
-
-    if( .not. lng_force_required ) return
-
-    call pmf_timers_start_timer(PMFLIB_TIMER)
-    call pmf_core_lf_langevin_forces(flng)
-    call pmf_timers_stop_timer(PMFLIB_TIMER)
-
-    return
-
-end subroutine pmf_sander_force_lng
-
-!===============================================================================
 ! subroutine pmf_sander_rstforce
 !===============================================================================
 

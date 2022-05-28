@@ -32,13 +32,6 @@ use pmf_sizes
 use pmf_constants
 
 implicit none
-
-integer,parameter ::  DEBUG_ABF_FMODE1    = 4750
-integer,parameter ::  DEBUG_ABF_FMODE2    = 4751
-integer,parameter ::  DEBUG_ABF_FMODE3    = 4752
-integer,parameter ::  DEBUG_ABF_FMODE4    = 4753
-integer,parameter ::  DEBUG_ABF_GPR       = 4789
-
 contains
 
 !===============================================================================
@@ -60,13 +53,14 @@ subroutine abf_core_main
     select case(fmode)
         ! standard algorithms
         case(1)
-            call abf_core_force_3pV
+            call abf_core_force_3pV2
         case(2)
-            call abf_core_force_3pF
+            call abf_core_force_5pV4
         case(3)
-            call abf_core_force_3pV4
-        case(4)
-            call abf_core_force_3pV6
+            call abf_core_force_7pV6
+        ! testing algorithms
+        case(10)
+            call abf_core_force_3pF
         case default
             call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented fmode in abf_core_main!')
     end select
@@ -89,9 +83,8 @@ subroutine abf_core_shake
     use pmf_utils
 
     ! --------------------------------------------------------------------------
-
     select case(fmode)
-        case(2)
+        case(10)
             ! get forces from SHAKE - abf_core_force_3pF
             shist(:,:,hist_len) = SHAKEFrc(:,:)
         case(1)
@@ -101,30 +94,6 @@ subroutine abf_core_shake
     end select
 
 end subroutine abf_core_shake
-
-!===============================================================================
-! Subroutine:  abf_core_flng
-! correct for forces from Langevin
-!===============================================================================
-
-subroutine abf_core_flng
-
-    use abf_dat
-    use pmf_utils
-
-    ! --------------------------------------------------------------------------
-
-    select case(fmode)
-        case(2)
-            ! get langevin forces -  - abf_core_force_3pF
-            lhist(:,:,hist_len) =  LNGFrc(:,:)
-        case(1)
-            ! ignored
-        case default
-            call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented fmode in abf_core_flng!')
-    end select
-
-end subroutine abf_core_flng
 
 !===============================================================================
 ! Subroutine:  abf_core_force_3pV
