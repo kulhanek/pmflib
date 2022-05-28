@@ -577,7 +577,6 @@ subroutine abf_accu_add_data_online(cvs,gfx,bfx,epot,erst,ekin,etot)
     real(PMFDP)    :: dicf1, dicf2
     real(PMFDP)    :: dpp, dpp1, dpp2
     real(PMFDP)    :: dpn, dpn1, dpn2
-    real(PMFDP)    :: ie, die1, die2
     ! --------------------------------------------------------------------------
 
     ! get global index to accumulator for cvs values

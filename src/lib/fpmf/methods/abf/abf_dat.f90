@@ -200,11 +200,6 @@ real(PMFDP),allocatable     :: fzinv0(:,:)          ! inverse of Z matrix   in t
 real(PMFDP)                 :: fzdet
 real(PMFDP)                 :: fzdetall
 
-! SHAKE correction
-real(PMFDP),allocatable     :: fzshake(:,:)           ! Z matrix for SHAKE CVs  in t
-integer,allocatable         :: indxshake(:)           ! for LU decomposition  in t
-real(PMFDP)                 :: fzdetshake
-
 ! helper arrays -------
 real(PMFDP),allocatable     :: la(:)
 real(PMFDP),allocatable     :: cvave(:)
@@ -219,7 +214,6 @@ real(PMFDP),allocatable     :: sfac(:)              ! switching factors
 ! ------------------------------------------------------------------------------
 
 integer                     :: hist_len
-integer                     :: cbuff_pos
 real(PMFDP),allocatable     :: cvhist(:,:)          ! history of CV values (nCVS,hist_len)
 real(PMFDP),allocatable     :: fhist(:,:,:)         ! history of forces (potential)
 real(PMFDP),allocatable     :: shist(:,:,:)         ! history of forces (shake)
@@ -246,38 +240,6 @@ real(PMFDP),allocatable     :: blph(:,:)
 real(PMFDP),allocatable     :: epotlph(:)
 real(PMFDP),allocatable     :: erstlph(:)
 real(PMFDP),allocatable     :: ekinlph(:)
-
-! GPR facility -----------------------------------------------------------------
-integer                     :: gpr_len          ! MUST be odd number
-
-logical                     :: gpr_filter_ficf
-logical                     :: gpr_filter_aicf
-logical                     :: gpr_filter_epot
-logical                     :: gpr_filter_ekin
-logical                     :: gpr_filter_etot
-
-real(PMFDP)                 :: gpr_width    ! kernel width in fs
-real(PMFDP)                 :: gpr_delay    ! delay between two domains
-integer                     :: gpr_kernel   ! 0 - Exponential
-                                            ! 1 - MC(3/2)
-                                            ! 2 - MC(5/2)
-                                            ! 3 - ARDSE
-                                            ! 4 - Epanechnikov (parabolic)
-                                            ! 5 - Quartic (biweight)
-                                            ! 6 - Triweight
-real(PMFDP)                 :: gpr_noise    ! noise magnitude
-
-integer                     :: gpr_rank         ! rank for SVD inversion
-real(PMFDP)                 :: gpr_rcond        ! rcond for automatic rank determination
-real(PMFDP)                 :: gpr_rsigma       ! min value of sigma for ranking
-
-real(PMFDP),allocatable     :: gpr_K(:,:)   ! co-variance matrix, it contains the inverse
-real(PMFDP),allocatable     :: gpr_kff1(:)   ! inference
-real(PMFDP),allocatable     :: gpr_kff2(:)   ! inference
-real(PMFDP)                 :: gpr_K_logdet
-
-real(PMFDP),allocatable     :: gpr_data(:)      ! GPR input data
-real(PMFDP),allocatable     :: gpr_model(:)     ! GPR model
 
 ! ------------------------------------------------------------------------------
 

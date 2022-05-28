@@ -799,7 +799,6 @@ subroutine pmf_control_read_method_cvs_and_paths(prm_fin)
     ! read method CVs setup -------------------------
     if( abf_enabled ) then
         call abf_control_read_cvs(prm_fin)
-        call abf_control_read_shake_cvs(prm_fin)
     end if
     if( tabf_enabled ) then
         call tabf_control_read_cvs(prm_fin)

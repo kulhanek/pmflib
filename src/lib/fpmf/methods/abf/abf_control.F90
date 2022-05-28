@@ -146,28 +146,6 @@ subroutine abf_control_read_abf(prm_fin)
     select case(flpfilter)
         case(0)
             ! nothing
-        case(1)
-            write(PMF_OUT,63)
-            call pmf_ctrl_read_integer(prm_fin,'gpr_len',gpr_len,'I12')
-            call pmf_ctrl_check_integer('ABF','gpr_len',gpr_len,3,CND_GE)
-
-            call pmf_ctrl_read_logical(prm_fin,'gpr_filter_aicf',gpr_filter_aicf)
-            call pmf_ctrl_read_logical(prm_fin,'gpr_filter_etot',gpr_filter_etot)
-            call pmf_ctrl_read_logical(prm_fin,'gpr_filter_ficf',gpr_filter_ficf)
-            call pmf_ctrl_read_logical(prm_fin,'gpr_filter_epot',gpr_filter_epot)
-            call pmf_ctrl_read_logical(prm_fin,'gpr_filter_ekin',gpr_filter_ekin)
-
-        ! GPR
-            call pmf_ctrl_read_integer(prm_fin,'gpr_kernel',gpr_kernel,'I12')
-            call pmf_ctrl_check_integer_in_range('ABF','gpr_kernel',gpr_kernel,1,7)
-            call pmf_ctrl_read_real8_wunit(prm_fin,'gpr_width',TimeUnit,gpr_width,'F12.3')
-            call pmf_ctrl_read_real8(prm_fin,'gpr_delay',gpr_delay,'E12.5')
-            call pmf_ctrl_read_real8(prm_fin,'gpr_noise',gpr_noise,'E12.5')
-
-        ! SVD setup
-            call pmf_ctrl_read_real8(prm_fin,'gpr_rcond',gpr_rcond,'E12.5')
-            call pmf_ctrl_read_real8(prm_fin,'gpr_rsigma',gpr_rsigma,'E12.5')
-            call pmf_ctrl_read_integer(prm_fin,'gpr_rank',gpr_rank,'I12')
         case default
             call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown flpfilter mode!')
     end select
