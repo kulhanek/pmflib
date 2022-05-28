@@ -325,12 +325,10 @@ subroutine abf_init_arrays
 ! general arrays --------------------------------
     allocate(                                   &
             la(NumOfABFCVs),                    &
-            pxi0(NumOfABFCVs),                  &
-            pxi1(NumOfABFCVs),                  &
-            pxi2(NumOfABFCVs),                  &
-            pxi3(NumOfABFCVs),                  &
-            pxip(NumOfABFCVs),                  &
+            pxia(NumOfABFCVs),                  &
             pxif(NumOfABFCVs),                  &
+            pxis(NumOfABFCVs),                  &
+            pxiv(NumOfABFCVs),                  &
             sfac(NumOfABFCVs),                  &
             fz(NumOfABFCVs,NumOfABFCVs),        &
             fzinv(NumOfABFCVs,NumOfABFCVs),     &
@@ -344,12 +342,10 @@ subroutine abf_init_arrays
     end if
 
     la(:)       = 0.0d0
-    pxi0(:)     = 0.0d0
-    pxi1(:)     = 0.0d0
-    pxi2(:)     = 0.0d0
-    pxi3(:)     = 0.0d0
-    pxip(:)     = 0.0d0
+    pxia(:)     = 0.0d0
     pxif(:)     = 0.0d0
+    pxis(:)     = 0.0d0
+    pxiv(:)     = 0.0d0
     fz(:,:)     = 0.0d0
     fzinv(:,:)  = 0.0d0
 
@@ -358,17 +354,14 @@ subroutine abf_init_arrays
 ! history buffers ------------------------------------------
 
     select case(fmode)
-        ! standard - 3pV
         case(1)
             hist_len = 5
-        ! standard - 3pF
         case(2)
-            hist_len = 3
-        ! standard - 3pV4
+            hist_len = 5
         case(3)
             hist_len = 5
         case(4)
-            hist_len = 6
+            hist_len = 5
         case default
             call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented fmode in abf_init_arrays!')
     end select

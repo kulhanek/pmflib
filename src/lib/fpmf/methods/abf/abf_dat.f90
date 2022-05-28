@@ -139,30 +139,25 @@ type,extends(PMFAccuType) :: ABFAccuType
 
     real(PMFDP),pointer    :: mtdsfx(:,:)               ! mean of ICF - force
     real(PMFDP),pointer    :: m2tdsfx(:,:)              ! M2 of ICF - force
+    real(PMFDP),pointer    :: mtdssx(:,:)               ! mean of ICF - shake
+    real(PMFDP),pointer    :: m2tdssx(:,:)              ! M2 of ICF - shake
     real(PMFDP),pointer    :: mtdsvx(:,:)               ! mean of ICF - velocity
     real(PMFDP),pointer    :: m2tdsvx(:,:)              ! M2 of ICF - velocity
     real(PMFDP),pointer    :: mtdsbx(:,:)               ! mean of ICF - bias
     real(PMFDP),pointer    :: m2tdsbx(:,:)              ! M2 of ICF - bias
-    real(PMFDP),pointer    :: mtdssx(:,:)               ! mean of ICF - shake
-    real(PMFDP),pointer    :: m2tdssx(:,:)              ! M2 of ICF - shake
-    real(PMFDP),pointer    :: mtdslx(:,:)               ! mean of ICF - lng
-    real(PMFDP),pointer    :: m2tdslx(:,:)              ! M2 of ICF - lng
 
     real(PMFDP),pointer    :: c11tdsfp(:,:)                ! co-variances
     real(PMFDP),pointer    :: c11tdsfr(:,:)
     real(PMFDP),pointer    :: c11tdsfk(:,:)
+    real(PMFDP),pointer    :: c11tdssp(:,:)
+    real(PMFDP),pointer    :: c11tdssr(:,:)
+    real(PMFDP),pointer    :: c11tdssk(:,:)
     real(PMFDP),pointer    :: c11tdsvp(:,:)
     real(PMFDP),pointer    :: c11tdsvr(:,:)
     real(PMFDP),pointer    :: c11tdsvk(:,:)
     real(PMFDP),pointer    :: c11tdsbp(:,:)
     real(PMFDP),pointer    :: c11tdsbr(:,:)
     real(PMFDP),pointer    :: c11tdsbk(:,:)
-    real(PMFDP),pointer    :: c11tdssp(:,:)
-    real(PMFDP),pointer    :: c11tdssr(:,:)
-    real(PMFDP),pointer    :: c11tdssk(:,:)
-    real(PMFDP),pointer    :: c11tdslp(:,:)
-    real(PMFDP),pointer    :: c11tdslr(:,:)
-    real(PMFDP),pointer    :: c11tdslk(:,:)
 
 ! time recording for post-processing
     real(PMFDP),pointer    :: tcvs(:,:)
@@ -192,20 +187,13 @@ real(PMFDP),allocatable     :: fz(:,:)              ! Z matrix              in t
 real(PMFDP),allocatable     :: fzinv(:,:)           ! inverse of Z matrix   in t
 real(PMFDP),allocatable     :: vv(:)                ! for LU decomposition
 integer,allocatable         :: indx(:)              ! for LU decomposition
-real(PMFDP),allocatable     :: fzinv0(:,:)          ! inverse of Z matrix   in t-dt
-
-! determinant of mass metric tensors
-real(PMFDP)                 :: fzdet
-real(PMFDP)                 :: fzdetall
 
 ! helper arrays -------
 real(PMFDP),allocatable     :: la(:)
-real(PMFDP),allocatable     :: pxi0(:)
-real(PMFDP),allocatable     :: pxi1(:)
-real(PMFDP),allocatable     :: pxi2(:)
-real(PMFDP),allocatable     :: pxi3(:)
-real(PMFDP),allocatable     :: pxip(:)
+real(PMFDP),allocatable     :: pxia(:)
 real(PMFDP),allocatable     :: pxif(:)
+real(PMFDP),allocatable     :: pxis(:)
+real(PMFDP),allocatable     :: pxiv(:)
 real(PMFDP),allocatable     :: sfac(:)              ! switching factors
 
 ! ------------------------------------------------------------------------------
