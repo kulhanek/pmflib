@@ -1,6 +1,7 @@
 !===============================================================================
 ! PMFLib - Library Supporting Potential of Mean Force Calculations
 !-------------------------------------------------------------------------------
+!    Copyright (C) 2022-2015 Petr Kulhanek, kulhanek@chemi.muni.cz
 !    Copyright (C) 2011-2015 Petr Kulhanek, kulhanek@chemi.muni.cz
 !    Copyright (C) 2013-2015 Letif Mones, lam81@cam.ac.uk
 !    Copyright (C) 2007 Petr Kulhanek, kulhanek@enzim.hu
@@ -301,8 +302,6 @@ subroutine abf_init_print_summary
 125 format(A,A)
 130 format(A,I6)
 150 format(A,F10.1,1X,A)
-152 format(A,F10.5,1X,A)
-160 format(A,E10.4)
 
 140 format(' == Collective variable #',I4.4)
 

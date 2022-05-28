@@ -1,6 +1,7 @@
 !===============================================================================
 ! PMFLib - Library Supporting Potential of Mean Force Calculations
 !-------------------------------------------------------------------------------
+!    Copyright (C) 2022-2015 Petr Kulhanek, kulhanek@chemi.muni.cz
 !    Copyright (C) 2011-2015 Petr Kulhanek, kulhanek@chemi.muni.cz
 !    Copyright (C) 2013-2015 Letif Mones, lam81@cam.ac.uk
 !    Copyright (C) 2007 Petr Kulhanek, kulhanek@enzim.hu
@@ -187,8 +188,6 @@ subroutine abf_control_read_abf(prm_fin)
  51 format (/,'>> Linear ramp mode (feimode == 1)')
  52 format (/,'>> Kernel smoother (feimode == 2)')
  53 format (/,'>> Linear interpolation (feimode == 3)')
-
- 63 format (/,'>> Gaussian Process Regression Low-pass Filter')
 
 100 format (' >> Multiple-walkers ABF method is disabled!')
 
