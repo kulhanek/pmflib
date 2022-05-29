@@ -155,6 +155,8 @@ subroutine abf_core_update_history()
         call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented ftds_ekin_src mode in abf_core_force_3pV!')
     end select
 
+    write(74895,*) fstep-2, KinEneV4, fstep-1, KinEneVV
+
 ! calculate Z matrix and its inverse
     call abf_core_calc_Zmat(CVContext)
 
