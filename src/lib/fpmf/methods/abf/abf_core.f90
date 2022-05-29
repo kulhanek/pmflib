@@ -151,6 +151,8 @@ subroutine abf_core_update_history()
         ekinhist(hist_len-0)    =                      + 0.5d0*(KinEneLF - fekinaverage)    ! in t-dt/2, this will be completed in the next step
     case(3)
         ekinhist(hist_len-2)    = KinEneV4 - fekinaverage
+    case(4)
+        ekinhist(hist_len-3)    = KinEneV6 - fekinaverage
     case default
         call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented ftds_ekin_src mode in abf_core_force_3pV!')
     end select

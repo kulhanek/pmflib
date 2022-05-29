@@ -382,7 +382,7 @@ subroutine pot_energy
     ! pmf force  -------------------------------
     !md_d(:,:) = - md_d(:,:)
     ! FIXME - EkinH,0.0
-    call pmf_core_lf_force(md_x,md_v,md_d,Epot+Erst,Ekin,EkinH,0.0d0,Epmf)
+    call pmf_core_lf_force(md_x,md_v,md_d,Epot+Erst,Ekin,EkinH,0.0d0,0.0d0,Epmf)
     !md_d(:,:) = - md_d(:,:)
 
     call stop_timer(FORCES_TIMER)
