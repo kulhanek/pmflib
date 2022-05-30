@@ -113,6 +113,8 @@ subroutine abf_init_dat
     fsmooth_kernel  = 0
     fswitch2zero    = .false.
 
+    ftds_ltemp      = 300.0
+
 end subroutine abf_init_dat
 
 !===============================================================================

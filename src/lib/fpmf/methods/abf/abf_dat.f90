@@ -58,6 +58,7 @@ integer     :: ftds_ekin_src    ! source of kinetic energy
                                 ! 1 - EkinVV
                                 ! 2 - EkinLF
 logical     :: ftds_add_bias    ! include ABF bias into TdS calculation
+real(PMFDP) :: ftds_ltemp
 
 real(PMFDP) :: fepotaverage
 real(PMFDP) :: fekinaverage
