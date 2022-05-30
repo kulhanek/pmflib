@@ -141,8 +141,8 @@ subroutine abf_core_update_history()
         cvhist(i,hist_len) = CVContext%CVsValues(ci)
     end do
     ! FIXME
-    ! vhist(:,:,hist_len-1)    = Vel(:,:)
-    vhist(:,:,hist_len)    = Vel(:,:)
+    vhist(:,:,hist_len-1)    = Vel(:,:)
+    ! vhist(:,:,hist_len)    = Vel(:,:)
 
 ! shift ene
     epothist(hist_len)      = PotEne - fepotaverage
