@@ -65,6 +65,8 @@ subroutine abf_core_main
             call abf_core_force_5pV2
         case(5)
             call abf_core_force_3pV3
+        case(6)
+            call abf_core_force_3pV4
 !        ! testing algorithms
 !        case(10)
 !            call abf_core_force_3pF
@@ -138,6 +140,8 @@ subroutine abf_core_update_history()
         ci = ABFCVList(i)%cvindx
         cvhist(i,hist_len) = CVContext%CVsValues(ci)
     end do
+    ! FIXME
+    ! vhist(:,:,hist_len-1)    = Vel(:,:)
     vhist(:,:,hist_len)    = Vel(:,:)
 
 ! shift ene
@@ -346,6 +350,47 @@ subroutine abf_core_force_3pV2()
 end subroutine abf_core_force_3pV2
 
 !===============================================================================
+! Subroutine:  abf_core_force_3pV4
+! this is leap-frog ABF version, simplified algorithm
+! ICF from velocities + decomposition
+!===============================================================================
+
+subroutine abf_core_force_3pV4()
+
+    use pmf_dat
+    use pmf_cvs
+    use abf_dat
+
+    implicit none
+    integer                :: i,j,m
+    real(PMFDP)            :: f1,v1
+    ! --------------------------------------------------------------------------
+
+    if( fstep .le. hist_len ) return
+
+    do i=1,NumOfABFCVs
+        f1 = 0.0d0
+        v1 = 0.0d0
+        do j=1,NumOfLAtoms
+            do m=1,3
+                ! force part
+                f1 = f1 + zdhist(m,j,i,hist_len-2) * (vhist(m,j,hist_len-1) - vhist(m,j,hist_len-2))
+                ! velocity part
+                v1 = v1 + (- zdhist(m,j,i,hist_len-0) + 8.0d0*zdhist(m,j,i,hist_len-1) &
+                           -8.0d0*zdhist(m,j,i,hist_len-3)       + zdhist(m,j,i,hist_len-4)) * vhist(m,j,hist_len-2)
+            end do
+        end do
+        pxif(i) = f1*ifdtx
+        pxiv(i) = (1.0d0/12.0d0)*v1*ifdtx
+    end do
+
+    ! subroutine abf_core_register_rawdata(cvs,ficf,sicf,vicf,licf,bicf,epot,erst,ekin)
+    call abf_core_register_rawdata(cvhist(:,hist_len-2),pxif,pxis,pxiv,micfhist(:,hist_len-2), &
+                           epothist(hist_len-2),ersthist(hist_len-2),ekinhist(hist_len-2))
+
+end subroutine abf_core_force_3pV4
+
+!===============================================================================
 ! Subroutine:  abf_core_force_5pV1
 ! this is leap-frog ABF version, simplified algorithm
 ! ICF from velocities + decomposition
@@ -387,8 +432,8 @@ subroutine abf_core_force_5pV1()
     end do
 
     ! subroutine abf_core_register_rawdata(cvs,ficf,sicf,vicf,licf,bicf,epot,erst,ekin)
-    call abf_core_register_rawdata(cvhist(:,hist_len-3),pxif,pxis,pxiv,micfhist(:,hist_len-3), &
-                           epothist(hist_len-3),ersthist(hist_len-3),ekinhist(hist_len-3))
+    call abf_core_register_rawdata(cvhist(:,hist_len-2),pxif,pxis,pxiv,micfhist(:,hist_len-2), &
+                           epothist(hist_len-2),ersthist(hist_len-2),ekinhist(hist_len-2))
 
 end subroutine abf_core_force_5pV1
 
@@ -431,8 +476,8 @@ subroutine abf_core_force_5pV2()
     end do
 
     ! subroutine abf_core_register_rawdata(cvs,ficf,sicf,vicf,licf,bicf,epot,erst,ekin)
-    call abf_core_register_rawdata(cvhist(:,hist_len-3),pxif,pxis,pxiv,micfhist(:,hist_len-3), &
-                           epothist(hist_len-3),ersthist(hist_len-3),ekinhist(hist_len-3))
+    call abf_core_register_rawdata(cvhist(:,hist_len-2),pxif,pxis,pxiv,micfhist(:,hist_len-2), &
+                           epothist(hist_len-2),ersthist(hist_len-2),ekinhist(hist_len-2))
 
 end subroutine abf_core_force_5pV2
 
