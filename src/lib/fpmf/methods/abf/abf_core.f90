@@ -149,7 +149,7 @@ subroutine abf_core_update_history()
     ersthist(hist_len)      = PMFEne
     select case(ftds_ekin_src)
     case(1)
-        ekinhist(hist_len-1)    = KinEneVV - fekinaverage    ! shifted by -dt
+        ekinhist(hist_len-1)    = (KinEneVV - fekinaverage)*ftds_ekin_scale    ! shifted by -dt
     case(2)
         ekinhist(hist_len-1)    = ekinhist(hist_len-1) + 0.5d0*(KinEneLF - fekinaverage)    ! in t-dt/2, this is completed
         ekinhist(hist_len-0)    =                      + 0.5d0*(KinEneLF - fekinaverage)    ! in t-dt/2, this will be completed in the next step

@@ -114,6 +114,7 @@ subroutine abf_init_dat
     fswitch2zero    = .false.
 
     ftds_ltemp      = 300.0
+    ftds_ekin_scale = 1.0d0
 
 end subroutine abf_init_dat
 
