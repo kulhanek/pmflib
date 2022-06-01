@@ -57,9 +57,9 @@ logical     :: frecord      ! record time progress
 integer     :: ftds_ekin_src    ! source of kinetic energy
                                 ! 1 - EkinVV
                                 ! 2 - EkinLF
+
 logical     :: ftds_add_bias    ! include ABF bias into TdS calculation
-real(PMFDP) :: ftds_ltemp
-real(PMFDP) :: ftds_ekin_scale
+real(PMFDP) :: ftds_ekin_scale  ! scale kinetic energy by this factor
 
 real(PMFDP) :: fepotaverage
 real(PMFDP) :: fekinaverage
@@ -204,16 +204,13 @@ integer                     :: hist_len
 real(PMFDP),allocatable     :: cvhist(:,:)          ! history of CV values (nCVS,hist_len)
 real(PMFDP),allocatable     :: fhist(:,:,:)         ! history of forces (potential)
 real(PMFDP),allocatable     :: shist(:,:,:)         ! history of forces (shake)
-real(PMFDP),allocatable     :: lhist(:,:,:)         ! history of forces (langevin)
 real(PMFDP),allocatable     :: vhist(:,:,:)         ! history of velocities
-real(PMFDP),allocatable     :: icfhist(:,:)         ! history of ICF forces
 real(PMFDP),allocatable     :: zdhist(:,:,:,:)      ! history of ZD
 real(PMFDP),allocatable     :: micfhist(:,:)        ! history of ABF bias
 real(PMFDP),allocatable     :: epothist(:)          ! history of Epot
 real(PMFDP),allocatable     :: ersthist(:)          ! history of Erst
 real(PMFDP),allocatable     :: ekinhist(:)          ! history of Ekin
-real(PMFDP),allocatable     :: ekinvvhist(:)          ! history of EkinVV
-real(PMFDP),allocatable     :: ekinlfhist(:)          ! history of EkinLF
+real(PMFDP),allocatable     :: ekinlfhist(:)        ! history of EkinLF
 
 ! ------------------------------------------------------------------------------
 

@@ -574,7 +574,7 @@ subroutine abf_accu_add_data_online(cvs,gfx,bfx,epot,erst,ekin,etot)
     end if
 
     ! get total biasing ICF
-    pxif(:) = - gfx(:) + bfx(:)
+    pxif(:) = - (gfx(:) - bfx(:))
 
     ! increase number of samples
     abfaccu%nsamples(gi0) = abfaccu%nsamples(gi0) + 1.0d0
@@ -736,7 +736,7 @@ subroutine abf_accu_add_data_entropy_decompose(cvs,fx,sx,vx,bx,epot,erst,ekin)
         divx2 = ivx - abfaccu%mtdsvx(i,gi0)
         abfaccu%m2tdsvx(i,gi0) = abfaccu%m2tdsvx(i,gi0) + divx1 * divx2
 
-        ibx = - bx(i)
+        ibx =   bx(i)
         dibx1 = ibx - abfaccu%mtdsbx(i,gi0)
         abfaccu%mtdsbx(i,gi0)  = abfaccu%mtdsbx(i,gi0)  + dibx1 * invn
         dibx2 = ibx - abfaccu%mtdsbx(i,gi0)
