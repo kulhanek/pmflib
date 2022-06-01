@@ -70,6 +70,8 @@ subroutine abf_core_main
             ! LF variants
             case(6)
                 call abf_core_force_3pLF1
+            case(7)
+                call abf_core_force_3pLF2
             case default
                 call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented fmode in abf_core_main!')
         end select
@@ -413,6 +415,54 @@ subroutine abf_core_force_3pLF1()
                            epot,erst,ekin)
 
 end subroutine abf_core_force_3pLF1
+
+!===============================================================================
+! Subroutine:  abf_core_force_3pLF2
+! this is leap-frog ABF version, simplified algorithm
+! ICF from velocities + decomposition, ICF determined at half-step
+!===============================================================================
+
+subroutine abf_core_force_3pLF2()
+
+    use pmf_dat
+    use pmf_cvs
+    use abf_dat
+
+    implicit none
+    integer                :: i,j,m
+    real(PMFDP)            :: f1,f2,v1
+    real(PMFDP)            :: epot,erst,ekin
+    ! --------------------------------------------------------------------------
+
+    do i=1,NumOfABFCVs
+        f1 = 0.0d0
+        f2 = 0.0d0
+        v1 = 0.0d0
+        do j=1,NumOfLAtoms
+            do m=1,3
+                ! force part
+                f1 = f1 + zdhist(m,j,i,hist_len-2) * (vhist(m,j,hist_len-1) - vhist(m,j,hist_len-2))
+                f2 = f2 + zdhist(m,j,i,hist_len-3) * (vhist(m,j,hist_len-2) - vhist(m,j,hist_len-3))
+                ! velocity part
+                v1 = v1 + (zdhist(m,j,i,hist_len-2)-zdhist(m,j,i,hist_len-3)) * vhist(m,j,hist_len-2)
+            end do
+        end do
+        pxif(i) = 0.5d0*(f1+f2)*ifdtx
+        pxiv(i) = v1*ifdtx
+    end do
+
+    cvave(:) = 0.5d0*(cvhist(:,hist_len-2)   + cvhist(:,hist_len-3))
+    mfave(:) = 0.5d0*(micfhist(:,hist_len-2) + micfhist(:,hist_len-3))
+
+    epot = (1.0d0/16.0d0)*(-epothist(hist_len-1) + 9.0d0*epothist(hist_len-2) + 9.0d0*epothist(hist_len-3) - epothist(hist_len-4))
+    erst = 0.5d0*(ersthist(hist_len-2) + ersthist(hist_len-3))
+    ekin = ekinhist(hist_len-2)
+
+    ! subroutine abf_core_register_rawdata(cvs,ficf,sicf,vicf,bicf,epot,erst,ekin)
+    call abf_core_register_rawdata(cvave,pxif,pxis,pxiv,mfave, &
+                           epot,erst,ekin)
+
+end subroutine abf_core_force_3pLF2
 
 !===============================================================================
 ! Subroutine:  abf_core_force_5pV1
