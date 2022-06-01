@@ -196,6 +196,8 @@ real(PMFDP),allocatable     :: pxia(:)
 real(PMFDP),allocatable     :: pxif(:)
 real(PMFDP),allocatable     :: pxis(:)
 real(PMFDP),allocatable     :: pxiv(:)
+real(PMFDP),allocatable     :: cvave(:)
+real(PMFDP),allocatable     :: mfave(:)
 real(PMFDP),allocatable     :: sfac(:)              ! switching factors
 
 ! ------------------------------------------------------------------------------

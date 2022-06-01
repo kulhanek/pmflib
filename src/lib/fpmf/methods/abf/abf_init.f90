@@ -171,6 +171,8 @@ subroutine abf_init_print_summary
     write(PMF_OUT,120)  '      |-> Simplified ABF algorithm (5pV1)'
     case(5)
     write(PMF_OUT,120)  '      |-> Simplified ABF algorithm (5pV2)'
+    case(6)
+    write(PMF_OUT,120)  '      |-> Simplified ABF algorithm (3pLF1)'
     case default
         call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown fmode in abf_init_print_summary!')
     end select
@@ -240,6 +242,8 @@ subroutine abf_init_print_summary
     write(PMF_OUT,120)  '      |-> LFKE4 (leap-frog KE - interpolated KE4)'
     case(6)
     write(PMF_OUT,120)  '      |-> LFKE6 (leap-frog KE - interpolated KE6)'
+    case(7)
+    write(PMF_OUT,120)  '      |-> LF (leap-frog KE at 1/2dt)'
     case default
     call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown kinetic energy source in abf_init_print_summary!')
     end select
@@ -324,6 +328,8 @@ subroutine abf_init_arrays
             pxif(NumOfABFCVs),                  &
             pxis(NumOfABFCVs),                  &
             pxiv(NumOfABFCVs),                  &
+            cvave(NumOfABFCVs),                 &
+            mfave(NumOfABFCVs),                 &
             sfac(NumOfABFCVs),                  &
             fz(NumOfABFCVs,NumOfABFCVs),        &
             fzinv(NumOfABFCVs,NumOfABFCVs),     &
@@ -343,6 +349,8 @@ subroutine abf_init_arrays
     pxiv(:)     = 0.0d0
     fz(:,:)     = 0.0d0
     fzinv(:,:)  = 0.0d0
+    cvave(:)    = 0.0d0
+    mfave(:)    = 0.0d0
 
     sfac(:)     = 1.0d0
 
@@ -351,6 +359,8 @@ subroutine abf_init_arrays
         case(1,2,3,4,5,6)
             ! for V6 interpolation we need at least 6 data points
             hist_len = 6
+        case(7)
+            hist_len = 3
         case default
             call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented fmode in abf_init_arrays!')
     end select

@@ -68,7 +68,7 @@ subroutine abf_control_read_abf(prm_fin)
 
     ! read configuration
     call pmf_ctrl_read_integer(prm_fin,'fmode',fmode,'I12')
-    call pmf_ctrl_check_integer_in_range('ABF','fmode',fmode,0,5)
+    call pmf_ctrl_check_integer_in_range('ABF','fmode',fmode,0,6)
 
     if( fmode .eq. 0 ) then
         write(PMF_OUT,10)
@@ -99,7 +99,7 @@ subroutine abf_control_read_abf(prm_fin)
     call pmf_ctrl_read_logical(prm_fin,'ftds_add_bias',ftds_add_bias)
 
     call pmf_ctrl_read_integer(prm_fin,'ftds_ekin_src',ftds_ekin_src,'I12')
-    call pmf_ctrl_check_integer_in_range('ABF','ftds_ekin_src',ftds_ekin_src,1,6)
+    call pmf_ctrl_check_integer_in_range('ABF','ftds_ekin_src',ftds_ekin_src,1,7)
 
     call pmf_ctrl_read_real8(prm_fin,'ftds_ekin_scale',ftds_ekin_scale,'F10.1')
 
