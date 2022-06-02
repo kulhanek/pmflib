@@ -179,6 +179,8 @@ subroutine abf_init_print_summary
     write(PMF_OUT,120)  '      |-> Simplified ABF algorithm (2pV2)'
     case(9)
     write(PMF_OUT,120)  '      |-> Simplified ABF algorithm (2pV3)'
+    case(10)
+    write(PMF_OUT,120)  '      |-> Simplified ABF algorithm (2pV4)'
     case default
         call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown fmode in abf_init_print_summary!')
     end select
@@ -380,6 +382,8 @@ subroutine abf_init_arrays
             hist_len = 3
         case(7,8,9)
             hist_len = 6
+        case(10)
+            hist_len = 8
         case default
             call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented fmode in abf_init_arrays!')
     end select

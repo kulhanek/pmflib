@@ -68,7 +68,7 @@ subroutine abf_control_read_abf(prm_fin)
 
     ! read configuration
     call pmf_ctrl_read_integer(prm_fin,'fmode',fmode,'I12')
-    call pmf_ctrl_check_integer_in_range('ABF','fmode',fmode,0,9)
+    call pmf_ctrl_check_integer_in_range('ABF','fmode',fmode,0,10)
 
     if( fmode .eq. 0 ) then
         write(PMF_OUT,10)
