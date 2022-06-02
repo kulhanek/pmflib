@@ -80,10 +80,10 @@ subroutine abf_core_main
             call abf_core_force_2pV2
         case(9)
             call abf_core_update_history
-            call abf_core_force_2pV2
+            call abf_core_force_2pV3
         case(10)
             call abf_core_update_history
-            call abf_core_force_2pV3
+            call abf_core_force_2pV4
         case default
             call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented fmode in abf_core_main!')
     end select
@@ -680,13 +680,13 @@ subroutine abf_core_force_2pV4()
 
     if( fstep .le. 2*hist_len ) return
 
-    ! write(12548,*) fstep-2, xvhist(1,hist_len-2)
-
     do i=1,NumOfABFCVs
         pxif(i) = (1.0d0/12.0d0)*(      -xvhist(i,hist_len-3) + 8.0d0*xvhist(i,hist_len-4) &
                                   -8.0d0*xvhist(i,hist_len-6)       + xvhist(i,hist_len-7))*ifdtx
         pxiv(i) = 0.0d0
     end do
+
+    !write(12548,*) fstep-3, xvhist(1,hist_len-3), pxif(1)
 
     !write(4789,*) fstep,pxia(1),xvhist(1,hist_len),pxiv(1),pxif(1),pxis(1)
 
