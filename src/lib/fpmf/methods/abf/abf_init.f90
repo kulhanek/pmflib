@@ -356,6 +356,17 @@ subroutine abf_init_arrays
 
     sfac(:)     = 1.0d0
 
+    allocate( crdave(3,NumOfLAtoms),                        &
+              cvcontextave%CVsValues(NumOfCVs),             &
+              cvcontextave%CVsDrvs(3,NumOfLAtoms,NumOfCVs), &
+              stat=alloc_failed)
+
+    if( alloc_failed .ne. 0 ) then
+        call pmf_utils_exit(PMF_OUT, 1,'[PMFLIB] Unable to allocate memory for ABF arrays II!')
+    endif
+
+    crdave(:,:) = 0.0d0
+
 ! history buffers ------------------------------------------
     select case(fmode)
         case(1,2,3,4,5)
@@ -364,7 +375,7 @@ subroutine abf_init_arrays
         case(6)
             hist_len = 3
         case(7)
-            hist_len = 5
+            hist_len = 6
         case default
             call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented fmode in abf_init_arrays!')
     end select
@@ -380,6 +391,8 @@ subroutine abf_init_arrays
             ersthist(hist_len),                         &
             ekinhist(hist_len),                         &
             ekinlfhist(hist_len),                       &
+            crdhist(3,NumOfLAtoms,hist_len),            &
+            xvhist(NumOfABFCVs,hist_len),               &
             stat= alloc_failed )
 
     if( alloc_failed .ne. 0 ) then
@@ -397,6 +410,8 @@ subroutine abf_init_arrays
     ersthist(:)     = 0.0d0
     ekinhist(:)     = 0.0d0
     ekinlfhist(:)   = 0.0d0
+    crdhist(:,:,:)  = 0.0d0
+    xvhist(:,:)     = 0.0d0
 
 ! other setup ----------------------------------------------
 

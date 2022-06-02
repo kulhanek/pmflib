@@ -200,6 +200,9 @@ real(PMFDP),allocatable     :: cvave(:)
 real(PMFDP),allocatable     :: mfave(:)
 real(PMFDP),allocatable     :: sfac(:)              ! switching factors
 
+type(CVContextType)         :: cvcontextave
+real(PMFDP),allocatable     :: crdave(:,:)
+
 ! ------------------------------------------------------------------------------
 
 integer                     :: hist_len
@@ -213,6 +216,8 @@ real(PMFDP),allocatable     :: epothist(:)          ! history of Epot
 real(PMFDP),allocatable     :: ersthist(:)          ! history of Erst
 real(PMFDP),allocatable     :: ekinhist(:)          ! history of Ekin
 real(PMFDP),allocatable     :: ekinlfhist(:)        ! history of EkinLF
+real(PMFDP),allocatable     :: crdhist(:,:,:)       ! history of Cartesian coordinates
+real(PMFDP),allocatable     :: xvhist(:,:)          ! history of xi velocities
 
 ! ------------------------------------------------------------------------------
 
