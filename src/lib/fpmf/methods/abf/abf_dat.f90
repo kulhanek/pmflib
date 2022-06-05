@@ -72,6 +72,10 @@ integer     :: fhramp_max
 integer     :: fsmooth_kernel
 logical     :: fswitch2zero
 
+! 2p algorithm
+integer     :: abf_p2_vx
+integer     :: abf_p2_px
+
 ! server part ------------------------------------------------------------------
 logical                 :: fserver_enabled      ! is abf-server enabled?
 character(PMF_MAX_PATH) :: fserverkey           ! abf-server key file name

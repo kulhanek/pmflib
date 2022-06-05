@@ -53,37 +53,15 @@ subroutine abf_core_main
     select case(fmode)
         ! 3-points
         case(1)
-            call abf_core_update_history
             call abf_core_force_3pV1
         case(2)
-            call abf_core_update_history
-            call abf_core_force_3pV2
-        case(3)
-            call abf_core_update_history
             call abf_core_force_3pF
         ! 5-points
-        case(4)
-            call abf_core_update_history
+        case(3)
             call abf_core_force_5pV1
-        case(5)
-            call abf_core_update_history
-            call abf_core_force_5pV2
-        ! LF variants
-        case(6)
-            call abf_core_update_history
-            call abf_core_force_3pLF1
-        case(7)
-            call abf_core_update_history
-            call abf_core_force_2pV1
-        case(8)
-            call abf_core_update_history
-            call abf_core_force_2pV2
-        case(9)
-            call abf_core_update_history
-            call abf_core_force_2pV3
-        case(10)
-            call abf_core_update_history
-            call abf_core_force_2pV4
+        ! symmetry forms
+        case(4)
+            call abf_core_force_2pX
         case default
             call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented fmode in abf_core_main!')
     end select
@@ -108,12 +86,12 @@ subroutine abf_core_shake
     ! --------------------------------------------------------------------------
 
     select case(fmode)
-        case(1,2)
+        case(1)
             ! ignored
-        case(3)
+        case(2)
             ! get forces from SHAKE - abf_core_force_3pF
             shist(:,:,hist_len) = SHAKEFrc(:,:)
-        case(4,5)
+        case(3,4,5,6)
             ! ignored
         case default
             call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented fmode in abf_core_shake!')
@@ -126,7 +104,7 @@ end subroutine abf_core_shake
 ! apply ABF force and update history buffers
 !===============================================================================
 
-subroutine abf_core_update_history()
+subroutine abf_core_update_history_I()
 
     use pmf_utils
     use pmf_dat
@@ -150,8 +128,6 @@ subroutine abf_core_update_history()
         vhist(:,:,i)        = vhist(:,:,i+1)
         zdhist(:,:,:,i)     = zdhist(:,:,:,i+1)
         micfhist(:,i)       = micfhist(:,i+1)
-        fhist(:,:,i)        = fhist(:,:,i+1)
-        shist(:,:,i)        = shist(:,:,i+1)
     end do
 
     do i=1,NumOfABFCVs
@@ -161,8 +137,8 @@ subroutine abf_core_update_history()
     vhist(:,:,hist_len)    = Vel(:,:)
 
 ! shift ene
-    epothist(hist_len)      = PotEne - fepotaverage
-    ersthist(hist_len)      = PMFEne
+    epothist(hist_len)     = PotEne - fepotaverage
+    ersthist(hist_len)     = PMFEne
     select case(ftds_ekin_src)
         ! KE from velocities at full-step interpolated from velocities at half-step
         case(1)
@@ -190,12 +166,8 @@ subroutine abf_core_update_history()
                                                        +150.0d0*ekinlfhist(hist_len-2) +150.0d0*ekinlfhist(hist_len-3) &
                                                         -25.0d0*ekinlfhist(hist_len-4)   +3.0d0*ekinlfhist(hist_len-5))
             ekin                    = ekinhist(hist_len-3)
-        case(7)
-            ! suitable for LF variants
-            ekinhist(hist_len)      = KinEneLF - fekinaverage  ! shifted by -1/2dt
-            ekin                    = ekinhist(hist_len)
     case default
-        call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented ftds_ekin_src mode in abf_core_force_3pV!')
+        call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented ftds_ekin_src mode in abf_core_update_history_I!')
     end select
 
 ! calculate Z matrix and its inverse
@@ -230,7 +202,8 @@ subroutine abf_core_update_history()
             case(3)
                 call abf_accu_get_data_lsmooth(cvhist(:,hist_len),la)
             case default
-                call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented extrapolation/interpolation mode in abf_core_force_3pV!')
+                call pmf_utils_exit(PMF_OUT,1, &
+                     '[ABF] Not implemented extrapolation/interpolation mode in abf_core_update_history_I!')
         end select
 
         ! project abf force along coordinate
@@ -241,7 +214,6 @@ subroutine abf_core_update_history()
             end do
         end do
     end if
-    fhist(:,:,hist_len)  = Frc(:,:)     ! to be compatible with forces derived from velocities, which also contain the bias
     micfhist(:,hist_len) = la(:)
 
     if( frecord ) then
@@ -252,7 +224,120 @@ subroutine abf_core_update_history()
 
     return
 
-end subroutine abf_core_update_history
+end subroutine abf_core_update_history_I
+
+!===============================================================================
+! Subroutine:  abf_core_update_history_II
+! apply ABF force and update history buffers
+!===============================================================================
+
+subroutine abf_core_update_history_II()
+
+    use pmf_utils
+    use pmf_dat
+    use pmf_cvs
+    use abf_dat
+    use abf_accu
+    use pmf_timers
+
+    implicit none
+    integer                :: i,j,ci
+    real(PMFDP)            :: ekin
+    ! --------------------------------------------------------------------------
+
+! shift accuvalue history
+    do i=1,hist_len-1
+        cvhist(:,i)         = cvhist(:,i+1)
+        epothist(i)         = epothist(i+1)
+        ersthist(i)         = ersthist(i+1)
+        ekinhist(i)         = ekinhist(i+1)
+        ekinlfhist(i)       = ekinlfhist(i+1)
+        vhist(:,:,i)        = vhist(:,:,i+1)
+        micfhist(:,i)       = micfhist(:,i+1)
+    end do
+
+    do i=1,NumOfABFCVs
+        ci = ABFCVList(i)%cvindx
+        cvhist(i,hist_len) = CVContext%CVsValues(ci)
+    end do
+    vhist(:,:,hist_len)    = Vel(:,:)
+
+! shift ene
+    epothist(hist_len)     = PotEne - fepotaverage
+    ersthist(hist_len)     = PMFEne
+    select case(ftds_ekin_src)
+        ! KE from velocities at full-step interpolated from velocities at half-step
+        case(1)
+            ekinhist(hist_len-1)    = KinEneVV - fekinaverage   ! shifted by -dt
+            ekin                    = ekinhist(hist_len-1)
+        case(2)
+            ekinhist(hist_len-2)    = KinEneV4 - fekinaverage
+            ekin                    = ekinhist(hist_len-2)
+        case(3)
+            ekinhist(hist_len-3)    = KinEneV6 - fekinaverage
+            ekin                    = ekinhist(hist_len-3)
+        ! KE from interpolated KE at half-step
+        case(4)
+            ekinlfhist(hist_len)    = KinEneLF - fekinaverage   ! shifted by -1/2dt
+            ekinhist(hist_len-1)    = 0.5d0*(ekinlfhist(hist_len-0) + ekinlfhist(hist_len-1))
+            ekin                    = ekinhist(hist_len-1)
+        case(5)
+            ekinlfhist(hist_len)    = KinEneLF - fekinaverage
+            ekinhist(hist_len-2)    = (1.0d0/16.0d0)*(      -ekinlfhist(hist_len-0)+9.0d0*ekinlfhist(hist_len-1) &
+                                                      +9.0d0*ekinlfhist(hist_len-2)      -ekinlfhist(hist_len-3))
+            ekin                    = ekinhist(hist_len-2)
+        case(6)
+            ekinlfhist(hist_len)    = KinEneLF - fekinaverage
+            ekinhist(hist_len-3)    = (1.0d0/256.0d0)*(  +3.0d0*ekinlfhist(hist_len-0)  -25.0d0*ekinlfhist(hist_len-1) &
+                                                       +150.0d0*ekinlfhist(hist_len-2) +150.0d0*ekinlfhist(hist_len-3) &
+                                                        -25.0d0*ekinlfhist(hist_len-4)   +3.0d0*ekinlfhist(hist_len-5))
+            ekin                    = ekinhist(hist_len-3)
+    case default
+        call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented ftds_ekin_src mode in abf_core_update_history_II!')
+    end select
+
+! calculate Z matrix and its inverse
+    call abf_core_calc_Zmat(CVContext)
+
+! apply force filters
+    la(:) = 0.0d0
+    if( fapply_abf ) then
+        ! calculate abf force to be applied
+        select case(feimode)
+            case(0)
+                call abf_accu_get_data(cvhist(:,hist_len),la)
+            case(1)
+                call abf_accu_get_data_lramp(cvhist(:,hist_len),la)
+            case(2)
+                call pmf_timers_start_timer(PMFLIB_ABF_KS_TIMER)
+                    call abf_accu_get_data_ksmooth(cvhist(:,hist_len),la)
+                call pmf_timers_stop_timer(PMFLIB_ABF_KS_TIMER)
+            case(3)
+                call abf_accu_get_data_lsmooth(cvhist(:,hist_len),la)
+            case default
+                call pmf_utils_exit(PMF_OUT,1, &
+                     '[ABF] Not implemented extrapolation/interpolation mode in abf_core_update_history_II!')
+        end select
+
+        ! project abf force along coordinate
+        do i=1,NumOfABFCVs
+            ci = ABFCVList(i)%cvindx
+            do j=1,NumOfLAtoms
+                Frc(:,j) = Frc(:,j) + la(i) * CVContext%CVsDrvs(:,j,ci)
+            end do
+        end do
+    end if
+    micfhist(:,hist_len) = la(:)
+
+    if( frecord ) then
+        ! record time progress of data
+        call abf_accu_add_data_record_lf(cvhist(:,hist_len),micfhist(:,hist_len), &
+                                         epothist(hist_len),ersthist(hist_len),ekin)
+    end if
+
+    return
+
+end subroutine abf_core_update_history_II
 
 !===============================================================================
 ! Subroutine:  abf_core_force_3pV1
@@ -270,6 +355,8 @@ subroutine abf_core_force_3pV1()
     integer                :: i,j,m
     real(PMFDP)            :: f1,v1,v2
     ! --------------------------------------------------------------------------
+
+    call abf_core_update_history_I
 
     if( fstep .le. 2*hist_len ) return
 
@@ -297,47 +384,6 @@ subroutine abf_core_force_3pV1()
 end subroutine abf_core_force_3pV1
 
 !===============================================================================
-! Subroutine:  abf_core_force_3pV2
-! this is leap-frog ABF version, simplified algorithm
-! ICF from velocities + decomposition
-!===============================================================================
-
-subroutine abf_core_force_3pV2()
-
-    use pmf_dat
-    use pmf_cvs
-    use abf_dat
-
-    implicit none
-    integer                :: i,j,m
-    real(PMFDP)            :: f1,v1
-    ! --------------------------------------------------------------------------
-
-    if( fstep .le. 2*hist_len ) return
-
-    do i=1,NumOfABFCVs
-        f1 = 0.0d0
-        v1 = 0.0d0
-        do j=1,NumOfLAtoms
-            do m=1,3
-                ! force part
-                f1 = f1 + zdhist(m,j,i,hist_len-3) * (vhist(m,j,hist_len-2) - vhist(m,j,hist_len-3))
-                ! velocity part
-                v1 = v1 + (zdhist(m,j,i,hist_len-2)-zdhist(m,j,i,hist_len-4)) * &
-                          (vhist(m,j,hist_len-2) + vhist(m,j,hist_len-3))
-            end do
-        end do
-        pxif(i) = f1*ifdtx
-        pxiv(i) = 0.25d0*v1*ifdtx
-    end do
-
-    ! subroutine abf_core_register_rawdata(cvs,ficf,sicf,vicf,bicf,epot,erst,ekin)
-    call abf_core_register_rawdata(cvhist(:,hist_len-3),pxif,pxis,pxiv,micfhist(:,hist_len-3), &
-                           epothist(hist_len-3),ersthist(hist_len-3),ekinhist(hist_len-3))
-
-end subroutine abf_core_force_3pV2
-
-!===============================================================================
 ! Subroutine:  abf_core_force_3pF
 ! this is leap-frog ABF version, simplified algorithm
 ! ICF from forces + decomposition
@@ -356,6 +402,17 @@ subroutine abf_core_force_3pF()
     integer                :: i,j,m
     real(PMFDP)            :: v1,v2,s1,f1
     ! --------------------------------------------------------------------------
+
+    call abf_core_update_history_I
+
+! shift accuvalue history
+    do i=1,hist_len-1
+        fhist(:,:,i)    = fhist(:,:,i+1)
+        shist(:,:,i)    = shist(:,:,i+1)
+    end do
+
+    fhist(:,:,hist_len) = Frc(:,:)     ! to be compatible with forces derived from velocities, which also contain the bias
+    ! shist is added later
 
     if( fstep .le. 2*hist_len ) return
 
@@ -386,317 +443,6 @@ subroutine abf_core_force_3pF()
 end subroutine abf_core_force_3pF
 
 !===============================================================================
-! Subroutine:  abf_core_force_3pLF1
-! this is leap-frog ABF version, simplified algorithm
-! ICF from velocities + decomposition, ICF determined at half-step
-!===============================================================================
-
-subroutine abf_core_force_3pLF1()
-
-    use pmf_dat
-    use pmf_cvs
-    use abf_dat
-
-    implicit none
-    integer                :: i,j,m
-    real(PMFDP)            :: f1,f2,v1
-    real(PMFDP)            :: epot,erst,ekin
-    ! --------------------------------------------------------------------------
-
-    if( fstep .le. 2*hist_len ) return
-
-    do i=1,NumOfABFCVs
-        f1 = 0.0d0
-        f2 = 0.0d0
-        v1 = 0.0d0
-        do j=1,NumOfLAtoms
-            do m=1,3
-                ! force part
-                f1 = f1 + zdhist(m,j,i,hist_len-1) * (vhist(m,j,hist_len-0) - vhist(m,j,hist_len-1))
-                f2 = f2 + zdhist(m,j,i,hist_len-2) * (vhist(m,j,hist_len-1) - vhist(m,j,hist_len-2))
-                ! velocity part
-                v1 = v1 + (zdhist(m,j,i,hist_len-1)-zdhist(m,j,i,hist_len-2)) * vhist(m,j,hist_len-1)
-            end do
-        end do
-        pxif(i) = 0.5d0*(f1+f2)*ifdtx
-        pxiv(i) = v1*ifdtx
-    end do
-
-    cvave(:) = 0.5d0*(cvhist(:,hist_len-1)   + cvhist(:,hist_len-2))
-    mfave(:) = 0.5d0*(micfhist(:,hist_len-1) + micfhist(:,hist_len-2))
-
-    epot = 0.5d0*(epothist(hist_len-1) + epothist(hist_len-2))
-    erst = 0.5d0*(ersthist(hist_len-1) + ersthist(hist_len-2))
-    ekin = ekinhist(hist_len-1)
-
-    ! subroutine abf_core_register_rawdata(cvs,ficf,sicf,vicf,bicf,epot,erst,ekin)
-    call abf_core_register_rawdata(cvave,pxif,pxis,pxiv,mfave, &
-                           epot,erst,ekin)
-
-end subroutine abf_core_force_3pLF1
-
-!===============================================================================
-! Subroutine:  abf_core_force_2pV1
-! this is leap-frog ABF version, simplified algorithm
-! ICF from velocities + decomposition, ICF determined at half-step
-!===============================================================================
-
-subroutine abf_core_force_2pV1()
-
-    use pmf_dat
-    use pmf_cvs
-    use abf_dat
-    use pmf_timers
-
-    implicit none
-    integer                :: i,j,m,ki
-    real(PMFDP)            :: v
-    ! --------------------------------------------------------------------------
-
-! shift accuvalue history
-    do i=1,hist_len-1
-        crdhist(:,:,i)  = crdhist(:,:,i+1)
-        xvhist(:,i)     = xvhist(:,i+1)
-    end do
-    crdhist(:,:,hist_len) = Crd(:,:)
-
-    if( fstep .le. 2 ) return
-
-    crdave(:,:) = 0.5d0*(crdhist(:,:,hist_len) + crdhist(:,:,hist_len-1))
-
-    call pmf_timers_start_timer(PMFLIB_CVS_TIMER)
-        ! clear previous data
-        CVContextAve%CVsValues(:) = 0.0d0
-        CVContextAve%CVsDrvs(:,:,:) = 0.0d0
-
-        ! update CVs
-        do i=1,NumOfCVs
-            call CVList(i)%cv%calculate_cv(crdave,CVContextAve)
-        end do
-    call pmf_timers_stop_timer(PMFLIB_CVS_TIMER)
-
-! calculate Z matrix and its inverse
-    call abf_core_calc_Zmat(CVContextAve)
-
-    do i=1,NumOfABFCVs
-        v = 0.0d0
-        do j=1,NumOfLAtoms
-            do m=1,3
-                ki = ABFCVList(i)%cvindx
-                v = v + CVContextAve%CVsDrvs(m,j,ki)*Vel(m,j)
-            end do
-        end do
-        pxia(i) = v
-    end do
-
-    do i=1,NumOfABFCVs
-        v = 0.0d0
-        do j=1,NumOfABFCVs
-            v = fzinv(i,j)*pxia(j)
-        end do
-        xvhist(i,hist_len) = v
-    end do
-
-    if( fstep .le. 2*hist_len ) return
-
-    do i=1,NumOfABFCVs
-        pxif(i) = (xvhist(i,hist_len-2) - xvhist(i,hist_len-3))*ifdtx
-        pxiv(i) = 0.0d0
-    end do
-
-    !write(4789,*) fstep,pxia(1),xvhist(1,hist_len),pxiv(1),pxif(1),pxis(1)
-
-    ! subroutine abf_core_register_rawdata(cvs,ficf,sicf,vicf,bicf,epot,erst,ekin)
-    call abf_core_register_rawdata(cvhist(:,hist_len-3),pxif,pxis,pxiv,micfhist(:,hist_len-3), &
-                           epothist(hist_len-3),ersthist(hist_len-3),ekinhist(hist_len-3))
-
-end subroutine abf_core_force_2pV1
-
-!===============================================================================
-! Subroutine:  abf_core_force_2pV2
-! this is leap-frog ABF version, simplified algorithm
-! ICF from velocities + decomposition, ICF determined at half-step
-!===============================================================================
-
-subroutine abf_core_force_2pV2()
-
-    use pmf_dat
-    use pmf_cvs
-    use abf_dat
-    use pmf_timers
-
-    implicit none
-    integer                :: i,j,m,ki
-    real(PMFDP)            :: v
-    ! --------------------------------------------------------------------------
-
-! shift accuvalue history
-    do i=1,hist_len-1
-        xvhist(:,i)     = xvhist(:,i+1)
-    end do
-
-    do i=1,NumOfABFCVs
-        v = 0.0d0
-        do j=1,NumOfLAtoms
-            do m=1,3
-                ki = ABFCVList(i)%cvindx
-                v = v + CVContext%CVsDrvs(m,j,ki)*Vel(m,j)
-            end do
-        end do
-        pxia(i) = v
-    end do
-
-    do i=1,NumOfABFCVs
-        v = 0.0d0
-        do j=1,NumOfABFCVs
-            v = fzinv(i,j)*pxia(j)
-        end do
-        xvhist(i,hist_len-1) = xvhist(i,hist_len-1) + v*0.5d0 ! complete previous
-        xvhist(i,hist_len)   = v*0.5d0                        ! half of current
-    end do
-
-    if( fstep .le. 2*hist_len ) return
-
-    ! write(12548,*) fstep-2, xvhist(1,hist_len-2)
-
-    do i=1,NumOfABFCVs
-        pxif(i) = 0.5d0*(xvhist(i,hist_len-2) - xvhist(i,hist_len-4))*ifdtx
-        pxiv(i) = 0.0d0
-    end do
-
-    !write(4789,*) fstep,pxia(1),xvhist(1,hist_len),pxiv(1),pxif(1),pxis(1)
-
-    ! subroutine abf_core_register_rawdata(cvs,ficf,sicf,vicf,bicf,epot,erst,ekin)
-    call abf_core_register_rawdata(cvhist(:,hist_len-3),pxif,pxis,pxiv,micfhist(:,hist_len-3), &
-                           epothist(hist_len-3),ersthist(hist_len-3),ekinhist(hist_len-3))
-
-end subroutine abf_core_force_2pV2
-
-!===============================================================================
-! Subroutine:  abf_core_force_2pV2
-! this is leap-frog ABF version, simplified algorithm
-! ICF from velocities + decomposition, ICF determined at half-step
-!===============================================================================
-
-subroutine abf_core_force_2pV3()
-
-    use pmf_dat
-    use pmf_cvs
-    use abf_dat
-    use pmf_timers
-
-    implicit none
-    integer                :: i,j,m,ki
-    real(PMFDP)            :: v
-    ! --------------------------------------------------------------------------
-
-! shift accuvalue history
-    do i=1,hist_len-1
-        xvhist(:,i)     = xvhist(:,i+1)
-    end do
-
-    do i=1,NumOfABFCVs
-        v = 0.0d0
-        do j=1,NumOfLAtoms
-            do m=1,3
-                ki = ABFCVList(i)%cvindx
-                v = v + CVContext%CVsDrvs(m,j,ki)*Vel(m,j)
-            end do
-        end do
-        pxia(i) = v
-    end do
-
-    do i=1,NumOfABFCVs
-        v = 0.0d0
-        do j=1,NumOfABFCVs
-            v = fzinv(i,j)*pxia(j)
-        end do
-        xvhist(i,hist_len-1) = xvhist(i,hist_len-1) + v*0.5d0 ! complete previous
-        xvhist(i,hist_len)   = v*0.5d0                        ! half of current
-    end do
-
-    if( fstep .le. 2*hist_len ) return
-
-    ! write(12548,*) fstep-2, xvhist(1,hist_len-2)
-
-    do i=1,NumOfABFCVs
-        pxif(i) = (1.0d0/12.0d0)*(      -xvhist(i,hist_len-1) + 8.0d0*xvhist(i,hist_len-2) &
-                                  -8.0d0*xvhist(i,hist_len-4)       + xvhist(i,hist_len-5))*ifdtx
-        pxiv(i) = 0.0d0
-    end do
-
-    !write(4789,*) fstep,pxia(1),xvhist(1,hist_len),pxiv(1),pxif(1),pxis(1)
-
-    ! subroutine abf_core_register_rawdata(cvs,ficf,sicf,vicf,bicf,epot,erst,ekin)
-    call abf_core_register_rawdata(cvhist(:,hist_len-3),pxif,pxis,pxiv,micfhist(:,hist_len-3), &
-                           epothist(hist_len-3),ersthist(hist_len-3),ekinhist(hist_len-3))
-
-end subroutine abf_core_force_2pV3
-
-!===============================================================================
-! Subroutine:  abf_core_force_2pV4
-! this is leap-frog ABF version, simplified algorithm
-! ICF from velocities + decomposition, ICF determined at half-step
-!===============================================================================
-
-subroutine abf_core_force_2pV4()
-
-    use pmf_dat
-    use pmf_cvs
-    use abf_dat
-    use pmf_timers
-
-    implicit none
-    integer                :: i,j,m,ki
-    real(PMFDP)            :: v
-    ! --------------------------------------------------------------------------
-
-! shift accuvalue history
-    do i=1,hist_len-1
-        xvhist(:,i)     = xvhist(:,i+1)
-    end do
-
-    do i=1,NumOfABFCVs
-        v = 0.0d0
-        do j=1,NumOfLAtoms
-            do m=1,3
-                ki = ABFCVList(i)%cvindx
-                v = v + CVContext%CVsDrvs(m,j,ki)*Vel(m,j)
-            end do
-        end do
-        pxia(i) = v
-    end do
-
-    do i=1,NumOfABFCVs
-        v = 0.0d0
-        do j=1,NumOfABFCVs
-            v = fzinv(i,j)*pxia(j)
-        end do
-        xvhist(i,hist_len-3) = xvhist(i,hist_len-3) - (1.0d0/16.0d0)*v  ! completed
-        xvhist(i,hist_len-2) = xvhist(i,hist_len-2) + (9.0d0/16.0d0)*v
-        xvhist(i,hist_len-1) = xvhist(i,hist_len-1) + (9.0d0/16.0d0)*v
-        xvhist(i,hist_len-0) = (1.0d0/16.0d0)*v                         ! initiation
-    end do
-
-    if( fstep .le. 2*hist_len ) return
-
-    do i=1,NumOfABFCVs
-        pxif(i) = (1.0d0/12.0d0)*(      -xvhist(i,hist_len-3) + 8.0d0*xvhist(i,hist_len-4) &
-                                  -8.0d0*xvhist(i,hist_len-6)       + xvhist(i,hist_len-7))*ifdtx
-        pxiv(i) = 0.0d0
-    end do
-
-    !write(12548,*) fstep-3, xvhist(1,hist_len-3), pxif(1)
-
-    !write(4789,*) fstep,pxia(1),xvhist(1,hist_len),pxiv(1),pxif(1),pxis(1)
-
-    ! subroutine abf_core_register_rawdata(cvs,ficf,sicf,vicf,bicf,epot,erst,ekin)
-    call abf_core_register_rawdata(cvhist(:,hist_len-5),pxif,pxis,pxiv,micfhist(:,hist_len-5), &
-                           epothist(hist_len-5),ersthist(hist_len-5),ekinhist(hist_len-5))
-
-end subroutine abf_core_force_2pV4
-
-!===============================================================================
 ! Subroutine:  abf_core_force_5pV1
 ! this is leap-frog ABF version, simplified algorithm
 ! ICF from velocities + decomposition
@@ -712,6 +458,8 @@ subroutine abf_core_force_5pV1()
     integer                :: i,j,m
     real(PMFDP)            :: f1,v1,v2,v3,v4
     ! --------------------------------------------------------------------------
+
+    call abf_core_update_history_I
 
     if( fstep .le. 2*hist_len ) return
 
@@ -744,48 +492,91 @@ subroutine abf_core_force_5pV1()
 end subroutine abf_core_force_5pV1
 
 !===============================================================================
-! Subroutine:  abf_core_force_5pV2
+! Subroutine:  abf_core_force_2pX
 ! this is leap-frog ABF version, simplified algorithm
-! ICF from velocities + decomposition
+! symmetrical variant: 2+3
 !===============================================================================
 
-subroutine abf_core_force_5pV2()
+subroutine abf_core_force_2pX()
 
     use pmf_dat
     use pmf_cvs
     use abf_dat
+    use pmf_timers
 
     implicit none
-    integer                :: i,j,m
-    real(PMFDP)            :: f1,v1
+    integer                :: i,j,m,ki
+    real(PMFDP)            :: v
     ! --------------------------------------------------------------------------
 
-    if( fstep .le. 2*hist_len ) return
+    call abf_core_update_history_II
+
+! shift accuvalue history
+    do i=1,hist_len-1
+        xvhist(:,i)     = xvhist(:,i+1)
+    end do
 
     do i=1,NumOfABFCVs
-        f1 = 0.0d0
-        v1 = 0.0d0
+        v = 0.0d0
         do j=1,NumOfLAtoms
             do m=1,3
-                ! force part
-                f1 = f1 + zdhist(m,j,i,hist_len-3) * (- vhist(m,j,hist_len-1) + 27.0d0*vhist(m,j,hist_len-2) &
-                                                      - 27.0d0*vhist(m,j,hist_len-3) + vhist(m,j,hist_len-4))
-                ! velocity part
-                v1 = v1 + (     - zdhist(m,j,i,hist_len-1) + 8.0d0*zdhist(m,j,i,hist_len-2) &
-                           -8.0d0*zdhist(m,j,i,hist_len-4)       + zdhist(m,j,i,hist_len-5) ) * &
-                           (       - vhist(m,j,hist_len-1) + 9.0d0*vhist(m,j,hist_len-2) &
-                             + 9.0d0*vhist(m,j,hist_len-3)       - vhist(m,j,hist_len-4))
+                ki = ABFCVList(i)%cvindx
+                v = v + CVContext%CVsDrvs(m,j,ki)*Vel(m,j)
             end do
         end do
-        pxif(i) = (1.0d0/24.0d0)*f1*ifdtx
-        pxiv(i) = (1.0d0/(12.0d0*16.0d0))*v1*ifdtx
+        pxia(i) = v
+    end do
+
+    do i=1,NumOfABFCVs
+        v = 0.0d0
+        do j=1,NumOfABFCVs
+            v = fzinv(i,j)*pxia(j)
+        end do
+        select case(abf_p2_vx)
+        case(2)
+            xvhist(i,hist_len-1) = xvhist(i,hist_len-1) + v*0.5d0               ! completed
+            xvhist(i,hist_len-0) = v*0.5d0                                      ! initiation
+        case(4)
+            xvhist(i,hist_len-3) = xvhist(i,hist_len-3) - (1.0d0/16.0d0)*v      ! completed
+            xvhist(i,hist_len-2) = xvhist(i,hist_len-2) + (9.0d0/16.0d0)*v
+            xvhist(i,hist_len-1) = xvhist(i,hist_len-1) + (9.0d0/16.0d0)*v
+            xvhist(i,hist_len-0) = - (1.0d0/16.0d0)*v                           ! initiation
+        case(6)
+            xvhist(i,hist_len-5) = xvhist(i,hist_len-5) + (3.0d0/256.0d0)*v     ! completed
+            xvhist(i,hist_len-4) = xvhist(i,hist_len-4) - (25.0d0/256.0d0)*v
+            xvhist(i,hist_len-3) = xvhist(i,hist_len-3) + (150.0d0/256.0d0)*v
+            xvhist(i,hist_len-2) = xvhist(i,hist_len-2) + (150.0d0/256.0d0)*v
+            xvhist(i,hist_len-1) = xvhist(i,hist_len-1) - (25.0d0/256.0d0)*v
+            xvhist(i,hist_len-0) = + (3.0d0/256.0d0)*v                          ! initiation
+        case default
+            call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented abf_p2_vx in abf_core_force_2pX!')
+        end select
+    end do
+
+    if( fstep .le.14 ) return
+
+    do i=1,NumOfABFCVs
+        select case(abf_p2_px)
+        case(3)
+            pxif(i) = 0.5d0*(xvhist(i,hist_len-9) - xvhist(i,hist_len-11))*ifdtx
+        case(5)
+            pxif(i) = (1.0d0/12.0d0)*(      -xvhist(i,hist_len-8) + 8.0d0*xvhist(i,hist_len-9) &
+                                      -8.0d0*xvhist(i,hist_len-11)      + xvhist(i,hist_len-12))*ifdtx
+        case(7)
+            pxif(i) = (1.0d0/60.0d0)*(        xvhist(i,hist_len-7)  -9.0d0*xvhist(i,hist_len-8) &
+                                      +45.0d0*xvhist(i,hist_len-9) -45.0d0*xvhist(i,hist_len-11) &
+                                       +9.0d0*xvhist(i,hist_len-12)        -xvhist(i,hist_len-13))*ifdtx
+        case default
+            call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented abf_p2_px in abf_core_force_2pX!')
+        end select
+        pxiv(i) = 0.0d0
     end do
 
     ! subroutine abf_core_register_rawdata(cvs,ficf,sicf,vicf,bicf,epot,erst,ekin)
-    call abf_core_register_rawdata(cvhist(:,hist_len-3),pxif,pxis,pxiv,micfhist(:,hist_len-3), &
-                           epothist(hist_len-3),ersthist(hist_len-3),ekinhist(hist_len-3))
+    call abf_core_register_rawdata(cvhist(:,hist_len-10),pxif,pxis,pxiv,micfhist(:,hist_len-10), &
+                           epothist(hist_len-10),ersthist(hist_len-10),ekinhist(hist_len-10))
 
-end subroutine abf_core_force_5pV2
+end subroutine abf_core_force_2pX
 
 !===============================================================================
 ! Subroutine:  abf_core_register_rawdata

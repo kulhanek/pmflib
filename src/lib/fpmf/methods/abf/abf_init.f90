@@ -115,6 +115,9 @@ subroutine abf_init_dat
 
     ftds_ekin_scale = 1.0d0
 
+    abf_p2_vx = 4
+    abf_p2_px = 5
+
 end subroutine abf_init_dat
 
 !===============================================================================
@@ -162,25 +165,15 @@ subroutine abf_init_print_summary
     write(PMF_OUT,130)  ' ABF mode (fmode)                        : ', fmode
     select case(fmode)
     case(1)
-    write(PMF_OUT,120)  '      |-> Simplified ABF algorithm (3pV1)'
+    write(PMF_OUT,120)  '      |-> ABF algorithm (3pV1)'
     case(2)
-    write(PMF_OUT,120)  '      |-> Simplified ABF algorithm (3pV2)'
+    write(PMF_OUT,120)  '      |-> ABF algorithm (3pF)'
     case(3)
-    write(PMF_OUT,120)  '      |-> Simplified ABF algorithm (3pF)'
+    write(PMF_OUT,120)  '      |-> ABF algorithm (5pV1)'
     case(4)
-    write(PMF_OUT,120)  '      |-> Simplified ABF algorithm (5pV1)'
-    case(5)
-    write(PMF_OUT,120)  '      |-> Simplified ABF algorithm (5pV2)'
-    case(6)
-    write(PMF_OUT,120)  '      |-> Simplified ABF algorithm (3pLF1)'
-    case(7)
-    write(PMF_OUT,120)  '      |-> Simplified ABF algorithm (2pV1)'
-    case(8)
-    write(PMF_OUT,120)  '      |-> Simplified ABF algorithm (2pV2)'
-    case(9)
-    write(PMF_OUT,120)  '      |-> Simplified ABF algorithm (2pV3)'
-    case(10)
-    write(PMF_OUT,120)  '      |-> Simplified ABF algorithm (2pV4)'
+    write(PMF_OUT,120)  '      |-> ABF algorithm (2pX)'
+    write(PMF_OUT,130)  '          Velocity order                 : ', abf_p2_vx
+    write(PMF_OUT,130)  '          Momenta order                  : ', abf_p2_px
     case default
         call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown fmode in abf_init_print_summary!')
     end select
@@ -250,8 +243,6 @@ subroutine abf_init_print_summary
     write(PMF_OUT,120)  '      |-> LFKE4 (leap-frog KE - interpolated KE4)'
     case(6)
     write(PMF_OUT,120)  '      |-> LFKE6 (leap-frog KE - interpolated KE6)'
-    case(7)
-    write(PMF_OUT,120)  '      |-> LF (leap-frog KE at 1/2dt)'
     case default
     call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown kinetic energy source in abf_init_print_summary!')
     end select
@@ -375,15 +366,11 @@ subroutine abf_init_arrays
 
 ! history buffers ------------------------------------------
     select case(fmode)
-        case(1,2,3,4,5)
+        case(1,2,3)
             ! for V6 interpolation we need at least 6 data points
             hist_len = 6
-        case(6)
-            hist_len = 3
-        case(7,8,9)
-            hist_len = 6
-        case(10)
-            hist_len = 8
+        case(4)
+            hist_len = 14
         case default
             call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented fmode in abf_init_arrays!')
     end select

@@ -77,6 +77,8 @@ subroutine abf_control_read_abf(prm_fin)
         return
     end if
 
+    call pmf_ctrl_read_integer(prm_fin,'abf_p2_vx',abf_p2_vx,'I12')
+    call pmf_ctrl_read_integer(prm_fin,'abf_p2_px',abf_p2_px,'I12')
 
     call pmf_ctrl_read_logical(prm_fin,'fapply_abf',fapply_abf)
     call pmf_ctrl_read_logical(prm_fin,'fapply_mask',fapply_mask)
