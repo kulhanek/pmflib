@@ -370,7 +370,7 @@ subroutine abf_init_arrays
             ! for V6 interpolation we need at least 6 data points
             hist_len = 6
         case(4)
-            hist_len = 14
+            hist_len = 10
         case default
             call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented fmode in abf_init_arrays!')
     end select
@@ -388,6 +388,7 @@ subroutine abf_init_arrays
             ekinlfhist(hist_len),                       &
             crdhist(3,NumOfLAtoms,hist_len),            &
             xvhist(NumOfABFCVs,hist_len),               &
+            xvhist2(NumOfABFCVs,hist_len),               &
             stat= alloc_failed )
 
     if( alloc_failed .ne. 0 ) then
@@ -407,6 +408,7 @@ subroutine abf_init_arrays
     ekinlfhist(:)   = 0.0d0
     crdhist(:,:,:)  = 0.0d0
     xvhist(:,:)     = 0.0d0
+    xvhist2(:,:)    = 0.0d0
 
 ! other setup ----------------------------------------------
 

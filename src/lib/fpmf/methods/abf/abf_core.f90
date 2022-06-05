@@ -514,6 +514,7 @@ subroutine abf_core_force_2pX()
 ! shift accuvalue history
     do i=1,hist_len-1
         xvhist(:,i)     = xvhist(:,i+1)
+        xvhist2(:,i)    = xvhist2(:,i+1)
     end do
 
     do i=1,NumOfABFCVs
@@ -532,40 +533,36 @@ subroutine abf_core_force_2pX()
         do j=1,NumOfABFCVs
             v = fzinv(i,j)*pxia(j)
         end do
+        xvhist2(i,hist_len) = v
+
         select case(abf_p2_vx)
         case(2)
-            xvhist(i,hist_len-1) = xvhist(i,hist_len-1) + v*0.5d0               ! completed
-            xvhist(i,hist_len-0) = v*0.5d0                                      ! initiation
+            xvhist(i,hist_len-1) = 0.5d0*(xvhist2(i,hist_len-0)+xvhist2(i,hist_len-1))
         case(4)
-            xvhist(i,hist_len-3) = xvhist(i,hist_len-3) - (1.0d0/16.0d0)*v      ! completed
-            xvhist(i,hist_len-2) = xvhist(i,hist_len-2) + (9.0d0/16.0d0)*v
-            xvhist(i,hist_len-1) = xvhist(i,hist_len-1) + (9.0d0/16.0d0)*v
-            xvhist(i,hist_len-0) = - (1.0d0/16.0d0)*v                           ! initiation
+            xvhist(i,hist_len-2) = (1.0d0/16.0d0)*(      -xvhist2(i,hist_len-0)+9.0d0*xvhist2(i,hist_len-1)&
+                                                   +9.0d0*xvhist2(i,hist_len-2)      -xvhist2(i,hist_len-3))
         case(6)
-            xvhist(i,hist_len-5) = xvhist(i,hist_len-5) + (3.0d0/256.0d0)*v     ! completed
-            xvhist(i,hist_len-4) = xvhist(i,hist_len-4) - (25.0d0/256.0d0)*v
-            xvhist(i,hist_len-3) = xvhist(i,hist_len-3) + (150.0d0/256.0d0)*v
-            xvhist(i,hist_len-2) = xvhist(i,hist_len-2) + (150.0d0/256.0d0)*v
-            xvhist(i,hist_len-1) = xvhist(i,hist_len-1) - (25.0d0/256.0d0)*v
-            xvhist(i,hist_len-0) = + (3.0d0/256.0d0)*v                          ! initiation
+            xvhist(i,hist_len-3) = (1.0d0/256.0d0)*(  +3.0d0*xvhist2(i,hist_len-0) -25.0d0*xvhist2(i,hist_len-1)&
+                                                    +150.0d0*xvhist2(i,hist_len-2)+150.0d0*xvhist2(i,hist_len-3)&
+                                                     -25.0d0*xvhist2(i,hist_len-4)  +3.0d0*xvhist2(i,hist_len-5))
         case default
             call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented abf_p2_vx in abf_core_force_2pX!')
         end select
     end do
 
-    if( fstep .le.14 ) return
+    if( fstep .le. 10 ) return
 
     do i=1,NumOfABFCVs
         select case(abf_p2_px)
         case(3)
-            pxif(i) = 0.5d0*(xvhist(i,hist_len-9) - xvhist(i,hist_len-11))*ifdtx
+            pxif(i) = 0.5d0*(xvhist(i,hist_len-5) - xvhist(i,hist_len-7))*ifdtx
         case(5)
-            pxif(i) = (1.0d0/12.0d0)*(      -xvhist(i,hist_len-8) + 8.0d0*xvhist(i,hist_len-9) &
-                                      -8.0d0*xvhist(i,hist_len-11)      + xvhist(i,hist_len-12))*ifdtx
+            pxif(i) = (1.0d0/12.0d0)*(      -xvhist(i,hist_len-4) + 8.0d0*xvhist(i,hist_len-5) &
+                                      -8.0d0*xvhist(i,hist_len-7)      + xvhist(i,hist_len-8))*ifdtx
         case(7)
-            pxif(i) = (1.0d0/60.0d0)*(        xvhist(i,hist_len-7)  -9.0d0*xvhist(i,hist_len-8) &
-                                      +45.0d0*xvhist(i,hist_len-9) -45.0d0*xvhist(i,hist_len-11) &
-                                       +9.0d0*xvhist(i,hist_len-12)        -xvhist(i,hist_len-13))*ifdtx
+            pxif(i) = (1.0d0/60.0d0)*(        xvhist(i,hist_len-3)  -9.0d0*xvhist(i,hist_len-4) &
+                                      +45.0d0*xvhist(i,hist_len-5) -45.0d0*xvhist(i,hist_len-7) &
+                                       +9.0d0*xvhist(i,hist_len-8)        -xvhist(i,hist_len-9))*ifdtx
         case default
             call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented abf_p2_px in abf_core_force_2pX!')
         end select
@@ -573,8 +570,8 @@ subroutine abf_core_force_2pX()
     end do
 
     ! subroutine abf_core_register_rawdata(cvs,ficf,sicf,vicf,bicf,epot,erst,ekin)
-    call abf_core_register_rawdata(cvhist(:,hist_len-10),pxif,pxis,pxiv,micfhist(:,hist_len-10), &
-                           epothist(hist_len-10),ersthist(hist_len-10),ekinhist(hist_len-10))
+    call abf_core_register_rawdata(cvhist(:,hist_len-6),pxif,pxis,pxiv,micfhist(:,hist_len-6), &
+                           epothist(hist_len-6),ersthist(hist_len-6),ekinhist(hist_len-6))
 
 end subroutine abf_core_force_2pX
 

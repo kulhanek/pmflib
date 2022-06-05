@@ -222,6 +222,7 @@ real(PMFDP),allocatable     :: ekinhist(:)          ! history of Ekin
 real(PMFDP),allocatable     :: ekinlfhist(:)        ! history of EkinLF
 real(PMFDP),allocatable     :: crdhist(:,:,:)       ! history of Cartesian coordinates
 real(PMFDP),allocatable     :: xvhist(:,:)          ! history of xi velocities
+real(PMFDP),allocatable     :: xvhist2(:,:)         ! history of xi velocities
 
 ! ------------------------------------------------------------------------------
 
