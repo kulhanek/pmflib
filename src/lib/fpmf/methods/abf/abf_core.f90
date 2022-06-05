@@ -502,7 +502,7 @@ subroutine abf_core_force_2pX()
     use pmf_dat
     use pmf_cvs
     use abf_dat
-    use pmf_timers
+    use pmf_utils
 
     implicit none
     integer                :: i,j,m,ki
