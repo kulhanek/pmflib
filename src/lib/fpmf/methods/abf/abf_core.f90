@@ -538,6 +538,9 @@ subroutine abf_core_force_2pX()
         select case(abf_p2_vx)
         case(2)
             xvhist(i,hist_len-1) = 0.5d0*(xvhist2(i,hist_len-0)+xvhist2(i,hist_len-1))
+        case(3)
+            xvhist(i,hist_len-1) = (1.0d0/8.0d0)*(+3.0d0*xvhist2(i,hist_len-0)+6.0d0*xvhist2(i,hist_len-1) &
+                                                        -xvhist2(i,hist_len-2))
         case(4)
             xvhist(i,hist_len-2) = (1.0d0/16.0d0)*(      -xvhist2(i,hist_len-0)+9.0d0*xvhist2(i,hist_len-1)&
                                                    +9.0d0*xvhist2(i,hist_len-2)      -xvhist2(i,hist_len-3))
@@ -556,6 +559,9 @@ subroutine abf_core_force_2pX()
         select case(abf_p2_px)
         case(3)
             pxif(i) = 0.5d0*(xvhist(i,hist_len-5) - xvhist(i,hist_len-7))*ifdtx
+        case(4)
+            pxif(i) = (1.0d0/6.0d0)*( +2.0d0*xvhist(i,hist_len-5) + 3.0d0*xvhist(i,hist_len-6) &
+                                      -6.0d0*xvhist(i,hist_len-7)      + xvhist(i,hist_len-8))*ifdtx
         case(5)
             pxif(i) = (1.0d0/12.0d0)*(      -xvhist(i,hist_len-4) + 8.0d0*xvhist(i,hist_len-5) &
                                       -8.0d0*xvhist(i,hist_len-7)      + xvhist(i,hist_len-8))*ifdtx
