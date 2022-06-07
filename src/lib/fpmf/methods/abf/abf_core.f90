@@ -787,14 +787,13 @@ subroutine abf_core_force_2pZ()
         case(3)
             pxih(i) = (xvhist(i,hist_len-5) - xvhist(i,hist_len-6))*ifdtx
         case default
-            call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented abf_p2_px in abf_core_force_2pX!')
+            call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented abf_p2_px in abf_core_force_2pZ!')
         end select
-        pxiv(i) = 0.0d0
     end do
 
     cvave(:) = 0.5d0*(cvhist(:,hist_len-5)+cvhist(:,hist_len-6))
 
-    call abf_accu_add_data_online_half(cvave(:),pxih,ekinlfhist(hist_len-5))
+    call abf_accu_add_data_online_half(cvave(:),pxih,ekinlfhist(hist_len-4))
 
 
 end subroutine abf_core_force_2pZ
