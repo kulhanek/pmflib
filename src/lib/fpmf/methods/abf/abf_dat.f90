@@ -215,6 +215,7 @@ real(PMFDP),allocatable     :: fhist(:,:,:)         ! history of forces (potenti
 real(PMFDP),allocatable     :: shist(:,:,:)         ! history of forces (shake)
 real(PMFDP),allocatable     :: vhist(:,:,:)         ! history of velocities
 real(PMFDP),allocatable     :: zdhist(:,:,:,:)      ! history of ZD
+real(PMFDP),allocatable     :: fzinvhist(:,:,:)     ! hostory of fzinv
 real(PMFDP),allocatable     :: micfhist(:,:)        ! history of ABF bias
 real(PMFDP),allocatable     :: epothist(:)          ! history of Epot
 real(PMFDP),allocatable     :: ersthist(:)          ! history of Erst
