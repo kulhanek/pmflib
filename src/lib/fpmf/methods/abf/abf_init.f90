@@ -178,6 +178,10 @@ subroutine abf_init_print_summary
     write(PMF_OUT,120)  '      |-> ABF algorithm (2pH)'
     write(PMF_OUT,130)  '          Velocity order                 : ', abf_p2_vx
     write(PMF_OUT,130)  '          Momenta order                  : ', abf_p2_px
+    case(6)
+    write(PMF_OUT,120)  '      |-> ABF algorithm (2pZ)'
+    write(PMF_OUT,130)  '          Velocity order                 : ', abf_p2_vx
+    write(PMF_OUT,130)  '          Momenta order                  : ', abf_p2_px
     case default
         call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown fmode in abf_init_print_summary!')
     end select
@@ -331,6 +335,7 @@ subroutine abf_init_arrays
             la(NumOfABFCVs),                    &
             pxia(NumOfABFCVs),                  &
             pxif(NumOfABFCVs),                  &
+            pxih(NumOfABFCVs),                  &
             pxis(NumOfABFCVs),                  &
             pxiv(NumOfABFCVs),                  &
             cvave(NumOfABFCVs),                 &
@@ -350,6 +355,7 @@ subroutine abf_init_arrays
     la(:)       = 0.0d0
     pxia(:)     = 0.0d0
     pxif(:)     = 0.0d0
+    pxih(:)     = 0.0d0
     pxis(:)     = 0.0d0
     pxiv(:)     = 0.0d0
     fz(:,:)     = 0.0d0
@@ -378,6 +384,8 @@ subroutine abf_init_arrays
         case(4)
             hist_len = 10
         case(5)
+            hist_len = 10
+        case(6)
             hist_len = 10
         case default
             call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented fmode in abf_init_arrays!')

@@ -136,6 +136,11 @@ void CABFProxy_mTdS::SetType(EABFTdSType type)
         break;
 
     // -------------------
+        case(ABF_TdS_HK):
+            Provide = "ABF -TdS(x) - HK";
+        break;
+
+    // -------------------
         default:
             RUNTIME_ERROR("unsupported type");
     }
@@ -175,6 +180,8 @@ double CABFProxy_mTdS::GetValue(int ibin,int icv,EProxyRealm realm) const
 
     if( Type == ABF_TdS_HH ) {
         nsamples = Accu->GetData("NSAMPLES",ibin);
+    } else if( Type == ABF_TdS_HK  ) {
+        nsamples = Accu->GetData("NTDS_H",ibin);
     } else {
         nsamples = Accu->GetData("NTDS",ibin);
     }
@@ -309,6 +316,13 @@ double CABFProxy_mTdS::GetValue(int ibin,int icv,EProxyRealm realm) const
             c11     = Accu->GetData("C11TDSLK",ibin,icv)/nsamples;
             m2icf   = Accu->GetData("M2TDSLX",ibin,icv);
             m2ene   = Accu->GetData("M2TDSEKIN",ibin);
+        break;
+
+    // -------------------
+        case(ABF_TdS_HK):
+            c11     = Accu->GetData("C11TDSHK_H",ibin,icv)/nsamples;
+            m2icf   = Accu->GetData("M2TDSHX_H",ibin,icv);
+            m2ene   = Accu->GetData("M2TDSEKIN_H",ibin);
         break;
 
     // -------------------

@@ -302,6 +302,12 @@ bool CPMFEnergyIntegrate::Run(void)
             lproxy = proxy;
 
     // -----------------------------------------------
+        } else if ( Options.GetOptRealm() == "-TdS_HK" ) {
+            CABFProxy_mTdS_Ptr proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
+            proxy->SetType(ABF_TdS_HK);
+            lproxy = proxy;
+
+    // -----------------------------------------------
         } else if ( Options.GetOptRealm() == "-TdS_VP" ) {
             CABFProxy_mTdS_Ptr proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
             proxy->SetType(ABF_TdS_VP);

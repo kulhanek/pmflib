@@ -165,6 +165,13 @@ type,extends(PMFAccuType) :: ABFAccuType
     real(PMFDP),pointer    :: c11tdsbr(:,:)
     real(PMFDP),pointer    :: c11tdsbk(:,:)
 
+    real(PMFDP),pointer    :: ntds_h(:)                   ! number of hits into bins
+    real(PMFDP),pointer    :: mtdsekin_h(:)               ! mean of kin energy
+    real(PMFDP),pointer    :: m2tdsekin_h(:)              ! M2 of kin energy
+    real(PMFDP),pointer    :: mtdshx_h(:,:)               ! mean of ICF - force
+    real(PMFDP),pointer    :: m2tdshx_h(:,:)              ! M2 of ICF - force
+    real(PMFDP),pointer    :: c11tdshk_h(:,:)
+
 ! time recording for post-processing
     real(PMFDP),pointer    :: tcvs(:,:)
     real(PMFDP),pointer    :: tbicf(:,:)
@@ -198,6 +205,7 @@ integer,allocatable         :: indx(:)              ! for LU decomposition
 real(PMFDP),allocatable     :: la(:)
 real(PMFDP),allocatable     :: pxia(:)
 real(PMFDP),allocatable     :: pxif(:)
+real(PMFDP),allocatable     :: pxih(:)
 real(PMFDP),allocatable     :: pxis(:)
 real(PMFDP),allocatable     :: pxiv(:)
 real(PMFDP),allocatable     :: cvave(:)
