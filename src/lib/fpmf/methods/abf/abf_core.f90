@@ -143,6 +143,9 @@ subroutine abf_core_update_history_I()
     ersthist(hist_len)     = PMFEne
     select case(ftds_ekin_src)
         ! KE from velocities at full-step interpolated from velocities at half-step
+        case(0)
+            ekinhist(hist_len-1)    = KinEneLF - fekinaverage   ! shifted by -1/2dt
+            ekin                    = ekinhist(hist_len-1)
         case(1)
             ekinhist(hist_len-1)    = KinEneVV - fekinaverage   ! shifted by -dt
             ekin                    = ekinhist(hist_len-1)
@@ -268,6 +271,9 @@ subroutine abf_core_update_history_II()
     epothist(hist_len)     = PotEne - fepotaverage
     ersthist(hist_len)     = PMFEne
     select case(ftds_ekin_src)
+        case(0)
+            ekinhist(hist_len-1)    = KinEneLF - fekinaverage   ! shifted by -1/2dt
+            ekin                    = ekinhist(hist_len-1)
         ! KE from velocities at full-step interpolated from velocities at half-step
         case(1)
             ekinhist(hist_len-1)    = KinEneVV - fekinaverage   ! shifted by -dt

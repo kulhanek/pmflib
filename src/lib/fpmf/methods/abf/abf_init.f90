@@ -235,6 +235,8 @@ subroutine abf_init_print_summary
                                                                        '['//trim(pmf_unit_label(EnergyUnit))//']'
     write(PMF_OUT,130)  ' Kinetic energy source (ftds_ekin_src)   : ', ftds_ekin_src
     select case(ftds_ekin_src)
+    case(0)
+    write(PMF_OUT,120)  '      |-> LF (leapfrog V at -1/2dt)'
     case(1)
     write(PMF_OUT,120)  '      |-> VVV2 (velocity Verlet V - interpolated V2)'
     case(2)
