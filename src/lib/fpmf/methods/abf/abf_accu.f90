@@ -71,6 +71,8 @@ subroutine abf_accu_init()
                 abfaccu%nsamples(abfaccu%tot_nbins),                &
                 abfaccu%micf(abfaccu%tot_cvs,abfaccu%tot_nbins),    &
                 abfaccu%m2icf(abfaccu%tot_cvs,abfaccu%tot_nbins),   &
+                abfaccu%mgfx(abfaccu%tot_cvs,abfaccu%tot_nbins),    &
+                abfaccu%m2gfx(abfaccu%tot_cvs,abfaccu%tot_nbins),   &
                 abfaccu%bnsamples(abfaccu%tot_nbins),               &
                 abfaccu%bmicf(abfaccu%tot_cvs,abfaccu%tot_nbins),   &
                 stat = alloc_failed)
@@ -100,12 +102,6 @@ subroutine abf_accu_init()
                     abfaccu%m2pp(abfaccu%tot_cvs,abfaccu%tot_nbins),    &
                     abfaccu%mpn(abfaccu%tot_cvs,abfaccu%tot_nbins),     &
                     abfaccu%m2pn(abfaccu%tot_cvs,abfaccu%tot_nbins),    &
-                    abfaccu%ntds_h(abfaccu%tot_nbins),                          &
-                    abfaccu%mtdsekin_h(abfaccu%tot_nbins),                      &
-                    abfaccu%m2tdsekin_h(abfaccu%tot_nbins),                     &
-                    abfaccu%mtdshx_h(abfaccu%tot_cvs,abfaccu%tot_nbins),        &
-                    abfaccu%m2tdshx_h(abfaccu%tot_cvs,abfaccu%tot_nbins),       &
-                    abfaccu%c11tdshk_h(abfaccu%tot_cvs,abfaccu%tot_nbins),      &
                     stat = alloc_failed)
 
         if( alloc_failed .ne. 0 ) then
@@ -202,6 +198,8 @@ subroutine abf_accu_clear()
     abfaccu%nsamples(:)     = 0.0d0
     abfaccu%micf(:,:)       = 0.0d0
     abfaccu%m2icf(:,:)      = 0.0d0
+    abfaccu%mgfx(:,:)       = 0.0d0
+    abfaccu%m2gfx(:,:)      = 0.0d0
 
     abfaccu%bnsamples(:)    = 0
     abfaccu%bmicf(:,:)      = 0.0d0
@@ -222,12 +220,6 @@ subroutine abf_accu_clear()
         abfaccu%m2pp(:,:)       = 0.0d0
         abfaccu%mpn(:,:)        = 0.0d0
         abfaccu%m2pn(:,:)       = 0.0d0
-        abfaccu%ntds_h(:)               = 0.0d0
-        abfaccu%mtdsekin_h(:)           = 0.0d0
-        abfaccu%m2tdsekin_h(:)          = 0.0d0
-        abfaccu%mtdshx_h(:,:)           = 0.0d0
-        abfaccu%m2tdshx_h(:,:)          = 0.0d0
-        abfaccu%c11tdshk_h(:,:)         = 0.0d0
     end if
 
     if( fentropy .and. fentdecomp ) then
@@ -478,6 +470,8 @@ subroutine abf_accu_write(iounit,full)
     call pmf_accu_write_rbuf_B(abfaccu%PMFAccuType,iounit,'NSAMPLES',   'AD',abfaccu%nsamples)
     call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'MICF',       'WA',abfaccu%micf,  'NSAMPLES')
     call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'M2ICF',      'M2',abfaccu%m2icf, 'NSAMPLES','MICF')
+    call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'MGFX',       'WA',abfaccu%mgfx,  'NSAMPLES')
+    call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'M2GFX',      'M2',abfaccu%m2gfx, 'NSAMPLES','MGFX')
 
     if( fenthalpy ) then
         call pmf_accu_write_rbuf_B(abfaccu%PMFAccuType,iounit,'MEPOT',  'WA',abfaccu%mepot, 'NSAMPLES')
@@ -495,14 +489,6 @@ subroutine abf_accu_write(iounit,full)
         call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'M2PP',       'M2',abfaccu%m2pp,      'NSAMPLES','MPP')
         call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'MPN',        'WA',abfaccu%mpn,       'NSAMPLES')
         call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'M2PN',       'M2',abfaccu%m2pn,      'NSAMPLES','MPN')
-
-        call pmf_accu_write_rbuf_B(abfaccu%PMFAccuType,iounit,'NTDS_H',     'AD',abfaccu%ntds_h)
-        call pmf_accu_write_rbuf_B(abfaccu%PMFAccuType,iounit,'MTDSEKIN_H', 'WA',abfaccu%mtdsekin_h,  'NTDS_H')
-        call pmf_accu_write_rbuf_B(abfaccu%PMFAccuType,iounit,'M2TDSEKIN_H','M2',abfaccu%m2tdsekin_h, 'NTDS_H','MTDSEKIN_H')
-        call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'MTDSHX_H',   'WA',abfaccu%mtdshx_h,    'NTDS_H')
-        call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'M2TDSHX_H',  'M2',abfaccu%m2tdshx_h,   'NTDS_H','MTDSHX_H')
-        call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'C11TDSHK_H', 'CO',abfaccu%c11tdshk_h, &
-                                                                                'NTDS_H','MTDSHX_H','MTDSEKIN_H')
     end if
 
     if( fentropy .and. fentdecomp ) then
@@ -574,12 +560,13 @@ subroutine abf_accu_add_data_online(cvs,gfx,bfx,epot,erst,ekin,etot)
     real(PMFDP),intent(in)  :: etot
     ! -----------------------------------------------
     integer        :: gi0, i
-    real(PMFDP)    :: invn, icf
+    real(PMFDP)    :: invn, icf, igf
     real(PMFDP)    :: depot1, depot2
     real(PMFDP)    :: derst1, derst2
     real(PMFDP)    :: dekin1, dekin2
     real(PMFDP)    :: detot1, detot2
     real(PMFDP)    :: dicf1, dicf2
+    real(PMFDP)    :: dgfx1, dgfx2
     real(PMFDP)    :: dpp, dpp1, dpp2
     real(PMFDP)    :: dpn, dpn1, dpn2
     ! --------------------------------------------------------------------------
@@ -635,6 +622,12 @@ subroutine abf_accu_add_data_online(cvs,gfx,bfx,epot,erst,ekin,etot)
         dicf2 = icf - abfaccu%micf(i,gi0)
         abfaccu%m2icf(i,gi0) = abfaccu%m2icf(i,gi0) + dicf1 * dicf2
 
+        igf = -gfx(i)
+        dgfx1 = igf - abfaccu%mgfx(i,gi0)
+        abfaccu%mgfx(i,gi0)  = abfaccu%mgfx(i,gi0)  + dgfx1 * invn
+        dgfx2 = igf - abfaccu%mgfx(i,gi0)
+        abfaccu%m2gfx(i,gi0) = abfaccu%m2gfx(i,gi0) + dgfx1 * dgfx2
+
         if( fentropy ) then
             if( ftds_add_bias ) then
                 icf = pxif(i)
@@ -681,54 +674,6 @@ subroutine abf_accu_add_data_online(cvs,gfx,bfx,epot,erst,ekin,etot)
     end do
 
 end subroutine abf_accu_add_data_online
-
-!===============================================================================
-! Subroutine:  abf_accu_add_data_online
-!===============================================================================
-
-subroutine abf_accu_add_data_online_half(cvs,gfh,ekin)
-
-    use abf_dat
-    use pmf_dat
-
-    implicit none
-    real(PMFDP),intent(in)  :: cvs(:)
-    real(PMFDP),intent(in)  :: gfh(:)
-    real(PMFDP),intent(in)  :: ekin
-    ! -----------------------------------------------
-    integer        :: gi0, i
-    real(PMFDP)    :: invn, ihx
-    real(PMFDP)    :: dekin1, dekin2
-    real(PMFDP)    :: dihx1, dihx2
-    ! --------------------------------------------------------------------------
-
-    ! get global index to accumulator for cvs values
-    gi0 = pmf_accu_globalindex(abfaccu%PMFAccuType,cvs)
-    if( gi0 .le. 0 ) then
-        return ! out of valid area
-    end if
-
-    ! increase number of samples
-    abfaccu%ntds_h(gi0) = abfaccu%ntds_h(gi0) + 1.0d0
-    invn = 1.0d0 / abfaccu%ntds_h(gi0)
-
-    ! kinetic energy
-    dekin1 = ekin - abfaccu%mtdsekin_h(gi0)
-    abfaccu%mtdsekin_h(gi0)  = abfaccu%mtdsekin_h(gi0)  + dekin1 * invn
-    dekin2 = ekin - abfaccu%mtdsekin_h(gi0)
-    abfaccu%m2tdsekin_h(gi0) = abfaccu%m2tdsekin_h(gi0) + dekin1 * dekin2
-
-    do i=1,NumOfABFCVs
-        ihx = - gfh(i)
-        dihx1 = ihx - abfaccu%mtdshx_h(i,gi0)
-        abfaccu%mtdshx_h(i,gi0)  = abfaccu%mtdshx_h(i,gi0)  + dihx1 * invn
-        dihx2 = ihx - abfaccu%mtdshx_h(i,gi0)
-        abfaccu%m2tdshx_h(i,gi0) = abfaccu%m2tdshx_h(i,gi0) + dihx1 * dihx2
-
-        abfaccu%c11tdshk_h(i,gi0)  = abfaccu%c11tdshk_h(i,gi0) + dihx1 * dekin2
-    end do
-
-end subroutine abf_accu_add_data_online_half
 
 !===============================================================================
 ! Subroutine:  abf_accu_add_data_entropy_decompose
@@ -825,7 +770,6 @@ subroutine abf_accu_add_data_entropy_decompose(cvs,fx,sx,vx,bx,epot,erst,ekin)
         abfaccu%c11tdsbp(i,gi0)  = abfaccu%c11tdsbp(i,gi0) + dibx1 * depot2
         abfaccu%c11tdsbr(i,gi0)  = abfaccu%c11tdsbr(i,gi0) + dibx1 * derst2
         abfaccu%c11tdsbk(i,gi0)  = abfaccu%c11tdsbk(i,gi0) + dibx1 * dekin2
-
     end do
 
 end subroutine abf_accu_add_data_entropy_decompose

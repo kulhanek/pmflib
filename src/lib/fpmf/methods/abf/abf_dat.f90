@@ -116,6 +116,8 @@ type,extends(PMFAccuType) :: ABFAccuType
 ! free energy
     real(PMFDP),pointer    :: micf(:,:)                 ! mean ICF
     real(PMFDP),pointer    :: m2icf(:,:)                ! M2 of ICF
+    real(PMFDP),pointer    :: mgfx(:,:)                 ! mean -GFX
+    real(PMFDP),pointer    :: m2gfx(:,:)                ! M2 of GFX
 
 ! enthalpy
     real(PMFDP),pointer    :: mepot(:)                  ! mean of pot energy
@@ -165,13 +167,6 @@ type,extends(PMFAccuType) :: ABFAccuType
     real(PMFDP),pointer    :: c11tdsbr(:,:)
     real(PMFDP),pointer    :: c11tdsbk(:,:)
 
-    real(PMFDP),pointer    :: ntds_h(:)                   ! number of hits into bins
-    real(PMFDP),pointer    :: mtdsekin_h(:)               ! mean of kin energy
-    real(PMFDP),pointer    :: m2tdsekin_h(:)              ! M2 of kin energy
-    real(PMFDP),pointer    :: mtdshx_h(:,:)               ! mean of ICF - force
-    real(PMFDP),pointer    :: m2tdshx_h(:,:)              ! M2 of ICF - force
-    real(PMFDP),pointer    :: c11tdshk_h(:,:)
-
 ! time recording for post-processing
     real(PMFDP),pointer    :: tcvs(:,:)
     real(PMFDP),pointer    :: tbicf(:,:)
@@ -211,9 +206,7 @@ real(PMFDP),allocatable     :: pxiv(:)
 real(PMFDP),allocatable     :: cvave(:)
 real(PMFDP),allocatable     :: mfave(:)
 real(PMFDP),allocatable     :: sfac(:)              ! switching factors
-
-type(CVContextType)         :: cvcontextave
-real(PMFDP),allocatable     :: crdave(:,:)
+real(PMFDP),allocatable     :: vint(:,:)
 
 ! ------------------------------------------------------------------------------
 
@@ -229,9 +222,7 @@ real(PMFDP),allocatable     :: epothist(:)          ! history of Epot
 real(PMFDP),allocatable     :: ersthist(:)          ! history of Erst
 real(PMFDP),allocatable     :: ekinhist(:)          ! history of Ekin
 real(PMFDP),allocatable     :: ekinlfhist(:)        ! history of EkinLF
-real(PMFDP),allocatable     :: crdhist(:,:,:)       ! history of Cartesian coordinates
 real(PMFDP),allocatable     :: xvhist(:,:)          ! history of xi velocities
-real(PMFDP),allocatable     :: xvhist2(:,:)         ! history of xi velocities
 
 ! ------------------------------------------------------------------------------
 

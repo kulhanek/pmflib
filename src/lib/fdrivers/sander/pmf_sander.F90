@@ -55,6 +55,7 @@ type PMFSanderEnergy
     real(PMFDP) :: epot         ! potential energy in t
     real(PMFDP) :: ekinvv       ! velocity-verlet kinetic energy in t-dt
     real(PMFDP) :: ekinlf       ! leapfrog kinetic energy in t-dt/2
+    real(PMFDP) :: ekinv3       ! high-accuracy kinetic energy in t-dt
     real(PMFDP) :: ekinv4       ! high-accuracy kinetic energy in t-2*dt
     real(PMFDP) :: ekinv6       ! high-accuracy kinetic energy in t-3*dt
     ! output
@@ -390,7 +391,8 @@ subroutine pmf_sander_force(anatom,x,v,f,spmfene)
 
     call pmf_timers_start_timer(PMFLIB_TIMER)
     call pmf_core_lf_update_step
-    call pmf_core_lf_force(x,v,f,spmfene%epot,spmfene%ekinvv,spmfene%ekinlf,spmfene%ekinv4,spmfene%ekinv6,spmfene%erst)
+    call pmf_core_lf_force(x,v,f,spmfene%epot,spmfene%ekinvv,spmfene%ekinlf,&
+                           spmfene%ekinv3,spmfene%ekinv4,spmfene%ekinv6,spmfene%erst)
     call pmf_timers_stop_timer(PMFLIB_TIMER)
 
     return

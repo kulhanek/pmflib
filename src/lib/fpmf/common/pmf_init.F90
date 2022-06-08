@@ -63,6 +63,12 @@ subroutine pmf_init_dat
     fdtx        = 0.0d0
     ifdtx       = 0.0d0
 
+    KinEneVV = 0.0d0
+    KinEneLF = 0.0d0
+    KinEneV3 = 0.0d0
+    KinEneV4 = 0.0d0
+    KinEneV6 = 0.0d0
+
     fcanexmdloop = .false.
     fexit_mdloop = 0
 

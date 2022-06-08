@@ -171,15 +171,11 @@ subroutine abf_init_print_summary
     case(3)
     write(PMF_OUT,120)  '      |-> ABF algorithm (5pV1)'
     case(4)
-    write(PMF_OUT,120)  '      |-> ABF algorithm (2pX)'
+    write(PMF_OUT,120)  '      |-> ABF algorithm (2pV)'
     write(PMF_OUT,130)  '          Velocity order                 : ', abf_p2_vx
     write(PMF_OUT,130)  '          Momenta order                  : ', abf_p2_px
     case(5)
-    write(PMF_OUT,120)  '      |-> ABF algorithm (2pH)'
-    write(PMF_OUT,130)  '          Velocity order                 : ', abf_p2_vx
-    write(PMF_OUT,130)  '          Momenta order                  : ', abf_p2_px
-    case(6)
-    write(PMF_OUT,120)  '      |-> ABF algorithm (2pZ)'
+    write(PMF_OUT,120)  '      |-> ABF algorithm (2pX)'
     write(PMF_OUT,130)  '          Velocity order                 : ', abf_p2_vx
     write(PMF_OUT,130)  '          Momenta order                  : ', abf_p2_px
     case default
@@ -333,6 +329,7 @@ subroutine abf_init_arrays
 ! general arrays --------------------------------
     allocate(                                   &
             la(NumOfABFCVs),                    &
+            vint(3,NumOfLAtoms),                &
             pxia(NumOfABFCVs),                  &
             pxif(NumOfABFCVs),                  &
             pxih(NumOfABFCVs),                  &
@@ -353,6 +350,7 @@ subroutine abf_init_arrays
     end if
 
     la(:)       = 0.0d0
+    vint(:,:)   = 0.0d0
     pxia(:)     = 0.0d0
     pxif(:)     = 0.0d0
     pxih(:)     = 0.0d0
@@ -365,27 +363,12 @@ subroutine abf_init_arrays
 
     sfac(:)     = 1.0d0
 
-    allocate( crdave(3,NumOfLAtoms),                        &
-              cvcontextave%CVsValues(NumOfCVs),             &
-              cvcontextave%CVsDrvs(3,NumOfLAtoms,NumOfCVs), &
-              stat=alloc_failed)
-
-    if( alloc_failed .ne. 0 ) then
-        call pmf_utils_exit(PMF_OUT, 1,'[PMFLIB] Unable to allocate memory for ABF arrays II!')
-    endif
-
-    crdave(:,:) = 0.0d0
-
 ! history buffers ------------------------------------------
     select case(fmode)
         case(1,2,3)
             ! for V6 interpolation we need at least 6 data points
             hist_len = 6
-        case(4)
-            hist_len = 10
-        case(5)
-            hist_len = 10
-        case(6)
+        case(4,5)
             hist_len = 10
         case default
             call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented fmode in abf_init_arrays!')
@@ -403,9 +386,7 @@ subroutine abf_init_arrays
             ersthist(hist_len),                         &
             ekinhist(hist_len),                         &
             ekinlfhist(hist_len),                       &
-            crdhist(3,NumOfLAtoms,hist_len),            &
             xvhist(NumOfABFCVs,hist_len),               &
-            xvhist2(NumOfABFCVs,hist_len),               &
             stat= alloc_failed )
 
     if( alloc_failed .ne. 0 ) then
@@ -423,9 +404,7 @@ subroutine abf_init_arrays
     ersthist(:)     = 0.0d0
     ekinhist(:)     = 0.0d0
     ekinlfhist(:)   = 0.0d0
-    crdhist(:,:,:)  = 0.0d0
     xvhist(:,:)     = 0.0d0
-    xvhist2(:,:)    = 0.0d0
     fzinvhist(:,:,:) = 0.0d0
 
 ! other setup ----------------------------------------------

@@ -115,6 +115,7 @@ real(PMFDP),allocatable     :: Vel(:,:)         ! current system velocities in t
 ! FIXME - better description
 real(PMFDP)                 :: KinEneVV         ! velocity verlet kinetic energy in t-dt
 real(PMFDP)                 :: KinEneLF         ! leapfrog kinetic energy in t-dt/2
+real(PMFDP)                 :: KinEneV3         ! accurate kinetic energy in t-dt
 real(PMFDP)                 :: KinEneV4         ! accurate kinetic energy in t-2*dt
 real(PMFDP)                 :: KinEneV6         ! accurate kinetic energy in t-3*dt
 real(PMFDP)                 :: PotEne           ! current system potential energy in t
