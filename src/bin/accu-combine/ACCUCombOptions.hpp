@@ -82,7 +82,7 @@ public:
                 0,                           /* short option name */
                 "common",                      /* long option name */
                 NULL,                           /* parameter name */
-                "Combine only common sections.")   /* option description */
+                "Combine only common data sections.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(int,                           /* option type */
                 Limit,                        /* option name */
