@@ -330,7 +330,7 @@ void CPMFAccumulator::LoadSnapshot(FILE* fin,int index)
 
 //------------------------------------------------------------------------------
 
-void CPMFAccumulator::Combine(CPMFAccumulatorPtr right)
+void CPMFAccumulator::Combine(CPMFAccumulatorPtr right,bool common_only)
 {
 // methods must be the same
     if( GetMethod() != right->GetMethod() ){
@@ -358,10 +358,12 @@ void CPMFAccumulator::Combine(CPMFAccumulatorPtr right)
     }
 
 // combine data blocks
-    if( GetNumOfSectionsNoIG() != right->GetNumOfSectionsNoIG() ){
-        CSmallString   error;
-        error << "two PMF accumulators are not compatible (number of data sections): " << GetNumOfSectionsNoIG()  << " vs " << right->GetNumOfSectionsNoIG();
-        RUNTIME_ERROR(error);
+    if( ! common_only ) {
+        if( GetNumOfSectionsNoIG() != right->GetNumOfSectionsNoIG() ){
+            CSmallString   error;
+            error << "two PMF accumulators are not compatible (number of data sections): " << GetNumOfSectionsNoIG()  << " vs " << right->GetNumOfSectionsNoIG();
+            RUNTIME_ERROR(error);
+        }
     }
 
     std::map<CSmallString,CPMFAccuDataPtr>::iterator  it = DataBlocks.begin();
@@ -370,6 +372,12 @@ void CPMFAccumulator::Combine(CPMFAccumulatorPtr right)
     std::map<CSmallString,CPMFAccuDataPtr>  combined;
 
     while( it != ie ){
+        if( common_only ) {
+            if( ! right->HasSectionData(it->first) ){
+                it++;
+                continue;
+            }
+        }
         CPMFAccuDataPtr ldb = it->second;
         CPMFAccuDataPtr rdb = right->GetSectionData(it->first);
         CPMFAccuDataPtr result = Combine(right,ldb,rdb);

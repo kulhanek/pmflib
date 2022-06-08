@@ -145,7 +145,7 @@ void CACCUCombine::CombineLinear(void)
     OutAccu = InAccus.front();  // the first accumulator becomes the output one
     // combine the others into the first one
     for(int i=1; i < Options.GetNumberOfProgArgs() - 1; i++){
-        OutAccu->Combine(InAccus[i]);
+        OutAccu->Combine(InAccus[i],Options.GetOptCommonOnly());
     }
 }
 
@@ -171,13 +171,13 @@ void CACCUCombine::CombineAsTree(void)
                 first = false;
             } else {
                 // second - combine
-                combined->Combine(accu);
+                combined->Combine(accu,Options.GetOptCommonOnly());
                 it++;
                 if(  it != ie ){
                     // third - combine if it is the last item
                     CPMFAccumulatorPtr accu = *it;
                     if( accu == InAccus.back() ){
-                        combined->Combine(accu);
+                        combined->Combine(accu,Options.GetOptCommonOnly());
                         it++;
                     }
                 }

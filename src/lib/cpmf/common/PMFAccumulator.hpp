@@ -69,7 +69,7 @@ public:
     void LoadSnapshot(FILE* fin,int index);
 
     /// combine accumulator data from other accumulator to existing data
-    void Combine(CPMFAccumulatorPtr right);
+    void Combine(CPMFAccumulatorPtr right,bool common_only=false);
 
     /// combine accumulator data from XML to existing data
     void Combine(CXMLElement* p_ele);

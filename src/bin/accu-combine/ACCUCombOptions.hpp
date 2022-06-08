@@ -57,6 +57,7 @@ public:
     CSO_LIST_BEGIN
     // options ------------------------------
     CSO_OPT(bool,Linear)
+    CSO_OPT(bool,CommonOnly)
     CSO_OPT(int,Limit)
     CSO_OPT(bool,Verbose)
     CSO_OPT(bool,Version)
@@ -73,6 +74,15 @@ public:
                 "linear",                      /* long option name */
                 NULL,                           /* parameter name */
                 "Combine PMF accumulators by step-by-step algorithm.")   /* option description */
+    //----------------------------------------------------------------------
+    CSO_MAP_OPT(bool,                           /* option type */
+                CommonOnly,                        /* option name */
+                false,                          /* default value */
+                false,                          /* is option mandatory */
+                0,                           /* short option name */
+                "common",                      /* long option name */
+                NULL,                           /* parameter name */
+                "Combine only common sections.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(int,                           /* option type */
                 Limit,                        /* option name */
