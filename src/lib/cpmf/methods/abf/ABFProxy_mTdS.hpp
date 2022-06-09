@@ -27,7 +27,6 @@
 
 enum EABFTdSType {
     ABF_TdS_HH,
-    ABF_TdS_HH_MTC,
     ABF_TdS_FP,
     ABF_TdS_FR,
     ABF_TdS_FK,
@@ -43,7 +42,6 @@ enum EABFTdSType {
     ABF_TdS_LP,
     ABF_TdS_LR,
     ABF_TdS_LK,
-    ABF_TdS_HK,
 };
 
 //------------------------------------------------------------------------------

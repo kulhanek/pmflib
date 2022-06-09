@@ -66,11 +66,6 @@ void CABFProxy_mTdS::SetType(EABFTdSType type)
         break;
 
     // -------------------
-        case(ABF_TdS_HH_MTC):
-            Provide = "ABF -TdS(x) MTC";
-        break;
-
-    // -------------------
         case(ABF_TdS_FP):
             Provide = "ABF -TdS(x) - FP";
         break;
@@ -136,11 +131,6 @@ void CABFProxy_mTdS::SetType(EABFTdSType type)
         break;
 
     // -------------------
-        case(ABF_TdS_HK):
-            Provide = "ABF -TdS(x) - HK";
-        break;
-
-    // -------------------
         default:
             RUNTIME_ERROR("unsupported type");
     }
@@ -155,7 +145,15 @@ int CABFProxy_mTdS::GetNumOfSamples(int ibin) const
     if( Accu == NULL ){
         RUNTIME_ERROR("Accu is NULL");
     }
-    return(Accu->GetData("NSAMPLES",ibin));
+    double  nsamples = 0.0;
+
+    if( Type == ABF_TdS_HH ) {
+        nsamples = Accu->GetData("NSAMPLES",ibin);
+    } else {
+        nsamples = Accu->GetData("NTDS",ibin);
+    }
+
+    return(nsamples);
 }
 
 //------------------------------------------------------------------------------
@@ -165,7 +163,12 @@ void CABFProxy_mTdS::SetNumOfSamples(int ibin,int nsamples)
     if( Accu == NULL ){
         RUNTIME_ERROR("Accu is NULL");
     }
-    Accu->SetData("NSAMPLES",ibin,nsamples);
+
+    if( Type == ABF_TdS_HH ) {
+        Accu->SetData("NSAMPLES",ibin,nsamples);
+    } else {
+        Accu->SetData("NTDS",ibin,nsamples);
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -180,8 +183,6 @@ double CABFProxy_mTdS::GetValue(int ibin,int icv,EProxyRealm realm) const
 
     if( Type == ABF_TdS_HH ) {
         nsamples = Accu->GetData("NSAMPLES",ibin);
-    } else if( Type == ABF_TdS_HK  ) {
-        nsamples = Accu->GetData("NTDS_H",ibin);
     } else {
         nsamples = Accu->GetData("NTDS",ibin);
     }
@@ -201,25 +202,9 @@ double CABFProxy_mTdS::GetValue(int ibin,int icv,EProxyRealm realm) const
         case(ABF_TdS_HH):{
             double m2pp = Accu->GetData("M2PP",ibin,icv);
             double m2pn = Accu->GetData("M2PN",ibin,icv);
-            c11 = 0.25*(m2pp-m2pn)/nsamples;
+            c11 = 0.25*(m2pn-m2pp)/nsamples;
             m2icf   = Accu->GetData("M2ICF",ibin,icv);
             m2ene   = Accu->GetData("M2ETOT",ibin);
-        }
-        break;
-
-    // -------------------
-        case(ABF_TdS_HH_MTC):{
-            double micfetot = Accu->GetData("MICFETOT_MTC",ibin,icv);
-            double micf     = Accu->GetData("MICF_MTC",ibin,icv);
-            double metot    = Accu->GetData("METOT_MTC",ibin);
-            double mmtc     = 1.0;
-            if( Accu->HasSectionData("MMTC") ){
-                mmtc     = Accu->GetData("MMTC",ibin);
-            }
-
-            c11     = micfetot/mmtc - metot*micf/(mmtc*mmtc);
-            m2icf   = Accu->GetData("M2ICF_MTC",ibin,icv);
-            m2ene   = Accu->GetData("M2ETOT_MTC",ibin);
         }
         break;
 
@@ -299,7 +284,7 @@ double CABFProxy_mTdS::GetValue(int ibin,int icv,EProxyRealm realm) const
             m2ene   = Accu->GetData("M2TDSEKIN",ibin);
         break;
 
-                    // -------------------
+    // -------------------
         case(ABF_TdS_LP):
             c11     = Accu->GetData("C11TDSLP",ibin,icv)/nsamples;
             m2icf   = Accu->GetData("M2TDSLX",ibin,icv);
@@ -319,13 +304,6 @@ double CABFProxy_mTdS::GetValue(int ibin,int icv,EProxyRealm realm) const
         break;
 
     // -------------------
-        case(ABF_TdS_HK):
-            c11     = Accu->GetData("C11TDSHK_H",ibin,icv)/nsamples;
-            m2icf   = Accu->GetData("M2TDSHX_H",ibin,icv);
-            m2ene   = Accu->GetData("M2TDSEKIN_H",ibin);
-        break;
-
-    // -------------------
         default:
             RUNTIME_ERROR("unsupported type");
     }
@@ -333,7 +311,8 @@ double CABFProxy_mTdS::GetValue(int ibin,int icv,EProxyRealm realm) const
     switch(realm){
     // -------------------
         case(E_PROXY_VALUE): {
-            return( c11  / (temp * PMF_Rgas) );
+            // all is negative in accumulator
+            return( - c11  / (temp * PMF_Rgas) );
         }
     // -------------------
         case(E_PROXY_SIGMA): {
