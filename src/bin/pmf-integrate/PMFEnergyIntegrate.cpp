@@ -573,6 +573,7 @@ bool CPMFEnergyIntegrate::Run(void)
         INVALID_ARGUMENT("output format - not implemented");
     }
 
+    printer.SetSampleLimit(Options.GetOptLimit());
     printer.IncludeGluedAreas((Options.GetOptGlueingFactor() > 0)||Options.GetOptGlueHoles()||Options.GetOptIncludeGluedRegions());
     printer.SetIncludeError(Options.GetOptWithError());
     printer.SetIncludeBinStat(Options.GetOptIncludeBinStat());
