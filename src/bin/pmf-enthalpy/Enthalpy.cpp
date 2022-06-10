@@ -165,10 +165,6 @@ bool CEnthalpy::Run(void)
             proxy    = CPMFProxy_dH_Ptr(new CPMFProxy_dH);
             proxy->SetType(PMF_ETOT);
     // -----------------------------------------------
-        } else if ( Options.GetOptRealm() == "<Epot>_MTC" ) {
-            proxy    = CPMFProxy_dH_Ptr(new CPMFProxy_dH);
-            proxy->SetType(PMF_ETOT_MTC);
-    // -----------------------------------------------
         } else if ( Options.GetOptRealm() == "<Epot>" ) {
             proxy    = CPMFProxy_dH_Ptr(new CPMFProxy_dH);
             proxy->SetType(PMF_EPOT);

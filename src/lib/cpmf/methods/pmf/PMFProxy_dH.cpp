@@ -59,10 +59,6 @@ void CPMFProxy_dH::SetType(EPMFdHType type)
             Provide = "PMF dH(x)=<Etot>";
         break;
     // -------------------
-        case(PMF_ETOT_MTC):
-            Provide = "PMF dH(x)=<Etot>(MTC)";
-        break;
-    // -------------------
         case(PMF_EPOT):
             Provide = "PMF dH(x)=<Epot>";
         break;
@@ -99,6 +95,7 @@ void CPMFProxy_dH::SetNumOfSamples(int ibin,int nsamples)
     if( Accu == NULL ){
         RUNTIME_ERROR("Accu is NULL");
     }
+    Accu->SetData("NSAMPLES",ibin,nsamples);
 }
 
 //------------------------------------------------------------------------------
@@ -119,16 +116,6 @@ double CPMFProxy_dH::GetValue( int ibin,EProxyRealm realm) const
         case(PMF_ETOT):
             mene    = Accu->GetData("METOT",ibin);
             m2ene   = Accu->GetData("M2ETOT",ibin);
-        break;
-    // -------------------
-        case(PMF_ETOT_MTC):{
-            mene    = Accu->GetData("METOT_MTC",ibin);
-            m2ene   = Accu->GetData("M2ETOT_MTC",ibin);
-            double mmtc     = Accu->GetData("MMTC",ibin);
-            double m2mtc    = Accu->GetData("M2MTC",ibin);
-            mene    = mene / mmtc;          // finalize mtc correction
-            m2ene   = m2ene / m2mtc;        // approximation - assume zero correlation between MTC an ICF
-        }
         break;
     // -------------------
         case(PMF_EPOT):

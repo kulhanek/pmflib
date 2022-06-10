@@ -60,9 +60,15 @@ int COptGPRHyprmsOptions::CheckOptions(void)
         IsError = true;
     }
 
-    if( GetOptSigmaF2() <= 0 ){
+    if( GetOptSigmaF2() <= GetOptMinSigmaF2() ){
         if(IsError == false) fprintf(stderr,"\n");
-        fprintf(stderr,"%s: --sigmaf2 has to be greater than zero, but %f is provided\n", (const char*)GetProgramName(),GetOptSigmaF2());
+        fprintf(stderr,"%s: --sigmaf2 has to be greater than --minsigmaf2, but %f is provided\n", (const char*)GetProgramName(),GetOptSigmaF2());
+        IsError = true;
+    }
+
+    if( GetOptNCorr() <= GetOptMinNCorr() ){
+        if(IsError == false) fprintf(stderr,"\n");
+        fprintf(stderr,"%s: --ncorr has to be greater than --minncorr, but %f is provided\n", (const char*)GetProgramName(),GetOptNCorr());
         IsError = true;
     }
 

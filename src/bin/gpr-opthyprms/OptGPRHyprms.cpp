@@ -233,7 +233,6 @@ bool COptGPRHyprms::IsRealm(const CSmallString& name)
 
 void COptGPRHyprms::InitRealm(CProxyRealmPtr realm)
 {
-
 // init energyder proxy
     if( realm->Name == "dG" ){
         for(size_t i=0; i < realm->Accumulators.size(); i++){
@@ -338,6 +337,11 @@ void COptGPRHyprms::InitOptimizer(void)
         SigmaF2 = Options.GetOptSigmaF2();
         NCorr   = Options.GetOptNCorr();
         DecodeVList(Options.GetOptWFac(),WFac,"--wfac",3.0);
+        for(size_t i=0; i < WFac.GetLength(); i++){
+            if( (WFac[i] - Options.GetOptMinWFac()) < 0.01 ){
+                RUNTIME_ERROR("--wfac has to be greater than --minwfac");
+            }
+        }
     }
 
     // print hyperparameters
@@ -384,16 +388,16 @@ void COptGPRHyprms::InitOptimizer(void)
 // set initial hyprms
     int ind = 0;
     if( SigmaF2Enabled ){
-        Hyprms[ind] = SigmaF2;
+        Hyprms[ind] = sqrt(SigmaF2-Options.GetOptMinSigmaF2());
         ind++;
     }
     if( NCorrEnabled ){
-        Hyprms[ind] = NCorr;
+        Hyprms[ind] = sqrt(NCorr-Options.GetOptMinNCorr());
         ind++;
     }
     for(int i=0; i < (int)WFacEnabled.size(); i++){
         if( WFacEnabled[i] ){
-            Hyprms[ind] = WFac[i];
+            Hyprms[ind] = sqrt(WFac[i]-Options.GetOptMinWFac());
             ind++;
         }
     }
@@ -538,26 +542,6 @@ bool COptGPRHyprms::Optimize(void)
     }
 
     for(int k=1; k <= noptsteps; k++ ){
-        // parameters cannot be zero or negative
-        bool reset = false;
-        for(int i=0; i < NumOfOptPrms; i++){
-            if( Hyprms[i] <= 0.0 ){
-                reset = true;
-            }
-        }
-        if( reset ){
-            vout << endl;
-            vout << "<b><blue>>>> INFO: Parameters out-of-range, resetting ...</blue></b>" << endl;
-            Hyprms = OldHyprms;
-            if( ResetOpt(numofreset) == false ){
-                result = false;
-                break;
-            }
-            vout << endl;
-            iflag = 0;  // reset optimizer
-            last_logtrg = last_logtrg - 10; // be sure that the number is somehow different
-        }
-
         OldHyprms = Hyprms;
 
         if( Options.GetOptNumeric() ){
@@ -1118,6 +1102,11 @@ void COptGPRHyprms::RunGPRAnalytical(void)
             RUNTIME_ERROR("undefined proxy")
         }
     }
+
+    // transform gradients
+    for(int ind=0; ind < NumOfOptPrms; ind++){
+        HyprmsGrd[ind] = 2.0*HyprmsGrd[ind]*Hyprms[ind];
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -1304,7 +1293,7 @@ void COptGPRHyprms::ScatterHyprms(CSimpleVector<double>& hyprsm)
     int i = 0;
 // ---------------
     if( SigmaF2Enabled ){
-        SigmaF2 = hyprsm[ind];
+        SigmaF2 = hyprsm[ind]*hyprsm[ind] + Options.GetOptMinSigmaF2();
         ind++;
         HyprmsEnabled[i] = true;
     } else {
@@ -1313,7 +1302,7 @@ void COptGPRHyprms::ScatterHyprms(CSimpleVector<double>& hyprsm)
     i++;
 // ---------------
     if( NCorrEnabled ){
-        NCorr = hyprsm[ind];
+        NCorr = hyprsm[ind]*hyprsm[ind] + Options.GetOptMinNCorr();
         ind++;
         HyprmsEnabled[i] = true;
     } else {
@@ -1323,7 +1312,7 @@ void COptGPRHyprms::ScatterHyprms(CSimpleVector<double>& hyprsm)
 // ---------------
     for(int k=0; k < (int)WFacEnabled.size(); k++){
         if( WFacEnabled[k] ){
-            WFac[k] = hyprsm[ind];
+            WFac[k] = hyprsm[ind]*hyprsm[ind] + Options.GetOptMinWFac();
             ind++;
             HyprmsEnabled[i] = true;
         } else {

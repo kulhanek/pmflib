@@ -63,8 +63,11 @@ public:
     CSO_OPT(CSmallString,LAMethod)
     CSO_OPT(double,RCond)
     CSO_OPT(double,SigmaF2)
+    CSO_OPT(double,MinSigmaF2)
     CSO_OPT(double,NCorr)
+    CSO_OPT(double,MinNCorr)
     CSO_OPT(CSmallString,WFac)
+    CSO_OPT(double,MinWFac)
     CSO_OPT(bool,SigmaF2Enabled)
     CSO_OPT(bool,NCorrEnabled)
     CSO_OPT(CSmallString,WFacEnabled)
@@ -140,6 +143,15 @@ public:
                 "Variance of the reconstructed free energy surface (signal variance).")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(double,                           /* option type */
+                MinSigmaF2,                        /* option name */
+                0.1,                          /* default value */
+                false,                          /* is option mandatory */
+                0,                           /* short option name */
+                "minsigmaf2",                      /* long option name */
+                "NUMBER",                           /* parameter name */
+                "Minimal value of SigmaF2.")   /* option description */
+    //----------------------------------------------------------------------
+    CSO_MAP_OPT(double,                           /* option type */
                 NCorr,                        /* option name */
                 1.0,                          /* default value */
                 false,                          /* is option mandatory */
@@ -147,6 +159,15 @@ public:
                 "ncorr",                      /* long option name */
                 "NUMBER",                           /* parameter name */
                 "Number of statistically correlated samples.")   /* option description */
+    //----------------------------------------------------------------------
+    CSO_MAP_OPT(double,                           /* option type */
+                MinNCorr,                        /* option name */
+                0.9,                          /* default value */
+                false,                          /* is option mandatory */
+                0,                           /* short option name */
+                "minncorr",                      /* long option name */
+                "NUMBER",                           /* parameter name */
+                "Minimal value of NCorr.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(CSmallString,                           /* option type */
                 WFac,                        /* option name */
@@ -158,6 +179,15 @@ public:
                 "Factors influencing widths of RBFs or square exponential kernels. The width is distance between "
                 "the adjacent square exponential functions multiplied by this factors in the form WFac1[xWFac2x...]. "
                 "The last value pads the rest.")   /* option description */
+    //----------------------------------------------------------------------
+    CSO_MAP_OPT(double,                           /* option type */
+                MinWFac,                        /* option name */
+                0.1,                          /* default value */
+                false,                          /* is option mandatory */
+                0,                           /* short option name */
+                "minwfac",                      /* long option name */
+                "NUMBER",                           /* parameter name */
+                "Minimal value of WFac.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(bool,                           /* option type */
                 SigmaF2Enabled,                        /* option name */

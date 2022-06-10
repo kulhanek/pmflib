@@ -27,7 +27,6 @@
 
 enum EPMFdHType {
     PMF_ETOT,
-    PMF_ETOT_MTC,
     PMF_EPOT,
     PMF_EKIN,
     PMF_ERST,

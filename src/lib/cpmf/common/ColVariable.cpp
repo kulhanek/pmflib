@@ -298,8 +298,11 @@ double CColVariable::GetDifference(double left,double right) const
 
 bool CColVariable::IsPeriodic(void) const
 {
+    if(strstr(Type,"DIH") != NULL){
+        // min and max values must be at boundary
+        if( ( (MinValue + M_PI) <= 0.01 ) && ( (MaxValue-M_PI) <= 0.01 ) ) return(true);
+    }
     // FIXME - make list of other CVs
-    if(strstr(Type,"DIH") != NULL) return(true);
     return(false);
 }
 

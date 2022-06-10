@@ -104,7 +104,7 @@ void CIntegratorGPR::AddInputEnergyDerProxy(CEnergyDerProxyPtr p_proxy)
 
 //------------------------------------------------------------------------------
 
-void CIntegratorGPR::ClearInputEnergyProxies(void)
+void CIntegratorGPR::ClearInputEnergyDerProxies(void)
 {
     DerProxyItems.clear();
 }
@@ -788,7 +788,6 @@ void CIntegratorGPR::CreateKff(const CSimpleVector<double>& ip,CSimpleVector<dou
     if( UseZeroPoint ){
         kff[GPRSize-1] = GetKernelValue(ip,GPos);
     }
-
 }
 
 //------------------------------------------------------------------------------
@@ -1459,10 +1458,12 @@ bool CIntegratorGPR::WriteMFInfo(const CSmallString& name)
 
     CSimpleVector<double> ipos;
     CSimpleVector<double> mfi;
+    CSimpleVector<double> mfie;
     CSimpleVector<double> mfp;
 
     ipos.CreateVector(NumOfCVs);
     mfi.CreateVector(GPRSize);
+    mfie.CreateVector(GPRSize);
     mfp.CreateVector(GPRSize);
 
     // calculate
@@ -1475,6 +1476,10 @@ bool CIntegratorGPR::WriteMFInfo(const CSmallString& name)
         for(size_t k=0; k < NumOfCVs; k++){
             double mf = item->GetValue(ibin,k,E_PROXY_VALUE);
             mfi[indi*NumOfCVs+k] = mf;
+
+            double mfe = item->GetValue(ibin,k,E_PROXY_ERROR);
+            mfie[indi*NumOfCVs+k] = mfe*mfe*NCorr;
+
             mfp[indi*NumOfCVs+k] = GetMeanForce(ipos,k);
         }
     }
@@ -1505,7 +1510,7 @@ bool CIntegratorGPR::WriteMFInfo(const CSmallString& name)
         }
 
         for(size_t k=0; k < NumOfCVs; k++){
-            ofs << format(" %20.16f %20.16f")%mfi[indi*NumOfCVs+k]%mfp[indi*NumOfCVs+k];
+            ofs << format(" %20.16f %20.16f %20.16f")%mfi[indi*NumOfCVs+k]%mfie[indi*NumOfCVs+k]%mfp[indi*NumOfCVs+k];
         }
 
         ofs << endl;
@@ -2069,8 +2074,6 @@ void CIntegratorGPR::CalculateErrors(CSimpleVector<double>& gpos,CVerboseStr& vo
         double varfc,covfg;
         GetCovVar(gpos,jpos,covfg,varfc);
 
-        // cout << varfc << " " << covfg << " " << vargp << endl;
-
         double error = varfc + vargp - 2.0*covfg;
         if( error > 0 ){
             error = sqrt(error);
@@ -2138,8 +2141,6 @@ void CIntegratorGPR::CalculateErrorsFromCov(CVerboseStr& vout)
         double covfg = Cov[indj][iglb];
         double vargp = Cov[iglb][iglb];
 
-        // cout << varfc << " " << covfg << " " << vargp << endl;
-
         double error = varfc + vargp - 2.0*covfg;
         if( error > 0 ){
             error = sqrt(error);
@@ -2191,7 +2192,7 @@ void CIntegratorGPR::CalculateCovs(CVerboseStr& vout)
 
     size_t nvals = NumOfValues;
     if( GlobalMinSet ){
-        nvals++; // include explicitly set global minumum
+        nvals++; // include explicitly set global minimum
     }
 
     CFortranMatrix  Kr;
@@ -2268,13 +2269,6 @@ void CIntegratorGPR::CalculateCovs(CVerboseStr& vout)
 
     RunBlasLapackPar();
     CSciBlas::gemm(-1.0,'T',Kl,'N',Kr,1.0,Cov);
-
-//    for(size_t indi=0; indi < NumOfValues; indi++){
-//        for(size_t indj=0; indj < NumOfValues; indj++){
-//            cout << Cov[indi][indj] << " ";
-//        }
-//        cout << endl;
-//    }
 }
 
 //==============================================================================

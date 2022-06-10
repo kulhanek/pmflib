@@ -67,8 +67,8 @@ public:
     /// set input energy der proxy
     void AddInputEnergyDerProxy(CEnergyDerProxyPtr p_proxy);
 
-    /// clear energy proxies
-    void ClearInputEnergyProxies(void);
+    /// clear energy der proxies
+    void ClearInputEnergyDerProxies(void);
 
     /// set output free energy surface
     void SetOutputES(CEnergySurfacePtr p_surf);
