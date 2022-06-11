@@ -143,27 +143,6 @@ subroutine pmf_core_in_data_xbar(xbar)
 end subroutine pmf_core_in_data_xbar
 
 !===============================================================================
-! Subroutine:  pmf_core_in_data_flng
-!===============================================================================
-
-subroutine pmf_core_in_data_flng(flng)
-
-    use pmf_dat
-
-    implicit none
-    real(PMFDP),intent(in)     :: flng(:,:)
-    ! -----------------------------------------------
-    integer                    :: i,ridx
-    ! --------------------------------------------------------------------------
-
-    do i=1,NumOfLAtoms
-        ridx = RIndexes(i)
-        LNGFrc(:,i) = flng(:,ridx)*ForceConv
-    end do
-
-end subroutine pmf_core_in_data_flng
-
-!===============================================================================
 ! Subroutine:  pmf_core_in_data_vp
 !===============================================================================
 

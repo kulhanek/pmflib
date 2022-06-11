@@ -1549,7 +1549,7 @@ void CIntegratorGPR::FilterByMFZScore(double zscore,CVerboseStr& vout)
     flags.Set(1);
 
     vout << high;
-    vout << "      Precalculating MF errors ..." << endl;
+    vout << "      Pre-calculating MF errors ..." << endl;
 
     CSimpleVector<double> ipos;
     ipos.CreateVector(NumOfCVs);

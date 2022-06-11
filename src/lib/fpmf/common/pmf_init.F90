@@ -505,7 +505,6 @@ subroutine pmf_init_pmf
           MassInv(NumOfLAtoms), &
           Crd(3,NumOfLAtoms), &
           Frc(3,NumOfLAtoms), &
-          LNGFrc(3,NumOfLAtoms), &
           SHAKEFrc(3,NumOfLAtoms), &
           Vel(3,NumOfLAtoms), &
           CVContext%CVsValues(NumOfCVs), &
@@ -518,7 +517,6 @@ subroutine pmf_init_pmf
 
     ! reset since later it might not be updated
     SHAKEFrc(:,:) = 0.0d0
-    LNGFrc(:,:)   = 0.0d0
 
     if( cst_enabled .or. shake_force_required ) then
         ! allocate arrays used by bluemoon

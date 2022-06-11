@@ -112,7 +112,8 @@ real(PMFDP),allocatable     :: MassInv(:)       ! mass inverse
 real(PMFDP),allocatable     :: Crd(:,:)         ! current coordinates in t
 real(PMFDP),allocatable     :: Frc(:,:)         ! current system forces in t due to potential energy
 real(PMFDP),allocatable     :: Vel(:,:)         ! current system velocities in t-dt/2
-! FIXME - better description
+type(CVContextType)         :: CVContext        ! current CV context (values and derivatives) in t
+
 real(PMFDP)                 :: KinEneVV         ! velocity verlet kinetic energy in t-dt
 real(PMFDP)                 :: KinEneLF         ! leapfrog kinetic energy in t-dt/2
 real(PMFDP)                 :: KinEneV3         ! accurate kinetic energy in t-dt
@@ -120,7 +121,6 @@ real(PMFDP)                 :: KinEneV4         ! accurate kinetic energy in t-2
 real(PMFDP)                 :: KinEneV6         ! accurate kinetic energy in t-3*dt
 real(PMFDP)                 :: PotEne           ! current system potential energy in t
 real(PMFDP)                 :: PMFEne           ! current PMFLib potential energy in t (from RST, MTD, STM)
-type(CVContextType)         :: CVContext        ! current CV context (values and derivatives) in t
 
 ! used by Blue moon
 real(PMFDP),allocatable     :: CrdP(:,:)        ! coordinates in t+dt
@@ -129,8 +129,6 @@ type(CVContextType)         :: CVContextP
 
 real(PMFDP),allocatable     :: CrdBar(:,:)      ! coordinates in t+dt without SHAKE
 real(PMFDP),allocatable     :: SHAKEFrc(:,:)    ! current SHAKE forces in t(+dt) - after PotForce
-
-real(PMFDP),allocatable     :: LNGFrc(:,:)      ! current Langevin forces in t(+dt) - after PotForce
 
 ! MASTER =======================================================================
 
