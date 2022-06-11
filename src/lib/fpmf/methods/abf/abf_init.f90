@@ -43,6 +43,7 @@ subroutine abf_init_method
     use abf_restart
     use abf_trajectory
     use abf_client
+    use abf_cvs
 
     implicit none
     ! --------------------------------------------------------------------------
@@ -56,6 +57,7 @@ subroutine abf_init_method
     call abf_client_register
     call abf_client_get_initial_data
     call abf_output_write_header
+    call usabf_cvs_init_values
 
 end subroutine abf_init_method
 
@@ -75,8 +77,10 @@ subroutine abf_init_dat
     frestart        = .false.
     frstupdate      = 5000
     ftrjsample      = 0
+
     fapply_mask     = .false.
     fapply_abf      = .true.
+    fupdate_abf     = .true.
 
     fenthalpy       = .false.
     fentropy        = .false.
@@ -92,6 +96,9 @@ subroutine abf_init_dat
     feimode         = 1
     fhramp_min      = 20000
     fhramp_max      = 30000
+
+    fusmode         = .false.
+    falignbias      = .false.
 
     NumOfABFCVs         = 0
     NumOfABFCVs   = 0
@@ -187,8 +194,15 @@ subroutine abf_init_print_summary
     write(PMF_OUT,120)  ' ABF Control'
     write(PMF_OUT,120)  ' ------------------------------------------------------'
     write(PMF_OUT,125)  ' Apply ABF force (fapply_abf)            : ', prmfile_onoff(fapply_abf)
+    write(PMF_OUT,125)  ' Update ABF force (fupdate_abf)          : ', prmfile_onoff(fupdate_abf)
     write(PMF_OUT,125)  ' ABF mask mode (fapply_mask)             : ', prmfile_onoff(fapply_mask)
     write(PMF_OUT,125)  ' ABF mask file (fabfmask)                : ', trim(fabfmask)
+
+    write(PMF_OUT,120)
+    write(PMF_OUT,120)  ' US-ABF Control'
+    write(PMF_OUT,120)  ' ------------------------------------------------------'
+    write(PMF_OUT,125)  ' US-ABF enable (fusmode)                 : ', prmfile_onoff(fusmode)
+    write(PMF_OUT,125)  ' Align bias by a bin (falignbias)        : ', prmfile_onoff(falignbias)
 
     write(PMF_OUT,120)
     write(PMF_OUT,120)  ' ABF Interpolation/Extrapolation '

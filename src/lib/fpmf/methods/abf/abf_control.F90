@@ -81,6 +81,7 @@ subroutine abf_control_read_abf(prm_fin)
     call pmf_ctrl_read_integer(prm_fin,'abf_p2_px',abf_p2_px,'I12')
 
     call pmf_ctrl_read_logical(prm_fin,'fapply_abf',fapply_abf)
+    call pmf_ctrl_read_logical(prm_fin,'fupdate_abf',fupdate_abf)
     call pmf_ctrl_read_logical(prm_fin,'fapply_mask',fapply_mask)
 
     call pmf_ctrl_read_integer(prm_fin,'fsample',fsample,'I12')
@@ -107,6 +108,9 @@ subroutine abf_control_read_abf(prm_fin)
 
     call pmf_ctrl_read_real8_wunit(prm_fin,'fepotaverage',EnergyUnit,fepotaverage,'F10.1')
     call pmf_ctrl_read_real8_wunit(prm_fin,'fekinaverage',EnergyUnit,fekinaverage,'F10.1')
+
+    call pmf_ctrl_read_logical(prm_fin,'fusmode',fusmode)
+    call pmf_ctrl_read_logical(prm_fin,'falignbias',falignbias)
 
     call pmf_ctrl_read_logical(prm_fin,'fswitch2zero',fswitch2zero)
     call pmf_ctrl_read_integer(prm_fin,'feimode',feimode,'I12')

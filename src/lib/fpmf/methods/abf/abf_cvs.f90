@@ -70,6 +70,9 @@ subroutine abf_cvs_read_cv(prm_fin,abf_item)
     implicit none
     type(PRMFILE_TYPE),intent(inout)    :: prm_fin
     type(CVTypeABF)                     :: abf_item
+    ! -----------------------------------------------
+    type(UnitType)                      :: forceunit
+    character(1)                        :: buffer
     ! --------------------------------------------------------------------------
 
 ! used CV cannot be controlled by the path subsystem
@@ -127,6 +130,35 @@ subroutine abf_cvs_read_cv(prm_fin,abf_item)
         write(PMF_OUT,170) abf_item%wfac
     end if
 
+    if( prmfile_get_string_by_key(prm_fin,'value',buffer) ) then
+        if( trim(buffer) .eq. '@' ) then
+            abf_item%set_value = .true.
+            write(PMF_OUT,201) '  @initial value'
+        end if
+    end if
+
+    ! ========================
+    if( fusmode ) then
+    ! prepare force unit
+    forceunit       = pmf_unit_div_units( EnergyUnit, pmf_unit_power_unit(abf_item%cv%unit,2) )
+
+    if( abf_item%set_value .eqv. .false. ) then
+        if( prmfile_get_real8_by_key(prm_fin,'value',abf_item%target_value) ) then
+            call abf_item%cv%conv_to_ivalue(abf_item%target_value)
+            write(PMF_OUT,200) abf_item%cv%get_rvalue(abf_item%target_value), trim(abf_item%cv%get_ulabel())
+        else
+            call pmf_utils_exit(PMF_OUT,1,'Target value is not specified (required by US-ABF)!')
+        end if
+    end if
+
+    ! force constant =========
+    if( .not. prmfile_get_real8_by_key(prm_fin,'force_constant',abf_item%force_constant) ) then
+        call pmf_utils_exit(PMF_OUT,1,'force_constant is not specified!')
+    end if
+    call pmf_unit_conv_to_ivalue(forceunit,abf_item%force_constant)
+    write(PMF_OUT,210) pmf_unit_get_rvalue(forceunit,abf_item%force_constant), trim(pmf_unit_label(forceunit))
+    end if
+
     return
 
 110 format('    ** Min value         : ',F16.7,' [',A,']')
@@ -135,7 +167,47 @@ subroutine abf_cvs_read_cv(prm_fin,abf_item)
 170 format('    ** KS W-factor       : ',F16.7)
 180 format('    ** Buffer width      : ',E16.7,' [',A,']')
 
+200 format('    ** Value             : ',F16.7,' [',A,']')
+201 format('    ** Value             : ',A)
+210 format('    ** Force constant    : ',F16.7,' [',A,']')
+
 end subroutine abf_cvs_read_cv
+
+!===============================================================================
+! Subroutine:  abf_cvs_init_values
+!===============================================================================
+
+subroutine abf_cvs_init_values()
+
+    use abf_dat
+    use pmf_dat
+    use pmf_cvs
+    use pmf_unit
+
+    implicit none
+    integer             :: i,gi0
+    ! --------------------------------------------------------------------------
+
+    do i=1,NumOfABFCVs
+        if( ABFCVList(i)%set_value ) then
+            ABFCVList(i)%target_value = CVContext%CVsValues(ABFCVList(i)%cvindx)
+        end if
+    end do
+
+    ! align bias if requested
+    if( falignbias ) then
+        do i=1,NumOfABFCVs
+            cvhist(i,1) = ABFCVList(i)%target_value
+        end do
+        gi0 = pmf_accu_globalindex(abfaccu%PMFAccuType,cvhist(:,1))
+        if( gi0 .ne. 0 ) then
+            do i=1,NumOfABFCVs
+                ABFCVList(i)%target_value = abfaccu%binpos(i,gi0)
+            end do
+        end if
+    end if
+
+end subroutine abf_cvs_init_values
 
 !===============================================================================
 ! Subroutine:  abf_cvs_cv_info
@@ -151,6 +223,8 @@ subroutine abf_cvs_cv_info(abf_item)
 
     implicit none
     type(CVTypeABF) :: abf_item
+    ! -----------------------------------------------
+    type(UnitType)                      :: forceunit
     ! --------------------------------------------------------------------------
 
     write(PMF_OUT,145) trim(abf_item%cv%name)
@@ -166,8 +240,19 @@ subroutine abf_cvs_cv_info(abf_item)
     write(PMF_OUT,180) abf_item%cv%get_rvalue(abf_item%buffer), &
                     trim(abf_item%cv%get_ulabel())
 
+    ! ========================
     if( feimode .eq. 2 ) then
     write(PMF_OUT,170) abf_item%wfac
+    end if
+
+    ! ========================
+    if( fusmode ) then
+    ! prepare force unit
+    forceunit       = pmf_unit_div_units( EnergyUnit, pmf_unit_power_unit(abf_item%cv%unit,2) )
+    write(PMF_OUT,210) abf_item%cv%get_rvalue(abf_item%target_value), &
+                        trim(abf_item%cv%get_ulabel())
+    write(PMF_OUT,220) pmf_unit_get_rvalue(forceunit,abf_item%force_constant), &
+                        trim(pmf_unit_label(forceunit))
     end if
 
     return
@@ -181,32 +266,10 @@ subroutine abf_cvs_cv_info(abf_item)
 170 format('    ** KS W-factor       : ',F16.7)
 180 format('    ** Buffer width      : ',E16.7,' [',A,']')
 
+210 format('    ** Target value      : ',E16.7,' [',A,']')
+220 format('    ** Force constant    : ',E16.7,' [',A,']')
+
 end subroutine abf_cvs_cv_info
-
-!===============================================================================
-! Subroutine:  abf_cvs_cv_info_shake
-!===============================================================================
-
-subroutine abf_cvs_cv_info_shake(abf_item)
-
-    use abf_dat
-    use pmf_dat
-    use pmf_cvs
-    use prmfile
-
-    implicit none
-    type(CVTypeABF) :: abf_item
-    ! --------------------------------------------------------------------------
-
-    write(PMF_OUT,145) trim(abf_item%cv%name)
-    write(PMF_OUT,146) trim(abf_item%cv%ctype)
-
-    return
-
-145 format('    ** Name              : ',a)
-146 format('    ** Type              : ',a)
-
-end subroutine abf_cvs_cv_info_shake
 
 !===============================================================================
 

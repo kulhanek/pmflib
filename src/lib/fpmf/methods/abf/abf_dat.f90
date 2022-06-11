@@ -43,26 +43,35 @@ integer     :: fsample      ! output sample period in steps
 logical     :: frestart     ! 1 - restart job with previous data, 0 - otherwise not
 integer     :: frstupdate   ! how often is restart file written
 integer     :: ftrjsample   ! how often save accumulator to "accumulator evolution"
+
 logical     :: fapply_mask  ! off - disable ABF mask, on - enable ABF mask
 logical     :: fapply_abf   ! on - apply ABF, off - do not apply ABF
-integer     :: feimode      ! interpolation/extrapolation mode
-                            ! 0 - disabled
-                            ! 1 - linear ramp
+logical     :: fupdate_abf  ! on - update ABF bias, off - keep initial bias
 
+! enthalpy/entropy calculations
 logical     :: fenthalpy    ! collect data for enthalpy calculation
 logical     :: fentropy     ! collect data for entropy calculation
 logical     :: fentdecomp   ! collect additional correlation terms
 logical     :: frecord      ! record time progress
 
-integer     :: ftds_ekin_src    ! source of kinetic energy
-                                ! 1 - EkinVV
-                                ! 2 - EkinLF
+integer     :: ftds_ekin_src    ! source of kinetic energy, see abf_core_update_history for supported values
 
 logical     :: ftds_add_bias    ! include ABF bias into TdS calculation
 real(PMFDP) :: ftds_ekin_scale  ! scale kinetic energy by this factor
 
 real(PMFDP) :: fepotaverage
 real(PMFDP) :: fekinaverage
+
+! US mode
+logical     :: fusmode      ! enable US mode
+logical     :: falignbias   ! move bottom of the biasing potential into the closest bin position
+
+! interpolation modes
+integer     :: feimode      ! interpolation/extrapolation mode
+                            ! 0 - disabled
+                            ! 1 - linear ramp
+                            ! 2 - kernel smoother
+                            ! 3 - linear smoother, only one CV
 
 ! linear ramp
 integer     :: fhramp_min
@@ -100,6 +109,13 @@ type CVTypeABF
     integer                 :: nbins            ! number of bins
     real(PMFDP)             :: wfac             ! smoothing factor in number of bins
     real(PMFDP)             :: buffer           ! switch biasing potential to zero at CV boundary
+
+    ! US mode
+    logical                 :: set_value        ! set target value to start value
+    real(PMFDP)             :: target_value     ! required value of restraint
+    real(PMFDP)             :: force_constant   ! sigma value
+    real(PMFDP)             :: deviation        ! deviation between real and actual value
+    real(PMFDP)             :: energy
 end type CVTypeABF
 
 ! ----------------------

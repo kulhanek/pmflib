@@ -649,29 +649,31 @@ subroutine abf_accu_add_data_online(cvs,gfx,bfx,epot,erst,ekin,etot)
         end if
     end do
 
-    if( fserver_enabled ) then
-        abfaccu%inc_nsamples(gi0) = abfaccu%inc_nsamples(gi0) + 1.0d0
-        invn = 1.0d0 / abfaccu%inc_nsamples(gi0)
+    if( fupdate_abf ) then
+        if( fserver_enabled ) then
+            abfaccu%inc_nsamples(gi0) = abfaccu%inc_nsamples(gi0) + 1.0d0
+            invn = 1.0d0 / abfaccu%inc_nsamples(gi0)
+
+            do i=1,NumOfABFCVs
+                icf = pxif(i)
+                dicf1 = icf - abfaccu%inc_micf(i,gi0)
+                abfaccu%inc_micf(i,gi0)  = abfaccu%inc_micf(i,gi0)  + dicf1 * invn
+                dicf2 = icf -  abfaccu%inc_micf(i,gi0)
+                abfaccu%inc_m2icf(i,gi0) = abfaccu%inc_m2icf(i,gi0) + dicf1 * dicf2
+            end do
+
+        end if
+
+        ! increase number of samples for applied bias - this uses different counter for number of samples
+        abfaccu%bnsamples(gi0) = abfaccu%bnsamples(gi0) + 1.0d0
+        invn = 1.0d0 / abfaccu%bnsamples(gi0)
 
         do i=1,NumOfABFCVs
             icf = pxif(i)
-            dicf1 = icf - abfaccu%inc_micf(i,gi0)
-            abfaccu%inc_micf(i,gi0)  = abfaccu%inc_micf(i,gi0)  + dicf1 * invn
-            dicf2 = icf -  abfaccu%inc_micf(i,gi0)
-            abfaccu%inc_m2icf(i,gi0) = abfaccu%inc_m2icf(i,gi0) + dicf1 * dicf2
+            dicf1 = icf - abfaccu%bmicf(i,gi0)
+            abfaccu%bmicf(i,gi0)  = abfaccu%bmicf(i,gi0)  + dicf1 * invn
         end do
-
     end if
-
-    ! increase number of samples for applied bias - this uses different counter for number of samples
-    abfaccu%bnsamples(gi0) = abfaccu%bnsamples(gi0) + 1.0d0
-    invn = 1.0d0 / abfaccu%bnsamples(gi0)
-
-    do i=1,NumOfABFCVs
-        icf = pxif(i)
-        dicf1 = icf - abfaccu%bmicf(i,gi0)
-        abfaccu%bmicf(i,gi0)  = abfaccu%bmicf(i,gi0)  + dicf1 * invn
-    end do
 
 end subroutine abf_accu_add_data_online
 
@@ -871,8 +873,12 @@ subroutine abf_accu_get_data(cvs,gfx)
     gi0 = pmf_accu_globalindex(abfaccu%PMFAccuType,cvs)
     if( gi0 .le. 0 ) return ! out of valid area
 
+    if( fswitch2zero ) then
+        call abf_get_switching_factors(cvs)
+    end if
+
     w      = abfaccu%weights(gi0)
-    gfx(:) = w * abfaccu%bmicf(:,gi0)
+    gfx(:) = w * abfaccu%bmicf(:,gi0) * sfac(:)
 
 end subroutine abf_accu_get_data
 

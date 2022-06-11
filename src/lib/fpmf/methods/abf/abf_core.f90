@@ -71,7 +71,9 @@ subroutine abf_core_main
     call abf_output_write
     call abf_trajectory_write_snapshot
     call abf_restart_update
-    call abf_client_exchange_data(.false.)
+    if( fupdate_abf ) then
+        call abf_client_exchange_data(.false.)
+    end if
 
 end subroutine abf_core_main
 
@@ -211,6 +213,37 @@ subroutine abf_core_update_history()
     return
 
 end subroutine abf_core_update_history
+
+!===============================================================================
+! Subroutine:  abf_core_get_us_bias
+! get bias from US restraints
+!===============================================================================
+
+subroutine abf_core_get_us_bias(values,gfx,bene)
+
+    use usabf_dat
+
+    implicit none
+    real(PMFDP)     :: values(:)
+    real(PMFDP)     :: gfx(:)
+    real(PMFDP)     :: bene
+    ! --------------------------------------------
+    integer         :: i
+    ! --------------------------------------------------------------------------
+
+    bene = 0.0
+
+    do i=1,NumOfUSABFCVs
+
+        USABFCVList(i)%deviation = USABFCVList(i)%cv%get_deviation(values(i),USABFCVList(i)%target_value)
+
+        USABFCVList(i)%energy = 0.5d0*USABFCVList(i)%force_constant*USABFCVList(i)%deviation**2
+        bene = bene + USABFCVList(i)%energy
+
+        gfx(i) = - USABFCVList(i)%force_constant*USABFCVList(i)%deviation
+    end do
+
+end subroutine abf_core_get_us_bias
 
 !===============================================================================
 ! Subroutine:  abf_core_update_zdhist
