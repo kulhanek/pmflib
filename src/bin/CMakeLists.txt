@@ -32,10 +32,6 @@ ADD_SUBDIRECTORY(mtd-energy)
 # ABP utilities
 ADD_SUBDIRECTORY(abp-energy)
 
-# ABF utilities
-#ADD_SUBDIRECTORY(abf-gpr-entropy-der)
-ADD_SUBDIRECTORY(abf-gpr-opthyprms)
-
 ## network utilities ------------------------------------------------------------
 IF(PMFLIB_NETWORK)
     # PMFLib MWA utilities

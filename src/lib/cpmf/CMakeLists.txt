@@ -20,12 +20,6 @@ SET(CPMF_METHODS_SRC
     # smoothers
         common/smoothers/SmootherGPR.cpp
 
-    # filters
-        common/Filter.cpp
-        common/filters/MAFilter.cpp
-        common/filters/SGFilter.cpp
-        common/filters/GPFilter.cpp
-
     # PMF
         methods/pmf/PMFProxy_dH.cpp
 
