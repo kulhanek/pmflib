@@ -32,9 +32,7 @@ using namespace std;
 CABFProxy_mTdS::CABFProxy_mTdS(void)
 {
     SetType(ABF_TdS_HH);
-    Requires.push_back("TABF");
     Requires.push_back("ABF");
-    Requires.push_back("US-ABF");
 }
 
 //------------------------------------------------------------------------------
@@ -48,8 +46,6 @@ CABFProxy_mTdS::~CABFProxy_mTdS(void)
 bool CABFProxy_mTdS::IsCompatible(CPMFAccumulatorPtr accu)
 {
     if( accu->GetMethod() == "ABF" ) return(true);
-    if( accu->GetMethod() == "TABF" ) return(true);
-    if( accu->GetMethod() == "US-ABF" ) return(true);
     return(false);
 }
 
@@ -115,19 +111,6 @@ void CABFProxy_mTdS::SetType(EABFTdSType type)
     // -------------------
         case(ABF_TdS_SK):
             Provide = "ABF -TdS(x) - SK";
-        break;
-
-    // -------------------
-        case(ABF_TdS_LP):
-            Provide = "ABF -TdS(x) - LP";
-        break;
-    // -------------------
-        case(ABF_TdS_LR):
-            Provide = "ABF -TdS(x) - LR";
-        break;
-    // -------------------
-        case(ABF_TdS_LK):
-            Provide = "ABF -TdS(x) - LK";
         break;
 
     // -------------------
@@ -281,25 +264,6 @@ double CABFProxy_mTdS::GetValue(int ibin,int icv,EProxyRealm realm) const
         case(ABF_TdS_SK):
             c11     = Accu->GetData("C11TDSSK",ibin,icv)/nsamples;
             m2icf   = Accu->GetData("M2TDSSX",ibin,icv);
-            m2ene   = Accu->GetData("M2TDSEKIN",ibin);
-        break;
-
-    // -------------------
-        case(ABF_TdS_LP):
-            c11     = Accu->GetData("C11TDSLP",ibin,icv)/nsamples;
-            m2icf   = Accu->GetData("M2TDSLX",ibin,icv);
-            m2ene   = Accu->GetData("M2TDSEPOT",ibin);
-        break;
-    // -------------------
-        case(ABF_TdS_LR):
-            c11     = Accu->GetData("C11TDSLR",ibin,icv)/nsamples;
-            m2icf   = Accu->GetData("M2TDSLX",ibin,icv);
-            m2ene   = Accu->GetData("M2TDSERST",ibin);
-        break;
-    // -------------------
-        case(ABF_TdS_LK):
-            c11     = Accu->GetData("C11TDSLK",ibin,icv)/nsamples;
-            m2icf   = Accu->GetData("M2TDSLX",ibin,icv);
             m2ene   = Accu->GetData("M2TDSEKIN",ibin);
         break;
 

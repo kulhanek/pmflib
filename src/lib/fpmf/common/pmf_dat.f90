@@ -94,9 +94,6 @@ logical                     :: abp_enabled
 logical                     :: mon_enabled
 logical                     :: stm_enabled
 logical                     :: pdrv_enabled
-! testing
-logical                     :: tabf_enabled
-logical                     :: usabf_enabled
 
 ! requests
 logical                     :: shake_force_required     ! we need force due to SHAKE
@@ -159,24 +156,10 @@ character(PMF_MAX_PATH)     :: fmtdhills
 
 ! adaptive biasing force method ------------------
 character(PMF_MAX_PATH)     :: fabfdef
-character(PMF_MAX_PATH)     :: fabfshakedef
 character(PMF_MAX_PATH)     :: fabfmask
 character(PMF_MAX_PATH)     :: fabfout
 character(PMF_MAX_PATH)     :: fabfrst
 character(PMF_MAX_PATH)     :: fabftrj
-
-! adaptive biasing force method (testing) --------
-character(PMF_MAX_PATH)     :: ftabfdef
-character(PMF_MAX_PATH)     :: ftabfout
-character(PMF_MAX_PATH)     :: ftabficf
-character(PMF_MAX_PATH)     :: ftabfrst
-character(PMF_MAX_PATH)     :: ftabftrj
-
-! umbrella sampling/adaptive biasing force method (testing) --------
-character(PMF_MAX_PATH)     :: fusabfdef
-character(PMF_MAX_PATH)     :: fusabfout
-character(PMF_MAX_PATH)     :: fusabfrst
-character(PMF_MAX_PATH)     :: fusabftrj
 
 ! adaptive biasing potential method ------------------
 character(PMF_MAX_PATH)     :: fabpdef

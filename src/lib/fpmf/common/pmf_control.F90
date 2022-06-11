@@ -38,8 +38,6 @@ subroutine pmf_control_read_pmflib_group(prm_fin)
     use mon_control
     use rst_control
     use abf_control
-    use tabf_control
-    use usabf_control
     use abp_control
     use mtd_control
     use cst_control
@@ -81,11 +79,6 @@ subroutine pmf_control_read_pmflib_group(prm_fin)
     call stm_control_read_stm(prm_fin)
     call cst_control_read_con(prm_fin)
     call rst_control_read_rst(prm_fin)
-
-    write(PMF_OUT,*)
-    call pmf_utils_heading(PMF_OUT,'PMF Methods (Testing)','=')
-    call tabf_control_read_abf(prm_fin)
-    call usabf_control_read_abf(prm_fin)
 
     write(PMF_OUT,*)
     call pmf_utils_heading(PMF_OUT,'Extensions','=')
@@ -274,19 +267,6 @@ subroutine pmf_control_read_files(prm_fin)
             call pmf_ctrl_print_default_stritem('fabfout',fabfout)
             call pmf_ctrl_print_default_stritem('fabfrst',fabfrst)
         end if
-        if( tabf_enabled ) then
-            write(PMF_OUT,410)
-            call pmf_ctrl_print_default_stritem('ftabfdef',ftabfdef)
-            call pmf_ctrl_print_default_stritem('ftabfout',ftabfout)
-            call pmf_ctrl_print_default_stritem('ftabfrst',ftabfrst)
-            call pmf_ctrl_print_default_stritem('ftabficf',ftabficf)
-        end if
-        if( usabf_enabled ) then
-            write(PMF_OUT,420)
-            call pmf_ctrl_print_default_stritem('fusabfdef',fusabfdef)
-            call pmf_ctrl_print_default_stritem('fusabfout',fusabfout)
-            call pmf_ctrl_print_default_stritem('fusabfrst',fusabfrst)
-        end if
         if( mtd_enabled ) then
             write(PMF_OUT,300)
             call pmf_ctrl_print_default_stritem('fmtddef',fmtddef)
@@ -336,19 +316,6 @@ subroutine pmf_control_read_files(prm_fin)
         call  pmf_ctrl_read_stritem(prm_fin,'fabfmask',fabfmask)
         call  pmf_ctrl_read_stritem(prm_fin,'fabfout',fabfout)
         call  pmf_ctrl_read_stritem(prm_fin,'fabfrst',fabfrst)
-    end if
-    if( tabf_enabled ) then
-        write(PMF_OUT,410)
-        call  pmf_ctrl_read_stritem(prm_fin,'ftabfdef',ftabfdef)
-        call  pmf_ctrl_read_stritem(prm_fin,'ftabfout',ftabfout)
-        call  pmf_ctrl_read_stritem(prm_fin,'ftabfrst',ftabfrst)
-        call  pmf_ctrl_read_stritem(prm_fin,'ftabficf',ftabficf)
-    end if
-    if( usabf_enabled ) then
-        write(PMF_OUT,420)
-        call  pmf_ctrl_read_stritem(prm_fin,'fusabfdef',fusabfdef)
-        call  pmf_ctrl_read_stritem(prm_fin,'fusabfout',fusabfout)
-        call  pmf_ctrl_read_stritem(prm_fin,'fusabfrst',fusabfrst)
     end if
     if( mtd_enabled ) then
         write(PMF_OUT,300)
@@ -779,8 +746,6 @@ subroutine pmf_control_read_method_cvs_and_paths(prm_fin)
     use mon_control
     use rst_control
     use abf_control
-    use tabf_control
-    use usabf_control
     use abp_control
     use mtd_control
     use cst_control
@@ -799,12 +764,6 @@ subroutine pmf_control_read_method_cvs_and_paths(prm_fin)
     ! read method CVs setup -------------------------
     if( abf_enabled ) then
         call abf_control_read_cvs(prm_fin)
-    end if
-    if( tabf_enabled ) then
-        call tabf_control_read_cvs(prm_fin)
-    end if
-    if( usabf_enabled ) then
-        call usabf_control_read_cvs(prm_fin)
     end if
     if( abp_enabled ) then
         call abp_control_read_cvs(prm_fin)

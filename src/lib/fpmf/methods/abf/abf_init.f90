@@ -57,7 +57,7 @@ subroutine abf_init_method
     call abf_client_register
     call abf_client_get_initial_data
     call abf_output_write_header
-    call usabf_cvs_init_values
+    call abf_cvs_init_values
 
 end subroutine abf_init_method
 

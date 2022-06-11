@@ -255,11 +255,6 @@ bool CPMFEnergyIntegrate::Run(void)
                 RUNTIME_ERROR(error);
             }
     // -----------------------------------------------
-        } else if ( Options.GetOptRealm() == "dG_MTC" ) {
-            CABFProxy_dG_Ptr proxy    = CABFProxy_dG_Ptr(new CABFProxy_dG);
-            proxy->SetType(ABF_MICF_MTC);
-            lproxy = proxy;
-    // -----------------------------------------------
         } else if ( Options.GetOptRealm() == "dG_p" ) {
             CABFProxy_dG_Ptr proxy    = CABFProxy_dG_Ptr(new CABFProxy_dG);
             proxy->SetType(ABF_MICF_POT);
@@ -342,22 +337,6 @@ bool CPMFEnergyIntegrate::Run(void)
         } else if ( Options.GetOptRealm() == "-TdS_SK" ) {
             CABFProxy_mTdS_Ptr proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
             proxy->SetType(ABF_TdS_SK);
-            lproxy = proxy;
-
-    // -----------------------------------------------
-        } else if ( Options.GetOptRealm() == "-TdS_LP" ) {
-            CABFProxy_mTdS_Ptr proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
-            proxy->SetType(ABF_TdS_LP);
-            lproxy = proxy;
-    // -----------------------------------------------
-        } else if ( Options.GetOptRealm() == "-TdS_LR" ) {
-            CABFProxy_mTdS_Ptr proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
-            proxy->SetType(ABF_TdS_LR);
-            lproxy = proxy;
-    // -----------------------------------------------
-        } else if ( Options.GetOptRealm() == "-TdS_LK" ) {
-            CABFProxy_mTdS_Ptr proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
-            proxy->SetType(ABF_TdS_LK);
             lproxy = proxy;
 
     // -----------------------------------------------

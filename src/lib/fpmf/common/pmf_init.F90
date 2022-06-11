@@ -82,9 +82,6 @@ subroutine pmf_init_dat
     stm_enabled  = .false.
     pdrv_enabled = .false.
 
-    tabf_enabled    = .false.
-    usabf_enabled   = .false.
-
     shake_force_required    = .false.
 
     fucell(:,:) = 0.0d0
@@ -113,22 +110,10 @@ subroutine pmf_init_dat
     fmtdhills   = '_mtd.hills'
 
     fabfdef     = '{ABF}'
-    fabfshakedef= '{ABF-SHAKE}'
     fabfmask    = '_abf.mask'
     fabfout     = '_abf.out'
     fabfrst     = '_abf.rst'
     fabftrj     = '_abf.trj'
-
-    ftabfdef    = '{TABF}'
-    ftabfout    = '_tabf.out'
-    ftabfrst    = '_tabf.rst'
-    ftabftrj    = '_tabf.trj'
-    ftabficf    = '_tabf.icf'
-
-    fusabfdef   = '{US-ABF}'
-    fusabfout   = '_us-abf.out'
-    fusabfrst   = '_us-abf.rst'
-    fusabftrj   = '_us-abf.trj'
 
     fabpdef     = '{ABP}'
     fabpout     = '_abp.out'
@@ -558,8 +543,6 @@ subroutine pmf_init_pmf_methods()
     use cst_init
     use stm_init
     use pdrv_init
-    use tabf_init
-    use usabf_init
 
     implicit none
     ! --------------------------------------------------------------------------
@@ -574,14 +557,6 @@ subroutine pmf_init_pmf_methods()
 
     if( abf_enabled ) then
         call abf_init_method
-    end if
-
-    if( tabf_enabled ) then
-        call tabf_init_method
-    end if
-
-    if( usabf_enabled ) then
-        call usabf_init_method
     end if
 
     if( abp_enabled ) then
@@ -605,8 +580,7 @@ subroutine pmf_init_pmf_methods()
     end if
 
     pmf_enabled = abf_enabled .or. abp_enabled .or. mtd_enabled .or. stm_enabled &
-               .or. cst_enabled .or. rst_enabled .or. mon_enabled .or. pdrv_enabled &
-               .or. tabf_enabled .or. usabf_enabled
+               .or. cst_enabled .or. rst_enabled .or. mon_enabled .or. pdrv_enabled
 
 end subroutine pmf_init_pmf_methods
 

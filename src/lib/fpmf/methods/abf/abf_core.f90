@@ -221,7 +221,7 @@ end subroutine abf_core_update_history
 
 subroutine abf_core_get_us_bias(values,gfx,bene)
 
-    use usabf_dat
+    use abf_dat
 
     implicit none
     real(PMFDP)     :: values(:)
@@ -233,14 +233,14 @@ subroutine abf_core_get_us_bias(values,gfx,bene)
 
     bene = 0.0
 
-    do i=1,NumOfUSABFCVs
+    do i=1,NumOfABFCVs
 
-        USABFCVList(i)%deviation = USABFCVList(i)%cv%get_deviation(values(i),USABFCVList(i)%target_value)
+        ABFCVList(i)%deviation = ABFCVList(i)%cv%get_deviation(values(i),ABFCVList(i)%target_value)
 
-        USABFCVList(i)%energy = 0.5d0*USABFCVList(i)%force_constant*USABFCVList(i)%deviation**2
-        bene = bene + USABFCVList(i)%energy
+        ABFCVList(i)%energy = 0.5d0*ABFCVList(i)%force_constant*ABFCVList(i)%deviation**2
+        bene = bene + ABFCVList(i)%energy
 
-        gfx(i) = - USABFCVList(i)%force_constant*USABFCVList(i)%deviation
+        gfx(i) = - ABFCVList(i)%force_constant*ABFCVList(i)%deviation
     end do
 
 end subroutine abf_core_get_us_bias
