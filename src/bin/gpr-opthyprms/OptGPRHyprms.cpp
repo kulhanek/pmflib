@@ -949,16 +949,20 @@ void COptGPRHyprms::PrintGradientSummary(void)
     for(int prm=0; prm < (int)HyprmsEnabled.size(); prm++){
         if( HyprmsEnabled[prm] ){
             vout << format("%5d ")%(ind+1);
+            double value = 0.0;
             if( prm == 0 ){
                 vout << "SigmaF2    ";
+                value = Hyprms[ind]*Hyprms[ind] + Options.GetOptMinSigmaF2();
             } else if( (prm >= noffset) && (prm < woffset) ){
                 vout << "NCorr      ";
+                value = Hyprms[ind]*Hyprms[ind] + Options.GetOptMinNCorr();
             } else {
                 int cv = prm - woffset;
                 vout << format("WFac#%-2d    ")%(cv+1);
+                value = Hyprms[ind]*Hyprms[ind] + Options.GetOptMinWFac();
             }
             gnorm += HyprmsGrd[ind]*HyprmsGrd[ind];
-            vout << format("%14.6e %14.6e")%Hyprms[ind]%HyprmsGrd[ind] << endl;
+            vout << format("%14.6e %14.6e")%(value)%HyprmsGrd[ind] << endl;
             ind++;
         }
     }
