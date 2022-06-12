@@ -161,7 +161,11 @@ bool CEnthalpy::Run(void)
     for(size_t i=0; i < Accumulators.size(); i++){
         CPMFAccumulatorPtr accu = Accumulators[i];
         CPMFProxy_dH_Ptr proxy;
-        if( Options.GetOptRealm() == "<Etot>" ){
+
+        if( Options.GetOptRealm() == "<Eint>" ){
+            proxy    = CPMFProxy_dH_Ptr(new CPMFProxy_dH);
+            proxy->SetType(PMF_EINT);
+        } else if( Options.GetOptRealm() == "<Etot>" ){
             proxy    = CPMFProxy_dH_Ptr(new CPMFProxy_dH);
             proxy->SetType(PMF_ETOT);
     // -----------------------------------------------

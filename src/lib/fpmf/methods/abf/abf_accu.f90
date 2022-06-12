@@ -82,7 +82,9 @@ subroutine abf_accu_init()
     endif
 
     if( fenthalpy ) then
-        allocate(   abfaccu%mepot(abfaccu%tot_nbins),   &
+        allocate(   abfaccu%meint(abfaccu%tot_nbins),   &
+                    abfaccu%m2eint(abfaccu%tot_nbins),  &
+                    abfaccu%mepot(abfaccu%tot_nbins),   &
                     abfaccu%m2epot(abfaccu%tot_nbins),  &
                     abfaccu%merst(abfaccu%tot_nbins),   &
                     abfaccu%m2erst(abfaccu%tot_nbins),  &
@@ -205,6 +207,8 @@ subroutine abf_accu_clear()
     abfaccu%bmicf(:,:)      = 0.0d0
 
     if( fenthalpy ) then
+        abfaccu%meint(:)        = 0.0d0
+        abfaccu%m2eint(:)       = 0.0d0
         abfaccu%mepot(:)        = 0.0d0
         abfaccu%m2epot(:)       = 0.0d0
         abfaccu%merst(:)        = 0.0d0
@@ -305,6 +309,20 @@ subroutine abf_accu_read(iounit)
             ! ------------------------------------
                 case('M2ICF')
                     call pmf_accu_read_rbuf_M(abfaccu%PMFAccuType,iounit,keyline,abfaccu%m2icf)
+            ! ------------------------------------
+                case('MEINT')
+                    if( fenthalpy ) then
+                        call pmf_accu_read_rbuf_B(abfaccu%PMFAccuType,iounit,keyline,abfaccu%meint)
+                    else
+                        call pmf_accu_skip_section(iounit,keyline,ABF_OUT)
+                    end if
+            ! ------------------------------------
+                case('M2EINT')
+                    if( fenthalpy ) then
+                        call pmf_accu_read_rbuf_B(abfaccu%PMFAccuType,iounit,keyline,abfaccu%m2eint)
+                    else
+                        call pmf_accu_skip_section(iounit,keyline,ABF_OUT)
+                    end if
             ! ------------------------------------
                 case('MEPOT')
                     if( fenthalpy ) then
@@ -474,6 +492,8 @@ subroutine abf_accu_write(iounit,full)
     call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'M2GFX',      'M2',abfaccu%m2gfx, 'NSAMPLES','MGFX')
 
     if( fenthalpy ) then
+        call pmf_accu_write_rbuf_B(abfaccu%PMFAccuType,iounit,'MEINT',  'WA',abfaccu%meint, 'NSAMPLES')
+        call pmf_accu_write_rbuf_B(abfaccu%PMFAccuType,iounit,'M2EINT', 'M2',abfaccu%m2eint,'NSAMPLES','MEINT')
         call pmf_accu_write_rbuf_B(abfaccu%PMFAccuType,iounit,'MEPOT',  'WA',abfaccu%mepot, 'NSAMPLES')
         call pmf_accu_write_rbuf_B(abfaccu%PMFAccuType,iounit,'M2EPOT', 'M2',abfaccu%m2epot,'NSAMPLES','MEPOT')
         call pmf_accu_write_rbuf_B(abfaccu%PMFAccuType,iounit,'MERST',  'WA',abfaccu%merst, 'NSAMPLES')
@@ -560,11 +580,12 @@ subroutine abf_accu_add_data_online(cvs,gfx,bfx,epot,erst,ekin,etot)
     real(PMFDP),intent(in)  :: etot
     ! -----------------------------------------------
     integer        :: gi0, i
-    real(PMFDP)    :: invn, icf, igf
+    real(PMFDP)    :: invn, icf, igf, eint
     real(PMFDP)    :: depot1, depot2
     real(PMFDP)    :: derst1, derst2
     real(PMFDP)    :: dekin1, dekin2
     real(PMFDP)    :: detot1, detot2
+    real(PMFDP)    :: deint1, deint2
     real(PMFDP)    :: dicf1, dicf2
     real(PMFDP)    :: dgfx1, dgfx2
     real(PMFDP)    :: dpp, dpp1, dpp2
@@ -588,6 +609,13 @@ subroutine abf_accu_add_data_online(cvs,gfx,bfx,epot,erst,ekin,etot)
     invn = 1.0d0 / abfaccu%nsamples(gi0)
 
     if( fenthalpy ) then
+        ! internal energy
+        eint = epot + erst
+        deint1 = eint - abfaccu%meint(gi0)
+        abfaccu%meint(gi0)  = abfaccu%meint(gi0)  + deint1 * invn
+        deint2 = eint - abfaccu%meint(gi0)
+        abfaccu%m2eint(gi0) = abfaccu%m2eint(gi0) + deint1 * deint2
+
         ! potential energy
         depot1 = epot - abfaccu%mepot(gi0)
         abfaccu%mepot(gi0)  = abfaccu%mepot(gi0)  + depot1 * invn

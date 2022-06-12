@@ -136,6 +136,8 @@ type,extends(PMFAccuType) :: ABFAccuType
     real(PMFDP),pointer    :: m2gfx(:,:)                ! M2 of GFX
 
 ! enthalpy
+    real(PMFDP),pointer    :: meint(:)                  ! mean of internal energy
+    real(PMFDP),pointer    :: m2eint(:)                 ! M2 of internal energy
     real(PMFDP),pointer    :: mepot(:)                  ! mean of pot energy
     real(PMFDP),pointer    :: m2epot(:)                 ! M2 of pot energy
     real(PMFDP),pointer    :: merst(:)                  ! mean of rst energy

@@ -89,13 +89,14 @@ public:
 // description of options ---------------------------------------------------
    CSO_MAP_OPT(CSmallString,                           /* option type */
                 Realm,                        /* option name */
-                "<Epot>",                          /* default value */
+                "<Eint>",                          /* default value */
                 false,                          /* is option mandatory */
                 'r',                           /* short option name */
                 "realm",                      /* long option name */
                 "NAME",                           /* parameter name */
                 "Intended output:\n"
-                "** <Epot>  - enthalpy as the ensemble average of the potential energy (default)\n"
+                "** <Eint>  - enthalpy as the ensemble average of the potential and restraint energy (default)\n"
+                "** <Epot>  - enthalpy as the ensemble average of the potential energy\n"
                 "** <Ekin>  - the ensemble average of the kinetic energy (this should be a constant for simulations at a constant temperature)\n"
                 "** <Erst>  - the ensemble average of the PMFLib restrain energy\n"
                 "** <Etot>  - enthalpy as the ensemble average of the total energy\n"

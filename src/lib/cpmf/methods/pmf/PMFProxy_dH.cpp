@@ -30,13 +30,11 @@ using namespace std;
 
 CPMFProxy_dH::CPMFProxy_dH(void)
 {
-    Provide = "PMF dH(x)=<Epot>";
-    Type = PMF_EPOT;
+    Provide = "PMF dH(x)=<Eint>";
+    Type = PMF_EINT;
 
     Requires.push_back("ABF");
-    Requires.push_back("TABF");
     Requires.push_back("CST");
-    Requires.push_back("US-ABF");
 }
 
 //------------------------------------------------------------------------------
@@ -54,6 +52,10 @@ void CPMFProxy_dH::SetType(EPMFdHType type)
     Type = type;
 
     switch(Type){
+    // -------------------
+        case(PMF_EINT):
+            Provide = "PMF dH(x)=<Eint>";
+        break;
     // -------------------
         case(PMF_ETOT):
             Provide = "PMF dH(x)=<Etot>";
@@ -112,6 +114,16 @@ double CPMFProxy_dH::GetValue( int ibin,EProxyRealm realm) const
     double  ncorr       = Accu->GetNCorr();
 
     switch(Type){
+    // -------------------
+        case(PMF_EINT):
+            if( Accu->HasSectionData("MEINT") ){
+                mene    = Accu->GetData("MEINT",ibin);
+                m2ene   = Accu->GetData("M2EINT",ibin);
+            } else {
+                mene    = Accu->GetData("MEPOT",ibin) + Accu->GetData("MERST",ibin);
+                m2ene    = Accu->GetData("M2ETOT",ibin) + Accu->GetData("M2ERST",ibin);
+            }
+        break;
     // -------------------
         case(PMF_ETOT):
             mene    = Accu->GetData("METOT",ibin);
