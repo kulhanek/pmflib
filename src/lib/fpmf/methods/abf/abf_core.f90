@@ -116,7 +116,7 @@ subroutine abf_core_update_history()
 
     implicit none
     integer                :: i,j,ci
-    real(PMFDP)            :: ekin
+    real(PMFDP)            :: ekin,eus
     ! --------------------------------------------------------------------------
 
 ! shift accuvalue history
@@ -177,22 +177,31 @@ subroutine abf_core_update_history()
 ! apply force filters
     la(:) = 0.0d0
     if( fapply_abf ) then
-        ! calculate abf force to be applied
-        select case(feimode)
-            case(0)
-                call abf_accu_get_data(cvhist(:,hist_len),la)
-            case(1)
-                call abf_accu_get_data_lramp(cvhist(:,hist_len),la)
-            case(2)
-                call pmf_timers_start_timer(PMFLIB_ABF_KS_TIMER)
-                    call abf_accu_get_data_ksmooth(cvhist(:,hist_len),la)
-                call pmf_timers_stop_timer(PMFLIB_ABF_KS_TIMER)
-            case(3)
-                call abf_accu_get_data_lsmooth(cvhist(:,hist_len),la)
-            case default
-                call pmf_utils_exit(PMF_OUT,1, &
-                     '[ABF] Not implemented extrapolation/interpolation mode in abf_core_update_history!')
-        end select
+        if( fusmode ) then
+            ! US-ABF
+            call abf_core_get_us_bias(cvhist(:,hist_len),la,eus)
+            ! since ersthist(hist_len) is already updated
+            ! we can add the bias into energy PMFEne
+            PMFEne = PMFEne + eus
+        else
+            ! regular ABF
+            ! calculate abf force to be applied
+            select case(feimode)
+                case(0)
+                    call abf_accu_get_data(cvhist(:,hist_len),la)
+                case(1)
+                    call abf_accu_get_data_lramp(cvhist(:,hist_len),la)
+                case(2)
+                    call pmf_timers_start_timer(PMFLIB_ABF_KS_TIMER)
+                        call abf_accu_get_data_ksmooth(cvhist(:,hist_len),la)
+                    call pmf_timers_stop_timer(PMFLIB_ABF_KS_TIMER)
+                case(3)
+                    call abf_accu_get_data_lsmooth(cvhist(:,hist_len),la)
+                case default
+                    call pmf_utils_exit(PMF_OUT,1, &
+                         '[ABF] Not implemented extrapolation/interpolation mode in abf_core_update_history!')
+            end select
+        end if
 
         ! project abf force along coordinate
         do i=1,NumOfABFCVs
@@ -477,7 +486,8 @@ subroutine abf_core_force_2pX()
     end do
     fzinvhist(:,:,hist_len) = fzinv(:,:)
 
-    ! FIXME - include periodicity in dCV calulation
+    ! this algorithm is not suitable for periodic CVs
+    ! this is tested in abf_init_print_summary
 
     do i=1,NumOfABFCVs
         select case(abf_p2_vx)
