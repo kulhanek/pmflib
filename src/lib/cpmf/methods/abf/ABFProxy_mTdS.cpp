@@ -185,7 +185,7 @@ double CABFProxy_mTdS::GetValue(int ibin,int icv,EProxyRealm realm) const
         case(ABF_TdS_HH):{
             double m2pp = Accu->GetData("M2PP",ibin,icv);
             double m2pn = Accu->GetData("M2PN",ibin,icv);
-            c11 = 0.25*(m2pn-m2pp)/nsamples;
+            c11 = 0.25*(m2pp-m2pn)/nsamples;
             m2icf   = Accu->GetData("M2ICF",ibin,icv);
             m2ene   = Accu->GetData("M2ETOT",ibin);
         }
@@ -275,8 +275,7 @@ double CABFProxy_mTdS::GetValue(int ibin,int icv,EProxyRealm realm) const
     switch(realm){
     // -------------------
         case(E_PROXY_VALUE): {
-            // all is negative in accumulator
-            return( - c11  / (temp * PMF_Rgas) );
+            return( c11  / (temp * PMF_Rgas) );
         }
     // -------------------
         case(E_PROXY_SIGMA): {
