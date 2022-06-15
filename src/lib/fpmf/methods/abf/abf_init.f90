@@ -346,7 +346,7 @@ subroutine abf_init_arrays
             vint(3,NumOfLAtoms),                &
             pxia(NumOfABFCVs),                  &
             pxif(NumOfABFCVs),                  &
-            pxih(NumOfABFCVs),                  &
+            picf(NumOfABFCVs),                  &
             pxis(NumOfABFCVs),                  &
             pxiv(NumOfABFCVs),                  &
             cvave(NumOfABFCVs),                 &
@@ -367,7 +367,7 @@ subroutine abf_init_arrays
     vint(:,:)   = 0.0d0
     pxia(:)     = 0.0d0
     pxif(:)     = 0.0d0
-    pxih(:)     = 0.0d0
+    picf(:)     = 0.0d0
     pxis(:)     = 0.0d0
     pxiv(:)     = 0.0d0
     fz(:,:)     = 0.0d0

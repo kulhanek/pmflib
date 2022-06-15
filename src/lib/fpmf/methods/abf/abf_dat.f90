@@ -217,8 +217,8 @@ integer,allocatable         :: indx(:)              ! for LU decomposition
 ! helper arrays -------
 real(PMFDP),allocatable     :: la(:)
 real(PMFDP),allocatable     :: pxia(:)
+real(PMFDP),allocatable     :: picf(:)
 real(PMFDP),allocatable     :: pxif(:)
-real(PMFDP),allocatable     :: pxih(:)
 real(PMFDP),allocatable     :: pxis(:)
 real(PMFDP),allocatable     :: pxiv(:)
 real(PMFDP),allocatable     :: cvave(:)

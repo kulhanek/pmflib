@@ -117,13 +117,15 @@ double CABFProxy_dG::GetValue(int ibin,int icv,EProxyRealm realm) const
         break;
     // -------------------
         case(ABF_MICF_POT):
-            micf     = Accu->GetData("MICF_POT",ibin,icv);
-            m2icf    = Accu->GetData("M2ICF_POT",ibin,icv);
+            nsamples = Accu->GetData("NTDS",ibin);
+            micf     = Accu->GetData("MTDSFX",ibin,icv);
+            m2icf    = Accu->GetData("M2TDSFX",ibin,icv);
         break;
     // -------------------
         case(ABF_MICF_KIN):
-            micf     = Accu->GetData("MICF_KIN",ibin,icv);
-            m2icf    = Accu->GetData("M2ICF_KIN",ibin,icv);
+            nsamples = Accu->GetData("NTDS",ibin);
+            micf     = Accu->GetData("MTDSVX",ibin,icv);
+            m2icf    = Accu->GetData("M2TDSVX",ibin,icv);
         break;
     // -------------------
         default:

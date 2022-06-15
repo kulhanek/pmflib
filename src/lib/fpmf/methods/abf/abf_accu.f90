@@ -602,7 +602,7 @@ subroutine abf_accu_add_data_online(cvs,gfx,bfx,epot,erst,ekin,etot)
     end if
 
     ! get total biasing ICF
-    pxif(:) = - (gfx(:) - bfx(:))
+    picf(:) = - (gfx(:) - bfx(:))
 
     ! increase number of samples
     abfaccu%nsamples(gi0) = abfaccu%nsamples(gi0) + 1.0d0
@@ -644,7 +644,7 @@ subroutine abf_accu_add_data_online(cvs,gfx,bfx,epot,erst,ekin,etot)
     end if
 
     do i=1,NumOfABFCVs
-        icf = pxif(i)
+        icf = picf(i)
         dicf1 = icf - abfaccu%micf(i,gi0)
         abfaccu%micf(i,gi0)  = abfaccu%micf(i,gi0)  + dicf1 * invn
         dicf2 = icf - abfaccu%micf(i,gi0)
@@ -658,7 +658,7 @@ subroutine abf_accu_add_data_online(cvs,gfx,bfx,epot,erst,ekin,etot)
 
         if( fentropy ) then
             if( ftds_add_bias ) then
-                icf = pxif(i)
+                icf = picf(i)
             else
                 icf = - gfx(i)
             end if
@@ -683,7 +683,7 @@ subroutine abf_accu_add_data_online(cvs,gfx,bfx,epot,erst,ekin,etot)
             invn = 1.0d0 / abfaccu%inc_nsamples(gi0)
 
             do i=1,NumOfABFCVs
-                icf = pxif(i)
+                icf = picf(i)
                 dicf1 = icf - abfaccu%inc_micf(i,gi0)
                 abfaccu%inc_micf(i,gi0)  = abfaccu%inc_micf(i,gi0)  + dicf1 * invn
                 dicf2 = icf -  abfaccu%inc_micf(i,gi0)
@@ -697,7 +697,7 @@ subroutine abf_accu_add_data_online(cvs,gfx,bfx,epot,erst,ekin,etot)
         invn = 1.0d0 / abfaccu%bnsamples(gi0)
 
         do i=1,NumOfABFCVs
-            icf = pxif(i)
+            icf = picf(i)
             dicf1 = icf - abfaccu%bmicf(i,gi0)
             abfaccu%bmicf(i,gi0)  = abfaccu%bmicf(i,gi0)  + dicf1 * invn
         end do

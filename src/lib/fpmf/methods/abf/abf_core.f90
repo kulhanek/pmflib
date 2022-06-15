@@ -477,6 +477,8 @@ subroutine abf_core_force_2pX()
     end do
     fzinvhist(:,:,hist_len) = fzinv(:,:)
 
+    ! FIXME - include periodicity in dCV calulation
+
     do i=1,NumOfABFCVs
         select case(abf_p2_vx)
         case(3)
