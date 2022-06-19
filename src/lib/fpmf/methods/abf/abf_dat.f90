@@ -58,6 +58,7 @@ integer     :: ftds_ekin_src    ! source of kinetic energy, see abf_core_update_
 
 logical     :: ftds_add_bias    ! include ABF bias into TdS calculation
 real(PMFDP) :: ftds_ekin_scale  ! scale kinetic energy by this factor
+real(PMFDP) :: ftds_vel_scale   ! scale velocities by factor
 
 real(PMFDP) :: fepotaverage
 real(PMFDP) :: fekinaverage

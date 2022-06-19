@@ -310,7 +310,7 @@ subroutine abf_core_force_3pV1()
         vhist(:,:,i)    = vhist(:,:,i+1)
     end do
 
-    vhist(:,:,hist_len) = Vel(:,:)
+    vhist(:,:,hist_len) = Vel(:,:) * ftds_vel_scale
     call abf_core_update_zdhist
 
     if( fstep .le. 2*hist_len ) return
@@ -370,7 +370,7 @@ subroutine abf_core_force_3pF()
     end do
     fhist(:,:,hist_len) = Frc(:,:)     ! to be compatible with forces derived from velocities, which also contain the bias
     ! shist is added later
-    vhist(:,:,hist_len) = Vel(:,:)
+    vhist(:,:,hist_len) = Vel(:,:) * ftds_vel_scale
     call abf_core_update_zdhist
 
     if( fstep .le. 2*hist_len ) return
@@ -394,6 +394,8 @@ subroutine abf_core_force_3pF()
         pxis(i) = s1
         pxiv(i) = 0.5d0*(v1+v2)*ifdtx
     end do
+
+    ! write(4789,*) fstep-3,pxif(1), pxis(1), pxiv(1)
 
     ! subroutine abf_core_register_rawdata(cvs,ficf,sicf,vicf,bicf,epot,erst,ekin)
     call abf_core_register_rawdata(cvhist(:,hist_len-3),pxif,pxis,pxiv,micfhist(:,hist_len-3), &
@@ -427,7 +429,7 @@ subroutine abf_core_force_5pV1()
         vhist(:,:,i)    = vhist(:,:,i+1)
     end do
 
-    vhist(:,:,hist_len) = Vel(:,:)
+    vhist(:,:,hist_len) = Vel(:,:) * ftds_vel_scale
     call abf_core_update_zdhist
 
     if( fstep .le. 2*hist_len ) return
@@ -572,7 +574,7 @@ subroutine abf_core_force_2pV()
         vhist(:,:,i)    = vhist(:,:,i+1)
         xvhist(:,i)     = xvhist(:,i+1)
     end do
-    vhist(:,:,hist_len) = Vel(:,:)
+    vhist(:,:,hist_len) = Vel(:,:) * ftds_vel_scale
     call abf_core_update_zdhist
 
     do i=1,NumOfABFCVs

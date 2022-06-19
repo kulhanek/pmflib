@@ -121,6 +121,7 @@ subroutine abf_init_dat
     fswitch2zero    = .false.
 
     ftds_ekin_scale = 1.0d0
+    ftds_vel_scale  = 1.0d0
 
     abf_p2_vx = 4
     abf_p2_px = 5
@@ -272,6 +273,7 @@ subroutine abf_init_print_summary
     call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown kinetic energy source in abf_init_print_summary!')
     end select
     write(PMF_OUT,151)  ' Scale Ekin (ftds_ekin_scale)            : ', ftds_ekin_scale
+    write(PMF_OUT,151)  ' Scale Vel (ftds_vel_scale)              : ', ftds_vel_scale
     write(PMF_OUT,125)  ' Incl. ABF bias into -TdS (ftds_add_bias): ', prmfile_onoff(ftds_add_bias)
 
     write(PMF_OUT,120)

@@ -104,7 +104,8 @@ subroutine abf_control_read_abf(prm_fin)
     call pmf_ctrl_read_integer(prm_fin,'ftds_ekin_src',ftds_ekin_src,'I12')
     call pmf_ctrl_check_integer_in_range('ABF','ftds_ekin_src',ftds_ekin_src,1,7)
 
-    call pmf_ctrl_read_real8(prm_fin,'ftds_ekin_scale',ftds_ekin_scale,'F10.1')
+    call pmf_ctrl_read_real8(prm_fin,'ftds_ekin_scale',ftds_ekin_scale,'F10.5')
+    call pmf_ctrl_read_real8(prm_fin,'ftds_vel_scale',ftds_vel_scale,'F10.5')
 
     call pmf_ctrl_read_real8_wunit(prm_fin,'fepotaverage',EnergyUnit,fepotaverage,'F10.1')
     call pmf_ctrl_read_real8_wunit(prm_fin,'fekinaverage',EnergyUnit,fekinaverage,'F10.1')
