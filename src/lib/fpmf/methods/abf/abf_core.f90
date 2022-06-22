@@ -644,6 +644,9 @@ subroutine abf_core_force_2pV()
         case(2)
             epot = 0.5d0*(epothist(hist_len-5)+epothist(hist_len-7))
             erst = 0.5d0*(ersthist(hist_len-5)+ersthist(hist_len-7))
+        case(3)
+            epot = (1.0d0/3.0d0)*(epothist(hist_len-5)+epothist(hist_len-6)+epothist(hist_len-7))
+            erst = (1.0d0/3.0d0)*(ersthist(hist_len-5)+ersthist(hist_len-6)+ersthist(hist_len-7))
         case default
             call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented ftds_epot_src in abf_core_force_2pV!')
     end select
