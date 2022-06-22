@@ -562,7 +562,7 @@ subroutine abf_core_force_2pV()
 
     implicit none
     integer                :: i,j,m,vidx
-    real(PMFDP)            :: v
+    real(PMFDP)            :: v,epot,erst
     ! --------------------------------------------------------------------------
 
     ! update core history and apply bias
@@ -636,9 +636,21 @@ subroutine abf_core_force_2pV()
         pxiv(i) = 0.0d0
     end do
 
+
+    select case(ftds_epot_src)
+        case(1)
+            epot = epothist(hist_len-6)
+            erst = ersthist(hist_len-6)
+        case(2)
+            epot = 0.5d0*(epothist(hist_len-5)+epothist(hist_len-7))
+            erst = 0.5d0*(ersthist(hist_len-5)+ersthist(hist_len-7))
+        case default
+            call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented ftds_epot_src in abf_core_force_2pV!')
+    end select
+
     ! subroutine abf_core_register_rawdata(cvs,ficf,sicf,vicf,bicf,epot,erst,ekin)
     call abf_core_register_rawdata(cvhist(:,hist_len-6),pxif,pxis,pxiv,micfhist(:,hist_len-6), &
-                           epothist(hist_len-6),ersthist(hist_len-6),ekinhist(hist_len-6))
+                           epot,erst,ekinhist(hist_len-6))
 
 end subroutine abf_core_force_2pV
 

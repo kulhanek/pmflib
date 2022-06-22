@@ -54,6 +54,8 @@ logical     :: fentropy     ! collect data for entropy calculation
 logical     :: fentdecomp   ! collect additional correlation terms
 logical     :: frecord      ! record time progress
 
+integer     :: ftds_epot_src    ! source of potential energy
+
 integer     :: ftds_ekin_src    ! source of kinetic energy, see abf_core_update_history for supported values
 
 logical     :: ftds_add_bias    ! include ABF bias into TdS calculation

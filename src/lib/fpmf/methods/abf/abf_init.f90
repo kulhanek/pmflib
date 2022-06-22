@@ -87,6 +87,7 @@ subroutine abf_init_dat
     fentdecomp      = .false.
     frecord         = .false.
 
+    ftds_epot_src   = 1
     ftds_ekin_src   = 1
     ftds_add_bias   = .false.
 
@@ -253,6 +254,8 @@ subroutine abf_init_print_summary
                                                                        '['//trim(pmf_unit_label(EnergyUnit))//']'
     write(PMF_OUT,150)  ' Kinetic energy offset (fekinaverage)    : ', pmf_unit_get_rvalue(EnergyUnit,fekinaverage), &
                                                                        '['//trim(pmf_unit_label(EnergyUnit))//']'
+    write(PMF_OUT,130)  ' Potential energy source (ftds_epot_src) : ', ftds_epot_src
+    ! FIXME
     write(PMF_OUT,130)  ' Kinetic energy source (ftds_ekin_src)   : ', ftds_ekin_src
     select case(ftds_ekin_src)
     case(0)
