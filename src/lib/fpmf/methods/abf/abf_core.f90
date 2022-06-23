@@ -295,6 +295,7 @@ subroutine abf_core_force_3pV1()
     use pmf_dat
     use pmf_cvs
     use abf_dat
+    use pmf_utils
 
     implicit none
     integer                :: i,j,m
