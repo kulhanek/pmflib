@@ -63,6 +63,8 @@ subroutine abf_core_main
             call abf_core_force_2pV
         case(5)
             call abf_core_force_2pX
+        case(6)
+            call abf_core_force_3pV2
         case default
             call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented fmode in abf_core_main!')
     end select
@@ -359,6 +361,124 @@ subroutine abf_core_force_3pV1()
                            epot,erst,ekinhist(hist_len-3))
 
 end subroutine abf_core_force_3pV1
+
+!===============================================================================
+! Subroutine:  abf_core_force_3pV2
+! this is leap-frog ABF version, simplified algorithm
+! ICF from velocities + decomposition
+!===============================================================================
+
+subroutine abf_core_force_3pV2()
+
+    use pmf_dat
+    use pmf_cvs
+    use abf_dat
+    use pmf_utils
+
+    implicit none
+    integer                :: i,j,m,k,ki
+    real(PMFDP)            :: f1,v1,epot,erst,v2
+    ! --------------------------------------------------------------------------
+
+    ! update core history and apply bias
+    call abf_core_update_history
+
+    ! shift history buffers
+    do i=1,hist_len-1
+        zdhist(:,:,:,i)     = zdhist(:,:,:,i+1)
+        fzinvhist(:,:,i)    = fzinvhist(:,:,i+1)
+        vhist(:,:,i)        = vhist(:,:,i+1)
+        cdrvhist(:,:,:,i)   = cdrvhist(:,:,:,i+1)
+        fhist(:,:,i)        = fhist(:,:,i+1)
+    end do
+
+    fzinvhist(:,:,hist_len) = fzinv(:,:)
+    vhist(:,:,hist_len)     = Vel(:,:) * ftds_vel_scale
+    cdrvhist(:,:,:,hist_len)= CVContext%CVsDrvs(:,:,:)
+    fhist(:,:,hist_len)     = Frc(:,:)
+    call abf_core_update_zdhist
+
+    if( fstep .le. 2*hist_len ) return
+
+    do i=1,NumOfABFCVs
+
+        f1 = 0.0d0
+        v1 = 0.0d0
+        do j=1,NumOfLAtoms
+            do m=1,3
+                ! force part
+                f1 = f1 + zdhist(m,j,i,hist_len-3) * fhist(m,j,hist_len-3) * MassInv(j) ! * (vhist(m,j,hist_len-2) - vhist(m,j,hist_len-3))
+                ! velocity part
+                ki = ABFCVList(i)%cvindx
+                v1 = v1 + (      -cdrvhist(m,j,ki,hist_len-1) +8.0d0*cdrvhist(m,j,ki,hist_len-2)   &
+                           -8.0d0*cdrvhist(m,j,ki,hist_len-4)       +cdrvhist(m,j,ki,hist_len-5)) &
+                        * (vhist(m,j,hist_len-2) + vhist(m,j,hist_len-3))
+            end do
+        end do
+
+
+        ! velocity part II
+        v2 = 0.0d0
+        do k=1,NumOfABFCVs
+            v2 = v2 + (      -fzinvhist(k,i,hist_len-1) +8.0d0*fzinvhist(k,i,hist_len-2)   &
+                       -8.0d0*fzinvhist(k,i,hist_len-4)       +fzinvhist(k,i,hist_len-5))  &
+                    * (      -cvhist(k,hist_len-1) +8.0d0*cvhist(k,hist_len-2)  &
+                       -8.0d0*cvhist(k,hist_len-4)       +cvhist(k,hist_len-5))
+        end do
+
+        pxif(i) = f1
+        pxis(i) = (1.0d0/12.0d0/2.0d0)*v1*ifdtx
+        pxiv(i) = (1.0d0/12.0d0/12.0d0)*v2*ifdtx*ifdtx
+
+       ! write(65893,*) fstep, pxiv(i), 0.5d0*(p1+p2)*ifdtx
+    end do
+
+    do i=1,NumOfABFCVs
+        v1 = 0.0d0
+        do j=1,NumOfABFCVs
+            v1 = v1 + fzinvhist(j,i,hist_len-3)*pxis(j)
+        end do
+        pxiv(i) = pxiv(i) + v1
+    end do
+    pxis(:) = 0.0d0
+
+    ! write(4789568,*) fstep, pxif(1), pxiv(1)
+
+!    write(78948,*) fstep, fzinvhist(1,1,hist_len), cvhist(1,hist_len), &
+!                   (1.0d0/12.0d0)*(-cvhist(1,hist_len-1) +8.0d0*cvhist(1,hist_len-2) &
+!                    -8.0d0*cvhist(1,hist_len-4) +cvhist(1,hist_len-5))*ifdtx, &
+!                   (1.0d0/2.0d0)*(cvhist(1,hist_len-2)-cvhist(1,hist_len-4))*ifdtx, &
+!                   (1.0d0/12.0d0)*( -fzinvhist(1,1,hist_len-1) +8.0d0*fzinvhist(1,1,hist_len-2)   &
+!                       -8.0d0*fzinvhist(1,1,hist_len-4)       +fzinvhist(1,1,hist_len-5))*ifdtx, &
+!                      (1.0d0/2.0d0)*(fzinvhist(1,1,hist_len-2)-fzinvhist(1,1,hist_len-4))*ifdtx
+
+
+    select case(ftds_epot_src)
+        case(1)
+            epot = epothist(hist_len-3)
+            erst = ersthist(hist_len-3)
+        case(2)
+            epot = 0.5d0*(epothist(hist_len-2)+epothist(hist_len-4))
+            erst = 0.5d0*(ersthist(hist_len-3)+ersthist(hist_len-4))
+        case(3)
+            epot = (1.0d0/3.0d0)*(epothist(hist_len-2)+epothist(hist_len-3)+epothist(hist_len-4))
+            erst = (1.0d0/3.0d0)*(ersthist(hist_len-2)+ersthist(hist_len-3)+ersthist(hist_len-4))
+        case(4)
+            epot = (1.0d0/35.0d0)*( -3.0d0*epothist(hist_len-1)+12.0d0*epothist(hist_len-2) &
+                                   +17.0d0*epothist(hist_len-3)+12.0d0*epothist(hist_len-4) &
+                                    -3.0d0*epothist(hist_len-5))
+            erst = (1.0d0/35.0d0)*( -3.0d0*ersthist(hist_len-1)+12.0d0*ersthist(hist_len-2) &
+                                   +17.0d0*ersthist(hist_len-3)+12.0d0*ersthist(hist_len-4) &
+                                    -3.0d0*ersthist(hist_len-5))
+        case default
+            call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented ftds_epot_src in abf_core_force_2pV!')
+    end select
+
+    ! subroutine abf_core_register_rawdata(cvs,ficf,sicf,vicf,bicf,epot,erst,ekin)
+    call abf_core_register_rawdata(cvhist(:,hist_len-3),pxif,pxis,pxiv,micfhist(:,hist_len-3), &
+                           epot,erst,ekinhist(hist_len-3))
+
+end subroutine abf_core_force_3pV2
 
 !===============================================================================
 ! Subroutine:  abf_core_force_3pF

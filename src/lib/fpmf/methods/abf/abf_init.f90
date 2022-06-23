@@ -187,6 +187,8 @@ subroutine abf_init_print_summary
     write(PMF_OUT,120)  '      |-> ABF algorithm (2pX)'
     write(PMF_OUT,130)  '          Velocity order                 : ', abf_p2_vx
     write(PMF_OUT,130)  '          Momenta order                  : ', abf_p2_px
+    case(6)
+    write(PMF_OUT,120)  '      |-> ABF algorithm (3pV2)'
     do i=1,NumOfABFCVs
         if( ABFCVList(i)%cv%is_periodic_cv() ) then
             call pmf_utils_exit(PMF_OUT,1,'[ABF] This ABF algorithm is not suitable for periodic CVs!')
@@ -389,7 +391,7 @@ subroutine abf_init_arrays
 
 ! history buffers ------------------------------------------
     select case(fmode)
-        case(1,2,3)
+        case(1,2,3,6)
             ! for V6 interpolation we need at least 6 data points
             hist_len = 6
         case(4,5)
@@ -406,6 +408,7 @@ subroutine abf_init_arrays
             vhist(3,NumOfLAtoms,hist_len),              &
             zdhist(3,NumOfLAtoms,NumOfABFCVs,hist_len), &
             fzinvhist(NumOfABFCVs,NumOfABFCVs,hist_len), &
+            cdrvhist(3,NumOfLAtoms,NumOfCVs,hist_len),   &
             epothist(hist_len),                         &
             ersthist(hist_len),                         &
             ekinhist(hist_len),                         &
@@ -424,6 +427,7 @@ subroutine abf_init_arrays
     shist(:,:,:)    = 0.0d0
     vhist(:,:,:)    = 0.0d0
     zdhist(:,:,:,:) = 0.0d0
+    cdrvhist(:,:,:,:) = 0.0d0
     epothist(:)     = 0.0d0
     ersthist(:)     = 0.0d0
     ekinhist(:)     = 0.0d0
