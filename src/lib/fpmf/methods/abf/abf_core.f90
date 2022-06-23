@@ -298,7 +298,7 @@ subroutine abf_core_force_3pV1()
 
     implicit none
     integer                :: i,j,m
-    real(PMFDP)            :: f1,v1,v2
+    real(PMFDP)            :: f1,v1,v2,epot,erst
     ! --------------------------------------------------------------------------
 
     ! update core history and apply bias
@@ -332,9 +332,30 @@ subroutine abf_core_force_3pV1()
         pxiv(i) = 0.5d0*(v1+v2)*ifdtx
     end do
 
+    select case(ftds_epot_src)
+        case(1)
+            epot = epothist(hist_len-3)
+            erst = ersthist(hist_len-3)
+        case(2)
+            epot = 0.5d0*(epothist(hist_len-2)+epothist(hist_len-4))
+            erst = 0.5d0*(ersthist(hist_len-3)+ersthist(hist_len-4))
+        case(3)
+            epot = (1.0d0/3.0d0)*(epothist(hist_len-2)+epothist(hist_len-3)+epothist(hist_len-4))
+            erst = (1.0d0/3.0d0)*(ersthist(hist_len-2)+ersthist(hist_len-3)+ersthist(hist_len-4))
+        case(4)
+            epot = (1.0d0/35.0d0)*( -3.0d0*epothist(hist_len-1)+12.0d0*epothist(hist_len-2) &
+                                   +17.0d0*epothist(hist_len-3)+12.0d0*epothist(hist_len-4) &
+                                    -3.0d0*epothist(hist_len-5))
+            erst = (1.0d0/35.0d0)*( -3.0d0*ersthist(hist_len-1)+12.0d0*ersthist(hist_len-2) &
+                                   +17.0d0*ersthist(hist_len-3)+12.0d0*ersthist(hist_len-4) &
+                                    -3.0d0*ersthist(hist_len-5))
+        case default
+            call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented ftds_epot_src in abf_core_force_2pV!')
+    end select
+
     ! subroutine abf_core_register_rawdata(cvs,ficf,sicf,vicf,bicf,epot,erst,ekin)
     call abf_core_register_rawdata(cvhist(:,hist_len-3),pxif,pxis,pxiv,micfhist(:,hist_len-3), &
-                           epothist(hist_len-3),ersthist(hist_len-3),ekinhist(hist_len-3))
+                           epot,erst,ekinhist(hist_len-3))
 
 end subroutine abf_core_force_3pV1
 
