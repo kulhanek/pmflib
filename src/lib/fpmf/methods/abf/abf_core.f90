@@ -377,7 +377,7 @@ subroutine abf_core_force_3pV2()
 
     implicit none
     integer                :: i,j,m,k,ki
-    real(PMFDP)            :: f1,v1,epot,erst,v2
+    real(PMFDP)            :: f1,v1,epot,erst,v2,dx1,dx2
     ! --------------------------------------------------------------------------
 
     ! update core history and apply bias
@@ -420,10 +420,16 @@ subroutine abf_core_force_3pV2()
         ! velocity part II
         v2 = 0.0d0
         do k=1,NumOfABFCVs
+            dx1 = ABFCVList(k)%cv%get_deviation(cvhist(k,hist_len-5),cvhist(k,hist_len-1))
+            dx2 = ABFCVList(k)%cv%get_deviation(cvhist(k,hist_len-2),cvhist(k,hist_len-4))
             v2 = v2 + (      -fzinvhist(k,i,hist_len-1) +8.0d0*fzinvhist(k,i,hist_len-2)   &
                        -8.0d0*fzinvhist(k,i,hist_len-4)       +fzinvhist(k,i,hist_len-5))  &
-                    * (      -cvhist(k,hist_len-1) +8.0d0*cvhist(k,hist_len-2)  &
-                       -8.0d0*cvhist(k,hist_len-4)       +cvhist(k,hist_len-5))
+                    * (dx1+8.0d0*dx2)
+
+!            v2 = v2 + (      -fzinvhist(k,i,hist_len-1) +8.0d0*fzinvhist(k,i,hist_len-2)   &
+!                       -8.0d0*fzinvhist(k,i,hist_len-4)       +fzinvhist(k,i,hist_len-5))  &
+!                    * (      -cvhist(k,hist_len-1) +8.0d0*cvhist(k,hist_len-2)  &
+!                       -8.0d0*cvhist(k,hist_len-4)       +cvhist(k,hist_len-5))
         end do
 
         pxif(i) = f1
