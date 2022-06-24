@@ -624,7 +624,7 @@ subroutine abf_core_force_2pX()
 
     implicit none
     integer                :: i,j,cidx
-    real(PMFDP)            :: v,dx1,dx2
+    real(PMFDP)            :: v,dx1,dx2,dx3
     ! --------------------------------------------------------------------------
 
     call abf_core_update_history
@@ -656,6 +656,13 @@ subroutine abf_core_force_2pX()
             !pxia(i) = (1.0d0/12.0d0)*(      -cvhist(i,hist_len-0)+8.0d0*cvhist(i,hist_len-1)&
             !                          -8.0d0*cvhist(i,hist_len-3)      +cvhist(i,hist_len-4))*ifdtx
             cidx = -2
+        case(7)
+            ! -3
+            dx1 = ABFCVList(i)%cv%get_deviation(cvhist(i,hist_len-0),cvhist(i,hist_len-6))
+            dx2 = ABFCVList(i)%cv%get_deviation(cvhist(i,hist_len-5),cvhist(i,hist_len-1))
+            dx3 = ABFCVList(i)%cv%get_deviation(cvhist(i,hist_len-2),cvhist(i,hist_len-4))
+            pxia(i) = (1.0d0/60.0d0)*(dx1+9.0d0*dx2+45.0d0*dx3)*ifdtx
+            cidx = -3
         case default
             call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented abf_p2_vx in abf_core_force_2pX!')
         end select
