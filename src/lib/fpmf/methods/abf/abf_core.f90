@@ -643,15 +643,15 @@ subroutine abf_core_force_2pX()
         select case(abf_p2_vx)
         case(3)
             ! -1
-            dx1 = ABFCVList(k)%cv%get_deviation(cvhist(k,hist_len-0),cvhist(k,hist_len-2))
+            dx1 = ABFCVList(i)%cv%get_deviation(cvhist(i,hist_len-0),cvhist(i,hist_len-2))
             pxia(i) = 0.5d0*dx1*ifdtx
             ! pxia(i) = 0.5d0*(cvhist(i,hist_len-0)-cvhist(i,hist_len-2))*ifdtx
 
             cidx = -1
         case(5)
             ! -2
-            dx1 = ABFCVList(k)%cv%get_deviation(cvhist(i,hist_len-4),cvhist(i,hist_len-0))
-            dx2 = ABFCVList(k)%cv%get_deviation(cvhist(i,hist_len-1),cvhist(i,hist_len-3))
+            dx1 = ABFCVList(i)%cv%get_deviation(cvhist(i,hist_len-4),cvhist(i,hist_len-0))
+            dx2 = ABFCVList(i)%cv%get_deviation(cvhist(i,hist_len-1),cvhist(i,hist_len-3))
             pxia(i) = (1.0d0/12.0d0)*(dx1+8.0d0*dx2)*ifdtx
             !pxia(i) = (1.0d0/12.0d0)*(      -cvhist(i,hist_len-0)+8.0d0*cvhist(i,hist_len-1)&
             !                          -8.0d0*cvhist(i,hist_len-3)      +cvhist(i,hist_len-4))*ifdtx
