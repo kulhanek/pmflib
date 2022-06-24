@@ -395,7 +395,7 @@ subroutine abf_init_arrays
             ! for V6 interpolation we need at least 6 data points
             hist_len = 6
         case(4,5)
-            hist_len = 10
+            hist_len = 13
         case default
             call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented fmode in abf_init_arrays!')
     end select
