@@ -624,7 +624,7 @@ subroutine abf_core_force_2pX()
 
     implicit none
     integer                :: i,j,cidx
-    real(PMFDP)            :: v
+    real(PMFDP)            :: v,dx1,dx2
     ! --------------------------------------------------------------------------
 
     call abf_core_update_history
@@ -643,17 +643,18 @@ subroutine abf_core_force_2pX()
         select case(abf_p2_vx)
         case(3)
             ! -1
-            pxia(i) = 0.5d0*(cvhist(i,hist_len-0)-cvhist(i,hist_len-2))*ifdtx
-            cidx = -1
-        case(4)
-            ! -1
-            pxia(i) = (1.0d0/6.0d0)*( 2.0d0*cvhist(i,hist_len-0)+3.0d0*cvhist(i,hist_len-1)&
-                                     -6.0d0*cvhist(i,hist_len-2)      +cvhist(i,hist_len-3))*ifdtx
+            dx1 = ABFCVList(k)%cv%get_deviation(cvhist(k,hist_len-0),cvhist(k,hist_len-2))
+            pxia(i) = 0.5d0*dx1*ifdtx
+            ! pxia(i) = 0.5d0*(cvhist(i,hist_len-0)-cvhist(i,hist_len-2))*ifdtx
+
             cidx = -1
         case(5)
             ! -2
-            pxia(i) = (1.0d0/12.0d0)*(      -cvhist(i,hist_len-0)+8.0d0*cvhist(i,hist_len-1)&
-                                      -8.0d0*cvhist(i,hist_len-3)      +cvhist(i,hist_len-4))*ifdtx
+            dx1 = ABFCVList(k)%cv%get_deviation(cvhist(i,hist_len-4),cvhist(i,hist_len-0))
+            dx2 = ABFCVList(k)%cv%get_deviation(cvhist(i,hist_len-1),cvhist(i,hist_len-3))
+            pxia(i) = (1.0d0/12.0d0)*(dx1+8.0d0*dx2)*ifdtx
+            !pxia(i) = (1.0d0/12.0d0)*(      -cvhist(i,hist_len-0)+8.0d0*cvhist(i,hist_len-1)&
+            !                          -8.0d0*cvhist(i,hist_len-3)      +cvhist(i,hist_len-4))*ifdtx
             cidx = -2
         case default
             call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented abf_p2_vx in abf_core_force_2pX!')

@@ -187,11 +187,11 @@ subroutine abf_init_print_summary
     write(PMF_OUT,120)  '      |-> ABF algorithm (2pX)'
     write(PMF_OUT,130)  '          Velocity order                 : ', abf_p2_vx
     write(PMF_OUT,130)  '          Momenta order                  : ', abf_p2_px
-    do i=1,NumOfABFCVs
-        if( ABFCVList(i)%cv%is_periodic_cv() ) then
-            call pmf_utils_exit(PMF_OUT,1,'[ABF] This ABF algorithm is not suitable for periodic CVs!')
-        end if
-    end do
+!    do i=1,NumOfABFCVs
+!        if( ABFCVList(i)%cv%is_periodic_cv() ) then
+!            call pmf_utils_exit(PMF_OUT,1,'[ABF] This ABF algorithm is not suitable for periodic CVs!')
+!        end if
+!    end do
     case(6)
     write(PMF_OUT,120)  '      |-> ABF algorithm (3pV2)'
     case default
