@@ -118,7 +118,7 @@ subroutine abf_core_update_history()
 
     implicit none
     integer                :: i,j,ci
-    real(PMFDP)            :: ekin,eus
+    real(PMFDP)            :: epot,erst,ekin,eus
     ! --------------------------------------------------------------------------
 
 ! shift accuvalue history
@@ -127,6 +127,8 @@ subroutine abf_core_update_history()
         epothist(i)         = epothist(i+1)
         ersthist(i)         = ersthist(i+1)
         ekinhist(i)         = ekinhist(i+1)
+        epotrwhist(i)       = epotrwhist(i+1)
+        erstrwhist(i)       = erstrwhist(i+1)
         ekinlfhist(i)       = ekinlfhist(i+1)
         micfhist(:,i)       = micfhist(:,i+1)
     end do
@@ -136,12 +138,42 @@ subroutine abf_core_update_history()
         cvhist(i,hist_len)  = CVContext%CVsValues(ci)
     end do
 
-! shift ene
-    epothist(hist_len)      = PotEne - fepotaverage
-    ersthist(hist_len)      = PMFEne
-
+! raw data
+    epotrwhist(hist_len)    = PotEne - fepotaverage
+    erstrwhist(hist_len)    = PMFEne
     ekinlfhist(hist_len)    = KinEneLF - fekinaverage   ! shifted by -1/2dt
 
+! process EPOT
+    select case(ftds_epot_src)
+        case(1)
+            epot = epotrwhist(hist_len)
+            erst = erstrwhist(hist_len)
+            epothist(hist_len) = epot
+            ersthist(hist_len) = erst
+        case(2)
+            epot = 0.5d0*(epotrwhist(hist_len-0)+epotrwhist(hist_len-2))
+            erst = 0.5d0*(erstrwhist(hist_len-0)+erstrwhist(hist_len-2))
+            epothist(hist_len-1) = epot
+            ersthist(hist_len-1) = erst
+        case(3)
+            epot = (1.0d0/3.0d0)*(epotrwhist(hist_len-0)+epotrwhist(hist_len-1)+epotrwhist(hist_len-2))
+            erst = (1.0d0/3.0d0)*(erstrwhist(hist_len-0)+erstrwhist(hist_len-1)+erstrwhist(hist_len-2))
+            epothist(hist_len-1) = epot
+            ersthist(hist_len-1) = erst
+        case(4)
+            epot = (1.0d0/35.0d0)*( -3.0d0*epotrwhist(hist_len-0)+12.0d0*epotrwhist(hist_len-1) &
+                                   +17.0d0*epotrwhist(hist_len-2)+12.0d0*epotrwhist(hist_len-3) &
+                                    -3.0d0*epotrwhist(hist_len-4))
+            erst = (1.0d0/35.0d0)*( -3.0d0*erstrwhist(hist_len-0)+12.0d0*erstrwhist(hist_len-1) &
+                                   +17.0d0*erstrwhist(hist_len-2)+12.0d0*erstrwhist(hist_len-3) &
+                                    -3.0d0*erstrwhist(hist_len-4))
+            epothist(hist_len-2) = epot
+            ersthist(hist_len-2) = erst
+        case default
+            call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented ftds_epot_src in abf_core_update_history!')
+    end select
+
+! process EKIN
     select case(ftds_ekin_src)
         ! KE from velocities at full-step interpolated from velocities at half-step
         case(1)
@@ -218,7 +250,7 @@ subroutine abf_core_update_history()
     if( frecord ) then
         ! record time progress of data
         call abf_accu_add_data_record_lf(cvhist(:,hist_len),micfhist(:,hist_len), &
-                                         epothist(hist_len),ersthist(hist_len),ekin)
+                                         epot,erst,ekin)
     end if
 
     return
@@ -301,7 +333,7 @@ subroutine abf_core_force_3pV1()
 
     implicit none
     integer                :: i,j,m
-    real(PMFDP)            :: f1,v1,v2,epot,erst
+    real(PMFDP)            :: f1,v1,v2
     ! --------------------------------------------------------------------------
 
     ! update core history and apply bias
@@ -335,30 +367,9 @@ subroutine abf_core_force_3pV1()
         pxiv(i) = 0.5d0*(v1+v2)*ifdtx
     end do
 
-    select case(ftds_epot_src)
-        case(1)
-            epot = epothist(hist_len-3)
-            erst = ersthist(hist_len-3)
-        case(2)
-            epot = 0.5d0*(epothist(hist_len-2)+epothist(hist_len-4))
-            erst = 0.5d0*(ersthist(hist_len-3)+ersthist(hist_len-4))
-        case(3)
-            epot = (1.0d0/3.0d0)*(epothist(hist_len-2)+epothist(hist_len-3)+epothist(hist_len-4))
-            erst = (1.0d0/3.0d0)*(ersthist(hist_len-2)+ersthist(hist_len-3)+ersthist(hist_len-4))
-        case(4)
-            epot = (1.0d0/35.0d0)*( -3.0d0*epothist(hist_len-1)+12.0d0*epothist(hist_len-2) &
-                                   +17.0d0*epothist(hist_len-3)+12.0d0*epothist(hist_len-4) &
-                                    -3.0d0*epothist(hist_len-5))
-            erst = (1.0d0/35.0d0)*( -3.0d0*ersthist(hist_len-1)+12.0d0*ersthist(hist_len-2) &
-                                   +17.0d0*ersthist(hist_len-3)+12.0d0*ersthist(hist_len-4) &
-                                    -3.0d0*ersthist(hist_len-5))
-        case default
-            call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented ftds_epot_src in abf_core_force_2pV!')
-    end select
-
     ! subroutine abf_core_register_rawdata(cvs,ficf,sicf,vicf,bicf,epot,erst,ekin)
     call abf_core_register_rawdata(cvhist(:,hist_len-3),pxif,pxis,pxiv,micfhist(:,hist_len-3), &
-                           epot,erst,ekinhist(hist_len-3))
+                           epothist(hist_len-3),ersthist(hist_len-3),ekinhist(hist_len-3))
 
 end subroutine abf_core_force_3pV1
 
@@ -377,7 +388,7 @@ subroutine abf_core_force_3pV2()
 
     implicit none
     integer                :: i,j,m,k,ki
-    real(PMFDP)            :: f1,v1,epot,erst,v2,dx1,dx2
+    real(PMFDP)            :: f1,v1,v2,dx1,dx2
     ! --------------------------------------------------------------------------
 
     ! update core history and apply bias
@@ -458,31 +469,9 @@ subroutine abf_core_force_3pV2()
 !                       -8.0d0*fzinvhist(1,1,hist_len-4)       +fzinvhist(1,1,hist_len-5))*ifdtx, &
 !                      (1.0d0/2.0d0)*(fzinvhist(1,1,hist_len-2)-fzinvhist(1,1,hist_len-4))*ifdtx
 
-
-    select case(ftds_epot_src)
-        case(1)
-            epot = epothist(hist_len-3)
-            erst = ersthist(hist_len-3)
-        case(2)
-            epot = 0.5d0*(epothist(hist_len-2)+epothist(hist_len-4))
-            erst = 0.5d0*(ersthist(hist_len-3)+ersthist(hist_len-4))
-        case(3)
-            epot = (1.0d0/3.0d0)*(epothist(hist_len-2)+epothist(hist_len-3)+epothist(hist_len-4))
-            erst = (1.0d0/3.0d0)*(ersthist(hist_len-2)+ersthist(hist_len-3)+ersthist(hist_len-4))
-        case(4)
-            epot = (1.0d0/35.0d0)*( -3.0d0*epothist(hist_len-1)+12.0d0*epothist(hist_len-2) &
-                                   +17.0d0*epothist(hist_len-3)+12.0d0*epothist(hist_len-4) &
-                                    -3.0d0*epothist(hist_len-5))
-            erst = (1.0d0/35.0d0)*( -3.0d0*ersthist(hist_len-1)+12.0d0*ersthist(hist_len-2) &
-                                   +17.0d0*ersthist(hist_len-3)+12.0d0*ersthist(hist_len-4) &
-                                    -3.0d0*ersthist(hist_len-5))
-        case default
-            call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented ftds_epot_src in abf_core_force_2pV!')
-    end select
-
     ! subroutine abf_core_register_rawdata(cvs,ficf,sicf,vicf,bicf,epot,erst,ekin)
     call abf_core_register_rawdata(cvhist(:,hist_len-3),pxif,pxis,pxiv,micfhist(:,hist_len-3), &
-                           epot,erst,ekinhist(hist_len-3))
+                           epothist(hist_len-3),ersthist(hist_len-3),ekinhist(hist_len-3))
 
 end subroutine abf_core_force_3pV2
 
@@ -621,6 +610,7 @@ subroutine abf_core_force_2pX()
     use pmf_cvs
     use abf_dat
     use pmf_utils
+    use abf_accu
 
     implicit none
     integer                :: i,j,cidx
@@ -712,6 +702,24 @@ subroutine abf_core_force_2pX()
     call abf_core_register_rawdata(cvhist(:,hist_len-8),pxif,pxis,pxiv,micfhist(:,hist_len-8), &
                            epothist(hist_len-8),ersthist(hist_len-8),ekinhist(hist_len-8))
 
+    if( .not. fentdecomp ) return
+
+    ! half step part
+    do i=1,NumOfABFCVs
+        select case(abf_p2_hx)
+        case(2)
+            pxif(i)  = (xvhist(i,hist_len-7) - xvhist(i,hist_len-8))*ifdtx
+            cvave(i) = 0.5d0*(cvhist(i,hist_len-7)+cvhist(i,hist_len-8))
+        case default
+            call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented abf_p2_hx in abf_core_force_2pX!')
+        end select
+        pxiv(i) = 0.0d0
+    end do
+
+   ! write(45789,*) cvave(1), pxif(1), ekinlfhist(hist_len-8)
+
+    call abf_accu_add_data_entropy_decompose_hs(cvave,pxif,ekinlfhist(hist_len-8))
+
 end subroutine abf_core_force_2pX
 
 !===============================================================================
@@ -728,7 +736,7 @@ subroutine abf_core_force_2pV()
 
     implicit none
     integer                :: i,j,m,vidx
-    real(PMFDP)            :: v,epot,erst
+    real(PMFDP)            :: v
     ! --------------------------------------------------------------------------
 
     ! update core history and apply bias
@@ -802,31 +810,9 @@ subroutine abf_core_force_2pV()
         pxiv(i) = 0.0d0
     end do
 
-
-    select case(ftds_epot_src)
-        case(1)
-            epot = epothist(hist_len-6)
-            erst = ersthist(hist_len-6)
-        case(2)
-            epot = 0.5d0*(epothist(hist_len-5)+epothist(hist_len-7))
-            erst = 0.5d0*(ersthist(hist_len-5)+ersthist(hist_len-7))
-        case(3)
-            epot = (1.0d0/3.0d0)*(epothist(hist_len-5)+epothist(hist_len-6)+epothist(hist_len-7))
-            erst = (1.0d0/3.0d0)*(ersthist(hist_len-5)+ersthist(hist_len-6)+ersthist(hist_len-7))
-        case(4)
-            epot = (1.0d0/35.0d0)*( -3.0d0*epothist(hist_len-4)+12.0d0*epothist(hist_len-5) &
-                                   +17.0d0*epothist(hist_len-6)+12.0d0*epothist(hist_len-7) &
-                                    -3.0d0*epothist(hist_len-8))
-            erst = (1.0d0/35.0d0)*( -3.0d0*ersthist(hist_len-4)+12.0d0*ersthist(hist_len-5) &
-                                   +17.0d0*ersthist(hist_len-6)+12.0d0*ersthist(hist_len-7) &
-                                    -3.0d0*ersthist(hist_len-8))
-        case default
-            call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented ftds_epot_src in abf_core_force_2pV!')
-    end select
-
     ! subroutine abf_core_register_rawdata(cvs,ficf,sicf,vicf,bicf,epot,erst,ekin)
     call abf_core_register_rawdata(cvhist(:,hist_len-6),pxif,pxis,pxiv,micfhist(:,hist_len-6), &
-                           epot,erst,ekinhist(hist_len-6))
+                           epothist(hist_len-6),ersthist(hist_len-6),ekinhist(hist_len-6))
 
 end subroutine abf_core_force_2pV
 

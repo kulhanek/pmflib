@@ -73,6 +73,10 @@ void CABFProxy_mTdS::SetType(EABFTdSType type)
         case(ABF_TdS_FK):
             Provide = "ABF -TdS(x) - FK";
         break;
+    // -------------------
+        case(ABF_TdS_FK_H):
+            Provide = "ABF -TdS(x) - FK (half step)";
+        break;
 
     // -------------------
         case(ABF_TdS_VP):
@@ -166,6 +170,8 @@ double CABFProxy_mTdS::GetValue(int ibin,int icv,EProxyRealm realm) const
 
     if( Type == ABF_TdS_HH ) {
         nsamples = Accu->GetData("NSAMPLES",ibin);
+    } else if( Type == ABF_TdS_FK_H ) {
+        nsamples = Accu->GetData("NTDS_H",ibin);
     } else {
         nsamples = Accu->GetData("NTDS",ibin);
     }
@@ -208,6 +214,13 @@ double CABFProxy_mTdS::GetValue(int ibin,int icv,EProxyRealm realm) const
             c11     = Accu->GetData("C11TDSFK",ibin,icv)/nsamples;
             m2icf   = Accu->GetData("M2TDSFX",ibin,icv);
             m2ene   = Accu->GetData("M2TDSEKIN",ibin);
+        break;
+
+    // -------------------
+        case(ABF_TdS_FK_H):
+            c11     = Accu->GetData("C11TDSFK_H",ibin,icv)/nsamples;
+            m2icf   = Accu->GetData("M2TDSFX_H",ibin,icv);
+            m2ene   = Accu->GetData("M2TDSEKIN_H",ibin);
         break;
 
     // -------------------

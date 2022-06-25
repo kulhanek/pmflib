@@ -87,6 +87,7 @@ logical     :: fswitch2zero
 ! 2p algorithm
 integer     :: abf_p2_vx
 integer     :: abf_p2_px
+integer     :: abf_p2_hx
 
 ! server part ------------------------------------------------------------------
 logical                 :: fserver_enabled      ! is abf-server enabled?
@@ -188,6 +189,14 @@ type,extends(PMFAccuType) :: ABFAccuType
     real(PMFDP),pointer    :: c11tdsbr(:,:)
     real(PMFDP),pointer    :: c11tdsbk(:,:)
 
+! half step
+    real(PMFDP),pointer    :: ntds_h(:)                   ! number of hits into bins
+    real(PMFDP),pointer    :: mtdsfx_h(:,:)               ! mean of ICF - force
+    real(PMFDP),pointer    :: m2tdsfx_h(:,:)              ! M2 of ICF - force
+    real(PMFDP),pointer    :: mtdsekin_h(:)               ! mean of kin energy
+    real(PMFDP),pointer    :: m2tdsekin_h(:)              ! M2 of kin energy
+    real(PMFDP),pointer    :: c11tdsfk_h(:,:)
+
 ! time recording for post-processing
     real(PMFDP),pointer    :: tcvs(:,:)
     real(PMFDP),pointer    :: tbicf(:,:)
@@ -243,6 +252,8 @@ real(PMFDP),allocatable     :: micfhist(:,:)        ! history of ABF bias
 real(PMFDP),allocatable     :: epothist(:)          ! history of Epot
 real(PMFDP),allocatable     :: ersthist(:)          ! history of Erst
 real(PMFDP),allocatable     :: ekinhist(:)          ! history of Ekin
+real(PMFDP),allocatable     :: epotrwhist(:)        ! history of Epot - raw data
+real(PMFDP),allocatable     :: erstrwhist(:)        ! history of Erst - raw data
 real(PMFDP),allocatable     :: ekinlfhist(:)        ! history of EkinLF
 real(PMFDP),allocatable     :: xvhist(:,:)          ! history of xi velocities
 

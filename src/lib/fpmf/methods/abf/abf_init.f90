@@ -126,6 +126,7 @@ subroutine abf_init_dat
 
     abf_p2_vx = 4
     abf_p2_px = 5
+    abf_p2_hx = 2
 
 end subroutine abf_init_dat
 
@@ -412,6 +413,8 @@ subroutine abf_init_arrays
             epothist(hist_len),                         &
             ersthist(hist_len),                         &
             ekinhist(hist_len),                         &
+            epotrwhist(hist_len),                       &
+            erstrwhist(hist_len),                       &
             ekinlfhist(hist_len),                       &
             xvhist(NumOfABFCVs,hist_len),               &
             stat= alloc_failed )
@@ -431,6 +434,8 @@ subroutine abf_init_arrays
     epothist(:)     = 0.0d0
     ersthist(:)     = 0.0d0
     ekinhist(:)     = 0.0d0
+    epotrwhist(:)   = 0.0d0
+    erstrwhist(:)   = 0.0d0
     ekinlfhist(:)   = 0.0d0
     xvhist(:,:)     = 0.0d0
     fzinvhist(:,:,:) = 0.0d0

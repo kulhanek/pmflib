@@ -362,12 +362,9 @@ subroutine pmf_control_read_files(prm_fin)
 200 format('# -------- Restrained Dynamics (RST)')
 300 format('# -------- Metadynamics (MTD)')
 400 format('# -------- Adaptive Biasing Force Method (ABF)')
-410 format('# -------- Adaptive Biasing Force Method (Testing - TABF)')
-420 format('# -------- Umbrella Sampling / Adaptive Biasing Force Method (US-ABF)')
 500 format('# -------- Monitoring (MON)')
 700 format('# -------- String Method (STM)')
 800 format('# -------- Path Driving (PDRV)')
-
 
 end subroutine pmf_control_read_files
 
