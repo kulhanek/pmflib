@@ -208,9 +208,10 @@ subroutine abf_core_update_history()
 
 ! calculate Z matrix and its inverse
     call abf_core_calc_Zmat(CVContext)
+    call abf_core_calc_Zmat_core(CVContext)
 
-    iszrhist(hist_len) = -0.5d0*PMF_Rgas*ftemp*log(fzdet)
-    ! write(7894,*) fstep,-0.5d0*PMF_Rgas*ftemp*log(fzdet)
+    iszrhist(hist_len) = -0.5d0*PMF_Rgas*ftemp*log(fzdet/fzdetcore)
+    !write(7894,*) fstep,-0.5d0*PMF_Rgas*ftemp*log(fzdet/fzdetcore)
 
 ! apply force filters
     la(:) = 0.0d0
@@ -942,6 +943,59 @@ subroutine abf_core_calc_Zmat(ctx)
     return
 
 end subroutine abf_core_calc_Zmat
+
+
+!===============================================================================
+! subroutine:  abf_core_calc_Zmat_core
+!===============================================================================
+
+subroutine abf_core_calc_Zmat_core(ctx)
+
+    use pmf_utils
+    use abf_dat
+
+    implicit none
+    type(CVContextType) :: ctx
+    integer             :: i,ci,j,cj,k,info
+    ! -----------------------------------------------------------------------------
+
+    ! calculate Z matrix
+    do i=1,abfaccu%tot_cvs
+        ci = ABFCVList(i)%cvindx
+        do j=1,abfaccu%tot_cvs
+            cj = ABFCVList(j)%cvindx
+            fzcore(i,j) = 0.0d0
+            do k=1,NumOfLAtoms
+                fzcore(i,j) = fzcore(i,j) + MassInv(k)*dot_product(ctx%CVsDrvs(:,k,ci),ctx%CVsDrvs(:,k,cj))
+            end do
+        end do
+    end do
+
+    ! and now its inversion - we will use LAPAC and LU decomposition
+    if (abfaccu%tot_cvs .gt. 1) then
+
+        call dgetrf(abfaccu%tot_cvs,abfaccu%tot_cvs,fzcore,abfaccu%tot_cvs,indx,info)
+        if( info .ne. 0 ) then
+            call pmf_utils_exit(PMF_OUT,1,'[ABF] LU decomposition failed in abf_core_calc_Zmat!')
+        end if
+
+        fzdetcore = 1.0d0
+        ! and finally determinant
+        do i=1,abfaccu%tot_cvs
+            if( indx(i) .ne. i ) then
+                fzdetcore = - fzdetcore * fzcore(i,i)
+            else
+                fzdetcore = fzdetcore * fzcore(i,i)
+            end if
+        end do
+
+    else
+        fzdetcore = fzcore(1,1)
+    end if
+
+    return
+
+end subroutine abf_core_calc_Zmat_core
 
 !===============================================================================
 

@@ -353,6 +353,9 @@ subroutine abf_init_arrays
     integer     :: alloc_failed
     ! --------------------------------------------------------------------------
 
+! init accumulator
+    call abf_accu_init
+
 ! general arrays --------------------------------
     allocate(                                   &
             la(NumOfABFCVs),                    &
@@ -369,6 +372,8 @@ subroutine abf_init_arrays
             fzinv(NumOfABFCVs,NumOfABFCVs),     &
             indx(NumOfABFCVs),                  &
             vv(NumOfABFCVs),                    &
+            fzcore(abfaccu%tot_cvs,abfaccu%tot_cvs),        &
+            indxcore(abfaccu%tot_cvs),                  &
             stat= alloc_failed )
 
     if( alloc_failed .ne. 0 ) then
@@ -444,8 +449,7 @@ subroutine abf_init_arrays
 
 ! other setup ----------------------------------------------
 
-! init accumulator
-    call abf_accu_init
+
 
 ! sanity checks
     if( feimode .eq. 2 ) then

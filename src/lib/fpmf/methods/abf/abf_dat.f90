@@ -229,7 +229,11 @@ real(PMFDP),allocatable     :: fzinv(:,:)           ! inverse of Z matrix   in t
 real(PMFDP),allocatable     :: vv(:)                ! for LU decomposition
 integer,allocatable         :: indx(:)              ! for LU decomposition
 
+real(PMFDP),allocatable     :: fzcore(:,:)
+integer,allocatable         :: indxcore(:)
+
 real(PMFDP)                 :: fzdet
+real(PMFDP)                 :: fzdetcore
 
 ! helper arrays -------
 real(PMFDP),allocatable     :: la(:)
