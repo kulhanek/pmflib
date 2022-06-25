@@ -710,6 +710,11 @@ subroutine abf_core_force_2pX()
         case(2)
             pxif(i)  = (xvhist(i,hist_len-7) - xvhist(i,hist_len-8))*ifdtx
             cvave(i) = 0.5d0*(cvhist(i,hist_len-7)+cvhist(i,hist_len-8))
+        case(4)
+            pxif(i)  = (1.0d0/24.0d0)*(       -xvhist(i,hist_len-6) +27.0d0*xvhist(i,hist_len-7) &
+                                       -27.0d0*xvhist(i,hist_len-8)        +xvhist(i,hist_len-9))*ifdtx
+            cvave(i) = (1.0d0/16.0d0)*(      -xvhist(i,hist_len-6) +9.0d0*xvhist(i,hist_len-7) &
+                                       +9.0d0*xvhist(i,hist_len-8)       -xvhist(i,hist_len-9))
         case default
             call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented abf_p2_hx in abf_core_force_2pX!')
         end select
