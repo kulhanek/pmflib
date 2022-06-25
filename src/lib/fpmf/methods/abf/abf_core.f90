@@ -718,7 +718,7 @@ subroutine abf_core_force_2pX()
 
    ! write(45789,*) cvave(1), pxif(1), ekinlfhist(hist_len-8)
 
-    call abf_accu_add_data_entropy_decompose_hs(cvave,pxif,ekinlfhist(hist_len-8))
+    call abf_accu_add_data_entropy_decompose_hs(cvave,pxif,ekinlfhist(hist_len-7))
 
 end subroutine abf_core_force_2pX
 
