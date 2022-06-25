@@ -238,7 +238,7 @@ subroutine abf_core_update_history()
         end if
 
         ! project abf force along coordinate
-        do i=1,NumOfABFCVs
+        do i=1,abfaccu%tot_cvs
             ci = ABFCVList(i)%cvindx
             do j=1,NumOfLAtoms
                 Frc(:,j) = Frc(:,j) + la(i) * CVContext%CVsDrvs(:,j,ci)
@@ -702,6 +702,8 @@ subroutine abf_core_force_2pX()
     call abf_core_register_rawdata(cvhist(:,hist_len-8),pxif,pxis,pxiv,micfhist(:,hist_len-8), &
                            epothist(hist_len-8),ersthist(hist_len-8),ekinhist(hist_len-8))
 
+    ! write(45789,*) fstep-8, pxif(1), ekinhist(hist_len-8)
+
     if( .not. fentdecomp ) return
 
     ! half step part
@@ -728,7 +730,7 @@ subroutine abf_core_force_2pX()
         pxiv(i) = 0.0d0
     end do
 
-   ! write(45789,*) cvave(1), pxif(1), ekinlfhist(hist_len-8)
+    ! write(45790,*) fstep-7.5, pxif(1), ekinlfhist(hist_len-7)
 
     call abf_accu_add_data_entropy_decompose_hs(cvave,pxif,ekinlfhist(hist_len-7))
 

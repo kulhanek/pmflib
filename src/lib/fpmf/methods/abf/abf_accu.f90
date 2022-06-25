@@ -47,13 +47,18 @@ subroutine abf_accu_init()
     integer              :: alloc_failed
     ! --------------------------------------------------------------------------
 
+    abfaccu%tot_cvs = 0
+    do i=1,NumOfABFCVs
+        if( ABFCVList(i)%shake ) exit
+        abfaccu%tot_cvs = abfaccu%tot_cvs + 1
+    end do
+
     ! init dimensions ------------------------------
-    allocate(abfaccu%sizes(NumOfABFCVs), stat = alloc_failed)
+    allocate(abfaccu%sizes(abfaccu%tot_cvs), stat = alloc_failed)
     if( alloc_failed .ne. 0 ) then
         call pmf_utils_exit(PMF_OUT, 1,'[ABF] Unable to allocate memory for abf accumulator!')
     endif
 
-    abfaccu%tot_cvs     = NumOfABFCVs
     abfaccu%tot_nbins   = 1
     do i=1, abfaccu%tot_cvs
         abfaccu%sizes(i)%min_value  = ABFCVList(i)%min_value
@@ -663,7 +668,7 @@ subroutine abf_accu_add_data_online(cvs,gfx,bfx,epot,erst,ekin,etot)
         abfaccu%m2etot(gi0) = abfaccu%m2etot(gi0) + detot1 * detot2
     end if
 
-    do i=1,NumOfABFCVs
+    do i=1,abfaccu%tot_cvs
         icf = picf(i)
         dicf1 = icf - abfaccu%micf(i,gi0)
         abfaccu%micf(i,gi0)  = abfaccu%micf(i,gi0)  + dicf1 * invn
@@ -702,7 +707,7 @@ subroutine abf_accu_add_data_online(cvs,gfx,bfx,epot,erst,ekin,etot)
             abfaccu%inc_nsamples(gi0) = abfaccu%inc_nsamples(gi0) + 1.0d0
             invn = 1.0d0 / abfaccu%inc_nsamples(gi0)
 
-            do i=1,NumOfABFCVs
+            do i=1,abfaccu%tot_cvs
                 icf = picf(i)
                 dicf1 = icf - abfaccu%inc_micf(i,gi0)
                 abfaccu%inc_micf(i,gi0)  = abfaccu%inc_micf(i,gi0)  + dicf1 * invn
@@ -716,7 +721,7 @@ subroutine abf_accu_add_data_online(cvs,gfx,bfx,epot,erst,ekin,etot)
         abfaccu%bnsamples(gi0) = abfaccu%bnsamples(gi0) + 1.0d0
         invn = 1.0d0 / abfaccu%bnsamples(gi0)
 
-        do i=1,NumOfABFCVs
+        do i=1,abfaccu%tot_cvs
             icf = picf(i)
             dicf1 = icf - abfaccu%bmicf(i,gi0)
             abfaccu%bmicf(i,gi0)  = abfaccu%bmicf(i,gi0)  + dicf1 * invn
@@ -780,7 +785,7 @@ subroutine abf_accu_add_data_entropy_decompose(cvs,fx,sx,vx,bx,epot,erst,ekin)
     dekin2 = ekin - abfaccu%mtdsekin(gi0)
     abfaccu%m2tdsekin(gi0) = abfaccu%m2tdsekin(gi0) + dekin1 * dekin2
 
-    do i=1,NumOfABFCVs
+    do i=1,abfaccu%tot_cvs
         ifx = - fx(i)
         difx1 = ifx - abfaccu%mtdsfx(i,gi0)
         abfaccu%mtdsfx(i,gi0)  = abfaccu%mtdsfx(i,gi0)  + difx1 * invn
@@ -858,7 +863,7 @@ subroutine abf_accu_add_data_entropy_decompose_hs(cvs,fx,ekin)
     dekin2 = ekin - abfaccu%mtdsekin_h(gi0)
     abfaccu%m2tdsekin_h(gi0) = abfaccu%m2tdsekin_h(gi0) + dekin1 * dekin2
 
-    do i=1,NumOfABFCVs
+    do i=1,abfaccu%tot_cvs
         ifx = - fx(i)
         difx1 = ifx - abfaccu%mtdsfx_h(i,gi0)
         abfaccu%mtdsfx_h(i,gi0)  = abfaccu%mtdsfx_h(i,gi0)  + difx1 * invn
@@ -918,7 +923,7 @@ function abf_get_skernel(cvs1,cvs2) result(kval)
 
 ! calculate length between two points
     u2 = 0.0d0
-    do i=1,NumOfABFCVs
+    do i=1,abfaccu%tot_cvs
         dx = ABFCVList(i)%cv%get_deviation(cvs1(i),cvs2(i)) / (ABFCVList(i)%wfac*abfaccu%PMFAccuType%sizes(i)%bin_width)
         u2 = u2 + dx**2
     end do
@@ -1084,7 +1089,7 @@ subroutine abf_accu_get_data_ksmooth(cvs,gfx)
             end if
         end if
         w = rw * kw * abfaccu%weights(si0)
-        gfx(:) = gfx(:) + w * abfaccu%bmicf(:,si0)
+        gfx(1:abfaccu%tot_cvs) = gfx(1:abfaccu%tot_cvs) + w * abfaccu%bmicf(:,si0)
     end do
 
     ! apply switching factors
@@ -1180,7 +1185,7 @@ subroutine abf_get_switching_factors(vals)
     ! --------------------------------------------------------------------------
 
     sfac(:) = 0.0d0
-    do i=1,NumOfABFCVs
+    do i=1,abfaccu%tot_cvs
         if( vals(i) .le. ABFCVList(i)%min_value ) cycle
         if( vals(i) .ge. ABFCVList(i)%max_value ) cycle
 

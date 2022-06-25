@@ -120,6 +120,9 @@ type CVTypeABF
     real(PMFDP)             :: force_constant   ! sigma value
     real(PMFDP)             :: deviation        ! deviation between real and actual value
     real(PMFDP)             :: energy
+
+    !
+    logical                 :: shake
 end type CVTypeABF
 
 ! ----------------------
