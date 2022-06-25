@@ -131,6 +131,7 @@ subroutine abf_core_update_history()
         erstrwhist(i)       = erstrwhist(i+1)
         ekinlfhist(i)       = ekinlfhist(i+1)
         micfhist(:,i)       = micfhist(:,i+1)
+        iszrhist(i)         = iszrhist(i+1)
     end do
 
     do i=1,NumOfABFCVs
@@ -208,6 +209,9 @@ subroutine abf_core_update_history()
 ! calculate Z matrix and its inverse
     call abf_core_calc_Zmat(CVContext)
 
+    iszrhist(hist_len) = -0.5d0*PMF_Rgas*ftemp*log(fzdet)
+    ! write(7894,*) fstep,-0.5d0*PMF_Rgas*ftemp*log(fzdet)
+
 ! apply force filters
     la(:) = 0.0d0
     if( fapply_abf ) then
@@ -238,6 +242,7 @@ subroutine abf_core_update_history()
         end if
 
         ! project abf force along coordinate
+        ! FIXME
         do i=1,abfaccu%tot_cvs
             ci = ABFCVList(i)%cvindx
             do j=1,NumOfLAtoms
@@ -614,7 +619,7 @@ subroutine abf_core_force_2pX()
 
     implicit none
     integer                :: i,j,cidx
-    real(PMFDP)            :: v,dx1,dx2,dx3,dx4
+    real(PMFDP)            :: v,dx1,dx2,dx3,dx4,erst
     ! --------------------------------------------------------------------------
 
     call abf_core_update_history
@@ -698,9 +703,11 @@ subroutine abf_core_force_2pX()
         pxiv(i) = 0.0d0
     end do
 
+    erst = ersthist(hist_len-8) + iszrhist(hist_len-8)
+
     ! subroutine abf_core_register_rawdata(cvs,ficf,sicf,vicf,bicf,epot,erst,ekin)
     call abf_core_register_rawdata(cvhist(:,hist_len-8),pxif,pxis,pxiv,micfhist(:,hist_len-8), &
-                           epothist(hist_len-8),ersthist(hist_len-8),ekinhist(hist_len-8))
+                           epothist(hist_len-8),erst,ekinhist(hist_len-8))
 
     ! write(45789,*) fstep-8, pxif(1), ekinhist(hist_len-8)
 
@@ -913,12 +920,23 @@ subroutine abf_core_calc_Zmat(ctx)
             call pmf_utils_exit(PMF_OUT,1,'[ABF] LU decomposition failed in abf_core_calc_Zmat!')
         end if
 
+        fzdet = 1.0d0
+        ! and finally determinant
+        do i=1,NumOfABFCVs
+            if( indx(i) .ne. i ) then
+                fzdet = - fzdet * fzinv(i,i)
+            else
+                fzdet = fzdet * fzinv(i,i)
+            end if
+        end do
+
         call dgetri(NumOfABFCVs,fzinv,NumOfABFCVs,indx,vv,NumOfABFCVs,info)
         if( info .ne. 0 ) then
             call pmf_utils_exit(PMF_OUT,1,'[ABF] Matrix inversion failed in abf_core_calc_Zmat!')
         end if
     else
         fzinv(1,1)  = 1.0d0/fz(1,1)
+        fzdet = fz(1,1)
     end if
 
     return

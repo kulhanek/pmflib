@@ -416,6 +416,7 @@ subroutine abf_init_arrays
             epotrwhist(hist_len),                       &
             erstrwhist(hist_len),                       &
             ekinlfhist(hist_len),                       &
+            iszrhist(hist_len),                       &
             xvhist(NumOfABFCVs,hist_len),               &
             stat= alloc_failed )
 
@@ -437,6 +438,7 @@ subroutine abf_init_arrays
     epotrwhist(:)   = 0.0d0
     erstrwhist(:)   = 0.0d0
     ekinlfhist(:)   = 0.0d0
+    iszrhist(:)     = 0.0d0
     xvhist(:,:)     = 0.0d0
     fzinvhist(:,:,:) = 0.0d0
 

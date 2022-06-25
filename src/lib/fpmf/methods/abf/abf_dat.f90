@@ -229,6 +229,8 @@ real(PMFDP),allocatable     :: fzinv(:,:)           ! inverse of Z matrix   in t
 real(PMFDP),allocatable     :: vv(:)                ! for LU decomposition
 integer,allocatable         :: indx(:)              ! for LU decomposition
 
+real(PMFDP)                 :: fzdet
+
 ! helper arrays -------
 real(PMFDP),allocatable     :: la(:)
 real(PMFDP),allocatable     :: pxia(:)
@@ -259,6 +261,7 @@ real(PMFDP),allocatable     :: epotrwhist(:)        ! history of Epot - raw data
 real(PMFDP),allocatable     :: erstrwhist(:)        ! history of Erst - raw data
 real(PMFDP),allocatable     :: ekinlfhist(:)        ! history of EkinLF
 real(PMFDP),allocatable     :: xvhist(:,:)          ! history of xi velocities
+real(PMFDP),allocatable     :: iszrhist(:)
 
 ! ------------------------------------------------------------------------------
 
