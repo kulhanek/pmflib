@@ -704,7 +704,7 @@ subroutine abf_core_force_2pX()
         pxiv(i) = 0.0d0
     end do
 
-    erst = ersthist(hist_len-8) + iszrhist(hist_len-8)
+    erst = ersthist(hist_len-8) ! + iszrhist(hist_len-8)
 
     ! subroutine abf_core_register_rawdata(cvs,ficf,sicf,vicf,bicf,epot,erst,ekin)
     call abf_core_register_rawdata(cvhist(:,hist_len-8),pxif,pxis,pxiv,micfhist(:,hist_len-8), &
