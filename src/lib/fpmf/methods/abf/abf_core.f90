@@ -706,6 +706,12 @@ subroutine abf_core_force_2pX()
 
     erst = ersthist(hist_len-8) ! + iszrhist(hist_len-8)
 
+    ! contribution from constraints - working version
+    pxis(:) = 0.0d0
+    do i=2,NumOfABFCVs
+        pxis(1) = pxis(1) + pxif(i)
+    end do
+
     ! subroutine abf_core_register_rawdata(cvs,ficf,sicf,vicf,bicf,epot,erst,ekin)
     call abf_core_register_rawdata(cvhist(:,hist_len-8),pxif,pxis,pxiv,micfhist(:,hist_len-8), &
                            epothist(hist_len-8),erst,ekinhist(hist_len-8))
