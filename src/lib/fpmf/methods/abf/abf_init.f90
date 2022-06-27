@@ -195,6 +195,10 @@ subroutine abf_init_print_summary
 !    end do
     case(6)
     write(PMF_OUT,120)  '      |-> ABF algorithm (3pV2)'
+    case(7)
+    write(PMF_OUT,120)  '      |-> ABF algorithm (2pX-B)'
+    write(PMF_OUT,130)  '          Velocity order                 : ', abf_p2_vx
+    write(PMF_OUT,130)  '          Momenta order                  : ', abf_p2_px
     case default
         call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown fmode in abf_init_print_summary!')
     end select
@@ -400,7 +404,7 @@ subroutine abf_init_arrays
         case(1,2,3,6)
             ! for V6 interpolation we need at least 6 data points
             hist_len = 6
-        case(4,5)
+        case(4,5,7)
             hist_len = 13
         case default
             call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented fmode in abf_init_arrays!')

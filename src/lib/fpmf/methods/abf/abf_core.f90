@@ -65,6 +65,8 @@ subroutine abf_core_main
             call abf_core_force_2pX
         case(6)
             call abf_core_force_3pV2
+        case(7)
+            call abf_core_force_2pX_B
         case default
             call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented fmode in abf_core_main!')
     end select
@@ -706,6 +708,145 @@ subroutine abf_core_force_2pX()
 
     erst = ersthist(hist_len-8) ! + iszrhist(hist_len-8)
 
+    ! subroutine abf_core_register_rawdata(cvs,ficf,sicf,vicf,bicf,epot,erst,ekin)
+    call abf_core_register_rawdata(cvhist(:,hist_len-8),pxif,pxis,pxiv,micfhist(:,hist_len-8), &
+                           epothist(hist_len-8),erst,ekinhist(hist_len-8))
+
+    ! write(45789,*) fstep-8, pxif(1), ekinhist(hist_len-8)
+
+    if( .not. fentdecomp ) return
+
+    ! half step part
+    do i=1,NumOfABFCVs
+        select case(abf_p2_hx)
+        case(2)
+            pxif(i)  = (xvhist(i,hist_len-7) - xvhist(i,hist_len-8))*ifdtx
+            cvave(i) = 0.5d0*(cvhist(i,hist_len-7)+cvhist(i,hist_len-8))
+        case(4)
+            pxif(i)  = (1.0d0/24.0d0)*(       -xvhist(i,hist_len-6) +27.0d0*xvhist(i,hist_len-7) &
+                                       -27.0d0*xvhist(i,hist_len-8)        +xvhist(i,hist_len-9))*ifdtx
+            cvave(i) = (1.0d0/16.0d0)*(      -cvhist(i,hist_len-6) +9.0d0*cvhist(i,hist_len-7) &
+                                       +9.0d0*cvhist(i,hist_len-8)       -cvhist(i,hist_len-9))
+        case(6)
+            pxif(i)  = (1.0d0/1920.0d0)*(  +9.0d0*xvhist(i,hist_len-5)  -125.0d0*xvhist(i,hist_len-6) &
+                                        +2250.0d0*xvhist(i,hist_len-7) -2250.0d0*xvhist(i,hist_len-8) &
+                                         +125.0d0*xvhist(i,hist_len-9)   -9.0d0*xvhist(i,hist_len-10))*ifdtx
+            cvave(i) = (1.0d0/256.0d0)*(  +3.0d0*cvhist(i,hist_len-5)  -25.0d0*cvhist(i,hist_len-6) &
+                                        +150.0d0*cvhist(i,hist_len-7) +150.0d0*cvhist(i,hist_len-8) &
+                                         -25.0d0*cvhist(i,hist_len-9)   +3.0d0*cvhist(i,hist_len-10))
+        case default
+            call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented abf_p2_hx in abf_core_force_2pX!')
+        end select
+        pxiv(i) = 0.0d0
+    end do
+
+    ! write(45790,*) fstep-7.5, pxif(1), ekinlfhist(hist_len-7)
+
+    call abf_accu_add_data_entropy_decompose_hs(cvave,pxif,ekinlfhist(hist_len-7))
+
+end subroutine abf_core_force_2pX
+
+!===============================================================================
+! Subroutine:  abf_core_force_2pX
+! this is leap-frog ABF version, simplified algorithm
+!===============================================================================
+
+subroutine abf_core_force_2pX_B()
+
+    use pmf_dat
+    use pmf_cvs
+    use abf_dat
+    use pmf_utils
+    use abf_accu
+
+    implicit none
+    integer                :: i,j,cidx
+    real(PMFDP)            :: v,dx1,dx2,dx3,dx4,erst
+    ! --------------------------------------------------------------------------
+
+    call abf_core_update_history
+
+! shift accuvalue history
+    do i=1,hist_len-1
+        xvhist(:,i)         = xvhist(:,i+1)
+        fzinvhist(:,:,i)    = fzinvhist(:,:,i+1)
+    end do
+    fzinvhist(:,:,hist_len) = fzinv(:,:)
+
+    ! this algorithm is not suitable for periodic CVs
+    ! this is tested in abf_init_print_summary
+
+    do i=1,NumOfABFCVs
+        select case(abf_p2_vx)
+        case(3)
+            ! -1
+            dx1 = ABFCVList(i)%cv%get_deviation(cvhist(i,hist_len-0),cvhist(i,hist_len-2))
+            pxia(i) = 0.5d0*dx1*ifdtx
+            ! pxia(i) = 0.5d0*(cvhist(i,hist_len-0)-cvhist(i,hist_len-2))*ifdtx
+
+            cidx = -1
+        case(5)
+            ! -2
+            dx1 = ABFCVList(i)%cv%get_deviation(cvhist(i,hist_len-4),cvhist(i,hist_len-0))
+            dx2 = ABFCVList(i)%cv%get_deviation(cvhist(i,hist_len-1),cvhist(i,hist_len-3))
+            pxia(i) = (1.0d0/12.0d0)*(dx1+8.0d0*dx2)*ifdtx
+            !pxia(i) = (1.0d0/12.0d0)*(      -cvhist(i,hist_len-0)+8.0d0*cvhist(i,hist_len-1)&
+            !                          -8.0d0*cvhist(i,hist_len-3)      +cvhist(i,hist_len-4))*ifdtx
+            cidx = -2
+        case(7)
+            ! -3
+            dx1 = ABFCVList(i)%cv%get_deviation(cvhist(i,hist_len-0),cvhist(i,hist_len-6))
+            dx2 = ABFCVList(i)%cv%get_deviation(cvhist(i,hist_len-5),cvhist(i,hist_len-1))
+            dx3 = ABFCVList(i)%cv%get_deviation(cvhist(i,hist_len-2),cvhist(i,hist_len-4))
+            pxia(i) = (1.0d0/60.0d0)*(dx1+9.0d0*dx2+45.0d0*dx3)*ifdtx
+            cidx = -3
+        case(9)
+            ! -4
+            dx1 = ABFCVList(i)%cv%get_deviation(cvhist(i,hist_len-8),cvhist(i,hist_len-0))
+            dx2 = ABFCVList(i)%cv%get_deviation(cvhist(i,hist_len-1),cvhist(i,hist_len-7))
+            dx3 = ABFCVList(i)%cv%get_deviation(cvhist(i,hist_len-6),cvhist(i,hist_len-2))
+            dx4 = ABFCVList(i)%cv%get_deviation(cvhist(i,hist_len-3),cvhist(i,hist_len-5))
+            pxia(i) = (1.0d0/840.0d0)*(3.0d0*dx1+32.0d0*dx2+168.0d0*dx3+672.0d0*dx4)*ifdtx
+            cidx = -4
+        case default
+            call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented abf_p2_vx in abf_core_force_2pX!')
+        end select
+    end do
+
+    do i=1,NumOfABFCVs
+        v = 0.0d0
+        do j=1,NumOfABFCVs
+            v = v + fzinvhist(i,j,hist_len+cidx)*pxia(j)
+        end do
+        xvhist(i,hist_len+cidx) = v
+    end do
+
+    if( fstep .le. 2*hist_len ) return
+
+    do i=1,NumOfABFCVs
+        select case(abf_p2_px)
+        case(3)
+            pxif(i) = 0.5d0*(xvhist(i,hist_len-7) - xvhist(i,hist_len-9))*ifdtx
+        case(5)
+            pxif(i) = (1.0d0/12.0d0)*(      -xvhist(i,hist_len-6) + 8.0d0*xvhist(i,hist_len-7) &
+                                      -8.0d0*xvhist(i,hist_len-9)      + xvhist(i,hist_len-10))*ifdtx
+        case(7)
+            pxif(i) = (1.0d0/60.0d0)*(        xvhist(i,hist_len-5)  -9.0d0*xvhist(i,hist_len-6) &
+                                      +45.0d0*xvhist(i,hist_len-7) -45.0d0*xvhist(i,hist_len-9) &
+                                       +9.0d0*xvhist(i,hist_len-10)       -xvhist(i,hist_len-11))*ifdtx
+        case(9)
+            pxif(i) = (1.0d0/840.0d0)*( -3.0d0*xvhist(i,hist_len-4) +32.0d0*xvhist(i,hist_len-5) &
+                                      -168.0d0*xvhist(i,hist_len-6)+672.0d0*xvhist(i,hist_len-7) &
+                                      -672.0d0*xvhist(i,hist_len-9)+168.0d0*xvhist(i,hist_len-10) &
+                                       -32.0d0*xvhist(i,hist_len-11) +3.0d0*xvhist(i,hist_len-12))*ifdtx
+        case default
+            call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented abf_p2_px in abf_core_force_2pX!')
+        end select
+        pxiv(i) = 0.0d0
+    end do
+
+    erst = ersthist(hist_len-8) ! + iszrhist(hist_len-8)
+
     ! contribution from constraints - working version
     pxis(:) = 0.0d0
     do i=2,NumOfABFCVs
@@ -748,7 +889,7 @@ subroutine abf_core_force_2pX()
 
     call abf_accu_add_data_entropy_decompose_hs(cvave,pxif,ekinlfhist(hist_len-7))
 
-end subroutine abf_core_force_2pX
+end subroutine abf_core_force_2pX_B
 
 !===============================================================================
 ! Subroutine:  abf_core_force_2pV
