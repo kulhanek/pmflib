@@ -637,6 +637,11 @@ subroutine abf_core_force_2pX()
     ! this algorithm is not suitable for periodic CVs
     ! this is tested in abf_init_print_summary
 
+!    dx1 = 0
+!    dx2 = 0
+!    dx3 = 0
+!    dx4 = 0
+
     do i=1,NumOfABFCVs
         select case(abf_p2_vx)
         case(3)
@@ -674,6 +679,15 @@ subroutine abf_core_force_2pX()
         end select
     end do
 
+    do i=abfaccu%tot_cvs+1,NumOfABFCVs
+        pxia(i) = 0.0d0 ! reset SHAKEn velocities
+    end do
+
+
+    !write(789458,*) fstep,  fzinvhist(:,j,hist_len+cidx)
+
+    !write(12458,*) fstep, dx1, dx2, dx3, dx4
+
     do i=1,NumOfABFCVs
         v = 0.0d0
         do j=1,NumOfABFCVs
@@ -683,6 +697,8 @@ subroutine abf_core_force_2pX()
     end do
 
     if( fstep .le. 2*hist_len ) return
+
+    ! write(45789,*) fstep,pxia
 
     do i=1,NumOfABFCVs
         select case(abf_p2_px)
@@ -813,6 +829,10 @@ subroutine abf_core_force_2pX_B()
         end select
     end do
 
+    do i=2,NumOfABFCVs
+        pxia(i) = 0.0d0 ! reset SHAKEn velocities
+    end do
+
     do i=1,NumOfABFCVs
         v = 0.0d0
         do j=1,NumOfABFCVs
@@ -852,6 +872,8 @@ subroutine abf_core_force_2pX_B()
     do i=2,NumOfABFCVs
         pxis(1) = pxis(1) + pxif(i)
     end do
+
+    write(78489,*) fstep, pxis(1), (pxif(i),i=1,NumOfABFCVs)
 
     ! subroutine abf_core_register_rawdata(cvs,ficf,sicf,vicf,bicf,epot,erst,ekin)
     call abf_core_register_rawdata(cvhist(:,hist_len-8),pxif,pxis,pxiv,micfhist(:,hist_len-8), &
