@@ -279,6 +279,8 @@ subroutine abf_init_print_summary
     write(PMF_OUT,120)  '      |-> LFKE4 (leap-frog KE - interpolated KE4)'
     case(6)
     write(PMF_OUT,120)  '      |-> LFKE6 (leap-frog KE - interpolated KE6)'
+    case(7)
+    write(PMF_OUT,120)  '      |-> Kolafa'
     case default
     call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown kinetic energy source in abf_init_print_summary!')
     end select

@@ -202,8 +202,8 @@ subroutine abf_core_update_history()
                                                         -25.0d0*ekinlfhist(hist_len-4)   +3.0d0*ekinlfhist(hist_len-5))
             ekin                    = ekinhist(hist_len-3)
         case(7)
-            ekinhist(hist_len-1)    = KinEneV3 - fekinaverage
-            ekin                    = ekinhist(hist_len-1)
+            ekinhist(hist_len)      = KinEneV3 - fekinaverage
+            ekin                    = ekinhist(hist_len)
     case default
         call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented ftds_ekin_src mode in abf_core_update_history!')
     end select
