@@ -232,13 +232,16 @@ void CMWAServer::AutoSaveData(void)
 
     vout << format(" --> %9d autosave to MWA accumulator: %s\n") % SaveCounter % OutputFileName;
     try {
+        MWAAccumulator.AccuMutex.Lock();
         MWAAccumulator.Save(OutputFileName);
         if( TrajFile ){
             MWAAccumulator.Save(TrajFile);
         }
+        MWAAccumulator.AccuMutex.Unlock();
     } catch(std::exception& e) {
-        ES_ERROR_FROM_EXCEPTION("unable to save MWA output accumulator",e);
+        MWAAccumulator.AccuMutex.Unlock();
         AutoSaveMutex.Unlock();
+        ES_ERROR_FROM_EXCEPTION("unable to save MWA output accumulator",e);
         return; // skip error
     }
 

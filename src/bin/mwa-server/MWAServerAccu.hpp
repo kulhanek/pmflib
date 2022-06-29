@@ -84,6 +84,8 @@ private:
 
     /// exchange data in synchronous mode
     void ExchangeDataSynchronousMode(CRegClient* p_client);
+
+    friend class CMWAServer;
 };
 
 //------------------------------------------------------------------------------
