@@ -176,29 +176,15 @@ subroutine abf_init_print_summary
     select case(fmode)
     case(1)
     write(PMF_OUT,120)  '      |-> ABF algorithm (3pV1)'
-    case(2)
-    write(PMF_OUT,120)  '      |-> ABF algorithm (3pF)'
-    case(3)
-    write(PMF_OUT,120)  '      |-> ABF algorithm (5pV1)'
     case(4)
     write(PMF_OUT,120)  '      |-> ABF algorithm (2pV)'
-    write(PMF_OUT,130)  '          Velocity order                 : ', abf_p2_vx
-    write(PMF_OUT,130)  '          Momenta order                  : ', abf_p2_px
+    write(PMF_OUT,130)  '          Velocity order (abf_p2_vx)     : ', abf_p2_vx
+    write(PMF_OUT,130)  '          Momenta order (abf_p2_px)      : ', abf_p2_px
     case(5)
     write(PMF_OUT,120)  '      |-> ABF algorithm (2pX)'
-    write(PMF_OUT,130)  '          Velocity order                 : ', abf_p2_vx
-    write(PMF_OUT,130)  '          Momenta order                  : ', abf_p2_px
-!    do i=1,NumOfABFCVs
-!        if( ABFCVList(i)%cv%is_periodic_cv() ) then
-!            call pmf_utils_exit(PMF_OUT,1,'[ABF] This ABF algorithm is not suitable for periodic CVs!')
-!        end if
-!    end do
-    case(6)
-    write(PMF_OUT,120)  '      |-> ABF algorithm (3pV2)'
-    case(7)
-    write(PMF_OUT,120)  '      |-> ABF algorithm (2pX-B)'
-    write(PMF_OUT,130)  '          Velocity order                 : ', abf_p2_vx
-    write(PMF_OUT,130)  '          Momenta order                  : ', abf_p2_px
+    write(PMF_OUT,130)  '          Velocity order (abf_p2_vx)     : ', abf_p2_vx
+    write(PMF_OUT,130)  '          Momenta order (abf_p2_px)      : ', abf_p2_px
+    write(PMF_OUT,125)  '          abf_clear_shaken_cvvel         : ', prmfile_onoff(abf_clear_shaken_cvvel)
     case default
         call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown fmode in abf_init_print_summary!')
     end select
@@ -262,11 +248,21 @@ subroutine abf_init_print_summary
     write(PMF_OUT,150)  ' Kinetic energy offset (fekinaverage)    : ', pmf_unit_get_rvalue(EnergyUnit,fekinaverage), &
                                                                        '['//trim(pmf_unit_label(EnergyUnit))//']'
     write(PMF_OUT,130)  ' Potential energy source (ftds_epot_src) : ', ftds_epot_src
-    ! FIXME
+    select case(ftds_epot_src)
+    case(1)
+    write(PMF_OUT,120)  '      |-> Unmodified'
+    case(2)
+    write(PMF_OUT,120)  '      |-> Interpolated 2p'
+    case(3)
+    write(PMF_OUT,120)  '      |-> Interpolated 3p'
+    case(4)
+    write(PMF_OUT,120)  '      |-> Interpolated 5p'
+    case default
+    call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown potential energy source in abf_init_print_summary!')
+    end select
+
     write(PMF_OUT,130)  ' Kinetic energy source (ftds_ekin_src)   : ', ftds_ekin_src
     select case(ftds_ekin_src)
-    case(0)
-    write(PMF_OUT,120)  '      |-> LF (leapfrog V at -1/2dt)'
     case(1)
     write(PMF_OUT,120)  '      |-> VVV2 (velocity Verlet V - interpolated V2)'
     case(2)
@@ -280,7 +276,15 @@ subroutine abf_init_print_summary
     case(6)
     write(PMF_OUT,120)  '      |-> LFKE6 (leap-frog KE - interpolated KE6)'
     case(7)
-    write(PMF_OUT,120)  '      |-> Kolafa'
+    write(PMF_OUT,120)  '      |-> VVV3 (velocity Verlet V - interpolated V3)'
+    case(8)
+    write(PMF_OUT,120)  '      |-> VVV5 (velocity Verlet V - interpolated V5)'
+    case(9)
+    write(PMF_OUT,120)  '      |-> VVV2 (velocity Verlet V - interpolated V2 - delayed +dt)'
+    case(10)
+    write(PMF_OUT,120)  '      |-> VVV2 (velocity Verlet V - interpolated V2 - delayed -dt)'
+    case(11)
+    write(PMF_OUT,120)  '      |-> HA (harmonic approximation Verlet V)'
     case default
     call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown kinetic energy source in abf_init_print_summary!')
     end select

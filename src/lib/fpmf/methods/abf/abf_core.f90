@@ -54,12 +54,7 @@ subroutine abf_core_main
         ! simplified
         case(1)
             call abf_core_force_3pV1
-! not supported any more
-!        case(2)
-!            call abf_core_force_3pF
-!        case(3)
-!            call abf_core_force_5pV1
-        ! special cases
+! not supported any more: 2, 3
         case(4)
             call abf_core_force_2pV
         case(5)
@@ -117,7 +112,7 @@ subroutine abf_core_update_history()
 ! raw data
     epotrwhist(hist_len)    = PotEne - fepotaverage
     erstrwhist(hist_len)    = PMFEne
-    ekinlfhist(hist_len)    = KinEneLF - fekinaverage   ! shifted by -1/2dt
+    ekinlfhist(hist_len)    = KinEne%KinEneLF - fekinaverage   ! shifted by -1/2dt
 
 ! process EPOT
     select case(ftds_epot_src)
@@ -153,13 +148,13 @@ subroutine abf_core_update_history()
     select case(ftds_ekin_src)
         ! KE from velocities at full-step interpolated from velocities at half-step
         case(1)
-            ekinhist(hist_len-1)    = KinEneVV - fekinaverage   ! shifted by -dt
+            ekinhist(hist_len-1)    = KinEne%KinEneVV - fekinaverage   ! shifted by -dt
             ekin                    = ekinhist(hist_len-1)
         case(2)
-            ekinhist(hist_len-2)    = KinEneV4 - fekinaverage
+            ekinhist(hist_len-2)    = KinEne%KinEneV4 - fekinaverage
             ekin                    = ekinhist(hist_len-2)
         case(3)
-            ekinhist(hist_len-3)    = KinEneV6 - fekinaverage
+            ekinhist(hist_len-3)    = KinEne%KinEneV6 - fekinaverage
             ekin                    = ekinhist(hist_len-3)
         ! KE from interpolated KE at half-step
         case(4)
@@ -175,8 +170,20 @@ subroutine abf_core_update_history()
                                                         -25.0d0*ekinlfhist(hist_len-4)   +3.0d0*ekinlfhist(hist_len-5))
             ekin                    = ekinhist(hist_len-3)
         case(7)
-            ekinhist(hist_len)      = KinEneV3 - fekinaverage
-            ekin                    = ekinhist(hist_len)
+            ekinhist(hist_len-1)    = KinEne%KinEneV3 - fekinaverage
+            ekin                    = ekinhist(hist_len-1)
+        case(8)
+            ekinhist(hist_len-2)    = KinEne%KinEneV5 - fekinaverage
+            ekin                    = ekinhist(hist_len-2)
+        case(9)
+            ekinhist(hist_len-2)    = KinEne%KinEneVV - fekinaverage
+            ekin                    = ekinhist(hist_len-2)
+        case(10)
+            ekinhist(hist_len-0)    = KinEne%KinEneVV - fekinaverage
+            ekin                    = ekinhist(hist_len-0)
+        case(11)
+            ekinhist(hist_len-1)    = KinEne%KinEneHA - fekinaverage
+            ekin                    = ekinhist(hist_len-1)
     case default
         call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented ftds_ekin_src mode in abf_core_update_history!')
     end select

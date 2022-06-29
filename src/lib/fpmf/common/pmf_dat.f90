@@ -30,6 +30,7 @@ module pmf_dat
 use pmf_sizes
 use pmf_constants
 use pmf_cvs
+use pmf_kinene
 
 implicit none
 
@@ -108,11 +109,8 @@ real(PMFDP),allocatable     :: Frc(:,:)         ! current system forces in t due
 real(PMFDP),allocatable     :: Vel(:,:)         ! current system velocities in t-dt/2
 type(CVContextType)         :: CVContext        ! current CV context (values and derivatives) in t
 
-real(PMFDP)                 :: KinEneVV         ! velocity verlet kinetic energy in t-dt
-real(PMFDP)                 :: KinEneLF         ! leapfrog kinetic energy in t-dt/2
-real(PMFDP)                 :: KinEneV3         ! accurate kinetic energy in t-dt
-real(PMFDP)                 :: KinEneV4         ! accurate kinetic energy in t-2*dt
-real(PMFDP)                 :: KinEneV6         ! accurate kinetic energy in t-3*dt
+! energies
+type(PMFKineticEnergy)      :: KinEne
 real(PMFDP)                 :: PotEne           ! current system potential energy in t
 real(PMFDP)                 :: PMFEne           ! current PMFLib potential energy in t (from RST, MTD, STM)
 

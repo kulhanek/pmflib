@@ -53,7 +53,7 @@ end subroutine pmf_core_lf_update_step
 ! leap-frog version
 !===============================================================================
 
-subroutine pmf_core_lf_force(x,v,f,epot,ekinvv,ekinlf,ekinv3,ekinv4,ekinv6,epmf)
+subroutine pmf_core_lf_force(x,v,f,epot,ekin,epmf)
 
     use pmf_dat
     use pmf_cvs
@@ -72,16 +72,12 @@ subroutine pmf_core_lf_force(x,v,f,epot,ekinvv,ekinlf,ekinv3,ekinv4,ekinv6,epmf)
     use pdrv_core
 
     implicit none
-    real(PMFDP)    :: x(:,:)        ! position in t
-    real(PMFDP)    :: v(:,:)        ! velocities in t-dt/2
-    real(PMFDP)    :: f(:,:)        ! forces in t
-    real(PMFDP)    :: epot          ! potential energy in t
-    real(PMFDP)    :: ekinvv        ! kinetic energy in t-dt
-    real(PMFDP)    :: ekinlf        ! kinetic energy in t-dt/2
-    real(PMFDP)    :: ekinv3        ! kinetic energy in t-dt
-    real(PMFDP)    :: ekinv4        ! kinetic energy in t-2*dt
-    real(PMFDP)    :: ekinv6        ! kinetic energy in t-3*dt
-    real(PMFDP)    :: epmf          ! energy from PMFLib
+    real(PMFDP)             :: x(:,:)        ! position in t
+    real(PMFDP)             :: v(:,:)        ! velocities in t-dt/2
+    real(PMFDP)             :: f(:,:)        ! forces in t
+    real(PMFDP)             :: epot          ! potential energy in t
+    type(PMFKineticEnergy)  :: ekin          ! kinetic energy
+    real(PMFDP)             :: epmf          ! energy from PMFLib
     ! -----------------------------------------------
     integer        :: i
     ! --------------------------------------------------------------------------
@@ -90,14 +86,18 @@ subroutine pmf_core_lf_force(x,v,f,epot,ekinvv,ekinlf,ekinv3,ekinv4,ekinv6,epmf)
 
     if( .not. pmf_enabled ) return
 
+    ! FIXME - this should be in drivers ...?
     ! convert potential energy
     PotEne = epot * EnergyConv
+
     ! convert kinetic energies
-    KinEneVV = ekinvv * EnergyConv
-    KinEneLF = ekinlf * EnergyConv
-    KinEneV3 = ekinv3 * EnergyConv
-    KinEneV4 = ekinv4 * EnergyConv
-    KinEneV6 = ekinv6 * EnergyConv
+    KinEne%KinEneVV = ekin%KinEneVV * EnergyConv
+    KinEne%KinEneLF = ekin%KinEneLF * EnergyConv
+    KinEne%KinEneHA = ekin%KinEneHA * EnergyConv
+    KinEne%KinEneV3 = ekin%KinEneV3 * EnergyConv
+    KinEne%KinEneV4 = ekin%KinEneV4 * EnergyConv
+    KinEne%KinEneV5 = ekin%KinEneV5 * EnergyConv
+    KinEne%KinEneV6 = ekin%KinEneV6 * EnergyConv
 
     PMFEne = 0.0d0
 

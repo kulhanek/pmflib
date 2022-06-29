@@ -362,13 +362,16 @@ subroutine pmf_pmemd_force(x,v,f,epot,ekin,epmf)
     real(PMFDP)    :: epot              ! in
     real(PMFDP)    :: ekin              ! in
     real(PMFDP)    :: epmf              ! out
+    type(PMFKineticEnergy)      :: lKinEne
     ! --------------------------------------------------------------------------
 
     if( .not. fmaster ) return
 
+    lKinEne%KinEneVV = ekin
+
     call pmf_timers_start_timer(PMFLIB_TIMER)
     call pmf_core_lf_update_step
-    call pmf_core_lf_force(x,v,f,epot,ekin,0.0d0,0.0d0,0.0d0,0.0d0,epmf)
+    call pmf_core_lf_force(x,v,f,epot,lKinEne,epmf)
     call pmf_timers_stop_timer(PMFLIB_TIMER)
 
 end subroutine pmf_pmemd_force

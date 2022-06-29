@@ -27,6 +27,7 @@ SET(PMF_COM_SRC
         common/pmf_alloc_cv.F90
         common/pmf_exit.f90
         common/pmf_accu.f90
+        common/pmf_kinene.f90
         )
 
 # coordinates ------------------------------------------------------------------
