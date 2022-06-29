@@ -449,7 +449,7 @@ end subroutine pmf_sander_num_of_pmflib_cst
 ! Subroutine: pmf_sander_constraints
 !===============================================================================
 
-subroutine pmf_sander_constraints(leapfrog_mode,anatom,xbar,x,modified)
+subroutine pmf_sander_constraints(anatom,x,modified)
 
     use pmf_sizes
     use pmf_dat
@@ -458,25 +458,16 @@ subroutine pmf_sander_constraints(leapfrog_mode,anatom,xbar,x,modified)
     use pmf_utils
 
     implicit none
-    integer        :: leapfrog_mode
     integer        :: anatom            ! number of atoms
-    real(PMFDP)    :: xbar(3,anatom)    ! positions in t+dt - without shake for leapfrog_mode .eq. 1, otherwise position in t
     real(PMFDP)    :: x(3,anatom)       ! positions in t+dt
     logical        :: modified          ! was constraint applied?
     ! --------------------------------------------------------------------------
 
     modified = .false.
-    if( .not. (cst_enabled .or. shake_force_required) ) return
+    if( .not. cst_enabled) return
 
     call pmf_timers_start_timer(PMFLIB_TIMER)
     call pmf_core_lf_shake(x)
-    if( shake_force_required .and. (fshake .or. cst_enabled) ) then
-        if( leapfrog_mode .eq. 1 ) then
-             call pmf_core_lf_shake_forces(xbar,x)
-        else
-            call pmf_utils_exit(PMF_OUT,1,'leapfrog_mode .eq. 1 is required in pmf_sander_constraints and shake_force_required')
-        end if
-    end if
     call pmf_timers_stop_timer(PMFLIB_TIMER)
 
     modified = cst_enabled

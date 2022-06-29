@@ -95,9 +95,6 @@ logical                     :: mon_enabled
 logical                     :: stm_enabled
 logical                     :: pdrv_enabled
 
-! requests
-logical                     :: shake_force_required     ! we need force due to SHAKE
-
 ! MASTER =======================================================================
 
 character(PMF_KEYLINE)      :: DriverName
@@ -123,9 +120,6 @@ real(PMFDP)                 :: PMFEne           ! current PMFLib potential energ
 real(PMFDP),allocatable     :: CrdP(:,:)        ! coordinates in t+dt
 real(PMFDP),allocatable     :: VelP(:,:)        ! velocities
 type(CVContextType)         :: CVContextP
-
-real(PMFDP),allocatable     :: CrdBar(:,:)      ! coordinates in t+dt without SHAKE
-real(PMFDP),allocatable     :: SHAKEFrc(:,:)    ! current SHAKE forces in t(+dt) - after PotForce
 
 ! MASTER =======================================================================
 

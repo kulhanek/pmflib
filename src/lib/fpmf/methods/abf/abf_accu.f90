@@ -144,12 +144,6 @@ subroutine abf_accu_init()
                     abfaccu%c11tdsbp(abfaccu%tot_cvs,abfaccu%tot_nbins),    &
                     abfaccu%c11tdsbk(abfaccu%tot_cvs,abfaccu%tot_nbins),    &
                     abfaccu%c11tdsbr(abfaccu%tot_cvs,abfaccu%tot_nbins),    &
-                    abfaccu%ntds_h(abfaccu%tot_nbins),                      &
-                    abfaccu%mtdsfx_h(abfaccu%tot_cvs,abfaccu%tot_nbins),    &
-                    abfaccu%m2tdsfx_h(abfaccu%tot_cvs,abfaccu%tot_nbins),   &
-                    abfaccu%mtdsekin_h(abfaccu%tot_nbins),                  &
-                    abfaccu%m2tdsekin_h(abfaccu%tot_nbins),                 &
-                    abfaccu%c11tdsfk_h(abfaccu%tot_cvs,abfaccu%tot_nbins),  &
                     stat = alloc_failed)
 
         if( alloc_failed .ne. 0 ) then
@@ -265,13 +259,6 @@ subroutine abf_accu_clear()
         abfaccu%c11tdsbp(:,:)   = 0.0d0
         abfaccu%c11tdsbr(:,:)   = 0.0d0
         abfaccu%c11tdsbk(:,:)   = 0.0d0
-
-        abfaccu%ntds_h(:)       = 0.0d0
-        abfaccu%mtdsfx_h(:,:)   = 0.0d0
-        abfaccu%m2tdsfx_h(:,:)  = 0.0d0
-        abfaccu%mtdsekin_h(:)   = 0.0d0
-        abfaccu%m2tdsekin_h(:)  = 0.0d0
-        abfaccu%c11tdsfk_h(:,:) = 0.0d0
     end if
 
     if( frecord ) then
@@ -561,14 +548,6 @@ subroutine abf_accu_write(iounit,full)
         call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'C11TDSBP',   'CO',abfaccu%c11tdsbp,  'NTDS','MTDSBX','MTDSEPOT')
         call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'C11TDSBR',   'CO',abfaccu%c11tdsbr,  'NTDS','MTDSBX','MTDSERST')
         call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'C11TDSBK',   'CO',abfaccu%c11tdsbk,  'NTDS','MTDSBX','MTDSEKIN')
-
-        call pmf_accu_write_rbuf_B(abfaccu%PMFAccuType,iounit,'NTDS_H',      'AD',abfaccu%ntds_h)
-        call pmf_accu_write_rbuf_B(abfaccu%PMFAccuType,iounit,'MTDSEKIN_H',  'WA',abfaccu%mtdsekin_h,  'NTDS_H')
-        call pmf_accu_write_rbuf_B(abfaccu%PMFAccuType,iounit,'M2TDSEKIN_H', 'M2',abfaccu%m2tdsekin_h, 'NTDS_H','MTDSEKIN_H')
-        call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'MTDSFX_H',    'WA',abfaccu%mtdsfx_h,    'NTDS_H')
-        call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'M2TDSFX_H',   'M2',abfaccu%m2tdsfx_h,   'NTDS_H','MTDSFX_H')
-        call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'C11TDSFK_H',  'CO',abfaccu%c11tdsfk_h,  &
-                                                                             'NTDS_H','MTDSFX_H','MTDSEKIN_H')
     end if
 
     call pmf_accu_write_rbuf_B(abfaccu%PMFAccuType,iounit,'BNSAMPLES',  'IG',abfaccu%bnsamples)
@@ -828,52 +807,6 @@ subroutine abf_accu_add_data_entropy_decompose(cvs,fx,sx,vx,bx,epot,erst,ekin)
     end do
 
 end subroutine abf_accu_add_data_entropy_decompose
-
-!===============================================================================
-! Subroutine:  abf_accu_add_data_entropy_decompose_hs
-!===============================================================================
-
-subroutine abf_accu_add_data_entropy_decompose_hs(cvs,fx,ekin)
-
-    use abf_dat
-    use pmf_dat
-
-    implicit none
-    real(PMFDP),intent(in)  :: cvs(:)
-    real(PMFDP),intent(in)  :: fx(:)
-    real(PMFDP),intent(in)  :: ekin
-    ! -----------------------------------------------
-    integer        :: gi0, i
-    real(PMFDP)    :: invn, ifx
-    real(PMFDP)    :: dekin1, dekin2
-    real(PMFDP)    :: difx1, difx2
-    ! --------------------------------------------------------------------------
-
-    ! get global index to accumulator for cvs values
-    gi0 = pmf_accu_globalindex(abfaccu%PMFAccuType,cvs)
-    if( gi0 .le. 0 ) return ! out-of-valid area
-
-    ! increase number of samples
-    abfaccu%ntds_h(gi0) = abfaccu%ntds_h(gi0) + 1.0d0
-    invn = 1.0d0 / abfaccu%ntds_h(gi0)
-
-    ! kinetic energy
-    dekin1 = ekin - abfaccu%mtdsekin_h(gi0)
-    abfaccu%mtdsekin_h(gi0)  = abfaccu%mtdsekin_h(gi0)  + dekin1 * invn
-    dekin2 = ekin - abfaccu%mtdsekin_h(gi0)
-    abfaccu%m2tdsekin_h(gi0) = abfaccu%m2tdsekin_h(gi0) + dekin1 * dekin2
-
-    do i=1,abfaccu%tot_cvs
-        ifx = - fx(i)
-        difx1 = ifx - abfaccu%mtdsfx_h(i,gi0)
-        abfaccu%mtdsfx_h(i,gi0)  = abfaccu%mtdsfx_h(i,gi0)  + difx1 * invn
-        difx2 = ifx - abfaccu%mtdsfx_h(i,gi0)
-        abfaccu%m2tdsfx_h(i,gi0) = abfaccu%m2tdsfx_h(i,gi0) + difx1 * difx2
-
-        abfaccu%c11tdsfk_h(i,gi0)  = abfaccu%c11tdsfk_h(i,gi0) + difx1 * dekin2
-    end do
-
-end subroutine abf_accu_add_data_entropy_decompose_hs
 
 !===============================================================================
 ! Subroutine:  abf_accu_add_data_record_lf

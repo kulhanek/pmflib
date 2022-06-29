@@ -82,8 +82,6 @@ subroutine pmf_init_dat
     stm_enabled  = .false.
     pdrv_enabled = .false.
 
-    shake_force_required    = .false.
-
     fucell(:,:) = 0.0d0
     frecip(:,:) = 0.0d0
     fbox_volume = 0.0d0
@@ -490,7 +488,6 @@ subroutine pmf_init_pmf
           MassInv(NumOfLAtoms), &
           Crd(3,NumOfLAtoms), &
           Frc(3,NumOfLAtoms), &
-          SHAKEFrc(3,NumOfLAtoms), &
           Vel(3,NumOfLAtoms), &
           CVContext%CVsValues(NumOfCVs), &
           CVContext%CVsDrvs(3,NumOfLAtoms,NumOfCVs), &
@@ -500,15 +497,11 @@ subroutine pmf_init_pmf
         call pmf_utils_exit(PMF_OUT, 1,'[PMFLIB] Unable to allocate memory for common arrays!')
     endif
 
-    ! reset since later it might not be updated
-    SHAKEFrc(:,:) = 0.0d0
-
-    if( cst_enabled .or. shake_force_required ) then
+    if( cst_enabled ) then
         ! allocate arrays used by bluemoon
         allocate( CrdP(3,NumOfLAtoms), &
                   CVContextP%CVsValues(NumOfCVs), &
                   CVContextP%CVsDrvs(3,NumOfLAtoms,NumOfCVs), &
-                  CrdBar(3,NumOfLAtoms), &
                   stat=alloc_failed)
 
         if( alloc_failed .ne. 0 ) then

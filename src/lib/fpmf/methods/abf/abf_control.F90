@@ -77,9 +77,13 @@ subroutine abf_control_read_abf(prm_fin)
         return
     end if
 
-    call pmf_ctrl_read_integer(prm_fin,'abf_p2_vx',abf_p2_vx,'I12')
-    call pmf_ctrl_read_integer(prm_fin,'abf_p2_px',abf_p2_px,'I12')
-    call pmf_ctrl_read_integer(prm_fin,'abf_p2_hx',abf_p2_hx,'I12')
+    if( (fmode .eq. 4) .or. (fmode .eq. 5) ) then
+        call pmf_ctrl_read_integer(prm_fin,'abf_p2_vx',abf_p2_vx,'I12')
+        call pmf_ctrl_read_integer(prm_fin,'abf_p2_px',abf_p2_px,'I12')
+    end if
+    if( fmode .eq. 5 ) then
+        call pmf_ctrl_read_logical(prm_fin,'abf_clear_shaken_cvvel',abf_clear_shaken_cvvel)
+    end if
 
     call pmf_ctrl_read_logical(prm_fin,'fapply_abf',fapply_abf)
     call pmf_ctrl_read_logical(prm_fin,'fupdate_abf',fupdate_abf)
@@ -103,9 +107,7 @@ subroutine abf_control_read_abf(prm_fin)
     call pmf_ctrl_read_logical(prm_fin,'ftds_add_bias',ftds_add_bias)
 
     call pmf_ctrl_read_integer(prm_fin,'ftds_epot_src',ftds_epot_src,'I12')
-
     call pmf_ctrl_read_integer(prm_fin,'ftds_ekin_src',ftds_ekin_src,'I12')
-    call pmf_ctrl_check_integer_in_range('ABF','ftds_ekin_src',ftds_ekin_src,1,7)
 
     call pmf_ctrl_read_real8(prm_fin,'ftds_ekin_scale',ftds_ekin_scale,'F10.5')
     call pmf_ctrl_read_real8(prm_fin,'ftds_vel_scale',ftds_vel_scale,'F10.5')
@@ -189,8 +191,6 @@ subroutine abf_control_read_abf(prm_fin)
     end if
 
     abf_enabled          = fmode .gt. 0
-
-    shake_force_required = shake_force_required .or. (fmode .eq. 2)
 
     return
 

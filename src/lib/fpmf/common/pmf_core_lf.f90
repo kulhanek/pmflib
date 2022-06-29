@@ -293,51 +293,6 @@ subroutine pmf_core_lf_shake(xp)
 end subroutine pmf_core_lf_shake
 
 !===============================================================================
-! Subroutine:  pmf_core_lf_shake_forces
-! leap-frog version
-!===============================================================================
-
-subroutine pmf_core_lf_shake_forces(xbar,xp)
-
-    use pmf_dat
-    use pmf_cvs
-    use pmf_core
-    use pmf_timers
-    use abf_core
-
-    implicit none
-    real(PMFDP)     :: xbar(:,:)     ! positions in t+dt - without shake
-    real(PMFDP)     :: xp(:,:)       ! position in t + dt
-    ! --------------------------------------------
-    integer         :: i
-    ! --------------------------------------------------------------------------
-
-    if( .not. shake_force_required ) return
-
-    call pmf_timers_start_timer(PMFLIB_METHODS_TIMER)
-        call pmf_timers_start_timer(PMFLIB_SHKFRC_TIMER)
-
-        ! update local data
-        if( .not. cst_enabled ) then
-            call pmf_core_in_data_xp(xp)
-        end if
-        call pmf_core_in_data_xbar(xbar)
-
-        ! get SHAKE forces in t
-        do i=1,NumOfLAtoms
-            SHAKEFrc(:,i)  = Mass(i) * (CrdP(:,i) - CrdBar(:,i)) * ifdtx**2
-        end do
-
-        if( abf_enabled ) then
-            call abf_core_shake()
-        end if
-
-        call pmf_timers_stop_timer(PMFLIB_SHKFRC_TIMER)
-    call pmf_timers_stop_timer(PMFLIB_METHODS_TIMER)
-
-end subroutine pmf_core_lf_shake_forces
-
-!===============================================================================
 
 end module pmf_core_lf
 

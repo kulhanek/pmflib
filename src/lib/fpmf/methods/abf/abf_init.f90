@@ -124,9 +124,9 @@ subroutine abf_init_dat
     ftds_ekin_scale = 1.0d0
     ftds_vel_scale  = 1.0d0
 
-    abf_p2_vx = 4
-    abf_p2_px = 5
-    abf_p2_hx = 2
+    abf_p2_vx = 7
+    abf_p2_px = 7
+    abf_clear_shaken_cvvel = .true.
 
 end subroutine abf_init_dat
 
@@ -371,15 +371,11 @@ subroutine abf_init_arrays
             picf(NumOfABFCVs),                  &
             pxis(NumOfABFCVs),                  &
             pxiv(NumOfABFCVs),                  &
-            cvave(NumOfABFCVs),                 &
-            mfave(NumOfABFCVs),                 &
             sfac(NumOfABFCVs),                  &
             fz(NumOfABFCVs,NumOfABFCVs),        &
             fzinv(NumOfABFCVs,NumOfABFCVs),     &
             indx(NumOfABFCVs),                  &
             vv(NumOfABFCVs),                    &
-            fzcore(abfaccu%tot_cvs,abfaccu%tot_cvs),        &
-            indxcore(abfaccu%tot_cvs),                  &
             stat= alloc_failed )
 
     if( alloc_failed .ne. 0 ) then
@@ -396,17 +392,14 @@ subroutine abf_init_arrays
     pxiv(:)     = 0.0d0
     fz(:,:)     = 0.0d0
     fzinv(:,:)  = 0.0d0
-    cvave(:)    = 0.0d0
-    mfave(:)    = 0.0d0
-
     sfac(:)     = 1.0d0
 
 ! history buffers ------------------------------------------
     select case(fmode)
-        case(1,2,3,6)
+        case(1)
             ! for V6 interpolation we need at least 6 data points
             hist_len = 6
-        case(4,5,7)
+        case(4,5)
             hist_len = 13
         case default
             call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented fmode in abf_init_arrays!')
@@ -415,20 +408,16 @@ subroutine abf_init_arrays
     allocate(                                           &
             cvhist(NumOfABFCVs,hist_len),               &
             micfhist(NumOfABFCVs,hist_len),             &
-            fhist(3,NumOfLAtoms,hist_len),              &
-            shist(3,NumOfLAtoms,hist_len),              &
             vhist(3,NumOfLAtoms,hist_len),              &
             zdhist(3,NumOfLAtoms,NumOfABFCVs,hist_len), &
             fzinvhist(NumOfABFCVs,NumOfABFCVs,hist_len), &
-            cdrvhist(3,NumOfLAtoms,NumOfCVs,hist_len),   &
             epothist(hist_len),                         &
             ersthist(hist_len),                         &
             ekinhist(hist_len),                         &
             epotrwhist(hist_len),                       &
             erstrwhist(hist_len),                       &
             ekinlfhist(hist_len),                       &
-            iszrhist(hist_len),                       &
-            xvhist(NumOfABFCVs,hist_len),               &
+            xphist(NumOfABFCVs,hist_len),               &
             stat= alloc_failed )
 
     if( alloc_failed .ne. 0 ) then
@@ -438,24 +427,18 @@ subroutine abf_init_arrays
 
     cvhist(:,:)     = 0.0d0
     micfhist(:,:)   = 0.0d0
-    fhist(:,:,:)    = 0.0d0
-    shist(:,:,:)    = 0.0d0
     vhist(:,:,:)    = 0.0d0
     zdhist(:,:,:,:) = 0.0d0
-    cdrvhist(:,:,:,:) = 0.0d0
     epothist(:)     = 0.0d0
     ersthist(:)     = 0.0d0
     ekinhist(:)     = 0.0d0
     epotrwhist(:)   = 0.0d0
     erstrwhist(:)   = 0.0d0
     ekinlfhist(:)   = 0.0d0
-    iszrhist(:)     = 0.0d0
-    xvhist(:,:)     = 0.0d0
+    xphist(:,:)     = 0.0d0
     fzinvhist(:,:,:) = 0.0d0
 
 ! other setup ----------------------------------------------
-
-
 
 ! sanity checks
     if( feimode .eq. 2 ) then

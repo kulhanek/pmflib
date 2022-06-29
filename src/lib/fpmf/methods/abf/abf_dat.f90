@@ -87,7 +87,7 @@ logical     :: fswitch2zero
 ! 2p algorithm
 integer     :: abf_p2_vx
 integer     :: abf_p2_px
-integer     :: abf_p2_hx
+logical     :: abf_clear_shaken_cvvel
 
 ! server part ------------------------------------------------------------------
 logical                 :: fserver_enabled      ! is abf-server enabled?
@@ -179,7 +179,7 @@ type,extends(PMFAccuType) :: ABFAccuType
     real(PMFDP),pointer    :: mtdsbx(:,:)               ! mean of ICF - bias
     real(PMFDP),pointer    :: m2tdsbx(:,:)              ! M2 of ICF - bias
 
-    real(PMFDP),pointer    :: c11tdsfp(:,:)                ! co-variances
+    real(PMFDP),pointer    :: c11tdsfp(:,:)             ! co-variances
     real(PMFDP),pointer    :: c11tdsfr(:,:)
     real(PMFDP),pointer    :: c11tdsfk(:,:)
     real(PMFDP),pointer    :: c11tdssp(:,:)
@@ -191,14 +191,6 @@ type,extends(PMFAccuType) :: ABFAccuType
     real(PMFDP),pointer    :: c11tdsbp(:,:)
     real(PMFDP),pointer    :: c11tdsbr(:,:)
     real(PMFDP),pointer    :: c11tdsbk(:,:)
-
-! half step
-    real(PMFDP),pointer    :: ntds_h(:)                   ! number of hits into bins
-    real(PMFDP),pointer    :: mtdsfx_h(:,:)               ! mean of ICF - force
-    real(PMFDP),pointer    :: m2tdsfx_h(:,:)              ! M2 of ICF - force
-    real(PMFDP),pointer    :: mtdsekin_h(:)               ! mean of kin energy
-    real(PMFDP),pointer    :: m2tdsekin_h(:)              ! M2 of kin energy
-    real(PMFDP),pointer    :: c11tdsfk_h(:,:)
 
 ! time recording for post-processing
     real(PMFDP),pointer    :: tcvs(:,:)
@@ -229,12 +221,6 @@ real(PMFDP),allocatable     :: fzinv(:,:)           ! inverse of Z matrix   in t
 real(PMFDP),allocatable     :: vv(:)                ! for LU decomposition
 integer,allocatable         :: indx(:)              ! for LU decomposition
 
-real(PMFDP),allocatable     :: fzcore(:,:)
-integer,allocatable         :: indxcore(:)
-
-real(PMFDP)                 :: fzdet
-real(PMFDP)                 :: fzdetcore
-
 ! helper arrays -------
 real(PMFDP),allocatable     :: la(:)
 real(PMFDP),allocatable     :: pxia(:)
@@ -242,8 +228,6 @@ real(PMFDP),allocatable     :: picf(:)
 real(PMFDP),allocatable     :: pxif(:)
 real(PMFDP),allocatable     :: pxis(:)
 real(PMFDP),allocatable     :: pxiv(:)
-real(PMFDP),allocatable     :: cvave(:)
-real(PMFDP),allocatable     :: mfave(:)
 real(PMFDP),allocatable     :: sfac(:)              ! switching factors
 real(PMFDP),allocatable     :: vint(:,:)
 
@@ -251,11 +235,8 @@ real(PMFDP),allocatable     :: vint(:,:)
 
 integer                     :: hist_len
 real(PMFDP),allocatable     :: cvhist(:,:)          ! history of CV values (nCVS,hist_len)
-real(PMFDP),allocatable     :: fhist(:,:,:)         ! history of forces (potential)
-real(PMFDP),allocatable     :: shist(:,:,:)         ! history of forces (shake)
 real(PMFDP),allocatable     :: vhist(:,:,:)         ! history of velocities
 real(PMFDP),allocatable     :: zdhist(:,:,:,:)      ! history of ZD
-real(PMFDP),allocatable     :: cdrvhist(:,:,:,:)    ! derivatives of CVs
 real(PMFDP),allocatable     :: fzinvhist(:,:,:)     ! hostory of fzinv
 real(PMFDP),allocatable     :: micfhist(:,:)        ! history of ABF bias
 real(PMFDP),allocatable     :: epothist(:)          ! history of Epot
@@ -264,8 +245,7 @@ real(PMFDP),allocatable     :: ekinhist(:)          ! history of Ekin
 real(PMFDP),allocatable     :: epotrwhist(:)        ! history of Epot - raw data
 real(PMFDP),allocatable     :: erstrwhist(:)        ! history of Erst - raw data
 real(PMFDP),allocatable     :: ekinlfhist(:)        ! history of EkinLF
-real(PMFDP),allocatable     :: xvhist(:,:)          ! history of xi velocities
-real(PMFDP),allocatable     :: iszrhist(:)
+real(PMFDP),allocatable     :: xphist(:,:)          ! history of CV momenta
 
 ! ------------------------------------------------------------------------------
 

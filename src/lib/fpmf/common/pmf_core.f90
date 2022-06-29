@@ -122,27 +122,6 @@ subroutine pmf_core_in_data_xp(xp)
 end subroutine pmf_core_in_data_xp
 
 !===============================================================================
-! Subroutine:  pmf_core_in_data_xp
-!===============================================================================
-
-subroutine pmf_core_in_data_xbar(xbar)
-
-    use pmf_dat
-
-    implicit none
-    real(PMFDP),intent(in)     :: xbar(:,:)
-    ! -----------------------------------------------
-    integer                    :: i,ridx
-    ! --------------------------------------------------------------------------
-
-    do i=1,NumOfLAtoms
-        ridx = RIndexes(i)
-        CrdBar(:,i) = xbar(:,ridx)*LengthConv
-    end do
-
-end subroutine pmf_core_in_data_xbar
-
-!===============================================================================
 ! Subroutine:  pmf_core_in_data_vp
 !===============================================================================
 
