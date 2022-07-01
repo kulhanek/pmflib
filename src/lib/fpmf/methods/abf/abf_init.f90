@@ -126,7 +126,8 @@ subroutine abf_init_dat
 
     abf_p2_vx = 7
     abf_p2_px = 7
-    abf_clear_shaken_cvvel = .true.
+    abf_clear_shaken_cvvel  = .true.
+    abf_use_shaken_icf      = .false.
 
 end subroutine abf_init_dat
 
@@ -185,6 +186,7 @@ subroutine abf_init_print_summary
     write(PMF_OUT,130)  '          Velocity order (abf_p2_vx)     : ', abf_p2_vx
     write(PMF_OUT,130)  '          Momenta order (abf_p2_px)      : ', abf_p2_px
     write(PMF_OUT,125)  '          abf_clear_shaken_cvvel         : ', prmfile_onoff(abf_clear_shaken_cvvel)
+    write(PMF_OUT,125)  '          abf_use_shaken_icf             : ', prmfile_onoff(abf_use_shaken_icf)
     case default
         call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown fmode in abf_init_print_summary!')
     end select

@@ -462,9 +462,16 @@ subroutine abf_core_force_2pX()
         pxiv(i) = 0.0d0
     end do
 
+    pxis(:) = 0.0d0
+    if( abf_use_shaken_icf ) then
+        do i=abfaccu%tot_cvs+1,NumOfABFCVs
+            pxis(1) = pxis(1) + pxif(i)
+        end do
+    end if
+
     ! subroutine abf_core_register_rawdata(cvs,ficf,sicf,vicf,bicf,epot,erst,ekin)
     call abf_core_register_rawdata(cvhist(:,hist_len-8),pxif,pxis,pxiv,micfhist(:,hist_len-8), &
-                           epothist(hist_len-8),ersthist(hist_len-8) ,ekinhist(hist_len-8))
+                           epothist(hist_len-8),ersthist(hist_len-8),ekinhist(hist_len-8))
 
 end subroutine abf_core_force_2pX
 

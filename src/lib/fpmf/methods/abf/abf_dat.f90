@@ -88,6 +88,7 @@ logical     :: fswitch2zero
 integer     :: abf_p2_vx
 integer     :: abf_p2_px
 logical     :: abf_clear_shaken_cvvel
+logical     :: abf_use_shaken_icf
 
 ! server part ------------------------------------------------------------------
 logical                 :: fserver_enabled      ! is abf-server enabled?
