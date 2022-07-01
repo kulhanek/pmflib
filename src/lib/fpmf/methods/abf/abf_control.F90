@@ -83,6 +83,7 @@ subroutine abf_control_read_abf(prm_fin)
     end if
     if( fmode .eq. 5 ) then
         call pmf_ctrl_read_logical(prm_fin,'abf_clear_shaken_cvvel',abf_clear_shaken_cvvel)
+        call pmf_ctrl_read_logical(prm_fin,'abf_use_shaken_icf',abf_use_shaken_icf)
     end if
 
     call pmf_ctrl_read_logical(prm_fin,'fapply_abf',fapply_abf)
