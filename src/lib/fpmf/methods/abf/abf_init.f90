@@ -179,6 +179,8 @@ subroutine abf_init_print_summary
     write(PMF_OUT,120)  '      |-> ABF algorithm (3pV1)'
     case(2)
     write(PMF_OUT,120)  '      |-> ABF algorithm (3pV2)'
+    case(3)
+    write(PMF_OUT,120)  '      |-> ABF algorithm (3pV3)'
     case(4)
     write(PMF_OUT,120)  '      |-> ABF algorithm (2pV)'
     write(PMF_OUT,130)  '          Velocity order (abf_p2_vx)     : ', abf_p2_vx
@@ -407,6 +409,8 @@ subroutine abf_init_arrays
         case(1,2)
             ! for V6 interpolation we need at least 6 data points
             hist_len = 6
+        case(3)
+            hist_len = 7
         case(4,5)
             hist_len = 13
         case default
