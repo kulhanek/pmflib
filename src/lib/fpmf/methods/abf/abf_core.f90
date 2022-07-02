@@ -371,7 +371,7 @@ subroutine abf_core_force_2pX()
     use abf_accu
 
     implicit none
-    integer                :: i,j,cidx
+    integer                :: i,j,cidx,fidx
     real(PMFDP)            :: v,dx1,dx2,dx3,dx4,dx5
     ! --------------------------------------------------------------------------
 
@@ -387,6 +387,7 @@ subroutine abf_core_force_2pX()
 ! calculate CV velocity, consider CV periodicity
     do i=1,NumOfABFCVs
         select case(abf_p2_vx)
+    ! central differences
         case(3)
             ! -1
             dx1 = ABFCVList(i)%cv%get_deviation(cvhist(i,hist_len-0),cvhist(i,hist_len-2))
@@ -417,7 +418,7 @@ subroutine abf_core_force_2pX()
             dx4 = ABFCVList(i)%cv%get_deviation(cvhist(i,hist_len-3),cvhist(i,hist_len-5))
             pxia(i) = (1.0d0/840.0d0)*(3.0d0*dx1+32.0d0*dx2+168.0d0*dx3+672.0d0*dx4)*ifdtx
             cidx = -4
-    ! - asymmetrical
+    ! backward differences
         case(14)
             ! -1
             dx1 = ABFCVList(i)%cv%get_deviation(cvhist(i,hist_len-0),cvhist(i,hist_len-1))
@@ -467,20 +468,40 @@ subroutine abf_core_force_2pX()
 ! get CV forces
     do i=1,NumOfABFCVs
         select case(abf_p2_px)
+    ! central differences
         case(3)
             pxif(i) = 0.5d0*(xphist(i,hist_len-7) - xphist(i,hist_len-9))*ifdtx
+            fidx = -8
         case(5)
             pxif(i) = (1.0d0/12.0d0)*(      -xphist(i,hist_len-6) + 8.0d0*xphist(i,hist_len-7) &
                                       -8.0d0*xphist(i,hist_len-9)      + xphist(i,hist_len-10))*ifdtx
+            fidx = -8
         case(7)
             pxif(i) = (1.0d0/60.0d0)*(        xphist(i,hist_len-5)  -9.0d0*xphist(i,hist_len-6) &
                                       +45.0d0*xphist(i,hist_len-7) -45.0d0*xphist(i,hist_len-9) &
                                        +9.0d0*xphist(i,hist_len-10)       -xphist(i,hist_len-11))*ifdtx
+            fidx = -8
         case(9)
             pxif(i) = (1.0d0/840.0d0)*( -3.0d0*xphist(i,hist_len-4) +32.0d0*xphist(i,hist_len-5) &
                                       -168.0d0*xphist(i,hist_len-6)+672.0d0*xphist(i,hist_len-7) &
                                       -672.0d0*xphist(i,hist_len-9)+168.0d0*xphist(i,hist_len-10) &
                                        -32.0d0*xphist(i,hist_len-11) +3.0d0*xphist(i,hist_len-12))*ifdtx
+            fidx = -8
+    ! backward differences
+        case(14)
+            pxif(i) = (1.0d0/6.0d0)*(+2.0d0*xphist(i,hist_len-1) +3.0d0*xphist(i,hist_len-2) &
+                                     -6.0d0*xphist(i,hist_len-3) +1.0d0*xphist(i,hist_len-4))*ifdtx
+            fidx = -2
+        case(15)
+            pxif(i) = (1.0d0/12.0d0)*( +3.0d0*xphist(i,hist_len-1) +10.0d0*xphist(i,hist_len-2) &
+                                      -18.0d0*xphist(i,hist_len-3)  +6.0d0*xphist(i,hist_len-4) &
+                                       -1.0d0*xphist(i,hist_len-5))*ifdtx
+            fidx = -2
+        case(16)
+            pxif(i) = (1.0d0/60.0d0)*( +12.0d0*xphist(i,hist_len-1) +65.0d0*xphist(i,hist_len-2) &
+                                      -120.0d0*xphist(i,hist_len-3) +60.0d0*xphist(i,hist_len-4) &
+                                       -20.0d0*xphist(i,hist_len-5)  +3.0d0*xphist(i,hist_len-6))*ifdtx
+            fidx = -2
         case default
             call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented abf_p2_px in abf_core_force_2pX!')
         end select
@@ -495,8 +516,8 @@ subroutine abf_core_force_2pX()
     end if
 
     ! subroutine abf_core_register_rawdata(cvs,ficf,sicf,vicf,bicf,epot,erst,ekin)
-    call abf_core_register_rawdata(cvhist(:,hist_len-8),pxif,pxis,pxiv,micfhist(:,hist_len-8), &
-                           epothist(hist_len-8),ersthist(hist_len-8),ekinhist(hist_len-8))
+    call abf_core_register_rawdata(cvhist(:,hist_len+fidx),pxif,pxis,pxiv,micfhist(:,hist_len+fidx), &
+                           epothist(hist_len+fidx),ersthist(hist_len+fidx),ekinhist(hist_len+fidx))
 
 end subroutine abf_core_force_2pX
 
