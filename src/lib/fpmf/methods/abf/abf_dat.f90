@@ -238,6 +238,7 @@ integer                     :: hist_len
 real(PMFDP),allocatable     :: cvhist(:,:)          ! history of CV values (nCVS,hist_len)
 real(PMFDP),allocatable     :: vhist(:,:,:)         ! history of velocities
 real(PMFDP),allocatable     :: zdhist(:,:,:,:)      ! history of ZD
+real(PMFDP),allocatable     :: cvderhist(:,:,:,:)   ! history of CV derivatives
 real(PMFDP),allocatable     :: fzinvhist(:,:,:)     ! hostory of fzinv
 real(PMFDP),allocatable     :: micfhist(:,:)        ! history of ABF bias
 real(PMFDP),allocatable     :: epothist(:)          ! history of Epot

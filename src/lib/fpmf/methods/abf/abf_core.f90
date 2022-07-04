@@ -307,6 +307,31 @@ subroutine abf_core_update_zdhist()
 end subroutine abf_core_update_zdhist
 
 !===============================================================================
+! Subroutine:  abf_core_update_cvder
+!===============================================================================
+
+subroutine abf_core_update_cvder()
+
+    use pmf_dat
+    use pmf_cvs
+    use abf_dat
+
+    implicit none
+    integer                :: i,j,m,ki
+    ! --------------------------------------------------------------------------
+
+    do i=1,NumOfABFCVs
+        ki = ABFCVList(i)%cvindx
+        do j=1,NumOfLAtoms
+            do m=1,3
+                cvderhist(m,j,i,hist_len) = CVContext%CVsDrvs(m,j,ki)
+            end do
+        end do
+    end do
+
+end subroutine abf_core_update_cvder
+
+!===============================================================================
 ! Subroutine:  abf_core_force_3pV1
 ! this is leap-frog ABF version, simplified algorithm
 ! ICF from velocities + decomposition
@@ -665,12 +690,14 @@ subroutine abf_core_force_2pV()
 
     ! shift history buffers
     do i=1,hist_len-1
-        zdhist(:,:,:,i) = zdhist(:,:,:,i+1)
-        vhist(:,:,i)    = vhist(:,:,i+1)
-        xphist(:,i)     = xphist(:,i+1)
+        fzinvhist(:,:,i)    = fzinvhist(:,:,i+1)
+        cvderhist(:,:,:,i)  = cvderhist(:,:,:,i+1)
+        vhist(:,:,i)        = vhist(:,:,i+1)
+        xphist(:,i)         = xphist(:,i+1)
     end do
-    vhist(:,:,hist_len) = Vel(:,:) * ftds_vel_scale
-    call abf_core_update_zdhist
+    vhist(:,:,hist_len)     = Vel(:,:) * ftds_vel_scale
+    fzinvhist(:,:,hist_len) = fzinv(:,:)
+    call abf_core_update_cvder
 
     do i=1,NumOfABFCVs
         select case(abf_p2_vx)
@@ -703,8 +730,27 @@ subroutine abf_core_force_2pV()
         v = 0.0d0
         do j=1,NumOfLAtoms
             do m=1,3
-                v = v + zdhist(m,j,i,hist_len+vidx)*vint(m,j)
+                v = v + cvderhist(m,j,i,hist_len+vidx)*vint(m,j)
             end do
+        end do
+        pxia(i) = v
+    end do
+
+    if( fdebug ) then
+        write(14789,*) fstep, pxia
+    end if
+
+    if( abf_clear_shaken_cvvel ) then
+        do i=abfaccu%tot_cvs+1,NumOfABFCVs
+            pxia(i) = 0.0d0 ! reset SHAKEn velocities
+        end do
+    end if
+
+! get CV momenta
+    do i=1,NumOfABFCVs
+        v = 0.0d0
+        do j=1,NumOfABFCVs
+            v = v + fzinvhist(i,j,hist_len+vidx)*pxia(j)
         end do
         xphist(i,hist_len+vidx) = v
     end do
@@ -796,6 +842,7 @@ subroutine abf_core_calc_Zmat(ctx)
     implicit none
     type(CVContextType) :: ctx
     integer             :: i,ci,j,cj,k,info
+    real(PMFDP)         :: v,logdet
     ! -----------------------------------------------------------------------------
 
     ! calculate Z matrix
@@ -810,6 +857,8 @@ subroutine abf_core_calc_Zmat(ctx)
         end do
     end do
 
+!    write(7894,*) fstep, fz
+
     ! and now its inversion - we will use LAPAC and LU decomposition
     if (NumOfABFCVs .gt. 1) then
         fzinv(:,:)  = fz(:,:)
@@ -822,13 +871,185 @@ subroutine abf_core_calc_Zmat(ctx)
         if( info .ne. 0 ) then
             call pmf_utils_exit(PMF_OUT,1,'[ABF] Matrix inversion failed in abf_core_calc_Zmat!')
         end if
+      ! call abf_init_gpr_invK(fzinv,logdet)
     else
         fzinv(1,1)  = 1.0d0/fz(1,1)
     end if
 
+!    write(7895,*) fstep, fzinv
+!
+!    do i=1,NumOfABFCVs
+!        do j=1,NumOfABFCVs
+!            v = 0.0d0
+!            do k=1,NumOfABFCVs
+!                v = v + fz(i,k)*fzinv(k,j)
+!            end do
+!            write(7896,*) fstep, i, j, v
+!        end do
+!    end do
+
     return
 
 end subroutine abf_core_calc_Zmat
+
+!===============================================================================
+! Subroutine:  abf_init_gpr_invK
+!===============================================================================
+
+subroutine abf_init_gpr_invK(mat,logdet)
+
+    use pmf_dat
+    use abf_dat
+    use pmf_utils
+
+    implicit none
+    real(PMFDP)                 :: mat(:,:)
+    real(PMFDP)                 :: logdet
+    integer                     :: gpr_len,i,alloc_failed,info,lwork,irank,gpr_rank
+    real(PMFDP)                 :: minv, maxv, a_rcond, r_sigma, gpr_rcond, gpr_rsigma
+    real(PMFDP),allocatable     :: sig(:)
+    real(PMFDP),allocatable     :: u(:,:)
+    real(PMFDP),allocatable     :: vt(:,:)
+    real(PMFDP),allocatable     :: sig_plus(:,:)
+    real(PMFDP),allocatable     :: temp_mat(:,:)
+    real(PMFDP),allocatable     :: twork(:)
+    integer,allocatable         :: iwork(:)
+    ! --------------------------------------------------------------------------
+
+    gpr_len = NumOfABFCVs
+    gpr_rank = -1
+    gpr_rcond = 1e-6
+    gpr_rsigma = 0.0d0
+
+! allocate arrays
+    allocate(                           &
+            sig(gpr_len),               &
+            u(gpr_len,gpr_len),         &
+            vt(gpr_len,gpr_len),        &
+            sig_plus(gpr_len,gpr_len),  &
+            temp_mat(gpr_len,gpr_len),  &
+            iwork(8*gpr_len),           &
+            twork(1),                   &
+            stat= alloc_failed )
+
+    if( alloc_failed .ne. 0 ) then
+        call pmf_utils_exit(PMF_OUT,1, &
+            '[ABF] Unable to allocate memory I for GPR arrays in abf_init_gpr_invK!')
+    end if
+
+    sig(:)          = 0.0d0
+    u(:,:)          = 0.0d0
+    vt(:,:)         = 0.0d0
+    sig_plus(:,:)   = 0.0d0
+    temp_mat(:,:)   = 0.0d0
+
+
+! query work size
+    lwork = -1
+    call dgesdd('A', gpr_len, gpr_len, mat, gpr_len, sig, u, gpr_len, vt, gpr_len, twork, lwork, iwork, info)
+
+    if( info .ne. 0 ) then
+        call pmf_utils_exit(PMF_OUT,1, &
+            '[ABF] Unable to run SVD I in abf_init_gpr_invK!')
+    end if
+
+
+    lwork = int(twork(1)) + 1
+    if( lwork < 0 ) then
+        call pmf_utils_exit(PMF_OUT,1, &
+            '[ABF] Unable to illegal work size in abf_init_gpr_invK!')
+    end if
+
+    deallocate(twork)
+    allocate(   twork(lwork),   &
+                stat= alloc_failed )
+
+    if( alloc_failed .ne. 0 ) then
+        call pmf_utils_exit(PMF_OUT,1, &
+            '[ABF] Unable to allocate memory II for GPR arrays in abf_init_gpr_invK!')
+    end if
+
+! run SVD
+    call dgesdd('A', gpr_len, gpr_len, mat, gpr_len, sig, u, gpr_len, vt, gpr_len, twork, lwork, iwork, info)
+
+    if( info .ne. 0 )  then
+        call pmf_utils_exit(PMF_OUT,1, &
+            '[ABF] Unable to run SVD II in abf_init_gpr_invK!')
+    end if
+
+    deallocate(iwork,twork)
+
+    if( fdebug ) then
+        open(unit=7812,file='gpr-kernel.isigma',status='UNKNOWN')
+        do i=1,gpr_len
+            write(7812,*) i, 1.0d0/sig(i)
+        end do
+        close(7812)
+    end if
+
+! invert singular numbers
+    maxv = sig(1)
+    minv = sig(1)
+    do i=1,gpr_len
+        if( maxv .lt. sig(i) ) then
+            maxv = sig(i)
+        end if
+        if( minv .gt. sig(i) ) then
+            minv = sig(i)
+        end if
+    end do
+
+    a_rcond = minv/maxv
+
+    irank = 0
+    logdet = 0.0d0  ! this is logarithm of the determinant of original matrix
+    r_sigma = 0.0d0
+    if( gpr_rank .gt. 1 ) then
+        do i=1,gpr_len
+            if( i .le. gpr_rank ) then
+               r_sigma = sig(i)
+               sig_plus(i,i) = 1.0d0/sig(i)
+               logdet        = logdet +  log(sig(i))
+               irank = irank + 1
+            else
+               sig_plus(i,i) = 0.0d0
+            end if
+        end do
+    else if( gpr_rsigma .ne. 0.0d0 ) then
+        do i=1,gpr_len
+            if( sig(i) .gt. gpr_rsigma ) then
+               r_sigma = sig(i)
+               sig_plus(i,i) = 1.0d0/sig(i)
+               logdet        = logdet +  log(sig(i))
+               irank = irank + 1
+            else
+               sig_plus(i,i) = 0.0d0
+            end if
+        end do
+    else
+        do i=1,gpr_len
+            if( sig(i) .gt. gpr_rcond*maxv ) then
+               r_sigma = sig(i)
+               sig_plus(i,i) = 1.0d0/sig(i)
+               logdet        = logdet +  log(sig(i))
+               irank = irank + 1
+            else
+               sig_plus(i,i) = 0.0d0
+            end if
+        end do
+    end if
+
+! build pseudoinverse: V*sig_plus*UT
+    call dgemm('N', 'T', gpr_len, gpr_len, gpr_len, 1.0d0, sig_plus, gpr_len, u, gpr_len, 0.0d0, temp_mat, gpr_len)
+    call dgemm('T', 'N', gpr_len, gpr_len, gpr_len, 1.0d0, vt, gpr_len, temp_mat, gpr_len, 0.0d0, mat, gpr_len)
+
+    deallocate(sig,sig_plus,u,vt,temp_mat)
+
+ !   write(PMF_OUT,10) gpr_len,irank,r_sigma,a_rcond
+
+ 10 format('    Size = ',I5,'; Rank = ',I5,'; Rank sigma = ',E10.5,'; Real rcond = ',E10.5)
+
+end subroutine abf_init_gpr_invK
 
 !===============================================================================
 

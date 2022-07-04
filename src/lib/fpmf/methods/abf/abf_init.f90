@@ -423,6 +423,7 @@ subroutine abf_init_arrays
             vhist(3,NumOfLAtoms,hist_len),              &
             zdhist(3,NumOfLAtoms,NumOfABFCVs,hist_len), &
             fzinvhist(NumOfABFCVs,NumOfABFCVs,hist_len), &
+            cvderhist(3,NumOfLAtoms,NumOfABFCVs,hist_len), &
             epothist(hist_len),                         &
             ersthist(hist_len),                         &
             ekinhist(hist_len),                         &
@@ -448,7 +449,8 @@ subroutine abf_init_arrays
     erstrwhist(:)   = 0.0d0
     ekinlfhist(:)   = 0.0d0
     xphist(:,:)     = 0.0d0
-    fzinvhist(:,:,:) = 0.0d0
+    fzinvhist(:,:,:)    = 0.0d0
+    cvderhist(:,:,:,:)  = 0.0d0
 
 ! other setup ----------------------------------------------
 
