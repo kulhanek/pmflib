@@ -54,6 +54,8 @@ subroutine abf_core_vv_main
 ! not supported any more: 2, 3
         case(4)
             call abf_core_vv_force_2pV
+        case(5)
+            call abf_core_vv_force_2pX
         case default
             call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented fmode in abf_core_vv_main!')
     end select
@@ -197,6 +199,170 @@ subroutine abf_core_vv_force_2pV()
                            epothist(hist_len+fidx),ersthist(hist_len+fidx),ekinhist(hist_len+fidx))
 
 end subroutine abf_core_vv_force_2pV
+
+!===============================================================================
+! Subroutine:  abf_core_vv_force_2pX
+! this is velocity verlet ABF version, numerical via CV values
+!===============================================================================
+
+subroutine abf_core_vv_force_2pX()
+
+    use pmf_dat
+    use pmf_cvs
+    use abf_dat
+    use pmf_utils
+    use abf_accu
+    use abf_core
+
+    implicit none
+    integer                :: i,j,cidx,fidx
+    real(PMFDP)            :: v,dx1,dx2,dx3,dx4,dx5
+    ! --------------------------------------------------------------------------
+
+    call abf_core_update_history
+
+! shift accuvalue history
+    do i=1,hist_len-1
+        xphist(:,i)         = xphist(:,i+1)
+        fzinvhist(:,:,i)    = fzinvhist(:,:,i+1)
+    end do
+    fzinvhist(:,:,hist_len) = fzinv(:,:)
+
+! calculate CV velocity, consider CV periodicity
+    do i=1,NumOfABFCVs
+        select case(abf_p2_vx)
+    ! central differences
+        case(3)
+            ! -1
+            dx1 = ABFCVList(i)%cv%get_deviation(cvhist(i,hist_len-0),cvhist(i,hist_len-2))
+            pxia(i) = 0.5d0*dx1*ifdtx
+            ! pxia(i) = 0.5d0*(cvhist(i,hist_len-0)-cvhist(i,hist_len-2))*ifdtx
+            cidx = -1
+        case(5)
+            ! -2
+            dx1 = ABFCVList(i)%cv%get_deviation(cvhist(i,hist_len-4),cvhist(i,hist_len-0))
+            dx2 = ABFCVList(i)%cv%get_deviation(cvhist(i,hist_len-1),cvhist(i,hist_len-3))
+            pxia(i) = (1.0d0/12.0d0)*(dx1+8.0d0*dx2)*ifdtx
+            !pxia(i) = (1.0d0/12.0d0)*(      -cvhist(i,hist_len-0)+8.0d0*cvhist(i,hist_len-1)&
+            !                          -8.0d0*cvhist(i,hist_len-3)      +cvhist(i,hist_len-4))*ifdtx
+            cidx = -2
+        case(7)
+            ! -3
+            dx1 = ABFCVList(i)%cv%get_deviation(cvhist(i,hist_len-0),cvhist(i,hist_len-6))
+            dx2 = ABFCVList(i)%cv%get_deviation(cvhist(i,hist_len-5),cvhist(i,hist_len-1))
+            dx3 = ABFCVList(i)%cv%get_deviation(cvhist(i,hist_len-2),cvhist(i,hist_len-4))
+            pxia(i) = (1.0d0/60.0d0)*(dx1+9.0d0*dx2+45.0d0*dx3)*ifdtx
+            cidx = -3
+        case(9)
+            ! -4
+            dx1 = ABFCVList(i)%cv%get_deviation(cvhist(i,hist_len-8),cvhist(i,hist_len-0))
+            dx2 = ABFCVList(i)%cv%get_deviation(cvhist(i,hist_len-1),cvhist(i,hist_len-7))
+            dx3 = ABFCVList(i)%cv%get_deviation(cvhist(i,hist_len-6),cvhist(i,hist_len-2))
+            dx4 = ABFCVList(i)%cv%get_deviation(cvhist(i,hist_len-3),cvhist(i,hist_len-5))
+            pxia(i) = (1.0d0/840.0d0)*(3.0d0*dx1+32.0d0*dx2+168.0d0*dx3+672.0d0*dx4)*ifdtx
+            cidx = -4
+    ! backward differences
+        case(14)
+            ! -1
+            dx1 = ABFCVList(i)%cv%get_deviation(cvhist(i,hist_len-0),cvhist(i,hist_len-1))
+            dx2 = ABFCVList(i)%cv%get_deviation(cvhist(i,hist_len-1),cvhist(i,hist_len-2))
+            dx3 = ABFCVList(i)%cv%get_deviation(cvhist(i,hist_len-2),cvhist(i,hist_len-3))
+            pxia(i) = (1.0d0/6.0d0)*(2.0d0*dx1+5.0d0*dx2-dx3)*ifdtx
+            cidx = -1
+        case(15)
+            ! -1
+            dx1 = ABFCVList(i)%cv%get_deviation(cvhist(i,hist_len-0),cvhist(i,hist_len-1))
+            dx2 = ABFCVList(i)%cv%get_deviation(cvhist(i,hist_len-1),cvhist(i,hist_len-2))
+            dx3 = ABFCVList(i)%cv%get_deviation(cvhist(i,hist_len-2),cvhist(i,hist_len-3))
+            dx4 = ABFCVList(i)%cv%get_deviation(cvhist(i,hist_len-3),cvhist(i,hist_len-4))
+            pxia(i) = (1.0d0/12.0d0)*(3.0d0*dx1+13.0d0*dx2-5.0d0*dx3+dx4)*ifdtx
+            cidx = -1
+        case(16)
+            ! -1
+            dx1 = ABFCVList(i)%cv%get_deviation(cvhist(i,hist_len-0),cvhist(i,hist_len-1))
+            dx2 = ABFCVList(i)%cv%get_deviation(cvhist(i,hist_len-1),cvhist(i,hist_len-2))
+            dx3 = ABFCVList(i)%cv%get_deviation(cvhist(i,hist_len-2),cvhist(i,hist_len-3))
+            dx4 = ABFCVList(i)%cv%get_deviation(cvhist(i,hist_len-3),cvhist(i,hist_len-4))
+            dx5 = ABFCVList(i)%cv%get_deviation(cvhist(i,hist_len-4),cvhist(i,hist_len-5))
+            pxia(i) = (1.0d0/60.0d0)*(12.0d0*dx1+77.0d0*dx2-43.0d0*dx3+17.0d0*dx4-3.0d0*dx5)*ifdtx
+            cidx = -1
+        case default
+            call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented abf_p2_vx in abf_core_force_2pX!')
+        end select
+    end do
+
+    if( abf_clear_shaken_cvvel ) then
+        do i=abfaccu%tot_cvs+1,NumOfABFCVs
+            pxia(i) = 0.0d0 ! reset SHAKEn velocities
+        end do
+    end if
+
+! get CV momenta
+    do i=1,NumOfABFCVs
+        v = 0.0d0
+        do j=1,NumOfABFCVs
+            v = v + fzinvhist(i,j,hist_len+cidx)*pxia(j)
+        end do
+        xphist(i,hist_len+cidx) = v
+    end do
+
+    if( fstep .le. 2*hist_len ) return
+
+! get CV forces
+    do i=1,NumOfABFCVs
+        select case(abf_p2_px)
+    ! central differences
+        case(3)
+            pxif(i) = 0.5d0*(xphist(i,hist_len-7) - xphist(i,hist_len-9))*ifdtx
+            fidx = -8
+        case(5)
+            pxif(i) = (1.0d0/12.0d0)*(      -xphist(i,hist_len-6) + 8.0d0*xphist(i,hist_len-7) &
+                                      -8.0d0*xphist(i,hist_len-9)      + xphist(i,hist_len-10))*ifdtx
+            fidx = -8
+        case(7)
+            pxif(i) = (1.0d0/60.0d0)*(        xphist(i,hist_len-5)  -9.0d0*xphist(i,hist_len-6) &
+                                      +45.0d0*xphist(i,hist_len-7) -45.0d0*xphist(i,hist_len-9) &
+                                       +9.0d0*xphist(i,hist_len-10)       -xphist(i,hist_len-11))*ifdtx
+            fidx = -8
+        case(9)
+            pxif(i) = (1.0d0/840.0d0)*( -3.0d0*xphist(i,hist_len-4) +32.0d0*xphist(i,hist_len-5) &
+                                      -168.0d0*xphist(i,hist_len-6)+672.0d0*xphist(i,hist_len-7) &
+                                      -672.0d0*xphist(i,hist_len-9)+168.0d0*xphist(i,hist_len-10) &
+                                       -32.0d0*xphist(i,hist_len-11) +3.0d0*xphist(i,hist_len-12))*ifdtx
+            fidx = -8
+    ! backward differences
+        case(14)
+            pxif(i) = (1.0d0/6.0d0)*(+2.0d0*xphist(i,hist_len-1) +3.0d0*xphist(i,hist_len-2) &
+                                     -6.0d0*xphist(i,hist_len-3) +1.0d0*xphist(i,hist_len-4))*ifdtx
+            fidx = -2
+        case(15)
+            pxif(i) = (1.0d0/12.0d0)*( +3.0d0*xphist(i,hist_len-1) +10.0d0*xphist(i,hist_len-2) &
+                                      -18.0d0*xphist(i,hist_len-3)  +6.0d0*xphist(i,hist_len-4) &
+                                       -1.0d0*xphist(i,hist_len-5))*ifdtx
+            fidx = -2
+        case(16)
+            pxif(i) = (1.0d0/60.0d0)*( +12.0d0*xphist(i,hist_len-1) +65.0d0*xphist(i,hist_len-2) &
+                                      -120.0d0*xphist(i,hist_len-3) +60.0d0*xphist(i,hist_len-4) &
+                                       -20.0d0*xphist(i,hist_len-5)  +3.0d0*xphist(i,hist_len-6))*ifdtx
+            fidx = -2
+        case default
+            call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented abf_p2_px in abf_core_force_2pX!')
+        end select
+        pxiv(i) = 0.0d0
+    end do
+
+    pxis(:) = 0.0d0
+    if( abf_use_shaken_icf ) then
+        do i=abfaccu%tot_cvs+1,NumOfABFCVs
+            pxis(1) = pxis(1) + pxif(i)
+        end do
+    end if
+
+    ! subroutine abf_core_register_rawdata(cvs,ficf,sicf,vicf,bicf,epot,erst,ekin)
+    call abf_core_register_rawdata(cvhist(:,hist_len+fidx),pxif,pxis,pxiv,micfhist(:,hist_len+fidx), &
+                           epothist(hist_len+fidx),ersthist(hist_len+fidx),ekinhist(hist_len+fidx))
+
+end subroutine abf_core_vv_force_2pX
 
 !===============================================================================
 
