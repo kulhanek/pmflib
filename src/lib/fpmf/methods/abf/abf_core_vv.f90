@@ -82,7 +82,7 @@ subroutine abf_core_vv_force_2pV()
     use abf_core
 
     implicit none
-    integer                :: i,j,m,vidx
+    integer                :: i,j,m,fidx
     real(PMFDP)            :: v
     ! --------------------------------------------------------------------------
 
@@ -93,37 +93,25 @@ subroutine abf_core_vv_force_2pV()
     do i=1,hist_len-1
         fzinvhist(:,:,i)    = fzinvhist(:,:,i+1)
         cvderhist(:,:,:,i)  = cvderhist(:,:,:,i+1)
-        vhist(:,:,i)        = vhist(:,:,i+1)
         xphist(:,i)         = xphist(:,i+1)
     end do
-    vhist(:,:,hist_len-1)   = Vel(:,:) * ftds_vel_scale ! velocities are in t-dt
     fzinvhist(:,:,hist_len) = fzinv(:,:)
     call abf_core_update_cvder
 
-    do i=1,NumOfABFCVs
-        select case(abf_p2_vx)
-        case(2)
-            ! -1
-            vint(:,:) =  vhist(:,:,hist_len-1)
-            vidx =-1
-        case default
-            call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented abf_p2_vx in abf_core_vv_force_2pV!')
-        end select
-    end do
-
+    ! velocities are in t-dt
     do i=1,NumOfABFCVs
         v = 0.0d0
         do j=1,NumOfLAtoms
             do m=1,3
-                v = v + cvderhist(m,j,i,hist_len+vidx)*vint(m,j)
+                v = v + cvderhist(m,j,i,hist_len-1)*Vel(m,j)* ftds_vel_scale
             end do
         end do
         pxia(i) = v
     end do
 
-    !if( fdebug ) then
-    !    write(14789,*) fstep, pxia
-    !end if
+    if( fdebug ) then
+        write(14789,*) fstep, pxia
+    end if
 
     if( abf_clear_shaken_cvvel ) then
         do i=abfaccu%tot_cvs+1,NumOfABFCVs
@@ -135,36 +123,78 @@ subroutine abf_core_vv_force_2pV()
     do i=1,NumOfABFCVs
         v = 0.0d0
         do j=1,NumOfABFCVs
-            v = v + fzinvhist(i,j,hist_len+vidx)*pxia(j)
+            v = v + fzinvhist(i,j,hist_len-1)*pxia(j)
         end do
-        xphist(i,hist_len+vidx) = v
+        xphist(i,hist_len-1) = v
     end do
 
     if( fstep .le. 2*hist_len ) return
 
     do i=1,NumOfABFCVs
         select case(abf_p2_px)
+    ! central differences
         case(3)
-            pxif(i) = 0.5d0*(xphist(i,hist_len-5) - xphist(i,hist_len-7))*ifdtx
-        case(4)
-            pxif(i) = (1.0d0/6.0d0)*( +2.0d0*xphist(i,hist_len-5) + 3.0d0*xphist(i,hist_len-6) &
-                                      -6.0d0*xphist(i,hist_len-7)      + xphist(i,hist_len-8))*ifdtx
+            pxif(i) = 0.5d0*(xphist(i,hist_len-1) - xphist(i,hist_len-3))*ifdtx
+            fidx = -2
         case(5)
-            pxif(i) = (1.0d0/12.0d0)*(      -xphist(i,hist_len-4) + 8.0d0*xphist(i,hist_len-5) &
-                                      -8.0d0*xphist(i,hist_len-7)      + xphist(i,hist_len-8))*ifdtx
+            pxif(i) = (1.0d0/12.0d0)*(      -xphist(i,hist_len-1) + 8.0d0*xphist(i,hist_len-2) &
+                                      -8.0d0*xphist(i,hist_len-4)      + xphist(i,hist_len-5))*ifdtx
+            fidx = -3
         case(7)
-            pxif(i) = (1.0d0/60.0d0)*(        xphist(i,hist_len-3)  -9.0d0*xphist(i,hist_len-4) &
-                                      +45.0d0*xphist(i,hist_len-5) -45.0d0*xphist(i,hist_len-7) &
-                                       +9.0d0*xphist(i,hist_len-8)        -xphist(i,hist_len-9))*ifdtx
+            pxif(i) = (1.0d0/60.0d0)*(        xphist(i,hist_len-1)  -9.0d0*xphist(i,hist_len-2) &
+                                      +45.0d0*xphist(i,hist_len-3) -45.0d0*xphist(i,hist_len-5) &
+                                       +9.0d0*xphist(i,hist_len-6)        -xphist(i,hist_len-7))*ifdtx
+            fidx = -4
+     ! central+backward differences
+        case(14)
+            pxif(i) = (1.0d0/6.0d0)*(+2.0d0*xphist(i,hist_len-1) +3.0d0*xphist(i,hist_len-2) &
+                                     -6.0d0*xphist(i,hist_len-3) +1.0d0*xphist(i,hist_len-4))*ifdtx
+            fidx = -2
+        case(15)
+            pxif(i) = (1.0d0/12.0d0)*( +3.0d0*xphist(i,hist_len-1) +10.0d0*xphist(i,hist_len-2) &
+                                      -18.0d0*xphist(i,hist_len-3)  +6.0d0*xphist(i,hist_len-4) &
+                                       -1.0d0*xphist(i,hist_len-5))*ifdtx
+            fidx = -2
+        case(16)
+            pxif(i) = (1.0d0/60.0d0)*( +12.0d0*xphist(i,hist_len-1) +65.0d0*xphist(i,hist_len-2) &
+                                      -120.0d0*xphist(i,hist_len-3) +60.0d0*xphist(i,hist_len-4) &
+                                       -20.0d0*xphist(i,hist_len-5)  +3.0d0*xphist(i,hist_len-6))*ifdtx
+            fidx = -2
+     ! backward differences
+        case(23)
+            pxif(i) = (1.0d0/2.0d0)*(+3.0d0*xphist(i,hist_len-1) -4.0d0*xphist(i,hist_len-2) &
+                                     +1.0d0*xphist(i,hist_len-3))*ifdtx
+            fidx = -1
+        case(24)
+            pxif(i) = (1.0d0/6.0d0)*(+11.0d0*xphist(i,hist_len-1) -18.0d0*xphist(i,hist_len-2) &
+                                      +9.0d0*xphist(i,hist_len-3)  -2.0d0*xphist(i,hist_len-4))*ifdtx
+            fidx = -1
+        case(25)
+            pxif(i) = (1.0d0/12.0d0)*(+25.0d0*xphist(i,hist_len-1) -48.0d0*xphist(i,hist_len-2) &
+                                      +36.0d0*xphist(i,hist_len-3) -16.0d0*xphist(i,hist_len-4) &
+                                       +3.0d0*xphist(i,hist_len-5))*ifdtx
+            fidx = -1
+        case(26)
+            pxif(i) = (1.0d0/60.0d0)*(+137.0d0*xphist(i,hist_len-1) -300.0d0*xphist(i,hist_len-2) &
+                                      +300.0d0*xphist(i,hist_len-3) -200.0d0*xphist(i,hist_len-4) &
+                                       +75.0d0*xphist(i,hist_len-5)  -12.0d0*xphist(i,hist_len-6))*ifdtx
+            fidx = -1
         case default
             call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented abf_p2_px in abf_core_vv_force_2pV!')
         end select
         pxiv(i) = 0.0d0
     end do
 
+    pxis(:) = 0.0d0
+    if( abf_use_shaken_icf ) then
+        do i=abfaccu%tot_cvs+1,NumOfABFCVs
+            pxis(1) = pxis(1) + pxif(i)
+        end do
+    end if
+
     ! subroutine abf_core_register_rawdata(cvs,ficf,sicf,vicf,bicf,epot,erst,ekin)
-    call abf_core_register_rawdata(cvhist(:,hist_len-6),pxif,pxis,pxiv,micfhist(:,hist_len-6), &
-                           epothist(hist_len-6),ersthist(hist_len-6),ekinhist(hist_len-6))
+    call abf_core_register_rawdata(cvhist(:,hist_len+fidx),pxif,pxis,pxiv,micfhist(:,hist_len+fidx), &
+                           epothist(hist_len+fidx),ersthist(hist_len+fidx),ekinhist(hist_len+fidx))
 
 end subroutine abf_core_vv_force_2pV
 

@@ -94,10 +94,6 @@ subroutine pmf_core_lf_force(x,v,f,epot,ekin,epmf)
     KinEne%KinEneVV = ekin%KinEneVV * EnergyConv
     KinEne%KinEneLF = ekin%KinEneLF * EnergyConv
     KinEne%KinEneHA = ekin%KinEneHA * EnergyConv
-    KinEne%KinEneV3 = ekin%KinEneV3 * EnergyConv
-    KinEne%KinEneV4 = ekin%KinEneV4 * EnergyConv
-    KinEne%KinEneV5 = ekin%KinEneV5 * EnergyConv
-    KinEne%KinEneV6 = ekin%KinEneV6 * EnergyConv
 
     PMFEne = 0.0d0
 

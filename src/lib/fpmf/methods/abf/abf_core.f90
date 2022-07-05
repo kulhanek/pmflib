@@ -142,12 +142,6 @@ subroutine abf_core_update_history()
         case(1)
             ekinhist(hist_len-1)    = KinEne%KinEneVV - fekinaverage   ! shifted by -dt
             ekin                    = ekinhist(hist_len-1)
-        case(2)
-            ekinhist(hist_len-2)    = KinEne%KinEneV4 - fekinaverage
-            ekin                    = ekinhist(hist_len-2)
-        case(3)
-            ekinhist(hist_len-3)    = KinEne%KinEneV6 - fekinaverage
-            ekin                    = ekinhist(hist_len-3)
         ! KE from interpolated KE at half-step
         case(4)
             ekinhist(hist_len-1)    = 0.5d0*(ekinlfhist(hist_len-0) + ekinlfhist(hist_len-1))
@@ -161,12 +155,6 @@ subroutine abf_core_update_history()
                                                        +150.0d0*ekinlfhist(hist_len-2) +150.0d0*ekinlfhist(hist_len-3) &
                                                         -25.0d0*ekinlfhist(hist_len-4)   +3.0d0*ekinlfhist(hist_len-5))
             ekin                    = ekinhist(hist_len-3)
-        case(7)
-            ekinhist(hist_len-1)    = KinEne%KinEneV3 - fekinaverage
-            ekin                    = ekinhist(hist_len-1)
-        case(8)
-            ekinhist(hist_len-2)    = KinEne%KinEneV5 - fekinaverage
-            ekin                    = ekinhist(hist_len-2)
         case(9)
             ekinhist(hist_len-2)    = KinEne%KinEneVV - fekinaverage
             ekin                    = ekinhist(hist_len-2)

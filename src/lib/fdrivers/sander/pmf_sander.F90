@@ -155,6 +155,25 @@ subroutine pmf_sander_init_preinit(mdin,anatom,anres, &
 end subroutine pmf_sander_init_preinit
 
 !===============================================================================
+! subroutine pmf_sander_set_intalg
+!===============================================================================
+
+subroutine pmf_sander_set_intalg(alg)
+
+    use pmf_dat
+
+    implicit none
+    integer        :: alg   ! MD integration algorithm
+    ! --------------------------------------------------------------------------
+
+    fintalg = IA_LEAP_FROG
+    if( alg .eq. 1 ) then
+        fintalg = IA_VEL_VERLET
+    end if
+
+end subroutine
+
+!===============================================================================
 ! subroutine pmf_sander_set_residue
 !===============================================================================
 
@@ -392,14 +411,15 @@ subroutine pmf_sander_force(anatom,x,v,f,spmfene)
 
     call pmf_timers_start_timer(PMFLIB_TIMER)
 
-    if( spmfene%intmode .eq. 1 ) then
-        fintalg = IA_VEL_VERLET
-        call pmf_core_vv_force_SRF(x,v,f,spmfene%epot,spmfene%ekin,spmfene%erst)
-    else
-        fintalg = IA_LEAP_FROG
-        call pmf_core_lf_update_step
-        call pmf_core_lf_force(x,v,f,spmfene%epot,spmfene%ekin,spmfene%erst)
-    end if
+    select case(fintalg)
+        case(IA_VEL_VERLET)
+            call pmf_core_vv_update_step
+            call pmf_core_vv_force(x,v,f,spmfene%epot,spmfene%ekin,spmfene%erst)
+        case(IA_LEAP_FROG)
+            call pmf_core_lf_update_step
+            call pmf_core_lf_force(x,v,f,spmfene%epot,spmfene%ekin,spmfene%erst)
+        case default
+    end select
 
     call pmf_timers_stop_timer(PMFLIB_TIMER)
 
@@ -409,6 +429,7 @@ end subroutine pmf_sander_force
 
 !===============================================================================
 ! subroutine pmf_sander_rstforce
+! this is used in geometry optimization
 !===============================================================================
 
 subroutine pmf_sander_rstforce(anatom,x,f,epot,epmf)
@@ -544,39 +565,6 @@ subroutine pmf_sander_force_mpi(anatom,x,v,f,spmfene)
     end if
 
 end subroutine pmf_sander_force_mpi
-
-!===============================================================================
-! Subroutine: pmf_sander_force_lng_mpi
-!===============================================================================
-
-subroutine pmf_sander_force_lng_mpi(anatom,flng)
-
-    use pmf_sizes
-    use pmf_dat
-    use pmf_core_lf
-    use pmf_timers
-
-    implicit none
-    integer        :: anatom            ! number of atoms
-    real(PMFDP)    :: flng(3,anatom)    ! forces from Langevin
-    ! --------------------------------------------------------------------------
-
-    if( .not. lng_force_required ) return
-
-    if(fmaster) then
-        call pmf_timers_start_timer(PMFLIB_TIMER)
-    end if
-
-    call pmf_sander_gather_array_mpi(tmp_a,flng,atm_owner_map,1)
-    call pmf_core_lf_langevin_forces(tmp_a)
-
-    if(fmaster) then
-        call pmf_timers_stop_timer(PMFLIB_TIMER)
-    end if
-
-    return
-
-end subroutine pmf_sander_force_lng_mpi
 
 !===============================================================================
 ! Subroutine: pmf_sander_constraints_mpi

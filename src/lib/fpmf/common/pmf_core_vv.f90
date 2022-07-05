@@ -69,10 +69,29 @@ subroutine pmf_core_vv_shake_SFR(xp,vp)
 end subroutine pmf_core_vv_shake_SFR
 
 !===============================================================================
-! Subroutine:  pmf_core_vv_force_SRF
+! Subroutine:  pmf_core_vv_update_step
+! velocity verlet version
 !===============================================================================
 
-subroutine pmf_core_vv_force_SRF(x,v,f,epot,ekin,epmf)
+subroutine pmf_core_vv_update_step()
+
+    use pmf_dat
+    use pmf_core
+
+    implicit none
+    ! --------------------------------------------------------------------------
+
+    ! update time increments
+    ftime = ftime + fdt
+    fstep = fstep + 1
+
+end subroutine pmf_core_vv_update_step
+
+!===============================================================================
+! Subroutine:  pmf_core_vv_force
+!===============================================================================
+
+subroutine pmf_core_vv_force(x,v,f,epot,ekin,epmf)
 
     use pmf_dat
     use pmf_cvs
@@ -105,10 +124,6 @@ subroutine pmf_core_vv_force_SRF(x,v,f,epot,ekin,epmf)
 
     if( .not. pmf_enabled ) return
 
-    ! update time increments
-    ftime = ftime + fdt
-    fstep = fstep + 1
-
     ! convert potential energy
     PotEne = epot *EnergyConv
 
@@ -116,10 +131,6 @@ subroutine pmf_core_vv_force_SRF(x,v,f,epot,ekin,epmf)
     KinEne%KinEneVV = ekin%KinEneVV * EnergyConv
     KinEne%KinEneLF = ekin%KinEneLF * EnergyConv
     KinEne%KinEneHA = ekin%KinEneHA * EnergyConv
-    KinEne%KinEneV3 = ekin%KinEneV3 * EnergyConv
-    KinEne%KinEneV4 = ekin%KinEneV4 * EnergyConv
-    KinEne%KinEneV5 = ekin%KinEneV5 * EnergyConv
-    KinEne%KinEneV6 = ekin%KinEneV6 * EnergyConv
 
     PMFEne = 0.0d0
 
@@ -208,7 +219,7 @@ subroutine pmf_core_vv_force_SRF(x,v,f,epot,ekin,epmf)
     ! debug
     ! write(RST_OUT,*) f(:,:)
 
-end subroutine pmf_core_vv_force_SRF
+end subroutine pmf_core_vv_force
 
 !===============================================================================
 ! Subroutine:  pmf_core_vv_rattle_SFR
