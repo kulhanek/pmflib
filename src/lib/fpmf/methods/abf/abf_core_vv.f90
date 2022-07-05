@@ -191,8 +191,10 @@ subroutine abf_core_vv_force_3pV1()
             end do
         end do
         pxif(i) = f1*ifdtx
-        pxis(1) = 0.0d0
+        pxis(i) = 0.0d0
         pxiv(i) = v1*ifdtx
+
+        write(78948+i,*) fstep, pxif(i), pxis(i), pxiv(i)
     end do
 
    ! write(78948,*) fstep, pxif(1), pxis(1)
@@ -279,9 +281,9 @@ subroutine abf_core_vv_force_2pF()
             end do
         end do
         pxif(i) = f1
-        pxis(i) = 0.5d0*(s1+r1)
+        pxis(i) = s1
         pxiv(i) = v1*ifdtx
-        !write(23568,*) fstep, f1, s1, r1
+        ! write(78948+i,*) fstep, f1, s1, r1, v1*ifdtx
     end do
 
     ! write(78948,*) fstep, pxif(1), pxis(1)
