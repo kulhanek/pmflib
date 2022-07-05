@@ -54,10 +54,12 @@ implicit none
 type PMFSanderEnergy
     ! input
     real(PMFDP)             :: epot     ! potential energy in t
+    integer                 :: intmode  ! 0 - LF
+                                        ! 1 - VV
     type(PMFKineticEnergy)  :: ekin     ! kinetic energy in various times
 
     ! output
-    real(PMFDP) :: erst                 ! PMF restrain energy in t
+    real(PMFDP)             :: erst                 ! PMF restrain energy in t
 end type PMFSanderEnergy
 
 contains
@@ -374,6 +376,7 @@ subroutine pmf_sander_force(anatom,x,v,f,spmfene)
 
     use pmf_sizes
     use pmf_core_lf
+    use pmf_core_vv
     use pmf_timers
     use pmf_dat
 
@@ -388,8 +391,16 @@ subroutine pmf_sander_force(anatom,x,v,f,spmfene)
     spmfene%erst = 0.0d0
 
     call pmf_timers_start_timer(PMFLIB_TIMER)
-    call pmf_core_lf_update_step
-    call pmf_core_lf_force(x,v,f,spmfene%epot,spmfene%ekin,spmfene%erst)
+
+    if( spmfene%intmode .eq. 1 ) then
+        fintalg = IA_VEL_VERLET
+        call pmf_core_vv_force_SRF(x,v,f,spmfene%epot,spmfene%ekin,spmfene%erst)
+    else
+        fintalg = IA_LEAP_FROG
+        call pmf_core_lf_update_step
+        call pmf_core_lf_force(x,v,f,spmfene%epot,spmfene%ekin,spmfene%erst)
+    end if
+
     call pmf_timers_stop_timer(PMFLIB_TIMER)
 
     return

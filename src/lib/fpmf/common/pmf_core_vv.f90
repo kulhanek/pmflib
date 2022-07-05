@@ -72,14 +72,14 @@ end subroutine pmf_core_vv_shake_SFR
 ! Subroutine:  pmf_core_vv_force_SRF
 !===============================================================================
 
-subroutine pmf_core_vv_force_SRF(x,f,epot,epmf)
+subroutine pmf_core_vv_force_SRF(x,v,f,epot,ekin,epmf)
 
     use pmf_dat
     use pmf_cvs
     use mon_output
     use rst_core
     use rst_dat
-    use abf_core
+    use abf_core_vv
     use abp_core
     use mtd_core
     use stm_core
@@ -91,10 +91,12 @@ subroutine pmf_core_vv_force_SRF(x,f,epot,epmf)
     use pdrv_core
 
     implicit none
-    real(PMFDP),intent(in)     :: x(:,:)       ! position in t
-    real(PMFDP),intent(inout)  :: f(:,:)       ! forces in t
-    real(PMFDP),intent(in)     :: epot         ! potential energy of system in t
-    real(PMFDP),intent(out)    :: epmf         ! energy from PMFLib
+    real(PMFDP),intent(in)      :: x(:,:)       ! position in t
+    real(PMFDP)                 :: v(:,:)       ! velocities in t-dt
+    real(PMFDP),intent(inout)   :: f(:,:)       ! forces in t
+    real(PMFDP),intent(in)      :: epot         ! potential energy of system in t
+    type(PMFKineticEnergy)      :: ekin          ! kinetic energy
+    real(PMFDP),intent(out)     :: epmf         ! energy from PMFLib
     ! -----------------------------------------------
     integer        :: i
     ! --------------------------------------------------------------------------
@@ -109,10 +111,20 @@ subroutine pmf_core_vv_force_SRF(x,f,epot,epmf)
 
     ! convert potential energy
     PotEne = epot *EnergyConv
+
+    ! convert kinetic energies
+    KinEne%KinEneVV = ekin%KinEneVV * EnergyConv
+    KinEne%KinEneLF = ekin%KinEneLF * EnergyConv
+    KinEne%KinEneHA = ekin%KinEneHA * EnergyConv
+    KinEne%KinEneV3 = ekin%KinEneV3 * EnergyConv
+    KinEne%KinEneV4 = ekin%KinEneV4 * EnergyConv
+    KinEne%KinEneV5 = ekin%KinEneV5 * EnergyConv
+    KinEne%KinEneV6 = ekin%KinEneV6 * EnergyConv
+
     PMFEne = 0.0d0
 
     ! update local data
-    call pmf_core_in_data_xf(x,f)
+    call pmf_core_in_data_xvf(x,v,f)
 
 !-------------------------------------------------
     call pmf_timers_start_timer(PMFLIB_CVS_TIMER)
@@ -176,7 +188,7 @@ subroutine pmf_core_vv_force_SRF(x,f,epot,epmf)
         ! ABF has to be here because it could be influenced by restraints (wall restraints, etc.)
         if( abf_enabled ) then
             call pmf_timers_start_timer(PMFLIB_ABF_TIMER)
-                call abf_core_main
+                call abf_core_vv_main
             call pmf_timers_stop_timer(PMFLIB_ABF_TIMER)
         end if
 

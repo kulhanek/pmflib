@@ -286,7 +286,8 @@ subroutine pmf_cpmd_force(NSP,NAX,NSX,NA,TAUP,FION)
 
     epmf = 0.0d0
 
-    call pmf_core_vv_force_SRF(tmp_x,tmp_f,ENE,epmf)
+! FIXME
+!    call pmf_core_vv_force_SRF(tmp_x,tmp_f,ENE,epmf)
 
     ! convert forces back ----------------------------------
     call remap_force_back(NSP,NAX,NSX,NA,FION,tmp_f)
