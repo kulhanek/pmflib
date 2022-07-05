@@ -259,6 +259,7 @@ subroutine abf_core_vv_force_2pF()
                     case(5)
                         f1 = f1 + zdhist(m,j,i,hist_len-3) * fhist(m,j,hist_len-3) * MassInv(j)
                         s1 = s1 + zdhist(m,j,i,hist_len-3) * shist(m,j,hist_len-3) * MassInv(j)
+                        r1 = r1 + zdhist(m,j,i,hist_len-3) * rhist(m,j,hist_len-3) * MassInv(j)
                         v1 = v1 + (1.0d0/12.0d0)*(-1.0d0*zdhist(m,j,i,hist_len-1) +8.0d0*zdhist(m,j,i,hist_len-2) &
                                                   -8.0d0*zdhist(m,j,i,hist_len-4) +1.0d0*zdhist(m,j,i,hist_len-5)) &
                                                 * vhist(m,j,hist_len-3)
@@ -266,6 +267,7 @@ subroutine abf_core_vv_force_2pF()
                     case(7)
                         f1 = f1 + zdhist(m,j,i,hist_len-4) * fhist(m,j,hist_len-4) * MassInv(j)
                         s1 = s1 + zdhist(m,j,i,hist_len-4) * shist(m,j,hist_len-4) * MassInv(j)
+                        r1 = r1 + zdhist(m,j,i,hist_len-4) * rhist(m,j,hist_len-4) * MassInv(j)
                         v1 = v1 + (1.0d0/60.0d0)*( +1.0d0*zdhist(m,j,i,hist_len-1)  -9.0d0*zdhist(m,j,i,hist_len-2) &
                                                   +45.0d0*zdhist(m,j,i,hist_len-3) -45.0d0*zdhist(m,j,i,hist_len-5) &
                                                    +9.0d0*zdhist(m,j,i,hist_len-6)  -1.0d0*zdhist(m,j,i,hist_len-7)) &
