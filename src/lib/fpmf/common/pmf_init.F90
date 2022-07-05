@@ -60,6 +60,9 @@ subroutine pmf_init_dat
     fintalg     = IA_LEAP_FROG
     fshake      = .false.
 
+    shake_force_required    = .false.
+    rattle_force_required   = .false.
+
     fdtx        = 0.0d0
     ifdtx       = 0.0d0
 
@@ -486,6 +489,8 @@ subroutine pmf_init_pmf
           MassInv(NumOfLAtoms), &
           Crd(3,NumOfLAtoms), &
           Frc(3,NumOfLAtoms), &
+          SHAKEFrc(3,NumOfLAtoms), &
+          RATTLEFrc(3,NumOfLAtoms), &
           Vel(3,NumOfLAtoms), &
           CVContext%CVsValues(NumOfCVs), &
           CVContext%CVsDrvs(3,NumOfLAtoms,NumOfCVs), &
@@ -495,9 +500,10 @@ subroutine pmf_init_pmf
         call pmf_utils_exit(PMF_OUT, 1,'[PMFLIB] Unable to allocate memory for common arrays!')
     endif
 
-    if( cst_enabled ) then
+    if( cst_enabled .or. shake_force_required .or. rattle_force_required ) then
         ! allocate arrays used by bluemoon
         allocate( CrdP(3,NumOfLAtoms), &
+                  CrdBar(3,NumOfLAtoms), &
                   CVContextP%CVsValues(NumOfCVs), &
                   CVContextP%CVsDrvs(3,NumOfLAtoms,NumOfCVs), &
                   stat=alloc_failed)
@@ -508,8 +514,9 @@ subroutine pmf_init_pmf
 
         if( fintalg .eq. IA_VEL_VERLET ) then
             ! allocate arrays used by bluemoon
-            allocate(VelP(3,NumOfLAtoms), &
-                      stat=alloc_failed)
+            allocate(   VelP(3,NumOfLAtoms), &
+                        VelBar(3,NumOfLAtoms), &
+                        stat=alloc_failed)
 
             if( alloc_failed .ne. 0 ) then
                 call pmf_utils_exit(PMF_OUT, 1,'[PMFLIB] Unable to allocate memory for CST array!')

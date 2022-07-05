@@ -52,6 +52,10 @@ subroutine abf_core_vv_main
     ! if we have enough data - run ABF
     select case(fmode)
 ! not supported any more: 2, 3
+        case(1)
+            call abf_core_vv_force_3pV1
+        case(3)
+            call abf_core_vv_force_2pF
         case(4)
             call abf_core_vv_force_2pV
         case(5)
@@ -69,6 +73,222 @@ subroutine abf_core_vv_main
     end if
 
 end subroutine abf_core_vv_main
+
+!===============================================================================
+! Subroutine:  abf_core_vv_shake
+! forces from SHAKE
+!===============================================================================
+
+subroutine abf_core_vv_shake
+
+    use abf_dat
+    use pmf_utils
+    ! --------------------------------------------------------------------------
+
+    select case(fmode)
+        case(1,2,4,5)
+            ! ignored
+        case(3)
+            ! get forces from SHAKE
+            shist(:,:,hist_len) = SHAKEFrc(:,:)
+        case default
+            call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented fmode in abf_core_vv_shake!')
+    end select
+
+  !  write(74896,*) fstep, SHAKEFrc
+
+end subroutine abf_core_vv_shake
+
+!===============================================================================
+! Subroutine:  abf_core_vv_rattle
+! forces from RATTLE
+!===============================================================================
+
+subroutine abf_core_vv_rattle
+
+    use abf_dat
+    use pmf_utils
+    ! --------------------------------------------------------------------------
+
+    select case(fmode)
+        case(1,2,4,5)
+            ! ignored
+        case(3)
+            ! get forces from RATTLE
+          !  shist(:,:,hist_len-1) = shist(:,:,hist_len-1) + 0.5d0*RATTLEFrc(:,:)
+            rhist(:,:,hist_len) = RATTLEFrc(:,:)
+        case default
+            call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented fmode in abf_core_vv_rattle!')
+    end select
+
+   ! write(74895,*) fstep, RATTLEFrc
+
+end subroutine abf_core_vv_rattle
+
+!===============================================================================
+! Subroutine:  abf_core_vv_force_3pV1
+! this is velocity verlet ABF version, simplified algorithm
+!===============================================================================
+
+subroutine abf_core_vv_force_3pV1()
+
+    use pmf_dat
+    use pmf_cvs
+    use abf_dat
+    use pmf_utils
+    use abf_core
+
+    implicit none
+    integer                :: i,j,m,fidx
+    real(PMFDP)            :: f1,v1
+    ! --------------------------------------------------------------------------
+
+    ! update core history and apply bias
+    call abf_core_update_history
+
+    ! shift history buffers
+    do i=1,hist_len-1
+        zdhist(:,:,:,i) = zdhist(:,:,:,i+1)
+        vhist(:,:,i)    = vhist(:,:,i+1)
+    end do
+
+    vhist(:,:,hist_len-1) = Vel(:,:) * ftds_vel_scale  ! shifted by -dt
+
+    call abf_core_update_zdhist
+
+    if( fstep .le. 2*hist_len ) return
+
+    do i=1,NumOfABFCVs
+        f1 = 0.0d0
+        v1 = 0.0d0
+        do j=1,NumOfLAtoms
+            do m=1,3
+                select case(abf_p2_px)
+                    case(3)
+                        f1 = f1 + zdhist(m,j,i,hist_len-2) &
+                                * (1.0d0/2.0d0) * (vhist(m,j,hist_len-1) - vhist(m,j,hist_len-3))
+                        v1 = v1 +  (1.0d0/2.0d0)*(zdhist(m,j,i,hist_len-1)-zdhist(m,j,i,hist_len-3)) &
+                                                * vhist(m,j,hist_len-2)
+                        fidx = -2
+                    case(5)
+                        f1 = f1 + zdhist(m,j,i,hist_len-3) &
+                                * (1.0d0/2.0d0) * (vhist(m,j,hist_len-2) - vhist(m,j,hist_len-4))
+                        v1 = v1 + (1.0d0/12.0d0)*(-1.0d0*zdhist(m,j,i,hist_len-1) +8.0d0*zdhist(m,j,i,hist_len-2) &
+                                                  -8.0d0*zdhist(m,j,i,hist_len-4) +1.0d0*zdhist(m,j,i,hist_len-5)) &
+                                                * vhist(m,j,hist_len-3)
+                        fidx = -3
+                    case(7)
+                        f1 = f1 + zdhist(m,j,i,hist_len-4) &
+                                * (1.0d0/2.0d0) * (vhist(m,j,hist_len-3) - vhist(m,j,hist_len-5))
+                        v1 = v1 + (1.0d0/60.0d0)*( +1.0d0*zdhist(m,j,i,hist_len-1)  -9.0d0*zdhist(m,j,i,hist_len-2) &
+                                                  +45.0d0*zdhist(m,j,i,hist_len-3) -45.0d0*zdhist(m,j,i,hist_len-5) &
+                                                   +9.0d0*zdhist(m,j,i,hist_len-6)  -1.0d0*zdhist(m,j,i,hist_len-7)) &
+                                                * vhist(m,j,hist_len-4)
+                        fidx = -4
+                    case default
+                        call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented abf_p2_px in abf_core_vv_force_2pF!')
+                end select
+            end do
+        end do
+        pxif(i) = f1*ifdtx
+        pxis(1) = 0.0d0
+        pxiv(i) = v1*ifdtx
+    end do
+
+   ! write(78948,*) fstep, pxif(1), pxis(1)
+
+    ! subroutine abf_core_register_rawdata(cvs,ficf,sicf,vicf,bicf,epot,erst,ekin)
+    call abf_core_register_rawdata(cvhist(:,hist_len+fidx),pxif,pxis,pxiv,micfhist(:,hist_len+fidx), &
+                           epothist(hist_len+fidx),ersthist(hist_len+fidx),ekinhist(hist_len+fidx))
+
+end subroutine abf_core_vv_force_3pV1
+
+!===============================================================================
+! Subroutine:  abf_core_vv_force_2pF
+! this is velocity verlet ABF version, simplified algorithm
+!===============================================================================
+
+subroutine abf_core_vv_force_2pF()
+
+    use pmf_dat
+    use pmf_cvs
+    use abf_dat
+    use pmf_utils
+    use abf_core
+
+    implicit none
+    integer                :: i,j,m,fidx
+    real(PMFDP)            :: f1,s1,r1,v1
+    ! --------------------------------------------------------------------------
+
+    ! update core history and apply bias
+    call abf_core_update_history
+
+    ! shift history buffers
+    do i=1,hist_len-1
+        zdhist(:,:,:,i) = zdhist(:,:,:,i+1)
+        vhist(:,:,i)    = vhist(:,:,i+1)
+        fhist(:,:,i)    = fhist(:,:,i+1)
+        shist(:,:,i)    = shist(:,:,i+1)
+        rhist(:,:,i)    = rhist(:,:,i+1)
+    end do
+
+    vhist(:,:,hist_len-1) = Vel(:,:) * ftds_vel_scale  ! shifted by -dt
+    fhist(:,:,hist_len)   = Frc(:,:)
+    ! shist is updated latter
+
+    call abf_core_update_zdhist
+
+    if( fstep .le. 2*hist_len ) return
+
+    do i=1,NumOfABFCVs
+        f1 = 0.0d0
+        s1 = 0.0d0
+        r1 = 0.0d0
+        v1 = 0.0d0
+        do j=1,NumOfLAtoms
+            do m=1,3
+                select case(abf_p2_px)
+                    case(3)
+                        f1 = f1 + zdhist(m,j,i,hist_len-2) * fhist(m,j,hist_len-2) * MassInv(j)
+                        s1 = s1 + zdhist(m,j,i,hist_len-2) * shist(m,j,hist_len-2) * MassInv(j)
+                        r1 = r1 + zdhist(m,j,i,hist_len-2) * rhist(m,j,hist_len-2) * MassInv(j)
+                        v1 = v1 +  (1.0d0/2.0d0)*(zdhist(m,j,i,hist_len-1)-zdhist(m,j,i,hist_len-3)) &
+                                                * vhist(m,j,hist_len-2)
+                        fidx = -2
+                    case(5)
+                        f1 = f1 + zdhist(m,j,i,hist_len-3) * fhist(m,j,hist_len-3) * MassInv(j)
+                        s1 = s1 + zdhist(m,j,i,hist_len-3) * shist(m,j,hist_len-3) * MassInv(j)
+                        v1 = v1 + (1.0d0/12.0d0)*(-1.0d0*zdhist(m,j,i,hist_len-1) +8.0d0*zdhist(m,j,i,hist_len-2) &
+                                                  -8.0d0*zdhist(m,j,i,hist_len-4) +1.0d0*zdhist(m,j,i,hist_len-5)) &
+                                                * vhist(m,j,hist_len-3)
+                        fidx = -3
+                    case(7)
+                        f1 = f1 + zdhist(m,j,i,hist_len-4) * fhist(m,j,hist_len-4) * MassInv(j)
+                        s1 = s1 + zdhist(m,j,i,hist_len-4) * shist(m,j,hist_len-4) * MassInv(j)
+                        v1 = v1 + (1.0d0/60.0d0)*( +1.0d0*zdhist(m,j,i,hist_len-1)  -9.0d0*zdhist(m,j,i,hist_len-2) &
+                                                  +45.0d0*zdhist(m,j,i,hist_len-3) -45.0d0*zdhist(m,j,i,hist_len-5) &
+                                                   +9.0d0*zdhist(m,j,i,hist_len-6)  -1.0d0*zdhist(m,j,i,hist_len-7)) &
+                                                * vhist(m,j,hist_len-4)
+                        fidx = -4
+                    case default
+                        call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented abf_p2_px in abf_core_vv_force_2pF!')
+                end select
+            end do
+        end do
+        pxif(i) = f1
+        pxis(i) = 0.5d0*(s1+r1)
+        pxiv(i) = v1*ifdtx
+        !write(23568,*) fstep, f1, s1, r1
+    end do
+
+    ! write(78948,*) fstep, pxif(1), pxis(1)
+
+    ! subroutine abf_core_register_rawdata(cvs,ficf,sicf,vicf,bicf,epot,erst,ekin)
+    call abf_core_register_rawdata(cvhist(:,hist_len+fidx),pxif,pxis,pxiv,micfhist(:,hist_len+fidx), &
+                           epothist(hist_len+fidx),ersthist(hist_len+fidx),ekinhist(hist_len+fidx))
+
+end subroutine abf_core_vv_force_2pF
 
 !===============================================================================
 ! Subroutine:  abf_core_vv_force_2pV

@@ -236,6 +236,9 @@ real(PMFDP),allocatable     :: vint(:,:)
 
 integer                     :: hist_len
 real(PMFDP),allocatable     :: cvhist(:,:)          ! history of CV values (nCVS,hist_len)
+real(PMFDP),allocatable     :: fhist(:,:,:)         ! history of forces
+real(PMFDP),allocatable     :: shist(:,:,:)         ! history of forces
+real(PMFDP),allocatable     :: rhist(:,:,:)         ! history of forces
 real(PMFDP),allocatable     :: vhist(:,:,:)         ! history of velocities
 real(PMFDP),allocatable     :: zdhist(:,:,:,:)      ! history of ZD
 real(PMFDP),allocatable     :: cvderhist(:,:,:,:)   ! history of CV derivatives

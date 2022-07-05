@@ -78,6 +78,29 @@ subroutine abf_core_lf_main
 end subroutine abf_core_lf_main
 
 !===============================================================================
+! Subroutine:  abf_core_lf_shake
+! forces from SHAKE
+!===============================================================================
+
+subroutine abf_core_lf_shake
+
+    use abf_dat
+    use pmf_utils
+    ! --------------------------------------------------------------------------
+
+    select case(fmode)
+        case(1,2,4,5)
+            ! ignored
+        case(3)
+            ! get forces from SHAKE
+            shist(:,:,hist_len) = SHAKEFrc(:,:)
+        case default
+            call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented fmode in abf_core_lf_shake!')
+    end select
+
+end subroutine abf_core_lf_shake
+
+!===============================================================================
 ! Subroutine:  abf_core_lf_force_3pV1
 ! this is leap-frog ABF version, simplified algorithm
 ! ICF from velocities + decomposition

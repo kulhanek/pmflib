@@ -119,6 +119,15 @@ real(PMFDP),allocatable     :: CrdP(:,:)        ! coordinates in t+dt
 real(PMFDP),allocatable     :: VelP(:,:)        ! velocities
 type(CVContextType)         :: CVContextP
 
+logical                     :: shake_force_required         ! we need force due to SHAKE
+logical                     :: rattle_force_required        ! we need force due to RATTLE
+
+real(PMFDP),allocatable     :: CrdBar(:,:)      ! coordinates in t+dt without SHAKE
+real(PMFDP),allocatable     :: SHAKEFrc(:,:)    ! current SHAKE forces in t+dt - after PotForce
+
+real(PMFDP),allocatable     :: VelBar(:,:)      ! velocities in t+dt without RATTLE
+real(PMFDP),allocatable     :: RATTLEFrc(:,:)   ! current RATTLE forces in t+dt - before PotForce
+
 ! MASTER =======================================================================
 
 ! file names -------------------------------------------------------------------

@@ -54,8 +54,6 @@ implicit none
 type PMFSanderEnergy
     ! input
     real(PMFDP)             :: epot     ! potential energy in t
-    integer                 :: intmode  ! 0 - LF
-                                        ! 1 - VV
     type(PMFKineticEnergy)  :: ekin     ! kinetic energy in various times
 
     ! output
@@ -398,6 +396,7 @@ subroutine pmf_sander_force(anatom,x,v,f,spmfene)
     use pmf_core_vv
     use pmf_timers
     use pmf_dat
+    use pmf_utils
 
     implicit none
     integer                 :: anatom       ! number of atoms
@@ -419,6 +418,7 @@ subroutine pmf_sander_force(anatom,x,v,f,spmfene)
             call pmf_core_lf_update_step
             call pmf_core_lf_force(x,v,f,spmfene%epot,spmfene%ekin,spmfene%erst)
         case default
+            call pmf_utils_exit(PMF_OUT,1,'[SANDER-DRIVER] fintalg not implemented pmf_sander_force!')
     end select
 
     call pmf_timers_stop_timer(PMFLIB_TIMER)
@@ -475,34 +475,90 @@ subroutine pmf_sander_num_of_pmflib_cst(numofcst)
 end subroutine pmf_sander_num_of_pmflib_cst
 
 !===============================================================================
-! Subroutine: pmf_sander_constraints
+! Subroutine: pmf_sander_shake
 !===============================================================================
 
-subroutine pmf_sander_constraints(anatom,x,modified)
+subroutine pmf_sander_shake(anatom,xbar,x,modified)
 
     use pmf_sizes
     use pmf_dat
-    use pmf_core_lf
     use pmf_timers
     use pmf_utils
+    use pmf_core_lf
+    use pmf_core_vv
 
     implicit none
     integer        :: anatom            ! number of atoms
+    real(PMFDP)    :: xbar(3,anatom)    ! positions in t+dt - without shake
     real(PMFDP)    :: x(3,anatom)       ! positions in t+dt
     logical        :: modified          ! was constraint applied?
     ! --------------------------------------------------------------------------
 
     modified = .false.
-    if( .not. cst_enabled) return
+    if( .not. (cst_enabled .or. shake_force_required) ) return
 
     call pmf_timers_start_timer(PMFLIB_TIMER)
-    call pmf_core_lf_shake(x)
+
+    select case(fintalg)
+        case(IA_VEL_VERLET)
+            call pmf_core_vv_shake(x)
+            if( shake_force_required .and. (fshake .or. cst_enabled) ) then
+                call pmf_core_vv_shake_forces(xbar,x)
+            end if
+        case(IA_LEAP_FROG)
+            call pmf_core_lf_shake(x)
+            if( shake_force_required .and. (fshake .or. cst_enabled) ) then
+                call pmf_core_lf_shake_forces(xbar,x)
+            end if
+        case default
+            call pmf_utils_exit(PMF_OUT,1,'[SANDER-DRIVER] fintalg not implemented in pmf_sander_shake!')
+    end select
+
     call pmf_timers_stop_timer(PMFLIB_TIMER)
 
     modified = cst_enabled
     return
 
-end subroutine pmf_sander_constraints
+end subroutine pmf_sander_shake
+
+!===============================================================================
+! Subroutine: pmf_sander_rattle
+!===============================================================================
+
+subroutine pmf_sander_rattle(anatom,x,vbar,v)
+
+    use pmf_sizes
+    use pmf_dat
+    use pmf_timers
+    use pmf_utils
+    use pmf_core_vv
+
+    implicit none
+    integer        :: anatom            ! number of atoms
+    real(PMFDP)    :: x(3,anatom)       ! positions in t+dt
+    real(PMFDP)    :: vbar(3,anatom)    ! velocities in t+dt - without rattle
+    real(PMFDP)    :: v(3,anatom)       ! velocities in t+dt
+    ! --------------------------------------------------------------------------
+
+    if( .not. (cst_enabled .or. rattle_force_required) ) return
+
+    call pmf_timers_start_timer(PMFLIB_TIMER)
+
+    select case(fintalg)
+        case(IA_VEL_VERLET)
+            call pmf_core_vv_rattle(x,v)
+            if( rattle_force_required .and. (fshake .or. cst_enabled) ) then
+                call pmf_core_vv_rattle_forces(vbar,v)
+            end if
+        case default
+            call pmf_utils_exit(PMF_OUT,1,'[SANDER-DRIVER] fintalg not implemented in pmf_sander_rattle!')
+    end select
+
+    call pmf_timers_stop_timer(PMFLIB_TIMER)
+
+    return
+
+end subroutine pmf_sander_rattle
 
 #ifdef MPI
 

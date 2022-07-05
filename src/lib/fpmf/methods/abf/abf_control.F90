@@ -77,7 +77,15 @@ subroutine abf_control_read_abf(prm_fin)
         return
     end if
 
-    if( (fmode .eq. 4) .or. (fmode .eq. 5) ) then
+    if( fmode .eq. 3 ) then
+        shake_force_required    = .true.
+        rattle_force_required   = .true.
+    end if
+
+    if( (fmode .eq. 3) .or. (fmode .eq. 4) .or. (fmode .eq. 1) ) then
+        call pmf_ctrl_read_integer(prm_fin,'abf_p2_px',abf_p2_px,'I12')
+    end if
+    if( fmode .eq. 5 ) then
         call pmf_ctrl_read_integer(prm_fin,'abf_p2_vx',abf_p2_vx,'I12')
         call pmf_ctrl_read_integer(prm_fin,'abf_p2_px',abf_p2_px,'I12')
     end if
