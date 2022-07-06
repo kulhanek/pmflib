@@ -477,9 +477,7 @@ subroutine abf_core_lf_force_2pV()
         select case(abf_p2_vx)
         case(2)
             ! -1
-            ! vint(:,:) = vhist(:,:,hist_len-1) ! 0.5d0*(vhist(:,:,hist_len-0)+vhist(:,:,hist_len-1))
-            !vint(:,:) =  0.5d0*(vhist(:,:,hist_len-0)+vhist(:,:,hist_len-1))
-            vint(:,:) =  vhist(:,:,hist_len-0)
+            vint(:,:) =  0.5d0*(vhist(:,:,hist_len-0)+vhist(:,:,hist_len-1))
             vidx =-1
         case(3)
             ! -1
@@ -511,10 +509,6 @@ subroutine abf_core_lf_force_2pV()
         end do
         pxia(i) = v
     end do
-
-    !if( fdebug ) then
-        write(14789,*) fstep, pxia
-    !end if
 
     if( abf_clear_shaken_cvvel ) then
         do i=abfaccu%tot_cvs+1,NumOfABFCVs
