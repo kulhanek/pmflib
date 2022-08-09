@@ -605,7 +605,7 @@ subroutine pmf_sander_force_mpi(anatom,x,v,f,spmfene)
             write(PMF_DEBUG+fmytaskid,*)
         end if
         call pmf_core_lf_update_step
-        call pmf_core_lf_force(tmp_a,tmp_b,tmp_c,spmfene%epot,spmfene%ekinvv,spmfene%ekinlf,spmfene%ekinv4,spmfene%erst)
+        call pmf_core_lf_force(tmp_a,tmp_b,tmp_c,spmfene%epot,spmfene%ekin,spmfene%erst)
     end if
 
     ! update data

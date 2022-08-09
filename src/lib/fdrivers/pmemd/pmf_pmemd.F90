@@ -423,7 +423,7 @@ end subroutine pmf_pmemd_constraints
 ! subroutine pmf_pmemd_force_mpi
 !===============================================================================
 
-subroutine pmf_pmemd_force_mpi(x,v,f,epot,ekin,epmf,atm_owner_map)
+subroutine pmf_pmemd_force_mpi(x,v,f,spmfene,atm_owner_map)
 
     use pmf_sizes
     use pmf_core_lf
@@ -436,13 +436,11 @@ subroutine pmf_pmemd_force_mpi(x,v,f,epot,ekin,epmf,atm_owner_map)
 
 INCLUDE 'mpif.h'
 
-    real(PMFDP)    :: x(:,:)            ! in
-    real(PMFDP)    :: v(:,:)            ! in
-    real(PMFDP)    :: f(:,:)            ! inout
-    real(PMFDP)    :: epot              ! in
-    real(PMFDP)    :: ekin              ! in
-    real(PMFDP)    :: epmf              ! out
-    integer        :: atm_owner_map(:)  ! in - atom map among processes
+    real(PMFDP)             :: x(:,:)           ! in
+    real(PMFDP)             :: v(:,:)           ! in
+    real(PMFDP)             :: f(:,:)           ! inout
+    type(PMFPMEMDEnergy)    :: spmfene          ! inout
+    integer                 :: atm_owner_map(:) ! in - atom map among processes
     ! ------------------------------------------------------
     integer        :: i, ierr
     ! --------------------------------------------------------------------------
@@ -466,7 +464,7 @@ INCLUDE 'mpif.h'
         end if
 
         call pmf_core_lf_update_step
-        call pmf_core_lf_force(tmp_a,tmp_b,tmp_c,epot,ekin,0.0d0,epmf)
+        call pmf_core_lf_force(tmp_a,tmp_b,tmp_c,spmfene%epot,spmfene%ekin,spmfene%erst)
     end if
 
     ! broadcast MD exit status

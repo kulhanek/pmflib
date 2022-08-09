@@ -15,7 +15,6 @@ INCLUDE(CTest)
 SET(LIBS_SHARED             ON  CACHE BOOL "Should the shared version of pmflib library be built?")
 SET(LIBS_STATIC             OFF CACHE BOOL "Should the static version of pmflib library be built?")
 
-SET(PMFLIB_HAVE_XBPLIB      OFF CACHE BOOL "Is XBPLib available?")
 SET(PMFLIB_NETWORK          ON  CACHE BOOL "Is network available")
 SET(PMFLIB_COMPILE_FPMF     ON  CACHE BOOL "Should the fortran part of pmflib be built?")
 SET(PMFLIB_HAVE_RPATH       ON  CACHE BOOL "Is rpath option supported by linker?")
@@ -126,18 +125,6 @@ SET(CSPARSE_LIB_NAME csparse)
 SET(LBFGS_ROOT ${DEVELOPMENT_ROOT}/thirdparty/lbfgs/1.0)
 LINK_DIRECTORIES(${LBFGS_ROOT}/lib)
 SET(LBFGS_LIB_NAME flbfgs)
-
-IF(PMFLIB_HAVE_XBPLIB)
-    # XBPLib ===================
-    SET(XBPLIB_ROOT ${DEVELOPMENT_ROOT}/projects/xbplib/4.0)
-    INCLUDE_DIRECTORIES(${XBPLIB_ROOT}/src/lib/xcore)
-    INCLUDE_DIRECTORIES(${XBPLIB_ROOT}/src/lib/xfiles)
-    INCLUDE_DIRECTORIES(${XBPLIB_ROOT}/src/lib/xene)
-    LINK_DIRECTORIES(${XBPLIB_ROOT}/lib)
-    SET(XBPLIB_XCORE_LIB_NAME xcore)
-    SET(XBPLIB_XFILES_LIB_NAME xfiles)
-    SET(XBPLIB_XENE_LIB_NAME xene)
-ENDIF(PMFLIB_HAVE_XBPLIB)
 
 # setup IntelCDK if available
 INCLUDE(IntelCDK)
