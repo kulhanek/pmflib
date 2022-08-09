@@ -1,6 +1,7 @@
 !===============================================================================
 ! PMFLib - Library Supporting Potential of Mean Force Calculations
 !-------------------------------------------------------------------------------
+!    Copyright (C) 2022 Petr Kulhanek, kulhanek@chemi.muni.cz
 !    Copyright (C) 2010,2011 Petr Kulhanek, kulhanek@chemi.muni.cz
 !    Copyright (C) 2007,2008 Petr Kulhanek, kulhanek@enzim.hu
 !
@@ -20,9 +21,23 @@
 !    Boston, MA  02110-1301  USA
 !===============================================================================
 
-module pmf_pmemd_new
+module pmf_pmemd
+
+use pmf_sizes
+use pmf_kinene
 
 implicit none
+
+! energy blob
+type PMFPMEMDEnergy
+    ! input
+    real(PMFDP)             :: epot     ! potential energy in t
+    type(PMFKineticEnergy)  :: ekin     ! kinetic energy in various times
+
+    ! output
+    real(PMFDP)             :: erst     ! PMF restrain energy in t
+end type PMFPMEMDEnergy
+
 contains
 
 #ifdef MPI
@@ -57,8 +72,8 @@ subroutine pmf_pmemd_init_preinit(mdin,anatom,anres, &
     use pmf_dat
     use pmf_init
     use pmf_utils
-    use pmf_pmemd_new_dat
-    use pmf_pmemd_new_control
+    use pmf_pmemd_dat
+    use pmf_pmemd_control
     use pmf_pbc
     use pmf_core
     use pmf_mask
@@ -161,7 +176,7 @@ subroutine pmf_pmemd_finalize_preinit(amass,ax)
     use pmf_mask
     use pmf_core
     use pmf_init
-    use pmf_pmemd_new_control
+    use pmf_pmemd_control
     use pmf_utils
 
     implicit none
@@ -228,7 +243,7 @@ subroutine pmf_pmemd_init(amass,ax)
     use pmf_init
     use pmf_dat
     use cst_init
-    use pmf_pmemd_new_control
+    use pmf_pmemd_control
 
     implicit none
     real(PMFDP)    :: amass(:)
@@ -280,7 +295,7 @@ end subroutine pmf_pmemd_shouldexit
 subroutine pmf_pmemd_bcast_dat_mpi()
 
     use pmf_init
-    use pmf_pmemd_new_dat
+    use pmf_pmemd_dat
     use pmf_dat
     use pmf_utils
 
@@ -348,7 +363,7 @@ end subroutine pmf_pmemd_update_box
 ! subroutine pmf_pmemd_force
 !===============================================================================
 
-subroutine pmf_pmemd_force(x,v,f,epot,ekin,epmf)
+subroutine pmf_pmemd_force(x,v,f,spmfene)
 
     use pmf_sizes
     use pmf_core_lf
@@ -356,22 +371,19 @@ subroutine pmf_pmemd_force(x,v,f,epot,ekin,epmf)
     use pmf_timers
 
     implicit none
-    real(PMFDP)    :: x(:,:)            ! in
-    real(PMFDP)    :: v(:,:)            ! in
-    real(PMFDP)    :: f(:,:)            ! inout
-    real(PMFDP)    :: epot              ! in
-    real(PMFDP)    :: ekin              ! in
-    real(PMFDP)    :: epmf              ! out
-    type(PMFKineticEnergy)      :: lKinEne
+    real(PMFDP)             :: x(:,:)   ! in
+    real(PMFDP)             :: v(:,:)   ! in
+    real(PMFDP)             :: f(:,:)   ! inout
+    type(PMFPMEMDEnergy)    :: spmfene  ! inout
     ! --------------------------------------------------------------------------
 
     if( .not. fmaster ) return
 
-    lKinEne%KinEneVV = ekin
+    spmfene%erst = 0.0d0
 
     call pmf_timers_start_timer(PMFLIB_TIMER)
     call pmf_core_lf_update_step
-    call pmf_core_lf_force(x,v,f,epot,lKinEne,epmf)
+    call pmf_core_lf_force(x,v,f,spmfene%epot,spmfene%ekin,spmfene%erst)
     call pmf_timers_stop_timer(PMFLIB_TIMER)
 
 end subroutine pmf_pmemd_force
@@ -415,7 +427,7 @@ subroutine pmf_pmemd_force_mpi(x,v,f,epot,ekin,epmf,atm_owner_map)
 
     use pmf_sizes
     use pmf_core_lf
-    use pmf_pmemd_new_dat
+    use pmf_pmemd_dat
     use pmf_dat
     use pmf_timers
     use pmf_utils
@@ -481,7 +493,7 @@ subroutine pmf_pmemd_constraints_mpi(x,modified,atm_owner_map)
     use pmf_sizes
     use pmf_dat
     use pmf_core_lf
-    use pmf_pmemd_new_dat
+    use pmf_pmemd_dat
     use pmf_dat
     use pmf_timers
 
@@ -630,7 +642,7 @@ subroutine pmf_pmemd_mpistat
 
     use pmf_constants
     use pmf_dat
-    use pmf_pmemd_new_dat
+    use pmf_pmemd_dat
 
     implicit none
     integer           :: i
@@ -680,7 +692,7 @@ subroutine pmf_pmemd_gather_array_mpi(lx,x,atm_owner_map)
 
     use pmf_dat
     use pmf_utils
-    use pmf_pmemd_new_dat
+    use pmf_pmemd_dat
 
     implicit none
 
@@ -810,7 +822,7 @@ subroutine pmf_pmemd_scatter_array_mpi(lx,x,atm_owner_map)
 
     use pmf_dat
     use pmf_utils
-    use pmf_pmemd_new_dat
+    use pmf_pmemd_dat
 
     implicit none
 
@@ -929,7 +941,7 @@ end subroutine pmf_pmemd_scatter_array_mpi
 
 !===============================================================================
 
-end module pmf_pmemd_new
+end module pmf_pmemd
 
 
 

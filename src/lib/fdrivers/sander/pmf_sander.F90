@@ -1,6 +1,7 @@
 !===============================================================================
 ! PMFLib - Library Supporting Potential of Mean Force Calculations
 !-------------------------------------------------------------------------------
+!    Copyright (C) 2022 Petr Kulhanek, kulhanek@chemi.muni.cz
 !    Copyright (C) 2010,2011 Petr Kulhanek, kulhanek@chemi.muni.cz
 !    Copyright (C) 2007,2008 Petr Kulhanek, kulhanek@enzim.hu
 !
@@ -57,7 +58,7 @@ type PMFSanderEnergy
     type(PMFKineticEnergy)  :: ekin     ! kinetic energy in various times
 
     ! output
-    real(PMFDP)             :: erst                 ! PMF restrain energy in t
+    real(PMFDP)             :: erst     ! PMF restrain energy in t
 end type PMFSanderEnergy
 
 contains

@@ -1,6 +1,7 @@
 !===============================================================================
 ! PMFLib - Library Supporting Potential of Mean Force Calculations
 !-------------------------------------------------------------------------------
+!    Copyright (C) 2022 Petr Kulhanek, kulhanek@chemi.muni.cz
 !    Copyright (C) 2010,2011 Petr Kulhanek, kulhanek@chemi.muni.cz
 !    Copyright (C) 2007,2008 Petr Kulhanek, kulhanek@enzim.hu
 !
@@ -16,11 +17,11 @@
 !
 !    You should have received a copy of the GNU Lesser General Public
 !    License along with this library; if not, write to the Free Software
-!    Foundation, Inc., 51 Franklin Street, Fifth Floor, 
+!    Foundation, Inc., 51 Franklin Street, Fifth Floor,
 !    Boston, MA  02110-1301  USA
 !===============================================================================
 
-module pmf_pmemd_new_dat
+module pmf_pmemd_dat
 
 use prmfile_dat
 use pmf_sizes
@@ -54,4 +55,4 @@ integer(8)                      :: numofchunkgaps       ! related to FATAL-ERROR
 !-------------------------------------------------------------------------------
 !===============================================================================
 
-end module pmf_pmemd_new_dat
+end module pmf_pmemd_dat

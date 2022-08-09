@@ -1,6 +1,7 @@
 !===============================================================================
 ! PMFLib - Library Supporting Potential of Mean Force Calculations
 !-------------------------------------------------------------------------------
+!    Copyright (C) 2022 Petr Kulhanek, kulhanek@chemi.muni.cz
 !    Copyright (C) 2010,2011 Petr Kulhanek, kulhanek@chemi.muni.cz
 !    Copyright (C) 2007,2008 Petr Kulhanek, kulhanek@enzim.hu
 !
@@ -16,11 +17,11 @@
 !
 !    You should have received a copy of the GNU Lesser General Public
 !    License along with this library; if not, write to the Free Software
-!    Foundation, Inc., 51 Franklin Street, Fifth Floor, 
+!    Foundation, Inc., 51 Franklin Street, Fifth Floor,
 !    Boston, MA  02110-1301  USA
 !===============================================================================
 
-module pmf_pmemd_new_control
+module pmf_pmemd_control
 
 implicit none
 contains
@@ -32,7 +33,7 @@ contains
 subroutine pmf_pmemd_process_control
 
     use pmf_constants
-    use pmf_pmemd_new_dat
+    use pmf_pmemd_dat
     use prmfile
     use pmf_utils
     use pmf_control
@@ -81,7 +82,7 @@ end subroutine pmf_pmemd_process_control
 subroutine pmf_pmemd_read_pmemd
 
     use pmf_constants
-    use pmf_pmemd_new_dat
+    use pmf_pmemd_dat
     use prmfile
     use pmf_utils
 
@@ -115,4 +116,4 @@ end subroutine pmf_pmemd_read_pmemd
 !-------------------------------------------------------------------------------
 !===============================================================================
 
-end module pmf_pmemd_new_control
+end module pmf_pmemd_control
