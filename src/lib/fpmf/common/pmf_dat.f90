@@ -55,7 +55,7 @@ integer     :: fnumoftasks  = 0         ! number of tasks
 integer     :: fnatoms      ! total number of atoms
 integer     :: fnstlim      ! length of simulation in steps
 integer     :: fstep        ! current MD step
-integer     :: fsystype     ! system type (NT,NTV,NTP)
+integer     :: fsystype     ! system type (NT,NVT,NpT)
 real(PMFDP) :: fdt          ! dt of step in [fs]
 real(PMFDP) :: ftime        ! actual time in [fs]
 real(PMFDP) :: ftemp        ! simulation temperature in [K]

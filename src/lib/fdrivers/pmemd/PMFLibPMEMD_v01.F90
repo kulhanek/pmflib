@@ -1,3 +1,4 @@
+#if defined PMFLIB
 !===============================================================================
 ! PMFLib - Library Supporting Potential of Mean Force Calculations
 !-------------------------------------------------------------------------------
@@ -554,3 +555,4 @@ end subroutine pmf_pmemd_get_dlerror
 !===============================================================================
 
 end module PMFLibPMEMD
+#endif
