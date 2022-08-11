@@ -26,19 +26,25 @@
 
 module pmf_sizes
 
+use iso_c_binding
 implicit none
 
 !===============================================================================
 
+integer,parameter       :: PMF_MAX_PATH         = 4096      ! max file name
+integer,parameter       :: PMF_MAX_SUNIT        = 50
+integer,parameter       :: PMF_MAX_CV_NAME      = 50
+integer,parameter       :: PMF_MAX_TYPE         = 10
+integer,parameter       :: PMF_MAX_MODE         = 1
+integer,parameter       :: PMF_MAX_KEY          = 20
+integer,parameter       :: PMF_KEYLINE          = 80
+integer,parameter       :: PMF_MAX_MASK_NAME    = 4
+
 integer,parameter       :: PMFDP            = 8         ! double precision
 integer,parameter       :: PMFSP            = 4         ! float
-integer,parameter       :: PMF_MAX_PATH     = 1024      ! max file name
-integer,parameter       :: PMF_MAX_SUNIT    = 50
-integer,parameter       :: PMF_MAX_CV_NAME  = 50
-integer,parameter       :: PMF_MAX_TYPE     = 10
-integer,parameter       :: PMF_MAX_MODE     = 1
-integer,parameter       :: PMF_MAX_KEY      = 20
-integer,parameter       :: PMF_KEYLINE      = 80
+integer, parameter      :: CPMFDP           = c_double
+integer, parameter      :: CPMFINT          = c_int
+integer, parameter      :: CPMFCHAR         = c_char
 
 ! ------------------------------------------------------------------------------
 

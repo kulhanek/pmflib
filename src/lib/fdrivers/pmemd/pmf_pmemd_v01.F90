@@ -21,77 +21,101 @@
 !    Boston, MA  02110-1301  USA
 !===============================================================================
 
-module pmf_pmemd
+module pmf_pmemd_v01
 
 use pmf_sizes
-use pmf_kinene
+use iso_c_binding
 
 implicit none
 
-! energy blob
-type PMFPMEMDEnergy
-    ! input
-    real(PMFDP)             :: epot     ! potential energy in t
-    type(PMFKineticEnergy)  :: ekin     ! kinetic energy in various times
+! interface binding check
+integer, parameter              :: PMFLIB_CHECK_INT1 = 1089523658
+real(PMFDP), parameter          :: PMFLIB_CHECK_R81  = 1.78493547
+character(len=10), parameter    :: PMFLIB_CHECK_STR1 = 'PMFLib v06'
 
-    ! output
-    real(PMFDP)             :: erst     ! PMF restrain energy in t
-end type PMFPMEMDEnergy
+! energy array
+integer, parameter          :: PMFLIB_ERST      = 1
+integer, parameter          :: PMFLIB_EPOT      = 2
+integer, parameter          :: PMFLIB_EKIN_VV   = 3
+integer, parameter          :: PMFLIB_EKIN_LF   = 4
+integer, parameter          :: PMFLIB_EKIN_HA   = 5
+integer, parameter          :: PMFLIB_ENE_SIZE  = PMFLIB_EKIN_HA
 
 contains
 
-#ifdef MPI
 !===============================================================================
-! subroutine pmf_pmemd_init_taskid_mpi
+!-------------------------------------------------------------------------------
 !===============================================================================
 
-subroutine pmf_pmemd_init_taskid_mpi(mytaskid,numoftasks)
+subroutine pmf_pmemd_check_interface(rnum,inum,ene_len,str,str_len) bind(c,name='int_pmf_pmemd_check_interface')
 
-    use pmf_init
+    use pmf_constants
+    use pmf_utils
 
     implicit none
-    integer        :: mytaskid
-    integer        :: numoftasks
+    real(CPMFDP)        :: rnum
+    integer(CPMFINT)    :: inum
+    integer(CPMFINT)    :: ene_len
+    character(CPMFCHAR) :: str(*)
+    integer(CPMFINT)    :: str_len
+    ! -------------------------------------------
+    integer             :: i
     ! --------------------------------------------------------------------------
 
-    call pmf_init_taskid_mpi(mytaskid,numoftasks)
+    if( rnum .ne. PMFLIB_CHECK_R81 ) then
+        call pmf_utils_exit(PMF_OUT,1,'Driver interface compromised for PMFLIB_CHECK_R81!')
+    end if
+    if( inum .ne. PMFLIB_CHECK_INT1 ) then
+        call pmf_utils_exit(PMF_OUT,1,'Driver interface compromised for PMFLIB_CHECK_INT1!')
+    end if
+    if( ene_len .ne. PMFLIB_ENE_SIZE ) then
+        call pmf_utils_exit(PMF_OUT,1,'Driver interface compromised for PMFLIB_ENE_SIZE!')
+    end if
+    if( str_len .ne. len(PMFLIB_CHECK_STR1) ) then
+        call pmf_utils_exit(PMF_OUT,1,'Driver interface compromised for len(PMFLIB_CHECK_STR1)!')
+    end if
+    do i=1,min(str_len,len(PMFLIB_CHECK_STR1))
+        if( str(i) .ne. PMFLIB_CHECK_STR1(i:i) ) then
+            call pmf_utils_exit(PMF_OUT,1,'Driver interface compromised for PMFLIB_CHECK_STR1!')
+        end if
+    end do
 
-end subroutine pmf_pmemd_init_taskid_mpi
-!===============================================================================
-#endif
+end subroutine pmf_pmemd_check_interface
 
 !===============================================================================
 ! subroutine pmf_pmemd_init_preinit
 !===============================================================================
 
-subroutine pmf_pmemd_init_preinit(mdin,anatom,anres, &
-                            antb,ansteps,astepsize,atemp0, &
-                            box_a,box_b,box_c,box_alpha,box_beta,box_gamma)
+subroutine pmf_pmemd_init_preinit(mdin,mdin_len,anatom,anres,   &
+                            antb,ansteps,astepsize,atemp0,      &
+                            box_a,box_b,box_c,                  &
+                            box_alpha,box_beta,box_gamma) bind(c,name='int_pmf_pmemd_init_preinit')
 
     use pmf_utils
     use pmf_dat
     use pmf_init
     use pmf_utils
-    use pmf_pmemd_dat
-    use pmf_pmemd_control
+    use pmf_pmemd_dat_v01
+    use pmf_pmemd_control_v01
     use pmf_pbc
     use pmf_core
     use pmf_mask
     use pmf_timers
 
     implicit none
-    character(*)   :: mdin
-    integer        :: anatom                       ! number of atoms in AMBER topology
-    integer        :: anres                        ! number of residues in AMBER topology
-    integer        :: antb                         ! BOX type
-    integer        :: ansteps                      ! number of MD steps
-    real(PMFDP)    :: astepsize                    ! step size
-    real(PMFDP)    :: atemp0                       ! temperature
-    real(PMFDP)    :: box_a,box_b,box_c            ! box dimmensions
-    real(PMFDP)    :: box_alpha,box_beta,box_gamma
+    character(CPMFCHAR) :: mdin(*)
+    integer(CPMFINT)    :: mdin_len
+    integer(CPMFINT)    :: anatom                       ! number of atoms in AMBER topology
+    integer(CPMFINT)    :: anres                        ! number of residues in AMBER topology
+    integer(CPMFINT)    :: antb                         ! BOX type
+    integer(CPMFINT)    :: ansteps                      ! number of MD steps
+    real(CPMFDP)        :: astepsize                    ! step size
+    real(CPMFDP)        :: atemp0                       ! temperature
+    real(CPMFDP)        :: box_a,box_b,box_c            ! box dimensions
+    real(CPMFDP)        :: box_alpha,box_beta,box_gamma
     ! ------------------------------------------------------
-    integer        :: has_box
-    real(PMFDP)    :: cbox(3)
+    integer             :: has_box, i
+    real(PMFDP)         :: cbox(3)
     ! --------------------------------------------------------------------------
 
     if( .not. fmaster ) return
@@ -105,7 +129,10 @@ subroutine pmf_pmemd_init_preinit(mdin,anatom,anres, &
     EnergyConv       = 1.0d0               ! kcal/mol -> kcal/mol
     ForceConv        = 1.0d0               ! kcal/mol/A -> kcal/mol/A
 
-    ControlFileName  = mdin
+    ControlFileName = ''
+    do i=1,min(mdin_len,len(ControlFileName))
+        ControlFileName(i:i)  = mdin(i)
+    end do
 
     ! init timers
     call pmf_timers_init_top()
@@ -129,20 +156,29 @@ end subroutine pmf_pmemd_init_preinit
 ! subroutine pmf_pmemd_set_residue
 !===============================================================================
 
-subroutine pmf_pmemd_set_residue(idx,name,first_atom)
+subroutine pmf_pmemd_set_residue(idx,name,name_len,first_atom) bind(c,name='int_pmf_pmemd_set_residue')
 
     use pmf_mask
     use pmf_dat
 
     implicit none
-    integer            :: idx
-    character(*)       :: name
-    integer            :: first_atom
+    integer(CPMFINT)    :: idx
+    character(CPMFCHAR) :: name(*)
+    integer(CPMFINT)    :: name_len
+    integer(CPMFINT)    :: first_atom
+    ! -------------------------------------------
+    character(len=PMF_MAX_MASK_NAME)    :: lname
+    integer                             :: i
     ! --------------------------------------------------------------------------
 
     if( .not. fmaster ) return
 
-    call pmf_mask_set_topo_residue(idx,name,first_atom)
+    lname=''
+    do i=1,min(name_len,PMF_MAX_MASK_NAME)
+        lname(i:i) = name(i)
+    end do
+
+    call pmf_mask_set_topo_residue(idx,lname,first_atom)
 
 end subroutine pmf_pmemd_set_residue
 
@@ -150,17 +186,36 @@ end subroutine pmf_pmemd_set_residue
 ! subroutine pmf_pmemd_set_atom
 !===============================================================================
 
-subroutine pmf_pmemd_set_atom(idx,name,atype)
+subroutine pmf_pmemd_set_atom(idx,name,name_len,atype,atype_len) bind(c,name='int_pmf_pmemd_set_atom')
 
     use pmf_mask
+    use pmf_dat
 
     implicit none
-    integer            :: idx
-    character(*)       :: name
-    character(*)       :: atype
+    integer(CPMFINT)    :: idx
+    character(CPMFCHAR) :: name(*)
+    integer(CPMFINT)    :: name_len
+    character(CPMFCHAR) :: atype(*)
+    integer(CPMFINT)    :: atype_len
+    ! -------------------------------------------
+    character(len=PMF_MAX_MASK_NAME)    :: lname
+    character(len=PMF_MAX_MASK_NAME)    :: latype
+    integer                             :: i
     ! --------------------------------------------------------------------------
 
-    call pmf_mask_set_topo_atom(idx,name,atype)
+    if( .not. fmaster ) return
+
+    lname=''
+    do i=1,min(name_len,PMF_MAX_MASK_NAME)
+        lname(i:i) = name(i)
+    end do
+
+    latype=''
+    do i=1,min(atype_len,PMF_MAX_MASK_NAME)
+        latype(i:i) = atype(i)
+    end do
+
+    call pmf_mask_set_topo_atom(idx,lname,latype)
 
 end subroutine pmf_pmemd_set_atom
 
@@ -168,7 +223,7 @@ end subroutine pmf_pmemd_set_atom
 !-------------------------------------------------------------------------------
 !===============================================================================
 
-subroutine pmf_pmemd_finalize_preinit(amass,ax)
+subroutine pmf_pmemd_finalize_preinit(amass,ax) bind(c,name='int_pmf_pmemd_finalize_preinit')
 
     use pmf_constants
     use pmf_sizes
@@ -176,12 +231,12 @@ subroutine pmf_pmemd_finalize_preinit(amass,ax)
     use pmf_mask
     use pmf_core
     use pmf_init
-    use pmf_pmemd_control
+    use pmf_pmemd_control_v01
     use pmf_utils
 
     implicit none
-    real(PMFDP)    :: amass(:)
-    real(PMFDP)    :: ax(:,:)
+    real(CPMFDP)   :: amass(:)
+    real(CPMFDP)   :: ax(:,:)
     ! ------------------------------------------------------
     integer        :: i, alloc_failed
     ! --------------------------------------------------------------------------
@@ -202,52 +257,29 @@ subroutine pmf_pmemd_finalize_preinit(amass,ax)
     call pmf_mask_topo_finalize()
 
     ! print PMFLib header with system description
-    call pmf_init_title('PMEMD-NEW')
+    call pmf_init_title('PMEMD')
 
     ! load method setups and CVs definition
     call pmf_pmemd_process_control
 
 end subroutine pmf_pmemd_finalize_preinit
 
-#ifdef MPI
-!===============================================================================
-! subroutine pmf_pmemd_bcast_constraints_mpi
-!===============================================================================
-
-subroutine pmf_pmemd_bcast_constraints_mpi
-
-    use cst_init
-    use pmf_dat
-
-    implicit none
-    ! --------------------------------------------------------------------------
-
-    if( fdebug ) then
-        write(PMF_DEBUG+fmytaskid,*) 'PMFLib MPI: TaskID: ', fmytaskid
-    end if
-
-    ! this HAS TO BE called by all processes
-    call cst_init_mpi_bcast_constraints
-
-end subroutine pmf_pmemd_bcast_constraints_mpi
-#endif
-
 !===============================================================================
 !-------------------------------------------------------------------------------
 !===============================================================================
 
-subroutine pmf_pmemd_init(amass,ax)
+subroutine pmf_pmemd_init(amass,ax) bind(c,name='int_pmf_pmemd_init')
 
     use pmf_constants
     use pmf_sizes
     use pmf_init
     use pmf_dat
     use cst_init
-    use pmf_pmemd_control
+    use pmf_pmemd_control_v01
 
     implicit none
-    real(PMFDP)    :: amass(:)
-    real(PMFDP)    :: ax(:,:)
+    real(CPMFDP)   :: amass(:)
+    real(CPMFDP)   :: ax(:,:)
     ! --------------------------------------------------------------------------
 
     if( .not. fmaster ) return
@@ -266,14 +298,14 @@ end subroutine pmf_pmemd_init
 !-------------------------------------------------------------------------------
 !===============================================================================
 
-subroutine pmf_pmemd_shouldexit(exitcode)
+subroutine pmf_pmemd_shouldexit(exitcode) bind(c,name='int_pmf_pmemd_shouldexit')
 
     use pmf_constants
     use pmf_sizes
     use pmf_dat
 
     implicit none
-    integer        :: exitcode       ! MD loop exit code
+    integer(CPMFINT)    :: exitcode       ! MD loop exit code
     ! --------------------------------------------------------------------------
 
     ! we cannot bcast the value here as pmf_pmemd_shouldexit is called on master
@@ -286,16 +318,212 @@ subroutine pmf_pmemd_shouldexit(exitcode)
 
 end subroutine pmf_pmemd_shouldexit
 
+!===============================================================================
+! subroutine pmf_pmemd_update_box
+!===============================================================================
+
+subroutine pmf_pmemd_update_box(a,b,c,alpha,beta,gamma) bind(c,name='int_pmf_pmemd_update_box')
+
+    use pmf_dat
+    use pmf_pbc
+
+    real(CPMFDP)    :: a,b,c
+    real(CPMFDP)    :: alpha,beta,gamma
+    ! --------------------------------------------------------------------------
+
+    if( .not. fmaster ) return
+
+    if( fsystype .eq. SYS_NT ) return  ! no box -> return
+
+    call pmf_pbc_set_box(a,b,c,alpha,beta,gamma)
+
+end subroutine pmf_pmemd_update_box
+
+!===============================================================================
+! subroutine pmf_pmemd_force
+!===============================================================================
+
+subroutine pmf_pmemd_force(x,v,f,spmfene) bind(c,name='int_pmf_pmemd_force')
+
+    use pmf_sizes
+    use pmf_core_lf
+    use pmf_dat
+    use pmf_timers
+
+    implicit none
+    real(CPMFDP)    :: x(:,:)       ! in
+    real(CPMFDP)    :: v(:,:)       ! in
+    real(CPMFDP)    :: f(:,:)       ! inout
+    real(CPMFDP)    :: spmfene(:)   ! inout
+    ! -------------------------------------------
+    type(PMFKineticEnergy)  :: ekin
+    ! --------------------------------------------------------------------------
+
+    if( .not. fmaster ) return
+
+    spmfene(PMFLIB_ERST) = 0.0d0
+
+    ekin%KinEneVV = spmfene(PMFLIB_EKIN_VV)
+    ekin%KinEneLF = spmfene(PMFLIB_EKIN_LF)
+    ekin%KinEneHA = spmfene(PMFLIB_EKIN_HA)
+
+    call pmf_timers_start_timer(PMFLIB_TIMER)
+    call pmf_core_lf_update_step
+    call pmf_core_lf_force(x,v,f,spmfene(PMFLIB_EPOT),ekin,spmfene(PMFLIB_ERST))
+    call pmf_timers_stop_timer(PMFLIB_TIMER)
+
+end subroutine pmf_pmemd_force
+
+!===============================================================================
+! Subroutine: pmf_pmemd_constraints
+!===============================================================================
+
+subroutine pmf_pmemd_constraints(x,modified) bind(c,name='int_pmf_pmemd_constraints')
+
+    use pmf_sizes
+    use pmf_dat
+    use pmf_core_lf
+    use pmf_timers
+
+    implicit none
+    real(CPMFDP)        :: x(:,:)     ! positions in t+dt
+    integer(CPMFINT)    :: modified   ! was constraint applied?
+    ! --------------------------------------------------------------------------
+
+    if( .not. fmaster ) return
+
+    modified = 0
+    if( .not. cst_enabled ) return
+
+    call pmf_timers_start_timer(PMFLIB_TIMER)
+    call pmf_core_lf_shake(x)
+    call pmf_timers_stop_timer(PMFLIB_TIMER)
+
+    modified = 1
+
+end subroutine pmf_pmemd_constraints
+
+!===============================================================================
+! Subroutine: pmf_pmemd_cst_checkatom
+!===============================================================================
+
+function pmf_pmemd_cst_checkatom(atomid) bind(c,name='int_pmf_pmemd_cst_checkatom')
+
+    use pmf_dat
+    use cst_shake
+
+    implicit none
+    integer(CPMFINT)    :: pmf_pmemd_cst_checkatom
+    integer(CPMFINT)    :: atomid
+    ! --------------------------------------------------------------------------
+
+    pmf_pmemd_cst_checkatom = 0
+    if( .not. cst_enabled ) return
+
+    if( cst_shake_checkatom(atomid) ) pmf_pmemd_cst_checkatom = 1
+
+end function pmf_pmemd_cst_checkatom
+
+!===============================================================================
+! Subroutine: pmf_pmemd_cst_shake_allocate
+!===============================================================================
+
+subroutine pmf_pmemd_cst_shake_allocate(num) bind(c,name='int_pmf_pmemd_cst_shake_allocate')
+
+    use pmf_dat
+    use cst_shake
+
+    implicit none
+    integer(CPMFINT)    :: num ! number of shake constraints
+    ! --------------------------------------------------------------------------
+
+    if( .not. fmaster ) return
+    if( .not. cst_enabled ) return
+
+    call cst_shake_allocate(num)
+
+end subroutine pmf_pmemd_cst_shake_allocate
+
+!===============================================================================
+! Function:  pmf_pmemd_cst_set_shake
+!===============================================================================
+
+subroutine pmf_pmemd_cst_set_shake(id,at1,at2,value) bind(c,name='int_pmf_pmemd_cst_set_shake')
+
+    use pmf_sizes
+    use pmf_dat
+    use cst_shake
+
+    implicit none
+    integer(CPMFINT)    :: id       ! id of constraint
+    integer(CPMFINT)    :: at1      ! id of first atom
+    integer(CPMFINT)    :: at2      ! id of second atom
+    real(CPMFDP)        :: value    ! value of DS constraint
+    ! --------------------------------------------------------------------------
+
+    if( .not. fmaster ) return
+    if( .not. cst_enabled ) return
+
+    call cst_shake_set(id,at1,at2,value)
+
+end subroutine pmf_pmemd_cst_set_shake
+
+!===============================================================================
+! subroutine pmf_pmemd_finalize
+!===============================================================================
+
+subroutine pmf_pmemd_finalize() bind(c,name='int_pmf_pmemd_finalize')
+
+    use pmf_constants
+    use pmf_utils
+    use pmf_finalize
+    use pmf_timers
+    use pmf_dat
+
+    implicit none
+    ! --------------------------------------------------------------------------
+
+    if( .not. fmaster ) return
+
+    write(PMF_OUT,*)
+    call pmf_utils_heading(PMF_OUT,'PMF Library Finalization', '-')
 
 #ifdef MPI
+    call pmf_pmemd_mpistat
+#endif
+
+    call pmf_timers_stop_timer(PMFLIB_TOTAL_TIMER)
+    call pmf_finalize_all(.true.)
+
+end subroutine pmf_pmemd_finalize
+
+#ifdef MPI
+
+!===============================================================================
+! subroutine pmf_pmemd_init_taskid_mpi
+!===============================================================================
+
+subroutine pmf_pmemd_init_taskid_mpi(mytaskid,numoftasks) bind(c,name='int_pmf_pmemd_init_taskid_mpi')
+
+    use pmf_init
+
+    implicit none
+    integer(CPMFINT)    :: mytaskid
+    integer(CPMFINT)    :: numoftasks
+    ! --------------------------------------------------------------------------
+
+    call pmf_init_taskid_mpi(mytaskid,numoftasks)
+
+end subroutine pmf_pmemd_init_taskid_mpi
+
 !===============================================================================
 ! subroutine pmf_pmemd_bcast_dat_mpi
 !===============================================================================
 
-subroutine pmf_pmemd_bcast_dat_mpi()
+subroutine pmf_pmemd_bcast_dat_mpi() bind(c,name='int_pmf_pmemd_bcast_dat_mpi')
 
     use pmf_init
-    use pmf_pmemd_dat
+    use pmf_pmemd_dat_v01
     use pmf_dat
     use pmf_utils
 
@@ -336,98 +564,36 @@ subroutine pmf_pmemd_bcast_dat_mpi()
 end subroutine pmf_pmemd_bcast_dat_mpi
 
 !===============================================================================
-#endif
-
-!===============================================================================
-! subroutine pmf_pmemd_update_box
+! subroutine pmf_pmemd_bcast_constraints_mpi
 !===============================================================================
 
-subroutine pmf_pmemd_update_box(a,b,c,alpha,beta,gamma)
+subroutine pmf_pmemd_bcast_constraints_mpi() bind(c,name='int_pmf_pmemd_bcast_constraints_mpi')
 
+    use cst_init
     use pmf_dat
-    use pmf_pbc
-
-    real(PMFDP)    :: a,b,c
-    real(PMFDP)    :: alpha,beta,gamma
-    ! --------------------------------------------------------------------------
-
-    if( .not. fmaster ) return
-
-    if( fsystype .eq. SYS_NT ) return  ! no box -> return
-
-    call pmf_pbc_set_box(a,b,c,alpha,beta,gamma)
-
-end subroutine pmf_pmemd_update_box
-
-!===============================================================================
-! subroutine pmf_pmemd_force
-!===============================================================================
-
-subroutine pmf_pmemd_force(x,v,f,spmfene)
-
-    use pmf_sizes
-    use pmf_core_lf
-    use pmf_dat
-    use pmf_timers
 
     implicit none
-    real(PMFDP)             :: x(:,:)   ! in
-    real(PMFDP)             :: v(:,:)   ! in
-    real(PMFDP)             :: f(:,:)   ! inout
-    type(PMFPMEMDEnergy)    :: spmfene  ! inout
     ! --------------------------------------------------------------------------
 
-    if( .not. fmaster ) return
+    if( fdebug ) then
+        write(PMF_DEBUG+fmytaskid,*) 'PMFLib MPI: TaskID: ', fmytaskid
+    end if
 
-    spmfene%erst = 0.0d0
+    ! this HAS TO BE called by all processes
+    call cst_init_mpi_bcast_constraints
 
-    call pmf_timers_start_timer(PMFLIB_TIMER)
-    call pmf_core_lf_update_step
-    call pmf_core_lf_force(x,v,f,spmfene%epot,spmfene%ekin,spmfene%erst)
-    call pmf_timers_stop_timer(PMFLIB_TIMER)
+end subroutine pmf_pmemd_bcast_constraints_mpi
 
-end subroutine pmf_pmemd_force
-
-!===============================================================================
-! Subroutine: pmf_pmemd_constraints
-!===============================================================================
-
-subroutine pmf_pmemd_constraints(x,modified)
-
-    use pmf_sizes
-    use pmf_dat
-    use pmf_core_lf
-    use pmf_timers
-
-    implicit none
-    real(PMFDP)    :: x(:,:)     ! positions in t+dt
-    logical        :: modified   ! was constraint applied?
-    ! --------------------------------------------------------------------------
-
-    if( .not. fmaster ) return
-
-    modified = .false.
-    if( .not. cst_enabled ) return
-
-    call pmf_timers_start_timer(PMFLIB_TIMER)
-    call pmf_core_lf_shake(x)
-    call pmf_timers_stop_timer(PMFLIB_TIMER)
-
-    modified = .true.
-
-end subroutine pmf_pmemd_constraints
-
-#ifdef MPI
 
 !===============================================================================
 ! subroutine pmf_pmemd_force_mpi
 !===============================================================================
 
-subroutine pmf_pmemd_force_mpi(x,v,f,spmfene,atm_owner_map)
+subroutine pmf_pmemd_force_mpi(x,v,f,spmfene,atm_owner_map) bind(c,name='int_pmf_pmemd_force_mpi')
 
     use pmf_sizes
     use pmf_core_lf
-    use pmf_pmemd_dat
+    use pmf_pmemd_dat_v01
     use pmf_dat
     use pmf_timers
     use pmf_utils
@@ -436,18 +602,25 @@ subroutine pmf_pmemd_force_mpi(x,v,f,spmfene,atm_owner_map)
 
 INCLUDE 'mpif.h'
 
-    real(PMFDP)             :: x(:,:)           ! in
-    real(PMFDP)             :: v(:,:)           ! in
-    real(PMFDP)             :: f(:,:)           ! inout
-    type(PMFPMEMDEnergy)    :: spmfene          ! inout
-    integer                 :: atm_owner_map(:) ! in - atom map among processes
+    real(CPMFDP)        :: x(:,:)           ! in
+    real(CPMFDP)        :: v(:,:)           ! in
+    real(CPMFDP)        :: f(:,:)           ! inout
+    real(CPMFDP)        :: spmfene(:)       ! inout
+    integer(CPMFINT)    :: atm_owner_map(:) ! in - atom map among processes
     ! ------------------------------------------------------
-    integer        :: i, ierr
+    integer                 :: i, ierr
+    type(PMFKineticEnergy)  :: ekin
     ! --------------------------------------------------------------------------
 
     if(fmaster) then
         call pmf_timers_start_timer(PMFLIB_TIMER)
     end if
+
+    spmfene(PMFLIB_ERST) = 0.0d0
+
+    ekin%KinEneVV = spmfene(PMFLIB_EKIN_VV)
+    ekin%KinEneLF = spmfene(PMFLIB_EKIN_LF)
+    ekin%KinEneHA = spmfene(PMFLIB_EKIN_HA)
 
     ! gather data
     call pmf_pmemd_gather_array_mpi(tmp_a,x,atm_owner_map)
@@ -464,7 +637,7 @@ INCLUDE 'mpif.h'
         end if
 
         call pmf_core_lf_update_step
-        call pmf_core_lf_force(tmp_a,tmp_b,tmp_c,spmfene%epot,spmfene%ekin,spmfene%erst)
+        call pmf_core_lf_force(tmp_a,tmp_b,tmp_c,spmfene(PMFLIB_EPOT),ekin,spmfene(PMFLIB_ERST))
     end if
 
     ! broadcast MD exit status
@@ -486,24 +659,24 @@ end subroutine pmf_pmemd_force_mpi
 ! Subroutine: pmf_pmemd_constraints_mpi
 !===============================================================================
 
-subroutine pmf_pmemd_constraints_mpi(x,modified,atm_owner_map)
+subroutine pmf_pmemd_constraints_mpi(x,modified,atm_owner_map) bind(c,name='int_pmf_pmemd_constraints_mpi')
 
     use pmf_sizes
     use pmf_dat
     use pmf_core_lf
-    use pmf_pmemd_dat
+    use pmf_pmemd_dat_v01
     use pmf_dat
     use pmf_timers
 
     implicit none
-    real(PMFDP)    :: x(:,:)               ! positions in t+dt
-    logical        :: modified             ! was constraint applied?
-    integer        :: atm_owner_map(:)     ! atom map among processes
+    real(CPMFDP)        :: x(:,:)               ! positions in t+dt
+    integer(CPMFINT)    :: modified             ! was constraint applied?
+    integer(CPMFINT)    :: atm_owner_map(:)     ! atom map among processes
     ! ------------------------------------------------------
     integer        :: i
     ! --------------------------------------------------------------------------
 
-    modified = .false.
+    modified = 0
     if( .not. cst_enabled ) return
 
     if(fmaster) then
@@ -531,106 +704,9 @@ subroutine pmf_pmemd_constraints_mpi(x,modified,atm_owner_map)
         call pmf_timers_stop_timer(PMFLIB_TIMER)
     end if
 
-    modified = .true.
+    modified = 1
 
 end subroutine pmf_pmemd_constraints_mpi
-!===============================================================================
-#endif
-
-!===============================================================================
-! Subroutine: pmf_pmemd_cst_checkatom
-!===============================================================================
-
-logical function pmf_pmemd_cst_checkatom(atomid)
-
-    use pmf_dat
-    use cst_shake
-
-    implicit none
-    integer    :: atomid
-    ! --------------------------------------------------------------------------
-
-    pmf_pmemd_cst_checkatom = .false.
-    if( .not. cst_enabled ) return
-
-    pmf_pmemd_cst_checkatom = cst_shake_checkatom(atomid)
-
-end function pmf_pmemd_cst_checkatom
-
-!===============================================================================
-! Subroutine: pmf_pmemd_cst_shake_allocate
-!===============================================================================
-
-subroutine pmf_pmemd_cst_shake_allocate(num)
-
-    use pmf_dat
-    use cst_shake
-
-    implicit none
-    integer    :: num ! number of shake constraints
-    ! --------------------------------------------------------------------------
-
-    if( .not. fmaster ) return
-    if( .not. cst_enabled ) return
-
-    call cst_shake_allocate(num)
-
-end subroutine pmf_pmemd_cst_shake_allocate
-
-!===============================================================================
-! Function:  pmf_pmemd_cst_set_shake
-!===============================================================================
-
-subroutine pmf_pmemd_cst_set_shake(id,at1,at2,value)
-
-    use pmf_sizes
-    use pmf_dat
-    use cst_shake
-
-    implicit none
-    integer        :: id       ! id of constraint
-    integer        :: at1      ! id of first atom
-    integer        :: at2      ! id of second atom
-    real(PMFDP)    :: value    ! value of DS constraint
-    ! --------------------------------------------------------------------------
-
-    if( .not. fmaster ) return
-    if( .not. cst_enabled ) return
-
-    call cst_shake_set(id,at1,at2,value)
-
-end subroutine pmf_pmemd_cst_set_shake
-
-!===============================================================================
-! subroutine pmf_pmemd_finalize
-!===============================================================================
-
-subroutine pmf_pmemd_finalize
-
-    use pmf_constants
-    use pmf_utils
-    use pmf_finalize
-    use pmf_timers
-    use pmf_dat
-
-    implicit none
-    ! --------------------------------------------------------------------------
-
-    if( .not. fmaster ) return
-
-    write(PMF_OUT,*)
-    call pmf_utils_heading(PMF_OUT,'PMF Library Finalization', '-')
-
-#ifdef MPI
-    call pmf_pmemd_mpistat
-#endif
-
-    call pmf_timers_stop_timer(PMFLIB_TOTAL_TIMER)
-    call pmf_finalize_all(.true.)
-
-end subroutine pmf_pmemd_finalize
-
-#ifdef MPI
 
 !===============================================================================
 ! Subroutine:  pmf_pmemd_mpistat
@@ -640,7 +716,7 @@ subroutine pmf_pmemd_mpistat
 
     use pmf_constants
     use pmf_dat
-    use pmf_pmemd_dat
+    use pmf_pmemd_dat_v01
 
     implicit none
     integer           :: i
@@ -690,7 +766,7 @@ subroutine pmf_pmemd_gather_array_mpi(lx,x,atm_owner_map)
 
     use pmf_dat
     use pmf_utils
-    use pmf_pmemd_dat
+    use pmf_pmemd_dat_v01
 
     implicit none
 
@@ -820,7 +896,7 @@ subroutine pmf_pmemd_scatter_array_mpi(lx,x,atm_owner_map)
 
     use pmf_dat
     use pmf_utils
-    use pmf_pmemd_dat
+    use pmf_pmemd_dat_v01
 
     implicit none
 
@@ -939,7 +1015,7 @@ end subroutine pmf_pmemd_scatter_array_mpi
 
 !===============================================================================
 
-end module pmf_pmemd
+end module pmf_pmemd_v01
 
 
 

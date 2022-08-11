@@ -674,9 +674,9 @@ subroutine pmf_init_sys_summary()
     case(SYS_NT)
     write(PMF_OUT,70)  'NT'
     case(SYS_NTV)
-    write(PMF_OUT,70)  'NTV'
+    write(PMF_OUT,70)  'NVT'
     case(SYS_NTP)
-    write(PMF_OUT,70)  'NTp'
+    write(PMF_OUT,70)  'NpT'
     end select
 
     select case(fbox_type)

@@ -21,7 +21,7 @@
 !    Boston, MA  02110-1301  USA
 !===============================================================================
 
-module pmf_pmemd_control
+module pmf_pmemd_control_v01
 
 implicit none
 contains
@@ -33,7 +33,7 @@ contains
 subroutine pmf_pmemd_process_control
 
     use pmf_constants
-    use pmf_pmemd_dat
+    use pmf_pmemd_dat_v01
     use prmfile
     use pmf_utils
     use pmf_control
@@ -82,7 +82,7 @@ end subroutine pmf_pmemd_process_control
 subroutine pmf_pmemd_read_pmemd
 
     use pmf_constants
-    use pmf_pmemd_dat
+    use pmf_pmemd_dat_v01
     use prmfile
     use pmf_utils
 
@@ -116,4 +116,4 @@ end subroutine pmf_pmemd_read_pmemd
 !-------------------------------------------------------------------------------
 !===============================================================================
 
-end module pmf_pmemd_control
+end module pmf_pmemd_control_v01

@@ -21,7 +21,7 @@
 !    Boston, MA  02110-1301  USA
 !===============================================================================
 
-module pmf_pmemd_dat
+module pmf_pmemd_dat_v01
 
 use prmfile_dat
 use pmf_sizes
@@ -55,4 +55,4 @@ integer(8)                      :: numofchunkgaps       ! related to FATAL-ERROR
 !-------------------------------------------------------------------------------
 !===============================================================================
 
-end module pmf_pmemd_dat
+end module pmf_pmemd_dat_v01

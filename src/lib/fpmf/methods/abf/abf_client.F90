@@ -38,33 +38,38 @@ interface
     subroutine cpmf_abf_client_set_header(ret_st,ncvs,nbins,version,driver, &
                     temp,temp_unit,temp_fconv, &
                     ene_unit,ene_fconv)
+        import
+        implicit none
         integer         :: ret_st
         integer         :: ncvs
         integer         :: nbins
         character(*)    :: version
         character(*)    :: driver
-        real(8)         :: temp
+        real(PMFDP)     :: temp
         character(*)    :: temp_unit
-        real(8)         :: temp_fconv
+        real(PMFDP)     :: temp_fconv
         character(*)    :: ene_unit
-        real(8)         :: ene_fconv
+        real(PMFDP)     :: ene_fconv
     end subroutine cpmf_abf_client_set_header
 
     ! set coordinate data
     subroutine cpmf_abf_client_set_coord(ret_st,id,name,ctype,min_value,max_value,nbins,fconv,unit)
+        import
+        implicit none
         integer         :: ret_st
         integer         :: id
         character(*)    :: ctype
         character(*)    :: name
-        real(8)         :: min_value
-        real(8)         :: max_value
+        real(PMFDP)     :: min_value
+        real(PMFDP)     :: max_value
         integer         :: nbins
-        real(8)         :: fconv
+        real(PMFDP)     :: fconv
         character(*)    :: unit
     end subroutine cpmf_abf_client_set_coord
 
     ! register client on server
     subroutine cpmf_abf_client_reg_by_key(str1,str2,id)
+        implicit none
         character(*)    :: str1
         character(*)    :: str2
         integer         :: id
@@ -72,22 +77,27 @@ interface
 
     ! get initial data from server
     subroutine cpmf_abf_client_initial_data(ret_st,inc_nsamples,inc_micf,inc_m2icf)
+        import
+        implicit none
         integer         :: ret_st
-        real(8)         :: inc_nsamples(*)
-        real(8)         :: inc_micf(*)
-        real(8)         :: inc_m2icf(*)
+        real(PMFDP)     :: inc_nsamples(*)
+        real(PMFDP)     :: inc_micf(*)
+        real(PMFDP)     :: inc_m2icf(*)
     end subroutine cpmf_abf_client_initial_data
 
     ! exchange data with server
     subroutine cpmf_abf_client_exchange_data(ret_st,inc_nsamples,inc_micf,inc_m2icf)
+        import
+        implicit none
         integer         :: ret_st
-        real(8)         :: inc_nsamples(*)
-        real(8)         :: inc_micf(*)
-        real(8)         :: inc_m2icf(*)
+        real(PMFDP)     :: inc_nsamples(*)
+        real(PMFDP)     :: inc_micf(*)
+        real(PMFDP)     :: inc_m2icf(*)
     end subroutine cpmf_abf_client_exchange_data
 
     ! unregister client on server
     subroutine cpmf_abf_client_unregister()
+        implicit none
     end subroutine cpmf_abf_client_unregister
 end interface
 
