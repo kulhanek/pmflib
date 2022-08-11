@@ -1,4 +1,3 @@
-#if defined PMFLIB
 !===============================================================================
 ! PMFLib - Library Supporting Potential of Mean Force Calculations
 !-------------------------------------------------------------------------------
@@ -20,11 +19,13 @@
 !    Boston, MA  02110-1301  USA
 !===============================================================================
 
-module pmflibpmemd
+module PMFLibPMEMD
 
 use iso_c_binding
 
 implicit none
+
+#if defined PMFLIB
 
 ! type sizes
 integer, parameter          :: CPMFDP        = c_double
@@ -554,5 +555,7 @@ end subroutine pmf_pmemd_get_dlerror
 
 !===============================================================================
 
-end module pmflibpmemd
 #endif
+
+end module PMFLibPMEMD
+
