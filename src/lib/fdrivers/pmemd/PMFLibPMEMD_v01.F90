@@ -20,7 +20,7 @@
 !    Boston, MA  02110-1301  USA
 !===============================================================================
 
-module PMFLibPMEMD
+module pmflibpmemd
 
 use iso_c_binding
 
@@ -554,5 +554,5 @@ end subroutine pmf_pmemd_get_dlerror
 
 !===============================================================================
 
-end module PMFLibPMEMD
+end module pmflibpmemd
 #endif
