@@ -14,7 +14,6 @@ SET(PMF_COM_SRC
         common/pmf_control_utils.f90
         common/pmf_core.f90
         common/pmf_core_lf.f90
-        common/pmf_core_vv.f90
         common/pmf_pbc.f90
         common/pmf_cvs.f90
         common/pmf_paths.f90
@@ -138,7 +137,6 @@ SET(PMF_ABF_CORE_SRC
         methods/abf/abf_accu.f90
         methods/abf/abf_core.f90
         methods/abf/abf_core_lf.f90
-        methods/abf/abf_core_vv.f90
         methods/abf/abf_client.F90
         methods/abf/abf_trajectory.f90
         methods/abf/abf_finalize.f90

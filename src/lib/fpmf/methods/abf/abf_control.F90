@@ -68,7 +68,7 @@ subroutine abf_control_read_abf(prm_fin)
 
     ! read configuration
     call pmf_ctrl_read_integer(prm_fin,'fmode',fmode,'I12')
-    call pmf_ctrl_check_integer_in_range('ABF','fmode',fmode,0,7)
+    call pmf_ctrl_check_integer_in_range('ABF','fmode',fmode,0,2)
 
     if( fmode .eq. 0 ) then
         write(PMF_OUT,10)
@@ -77,23 +77,8 @@ subroutine abf_control_read_abf(prm_fin)
         return
     end if
 
-    if( fmode .eq. 3 ) then
-        shake_force_required    = .true.
-        rattle_force_required   = .true.
-    end if
-
-    if( (fmode .eq. 3) .or. (fmode .eq. 4) .or. (fmode .eq. 1) ) then
-        call pmf_ctrl_read_integer(prm_fin,'abf_p2_vx',abf_p2_vx,'I12')
-        call pmf_ctrl_read_integer(prm_fin,'abf_p2_px',abf_p2_px,'I12')
-    end if
-    if( fmode .eq. 5 ) then
-        call pmf_ctrl_read_integer(prm_fin,'abf_p2_vx',abf_p2_vx,'I12')
-        call pmf_ctrl_read_integer(prm_fin,'abf_p2_px',abf_p2_px,'I12')
-    end if
-    if( fmode .eq. 5 ) then
-        call pmf_ctrl_read_logical(prm_fin,'abf_clear_shaken_cvvel',abf_clear_shaken_cvvel)
-        call pmf_ctrl_read_logical(prm_fin,'abf_use_shaken_icf',abf_use_shaken_icf)
-    end if
+    call pmf_ctrl_read_integer(prm_fin,'abf_p2_vx',abf_p2_vx,'I12')
+    call pmf_ctrl_read_integer(prm_fin,'abf_p2_px',abf_p2_px,'I12')
 
     call pmf_ctrl_read_logical(prm_fin,'fapply_abf',fapply_abf)
     call pmf_ctrl_read_logical(prm_fin,'fupdate_abf',fupdate_abf)
@@ -113,14 +98,9 @@ subroutine abf_control_read_abf(prm_fin)
     call pmf_ctrl_read_logical(prm_fin,'fenthalpy',fenthalpy)
     call pmf_ctrl_read_logical(prm_fin,'fentropy',fentropy)
     call pmf_ctrl_read_logical(prm_fin,'fentdecomp',fentdecomp)
-    call pmf_ctrl_read_logical(prm_fin,'frecord',frecord)
     call pmf_ctrl_read_logical(prm_fin,'ftds_add_bias',ftds_add_bias)
 
-    call pmf_ctrl_read_integer(prm_fin,'ftds_epot_src',ftds_epot_src,'I12')
     call pmf_ctrl_read_integer(prm_fin,'ftds_ekin_src',ftds_ekin_src,'I12')
-
-    call pmf_ctrl_read_real8(prm_fin,'ftds_ekin_scale',ftds_ekin_scale,'F10.5')
-    call pmf_ctrl_read_real8(prm_fin,'ftds_vel_scale',ftds_vel_scale,'F10.5')
 
     call pmf_ctrl_read_real8_wunit(prm_fin,'fepotaverage',EnergyUnit,fepotaverage,'F10.1')
     call pmf_ctrl_read_real8_wunit(prm_fin,'fekinaverage',EnergyUnit,fekinaverage,'F10.1')

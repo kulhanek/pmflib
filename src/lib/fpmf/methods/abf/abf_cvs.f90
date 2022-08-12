@@ -51,7 +51,6 @@ subroutine abf_cvs_reset_cv(abf_item)
     abf_item%wfac           = 1.0d0
     abf_item%buffer         = 0.0d0
     abf_item%energy         = 0.0d0
-    abf_item%shake          = .false.
 
 end subroutine abf_cvs_reset_cv
 
@@ -83,14 +82,6 @@ subroutine abf_cvs_read_cv(prm_fin,abf_item)
             call pmf_utils_exit(PMF_OUT,1,'Requested CV is connected with the path that is in a driven mode!')
         end if
     end if
-
-    if( prmfile_get_logical_by_key(prm_fin,'shake',abf_item%shake) ) then
-        write(PMF_OUT,300) prmfile_onoff(abf_item%shake)
-    else
-        write(PMF_OUT,300) prmfile_onoff(abf_item%shake)
-    end if
-
-    if( abf_item%shake ) return
 
 ! main CV setup
     ! ========================
@@ -183,8 +174,6 @@ subroutine abf_cvs_read_cv(prm_fin,abf_item)
 201 format('    ** Value             : ',A)
 210 format('    ** Force constant    : ',F16.7,' [',A,']')
 
-300 format('    ** SHAKE             : ',A)
-
 end subroutine abf_cvs_read_cv
 
 !===============================================================================
@@ -209,18 +198,17 @@ subroutine abf_cvs_init_values()
     end do
 
     ! align bias if requested
-    ! FIXME
-!    if( falignbias ) then
-!        do i=1,NumOfABFCVs
-!            cvhist(i,1) = ABFCVList(i)%target_value
-!        end do
-!        gi0 = pmf_accu_globalindex(abfaccu%PMFAccuType,cvhist(:,1))
-!        if( gi0 .ne. 0 ) then
-!            do i=1,NumOfABFCVs
-!                ABFCVList(i)%target_value = abfaccu%binpos(i,gi0)
-!            end do
-!        end if
-!    end if
+    if( falignbias ) then
+        do i=1,NumOfABFCVs
+            cvhist(i,1) = ABFCVList(i)%target_value
+        end do
+        gi0 = pmf_accu_globalindex(abfaccu%PMFAccuType,cvhist(:,1))
+        if( gi0 .ne. 0 ) then
+            do i=1,NumOfABFCVs
+                ABFCVList(i)%target_value = abfaccu%binpos(i,gi0)
+            end do
+        end if
+    end if
 
 end subroutine abf_cvs_init_values
 
@@ -246,9 +234,6 @@ subroutine abf_cvs_cv_info(abf_item)
     write(PMF_OUT,146) trim(abf_item%cv%ctype)
     write(PMF_OUT,150) abf_item%cv%get_rvalue(CVContext%CVsValues(abf_item%cvindx)), &
                     trim(abf_item%cv%get_ulabel())
-
-    write(PMF_OUT,300) prmfile_onoff(abf_item%shake)
-    if( abf_item%shake ) return
 
     write(PMF_OUT,155) abf_item%cv%get_rvalue(abf_item%min_value), &
                     trim(abf_item%cv%get_ulabel())
@@ -286,8 +271,6 @@ subroutine abf_cvs_cv_info(abf_item)
 
 210 format('    ** Target value      : ',E16.7,' [',A,']')
 220 format('    ** Force constant    : ',E16.7,' [',A,']')
-
-300 format('    ** SHAKE             : ',A)
 
 end subroutine abf_cvs_cv_info
 

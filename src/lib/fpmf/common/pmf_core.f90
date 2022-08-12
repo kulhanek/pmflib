@@ -292,48 +292,6 @@ subroutine pmf_core_out_data_xpvp(xp,vp)
 end subroutine pmf_core_out_data_xpvp
 
 !===============================================================================
-! Subroutine:  pmf_core_in_data_xbar
-!===============================================================================
-
-subroutine pmf_core_in_data_xbar(xbar)
-
-    use pmf_dat
-
-    implicit none
-    real(PMFDP),intent(in)     :: xbar(:,:)
-    ! -----------------------------------------------
-    integer                    :: i,ridx
-    ! --------------------------------------------------------------------------
-
-    do i=1,NumOfLAtoms
-        ridx = RIndexes(i)
-        CrdBar(:,i) = xbar(:,ridx)*LengthConv
-    end do
-
-end subroutine pmf_core_in_data_xbar
-
-!===============================================================================
-! Subroutine:  pmf_core_in_data_vbar
-!===============================================================================
-
-subroutine pmf_core_in_data_vbar(vbar)
-
-    use pmf_dat
-
-    implicit none
-    real(PMFDP),intent(in)     :: vbar(:,:)
-    ! -----------------------------------------------
-    integer                    :: i,ridx
-    ! --------------------------------------------------------------------------
-
-    do i=1,NumOfLAtoms
-        ridx = RIndexes(i)
-        VelBar(:,i) = vbar(:,ridx)*VelocityConv
-    end do
-
-end subroutine pmf_core_in_data_vbar
-
-!===============================================================================
 ! Function:  pmf_core_get_num_of_constraints
 !===============================================================================
 

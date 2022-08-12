@@ -2,20 +2,7 @@
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
 
-broadcast fshake
-broadcast shake_force_required
 
-
-
-remove CNGFC - wrong concept
-
-CVs - coordination numbers (fermi like, 6/12 form)
-    - minimal distance - to use study CB9 and CB10 deformation
-    - suggar angles (pucker,other?)
-    - secondary structure elements (alpha, beta?)
-    - egap
-
-Timers
 
 
 

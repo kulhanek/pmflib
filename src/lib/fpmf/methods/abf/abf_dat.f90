@@ -52,15 +52,10 @@ logical     :: fupdate_abf  ! on - update ABF bias, off - keep initial bias
 logical     :: fenthalpy    ! collect data for enthalpy calculation
 logical     :: fentropy     ! collect data for entropy calculation
 logical     :: fentdecomp   ! collect additional correlation terms
-logical     :: frecord      ! record time progress
 
-integer     :: ftds_epot_src    ! source of potential energy
-
-integer     :: ftds_ekin_src    ! source of kinetic energy, see abf_core_update_history for supported values
+integer     :: ftds_ekin_src    ! source of kinetic energy, see abf_core_update_history_ene for supported values
 
 logical     :: ftds_add_bias    ! include ABF bias into TdS calculation
-real(PMFDP) :: ftds_ekin_scale  ! scale kinetic energy by this factor
-real(PMFDP) :: ftds_vel_scale   ! scale velocities by factor
 
 real(PMFDP) :: fepotaverage
 real(PMFDP) :: fekinaverage
@@ -87,8 +82,6 @@ logical     :: fswitch2zero
 ! 2p algorithm
 integer     :: abf_p2_vx
 integer     :: abf_p2_px
-logical     :: abf_clear_shaken_cvvel
-logical     :: abf_use_shaken_icf
 
 ! server part ------------------------------------------------------------------
 logical                 :: fserver_enabled      ! is abf-server enabled?
@@ -121,9 +114,6 @@ type CVTypeABF
     real(PMFDP)             :: force_constant   ! sigma value
     real(PMFDP)             :: deviation        ! deviation between real and actual value
     real(PMFDP)             :: energy
-
-    !
-    logical                 :: shake
 end type CVTypeABF
 
 ! ----------------------
@@ -143,7 +133,9 @@ type,extends(PMFAccuType) :: ABFAccuType
     real(PMFDP),pointer    :: mgfx(:,:)                 ! mean -GFX
     real(PMFDP),pointer    :: m2gfx(:,:)                ! M2 of GFX
 
-! enthalpy
+! enthalpy & entropy
+    real(PMFDP),pointer    :: nene(:)
+
     real(PMFDP),pointer    :: meint(:)                  ! mean of internal energy
     real(PMFDP),pointer    :: m2eint(:)                 ! M2 of internal energy
     real(PMFDP),pointer    :: mepot(:)                  ! mean of pot energy
@@ -153,7 +145,6 @@ type,extends(PMFAccuType) :: ABFAccuType
     real(PMFDP),pointer    :: mekin(:)                  ! mean of kin energy
     real(PMFDP),pointer    :: m2ekin(:)                 ! M2 of kin energy
 
-! entropy
     real(PMFDP),pointer    :: metot(:)                  ! mean of tot energy
     real(PMFDP),pointer    :: m2etot(:)                 ! M2 of tot energy
     real(PMFDP),pointer    :: mpp(:,:)                  ! mean of tot energy + icf
@@ -173,32 +164,15 @@ type,extends(PMFAccuType) :: ABFAccuType
 
     real(PMFDP),pointer    :: mtdsfx(:,:)               ! mean of ICF - force
     real(PMFDP),pointer    :: m2tdsfx(:,:)              ! M2 of ICF - force
-    real(PMFDP),pointer    :: mtdssx(:,:)               ! mean of ICF - shake
-    real(PMFDP),pointer    :: m2tdssx(:,:)              ! M2 of ICF - shake
-    real(PMFDP),pointer    :: mtdsvx(:,:)               ! mean of ICF - velocity
-    real(PMFDP),pointer    :: m2tdsvx(:,:)              ! M2 of ICF - velocity
     real(PMFDP),pointer    :: mtdsbx(:,:)               ! mean of ICF - bias
     real(PMFDP),pointer    :: m2tdsbx(:,:)              ! M2 of ICF - bias
 
     real(PMFDP),pointer    :: c11tdsfp(:,:)             ! co-variances
     real(PMFDP),pointer    :: c11tdsfr(:,:)
     real(PMFDP),pointer    :: c11tdsfk(:,:)
-    real(PMFDP),pointer    :: c11tdssp(:,:)
-    real(PMFDP),pointer    :: c11tdssr(:,:)
-    real(PMFDP),pointer    :: c11tdssk(:,:)
-    real(PMFDP),pointer    :: c11tdsvp(:,:)
-    real(PMFDP),pointer    :: c11tdsvr(:,:)
-    real(PMFDP),pointer    :: c11tdsvk(:,:)
     real(PMFDP),pointer    :: c11tdsbp(:,:)
     real(PMFDP),pointer    :: c11tdsbr(:,:)
     real(PMFDP),pointer    :: c11tdsbk(:,:)
-
-! time recording for post-processing
-    real(PMFDP),pointer    :: tcvs(:,:)
-    real(PMFDP),pointer    :: tbicf(:,:)
-    real(PMFDP),pointer    :: tepot(:)
-    real(PMFDP),pointer    :: terst(:)
-    real(PMFDP),pointer    :: tekin(:)
 
 ! applied ICF - this is stored in accu but ignored
     real(PMFDP),pointer    :: bnsamples(:)              ! number of hits into bins
@@ -225,32 +199,29 @@ integer,allocatable         :: indx(:)              ! for LU decomposition
 ! helper arrays -------
 real(PMFDP),allocatable     :: la(:)
 real(PMFDP),allocatable     :: pxia(:)
-real(PMFDP),allocatable     :: picf(:)
 real(PMFDP),allocatable     :: pxif(:)
-real(PMFDP),allocatable     :: pxis(:)
-real(PMFDP),allocatable     :: pxiv(:)
+real(PMFDP),allocatable     :: picf(:)
 real(PMFDP),allocatable     :: sfac(:)              ! switching factors
 real(PMFDP),allocatable     :: vint(:,:)
 
 ! ------------------------------------------------------------------------------
 
 integer                     :: hist_len
+integer                     :: hist_fidx
+
 real(PMFDP),allocatable     :: cvhist(:,:)          ! history of CV values (nCVS,hist_len)
-real(PMFDP),allocatable     :: fhist(:,:,:)         ! history of forces
-real(PMFDP),allocatable     :: shist(:,:,:)         ! history of forces
-real(PMFDP),allocatable     :: rhist(:,:,:)         ! history of forces
 real(PMFDP),allocatable     :: vhist(:,:,:)         ! history of velocities
-real(PMFDP),allocatable     :: zdhist(:,:,:,:)      ! history of ZD
 real(PMFDP),allocatable     :: cvderhist(:,:,:,:)   ! history of CV derivatives
-real(PMFDP),allocatable     :: fzinvhist(:,:,:)     ! hostory of fzinv
+real(PMFDP),allocatable     :: fzinvhist(:,:,:)     ! history of fzinv
+real(PMFDP),allocatable     :: xphist(:,:)          ! history of CV momenta
+real(PMFDP),allocatable     :: icfhist(:,:)         ! history of ABF ICF
 real(PMFDP),allocatable     :: micfhist(:,:)        ! history of ABF bias
+
 real(PMFDP),allocatable     :: epothist(:)          ! history of Epot
 real(PMFDP),allocatable     :: ersthist(:)          ! history of Erst
 real(PMFDP),allocatable     :: ekinhist(:)          ! history of Ekin
-real(PMFDP),allocatable     :: epotrwhist(:)        ! history of Epot - raw data
-real(PMFDP),allocatable     :: erstrwhist(:)        ! history of Erst - raw data
 real(PMFDP),allocatable     :: ekinlfhist(:)        ! history of EkinLF
-real(PMFDP),allocatable     :: xphist(:,:)          ! history of CV momenta
+logical,allocatable         :: enevalidhist(:)      ! is energy valid?
 
 ! ------------------------------------------------------------------------------
 

@@ -53,7 +53,7 @@ end subroutine pmf_core_lf_update_step
 ! leap-frog version
 !===============================================================================
 
-subroutine pmf_core_lf_force(x,v,f,epot,ekin,epmf)
+subroutine pmf_core_lf_force(x,v,f,epot,epmf)
 
     use pmf_dat
     use pmf_cvs
@@ -76,7 +76,6 @@ subroutine pmf_core_lf_force(x,v,f,epot,ekin,epmf)
     real(PMFDP)             :: v(:,:)        ! velocities in t-dt/2
     real(PMFDP)             :: f(:,:)        ! forces in t
     real(PMFDP)             :: epot          ! potential energy in t
-    type(PMFKineticEnergy)  :: ekin          ! kinetic energy
     real(PMFDP)             :: epmf          ! energy from PMFLib
     ! -----------------------------------------------
     integer        :: i
@@ -90,12 +89,8 @@ subroutine pmf_core_lf_force(x,v,f,epot,ekin,epmf)
     ! convert potential energy
     PotEne = epot * EnergyConv
 
-    ! convert kinetic energies
-    KinEne%KinEneVV = ekin%KinEneVV * EnergyConv
-    KinEne%KinEneLF = ekin%KinEneLF * EnergyConv
-    KinEne%KinEneHA = ekin%KinEneHA * EnergyConv
-
     PMFEne = 0.0d0
+    RstEne = 0.0d0
 
     ! update local data
     call pmf_core_in_data_xvf(x,v,f)
@@ -126,51 +121,52 @@ subroutine pmf_core_lf_force(x,v,f,epot,ekin,epmf)
 !-------------------------------------------------
     call pmf_timers_start_timer(PMFLIB_METHODS_TIMER)
 
-     if( pdrv_enabled ) then
+    if( pdrv_enabled ) then
         call pmf_timers_start_timer(PMFLIB_PDRV_TIMER)
         call pdrv_core_main
         call pmf_timers_stop_timer(PMFLIB_PDRV_TIMER)
-     end if
+    end if
 
-     if( rst_enabled ) then
+    if( rst_enabled ) then
         call pmf_timers_start_timer(PMFLIB_RST_TIMER)
         call rst_core_main
+        RstEne = TotalRSTEnergy
         PMFEne = PMFEne + TotalRSTEnergy
         call pmf_timers_stop_timer(PMFLIB_RST_TIMER)
-     end if
+    end if
 
-     if( stm_enabled ) then
+    if( stm_enabled ) then
         call pmf_timers_start_timer(PMFLIB_STM_TIMER)
         call stm_core_main
         PMFEne = PMFEne + TotalSTMEnergy
         call pmf_timers_stop_timer(PMFLIB_STM_TIMER)
-     end if
+    end if
 
-     if( mon_enabled ) then
+    if( mon_enabled ) then
         call pmf_timers_start_timer(PMFLIB_MON_TIMER)
         call mon_output_write_output
         call pmf_timers_stop_timer(PMFLIB_MON_TIMER)
-     end if
+    end if
 
-     if( mtd_enabled ) then
+    if( mtd_enabled ) then
         call pmf_timers_start_timer(PMFLIB_MTD_TIMER)
         call mtd_core_main
         PMFEne = PMFEne + TotalMTDEnergy
         call pmf_timers_stop_timer(PMFLIB_MTD_TIMER)
-     end if
+    end if
 
-     ! ABF has to be here because it could be influenced by US restraints (wall restraints, etc.)
-     if( abf_enabled ) then
+    ! ABF has to be here because it could be influenced by US restraints (wall restraints, etc.)
+    if( abf_enabled ) then
         call pmf_timers_start_timer(PMFLIB_ABF_TIMER)
         call abf_core_lf_main
         call pmf_timers_stop_timer(PMFLIB_ABF_TIMER)
-     end if
+    end if
 
-     if( abp_enabled ) then
+    if( abp_enabled ) then
         call pmf_timers_start_timer(PMFLIB_ABP_TIMER)
         call abp_core_main
         call pmf_timers_stop_timer(PMFLIB_ABP_TIMER)
-     end if
+    end if
 
     call pmf_timers_stop_timer(PMFLIB_METHODS_TIMER)
 
@@ -211,6 +207,7 @@ subroutine pmf_core_lf_rstforce(x,f,epot,epmf)
     ! convert potential energy
     PotEne = epot *EnergyConv
 
+    RstEne = 0.0d0
     PMFEne = 0.0d0
 
     ! update local data
@@ -231,18 +228,19 @@ subroutine pmf_core_lf_rstforce(x,f,epot,epmf)
 !-------------------------------------------------
     call pmf_timers_start_timer(PMFLIB_METHODS_TIMER)
 
-     if( rst_enabled ) then
+    if( rst_enabled ) then
         call pmf_timers_start_timer(PMFLIB_RST_TIMER)
         call rst_core_main
+        RstEne = TotalRSTEnergy
         PMFEne = PMFEne + TotalRSTEnergy
         call pmf_timers_stop_timer(PMFLIB_RST_TIMER)
-     end if
+    end if
 
-     if( mon_enabled ) then
+    if( mon_enabled ) then
         call pmf_timers_start_timer(PMFLIB_MON_TIMER)
         call mon_output_write_output
         call pmf_timers_stop_timer(PMFLIB_MON_TIMER)
-     end if
+    end if
 
     call pmf_timers_stop_timer(PMFLIB_METHODS_TIMER)
 
@@ -287,51 +285,6 @@ subroutine pmf_core_lf_shake(xp)
     call pmf_timers_stop_timer(PMFLIB_METHODS_TIMER)
 
 end subroutine pmf_core_lf_shake
-
-!===============================================================================
-! Subroutine:  pmf_core_lf_shake_forces
-! leap-frog version
-!===============================================================================
-
-subroutine pmf_core_lf_shake_forces(xbar,xp)
-
-    use pmf_dat
-    use pmf_cvs
-    use pmf_core
-    use pmf_timers
-    use abf_core_lf
-
-    implicit none
-    real(PMFDP)     :: xbar(:,:)     ! positions in t+dt - without shake
-    real(PMFDP)     :: xp(:,:)       ! position in t + dt
-    ! --------------------------------------------
-    integer         :: i
-    ! --------------------------------------------------------------------------
-
-    if( .not. shake_force_required ) return
-
-    call pmf_timers_start_timer(PMFLIB_METHODS_TIMER)
-        call pmf_timers_start_timer(PMFLIB_CONFRC_TIMER)
-
-        ! update local data
-        if( .not. cst_enabled ) then
-            call pmf_core_in_data_xp(xp)
-        end if
-        call pmf_core_in_data_xbar(xbar)
-
-        ! get SHAKE forces in t
-        do i=1,NumOfLAtoms
-            SHAKEFrc(:,i)  = Mass(i) * (CrdP(:,i) - CrdBar(:,i)) * ifdtx**2
-        end do
-
-        if( abf_enabled ) then
-            call abf_core_lf_shake()
-        end if
-
-        call pmf_timers_stop_timer(PMFLIB_CONFRC_TIMER)
-    call pmf_timers_stop_timer(PMFLIB_METHODS_TIMER)
-
-end subroutine pmf_core_lf_shake_forces
 
 !===============================================================================
 

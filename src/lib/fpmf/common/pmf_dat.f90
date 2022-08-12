@@ -110,23 +110,16 @@ real(PMFDP),allocatable     :: Vel(:,:)         ! current system velocities in t
 type(CVContextType)         :: CVContext        ! current CV context (values and derivatives) in t
 
 ! energies
-type(PMFKineticEnergy)      :: KinEne
-real(PMFDP)                 :: PotEne           ! current system potential energy in t
+real(PMFDP)                 :: RstEne           ! current restraint energy from PMFLib in t
 real(PMFDP)                 :: PMFEne           ! current PMFLib potential energy in t (from RST, MTD, STM)
+
+real(PMFDP)                 :: PotEne           ! current potential energy in t
+type(PMFKineticEnergy)      :: KinEne           ! current kinetic energy in t
 
 ! used by Blue moon
 real(PMFDP),allocatable     :: CrdP(:,:)        ! coordinates in t+dt
 real(PMFDP),allocatable     :: VelP(:,:)        ! velocities
 type(CVContextType)         :: CVContextP
-
-logical                     :: shake_force_required         ! we need force due to SHAKE
-logical                     :: rattle_force_required        ! we need force due to RATTLE
-
-real(PMFDP),allocatable     :: CrdBar(:,:)      ! coordinates in t+dt without SHAKE
-real(PMFDP),allocatable     :: SHAKEFrc(:,:)    ! current SHAKE forces in t+dt - after PotForce
-
-real(PMFDP),allocatable     :: VelBar(:,:)      ! velocities in t+dt without RATTLE
-real(PMFDP),allocatable     :: RATTLEFrc(:,:)   ! current RATTLE forces in t+dt - before PotForce
 
 ! MASTER =======================================================================
 

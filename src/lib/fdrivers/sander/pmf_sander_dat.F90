@@ -21,7 +21,7 @@
 !    Boston, MA  02110-1301  USA
 !===============================================================================
 
-module pmf_sander_dat
+module pmf_sander_dat_d01
 
 use prmfile_dat
 use pmf_sizes
@@ -46,4 +46,4 @@ real(PMFDP),allocatable         :: tmp_c(:,:)   ! helper array
 !-------------------------------------------------------------------------------
 !===============================================================================
 
-end module pmf_sander_dat
+end module pmf_sander_dat_d01

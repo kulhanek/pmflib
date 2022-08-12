@@ -35,12 +35,10 @@ character(len=10), parameter    :: PMFLIB_CHECK_STR1 = 'PMFLib v06'
 character(len=10), parameter    :: PMFLIB_CHECK_STR2 = 'DRVABI d01'
 
 ! energy array
-integer, parameter          :: PMFLIB_ERST                  = 1
-integer, parameter          :: PMFLIB_EPOT                  = 2
-integer, parameter          :: PMFLIB_EKIN_VV               = 3
-integer, parameter          :: PMFLIB_EKIN_LF               = 4
-integer, parameter          :: PMFLIB_EKIN_HA               = 5
-integer, parameter          :: PMFLIB_ENE_SIZE              = PMFLIB_EKIN_HA
+integer, parameter          :: PMFLIB_EKIN_VV               = 1
+integer, parameter          :: PMFLIB_EKIN_LF               = 2
+integer, parameter          :: PMFLIB_EKIN_HA               = 3
+integer, parameter          :: PMFLIB_EKIN_SIZE             = PMFLIB_EKIN_HA
 
 ! setup array
 integer, parameter          :: PMFLIB_SETUP_FORCE_NEED_ENE  = 1
@@ -54,7 +52,7 @@ contains
 !-------------------------------------------------------------------------------
 !===============================================================================
 
-subroutine pmf_pmemd_check_interface(rnum,inum,ene_len,setup_len,str1,str1_len,str2,str2_len) &
+subroutine pmf_pmemd_check_interface(rnum,inum,ekin_len,setup_len,str1,str1_len,str2,str2_len) &
            bind(c,name='int_pmf_pmemd_check_interface')
 
     use pmf_constants
@@ -63,7 +61,7 @@ subroutine pmf_pmemd_check_interface(rnum,inum,ene_len,setup_len,str1,str1_len,s
     implicit none
     real(CPMFDP)        :: rnum
     integer(CPMFINT)    :: inum
-    integer(CPMFINT)    :: ene_len
+    integer(CPMFINT)    :: ekin_len
     integer(CPMFINT)    :: setup_len
     character(CPMFCHAR) :: str1(*)
     integer(CPMFINT)    :: str1_len
@@ -80,8 +78,8 @@ subroutine pmf_pmemd_check_interface(rnum,inum,ene_len,setup_len,str1,str1_len,s
         call pmf_utils_exit(PMF_OUT,1,'Driver interface compromised for PMFLIB_CHECK_INT1!')
     end if
 
-    if( ene_len .ne. PMFLIB_ENE_SIZE ) then
-        call pmf_utils_exit(PMF_OUT,1,'Driver interface compromised for PMFLIB_ENE_SIZE!')
+    if( ekin_len .ne. PMFLIB_EKIN_SIZE ) then
+        call pmf_utils_exit(PMF_OUT,1,'Driver interface compromised for PMFLIB_EKIN_SIZE!')
     end if
     if( setup_len .ne. PMFLIB_SETUP_SIZE ) then
         call pmf_utils_exit(PMF_OUT,1,'Driver interface compromised for PMFLIB_SETUP_SIZE!')
@@ -112,7 +110,7 @@ end subroutine pmf_pmemd_check_interface
 !===============================================================================
 
 subroutine pmf_pmemd_init_preinit(mdin,mdin_len,anatom,anres,   &
-                            antb,ansteps,astepsize,atemp0,      &
+                            antb,antc,ansteps,astepsize,atemp0, &
                             box_a,box_b,box_c,                  &
                             box_alpha,box_beta,box_gamma) bind(c,name='int_pmf_pmemd_init_preinit')
 
@@ -133,6 +131,7 @@ subroutine pmf_pmemd_init_preinit(mdin,mdin_len,anatom,anres,   &
     integer(CPMFINT)    :: anatom                       ! number of atoms in AMBER topology
     integer(CPMFINT)    :: anres                        ! number of residues in AMBER topology
     integer(CPMFINT)    :: antb                         ! BOX type
+    integer(CPMFINT)    :: antc                         ! shake mode
     integer(CPMFINT)    :: ansteps                      ! number of MD steps
     real(CPMFDP)        :: astepsize                    ! step size
     real(CPMFDP)        :: atemp0                       ! temperature
@@ -174,6 +173,12 @@ subroutine pmf_pmemd_init_preinit(mdin,mdin_len,anatom,anres,   &
 
     ! rewrite the setup
     fcanexmdloop     = .true.       ! the client is able to terminate md loop
+
+    ! SHAKE
+    fshake = .false.
+    if( antc .ne. 1 ) then
+        fshake = .true.
+    end if
 
 end subroutine pmf_pmemd_init_preinit
 
@@ -400,7 +405,7 @@ end subroutine pmf_pmemd_update_box
 ! subroutine pmf_pmemd_force
 !===============================================================================
 
-subroutine pmf_pmemd_force(x,v,f,spmfene) bind(c,name='int_pmf_pmemd_force')
+subroutine pmf_pmemd_force(x,v,f,epot,epmf) bind(c,name='int_pmf_pmemd_force')
 
     use pmf_sizes
     use pmf_core_lf
@@ -411,22 +416,15 @@ subroutine pmf_pmemd_force(x,v,f,spmfene) bind(c,name='int_pmf_pmemd_force')
     real(CPMFDP)    :: x(:,:)       ! in
     real(CPMFDP)    :: v(:,:)       ! in
     real(CPMFDP)    :: f(:,:)       ! inout
-    real(CPMFDP)    :: spmfene(:)   ! inout
-    ! -------------------------------------------
-    type(PMFKineticEnergy)  :: ekin
+    real(CPMFDP)    :: epot         ! in
+    real(CPMFDP)    :: epmf         ! out
     ! --------------------------------------------------------------------------
 
     if( .not. fmaster ) return
 
-    spmfene(PMFLIB_ERST) = 0.0d0
-
-    ekin%KinEneVV = spmfene(PMFLIB_EKIN_VV)
-    ekin%KinEneLF = spmfene(PMFLIB_EKIN_LF)
-    ekin%KinEneHA = spmfene(PMFLIB_EKIN_HA)
-
     call pmf_timers_start_timer(PMFLIB_TIMER)
     call pmf_core_lf_update_step
-    call pmf_core_lf_force(x,v,f,spmfene(PMFLIB_EPOT),ekin,spmfene(PMFLIB_ERST))
+    call pmf_core_lf_force(x,v,f,epot,epmf)
     call pmf_timers_stop_timer(PMFLIB_TIMER)
 
 end subroutine pmf_pmemd_force
@@ -646,7 +644,7 @@ end subroutine pmf_pmemd_bcast_constraints_mpi
 ! subroutine pmf_pmemd_force_mpi
 !===============================================================================
 
-subroutine pmf_pmemd_force_mpi(x,v,f,spmfene,atm_owner_map) bind(c,name='int_pmf_pmemd_force_mpi')
+subroutine pmf_pmemd_force_mpi(x,v,f,epot,epmf,atm_owner_map) bind(c,name='int_pmf_pmemd_force_mpi')
 
     use pmf_sizes
     use pmf_core_lf
@@ -662,22 +660,16 @@ INCLUDE 'mpif.h'
     real(CPMFDP)        :: x(:,:)           ! in
     real(CPMFDP)        :: v(:,:)           ! in
     real(CPMFDP)        :: f(:,:)           ! inout
-    real(CPMFDP)        :: spmfene(:)       ! inout
+    real(CPMFDP)        :: epot             ! in
+    real(CPMFDP)        :: epmf             ! out
     integer(CPMFINT)    :: atm_owner_map(:) ! in - atom map among processes
     ! ------------------------------------------------------
-    integer                 :: i, ierr
-    type(PMFKineticEnergy)  :: ekin
+    integer             :: i, ierr
     ! --------------------------------------------------------------------------
 
     if(fmaster) then
         call pmf_timers_start_timer(PMFLIB_TIMER)
     end if
-
-    spmfene(PMFLIB_ERST) = 0.0d0
-
-    ekin%KinEneVV = spmfene(PMFLIB_EKIN_VV)
-    ekin%KinEneLF = spmfene(PMFLIB_EKIN_LF)
-    ekin%KinEneHA = spmfene(PMFLIB_EKIN_HA)
 
     ! gather data
     call pmf_pmemd_gather_array_mpi(tmp_a,x,atm_owner_map)
@@ -694,7 +686,7 @@ INCLUDE 'mpif.h'
         end if
 
         call pmf_core_lf_update_step
-        call pmf_core_lf_force(tmp_a,tmp_b,tmp_c,spmfene(PMFLIB_EPOT),ekin,spmfene(PMFLIB_ERST))
+        call pmf_core_lf_force(tmp_a,tmp_b,tmp_c,epot,epmf)
     end if
 
     ! broadcast MD exit status

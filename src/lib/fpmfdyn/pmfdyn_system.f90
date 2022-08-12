@@ -361,7 +361,7 @@ subroutine pot_energy
     use pmf_dat
 
     implicit none
-    type(PMFKineticEnergy)      :: lKinEne
+  !  type(PMFKineticEnergy)      :: lKinEne
     ! --------------------------------------------------------------------------
 
     call start_timer(FORCES_TIMER)
@@ -384,9 +384,8 @@ subroutine pot_energy
     ! pmf force  -------------------------------
     !md_d(:,:) = - md_d(:,:)
     ! FIXME - EkinH,0.0
-    lKinEne%KinEneVV = Ekin
-    lKinEne%KinEneLF = EkinH
-    call pmf_core_lf_force(md_x,md_v,md_d,Epot+Erst,lKinEne,Epmf)
+    ! FIXM - ekin
+    call pmf_core_lf_force(md_x,md_v,md_d,Epot+Erst,Epmf)
     !md_d(:,:) = - md_d(:,:)
 
     call stop_timer(FORCES_TIMER)

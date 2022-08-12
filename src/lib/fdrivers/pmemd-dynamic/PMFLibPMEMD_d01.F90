@@ -49,12 +49,10 @@ integer(c_int), parameter   :: RTLD_DI_ORIGIN               = 6         ! extrac
 integer, parameter          :: MAX_PATH                     = 4096      ! Linux
 
 ! energy array
-integer, parameter          :: PMFLIB_ERST                  = 1
-integer, parameter          :: PMFLIB_EPOT                  = 2
-integer, parameter          :: PMFLIB_EKIN_VV               = 3
-integer, parameter          :: PMFLIB_EKIN_LF               = 4
-integer, parameter          :: PMFLIB_EKIN_HA               = 5
-integer, parameter          :: PMFLIB_ENE_SIZE              = PMFLIB_EKIN_HA
+integer, parameter          :: PMFLIB_EKIN_VV               = 1
+integer, parameter          :: PMFLIB_EKIN_LF               = 2
+integer, parameter          :: PMFLIB_EKIN_HA               = 3
+integer, parameter          :: PMFLIB_EKIN_SIZE             = PMFLIB_EKIN_HA
 
 ! setup array
 integer, parameter          :: PMFLIB_SETUP_FORCE_NEED_ENE  = 1
@@ -114,12 +112,12 @@ end interface
 abstract interface
 
 ! SETUP ==========================================
-    subroutine int_pmf_pmemd_check_interface(rnum,inum,ene_len,setup_len,str1,str1_len,str2,str2_len) bind(c)
+    subroutine int_pmf_pmemd_check_interface(rnum,inum,ekin_len,setup_len,str1,str1_len,str2,str2_len) bind(c)
         import
         implicit none
         real(CPMFDP)        :: rnum
         integer(CPMFINT)    :: inum
-        integer(CPMFINT)    :: ene_len
+        integer(CPMFINT)    :: ekin_len
         integer(CPMFINT)    :: setup_len
         character(CPMFCHAR) :: str1(*)
         integer(CPMFINT)    :: str1_len
@@ -138,6 +136,7 @@ abstract interface
         integer(CPMFINT)    :: anatom                       ! number of atoms in AMBER topology
         integer(CPMFINT)    :: anres                        ! number of residues in AMBER topology
         integer(CPMFINT)    :: antb                         ! BOX type
+        integer(CPMFINT)    :: antc                         ! shake mode
         integer(CPMFINT)    :: ansteps                      ! number of MD steps
         real(CPMFDP)        :: astepsize                    ! step size
         real(CPMFDP)        :: atemp0                       ! temperature
@@ -203,13 +202,14 @@ abstract interface
         real(CPMFDP)        :: alpha,beta,gamma
     end subroutine int_pmf_pmemd_update_box
     ! --------------------------------------------------------------------------
-    subroutine int_pmf_pmemd_force(x,v,f,spmfene) bind(c)
+    subroutine int_pmf_pmemd_force(x,v,f,epot,epmf) bind(c)
         import
         implicit none
         real(CPMFDP)        :: x(:,:)       ! in
         real(CPMFDP)        :: v(:,:)       ! in
         real(CPMFDP)        :: f(:,:)       ! inout
-        real(CPMFDP)        :: spmfene(:)   ! inout
+        real(CPMFDP)        :: epot         ! in
+        real(CPMFDP)        :: epmf         ! out
     end subroutine int_pmf_pmemd_force
 
 ! CST ============================================
@@ -325,7 +325,10 @@ integer         :: pmflib_force_need_vel    = 0
 integer         :: pmflib_cst_modified      = 0
 integer         :: pmflib_exit              = 0
 
-real(CPMFDP)        :: pmflib_ene(PMFLIB_ENE_SIZE)
+real(CPMFDP)        :: pmflib_epot          = 0.0d0
+real(CPMFDP)        :: pmflib_erst          = 0.0d0
+
+real(CPMFDP)        :: pmflib_ekin(PMFLIB_EKIN_SIZE)
 integer(CPMFINT)    :: pmflib_setup(PMFLIB_SETUP_SIZE)
 
 ! ==============================================================================
@@ -503,14 +506,14 @@ subroutine pmf_pmemd_bind_to_driver(master)
     if( master ) then
         write(6,80)
         write(6,90)
-        call pmf_pmemd_check_interface(PMFLIB_CHECK_R81,PMFLIB_CHECK_INT1,PMFLIB_ENE_SIZE,PMFLIB_SETUP_SIZE, &
+        call pmf_pmemd_check_interface(PMFLIB_CHECK_R81,PMFLIB_CHECK_INT1,PMFLIB_EKIN_SIZE,PMFLIB_SETUP_SIZE, &
                                        PMFLIB_CHECK_STR1,len(PMFLIB_CHECK_STR1), &
                                        PMFLIB_CHECK_STR2,len(PMFLIB_CHECK_STR2))
         write(6,100)
         write(6,10)
         write(6,*)
     else
-        call pmf_pmemd_check_interface(PMFLIB_CHECK_R81,PMFLIB_CHECK_INT1,PMFLIB_ENE_SIZE,PMFLIB_SETUP_SIZE, &
+        call pmf_pmemd_check_interface(PMFLIB_CHECK_R81,PMFLIB_CHECK_INT1,PMFLIB_EKIN_SIZE,PMFLIB_SETUP_SIZE, &
                                        PMFLIB_CHECK_STR1,len(PMFLIB_CHECK_STR1), &
                                        PMFLIB_CHECK_STR2,len(PMFLIB_CHECK_STR2))
     end if

@@ -8,8 +8,13 @@ SET(LIBRARY_OUTPUT_PATH ${CMAKE_BINARY_DIR}/lib/drivers)
 
 # sander drv =================
 IF(PMFLIB_SANDER_DRV)
-    ADD_SUBDIRECTORY(sander)
+   # ADD_SUBDIRECTORY(sander)
 ENDIF(PMFLIB_SANDER_DRV)
+
+# sander drv =================
+IF(PMFLIB_SANDER_DYNAMIC_DRV)
+    ADD_SUBDIRECTORY(sander-dynamic)
+ENDIF(PMFLIB_SANDER_DYNAMIC_DRV)
 
 # pmemd drv =================
 IF(PMFLIB_PMEMD_DYNAMIC_DRV)

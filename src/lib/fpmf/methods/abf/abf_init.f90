@@ -85,9 +85,7 @@ subroutine abf_init_dat
     fenthalpy       = .false.
     fentropy        = .false.
     fentdecomp      = .false.
-    frecord         = .false.
 
-    ftds_epot_src   = 1
     ftds_ekin_src   = 1
     ftds_add_bias   = .false.
 
@@ -121,13 +119,8 @@ subroutine abf_init_dat
     fsmooth_kernel  = 0
     fswitch2zero    = .false.
 
-    ftds_ekin_scale = 1.0d0
-    ftds_vel_scale  = 1.0d0
-
     abf_p2_vx = 7
     abf_p2_px = 7
-    abf_clear_shaken_cvvel  = .true.
-    abf_use_shaken_icf      = .false.
 
 end subroutine abf_init_dat
 
@@ -176,21 +169,14 @@ subroutine abf_init_print_summary
     write(PMF_OUT,130)  ' ABF mode (fmode)                        : ', fmode
     select case(fmode)
     case(1)
-    write(PMF_OUT,120)  '      |-> ABF algorithm (3pV1)'
-    case(2)
-    write(PMF_OUT,120)  '      |-> ABF algorithm (3pV2)'
-    case(3)
-    write(PMF_OUT,120)  '      |-> ABF algorithm (3pV3)'
-    case(4)
-    write(PMF_OUT,120)  '      |-> ABF algorithm (2pV)'
-    write(PMF_OUT,130)  '          Velocity order (abf_p2_vx)     : ', abf_p2_vx
-    write(PMF_OUT,130)  '          Momenta order (abf_p2_px)      : ', abf_p2_px
-    case(5)
     write(PMF_OUT,120)  '      |-> ABF algorithm (2pX)'
     write(PMF_OUT,130)  '          Velocity order (abf_p2_vx)     : ', abf_p2_vx
     write(PMF_OUT,130)  '          Momenta order (abf_p2_px)      : ', abf_p2_px
-    write(PMF_OUT,125)  '          abf_clear_shaken_cvvel         : ', prmfile_onoff(abf_clear_shaken_cvvel)
-    write(PMF_OUT,125)  '          abf_use_shaken_icf             : ', prmfile_onoff(abf_use_shaken_icf)
+    case(2)
+    write(PMF_OUT,120)  '      |-> ABF algorithm (2pV)'
+    write(PMF_OUT,130)  '          Velocity order (abf_p2_vx)     : ', abf_p2_vx
+    write(PMF_OUT,130)  '          Momenta order (abf_p2_px)      : ', abf_p2_px
+
     case default
         call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown fmode in abf_init_print_summary!')
     end select
@@ -246,56 +232,24 @@ subroutine abf_init_print_summary
     write(PMF_OUT,120)
     write(PMF_OUT,120)  ' Enthalpy/entropy options:'
     write(PMF_OUT,120)  ' ------------------------------------------------------'
-    write(PMF_OUT,125)  ' Record time progress (frecord)          : ', prmfile_onoff(frecord)
     write(PMF_OUT,125)  ' Accumulate enthalpy (fenthalpy)         : ', prmfile_onoff(fenthalpy)
     write(PMF_OUT,125)  ' Accumulate entropy (fentropy)           : ', prmfile_onoff(fentropy)
     write(PMF_OUT,150)  ' Potential energy offset (fepotaverage)  : ', pmf_unit_get_rvalue(EnergyUnit,fepotaverage),  &
                                                                        '['//trim(pmf_unit_label(EnergyUnit))//']'
     write(PMF_OUT,150)  ' Kinetic energy offset (fekinaverage)    : ', pmf_unit_get_rvalue(EnergyUnit,fekinaverage), &
                                                                        '['//trim(pmf_unit_label(EnergyUnit))//']'
-    write(PMF_OUT,130)  ' Potential energy source (ftds_epot_src) : ', ftds_epot_src
-    select case(ftds_epot_src)
-    case(1)
-    write(PMF_OUT,120)  '      |-> Unmodified'
-    case(2)
-    write(PMF_OUT,120)  '      |-> Interpolated 2p'
-    case(3)
-    write(PMF_OUT,120)  '      |-> Interpolated 3p'
-    case(4)
-    write(PMF_OUT,120)  '      |-> Interpolated 5p'
-    case default
-    call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown potential energy source in abf_init_print_summary!')
-    end select
 
     write(PMF_OUT,130)  ' Kinetic energy source (ftds_ekin_src)   : ', ftds_ekin_src
     select case(ftds_ekin_src)
     case(1)
-    write(PMF_OUT,120)  '      |-> VVV2 (velocity Verlet V - interpolated V2)'
+    write(PMF_OUT,120)  '      |-> VV (Velocity Verlet KE)'
     case(2)
-    write(PMF_OUT,120)  '      |-> VVV4 (velocity Verlet V - interpolated V4)'
+    write(PMF_OUT,120)  '      |-> LF (Leap-Frog KE)'
     case(3)
-    write(PMF_OUT,120)  '      |-> VVV6 (velocity Verlet V - interpolated V6)'
-    case(4)
-    write(PMF_OUT,120)  '      |-> LFKE2 (leap-frog KE - interpolated KE2)'
-    case(5)
-    write(PMF_OUT,120)  '      |-> LFKE4 (leap-frog KE - interpolated KE4)'
-    case(6)
-    write(PMF_OUT,120)  '      |-> LFKE6 (leap-frog KE - interpolated KE6)'
-    case(7)
-    write(PMF_OUT,120)  '      |-> VVV3 (velocity Verlet V - interpolated V3)'
-    case(8)
-    write(PMF_OUT,120)  '      |-> VVV5 (velocity Verlet V - interpolated V5)'
-    case(9)
-    write(PMF_OUT,120)  '      |-> VVV2 (velocity Verlet V - interpolated V2 - delayed +dt)'
-    case(10)
-    write(PMF_OUT,120)  '      |-> VVV2 (velocity Verlet V - interpolated V2 - delayed -dt)'
-    case(11)
-    write(PMF_OUT,120)  '      |-> HA (harmonic approximation Verlet V)'
+    write(PMF_OUT,120)  '      |-> HA (Harmonic Approximation Verlet KE)'
     case default
     call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown kinetic energy source in abf_init_print_summary!')
     end select
-    write(PMF_OUT,151)  ' Scale Ekin (ftds_ekin_scale)            : ', ftds_ekin_scale
-    write(PMF_OUT,151)  ' Scale Vel (ftds_vel_scale)              : ', ftds_vel_scale
     write(PMF_OUT,125)  ' Incl. ABF bias into -TdS (ftds_add_bias): ', prmfile_onoff(ftds_add_bias)
 
     write(PMF_OUT,120)
@@ -348,7 +302,6 @@ subroutine abf_init_print_summary
 125 format(A,A)
 130 format(A,I6)
 150 format(A,F10.1,1X,A)
-151 format(A,F10.4)
 
 140 format(' == Collective variable #',I4.4)
 
@@ -379,8 +332,6 @@ subroutine abf_init_arrays
             pxia(NumOfABFCVs),                  &
             pxif(NumOfABFCVs),                  &
             picf(NumOfABFCVs),                  &
-            pxis(NumOfABFCVs),                  &
-            pxiv(NumOfABFCVs),                  &
             sfac(NumOfABFCVs),                  &
             fz(NumOfABFCVs,NumOfABFCVs),        &
             fzinv(NumOfABFCVs,NumOfABFCVs),     &
@@ -398,42 +349,33 @@ subroutine abf_init_arrays
     pxia(:)     = 0.0d0
     pxif(:)     = 0.0d0
     picf(:)     = 0.0d0
-    pxis(:)     = 0.0d0
-    pxiv(:)     = 0.0d0
     fz(:,:)     = 0.0d0
     fzinv(:,:)  = 0.0d0
     sfac(:)     = 1.0d0
 
 ! history buffers ------------------------------------------
     select case(fmode)
-        case(1,2)
-            ! for V6 interpolation we need at least 6 data points
-            hist_len = 6
-        case(3)
-            hist_len = 8
-        case(4,5)
+        case(1)
             hist_len = 13
+        case(2)
+            hist_len = 8
         case default
             call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented fmode in abf_init_arrays!')
     end select
 
-    allocate(                                           &
-            cvhist(NumOfABFCVs,hist_len),               &
-            micfhist(NumOfABFCVs,hist_len),             &
-            fhist(3,NumOfLAtoms,hist_len),              &
-            shist(3,NumOfLAtoms,hist_len),              &
-            rhist(3,NumOfLAtoms,hist_len),              &
-            vhist(3,NumOfLAtoms,hist_len),              &
-            zdhist(3,NumOfLAtoms,NumOfABFCVs,hist_len), &
-            fzinvhist(NumOfABFCVs,NumOfABFCVs,hist_len), &
-            cvderhist(3,NumOfLAtoms,NumOfABFCVs,hist_len), &
-            epothist(hist_len),                         &
-            ersthist(hist_len),                         &
-            ekinhist(hist_len),                         &
-            epotrwhist(hist_len),                       &
-            erstrwhist(hist_len),                       &
-            ekinlfhist(hist_len),                       &
-            xphist(NumOfABFCVs,hist_len),               &
+    allocate(                                               &
+            cvhist(NumOfABFCVs,hist_len),                   &
+            micfhist(NumOfABFCVs,hist_len),                 &
+            icfhist(NumOfABFCVs,hist_len),                  &
+            xphist(NumOfABFCVs,hist_len),                   &
+            vhist(3,NumOfLAtoms,hist_len),                  &
+            fzinvhist(NumOfABFCVs,NumOfABFCVs,hist_len),    &
+            cvderhist(3,NumOfLAtoms,NumOfABFCVs,hist_len),  &
+            epothist(hist_len),                             &
+            ersthist(hist_len),                             &
+            ekinhist(hist_len),                             &
+            ekinlfhist(hist_len),                           &
+            enevalidhist(hist_len),                         &
             stat= alloc_failed )
 
     if( alloc_failed .ne. 0 ) then
@@ -441,22 +383,18 @@ subroutine abf_init_arrays
             '[ABF] Unable to allocate memory for buffers used in ABF calculation!')
     end if
 
-    cvhist(:,:)     = 0.0d0
-    micfhist(:,:)   = 0.0d0
-    fhist(:,:,:)    = 0.0d0
-    shist(:,:,:)    = 0.0d0
-    rhist(:,:,:)    = 0.0d0
-    vhist(:,:,:)    = 0.0d0
-    zdhist(:,:,:,:) = 0.0d0
-    epothist(:)     = 0.0d0
-    ersthist(:)     = 0.0d0
-    ekinhist(:)     = 0.0d0
-    epotrwhist(:)   = 0.0d0
-    erstrwhist(:)   = 0.0d0
-    ekinlfhist(:)   = 0.0d0
-    xphist(:,:)     = 0.0d0
+    cvhist(:,:)         = 0.0d0
+    micfhist(:,:)       = 0.0d0
+    icfhist(:,:)        = 0.0d0
+    vhist(:,:,:)        = 0.0d0
+    epothist(:)         = 0.0d0
+    ersthist(:)         = 0.0d0
+    ekinhist(:)         = 0.0d0
+    ekinlfhist(:)       = 0.0d0
+    xphist(:,:)         = 0.0d0
     fzinvhist(:,:,:)    = 0.0d0
     cvderhist(:,:,:,:)  = 0.0d0
+    enevalidhist(:)     = .false.
 
 ! other setup ----------------------------------------------
 
