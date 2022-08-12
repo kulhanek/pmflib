@@ -126,16 +126,6 @@ SET(PMF_CVS_SRC
         common/cvs/algebra/cv_rswitch.f90
        )
 
-# XBPLib binding ---------------------------------------------------------------
-
-IF(PMFLIB_HAVE_XBPLIB)
-    SET(PMF_CVS_SRC ${PMF_CVS_SRC}
-        # EGAP based
-            common/cvs/energy/cv_egap.f90
-        )
-    ADD_DEFINITIONS(-DPMFLIB_HAVE_XBPLIB)
-ENDIF(PMFLIB_HAVE_XBPLIB)
-
 # ABF --------------------------------------------------------------------------
 
 SET(PMF_ABF_CORE_SRC

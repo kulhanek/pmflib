@@ -84,9 +84,6 @@ subroutine pmf_alloc_cv_allocate(cv_type,cv_item)
 
 ! energy based CVs -------------------------------
     use cv_epot
-#ifdef PMFLIB_HAVE_XBPLIB
-    use cv_egap
-#endif
 
 ! coordination number  ---------------------------
     use cv_cnff
@@ -221,10 +218,6 @@ subroutine pmf_alloc_cv_allocate(cv_type,cv_item)
     ! energy -------------------------------------
         case('EPOT')
             allocate(CVTypeEPOT::cv_item)
-#ifdef PMFLIB_HAVE_XBPLIB
-        case('EGAP')
-            allocate(CVTypeEGAP::cv_item)
-#endif
 
     ! coordination numbers -----------------------
         case('CNFF')
