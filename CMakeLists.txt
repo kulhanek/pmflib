@@ -23,9 +23,10 @@ SET(PMFLIB_BUILD_UTILS      ON  CACHE BOOL "Should utilities be build?")
 SET(PMFLIB_OPENMP           OFF CACHE BOOL "Should OpenMP be enabled for some PMFLib utilities?")
 
 # drivers options --------------------------------
-SET(PMFLIB_SANDER_DRV   ON   CACHE BOOL "Should the driver for sander be built?")
-SET(PMFLIB_PMEMD_DRV    ON   CACHE BOOL "Should the driver for pmemd be built?")
-SET(PMFLIB_CATS_DRV     ON   CACHE BOOL "Should the driver for cats be built?")
+SET(PMFLIB_SANDER_DRV           ON   CACHE BOOL "Should the driver for sander be built?")
+SET(PMFLIB_SANDER_DYNAMIC_DRV   ON   CACHE BOOL "Should the driver for sander (dynamic) be built?")
+SET(PMFLIB_PMEMD_DYNAMIC_DRV    ON   CACHE BOOL "Should the driver for pmemd  (dynamic) be built?")
+SET(PMFLIB_CATS_DRV             ON   CACHE BOOL "Should the driver for cats be built?")
 
 # ==============================================================================
 # project setup ----------------------------------------------------------------

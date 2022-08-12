@@ -21,7 +21,7 @@
 !    Boston, MA  02110-1301  USA
 !===============================================================================
 
-module pmf_pmemd_v01
+module pmf_pmemd_d01
 
 use pmf_sizes
 use iso_c_binding
@@ -32,14 +32,21 @@ implicit none
 integer, parameter              :: PMFLIB_CHECK_INT1 = 1089523658
 real(PMFDP), parameter          :: PMFLIB_CHECK_R81  = 1.78493547
 character(len=10), parameter    :: PMFLIB_CHECK_STR1 = 'PMFLib v06'
+character(len=10), parameter    :: PMFLIB_CHECK_STR2 = 'DRVABI d01'
 
 ! energy array
-integer, parameter          :: PMFLIB_ERST      = 1
-integer, parameter          :: PMFLIB_EPOT      = 2
-integer, parameter          :: PMFLIB_EKIN_VV   = 3
-integer, parameter          :: PMFLIB_EKIN_LF   = 4
-integer, parameter          :: PMFLIB_EKIN_HA   = 5
-integer, parameter          :: PMFLIB_ENE_SIZE  = PMFLIB_EKIN_HA
+integer, parameter          :: PMFLIB_ERST                  = 1
+integer, parameter          :: PMFLIB_EPOT                  = 2
+integer, parameter          :: PMFLIB_EKIN_VV               = 3
+integer, parameter          :: PMFLIB_EKIN_LF               = 4
+integer, parameter          :: PMFLIB_EKIN_HA               = 5
+integer, parameter          :: PMFLIB_ENE_SIZE              = PMFLIB_EKIN_HA
+
+! setup array
+integer, parameter          :: PMFLIB_SETUP_FORCE_NEED_ENE  = 1
+integer, parameter          :: PMFLIB_SETUP_FORCE_NEED_FRC  = 2
+integer, parameter          :: PMFLIB_SETUP_FORCE_NEED_VEL  = 3
+integer, parameter          :: PMFLIB_SETUP_SIZE            = PMFLIB_SETUP_FORCE_NEED_VEL
 
 contains
 
@@ -47,7 +54,8 @@ contains
 !-------------------------------------------------------------------------------
 !===============================================================================
 
-subroutine pmf_pmemd_check_interface(rnum,inum,ene_len,str,str_len) bind(c,name='int_pmf_pmemd_check_interface')
+subroutine pmf_pmemd_check_interface(rnum,inum,ene_len,setup_len,str1,str1_len,str2,str2_len) &
+           bind(c,name='int_pmf_pmemd_check_interface')
 
     use pmf_constants
     use pmf_utils
@@ -56,8 +64,11 @@ subroutine pmf_pmemd_check_interface(rnum,inum,ene_len,str,str_len) bind(c,name=
     real(CPMFDP)        :: rnum
     integer(CPMFINT)    :: inum
     integer(CPMFINT)    :: ene_len
-    character(CPMFCHAR) :: str(*)
-    integer(CPMFINT)    :: str_len
+    integer(CPMFINT)    :: setup_len
+    character(CPMFCHAR) :: str1(*)
+    integer(CPMFINT)    :: str1_len
+    character(CPMFCHAR) :: str2(*)
+    integer(CPMFINT)    :: str2_len
     ! -------------------------------------------
     integer             :: i
     ! --------------------------------------------------------------------------
@@ -68,15 +79,29 @@ subroutine pmf_pmemd_check_interface(rnum,inum,ene_len,str,str_len) bind(c,name=
     if( inum .ne. PMFLIB_CHECK_INT1 ) then
         call pmf_utils_exit(PMF_OUT,1,'Driver interface compromised for PMFLIB_CHECK_INT1!')
     end if
+
     if( ene_len .ne. PMFLIB_ENE_SIZE ) then
         call pmf_utils_exit(PMF_OUT,1,'Driver interface compromised for PMFLIB_ENE_SIZE!')
     end if
-    if( str_len .ne. len(PMFLIB_CHECK_STR1) ) then
+    if( setup_len .ne. PMFLIB_SETUP_SIZE ) then
+        call pmf_utils_exit(PMF_OUT,1,'Driver interface compromised for PMFLIB_SETUP_SIZE!')
+    end if
+
+    if( str1_len .ne. len(PMFLIB_CHECK_STR1) ) then
         call pmf_utils_exit(PMF_OUT,1,'Driver interface compromised for len(PMFLIB_CHECK_STR1)!')
     end if
-    do i=1,min(str_len,len(PMFLIB_CHECK_STR1))
-        if( str(i) .ne. PMFLIB_CHECK_STR1(i:i) ) then
+    do i=1,min(str1_len,len(PMFLIB_CHECK_STR1))
+        if( str1(i) .ne. PMFLIB_CHECK_STR1(i:i) ) then
             call pmf_utils_exit(PMF_OUT,1,'Driver interface compromised for PMFLIB_CHECK_STR1!')
+        end if
+    end do
+
+    if( str2_len .ne. len(PMFLIB_CHECK_STR2) ) then
+        call pmf_utils_exit(PMF_OUT,1,'Driver interface compromised for len(PMFLIB_CHECK_STR2)!')
+    end if
+    do i=1,min(str2_len,len(PMFLIB_CHECK_STR2))
+        if( str2(i) .ne. PMFLIB_CHECK_STR2(i:i) ) then
+            call pmf_utils_exit(PMF_OUT,1,'Driver interface compromised for PMFLIB_CHECK_STR2!')
         end if
     end do
 
@@ -95,8 +120,8 @@ subroutine pmf_pmemd_init_preinit(mdin,mdin_len,anatom,anres,   &
     use pmf_dat
     use pmf_init
     use pmf_utils
-    use pmf_pmemd_dat_v01
-    use pmf_pmemd_control_v01
+    use pmf_pmemd_dat_d01
+    use pmf_pmemd_control_d01
     use pmf_pbc
     use pmf_core
     use pmf_mask
@@ -231,7 +256,7 @@ subroutine pmf_pmemd_finalize_preinit(amass,ax) bind(c,name='int_pmf_pmemd_final
     use pmf_mask
     use pmf_core
     use pmf_init
-    use pmf_pmemd_control_v01
+    use pmf_pmemd_control_d01
     use pmf_utils
 
     implicit none
@@ -275,7 +300,7 @@ subroutine pmf_pmemd_init(amass,ax) bind(c,name='int_pmf_pmemd_init')
     use pmf_init
     use pmf_dat
     use cst_init
-    use pmf_pmemd_control_v01
+    use pmf_pmemd_control_d01
 
     implicit none
     real(CPMFDP)   :: amass(:)
@@ -293,6 +318,38 @@ subroutine pmf_pmemd_init(amass,ax) bind(c,name='int_pmf_pmemd_init')
     return
 
 end subroutine pmf_pmemd_init
+
+!===============================================================================
+!-------------------------------------------------------------------------------
+!===============================================================================
+
+subroutine pmf_pmemd_get_setup(setup,setup_len) bind(c,name='int_pmf_pmemd_get_setup')
+
+    use pmf_constants
+    use pmf_sizes
+    use pmf_dat
+
+    implicit none
+    integer(CPMFINT)    :: setup(:)
+    integer(CPMFINT)    :: setup_len
+    ! --------------------------------------------------------------------------
+
+    ! reset setup
+    setup(1:setup_len) = 0
+
+    if( fmaster ) then
+        setup(PMFLIB_SETUP_FORCE_NEED_ENE) = 0
+        setup(PMFLIB_SETUP_FORCE_NEED_FRC) = 0
+        setup(PMFLIB_SETUP_FORCE_NEED_VEL) = 0
+    end if
+
+#ifdef MPI
+    ! broadcast to other processes
+#endif
+
+    return
+
+end subroutine pmf_pmemd_get_setup
 
 !===============================================================================
 !-------------------------------------------------------------------------------
@@ -523,7 +580,7 @@ end subroutine pmf_pmemd_init_taskid_mpi
 subroutine pmf_pmemd_bcast_dat_mpi() bind(c,name='int_pmf_pmemd_bcast_dat_mpi')
 
     use pmf_init
-    use pmf_pmemd_dat_v01
+    use pmf_pmemd_dat_d01
     use pmf_dat
     use pmf_utils
 
@@ -593,7 +650,7 @@ subroutine pmf_pmemd_force_mpi(x,v,f,spmfene,atm_owner_map) bind(c,name='int_pmf
 
     use pmf_sizes
     use pmf_core_lf
-    use pmf_pmemd_dat_v01
+    use pmf_pmemd_dat_d01
     use pmf_dat
     use pmf_timers
     use pmf_utils
@@ -664,7 +721,7 @@ subroutine pmf_pmemd_constraints_mpi(x,modified,atm_owner_map) bind(c,name='int_
     use pmf_sizes
     use pmf_dat
     use pmf_core_lf
-    use pmf_pmemd_dat_v01
+    use pmf_pmemd_dat_d01
     use pmf_dat
     use pmf_timers
 
@@ -716,7 +773,7 @@ subroutine pmf_pmemd_mpistat
 
     use pmf_constants
     use pmf_dat
-    use pmf_pmemd_dat_v01
+    use pmf_pmemd_dat_d01
 
     implicit none
     integer           :: i
@@ -766,7 +823,7 @@ subroutine pmf_pmemd_gather_array_mpi(lx,x,atm_owner_map)
 
     use pmf_dat
     use pmf_utils
-    use pmf_pmemd_dat_v01
+    use pmf_pmemd_dat_d01
 
     implicit none
 
@@ -896,7 +953,7 @@ subroutine pmf_pmemd_scatter_array_mpi(lx,x,atm_owner_map)
 
     use pmf_dat
     use pmf_utils
-    use pmf_pmemd_dat_v01
+    use pmf_pmemd_dat_d01
 
     implicit none
 
@@ -1015,7 +1072,7 @@ end subroutine pmf_pmemd_scatter_array_mpi
 
 !===============================================================================
 
-end module pmf_pmemd_v01
+end module pmf_pmemd_d01
 
 
 

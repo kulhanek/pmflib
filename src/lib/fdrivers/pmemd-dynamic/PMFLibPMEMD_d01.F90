@@ -19,7 +19,7 @@
 !    Boston, MA  02110-1301  USA
 !===============================================================================
 
-module PMFLibPMEMD
+module PMFLibPMEMD_d01
 
 use iso_c_binding
 
@@ -27,29 +27,38 @@ implicit none
 
 #if defined PMFLIB
 
+! ==============================================================================
 ! type sizes
-integer, parameter          :: CPMFDP        = c_double
-integer, parameter          :: CPMFINT       = c_int
-integer, parameter          :: CPMFCHAR      = c_char
-
+integer, parameter                          :: CPMFDP        = c_double
+integer, parameter                          :: CPMFINT       = c_int
+integer, parameter                          :: CPMFCHAR      = c_char
 ! interface binding check
 integer(CPMFINT), parameter                 :: PMFLIB_CHECK_INT1 = 1089523658
 real(CPMFDP), parameter                     :: PMFLIB_CHECK_R81  = 1.78493547
 character(kind=CPMFCHAR,len=10), parameter  :: PMFLIB_CHECK_STR1 = 'PMFLib v06'
+character(kind=CPMFCHAR,len=10), parameter  :: PMFLIB_CHECK_STR2 = 'DRVABI d01'
+! ==============================================================================
 
 ! constants
-integer(c_int), parameter   :: RTLD_NOW         = 2         ! extracted from libc
-integer(c_int), parameter   :: RTLD_DI_ORIGIN   = 6         ! extracted from libc
-integer, parameter          :: MAX_PATH         = 4096      ! Linux
+integer(c_int), parameter   :: RTLD_NOW                     = 2         ! extracted from libc
+integer(c_int), parameter   :: RTLD_DI_ORIGIN               = 6         ! extracted from libc
+integer, parameter          :: MAX_PATH                     = 4096      ! Linux
 
 ! energy array
-integer, parameter          :: PMFLIB_ERST      = 1
-integer, parameter          :: PMFLIB_EPOT      = 2
-integer, parameter          :: PMFLIB_EKIN_VV   = 3
-integer, parameter          :: PMFLIB_EKIN_LF   = 4
-integer, parameter          :: PMFLIB_EKIN_HA   = 5
-integer, parameter          :: PMFLIB_ENE_SIZE  = PMFLIB_EKIN_HA
+integer, parameter          :: PMFLIB_ERST                  = 1
+integer, parameter          :: PMFLIB_EPOT                  = 2
+integer, parameter          :: PMFLIB_EKIN_VV               = 3
+integer, parameter          :: PMFLIB_EKIN_LF               = 4
+integer, parameter          :: PMFLIB_EKIN_HA               = 5
+integer, parameter          :: PMFLIB_ENE_SIZE              = PMFLIB_EKIN_HA
 
+! setup array
+integer, parameter          :: PMFLIB_SETUP_FORCE_NEED_ENE  = 1
+integer, parameter          :: PMFLIB_SETUP_FORCE_NEED_FRC  = 2
+integer, parameter          :: PMFLIB_SETUP_FORCE_NEED_VEL  = 3
+integer, parameter          :: PMFLIB_SETUP_SIZE            = PMFLIB_SETUP_FORCE_NEED_VEL
+
+! ==============================================================================
 ! interface to linux API
 interface
     function dlopen(filename,mode) bind(c,name="dlopen")
@@ -96,18 +105,22 @@ interface
     end function
 end interface
 
+! ==============================================================================
 ! interface to PMFLib driver
 abstract interface
 
 ! SETUP ==========================================
-    subroutine int_pmf_pmemd_check_interface(rnum,inum,ene_len,str,str_len) bind(c)
+    subroutine int_pmf_pmemd_check_interface(rnum,inum,ene_len,setup_len,str1,str1_len,str2,str2_len) bind(c)
         import
         implicit none
         real(CPMFDP)        :: rnum
         integer(CPMFINT)    :: inum
         integer(CPMFINT)    :: ene_len
-        character(CPMFCHAR) :: str(*)
-        integer(CPMFINT)    :: str_len
+        integer(CPMFINT)    :: setup_len
+        character(CPMFCHAR) :: str1(*)
+        integer(CPMFINT)    :: str1_len
+        character(CPMFCHAR) :: str2(*)
+        integer(CPMFINT)    :: str2_len
     end subroutine int_pmf_pmemd_check_interface
     ! -------------------------------------------------------------------------
     subroutine int_pmf_pmemd_init_preinit(mdin,mdin_len,anatom,anres,   &
@@ -160,6 +173,13 @@ abstract interface
         real(CPMFDP)        :: amass(:)
         real(CPMFDP)        :: ax(:,:)
     end subroutine int_pmf_pmemd_init
+    ! --------------------------------------------------------------------------
+    subroutine int_pmf_pmemd_get_setup(setup,setup_len) bind(c)
+        import
+        implicit none
+        integer(CPMFINT)    :: setup(:)
+        integer(CPMFINT)    :: setup_len
+    end subroutine int_pmf_pmemd_get_setup
     ! --------------------------------------------------------------------------
     subroutine int_pmf_pmemd_shouldexit(exitcode) bind(c)
         import
@@ -257,20 +277,12 @@ abstract interface
 
 end interface
 
+! ==============================================================================
 ! driver setup
-character(len=100)          :: pmf_pmemd_driver_name = 'libfpmfdrv_pmemd_v01.so'
-character(len=MAX_PATH)     :: pmf_pmemd_driver_path
-character(len=MAX_PATH)     :: pmf_pmemd_driver_error
-type(c_ptr)                 :: pmf_pmemd_driver_handle
-
-! run-time variables
-logical                     :: use_pmflib
-integer                     :: pmflib_need_ene
-integer                     :: pmflib_need_frc
-integer                     :: pmflib_need_vel
-integer                     :: pmflib_cst_modified
-integer                     :: pmflib_exit
-real(CPMFDP)                :: pmflib_ene(PMFLIB_ENE_SIZE)
+character(len=100)          :: pmf_pmemd_driver_name    = 'libfpmfdrv_pmemd_v01.so'
+character(len=MAX_PATH)     :: pmf_pmemd_driver_path    = ''
+character(len=MAX_PATH)     :: pmf_pmemd_driver_error   = ''
+type(c_ptr)                 :: pmf_pmemd_driver_handle  = C_NULL_PTR
 
 ! driver symbol
 procedure(int_pmf_pmemd_check_interface), bind(c), pointer          :: pmf_pmemd_check_interface
@@ -280,6 +292,8 @@ procedure(int_pmf_pmemd_set_residue), bind(c), pointer              :: pmf_pmemd
 procedure(int_pmf_pmemd_set_atom), bind(c), pointer                 :: pmf_pmemd_set_atom
 procedure(int_pmf_pmemd_finalize_preinit), bind(c), pointer         :: pmf_pmemd_finalize_preinit
 procedure(int_pmf_pmemd_init), bind(c), pointer                     :: pmf_pmemd_init
+procedure(int_pmf_pmemd_get_setup), bind(c), pointer                :: pmf_pmemd_get_setup
+
 procedure(int_pmf_pmemd_shouldexit), bind(c), pointer               :: pmf_pmemd_shouldexit
 procedure(int_pmf_pmemd_finalize), bind(c), pointer                 :: pmf_pmemd_finalize
 
@@ -297,6 +311,20 @@ procedure(int_pmf_pmemd_bcast_dat_mpi), bind(c), pointer            :: pmf_pmemd
 procedure(int_pmf_pmemd_bcast_constraints_mpi), bind(c), pointer    :: pmf_pmemd_bcast_constraints_mpi
 procedure(int_pmf_pmemd_force_mpi), bind(c), pointer                :: pmf_pmemd_force_mpi
 #endif
+
+! ==============================================================================
+! run-time variables
+logical         :: use_pmflib               = .false.
+integer         :: pmflib_force_need_ene    = 0
+integer         :: pmflib_force_need_frc    = 0
+integer         :: pmflib_force_need_vel    = 0
+integer         :: pmflib_cst_modified      = 0
+integer         :: pmflib_exit              = 0
+
+real(CPMFDP)        :: pmflib_ene(PMFLIB_ENE_SIZE)
+integer(CPMFINT)    :: pmflib_setup(PMFLIB_SETUP_SIZE)
+
+! ==============================================================================
 
 contains
 
@@ -383,6 +411,12 @@ subroutine pmf_pmemd_bind_to_driver(master)
     end if
     call c_f_procpointer(proc_addr,pmf_pmemd_init)
 ! ------------------
+    proc_addr=dlsym(pmf_pmemd_driver_handle, "int_pmf_pmemd_get_setup"//c_null_char)
+    if (.not. c_associated(proc_addr))then
+        stop 'Unable to load the procedure int_pmf_pmemd_get_setup'
+    end if
+    call c_f_procpointer(proc_addr,pmf_pmemd_get_setup)
+! ------------------
     proc_addr=dlsym(pmf_pmemd_driver_handle, "int_pmf_pmemd_shouldexit"//c_null_char)
     if (.not. c_associated(proc_addr))then
         stop 'Unable to load the procedure int_pmf_pmemd_shouldexit'
@@ -465,14 +499,16 @@ subroutine pmf_pmemd_bind_to_driver(master)
     if( master ) then
         write(6,80)
         write(6,90)
-        call pmf_pmemd_check_interface(PMFLIB_CHECK_R81,PMFLIB_CHECK_INT1,PMFLIB_ENE_SIZE, &
-                                       PMFLIB_CHECK_STR1,len(PMFLIB_CHECK_STR1))
+        call pmf_pmemd_check_interface(PMFLIB_CHECK_R81,PMFLIB_CHECK_INT1,PMFLIB_ENE_SIZE,PMFLIB_SETUP_SIZE, &
+                                       PMFLIB_CHECK_STR1,len(PMFLIB_CHECK_STR1), &
+                                       PMFLIB_CHECK_STR2,len(PMFLIB_CHECK_STR2))
         write(6,100)
         write(6,10)
         write(6,*)
     else
-        call pmf_pmemd_check_interface(PMFLIB_CHECK_R81,PMFLIB_CHECK_INT1,PMFLIB_ENE_SIZE, &
-                                       PMFLIB_CHECK_STR1,len(PMFLIB_CHECK_STR1))
+        call pmf_pmemd_check_interface(PMFLIB_CHECK_R81,PMFLIB_CHECK_INT1,PMFLIB_ENE_SIZE,PMFLIB_SETUP_SIZE, &
+                                       PMFLIB_CHECK_STR1,len(PMFLIB_CHECK_STR1), &
+                                       PMFLIB_CHECK_STR2,len(PMFLIB_CHECK_STR2))
     end if
 
     use_pmflib = .true.
@@ -493,6 +529,25 @@ subroutine pmf_pmemd_bind_to_driver(master)
 100 format("#   Everything seems to be OK!")
 
 end subroutine pmf_pmemd_bind_to_driver
+
+!===============================================================================
+! subroutine pmf_pmemd_update_setup
+!===============================================================================
+
+subroutine pmf_pmemd_update_setup
+
+    implicit none
+    ! --------------------------------------------------------------------------
+
+    ! get setup from driver
+    call pmf_pmemd_get_setup(pmflib_setup,PMFLIB_SETUP_SIZE)
+
+    ! update local variables
+    pmflib_force_need_ene = pmflib_setup(PMFLIB_SETUP_FORCE_NEED_ENE)
+    pmflib_force_need_frc = pmflib_setup(PMFLIB_SETUP_FORCE_NEED_FRC)
+    pmflib_force_need_vel = pmflib_setup(PMFLIB_SETUP_FORCE_NEED_VEL)
+
+end subroutine pmf_pmemd_update_setup
 
 !===============================================================================
 ! subroutine pmf_pmemd_release_driver
@@ -557,5 +612,5 @@ end subroutine pmf_pmemd_get_dlerror
 
 #endif
 
-end module PMFLibPMEMD
+end module PMFLibPMEMD_d01
 

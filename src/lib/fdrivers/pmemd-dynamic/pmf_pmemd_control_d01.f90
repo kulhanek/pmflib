@@ -1,6 +1,7 @@
 !===============================================================================
 ! PMFLib - Library Supporting Potential of Mean Force Calculations
 !-------------------------------------------------------------------------------
+!    Copyright (C) 2022 Petr Kulhanek, kulhanek@chemi.muni.cz
 !    Copyright (C) 2010,2011 Petr Kulhanek, kulhanek@chemi.muni.cz
 !    Copyright (C) 2007,2008 Petr Kulhanek, kulhanek@enzim.hu
 !
@@ -20,7 +21,7 @@
 !    Boston, MA  02110-1301  USA
 !===============================================================================
 
-module pmf_cpmd_control
+module pmf_pmemd_control_d01
 
 implicit none
 contains
@@ -29,10 +30,10 @@ contains
 !-------------------------------------------------------------------------------
 !===============================================================================
 
-subroutine pmf_cpmd_process_control_begin
+subroutine pmf_pmemd_process_control
 
     use pmf_constants
-    use pmf_cpmd_dat
+    use pmf_pmemd_dat_d01
     use prmfile
     use pmf_utils
     use pmf_control
@@ -52,28 +53,8 @@ subroutine pmf_cpmd_process_control_begin
     end if
 
     ! read groups
-    call pmf_cpmd_read_cpmd
+    call pmf_pmemd_read_pmemd
     call pmf_control_read_pmflib_group(ControlPrmfile)
-
-    return
-
-end subroutine pmf_cpmd_process_control_begin
-
-!===============================================================================
-!-------------------------------------------------------------------------------
-!===============================================================================
-
-subroutine pmf_cpmd_process_control_end
-
-    use pmf_constants
-    use pmf_cpmd_dat
-    use prmfile
-    use pmf_utils
-    use pmf_control
-    use pmf_dat
-
-    implicit none
-    ! --------------------------------------------------------------------------
 
     ! read method CV setup
     call pmf_control_read_method_cvs_and_paths(ControlPrmfile)
@@ -92,21 +73,21 @@ subroutine pmf_cpmd_process_control_end
 
     return
 
-end subroutine pmf_cpmd_process_control_end
+end subroutine pmf_pmemd_process_control
 
 !===============================================================================
 !-------------------------------------------------------------------------------
 !===============================================================================
 
-subroutine pmf_cpmd_read_cpmd
+subroutine pmf_pmemd_read_pmemd
 
     use pmf_constants
-    use pmf_cpmd_dat
+    use pmf_pmemd_dat_d01
     use prmfile
     use pmf_utils
 
     implicit none
-    ! --------------------------------------------------------------------------
+    ! ----------------------------------------------------------------------------
 
     write(PMF_OUT,*)
     call pmf_utils_heading(PMF_OUT,'{MAIN}',':')
@@ -117,22 +98,22 @@ subroutine pmf_cpmd_read_cpmd
         call pmf_utils_exit(PMF_OUT,1,'Specified control file does not contain {MAIN} group!')
     end if
 
-    write(PMF_OUT,'(a)') '--- [cpmd] ---------------------------------------------------------------------'
+    write(PMF_OUT,'(a)') '--- [amber] --------------------------------------------------------------------'
 
-    ! open cpmd section
-    if( .not. prmfile_open_section(ControlPrmfile,'cpmd') ) then
-        call pmf_utils_exit(PMF_OUT,1,'[cpmd] section has to be specified in control file!')
+    ! open pmemd section
+    if( .not. prmfile_open_section(ControlPrmfile,'amber') ) then
+        call pmf_utils_exit(PMF_OUT,1,'[amber] section has to be specified in control file!')
     end if
 
-    write(PMF_OUT,'(a)') ' >> cpmd section is discarded ...'
+    write(PMF_OUT,'(a)') ' >> [amber] section is discarded ...'
     call prmfile_set_sec_as_processed(ControlPrmfile)
 
     return
 
-end subroutine pmf_cpmd_read_cpmd
+end subroutine pmf_pmemd_read_pmemd
 
 !===============================================================================
 !-------------------------------------------------------------------------------
 !===============================================================================
 
-end module pmf_cpmd_control
+end module pmf_pmemd_control_d01
