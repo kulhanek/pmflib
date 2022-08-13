@@ -39,6 +39,7 @@ IF(LIBS_SHARED)
 
     # client test
     ADD_LIBRARY(sander_drv_client_shared_d01 SHARED ${SANDER_DRV_CLIENT_SRC_D01})
+    ADD_DEPENDENCIES(sander_drv_client_shared_d01 fpmf_shared)
     TARGET_LINK_LIBRARIES(sander_drv_client_shared_d01 ${FPMF_LIBRARIES})
     TARGET_COMPILE_DEFINITIONS(sander_drv_client_shared_d01 PUBLIC PMFLIB)
     SET_TARGET_PROPERTIES(sander_drv_client_shared_d01 PROPERTIES
