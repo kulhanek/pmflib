@@ -309,28 +309,56 @@ end subroutine pmf_pmemd_init
 !-------------------------------------------------------------------------------
 !===============================================================================
 
-subroutine pmf_pmemd_get_setup(setup,setup_len) bind(c,name='int_pmf_pmemd_get_setup')
+subroutine pmf_pmemd_get_setup(setup) bind(c,name='int_pmf_pmemd_get_setup')
 
     use pmf_constants
     use pmf_sizes
     use pmf_dat
+    use abf_dat
+    use pmf_cvs
 
     implicit none
+#ifdef MPI
+INCLUDE 'mpif.h'
+#endif
+
     integer(CPMFINT)    :: setup(:)
-    integer(CPMFINT)    :: setup_len
+    ! -------------------------------------------
+    integer             :: i
+#ifdef MPI
+    integer             :: ierr
+#endif
     ! --------------------------------------------------------------------------
 
     ! reset setup
-    setup(1:setup_len) = 0
+    setup(:) = 0
 
     if( fmaster ) then
-        setup(PMFLIB_SETUP_FORCE_NEED_ENE) = 0
-        setup(PMFLIB_SETUP_FORCE_NEED_FRC) = 0
-        setup(PMFLIB_SETUP_FORCE_NEED_VEL) = 0
+        if( cst_enabled ) then
+            call pmf_utils_exit(PMF_OUT,1,'[cst] method is not supported with this PMFLib driver!')
+        end if
+
+        ! [EPOT] requires ENE and FRC
+        do i=1,NumOfCVs
+            if( CVList(i)%cv%ctype .eq. 'EPOT' ) then
+                setup(PMFLIB_SETUP_FORCE_NEED_ENE) = 1
+                setup(PMFLIB_SETUP_FORCE_NEED_FRC) = 1
+                exit
+            end if
+        end do
+
+        if( fmode .eq. 2 ) then
+            ! we need velocities for this ABF mode
+            setup(PMFLIB_SETUP_FORCE_NEED_VEL) = 1
+        end if
     end if
 
 #ifdef MPI
     ! broadcast to other processes
+    call mpi_bcast(setup, size(setup), mpi_integer, 0, mpi_comm_world, ierr)
+    if( ierr .ne. MPI_SUCCESS ) then
+        call pmf_utils_exit(PMF_OUT, 1,'[PMF] Unable to broadcast setup array in pmf_pmemd_get_setup!')
+    end if
 #endif
 
     return

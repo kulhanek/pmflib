@@ -408,6 +408,8 @@ subroutine pmf_sander_force(anatom,x,v,f,epot,epmf) bind(c,name='int_pmf_sander_
     real(CPMFDP)        :: epmf         ! out
     ! --------------------------------------------------------------------------
 
+    if( .not. fmaster ) return
+
     call pmf_timers_start_timer(PMFLIB_TIMER)
 
     call pmf_core_lf_update_step

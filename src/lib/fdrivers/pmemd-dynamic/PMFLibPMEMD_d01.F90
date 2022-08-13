@@ -105,6 +105,14 @@ interface
         integer(c_int)      :: dlclose
         type(c_ptr), value  :: handle
     end function
+    ! -------------------------------------------------------------------------
+    function strlen(string) bind(c,name='strlen')
+        ! int strlen(char *string)
+        use iso_c_binding
+        implicit none
+        integer(c_int)      :: strlen
+        type(c_ptr), value  :: string
+    end function
 end interface
 
 ! ==============================================================================
@@ -177,11 +185,10 @@ abstract interface
         real(CPMFDP)        :: ax(:,:)
     end subroutine int_pmf_pmemd_init
     ! --------------------------------------------------------------------------
-    subroutine int_pmf_pmemd_get_setup(setup,setup_len) bind(c)
+    subroutine int_pmf_pmemd_get_setup(setup) bind(c)
         import
         implicit none
         integer(CPMFINT)    :: setup(:)
-        integer(CPMFINT)    :: setup_len
     end subroutine int_pmf_pmemd_get_setup
     ! --------------------------------------------------------------------------
     subroutine int_pmf_pmemd_shouldexit(exitcode) bind(c)
@@ -219,36 +226,6 @@ abstract interface
         integer(CPMFINT)    :: valid
     end subroutine int_pmf_pmemd_register_ekin
 
-! CST ============================================
-    function int_pmf_pmemd_cst_checkatom(atomid) bind(c)
-        import
-        implicit none
-        integer(CPMFINT)    :: int_pmf_pmemd_cst_checkatom
-        integer(CPMFINT)    :: atomid
-    end function int_pmf_pmemd_cst_checkatom
-    ! --------------------------------------------------------------------------
-    subroutine int_pmf_pmemd_cst_shake_allocate(num) bind(c)
-        import
-        implicit none
-        integer(CPMFINT)    :: num
-    end subroutine int_pmf_pmemd_cst_shake_allocate
-    ! --------------------------------------------------------------------------
-    subroutine int_pmf_pmemd_cst_set_shake(id,at1,at2,value) bind(c)
-        import
-        implicit none
-        integer(CPMFINT)    :: id       ! id of constraint
-        integer(CPMFINT)    :: at1      ! id of first atom
-        integer(CPMFINT)    :: at2      ! id of second atom
-        real(CPMFDP)        :: value    ! value of DS constraint
-    end subroutine int_pmf_pmemd_cst_set_shake
-    ! --------------------------------------------------------------------------
-    subroutine int_pmf_pmemd_shake(x,modified) bind(c)
-        import
-        implicit none
-        real(CPMFDP)        :: x(:,:)
-        integer(CPMFINT)    :: modified
-    end subroutine int_pmf_pmemd_shake
-
 #ifdef MPI
 ! MPI ============================================
     subroutine int_pmf_pmemd_init_taskid_mpi(mytaskid,numoftasks) bind(c)
@@ -262,27 +239,16 @@ abstract interface
         implicit none
     end subroutine int_pmf_pmemd_bcast_dat_mpi
     ! -------------------------------------------------------------------------
-    subroutine int_pmf_pmemd_bcast_constraints_mpi() bind(c)
-        implicit none
-    end subroutine int_pmf_pmemd_bcast_constraints_mpi
-    ! -------------------------------------------------------------------------
-    subroutine int_pmf_pmemd_force_mpi(x,v,f,spmfene,atm_owner_map) bind(c)
+    subroutine int_pmf_pmemd_force_mpi(x,v,f,epot,epmf,atm_owner_map) bind(c)
         import
         implicit none
         real(CPMFDP)        :: x(:,:)
         real(CPMFDP)        :: v(:,:)
         real(CPMFDP)        :: f(:,:)
-        real(CPMFDP)        :: spmfene(:)
+        real(CPMFDP)        :: epot             ! in
+        real(CPMFDP)        :: epmf             ! out
         integer(CPMFINT)    :: atm_owner_map(:)
     end subroutine int_pmf_pmemd_force_mpi
-    ! -------------------------------------------------------------------------
-    subroutine int_pmf_pmemd_shake_mpi(x,modified,atm_owner_map) bind(c)
-        import
-        implicit none
-        real(CPMFDP)        :: x(:,:)
-        integer(CPMFINT)    :: modified
-        integer(CPMFINT)    :: atm_owner_map(:)
-    end subroutine int_pmf_pmemd_shake_mpi
     ! -------------------------------------------------------------------------
 #endif
 
@@ -312,25 +278,18 @@ procedure(int_pmf_pmemd_update_box), bind(c), pointer               :: pmf_pmemd
 procedure(int_pmf_pmemd_force), bind(c), pointer                    :: pmf_pmemd_force
 procedure(int_pmf_pmemd_register_ekin), bind(c), pointer            :: pmf_pmemd_register_ekin
 
-procedure(int_pmf_pmemd_cst_checkatom), bind(c), pointer            :: pmf_pmemd_cst_checkatom
-procedure(int_pmf_pmemd_cst_shake_allocate), bind(c), pointer       :: pmf_pmemd_cst_shake_allocate
-procedure(int_pmf_pmemd_cst_set_shake), bind(c), pointer            :: pmf_pmemd_cst_set_shake
-procedure(int_pmf_pmemd_shake), bind(c), pointer                    :: pmf_pmemd_shake
-
 #ifdef MPI
 procedure(int_pmf_pmemd_init_taskid_mpi), bind(c), pointer          :: pmf_pmemd_init_taskid_mpi
 procedure(int_pmf_pmemd_bcast_dat_mpi), bind(c), pointer            :: pmf_pmemd_bcast_dat_mpi
-procedure(int_pmf_pmemd_bcast_constraints_mpi), bind(c), pointer    :: pmf_pmemd_bcast_constraints_mpi
 procedure(int_pmf_pmemd_force_mpi), bind(c), pointer                :: pmf_pmemd_force_mpi
-procedure(int_pmf_pmemd_shake_mpi), bind(c), pointer                :: pmf_pmemd_shake_mpi
 #endif
 
 ! ==============================================================================
 ! run-time variables
 logical         :: use_pmflib               = .false.
-integer         :: pmflib_force_need_ene    = 0
-integer         :: pmflib_force_need_frc    = 0
-integer         :: pmflib_force_need_vel    = 0
+logical         :: pmflib_force_need_ene    = .false.
+logical         :: pmflib_force_need_frc    = .false.
+logical         :: pmflib_force_need_vel    = .false.
 integer         :: pmflib_cst_modified      = 0
 integer         :: pmflib_exit              = 0
 
@@ -464,31 +423,6 @@ subroutine pmf_pmemd_bind_to_driver(master)
     end if
     call c_f_procpointer(proc_addr,pmf_pmemd_register_ekin)
 
-! ------------------
-    proc_addr=dlsym(pmf_pmemd_driver_handle, "int_pmf_pmemd_cst_checkatom"//c_null_char)
-    if (.not. c_associated(proc_addr))then
-        stop 'Unable to load the procedure int_pmf_pmemd_cst_checkatom'
-    end if
-    call c_f_procpointer(proc_addr,pmf_pmemd_cst_checkatom)
-! ------------------
-    proc_addr=dlsym(pmf_pmemd_driver_handle, "int_pmf_pmemd_cst_shake_allocate"//c_null_char)
-    if (.not. c_associated(proc_addr))then
-        stop 'Unable to load the procedure int_pmf_pmemd_cst_shake_allocate'
-    end if
-    call c_f_procpointer(proc_addr,pmf_pmemd_cst_shake_allocate)
-        ! ------------------
-    proc_addr=dlsym(pmf_pmemd_driver_handle, "int_pmf_pmemd_cst_set_shake"//c_null_char)
-    if (.not. c_associated(proc_addr))then
-        stop 'Unable to load the procedure int_pmf_pmemd_cst_set_shake'
-    end if
-    call c_f_procpointer(proc_addr,pmf_pmemd_cst_set_shake)
-! ------------------
-    proc_addr=dlsym(pmf_pmemd_driver_handle, "int_pmf_pmemd_shake"//c_null_char)
-    if (.not. c_associated(proc_addr))then
-        stop 'Unable to load the procedure int_pmf_pmemd_shake'
-    end if
-    call c_f_procpointer(proc_addr,pmf_pmemd_shake)
-
 #ifdef MPI
 ! ------------------
     proc_addr=dlsym(pmf_pmemd_driver_handle, "int_pmf_pmemd_init_taskid_mpi"//c_null_char)
@@ -503,23 +437,11 @@ subroutine pmf_pmemd_bind_to_driver(master)
     end if
     call c_f_procpointer(proc_addr,pmf_pmemd_bcast_dat_mpi)
 ! ------------------
-    proc_addr=dlsym(pmf_pmemd_driver_handle, "int_pmf_pmemd_bcast_constraints_mpi"//c_null_char)
-    if (.not. c_associated(proc_addr))then
-        stop 'Unable to load the procedure int_pmf_pmemd_bcast_constraints_mpi'
-    end if
-    call c_f_procpointer(proc_addr,pmf_pmemd_bcast_constraints_mpi)
-! ------------------
     proc_addr=dlsym(pmf_pmemd_driver_handle, "int_pmf_pmemd_force_mpi"//c_null_char)
     if (.not. c_associated(proc_addr))then
         stop 'Unable to load the procedure int_pmf_pmemd_force_mpi'
     end if
     call c_f_procpointer(proc_addr,pmf_pmemd_force_mpi)
-! ------------------
-    proc_addr=dlsym(pmf_pmemd_driver_handle, "int_pmf_pmemd_shake_mpi"//c_null_char)
-    if (.not. c_associated(proc_addr))then
-        stop 'Unable to load the procedure int_pmf_pmemd_shake_mpi'
-    end if
-    call c_f_procpointer(proc_addr,pmf_pmemd_shake_mpi)
 ! ------------------
 #endif
 
@@ -568,12 +490,16 @@ subroutine pmf_pmemd_update_setup
     ! --------------------------------------------------------------------------
 
     ! get setup from driver
-    call pmf_pmemd_get_setup(pmflib_setup,PMFLIB_SETUP_SIZE)
+    call pmf_pmemd_get_setup(pmflib_setup)
 
     ! update local variables
-    pmflib_force_need_ene = pmflib_setup(PMFLIB_SETUP_FORCE_NEED_ENE)
-    pmflib_force_need_frc = pmflib_setup(PMFLIB_SETUP_FORCE_NEED_FRC)
-    pmflib_force_need_vel = pmflib_setup(PMFLIB_SETUP_FORCE_NEED_VEL)
+    pmflib_force_need_ene = .false.
+    pmflib_force_need_frc = .false.
+    pmflib_force_need_vel = .false.
+
+    if( pmflib_setup(PMFLIB_SETUP_FORCE_NEED_ENE) .gt. 0 )  pmflib_force_need_ene = .true.
+    if( pmflib_setup(PMFLIB_SETUP_FORCE_NEED_FRC) .gt. 0 )  pmflib_force_need_frc = .true.
+    if( pmflib_setup(PMFLIB_SETUP_FORCE_NEED_VEL) .gt. 0 )  pmflib_force_need_vel = .true.
 
 end subroutine pmf_pmemd_update_setup
 
@@ -630,9 +556,18 @@ end subroutine pmf_pmemd_release_driver
 subroutine pmf_pmemd_get_dlerror
 
     implicit none
+    type(c_ptr)         :: errstr
+    character, pointer  :: strptr(:)
+    integer             :: i
     ! --------------------------------------------------------------------------
 
-    pmf_pmemd_driver_error = 'FIXME'
+    pmf_pmemd_driver_error = ''
+    errstr = dlerror()
+    call c_f_pointer(errstr,strptr,shape=[strlen(errstr)])
+
+    do i=1,strlen(errstr)
+        pmf_pmemd_driver_error(i:i) = strptr(i)
+    end do
 
 end subroutine pmf_pmemd_get_dlerror
 
