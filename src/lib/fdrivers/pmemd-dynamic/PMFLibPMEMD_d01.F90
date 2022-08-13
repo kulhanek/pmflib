@@ -256,7 +256,7 @@ end interface
 
 ! ==============================================================================
 ! driver setup
-character(len=100)          :: pmf_pmemd_driver_name    = 'libfpmfdrv_pmemd_v01.so'
+character(len=100)          :: pmf_pmemd_driver_name    = 'libfpmfdrv_pmemd_d01.so'
 character(len=MAX_PATH)     :: pmf_pmemd_driver_path    = ''
 character(len=MAX_PATH)     :: pmf_pmemd_driver_error   = ''
 type(c_ptr)                 :: pmf_pmemd_driver_handle  = C_NULL_PTR
