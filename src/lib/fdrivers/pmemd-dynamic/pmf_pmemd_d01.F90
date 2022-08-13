@@ -316,6 +316,7 @@ subroutine pmf_pmemd_get_setup(setup) bind(c,name='int_pmf_pmemd_get_setup')
     use pmf_dat
     use abf_dat
     use pmf_cvs
+    use pmf_utils
 
     implicit none
 #ifdef MPI
