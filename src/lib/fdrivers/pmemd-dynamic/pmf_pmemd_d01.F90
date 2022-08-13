@@ -487,6 +487,8 @@ subroutine pmf_pmemd_register_ekin(ekin,valid) bind(c,name='int_pmf_pmemd_regist
     type(PMFKineticEnergy)  :: sekin
     ! --------------------------------------------------------------------------
 
+    write(*,*) 'HHHHH=',valid
+
     if( .not. fmaster ) return
 
     call pmf_timers_start_timer(PMFLIB_TIMER)
