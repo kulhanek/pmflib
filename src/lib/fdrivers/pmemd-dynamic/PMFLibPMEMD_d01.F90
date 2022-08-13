@@ -134,7 +134,7 @@ abstract interface
     end subroutine int_pmf_pmemd_check_interface
     ! -------------------------------------------------------------------------
     subroutine int_pmf_pmemd_init_preinit(mdin,mdin_len,anatom,anres,   &
-                            antb,ansteps,astepsize,atemp0,              &
+                            antb,antc,ansteps,astepsize,atemp0,              &
                             box_a,box_b,box_c,                          &
                             box_alpha,box_beta,box_gamma) bind(c)
         import
