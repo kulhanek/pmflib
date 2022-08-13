@@ -42,6 +42,22 @@ real(PMFDP),allocatable         :: tmp_b(:,:)   ! helper array
 real(PMFDP),allocatable         :: tmp_c(:,:)   ! helper array
 #endif
 
+! interface binding check
+integer, parameter              :: PMFLIB_CHECK_INT1 = 1089523658
+real(PMFDP), parameter          :: PMFLIB_CHECK_R81  = 1.78493547
+character(len=10), parameter    :: PMFLIB_CHECK_STR1 = 'PMFLib v06'
+character(len=10), parameter    :: PMFLIB_CHECK_STR2 = 'DRVABI d01'
+
+! energy array
+integer, parameter              :: PMFLIB_EKIN_VV               = 1
+integer, parameter              :: PMFLIB_EKIN_LF               = 2
+integer, parameter              :: PMFLIB_EKIN_HA               = 3
+integer, parameter              :: PMFLIB_EKIN_SIZE             = PMFLIB_EKIN_HA
+
+! setup array
+integer, parameter              :: PMFLIB_SETUP_ISCHEME         = 1
+integer, parameter              :: PMFLIB_SETUP_SIZE            = PMFLIB_SETUP_ISCHEME
+
 !===============================================================================
 !-------------------------------------------------------------------------------
 !===============================================================================

@@ -84,6 +84,9 @@ subroutine abf_control_read_abf(prm_fin)
     call pmf_ctrl_read_logical(prm_fin,'fupdate_abf',fupdate_abf)
     call pmf_ctrl_read_logical(prm_fin,'fapply_mask',fapply_mask)
 
+    call pmf_ctrl_read_integer(prm_fin,'ficfsample',ficfsample,'I12')
+    call pmf_ctrl_check_integer('ABF','ficfsample',ficfsample,0,CND_GT)
+
     call pmf_ctrl_read_integer(prm_fin,'fsample',fsample,'I12')
     call pmf_ctrl_check_integer('ABF','fsample',fsample,0,CND_GE)
 
@@ -95,6 +98,7 @@ subroutine abf_control_read_abf(prm_fin)
     call pmf_ctrl_read_integer(prm_fin,'ftrjsample',ftrjsample,'I12')
     call pmf_ctrl_check_integer('ABF','ftrjsample',ftrjsample,0,CND_GE)
 
+! ENT/TDS ====================
     call pmf_ctrl_read_logical(prm_fin,'fenthalpy',fenthalpy)
     call pmf_ctrl_read_logical(prm_fin,'fentropy',fentropy)
     call pmf_ctrl_read_logical(prm_fin,'fentdecomp',fentdecomp)
@@ -104,6 +108,9 @@ subroutine abf_control_read_abf(prm_fin)
 
     call pmf_ctrl_read_real8_wunit(prm_fin,'fepotaverage',EnergyUnit,fepotaverage,'F10.1')
     call pmf_ctrl_read_real8_wunit(prm_fin,'fekinaverage',EnergyUnit,fekinaverage,'F10.1')
+
+    call pmf_ctrl_read_integer(prm_fin,'fenesample',fenesample,'I12')
+    call pmf_ctrl_check_integer('ABF','fenesample',fenesample,0,CND_GT)
 
     call pmf_ctrl_read_logical(prm_fin,'fusmode',fusmode)
     call pmf_ctrl_read_logical(prm_fin,'falignbias',falignbias)

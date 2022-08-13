@@ -216,8 +216,11 @@ subroutine abf_core_lf_force_2pX()
 
     icfhist(:,hist_len+hist_fidx) = pxif(:)
 
-    ! register data
-    call abf_accu_add_data_online(cvhist(:,hist_len+hist_fidx),icfhist(:,hist_len+hist_fidx),micfhist(:,hist_len+hist_fidx))
+    if( mod(fstep,ficfsample) .eq. 0 ) then
+        ! register data
+        call abf_accu_add_data_online(cvhist(:,hist_len+hist_fidx),icfhist(:,hist_len+hist_fidx),&
+                                      micfhist(:,hist_len+hist_fidx))
+    end if
 
 end subroutine abf_core_lf_force_2pX
 
@@ -324,10 +327,74 @@ subroutine abf_core_lf_force_2pV()
 
     icfhist(:,hist_len+hist_fidx) = pxif(:)
 
-    ! register data
-    call abf_accu_add_data_online(cvhist(:,hist_len+hist_fidx),icfhist(:,hist_len+hist_fidx),micfhist(:,hist_len+hist_fidx))
+    if( mod(fstep,ficfsample) .eq. 0 ) then
+        ! register data
+        call abf_accu_add_data_online(cvhist(:,hist_len+hist_fidx),icfhist(:,hist_len+hist_fidx),&
+                                      micfhist(:,hist_len+hist_fidx))
+    end if
 
 end subroutine abf_core_lf_force_2pV
+
+!===============================================================================
+! Subroutine:  abf_core_lf_register_ekin
+! this is leap-frog ABF version
+!===============================================================================
+
+subroutine abf_core_lf_register_ekin()
+
+    use pmf_dat
+    use abf_dat
+    use abf_accu
+    use pmf_utils
+
+    implicit none
+    integer     :: i
+    ! --------------------------------------------------------------------------
+
+! shift accuvalue history
+    do i=1,hist_len-1
+        epothist(i)         = epothist(i+1)
+        ersthist(i)         = ersthist(i+1)
+        ekinhist(i)         = ekinhist(i+1)
+        ekinlfhist(i)       = ekinlfhist(i+1)
+        enevalidhist(i)     = enevalidhist(i+1)
+    end do
+
+! raw data
+    epothist(hist_len)      = PotEne - fepotaverage
+    ersthist(hist_len)      = RstEne
+    ekinlfhist(hist_len)    = KinEne%KinEneLF - fekinaverage   ! shifted by +1/2dt
+    enevalidhist(hist_len)  = KinEne%Valid
+
+! process EKIN
+    select case(ftds_ekin_src)
+        case(1)
+            ekinhist(hist_len)      = KinEne%KinEneVV - fekinaverage
+        case(2)
+            ekinhist(hist_len)      = 0.5d0*(ekinlfhist(hist_len-0) + ekinlfhist(hist_len-1))
+        case(3)
+            ekinhist(hist_len)      = KinEne%KinEneHA - fekinaverage
+    case default
+        call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented ftds_ekin_src mode in abf_core_lf_register_ekin!')
+    end select
+
+    if( KinEne%Valid ) fene_step = fene_step + 1
+
+    if( (mod(fene_step,fenesample) .eq. 0) .and. enevalidhist(hist_len+hist_fidx) ) then
+        ! register data
+        call abf_accu_add_data_energy(cvhist(:,hist_len+hist_fidx), &
+                                      icfhist(:,hist_len+hist_fidx), micfhist(:,hist_len+hist_fidx), &
+                                      epothist(hist_len+hist_fidx), ersthist(hist_len+hist_fidx), ekinhist(hist_len+hist_fidx))
+
+        if( fentdecomp ) then
+            call abf_accu_add_data_entropy_decompose(cvhist(:,hist_len+hist_fidx), &
+                                                     icfhist(:,hist_len+hist_fidx), micfhist(:,hist_len+hist_fidx), &
+                                      epothist(hist_len+hist_fidx), ersthist(hist_len+hist_fidx), ekinhist(hist_len+hist_fidx))
+        end if
+
+    end if
+
+end subroutine abf_core_lf_register_ekin
 
 !===============================================================================
 

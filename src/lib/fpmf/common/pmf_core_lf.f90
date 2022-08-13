@@ -26,12 +26,13 @@
 
 module pmf_core_lf
 
+! leap-frog version
+
 implicit none
 contains
 
 !===============================================================================
 ! Subroutine:  pmf_core_lf_update_step
-! leap-frog version
 !===============================================================================
 
 subroutine pmf_core_lf_update_step()
@@ -50,7 +51,6 @@ end subroutine pmf_core_lf_update_step
 
 !===============================================================================
 ! Subroutine:  pmf_core_lf_force
-! leap-frog version
 !===============================================================================
 
 subroutine pmf_core_lf_force(x,v,f,epot,epmf)
@@ -85,8 +85,8 @@ subroutine pmf_core_lf_force(x,v,f,epot,epmf)
 
     if( .not. pmf_enabled ) return
 
-    ! FIXME - this should be in drivers ...?
     ! convert potential energy
+    ! conversion factors are set by drivers
     PotEne = epot * EnergyConv
 
     PMFEne = 0.0d0
@@ -131,7 +131,7 @@ subroutine pmf_core_lf_force(x,v,f,epot,epmf)
         call pmf_timers_start_timer(PMFLIB_RST_TIMER)
         call rst_core_main
         RstEne = TotalRSTEnergy
-        PMFEne = PMFEne + TotalRSTEnergy
+        PMFEne = PMFEne + RstEne
         call pmf_timers_stop_timer(PMFLIB_RST_TIMER)
     end if
 
@@ -176,6 +176,42 @@ subroutine pmf_core_lf_force(x,v,f,epot,epmf)
     call pmf_core_out_data_f(f)
 
 end subroutine pmf_core_lf_force
+
+!===============================================================================
+! Subroutine:  pmf_core_lf_register_ekin
+!===============================================================================
+
+subroutine pmf_core_lf_register_ekin(ekin)
+
+    use pmf_dat
+    use abf_core_lf
+    use pmf_timers
+    use pmf_core
+
+    implicit none
+    type(PMFKineticEnergy)  :: ekin     ! in time t and t+dt/2
+    ! --------------------------------------------------------------------------
+
+    if( .not. pmf_enabled ) return
+
+    ! convert kinetic energy
+    KinEne%KinEneVV = ekin%KinEneVV * EnergyConv
+    KinEne%KinEneLF = ekin%KinEneLF * EnergyConv
+    KinEne%KinEneHA = ekin%KinEneHA * EnergyConv
+    KinEne%Valid    = ekin%Valid
+
+!-------------------------------------------------
+    call pmf_timers_start_timer(PMFLIB_METHODS_TIMER)
+
+    if( abf_enabled ) then
+        call pmf_timers_start_timer(PMFLIB_ABF_TIMER)
+        call abf_core_lf_register_ekin()
+        call pmf_timers_stop_timer(PMFLIB_ABF_TIMER)
+    end if
+
+    call pmf_timers_stop_timer(PMFLIB_METHODS_TIMER)
+
+end subroutine pmf_core_lf_register_ekin
 
 !===============================================================================
 ! Subroutine:  pmf_core_lf_rstforce
@@ -232,7 +268,7 @@ subroutine pmf_core_lf_rstforce(x,f,epot,epmf)
         call pmf_timers_start_timer(PMFLIB_RST_TIMER)
         call rst_core_main
         RstEne = TotalRSTEnergy
-        PMFEne = PMFEne + TotalRSTEnergy
+        PMFEne = PMFEne + RstEne
         call pmf_timers_stop_timer(PMFLIB_RST_TIMER)
     end if
 
@@ -253,7 +289,6 @@ end subroutine pmf_core_lf_rstforce
 
 !===============================================================================
 ! Subroutine:  pmf_core_lf_shake
-! leap-frog version
 !===============================================================================
 
 subroutine pmf_core_lf_shake(xp)

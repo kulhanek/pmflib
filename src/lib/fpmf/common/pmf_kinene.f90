@@ -29,6 +29,7 @@ implicit none
 
 ! energy blob
 type PMFKineticEnergy
+    logical                     :: Valid
     real(PMFDP)                 :: KinEneVV         ! velocity Verlet - kinetic energy in t-dt
     real(PMFDP)                 :: KinEneHA         ! harmonic approximation - kinetic energy in t-dt
     real(PMFDP)                 :: KinEneLF         ! leapfrog Verlet - kinetic energy in t-dt/2

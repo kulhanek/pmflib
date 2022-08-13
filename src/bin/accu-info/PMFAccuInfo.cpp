@@ -309,34 +309,19 @@ void CPMFAccuInfo::GetDerivative(const CSmallString& name)
             RUNTIME_ERROR(error);
         }
 // -----------------------------------------------
-    } else if ( name == "-TdS_FP" ) {
+    } else if ( name == "-TdS_HP" ) {
         CABFProxy_mTdS_Ptr proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
-        proxy->SetType(ABF_TdS_FP);
+        proxy->SetType(ABF_TdS_HP);
         der_proxy = proxy;
 // -----------------------------------------------
-    } else if ( name == "-TdS_FR" ) {
+    } else if ( name == "-TdS_HR" ) {
         CABFProxy_mTdS_Ptr proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
-        proxy->SetType(ABF_TdS_FR);
+        proxy->SetType(ABF_TdS_HR);
         der_proxy = proxy;
 // -----------------------------------------------
-    } else if ( name == "-TdS_FK" ) {
+    } else if ( name == "-TdS_HK" ) {
         CABFProxy_mTdS_Ptr proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
-        proxy->SetType(ABF_TdS_FK);
-        der_proxy = proxy;
-// -----------------------------------------------
-    } else if ( name == "-TdS_VP" ) {
-        CABFProxy_mTdS_Ptr proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
-        proxy->SetType(ABF_TdS_VP);
-        der_proxy = proxy;
-// -----------------------------------------------
-    } else if ( name == "-TdS_VR" ) {
-        CABFProxy_mTdS_Ptr proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
-        proxy->SetType(ABF_TdS_VR);
-        der_proxy = proxy;
-// -----------------------------------------------
-    } else if ( name == "-TdS_VK" ) {
-        CABFProxy_mTdS_Ptr proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
-        proxy->SetType(ABF_TdS_VK);
+        proxy->SetType(ABF_TdS_HK);
         der_proxy = proxy;
 // -----------------------------------------------
     } else if ( name == "-TdS_BP" ) {

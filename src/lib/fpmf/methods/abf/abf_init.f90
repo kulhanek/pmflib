@@ -81,10 +81,12 @@ subroutine abf_init_dat
     fapply_mask     = .false.
     fapply_abf      = .true.
     fupdate_abf     = .true.
+    ficfsample      = 1
 
     fenthalpy       = .false.
     fentropy        = .false.
     fentdecomp      = .false.
+    fenesample      = 1
 
     ftds_ekin_src   = 1
     ftds_add_bias   = .false.
@@ -118,6 +120,8 @@ subroutine abf_init_dat
 
     fsmooth_kernel  = 0
     fswitch2zero    = .false.
+
+    fene_step       = 0
 
     abf_p2_vx = 7
     abf_p2_px = 7
@@ -189,6 +193,7 @@ subroutine abf_init_print_summary
     write(PMF_OUT,125)  ' Update ABF force (fupdate_abf)          : ', prmfile_onoff(fupdate_abf)
     write(PMF_OUT,125)  ' ABF mask mode (fapply_mask)             : ', prmfile_onoff(fapply_mask)
     write(PMF_OUT,125)  ' ABF mask file (fabfmask)                : ', trim(fabfmask)
+    write(PMF_OUT,130)  ' Sampling for ICF (ficfsample)           : ', ficfsample
 
     write(PMF_OUT,120)
     write(PMF_OUT,120)  ' US-ABF Control'
@@ -234,10 +239,8 @@ subroutine abf_init_print_summary
     write(PMF_OUT,120)  ' ------------------------------------------------------'
     write(PMF_OUT,125)  ' Accumulate enthalpy (fenthalpy)         : ', prmfile_onoff(fenthalpy)
     write(PMF_OUT,125)  ' Accumulate entropy (fentropy)           : ', prmfile_onoff(fentropy)
-    write(PMF_OUT,150)  ' Potential energy offset (fepotaverage)  : ', pmf_unit_get_rvalue(EnergyUnit,fepotaverage),  &
-                                                                       '['//trim(pmf_unit_label(EnergyUnit))//']'
-    write(PMF_OUT,150)  ' Kinetic energy offset (fekinaverage)    : ', pmf_unit_get_rvalue(EnergyUnit,fekinaverage), &
-                                                                       '['//trim(pmf_unit_label(EnergyUnit))//']'
+    write(PMF_OUT,125)  ' Decompose entropy (fentdecomp)          : ', prmfile_onoff(fentdecomp)
+    write(PMF_OUT,125)  ' Use ABF bias for -TdS (ftds_add_bias)   : ', prmfile_onoff(ftds_add_bias)
 
     write(PMF_OUT,130)  ' Kinetic energy source (ftds_ekin_src)   : ', ftds_ekin_src
     select case(ftds_ekin_src)
@@ -250,7 +253,11 @@ subroutine abf_init_print_summary
     case default
     call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown kinetic energy source in abf_init_print_summary!')
     end select
-    write(PMF_OUT,125)  ' Incl. ABF bias into -TdS (ftds_add_bias): ', prmfile_onoff(ftds_add_bias)
+    write(PMF_OUT,150)  ' Potential energy offset (fepotaverage)  : ', pmf_unit_get_rvalue(EnergyUnit,fepotaverage),  &
+                                                                       '['//trim(pmf_unit_label(EnergyUnit))//']'
+    write(PMF_OUT,150)  ' Kinetic energy offset (fekinaverage)    : ', pmf_unit_get_rvalue(EnergyUnit,fekinaverage), &
+                                                                       '['//trim(pmf_unit_label(EnergyUnit))//']'
+    write(PMF_OUT,130)  ' Sampling for -TdS and ENT (fenesample)  : ', fenesample
 
     write(PMF_OUT,120)
     write(PMF_OUT,120)  ' Restart options:'

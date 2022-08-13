@@ -24,26 +24,10 @@
 module pmf_sander
 
 use pmf_sizes
+use pmf_sander_dat_d01
 use iso_c_binding
 
 implicit none
-
-! interface binding check
-integer, parameter              :: PMFLIB_CHECK_INT1 = 1089523658
-real(PMFDP), parameter          :: PMFLIB_CHECK_R81  = 1.78493547
-character(len=10), parameter    :: PMFLIB_CHECK_STR1 = 'PMFLib v06'
-character(len=10), parameter    :: PMFLIB_CHECK_STR2 = 'DRVABI d01'
-
-! energy array
-integer, parameter          :: PMFLIB_EKIN_VV               = 1
-integer, parameter          :: PMFLIB_EKIN_LF               = 2
-integer, parameter          :: PMFLIB_EKIN_HA               = 3
-integer, parameter          :: PMFLIB_EKIN_SIZE             = PMFLIB_EKIN_HA
-
-! setup array
-integer, parameter          :: PMFLIB_SETUP_ISCHEME         = 1
-integer, parameter          :: PMFLIB_SETUP_SIZE            = PMFLIB_SETUP_ISCHEME
-
 contains
 
 !===============================================================================
@@ -288,7 +272,7 @@ subroutine pmf_sander_finalize_preinit(anatom,amass,ax) bind(c,name='int_pmf_san
     call pmf_mask_topo_finalize()
 
     ! print PMFLib header with system description
-    call pmf_init_title('SANDER')
+    call pmf_init_title('SANDER-DYNAMIC')
 
     ! load method setups and CVs definition
     call pmf_sander_process_control
@@ -346,7 +330,7 @@ subroutine pmf_sender_get_setup(setup,setup_len) bind(c,name='int_pmf_sander_get
     if( .not. fmaster ) return
 
     if( setup_len .ne. PMFLIB_SETUP_SIZE ) then
-        call pmf_utils_exit(PMF_OUT,1,'Incompatible PMFLIB_SETUP_SIZE - driver interface compromised!')
+        call pmf_utils_exit(PMF_OUT,1,'Incompatible PMFLIB_SETUP_SIZE - driver interface compromised in pmf_sender_get_setup!')
     end if
 
     ! PMFLib constraints are not compatible with middle scheme
@@ -434,6 +418,41 @@ subroutine pmf_sander_force(anatom,x,v,f,epot,epmf) bind(c,name='int_pmf_sander_
     return
 
 end subroutine pmf_sander_force
+
+!===============================================================================
+! subroutine pmf_sander_register_ekin
+!===============================================================================
+
+subroutine pmf_sander_register_ekin(ekin) bind(c,name='int_pmf_sander_register_ekin')
+
+    use pmf_sizes
+    use pmf_core_lf
+    use pmf_timers
+    use pmf_dat
+    use pmf_utils
+
+    implicit none
+    real(CPMFDP)            :: ekin(:)      ! in
+    ! --------------------------------------------
+    type(PMFKineticEnergy)  :: sekin
+    ! --------------------------------------------------------------------------
+
+    if( .not. fmaster ) return
+
+    call pmf_timers_start_timer(PMFLIB_TIMER)
+
+    sekin%KinEneVV = ekin(PMFLIB_EKIN_VV)
+    sekin%KinEneLF = ekin(PMFLIB_EKIN_LF)
+    sekin%KinEneHA = ekin(PMFLIB_EKIN_HA)
+    sekin%Valid = .true.
+
+    call pmf_core_lf_register_ekin(sekin)
+
+    call pmf_timers_stop_timer(PMFLIB_TIMER)
+
+    return
+
+end subroutine pmf_sander_register_ekin
 
 !===============================================================================
 ! subroutine pmf_sander_rstforce

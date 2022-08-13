@@ -142,56 +142,6 @@ subroutine abf_core_update_history_force()
 end subroutine abf_core_update_history_force
 
 !===============================================================================
-! Subroutine:  abf_core_update_history_ene
-!===============================================================================
-
-subroutine abf_core_update_history_ene(valid)
-
-    use pmf_utils
-    use pmf_dat
-    use pmf_cvs
-    use abf_dat
-    use abf_accu
-    use pmf_timers
-
-    implicit none
-    logical                 :: valid
-    ! -------------------------------------------
-    integer                 :: i
-    ! --------------------------------------------------------------------------
-
-! shift accuvalue history
-    do i=1,hist_len-1
-        epothist(i)         = epothist(i+1)
-        ersthist(i)         = ersthist(i+1)
-        ekinhist(i)         = ekinhist(i+1)
-        ekinlfhist(i)       = ekinlfhist(i+1)
-        enevalidhist(i)     = enevalidhist(i+1)
-    end do
-
-! raw data
-    epothist(hist_len)      = PotEne - fepotaverage
-    ersthist(hist_len)      = RstEne
-    ekinlfhist(hist_len)    = KinEne%KinEneLF - fekinaverage   ! shifted by +1/2dt
-    enevalidhist(hist_len)  = valid
-
-! process EKIN
-    select case(ftds_ekin_src)
-        case(1)
-            ekinhist(hist_len)      = KinEne%KinEneVV - fekinaverage
-        case(2)
-            ekinhist(hist_len)      = 0.5d0*(ekinlfhist(hist_len-0) + ekinlfhist(hist_len-1))
-        case(3)
-            ekinhist(hist_len)      = KinEne%KinEneHA - fekinaverage
-    case default
-        call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented ftds_ekin_src mode in abf_core_update_history_ene!')
-    end select
-
-    return
-
-end subroutine abf_core_update_history_ene
-
-!===============================================================================
 ! Subroutine:  abf_core_update_cvder
 !===============================================================================
 

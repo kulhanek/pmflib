@@ -62,33 +62,16 @@ void CABFProxy_mTdS::SetType(EABFTdSType type)
         break;
 
     // -------------------
-        case(ABF_TdS_FP):
-            Provide = "ABF -TdS(x) - FP";
+        case(ABF_TdS_HP):
+            Provide = "ABF -TdS(x) - HP";
         break;
     // -------------------
-        case(ABF_TdS_FR):
-            Provide = "ABF -TdS(x) - FR";
+        case(ABF_TdS_HR):
+            Provide = "ABF -TdS(x) - HR";
         break;
     // -------------------
-        case(ABF_TdS_FK):
-            Provide = "ABF -TdS(x) - FK";
-        break;
-    // -------------------
-        case(ABF_TdS_FK_H):
-            Provide = "ABF -TdS(x) - FK (half step)";
-        break;
-
-    // -------------------
-        case(ABF_TdS_VP):
-            Provide = "ABF -TdS(x) - VP";
-        break;
-    // -------------------
-        case(ABF_TdS_VR):
-            Provide = "ABF -TdS(x) - VR";
-        break;
-    // -------------------
-        case(ABF_TdS_VK):
-            Provide = "ABF -TdS(x) - VK";
+        case(ABF_TdS_HK):
+            Provide = "ABF -TdS(x) - HK";
         break;
 
     // -------------------
@@ -102,19 +85,6 @@ void CABFProxy_mTdS::SetType(EABFTdSType type)
     // -------------------
         case(ABF_TdS_BK):
             Provide = "ABF -TdS(x) - BK";
-        break;
-
-    // -------------------
-        case(ABF_TdS_SP):
-            Provide = "ABF -TdS(x) - SP";
-        break;
-    // -------------------
-        case(ABF_TdS_SR):
-            Provide = "ABF -TdS(x) - SR";
-        break;
-    // -------------------
-        case(ABF_TdS_SK):
-            Provide = "ABF -TdS(x) - SK";
         break;
 
     // -------------------
@@ -167,20 +137,10 @@ double CABFProxy_mTdS::GetValue(int ibin,int icv,EProxyRealm realm) const
     }
 
     double  nsamples = 0.0;
-
-    if( Type == ABF_TdS_HH ) {
-        nsamples = Accu->GetData("NSAMPLES",ibin);
-    } else if( Type == ABF_TdS_FK_H ) {
-        nsamples = Accu->GetData("NTDS_H",ibin);
-    } else {
-        nsamples = Accu->GetData("NTDS",ibin);
-    }
-
     double  ncorr    = Accu->GetNCorr();
     double  temp     = Accu->GetTemperature();
+    double  value    = 0.0;
 
-    double value = 0.0;
-    if( nsamples <= 0 ) return(value);
 
     double  c11     = 0.0;
     double  m2icf   = 0.0;
@@ -189,6 +149,7 @@ double CABFProxy_mTdS::GetValue(int ibin,int icv,EProxyRealm realm) const
     switch(Type){
     // -------------------
         case(ABF_TdS_HH):{
+            nsamples = Accu->GetData("NENE",ibin);
             double m2pp = Accu->GetData("M2PP",ibin,icv);
             double m2pn = Accu->GetData("M2PN",ibin,icv);
             c11 = 0.25*(m2pp-m2pn)/nsamples;
@@ -198,85 +159,45 @@ double CABFProxy_mTdS::GetValue(int ibin,int icv,EProxyRealm realm) const
         break;
 
     // -------------------
-        case(ABF_TdS_FP):
-            c11     = Accu->GetData("C11TDSFP",ibin,icv)/nsamples;
-            m2icf   = Accu->GetData("M2TDSFX",ibin,icv);
+        case(ABF_TdS_HP):
+            nsamples = Accu->GetData("NTDS",ibin);
+            c11     = Accu->GetData("C11TDSHP",ibin,icv)/nsamples;
+            m2icf   = Accu->GetData("M2TDSHX",ibin,icv);
             m2ene   = Accu->GetData("M2TDSEPOT",ibin);
         break;
     // -------------------
-        case(ABF_TdS_FR):
-            c11     = Accu->GetData("C11TDSFR",ibin,icv)/nsamples;
-            m2icf   = Accu->GetData("M2TDSFX",ibin,icv);
+        case(ABF_TdS_HR):
+            nsamples = Accu->GetData("NTDS",ibin);
+            c11     = Accu->GetData("C11TDSHR",ibin,icv)/nsamples;
+            m2icf   = Accu->GetData("M2TDSHX",ibin,icv);
             m2ene   = Accu->GetData("M2TDSERST",ibin);
         break;
     // -------------------
-        case(ABF_TdS_FK):
-            c11     = Accu->GetData("C11TDSFK",ibin,icv)/nsamples;
-            m2icf   = Accu->GetData("M2TDSFX",ibin,icv);
+        case(ABF_TdS_HK):
+            nsamples = Accu->GetData("NTDS",ibin);
+            c11     = Accu->GetData("C11TDSHK",ibin,icv)/nsamples;
+            m2icf   = Accu->GetData("M2TDSHX",ibin,icv);
             m2ene   = Accu->GetData("M2TDSEKIN",ibin);
         break;
-
-    // -------------------
-        case(ABF_TdS_FK_H):
-            c11     = Accu->GetData("C11TDSFK_H",ibin,icv)/nsamples;
-            m2icf   = Accu->GetData("M2TDSFX_H",ibin,icv);
-            m2ene   = Accu->GetData("M2TDSEKIN_H",ibin);
-        break;
-
-    // -------------------
-        case(ABF_TdS_VP):
-            c11     = Accu->GetData("C11TDSVP",ibin,icv)/nsamples;
-            m2icf   = Accu->GetData("M2TDSVX",ibin,icv);
-            m2ene   = Accu->GetData("M2TDSEPOT",ibin);
-        break;
-    // -------------------
-        case(ABF_TdS_VR):
-            c11     = Accu->GetData("C11TDSVR",ibin,icv)/nsamples;
-            m2icf   = Accu->GetData("M2TDSVX",ibin,icv);
-            m2ene   = Accu->GetData("M2TDSERST",ibin);
-        break;
-    // -------------------
-        case(ABF_TdS_VK):
-            c11     = Accu->GetData("C11TDSVK",ibin,icv)/nsamples;
-            m2icf   = Accu->GetData("M2TDSVX",ibin,icv);
-            m2ene   = Accu->GetData("M2TDSEKIN",ibin);
-        break;
-
     // -------------------
         case(ABF_TdS_BP):
+            nsamples = Accu->GetData("NTDS",ibin);
             c11     = Accu->GetData("C11TDSBP",ibin,icv)/nsamples;
             m2icf   = Accu->GetData("M2TDSBX",ibin,icv);
             m2ene   = Accu->GetData("M2TDSEPOT",ibin);
         break;
     // -------------------
         case(ABF_TdS_BR):
+            nsamples = Accu->GetData("NTDS",ibin);
             c11     = Accu->GetData("C11TDSBR",ibin,icv)/nsamples;
             m2icf   = Accu->GetData("M2TDSBX",ibin,icv);
             m2ene   = Accu->GetData("M2TDSERST",ibin);
         break;
     // -------------------
         case(ABF_TdS_BK):
+            nsamples = Accu->GetData("NTDS",ibin);
             c11     = Accu->GetData("C11TDSBK",ibin,icv)/nsamples;
             m2icf   = Accu->GetData("M2TDSBX",ibin,icv);
-            m2ene   = Accu->GetData("M2TDSEKIN",ibin);
-        break;
-
-    // -------------------
-        case(ABF_TdS_SP):
-            c11     = Accu->GetData("C11TDSSP",ibin,icv)/nsamples;
-            m2icf   = Accu->GetData("M2TDSSX",ibin,icv);
-            m2ene   = Accu->GetData("M2TDSEPOT",ibin);
-        break;
-    // -------------------
-        case(ABF_TdS_SR):
-            c11     = Accu->GetData("C11TDSSR",ibin,icv)/nsamples;
-            m2icf   = Accu->GetData("M2TDSSX",ibin,icv);
-            m2ene   = Accu->GetData("M2TDSERST",ibin);
-        break;
-    // -------------------
-        case(ABF_TdS_SK):
-            c11     = Accu->GetData("C11TDSSK",ibin,icv)/nsamples;
-            m2icf   = Accu->GetData("M2TDSSX",ibin,icv);
             m2ene   = Accu->GetData("M2TDSEKIN",ibin);
         break;
 
@@ -284,6 +205,8 @@ double CABFProxy_mTdS::GetValue(int ibin,int icv,EProxyRealm realm) const
         default:
             RUNTIME_ERROR("unsupported type");
     }
+
+    if( nsamples <= 0 ) return(value);
 
     switch(realm){
     // -------------------

@@ -47,18 +47,17 @@ integer     :: ftrjsample   ! how often save accumulator to "accumulator evoluti
 logical     :: fapply_mask  ! off - disable ABF mask, on - enable ABF mask
 logical     :: fapply_abf   ! on - apply ABF, off - do not apply ABF
 logical     :: fupdate_abf  ! on - update ABF bias, off - keep initial bias
+integer     :: ficfsample   ! how often update ABF accumulator for ICF
 
 ! enthalpy/entropy calculations
-logical     :: fenthalpy    ! collect data for enthalpy calculation
-logical     :: fentropy     ! collect data for entropy calculation
-logical     :: fentdecomp   ! collect additional correlation terms
-
-integer     :: ftds_ekin_src    ! source of kinetic energy, see abf_core_update_history_ene for supported values
-
+logical     :: fenthalpy        ! collect data for enthalpy calculation
+logical     :: fentropy         ! collect data for entropy calculation
+logical     :: fentdecomp       ! collect additional correlation terms
 logical     :: ftds_add_bias    ! include ABF bias into TdS calculation
-
+integer     :: ftds_ekin_src    ! source of kinetic energy, see abf_core_update_history_ene for supported values
 real(PMFDP) :: fepotaverage
 real(PMFDP) :: fekinaverage
+integer     :: fenesample       ! how often update ABF accumulator for ENT and TDS
 
 ! US mode
 logical     :: fusmode      ! enable US mode
@@ -162,14 +161,14 @@ type,extends(PMFAccuType) :: ABFAccuType
     real(PMFDP),pointer    :: mtdsekin(:)               ! mean of kin energy
     real(PMFDP),pointer    :: m2tdsekin(:)              ! M2 of kin energy
 
-    real(PMFDP),pointer    :: mtdsfx(:,:)               ! mean of ICF - force
-    real(PMFDP),pointer    :: m2tdsfx(:,:)              ! M2 of ICF - force
+    real(PMFDP),pointer    :: mtdshx(:,:)               ! mean of ICF - all
+    real(PMFDP),pointer    :: m2tdshx(:,:)              ! M2 of ICF - all
     real(PMFDP),pointer    :: mtdsbx(:,:)               ! mean of ICF - bias
     real(PMFDP),pointer    :: m2tdsbx(:,:)              ! M2 of ICF - bias
 
-    real(PMFDP),pointer    :: c11tdsfp(:,:)             ! co-variances
-    real(PMFDP),pointer    :: c11tdsfr(:,:)
-    real(PMFDP),pointer    :: c11tdsfk(:,:)
+    real(PMFDP),pointer    :: c11tdshp(:,:)             ! co-variances
+    real(PMFDP),pointer    :: c11tdshr(:,:)
+    real(PMFDP),pointer    :: c11tdshk(:,:)
     real(PMFDP),pointer    :: c11tdsbp(:,:)
     real(PMFDP),pointer    :: c11tdsbr(:,:)
     real(PMFDP),pointer    :: c11tdsbk(:,:)
@@ -208,6 +207,7 @@ real(PMFDP),allocatable     :: vint(:,:)
 
 integer                     :: hist_len
 integer                     :: hist_fidx
+integer                     :: fene_step
 
 real(PMFDP),allocatable     :: cvhist(:,:)          ! history of CV values (nCVS,hist_len)
 real(PMFDP),allocatable     :: vhist(:,:,:)         ! history of velocities

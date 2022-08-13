@@ -220,6 +220,12 @@ abstract interface
         real(CPMFDP)        :: epot         ! in
         real(CPMFDP)        :: epmf         ! out
     end subroutine int_pmf_sander_force
+    ! --------------------------------------------------------------------------
+    subroutine int_pmf_sander_register_ekin(ekin) bind(c)
+        import
+        implicit none
+        real(CPMFDP)        :: ekin(:)      ! in
+    end subroutine int_pmf_sander_register_ekin
 
 ! CST ============================================
     subroutine int_pmf_sander_cst_init_collisions(ntc,nbt,ifstwt,ib,jb,conp) bind(c)
@@ -316,6 +322,7 @@ procedure(int_pmf_sander_finalize), bind(c), pointer                :: pmf_sande
 
 procedure(int_pmf_sander_update_box), bind(c), pointer              :: pmf_sander_update_box
 procedure(int_pmf_sander_force), bind(c), pointer                   :: pmf_sander_force
+procedure(int_pmf_sander_register_ekin), bind(c), pointer           :: pmf_sander_register_ekin
 
 procedure(int_pmf_sander_cst_init_collisions), bind(c), pointer     :: pmf_sander_cst_init_collisions
 procedure(int_pmf_sander_num_of_pmflib_cst), bind(c), pointer       :: pmf_sander_num_of_pmflib_cst
@@ -459,6 +466,12 @@ subroutine pmf_sander_bind_to_driver(master)
         stop 'Unable to load the procedure int_pmf_sander_force'
     end if
     call c_f_procpointer(proc_addr,pmf_sander_force)
+! ------------------
+    proc_addr=dlsym(pmf_sander_driver_handle, "int_pmf_sander_register_ekin"//c_null_char)
+    if (.not. c_associated(proc_addr))then
+        stop 'Unable to load the procedure int_pmf_sander_register_ekin'
+    end if
+    call c_f_procpointer(proc_addr,pmf_sander_register_ekin)
 
 ! ------------------
     proc_addr=dlsym(pmf_sander_driver_handle, "int_pmf_sander_cst_init_collisions"//c_null_char)

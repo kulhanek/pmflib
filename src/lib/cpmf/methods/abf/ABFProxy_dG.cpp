@@ -104,7 +104,7 @@ double CABFProxy_dG::GetValue(int ibin,int icv,EProxyRealm realm) const
         RUNTIME_ERROR("Accu is NULL");
     }
 
-    double  nsamples = Accu->GetData("NSAMPLES",ibin);
+    double  nsamples = 0.0;
     double  micf     = 0.0;
     double  m2icf    = 0.0;
     double  ncorr    = Accu->GetNCorr();
@@ -112,6 +112,7 @@ double CABFProxy_dG::GetValue(int ibin,int icv,EProxyRealm realm) const
     switch(Type){
     // -------------------
         case(ABF_MICF):
+            nsamples = Accu->GetData("NSAMPLES",ibin);
             micf     = Accu->GetData("MICF",ibin,icv);
             m2icf    = Accu->GetData("M2ICF",ibin,icv);
         break;
