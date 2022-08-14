@@ -339,6 +339,7 @@ procedure(int_pmf_sander_shake_mpi), bind(c), pointer               :: pmf_sande
 ! ==============================================================================
 ! run-time variables
 logical             :: use_pmflib               = .false.
+logical             :: pmflib_stop_on_failure   = .true.
 integer             :: pmflib_cst_modified      = 0
 integer             :: pmflib_exit              = 0
 real(CPMFDP)        :: pmflib_ncst              = 0
@@ -384,6 +385,9 @@ subroutine pmf_sander_bind_to_driver(master)
             write(6,40) trim(pmf_sander_driver_error)
             write(6,10)
             write(6,*)
+        end if
+        if( pmflib_stop_on_failure ) then
+            stop 'Unable to load the PMFLib driver!'
         end if
         return
     end if

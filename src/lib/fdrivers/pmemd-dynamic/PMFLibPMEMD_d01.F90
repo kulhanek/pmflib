@@ -286,12 +286,13 @@ procedure(int_pmf_pmemd_force_mpi), bind(c), pointer                :: pmf_pmemd
 
 ! ==============================================================================
 ! run-time variables
-logical         :: use_pmflib               = .false.
-logical         :: pmflib_force_need_ene    = .false.
-logical         :: pmflib_force_need_frc    = .false.
-logical         :: pmflib_force_need_vel    = .false.
-integer         :: pmflib_cst_modified      = 0
-integer         :: pmflib_exit              = 0
+logical             :: use_pmflib               = .false.
+logical             :: pmflib_stop_on_failure   = .true.
+logical             :: pmflib_force_need_ene    = .false.
+logical             :: pmflib_force_need_frc    = .false.
+logical             :: pmflib_force_need_vel    = .false.
+integer             :: pmflib_cst_modified      = 0
+integer             :: pmflib_exit              = 0
 
 real(CPMFDP)        :: pmflib_epot          = 0.0d0
 real(CPMFDP)        :: pmflib_erst          = 0.0d0
@@ -334,6 +335,9 @@ subroutine pmf_pmemd_bind_to_driver(master)
             write(6,40) trim(pmf_pmemd_driver_error)
             write(6,10)
             write(6,*)
+        end if
+        if( pmflib_stop_on_failure ) then
+            stop 'Unable to load the PMFLib driver!'
         end if
         return
     end if
@@ -484,9 +488,10 @@ end subroutine pmf_pmemd_bind_to_driver
 ! subroutine pmf_pmemd_update_setup
 !===============================================================================
 
-subroutine pmf_pmemd_update_setup
+subroutine pmf_pmemd_update_setup(master)
 
     implicit none
+    logical         :: master
     ! --------------------------------------------------------------------------
 
     ! get setup from driver
@@ -500,6 +505,24 @@ subroutine pmf_pmemd_update_setup
     if( pmflib_setup(PMFLIB_SETUP_FORCE_NEED_ENE) .gt. 0 )  pmflib_force_need_ene = .true.
     if( pmflib_setup(PMFLIB_SETUP_FORCE_NEED_FRC) .gt. 0 )  pmflib_force_need_frc = .true.
     if( pmflib_setup(PMFLIB_SETUP_FORCE_NEED_VEL) .gt. 0 )  pmflib_force_need_vel = .true.
+
+    if( master ) then
+        write(6,*)
+        write(6,10)
+        write(6,20)
+        write(6,30) pmflib_force_need_ene
+        write(6,40) pmflib_force_need_frc
+        write(6,50) pmflib_force_need_vel
+        write(6,10)
+        write(6,*)
+    end if
+
+
+ 10 format('# -----------------------------------------------------------------------------')
+ 20 format('# PMFLib dynamic binding')
+ 30 format('# > PMFLib force need POT: ',L1)
+ 40 format('# > PMFLib force need FRC: ',L1)
+ 50 format('# > PMFLib force need VEL: ',L1)
 
 end subroutine pmf_pmemd_update_setup
 
