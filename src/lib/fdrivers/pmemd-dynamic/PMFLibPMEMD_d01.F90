@@ -517,7 +517,6 @@ subroutine pmf_pmemd_update_setup(master)
         write(6,*)
     end if
 
-
  10 format('# -----------------------------------------------------------------------------')
  20 format('# PMFLib dynamic binding')
  30 format('# > PMFLib force need POT: ',L1)
