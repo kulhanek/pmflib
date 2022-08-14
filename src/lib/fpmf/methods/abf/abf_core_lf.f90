@@ -351,6 +351,8 @@ subroutine abf_core_lf_register_ekin()
     integer     :: i
     ! --------------------------------------------------------------------------
 
+    if( .not. (fenthalpy .or. fentropy) ) return
+
 ! shift accuvalue history
     do i=1,hist_len-1
         epothist(i)         = epothist(i+1)
@@ -386,7 +388,7 @@ subroutine abf_core_lf_register_ekin()
                                       icfhist(:,hist_len+hist_fidx), micfhist(:,hist_len+hist_fidx), &
                                       epothist(hist_len+hist_fidx), ersthist(hist_len+hist_fidx), ekinhist(hist_len+hist_fidx))
 
-        if( fentdecomp ) then
+        if( fentropy .and. fentdecomp ) then
             call abf_accu_add_data_entropy_decompose(cvhist(:,hist_len+hist_fidx), &
                                                      icfhist(:,hist_len+hist_fidx), micfhist(:,hist_len+hist_fidx), &
                                       epothist(hist_len+hist_fidx), ersthist(hist_len+hist_fidx), ekinhist(hist_len+hist_fidx))
