@@ -310,19 +310,49 @@ void CPMFAccuInfo::GetDerivative(const CSmallString& name)
         }
 // -----------------------------------------------
     } else if ( name == "-TdS_HP" ) {
-        CABFProxy_mTdS_Ptr proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
-        proxy->SetType(ABF_TdS_HP);
-        der_proxy = proxy;
+        if( CABFProxy_mTdS::IsCompatible(Accu) ){
+            CABFProxy_mTdS_Ptr proxy = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
+            proxy->SetType(ABF_TdS_HP);
+            der_proxy = proxy;
+        } else if (CCSTProxy_mTdS::IsCompatible(Accu) ) {
+            CCSTProxy_mTdS_Ptr proxy = CCSTProxy_mTdS_Ptr(new CCSTProxy_mTdS);
+            proxy->SetType(CST_TdS_HP);
+            der_proxy = proxy;
+        } else {
+            CSmallString error;
+            error << "incompatible method: " << Accu->GetMethod() << " with requested realm: " << name;
+            RUNTIME_ERROR(error);
+        }
 // -----------------------------------------------
     } else if ( name == "-TdS_HR" ) {
-        CABFProxy_mTdS_Ptr proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
-        proxy->SetType(ABF_TdS_HR);
-        der_proxy = proxy;
+        if( CABFProxy_mTdS::IsCompatible(Accu) ){
+            CABFProxy_mTdS_Ptr proxy = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
+            proxy->SetType(ABF_TdS_HR);
+            der_proxy = proxy;
+        } else if (CCSTProxy_mTdS::IsCompatible(Accu) ) {
+            CCSTProxy_mTdS_Ptr proxy = CCSTProxy_mTdS_Ptr(new CCSTProxy_mTdS);
+            proxy->SetType(CST_TdS_HR);
+            der_proxy = proxy;
+        } else {
+            CSmallString error;
+            error << "incompatible method: " << Accu->GetMethod() << " with requested realm: " << name;
+            RUNTIME_ERROR(error);
+        }
 // -----------------------------------------------
     } else if ( name == "-TdS_HK" ) {
-        CABFProxy_mTdS_Ptr proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
-        proxy->SetType(ABF_TdS_HK);
-        der_proxy = proxy;
+        if( CABFProxy_mTdS::IsCompatible(Accu) ){
+            CABFProxy_mTdS_Ptr proxy = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
+            proxy->SetType(ABF_TdS_HK);
+            der_proxy = proxy;
+        } else if (CCSTProxy_mTdS::IsCompatible(Accu) ) {
+            CCSTProxy_mTdS_Ptr proxy = CCSTProxy_mTdS_Ptr(new CCSTProxy_mTdS);
+            proxy->SetType(CST_TdS_HK);
+            der_proxy = proxy;
+        } else {
+            CSmallString error;
+            error << "incompatible method: " << Accu->GetMethod() << " with requested realm: " << name;
+            RUNTIME_ERROR(error);
+        }
 // -----------------------------------------------
     } else if ( name == "-TdS_BP" ) {
         CABFProxy_mTdS_Ptr proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
@@ -337,21 +367,6 @@ void CPMFAccuInfo::GetDerivative(const CSmallString& name)
     } else if ( name == "-TdS_BK" ) {
         CABFProxy_mTdS_Ptr proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
         proxy->SetType(ABF_TdS_BK);
-        der_proxy = proxy;
-// -----------------------------------------------
-    } else if ( name == "-TdS_HP" ) {
-        CCSTProxy_mTdS_Ptr proxy    = CCSTProxy_mTdS_Ptr(new CCSTProxy_mTdS);
-        proxy->SetType(CST_C11HP);
-        der_proxy = proxy;
-// -----------------------------------------------
-    } else if ( name == "-TdS_HK" ) {
-        CCSTProxy_mTdS_Ptr proxy    = CCSTProxy_mTdS_Ptr(new CCSTProxy_mTdS);
-        proxy->SetType(CST_C11HK);
-        der_proxy = proxy;
-// -----------------------------------------------
-    } else if ( name == "-TdS_HR" ) {
-        CCSTProxy_mTdS_Ptr proxy    = CCSTProxy_mTdS_Ptr(new CCSTProxy_mTdS);
-        proxy->SetType(CST_C11HR);
         der_proxy = proxy;
 // -----------------------------------------------
     } else {

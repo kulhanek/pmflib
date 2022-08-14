@@ -31,7 +31,7 @@ using namespace std;
 
 CCSTProxy_mTdS::CCSTProxy_mTdS(void)
 {
-    SetType(CST_C11HH);
+    SetType(CST_TdS_HH);
     Requires.push_back("CST");
 }
 
@@ -57,19 +57,19 @@ void CCSTProxy_mTdS::SetType(ECSTTdSType type)
 
     switch(Type){
     // -------------------
-        case(CST_C11HH):
+        case(CST_TdS_HH):
             Provide = "CST -TdS(x)^{c}";    // entropy of the constrained system
         break;
     // -------------------
-        case(CST_C11HP):
+        case(CST_TdS_HP):
             Provide = "CST -TdS(x)^{c} cov(dH/dx,Epot)";    // entropy of the constrained system  - contribution
         break;
     // -------------------
-        case(CST_C11HK):
+        case(CST_TdS_HR):
             Provide = "CST -TdS(x)^{c} cov(dH/dx,Ekin)";    // entropy of the constrained system  - contribution
         break;
     // -------------------
-        case(CST_C11HR):
+        case(CST_TdS_HK):
             Provide = "CST -TdS(x)^{c} cov(dH/dx,Erst)";    // entropy of the constrained system  - contribution
         break;
     // -------------------
@@ -117,24 +117,24 @@ double CCSTProxy_mTdS::GetValue(int ibin,int icv,EProxyRealm realm) const
 
     switch(Type){
     // -------------------
-        case(CST_C11HH):
+        case(CST_TdS_HH):
             c11     = Accu->GetData("C11HH",ibin,icv);
             m2ene   = Accu->GetData("M2ETOT",ibin);
         break;
     // -------------------
-        case(CST_C11HP):
+        case(CST_TdS_HP):
             c11     = Accu->GetData("C11HP",ibin,icv);
             m2ene   = Accu->GetData("M2EPOT",ibin);
         break;
     // -------------------
-        case(CST_C11HK):
-            c11     = Accu->GetData("C11HK",ibin,icv);
-            m2ene   = Accu->GetData("M2EKIN",ibin);
-        break;
-    // -------------------
-        case(CST_C11HR):
+        case(CST_TdS_HR):
             c11     = Accu->GetData("C11HR",ibin,icv);
             m2ene   = Accu->GetData("M2ERST",ibin);
+        break;
+    // -------------------
+        case(CST_TdS_HK):
+            c11     = Accu->GetData("C11HK",ibin,icv);
+            m2ene   = Accu->GetData("M2EKIN",ibin);
         break;
     // -------------------
         default:

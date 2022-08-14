@@ -63,28 +63,28 @@ void CABFProxy_mTdS::SetType(EABFTdSType type)
 
     // -------------------
         case(ABF_TdS_HP):
-            Provide = "ABF -TdS(x) - HP";
+            Provide = "ABF -TdS(x) - cov(dH/dx,Epot)";
         break;
     // -------------------
         case(ABF_TdS_HR):
-            Provide = "ABF -TdS(x) - HR";
+            Provide = "ABF -TdS(x) - cov(dH/dx,Erst)";
         break;
     // -------------------
         case(ABF_TdS_HK):
-            Provide = "ABF -TdS(x) - HK";
+            Provide = "ABF -TdS(x) - cov(dH/dx,Ekin)";
         break;
 
     // -------------------
         case(ABF_TdS_BP):
-            Provide = "ABF -TdS(x) - BP";
+            Provide = "ABF -TdS(x) - cov(bias,Epot)";
         break;
     // -------------------
         case(ABF_TdS_BR):
-            Provide = "ABF -TdS(x) - BR";
+            Provide = "ABF -TdS(x) - cov(bias,Erst)";
         break;
     // -------------------
         case(ABF_TdS_BK):
-            Provide = "ABF -TdS(x) - BK";
+            Provide = "ABF -TdS(x) -cov(bias,Ekin)";
         break;
 
     // -------------------

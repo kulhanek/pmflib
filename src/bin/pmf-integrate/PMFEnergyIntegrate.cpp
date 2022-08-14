@@ -277,19 +277,49 @@ bool CPMFEnergyIntegrate::Run(void)
             }
     // -----------------------------------------------
         } else if ( Options.GetOptRealm() == "-TdS_HP" ) {
-            CABFProxy_mTdS_Ptr proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
-            proxy->SetType(ABF_TdS_HP);
-            lproxy = proxy;
+            if( CABFProxy_mTdS::IsCompatible(accu) ){
+                CABFProxy_mTdS_Ptr proxy = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
+                proxy->SetType(ABF_TdS_HP);
+                lproxy = proxy;
+            } else if (CCSTProxy_mTdS::IsCompatible(accu) ) {
+                CCSTProxy_mTdS_Ptr proxy = CCSTProxy_mTdS_Ptr(new CCSTProxy_mTdS);
+                proxy->SetType(CST_TdS_HP);
+                lproxy = proxy;
+            } else {
+                CSmallString error;
+                error << "incompatible method: " << accu->GetMethod() << " with requested realm: " <<  Options.GetOptRealm();
+                RUNTIME_ERROR(error);
+            }
     // -----------------------------------------------
         } else if ( Options.GetOptRealm() == "-TdS_HR" ) {
-            CABFProxy_mTdS_Ptr proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
-            proxy->SetType(ABF_TdS_HR);
-            lproxy = proxy;
+            if( CABFProxy_mTdS::IsCompatible(accu) ){
+                CABFProxy_mTdS_Ptr proxy = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
+                proxy->SetType(ABF_TdS_HR);
+                lproxy = proxy;
+            } else if (CCSTProxy_mTdS::IsCompatible(accu) ) {
+                CCSTProxy_mTdS_Ptr proxy = CCSTProxy_mTdS_Ptr(new CCSTProxy_mTdS);
+                proxy->SetType(CST_TdS_HR);
+                lproxy = proxy;
+            } else {
+                CSmallString error;
+                error << "incompatible method: " << accu->GetMethod() << " with requested realm: " <<  Options.GetOptRealm();
+                RUNTIME_ERROR(error);
+            }
     // -----------------------------------------------
         } else if ( Options.GetOptRealm() == "-TdS_HK" ) {
-            CABFProxy_mTdS_Ptr proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
-            proxy->SetType(ABF_TdS_HK);
-            lproxy = proxy;
+            if( CABFProxy_mTdS::IsCompatible(accu) ){
+                CABFProxy_mTdS_Ptr proxy = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
+                proxy->SetType(ABF_TdS_HK);
+                lproxy = proxy;
+            } else if (CCSTProxy_mTdS::IsCompatible(accu) ) {
+                CCSTProxy_mTdS_Ptr proxy = CCSTProxy_mTdS_Ptr(new CCSTProxy_mTdS);
+                proxy->SetType(CST_TdS_HK);
+                lproxy = proxy;
+            } else {
+                CSmallString error;
+                error << "incompatible method: " << accu->GetMethod() << " with requested realm: " <<  Options.GetOptRealm();
+                RUNTIME_ERROR(error);
+            }
     // -----------------------------------------------
         } else if ( Options.GetOptRealm() == "-TdS_BP" ) {
             CABFProxy_mTdS_Ptr proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
@@ -305,23 +335,6 @@ bool CPMFEnergyIntegrate::Run(void)
             CABFProxy_mTdS_Ptr proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
             proxy->SetType(ABF_TdS_BK);
             lproxy = proxy;
-
-    // -----------------------------------------------
-        } else if ( Options.GetOptRealm() == "-TdS_HP" ) {
-            CCSTProxy_mTdS_Ptr proxy    = CCSTProxy_mTdS_Ptr(new CCSTProxy_mTdS);
-            proxy->SetType(CST_C11HP);
-            lproxy = proxy;
-    // -----------------------------------------------
-        } else if ( Options.GetOptRealm() == "-TdS_HK" ) {
-            CCSTProxy_mTdS_Ptr proxy    = CCSTProxy_mTdS_Ptr(new CCSTProxy_mTdS);
-            proxy->SetType(CST_C11HK);
-            lproxy = proxy;
-    // -----------------------------------------------
-        } else if ( Options.GetOptRealm() == "-TdS_HR" ) {
-            CCSTProxy_mTdS_Ptr proxy    = CCSTProxy_mTdS_Ptr(new CCSTProxy_mTdS);
-            proxy->SetType(CST_C11HR);
-            lproxy = proxy;
-
     // -----------------------------------------------
         } else {
             CSmallString error;

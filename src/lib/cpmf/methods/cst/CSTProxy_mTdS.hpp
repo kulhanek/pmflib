@@ -26,10 +26,10 @@
 //------------------------------------------------------------------------------
 
 enum ECSTTdSType {
-    CST_C11HH,
-    CST_C11HP,
-    CST_C11HK,
-    CST_C11HR,
+    CST_TdS_HH,
+    CST_TdS_HP,
+    CST_TdS_HR,
+    CST_TdS_HK,
 };
 
 //------------------------------------------------------------------------------
@@ -67,7 +67,7 @@ private:
 
 //------------------------------------------------------------------------------
 
-typedef boost::shared_ptr<CCSTProxy_mTdS>    CCSTProxy_mTdS_Ptr;
+typedef boost::shared_ptr   <CCSTProxy_mTdS>    CCSTProxy_mTdS_Ptr;
 
 //------------------------------------------------------------------------------
 
