@@ -220,31 +220,6 @@ subroutine pmf_pbc_set_box_from_lvectors(lattice)
 end subroutine pmf_pbc_set_box_from_lvectors
 
 !===============================================================================
-! Subroutine:  pmf_pbc_get_box
-!===============================================================================
-
-subroutine pmf_pbc_get_box(a,b,c,alpha,beta,gamma)
-
- use pmf_dat
- use pmf_utils
-
- real(PMFDP)    :: a,b,c
- real(PMFDP)    :: alpha,beta,gamma
- ! -----------------------------------------------------------------------------
-
- a = 0.0d0
- b = 0.0d0
- c = 0.0d0
-
- alpha = 0.0d0
- beta = 0.0d0
- gamma = 0.0d0
-
- ! TODO !!!!!!
-
-end subroutine pmf_pbc_get_box
-
-!===============================================================================
 ! Subroutine:  pmf_pbc_get_cbox
 ! get box flag and center of box (cbox_x,cbox_y,cbox_z)
 !===============================================================================

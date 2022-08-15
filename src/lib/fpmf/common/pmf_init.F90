@@ -693,10 +693,9 @@ subroutine pmf_init_sys_summary()
     volunit = pmf_unit_power_unit(LengthUnit,3)
 
     select case(fbox_type)
+    case(BOX_ISOLATED_SYSTEM)
+        ! nothing to print
     case(BOX_ORTHOGONAL,BOX_GENERAL)
-    write(form_str,'(F15.1)') pmf_unit_get_rvalue(volunit,fbox_volume)
-    write(PMF_OUT,90)  trim(adjustl(form_str)),'['//trim(pmf_unit_label(volunit))//']'
-
     write(PMF_OUT,100) pmf_unit_get_rvalue(LengthUnit,fucell(1,1)), &
                     pmf_unit_get_rvalue(LengthUnit,fucell(2,1)), &
                     pmf_unit_get_rvalue(LengthUnit,fucell(3,1)), &
@@ -710,8 +709,13 @@ subroutine pmf_init_sys_summary()
                     pmf_unit_get_rvalue(LengthUnit,fucell(3,3)), &
                     '['//trim(pmf_unit_label(LengthUnit))//']'
 
+    write(form_str,'(F15.1)') pmf_unit_get_rvalue(volunit,fbox_volume)
+    write(PMF_OUT,90)  trim(adjustl(form_str)),'['//trim(pmf_unit_label(volunit))//']'
+
     write(form_str,'(F10.2)') pmf_unit_get_rvalue(LengthUnit,fbox_sphere)
     write(PMF_OUT,130) trim(adjustl(form_str)), '['//trim(pmf_unit_label(LengthUnit))//']'
+    case default
+        call pmf_utils_exit(PMF_OUT,1,'[PMF] Unsupported box type in pmf_init_sys_summary!')
     end select
 
  10 format('# Total number of atoms    : ',A)
@@ -725,10 +729,12 @@ subroutine pmf_init_sys_summary()
  65 format('# Simulation length        : ',A,1X,A)
  70 format('# System type              : ',A)
  80 format('# Box type                 : ',A)
- 90 format('# Initial box volume       : ',A,1X,A)
+
 100 format('# Initial box A vector     : ',F12.4,1X,F12.4,1X,F12.4,1X,A)
 110 format('# Initial box B vector     : ',F12.4,1X,F12.4,1X,F12.4,1X,A)
 120 format('# Initial box C vector     : ',F12.4,1X,F12.4,1X,F12.4,1X,A)
+
+ 90 format('# Initial box volume       : ',A,1X,A)
 130 format('# Largest sphere radius    : ',A,1X,A)
 
 end subroutine pmf_init_sys_summary
