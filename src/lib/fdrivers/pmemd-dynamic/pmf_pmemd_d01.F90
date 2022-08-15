@@ -116,6 +116,7 @@ subroutine pmf_pmemd_init_preinit(mdin,mdin_len,anatom,anres,   &
     integer(CPMFINT)    :: ansteps                      ! number of MD steps
     real(CPMFDP)        :: astepsize                    ! step size
     real(CPMFDP)        :: atemp0                       ! temperature
+    real(CPMFDP)        :: apress0                      ! pressure
     real(CPMFDP)        :: box_a,box_b,box_c            ! box dimensions
     real(CPMFDP)        :: box_alpha,box_beta,box_gamma
     ! ------------------------------------------------------
@@ -126,13 +127,15 @@ subroutine pmf_pmemd_init_preinit(mdin,mdin_len,anatom,anres,   &
     if( .not. fmaster ) return
 
     ! setup conversion factors
-    MassConv         = 1.0d0               ! g/mol -> g/mol
-    LengthConv       = 1.0d0               ! A -> A
-    AngleConv        = PMF_D2R             ! deg -> rad
-    TimeConv         = 1000.0d0            ! ps -> fs
-    VelocityConv     = 1.0d0               ! pmflib velocity -> pmflib velocity
-    EnergyConv       = 1.0d0               ! kcal/mol -> kcal/mol
-    ForceConv        = 1.0d0               ! kcal/mol/A -> kcal/mol/A
+    MassConv         = 1.0d0                ! g/mol -> g/mol
+    LengthConv       = 1.0d0                ! A -> A
+    AngleConv        = PMF_D2R              ! deg -> rad
+    TimeConv         = 1000.0d0             ! ps -> fs
+    VelocityConv     = 1.0d0                ! pmflib velocity -> pmflib velocity
+    EnergyConv       = 1.0d0                ! kcal/mol -> kcal/mol
+    ForceConv        = 1.0d0                ! kcal/mol/A -> kcal/mol/A
+    TemperatureConv  = 1.0d0                ! K
+    PressureConv     = 1.0d5                ! Bar -> Pa
 
     ControlFileName = ''
     do i=1,min(mdin_len,len(ControlFileName))
@@ -145,7 +148,7 @@ subroutine pmf_pmemd_init_preinit(mdin,mdin_len,anatom,anres,   &
 
     ! init basic PMF setup
     call pmf_init_dat()
-    call pmf_init_variables(IA_LEAP_FROG,anatom,antb,ansteps,astepsize,0.0d0,atemp0)
+    call pmf_init_variables(IA_LEAP_FROG,anatom,antb,ansteps,astepsize,0.0d0,atemp0,apress0)
     call pmf_pbc_set_box(box_a,box_b,box_c,box_alpha,box_beta,box_gamma)
 
     ! init mask subsystem

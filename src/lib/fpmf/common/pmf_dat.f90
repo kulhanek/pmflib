@@ -59,6 +59,7 @@ integer     :: fsystype     ! system type (NT,NVT,NpT)
 real(PMFDP) :: fdt          ! dt of step in [fs]
 real(PMFDP) :: ftime        ! actual time in [fs]
 real(PMFDP) :: ftemp        ! simulation temperature in [K]
+real(PMFDP) :: fpressure    ! simulation pressure in [Pa]
 integer     :: fintalg      ! integration algorithm
 logical     :: fshake       ! SHAKE or different constraint algorithm in use in main MD engine
 

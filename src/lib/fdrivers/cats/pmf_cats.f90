@@ -15,7 +15,7 @@
 !
 !    You should have received a copy of the GNU Lesser General Public
 !    License along with this library; if not, write to the Free Software
-!    Foundation, Inc., 51 Franklin Street, Fifth Floor, 
+!    Foundation, Inc., 51 Franklin Street, Fifth Floor,
 !    Boston, MA  02110-1301  USA
 !===============================================================================
 
@@ -69,7 +69,7 @@ subroutine pmf_cats_begin_init(mdin,anatom,anres, &
 
     ! init basic PMF setup
     call pmf_init_dat()
-    call pmf_init_variables(IA_LEAP_FROG,anatom,antb,1,1.0d0,0.0d0,300.0d0)
+    call pmf_init_variables(IA_LEAP_FROG,anatom,antb,1,1.0d0,0.0d0,300.0d0,100000.0d0)
     call pmf_pbc_set_box(box_a,box_b,box_c,box_alpha,box_beta,box_gamma)
 
     ! init mask subsystem

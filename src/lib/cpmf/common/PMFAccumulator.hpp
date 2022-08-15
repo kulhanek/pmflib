@@ -152,6 +152,8 @@ public:
     /// convert point index to point position
     void GetIPoint(unsigned int index,CSimpleVector<int>& point) const;
 
+// -----------------------------------------------
+
     /// get temperature in iu
     double GetTemperature(void) const;
 
@@ -164,11 +166,29 @@ public:
     /// get temperature conversion factor to given unit
     double GetTemperatureFConv(void);
 
+ // -----------------------------------------------
+
+    /// get pressure in iu
+    double GetPressure(void) const;
+
+    /// get pressure in unit
+    double GetRealPressure(void) const;
+
+    /// get pressure unit
+    const CSmallString& GetPressureUnit(void) const;
+
+    /// get pressure conversion factor to given unit
+    double GetPressureFConv(void);
+
+ // -----------------------------------------------
+
     /// get energy conversion factor to given unit
     double GetEnergyFConv(void);
 
     /// get energy unit
     const CSmallString& GetEnergyUnit(void) const;
+
+ // -----------------------------------------------
 
     /// get number of samples
     int GetNumOfSamples(int ibin) const;
@@ -279,6 +299,11 @@ protected:
     double                          Temperature;        // temperature
     double                          TemperatureFConv;
     CSmallString                    TemperatureUnit;
+
+    double                          Pressure;           // pressure
+    double                          PressureFConv;
+    CSmallString                    PressureUnit;
+
     double                          EnergyFConv;        // energy unit
     CSmallString                    EnergyUnit;
 

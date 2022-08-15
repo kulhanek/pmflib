@@ -89,8 +89,8 @@ character(PMF_MAX_PATH) :: fserver              ! abf-server name
 integer                 :: fserverupdate        ! how often to communicate with server
 integer                 :: fconrepeats          ! how many times to repeat connection
 logical                 :: fabortonmwaerr       ! abort if communication with MWA fails
-integer                 :: fmwamode             ! 0 - all is transferred
-                                                ! 1 - only MICF is transferred
+integer                 :: fmwamode             ! 0 - full update of MICF
+                                                ! 1 - incremental update of MICF (default)
 
 ! abf server -----------------
 integer                 :: client_id            ! abf walker client ID
@@ -133,7 +133,7 @@ type,extends(PMFAccuType) :: ABFAccuType
     real(PMFDP),pointer    :: m2gfx(:,:)                ! M2 of GFX
 
 ! enthalpy & entropy
-    real(PMFDP),pointer    :: nene(:)
+    real(PMFDP),pointer    :: ntds(:)                   ! number of hits into bins
 
     real(PMFDP),pointer    :: meint(:)                  ! mean of internal energy
     real(PMFDP),pointer    :: m2eint(:)                 ! M2 of internal energy
@@ -152,26 +152,17 @@ type,extends(PMFAccuType) :: ABFAccuType
     real(PMFDP),pointer    :: m2pn(:,:)                 ! M2 of tot energy - icf
 
 ! entropy - decomposition
-    real(PMFDP),pointer    :: ntds(:)                   ! number of hits into bins
+    real(PMFDP),pointer    :: mhicf(:,:)                ! mean of ICF - hamiltonian
+    real(PMFDP),pointer    :: m2hicf(:,:)               ! M2 of ICF - hamiltonian
+    real(PMFDP),pointer    :: mbicf(:,:)                ! mean of ICF - bias
+    real(PMFDP),pointer    :: m2bicf(:,:)               ! M2 of ICF - bias
 
-    real(PMFDP),pointer    :: mtdsepot(:)               ! mean of pot energy
-    real(PMFDP),pointer    :: m2tdsepot(:)              ! M2 of pot energy
-    real(PMFDP),pointer    :: mtdserst(:)               ! mean of rst energy
-    real(PMFDP),pointer    :: m2tdserst(:)              ! M2 of rst energy
-    real(PMFDP),pointer    :: mtdsekin(:)               ! mean of kin energy
-    real(PMFDP),pointer    :: m2tdsekin(:)              ! M2 of kin energy
-
-    real(PMFDP),pointer    :: mtdshx(:,:)               ! mean of ICF - all
-    real(PMFDP),pointer    :: m2tdshx(:,:)              ! M2 of ICF - all
-    real(PMFDP),pointer    :: mtdsbx(:,:)               ! mean of ICF - bias
-    real(PMFDP),pointer    :: m2tdsbx(:,:)              ! M2 of ICF - bias
-
-    real(PMFDP),pointer    :: c11tdshp(:,:)             ! co-variances
-    real(PMFDP),pointer    :: c11tdshr(:,:)
-    real(PMFDP),pointer    :: c11tdshk(:,:)
-    real(PMFDP),pointer    :: c11tdsbp(:,:)
-    real(PMFDP),pointer    :: c11tdsbr(:,:)
-    real(PMFDP),pointer    :: c11tdsbk(:,:)
+    real(PMFDP),pointer    :: c11hp(:,:)                ! co-variances
+    real(PMFDP),pointer    :: c11hr(:,:)
+    real(PMFDP),pointer    :: c11hk(:,:)
+    real(PMFDP),pointer    :: c11bp(:,:)
+    real(PMFDP),pointer    :: c11br(:,:)
+    real(PMFDP),pointer    :: c11bk(:,:)
 
 ! applied ICF - this is stored in accu but ignored
     real(PMFDP),pointer    :: bnsamples(:)              ! number of hits into bins

@@ -42,9 +42,15 @@ CPMFAccumulator::CPMFAccumulator(void)
 {
     NumOfCVs            = 0;
     NumOfBins           = 0;
+
     Temperature         = 300.0;
     TemperatureFConv    = 1.0;
     TemperatureUnit     = "K";
+
+    Pressure            = 100000;
+    PressureFConv       = 1.0;
+    PressureUnit        = "Pa";
+
     EnergyFConv         = 1.0;
     EnergyUnit          = "kcal mol^-1";
     Method              = "NONE";
@@ -941,6 +947,12 @@ void CPMFAccumulator::Save(FILE* fout)
         RUNTIME_ERROR(error);
     }
 
+    if(fprintf(fout,"%%PRESSURE\n%10.4f\n",Pressure) <= 0) {
+        CSmallString error;
+        error << "unable to write pressure";
+        RUNTIME_ERROR(error);
+    }
+
     // 40  format(3X,E18.11,1X,A36)
     if(fprintf(fout,"%%ENERGY-UNIT\n   %18.11E %36s\n",EnergyFConv,(const char*)EnergyUnit) <= 0) {
         CSmallString error;
@@ -948,10 +960,15 @@ void CPMFAccumulator::Save(FILE* fout)
         RUNTIME_ERROR(error);
     }
 
-    // 40  format(3X,E18.11,1X,A36)
     if(fprintf(fout,"%%TEMPERATURE-UNIT\n   %18.11E %36s\n",TemperatureFConv,(const char*)TemperatureUnit) <= 0) {
         CSmallString error;
         error << "unable to write temperature unit";
+        RUNTIME_ERROR(error);
+    }
+
+    if(fprintf(fout,"%%PRESSURE-UNIT\n   %18.11E %36s\n",PressureFConv,(const char*)PressureUnit) <= 0) {
+        CSmallString error;
+        error << "unable to write pressure unit";
         RUNTIME_ERROR(error);
     }
 
@@ -1147,6 +1164,34 @@ const CSmallString& CPMFAccumulator::GetTemperatureUnit(void) const
 double CPMFAccumulator::GetTemperatureFConv(void)
 {
     return(TemperatureFConv);
+}
+
+//------------------------------------------------------------------------------
+
+double CPMFAccumulator::GetPressure(void) const
+{
+    return(Pressure);
+}
+
+//------------------------------------------------------------------------------
+
+double CPMFAccumulator::GetRealPressure(void) const
+{
+    return(Pressure*PressureFConv);
+}
+
+//------------------------------------------------------------------------------
+
+const CSmallString& CPMFAccumulator::GetPressureUnit(void) const
+{
+    return(PressureUnit);
+}
+
+//------------------------------------------------------------------------------
+
+double CPMFAccumulator::GetPressureFConv(void)
+{
+    return(PressureFConv);
 }
 
 //------------------------------------------------------------------------------

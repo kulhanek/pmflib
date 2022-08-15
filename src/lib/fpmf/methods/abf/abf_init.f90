@@ -110,7 +110,7 @@ subroutine abf_init_dat
     fserverupdate   = 20000
     fconrepeats     = 0
     fabortonmwaerr  = .true.
-    fmwamode        = 0
+    fmwamode        = 1
 
     client_id       = -1
     failure_counter = 0

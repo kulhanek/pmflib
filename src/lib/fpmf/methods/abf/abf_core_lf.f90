@@ -387,13 +387,6 @@ subroutine abf_core_lf_register_ekin()
         call abf_accu_add_data_energy(cvhist(:,hist_len+hist_fidx), &
                                       icfhist(:,hist_len+hist_fidx), micfhist(:,hist_len+hist_fidx), &
                                       epothist(hist_len+hist_fidx), ersthist(hist_len+hist_fidx), ekinhist(hist_len+hist_fidx))
-
-        if( fentropy .and. fentdecomp ) then
-            call abf_accu_add_data_entropy_decompose(cvhist(:,hist_len+hist_fidx), &
-                                                     icfhist(:,hist_len+hist_fidx), micfhist(:,hist_len+hist_fidx), &
-                                      epothist(hist_len+hist_fidx), ersthist(hist_len+hist_fidx), ekinhist(hist_len+hist_fidx))
-        end if
-
     end if
 
 end subroutine abf_core_lf_register_ekin

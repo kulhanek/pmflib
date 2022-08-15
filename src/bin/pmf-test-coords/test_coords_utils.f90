@@ -59,7 +59,7 @@ subroutine initialization_pass_I
 
 ! init basic PMF setup
     call pmf_init_dat()
-    call pmf_init_variables(IA_LEAP_FROG,max_atoms,0,1,0.001d0,0.0d0,300.0d0)
+    call pmf_init_variables(IA_LEAP_FROG,max_atoms,0,1,0.001d0,0.0d0,300.0d0,100000.0d0)
 
 ! init mask subsystem
     call pmf_pbc_get_cbox(has_box,cbox)
