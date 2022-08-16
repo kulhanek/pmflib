@@ -141,9 +141,10 @@ subroutine abf_accu_init()
 
     if( fserver_enabled ) then
         ! ABF incremental force arrays - allocate all to simplify F90/C++ interface
+        ! index order is OPPOSITE due to F90/C++ interface
         allocate(   abfaccu%inc_nsamples(abfaccu%tot_nbins),                &
-                    abfaccu%inc_micf(abfaccu%tot_cvs,abfaccu%tot_nbins),    &
-                    abfaccu%inc_m2icf(abfaccu%tot_cvs,abfaccu%tot_nbins),   &
+                    abfaccu%inc_micf(abfaccu%tot_nbins,abfaccu%tot_cvs),    &
+                    abfaccu%inc_m2icf(abfaccu%tot_nbins,abfaccu%tot_cvs),   &
                     stat = alloc_failed)
 
         if( alloc_failed .ne. 0 ) then
@@ -584,10 +585,11 @@ subroutine abf_accu_add_data_online(cvs,gfx,bfx)
 
             do i=1,abfaccu%tot_cvs
                 icf = picf(i)
-                dicf1 = icf - abfaccu%inc_micf(i,gi0)
-                abfaccu%inc_micf(i,gi0)  = abfaccu%inc_micf(i,gi0)  + dicf1 * invn
-                dicf2 = icf -  abfaccu%inc_micf(i,gi0)
-                abfaccu%inc_m2icf(i,gi0) = abfaccu%inc_m2icf(i,gi0) + dicf1 * dicf2
+                ! the index order is opposite due to F90/C++ interface
+                dicf1 = icf - abfaccu%inc_micf(gi0,i)
+                abfaccu%inc_micf(gi0,i)  = abfaccu%inc_micf(gi0,i)  + dicf1 * invn
+                dicf2 = icf -  abfaccu%inc_micf(gi0,i)
+                abfaccu%inc_m2icf(gi0,i) = abfaccu%inc_m2icf(gi0,i) + dicf1 * dicf2
             end do
 
         end if

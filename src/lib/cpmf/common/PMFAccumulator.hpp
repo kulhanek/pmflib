@@ -92,6 +92,13 @@ public:
                     double temp, const CSmallString& temp_unit, double temp_fconv,
                     const CSmallString& ene_unit, double ene_fconv);
 
+    /// set headers
+    void SetHeaders(const CSmallString& method, const CSmallString& version, const CSmallString& driver,
+                    double temp, const CSmallString& temp_unit, double temp_fconv,
+                    int systype,
+                    double pres, const CSmallString& pres_unit, double pres_fconv,
+                    const CSmallString& ene_unit, double ene_fconv);
+
 // dimension specification ----------------------------------------------------
 
     /// set number of coordinates, all previous data are destroyed
@@ -300,6 +307,9 @@ protected:
     double                          TemperatureFConv;
     CSmallString                    TemperatureUnit;
 
+    int                             SysType;            // 0 - isolated system
+                                                        // 1 - constant volume
+                                                        // 2 - constant pressure
     double                          Pressure;           // pressure
     double                          PressureFConv;
     CSmallString                    PressureUnit;

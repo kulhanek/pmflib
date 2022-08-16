@@ -340,9 +340,15 @@ subroutine pmf_accu_write_header(accu,iounit)
     write(iounit,5) adjustl(key)
     write(iounit,20) ftemp
 
+    key = '%SYSTYPE'
+    write(iounit,5) adjustl(key)
+    write(iounit,26) fsystype
+
+    if( fsystype .eq. 2 ) then
     key = '%PRESSURE'
     write(iounit,5) adjustl(key)
-    write(iounit,20) fpressure
+    write(iounit,25) fpressure
+    end if
 
     key = '%CVS'
     write(iounit,5) adjustl(key)
@@ -363,9 +369,11 @@ subroutine pmf_accu_write_header(accu,iounit)
     write(iounit,5) adjustl(key)
     write(iounit,40) pmf_unit_get_rvalue(TemperatureUnit,1.0d0),trim(pmf_unit_label(TemperatureUnit))
 
+    if( fsystype .eq. 2 ) then
     key = '%PRESSURE-UNIT'
     write(iounit,5) adjustl(key)
     write(iounit,40) pmf_unit_get_rvalue(PressureUnit,1.0d0),trim(pmf_unit_label(PressureUnit))
+    end if
 
     key = '%NSTLIMIT'
     write(iounit,5) adjustl(key)
@@ -385,6 +393,8 @@ subroutine pmf_accu_write_header(accu,iounit)
 10  format(A)
 15  format(I2)
 20  format(F10.4)
+25  format(F10.1)
+26  format(I10)
 
 30  format(I2,1X,E18.11,1X,E18.11,1X,I6,1X,A10)
 31  format(I2,1X,A55)

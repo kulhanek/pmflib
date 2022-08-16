@@ -47,7 +47,8 @@ CPMFAccumulator::CPMFAccumulator(void)
     TemperatureFConv    = 1.0;
     TemperatureUnit     = "K";
 
-    Pressure            = 100000;
+    SysType             = 0;        // isolated system
+    Pressure            = 0;
     PressureFConv       = 1.0;
     PressureUnit        = "Pa";
 
@@ -226,6 +227,12 @@ void CPMFAccumulator::Load(CXMLElement* p_root)
         } else if (  name == "TEMPERATURE" ) {
             result &= p_item->GetAttribute("value",Temperature);
     // -------------------------------------------
+        } else if (  name == "SYSTYPE" ) {
+            result &= p_item->GetAttribute("value",SysType);
+    // -------------------------------------------
+        } else if (  name == "PRESSURE" ) {
+            result &= p_item->GetAttribute("value",Pressure);
+    // -------------------------------------------
         } else if (  name == "ENERGY-UNIT" ) {
             result &= p_item->GetAttribute("value",EnergyUnit);
             result &= p_item->GetAttribute("fconv",EnergyFConv);
@@ -233,6 +240,10 @@ void CPMFAccumulator::Load(CXMLElement* p_root)
         } else if (  name == "TEMPERATURE-UNIT" ) {
             result &= p_item->GetAttribute("value",TemperatureUnit);
             result &= p_item->GetAttribute("fconv",TemperatureFConv);
+    // -------------------------------------------
+        } else if (  name == "PRESSURE-UNIT" ) {
+            result &= p_item->GetAttribute("value",PressureUnit);
+            result &= p_item->GetAttribute("fconv",PressureFConv);
     // -------------------------------------------
         } else if (  name == "NSTLIMIT" ) {
             int tmp;  // read but ignored
@@ -700,6 +711,26 @@ void CPMFAccumulator::ReadHeaderSection(FILE* fin,const CSmallString& keyline)
             RUNTIME_ERROR(error);
         }
 // -----------------------------------------------------
+    } else if( key == "SYSTYPE" ) {
+        // read item
+        sbuff.ReadLineFromFile(fin,true,true);
+        int tr = sscanf(sbuff,"%d",&SysType);
+        if( tr != 1 ) {
+            CSmallString error;
+            error << "unable to read SYSTYPE (" << tr << " != 1)";
+            RUNTIME_ERROR(error);
+        }
+// -----------------------------------------------------
+    } else if( key == "PRESSURE" ) {
+        // read item
+        sbuff.ReadLineFromFile(fin,true,true);
+        int tr = sscanf(sbuff,"%lf",&Pressure);
+        if( tr != 1 ) {
+            CSmallString error;
+            error << "unable to read pressure (" << tr << " != 1)";
+            RUNTIME_ERROR(error);
+        }
+// -----------------------------------------------------
     } else if( key == "ENERGY-UNIT" ) {
         int             tr = 0;
 
@@ -719,7 +750,6 @@ void CPMFAccumulator::ReadHeaderSection(FILE* fin,const CSmallString& keyline)
         }
         EnergyUnit = sbuff.GetSubStringFromTo(22,57);
         EnergyUnit.Trim();
-
     // -----------------------------------------------------
     } else if( key == "TEMPERATURE-UNIT" ) {
         int             tr = 0;
@@ -740,6 +770,26 @@ void CPMFAccumulator::ReadHeaderSection(FILE* fin,const CSmallString& keyline)
         }
         TemperatureUnit = sbuff.GetSubStringFromTo(22,57);
         TemperatureUnit.Trim();
+    // -----------------------------------------------------
+    } else if( key == "PRESSURE-UNIT" ) {
+        int             tr = 0;
+
+// 40  format(3X,E18.11,1X,A36)
+        // read item
+        sbuff.ReadLineFromFile(fin,true,true);
+        tr = sscanf(sbuff,"%lf",&PressureFConv);
+        if( tr != 1 ) {
+            CSmallString error;
+            error << "unable to read pressure unit (" << tr << " != 1)";
+            RUNTIME_ERROR(error);
+        }
+        if( sbuff.GetLength() != 58 ){
+            CSmallString error;
+            error << "unable to read pressure unit: '" << sbuff << "'";
+            RUNTIME_ERROR(error);
+        }
+        PressureUnit = sbuff.GetSubStringFromTo(22,57);
+        PressureUnit.Trim();
 // -----------------------------------------------------
     } else if( key == "NSTLIMIT" ) {
         // read item
@@ -862,6 +912,18 @@ void CPMFAccumulator::Save(CXMLElement* p_ele)
 
 // header item -----------------------------------
     p_item = p_root->CreateChildElement("HEADER");
+    p_item->SetAttribute("name","SYSTYPE");
+    p_item->SetAttribute("value",SysType);
+
+// header item -----------------------------------
+    if( SysType == 2 ) {
+    p_item = p_root->CreateChildElement("HEADER");
+    p_item->SetAttribute("name","PRESSURE");
+    p_item->SetAttribute("value",Pressure);
+    }
+
+// header item -----------------------------------
+    p_item = p_root->CreateChildElement("HEADER");
     p_item->SetAttribute("name","ENERGY-UNIT");
     p_item->SetAttribute("value",EnergyUnit);
     p_item->SetAttribute("fconv",EnergyFConv);
@@ -871,6 +933,14 @@ void CPMFAccumulator::Save(CXMLElement* p_ele)
     p_item->SetAttribute("name","TEMPERATURE-UNIT");
     p_item->SetAttribute("value",TemperatureUnit);
     p_item->SetAttribute("fconv",TemperatureFConv);
+
+// header item -----------------------------------
+    if( SysType == 2 ) {
+    p_item = p_root->CreateChildElement("HEADER");
+    p_item->SetAttribute("name","PRESSURE-UNIT");
+    p_item->SetAttribute("value",PressureUnit);
+    p_item->SetAttribute("fconv",PressureFConv);
+    }
 
 // header item -----------------------------------
     p_item = p_root->CreateChildElement("HEADER");
@@ -947,10 +1017,18 @@ void CPMFAccumulator::Save(FILE* fout)
         RUNTIME_ERROR(error);
     }
 
-    if(fprintf(fout,"%%PRESSURE\n%10.4f\n",Pressure) <= 0) {
+    if(fprintf(fout,"%%SYSTYPE\n%10d\n",SysType) <= 0) {
+        CSmallString error;
+        error << "unable to write SYSTYPE";
+        RUNTIME_ERROR(error);
+    }
+
+    if( SysType == 2 ){
+    if(fprintf(fout,"%%PRESSURE\n%10.1f\n",Pressure) <= 0) {
         CSmallString error;
         error << "unable to write pressure";
         RUNTIME_ERROR(error);
+    }
     }
 
     // 40  format(3X,E18.11,1X,A36)
@@ -966,10 +1044,12 @@ void CPMFAccumulator::Save(FILE* fout)
         RUNTIME_ERROR(error);
     }
 
+    if( SysType == 2 ){
     if(fprintf(fout,"%%PRESSURE-UNIT\n   %18.11E %36s\n",PressureFConv,(const char*)PressureUnit) <= 0) {
         CSmallString error;
         error << "unable to write pressure unit";
         RUNTIME_ERROR(error);
+    }
     }
 
     if( NSTLimit > 0 ){
@@ -1102,6 +1182,33 @@ void CPMFAccumulator::SetHeaders(const CSmallString& method, const CSmallString&
     EnergyUnit  = ene_unit;
     EnergyFConv = ene_fconv;
 }
+
+//------------------------------------------------------------------------------
+
+void CPMFAccumulator::SetHeaders(const CSmallString& method, const CSmallString& version, const CSmallString& driver,
+                double temp, const CSmallString& temp_unit, double temp_fconv,
+                int systype,
+                double pres, const CSmallString& pres_unit, double pres_fconv,
+                const CSmallString& ene_unit, double ene_fconv)
+{
+    Method = method;
+    Version = version;
+    Driver = driver;
+
+    Temperature = temp;
+    TemperatureUnit = temp_unit;
+    TemperatureFConv = temp_fconv;
+
+    SysType = systype;
+
+    Pressure = pres;
+    PressureUnit = pres_unit;
+    PressureFConv = pres_fconv;
+
+    EnergyUnit  = ene_unit;
+    EnergyFConv = ene_fconv;
+}
+
 
 //------------------------------------------------------------------------------
 

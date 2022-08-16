@@ -170,8 +170,8 @@ type,extends(PMFAccuType) :: ABFAccuType
 
 ! ABF force - incremental part for ABF-server
     real(PMFDP),pointer    :: inc_nsamples(:)           ! number of hits into bins
-    real(PMFDP),pointer    :: inc_micf(:,:)             ! accumulated mean ICF
-    real(PMFDP),pointer    :: inc_m2icf(:,:)            ! accumulated M2 of ICF
+    real(PMFDP),pointer    :: inc_micf(:,:)             ! accumulated mean ICF  - reverted indexing do to C/Fortran interoperability
+    real(PMFDP),pointer    :: inc_m2icf(:,:)            ! accumulated M2 of ICF - reverted indexing do to C/Fortran interoperability
 end type ABFAccuType
 
 ! ----------------------

@@ -40,11 +40,16 @@ void PMF_PACKAGE cpmf_abf_client_set_header_(FTINT* ret_st,
                                  double*    temp,
                                  char*      temp_unit,
                                  double*    temp_fconv,
+                                 FTINT*     systype,
+                                 double*    pres,
+                                 char*      pres_unit,
+                                 double*    pres_fconv,
                                  char*      ene_unit,
                                  double*    ene_fconv,
                                  UFTINT     version_len,
                                  UFTINT     driver_len,
                                  UFTINT     temp_unit_len,
+                                 UFTINT     pres_unit_len,
                                  UFTINT     ene_unit_len
                                  )
 {
@@ -52,23 +57,29 @@ void PMF_PACKAGE cpmf_abf_client_set_header_(FTINT* ret_st,
     int             l_nbins         = *nbins;
     double          l_temp          = *temp;
     double          l_temp_fconv    = *temp_fconv;
+    int             l_systype       = *systype;
+    double          l_pres          = *pres;
+    double          l_pres_fconv    = *pres_fconv;
     double          l_ene_fconv     = *ene_fconv;
     CSmallString    l_version;
     CSmallString    l_driver;
     CSmallString    l_temp_unit;
+    CSmallString    l_pres_unit;
     CSmallString    l_ene_unit;
 
     try {
         l_version.SetFromFortran(version,version_len);
         l_driver.SetFromFortran(driver,driver_len);
         l_temp_unit.SetFromFortran(temp_unit,temp_unit_len);
+        l_pres_unit.SetFromFortran(pres_unit,pres_unit_len);
         l_ene_unit.SetFromFortran(ene_unit,ene_unit_len);
 
         ABFClient.NumOfCVs = l_ncvs;
         ABFClient.NumOfBins = l_nbins;
 
         ABFClient.Accu->SetNumOfCVs(l_ncvs);
-        ABFClient.Accu->SetHeaders("ABF",l_version,l_driver,l_temp,l_temp_unit,l_temp_fconv,l_ene_unit,l_ene_fconv);
+        ABFClient.Accu->SetHeaders("ABF",l_version,l_driver,l_temp,l_temp_unit,l_temp_fconv,
+                                   l_systype,l_pres,l_pres_unit,l_pres_fconv,l_ene_unit,l_ene_fconv);
 
     } catch(std::exception& e) {
         ES_ERROR_FROM_EXCEPTION("unable to set the number of items",e);

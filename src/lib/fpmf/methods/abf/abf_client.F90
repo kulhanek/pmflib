@@ -36,7 +36,9 @@ implicit none
 interface
     ! set number of coordinates
     subroutine cpmf_abf_client_set_header(ret_st,ncvs,nbins,version,driver, &
-                    temp,temp_unit,temp_fconv, &
+                    temp,temp_unit,temp_fconv,  &
+                    systype,                    &
+                    pres,pres_unit,pres_fconv,  &
                     ene_unit,ene_fconv)
         import
         implicit none
@@ -48,6 +50,10 @@ interface
         real(PMFDP)     :: temp
         character(*)    :: temp_unit
         real(PMFDP)     :: temp_fconv
+        integer         :: systype
+        real(PMFDP)     :: pres
+        character(*)    :: pres_unit
+        real(PMFDP)     :: pres_fconv
         character(*)    :: ene_unit
         real(PMFDP)     :: ene_fconv
     end subroutine cpmf_abf_client_set_header
@@ -138,6 +144,8 @@ subroutine abf_client_register
         ! register coordinates
         call cpmf_abf_client_set_header(ret_st,abfaccu%tot_cvs,abfaccu%tot_nbins,PMFLIBVER,DriverName, &
                                         ftemp,trim(pmf_unit_label(TemperatureUnit)),pmf_unit_get_rvalue(TemperatureUnit,1.0d0), &
+                                        fsystype, &
+                                        fpressure,trim(pmf_unit_label(PressureUnit)),pmf_unit_get_rvalue(PressureUnit,1.0d0), &
                                         trim(pmf_unit_label(EnergyUnit)),pmf_unit_get_rvalue(EnergyUnit,1.0d0))
 
         if( ret_st .ne. 0 ) then
@@ -209,8 +217,9 @@ subroutine abf_client_get_initial_data
 
     implicit none
 #ifdef PMFLIB_NETWORK
-    integer        :: ret_st = 0
+    integer     :: ret_st = 0
 #endif
+    integer     :: i
     ! -----------------------------------------------------------------------------
 
     if( .not. fserver_enabled ) return
@@ -232,15 +241,18 @@ subroutine abf_client_get_initial_data
         case(0)
             ! move received data to main abfaccu
             abfaccu%nsamples(:)         = abfaccu%inc_nsamples(:)
-            abfaccu%micf(:,:)           = abfaccu%inc_micf(:,:)
-            abfaccu%m2icf(:,:)          = abfaccu%inc_m2icf(:,:)
-
             abfaccu%bnsamples(:)        = abfaccu%inc_nsamples(:)
-            abfaccu%bmicf(:,:)          = abfaccu%inc_micf(:,:)
 
+            do i=1,abfaccu%PMFAccuType%tot_cvs
+                abfaccu%micf(i,:)       = abfaccu%inc_micf(:,i)
+                abfaccu%m2icf(i,:)      = abfaccu%inc_m2icf(:,i)
+                abfaccu%bmicf(i,:)      = abfaccu%inc_micf(:,i)
+            end do
         case(1)
             abfaccu%bnsamples(:)        = abfaccu%inc_nsamples(:)
-            abfaccu%bmicf(:,:)          = abfaccu%inc_micf(:,:)
+            do i=1,abfaccu%PMFAccuType%tot_cvs
+                abfaccu%bmicf(i,:)      = abfaccu%inc_micf(:,i)
+            end do
         case default
             call pmf_utils_exit(PMF_OUT,1,'fmwamode not implemented in abf_client_get_initial_data')
     end select
@@ -274,11 +286,12 @@ subroutine abf_client_exchange_data(force_exchange)
     use pmf_exit
 
     implicit none
-    logical        :: force_exchange       ! do exchange even if mod(fstep,fserverupdate) .ne. 0
+    logical     :: force_exchange       ! do exchange even if mod(fstep,fserverupdate) .ne. 0
     ! -----------------------------------------------
 #ifdef PMFLIB_NETWORK
-    integer        :: ret_st = 0
+    integer     :: ret_st = 0
 #endif
+    integer     :: i
     ! --------------------------------------------------------------------------
 
     if( .not. fserver_enabled ) return
@@ -316,16 +329,20 @@ subroutine abf_client_exchange_data(force_exchange)
 ! move received data to main abfaccu
     select case(fmwamode)
         case(0)
+            ! move received data to main abfaccu
             abfaccu%nsamples(:)         = abfaccu%inc_nsamples(:)
-            abfaccu%micf(:,:)           = abfaccu%inc_micf(:,:)
-            abfaccu%m2icf(:,:)          = abfaccu%inc_m2icf(:,:)
-
             abfaccu%bnsamples(:)        = abfaccu%inc_nsamples(:)
-            abfaccu%bmicf(:,:)          = abfaccu%inc_micf(:,:)
 
+            do i=1,abfaccu%PMFAccuType%tot_cvs
+                abfaccu%micf(i,:)       = abfaccu%inc_micf(:,i)
+                abfaccu%m2icf(i,:)      = abfaccu%inc_m2icf(:,i)
+                abfaccu%bmicf(i,:)      = abfaccu%inc_micf(:,i)
+            end do
         case(1)
             abfaccu%bnsamples(:)        = abfaccu%inc_nsamples(:)
-            abfaccu%bmicf(:,:)          = abfaccu%inc_micf(:,:)
+            do i=1,abfaccu%PMFAccuType%tot_cvs
+                abfaccu%bmicf(i,:)      = abfaccu%inc_micf(:,i)
+            end do
         case default
             call pmf_utils_exit(PMF_OUT,1,'fmwamode not implemented in abf_client_get_initial_data')
     end select
