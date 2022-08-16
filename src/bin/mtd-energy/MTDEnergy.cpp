@@ -157,9 +157,9 @@ bool CMTDEnergy::Run(void)
         accu = *it;
         eneproxy->Init(accu);
     // calculate energy
-        for(int i=0; i < accu->GetNumOfBins(); i++){
-            tmp_FES->SetNumOfSamples(i,eneproxy->GetNumOfSamples(i));
-            tmp_FES->SetEnergy(i, eneproxy->GetValue(i,E_PROXY_VALUE) );
+        for(int j=0; j < accu->GetNumOfBins(); j++){
+            tmp_FES->SetNumOfSamples(j,eneproxy->GetNumOfSamples(i));
+            tmp_FES->SetEnergy(j, eneproxy->GetValue(j,E_PROXY_VALUE) );
         }
         int numofhills = accu->GetTotalNumOfSamples();
         CSmallString type = "MTD";
