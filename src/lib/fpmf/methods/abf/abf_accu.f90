@@ -500,6 +500,8 @@ subroutine abf_accu_write(iounit)
     end if
 
     if( fentropy ) then
+        call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'MHICF',  'WA',abfaccu%mhicf, 'NTDS')
+        call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'M2HICF', 'M2',abfaccu%m2hicf,'NTDS','MHICF')
         call pmf_accu_write_rbuf_B(abfaccu%PMFAccuType,iounit,'METOT',  'WA',abfaccu%metot, 'NTDS')
         call pmf_accu_write_rbuf_B(abfaccu%PMFAccuType,iounit,'M2ETOT', 'M2',abfaccu%m2etot,'NTDS','METOT')
         call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'MPP',    'WA',abfaccu%mpp,   'NTDS')
@@ -509,8 +511,6 @@ subroutine abf_accu_write(iounit)
     end if
 
     if( fentropy .and. fentdecomp ) then
-        call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'MHICF',  'WA',abfaccu%mhicf, 'NTDS')
-        call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'M2HICF', 'M2',abfaccu%m2hicf,'NTDS','MHICF')
         call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'MBICF',  'WA',abfaccu%mbicf, 'NTDS')
         call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'M2BICF', 'M2',abfaccu%m2bicf,'NTDS','MBICF')
 
