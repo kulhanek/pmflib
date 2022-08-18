@@ -288,16 +288,6 @@ void CPMFAccuInfo::GetDerivative(const CSmallString& name)
             RUNTIME_ERROR(error);
         }
 // -----------------------------------------------
-    } else if ( name == "dG_p" ) {
-        CABFProxy_dG_Ptr proxy    = CABFProxy_dG_Ptr(new CABFProxy_dG);
-        proxy->SetType(ABF_MICF_POT);
-        der_proxy = proxy;
-// -----------------------------------------------
-    } else if ( name == "dG_k" ) {
-        CABFProxy_dG_Ptr proxy    = CABFProxy_dG_Ptr(new CABFProxy_dG);
-        proxy->SetType(ABF_MICF_KIN);
-        der_proxy = proxy;
-// -----------------------------------------------
     } else if ( name == "-TdS" ) {
         if( CABFProxy_mTdS::IsCompatible(Accu) ){
             der_proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);

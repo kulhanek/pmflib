@@ -108,7 +108,7 @@ double CPMFProxy_dH::GetValue( int ibin,EProxyRealm realm) const
         RUNTIME_ERROR("Accu is NULL");
     }
 
-    double  nsamples    = Accu->GetData("NSAMPLES",ibin);
+    double  nsamples    = Accu->GetData("NTDS",ibin);
     double  mene        = 0.0;
     double  m2ene       = 0.0;
     double  ncorr       = Accu->GetNCorr();

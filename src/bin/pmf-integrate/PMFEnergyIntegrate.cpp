@@ -255,16 +255,6 @@ bool CPMFEnergyIntegrate::Run(void)
                 RUNTIME_ERROR(error);
             }
     // -----------------------------------------------
-        } else if ( Options.GetOptRealm() == "dG_p" ) {
-            CABFProxy_dG_Ptr proxy    = CABFProxy_dG_Ptr(new CABFProxy_dG);
-            proxy->SetType(ABF_MICF_POT);
-            lproxy = proxy;
-    // -----------------------------------------------
-        } else if ( Options.GetOptRealm() == "dG_k" ) {
-            CABFProxy_dG_Ptr proxy    = CABFProxy_dG_Ptr(new CABFProxy_dG);
-            proxy->SetType(ABF_MICF_KIN);
-            lproxy = proxy;
-    // -----------------------------------------------
         } else if ( Options.GetOptRealm() == "-TdS" ) {
             if( CABFProxy_mTdS::IsCompatible(accu) ){
                 lproxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
