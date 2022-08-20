@@ -606,20 +606,26 @@ subroutine pmf_sander_release_driver(master)
         write(6,30)
     end if
 
-    if( dlclose(pmf_sander_driver_handle) .ne. 0 ) then
-        if( master ) then
-            call pmf_sander_get_dlerror
-            write(6,40) trim(pmf_sander_driver_error)
-            write(6,10)
-            write(6,*)
-        end if
-        return
-    else
-        if( master ) then
-            write(6,50)
-            write(6,10)
-            write(6,*)
-        end if
+!    if( dlclose(pmf_sander_driver_handle) .ne. 0 ) then
+!        if( master ) then
+!            call pmf_sander_get_dlerror
+!            write(6,40) trim(pmf_sander_driver_error)
+!            write(6,10)
+!            write(6,*)
+!        end if
+!        return
+!    else
+!        if( master ) then
+!            write(6,50)
+!            write(6,10)
+!            write(6,*)
+!        end if
+!    end if
+
+    if( master ) then
+        write(6,60)
+        write(6,10)
+        write(6,*)
     end if
 
     use_pmflib = .false.
@@ -628,8 +634,9 @@ subroutine pmf_sander_release_driver(master)
  10 format('# -----------------------------------------------------------------------------')
  20 format('# PMFLib dynamic binding')
  30 format('# > Unloading driver ...')
- 40 format('#   Unable to unload driver (',A,')!')
- 50 format('#   Driver unloaded successfully!')
+! 40 format('#   Unable to unload driver (',A,')!')
+! 50 format('#   Driver unloaded successfully!')
+ 60 format('#   Left loaded ...!')
 
 end subroutine pmf_sander_release_driver
 

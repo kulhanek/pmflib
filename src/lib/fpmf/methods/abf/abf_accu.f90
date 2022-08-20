@@ -640,10 +640,7 @@ subroutine abf_accu_add_data_energy(cvs,gfx,bfx,epot,erst,ekin)
     ! get global index to accumulator for cvs values
     gi0 = pmf_accu_globalindex(abfaccu%PMFAccuType,cvs)
     if( gi0 .le. 0 ) then
-        outsidesamples = outsidesamples + 1
         return ! out of valid area
-    else
-        insidesamples = insidesamples + 1
     end if
 
     ! get total biasing ICF
