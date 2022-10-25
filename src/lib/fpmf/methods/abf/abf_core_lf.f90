@@ -217,6 +217,9 @@ subroutine abf_core_lf_force_2pX()
     icfhist(:,hist_len+hist_fidx) = pxif(:)
 
     if( mod(fstep,ficfsample) .eq. 0 ) then
+
+        write(1486,*) fstep
+
         ! register data
         call abf_accu_add_data_online(cvhist(:,hist_len+hist_fidx),icfhist(:,hist_len+hist_fidx),&
                                       micfhist(:,hist_len+hist_fidx))
@@ -360,12 +363,14 @@ subroutine abf_core_lf_register_ekin()
         ekinhist(i)         = ekinhist(i+1)
         ekinlfhist(i)       = ekinlfhist(i+1)
         enevalidhist(i)     = enevalidhist(i+1)
+        epvhist(i)          = epvhist(i+1)
     end do
 
 ! raw data
     epothist(hist_len)      = PotEne - fepotaverage
     ersthist(hist_len)      = RstEne
     ekinlfhist(hist_len)    = KinEne%KinEneLF - fekinaverage   ! shifted by +1/2dt
+    epvhist(hist_len)       = pVEne
     enevalidhist(hist_len)  = KinEne%Valid
 
 ! process EKIN
@@ -380,13 +385,19 @@ subroutine abf_core_lf_register_ekin()
         call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented ftds_ekin_src mode in abf_core_lf_register_ekin!')
     end select
 
+    if( fstep .le. 2*hist_len ) return
+
     if( KinEne%Valid ) fene_step = fene_step + 1
 
     if( (mod(fene_step,fenesample) .eq. 0) .and. enevalidhist(hist_len+hist_fidx) ) then
+
+        write(1487,*) fstep
+
         ! register data
         call abf_accu_add_data_energy(cvhist(:,hist_len+hist_fidx), &
                                       icfhist(:,hist_len+hist_fidx), micfhist(:,hist_len+hist_fidx), &
-                                      epothist(hist_len+hist_fidx), ersthist(hist_len+hist_fidx), ekinhist(hist_len+hist_fidx))
+                                      epothist(hist_len+hist_fidx), ersthist(hist_len+hist_fidx), ekinhist(hist_len+hist_fidx), &
+                                      epvhist(hist_len+hist_fidx))
     end if
 
 end subroutine abf_core_lf_register_ekin

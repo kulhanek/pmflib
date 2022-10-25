@@ -143,6 +143,8 @@ type,extends(PMFAccuType) :: ABFAccuType
     real(PMFDP),pointer    :: m2erst(:)                 ! M2 of rst energy
     real(PMFDP),pointer    :: mekin(:)                  ! mean of kin energy
     real(PMFDP),pointer    :: m2ekin(:)                 ! M2 of kin energy
+    real(PMFDP),pointer    :: mepv(:)                   ! mean of pV energy
+    real(PMFDP),pointer    :: m2epv(:)                  ! M2 of pV energy
 
     real(PMFDP),pointer    :: metot(:)                  ! mean of tot energy
     real(PMFDP),pointer    :: m2etot(:)                 ! M2 of tot energy
@@ -160,9 +162,11 @@ type,extends(PMFAccuType) :: ABFAccuType
     real(PMFDP),pointer    :: c11hp(:,:)                ! co-variances
     real(PMFDP),pointer    :: c11hr(:,:)
     real(PMFDP),pointer    :: c11hk(:,:)
+    real(PMFDP),pointer    :: c11hv(:,:)
     real(PMFDP),pointer    :: c11bp(:,:)
     real(PMFDP),pointer    :: c11br(:,:)
     real(PMFDP),pointer    :: c11bk(:,:)
+    real(PMFDP),pointer    :: c11bv(:,:)
 
 ! applied ICF - this is stored in accu but ignored
     real(PMFDP),pointer    :: bnsamples(:)              ! number of hits into bins
@@ -212,6 +216,7 @@ real(PMFDP),allocatable     :: epothist(:)          ! history of Epot
 real(PMFDP),allocatable     :: ersthist(:)          ! history of Erst
 real(PMFDP),allocatable     :: ekinhist(:)          ! history of Ekin
 real(PMFDP),allocatable     :: ekinlfhist(:)        ! history of EkinLF
+real(PMFDP),allocatable     :: epvhist(:)           ! history of pV
 logical,allocatable         :: enevalidhist(:)      ! is energy valid?
 
 ! ------------------------------------------------------------------------------

@@ -382,6 +382,7 @@ subroutine abf_init_arrays
             ersthist(hist_len),                             &
             ekinhist(hist_len),                             &
             ekinlfhist(hist_len),                           &
+            epvhist(hist_len),                              &
             enevalidhist(hist_len),                         &
             stat= alloc_failed )
 
@@ -397,6 +398,7 @@ subroutine abf_init_arrays
     epothist(:)         = 0.0d0
     ersthist(:)         = 0.0d0
     ekinhist(:)         = 0.0d0
+    epvhist(:)          = 0.0d0
     ekinlfhist(:)       = 0.0d0
     xphist(:,:)         = 0.0d0
     fzinvhist(:,:,:)    = 0.0d0

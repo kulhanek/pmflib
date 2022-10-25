@@ -125,6 +125,9 @@ real(PMFDP), parameter  :: PMF_LIBATOMSM2AMU = 1.0d0 / PMF_AMU2LIBATOMSM
 real(PMFDP), parameter  :: PMF_AU2AMU = 1.0d0 / 1822.88842718d0
 real(PMFDP), parameter  :: PMF_AMU2AU = 1.0d0 / PMF_AU2AMU
 
+! pV from internal units to kcal/mol
+real(PMFDP), parameter  :: PMF_PVCONV = 1.0d-30 * 6.02214076d23 * 1d-3 * PMF_KJ2KCL
+
 ! common part ------------------------------------------------------------------
 integer,parameter       :: PMF_INP      = 5
 integer,parameter       :: PMF_OUT      = 6
