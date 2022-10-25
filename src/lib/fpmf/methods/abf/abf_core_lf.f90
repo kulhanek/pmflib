@@ -218,7 +218,7 @@ subroutine abf_core_lf_force_2pX()
 
     if( mod(fstep,ficfsample) .eq. 0 ) then
 
-        write(1486,*) fstep
+!        write(1486,*) fstep
 
         ! register data
         call abf_accu_add_data_online(cvhist(:,hist_len+hist_fidx),icfhist(:,hist_len+hist_fidx),&
@@ -391,7 +391,7 @@ subroutine abf_core_lf_register_ekin()
 
     if( (mod(fene_step,fenesample) .eq. 0) .and. enevalidhist(hist_len+hist_fidx) ) then
 
-        write(1487,*) fstep
+      !  write(1487,*) fstep
 
         ! register data
         call abf_accu_add_data_energy(cvhist(:,hist_len+hist_fidx), &
