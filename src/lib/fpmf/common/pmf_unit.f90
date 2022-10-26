@@ -640,9 +640,9 @@ subroutine pmf_unit_decode_press_unit(unit_label,unit)
             unit%Units(QUANTITY_PRESSURE) = PRESSURE_Pa
             unit%Expns(QUANTITY_PRESSURE) = 1
         case('kPa')
-            unit%ConversionFac = 1
+            unit%ConversionFac = 1d-3
             unit%Units(QUANTITY_PRESSURE) = PRESSURE_kPa
-            unit%Expns(QUANTITY_PRESSURE) = 3
+            unit%Expns(QUANTITY_PRESSURE) = 1
         case default
             write(PMF_OUT,'(A)')   ''//trim(unit_label)//' is not supported pressure unit'
             write(PMF_OUT,'(A,/)') '           Supported units are: Pa, KPa'

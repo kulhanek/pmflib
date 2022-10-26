@@ -92,7 +92,8 @@ end subroutine pmf_pmemd_check_interface
 !===============================================================================
 
 subroutine pmf_pmemd_init_preinit(mdin,mdin_len,anatom,anres,   &
-                            antb,antc,ansteps,astepsize,atemp0, &
+                            antb,antc,ansteps,astepsize,        &
+                            atemp0,apress0,                     &
                             box_a,box_b,box_c,                  &
                             box_alpha,box_beta,box_gamma) bind(c,name='int_pmf_pmemd_init_preinit')
 
