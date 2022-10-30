@@ -181,6 +181,26 @@ end subroutine pmf_core_lf_force
 ! Subroutine:  pmf_core_lf_register_ekin
 !===============================================================================
 
+subroutine pmf_core_lf_register_press(press)
+
+    use pmf_dat
+
+    implicit none
+    real(PMFDP)     :: press
+    ! --------------------------------------------------------------------------
+
+    if( .not. pmf_enabled ) return
+
+    ActPress = press * PressureConv
+
+    pVEne = ActPress * fbox_volume * PMF_PVCONV
+
+end subroutine pmf_core_lf_register_press
+
+!===============================================================================
+! Subroutine:  pmf_core_lf_register_ekin
+!===============================================================================
+
 subroutine pmf_core_lf_register_ekin(ekin)
 
     use pmf_dat

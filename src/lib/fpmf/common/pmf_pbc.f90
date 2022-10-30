@@ -124,9 +124,6 @@ subroutine pmf_pbc_set_box(a,b,c,alpha,beta,gamma)
         fbox_sphere = 0.5d0 * fbox_sphere
     end if
 
-     ! calculate pV term
-    pVEne = fpressure * fbox_volume * PMF_PVCONV
-
     return
 
 end subroutine pmf_pbc_set_box
@@ -218,9 +215,6 @@ subroutine pmf_pbc_set_box_from_lvectors(lattice)
     end do
     fbox_sphere = 0.5d0 * fbox_sphere
  end if
-
-     ! calculate pV term
-    pVEne = fpressure * fbox_volume * PMF_PVCONV
 
 end subroutine pmf_pbc_set_box_from_lvectors
 

@@ -476,7 +476,7 @@ end subroutine pmf_pmemd_force
 ! subroutine pmf_pmemd_register_ekin
 !===============================================================================
 
-subroutine pmf_pmemd_register_ekin(ekin,valid) bind(c,name='int_pmf_pmemd_register_ekin')
+subroutine pmf_pmemd_register_ekin(ekin,press,valid) bind(c,name='int_pmf_pmemd_register_ekin')
 
     use pmf_sizes
     use pmf_core_lf
@@ -486,6 +486,7 @@ subroutine pmf_pmemd_register_ekin(ekin,valid) bind(c,name='int_pmf_pmemd_regist
 
     implicit none
     real(CPMFDP)            :: ekin(:)      ! in
+    real(CPMFDP)            :: press        ! pressure
     integer(CPMFINT)        :: valid
     ! --------------------------------------------
     type(PMFKineticEnergy)  :: sekin
@@ -501,6 +502,7 @@ subroutine pmf_pmemd_register_ekin(ekin,valid) bind(c,name='int_pmf_pmemd_regist
     sekin%Valid = .false.
     if( valid .eq. 1 ) sekin%Valid = .true.
 
+    call pmf_core_lf_register_press(press)
     call pmf_core_lf_register_ekin(sekin)
 
     call pmf_timers_stop_timer(PMFLIB_TIMER)

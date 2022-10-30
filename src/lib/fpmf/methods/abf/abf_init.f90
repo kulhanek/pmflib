@@ -88,6 +88,8 @@ subroutine abf_init_dat
     fentdecomp      = .false.
     fenesample      = 1
 
+    finclude_pv     = .false.
+
     ftds_ekin_src   = 1
     ftds_add_bias   = .false.
 
@@ -258,6 +260,7 @@ subroutine abf_init_print_summary
     write(PMF_OUT,150)  ' Kinetic energy offset (fekinaverage)    : ', pmf_unit_get_rvalue(EnergyUnit,fekinaverage), &
                                                                        '['//trim(pmf_unit_label(EnergyUnit))//']'
     write(PMF_OUT,130)  ' Sampling for -TdS and ENT (fenesample)  : ', fenesample
+    write(PMF_OUT,125)  ' Include pV term (finclude_pv)           : ', prmfile_onoff(finclude_pv)
 
     write(PMF_OUT,120)
     write(PMF_OUT,120)  ' Restart options:'
@@ -383,6 +386,7 @@ subroutine abf_init_arrays
             ekinhist(hist_len),                             &
             ekinlfhist(hist_len),                           &
             epvhist(hist_len),                              &
+            volhist(hist_len),                              &
             enevalidhist(hist_len),                         &
             stat= alloc_failed )
 
@@ -403,6 +407,7 @@ subroutine abf_init_arrays
     xphist(:,:)         = 0.0d0
     fzinvhist(:,:,:)    = 0.0d0
     cvderhist(:,:,:,:)  = 0.0d0
+    volhist(:)          = 0.0d0
     enevalidhist(:)     = .false.
 
 ! other setup ----------------------------------------------

@@ -311,6 +311,17 @@ bool CPMFEnergyIntegrate::Run(void)
                 RUNTIME_ERROR(error);
             }
     // -----------------------------------------------
+        } else if ( Options.GetOptRealm() == "-TdS_HV" ) {
+            if( CABFProxy_mTdS::IsCompatible(accu) ){
+                CABFProxy_mTdS_Ptr proxy = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
+                proxy->SetType(ABF_TdS_HV);
+                lproxy = proxy;
+            } else {
+                CSmallString error;
+                error << "incompatible method: " << accu->GetMethod() << " with requested realm: " <<  Options.GetOptRealm();
+                RUNTIME_ERROR(error);
+            }
+    // -----------------------------------------------
         } else if ( Options.GetOptRealm() == "-TdS_BP" ) {
             CABFProxy_mTdS_Ptr proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
             proxy->SetType(ABF_TdS_BP);
@@ -324,6 +335,11 @@ bool CPMFEnergyIntegrate::Run(void)
         } else if ( Options.GetOptRealm() == "-TdS_BK" ) {
             CABFProxy_mTdS_Ptr proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
             proxy->SetType(ABF_TdS_BK);
+            lproxy = proxy;
+    // -----------------------------------------------
+        } else if ( Options.GetOptRealm() == "-TdS_BV" ) {
+            CABFProxy_mTdS_Ptr proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
+            proxy->SetType(ABF_TdS_BV);
             lproxy = proxy;
     // -----------------------------------------------
         } else {

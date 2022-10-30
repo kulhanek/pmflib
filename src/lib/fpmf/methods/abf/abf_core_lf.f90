@@ -356,6 +356,8 @@ subroutine abf_core_lf_register_ekin()
 
     if( .not. (fenthalpy .or. fentropy) ) return
 
+    ! kinetic energy at this point is in the same time as potential energy
+
 ! shift accuvalue history
     do i=1,hist_len-1
         epothist(i)         = epothist(i+1)
@@ -364,6 +366,7 @@ subroutine abf_core_lf_register_ekin()
         ekinlfhist(i)       = ekinlfhist(i+1)
         enevalidhist(i)     = enevalidhist(i+1)
         epvhist(i)          = epvhist(i+1)
+        volhist(i)          = volhist(i+1)
     end do
 
 ! raw data
@@ -372,6 +375,9 @@ subroutine abf_core_lf_register_ekin()
     ekinlfhist(hist_len)    = KinEne%KinEneLF - fekinaverage   ! shifted by +1/2dt
     epvhist(hist_len)       = pVEne
     enevalidhist(hist_len)  = KinEne%Valid
+    volhist(hist_len)       = fbox_volume
+
+!    write(14789,*) fstep, pVEne, fbox_volume
 
 ! process EKIN
     select case(ftds_ekin_src)
@@ -397,7 +403,7 @@ subroutine abf_core_lf_register_ekin()
         call abf_accu_add_data_energy(cvhist(:,hist_len+hist_fidx), &
                                       icfhist(:,hist_len+hist_fidx), micfhist(:,hist_len+hist_fidx), &
                                       epothist(hist_len+hist_fidx), ersthist(hist_len+hist_fidx), ekinhist(hist_len+hist_fidx), &
-                                      epvhist(hist_len+hist_fidx))
+                                      epvhist(hist_len+hist_fidx),volhist(hist_len+hist_fidx))
     end if
 
 end subroutine abf_core_lf_register_ekin

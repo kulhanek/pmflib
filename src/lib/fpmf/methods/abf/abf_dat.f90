@@ -58,6 +58,7 @@ integer     :: ftds_ekin_src    ! source of kinetic energy, see abf_core_update_
 real(PMFDP) :: fepotaverage
 real(PMFDP) :: fekinaverage
 integer     :: fenesample       ! how often update ABF accumulator for ENT and TDS
+logical     :: finclude_pv      ! include pV term
 
 ! US mode
 logical     :: fusmode      ! enable US mode
@@ -131,6 +132,9 @@ type,extends(PMFAccuType) :: ABFAccuType
     real(PMFDP),pointer    :: m2icf(:,:)                ! M2 of ICF
     real(PMFDP),pointer    :: mgfx(:,:)                 ! mean -GFX
     real(PMFDP),pointer    :: m2gfx(:,:)                ! M2 of GFX
+
+    real(PMFDP),pointer    :: mvol(:)                   ! mean volume
+    real(PMFDP),pointer    :: m2vol(:)                  ! M2 of volume
 
 ! enthalpy & entropy
     real(PMFDP),pointer    :: ntds(:)                   ! number of hits into bins
@@ -217,6 +221,7 @@ real(PMFDP),allocatable     :: ersthist(:)          ! history of Erst
 real(PMFDP),allocatable     :: ekinhist(:)          ! history of Ekin
 real(PMFDP),allocatable     :: ekinlfhist(:)        ! history of EkinLF
 real(PMFDP),allocatable     :: epvhist(:)           ! history of pV
+real(PMFDP),allocatable     :: volhist(:)           ! history of volume
 logical,allocatable         :: enevalidhist(:)      ! is energy valid?
 
 ! ------------------------------------------------------------------------------

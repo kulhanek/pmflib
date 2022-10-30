@@ -220,10 +220,11 @@ abstract interface
         real(CPMFDP)        :: epmf         ! out
     end subroutine int_pmf_pmemd_force
     ! --------------------------------------------------------------------------
-    subroutine int_pmf_pmemd_register_ekin(ekin,valid) bind(c)
+    subroutine int_pmf_pmemd_register_ekin(ekin,press,valid) bind(c)
         import
         implicit none
         real(CPMFDP)        :: ekin(:)      ! in
+        real(CPMFDP)        :: press
         integer(CPMFINT)    :: valid
     end subroutine int_pmf_pmemd_register_ekin
 

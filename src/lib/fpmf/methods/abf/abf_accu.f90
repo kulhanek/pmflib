@@ -82,6 +82,16 @@ subroutine abf_accu_init()
         call pmf_utils_exit(PMF_OUT, 1,'[ABF] Unable to allocate memory for abf accumulator (abfforce)!')
     endif
 
+    if( fsystype .eq. SYS_NTP ) then
+        allocate(   abfaccu%mvol(abfaccu%tot_nbins),   &
+                    abfaccu%m2vol(abfaccu%tot_nbins),  &
+                    stat = alloc_failed)
+
+        if( alloc_failed .ne. 0 ) then
+            call pmf_utils_exit(PMF_OUT, 1,'[ABF] Unable to allocate memory for abf accumulator (mvol)!')
+        endif
+    end if
+
     if( fenthalpy .or. fentropy ) then
         allocate(   abfaccu%ntds(abfaccu%tot_nbins),   &
                     stat = alloc_failed)
@@ -191,6 +201,11 @@ subroutine abf_accu_clear()
     abfaccu%bnsamples(:)    = 0
     abfaccu%bmicf(:,:)      = 0.0d0
 
+    if( fsystype .eq. SYS_NTP ) then
+        abfaccu%mvol(:)     = 0.0d0
+        abfaccu%m2vol(:)    = 0.0d0
+    end if
+
     if( fenthalpy .or. fentropy ) then
         abfaccu%ntds(:)         = 0.0d0
     end if
@@ -204,8 +219,10 @@ subroutine abf_accu_clear()
         abfaccu%m2erst(:)   = 0.0d0
         abfaccu%mekin(:)    = 0.0d0
         abfaccu%m2ekin(:)   = 0.0d0
-        abfaccu%mepv(:)     = 0.0d0
-        abfaccu%m2epv(:)    = 0.0d0
+        if( finclude_pv ) then
+            abfaccu%mepv(:)     = 0.0d0
+            abfaccu%m2epv(:)    = 0.0d0
+        end if
     end if
 
     if( fentropy ) then
@@ -222,14 +239,19 @@ subroutine abf_accu_clear()
         abfaccu%m2hicf(:,:) = 0.0d0
         abfaccu%mbicf(:,:)  = 0.0d0
         abfaccu%m2bicf(:,:) = 0.0d0
+
         abfaccu%c11hp(:,:)  = 0.0d0
         abfaccu%c11hr(:,:)  = 0.0d0
         abfaccu%c11hk(:,:)  = 0.0d0
-        abfaccu%c11hv(:,:)  = 0.0d0
+
         abfaccu%c11bp(:,:)  = 0.0d0
         abfaccu%c11br(:,:)  = 0.0d0
         abfaccu%c11bk(:,:)  = 0.0d0
-        abfaccu%c11bv(:,:)  = 0.0d0
+
+        if( finclude_pv ) then
+            abfaccu%c11hv(:,:)  = 0.0d0
+            abfaccu%c11bv(:,:)  = 0.0d0
+        end if
     end if
 
     if( fserver_enabled ) then
@@ -284,6 +306,17 @@ subroutine abf_accu_read(iounit)
                     call pmf_accu_read_rbuf_M(abfaccu%PMFAccuType,iounit,keyline,abfaccu%m2gfx)
 
             ! ------------------------------------
+                case('MVOL')
+                    if( fsystype .eq. SYS_NTP ) then
+                        call pmf_accu_read_rbuf_B(abfaccu%PMFAccuType,iounit,keyline,abfaccu%mvol)
+                    end if
+            ! ------------------------------------
+                case('M2VOL')
+                    if( fsystype .eq. SYS_NTP ) then
+                        call pmf_accu_read_rbuf_B(abfaccu%PMFAccuType,iounit,keyline,abfaccu%m2vol)
+                    end if
+
+            ! ------------------------------------
                 case('NTDS')
                     if( fenthalpy .or. fentropy ) then
                         call pmf_accu_read_rbuf_B(abfaccu%PMFAccuType,iounit,keyline,abfaccu%ntds)
@@ -326,12 +359,12 @@ subroutine abf_accu_read(iounit)
                     end if
             ! ------------------------------------
                 case('MEPV')
-                    if( fenthalpy .or. (fentropy .and. fentdecomp) ) then
+                    if( (fenthalpy .or. (fentropy .and. fentdecomp)) .and. finclude_pv ) then
                         call pmf_accu_read_rbuf_B(abfaccu%PMFAccuType,iounit,keyline,abfaccu%mepv)
                     end if
             ! ------------------------------------
                 case('M2EPV')
-                    if( fenthalpy .or. (fentropy .and. fentdecomp) ) then
+                    if( (fenthalpy .or. (fentropy .and. fentdecomp)) .and. finclude_pv ) then
                         call pmf_accu_read_rbuf_B(abfaccu%PMFAccuType,iounit,keyline,abfaccu%m2epv)
                     end if
 
@@ -404,7 +437,7 @@ subroutine abf_accu_read(iounit)
                     end if
             ! ------------------------------------
                 case('C11HV')
-                    if( fentropy .and. fentdecomp ) then
+                    if( fentropy .and. fentdecomp .and. finclude_pv ) then
                         call pmf_accu_read_rbuf_M(abfaccu%PMFAccuType,iounit,keyline,abfaccu%c11hv)
                     end if
 
@@ -425,7 +458,7 @@ subroutine abf_accu_read(iounit)
                     end if
             ! ------------------------------------
                 case('C11BV')
-                    if( fentropy .and. fentdecomp ) then
+                    if( fentropy .and. fentdecomp .and. finclude_pv ) then
                         call pmf_accu_read_rbuf_M(abfaccu%PMFAccuType,iounit,keyline,abfaccu%c11bv)
                     end if
 
@@ -512,6 +545,11 @@ subroutine abf_accu_write(iounit)
     call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'MGFX',       'WA',abfaccu%mgfx,  'NSAMPLES')
     call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'M2GFX',      'M2',abfaccu%m2gfx, 'NSAMPLES','MGFX')
 
+    if( fsystype .eq. SYS_NTP ) then
+        call pmf_accu_write_rbuf_B(abfaccu%PMFAccuType,iounit,'MVOL',   'WA',abfaccu%mvol,  'NSAMPLES')
+        call pmf_accu_write_rbuf_B(abfaccu%PMFAccuType,iounit,'M2VOL',  'M2',abfaccu%m2vol, 'NSAMPLES','MVOL')
+    end if
+
     if( fenthalpy .or. fentropy ) then
         call pmf_accu_write_rbuf_B(abfaccu%PMFAccuType,iounit,'NTDS',   'AD',abfaccu%ntds)
     end if
@@ -525,8 +563,10 @@ subroutine abf_accu_write(iounit)
         call pmf_accu_write_rbuf_B(abfaccu%PMFAccuType,iounit,'M2ERST', 'M2',abfaccu%m2erst,'NTDS','MERST')
         call pmf_accu_write_rbuf_B(abfaccu%PMFAccuType,iounit,'MEKIN',  'WA',abfaccu%mekin, 'NTDS')
         call pmf_accu_write_rbuf_B(abfaccu%PMFAccuType,iounit,'M2EKIN', 'M2',abfaccu%m2ekin,'NTDS','MEKIN')
-        call pmf_accu_write_rbuf_B(abfaccu%PMFAccuType,iounit,'MEPV',   'WA',abfaccu%mepv,  'NTDS')
-        call pmf_accu_write_rbuf_B(abfaccu%PMFAccuType,iounit,'M2EPV',  'M2',abfaccu%m2epv, 'NTDS','MEKIN')
+        if( finclude_pv ) then
+            call pmf_accu_write_rbuf_B(abfaccu%PMFAccuType,iounit,'MEPV',   'WA',abfaccu%mepv,  'NTDS')
+            call pmf_accu_write_rbuf_B(abfaccu%PMFAccuType,iounit,'M2EPV',  'M2',abfaccu%m2epv, 'NTDS','MEKIN')
+        end if
     end if
 
     if( fentropy ) then
@@ -547,12 +587,16 @@ subroutine abf_accu_write(iounit)
         call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'C11HP',  'CO',abfaccu%c11hp, 'NTDS','MHICF','MEPOT')
         call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'C11HR',  'CO',abfaccu%c11hr, 'NTDS','MHICF','MERST')
         call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'C11HK',  'CO',abfaccu%c11hk, 'NTDS','MHICF','MEKIN')
-        call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'C11HV',  'CO',abfaccu%c11hk, 'NTDS','MHICF','MEPV')
+
 
         call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'C11BP',  'CO',abfaccu%c11bp, 'NTDS','MBICF','MEPOT')
         call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'C11BR',  'CO',abfaccu%c11br, 'NTDS','MBICF','MERST')
         call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'C11BK',  'CO',abfaccu%c11bk, 'NTDS','MBICF','MEKIN')
-        call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'C11BV',  'CO',abfaccu%c11bk, 'NTDS','MBICF','MEPV')
+
+        if( finclude_pv ) then
+            call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'C11HV',  'CO',abfaccu%c11hv, 'NTDS','MHICF','MEPV')
+            call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'C11BV',  'CO',abfaccu%c11bk, 'NTDS','MBICF','MEPV')
+        end if
     end if
 
     call pmf_accu_write_rbuf_B(abfaccu%PMFAccuType,iounit,'BNSAMPLES',  'IG',abfaccu%bnsamples)
@@ -643,7 +687,7 @@ end subroutine abf_accu_add_data_online
 ! Subroutine:  abf_accu_add_data_energy
 !===============================================================================
 
-subroutine abf_accu_add_data_energy(cvs,gfx,bfx,epot,erst,ekin,epv)
+subroutine abf_accu_add_data_energy(cvs,gfx,bfx,epot,erst,ekin,epv,vol)
 
     use abf_dat
     use pmf_dat
@@ -656,6 +700,7 @@ subroutine abf_accu_add_data_energy(cvs,gfx,bfx,epot,erst,ekin,epv)
     real(PMFDP),intent(in)  :: erst
     real(PMFDP),intent(in)  :: ekin
     real(PMFDP),intent(in)  :: epv
+    real(PMFDP),intent(in)  :: vol      ! volume
     ! -----------------------------------------------
     integer         :: gi0, i
     real(PMFDP)     :: invn, icf
@@ -665,6 +710,7 @@ subroutine abf_accu_add_data_energy(cvs,gfx,bfx,epot,erst,ekin,epv)
     real(PMFDP)     :: depv1, depv2
     real(PMFDP)     :: detot1, detot2
     real(PMFDP)     :: deint1, deint2
+    real(PMFDP)     :: dvol1, dvol2
     real(PMFDP)     :: dpp, dpp1, dpp2
     real(PMFDP)     :: dpn, dpn1, dpn2
     real(PMFDP)     :: etot, eint
@@ -681,11 +727,18 @@ subroutine abf_accu_add_data_energy(cvs,gfx,bfx,epot,erst,ekin,epv)
     picf(:) = - (gfx(:) - bfx(:))
 
     etot = epot + erst + ekin + epv
-    eint = epot + erst + epv
+    eint = epot + erst
 
     ! increase number of samples
     abfaccu%ntds(gi0) = abfaccu%ntds(gi0) + 1.0d0
     invn = 1.0d0 / abfaccu%ntds(gi0)
+
+    if( fsystype .eq. SYS_NTP ) then
+        dvol1 = vol - abfaccu%mvol(gi0)
+        abfaccu%mvol(gi0)  = abfaccu%mvol(gi0)  + dvol1 * invn
+        dvol2 = vol - abfaccu%mvol(gi0)
+        abfaccu%m2vol(gi0) = abfaccu%m2vol(gi0) + dvol1 * dvol2
+    end if
 
     if( fenthalpy .or. (fentropy .and. fentdecomp) ) then
         ! internal energy
@@ -712,11 +765,13 @@ subroutine abf_accu_add_data_energy(cvs,gfx,bfx,epot,erst,ekin,epv)
         dekin2 = ekin - abfaccu%mekin(gi0)
         abfaccu%m2ekin(gi0) = abfaccu%m2ekin(gi0) + dekin1 * dekin2
 
-        ! pV energy
-        depv1 = epv - abfaccu%mepv(gi0)
-        abfaccu%mepv(gi0)  = abfaccu%mepv(gi0)  + depv1 * invn
-        depv2 = epv - abfaccu%mepv(gi0)
-        abfaccu%m2epv(gi0) = abfaccu%m2epv(gi0) + depv1 * depv2
+        if( finclude_pv ) then
+            ! pV energy
+            depv1 = epv - abfaccu%mepv(gi0)
+            abfaccu%mepv(gi0)  = abfaccu%mepv(gi0)  + depv1 * invn
+            depv2 = epv - abfaccu%mepv(gi0)
+            abfaccu%m2epv(gi0) = abfaccu%m2epv(gi0) + depv1 * depv2
+        end if
     end if
 
     if( fentropy ) then
@@ -765,6 +820,11 @@ subroutine abf_accu_add_data_energy(cvs,gfx,bfx,epot,erst,ekin,epv)
                 abfaccu%c11bp(i,gi0)  = abfaccu%c11bp(i,gi0) + dibx1 * depot2
                 abfaccu%c11br(i,gi0)  = abfaccu%c11br(i,gi0) + dibx1 * derst2
                 abfaccu%c11bk(i,gi0)  = abfaccu%c11bk(i,gi0) + dibx1 * dekin2
+
+                if( finclude_pv ) then
+                    abfaccu%c11hv(i,gi0)  = abfaccu%c11hv(i,gi0) + difx1 * depv2
+                    abfaccu%c11bv(i,gi0)  = abfaccu%c11bv(i,gi0) + dibx1 * depv2
+                end if
             end if
         end do
     end if
