@@ -565,7 +565,7 @@ subroutine abf_accu_write(iounit)
         call pmf_accu_write_rbuf_B(abfaccu%PMFAccuType,iounit,'M2EKIN', 'M2',abfaccu%m2ekin,'NTDS','MEKIN')
         if( finclude_pv ) then
             call pmf_accu_write_rbuf_B(abfaccu%PMFAccuType,iounit,'MEPV',   'WA',abfaccu%mepv,  'NTDS')
-            call pmf_accu_write_rbuf_B(abfaccu%PMFAccuType,iounit,'M2EPV',  'M2',abfaccu%m2epv, 'NTDS','MEKIN')
+            call pmf_accu_write_rbuf_B(abfaccu%PMFAccuType,iounit,'M2EPV',  'M2',abfaccu%m2epv, 'NTDS','MEPV')
         end if
     end if
 
@@ -595,7 +595,7 @@ subroutine abf_accu_write(iounit)
 
         if( finclude_pv ) then
             call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'C11HV',  'CO',abfaccu%c11hv, 'NTDS','MHICF','MEPV')
-            call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'C11BV',  'CO',abfaccu%c11bk, 'NTDS','MBICF','MEPV')
+            call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'C11BV',  'CO',abfaccu%c11bv, 'NTDS','MBICF','MEPV')
         end if
     end if
 

@@ -344,6 +344,17 @@ void CPMFAccuInfo::GetDerivative(const CSmallString& name)
             RUNTIME_ERROR(error);
         }
 // -----------------------------------------------
+    } else if ( name == "-TdS_HV" ) {
+        if( CABFProxy_mTdS::IsCompatible(Accu) ){
+            CABFProxy_mTdS_Ptr proxy = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
+            proxy->SetType(ABF_TdS_HV);
+            der_proxy = proxy;
+        } else {
+            CSmallString error;
+            error << "incompatible method: " << Accu->GetMethod() << " with requested realm: " << name;
+            RUNTIME_ERROR(error);
+        }
+// -----------------------------------------------
     } else if ( name == "-TdS_BP" ) {
         CABFProxy_mTdS_Ptr proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
         proxy->SetType(ABF_TdS_BP);
@@ -357,6 +368,11 @@ void CPMFAccuInfo::GetDerivative(const CSmallString& name)
     } else if ( name == "-TdS_BK" ) {
         CABFProxy_mTdS_Ptr proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
         proxy->SetType(ABF_TdS_BK);
+        der_proxy = proxy;
+// -----------------------------------------------
+    } else if ( name == "-TdS_BV" ) {
+        CABFProxy_mTdS_Ptr proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
+        proxy->SetType(ABF_TdS_BV);
         der_proxy = proxy;
 // -----------------------------------------------
     } else {
