@@ -119,6 +119,16 @@ subroutine abf_accu_init()
         endif
     end if
 
+    if( (fenthalpy .or. (fentropy .and. fentdecomp)) .and. finclude_pv ) then
+        allocate(   abfaccu%mepv(abfaccu%tot_nbins),   &
+                    abfaccu%m2epv(abfaccu%tot_nbins),  &
+                    stat = alloc_failed)
+
+        if( alloc_failed .ne. 0 ) then
+            call pmf_utils_exit(PMF_OUT, 1,'[ABF] Unable to allocate memory for abf accumulator (enthalpy pV)!')
+        endif
+    end if
+
     if( fentropy ) then
         allocate(   abfaccu%metot(abfaccu%tot_nbins),                   &
                     abfaccu%m2etot(abfaccu%tot_nbins),                  &
@@ -141,15 +151,23 @@ subroutine abf_accu_init()
                     abfaccu%c11hp(abfaccu%tot_cvs,abfaccu%tot_nbins),   &
                     abfaccu%c11hk(abfaccu%tot_cvs,abfaccu%tot_nbins),   &
                     abfaccu%c11hr(abfaccu%tot_cvs,abfaccu%tot_nbins),   &
-                    abfaccu%c11hv(abfaccu%tot_cvs,abfaccu%tot_nbins),   &
                     abfaccu%c11bp(abfaccu%tot_cvs,abfaccu%tot_nbins),   &
                     abfaccu%c11bk(abfaccu%tot_cvs,abfaccu%tot_nbins),   &
                     abfaccu%c11br(abfaccu%tot_cvs,abfaccu%tot_nbins),   &
-                    abfaccu%c11bv(abfaccu%tot_cvs,abfaccu%tot_nbins),   &
                     stat = alloc_failed)
 
         if( alloc_failed .ne. 0 ) then
             call pmf_utils_exit(PMF_OUT, 1,'[ABF] Unable to allocate memory for abf accumulator (entropy_decompose)!')
+        endif
+    end if
+
+    if( fentropy .and. fentdecomp .and. finclude_pv ) then
+        allocate(   abfaccu%c11hv(abfaccu%tot_cvs,abfaccu%tot_nbins),   &
+                    abfaccu%c11bv(abfaccu%tot_cvs,abfaccu%tot_nbins),   &
+                    stat = alloc_failed)
+
+        if( alloc_failed .ne. 0 ) then
+            call pmf_utils_exit(PMF_OUT, 1,'[ABF] Unable to allocate memory for abf accumulator (entropy_decompose pV)!')
         endif
     end if
 
