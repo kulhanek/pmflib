@@ -66,6 +66,7 @@ subroutine pmf_init_dat
     RstEne      = 0.0d0
     PotEne      = 0.0d0
     pVEne       = 0.0d0
+    p0VEne      = 0.0d0
 
     KinEne%KinEneVV = 0.0d0
     KinEne%KinEneHA = 0.0d0

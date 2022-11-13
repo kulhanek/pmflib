@@ -373,7 +373,18 @@ subroutine abf_core_lf_register_ekin()
     epothist(hist_len)      = PotEne - fepotaverage
     ersthist(hist_len)      = RstEne
     ekinlfhist(hist_len)    = KinEne%KinEneLF - fekinaverage   ! shifted by +1/2dt
-    epvhist(hist_len)       = pVEne
+
+    select case(finclude_pv)
+        case(0)
+            epvhist(hist_len)       = 0.0d0
+        case(1)
+            epvhist(hist_len)       = p0VEne
+        case(2)
+            epvhist(hist_len)       = pVEne
+        case default
+            call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown pV mode in abf_core_lf_register_ekin!')
+    end select
+
     enevalidhist(hist_len)  = KinEne%Valid
     volhist(hist_len)       = fbox_volume
 

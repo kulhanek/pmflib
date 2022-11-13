@@ -88,7 +88,7 @@ subroutine abf_init_dat
     fentdecomp      = .false.
     fenesample      = 1
 
-    finclude_pv     = .false.
+    finclude_pv     = 0
 
     ftds_ekin_src   = 1
     ftds_add_bias   = .false.
@@ -260,7 +260,18 @@ subroutine abf_init_print_summary
     write(PMF_OUT,150)  ' Kinetic energy offset (fekinaverage)    : ', pmf_unit_get_rvalue(EnergyUnit,fekinaverage), &
                                                                        '['//trim(pmf_unit_label(EnergyUnit))//']'
     write(PMF_OUT,130)  ' Sampling for -TdS and ENT (fenesample)  : ', fenesample
-    write(PMF_OUT,125)  ' Include pV term (finclude_pv)           : ', prmfile_onoff(finclude_pv)
+
+    write(PMF_OUT,130)  ' Include pV term (finclude_pv)           : ', finclude_pv
+    select case(finclude_pv)
+    case(0)
+    write(PMF_OUT,120)  '      |-> none'
+    case(1)
+    write(PMF_OUT,120)  '      |-> p0V'
+    case(2)
+    write(PMF_OUT,120)  '      |-> pV'
+    case default
+    call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown pV mode in abf_init_print_summary!')
+    end select
 
     write(PMF_OUT,120)
     write(PMF_OUT,120)  ' Restart options:'

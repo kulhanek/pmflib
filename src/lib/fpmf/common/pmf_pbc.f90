@@ -124,6 +124,8 @@ subroutine pmf_pbc_set_box(a,b,c,alpha,beta,gamma)
         fbox_sphere = 0.5d0 * fbox_sphere
     end if
 
+    p0VEne = fpressure * fbox_volume * PMF_PVCONV
+
     return
 
 end subroutine pmf_pbc_set_box
@@ -134,87 +136,89 @@ end subroutine pmf_pbc_set_box
 
 subroutine pmf_pbc_set_box_from_lvectors(lattice)
 
- use pmf_dat
- use pmf_utils
+    use pmf_dat
+    use pmf_utils
 
- real(PMFDP)    :: lattice(3,3)
- ! -----------------------------------------------
- integer        :: i
- real(PMFDP)    :: u12(3),u23(3),u31(3)
- real(PMFDP)    :: a, b, c, dist
- real(PMFDP)    :: calpha,cbeta,cgamma
- ! -----------------------------------------------------------------------------
+    real(PMFDP)    :: lattice(3,3)
+    ! -----------------------------------------------
+    integer        :: i
+    real(PMFDP)    :: u12(3),u23(3),u31(3)
+    real(PMFDP)    :: a, b, c, dist
+    real(PMFDP)    :: calpha,cbeta,cgamma
+    ! -----------------------------------------------------------------------------
 
- ! dirrect mapping
- fucell(:,:) = lattice(:,:)*LengthConv
+    ! direct mapping
+    fucell(:,:) = lattice(:,:)*LengthConv
 
- ! calculate cell parameters ---------------------
- frecip(:,:) = 0.0d0
- fbox_volume = 0.0d0
- fbox_sphere = 0.0d0
+    ! calculate cell parameters ---------------------
+    frecip(:,:) = 0.0d0
+    fbox_volume = 0.0d0
+    fbox_sphere = 0.0d0
 
- fbox_type = BOX_ISOLATED_SYSTEM
+    fbox_type = BOX_ISOLATED_SYSTEM
 
- if( fsystype .eq. SYS_UNK .or. fsystype .eq. SYS_NT ) return
+    if( fsystype .eq. SYS_UNK .or. fsystype .eq. SYS_NT ) return
 
- a = sqrt(fucell(1,1)*fucell(1,1) + fucell(2,1)*fucell(2,1) + fucell(3,1)*fucell(3,1))
- b = sqrt(fucell(1,2)*fucell(1,2) + fucell(2,2)*fucell(2,2) + fucell(3,2)*fucell(3,2))
- c = sqrt(fucell(1,3)*fucell(1,3) + fucell(2,3)*fucell(2,3) + fucell(3,3)*fucell(3,3))
+    a = sqrt(fucell(1,1)*fucell(1,1) + fucell(2,1)*fucell(2,1) + fucell(3,1)*fucell(3,1))
+    b = sqrt(fucell(1,2)*fucell(1,2) + fucell(2,2)*fucell(2,2) + fucell(3,2)*fucell(3,2))
+    c = sqrt(fucell(1,3)*fucell(1,3) + fucell(2,3)*fucell(2,3) + fucell(3,3)*fucell(3,3))
 
- calpha = fucell(1,1)*fucell(1,2) + fucell(2,1)*fucell(2,2) + fucell(3,1)*fucell(3,2)
- calpha = calpha / (a*b)
+    calpha = fucell(1,1)*fucell(1,2) + fucell(2,1)*fucell(2,2) + fucell(3,1)*fucell(3,2)
+    calpha = calpha / (a*b)
 
- cbeta = fucell(1,2)*fucell(1,3) + fucell(2,2)*fucell(2,3) + fucell(3,2)*fucell(3,3)
- calpha = calpha / (b*c)
+    cbeta = fucell(1,2)*fucell(1,3) + fucell(2,2)*fucell(2,3) + fucell(3,2)*fucell(3,3)
+    calpha = calpha / (b*c)
 
- cgamma = fucell(1,1)*fucell(1,3) + fucell(2,1)*fucell(2,3) + fucell(3,1)*fucell(3,3)
- calpha = calpha / (a*c)
+    cgamma = fucell(1,1)*fucell(1,3) + fucell(2,1)*fucell(2,3) + fucell(3,1)*fucell(3,3)
+    calpha = calpha / (a*c)
 
- ! determine box type ----------------------------
- if( (abs(a) .lt. 0.00001d0) .or. &
+    ! determine box type ----------------------------
+    if( (abs(a) .lt. 0.00001d0) .or. &
      (abs(b) .lt. 0.00001d0) .or. &
      (abs(c) .lt. 0.00001d0)  ) then
-    fbox_type = BOX_ISOLATED_SYSTEM
- else if( (abs(calpha) .lt. 0.00001d0) .and. &
+        fbox_type = BOX_ISOLATED_SYSTEM
+    else if( (abs(calpha) .lt. 0.00001d0) .and. &
           (abs(cbeta)  .lt. 0.00001d0) .and. &
           (abs(cgamma) .lt. 0.00001d0) ) then
-    fbox_type = BOX_ORTHOGONAL
+        fbox_type = BOX_ORTHOGONAL
 
-    frecip(1,1) = 1.0d0 / fucell(1,1)
-    frecip(2,2) = 1.0d0 / fucell(2,2)
-    frecip(3,3) = 1.0d0 / fucell(3,3)
+        frecip(1,1) = 1.0d0 / fucell(1,1)
+        frecip(2,2) = 1.0d0 / fucell(2,2)
+        frecip(3,3) = 1.0d0 / fucell(3,3)
 
-    fbox_volume = fucell(1,1)*fucell(2,2)*fucell(3,3)
-    fbox_sphere = 0.5d0*min(fucell(1,1),fucell(2,2),fucell(3,3))
- else
-    fbox_type = BOX_GENERAL
+        fbox_volume = fucell(1,1)*fucell(2,2)*fucell(3,3)
+        fbox_sphere = 0.5d0*min(fucell(1,1),fucell(2,2),fucell(3,3))
+    else
+        fbox_type = BOX_GENERAL
 
-    u23(1) = fucell(2,2)*fucell(3,3) - fucell(3,2)*fucell(2,3)
-    u23(2) = fucell(3,2)*fucell(1,3) - fucell(1,2)*fucell(3,3)
-    u23(3) = fucell(1,2)*fucell(2,3) - fucell(2,2)*fucell(1,3)
+        u23(1) = fucell(2,2)*fucell(3,3) - fucell(3,2)*fucell(2,3)
+        u23(2) = fucell(3,2)*fucell(1,3) - fucell(1,2)*fucell(3,3)
+        u23(3) = fucell(1,2)*fucell(2,3) - fucell(2,2)*fucell(1,3)
 
-    u31(1) = fucell(2,3)*fucell(3,1) - fucell(3,3)*fucell(2,1)
-    u31(2) = fucell(3,3)*fucell(1,1) - fucell(1,3)*fucell(3,1)
-    u31(3) = fucell(1,3)*fucell(2,1) - fucell(2,3)*fucell(1,1)
+        u31(1) = fucell(2,3)*fucell(3,1) - fucell(3,3)*fucell(2,1)
+        u31(2) = fucell(3,3)*fucell(1,1) - fucell(1,3)*fucell(3,1)
+        u31(3) = fucell(1,3)*fucell(2,1) - fucell(2,3)*fucell(1,1)
 
-    u12(1) = fucell(2,1)*fucell(3,2) - fucell(3,1)*fucell(2,2)
-    u12(2) = fucell(3,1)*fucell(1,2) - fucell(1,1)*fucell(3,2)
-    u12(3) = fucell(1,1)*fucell(2,2) - fucell(2,1)*fucell(1,2)
+        u12(1) = fucell(2,1)*fucell(3,2) - fucell(3,1)*fucell(2,2)
+        u12(2) = fucell(3,1)*fucell(1,2) - fucell(1,1)*fucell(3,2)
+        u12(3) = fucell(1,1)*fucell(2,2) - fucell(2,1)*fucell(1,2)
 
-    fbox_volume = fucell(1,1)*u23(1) + fucell(2,1)*u23(2)+ fucell(3,2)*u23(3)
+        fbox_volume = fucell(1,1)*u23(1) + fucell(2,1)*u23(2)+ fucell(3,2)*u23(3)
 
-    frecip(1,:) = u23(:) / fbox_volume
-    frecip(2,:) = u31(:) / fbox_volume
-    frecip(3,:) = u12(:) / fbox_volume
+        frecip(1,:) = u23(:) / fbox_volume
+        frecip(2,:) = u31(:) / fbox_volume
+        frecip(3,:) = u12(:) / fbox_volume
 
-    fbox_sphere = a*b*c
-    do i = 1, 3
-        dist = frecip(i,1)*fucell(1,i) + frecip(i,2)*fucell(2,i) + frecip(i,3)*fucell(3,i)
-        dist = dist / sqrt( frecip(i,1)**2 + frecip(i,2)**2 + frecip(i,3)**2)
-        if( dist .lt. fbox_sphere ) fbox_sphere = dist
-    end do
-    fbox_sphere = 0.5d0 * fbox_sphere
- end if
+        fbox_sphere = a*b*c
+        do i = 1, 3
+            dist = frecip(i,1)*fucell(1,i) + frecip(i,2)*fucell(2,i) + frecip(i,3)*fucell(3,i)
+            dist = dist / sqrt( frecip(i,1)**2 + frecip(i,2)**2 + frecip(i,3)**2)
+            if( dist .lt. fbox_sphere ) fbox_sphere = dist
+        end do
+        fbox_sphere = 0.5d0 * fbox_sphere
+    end if
+
+    p0VEne = fpressure * fbox_volume * PMF_PVCONV
 
 end subroutine pmf_pbc_set_box_from_lvectors
 

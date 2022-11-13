@@ -193,7 +193,7 @@ subroutine pmf_core_lf_register_press(press)
 
     ActPress = press * PressureConv
 
-    pVEne = ActPress * fbox_volume * PMF_PVCONV
+    pVEne  = ActPress * fbox_volume * PMF_PVCONV
 
 end subroutine pmf_core_lf_register_press
 

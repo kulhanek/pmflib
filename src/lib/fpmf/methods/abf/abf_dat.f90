@@ -58,7 +58,7 @@ integer     :: ftds_ekin_src    ! source of kinetic energy, see abf_core_update_
 real(PMFDP) :: fepotaverage
 real(PMFDP) :: fekinaverage
 integer     :: fenesample       ! how often update ABF accumulator for ENT and TDS
-logical     :: finclude_pv      ! include pV term
+integer     :: finclude_pv      ! include pV term
 
 ! US mode
 logical     :: fusmode      ! enable US mode

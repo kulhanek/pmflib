@@ -112,7 +112,8 @@ subroutine abf_control_read_abf(prm_fin)
     call pmf_ctrl_read_integer(prm_fin,'fenesample',fenesample,'I12')
     call pmf_ctrl_check_integer('ABF','fenesample',fenesample,0,CND_GT)
 
-    call pmf_ctrl_read_logical(prm_fin,'finclude_pv',finclude_pv)
+    call pmf_ctrl_read_integer(prm_fin,'finclude_pv',finclude_pv,'I12')
+    call pmf_ctrl_check_integer_in_range('ABF','finclude_pv',finclude_pv,0,2)
 
     call pmf_ctrl_read_logical(prm_fin,'fusmode',fusmode)
     call pmf_ctrl_read_logical(prm_fin,'falignbias',falignbias)
