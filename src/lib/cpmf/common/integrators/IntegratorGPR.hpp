@@ -80,6 +80,9 @@ public:
     /// set ncorr
     void SetNCorr(double value);
 
+    /// use input noise equal to one, thus ncorr become an uniform noise
+    void EnableNCorrAsNoise(bool enable);
+
     /// multiply of bin sizes
     void SetWFac(const CSmallString& spec);
 
@@ -206,6 +209,7 @@ private:
     bool                    SplitNCorr;     // ncorr for each cv / all cvs
     double                  SigmaF2;
     double                  NCorr;
+    bool                    UseNCorrAsNoise;
     CSimpleVector<double>   WFac;
     CSimpleVector<double>   CVLengths2;
 

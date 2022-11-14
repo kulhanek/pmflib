@@ -52,11 +52,14 @@ CIntegratorGPR::CIntegratorGPR(void)
     GPRSize             = 0;
     NumOfUsedBins       = 0;
     NumOfValues         = 0;
-    NumOfCVs                = 0;
+    NumOfCVs            = 0;
     NumOfBins           = 0;
 
     SplitNCorr          = false;
     SigmaF2             = 15.0;
+
+    NCorr               = 1.0;
+    UseNCorrAsNoise     = false;
 
     IncludeError        = false;
     IncludeGluedBins    = false;
@@ -139,6 +142,13 @@ void CIntegratorGPR::SetNCorr(double value)
 
 //------------------------------------------------------------------------------
 
+void CIntegratorGPR::EnableNCorrAsNoise(bool enable)
+{
+    UseNCorrAsNoise = enable;
+}
+
+//------------------------------------------------------------------------------
+
 void CIntegratorGPR::SetWFac(const CSmallString& spec)
 {
     if( NumOfCVs == 0 ){
@@ -182,7 +192,7 @@ void CIntegratorGPR::SetWFac(const CSmallString& spec)
 void CIntegratorGPR::SetWFac(CSimpleVector<double>& wfac)
 {
     if( NumOfCVs == 0 ){
-        RUNTIME_ERROR("FES is not set for SetNCorr");
+        RUNTIME_ERROR("FES is not set for SetWFac");
     }
     if( wfac.GetLength() != NumOfCVs ){
         RUNTIME_ERROR("ncvs inconsistent in the source and target");
@@ -196,7 +206,7 @@ void CIntegratorGPR::SetWFac(CSimpleVector<double>& wfac)
 void CIntegratorGPR::SetWFac(size_t cvind, double value)
 {
     if( NumOfCVs == 0 ){
-        RUNTIME_ERROR("FES is not set for SetNCorr");
+        RUNTIME_ERROR("FES is not set for SetWFac");
     }
     if( cvind >= NumOfCVs ){
         RUNTIME_ERROR("cvind out-of-range");
@@ -298,7 +308,7 @@ void CIntegratorGPR::IncludeGluedAreas(bool set)
 void CIntegratorGPR::SetGlobalMin(const CSmallString& spec)
 {
     if( NumOfCVs == 0 ){
-        RUNTIME_ERROR("accumulator is not set for SetNCorr");
+        RUNTIME_ERROR("accumulator is not set for SetGlobalMin");
     }
     if( EneSurface == NULL ) {
         RUNTIME_ERROR("ES is not set");
@@ -456,9 +466,9 @@ bool CIntegratorGPR::Integrate(CVerboseStr& vout,bool nostat)
     KS.CreateMatrix(GPRSize,GPRSize);
 
     // print hyperparameters
-    vout << "   Hyperparameters ..." << endl;
-        vout << format("      SigmaF2   = %10.4f")%SigmaF2 << endl;
-        vout << format("      NCorr     = %10.4f")%NCorr << endl;
+    vout        << "   Hyperparameters ..." << endl;
+    vout << format("      SigmaF2   = %10.4f")%SigmaF2 << endl;
+    vout << format("      NCorr     = %10.4f")%NCorr << endl;
 
     for(size_t k=0; k < NumOfCVs; k++ ){
         vout << format("      WFac#%-2d   = %10.4f")%(k+1)%WFac[k] << endl;
@@ -749,7 +759,10 @@ void CIntegratorGPR::CreateKS(void)
         CEnergyDerProxyPtr  item = DerProxyItems[DerProxyMap[indi]];
         size_t              ibin = SampledMap[indi];
         for(size_t ii=0; ii < NumOfCVs; ii++){
-            double er = item->GetValue(ibin,ii,E_PROXY_ERROR);
+            double er = 1.0;
+            if( UseNCorrAsNoise == false ){
+                er = item->GetValue(ibin,ii,E_PROXY_ERROR);
+            }
             KS[indi*NumOfCVs+ii][indi*NumOfCVs+ii] += er*er*NCorr;
         }
     }
@@ -1477,7 +1490,11 @@ bool CIntegratorGPR::WriteMFInfo(const CSmallString& name)
             double mf = item->GetValue(ibin,k,E_PROXY_VALUE);
             mfi[indi*NumOfCVs+k] = mf;
 
-            double mfe = item->GetValue(ibin,k,E_PROXY_ERROR);
+            double mfe = 1.0;
+            if( UseNCorrAsNoise == false ){
+                mfe = item->GetValue(ibin,k,E_PROXY_ERROR);
+            }
+
             mfie[indi*NumOfCVs+k] = mfe*mfe*NCorr;
 
             mfp[indi*NumOfCVs+k] = GetMeanForce(ipos,k);
@@ -1953,7 +1970,10 @@ void CIntegratorGPR::CalcKderWRTNCorr(size_t cv)
         size_t              ibin = SampledMap[indi];
 
         for(size_t ii=0; ii < NumOfCVs; ii++){
-            double er = item->GetValue(ibin,ii,E_PROXY_ERROR);
+            double er = 1.0;
+            if( UseNCorrAsNoise == false ){
+                er = item->GetValue(ibin,ii,E_PROXY_ERROR);
+            }
             if( SplitNCorr ){
                 if( cv == ii ) Kder[indi*NumOfCVs+ii][indi*NumOfCVs+ii] += er*er;
             } else {
