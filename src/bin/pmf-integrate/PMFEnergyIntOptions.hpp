@@ -52,13 +52,12 @@ public:
     CSO_PROG_ARGS_SHORT_DESC_END
 
     CSO_PROG_ARGS_LONG_DESC_BEGIN
-    "<cyan><b>accuname</b></cyan>                   Name of file containing the ABF accumulator. If the name is '-' then the accumulator is read from the standard input.\n"
+    "<cyan><b>accuname1</b></cyan>                  Name of file containing the ABF accumulator. If the name is '-' then the accumulator is read from the standard input.\n"
     "<cyan><b>fename</b></cyan>                     Name of file where the resulting free energy surface will be printed. If the name is '-' then the output will be written to the standard output.\n"
     CSO_PROG_ARGS_LONG_DESC_END
 
 // list of all options and arguments ------------------------------------------
     CSO_LIST_BEGIN
-
     // options ------------------------------
     CSO_OPT(CSmallString,Realm)
     CSO_OPT(CSmallString,Method)
@@ -75,6 +74,7 @@ public:
     CSO_OPT(double,SigmaF2)
     CSO_OPT(double,NCorr)
     CSO_OPT(CSmallString,WFac)
+    CSO_OPT(CSmallString,SigmaN2)
     CSO_OPT(CSmallString,LoadHyprms)
     CSO_OPT(CSmallString,RFac)
     CSO_OPT(int,Overhang)
@@ -122,20 +122,20 @@ public:
                 'r',                           /* short option name */
                 "realm",                      /* long option name */
                 "NAME",                           /* parameter name */
-                "Intended output from the integration:\n"
-                "**  dG     - free energy (default)\n"
-                "** -TdS    - entropy contribution to the free energy\n"
-                "**  dG_p   - free energy (potential part) - ABF\n"
-                "**  dG_k   - free energy (kinetic part) - ABF\n"
-                "** -TdS_PP - entropy contribution to the free energy, cov(dH_p/dx,Epot) - ABF\n"
-                "** -TdS_PK - entropy contribution to the free energy, cov(dH_p/dx,Ekin) - ABF\n"
-                "** -TdS_PR - entropy contribution to the free energy, cov(dH_p/dx,Erst) - ABF\n"
-                "** -TdS_KP - entropy contribution to the free energy, cov(dH_k/dx,Epot) - ABF\n"
-                "** -TdS_KK - entropy contribution to the free energy, cov(dH_k/dx,Ekin) - ABF\n"
-                "** -TdS_KR - entropy contribution to the free energy, cov(dH_k/dx,Erst) - ABF\n"
-                "** -TdS_HP - entropy contribution to the free energy, cov(dH/dx,Epot) - CST\n"
-                "** -TdS_HK - entropy contribution to the free energy, cov(dH/dx,Ekin) - CST\n"
-                "** -TdS_HR - entropy contribution to the free energy, cov(dH/dx,Erst) - CST\n"
+                "Requested output from the integration:\n"
+                "**  dG        - free energy (default)\n"
+                "**  mTdS/-TdS - entropy contribution to the free energy\n"
+                "\n"
+                "Requested output from the integration (-TdS decomposition):\n"
+                "** -TdS_HP    - entropy contribution to the free energy, cov(dH/dx,Epot) - ABF/CST\n"
+                "** -TdS_HR    - entropy contribution to the free energy, cov(dH/dx,Erst) - ABF/CST\n"
+                "** -TdS_HK    - entropy contribution to the free energy, cov(dH/dx,Ekin) - ABF/CST\n"
+                "** -TdS_HV    - entropy contribution to the free energy, cov(dH/dx,pV) - ABF\n"
+                "\n"
+                "** -TdS_BP    - entropy contribution to the free energy, cov(bias,Epot) - ABF/CST\n"
+                "** -TdS_BR    - entropy contribution to the free energy, cov(bias,Erst) - ABF/CST\n"
+                "** -TdS_BK    - entropy contribution to the free energy, cov(bias,Ekin) - ABF/CST\n"
+                "** -TdS_BV    - entropy contribution to the free energy, cov(bias,pV) - ABF/CST\n"
                 )   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(CSmallString,                           /* option type */
@@ -180,7 +180,7 @@ public:
     //----------------------------------------------------------------------
     CSO_MAP_OPT(int,                           /* option type */
                 Limit,                        /* option name */
-                100,                          /* default value */
+                1000,                          /* default value */
                 false,                          /* is option mandatory */
                 'l',                           /* short option name */
                 "limit",                      /* long option name */
@@ -254,7 +254,7 @@ public:
     //----------------------------------------------------------------------
     CSO_MAP_OPT(double,                           /* option type */
                 NCorr,                        /* option name */
-                1.0,                          /* default value */
+                0.0,                          /* default value */
                 false,                          /* is option mandatory */
                 'c',                           /* short option name */
                 "ncorr",                      /* long option name */
@@ -270,6 +270,16 @@ public:
                 "SPEC",                           /* parameter name */
                 "RBF+GPR: Factors influencing widths of RBFs or square exponential kernels. The width is distance between "
                 "the adjacent square exponential functions multiplied by this factors in the form WFac1[xWFac2x...]. "
+                "The last value pads the rest.")   /* option description */
+    //----------------------------------------------------------------------
+    CSO_MAP_OPT(CSmallString,                           /* option type */
+                SigmaN2,                        /* option name */
+                "0.1",                          /* default value */
+                false,                          /* is option mandatory */
+                'n',                           /* short option name */
+                "sigman2",                      /* long option name */
+                "SPEC",                           /* parameter name */
+                "GPR: Values of noise sigma squared for each CV in the form SigmaN2(1)[xSigmaN2(2)x...]. "
                 "The last value pads the rest.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(CSmallString,                           /* option type */

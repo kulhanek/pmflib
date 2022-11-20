@@ -62,6 +62,15 @@ public:
     /// set ncorr
     void SetNCorr(double value);
 
+    /// set sigman2
+    void SetSigmaN2(const CSmallString& spec);
+
+    /// set sigman2
+    void SetSigmaN2(CSimpleVector<double>& sigman2);
+
+    /// set sigman2
+    void SetSigmaN2(size_t cvind, double value);
+
     /// multiply of bin sizes
     void SetWFac(const CSmallString& spec);
 
@@ -164,6 +173,7 @@ private:
     double                  SigmaF2;
     double                  NCorr;
     CSimpleVector<double>   WFac;
+    CSimpleVector<double>   SigmaN2;
     CSimpleVector<double>   CVLengths2;
 
     // GPR model
@@ -211,6 +221,7 @@ private:
     void CalcKderWRTSigmaF2(void);
     void CalcKderWRTNCorr(void);
     void CalcKderWRTWFac(size_t cv);
+    void CalcKderWRTSigmaN2(size_t cv);
     double GetKernelValueWFacDer(const CSimpleVector<double>& ip,const CSimpleVector<double>& jp,size_t cv);
 };
 

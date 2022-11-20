@@ -225,6 +225,13 @@ int CPMFEnergyIntOptions::CheckOptions(void)
         IsError = true;
     }
 
+    if( IsOptSigmaN2Set() && (GetOptMethod() != "gpr") ){
+        if(IsError == false) fprintf(stderr,"\n");
+        fprintf(stderr,"%s: --sigman2 can be set only for GPR method\n",
+                (const char*)GetProgramName());
+        IsError = true;
+    }
+
     if( IsOptMaxEnergySet() && (GetOptUnsampledAsMaxE() == false) ){
         if(IsError == false) fprintf(stderr,"\n");
         fprintf(stderr,"%s: --maxenergy without --unsampledasmax does not have any effect\n",
@@ -259,6 +266,12 @@ int CPMFEnergyIntOptions::CheckOptions(void)
     if( IsOptLoadHyprmsSet() && IsOptWFacSet() ){
         if(IsError == false) fprintf(stderr,"\n");
         fprintf(stderr,"%s: --loadhyprms is mutually exclusive with --wfac\n",
+                (const char*)GetProgramName());
+        IsError = true;
+    }
+    if( IsOptLoadHyprmsSet() && IsOptSigmaN2Set() ){
+        if(IsError == false) fprintf(stderr,"\n");
+        fprintf(stderr,"%s: --loadhyprms is mutually exclusive with --sigman2\n",
                 (const char*)GetProgramName());
         IsError = true;
     }

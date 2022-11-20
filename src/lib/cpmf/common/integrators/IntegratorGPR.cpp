@@ -55,11 +55,8 @@ CIntegratorGPR::CIntegratorGPR(void)
     NumOfCVs            = 0;
     NumOfBins           = 0;
 
-    SplitNCorr          = false;
     SigmaF2             = 15.0;
-
     NCorr               = 1.0;
-    UseNCorrAsNoise     = false;
 
     IncludeError        = false;
     IncludeGluedBins    = false;
@@ -142,9 +139,73 @@ void CIntegratorGPR::SetNCorr(double value)
 
 //------------------------------------------------------------------------------
 
-void CIntegratorGPR::EnableNCorrAsNoise(bool enable)
+void CIntegratorGPR::SetSigmaN2(const CSmallString& spec)
 {
-    UseNCorrAsNoise = enable;
+    if( NumOfCVs == 0 ){
+        RUNTIME_ERROR("accumulator is not set for SetSigmaN2");
+    }
+
+    string          sspec(spec);
+    vector<string>  ssigman2;
+
+    split(ssigman2,sspec,is_any_of("x"),token_compress_on);
+
+    if( ssigman2.size() > NumOfCVs ){
+        CSmallString error;
+        error << "too many sigman2 (" << ssigman2.size() << ") than required (" << NumOfCVs << ")";
+        RUNTIME_ERROR(error);
+    }
+
+    SigmaN2.CreateVector(NumOfCVs);
+
+    // parse values of sigman2
+    double last_sigman2 = 0.1;
+    for(size_t i=0; i < ssigman2.size(); i++){
+        stringstream str(ssigman2[i]);
+        str >> last_sigman2;
+        if( ! str ){
+            CSmallString error;
+            error << "unable to decode sigman2 value for position: " << i+1;
+            RUNTIME_ERROR(error);
+        }
+        SigmaN2[i] = last_sigman2;
+    }
+
+    // pad the rest with the last value
+    for(size_t i=ssigman2.size(); i < NumOfCVs; i++){
+        SigmaN2[i] = last_sigman2;
+    }
+}
+
+//------------------------------------------------------------------------------
+
+void CIntegratorGPR::SetSigmaN2(CSimpleVector<double>& sigman2)
+{
+    if( NumOfCVs == 0 ){
+        RUNTIME_ERROR("FES is not set for SetSigmaN2");
+    }
+    if( sigman2.GetLength() != NumOfCVs ){
+        RUNTIME_ERROR("ncvs inconsistent in the source and target");
+    }
+
+    SigmaN2 = sigman2;
+}
+
+//------------------------------------------------------------------------------
+
+void CIntegratorGPR::SetSigmaN2(size_t cvind, double value)
+{
+    if( NumOfCVs == 0 ){
+        RUNTIME_ERROR("FES is not set for SetSigmaN2");
+    }
+    if( cvind >= NumOfCVs ){
+        RUNTIME_ERROR("cvind out-of-range");
+    }
+    // is SigmaN2 initialized?
+    if( SigmaN2.GetLength() == 0 ){
+        SigmaN2.CreateVector(NumOfCVs);
+    }
+    SigmaN2[cvind] = value;
 }
 
 //------------------------------------------------------------------------------
@@ -429,6 +490,9 @@ bool CIntegratorGPR::Integrate(CVerboseStr& vout,bool nostat)
     if( WFac.GetLength() == 0 ){
         RUNTIME_ERROR("wfac is not set");
     }
+    if( SigmaN2.GetLength() == 0 ){
+        RUNTIME_ERROR("sigman2 is not set");
+    }
 
     // GPR setup
     CVLengths2.CreateVector(NumOfCVs);
@@ -466,12 +530,15 @@ bool CIntegratorGPR::Integrate(CVerboseStr& vout,bool nostat)
     KS.CreateMatrix(GPRSize,GPRSize);
 
     // print hyperparameters
-    vout        << "   Hyperparameters ..." << endl;
-    vout << format("      SigmaF2   = %10.4f")%SigmaF2 << endl;
-    vout << format("      NCorr     = %10.4f")%NCorr << endl;
+        vout        << "   Hyperparameters ..." << endl;
+        vout << format("      SigmaF2   = %10.4f")%SigmaF2 << endl;
+        vout << format("      NCorr     = %10.4f")%NCorr << endl;
 
     for(size_t k=0; k < NumOfCVs; k++ ){
         vout << format("      WFac#%-2d   = %10.4f")%(k+1)%WFac[k] << endl;
+    }
+    for(size_t k=0; k < NumOfCVs; k++ ){
+        vout << format("      SigmaN2#%-2d= %10.4e")%(k+1)%SigmaN2[k] << endl;
     }
 
     // train GPR
@@ -483,7 +550,7 @@ bool CIntegratorGPR::Integrate(CVerboseStr& vout,bool nostat)
     if( ! nostat ){
         // and finally some statistics
         for(size_t k=0; k < NumOfCVs; k++ ){
-        vout << "      RMSR CV#" << k+1 << " = " << setprecision(5) << GetRMSR(k) << endl;
+            vout << "      RMSR CV#" << k+1 << " = " << setprecision(5) << GetRMSR(k) << endl;
         }
 
         // and log of marginal likelihood
@@ -759,11 +826,8 @@ void CIntegratorGPR::CreateKS(void)
         CEnergyDerProxyPtr  item = DerProxyItems[DerProxyMap[indi]];
         size_t              ibin = SampledMap[indi];
         for(size_t ii=0; ii < NumOfCVs; ii++){
-            double er = 1.0;
-            if( UseNCorrAsNoise == false ){
-                er = item->GetValue(ibin,ii,E_PROXY_ERROR);
-            }
-            KS[indi*NumOfCVs+ii][indi*NumOfCVs+ii] += er*er*NCorr;
+            double er = item->GetValue(ibin,ii,E_PROXY_ERROR);
+            KS[indi*NumOfCVs+ii][indi*NumOfCVs+ii] += er*er*NCorr + SigmaN2[ii];
         }
     }
     // zero point has no uncertainty
@@ -1473,11 +1537,13 @@ bool CIntegratorGPR::WriteMFInfo(const CSmallString& name)
     CSimpleVector<double> mfi;
     CSimpleVector<double> mfie;
     CSimpleVector<double> mfp;
+    CSimpleVector<double> mfpe;
 
     ipos.CreateVector(NumOfCVs);
     mfi.CreateVector(GPRSize);
     mfie.CreateVector(GPRSize);
     mfp.CreateVector(GPRSize);
+    mfpe.CreateVector(GPRSize);
 
     // calculate
     #pragma omp parallel for firstprivate(ipos)
@@ -1490,14 +1556,12 @@ bool CIntegratorGPR::WriteMFInfo(const CSmallString& name)
             double mf = item->GetValue(ibin,k,E_PROXY_VALUE);
             mfi[indi*NumOfCVs+k] = mf;
 
-            double mfe = 1.0;
-            if( UseNCorrAsNoise == false ){
-                mfe = item->GetValue(ibin,k,E_PROXY_ERROR);
-            }
-
-            mfie[indi*NumOfCVs+k] = mfe*mfe*NCorr;
+            double mfe = item->GetValue(ibin,k,E_PROXY_ERROR);
+            mfie[indi*NumOfCVs+k] = mfe*mfe;
 
             mfp[indi*NumOfCVs+k] = GetMeanForce(ipos,k);
+            // FIXME - mean force error
+            mfpe[indi*NumOfCVs+k] = 0.0;
         }
     }
 
@@ -1527,7 +1591,7 @@ bool CIntegratorGPR::WriteMFInfo(const CSmallString& name)
         }
 
         for(size_t k=0; k < NumOfCVs; k++){
-            ofs << format(" %20.16f %20.16f %20.16f")%mfi[indi*NumOfCVs+k]%mfie[indi*NumOfCVs+k]%mfp[indi*NumOfCVs+k];
+            ofs << format(" %20.16f %20.16f %20.16f %20.16f")%mfi[indi*NumOfCVs+k]%mfie[indi*NumOfCVs+k]%mfp[indi*NumOfCVs+k]%mfpe[indi*NumOfCVs+k];
         }
 
         ofs << endl;
@@ -1741,17 +1805,6 @@ void CIntegratorGPR::GetLogMLDerivatives(const std::vector<bool>& flags,CSimpleV
     }
 
     size_t ind = 0;
-    size_t soffset = 0;
-    size_t noffset;
-    size_t woffset;
-
-    if( SplitNCorr ){
-        noffset = soffset+1;
-        woffset = noffset+NumOfCVs;
-    } else {
-        noffset = soffset+1;
-        woffset = noffset+1;
-    }
 
     for(size_t prm=0; prm < flags.size(); prm++){
         // shall we calc der?
@@ -1763,12 +1816,14 @@ void CIntegratorGPR::GetLogMLDerivatives(const std::vector<bool>& flags,CSimpleV
         if( prm == 0 ){
             // sigmaf2
             CalcKderWRTSigmaF2();
-        } else if( (prm >= noffset) && (prm < woffset) ){
-            size_t cv = prm - noffset;
-            CalcKderWRTNCorr(cv);
-        } else {
-            size_t cv = prm - woffset;
+        } else if( prm == 1  ){
+            CalcKderWRTNCorr();
+        } else if( (prm >= 2) && (prm < 2+NumOfCVs) ){
+            size_t cv = prm - 2;
             CalcKderWRTWFac(cv);
+        } else {
+            size_t cv = prm - (2+NumOfCVs);
+            CalcKderWRTSigmaN2(cv);
         }
 
         // calc trace
@@ -1813,17 +1868,6 @@ void CIntegratorGPR::GetLogPLDerivatives(const std::vector<bool>& flags,CSimpleV
     za.CreateVector(GPRSize);
 
     size_t ind = 0;
-    size_t soffset = 0;
-    size_t noffset;
-    size_t woffset;
-
-    if( SplitNCorr ){
-        noffset = soffset+1;
-        woffset = noffset+NumOfCVs;
-    } else {
-        noffset = soffset+1;
-        woffset = noffset+1;
-    }
 
     for(size_t prm=0; prm < flags.size(); prm++){
         // shall we calc der?
@@ -1835,12 +1879,14 @@ void CIntegratorGPR::GetLogPLDerivatives(const std::vector<bool>& flags,CSimpleV
         if( prm == 0 ){
             // sigmaf2
             CalcKderWRTSigmaF2();
-        } else if( (prm >= noffset) && (prm < woffset) ){
-            size_t cv = prm - noffset;
-            CalcKderWRTNCorr(cv);
-        } else {
-            size_t cv = prm - woffset;
+        } else if( prm == 1  ){
+            CalcKderWRTNCorr();
+        } else if( (prm >= 2) && (prm < 2+NumOfCVs) ){
+            size_t cv = prm - 2;
             CalcKderWRTWFac(cv);
+        } else {
+            size_t cv = prm - (2+NumOfCVs);
+            CalcKderWRTSigmaN2(cv);
         }
 
         RunBlasLapackPar();
@@ -1960,7 +2006,7 @@ void CIntegratorGPR::CalcKderWRTSigmaF2(void)
 
 //------------------------------------------------------------------------------
 
-void CIntegratorGPR::CalcKderWRTNCorr(size_t cv)
+void CIntegratorGPR::CalcKderWRTNCorr(void)
 {
     Kder.SetZero();
 
@@ -1970,15 +2016,8 @@ void CIntegratorGPR::CalcKderWRTNCorr(size_t cv)
         size_t              ibin = SampledMap[indi];
 
         for(size_t ii=0; ii < NumOfCVs; ii++){
-            double er = 1.0;
-            if( UseNCorrAsNoise == false ){
-                er = item->GetValue(ibin,ii,E_PROXY_ERROR);
-            }
-            if( SplitNCorr ){
-                if( cv == ii ) Kder[indi*NumOfCVs+ii][indi*NumOfCVs+ii] += er*er;
-            } else {
-                Kder[indi*NumOfCVs+ii][indi*NumOfCVs+ii] += er*er;
-            }
+            double er = item->GetValue(ibin,ii,E_PROXY_ERROR);
+            Kder[indi*NumOfCVs+ii][indi*NumOfCVs+ii] = er*er;
         }
     }
 }
@@ -2022,6 +2061,22 @@ void CIntegratorGPR::CalcKderWRTWFac(size_t cv)
 
     if( UseZeroPoint ){
         RUNTIME_ERROR("not implemented");
+    }
+}
+
+//------------------------------------------------------------------------------
+
+void CIntegratorGPR::CalcKderWRTSigmaN2(size_t cv)
+{
+    Kder.SetZero();
+
+    #pragma omp parallel for
+    for(size_t indi=0; indi < NumOfUsedBins; indi++){
+        for(size_t ii=0; ii < NumOfCVs; ii++){
+            if( ii == cv ){
+                Kder[indi*NumOfCVs+ii][indi*NumOfCVs+ii] = 1.0;
+            }
+        }
     }
 }
 

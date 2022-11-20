@@ -95,10 +95,11 @@ int COptGPRHyprms::Init(int argc,char* argv[])
         vout << "# SigmaF2               : " << setprecision(3) << Options.GetOptSigmaF2() << endl;
         vout << "# NCorr                 : " << setprecision(3) << Options.GetOptNCorr() << endl;
         vout << "# Width factor wfac     : " << (const char*)Options.GetOptWFac() << endl;
+        vout << "# SigmaN2               : " << (const char*)Options.GetOptSigmaN2() << endl;
     }
     vout << "# ------------------------------------------------" << endl;
     vout << "# Linear algebra        : " << Options.GetOptLAMethod() << endl;
-    if( (Options.GetOptLAMethod() == "svd") || (Options.GetOptLAMethod() == "svd2") ){
+    if( (Options.GetOptLAMethod() == "svd") || (Options.GetOptLAMethod() == "svd2") || (Options.GetOptLAMethod() == "default") ){
     vout << "# SVD rcond             : " << setprecision(3) << Options.GetOptRCond() << endl;
     }
     vout << "# Optimized target      : " << Options.GetOptTarget() << endl;
@@ -225,6 +226,7 @@ bool COptGPRHyprms::IsRealm(const CSmallString& name)
 {
     if( name == "dG" )      return(true);
     if( name == "-TdS" )    return(true);
+    if( name == "mTdS" )    return(true);
     if( name == "dH" )      return(true);
     return(false);
 }
@@ -251,7 +253,7 @@ void COptGPRHyprms::InitRealm(CProxyRealmPtr realm)
             realm->DerProxies.push_back(proxy);
         }
 // -----------------------------------------------
-    } else if ( realm->Name == "-TdS" ) {
+    } else if ( (realm->Name == "-TdS") && (realm->Name == "mTdS") ) {
         for(size_t i=0; i < realm->Accumulators.size(); i++){
             CPMFAccumulatorPtr accu = realm->Accumulators[i];
             CEnergyDerProxyPtr proxy;
@@ -296,6 +298,7 @@ void COptGPRHyprms::InitOptimizer(void)
     SigmaF2Enabled  = Options.GetOptSigmaF2Enabled();
     NCorrEnabled    = Options.GetOptNCorrEnabled();
     DecodeEList(Options.GetOptWFacEnabled(),WFacEnabled,"--enablewfac");
+    DecodeEList(Options.GetOptSigmaN2Enabled(),SigmaN2Enabled,"--enablesigman2");
 
 // number of optimized parameters
     NumOfOptPrms = 0;
@@ -309,6 +312,11 @@ void COptGPRHyprms::InitOptimizer(void)
 // wfac
     for(size_t i=0; i < WFacEnabled.size(); i++){
         if( WFacEnabled[i] ) NumOfOptPrms++;
+    }
+    NumOfPrms += NCVs;
+// sigman2
+    for(size_t i=0; i < SigmaN2Enabled.size(); i++){
+        if( SigmaN2Enabled[i] ) NumOfOptPrms++;
     }
     NumOfPrms += NCVs;
 
@@ -342,15 +350,24 @@ void COptGPRHyprms::InitOptimizer(void)
                 RUNTIME_ERROR("--wfac has to be greater than --minwfac");
             }
         }
+        DecodeVList(Options.GetOptSigmaN2(),SigmaN2,"--sigman2",0.1);
+        for(size_t i=0; i < SigmaN2.GetLength(); i++){
+            if( (SigmaN2[i] - Options.GetOptMinSigmaN2()) < 1.0e-8 ){
+                RUNTIME_ERROR("--sigman2 has to be greater than --minsigman2");
+            }
+        }
     }
 
     // print hyperparameters
     vout << "   Hyperparameters ..." << endl;
-        vout << format("      SigmaF2  = %10.4f")%SigmaF2 << endl;
-        vout << format("      NCorr    = %10.4f")%NCorr   << endl;
+        vout << format("      SigmaF2    = %10.4f")%SigmaF2 << endl;
+        vout << format("      NCorr      = %10.4f")%NCorr   << endl;
 
     for(int k=0; k < NCVs; k++ ){
-        vout << format("      WFac#%-2d  = %10.4f")%(k+1)%WFac[k] << endl;
+        vout << format("      WFac#%-2d    = %10.4f")%(k+1)%WFac[k] << endl;
+    }
+    for(int k=0; k < NCVs; k++ ){
+        vout << format("      SigmaN2#%-2d = %10.4e")%(k+1)%SigmaN2[k] << endl;
     }
 
     if( ! Options.GetOptTest() ){
@@ -368,7 +385,10 @@ void COptGPRHyprms::InitOptimizer(void)
         if( NCorrEnabled )      vout << "      NCorr";
 
         for(size_t i=0; i < WFacEnabled.size(); i++){
-            if( WFacEnabled[i] ) vout << format("     Wfac#%-1d")%(i+1);
+            if( WFacEnabled[i] ) vout << format("     Wfac#%-2d")%(i+1);
+        }
+        for(size_t i=0; i < SigmaN2Enabled.size(); i++){
+            if( SigmaN2Enabled[i] ) vout << format(" SigmaN2#%-2d")%(i+1);
         }
         vout << endl;
 
@@ -378,12 +398,14 @@ void COptGPRHyprms::InitOptimizer(void)
         for(size_t i=0; i < WFacEnabled.size(); i++){
             if( WFacEnabled[i] ) vout << " ----------";
         }
+        for(size_t i=0; i < SigmaN2Enabled.size(); i++){
+            if( SigmaN2Enabled[i] ) vout << " ----------";
+        }
         vout << endl;
     }
 
     Hyprms.CreateVector(NumOfOptPrms);
     HyprmsGrd.CreateVector(NumOfOptPrms);
-
 
 // set initial hyprms
     int ind = 0;
@@ -398,6 +420,12 @@ void COptGPRHyprms::InitOptimizer(void)
     for(int i=0; i < (int)WFacEnabled.size(); i++){
         if( WFacEnabled[i] ){
             Hyprms[ind] = sqrt(WFac[i]-Options.GetOptMinWFac());
+            ind++;
+        }
+    }
+    for(int i=0; i < (int)WFacEnabled.size(); i++){
+        if( WFacEnabled[i] ){
+            Hyprms[ind] = sqrt(SigmaN2[i]-Options.GetOptMinSigmaN2());
             ind++;
         }
     }
@@ -610,6 +638,9 @@ bool COptGPRHyprms::Optimize(void)
         for(size_t i=0; i < WFacEnabled.size(); i++){
             if( WFacEnabled[i] ) vout << " ----------";
         }
+        for(size_t i=0; i < SigmaN2Enabled.size(); i++){
+            if( SigmaN2Enabled[i] ) vout << " ----------";
+        }
         vout << endl;
     }
 
@@ -713,13 +744,6 @@ void COptGPRHyprms::Test(void)
 
     int ind = 0;
 
-    int soffset = 0;
-    int noffset;
-    int woffset;
-
-    noffset = soffset+1;
-    woffset = noffset+1;
-
     for(int prm=0; prm < (int)HyprmsEnabled.size(); prm++){
         if( HyprmsEnabled[prm] ){
             double diff = grd1[ind]-grd2[ind];
@@ -735,11 +759,14 @@ void COptGPRHyprms::Test(void)
             vout << format("%5d ")%(ind+1);
             if( prm == 0 ){
                 vout << "SigmaF2    ";
-            } else if( (prm >= noffset) && (prm < woffset) ){
+            } else if( prm == 1 ){
                 vout << "NCorr      ";
-            } else {
-                int cv = prm - woffset;
+            } else if( (prm >= 2) && (prm < NCVs+2) ) {
+                int cv = prm - 2;
                 vout << format("WFac#%-2d    ")%(cv+1);
+            } else {
+                int cv = prm - (NCVs+2);
+                vout << format("SigmaN2#%-2d ")%(cv+1);
             }
 
             vout << format("%14.6e %14.6e %14.6e")%grd1[ind]%grd2[ind]%diff << rel << endl;
@@ -882,26 +909,21 @@ void COptGPRHyprms::CalcHessian(void)
     vout << endl;
     vout << "# idx    hess eigval";
 
-    int soffset = 0;
-    int noffset;
-    int woffset;
-
-    noffset = soffset+1;
-    woffset = noffset+1;
-
     int ind = 0;
     for(int prm=0; prm < (int)HyprmsEnabled.size(); prm++){
-        if( HyprmsEnabled[prm] ){
-            if( prm == 0 ){
-                vout << " SigmaF2   ";
-            } else if( (prm >= noffset) && (prm < woffset) ){
-                vout << " NCorr     ";
-            } else {
-                int cv = prm - woffset;
-                vout << format(" WFac#%-2d   ")%(cv+1);
-            }
-            ind++;
+        if( ! HyprmsEnabled[prm] ) continue;
+        if( prm == 0 ){
+            vout << " SigmaF2   ";
+        } else if( prm == 1 ){
+            vout << " NCorr     ";
+        } else if( (prm >= 2) && (prm < NCVs+2) ) {
+            int cv = prm - 2;
+            vout << format(" WFac#%-2d   ")%(cv+1);
+        } else {
+            int cv = prm - (NCVs+2);
+            vout << format(" SigmaN2#%-2d")%(cv+1);
         }
+        ind++;
     }
     vout << endl;
 
@@ -937,34 +959,30 @@ void COptGPRHyprms::PrintGradientSummary(void)
 
     int ind = 0;
 
-    int soffset = 0;
-    int noffset;
-    int woffset;
-
-    noffset = soffset+1;
-    woffset = noffset+1;
-
     double gnorm = 0.0;
 
     for(int prm=0; prm < (int)HyprmsEnabled.size(); prm++){
-        if( HyprmsEnabled[prm] ){
-            vout << format("%5d ")%(ind+1);
-            double value = 0.0;
-            if( prm == 0 ){
-                vout << "SigmaF2    ";
-                value = Hyprms[ind]*Hyprms[ind] + Options.GetOptMinSigmaF2();
-            } else if( (prm >= noffset) && (prm < woffset) ){
-                vout << "NCorr      ";
-                value = Hyprms[ind]*Hyprms[ind] + Options.GetOptMinNCorr();
-            } else {
-                int cv = prm - woffset;
-                vout << format("WFac#%-2d    ")%(cv+1);
-                value = Hyprms[ind]*Hyprms[ind] + Options.GetOptMinWFac();
-            }
-            gnorm += HyprmsGrd[ind]*HyprmsGrd[ind];
-            vout << format("%14.6e %14.6e")%(value)%HyprmsGrd[ind] << endl;
-            ind++;
+        if( ! HyprmsEnabled[prm] ) continue;
+        vout << format("%5d ")%(ind+1);
+        double value = 0.0;
+        if( prm == 0 ){
+            vout << "SigmaF2    ";
+            value = Hyprms[ind]*Hyprms[ind] + Options.GetOptMinSigmaF2();
+        } else if( prm == 1 ){
+            vout << "NCorr      ";
+            value = Hyprms[ind]*Hyprms[ind] + Options.GetOptMinNCorr();
+        } else if( (prm >= 2) && (prm < NCVs+2)) {
+            int cv = prm - 2;
+            vout << format("WFac#%-2d    ")%(cv+1);
+            value = Hyprms[ind]*Hyprms[ind] + Options.GetOptMinWFac();
+        } else {
+            int cv = prm - (NCVs+2);
+            vout << format("SigmaN2#%-2d ")%(cv+1);
+            value = Hyprms[ind]*Hyprms[ind] + Options.GetOptMinSigmaN2();
         }
+        gnorm += HyprmsGrd[ind]*HyprmsGrd[ind];
+        vout << format("%14.6e %14.6e")%(value)%HyprmsGrd[ind] << endl;
+        ind++;
     }
     if( NumOfOptPrms > 0 ){
         gnorm = sqrt(gnorm/(double)NumOfOptPrms);
@@ -1023,6 +1041,7 @@ void COptGPRHyprms::ShowGPRStat(void)
             gpr.SetSigmaF2(SigmaF2);
             gpr.SetNCorr(NCorr);
             gpr.SetWFac(WFac);
+            gpr.SetSigmaN2(SigmaN2);
             gpr.Integrate(vout,false);
     // SmootherGPR
         } else if( proxy->EnergyProxies.size() > 0 ) {
@@ -1054,6 +1073,7 @@ void COptGPRHyprms::ShowGPRStat(void)
             gpr.SetSigmaF2(SigmaF2);
             gpr.SetNCorr(NCorr);
             gpr.SetWFac(WFac);
+            gpr.SetSigmaN2(SigmaN2);
             gpr.Interpolate(vout,false);
         } else {
             RUNTIME_ERROR("undefined proxy")
@@ -1324,6 +1344,17 @@ void COptGPRHyprms::ScatterHyprms(CSimpleVector<double>& hyprsm)
         }
         i++;
     }
+// ---------------
+    for(int k=0; k < (int)SigmaN2Enabled.size(); k++){
+        if( SigmaN2Enabled[k] ){
+            SigmaN2[k] = hyprsm[ind]*hyprsm[ind] + Options.GetOptMinSigmaN2();
+            ind++;
+            HyprmsEnabled[i] = true;
+        } else {
+            HyprmsEnabled[i] = false;
+        }
+        i++;
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -1358,6 +1389,7 @@ double COptGPRHyprms::GetTargetFromIntegrator(CIntegratorGPR& gpr,CProxyRealmPtr
     gpr.SetSigmaF2(SigmaF2);
     gpr.SetNCorr(NCorr);
     gpr.SetWFac(WFac);
+    gpr.SetSigmaN2(SigmaN2);
     vout << high;
     gpr.Integrate(vout,true);
 
@@ -1408,6 +1440,7 @@ double  COptGPRHyprms::GetTargetFromSmoother(CSmootherGPR& gpr,CProxyRealmPtr pr
     gpr.SetSigmaF2(SigmaF2);
     gpr.SetNCorr(NCorr);
     gpr.SetWFac(WFac);
+    gpr.SetSigmaN2(SigmaN2);
     vout << high;
 
     gpr.Interpolate(vout,true);
@@ -1437,6 +1470,9 @@ void COptGPRHyprms::WriteResults(int istep)
     if( NCorrEnabled )   vout << format(" %10.3f")%NCorr;
     for(int i=0; i < (int)WFacEnabled.size(); i++){
         if( WFacEnabled[i] ) vout << format(" %10.3f")%WFac[i];
+    }
+    for(int i=0; i < (int)SigmaN2Enabled.size(); i++){
+        if( SigmaN2Enabled[i] ) vout << format(" %10.4e")%SigmaN2[i];
     }
     vout << endl;
 }
@@ -1495,11 +1531,14 @@ bool COptGPRHyprms::WriteHyperPrms(FILE* p_fout)
     ScatterHyprms(Hyprms);
 
     if( fprintf(p_fout,"# GPR hyper-parameters\n") <= 0 ) return(false);
-    if( fprintf(p_fout,"SigmaF2  = %10.4f\n",SigmaF2) <= 0 ) return(false);
-    if( fprintf(p_fout,"NCorr    = %10.4f\n",NCorr) <= 0 ) return(false);
+        if( fprintf(p_fout,"SigmaF2    = %10.4f\n",SigmaF2) <= 0 ) return(false);
+        if( fprintf(p_fout,"NCorr      = %10.4f\n",NCorr) <= 0 ) return(false);
 
     for(size_t i=0; i < WFac.GetLength(); i++ ){
-        if( fprintf(p_fout,"WFac#%-2ld  = %10.4f\n",i+1,WFac[i]) <= 0 ) return(false);
+        if( fprintf(p_fout,"WFac#%-2ld    = %10.4f\n",i+1,WFac[i]) <= 0 ) return(false);
+    }
+    for(size_t i=0; i < SigmaN2.GetLength(); i++ ){
+        if( fprintf(p_fout,"SigmaN2#%-2ld = %10.4e\n",i+1,SigmaN2[i]) <= 0 ) return(false);
     }
 
     return(true);
@@ -1518,6 +1557,7 @@ void COptGPRHyprms::LoadGPRHyprms(void)
     }
 
     WFac.CreateVector(NCVs);
+    SigmaN2.CreateVector(NCVs);
 
     string line;
     while( getline(fin,line) ){
@@ -1556,6 +1596,24 @@ void COptGPRHyprms::LoadGPRHyprms(void)
                 RUNTIME_ERROR(error);
             }
             WFac[cvind] = value;
+        } else if( key.find("SigmaN2#") != string::npos ) {
+            std::replace( key.begin(), key.end(), '#', ' ');
+            stringstream kstr(key);
+            string ssigman2;
+            int    cvind;
+            kstr >> ssigman2 >> cvind;
+            if( ! kstr ){
+                CSmallString error;
+                error << "GPR hyperparameters file, unable to decode sigman2 key: " << key.c_str();
+                RUNTIME_ERROR(error);
+            }
+            cvind--; // transform to 0-based indexing
+            if( (cvind < 0) || (cvind >= NCVs) ){
+                CSmallString error;
+                error << "sigman2 index " << (cvind+1) << " out-of-range 1-" << NCVs;
+                RUNTIME_ERROR(error);
+            }
+            SigmaN2[cvind] = value;
         } else {
             CSmallString error;
             error << "GPR hyperparameters file, unrecognized key: " << key.c_str();

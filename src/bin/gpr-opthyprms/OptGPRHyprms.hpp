@@ -82,12 +82,14 @@ private:
     double                  SigmaF2;
     double                  NCorr;
     CSimpleVector<double>   WFac;
+    CSimpleVector<double>   SigmaN2;
 
 // L-BFGS setup
     int                     NumOfCorrections;
     bool                    SigmaF2Enabled;
     bool                    NCorrEnabled;
     std::vector<bool>       WFacEnabled;
+    std::vector<bool>       SigmaN2Enabled;
     int                     NumOfPrms;
     int                     NumOfOptPrms;
     int                     NCVs;

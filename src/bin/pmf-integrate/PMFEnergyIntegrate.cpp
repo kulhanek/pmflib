@@ -255,7 +255,7 @@ bool CPMFEnergyIntegrate::Run(void)
                 RUNTIME_ERROR(error);
             }
     // -----------------------------------------------
-        } else if ( Options.GetOptRealm() == "-TdS" ) {
+        } else if ( (Options.GetOptRealm() == "-TdS") && (Options.GetOptRealm() == "mTdS") ) {
             if( CABFProxy_mTdS::IsCompatible(accu) ){
                 lproxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
             } else if (CCSTProxy_mTdS::IsCompatible(accu) ) {
@@ -266,7 +266,7 @@ bool CPMFEnergyIntegrate::Run(void)
                 RUNTIME_ERROR(error);
             }
     // -----------------------------------------------
-        } else if ( Options.GetOptRealm() == "-TdS_HP" ) {
+        } else if ( (Options.GetOptRealm() == "-TdS_HP") && (Options.GetOptRealm() == "mTdS_HP") ) {
             if( CABFProxy_mTdS::IsCompatible(accu) ){
                 CABFProxy_mTdS_Ptr proxy = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
                 proxy->SetType(ABF_TdS_HP);
@@ -281,7 +281,7 @@ bool CPMFEnergyIntegrate::Run(void)
                 RUNTIME_ERROR(error);
             }
     // -----------------------------------------------
-        } else if ( Options.GetOptRealm() == "-TdS_HR" ) {
+        } else if ( (Options.GetOptRealm() == "-TdS_HR") && (Options.GetOptRealm() == "mTdS_HR") ) {
             if( CABFProxy_mTdS::IsCompatible(accu) ){
                 CABFProxy_mTdS_Ptr proxy = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
                 proxy->SetType(ABF_TdS_HR);
@@ -296,7 +296,7 @@ bool CPMFEnergyIntegrate::Run(void)
                 RUNTIME_ERROR(error);
             }
     // -----------------------------------------------
-        } else if ( Options.GetOptRealm() == "-TdS_HK" ) {
+        } else if ( (Options.GetOptRealm() == "-TdS_HK") && (Options.GetOptRealm() == "mTdS_HK") ) {
             if( CABFProxy_mTdS::IsCompatible(accu) ){
                 CABFProxy_mTdS_Ptr proxy = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
                 proxy->SetType(ABF_TdS_HK);
@@ -311,7 +311,7 @@ bool CPMFEnergyIntegrate::Run(void)
                 RUNTIME_ERROR(error);
             }
     // -----------------------------------------------
-        } else if ( Options.GetOptRealm() == "-TdS_HV" ) {
+        } else if ( (Options.GetOptRealm() == "-TdS_HV") && (Options.GetOptRealm() == "mTdS_HV") ) {
             if( CABFProxy_mTdS::IsCompatible(accu) ){
                 CABFProxy_mTdS_Ptr proxy = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
                 proxy->SetType(ABF_TdS_HV);
@@ -322,22 +322,22 @@ bool CPMFEnergyIntegrate::Run(void)
                 RUNTIME_ERROR(error);
             }
     // -----------------------------------------------
-        } else if ( Options.GetOptRealm() == "-TdS_BP" ) {
+        } else if ( (Options.GetOptRealm() == "-TdS_BP") && (Options.GetOptRealm() == "mTdS_BP") ) {
             CABFProxy_mTdS_Ptr proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
             proxy->SetType(ABF_TdS_BP);
             lproxy = proxy;
     // -----------------------------------------------
-        } else if ( Options.GetOptRealm() == "-TdS_BR" ) {
+        } else if ( (Options.GetOptRealm() == "-TdS_BR") && (Options.GetOptRealm() == "mTdS_BR") ) {
             CABFProxy_mTdS_Ptr proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
             proxy->SetType(ABF_TdS_BR);
             lproxy = proxy;
     // -----------------------------------------------
-        } else if ( Options.GetOptRealm() == "-TdS_BK" ) {
+        } else if ( (Options.GetOptRealm() == "-TdS_BK") && (Options.GetOptRealm() == "mTdS_BK") ) {
             CABFProxy_mTdS_Ptr proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
             proxy->SetType(ABF_TdS_BK);
             lproxy = proxy;
     // -----------------------------------------------
-        } else if ( Options.GetOptRealm() == "-TdS_BV" ) {
+        } else if ( (Options.GetOptRealm() == "-TdS_BV") && (Options.GetOptRealm() == "mTdS_BV") ) {
             CABFProxy_mTdS_Ptr proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
             proxy->SetType(ABF_TdS_BV);
             lproxy = proxy;
@@ -672,6 +672,7 @@ bool CPMFEnergyIntegrate::IntegrateForMFZScore(int pass)
             integrator.SetSigmaF2(Options.GetOptSigmaF2());
             integrator.SetNCorr(Options.GetOptNCorr());
             integrator.SetWFac(Options.GetOptWFac());
+            integrator.SetSigmaN2(Options.GetOptSigmaN2());
         }
 
         integrator.SetUseNumDiff(Options.GetOptGPRNumDiff());
@@ -778,6 +779,7 @@ bool CPMFEnergyIntegrate::IntegrateForEcut(void)
             integrator.SetSigmaF2(Options.GetOptSigmaF2());
             integrator.SetNCorr(Options.GetOptNCorr());
             integrator.SetWFac(Options.GetOptWFac());
+            integrator.SetSigmaN2(Options.GetOptSigmaN2());
         }
 
         integrator.SetUseNumDiff(Options.GetOptGPRNumDiff());
@@ -896,6 +898,7 @@ bool CPMFEnergyIntegrate::Integrate(void)
             integrator.SetSigmaF2(Options.GetOptSigmaF2());
             integrator.SetNCorr(Options.GetOptNCorr());
             integrator.SetWFac(Options.GetOptWFac());
+            integrator.SetSigmaN2(Options.GetOptSigmaN2());
         }
 
         integrator.SetFastError(!Options.GetOptGPRNoFastError());
@@ -995,6 +998,7 @@ bool CPMFEnergyIntegrate::ReduceFES(void)
             integrator.SetSigmaF2(Options.GetOptSigmaF2());
             integrator.SetNCorr(Options.GetOptNCorr());
             integrator.SetWFac(Options.GetOptWFac());
+            integrator.SetSigmaN2(Options.GetOptSigmaN2());
         }
 
         integrator.SetFastError(true);
@@ -1153,6 +1157,19 @@ void CPMFEnergyIntegrate::LoadGPRHyprms(CIntegratorGPR& gpr)
             }
             cvind--; // transform to 0-based indexing
             gpr.SetWFac(cvind,value);
+        } else if( key.find("SigmaN2#") != string::npos ) {
+            std::replace( key.begin(), key.end(), '#', ' ');
+            stringstream kstr(key);
+            string swfac;
+            int    cvind;
+            kstr >> swfac >> cvind;
+            if( ! kstr ){
+                CSmallString error;
+                error << "GPR hyperparameters file, unable to decode sigman2 key: " << key.c_str();
+                RUNTIME_ERROR(error);
+            }
+            cvind--; // transform to 0-based indexing
+            gpr.SetSigmaN2(cvind,value);
         } else {
             CSmallString error;
             error << "GPR hyperparameters file, unrecognized key: " << key.c_str();

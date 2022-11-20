@@ -179,6 +179,77 @@ void CSmootherGPR::SetNCorr(double value)
 
 //------------------------------------------------------------------------------
 
+void CSmootherGPR::SetSigmaN2(const CSmallString& spec)
+{
+    if( NumOfCVs == 0 ){
+        RUNTIME_ERROR("accumulator is not set for SetSigmaN2");
+    }
+
+    string          sspec(spec);
+    vector<string>  ssigman2;
+
+    split(ssigman2,sspec,is_any_of("x"),token_compress_on);
+
+    if( ssigman2.size() > NumOfCVs ){
+        CSmallString error;
+        error << "too many sigman2 (" << ssigman2.size() << ") than required (" << NumOfCVs << ")";
+        RUNTIME_ERROR(error);
+    }
+
+    SigmaN2.CreateVector(NumOfCVs);
+
+    // parse values of sigman2
+    double last_sigman2 = 0.1;
+    for(size_t i=0; i < ssigman2.size(); i++){
+        stringstream str(ssigman2[i]);
+        str >> last_sigman2;
+        if( ! str ){
+            CSmallString error;
+            error << "unable to decode sigman2 value for position: " << i+1;
+            RUNTIME_ERROR(error);
+        }
+        SigmaN2[i] = last_sigman2;
+    }
+
+    // pad the rest with the last value
+    for(size_t i=ssigman2.size(); i < NumOfCVs; i++){
+        SigmaN2[i] = last_sigman2;
+    }
+}
+
+//------------------------------------------------------------------------------
+
+void CSmootherGPR::SetSigmaN2(CSimpleVector<double>& sigman2)
+{
+    if( NumOfCVs == 0 ){
+        RUNTIME_ERROR("FES is not set for SetSigmaN2");
+    }
+    if( sigman2.GetLength() != NumOfCVs ){
+        RUNTIME_ERROR("ncvs inconsistent in the source and target");
+    }
+
+    SigmaN2 = sigman2;
+}
+
+//------------------------------------------------------------------------------
+
+void CSmootherGPR::SetSigmaN2(size_t cvind, double value)
+{
+    if( NumOfCVs == 0 ){
+        RUNTIME_ERROR("FES is not set for SetSigmaN2");
+    }
+    if( cvind >= NumOfCVs ){
+        RUNTIME_ERROR("cvind out-of-range");
+    }
+    // is SigmaN2 initialized?
+    if( SigmaN2.GetLength() == 0 ){
+        SigmaN2.CreateVector(NumOfCVs);
+    }
+    SigmaN2[cvind] = value;
+}
+
+//------------------------------------------------------------------------------
+
 void CSmootherGPR::SetWFac(const CSmallString& spec)
 {
     if( NumOfCVs == 0 ){
@@ -402,6 +473,9 @@ bool CSmootherGPR::Interpolate(CVerboseStr& vout,bool nostat)
     if( WFac.GetLength() == 0 ){
         RUNTIME_ERROR("wfac is not set");
     }
+    if( SigmaN2.GetLength() == 0 ){
+        RUNTIME_ERROR("sigman2 is not set");
+    }
 
     // GPR setup
     CVLengths2.CreateVector(NumOfCVs);
@@ -443,6 +517,9 @@ bool CSmootherGPR::Interpolate(CVerboseStr& vout,bool nostat)
 
     for(size_t k=0; k < NumOfCVs; k++ ){
         vout << format("      WFac#%-2d   = %10.4f")%(k+1)%WFac[k] << endl;
+    }
+    for(size_t k=0; k < NumOfCVs; k++ ){
+        vout << format("      SigmaN2#%-2d= %10.4e")%(k+1)%SigmaN2[k] << endl;
     }
 
     // train GPR
@@ -726,7 +803,8 @@ void CSmootherGPR::CreateKS(void)
         size_t          ibin = SampledMap[indi];
         CEnergyProxyPtr item = EneProxyItems[EneProxyMap[indi]];
         double er = item->GetValue(ibin,E_PROXY_ERROR);
-        KS[indi][indi] += er*er*NCorr;
+        // use only sigmaN2[0]
+        KS[indi][indi] += er*er*NCorr + SigmaN2[0];
     }
 }
 
@@ -1159,13 +1237,15 @@ if( ! (NeedInv || UseInv) ){
 
         // calc Kder
         if( prm == 0 ){
-            // sigmaf2
             CalcKderWRTSigmaF2();
         } else if( prm == 1 ){
             CalcKderWRTNCorr();
-        } else {
+        } else if ( (prm >=2) && (prm < NumOfCVs+2) ) {
             size_t cv = prm - 2;
             CalcKderWRTWFac(cv);
+        } else {
+            size_t cv = prm - (NumOfCVs+2);
+            CalcKderWRTSigmaN2(cv);
         }
 
         // calc trace
@@ -1242,13 +1322,15 @@ void CSmootherGPR::GetLogPLDerivatives(const std::vector<bool>& flags,CSimpleVec
 
         // calc Kder
         if( prm == 0 ){
-            // sigmaf2
             CalcKderWRTSigmaF2();
         } else if( prm == 1 ){
             CalcKderWRTNCorr();
-        } else {
+        } else if ( (prm >=2) && (prm < NumOfCVs+2) ) {
             size_t cv = prm - 2;
             CalcKderWRTWFac(cv);
+        } else {
+            size_t cv = prm - (NumOfCVs+2);
+            CalcKderWRTSigmaN2(cv);
         }
 
         RunBlasLapackPar();
@@ -1315,7 +1397,7 @@ void CSmootherGPR::CalcKderWRTNCorr(void)
         size_t          ibin = SampledMap[indi];
         CEnergyProxyPtr item = EneProxyItems[EneProxyMap[indi]];
         double er = item->GetValue(ibin,E_PROXY_ERROR);
-        Kder[indi][indi] += er*er;
+        Kder[indi][indi] = er*er;
     }
 }
 
@@ -1346,6 +1428,21 @@ void CSmootherGPR::CalcKderWRTWFac(size_t cv)
                 Kder[indi][indj] = 0.0;
             }
         }
+    }
+}
+
+
+//------------------------------------------------------------------------------
+
+void CSmootherGPR::CalcKderWRTSigmaN2(size_t cv)
+{
+    Kder.SetZero();
+
+    // ignore cv index
+
+    #pragma omp parallel for
+    for(size_t indi=0; indi < GPRSize; indi++){
+        Kder[indi][indi] = 1.0;
     }
 }
 

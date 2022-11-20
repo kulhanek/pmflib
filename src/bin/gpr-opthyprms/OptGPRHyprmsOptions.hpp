@@ -51,7 +51,7 @@ public:
 
     CSO_PROG_ARGS_LONG_DESC_BEGIN
     "<cyan><b>accuname1</b></cyan>                  Name of file containing the PMF accumulator.\n"
-    "<cyan><b>realm1</b></cyan>                     Realm of interest.\n"
+    "<cyan><b>realm1</b></cyan>                     Realm of interest (dG, dH, and mTDS/-TdS).\n"
     "<cyan><b>hyprmsname</b></cyan>                 Name of file where the optimized GPR hyperparameters are saved. If the name is '-' then the output will be written to the standard output."
     CSO_PROG_ARGS_LONG_DESC_END
 
@@ -68,9 +68,12 @@ public:
     CSO_OPT(double,MinNCorr)
     CSO_OPT(CSmallString,WFac)
     CSO_OPT(double,MinWFac)
+    CSO_OPT(CSmallString,SigmaN2)
+    CSO_OPT(double,MinSigmaN2)
     CSO_OPT(bool,SigmaF2Enabled)
     CSO_OPT(bool,NCorrEnabled)
     CSO_OPT(CSmallString,WFacEnabled)
+    CSO_OPT(CSmallString,SigmaN2Enabled)
     CSO_OPT(bool,Numeric)
     CSO_OPT(int,NOptSteps)
     CSO_OPT(int,NumOfResets)
@@ -105,7 +108,7 @@ public:
     //----------------------------------------------------------------------
     CSO_MAP_OPT(int,                           /* option type */
                 Limit,                        /* option name */
-                0,                          /* default value */
+                1000,                          /* default value */
                 false,                          /* is option mandatory */
                 'l',                           /* short option name */
                 "limit",                      /* long option name */
@@ -153,7 +156,7 @@ public:
     //----------------------------------------------------------------------
     CSO_MAP_OPT(double,                           /* option type */
                 NCorr,                        /* option name */
-                1.0,                          /* default value */
+                0.0,                          /* default value */
                 false,                          /* is option mandatory */
                 'c',                           /* short option name */
                 "ncorr",                      /* long option name */
@@ -162,7 +165,7 @@ public:
     //----------------------------------------------------------------------
     CSO_MAP_OPT(double,                           /* option type */
                 MinNCorr,                        /* option name */
-                0.9,                          /* default value */
+                0.0,                          /* default value */
                 false,                          /* is option mandatory */
                 0,                           /* short option name */
                 "minncorr",                      /* long option name */
@@ -188,6 +191,25 @@ public:
                 "minwfac",                      /* long option name */
                 "NUMBER",                           /* parameter name */
                 "Minimal value of WFac.")   /* option description */
+    //----------------------------------------------------------------------
+    CSO_MAP_OPT(CSmallString,                           /* option type */
+                SigmaN2,                        /* option name */
+                "0.1",                          /* default value */
+                false,                          /* is option mandatory */
+                'n',                           /* short option name */
+                "sigman2",                      /* long option name */
+                "SPEC",                           /* parameter name */
+                "Values of noise sigma squared for each CV in the form SigmaN2(1)[xSigmaN2(2)x...]. "
+                "The last value pads the rest.")   /* option description */
+    //----------------------------------------------------------------------
+    CSO_MAP_OPT(double,                           /* option type */
+                MinSigmaN2,                        /* option name */
+                0.0,                          /* default value */
+                false,                          /* is option mandatory */
+                0,                           /* short option name */
+                "minsigman2",                      /* long option name */
+                "NUMBER",                           /* parameter name */
+                "Minimal value of SigmaN2.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(bool,                           /* option type */
                 SigmaF2Enabled,                        /* option name */
@@ -215,6 +237,16 @@ public:
                 "enablewfac",                      /* long option name */
                 "SPEC",                           /* parameter name */
                 "Enable optimization of Wfac hyperparamters. Flags are specified in the form WFac1Enabled[xWFac2Enabledx...] with F and T for disabled and enabled, respectively. "
+                "The last value pads the rest.")   /* option description */
+    //----------------------------------------------------------------------
+    CSO_MAP_OPT(CSmallString,                           /* option type */
+                SigmaN2Enabled,                        /* option name */
+                "F",                          /* default value */
+                false,                          /* is option mandatory */
+                0,                           /* short option name */
+                "enablesigman2",                      /* long option name */
+                "SPEC",                           /* parameter name */
+                "Enable optimization of SigmaN2 hyperparamters. Flags are specified in the form SigmaN2(1)Enabled[xSigmaN2(1)Enabledx...] with F and T for disabled and enabled, respectively. "
                 "The last value pads the rest.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(bool,                           /* option type */
