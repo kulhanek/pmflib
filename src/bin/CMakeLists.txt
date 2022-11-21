@@ -27,7 +27,7 @@ ADD_SUBDIRECTORY(pmf-enthalpy)
 ADD_SUBDIRECTORY(gpr-opthyprms)
 
 # ABF utilities
-#ADD_SUBDIRECTORY(abf-resample)
+ADD_SUBDIRECTORY(abf-resample)
 
 # MTD utilities
 ADD_SUBDIRECTORY(mtd-energy)

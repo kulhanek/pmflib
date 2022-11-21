@@ -130,6 +130,9 @@ public:
     /// load cv info
     void LoadInfo(CXMLElement* p_ele);
 
+    /// load cv info with other number of bins
+    void LoadInfo(CXMLElement* p_ele,int nbins);
+
     /// check cv info
     bool CheckInfo(CXMLElement* p_ele) const;
 

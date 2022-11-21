@@ -393,6 +393,45 @@ void CColVariable::LoadInfo(CXMLElement* p_ele)
     if(NumOfBins > 0) BinWidth = Width/((double)NumOfBins);
 }
 
+
+//------------------------------------------------------------------------------
+
+void CColVariable::LoadInfo(CXMLElement* p_ele,int nbins)
+{
+    if(p_ele == NULL) {
+        INVALID_ARGUMENT("p_ele is NULL");
+    }
+
+    bool result = true;
+
+    result &= p_ele->GetAttribute("ID",ID);
+    result &= p_ele->GetAttribute("Name",Name);
+    result &= p_ele->GetAttribute("Type",Type);
+    result &= p_ele->GetAttribute("Unit",Unit);
+    result &= p_ele->GetAttribute("FConv",FConv);
+
+    NumOfBins = nbins;
+
+    if( NumOfBins <=  0 ){
+        RUNTIME_ERROR("NumOfBins <= 0");
+    }
+
+    result &= p_ele->GetAttribute("MinValue",MinValue);
+    result &= p_ele->GetAttribute("MaxValue",MaxValue);
+
+    // optional
+    p_ele->GetAttribute("MaxMovement",MaxMovement);
+    p_ele->GetAttribute("Alpha",Alpha);
+
+    if(result == false) {
+        LOGIC_ERROR("unable to get attribute(s)");
+    }
+
+    Width = MaxValue - MinValue;
+    BinWidth = 0.0;
+    if(NumOfBins > 0) BinWidth = Width/((double)NumOfBins);
+}
+
 //------------------------------------------------------------------------------
 
 bool CColVariable::CheckInfo(CXMLElement* p_ele) const

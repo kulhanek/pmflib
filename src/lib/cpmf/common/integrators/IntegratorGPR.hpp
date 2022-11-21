@@ -154,6 +154,9 @@ public:
     /// integrate data
     bool Integrate(CVerboseStr& vout,bool nostat=false);
 
+    // get mean force
+    double GetMeanForce(const CSimpleVector<double>& position,size_t icoord);
+
     /// get root mean square residuals
     double GetRMSR(size_t cv);
 
@@ -253,7 +256,6 @@ private:
     void CalculateErrorsFromCov(CVerboseStr& vout);
 
     double GetValue(const CSimpleVector<double>& position);
-    double GetMeanForce(const CSimpleVector<double>& position,size_t icoord);
     double GetVar(CSimpleVector<double>& lpos);
     // optimized version var+cov
     void   GetCovVar(CSimpleVector<double>& lpos,CSimpleVector<double>& rpos,double& llvar,double& lrcov);

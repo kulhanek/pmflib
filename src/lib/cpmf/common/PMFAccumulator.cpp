@@ -40,6 +40,9 @@ using namespace boost;
 
 CPMFAccumulator::CPMFAccumulator(void)
 {
+    Method              = "NONE";
+    Version             = LibBuildVersion_PMF;
+
     NumOfCVs            = 0;
     NumOfBins           = 0;
 
@@ -54,8 +57,7 @@ CPMFAccumulator::CPMFAccumulator(void)
 
     EnergyFConv         = 1.0;
     EnergyUnit          = "kcal mol^-1";
-    Method              = "NONE";
-    Version             = LibBuildVersion_PMF;
+
     NCorr               = 1.0;
     NSTLimit            = 0;
     CurrStep            = 0;
@@ -1131,22 +1133,30 @@ CPMFAccumulatorPtr CPMFAccumulator::Duplicate(void)
     outaccu->Version            = Version;
     outaccu->Method             = Method;
     outaccu->Driver             = Driver;
+
     outaccu->Temperature        = Temperature;
     outaccu->TemperatureFConv   = TemperatureFConv;
     outaccu->TemperatureUnit    = TemperatureUnit;
+
     outaccu->EnergyFConv        = EnergyFConv;
     outaccu->EnergyUnit         = EnergyUnit;
 
-    outaccu->NCorr              = NCorr;
+    outaccu->SysType            = SysType;
 
-    outaccu->NumOfCVs           = NumOfCVs;
-    outaccu->SetNumOfCVs(NumOfCVs);
+    outaccu->Pressure           = Pressure;
+    outaccu->PressureFConv      = PressureFConv;
+    outaccu->PressureUnit       = PressureUnit;
+
+    outaccu->NCorr              = NCorr;
 
     outaccu->NSTLimit           = NSTLimit;
     outaccu->CurrStep           = CurrStep;
     outaccu->TimeStep           = TimeStep;
 
 // CVs
+    outaccu->NumOfCVs           = NumOfCVs;
+    outaccu->SetNumOfCVs(NumOfCVs);
+
     CXMLElement cvs_info(NULL);
     SaveCVSInfo(&cvs_info);
     outaccu->LoadCVSInfo(&cvs_info);
@@ -1165,6 +1175,51 @@ CPMFAccumulatorPtr CPMFAccumulator::Duplicate(void)
     }
 
     return(outaccu);
+}
+
+//------------------------------------------------------------------------------
+
+CPMFAccumulatorPtr CPMFAccumulator::DuplicateHeader(void)
+{
+     CPMFAccumulatorPtr outaccu = CPMFAccumulatorPtr(new CPMFAccumulator);
+
+// header
+    outaccu->Version            = Version;
+    outaccu->Method             = Method;
+    outaccu->Driver             = Driver;
+
+    outaccu->Temperature        = Temperature;
+    outaccu->TemperatureFConv   = TemperatureFConv;
+    outaccu->TemperatureUnit    = TemperatureUnit;
+
+    outaccu->EnergyFConv        = EnergyFConv;
+    outaccu->EnergyUnit         = EnergyUnit;
+
+    outaccu->SysType            = SysType;
+
+    outaccu->Pressure           = Pressure;
+    outaccu->PressureFConv      = PressureFConv;
+    outaccu->PressureUnit       = PressureUnit;
+
+    outaccu->NCorr              = NCorr;
+
+    outaccu->NSTLimit           = NSTLimit;
+    outaccu->CurrStep           = CurrStep;
+    outaccu->TimeStep           = TimeStep;
+
+    outaccu->NumOfCVs           = NumOfCVs;
+    outaccu->SetNumOfCVs(NumOfCVs);
+
+    return(outaccu);
+}
+
+//------------------------------------------------------------------------------
+
+void CPMFAccumulator::ResampleCVs(CPMFAccumulatorPtr source,const std::vector<int>& nbins)
+{
+    CXMLElement cvs_info(NULL);
+    source->SaveCVSInfo(&cvs_info);
+    LoadCVSInfo(&cvs_info,nbins);
 }
 
 //------------------------------------------------------------------------------
@@ -1603,6 +1658,42 @@ void CPMFAccumulator::LoadCVSInfo(CXMLElement* p_iele)
             LOGIC_ERROR("more CV elements than NumOfCVs");
         }
         CVs[ccount]->LoadInfo(p_cel);
+        ccount++;
+        p_cel = p_cel->GetNextSiblingElement("CV");
+    }
+
+    // update NumOfBins
+    UpdateNumOfBins();
+}
+
+//------------------------------------------------------------------------------
+
+void CPMFAccumulator::LoadCVSInfo(CXMLElement* p_iele,const std::vector<int>& nbins)
+{
+    if(p_iele == NULL) {
+        INVALID_ARGUMENT("p_iele is NULL");
+    }
+    if( NumOfCVs == 0 ){
+        RUNTIME_ERROR("no CVs allocated");
+    }
+
+    if( (int)nbins.size() != NumOfCVs ){
+        RUNTIME_ERROR("nbins.size() != NumOfCVs");
+    }
+
+    CXMLElement* p_ele = p_iele->GetFirstChildElement("CVS");
+    if(p_ele == NULL) {
+        RUNTIME_ERROR("unable to get CVS element");
+    }
+
+    CXMLElement*   p_cel = p_ele->GetFirstChildElement("CV");
+    int            ccount = 0;
+
+    while(p_cel != NULL) {
+        if( ccount >= NumOfCVs ) {
+            LOGIC_ERROR("more CV elements than NumOfCVs");
+        }
+        CVs[ccount]->LoadInfo(p_cel,nbins[ccount]);
         ccount++;
         p_cel = p_cel->GetNextSiblingElement("CV");
     }

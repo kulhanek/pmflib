@@ -346,13 +346,13 @@ void COptGPRHyprms::InitOptimizer(void)
         NCorr   = Options.GetOptNCorr();
         DecodeVList(Options.GetOptWFac(),WFac,"--wfac",3.0);
         for(size_t i=0; i < WFac.GetLength(); i++){
-            if( (WFac[i] - Options.GetOptMinWFac()) < 0.01 ){
+            if( WFac[i] < Options.GetOptMinWFac() ){
                 RUNTIME_ERROR("--wfac has to be greater than --minwfac");
             }
         }
         DecodeVList(Options.GetOptSigmaN2(),SigmaN2,"--sigman2",0.1);
         for(size_t i=0; i < SigmaN2.GetLength(); i++){
-            if( (SigmaN2[i] - Options.GetOptMinSigmaN2()) < 1.0e-8 ){
+            if( SigmaN2[i] < Options.GetOptMinSigmaN2() ){
                 RUNTIME_ERROR("--sigman2 has to be greater than --minsigman2");
             }
         }

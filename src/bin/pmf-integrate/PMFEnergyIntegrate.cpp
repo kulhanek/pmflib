@@ -140,6 +140,7 @@ int CPMFEnergyIntegrate::Init(int argc,char* argv[])
             vout << "# SigmaF2               : " << setprecision(3) << Options.GetOptSigmaF2() << endl;
             vout << "# NCorr                 : " << setprecision(3) << Options.GetOptNCorr() << endl;
             vout << "# Width factor wfac     : " << Options.GetOptWFac() << endl;
+            vout << "# SigmaN2               : " << Options.GetOptSigmaN2() << endl;
         }
     } else {
         ES_ERROR("not implemented method");
@@ -1072,49 +1073,6 @@ bool CPMFEnergyIntegrate::ReduceFES(void)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void CPMFEnergyIntegrate::PrintGPRHyprms(FILE* p_fout)
-{
-    ifstream fin;
-    fin.open(Options.GetOptLoadHyprms());
-    if( ! fin ){
-        CSmallString error;
-        error << "unable to open file with GPR hyperparameters: " << Options.GetOptLoadHyprms();
-        RUNTIME_ERROR(error);
-    }
-
-    string line;
-    while( getline(fin,line) ){
-        // is it comment?
-        if( (line.size() > 0) && (line[0] == '#') ) continue;
-
-        // parse line
-        stringstream str(line);
-        string key, buf;
-        double value;
-        str >> key >> buf >> value;
-        if( ! str ){
-            CSmallString error;
-            error << "GPR hyperparameters file, unable to decode line: " << line.c_str();
-            RUNTIME_ERROR(error);
-        }
-        if( key == "SigmaF2" ){
-            fprintf(p_fout,"# SigmaF2               : %10.4f\n",value);
-        } else if( key == "NCorr" ){
-            fprintf(p_fout,"# NCorr                 : %10.4f\n",value);
-        } else if( key.find("NCorr#") != string::npos ) {
-            fprintf(p_fout,"# %-7s               : %10.4f\n",key.c_str(),value);
-        } else if( key.find("WFac#") != string::npos ) {
-            fprintf(p_fout,"# %-7s               : %10.4f\n",key.c_str(),value);
-        } else {
-            CSmallString error;
-            error << "GPR hyperparameters file, unrecognized key: " << key.c_str();
-            RUNTIME_ERROR(error);
-        }
-    }
-}
-
-//------------------------------------------------------------------------------
-
 void CPMFEnergyIntegrate::LoadGPRHyprms(CIntegratorGPR& gpr)
 {
     ifstream fin;
@@ -1170,58 +1128,6 @@ void CPMFEnergyIntegrate::LoadGPRHyprms(CIntegratorGPR& gpr)
             }
             cvind--; // transform to 0-based indexing
             gpr.SetSigmaN2(cvind,value);
-        } else {
-            CSmallString error;
-            error << "GPR hyperparameters file, unrecognized key: " << key.c_str();
-            RUNTIME_ERROR(error);
-        }
-    }
-}
-
-//------------------------------------------------------------------------------
-
-void CPMFEnergyIntegrate::LoadGPRHyprms(CSmootherGPR& gpr)
-{
-    ifstream fin;
-    fin.open(Options.GetOptLoadHyprms());
-    if( ! fin ){
-        CSmallString error;
-        error << "unable to open file with GPR hyperparameters: " << Options.GetOptLoadHyprms();
-        RUNTIME_ERROR(error);
-    }
-
-    string line;
-    while( getline(fin,line) ){
-        // is it comment?
-        if( (line.size() > 0) && (line[0] == '#') ) continue;
-
-        // parse line
-        stringstream str(line);
-        string key, buf;
-        double value;
-        str >> key >> buf >> value;
-        if( ! str ){
-            CSmallString error;
-            error << "GPR hyperparameters file, unable to decode line: " << line.c_str();
-            RUNTIME_ERROR(error);
-        }
-        if( key == "SigmaF2" ){
-            gpr.SetSigmaF2(value);
-        } else if( key == "NCorr" ){
-            gpr.SetNCorr(value);
-        } else if( key.find("WFac#") != string::npos ) {
-            std::replace( key.begin(), key.end(), '#', ' ');
-            stringstream kstr(key);
-            string swfac;
-            int    cvind;
-            kstr >> swfac >> cvind;
-            if( ! kstr ){
-                CSmallString error;
-                error << "GPR hyperparameters file, unable to decode wfac key: " << key.c_str();
-                RUNTIME_ERROR(error);
-            }
-            cvind--; // transform to 0-based indexing
-            gpr.SetWFac(cvind,value);
         } else {
             CSmallString error;
             error << "GPR hyperparameters file, unrecognized key: " << key.c_str();

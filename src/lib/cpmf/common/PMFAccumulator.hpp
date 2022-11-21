@@ -86,6 +86,12 @@ public:
     /// duplicate PMF accumulator except of IG data sections
     CPMFAccumulatorPtr Duplicate(void);
 
+    /// duplicate header only
+    CPMFAccumulatorPtr DuplicateHeader(void);
+
+    /// resample CVs
+    void ResampleCVs(CPMFAccumulatorPtr source,const std::vector<int>& nbins);
+
 // setup methods --------------------------------------------------------------
     /// set headers
     void SetHeaders(const CSmallString& method, const CSmallString& version, const CSmallString& driver,
@@ -263,6 +269,9 @@ public:
 // information methods --------------------------------------------------------
     /// load cvs info
     void LoadCVSInfo(CXMLElement* p_iele);
+
+    /// load cvs info
+    void LoadCVSInfo(CXMLElement* p_iele,const std::vector<int>& nbins);
 
     /// check cv info
     bool CheckCVSInfo(CXMLElement* p_iele) const;
