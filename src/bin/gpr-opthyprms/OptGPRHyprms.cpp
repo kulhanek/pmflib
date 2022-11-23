@@ -253,7 +253,7 @@ void COptGPRHyprms::InitRealm(CProxyRealmPtr realm)
             realm->DerProxies.push_back(proxy);
         }
 // -----------------------------------------------
-    } else if ( (realm->Name == "-TdS") && (realm->Name == "mTdS") ) {
+    } else if ( (realm->Name == "-TdS") || (realm->Name == "mTdS") ) {
         for(size_t i=0; i < realm->Accumulators.size(); i++){
             CPMFAccumulatorPtr accu = realm->Accumulators[i];
             CEnergyDerProxyPtr proxy;

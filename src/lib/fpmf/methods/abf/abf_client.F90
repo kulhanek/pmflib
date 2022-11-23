@@ -344,7 +344,7 @@ subroutine abf_client_exchange_data(force_exchange)
                 abfaccu%bmicf(i,:)      = abfaccu%inc_micf(:,i)
             end do
         case default
-            call pmf_utils_exit(PMF_OUT,1,'fmwamode not implemented in abf_client_get_initial_data')
+            call pmf_utils_exit(PMF_OUT,1,'fmwamode not implemented in abf_client_exchange_data')
     end select
 
     abfaccu%inc_nsamples(:) = 0
