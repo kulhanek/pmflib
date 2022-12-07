@@ -459,6 +459,19 @@ void CEnthalpy::LoadGPRHyprms(CSmootherGPR& gpr)
             }
             cvind--; // transform to 0-based indexing
             gpr.SetWFac(cvind,value);
+        } else if( key.find("SigmaN2#") != string::npos ) {
+            std::replace( key.begin(), key.end(), '#', ' ');
+            stringstream kstr(key);
+            string swfac;
+            int    cvind;
+            kstr >> swfac >> cvind;
+            if( ! kstr ){
+                CSmallString error;
+                error << "GPR hyperparameters file, unable to decode sigman2 key: " << key.c_str();
+                RUNTIME_ERROR(error);
+            }
+            cvind--; // transform to 0-based indexing
+            gpr.SetSigmaN2(cvind,value);
         } else {
             CSmallString error;
             error << "GPR hyperparameters file, unrecognized key: " << key.c_str();

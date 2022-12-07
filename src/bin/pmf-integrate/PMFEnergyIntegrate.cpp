@@ -1172,7 +1172,7 @@ void CPMFEnergyIntegrate::PrepareAccumulatorII(void)
             if( FES->GetEnergy(ibin) > Options.GetOptEnergyLimit() ){
                 // erase data points with too large energy
                 FES->SetNumOfSamples(ibin,0);
-                FES->SetEnergy(ibin,0.0);
+                FES->SetEnergy(ibin,Options.GetOptEnergyLimit());
             }
             if( Options.GetOptEraseNegativeEnergy() ){
                 if( FES->GetEnergy(ibin) < 0 ){
