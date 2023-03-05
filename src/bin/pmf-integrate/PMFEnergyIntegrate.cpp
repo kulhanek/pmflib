@@ -592,7 +592,7 @@ bool CPMFEnergyIntegrate::Run(void)
         vout << endl;
         vout << format("%02d:Saving PMF accumulator to : %s")%State%string(Options.GetOptSaveABF()) << endl;
 
-        if( Accumulators.size() != 0 ){
+        if( Accumulators.size() != 1 ){
             ES_ERROR("only one PMF accumulator expected");
             return(false);
         }
