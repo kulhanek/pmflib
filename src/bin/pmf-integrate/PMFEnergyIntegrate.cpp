@@ -1173,12 +1173,22 @@ void CPMFEnergyIntegrate::PrepareAccumulatorII(void)
                 // erase data points with too large energy
                 FES->SetNumOfSamples(ibin,0);
                 FES->SetEnergy(ibin,Options.GetOptEnergyLimit());
+
+                for(size_t i=0; i < Accumulators.size(); i++){
+                    CPMFAccumulatorPtr accu = Accumulators[i];
+                    accu->SetNumOfSamples(ibin,0);
+                }
             }
             if( Options.GetOptEraseNegativeEnergy() ){
                 if( FES->GetEnergy(ibin) < 0 ){
                     // erase data points with negative energy
                     FES->SetNumOfSamples(ibin,0);
                     FES->SetEnergy(ibin,0.0);
+
+                    for(size_t i=0; i < Accumulators.size(); i++){
+                        CPMFAccumulatorPtr accu = Accumulators[i];
+                        accu->SetNumOfSamples(ibin,0);
+                    }
                 }
             }
         }
