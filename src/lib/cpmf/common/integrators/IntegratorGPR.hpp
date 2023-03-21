@@ -157,6 +157,9 @@ public:
     // get mean force
     double GetMeanForce(const CSimpleVector<double>& position,size_t icoord);
 
+    // get mean force variance
+    double GetMeanForceVar(const CSimpleVector<double>& position,size_t icoord);
+
     /// get root mean square residuals
     double GetRMSR(size_t cv);
 

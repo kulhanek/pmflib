@@ -1487,6 +1487,30 @@ double CIntegratorGPR::GetMeanForce(const CSimpleVector<double>& position,size_t
 
 //------------------------------------------------------------------------------
 
+double CIntegratorGPR::GetMeanForceVar(const CSimpleVector<double>& position,size_t icoord)
+{
+    CSimpleVector<double>   kff2;
+    CSimpleVector<double>   ik;
+
+    kff2.CreateVector(GPRSize);
+    ik.CreateVector(GPRSize);
+
+    RunBlasLapackSeq();
+
+    CreateKff2(position,icoord,kff2);
+    CSciBlas::gemv(1.0,KS,kff2,0.0,ik);
+
+    CFortranMatrix kblock;
+    kblock.CreateMatrix(NumOfCVs,NumOfCVs);
+
+    GetKernelDer2Ana(position,position,kblock);
+
+    double var = kblock[icoord][icoord] - CSciBlas::dot(kff2,ik);
+    return(var);
+}
+
+//------------------------------------------------------------------------------
+
 double CIntegratorGPR::GetRMSR(size_t cv)
 {
     if( NumOfBins == 0 ){
@@ -1560,8 +1584,8 @@ bool CIntegratorGPR::WriteMFInfo(const CSmallString& name)
             mfie[indi*NumOfCVs+k] = mfe*mfe;
 
             mfp[indi*NumOfCVs+k] = GetMeanForce(ipos,k);
-            // FIXME - mean force error
-            mfpe[indi*NumOfCVs+k] = 0.0;
+            double mfv = GetMeanForceVar(ipos,k);
+            mfpe[indi*NumOfCVs+k] = sqrt(mfv);
         }
     }
 
@@ -1718,8 +1742,9 @@ void CIntegratorGPR::FilterByMFZScore(double zscore,CVerboseStr& vout)
     size_t outliers = 0;
     for(size_t i=0; i < NumOfBins; i++){
         if( flags[i] == 0 ){
-            RUNTIME_ERROR("FIXME");
-            // DerProxy->SetNumOfSamples(i,0);
+            for(size_t j=0; j < DerProxyItems.size(); j++){
+                DerProxyItems[j]->GetAccu()->SetNumOfSamples(i,0);
+            }
             outliers++;
         }
     }
@@ -2096,7 +2121,7 @@ double CIntegratorGPR::GetVar(CSimpleVector<double>& lpos)
 
     CreateKff(lpos,kff);
     CSciBlas::gemv(1.0,KS,kff,0.0,ik);
-    double cov = GetKernelValue(lpos,lpos)  - CSciBlas::dot(kff,ik);
+    double cov = GetKernelValue(lpos,lpos) - CSciBlas::dot(kff,ik);
     return(cov);
 }
 
