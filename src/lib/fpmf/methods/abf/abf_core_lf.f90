@@ -387,7 +387,6 @@ subroutine abf_core_lf_get_icfp()
             icfphist(i,hist_len) = f1 - micfhist(i,hist_len)
         end do
     else if ( fenthalpy_der .eq. 2 ) then
-        ! at this moment, we have velocities at t+dt/2
         do i=1,NumOfABFCVs
             f1 = 0.0d0
             do j=1,NumOfLAtoms
@@ -399,6 +398,19 @@ subroutine abf_core_lf_get_icfp()
             end do
             ! remove bias
             icfphist(i,hist_len-1) = f1*ifdtx - micfhist(i,hist_len-1)
+        end do
+    else if ( fenthalpy_der .eq. 3 ) then
+        do i=1,NumOfABFCVs
+            f1 = 0.0d0
+            do j=1,NumOfLAtoms
+                do m=1,3
+                    ! force part
+                    f1 = f1 + zdhist(m,j,i,hist_len-2) * (       - vhist(m,j,hist_len-0) + 27.0d0*vhist(m,j,hist_len-1) &
+                                                          - 27.0d0*vhist(m,j,hist_len-2)        + vhist(m,j,hist_len-3))
+                end do
+            end do
+            ! remove bias
+            icfphist(i,hist_len-2) = f1*ifdtx - micfhist(i,hist_len-2)
         end do
     end if
 

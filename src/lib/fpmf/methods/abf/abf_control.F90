@@ -101,7 +101,7 @@ subroutine abf_control_read_abf(prm_fin)
 ! ENT/TDS ====================
     call pmf_ctrl_read_logical(prm_fin,'fenthalpy',fenthalpy)
     call pmf_ctrl_read_integer(prm_fin,'fenthalpy_der',fenthalpy_der,'I12')
-    call pmf_ctrl_check_integer_in_range('ABF','fenthalpy_der',fenthalpy_der,0,2)
+    call pmf_ctrl_check_integer_in_range('ABF','fenthalpy_der',fenthalpy_der,0,3)
 
     call pmf_ctrl_read_logical(prm_fin,'fentropy',fentropy)
     call pmf_ctrl_read_logical(prm_fin,'fentdecomp',fentdecomp)

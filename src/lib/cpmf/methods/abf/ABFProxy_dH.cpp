@@ -105,8 +105,8 @@ double CABFProxy_dH::GetValue(int ibin,int icv,EProxyRealm realm) const
     // -------------------
         case(ABF_MICFP):
             nsamples = Accu->GetData("NTDS",ibin);
-            micf     = Accu->GetData("MHICFP",ibin,icv);
-            m2icf    = Accu->GetData("M2HICFP",ibin,icv);
+            micf     = Accu->GetData("MICFP",ibin,icv);
+            m2icf    = Accu->GetData("M2ICFP",ibin,icv);
         break;
     // -------------------
         default:
