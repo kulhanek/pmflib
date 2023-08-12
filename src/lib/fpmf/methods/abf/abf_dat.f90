@@ -51,6 +51,10 @@ integer     :: ficfsample   ! how often update ABF accumulator for ICF
 
 ! enthalpy/entropy calculations
 logical     :: fenthalpy        ! collect data for enthalpy calculation
+integer     :: fenthalpy_der    ! collect data for enthalpy derivative calculation
+                                ! 0 - no
+                                ! 1 - from forces
+                                ! 2 - from velocities
 logical     :: fentropy         ! collect data for entropy calculation
 logical     :: fentdecomp       ! collect additional correlation terms
 logical     :: ftds_add_bias    ! include ABF bias into TdS calculation
@@ -157,6 +161,10 @@ type,extends(PMFAccuType) :: ABFAccuType
     real(PMFDP),pointer    :: mpn(:,:)                  ! mean of tot energy - icf
     real(PMFDP),pointer    :: m2pn(:,:)                 ! M2 of tot energy - icf
 
+! enthalpy derivative
+    real(PMFDP),pointer    :: mhicfp(:,:)               ! mean of ICF-P
+    real(PMFDP),pointer    :: m2hicfp(:,:)              ! M2 of internal energy
+
 ! entropy - decomposition
     real(PMFDP),pointer    :: mhicf(:,:)                ! mean of ICF - hamiltonian
     real(PMFDP),pointer    :: m2hicf(:,:)               ! M2 of ICF - hamiltonian
@@ -215,6 +223,10 @@ real(PMFDP),allocatable     :: fzinvhist(:,:,:)     ! history of fzinv
 real(PMFDP),allocatable     :: xphist(:,:)          ! history of CV momenta
 real(PMFDP),allocatable     :: icfhist(:,:)         ! history of ABF ICF
 real(PMFDP),allocatable     :: micfhist(:,:)        ! history of ABF bias
+
+real(PMFDP),allocatable     :: zdhist(:,:,:,:)      ! history of ZD
+real(PMFDP),allocatable     :: fhist(:,:,:)         ! history of forces
+real(PMFDP),allocatable     :: icfphist(:,:)        ! history of ABF ICF-P
 
 real(PMFDP),allocatable     :: epothist(:)          ! history of Epot
 real(PMFDP),allocatable     :: ersthist(:)          ! history of Erst

@@ -119,6 +119,16 @@ subroutine abf_accu_init()
         endif
     end if
 
+    if( fenthalpy .and. (fenthalpy_der .gt. 0) ) then
+        allocate(   abfaccu%mhicfp(abfaccu%tot_cvs,abfaccu%tot_nbins),   &
+                    abfaccu%m2hicfp(abfaccu%tot_cvs,abfaccu%tot_nbins),  &
+                    stat = alloc_failed)
+
+        if( alloc_failed .ne. 0 ) then
+            call pmf_utils_exit(PMF_OUT, 1,'[ABF] Unable to allocate memory for abf accumulator (enthalpy_der)!')
+        endif
+    end if
+
     if( (fenthalpy .or. (fentropy .and. fentdecomp)) .and. (finclude_pv .ne. 0) ) then
         allocate(   abfaccu%mepv(abfaccu%tot_nbins),   &
                     abfaccu%m2epv(abfaccu%tot_nbins),  &
@@ -243,6 +253,11 @@ subroutine abf_accu_clear()
         end if
     end if
 
+    if( fenthalpy .and. (fenthalpy_der .gt. 0) ) then
+        abfaccu%mhicfp(:,:)     = 0.0d0
+        abfaccu%m2hicfp(:,:)    = 0.0d0
+    end if
+
     if( fentropy ) then
         abfaccu%metot(:)    = 0.0d0
         abfaccu%m2etot(:)   = 0.0d0
@@ -338,6 +353,17 @@ subroutine abf_accu_read(iounit)
                 case('NTDS')
                     if( fenthalpy .or. fentropy ) then
                         call pmf_accu_read_rbuf_B(abfaccu%PMFAccuType,iounit,keyline,abfaccu%ntds)
+                    end if
+
+            ! ------------------------------------
+                case('MHICFP')
+                    if( fenthalpy .and. (fenthalpy_der .gt. 0) ) then
+                        call pmf_accu_read_rbuf_M(abfaccu%PMFAccuType,iounit,keyline,abfaccu%mhicfp)
+                    end if
+            ! ------------------------------------
+                case('M2HICFP')
+                    if( fenthalpy .and. (fenthalpy_der .gt. 0)  ) then
+                        call pmf_accu_read_rbuf_M(abfaccu%PMFAccuType,iounit,keyline,abfaccu%m2hicfp)
                     end if
 
             ! ------------------------------------
@@ -587,6 +613,11 @@ subroutine abf_accu_write(iounit)
         end if
     end if
 
+    if( fenthalpy .and. (fenthalpy_der .gt. 0) ) then
+        call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'MHICFP',     'WA',abfaccu%mhicfp,  'NTDS')
+        call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'M2HICFP',    'M2',abfaccu%m2hicfp, 'NTDS','MHICFP')
+    end if
+
     if( fentropy ) then
         call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'MHICF',  'WA',abfaccu%mhicf, 'NTDS')
         call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'M2HICF', 'M2',abfaccu%m2hicf,'NTDS','MHICF')
@@ -705,7 +736,7 @@ end subroutine abf_accu_add_data_online
 ! Subroutine:  abf_accu_add_data_energy
 !===============================================================================
 
-subroutine abf_accu_add_data_energy(cvs,gfx,bfx,epot,erst,ekin,epv,vol)
+subroutine abf_accu_add_data_energy(cvs,gfx,bfx,pfx,epot,erst,ekin,epv,vol)
 
     use abf_dat
     use pmf_dat
@@ -714,6 +745,7 @@ subroutine abf_accu_add_data_energy(cvs,gfx,bfx,epot,erst,ekin,epv,vol)
     real(PMFDP),intent(in)  :: cvs(:)
     real(PMFDP),intent(in)  :: gfx(:)
     real(PMFDP),intent(in)  :: bfx(:)
+    real(PMFDP),intent(in)  :: pfx(:)
     real(PMFDP),intent(in)  :: epot
     real(PMFDP),intent(in)  :: erst
     real(PMFDP),intent(in)  :: ekin
@@ -732,7 +764,7 @@ subroutine abf_accu_add_data_energy(cvs,gfx,bfx,epot,erst,ekin,epv,vol)
     real(PMFDP)     :: dpp, dpp1, dpp2
     real(PMFDP)     :: dpn, dpn1, dpn2
     real(PMFDP)     :: etot, eint
-    real(PMFDP)     :: dibx1, dibx2, difx1, difx2, ifx, ibx
+    real(PMFDP)     :: dibx1, dibx2, difx1, difx2, dipx1, dipx2, ifx, ibx, ipx
     ! --------------------------------------------------------------------------
 
     ! write(147895,*) cvs(1), gfx(1), epv, vol
@@ -792,6 +824,16 @@ subroutine abf_accu_add_data_energy(cvs,gfx,bfx,epot,erst,ekin,epv,vol)
             depv2 = epv - abfaccu%mepv(gi0)
             abfaccu%m2epv(gi0) = abfaccu%m2epv(gi0) + depv1 * depv2
         end if
+    end if
+
+    if( fenthalpy .and. (fenthalpy_der .gt. 0) ) then
+        do i=1,abfaccu%tot_cvs
+            ipx = - pfx(i)
+            dipx1 = ipx - abfaccu%mhicfp(i,gi0)
+            abfaccu%mhicfp(i,gi0)  = abfaccu%mhicfp(i,gi0)  + dipx1 * invn
+            dipx2 = ipx - abfaccu%mhicfp(i,gi0)
+            abfaccu%m2hicfp(i,gi0) = abfaccu%m2hicfp(i,gi0) + dipx1 * dipx2
+        end do
     end if
 
     if( fentropy ) then

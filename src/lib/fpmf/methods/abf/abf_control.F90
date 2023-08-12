@@ -100,8 +100,24 @@ subroutine abf_control_read_abf(prm_fin)
 
 ! ENT/TDS ====================
     call pmf_ctrl_read_logical(prm_fin,'fenthalpy',fenthalpy)
+    call pmf_ctrl_read_integer(prm_fin,'fenthalpy_der',fenthalpy_der,'I12')
+    call pmf_ctrl_check_integer_in_range('ABF','fenthalpy_der',fenthalpy_der,0,2)
+
     call pmf_ctrl_read_logical(prm_fin,'fentropy',fentropy)
     call pmf_ctrl_read_logical(prm_fin,'fentdecomp',fentdecomp)
+
+    if( fenthalpy .and. (fenthalpy_der .gt. 0) ) then
+        if( fentropy .eqv. .false. ) then
+            fentropy = .true.
+            write(PMF_OUT,200)
+        end if
+        if( fentdecomp .eqv. .false. ) then
+            fentdecomp = .true.
+            write(PMF_OUT,201)
+        end if
+    end if
+
+
     call pmf_ctrl_read_logical(prm_fin,'ftds_add_bias',ftds_add_bias)
 
     call pmf_ctrl_read_integer(prm_fin,'ftds_ekin_src',ftds_ekin_src,'I12')
@@ -202,6 +218,9 @@ subroutine abf_control_read_abf(prm_fin)
  53 format (/,'>> Linear interpolation (feimode == 3)')
 
 100 format (' >> Multiple-walkers ABF method is disabled!')
+
+200 format ('|- Forcing: fentropy   = on due to fenthalpy_der > 0')
+201 format ('|- Forcing: fentdecomp = on due to fenthalpy_der > 0')
 
 #ifndef PMFLIB_NETWORK
 105 format (' >> Multiple-walkers ABF method is not compiled in!')

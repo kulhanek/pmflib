@@ -84,6 +84,7 @@ subroutine abf_init_dat
     ficfsample      = 1
 
     fenthalpy       = .false.
+    fenthalpy_der   = 0
     fentropy        = .false.
     fentdecomp      = .false.
     fenesample      = 1
@@ -388,10 +389,13 @@ subroutine abf_init_arrays
             cvhist(NumOfABFCVs,hist_len),                   &
             micfhist(NumOfABFCVs,hist_len),                 &
             icfhist(NumOfABFCVs,hist_len),                  &
+            icfphist(NumOfABFCVs,hist_len),                 &
             xphist(NumOfABFCVs,hist_len),                   &
             vhist(3,NumOfLAtoms,hist_len),                  &
+            fhist(3,NumOfLAtoms,hist_len),                  &
             fzinvhist(NumOfABFCVs,NumOfABFCVs,hist_len),    &
             cvderhist(3,NumOfLAtoms,NumOfABFCVs,hist_len),  &
+            zdhist(3,NumOfLAtoms,NumOfABFCVs,hist_len),     &
             epothist(hist_len),                             &
             ersthist(hist_len),                             &
             ekinhist(hist_len),                             &
@@ -409,7 +413,9 @@ subroutine abf_init_arrays
     cvhist(:,:)         = 0.0d0
     micfhist(:,:)       = 0.0d0
     icfhist(:,:)        = 0.0d0
+    icfphist(:,:)       = 0.0d0
     vhist(:,:,:)        = 0.0d0
+    fhist(:,:,:)        = 0.0d0
     epothist(:)         = 0.0d0
     ersthist(:)         = 0.0d0
     ekinhist(:)         = 0.0d0
@@ -418,6 +424,7 @@ subroutine abf_init_arrays
     xphist(:,:)         = 0.0d0
     fzinvhist(:,:,:)    = 0.0d0
     cvderhist(:,:,:,:)  = 0.0d0
+    zdhist(:,:,:,:)     = 0.0d0
     volhist(:)          = 0.0d0
     enevalidhist(:)     = .false.
 

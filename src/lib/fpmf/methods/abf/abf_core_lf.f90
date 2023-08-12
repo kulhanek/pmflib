@@ -93,8 +93,10 @@ subroutine abf_core_lf_force_2pX()
 ! shift accuvalue history
     do i=1,hist_len-1
         xphist(:,i)         = xphist(:,i+1)
+        vhist(:,:,i)        = vhist(:,:,i+1)        ! we do not need this, but for fenthalpy_der > 0, it must be here
         fzinvhist(:,:,i)    = fzinvhist(:,:,i+1)
     end do
+    vhist(:,:,hist_len)     = Vel(:,:)              ! t-dt/2
     fzinvhist(:,:,hist_len) = fzinv(:,:)
 
 ! calculate CV velocity, consider CV periodicity
@@ -256,7 +258,7 @@ subroutine abf_core_lf_force_2pV()
         vhist(:,:,i)        = vhist(:,:,i+1)
         xphist(:,i)         = xphist(:,i+1)
     end do
-    vhist(:,:,hist_len)     = Vel(:,:)
+    vhist(:,:,hist_len)     = Vel(:,:)             ! t-dt/2
     fzinvhist(:,:,hist_len) = fzinv(:,:)
     call abf_core_update_cvder
 
@@ -339,6 +341,70 @@ subroutine abf_core_lf_force_2pV()
 end subroutine abf_core_lf_force_2pV
 
 !===============================================================================
+! Subroutine:  abf_core_lf_get_icfp
+! this is leap-frog ABF version
+!===============================================================================
+
+subroutine abf_core_lf_get_icfp()
+
+    use pmf_utils
+    use pmf_dat
+    use pmf_cvs
+    use abf_dat
+    use abf_accu
+    use abf_core
+
+    implicit none
+    integer                :: i,j,m
+    real(PMFDP)            :: f1
+    ! --------------------------------------------------------------------------
+
+    ! shift history buffers
+    do i=1,hist_len-1
+        fhist(:,:,i)    = fhist(:,:,i+1)
+        icfphist(:,i)   = icfphist(:,i+1)
+        zdhist(:,:,:,i) = zdhist(:,:,:,i+1)
+    end do
+                                        ! at this moment, Frc contains ABF bias
+    fhist(:,:,hist_len) = Frc(:,:)      ! to be compatible with forces derived from velocities, which also contain the bias
+    call abf_core_update_zdhist
+
+    icfphist(:,hist_len) = 0.0d0
+
+    if( fstep .le. 2*hist_len ) return
+
+    if( fenthalpy_der .eq. 1 ) then
+        do i=1,NumOfABFCVs
+            f1 = 0.0d0
+            do j=1,NumOfLAtoms
+                do m=1,3
+                    ! force part
+                    !                  t                        t
+                    f1 = f1 + zdhist(m,j,i,hist_len) * fhist(m,j,hist_len) * MassInv(j)
+                end do
+            end do
+            ! remove bias
+            icfphist(i,hist_len) = f1 - micfhist(i,hist_len)
+        end do
+    else if ( fenthalpy_der .eq. 2 ) then
+        ! at this moment, we have velocities at t+dt/2
+        do i=1,NumOfABFCVs
+            f1 = 0.0d0
+            do j=1,NumOfLAtoms
+                do m=1,3
+                    ! force part
+                    !                  t-dt                    t-dt/2               t-2*dt/2
+                    f1 = f1 + zdhist(m,j,i,hist_len-1) * (vhist(m,j,hist_len) - vhist(m,j,hist_len-1))
+                end do
+            end do
+            ! remove bias
+            icfphist(i,hist_len-1) = f1*ifdtx - micfhist(i,hist_len-1)
+        end do
+    end if
+
+end subroutine abf_core_lf_get_icfp
+
+!===============================================================================
 ! Subroutine:  abf_core_lf_register_ekin
 ! this is leap-frog ABF version
 !===============================================================================
@@ -388,6 +454,9 @@ subroutine abf_core_lf_register_ekin()
     enevalidhist(hist_len)  = KinEne%Valid
     volhist(hist_len)       = fbox_volume
 
+    ! get ICF-P
+    call abf_core_lf_get_icfp
+
 !    write(14789,*) fstep, pVEne, fbox_volume
 
 ! process EKIN
@@ -404,7 +473,7 @@ subroutine abf_core_lf_register_ekin()
 
     if( fstep .le. 2*hist_len ) return
 
-    if( KinEne%Valid ) fene_step = fene_step + 1
+    if( enevalidhist(hist_len) ) fene_step = fene_step + 1
 
     if( (mod(fene_step,fenesample) .eq. 0) .and. enevalidhist(hist_len+hist_fidx) ) then
 
@@ -412,9 +481,9 @@ subroutine abf_core_lf_register_ekin()
 
         ! register data
         call abf_accu_add_data_energy(cvhist(:,hist_len+hist_fidx), &
-                                      icfhist(:,hist_len+hist_fidx), micfhist(:,hist_len+hist_fidx), &
-                                      epothist(hist_len+hist_fidx), ersthist(hist_len+hist_fidx), ekinhist(hist_len+hist_fidx), &
-                                      epvhist(hist_len+hist_fidx),volhist(hist_len+hist_fidx))
+                      icfhist(:,hist_len+hist_fidx), micfhist(:,hist_len+hist_fidx), icfphist(:,hist_len+hist_fidx), &
+                      epothist(hist_len+hist_fidx), ersthist(hist_len+hist_fidx), ekinhist(hist_len+hist_fidx), &
+                      epvhist(hist_len+hist_fidx),volhist(hist_len+hist_fidx))
     end if
 
 end subroutine abf_core_lf_register_ekin

@@ -213,5 +213,35 @@ subroutine abf_core_calc_Zmat(ctx)
 end subroutine abf_core_calc_Zmat
 
 !===============================================================================
+! Subroutine:  abf_core_update_zdhist
+!===============================================================================
+
+subroutine abf_core_update_zdhist()
+
+    use pmf_dat
+    use pmf_cvs
+    use abf_dat
+
+    implicit none
+    integer                :: i,j,k,m,ki
+    real(PMFDP)            :: v
+    ! --------------------------------------------------------------------------
+
+    do i=1,NumOfABFCVs
+        do j=1,NumOfLAtoms
+            do m=1,3
+                v = 0.0d0
+                do k=1,NumOfABFCVs
+                    ki = ABFCVList(k)%cvindx
+                    v = v + fzinv(i,k)*CVContext%CVsDrvs(m,j,ki)
+                end do
+                zdhist(m,j,i,hist_len) = v
+            end do
+        end do
+    end do
+
+end subroutine abf_core_update_zdhist
+
+!===============================================================================
 
 end module abf_core
