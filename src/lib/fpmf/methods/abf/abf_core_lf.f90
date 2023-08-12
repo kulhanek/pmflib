@@ -410,7 +410,7 @@ subroutine abf_core_lf_get_icfp()
                 end do
             end do
             ! remove bias
-            icfphist(i,hist_len-2) = f1*ifdtx - micfhist(i,hist_len-2)
+            icfphist(i,hist_len-2) = (1.0d0/24.0d0)*f1*ifdtx - micfhist(i,hist_len-2)
         end do
     end if
 
