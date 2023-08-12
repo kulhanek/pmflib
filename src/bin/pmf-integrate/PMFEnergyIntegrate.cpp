@@ -37,6 +37,7 @@
 #include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string/classification.hpp>
 #include <ABFProxy_dG.hpp>
+#include <ABFProxy_dH.hpp>
 #include <ABFProxy_mTdS.hpp>
 #include <CSTProxy_dG.hpp>
 #include <CSTProxy_mTdS.hpp>
@@ -250,6 +251,15 @@ bool CPMFEnergyIntegrate::Run(void)
                 lproxy    = CABFProxy_dG_Ptr(new CABFProxy_dG);
             } else if (CCSTProxy_dG::IsCompatible(accu) ) {
                 lproxy    = CCSTProxy_dG_Ptr(new CCSTProxy_dG);
+            } else {
+                CSmallString error;
+                error << "incompatible method: " << accu->GetMethod() << " with requested realm: " <<  Options.GetOptRealm();
+                RUNTIME_ERROR(error);
+            }
+    // -----------------------------------------------
+        } else if ( Options.GetOptRealm() == "ICFP" ) {
+            if( CABFProxy_dH::IsCompatible(accu) ){
+                lproxy    = CABFProxy_dH_Ptr(new CABFProxy_dH);
             } else {
                 CSmallString error;
                 error << "incompatible method: " << accu->GetMethod() << " with requested realm: " <<  Options.GetOptRealm();

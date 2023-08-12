@@ -120,8 +120,8 @@ subroutine abf_accu_init()
     end if
 
     if( fenthalpy .and. (fenthalpy_der .gt. 0) ) then
-        allocate(   abfaccu%mhicfp(abfaccu%tot_cvs,abfaccu%tot_nbins),   &
-                    abfaccu%m2hicfp(abfaccu%tot_cvs,abfaccu%tot_nbins),  &
+        allocate(   abfaccu%micfp(abfaccu%tot_cvs,abfaccu%tot_nbins),   &
+                    abfaccu%m2icfp(abfaccu%tot_cvs,abfaccu%tot_nbins),  &
                     stat = alloc_failed)
 
         if( alloc_failed .ne. 0 ) then
@@ -254,8 +254,8 @@ subroutine abf_accu_clear()
     end if
 
     if( fenthalpy .and. (fenthalpy_der .gt. 0) ) then
-        abfaccu%mhicfp(:,:)     = 0.0d0
-        abfaccu%m2hicfp(:,:)    = 0.0d0
+        abfaccu%micfp(:,:)     = 0.0d0
+        abfaccu%m2icfp(:,:)    = 0.0d0
     end if
 
     if( fentropy ) then
@@ -356,14 +356,14 @@ subroutine abf_accu_read(iounit)
                     end if
 
             ! ------------------------------------
-                case('MHICFP')
+                case('MICFP')
                     if( fenthalpy .and. (fenthalpy_der .gt. 0) ) then
-                        call pmf_accu_read_rbuf_M(abfaccu%PMFAccuType,iounit,keyline,abfaccu%mhicfp)
+                        call pmf_accu_read_rbuf_M(abfaccu%PMFAccuType,iounit,keyline,abfaccu%micfp)
                     end if
             ! ------------------------------------
-                case('M2HICFP')
+                case('M2ICFP')
                     if( fenthalpy .and. (fenthalpy_der .gt. 0)  ) then
-                        call pmf_accu_read_rbuf_M(abfaccu%PMFAccuType,iounit,keyline,abfaccu%m2hicfp)
+                        call pmf_accu_read_rbuf_M(abfaccu%PMFAccuType,iounit,keyline,abfaccu%m2icfp)
                     end if
 
             ! ------------------------------------
@@ -614,8 +614,8 @@ subroutine abf_accu_write(iounit)
     end if
 
     if( fenthalpy .and. (fenthalpy_der .gt. 0) ) then
-        call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'MHICFP',     'WA',abfaccu%mhicfp,  'NTDS')
-        call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'M2HICFP',    'M2',abfaccu%m2hicfp, 'NTDS','MHICFP')
+        call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'MICFP',     'WA',abfaccu%micfp,  'NTDS')
+        call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'M2ICFP',    'M2',abfaccu%m2icfp, 'NTDS','MICFP')
     end if
 
     if( fentropy ) then
@@ -829,10 +829,10 @@ subroutine abf_accu_add_data_energy(cvs,gfx,bfx,pfx,epot,erst,ekin,epv,vol)
     if( fenthalpy .and. (fenthalpy_der .gt. 0) ) then
         do i=1,abfaccu%tot_cvs
             ipx = - pfx(i)
-            dipx1 = ipx - abfaccu%mhicfp(i,gi0)
-            abfaccu%mhicfp(i,gi0)  = abfaccu%mhicfp(i,gi0)  + dipx1 * invn
-            dipx2 = ipx - abfaccu%mhicfp(i,gi0)
-            abfaccu%m2hicfp(i,gi0) = abfaccu%m2hicfp(i,gi0) + dipx1 * dipx2
+            dipx1 = ipx - abfaccu%micfp(i,gi0)
+            abfaccu%micfp(i,gi0)  = abfaccu%micfp(i,gi0)  + dipx1 * invn
+            dipx2 = ipx - abfaccu%micfp(i,gi0)
+            abfaccu%m2icfp(i,gi0) = abfaccu%m2icfp(i,gi0) + dipx1 * dipx2
         end do
     end if
 

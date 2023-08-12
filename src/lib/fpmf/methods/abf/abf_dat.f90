@@ -162,8 +162,8 @@ type,extends(PMFAccuType) :: ABFAccuType
     real(PMFDP),pointer    :: m2pn(:,:)                 ! M2 of tot energy - icf
 
 ! enthalpy derivative
-    real(PMFDP),pointer    :: mhicfp(:,:)               ! mean of ICF-P
-    real(PMFDP),pointer    :: m2hicfp(:,:)              ! M2 of internal energy
+    real(PMFDP),pointer    :: micfp(:,:)                ! mean of ICF-P
+    real(PMFDP),pointer    :: m2icfp(:,:)               ! M2 of internal energy
 
 ! entropy - decomposition
     real(PMFDP),pointer    :: mhicf(:,:)                ! mean of ICF - hamiltonian
