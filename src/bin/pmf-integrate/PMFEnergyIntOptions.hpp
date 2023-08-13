@@ -126,20 +126,21 @@ public:
                 "**  dG        - free energy (default)\n"
                 "**  mTdS/-TdS - entropy contribution to the free energy\n"
                 "\n"
-                "Requested output from the integration (fenthalpy_der > 0):\n"
+                "Requested output from the integration (ABF: fenthalpy_der > 0):\n"
+                "**  dH        - enthalpy\n"
                 "**  ICFP      - integration of ICF-Epot\n"
                 "\n"
                 "Requested output from the integration (-TdS decomposition):\n"
-                "** mTdS_HP/-TdS_HP    - entropy contribution to the free energy, cov(dH/dx,Epot) - ABF/CST\n"
-                "** mTdS_HR/-TdS_HR    - entropy contribution to the free energy, cov(dH/dx,Erst) - ABF/CST\n"
-                "** mTdS_HK/-TdS_HK    - entropy contribution to the free energy, cov(dH/dx,Ekin) - ABF/CST\n"
-                "** mTdS_HV/-TdS_HV    - entropy contribution to the free energy, cov(dH/dx,pV)   - ABF\n"
+                "** mTdS_HP/-TdS_HP    - entropy contribution to the free energy, cov(dH/dx,Epot)\n"
+                "** mTdS_HR/-TdS_HR    - entropy contribution to the free energy, cov(dH/dx,Erst)\n"
+                "** mTdS_HK/-TdS_HK    - entropy contribution to the free energy, cov(dH/dx,Ekin)\n"
+                "** mTdS_HV/-TdS_HV    - entropy contribution to the free energy, cov(dH/dx,pV)\n"
                 "\n"
-                "** mTdS_BP/-TdS_BP    - entropy contribution to the free energy, cov(bias,Epot) - ABF/CST\n"
-                "** mTdS_BR/-TdS_BR    - entropy contribution to the free energy, cov(bias,Erst) - ABF/CST\n"
-                "** mTdS_BK/-TdS_BK    - entropy contribution to the free energy, cov(bias,Ekin) - ABF/CST\n"
-                "** mTdS_BV/-TdS_BV    - entropy contribution to the free energy, cov(bias,pV)   - ABF/CST\n"
-                )   /* option description */
+                "** mTdS_BP/-TdS_BP    - entropy contribution to the free energy, cov(bias,Epot)\n"
+                "** mTdS_BR/-TdS_BR    - entropy contribution to the free energy, cov(bias,Erst)\n"
+                "** mTdS_BK/-TdS_BK    - entropy contribution to the free energy, cov(bias,Ekin)\n"
+                "** mTdS_BV/-TdS_BV    - entropy contribution to the free energy, cov(bias,pV)\n"
+                )
     //----------------------------------------------------------------------
     CSO_MAP_OPT(CSmallString,                           /* option type */
                 Method,                        /* option name */

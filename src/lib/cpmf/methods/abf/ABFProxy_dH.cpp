@@ -19,6 +19,7 @@
 // =============================================================================
 
 #include <ABFProxy_dH.hpp>
+#include <PMFConstants.hpp>
 
 //------------------------------------------------------------------------------
 
@@ -57,8 +58,11 @@ void CABFProxy_dH::SetType(EABFdHType type)
 
     switch(Type){
     // -------------------
+        case(ABF_dH):
+            Provide = "ABF dH(x) (based on derivatives)";
+    // -------------------
         case(ABF_MICFP):
-            Provide = "ABF ICFP";
+            Provide = "ABF ICFP(x)";
         break;
     // -------------------
         default:
@@ -96,40 +100,73 @@ double CABFProxy_dH::GetValue(int ibin,int icv,EProxyRealm realm) const
         RUNTIME_ERROR("Accu is NULL");
     }
 
-    double  nsamples = 0.0;
-    double  micf     = 0.0;
-    double  m2icf    = 0.0;
-    double  ncorr    = Accu->GetNCorr();
+    double value = 0.0;
+    double ncorr = Accu->GetNCorr();
+    double temp  = Accu->GetTemperature();
 
     switch(Type){
     // -------------------
-        case(ABF_MICFP):
-            nsamples = Accu->GetData("NTDS",ibin);
-            micf     = Accu->GetData("MICFP",ibin,icv);
-            m2icf    = Accu->GetData("M2ICFP",ibin,icv);
+        case(ABF_dH): {
+            double  nsamples    = Accu->GetData("NTDS",ibin);
+            double  micfp       = Accu->GetData("MICFP",ibin,icv);
+            double  m2icfp      = Accu->GetData("M2ICFP",ibin,icv);
+
+            double  c11         = Accu->GetData("C11HP",ibin,icv) / nsamples;
+            double  m2hicf      = Accu->GetData("M2HICF",ibin,icv);
+            double  m2epot      = Accu->GetData("M2EPOT",ibin);
+
+            if( nsamples <= 0 ) return(value);
+
+            double value = micfp - c11  / (temp * PMF_Rgas);
+            double sicfp = sqrt(m2icfp / nsamples);
+            double sc11  = sqrt(m2hicf / nsamples) * sqrt( m2epot / nsamples )  / (temp * PMF_Rgas);
+
+            // approximation
+            double sigma = sqrt( sicfp*sicfp + sc11*sc11 );
+
+            switch(realm){
+                // -------------------
+                case(E_PROXY_VALUE):
+                    return( value );
+                // -------------------
+                case(E_PROXY_SIGMA):
+                    return( sigma );
+                // -------------------
+                case(E_PROXY_ERROR):
+                    return( sqrt(ncorr) * sigma / sqrt(nsamples) );
+                // -------------------
+                default:
+                    RUNTIME_ERROR("unsupported realm");
+            }
+        }
+        break;
+    // -------------------
+        case(ABF_MICFP): {
+            double  nsamples = Accu->GetData("NTDS",ibin);
+            double  micf     = Accu->GetData("MICFP",ibin,icv);
+            double  m2icf    = Accu->GetData("M2ICFP",ibin,icv);
+
+            if( nsamples <= 0 ) return(value);
+
+            switch(realm){
+                // -------------------
+                case(E_PROXY_VALUE):
+                    return( micf );
+                // -------------------
+                case(E_PROXY_SIGMA):
+                    return( sqrt(m2icf / nsamples) );
+                // -------------------
+                case(E_PROXY_ERROR):
+                    return( sqrt(m2icf * ncorr) / nsamples );
+                // -------------------
+                default:
+                    RUNTIME_ERROR("unsupported realm");
+            }
+        }
         break;
     // -------------------
         default:
             RUNTIME_ERROR("unsupported type");
-    }
-
-    double value = 0.0;
-    if( nsamples <= 0 ) return(value);
-
-    switch(realm){
-// mean force
-        // -------------------
-        case(E_PROXY_VALUE):
-            return( micf );
-        // -------------------
-        case(E_PROXY_SIGMA):
-            return( sqrt(m2icf / nsamples) );
-        // -------------------
-        case(E_PROXY_ERROR):
-            return( sqrt(m2icf * ncorr) / nsamples );
-        // -------------------
-        default:
-            RUNTIME_ERROR("unsupported realm");
     }
 
     return(value);

@@ -46,7 +46,20 @@ CEnergyDerProxyPtr CEnergyDerProxyInit::InitProxy(const CSmallString& realm,CPMF
 // -----------------------------------------------
     } else if ( realm == "ICFP" ) {
         if( CABFProxy_dH::IsCompatible(accu) ){
-            lproxy    = CABFProxy_dH_Ptr(new CABFProxy_dH);
+            CABFProxy_dH_Ptr proxy = CABFProxy_dH_Ptr(new CABFProxy_dH);
+            proxy->SetType(ABF_MICFP);
+            lproxy = proxy;
+        } else {
+            CSmallString error;
+            error << "incompatible method: " << accu->GetMethod() << " with requested realm: " <<  realm;
+            RUNTIME_ERROR(error);
+        }
+// -----------------------------------------------
+    } else if ( realm == "dH" ) {
+        if( CABFProxy_dH::IsCompatible(accu) ){
+            CABFProxy_dH_Ptr proxy = CABFProxy_dH_Ptr(new CABFProxy_dH);
+            proxy->SetType(ABF_dH);
+            lproxy = proxy;
         } else {
             CSmallString error;
             error << "incompatible method: " << accu->GetMethod() << " with requested realm: " <<  realm;
