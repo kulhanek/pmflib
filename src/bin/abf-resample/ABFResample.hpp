@@ -81,7 +81,6 @@ private:
     void ResampleAccu(void);
     void PrintSampledStat(void);
     bool Integrate(void);
-    void LoadGPRHyprms(CIntegratorGPR& gpr);
     void DecodeIList(const CSmallString& spec, std::vector<int>& ilist,const CSmallString& optionname);
 };
 

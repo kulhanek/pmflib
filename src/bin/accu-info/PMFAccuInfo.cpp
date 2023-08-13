@@ -26,12 +26,9 @@
 #include "PMFAccuInfo.hpp"
 #include <iomanip>
 #include <boost/format.hpp>
-#include <ABFProxy_dG.hpp>
-#include <ABFProxy_mTdS.hpp>
-#include <CSTProxy_dG.hpp>
-#include <CSTProxy_mTdS.hpp>
+#include <EnergyDerProxyInit.hpp>
+#include <EnergyProxyInit.hpp>
 #include <CSTProxy_MTC.hpp>
-#include <PMFProxy_dH.hpp>
 
 //------------------------------------------------------------------------------
 
@@ -274,113 +271,7 @@ void CPMFAccuInfo::GetSection(const CSmallString& name)
 
 void CPMFAccuInfo::GetDerivative(const CSmallString& name)
 {
-    CEnergyDerProxyPtr      der_proxy;
-
-// init energy-der proxy
-    if( name == "dG" ){
-        if( CABFProxy_dG::IsCompatible(Accu) ){
-            der_proxy    = CABFProxy_dG_Ptr(new CABFProxy_dG);
-        } else if (CCSTProxy_dG::IsCompatible(Accu) ) {
-            der_proxy    = CCSTProxy_dG_Ptr(new CCSTProxy_dG);
-        } else {
-            CSmallString error;
-            error << "incompatible method: " << Accu->GetMethod() << " with requested realm: " <<  name;
-            RUNTIME_ERROR(error);
-        }
-// -----------------------------------------------
-    } else if ( name == "-TdS" ) {
-        if( CABFProxy_mTdS::IsCompatible(Accu) ){
-            der_proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
-        } else if (CCSTProxy_mTdS::IsCompatible(Accu) ) {
-            der_proxy    = CCSTProxy_mTdS_Ptr(new CCSTProxy_mTdS);
-        } else {
-            CSmallString error;
-            error << "incompatible method: " << Accu->GetMethod() << " with requested realm: " <<  name;
-            RUNTIME_ERROR(error);
-        }
-// -----------------------------------------------
-    } else if ( name == "-TdS_HP" ) {
-        if( CABFProxy_mTdS::IsCompatible(Accu) ){
-            CABFProxy_mTdS_Ptr proxy = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
-            proxy->SetType(ABF_TdS_HP);
-            der_proxy = proxy;
-        } else if (CCSTProxy_mTdS::IsCompatible(Accu) ) {
-            CCSTProxy_mTdS_Ptr proxy = CCSTProxy_mTdS_Ptr(new CCSTProxy_mTdS);
-            proxy->SetType(CST_TdS_HP);
-            der_proxy = proxy;
-        } else {
-            CSmallString error;
-            error << "incompatible method: " << Accu->GetMethod() << " with requested realm: " << name;
-            RUNTIME_ERROR(error);
-        }
-// -----------------------------------------------
-    } else if ( name == "-TdS_HR" ) {
-        if( CABFProxy_mTdS::IsCompatible(Accu) ){
-            CABFProxy_mTdS_Ptr proxy = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
-            proxy->SetType(ABF_TdS_HR);
-            der_proxy = proxy;
-        } else if (CCSTProxy_mTdS::IsCompatible(Accu) ) {
-            CCSTProxy_mTdS_Ptr proxy = CCSTProxy_mTdS_Ptr(new CCSTProxy_mTdS);
-            proxy->SetType(CST_TdS_HR);
-            der_proxy = proxy;
-        } else {
-            CSmallString error;
-            error << "incompatible method: " << Accu->GetMethod() << " with requested realm: " << name;
-            RUNTIME_ERROR(error);
-        }
-// -----------------------------------------------
-    } else if ( name == "-TdS_HK" ) {
-        if( CABFProxy_mTdS::IsCompatible(Accu) ){
-            CABFProxy_mTdS_Ptr proxy = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
-            proxy->SetType(ABF_TdS_HK);
-            der_proxy = proxy;
-        } else if (CCSTProxy_mTdS::IsCompatible(Accu) ) {
-            CCSTProxy_mTdS_Ptr proxy = CCSTProxy_mTdS_Ptr(new CCSTProxy_mTdS);
-            proxy->SetType(CST_TdS_HK);
-            der_proxy = proxy;
-        } else {
-            CSmallString error;
-            error << "incompatible method: " << Accu->GetMethod() << " with requested realm: " << name;
-            RUNTIME_ERROR(error);
-        }
-// -----------------------------------------------
-    } else if ( name == "-TdS_HV" ) {
-        if( CABFProxy_mTdS::IsCompatible(Accu) ){
-            CABFProxy_mTdS_Ptr proxy = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
-            proxy->SetType(ABF_TdS_HV);
-            der_proxy = proxy;
-        } else {
-            CSmallString error;
-            error << "incompatible method: " << Accu->GetMethod() << " with requested realm: " << name;
-            RUNTIME_ERROR(error);
-        }
-// -----------------------------------------------
-    } else if ( name == "-TdS_BP" ) {
-        CABFProxy_mTdS_Ptr proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
-        proxy->SetType(ABF_TdS_BP);
-        der_proxy = proxy;
-// -----------------------------------------------
-    } else if ( name == "-TdS_BR" ) {
-        CABFProxy_mTdS_Ptr proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
-        proxy->SetType(ABF_TdS_BR);
-        der_proxy = proxy;
-// -----------------------------------------------
-    } else if ( name == "-TdS_BK" ) {
-        CABFProxy_mTdS_Ptr proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
-        proxy->SetType(ABF_TdS_BK);
-        der_proxy = proxy;
-// -----------------------------------------------
-    } else if ( name == "-TdS_BV" ) {
-        CABFProxy_mTdS_Ptr proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
-        proxy->SetType(ABF_TdS_BV);
-        der_proxy = proxy;
-// -----------------------------------------------
-    } else {
-        CSmallString error;
-        error << "unsupported realm: " << name;
-        RUNTIME_ERROR(error);
-    }
-
+    CEnergyDerProxyPtr der_proxy = CEnergyDerProxyInit::InitProxy(name,Accu);
     der_proxy->Init(Accu);
 
     vout << high;
@@ -411,34 +302,7 @@ void CPMFAccuInfo::GetDerivative(const CSmallString& name)
 
 void CPMFAccuInfo::GetEnergy(const CSmallString& name)
 {
-    CPMFProxy_dH_Ptr    ene_proxy;
-
-    if( name == "<Etot>" ){
-        CPMFProxy_dH_Ptr proxy    = CPMFProxy_dH_Ptr(new CPMFProxy_dH);
-        proxy->SetType(PMF_ETOT);
-        ene_proxy = proxy;
-// -----------------------------------------------
-    } else if ( name == "<Epot>" ) {
-        CPMFProxy_dH_Ptr proxy    = CPMFProxy_dH_Ptr(new CPMFProxy_dH);
-        proxy->SetType(PMF_EPOT);
-        ene_proxy = proxy;
-// -----------------------------------------------
-    } else if ( name == "<Ekin>" ) {
-        CPMFProxy_dH_Ptr proxy    = CPMFProxy_dH_Ptr(new CPMFProxy_dH);
-        proxy->SetType(PMF_EKIN);
-        ene_proxy = proxy;
-// -----------------------------------------------
-    } else if ( name == "<Erst>" ) {
-        CPMFProxy_dH_Ptr proxy    = CPMFProxy_dH_Ptr(new CPMFProxy_dH);
-        proxy->SetType(PMF_ERST);
-        ene_proxy = proxy;
-// -----------------------------------------------
-    } else {
-        CSmallString error;
-        error << "unsupported realm: " << name ;
-        RUNTIME_ERROR(error);
-    }
-
+    CEnergyProxyPtr ene_proxy = CEnergyProxyInit::InitProxy(name,Accu);
     ene_proxy->Init(Accu);
 
     vout << high;

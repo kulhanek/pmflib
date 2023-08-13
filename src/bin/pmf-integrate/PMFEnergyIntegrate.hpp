@@ -92,7 +92,6 @@ private:
     int  SeedSampled(int seedid);
     bool IsHole(int seedid);
     void MarkAsHole(int seedid);
-    void LoadGPRHyprms(CIntegratorGPR& gpr);
     void SyncFESWithAccu(void);
     void SyncAccuWithFES(void);
     void DecodeEList(const CSmallString& spec, std::vector<bool>& elist,const CSmallString& optionname);

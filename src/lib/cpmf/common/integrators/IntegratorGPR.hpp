@@ -98,6 +98,9 @@ public:
     /// multiply of bin sizes
     void SetWFac(size_t cvind, double value);
 
+    /// load hyperparameters from file
+    void LoadGPRHyprms(const CSmallString& name);
+
 // setup
     /// set include error
     void SetIncludeError(bool set);

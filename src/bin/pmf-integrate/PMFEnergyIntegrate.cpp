@@ -36,11 +36,7 @@
 #include <boost/format.hpp>
 #include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string/classification.hpp>
-#include <ABFProxy_dG.hpp>
-#include <ABFProxy_dH.hpp>
-#include <ABFProxy_mTdS.hpp>
-#include <CSTProxy_dG.hpp>
-#include <CSTProxy_mTdS.hpp>
+#include <EnergyDerProxyInit.hpp>
 #include <CSTProxy_MTC.hpp>
 
 //------------------------------------------------------------------------------
@@ -244,120 +240,8 @@ bool CPMFEnergyIntegrate::Run(void)
     vout << format(  "   Number of loaded PMF accumulators = %d")%Accumulators.size() << endl;
     State++;
     for(size_t i=0; i < Accumulators.size(); i++){
-        CPMFAccumulatorPtr accu = Accumulators[i];
-        CEnergyDerProxyPtr lproxy;
-        if( Options.GetOptRealm() == "dG" ){
-            if( CABFProxy_dG::IsCompatible(accu) ){
-                lproxy    = CABFProxy_dG_Ptr(new CABFProxy_dG);
-            } else if (CCSTProxy_dG::IsCompatible(accu) ) {
-                lproxy    = CCSTProxy_dG_Ptr(new CCSTProxy_dG);
-            } else {
-                CSmallString error;
-                error << "incompatible method: " << accu->GetMethod() << " with requested realm: " <<  Options.GetOptRealm();
-                RUNTIME_ERROR(error);
-            }
-    // -----------------------------------------------
-        } else if ( Options.GetOptRealm() == "ICFP" ) {
-            if( CABFProxy_dH::IsCompatible(accu) ){
-                lproxy    = CABFProxy_dH_Ptr(new CABFProxy_dH);
-            } else {
-                CSmallString error;
-                error << "incompatible method: " << accu->GetMethod() << " with requested realm: " <<  Options.GetOptRealm();
-                RUNTIME_ERROR(error);
-            }
-    // -----------------------------------------------
-        } else if ( (Options.GetOptRealm() == "-TdS") || (Options.GetOptRealm() == "mTdS") ) {
-            if( CABFProxy_mTdS::IsCompatible(accu) ){
-                lproxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
-            } else if (CCSTProxy_mTdS::IsCompatible(accu) ) {
-                lproxy    = CCSTProxy_mTdS_Ptr(new CCSTProxy_mTdS);
-            } else {
-                CSmallString error;
-                error << "incompatible method: " << accu->GetMethod() << " with requested realm: " <<  Options.GetOptRealm();
-                RUNTIME_ERROR(error);
-            }
-    // -----------------------------------------------
-        } else if ( (Options.GetOptRealm() == "-TdS_HP") || (Options.GetOptRealm() == "mTdS_HP") ) {
-            if( CABFProxy_mTdS::IsCompatible(accu) ){
-                CABFProxy_mTdS_Ptr proxy = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
-                proxy->SetType(ABF_TdS_HP);
-                lproxy = proxy;
-            } else if (CCSTProxy_mTdS::IsCompatible(accu) ) {
-                CCSTProxy_mTdS_Ptr proxy = CCSTProxy_mTdS_Ptr(new CCSTProxy_mTdS);
-                proxy->SetType(CST_TdS_HP);
-                lproxy = proxy;
-            } else {
-                CSmallString error;
-                error << "incompatible method: " << accu->GetMethod() << " with requested realm: " <<  Options.GetOptRealm();
-                RUNTIME_ERROR(error);
-            }
-    // -----------------------------------------------
-        } else if ( (Options.GetOptRealm() == "-TdS_HR") || (Options.GetOptRealm() == "mTdS_HR") ) {
-            if( CABFProxy_mTdS::IsCompatible(accu) ){
-                CABFProxy_mTdS_Ptr proxy = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
-                proxy->SetType(ABF_TdS_HR);
-                lproxy = proxy;
-            } else if (CCSTProxy_mTdS::IsCompatible(accu) ) {
-                CCSTProxy_mTdS_Ptr proxy = CCSTProxy_mTdS_Ptr(new CCSTProxy_mTdS);
-                proxy->SetType(CST_TdS_HR);
-                lproxy = proxy;
-            } else {
-                CSmallString error;
-                error << "incompatible method: " << accu->GetMethod() << " with requested realm: " <<  Options.GetOptRealm();
-                RUNTIME_ERROR(error);
-            }
-    // -----------------------------------------------
-        } else if ( (Options.GetOptRealm() == "-TdS_HK") || (Options.GetOptRealm() == "mTdS_HK") ) {
-            if( CABFProxy_mTdS::IsCompatible(accu) ){
-                CABFProxy_mTdS_Ptr proxy = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
-                proxy->SetType(ABF_TdS_HK);
-                lproxy = proxy;
-            } else if (CCSTProxy_mTdS::IsCompatible(accu) ) {
-                CCSTProxy_mTdS_Ptr proxy = CCSTProxy_mTdS_Ptr(new CCSTProxy_mTdS);
-                proxy->SetType(CST_TdS_HK);
-                lproxy = proxy;
-            } else {
-                CSmallString error;
-                error << "incompatible method: " << accu->GetMethod() << " with requested realm: " <<  Options.GetOptRealm();
-                RUNTIME_ERROR(error);
-            }
-    // -----------------------------------------------
-        } else if ( (Options.GetOptRealm() == "-TdS_HV") || (Options.GetOptRealm() == "mTdS_HV") ) {
-            if( CABFProxy_mTdS::IsCompatible(accu) ){
-                CABFProxy_mTdS_Ptr proxy = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
-                proxy->SetType(ABF_TdS_HV);
-                lproxy = proxy;
-            } else {
-                CSmallString error;
-                error << "incompatible method: " << accu->GetMethod() << " with requested realm: " <<  Options.GetOptRealm();
-                RUNTIME_ERROR(error);
-            }
-    // -----------------------------------------------
-        } else if ( (Options.GetOptRealm() == "-TdS_BP") || (Options.GetOptRealm() == "mTdS_BP") ) {
-            CABFProxy_mTdS_Ptr proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
-            proxy->SetType(ABF_TdS_BP);
-            lproxy = proxy;
-    // -----------------------------------------------
-        } else if ( (Options.GetOptRealm() == "-TdS_BR") || (Options.GetOptRealm() == "mTdS_BR") ) {
-            CABFProxy_mTdS_Ptr proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
-            proxy->SetType(ABF_TdS_BR);
-            lproxy = proxy;
-    // -----------------------------------------------
-        } else if ( (Options.GetOptRealm() == "-TdS_BK") || (Options.GetOptRealm() == "mTdS_BK") ) {
-            CABFProxy_mTdS_Ptr proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
-            proxy->SetType(ABF_TdS_BK);
-            lproxy = proxy;
-    // -----------------------------------------------
-        } else if ( (Options.GetOptRealm() == "-TdS_BV") || (Options.GetOptRealm() == "mTdS_BV") ) {
-            CABFProxy_mTdS_Ptr proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
-            proxy->SetType(ABF_TdS_BV);
-            lproxy = proxy;
-    // -----------------------------------------------
-        } else {
-            CSmallString error;
-            error << "unsupported realm: " << Options.GetOptRealm();
-            RUNTIME_ERROR(error);
-        }
+        CPMFAccumulatorPtr accu   = Accumulators[i];
+        CEnergyDerProxyPtr lproxy = CEnergyDerProxyInit::InitProxy(Options.GetOptRealm(),accu);
         lproxy->Init(accu);
         DerProxies.push_back(lproxy);
     }
@@ -678,7 +562,7 @@ bool CPMFEnergyIntegrate::IntegrateForMFZScore(int pass)
         }
 
         if( Options.IsOptLoadHyprmsSet() ){
-            LoadGPRHyprms(integrator);
+            integrator.LoadGPRHyprms(Options.GetOptLoadHyprms());
         } else {
             integrator.SetSigmaF2(Options.GetOptSigmaF2());
             integrator.SetNCorr(Options.GetOptNCorr());
@@ -785,7 +669,7 @@ bool CPMFEnergyIntegrate::IntegrateForEcut(void)
         }
 
         if( Options.IsOptLoadHyprmsSet() ){
-            LoadGPRHyprms(integrator);
+            integrator.LoadGPRHyprms(Options.GetOptLoadHyprms());
         } else {
             integrator.SetSigmaF2(Options.GetOptSigmaF2());
             integrator.SetNCorr(Options.GetOptNCorr());
@@ -904,7 +788,7 @@ bool CPMFEnergyIntegrate::Integrate(void)
         }
 
         if( Options.IsOptLoadHyprmsSet() ){
-            LoadGPRHyprms(integrator);
+            integrator.LoadGPRHyprms(Options.GetOptLoadHyprms());
         } else {
             integrator.SetSigmaF2(Options.GetOptSigmaF2());
             integrator.SetNCorr(Options.GetOptNCorr());
@@ -1004,7 +888,7 @@ bool CPMFEnergyIntegrate::ReduceFES(void)
         }
 
         if( Options.IsOptLoadHyprmsSet() ){
-            LoadGPRHyprms(integrator);
+            integrator.LoadGPRHyprms(Options.GetOptLoadHyprms());
         } else {
             integrator.SetSigmaF2(Options.GetOptSigmaF2());
             integrator.SetNCorr(Options.GetOptNCorr());
@@ -1077,73 +961,6 @@ bool CPMFEnergyIntegrate::ReduceFES(void)
     }
 
     return(true);
-}
-
-//==============================================================================
-//------------------------------------------------------------------------------
-//==============================================================================
-
-void CPMFEnergyIntegrate::LoadGPRHyprms(CIntegratorGPR& gpr)
-{
-    ifstream fin;
-    fin.open(Options.GetOptLoadHyprms());
-    if( ! fin ){
-        CSmallString error;
-        error << "unable to open file with GPR hyperparameters: " << Options.GetOptLoadHyprms();
-        RUNTIME_ERROR(error);
-    }
-
-    string line;
-    while( getline(fin,line) ){
-        // is it comment?
-        if( (line.size() > 0) && (line[0] == '#') ) continue;
-
-        // parse line
-        stringstream str(line);
-        string key, buf;
-        double value;
-        str >> key >> buf >> value;
-        if( ! str ){
-            CSmallString error;
-            error << "GPR hyperparameters file, unable to decode line: " << line.c_str();
-            RUNTIME_ERROR(error);
-        }
-        if( key == "SigmaF2" ){
-            gpr.SetSigmaF2(value);
-        } else if( key == "NCorr" ){
-            gpr.SetNCorr(value);
-        } else if( key.find("WFac#") != string::npos ) {
-            std::replace( key.begin(), key.end(), '#', ' ');
-            stringstream kstr(key);
-            string swfac;
-            int    cvind;
-            kstr >> swfac >> cvind;
-            if( ! kstr ){
-                CSmallString error;
-                error << "GPR hyperparameters file, unable to decode wfac key: " << key.c_str();
-                RUNTIME_ERROR(error);
-            }
-            cvind--; // transform to 0-based indexing
-            gpr.SetWFac(cvind,value);
-        } else if( key.find("SigmaN2#") != string::npos ) {
-            std::replace( key.begin(), key.end(), '#', ' ');
-            stringstream kstr(key);
-            string swfac;
-            int    cvind;
-            kstr >> swfac >> cvind;
-            if( ! kstr ){
-                CSmallString error;
-                error << "GPR hyperparameters file, unable to decode sigman2 key: " << key.c_str();
-                RUNTIME_ERROR(error);
-            }
-            cvind--; // transform to 0-based indexing
-            gpr.SetSigmaN2(cvind,value);
-        } else {
-            CSmallString error;
-            error << "GPR hyperparameters file, unrecognized key: " << key.c_str();
-            RUNTIME_ERROR(error);
-        }
-    }
 }
 
 //==============================================================================

@@ -28,7 +28,7 @@
 #include <boost/algorithm/string/classification.hpp>
 #include <ESPrinter.hpp>
 #include <iomanip>
-#include <PMFProxy_dH.hpp>
+#include <EnergyProxyInit.hpp>
 
 //------------------------------------------------------------------------------
 
@@ -159,33 +159,8 @@ bool CEnthalpy::Run(void)
     vout << format(  "   Number of loaded PMF accumulators = %d")%Accumulators.size() << endl;
     State++;
     for(size_t i=0; i < Accumulators.size(); i++){
-        CPMFAccumulatorPtr accu = Accumulators[i];
-        CPMFProxy_dH_Ptr proxy;
-
-        if( Options.GetOptRealm() == "<Eint>" ){
-            proxy    = CPMFProxy_dH_Ptr(new CPMFProxy_dH);
-            proxy->SetType(PMF_EINT);
-        } else if( Options.GetOptRealm() == "<Etot>" ){
-            proxy    = CPMFProxy_dH_Ptr(new CPMFProxy_dH);
-            proxy->SetType(PMF_ETOT);
-    // -----------------------------------------------
-        } else if ( Options.GetOptRealm() == "<Epot>" ) {
-            proxy    = CPMFProxy_dH_Ptr(new CPMFProxy_dH);
-            proxy->SetType(PMF_EPOT);
-    // -----------------------------------------------
-        } else if ( Options.GetOptRealm() == "<Ekin>" ) {
-            proxy    = CPMFProxy_dH_Ptr(new CPMFProxy_dH);
-            proxy->SetType(PMF_EKIN);
-    // -----------------------------------------------
-        } else if ( Options.GetOptRealm() == "<Erst>" ) {
-            proxy    = CPMFProxy_dH_Ptr(new CPMFProxy_dH);
-            proxy->SetType(PMF_ERST);
-    // -----------------------------------------------
-        } else {
-            CSmallString error;
-            error << "unsupported realm: " << Options.GetOptRealm() ;
-            RUNTIME_ERROR(error);
-        }
+        CPMFAccumulatorPtr  accu  = Accumulators[i];
+        CEnergyProxyPtr     proxy = CEnergyProxyInit::InitProxy(Options.GetOptRealm(),accu);
         proxy->Init(accu);
         EnergyProxies.push_back(proxy);
     }

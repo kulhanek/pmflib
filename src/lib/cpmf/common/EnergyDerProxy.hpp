@@ -1,5 +1,5 @@
-#ifndef MeanForceProxyH
-#define MeanForceProxyH
+#ifndef EnergyDerProxyH
+#define EnergyDerProxyH
 // =============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------

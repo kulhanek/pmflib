@@ -10,7 +10,9 @@ SET(CPMF_METHODS_SRC
         common/EnergySurface.cpp
         common/ESPrinter.cpp
         common/EnergyProxy.cpp
+        common/EnergyProxyInit.cpp
         common/EnergyDerProxy.cpp
+        common/EnergyDerProxyInit.cpp
 
     # integrators
         common/integrators/IntegratorRFD.cpp

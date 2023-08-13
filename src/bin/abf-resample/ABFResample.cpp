@@ -242,7 +242,7 @@ bool CABFResample::Integrate(void)
     Integrator.AddInputEnergyDerProxy(DerProxy);
 
     if( Options.IsOptLoadHyprmsSet() ){
-        LoadGPRHyprms(Integrator);
+        Integrator.LoadGPRHyprms(Options.GetOptLoadHyprms());
     } else {
         Integrator.SetSigmaF2(Options.GetOptSigmaF2());
         Integrator.SetNCorr(Options.GetOptNCorr());
@@ -285,73 +285,6 @@ void CABFResample::ResampleAccu(void)
             NSAMPLES->SetData(ibin,1.0);
             MICF->SetData(ibin,icv,mf);
             M2ICF->SetData(ibin,icv,0.0);
-        }
-    }
-}
-
-//==============================================================================
-//------------------------------------------------------------------------------
-//==============================================================================
-
-void CABFResample::LoadGPRHyprms(CIntegratorGPR& gpr)
-{
-    ifstream fin;
-    fin.open(Options.GetOptLoadHyprms());
-    if( ! fin ){
-        CSmallString error;
-        error << "unable to open file with GPR hyperparameters: " << Options.GetOptLoadHyprms();
-        RUNTIME_ERROR(error);
-    }
-
-    string line;
-    while( getline(fin,line) ){
-        // is it comment?
-        if( (line.size() > 0) && (line[0] == '#') ) continue;
-
-        // parse line
-        stringstream str(line);
-        string key, buf;
-        double value;
-        str >> key >> buf >> value;
-        if( ! str ){
-            CSmallString error;
-            error << "GPR hyperparameters file, unable to decode line: " << line.c_str();
-            RUNTIME_ERROR(error);
-        }
-        if( key == "SigmaF2" ){
-            gpr.SetSigmaF2(value);
-        } else if( key == "NCorr" ){
-            gpr.SetNCorr(value);
-        } else if( key.find("WFac#") != string::npos ) {
-            std::replace( key.begin(), key.end(), '#', ' ');
-            stringstream kstr(key);
-            string swfac;
-            int    cvind;
-            kstr >> swfac >> cvind;
-            if( ! kstr ){
-                CSmallString error;
-                error << "GPR hyperparameters file, unable to decode wfac key: " << key.c_str();
-                RUNTIME_ERROR(error);
-            }
-            cvind--; // transform to 0-based indexing
-            gpr.SetWFac(cvind,value);
-        } else if( key.find("SigmaN2#") != string::npos ) {
-            std::replace( key.begin(), key.end(), '#', ' ');
-            stringstream kstr(key);
-            string swfac;
-            int    cvind;
-            kstr >> swfac >> cvind;
-            if( ! kstr ){
-                CSmallString error;
-                error << "GPR hyperparameters file, unable to decode sigman2 key: " << key.c_str();
-                RUNTIME_ERROR(error);
-            }
-            cvind--; // transform to 0-based indexing
-            gpr.SetSigmaN2(cvind,value);
-        } else {
-            CSmallString error;
-            error << "GPR hyperparameters file, unrecognized key: " << key.c_str();
-            RUNTIME_ERROR(error);
         }
     }
 }

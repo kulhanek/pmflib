@@ -40,7 +40,9 @@ public:
     CSO_PROG_NAME_END
 
     CSO_PROG_DESC_BEGIN
-    "The program re-samples the biasing force."
+    "Re-sample the biasing force for the ABF method employing the GP regression. "
+    "The forces are interpolated/extrapolated from the sampled regions of the input PMF accumulator. "
+    "The new forces have the number of samples set to <Limit> with zero variance."
     CSO_PROG_DESC_END
 
     CSO_PROG_VERS_BEGIN
@@ -75,21 +77,21 @@ public:
                 NULL,                           /* default value */
                 true,                           /* is argument mandatory */
                 "input",                        /* parameter name */
-                "File name with the ABF accumulator.")   /* argument description */
+                "File name with the PMF accumulator.")   /* argument description */
     //----------------------------------------------------------------------
     CSO_MAP_ARG(CSmallString,                   /* argument type */
                 NBins,                          /* argument name */
                 NULL,                           /* default value */
                 true,                           /* is argument mandatory */
                 "nbins",                        /* parameter name */
-                "Number of bins in resampled accumulator in the form NBins1[xNBins2...].")   /* argument description */
+                "Number of bins in re-sampled accumulator in the form NBins1[xNBins2...].")   /* argument description */
     //----------------------------------------------------------------------
     CSO_MAP_ARG(CSmallString,                   /* argument type */
                 OutAccuName,                          /* argument name */
                 NULL,                           /* default value */
                 true,                           /* is argument mandatory */
                 "output",                        /* parameter name */
-                "File name of resampled ABF accumulator.")   /* argument description */
+                "File name of re-sampled PMF accumulator.")   /* argument description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(CSmallString,                           /* option type */
                 LAMethod,                        /* option name */
@@ -115,7 +117,7 @@ public:
     //----------------------------------------------------------------------
     CSO_MAP_OPT(int,                           /* option type */
                 Limit,                        /* option name */
-                1000,                          /* default value */
+                100000,                          /* default value */
                 false,                          /* is option mandatory */
                 'l',                           /* short option name */
                 "limit",                      /* long option name */

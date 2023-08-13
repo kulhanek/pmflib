@@ -281,6 +281,71 @@ void CIntegratorGPR::SetWFac(size_t cvind, double value)
 
 //------------------------------------------------------------------------------
 
+void CIntegratorGPR::LoadGPRHyprms(const CSmallString& name)
+{
+    ifstream fin;
+    fin.open(name);
+    if( ! fin ){
+        CSmallString error;
+        error << "unable to open file with GPR hyperparameters: " << name;
+        RUNTIME_ERROR(error);
+    }
+
+    string line;
+    while( getline(fin,line) ){
+        // is it comment?
+        if( (line.size() > 0) && (line[0] == '#') ) continue;
+
+        // parse line
+        stringstream str(line);
+        string key, buf;
+        double value;
+        str >> key >> buf >> value;
+        if( ! str ){
+            CSmallString error;
+            error << "GPR hyperparameters file, unable to decode line: " << line.c_str();
+            RUNTIME_ERROR(error);
+        }
+        if( key == "SigmaF2" ){
+            SetSigmaF2(value);
+        } else if( key == "NCorr" ){
+            SetNCorr(value);
+        } else if( key.find("WFac#") != string::npos ) {
+            std::replace( key.begin(), key.end(), '#', ' ');
+            stringstream kstr(key);
+            string swfac;
+            int    cvind;
+            kstr >> swfac >> cvind;
+            if( ! kstr ){
+                CSmallString error;
+                error << "GPR hyperparameters file, unable to decode wfac key: " << key.c_str();
+                RUNTIME_ERROR(error);
+            }
+            cvind--; // transform to 0-based indexing
+            SetWFac(cvind,value);
+        } else if( key.find("SigmaN2#") != string::npos ) {
+            std::replace( key.begin(), key.end(), '#', ' ');
+            stringstream kstr(key);
+            string swfac;
+            int    cvind;
+            kstr >> swfac >> cvind;
+            if( ! kstr ){
+                CSmallString error;
+                error << "GPR hyperparameters file, unable to decode sigman2 key: " << key.c_str();
+                RUNTIME_ERROR(error);
+            }
+            cvind--; // transform to 0-based indexing
+            SetSigmaN2(cvind,value);
+        } else {
+            CSmallString error;
+            error << "GPR hyperparameters file, unrecognized key: " << key.c_str();
+            RUNTIME_ERROR(error);
+        }
+    }
+}
+
+//------------------------------------------------------------------------------
+
 void CIntegratorGPR::SetIncludeError(bool set)
 {
     IncludeError = set;
