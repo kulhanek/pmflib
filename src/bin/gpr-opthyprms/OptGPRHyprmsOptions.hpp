@@ -194,7 +194,7 @@ public:
     //----------------------------------------------------------------------
     CSO_MAP_OPT(CSmallString,                           /* option type */
                 SigmaN2,                        /* option name */
-                "0.1",                          /* default value */
+                "0.0",                          /* default value */
                 false,                          /* is option mandatory */
                 'n',                           /* short option name */
                 "sigman2",                      /* long option name */

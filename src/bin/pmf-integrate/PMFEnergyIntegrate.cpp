@@ -582,6 +582,10 @@ bool CPMFEnergyIntegrate::IntegrateForMFZScore(int pass)
 
         integrator.SetNoEnergy(true);
 
+        if( Options.IsOptMFInfoSet() ){
+            integrator.PrepForMFInfo();
+        }
+
         if(integrator.Integrate(vout) == false) {
             ES_ERROR("unable to integrate ABF accumulator");
             return(false);
@@ -814,6 +818,10 @@ bool CPMFEnergyIntegrate::Integrate(void)
         integrator.SetKernel(Options.GetOptGPRKernel());
         integrator.SetCalcLogPL(Options.GetOptGPRCalcLogPL());
         integrator.SetUseZeroPoint(Options.GetOptGPRIncludeZPE());
+
+        if( Options.IsOptMFInfoSet() ){
+            integrator.PrepForMFInfo();
+        }
 
         if(integrator.Integrate(vout) == false) {
             ES_ERROR("unable to integrate ABF accumulator");

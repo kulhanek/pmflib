@@ -111,18 +111,22 @@ double CABFProxy_dH::GetValue(int ibin,int icv,EProxyRealm realm) const
             double  micfp       = Accu->GetData("MICFP",ibin,icv);
             double  m2icfp      = Accu->GetData("M2ICFP",ibin,icv);
 
-            double  c11         = Accu->GetData("C11HP",ibin,icv) / nsamples;
+            double  chp         = Accu->GetData("C11HP",ibin,icv) / nsamples;
             double  m2hicf      = Accu->GetData("M2HICF",ibin,icv);
             double  m2epot      = Accu->GetData("M2EPOT",ibin);
 
+            double  chr         = Accu->GetData("C11HR",ibin,icv) / nsamples;
+            double  m2erst      = Accu->GetData("M2ERST",ibin);
+
             if( nsamples <= 0 ) return(value);
 
-            double value = micfp - c11  / (temp * PMF_Rgas);
+            double value = micfp - (chp + chr) / (temp * PMF_Rgas);
             double sicfp = sqrt(m2icfp / nsamples);
-            double sc11  = sqrt(m2hicf / nsamples) * sqrt( m2epot / nsamples )  / (temp * PMF_Rgas);
+            double shp  = sqrt(m2hicf / nsamples) * sqrt( m2epot / nsamples )  / (temp * PMF_Rgas);
+            double shr  = sqrt(m2hicf / nsamples) * sqrt( m2erst / nsamples )  / (temp * PMF_Rgas);
 
             // approximation
-            double sigma = sqrt( sicfp*sicfp + sc11*sc11 );
+            double sigma = sqrt( sicfp*sicfp + shp*shp + shr*shr );
 
             switch(realm){
                 // -------------------

@@ -609,9 +609,9 @@ bool CSmootherGPR::WriteMFInfo(const CSmallString& name)
 
         EneSurface->GetPoint(ibin,ipos);
         mfi[indi]  = item->GetValue(ibin,E_PROXY_VALUE);
-        mfie[indi] = item->GetValue(ibin,E_PROXY_ERROR)*item->GetValue(ibin,E_PROXY_ERROR);
+        mfie[indi] = item->GetValue(ibin,E_PROXY_ERROR);    // sigma
         mfp[indi]  = GetValue(ipos);
-        mfpe[indi] = Cov[indi][indi];
+        mfpe[indi] = sqrt(Cov[indi][indi]);                 // convert to sigma
     }
 
     ofstream ofs(name);

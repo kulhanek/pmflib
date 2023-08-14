@@ -75,6 +75,8 @@ CIntegratorGPR::CIntegratorGPR(void)
     NeedInv             = false;
     UseZeroPoint        = false;
     FastErrors          = true;
+
+    KSInverted          = false;
 }
 
 //------------------------------------------------------------------------------
@@ -719,6 +721,7 @@ bool CIntegratorGPR::TrainGP(CVerboseStr& vout)
                 vout << "   Inverting K+Sigma by LU ..." << endl;
                 result = CSciLapack::invLU(KS,logdetK);
                 if( result != 0 ) return(false);
+                KSInverted = true;
                 // calculate weights
                 vout << "   Calculating weights B ..." << endl;
                 CSciBlas::gemv(1.0,KS,Y,0.0,GPRModel);
@@ -728,6 +731,7 @@ bool CIntegratorGPR::TrainGP(CVerboseStr& vout)
                     vout << "   Training GPR + K+Sigma inversion by LU ..." << endl;
                     result = CSciLapack::solvleLUInv(KS,GPRModel,logdetK);
                     if( result != 0 ) return(false);
+                    KSInverted = true;
                 } else {
                     vout << "   Training GPR by LU ..." << endl;
                     result = CSciLapack::solvleLU(KS,GPRModel,logdetK);
@@ -740,6 +744,7 @@ bool CIntegratorGPR::TrainGP(CVerboseStr& vout)
                 vout << "   Inverting K+Sigma by LL ..." << endl;
                 result = CSciLapack::invLL(KS,logdetK);
                 if( result != 0 ) return(false);
+                KSInverted = true;
                 // calculate weights
                 vout << "   Calculating weights B ..." << endl;
                 CSciBlas::gemv(1.0,KS,Y,0.0,GPRModel);
@@ -749,6 +754,7 @@ bool CIntegratorGPR::TrainGP(CVerboseStr& vout)
                     vout << "   Training GPR + K+Sigma inversion by LL ..." << endl;
                     result = CSciLapack::solvleLLInv(KS,GPRModel,logdetK);
                     if( result != 0 ) return(false);
+                    KSInverted = true;
                 } else {
                     vout << "   Training GPR by LL ..." << endl;
                     result = CSciLapack::solvleLL(KS,GPRModel,logdetK);
@@ -766,6 +772,7 @@ bool CIntegratorGPR::TrainGP(CVerboseStr& vout)
             // calculate weights
             vout << "   Calculating weights B ..." << endl;
             CSciBlas::gemv(1.0,KS,Y,0.0,GPRModel);
+            KSInverted = true;
             }
             break;
         case(EGPRLA_SVD2):{
@@ -778,6 +785,7 @@ bool CIntegratorGPR::TrainGP(CVerboseStr& vout)
             // calculate weights
             vout << "   Calculating weights B ..." << endl;
             CSciBlas::gemv(1.0,KS,Y,0.0,GPRModel);
+            KSInverted = true;
             }
             break;
     default:
@@ -1165,7 +1173,7 @@ void CIntegratorGPR::GetKernelDer2Num(const CSimpleVector<double>& ip,const CSim
     CSimpleVector<double> tjp;
     tjp.CreateVector(NumOfCVs);
 
-    double  dh = 1e-3;
+    double  dh = 1e-4;
     double  v1,v2,v3,v4;
 
     // off diagonal elements
@@ -1554,6 +1562,10 @@ double CIntegratorGPR::GetMeanForce(const CSimpleVector<double>& position,size_t
 
 double CIntegratorGPR::GetMeanForceVar(const CSimpleVector<double>& position,size_t icoord)
 {
+    if( KSInverted != true ) {
+        RUNTIME_ERROR("KS must be inverted!");
+    }
+
     CSimpleVector<double>   kff2;
     CSimpleVector<double>   ik;
 
@@ -1563,7 +1575,7 @@ double CIntegratorGPR::GetMeanForceVar(const CSimpleVector<double>& position,siz
     RunBlasLapackSeq();
 
     CreateKff2(position,icoord,kff2);
-    CSciBlas::gemv(1.0,KS,kff2,0.0,ik);
+    CSciBlas::gemv(1.0,KS,kff2,0.0,ik);     // KS must be inverted
 
     CFortranMatrix kblock;
     kblock.CreateMatrix(NumOfCVs,NumOfCVs);
@@ -1615,6 +1627,13 @@ double CIntegratorGPR::GetRMSR(size_t cv)
 
 //------------------------------------------------------------------------------
 
+void CIntegratorGPR::PrepForMFInfo(void)
+{
+    NeedInv = true;
+}
+
+//------------------------------------------------------------------------------
+
 bool CIntegratorGPR::WriteMFInfo(const CSmallString& name)
 {
     if( NumOfBins == 0 ){
@@ -1642,15 +1661,13 @@ bool CIntegratorGPR::WriteMFInfo(const CSmallString& name)
 
         EneSurface->GetPoint(ibin,ipos);
         for(size_t k=0; k < NumOfCVs; k++){
-            double mf = item->GetValue(ibin,k,E_PROXY_VALUE);
-            mfi[indi*NumOfCVs+k] = mf;
-
+            mfi[indi*NumOfCVs+k] = item->GetValue(ibin,k,E_PROXY_VALUE);
             double mfe = item->GetValue(ibin,k,E_PROXY_ERROR);
-            mfie[indi*NumOfCVs+k] = mfe*mfe;
+            mfie[indi*NumOfCVs+k] = mfe;            // this is a sigma
 
             mfp[indi*NumOfCVs+k] = GetMeanForce(ipos,k);
-            double mfv = GetMeanForceVar(ipos,k);
-            mfpe[indi*NumOfCVs+k] = sqrt(mfv);
+            double mfv = GetMeanForceVar(ipos,k);   // this is a variance, sigma^2
+            mfpe[indi*NumOfCVs+k] = sqrt(mfv);      // get a sigma
         }
     }
 
@@ -2176,6 +2193,10 @@ void CIntegratorGPR::CalcKderWRTSigmaN2(size_t cv)
 
 double CIntegratorGPR::GetVar(CSimpleVector<double>& lpos)
 {
+    if( KSInverted != true ) {
+        RUNTIME_ERROR("KS must be inverted!");
+    }
+
     CSimpleVector<double>   kff;
     CSimpleVector<double>   ik;
 
@@ -2194,6 +2215,10 @@ double CIntegratorGPR::GetVar(CSimpleVector<double>& lpos)
 
 void CIntegratorGPR::GetCovVar(CSimpleVector<double>& lpos,CSimpleVector<double>& rpos,double& lrcov,double& rrvar)
 {
+    if( KSInverted != true ) {
+        RUNTIME_ERROR("KS must be inverted!");
+    }
+
     CSimpleVector<double>   kffr;
     CSimpleVector<double>   kffl;
     CSimpleVector<double>   ik;
@@ -2343,6 +2368,10 @@ void CIntegratorGPR::CalculateCovs(CVerboseStr& vout)
         vout << "      Creating K+Sigma ..." << endl;
     }
         vout << "         Dim    = " << GPRSize << " x " << GPRSize << endl;
+
+    CFortranMatrix KSInv;   // backup KS, which is inverted
+    KSInv = KS;
+
     CreateKS();
 
     CSimpleVector<double> ipos;
@@ -2434,6 +2463,9 @@ void CIntegratorGPR::CalculateCovs(CVerboseStr& vout)
 
     RunBlasLapackPar();
     CSciBlas::gemm(-1.0,'T',Kl,'N',Kr,1.0,Cov);
+
+    // restore inverted KS
+    KS = KSInv;
 }
 
 //==============================================================================

@@ -385,7 +385,7 @@ void COptGPRHyprms::InitOptimizer(void)
         if( NCorrEnabled )      vout << "      NCorr";
 
         for(size_t i=0; i < WFacEnabled.size(); i++){
-            if( WFacEnabled[i] ) vout << format("     Wfac#%-2d")%(i+1);
+            if( WFacEnabled[i] ) vout << format("     WFac#%-2d")%(i+1);
         }
         for(size_t i=0; i < SigmaN2Enabled.size(); i++){
             if( SigmaN2Enabled[i] ) vout << format(" SigmaN2#%-2d")%(i+1);
@@ -1531,14 +1531,14 @@ bool COptGPRHyprms::WriteHyperPrms(FILE* p_fout)
     ScatterHyprms(Hyprms);
 
     if( fprintf(p_fout,"# GPR hyper-parameters\n") <= 0 ) return(false);
-        if( fprintf(p_fout,"SigmaF2    = %10.4f\n",SigmaF2) <= 0 ) return(false);
-        if( fprintf(p_fout,"NCorr      = %10.4f\n",NCorr) <= 0 ) return(false);
+        if( fprintf(p_fout,"SigmaF2    = %16.10e\n",SigmaF2) <= 0 ) return(false);
+        if( fprintf(p_fout,"NCorr      = %16.10e\n",NCorr) <= 0 ) return(false);
 
     for(size_t i=0; i < WFac.GetLength(); i++ ){
-        if( fprintf(p_fout,"WFac#%-2ld    = %10.4f\n",i+1,WFac[i]) <= 0 ) return(false);
+        if( fprintf(p_fout,"WFac#%-2ld    = %16.10e\n",i+1,WFac[i]) <= 0 ) return(false);
     }
     for(size_t i=0; i < SigmaN2.GetLength(); i++ ){
-        if( fprintf(p_fout,"SigmaN2#%-2ld = %10.4e\n",i+1,SigmaN2[i]) <= 0 ) return(false);
+        if( fprintf(p_fout,"SigmaN2#%-2ld = %16.10e\n",i+1,SigmaN2[i]) <= 0 ) return(false);
     }
 
     return(true);

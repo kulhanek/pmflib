@@ -182,6 +182,9 @@ public:
     /// derivatives are ADDED to der
     void GetLogPLDerivatives(const std::vector<bool>& flags,CSimpleVector<double>& der);
 
+    /// prepare for subsequent call WriteMFInfo
+    void PrepForMFInfo(void);
+
     /// write file with derivatives
     bool WriteMFInfo(const CSmallString& name);
 
@@ -229,7 +232,8 @@ private:
 
     // GPR model
     EGPRKernel              Kernel;
-    CFortranMatrix          KS;              // kernel matrix
+    CFortranMatrix          KS;             // kernel matrix with noice
+    bool                    KSInverted;
     double                  logdetK;
     CSimpleVector<double>   Y;              // mean forces
     CSimpleVector<double>   GPRModel;       // weights
