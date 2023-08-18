@@ -30,11 +30,9 @@ using namespace std;
 
 CPMFProxy_dH::CPMFProxy_dH(void)
 {
-    Provide = "PMF dH(x)=<Eint>";
-    Type = PMF_EINT;
-
     Requires.push_back("ABF");
     Requires.push_back("CST");
+    SetType(PMF_EINT);
 }
 
 //------------------------------------------------------------------------------
@@ -54,23 +52,23 @@ void CPMFProxy_dH::SetType(EPMFdHType type)
     switch(Type){
     // -------------------
         case(PMF_EINT):
-            Provide = "PMF dH(x)=<Eint>";
+            Provide = "dH(x)=<Eint>";
         break;
     // -------------------
         case(PMF_ETOT):
-            Provide = "PMF dH(x)=<Etot>";
+            Provide = "dH(x)=<Etot>";
         break;
     // -------------------
         case(PMF_EPOT):
-            Provide = "PMF dH(x)=<Epot>";
+            Provide = "dH(x)=<Epot>";
         break;
     // -------------------
         case(PMF_EKIN):
-            Provide = "PMF <Ekin>";
+            Provide = "<Ekin>";
         break;
     // -------------------
         case(PMF_ERST):
-            Provide = "PMF <Erst>";
+            Provide = "<Erst>";
         break;
     // -------------------
         default:

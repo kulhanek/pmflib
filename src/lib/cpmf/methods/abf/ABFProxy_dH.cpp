@@ -20,6 +20,7 @@
 
 #include <ABFProxy_dH.hpp>
 #include <PMFConstants.hpp>
+#include <iomanip>
 
 //------------------------------------------------------------------------------
 
@@ -31,7 +32,7 @@ using namespace std;
 
 CABFProxy_dH::CABFProxy_dH(void)
 {
-    SetType(ABF_MICFP);
+    SetType(ABF_dH);
 
     Requires.push_back("ABF");
 }
