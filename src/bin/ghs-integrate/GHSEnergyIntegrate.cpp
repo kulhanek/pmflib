@@ -327,7 +327,7 @@ bool CGHSEnergyIntegrate::Integrate(void)
         integrator.SetSigmaN2(Options.GetOptSigmaN2());
     }
 
-    integrator.EnableConstraints(Options.GetOptImposeConstraints());
+    integrator.EnableConstraints(Options.GetOptEnableConstraints());
     integrator.SetFastError(!Options.GetOptGPRNoFastError());
     integrator.SetIncludeError(Options.GetOptWithError());
     integrator.SetNoEnergy(Options.GetOptNoEnergy());

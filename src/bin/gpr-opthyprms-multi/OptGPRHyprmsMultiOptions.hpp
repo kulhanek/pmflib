@@ -1,5 +1,5 @@
-#ifndef OptGPRHyprmsOptionsH
-#define OptGPRHyprmsOptionsH
+#ifndef OptGPRHyprmsMultiOptionsH
+#define OptGPRHyprmsMultiOptionsH
 // =============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
@@ -26,14 +26,14 @@
 
 //------------------------------------------------------------------------------
 
-class COptGPRHyprmsOptions : public CSimpleOptions {
+class COptGPRHyprmsMultiOptions : public CSimpleOptions {
 public:
     // constructor - tune option setup
-    COptGPRHyprmsOptions(void);
+    COptGPRHyprmsMultiOptions(void);
 
 // program name and description -----------------------------------------------
     CSO_PROG_NAME_BEGIN
-    "gpr-opthyprms"
+    "gpr-opthyprms-multi"
     CSO_PROG_NAME_END
 
     CSO_PROG_DESC_BEGIN
@@ -45,37 +45,35 @@ public:
     LibBuildVersion_PMF
     CSO_PROG_VERS_END
 
+    CSO_PROG_ARGS_SHORT_DESC_BEGIN
+    "accuname1 realm1 [accuname2 realm2 [..]] hyprmsname"
+    CSO_PROG_ARGS_SHORT_DESC_END
+
+    CSO_PROG_ARGS_LONG_DESC_BEGIN
+    "<cyan><b>accuname1</b></cyan>                  Name of file containing the PMF accumulator.\n"
+    "<cyan><b>realm1</b></cyan>                     Realm of interest: dG/dx, dH/dx, dH, and mTDS/dx (-TdS/dx).\n"
+    "<cyan><b>hyprmsname</b></cyan>                 Name of file where the optimized GPR hyperparameters are saved. If the name is '-' then the output will be written to the standard output."
+    CSO_PROG_ARGS_LONG_DESC_END
+
 // list of all options and arguments ------------------------------------------
     CSO_LIST_BEGIN
-    // arguments ----------------------------
-    CSO_ARG(CSmallString,AccuFile)
-    CSO_ARG(CSmallString,Realm)
-    CSO_ARG(CSmallString,HyprmsFile)
     // options ------------------------------
     CSO_OPT(CSmallString,Target)
     CSO_OPT(int,Limit)
     CSO_OPT(CSmallString,LAMethod)
     CSO_OPT(double,RCond)
-
-    CSO_OPT(CSmallString,SigmaF2)
+    CSO_OPT(double,SigmaF2)
     CSO_OPT(double,MinSigmaF2)
-    CSO_OPT(CSmallString,CoVar)
-    CSO_OPT(double,MinCoVar)
+    CSO_OPT(double,NCorr)
+    CSO_OPT(double,MinNCorr)
     CSO_OPT(CSmallString,WFac)
     CSO_OPT(double,MinWFac)
-    CSO_OPT(CSmallString,NCorr)
-    CSO_OPT(double,MinNCorr)
     CSO_OPT(CSmallString,SigmaN2)
     CSO_OPT(double,MinSigmaN2)
-
-    CSO_OPT(CSmallString,SigmaF2Enabled)
-    CSO_OPT(CSmallString,CoVarEnabled)
+    CSO_OPT(bool,SigmaF2Enabled)
+    CSO_OPT(bool,NCorrEnabled)
     CSO_OPT(CSmallString,WFacEnabled)
-    CSO_OPT(CSmallString,NCorrEnabled)
     CSO_OPT(CSmallString,SigmaN2Enabled)
-
-    CSO_OPT(bool,EnableConstraints)
-
     CSO_OPT(bool,Numeric)
     CSO_OPT(int,NOptSteps)
     CSO_OPT(int,NumOfResets)
@@ -97,27 +95,6 @@ public:
     CSO_LIST_END
 
     CSO_MAP_BEGIN
-// description of arguments ---------------------------------------------------
-    CSO_MAP_ARG(CSmallString,                   /* argument type */
-                AccuFile,                          /* argument name */
-                NULL,                           /* default value */
-                true,                           /* is argument mandatory */
-                "ACCU",                        /* parameter name */
-                "Name of file containing the input ABF accumulator.\n")   /* argument description */
-    //----------------------------------------------------------------------
-    CSO_MAP_ARG(CSmallString,                   /* argument type */
-                Realm,                          /* argument name */
-                NULL,                           /* default value */
-                true,                           /* is argument mandatory */
-                "REALM",                        /* parameter name */
-                "Realm for GPR hyperparameter optimization. Supported realms: dG/dx, dH/dx, dH, and mTDS/dx (-TdS/dx).\n")   /* argument description */
-    //----------------------------------------------------------------------
-    CSO_MAP_ARG(CSmallString,                   /* argument type */
-                HyprmsFile,                          /* argument name */
-                NULL,                           /* default value */
-                true,                           /* is argument mandatory */
-                "HYPRMS",                        /* parameter name */
-                "Name of file containing the optimized hyperparameters.\n")   /* argument description */
 // description of options ---------------------------------------------------
     CSO_MAP_OPT(CSmallString,                           /* option type */
                 Target,                        /* option name */
@@ -159,15 +136,14 @@ public:
                 "NUMBER",                           /* parameter name */
                 "Rank condition for SVD. Used value must be carefully tested. Calculation at computer precision is requested with -1 (not recommended).")   /* option description */
     //----------------------------------------------------------------------
-    CSO_MAP_OPT(CSmallString,                           /* option type */
+    CSO_MAP_OPT(double,                           /* option type */
                 SigmaF2,                        /* option name */
-                "15.0",                          /* default value */
+                15.0,                          /* default value */
                 false,                          /* is option mandatory */
                 's',                           /* short option name */
                 "sigmaf2",                      /* long option name */
-                "SPEC",                           /* parameter name */
-                "Variance of the reconstructed free energy surface (signal variance) in the form SigmaF2(1)[xSigmaF2(2)[x...]]. "
-                "The last value pads the rest.")   /* option description */
+                "NUMBER",                           /* parameter name */
+                "Variance of the reconstructed free energy surface (signal variance).")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(double,                           /* option type */
                 MinSigmaF2,                        /* option name */
@@ -177,25 +153,24 @@ public:
                 "minsigmaf2",                      /* long option name */
                 "NUMBER",                           /* parameter name */
                 "Minimal value of SigmaF2.")   /* option description */
-//----------------------------------------------------------------------
-    CSO_MAP_OPT(CSmallString,                           /* option type */
-                CoVar,                        /* option name */
-                "0.0",                          /* default value */
-                false,                          /* is option mandatory */
-                'o',                           /* short option name */
-                "covar",                      /* long option name */
-                "SPEC",                           /* parameter name */
-                "CoVariances between GPR tasks in the form CoVar1[xCoVar2[x...]]. "
-                "The last value pads the rest.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(double,                           /* option type */
-                MinCoVar,                        /* option name */
-                -1000,                          /* default value */
+                NCorr,                        /* option name */
+                0.0,                          /* default value */
+                false,                          /* is option mandatory */
+                'c',                           /* short option name */
+                "ncorr",                      /* long option name */
+                "NUMBER",                           /* parameter name */
+                "Number of statistically correlated samples.")   /* option description */
+    //----------------------------------------------------------------------
+    CSO_MAP_OPT(double,                           /* option type */
+                MinNCorr,                        /* option name */
+                0.0,                          /* default value */
                 false,                          /* is option mandatory */
                 0,                           /* short option name */
-                "mincovar",                      /* long option name */
+                "minncorr",                      /* long option name */
                 "NUMBER",                           /* parameter name */
-                "Minimal value of CoVariances.")   /* option description */
+                "Minimal value of NCorr.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(CSmallString,                           /* option type */
                 WFac,                        /* option name */
@@ -204,7 +179,8 @@ public:
                 'w',                           /* short option name */
                 "wfac",                      /* long option name */
                 "SPEC",                           /* parameter name */
-                "Characteristic scale of collective variables in the form WFac1[xWFac2[x...]]. "
+                "Factors influencing widths of RBFs or square exponential kernels. The width is distance between "
+                "the adjacent square exponential functions multiplied by this factors in the form WFac1[xWFac2x...]. "
                 "The last value pads the rest.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(double,                           /* option type */
@@ -217,32 +193,13 @@ public:
                 "Minimal value of WFac.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(CSmallString,                           /* option type */
-                NCorr,                        /* option name */
-                "0.0",                          /* default value */
-                false,                          /* is option mandatory */
-                'c',                           /* short option name */
-                "ncorr",                      /* long option name */
-                "SPEC",                           /* parameter name */
-                "Number of statistically correlated samples in the form NCorr1[xNCorr2[x...]]. "
-                "The last value pads the rest.")   /* option description */
-    //----------------------------------------------------------------------
-    CSO_MAP_OPT(double,                           /* option type */
-                MinNCorr,                        /* option name */
-                0.0,                          /* default value */
-                false,                          /* is option mandatory */
-                0,                           /* short option name */
-                "minncorr",                      /* long option name */
-                "NUMBER",                           /* parameter name */
-                "Minimal value of NCorr.")   /* option description */
-    //----------------------------------------------------------------------
-    CSO_MAP_OPT(CSmallString,                           /* option type */
                 SigmaN2,                        /* option name */
                 "0.0",                          /* default value */
                 false,                          /* is option mandatory */
                 'n',                           /* short option name */
                 "sigman2",                      /* long option name */
                 "SPEC",                           /* parameter name */
-                "Values of noise sigma squared for each CV in the form SigmaN2(1)[xSigmaN2(2)[x...]]. "
+                "Values of noise sigma squared for each CV in the form SigmaN2(1)[xSigmaN2(2)x...]. "
                 "The last value pads the rest.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(double,                           /* option type */
@@ -254,25 +211,23 @@ public:
                 "NUMBER",                           /* parameter name */
                 "Minimal value of SigmaN2.")   /* option description */
     //----------------------------------------------------------------------
-    CSO_MAP_OPT(CSmallString,                           /* option type */
+    CSO_MAP_OPT(bool,                           /* option type */
                 SigmaF2Enabled,                        /* option name */
-                "F",                          /* default value */
+                false,                          /* default value */
                 false,                          /* is option mandatory */
                 0,                           /* short option name */
                 "enablesigmaf2",                      /* long option name */
-                "SPEC",                           /* parameter name */
-                "Enable optimization of SigmaF2 hyperparamters. Flags are specified in the form SigmaF2(1)Enabled[xSigmaF2(1)2Enabled[x...]] with F and T for disabled and enabled, respectively. "
-                "The last value pads the rest.")   /* option description */
-//----------------------------------------------------------------------
-    CSO_MAP_OPT(CSmallString,                           /* option type */
-                CoVarEnabled,                        /* option name */
-                "F",                          /* default value */
+                NULL,                           /* parameter name */
+                "Enable optimization of SigmaF2 hyperparameter.")   /* option description */
+    //----------------------------------------------------------------------
+    CSO_MAP_OPT(bool,                           /* option type */
+                NCorrEnabled,                        /* option name */
+                false,                          /* default value */
                 false,                          /* is option mandatory */
                 0,                           /* short option name */
-                "enablecovar",                      /* long option name */
-                "SPEC",                           /* parameter name */
-                "Enable optimization of CoVar hyperparamters. Flags are specified in the form CoVar1Enabled[xCoVar2Enabled[x...]] with F and T for disabled and enabled, respectively. "
-                "The last value pads the rest.")   /* option description */
+                "enablencorr",                      /* long option name */
+                NULL,                           /* parameter name */
+                "Enable optimization of NCorr hyperparameter.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(CSmallString,                           /* option type */
                 WFacEnabled,                        /* option name */
@@ -281,17 +236,7 @@ public:
                 0,                           /* short option name */
                 "enablewfac",                      /* long option name */
                 "SPEC",                           /* parameter name */
-                "Enable optimization of Wfac hyperparamters. Flags are specified in the form WFac1Enabled[xWFac2Enabled[x...]] with F and T for disabled and enabled, respectively. "
-                "The last value pads the rest.")   /* option description */
-    //----------------------------------------------------------------------
-    CSO_MAP_OPT(CSmallString,                           /* option type */
-                NCorrEnabled,                        /* option name */
-                "F",                          /* default value */
-                false,                          /* is option mandatory */
-                0,                           /* short option name */
-                "enablencorr",                      /* long option name */
-                "SPEC",                           /* parameter name */
-                "Enable optimization of NCorr hyperparamters. Flags are specified in the form NCorr1Enabled[xNCorr2Enabled[x...]] with F and T for disabled and enabled, respectively. "
+                "Enable optimization of Wfac hyperparamters. Flags are specified in the form WFac1Enabled[xWFac2Enabledx...] with F and T for disabled and enabled, respectively. "
                 "The last value pads the rest.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(CSmallString,                           /* option type */
@@ -303,15 +248,6 @@ public:
                 "SPEC",                           /* parameter name */
                 "Enable optimization of SigmaN2 hyperparamters. Flags are specified in the form SigmaN2(1)Enabled[xSigmaN2(1)Enabledx...] with F and T for disabled and enabled, respectively. "
                 "The last value pads the rest.")   /* option description */
-    //----------------------------------------------------------------------
-    CSO_MAP_OPT(bool,                           /* option type */
-                EnableConstraints,                        /* option name */
-                false,                          /* default value */
-                false,                          /* is option mandatory */
-                0,                           /* short option name */
-                "constraints",                      /* long option name */
-                NULL,                           /* parameter name */
-                "Enable constraints in multitask GPR, e.g., impose dG(x)/dx - dH(x)/dx - (-TdS(x)/dx) = 0 constraints.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(bool,                           /* option type */
                 Numeric,                        /* option name */
@@ -478,6 +414,7 @@ public:
 
 // final operation with options ------------------------------------------------
 private:
+    virtual int CheckArguments(void);
     virtual int CheckOptions(void);
     virtual int FinalizeOptions(void);
 };

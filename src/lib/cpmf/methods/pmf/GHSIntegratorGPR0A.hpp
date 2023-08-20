@@ -36,7 +36,7 @@
 /** \brief integrator of ABF accumulator employing gaussian process
 */
 
-class PMF_PACKAGE CGHSIntegratorGPR0A {
+class PMF_PACKAGE CGHSIntegratorGPR0A : public CGPRHyprmsBase {
 public:
 // constructor and destructor -------------------------------------------------
     CGHSIntegratorGPR0A(void);
@@ -149,8 +149,18 @@ public:
     /// get log of Marginal Likelihood
     double GetLogML(void);
 
+    /// get derivative of logML wrt hyperparameters
+    /// order sigmaf2, covar, wfac, nsigman2: only requested ders are calculated
+    /// derivatives are ADDED to der
+    void GetLogMLDerivatives(const std::vector<bool>& flags,CSimpleVector<double>& der);
+
     /// get the log of pseudo-likelihood from leave-one-out cross-validation (LOO-CV)
     double GetLogPL(void);
+
+    /// get derivative of logPL wrt hyperparameters
+    /// order sigmaf2, covar, wfac, nsigman2: only requested ders are calculated
+    /// derivatives are ADDED to der
+    void GetLogPLDerivatives(const std::vector<bool>& flags,CSimpleVector<double>& der);
 
     /// print exec info
     void PrintExecInfo(CVerboseStr& vout);
@@ -211,7 +221,6 @@ private:
     double                  RCond;
 
     // internal flow
-    bool                    UseZeroPoint;
     bool                    UseInv;         // calc all via inversion
     bool                    NeedInv;        // need inverted matrix - hyprms, error analysis
     bool                    FastErrors;     // use faster but more memory intensive algorithm
@@ -235,10 +244,20 @@ private:
     void   GetKernelDer2AnaWFac(const CSimpleVector<double>& ip,const CSimpleVector<double>& jp,size_t cv,CFortranMatrix& kblock);
     void   GetKernelDer2NumWFac(const CSimpleVector<double>& ip,const CSimpleVector<double>& jp,size_t cv,CFortranMatrix& kblock);
 
-    // parallel processing
+// parallel processing
     void RunBlasLapackSeq(void);
     void RunBlasLapackPar(void);
+
+// derivatives
+    void CalcKderWRTSigmaF2(size_t idx);
+    void CalcKderWRTCoVar(size_t idx);
+    void CalcKderWRTWFac(size_t cv);
+    void CalcKderWRTSigmaN2(size_t idx);
 };
+
+//------------------------------------------------------------------------------
+
+typedef boost::shared_ptr<CGHSIntegratorGPR0A>    CGHSIntegratorGPR0APtr;
 
 //------------------------------------------------------------------------------
 

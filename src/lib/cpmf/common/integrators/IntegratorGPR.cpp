@@ -308,10 +308,8 @@ void CIntegratorGPR::LoadGPRHyprms(const CSmallString& name)
             error << "GPR hyperparameters file, unable to decode line: " << line.c_str();
             RUNTIME_ERROR(error);
         }
-        if( key == "SigmaF2" ){
+        if( (key == "SigmaF2") ||(key == "SigmaF2#1") ){
             SetSigmaF2(value);
-        } else if( key == "NCorr" ){
-            SetNCorr(value);
         } else if( key.find("WFac#") != string::npos ) {
             std::replace( key.begin(), key.end(), '#', ' ');
             stringstream kstr(key);
@@ -325,6 +323,8 @@ void CIntegratorGPR::LoadGPRHyprms(const CSmallString& name)
             }
             cvind--; // transform to 0-based indexing
             SetWFac(cvind,value);
+        } else if( (key == "NCorr") || (key == "NCorr#1") ){
+            SetNCorr(value);
         } else if( key.find("SigmaN2#") != string::npos ) {
             std::replace( key.begin(), key.end(), '#', ' ');
             stringstream kstr(key);
@@ -1920,17 +1920,24 @@ void CIntegratorGPR::GetLogMLDerivatives(const std::vector<bool>& flags,CSimpleV
         }
 
         // calc Kder
+        // NumOfCVs = 1
+        // 0; 1; 2; 3
+        // 0; 1<1+NumOfCVs; NumOfCVs+1; 2+NumOfCVs<2+2*NumOfCVs+1
         if( prm == 0 ){
             // sigmaf2
             CalcKderWRTSigmaF2();
-        } else if( prm == 1  ){
-            CalcKderWRTNCorr();
-        } else if( (prm >= 2) && (prm < 2+NumOfCVs) ){
-            size_t cv = prm - 2;
+        } else if( (prm >= 1) && (prm < 1+NumOfCVs) ){
+            // wfac
+            size_t cv = prm - 1;
             CalcKderWRTWFac(cv);
-        } else {
+        } else if( prm == NumOfCVs+1 ){
+            // ncorr
+            CalcKderWRTNCorr();
+        } else if( (prm >= 2+NumOfCVs) && (prm < 3+2*NumOfCVs) ){
             size_t cv = prm - (2+NumOfCVs);
             CalcKderWRTSigmaN2(cv);
+        } else {
+            RUNTIME_ERROR("prm out-of-range");
         }
 
         // calc trace
@@ -1983,17 +1990,24 @@ void CIntegratorGPR::GetLogPLDerivatives(const std::vector<bool>& flags,CSimpleV
         }
 
         // calc Kder
+        // NumOfCVs = 1
+        // 0; 1; 2; 3
+        // 0; 1<1+NumOfCVs; NumOfCVs+1; 2+NumOfCVs<2+2*NumOfCVs+1
         if( prm == 0 ){
             // sigmaf2
             CalcKderWRTSigmaF2();
-        } else if( prm == 1  ){
-            CalcKderWRTNCorr();
-        } else if( (prm >= 2) && (prm < 2+NumOfCVs) ){
-            size_t cv = prm - 2;
+        } else if( (prm >= 1) && (prm < 1+NumOfCVs) ){
+            // wfac
+            size_t cv = prm - 1;
             CalcKderWRTWFac(cv);
-        } else {
+        } else if( prm == NumOfCVs+1 ){
+            // ncorr
+            CalcKderWRTNCorr();
+        } else if( (prm >= 2+NumOfCVs) && (prm < 3+2*NumOfCVs) ){
             size_t cv = prm - (2+NumOfCVs);
             CalcKderWRTSigmaN2(cv);
+        } else {
+            RUNTIME_ERROR("prm out-of-range");
         }
 
         RunBlasLapackPar();

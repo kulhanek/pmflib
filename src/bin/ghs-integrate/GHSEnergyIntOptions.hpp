@@ -55,7 +55,7 @@ public:
     CSO_ARG(CSmallString,HESFile)
     CSO_ARG(CSmallString,SESFile)
     // options ------------------------------
-    CSO_OPT(bool,ImposeConstraints)
+    CSO_OPT(bool,EnableConstraints)
     CSO_OPT(CSmallString,LAMethod)
     CSO_OPT(double,RCond)
     CSO_OPT(int,Limit)
@@ -121,7 +121,7 @@ public:
                 "Name of file containing the output entropic energy surface [-TdS(x)].\n")   /* argument description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(bool,                           /* option type */
-                ImposeConstraints,                        /* option name */
+                EnableConstraints,                        /* option name */
                 false,                          /* default value */
                 false,                          /* is option mandatory */
                 0,                           /* short option name */

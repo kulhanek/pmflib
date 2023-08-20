@@ -23,17 +23,12 @@
 #include <errno.h>
 #include <ErrorSystem.hpp>
 #include <EnergySurface.hpp>
-#include "OptGPRHyprms.hpp"
+#include "OptGPRHyprmsMulti.hpp"
 #include <iomanip>
 #include <boost/format.hpp>
 #include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string/classification.hpp>
 #include <SciLapack.hpp>
-// ----------
-#include <IntegratorGPR.hpp>
-#include <SmootherGPR.hpp>
-#include <GHSIntegratorGPR0A.hpp>
-// ----------
 #include <ABFProxy_dG.hpp>
 #include <ABFProxy_dH.hpp>
 #include <ABFProxy_mTdS.hpp>
@@ -49,13 +44,13 @@ using namespace boost::algorithm;
 
 //------------------------------------------------------------------------------
 
-MAIN_ENTRY(COptGPRHyprms)
+MAIN_ENTRY(COptGPRHyprmsMulti)
 
 //==============================================================================
 //------------------------------------------------------------------------------
 //==============================================================================
 
-COptGPRHyprms::COptGPRHyprms(void)
+COptGPRHyprmsMulti::COptGPRHyprmsMulti(void)
 {
     NCVs = 0;
 }
@@ -64,7 +59,7 @@ COptGPRHyprms::COptGPRHyprms(void)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-int COptGPRHyprms::Init(int argc,char* argv[])
+int COptGPRHyprmsMulti::Init(int argc,char* argv[])
 {
 // encode program options, all check procedures are done inside of CPMFIntOpts
     int result = Options.ParseCmdLine(argc,argv);
@@ -84,14 +79,13 @@ int COptGPRHyprms::Init(int argc,char* argv[])
 
     vout << endl;
     vout << "# ==============================================================================" << endl;
-    vout << "# gpr-opthyprms (PMFLib utility)  started at " << StartTime.GetSDateAndTime() << endl;
+    vout << "# gpr-opthyprms-multi (PMFLib utility)  started at " << StartTime.GetSDateAndTime() << endl;
     vout << "# Version: " << LibBuildVersion_PMF << endl;
     vout << "# ==============================================================================" << endl;
 
-    vout << "# PMF Accumulator               : " << Options.GetArgAccuFile() << endl;
-    vout << "# Processed realm               : " << Options.GetArgRealm() << endl;
-    if( Options.GetArgHyprmsFile() != "-") {
-        vout << "# Optimized GPR hyprms (out): " << Options.GetArgHyprmsFile() << endl;
+    CSmallString output = Options.GetProgArg(Options.GetNumberOfProgArgs()-1);
+    if( output != "-") {
+        vout << "# Optimized GPR hyprms (out): " << output << endl;
     } else {
         vout << "# Optimized GPR hyprms (out): - (standard output)" << endl;
     }
@@ -99,10 +93,9 @@ int COptGPRHyprms::Init(int argc,char* argv[])
     if( Options.IsOptLoadHyprmsSet() ){
         vout << "# GPR hyperprms file    : " << Options.GetOptLoadHyprms() << endl;
     } else {
-        vout << "# SigmaF2               : " << (const char*)Options.GetOptSigmaF2() << endl;
-        vout << "# CoVar                 : " << (const char*)Options.GetOptCoVar() << endl;
+        vout << "# SigmaF2               : " << setprecision(3) << Options.GetOptSigmaF2() << endl;
+        vout << "# NCorr                 : " << setprecision(3) << Options.GetOptNCorr() << endl;
         vout << "# Width factor wfac     : " << (const char*)Options.GetOptWFac() << endl;
-        vout << "# NCorr                 : " << (const char*)Options.GetOptNCorr() << endl;
         vout << "# SigmaN2               : " << (const char*)Options.GetOptSigmaN2() << endl;
     }
     vout << "# ------------------------------------------------" << endl;
@@ -131,43 +124,64 @@ int COptGPRHyprms::Init(int argc,char* argv[])
 
 //------------------------------------------------------------------------------
 
-bool COptGPRHyprms::Run(void)
+bool COptGPRHyprmsMulti::Run(void)
 {
     State = 1;
 
 // load accumulator
     vout << endl;
-    vout << format("%02d:Loading PMF accumulator: %s")%State%string(Options.GetArgAccuFile()) << endl;
+    CProxyRealmPtr curr;
+    vout << format("%02d:Loading PMF accumulators ...")%State << endl;
     State++;
-    Accu = CPMFAccumulatorPtr(new CPMFAccumulator);
-    try {
-        Accu->Load(Options.GetArgAccuFile());
-    } catch(...) {
-        CSmallString error;
-        error << "unable to load the input PMF accumulator file '" << Options.GetArgAccuFile() << "'";
-        ES_ERROR(error);
-        return(false);
+    int naccu = 1;
+    for(int i=0; i < Options.GetNumberOfProgArgs()-1; i++){
+        CSmallString name = Options.GetProgArg(i);
+        if( IsRealm(name) ){
+            if( curr == NULL ){
+                CSmallString error;
+                error << "no accumulators defined for realm'" << name << "'";
+                ES_ERROR(error);
+                return(false);
+            }
+            curr->Name = name;
+            curr = CProxyRealmPtr();
+        } else {
+            vout << format("** PMFAccumulator #%05d: %s")%(naccu)%string(name) << endl;
+            CPMFAccumulatorPtr p_accu(new CPMFAccumulator);
+            try {
+                p_accu->Load(name);
+            } catch(...) {
+                CSmallString error;
+                error << "unable to load the input PMF accumulator file '" << name << "'";
+                ES_ERROR(error);
+                return(false);
+            }
+            if( curr == NULL ){
+                curr = CProxyRealmPtr(new CProxyRealm);
+                RealmProxies.push_back(curr);
+            }
+            curr->Accumulators.push_back(p_accu);
+            naccu++;
+        }
     }
-    FES = CEnergySurfacePtr(new CEnergySurface);
-    FES->Allocate(Accu);
-    HES = CEnergySurfacePtr(new CEnergySurface);
-    HES->Allocate(Accu);
-    SES = CEnergySurfacePtr(new CEnergySurface);
-    SES->Allocate(Accu);
     vout << "   Done" << endl;
+
+// realms
+    vout << endl;
+    vout << format("%02d:Initializing realms ...")%State << endl;
+    State++;
+    for(size_t i=0; i < RealmProxies.size(); i++){
+        CProxyRealmPtr realm = RealmProxies[i];
+        vout << format("   ** ----------> Realm #%02d: %s")%(i+1)%realm->Name << endl;
+        vout << format("      # of PMF accumulators: %d")%realm->Accumulators.size() << endl;
+        InitRealm(realm);
+    }
 
 // statistics
     vout << endl;
     vout << format("%02d:PMF accumulator statistics ...")%State << endl;
     State++;
     PrintSampledStat();
-    vout << "   Done" << endl;
-
-// realms
-    vout << endl;
-    vout << format("%02d:Initializing realm: %s")%State%string(Options.GetArgRealm()) << endl;
-    State++;
-    InitGPREngine();
     vout << "   Done" << endl;
 
 // run optimization
@@ -209,7 +223,88 @@ bool COptGPRHyprms::Run(void)
 
 //------------------------------------------------------------------------------
 
-void COptGPRHyprms::InitOptimizer(void)
+bool COptGPRHyprmsMulti::IsRealm(const CSmallString& name)
+{
+    if( name == "dG/dx" )      return(true);
+    if( name == "-TdS/dx" )    return(true);
+    if( name == "mTdS/dx" )    return(true);
+    if( name == "dH/dx" )      return(true);
+    if( name == "dH" )         return(true);
+    return(false);
+}
+
+//------------------------------------------------------------------------------
+
+void COptGPRHyprmsMulti::InitRealm(CProxyRealmPtr realm)
+{
+// init energyder proxy
+    if( realm->Name == "dG/dx" ){
+        for(size_t i=0; i < realm->Accumulators.size(); i++){
+            CPMFAccumulatorPtr accu = realm->Accumulators[i];
+            CEnergyDerProxyPtr proxy;
+            if( CABFProxy_dG::IsCompatible(accu) ){
+               proxy    = CABFProxy_dG_Ptr(new CABFProxy_dG);
+            } else if (CCSTProxy_dG::IsCompatible(accu) ) {
+                proxy    = CCSTProxy_dG_Ptr(new CCSTProxy_dG);
+            } else {
+                CSmallString error;
+                error << "incompatible method: " << accu->GetMethod() << " with requested realm: " <<  realm->Name;
+                RUNTIME_ERROR(error);
+            }
+            proxy->Init(accu);
+            realm->DerProxies.push_back(proxy);
+        }
+// -----------------------------------------------
+    } else if( realm->Name == "dH/dx" ) {
+        for(size_t i=0; i < realm->Accumulators.size(); i++){
+            CPMFAccumulatorPtr accu = realm->Accumulators[i];
+            CEnergyDerProxyPtr proxy;
+            if( CABFProxy_dH::IsCompatible(accu) ){
+                proxy    = CABFProxy_dH_Ptr(new CABFProxy_dH);
+            } else {
+                CSmallString error;
+                error << "incompatible method: " << accu->GetMethod() << " with requested realm: " <<  realm->Name;
+                RUNTIME_ERROR(error);
+            }
+            proxy->Init(accu);
+            realm->DerProxies.push_back(proxy);
+        }
+// -----------------------------------------------
+    } else if ( (realm->Name == "-TdS/dx") || (realm->Name == "mTdS/dx") ) {
+        for(size_t i=0; i < realm->Accumulators.size(); i++){
+            CPMFAccumulatorPtr accu = realm->Accumulators[i];
+            CEnergyDerProxyPtr proxy;
+            if( CABFProxy_mTdS::IsCompatible(accu) ){
+                proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
+            } else if (CCSTProxy_mTdS::IsCompatible(accu) ) {
+                proxy    = CCSTProxy_mTdS_Ptr(new CCSTProxy_mTdS);
+            } else {
+                CSmallString error;
+                error << "incompatible method: " << accu->GetMethod() << " with requested realm: " <<  realm->Name;
+                RUNTIME_ERROR(error);
+            }
+            proxy->Init(accu);
+            realm->DerProxies.push_back(proxy);
+        }
+
+    } else if ( realm->Name == "dH" ) {
+        for(size_t i=0; i < realm->Accumulators.size(); i++){
+            CPMFAccumulatorPtr accu = realm->Accumulators[i];
+            CEnergyProxyPtr proxy    = CPMFProxy_dH_Ptr(new CPMFProxy_dH);
+            proxy->Init(accu);
+            realm->EnergyProxies.push_back(proxy);
+        }
+// -----------------------------------------------
+    } else {
+        CSmallString error;
+        error << "unsupported realm: " << realm->Name;
+        RUNTIME_ERROR(error);
+    }
+}
+
+//------------------------------------------------------------------------------
+
+void COptGPRHyprmsMulti::InitOptimizer(void)
 {
     vout << endl;
     vout << format("%02d:Optimization of GPR hyperparameters ...")%State << endl;
@@ -218,40 +313,30 @@ void COptGPRHyprms::InitOptimizer(void)
     gpr.PrintExecInfo(vout);
 
 // what should be optimized?
-    DecodeEList(Options.GetOptSigmaF2Enabled(),SigmaF2,SigmaF2Enabled,"--enablesigmaf2");
-    DecodeEList(Options.GetOptCoVarEnabled(),CoVar,CoVarEnabled,"--enablecovar");
-    DecodeEList(Options.GetOptWFacEnabled(),WFac,WFacEnabled,"--enablewfac");
-    DecodeEList(Options.GetOptNCorrEnabled(),NCorr,NCorrEnabled,"--enablencorr");
-    DecodeEList(Options.GetOptSigmaN2Enabled(),SigmaN2,SigmaN2Enabled,"--enablesigman2");
+    SigmaF2Enabled  = Options.GetOptSigmaF2Enabled();
+    DecodeEList(Options.GetOptWFacEnabled(),WFacEnabled,"--enablewfac");
+    NCorrEnabled    = Options.GetOptNCorrEnabled();
+    DecodeEList(Options.GetOptSigmaN2Enabled(),SigmaN2Enabled,"--enablesigman2");
 
 // number of optimized parameters
     NumOfOptPrms = 0;
     NumOfPrms = 0;
 // sigmaf2
-    for(size_t i=0; i < SigmaF2Enabled.size(); i++){
-        if( SigmaF2Enabled[i] ) NumOfOptPrms++;
-        NumOfPrms++;
-    }
-// covar
-    for(size_t i=0; i < CoVarEnabled.size(); i++){
-        if( CoVarEnabled[i] ) NumOfOptPrms++;
-        NumOfPrms++;
-    }
+    if( SigmaF2Enabled ) NumOfOptPrms++;
+    NumOfPrms++;
 // wfac
     for(size_t i=0; i < WFacEnabled.size(); i++){
         if( WFacEnabled[i] ) NumOfOptPrms++;
-        NumOfPrms++;
     }
+    NumOfPrms += NCVs;
 // ncorr
-    for(size_t i=0; i < NCorrEnabled.size(); i++){
-        if( NCorrEnabled[i] ) NumOfOptPrms++;
-        NumOfPrms++;
-    }
+    if( NCorrEnabled ) NumOfOptPrms++;
+    NumOfPrms++;
 // sigman2
     for(size_t i=0; i < SigmaN2Enabled.size(); i++){
         if( SigmaN2Enabled[i] ) NumOfOptPrms++;
-        NumOfPrms++;
     }
+    NumOfPrms += NCVs;
 
     if( NumOfOptPrms == 0 ){
         RUNTIME_ERROR("no hyperparameter to optimize");
@@ -275,53 +360,33 @@ void COptGPRHyprms::InitOptimizer(void)
     if( Options.IsOptLoadHyprmsSet() ){
         LoadGPRHyprms();
     } else {
-        DecodeVList(Options.GetOptSigmaF2(),SigmaF2,"--sigmaf2",15.0);
-        for(size_t i=0; i < SigmaF2.GetLength(); i++){
-            if( SigmaF2[i] < Options.GetOptMinSigmaF2() ){
-                RUNTIME_ERROR("--sigmaf2 has to be greater than or equal to --minsigmaf2");
-            }
-        }
-        DecodeVList(Options.GetOptCoVar(),CoVar,"--covar",0.0);
-        for(size_t i=0; i < CoVar.GetLength(); i++){
-            if( CoVar[i] < Options.GetOptMinCoVar() ){
-                RUNTIME_ERROR("--covar has to be greater than or equal to --mincovar");
-            }
-        }
+        SigmaF2 = Options.GetOptSigmaF2();
         DecodeVList(Options.GetOptWFac(),WFac,"--wfac",3.0);
         for(size_t i=0; i < WFac.GetLength(); i++){
             if( WFac[i] < Options.GetOptMinWFac() ){
-                RUNTIME_ERROR("--wfac has to be greater than or equal to --minwfac");
+                RUNTIME_ERROR("--wfac has to be greater than --minwfac");
             }
         }
-        DecodeVList(Options.GetOptNCorr(),NCorr,"--ncorr",0.0);
-        for(size_t i=0; i < NCorr.GetLength(); i++){
-            if( NCorr[i] < Options.GetOptMinNCorr() ){
-                RUNTIME_ERROR("--ncorr has to be greater than or equal to --minncorr");
-            }
-        }
-        DecodeVList(Options.GetOptSigmaN2(),SigmaN2,"--sigman2",0.0);
+        NCorr   = Options.GetOptNCorr();
+        DecodeVList(Options.GetOptSigmaN2(),SigmaN2,"--sigman2",0.1);
         for(size_t i=0; i < SigmaN2.GetLength(); i++){
             if( SigmaN2[i] < Options.GetOptMinSigmaN2() ){
-                RUNTIME_ERROR("--sigman2 has to be greater than or equal to --minsigman2");
+                RUNTIME_ERROR("--sigman2 has to be greater than --minsigman2");
             }
         }
     }
 
     // print hyperparameters
     vout << "   Hyperparameters ..." << endl;
-    for(int k=0; k < (int)SigmaF2.GetLength(); k++ ){
-        vout << format("      SigmaF2#%-2d = %10.4f")%(k+1)%SigmaF2[k] << endl;
-    }
-    for(int k=0; k < (int)CoVar.GetLength(); k++ ){
-        vout << format("      CoVar#%-2d   = %10.4f")%(k+1)%CoVar[k] << endl;
-    }
-    for(int k=0; k < (int)WFac.GetLength(); k++ ){
+
+        vout << format("      SigmaF2    = %10.4f")%SigmaF2 << endl;
+
+    for(int k=0; k < NCVs; k++ ){
         vout << format("      WFac#%-2d    = %10.4f")%(k+1)%WFac[k] << endl;
     }
-    for(int k=0; k < (int)NCorr.GetLength(); k++ ){
-        vout << format("      NCorr#%-2d   = %10.4e")%(k+1)%NCorr[k] << endl;
-    }
-    for(int k=0; k < (int)SigmaN2.GetLength(); k++ ){
+            vout << format("      NCorr      = %10.4f")%NCorr   << endl;
+
+    for(int k=0; k < NCVs; k++ ){
         vout << format("      SigmaN2#%-2d = %10.4e")%(k+1)%SigmaN2[k] << endl;
     }
 
@@ -336,36 +401,23 @@ void COptGPRHyprms::InitOptimizer(void)
             break;
         }
 
-        for(size_t i=0; i < SigmaF2Enabled.size(); i++){
-            if( SigmaF2Enabled[i] ) vout << format(" SigmaF2#%-2d")%(i+1);
-        }
-        for(size_t i=0; i < CoVarEnabled.size(); i++){
-            if( CoVarEnabled[i] )   vout << format("   CoVar#%-2d")%(i+1);
-        }
+        if( SigmaF2Enabled )    vout << "    SigmaF2";
+
         for(size_t i=0; i < WFacEnabled.size(); i++){
-            if( WFacEnabled[i] )    vout << format("    WFac#%-2d")%(i+1);
+            if( WFacEnabled[i] ) vout << format("     WFac#%-2d")%(i+1);
         }
-        for(size_t i=0; i < NCorrEnabled.size(); i++){
-            if( NCorrEnabled[i] )   vout << format("   NCorr#%-2d")%(i+1);
-        }
+        if( NCorrEnabled )      vout << "      NCorr";
         for(size_t i=0; i < SigmaN2Enabled.size(); i++){
             if( SigmaN2Enabled[i] ) vout << format(" SigmaN2#%-2d")%(i+1);
         }
         vout << endl;
 
         vout << "# ---- -------------";
-        for(size_t i=0; i < SigmaF2Enabled.size(); i++){
-            if( SigmaF2Enabled[i] ) vout << " ----------";
-        }
-        for(size_t i=0; i < CoVarEnabled.size(); i++){
-            if( CoVarEnabled[i] )   vout << " ----------";
-        }
+        if( SigmaF2Enabled )    vout << " ----------";
         for(size_t i=0; i < WFacEnabled.size(); i++){
-            if( WFacEnabled[i] )    vout << " ----------";
+            if( WFacEnabled[i] ) vout << " ----------";
         }
-        for(size_t i=0; i < NCorrEnabled.size(); i++){
-            if( NCorrEnabled[i] )   vout << " ----------";
-        }
+        if( NCorrEnabled )      vout << " ----------";
         for(size_t i=0; i < SigmaN2Enabled.size(); i++){
             if( SigmaN2Enabled[i] ) vout << " ----------";
         }
@@ -377,17 +429,9 @@ void COptGPRHyprms::InitOptimizer(void)
 
 // set initial hyprms
     int ind = 0;
-    for(int i=0; i < (int)SigmaF2Enabled.size(); i++){
-        if( SigmaF2Enabled[i] ){
-            Hyprms[ind] = sqrt(SigmaF2[i]-Options.GetOptMinSigmaF2());
-            ind++;
-        }
-    }
-    for(int i=0; i < (int)CoVarEnabled.size(); i++){
-        if( CoVarEnabled[i] ){
-            Hyprms[ind] = sqrt(CoVar[i]-Options.GetOptMinCoVar());
-            ind++;
-        }
+    if( SigmaF2Enabled ){
+        Hyprms[ind] = sqrt(SigmaF2-Options.GetOptMinSigmaF2());
+        ind++;
     }
     for(int i=0; i < (int)WFacEnabled.size(); i++){
         if( WFacEnabled[i] ){
@@ -395,11 +439,9 @@ void COptGPRHyprms::InitOptimizer(void)
             ind++;
         }
     }
-    for(int i=0; i < (int)NCorrEnabled.size(); i++){
-        if( NCorrEnabled[i] ){
-            Hyprms[ind] = sqrt(NCorr[i]-Options.GetOptMinNCorr());
-            ind++;
-        }
+    if( NCorrEnabled ){
+        Hyprms[ind] = sqrt(NCorr-Options.GetOptMinNCorr());
+        ind++;
     }
     for(int i=0; i < (int)SigmaN2Enabled.size(); i++){
         if( SigmaN2Enabled[i] ){
@@ -418,26 +460,24 @@ void COptGPRHyprms::InitOptimizer(void)
 
 //------------------------------------------------------------------------------
 
-void COptGPRHyprms::DecodeEList(const CSmallString& spec, CSimpleVector<double>& vlist, std::vector<bool>& elist,const CSmallString& optionname)
+void COptGPRHyprmsMulti::DecodeEList(const CSmallString& spec, std::vector<bool>& elist,const CSmallString& optionname)
 {
-    if( vlist.GetLength() == 0 ) return;
-
     string          sspecen(spec);
     vector<string>  slist;
 
     split(slist,sspecen,is_any_of("x"),token_compress_on);
 
-    if( slist.size() > vlist.GetLength() ){
+    if( (int)slist.size() > NCVs ){
         CSmallString error;
-        error << "too many flags (" << slist.size() << ") for " << optionname << " than required (" << vlist.GetLength() << ")";
+        error << "too many flags (" << slist.size() << ") for " << optionname << " than required (" << NCVs << ")";
         RUNTIME_ERROR(error);
     }
 
-    elist.resize(vlist.GetLength());
+    elist.resize(NCVs);
 
     // parse values
     bool last_st = false;
-    for(size_t i=0; i < slist.size(); i++){
+    for(int i=0; i < (int)slist.size(); i++){
         stringstream str(slist[i]);
         char letter;
         str >> letter;
@@ -455,31 +495,31 @@ void COptGPRHyprms::DecodeEList(const CSmallString& spec, CSimpleVector<double>&
     }
 
     // pad the rest with the last value
-    for(size_t i=slist.size(); i < vlist.GetLength(); i++){
+    for(int i=slist.size(); i < NCVs; i++){
         elist[i] = last_st;
     }
 }
 
 //------------------------------------------------------------------------------
 
-void COptGPRHyprms::DecodeVList(const CSmallString& spec, CSimpleVector<double>& vlist,const CSmallString& optionname,double defv)
+void COptGPRHyprmsMulti::DecodeVList(const CSmallString& spec, CSimpleVector<double>& vlist,const CSmallString& optionname,double defv)
 {
-    if( vlist.GetLength() == 0 ) return;
-
     string          sspecen(spec);
     vector<string>  slist;
 
     split(slist,sspecen,is_any_of("x"),token_compress_on);
 
-    if( slist.size() > vlist.GetLength() ){
+    if( (int)slist.size() > NCVs ){
         CSmallString error;
-        error << "too many flags (" << slist.size() << ") for " << optionname << " than required (" << vlist.GetLength() << ")";
+        error << "too many flags (" << slist.size() << ") for " << optionname << " than required (" << NCVs << ")";
         RUNTIME_ERROR(error);
     }
 
+    vlist.CreateVector(NCVs);
+
     // parse values
     double last_st = defv;
-    for(size_t i=0; i < slist.size(); i++){
+    for(int i=0; i < (int)slist.size(); i++){
         stringstream str(slist[i]);
         str >> last_st;
         if( ! str ){
@@ -491,7 +531,7 @@ void COptGPRHyprms::DecodeVList(const CSmallString& spec, CSimpleVector<double>&
     }
 
     // pad the rest with the last value
-    for(size_t i=slist.size(); i < vlist.GetLength(); i++){
+    for(int i=slist.size(); i < NCVs; i++){
         vlist[i] = last_st;
     }
 }
@@ -518,7 +558,7 @@ extern "C" void lbfgs_(FT_INT* N,FT_INT* M,double* X,double* F,double* G,FT_INT*
 
 //------------------------------------------------------------------------------
 
-bool COptGPRHyprms::Optimize(void)
+bool COptGPRHyprmsMulti::Optimize(void)
 {
     bool result = true;
 
@@ -613,18 +653,11 @@ bool COptGPRHyprms::Optimize(void)
 
     if( noptsteps > 0 ) {
         vout << "# ---- -------------";
-        for(size_t i=0; i < SigmaF2Enabled.size(); i++){
-            if( SigmaF2Enabled[i] ) vout << " ----------";
-        }
-        for(size_t i=0; i < CoVarEnabled.size(); i++){
-            if( CoVarEnabled[i] ) vout << " ----------";
-        }
+        if( SigmaF2Enabled )    vout << " ----------";
         for(size_t i=0; i < WFacEnabled.size(); i++){
             if( WFacEnabled[i] ) vout << " ----------";
         }
-        for(size_t i=0; i < NCorrEnabled.size(); i++){
-            if( NCorrEnabled[i] ) vout << " ----------";
-        }
+        if( NCorrEnabled )      vout << " ----------";
         for(size_t i=0; i < SigmaN2Enabled.size(); i++){
             if( SigmaN2Enabled[i] ) vout << " ----------";
         }
@@ -660,7 +693,7 @@ bool COptGPRHyprms::Optimize(void)
 
 //------------------------------------------------------------------------------
 
-bool COptGPRHyprms::ResetOpt(int& numofreset)
+bool COptGPRHyprmsMulti::ResetOpt(int& numofreset)
 {
     numofreset++;
     if( numofreset > Options.GetOptNumOfResets() ){
@@ -681,7 +714,7 @@ bool COptGPRHyprms::ResetOpt(int& numofreset)
 
 //------------------------------------------------------------------------------
 
-double COptGPRHyprms::GetGNorm(void)
+double COptGPRHyprmsMulti::GetGNorm(void)
 {
     double gnorm = 0.0;
     int ind = 0;
@@ -699,7 +732,7 @@ double COptGPRHyprms::GetGNorm(void)
 
 //------------------------------------------------------------------------------
 
-void COptGPRHyprms::Test(void)
+void COptGPRHyprmsMulti::Test(void)
 {
     vout << endl;
     vout << format("%02d:Testing gradients ...")%State << endl;
@@ -744,7 +777,21 @@ void COptGPRHyprms::Test(void)
                 vout << "<red><bold>";
             }
             vout << format("%5d ")%(ind+1);
-            vout << setw(10) << left << GetPrmName(prm) << " " << right;
+
+            if( prm == 0 ){
+                vout << "SigmaF2    ";
+            } else if( (prm >= 1) && (prm < 1+NCVs) ) {
+                int cv = prm - 1;
+                vout << format("WFac#%-2d    ")%(cv+1);
+            } else if( prm == NCVs+1 ){
+                vout << "NCorr      ";
+            } else if( (prm >= 2+NCVs) && (prm < 3+2*NCVs) ) {
+                int cv = prm - (NCVs+2);
+                vout << format("SigmaN2#%-2d ")%(cv+1);
+            } else {
+            RUNTIME_ERROR("prm out-of-range");
+        }
+
             vout << format("%14.6e %14.6e %14.6e")%grd1[ind]%grd2[ind]%diff << rel << endl;
             if( fabs(diff) > trh ){
                 vout << "</bold></red>";
@@ -756,45 +803,7 @@ void COptGPRHyprms::Test(void)
 
 //------------------------------------------------------------------------------
 
-std::string COptGPRHyprms::GetPrmName(int prm)
-{
-    int ind = 0;
-    for(size_t i=0; i < SigmaF2Enabled.size(); i++){
-        stringstream str;
-        str << format("SigmaF2#%-2d")%(i+1);
-        if( ind == prm) return(str.str());
-        ind++;
-    }
-    for(size_t i=0; i < CoVarEnabled.size(); i++){
-        stringstream str;
-        str << format("CoVar#%-2d")%(i+1);
-        if( ind == prm) return(str.str());
-        ind++;
-    }
-    for(size_t i=0; i < WFacEnabled.size(); i++){
-        stringstream str;
-        str << format("WFac#%-2d")%(i+1);
-        if( ind == prm) return(str.str());
-        ind++;
-    }
-    for(size_t i=0; i < NCorrEnabled.size(); i++){
-        stringstream str;
-        str << format("NCorr#%-2d")%(i+1);
-        if( ind == prm) return(str.str());
-        ind++;
-    }
-    for(size_t i=0; i < SigmaN2Enabled.size(); i++){
-        stringstream str;
-        str << format("SigmaN2#%-2d")%(i+1);
-        if( ind == prm) return(str.str());
-        ind++;
-    }
-    return("");
-}
-
-//------------------------------------------------------------------------------
-
-void COptGPRHyprms::CalcHessian(void)
+void COptGPRHyprmsMulti::CalcHessian(void)
 {
     vout << endl;
     vout << format("%02d:Calculating numerical hessian by central differences ... ")%State << endl;
@@ -832,11 +841,39 @@ void COptGPRHyprms::CalcHessian(void)
         ScatterHyprms(tmp_prms);
 
         // calculate gradient and logML
-        vout << high;
-        CreateGPREngine();
-        GetTarget();
-        GetTargetDerivatives(grd1[i]);
-        vout << low;
+        for(size_t j=0; j < RealmProxies.size(); j++){
+            CProxyRealmPtr proxy = RealmProxies[j];
+
+        // IntegratorGPR
+            if( proxy->DerProxies.size() > 0 ) {
+                CIntegratorGPR gpr;
+                gpr.PrepForHyprmsGrd(true);
+                GetTargetFromIntegrator(gpr,proxy);
+                switch(Target){
+                    case(EGOT_LOGML):
+                        gpr.GetLogMLDerivatives(HyprmsEnabled,grd1[i]);
+                    break;
+                    case(EGOT_LOGPL):
+                        gpr.GetLogPLDerivatives(HyprmsEnabled,grd1[i]);
+                    break;
+                }
+        // SmootherGPR
+            } else if( proxy->EnergyProxies.size() > 0 ) {
+                CSmootherGPR gpr;
+                gpr.PrepForHyprmsGrd(true);
+                GetTargetFromSmoother(gpr,proxy);
+                switch(Target){
+                    case(EGOT_LOGML):
+                        gpr.GetLogMLDerivatives(HyprmsEnabled,grd1[i]);
+                    break;
+                    case(EGOT_LOGPL):
+                        gpr.GetLogPLDerivatives(HyprmsEnabled,grd1[i]);
+                    break;
+                }
+            } else {
+                RUNTIME_ERROR("undefined proxy")
+            }
+        }
 
         vout << "   - perturbation for hyprm: " << setw(3) << (i+1) << endl;
         grd2[i].SetZero();
@@ -845,12 +882,40 @@ void COptGPRHyprms::CalcHessian(void)
         ScatterHyprms(tmp_prms);
 
 
-        // calculate gradient and logML
-        vout << high;
-        CreateGPREngine();
-        GetTarget();
-        GetTargetDerivatives(grd2[i]);
-        vout << low;
+// calculate gradient and logML
+        for(size_t j=0; j < RealmProxies.size(); j++){
+            CProxyRealmPtr proxy = RealmProxies[j];
+
+        // IntegratorGPR
+            if( proxy->DerProxies.size() > 0  ) {
+                CIntegratorGPR gpr;
+                gpr.PrepForHyprmsGrd(true);
+                GetTargetFromIntegrator(gpr,proxy);
+                switch(Target){
+                    case(EGOT_LOGML):
+                        gpr.GetLogMLDerivatives(HyprmsEnabled,grd2[i]);
+                    break;
+                    case(EGOT_LOGPL):
+                        gpr.GetLogPLDerivatives(HyprmsEnabled,grd2[i]);
+                    break;
+                }
+        // SmootherGPR
+            } else if( proxy->EnergyProxies.size() > 0 ) {
+                CSmootherGPR gpr;
+                gpr.PrepForHyprmsGrd(true);
+                GetTargetFromSmoother(gpr,proxy);
+                switch(Target){
+                    case(EGOT_LOGML):
+                        gpr.GetLogMLDerivatives(HyprmsEnabled,grd2[i]);
+                    break;
+                    case(EGOT_LOGPL):
+                        gpr.GetLogPLDerivatives(HyprmsEnabled,grd2[i]);
+                    break;
+                }
+            } else {
+                RUNTIME_ERROR("undefined proxy")
+            }
+        }
     }
 
 // hessian by central differences from gradients
@@ -870,7 +935,20 @@ void COptGPRHyprms::CalcHessian(void)
     int ind = 0;
     for(int prm=0; prm < (int)HyprmsEnabled.size(); prm++){
         if( ! HyprmsEnabled[prm] ) continue;
-        vout << " " << setw(10) << left << GetPrmName(prm) << right;
+        if( prm == 0 ){
+            vout << " SigmaF2   ";
+        } else if( (prm >= 1) && (prm < 1+NCVs) ) {
+            int cv = prm - 1;
+            vout << format(" WFac#%-2d   ")%(cv+1);
+        } else if ( prm == NCVs+1 ){
+            vout << " NCorr     ";
+        } else if( (prm >= 2+NCVs) && (prm < 3+2*NCVs) ){
+            int cv = prm - (NCVs+2);
+            vout << format(" SigmaN2#%-2d")%(cv+1);
+        } else {
+            RUNTIME_ERROR("prm out-of-range");
+        }
+        ind++;
     }
     vout << endl;
 
@@ -897,7 +975,7 @@ void COptGPRHyprms::CalcHessian(void)
 
 //------------------------------------------------------------------------------
 
-void COptGPRHyprms::PrintGradientSummary(void)
+void COptGPRHyprmsMulti::PrintGradientSummary(void)
 {
     vout << endl;
     vout << "# Final results ..." << endl;
@@ -908,57 +986,31 @@ void COptGPRHyprms::PrintGradientSummary(void)
 
     double gnorm = 0.0;
 
-    for(size_t i=0; i < SigmaF2Enabled.size(); i++){
-        if( SigmaF2Enabled[i] ) {
-            vout << format("%5d ")%(ind+1);
-            vout << format("SigmaF2#%-2d ")%(i+1);
-            double value = Hyprms[ind]*Hyprms[ind] + Options.GetOptMinSigmaF2();
-            gnorm += HyprmsGrd[ind]*HyprmsGrd[ind];
-            vout << format("%14.6e %14.6e")%(value)%HyprmsGrd[ind] << endl;
-            ind++;
+    for(int prm=0; prm < (int)HyprmsEnabled.size(); prm++){
+        if( ! HyprmsEnabled[prm] ) continue;
+        vout << format("%5d ")%(ind+1);
+        double value = 0.0;
+        if( prm == 0 ){
+            vout << "SigmaF2    ";
+            value = Hyprms[ind]*Hyprms[ind] + Options.GetOptMinSigmaF2();
+        } else if( (prm >= 1) && (prm < 1+NCVs) ) {
+            int cv = prm - 1;
+            vout << format("WFac#%-2d    ")%(cv+1);
+            value = Hyprms[ind]*Hyprms[ind] + Options.GetOptMinWFac();
+        } else if( prm == NCVs+1 ){
+            vout << "NCorr      ";
+            value = Hyprms[ind]*Hyprms[ind] + Options.GetOptMinNCorr();
+        } else if ( (prm >= 2+NCVs) && (prm < 3+2*NCVs) ) {
+            int cv = prm - (NCVs+2);
+            vout << format("SigmaN2#%-2d ")%(cv+1);
+            value = Hyprms[ind]*Hyprms[ind] + Options.GetOptMinSigmaN2();
+        } else {
+            RUNTIME_ERROR("prm out-of-range");
         }
+        gnorm += HyprmsGrd[ind]*HyprmsGrd[ind];
+        vout << format("%14.6e %14.6e")%(value)%HyprmsGrd[ind] << endl;
+        ind++;
     }
-    for(size_t i=0; i < CoVarEnabled.size(); i++){
-        if( CoVarEnabled[i] ) {
-            vout << format("%5d ")%(ind+1);
-            vout << format("CoVar#%-2d   ")%(i+1);
-            double value = Hyprms[ind]*Hyprms[ind] + Options.GetOptMinCoVar();
-            gnorm += HyprmsGrd[ind]*HyprmsGrd[ind];
-            vout << format("%14.6e %14.6e")%(value)%HyprmsGrd[ind] << endl;
-            ind++;
-        }
-    }
-    for(size_t i=0; i < WFacEnabled.size(); i++){
-        if( WFacEnabled[i] ) {
-            vout << format("%5d ")%(ind+1);
-            vout << format("WFac#%-2d    ")%(i+1);
-            double value = Hyprms[ind]*Hyprms[ind] + Options.GetOptMinWFac();
-            gnorm += HyprmsGrd[ind]*HyprmsGrd[ind];
-            vout << format("%14.6e %14.6e")%(value)%HyprmsGrd[ind] << endl;
-            ind++;
-        }
-    }
-    for(size_t i=0; i < NCorrEnabled.size(); i++){
-        if( NCorrEnabled[i] ) {
-            vout << format("%5d ")%(ind+1);
-            vout << format("NCorr#%-2d   ")%(i+1);
-            double value = Hyprms[ind]*Hyprms[ind] + Options.GetOptMinNCorr();
-            gnorm += HyprmsGrd[ind]*HyprmsGrd[ind];
-            vout << format("%14.6e %14.6e")%(value)%HyprmsGrd[ind] << endl;
-            ind++;
-        }
-    }
-    for(size_t i=0; i < SigmaN2Enabled.size(); i++){
-        if( SigmaN2Enabled[i] ) {
-            vout << format("%5d ")%(ind+1);
-            vout << format("SigmaN2#%-2d ")%(i+1);
-            double value = Hyprms[ind]*Hyprms[ind] + Options.GetOptMinSigmaN2();
-            gnorm += HyprmsGrd[ind]*HyprmsGrd[ind];
-            vout << format("%14.6e %14.6e")%(value)%HyprmsGrd[ind] << endl;
-            ind++;
-        }
-    }
-
     if( NumOfOptPrms > 0 ){
         gnorm = sqrt(gnorm/(double)NumOfOptPrms);
     }
@@ -970,7 +1022,7 @@ void COptGPRHyprms::PrintGradientSummary(void)
 
 //------------------------------------------------------------------------------
 
-void COptGPRHyprms::ShowGPRStat(void)
+void COptGPRHyprmsMulti::ShowGPRStat(void)
 {
     vout << endl;
     vout << format("%02d:Statistics per PMF accumulator ...")%State << endl;
@@ -979,23 +1031,130 @@ void COptGPRHyprms::ShowGPRStat(void)
 // setup parameters
     ScatterHyprms(Hyprms);
 
-    vout << low;
-    CreateGPREngine();
+// run GPR integration
+    for(size_t i=0; i < RealmProxies.size(); i++){
+        CProxyRealmPtr proxy = RealmProxies[i];
+
+        vout << format("** PMF Realm Set #%02d ...")%(i+1) << endl;
+
+    // IntegratorGPR
+        if( proxy->DerProxies.size() > 0 ) {
+            CIntegratorGPR   gpr;
+
+            CEnergySurfacePtr fes(new CEnergySurface);
+            fes->Allocate(proxy->Accumulators.front());
+
+            gpr.SetOutputES(fes);
+            for(size_t i=0; i < proxy->DerProxies.size(); i++){
+                gpr.AddInputEnergyDerProxy(proxy->DerProxies[i]);
+            }
+
+            gpr.SetRCond(Options.GetOptRCond());
+
+            gpr.SetIncludeError(false);
+            gpr.SetNoEnergy(false);
+            gpr.IncludeGluedAreas(false);
+
+            gpr.SetLAMethod(Options.GetOptLAMethod());
+            gpr.SetKernel(Options.GetOptGPRKernel());
+            gpr.SetUseInv(Options.GetOptGPRUseInv());
+            gpr.SetCalcLogPL(Options.GetOptGPRCalcLogPL() || Target == EGOT_LOGPL);
+
+            if( Options.IsOptGlobalMinSet() ){
+                gpr.SetGlobalMin(Options.GetOptGlobalMin());
+            }
+
+        // run integrator
+            gpr.SetSigmaF2(SigmaF2);
+            gpr.SetWFac(WFac);
+            gpr.SetNCorr(NCorr);
+            gpr.SetSigmaN2(SigmaN2);
+            gpr.Integrate(vout,false);
+    // SmootherGPR
+        } else if( proxy->EnergyProxies.size() > 0 ) {
+            CSmootherGPR   gpr;
+
+            CEnergySurfacePtr fes(new CEnergySurface);
+            fes->Allocate(proxy->Accumulators.front());
+
+            gpr.SetOutputES(fes);
+            for(size_t i=0; i < proxy->EnergyProxies.size(); i++){
+                gpr.AddInputEnergyProxy(proxy->EnergyProxies[i]);
+            }
+
+            gpr.SetRCond(Options.GetOptRCond());
+
+            gpr.SetIncludeError(false);
+
+            gpr.SetLAMethod(Options.GetOptLAMethod());
+
+            gpr.SetKernel(Options.GetOptGPRKernel());
+            gpr.SetUseInv(Options.GetOptGPRUseInv());
+            gpr.SetCalcLogPL(Options.GetOptGPRCalcLogPL() || Target == EGOT_LOGPL);
+
+            if( Options.IsOptGlobalMinSet() ){
+                gpr.SetGlobalMin(Options.GetOptGlobalMin());
+            }
+
+        // run integrator
+            gpr.SetSigmaF2(SigmaF2);
+            gpr.SetWFac(WFac);
+            gpr.SetNCorr(NCorr);
+            gpr.SetSigmaN2(SigmaN2);
+            gpr.Interpolate(vout,false);
+        } else {
+            RUNTIME_ERROR("undefined proxy")
+        }
+
+   }
 }
 
 //------------------------------------------------------------------------------
 
-void COptGPRHyprms::RunGPRAnalytical(void)
+void COptGPRHyprmsMulti::RunGPRAnalytical(void)
 {
 // setup parameters
     ScatterHyprms(Hyprms);
+
+    logTarget = 0;
     HyprmsGrd.SetZero();
 
-// get data
-    logTarget = GetTarget();
-    GetTargetDerivatives(HyprmsGrd);
+// calculate gradient and logML
+    for(size_t i=0; i < RealmProxies.size(); i++){
+        CProxyRealmPtr proxy = RealmProxies[i];
 
-// transform gradients
+    // IntegratorGPR
+        if( proxy->DerProxies.size() > 0 ) {
+            CIntegratorGPR gpr;
+            gpr.PrepForHyprmsGrd(true);
+            logTarget += GetTargetFromIntegrator(gpr,proxy);
+            switch(Target){
+                case(EGOT_LOGML):
+                    gpr.GetLogMLDerivatives(HyprmsEnabled,HyprmsGrd);
+                break;
+                case(EGOT_LOGPL):
+                    gpr.GetLogPLDerivatives(HyprmsEnabled,HyprmsGrd);
+                break;
+            }
+    // SmootherGPR
+        } else if( proxy->EnergyProxies.size() > 0 ) {
+            CSmootherGPR gpr;
+            gpr.PrepForHyprmsGrd(true);
+            logTarget += GetTargetFromSmoother(gpr,proxy);
+            switch(Target){
+                case(EGOT_LOGML):
+                    gpr.GetLogMLDerivatives(HyprmsEnabled,HyprmsGrd);
+                break;
+                case(EGOT_LOGPL):
+                    gpr.GetLogPLDerivatives(HyprmsEnabled,HyprmsGrd);
+                break;
+            }
+        } else {
+            RUNTIME_ERROR("undefined proxy")
+        }
+    }
+
+    // transform gradients
     for(int ind=0; ind < NumOfOptPrms; ind++){
         HyprmsGrd[ind] = 2.0*HyprmsGrd[ind]*Hyprms[ind];
     }
@@ -1003,19 +1162,41 @@ void COptGPRHyprms::RunGPRAnalytical(void)
 
 //------------------------------------------------------------------------------
 
-void COptGPRHyprms::RunGPRNumerical(void)
+void COptGPRHyprmsMulti::RunGPRNumerical(void)
 {
-// setup parameters
-    HyprmsGrd.SetZero();
     logTarget = 0;
+    HyprmsGrd.SetZero();
+    for(size_t i=0; i < RealmProxies.size(); i++){
+        CProxyRealmPtr proxy = RealmProxies[i];
 
+    // IntegratorGPR
+        if( proxy->DerProxies.size() > 0 ) {
+            logTarget += RunGPRNumericalIntegrator(proxy,HyprmsGrd);
+    // SmootherGPR
+        } else if( proxy->EnergyProxies.size() > 0 ) {
+            logTarget += RunGPRNumericalSmoother(proxy,HyprmsGrd);
+        } else {
+            RUNTIME_ERROR("undefined proxy")
+        }
+    }
+}
+
+//------------------------------------------------------------------------------
+
+double COptGPRHyprmsMulti::RunGPRNumericalIntegrator(CProxyRealmPtr derproxy,CSimpleVector<double>& der)
+{
     CSimpleVector<double>   tmp_prms;
     tmp_prms.CreateVector(NumOfOptPrms);
+
+    double lml = 0.0;
 
 // value
     tmp_prms = Hyprms;
     ScatterHyprms(tmp_prms);
-    logTarget = GetTarget();
+    {
+        CIntegratorGPR gpr;
+        lml = GetTargetFromIntegrator(gpr,derproxy);
+    }
 
 // derivatives
     double dh = 1e-5;
@@ -1026,38 +1207,135 @@ void COptGPRHyprms::RunGPRNumerical(void)
             tmp_prms = Hyprms;
             tmp_prms[i] -= 2.0*dh*Hyprms[i];
             ScatterHyprms(tmp_prms);
-            v1 = GetTarget();
+            {
+                CIntegratorGPR gpr;
+                v1 = GetTargetFromIntegrator(gpr,derproxy);
+            }
             tmp_prms = Hyprms;
             tmp_prms[i] -= dh*Hyprms[i];
             ScatterHyprms(tmp_prms);
-            v2 = GetTarget();
+            {
+                CIntegratorGPR gpr;
+                v2 = GetTargetFromIntegrator(gpr,derproxy);
+            }
             tmp_prms = Hyprms;
             tmp_prms[i] += dh*Hyprms[i];
             ScatterHyprms(tmp_prms);
-            v3 = GetTarget();
+            {
+                CIntegratorGPR gpr;
+                v3 = GetTargetFromIntegrator(gpr,derproxy);
+            }
             tmp_prms = Hyprms;
             tmp_prms[i] += 2.0*dh*Hyprms[i];
             ScatterHyprms(tmp_prms);
-            v4 = GetTarget();
-            HyprmsGrd[i] += (v1-8.0*v2+8.0*v3-v4)/(12.0*dh*Hyprms[i]);
+            {
+                CIntegratorGPR gpr;
+                v4 = GetTargetFromIntegrator(gpr,derproxy);
+            }
+            der[i] += (v1-8.0*v2+8.0*v3-v4)/(12.0*dh*Hyprms[i]);
         } else {
             double lv,rv;
             tmp_prms = Hyprms;
             tmp_prms[i] -= dh*Hyprms[i];
             ScatterHyprms(tmp_prms);
-            lv = GetTarget();
+            {
+                CIntegratorGPR gpr;
+                lv = GetTargetFromIntegrator(gpr,derproxy);
+            }
             tmp_prms = Hyprms;
             tmp_prms[i] += dh*Hyprms[i];
             ScatterHyprms(tmp_prms);
-            rv = GetTarget();
-            HyprmsGrd[i] += (rv-lv)/(2.0*dh*Hyprms[i]);
+            {
+                CIntegratorGPR gpr;
+                rv = GetTargetFromIntegrator(gpr,derproxy);
+            }
+            der[i] += (rv-lv)/(2.0*dh*Hyprms[i]);
         }
+
     }
+
+    return(lml);
 }
 
 //------------------------------------------------------------------------------
 
-void COptGPRHyprms::ScatterHyprms(CSimpleVector<double>& hyprsm)
+double COptGPRHyprmsMulti::RunGPRNumericalSmoother(CProxyRealmPtr eneproxy,CSimpleVector<double>& der)
+{
+    CSimpleVector<double>   tmp_prms;
+    tmp_prms.CreateVector(NumOfOptPrms);
+
+    double lml = 0.0;
+
+// value
+    tmp_prms = Hyprms;
+    ScatterHyprms(tmp_prms);
+    {
+        CSmootherGPR gpr;
+        lml = GetTargetFromSmoother(gpr,eneproxy);
+    }
+
+// derivatives
+    double dh = 1e-5;
+
+    for(int i=0; i < NumOfOptPrms; i++){
+        if( Options.GetOptCD5() ){
+            double v1,v2,v3,v4;
+            tmp_prms = Hyprms;
+            tmp_prms[i] -= 2.0*dh*Hyprms[i];
+            ScatterHyprms(tmp_prms);
+            {
+                CSmootherGPR gpr;
+                v1 = GetTargetFromSmoother(gpr,eneproxy);
+            }
+            tmp_prms = Hyprms;
+            tmp_prms[i] -= dh*Hyprms[i];
+            ScatterHyprms(tmp_prms);
+            {
+                CSmootherGPR gpr;
+                v2 = GetTargetFromSmoother(gpr,eneproxy);
+            }
+            tmp_prms = Hyprms;
+            tmp_prms[i] += dh*Hyprms[i];
+            ScatterHyprms(tmp_prms);
+            {
+                CSmootherGPR gpr;
+                v3 = GetTargetFromSmoother(gpr,eneproxy);
+            }
+            tmp_prms = Hyprms;
+            tmp_prms[i] += 2.0*dh*Hyprms[i];
+            ScatterHyprms(tmp_prms);
+            {
+                CSmootherGPR gpr;
+                v4 = GetTargetFromSmoother(gpr,eneproxy);
+            }
+            der[i] += (v1-8.0*v2+8.0*v3-v4)/(12.0*dh*Hyprms[i]);
+        } else {
+            double lv,rv;
+            tmp_prms = Hyprms;
+            tmp_prms[i] -= dh*Hyprms[i];
+            ScatterHyprms(tmp_prms);
+            {
+                CSmootherGPR gpr;
+                lv = GetTargetFromSmoother(gpr,eneproxy);
+            }
+            tmp_prms = Hyprms;
+            tmp_prms[i] += dh*Hyprms[i];
+            ScatterHyprms(tmp_prms);
+            {
+                CSmootherGPR gpr;
+                rv = GetTargetFromSmoother(gpr,eneproxy);
+            }
+            der[i] += (rv-lv)/(2.0*dh*Hyprms[i]);
+        }
+
+    }
+
+    return(lml);
+}
+
+//------------------------------------------------------------------------------
+
+void COptGPRHyprmsMulti::ScatterHyprms(CSimpleVector<double>& hyprsm)
 {
     // update parameters
     HyprmsEnabled.resize(NumOfPrms);
@@ -1065,27 +1343,14 @@ void COptGPRHyprms::ScatterHyprms(CSimpleVector<double>& hyprsm)
     int ind = 0;
     int i = 0;
 // ---------------
-    for(int k=0; k < (int)SigmaF2Enabled.size(); k++){
-        if( SigmaF2Enabled[k] ){
-            SigmaF2[k] = hyprsm[ind]*hyprsm[ind] + Options.GetOptMinSigmaF2();
-            ind++;
-            HyprmsEnabled[i] = true;
-        } else {
-            HyprmsEnabled[i] = false;
-        }
-        i++;
+    if( SigmaF2Enabled ){
+        SigmaF2 = hyprsm[ind]*hyprsm[ind] + Options.GetOptMinSigmaF2();
+        ind++;
+        HyprmsEnabled[i] = true;
+    } else {
+        HyprmsEnabled[i] = false;
     }
-// ---------------
-    for(int k=0; k < (int)CoVarEnabled.size(); k++){
-        if( CoVarEnabled[k] ){
-            CoVar[k] = hyprsm[ind]*hyprsm[ind] + Options.GetOptMinCoVar();
-            ind++;
-            HyprmsEnabled[i] = true;
-        } else {
-            HyprmsEnabled[i] = false;
-        }
-        i++;
-    }
+    i++;
 // ---------------
     for(int k=0; k < (int)WFacEnabled.size(); k++){
         if( WFacEnabled[k] ){
@@ -1098,16 +1363,14 @@ void COptGPRHyprms::ScatterHyprms(CSimpleVector<double>& hyprsm)
         i++;
     }
 // ---------------
-    for(int k=0; k < (int)NCorrEnabled.size(); k++){
-        if( NCorrEnabled[k] ){
-            NCorr[k] = hyprsm[ind]*hyprsm[ind] + Options.GetOptMinNCorr();
-            ind++;
-            HyprmsEnabled[i] = true;
-        } else {
-            HyprmsEnabled[i] = false;
-        }
-        i++;
+    if( NCorrEnabled ){
+        NCorr = hyprsm[ind]*hyprsm[ind] + Options.GetOptMinNCorr();
+        ind++;
+        HyprmsEnabled[i] = true;
+    } else {
+        HyprmsEnabled[i] = false;
     }
+    i++;
 // ---------------
     for(int k=0; k < (int)SigmaN2Enabled.size(); k++){
         if( SigmaN2Enabled[k] ){
@@ -1123,299 +1386,49 @@ void COptGPRHyprms::ScatterHyprms(CSimpleVector<double>& hyprsm)
 
 //------------------------------------------------------------------------------
 
-void COptGPRHyprms::InitGPREngine(void)
+double COptGPRHyprmsMulti::GetTargetFromIntegrator(CIntegratorGPR& gpr,CProxyRealmPtr proxy)
 {
-    if( Options.GetArgRealm() == "dG/dx" ) {
-        InitGPREngine_dF_dx();
-    } else if( Options.GetArgRealm() == "dH/dx" ) {
-        InitGPREngine_dF_dx();
-    } else if( Options.GetArgRealm() == "-TdS/dx" ) {
-        InitGPREngine_dF_dx();
-    } else if( Options.GetArgRealm() == "mTdS/dx" ) {
-        InitGPREngine_dF_dx();
-    } else if( Options.GetArgRealm() == "dH" ) {
-        InitGPREngine_dF();
-    } else if( Options.GetArgRealm() == "GHS_dH/dx" ) {
-        InitGPREngine_GHS_dH_dx();
-    } else {
-        CSmallString error;
-        error << "unsupported realm: " <<  Options.GetArgRealm();
-        RUNTIME_ERROR(error);
-    }
-}
+    CEnergySurfacePtr fes(new CEnergySurface);
+    fes->Allocate(proxy->Accumulators.front());
 
-//------------------------------------------------------------------------------
-
-void COptGPRHyprms::InitGPREngine_dF_dx(void)
-{
-    SigmaF2.CreateVector(1);
-    NCorr.CreateVector(1);
-    WFac.CreateVector(Accu->GetNumOfCVs());
-    SigmaN2.CreateVector(Accu->GetNumOfCVs());
-}
-
-//------------------------------------------------------------------------------
-
-void COptGPRHyprms::InitGPREngine_dF(void)
-{
-    SigmaF2.CreateVector(1);
-    NCorr.CreateVector(1);
-    WFac.CreateVector(Accu->GetNumOfCVs());
-    SigmaN2.CreateVector(Accu->GetNumOfCVs());
-}
-
-//------------------------------------------------------------------------------
-
-void COptGPRHyprms::InitGPREngine_GHS_dH_dx(void)
-{
-    SigmaF2.CreateVector(3);
-    CoVar.CreateVector(3);
-    WFac.CreateVector(Accu->GetNumOfCVs());
-    SigmaN2.CreateVector(3*Accu->GetNumOfCVs());
-}
-
-//------------------------------------------------------------------------------
-
-void COptGPRHyprms::CreateGPREngine(void)
-{
-    if( Options.GetArgRealm() == "dG/dx" ) {
-        CreateGPREngine_dF_dx();
-    } else if( Options.GetArgRealm() == "dH/dx" ) {
-        CreateGPREngine_dF_dx();
-    } else if( Options.GetArgRealm() == "-TdS/dx" ) {
-        CreateGPREngine_dF_dx();
-    } else if( Options.GetArgRealm() == "mTdS/dx" ) {
-        CreateGPREngine_dF_dx();
-    } else if( Options.GetArgRealm() == "dH" ) {
-        CreateGPREngine_dF();
-    } else if( Options.GetArgRealm() == "GHS_dH/dx" ) {
-        CreateGPREngine_GHS_dH_dx();
-    } else {
-        CSmallString error;
-        error << "unsupported realm: " <<  Options.GetArgRealm();
-        RUNTIME_ERROR(error);
-    }
-}
-
-//------------------------------------------------------------------------------
-
-void COptGPRHyprms::CreateGPREngine_dF_dx(void)
-{
-    CEnergyDerProxyPtr proxy;
-
-    if( Options.GetArgRealm() == "dG/dx" ) {
-        if( CABFProxy_dG::IsCompatible(Accu) ){
-           proxy    = CABFProxy_dG_Ptr(new CABFProxy_dG);
-        } else if (CCSTProxy_dG::IsCompatible(Accu) ) {
-            proxy    = CCSTProxy_dG_Ptr(new CCSTProxy_dG);
-        } else {
-            CSmallString error;
-            error << "incompatible method: " << Accu->GetMethod() << " with requested realm: " <<  Options.GetArgRealm();
-            RUNTIME_ERROR(error);
-        }
-    } else if( Options.GetArgRealm() == "dH/dx" ) {
-        if( CABFProxy_dG::IsCompatible(Accu) ){
-           proxy    = CABFProxy_dH_Ptr(new CABFProxy_dH);
-        } else {
-            CSmallString error;
-            error << "incompatible method: " << Accu->GetMethod() << " with requested realm: " <<  Options.GetArgRealm();
-            RUNTIME_ERROR(error);
-        }
-    } else if( (Options.GetArgRealm() == "-TdS/dx") || (Options.GetArgRealm() == "mTdS/dx") ) {
-        if( CABFProxy_mTdS::IsCompatible(Accu) ){
-            proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
-        } else if (CCSTProxy_mTdS::IsCompatible(Accu) ) {
-            proxy    = CCSTProxy_mTdS_Ptr(new CCSTProxy_mTdS);
-        } else {
-            CSmallString error;
-            error << "incompatible method: " << Accu->GetMethod() << " with requested realm: " <<  Options.GetArgRealm();
-            RUNTIME_ERROR(error);
-        }
-    } else {
-            CSmallString error;
-            error << "unsupported realm: " <<  Options.GetArgRealm();
-            RUNTIME_ERROR(error);
+    gpr.SetOutputES(fes);
+    for(size_t i=0; i < proxy->DerProxies.size(); i++){
+        gpr.AddInputEnergyDerProxy(proxy->DerProxies[i]);
     }
 
-    proxy->Init(Accu);
+    gpr.SetRCond(Options.GetOptRCond());
 
-    CIntegratorGPRPtr gpr = CIntegratorGPRPtr(new CIntegratorGPR);
+    gpr.SetIncludeError(false);
+    gpr.SetNoEnergy(true);
+    gpr.IncludeGluedAreas(false);
 
-    gpr->SetOutputES(FES);
-    gpr->AddInputEnergyDerProxy(proxy);
-
-    gpr->SetRCond(Options.GetOptRCond());
-
-    gpr->SetIncludeError(false);
-    gpr->SetNoEnergy(false);
-    gpr->IncludeGluedAreas(false);
-
-    gpr->SetLAMethod(Options.GetOptLAMethod());
-    gpr->SetKernel(Options.GetOptGPRKernel());
-    gpr->SetUseInv(Options.GetOptGPRUseInv());
-    gpr->SetCalcLogPL(Options.GetOptGPRCalcLogPL() || (Target == EGOT_LOGPL));
+    gpr.SetLAMethod(Options.GetOptLAMethod());
+    gpr.SetUseInv(Options.GetOptGPRUseInv());
+    gpr.SetKernel(Options.GetOptGPRKernel());
 
     if( Options.IsOptGlobalMinSet() ){
-         gpr->SetGlobalMin(Options.GetOptGlobalMin());
+        gpr.SetGlobalMin(Options.GetOptGlobalMin());
     }
 
-// set parameters
-    gpr->SetSigmaF2(SigmaF2[0]);
-    gpr->SetWFac(WFac);
-    gpr->SetNCorr(NCorr[0]);
-    gpr->SetSigmaN2(SigmaN2);
+    if( Target == EGOT_LOGPL) gpr.SetCalcLogPL(true);
 
-// run integrator
-    gpr->PrepForHyprmsGrd(true);
-    gpr->Integrate(vout,false);
-
-    GPREngine = gpr;
-}
-
-//------------------------------------------------------------------------------
-
-void COptGPRHyprms::CreateGPREngine_dF(void)
-{
-    CEnergyProxyPtr proxy;
-
-    if( Options.GetArgRealm() == "dH" ) {
-        proxy    = CPMFProxy_dH_Ptr(new CPMFProxy_dH);
-    } else {
-        CSmallString error;
-        error << "unsupported realm: " <<  Options.GetArgRealm();
-        RUNTIME_ERROR(error);
-    }
-    proxy->Init(Accu);
-
-    CSmootherGPRPtr gpr = CSmootherGPRPtr(new CSmootherGPR);
-
-    gpr->SetOutputES(FES);
-    gpr->AddInputEnergyProxy(proxy);
-
-    gpr->SetRCond(Options.GetOptRCond());
-
-    gpr->SetIncludeError(false);
-
-    gpr->SetLAMethod(Options.GetOptLAMethod());
-
-    gpr->SetKernel(Options.GetOptGPRKernel());
-    gpr->SetUseInv(Options.GetOptGPRUseInv());
-    gpr->SetCalcLogPL(Options.GetOptGPRCalcLogPL() || (Target == EGOT_LOGPL));
-
-    if( Options.IsOptGlobalMinSet() ){
-         gpr->SetGlobalMin(Options.GetOptGlobalMin());
-    }
-
-// set parameters
-    gpr->SetSigmaF2(SigmaF2[0]);
-    gpr->SetWFac(WFac);
-    gpr->SetNCorr(NCorr[0]);
-    gpr->SetSigmaN2(SigmaN2);
-
-// run interpolator
-    gpr->PrepForHyprmsGrd(true);
-    gpr->Interpolate(vout,false);
-
-    GPREngine = gpr;
-}
-
-//------------------------------------------------------------------------------
-
-void COptGPRHyprms::CreateGPREngine_GHS_dH_dx(void)
-{
-    CEnergyDerProxyPtr proxy_dg;
-    CEnergyDerProxyPtr proxy_dh;
-    CEnergyDerProxyPtr proxy_ds;
-
-    if( Options.GetArgRealm() == "GHS_dH/dx" ) {
-        if( CABFProxy_dG::IsCompatible(Accu) ){
-           proxy_dg = CABFProxy_dG_Ptr(new CABFProxy_dG);
-           proxy_dg->Init(Accu);
-        } else {
-            CSmallString error;
-            error << "incompatible method: " << Accu->GetMethod() << " with requested realm for dG/dx: " <<  Options.GetArgRealm();
-            RUNTIME_ERROR(error);
-        }
-        if( CABFProxy_dH::IsCompatible(Accu) ){
-           proxy_dh = CABFProxy_dH_Ptr(new CABFProxy_dH);
-           proxy_dh->Init(Accu);
-        } else {
-            CSmallString error;
-            error << "incompatible method: " << Accu->GetMethod() << " with requested realm for dH/dx: " <<  Options.GetArgRealm();
-            RUNTIME_ERROR(error);
-        }
-        if( CABFProxy_mTdS::IsCompatible(Accu) ){
-            proxy_ds    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
-            proxy_ds->Init(Accu);
-        } else {
-            CSmallString error;
-            error << "incompatible method: " << Accu->GetMethod() << " with requested realm for -TdS/dx: " <<  Options.GetArgRealm();
-            RUNTIME_ERROR(error);
-        }
-    } else {
-        CSmallString error;
-        error << "unsupported realm: " <<  Options.GetArgRealm();
-        RUNTIME_ERROR(error);
-    }
-
-    CGHSIntegratorGPR0APtr gpr = CGHSIntegratorGPR0APtr(new CGHSIntegratorGPR0A);
-
-    gpr->SetOutputFES(FES);
-    gpr->SetOutputHES(HES);
-    gpr->SetOutputSES(SES);
-
-    gpr->SetGDerProxy(proxy_dg);
-    gpr->SetHDerProxy(proxy_dh);
-    gpr->SetSDerProxy(proxy_ds);
-
-    gpr->SetRCond(Options.GetOptRCond());
-
-    gpr->SetIncludeError(false);
-    gpr->SetNoEnergy(false);
-    gpr->EnableConstraints(Options.GetOptEnableConstraints());
-
-    gpr->SetLAMethod(Options.GetOptLAMethod());
-    gpr->SetKernel(Options.GetOptGPRKernel());
-    gpr->SetUseInv(Options.GetOptGPRUseInv());
-    gpr->SetCalcLogPL(Options.GetOptGPRCalcLogPL() || (Target == EGOT_LOGPL));
-
-    if( Options.IsOptGlobalMinSet() ){
-         gpr->SetGlobalMin(Options.GetOptGlobalMin());
-    }
-
-// set parameters
-    gpr->SetSigmaF2(SigmaF2);
-    gpr->SetCoVar(CoVar);
-    gpr->SetWFac(WFac);
-    gpr->SetSigmaN2(SigmaN2);
-
-// run integrator
-    gpr->PrepForHyprmsGrd(true);
-    gpr->Integrate(vout,false);
-
-    GPREngine = gpr;
-}
-
-//------------------------------------------------------------------------------
-
-double  COptGPRHyprms::GetTarget(void)
-{
+// setup integrator
+    gpr.SetSigmaF2(SigmaF2);
+    gpr.SetWFac(WFac);
+    gpr.SetNCorr(NCorr);
+    gpr.SetSigmaN2(SigmaN2);
     vout << high;
-
-    CreateGPREngine();
+    gpr.Integrate(vout,true);
 
     double target = 0.0;
-    switch(Target){
-        case(EGOT_LOGML):
-            // calculate logML
-            target = GPREngine->GetLogML();
-            vout << "      logML     = " << setprecision(5) << target << endl;
-        break;
-        case(EGOT_LOGPL):
-            // calculate logLOO
-            target = GPREngine->GetLogPL();
-            vout << "      logPL     = " << setprecision(5) << target << endl;
-        break;
+    if( Options.GetOptTarget() == "logml" ){
+        // calculate logML
+        target = gpr.GetLogML();
+        vout << "      logML     = " << setprecision(5) << target << endl;
+    } else if ( Options.GetOptTarget() == "logpl" ) {
+        // calculate logLOO
+        target = gpr.GetLogPL();
+        vout << "      logPL     = " << setprecision(5) << target << endl;
     }
 
     vout << low;
@@ -1425,74 +1438,118 @@ double  COptGPRHyprms::GetTarget(void)
 
 //------------------------------------------------------------------------------
 
-void COptGPRHyprms::GetTargetDerivatives(CSimpleVector<double>& der)
+double  COptGPRHyprmsMulti::GetTargetFromSmoother(CSmootherGPR& gpr,CProxyRealmPtr proxy)
 {
-    switch(Target){
-        case(EGOT_LOGML):
-            GPREngine->GetLogMLDerivatives(HyprmsEnabled,der);
-        break;
-        case(EGOT_LOGPL):
-            GPREngine->GetLogPLDerivatives(HyprmsEnabled,der);
-        break;
+    CEnergySurfacePtr fes(new CEnergySurface);
+    fes->Allocate(proxy->Accumulators.front());
+
+    gpr.SetOutputES(fes);
+    for(size_t i=0; i < proxy->EnergyProxies.size(); i++){
+        gpr.AddInputEnergyProxy(proxy->EnergyProxies[i]);
     }
 
+    gpr.SetRCond(Options.GetOptRCond());
+
+    gpr.SetIncludeError(false);
+
+    gpr.SetLAMethod(Options.GetOptLAMethod());
+    gpr.SetUseInv(Options.GetOptGPRUseInv());
+
+    gpr.SetKernel(Options.GetOptGPRKernel());
+
+    if( Options.IsOptGlobalMinSet() ){
+        gpr.SetGlobalMin(Options.GetOptGlobalMin());
+    }
+
+    if( Target == EGOT_LOGPL) gpr.SetCalcLogPL(true);
+
+// setup integrator
+    gpr.SetSigmaF2(SigmaF2);
+    gpr.SetWFac(WFac);
+    gpr.SetNCorr(NCorr);
+    gpr.SetSigmaN2(SigmaN2);
+    vout << high;
+
+    gpr.Interpolate(vout,true);
+
+    double target = 0.0;
+    if( Options.GetOptTarget() == "logml" ){
+        // calculate logML
+        target = gpr.GetLogML();
+        vout << "      logML     = " << setprecision(5) << target << endl;
+    } else if ( Options.GetOptTarget() == "logpl" ) {
+        // calculate logLOO
+        target = gpr.GetLogPL();
+        vout << "      logPL     = " << setprecision(5) << target << endl;
+    }
+
+    vout << low;
+
+    return(target);
 }
 
 //------------------------------------------------------------------------------
 
-void COptGPRHyprms::WriteResults(int istep)
+void COptGPRHyprmsMulti::WriteResults(int istep)
 {
     vout << format("%6d %13e")%istep%logTarget;
-
-    for(int i=0; i < (int)SigmaF2Enabled.size(); i++){
-        if( SigmaF2Enabled[i] ) vout << format(" %10.4e")%SigmaF2[i];
-    }
-    for(int i=0; i < (int)CoVarEnabled.size(); i++){
-        if( CoVarEnabled[i] ) vout << format(" %10.4e")%CoVar[i];
-    }
+    if( SigmaF2Enabled ) vout << format(" %10.3f")%SigmaF2;
     for(int i=0; i < (int)WFacEnabled.size(); i++){
         if( WFacEnabled[i] ) vout << format(" %10.3f")%WFac[i];
     }
-    for(int i=0; i < (int)NCorrEnabled.size(); i++){
-        if( NCorrEnabled[i] ) vout << format(" %10.4e")%NCorr[i];
-    }
+    if( NCorrEnabled )   vout << format(" %10.3f")%NCorr;
     for(int i=0; i < (int)SigmaN2Enabled.size(); i++){
         if( SigmaN2Enabled[i] ) vout << format(" %10.4e")%SigmaN2[i];
     }
-
     vout << endl;
 }
 
 //------------------------------------------------------------------------------
 
-void COptGPRHyprms::PrintSampledStat(void)
+void COptGPRHyprmsMulti::PrintSampledStat(void)
 {
-    // calculate sampled area
-    double maxbins = Accu->GetNumOfBins();
-    int    sampled = 0;
-    int    limit = 0;
-    for(int ibin=0; ibin < Accu->GetNumOfBins(); ibin++) {
-        if( Accu->GetNumOfSamples(ibin) > 0 ) {
-            sampled++;
-        }
-        if( Accu->GetNumOfSamples(ibin) > Options.GetOptLimit() ) {
-            limit++;
-        } else {
-            Accu->SetNumOfSamples(ibin,0);
-        }
+    for(size_t r=0; r < RealmProxies.size(); r++){
+        vout << format("** -------> Realm #%02d: %s")%(r+1)%RealmProxies[r]->Name << endl;
+        for(size_t i=0; i < RealmProxies[r]->Accumulators.size(); i++){
+            CPMFAccumulatorPtr accu = RealmProxies[r]->Accumulators[i];
+            vout << format("   ** PMF Accumulator #%05d ...")%(i+1);
+            // calculate sampled area
+            double maxbins = accu->GetNumOfBins();
+            int    sampled = 0;
+            int    limit = 0;
+            for(int ibin=0; ibin < accu->GetNumOfBins(); ibin++) {
+                if( accu->GetNumOfSamples(ibin) > 0 ) {
+                    sampled++;
+                }
+                if( accu->GetNumOfSamples(ibin) > Options.GetOptLimit() ) {
+                    limit++;
+                } else {
+                    accu->SetNumOfSamples(ibin,0);
+                }
+            }
+            if( maxbins > 0 ){
+                vout << " Sampled area: "
+                     << setw(6) << sampled << " / " << (int)maxbins << " | " << setw(5) << setprecision(1) << fixed << sampled/maxbins*100 <<"%" ;
+                vout << " ... Within limit: "
+                     << setw(6) << limit << " / " << (int)maxbins << " | " << setw(5) << setprecision(1) << fixed << limit/maxbins*100 <<"%";
+            }
+            vout << endl;
+            int ncvs = accu->GetNumOfCVs();
+            if( i == 0 ){
+                NCVs = ncvs;
+            }
+            if( NCVs != ncvs ){
+                CSmallString error;
+                error << "inconsistent dimensions (NCVs) of PMF accumulator: " << ncvs << "; the first accu: " << NCVs;
+                RUNTIME_ERROR(error);
+            }
+       }
     }
-    if( maxbins > 0 ){
-        vout << " Sampled area: "
-             << setw(6) << sampled << " / " << (int)maxbins << " | " << setw(5) << setprecision(1) << fixed << sampled/maxbins*100 <<"%" ;
-        vout << " ... Within limit: "
-             << setw(6) << limit << " / " << (int)maxbins << " | " << setw(5) << setprecision(1) << fixed << limit/maxbins*100 <<"%";
-    }
-    vout << endl;
 }
 
 //------------------------------------------------------------------------------
 
-bool COptGPRHyprms::WriteHyperPrms(FILE* p_fout)
+bool COptGPRHyprmsMulti::WriteHyperPrms(FILE* p_fout)
 {
     if( p_fout == NULL ){
         return(false);
@@ -1502,18 +1559,14 @@ bool COptGPRHyprms::WriteHyperPrms(FILE* p_fout)
 
     if( fprintf(p_fout,"# GPR hyper-parameters\n") <= 0 ) return(false);
 
-    for(size_t i=0; i < SigmaF2.GetLength(); i++ ){
-        if( fprintf(p_fout,"SigmaF2#%-2ld = %16.10e\n",i+1,SigmaF2[i]) <= 0 ) return(false);
-    }
-    for(size_t i=0; i < CoVar.GetLength(); i++ ){
-        if( fprintf(p_fout,"CoVar#%-2ld   = %16.10e\n",i+1,CoVar[i]) <= 0 ) return(false);
-    }
+        if( fprintf(p_fout,"SigmaF2    = %16.10e\n",SigmaF2) <= 0 ) return(false);
+
     for(size_t i=0; i < WFac.GetLength(); i++ ){
         if( fprintf(p_fout,"WFac#%-2ld    = %16.10e\n",i+1,WFac[i]) <= 0 ) return(false);
     }
-    for(size_t i=0; i < NCorr.GetLength(); i++ ){
-        if( fprintf(p_fout,"NCorr#%-2ld   = %16.10e\n",i+1,NCorr[i]) <= 0 ) return(false);
-    }
+
+        if( fprintf(p_fout,"NCorr      = %16.10e\n",NCorr) <= 0 ) return(false);
+
     for(size_t i=0; i < SigmaN2.GetLength(); i++ ){
         if( fprintf(p_fout,"SigmaN2#%-2ld = %16.10e\n",i+1,SigmaN2[i]) <= 0 ) return(false);
     }
@@ -1523,7 +1576,7 @@ bool COptGPRHyprms::WriteHyperPrms(FILE* p_fout)
 
 //------------------------------------------------------------------------------
 
-void COptGPRHyprms::LoadGPRHyprms(void)
+void COptGPRHyprmsMulti::LoadGPRHyprms(void)
 {
     ifstream fin;
     fin.open(Options.GetOptLoadHyprms());
@@ -1532,6 +1585,9 @@ void COptGPRHyprms::LoadGPRHyprms(void)
         error << "unable to open file with GPR hyperparameters: " << Options.GetOptLoadHyprms();
         RUNTIME_ERROR(error);
     }
+
+    WFac.CreateVector(NCVs);
+    SigmaN2.CreateVector(NCVs);
 
     string line;
     while( getline(fin,line) ){
@@ -1548,42 +1604,8 @@ void COptGPRHyprms::LoadGPRHyprms(void)
             error << "GPR hyperparameters file, unable to decode line: " << line.c_str();
             RUNTIME_ERROR(error);
         }
-        if( key.find("SigmaF2#") != string::npos ) {
-            std::replace( key.begin(), key.end(), '#', ' ');
-            stringstream kstr(key);
-            string swfac;
-            int    cvind;
-            kstr >> swfac >> cvind;
-            if( ! kstr ){
-                CSmallString error;
-                error << "GPR hyperparameters file, unable to decode sigmaf2 key: " << key.c_str();
-                RUNTIME_ERROR(error);
-            }
-            cvind--; // transform to 0-based indexing
-            if( (cvind < 0) || (cvind >= (int)SigmaF2.GetLength()) ){
-                CSmallString error;
-                error << "sigmaf2 index " << (cvind+1) << " out-of-range 1-" << SigmaF2.GetLength();
-                RUNTIME_ERROR(error);
-            }
-            SigmaF2[cvind] = value;
-        } else if( key.find("CoVar#") != string::npos ) {
-            std::replace( key.begin(), key.end(), '#', ' ');
-            stringstream kstr(key);
-            string swfac;
-            int    cvind;
-            kstr >> swfac >> cvind;
-            if( ! kstr ){
-                CSmallString error;
-                error << "GPR hyperparameters file, unable to decode covar key: " << key.c_str();
-                RUNTIME_ERROR(error);
-            }
-            cvind--; // transform to 0-based indexing
-            if( (cvind < 0) || (cvind >= (int)CoVar.GetLength()) ){
-                CSmallString error;
-                error << "covar index " << (cvind+1) << " out-of-range 1-" << CoVar.GetLength();
-                RUNTIME_ERROR(error);
-            }
-            CoVar[cvind] = value;
+        if( (key == "SigmaF2") || (key == "SigmaF2#1") ){
+            SigmaF2 = value;
         } else if( key.find("WFac#") != string::npos ) {
             std::replace( key.begin(), key.end(), '#', ' ');
             stringstream kstr(key);
@@ -1596,30 +1618,14 @@ void COptGPRHyprms::LoadGPRHyprms(void)
                 RUNTIME_ERROR(error);
             }
             cvind--; // transform to 0-based indexing
-            if( (cvind < 0) || (cvind >= (int)WFac.GetLength()) ){
+            if( (cvind < 0) || (cvind >= NCVs) ){
                 CSmallString error;
-                error << "wfac index " << (cvind+1) << " out-of-range 1-" << WFac.GetLength();
+                error << "wfac index " << (cvind+1) << " out-of-range 1-" << NCVs;
                 RUNTIME_ERROR(error);
             }
             WFac[cvind] = value;
-        } else if( key.find("NCorr#") != string::npos ) {
-            std::replace( key.begin(), key.end(), '#', ' ');
-            stringstream kstr(key);
-            string swfac;
-            int    cvind;
-            kstr >> swfac >> cvind;
-            if( ! kstr ){
-                CSmallString error;
-                error << "GPR hyperparameters file, unable to decode ncorr key: " << key.c_str();
-                RUNTIME_ERROR(error);
-            }
-            cvind--; // transform to 0-based indexing
-            if( (cvind < 0) || (cvind >= (int)NCorr.GetLength()) ){
-                CSmallString error;
-                error << "ncorr index " << (cvind+1) << " out-of-range 1-" << NCorr.GetLength();
-                RUNTIME_ERROR(error);
-            }
-            NCorr[cvind] = value;
+        } else if( (key == "NCorr") || (key == "NCorr#1") ){
+            NCorr = value;
         } else if( key.find("SigmaN2#") != string::npos ) {
             std::replace( key.begin(), key.end(), '#', ' ');
             stringstream kstr(key);
@@ -1632,9 +1638,9 @@ void COptGPRHyprms::LoadGPRHyprms(void)
                 RUNTIME_ERROR(error);
             }
             cvind--; // transform to 0-based indexing
-            if( (cvind < 0) || (cvind >= (int)SigmaN2.GetLength()) ){
+            if( (cvind < 0) || (cvind >= NCVs) ){
                 CSmallString error;
-                error << "sigman2 index " << (cvind+1) << " out-of-range 1-" << SigmaN2.GetLength();
+                error << "sigman2 index " << (cvind+1) << " out-of-range 1-" << NCVs;
                 RUNTIME_ERROR(error);
             }
             SigmaN2[cvind] = value;
@@ -1650,7 +1656,7 @@ void COptGPRHyprms::LoadGPRHyprms(void)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void COptGPRHyprms::Finalize(void)
+void COptGPRHyprmsMulti::Finalize(void)
 {
     // close files if they are own by program
     OutputFile.Close();
@@ -1663,7 +1669,7 @@ void COptGPRHyprms::Finalize(void)
 
     vout << endl;
     vout << "# ==============================================================================" << endl;
-    vout << "# gpr-opthyprms terminated at " << dt.GetSDateAndTime() << ". Total time: " << dur.GetSTimeAndDay() << endl;
+    vout << "# gpr-opthyprms-multi terminated at " << dt.GetSDateAndTime() << ". Total time: " << dur.GetSTimeAndDay() << endl;
     vout << "# ==============================================================================" << endl;
 
     if( ErrorSystem.IsError() || Options.GetOptVerbose() ){

@@ -36,7 +36,7 @@
 /** \brief smooth energy by GPR
 */
 
-class PMF_PACKAGE CSmootherGPR {
+class PMF_PACKAGE CSmootherGPR : public CGPRHyprmsBase {
 public:
 // constructor and destructor -------------------------------------------------
     CSmootherGPR(void);
@@ -56,12 +56,24 @@ public:
     /// set sigmaf2
     void SetSigmaF2(double sigf2);
 
+// ----
+    /// multiply of bin sizes
+    void SetWFac(const CSmallString& spec);
+
+    /// multiply of bin sizes
+    void SetWFac(CSimpleVector<double>& wfac);
+
+    /// multiply of bin sizes
+    void SetWFac(size_t cvind, double value);
+
+// ----
     /// set ncorr
     void SetNCorr(const CSmallString& spec);
 
     /// set ncorr
     void SetNCorr(double value);
 
+// ----
     /// set sigman2
     void SetSigmaN2(const CSmallString& spec);
 
@@ -71,14 +83,9 @@ public:
     /// set sigman2
     void SetSigmaN2(size_t cvind, double value);
 
-    /// multiply of bin sizes
-    void SetWFac(const CSmallString& spec);
-
-    /// multiply of bin sizes
-    void SetWFac(CSimpleVector<double>& wfac);
-
-    /// multiply of bin sizes
-    void SetWFac(size_t cvind, double value);
+// ----
+    /// load hyperparameters from the file
+    void LoadGPRHyprms(const CSmallString& name);
 
 // setup
     /// set include error
@@ -138,7 +145,7 @@ public:
     double GetLogML(void);
 
     /// get derivative of logML wrt hyperparameters
-    /// order sigmaf2, ncorr, wfac, only requested ders are calculated
+    /// order sigmaf2, wfac, ncorr, nsigman2: only requested ders are calculated
     /// derivatives are ADDED to der
     void GetLogMLDerivatives(const std::vector<bool>& flags,CSimpleVector<double>& der);
 
@@ -146,7 +153,7 @@ public:
     double GetLogPL(void);
 
     /// get derivative of logPL wrt hyperparameters
-    /// order sigmaf2, ncorr, wfac, only requested ders are calculated
+    /// order sigmaf2, wfac, ncorr, nsigman2: only requested ders are calculated
     /// derivatives are ADDED to der
     void GetLogPLDerivatives(const std::vector<bool>& flags,CSimpleVector<double>& der);
 
@@ -224,6 +231,10 @@ private:
     void CalcKderWRTSigmaN2(size_t cv);
     double GetKernelValueWFacDer(const CSimpleVector<double>& ip,const CSimpleVector<double>& jp,size_t cv);
 };
+
+//------------------------------------------------------------------------------
+
+typedef boost::shared_ptr<CSmootherGPR>    CSmootherGPRPtr;
 
 //------------------------------------------------------------------------------
 

@@ -13,6 +13,7 @@ SET(CPMF_METHODS_SRC
         common/EnergyProxyInit.cpp
         common/EnergyDerProxy.cpp
         common/EnergyDerProxyInit.cpp
+        common/GPRHyprmsBase.cpp
 
     # integrators
         common/integrators/IntegratorRFD.cpp

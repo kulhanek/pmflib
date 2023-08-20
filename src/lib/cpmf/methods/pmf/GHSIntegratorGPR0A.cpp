@@ -1836,6 +1836,248 @@ double CGHSIntegratorGPR0A::GetLogPL(void)
     return(loo);
 }
 
+//------------------------------------------------------------------------------
+
+void CGHSIntegratorGPR0A::GetLogMLDerivatives(const std::vector<bool>& flags,CSimpleVector<double>& der)
+{
+    if( ! (NeedInv || UseInv) ){
+        RUNTIME_ERROR("GetLogMLDerivatives requires K+Sigma inverted matrix");
+    }
+
+    if( NumOfCVs <= 0 ){
+        RUNTIME_ERROR("NumOfCVs <= NULL");
+    }
+    if( GPRSize <= 0 ){
+        RUNTIME_ERROR("GPRSize <= NULL");
+    }
+
+    Kder.CreateMatrix(GPRSize,GPRSize);
+
+    CFortranMatrix          ata;            // alphaT*alpha
+    ata.CreateMatrix(GPRSize,GPRSize);
+
+    // calc ATA matrix
+    #pragma omp parallel for
+    for(size_t i=0; i < GPRSize; i++){
+        for(size_t j=0; j < GPRSize; j++){
+            ata[i][j] = GPRModel[i]*GPRModel[j];
+        }
+    }
+
+    size_t ind = 0;
+
+    for(size_t prm=0; prm < flags.size(); prm++){
+        // shall we calc der?
+        if( flags[prm] == false ) {
+            continue;
+        }
+
+        // calc Kder
+        // 0<3; 3<6; 6<6+NumOfCVs; 6+NumOfCVs < 3*NumOfCVs + 6+NumOfCVs
+        if( (prm >= 0) && (prm < 3) ){
+            // sigmaf2
+            size_t idx = prm - 0;
+            CalcKderWRTSigmaF2(idx);
+        } else if( (prm >= 3) && (prm < 6) ){
+            // covar
+            size_t idx = prm - 3;
+            CalcKderWRTCoVar(idx);
+        } else if( (prm >= 6) && (prm < 6+NumOfCVs) ){
+            // wfac
+            size_t cv = prm - 6;
+            CalcKderWRTWFac(cv);
+        } else if( (prm >= 6+NumOfCVs) && (prm < 3*NumOfCVs + 6+NumOfCVs) ){
+            // sigman2
+            size_t idx = prm - (6+NumOfCVs);
+            CalcKderWRTSigmaN2(idx);
+        } else {
+            RUNTIME_ERROR("prm out-of-range");
+        }
+
+        // calc trace
+        double tr = 0.0;
+        #pragma omp parallel for reduction(+:tr)
+        for(size_t i=0; i < GPRSize; i++){
+            for(size_t j=0; j < GPRSize; j++){
+                tr += (ata[i][j]-KS[i][j])*Kder[j][i];
+            }
+        }
+
+        // finalize derivative
+        der[ind] += 0.5*tr;
+        ind++;
+    }
+}
+
+//------------------------------------------------------------------------------
+
+void CGHSIntegratorGPR0A::GetLogPLDerivatives(const std::vector<bool>& flags,CSimpleVector<double>& der)
+{
+    if( ! (NeedInv || UseInv) ){
+        RUNTIME_ERROR("GetLogPLDerivatives requires K+Sigma inverted matrix");
+    }
+
+    if( NumOfCVs <= 0 ){
+        RUNTIME_ERROR("NumOfCVs <= NULL");
+    }
+    if( GPRSize <= 0 ){
+        RUNTIME_ERROR("GPRSize <= NULL");
+    }
+
+    Kder.CreateMatrix(GPRSize,GPRSize);
+
+    CFortranMatrix zj;
+    zj.CreateMatrix(GPRSize,GPRSize);
+
+    CSimpleVector<double> za;
+    za.CreateVector(GPRSize);
+
+    size_t ind = 0;
+
+    for(size_t prm=0; prm < flags.size(); prm++){
+        // shall we calc der?
+        if( flags[prm] == false ) {
+            continue;
+        }
+
+        // calc Kder
+        // 0<3; 3<6; 6<6+NumOfCVs; 6+NumOfCVs < 3*NumOfCVs + 6+NumOfCVs
+        if( (prm >= 0) && (prm < 3) ){
+            // sigmaf2
+            size_t idx = prm - 0;
+            CalcKderWRTSigmaF2(idx);
+        } else if( (prm >= 3) && (prm < 6) ){
+            // covar
+            size_t idx = prm - 3;
+            CalcKderWRTCoVar(idx);
+        } else if( (prm >= 6) && (prm < 6+NumOfCVs) ){
+            // wfac
+            size_t cv = prm - 6;
+            CalcKderWRTWFac(cv);
+        } else if( (prm >= 6+NumOfCVs) && (prm < 3*NumOfCVs + 6+NumOfCVs) ){
+            // sigman2
+            size_t idx = prm - (6+NumOfCVs);
+            CalcKderWRTSigmaN2(idx);
+        } else {
+            RUNTIME_ERROR("prm out-of-range");
+        }
+
+        RunBlasLapackPar();
+
+        // calc Zj
+        CSciBlas::gemm(1.0,KS,Kder,0.0,zj);
+
+        // calc zj * alpha
+        CSciBlas::gemv(1.0,zj,GPRModel,0.0,za);
+
+        // derivative
+        double loo = 0.0;
+        #pragma omp parallel for reduction(+:loo)
+        for(size_t i=0; i < GPRSize; i++){
+            double zk = 0.0;
+            for(size_t j=0; j < GPRSize; j++){
+                zk += zj[i][j]*KS[j][i];
+            }
+            double top;
+            top  = GPRModel[i]*za[i];
+            top -= 0.5*(1.0 + GPRModel[i]*GPRModel[i]/KS[i][i])*zk;
+            loo += top/KS[i][i];
+        }
+
+        // finalize derivative
+        der[ind] += loo;
+        ind++;
+    }
+}
+
+//------------------------------------------------------------------------------
+
+void CGHSIntegratorGPR0A::CalcKderWRTSigmaF2(size_t idx)
+{
+    Kder.SetZero();
+
+    // FIXME
+}
+
+//------------------------------------------------------------------------------
+
+void CGHSIntegratorGPR0A::CalcKderWRTCoVar(size_t idx)
+{
+    Kder.SetZero();
+
+    // FIXME
+}
+
+//------------------------------------------------------------------------------
+
+void CGHSIntegratorGPR0A::CalcKderWRTWFac(size_t cv)
+{
+    Kder.SetZero();
+
+    CSimpleVector<double> ipos;
+    CSimpleVector<double> jpos;
+    ipos.CreateVector(NumOfCVs);
+    jpos.CreateVector(NumOfCVs);
+
+    CFortranMatrix kblock;
+    kblock.CreateMatrix(NumOfCVs,NumOfCVs);
+
+    int offset0 = 0*NumOfUsedBins*NumOfCVs;
+    int offset1 = 1*NumOfUsedBins*NumOfCVs;
+    int offset2 = 2*NumOfUsedBins*NumOfCVs;
+
+    #pragma omp parallel for firstprivate(ipos,jpos,kblock)
+    for(size_t indi=0; indi < NumOfUsedBins; indi++){
+        size_t ibin = SampledMap[indi];
+
+        GSurface->GetPoint(ibin,ipos);
+
+        for(size_t indj=0; indj < NumOfUsedBins; indj++){
+            size_t jbin = SampledMap[indj];
+
+            GSurface->GetPoint(jbin,jpos);
+
+            GetKernelDer2AnaWFac(ipos,jpos,cv,kblock);
+
+            // distribute to main kernel matrix
+            for(size_t ii=0; ii < NumOfCVs; ii++){
+                for(size_t jj=0; jj < NumOfCVs; jj++){
+                    // wfac cannot be zero
+                    Kder[offset0 + indi*NumOfCVs+ii][offset0 + indj*NumOfCVs+jj] = TK[0][0]*kblock[ii][jj];
+                    Kder[offset0 + indi*NumOfCVs+ii][offset1 + indj*NumOfCVs+jj] = TK[0][1]*kblock[ii][jj];
+                    Kder[offset0 + indi*NumOfCVs+ii][offset2 + indj*NumOfCVs+jj] = TK[0][2]*kblock[ii][jj];
+
+                    Kder[offset1 + indi*NumOfCVs+ii][offset0 + indj*NumOfCVs+jj] = TK[1][0]*kblock[ii][jj];
+                    Kder[offset1 + indi*NumOfCVs+ii][offset1 + indj*NumOfCVs+jj] = TK[1][1]*kblock[ii][jj];
+                    Kder[offset1 + indi*NumOfCVs+ii][offset2 + indj*NumOfCVs+jj] = TK[1][2]*kblock[ii][jj];
+
+                    Kder[offset2 + indi*NumOfCVs+ii][offset0 + indj*NumOfCVs+jj] = TK[2][0]*kblock[ii][jj];
+                    Kder[offset2 + indi*NumOfCVs+ii][offset1 + indj*NumOfCVs+jj] = TK[2][1]*kblock[ii][jj];
+                    Kder[offset2 + indi*NumOfCVs+ii][offset2 + indj*NumOfCVs+jj] = TK[2][2]*kblock[ii][jj];
+                }
+            }
+        }
+    }
+}
+
+//------------------------------------------------------------------------------
+
+void CGHSIntegratorGPR0A::CalcKderWRTSigmaN2(size_t idx)
+{
+    Kder.SetZero();
+
+    #pragma omp parallel for
+    for(size_t task=0; task < 3; task++){
+        for(size_t indi=0; indi < NumOfUsedBins; indi++){
+            for(size_t ii=0; ii < NumOfCVs; ii++){
+                if( (task*NumOfCVs + ii) == idx ){
+                    Kder[task*NumOfUsedBins+indi*NumOfCVs+ii][task*NumOfUsedBins+indi*NumOfCVs+ii] = 1.0;
+                }
+            }
+        }
+    }
+}
+
 //==============================================================================
 //------------------------------------------------------------------------------
 //==============================================================================

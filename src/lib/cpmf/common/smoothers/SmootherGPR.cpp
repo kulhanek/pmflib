@@ -321,6 +321,71 @@ void CSmootherGPR::SetWFac(size_t cvind, double value)
 
 //------------------------------------------------------------------------------
 
+void CSmootherGPR::LoadGPRHyprms(const CSmallString& name)
+{
+    ifstream fin;
+    fin.open(name);
+    if( ! fin ){
+        CSmallString error;
+        error << "unable to open file with GPR hyperparameters: " << name;
+        RUNTIME_ERROR(error);
+    }
+
+    string line;
+    while( getline(fin,line) ){
+        // is it comment?
+        if( (line.size() > 0) && (line[0] == '#') ) continue;
+
+        // parse line
+        stringstream str(line);
+        string key, buf;
+        double value;
+        str >> key >> buf >> value;
+        if( ! str ){
+            CSmallString error;
+            error << "GPR hyperparameters file, unable to decode line: " << line.c_str();
+            RUNTIME_ERROR(error);
+        }
+        if( (key == "SigmaF2") || (key == "SigmaF2#1") ){
+            SetSigmaF2(value);
+        } else if( key.find("WFac#") != string::npos ) {
+            std::replace( key.begin(), key.end(), '#', ' ');
+            stringstream kstr(key);
+            string swfac;
+            int    cvind;
+            kstr >> swfac >> cvind;
+            if( ! kstr ){
+                CSmallString error;
+                error << "GPR hyperparameters file, unable to decode wfac key: " << key.c_str();
+                RUNTIME_ERROR(error);
+            }
+            cvind--; // transform to 0-based indexing
+            SetWFac(cvind,value);
+        } else if( (key == "NCorr") || (key == "NCorr#1") ){
+            SetNCorr(value);
+        } else if( key.find("SigmaN2#") != string::npos ) {
+            std::replace( key.begin(), key.end(), '#', ' ');
+            stringstream kstr(key);
+            string swfac;
+            int    cvind;
+            kstr >> swfac >> cvind;
+            if( ! kstr ){
+                CSmallString error;
+                error << "GPR hyperparameters file, unable to decode sigman2 key: " << key.c_str();
+                RUNTIME_ERROR(error);
+            }
+            cvind--; // transform to 0-based indexing
+            SetSigmaN2(cvind,value);
+        } else {
+            CSmallString error;
+            error << "GPR hyperparameters file, unrecognized key: " << key.c_str();
+            RUNTIME_ERROR(error);
+        }
+    }
+}
+
+//------------------------------------------------------------------------------
+
 void CSmootherGPR::SetIncludeError(bool set)
 {
     IncludeError = set;
@@ -528,9 +593,6 @@ bool CSmootherGPR::Interpolate(CVerboseStr& vout,bool nostat)
         return(false);
     }
 
-    // finalize HES
-    CalculateEnergy(vout);
-
     if( ! nostat ){
         // and log of marginal likelihood
         vout << "      logML     = " << setprecision(5) << GetLogML() << endl;
@@ -539,6 +601,9 @@ bool CSmootherGPR::Interpolate(CVerboseStr& vout,bool nostat)
             vout << "      logPL     = " << setprecision(5) << GetLogPL() << endl;
         }
     }
+
+    // finalize HES
+    CalculateEnergy(vout);
 
     if( IncludeError ){
         CalculateCovs(vout);
@@ -1236,16 +1301,24 @@ if( ! (NeedInv || UseInv) ){
         }
 
         // calc Kder
+        // NumOfCVs = 1
+        // 0; 1; 2; 3
+        // 0; 1<1+NumOfCVs; NumOfCVs+1; 2+NumOfCVs<2+2*NumOfCVs+1
         if( prm == 0 ){
+            // sigmaf2
             CalcKderWRTSigmaF2();
-        } else if( prm == 1 ){
-            CalcKderWRTNCorr();
-        } else if ( (prm >=2) && (prm < NumOfCVs+2) ) {
-            size_t cv = prm - 2;
+        } else if( (prm >= 1) && (prm < 1+NumOfCVs) ){
+            // wfac
+            size_t cv = prm - 1;
             CalcKderWRTWFac(cv);
-        } else {
-            size_t cv = prm - (NumOfCVs+2);
+        } else if( prm == NumOfCVs+1 ){
+            // ncorr
+            CalcKderWRTNCorr();
+        } else if( (prm >= 2+NumOfCVs) && (prm < 3+2*NumOfCVs) ){
+            size_t cv = prm - (2+NumOfCVs);
             CalcKderWRTSigmaN2(cv);
+        } else {
+            RUNTIME_ERROR("prm out-of-range");
         }
 
         // calc trace
@@ -1388,21 +1461,6 @@ void CSmootherGPR::CalcKderWRTSigmaF2(void)
 
 //------------------------------------------------------------------------------
 
-void CSmootherGPR::CalcKderWRTNCorr(void)
-{
-    Kder.SetZero();
-
-    #pragma omp parallel for
-    for(size_t indi=0; indi < GPRSize; indi++){
-        size_t          ibin = SampledMap[indi];
-        CEnergyProxyPtr item = EneProxyItems[EneProxyMap[indi]];
-        double er = item->GetValue(ibin,E_PROXY_ERROR);
-        Kder[indi][indi] = er*er;
-    }
-}
-
-//------------------------------------------------------------------------------
-
 void CSmootherGPR::CalcKderWRTWFac(size_t cv)
 {
     Kder.SetZero();
@@ -1431,6 +1489,21 @@ void CSmootherGPR::CalcKderWRTWFac(size_t cv)
     }
 }
 
+
+//------------------------------------------------------------------------------
+
+void CSmootherGPR::CalcKderWRTNCorr(void)
+{
+    Kder.SetZero();
+
+    #pragma omp parallel for
+    for(size_t indi=0; indi < GPRSize; indi++){
+        size_t          ibin = SampledMap[indi];
+        CEnergyProxyPtr item = EneProxyItems[EneProxyMap[indi]];
+        double er = item->GetValue(ibin,E_PROXY_ERROR);
+        Kder[indi][indi] = er*er;
+    }
+}
 
 //------------------------------------------------------------------------------
 

@@ -19,20 +19,21 @@
 //     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 // =============================================================================
 
-#include "OptGPRHyprmsOptions.hpp"
+#include "OptGPRHyprmsMultiOptions.hpp"
 
 //==============================================================================
 //------------------------------------------------------------------------------
 //==============================================================================
 
-COptGPRHyprmsOptions::COptGPRHyprmsOptions(void)
+COptGPRHyprmsMultiOptions::COptGPRHyprmsMultiOptions(void)
 {
     SetShowMiniUsage(true);
+    SetAllowProgArgs(true);
 }
 
 //------------------------------------------------------------------------------
 
-int COptGPRHyprmsOptions::CheckOptions(void)
+int COptGPRHyprmsMultiOptions::CheckOptions(void)
 {
     if( (GetOptTarget() != "logml") &&
         (GetOptTarget() != "logpl") ) {
@@ -59,6 +60,18 @@ int COptGPRHyprmsOptions::CheckOptions(void)
         IsError = true;
     }
 
+    if( GetOptSigmaF2() < GetOptMinSigmaF2() ){
+        if(IsError == false) fprintf(stderr,"\n");
+        fprintf(stderr,"%s: --sigmaf2 has to be greater or equal than --minsigmaf2, but %f is provided\n", (const char*)GetProgramName(),GetOptSigmaF2());
+        IsError = true;
+    }
+
+    if( GetOptNCorr() < GetOptMinNCorr() ){
+        if(IsError == false) fprintf(stderr,"\n");
+        fprintf(stderr,"%s: --ncorr has to be greater or equal than --minncorr, but %f is provided\n", (const char*)GetProgramName(),GetOptNCorr());
+        IsError = true;
+    }
+
     if( (GetOptRCond() != -1) && (GetOptRCond() < 0) ){
         if(IsError == false) fprintf(stderr,"\n");
         fprintf(stderr,"%s: --rcond has to be either -1 or greater than zero, but %f is provided\n", (const char*)GetProgramName(),GetOptRCond());
@@ -71,27 +84,15 @@ int COptGPRHyprmsOptions::CheckOptions(void)
                 (const char*)GetProgramName());
         IsError = true;
     }
-    if( IsOptLoadHyprmsSet() && IsOptCoVarSet() ){
-        if(IsError == false) fprintf(stderr,"\n");
-        fprintf(stderr,"%s: --loadhyprms is mutually exclusive with --covar\n",
-                (const char*)GetProgramName());
-        IsError = true;
-    }
-    if( IsOptLoadHyprmsSet() && IsOptWFacSet() ){
-        if(IsError == false) fprintf(stderr,"\n");
-        fprintf(stderr,"%s: --loadhyprms is mutually exclusive with --wfac\n",
-                (const char*)GetProgramName());
-        IsError = true;
-    }
     if( IsOptLoadHyprmsSet() && IsOptNCorrSet() ){
         if(IsError == false) fprintf(stderr,"\n");
         fprintf(stderr,"%s: --loadhyprms is mutually exclusive with --ncorr\n",
                 (const char*)GetProgramName());
         IsError = true;
     }
-    if( IsOptLoadHyprmsSet() && IsOptSigmaN2Set() ){
+    if( IsOptLoadHyprmsSet() && IsOptWFacSet() ){
         if(IsError == false) fprintf(stderr,"\n");
-        fprintf(stderr,"%s: --loadhyprms is mutually exclusive with --sigman2\n",
+        fprintf(stderr,"%s: --loadhyprms is mutually exclusive with --wfac\n",
                 (const char*)GetProgramName());
         IsError = true;
     }
@@ -109,11 +110,25 @@ int COptGPRHyprmsOptions::CheckOptions(void)
 
 //------------------------------------------------------------------------------
 
+int COptGPRHyprmsMultiOptions::CheckArguments(void)
+{
+    if( GetNumberOfProgArgs() < 3 ){
+        if(IsError == false) fprintf(stderr,"\n");
+        fprintf(stderr,"%s: at least three arguments are expected, but %d is provided\n",
+                (const char*)GetProgramName(),GetNumberOfProgArgs());
+        IsError = true;
+    }
+    if(IsError == true) return(SO_OPTS_ERROR);
+    return(SO_CONTINUE);
+}
+
+//------------------------------------------------------------------------------
+
 /*
  process special options (Help, Version) before arguments will be processed
 */
 
-int COptGPRHyprmsOptions::FinalizeOptions(void)
+int COptGPRHyprmsMultiOptions::FinalizeOptions(void)
 {
     bool ret_opt = false;
 

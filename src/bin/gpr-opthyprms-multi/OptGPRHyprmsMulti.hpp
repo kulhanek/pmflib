@@ -1,5 +1,5 @@
-#ifndef COptGPRHyprmsH
-#define COptGPRHyprmsH
+#ifndef COptGPRHyprmsMultiH
+#define COptGPRHyprmsMultiH
 // =============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
@@ -21,16 +21,30 @@
 //     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 // =============================================================================
 
-#include "OptGPRHyprmsOptions.hpp"
+#include "OptGPRHyprmsMultiOptions.hpp"
 #include <PMFAccumulator.hpp>
 #include <VerboseStr.hpp>
 #include <TerminalStr.hpp>
 #include <StdIOFile.hpp>
 #include <SmallTimeAndDate.hpp>
-#include <GPRHyprmsBase.hpp>
-#include <FortranMatrix.hpp>
-#include <boost/shared_ptr.hpp>
+#include <IntegratorGPR.hpp>
+#include <SmootherGPR.hpp>
 #include <vector>
+#include <boost/shared_ptr.hpp>
+#include <EnergyProxy.hpp>
+#include <EnergyDerProxy.hpp>
+
+//------------------------------------------------------------------------------
+
+class CProxyRealm {
+public:
+    CSmallString                        Name;
+    std::vector<CEnergyProxyPtr>        EnergyProxies;
+    std::vector<CEnergyDerProxyPtr>     DerProxies;
+    std::vector<CPMFAccumulatorPtr>     Accumulators;
+};
+
+typedef boost::shared_ptr<CProxyRealm>    CProxyRealmPtr;
 
 //------------------------------------------------------------------------------
 
@@ -43,9 +57,9 @@ enum EGPROptTarget {
 
 /// utility to find optimal GPR hyperparameters
 
-class COptGPRHyprms {
+class COptGPRHyprmsMulti {
 public:
-    COptGPRHyprms(void);
+    COptGPRHyprmsMulti(void);
 
 // main methods ---------------------------------------------------------------
     /// init options
@@ -59,26 +73,21 @@ public:
 
 // section of private data ----------------------------------------------------
 private:
-    COptGPRHyprmsOptions    Options;
-    CPMFAccumulatorPtr      Accu;
-    CEnergySurfacePtr       FES;
-    CEnergySurfacePtr       HES;
-    CEnergySurfacePtr       SES;
-    CGPRHyprmsBasePtr       GPREngine;
-    CStdIOFile              OutputFile;
+    COptGPRHyprmsMultiOptions           Options;
+    CStdIOFile                          OutputFile;
+    std::vector<CProxyRealmPtr>         RealmProxies;
+    CSmallTimeAndDate                   StartTime;
 
 // hyperparameters
-    CSimpleVector<double>   SigmaF2;
-    CSimpleVector<double>   CoVar;
-    CSimpleVector<double>   NCorr;
+    double                  SigmaF2;
+    double                  NCorr;
     CSimpleVector<double>   WFac;
     CSimpleVector<double>   SigmaN2;
 
 // L-BFGS setup
     int                     NumOfCorrections;
-    std::vector<bool>       SigmaF2Enabled;
-    std::vector<bool>       CoVarEnabled;
-    std::vector<bool>       NCorrEnabled;
+    bool                    SigmaF2Enabled;
+    bool                    NCorrEnabled;
     std::vector<bool>       WFacEnabled;
     std::vector<bool>       SigmaN2Enabled;
     int                     NumOfPrms;
@@ -102,9 +111,8 @@ private:
     // output ------------------------------------
     CTerminalStr            Console;
     CVerboseStr             vout;
-    CSmallTimeAndDate       StartTime;
 
-    void InitRealm(void);
+    void InitRealm(CProxyRealmPtr realm);
 
     void PrintSampledStat(void);
     void InitOptimizer(void);
@@ -121,23 +129,16 @@ private:
     double GetGNorm(void);
 
     void    ScatterHyprms(CSimpleVector<double>& hyprsm);
-    void    DecodeEList(const CSmallString& spec,CSimpleVector<double>& vlist,std::vector<bool>& elist,const CSmallString& optionname);
-    void    DecodeVList(const CSmallString& spec,CSimpleVector<double>& vlist,const CSmallString& optionname,double defv);
+    void    DecodeEList(const CSmallString& spec, std::vector<bool>& elist,const CSmallString& optionname);
+    void    DecodeVList(const CSmallString& spec, CSimpleVector<double>& vlist,const CSmallString& optionname,double defv);
     bool    ResetOpt(int& numofreset);
-    std::string GetPrmName(int prm);
 
-    void InitGPREngine(void);
-    void InitGPREngine_dF_dx(void);
-    void InitGPREngine_dF(void);
-    void InitGPREngine_GHS_dH_dx(void);
+    double  GetTargetFromIntegrator(CIntegratorGPR& gpr,CProxyRealmPtr derproxy);
+    double  RunGPRNumericalIntegrator(CProxyRealmPtr derproxy,CSimpleVector<double>& der);
+    double  GetTargetFromSmoother(CSmootherGPR& gpr,CProxyRealmPtr eneproxy);
+    double  RunGPRNumericalSmoother(CProxyRealmPtr eneproxy,CSimpleVector<double>& der);
 
-    void CreateGPREngine(void);
-    void CreateGPREngine_dF_dx(void);
-    void CreateGPREngine_dF(void);
-    void CreateGPREngine_GHS_dH_dx(void);
-
-    double  GetTarget(void);
-    void    GetTargetDerivatives(CSimpleVector<double>& der);
+    bool    IsRealm(const CSmallString& name);
 };
 
 //------------------------------------------------------------------------------

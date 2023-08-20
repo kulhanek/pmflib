@@ -28,6 +28,7 @@
 #include <stddef.h>
 #include <EnergyDerProxy.hpp>
 #include <EnergySurface.hpp>
+#include <GPRHyprmsBase.hpp>
 
 //------------------------------------------------------------------------------
 
@@ -57,7 +58,7 @@ enum EGPRKernel {
 /** \brief integrator of ABF accumulator employing gaussian process
 */
 
-class PMF_PACKAGE CIntegratorGPR {
+class PMF_PACKAGE CIntegratorGPR : public CGPRHyprmsBase {
 public:
 // constructor and destructor -------------------------------------------------
     CIntegratorGPR(void);
@@ -77,18 +78,7 @@ public:
     /// set sigmaf2
     void SetSigmaF2(double sigf2);
 
-    /// set ncorr
-    void SetNCorr(double value);
-
-    /// set sigman2
-    void SetSigmaN2(const CSmallString& spec);
-
-    /// set sigman2
-    void SetSigmaN2(CSimpleVector<double>& sigman2);
-
-    /// set sigman2
-    void SetSigmaN2(size_t cvind, double value);
-
+// ----
     /// multiply of bin sizes
     void SetWFac(const CSmallString& spec);
 
@@ -98,6 +88,21 @@ public:
     /// multiply of bin sizes
     void SetWFac(size_t cvind, double value);
 
+// ----
+    /// set ncorr
+    void SetNCorr(double value);
+
+// ----
+    /// set sigman2
+    void SetSigmaN2(const CSmallString& spec);
+
+    /// set sigman2
+    void SetSigmaN2(CSimpleVector<double>& sigman2);
+
+    /// set sigman2
+    void SetSigmaN2(size_t cvind, double value);
+
+// ----
     /// load hyperparameters from file
     void LoadGPRHyprms(const CSmallString& name);
 
@@ -170,7 +175,7 @@ public:
     double GetLogML(void);
 
     /// get derivative of logML wrt hyperparameters
-    /// order sigmaf2, ncorr, wfac, only requested ders are calculated
+    /// order sigmaf2, wfac, ncorr, nsigman2: only requested ders are calculated
     /// derivatives are ADDED to der
     void GetLogMLDerivatives(const std::vector<bool>& flags,CSimpleVector<double>& der);
 
@@ -178,7 +183,7 @@ public:
     double GetLogPL(void);
 
     /// get derivative of logPL wrt hyperparameters
-    /// order sigmaf2, ncorr, wfac, only requested ders are calculated
+    /// order sigmaf2, wfac, ncorr, nsigman2: only requested ders are calculated
     /// derivatives are ADDED to der
     void GetLogPLDerivatives(const std::vector<bool>& flags,CSimpleVector<double>& der);
 
@@ -267,10 +272,11 @@ private:
 
     double GetValue(const CSimpleVector<double>& position);
     double GetVar(CSimpleVector<double>& lpos);
-    // optimized version var+cov
+
+// optimized version var+cov
     void   GetCovVar(CSimpleVector<double>& lpos,CSimpleVector<double>& rpos,double& llvar,double& lrcov);
 
-    // kernel matrix + noise
+// kernel matrix + noise
     void   CreateKS(void);
     void   CreateKff(const CSimpleVector<double>& ip,CSimpleVector<double>& ky);
     void   CreateKff2(const CSimpleVector<double>& ip,size_t icoord,CSimpleVector<double>& ky2);
@@ -284,17 +290,20 @@ private:
     void   GetKernelDer2AnaWFac(const CSimpleVector<double>& ip,const CSimpleVector<double>& jp,size_t cv,CFortranMatrix& kblock);
     void   GetKernelDer2NumWFac(const CSimpleVector<double>& ip,const CSimpleVector<double>& jp,size_t cv,CFortranMatrix& kblock);
 
-
-    // derivatives
+// derivatives
     void CalcKderWRTSigmaF2(void);
     void CalcKderWRTNCorr(void);
     void CalcKderWRTWFac(size_t cv);
     void CalcKderWRTSigmaN2(size_t cv);
 
-    // parallel processing
+// parallel processing
     void RunBlasLapackSeq(void);
     void RunBlasLapackPar(void);
 };
+
+//------------------------------------------------------------------------------
+
+typedef boost::shared_ptr<CIntegratorGPR>    CIntegratorGPRPtr;
 
 //------------------------------------------------------------------------------
 
