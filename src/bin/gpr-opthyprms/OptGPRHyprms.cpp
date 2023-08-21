@@ -88,12 +88,12 @@ int COptGPRHyprms::Init(int argc,char* argv[])
     vout << "# Version: " << LibBuildVersion_PMF << endl;
     vout << "# ==============================================================================" << endl;
 
-    vout << "# PMF Accumulator               : " << Options.GetArgAccuFile() << endl;
-    vout << "# Processed realm               : " << Options.GetArgRealm() << endl;
+        vout << "# PMF Accumulator       : " << Options.GetArgAccuFile() << endl;
+        vout << "# Processed realm       : " << Options.GetArgRealm() << endl;
     if( Options.GetArgHyprmsFile() != "-") {
-        vout << "# Optimized GPR hyprms (out): " << Options.GetArgHyprmsFile() << endl;
+        vout << "# Optimized GPR hyprms  : " << Options.GetArgHyprmsFile() << endl;
     } else {
-        vout << "# Optimized GPR hyprms (out): - (standard output)" << endl;
+        vout << "# Optimized GPR hyprms  : - (standard output)" << endl;
     }
     vout << "# ------------------------------------------------" << endl;
     if( Options.IsOptLoadHyprmsSet() ){
@@ -105,17 +105,18 @@ int COptGPRHyprms::Init(int argc,char* argv[])
         vout << "# NCorr                 : " << (const char*)Options.GetOptNCorr() << endl;
         vout << "# SigmaN2               : " << (const char*)Options.GetOptSigmaN2() << endl;
     }
+    vout << "# Constrained MT-GPR        : " << bool_to_str(Options.GetOptEnableConstraints()) << endl;
     vout << "# ------------------------------------------------" << endl;
-    vout << "# Linear algebra        : " << Options.GetOptLAMethod() << endl;
+        vout << "# Linear algebra        : " << Options.GetOptLAMethod() << endl;
     if( (Options.GetOptLAMethod() == "svd") || (Options.GetOptLAMethod() == "svd2") || (Options.GetOptLAMethod() == "default") ){
-    vout << "# SVD rcond             : " << setprecision(3) << Options.GetOptRCond() << endl;
+        vout << "# SVD rcond             : " << setprecision(3) << Options.GetOptRCond() << endl;
     }
-    vout << "# Optimized target      : " << Options.GetOptTarget() << endl;
+        vout << "# Optimized target      : " << Options.GetOptTarget() << endl;
 
     // here we assume that kernels in IntegratorGPR and SmootherGPR are the same
     CSmootherGPR gpr;
     gpr.SetKernel(Options.GetOptGPRKernel());
-    vout << "# GPR Kernel            : " << gpr.GetKernelName() << endl;
+        vout << "# GPR Kernel            : " << gpr.GetKernelName() << endl;
     vout << "# ------------------------------------------------" << endl;
 
     if( Options.GetOptTarget() == "logml" ){
@@ -173,9 +174,11 @@ bool COptGPRHyprms::Run(void)
 // run optimization
     bool result = true;
     InitOptimizer();
-    if( ! Options.GetOptTest() ){
-        result = Optimize();
-    } else {
+    if( Options.GetOptTest() ){
+        Test();
+    }
+    result = Optimize();
+    if( Options.GetOptTest() ){
         Test();
     }
 
@@ -323,53 +326,6 @@ void COptGPRHyprms::InitOptimizer(void)
     }
     for(int k=0; k < (int)SigmaN2.GetLength(); k++ ){
         vout << format("      SigmaN2#%-2d = %10.4e")%(k+1)%SigmaN2[k] << endl;
-    }
-
-    if( ! Options.GetOptTest() ){
-        vout << endl;
-        switch(Target){
-            case(EGOT_LOGML):
-                vout << "# step         logML";
-            break;
-            case(EGOT_LOGPL):
-                vout << "# step         logPL";
-            break;
-        }
-
-        for(size_t i=0; i < SigmaF2Enabled.size(); i++){
-            if( SigmaF2Enabled[i] ) vout << format(" SigmaF2#%-2d")%(i+1);
-        }
-        for(size_t i=0; i < CoVarEnabled.size(); i++){
-            if( CoVarEnabled[i] )   vout << format("   CoVar#%-2d")%(i+1);
-        }
-        for(size_t i=0; i < WFacEnabled.size(); i++){
-            if( WFacEnabled[i] )    vout << format("    WFac#%-2d")%(i+1);
-        }
-        for(size_t i=0; i < NCorrEnabled.size(); i++){
-            if( NCorrEnabled[i] )   vout << format("   NCorr#%-2d")%(i+1);
-        }
-        for(size_t i=0; i < SigmaN2Enabled.size(); i++){
-            if( SigmaN2Enabled[i] ) vout << format(" SigmaN2#%-2d")%(i+1);
-        }
-        vout << endl;
-
-        vout << "# ---- -------------";
-        for(size_t i=0; i < SigmaF2Enabled.size(); i++){
-            if( SigmaF2Enabled[i] ) vout << " ----------";
-        }
-        for(size_t i=0; i < CoVarEnabled.size(); i++){
-            if( CoVarEnabled[i] )   vout << " ----------";
-        }
-        for(size_t i=0; i < WFacEnabled.size(); i++){
-            if( WFacEnabled[i] )    vout << " ----------";
-        }
-        for(size_t i=0; i < NCorrEnabled.size(); i++){
-            if( NCorrEnabled[i] )   vout << " ----------";
-        }
-        for(size_t i=0; i < SigmaN2Enabled.size(); i++){
-            if( SigmaN2Enabled[i] ) vout << " ----------";
-        }
-        vout << endl;
     }
 
     Hyprms.CreateVector(NumOfOptPrms);
@@ -528,6 +484,52 @@ bool COptGPRHyprms::Optimize(void)
     iprint[0] = -1;
     iprint[1] = 1;
 
+    vout << endl;
+    switch(Target){
+        case(EGOT_LOGML):
+            vout << "# step         logML";
+        break;
+        case(EGOT_LOGPL):
+            vout << "# step         logPL";
+        break;
+    }
+
+    for(size_t i=0; i < SigmaF2Enabled.size(); i++){
+        if( SigmaF2Enabled[i] ) vout << format(" SigmaF2#%-2d")%(i+1);
+    }
+    for(size_t i=0; i < CoVarEnabled.size(); i++){
+        if( CoVarEnabled[i] )   vout << format("   CoVar#%-2d")%(i+1);
+    }
+    for(size_t i=0; i < WFacEnabled.size(); i++){
+        if( WFacEnabled[i] )    vout << format("    WFac#%-2d")%(i+1);
+    }
+    for(size_t i=0; i < NCorrEnabled.size(); i++){
+        if( NCorrEnabled[i] )   vout << format("   NCorr#%-2d")%(i+1);
+    }
+    for(size_t i=0; i < SigmaN2Enabled.size(); i++){
+        if( SigmaN2Enabled[i] ) vout << format(" SigmaN2#%-2d")%(i+1);
+    }
+    vout << endl;
+
+    vout << "# ---- -------------";
+    for(size_t i=0; i < SigmaF2Enabled.size(); i++){
+        if( SigmaF2Enabled[i] ) vout << " ----------";
+    }
+    for(size_t i=0; i < CoVarEnabled.size(); i++){
+        if( CoVarEnabled[i] )   vout << " ----------";
+    }
+    for(size_t i=0; i < WFacEnabled.size(); i++){
+        if( WFacEnabled[i] )    vout << " ----------";
+    }
+    for(size_t i=0; i < NCorrEnabled.size(); i++){
+        if( NCorrEnabled[i] )   vout << " ----------";
+    }
+    for(size_t i=0; i < SigmaN2Enabled.size(); i++){
+        if( SigmaN2Enabled[i] ) vout << " ----------";
+    }
+    vout << endl;
+
+
     double xtol = 1e-15;
     iflag = 0;
 
@@ -548,6 +550,9 @@ bool COptGPRHyprms::Optimize(void)
             Hyprms[i] = 1.0;
         }
     }
+
+    int insupr = 0;
+    int nochan = 0;
 
     for(int k=1; k <= noptsteps; k++ ){
         OldHyprms = Hyprms;
@@ -573,39 +578,49 @@ bool COptGPRHyprms::Optimize(void)
 
         if( iflag == 0 ) break;
         if( iflag < 0 ) {
-            vout << endl;
-            vout << "<b><blue>>>> INFO: Insufficient progress, resetting ...</blue></b>" << endl;
-            if( ResetOpt(numofreset) == false ){
-                result = false;
-                break;
+            insupr++;
+            if( insupr > 3 ){
+                vout << endl;
+                vout << "<b><blue>>>> INFO: Insufficient progress, resetting ...</blue></b>" << endl;
+                if( ResetOpt(numofreset) == false ){
+                    result = false;
+                    break;
+                }
+                vout << endl;
+                iflag = 0;
+                last_logtrg = logTarget - 10; // be sure that the number is somehow different
+                continue;
             }
-            vout << endl;
-            iflag = 0;
-            last_logtrg = logTarget - 10; // be sure that the number is somehow different
-            continue;
+        } else {
+            insupr = 0; // reset counter
         }
 
         if( istep > 1 ){
             if( fabs(logTarget - last_logtrg) < Options.GetOptTermVal() ){
-                double gnorm = GetGNorm();
-                if( gnorm > termeps*1000 ){
-                    vout << endl;
-                    vout << "<b><blue>>>> INFO: No significant change, but gradient is large - resetting ...</blue></b>" << endl;
-                    vout <<   format("          gnorm = %14.6e")%gnorm << endl;
-                    if( ResetOpt(numofreset) == false ){
-                        result = false;
+                nochan++;
+                if( nochan > 3 ) {
+                    double gnorm = GetGNorm();
+                    if( gnorm > termeps*1000 ){
+                        vout << endl;
+                        vout << "<b><blue>>>> INFO: No significant change, but gradient is large - resetting ...</blue></b>" << endl;
+                        vout <<   format("          gnorm = %14.6e")%gnorm << endl;
+                        if( ResetOpt(numofreset) == false ){
+                            result = false;
+                            break;
+                        }
+                        vout << endl;
+                        iflag = 0;
+                        last_logtrg = logTarget - 10; // be sure that the number is somehow different
+                        continue;
+                    } else {
+                        vout << endl;
+                        vout << "<b><blue>>>> INFO: No significant change - terminating ...</blue></b>" << endl;
+                        vout << endl;
                         break;
                     }
-                    vout << endl;
-                    iflag = 0;
-                    last_logtrg = logTarget - 10; // be sure that the number is somehow different
-                    continue;
-                } else {
-                    vout << endl;
-                    vout << "<b><blue>>>> INFO: No significant change - terminating ...</blue></b>" << endl;
-                    vout << endl;
-                    break;
                 }
+            } else {
+                nochan = 0;
             }
         }
         last_logtrg = logTarget;
@@ -1359,6 +1374,8 @@ void COptGPRHyprms::CreateGPREngine_GHS_dH_dx(void)
     }
 
     CGHSIntegratorGPR0APtr gpr = CGHSIntegratorGPR0APtr(new CGHSIntegratorGPR0A);
+
+    gpr->SetAccumulator(Accu);
 
     gpr->SetOutputFES(FES);
     gpr->SetOutputHES(HES);

@@ -59,7 +59,6 @@ public:
     CSO_OPT(CSmallString,LAMethod)
     CSO_OPT(double,RCond)
     CSO_OPT(int,Limit)
-    CSO_OPT(bool,SkipFFTest)
     CSO_OPT(CSmallString,SigmaF2)
     CSO_OPT(CSmallString,CoVar)
     CSO_OPT(CSmallString,WFac)
@@ -67,7 +66,6 @@ public:
     CSO_OPT(CSmallString,LoadHyprms)
     CSO_OPT(CSmallString,RFac)
     CSO_OPT(CSmallString,GlobalMin)
-    CSO_OPT(bool,UseRealGlobalMin)
     CSO_OPT(double,Offset)
     CSO_OPT(bool,WithError)
     CSO_OPT(bool,NoEnergy)
@@ -160,15 +158,6 @@ public:
                 "NUMBER",                           /* parameter name */
                 "Only bins containing more samples than NUMBER are considered as properly sampled.")   /* option description */
     //----------------------------------------------------------------------
-    CSO_MAP_OPT(bool,                           /* option type */
-                SkipFFTest,                        /* option name */
-                false,                          /* default value */
-                false,                          /* is option mandatory */
-                0,                           /* short option name */
-                "skipfftest",                      /* long option name */
-                NULL,                           /* parameter name */
-                "Skip flood fill test for discontinuous regions.")   /* option description */
-    //----------------------------------------------------------------------
     CSO_MAP_OPT(CSmallString,                           /* option type */
                 SigmaF2,                        /* option name */
                 "15.0",                          /* default value */
@@ -227,15 +216,6 @@ public:
                 "globalmin",                      /* long option name */
                 "SPEC",                           /* parameter name */
                 "position of global minimum provided as a single string in the form CV1xCV2x...xCVn (relevant for error determination), if not set the position is determined automatically.")   /* option description */
-    //----------------------------------------------------------------------
-    CSO_MAP_OPT(bool,                           /* option type */
-                UseRealGlobalMin,                        /* option name */
-                NULL,                          /* default value */
-                false,                          /* is option mandatory */
-                '\0',                           /* short option name */
-                "userealglbmin",                      /* long option name */
-                NULL,                           /* parameter name */
-                "ignore --globalmin in the final integration step")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(double,                           /* option type */
                 Offset,                        /* option name */

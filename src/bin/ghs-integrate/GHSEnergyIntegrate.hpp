@@ -60,7 +60,7 @@ private:
     CGHSEnergyIntOptions    Options;
 
     // input
-    CPMFAccumulatorPtr      Accumulator;
+    CPMFAccumulatorPtr      Accu;
     CEnergyDerProxyPtr      GDerProxy;
     CEnergyDerProxyPtr      HDerProxy;
     CEnergyDerProxyPtr      SDerProxy;
@@ -81,17 +81,9 @@ private:
     CSmallTimeAndDate       StartTime;
     int                     State;
 
-    void PrepareAccumulatorI(void);
     void PrintAccuStat(void);
-    void PrintSampledStat(void);
-    void FloodFillTest(void);
-    bool InstallNewSeed(int seedid,bool unsampled);
-    int  FillSeed(int seedid,bool unsampled);
-    void GetTPoint(CSimpleVector<int>& ipos,int d,CSimpleVector<int>& tpos);
     bool Integrate(void);
     void WriteES(CEnergySurfacePtr& surf,const CSmallString& name);
-    void SyncFESWithAccu(void);
-    void SyncAccuWithFES(void);
 };
 
 //------------------------------------------------------------------------------

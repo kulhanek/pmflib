@@ -96,13 +96,6 @@ int COptGPRHyprmsOptions::CheckOptions(void)
         IsError = true;
     }
 
-    if( IsOptTestSet() && IsOptSPTypeSet() ){
-        if(IsError == false) fprintf(stderr,"\n");
-        fprintf(stderr,"%s: --sptype is mutually exclusive with --test\n",
-                (const char*)GetProgramName());
-        IsError = true;
-    }
-
     if(IsError == true) return(SO_OPTS_ERROR);
     return(SO_CONTINUE);
 }

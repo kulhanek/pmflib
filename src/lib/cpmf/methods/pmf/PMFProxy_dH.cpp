@@ -85,7 +85,7 @@ int CPMFProxy_dH::GetNumOfSamples(int ibin) const
     if( Accu == NULL ){
         RUNTIME_ERROR("Accu is NULL");
     }
-    return(Accu->GetData("NSAMPLES",ibin));
+    return(Accu->GetData("NTDS",ibin));
 }
 
 //------------------------------------------------------------------------------
@@ -95,7 +95,7 @@ void CPMFProxy_dH::SetNumOfSamples(int ibin,int nsamples)
     if( Accu == NULL ){
         RUNTIME_ERROR("Accu is NULL");
     }
-    Accu->SetData("NSAMPLES",ibin,nsamples);
+    Accu->SetData("NTDS",ibin,nsamples);
 }
 
 //------------------------------------------------------------------------------

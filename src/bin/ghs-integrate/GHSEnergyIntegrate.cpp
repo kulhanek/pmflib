@@ -152,9 +152,9 @@ bool CGHSEnergyIntegrate::Run(void)
     CSmallString name = Options.GetArgAccuFile();
     vout << format("%02d:Loading PMF accumulator: %s")%State%string(name) << endl;
     State++;
-    Accumulator = CPMFAccumulatorPtr(new CPMFAccumulator);
+    Accu = CPMFAccumulatorPtr(new CPMFAccumulator);
     try {
-        Accumulator->Load(name);
+        Accu->Load(name);
     } catch(...) {
         CSmallString error;
         error << "unable to load the input ABF accumulator file '" << name << "'";
@@ -169,26 +169,26 @@ bool CGHSEnergyIntegrate::Run(void)
     State++;
     vout << format("   ** FES [from ABF dG(x)/dx]") << endl;
     GDerProxy = CABFProxy_dG_Ptr(new CABFProxy_dG());
-    GDerProxy->Init(Accumulator);
+    GDerProxy->Init(Accu);
 
     FES = CEnergySurfacePtr(new CEnergySurface);
-    FES->Allocate(Accumulator);
+    FES->Allocate(Accu);
     FES->SetSLevel(Options.GetOptSLevel());
 
     vout << format("   ** HES [from ABF dH(x)/dx]") << endl;
     HDerProxy = CABFProxy_dH_Ptr(new CABFProxy_dH());
-    HDerProxy->Init(Accumulator);
+    HDerProxy->Init(Accu);
 
     HES = CEnergySurfacePtr(new CEnergySurface);
-    HES->Allocate(Accumulator);
+    HES->Allocate(Accu);
     HES->SetSLevel(Options.GetOptSLevel());
 
     vout << format("   ** SES [from ABF -TdS(x)/dx]") << endl;
     SDerProxy = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS());
-    SDerProxy->Init(Accumulator);
+    SDerProxy->Init(Accu);
 
     SES = CEnergySurfacePtr(new CEnergySurface);
-    SES->Allocate(Accumulator);
+    SES->Allocate(Accu);
     SES->SetSLevel(Options.GetOptSLevel());
     vout << "   Done." << endl;
 
@@ -196,7 +196,6 @@ bool CGHSEnergyIntegrate::Run(void)
     vout << format("%02d:Statistics of the input PMF accumulator")%State << endl;
     State++;
     PrintAccuStat();
-    PrintSampledStat();
     vout << "   Done." << endl;
 
     // test early stage parsing of --globalmin
@@ -209,24 +208,11 @@ bool CGHSEnergyIntegrate::Run(void)
         integrator.SetGlobalMin(Options.GetOptGlobalMin());
     }
 
-// sampling limit -------------------------------
-    vout << endl;
-    vout << format("%02d:Preparing PMF accumulators for integration (sampling limit)")%State << endl;
-    State++;
-    PrepareAccumulatorI();
-    if( ! Options.GetOptSkipFFTest() ){
-        FloodFillTest();
-    }
-    PrintAccuStat();
-    PrintSampledStat();
-    vout << "   Done." << endl;
-
 // integrate data ------------------------------
     vout << endl;
     vout << format("%02d:PMF accumulator integration")%State << endl;
     State++;
     if( Integrate() == false ) return(false);
-    vout << "   Done." << endl;
 
 // print result ---------------------------------
     vout << endl;
@@ -310,6 +296,8 @@ bool CGHSEnergyIntegrate::Integrate(void)
 
     CGHSIntegratorGPR0A   integrator;
 
+    integrator.SetAccumulator(Accu);
+
     integrator.SetGDerProxy(GDerProxy);
     integrator.SetHDerProxy(HDerProxy);
     integrator.SetSDerProxy(SDerProxy);
@@ -333,10 +321,8 @@ bool CGHSEnergyIntegrate::Integrate(void)
     integrator.SetNoEnergy(Options.GetOptNoEnergy());
     integrator.SetUseNumDiff(Options.GetOptGPRNumDiff());
 
-    if( Options.GetOptUseRealGlobalMin() == false ){
-        if( Options.IsOptGlobalMinSet() ){
-            integrator.SetGlobalMin(Options.GetOptGlobalMin());
-        }
+    if( Options.IsOptGlobalMinSet() ){
+        integrator.SetGlobalMin(Options.GetOptGlobalMin());
     }
 
     integrator.SetRCond(Options.GetOptRCond());
@@ -346,17 +332,34 @@ bool CGHSEnergyIntegrate::Integrate(void)
     integrator.SetCalcLogPL(Options.GetOptGPRCalcLogPL());
 
     if( Options.IsOptMFInfoSet() ){
-       // integrator.PrepForMFInfo();
+       integrator.PrepForMFInfo();
     }
 
     if(integrator.Integrate(vout) == false) {
         ES_ERROR("unable to integrate ABF accumulator");
         return(false);
     }
+    vout << "   Done." << endl;
 
     if( Options.IsOptMFInfoSet() ){
-       // if( integrator.WriteMFInfo(Options.GetOptMFInfo()) == false ) return(false);
+    vout << endl;
+    vout << format("%02d:MF Info file: %s")%State%string(Options.GetOptMFInfo()) << endl;
+    State++;
+        CSmallString mfinfo;
+        mfinfo = Options.GetOptMFInfo();
+        mfinfo << ".dG_dx";
+    vout << format("   ** dG(x)/dx") << endl;
+        if( integrator.WriteMFInfo(mfinfo,0) == false ) return(false);
+        mfinfo = Options.GetOptMFInfo();
+        mfinfo << ".dH_dx";
+    vout << format("   ** dH(x)/dx") << endl;
+        if( integrator.WriteMFInfo(mfinfo,1) == false ) return(false);
+        mfinfo = Options.GetOptMFInfo();
+        mfinfo << ".mTdS_dx";
+    vout << format("   ** -TdS(x)/dx") << endl;
+        if( integrator.WriteMFInfo(mfinfo,2) == false ) return(false);
     }
+    vout << "   Done." << endl;
 
     return(true);
 }
@@ -365,243 +368,29 @@ bool CGHSEnergyIntegrate::Integrate(void)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-// this part performs following tasks:
-//    a) bins with number of samples <= limit will be set to zero
-
-void CGHSEnergyIntegrate::PrepareAccumulatorI(void)
-{
-    for(int ibin=0; ibin < Accumulator->GetNumOfBins(); ibin++) {
-        // erase datapoints not properly sampled, preserve glueing
-        if( (Accumulator->GetNumOfSamples(ibin) >= 0) && (Accumulator->GetNumOfSamples(ibin) <= Options.GetOptLimit()) ) {
-            Accumulator->SetNumOfSamples(ibin,0);
-        }
-    }
-}
-
-//------------------------------------------------------------------------------
-
-void CGHSEnergyIntegrate::SyncFESWithAccu(void)
-{
-    for(int ibin=0; ibin < FES->GetNumOfBins(); ibin++) {
-        FES->SetNumOfSamples(ibin,0);
-    }
-
-    for(int ibin=0; ibin < Accumulator->GetNumOfBins(); ibin++) {
-        int osam = FES->GetNumOfSamples(ibin);
-        int nsam = Accumulator->GetNumOfSamples(ibin);
-        FES->SetNumOfSamples(ibin,osam+nsam);
-    }
-}
-
-//------------------------------------------------------------------------------
-
-void CGHSEnergyIntegrate::SyncAccuWithFES(void)
-{
-    for(int ibin=0; ibin < Accumulator->GetNumOfBins(); ibin++) {
-        if( FES->GetNumOfSamples(ibin) <= 0 ) {
-            Accumulator->SetNumOfSamples(ibin,0);
-        }
-    }
-}
-
-//------------------------------------------------------------------------------
-
 void CGHSEnergyIntegrate::PrintAccuStat(void)
 {
     // calculate sampled area
-    double maxbins = Accumulator->GetNumOfBins();
+    double maxbins = Accu->GetNumOfBins();
     int    sampled = 0;
-    for(int ibin=0; ibin < Accumulator->GetNumOfBins(); ibin++) {
-        if( Accumulator->GetNumOfSamples(ibin) > 0 ) {
+    int    limit = 0;
+    for(int ibin=0; ibin < Accu->GetNumOfBins(); ibin++) {
+        if( Accu->GetNumOfSamples(ibin) > 0 ) {
             sampled++;
+        }
+        if( Accu->GetNumOfSamples(ibin) > Options.GetOptLimit() ) {
+            limit++;
+        } else {
+            Accu->SetNumOfSamples(ibin,0);
         }
     }
     if( maxbins > 0 ){
-        vout << "   -- Sampled area:               "
-             << setw(6) << sampled << " / " << (int)maxbins << " | " << setw(5) << setprecision(1) << fixed << sampled/maxbins*100 <<"%";
+        vout << " Sampled area: "
+             << setw(6) << sampled << " / " << (int)maxbins << " | " << setw(5) << setprecision(1) << fixed << sampled/maxbins*100 <<"%" ;
+        vout << " ... Within limit: "
+             << setw(6) << limit << " / " << (int)maxbins << " | " << setw(5) << setprecision(1) << fixed << limit/maxbins*100 <<"%";
     }
     vout << endl;
-}
-
-//------------------------------------------------------------------------------
-
-void CGHSEnergyIntegrate::PrintSampledStat(void)
-{
-    SyncFESWithAccu();
-
-    // calculate sampled area
-    double maxbins = FES->GetNumOfBins();
-    int    sampled = 0;
-    int    holes = 0;
-    int    glued = 0;
-    for(int ibin=0; ibin < FES->GetNumOfBins(); ibin++) {
-        if( FES->GetNumOfSamples(ibin) > 0 ) {
-            sampled++;
-        }
-        if( FES->GetNumOfSamples(ibin) < 0 ) {
-            glued++;
-        }
-        if( FES->GetNumOfSamples(ibin) == -1 ) {
-            holes++;
-        }
-    }
-    if( (maxbins > 0) && (glued != 0) ){
-        vout << "   -- Sampled area:               "
-             << setw(6) << sampled << " / " << (int)maxbins << " | " << setw(5) << setprecision(1) << fixed << sampled/maxbins*100 <<"%" << endl;
-    }
-    if( glued > 0 ){
-        vout << "   -- All inter/extrapolated area:"
-             << setw(6) << glued << " / " << (int)maxbins << " | " << setw(5) << setprecision(1) << fixed << glued/maxbins*100 <<"%" << endl;
-    }
-    if( holes > 0 ){
-        vout << "   -- Interpolated area:       "
-             << setw(6) << holes << " / " << (int)maxbins << " | " << setw(5) << setprecision(1) << fixed << holes/maxbins*100 <<"%" << endl;
-    }
-    if( (glued-holes) > 0 ){
-        vout << "   -- Extrapolated area:       "
-             << setw(6) << (glued-holes) << " / " << (int)maxbins << " | " << setw(5) << setprecision(1) << fixed << (glued-holes)/maxbins*100 <<"%" << endl;
-    }
-    if( glued+sampled > 0 ){
-        vout << "   -- Total area:                 "
-             << setw(6) << (glued+sampled) << " / " << (int)maxbins << " | " << setw(5) << setprecision(1) << fixed << (glued+sampled)/maxbins*100 <<"%" << endl;
-    }
-}
-
-//------------------------------------------------------------------------------
-
-void CGHSEnergyIntegrate::FloodFillTest(void)
-{
-    vout << "   Searching for discontinuous regions ..." << endl;
-    int seedid = 1;
-
-    SyncFESWithAccu();
-
-    FFSeeds.CreateVector(FES->GetNumOfBins());
-    FFSeeds.SetZero();
-    IPos.CreateVector(FES->GetNumOfCVs());
-    TPos.CreateVector(FES->GetNumOfCVs());
-
-    double maxbins = FES->GetNumOfBins();
-    int    maxseedid = 0;
-    int    maxsampled = 0;
-    bool   first = true;
-
-    while( InstallNewSeed(seedid,false) ){
-        int sampled = 1;    // for initial seed set by InstallNewSeed
-        int newsamples = 0;
-
-        while( (newsamples = FillSeed(seedid,false)) > 0 ){
-            sampled += newsamples;
-        }
-
-        if( maxbins > 0 ){
-            vout << "   Region: " << setw(6) << seedid << " - sampled area: "
-                 << setw(6) << sampled << " / " << (int)maxbins << " | " << setw(5) << setprecision(1) << fixed << sampled/maxbins*100 <<"%" << endl;
-        }
-
-        if( first || (maxsampled < sampled) ){
-            first = false;
-            maxsampled = sampled;
-            maxseedid = seedid;
-        }
-
-        seedid++;
-    }
-    seedid--;
-
-    // quit if one or none region
-    if( seedid <= 1 ){
-        vout << "   -- All is continuous." << endl;
-        return;
-    }
-
-        vout << "   -- Clearing all except region: " << maxseedid <<  endl;
-
-    for(int ibin=0; ibin < FES->GetNumOfBins(); ibin++) {
-        if( FFSeeds[ibin] != maxseedid ) {
-            FES->SetNumOfSamples(ibin,0);
-        }
-    }
-
-    SyncAccuWithFES();
-}
-
-//------------------------------------------------------------------------------
-
-bool CGHSEnergyIntegrate::InstallNewSeed(int seedid,bool unsampled)
-{
-    for(int ibin=0; ibin < FES->GetNumOfBins(); ibin++) {
-        if( unsampled ){
-            if( (FFSeeds[ibin] == 0) && ( FES->GetNumOfSamples(ibin) == 0 ) ) {
-                FFSeeds[ibin] = seedid;
-                return(true);
-            }
-        } else {
-            if( (FFSeeds[ibin] == 0) && ( FES->GetNumOfSamples(ibin) != 0 ) ) {
-                FFSeeds[ibin] = seedid;
-                return(true);
-            }
-        }
-    }
-
-    return(false);
-}
-
-//------------------------------------------------------------------------------
-
-int CGHSEnergyIntegrate::FillSeed(int seedid,bool unsampled)
-{
-    int newsamples = 0;
-    int ndir = 1;
-    for(int j=0; j < FES->GetNumOfCVs(); j++){
-        ndir *= 3;
-    }
-
-    for(int ibin=0; ibin < FES->GetNumOfBins(); ibin++) {
-        if( unsampled ){
-            if( FES->GetNumOfSamples(ibin) > 0 ) continue; // skip sampled regions
-        } else {
-            if( FES->GetNumOfSamples(ibin) == 0 ) continue; // skip unsampled regions
-        }
-        if( FFSeeds[ibin] != seedid ) continue; // skip different regions
-
-        // convert to ipont
-        FES->GetIPoint(ibin,IPos);
-
-        // in each direction
-        for(int j=0; j < ndir; j++){
-            GetTPoint(IPos,j,TPos);
-            int tbin = FES->GetGlobalIndex(TPos);
-            if( tbin >= 0 ){
-                if( FFSeeds[tbin] == 0 ){
-                    if( unsampled ){
-                        if( FES->GetNumOfSamples(tbin) == 0 ){
-                            FFSeeds[tbin] = seedid;
-                            newsamples++;
-                        }
-                    } else {
-                        if( FES->GetNumOfSamples(tbin) != 0 ){
-                            FFSeeds[tbin] = seedid;
-                            newsamples++;
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    return(newsamples);
-}
-
-//------------------------------------------------------------------------------
-
-void CGHSEnergyIntegrate::GetTPoint(CSimpleVector<int>& ipos,int d,CSimpleVector<int>& tpos)
-{
-    for(int k=FES->GetNumOfCVs()-1; k >= 0; k--) {
-        int ibin = d % 3 - 1;
-        tpos[k] = ibin + ipos[k];
-        d = d / 3;
-    }
 }
 
 //==============================================================================

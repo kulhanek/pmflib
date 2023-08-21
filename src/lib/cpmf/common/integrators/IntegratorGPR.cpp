@@ -1582,6 +1582,7 @@ double CIntegratorGPR::GetMeanForceVar(const CSimpleVector<double>& position,siz
 
     GetKernelDer2Ana(position,position,kblock);
 
+    // FIXME - valiadate
     double var = kblock[icoord][icoord] - CSciBlas::dot(kff2,ik);
     return(var);
 }
@@ -2173,7 +2174,6 @@ void CIntegratorGPR::CalcKderWRTWFac(size_t cv)
             // distribute to main kernel matrix
             for(size_t ii=0; ii < NumOfCVs; ii++){
                 for(size_t jj=0; jj < NumOfCVs; jj++){
-                    // SigmaF2 cannot be zero
                     Kder[indi*NumOfCVs+ii][indj*NumOfCVs+jj] = kblock[ii][jj];
                 }
             }

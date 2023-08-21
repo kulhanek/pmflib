@@ -43,6 +43,9 @@ public:
     virtual ~CGHSIntegratorGPR0A(void);
 
 // setup methods --------------------------------------------------------------
+    /// set accumulator
+    void SetAccumulator(CPMFAccumulatorPtr accu);
+
     /// set input derivative proxies
     void SetGDerProxy(CEnergyDerProxyPtr p_proxy);
     void SetHDerProxy(CEnergyDerProxyPtr p_proxy);
@@ -142,9 +145,21 @@ public:
     /// use fast error algorithm
     void SetFastError(bool set);
 
+    /// prepare for subsequent call WriteMFInfo
+    void PrepForMFInfo(void);
+
 // execution method -----------------------------------------------------------
     /// integrate data
     bool Integrate(CVerboseStr& vout,bool nostat=false);
+
+    /// get mean force
+    double GetMeanForce(const CSimpleVector<double>& position,size_t icoord,int task);
+
+    /// get mean force variance
+    double GetMeanForceVar(const CSimpleVector<double>& position,size_t icoord,int task);
+
+    /// get root mean square residuals
+    double GetRMSR(size_t cv,int task);
 
     /// get log of Marginal Likelihood
     double GetLogML(void);
@@ -168,8 +183,12 @@ public:
     /// get kernel name
     const CSmallString GetKernelName(void);
 
+    /// write file with derivatives
+    bool WriteMFInfo(const CSmallString& name,int task);
+
 // section of private data ----------------------------------------------------
 private:
+    CPMFAccumulatorPtr      Accu;
     CEnergyDerProxyPtr      GDerProxy;
     CEnergyDerProxyPtr      HDerProxy;
     CEnergyDerProxyPtr      SDerProxy;
@@ -211,6 +230,7 @@ private:
 
     // derivatives
     CFortranMatrix          Kder;           // derivative of kernels w.r.t. a hyperparameter
+    CFortranMatrix          TKder;             // task covariances derivatives
 
     bool                    GlobalMinSet;   // true if gpos set by SetGlobalMin()
     CSimpleVector<double>   GPos;           // global position, either detected or use
@@ -228,12 +248,23 @@ private:
     bool TrainGP(CVerboseStr& vout);
     void CalculateEnergy(CVerboseStr& vout);
 
-    void GetValues(const CSimpleVector<double>& position,double& dg, double& dh, double& mtds);
+    void   GetValues(const CSimpleVector<double>& position,double& dg, double& dh, double& mtds);
+    double GetVar(CSimpleVector<double>& lpos,int task);
+    void   GetCovVar(CSimpleVector<double>& lpos,CSimpleVector<double>& rpos,double& llvar,double& lrcov,int task);
+
+// errors - slow algorithm
+    void   CalculateErrors(CSimpleVector<double>& gpos,CVerboseStr& vout); // gpos - position of global minimum
+// fast errors
+    void   CalculateErrorsFromCov(CVerboseStr& vout);
+
+    void   CalculateCovs(CVerboseStr& vout,int task);
+    void   CalculateErrors(CSimpleVector<double>& gpos,CVerboseStr& vout,int task);
+    void   CalculateErrorsFromCov(CVerboseStr& vout,int task);
 
     void   CreateTK(void);
     void   CreateKS(void);
     void   CreateKff(const CSimpleVector<double>& ip,CSimpleVector<double>& ky,int task);
-    void   CreateKff2(const CSimpleVector<double>& ip,size_t icoord,CSimpleVector<double>& ky2);
+    void   CreateKff2(const CSimpleVector<double>& ip,size_t icoord,CSimpleVector<double>& ky2,int task);
     double GetKernelValue(const CSimpleVector<double>& ip,const CSimpleVector<double>& jp);
     void   GetKernelDerAnaI(const CSimpleVector<double>& ip,const CSimpleVector<double>& jp,CSimpleVector<double>& der);
     void   GetKernelDerNumI(const CSimpleVector<double>& ip,const CSimpleVector<double>& jp,CSimpleVector<double>& der);
@@ -253,6 +284,8 @@ private:
     void CalcKderWRTCoVar(size_t idx);
     void CalcKderWRTWFac(size_t cv);
     void CalcKderWRTSigmaN2(size_t idx);
+    void CreateTKDerSigmaF2(size_t idx);
+    void CreateTKDerCoVar(size_t idx);
 };
 
 //------------------------------------------------------------------------------
