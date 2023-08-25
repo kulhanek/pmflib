@@ -63,6 +63,7 @@ private:
     CPMFAccumulatorPtr      Accu;
     CEnergyDerProxyPtr      GDerProxy;
     CEnergyDerProxyPtr      HDerProxy;
+    CEnergyProxyPtr         HEneProxy;
     CEnergyDerProxyPtr      SDerProxy;
 
     // output
@@ -82,7 +83,8 @@ private:
     int                     State;
 
     void PrintAccuStat(void);
-    bool Integrate(void);
+    bool Integrate0A(void);
+    bool Integrate0B(void);
     void WriteES(CEnergySurfacePtr& surf,const CSmallString& name);
 };
 

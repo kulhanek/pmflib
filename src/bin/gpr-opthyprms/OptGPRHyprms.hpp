@@ -130,11 +130,13 @@ private:
     void InitGPREngine_dF_dx(void);
     void InitGPREngine_dF(void);
     void InitGPREngine_GHS_dH_dx(void);
+    void InitGPREngine_GHS_dH(void);
 
     void CreateGPREngine(void);
     void CreateGPREngine_dF_dx(void);
     void CreateGPREngine_dF(void);
     void CreateGPREngine_GHS_dH_dx(void);
+    void CreateGPREngine_GHS_dH(void);
 
     double  GetTarget(void);
     void    GetTargetDerivatives(CSimpleVector<double>& der);

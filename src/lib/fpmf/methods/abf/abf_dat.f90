@@ -164,6 +164,8 @@ type,extends(PMFAccuType) :: ABFAccuType
 ! enthalpy derivative
     real(PMFDP),pointer    :: micfp(:,:)                ! mean of ICF-P
     real(PMFDP),pointer    :: m2icfp(:,:)               ! M2 of internal energy
+    real(PMFDP),pointer    :: micfpa(:,:)                ! mean of ICF-P
+    real(PMFDP),pointer    :: m2icfpa(:,:)               ! M2 of internal energy
 
 ! entropy - decomposition
     real(PMFDP),pointer    :: mhicf(:,:)                ! mean of ICF - hamiltonian
@@ -199,6 +201,8 @@ integer                     :: outsidesamples
 ! global variables for abf - results -------------------------------------------
 real(PMFDP),allocatable     :: fz(:,:)              ! Z matrix              in t
 real(PMFDP),allocatable     :: fzinv(:,:)           ! inverse of Z matrix   in t
+real(PMFDP),allocatable     :: fza(:,:)              ! Z matrix              in t
+real(PMFDP),allocatable     :: fzinva(:,:)           ! inverse of Z matrix   in t
 real(PMFDP),allocatable     :: vv(:)                ! for LU decomposition
 integer,allocatable         :: indx(:)              ! for LU decomposition
 
@@ -225,8 +229,10 @@ real(PMFDP),allocatable     :: icfhist(:,:)         ! history of ABF ICF
 real(PMFDP),allocatable     :: micfhist(:,:)        ! history of ABF bias
 
 real(PMFDP),allocatable     :: zdhist(:,:,:,:)      ! history of ZD
+real(PMFDP),allocatable     :: zdhista(:,:,:,:)      ! history of ZD
 real(PMFDP),allocatable     :: fhist(:,:,:)         ! history of forces
 real(PMFDP),allocatable     :: icfphist(:,:)        ! history of ABF ICF-P
+real(PMFDP),allocatable     :: icfpahist(:,:)        ! history of ABF ICF-P
 
 real(PMFDP),allocatable     :: epothist(:)          ! history of Epot
 real(PMFDP),allocatable     :: ersthist(:)          ! history of Erst

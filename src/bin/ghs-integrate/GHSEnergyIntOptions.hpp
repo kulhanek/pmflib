@@ -55,6 +55,7 @@ public:
     CSO_ARG(CSmallString,HESFile)
     CSO_ARG(CSmallString,SESFile)
     // options ------------------------------
+    CSO_OPT(CSmallString,Realm)
     CSO_OPT(bool,EnableConstraints)
     CSO_OPT(CSmallString,LAMethod)
     CSO_OPT(double,RCond)
@@ -127,6 +128,18 @@ public:
                 NULL,                           /* parameter name */
                 "Impose dG(x)/dx - dH(x)/dx - (-TdS(x)/dx) = 0 constraints.")   /* option description */
 // description of options ---------------------------------------------------
+   CSO_MAP_OPT(CSmallString,                           /* option type */
+                Realm,                        /* option name */
+                "GHS_dH",                          /* default value */
+                false,                          /* is option mandatory */
+                'r',                           /* short option name */
+                "realm",                      /* long option name */
+                "NAME",                           /* parameter name */
+                "Requested output from the integration:\n"
+                "**  GHS_dH    - 0B\n"
+                "**  GHS_dH/dx - 0A\n"
+                )
+    //----------------------------------------------------------------------
     CSO_MAP_OPT(CSmallString,                           /* option type */
                 LAMethod,                        /* option name */
                 "default",                          /* default value */

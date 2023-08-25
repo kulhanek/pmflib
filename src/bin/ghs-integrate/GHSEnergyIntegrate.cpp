@@ -35,11 +35,14 @@
 #include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string/classification.hpp>
 #include <StdIOFile.hpp>
+// -------------
 #include <GHSIntegratorGPR0A.hpp>
 #include <GHSIntegratorGPR0B.hpp>
+// -------------
 #include <ABFProxy_dG.hpp>
 #include <ABFProxy_dH.hpp>
 #include <ABFProxy_mTdS.hpp>
+#include <PMFProxy_dH.hpp>
 
 //------------------------------------------------------------------------------
 
@@ -175,9 +178,17 @@ bool CGHSEnergyIntegrate::Run(void)
     FES->Allocate(Accu);
     FES->SetSLevel(Options.GetOptSLevel());
 
-    vout << format("   ** HES [from ABF dH(x)/dx]") << endl;
-    HDerProxy = CABFProxy_dH_Ptr(new CABFProxy_dH());
-    HDerProxy->Init(Accu);
+    if( Options.GetOptRealm() == "GHS_dH/dx" ){
+        vout << format("   ** HES [from ABF dH(x)/dx]") << endl;
+        HDerProxy = CABFProxy_dH_Ptr(new CABFProxy_dH());
+        HDerProxy->Init(Accu);
+    } else if( Options.GetOptRealm() == "GHS_dH" ) {
+        vout << format("   ** HES [from dH(x)]") << endl;
+        HEneProxy = CPMFProxy_dH_Ptr(new CPMFProxy_dH());
+        HEneProxy->Init(Accu);
+    } else {
+        RUNTIME_ERROR("unsupported realm");
+    }
 
     HES = CEnergySurfacePtr(new CEnergySurface);
     HES->Allocate(Accu);
@@ -212,7 +223,13 @@ bool CGHSEnergyIntegrate::Run(void)
     vout << endl;
     vout << format("%02d:PMF accumulator integration")%State << endl;
     State++;
-    if( Integrate() == false ) return(false);
+    if( Options.GetOptRealm() == "GHS_dH/dx" ){
+        if( Integrate0A() == false ) return(false);
+    } else if( Options.GetOptRealm() == "GHS_dH" ) {
+        if( Integrate0B() == false ) return(false);
+    } else {
+        RUNTIME_ERROR("unsupported realm");
+    }
 
 // print result ---------------------------------
     vout << endl;
@@ -291,7 +308,7 @@ void CGHSEnergyIntegrate::WriteES(CEnergySurfacePtr& surf,const CSmallString& na
 //------------------------------------------------------------------------------
 //==============================================================================
 
-bool CGHSEnergyIntegrate::Integrate(void)
+bool CGHSEnergyIntegrate::Integrate0A(void)
 {
 
     CGHSIntegratorGPR0A   integrator;
@@ -358,6 +375,81 @@ bool CGHSEnergyIntegrate::Integrate(void)
         mfinfo << ".mTdS_dx";
     vout << format("   ** -TdS(x)/dx") << endl;
         if( integrator.WriteMFInfo(mfinfo,2) == false ) return(false);
+    }
+    vout << "   Done." << endl;
+
+    return(true);
+}
+
+//------------------------------------------------------------------------------
+
+bool CGHSEnergyIntegrate::Integrate0B(void)
+{
+
+    CGHSIntegratorGPR0B   integrator;
+
+    integrator.SetAccumulator(Accu);
+
+    integrator.SetGDerProxy(GDerProxy);
+    integrator.SetHEneProxy(HEneProxy);
+    integrator.SetSDerProxy(SDerProxy);
+
+    integrator.SetOutputFES(FES);
+    integrator.SetOutputHES(HES);
+    integrator.SetOutputSES(SES);
+
+    if( Options.IsOptLoadHyprmsSet() ){
+        integrator.LoadGPRHyprms(Options.GetOptLoadHyprms());
+    } else {
+        integrator.SetSigmaF2(Options.GetOptSigmaF2());
+        integrator.SetCoVar(Options.GetOptCoVar());
+        integrator.SetWFac(Options.GetOptWFac());
+        integrator.SetSigmaN2(Options.GetOptSigmaN2());
+    }
+
+    integrator.EnableConstraints(Options.GetOptEnableConstraints());
+    integrator.SetFastError(!Options.GetOptGPRNoFastError());
+    integrator.SetIncludeError(Options.GetOptWithError());
+    integrator.SetNoEnergy(Options.GetOptNoEnergy());
+    integrator.SetUseNumDiff(Options.GetOptGPRNumDiff());
+
+    if( Options.IsOptGlobalMinSet() ){
+        integrator.SetGlobalMin(Options.GetOptGlobalMin());
+    }
+
+    integrator.SetRCond(Options.GetOptRCond());
+    integrator.SetLAMethod(Options.GetOptLAMethod());
+    integrator.SetUseInv(Options.GetOptGPRUseInv());
+    integrator.SetKernel(Options.GetOptGPRKernel());
+    integrator.SetCalcLogPL(Options.GetOptGPRCalcLogPL());
+
+    if( Options.IsOptMFInfoSet() ){
+  //     integrator.PrepForMFInfo();
+    }
+
+    if(integrator.Integrate(vout) == false) {
+        ES_ERROR("unable to integrate ABF accumulator");
+        return(false);
+    }
+    vout << "   Done." << endl;
+
+    if( Options.IsOptMFInfoSet() ){
+    vout << endl;
+    vout << format("%02d:MF Info file: %s")%State%string(Options.GetOptMFInfo()) << endl;
+    State++;
+        CSmallString mfinfo;
+        mfinfo = Options.GetOptMFInfo();
+        mfinfo << ".dG_dx";
+    vout << format("   ** dG(x)/dx") << endl;
+     //   if( integrator.WriteMFInfo(mfinfo,0) == false ) return(false);
+        mfinfo = Options.GetOptMFInfo();
+        mfinfo << ".dH_dx";
+    vout << format("   ** dH(x)/dx") << endl;
+    //    if( integrator.WriteMFInfo(mfinfo,1) == false ) return(false);
+        mfinfo = Options.GetOptMFInfo();
+        mfinfo << ".mTdS_dx";
+    vout << format("   ** -TdS(x)/dx") << endl;
+     //   if( integrator.WriteMFInfo(mfinfo,2) == false ) return(false);
     }
     vout << "   Done." << endl;
 

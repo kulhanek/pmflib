@@ -357,6 +357,8 @@ subroutine abf_init_arrays
             sfac(NumOfABFCVs),                  &
             fz(NumOfABFCVs,NumOfABFCVs),        &
             fzinv(NumOfABFCVs,NumOfABFCVs),     &
+            fza(NumOfABFCVs,NumOfABFCVs),        &
+            fzinva(NumOfABFCVs,NumOfABFCVs),     &
             indx(NumOfABFCVs),                  &
             vv(NumOfABFCVs),                    &
             stat= alloc_failed )
@@ -373,6 +375,8 @@ subroutine abf_init_arrays
     picf(:)     = 0.0d0
     fz(:,:)     = 0.0d0
     fzinv(:,:)  = 0.0d0
+    fza(:,:)     = 0.0d0
+    fzinva(:,:)  = 0.0d0
     sfac(:)     = 1.0d0
 
 ! history buffers ------------------------------------------
@@ -390,12 +394,14 @@ subroutine abf_init_arrays
             micfhist(NumOfABFCVs,hist_len),                 &
             icfhist(NumOfABFCVs,hist_len),                  &
             icfphist(NumOfABFCVs,hist_len),                 &
+            icfpahist(NumOfABFCVs,hist_len),                 &
             xphist(NumOfABFCVs,hist_len),                   &
             vhist(3,NumOfLAtoms,hist_len),                  &
             fhist(3,NumOfLAtoms,hist_len),                  &
             fzinvhist(NumOfABFCVs,NumOfABFCVs,hist_len),    &
             cvderhist(3,NumOfLAtoms,NumOfABFCVs,hist_len),  &
             zdhist(3,NumOfLAtoms,NumOfABFCVs,hist_len),     &
+            zdhista(3,NumOfLAtoms,NumOfABFCVs,hist_len),     &
             epothist(hist_len),                             &
             ersthist(hist_len),                             &
             ekinhist(hist_len),                             &
@@ -414,6 +420,7 @@ subroutine abf_init_arrays
     micfhist(:,:)       = 0.0d0
     icfhist(:,:)        = 0.0d0
     icfphist(:,:)       = 0.0d0
+    icfpahist(:,:)      = 0.0d0
     vhist(:,:,:)        = 0.0d0
     fhist(:,:,:)        = 0.0d0
     epothist(:)         = 0.0d0
@@ -426,6 +433,8 @@ subroutine abf_init_arrays
     cvderhist(:,:,:,:)  = 0.0d0
     zdhist(:,:,:,:)     = 0.0d0
     volhist(:)          = 0.0d0
+    zdhist(:,:,:,:)     = 0.0d0
+    zdhista(:,:,:,:)    = 0.0d0
     enevalidhist(:)     = .false.
 
 ! other setup ----------------------------------------------

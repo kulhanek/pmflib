@@ -1,5 +1,5 @@
-#ifndef GHSIntegratorGPR0AH
-#define GHSIntegratorGPR0AH
+#ifndef GHSIntegratorGPR0BH
+#define GHSIntegratorGPR0BH
 // =============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
@@ -31,16 +31,17 @@
 #include <EnergySurface.hpp>
 #include <IntegratorGPR.hpp>
 
+
 //------------------------------------------------------------------------------
 
 /** \brief integrator of ABF accumulator employing gaussian process
 */
 
-class PMF_PACKAGE CGHSIntegratorGPR0A : public CGPRHyprmsBase {
+class PMF_PACKAGE CGHSIntegratorGPR0B : public CGPRHyprmsBase {
 public:
 // constructor and destructor -------------------------------------------------
-    CGHSIntegratorGPR0A(void);
-    virtual ~CGHSIntegratorGPR0A(void);
+    CGHSIntegratorGPR0B(void);
+    virtual ~CGHSIntegratorGPR0B(void);
 
 // setup methods --------------------------------------------------------------
     /// set accumulator
@@ -48,7 +49,7 @@ public:
 
     /// set input derivative proxies
     void SetGDerProxy(CEnergyDerProxyPtr p_proxy);
-    void SetHDerProxy(CEnergyDerProxyPtr p_proxy);
+    void SetHEneProxy(CEnergyProxyPtr p_proxy);
     void SetSDerProxy(CEnergyDerProxyPtr p_proxy);
 
     /// set output energy surfaces
@@ -57,6 +58,7 @@ public:
     void SetOutputSES(CEnergySurfacePtr p_surf);
 
 // hyperparameters
+//-----
     /// set sigmaf2
     void SetSigmaF2(const CSmallString& spec);
 
@@ -149,37 +151,15 @@ public:
     /// use fast error algorithm
     void SetFastError(bool set);
 
-    /// prepare for subsequent call WriteMFInfo
-    void PrepForMFInfo(void);
-
 // execution method -----------------------------------------------------------
     /// integrate data
     bool Integrate(CVerboseStr& vout,bool nostat=false);
 
-    /// get mean force
-    double GetMeanForce(const CSimpleVector<double>& position,size_t icoord,int task);
-
-    /// get mean force variance
-    double GetMeanForceVar(const CSimpleVector<double>& position,size_t icoord,int task);
-
-    /// get root mean square residuals
-    double GetRMSR(size_t cv,int task);
-
     /// get log of Marginal Likelihood
     double GetLogML(void);
 
-    /// get derivative of logML wrt hyperparameters
-    /// order sigmaf2, covar, wfac, nsigman2: only requested ders are calculated
-    /// derivatives are ADDED to der
-    void GetLogMLDerivatives(const std::vector<bool>& flags,CSimpleVector<double>& der);
-
     /// get the log of pseudo-likelihood from leave-one-out cross-validation (LOO-CV)
     double GetLogPL(void);
-
-    /// get derivative of logPL wrt hyperparameters
-    /// order sigmaf2, covar, wfac, nsigman2: only requested ders are calculated
-    /// derivatives are ADDED to der
-    void GetLogPLDerivatives(const std::vector<bool>& flags,CSimpleVector<double>& der);
 
     /// print exec info
     void PrintExecInfo(CVerboseStr& vout);
@@ -187,14 +167,11 @@ public:
     /// get kernel name
     const CSmallString GetKernelName(void);
 
-    /// write file with derivatives
-    bool WriteMFInfo(const CSmallString& name,int task);
-
 // section of private data ----------------------------------------------------
 private:
     CPMFAccumulatorPtr      Accu;
     CEnergyDerProxyPtr      GDerProxy;
-    CEnergyDerProxyPtr      HDerProxy;
+    CEnergyProxyPtr         HEneProxy;
     CEnergyDerProxyPtr      SDerProxy;
     CEnergySurfacePtr       GSurface;
     CEnergySurfacePtr       HSurface;
@@ -207,6 +184,7 @@ private:
     size_t                  GPRSize;
     size_t                  NumOfUsedBins;
     std::vector<size_t>     SampledMap;
+    size_t                  BlockSize;
 
     // setup
     bool                    ConstrainedTK;
@@ -223,9 +201,9 @@ private:
     CSimpleVector<double>   CVLengths2;
 
     // GPR model
+    double                  HMean;
     EGPRKernel              Kernel;
     CFortranMatrix          KS;             // kernel matrix with noise
-    CFortranMatrix          TK;             // task covariances
     bool                    KSInverted;
     double                  logdetK;
     CSimpleVector<double>   Y;              // mean forces
@@ -234,7 +212,6 @@ private:
 
     // derivatives
     CFortranMatrix          Kder;           // derivative of kernels w.r.t. a hyperparameter
-    CFortranMatrix          TKder;             // task covariances derivatives
 
     bool                    GlobalMinSet;   // true if gpos set by SetGlobalMin()
     CSimpleVector<double>   GPos;           // global position, either detected or use
@@ -252,20 +229,9 @@ private:
     bool TrainGP(CVerboseStr& vout);
     void CalculateEnergy(CVerboseStr& vout);
 
-    void   GetValues(const CSimpleVector<double>& position,double& dg, double& dh, double& mtds);
-    double GetVar(CSimpleVector<double>& lpos,int task);
-    void   GetCovVar(CSimpleVector<double>& lpos,CSimpleVector<double>& rpos,double& llvar,double& lrcov,int task);
+    void GetValues(const CSimpleVector<double>& position,double& dg, double& dh, double& mtds);
 
-// errors - slow algorithm
-    void   CalculateErrors(CSimpleVector<double>& gpos,CVerboseStr& vout); // gpos - position of global minimum
-// fast errors
-    void   CalculateErrorsFromCov(CVerboseStr& vout);
-
-    void   CalculateCovs(CVerboseStr& vout,int task);
-    void   CalculateErrors(CSimpleVector<double>& gpos,CVerboseStr& vout,int task);
-    void   CalculateErrorsFromCov(CVerboseStr& vout,int task);
-
-    void   CreateTK(void);
+    // kernel matrix + noise
     void   CreateKS(void);
     void   CreateKff(const CSimpleVector<double>& ip,CSimpleVector<double>& ky,int task);
     void   CreateKff2(const CSimpleVector<double>& ip,size_t icoord,CSimpleVector<double>& ky2,int task);
@@ -279,22 +245,17 @@ private:
     void   GetKernelDer2AnaWFac(const CSimpleVector<double>& ip,const CSimpleVector<double>& jp,size_t cv,CFortranMatrix& kblock);
     void   GetKernelDer2NumWFac(const CSimpleVector<double>& ip,const CSimpleVector<double>& jp,size_t cv,CFortranMatrix& kblock);
 
-// parallel processing
+    // parallel processing
     void RunBlasLapackSeq(void);
     void RunBlasLapackPar(void);
 
-// derivatives
-    void CalcKderWRTSigmaF2(size_t idx);
-    void CalcKderWRTCoVar(size_t idx);
-    void CalcKderWRTWFac(size_t cv);
-    void CalcKderWRTSigmaN2(size_t idx);
-    void CreateTKDerSigmaF2(size_t idx);
-    void CreateTKDerCoVar(size_t idx);
+    void GetKernelKSBlock(const CSimpleVector<double>& ip,const CSimpleVector<double>& jp,CFortranMatrix& kblock);
+    void CreateKffBlock(const CSimpleVector<double>& ip,const CSimpleVector<double>& jp,CSimpleVector<double>& kffblock,int task);
 };
 
 //------------------------------------------------------------------------------
 
-typedef boost::shared_ptr<CGHSIntegratorGPR0A>    CGHSIntegratorGPR0APtr;
+typedef boost::shared_ptr<CGHSIntegratorGPR0B>    CGHSIntegratorGPR0BPtr;
 
 //------------------------------------------------------------------------------
 
