@@ -343,7 +343,7 @@ INCLUDE 'mpif.h'
             call pmf_utils_exit(PMF_OUT,1,'[cst] method is not supported with this PMFLib driver!')
         end if
 
-        ! [EPOT] requires ENE and FRC
+    ! [EPOT] requires ENE and FRC
         do i=1,NumOfCVs
             if( CVList(i)%cv%ctype .eq. 'EPOT' ) then
                 setup(PMFLIB_SETUP_FORCE_NEED_ENE) = 1
@@ -352,8 +352,21 @@ INCLUDE 'mpif.h'
             end if
         end do
 
+    ! ABF requirements
         if( fmode .eq. 2 ) then
             ! we need velocities for this ABF mode
+            setup(PMFLIB_SETUP_FORCE_NEED_VEL) = 1
+        end if
+
+        if( fenthalpy .or. fentropy ) then
+            setup(PMFLIB_SETUP_FORCE_NEED_ENE) = 1
+        end if
+
+        if( fenthalpy_der .eq. 1 ) then
+            setup(PMFLIB_SETUP_FORCE_NEED_FRC) = 1
+        end if
+
+        if( (fenthalpy_der .eq. 2) .or. (fenthalpy_der .eq. 3) ) then
             setup(PMFLIB_SETUP_FORCE_NEED_VEL) = 1
         end if
     end if

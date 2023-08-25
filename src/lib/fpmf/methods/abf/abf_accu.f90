@@ -632,7 +632,7 @@ subroutine abf_accu_write(iounit)
         call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'MICFP',     'WA',abfaccu%micfp,  'NTDS')
         call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'M2ICFP',    'M2',abfaccu%m2icfp, 'NTDS','MICFP')
         call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'MICFPA',    'WA',abfaccu%micfpa, 'NTDS')
-        call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'M2ICFPA',   'M2',abfaccu%m2icfpa,'NTDS','MICFP')
+        call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'M2ICFPA',   'M2',abfaccu%m2icfpa,'NTDS','MICFPA')
     end if
 
     if( fentropy ) then

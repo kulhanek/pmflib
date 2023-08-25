@@ -108,9 +108,10 @@ double CABFProxy_dH::GetValue(int ibin,int icv,EProxyRealm realm) const
     switch(Type){
     // -------------------
         case(ABF_dH): {
+            // FIXME MICFPA -> MICFP
             double  nsamples    = Accu->GetData("NTDS",ibin);
-            double  micfp       = Accu->GetData("MICFP",ibin,icv);
-            double  m2icfp      = Accu->GetData("M2ICFP",ibin,icv);
+            double  micfp       = Accu->GetData("MICFPA",ibin,icv);
+            double  m2icfp      = Accu->GetData("M2ICFPA",ibin,icv);
 
             double  chp         = Accu->GetData("C11HP",ibin,icv) / nsamples;
             double  m2hicf      = Accu->GetData("M2HICF",ibin,icv);
@@ -148,8 +149,8 @@ double CABFProxy_dH::GetValue(int ibin,int icv,EProxyRealm realm) const
     // -------------------
         case(ABF_MICFP): {
             double  nsamples = Accu->GetData("NTDS",ibin);
-            double  micf     = Accu->GetData("MICFP",ibin,icv);
-            double  m2icf    = Accu->GetData("M2ICFP",ibin,icv);
+            double  micf     = Accu->GetData("MICFPA",ibin,icv);
+            double  m2icf    = Accu->GetData("M2ICFPA",ibin,icv);
 
             if( nsamples <= 0 ) return(value);
 
