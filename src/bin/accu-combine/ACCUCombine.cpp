@@ -74,7 +74,7 @@ int CACCUCombine::Init(int argc,char* argv[])
     for(int i=0; i < Options.GetNumberOfProgArgs() - 1; i++){
         vout << format("# Input PMF accumulator #%05d : %s")%(i+1)%Options.GetProgArg(i) << endl;
     }
-    vout << format("# Output PMF accumulator     : %s")%Options.GetProgArg(Options.GetNumberOfProgArgs()-1) << endl;
+        vout << format("# Output PMF accumulator       : %s")%Options.GetProgArg(Options.GetNumberOfProgArgs()-1) << endl;
 
     vout << "# ------------------------------------------------------------------------------" << endl;
 

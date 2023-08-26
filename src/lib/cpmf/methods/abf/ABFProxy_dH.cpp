@@ -64,6 +64,9 @@ void CABFProxy_dH::SetType(EABFdHType type)
     // -------------------
         case(ABF_MICFP):
             Provide = "ABF ICFP(x)";
+    // -------------------
+        case(ABF_MICFPA):
+            Provide = "ABF ICFP-A(x)";
         break;
     // -------------------
         default:
@@ -110,8 +113,8 @@ double CABFProxy_dH::GetValue(int ibin,int icv,EProxyRealm realm) const
         case(ABF_dH): {
             // FIXME MICFPA -> MICFP
             double  nsamples    = Accu->GetData("NTDS",ibin);
-            double  micfp       = Accu->GetData("MICFPA",ibin,icv);
-            double  m2icfp      = Accu->GetData("M2ICFPA",ibin,icv);
+            double  micfp       = Accu->GetData("MICFP",ibin,icv);
+            double  m2icfp      = Accu->GetData("M2ICFP",ibin,icv);
 
             double  chp         = Accu->GetData("C11HP",ibin,icv) / nsamples;
             double  m2hicf      = Accu->GetData("M2HICF",ibin,icv);
@@ -148,6 +151,30 @@ double CABFProxy_dH::GetValue(int ibin,int icv,EProxyRealm realm) const
         break;
     // -------------------
         case(ABF_MICFP): {
+            double  nsamples = Accu->GetData("NTDS",ibin);
+            double  micf     = Accu->GetData("MICFP",ibin,icv);
+            double  m2icf    = Accu->GetData("M2ICFP",ibin,icv);
+
+            if( nsamples <= 0 ) return(value);
+
+            switch(realm){
+                // -------------------
+                case(E_PROXY_VALUE):
+                    return( micf );
+                // -------------------
+                case(E_PROXY_SIGMA):
+                    return( sqrt(m2icf / nsamples) );
+                // -------------------
+                case(E_PROXY_ERROR):
+                    return( sqrt(m2icf * ncorr) / nsamples );
+                // -------------------
+                default:
+                    RUNTIME_ERROR("unsupported realm");
+            }
+        }
+        break;
+    // -------------------
+        case(ABF_MICFPA): {
             double  nsamples = Accu->GetData("NTDS",ibin);
             double  micf     = Accu->GetData("MICFPA",ibin,icv);
             double  m2icf    = Accu->GetData("M2ICFPA",ibin,icv);

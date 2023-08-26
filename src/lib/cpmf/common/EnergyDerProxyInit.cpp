@@ -33,7 +33,7 @@ CEnergyDerProxyPtr CEnergyDerProxyInit::InitProxy(const CSmallString& realm,CPMF
 {
     CEnergyDerProxyPtr lproxy;
 
-    if( realm == "dG" ){
+    if( realm == "dG/dx" ){
         if( CABFProxy_dG::IsCompatible(accu) ){
             lproxy    = CABFProxy_dG_Ptr(new CABFProxy_dG);
         } else if (CCSTProxy_dG::IsCompatible(accu) ) {
@@ -44,7 +44,7 @@ CEnergyDerProxyPtr CEnergyDerProxyInit::InitProxy(const CSmallString& realm,CPMF
             RUNTIME_ERROR(error);
         }
 // -----------------------------------------------
-    } else if ( realm == "ICFP" ) {
+    } else if ( realm == "ICFP/dx" ) {
         if( CABFProxy_dH::IsCompatible(accu) ){
             CABFProxy_dH_Ptr proxy = CABFProxy_dH_Ptr(new CABFProxy_dH);
             proxy->SetType(ABF_MICFP);
@@ -55,7 +55,18 @@ CEnergyDerProxyPtr CEnergyDerProxyInit::InitProxy(const CSmallString& realm,CPMF
             RUNTIME_ERROR(error);
         }
 // -----------------------------------------------
-    } else if ( realm == "dH" ) {
+    } else if ( realm == "ICFPA/dx" ) {
+        if( CABFProxy_dH::IsCompatible(accu) ){
+            CABFProxy_dH_Ptr proxy = CABFProxy_dH_Ptr(new CABFProxy_dH);
+            proxy->SetType(ABF_MICFPA);
+            lproxy = proxy;
+        } else {
+            CSmallString error;
+            error << "incompatible method: " << accu->GetMethod() << " with requested realm: " <<  realm;
+            RUNTIME_ERROR(error);
+        }
+// -----------------------------------------------
+    } else if ( realm == "dH/dx" ) {
         if( CABFProxy_dH::IsCompatible(accu) ){
             CABFProxy_dH_Ptr proxy = CABFProxy_dH_Ptr(new CABFProxy_dH);
             proxy->SetType(ABF_dH);
@@ -66,7 +77,7 @@ CEnergyDerProxyPtr CEnergyDerProxyInit::InitProxy(const CSmallString& realm,CPMF
             RUNTIME_ERROR(error);
         }
 // -----------------------------------------------
-    } else if ( (realm == "-TdS") || (realm == "mTdS") ) {
+    } else if ( (realm == "-TdS/dx") || (realm == "mTdS/dx") ) {
         if( CABFProxy_mTdS::IsCompatible(accu) ){
             lproxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
         } else if (CCSTProxy_mTdS::IsCompatible(accu) ) {
@@ -77,7 +88,7 @@ CEnergyDerProxyPtr CEnergyDerProxyInit::InitProxy(const CSmallString& realm,CPMF
             RUNTIME_ERROR(error);
         }
 // -----------------------------------------------
-    } else if ( (realm == "-TdS_HP") || (realm == "mTdS_HP") ) {
+    } else if ( (realm == "-TdS_HP/dx") || (realm == "mTdS_HP/dx") ) {
         if( CABFProxy_mTdS::IsCompatible(accu) ){
             CABFProxy_mTdS_Ptr proxy = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
             proxy->SetType(ABF_TdS_HP);
@@ -92,7 +103,7 @@ CEnergyDerProxyPtr CEnergyDerProxyInit::InitProxy(const CSmallString& realm,CPMF
             RUNTIME_ERROR(error);
         }
 // -----------------------------------------------
-    } else if ( (realm == "-TdS_HR") || (realm == "mTdS_HR") ) {
+    } else if ( (realm == "-TdS_HR/dx") || (realm == "mTdS_HR/dx") ) {
         if( CABFProxy_mTdS::IsCompatible(accu) ){
             CABFProxy_mTdS_Ptr proxy = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
             proxy->SetType(ABF_TdS_HR);
@@ -107,7 +118,7 @@ CEnergyDerProxyPtr CEnergyDerProxyInit::InitProxy(const CSmallString& realm,CPMF
             RUNTIME_ERROR(error);
         }
 // -----------------------------------------------
-    } else if ( (realm == "-TdS_HK") || (realm == "mTdS_HK") ) {
+    } else if ( (realm == "-TdS_HK/dx") || (realm == "mTdS_HK/dx") ) {
         if( CABFProxy_mTdS::IsCompatible(accu) ){
             CABFProxy_mTdS_Ptr proxy = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
             proxy->SetType(ABF_TdS_HK);
@@ -122,7 +133,7 @@ CEnergyDerProxyPtr CEnergyDerProxyInit::InitProxy(const CSmallString& realm,CPMF
             RUNTIME_ERROR(error);
         }
 // -----------------------------------------------
-    } else if ( (realm == "-TdS_HV") || (realm == "mTdS_HV") ) {
+    } else if ( (realm == "-TdS_HV/dx") || (realm == "mTdS_HV/dx") ) {
         if( CABFProxy_mTdS::IsCompatible(accu) ){
             CABFProxy_mTdS_Ptr proxy = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
             proxy->SetType(ABF_TdS_HV);
@@ -133,22 +144,22 @@ CEnergyDerProxyPtr CEnergyDerProxyInit::InitProxy(const CSmallString& realm,CPMF
             RUNTIME_ERROR(error);
         }
 // -----------------------------------------------
-    } else if ( (realm == "-TdS_BP") || (realm == "mTdS_BP") ) {
+    } else if ( (realm == "-TdS_BP/dx") || (realm == "mTdS_BP/dx") ) {
         CABFProxy_mTdS_Ptr proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
         proxy->SetType(ABF_TdS_BP);
         lproxy = proxy;
 // -----------------------------------------------
-    } else if ( (realm == "-TdS_BR") || (realm == "mTdS_BR") ) {
+    } else if ( (realm == "-TdS_BR/dx") || (realm == "mTdS_BR/dx") ) {
         CABFProxy_mTdS_Ptr proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
         proxy->SetType(ABF_TdS_BR);
         lproxy = proxy;
 // -----------------------------------------------
-    } else if ( (realm == "-TdS_BK") || (realm == "mTdS_BK") ) {
+    } else if ( (realm == "-TdS_BK/dx") || (realm == "mTdS_BK/dx") ) {
         CABFProxy_mTdS_Ptr proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
         proxy->SetType(ABF_TdS_BK);
         lproxy = proxy;
 // -----------------------------------------------
-    } else if ( (realm == "-TdS_BV") || (realm == "mTdS_BV") ) {
+    } else if ( (realm == "-TdS_BV/dx") || (realm == "mTdS_BV/dx") ) {
         CABFProxy_mTdS_Ptr proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
         proxy->SetType(ABF_TdS_BV);
         lproxy = proxy;
