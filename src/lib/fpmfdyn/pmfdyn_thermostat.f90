@@ -104,7 +104,10 @@ subroutine init_thermostat_subsystem(x,v)
     write(PMF_OUT,150) NOF
 
     ! set up random generator
-    call RLUXGO(3,Iseed,0,0)
+    if( Iseed .ne. 0 ) then
+        CALL RANDOM_SEED()
+    end if
+
 
     if( (restart .eqv. .false.) .or. (Tmaxw .ge. 0) ) then
         call generate_MB_velocities(x,v)
@@ -554,7 +557,7 @@ real(PMFDP) function rand_uniform()
     real(PMFSP)   vector(1)
     ! --------------------------------------------------------------------------
 
-    call RANLUX(vector,1)
+    CALL RANDOM_NUMBER(vector)
     rand_uniform = vector(1)
 
 end function rand_uniform

@@ -111,11 +111,6 @@ SET(NETLIB_LIB_NAME netlib)
 # setup BLAS/LAPACK either from MKL or from fallback netlib blas and lapack
 FIND_PACKAGE(BlasLapack)
 
-# runlux =====================
-SET(RANLUX_ROOT ${DEVELOPMENT_ROOT}/thirdparty/ranlux/1.0)
-LINK_DIRECTORIES(${RANLUX_ROOT}/lib)
-SET(RANLUX_LIB_NAME franlux)
-
 # CSPARSE ======================
 SET(CSPARSE_ROOT ${DEVELOPMENT_ROOT}/thirdparty/csparse/2.2.1)
 INCLUDE_DIRECTORIES(${CSPARSE_ROOT}/src/lib/csparse)

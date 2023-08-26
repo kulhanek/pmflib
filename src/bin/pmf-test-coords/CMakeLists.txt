@@ -23,7 +23,6 @@ TARGET_LINK_LIBRARIES(pmf-test-cvs
         ${LAPACK_LIB_NAME}
         ${BLAS_LIB_NAME}
         ${SCIMAFIC_FLIB_NAME}
-        ${RANLUX_LIB_NAME}
         ${CPMF_LIBRARIES}
         )
 

@@ -776,7 +776,7 @@ real(PMFDP) function rand_uniform()
     real(PMFSP)   vector(1)
     ! --------------------------------------------------------------------------
 
-    call RANLUX(vector,1)
+    CALL RANDOM_NUMBER(vector)
     rand_uniform = vector(1)
 
 end function rand_uniform
