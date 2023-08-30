@@ -282,6 +282,34 @@ double CGPRKernel::GetKernelValue(const CSimpleVector<double>& ip,const CSimpleV
 //------------------------------------------------------------------------------
 //==============================================================================
 
+double CGPRKernel::GetKernelIntI(const CSimpleVector<double>& ip,const CSimpleVector<double>& jp)
+{
+    if( NumOfCVs != 1 ){
+        RUNTIME_ERROR("not implemented");
+    }
+
+    double kint = 0.0;
+
+    // get kernel value
+    switch(Kernel){
+    case(EGPRK_ARDSE):{
+        double du = Accu->GetCV(0)->GetDifference(ip[0],jp[0]);
+        double dd = 2.0*CVLengths2[0];
+        kint = -0.5*sqrt(M_PI)*sqrt(dd)*erf(-du/sqrt(dd));
+        }
+        break;
+    default:
+        RUNTIME_ERROR("not implemented");
+        break;
+    }
+
+    return(kint);
+}
+
+//==============================================================================
+//------------------------------------------------------------------------------
+//==============================================================================
+
 void CGPRKernel::GetKernelDerI(const CSimpleVector<double>& ip,const CSimpleVector<double>& jp,CSimpleVector<double>& kder)
 {
     if( UseNumDiff ){
@@ -676,12 +704,14 @@ double CGPRKernel::GetKernelValueWFacDerNum(const CSimpleVector<double>& ip,cons
 
 void CGPRKernel::GetKernelDerIWFacDerAna(const CSimpleVector<double>& ip,const CSimpleVector<double>& jp,size_t cv,CSimpleVector<double>& kder)
 {
+    RUNTIME_ERROR("not implemented");
 }
 
 //------------------------------------------------------------------------------
 
 void CGPRKernel::GetKernelDerIWFacDerNum(const CSimpleVector<double>& ip,const CSimpleVector<double>& jp,size_t cv,CSimpleVector<double>& kder)
 {
+    RUNTIME_ERROR("not implemented");
 }
 
 //==============================================================================
@@ -690,13 +720,13 @@ void CGPRKernel::GetKernelDerIWFacDerNum(const CSimpleVector<double>& ip,const C
 
 void CGPRKernel::GetKernelDerJWFacDerAna(const CSimpleVector<double>& ip,const CSimpleVector<double>& jp,size_t cv,CSimpleVector<double>& kder)
 {
-
+    RUNTIME_ERROR("not implemented");
 }
 //------------------------------------------------------------------------------
 
 void CGPRKernel::GetKernelDerJWFacDerNum(const CSimpleVector<double>& ip,const CSimpleVector<double>& jp,size_t cv,CSimpleVector<double>& kder)
 {
-
+    RUNTIME_ERROR("not implemented");
 }
 
 //==============================================================================

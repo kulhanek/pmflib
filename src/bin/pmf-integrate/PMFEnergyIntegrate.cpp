@@ -274,10 +274,6 @@ bool CPMFEnergyIntegrate::Run(void)
 
         integrator.SetOutputES(FES);
         integrator.SetInputEnergyDerProxy(DerProxies[0]);
-
-        if( Options.IsOptGlobalMinSet() ){
-            integrator.SetGlobalMin(Options.GetOptGlobalMin());
-        }
     }
 
 // sampling limit -------------------------------
@@ -633,10 +629,6 @@ bool CPMFEnergyIntegrate::IntegrateForEcut(void)
 
         integrator.SetOutputES(FES);
         integrator.SetInputEnergyDerProxy(DerProxies[0]);
-
-        if( Options.IsOptGlobalMinSet() ){
-            integrator.SetGlobalMin(Options.GetOptGlobalMin());
-        }
 
         if(integrator.Integrate(vout) == false) {
             ES_ERROR("unable to integrate ABF accumulator");

@@ -461,6 +461,19 @@ void CGPRHyprms::LoadGPRHyprms(const CSmallString& name)
             }
             cvind--; // transform to 0-based indexing
             SetWFac(cvind,value);
+        } else if( key.find("NCorr#") != string::npos ) {
+            std::replace( key.begin(), key.end(), '#', ' ');
+            stringstream kstr(key);
+            string swfac;
+            int    cvind;
+            kstr >> swfac >> cvind;
+            if( ! kstr ){
+                CSmallString error;
+                error << "GPR hyperparameters file, unable to decode ncorr key: " << key.c_str();
+                RUNTIME_ERROR(error);
+            }
+            cvind--; // transform to 0-based indexing
+            SetNCorr(cvind,value);
         } else if( key.find("SigmaN2#") != string::npos ) {
             std::replace( key.begin(), key.end(), '#', ' ');
             stringstream kstr(key);
