@@ -129,13 +129,11 @@ private:
     void InitGPREngine(void);
     void InitGPREngine_dF_dx(void);
     void InitGPREngine_dF(void);
-    void InitGPREngine_GHS_dH(void);
     void InitGPREngine_GHS_dH_C(void);
 
     void CreateGPREngine(void);
     void CreateGPREngine_dF_dx(void);
     void CreateGPREngine_dF(void);
-    void CreateGPREngine_GHS_dH(void);
     void CreateGPREngine_GHS_dH_C(void);
 
     double  GetTarget(void);

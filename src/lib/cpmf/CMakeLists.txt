@@ -26,7 +26,6 @@ SET(CPMF_METHODS_SRC
 
     # PMF
         methods/pmf/PMFProxy_dH.cpp
-        methods/pmf/GHSIntegratorGPR0B.cpp
         methods/pmf/GHSIntegratorGPR0C.cpp
 
     # ABF
