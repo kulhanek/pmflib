@@ -74,8 +74,6 @@ public:
     CSO_OPT(CSmallString,NCorrEnabled)
     CSO_OPT(CSmallString,SigmaN2Enabled)
 
-    CSO_OPT(bool,EnableConstraints)
-
     CSO_OPT(bool,Numeric)
     CSO_OPT(int,NOptSteps)
     CSO_OPT(int,NumOfResets)
@@ -303,15 +301,6 @@ public:
                 "SPEC",                           /* parameter name */
                 "Enable optimization of SigmaN2 hyperparamters. Flags are specified in the form SigmaN2(1)Enabled[xSigmaN2(1)Enabledx...] with F and T for disabled and enabled, respectively. "
                 "The last value pads the rest.")   /* option description */
-    //----------------------------------------------------------------------
-    CSO_MAP_OPT(bool,                           /* option type */
-                EnableConstraints,                        /* option name */
-                false,                          /* default value */
-                false,                          /* is option mandatory */
-                0,                           /* short option name */
-                "constraints",                      /* long option name */
-                NULL,                           /* parameter name */
-                "Enable constraints in multitask GPR, e.g., impose dG(x)/dx - dH(x)/dx - (-TdS(x)/dx) = 0 constraints.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(bool,                           /* option type */
                 Numeric,                        /* option name */

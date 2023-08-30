@@ -48,6 +48,10 @@ CEnergySurface::CEnergySurface(void)
 
     EnergyFConv = 1.0;
     EnergyUnit = "kcal/mol";
+
+    GlobalMinSet    = false;
+    GPosSet         = false;
+    GPosBin         = 0;
 }
 
 //------------------------------------------------------------------------------
@@ -671,6 +675,139 @@ void CEnergySurface::ReduceIPoint(const std::vector<bool>& keepcvs,CSimpleVector
             ridx[j] = midx[i];
             j++;
         }
+    }
+}
+
+//==============================================================================
+//------------------------------------------------------------------------------
+//==============================================================================
+
+void CEnergySurface::SetGlobalMin(const CSmallString& spec)
+{
+    if( NumOfCVs == 0 ){
+        RUNTIME_ERROR("accumulator is not set for SetGlobalMin");
+    }
+
+    GlobalMinSet = true;
+    string sspec(spec);
+
+    // remove "x" from the string
+    replace (sspec.begin(), sspec.end(), 'x' , ' ');
+
+    // parse values of CVs
+    GPos.CreateVector(NumOfCVs);
+    stringstream str(sspec);
+    for(int i=0; i < NumOfCVs; i++){
+        double val;
+        str >> val;
+        if( ! str ){
+            CSmallString error;
+            error << "unable to decode CV value for position: " << i+1;
+            RUNTIME_ERROR(error);
+        }
+        GPos[i] = GetCV(i)->GetIntValue(val);
+    }
+
+    GPosSet = true;
+}
+
+//------------------------------------------------------------------------------
+
+void CEnergySurface::SetGlobalMin(const CSimpleVector<double>& pos)
+{
+    GlobalMinSet = true;
+    GPos = pos;
+    GPosSet = true;
+}
+
+//------------------------------------------------------------------------------
+
+bool CEnergySurface::IsGlobalMinSet(void)
+{
+    return(GPosSet);
+}
+
+//------------------------------------------------------------------------------
+
+CSimpleVector<double> CEnergySurface::GetGlobalMinPos(void)
+{
+    if( GPosSet == false ){
+        RUNTIME_ERROR("no global min set")
+    }
+    return(GPos);
+}
+
+//------------------------------------------------------------------------------
+
+int CEnergySurface::GetGlobalMinBin(void)
+{
+    if( GPosSet == false ){
+        RUNTIME_ERROR("no global min set")
+    }
+    return(GPosBin);
+}
+
+//------------------------------------------------------------------------------
+
+double CEnergySurface::GetGlobalMinEnergy(void)
+{
+   return(GetEnergy(GPosBin));
+}
+
+//------------------------------------------------------------------------------
+
+void CEnergySurface::FindGlobalMinBin(void)
+{
+    // find the closest bin
+    CSimpleVector<double>   pos;
+    pos.CreateVector(NumOfCVs);
+    double minv = 0.0;
+    GPosBin = 0;
+    for(int ibin=0; ibin < NumOfBins; ibin++){
+        GetPoint(ibin,pos);
+        double dist2 = 0.0;
+        for(int cv=0; cv < NumOfCVs; cv++){
+            dist2 = dist2 + (pos[cv]-GPos[cv])*(pos[cv]-GPos[cv]);
+        }
+        if( ibin == 0 ){
+            minv = dist2;
+            GPosBin = 0;
+        }
+        if( dist2 < minv ){
+            minv = dist2;
+            GPosBin = ibin;
+        }
+    }
+
+    GetPoint(GPosBin,GPos);
+    GPosSet = true;
+}
+
+//------------------------------------------------------------------------------
+
+void CEnergySurface::FindGlobalMin(void)
+{
+    GPosSet = false;
+    GPos.CreateVector(NumOfCVs);
+    bool   first = true;
+    double glb_min = 0.0;
+    for(int ibin=0; ibin < NumOfBins; ibin++){
+        int samples = GetNumOfSamples(ibin);
+        if( samples < -1 ) continue;    // include sampled areas and holes but exclude extrapolated areas
+        double value = GetEnergy(ibin);
+        if( first || (glb_min > value) ){
+            glb_min = value;
+            first = false;
+            GPosBin = ibin;
+            GetPoint(ibin,GPos);
+            GPosSet = true;
+        }
+    }
+
+    if( GPosSet == false ){
+        // fallback
+        GetPoint(0,GPos);
+        GPosSet = true;
     }
 }
 

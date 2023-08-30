@@ -87,12 +87,6 @@ int CPMFEnergyIntOptions::CheckOptions(void)
         }
     }
 
-    if( GetOptSigmaF2() <= 0 ){
-        if(IsError == false) fprintf(stderr,"\n");
-        fprintf(stderr,"%s: sigmaf2 has to be greater than zero, but %f is provided\n", (const char*)GetProgramName(),GetOptSigmaF2());
-        IsError = true;
-    }
-
     if( (GetOptRCond() != -1) && (GetOptRCond() < 0) ){
         if(IsError == false) fprintf(stderr,"\n");
         fprintf(stderr,"%s: rcond has to be either -1 or greater than zero, but %f is provided\n", (const char*)GetProgramName(),GetOptRCond());
@@ -307,18 +301,7 @@ int CPMFEnergyIntOptions::CheckOptions(void)
                 (const char*)GetProgramName());
         IsError = true;
     }
-//    if( IsOptGlobalMinSet() && ((GetOptMethod() != "rbf")&&(GetOptMethod() != "gpr")) ){
-//        if(IsError == false) fprintf(stderr,"\n");
-//        fprintf(stderr,"%s: --globalmin can be combined only with RBF or GPR\n",
-//                (const char*)GetProgramName());
-//        IsError = true;
-//    }
-    if( IsOptUseRealGlobalMinSet() && ((GetOptMethod() != "rbf")&&(GetOptMethod() != "gpr")) ){
-        if(IsError == false) fprintf(stderr,"\n");
-        fprintf(stderr,"%s: --userealglbmin can be combined only with RBF or GPR\n",
-                (const char*)GetProgramName());
-        IsError = true;
-    }
+
     if( IsOptUseOldRFDSet() && (GetOptMethod() != "rfd") ){
         if(IsError == false) fprintf(stderr,"\n");
         fprintf(stderr,"%s: --oldrfd can be combined only with RFD\n",

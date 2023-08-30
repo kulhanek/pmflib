@@ -66,7 +66,6 @@ private:
     CSimpleVector<int>                  FFSeeds;
     CSimpleVector<int>                  IPos;
     CSimpleVector<int>                  TPos;
-    CSimpleVector<double>               GPos;
     int                                 State;
 
     // output ------------------------------------

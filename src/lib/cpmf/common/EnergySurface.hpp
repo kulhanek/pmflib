@@ -165,6 +165,31 @@ public:
     /// convert point to bin
     int IPoint2Bin(const CSimpleVector<int>& point);
 
+// global minimum --------------------------------------------------------------
+    /// set position of global minimum - spec in real units
+    void SetGlobalMin(const CSmallString& spec);
+
+    /// set position of global minimum - in internal units
+    void SetGlobalMin(const CSimpleVector<double>& pos);
+
+    /// is global minimum set
+    bool IsGlobalMinSet(void);
+
+    /// get position of global minima - in internal units
+    CSimpleVector<double> GetGlobalMinPos(void);
+
+    /// get position of global minima - bin
+    int GetGlobalMinBin(void);
+
+    /// get global minimum energy
+    double GetGlobalMinEnergy(void);
+
+    /// find the closest bin to provided global min
+    void FindGlobalMinBin(void);
+
+    /// find global minimum
+    void FindGlobalMin(void);
+
 // operators ------------------------------------------------------------------
     /// add energy surface
     void AddFES(CEnergySurfacePtr source);
@@ -192,6 +217,11 @@ private:
     CSimpleVector<double>           Error;          // error array
     CSimpleVector<int>              Samples;        // number of samples
     double                          SLevel;         // sigma level for error calculation
+
+    bool                            GlobalMinSet;   // true if gpos set by SetGlobalMin()
+    CSimpleVector<double>           GPos;           // global position, either detected or use
+    bool                            GPosSet;        // true is gpos set by any means, either SetGlobalMin() or from FES
+    int                             GPosBin;
 };
 
 //------------------------------------------------------------------------------

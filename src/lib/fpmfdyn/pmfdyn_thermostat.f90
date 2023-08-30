@@ -108,7 +108,6 @@ subroutine init_thermostat_subsystem(x,v)
         CALL RANDOM_SEED()
     end if
 
-
     if( (restart .eqv. .false.) .or. (Tmaxw .ge. 0) ) then
         call generate_MB_velocities(x,v)
     end if

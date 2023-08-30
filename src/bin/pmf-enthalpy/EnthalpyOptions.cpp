@@ -79,12 +79,6 @@ int CEnthalpyOptions::CheckOptions(void)
         IsError = true;
     }
 
-    if( GetOptSigmaF2() <= 0 ){
-        if(IsError == false) fprintf(stderr,"\n");
-        fprintf(stderr,"%s: sigmaf2 has to be greater than zero, but %f is provided\n", (const char*)GetProgramName(),GetOptSigmaF2());
-        IsError = true;
-    }
-
     if( IsOptWFacSet() && (GetOptMethod() != "gpr") ){
         if(IsError == false) fprintf(stderr,"\n");
         fprintf(stderr,"%s: --wfac can be set only for GPR method\n",
@@ -95,6 +89,13 @@ int CEnthalpyOptions::CheckOptions(void)
     if( IsOptNCorrSet() && (GetOptMethod() != "gpr") ){
         if(IsError == false) fprintf(stderr,"\n");
         fprintf(stderr,"%s: --ncorr can be set only for GPR method\n",
+                (const char*)GetProgramName());
+        IsError = true;
+    }
+
+    if( IsOptSigmaN2Set() && (GetOptMethod() != "gpr") ){
+        if(IsError == false) fprintf(stderr,"\n");
+        fprintf(stderr,"%s: --sigman2 can be set only for GPR method\n",
                 (const char*)GetProgramName());
         IsError = true;
     }

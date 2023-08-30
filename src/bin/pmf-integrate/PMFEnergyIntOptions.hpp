@@ -71,9 +71,9 @@ public:
     CSO_OPT(bool,SkipLastEnergyLimit)
     CSO_OPT(double,MFMaxZScore)
     CSO_OPT(int,MFZTestPasses)
-    CSO_OPT(double,SigmaF2)
-    CSO_OPT(double,NCorr)
+    CSO_OPT(CSmallString,SigmaF2)
     CSO_OPT(CSmallString,WFac)
+    CSO_OPT(CSmallString,NCorr)
     CSO_OPT(CSmallString,SigmaN2)
     CSO_OPT(CSmallString,LoadHyprms)
     CSO_OPT(CSmallString,RFac)
@@ -83,7 +83,6 @@ public:
     CSO_OPT(bool,GlueHoles)
     CSO_OPT(bool,Periodicity)
     CSO_OPT(CSmallString,GlobalMin)
-    CSO_OPT(bool,UseRealGlobalMin)
     CSO_OPT(double,Offset)
     CSO_OPT(bool,WithError)
     CSO_OPT(bool,NoEnergy)
@@ -248,18 +247,18 @@ public:
                 "NUMBER",                           /* parameter name */
                 "RBF+GPR: Repeat z-score test for mean force errrors NUMBER times.")   /* option description */
     //----------------------------------------------------------------------
-    CSO_MAP_OPT(double,                           /* option type */
+    CSO_MAP_OPT(CSmallString,                           /* option type */
                 SigmaF2,                        /* option name */
-                15.0,                          /* default value */
+                "15.0",                          /* default value */
                 false,                          /* is option mandatory */
                 's',                           /* short option name */
                 "sigmaf2",                      /* long option name */
                 "NUMBER",                           /* parameter name */
                 "GPR: Variance of the reconstructed free energy surface (signal variance).")   /* option description */
     //----------------------------------------------------------------------
-    CSO_MAP_OPT(double,                           /* option type */
+    CSO_MAP_OPT(CSmallString,                           /* option type */
                 NCorr,                        /* option name */
-                0.0,                          /* default value */
+                "0.0",                          /* default value */
                 false,                          /* is option mandatory */
                 'c',                           /* short option name */
                 "ncorr",                      /* long option name */
@@ -359,15 +358,6 @@ public:
                 "globalmin",                      /* long option name */
                 "SPEC",                           /* parameter name */
                 "RFD+RBF+GPR: position of global minimum provided as a single string in the form CV1xCV2x...xCVn (relevant for error determination), if not set the position is determined automatically.")   /* option description */
-    //----------------------------------------------------------------------
-    CSO_MAP_OPT(bool,                           /* option type */
-                UseRealGlobalMin,                        /* option name */
-                NULL,                          /* default value */
-                false,                          /* is option mandatory */
-                '\0',                           /* short option name */
-                "userealglbmin",                      /* long option name */
-                NULL,                           /* parameter name */
-                "RBF+GPR: ignore --globalmin in the final integration step")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(double,                           /* option type */
                 Offset,                        /* option name */

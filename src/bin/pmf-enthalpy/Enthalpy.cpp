@@ -181,6 +181,10 @@ bool CEnthalpy::Run(void)
     HES->Allocate(Accumulators[0]);
     HES->SetSLevel(Options.GetOptSLevel());
 
+    if( Options.IsOptGlobalMinSet() ){
+        HES->SetGlobalMin(Options.GetOptGlobalMin());
+    }
+
     if( Options.GetOptMethod() == "raw" ){
         if( Accumulators.size() > 1 ){
             CSmallString error;
@@ -188,7 +192,8 @@ bool CEnthalpy::Run(void)
             ES_ERROR(error);
             return(false);
         }
-        Accumulators[0]->SetNCorr(Options.GetOptNCorr());
+// FIXME
+//        Accumulators[0]->SetNCorr(Options.GetOptNCorr());
         vout << endl;
         vout << format("%02d:Raw absolute enthalpy")%State << endl;
         GetRawEnthalpy();
@@ -221,15 +226,12 @@ bool CEnthalpy::Run(void)
             entgpr.LoadGPRHyprms(Options.GetOptLoadHyprms());
         } else {
             entgpr.SetSigmaF2(Options.GetOptSigmaF2());
-            entgpr.SetNCorr(Options.GetOptNCorr());
             entgpr.SetWFac(Options.GetOptWFac());
+            entgpr.SetNCorr(Options.GetOptNCorr());
+            entgpr.SetSigmaN2(Options.GetOptSigmaN2());
         }
 
         entgpr.SetIncludeError(Options.GetOptWithError());
-
-        if( Options.IsOptGlobalMinSet() ){
-            entgpr.SetGlobalMin(Options.GetOptGlobalMin());
-        }
 
         entgpr.SetRCond(Options.GetOptRCond());
         entgpr.SetLAMethod(Options.GetOptLAMethod());

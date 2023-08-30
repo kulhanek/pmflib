@@ -50,8 +50,6 @@ using namespace boost::algorithm;
 
 CGHSIntegratorGPR0A::CGHSIntegratorGPR0A(void)
 {
-    Accu                = NULL;
-
     GDerProxy           = NULL;
     HDerProxy           = NULL;
     SDerProxy           = NULL;
@@ -61,24 +59,10 @@ CGHSIntegratorGPR0A::CGHSIntegratorGPR0A(void)
 
     GPRSize             = 0;
     NumOfUsedBins       = 0;
-    NumOfCVs            = 0;
-    NumOfBins           = 0;
 
     ConstrainedTK       = false;
     IncludeError        = false;
     NoEnergy            = false;
-    GlobalMinSet        = false;
-    GPosSet             = false;
-    GPosBin             = 0;
-
-    UseNumDiff          = false;
-    Method              = EGPRLA_LU;
-    Kernel              = EGPRK_ARDSE;
-
-    NumOfThreads        = 1;
-
-    UseInv              = false;
-    NeedInv             = false;
     FastErrors          = true;
 
     KSInverted          = false;
@@ -98,19 +82,12 @@ void CGHSIntegratorGPR0A::SetAccumulator(CPMFAccumulatorPtr accu)
 {
     if( accu == NULL ) return;                 // no-accu
 
-    if( NumOfCVs == 0 ){
-        NumOfCVs  = (size_t)accu->GetNumOfCVs();
-        NumOfBins = (size_t)accu->GetNumOfBins();
-    }
+    CGPRKernel::SetAccumulator(accu);
 
-    if( NumOfCVs != (size_t)accu->GetNumOfCVs() ){
-        RUNTIME_ERROR("inconsistent NumOfCVs");
-    }
-    if( NumOfBins != (size_t)accu->GetNumOfBins() ){
-        RUNTIME_ERROR("inconsistent NumOfBins");
-    }
-
-    Accu = accu;
+    NumOfSigmaF2 = 3;
+    NumOfCoVar   = 3;
+    NumOfNCorr   = 0;
+    NumOfSigmaN2 = 3*NumOfCVs;
 }
 
 //------------------------------------------------------------------------------
@@ -238,355 +215,6 @@ void CGHSIntegratorGPR0A::SetOutputSES(CEnergySurfacePtr p_surf)
 
 //------------------------------------------------------------------------------
 
-void CGHSIntegratorGPR0A::SetSigmaF2(const CSmallString& spec)
-{
-    string          sspec(spec);
-    vector<string>  ssigmaf2;
-
-    split(ssigmaf2,sspec,is_any_of("x"),token_compress_on);
-
-    if( ssigmaf2.size() > 3){
-        CSmallString error;
-        error << "too many sigmaf2 (" << ssigmaf2.size() << ") than required (" << 3 << ")";
-        RUNTIME_ERROR(error);
-    }
-
-    SigmaF2.CreateVector(3);
-
-    // parse values of sigmaf2
-    double last_sigmaf2 = 0.1;
-    for(size_t i=0; i < ssigmaf2.size(); i++){
-        stringstream str(ssigmaf2[i]);
-        str >> last_sigmaf2;
-        if( ! str ){
-            CSmallString error;
-            error << "unable to decode sigmaf2 value for position: " << i+1;
-            RUNTIME_ERROR(error);
-        }
-        SigmaF2[i] = last_sigmaf2;
-    }
-
-    // pad the rest with the last value
-    for(size_t i=ssigmaf2.size(); i < 3; i++){
-        SigmaF2[i] = last_sigmaf2;
-    }
-}
-
-//------------------------------------------------------------------------------
-
-void CGHSIntegratorGPR0A::SetSigmaF2(CSimpleVector<double>& sigmaf2)
-{
-    if( sigmaf2.GetLength() != 3 ){
-        RUNTIME_ERROR("dimmension inconsistent in the source and target");
-    }
-    SigmaF2 = sigmaf2;
-}
-
-//------------------------------------------------------------------------------
-
-void CGHSIntegratorGPR0A::SetSigmaF2(size_t cvind, double value)
-{
-    if( cvind >= 3 ){
-        RUNTIME_ERROR("cvind out-of-range");
-    }
-    // is SigmaF2 initialized?
-    if( SigmaF2.GetLength() == 0 ){
-        SigmaF2.CreateVector(3);
-    }
-    SigmaF2[cvind] = value;
-}
-
-//------------------------------------------------------------------------------
-
-void CGHSIntegratorGPR0A::SetCoVar(const CSmallString& spec)
-{
-    string          sspec(spec);
-    vector<string>  scovar;
-
-    split(scovar,sspec,is_any_of("x"),token_compress_on);
-
-    if( scovar.size() > 3){
-        CSmallString error;
-        error << "too many covariances (" << scovar.size() << ") than required (" << 3 << ")";
-        RUNTIME_ERROR(error);
-    }
-
-    CoVar.CreateVector(3);
-
-    // parse values of scovar
-    double last_covar = 0.1;
-    for(size_t i=0; i < scovar.size(); i++){
-        stringstream str(scovar[i]);
-        str >> last_covar;
-        if( ! str ){
-            CSmallString error;
-            error << "unable to decode scovar value for position: " << i+1;
-            RUNTIME_ERROR(error);
-        }
-        CoVar[i] = last_covar;
-    }
-
-    // pad the rest with the last value
-    for(size_t i=scovar.size(); i < 3; i++){
-        CoVar[i] = last_covar;
-    }
-}
-
-//------------------------------------------------------------------------------
-
-void CGHSIntegratorGPR0A::SetCoVar(CSimpleVector<double>& covar)
-{
-    if( covar.GetLength() != 3 ){
-        RUNTIME_ERROR("dimmension inconsistent in the source and target");
-    }
-    CoVar = covar;
-}
-
-//------------------------------------------------------------------------------
-
-void CGHSIntegratorGPR0A::SetCoVar(size_t cvind, double value)
-{
-    if( cvind >= 3 ){
-        RUNTIME_ERROR("cvind out-of-range");
-    }
-    // is CoVar initialized?
-    if( CoVar.GetLength() == 0 ){
-        CoVar.CreateVector(3);
-    }
-    CoVar[cvind] = value;
-}
-
-//------------------------------------------------------------------------------
-
-void CGHSIntegratorGPR0A::SetSigmaN2(const CSmallString& spec)
-{
-    if( NumOfCVs == 0 ){
-        RUNTIME_ERROR("accumulator is not set for SetSigmaN2");
-    }
-
-    string          sspec(spec);
-    vector<string>  ssigman2;
-
-    split(ssigman2,sspec,is_any_of("x"),token_compress_on);
-
-    if( ssigman2.size() > 3*NumOfCVs ){
-        CSmallString error;
-        error << "too many sigman2 (" << ssigman2.size() << ") than required (" << NumOfCVs << ")";
-        RUNTIME_ERROR(error);
-    }
-
-    SigmaN2.CreateVector(3*NumOfCVs);
-
-    // parse values of sigman2
-    double last_sigman2 = 0.1;
-    for(size_t i=0; i < ssigman2.size(); i++){
-        stringstream str(ssigman2[i]);
-        str >> last_sigman2;
-        if( ! str ){
-            CSmallString error;
-            error << "unable to decode sigman2 value for position: " << i+1;
-            RUNTIME_ERROR(error);
-        }
-        SigmaN2[i] = last_sigman2;
-    }
-
-    // pad the rest with the last value
-    for(size_t i=ssigman2.size(); i < 3*NumOfCVs; i++){
-        SigmaN2[i] = last_sigman2;
-    }
-}
-
-//------------------------------------------------------------------------------
-
-void CGHSIntegratorGPR0A::SetSigmaN2(CSimpleVector<double>& sigman2)
-{
-    if( NumOfCVs == 0 ){
-        RUNTIME_ERROR("FES is not set for SetSigmaN2");
-    }
-    if( sigman2.GetLength() != 3*NumOfCVs ){
-        RUNTIME_ERROR("ncvs inconsistent in the source and target");
-    }
-
-    SigmaN2 = sigman2;
-}
-
-//------------------------------------------------------------------------------
-
-void CGHSIntegratorGPR0A::SetSigmaN2(size_t cvind, double value)
-{
-    if( NumOfCVs == 0 ){
-        RUNTIME_ERROR("FES is not set for SetSigmaN2");
-    }
-    if( cvind >= 3*NumOfCVs ){
-        RUNTIME_ERROR("cvind out-of-range");
-    }
-    // is SigmaN2 initialized?
-    if( SigmaN2.GetLength() == 0 ){
-        SigmaN2.CreateVector(3*NumOfCVs);
-    }
-    SigmaN2[cvind] = value;
-}
-
-//------------------------------------------------------------------------------
-
-void CGHSIntegratorGPR0A::SetWFac(const CSmallString& spec)
-{
-    if( NumOfCVs == 0 ){
-        RUNTIME_ERROR("accumulator is not set for SetWFac");
-    }
-
-    string          sspec(spec);
-    vector<string>  swfacs;
-
-    split(swfacs,sspec,is_any_of("x"),token_compress_on);
-
-    if( swfacs.size() > NumOfCVs ){
-        CSmallString error;
-        error << "too many wfacs (" << swfacs.size() << ") than required (" << NumOfCVs << ")";
-        RUNTIME_ERROR(error);
-    }
-
-    WFac.CreateVector(NumOfCVs);
-
-    // parse values of wfac
-    double last_wfac = 3.0;
-    for(size_t i=0; i < swfacs.size(); i++){
-        stringstream str(swfacs[i]);
-        str >> last_wfac;
-        if( ! str ){
-            CSmallString error;
-            error << "unable to decode wfac value for position: " << i+1;
-            RUNTIME_ERROR(error);
-        }
-        WFac[i] = last_wfac;
-    }
-
-    // pad the rest with the last value
-    for(size_t i=swfacs.size(); i < NumOfCVs; i++){
-        WFac[i] = last_wfac;
-    }
-}
-
-//------------------------------------------------------------------------------
-
-void CGHSIntegratorGPR0A::SetWFac(CSimpleVector<double>& wfac)
-{
-    if( NumOfCVs == 0 ){
-        RUNTIME_ERROR("FES is not set for SetWFac");
-    }
-    if( wfac.GetLength() != NumOfCVs ){
-        RUNTIME_ERROR("ncvs inconsistent in the source and target");
-    }
-
-    WFac = wfac;
-}
-
-//------------------------------------------------------------------------------
-
-void CGHSIntegratorGPR0A::SetWFac(size_t cvind, double value)
-{
-    if( NumOfCVs == 0 ){
-        RUNTIME_ERROR("FES is not set for SetWFac");
-    }
-    if( cvind >= NumOfCVs ){
-        RUNTIME_ERROR("cvind out-of-range");
-    }
-    // is wfac initialized?
-    if( WFac.GetLength() == 0 ){
-        WFac.CreateVector(NumOfCVs);
-    }
-    WFac[cvind] = value;
-}
-
-//------------------------------------------------------------------------------
-
-void CGHSIntegratorGPR0A::LoadGPRHyprms(const CSmallString& name)
-{
-    ifstream fin;
-    fin.open(name);
-    if( ! fin ){
-        CSmallString error;
-        error << "unable to open file with GPR hyperparameters: " << name;
-        RUNTIME_ERROR(error);
-    }
-
-    string line;
-    while( getline(fin,line) ){
-        // is it comment?
-        if( (line.size() > 0) && (line[0] == '#') ) continue;
-
-        // parse line
-        stringstream str(line);
-        string key, buf;
-        double value;
-        str >> key >> buf >> value;
-        if( ! str ){
-            CSmallString error;
-            error << "GPR hyperparameters file, unable to decode line: " << line.c_str();
-            RUNTIME_ERROR(error);
-        }
-        if( key.find("SigmaF2#") != string::npos ) {
-            std::replace( key.begin(), key.end(), '#', ' ');
-            stringstream kstr(key);
-            string swfac;
-            int    cvind;
-            kstr >> swfac >> cvind;
-            if( ! kstr ){
-                CSmallString error;
-                error << "GPR hyperparameters file, unable to decode sigmaf2 key: " << key.c_str();
-                RUNTIME_ERROR(error);
-            }
-            cvind--; // transform to 0-based indexing
-            SetSigmaF2(cvind,value);
-        } else         if( key.find("CoVar#") != string::npos ) {
-            std::replace( key.begin(), key.end(), '#', ' ');
-            stringstream kstr(key);
-            string swfac;
-            int    cvind;
-            kstr >> swfac >> cvind;
-            if( ! kstr ){
-                CSmallString error;
-                error << "GPR hyperparameters file, unable to decode covar key: " << key.c_str();
-                RUNTIME_ERROR(error);
-            }
-            cvind--; // transform to 0-based indexing
-            SetCoVar(cvind,value);
-        } else if( key.find("WFac#") != string::npos ) {
-            std::replace( key.begin(), key.end(), '#', ' ');
-            stringstream kstr(key);
-            string swfac;
-            int    cvind;
-            kstr >> swfac >> cvind;
-            if( ! kstr ){
-                CSmallString error;
-                error << "GPR hyperparameters file, unable to decode wfac key: " << key.c_str();
-                RUNTIME_ERROR(error);
-            }
-            cvind--; // transform to 0-based indexing
-            SetWFac(cvind,value);
-        } else if( key.find("SigmaN2#") != string::npos ) {
-            std::replace( key.begin(), key.end(), '#', ' ');
-            stringstream kstr(key);
-            string swfac;
-            int    cvind;
-            kstr >> swfac >> cvind;
-            if( ! kstr ){
-                CSmallString error;
-                error << "GPR hyperparameters file, unable to decode sigman2 key: " << key.c_str();
-                RUNTIME_ERROR(error);
-            }
-            cvind--; // transform to 0-based indexing
-            SetSigmaN2(cvind,value);
-        } else {
-            CSmallString error;
-            error << "GPR hyperparameters file, unrecognized key: " << key.c_str();
-            RUNTIME_ERROR(error);
-        }
-    }
-}
-
-//------------------------------------------------------------------------------
-
 void CGHSIntegratorGPR0A::EnableConstraints(bool set)
 {
     ConstrainedTK = set;
@@ -604,140 +232,9 @@ void CGHSIntegratorGPR0A::SetIncludeError(bool set)
 
 //------------------------------------------------------------------------------
 
-void CGHSIntegratorGPR0A::SetUseNumDiff(bool set)
-{
-    UseNumDiff = set;
-}
-
-//------------------------------------------------------------------------------
-
 void CGHSIntegratorGPR0A::SetNoEnergy(bool set)
 {
     NoEnergy = set;
-}
-
-//------------------------------------------------------------------------------
-
-void CGHSIntegratorGPR0A::SetRCond(double rcond)
-{
-    RCond = rcond;
-}
-
-//------------------------------------------------------------------------------
-
-void CGHSIntegratorGPR0A::SetLAMethod(EGPRLAMethod set)
-{
-    Method = set;
-}
-
-//------------------------------------------------------------------------------
-
-void CGHSIntegratorGPR0A::SetLAMethod(const CSmallString& method)
-{
-    if( method == "svd" ){
-        SetLAMethod(EGPRLA_SVD);
-    } else if( method == "svd2" ){
-        SetLAMethod(EGPRLA_SVD2);
-    } else if( method == "lu" ) {
-        SetLAMethod(EGPRLA_LU);
-    } else if( method == "ll" ) {
-        SetLAMethod(EGPRLA_LL);
-    } else if( method == "default" ) {
-        SetLAMethod(EGPRLA_LU);
-    } else {
-        CSmallString error;
-        error << "Specified method '" << method << "' for linear algebra is not supported. "
-                 "Supported methods are: svd (simple driver), svd2 (conquer and divide driver), lu, ll (Choleskff decomposition), default (=lu)";
-        INVALID_ARGUMENT(error);
-    }
-}
-
-//------------------------------------------------------------------------------
-
-void CGHSIntegratorGPR0A::SetKernel(const CSmallString& kernel)
-{
-    if( kernel == "ardse" ){
-        Kernel = EGPRK_ARDSE;
-    } else if( kernel == "ardmc52" ) {
-        Kernel = EGPRK_ARDMC52;
-    } else if( kernel == "default" ) {
-        Kernel = EGPRK_ARDSE;
-    } else {
-        CSmallString error;
-        error << "Specified kernel '" << kernel << "' is not supported. "
-                 "Supported kernels are: ardse (ARD squared exponential), ardmc52 (ARD Matern class 5/2), default(=ardse)";
-        INVALID_ARGUMENT(error);
-    }
-}
-
-//------------------------------------------------------------------------------
-
-void CGHSIntegratorGPR0A::SetGlobalMin(const CSmallString& spec)
-{
-    if( NumOfCVs == 0 ){
-        RUNTIME_ERROR("accumulator is not set for SetGlobalMin");
-    }
-    if( GSurface == NULL ) {
-        RUNTIME_ERROR("FES is not set");
-    }
-
-    GlobalMinSet = true;
-    string sspec(spec);
-
-    // remove "x" from the string
-    replace (sspec.begin(), sspec.end(), 'x' , ' ');
-
-    // parse values of CVs
-    GPos.CreateVector(NumOfCVs);
-    stringstream str(sspec);
-    for(size_t i=0; i < NumOfCVs; i++){
-        double val;
-        str >> val;
-        if( ! str ){
-            CSmallString error;
-            error << "unable to decode CV value for position: " << i+1;
-            RUNTIME_ERROR(error);
-        }
-        GPos[i] = GSurface->GetCV(i)->GetIntValue(val);
-    }
-
-    GPosSet = true;
-}
-
-//------------------------------------------------------------------------------
-
-void CGHSIntegratorGPR0A::SetGlobalMin(const CSimpleVector<double>& pos)
-{
-    GlobalMinSet = true;
-    GPos = pos;
-    GPosSet = true;
-}
-
-//------------------------------------------------------------------------------
-
-CSimpleVector<double> CGHSIntegratorGPR0A::GetGlobalMin(void)
-{
-    if( GPosSet == false ){
-        RUNTIME_ERROR("no global min set")
-    }
-    return(GPos);
-}
-
-//------------------------------------------------------------------------------
-
-int CGHSIntegratorGPR0A::GetGlobalMinBin(void)
-{
-    if( GPosSet == false ){
-        RUNTIME_ERROR("no global min set")
-    }
-    return(GPosBin);
-}
-
-//------------------------------------------------------------------------------
-
-void CGHSIntegratorGPR0A::SetUseInv(bool set)
-{
-    UseInv = set;
 }
 
 //------------------------------------------------------------------------------
@@ -809,12 +306,7 @@ bool CGHSIntegratorGPR0A::Integrate(CVerboseStr& vout,bool nostat)
         RUNTIME_ERROR("sigman2 is not set");
     }
 
-    // GPR setup
-    CVLengths2.CreateVector(NumOfCVs);
-    for(size_t i=0; i < NumOfCVs; i++){
-        double l = WFac[i]*GSurface->GetCV(i)->GetRange()/GSurface->GetCV(i)->GetNumOfBins();
-        CVLengths2[i] = l*l;
-    }
+    SetupKernel();
 
     // number of data points
     NumOfUsedBins = 0;
@@ -890,44 +382,12 @@ bool CGHSIntegratorGPR0A::Integrate(CVerboseStr& vout,bool nostat)
             if( FastErrors ){
                 CalculateErrorsFromCov(vout);
             } else {
-                CalculateErrors(GPos,vout);
+                CalculateErrors(vout);
             }
         }
     }
 
     return(true);
-}
-
-//------------------------------------------------------------------------------
-
-void CGHSIntegratorGPR0A::PrintExecInfo(CVerboseStr& vout)
-{
-    NumOfThreads = 1;
-
-#if defined(_OPENMP)
-    {
-        NumOfThreads = omp_get_max_threads();
-        vout << "   OpenMP - number of threads: " << NumOfThreads << endl;
-    }
-#else
-    vout << "   No OpenMP - sequential mode." << endl;
-#endif
-    RunBlasLapackPar();
-    CSciLapack::PrintExecInfo(vout);
-}
-
-//------------------------------------------------------------------------------
-
-void CGHSIntegratorGPR0A::RunBlasLapackSeq(void)
-{
-    CSciLapack::SetNumThreadsLocal(1);
-}
-
-//------------------------------------------------------------------------------
-
-void CGHSIntegratorGPR0A::RunBlasLapackPar(void)
-{
-    CSciLapack::SetNumThreadsLocal(NumOfThreads);
 }
 
 //==============================================================================
@@ -936,7 +396,7 @@ void CGHSIntegratorGPR0A::RunBlasLapackPar(void)
 
 bool CGHSIntegratorGPR0A::TrainGP(CVerboseStr& vout)
 {
-    if( UseNumDiff ) {
+    if( IsNumDiffEnabled() ) {
         vout << "   Creating K+Sigma and Y (numeric differentation) ..." << endl;
     } else {
         vout << "   Creating K+Sigma and Y ..." << endl;
@@ -1060,20 +520,6 @@ bool CGHSIntegratorGPR0A::TrainGP(CVerboseStr& vout)
 
 //------------------------------------------------------------------------------
 
-const CSmallString CGHSIntegratorGPR0A::GetKernelName(void)
-{
-    switch(Kernel){
-    case(EGPRK_ARDSE):
-        return("ARD squared exponential");
-    case(EGPRK_ARDMC52):
-        return("ARD Matern class 5/2");
-    default:
-        RUNTIME_ERROR("not implemented");
-    }
-}
-
-////------------------------------------------------------------------------------
-
 // TK is multitask covariance matrix
 void CGHSIntegratorGPR0A::CreateTK(void)
 {
@@ -1090,14 +536,12 @@ void CGHSIntegratorGPR0A::CreateTK(void)
     TK[1][2] = CoVar[2];
     TK[2][1] = CoVar[2];
 
+    if( ConstrainedTK ){
+        // impose dG/dx - dH/dx - (-TdS/dx) = 0 constraint
         CFortranMatrix A;
         A.CreateMatrix(3,3);
         CFortranMatrix B;
         B.CreateMatrix(3,3);
-
-    if( ConstrainedTK ){
-        // impose dG/dx - dH/dx - (-TdS/dx) = 0 constraint
-
 
         A[0][0] =  0.0;
         A[0][1] = -1.0;
@@ -1136,20 +580,13 @@ void CGHSIntegratorGPR0A::CreateKS(void)
     #pragma omp parallel for firstprivate(ipos,jpos,kblock)
     for(size_t indi=0; indi < NumOfUsedBins; indi++){
         size_t ibin = SampledMap[indi];
-
         Accu->GetPoint(ibin,ipos);
 
         for(size_t indj=0; indj < NumOfUsedBins; indj++){
             size_t jbin = SampledMap[indj];
-
             Accu->GetPoint(jbin,jpos);
 
-            // calc Kblock
-            if( UseNumDiff ){
-                GetKernelDer2Num(ipos,jpos,kblock);
-            } else {
-                GetKernelDer2Ana(ipos,jpos,kblock);
-            }
+            GetKernelDerIJ(ipos,jpos,kblock);
 
             // distribute to main kernel matrix
             for(size_t ii=0; ii < NumOfCVs; ii++){
@@ -1202,15 +639,9 @@ void CGHSIntegratorGPR0A::CreateKff(const CSimpleVector<double>& ip,CSimpleVecto
     // main kernel matrix
     for(size_t indj=0; indj < NumOfUsedBins; indj++){
         size_t jbin = SampledMap[indj];
-
         Accu->GetPoint(jbin,jpos);
 
-        // calc Kder
-        if( UseNumDiff ){
-            GetKernelDerNumJ(ip,jpos,kder);
-        } else {
-            GetKernelDerAnaJ(ip,jpos,kder);
-        }
+        GetKernelDerJ(ip,jpos,kder);
 
         // distribute to vector
         for(size_t jj=0; jj < NumOfCVs; jj++){
@@ -1237,15 +668,9 @@ void CGHSIntegratorGPR0A::CreateKff2(const CSimpleVector<double>& ip,size_t icoo
 
     for(size_t indj=0; indj < NumOfUsedBins; indj++){
         size_t jbin = SampledMap[indj];
-
         Accu->GetPoint(jbin,jpos);
 
-        // calc Kder
-        if( UseNumDiff ){
-            GetKernelDer2Num(ip,jpos,kblock);
-        } else {
-            GetKernelDer2Ana(ip,jpos,kblock);
-        }
+        GetKernelDerIJ(ip,jpos,kblock);
 
         // distribute to vector
         for(size_t jj=0; jj < NumOfCVs; jj++){
@@ -1253,399 +678,6 @@ void CGHSIntegratorGPR0A::CreateKff2(const CSimpleVector<double>& ip,size_t icoo
             kff2[offset1 + indj*NumOfCVs+jj] = TK[1][task]*kblock[icoord][jj];
             kff2[offset2 + indj*NumOfCVs+jj] = TK[2][task]*kblock[icoord][jj];
         }
-    }
-}
-
-//------------------------------------------------------------------------------
-
-void CGHSIntegratorGPR0A::GetKernelDerAnaI(const CSimpleVector<double>& ip,const CSimpleVector<double>& jp,CSimpleVector<double>& kder)
-{
-    // calculate scaled distance
-    double scdist2 = 0.0;
-    for(size_t ii=0; ii < NumOfCVs; ii++){
-        double du = GSurface->GetCV(ii)->GetDifference(ip[ii],jp[ii]);
-        double dd = CVLengths2[ii];
-        scdist2 += du*du/dd;
-    }
-
-    // get kernel value
-    switch(Kernel){
-    case(EGPRK_ARDSE):{
-            double pre = exp(-0.5*scdist2);
-            for(size_t ii=0; ii < NumOfCVs; ii++){
-                double du = GSurface->GetCV(ii)->GetDifference(ip[ii],jp[ii]);
-                double dd = CVLengths2[ii];
-                kder[ii] = -pre*du/dd;
-            }
-        }
-        break;
-    case(EGPRK_ARDMC52):{
-            double scdist = sqrt(scdist2);
-            double pre = -(5.0/3.0)*exp(-sqrt(5.0)*scdist)*(sqrt(5.0)*scdist+1.0);
-            for(size_t ii=0; ii < NumOfCVs; ii++){
-                double du = GSurface->GetCV(ii)->GetDifference(ip[ii],jp[ii]);
-                double dd = CVLengths2[ii];
-                kder[ii] = pre*du/dd;
-            }
-        }
-        break;
-    default:
-        RUNTIME_ERROR("not implemented");
-        break;
-    }
-}
-
-//------------------------------------------------------------------------------
-
-void CGHSIntegratorGPR0A::GetKernelDerNumI(const CSimpleVector<double>& ip,const CSimpleVector<double>& jp,CSimpleVector<double>& kder)
-{
-    CSimpleVector<double> tip;
-    tip.CreateVector(NumOfCVs);
-
-    double  dh = 1e-3;
-    double  v1,v2;
-
-    // off diagonal elements
-    for(size_t ii=0; ii < NumOfCVs; ii++) {
-
-        tip = jp;
-        tip[ii] = ip[ii] - dh;
-        v1 = GetKernelValue(tip,jp);
-
-        tip = jp;
-        tip[ii] = ip[ii] + dh;
-        v2 = GetKernelValue(tip,jp);
-
-        kder[ii] = (v2 - v1)/(2.0*dh);
-    }
-}
-
-//------------------------------------------------------------------------------
-
-void CGHSIntegratorGPR0A::GetKernelDerAnaJ(const CSimpleVector<double>& ip,const CSimpleVector<double>& jp,CSimpleVector<double>& kder)
-{
-    // calculate scaled distance
-    double scdist2 = 0.0;
-    for(size_t ii=0; ii < NumOfCVs; ii++){
-        double du = GSurface->GetCV(ii)->GetDifference(ip[ii],jp[ii]);
-        double dd = CVLengths2[ii];
-        scdist2 += du*du/dd;
-    }
-
-    // get kernel value
-    switch(Kernel){
-    case(EGPRK_ARDSE):{
-            double pre = exp(-0.5*scdist2);
-            for(size_t ii=0; ii < NumOfCVs; ii++){
-                double du = GSurface->GetCV(ii)->GetDifference(ip[ii],jp[ii]);
-                double dd = CVLengths2[ii];
-                kder[ii] = pre*du/dd;
-            }
-        }
-        break;
-    case(EGPRK_ARDMC52):{
-            double scdist = sqrt(scdist2);
-            double pre = -(5.0/3.0)*exp(-sqrt(5.0)*scdist)*(sqrt(5.0)*scdist+1.0);
-            for(size_t ii=0; ii < NumOfCVs; ii++){
-                double du = GSurface->GetCV(ii)->GetDifference(ip[ii],jp[ii]);
-                double dd = CVLengths2[ii];
-                kder[ii] = -pre*du/dd;
-            }
-        }
-        break;
-    default:
-        RUNTIME_ERROR("not implemented");
-        break;
-    }
-}
-
-//------------------------------------------------------------------------------
-
-void CGHSIntegratorGPR0A::GetKernelDerNumJ(const CSimpleVector<double>& ip,const CSimpleVector<double>& jp,CSimpleVector<double>& kder)
-{
-    CSimpleVector<double> tjp;
-    tjp.CreateVector(NumOfCVs);
-
-    double  dh = 1e-3;
-    double  v1,v2;
-
-    // off diagonal elements
-    for(size_t ii=0; ii < NumOfCVs; ii++) {
-
-        tjp = jp;
-        tjp[ii] = jp[ii] - dh;
-        v1 = GetKernelValue(ip,tjp);
-
-        tjp = jp;
-        tjp[ii] = jp[ii] + dh;
-        v2 = GetKernelValue(ip,tjp);
-
-        kder[ii] = (v2 - v1)/(2.0*dh);
-    }
-}
-
-//------------------------------------------------------------------------------
-
-void CGHSIntegratorGPR0A::GetKernelDer2Ana(const CSimpleVector<double>& ip,const CSimpleVector<double>& jp,CFortranMatrix& kblock)
-{
-    kblock.SetZero();
-
-    // calculate scaled distance
-    double scdist2 = 0.0;
-    for(size_t ii=0; ii < NumOfCVs; ii++){
-        double du = GSurface->GetCV(ii)->GetDifference(ip[ii],jp[ii]);
-        double dd = CVLengths2[ii];
-        scdist2 += du*du/dd;
-    }
-
-    switch(Kernel){
-    case(EGPRK_ARDSE): {
-            double pre = exp(-0.5*scdist2);
-            for(size_t ii=0; ii < NumOfCVs; ii++){
-                for(size_t jj=0; jj < NumOfCVs; jj++){
-                    double du = GSurface->GetCV(ii)->GetDifference(ip[ii],jp[ii]) *
-                                GSurface->GetCV(jj)->GetDifference(ip[jj],jp[jj]);
-                    double dd = CVLengths2[ii]*CVLengths2[jj];
-                    kblock[ii][jj] -= pre*du/dd;
-                    if( ii == jj ){
-                        kblock[ii][ii] += pre/CVLengths2[ii];
-                    }
-                }
-            }
-        }
-        break;
-    case(EGPRK_ARDMC52):{
-            double scdist = sqrt(scdist2);
-            double pr = -(5.0/3.0)*exp(-sqrt(5.0)*scdist);
-            double d1 = pr*(sqrt(5.0)*scdist+1.0);
-            for(size_t ii=0; ii < NumOfCVs; ii++){
-                for(size_t jj=0; jj < NumOfCVs; jj++){
-                    double du = GSurface->GetCV(ii)->GetDifference(ip[ii],jp[ii]) *
-                                GSurface->GetCV(jj)->GetDifference(ip[jj],jp[jj]);
-                    double dd = CVLengths2[ii]*CVLengths2[jj];
-                    kblock[ii][jj] += 5.0*pr*du/dd;
-                    if( (ii == jj) ){
-                        kblock[ii][jj] -= d1/(CVLengths2[ii]);
-                    }
-                }
-            }
-        }
-        break;
-    default:
-        RUNTIME_ERROR("not implemented");
-        break;
-    }
-}
-
-//------------------------------------------------------------------------------
-
-void CGHSIntegratorGPR0A::GetKernelDer2Num(const CSimpleVector<double>& ip,const CSimpleVector<double>& jp,CFortranMatrix& kblock)
-{
-    CSimpleVector<double> tip;
-    tip.CreateVector(NumOfCVs);
-    CSimpleVector<double> tjp;
-    tjp.CreateVector(NumOfCVs);
-
-    double  dh = 1e-4;
-    double  v1,v2,v3,v4;
-
-    // off diagonal elements
-    for(size_t ii=0; ii < NumOfCVs; ii++) {
-        for(size_t jj=0; jj < NumOfCVs; jj++) {
-
-            tip = ip;
-            tip[ii] = ip[ii] + dh;
-            tjp = jp;
-            tjp[jj] = jp[jj] + dh;
-            v1 = GetKernelValue(tip,tjp);
-
-            tip = ip;
-            tip[ii] = ip[ii] + dh;
-            tjp = jp;
-            tjp[jj] = jp[jj] - dh;
-            v2 = GetKernelValue(tip,tjp);
-
-            tip = ip;
-            tip[ii] = ip[ii] - dh;
-            tjp = jp;
-            tjp[jj] = jp[jj] + dh;
-            v3 = GetKernelValue(tip,tjp);
-
-            tip = ip;
-            tip[ii] = ip[ii] - dh;
-            tjp = jp;
-            tjp[jj] = jp[jj] - dh;
-            v4 = GetKernelValue(tip,tjp);
-
-            kblock[ii][jj] = (v1 - v2 - v3 + v4)/(4.0*dh*dh);
-        }
-    }
-}
-
-//------------------------------------------------------------------------------
-
-void CGHSIntegratorGPR0A::GetKernelDer2AnaWFac(const CSimpleVector<double>& ip,const CSimpleVector<double>& jp,size_t cv,CFortranMatrix& kblock)
-{
-    // calculate scaled distance
-    double scdist2 = 0.0;
-    for(size_t ii=0; ii < NumOfCVs; ii++){
-        double du = GSurface->GetCV(ii)->GetDifference(ip[ii],jp[ii]);
-        double dd = CVLengths2[ii];
-        scdist2 += du*du/dd;
-    }
-
-    kblock.SetZero();
-
-    double wf = WFac[cv];
-    double wd3 = 1.0/(CVLengths2[cv]*wf);
-    double wd5 = wd3/CVLengths2[cv];
-    double dc = GSurface->GetCV(cv)->GetDifference(ip[cv],jp[cv]);
-
-    switch(Kernel){
-    case(EGPRK_ARDSE): {
-            double arg = exp(-0.5*scdist2);
-            double argd = arg*dc*dc*wd3;
-            for(size_t ii=0; ii < NumOfCVs; ii++){
-                for(size_t jj=0; jj < NumOfCVs; jj++){
-                    double du = GSurface->GetCV(ii)->GetDifference(ip[ii],jp[ii]) *
-                                GSurface->GetCV(jj)->GetDifference(ip[jj],jp[jj]);
-                    double dd = CVLengths2[ii]*CVLengths2[jj];
-                    kblock[ii][jj] -= argd*du/dd;
-                    if( (cv == ii) && (cv != jj) ) {
-                        kblock[ii][jj] += 2.0*arg*du*wd3/(CVLengths2[jj]);
-                    } else if( (cv == jj) && (cv != ii) ) {
-                        kblock[ii][jj] += 2.0*arg*du*wd3/(CVLengths2[ii]);
-                    } else if( (cv == ii) && (cv == jj) ) {
-                        kblock[ii][jj] += 4.0*arg*du*wd5;
-                    }
-                    if( (ii == jj) ){
-                        kblock[ii][ii] += argd/CVLengths2[ii];
-                        if( ii == cv ){
-                            kblock[ii][ii] -= 2.0*arg*wd3;
-                        }
-                    }
-                }
-            }
-        }
-        break;
-    case(EGPRK_ARDMC52):{
-            double scdist = sqrt(scdist2);
-            double pr = -(5.0/3.0)*exp(-sqrt(5.0)*scdist);
-            double prd = 0.0;
-            if( scdist > 0 ){
-               prd = -(5.0/3.0)*sqrt(5.0)*exp(-sqrt(5.0)*scdist)*(1.0/scdist)*wd3*dc*dc;
-            }
-            double d1 = pr*(sqrt(5.0)*scdist+1.0);
-            double d1d = -(25.0/3.0)*exp(-sqrt(5.0)*scdist)*wd3*dc*dc;
-            for(size_t ii=0; ii < NumOfCVs; ii++){
-                for(size_t jj=0; jj < NumOfCVs; jj++){
-                    double du = GSurface->GetCV(ii)->GetDifference(ip[ii],jp[ii]) *
-                                GSurface->GetCV(jj)->GetDifference(ip[jj],jp[jj]);
-                    double dd = CVLengths2[ii]*CVLengths2[jj];
-                    kblock[ii][jj] += 5.0*prd*du/dd;
-                    if( (cv == ii) && (cv != jj) ) {
-                        kblock[ii][jj] -= 10.0*pr*du*wd3/(CVLengths2[jj]);
-                    } else if( (cv == jj) && (cv != ii) ) {
-                        kblock[ii][jj] -= 10.0*pr*du*wd3/(CVLengths2[ii]);
-                    } else if( (cv == ii) && (cv == jj) ) {
-                        kblock[ii][jj] -= 20.0*pr*du*wd5;
-                    }
-                    if( (ii == jj) ){
-                        kblock[ii][ii] -= d1d/(CVLengths2[ii]);
-                        if( ii == cv ){
-                            kblock[ii][ii] += 2.0*d1*wd3;
-                        }
-
-                    }
-                }
-            }
-        }
-        break;
-    default:
-        RUNTIME_ERROR("not implemented");
-        break;
-    }
-}
-
-//------------------------------------------------------------------------------
-
-// for internal debugging
-void CGHSIntegratorGPR0A::GetKernelDer2NumWFac(const CSimpleVector<double>& ip,const CSimpleVector<double>& jp,size_t cv,CFortranMatrix& kblock)
-{
-    CFortranMatrix kblock1,kblock2;
-
-    kblock1.CreateMatrix(NumOfCVs,NumOfCVs);
-    kblock2.CreateMatrix(NumOfCVs,NumOfCVs);
-
-    double  dh = 1e-3;
-
-    for(size_t i=0; i < NumOfCVs; i++){
-        double l;
-        if( i == cv ){
-            l = (WFac[i]-dh)*GSurface->GetCV(i)->GetRange()/GSurface->GetCV(i)->GetNumOfBins();
-        } else {
-            l = WFac[i]*GSurface->GetCV(i)->GetRange()/GSurface->GetCV(i)->GetNumOfBins();
-        }
-        CVLengths2[i] = l*l;
-    }
-    GetKernelDer2Ana(ip,jp,kblock1);
-
-    for(size_t i=0; i < NumOfCVs; i++){
-        double l;
-        if( i == cv ){
-            l = (WFac[i]+dh)*GSurface->GetCV(i)->GetRange()/GSurface->GetCV(i)->GetNumOfBins();
-        } else {
-            l = WFac[i]*GSurface->GetCV(i)->GetRange()/GSurface->GetCV(i)->GetNumOfBins();
-        }
-        CVLengths2[i] = l*l;
-    }
-    GetKernelDer2Ana(ip,jp,kblock2);
-
-    for(size_t ii=0; ii < NumOfCVs; ii++){
-        for(size_t jj=0; jj < NumOfCVs; jj++){
-            kblock[ii][jj] = (kblock2[ii][jj]-kblock1[ii][jj])/(2.0*dh);
-        }
-    }
-
-    // restore original CVLengths2
-    for(size_t i=0; i < NumOfCVs; i++){
-        double l = WFac[i]*GSurface->GetCV(i)->GetRange()/GSurface->GetCV(i)->GetNumOfBins();
-        CVLengths2[i] = l*l;
-    }
-}
-
-//------------------------------------------------------------------------------
-
-double CGHSIntegratorGPR0A::GetKernelValue(const CSimpleVector<double>& ip,const CSimpleVector<double>& jp)
-{
-    // get kernel value
-    switch(Kernel){
-        case(EGPRK_ARDSE): {
-            // calculate scaled distance
-            double scdist2 = 0.0;
-            for(size_t ii=0; ii < NumOfCVs; ii++){
-                double du = GSurface->GetCV(ii)->GetDifference(ip[ii],jp[ii]);
-                double dd = CVLengths2[ii];
-                scdist2 += du*du/dd;
-            }
-            return(exp(-0.5*scdist2));
-        }
-        break;
-        case(EGPRK_ARDMC52):{
-            // calculate scaled distance
-            double scdist2 = 0.0;
-            for(size_t ii=0; ii < NumOfCVs; ii++){
-                double du = GSurface->GetCV(ii)->GetDifference(ip[ii],jp[ii]);
-                double dd = CVLengths2[ii];
-                scdist2 += du*du/dd;
-            }
-            double scdist = sqrt(scdist2);
-            return((1.0+sqrt(5.0)*scdist+(5.0/3.0)*scdist2)*exp(-sqrt(5.0)*scdist));
-        }
-        break;
-        default:
-            RUNTIME_ERROR("not implemented");
-        break;
     }
 }
 
@@ -1695,100 +727,67 @@ void CGHSIntegratorGPR0A::CalculateEnergy(CVerboseStr& vout)
     for(size_t indj=0; indj < NumOfUsedBins; indj++){
         int jbin = SampledMap[indj];
         Accu->GetPoint(jbin,jpos);
-        double dg,dh,mtds;
-        GetValues(jpos,dg,dh,mtds);
-        GSurface->SetEnergy(jbin,dg);
-        HSurface->SetEnergy(jbin,dh);
-        SSurface->SetEnergy(jbin,mtds);
+        GSurface->SetEnergy(jbin,GetValue(jpos,0));
+        HSurface->SetEnergy(jbin,GetValue(jpos,1));
+        SSurface->SetEnergy(jbin,GetValue(jpos,2));
     }
 
 // update FES
-    if( GlobalMinSet ){
-        // GPos.CreateVector(NumOfCVs) - is created in  SetGlobalMin
-   //   vout << "   Calculating FES ..." << endl;
+    if( GSurface->IsGlobalMinSet() ){
+
+        CSimpleVector<double> gpos;
+
+        gpos = GSurface->GetGlobalMinPos();
         vout << "      dG(x) Global minimum provided at: ";
-        vout << setprecision(5) << GSurface->GetCV(0)->GetRealValue(GPos[0]);
+        vout << setprecision(5) << gpos[0];
         for(size_t i=1; i < NumOfCVs; i++){
-            vout << "x" << setprecision(5) << GSurface->GetCV(i)->GetRealValue(GPos[i]);
+            vout << "x" << setprecision(5) << gpos[0];
         }
         vout << endl;
 
-        // find the closest bin
-        CSimpleVector<double>   pos;
-        pos.CreateVector(NumOfCVs);
-        double minv = 0.0;
-        GPosBin = 0;
-        for(size_t ibin=0; ibin < NumOfBins; ibin++){
-            Accu->GetPoint(ibin,pos);
-            double dist2 = 0.0;
-            for(size_t cv=0; cv < NumOfCVs; cv++){
-                dist2 = dist2 + (pos[cv]-GPos[cv])*(pos[cv]-GPos[cv]);
-            }
-            if( ibin == 0 ){
-                minv = dist2;
-                GPosBin = 0;
-            }
-            if( dist2 < minv ){
-                minv = dist2;
-                GPosBin = ibin;
-            }
-        }
+        GSurface->FindGlobalMinBin();
 
-        Accu->GetPoint(GPosBin,GPos);
-        GPosSet = true;
-
-        vout << "      dG(x) Closest bin found at: ";
-        vout << setprecision(5) << GSurface->GetCV(0)->GetRealValue(GPos[0]);
+        gpos = GSurface->GetGlobalMinPos();
+        vout << "      Closest bin found at: ";
+        vout << setprecision(5) << gpos[0];
         for(size_t i=1; i < NumOfCVs; i++){
-            vout << "x" << setprecision(5) << GSurface->GetCV(i)->GetRealValue(GPos[i]);
+            vout << "x" << setprecision(5) << gpos[0];
         }
 
-        double glb_min = GSurface->GetEnergy(GPosBin);
+        double glb_min = GSurface->GetGlobalMinEnergy();
         vout << " (" << setprecision(5) << glb_min << ")" << endl;
 
         for(size_t indj=0; indj < NumOfUsedBins; indj++){
-            int jbin = SampledMap[indj];
-            GSurface->SetEnergy(jbin,GSurface->GetEnergy(jbin)-glb_min);
+            size_t j = SampledMap[indj];
+            GSurface->SetEnergy(j,GSurface->GetEnergy(j)-glb_min);
         }
     } else {
         // search for global minimum
-        GPos.CreateVector(NumOfCVs);
-        bool   first = true;
-        double glb_min = 0.0;
-        for(size_t indj=0; indj < NumOfUsedBins; indj++){
-            int jbin = SampledMap[indj];
-            int samples = Accu->GetNumOfSamples(jbin);
-            if( samples < -1 ) continue;    // include sampled areas and holes but exclude extrapolated areas
-            double value = GSurface->GetEnergy(jbin);
-            if( first || (glb_min > value) ){
-                glb_min = value;
-                first = false;
-                GPosBin = jbin;
-                Accu->GetPoint(jbin,GPos);
-            }
-        }
+        GSurface->FindGlobalMin();
 
-   //   vout << "   Calculating FES ..." << endl;
+        double                glb_min = GSurface->GetGlobalMinEnergy();
+        CSimpleVector<double> gpos    = GSurface->GetGlobalMinPos();
+
         vout << "      dG(x) Global minimum found at: ";
-        vout << setprecision(5) << GSurface->GetCV(0)->GetRealValue(GPos[0]);
+        vout << setprecision(5) << gpos[0];
         for(size_t i=1; i < NumOfCVs; i++){
-            vout << "x" << setprecision(5) << GSurface->GetCV(i)->GetRealValue(GPos[i]);
+            vout << "x" << setprecision(5) << gpos[0];
         }
         vout << " (" << setprecision(5) << glb_min << ")" << endl;
 
         for(size_t indj=0; indj < NumOfUsedBins; indj++){
-            int jbin = SampledMap[indj];
-            GSurface->SetEnergy(jbin,GSurface->GetEnergy(jbin)-glb_min);
+            size_t j = SampledMap[indj];
+            GSurface->SetEnergy(j,GSurface->GetEnergy(j)-glb_min);
         }
     }
 
-    GPosSet = true;
+    int gmin_bin = GSurface->GetGlobalMinBin();
 
     vout << "      dG(x) SigmaF2   = " << setprecision(5) << GSurface->GetSigmaF2() << endl;
     vout << "      dG(x) SigmaF    = " << setprecision(5) << GSurface->GetSigmaF() << endl;
 
     vout << "      >>>>>>>>" << endl;
-    double glb_min = HSurface->GetEnergy(GPosBin);
+    double glb_min = HSurface->GetEnergy(gmin_bin);
     for(size_t indj=0; indj < NumOfUsedBins; indj++){
         int jbin = SampledMap[indj];
         HSurface->SetEnergy(jbin,HSurface->GetEnergy(jbin)-glb_min);
@@ -1797,7 +796,7 @@ void CGHSIntegratorGPR0A::CalculateEnergy(CVerboseStr& vout)
     vout << "      dH(x) SigmaF    = " << setprecision(5) << HSurface->GetSigmaF() << endl;
 
     vout << "      >>>>>>>>" << endl;
-    glb_min = SSurface->GetEnergy(GPosBin);
+    glb_min = SSurface->GetEnergy(gmin_bin);
     for(size_t indj=0; indj < NumOfUsedBins; indj++){
         int jbin = SampledMap[indj];
         SSurface->SetEnergy(jbin,SSurface->GetEnergy(jbin)-glb_min);
@@ -1806,26 +805,69 @@ void CGHSIntegratorGPR0A::CalculateEnergy(CVerboseStr& vout)
     vout << "    -TdS(x) SigmaF    = " << setprecision(5) << SSurface->GetSigmaF() << endl;
 }
 
+//==============================================================================
 //------------------------------------------------------------------------------
+//==============================================================================
 
-void CGHSIntegratorGPR0A::GetValues(const CSimpleVector<double>& position,double& dg, double& dh, double& mtds)
+double CGHSIntegratorGPR0A::GetValue(const CSimpleVector<double>& position,int task)
 {
     CSimpleVector<double>   kff;
     kff.CreateVector(GPRSize);
 
     RunBlasLapackSeq();
 
-    CreateKff(position,kff,0);
-    dg   = CSciBlas::dot(kff,GPRModel);
-
-    CreateKff(position,kff,1);
-    dh   = CSciBlas::dot(kff,GPRModel);
-
-    CreateKff(position,kff,2);
-    mtds = CSciBlas::dot(kff,GPRModel);
+    CreateKff(position,kff,task);
+    return( CSciBlas::dot(kff,GPRModel) );
 }
 
+//------------------------------------------------------------------------------
 
+double CGHSIntegratorGPR0A::GetVar(CSimpleVector<double>& lpos,int task)
+{
+    if( KSInverted != true ) {
+        RUNTIME_ERROR("KS must be inverted!");
+    }
+
+    CSimpleVector<double>   kff;
+    CSimpleVector<double>   ik;
+
+    kff.CreateVector(GPRSize);
+    ik.CreateVector(GPRSize);
+
+    RunBlasLapackSeq();
+
+    CreateKff(lpos,kff,task);
+    CSciBlas::gemv(1.0,KS,kff,0.0,ik);
+    double cov = TK[task][task]*GetKernelValue(lpos,lpos) - CSciBlas::dot(kff,ik);
+    return(cov);
+}
+
+//------------------------------------------------------------------------------
+
+void CGHSIntegratorGPR0A::GetCovVar(CSimpleVector<double>& lpos,CSimpleVector<double>& rpos,double& lrcov,double& rrvar,int task)
+{
+    if( KSInverted != true ) {
+        RUNTIME_ERROR("KS must be inverted!");
+    }
+
+    CSimpleVector<double>   kffr;
+    CSimpleVector<double>   kffl;
+    CSimpleVector<double>   ik;
+
+    kffl.CreateVector(GPRSize);
+    kffr.CreateVector(GPRSize);
+    ik.CreateVector(GPRSize);
+
+    RunBlasLapackSeq();
+
+    CreateKff(rpos,kffr,task);
+    CreateKff(lpos,kffl,task);
+
+    CSciBlas::gemv(1.0,KS,kffr,0.0,ik);
+
+    lrcov = TK[task][task]*GetKernelValue(lpos,rpos) - CSciBlas::dot(kffl,ik);
+    rrvar = TK[task][task]*GetKernelValue(rpos,rpos) - CSciBlas::dot(kffr,ik);
+}
 
 //==============================================================================
 //------------------------------------------------------------------------------
@@ -2049,20 +1091,13 @@ void CGHSIntegratorGPR0A::CalcKderWRTSigmaF2(size_t idx)
     #pragma omp parallel for firstprivate(ipos,jpos,kblock)
     for(size_t indi=0; indi < NumOfUsedBins; indi++){
         size_t ibin = SampledMap[indi];
-
         Accu->GetPoint(ibin,ipos);
 
         for(size_t indj=0; indj < NumOfUsedBins; indj++){
             size_t jbin = SampledMap[indj];
-
             Accu->GetPoint(jbin,jpos);
 
-            // calc Kblock
-            if( UseNumDiff ){
-                GetKernelDer2Num(ipos,jpos,kblock);
-            } else {
-                GetKernelDer2Ana(ipos,jpos,kblock);
-            }
+            GetKernelDerIJ(ipos,jpos,kblock);
 
             for(size_t ii=0; ii < NumOfCVs; ii++){
                 for(size_t jj=0; jj < NumOfCVs; jj++){
@@ -2137,20 +1172,13 @@ void CGHSIntegratorGPR0A::CalcKderWRTCoVar(size_t idx)
     #pragma omp parallel for firstprivate(ipos,jpos,kblock)
     for(size_t indi=0; indi < NumOfUsedBins; indi++){
         size_t ibin = SampledMap[indi];
-
         Accu->GetPoint(ibin,ipos);
 
         for(size_t indj=0; indj < NumOfUsedBins; indj++){
             size_t jbin = SampledMap[indj];
-
             Accu->GetPoint(jbin,jpos);
 
-            // calc Kblock
-            if( UseNumDiff ){
-                GetKernelDer2Num(ipos,jpos,kblock);
-            } else {
-                GetKernelDer2Ana(ipos,jpos,kblock);
-            }
+            GetKernelDerIJ(ipos,jpos,kblock);
 
             for(size_t ii=0; ii < NumOfCVs; ii++){
                 for(size_t jj=0; jj < NumOfCVs; jj++){
@@ -2235,15 +1263,13 @@ void CGHSIntegratorGPR0A::CalcKderWRTWFac(size_t cv)
     #pragma omp parallel for firstprivate(ipos,jpos,kblock)
     for(size_t indi=0; indi < NumOfUsedBins; indi++){
         size_t ibin = SampledMap[indi];
-
         Accu->GetPoint(ibin,ipos);
 
         for(size_t indj=0; indj < NumOfUsedBins; indj++){
             size_t jbin = SampledMap[indj];
-
             Accu->GetPoint(jbin,jpos);
 
-            GetKernelDer2AnaWFac(ipos,jpos,cv,kblock);
+            GetKernelDerIJWFacDer(ipos,jpos,cv,kblock);
 
             // distribute to main kernel matrix
             for(size_t ii=0; ii < NumOfCVs; ii++){
@@ -2381,7 +1407,9 @@ bool CGHSIntegratorGPR0A::WriteMFInfo(const CSmallString& name,int task)
     return(true);
 }
 
+//==============================================================================
 //------------------------------------------------------------------------------
+//==============================================================================
 
 double CGHSIntegratorGPR0A::GetMeanForce(const CSimpleVector<double>& position,size_t icoord,int task)
 {
@@ -2417,38 +1445,92 @@ double CGHSIntegratorGPR0A::GetMeanForceVar(const CSimpleVector<double>& positio
     CFortranMatrix kblock;
     kblock.CreateMatrix(NumOfCVs,NumOfCVs);
 
-    GetKernelDer2Ana(position,position,kblock);
+    GetKernelDerIJ(position,position,kblock);
 
     double var = TK[task][task]*kblock[icoord][icoord] - CSciBlas::dot(kff2,ik);
     return(var);
 }
 
+//------------------------------------------------------------------------------
+
+double CGHSIntegratorGPR0A::GetRMSR(size_t cv,int task)
+{
+    if( NumOfBins == 0 ){
+        RUNTIME_ERROR("number of bins is not > 0");
+    }
+
+    CEnergyDerProxyPtr proxy = NULL;
+
+    switch(task){
+        case(0):
+            proxy = GDerProxy;
+        break;
+        case(1):
+            proxy = HDerProxy;
+        break;
+        case(2):
+            proxy = SDerProxy;
+        break;
+    }
+
+    if( proxy == NULL ){
+        RUNTIME_ERROR("no proxy");
+    }
+
+    CSimpleVector<double> ipos;
+    ipos.CreateVector(NumOfCVs);
+
+    double rmsr = 0.0;
+
+    #pragma omp parallel for firstprivate(ipos) reduction(+:rmsr)
+    for(size_t indi=0; indi < NumOfUsedBins; indi++){
+        size_t  ibin = SampledMap[indi];
+
+        Accu->GetPoint(ibin,ipos);
+
+        double mfi = proxy->GetValue(ibin,cv,E_PROXY_VALUE);
+        double mfp = GetMeanForce(ipos,cv,task);
+        double diff = mfi - mfp;
+        rmsr += diff*diff;
+    }
+
+    double nsamples = NumOfUsedBins;
+
+    if( nsamples > 0 ){
+        rmsr /= nsamples;
+    }
+    if( rmsr > 0.0 ){
+        rmsr = sqrt(rmsr);
+    }
+
+    return(rmsr);
+}
 
 //==============================================================================
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void CGHSIntegratorGPR0A::CalculateErrors(CSimpleVector<double>& gpos,CVerboseStr& vout)
+void CGHSIntegratorGPR0A::CalculateErrors(CVerboseStr& vout)
 {
     vout << "   Calculating dG(x) error ..." << endl;
-    CalculateErrors(gpos,vout,0);
+    CalculateErrors(vout,0);
     vout << "      gG(x) RMSError  = " << setprecision(5) << GSurface->GetRMSError() << endl;
     vout << "      dG(x) MaxError  = " << setprecision(5) << GSurface->GetMaxError() << endl;
 
     vout << "   Calculating dH(x) error ..." << endl;
-    CalculateErrors(gpos,vout,1);
+    CalculateErrors(vout,1);
     vout << "      dH(x) RMSError  = " << setprecision(5) << HSurface->GetRMSError() << endl;
     vout << "      dH(x) MaxError  = " << setprecision(5) << HSurface->GetMaxError() << endl;
 
     vout << "   Calculating -TdS(x) error ..." << endl;
-    CalculateErrors(gpos,vout,2);
+    CalculateErrors(vout,2);
     vout << "    -TdS(x) RMSError  = " << setprecision(5) << SSurface->GetRMSError() << endl;
     vout << "    -TdS(x) MaxError  = " << setprecision(5) << SSurface->GetMaxError() << endl;
 }
 
 //------------------------------------------------------------------------------
 
-void CGHSIntegratorGPR0A::CalculateErrors(CSimpleVector<double>& gpos,CVerboseStr& vout,int task)
+void CGHSIntegratorGPR0A::CalculateErrors(CVerboseStr& vout,int task)
 {
     if( NumOfUsedBins == 0 ){
         RUNTIME_ERROR("NumOfUsedBins == 0");
@@ -2472,9 +1554,10 @@ void CGHSIntegratorGPR0A::CalculateErrors(CSimpleVector<double>& gpos,CVerboseSt
         RUNTIME_ERROR("no surf");
     }
 
-
     CSmallTime st;
     st.GetActualTime();
+
+    CSimpleVector<double> gpos = GSurface->GetGlobalMinPos();
 
     CSimpleVector<double> jpos;
     jpos.CreateVector(NumOfCVs);
@@ -2568,16 +1651,8 @@ void CGHSIntegratorGPR0A::CalculateErrorsFromCov(CVerboseStr& vout,int task)
         RUNTIME_ERROR("no surf");
     }
 
-    if( (GPosBin < 0) || (GPosBin >= (int)NumOfBins) ){
-        RUNTIME_ERROR("GPosBin out-of-range");
-    }
-
     // global minimum
-    size_t iglb = 0;
-
-    if( GlobalMinSet ){
-        iglb = GPosBin;
-    }
+    size_t iglb = GSurface->GetGlobalMinBin();
 
     for(size_t indj=0; indj < NumOfUsedBins; indj++){
         size_t j = SampledMap[indj];
@@ -2598,110 +1673,6 @@ void CGHSIntegratorGPR0A::CalculateErrorsFromCov(CVerboseStr& vout,int task)
 
 //------------------------------------------------------------------------------
 
-double CGHSIntegratorGPR0A::GetRMSR(size_t cv,int task)
-{
-    if( NumOfBins == 0 ){
-        RUNTIME_ERROR("number of bins is not > 0");
-    }
-
-    CEnergyDerProxyPtr proxy = NULL;
-
-    switch(task){
-        case(0):
-            proxy = GDerProxy;
-        break;
-        case(1):
-            proxy = HDerProxy;
-        break;
-        case(2):
-            proxy = SDerProxy;
-        break;
-    }
-
-    if( proxy == NULL ){
-        RUNTIME_ERROR("no proxy");
-    }
-
-    CSimpleVector<double> ipos;
-    ipos.CreateVector(NumOfCVs);
-
-    double rmsr = 0.0;
-
-    #pragma omp parallel for firstprivate(ipos) reduction(+:rmsr)
-    for(size_t indi=0; indi < NumOfUsedBins; indi++){
-        size_t  ibin = SampledMap[indi];
-
-        Accu->GetPoint(ibin,ipos);
-
-        double mfi = proxy->GetValue(ibin,cv,E_PROXY_VALUE);
-        double mfp = GetMeanForce(ipos,cv,task);
-        double diff = mfi - mfp;
-        rmsr += diff*diff;
-    }
-
-    double nsamples = NumOfUsedBins;
-
-    if( nsamples > 0 ){
-        rmsr /= nsamples;
-    }
-    if( rmsr > 0.0 ){
-        rmsr = sqrt(rmsr);
-    }
-
-    return(rmsr);
-}
-
-//------------------------------------------------------------------------------
-
-double CGHSIntegratorGPR0A::GetVar(CSimpleVector<double>& lpos,int task)
-{
-    if( KSInverted != true ) {
-        RUNTIME_ERROR("KS must be inverted!");
-    }
-
-    CSimpleVector<double>   kff;
-    CSimpleVector<double>   ik;
-
-    kff.CreateVector(GPRSize);
-    ik.CreateVector(GPRSize);
-
-    RunBlasLapackSeq();
-
-    CreateKff(lpos,kff,task);
-    CSciBlas::gemv(1.0,KS,kff,0.0,ik);
-    double cov = TK[task][task]*GetKernelValue(lpos,lpos) - CSciBlas::dot(kff,ik);
-    return(cov);
-}
-
-//------------------------------------------------------------------------------
-
-void CGHSIntegratorGPR0A::GetCovVar(CSimpleVector<double>& lpos,CSimpleVector<double>& rpos,double& lrcov,double& rrvar,int task)
-{
-    if( KSInverted != true ) {
-        RUNTIME_ERROR("KS must be inverted!");
-    }
-
-    CSimpleVector<double>   kffr;
-    CSimpleVector<double>   kffl;
-    CSimpleVector<double>   ik;
-
-    kffl.CreateVector(GPRSize);
-    kffr.CreateVector(GPRSize);
-    ik.CreateVector(GPRSize);
-
-    RunBlasLapackSeq();
-
-    CreateKff(rpos,kffr,task);
-    CreateKff(lpos,kffl,task);
-
-    CSciBlas::gemv(1.0,KS,kffr,0.0,ik);
-
-    lrcov = TK[task][task]*GetKernelValue(lpos,rpos) - CSciBlas::dot(kffl,ik);
-    rrvar = TK[task][task]*GetKernelValue(rpos,rpos) - CSciBlas::dot(kffr,ik);
-}
-
-//------------------------------------------------------------------------------
-
 void CGHSIntegratorGPR0A::CalculateCovs(CVerboseStr& vout,int task)
 {
     if( NumOfUsedBins == 0 ){
@@ -2716,7 +1687,7 @@ void CGHSIntegratorGPR0A::CalculateCovs(CVerboseStr& vout,int task)
 
 // ------------------------------------
         vout << "      Calculating covariances ..." << endl;
-    if( UseNumDiff ) {
+    if( IsNumDiffEnabled() ) {
         vout << "         Creating K+Sigma (numeric differentation) ..." << endl;
     } else {
         vout << "         Creating K+Sigma ..." << endl;
@@ -2739,9 +1710,6 @@ void CGHSIntegratorGPR0A::CalculateCovs(CVerboseStr& vout,int task)
     kff.CreateVector(GPRSize);
 
     size_t nvals = NumOfUsedBins;
-    if( GlobalMinSet ){
-        nvals++; // include explicitly set global minimum
-    }
 
     CFortranMatrix  Kr;
     Kr.CreateMatrix(GPRSize,nvals);
@@ -2756,12 +1724,6 @@ void CGHSIntegratorGPR0A::CalculateCovs(CVerboseStr& vout,int task)
         CreateKff(ipos,kff,task);
         for(size_t k=0; k < GPRSize; k++){
             Kr[k][indi] = kff[k];
-        }
-    }
-    if( GlobalMinSet ){
-        CreateKff(GPos,kff,task);
-        for(size_t k=0; k < GPRSize; k++){
-            Kr[k][nvals-1] = kff[k];
         }
     }
 
@@ -2803,16 +1765,6 @@ void CGHSIntegratorGPR0A::CalculateCovs(CVerboseStr& vout,int task)
             Cov[indi][indj] = TK[task][task]*GetKernelValue(ipos,jpos);
 
         }
-    }
-    if( GlobalMinSet ){
-        #pragma omp parallel for firstprivate(ipos)
-        for(size_t indi=0; indi < NumOfUsedBins; indi++){
-            size_t i = SampledMap[indi];
-            Accu->GetPoint(i,ipos);
-            Cov[indi][nvals-1] = TK[task][task]*GetKernelValue(ipos,GPos);
-            Cov[nvals-1][indi] = Cov[indi][nvals-1];
-        }
-        Cov[nvals-1][nvals-1] = TK[task][task]*GetKernelValue(GPos,GPos);
     }
 
     RunBlasLapackPar();

@@ -36,7 +36,7 @@
 /** \brief integrator of ABF accumulator employing gaussian process
 */
 
-class PMF_PACKAGE CGHSIntegratorGPR0A : public CGPRHyprmsBase {
+class PMF_PACKAGE CGHSIntegratorGPR0A : public CGPRHyprms {
 public:
 // constructor and destructor -------------------------------------------------
     CGHSIntegratorGPR0A(void);
@@ -56,50 +56,6 @@ public:
     void SetOutputHES(CEnergySurfacePtr p_surf);
     void SetOutputSES(CEnergySurfacePtr p_surf);
 
-// hyperparameters
-    /// set sigmaf2
-    void SetSigmaF2(const CSmallString& spec);
-
-    /// set sigmaf2
-    void SetSigmaF2(CSimpleVector<double>& sigmaf2);
-
-    /// set sigmaf2
-    void SetSigmaF2(size_t cvind, double value);
-
-//-----
-    /// set covariances
-    void SetCoVar(const CSmallString& spec);
-
-    /// set covariances
-    void SetCoVar(CSimpleVector<double>& covar);
-
-    /// set covariances
-    void SetCoVar(size_t cvind, double value);
-
-//-----
-    /// multiply of bin sizes
-    void SetWFac(const CSmallString& spec);
-
-    /// multiply of bin sizes
-    void SetWFac(CSimpleVector<double>& wfac);
-
-    /// multiply of bin sizes
-    void SetWFac(size_t cvind, double value);
-
-//-----
-    /// set sigman2
-    void SetSigmaN2(const CSmallString& spec);
-
-    /// set sigman2
-    void SetSigmaN2(CSimpleVector<double>& sigman2);
-
-    /// set sigman2
-    void SetSigmaN2(size_t cvind, double value);
-
-//-----
-    /// load hyperparameters from file
-    void LoadGPRHyprms(const CSmallString& name);
-
 // setup
     /// enable constraints
     void EnableConstraints(bool set);
@@ -109,36 +65,6 @@ public:
 
     /// skip energy calculation, it also disables errors
     void SetNoEnergy(bool set);
-
-    /// switch to numerical evaluation of kernel fce derivatives
-    void SetUseNumDiff(bool set);
-
-    /// set algorithm for LA
-    void SetLAMethod(EGPRLAMethod set);
-
-    /// set algorithm for LA
-    void SetLAMethod(const CSmallString& method);
-
-    /// set kernel
-    void SetKernel(const CSmallString& kernel);
-
-    /// set rcond for SVD
-    void SetRCond(double rcond);
-
-    /// set position of global minimum - spec in real units
-    void SetGlobalMin(const CSmallString& spec);
-
-    /// set position of global minimum - in internal units
-    void SetGlobalMin(const CSimpleVector<double>& pos);
-
-    /// get position of global minima - in internal units
-    CSimpleVector<double> GetGlobalMin(void);
-
-    /// get position of global minima - bin
-    int GetGlobalMinBin(void);
-
-    /// use inversion alg
-    void SetUseInv(bool set);
 
     /// calc hyprms grd
     void PrepForHyprmsGrd(bool set);
@@ -156,15 +82,6 @@ public:
     /// integrate data
     bool Integrate(CVerboseStr& vout,bool nostat=false);
 
-    /// get mean force
-    double GetMeanForce(const CSimpleVector<double>& position,size_t icoord,int task);
-
-    /// get mean force variance
-    double GetMeanForceVar(const CSimpleVector<double>& position,size_t icoord,int task);
-
-    /// get root mean square residuals
-    double GetRMSR(size_t cv,int task);
-
     /// get log of Marginal Likelihood
     double GetLogML(void);
 
@@ -181,46 +98,28 @@ public:
     /// derivatives are ADDED to der
     void GetLogPLDerivatives(const std::vector<bool>& flags,CSimpleVector<double>& der);
 
-    /// print exec info
-    void PrintExecInfo(CVerboseStr& vout);
-
-    /// get kernel name
-    const CSmallString GetKernelName(void);
-
     /// write file with derivatives
     bool WriteMFInfo(const CSmallString& name,int task);
 
 // section of private data ----------------------------------------------------
 private:
-    CPMFAccumulatorPtr      Accu;
     CEnergyDerProxyPtr      GDerProxy;
     CEnergyDerProxyPtr      HDerProxy;
     CEnergyDerProxyPtr      SDerProxy;
     CEnergySurfacePtr       GSurface;
     CEnergySurfacePtr       HSurface;
     CEnergySurfacePtr       SSurface;
-    int                     NumOfThreads;
 
     // GPR data, sizes and index maps
-    size_t                  NumOfCVs;
-    size_t                  NumOfBins;
     size_t                  GPRSize;
     size_t                  NumOfUsedBins;
     std::vector<size_t>     SampledMap;
 
     // setup
     bool                    ConstrainedTK;
-    bool                    UseNumDiff;
     bool                    NoEnergy;
     bool                    IncludeError;
-    EGPRLAMethod            Method;
-
-    // hyperparameters
-    CSimpleVector<double>   SigmaF2;
-    CSimpleVector<double>   CoVar;
-    CSimpleVector<double>   WFac;
-    CSimpleVector<double>   SigmaN2;
-    CSimpleVector<double>   CVLengths2;
+    bool                    FastErrors;     // use faster but more memory intensive algorithm
 
     // GPR model
     EGPRKernel              Kernel;
@@ -234,54 +133,34 @@ private:
 
     // derivatives
     CFortranMatrix          Kder;           // derivative of kernels w.r.t. a hyperparameter
-    CFortranMatrix          TKder;             // task covariances derivatives
+    CFortranMatrix          TKder;          // task covariances derivatives
 
-    bool                    GlobalMinSet;   // true if gpos set by SetGlobalMin()
-    CSimpleVector<double>   GPos;           // global position, either detected or use
-    bool                    GPosSet;        // true is gpos set by any means, either SetGlobalMin() or from FES
-    int                     GPosBin;
-
-    // SVD setup
-    double                  RCond;
-
-    // internal flow
-    bool                    UseInv;         // calc all via inversion
-    bool                    NeedInv;        // need inverted matrix - hyprms, error analysis
-    bool                    FastErrors;     // use faster but more memory intensive algorithm
 
     bool TrainGP(CVerboseStr& vout);
     void CalculateEnergy(CVerboseStr& vout);
 
-    void   GetValues(const CSimpleVector<double>& position,double& dg, double& dh, double& mtds);
+// output data
+    double GetValue(const CSimpleVector<double>& position,int task);
     double GetVar(CSimpleVector<double>& lpos,int task);
     void   GetCovVar(CSimpleVector<double>& lpos,CSimpleVector<double>& rpos,double& llvar,double& lrcov,int task);
 
-// errors - slow algorithm
-    void   CalculateErrors(CSimpleVector<double>& gpos,CVerboseStr& vout); // gpos - position of global minimum
-// fast errors
-    void   CalculateErrorsFromCov(CVerboseStr& vout);
+// source data
+    double GetMeanForce(const CSimpleVector<double>& position,size_t icoord,int task);
+    double GetMeanForceVar(const CSimpleVector<double>& position,size_t icoord,int task);
+    double GetRMSR(size_t cv,int task);
 
-    void   CalculateCovs(CVerboseStr& vout,int task);
-    void   CalculateErrors(CSimpleVector<double>& gpos,CVerboseStr& vout,int task);
-    void   CalculateErrorsFromCov(CVerboseStr& vout,int task);
+// errors
+    void CalculateErrors(CVerboseStr& vout);        // slow algorithm
+    void CalculateErrorsFromCov(CVerboseStr& vout); // fast errors
 
-    void   CreateTK(void);
-    void   CreateKS(void);
-    void   CreateKff(const CSimpleVector<double>& ip,CSimpleVector<double>& ky,int task);
-    void   CreateKff2(const CSimpleVector<double>& ip,size_t icoord,CSimpleVector<double>& ky2,int task);
-    double GetKernelValue(const CSimpleVector<double>& ip,const CSimpleVector<double>& jp);
-    void   GetKernelDerAnaI(const CSimpleVector<double>& ip,const CSimpleVector<double>& jp,CSimpleVector<double>& der);
-    void   GetKernelDerNumI(const CSimpleVector<double>& ip,const CSimpleVector<double>& jp,CSimpleVector<double>& der);
-    void   GetKernelDerAnaJ(const CSimpleVector<double>& ip,const CSimpleVector<double>& jp,CSimpleVector<double>& der);
-    void   GetKernelDerNumJ(const CSimpleVector<double>& ip,const CSimpleVector<double>& jp,CSimpleVector<double>& der);
-    void   GetKernelDer2Ana(const CSimpleVector<double>& ip,const CSimpleVector<double>& jp,CFortranMatrix& kblock);
-    void   GetKernelDer2Num(const CSimpleVector<double>& ip,const CSimpleVector<double>& jp,CFortranMatrix& kblock);
-    void   GetKernelDer2AnaWFac(const CSimpleVector<double>& ip,const CSimpleVector<double>& jp,size_t cv,CFortranMatrix& kblock);
-    void   GetKernelDer2NumWFac(const CSimpleVector<double>& ip,const CSimpleVector<double>& jp,size_t cv,CFortranMatrix& kblock);
+    void CalculateCovs(CVerboseStr& vout,int task);
+    void CalculateErrors(CVerboseStr& vout,int task);
+    void CalculateErrorsFromCov(CVerboseStr& vout,int task);
 
-// parallel processing
-    void RunBlasLapackSeq(void);
-    void RunBlasLapackPar(void);
+    void CreateTK(void);
+    void CreateKS(void);
+    void CreateKff(const CSimpleVector<double>& ip,CSimpleVector<double>& ky,int task);
+    void CreateKff2(const CSimpleVector<double>& ip,size_t icoord,CSimpleVector<double>& ky2,int task);
 
 // derivatives
     void CalcKderWRTSigmaF2(size_t idx);

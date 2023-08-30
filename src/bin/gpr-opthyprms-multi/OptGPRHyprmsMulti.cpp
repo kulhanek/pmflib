@@ -1044,6 +1044,10 @@ void COptGPRHyprmsMulti::ShowGPRStat(void)
             CEnergySurfacePtr fes(new CEnergySurface);
             fes->Allocate(proxy->Accumulators.front());
 
+            if( Options.IsOptGlobalMinSet() ){
+                fes->SetGlobalMin(Options.GetOptGlobalMin());
+            }
+
             gpr.SetOutputES(fes);
             for(size_t i=0; i < proxy->DerProxies.size(); i++){
                 gpr.AddInputEnergyDerProxy(proxy->DerProxies[i]);
@@ -1060,10 +1064,6 @@ void COptGPRHyprmsMulti::ShowGPRStat(void)
             gpr.SetUseInv(Options.GetOptGPRUseInv());
             gpr.SetCalcLogPL(Options.GetOptGPRCalcLogPL() || Target == EGOT_LOGPL);
 
-            if( Options.IsOptGlobalMinSet() ){
-                gpr.SetGlobalMin(Options.GetOptGlobalMin());
-            }
-
         // run integrator
             gpr.SetSigmaF2(SigmaF2);
             gpr.SetWFac(WFac);
@@ -1076,6 +1076,10 @@ void COptGPRHyprmsMulti::ShowGPRStat(void)
 
             CEnergySurfacePtr fes(new CEnergySurface);
             fes->Allocate(proxy->Accumulators.front());
+
+            if( Options.IsOptGlobalMinSet() ){
+                fes->SetGlobalMin(Options.GetOptGlobalMin());
+            }
 
             gpr.SetOutputES(fes);
             for(size_t i=0; i < proxy->EnergyProxies.size(); i++){
@@ -1091,10 +1095,6 @@ void COptGPRHyprmsMulti::ShowGPRStat(void)
             gpr.SetKernel(Options.GetOptGPRKernel());
             gpr.SetUseInv(Options.GetOptGPRUseInv());
             gpr.SetCalcLogPL(Options.GetOptGPRCalcLogPL() || Target == EGOT_LOGPL);
-
-            if( Options.IsOptGlobalMinSet() ){
-                gpr.SetGlobalMin(Options.GetOptGlobalMin());
-            }
 
         // run integrator
             gpr.SetSigmaF2(SigmaF2);
@@ -1443,6 +1443,10 @@ double  COptGPRHyprmsMulti::GetTargetFromSmoother(CSmootherGPR& gpr,CProxyRealmP
     CEnergySurfacePtr fes(new CEnergySurface);
     fes->Allocate(proxy->Accumulators.front());
 
+    if( Options.IsOptGlobalMinSet() ){
+        fes->SetGlobalMin(Options.GetOptGlobalMin());
+    }
+
     gpr.SetOutputES(fes);
     for(size_t i=0; i < proxy->EnergyProxies.size(); i++){
         gpr.AddInputEnergyProxy(proxy->EnergyProxies[i]);
@@ -1456,10 +1460,6 @@ double  COptGPRHyprmsMulti::GetTargetFromSmoother(CSmootherGPR& gpr,CProxyRealmP
     gpr.SetUseInv(Options.GetOptGPRUseInv());
 
     gpr.SetKernel(Options.GetOptGPRKernel());
-
-    if( Options.IsOptGlobalMinSet() ){
-        gpr.SetGlobalMin(Options.GetOptGlobalMin());
-    }
 
     if( Target == EGOT_LOGPL) gpr.SetCalcLogPL(true);
 

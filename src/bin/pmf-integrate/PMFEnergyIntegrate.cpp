@@ -252,6 +252,10 @@ bool CPMFEnergyIntegrate::Run(void)
     FES->Allocate(Accumulators[0]);
     FES->SetSLevel(Options.GetOptSLevel());
 
+    if( Options.IsOptGlobalMinSet() ){
+        FES->SetGlobalMin(Options.GetOptGlobalMin());
+    }
+
 // reduced FES options
     if( Options.IsOptKeepCVsSet() ){
         DecodeEList(Options.GetOptKeepCVs(),KeepCVs,"--keepcvs");
@@ -692,10 +696,6 @@ bool CPMFEnergyIntegrate::IntegrateForEcut(void)
         integrator.SetUseInv(Options.GetOptGPRUseInv());
         integrator.SetKernel(Options.GetOptGPRKernel());
 
-        if( Options.IsOptGlobalMinSet() ){
-            integrator.SetGlobalMin(Options.GetOptGlobalMin());
-        }
-
         if(integrator.Integrate(vout) == false) {
             ES_ERROR("unable to integrate ABF accumulator");
             return(false);
@@ -737,20 +737,12 @@ bool CPMFEnergyIntegrate::Integrate(void)
             INVALID_ARGUMENT("algorithm - not implemented");
         }
 
-        if( Options.GetOptUseRealGlobalMin() == false ){
-            if( Options.IsOptGlobalMinSet() ){
-                integrator.SetGlobalMin(Options.GetOptGlobalMin());
-            }
-        }
-
         integrator.SetUseOldRFDMode(Options.GetOptUseOldRFD());
 
         if(integrator.Integrate(vout) == false) {
             ES_ERROR("unable to integrate ABF accumulator");
             return(false);
         }
-
-        GPos = integrator.GetGlobalMin();
 
     } else if( Options.GetOptMethod() == "rbf" ){
         CIntegratorRBF   integrator;
@@ -766,12 +758,6 @@ bool CPMFEnergyIntegrate::Integrate(void)
 
         integrator.SetLLSMethod(Options.GetOptLAMethod());
 
-        if( Options.GetOptUseRealGlobalMin() == false ){
-            if( Options.IsOptGlobalMinSet() ){
-                integrator.SetGlobalMin(Options.GetOptGlobalMin());
-            }
-        }
-
         if(integrator.Integrate(vout) == false) {
             ES_ERROR("unable to integrate ABF accumulator");
             return(false);
@@ -780,8 +766,6 @@ bool CPMFEnergyIntegrate::Integrate(void)
         if( Options.IsOptMFInfoSet() ){
             if( integrator.WriteMFInfo(Options.GetOptMFInfo()) == false ) return(false);
         }
-
-        GPos = integrator.GetGlobalMin();
 
     } else if( Options.GetOptMethod() == "gpr" ){
         CIntegratorGPR   integrator;
@@ -806,18 +790,11 @@ bool CPMFEnergyIntegrate::Integrate(void)
         integrator.SetUseNumDiff(Options.GetOptGPRNumDiff());
         integrator.IncludeGluedAreas((Options.GetOptGlueingFactor() > 0)||Options.GetOptGlueHoles()||Options.GetOptIncludeGluedRegions());
 
-        if( Options.GetOptUseRealGlobalMin() == false ){
-            if( Options.IsOptGlobalMinSet() ){
-                integrator.SetGlobalMin(Options.GetOptGlobalMin());
-            }
-        }
-
         integrator.SetRCond(Options.GetOptRCond());
         integrator.SetLAMethod(Options.GetOptLAMethod());
         integrator.SetUseInv(Options.GetOptGPRUseInv());
         integrator.SetKernel(Options.GetOptGPRKernel());
         integrator.SetCalcLogPL(Options.GetOptGPRCalcLogPL());
-        integrator.SetUseZeroPoint(Options.GetOptGPRIncludeZPE());
 
         if( Options.IsOptMFInfoSet() ){
             integrator.PrepForMFInfo();
@@ -831,8 +808,6 @@ bool CPMFEnergyIntegrate::Integrate(void)
         if( Options.IsOptMFInfoSet() ){
             if( integrator.WriteMFInfo(Options.GetOptMFInfo()) == false ) return(false);
         }
-
-        GPos = integrator.GetGlobalMin();
 
     } else {
         INVALID_ARGUMENT("method - not implemented");
@@ -909,13 +884,11 @@ bool CPMFEnergyIntegrate::ReduceFES(void)
         integrator.SetNoEnergy(false);
         integrator.SetUseNumDiff(Options.GetOptGPRNumDiff());
         integrator.IncludeGluedAreas((Options.GetOptGlueingFactor() > 0)||Options.GetOptGlueHoles()||Options.GetOptIncludeGluedRegions());
-        integrator.SetGlobalMin(GPos);
         integrator.SetRCond(Options.GetOptRCond());
         integrator.SetLAMethod(Options.GetOptLAMethod());
         integrator.SetUseInv(Options.GetOptGPRUseInv());
         integrator.SetKernel(Options.GetOptGPRKernel());
         integrator.SetCalcLogPL(Options.GetOptGPRCalcLogPL());
-        integrator.SetUseZeroPoint(true);
 
         if(integrator.Integrate(vout) == false) {
             ES_ERROR("unable to integrate ABF accumulator");
@@ -1515,51 +1488,52 @@ void CPMFEnergyIntegrate::AddMTCorr(void)
 
     if( Options.IsOptGlobalMinSet() ){
 
-        vout << "      Global minimum provided at: ";
-        vout << setprecision(5) << FES->GetCV(0)->GetRealValue(GPos[0]);
-        for(int i=1; i < FES->GetNumOfCVs(); i++){
-            vout << "x" << setprecision(5) << FES->GetCV(i)->GetRealValue(GPos[i]);
-        }
-        vout << endl;
+// FIXME
+//        vout << "      Global minimum provided at: ";
+//        vout << setprecision(5) << FES->GetCV(0)->GetRealValue(GPos[0]);
+//        for(int i=1; i < FES->GetNumOfCVs(); i++){
+//            vout << "x" << setprecision(5) << FES->GetCV(i)->GetRealValue(GPos[i]);
+//        }
+//        vout << endl;
 
-        // find the closest bin
-        CSimpleVector<double>   pos;
-        pos.CreateVector(FES->GetNumOfCVs());
-        double minv = 0.0;
-        int glb_bin = 0;
-        for(int ibin=0; ibin < FES->GetNumOfBins(); ibin++){
-            FES->GetPoint(ibin,pos);
-            double dist2 = 0.0;
-            for(int cv=0; cv < FES->GetNumOfCVs(); cv++){
-                dist2 = dist2 + (pos[cv]-GPos[cv])*(pos[cv]-GPos[cv]);
-            }
-            if( ibin == 0 ){
-                minv = dist2;
-                glb_bin = 0;
-            }
-            if( dist2 < minv ){
-                minv = dist2;
-                glb_bin = ibin;
-            }
-        }
-
-        FES->GetPoint(glb_bin,pos);
-
-        vout << "      Closest bin found at: ";
-        vout << setprecision(5) << FES->GetCV(0)->GetRealValue(pos[0]);
-        for(int i=1; i < FES->GetNumOfCVs(); i++){
-            vout << "x" << setprecision(5) << FES->GetCV(i)->GetRealValue(pos[i]);
-        }
-
-        double glb_min = FES->GetEnergy(glb_bin);
-        vout << " (" << setprecision(5) << glb_min << ")" << endl;
-
-        for(int i=0; i < FES->GetNumOfBins(); i++){
-            if( FES->GetNumOfSamples(i) != 0 ) {
-                double value = FES->GetEnergy(i);
-                FES->SetEnergy(i,value-glb_min);
-            }
-        }
+//        // find the closest bin
+//        CSimpleVector<double>   pos;
+//        pos.CreateVector(FES->GetNumOfCVs());
+//        double minv = 0.0;
+//        int glb_bin = 0;
+//        for(int ibin=0; ibin < FES->GetNumOfBins(); ibin++){
+//            FES->GetPoint(ibin,pos);
+//            double dist2 = 0.0;
+//            for(int cv=0; cv < FES->GetNumOfCVs(); cv++){
+//                dist2 = dist2 + (pos[cv]-GPos[cv])*(pos[cv]-GPos[cv]);
+//            }
+//            if( ibin == 0 ){
+//                minv = dist2;
+//                glb_bin = 0;
+//            }
+//            if( dist2 < minv ){
+//                minv = dist2;
+//                glb_bin = ibin;
+//            }
+//        }
+//
+//        FES->GetPoint(glb_bin,pos);
+//
+//        vout << "      Closest bin found at: ";
+//        vout << setprecision(5) << FES->GetCV(0)->GetRealValue(pos[0]);
+//        for(int i=1; i < FES->GetNumOfCVs(); i++){
+//            vout << "x" << setprecision(5) << FES->GetCV(i)->GetRealValue(pos[i]);
+//        }
+//
+//        double glb_min = FES->GetEnergy(glb_bin);
+//        vout << " (" << setprecision(5) << glb_min << ")" << endl;
+//
+//        for(int i=0; i < FES->GetNumOfBins(); i++){
+//            if( FES->GetNumOfSamples(i) != 0 ) {
+//                double value = FES->GetEnergy(i);
+//                FES->SetEnergy(i,value-glb_min);
+//            }
+//        }
     } else {
         // search for global minimum
         CSimpleVector<double> gpos;

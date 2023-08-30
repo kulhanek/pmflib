@@ -27,7 +27,7 @@
 #include <TerminalStr.hpp>
 #include <StdIOFile.hpp>
 #include <SmallTimeAndDate.hpp>
-#include <GPRHyprmsBase.hpp>
+#include <GPRHyprms.hpp>
 #include <FortranMatrix.hpp>
 #include <boost/shared_ptr.hpp>
 #include <vector>
@@ -64,7 +64,7 @@ private:
     CEnergySurfacePtr       FES;
     CEnergySurfacePtr       HES;
     CEnergySurfacePtr       SES;
-    CGPRHyprmsBasePtr       GPREngine;
+    CGPRHyprmsPtr           GPREngine;
     CStdIOFile              OutputFile;
 
 // hyperparameters

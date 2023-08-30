@@ -338,10 +338,6 @@ bool CGHSEnergyIntegrate::Integrate0A(void)
     integrator.SetNoEnergy(Options.GetOptNoEnergy());
     integrator.SetUseNumDiff(Options.GetOptGPRNumDiff());
 
-    if( Options.IsOptGlobalMinSet() ){
-        integrator.SetGlobalMin(Options.GetOptGlobalMin());
-    }
-
     integrator.SetRCond(Options.GetOptRCond());
     integrator.SetLAMethod(Options.GetOptLAMethod());
     integrator.SetUseInv(Options.GetOptGPRUseInv());
@@ -407,15 +403,10 @@ bool CGHSEnergyIntegrate::Integrate0B(void)
         integrator.SetSigmaN2(Options.GetOptSigmaN2());
     }
 
-    integrator.EnableConstraints(Options.GetOptEnableConstraints());
     integrator.SetFastError(!Options.GetOptGPRNoFastError());
     integrator.SetIncludeError(Options.GetOptWithError());
     integrator.SetNoEnergy(Options.GetOptNoEnergy());
     integrator.SetUseNumDiff(Options.GetOptGPRNumDiff());
-
-    if( Options.IsOptGlobalMinSet() ){
-        integrator.SetGlobalMin(Options.GetOptGlobalMin());
-    }
 
     integrator.SetRCond(Options.GetOptRCond());
     integrator.SetLAMethod(Options.GetOptLAMethod());
@@ -424,7 +415,7 @@ bool CGHSEnergyIntegrate::Integrate0B(void)
     integrator.SetCalcLogPL(Options.GetOptGPRCalcLogPL());
 
     if( Options.IsOptMFInfoSet() ){
-  //     integrator.PrepForMFInfo();
+       integrator.PrepForMFInfo();
     }
 
     if(integrator.Integrate(vout) == false) {
@@ -441,15 +432,15 @@ bool CGHSEnergyIntegrate::Integrate0B(void)
         mfinfo = Options.GetOptMFInfo();
         mfinfo << ".dG_dx";
     vout << format("   ** dG(x)/dx") << endl;
-     //   if( integrator.WriteMFInfo(mfinfo,0) == false ) return(false);
+        if( integrator.WriteMFInfo(mfinfo,0) == false ) return(false);
         mfinfo = Options.GetOptMFInfo();
-        mfinfo << ".dH_dx";
-    vout << format("   ** dH(x)/dx") << endl;
-    //    if( integrator.WriteMFInfo(mfinfo,1) == false ) return(false);
+        mfinfo << ".dH";
+    vout << format("   ** dH(x)") << endl;
+        if( integrator.WriteMFInfo(mfinfo,1) == false ) return(false);
         mfinfo = Options.GetOptMFInfo();
         mfinfo << ".mTdS_dx";
     vout << format("   ** -TdS(x)/dx") << endl;
-     //   if( integrator.WriteMFInfo(mfinfo,2) == false ) return(false);
+        if( integrator.WriteMFInfo(mfinfo,2) == false ) return(false);
     }
     vout << "   Done." << endl;
 

@@ -106,7 +106,6 @@ int COptGPRHyprms::Init(int argc,char* argv[])
         vout << "# NCorr                 : " << (const char*)Options.GetOptNCorr() << endl;
         vout << "# SigmaN2               : " << (const char*)Options.GetOptSigmaN2() << endl;
     }
-    vout << "# Constrained MT-GPR        : " << bool_to_str(Options.GetOptEnableConstraints()) << endl;
     vout << "# ------------------------------------------------" << endl;
         vout << "# Linear algebra        : " << Options.GetOptLAMethod() << endl;
     if( (Options.GetOptLAMethod() == "svd") || (Options.GetOptLAMethod() == "svd2") || (Options.GetOptLAMethod() == "default") ){
@@ -156,6 +155,10 @@ bool COptGPRHyprms::Run(void)
     HES->Allocate(Accu);
     SES = CEnergySurfacePtr(new CEnergySurface);
     SES->Allocate(Accu);
+
+    if( Options.IsOptGlobalMinSet() ){
+        FES->SetGlobalMin(Options.GetOptGlobalMin());
+    }
     vout << "   Done" << endl;
 
 // statistics
@@ -360,7 +363,8 @@ void COptGPRHyprms::InitOptimizer(void)
     }
     for(int i=0; i < (int)SigmaN2Enabled.size(); i++){
         if( SigmaN2Enabled[i] ){
-            Hyprms[ind] = sqrt(SigmaN2[i]-Options.GetOptMinSigmaN2());
+            // Hyprms[ind] = sqrt(SigmaN2[i]-Options.GetOptMinSigmaN2());
+            Hyprms[ind] = log(SigmaN2[i]);
             ind++;
         }
     }
@@ -548,7 +552,7 @@ bool COptGPRHyprms::Optimize(void)
     // input parameters cannot be zero or negative
     for(int i=0; i < NumOfOptPrms; i++){
         if( Hyprms[i] <= 0.0 ){
-            Hyprms[i] = 1.0;
+    //        Hyprms[i] = 1.0;
         }
     }
 
@@ -968,7 +972,7 @@ void COptGPRHyprms::PrintGradientSummary(void)
         if( SigmaN2Enabled[i] ) {
             vout << format("%5d ")%(ind+1);
             vout << format("SigmaN2#%-2d ")%(i+1);
-            double value = Hyprms[ind]*Hyprms[ind] + Options.GetOptMinSigmaN2();
+            double value = exp(Hyprms[ind]);
             gnorm += HyprmsGrd[ind]*HyprmsGrd[ind];
             vout << format("%14.6e %14.6e")%(value)%HyprmsGrd[ind] << endl;
             ind++;
@@ -1012,8 +1016,42 @@ void COptGPRHyprms::RunGPRAnalytical(void)
     GetTargetDerivatives(HyprmsGrd);
 
 // transform gradients
-    for(int ind=0; ind < NumOfOptPrms; ind++){
-        HyprmsGrd[ind] = 2.0*HyprmsGrd[ind]*Hyprms[ind];
+//    for(int ind=0; ind < NumOfOptPrms; ind++){
+//        HyprmsGrd[ind] = 2.0*HyprmsGrd[ind]*Hyprms[ind];
+//    }
+
+
+    int ind = 0;
+    for(int i=0; i < (int)SigmaF2Enabled.size(); i++){
+        if( SigmaF2Enabled[i] ){
+            HyprmsGrd[ind] = 2.0*HyprmsGrd[ind]*Hyprms[ind];
+            ind++;
+        }
+    }
+    for(int i=0; i < (int)CoVarEnabled.size(); i++){
+        if( CoVarEnabled[i] ){
+            HyprmsGrd[ind] = 2.0*HyprmsGrd[ind]*Hyprms[ind];
+            ind++;
+        }
+    }
+    for(int i=0; i < (int)WFacEnabled.size(); i++){
+        if( WFacEnabled[i] ){
+            HyprmsGrd[ind] = 2.0*HyprmsGrd[ind]*Hyprms[ind];
+            ind++;
+        }
+    }
+    for(int i=0; i < (int)NCorrEnabled.size(); i++){
+        if( NCorrEnabled[i] ){
+            HyprmsGrd[ind] = 2.0*HyprmsGrd[ind]*Hyprms[ind];
+            ind++;
+        }
+    }
+    for(int i=0; i < (int)SigmaN2Enabled.size(); i++){
+        if( SigmaN2Enabled[i] ){
+            // Hyprms[ind] = sqrt(SigmaN2[i]-Options.GetOptMinSigmaN2());
+            HyprmsGrd[ind] = HyprmsGrd[ind]*exp(Hyprms[ind]);
+            ind++;
+        }
     }
 }
 
@@ -1034,7 +1072,7 @@ void COptGPRHyprms::RunGPRNumerical(void)
     logTarget = GetTarget();
 
 // derivatives
-    double dh = 1e-5;
+    double dh = 1e-3;
 
     for(int i=0; i < NumOfOptPrms; i++){
         if( Options.GetOptCD5() ){
@@ -1127,7 +1165,7 @@ void COptGPRHyprms::ScatterHyprms(CSimpleVector<double>& hyprsm)
 // ---------------
     for(int k=0; k < (int)SigmaN2Enabled.size(); k++){
         if( SigmaN2Enabled[k] ){
-            SigmaN2[k] = hyprsm[ind]*hyprsm[ind] + Options.GetOptMinSigmaN2();
+            SigmaN2[k] = exp(hyprsm[ind]);
             ind++;
             HyprmsEnabled[i] = true;
         } else {
@@ -1152,6 +1190,8 @@ void COptGPRHyprms::InitGPREngine(void)
     } else if( Options.GetArgRealm() == "dH" ) {
         InitGPREngine_dF();
     } else if( Options.GetArgRealm() == "GHS_dH/dx" ) {
+        InitGPREngine_GHS_dH_dx();
+    } else if( Options.GetArgRealm() == "cGHS_dH/dx" ) {
         InitGPREngine_GHS_dH_dx();
     } else if( Options.GetArgRealm() == "GHS_dH" ) {
         InitGPREngine_GHS_dH();
@@ -1217,6 +1257,8 @@ void COptGPRHyprms::CreateGPREngine(void)
     } else if( Options.GetArgRealm() == "dH" ) {
         CreateGPREngine_dF();
     } else if( Options.GetArgRealm() == "GHS_dH/dx" ) {
+        CreateGPREngine_GHS_dH_dx();
+    } else if( Options.GetArgRealm() == "cGHS_dH/dx" ) {
         CreateGPREngine_GHS_dH_dx();
     } else if( Options.GetArgRealm() == "GHS_dH" ) {
         CreateGPREngine_GHS_dH();
@@ -1285,14 +1327,10 @@ void COptGPRHyprms::CreateGPREngine_dF_dx(void)
     gpr->SetUseInv(Options.GetOptGPRUseInv());
     gpr->SetCalcLogPL(Options.GetOptGPRCalcLogPL() || (Target == EGOT_LOGPL));
 
-    if( Options.IsOptGlobalMinSet() ){
-         gpr->SetGlobalMin(Options.GetOptGlobalMin());
-    }
-
 // set parameters
-    gpr->SetSigmaF2(SigmaF2[0]);
+    gpr->SetSigmaF2(SigmaF2);
     gpr->SetWFac(WFac);
-    gpr->SetNCorr(NCorr[0]);
+    gpr->SetNCorr(NCorr);
     gpr->SetSigmaN2(SigmaN2);
 
 // run integrator
@@ -1332,14 +1370,10 @@ void COptGPRHyprms::CreateGPREngine_dF(void)
     gpr->SetUseInv(Options.GetOptGPRUseInv());
     gpr->SetCalcLogPL(Options.GetOptGPRCalcLogPL() || (Target == EGOT_LOGPL));
 
-    if( Options.IsOptGlobalMinSet() ){
-         gpr->SetGlobalMin(Options.GetOptGlobalMin());
-    }
-
 // set parameters
-    gpr->SetSigmaF2(SigmaF2[0]);
+    gpr->SetSigmaF2(SigmaF2);
     gpr->SetWFac(WFac);
-    gpr->SetNCorr(NCorr[0]);
+    gpr->SetNCorr(NCorr);
     gpr->SetSigmaN2(SigmaN2);
 
 // run interpolator
@@ -1357,7 +1391,7 @@ void COptGPRHyprms::CreateGPREngine_GHS_dH_dx(void)
     CEnergyDerProxyPtr proxy_dh;
     CEnergyDerProxyPtr proxy_ds;
 
-    if( Options.GetArgRealm() == "GHS_dH/dx" ) {
+    if( (Options.GetArgRealm() == "GHS_dH/dx") || (Options.GetArgRealm() == "cGHS_dH/dx") ) {
         if( CABFProxy_dG::IsCompatible(Accu) ){
            proxy_dg = CABFProxy_dG_Ptr(new CABFProxy_dG);
            proxy_dg->Init(Accu);
@@ -1404,16 +1438,14 @@ void COptGPRHyprms::CreateGPREngine_GHS_dH_dx(void)
 
     gpr->SetIncludeError(false);
     gpr->SetNoEnergy(false);
-    gpr->EnableConstraints(Options.GetOptEnableConstraints());
+    if( Options.GetArgRealm() == "cGHS_dH/dx" ){
+        gpr->EnableConstraints(true);
+    }
 
     gpr->SetLAMethod(Options.GetOptLAMethod());
     gpr->SetKernel(Options.GetOptGPRKernel());
     gpr->SetUseInv(Options.GetOptGPRUseInv());
     gpr->SetCalcLogPL(Options.GetOptGPRCalcLogPL() || (Target == EGOT_LOGPL));
-
-    if( Options.IsOptGlobalMinSet() ){
-         gpr->SetGlobalMin(Options.GetOptGlobalMin());
-    }
 
 // set parameters
     gpr->SetSigmaF2(SigmaF2);
@@ -1477,16 +1509,11 @@ void COptGPRHyprms::CreateGPREngine_GHS_dH(void)
 
     gpr->SetIncludeError(false);
     gpr->SetNoEnergy(false);
-    gpr->EnableConstraints(Options.GetOptEnableConstraints());
 
     gpr->SetLAMethod(Options.GetOptLAMethod());
     gpr->SetKernel(Options.GetOptGPRKernel());
     gpr->SetUseInv(Options.GetOptGPRUseInv());
     gpr->SetCalcLogPL(Options.GetOptGPRCalcLogPL() || (Target == EGOT_LOGPL));
-
-    if( Options.IsOptGlobalMinSet() ){
-         gpr->SetGlobalMin(Options.GetOptGlobalMin());
-    }
 
 // set parameters
     gpr->SetSigmaF2(SigmaF2);

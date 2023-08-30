@@ -36,13 +36,16 @@
 /** \brief smooth energy by GPR
 */
 
-class PMF_PACKAGE CSmootherGPR : public CGPRHyprmsBase {
+class PMF_PACKAGE CSmootherGPR : public CGPRHyprms {
 public:
 // constructor and destructor -------------------------------------------------
     CSmootherGPR(void);
     virtual ~CSmootherGPR(void);
 
 // setup methods --------------------------------------------------------------
+    /// set accumulator
+    void SetAccumulator(CPMFAccumulatorPtr accu);
+
     /// set input energy proxy
     void AddInputEnergyProxy(CEnergyProxyPtr p_proxy);
 
@@ -52,84 +55,13 @@ public:
     /// set output energy surface
     void SetOutputES(CEnergySurfacePtr p_surf);
 
-// hyperparameters
-    /// set sigmaf2
-    void SetSigmaF2(double sigf2);
-
-// ----
-    /// multiply of bin sizes
-    void SetWFac(const CSmallString& spec);
-
-    /// multiply of bin sizes
-    void SetWFac(CSimpleVector<double>& wfac);
-
-    /// multiply of bin sizes
-    void SetWFac(size_t cvind, double value);
-
-// ----
-    /// set ncorr
-    void SetNCorr(const CSmallString& spec);
-
-    /// set ncorr
-    void SetNCorr(double value);
-
-// ----
-    /// set sigman2
-    void SetSigmaN2(const CSmallString& spec);
-
-    /// set sigman2
-    void SetSigmaN2(CSimpleVector<double>& sigman2);
-
-    /// set sigman2
-    void SetSigmaN2(size_t cvind, double value);
-
-// ----
-    /// load hyperparameters from the file
-    void LoadGPRHyprms(const CSmallString& name);
-
 // setup
     /// set include error
     void SetIncludeError(bool set);
 
-    /// set algorithm for LA
-    void SetLAMethod(EGPRLAMethod set);
-
-    /// set algorithm for LA
-    void SetLAMethod(const CSmallString& method);
-
-    /// set kernel
-    void SetKernel(const CSmallString& kernel);
-
-    /// set rcond for SVD
-    void SetRCond(double rcond);
-
-    /// set position of global minimum
-    void SetGlobalMin(const CSmallString& spec);
-
-    /// set position of global minimum
-    void SetGlobalMin(const CSimpleVector<double>& pos);
-
-    /// get position of global minima
-    CSimpleVector<double> GetGlobalMin(void);
-
-    /// get position of global minima - bin
-    int GetGlobalMinBin(void);
-
-    /// get position of global minima
-    double GetGlobalMinValue(void) const;
-
-    /// use inversion alg
-    void SetUseInv(bool set);
-
 // execution method -----------------------------------------------------------
     /// interpolate data
     bool Interpolate(CVerboseStr& vout,bool nostat=false);
-
-    /// print exec info
-    void PrintExecInfo(CVerboseStr& vout);
-
-    /// get kernel name
-    const CSmallString GetKernelName(void);
 
     /// write file with derivatives
     bool WriteMFInfo(const CSmallString& name);
@@ -161,11 +93,8 @@ public:
 private:
     std::vector<CEnergyProxyPtr>    EneProxyItems;
     CEnergySurfacePtr               EneSurface;
-    int                             NumOfThreads;
 
     // GPR data, sizes and index maps
-    size_t                          NumOfCVs;
-    size_t                          NumOfBins;
     size_t                          GPRSize;
     std::vector<size_t>             SampledMap;
     std::vector<size_t>             EneProxyMap;
@@ -174,14 +103,6 @@ private:
 
     // setup
     bool                    IncludeError;
-    EGPRLAMethod            Method;
-
-    // hyperparameters
-    double                  SigmaF2;
-    double                  NCorr;
-    CSimpleVector<double>   WFac;
-    CSimpleVector<double>   SigmaN2;
-    CSimpleVector<double>   CVLengths2;
 
     // GPR model
     EGPRKernel              Kernel;
@@ -192,21 +113,8 @@ private:
     CSimpleVector<double>   GPRModel;       // weights
     CFortranMatrix          Cov;            // covariances
 
-    bool                    GlobalMinSet;   // true if gpos set by SetGlobalMin()
-    CSimpleVector<double>   GPos;           // global position, either detected or use
-    bool                    GPosSet;        // true is gpos set by any means, either SetGlobalMin() or from FES
-    double                  GlbMinValue;
-    int                     GPosBin;
-
     // derivatives
     CFortranMatrix          Kder;           // derivative of kernels w.r.t. a hyperparameter
-
-    // internal
-    bool                    UseInv;         // calc all via inversion
-    bool                    NeedInv;        // need inverted matrix - hyprms, error analysis
-
-    // SVD setup
-    double                  RCond;
 
     bool TrainGP(CVerboseStr& vout);
     void CalculateEnergy(CVerboseStr& vout);
@@ -216,20 +124,14 @@ private:
     double GetValue(const CSimpleVector<double>& position);
 
     // kernel matrix + noise
-    void   CreateKS(void);
-    void   CreateKff(const CSimpleVector<double>& ip,CSimpleVector<double>& ky);
-    double GetKernelValue(const CSimpleVector<double>& ip,const CSimpleVector<double>& jp);
-
-    // parallel processing
-    void RunBlasLapackSeq(void);
-    void RunBlasLapackPar(void);
+    void CreateKS(void);
+    void CreateKff(const CSimpleVector<double>& ip,CSimpleVector<double>& ky);
 
     // derivatives
     void CalcKderWRTSigmaF2(void);
     void CalcKderWRTNCorr(void);
     void CalcKderWRTWFac(size_t cv);
     void CalcKderWRTSigmaN2(size_t cv);
-    double GetKernelValueWFacDer(const CSimpleVector<double>& ip,const CSimpleVector<double>& jp,size_t cv);
 };
 
 //------------------------------------------------------------------------------

@@ -67,9 +67,10 @@ public:
     CSO_OPT(double,Offset)
     CSO_OPT(CSmallString,GPRKernel)
     CSO_OPT(bool,GPRCalcLogPL)
-    CSO_OPT(double,SigmaF2)
-    CSO_OPT(double,NCorr)
+    CSO_OPT(CSmallString,SigmaF2)
     CSO_OPT(CSmallString,WFac)
+    CSO_OPT(CSmallString,NCorr)
+    CSO_OPT(CSmallString,SigmaN2)
     CSO_OPT(CSmallString,LoadHyprms)
     CSO_OPT(double,SLevel)
     CSO_OPT(CSmallString,MFInfo)
@@ -157,23 +158,14 @@ public:
                 NULL,                           /* parameter name */
                 "GPR: Calculate logPL.")   /* option description */
 //----------------------------------------------------------------------
-    CSO_MAP_OPT(double,                           /* option type */
+    CSO_MAP_OPT(CSmallString,                           /* option type */
                 SigmaF2,                        /* option name */
-                15.0,                          /* default value */
+                "15.0",                          /* default value */
                 false,                          /* is option mandatory */
                 's',                           /* short option name */
                 "sigmaf2",                      /* long option name */
                 "NUMBER",                           /* parameter name */
                 "GPR: Variance of the reconstructed enthalpy surface (signal variance).")   /* option description */
-    //----------------------------------------------------------------------
-    CSO_MAP_OPT(double,                           /* option type */
-                NCorr,                        /* option name */
-                1.0,                          /* default value */
-                false,                          /* is option mandatory */
-                'c',                           /* short option name */
-                "ncorr",                      /* long option name */
-                "VALUE",                           /* parameter name */
-                "Number of statistically correlated samples.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(CSmallString,                           /* option type */
                 WFac,                        /* option name */
@@ -184,6 +176,26 @@ public:
                 "SPEC",                           /* parameter name */
                 "GPR: Factors influencing widths of square exponential kernels. The width is distance between "
                 "the adjacent square exponential functions multiplied by this factors in the form WFac1[xWFac2x...]. "
+                "The last value pads the rest.")   /* option description */
+    //----------------------------------------------------------------------
+    CSO_MAP_OPT(CSmallString,                           /* option type */
+                NCorr,                        /* option name */
+                "0.0",                          /* default value */
+                false,                          /* is option mandatory */
+                'c',                           /* short option name */
+                "ncorr",                      /* long option name */
+                "VALUE",                           /* parameter name */
+                "Number of statistically correlated samples in the form NCorr1[NCorr2x...]. "
+                "The last value pads the rest.")   /* option description */
+    //----------------------------------------------------------------------
+    CSO_MAP_OPT(CSmallString,                           /* option type */
+                SigmaN2,                        /* option name */
+                "0.0",                          /* default value */
+                false,                          /* is option mandatory */
+                'n',                           /* short option name */
+                "sigman2",                      /* long option name */
+                "SPEC",                           /* parameter name */
+                "Values of noise sigma squared for each CV in the form SigmaN2(1)[xSigmaN2(2)x...]. "
                 "The last value pads the rest.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(CSmallString,                           /* option type */

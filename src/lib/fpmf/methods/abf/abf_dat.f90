@@ -182,6 +182,16 @@ type,extends(PMFAccuType) :: ABFAccuType
     real(PMFDP),pointer    :: c11bk(:,:)
     real(PMFDP),pointer    :: c11bv(:,:)
 
+    real(PMFDP),pointer    :: c11fp(:,:)                ! co-variances
+    real(PMFDP),pointer    :: c11fr(:,:)
+    real(PMFDP),pointer    :: c11fk(:,:)
+    real(PMFDP),pointer    :: c11fv(:,:)
+
+    real(PMFDP),pointer    :: c11fap(:,:)                ! co-variances
+    real(PMFDP),pointer    :: c11far(:,:)
+    real(PMFDP),pointer    :: c11fak(:,:)
+    real(PMFDP),pointer    :: c11fav(:,:)
+
 ! applied ICF - this is stored in accu but ignored
     real(PMFDP),pointer    :: bnsamples(:)              ! number of hits into bins
     real(PMFDP),pointer    :: bmicf(:,:)                ! applied MICF
