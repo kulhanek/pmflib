@@ -86,9 +86,9 @@ void CGHSIntegratorGPR0C::SetAccumulator(CPMFAccumulatorPtr accu)
     CGPRKernel::SetAccumulator(accu);
 
     NumOfSigmaF2 = 3;
-    NumOfCoVar   = 3;
+    NumOfCoVar   = 0;
     NumOfNCorr   = 0;
-    NumOfSigmaN2 = 3*NumOfCVs;
+    NumOfSigmaN2 = 3;
 }
 
 //------------------------------------------------------------------------------
@@ -290,9 +290,6 @@ bool CGHSIntegratorGPR0C::Integrate(CVerboseStr& vout,bool nostat)
     if( SigmaF2.GetLength() != 3 ){
         RUNTIME_ERROR("SigmaF2 is not set");
     }
-    if( CoVar.GetLength() != 3 ){
-        RUNTIME_ERROR("CoVar is not set");
-    }
     if( WFac.GetLength() != NumOfCVs ){
         RUNTIME_ERROR("WFac is not set");
     }
@@ -331,17 +328,13 @@ bool CGHSIntegratorGPR0C::Integrate(CVerboseStr& vout,bool nostat)
 
     // print hyperparameters
         vout        << "   Hyperparameters ..." << endl;
-    for(size_t k=0; k < 3*NumOfCVs; k++ ){
+    for(size_t k=0; k < 3; k++ ){
         vout << format("      SigmaF2#%-2d= %10.4f")%(k+1)%SigmaF2[k] << endl;
     }
-    for(size_t k=0; k < 3*NumOfCVs; k++ ){
-        vout << format("      CoVar#%-2d  = %10.4f")%(k+1)%CoVar[k] << endl;
-    }
-
-    for(size_t k=0; k < NumOfCVs; k++ ){
+    for(size_t k=0; k < 1; k++ ){
         vout << format("      WFac#%-2d   = %10.4f")%(k+1)%WFac[k] << endl;
     }
-    for(size_t k=0; k < 3*NumOfCVs; k++ ){
+    for(size_t k=0; k < 3; k++ ){
         vout << format("      SigmaN2#%-2d= %10.4e")%(k+1)%SigmaN2[k] << endl;
     }
 
@@ -514,18 +507,10 @@ bool CGHSIntegratorGPR0C::TrainGP(CVerboseStr& vout)
 // TK is multitask covariance matrix
 void CGHSIntegratorGPR0C::CreateTK(void)
 {
+    TK.SetZero();
     TK[0][0] = SigmaF2[0];
     TK[1][1] = SigmaF2[1];
     TK[2][2] = SigmaF2[2];
-
-    TK[0][1] = CoVar[0];
-    TK[1][0] = CoVar[0];
-
-    TK[0][2] = CoVar[1];
-    TK[2][0] = CoVar[1];
-
-    TK[1][2] = CoVar[2];
-    TK[2][1] = CoVar[2];
 }
 
 //------------------------------------------------------------------------------
@@ -561,7 +546,7 @@ void CGHSIntegratorGPR0C::CreateKS(void)
             size_t jbin = SampledMap[indj];
             Accu->GetPoint(jbin,jpos);
 
-            double kblock = SigmaF2[0]*GetKernelValue(ipos,jpos);
+            double kblock = GetKernelValue(ipos,jpos);
 
             GetKernelDerI(ipos,jpos,kblock1i);
             GetKernelDerJ(ipos,jpos,kblock1j);
@@ -612,8 +597,8 @@ void CGHSIntegratorGPR0C::CreateKff(const CSimpleVector<double>& ip,CSimpleVecto
         size_t jbin = SampledMap[indj];
         Accu->GetPoint(jbin,jpos);
 
-        double kblock = SigmaF2[0]*GetKernelValue(ip,jpos);
-        double kint   = SigmaF2[0]*GetKernelIntI(ip,jpos);
+        double kblock = GetKernelValue(ip,jpos);
+        double kint   = GetKernelIntI(ip,jpos);
 
         // distribute to vector
         kff[offset0 + indj] = TK[0][task]*kint;
@@ -637,7 +622,7 @@ void CGHSIntegratorGPR0C::CreateKff2(const CSimpleVector<double>& ip,size_t icoo
         size_t jbin = SampledMap[indj];
         Accu->GetPoint(jbin,jpos);
 
-        double kblock = SigmaF2[0]*GetKernelValue(ip,jpos);
+        double kblock = GetKernelValue(ip,jpos);
 
         // distribute to vector
         kff2[offset0 + indj] = TK[0][task]*kblock;
@@ -786,11 +771,16 @@ double CGHSIntegratorGPR0C::GetVar(CSimpleVector<double>& lpos,int task)
     kff.CreateVector(GPRSize);
     ik.CreateVector(GPRSize);
 
+    double kblock = 0.0;
+    if( task == 0 ) kblock = GetKernelIntI(lpos,lpos);
+    if( task == 1 ) kblock = GetKernelValue(lpos,lpos);
+    if( task == 2 ) kblock = GetKernelIntI(lpos,lpos);
+
     RunBlasLapackSeq();
 
     CreateKff(lpos,kff,task);
     CSciBlas::gemv(1.0,KS,kff,0.0,ik);
-    double cov = TK[task][task]*GetKernelValue(lpos,lpos) - CSciBlas::dot(kff,ik);
+    double cov = TK[task][task]*kblock - CSciBlas::dot(kff,ik);
     return(cov);
 }
 
@@ -817,8 +807,18 @@ void CGHSIntegratorGPR0C::GetCovVar(CSimpleVector<double>& lpos,CSimpleVector<do
 
     CSciBlas::gemv(1.0,KS,kffr,0.0,ik);
 
-    lrcov = TK[task][task]*GetKernelValue(lpos,rpos) - CSciBlas::dot(kffl,ik);
-    rrvar = TK[task][task]*GetKernelValue(rpos,rpos) - CSciBlas::dot(kffr,ik);
+    double klr = 0.0;
+    if( task == 0 ) klr = GetKernelIntI(lpos,rpos);
+    if( task == 1 ) klr = GetKernelValue(lpos,rpos);
+    if( task == 2 ) klr = GetKernelIntI(lpos,rpos);
+
+    double krr = 0.0;
+    if( task == 0 ) krr = GetKernelIntI(rpos,rpos);
+    if( task == 1 ) krr = GetKernelValue(rpos,rpos);
+    if( task == 2 ) krr = GetKernelIntI(rpos,rpos);
+
+    lrcov = TK[task][task]*klr - CSciBlas::dot(kffl,ik);
+    rrvar = TK[task][task]*krr - CSciBlas::dot(kffr,ik);
 }
 
 //==============================================================================
@@ -1169,22 +1169,18 @@ void CGHSIntegratorGPR0C::GetLogMLDerivatives(const std::vector<bool>& flags,CSi
         }
 
         // calc Kder
-        // 0<3; 3<6; 6<6+NumOfCVs; 6+NumOfCVs < 3*NumOfCVs + 6+NumOfCVs
+        // 0<3; 3<3+NumOfCVs; 3+NumOfCVs < 3*NumOfCVs + 3+NumOfCVs
         if( (prm >= 0) && (prm < 3) ){
             // sigmaf2
             size_t idx = prm - 0;
             CalcKderWRTSigmaF2(idx);
-        } else if( (prm >= 3) && (prm < 6) ){
-            // covar
-            size_t idx = prm - 3;
-            CalcKderWRTCoVar(idx);
-        } else if( (prm >= 6) && (prm < 6+NumOfCVs) ){
+        } else if( (prm >= 3) && (prm < 3+NumOfCVs) ){
             // wfac
-            size_t cv = prm - 6;
+            size_t cv = prm - 3;
             CalcKderWRTWFac(cv);
-        } else if( (prm >= 6+NumOfCVs) && (prm < 3*NumOfCVs + 6+NumOfCVs) ){
+        } else if( (prm >= 3+NumOfCVs) && (prm < 3*NumOfCVs + 3+NumOfCVs) ){
             // sigman2
-            size_t idx = prm - (6+NumOfCVs);
+            size_t idx = prm - (3+NumOfCVs);
             CalcKderWRTSigmaN2(idx);
         } else {
             RUNTIME_ERROR("prm out-of-range");
@@ -1237,22 +1233,18 @@ void CGHSIntegratorGPR0C::GetLogPLDerivatives(const std::vector<bool>& flags,CSi
         }
 
         // calc Kder
-        // 0<3; 3<6; 6<6+NumOfCVs; 6+NumOfCVs < 3*NumOfCVs + 6+NumOfCVs
+        // 0<3; 3<3+NumOfCVs; 3+NumOfCVs < 3*NumOfCVs + 3+NumOfCVs
         if( (prm >= 0) && (prm < 3) ){
             // sigmaf2
             size_t idx = prm - 0;
             CalcKderWRTSigmaF2(idx);
-        } else if( (prm >= 3) && (prm < 6) ){
-            // covar
-            size_t idx = prm - 3;
-            CalcKderWRTCoVar(idx);
-        } else if( (prm >= 6) && (prm < 6+NumOfCVs) ){
+        } else if( (prm >= 3) && (prm < 3+NumOfCVs) ){
             // wfac
-            size_t cv = prm - 6;
+            size_t cv = prm - 3;
             CalcKderWRTWFac(cv);
-        } else if( (prm >= 6+NumOfCVs) && (prm < 3*NumOfCVs + 6+NumOfCVs) ){
+        } else if( (prm >= 3+NumOfCVs) && (prm < 3*NumOfCVs + 3+NumOfCVs) ){
             // sigman2
-            size_t idx = prm - (6+NumOfCVs);
+            size_t idx = prm - (3+NumOfCVs);
             CalcKderWRTSigmaN2(idx);
         } else {
             RUNTIME_ERROR("prm out-of-range");
@@ -1591,7 +1583,7 @@ void CGHSIntegratorGPR0C::CalcKderWRTSigmaF2(size_t idx)
             size_t jbin = SampledMap[indj];
             Accu->GetPoint(jbin,jpos);
 
-            double kblock = SigmaF2[0]*GetKernelValue(ipos,jpos);
+            double kblock = GetKernelValue(ipos,jpos);
 
             Kder[offset0 + indi][offset0 + indj] = TKder[0][0]*kblock;
             Kder[offset0 + indi][offset1 + indj] = TKder[0][1]*kblock;
@@ -1614,78 +1606,6 @@ void CGHSIntegratorGPR0C::CreateTKDerSigmaF2(size_t idx)
 {
     TKder.SetZero();
     TKder[idx][idx] = 1.0;
-}
-
-//------------------------------------------------------------------------------
-
-void CGHSIntegratorGPR0C::CalcKderWRTCoVar(size_t idx)
-{
-    CSimpleVector<double> ipos;
-    CSimpleVector<double> jpos;
-    ipos.CreateVector(NumOfCVs);
-    jpos.CreateVector(NumOfCVs);
-
-    CSimpleVector<double> kblock1i;
-    CSimpleVector<double> kblock1j;
-    kblock1i.CreateVector(NumOfCVs);
-    kblock1j.CreateVector(NumOfCVs);
-
-    CFortranMatrix kblock2;
-    kblock2.CreateMatrix(NumOfCVs,NumOfCVs);
-
-    Kder.SetZero();
-
-    int offset0 = 0;
-    int offset1 = offset0 + NumOfUsedBins;
-    int offset2 = offset1 + NumOfUsedBins;
-
-    CreateTKDerCoVar(idx);
-
-    // generate main kernel block
-    #pragma omp parallel for firstprivate(ipos,jpos,kblock2)
-    for(size_t indi=0; indi < NumOfUsedBins; indi++){
-        size_t ibin = SampledMap[indi];
-        Accu->GetPoint(ibin,ipos);
-
-        for(size_t indj=0; indj < NumOfUsedBins; indj++){
-            size_t jbin = SampledMap[indj];
-            Accu->GetPoint(jbin,jpos);
-
-            double kblock = SigmaF2[0]*GetKernelValue(ipos,jpos);
-
-            Kder[offset0 + indi][offset0 + indj] = TKder[0][0]*kblock;
-            Kder[offset0 + indi][offset1 + indj] = TKder[0][1]*kblock;
-            Kder[offset0 + indi][offset2 + indj] = TKder[0][2]*kblock;
-
-            Kder[offset1 + indi][offset0 + indj] = TKder[1][0]*kblock;
-            Kder[offset1 + indi][offset1 + indj] = TKder[1][1]*kblock;
-            Kder[offset1 + indi][offset2 + indj] = TKder[1][2]*kblock;
-
-            Kder[offset2 + indi][offset0 + indj] = TKder[2][0]*kblock;
-            Kder[offset2 + indi][offset1 + indj] = TKder[2][1]*kblock;
-            Kder[offset2 + indi][offset2 + indj] = TKder[2][2]*kblock;
-        }
-    }
-}
-
-//------------------------------------------------------------------------------
-
-void CGHSIntegratorGPR0C::CreateTKDerCoVar(size_t idx)
-{
-    TKder.SetZero();
-
-    if( idx == 0 ) {
-        TKder[0][1] = 1.0;
-        TKder[1][0] = 1.0;
-    }
-    if( idx == 1 ) {
-        TKder[0][2] = 1.0;
-        TKder[2][0] = 1.0;
-    }
-    if( idx == 2 ) {
-        TKder[1][2] = 1.0;
-        TKder[2][1] = 1.0;
-    }
 }
 
 //------------------------------------------------------------------------------
@@ -1713,7 +1633,7 @@ CSimpleVector<double> ipos;
             size_t jbin = SampledMap[indj];
             Accu->GetPoint(jbin,jpos);
 
-            double kblock = SigmaF2[0]*GetKernelValueWFacDer(ipos,jpos,cv);
+            double kblock = GetKernelValueWFacDer(ipos,jpos,cv);
 
             Kder[offset0 + indi][offset0 + indj] = TK[0][0]*kblock;
             Kder[offset0 + indi][offset1 + indj] = TK[0][1]*kblock;

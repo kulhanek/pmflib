@@ -32,12 +32,10 @@
 // ----------
 #include <IntegratorGPR.hpp>
 #include <SmootherGPR.hpp>
-#include <GHSIntegratorGPR0A.hpp>
 #include <GHSIntegratorGPR0B.hpp>
 #include <GHSIntegratorGPR0C.hpp>
 // ----------
 #include <ABFProxy_dG.hpp>
-#include <ABFProxy_dH.hpp>
 #include <ABFProxy_mTdS.hpp>
 #include <CSTProxy_dG.hpp>
 #include <CSTProxy_mTdS.hpp>
@@ -1073,39 +1071,40 @@ void COptGPRHyprms::RunGPRNumerical(void)
     logTarget = GetTarget();
 
 // derivatives
-    double dh = 1e-3;
+    double dh  = 1e-4;
+    double dh2 = 1e-6;
 
     for(int i=0; i < NumOfOptPrms; i++){
         if( Options.GetOptCD5() ){
             double v1,v2,v3,v4;
             tmp_prms = Hyprms;
-            tmp_prms[i] -= 2.0*dh*Hyprms[i];
+            tmp_prms[i] -= 2.0*(dh*Hyprms[i]+dh2);
             ScatterHyprms(tmp_prms);
             v1 = GetTarget();
             tmp_prms = Hyprms;
-            tmp_prms[i] -= dh*Hyprms[i];
+            tmp_prms[i] -= dh*Hyprms[i]+dh2;
             ScatterHyprms(tmp_prms);
             v2 = GetTarget();
             tmp_prms = Hyprms;
-            tmp_prms[i] += dh*Hyprms[i];
+            tmp_prms[i] += dh*Hyprms[i]+dh2;
             ScatterHyprms(tmp_prms);
             v3 = GetTarget();
             tmp_prms = Hyprms;
-            tmp_prms[i] += 2.0*dh*Hyprms[i];
+            tmp_prms[i] += 2.0*(dh*Hyprms[i]+dh2);
             ScatterHyprms(tmp_prms);
             v4 = GetTarget();
-            HyprmsGrd[i] += (v1-8.0*v2+8.0*v3-v4)/(12.0*dh*Hyprms[i]);
+            HyprmsGrd[i] += (v1-8.0*v2+8.0*v3-v4)/(12.0*(dh*Hyprms[i]+dh2));
         } else {
             double lv,rv;
             tmp_prms = Hyprms;
-            tmp_prms[i] -= dh*Hyprms[i];
+            tmp_prms[i] -= dh*Hyprms[i]+dh2;
             ScatterHyprms(tmp_prms);
             lv = GetTarget();
             tmp_prms = Hyprms;
-            tmp_prms[i] += dh*Hyprms[i];
+            tmp_prms[i] += dh*Hyprms[i]+dh2;
             ScatterHyprms(tmp_prms);
             rv = GetTarget();
-            HyprmsGrd[i] += (rv-lv)/(2.0*dh*Hyprms[i]);
+            HyprmsGrd[i] += (rv-lv)/(2.0*(dh*Hyprms[i]+dh2));
         }
     }
 }
@@ -1190,14 +1189,10 @@ void COptGPRHyprms::InitGPREngine(void)
         InitGPREngine_dF_dx();
     } else if( Options.GetArgRealm() == "dH" ) {
         InitGPREngine_dF();
-    } else if( Options.GetArgRealm() == "GHS_dH/dx" ) {
-        InitGPREngine_GHS_dH_dx();
-    } else if( Options.GetArgRealm() == "cGHS_dH/dx" ) {
-        InitGPREngine_GHS_dH_dx();
     } else if( Options.GetArgRealm() == "GHS_dH" ) {
         InitGPREngine_GHS_dH();
     } else if( Options.GetArgRealm() == "GHS_dH_C" ) {
-        InitGPREngine_GHS_dH();
+        InitGPREngine_GHS_dH_C();
     } else {
         CSmallString error;
         error << "unsupported realm: " <<  Options.GetArgRealm();
@@ -1227,7 +1222,7 @@ void COptGPRHyprms::InitGPREngine_dF(void)
 
 //------------------------------------------------------------------------------
 
-void COptGPRHyprms::InitGPREngine_GHS_dH_dx(void)
+void COptGPRHyprms::InitGPREngine_GHS_dH(void)
 {
     SigmaF2.CreateVector(3);
     CoVar.CreateVector(3);
@@ -1237,10 +1232,9 @@ void COptGPRHyprms::InitGPREngine_GHS_dH_dx(void)
 
 //------------------------------------------------------------------------------
 
-void COptGPRHyprms::InitGPREngine_GHS_dH(void)
+void COptGPRHyprms::InitGPREngine_GHS_dH_C(void)
 {
     SigmaF2.CreateVector(3);
-    CoVar.CreateVector(3);
     WFac.CreateVector(Accu->GetNumOfCVs());
     SigmaN2.CreateVector(3*Accu->GetNumOfCVs());
 }
@@ -1259,10 +1253,6 @@ void COptGPRHyprms::CreateGPREngine(void)
         CreateGPREngine_dF_dx();
     } else if( Options.GetArgRealm() == "dH" ) {
         CreateGPREngine_dF();
-    } else if( Options.GetArgRealm() == "GHS_dH/dx" ) {
-        CreateGPREngine_GHS_dH_dx();
-    } else if( Options.GetArgRealm() == "cGHS_dH/dx" ) {
-        CreateGPREngine_GHS_dH_dx();
     } else if( Options.GetArgRealm() == "GHS_dH" ) {
         CreateGPREngine_GHS_dH();
     } else if( Options.GetArgRealm() == "GHS_dH_C" ) {
@@ -1285,14 +1275,6 @@ void COptGPRHyprms::CreateGPREngine_dF_dx(void)
            proxy    = CABFProxy_dG_Ptr(new CABFProxy_dG);
         } else if (CCSTProxy_dG::IsCompatible(Accu) ) {
             proxy    = CCSTProxy_dG_Ptr(new CCSTProxy_dG);
-        } else {
-            CSmallString error;
-            error << "incompatible method: " << Accu->GetMethod() << " with requested realm: " <<  Options.GetArgRealm();
-            RUNTIME_ERROR(error);
-        }
-    } else if( Options.GetArgRealm() == "dH/dx" ) {
-        if( CABFProxy_dG::IsCompatible(Accu) ){
-           proxy    = CABFProxy_dH_Ptr(new CABFProxy_dH);
         } else {
             CSmallString error;
             error << "incompatible method: " << Accu->GetMethod() << " with requested realm: " <<  Options.GetArgRealm();
@@ -1384,83 +1366,6 @@ void COptGPRHyprms::CreateGPREngine_dF(void)
 // run interpolator
     gpr->PrepForHyprmsGrd(true);
     gpr->Interpolate(vout,false);
-
-    GPREngine = gpr;
-}
-
-//------------------------------------------------------------------------------
-
-void COptGPRHyprms::CreateGPREngine_GHS_dH_dx(void)
-{
-    CEnergyDerProxyPtr proxy_dg;
-    CEnergyDerProxyPtr proxy_dh;
-    CEnergyDerProxyPtr proxy_ds;
-
-    if( (Options.GetArgRealm() == "GHS_dH/dx") || (Options.GetArgRealm() == "cGHS_dH/dx") ) {
-        if( CABFProxy_dG::IsCompatible(Accu) ){
-           proxy_dg = CABFProxy_dG_Ptr(new CABFProxy_dG);
-           proxy_dg->Init(Accu);
-        } else {
-            CSmallString error;
-            error << "incompatible method: " << Accu->GetMethod() << " with requested realm for dG/dx: " <<  Options.GetArgRealm();
-            RUNTIME_ERROR(error);
-        }
-        if( CABFProxy_dH::IsCompatible(Accu) ){
-           proxy_dh = CABFProxy_dH_Ptr(new CABFProxy_dH);
-           proxy_dh->Init(Accu);
-        } else {
-            CSmallString error;
-            error << "incompatible method: " << Accu->GetMethod() << " with requested realm for dH/dx: " <<  Options.GetArgRealm();
-            RUNTIME_ERROR(error);
-        }
-        if( CABFProxy_mTdS::IsCompatible(Accu) ){
-            proxy_ds    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
-            proxy_ds->Init(Accu);
-        } else {
-            CSmallString error;
-            error << "incompatible method: " << Accu->GetMethod() << " with requested realm for -TdS/dx: " <<  Options.GetArgRealm();
-            RUNTIME_ERROR(error);
-        }
-    } else {
-        CSmallString error;
-        error << "unsupported realm: " <<  Options.GetArgRealm();
-        RUNTIME_ERROR(error);
-    }
-
-    CGHSIntegratorGPR0APtr gpr = CGHSIntegratorGPR0APtr(new CGHSIntegratorGPR0A);
-
-    gpr->SetAccumulator(Accu);
-
-    gpr->SetOutputFES(FES);
-    gpr->SetOutputHES(HES);
-    gpr->SetOutputSES(SES);
-
-    gpr->SetGDerProxy(proxy_dg);
-    gpr->SetHDerProxy(proxy_dh);
-    gpr->SetSDerProxy(proxy_ds);
-
-    gpr->SetRCond(Options.GetOptRCond());
-
-    gpr->SetIncludeError(false);
-    gpr->SetNoEnergy(false);
-    if( Options.GetArgRealm() == "cGHS_dH/dx" ){
-        gpr->EnableConstraints(true);
-    }
-
-    gpr->SetLAMethod(Options.GetOptLAMethod());
-    gpr->SetKernel(Options.GetOptGPRKernel());
-    gpr->SetUseInv(Options.GetOptGPRUseInv());
-    gpr->SetCalcLogPL(Options.GetOptGPRCalcLogPL() || (Target == EGOT_LOGPL));
-
-// set parameters
-    gpr->SetSigmaF2(SigmaF2);
-    gpr->SetCoVar(CoVar);
-    gpr->SetWFac(WFac);
-    gpr->SetSigmaN2(SigmaN2);
-
-// run integrator
-    gpr->PrepForHyprmsGrd(true);
-    gpr->Integrate(vout,false);
 
     GPREngine = gpr;
 }
@@ -1590,7 +1495,6 @@ void COptGPRHyprms::CreateGPREngine_GHS_dH_C(void)
 
 // set parameters
     gpr->SetSigmaF2(SigmaF2);
-    gpr->SetCoVar(CoVar);
     gpr->SetWFac(WFac);
     gpr->SetSigmaN2(SigmaN2);
 

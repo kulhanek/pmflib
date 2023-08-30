@@ -163,11 +163,9 @@ private:
 
 // derivatives
     void CalcKderWRTSigmaF2(size_t idx);
-    void CalcKderWRTCoVar(size_t idx);
     void CalcKderWRTWFac(size_t cv);
     void CalcKderWRTSigmaN2(size_t idx);
     void CreateTKDerSigmaF2(size_t idx);
-    void CreateTKDerCoVar(size_t idx);
 };
 
 //------------------------------------------------------------------------------

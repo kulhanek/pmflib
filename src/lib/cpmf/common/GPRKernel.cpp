@@ -704,7 +704,34 @@ double CGPRKernel::GetKernelValueWFacDerNum(const CSimpleVector<double>& ip,cons
 
 void CGPRKernel::GetKernelDerIWFacDerAna(const CSimpleVector<double>& ip,const CSimpleVector<double>& jp,size_t cv,CSimpleVector<double>& kder)
 {
-    RUNTIME_ERROR("not implemented");
+ // calculate scaled distance
+    double scdist2 = 0.0;
+    for(size_t ii=0; ii < NumOfCVs; ii++){
+        double du = Accu->GetCV(ii)->GetDifference(ip[ii],jp[ii]);
+        double dd = CVLengths2[ii];
+        scdist2 += du*du/dd;
+    }
+
+    // get kernel value
+    switch(Kernel){
+    case(EGPRK_ARDSE):{
+            double pre = exp(-0.5*scdist2);
+            double du = Accu->GetCV(cv)->GetDifference(ip[cv],jp[cv]);
+            double dd = CVLengths2[cv];
+            double wf = WFac[cv];
+            double eder = pre * du*du / (dd * wf);
+
+            for(size_t ii=0; ii < NumOfCVs; ii++){
+                double du = Accu->GetCV(ii)->GetDifference(ip[ii],jp[ii]);
+                double dd = CVLengths2[ii];
+                kder[ii] = (-eder*du - (-pre*2.0*dd*wf))/(dd*dd);
+            }
+        }
+        break;
+    default:
+        RUNTIME_ERROR("not implemented");
+        break;
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -720,7 +747,34 @@ void CGPRKernel::GetKernelDerIWFacDerNum(const CSimpleVector<double>& ip,const C
 
 void CGPRKernel::GetKernelDerJWFacDerAna(const CSimpleVector<double>& ip,const CSimpleVector<double>& jp,size_t cv,CSimpleVector<double>& kder)
 {
-    RUNTIME_ERROR("not implemented");
+// calculate scaled distance
+    double scdist2 = 0.0;
+    for(size_t ii=0; ii < NumOfCVs; ii++){
+        double du = Accu->GetCV(ii)->GetDifference(ip[ii],jp[ii]);
+        double dd = CVLengths2[ii];
+        scdist2 += du*du/dd;
+    }
+
+    // get kernel value
+    switch(Kernel){
+    case(EGPRK_ARDSE):{
+            double pre = exp(-0.5*scdist2);
+            double du = Accu->GetCV(cv)->GetDifference(ip[cv],jp[cv]);
+            double dd = CVLengths2[cv];
+            double wf = WFac[cv];
+            double eder = pre * du*du / (dd * wf);
+
+            for(size_t ii=0; ii < NumOfCVs; ii++){
+                double du = Accu->GetCV(ii)->GetDifference(ip[ii],jp[ii]);
+                double dd = CVLengths2[ii];
+                kder[ii] = (eder*du - pre*2.0*dd*wf)/(dd*dd);
+            }
+        }
+        break;
+    default:
+        RUNTIME_ERROR("not implemented");
+        break;
+    }
 }
 //------------------------------------------------------------------------------
 

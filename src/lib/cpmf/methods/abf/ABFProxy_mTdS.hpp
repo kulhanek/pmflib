@@ -37,16 +37,6 @@ enum EABFTdSType {
     ABF_TdS_BR,
     ABF_TdS_BK,
     ABF_TdS_BV,
-
-    ABF_TdS_FP,
-    ABF_TdS_FR,
-    ABF_TdS_FK,
-    ABF_TdS_FV,
-
-    ABF_TdS_FAP,
-    ABF_TdS_FAR,
-    ABF_TdS_FAK,
-    ABF_TdS_FAV,
 };
 
 //------------------------------------------------------------------------------
