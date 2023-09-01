@@ -59,19 +59,16 @@ public:
 
 // setup
     /// set include error
-    void SetIncludeError(bool set);
+    void SetIncludeError(bool iset);
 
     /// skip energy calculation, it also disables errors
-    void SetNoEnergy(bool set);
+    void SetNoEnergy(bool iset);
 
     /// calc hyprms grd
-    void PrepForHyprmsGrd(bool set);
+    void PrepForHyprmsGrd(bool iset);
 
     /// calc logpl
-    void SetCalcLogPL(bool set);
-
-    /// use fast error algorithm
-    void SetFastError(bool set);
+    void SetCalcLogPL(bool iset);
 
     /// prepare for subsequent call WriteMFInfo
     void PrepForMFInfo(void);
@@ -115,8 +112,6 @@ private:
 
     // setup
     bool                    NoEnergy;
-    bool                    IncludeError;
-    bool                    FastErrors;     // use faster but more memory intensive algorithm
 
     // GPR model
     double                  HMean;
@@ -138,8 +133,6 @@ private:
 
 // output data
     double GetValue(const CSimpleVector<double>& position,int task);
-    double GetVar(CSimpleVector<double>& lpos,int task);
-    void   GetCovVar(CSimpleVector<double>& lpos,CSimpleVector<double>& rpos,double& llvar,double& lrcov,int task);
 
 // source data
     double GetTrainingValue(const CSimpleVector<double>& position,size_t icoord,int task);
@@ -152,14 +145,6 @@ private:
 
     void CreateKff(const CSimpleVector<double>& ip,CSimpleVector<double>& ky,int task);
     void CreateKff2(const CSimpleVector<double>& ip,size_t icoord,CSimpleVector<double>& ky2,int task);
-
-// errors
-    void CalculateErrors(CVerboseStr& vout);        // slow algorithm
-    void CalculateErrorsFromCov(CVerboseStr& vout); // fast errors
-
-    void CalculateCovs(CVerboseStr& vout,int task);
-    void CalculateErrors(CVerboseStr& vout,int task);
-    void CalculateErrorsFromCov(CVerboseStr& vout,int task);
 
 // derivatives
     void CalcKderWRTSigmaF2(size_t idx);

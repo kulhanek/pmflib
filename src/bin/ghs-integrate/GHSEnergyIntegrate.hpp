@@ -83,7 +83,10 @@ private:
     int                     State;
 
     void PrintAccuStat(void);
+
     bool Integrate0C(void);
+    bool IntegratecC(void);
+
     void WriteES(CEnergySurfacePtr& surf,const CSmallString& name);
 };
 

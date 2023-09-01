@@ -87,6 +87,7 @@ public:
 
     // kernel integrals - only one CV
     double GetKernelIntI(const CSimpleVector<double>& ip,const CSimpleVector<double>& jp);
+    double GetKernelIntIJ(const CSimpleVector<double>& ip,const CSimpleVector<double>& jp);
 
     // kernel derivatives
     void   GetKernelDerI(const CSimpleVector<double>& ip,const CSimpleVector<double>& jp,CSimpleVector<double>& kder);

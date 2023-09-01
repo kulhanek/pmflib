@@ -295,7 +295,33 @@ double CGPRKernel::GetKernelIntI(const CSimpleVector<double>& ip,const CSimpleVe
     case(EGPRK_ARDSE):{
         double du = Accu->GetCV(0)->GetDifference(ip[0],jp[0]);
         double dd = 2.0*CVLengths2[0];
-        kint = -0.5*sqrt(M_PI)*sqrt(dd)*erf(-du/sqrt(dd));
+        kint = 0.5*sqrt(M_PI)*sqrt(dd)*erf(du/sqrt(dd));
+        }
+        break;
+    default:
+        RUNTIME_ERROR("not implemented");
+        break;
+    }
+
+    return(kint);
+}
+
+//------------------------------------------------------------------------------
+
+double CGPRKernel::GetKernelIntIJ(const CSimpleVector<double>& ip,const CSimpleVector<double>& jp)
+{
+    if( NumOfCVs != 1 ){
+        RUNTIME_ERROR("not implemented");
+    }
+
+    double kint = 0.0;
+
+    // get kernel value
+    switch(Kernel){
+    case(EGPRK_ARDSE):{
+        double du = Accu->GetCV(0)->GetDifference(ip[0],jp[0]);
+        double dd = 2.0*CVLengths2[0];
+        kint = -0.5*sqrt(M_PI)*sqrt(dd)*du*erf(du/sqrt(dd))-0.5*dd*exp(-du*du/dd)+1.5;
         }
         break;
     default:
@@ -421,7 +447,7 @@ void CGPRKernel::GetKernelDerJAna(const CSimpleVector<double>& ip,const CSimpleV
         scdist2 += du*du/dd;
     }
 
-    // get kernel value
+// get derivative
     switch(Kernel){
     case(EGPRK_ARDSE):{
             double pre = exp(-0.5*scdist2);
@@ -481,7 +507,7 @@ void CGPRKernel::GetKernelDerIJAna(const CSimpleVector<double>& ip,const CSimple
 {
     kblock.SetZero();
 
-    // calculate scaled distance
+// calculate scaled distance
     double scdist2 = 0.0;
     for(size_t ii=0; ii < NumOfCVs; ii++){
         double du = Accu->GetCV(ii)->GetDifference(ip[ii],jp[ii]);
@@ -489,6 +515,7 @@ void CGPRKernel::GetKernelDerIJAna(const CSimpleVector<double>& ip,const CSimple
         scdist2 += du*du/dd;
     }
 
+// get derivative
     switch(Kernel){
     case(EGPRK_ARDSE): {
             double pre = exp(-0.5*scdist2);
@@ -625,7 +652,7 @@ void CGPRKernel::GetKernelDerIJWFacDer(const CSimpleVector<double>& ip,const CSi
 
 double CGPRKernel::GetKernelValueWFacDerAna(const CSimpleVector<double>& ip,const CSimpleVector<double>& jp,size_t cv)
 {
-    // calculate scaled distance
+// calculate scaled distance
     double scdist2 = 0.0;
     for(size_t ii=0; ii < NumOfCVs; ii++){
         double du = Accu->GetCV(ii)->GetDifference(ip[ii],jp[ii]);
@@ -633,6 +660,7 @@ double CGPRKernel::GetKernelValueWFacDerAna(const CSimpleVector<double>& ip,cons
         scdist2 += du*du/dd;
     }
 
+// get derivative
     switch(Kernel){
         case(EGPRK_ARDSE): {
                 double val = exp(-0.5*scdist2);
@@ -694,8 +722,41 @@ double CGPRKernel::GetKernelValueWFacDerAna(const CSimpleVector<double>& ip,cons
 
 double CGPRKernel::GetKernelValueWFacDerNum(const CSimpleVector<double>& ip,const CSimpleVector<double>& jp,size_t cv)
 {
-    RUNTIME_ERROR("fix");
-    return(0.0);
+    double kval1,kval2;
+
+    double  dh = 1e-3;
+
+    for(size_t i=0; i < NumOfCVs; i++){
+        double l;
+        if( i == cv ){
+            l = (WFac[i]-dh)*Accu->GetCV(i)->GetRange()/Accu->GetCV(i)->GetNumOfBins();
+        } else {
+            l = WFac[i]*Accu->GetCV(i)->GetRange()/Accu->GetCV(i)->GetNumOfBins();
+        }
+        CVLengths2[i] = l*l;
+    }
+    kval1 = GetKernelValue(ip,jp);
+
+    for(size_t i=0; i < NumOfCVs; i++){
+        double l;
+        if( i == cv ){
+            l = (WFac[i]+dh)*Accu->GetCV(i)->GetRange()/Accu->GetCV(i)->GetNumOfBins();
+        } else {
+            l = WFac[i]*Accu->GetCV(i)->GetRange()/Accu->GetCV(i)->GetNumOfBins();
+        }
+        CVLengths2[i] = l*l;
+    }
+    kval2 = GetKernelValue(ip,jp);
+
+    double kder = (kval2-kval1)/(2.0*dh);
+
+    // restore original CVLengths2
+    for(size_t i=0; i < NumOfCVs; i++){
+        double l = WFac[i]*Accu->GetCV(i)->GetRange()/Accu->GetCV(i)->GetNumOfBins();
+        CVLengths2[i] = l*l;
+    }
+
+    return(kder);
 }
 
 //==============================================================================
@@ -704,7 +765,7 @@ double CGPRKernel::GetKernelValueWFacDerNum(const CSimpleVector<double>& ip,cons
 
 void CGPRKernel::GetKernelDerIWFacDerAna(const CSimpleVector<double>& ip,const CSimpleVector<double>& jp,size_t cv,CSimpleVector<double>& kder)
 {
- // calculate scaled distance
+// calculate scaled distance
     double scdist2 = 0.0;
     for(size_t ii=0; ii < NumOfCVs; ii++){
         double du = Accu->GetCV(ii)->GetDifference(ip[ii],jp[ii]);
@@ -712,19 +773,29 @@ void CGPRKernel::GetKernelDerIWFacDerAna(const CSimpleVector<double>& ip,const C
         scdist2 += du*du/dd;
     }
 
-    // get kernel value
+// get derivative
     switch(Kernel){
     case(EGPRK_ARDSE):{
             double pre = exp(-0.5*scdist2);
-            double du = Accu->GetCV(cv)->GetDifference(ip[cv],jp[cv]);
-            double dd = CVLengths2[cv];
-            double wf = WFac[cv];
-            double eder = pre * du*du / (dd * wf);
+            double du  = Accu->GetCV(cv)->GetDifference(ip[cv],jp[cv]);
+            double dd  = CVLengths2[cv];
+            double wf  = WFac[cv];
+            // -1/2 * du*du * wfac^-2*dbin-^2
+            // -1/2 * du*du * (-2)*wfac^-3 * dbin^-2
+            //        du*du * wfac^-2 * dbin^-2 * wfac^-1
+            //        du*du / (dd * wfac)
+            double der = pre * du*du / (dd * wf);
 
             for(size_t ii=0; ii < NumOfCVs; ii++){
                 double du = Accu->GetCV(ii)->GetDifference(ip[ii],jp[ii]);
                 double dd = CVLengths2[ii];
-                kder[ii] = (-eder*du - (-pre*2.0*dd*wf))/(dd*dd);
+                // kder[ii] = -pre*du/dd;
+                // [(-pre*du)'*(dd) - (-pre*du)*(dd)']/(dd*dd)
+                if( cv == ii ){
+                    kder[ii] = (-der*du*dd - (-pre*du*(2.0*dd/wf)) )/(dd*dd);
+                } else {
+                    kder[ii] = -der*du/dd;
+                }
             }
         }
         break;
@@ -738,7 +809,44 @@ void CGPRKernel::GetKernelDerIWFacDerAna(const CSimpleVector<double>& ip,const C
 
 void CGPRKernel::GetKernelDerIWFacDerNum(const CSimpleVector<double>& ip,const CSimpleVector<double>& jp,size_t cv,CSimpleVector<double>& kder)
 {
-    RUNTIME_ERROR("not implemented");
+    CSimpleVector<double> kder1,kder2;
+
+    kder1.CreateVector(NumOfCVs);
+    kder2.CreateVector(NumOfCVs);
+
+    double  dh = 1e-3;
+
+    for(size_t i=0; i < NumOfCVs; i++){
+        double l;
+        if( i == cv ){
+            l = (WFac[i]-dh)*Accu->GetCV(i)->GetRange()/Accu->GetCV(i)->GetNumOfBins();
+        } else {
+            l = WFac[i]*Accu->GetCV(i)->GetRange()/Accu->GetCV(i)->GetNumOfBins();
+        }
+        CVLengths2[i] = l*l;
+    }
+    GetKernelDerIAna(ip,jp,kder1);
+
+    for(size_t i=0; i < NumOfCVs; i++){
+        double l;
+        if( i == cv ){
+            l = (WFac[i]+dh)*Accu->GetCV(i)->GetRange()/Accu->GetCV(i)->GetNumOfBins();
+        } else {
+            l = WFac[i]*Accu->GetCV(i)->GetRange()/Accu->GetCV(i)->GetNumOfBins();
+        }
+        CVLengths2[i] = l*l;
+    }
+    GetKernelDerIAna(ip,jp,kder2);
+
+    for(size_t ii=0; ii < NumOfCVs; ii++){
+        kder[ii] = (kder2[ii]-kder1[ii])/(2.0*dh);
+    }
+
+    // restore original CVLengths2
+    for(size_t i=0; i < NumOfCVs; i++){
+        double l = WFac[i]*Accu->GetCV(i)->GetRange()/Accu->GetCV(i)->GetNumOfBins();
+        CVLengths2[i] = l*l;
+    }
 }
 
 //==============================================================================
@@ -755,19 +863,29 @@ void CGPRKernel::GetKernelDerJWFacDerAna(const CSimpleVector<double>& ip,const C
         scdist2 += du*du/dd;
     }
 
-    // get kernel value
+// get derivative
     switch(Kernel){
     case(EGPRK_ARDSE):{
             double pre = exp(-0.5*scdist2);
-            double du = Accu->GetCV(cv)->GetDifference(ip[cv],jp[cv]);
-            double dd = CVLengths2[cv];
-            double wf = WFac[cv];
-            double eder = pre * du*du / (dd * wf);
+            double du  = Accu->GetCV(cv)->GetDifference(ip[cv],jp[cv]);
+            double dd  = CVLengths2[cv];
+            double wf  = WFac[cv];
+            // -1/2 * du*du * wfac^-2*dbin-^2
+            // -1/2 * du*du * (-2)*wfac^-3 * dbin^-2
+            //        du*du * wfac^-2 * dbin^-2 * wfac^-1
+            //        du*du / (dd * wfac)
+            double der = pre * du*du / (dd * wf);
 
             for(size_t ii=0; ii < NumOfCVs; ii++){
                 double du = Accu->GetCV(ii)->GetDifference(ip[ii],jp[ii]);
                 double dd = CVLengths2[ii];
-                kder[ii] = (eder*du - pre*2.0*dd*wf)/(dd*dd);
+                // kder[ii] = pre*du/dd;
+                // [(pre*du)'*(dd) - (pre*du)*(dd)']/(dd*dd)
+                if( cv == ii ){
+                    kder[ii] = (der*du*dd - (pre*du*(2.0*dd/wf)) )/(dd*dd);
+                } else {
+                    kder[ii] = der*du/dd;
+                }
             }
         }
         break;
@@ -780,7 +898,44 @@ void CGPRKernel::GetKernelDerJWFacDerAna(const CSimpleVector<double>& ip,const C
 
 void CGPRKernel::GetKernelDerJWFacDerNum(const CSimpleVector<double>& ip,const CSimpleVector<double>& jp,size_t cv,CSimpleVector<double>& kder)
 {
-    RUNTIME_ERROR("not implemented");
+CSimpleVector<double> kder1,kder2;
+
+    kder1.CreateVector(NumOfCVs);
+    kder2.CreateVector(NumOfCVs);
+
+    double  dh = 1e-3;
+
+    for(size_t i=0; i < NumOfCVs; i++){
+        double l;
+        if( i == cv ){
+            l = (WFac[i]-dh)*Accu->GetCV(i)->GetRange()/Accu->GetCV(i)->GetNumOfBins();
+        } else {
+            l = WFac[i]*Accu->GetCV(i)->GetRange()/Accu->GetCV(i)->GetNumOfBins();
+        }
+        CVLengths2[i] = l*l;
+    }
+    GetKernelDerJAna(ip,jp,kder1);
+
+    for(size_t i=0; i < NumOfCVs; i++){
+        double l;
+        if( i == cv ){
+            l = (WFac[i]+dh)*Accu->GetCV(i)->GetRange()/Accu->GetCV(i)->GetNumOfBins();
+        } else {
+            l = WFac[i]*Accu->GetCV(i)->GetRange()/Accu->GetCV(i)->GetNumOfBins();
+        }
+        CVLengths2[i] = l*l;
+    }
+    GetKernelDerJAna(ip,jp,kder2);
+
+    for(size_t ii=0; ii < NumOfCVs; ii++){
+        kder[ii] = (kder2[ii]-kder1[ii])/(2.0*dh);
+    }
+
+    // restore original CVLengths2
+    for(size_t i=0; i < NumOfCVs; i++){
+        double l = WFac[i]*Accu->GetCV(i)->GetRange()/Accu->GetCV(i)->GetNumOfBins();
+        CVLengths2[i] = l*l;
+    }
 }
 
 //==============================================================================
@@ -789,7 +944,7 @@ void CGPRKernel::GetKernelDerJWFacDerNum(const CSimpleVector<double>& ip,const C
 
 void CGPRKernel::GetKernelDerIJWFacDerAna(const CSimpleVector<double>& ip,const CSimpleVector<double>& jp,size_t cv,CFortranMatrix& kblock)
 {
-    // calculate scaled distance
+// calculate scaled distance
     double scdist2 = 0.0;
     for(size_t ii=0; ii < NumOfCVs; ii++){
         double du = Accu->GetCV(ii)->GetDifference(ip[ii],jp[ii]);
@@ -799,6 +954,7 @@ void CGPRKernel::GetKernelDerIJWFacDerAna(const CSimpleVector<double>& ip,const 
 
     kblock.SetZero();
 
+// get derivative
     double wf = WFac[cv];
     double wd3 = 1.0/(CVLengths2[cv]*wf);
     double wd5 = wd3/CVLengths2[cv];
