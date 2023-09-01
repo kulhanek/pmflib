@@ -1197,9 +1197,6 @@ void CGHSIntegratorGPR0C::CalcKderWRTSigmaF2(size_t idx)
     kblock1i.CreateVector(NumOfCVs);
     kblock1j.CreateVector(NumOfCVs);
 
-    CFortranMatrix kblock2;
-    kblock2.CreateMatrix(NumOfCVs,NumOfCVs);
-
     Kder.SetZero();
 
     int offset0 = 0;
@@ -1209,7 +1206,7 @@ void CGHSIntegratorGPR0C::CalcKderWRTSigmaF2(size_t idx)
     CreateTKDerSigmaF2(idx);
 
     // generate main kernel block
-    #pragma omp parallel for firstprivate(ipos,jpos,kblock2)
+    #pragma omp parallel for firstprivate(ipos,jpos)
     for(size_t indi=0; indi < NumOfUsedBins; indi++){
         size_t ibin = SampledMap[indi];
         Accu->GetPoint(ibin,ipos);
@@ -1259,7 +1256,7 @@ CSimpleVector<double> ipos;
     int offset2 = offset1 + NumOfUsedBins;
 
     // generate main kernel block
-    #pragma omp parallel for firstprivate(ipos,jpos,kblock2)
+    #pragma omp parallel for firstprivate(ipos,jpos)
     for(size_t indi=0; indi < NumOfUsedBins; indi++){
         size_t ibin = SampledMap[indi];
         Accu->GetPoint(ibin,ipos);
