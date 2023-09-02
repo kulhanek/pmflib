@@ -99,7 +99,6 @@ subroutine abf_core_update_history_force()
 
 ! calculate Z matrix and its inverse
     call abf_core_calc_Zmat(CVContext)
-    call abf_core_calc_ZmatA(CVContext)
 
 ! apply force filters
     la(:) = 0.0d0
