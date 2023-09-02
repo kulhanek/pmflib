@@ -122,8 +122,6 @@ subroutine abf_accu_init()
     if( fenthalpy .and. (fenthalpy_der .gt. 0) ) then
         allocate(   abfaccu%micfp(abfaccu%tot_cvs,abfaccu%tot_nbins),   &
                     abfaccu%m2icfp(abfaccu%tot_cvs,abfaccu%tot_nbins),  &
-                    abfaccu%micfpa(abfaccu%tot_cvs,abfaccu%tot_nbins),   &
-                    abfaccu%m2icfpa(abfaccu%tot_cvs,abfaccu%tot_nbins),  &
                     stat = alloc_failed)
 
         if( alloc_failed .ne. 0 ) then
@@ -258,8 +256,6 @@ subroutine abf_accu_clear()
     if( fenthalpy .and. (fenthalpy_der .gt. 0) ) then
         abfaccu%micfp(:,:)     = 0.0d0
         abfaccu%m2icfp(:,:)    = 0.0d0
-        abfaccu%micfpa(:,:)     = 0.0d0
-        abfaccu%m2icfpa(:,:)    = 0.0d0
     end if
 
     if( fentropy ) then
@@ -368,17 +364,6 @@ subroutine abf_accu_read(iounit)
                 case('M2ICFP')
                     if( fenthalpy .and. (fenthalpy_der .gt. 0)  ) then
                         call pmf_accu_read_rbuf_M(abfaccu%PMFAccuType,iounit,keyline,abfaccu%m2icfp)
-                    end if
-
-            ! ------------------------------------
-                case('MICFPA')
-                    if( fenthalpy .and. (fenthalpy_der .gt. 0) ) then
-                        call pmf_accu_read_rbuf_M(abfaccu%PMFAccuType,iounit,keyline,abfaccu%micfpa)
-                    end if
-            ! ------------------------------------
-                case('M2ICFPA')
-                    if( fenthalpy .and. (fenthalpy_der .gt. 0)  ) then
-                        call pmf_accu_read_rbuf_M(abfaccu%PMFAccuType,iounit,keyline,abfaccu%m2icfpa)
                     end if
 
             ! ------------------------------------
@@ -631,8 +616,6 @@ subroutine abf_accu_write(iounit)
     if( fenthalpy .and. (fenthalpy_der .gt. 0) ) then
         call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'MICFP',     'WA',abfaccu%micfp,  'NTDS')
         call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'M2ICFP',    'M2',abfaccu%m2icfp, 'NTDS','MICFP')
-        call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'MICFPA',    'WA',abfaccu%micfpa, 'NTDS')
-        call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'M2ICFPA',   'M2',abfaccu%m2icfpa,'NTDS','MICFPA')
     end if
 
     if( fentropy ) then
@@ -752,7 +735,7 @@ end subroutine abf_accu_add_data_online
 ! Subroutine:  abf_accu_add_data_energy
 !===============================================================================
 
-subroutine abf_accu_add_data_energy(cvs,gfx,bfx,pfx,pfxa,epot,erst,ekin,epv,vol)
+subroutine abf_accu_add_data_energy(cvs,gfx,bfx,pfx,epot,erst,ekin,epv,vol)
 
     use abf_dat
     use pmf_dat
@@ -762,7 +745,6 @@ subroutine abf_accu_add_data_energy(cvs,gfx,bfx,pfx,pfxa,epot,erst,ekin,epv,vol)
     real(PMFDP),intent(in)  :: gfx(:)
     real(PMFDP),intent(in)  :: bfx(:)
     real(PMFDP),intent(in)  :: pfx(:)
-    real(PMFDP),intent(in)  :: pfxa(:)
     real(PMFDP),intent(in)  :: epot
     real(PMFDP),intent(in)  :: erst
     real(PMFDP),intent(in)  :: ekin
@@ -781,7 +763,7 @@ subroutine abf_accu_add_data_energy(cvs,gfx,bfx,pfx,pfxa,epot,erst,ekin,epv,vol)
     real(PMFDP)     :: dpp, dpp1, dpp2
     real(PMFDP)     :: dpn, dpn1, dpn2
     real(PMFDP)     :: etot, eint
-    real(PMFDP)     :: dibx1, dibx2, difx1, difx2, dipx1, dipx2, dipxa1, dipxa2, ifx, ibx, ipx
+    real(PMFDP)     :: dibx1, dibx2, difx1, difx2, dipx1, dipx2, ifx, ibx, ipx
     ! --------------------------------------------------------------------------
 
     ! write(147895,*) cvs(1), gfx(1), epv, vol
@@ -859,12 +841,6 @@ subroutine abf_accu_add_data_energy(cvs,gfx,bfx,pfx,pfxa,epot,erst,ekin,epv,vol)
             abfaccu%micfp(i,gi0)  = abfaccu%micfp(i,gi0)  + dipx1 * invn
             dipx2 = ipx - abfaccu%micfp(i,gi0)
             abfaccu%m2icfp(i,gi0) = abfaccu%m2icfp(i,gi0) + dipx1 * dipx2
-
-            ipx = - pfxa(i)
-            dipxa1 = ipx - abfaccu%micfpa(i,gi0)
-            abfaccu%micfpa(i,gi0)  = abfaccu%micfpa(i,gi0)  + dipxa1 * invn
-            dipxa2 = ipx - abfaccu%micfpa(i,gi0)
-            abfaccu%m2icfpa(i,gi0) = abfaccu%m2icfpa(i,gi0) + dipxa1 * dipxa2
         end do
     end if
 

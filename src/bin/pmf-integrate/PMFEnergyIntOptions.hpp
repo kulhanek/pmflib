@@ -128,7 +128,6 @@ public:
                 "Requested output from the integration (ABF: fenthalpy_der > 0):\n"
                 "**  dH/dx                  - enthalpy\n"
                 "**  ICFP/dx                - integration of ICF-Epot\n"
-                "**  ICFPA/dx               - integration of ICF-Epot calculated from CVder pseudoinverse\n"
                 "\n"
                 "Requested output from the integration (-TdS decomposition):\n"
                 "** mTdS_HP/dx|-TdS_HP/dx   - entropy contribution to the free energy, cov(dH/dx,Epot)\n"

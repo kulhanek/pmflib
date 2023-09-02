@@ -1,5 +1,5 @@
-#ifndef GHSIntegratorGPR0CH
-#define GHSIntegratorGPR0CH
+#ifndef GHSIntegratorGPRcAH
+#define GHSIntegratorGPRcAH
 // =============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
@@ -37,11 +37,11 @@
 /** \brief integrator of ABF accumulator employing gaussian process
 */
 
-class PMF_PACKAGE CGHSIntegratorGPR0C : public CGPRHyprms {
+class PMF_PACKAGE CGHSIntegratorGPRcA : public CGPRHyprms {
 public:
 // constructor and destructor -------------------------------------------------
-    CGHSIntegratorGPR0C(void);
-    virtual ~CGHSIntegratorGPR0C(void);
+    CGHSIntegratorGPRcA(void);
+    virtual ~CGHSIntegratorGPRcA(void);
 
 // setup methods --------------------------------------------------------------
     /// set accumulator
@@ -126,7 +126,6 @@ private:
 
     // derivatives
     CFortranMatrix          Kder;           // derivative of kernels w.r.t. a hyperparameter
-    CFortranMatrix          TKder;          // task covariances derivatives
 
     bool TrainGP(CVerboseStr& vout);
     void CalculateEnergy(CVerboseStr& vout);
@@ -140,22 +139,27 @@ private:
     double GetRMSR(size_t cv,int task);
 
 // GPR
-    void CreateTK(void);
     void CreateKS(void);
+
+    void CreateTK(const CSimpleVector<double>& ip, const CSimpleVector<double>& jp, CFortranMatrix& kblock);
+    void CreateTKInt(const CSimpleVector<double>& ip, const CSimpleVector<double>& jp, CFortranMatrix& kblock);
 
     void CreateKff(const CSimpleVector<double>& ip,CSimpleVector<double>& ky,int task);
     void CreateKff2(const CSimpleVector<double>& ip,size_t icoord,CSimpleVector<double>& ky2,int task);
 
 // derivatives
     void CalcKderWRTSigmaF2(size_t idx);
+    void CreateTKDerSigmaF2(const CSimpleVector<double>& ip, const CSimpleVector<double>& jp, CFortranMatrix& kblock, size_t idx);
+
     void CalcKderWRTWFac(size_t cv);
+    void CreateTKDerWFac(const CSimpleVector<double>& ip, const CSimpleVector<double>& jp, CFortranMatrix& kblock, int cv);
+
     void CalcKderWRTSigmaN2(size_t idx);
-    void CreateTKDerSigmaF2(size_t idx);
 };
 
 //------------------------------------------------------------------------------
 
-typedef boost::shared_ptr<CGHSIntegratorGPR0C>    CGHSIntegratorGPR0CPtr;
+typedef boost::shared_ptr<CGHSIntegratorGPRcA>    CGHSIntegratorGPRcAPtr;
 
 //------------------------------------------------------------------------------
 

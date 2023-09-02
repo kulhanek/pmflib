@@ -84,8 +84,8 @@ private:
 
     void PrintAccuStat(void);
 
-    bool Integrate0C(void);
-    bool IntegratecC(void);
+    bool Integrate0A(void);
+    bool IntegratecA(void);
 
     void WriteES(CEnergySurfacePtr& surf,const CSmallString& name);
 };

@@ -32,8 +32,8 @@
 // ----------
 #include <IntegratorGPR.hpp>
 #include <SmootherGPR.hpp>
-#include <GHSIntegratorGPR0C.hpp>
-#include <GHSIntegratorGPRcC.hpp>
+#include <GHSIntegratorGPR0A.hpp>
+#include <GHSIntegratorGPRcA.hpp>
 // ----------
 #include <ABFProxy_dG.hpp>
 #include <ABFProxy_mTdS.hpp>
@@ -1190,9 +1190,9 @@ void COptGPRHyprms::InitGPREngine(void)
     } else if( Options.GetArgRealm() == "dH" ) {
         InitGPREngine_dF();
     } else if( Options.GetArgRealm() == "GHS_dH" ) {
-        InitGPREngine_GHS_dH();
+        InitGPREngine_GHS_dH_A();
     } else if( Options.GetArgRealm() == "cGHS_dH" ) {
-        InitGPREngine_cGHS_dH();
+        InitGPREngine_cGHS_dH_A();
     } else {
         CSmallString error;
         error << "unsupported realm: " <<  Options.GetArgRealm();
@@ -1222,7 +1222,7 @@ void COptGPRHyprms::InitGPREngine_dF(void)
 
 //------------------------------------------------------------------------------
 
-void COptGPRHyprms::InitGPREngine_GHS_dH(void)
+void COptGPRHyprms::InitGPREngine_GHS_dH_A(void)
 {
     SigmaF2.CreateVector(3);
     WFac.CreateVector(Accu->GetNumOfCVs());
@@ -1231,7 +1231,7 @@ void COptGPRHyprms::InitGPREngine_GHS_dH(void)
 
 //------------------------------------------------------------------------------
 
-void COptGPRHyprms::InitGPREngine_cGHS_dH(void)
+void COptGPRHyprms::InitGPREngine_cGHS_dH_A(void)
 {
     SigmaF2.CreateVector(3);
     WFac.CreateVector(Accu->GetNumOfCVs());
@@ -1252,9 +1252,9 @@ void COptGPRHyprms::CreateGPREngine(void)
     } else if( Options.GetArgRealm() == "dH" ) {
         CreateGPREngine_dF();
     } else if( Options.GetArgRealm() == "GHS_dH" ) {
-        CreateGPREngine_GHS_dH();
+        CreateGPREngine_GHS_dH_A();
     } else if( Options.GetArgRealm() == "cGHS_dH" ) {
-        CreateGPREngine_cGHS_dH();
+        CreateGPREngine_cGHS_dH_A();
     } else {
         CSmallString error;
         error << "unsupported realm: " <<  Options.GetArgRealm();
@@ -1370,7 +1370,7 @@ void COptGPRHyprms::CreateGPREngine_dF(void)
 
 //------------------------------------------------------------------------------
 
-void COptGPRHyprms::CreateGPREngine_GHS_dH(void)
+void COptGPRHyprms::CreateGPREngine_GHS_dH_A(void)
 {
     CEnergyDerProxyPtr proxy_dg;
     CEnergyProxyPtr    proxy_dh;
@@ -1401,7 +1401,7 @@ void COptGPRHyprms::CreateGPREngine_GHS_dH(void)
         RUNTIME_ERROR(error);
     }
 
-    CGHSIntegratorGPR0CPtr gpr = CGHSIntegratorGPR0CPtr(new CGHSIntegratorGPR0C);
+    CGHSIntegratorGPR0APtr gpr = CGHSIntegratorGPR0APtr(new CGHSIntegratorGPR0A);
 
     gpr->SetAccumulator(Accu);
 
@@ -1437,7 +1437,7 @@ void COptGPRHyprms::CreateGPREngine_GHS_dH(void)
 
 //------------------------------------------------------------------------------
 
-void COptGPRHyprms::CreateGPREngine_cGHS_dH(void)
+void COptGPRHyprms::CreateGPREngine_cGHS_dH_A(void)
 {
     CEnergyDerProxyPtr proxy_dg;
     CEnergyProxyPtr    proxy_dh;
@@ -1468,7 +1468,7 @@ void COptGPRHyprms::CreateGPREngine_cGHS_dH(void)
         RUNTIME_ERROR(error);
     }
 
-    CGHSIntegratorGPRcCPtr gpr = CGHSIntegratorGPRcCPtr(new CGHSIntegratorGPRcC);
+    CGHSIntegratorGPRcAPtr gpr = CGHSIntegratorGPRcAPtr(new CGHSIntegratorGPRcA);
 
     gpr->SetAccumulator(Accu);
 

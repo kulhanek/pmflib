@@ -356,7 +356,7 @@ subroutine abf_core_lf_get_icfp()
 
     implicit none
     integer                :: i,j,m
-    real(PMFDP)            :: f1,f2
+    real(PMFDP)            :: f1
     ! --------------------------------------------------------------------------
 
     ! shift history buffers
@@ -364,70 +364,53 @@ subroutine abf_core_lf_get_icfp()
         fhist(:,:,i)    = fhist(:,:,i+1)
         icfphist(:,i)   = icfphist(:,i+1)
         zdhist(:,:,:,i) = zdhist(:,:,:,i+1)
-        icfpahist(:,i)   = icfpahist(:,i+1)
-        zdhista(:,:,:,i) = zdhista(:,:,:,i+1)
     end do
                                         ! at this moment, Frc contains ABF bias
     fhist(:,:,hist_len) = Frc(:,:)      ! to be compatible with forces derived from velocities, which also contain the bias
     call abf_core_update_zdhist
-    call abf_core_update_zdhistA
 
     icfphist(:,hist_len) = 0.0d0
-    icfpahist(:,hist_len) = 0.0d0
 
     if( fstep .le. 2*hist_len ) return
 
     if( fenthalpy_der .eq. 1 ) then
         do i=1,NumOfABFCVs
             f1 = 0.0d0
-            f2 = 0.0d0
             do j=1,NumOfLAtoms
                 do m=1,3
                     ! force part
                     !                  t                        t
                     f1 = f1 + zdhist(m,j,i,hist_len) * fhist(m,j,hist_len) * MassInv(j)
-                    f2 = f2 + zdhista(m,j,i,hist_len) * fhist(m,j,hist_len)
                 end do
             end do
             ! remove bias
             icfphist(i,hist_len) = f1 - micfhist(i,hist_len)
-            icfpahist(i,hist_len) = f2 - micfhist(i,hist_len)
         end do
     else if ( fenthalpy_der .eq. 2 ) then
         do i=1,NumOfABFCVs
             f1 = 0.0d0
-            f2 = 0.0d0
             do j=1,NumOfLAtoms
                 do m=1,3
                     ! force part
                     !                  t-dt                    t-dt/2               t-2*dt/2
                     f1 = f1 + zdhist(m,j,i,hist_len-1) * (vhist(m,j,hist_len) - vhist(m,j,hist_len-1))
-
-                    f2 = f2 + zdhista(m,j,i,hist_len-1) * (vhist(m,j,hist_len) - vhist(m,j,hist_len-1)) * mass(j)
                 end do
             end do
             ! remove bias
             icfphist(i,hist_len-1) = f1*ifdtx - micfhist(i,hist_len-1)
-            icfpahist(i,hist_len-1) = f2*ifdtx - micfhist(i,hist_len-1)
         end do
     else if ( fenthalpy_der .eq. 3 ) then
         do i=1,NumOfABFCVs
             f1 = 0.0d0
-            f2 = 0.0d0
             do j=1,NumOfLAtoms
                 do m=1,3
                     ! force part
                     f1 = f1 + zdhist(m,j,i,hist_len-2) * (       - vhist(m,j,hist_len-0) + 27.0d0*vhist(m,j,hist_len-1) &
                                                           - 27.0d0*vhist(m,j,hist_len-2)        + vhist(m,j,hist_len-3))
-
-                    ! force part
-                    f2 = f2 + zdhista(m,j,i,hist_len-2) * (       - vhist(m,j,hist_len-0) + 27.0d0*vhist(m,j,hist_len-1) &
-                                                          - 27.0d0*vhist(m,j,hist_len-2)        + vhist(m,j,hist_len-3)) * mass(j)
                 end do
             end do
             ! remove bias
             icfphist(i,hist_len-2) = (1.0d0/24.0d0)*f1*ifdtx - micfhist(i,hist_len-2)
-            icfpahist(i,hist_len-2) = (1.0d0/24.0d0)*f2*ifdtx - micfhist(i,hist_len-2)
         end do
     end if
 
@@ -511,7 +494,6 @@ subroutine abf_core_lf_register_ekin()
         ! register data
         call abf_accu_add_data_energy(cvhist(:,hist_len+hist_fidx), &
                       icfhist(:,hist_len+hist_fidx), micfhist(:,hist_len+hist_fidx), icfphist(:,hist_len+hist_fidx), &
-                      icfpahist(:,hist_len+hist_fidx), &
                       epothist(hist_len+hist_fidx), ersthist(hist_len+hist_fidx), ekinhist(hist_len+hist_fidx), &
                       epvhist(hist_len+hist_fidx),volhist(hist_len+hist_fidx))
     end if

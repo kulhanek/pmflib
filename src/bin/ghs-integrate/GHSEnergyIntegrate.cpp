@@ -36,8 +36,8 @@
 #include <boost/algorithm/string/classification.hpp>
 #include <StdIOFile.hpp>
 // -------------
-#include <GHSIntegratorGPR0C.hpp>
-#include <GHSIntegratorGPRcC.hpp>
+#include <GHSIntegratorGPR0A.hpp>
+#include <GHSIntegratorGPRcA.hpp>
 // -------------
 #include <ABFProxy_dG.hpp>
 #include <ABFProxy_mTdS.hpp>
@@ -213,9 +213,9 @@ bool CGHSEnergyIntegrate::Run(void)
     vout << format("%02d:PMF accumulator integration")%State << endl;
     State++;
     if( Options.GetOptRealm() == "GHS_dH" ) {
-        if( Integrate0C() == false ) return(false);
+        if( Integrate0A() == false ) return(false);
     } else if( Options.GetOptRealm() == "cGHS_dH" ) {
-        if( IntegratecC() == false ) return(false);
+        if( IntegratecA() == false ) return(false);
     } else {
         RUNTIME_ERROR("unsupported realm");
     }
@@ -297,10 +297,10 @@ void CGHSEnergyIntegrate::WriteES(CEnergySurfacePtr& surf,const CSmallString& na
 //------------------------------------------------------------------------------
 //==============================================================================
 
-bool CGHSEnergyIntegrate::Integrate0C(void)
+bool CGHSEnergyIntegrate::Integrate0A(void)
 {
 
-    CGHSIntegratorGPR0C   integrator;
+    CGHSIntegratorGPR0A   integrator;
 
     integrator.SetAccumulator(Accu);
 
@@ -365,10 +365,10 @@ bool CGHSEnergyIntegrate::Integrate0C(void)
 
 //------------------------------------------------------------------------------
 
-bool CGHSEnergyIntegrate::IntegratecC(void)
+bool CGHSEnergyIntegrate::IntegratecA(void)
 {
 
-    CGHSIntegratorGPRcC   integrator;
+    CGHSIntegratorGPRcA   integrator;
 
     integrator.SetAccumulator(Accu);
 

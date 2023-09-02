@@ -214,52 +214,6 @@ subroutine abf_core_calc_Zmat(ctx)
 end subroutine abf_core_calc_Zmat
 
 !===============================================================================
-! subroutine:  abf_core_calc_ZmatA
-!===============================================================================
-
-subroutine abf_core_calc_ZmatA(ctx)
-
-    use pmf_utils
-    use abf_dat
-
-    implicit none
-    type(CVContextType) :: ctx
-    integer             :: i,ci,j,cj,k,info
-    ! -----------------------------------------------------------------------------
-
-    ! calculate Z matrix
-    do i=1,NumOfABFCVs
-        ci = ABFCVList(i)%cvindx
-        do j=1,NumOfABFCVs
-            cj = ABFCVList(j)%cvindx
-            fza(i,j) = 0.0d0
-            do k=1,NumOfLAtoms
-                fza(i,j) = fza(i,j) + dot_product(ctx%CVsDrvs(:,k,ci),ctx%CVsDrvs(:,k,cj))
-            end do
-        end do
-    end do
-
-    ! and now its inversion - we will use LAPAC and LU decomposition
-    if (NumOfABFCVs .gt. 1) then
-        fzinva(:,:)  = fza(:,:)
-        call dgetrf(NumOfABFCVs,NumOfABFCVs,fzinva,NumOfABFCVs,indx,info)
-        if( info .ne. 0 ) then
-            call pmf_utils_exit(PMF_OUT,1,'[ABF] LU decomposition failed in abf_core_calc_Zmat!')
-        end if
-
-        call dgetri(NumOfABFCVs,fzinva,NumOfABFCVs,indx,vv,NumOfABFCVs,info)
-        if( info .ne. 0 ) then
-            call pmf_utils_exit(PMF_OUT,1,'[ABF] Matrix inversion failed in abf_core_calc_Zmat!')
-        end if
-    else
-        fzinva(1,1)  = 1.0d0/fza(1,1)
-    end if
-
-    return
-
-end subroutine abf_core_calc_ZmatA
-
-!===============================================================================
 ! Subroutine:  abf_core_update_zdhist
 !===============================================================================
 
@@ -288,36 +242,6 @@ subroutine abf_core_update_zdhist()
     end do
 
 end subroutine abf_core_update_zdhist
-
-!===============================================================================
-! Subroutine:  abf_core_update_zdhist
-!===============================================================================
-
-subroutine abf_core_update_zdhistA()
-
-    use pmf_dat
-    use pmf_cvs
-    use abf_dat
-
-    implicit none
-    integer                :: i,j,k,m,ki
-    real(PMFDP)            :: v
-    ! --------------------------------------------------------------------------
-
-    do i=1,NumOfABFCVs
-        do j=1,NumOfLAtoms
-            do m=1,3
-                v = 0.0d0
-                do k=1,NumOfABFCVs
-                    ki = ABFCVList(k)%cvindx
-                    v = v + fzinva(i,k)*CVContext%CVsDrvs(m,j,ki)
-                end do
-                zdhista(m,j,i,hist_len) = v
-            end do
-        end do
-    end do
-
-end subroutine abf_core_update_zdhistA
 
 !===============================================================================
 

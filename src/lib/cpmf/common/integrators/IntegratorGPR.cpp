@@ -1241,7 +1241,15 @@ void CIntegratorGPR::CalculateErrorsFromCov(CVerboseStr& vout)
     vout << "   Calculating FES error ..." << endl;
 
     // find global minimum
-    size_t iglb = EneSurface->GetGlobalMinBin();
+    size_t iglb_bin = EneSurface->GetGlobalMinBin();
+    size_t iglb = 0;
+
+    for(size_t indj=0; indj < NumOfValues; indj++){
+        size_t j = ValueMap[indj];
+        if( j == iglb_bin ){
+            iglb = indj;
+        }
+    }
 
     for(size_t indj=0; indj < NumOfValues; indj++){
         size_t j = ValueMap[indj];
