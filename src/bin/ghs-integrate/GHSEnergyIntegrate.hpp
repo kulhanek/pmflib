@@ -87,6 +87,8 @@ private:
     bool Integrate0A(void);
     bool IntegratecA(void);
 
+    bool Integrate0B(void);
+
     void WriteES(CEnergySurfacePtr& surf,const CSmallString& name);
 };
 

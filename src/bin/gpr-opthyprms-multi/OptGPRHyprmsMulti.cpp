@@ -30,7 +30,6 @@
 #include <boost/algorithm/string/classification.hpp>
 #include <SciLapack.hpp>
 #include <ABFProxy_dG.hpp>
-#include <ABFProxy_dH.hpp>
 #include <ABFProxy_mTdS.hpp>
 #include <CSTProxy_dG.hpp>
 #include <CSTProxy_mTdS.hpp>
@@ -246,21 +245,6 @@ void COptGPRHyprmsMulti::InitRealm(CProxyRealmPtr realm)
                proxy    = CABFProxy_dG_Ptr(new CABFProxy_dG);
             } else if (CCSTProxy_dG::IsCompatible(accu) ) {
                 proxy    = CCSTProxy_dG_Ptr(new CCSTProxy_dG);
-            } else {
-                CSmallString error;
-                error << "incompatible method: " << accu->GetMethod() << " with requested realm: " <<  realm->Name;
-                RUNTIME_ERROR(error);
-            }
-            proxy->Init(accu);
-            realm->DerProxies.push_back(proxy);
-        }
-// -----------------------------------------------
-    } else if( realm->Name == "dH/dx" ) {
-        for(size_t i=0; i < realm->Accumulators.size(); i++){
-            CPMFAccumulatorPtr accu = realm->Accumulators[i];
-            CEnergyDerProxyPtr proxy;
-            if( CABFProxy_dH::IsCompatible(accu) ){
-                proxy    = CABFProxy_dH_Ptr(new CABFProxy_dH);
             } else {
                 CSmallString error;
                 error << "incompatible method: " << accu->GetMethod() << " with requested realm: " <<  realm->Name;
@@ -1065,9 +1049,9 @@ void COptGPRHyprmsMulti::ShowGPRStat(void)
             gpr.SetCalcLogPL(Options.GetOptGPRCalcLogPL() || Target == EGOT_LOGPL);
 
         // run integrator
-            gpr.SetSigmaF2(SigmaF2);
+            gpr.SetSigmaF2(0,SigmaF2);
             gpr.SetWFac(WFac);
-            gpr.SetNCorr(NCorr);
+            gpr.SetNCorr(0,NCorr);
             gpr.SetSigmaN2(SigmaN2);
             gpr.Integrate(vout,false);
     // SmootherGPR
@@ -1097,9 +1081,9 @@ void COptGPRHyprmsMulti::ShowGPRStat(void)
             gpr.SetCalcLogPL(Options.GetOptGPRCalcLogPL() || Target == EGOT_LOGPL);
 
         // run integrator
-            gpr.SetSigmaF2(SigmaF2);
+            gpr.SetSigmaF2(0,SigmaF2);
             gpr.SetWFac(WFac);
-            gpr.SetNCorr(NCorr);
+            gpr.SetNCorr(0,NCorr);
             gpr.SetSigmaN2(SigmaN2);
             gpr.Interpolate(vout,false);
         } else {
@@ -1406,16 +1390,17 @@ double COptGPRHyprmsMulti::GetTargetFromIntegrator(CIntegratorGPR& gpr,CProxyRea
     gpr.SetUseInv(Options.GetOptGPRUseInv());
     gpr.SetKernel(Options.GetOptGPRKernel());
 
-    if( Options.IsOptGlobalMinSet() ){
-        gpr.SetGlobalMin(Options.GetOptGlobalMin());
-    }
+    // FIXME
+//    if( Options.IsOptGlobalMinSet() ){
+//        gpr.SetGlobalMin(Options.GetOptGlobalMin());
+//    }
 
     if( Target == EGOT_LOGPL) gpr.SetCalcLogPL(true);
 
 // setup integrator
-    gpr.SetSigmaF2(SigmaF2);
+    gpr.SetSigmaF2(0,SigmaF2);
     gpr.SetWFac(WFac);
-    gpr.SetNCorr(NCorr);
+    gpr.SetNCorr(0,NCorr);
     gpr.SetSigmaN2(SigmaN2);
     vout << high;
     gpr.Integrate(vout,true);
@@ -1464,9 +1449,9 @@ double  COptGPRHyprmsMulti::GetTargetFromSmoother(CSmootherGPR& gpr,CProxyRealmP
     if( Target == EGOT_LOGPL) gpr.SetCalcLogPL(true);
 
 // setup integrator
-    gpr.SetSigmaF2(SigmaF2);
+    gpr.SetSigmaF2(0,SigmaF2);
     gpr.SetWFac(WFac);
-    gpr.SetNCorr(NCorr);
+    gpr.SetNCorr(0,NCorr);
     gpr.SetSigmaN2(SigmaN2);
     vout << high;
 
