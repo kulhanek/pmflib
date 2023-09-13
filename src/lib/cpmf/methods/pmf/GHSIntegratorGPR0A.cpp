@@ -61,6 +61,7 @@ CGHSIntegratorGPR0A::CGHSIntegratorGPR0A(void)
     NumOfUsedBins       = 0;
 
     NoEnergy            = false;
+    DoBalanceResiduals  = false;
 
     KSInverted          = false;
 
@@ -485,6 +486,8 @@ bool CGHSIntegratorGPR0A::TrainGP(CVerboseStr& vout)
     return(true);
 }
 
+//------------------------------------------------------------------------------
+
 void CGHSIntegratorGPR0A::CalculateEnergy(CVerboseStr& vout)
 {
     vout << "   Calculating dG, dH, -TdS surfaces ..." << endl;
@@ -590,6 +593,14 @@ void CGHSIntegratorGPR0A::CalculateEnergy(CVerboseStr& vout)
     }
     vout << "    -TdS(x) SigmaF2   = " << setprecision(5) << SSurface->GetSigmaF2() << endl;
     vout << "    -TdS(x) SigmaF    = " << setprecision(5) << SSurface->GetSigmaF() << endl;
+
+    vout << "      >>>>>>>>" << endl;
+    CalcResiduals(vout,false);
+    if( DoBalanceResiduals ) {
+        vout << "      >>>>>>>>" << endl;
+        BalanceResiduals();
+        CalcResiduals(vout,true);
+    }
 }
 
 //==============================================================================
@@ -855,6 +866,74 @@ void CGHSIntegratorGPR0A::CreateKff2(const CSimpleVector<double>& ip,size_t icoo
         kff2[offset0 + indj] = TK[0][task]*kblock;
         kff2[offset1 + indj] = TK[1][task]*kblock;
         kff2[offset2 + indj] = TK[2][task]*kblock;
+    }
+}
+
+//==============================================================================
+//------------------------------------------------------------------------------
+//==============================================================================
+
+void CGHSIntegratorGPR0A::CalcResiduals(CVerboseStr& vout,bool balanced)
+{
+    double mf = 0.0;
+    double m2 = 0.0;
+    double n  = 0.0;
+
+    // https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Welford's_online_algorithm
+
+    for(size_t indj=0; indj < NumOfUsedBins; indj++){
+        int jbin = SampledMap[indj];
+        double g = GSurface->GetEnergy(jbin);
+        double h = HSurface->GetEnergy(jbin);
+        double s = SSurface->GetEnergy(jbin);
+        double res = g-(h+s);
+
+        n++;
+        double dx1 = (res - mf);
+        mf = mf + dx1/n;
+        double dx2 = (res - mf);
+        m2 = m2 + dx1*dx2;
+    }
+
+    double sigmaf = 0.0;
+    if( n > 0 ) {
+        sigmaf = sqrt(m2/n);
+    }
+
+    if( balanced ){
+        vout << "      Residual AVE|B    = " << setw(10) << setprecision(5) << mf << endl;
+        vout << "      Residual SigmaF|B = " << setw(10) << setprecision(5) << sigmaf << endl;
+    } else {
+        vout << "      Residual AVE      = " << setw(10) << setprecision(5) << mf << endl;
+        vout << "      Residual SigmaF   = " << setw(10) << setprecision(5) << sigmaf << endl;
+    }
+}
+
+//------------------------------------------------------------------------------
+
+void CGHSIntegratorGPR0A::BalanceResiduals(void)
+{
+    double mf = 0.0;
+    double n  = 0.0;
+
+    // https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Welford's_online_algorithm
+
+    for(size_t indj=0; indj < NumOfUsedBins; indj++){
+        int jbin = SampledMap[indj];
+        double g = GSurface->GetEnergy(jbin);
+        double h = HSurface->GetEnergy(jbin);
+        double s = SSurface->GetEnergy(jbin);
+        double res = g-(h+s);
+        n++;
+        double dx1 = (res - mf);
+        mf = mf + dx1/n;
+    }
+
+// balance residuals to H and -TdS
+    for(size_t indj=0; indj < NumOfUsedBins; indj++){
+        int jbin = SampledMap[indj];
+        HSurface->SetEnergy(jbin,HSurface->GetEnergy(jbin)+mf/2.0);
+        SSurface->SetEnergy(jbin,SSurface->GetEnergy(jbin)+mf/2.0);
     }
 }
 

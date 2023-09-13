@@ -112,6 +112,7 @@ private:
 
     // setup
     bool                    NoEnergy;
+    bool                    DoBalanceResiduals;
 
     // GPR model
     double                  HMean;
@@ -137,6 +138,10 @@ private:
     double GetTrainingValue(const CSimpleVector<double>& position,size_t icoord,int task);
     double GetTrainingValueVar(const CSimpleVector<double>& position,size_t icoord,int task);
     double GetRMSR(size_t cv,int task);
+
+// calculate residuals
+    void CalcResiduals(CVerboseStr& vout,bool balanced);
+    void BalanceResiduals(void);
 
 // GPR
     void CreateKS(void);

@@ -1190,9 +1190,9 @@ void COptGPRHyprms::InitGPREngine(void)
         InitGPREngine_dF_dx();
     } else if( Options.GetArgRealm() == "dH" ) {
         InitGPREngine_dF();
-    } else if( Options.GetArgRealm() == "GHS_dH" ) {
+    } else if( Options.GetArgRealm() == "GHS_dH_A" ) {
         InitGPREngine_GHS_dH_A();
-    } else if( Options.GetArgRealm() == "cGHS_dH" ) {
+    } else if( Options.GetArgRealm() == "cGHS_dH_A" ) {
         InitGPREngine_cGHS_dH_A();
     } else if( Options.GetArgRealm() == "GHS_dH_B" ) {
         InitGPREngine_GHS_dH_B();
@@ -1264,9 +1264,9 @@ void COptGPRHyprms::CreateGPREngine(void)
         CreateGPREngine_dF_dx();
     } else if( Options.GetArgRealm() == "dH" ) {
         CreateGPREngine_dF();
-    } else if( Options.GetArgRealm() == "GHS_dH" ) {
+    } else if( Options.GetArgRealm() == "GHS_dH_A" ) {
         CreateGPREngine_GHS_dH_A();
-    } else if( Options.GetArgRealm() == "cGHS_dH" ) {
+    } else if( Options.GetArgRealm() == "cGHS_dH_A" ) {
         CreateGPREngine_cGHS_dH_A();
     } else if( Options.GetArgRealm() == "GHS_dH_B" ) {
         CreateGPREngine_GHS_dH_B();
@@ -1391,7 +1391,7 @@ void COptGPRHyprms::CreateGPREngine_GHS_dH_A(void)
     CEnergyProxyPtr    proxy_dh;
     CEnergyDerProxyPtr proxy_ds;
 
-    if( Options.GetArgRealm() == "GHS_dH" ) {
+    if( Options.GetArgRealm() == "GHS_dH_A" ) {
         if( CABFProxy_dG::IsCompatible(Accu) ){
            proxy_dg = CABFProxy_dG_Ptr(new CABFProxy_dG);
            proxy_dg->Init(Accu);
@@ -1458,7 +1458,7 @@ void COptGPRHyprms::CreateGPREngine_cGHS_dH_A(void)
     CEnergyProxyPtr    proxy_dh;
     CEnergyDerProxyPtr proxy_ds;
 
-    if( Options.GetArgRealm() == "cGHS_dH" ) {
+    if( Options.GetArgRealm() == "cGHS_dH_A" ) {
         if( CABFProxy_dG::IsCompatible(Accu) ){
            proxy_dg = CABFProxy_dG_Ptr(new CABFProxy_dG);
            proxy_dg->Init(Accu);

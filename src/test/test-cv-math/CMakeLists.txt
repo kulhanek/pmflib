@@ -8,10 +8,10 @@ SET(CV_MATH_TEST_SRC
         )
 
 # final build ------------------------------------------------------------------
-ADD_EXECUTABLE(cv-math-test ${CV_MATH_TEST_SRC})
-ADD_DEPENDENCIES(cv-math-test fpmf_shared)
+ADD_EXECUTABLE(test-cv-math ${CV_MATH_TEST_SRC})
+ADD_DEPENDENCIES(test-cv-math fpmf_shared)
 
-TARGET_LINK_LIBRARIES(cv-math-test
+TARGET_LINK_LIBRARIES(test-cv-math
         fpmf
         ${XBPLIB_XCORE_LIB_NAME}
         ${XBPLIB_XFILES_LIB_NAME}
@@ -24,7 +24,7 @@ TARGET_LINK_LIBRARIES(cv-math-test
         )
 
 INSTALL(TARGETS
-            cv-math-test
+            test-cv-math
         RUNTIME DESTINATION
             bin
         )

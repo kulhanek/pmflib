@@ -38,6 +38,7 @@ enum EGPRKernel {
     EGPRK_ARDMC52   = 2,    // ARD Matern class 5/2 function
     EGPRK_ARDMC32   = 3,    // ARD Matern class 3/2 function
     EGPRK_ARDMC12   = 4,    // ARD Matern class 1/2 function
+    EGPRK_ARDRQ     = 5,    // ARD rational quadratic
 };
 
 //------------------------------------------------------------------------------
@@ -107,12 +108,15 @@ protected:
     size_t                  NumOfBins;
     EGPRKernel              Kernel;
     CSimpleVector<double>   WFac;
+    double                  Alpha;
 
-// section of private data ----------------------------------------------------
+// section of private data -----------------------------------------------------
 private:
     CSimpleVector<double>   CVLengths2;
     bool                    UseNumDiff;
 
+// for testing -----------------------------------------------------------------
+public:
 // analytical derivatives
     void   GetKernelDerIAna(const CSimpleVector<double>& ip,const CSimpleVector<double>& jp,CSimpleVector<double>& kder);
     void   GetKernelDerJAna(const CSimpleVector<double>& ip,const CSimpleVector<double>& jp,CSimpleVector<double>& kder);

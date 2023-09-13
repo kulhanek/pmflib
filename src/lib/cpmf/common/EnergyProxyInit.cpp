@@ -29,7 +29,7 @@ CEnergyProxyPtr CEnergyProxyInit::InitProxy(const CSmallString& realm,CPMFAccumu
 {
     CEnergyProxyPtr lproxy;
 
-    if( realm == "<Eint>" ){
+    if( (realm == "<Eint>") || (realm == "dH") ){
         CPMFProxy_dH_Ptr proxy = CPMFProxy_dH_Ptr(new CPMFProxy_dH);
         proxy->SetType(PMF_EINT);
         lproxy = proxy;

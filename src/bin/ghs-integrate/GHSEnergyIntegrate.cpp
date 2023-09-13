@@ -214,9 +214,9 @@ bool CGHSEnergyIntegrate::Run(void)
     vout << endl;
     vout << format("%02d:PMF accumulator integration")%State << endl;
     State++;
-    if( Options.GetOptRealm() == "GHS_dH" ) {
+    if( Options.GetOptRealm() == "GHS_dH_A" ) {
         if( Integrate0A() == false ) return(false);
-    } else if( Options.GetOptRealm() == "cGHS_dH" ) {
+    } else if( Options.GetOptRealm() == "cGHS_dH_A" ) {
         if( IntegratecA() == false ) return(false);
     } else if( Options.GetOptRealm() == "GHS_dH_B" ) {
         if( Integrate0B() == false ) return(false);

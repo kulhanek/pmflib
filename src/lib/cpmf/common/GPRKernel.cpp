@@ -43,6 +43,7 @@ CGPRKernel::CGPRKernel(void)
     Kernel              = EGPRK_NONE;
     Accu                = NULL;
     UseNumDiff          = false;
+    Alpha               = 2.0;
 }
 
 //------------------------------------------------------------------------------
@@ -102,6 +103,8 @@ void CGPRKernel::SetKernel(const CSmallString& kernel)
         Kernel = EGPRK_ARDMC32;
     } else if( kernel == "ardmc12" ) {
         Kernel = EGPRK_ARDMC12;
+    } else if( kernel == "ardrq" ) {
+        Kernel = EGPRK_ARDRQ;
     } else if( kernel == "default" ) {
         Kernel = EGPRK_ARDSE;
     } else {
@@ -125,6 +128,8 @@ const CSmallString CGPRKernel::GetKernelName(void)
             return("ARD Matern class 3/2");
         case(EGPRK_ARDMC12):
             return("ARD Matern class 1/2");
+        case(EGPRK_ARDRQ):
+            return("ARD rational quadratic");
         default:
             RUNTIME_ERROR("not implemented");
     }
@@ -272,6 +277,12 @@ double CGPRKernel::GetKernelValue(const CSimpleVector<double>& ip,const CSimpleV
         }
         break;
     // -----------------------
+        case(EGPRK_ARDRQ):{
+            double in = 1.0 + 0.5*scdist2/Alpha;
+            return(pow(in,-Alpha));
+        }
+        break;
+    // -----------------------
         default:
             RUNTIME_ERROR("not implemented");
         break;
@@ -402,6 +413,16 @@ void CGPRKernel::GetKernelDerIAna(const CSimpleVector<double>& ip,const CSimpleV
             }
         }
         break;
+    case(EGPRK_ARDRQ):{
+            double in = 1.0 + 0.5*scdist2/Alpha;
+            double pre = pow(in,-(Alpha+1.0));
+            for(size_t ii=0; ii < NumOfCVs; ii++){
+                double du = Accu->GetCV(ii)->GetDifference(ip[ii],jp[ii]);
+                double dd = CVLengths2[ii];
+                kder[ii] = -pre*du/dd;
+            }
+        }
+        break;
     default:
         RUNTIME_ERROR("not implemented");
         break;
@@ -421,11 +442,11 @@ void CGPRKernel::GetKernelDerINum(const CSimpleVector<double>& ip,const CSimpleV
     // off diagonal elements
     for(size_t ii=0; ii < NumOfCVs; ii++) {
 
-        tip = jp;
+        tip = ip;
         tip[ii] = ip[ii] - dh;
         v1 = GetKernelValue(tip,jp);
 
-        tip = jp;
+        tip = ip;
         tip[ii] = ip[ii] + dh;
         v2 = GetKernelValue(tip,jp);
 
@@ -465,6 +486,16 @@ void CGPRKernel::GetKernelDerJAna(const CSimpleVector<double>& ip,const CSimpleV
                 double du = Accu->GetCV(ii)->GetDifference(ip[ii],jp[ii]);
                 double dd = CVLengths2[ii];
                 kder[ii] = -pre*du/dd;
+            }
+        }
+        break;
+    case(EGPRK_ARDRQ):{
+            double in = 1.0 + 0.5*scdist2/Alpha;
+            double pre = pow(in,-(Alpha+1.0));
+            for(size_t ii=0; ii < NumOfCVs; ii++){
+                double du = Accu->GetCV(ii)->GetDifference(ip[ii],jp[ii]);
+                double dd = CVLengths2[ii];
+                kder[ii] = pre*du/dd;
             }
         }
         break;
@@ -544,6 +575,23 @@ void CGPRKernel::GetKernelDerIJAna(const CSimpleVector<double>& ip,const CSimple
                     kblock[ii][jj] += 5.0*pr*du/dd;
                     if( (ii == jj) ){
                         kblock[ii][jj] -= d1/(CVLengths2[ii]);
+                    }
+                }
+            }
+        }
+        break;
+    case(EGPRK_ARDRQ): {
+            double in = 1.0 + 0.5*scdist2/Alpha;
+            double pre  = pow(in,-(Alpha+2.0));
+            double pre1 = pow(in,-(Alpha+1.0));
+            for(size_t ii=0; ii < NumOfCVs; ii++){
+                for(size_t jj=0; jj < NumOfCVs; jj++){
+                    double du = Accu->GetCV(ii)->GetDifference(ip[ii],jp[ii]) *
+                                Accu->GetCV(jj)->GetDifference(ip[jj],jp[jj]);
+                    double dd = CVLengths2[ii]*CVLengths2[jj];
+                    kblock[ii][jj] -= (Alpha+1.0)*pre*du/(dd*Alpha);
+                    if( ii == jj ){
+                        kblock[ii][ii] += pre1/CVLengths2[ii];
                     }
                 }
             }
@@ -712,6 +760,17 @@ double CGPRKernel::GetKernelValueWFacDerAna(const CSimpleVector<double>& ip,cons
             }
             break;
     // -----------------------
+        case(EGPRK_ARDRQ): {
+            double in  = 1.0 + 0.5*scdist2/Alpha;
+            double pre = pow(in,-(Alpha+1.0));
+            double du = Accu->GetCV(cv)->GetDifference(ip[cv],jp[cv]);
+            double dd = CVLengths2[cv];
+            double wf = WFac[cv];
+            double der = pre * du*du / (2.0*dd*dd*wf);
+            return(der);
+            }
+            break;
+    // -----------------------
         default:
             RUNTIME_ERROR("not implemented");
             break;
@@ -795,6 +854,26 @@ void CGPRKernel::GetKernelDerIWFacDerAna(const CSimpleVector<double>& ip,const C
                     kder[ii] = (-der*du*dd - (-pre*du*(2.0*dd/wf)) )/(dd*dd);
                 } else {
                     kder[ii] = -der*du/dd;
+                }
+            }
+        }
+        break;
+    // -----------------------
+        case(EGPRK_ARDRQ): {
+            double in   = 1.0 + 0.5*scdist2/Alpha;
+            double pre  = pow(in,-(Alpha+2.0));
+            double pre1 = pow(in,-(Alpha+1.0));
+            double du = Accu->GetCV(cv)->GetDifference(ip[cv],jp[cv]);
+            double dd = CVLengths2[cv];
+            double wf = WFac[cv];
+            double der = -(Alpha+1.0)*pre*du*du/(Alpha*dd*wf);
+            for(size_t ii=0; ii < NumOfCVs; ii++){
+                double du = Accu->GetCV(ii)->GetDifference(ip[ii],jp[ii]);
+                double dd = CVLengths2[ii];
+                if( cv == ii ){
+                    kder[ii] = 2.0*du*pre1/(dd*wf) - (Alpha+1.0)*du*du*du*pre/(Alpha*dd*dd*wf);
+                } else {
+                    kder[ii] = der*du/dd;
                 }
             }
         }
@@ -885,6 +964,26 @@ void CGPRKernel::GetKernelDerJWFacDerAna(const CSimpleVector<double>& ip,const C
                     kder[ii] = (der*du*dd - (pre*du*(2.0*dd/wf)) )/(dd*dd);
                 } else {
                     kder[ii] = der*du/dd;
+                }
+            }
+        }
+        break;
+    // -----------------------
+        case(EGPRK_ARDRQ): {
+            double in   = 1.0 + 0.5*scdist2/Alpha;
+            double pre  = pow(in,-(Alpha+2.0));
+            double pre1 = pow(in,-(Alpha+1.0));
+            double du = Accu->GetCV(cv)->GetDifference(ip[cv],jp[cv]);
+            double dd = CVLengths2[cv];
+            double wf = WFac[cv];
+            double der = -(Alpha+1.0)*pre*du*du/(Alpha*dd*wf);
+            for(size_t ii=0; ii < NumOfCVs; ii++){
+                double du = Accu->GetCV(ii)->GetDifference(ip[ii],jp[ii]);
+                double dd = CVLengths2[ii];
+                if( cv == ii ){
+                    kder[ii] = -2.0*du*pre1/(dd*wf) + (Alpha+1.0)*du*du*du*pre/(Alpha*dd*dd*wf);
+                } else {
+                    kder[ii] = -der*du/dd;
                 }
             }
         }
@@ -1015,6 +1114,38 @@ void CGPRKernel::GetKernelDerIJWFacDerAna(const CSimpleVector<double>& ip,const 
                             kblock[ii][ii] += 2.0*d1*wd3;
                         }
 
+                    }
+                }
+            }
+        }
+        break;
+    case(EGPRK_ARDRQ): {
+            double in   = 1.0 + 0.5*scdist2/Alpha;
+            double pre1 = pow(in,-(Alpha+1.0));
+            double pre2 = pow(in,-(Alpha+2.0));
+            double pre3 = pow(in,-(Alpha+3.0));
+
+            double du = Accu->GetCV(cv)->GetDifference(ip[cv],jp[cv]);
+            double dd = CVLengths2[cv];
+
+            for(size_t ii=0; ii < NumOfCVs; ii++){
+                for(size_t jj=0; jj < NumOfCVs; jj++){
+                    double duii = Accu->GetCV(ii)->GetDifference(ip[ii],jp[ii]);
+                    double dujj = Accu->GetCV(jj)->GetDifference(ip[jj],jp[jj]);
+                    double ddii = CVLengths2[ii];
+                    double ddjj = CVLengths2[jj];
+                           if( (cv == ii) && (cv != jj) ) {
+                        kblock[ii][jj] = -(Alpha+2.0)*(Alpha+1.0)*du*du*du*dujj*pre3/(Alpha*Alpha*dd*dd*wf*ddjj)
+                                         +2.0*(Alpha+1.0)*du*dujj*pre2/(Alpha*dd*wf*ddjj);
+                    } else if( (cv != ii) && (cv == jj) ) {
+                        kblock[ii][jj] = -(Alpha+2.0)*(Alpha+1.0)*du*du*du*duii*pre3/(Alpha*Alpha*dd*dd*wf*ddii)
+                                         +2.0*(Alpha+1.0)*du*duii*pre2/(Alpha*dd*wf*ddii);
+                    } else if( (cv == ii) && (cv == jj) ) {
+                        kblock[ii][jj] = -(Alpha+2.0)*(Alpha+1.0)*du*du*du*du*pre3/(Alpha*Alpha*dd*dd*dd*wf)
+                                         +5.0*(Alpha+1.0)*du*du*pre2/(Alpha*dd*dd*wf)-2.0*pre1/(dd*wf);
+                    } else {
+                        kblock[ii][jj] = -(Alpha+2.0)*(Alpha+1.0)*du*du*dujj*dujj*pre3/(Alpha*Alpha*dd*wf*ddjj*ddjj)
+                                         +(Alpha+1.0)*du*du*pre2/(Alpha*dd*wf*ddjj);
                     }
                 }
             }
