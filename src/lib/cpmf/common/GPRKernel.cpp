@@ -43,7 +43,7 @@ CGPRKernel::CGPRKernel(void)
     Kernel              = EGPRK_NONE;
     Accu                = NULL;
     UseNumDiff          = false;
-    Alpha               = 2.0;
+    Alpha               = 10.0;
 }
 
 //------------------------------------------------------------------------------

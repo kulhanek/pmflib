@@ -64,6 +64,9 @@ public:
     /// skip energy calculation, it also disables errors
     void SetNoEnergy(bool iset);
 
+    /// balance residual errors
+    void SetBalanceResiduals(bool iset);
+
     /// calc hyprms grd
     void PrepForHyprmsGrd(bool iset);
 

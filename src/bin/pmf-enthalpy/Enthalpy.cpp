@@ -238,6 +238,10 @@ bool CEnthalpy::Run(void)
         entgpr.SetCalcLogPL(Options.GetOptGPRCalcLogPL());
         entgpr.SetKernel(Options.GetOptGPRKernel());
 
+        if( Options.IsOptMFInfoSet() ){
+            entgpr.PrepForMFInfo();
+        }
+
         if(entgpr.Interpolate(vout) == false) {
             ES_ERROR("unable to interpolate enthalpy");
             return(false);

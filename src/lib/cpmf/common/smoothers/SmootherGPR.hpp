@@ -63,6 +63,9 @@ public:
     /// interpolate data
     bool Interpolate(CVerboseStr& vout,bool nostat=false);
 
+    /// prepare for subsequent call WriteMFInfo
+    void PrepForMFInfo(void);
+
     /// write file with derivatives
     bool WriteMFInfo(const CSmallString& name);
 

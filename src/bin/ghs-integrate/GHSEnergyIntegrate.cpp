@@ -124,8 +124,7 @@ int CGHSEnergyIntegrate::Init(int argc,char* argv[])
     } else {
         vout << "# Sampling limit        : " << Options.GetOptLimit() << endl;
     }
-        vout << "# Skip flood fill test  : " << bool_to_str(Options.GetOptNoHeader()) << endl;
-
+    vout << "# Balance res. errors   : " << bool_to_str(Options.GetOptBalanceResiduals()) << endl;
     vout << "# ------------------------------------------------" << endl;
 
     if( Options.IsOptGlobalMinSet() ){
@@ -326,6 +325,7 @@ bool CGHSEnergyIntegrate::Integrate0A(void)
 
     integrator.SetIncludeError(Options.GetOptWithError());
     integrator.SetNoEnergy(Options.GetOptNoEnergy());
+    integrator.SetBalanceResiduals(Options.GetOptBalanceResiduals());
     integrator.SetUseNumDiff(Options.GetOptGPRNumDiff());
 
     integrator.SetRCond(Options.GetOptRCond());
@@ -396,6 +396,7 @@ bool CGHSEnergyIntegrate::Integrate0B(void)
 
     integrator.SetIncludeError(Options.GetOptWithError());
     integrator.SetNoEnergy(Options.GetOptNoEnergy());
+    integrator.SetBalanceResiduals(Options.GetOptBalanceResiduals());
     integrator.SetUseNumDiff(Options.GetOptGPRNumDiff());
 
     integrator.SetRCond(Options.GetOptRCond());
@@ -464,6 +465,7 @@ bool CGHSEnergyIntegrate::IntegratecA(void)
 
     integrator.SetIncludeError(Options.GetOptWithError());
     integrator.SetNoEnergy(Options.GetOptNoEnergy());
+    integrator.SetBalanceResiduals(Options.GetOptBalanceResiduals());
     integrator.SetUseNumDiff(Options.GetOptGPRNumDiff());
 
     integrator.SetRCond(Options.GetOptRCond());

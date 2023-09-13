@@ -70,6 +70,7 @@ public:
     CSO_OPT(double,Offset)
     CSO_OPT(bool,WithError)
     CSO_OPT(bool,NoEnergy)
+    CSO_OPT(bool,BalanceResiduals)
     CSO_OPT(CSmallString,OutputFormat)
     CSO_OPT(bool,UnsampledAsMaxE)
     CSO_OPT(double,MaxEnergy)
@@ -256,6 +257,15 @@ public:
                 "noenergy",                      /* long option name */
                 NULL,                           /* parameter name */
                 "Skip calculation of energy and errors (it can save some time when only logML is required).")   /* option description */
+    //----------------------------------------------------------------------
+    CSO_MAP_OPT(bool,                           /* option type */
+                BalanceResiduals,                        /* option name */
+                false,                          /* default value */
+                false,                          /* is option mandatory */
+                0,                           /* short option name */
+                "balres",                      /* long option name */
+                NULL,                           /* parameter name */
+                "Balance residual errors between dG and dH and -TdS.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(CSmallString,                           /* option type */
                 MFInfo,                        /* option name */

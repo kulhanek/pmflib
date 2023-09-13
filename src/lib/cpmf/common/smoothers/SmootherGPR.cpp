@@ -127,6 +127,13 @@ void CSmootherGPR::SetIncludeError(bool set)
     IncludeError = set;
 }
 
+//------------------------------------------------------------------------------
+
+void CSmootherGPR::PrepForMFInfo(void)
+{
+    IncludeError = true;
+}
+
 //==============================================================================
 //------------------------------------------------------------------------------
 //==============================================================================
@@ -646,6 +653,11 @@ void CSmootherGPR::CalculateCovs(CVerboseStr& vout)
     vout << "         Dim    = " << GPRSize << " x " << GPRSize << endl;
     CreateKS();
 
+    CFortranMatrix KSInv;   // backup KS, which is inverted
+    KSInv = KS;
+
+    CreateKS();
+
     CSimpleVector<double> ipos;
     ipos.CreateVector(NumOfCVs);
 
@@ -716,6 +728,8 @@ void CSmootherGPR::CalculateCovs(CVerboseStr& vout)
 
     RunBlasLapackPar();
     CSciBlas::gemm(-1.0,'T',Kl,'N',Kr,1.0,Cov);
+
+    KS = KSInv;
 }
 
 //==============================================================================

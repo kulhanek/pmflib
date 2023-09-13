@@ -166,7 +166,7 @@ int CPMFEnergyIntegrate::Init(int argc,char* argv[])
         vout << "# Energy limit          : " << Options.GetOptEnergyLimit() << endl;
     }
         vout << "# Skip last energy limit: " << bool_to_str(Options.GetOptSkipLastEnergyLimit()) << endl;
-        vout << "# Skip flood fill test  : " << bool_to_str(Options.GetOptNoHeader()) << endl;
+        vout << "# Skip flood fill test  : " << bool_to_str(Options.GetOptSkipFFTest()) << endl;
 
     vout << "# ------------------------------------------------" << endl;
 

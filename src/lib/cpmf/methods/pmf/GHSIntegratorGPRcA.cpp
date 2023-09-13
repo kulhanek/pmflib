@@ -61,6 +61,7 @@ CGHSIntegratorGPRcA::CGHSIntegratorGPRcA(void)
     NumOfUsedBins       = 0;
 
     NoEnergy            = false;
+    DoBalanceResiduals  = false;
 
     KSInverted          = false;
 
@@ -226,6 +227,13 @@ void CGHSIntegratorGPRcA::SetIncludeError(bool iset)
 void CGHSIntegratorGPRcA::SetNoEnergy(bool iset)
 {
     NoEnergy = iset;
+}
+
+//------------------------------------------------------------------------------
+
+void CGHSIntegratorGPRcA::SetBalanceResiduals(bool iset)
+{
+    DoBalanceResiduals = iset;
 }
 
 //------------------------------------------------------------------------------

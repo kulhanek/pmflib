@@ -231,6 +231,13 @@ void CGHSIntegratorGPR0A::SetNoEnergy(bool iset)
 
 //------------------------------------------------------------------------------
 
+void CGHSIntegratorGPR0A::SetBalanceResiduals(bool iset)
+{
+    DoBalanceResiduals = iset;
+}
+
+//------------------------------------------------------------------------------
+
 void CGHSIntegratorGPR0A::PrepForHyprmsGrd(bool iset)
 {
    NeedInv |= iset;
