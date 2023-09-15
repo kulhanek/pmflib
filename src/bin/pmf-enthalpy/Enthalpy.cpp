@@ -396,7 +396,7 @@ void CEnthalpy::AdjustGlobalMin(void)
 void CEnthalpy::GetRawEnthalpy(void)
 {
     for(int ibin=0; ibin < Accumulators[0]->GetNumOfBins(); ibin++){
-        int    nsamples = EnergyProxies[0]->GetNumOfSamples(ibin);
+        int    nsamples = EnergyProxies[0]->GetNSamples(ibin);
         double ent = EnergyProxies[0]->GetValue(ibin,E_PROXY_VALUE);
         double error = EnergyProxies[0]->GetValue(ibin,E_PROXY_ERROR);
         HES->SetNumOfSamples(ibin,nsamples);
@@ -475,7 +475,7 @@ void CEnthalpy::WriteHeader(void)
 void CEnthalpy::PrintSampledStat(void)
 {
     for(size_t i=0; i < Accumulators.size(); i++){
-        CPMFAccumulatorPtr accu = Accumulators[i];
+        CPMFAccumulatorPtr  accu = Accumulators[i];
         vout << format("** PMF Accumulator #%05d ...")%(i+1) << endl;
         // calculate sampled area
         double maxbins = accu->GetNumOfBins();
@@ -492,10 +492,10 @@ void CEnthalpy::PrintSampledStat(void)
             }
         }
         if( maxbins > 0 ){
-            vout << " Sampled area: "
-                 << setw(6) << sampled << " / " << (int)maxbins << " | " << setw(5) << setprecision(1) << fixed << sampled/maxbins*100 <<"%" << endl;
-            vout << " Within limit: "
-                 << setw(6) << limit << " / " << (int)maxbins << " | " << setw(5) << setprecision(1) << fixed << limit/maxbins*100 <<"%" << endl;
+            vout << "   Sampled area: "
+                 << setw(6) << sampled << " / " << (int)maxbins << " | " << setw(5) << setprecision(1) << fixed << sampled/maxbins*100 <<"%" ;
+            vout << " ... Within limit: "
+                 << setw(6) << limit << " / " << (int)maxbins << " | " << setw(5) << setprecision(1) << fixed << limit/maxbins*100 <<"%";
         }
         vout << endl;
         if( accu->CheckCVSInfo(Accumulators[0]) == false ){

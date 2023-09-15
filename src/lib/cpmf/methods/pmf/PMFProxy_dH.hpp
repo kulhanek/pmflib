@@ -49,11 +49,8 @@ public:
     void SetType(EPMFdHType type);
 
 //------------------------------------------------------------------------------
-    // get number of samples
-    virtual int GetNumOfSamples(int ibin) const;
-
-    // set number of samples
-    virtual void SetNumOfSamples(int ibin,int nsamples);
+    // get number of value samples
+    virtual int GetVSamples(int ibin) const;
 
     // get energy derivative and its error
     virtual double GetValue( int ibin,EProxyRealm realm) const;

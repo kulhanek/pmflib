@@ -50,7 +50,7 @@ public:
     int GetNumOfBins(void) const;
 
     // get number of samples
-    virtual int GetNumOfSamples(int ibin) const;
+    int GetNSamples(int ibin) const;
 
     // get energy derivative and its error
     virtual double GetValue( int ibin,int cv,EProxyRealm realm) const;

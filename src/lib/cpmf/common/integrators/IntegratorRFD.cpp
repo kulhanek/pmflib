@@ -143,7 +143,7 @@ bool CIntegratorRFD::Integrate(CVerboseStr& vout)
 
 // basic EneSurf update
     for(int i=0; i < EneSurf->GetNumOfBins(); i++){
-        int samples = DerProxy->GetNumOfSamples(i);
+        int samples = DerProxy->GetNSamples(i);
         EneSurf->SetNumOfSamples(i,samples);
         EneSurf->SetEnergy(i,0.0);
         EneSurf->SetError(i,0.0);
@@ -154,7 +154,7 @@ bool CIntegratorRFD::Integrate(CVerboseStr& vout)
         int x_index = XMap[ibin];
         if(x_index >= 0) {
             EneSurf->SetEnergy(ibin, X[x_index]);
-            EneSurf->SetNumOfSamples(ibin, DerProxy->GetNumOfSamples(ibin));
+            EneSurf->SetNumOfSamples(ibin, DerProxy->GetNSamples(ibin));
         }
     }
 
@@ -522,7 +522,7 @@ int CIntegratorRFD::GetFBinIndex(const CSimpleVector<int>& position,int ifcoord,
     }
 
 // check if we have sufficient number of samples
-    if(DerProxy->GetNumOfSamples(glbindex) <= 0) return(-1);
+    if(DerProxy->GetNSamples(glbindex) <= 0) return(-1);
 
     return(glbindex);
 }

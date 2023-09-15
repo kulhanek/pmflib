@@ -91,10 +91,12 @@ int CEnergyProxy::GetNumOfBins(void) const
 
 //------------------------------------------------------------------------------
 
-int CEnergyProxy::GetNumOfSamples(int ibin) const
+int CEnergyProxy::GetNSamples(int ibin) const
 {
-    RUNTIME_ERROR("need to be overloaded");
-    return(0);
+    if( Accu == NULL ){
+        RUNTIME_ERROR("Accu is NULL");
+    }
+    return(Accu->GetData("NSAMPLES",ibin));
 }
 
 //------------------------------------------------------------------------------

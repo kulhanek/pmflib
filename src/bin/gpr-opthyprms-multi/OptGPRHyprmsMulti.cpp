@@ -1544,13 +1544,13 @@ bool COptGPRHyprmsMulti::WriteHyperPrms(FILE* p_fout)
 
     if( fprintf(p_fout,"# GPR hyper-parameters\n") <= 0 ) return(false);
 
-        if( fprintf(p_fout,"SigmaF2    = %16.10e\n",SigmaF2) <= 0 ) return(false);
+        if( fprintf(p_fout,"SigmaF2#1  = %16.10e\n",SigmaF2) <= 0 ) return(false);
 
     for(size_t i=0; i < WFac.GetLength(); i++ ){
         if( fprintf(p_fout,"WFac#%-2ld    = %16.10e\n",i+1,WFac[i]) <= 0 ) return(false);
     }
 
-        if( fprintf(p_fout,"NCorr      = %16.10e\n",NCorr) <= 0 ) return(false);
+        if( fprintf(p_fout,"NCorr#1    = %16.10e\n",NCorr) <= 0 ) return(false);
 
     for(size_t i=0; i < SigmaN2.GetLength(); i++ ){
         if( fprintf(p_fout,"SigmaN2#%-2ld = %16.10e\n",i+1,SigmaN2[i]) <= 0 ) return(false);

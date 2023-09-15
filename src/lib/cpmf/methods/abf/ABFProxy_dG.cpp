@@ -74,26 +74,6 @@ void CABFProxy_dG::SetType(EABFdGType type)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-int CABFProxy_dG::GetNumOfSamples(int ibin) const
-{
-    if( Accu == NULL ){
-        RUNTIME_ERROR("Accu is NULL");
-    }
-    return(Accu->GetData("NSAMPLES",ibin));
-}
-
-//------------------------------------------------------------------------------
-
-void CABFProxy_dG::SetNumOfSamples(int ibin,int nsamples)
-{
-    if( Accu == NULL ){
-        RUNTIME_ERROR("Accu is NULL");
-    }
-    Accu->SetData("NSAMPLES",ibin,nsamples);
-}
-
-//------------------------------------------------------------------------------
-
 double CABFProxy_dG::GetValue(int ibin,int icv,EProxyRealm realm) const
 {
     if( Accu == NULL ){

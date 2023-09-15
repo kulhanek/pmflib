@@ -58,8 +58,8 @@ public:
     /// return number of bins
     int GetNumOfBins(void) const;
 
-    // get number of samples
-    virtual int GetNumOfSamples(int ibin) const;
+    // get number of samples (NSAMPLES)
+    int GetNSamples(int ibin) const;
 
     // get energy and its error
     virtual double GetValue( int ibin,EProxyRealm realm) const;

@@ -46,12 +46,6 @@ public:
     void SetType(EABFdGType type);
 
 //------------------------------------------------------------------------------
-    // get number of samples
-    virtual int GetNumOfSamples(int ibin) const;
-
-    // set number of samples
-    virtual void SetNumOfSamples(int ibin,int nsamples);
-
     // get energy derivative and its error
     virtual double GetValue( int ibin,int icv,EProxyRealm realm) const;
 

@@ -168,7 +168,7 @@ bool CSmootherGPR::Interpolate(CVerboseStr& vout,bool nostat)
     GPRSize = 0;
     for(size_t i=0; i < EneProxyItems.size(); i++){
         for(size_t ibin=0; ibin < NumOfBins; ibin++){
-            if( EneProxyItems[i]->GetNumOfSamples(ibin) > 0 ) GPRSize++;
+            if( EneProxyItems[i]->GetNSamples(ibin) > 0 ) GPRSize++;
         }
     }
 
@@ -178,7 +178,7 @@ bool CSmootherGPR::Interpolate(CVerboseStr& vout,bool nostat)
     size_t ind = 0;
     for(size_t i=0; i < EneProxyItems.size(); i++){
         for(size_t ibin=0; ibin < NumOfBins; ibin++){
-            if( EneProxyItems[i]->GetNumOfSamples(ibin) <= 0 ) continue;
+            if( EneProxyItems[i]->GetNSamples(ibin) <= 0 ) continue;
             SampledMap[ind] = ibin;
             EneProxyMap[ind] = i;
             ind++;
@@ -262,7 +262,12 @@ bool CSmootherGPR::WriteMFInfo(const CSmallString& name)
         mfi[indi]  = item->GetValue(ibin,E_PROXY_VALUE);
         mfie[indi] = item->GetValue(ibin,E_PROXY_ERROR);    // sigma
         mfp[indi]  = GetValue(ipos);
-        mfpe[indi] = sqrt(Cov[indi][indi]);                 // convert to sigma
+        mfpe[indi] = 0.0;
+        for(size_t indv=0; indv < NumOfValues; indv++){
+            if( ValueMap[indv] == ibin ){
+                mfpe[indi] = sqrt(Cov[indv][indv]);  // convert to sigma
+            }
+        }
     }
 
     ofstream ofs(name);
@@ -470,7 +475,7 @@ void CSmootherGPR::CalculateEnergy(CVerboseStr& vout)
     std::set<size_t>    vset;
     for(size_t i=0; i < EneProxyItems.size(); i++){
         for(size_t ibin=0; ibin < NumOfBins; ibin++){
-            if( EneProxyItems[i]->GetNumOfSamples(ibin) <= 0 ) continue;
+            if( EneProxyItems[i]->GetNSamples(ibin) <= 0 ) continue;
             vset.insert(ibin);
         }
     }
@@ -504,7 +509,7 @@ void CSmootherGPR::CalculateEnergy(CVerboseStr& vout)
 // basic HES update
     for(size_t i=0; i < EneProxyItems.size(); i++){
         for(size_t ibin=0; ibin < NumOfBins; ibin++){
-            int nsamples = EneProxyItems[i]->GetNumOfSamples(ibin);
+            int nsamples = EneProxyItems[i]->GetNSamples(ibin);
             int osamples = EneSurface->GetNumOfSamples(ibin);
             EneSurface->SetNumOfSamples(ibin,nsamples+osamples);
             EneSurface->SetEnergy(ibin,0.0);

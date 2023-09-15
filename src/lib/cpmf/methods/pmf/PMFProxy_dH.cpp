@@ -80,22 +80,12 @@ void CPMFProxy_dH::SetType(EPMFdHType type)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-int CPMFProxy_dH::GetNumOfSamples(int ibin) const
+int CPMFProxy_dH::GetVSamples(int ibin) const
 {
     if( Accu == NULL ){
         RUNTIME_ERROR("Accu is NULL");
     }
     return(Accu->GetData("NTDS",ibin));
-}
-
-//------------------------------------------------------------------------------
-
-void CPMFProxy_dH::SetNumOfSamples(int ibin,int nsamples)
-{
-    if( Accu == NULL ){
-        RUNTIME_ERROR("Accu is NULL");
-    }
-    Accu->SetData("NTDS",ibin,nsamples);
 }
 
 //------------------------------------------------------------------------------

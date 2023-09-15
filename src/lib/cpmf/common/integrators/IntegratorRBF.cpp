@@ -388,7 +388,7 @@ void CIntegratorRBF::CalculateEnergy(CVerboseStr& vout)
 // create map for bins with calculated energy and error
     NumOfValues = 0;
     for(size_t i=0; i < NumOfBins; i++){
-        int samples = DerProxy->GetNumOfSamples(i);
+        int samples = DerProxy->GetNSamples(i);
         if( IncludeGluedBins ){
             if( samples == 0 ) continue;
         } else {
@@ -400,7 +400,7 @@ void CIntegratorRBF::CalculateEnergy(CVerboseStr& vout)
 
     size_t indi = 0;
     for(size_t i=0; i < NumOfBins; i++){
-        int samples = DerProxy->GetNumOfSamples(i);
+        int samples = DerProxy->GetNSamples(i);
         if( IncludeGluedBins ){
             if( samples == 0 ) continue;
         } else {
@@ -426,7 +426,7 @@ void CIntegratorRBF::CalculateEnergy(CVerboseStr& vout)
 
 // basic EneSurf update
     for(size_t i=0; i < NumOfBins; i++){
-        int samples = DerProxy->GetNumOfSamples(i);
+        int samples = DerProxy->GetNSamples(i);
         EneSurf->SetNumOfSamples(i,samples);
         EneSurf->SetEnergy(i,0.0);
         EneSurf->SetError(i,0.0);
@@ -493,7 +493,7 @@ void CIntegratorRBF::CalculateEnergy(CVerboseStr& vout)
         double glb_min = 0.0;
         for(size_t indj=0; indj < NumOfValues; indj++){
             size_t j = ValueMap[indj];
-            int samples = DerProxy->GetNumOfSamples(j);
+            int samples = DerProxy->GetNSamples(j);
             if( samples < -1 ) continue;    // include sampled areas and holes but exclude extrapolated areas
             double value = values[indj];
             if( first || (glb_min > value) ){
@@ -570,7 +570,7 @@ bool CIntegratorRBF::IntegrateByLS(CVerboseStr& vout)
     // number of equations
     NumOfUsedBins = 0;
     for(size_t i=0; i < NumOfBins; i++){
-        if( DerProxy->GetNumOfSamples(i) > 0 ) NumOfUsedBins++;
+        if( DerProxy->GetNSamples(i) > 0 ) NumOfUsedBins++;
     }
     NumOfEq = NumOfUsedBins*NCVs;
 
@@ -578,7 +578,7 @@ bool CIntegratorRBF::IntegrateByLS(CVerboseStr& vout)
     SampledMap.CreateVector(NumOfUsedBins);
     size_t ind = 0;
     for(size_t i=0; i < NumOfBins; i++){
-        if( DerProxy->GetNumOfSamples(i) <= 0 ) continue;
+        if( DerProxy->GetNSamples(i) <= 0 ) continue;
         SampledMap[ind] = i;
         ind++;
     }

@@ -205,7 +205,7 @@ bool CIntegratorGPR::Integrate(CVerboseStr& vout,bool nostat)
     NumOfUsedBins = 0;
     for(size_t i=0; i < DerProxyItems.size(); i++){
         for(size_t ibin=0; ibin < NumOfBins; ibin++){
-            if( DerProxyItems[i]->GetNumOfSamples(ibin) > 0 ) NumOfUsedBins++;
+            if( DerProxyItems[i]->GetNSamples(ibin) > 0 ) NumOfUsedBins++;
         }
     }
     GPRSize = NumOfUsedBins * NumOfCVs;
@@ -216,7 +216,7 @@ bool CIntegratorGPR::Integrate(CVerboseStr& vout,bool nostat)
     size_t ind = 0;
     for(size_t i=0; i < DerProxyItems.size(); i++){
         for(size_t ibin=0; ibin < NumOfBins; ibin++){
-            if( DerProxyItems[i]->GetNumOfSamples(ibin) <= 0 ) continue;
+            if( DerProxyItems[i]->GetNSamples(ibin) <= 0 ) continue;
             SampledMap[ind] = ibin;
             DerProxyMap[ind] = i;
             ind++;
@@ -501,7 +501,7 @@ void CIntegratorGPR::CalculateEnergy(CVerboseStr& vout)
     std::set<size_t>    vset;
     for(size_t i=0; i < DerProxyItems.size(); i++){
         for(size_t ibin=0; ibin < NumOfBins; ibin++){
-            int samples = DerProxyItems[i]->GetNumOfSamples(ibin);
+            int samples = DerProxyItems[i]->GetNSamples(ibin);
             if( IncludeGluedBins ){
                 if( samples == 0 ) continue;
             } else {
@@ -540,7 +540,7 @@ void CIntegratorGPR::CalculateEnergy(CVerboseStr& vout)
 // basic EneSurface update
     for(size_t i=0; i < DerProxyItems.size(); i++){
         for(size_t ibin=0; ibin < NumOfBins; ibin++){
-            int nsamples = DerProxyItems[i]->GetNumOfSamples(ibin);
+            int nsamples = DerProxyItems[i]->GetNSamples(ibin);
             int osamples = EneSurface->GetNumOfSamples(ibin);
             EneSurface->SetNumOfSamples(ibin,nsamples+osamples);
             EneSurface->SetEnergy(ibin,0.0);

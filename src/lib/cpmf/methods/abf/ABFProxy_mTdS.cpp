@@ -105,29 +105,6 @@ void CABFProxy_mTdS::SetType(EABFTdSType type)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-int CABFProxy_mTdS::GetNumOfSamples(int ibin) const
-{
-    if( Accu == NULL ){
-        RUNTIME_ERROR("Accu is NULL");
-    }
-
-    double  nsamples = Accu->GetData("NTDS",ibin);
-    return(nsamples);
-}
-
-//------------------------------------------------------------------------------
-
-void CABFProxy_mTdS::SetNumOfSamples(int ibin,int nsamples)
-{
-    if( Accu == NULL ){
-        RUNTIME_ERROR("Accu is NULL");
-    }
-
-    Accu->SetData("NTDS",ibin,nsamples);
-}
-
-//------------------------------------------------------------------------------
-
 double CABFProxy_mTdS::GetValue(int ibin,int icv,EProxyRealm realm) const
 {
     if( Accu == NULL ){
