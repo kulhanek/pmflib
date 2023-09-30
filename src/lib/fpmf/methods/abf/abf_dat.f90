@@ -161,6 +161,9 @@ type,extends(PMFAccuType) :: ABFAccuType
     real(PMFDP),pointer    :: mpn(:,:)                  ! mean of tot energy - icf
     real(PMFDP),pointer    :: m2pn(:,:)                 ! M2 of tot energy - icf
 
+    real(PMFDP),pointer    :: mpit(:,:)                 ! mean of ICF and tot energy product
+    real(PMFDP),pointer    :: m2pit(:,:)                ! M2 of ICF and tot energy product
+
 ! enthalpy derivative
     real(PMFDP),pointer    :: micfp(:,:)                ! mean of ICF-P
     real(PMFDP),pointer    :: m2icfp(:,:)               ! M2 of internal energy

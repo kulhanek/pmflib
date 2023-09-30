@@ -146,6 +146,8 @@ subroutine abf_accu_init()
                     abfaccu%m2pp(abfaccu%tot_cvs,abfaccu%tot_nbins),    &
                     abfaccu%mpn(abfaccu%tot_cvs,abfaccu%tot_nbins),     &
                     abfaccu%m2pn(abfaccu%tot_cvs,abfaccu%tot_nbins),    &
+                    abfaccu%mpit(abfaccu%tot_cvs,abfaccu%tot_nbins),    &
+                    abfaccu%m2pit(abfaccu%tot_cvs,abfaccu%tot_nbins),   &
                     stat = alloc_failed)
 
         if( alloc_failed .ne. 0 ) then
@@ -265,6 +267,8 @@ subroutine abf_accu_clear()
         abfaccu%m2pp(:,:)   = 0.0d0
         abfaccu%mpn(:,:)    = 0.0d0
         abfaccu%m2pn(:,:)   = 0.0d0
+        abfaccu%mpit(:,:)   = 0.0d0
+        abfaccu%m2pit(:,:)  = 0.0d0
     end if
 
     if( fentropy .and. fentdecomp ) then
@@ -441,6 +445,16 @@ subroutine abf_accu_read(iounit)
                 case('M2PN')
                     if( fentropy ) then
                         call pmf_accu_read_rbuf_M(abfaccu%PMFAccuType,iounit,keyline,abfaccu%m2pn)
+                    end if
+            ! ------------------------------------
+                case('MPIT')
+                    if( fentropy ) then
+                        call pmf_accu_read_rbuf_M(abfaccu%PMFAccuType,iounit,keyline,abfaccu%mpit)
+                    end if
+            ! ------------------------------------
+                case('M2PIT')
+                    if( fentropy ) then
+                        call pmf_accu_read_rbuf_M(abfaccu%PMFAccuType,iounit,keyline,abfaccu%m2pit)
                     end if
 
             ! ------------------------------------
@@ -627,6 +641,8 @@ subroutine abf_accu_write(iounit)
         call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'M2PP',   'M2',abfaccu%m2pp,  'NTDS','MPP')
         call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'MPN',    'WA',abfaccu%mpn,   'NTDS')
         call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'M2PN',   'M2',abfaccu%m2pn,  'NTDS','MPN')
+        call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'MPIT',   'WA',abfaccu%mpit,  'NTDS')
+        call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'M2PIT',  'M2',abfaccu%m2pit, 'NTDS','MPIT')
     end if
 
     if( fentropy .and. fentdecomp ) then
@@ -764,6 +780,7 @@ subroutine abf_accu_add_data_energy(cvs,gfx,bfx,pfx,epot,erst,ekin,epv,vol)
     real(PMFDP)     :: dpn, dpn1, dpn2
     real(PMFDP)     :: etot, eint
     real(PMFDP)     :: dibx1, dibx2, difx1, difx2, dipx1, dipx2, ifx, ibx, ipx
+    real(PMFDP)     :: pit, dpit1, dpit2
     ! --------------------------------------------------------------------------
 
     ! write(147895,*) cvs(1), gfx(1), epv, vol
@@ -863,6 +880,12 @@ subroutine abf_accu_add_data_energy(cvs,gfx,bfx,pfx,epot,erst,ekin,epv,vol)
             abfaccu%mpn(i,gi0)  = abfaccu%mpn(i,gi0)  + dpn1 * invn
             dpn2 = dpn - abfaccu%mpn(i,gi0)
             abfaccu%m2pn(i,gi0) = abfaccu%m2pn(i,gi0) + dpn1 * dpn2
+
+            pit = icf * etot
+            dpit1 = pit - abfaccu%mpit(i,gi0)
+            abfaccu%mpit(i,gi0)  = abfaccu%mpit(i,gi0)  + dpit1 * invn
+            dpit2 = pit - abfaccu%mpit(i,gi0)
+            abfaccu%m2pit(i,gi0) = abfaccu%m2pit(i,gi0) + dpit1 * dpit2
 
             if( fentdecomp ) then
                 ifx = - gfx(i)
