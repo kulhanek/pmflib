@@ -120,7 +120,7 @@ public:
                 'o',                           /* short option name */
                 "offset",                      /* long option name */
                 "NUMBER",                           /* parameter name */
-                "Specify an integration constant.")   /* option description */
+                "Specify an energy offset.")   /* option description */
     //----------------------------------------------------------------------
     CSO_MAP_OPT(bool,                           /* option type */
                 PrintAll,                        /* option name */

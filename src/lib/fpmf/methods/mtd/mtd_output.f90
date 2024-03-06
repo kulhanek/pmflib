@@ -88,7 +88,7 @@ subroutine mtd_output_write_header
     integer        :: i, off
     ! --------------------------------------------------------------------------
 
-    write(MTD_HILLS,1) '#'
+    write(MTD_OUT,1) '#'
     write(MTD_OUT,10,advance='NO') '#       1'
     off = 1
     do i=off+1,off+NumOfMTDCVs

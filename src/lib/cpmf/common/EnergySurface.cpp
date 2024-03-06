@@ -502,7 +502,6 @@ double CEnergySurface::GetGlobalMinimumValue(void) const
             }
         }
     }
-
     return(minimum);
 }
 

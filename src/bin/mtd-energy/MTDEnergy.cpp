@@ -152,13 +152,13 @@ bool CMTDEnergy::Run(void)
     std::list<CPMFAccumulatorPtr>::iterator it = Accus.begin();
     std::list<CPMFAccumulatorPtr>::iterator ie = Accus.end();
 
-    int i = 1;
+    int nf = 1;
     while( it != ie ){
         accu = *it;
         eneproxy->Init(accu);
     // calculate energy
         for(int j=0; j < accu->GetNumOfBins(); j++){
-            tmp_FES->SetNumOfSamples(j,eneproxy->GetNumOfSamples(i));
+            tmp_FES->SetNumOfSamples(j,eneproxy->GetNumOfSamples(j));
             tmp_FES->SetEnergy(j, eneproxy->GetValue(j,E_PROXY_VALUE) );
         }
         int numofhills = accu->GetTotalNumOfSamples();
@@ -166,10 +166,10 @@ bool CMTDEnergy::Run(void)
         if( eneproxy->IsWTMeta() ){
             type << "-WT";
         }
-        vout << format("   #%03d FES SigmaF2     = %12.5lf, #hills = %10d, Type: %s")%i%tmp_FES->GetSigmaF2All()%numofhills%type << endl;
+        vout << format("   #%03d FES SigmaF2     = %12.5lf, #hills = %10d, Type: %s")%nf%tmp_FES->GetSigmaF2All()%numofhills%type << endl;
         FES->AddFES(tmp_FES);
         it++;
-        i++;
+        nf++;
     }
     vout << "   -----------------------------------" << endl;
     double num = Accus.size();

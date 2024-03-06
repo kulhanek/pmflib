@@ -179,6 +179,13 @@ subroutine pmf_accu_read_header(accu,iounit,method,keyline)
         case('VERSION')
             ! read but do not use
             read(iounit,10,end=102,err=102) sbuff
+        case('SYSTYPE')
+            ! read but do not use
+            read(iounit,40,end=102,err=102) itmp
+            if( itmp .ne. fsystype ) then
+                call pmf_utils_exit(PMF_OUT,1, &
+                                    '[PMFAccu] Inconsistent systype!')
+            end if
         case('METHOD')
             ! read and check
             read(iounit,10,end=103,err=103) sbuff
@@ -278,6 +285,8 @@ subroutine pmf_accu_read_header(accu,iounit,method,keyline)
 26  format(I2,1X,E18.11,1X,A36)
 27  format(3X,E18.11,1X,A36)
 30  format(I15)
+
+40  format(I10)
 
 101 call pmf_utils_exit(PMF_OUT,1,'[PMFAccu] Unable to read from the accumulator - number of CVS!')
 102 call pmf_utils_exit(PMF_OUT,1,'[PMFAccu] Unable to read from the accumulator - version!')
