@@ -257,8 +257,11 @@ public:
     /// get access to data section
     CPMFAccuDataPtr GetSectionData(const CSmallString& name) const;
 
+      /// get data
+    double GetData(const CSmallString& name, int ibin) const;
+
     /// get data
-    double GetData(const CSmallString& name, int ibin, int cv=0) const;
+    double GetData(const CSmallString& name, int ibin, int cv) const;
 
     /// set data
     void SetData(const CSmallString& name, int ibin, double value);

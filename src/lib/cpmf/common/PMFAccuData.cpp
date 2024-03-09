@@ -45,7 +45,7 @@ CPMFAccuData::CPMFAccuData(int nbins, int ncvs,int nstlim)
 
 //------------------------------------------------------------------------------
 
-void CPMFAccuData::InitDataBlock(void)
+void CPMFAccuData::InitDataBlock(int len)
 {
     Data.clear();
 
@@ -60,6 +60,11 @@ void CPMFAccuData::InitDataBlock(void)
         data->CreateVector(NumOfCVs);
         Data.push_back(data);
         Size  = NumOfCVs;
+    } else if ( Mode == "D" ) {
+        CVectorDataPtr data = CVectorDataPtr(new CSimpleVector<double>);
+        Size = len;
+        data->CreateVector(Size);
+        Data.push_back(data);
     } else if ( Mode == "M" ) {
         for(int icv=0; icv < NumOfCVs; icv++){
             CVectorDataPtr data = CVectorDataPtr(new CSimpleVector<double>);
@@ -145,7 +150,7 @@ void CPMFAccuData::Load(FILE* p_fin,const CSmallString& keyline)
         RUNTIME_ERROR(error);
     }
 
-    InitDataBlock();
+    InitDataBlock(len);
 
     if( len != Size ){
         CSmallString error;
@@ -322,7 +327,7 @@ void CPMFAccuData::Load(CXMLElement* p_ele)
         RUNTIME_ERROR("unable to get DATA attributes");
     }
 
-    InitDataBlock();
+    InitDataBlock(len);
 
     if( len != Size ){
         CSmallString error;
@@ -516,6 +521,14 @@ double CPMFAccuData::GetData(int indi) const
     if( Mode == "C" ){
         if( (indi < 0) || (NumOfCVs <= indi) ) {
             RUNTIME_ERROR("indi out-of-range for the C mode");
+        }
+        CVectorDataPtr data = Data[0];
+        return( data->GetRawDataField()[indi] );
+    }
+
+    if( Mode == "D" ){
+        if( (indi < 0) || (Size <= indi) ) {
+            RUNTIME_ERROR("indi out-of-range for the D mode");
         }
         CVectorDataPtr data = Data[0];
         return( data->GetRawDataField()[indi] );
@@ -813,7 +826,7 @@ CPMFAccuDataPtr CPMFAccuData::CreateTheSame(void) const
     ptr->MXName = MXName;
     ptr->MYName = MYName;
 
-    ptr->InitDataBlock();
+    ptr->InitDataBlock(Size);
 
     if(  ptr->Size != Size ){
         CSmallString error;

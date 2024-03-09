@@ -1943,7 +1943,7 @@ CPMFAccuDataPtr CPMFAccumulator::CreateSectionData(const CSmallString& name,cons
     data->Type  = type;
     data->Mode  = mode;
 
-    data->InitDataBlock();
+    data->InitDataBlock(0);
 
     DataBlocks[name] = data;
 
@@ -1962,7 +1962,7 @@ CPMFAccuDataPtr CPMFAccumulator::CreateSectionData(const CSmallString& name,cons
     data->Mode      = mode;
     data->MSName    = msname;
 
-    data->InitDataBlock();
+    data->InitDataBlock(0);
 
     DataBlocks[name] = data;
 
@@ -1982,7 +1982,7 @@ CPMFAccuDataPtr CPMFAccumulator::CreateSectionData(const CSmallString& name,cons
     data->MSName    = msname;
     data->MXName    = mxname;
 
-    data->InitDataBlock();
+    data->InitDataBlock(0);
 
     DataBlocks[name] = data;
 
@@ -2003,7 +2003,7 @@ CPMFAccuDataPtr CPMFAccumulator::CreateSectionData(const CSmallString& name,cons
     data->MXName    = mxname;
     data->MYName    = myname;
 
-    data->InitDataBlock();
+    data->InitDataBlock(0);
 
     DataBlocks[name] = data;
 
@@ -2022,6 +2022,20 @@ CPMFAccuDataPtr CPMFAccumulator::GetSectionData(const CSmallString& name) const
     }
     const CPMFAccuDataPtr sec = isec->second;
     return(sec);
+}
+
+//------------------------------------------------------------------------------
+
+double CPMFAccumulator::GetData(const CSmallString& name, int ibin) const
+{
+    std::map<CSmallString,CPMFAccuDataPtr>::const_iterator isec = DataBlocks.find(name);
+    if( isec == DataBlocks.end() ) {
+        CSmallString error;
+        error << "unable to find '" << name << "' data section";
+        RUNTIME_ERROR(error);
+    }
+    const CPMFAccuDataPtr sec = isec->second;
+    return( sec->GetData(ibin) );
 }
 
 //------------------------------------------------------------------------------

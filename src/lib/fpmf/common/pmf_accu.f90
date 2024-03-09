@@ -987,7 +987,7 @@ end subroutine pmf_accu_write_rbuf_C
 
 !===============================================================================
 ! Subroutine:  pmf_accu_write_rbuf_D
-! data per CVs
+! specified data
 !===============================================================================
 
 subroutine pmf_accu_write_rbuf_D(iounit,key,op,rbuf,nsize)

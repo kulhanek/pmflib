@@ -172,7 +172,7 @@ private:
     friend class CPMFAccumulator;
 
     /// calculate size and init data block
-    void InitDataBlock(void);
+    void InitDataBlock(int len);
 };
 
 //------------------------------------------------------------------------------
