@@ -47,6 +47,8 @@ CPMFAccuData::CPMFAccuData(int nbins, int ncvs,int nstlim)
 
 void CPMFAccuData::InitDataBlock(int len)
 {
+    // len is used only some cases otherwise it is derived from NumOfBins or NumOfCVs
+
     Data.clear();
 
     Size = 0;
@@ -61,6 +63,11 @@ void CPMFAccuData::InitDataBlock(int len)
         Data.push_back(data);
         Size  = NumOfCVs;
     } else if ( Mode == "D" ) {
+        if( len <= 0 ){
+            CSmallString error;
+            error << "illegal data length for 'D' mode, len = " << len ;
+            RUNTIME_ERROR(error);
+        }
         CVectorDataPtr data = CVectorDataPtr(new CSimpleVector<double>);
         Size = len;
         data->CreateVector(Size);
@@ -656,6 +663,15 @@ void CPMFAccuData::SetData(int indi, double value)
         return;
     }
 
+    if( Mode == "D" ){
+        if( (indi < 0) || (Size <= indi) ) {
+            RUNTIME_ERROR("indi out-of-range for the D mode");
+        }
+        CVectorDataPtr data = Data[0];
+        data->GetRawDataField()[indi] = value;
+        return;
+    }
+
     CSmallString error;
     error << "unsupported mode '" << Mode << "'";
     RUNTIME_ERROR(error);
@@ -899,7 +915,7 @@ void CPMFAccuData::CombineSA(CPMFAccuDataPtr left,CPMFAccuDataPtr right)
         CVectorDataPtr rdata  = right->Data[seg];
 
         for(size_t idx = 0; idx < out->GetLength(); idx++){
-            if( ldata->GetRawDataField()[idx] != rdata->GetRawDataField()[idx] ){
+            if( fabs(ldata->GetRawDataField()[idx] - rdata->GetRawDataField()[idx]) > 1e-7 ){
                 stringstream serror;
                 serror << "data are not the same for '" << GetName() << "', item: " << (idx+1) << ", values: "
                        << ldata->GetRawDataField()[idx] << ", " << rdata->GetRawDataField()[idx];

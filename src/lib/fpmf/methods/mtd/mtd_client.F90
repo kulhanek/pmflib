@@ -76,16 +76,16 @@ interface
     subroutine cpmf_mtd_client_initial_data(ret_st,insamples,imtdpot,imtdforces)
         integer         :: ret_st
         integer         :: insamples(*)
-        real(8)         :: imtdpot(*)
         real(8)         :: imtdforces(*)
+        real(8)         :: imtdpot(*)
     end subroutine cpmf_mtd_client_initial_data
 
     ! exchange data with server
     subroutine cpmf_mtd_client_exchange_data(ret_st,insamples,imtdpot,imtdforces)
         integer         :: ret_st
         integer         :: insamples(*)
-        real(8)         :: imtdpot(*)
         real(8)         :: imtdforces(*)
+        real(8)         :: imtdpot(*)
     end subroutine cpmf_mtd_client_exchange_data
 
     ! unregister client on server
@@ -213,8 +213,8 @@ subroutine mtd_client_get_initial_data
 #ifdef PMFLIB_NETWORK
     call cpmf_mtd_client_initial_data(ret_st,               &
                                         mtdaccu%nsamples,   &
-                                        mtdaccu%mtdpot,     &
-                                        mtdaccu%mtdforce    &
+                                        mtdaccu%mtdforce,   &
+                                        mtdaccu%mtdpot      &
                                         )
 
     if( ret_st .ne. 0 ) then
@@ -271,8 +271,8 @@ subroutine mtd_client_exchange_data(force_exchange)
 #ifdef PMFLIB_NETWORK
     call cpmf_mtd_client_exchange_data(ret_st,                  &
                                         mtdaccu%inc_nsamples,   &
-                                        mtdaccu%inc_mtdpot,     &
-                                        mtdaccu%inc_mtdforce    &
+                                        mtdaccu%inc_mtdforce,   &
+                                        mtdaccu%inc_mtdpot      &
                                        )
 
     if( ret_st .ne. 0 ) then

@@ -80,8 +80,8 @@ int CMTDClient::RegisterClient(void)
 
         // create sections
         Accu->CreateSectionData("NSAMPLES", "AD","I","B");
+        Accu->CreateSectionData("MTDPOT",   "AD","R","B");
         Accu->CreateSectionData("MTDFORCE", "AD","R","M");
-        Accu->CreateSectionData("MTDPOT",   "AD","R","M");
 
         // set widths
         Accu->CreateSectionData("WIDTHS","SA","R","C");
