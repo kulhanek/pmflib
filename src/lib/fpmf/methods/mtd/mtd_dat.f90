@@ -48,6 +48,7 @@ logical     :: frestart         ! restart job with previous data
 integer     :: frstupdate       ! how often is restart file written
 integer     :: ftrjsample       ! how often save accumulator to "accumulator evolution"
 logical     :: fwritehills      ! record deposition of gaussians
+logical     :: fswitch2zero     ! switch to zero at discretionary boundary
 
 ! server part ------------------------------------------------------------------
 logical                 :: fserver_enabled      ! is abf-server enabled?
@@ -74,6 +75,8 @@ type CVTypeMTD
 
     real(PMFDP)             :: width            ! gaussian width
     integer                 :: nbins            ! number of bins (for mtd-energy)
+
+    real(PMFDP)             :: buffer           ! switch biasing potential to zero at CV boundary
 end type CVTypeMTD
 
 integer                     :: NumOfMTDCVs              ! number of CVs
@@ -106,6 +109,9 @@ integer                     :: outsidesamples
 real(PMFDP),allocatable     :: CVValues(:)          ! current CV values
 real(PMFDP)                 :: TotalMTDEnergy       ! imposed MTD energy
 real(PMFDP),allocatable     :: MTDForce(:)          ! imposed MTD force
+
+! helpers
+real(PMFDP),allocatable     :: sfac(:)              ! switching factors
 
 ! run-time information
 integer                     :: meta_next_fstep  = 0

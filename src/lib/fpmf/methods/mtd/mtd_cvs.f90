@@ -48,6 +48,7 @@ subroutine mtd_cvs_reset_cv(mtd_item)
     mtd_item%min_value      = 0.0   ! left range
     mtd_item%max_value      = 0.0   ! right range
     mtd_item%nbins          = 0     ! number of bins
+    mtd_item%buffer         = 0.0d0
 
 end subroutine mtd_cvs_reset_cv
 
@@ -133,6 +134,17 @@ subroutine mtd_cvs_read_cv(prm_fin,mtd_item)
     end if
     write(PMF_OUT,130) mtd_item%nbins
 
+    ! ========================
+    mtd_item%buffer = 0.0
+    if( prmfile_get_real8_by_key(prm_fin,'buffer',mtd_item%buffer) ) then
+        write(PMF_OUT,180) mtd_item%buffer, trim(mtd_item%cv%get_ulabel())
+        call mtd_item%cv%conv_to_ivalue(mtd_item%buffer)
+
+        if( mtd_item%buffer .lt. 0.0d0 ) then
+            call pmf_utils_exit(PMF_OUT,1,'buffer has to be greater or equal to zero!')
+        end if
+    end if
+
     return
 
 100 format('    ** Width             : ',F16.6,' [',A,']')
@@ -141,6 +153,7 @@ subroutine mtd_cvs_read_cv(prm_fin,mtd_item)
 120 format('    ** Max value         : ',F16.6,' [',A,']')
 125 format('    ** Max deposit value : ',F16.6,' [',A,']')
 130 format('    ** Number of bins    : ',I10)
+180 format('    ** Buffer width      : ',E16.7,' [',A,']')
 
 end subroutine mtd_cvs_read_cv
 
@@ -173,6 +186,8 @@ subroutine mtd_cvs_cv_info(mtd_item)
     write(PMF_OUT,160) mtd_item%cv%get_rvalue(mtd_item%max_value), &
                     trim(mtd_item%cv%get_ulabel())
     write(PMF_OUT,165) mtd_item%nbins
+    write(PMF_OUT,180) mtd_item%cv%get_rvalue(mtd_item%buffer), &
+                    trim(mtd_item%cv%get_ulabel())
 
     return
 
@@ -185,6 +200,7 @@ subroutine mtd_cvs_cv_info(mtd_item)
 157 format('    ** Max deposit value : ',E16.7,' [',A,']')
 160 format('    ** Max value         : ',E16.7,' [',A,']')
 165 format('    ** Number of bins    : ',I8)
+180 format('    ** Buffer width      : ',E16.7,' [',A,']')
 
 end subroutine mtd_cvs_cv_info
 

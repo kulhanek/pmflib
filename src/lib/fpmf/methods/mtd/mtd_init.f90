@@ -214,6 +214,7 @@ subroutine mtd_init_core
     allocate(                               &
             CVValues(NumOfMTDCVs),          &
             MTDForce(NumOfMTDCVs),          &
+            sfac(NumOfMTDCVs),              &
             stat= alloc_failed )
 
     if( alloc_failed .ne. 0 ) then
@@ -223,6 +224,7 @@ subroutine mtd_init_core
 
     CVValues(:) = 0.0d0
     MTDForce(:) = 0.0d0
+    sfac(:)     = 1.0d0
 
     ! init accumulator ------------------------------
     call mtd_accu_init

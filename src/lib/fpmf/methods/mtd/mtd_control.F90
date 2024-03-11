@@ -99,6 +99,8 @@ subroutine mtd_control_read_mtd(prm_fin)
 
     call pmf_ctrl_read_logical(prm_fin,'fwritehills',fwritehills)
 
+    call pmf_ctrl_read_logical(prm_fin,'fswitch2zero',fswitch2zero)
+
     ! network setup ----------------------------------------------------------------
 
     write(PMF_OUT,'(/,a)') '--- [mtd-walker] -----------------------------------------------------------'

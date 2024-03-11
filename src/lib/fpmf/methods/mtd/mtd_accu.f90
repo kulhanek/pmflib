@@ -330,10 +330,54 @@ subroutine mtd_accu_get_data(cvs,potential,forces)
     ! get potential
     potential = mtdaccu%mtdpot(gi0)
 
+    if( fswitch2zero ) then
+        call mtd_get_switching_factors(cvs)
+    end if
+
     ! get forces
-    forces(:) = mtdaccu%mtdforce(:,gi0)
+    forces(:) = mtdaccu%mtdforce(:,gi0)*sfac(:)
 
 end subroutine mtd_accu_get_data
+
+!===============================================================================
+! Function:  mtd_get_switching_factors
+!===============================================================================
+
+subroutine mtd_get_switching_factors(vals)
+
+    use mtd_dat
+    use pmf_dat
+
+    implicit none
+    real(PMFDP)     :: vals(:)
+    ! -----------------------------------------------
+    integer         :: i
+    real(PMFDP)     :: r
+    ! --------------------------------------------------------------------------
+
+    sfac(:) = 0.0d0
+    do i=1,mtdaccu%tot_cvs
+        if( vals(i) .le. MTDCVList(i)%min_value ) cycle
+        if( vals(i) .ge. MTDCVList(i)%max_value ) cycle
+
+        if( vals(i) .lt. (MTDCVList(i)%min_value + MTDCVList(i)%buffer) ) then
+            r = MTDCVList(i)%buffer - (vals(i) - MTDCVList(i)%min_value)
+        else if ( vals(i) .ge. (MTDCVList(i)%max_value - MTDCVList(i)%buffer) ) then
+            r = MTDCVList(i)%buffer + (vals(i) - MTDCVList(i)%max_value)
+        else
+            sfac(i) = 1.0d0
+            cycle
+        end if
+
+    ! normalize
+        r = r / MTDCVList(i)%buffer
+
+    ! get switching function
+        sfac(i) = 1.0d0 - 10.0d0*r**3 + 15.0d0*r**4 - 6.0d0*r**5
+
+    end do
+
+end subroutine mtd_get_switching_factors
 
 !===============================================================================
 
