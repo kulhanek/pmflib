@@ -83,6 +83,8 @@ subroutine mtd_init_dat
     frstupdate      = 5000
     ftrjsample      = 0
 
+    fswitch2zero    = .false.
+
     ! server part --------------------------------------------------------------
     fserver_enabled = .false.
     fserverkey      = ''
@@ -134,6 +136,11 @@ subroutine mtd_init_print_header
                                                                        '['//trim(pmf_unit_label(EnergyUnit))//']'
     write(PMF_OUT,135)  ' Meta temperature (fmetatemp)            : ', pmf_unit_get_rvalue(TemperatureUnit,fmetatemp), &
                                                                        '['//trim(pmf_unit_label(TemperatureUnit))//']'
+
+    write(PMF_OUT,120)  ' MTD Interpolation/Extrapolation '
+    write(PMF_OUT,120)  ' ------------------------------------------------------'
+    write(PMF_OUT,125)  ' Switch ICF to zero (fswitch2zero)       : ', prmfile_onoff(fswitch2zero)
+
     write(PMF_OUT,120)
     write(PMF_OUT,120)  ' Restart options:'
     write(PMF_OUT,120)  ' ------------------------------------------------------'
