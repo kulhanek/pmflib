@@ -49,6 +49,7 @@ subroutine pmf_init_dat
     fprint_masks   = .false.
     fenable_pbc    = .false.
     fmonitor_paths = .false.
+    frst_early     = .true.
 
     fnatoms     = 0
     fnstlim     = 0

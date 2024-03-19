@@ -45,6 +45,7 @@ logical                 :: fprint_inpcrds       ! print input coordinates includ
 logical                 :: fprint_masks         ! print atom masks in CV definitions
 logical                 :: fenable_pbc          ! enable PBC condition (partially)
 logical                 :: fmonitor_paths       ! enable path monitoring
+logical                 :: frst_early           ! use RST before MTD and ABF
 
 ! parallel setup ---------------------------------------------------------------
 logical     :: fmaster      = .true.    ! .true. for master process

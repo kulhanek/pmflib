@@ -127,7 +127,7 @@ subroutine pmf_core_lf_force(x,v,f,epot,epmf)
         call pmf_timers_stop_timer(PMFLIB_PDRV_TIMER)
     end if
 
-    if( rst_enabled ) then
+    if( rst_enabled .and. frst_early) then
         call pmf_timers_start_timer(PMFLIB_RST_TIMER)
         call rst_core_main
         RstEne = TotalRSTEnergy
@@ -166,6 +166,14 @@ subroutine pmf_core_lf_force(x,v,f,epot,epmf)
         call pmf_timers_start_timer(PMFLIB_ABP_TIMER)
         call abp_core_main
         call pmf_timers_stop_timer(PMFLIB_ABP_TIMER)
+    end if
+
+    if( rst_enabled .and. (.not. frst_early) ) then
+        call pmf_timers_start_timer(PMFLIB_RST_TIMER)
+        call rst_core_main
+        RstEne = TotalRSTEnergy
+        PMFEne = PMFEne + RstEne
+        call pmf_timers_stop_timer(PMFLIB_RST_TIMER)
     end if
 
     call pmf_timers_stop_timer(PMFLIB_METHODS_TIMER)

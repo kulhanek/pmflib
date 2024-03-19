@@ -137,6 +137,7 @@ subroutine pmf_control_read_control(prm_fin)
         call pmf_ctrl_print_default_logical('fprint_inpcrds',fprint_inpcrds)
         call pmf_ctrl_print_default_logical('fprint_masks',fprint_masks)
         call pmf_ctrl_print_default_logical('fenable_pbc',fenable_pbc)
+        call pmf_ctrl_print_default_logical('frst_early',frst_early)
         return
     end if
 
@@ -146,6 +147,7 @@ subroutine pmf_control_read_control(prm_fin)
     call pmf_ctrl_read_logical(prm_fin,'fprint_inpcrds',fprint_inpcrds)
     call pmf_ctrl_read_logical(prm_fin,'fprint_masks',fprint_masks)
     call pmf_ctrl_read_logical(prm_fin,'fenable_pbc',fenable_pbc)
+    call pmf_ctrl_read_logical(prm_fin,'frst_early',frst_early)
 
 end subroutine pmf_control_read_control
 
