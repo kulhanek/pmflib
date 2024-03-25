@@ -90,8 +90,8 @@ int CMTDClient::RegisterClient(void)
         }
 
         if( WTemp > 0.0 ){
-            Accu->CreateSectionData("WT-MTD","SA","R","D",1);
-            Accu->SetData("WT-MTD",0,WTemp);
+            Accu->CreateSectionData("MTD-WT","SA","R","D",1);
+            Accu->SetData("MTD-WT",0,WTemp);
         }
 
         Accu->Save(p_ele);

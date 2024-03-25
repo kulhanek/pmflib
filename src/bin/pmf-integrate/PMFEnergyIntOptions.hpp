@@ -116,7 +116,7 @@ public:
 // description of options ---------------------------------------------------
    CSO_MAP_OPT(CSmallString,                           /* option type */
                 Realm,                        /* option name */
-                "dG",                          /* default value */
+                "dG/dx",                          /* default value */
                 false,                          /* is option mandatory */
                 'r',                           /* short option name */
                 "realm",                      /* long option name */
