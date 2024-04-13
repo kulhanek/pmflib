@@ -17,7 +17,7 @@
 !
 !    You should have received a copy of the GNU Lesser General Public
 !    License along with this library; if not, write to the Free Software
-!    Foundation, Inc., 51 Franklin Street, Fifth Floor, 
+!    Foundation, Inc., 51 Franklin Street, Fifth Floor,
 !    Boston, MA  02110-1301  USA
 !===============================================================================
 
@@ -279,6 +279,40 @@ subroutine cv_common_init_groups_II(cv_item,prm_fin,groupid,groupname)
 end subroutine cv_common_init_groups_II
 
 !===============================================================================
+! Subroutine:  cv_common_init_groups_II_bymask
+!===============================================================================
+
+subroutine cv_common_init_groups_II_bymask(cv_item,groupid,mask)
+
+    use prmfile
+    use pmf_dat
+    use pmf_utils
+    use pmf_mask
+
+    implicit none
+    class(CVType)                       :: cv_item
+    integer                             :: groupid
+    character(len=PRMFILE_MAX_LINE)     :: mask
+    ! --------------------------------------------------------------------------
+
+    if( cv_item%ngrps .le. 0 ) then
+        call pmf_utils_exit(PMF_OUT,1,'No groups defined for CV ('//trim(cv_item%name)//')!')
+    end if
+
+    if( (groupid .le. 0) .or. (groupid .gt. cv_item%ngrps) ) then
+        call pmf_utils_exit(PMF_OUT,1,'Group index out-of-range for CV ('//trim(cv_item%name)//')!')
+    end if
+
+    cv_item%grps(groupid) = pmf_mask_natoms_in_mask(trim(mask))
+    if( cv_item%grps(groupid) .eq. 0 ) then
+        call pmf_utils_exit(PMF_OUT,1, 'Mask (' // trim(mask) // ') does not contain any atom!')
+    end if
+
+    return
+
+end subroutine cv_common_init_groups_II_bymask
+
+!===============================================================================
 ! Subroutine:  cv_common_init_groups_III
 !===============================================================================
 
@@ -457,6 +491,66 @@ subroutine cv_common_read_group_by_name(cv_item,prm_fin,groupid,groupname)
 110 format('      >> Number of atoms : ',I6)
 
 end subroutine cv_common_read_group_by_name
+
+!===============================================================================
+! Subroutine:  cv_common_read_group_by_mask
+!===============================================================================
+
+subroutine cv_common_read_group_by_mask(cv_item,groupid,title,mask)
+
+    use prmfile
+    use pmf_dat
+    use pmf_utils
+    use pmf_mask
+
+    implicit none
+    class(CVType)                       :: cv_item
+    integer                             :: groupid
+    character(len=PRMFILE_MAX_LINE)     :: title
+    character(len=PRMFILE_MAX_LINE)     :: mask
+    ! -----------------------------------------------
+    integer                             :: i, k, l, sel
+    character(len=18)                   :: string
+    ! --------------------------------------------------------------------------
+
+    if( cv_item%ngrps .le. 0 ) then
+        call pmf_utils_exit(PMF_OUT,1,'No groups defined for CV ('//trim(cv_item%name)//')!')
+    end if
+
+    if( (groupid .le. 0) .or. (groupid .gt. cv_item%ngrps) ) then
+        call pmf_utils_exit(PMF_OUT,1,'Group index out-of-range for CV ('//trim(cv_item%name)//')!')
+    end if
+
+    !set mask
+    string = adjustl(trim(title)//' mask')
+    write(PMF_OUT,100) string,trim(mask)
+    call pmf_mask_set_mask(trim(mask))
+
+    ! populate cv rindexes
+    k = 1
+    l = 0
+    if( groupid .gt. 1 ) k = cv_item%grps(groupid-1) + 1
+    do i=1,fnatoms
+        call pmf_mask_is_atom_selected(i,sel)
+        if( sel .eq. 1 ) then
+            cv_item%rindexes(k) = i
+            k = k + 1
+            l = l + 1
+        end if
+    end do
+
+    write(PMF_OUT,110) l
+    ! print mask
+    if( fprint_masks ) then
+        call pmf_mask_print();
+    end if
+
+    return
+
+100 format('   ** ',A18,' = ',A)
+110 format('      >> Number of atoms : ',I6)
+
+end subroutine cv_common_read_group_by_mask
 
 !===============================================================================
 ! Subroutine:  cv_common_set_atom_from_mask

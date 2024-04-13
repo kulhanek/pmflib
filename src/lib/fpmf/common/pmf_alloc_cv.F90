@@ -118,6 +118,10 @@ subroutine pmf_alloc_cv_allocate(cv_type,cv_item)
     use cv_wormpos
     use cv_wormang
 
+! path -------------------------------------------
+    use cv_paths
+    use cv_pathz
+
 ! algebra ----------------------------------------
     use cv_add
     use cv_sub
@@ -290,6 +294,12 @@ subroutine pmf_alloc_cv_allocate(cv_type,cv_item)
             allocate(CVTypeWORMPOS::cv_item)
         case('WORMANG')
             allocate(CVTypeWORMANG::cv_item)
+
+    ! path ------------------------------------
+        case('PATHS')
+            allocate(CVTypePATHS::cv_item)
+        case('PATHZ')
+            allocate(CVTypePATHZ::cv_item)
 
         case default
             call pmf_utils_exit(PMF_OUT,1,&
