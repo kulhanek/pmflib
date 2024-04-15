@@ -90,7 +90,7 @@ subroutine cst_init_dat
     fepotoffset     = 0.0d0
     fekinoffset     = 0.0d0
 
-    freadranges     = .true.        ! request full definitions of CVs
+    freadranges     = .false.        ! request full definitions of CVs
 
     NumOfCONs       = 0
     NumOfSHAKECONs  = 0
@@ -125,6 +125,8 @@ subroutine cst_init_print_header
     write(PMF_OUT,130)  ' Total number of constraints          : ', NumOfCONs
     write(PMF_OUT,130)  ' SHAKE constraints in collisions      : ', NumOfSHAKECONs
     write(PMF_OUT,130)  ' Num of constrained atoms (no SHAKE)  : ', NumOfConAtoms
+    write(PMF_OUT,125)  ' Read CV ranges (freadranges)         : ', prmfile_onoff(freadranges)
+
     write(PMF_OUT,120)
     write(PMF_OUT,120)  ' Constraint optimization options:'
     write(PMF_OUT,120)  ' ------------------------------------------------------'
@@ -627,8 +629,7 @@ subroutine cst_init_core
 
     cstaccu%tot_nbins = tot_nbins
 
-    allocate(   ibuf_B(cstaccu%tot_nbins),                    &
-                rbuf_B(cstaccu%tot_nbins),                    &
+    allocate(   rbuf_B(cstaccu%tot_nbins),                    &
                 rbuf_M(cstaccu%tot_cvs,cstaccu%tot_nbins),    &
                 stat = alloc_failed)
     if( alloc_failed .ne. 0 ) then

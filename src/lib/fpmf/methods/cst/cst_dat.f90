@@ -104,7 +104,6 @@ integer,allocatable :: ConAtoms(:)              ! constrained atoms with SHAKE
 type(PMFAccuType)   :: cstaccu
 logical             :: fallconstant
 
-integer,allocatable         :: ibuf_B(:)
 real(PMFDP),allocatable     :: rbuf_B(:)
 real(PMFDP),allocatable     :: rbuf_M(:,:)
 

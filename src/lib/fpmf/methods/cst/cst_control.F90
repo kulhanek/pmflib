@@ -76,6 +76,8 @@ subroutine cst_control_read_con(prm_fin)
         return
     end if
 
+    call pmf_ctrl_read_logical(prm_fin,'freadranges',freadranges)
+
     call pmf_ctrl_read_integer(prm_fin,'fsample',fsample,'I12')
     call pmf_ctrl_check_integer('CST','fsample',fsample,0,CND_GE)
 
