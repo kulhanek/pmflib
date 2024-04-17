@@ -97,9 +97,6 @@ subroutine mtd_cvs_read_cv(prm_fin,mtd_item)
     if( .not. prmfile_get_real8_by_key(prm_fin,'min_deposit',mtd_item%min_deposit) ) then
         mtd_item%min_deposit = mtd_item%min_value    ! already in internal units
         write(PMF_OUT,115) mtd_item%cv%get_rvalue(mtd_item%min_deposit), trim(mtd_item%cv%get_ulabel())
-        if( mtd_item%min_deposit .lt. mtd_item%min_value ) then
-            call pmf_utils_exit(PMF_OUT,1,'min_deposit >= min_value')
-        end if
     else
         write(PMF_OUT,115) mtd_item%min_deposit, trim(mtd_item%cv%get_ulabel())
         call mtd_item%cv%conv_to_ivalue(mtd_item%min_deposit)
@@ -120,9 +117,6 @@ subroutine mtd_cvs_read_cv(prm_fin,mtd_item)
     if( .not. prmfile_get_real8_by_key(prm_fin,'max_deposit',mtd_item%max_deposit) ) then
         mtd_item%max_deposit = mtd_item%max_value    ! already in internal units
         write(PMF_OUT,125) mtd_item%cv%get_rvalue(mtd_item%max_deposit), trim(mtd_item%cv%get_ulabel())
-        if( mtd_item%max_deposit .gt. mtd_item%max_value ) then
-            call pmf_utils_exit(PMF_OUT,1,'max_deposit <= max_value')
-        end if
     else
         write(PMF_OUT,125) mtd_item%max_deposit, trim(mtd_item%cv%get_ulabel())
         call mtd_item%cv%conv_to_ivalue(mtd_item%max_deposit)

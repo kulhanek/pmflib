@@ -258,15 +258,14 @@ subroutine mtd_accu_add_data(cvs, height,added)
     if( gi0 .le. 0 ) then
         ! this can happen for one boundary if the deposit box is the exactly the same as sampling box
         outsidesamples = outsidesamples + 1
-        return
-    end if
+    else
+        insidesamples           = insidesamples + 1
+        numofhills              = numofhills + 1
+        mtdaccu%nsamples(gi0)   = mtdaccu%nsamples(gi0) + 1
 
-    insidesamples           = insidesamples + 1
-    numofhills              = numofhills + 1
-    mtdaccu%nsamples(gi0)   = mtdaccu%nsamples(gi0) + 1
-
-    if( fserver_enabled ) then
-        mtdaccu%inc_nsamples(gi0) = mtdaccu%inc_nsamples(gi0) + 1
+        if( fserver_enabled ) then
+            mtdaccu%inc_nsamples(gi0) = mtdaccu%inc_nsamples(gi0) + 1
+        end if
     end if
 
     ! update grid data

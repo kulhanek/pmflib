@@ -697,9 +697,9 @@ bool CPMFEnergyIntegrate::IntegrateForEcut(void)
     }
 
     // add metric tensor correction
-    if( Options.GetOptRealm() == "dG" ){
+    if( Options.GetOptRealm() == "dG/dx" ){
         AddMTCorr();
-    } else if ( Options.GetOptRealm() == "-TdS" ) {
+    } else if ( Options.GetOptRealm() == "-TdS/dx" ) {
         AddMTCorr();
     } else {
         // do not add MTC
@@ -806,9 +806,9 @@ bool CPMFEnergyIntegrate::Integrate(void)
     }
 
     // add metric tensor correction
-    if( Options.GetOptRealm() == "dG" ){
+    if( Options.GetOptRealm() == "dG/dx" ){
         AddMTCorr();
-    } else if ( Options.GetOptRealm() == "-TdS" ) {
+    } else if ( Options.GetOptRealm() == "-TdS/dx" ) {
         AddMTCorr();
     } else {
         // do not add MTC
