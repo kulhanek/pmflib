@@ -74,6 +74,7 @@ subroutine mtd_accu_init()
               mtdaccu%binpos(mtdaccu%tot_cvs,mtdaccu%tot_nbins),    &
               mtdaccu%mtdpot(mtdaccu%tot_nbins),                    &
               mtdaccu%mtdforce(mtdaccu%tot_cvs,mtdaccu%tot_nbins),  &
+              mtdaccu%aplforce(mtdaccu%tot_cvs,mtdaccu%tot_nbins),  &
               mtdaccu%widths(mtdaccu%tot_cvs),                      &
               mtdaccu%iwidths2(mtdaccu%tot_cvs),                    &
               stat = alloc_failed)
@@ -115,6 +116,7 @@ subroutine mtd_accu_clear()
     mtdaccu%nsamples(:)     = 0.0d0
     mtdaccu%mtdpot(:)       = 0.0d0
     mtdaccu%mtdforce(:,:)   = 0.0d0
+    mtdaccu%aplforce(:,:)   = 0.0d0
 
     ! init binpos
     do i=1,mtdaccu%tot_nbins
@@ -207,6 +209,7 @@ subroutine mtd_accu_write(iounit)
     call pmf_accu_write_ibuf_B(mtdaccu%PMFAccuType,iounit,'NSAMPLES',   'AD',mtdaccu%nsamples)
     call pmf_accu_write_rbuf_B(mtdaccu%PMFAccuType,iounit,'MTDPOT',     'AD',mtdaccu%mtdpot)
     call pmf_accu_write_rbuf_M(mtdaccu%PMFAccuType,iounit,'MTDFORCE',   'AD',mtdaccu%mtdforce)
+    call pmf_accu_write_rbuf_M(mtdaccu%PMFAccuType,iounit,'APLFORCE',   'AD',mtdaccu%aplforce)
     call pmf_accu_write_rbuf_C(mtdaccu%PMFAccuType,iounit,'WIDTHS',     'SA',mtdaccu%widths)
     if( fmetatemp .gt. 0.0d0 ) then
         mtdwt(1) = fmetatemp
@@ -335,6 +338,9 @@ subroutine mtd_accu_get_data(cvs,potential,forces)
 
     ! get forces
     forces(:) = mtdaccu%mtdforce(:,gi0)*sfac(:)
+
+    ! update applied forces
+    mtdaccu%aplforce(:,gi0) = forces(:)
 
 end subroutine mtd_accu_get_data
 

@@ -90,6 +90,7 @@ type,extends(PMFAccuType) :: MTDGridType
     integer,pointer                 :: nsamples(:)              ! number of hits into bins
     real(PMFDP),pointer             :: mtdpot(:)                ! MTD potential
     real(PMFDP),pointer             :: mtdforce(:,:)            ! MTD forces
+    real(PMFDP),pointer             :: aplforce(:,:)            ! MTD applied forces
 
     real(PMFDP),pointer             :: widths(:)
     real(PMFDP),pointer             :: iwidths2(:)
