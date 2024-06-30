@@ -1201,6 +1201,8 @@ subroutine abf_get_switching_factors(vals)
     ! --------------------------------------------------------------------------
 
     sfac(:) = 0.0d0
+  !  write(*,*) vals(1), sfac(1), ABFCVList(1)%min_value , ABFCVList(1)%max_value, ABFCVList(1)%buffer
+
     do i=1,abfaccu%tot_cvs
         if( vals(i) .le. ABFCVList(i)%min_value ) cycle
         if( vals(i) .ge. ABFCVList(i)%max_value ) cycle
@@ -1219,6 +1221,8 @@ subroutine abf_get_switching_factors(vals)
 
     ! get switching function
         sfac(i) = 1.0d0 - 10.0d0*r**3 + 15.0d0*r**4 - 6.0d0*r**5
+
+  !      write(*,*)  'here', ABFCVList(1)%min_value , ABFCVList(1)%max_value, ABFCVList(1)%buffer, r, vals(1), sfac(1)
 
     end do
 

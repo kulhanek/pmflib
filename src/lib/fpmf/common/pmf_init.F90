@@ -135,7 +135,7 @@ subroutine pmf_init_dat
     call pmf_unit_decode_time_unit('fs',TimeUnit)
     call pmf_unit_decode_energy_unit('kcal/mol',EnergyUnit)
     call pmf_unit_decode_length_unit('A',LengthUnit)
-    call pmf_unit_decode_angle_unit('rad',AngleUnit)
+    call pmf_unit_decode_angle_unit('deg',AngleUnit)
     call pmf_unit_decode_temp_unit('K',TemperatureUnit)
     call pmf_unit_decode_press_unit('kPa',PressureUnit)
 
