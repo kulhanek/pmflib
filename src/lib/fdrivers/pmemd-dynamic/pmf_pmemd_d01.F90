@@ -637,6 +637,7 @@ INCLUDE 'mpif.h'
     integer(CPMFINT)    :: atm_owner_map(:) ! in - atom map among processes
     ! ------------------------------------------------------
     integer             :: i, ierr
+    integer             :: mydata(1)
     ! --------------------------------------------------------------------------
 
     if(fmaster) then
@@ -662,7 +663,8 @@ INCLUDE 'mpif.h'
     end if
 
     ! broadcast MD exit status
-    call mpi_bcast(fexit_mdloop, 1, mpi_integer, 0, mpi_comm_world, ierr)
+    mydata(1) = fexit_mdloop
+    call mpi_bcast(mydata, 1, mpi_integer, 0, mpi_comm_world, ierr)
     if( ierr .ne. MPI_SUCCESS ) then
         call pmf_utils_exit(PMF_OUT, 1,'[PMF] Unable to broadcast fexit_mdloop variable!')
     end if
