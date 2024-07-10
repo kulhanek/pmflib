@@ -106,7 +106,7 @@ subroutine pmf_pmemd_check_interface(rnum,inum,ekin_len,setup_len,str1,str1_len,
 
     if( found_d1a ) then
         ! pmemd mdout unit number
-        PMF_OUT = 126
+        PMF_OUT = 116
     end if
     
 end subroutine pmf_pmemd_check_interface
