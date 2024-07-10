@@ -51,6 +51,8 @@ subroutine pmf_pmemd_check_interface(rnum,inum,ekin_len,setup_len,str1,str1_len,
     integer(CPMFINT)    :: str2_len
     ! -------------------------------------------
     integer             :: i
+    logical             :: found_d01
+    logical             :: found_d1a
     ! --------------------------------------------------------------------------
 
     if( rnum .ne. PMFLIB_CHECK_R81 ) then
@@ -76,15 +78,37 @@ subroutine pmf_pmemd_check_interface(rnum,inum,ekin_len,setup_len,str1,str1_len,
         end if
     end do
 
-    if( str2_len .ne. len(PMFLIB_CHECK_STR2) ) then
-        call pmf_utils_exit(PMF_OUT,1,'Driver interface compromised for len(PMFLIB_CHECK_STR2)!')
+    if( (str2_len .ne. len(PMFLIB_CHECK_STR2)) .and. (str2_len .ne. len(PMFLIB_CHECK_STR2a)) ) then
+        call pmf_utils_exit(PMF_OUT,1,'Driver interface compromised for len(PMFLIB_CHECK_STR2/a)!')
     end if
+
+    found_d01 = .false.
+    found_d1a = .false.
+
     do i=1,min(str2_len,len(PMFLIB_CHECK_STR2))
-        if( str2(i) .ne. PMFLIB_CHECK_STR2(i:i) ) then
-            call pmf_utils_exit(PMF_OUT,1,'Driver interface compromised for PMFLIB_CHECK_STR2!')
+        if( str2(i) .eq. PMFLIB_CHECK_STR2(i:i) ) then
+            found_d01 = .true.
+        else
+            found_d01 = .false.
+        end if
+    end do
+    do i=1,min(str2_len,len(PMFLIB_CHECK_STR2a))
+        if( str2(i) .eq. PMFLIB_CHECK_STR2a(i:i) ) then
+            found_d1a = .true.
+        else
+            found_d1a = .false.
         end if
     end do
 
+    if( .not. (found_d01 .or. found_d1a) ) then
+        call pmf_utils_exit(PMF_OUT,1,'Driver interface compromised for PMFLIB_CHECK_STR2a!')
+    end if
+
+    if( found_d1a ) then
+        ! pmemd mdout unit number
+        PMF_OUT = 126
+    end if
+    
 end subroutine pmf_pmemd_check_interface
 
 !===============================================================================

@@ -130,7 +130,8 @@ real(PMFDP), parameter  :: PMF_PVCONV = 1.0d-30 * 6.02214076d23 * 1d-3 * PMF_KJ2
 
 ! common part ------------------------------------------------------------------
 integer,parameter       :: PMF_INP      = 5
-integer,parameter       :: PMF_OUT      = 6
+! is not constant anymore - due to pmemd mdout handling
+integer                 :: PMF_OUT      = 6
 integer,parameter       :: PMF_TEST     = 1342
 integer,parameter       :: PMF_DEBUG    = 1000
 

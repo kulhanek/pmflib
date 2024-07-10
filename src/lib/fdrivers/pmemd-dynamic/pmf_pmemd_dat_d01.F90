@@ -52,10 +52,11 @@ integer(8)                      :: numofchunkgaps       ! related to FATAL-ERROR
 #endif
 
 ! interface binding check
-integer, parameter              :: PMFLIB_CHECK_INT1 = 1089523658
-real(PMFDP), parameter          :: PMFLIB_CHECK_R81  = 1.78493547
-character(len=10), parameter    :: PMFLIB_CHECK_STR1 = 'PMFLib v06'
-character(len=10), parameter    :: PMFLIB_CHECK_STR2 = 'DRVABI d01'
+integer, parameter              :: PMFLIB_CHECK_INT1    = 1089523658
+real(PMFDP), parameter          :: PMFLIB_CHECK_R81     = 1.78493547
+character(len=10), parameter    :: PMFLIB_CHECK_STR1    = 'PMFLib v06'
+character(len=10), parameter    :: PMFLIB_CHECK_STR2    = 'DRVABI d01'
+character(len=10), parameter    :: PMFLIB_CHECK_STR2a   = 'DRVABI d1a' ! pmemd v24.x
 
 ! energy array
 integer, parameter              :: PMFLIB_EKIN_VV               = 1
