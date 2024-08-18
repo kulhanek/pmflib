@@ -1208,7 +1208,7 @@ void COptGPRHyprms::InitGPREngine(void)
 void COptGPRHyprms::InitGPREngine_dF_dx(void)
 {
     SigmaF2.CreateVector(1);
-    NCorr.CreateVector(1);
+    NCorr.CreateVector(Accu->GetNumOfCVs());
     WFac.CreateVector(Accu->GetNumOfCVs());
     SigmaN2.CreateVector(Accu->GetNumOfCVs());
 }
@@ -1218,7 +1218,7 @@ void COptGPRHyprms::InitGPREngine_dF_dx(void)
 void COptGPRHyprms::InitGPREngine_dF(void)
 {
     SigmaF2.CreateVector(1);
-    NCorr.CreateVector(1);
+    NCorr.CreateVector(Accu->GetNumOfCVs());
     WFac.CreateVector(Accu->GetNumOfCVs());
     SigmaN2.CreateVector(Accu->GetNumOfCVs());
 }

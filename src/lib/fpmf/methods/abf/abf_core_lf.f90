@@ -224,7 +224,7 @@ subroutine abf_core_lf_force_2pX()
 
         ! register data
         call abf_accu_add_data_online(cvhist(:,hist_len+hist_fidx),icfhist(:,hist_len+hist_fidx),&
-                                      micfhist(:,hist_len+hist_fidx))
+                                      micfhist(:,hist_len+hist_fidx),fzdethist(hist_len+hist_fidx))
     end if
 
 end subroutine abf_core_lf_force_2pX
@@ -335,7 +335,7 @@ subroutine abf_core_lf_force_2pV()
     if( mod(fstep,ficfsample) .eq. 0 ) then
         ! register data
         call abf_accu_add_data_online(cvhist(:,hist_len+hist_fidx),icfhist(:,hist_len+hist_fidx),&
-                                      micfhist(:,hist_len+hist_fidx))
+                                      micfhist(:,hist_len+hist_fidx),fzdethist(hist_len+hist_fidx))
     end if
 
 end subroutine abf_core_lf_force_2pV

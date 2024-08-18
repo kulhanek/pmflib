@@ -137,6 +137,9 @@ type,extends(PMFAccuType) :: ABFAccuType
     real(PMFDP),pointer    :: mgfx(:,:)                 ! mean -GFX
     real(PMFDP),pointer    :: m2gfx(:,:)                ! M2 of GFX
 
+    real(PMFDP),pointer    :: mfmtc(:)                  ! mean metric tensor factor sqrt(det(Zxi))
+    real(PMFDP),pointer    :: m2fmtc(:)                 ! M2 of fzdet
+
     real(PMFDP),pointer    :: mvol(:)                   ! mean volume
     real(PMFDP),pointer    :: m2vol(:)                  ! M2 of volume
 
@@ -202,6 +205,7 @@ integer                     :: outsidesamples
 ! global variables for abf - results -------------------------------------------
 real(PMFDP),allocatable     :: fz(:,:)              ! Z matrix              in t
 real(PMFDP),allocatable     :: fzinv(:,:)           ! inverse of Z matrix   in t
+real(PMFDP)                 :: fzdet
 real(PMFDP),allocatable     :: vv(:)                ! for LU decomposition
 integer,allocatable         :: indx(:)              ! for LU decomposition
 
@@ -226,6 +230,7 @@ real(PMFDP),allocatable     :: fzinvhist(:,:,:)     ! history of fzinv
 real(PMFDP),allocatable     :: xphist(:,:)          ! history of CV momenta
 real(PMFDP),allocatable     :: icfhist(:,:)         ! history of ABF ICF
 real(PMFDP),allocatable     :: micfhist(:,:)        ! history of ABF bias
+real(PMFDP),allocatable     :: fzdethist(:)         ! history of fzdet
 
 real(PMFDP),allocatable     :: zdhist(:,:,:,:)      ! history of ZD
 real(PMFDP),allocatable     :: fhist(:,:,:)         ! history of forces

@@ -90,6 +90,7 @@ subroutine abf_core_update_history_force()
         cvhist(:,i)         = cvhist(:,i+1)
         micfhist(:,i)       = micfhist(:,i+1)
         icfhist(:,i)        = icfhist(:,i+1)
+        fzdethist(i)        = fzdethist(i+1)
     end do
 
     do i=1,NumOfABFCVs
@@ -99,6 +100,7 @@ subroutine abf_core_update_history_force()
 
 ! calculate Z matrix and its inverse
     call abf_core_calc_Zmat(CVContext)
+    fzdethist(hist_len) = fzdet
 
 ! apply force filters
     la(:) = 0.0d0
@@ -192,6 +194,8 @@ subroutine abf_core_calc_Zmat(ctx)
         end do
     end do
 
+    fzdet = 1.0d0
+
     ! and now its inversion - we will use LAPAC and LU decomposition
     if (NumOfABFCVs .gt. 1) then
         fzinv(:,:)  = fz(:,:)
@@ -200,11 +204,21 @@ subroutine abf_core_calc_Zmat(ctx)
             call pmf_utils_exit(PMF_OUT,1,'[ABF] LU decomposition failed in abf_core_calc_Zmat!')
         end if
 
+         ! and finally determinant
+        do i=1,NumOfABFCVs
+            if( indx(i) .ne. i ) then
+                fzdet = - fzdet * fz(i,i)
+            else
+                fzdet = fzdet * fz(i,i)
+            end if
+        end do
+
         call dgetri(NumOfABFCVs,fzinv,NumOfABFCVs,indx,vv,NumOfABFCVs,info)
         if( info .ne. 0 ) then
             call pmf_utils_exit(PMF_OUT,1,'[ABF] Matrix inversion failed in abf_core_calc_Zmat!')
         end if
     else
+        fzdet       = fz(1,1)
         fzinv(1,1)  = 1.0d0/fz(1,1)
     end if
 
