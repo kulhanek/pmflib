@@ -79,7 +79,7 @@ void CIntegratorGPR::SetAccumulator(CPMFAccumulatorPtr accu)
 
     NumOfSigmaF2 = 1;
     NumOfCoVar   = 0;
-    NumOfNCorr   = NumOfCVs;
+    NumOfNCorr   = 1;
     NumOfSigmaN2 = NumOfCVs;
 }
 
@@ -433,7 +433,7 @@ void CIntegratorGPR::CreateKS(void)
         size_t              ibin = SampledMap[indi];
         for(size_t ii=0; ii < NumOfCVs; ii++){
             double er = item->GetValue(ibin,ii,E_PROXY_ERROR);
-            KS[indi*NumOfCVs+ii][indi*NumOfCVs+ii] += er*er*NCorr[ii] + SigmaN2[ii];
+            KS[indi*NumOfCVs+ii][indi*NumOfCVs+ii] += er*er*NCorr[0] + SigmaN2[ii];
         }
     }
 }

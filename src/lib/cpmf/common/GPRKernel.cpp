@@ -573,7 +573,7 @@ void CGPRKernel::GetKernelDerIJAna(const CSimpleVector<double>& ip,const CSimple
                                 Accu->GetCV(jj)->GetDifference(ip[jj],jp[jj]);
                     double dd = CVLengths2[ii]*CVLengths2[jj];
                     kblock[ii][jj] += 5.0*pr*du/dd;
-                    if( (ii == jj) ){
+                    if( ii == jj ){
                         kblock[ii][jj] -= d1/(CVLengths2[ii]);
                     }
                 }
@@ -1076,7 +1076,7 @@ void CGPRKernel::GetKernelDerIJWFacDerAna(const CSimpleVector<double>& ip,const 
                     } else if( (cv == ii) && (cv == jj) ) {
                         kblock[ii][jj] += 4.0*arg*du*wd5;
                     }
-                    if( (ii == jj) ){
+                    if( ii == jj ){
                         kblock[ii][ii] += argd/CVLengths2[ii];
                         if( ii == cv ){
                             kblock[ii][ii] -= 2.0*arg*wd3;
@@ -1108,7 +1108,7 @@ void CGPRKernel::GetKernelDerIJWFacDerAna(const CSimpleVector<double>& ip,const 
                     } else if( (cv == ii) && (cv == jj) ) {
                         kblock[ii][jj] -= 20.0*pr*du*wd5;
                     }
-                    if( (ii == jj) ){
+                    if( ii == jj ){
                         kblock[ii][ii] -= d1d/(CVLengths2[ii]);
                         if( ii == cv ){
                             kblock[ii][ii] += 2.0*d1*wd3;
