@@ -403,7 +403,8 @@ subroutine abf_init_arrays
             epvhist(hist_len),                              &
             volhist(hist_len),                              &
             enevalidhist(hist_len),                         &
-            fzdethist(hist_len),                            &
+            fdetzhist(hist_len),                            &
+            fziihist(NumOfABFCVs,hist_len),                 &
             stat= alloc_failed )
 
     if( alloc_failed .ne. 0 ) then
@@ -427,8 +428,8 @@ subroutine abf_init_arrays
     cvderhist(:,:,:,:)  = 0.0d0
     zdhist(:,:,:,:)     = 0.0d0
     volhist(:)          = 0.0d0
-    zdhist(:,:,:,:)     = 0.0d0
-    fzdethist(:)        = 0.0d0
+    fdetzhist(:)        = 0.0d0
+    fziihist(:,:)       = 0.0d0
     enevalidhist(:)     = .false.
 
 ! other setup ----------------------------------------------

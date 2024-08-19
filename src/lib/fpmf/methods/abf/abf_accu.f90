@@ -76,8 +76,10 @@ subroutine abf_accu_init()
                 abfaccu%m2gfx(abfaccu%tot_cvs,abfaccu%tot_nbins),   &
                 abfaccu%bnsamples(abfaccu%tot_nbins),               &
                 abfaccu%bmicf(abfaccu%tot_cvs,abfaccu%tot_nbins),   &
-                abfaccu%mfmtc(abfaccu%tot_nbins),                   &
-                abfaccu%m2fmtc(abfaccu%tot_nbins),                  &
+                abfaccu%msrdetz(abfaccu%tot_nbins),                 &
+                abfaccu%m2srdetz(abfaccu%tot_nbins),                &
+                abfaccu%msrzii(abfaccu%tot_cvs,abfaccu%tot_nbins),  &
+                abfaccu%m2srzii(abfaccu%tot_cvs,abfaccu%tot_nbins), &
                 stat = alloc_failed)
 
     if( alloc_failed .ne. 0 ) then
@@ -230,8 +232,10 @@ subroutine abf_accu_clear()
     abfaccu%mgfx(:,:)       = 0.0d0
     abfaccu%m2gfx(:,:)      = 0.0d0
 
-    abfaccu%mfmtc(:)        = 0.0d0
-    abfaccu%m2fmtc(:)       = 0.0d0
+    abfaccu%msrdetz(:)      = 0.0d0
+    abfaccu%m2srdetz(:)     = 0.0d0
+    abfaccu%msrzii(:,:)     = 0.0d0
+    abfaccu%m2srzii(:,:)    = 0.0d0
 
     abfaccu%bnsamples(:)    = 0
     abfaccu%bmicf(:,:)      = 0.0d0
@@ -348,11 +352,18 @@ subroutine abf_accu_read(iounit)
                     call pmf_accu_read_rbuf_M(abfaccu%PMFAccuType,iounit,keyline,abfaccu%m2gfx)
 
             ! ------------------------------------
-                case('MFMTC')
-                    call pmf_accu_read_rbuf_B(abfaccu%PMFAccuType,iounit,keyline,abfaccu%mfmtc)
+                case('MSRDETZ')
+                    call pmf_accu_read_rbuf_B(abfaccu%PMFAccuType,iounit,keyline,abfaccu%msrdetz)
             ! ------------------------------------
-                case('M2FMTC')
-                    call pmf_accu_read_rbuf_B(abfaccu%PMFAccuType,iounit,keyline,abfaccu%m2fmtc)
+                case('M2SRDETZ')
+                    call pmf_accu_read_rbuf_B(abfaccu%PMFAccuType,iounit,keyline,abfaccu%m2srdetz)
+
+            ! ------------------------------------
+                case('MSRZII')
+                    call pmf_accu_read_rbuf_M(abfaccu%PMFAccuType,iounit,keyline,abfaccu%msrzii)
+            ! ------------------------------------
+                case('M2SRZII')
+                    call pmf_accu_read_rbuf_M(abfaccu%PMFAccuType,iounit,keyline,abfaccu%m2srzii)
 
             ! ------------------------------------
                 case('MVOL')
@@ -614,8 +625,13 @@ subroutine abf_accu_write(iounit)
     call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'M2ICF',      'M2',abfaccu%m2icf, 'NSAMPLES','MICF')
     call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'MGFX',       'WA',abfaccu%mgfx,  'NSAMPLES')
     call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'M2GFX',      'M2',abfaccu%m2gfx, 'NSAMPLES','MGFX')
-    call pmf_accu_write_rbuf_B(abfaccu%PMFAccuType,iounit,'MFMTC',      'WA',abfaccu%mfmtc, 'NSAMPLES')
-    call pmf_accu_write_rbuf_B(abfaccu%PMFAccuType,iounit,'M2FMTC',     'M2',abfaccu%m2fmtc,'NSAMPLES','MFMTC')
+
+
+    call pmf_accu_write_rbuf_B(abfaccu%PMFAccuType,iounit,'MSRDETZ',    'WA',abfaccu%msrdetz, 'NSAMPLES')
+    call pmf_accu_write_rbuf_B(abfaccu%PMFAccuType,iounit,'M2SRDETZ',   'M2',abfaccu%m2srdetz,'NSAMPLES','MSRDETZ')
+
+    call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'MSRZII',     'WA',abfaccu%msrzii, 'NSAMPLES')
+    call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'M2SRZII',    'M2',abfaccu%m2srzii,'NSAMPLES','MSRZII')
 
     if( fsystype .eq. SYS_NTP ) then
         call pmf_accu_write_rbuf_B(abfaccu%PMFAccuType,iounit,'MVOL',   'WA',abfaccu%mvol,  'NSAMPLES')
@@ -686,7 +702,7 @@ end subroutine abf_accu_write
 ! Subroutine:  abf_accu_add_data_online
 !===============================================================================
 
-subroutine abf_accu_add_data_online(cvs,gfx,bfx,fzd)
+subroutine abf_accu_add_data_online(cvs,gfx,bfx,zdet,zii)
 
     use abf_dat
     use pmf_dat
@@ -695,13 +711,15 @@ subroutine abf_accu_add_data_online(cvs,gfx,bfx,fzd)
     real(PMFDP),intent(in)  :: cvs(:)
     real(PMFDP),intent(in)  :: gfx(:)
     real(PMFDP),intent(in)  :: bfx(:)
-    real(PMFDP),intent(in)  :: fzd      ! fzdet
+    real(PMFDP),intent(in)  :: zdet
+    real(PMFDP),intent(in)  :: zii(:)
     ! -----------------------------------------------
     integer        :: gi0, i
     real(PMFDP)    :: invn, icf, igf
     real(PMFDP)    :: dicf1, dicf2
     real(PMFDP)    :: dgfx1, dgfx2
-    real(PMFDP)    :: fmtc, dfmtc1, dfmtc2
+    real(PMFDP)    :: srdetz, dsrdetz1, dsrdetz2
+    real(PMFDP)    :: srzii, dsrzii1, dsrzii2
     ! --------------------------------------------------------------------------
 
     ! get global index to accumulator for cvs values
@@ -732,14 +750,22 @@ subroutine abf_accu_add_data_online(cvs,gfx,bfx,fzd)
         abfaccu%mgfx(i,gi0)  = abfaccu%mgfx(i,gi0)  + dgfx1 * invn
         dgfx2 = igf - abfaccu%mgfx(i,gi0)
         abfaccu%m2gfx(i,gi0) = abfaccu%m2gfx(i,gi0) + dgfx1 * dgfx2
+
+            ! correction for TST
+        srzii = sqrt(zii(i))
+        dsrzii1 = srzii - abfaccu%msrzii(i,gi0)
+        abfaccu%msrzii(i,gi0)  = abfaccu%msrzii(i,gi0)  + dsrzii1 * invn
+        dsrzii2 = srzii - abfaccu%msrzii(i,gi0)
+        abfaccu%m2srzii(i,gi0) = abfaccu%m2srzii(i,gi0) + dsrzii1 * dsrzii2
+
     end do
 
-    ! metric tensor correction for TST
-    fmtc = sqrt(fzd)
-    dfmtc1 = fmtc - abfaccu%mfmtc(gi0)
-    abfaccu%mfmtc(gi0)  = abfaccu%mfmtc(gi0)  + dfmtc1 * invn
-    dfmtc2 = fmtc - abfaccu%mfmtc(gi0)
-    abfaccu%m2fmtc(gi0) = abfaccu%m2fmtc(gi0) + dfmtc1 * dfmtc2
+    ! correction for TST
+    srdetz = sqrt(zdet)
+    dsrdetz1 = srdetz - abfaccu%msrdetz(gi0)
+    abfaccu%msrdetz(gi0)  = abfaccu%msrdetz(gi0)  + dsrdetz1 * invn
+    dsrdetz2 = srdetz - abfaccu%msrdetz(gi0)
+    abfaccu%m2srdetz(gi0) = abfaccu%m2srdetz(gi0) + dsrdetz1 * dsrdetz2
 
     if( fupdate_abf ) then
         if( fserver_enabled ) then
