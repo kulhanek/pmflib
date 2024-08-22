@@ -61,10 +61,6 @@ void CABFProxy_dG::SetType(EABFdGType type)
             Provide = "ABF dG(x)";
         break;
     // -------------------
-        case(ABF_MICFP):
-            Provide = "ABF MICFP";
-        break;
-    // -------------------
         default:
             RUNTIME_ERROR("unsupported type");
     }
@@ -91,12 +87,6 @@ double CABFProxy_dG::GetValue(int ibin,int icv,EProxyRealm realm) const
             nsamples = Accu->GetData("NSAMPLES",ibin);
             micf     = Accu->GetData("MICF",ibin,icv);
             m2icf    = Accu->GetData("M2ICF",ibin,icv);
-        break;
-    // -------------------
-        case(ABF_MICFP):
-            nsamples = Accu->GetData("NTDS",ibin);
-            micf     = Accu->GetData("MICFP",ibin,icv);
-            m2icf    = Accu->GetData("M2ICFP",ibin,icv);
         break;
     // -------------------
         default:

@@ -64,6 +64,8 @@ real(PMFDP) :: fekinaverage
 integer     :: fenesample       ! how often update ABF accumulator for ENT and TDS
 integer     :: finclude_pv      ! include pV term
 
+integer     :: fenesmooth
+
 ! US mode
 logical     :: fusmode      ! enable US mode
 logical     :: falignbias   ! move bottom of the biasing potential into the closest bin position

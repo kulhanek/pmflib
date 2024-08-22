@@ -430,6 +430,7 @@ subroutine abf_core_lf_register_ekin()
 
     implicit none
     integer     :: i
+    real(PMFDP) :: lepot, lerst, lekin
     ! --------------------------------------------------------------------------
 
     if( .not. (fenthalpy .or. fentropy) ) return
@@ -489,12 +490,42 @@ subroutine abf_core_lf_register_ekin()
 
     if( (mod(fene_step,fenesample) .eq. 0) .and. enevalidhist(hist_len+hist_fidx) ) then
 
+
+        select case(fenesmooth)
+            case(0)
+                lepot = epothist(hist_len+hist_fidx)
+                lerst = ersthist(hist_len+hist_fidx)
+                lekin = ekinhist(hist_len+hist_fidx)
+            case(5)
+                lepot = (   -3.0d0 * epothist(hist_len+hist_fidx-2) &
+                          + 12.0d0 * epothist(hist_len+hist_fidx-1) &
+                          + 17.0d0 * epothist(hist_len+hist_fidx+0) &
+                          + 12.0d0 * epothist(hist_len+hist_fidx+1) &
+                           - 3.0d0 * epothist(hist_len+hist_fidx+2) &
+                        ) / 35.0d0
+                lerst  = (  -3.0d0 * ersthist(hist_len+hist_fidx-2) &
+                          + 12.0d0 * ersthist(hist_len+hist_fidx-1) &
+                          + 17.0d0 * ersthist(hist_len+hist_fidx+0) &
+                          + 12.0d0 * ersthist(hist_len+hist_fidx+1) &
+                           - 3.0d0 * ersthist(hist_len+hist_fidx+2) &
+                        ) / 35.0d0
+                lekin  = (  -3.0d0 * ekinhist(hist_len+hist_fidx-2) &
+                          + 12.0d0 * ekinhist(hist_len+hist_fidx-1) &
+                          + 17.0d0 * ekinhist(hist_len+hist_fidx+0) &
+                          + 12.0d0 * ekinhist(hist_len+hist_fidx+1) &
+                           - 3.0d0 * ekinhist(hist_len+hist_fidx+2) &
+                        ) / 35.0d0
+            case default
+                call pmf_utils_exit(PMF_OUT,1,'[ABF] Unsupported fenesmooth mode in abf_core_lf_register_ekin!')
+        end select
+
+
       !  write(1487,*) fstep
 
         ! register data
         call abf_accu_add_data_energy(cvhist(:,hist_len+hist_fidx), &
                       icfhist(:,hist_len+hist_fidx), micfhist(:,hist_len+hist_fidx), icfphist(:,hist_len+hist_fidx), &
-                      epothist(hist_len+hist_fidx), ersthist(hist_len+hist_fidx), ekinhist(hist_len+hist_fidx), &
+                      lepot, lerst, lekin, &
                       epvhist(hist_len+hist_fidx),volhist(hist_len+hist_fidx))
     end if
 

@@ -20,6 +20,7 @@
 
 #include <EnergyDerProxyInit.hpp>
 #include <ABFProxy_dG.hpp>
+#include <ABFProxy_dH.hpp>
 #include <ABFProxy_mTdS.hpp>
 #include <CSTProxy_dG.hpp>
 #include <CSTProxy_mTdS.hpp>
@@ -45,8 +46,19 @@ CEnergyDerProxyPtr CEnergyDerProxyInit::InitProxy(const CSmallString& realm,CPMF
 // -----------------------------------------------
     } else if ( realm == "ICFP/dx" ) {
         if( CABFProxy_mTdS::IsCompatible(accu) ){
-            CABFProxy_dG_Ptr proxy = CABFProxy_dG_Ptr(new CABFProxy_dG);
+            CABFProxy_dH_Ptr proxy = CABFProxy_dH_Ptr(new CABFProxy_dH);
             proxy->SetType(ABF_MICFP);
+            lproxy = proxy;
+        } else {
+            CSmallString error;
+            error << "incompatible method: " << accu->GetMethod() << " with requested realm: " <<  realm;
+            RUNTIME_ERROR(error);
+        }
+// -----------------------------------------------
+    } else if ( realm == "dH/dx" ) {
+        if( CABFProxy_mTdS::IsCompatible(accu) ){
+            CABFProxy_dH_Ptr proxy = CABFProxy_dH_Ptr(new CABFProxy_dH);
+            proxy->SetType(ABF_dH);
             lproxy = proxy;
         } else {
             CSmallString error;

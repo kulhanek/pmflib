@@ -97,6 +97,8 @@ subroutine abf_init_dat
     fepotaverage    = 0.0d0
     fekinaverage    = 0.0d0
 
+    fenesmooth      = 0
+
     feimode         = 1
     fhramp_min      = 20000
     fhramp_max      = 30000
@@ -260,6 +262,7 @@ subroutine abf_init_print_summary
                                                                        '['//trim(pmf_unit_label(EnergyUnit))//']'
     write(PMF_OUT,150)  ' Kinetic energy offset (fekinaverage)    : ', pmf_unit_get_rvalue(EnergyUnit,fekinaverage), &
                                                                        '['//trim(pmf_unit_label(EnergyUnit))//']'
+    write(PMF_OUT,130)  ' Energy smoothing mode (fenesmooth)      : ', fenesmooth
     write(PMF_OUT,130)  ' Sampling for -TdS and ENT (fenesample)  : ', fenesample
 
     write(PMF_OUT,130)  ' Include pV term (finclude_pv)           : ', finclude_pv
