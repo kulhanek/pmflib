@@ -221,40 +221,41 @@ subroutine abf_core_lf_force_2pX()
                                        -32.0d0*xphist(i,hist_len-11) +3.0d0*xphist(i,hist_len-12))*ifdtx
             hist_fidx = -8
     ! backward differences
+    ! offset -2 to get fenthlapy_der
         case(13)
             ! -2,-1,0
             ! f_x = (1*f[i-2]-4*f[i-1]+3*f[i+0])/(2*1.0*h**1)
-            pxif(i) = (1.0d0/2.0d0) *(+3.0d0*xphist(i,hist_len-0) -4.0d0*xphist(i,hist_len-1) &
-                                      +1.0d0*xphist(i,hist_len-2))*ifdtx
-            hist_fidx = 0
+            pxif(i) = (1.0d0/2.0d0) *(+3.0d0*xphist(i,hist_len-0-2) -4.0d0*xphist(i,hist_len-1-2) &
+                                      +1.0d0*xphist(i,hist_len-2-2))*ifdtx
+            hist_fidx = -2
         case(14)
             ! -3,-2,-1,0
             ! f_x = (-2*f[i-3]+9*f[i-2]-18*f[i-1]+11*f[i+0])/(6*1.0*h**1)
-            pxif(i) = (1.0d0/6.0d0) *(+11.0d0*xphist(i,hist_len-0) -18.0d0*xphist(i,hist_len-1) &
-                                       +9.0d0*xphist(i,hist_len-2)  -2.0d0*xphist(i,hist_len-3))*ifdtx
-            hist_fidx = 0
+            pxif(i) = (1.0d0/6.0d0) *(+11.0d0*xphist(i,hist_len-0-2) -18.0d0*xphist(i,hist_len-1-2) &
+                                       +9.0d0*xphist(i,hist_len-2-2)  -2.0d0*xphist(i,hist_len-3-2))*ifdtx
+            hist_fidx = -2
         case(15)
             ! -4,-3,-2,-1,0
             ! f_x = (3*f[i-4]-16*f[i-3]+36*f[i-2]-48*f[i-1]+25*f[i+0])/(12*1.0*h**1)
-            pxif(i) = (1.0d0/12.0d0)*(+25.0d0*xphist(i,hist_len-0) -48.0d0*xphist(i,hist_len-1) &
-                                      +36.0d0*xphist(i,hist_len-2) -16.0d0*xphist(i,hist_len-3) &
-                                       +3.0d0*xphist(i,hist_len-4))*ifdtx
-            hist_fidx = 0
+            pxif(i) = (1.0d0/12.0d0)*(+25.0d0*xphist(i,hist_len-0-2) -48.0d0*xphist(i,hist_len-1-2) &
+                                      +36.0d0*xphist(i,hist_len-2-2) -16.0d0*xphist(i,hist_len-3-2) &
+                                       +3.0d0*xphist(i,hist_len-4-2))*ifdtx
+            hist_fidx = -2
         case(16)
             ! -5,-4,-3,-2,-1,0
             ! f_x = (-12*f[i-5]+75*f[i-4]-200*f[i-3]+300*f[i-2]-300*f[i-1]+137*f[i+0])/(60*1.0*h**1)
-            pxif(i) = (1.0d0/60.0d0)*(+137.0d0*xphist(i,hist_len-0) -300.0d0*xphist(i,hist_len-1) &
-                                      +300.0d0*xphist(i,hist_len-2) -200.0d0*xphist(i,hist_len-3) &
-                                       +75.0d0*xphist(i,hist_len-4)  -12.0d0*xphist(i,hist_len-5))*ifdtx
-            hist_fidx = 0
+            pxif(i) = (1.0d0/60.0d0)*(+137.0d0*xphist(i,hist_len-0-2) -300.0d0*xphist(i,hist_len-1-2) &
+                                      +300.0d0*xphist(i,hist_len-2-2) -200.0d0*xphist(i,hist_len-3-2) &
+                                       +75.0d0*xphist(i,hist_len-4-2)  -12.0d0*xphist(i,hist_len-5-2))*ifdtx
+            hist_fidx = -2
         case(17)
             ! -6,-5,-4,-3,-2,-1,0
             ! f_x = (10*f[i-6]-72*f[i-5]+225*f[i-4]-400*f[i-3]+450*f[i-2]-360*f[i-1]+147*f[i+0])/(60*1.0*h**1)
-            pxif(i) = (1.0d0/60.0d0)*(+147.0d0*xphist(i,hist_len-0) -360.0d0*xphist(i,hist_len-1) &
-                                      +450.0d0*xphist(i,hist_len-2) -400.0d0*xphist(i,hist_len-3) &
-                                      +225.0d0*xphist(i,hist_len-4)  -72.0d0*xphist(i,hist_len-5) &
-                                       +10.0d0*xphist(i,hist_len-6))*ifdtx
-            hist_fidx = 0
+            pxif(i) = (1.0d0/60.0d0)*(+147.0d0*xphist(i,hist_len-0-2) -360.0d0*xphist(i,hist_len-1-2) &
+                                      +450.0d0*xphist(i,hist_len-2-2) -400.0d0*xphist(i,hist_len-3-2) &
+                                      +225.0d0*xphist(i,hist_len-4-2)  -72.0d0*xphist(i,hist_len-5-2) &
+                                       +10.0d0*xphist(i,hist_len-6-2))*ifdtx
+            hist_fidx = -2
         case default
             call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented abf_p2_px in abf_core_force_2pX!')
         end select
