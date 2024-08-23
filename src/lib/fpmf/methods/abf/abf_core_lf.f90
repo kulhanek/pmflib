@@ -85,7 +85,7 @@ subroutine abf_core_lf_force_2pX()
 
     implicit none
     integer                :: i,j,cidx
-    real(PMFDP)            :: v,dx1,dx2,dx3,dx4,dx5
+    real(PMFDP)            :: v,dx1,dx2,dx3,dx4,dx5,dx6
     ! --------------------------------------------------------------------------
 
     call abf_core_update_history_force
@@ -99,34 +99,37 @@ subroutine abf_core_lf_force_2pX()
     vhist(:,:,hist_len)     = Vel(:,:)              ! t-dt/2
     fzinvhist(:,:,hist_len) = fzinv(:,:)
 
+! Finite Difference Coefficients Calculator
+! https://web.media.mit.edu/~crtaylor/calculator.html
+
 ! calculate CV velocity, consider CV periodicity
     do i=1,NumOfABFCVs
         select case(abf_p2_vx)
     ! central differences
         case(3)
-            ! -1
+            ! -1,0,1
+            ! f_x = (-1*f[i-1]+0*f[i+0]+1*f[i+1])/(2*1.0*h**1)
             dx1 = ABFCVList(i)%cv%get_deviation(cvhist(i,hist_len-0),cvhist(i,hist_len-2))
             pxia(i) = 0.5d0*dx1*ifdtx
-            ! pxia(i) = 0.5d0*(cvhist(i,hist_len-0)-cvhist(i,hist_len-2))*ifdtx
-
             cidx = -1
         case(5)
-            ! -2
+            ! -2,-1,0,1,2
+            ! f_x = (1*f[i-2]-8*f[i-1]+0*f[i+0]+8*f[i+1]-1*f[i+2])/(12*1.0*h**1)
             dx1 = ABFCVList(i)%cv%get_deviation(cvhist(i,hist_len-4),cvhist(i,hist_len-0))
             dx2 = ABFCVList(i)%cv%get_deviation(cvhist(i,hist_len-1),cvhist(i,hist_len-3))
             pxia(i) = (1.0d0/12.0d0)*(dx1+8.0d0*dx2)*ifdtx
-            !pxia(i) = (1.0d0/12.0d0)*(      -cvhist(i,hist_len-0)+8.0d0*cvhist(i,hist_len-1)&
-            !                          -8.0d0*cvhist(i,hist_len-3)      +cvhist(i,hist_len-4))*ifdtx
             cidx = -2
         case(7)
-            ! -3
+            ! -3,-2,-1,0,1,2,3
+            ! f_x = (-1*f[i-3]+9*f[i-2]-45*f[i-1]+0*f[i+0]+45*f[i+1]-9*f[i+2]+1*f[i+3])/(60*1.0*h**1)
             dx1 = ABFCVList(i)%cv%get_deviation(cvhist(i,hist_len-0),cvhist(i,hist_len-6))
             dx2 = ABFCVList(i)%cv%get_deviation(cvhist(i,hist_len-5),cvhist(i,hist_len-1))
             dx3 = ABFCVList(i)%cv%get_deviation(cvhist(i,hist_len-2),cvhist(i,hist_len-4))
             pxia(i) = (1.0d0/60.0d0)*(dx1+9.0d0*dx2+45.0d0*dx3)*ifdtx
             cidx = -3
         case(9)
-            ! -4
+            ! -4,-3,-2,-1,0,1,2,3,4
+            ! f_x = (3*f[i-4]-32*f[i-3]+168*f[i-2]-672*f[i-1]+0*f[i+0]+672*f[i+1]-168*f[i+2]+32*f[i+3]-3*f[i+4])/(840*1.0*h**1)
             dx1 = ABFCVList(i)%cv%get_deviation(cvhist(i,hist_len-8),cvhist(i,hist_len-0))
             dx2 = ABFCVList(i)%cv%get_deviation(cvhist(i,hist_len-1),cvhist(i,hist_len-7))
             dx3 = ABFCVList(i)%cv%get_deviation(cvhist(i,hist_len-6),cvhist(i,hist_len-2))
@@ -134,30 +137,51 @@ subroutine abf_core_lf_force_2pX()
             pxia(i) = (1.0d0/840.0d0)*(3.0d0*dx1+32.0d0*dx2+168.0d0*dx3+672.0d0*dx4)*ifdtx
             cidx = -4
     ! backward differences
+        case(13)
+            ! -2,-1,0
+            ! f_x = (1*f[i-2]-4*f[i-1]+3*f[i+0])/(2*1.0*h**1)
+            dx1 = ABFCVList(i)%cv%get_deviation(cvhist(i,hist_len-0),cvhist(i,hist_len-1))
+            dx2 = ABFCVList(i)%cv%get_deviation(cvhist(i,hist_len-1),cvhist(i,hist_len-2))
+            pxia(i) = (1.0d0/2.0d0)*(3.0d0*dx1-1.0d0*dx2)*ifdtx
+            cidx = 0
         case(14)
-            ! -1
+            ! -3,-2,-1,0
+            ! f_x = (-2*f[i-3]+9*f[i-2]-18*f[i-1]+11*f[i+0])/(6*1.0*h**1)
             dx1 = ABFCVList(i)%cv%get_deviation(cvhist(i,hist_len-0),cvhist(i,hist_len-1))
             dx2 = ABFCVList(i)%cv%get_deviation(cvhist(i,hist_len-1),cvhist(i,hist_len-2))
             dx3 = ABFCVList(i)%cv%get_deviation(cvhist(i,hist_len-2),cvhist(i,hist_len-3))
-            pxia(i) = (1.0d0/6.0d0)*(2.0d0*dx1+5.0d0*dx2-dx3)*ifdtx
-            cidx = -1
+            pxia(i) = (1.0d0/6.0d0)*(11.0d0*dx1-7.0d0*dx2+2.0d0*dx3)*ifdtx
+            cidx = 0
         case(15)
-            ! -1
+            ! -4,-3,-2,-1,0
+            ! f_x = (3*f[i-4]-16*f[i-3]+36*f[i-2]-48*f[i-1]+25*f[i+0])/(12*1.0*h**1)
             dx1 = ABFCVList(i)%cv%get_deviation(cvhist(i,hist_len-0),cvhist(i,hist_len-1))
             dx2 = ABFCVList(i)%cv%get_deviation(cvhist(i,hist_len-1),cvhist(i,hist_len-2))
             dx3 = ABFCVList(i)%cv%get_deviation(cvhist(i,hist_len-2),cvhist(i,hist_len-3))
             dx4 = ABFCVList(i)%cv%get_deviation(cvhist(i,hist_len-3),cvhist(i,hist_len-4))
-            pxia(i) = (1.0d0/12.0d0)*(3.0d0*dx1+13.0d0*dx2-5.0d0*dx3+dx4)*ifdtx
-            cidx = -1
+            pxia(i) = (1.0d0/12.0d0)*(25.0d0*dx1-23.0d0*dx2+13.0d0*dx3-3.0d0*dx4)*ifdtx
+            cidx = 0
         case(16)
-            ! -1
+            ! -5,-4,-3,-2,-1,0
+            ! f_x = (-12*f[i-5]+75*f[i-4]-200*f[i-3]+300*f[i-2]-300*f[i-1]+137*f[i+0])/(60*1.0*h**1)
             dx1 = ABFCVList(i)%cv%get_deviation(cvhist(i,hist_len-0),cvhist(i,hist_len-1))
             dx2 = ABFCVList(i)%cv%get_deviation(cvhist(i,hist_len-1),cvhist(i,hist_len-2))
             dx3 = ABFCVList(i)%cv%get_deviation(cvhist(i,hist_len-2),cvhist(i,hist_len-3))
             dx4 = ABFCVList(i)%cv%get_deviation(cvhist(i,hist_len-3),cvhist(i,hist_len-4))
             dx5 = ABFCVList(i)%cv%get_deviation(cvhist(i,hist_len-4),cvhist(i,hist_len-5))
-            pxia(i) = (1.0d0/60.0d0)*(12.0d0*dx1+77.0d0*dx2-43.0d0*dx3+17.0d0*dx4-3.0d0*dx5)*ifdtx
-            cidx = -1
+            pxia(i) = (1.0d0/60.0d0)*(137.0d0*dx1-163.0d0*dx2+137.0d0*dx3-63.0d0*dx4+12.0d0*dx5)*ifdtx
+            cidx = 0
+        case(17)
+            ! -6,-5,-4,-3,-2,-1,0
+            ! f_x = (10*f[i-6]-72*f[i-5]+225*f[i-4]-400*f[i-3]+450*f[i-2]-360*f[i-1]+147*f[i+0])/(60*1.0*h**1)
+            dx1 = ABFCVList(i)%cv%get_deviation(cvhist(i,hist_len-0),cvhist(i,hist_len-1))
+            dx2 = ABFCVList(i)%cv%get_deviation(cvhist(i,hist_len-1),cvhist(i,hist_len-2))
+            dx3 = ABFCVList(i)%cv%get_deviation(cvhist(i,hist_len-2),cvhist(i,hist_len-3))
+            dx4 = ABFCVList(i)%cv%get_deviation(cvhist(i,hist_len-3),cvhist(i,hist_len-4))
+            dx5 = ABFCVList(i)%cv%get_deviation(cvhist(i,hist_len-4),cvhist(i,hist_len-5))
+            dx6 = ABFCVList(i)%cv%get_deviation(cvhist(i,hist_len-5),cvhist(i,hist_len-6))
+            pxia(i) = (1.0d0/60.0d0)*(147.0d0*dx1-213.0d0*dx2+237.0d0*dx3-163.0d0*dx4+62.0d0*dx5-10.0d0*dx6)*ifdtx
+            cidx = 0
         case default
             call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented abf_p2_vx in abf_core_force_2pX!')
         end select
@@ -197,20 +221,40 @@ subroutine abf_core_lf_force_2pX()
                                        -32.0d0*xphist(i,hist_len-11) +3.0d0*xphist(i,hist_len-12))*ifdtx
             hist_fidx = -8
     ! backward differences
+        case(13)
+            ! -2,-1,0
+            ! f_x = (1*f[i-2]-4*f[i-1]+3*f[i+0])/(2*1.0*h**1)
+            pxif(i) = (1.0d0/2.0d0) *(+3.0d0*xphist(i,hist_len-0) -4.0d0*xphist(i,hist_len-1) &
+                                      +1.0d0*xphist(i,hist_len-2))*ifdtx
+            hist_fidx = 0
         case(14)
-            pxif(i) = (1.0d0/6.0d0)*(+2.0d0*xphist(i,hist_len-1) +3.0d0*xphist(i,hist_len-2) &
-                                     -6.0d0*xphist(i,hist_len-3) +1.0d0*xphist(i,hist_len-4))*ifdtx
-            hist_fidx = -2
+            ! -3,-2,-1,0
+            ! f_x = (-2*f[i-3]+9*f[i-2]-18*f[i-1]+11*f[i+0])/(6*1.0*h**1)
+            pxif(i) = (1.0d0/6.0d0) *(+11.0d0*xphist(i,hist_len-0) -18.0d0*xphist(i,hist_len-1) &
+                                       +9.0d0*xphist(i,hist_len-2)  -2.0d0*xphist(i,hist_len-3))*ifdtx
+            hist_fidx = 0
         case(15)
-            pxif(i) = (1.0d0/12.0d0)*( +3.0d0*xphist(i,hist_len-1) +10.0d0*xphist(i,hist_len-2) &
-                                      -18.0d0*xphist(i,hist_len-3)  +6.0d0*xphist(i,hist_len-4) &
-                                       -1.0d0*xphist(i,hist_len-5))*ifdtx
-            hist_fidx = -2
+            ! -4,-3,-2,-1,0
+            ! f_x = (3*f[i-4]-16*f[i-3]+36*f[i-2]-48*f[i-1]+25*f[i+0])/(12*1.0*h**1)
+            pxif(i) = (1.0d0/12.0d0)*(+25.0d0*xphist(i,hist_len-0) -48.0d0*xphist(i,hist_len-1) &
+                                      +36.0d0*xphist(i,hist_len-2) -16.0d0*xphist(i,hist_len-3) &
+                                       +3.0d0*xphist(i,hist_len-4))*ifdtx
+            hist_fidx = 0
         case(16)
-            pxif(i) = (1.0d0/60.0d0)*( +12.0d0*xphist(i,hist_len-1) +65.0d0*xphist(i,hist_len-2) &
-                                      -120.0d0*xphist(i,hist_len-3) +60.0d0*xphist(i,hist_len-4) &
-                                       -20.0d0*xphist(i,hist_len-5)  +3.0d0*xphist(i,hist_len-6))*ifdtx
-            hist_fidx = -2
+            ! -5,-4,-3,-2,-1,0
+            ! f_x = (-12*f[i-5]+75*f[i-4]-200*f[i-3]+300*f[i-2]-300*f[i-1]+137*f[i+0])/(60*1.0*h**1)
+            pxif(i) = (1.0d0/60.0d0)*(+137.0d0*xphist(i,hist_len-0) -300.0d0*xphist(i,hist_len-1) &
+                                      +300.0d0*xphist(i,hist_len-2) -200.0d0*xphist(i,hist_len-3) &
+                                       +75.0d0*xphist(i,hist_len-4)  -12.0d0*xphist(i,hist_len-5))*ifdtx
+            hist_fidx = 0
+        case(17)
+            ! -6,-5,-4,-3,-2,-1,0
+            ! f_x = (10*f[i-6]-72*f[i-5]+225*f[i-4]-400*f[i-3]+450*f[i-2]-360*f[i-1]+147*f[i+0])/(60*1.0*h**1)
+            pxif(i) = (1.0d0/60.0d0)*(+147.0d0*xphist(i,hist_len-0) -360.0d0*xphist(i,hist_len-1) &
+                                      +450.0d0*xphist(i,hist_len-2) -400.0d0*xphist(i,hist_len-3) &
+                                      +225.0d0*xphist(i,hist_len-4)  -72.0d0*xphist(i,hist_len-5) &
+                                       +10.0d0*xphist(i,hist_len-6))*ifdtx
+            hist_fidx = 0
         case default
             call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented abf_p2_px in abf_core_force_2pX!')
         end select
@@ -267,7 +311,7 @@ subroutine abf_core_lf_force_2pV()
         case(2)
             ! -1
             vint(:,:) =  0.5d0*(vhist(:,:,hist_len-0)+vhist(:,:,hist_len-1))
-            vidx =-1
+            vidx = -1
         case(3)
             ! -1
             vint(:,:) = (1.0d0/8.0d0)*(+3.0d0*vhist(:,:,hist_len-0)+6.0d0*vhist(:,:,hist_len-1) &
