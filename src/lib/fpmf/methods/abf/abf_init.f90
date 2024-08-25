@@ -255,6 +255,8 @@ subroutine abf_init_print_summary
     write(PMF_OUT,120)  '      |-> LF (Leap-Frog KE)'
     case(3)
     write(PMF_OUT,120)  '      |-> HA (Harmonic Approximation Verlet KE)'
+    case(4)
+    write(PMF_OUT,120)  '      |-> LF (Leap-Frog KE), shifted by 0.5'
     case default
     call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown kinetic energy source in abf_init_print_summary!')
     end select
