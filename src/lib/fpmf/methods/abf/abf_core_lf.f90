@@ -598,6 +598,34 @@ subroutine abf_core_lf_register_ekin()
                             - 6.0d0 * ekinhist(hist_len+hist_fidx+2) &
                             + 1.0d0 * ekinhist(hist_len+hist_fidx+3) &
                         ) / 20.0d0
+            case(29)
+                lepot = (  - 1.0d0 * epothist(hist_len+hist_fidx-4) &
+                           + 8.0d0 * epothist(hist_len+hist_fidx-3) &
+                           -28.0d0 * epothist(hist_len+hist_fidx-2) &
+                           +56.0d0 * epothist(hist_len+hist_fidx-1) &
+                           +56.0d0 * epothist(hist_len+hist_fidx+1) &
+                           -28.0d0 * epothist(hist_len+hist_fidx+2) &
+                           + 8.0d0 * epothist(hist_len+hist_fidx+3) &
+                           - 1.0d0 * epothist(hist_len+hist_fidx+4) &
+                        ) / 70.0d0
+                lerst  = ( - 1.0d0 * ersthist(hist_len+hist_fidx-4) &
+                           + 8.0d0 * ersthist(hist_len+hist_fidx-3) &
+                           -28.0d0 * ersthist(hist_len+hist_fidx-2) &
+                           +56.0d0 * ersthist(hist_len+hist_fidx-1) &
+                           +56.0d0 * ersthist(hist_len+hist_fidx+1) &
+                           -28.0d0 * ersthist(hist_len+hist_fidx+2) &
+                           + 8.0d0 * ersthist(hist_len+hist_fidx+3) &
+                           - 1.0d0 * ersthist(hist_len+hist_fidx+4) &
+                        ) / 70.0d0
+                lekin  = ( - 1.0d0 * ekinhist(hist_len+hist_fidx-4) &
+                           + 8.0d0 * ekinhist(hist_len+hist_fidx-3) &
+                           -28.0d0 * ekinhist(hist_len+hist_fidx-2) &
+                           +56.0d0 * ekinhist(hist_len+hist_fidx-1) &
+                           +56.0d0 * ekinhist(hist_len+hist_fidx+1) &
+                           -28.0d0 * ekinhist(hist_len+hist_fidx+2) &
+                           + 8.0d0 * ekinhist(hist_len+hist_fidx+3) &
+                           - 1.0d0 * ekinhist(hist_len+hist_fidx+4) &
+                        ) / 70.0d0
             case default
                 call pmf_utils_exit(PMF_OUT,1,'[ABF] Unsupported fenesmooth mode in abf_core_lf_register_ekin!')
         end select
