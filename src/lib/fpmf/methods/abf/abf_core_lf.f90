@@ -655,6 +655,56 @@ subroutine abf_core_lf_register_ekin()
                             - 25.0d0 * ekinhist(hist_len+hist_fidx+1) &
                             +  3.0d0 * ekinhist(hist_len+hist_fidx+2) &
                         ) / 256.0d0
+            case(371)
+                ! ekin LF
+                lepot = (  + 1.0d0 * epothist(hist_len+hist_fidx-3) &
+                           - 6.0d0 * epothist(hist_len+hist_fidx-2) &
+                           +15.0d0 * epothist(hist_len+hist_fidx-1) &
+                           +15.0d0 * epothist(hist_len+hist_fidx+1) &
+                           - 6.0d0 * epothist(hist_len+hist_fidx+2) &
+                           + 1.0d0 * epothist(hist_len+hist_fidx+3) &
+                        ) / 20.0d0
+                lerst  = (  + 1.0d0 * ersthist(hist_len+hist_fidx-3) &
+                            - 6.0d0 * ersthist(hist_len+hist_fidx-2) &
+                            +15.0d0 * ersthist(hist_len+hist_fidx-1) &
+                            +15.0d0 * ersthist(hist_len+hist_fidx+1) &
+                            - 6.0d0 * ersthist(hist_len+hist_fidx+2) &
+                            + 1.0d0 * ersthist(hist_len+hist_fidx+3) &
+                        ) / 20.0d0
+                ! -2.5,-1.5,-0.5,0.5,1.5,2.5
+                ! f_ = (3*f[i-2.5]-25*f[i-1.5]+150*f[i-0.5]+150*f[i+0.5]-25*f[i+1.5]+3*f[i+2.5])/(256*1.0*h**0)
+                lekin  = (  +  3.0d0 * ekinhist(hist_len+hist_fidx-2) &
+                            - 25.0d0 * ekinhist(hist_len+hist_fidx-1) &
+                            +150.0d0 * ekinhist(hist_len+hist_fidx-0) &
+                            +150.0d0 * ekinhist(hist_len+hist_fidx+1) &
+                            - 25.0d0 * ekinhist(hist_len+hist_fidx+2) &
+                            +  3.0d0 * ekinhist(hist_len+hist_fidx+3) &
+                        ) / 256.0d0
+            case(372)
+                ! ekin LF
+                lepot = (  + 1.0d0 * epothist(hist_len+hist_fidx-3) &
+                           - 6.0d0 * epothist(hist_len+hist_fidx-2) &
+                           +15.0d0 * epothist(hist_len+hist_fidx-1) &
+                           +15.0d0 * epothist(hist_len+hist_fidx+1) &
+                           - 6.0d0 * epothist(hist_len+hist_fidx+2) &
+                           + 1.0d0 * epothist(hist_len+hist_fidx+3) &
+                        ) / 20.0d0
+                lerst  = (  + 1.0d0 * ersthist(hist_len+hist_fidx-3) &
+                            - 6.0d0 * ersthist(hist_len+hist_fidx-2) &
+                            +15.0d0 * ersthist(hist_len+hist_fidx-1) &
+                            +15.0d0 * ersthist(hist_len+hist_fidx+1) &
+                            - 6.0d0 * ersthist(hist_len+hist_fidx+2) &
+                            + 1.0d0 * ersthist(hist_len+hist_fidx+3) &
+                        ) / 20.0d0
+                ! -2.5,-1.5,-0.5,0.5,1.5,2.5
+                ! f_ = (3*f[i-2.5]-25*f[i-1.5]+150*f[i-0.5]+150*f[i+0.5]-25*f[i+1.5]+3*f[i+2.5])/(256*1.0*h**0)
+                lekin  = (  +  3.0d0 * ekinhist(hist_len+hist_fidx-4) &
+                            - 25.0d0 * ekinhist(hist_len+hist_fidx-3) &
+                            +150.0d0 * ekinhist(hist_len+hist_fidx-2) &
+                            +150.0d0 * ekinhist(hist_len+hist_fidx-1) &
+                            - 25.0d0 * ekinhist(hist_len+hist_fidx+0) &
+                            +  3.0d0 * ekinhist(hist_len+hist_fidx+1) &
+                        ) / 256.0d0
             case default
                 call pmf_utils_exit(PMF_OUT,1,'[ABF] Unsupported fenesmooth mode in abf_core_lf_register_ekin!')
         end select
