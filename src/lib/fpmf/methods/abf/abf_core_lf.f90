@@ -598,6 +598,7 @@ subroutine abf_core_lf_register_ekin()
                             - 6.0d0 * ekinhist(hist_len+hist_fidx+2) &
                             + 1.0d0 * ekinhist(hist_len+hist_fidx+3) &
                         ) / 20.0d0
+            case default
                 call pmf_utils_exit(PMF_OUT,1,'[ABF] Unsupported fenesmooth mode in abf_core_lf_register_ekin!')
         end select
 
