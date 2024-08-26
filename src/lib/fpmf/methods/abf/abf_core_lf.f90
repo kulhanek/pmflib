@@ -139,11 +139,11 @@ subroutine abf_core_lf_force_2pX()
         case(11)
             ! -5,-4,-3,-2,-1,0,1,2,3,4,5
             ! f_x = (-2*f[i-5]+25*f[i-4]-150*f[i-3]+600*f[i-2]-2100*f[i-1]+0*f[i+0]+2100*f[i+1]-600*f[i+2]+150*f[i+3]-25*f[i+4]+2*f[i+5])/(2520*1.0*h**1)
-            dx1 = ABFCVList(i)%cv%get_deviation(cvhist(i,hist_len-0),cvhist(i,hist_len-9))
-            dx2 = ABFCVList(i)%cv%get_deviation(cvhist(i,hist_len-8),cvhist(i,hist_len-1))
-            dx3 = ABFCVList(i)%cv%get_deviation(cvhist(i,hist_len-2),cvhist(i,hist_len-7))
-            dx4 = ABFCVList(i)%cv%get_deviation(cvhist(i,hist_len-6),cvhist(i,hist_len-3))
-            dx5 = ABFCVList(i)%cv%get_deviation(cvhist(i,hist_len-4),cvhist(i,hist_len-5))
+            dx1 = ABFCVList(i)%cv%get_deviation(cvhist(i,hist_len-0),cvhist(i,hist_len-10))
+            dx2 = ABFCVList(i)%cv%get_deviation(cvhist(i,hist_len-9),cvhist(i,hist_len-1))
+            dx3 = ABFCVList(i)%cv%get_deviation(cvhist(i,hist_len-2),cvhist(i,hist_len-8))
+            dx4 = ABFCVList(i)%cv%get_deviation(cvhist(i,hist_len-7),cvhist(i,hist_len-3))
+            dx5 = ABFCVList(i)%cv%get_deviation(cvhist(i,hist_len-4),cvhist(i,hist_len-6))
             pxia(i) = (1.0d0/2520.0d0)*(2.0d0*dx1+25.0d0*dx2+150.0d0*dx3+600.0d0*dx4+2100.0d0*dx5)*ifdtx
             cidx = -5
     ! backward differences
