@@ -383,7 +383,7 @@ subroutine abf_init_arrays
 ! history buffers ------------------------------------------
     select case(fmode)
         case(1)
-            hist_len = 13
+            hist_len = 15
         case(2)
             hist_len = 8
         case default

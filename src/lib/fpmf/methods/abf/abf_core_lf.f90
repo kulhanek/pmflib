@@ -136,6 +136,16 @@ subroutine abf_core_lf_force_2pX()
             dx4 = ABFCVList(i)%cv%get_deviation(cvhist(i,hist_len-3),cvhist(i,hist_len-5))
             pxia(i) = (1.0d0/840.0d0)*(3.0d0*dx1+32.0d0*dx2+168.0d0*dx3+672.0d0*dx4)*ifdtx
             cidx = -4
+        case(11)
+            ! -5,-4,-3,-2,-1,0,1,2,3,4,5
+            ! f_x = (-2*f[i-5]+25*f[i-4]-150*f[i-3]+600*f[i-2]-2100*f[i-1]+0*f[i+0]+2100*f[i+1]-600*f[i+2]+150*f[i+3]-25*f[i+4]+2*f[i+5])/(2520*1.0*h**1)
+            dx1 = ABFCVList(i)%cv%get_deviation(cvhist(i,hist_len-0),cvhist(i,hist_len-9))
+            dx2 = ABFCVList(i)%cv%get_deviation(cvhist(i,hist_len-8),cvhist(i,hist_len-1))
+            dx3 = ABFCVList(i)%cv%get_deviation(cvhist(i,hist_len-2),cvhist(i,hist_len-7))
+            dx4 = ABFCVList(i)%cv%get_deviation(cvhist(i,hist_len-6),cvhist(i,hist_len-3))
+            dx5 = ABFCVList(i)%cv%get_deviation(cvhist(i,hist_len-4),cvhist(i,hist_len-5))
+            pxia(i) = (1.0d0/2520.0d0)*(2.0d0*dx1+25.0d0*dx2+150.0d0*dx3+600.0d0*dx4+2100.0d0*dx5)*ifdtx
+            cidx = -5
     ! backward differences
         case(13)
             ! -2,-1,0
@@ -203,23 +213,40 @@ subroutine abf_core_lf_force_2pX()
         select case(abf_p2_px)
     ! central differences
         case(3)
-            pxif(i) = 0.5d0*(xphist(i,hist_len-7) - xphist(i,hist_len-9))*ifdtx
-            hist_fidx = -8
+            ! -1,0,1
+            ! f_x = (-1*f[i-1]+0*f[i+0]+1*f[i+1])/(2*1.0*h**1)
+            pxif(i) = 0.5d0*(xphist(i,hist_len-9) - xphist(i,hist_len-11))*ifdtx
+            hist_fidx = -10
         case(5)
-            pxif(i) = (1.0d0/12.0d0)*(      -xphist(i,hist_len-6) + 8.0d0*xphist(i,hist_len-7) &
-                                      -8.0d0*xphist(i,hist_len-9)      + xphist(i,hist_len-10))*ifdtx
-            hist_fidx = -8
+            ! -2,-1,0,1,2
+            ! f_x = (1*f[i-2]-8*f[i-1]+0*f[i+0]+8*f[i+1]-1*f[i+2])/(12*1.0*h**1)
+            pxif(i) = (1.0d0/12.0d0)*( -       xphist(i,hist_len-8)  + 8.0d0*xphist(i,hist_len-9) &
+                                       - 8.0d0*xphist(i,hist_len-11) +       xphist(i,hist_len-12))*ifdtx
+            hist_fidx = -10
         case(7)
-            pxif(i) = (1.0d0/60.0d0)*(        xphist(i,hist_len-5)  -9.0d0*xphist(i,hist_len-6) &
-                                      +45.0d0*xphist(i,hist_len-7) -45.0d0*xphist(i,hist_len-9) &
-                                       +9.0d0*xphist(i,hist_len-10)       -xphist(i,hist_len-11))*ifdtx
-            hist_fidx = -8
+            ! -3,-2,-1,0,1,2,3
+            ! f_x = (-1*f[i-3]+9*f[i-2]-45*f[i-1]+0*f[i+0]+45*f[i+1]-9*f[i+2]+1*f[i+3])/(60*1.0*h**1)
+            pxif(i) = (1.0d0/60.0d0)*(          xphist(i,hist_len-7)  -  9.0d0*xphist(i,hist_len-8)  &
+                                       + 45.0d0*xphist(i,hist_len-9)  - 45.0d0*xphist(i,hist_len-11) &
+                                       +  9.0d0*xphist(i,hist_len-12) -        xphist(i,hist_len-13))*ifdtx
+            hist_fidx = -10
         case(9)
-            pxif(i) = (1.0d0/840.0d0)*( -3.0d0*xphist(i,hist_len-4) +32.0d0*xphist(i,hist_len-5) &
-                                      -168.0d0*xphist(i,hist_len-6)+672.0d0*xphist(i,hist_len-7) &
-                                      -672.0d0*xphist(i,hist_len-9)+168.0d0*xphist(i,hist_len-10) &
-                                       -32.0d0*xphist(i,hist_len-11) +3.0d0*xphist(i,hist_len-12))*ifdtx
-            hist_fidx = -8
+            ! -4,-3,-2,-1,0,1,2,3,4
+            ! f_x = (3*f[i-4]-32*f[i-3]+168*f[i-2]-672*f[i-1]+0*f[i+0]+672*f[i+1]-168*f[i+2]+32*f[i+3]-3*f[i+4])/(840*1.0*h**1)
+            pxif(i) = (1.0d0/840.0d0)*( -3.0d0*xphist(i,hist_len-6)  +  32.0d0*xphist(i,hist_len-7)  &
+                                      -168.0d0*xphist(i,hist_len-8)  + 672.0d0*xphist(i,hist_len-9)  &
+                                      -672.0d0*xphist(i,hist_len-11) + 168.0d0*xphist(i,hist_len-12) &
+                                       -32.0d0*xphist(i,hist_len-13) +   3.0d0*xphist(i,hist_len-14))*ifdtx
+            hist_fidx = -10
+        case(11)
+            ! -5,-4,-3,-2,-1,0,1,2,3,4,5
+            ! f_x = (-2*f[i-5]+25*f[i-4]-150*f[i-3]+600*f[i-2]-2100*f[i-1]+0*f[i+0]+2100*f[i+1]-600*f[i+2]+150*f[i+3]-25*f[i+4]+2*f[i+5])/(2520*1.0*h**1)
+            pxif(i) = (1.0d0/2520.0d0)*( +    2.0d0*xphist(i,hist_len-5)  -   25.0d0*xphist(i,hist_len-6)  &
+                                         +  150.0d0*xphist(i,hist_len-7)  -  600.0d0*xphist(i,hist_len-8)  &
+                                         + 2100.0d0*xphist(i,hist_len-9)  - 2100.0d0*xphist(i,hist_len-11) &
+                                         +  600.0d0*xphist(i,hist_len-12) -  150.0d0*xphist(i,hist_len-13) &
+                                         +   25.0d0*xphist(i,hist_len-14) -    2.0d0*xphist(i,hist_len-15))*ifdtx
+            hist_fidx = -10
     ! backward differences
     ! offset -2 to get fenthlapy_der
         case(13)
@@ -630,6 +657,42 @@ subroutine abf_core_lf_register_ekin()
                            + 8.0d0 * ekinhist(hist_len+hist_fidx+3) &
                            - 1.0d0 * ekinhist(hist_len+hist_fidx+4) &
                         ) / 70.0d0
+            case(31)
+                ! -5,-4,-3,-2,-1,1,2,3,4,5
+                ! f_ = (1*f[i-5]-10*f[i-4]+45*f[i-3]-120*f[i-2]+210*f[i-1]+210*f[i+1]-120*f[i+2]+45*f[i+3]-10*f[i+4]+1*f[i+5])/(252*1.0*h**0)
+                lepot = (  +   1.0d0 * epothist(hist_len+hist_fidx-5) &
+                           -  10.0d0 * epothist(hist_len+hist_fidx-4) &
+                           +  45.0d0 * epothist(hist_len+hist_fidx-3) &
+                           - 120.0d0 * epothist(hist_len+hist_fidx-2) &
+                           + 210.0d0 * epothist(hist_len+hist_fidx-1) &
+                           + 210.0d0 * epothist(hist_len+hist_fidx+1) &
+                           - 120.0d0 * epothist(hist_len+hist_fidx+2) &
+                           +  45.0d0 * epothist(hist_len+hist_fidx+3) &
+                           -  10.0d0 * epothist(hist_len+hist_fidx+4) &
+                           +   1.0d0 * epothist(hist_len+hist_fidx+5) &
+                        ) / 252.0d0
+                lerst  = ( +   1.0d0 * ersthist(hist_len+hist_fidx-5) &
+                           -  10.0d0 * ersthist(hist_len+hist_fidx-4) &
+                           +  45.0d0 * ersthist(hist_len+hist_fidx-3) &
+                           - 120.0d0 * ersthist(hist_len+hist_fidx-2) &
+                           + 210.0d0 * ersthist(hist_len+hist_fidx-1) &
+                           + 210.0d0 * ersthist(hist_len+hist_fidx+1) &
+                           - 120.0d0 * ersthist(hist_len+hist_fidx+2) &
+                           +  45.0d0 * ersthist(hist_len+hist_fidx+3) &
+                           -  10.0d0 * ersthist(hist_len+hist_fidx+4) &
+                           +   1.0d0 * ersthist(hist_len+hist_fidx+5) &
+                        ) / 252.0d0
+                lekin  = ( +   1.0d0 * ekinhist(hist_len+hist_fidx-5) &
+                           -  10.0d0 * ekinhist(hist_len+hist_fidx-4) &
+                           +  45.0d0 * ekinhist(hist_len+hist_fidx-3) &
+                           - 120.0d0 * ekinhist(hist_len+hist_fidx-2) &
+                           + 210.0d0 * ekinhist(hist_len+hist_fidx-1) &
+                           + 210.0d0 * ekinhist(hist_len+hist_fidx+1) &
+                           - 120.0d0 * ekinhist(hist_len+hist_fidx+2) &
+                           +  45.0d0 * ekinhist(hist_len+hist_fidx+3) &
+                           -  10.0d0 * ekinhist(hist_len+hist_fidx+4) &
+                           +   1.0d0 * ekinhist(hist_len+hist_fidx+5) &
+                        ) / 252.0d0
             case(37)
                 ! ekin LF
                 lepot = (  + 1.0d0 * epothist(hist_len+hist_fidx-3) &
