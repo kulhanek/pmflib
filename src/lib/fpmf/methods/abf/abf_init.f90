@@ -257,8 +257,8 @@ subroutine abf_init_print_summary
     write(PMF_OUT,120)  '      |-> HA (Harmonic Approximation Verlet KE)'
     case(4)
     write(PMF_OUT,120)  '      |-> LF (Leap-Frog KE), shifted by 0.5'
-    case default
-    call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown kinetic energy source in abf_init_print_summary!')
+   ! case default
+   ! call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown kinetic energy source in abf_init_print_summary!')
     end select
     write(PMF_OUT,150)  ' Potential energy offset (fepotaverage)  : ', pmf_unit_get_rvalue(EnergyUnit,fepotaverage),  &
                                                                        '['//trim(pmf_unit_label(EnergyUnit))//']'
@@ -396,6 +396,7 @@ subroutine abf_init_arrays
             icfhist(NumOfABFCVs,hist_len),                  &
             icfphist(NumOfABFCVs,hist_len),                 &
             xphist(NumOfABFCVs,hist_len),                   &
+            xhist(3,NumOfLAtoms,hist_len),                  &
             vhist(3,NumOfLAtoms,hist_len),                  &
             fhist(3,NumOfLAtoms,hist_len),                  &
             fzinvhist(NumOfABFCVs,NumOfABFCVs,hist_len),    &
@@ -421,6 +422,7 @@ subroutine abf_init_arrays
     micfhist(:,:)       = 0.0d0
     icfhist(:,:)        = 0.0d0
     icfphist(:,:)       = 0.0d0
+    xhist(:,:,:)        = 0.0d0
     vhist(:,:,:)        = 0.0d0
     fhist(:,:,:)        = 0.0d0
     epothist(:)         = 0.0d0

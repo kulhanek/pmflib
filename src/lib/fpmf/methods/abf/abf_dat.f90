@@ -229,6 +229,7 @@ integer                     :: hist_fidx
 integer                     :: fene_step
 
 real(PMFDP),allocatable     :: cvhist(:,:)          ! history of CV values (nCVS,hist_len)
+real(PMFDP),allocatable     :: xhist(:,:,:)         ! history of velocities
 real(PMFDP),allocatable     :: vhist(:,:,:)         ! history of velocities
 real(PMFDP),allocatable     :: cvderhist(:,:,:,:)   ! history of CV derivatives
 real(PMFDP),allocatable     :: fzinvhist(:,:,:)     ! history of fzinv
