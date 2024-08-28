@@ -844,7 +844,8 @@ subroutine abf_core_lf_register_ekin_v5()
 
    ! write(7894,*) ekinvv, ekinv5, ekinv5b
 
-   ekinhist(hist_len-2) = KinEne%KinEneVV - fekinaverage - ekinvv + ekinv5b
+   ekinhist(hist_len) = KinEne%KinEneVV - fekinaverage
+   ekinhist(hist_len-2) = ekinhist(hist_len-2) - ekinvv + ekinv5b
 
 end subroutine abf_core_lf_register_ekin_v5
 
