@@ -556,6 +556,8 @@ subroutine abf_core_lf_register_ekin()
             ekinhist(hist_len)      = ekinlfhist(hist_len) ! shifted by +1/2dt
         case(5)
             call abf_core_lf_register_ekin_v5
+        case(6)
+            call abf_core_lf_register_ekin_v7
     case default
         call pmf_utils_exit(PMF_OUT,1,'[ABF] Not implemented ftds_ekin_src mode in abf_core_lf_register_ekin!')
     end select
@@ -649,7 +651,7 @@ subroutine abf_core_lf_register_ekin_v5()
     do i=1,NumOfLAtoms
         v2 = 0.0d0
         do m=1,3
-            v2 = v2 + vhist(m,i,hist_len-2)**2
+            v2 = v2 + vhist(m,i,hist_len-1)**2
         end do
         ekinvv = ekinvv + Mass(i)*v2
     end do
@@ -672,9 +674,59 @@ subroutine abf_core_lf_register_ekin_v5()
    ! write(7894,*) ekinvv, ekinv5, ekinv5
 
    ekinhist(hist_len) = KinEne%KinEneVV - fekinaverage
-   ekinhist(hist_len-2) = ekinhist(hist_len-2) - ekinvv + ekinv5
+   ekinhist(hist_len-1) = ekinhist(hist_len-1) - ekinvv + ekinv5
 
 end subroutine abf_core_lf_register_ekin_v5
+
+!===============================================================================
+! Subroutine:  abf_core_lf_register_ekin_v7
+! this is leap-frog ABF version
+!===============================================================================
+
+subroutine abf_core_lf_register_ekin_v7()
+
+    use pmf_dat
+    use abf_dat
+    use abf_accu
+    use pmf_utils
+
+    implicit none
+    integer     :: i, m
+    real(PMFDP) :: ekinvv,ekinv7,v2,v7
+    ! --------------------------------------------------------------------------
+
+    ! old VV Ekin
+    ekinvv = 0.0d0
+    do i=1,NumOfLAtoms
+        v2 = 0.0d0
+        do m=1,3
+            v2 = v2 + vhist(m,i,hist_len-2)**2
+        end do
+        ekinvv = ekinvv + Mass(i)*v2
+    end do
+    ekinvv = 0.5d0*ekinvv
+
+    ! new V7 Ekin
+    ekinv7 = 0.0d0
+    do i=1,NumOfLAtoms
+        v2 = 0.0d0
+        do m=1,3
+            v7 = +  3.0d0*vhist(m,i,hist_len-0) - 25.0d0*vhist(m,i,hist_len-1) &
+                 +150.0d0*vhist(m,i,hist_len-2) +150.0d0*vhist(m,i,hist_len-3) &
+                 - 25.0d0*vhist(m,i,hist_len-4) +  3.0d0*vhist(m,i,hist_len-5)
+            v7 = (1.0d0 / 256.0d0) * v7
+            v2 = v2 + v7**2
+        end do
+        ekinv7 = ekinv7 + Mass(i)*v2
+    end do
+    ekinv7 = 0.5d0*ekinv7
+
+   ! write(7894,*) ekinvv, ekinv5, ekinv5
+
+   ekinhist(hist_len) = KinEne%KinEneVV - fekinaverage
+   ekinhist(hist_len-2) = ekinhist(hist_len-2) - ekinvv + ekinv7
+
+end subroutine abf_core_lf_register_ekin_v7
 
 !===============================================================================
 
