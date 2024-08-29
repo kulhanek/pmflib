@@ -575,6 +575,8 @@ subroutine abf_core_lf_register_ekin()
 ! https://web.media.mit.edu/~crtaylor/calculator.html
 
     select case(fepotsmooth)
+        case(0)
+            ! nothing to be here
         case(5)
             lepot = (  - 1.0d0 * epothist(hist_len+hist_fidx-2) &
                        + 4.0d0 * epothist(hist_len+hist_fidx-1) &
