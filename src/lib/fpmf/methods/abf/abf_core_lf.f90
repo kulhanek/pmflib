@@ -653,7 +653,7 @@ subroutine abf_core_lf_register_ekin_v5()
     do i=1,NumOfLAtoms
         v2 = 0.0d0
         do m=1,3
-            v2 = v2 + vhist(m,i,hist_len-1)**2
+            v2 = v2 + vhist(m,i,hist_len-2)**2
         end do
         ekinvv = ekinvv + Mass(i)*v2
     end do
@@ -664,6 +664,7 @@ subroutine abf_core_lf_register_ekin_v5()
     do i=1,NumOfLAtoms
         v2 = 0.0d0
         do m=1,3
+            !            t-dt/2
             v5 = -       vhist(m,i,hist_len-0) + 9.0d0*vhist(m,i,hist_len-1) &
                  + 9.0d0*vhist(m,i,hist_len-2) -       vhist(m,i,hist_len-3)
             v5 = (1.0d0 / 16.0d0) * v5
@@ -673,10 +674,10 @@ subroutine abf_core_lf_register_ekin_v5()
     end do
     ekinv5 = 0.5d0*ekinv5
 
-   ! write(7894,*) ekinvv, ekinv5, ekinv5
+  !  write(7894,*) ekinvv, ekinv5, ekinv5
 
    ekinhist(hist_len) = KinEne%KinEneVV - fekinaverage
-   ekinhist(hist_len-1) = ekinhist(hist_len-1) - ekinvv + ekinv5
+   ekinhist(hist_len-2) = ekinhist(hist_len-2) - ekinvv + ekinv5
 
 end subroutine abf_core_lf_register_ekin_v5
 
@@ -702,7 +703,7 @@ subroutine abf_core_lf_register_ekin_v7()
     do i=1,NumOfLAtoms
         v2 = 0.0d0
         do m=1,3
-            v2 = v2 + vhist(m,i,hist_len-2)**2
+            v2 = v2 + vhist(m,i,hist_len-3)**2
         end do
         ekinvv = ekinvv + Mass(i)*v2
     end do
@@ -713,6 +714,7 @@ subroutine abf_core_lf_register_ekin_v7()
     do i=1,NumOfLAtoms
         v2 = 0.0d0
         do m=1,3
+            !            t-dt/2
             v7 = +  3.0d0*vhist(m,i,hist_len-0) - 25.0d0*vhist(m,i,hist_len-1) &
                  +150.0d0*vhist(m,i,hist_len-2) +150.0d0*vhist(m,i,hist_len-3) &
                  - 25.0d0*vhist(m,i,hist_len-4) +  3.0d0*vhist(m,i,hist_len-5)
@@ -726,7 +728,7 @@ subroutine abf_core_lf_register_ekin_v7()
    ! write(7894,*) ekinvv, ekinv5, ekinv5
 
    ekinhist(hist_len) = KinEne%KinEneVV - fekinaverage
-   ekinhist(hist_len-2) = ekinhist(hist_len-2) - ekinvv + ekinv7
+   ekinhist(hist_len-3) = ekinhist(hist_len-3) - ekinvv + ekinv7
 
 end subroutine abf_core_lf_register_ekin_v7
 
