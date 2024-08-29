@@ -97,7 +97,9 @@ subroutine abf_init_dat
     fepotaverage    = 0.0d0
     fekinaverage    = 0.0d0
 
-    fenesmooth      = 0
+    fepotsmooth     = 0
+    ferstsmooth     = 0
+    fekinsmooth     = 0
 
     feimode         = 1
     fhramp_min      = 20000
@@ -264,7 +266,9 @@ subroutine abf_init_print_summary
                                                                        '['//trim(pmf_unit_label(EnergyUnit))//']'
     write(PMF_OUT,150)  ' Kinetic energy offset (fekinaverage)    : ', pmf_unit_get_rvalue(EnergyUnit,fekinaverage), &
                                                                        '['//trim(pmf_unit_label(EnergyUnit))//']'
-    write(PMF_OUT,130)  ' Energy smoothing mode (fenesmooth)      : ', fenesmooth
+    write(PMF_OUT,130)  ' Pot energy smoothing mode (fepotsmooth) : ', fepotsmooth
+    write(PMF_OUT,130)  ' Rst energy smoothing mode (ferstsmooth) : ', ferstsmooth
+    write(PMF_OUT,130)  ' Kin energy smoothing mode (fekinsmooth) : ', fekinsmooth
     write(PMF_OUT,130)  ' Sampling for -TdS and ENT (fenesample)  : ', fenesample
 
     write(PMF_OUT,130)  ' Include pV term (finclude_pv)           : ', finclude_pv
@@ -396,7 +400,6 @@ subroutine abf_init_arrays
             icfhist(NumOfABFCVs,hist_len),                  &
             icfphist(NumOfABFCVs,hist_len),                 &
             xphist(NumOfABFCVs,hist_len),                   &
-            xhist(3,NumOfLAtoms,hist_len),                  &
             vhist(3,NumOfLAtoms,hist_len),                  &
             fhist(3,NumOfLAtoms,hist_len),                  &
             fzinvhist(NumOfABFCVs,NumOfABFCVs,hist_len),    &
@@ -422,7 +425,6 @@ subroutine abf_init_arrays
     micfhist(:,:)       = 0.0d0
     icfhist(:,:)        = 0.0d0
     icfphist(:,:)       = 0.0d0
-    xhist(:,:,:)        = 0.0d0
     vhist(:,:,:)        = 0.0d0
     fhist(:,:,:)        = 0.0d0
     epothist(:)         = 0.0d0

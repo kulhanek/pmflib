@@ -64,7 +64,9 @@ real(PMFDP) :: fekinaverage
 integer     :: fenesample       ! how often update ABF accumulator for ENT and TDS
 integer     :: finclude_pv      ! include pV term
 
-integer     :: fenesmooth
+integer     :: fepotsmooth
+integer     :: ferstsmooth
+integer     :: fekinsmooth
 
 ! US mode
 logical     :: fusmode      ! enable US mode
@@ -228,8 +230,11 @@ integer                     :: hist_len
 integer                     :: hist_fidx
 integer                     :: fene_step
 
+
+! it is not possible to buffer atom coordinates
+! there are jumps due to nscm (removal of COM motion)
+
 real(PMFDP),allocatable     :: cvhist(:,:)          ! history of CV values (nCVS,hist_len)
-real(PMFDP),allocatable     :: xhist(:,:,:)         ! history of velocities
 real(PMFDP),allocatable     :: vhist(:,:,:)         ! history of velocities
 real(PMFDP),allocatable     :: cvderhist(:,:,:,:)   ! history of CV derivatives
 real(PMFDP),allocatable     :: fzinvhist(:,:,:)     ! history of fzinv

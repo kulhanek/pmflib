@@ -88,7 +88,6 @@ subroutine abf_core_update_history_force()
 ! shift accuvalue history
     do i=1,hist_len-1
         cvhist(:,i)         = cvhist(:,i+1)
-        xhist(:,:,i)        = xhist(:,:,i+1)
         micfhist(:,i)       = micfhist(:,i+1)
         icfhist(:,i)        = icfhist(:,i+1)
         fdetzhist(i)        = fdetzhist(i+1)
@@ -99,8 +98,6 @@ subroutine abf_core_update_history_force()
         ci = ABFCVList(i)%cvindx
         cvhist(i,hist_len)  = CVContext%CVsValues(ci)
     end do
-
-    xhist(:,:,hist_len)     = Crd(:,:)
 
 ! calculate Z matrix and its inverse
     call abf_core_calc_Zmat(CVContext)
