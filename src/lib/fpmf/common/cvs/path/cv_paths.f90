@@ -33,6 +33,7 @@ type, extends(CVType) :: CVTypePATHS
 
     integer             :: nrefs        ! number of reference points
     real(PMFDP)         :: alpha
+    integer             :: ioffset
 
     contains
         procedure :: load_cv        => load_paths
@@ -134,11 +135,20 @@ subroutine load_paths(cv_item,prm_fin)
         call pmf_utils_exit(PMF_OUT,1,'alpha is not specified!')
     end if
 
+! read offset
+    cv_item%ioffset       = 1
+    if( prmfile_get_integer_by_key(prm_fin,'ioffset',cv_item%ioffset) ) then
+        write(PMF_OUT,230) cv_item%ioffset
+    else
+        call pmf_utils_exit(PMF_OUT,1,'ioffset is not specified!')
+    end if
+
    100 format('   == Anchor point ===============================')
    200 format('   == Reference points ===========================')
    205 format('refpoint #',I2.2)
    210 format('   ** Num of ref. pts    : ',I6)
    220 format('   ** Alpha              : ',F5.2,' [',A,']')
+   230 format('   ** IOffset            : ',I2)
 
 end subroutine load_paths
 
@@ -202,7 +212,7 @@ subroutine calculate_paths(cv_item,x,ctx)
         r2 = dx(1)**2 + dx(2)**2 + dx(3)**2
 
         ce = exp(-r2/cv_item%alpha**2)
-        cu = cu + real(i-0,PMFDP)*ce
+        cu = cu + real(i-cv_item%ioffset,PMFDP)*ce
         cd = cd + ce
     end do
 
@@ -240,7 +250,7 @@ subroutine calculate_paths(cv_item,x,ctx)
 
         sce = exp(-r2/cv_item%alpha**2)
 
-        sci = real(i-0,PMFDP)*sce
+        sci = real(i-cv_item%ioffset,PMFDP)*sce
 
         do  m = 1, cv_item%grps(1)
             ai = cv_item%lindexes(m)

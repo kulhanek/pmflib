@@ -7,6 +7,7 @@ refpoint @6,7
 refpoint @8,9
 refpoint @9,10
 alpha 2.0
+ioffset  1
 
 [PATHS]
 name  cv2
@@ -15,6 +16,8 @@ refpoint @2-5
 refpoint @5,6
 refpoint @6,10
 alpha 2.0
+ioffset  1
+
 
 [PATHS]
 name  cv3
@@ -23,6 +26,8 @@ refpoint @1-5
 refpoint @5,6
 refpoint @6,10
 alpha 2.0
+ioffset  3
+
 
 [PATHS]
 name  cv4
@@ -31,6 +36,8 @@ refpoint @1-5
 refpoint @5,6
 refpoint @6,10
 alpha 3.0
+ioffset  0
+
 
 [PATHS]
 name  cv5
@@ -41,6 +48,7 @@ refpoint @6,7
 refpoint @8,9
 refpoint @9,10
 alpha 3.0
+ioffset  1
 
 
 
