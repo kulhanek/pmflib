@@ -119,6 +119,7 @@ SET(PMF_CVS_SRC
     # path
         common/cvs/path/cv_paths.f90
         common/cvs/path/cv_pathz.f90
+        common/cvs/path/cv_paths2p.f90
 
     # algebra
         common/cvs/algebra/cv_add.f90

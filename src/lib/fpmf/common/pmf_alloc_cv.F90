@@ -121,6 +121,7 @@ subroutine pmf_alloc_cv_allocate(cv_type,cv_item)
 ! path -------------------------------------------
     use cv_paths
     use cv_pathz
+    use cv_paths2p
 
 ! algebra ----------------------------------------
     use cv_add
@@ -300,6 +301,9 @@ subroutine pmf_alloc_cv_allocate(cv_type,cv_item)
             allocate(CVTypePATHS::cv_item)
         case('PATHZ')
             allocate(CVTypePATHZ::cv_item)
+
+        case('PATHS2P')
+            allocate(CVTypePATHS2P::cv_item)
 
         case default
             call pmf_utils_exit(PMF_OUT,1,&

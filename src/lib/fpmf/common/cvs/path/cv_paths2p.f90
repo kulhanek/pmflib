@@ -2,12 +2,12 @@
 ! PMFLib - Library Supporting Potential of Mean Force Calculations
 !-------------------------------------------------------------------------------
 !
-!    This library is free software; you can repathstribute it and/or
+!    This library is free software; you can repaths2ptribute it and/or
 !    modify it under the terms of the GNU Lesser General Public
 !    License as published by the Free Software Foundation; either
 !    version 2.1 of the License, or (at your option) any later version.
 !
-!    This library is pathstributed in the hope that it will be useful,
+!    This library is paths2ptributed in the hope that it will be useful,
 !    but WITHOUT ANY WARRANTY; without even the implied warranty of
 !    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 !    Lesser General Public License for more details.
@@ -18,7 +18,7 @@
 !    Boston, MA  02110-1301  USA
 !===============================================================================
 
-module cv_paths
+module cv_paths2p
 
 use pmf_sizes
 use pmf_constants
@@ -29,32 +29,32 @@ implicit none
 
 !===============================================================================
 
-type, extends(CVType) :: CVTypePATHS
+type, extends(CVType) :: CVTypePATHS2P
 
     integer             :: nrefs        ! number of reference points
     real(PMFDP)         :: alpha
     integer             :: ioffset
 
     contains
-        procedure :: load_cv        => load_paths
-        procedure :: calculate_cv   => calculate_paths
-end type CVTypePATHS
+        procedure :: load_cv        => load_paths2p
+        procedure :: calculate_cv   => calculate_paths2p
+end type CVTypePATHS2P
 
 !===============================================================================
 
 contains
 
 !===============================================================================
-! Subroutine:  load_paths
+! Subroutine:  load_paths2p
 !===============================================================================
 
-subroutine load_paths(cv_item,prm_fin)
+subroutine load_paths2p(cv_item,prm_fin)
 
     use prmfile
     use pmf_utils
 
     implicit none
-    class(CVTypePATHS)                  :: cv_item
+    class(CVTypePATHS2P)                  :: cv_item
     type(PRMFILE_TYPE),intent(inout)    :: prm_fin
     ! --------------------------------------------
     integer                             :: i
@@ -63,21 +63,25 @@ subroutine load_paths(cv_item,prm_fin)
     ! --------------------------------------------------------------------------
 
 ! simple init and allocation --------------------
-    cv_item%ctype         = 'PATHS'
+    cv_item%ctype         = 'PATHS2P'
     call pmf_unit_init(cv_item%unit)
     cv_item%gradforanycrd = .true.
     call cv_common_read_name(cv_item,prm_fin)
 
-! determine number of reference points ----------
-    ret = prmfile_first_line(prm_fin)
+! read nrefs
     cv_item%nrefs = 0
-    do while( prmfile_get_field_on_line(prm_fin,key) .and. ret)
-        if( trim(key) .eq. 'refpoint' )  cv_item%nrefs = cv_item%nrefs + 1
-        ret = prmfile_next_line(prm_fin)
-    end do
+    if( prmfile_get_integer_by_key(prm_fin,'nrefs',cv_item%nrefs) ) then
+        write(PMF_OUT,230) cv_item%nrefs
+    else
+        call pmf_utils_exit(PMF_OUT,1,'nrefs is not specified!')
+    end if
+
+    if( cv_item%nrefs .le. 2 ) then
+       call pmf_utils_exit(PMF_OUT,1,'nrefs must be greater than 2!')
+    end if
 
 ! init groups -----------------------------------
-    cv_item%ngrps = cv_item%nrefs + 1 ! plus anchor point
+    cv_item%ngrps = 2 + 1 ! plus anchor point
     call cv_common_init_groups_I(cv_item)
 
     ! anchor
@@ -89,6 +93,10 @@ subroutine load_paths(cv_item,prm_fin)
     i = 1
     do while( prmfile_get_field_on_line(prm_fin,key) .and. ret)
         if( trim(key) .eq. 'refpoint' ) then
+            if( i .ge. 3 ) then
+                ! two many refpoint points
+                call pmf_utils_exit(PMF_OUT,1,'too many refpoint points (only two allowed)')
+            end if
             ret = prmfile_get_string_value_on_line(prm_fin,mask)
             if( .not. ret ) then
                 call pmf_utils_exit(PMF_OUT,1,'refpoint error')
@@ -148,26 +156,26 @@ subroutine load_paths(cv_item,prm_fin)
    220 format('   ** Alpha              : ',F5.2,' [',A,']')
    230 format('   ** IOffset            : ',I2)
 
-end subroutine load_paths
+end subroutine load_paths2p
 
 !===============================================================================
-! Subroutine:  calculate_paths
+! Subroutine:  calculate_paths2p
 !===============================================================================
 
-subroutine calculate_paths(cv_item,x,ctx)
+subroutine calculate_paths2p(cv_item,x,ctx)
 
     use pmf_dat
     use pmf_pbc
     use pmf_utils
 
     implicit none
-    class(CVTypePATHS)  :: cv_item
+    class(CVTypePATHS2P)  :: cv_item
     real(PMFDP)         :: x(:,:)
     type(CVContextType) :: ctx
     ! -----------------------------------------------
     integer             :: i,ai,m
-    real(PMFDP)         :: d1(3),d2(3),dx(3)
-    real(PMFDP)         :: totmass1,totmass2,amass
+    real(PMFDP)         :: d1(3),d2(3),d3(3),dx(3)
+    real(PMFDP)         :: totmass1,totmass2,totmass3,amass
     real(PMFDP)         :: cu,cd,ce,r2,sc1,sc2,sce,sci
     ! --------------------------------------------------------------------------
 
@@ -181,28 +189,43 @@ subroutine calculate_paths(cv_item,x,ctx)
         totmass1 = totmass1 + amass
     end do
     if( totmass1 .le. 0 ) then
-        call pmf_utils_exit(PMF_OUT,1,'totmass1 is zero in calculate_paths!')
+        call pmf_utils_exit(PMF_OUT,1,'totmass1 is zero in calculate_paths2p!')
     end if
     d1(:) = d1(:) / totmass1
+
+    totmass2 = 0.0d0
+    d2(:) = 0.0d0
+    do  m = cv_item%grps(1) + 1 , cv_item%grps(2)
+        ai = cv_item%lindexes(m)
+        amass = mass(ai)
+        d2(:) = d2(:) + x(:,ai)*amass
+        totmass2 = totmass2 + amass
+    end do
+    if( totmass2 .le. 0 ) then
+        call pmf_utils_exit(PMF_OUT,1,'totmass2 is zero in calculate_paths2p!')
+    end if
+    d2(:) = d2(:) / totmass2
+
+    totmass3 = 0.0d0
+    d3(:) = 0.0d0
+    do  m = cv_item%grps(2) + 1 , cv_item%grps(3)
+        ai = cv_item%lindexes(m)
+        amass = mass(ai)
+        d3(:) = d3(:) + x(:,ai)*amass
+        totmass3 = totmass3 + amass
+    end do
+    if( totmass3 .le. 0 ) then
+        call pmf_utils_exit(PMF_OUT,1,'totmass3 is zero in calculate_paths2p!')
+    end if
+    d3(:) = d3(:) / totmass3
 
     cu = 0.0d0
     cd = 0.0d0
 
     do i=1,cv_item%nrefs
-        totmass2 = 0.0d0
-        d2(:) = 0.0d0
-        do  m = cv_item%grps(i) + 1 , cv_item%grps(i+1)
-            ai = cv_item%lindexes(m)
-            amass = mass(ai)
-            d2(:) = d2(:) + x(:,ai)*amass
-            totmass2 = totmass2 + amass
-        end do
-        if( totmass2 .le. 0 ) then
-            call pmf_utils_exit(PMF_OUT,1,'totmass2 is zero in calculate_paths!')
-        end if
-        d2(:) = d2(:) / totmass2
 
-        dx(:) = d1(:) - d2(:)
+        dx(:) = d1(:) - real(i-cv_item%ioffset,PMFDP)*d3(:) + (real(i-cv_item%ioffset,PMFDP)-1.0d0)*d2(:)
+
         if( fenable_pbc ) then
             call pmf_pbc_image_vector(dx)
         end if
@@ -220,26 +243,15 @@ subroutine calculate_paths(cv_item,x,ctx)
     sc1 = 1.0 / ( cd * real(cv_item%nrefs-1) )    ! cu'
     sc2 = cu / (cd * cd * real(cv_item%nrefs-1) ) ! cd'
 
-! ------------------------------------------------
-! calculate derivatives
+ !------------------------------------------------
+ !calculate derivatives
 
     cu = 0.0d0
 
     do i=1,cv_item%nrefs
-        totmass2 = 0.0d0
-        d2(:) = 0.0d0
-        do  m = cv_item%grps(i) + 1 , cv_item%grps(i+1)
-            ai = cv_item%lindexes(m)
-            amass = mass(ai)
-            d2(:) = d2(:) + x(:,ai)*amass
-            totmass2 = totmass2 + amass
-        end do
-        if( totmass2 .le. 0 ) then
-            call pmf_utils_exit(PMF_OUT,1,'totmass2 is zero in calculate_pathz!')
-        end if
-        d2(:) = d2(:) / totmass2
 
-        dx(:) = d1(:) - d2(:)
+        dx(:) = d1(:) - real(i-cv_item%ioffset,PMFDP)*d3(:) + (real(i-cv_item%ioffset,PMFDP)-1.0d0)*d2(:)
+
         if( fenable_pbc ) then
             call pmf_pbc_image_vector(dx)
         end if
@@ -257,20 +269,29 @@ subroutine calculate_paths(cv_item,x,ctx)
                                           - 2.0d0*(sc1*sci - sc2*sce)*dx(:)*amass/(totmass1 * cv_item%alpha**2)
         end do
 
-        do  m = cv_item%grps(i) + 1 , cv_item%grps(i+1)
+        do  m = cv_item%grps(1) + 1 , cv_item%grps(2)
             ai = cv_item%lindexes(m)
             amass = mass(ai)
             ctx%CVsDrvs(:,ai,cv_item%idx) = ctx%CVsDrvs(:,ai,cv_item%idx) &
-                                          + 2.0d0*(sc1*sci - sc2*sce)*dx(:)*amass/(totmass2 * cv_item%alpha**2)
+                                          - (real(i-cv_item%ioffset,PMFDP)-1.0d0) &
+                                          * 2.0d0*(sc1*sci - sc2*sce)*dx(:)*amass/(totmass2 * cv_item%alpha**2)
+        end do
+
+        do  m = cv_item%grps(2) + 1 , cv_item%grps(3)
+            ai = cv_item%lindexes(m)
+            amass = mass(ai)
+            ctx%CVsDrvs(:,ai,cv_item%idx) = ctx%CVsDrvs(:,ai,cv_item%idx) &
+                                          + real(i-cv_item%ioffset,PMFDP) &
+                                          * 2.0d0*(sc1*sci - sc2*sce)*dx(:)*amass/(totmass3 * cv_item%alpha**2)
         end do
 
     end do
 
  return
 
-end subroutine calculate_paths
+end subroutine calculate_paths2p
 
 !===============================================================================
 
-end module cv_paths
+end module cv_paths2p
 
