@@ -1,0 +1,46 @@
+[PATHS2PN]
+name  cv1
+nrefsp  5
+nrefsn  5
+anchor @1-2
+refpoint @3,4
+direction @5,6
+alpha 2.0
+
+[PATHS2PN]
+name  cv2
+nrefsp  6
+nrefsn  2
+anchor @1-2
+refpoint @2-5
+direction @5,6
+alpha 2.0
+
+[PATHS2PN]
+name  cv3
+nrefsp  2
+nrefsn  5
+anchor @6
+refpoint @1-5
+direction @5,6
+alpha 2.0
+
+[PATHS2PN]
+name  cv4
+nrefsp  5
+nrefsn  7
+anchor @6
+refpoint @1-5
+direction @6,10
+alpha 3.0
+
+[PATHS2PN]
+name  cv5
+nrefsp  7
+nrefsn  7
+anchor @1-2
+refpoint @6,7
+direction @9,10
+alpha 3.0
+
+

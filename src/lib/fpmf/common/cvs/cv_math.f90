@@ -66,7 +66,7 @@ subroutine get_com(cv_item,grpid,x,com,tmass)
     com(:)  = 0.0d0
 
     istart = 1
-    if( grpid - 1 .gt. 0 ) istart = cv_item%grps(grpid - 1)
+    if( grpid - 1 .gt. 0 ) istart = cv_item%grps(grpid - 1) + 1
     istop  = cv_item%grps(grpid)
 
     do  m = istart, istop
@@ -107,7 +107,7 @@ subroutine get_com_der(cv_item,grpid,comder,tmass,sc,ctx)
     ! --------------------------------------------------------------------------
 
     istart = 1
-    if( grpid - 1 .gt. 0 ) istart = cv_item%grps(grpid - 1)
+    if( grpid - 1 .gt. 0 ) istart = cv_item%grps(grpid - 1) + 1
     istop  = cv_item%grps(grpid)
 
     itmass = 1.0d0 / tmass

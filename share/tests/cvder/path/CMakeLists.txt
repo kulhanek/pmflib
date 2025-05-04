@@ -26,6 +26,14 @@ ADD_TEST(CVDerRand03-PATHS2P ${EXECUTABLE_OUTPUT_PATH}/pmf-test-cvs
                         ../random03.in paths2p.in)
 
 
+ADD_TEST(CVDerRand01-PATHS2PN ${EXECUTABLE_OUTPUT_PATH}/pmf-test-cvs
+                        ../random01.in paths2pn.in)
+ADD_TEST(CVDerRand02-PATHS2PN ${EXECUTABLE_OUTPUT_PATH}/pmf-test-cvs
+                        ../random02.in paths2pn.in)
+ADD_TEST(CVDerRand03-PATHS2PN ${EXECUTABLE_OUTPUT_PATH}/pmf-test-cvs
+                        ../random03.in paths2pn.in)
+
+
 
 
 

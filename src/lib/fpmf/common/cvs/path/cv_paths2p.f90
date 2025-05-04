@@ -71,7 +71,7 @@ subroutine load_paths2p(cv_item,prm_fin)
 ! read nrefs
     cv_item%nrefs = 0
     if( prmfile_get_integer_by_key(prm_fin,'nrefs',cv_item%nrefs) ) then
-        write(PMF_OUT,230) cv_item%nrefs
+        write(PMF_OUT,210) cv_item%nrefs
     else
         call pmf_utils_exit(PMF_OUT,1,'nrefs is not specified!')
     end if
