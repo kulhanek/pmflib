@@ -152,6 +152,8 @@ subroutine abf_accu_init()
                     abfaccu%m2pn(abfaccu%tot_cvs,abfaccu%tot_nbins),    &
                     abfaccu%mpit(abfaccu%tot_cvs,abfaccu%tot_nbins),    &
                     abfaccu%m2pit(abfaccu%tot_cvs,abfaccu%tot_nbins),   &
+                    abfaccu%mhicf(abfaccu%tot_cvs,abfaccu%tot_nbins),   &
+                    abfaccu%m2hicf(abfaccu%tot_cvs,abfaccu%tot_nbins),  &
                     stat = alloc_failed)
 
         if( alloc_failed .ne. 0 ) then
@@ -160,9 +162,7 @@ subroutine abf_accu_init()
     end if
 
     if( fentropy .and. fentdecomp ) then
-        allocate(   abfaccu%mhicf(abfaccu%tot_cvs,abfaccu%tot_nbins),   &
-                    abfaccu%m2hicf(abfaccu%tot_cvs,abfaccu%tot_nbins),  &
-                    abfaccu%mbicf(abfaccu%tot_cvs,abfaccu%tot_nbins),   &
+        allocate(   abfaccu%mbicf(abfaccu%tot_cvs,abfaccu%tot_nbins),   &
                     abfaccu%m2bicf(abfaccu%tot_cvs,abfaccu%tot_nbins),  &
                     abfaccu%c11hp(abfaccu%tot_cvs,abfaccu%tot_nbins),   &
                     abfaccu%c11hk(abfaccu%tot_cvs,abfaccu%tot_nbins),   &
@@ -278,11 +278,11 @@ subroutine abf_accu_clear()
         abfaccu%m2pn(:,:)   = 0.0d0
         abfaccu%mpit(:,:)   = 0.0d0
         abfaccu%m2pit(:,:)  = 0.0d0
+        abfaccu%mhicf(:,:)  = 0.0d0
+        abfaccu%m2hicf(:,:) = 0.0d0
     end if
 
     if( fentropy .and. fentdecomp ) then
-        abfaccu%mhicf(:,:)  = 0.0d0
-        abfaccu%m2hicf(:,:) = 0.0d0
         abfaccu%mbicf(:,:)  = 0.0d0
         abfaccu%m2bicf(:,:) = 0.0d0
 
@@ -482,12 +482,12 @@ subroutine abf_accu_read(iounit)
 
             ! ------------------------------------
                 case('MHICF')
-                    if( fentropy .and. fentdecomp ) then
+                    if( fentropy ) then
                         call pmf_accu_read_rbuf_M(abfaccu%PMFAccuType,iounit,keyline,abfaccu%mhicf)
                     end if
             ! ------------------------------------
                 case('M2HICF')
-                    if( fentropy .and. fentdecomp ) then
+                    if( fentropy ) then
                         call pmf_accu_read_rbuf_M(abfaccu%PMFAccuType,iounit,keyline,abfaccu%m2hicf)
                     end if
             ! ------------------------------------
@@ -671,12 +671,11 @@ subroutine abf_accu_write(iounit)
         call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'M2PN',   'M2',abfaccu%m2pn,  'NTDS','MPN')
         call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'MPIT',   'WA',abfaccu%mpit,  'NTDS')
         call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'M2PIT',  'M2',abfaccu%m2pit, 'NTDS','MPIT')
+        call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'MHICF',  'WA',abfaccu%mhicf, 'NTDS')
+        call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'M2HICF', 'M2',abfaccu%m2hicf,'NTDS','MHICF')
     end if
 
     if( fentropy .and. fentdecomp ) then
-        call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'MHICF',  'WA',abfaccu%mhicf, 'NTDS')
-        call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'M2HICF', 'M2',abfaccu%m2hicf,'NTDS','MHICF')
-
         call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'MBICF',  'WA',abfaccu%mbicf, 'NTDS')
         call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'M2BICF', 'M2',abfaccu%m2bicf,'NTDS','MBICF')
 
@@ -937,13 +936,13 @@ subroutine abf_accu_add_data_energy(cvs,gfx,bfx,pfx,epot,erst,ekin,epv,vol)
             dpit2 = pit - abfaccu%mpit(i,gi0)
             abfaccu%m2pit(i,gi0) = abfaccu%m2pit(i,gi0) + dpit1 * dpit2
 
-            if( fentdecomp ) then
-                ifx = - gfx(i)
-                difx1 = ifx - abfaccu%mhicf(i,gi0)
-                abfaccu%mhicf(i,gi0)  = abfaccu%mhicf(i,gi0)  + difx1 * invn
-                difx2 = ifx - abfaccu%mhicf(i,gi0)
-                abfaccu%m2hicf(i,gi0) = abfaccu%m2hicf(i,gi0) + difx1 * difx2
+            ifx = - gfx(i)
+            difx1 = ifx - abfaccu%mhicf(i,gi0)
+            abfaccu%mhicf(i,gi0)  = abfaccu%mhicf(i,gi0)  + difx1 * invn
+            difx2 = ifx - abfaccu%mhicf(i,gi0)
+            abfaccu%m2hicf(i,gi0) = abfaccu%m2hicf(i,gi0) + difx1 * difx2
 
+            if( fentdecomp ) then
                 ibx =   bfx(i)
                 dibx1 = ibx - abfaccu%mbicf(i,gi0)
                 abfaccu%mbicf(i,gi0)  = abfaccu%mbicf(i,gi0)  + dibx1 * invn
