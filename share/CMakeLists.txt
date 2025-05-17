@@ -11,6 +11,7 @@ IF(OpenMP_FOUND)
                 bin/ghs-integrate
                 bin/pmf-enthalpy
                 bin/gpr-opthyprms
+                bin/gpr-opthyprms-multi
             DESTINATION
                 bin
             PERMISSIONS
