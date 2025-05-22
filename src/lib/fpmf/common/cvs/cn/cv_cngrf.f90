@@ -15,7 +15,7 @@
 !
 !    You should have received a copy of the GNU Lesser General Public
 !    License along with this library; if not, write to the Free Software
-!    Foundation, Inc., 51 Franklin Street, Fifth Floor, 
+!    Foundation, Inc., 51 Franklin Street, Fifth Floor,
 !    Boston, MA  02110-1301  USA
 !===============================================================================
 
@@ -165,9 +165,15 @@ subroutine calculate_cngrf(cv_item,x,ctx)
     do j = cv_item%grps(1)+1, cv_item%grps(2)
         aj = cv_item%lindexes(j)
         dx(:) = x(:,aj) - com(:)
+
+        if( fenable_pbc ) then
+            call pmf_pbc_image_vector(dx)
+        end if
+
         d2 = dx(1)**2 + dx(2)**2 + dx(3)**2
         d  = sqrt(d2)
         dm = d - cv_item%offset
+
         if( dm .le. 0 ) then
             ctx%CVsValues(cv_item%idx) = ctx%CVsValues(cv_item%idx) + 1.0d0
             ! TODO derivatives ?
