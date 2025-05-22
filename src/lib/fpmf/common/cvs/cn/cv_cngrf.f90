@@ -134,6 +134,7 @@ subroutine calculate_cngrf(cv_item,x,ctx)
 
     use pmf_dat
     use pmf_utils
+    use pmf_pbc
 
     implicit none
     class(CVTypeCNGRF)  :: cv_item
