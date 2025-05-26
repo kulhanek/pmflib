@@ -100,6 +100,7 @@ subroutine mtd_control_read_mtd(prm_fin)
     call pmf_ctrl_read_logical(prm_fin,'fwritehills',fwritehills)
 
     call pmf_ctrl_read_logical(prm_fin,'fswitch2zero',fswitch2zero)
+    call pmf_ctrl_read_logical(prm_fin,'fdepositbox',fdepositbox)
 
     ! network setup ----------------------------------------------------------------
 
