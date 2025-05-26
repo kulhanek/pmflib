@@ -202,6 +202,7 @@ subroutine mtd_accu_write(iounit)
     implicit none
     integer                     :: iounit
     real(PMFDP)                 :: mtdwt(1)
+    integer                     :: mtdnhills(1)
     !---------------------------------------------------------------------------
 
     mtdaccu%method = 'MTD'
@@ -215,6 +216,9 @@ subroutine mtd_accu_write(iounit)
         mtdwt(1) = fmetatemp
         call pmf_accu_write_rbuf_D(iounit,'MTD-WT','SA',mtdwt,1)
     end if
+
+    mtdnhills(1) = numofhills
+    call pmf_accu_write_ibuf_D(iounit,'NHILLS','SA',mtdnhills,1)
 
     return
 
@@ -243,33 +247,36 @@ subroutine mtd_accu_add_data(cvs, height,added)
     added = .false.
 
     ! is it inside deposition box?
-    ! deposition box is smaller than sampling box to avoid bouncing problem due to discontinuous potential
+    ! deposition box is smaller/bigger than sampling box to avoid bouncing problem due to discontinuous potential
     ! at grid boundary
-    do i=1, mtdaccu%tot_cvs
-        if( cvs(i) .lt. MTDCVList(i)%min_deposit ) then
-            outsidesamples = outsidesamples + 1
-            return
-        end if
-        if( cvs(i) .gt. MTDCVList(i)%max_deposit) then
-            outsidesamples = outsidesamples + 1
-            return
-        end if
-    end do
+    if( fdepositbox ) then
+        do i=1, mtdaccu%tot_cvs
+            if( cvs(i) .lt. MTDCVList(i)%min_deposit ) then
+                outsidesamples = outsidesamples + 1
+                return
+            end if
+            if( cvs(i) .gt. MTDCVList(i)%max_deposit) then
+                outsidesamples = outsidesamples + 1
+                return
+            end if
+        end do
+    end if
 
     ! get global index to accumulator
     gi0 = pmf_accu_globalindex(mtdaccu%PMFAccuType, cvs)
-    if( gi0 .le. 0 ) then
-        ! this can happen for one boundary if the deposit box is the exactly the same as sampling box
-        outsidesamples = outsidesamples + 1
-    else
+    if( gi0 .gt. 0 ) then
         insidesamples           = insidesamples + 1
-        numofhills              = numofhills + 1
         mtdaccu%nsamples(gi0)   = mtdaccu%nsamples(gi0) + 1
 
         if( fserver_enabled ) then
             mtdaccu%inc_nsamples(gi0) = mtdaccu%inc_nsamples(gi0) + 1
         end if
+    else
+        ! this can happen for one boundary if the deposit box is the exactly the same as sampling box
+        outsidesamples = outsidesamples + 1
     end if
+
+    numofhills = numofhills + 1
 
     ! update grid data
     do n=1,mtdaccu%tot_nbins

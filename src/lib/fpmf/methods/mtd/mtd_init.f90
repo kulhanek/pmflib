@@ -84,6 +84,7 @@ subroutine mtd_init_dat
     ftrjsample      = 0
 
     fswitch2zero    = .false.
+    fdepositbox     = .false.
 
     ! server part --------------------------------------------------------------
     fserver_enabled = .false.
@@ -140,6 +141,7 @@ subroutine mtd_init_print_header
     write(PMF_OUT,120)  ' MTD Interpolation/Extrapolation '
     write(PMF_OUT,120)  ' ------------------------------------------------------'
     write(PMF_OUT,125)  ' Switch ICF to zero (fswitch2zero)       : ', prmfile_onoff(fswitch2zero)
+    write(PMF_OUT,125)  ' Enable deposit box (fdepositbox)        : ', prmfile_onoff(fdepositbox)
 
     write(PMF_OUT,120)
     write(PMF_OUT,120)  ' Restart options:'

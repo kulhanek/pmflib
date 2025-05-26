@@ -49,6 +49,7 @@ integer     :: frstupdate       ! how often is restart file written
 integer     :: ftrjsample       ! how often save accumulator to "accumulator evolution"
 logical     :: fwritehills      ! record deposition of gaussians
 logical     :: fswitch2zero     ! switch to zero at discretionary boundary
+logical     :: fdepositbox      ! apply deposit box
 
 ! server part ------------------------------------------------------------------
 logical                 :: fserver_enabled      ! is abf-server enabled?
