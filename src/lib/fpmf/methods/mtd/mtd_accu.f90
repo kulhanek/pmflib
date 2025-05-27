@@ -152,6 +152,7 @@ subroutine mtd_accu_read(iounit)
     integer                         :: iounit
     ! -----------------------------------------------
     character(len=PMF_KEYLINE)      :: keyline
+    integer                         :: mtdnhills(1)
     ! --------------------------------------------------------------------------
 
     do while(.true.)
@@ -167,6 +168,10 @@ subroutine mtd_accu_read(iounit)
             ! ------------------------------------
                 case('NSAMPLES')
                     call pmf_accu_read_ibuf_B(mtdaccu%PMFAccuType,iounit,keyline,mtdaccu%nsamples)
+            ! ------------------------------------
+                case('NHILLS')
+                    call pmf_accu_read_ibuf_D(iounit,keyline,mtdnhills,1)
+                    numofhills = mtdnhills(1)
             ! ------------------------------------
                 case('MTDPOT')
                     call pmf_accu_read_rbuf_B(mtdaccu%PMFAccuType,iounit,keyline,mtdaccu%mtdpot)
@@ -218,7 +223,7 @@ subroutine mtd_accu_write(iounit)
     end if
 
     mtdnhills(1) = numofhills
-    call pmf_accu_write_ibuf_D(iounit,'NHILLS','SA',mtdnhills,1)
+    call pmf_accu_write_ibuf_D(iounit,'NHILLS','AD',mtdnhills,1)
 
     return
 
