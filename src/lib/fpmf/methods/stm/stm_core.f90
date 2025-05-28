@@ -1,6 +1,7 @@
 !===============================================================================
 ! PMFLib - Library Supporting Potential of Mean Force Calculations
 !-------------------------------------------------------------------------------
+!    Copyright (C) 2025 Petr Kulhanek, kulhanek@chemi.muni.cz
 !    Copyright (C) 2011 Petr Kulhanek, kulhanek@chemi.muni.cz
 !    Copyright (C) 2010 Petr Kulhanek, kulhanek@chemi.muni.cz
 !
@@ -99,18 +100,6 @@ subroutine stm_core_force
                             MTZ(j,i) = MTZ(j,i) + &
                                        CVContext%CVsDrvs(l,k,STMCVList(i)%cvindx) &
                                       *CVContext%CVsDrvs(l,k,STMCVList(j)%cvindx)
-                        end do
-                    end do
-                end do
-            end do
-        case (2)
-            do i=1,NumOfSTMCVs
-                do j=1,NumOfSTMCVs
-                    do k=1,NumOfLAtoms
-                        do l=1,3
-                            MTZ(j,i) = MTZ(j,i) + &
-                                       MassInv(k)*CVContext%CVsDrvs(l,k,STMCVList(i)%cvindx) &
-                                                 *CVContext%CVsDrvs(l,k,STMCVList(j)%cvindx)
                         end do
                     end do
                 end do

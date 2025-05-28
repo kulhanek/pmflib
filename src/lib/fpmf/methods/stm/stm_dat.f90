@@ -32,7 +32,7 @@ implicit none
 ! control section --------------------------------------------------------------
 integer                 :: fmode            ! 0 - disable STM, 1 - enabled STM
 integer                 :: fsample          ! output sample period in steps
-integer                 :: ftensor          ! 0 - unity, 1 - normal, 2 - massweighted
+integer                 :: ftensor          ! 0 - unity, 1 - normal
 integer                 :: fbeadid          ! bead id
 character(PMF_MAX_PATH) :: fbeadidfile      ! name of file containing bead id
 

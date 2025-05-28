@@ -61,10 +61,10 @@ subroutine stm_init_dat
     ! --------------------------------------------------------------------------
 
     fmode           = 0         ! 0 - disable STM, 1 - enabled STM
-    fsample         = 500       ! output sample pariod in steps
+    fsample         = 500       ! output sample period in steps
     fbeadid         = 0         ! read fbeadidfile is fbead == 0
     fbeadidfile     = 'beadid'  ! bead id file definition
-    ftensor         = 2         ! 0 - unity, 1 - normal, 2 - massweighted
+    ftensor         = 1         ! 0 - unity, 1 - normal
 
     NumOfSTMCVs     = 0
 
@@ -107,6 +107,17 @@ subroutine stm_init_print_header
     write(PMF_OUT,125)  ' Coordinate definition file (fstmdef)    : ', trim(fstmdef)
     write(PMF_OUT,130)  ' Number of coordinates                   : ', NumOfSTMCVs
     write(PMF_OUT,130)  ' Bead ID                                 : ', bead_id
+    write(PMF_OUT,130)  ' Tensor mode (ftensor)                   : ', ftensor
+
+    select case(ftensor)
+    case(0)
+    write(PMF_OUT,120)  '      |-> unity'
+    case(1)
+    write(PMF_OUT,120)  '      |-> default'
+    case default
+    call pmf_utils_exit(PMF_OUT,1,'[STM] Unknown ftensor mode in stm_init_print_header!')
+    end select
+
     write(PMF_OUT,120)
     write(PMF_OUT,120)  ' Output options:'
     write(PMF_OUT,120)  ' ------------------------------------------------------'

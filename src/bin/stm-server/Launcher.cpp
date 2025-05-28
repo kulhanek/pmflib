@@ -722,6 +722,7 @@ bool CLauncher::IsJobFinished(CLauncherJob& job)
     idstr >> status;
 
     if( status == 'C' ) return(true);   // finished
+    if( status == 'F' ) return(true);   // finished
     if( status == 'U' ) return(true);   // unknown
 
     return(false);

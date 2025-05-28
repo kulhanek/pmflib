@@ -97,7 +97,7 @@ subroutine stm_control_read_stm(prm_fin)
     call pmf_ctrl_check_integer('STM','fsample',fsample,0,CND_GE)
 
     call pmf_ctrl_read_integer(prm_fin,'ftensor',ftensor,'i12')
-    call pmf_ctrl_check_integer_in_range('STM','ftensor',ftensor,0,2)
+    call pmf_ctrl_check_integer_in_range('STM','ftensor',ftensor,0,1)
 
     call pmf_ctrl_read_integer(prm_fin,'fbeadid',fbeadid,'i12')
 
