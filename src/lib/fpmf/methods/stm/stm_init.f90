@@ -90,6 +90,7 @@ subroutine stm_init_print_header
     use pmf_dat
     use stm_dat
     use stm_cvs
+    use pmf_utils
 
     implicit none
     integer     :: i
