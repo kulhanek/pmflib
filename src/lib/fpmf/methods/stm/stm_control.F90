@@ -108,8 +108,6 @@ subroutine stm_control_read_stm(prm_fin)
         call pmf_utils_open(STM_BEADID,fbeadidfile,'O')
         read(STM_BEADID,*,end=500,err=500) fbeadid
         close(STM_BEADID)
-
-        call pmf_ctrl_read_integer(prm_fin,'fbeadid',fbeadid,'i12')
     end if
 
     call pmf_ctrl_check_integer('STM','fbeadid',fbeadid,0,CND_GT)
