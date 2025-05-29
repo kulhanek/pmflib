@@ -196,14 +196,14 @@ void CBead::MoveToNextMode(void)
             if( BeadList->InitPeriod > 0 ){
                 Mode = BMO_INITIALIZATION;
             } else if( BeadList->EquiPeriod > 0 ) {
-                Mode = BMO_EQUILIBRATION;             
+                Mode = BMO_EQUILIBRATION;
             } else if( BeadList->AccuPeriod > 0 ) {
-                Mode = BMO_ACCUMULATION;                
+                Mode = BMO_ACCUMULATION;
             } else if( BeadList->ProdPeriod > 0 ) {
-                Mode = BMO_PRODUCTION;               
+                Mode = BMO_PRODUCTION;
             }
         break;
-        case BMO_INITIALIZATION:      
+        case BMO_INITIALIZATION:
             if( BeadList->AccuPeriod > 0 ) {
                 Mode = BMO_ACCUMULATION;
             } else {
@@ -341,7 +341,7 @@ void CBead::LoadInfo(CXMLElement* p_ele)
     result &= p_ele->GetAttribute("client_id",ClientID);
     result &= p_ele->GetAttribute("permanent",Permanent);
     result &= p_ele->GetAttribute("mode",Mode);
-    result &= p_ele->GetAttribute("nupd",NumOfUpdates);  
+    result &= p_ele->GetAttribute("nupd",NumOfUpdates);
 
     if(result == false) {
         LOGIC_ERROR("unable to read some attributes");
@@ -409,7 +409,6 @@ void CBead::GetProductionData(CXMLElement* p_ele)
         INVALID_ARGUMENT("p_ele is NULL");
     }
 
-    Pos = RPos;
     CXMLBinData* p_pmfele = p_ele->GetFirstChildBinData("PMF");
     if(p_pmfele == NULL) {
         LOGIC_ERROR("unable to open PMF element");
@@ -460,7 +459,7 @@ void CBead::SetNextStepData(CXMLElement* p_ele)
 
     // and bead position
     CXMLBinData* p_bposele = p_ele->CreateChildBinData("BPOS");
-    RPos.Save(p_bposele);
+    Pos.Save(p_bposele);
 
     ModeStatus = BMS_RUNNING;
 }

@@ -2059,6 +2059,7 @@ void CBeadList::CheckBoundaries(void)
     // get data about the final path
     for(int b=0; b < NumOfBeads; b++){
         Beads[b].PPos = Beads[b].RPos;
+        Beads[b].Pos = Beads[b].RPos;
     }
     UpdatedPathLength = OptimizePath(Beads);
 }
