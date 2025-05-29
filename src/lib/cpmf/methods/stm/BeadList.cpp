@@ -631,7 +631,7 @@ void CBeadList::ReadPathUserBeads(CPrmFile& file,CSimpleVector<CBead>& beads)
             error << "incorrect number of items for '" << tokens[0] << "' key";
             RUNTIME_ERROR(error);
         }
-        // skip already processed keys      
+        // skip already processed keys
         if( tokens[0] == "names" ) continue;
         if( tokens[0] == "types" ) continue;
         if( tokens[0] == "min" ) continue;
@@ -1062,7 +1062,7 @@ void CBeadList::ProcessProductionData(CBead* p_bead)
                                     vout << ">> INFO: The server is terminated since all data were acquired." <<  endl;
                                 }
                             } else {
-                                if( MaxSTMSteps <= STMStep ){                              
+                                if( MaxSTMSteps <= STMStep ){
                                     vout << ">> Max number of optimization steps reached, but requested convergence not reached. Server is terminating." << endl;
                                     STMStatus = ESTMS_MAX_STEPS_REACHED;
                                 }
@@ -1107,6 +1107,8 @@ void CBeadList::ProcessPathAsynchronously(void)
     ProcessingMutex.Lock();
 
         if( STMStatus == ESTMS_OPTIMIZING ){
+            CompletePathData();
+            SavePathAndTraj();
             UpdateAllPositions();
             SmoothAllPositions();
             ReparametrizeAllPositions();
@@ -1135,6 +1137,8 @@ void CBeadList::ProcessPathAsynchronously(void)
                 }
             }
         } else if( STMStatus == ESTMS_PATH_FOUND ){
+            CompletePathData();
+            SavePathAndTraj();
             STMStatus = ESTMS_COMPLETED;
             vout << ">> INFO: The server is terminated since all data were acquired." <<  endl;
         } else {
@@ -1471,8 +1475,6 @@ void CBeadList::PrintPathSummaryHeader(std::ostream& vout)
 
 void CBeadList::PrintPathSummaryData(std::ostream& vout)
 {
-    CalculatePathData();
-
     for(int b=0; b < NumOfBeads; b++){
         vout << right;
         if( Beads[b].Permanent ) {
@@ -1929,7 +1931,12 @@ void CBeadList::PrintSTMStepInfo(void)
             vout << ">> INFO: Entering production accumulation (" << ProdPeriod <<" steps)." <<  endl;
         }
     }
+}
 
+//------------------------------------------------------------------------------
+
+void CBeadList::SavePathAndTraj(void)
+{
     // write output and trajectory
     if( (OutInterval > 0) && (STMStep % OutInterval == 0) ){
         SavePath(OutputPath);
@@ -1942,12 +1949,8 @@ void CBeadList::PrintSTMStepInfo(void)
 
 //------------------------------------------------------------------------------
 
-void CBeadList::UpdateAllPositions(void)
+void CBeadList::CompletePathData(void)
 {
-    STMStep++;
-
-    // vout << debug << "Updating positions ..." << endl << high;
-
     // reoptimize path
     for(int b=0; b < NumOfBeads; b++){
         Beads[b].PPos = Beads[b].Pos;
@@ -1957,6 +1960,19 @@ void CBeadList::UpdateAllPositions(void)
     for(int i=0; i < NumOfBeads; i++){
         CBead* p_bead = &Beads[i];
         p_bead->CalcProjector();
+    }
+
+    CalculatePathData();
+}
+
+//------------------------------------------------------------------------------
+
+void CBeadList::UpdateAllPositions(void)
+{
+    STMStep++;
+
+    for(int i=0; i < NumOfBeads; i++){
+        CBead* p_bead = &Beads[i];
         p_bead->UpdatePosition();
     }
 }
@@ -1964,7 +1980,7 @@ void CBeadList::UpdateAllPositions(void)
 //------------------------------------------------------------------------------
 
 void CBeadList::SmoothAllPositions(void)
-{   
+{
     if( (SmoothInterval == 0) || (STMStep % SmoothInterval != 0) ){
         for(int b=0; b < NumOfBeads; b++) {
             Beads[b].SPos = Beads[b].NPos;
@@ -1996,7 +2012,7 @@ void CBeadList::SmoothAllPositions(void)
 //------------------------------------------------------------------------------
 
 void CBeadList::ReparametrizeAllPositions(void)
-{   
+{
     if( (ReparamInterval == 0) || (STMStep % ReparamInterval != 0) ){
         for(int b=0; b < NumOfBeads; b++) {
             Beads[b].RPos = Beads[b].SPos;
@@ -2051,12 +2067,6 @@ void CBeadList::CheckBoundaries(void)
 
 void CBeadList::CalculatePathData(void)
 {
-    // optimize path and alphas for current position
-    for(int b=0; b < NumOfBeads; b++){
-        Beads[b].PPos = Beads[b].Pos;
-    }
-    OptimizePath(Beads);
-
     // get PMF projections along path
     double fes = 0.0;
     for(int b=0; b < NumOfBeads; b++){

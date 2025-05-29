@@ -137,7 +137,7 @@ public:
     /// get STM status
     ESTMState GetSTMStatus(void);
 
-    /// shoul server be terminated?
+    /// should server be terminated?
     bool IsAsynchronous(void);
 
     /// print summary
@@ -162,6 +162,9 @@ public:
     int GetSTMStep(void);
 
 // executive methods -----------------------------------------------------------
+    /// complete path with data from STM client
+    void CompletePathData(void);
+
     /// update all positions
     void UpdateAllPositions(void);
 
@@ -224,7 +227,7 @@ private:
     int                 MaxMovementBead;    // current max path movement is for given bead
     double              AveMovement;        // current average path movement
     double              CurrentPathLength;
-    double              UpdatedPathLength;  
+    double              UpdatedPathLength;
 
     CSimpleMutex        ProcessingMutex;    // mutex for path processing accesses
 
@@ -256,6 +259,9 @@ private:
 
     // print stm step
     void PrintSTMStepInfo(void);
+
+    // save path
+    void SavePathAndTraj(void);
 
     // print path summary header
     void PrintPathSummaryHeader(std::ostream& vout);
