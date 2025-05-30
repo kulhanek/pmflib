@@ -376,11 +376,11 @@ void CBead::LoadInfo(CXMLElement* p_ele)
     }
     PMF.Load(p_pmfele);
 
-    CXMLBinData* p_ppmfele = p_ele->GetFirstChildBinData("pPMF");
-    if(p_ppmfele == NULL) {
-        LOGIC_ERROR("unable to open pPMF element");
+    CXMLBinData* p_mtzele = p_ele->GetFirstChildBinData("MTZ");
+    if(p_mtzele == NULL) {
+        LOGIC_ERROR("unable to open MTZ element");
     }
-    pPMF.Load(p_ppmfele);
+    MTZ.Load(p_mtzele);
 
     CXMLBinData* p_rposele = p_ele->GetFirstChildBinData("OPOS");
     if(p_rposele == NULL) {
@@ -410,8 +410,8 @@ void CBead::SaveInfo(CXMLElement* p_ele)
     CXMLBinData* p_pmfele = p_ele->CreateChildBinData("PMF");
     PMF.Save(p_pmfele);
 
-    CXMLBinData* p_ppmfele = p_ele->CreateChildBinData("pPMF");
-    pPMF.Save(p_ppmfele);
+    CXMLBinData* p_mtzele = p_ele->CreateChildBinData("MTZ");
+    MTZ.Save(p_mtzele);
 
     CXMLBinData* p_rposele = p_ele->CreateChildBinData("OPOS");
     OPos.Save(p_rposele);

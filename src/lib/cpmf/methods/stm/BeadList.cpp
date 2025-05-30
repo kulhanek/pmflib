@@ -1353,7 +1353,7 @@ void CSTMPath::PrintPathSummaryHeader(std::ostream& vout)
 
 // header --------------------
     // legends
-    vout << "#  ID   Type  ST  alpha  dA/dalpha       A         CID Updates";
+    vout << "#  ID   Type  ST  alpha  dA/dalpha       A            CID Updates";
     for(int i=0; i < NumOfCVs; i++){
         vout << "     CV" << left << setw(2) << i+1 << "    ";
     }
@@ -1369,7 +1369,7 @@ void CSTMPath::PrintPathSummaryHeader(std::ostream& vout)
     vout << endl;
 
     // delimiters
-    vout << "# ---- ------ -- ------ ------------ ------------ ---- -------";
+    vout << "# ---- ------ -- ------ ------------ ------------ ------- -------";
     for(int i=0; i < NumOfCVs; i++){
         vout << " ------------";
     }
@@ -1385,7 +1385,7 @@ void CSTMPath::PrintPathSummaryHeader(std::ostream& vout)
     vout << endl;
 
 // data ----------------------
-    vout << left << "#      names                                                 " << right;
+    vout << left << "#      names                                                    " << right;
     for(int i=0; i < NumOfCVs; i++){
         vout << " " << setw(12) << CVs[i].GetName();
     }
@@ -1399,22 +1399,22 @@ void CSTMPath::PrintPathSummaryHeader(std::ostream& vout)
         vout << " " << setw(12) << CVs[i].GetName();
     }
     vout << endl;
-    vout << left << "#      types                                                 " << right;
+    vout << left << "#      types                                                    " << right;
     for(int i=0; i < NumOfCVs; i++){
         vout << " " << setw(12) << CVs[i].GetType();
     }
     vout << endl;
-    vout << left << "#      min                                                   " << right << scientific << setprecision(5);
+    vout << left << "#      min                                                      " << right << scientific << setprecision(5);
     for(int i=0; i < NumOfCVs; i++){
         vout << " " << setw(12) << CVs[i].GetMinValue();
     }
     vout << endl;
-    vout << left << "#      max                                                   " << right << scientific << setprecision(5);
+    vout << left << "#      max                                                      " << right << scientific << setprecision(5);
     for(int i=0; i < NumOfCVs; i++){
         vout << " " << setw(12) << CVs[i].GetMaxValue();
     }
     vout << endl;
-    vout << left << "#      maxmov                                                " << right << scientific << setprecision(5);
+    vout << left << "#      maxmov                                                   " << right << scientific << setprecision(5);
     for(int i=0; i < NumOfCVs; i++){
         if( CVs[i].GetMaxMovement() > 0 ){
             vout << " " << setw(12) << CVs[i].GetMaxMovement();
@@ -1424,7 +1424,7 @@ void CSTMPath::PrintPathSummaryHeader(std::ostream& vout)
     }
     vout << endl;
 
-    vout << "# ---- ------ -- ------ ------------ ------------ ---- -------";
+    vout << "# ---- ------ -- ------ ------------ ------------ ------- -------";
     for(int i=0; i < NumOfCVs; i++){
         vout << " ------------";
     }
@@ -1439,7 +1439,7 @@ void CSTMPath::PrintPathSummaryHeader(std::ostream& vout)
     }
     vout << endl;
 
-    vout << "#    1      2  3      4            5            6    7       8";
+    vout << "#    1      2  3      4            5            6       7       8";
     int id = 9;
     for(int i=0; i < NumOfCVs; i++){
         vout << right << setw(13) << id;
@@ -1458,7 +1458,7 @@ void CSTMPath::PrintPathSummaryHeader(std::ostream& vout)
         id++;
     }
     vout << endl;
-    vout << "# ---- ------ -- ------ ------------ ------------ ---- -------";
+    vout << "# ---- ------ -- ------ ------------ ------------ ------- -------";
     for(int i=0; i < NumOfCVs; i++){
         vout << " ------------";
     }
@@ -1513,9 +1513,9 @@ void CSTMPath::PrintPathSummaryData(std::ostream& vout)
         vout << " " << setw(12) << Beads[b].dAdAlpha;
         vout << " " << setw(12) << Beads[b].A;
         if( Beads[b].GetClientID() > 0 ){
-            vout << " " << setw(4) << Beads[b].GetClientID();
+            vout << " " << setw(7) << Beads[b].GetClientID();
         } else {
-            vout << " " << setw(4) << "----";
+            vout << " " << setw(7) << "--";
         }
         vout << setw(8) << Beads[b].NumOfUpdates;
         vout << scientific << setprecision(5);
@@ -1559,7 +1559,7 @@ void CSTMPath::PrintPathUpdate(std::ostream& vout)
 
 // header --------------------
     // legends
-    vout << "#  ID   Type  ST Nalpha CID Updates  ";
+    vout << "#  ID   Type  ST Nalpha     CID Updates  ";
     for(int i=0; i < NumOfCVs; i++){
         vout << " old CV" << left << setw(2) << i+1 << "    ";
     }
@@ -1572,7 +1572,7 @@ void CSTMPath::PrintPathUpdate(std::ostream& vout)
     vout << endl;
 
     // delimiters
-    vout << "# ---- ------ -- ------ --- -------";
+    vout << "# ---- ------ -- ------ ------- -------";
     for(int i=0; i < NumOfCVs; i++){
         vout << " ------------";
     }
@@ -1585,7 +1585,7 @@ void CSTMPath::PrintPathUpdate(std::ostream& vout)
     vout << endl;
 
 // data ----------------------
-    vout << left << "#      names                       " << right;
+    vout << left << "#      names                           " << right;
     for(int i=0; i < NumOfCVs; i++){
         vout << " " << setw(12) << CVs[i].GetName();
     }
@@ -1596,22 +1596,22 @@ void CSTMPath::PrintPathUpdate(std::ostream& vout)
         vout << " " << setw(12) << CVs[i].GetName();
     }
     vout << endl;
-    vout << left << "#      types                       " << right;
+    vout << left << "#      types                           " << right;
     for(int i=0; i < NumOfCVs; i++){
         vout << " " << setw(12) << CVs[i].GetType();
     }
     vout << endl;
-    vout << left << "#      min                         " << right << scientific << setprecision(5);
+    vout << left << "#      min                             " << right << scientific << setprecision(5);
     for(int i=0; i < NumOfCVs; i++){
         vout << " " << setw(12) << CVs[i].GetMinValue();
     }
     vout << endl;
-    vout << left << "#      max                         " << right << scientific << setprecision(5);
+    vout << left << "#      max                             " << right << scientific << setprecision(5);
     for(int i=0; i < NumOfCVs; i++){
         vout << " " << setw(12) << CVs[i].GetMaxValue();
     }
     vout << endl;
-    vout << left << "#      maxmov                      " << right << scientific << setprecision(5);
+    vout << left << "#      maxmov                          " << right << scientific << setprecision(5);
     for(int i=0; i < NumOfCVs; i++){
         if( CVs[i].GetMaxMovement() > 0 ){
             vout << " " << setw(12) << CVs[i].GetMaxMovement();
@@ -1621,7 +1621,7 @@ void CSTMPath::PrintPathUpdate(std::ostream& vout)
     }
     vout << endl;
 
-    vout << "# ---- ------ -- ------ --- -------";
+    vout << "# ---- ------ -- ------ ------- -------";
     for(int i=0; i < NumOfCVs; i++){
         vout << " ------------";
     }
@@ -1633,7 +1633,7 @@ void CSTMPath::PrintPathUpdate(std::ostream& vout)
     }
     vout << endl;
 
-    vout << "#    1      2  3      4   5       6";
+    vout << "#    1      2  3      4       5       6";
     int id = 7;
     for(int i=0; i < NumOfCVs; i++){
         vout << right << setw(13) << id;
@@ -1648,7 +1648,7 @@ void CSTMPath::PrintPathUpdate(std::ostream& vout)
         id++;
     }
     vout << endl;
-    vout << "# ---- ------ -- ------ --- -------";
+    vout << "# ---- ------ -- ------ ------- -------";
     for(int i=0; i < NumOfCVs; i++){
         vout << " ------------";
     }
@@ -1691,9 +1691,9 @@ void CSTMPath::PrintPathUpdate(std::ostream& vout)
         vout << " " << setw(6) << Beads[b].Alpha;
 
         if( Beads[b].GetClientID() > 0 ){
-            vout << setw(4) << Beads[b].GetClientID();
+            vout << " " << setw(7) << Beads[b].GetClientID();
         } else {
-            vout << setw(4) << " --";
+            vout << " " << setw(7) << " --";
         }
         vout << setw(8) << Beads[b].NumOfUpdates;
         vout << scientific << setprecision(5);
