@@ -1334,6 +1334,11 @@ bool CSTMPath::CheckCoords(CXMLElement* p_ele)
 void CSTMPath::PrintPathSummary(std::ostream& vout)
 {
     PrintPathSummaryHeader(vout);
+
+    // optimize path and alphas for current position
+    CompletePathData();
+    IntegratePath();
+
     PrintPathSummaryData(vout);
 }
 
@@ -1540,11 +1545,7 @@ void CSTMPath::PrintPathUpdate(std::ostream& vout)
     }
 
     if( num_of_updates > 0 ){
-        // optimize path and alphas for current position
-        for(int b=0; b < NumOfBeads; b++){
-            Beads[b].PPos = Beads[b].Pos;
-        }
-        OptimizePath(Beads);
+
     } else {
         for(int b=0; b < NumOfBeads; b++){
             Beads[b].Alpha = 0.0;
