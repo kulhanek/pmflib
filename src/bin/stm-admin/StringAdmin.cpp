@@ -183,6 +183,9 @@ bool CStringAdmin::GetServerInfo(std::ostream& vout)
         // execute command
         ExecuteCommand(&cmd);
 
+        GetShortServerInfo(&cmd,vout);
+        GetLongServerInfo(&cmd,vout);
+
         // print response
         CSTMPath beads;
         beads.LoadInfo(cmd.GetRootResultElement());
@@ -192,9 +195,6 @@ bool CStringAdmin::GetServerInfo(std::ostream& vout)
 
         vout << endl;
         beads.PrintPathUpdate(vout);
-
-        GetShortServerInfo(&cmd,vout);
-        GetLongServerInfo(&cmd,vout);
 
     } catch(std::exception& e) {
         ES_ERROR_FROM_EXCEPTION("unable to process command",e);
