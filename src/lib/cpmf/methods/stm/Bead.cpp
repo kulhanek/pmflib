@@ -143,8 +143,8 @@ void CBead::InitBead(CSTMPath* p_list,int ncvs)
     NPos.SetZero();
     SPos.CreateVector(NumOfCVs);
     SPos.SetZero();
-    RPos.CreateVector(NumOfCVs);
-    RPos.SetZero();
+    FPos.CreateVector(NumOfCVs);
+    FPos.SetZero();
     PPos.CreateVector(NumOfCVs);
     PPos.SetZero();
     PMF.CreateVector(NumOfCVs);
@@ -166,8 +166,8 @@ void CBead::InitBead(CSTMPath* p_list,int ncvs)
 void CBead::SetBeadData(int beadid,const CSimpleVector<double>& pos,bool flexible)
 {
     BeadID = beadid;
+    OPos = pos;
     Pos = pos;
-    RPos = pos;
     Permanent = !flexible;
 }
 
@@ -382,11 +382,11 @@ void CBead::LoadInfo(CXMLElement* p_ele)
     }
     pPMF.Load(p_ppmfele);
 
-    CXMLBinData* p_rposele = p_ele->GetFirstChildBinData("RPOS");
+    CXMLBinData* p_rposele = p_ele->GetFirstChildBinData("OPOS");
     if(p_rposele == NULL) {
-        LOGIC_ERROR("unable to open RPOS element");
+        LOGIC_ERROR("unable to open OPOS element");
     }
-    RPos.Load(p_rposele);
+    OPos.Load(p_rposele);
 }
 
 //------------------------------------------------------------------------------
@@ -413,8 +413,8 @@ void CBead::SaveInfo(CXMLElement* p_ele)
     CXMLBinData* p_ppmfele = p_ele->CreateChildBinData("pPMF");
     pPMF.Save(p_ppmfele);
 
-    CXMLBinData* p_rposele = p_ele->CreateChildBinData("RPOS");
-    RPos.Save(p_rposele);
+    CXMLBinData* p_rposele = p_ele->CreateChildBinData("OPOS");
+    OPos.Save(p_rposele);
 }
 
 //------------------------------------------------------------------------------

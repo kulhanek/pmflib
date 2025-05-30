@@ -436,13 +436,13 @@ void CSTMPath::ProcessPathControl(CPrmFile& file)
 
     // check boundaries
     for(int b=0; b < NumOfBeads; b++){
-        Beads[b].RPos = Beads[b].Pos;
+        Beads[b].FPos = Beads[b].Pos;
     }
     CheckBoundaries();
 
     // and again reoptimize path
     for(int b=0; b < NumOfBeads; b++){
-        Beads[b].PPos = Beads[b].RPos;
+        Beads[b].PPos = Beads[b].FPos;
     }
     OptimizePath(Beads);
 
@@ -1136,6 +1136,7 @@ void CSTMPath::ProcessPathAsynchronously(void)
             }
         } else if( STMStatus == ESTMS_PATH_FOUND ){
             CompletePathData();
+            IntegratePath();
             SavePathAndTraj();
             STMStatus = ESTMS_COMPLETED;
             vout << ">> INFO: The server is terminated since all data were acquired." <<  endl;
@@ -1541,7 +1542,7 @@ void CSTMPath::PrintPathUpdate(std::ostream& vout)
     if( num_of_updates > 0 ){
         // optimize path and alphas for current position
         for(int b=0; b < NumOfBeads; b++){
-            Beads[b].PPos = Beads[b].RPos;
+            Beads[b].PPos = Beads[b].Pos;
         }
         OptimizePath(Beads);
     } else {
@@ -1696,14 +1697,14 @@ void CSTMPath::PrintPathUpdate(std::ostream& vout)
         vout << setw(8) << Beads[b].NumOfUpdates;
         vout << scientific << setprecision(5);
         for(int i=0; i < NumOfCVs; i++){
-            vout << " " << setw(12) << Beads[b].Pos[i];
+            vout << " " << setw(12) << Beads[b].OPos[i];
         }
         if( Beads[b].NumOfUpdates > 0 ){
             for(int i=0; i < NumOfCVs; i++){
-                vout << " " << setw(12) << Beads[b].RPos[i];
+                vout << " " << setw(12) << Beads[b].Pos[i];
             }
             for(int i=0; i < NumOfCVs; i++){
-                vout << " " << setw(12) << Beads[b].RPos[i] - Beads[b].Pos[i];
+                vout << " " << setw(12) << Beads[b].Pos[i] - Beads[b].OPos[i];
             }
         }
         vout << endl;
@@ -2011,7 +2012,7 @@ void CSTMPath::ReparametrizeAllPositions(void)
 {
     if( (ReparamInterval == 0) || (STMStep % ReparamInterval != 0) ){
         for(int b=0; b < NumOfBeads; b++) {
-            Beads[b].RPos = Beads[b].SPos;
+            Beads[b].FPos = Beads[b].SPos;
         }
         return;
     }
@@ -2026,11 +2027,11 @@ void CSTMPath::ReparametrizeAllPositions(void)
 
     // and correct positions
     for(int i=0; i < NumOfCVs; i++){
-        Beads[0].RPos[i] = CVSplines[i].GetCV(0.0);
-        Beads[NumOfBeads-1].RPos[i] = CVSplines[i].GetCV(1.0);
+        Beads[0].FPos[i] = CVSplines[i].GetCV(0.0);
+        Beads[NumOfBeads-1].FPos[i] = CVSplines[i].GetCV(1.0);
         for(int b=1; b < NumOfBeads-1; b++){
             double alpha = (double)b / ((double)NumOfBeads-1.0);
-            Beads[b].RPos[i] = CVSplines[i].GetCV(alpha);
+            Beads[b].FPos[i] = CVSplines[i].GetCV(alpha);
         }
     }
 }
@@ -2043,18 +2044,18 @@ void CSTMPath::CheckBoundaries(void)
         CBead* p_bead = &Beads[b];
 
         for(int i=0; i < NumOfCVs; i++){
-            if( p_bead->RPos[i] < CVs[i].GetMinValue() ){
-                p_bead->RPos[i] = CVs[i].GetMinValue();
+            if( p_bead->FPos[i] < CVs[i].GetMinValue() ){
+                p_bead->FPos[i] = CVs[i].GetMinValue();
             }
-            if( p_bead->RPos[i] > CVs[i].GetMaxValue() ){
-                p_bead->RPos[i] = CVs[i].GetMaxValue();
+            if( p_bead->FPos[i] > CVs[i].GetMaxValue() ){
+                p_bead->FPos[i] = CVs[i].GetMaxValue();
             }
         }
     }
 
     // get data about the final path
     for(int b=0; b < NumOfBeads; b++){
-        Beads[b].Pos  = Beads[b].RPos;
+        Beads[b].Pos  = Beads[b].FPos;
         Beads[b].PPos = Beads[b].Pos;
     }
     UpdatedPathLength = OptimizePath(Beads);

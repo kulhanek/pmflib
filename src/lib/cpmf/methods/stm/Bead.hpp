@@ -143,7 +143,7 @@ private:
     CSimpleVector<double>   OPos;           // old bead position
     CSimpleVector<double>   NPos;           // new bead position
     CSimpleVector<double>   SPos;           // smoothed position
-    CSimpleVector<double>   RPos;           // re-parametrized position
+    CSimpleVector<double>   FPos;           // re-parametrized position
     CSimpleVector<double>   PPos;           // position for path optimization
 
     friend class CSTMPath;
