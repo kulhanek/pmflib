@@ -38,7 +38,7 @@ using namespace std;
 //------------------------------------------------------------------------------
 //==============================================================================
 
-CBeadList::CBeadList(void)
+CSTMPath::CSTMPath(void)
 {
     // files
     InputPath = "{PATHS}";
@@ -86,7 +86,7 @@ CBeadList::CBeadList(void)
 
 //------------------------------------------------------------------------------
 
-void CBeadList::AllocatePath(void)
+void CSTMPath::AllocatePath(void)
 {
     if( NumOfCVs < 2 ){
         RUNTIME_ERROR("number of CVs must be larger than or equal to 2");
@@ -107,7 +107,7 @@ void CBeadList::AllocatePath(void)
 
 //------------------------------------------------------------------------------
 
-void CBeadList::ClearPath(void)
+void CSTMPath::ClearPath(void)
 {
     NumOfBeads = 0;
     NumOfCVs = 0;
@@ -119,7 +119,7 @@ void CBeadList::ClearPath(void)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void CBeadList::AttachVerboseStream(std::ostream& str,bool verbose)
+void CSTMPath::AttachVerboseStream(std::ostream& str,bool verbose)
 {
     vout.Attach(str);
     if( verbose ) {
@@ -131,7 +131,7 @@ void CBeadList::AttachVerboseStream(std::ostream& str,bool verbose)
 
 //------------------------------------------------------------------------------
 
-void CBeadList::ProcessFilesControl(CPrmFile& file)
+void CSTMPath::ProcessFilesControl(CPrmFile& file)
 {
     vout << endl;
     vout << "=== [files] ====================================================================" << endl;
@@ -178,7 +178,7 @@ void CBeadList::ProcessFilesControl(CPrmFile& file)
 
 //------------------------------------------------------------------------------
 
-void CBeadList::ProcessSTMControl(CPrmFile& file)
+void CSTMPath::ProcessSTMControl(CPrmFile& file)
 {
     vout << endl;
     vout << "=== [stm] ======================================================================" << endl;
@@ -290,7 +290,7 @@ void CBeadList::ProcessSTMControl(CPrmFile& file)
 
 //------------------------------------------------------------------------------
 
-void CBeadList::ProcessIntervalsControl(CPrmFile& file)
+void CSTMPath::ProcessIntervalsControl(CPrmFile& file)
 {
     vout << endl;
     vout << "=== [intervals] ================================================================" << endl;
@@ -337,7 +337,7 @@ void CBeadList::ProcessIntervalsControl(CPrmFile& file)
 
 //------------------------------------------------------------------------------
 
-void CBeadList::ProcessPathControl(CPrmFile& file)
+void CSTMPath::ProcessPathControl(CPrmFile& file)
 {
 //    ! [PATH]
 //    ! nbeads     number_of_beads
@@ -462,7 +462,7 @@ void CBeadList::ProcessPathControl(CPrmFile& file)
 
 //------------------------------------------------------------------------------
 
-void CBeadList::ReadPathControls(CPrmFile& file)
+void CSTMPath::ReadPathControls(CPrmFile& file)
 {
     // load names,types,min and max items
 
@@ -559,7 +559,7 @@ void CBeadList::ReadPathControls(CPrmFile& file)
 
 //------------------------------------------------------------------------------
 
-int CBeadList::ReadPathNumberOfUserBeads(CPrmFile& file)
+int CSTMPath::ReadPathNumberOfUserBeads(CPrmFile& file)
 {
     CSmallString tmp;
 
@@ -606,7 +606,7 @@ int CBeadList::ReadPathNumberOfUserBeads(CPrmFile& file)
 
 //------------------------------------------------------------------------------
 
-void CBeadList::ReadPathUserBeads(CPrmFile& file,CSimpleVector<CBead>& beads)
+void CSTMPath::ReadPathUserBeads(CPrmFile& file,CSimpleVector<CBead>& beads)
 {
     CSmallString tmp;
 
@@ -671,7 +671,7 @@ void CBeadList::ReadPathUserBeads(CPrmFile& file,CSimpleVector<CBead>& beads)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-bool CBeadList::LoadPath(CPrmFile& file)
+bool CSTMPath::LoadPath(CPrmFile& file)
 {
     // load path ------------------------------
     if( (InputPath.GetLength() > 0) && (InputPath[0] == '{') ){
@@ -717,7 +717,7 @@ bool CBeadList::LoadPath(CPrmFile& file)
 
 //------------------------------------------------------------------------------
 
-bool CBeadList::SavePath(void)
+bool CSTMPath::SavePath(void)
 {
     vout << "Output STM path:         " << OutputPath <<  endl;
     try{
@@ -730,7 +730,7 @@ bool CBeadList::SavePath(void)
 
 //------------------------------------------------------------------------------
 
-void CBeadList::SavePath(const CSmallString& name)
+void CSTMPath::SavePath(const CSmallString& name)
 {
     ofstream ofs;
     ofs.open(name);
@@ -749,7 +749,7 @@ void CBeadList::SavePath(const CSmallString& name)
 
 //------------------------------------------------------------------------------
 
-bool CBeadList::SavePathSummary(void)
+bool CSTMPath::SavePathSummary(void)
 {
     vout << "Output STM path summary: " << OutputPathSummary <<  endl;
     try{
@@ -762,7 +762,7 @@ bool CBeadList::SavePathSummary(void)
 
 //------------------------------------------------------------------------------
 
-void CBeadList::SavePathSummary(const CSmallString& name)
+void CSTMPath::SavePathSummary(const CSmallString& name)
 {
     ofstream ofs;
     ofs.open(name);
@@ -781,7 +781,7 @@ void CBeadList::SavePathSummary(const CSmallString& name)
 
 //------------------------------------------------------------------------------
 
-void CBeadList::FlushPath(void)
+void CSTMPath::FlushPath(void)
 {
     try{
         ProcessingMutex.Lock();
@@ -796,7 +796,7 @@ void CBeadList::FlushPath(void)
 
 //------------------------------------------------------------------------------
 
-bool CBeadList::OpenTrajectory(void)
+bool CSTMPath::OpenTrajectory(void)
 {
     if( TrajInterval <= 0 ) return(true);
 
@@ -810,15 +810,12 @@ bool CBeadList::OpenTrajectory(void)
     Trajectory << "# STMTRAJ " << NumOfCVs << " " << NumOfBeads << endl;
     PrintPathSummaryHeader(Trajectory);
 
-    // write initial bead positions
-    SaveSnapshot();
-
     return(true);
 }
 
 //------------------------------------------------------------------------------
 
-void CBeadList::SaveSnapshot(void)
+void CSTMPath::SaveSnapshot(void)
 {
     if( TrajInterval <= 0 ) return;
     Trajectory << "# STMSNAP " << STMStep / TrajInterval << endl;
@@ -828,14 +825,14 @@ void CBeadList::SaveSnapshot(void)
 
 //------------------------------------------------------------------------------
 
-void CBeadList::CloseTrajectory(void)
+void CSTMPath::CloseTrajectory(void)
 {
     Trajectory.close();
 }
 
 //------------------------------------------------------------------------------
 
-void CBeadList::ForceTermination(void)
+void CSTMPath::ForceTermination(void)
 {
     ProcessingMutex.Lock();
         Terminate = true;
@@ -845,7 +842,7 @@ void CBeadList::ForceTermination(void)
 
 //------------------------------------------------------------------------------
 
-void CBeadList::SetAsynchronousMode(bool set)
+void CSTMPath::SetAsynchronousMode(bool set)
 {
     AsynchronousMode = set;
 }
@@ -854,7 +851,7 @@ void CBeadList::SetAsynchronousMode(bool set)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-bool CBeadList::CheckClient(CXMLElement* p_cele)
+bool CSTMPath::CheckClient(CXMLElement* p_cele)
 {
     try {
         ProcessingMutex.Lock();
@@ -879,7 +876,7 @@ bool CBeadList::CheckClient(CXMLElement* p_cele)
 
 //------------------------------------------------------------------------------
 
-void CBeadList::RegisterBead(int bead_id,int client_id)
+void CSTMPath::RegisterBead(int bead_id,int client_id)
 {
     try {
         ProcessingMutex.Lock();
@@ -925,7 +922,7 @@ void CBeadList::RegisterBead(int bead_id,int client_id)
 
 //------------------------------------------------------------------------------
 
-void CBeadList::BeginAsynchronousMode(void)
+void CSTMPath::BeginAsynchronousMode(void)
 {
     // move to first mode
     for(int i=0; i < NumOfBeads; i++){
@@ -935,7 +932,7 @@ void CBeadList::BeginAsynchronousMode(void)
 
 //------------------------------------------------------------------------------
 
-void CBeadList::ExchangeData(CXMLElement* p_cele,CXMLElement* p_rele)
+void CSTMPath::ExchangeData(CXMLElement* p_cele,CXMLElement* p_rele)
 {
     if( p_cele == NULL ){
         INVALID_ARGUMENT("p_cele is NULL");
@@ -957,7 +954,7 @@ void CBeadList::ExchangeData(CXMLElement* p_cele,CXMLElement* p_rele)
 
 //------------------------------------------------------------------------------
 
-void CBeadList::ExchangeDataSynchronously(CXMLElement* p_cele,CXMLElement* p_rele)
+void CSTMPath::ExchangeDataSynchronously(CXMLElement* p_cele,CXMLElement* p_rele)
 {
     if( p_cele == NULL ){
         INVALID_ARGUMENT("p_cele is NULL");
@@ -1027,7 +1024,7 @@ void CBeadList::ExchangeDataSynchronously(CXMLElement* p_cele,CXMLElement* p_rel
 
 //------------------------------------------------------------------------------
 
-void CBeadList::ProcessProductionData(CBead* p_bead)
+void CSTMPath::ProcessProductionData(CBead* p_bead)
 {
     // how many beads are waiting
     RendezvousMutex.Lock();
@@ -1102,12 +1099,13 @@ void CBeadList::ProcessProductionData(CBead* p_bead)
 
 //------------------------------------------------------------------------------
 
-void CBeadList::ProcessPathAsynchronously(void)
+void CSTMPath::ProcessPathAsynchronously(void)
 {
     ProcessingMutex.Lock();
 
         if( STMStatus == ESTMS_OPTIMIZING ){
             CompletePathData();
+            IntegratePath();
             SavePathAndTraj();
             UpdateAllPositions();
             SmoothAllPositions();
@@ -1154,7 +1152,7 @@ void CBeadList::ProcessPathAsynchronously(void)
 
 //------------------------------------------------------------------------------
 
-void CBeadList::ExchangeDataAsynchronously(CXMLElement* p_cele,CXMLElement* p_rele)
+void CSTMPath::ExchangeDataAsynchronously(CXMLElement* p_cele,CXMLElement* p_rele)
 {
     if( p_cele == NULL ){
         INVALID_ARGUMENT("p_cele is NULL");
@@ -1219,7 +1217,7 @@ void CBeadList::ExchangeDataAsynchronously(CXMLElement* p_cele,CXMLElement* p_re
 
 //------------------------------------------------------------------------------
 
-void CBeadList::TerminateClient(CXMLElement* p_rele)
+void CSTMPath::TerminateClient(CXMLElement* p_rele)
 {
     if( p_rele == NULL ){
         INVALID_ARGUMENT("p_rele is NULL");
@@ -1232,7 +1230,7 @@ void CBeadList::TerminateClient(CXMLElement* p_rele)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void CBeadList::LoadInfo(CXMLElement* p_ele)
+void CSTMPath::LoadInfo(CXMLElement* p_ele)
 {
     if( p_ele == NULL ){
         INVALID_ARGUMENT("p_ele is NULL");
@@ -1270,7 +1268,7 @@ void CBeadList::LoadInfo(CXMLElement* p_ele)
 
 //------------------------------------------------------------------------------
 
-void CBeadList::SaveInfo(CXMLElement* p_ele)
+void CSTMPath::SaveInfo(CXMLElement* p_ele)
 {
     if( p_ele == NULL ){
         INVALID_ARGUMENT("p_ele is NULL");
@@ -1295,7 +1293,7 @@ void CBeadList::SaveInfo(CXMLElement* p_ele)
 
 //------------------------------------------------------------------------------
 
-bool CBeadList::CheckCoords(CXMLElement* p_ele)
+bool CSTMPath::CheckCoords(CXMLElement* p_ele)
 {
     if( p_ele == NULL ){
         INVALID_ARGUMENT("p_ele is NULL");
@@ -1332,7 +1330,7 @@ bool CBeadList::CheckCoords(CXMLElement* p_ele)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void CBeadList::PrintPathSummary(std::ostream& vout)
+void CSTMPath::PrintPathSummary(std::ostream& vout)
 {
     PrintPathSummaryHeader(vout);
     PrintPathSummaryData(vout);
@@ -1340,7 +1338,7 @@ void CBeadList::PrintPathSummary(std::ostream& vout)
 
 //------------------------------------------------------------------------------
 
-void CBeadList::PrintPathSummaryHeader(std::ostream& vout)
+void CSTMPath::PrintPathSummaryHeader(std::ostream& vout)
 {
     vout << "# === [PATH] ===================================================================" << endl;
     vout << "# Path name       = " << PathName << endl;
@@ -1473,7 +1471,7 @@ void CBeadList::PrintPathSummaryHeader(std::ostream& vout)
 
 //------------------------------------------------------------------------------
 
-void CBeadList::PrintPathSummaryData(std::ostream& vout)
+void CSTMPath::PrintPathSummaryData(std::ostream& vout)
 {
     for(int b=0; b < NumOfBeads; b++){
         vout << right;
@@ -1533,7 +1531,7 @@ void CBeadList::PrintPathSummaryData(std::ostream& vout)
 
 //------------------------------------------------------------------------------
 
-void CBeadList::PrintPathUpdate(std::ostream& vout)
+void CSTMPath::PrintPathUpdate(std::ostream& vout)
 {
     int num_of_updates = 0;
     for(int b=0; b < NumOfBeads; b++){
@@ -1714,7 +1712,7 @@ void CBeadList::PrintPathUpdate(std::ostream& vout)
 
 //------------------------------------------------------------------------------
 
-void CBeadList::PrintPath(std::ostream& vout)
+void CSTMPath::PrintPath(std::ostream& vout)
 {
     vout << "[PATH]" << endl;
     vout << "name     " << PathName << endl;
@@ -1763,7 +1761,7 @@ void CBeadList::PrintPath(std::ostream& vout)
 
 //------------------------------------------------------------------------------
 
-void CBeadList::SplitString(string text,vector<string>& words)
+void CSTMPath::SplitString(string text,vector<string>& words)
 {
     size_t i=0;
     char ch;
@@ -1788,14 +1786,14 @@ void CBeadList::SplitString(string text,vector<string>& words)
 
 //------------------------------------------------------------------------------
 
-int CBeadList::GetNumOfBeads(void)
+int CSTMPath::GetNumOfBeads(void)
 {
     return(NumOfBeads);
 }
 
 //------------------------------------------------------------------------------
 
-int CBeadList::GetNumOfBeadsInRendezvousState(void)
+int CSTMPath::GetNumOfBeadsInRendezvousState(void)
 {
     int count = 0;
     ProcessingMutex.Lock();
@@ -1810,21 +1808,21 @@ int CBeadList::GetNumOfBeadsInRendezvousState(void)
 
 //------------------------------------------------------------------------------
 
-ESTMState CBeadList::GetSTMStatus(void)
+ESTMState CSTMPath::GetSTMStatus(void)
 {
     return(STMStatus);
 }
 
 //------------------------------------------------------------------------------
 
-bool CBeadList::IsAsynchronous(void)
+bool CSTMPath::IsAsynchronous(void)
 {
     return(AsynchronousMode);
 }
 
 //------------------------------------------------------------------------------
 
-CBead* CBeadList::GetBead(int bead_id)
+CBead* CSTMPath::GetBead(int bead_id)
 {
     if( (bead_id <= 0) || (bead_id > NumOfBeads) ){
         LOGIC_ERROR("bead_id out-of-legal range");
@@ -1835,7 +1833,7 @@ CBead* CBeadList::GetBead(int bead_id)
 
 //------------------------------------------------------------------------------
 
-CBead* CBeadList::GetBeadByClientID(int client_id)
+CBead* CSTMPath::GetBeadByClientID(int client_id)
 {
     for(int b=0; b < NumOfBeads; b++){
         CBead* p_bead = &Beads[b];
@@ -1848,7 +1846,7 @@ CBead* CBeadList::GetBeadByClientID(int client_id)
 
 //------------------------------------------------------------------------------
 
-CBead* CBeadList::GetNextFreeBead(void)
+CBead* CSTMPath::GetNextFreeBead(void)
 {
     CBead* p_bead = NULL;
     for(int id=0; id < NumOfBeads; id++){
@@ -1863,7 +1861,7 @@ CBead* CBeadList::GetNextFreeBead(void)
 
 //------------------------------------------------------------------------------
 
-int CBeadList::GetSTMStep(void)
+int CSTMPath::GetSTMStep(void)
 {
     int step = 0;
 
@@ -1878,7 +1876,7 @@ int CBeadList::GetSTMStep(void)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void CBeadList::PrintSTMHeader(void)
+void CSTMPath::PrintSTMHeader(void)
 {
     vout << endl;
     vout << "# Step   Path length  Length change   Max movement  BID  Ave movement  Term" << endl;
@@ -1889,7 +1887,7 @@ void CBeadList::PrintSTMHeader(void)
 
 //------------------------------------------------------------------------------
 
-void CBeadList::PrintSTMStepInfo(void)
+void CSTMPath::PrintSTMStepInfo(void)
 {
     vout << setw(6)  << STMStep << " ";
     vout << setw(14) << setprecision(7) << scientific << CurrentPathLength << " ";
@@ -1900,7 +1898,7 @@ void CBeadList::PrintSTMStepInfo(void)
     for(int b=0; b < NumOfBeads; b++){
         double mov = 0;
         for(int i=0; i < NumOfCVs; i++){
-            mov += (Beads[b].RPos[i]-Beads[b].Pos[i])*(Beads[b].RPos[i]-Beads[b].Pos[i]);
+            mov += (Beads[b].Pos[i]-Beads[b].OPos[i])*(Beads[b].Pos[i]-Beads[b].OPos[i]);
         }
         AveMovement += mov; // add mov square
         mov = sqrt(mov);
@@ -1935,7 +1933,7 @@ void CBeadList::PrintSTMStepInfo(void)
 
 //------------------------------------------------------------------------------
 
-void CBeadList::SavePathAndTraj(void)
+void CSTMPath::SavePathAndTraj(void)
 {
     // write output and trajectory
     if( (OutInterval > 0) && (STMStep % OutInterval == 0) ){
@@ -1949,9 +1947,9 @@ void CBeadList::SavePathAndTraj(void)
 
 //------------------------------------------------------------------------------
 
-void CBeadList::CompletePathData(void)
+void CSTMPath::CompletePathData(void)
 {
-    // reoptimize path
+    // re-optimize path
     for(int b=0; b < NumOfBeads; b++){
         Beads[b].PPos = Beads[b].Pos;
     }
@@ -1961,13 +1959,11 @@ void CBeadList::CompletePathData(void)
         CBead* p_bead = &Beads[i];
         p_bead->CalcProjector();
     }
-
-    CalculatePathData();
 }
 
 //------------------------------------------------------------------------------
 
-void CBeadList::UpdateAllPositions(void)
+void CSTMPath::UpdateAllPositions(void)
 {
     STMStep++;
 
@@ -1979,7 +1975,7 @@ void CBeadList::UpdateAllPositions(void)
 
 //------------------------------------------------------------------------------
 
-void CBeadList::SmoothAllPositions(void)
+void CSTMPath::SmoothAllPositions(void)
 {
     if( (SmoothInterval == 0) || (STMStep % SmoothInterval != 0) ){
         for(int b=0; b < NumOfBeads; b++) {
@@ -2011,7 +2007,7 @@ void CBeadList::SmoothAllPositions(void)
 
 //------------------------------------------------------------------------------
 
-void CBeadList::ReparametrizeAllPositions(void)
+void CSTMPath::ReparametrizeAllPositions(void)
 {
     if( (ReparamInterval == 0) || (STMStep % ReparamInterval != 0) ){
         for(int b=0; b < NumOfBeads; b++) {
@@ -2041,7 +2037,7 @@ void CBeadList::ReparametrizeAllPositions(void)
 
 //------------------------------------------------------------------------------
 
-void CBeadList::CheckBoundaries(void)
+void CSTMPath::CheckBoundaries(void)
 {
     for(int b=0; b < NumOfBeads; b++){
         CBead* p_bead = &Beads[b];
@@ -2058,15 +2054,15 @@ void CBeadList::CheckBoundaries(void)
 
     // get data about the final path
     for(int b=0; b < NumOfBeads; b++){
-        Beads[b].PPos = Beads[b].RPos;
-        Beads[b].Pos = Beads[b].RPos;
+        Beads[b].Pos  = Beads[b].RPos;
+        Beads[b].PPos = Beads[b].Pos;
     }
     UpdatedPathLength = OptimizePath(Beads);
 }
 
 //------------------------------------------------------------------------------
 
-void CBeadList::CalculatePathData(void)
+void CSTMPath::IntegratePath(void)
 {
     // get PMF projections along path
     double fes = 0.0;
@@ -2087,7 +2083,7 @@ void CBeadList::CalculatePathData(void)
 
 //------------------------------------------------------------------------------
 
-void CBeadList::SetServerTerminated(void)
+void CSTMPath::SetServerTerminated(void)
 {
     STMStatus = ESTMS_COMPLETED;
     RendezvousCond.BroadcastSignal();
@@ -2097,7 +2093,7 @@ void CBeadList::SetServerTerminated(void)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-double CBeadList::OptimizePath(CSimpleVector<CBead>& beads)
+double CSTMPath::OptimizePath(CSimpleVector<CBead>& beads)
 {
     if( beads.GetLength() < 2 ){
         RUNTIME_ERROR("beads.GetLength() must be greater or equal 2");
@@ -2178,7 +2174,7 @@ double CBeadList::OptimizePath(CSimpleVector<CBead>& beads)
 
 //------------------------------------------------------------------------------
 
-double CBeadList::GetSegmentLength(double alpha1,double alpha2)
+double CSTMPath::GetSegmentLength(double alpha1,double alpha2)
 {
     double len = 0;
     for(int i=0; i < NumOfCVs; i++){

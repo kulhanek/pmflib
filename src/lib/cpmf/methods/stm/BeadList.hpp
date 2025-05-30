@@ -47,9 +47,9 @@ enum ESTMState {
 
 /// STM enegine
 
-class PMF_PACKAGE CBeadList {
+class PMF_PACKAGE CSTMPath {
 public:
-    CBeadList(void);
+    CSTMPath(void);
 
 // file support ----------------------------------------------------------------
     /// attach stream
@@ -171,14 +171,14 @@ public:
     /// smooth all positions
     void SmoothAllPositions(void);
 
-    /// reparametrize all positions
+    /// re-parametrize all positions
     void ReparametrizeAllPositions(void);
 
     /// check bead position boundaries
     void CheckBoundaries(void);
 
-    /// calculate path data
-    void CalculatePathData(void);
+    /// integrate path
+    void IntegratePath(void);
 
     /// server is terminated - unblock waiting beads
     void SetServerTerminated(void);
@@ -212,7 +212,7 @@ private:
     int                 TrajInterval;       // how often to print snapshot to trajectory
     int                 OutInterval;        // how often to write current path
     int                 SmoothInterval;     // how often to smooth path
-    int                 ReparamInterval;    // how often to reparametrize path
+    int                 ReparamInterval;    // how often to re-parametrize path
 
     // files -------------------------------------
     CSmallString        InputPath;
@@ -241,9 +241,9 @@ private:
     CSimpleCond         RendezvousCond;
     int                 NumOfRendezvousBeads;
 
-    // technicals
+    // technical
     CSimpleVector<double>   SPos;
-    int                     SegmentDiscretization;  // how many subpoints are used to calculate segment length
+    int                     SegmentDiscretization;  // how many sub-points are used to calculate segment length
 
     // allocate path
     void AllocatePath(void);

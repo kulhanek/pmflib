@@ -26,6 +26,7 @@
 #include <SimpleVector.hpp>
 #include <FortranMatrix.hpp>
 #include <SimpleMutex.hpp>
+#include <memory>
 
 //------------------------------------------------------------------------------
 
@@ -43,7 +44,7 @@
 
 //------------------------------------------------------------------------------
 
-class CBeadList;
+class CSTMPath;
 
 //------------------------------------------------------------------------------
 
@@ -75,7 +76,7 @@ public:
 
 // executive methods -----------------------------------------------------------
     /// set base list
-    void InitBead(CBeadList* p_list,int ncvs);
+    void InitBead(CSTMPath* p_list,int ncvs);
 
     /// set bead data
     void SetBeadData(int beadid,const CSimpleVector<double>& pos,bool flexible);
@@ -83,13 +84,13 @@ public:
     /// set client ID
     void SetClientID(int client_id);
 
-    /// relase possibly crashed bead
+    /// release possibly crashed bead
     void ReleaseBead(void);
 
     /// next program
     void MoveToNextMode(void);
 
-    /// calc projector - path must be optimized!
+    /// calculate projector - path must be optimized!
     void CalcProjector(void);
 
     /// update bead position
@@ -108,7 +109,7 @@ public:
     /// skip production data
     void SkipProductionData(void);
 
-    /// wait for randezvous
+    /// wait for rendezvous
     void WaitForRendezvous(void);
 
     /// get production data
@@ -116,7 +117,7 @@ public:
 
 // section of private data -----------------------------------------------------
 private:
-    CBeadList*              BeadList;
+    CSTMPath*               BeadList;
 
     // bead data
     int                     BeadID;         // bead id
@@ -128,13 +129,9 @@ private:
     int                     NumOfCVs;       // number of CVs
     bool                    Permanent;      // is bead permanent
     CSimpleVector<double>   Pos;            // bead position
-    CSimpleVector<double>   NPos;           // new bead position
-    CSimpleVector<double>   SPos;           // smoothed position
-    CSimpleVector<double>   RPos;           // reparametrized position
-    CSimpleVector<double>   PPos;           // position for path optimization
     CSimpleVector<double>   PMF;            // force acting on the bead
     CSimpleVector<double>   dCV;            // path derivatives
-    CSimpleVector<double>   pPMF;           // force/velocity acting perpendiculary to the path
+    CSimpleVector<double>   pPMF;           // force/velocity acting perpendicularly to the path
     CFortranMatrix          MTZ;            // metric tensor
     CFortranMatrix          P;              // projector
     double                  Alpha;          // path position
@@ -142,8 +139,19 @@ private:
     double                  A;              // free energy
     int                     NumOfUpdates;   // how many updates was performed
 
-    friend class CBeadList;
+// helper positions
+    CSimpleVector<double>   OPos;           // old bead position
+    CSimpleVector<double>   NPos;           // new bead position
+    CSimpleVector<double>   SPos;           // smoothed position
+    CSimpleVector<double>   RPos;           // re-parametrized position
+    CSimpleVector<double>   PPos;           // position for path optimization
+
+    friend class CSTMPath;
 };
+
+//------------------------------------------------------------------------------
+
+typedef std::shared_ptr<CBead>   CBeadPtr;
 
 //------------------------------------------------------------------------------
 

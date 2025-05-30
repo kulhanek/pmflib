@@ -131,10 +131,12 @@ int CBead::GetModeLength(void)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void CBead::InitBead(CBeadList* p_list,int ncvs)
+void CBead::InitBead(CSTMPath* p_list,int ncvs)
 {
     NumOfCVs = ncvs;
     BeadList = p_list;
+    OPos.CreateVector(NumOfCVs);
+    OPos.SetZero();
     Pos.CreateVector(NumOfCVs);
     Pos.SetZero();
     NPos.CreateVector(NumOfCVs);
@@ -257,7 +259,15 @@ template <typename T> int sgn(T val) {
 
 void CBead::CalcProjector(void)
 {
-    if( Permanent ) return;
+    if( Permanent ){
+        for(int i=0; i < NumOfCVs; i++){
+            pPMF[i] = 0.0;
+            for(int j=0; j < NumOfCVs; j++){
+                P[i][j] = 0.0;
+            }
+        }
+        return;
+    }
 
     // calculate derivative vector length
     double slen2 = 0.0;
@@ -283,26 +293,10 @@ void CBead::CalcProjector(void)
             P[i][j] -= cvder1*cvder2/slen2;
         }
     }
-}
 
-// -----------------------------------------------------------------------------
-
-void CBead::UpdatePosition(void)
-{
-    NumOfUpdates++;
-
-    if( Permanent ){
-        for(int i=0; i < NumOfCVs; i++){
-            NPos[i] = Pos[i];
-        }
-        return;
-    }
-
-    double step = BeadList->StepSize;
-
+    // projection perpendicular to the path
     for(int i=0; i < NumOfCVs; i++){
         double ps = 0;
-        double maxmov = BeadList->CVs[i].GetMaxMovement();
 
         if( (BeadID == 1) || (BeadID == BeadList->GetNumOfBeads() ) ){
             // steepest descent movement
@@ -318,10 +312,32 @@ void CBead::UpdatePosition(void)
             }
         }
         pPMF[i] = ps;
-        if( (maxmov <= 0) || (fabs(ps*step) < maxmov) ){
-            NPos[i] = Pos[i] - ps*step;
+    }
+}
+
+// -----------------------------------------------------------------------------
+
+void CBead::UpdatePosition(void)
+{
+    NumOfUpdates++;
+
+    if( Permanent ){
+        for(int i=0; i < NumOfCVs; i++){
+            OPos[i] = Pos[i];
+            NPos[i] = Pos[i];
+        }
+        return;
+    }
+
+    double step = BeadList->StepSize;
+
+    for(int i=0; i < NumOfCVs; i++){
+        double maxmov = BeadList->CVs[i].GetMaxMovement();
+         OPos[i] = Pos[i];
+        if( (maxmov <= 0) || (fabs(pPMF[i]*step) < maxmov) ){
+            NPos[i] = Pos[i] - pPMF[i]*step;
         } else {
-            NPos[i] = Pos[i] - maxmov*sgn(ps*step);
+            NPos[i] = Pos[i] - maxmov*sgn(pPMF[i]*step);
         }
     }
 }

@@ -174,7 +174,7 @@ private:
     friend class CABFAccumulator;
     friend class CABPAccumulator;
     friend class CRSTAccumulator;
-    friend class CBeadList;
+    friend class CSTMPath;
 
     static bool     EnablePeriodic;
 };

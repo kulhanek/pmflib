@@ -184,7 +184,7 @@ bool CStringAdmin::GetServerInfo(std::ostream& vout)
         ExecuteCommand(&cmd);
 
         // print response
-        CBeadList beads;
+        CSTMPath beads;
         beads.LoadInfo(cmd.GetRootResultElement());
 
         vout << endl;
@@ -228,7 +228,7 @@ bool CStringAdmin::GetStringPath(void)
         ExecuteCommand(&cmd);
 
         // print response
-        CBeadList beads;
+        CSTMPath beads;
         beads.LoadInfo(cmd.GetRootResultElement());
 
         vout << endl;
