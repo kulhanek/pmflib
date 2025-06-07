@@ -773,7 +773,7 @@ subroutine superimpose_str(cv_item,gi,gj,x,str,simpdat,u,o)
     integer,intent(in)              :: gi,gj
     real(PMFDP),intent(in)          :: x(:,:)
     type(XYZFILE_TYPE),intent(in)   :: str
-    class(SImpStrData),intent(out)  :: simpdat
+    type(SImpStrData),intent(out)   :: simpdat
     real(PMFDP),intent(out)         :: u(3,3)
     real(PMFDP),intent(out)         :: o(3)
     ! -----------------------------------------------
@@ -929,7 +929,7 @@ subroutine superimpose_str_der(cv_item,gi,gj,ctx,str,simpdat,a_u,a_o)
     integer,intent(in)                  :: gi,gj
     type(CVContextType),intent(inout)   :: ctx
     type(XYZFILE_TYPE),intent(in)       :: str
-    class(SImpStrData),intent(in)       :: simpdat
+    type(SImpStrData),intent(in)        :: simpdat
     real(PMFDP),intent(in)              :: a_u(3,3)
     real(PMFDP),intent(in)              :: a_o(3)
     ! -----------------------------------------------
