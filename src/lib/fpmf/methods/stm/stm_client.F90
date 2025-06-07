@@ -286,6 +286,8 @@ subroutine stm_client_exchange_data()
     pmf(:) = 0.0d0
     MTZ(:,:) = 0.0d0
 
+    flush(STM_OUT)
+
     call pmf_timers_stop_timer(PMFLIB_STM_NET_TIMER)
 
     return

@@ -126,7 +126,7 @@ real(PMFDP),allocatable     :: work(:)          ! for SVD decomposition
 integer,allocatable         :: indx(:)
 
 ! global variables for blue moon - results ---------------------------------
-integer                     :: faccumulation    ! total number of accumulated steps
+real(PMFDP)                 :: faccumulation    ! total number of accumulated steps
 real(PMFDP),allocatable     :: fz(:,:)          ! Z matrix
 real(PMFDP)                 :: fzdet            ! current value of det(Z)
 real(PMFDP)                 :: misrz            ! mean of inverse square root of fzdet

@@ -102,6 +102,8 @@ subroutine abf_output_write_header
     end do
     write(ABF_OUT,*)
 
+    flush(ABF_OUT)
+
     return
 
  1 format(A)

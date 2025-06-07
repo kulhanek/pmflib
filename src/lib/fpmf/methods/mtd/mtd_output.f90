@@ -118,6 +118,8 @@ subroutine mtd_output_write_header
         call mtd_output_write_hills_header
     end if
 
+    flush(MTD_OUT)
+
     return
 
  1 format(A)

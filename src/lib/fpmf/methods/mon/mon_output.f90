@@ -104,6 +104,8 @@ subroutine mon_output_write_header
     end do
     write(MON_OUT,*)
 
+    flush(MON_OUT)
+
     return
 
  1 format(A)

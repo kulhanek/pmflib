@@ -213,6 +213,8 @@ subroutine rst_output_write_header
     end do
     write(RST_OUT,*)
 
+    flush(RST_OUT)
+
     return
 
  1 format(A)

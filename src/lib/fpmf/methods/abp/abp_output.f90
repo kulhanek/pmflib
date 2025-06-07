@@ -99,6 +99,8 @@ subroutine abp_output_write_header
     end do
     write(ABP_OUT,*)
 
+    flush(ABP_OUT)
+
     return
 
  1 format(A)

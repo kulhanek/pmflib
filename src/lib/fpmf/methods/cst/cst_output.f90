@@ -159,6 +159,8 @@ subroutine cst_output_write_header
     end do
     write(CST_OUT,*)
 
+    flush(CST_OUT)
+
     return
 
  5 format('              ',I2,'              ',I2)
