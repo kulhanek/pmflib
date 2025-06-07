@@ -33,7 +33,7 @@ void CStringProcessor::UnregisterClient(void)
     int client_id = -1;
     int bead_id = -1;
 
-    CBead* p_bead = NULL;
+    CBeadPtr p_bead = NULL;
     if(CommandElement->GetAttribute("bead_id",bead_id) == true) {
         // request to release the bead
         p_bead = StringServer.Beads.GetBead(bead_id);

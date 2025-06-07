@@ -150,13 +150,13 @@ public:
     void PrintPathUpdate(std::ostream& vout);
 
     /// get bead by its ID (1,2,3,...,NumOfBeads)
-    CBead* GetBead(int bead_id);
+    CBeadPtr GetBead(int bead_id);
 
     /// get bead by client ID
-    CBead* GetBeadByClientID(int client_id);
+    CBeadPtr GetBeadByClientID(int client_id);
 
     /// get next free bead
-    CBead* GetNextFreeBead(void);
+    CBeadPtr GetNextFreeBead(void);
 
     /// get current STM step
     int GetSTMStep(void);
@@ -185,13 +185,13 @@ public:
 
 // section of private data -----------------------------------------------------
 private:
-    CSmallString                PathName;
-    int                         NumOfCVs;
-    CSimpleVector<CColVariable> CVs;        // CV definitions
+    CSmallString                    PathName;
+    int                             NumOfCVs;
+    std::vector<CColVariablePtr>    CVs;        // CV definitions
 
-    int                         NumOfBeads;
-    CSimpleVector<CBead>        Beads;      // bead data
-    CSimpleVector<CCVSpline>    CVSplines;  // interpolated CV
+    int                             NumOfBeads;
+    std::vector<CBeadPtr>           Beads;      // bead data
+    std::vector<CCVSplinePtr>       CVSplines;  // interpolated CV
 
     // STM setup ---------------------------------
     int                 MaxSTMSteps;        // maximum number of STM steps
@@ -199,6 +199,8 @@ private:
     double              FinalMaxPLenChange; // termination criteria - max path movement
     double              FinalMaxMovement;   // termination criteria - max path movement
     double              FinalAveMovement;   // termination criteria - average path movement
+    double              FinalpPMFSizeMax;   // perpendicular force size (pPMF) - termination criteria
+    double              FinalpPMFSizeAve;
 
     int                 InitPeriod;         // initialization period
     int                 AccuPeriod;         // accumulation period
@@ -223,11 +225,17 @@ private:
 
     CVerboseStr         vout;               // info channel
     int                 STMStep;            // current STM step
+
+    double              AveMovement;        // current average path movement
     double              MaxMovement;        // current max path movement
     int                 MaxMovementBead;    // current max path movement is for given bead
-    double              AveMovement;        // current average path movement
+
     double              CurrentPathLength;
     double              UpdatedPathLength;
+
+    double              pPMFSizeAve;        // perpendicular force size (pPMF) - termination criteria
+    double              pPMFSizeMax;
+    int                 MaxpPMFBead;
 
     CSimpleMutex        ProcessingMutex;    // mutex for path processing accesses
 
@@ -271,7 +279,7 @@ private:
 
     // synchronous mode
     void ExchangeDataSynchronously(CXMLElement* p_cele,CXMLElement* p_rele);
-    void ProcessProductionData(CBead* p_bead);
+    void ProcessProductionData(CBeadPtr p_bead);
 
     // asynchronous mode
     void ExchangeDataAsynchronously(CXMLElement* p_cele,CXMLElement* p_rele);
@@ -281,7 +289,7 @@ private:
 
     // path optimization, it return path length and initialize CVSplines
     // positions that are optimized are in PPos
-    double OptimizePath(CSimpleVector<CBead>& beads);
+    double OptimizePath(std::vector<CBeadPtr>& beads);
 
     // get path length
     double GetSegmentLength(double alpha1,double alpha2);
@@ -289,7 +297,7 @@ private:
     // read path helpers
     void ReadPathControls(CPrmFile& file);
     int  ReadPathNumberOfUserBeads(CPrmFile& file);
-    void ReadPathUserBeads(CPrmFile& file,CSimpleVector<CBead>& beads);
+    void ReadPathUserBeads(CPrmFile& file,std::vector<CBeadPtr>& beads);
 
     friend class CBead;
 };

@@ -25,7 +25,7 @@
 #include <RegClientList.hpp>
 #include <SimpleCond.hpp>
 #include "StringSrvOptions.hpp"
-#include "BeadList.hpp"
+#include <STMPath.hpp>
 #include <VerboseStr.hpp>
 #include <TerminalStr.hpp>
 #include "Launcher.hpp"

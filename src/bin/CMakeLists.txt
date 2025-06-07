@@ -37,6 +37,9 @@ ADD_SUBDIRECTORY(mtd-energy)
 # ABP utilities
 ADD_SUBDIRECTORY(abp-energy)
 
+# STN utilities
+ADD_SUBDIRECTORY(stm-trajectory)
+
 ## network utilities ------------------------------------------------------------
 IF(PMFLIB_NETWORK)
     # PMFLib MWA utilities

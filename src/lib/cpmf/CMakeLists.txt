@@ -50,10 +50,10 @@ SET(CPMF_METHODS_SRC
         methods/cst/CSTProxy_MTC.cpp
 
     # STM
-        methods/stm/spline.cpp
         methods/stm/Bead.cpp
+        methods/stm/STMPath.cpp
         methods/stm/CVSpline.cpp
-        methods/stm/BeadList.cpp
+        methods/stm/CVSplineNaturalCubic.cpp
         )
 
 SET(CPMF_MASK_SRC

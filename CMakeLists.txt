@@ -185,7 +185,7 @@ IF(NOT DEFINED COMPOSITE_PROJECT)
     ENDIF(MPI_ENABLED)
 
     # default compiler setups - gfortran
-    SET(CMAKE_Fortran_FLAGS_RELEASE "-O0")
+    SET(CMAKE_Fortran_FLAGS_RELEASE "-O1")
     # SET(CMAKE_Fortran_FLAGS_DEBUG   "-g -O0 -Wall -fcheck=all -ffpe-trap=denorm,underflow")
     SET(CMAKE_Fortran_FLAGS_DEBUG   "-g -O0 -Wall -fcheck=all")
 

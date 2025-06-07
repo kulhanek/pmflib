@@ -23,7 +23,7 @@
 #include <ErrorSystem.hpp>
 #include "StringAdmin.hpp"
 #include <ExtraOperation.hpp>
-#include <BeadList.hpp>
+#include <STMPath.hpp>
 #include <PMFOperation.hpp>
 
 //------------------------------------------------------------------------------

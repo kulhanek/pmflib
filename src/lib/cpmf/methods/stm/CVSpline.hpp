@@ -3,9 +3,7 @@
 // ===============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -------------------------------------------------------------------------------
-//    Copyright (C) 2012 Petr Kulhanek, kulhanek@chemi.muni.cz
-//    Copyright (C) 2011 Petr Kulhanek, kulhanek@chemi.muni.cz
-//    Copyright (C) 2010 Petr Kulhanek, kulhanek@chemi.muni.cz
+//    Copyright (C) 2025 Petr Kulhanek, kulhanek@chemi.muni.cz
 //
 //     This program is free software; you can redistribute it and/or modify
 //     it under the terms of the GNU General Public License as published by
@@ -23,44 +21,39 @@
 // =============================================================================
 
 #include <PMFMainHeader.hpp>
-#include <XMLElement.hpp>
-#include <SimpleVector.hpp>
-#include <FortranMatrix.hpp>
+#include <memory>
 
 //------------------------------------------------------------------------------
 
 class PMF_PACKAGE CCVSpline {
 public:
     CCVSpline(void);
-    ~CCVSpline(void);
+    virtual ~CCVSpline(void);
 
 // setup method ----------------------------------------------------------------
     /// clear all data
-    void Clear(void);
+    virtual void Clear(void) = 0;
 
     /// allocate memory for data
-    void Allocate(int numofknots);
+    virtual void Allocate(int numofknots) = 0;
 
     /// register data point
-    void AddPoint(int knotid,double alpha,double cv);
+    virtual bool AddPoint(int knotid,double alpha,double cv) = 0;
 
     /// finalize spline
-    void Finalize(void);
+    virtual bool Finalize(void) = 0;
 
 // information methods ---------------------------------------------------------
-    /// get CV value for given aplha
-    double GetCV(double alpha);
+    /// get CV value for given alpha
+    virtual double GetCV(double alpha) = 0;
 
     /// get CV first derivatives for given alpha
-    double GetCVFirstDer(double alpha);
-
-// section of private data -----------------------------------------------------
-private:
-    int     NumOfKnots;
-    double* t;
-    double* y;
-    double* ypp;
+    virtual double GetCVFirstDer(double alpha) = 0;
 };
+
+//------------------------------------------------------------------------------
+
+typedef std::shared_ptr<CCVSpline>  CCVSplinePtr;
 
 //------------------------------------------------------------------------------
 

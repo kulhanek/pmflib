@@ -20,7 +20,7 @@
 // ===============================================================================
 
 #include <sstream>
-#include "BeadList.hpp"
+#include <STMPath.hpp>
 #include <TemplIterator.hpp>
 #include <ErrorSystem.hpp>
 #include <iomanip>
@@ -29,6 +29,7 @@
 #include <math.h>
 #include <XMLIterator.hpp>
 #include <PrmUtils.hpp>
+#include <CVSplineNaturalCubic.hpp>
 
 //------------------------------------------------------------------------------
 
@@ -63,6 +64,8 @@ CSTMPath::CSTMPath(void)
     FinalMaxPLenChange  = 0.01;
     FinalMaxMovement    = 0.01;
     FinalAveMovement    = 0.01;
+    FinalpPMFSizeMax    = 0.01;
+    FinalpPMFSizeAve    = 0.01;
 
     SmoothingFac = 0.1;
     AsynchronousMode = false;    // update per bead or path
@@ -71,6 +74,8 @@ CSTMPath::CSTMPath(void)
     MaxMovement = 0.0;          // current max path movement
     MaxMovementBead = 0;        // current max path movement is for given bead
     AveMovement = 0;            // current average path movement
+    pPMFSizeMax = 0;
+    pPMFSizeAve = 0;
 
     // control
     NumOfRendezvousBeads = 0;
@@ -95,14 +100,20 @@ void CSTMPath::AllocatePath(void)
         RUNTIME_ERROR("number of beads must be larger than or equal to 3");
     }
 
-    CVs.CreateVector(NumOfCVs);
-    CVSplines.CreateVector(NumOfCVs);
-    Beads.CreateVector(NumOfBeads);
-    SPos.CreateVector(NumOfCVs);
+    for(int i=0; i < NumOfCVs; i++){
+        CColVariablePtr cv = CColVariablePtr(new CColVariable);
+        CVs.push_back(cv);
+        CCVSplinePtr cvspline = CCVSplinePtr(new CCVSplineNaturalCubic);
+        CVSplines.push_back(cvspline);
+    }
 
     for(int b=0; b < NumOfBeads; b++){
-        Beads[b].InitBead(this,NumOfCVs);
+        CBeadPtr bead = CBeadPtr(new CBead);
+        Beads.push_back(bead);
+        bead->InitBead(this,NumOfCVs);
     }
+
+    SPos.CreateVector(NumOfCVs);
 }
 
 //------------------------------------------------------------------------------
@@ -111,8 +122,8 @@ void CSTMPath::ClearPath(void)
 {
     NumOfBeads = 0;
     NumOfCVs = 0;
-    CVs.FreeVector();
-    Beads.FreeVector();
+    CVs.clear();
+    Beads.clear();
 }
 
 //==============================================================================
@@ -187,12 +198,19 @@ void CSTMPath::ProcessSTMControl(CPrmFile& file)
              << left << "             (default)" << endl;
         vout << "Step size (stepsize)                           = " << setw(9) << StepSize
              << left << "             (default)" << endl;
+
         vout << "Max final path length change (maxfplch)        = " << setw(9) << FinalMaxPLenChange
              << left << "             (default)" << endl;
         vout << "Max final path movement (maxfmove)             = " << setw(9) << FinalMaxMovement
              << left << "             (default)" << endl;
         vout << "Average final path movement (avefmove)         = " << setw(9) << FinalAveMovement
              << left << "             (default)" << endl;
+
+        vout << "Average final path movement (maxfppmf)         = " << setw(9) << FinalpPMFSizeMax
+             << left << "             (default)" << endl;
+        vout << "Average final path movement (avefppmf)         = " << setw(9) << FinalpPMFSizeAve
+             << left << "             (default)" << endl;
+
         vout << "Initialization period (init)                   = " << setw(9) << InitPeriod
              << left << "             (default)" << endl;
         vout << "Accumulation period (accu)                     = " << setw(9) << AccuPeriod
@@ -242,6 +260,20 @@ void CSTMPath::ProcessSTMControl(CPrmFile& file)
         vout << "Average final path movement (avefmove)         = " << setw(9) << FinalAveMovement << left << endl;
     } else {
         vout << "Average final path movement (avefmove)         = " << setw(9) << FinalAveMovement
+             << left << "             (default)" << endl;
+    }
+
+    if(file.GetDoubleByKey("maxfppmf",FinalpPMFSizeMax) == true) {
+        vout << "Max final path movement (maxfppmf)             = " << setw(9) << FinalpPMFSizeMax << left << endl;
+    } else {
+        vout << "Max final path movement (maxfppmf)             = " << setw(9) << FinalpPMFSizeMax
+             << left << "             (default)" << endl;
+    }
+
+    if(file.GetDoubleByKey("avefppmf",FinalpPMFSizeAve) == true) {
+        vout << "Average final path movement (avefppmf)         = " << setw(9) << FinalpPMFSizeAve << left << endl;
+    } else {
+        vout << "Average final path movement (avefppmf)         = " << setw(9) << FinalpPMFSizeAve
              << left << "             (default)" << endl;
     }
 
@@ -320,14 +352,14 @@ void CSTMPath::ProcessIntervalsControl(CPrmFile& file)
              << "             (default)" << endl;
     }
 
-    if(file.GetIntegerByKey("reparam",SmoothInterval) == true) {
+    if(file.GetIntegerByKey("smooth",SmoothInterval) == true) {
         vout << "Path smoothing interval (smooth)               = " << setw(9) << SmoothInterval << endl;
     } else {
         vout << "Path smoothing interval (smooth)               = " << setw(9) << SmoothInterval
              << "             (default)" << endl;
     }
 
-    if(file.GetIntegerByKey("smooth",ReparamInterval) == true) {
+    if(file.GetIntegerByKey("reparam",ReparamInterval) == true) {
         vout << "Path reparametrization interval (reparam)      = " << setw(9) << ReparamInterval << endl;
     } else {
         vout << "Path reparametrization interval (reparam)      = " << setw(9) << ReparamInterval
@@ -405,57 +437,60 @@ void CSTMPath::ProcessPathControl(CPrmFile& file)
     vout << debug << "Number of user provided beads: " << num_of_user_beads << endl;
     vout << high;
 
-    CSimpleVector<CBead>    beads;
-    beads.CreateVector(num_of_user_beads);
+    std::vector<CBeadPtr>  beads;
+    for(int i=0; i < num_of_user_beads; i++){
+        CBeadPtr bead = CBeadPtr(new CBead);
+        beads.push_back(bead);
+    }
 
     ReadPathUserBeads(file,beads);
 
     // optimize path
     for(int i=0; i < num_of_user_beads; i++){
-        beads[i].PPos = beads[i].Pos;
+        beads[i]->PPos = beads[i]->Pos;
     }
     OptimizePath(beads);
 
     // generate missing points or reoptimize path
-    Beads[0].Alpha = 0.0;
-    Beads[0].Permanent = beads[0].Permanent;
-    Beads[0].BeadID = 1;
-    Beads[NumOfBeads-1].Alpha = 1.0;
-    Beads[NumOfBeads-1].Permanent = beads[num_of_user_beads-1].Permanent;
-    Beads[NumOfBeads-1].BeadID = NumOfBeads;
+    Beads[0]->Alpha = 0.0;
+    Beads[0]->Permanent = beads[0]->Permanent;
+    Beads[0]->BeadID = 1;
+    Beads[NumOfBeads-1]->Alpha = 1.0;
+    Beads[NumOfBeads-1]->Permanent = beads[num_of_user_beads-1]->Permanent;
+    Beads[NumOfBeads-1]->BeadID = NumOfBeads;
     for(int i=0; i < NumOfCVs; i++){
-        Beads[0].Pos[i] = CVSplines[i].GetCV(0.0);
-        Beads[NumOfBeads-1].Pos[i] = CVSplines[i].GetCV(1.0);
+        Beads[0]->Pos[i] = CVSplines[i]->GetCV(0.0);
+        Beads[NumOfBeads-1]->Pos[i] = CVSplines[i]->GetCV(1.0);
         for(int b=1; b < NumOfBeads-1; b++){
             double alpha = (double)b / ((double)NumOfBeads-1.0);
-            Beads[b].Pos[i] = CVSplines[i].GetCV(alpha);
-            Beads[b].Alpha = alpha;
-            Beads[b].BeadID = b + 1;
+            Beads[b]->Pos[i] = CVSplines[i]->GetCV(alpha);
+            Beads[b]->Alpha = alpha;
+            Beads[b]->BeadID = b + 1;
         }
     }
 
     // check boundaries
     for(int b=0; b < NumOfBeads; b++){
-        Beads[b].FPos = Beads[b].Pos;
+        Beads[b]->FPos = Beads[b]->Pos;
     }
     CheckBoundaries();
 
     // and again reoptimize path
     for(int b=0; b < NumOfBeads; b++){
-        Beads[b].PPos = Beads[b].FPos;
+        Beads[b]->PPos = Beads[b]->FPos;
     }
     OptimizePath(Beads);
 
     // and final correct positions
-    Beads[0].Alpha = 0.0;
-    Beads[NumOfBeads-1].Alpha = 1.0;
+    Beads[0]->Alpha = 0.0;
+    Beads[NumOfBeads-1]->Alpha = 1.0;
     for(int i=0; i < NumOfCVs; i++){
-        Beads[0].Pos[i] = CVSplines[i].GetCV(0.0);
-        Beads[NumOfBeads-1].Pos[i] = CVSplines[i].GetCV(1.0);
+        Beads[0]->Pos[i] = CVSplines[i]->GetCV(0.0);
+        Beads[NumOfBeads-1]->Pos[i] = CVSplines[i]->GetCV(1.0);
         for(int b=1; b < NumOfBeads-1; b++){
             double alpha = (double)b / ((double)NumOfBeads-1.0);
-            Beads[b].Pos[i] = CVSplines[i].GetCV(alpha);
-            Beads[b].Alpha = alpha;
+            Beads[b]->Pos[i] = CVSplines[i]->GetCV(alpha);
+            Beads[b]->Alpha = alpha;
         }
     }
 }
@@ -478,8 +513,8 @@ void CSTMPath::ReadPathControls(CPrmFile& file)
 
         vout << left << "     names " << right;
         for(int i=0; i < NumOfCVs; i++){
-            CVs[i].ID = i;
-            CVs[i].SetName(tokens[i]);
+            CVs[i]->ID = i;
+            CVs[i]->SetName(tokens[i]);
             vout << " " << setw(12) << tokens[i];
         }
         vout << endl;
@@ -496,7 +531,7 @@ void CSTMPath::ReadPathControls(CPrmFile& file)
 
         vout << left << "     types " << right;
         for(int i=0; i < NumOfCVs; i++){
-            CVs[i].SetType(tokens[i]);
+            CVs[i]->SetType(tokens[i]);
             vout << " " << setw(12) << tokens[i];
         }
         vout << endl;
@@ -514,7 +549,7 @@ void CSTMPath::ReadPathControls(CPrmFile& file)
         vout << left << "     min   " << right << scientific << setprecision(5);
         for(int i=0; i < NumOfCVs; i++){
             double min = CSmallString(tokens[i]).ToDouble();
-            CVs[i].SetMinValue(min);
+            CVs[i]->SetMinValue(min);
             vout << " " << setw(12) << min;
         }
         vout << endl;
@@ -532,7 +567,7 @@ void CSTMPath::ReadPathControls(CPrmFile& file)
         vout << left << "     max   " << right << scientific << setprecision(5);
         for(int i=0; i < NumOfCVs; i++){
             double max = CSmallString(tokens[i]).ToDouble();
-            CVs[i].SetMaxValue(max);
+            CVs[i]->SetMaxValue(max);
             vout << " " << setw(12) << max;
         }
         vout << endl;
@@ -550,7 +585,7 @@ void CSTMPath::ReadPathControls(CPrmFile& file)
         vout << left << "     maxmov" << right << scientific << setprecision(5);
         for(int i=0; i < NumOfCVs; i++){
             double max = CSmallString(tokens[i]).ToDouble();
-            CVs[i].SetMaxMovement(max);
+            CVs[i]->SetMaxMovement(max);
             vout << " " << setw(12) << max;
         }
         vout << endl;
@@ -606,7 +641,7 @@ int CSTMPath::ReadPathNumberOfUserBeads(CPrmFile& file)
 
 //------------------------------------------------------------------------------
 
-void CSTMPath::ReadPathUserBeads(CPrmFile& file,CSimpleVector<CBead>& beads)
+void CSTMPath::ReadPathUserBeads(CPrmFile& file,std::vector<CBeadPtr>& beads)
 {
     CSmallString tmp;
 
@@ -648,11 +683,11 @@ void CSTMPath::ReadPathUserBeads(CPrmFile& file,CSimpleVector<CBead>& beads)
         }
 
         // process permanent or flexible point definition
-        beads[beadid].InitBead(this,NumOfCVs);
+        beads[beadid]->InitBead(this,NumOfCVs);
         for(int i=0; i < NumOfCVs; i++){
-            beads[beadid].Pos[i] = CSmallString(tokens[i+1]).ToDouble();
+            beads[beadid]->Pos[i] = CSmallString(tokens[i+1]).ToDouble();
         }
-        beads[beadid].Permanent = tokens[0] != "flexible";
+        beads[beadid]->Permanent = tokens[0] != "flexible";
 
         if( tokens[0] == "flexible" ) {
             vout << setw(4) << beadid+1 << " F     " << scientific << setprecision(5);
@@ -660,7 +695,7 @@ void CSTMPath::ReadPathUserBeads(CPrmFile& file,CSimpleVector<CBead>& beads)
             vout << setw(4) << beadid+1 << " P     " << scientific << setprecision(5);
         }
         for(int i=0; i < NumOfCVs; i++){
-            vout << " " << setw(12) << beads[beadid].Pos[i];
+            vout << " " << setw(12) << beads[beadid]->Pos[i];
         }
         vout << endl;
         beadid++;
@@ -881,7 +916,7 @@ void CSTMPath::RegisterBead(int bead_id,int client_id)
     try {
         ProcessingMutex.Lock();
 
-        CBead* p_bead = GetBead(bead_id);
+        CBeadPtr p_bead = GetBead(bead_id);
         if( p_bead == NULL ){
             CSmallString error;
             error << "bead with ID=" << bead_id << " not found";
@@ -906,7 +941,7 @@ void CSTMPath::RegisterBead(int bead_id,int client_id)
                 vout << "# Entering synchronous mode ..." << endl;
                 // move to first mode
                 for(int i=0; i < NumOfBeads; i++){
-                    Beads[i].MoveToNextMode();
+                    Beads[i]->MoveToNextMode();
                 }
             }
             PrintSTMHeader();
@@ -926,7 +961,7 @@ void CSTMPath::BeginAsynchronousMode(void)
 {
     // move to first mode
     for(int i=0; i < NumOfBeads; i++){
-        Beads[i].MoveToNextMode();
+        Beads[i]->MoveToNextMode();
     }
 }
 
@@ -969,7 +1004,7 @@ void CSTMPath::ExchangeDataSynchronously(CXMLElement* p_cele,CXMLElement* p_rele
     }
 
     // get bead ----------------------------------
-    CBead* p_bead = GetBead(bead_id);
+    CBeadPtr p_bead = GetBead(bead_id);
     if( p_bead == NULL ){
         CSmallString error;
         error << "unable to find bead ID=" << bead_id;
@@ -1024,7 +1059,7 @@ void CSTMPath::ExchangeDataSynchronously(CXMLElement* p_cele,CXMLElement* p_rele
 
 //------------------------------------------------------------------------------
 
-void CSTMPath::ProcessProductionData(CBead* p_bead)
+void CSTMPath::ProcessProductionData(CBeadPtr p_bead)
 {
     // how many beads are waiting
     RendezvousMutex.Lock();
@@ -1044,7 +1079,10 @@ void CSTMPath::ProcessProductionData(CBead* p_bead)
                     switch( p_bead->GetMode() ){
                         case BMO_ACCUMULATION:
                             p_bead->Mode = BMO_WAITFORRENDEZVOUS;
-                            // regular data accusition
+                            // regular data acquisition
+                            CompletePathData();
+                            IntegratePath();
+                            SavePathAndTraj();
                             UpdateAllPositions();
                             SmoothAllPositions();
                             ReparametrizeAllPositions();
@@ -1053,7 +1091,7 @@ void CSTMPath::ProcessProductionData(CBead* p_bead)
                             if( STMStatus == ESTMS_PATH_FOUND ){
                                 if( ProdPeriod <= 0 ){
                                     for(int b=0; b < NumOfBeads; b++){
-                                        Beads[b].Mode = BMO_ACCUMULATION;
+                                        Beads[b]->Mode = BMO_ACCUMULATION;
                                     }
                                     STMStatus = ESTMS_COMPLETED;
                                     vout << ">> INFO: The server is terminated since all data were acquired." <<  endl;
@@ -1067,7 +1105,7 @@ void CSTMPath::ProcessProductionData(CBead* p_bead)
                             break;
                         case BMO_PRODUCTION:
                             for(int b=0; b < NumOfBeads; b++){
-                                Beads[b].Mode = BMO_PRODUCTION;
+                                Beads[b]->Mode = BMO_PRODUCTION;
                             }
                             // this can happen only when STM with production period is run
                             // e.g. init, equi, accu periods are zero
@@ -1116,7 +1154,7 @@ void CSTMPath::ProcessPathAsynchronously(void)
             if( STMStatus == ESTMS_PATH_FOUND ){
                 if( ProdPeriod <= 0 ){
                     for(int b=0; b < NumOfBeads; b++){
-                        Beads[b].Mode = BMO_ACCUMULATION;
+                        Beads[b]->Mode = BMO_ACCUMULATION;
                     }
                     STMStatus = ESTMS_COMPLETED;
                     vout << ">> INFO: The server is terminated since all data were acquired." <<  endl;
@@ -1131,7 +1169,7 @@ void CSTMPath::ProcessPathAsynchronously(void)
             if( (STMStatus == ESTMS_OPTIMIZING) || (STMStatus == ESTMS_PATH_FOUND) ){
                 // move to next mode
                 for(int i=0; i < NumOfBeads; i++) {
-                    Beads[i].MoveToNextMode();
+                    Beads[i]->MoveToNextMode();
                 }
             }
         } else if( STMStatus == ESTMS_PATH_FOUND ){
@@ -1168,7 +1206,7 @@ void CSTMPath::ExchangeDataAsynchronously(CXMLElement* p_cele,CXMLElement* p_rel
     }
 
     // get bead ----------------------------------
-    CBead* p_bead = GetBead(bead_id);
+    CBeadPtr p_bead = GetBead(bead_id);
     if( p_bead == NULL ){
         CSmallString error;
         error << "unable to find bead ID=" << bead_id;
@@ -1256,13 +1294,13 @@ void CSTMPath::LoadInfo(CXMLElement* p_ele)
     CXMLElement* p_iele;
     p_iele = p_mele->GetFirstChildElement("COORD");
     for(int i=0; i < NumOfCVs; i++) {
-        CVs[i].LoadInfo(p_iele);
+        CVs[i]->LoadInfo(p_iele);
         p_iele = p_iele->GetNextSiblingElement("COORD");
     }
 
     p_iele = p_mele->GetFirstChildElement("BEAD");
     for(int b=0; b < NumOfBeads; b++) {
-        Beads[b].LoadInfo(p_iele);
+        Beads[b]->LoadInfo(p_iele);
         p_iele = p_iele->GetNextSiblingElement("BEAD");
     }
 }
@@ -1283,12 +1321,12 @@ void CSTMPath::SaveInfo(CXMLElement* p_ele)
 
     for(int i=0; i < NumOfCVs; i++) {
         CXMLElement* p_iele = p_mele->CreateChildElement("COORD");
-        CVs[i].SaveInfo(p_iele);
+        CVs[i]->SaveInfo(p_iele);
     }
 
     for(int b=0; b < NumOfBeads; b++) {
         CXMLElement* p_iele = p_mele->CreateChildElement("BEAD");
-        Beads[b].SaveInfo(p_iele);
+        Beads[b]->SaveInfo(p_iele);
     }
 }
 
@@ -1314,7 +1352,7 @@ bool CSTMPath::CheckCoords(CXMLElement* p_ele)
     CXMLElement* p_nele = p_ele->GetFirstChildElement("COORD");
     int id = 0;
     while( p_nele != NULL ) {
-        if( CVs[id].CheckInfo(p_nele) == false ){
+        if( CVs[id]->CheckInfo(p_nele) == false ){
             CSmallString error;
             error << "CV" << id << " does not match server setup";
             ES_ERROR(error);
@@ -1387,37 +1425,37 @@ void CSTMPath::PrintPathSummaryHeader(std::ostream& vout)
 // data ----------------------
     vout << left << "#      names                                                    " << right;
     for(int i=0; i < NumOfCVs; i++){
-        vout << " " << setw(12) << CVs[i].GetName();
+        vout << " " << setw(12) << CVs[i]->GetName();
     }
     for(int i=0; i < NumOfCVs; i++){
-        vout << " " << setw(12) << CVs[i].GetName();
+        vout << " " << setw(12) << CVs[i]->GetName();
     }
     for(int i=0; i < NumOfCVs; i++){
-        vout << " " << setw(12) << CVs[i].GetName();
+        vout << " " << setw(12) << CVs[i]->GetName();
     }
     for(int i=0; i < NumOfCVs; i++){
-        vout << " " << setw(12) << CVs[i].GetName();
+        vout << " " << setw(12) << CVs[i]->GetName();
     }
     vout << endl;
     vout << left << "#      types                                                    " << right;
     for(int i=0; i < NumOfCVs; i++){
-        vout << " " << setw(12) << CVs[i].GetType();
+        vout << " " << setw(12) << CVs[i]->GetType();
     }
     vout << endl;
     vout << left << "#      min                                                      " << right << scientific << setprecision(5);
     for(int i=0; i < NumOfCVs; i++){
-        vout << " " << setw(12) << CVs[i].GetMinValue();
+        vout << " " << setw(12) << CVs[i]->GetMinValue();
     }
     vout << endl;
     vout << left << "#      max                                                      " << right << scientific << setprecision(5);
     for(int i=0; i < NumOfCVs; i++){
-        vout << " " << setw(12) << CVs[i].GetMaxValue();
+        vout << " " << setw(12) << CVs[i]->GetMaxValue();
     }
     vout << endl;
     vout << left << "#      maxmov                                                   " << right << scientific << setprecision(5);
     for(int i=0; i < NumOfCVs; i++){
-        if( CVs[i].GetMaxMovement() > 0 ){
-            vout << " " << setw(12) << CVs[i].GetMaxMovement();
+        if( CVs[i]->GetMaxMovement() > 0 ){
+            vout << " " << setw(12) << CVs[i]->GetMaxMovement();
         } else {
             vout << " " << setw(12) << "--";
         }
@@ -1481,12 +1519,12 @@ void CSTMPath::PrintPathSummaryData(std::ostream& vout)
 {
     for(int b=0; b < NumOfBeads; b++){
         vout << right;
-        if( Beads[b].Permanent ) {
-            vout << "  " << setw(4) << Beads[b].GetBeadID() << setw(7) << " P     ";
+        if( Beads[b]->Permanent ) {
+            vout << "  " << setw(4) << Beads[b]->GetBeadID() << setw(7) << " P     ";
         } else {
-            vout << "  " << setw(4) << Beads[b].GetBeadID() << setw(7) << " F     ";
+            vout << "  " << setw(4) << Beads[b]->GetBeadID() << setw(7) << " F     ";
         }
-        switch(Beads[b].GetMode()){
+        switch(Beads[b]->GetMode()){
             case BMO_INITIALIZATION:
                 vout << " I ";
                 break;
@@ -1507,29 +1545,29 @@ void CSTMPath::PrintPathSummaryData(std::ostream& vout)
                 break;
         }
         vout << fixed << setprecision(4);
-        vout << " " << setw(6) << Beads[b].Alpha;
+        vout << " " << setw(6) << Beads[b]->Alpha;
 
         vout << scientific << setprecision(5);
-        vout << " " << setw(12) << Beads[b].dAdAlpha;
-        vout << " " << setw(12) << Beads[b].A;
-        if( Beads[b].GetClientID() > 0 ){
-            vout << " " << setw(7) << Beads[b].GetClientID();
+        vout << " " << setw(12) << Beads[b]->dAdAlpha;
+        vout << " " << setw(12) << Beads[b]->A;
+        if( Beads[b]->GetClientID() > 0 ){
+            vout << " " << setw(7) << Beads[b]->GetClientID();
         } else {
             vout << " " << setw(7) << "--";
         }
-        vout << setw(8) << Beads[b].NumOfUpdates;
+        vout << setw(8) << Beads[b]->NumOfUpdates;
         vout << scientific << setprecision(5);
         for(int i=0; i < NumOfCVs; i++){
-            vout << " " << setw(12) << Beads[b].Pos[i];
+            vout << " " << setw(12) << Beads[b]->Pos[i];
         }
         for(int i=0; i < NumOfCVs; i++){
-            vout << " " << setw(12) << Beads[b].PMF[i];
+            vout << " " << setw(12) << Beads[b]->PMF[i];
         }
         for(int i=0; i < NumOfCVs; i++){
-            vout << " " << setw(12) << Beads[b].dCV[i];
+            vout << " " << setw(12) << Beads[b]->dCV[i];
         }
         for(int i=0; i < NumOfCVs; i++){
-            vout << " " << setw(12) << Beads[b].pPMF[i];
+            vout << " " << setw(12) << Beads[b]->pPMF[i];
         }
         vout << endl;
     }
@@ -1541,14 +1579,14 @@ void CSTMPath::PrintPathUpdate(std::ostream& vout)
 {
     int num_of_updates = 0;
     for(int b=0; b < NumOfBeads; b++){
-        num_of_updates += Beads[b].NumOfUpdates;
+        num_of_updates += Beads[b]->NumOfUpdates;
     }
 
     if( num_of_updates > 0 ){
 
     } else {
         for(int b=0; b < NumOfBeads; b++){
-            Beads[b].Alpha = 0.0;
+            Beads[b]->Alpha = 0.0;
         }
     }
 
@@ -1587,34 +1625,34 @@ void CSTMPath::PrintPathUpdate(std::ostream& vout)
 // data ----------------------
     vout << left << "#      names                           " << right;
     for(int i=0; i < NumOfCVs; i++){
-        vout << " " << setw(12) << CVs[i].GetName();
+        vout << " " << setw(12) << CVs[i]->GetName();
     }
     for(int i=0; i < NumOfCVs; i++){
-        vout << " " << setw(12) << CVs[i].GetName();
+        vout << " " << setw(12) << CVs[i]->GetName();
     }
     for(int i=0; i < NumOfCVs; i++){
-        vout << " " << setw(12) << CVs[i].GetName();
+        vout << " " << setw(12) << CVs[i]->GetName();
     }
     vout << endl;
     vout << left << "#      types                           " << right;
     for(int i=0; i < NumOfCVs; i++){
-        vout << " " << setw(12) << CVs[i].GetType();
+        vout << " " << setw(12) << CVs[i]->GetType();
     }
     vout << endl;
     vout << left << "#      min                             " << right << scientific << setprecision(5);
     for(int i=0; i < NumOfCVs; i++){
-        vout << " " << setw(12) << CVs[i].GetMinValue();
+        vout << " " << setw(12) << CVs[i]->GetMinValue();
     }
     vout << endl;
     vout << left << "#      max                             " << right << scientific << setprecision(5);
     for(int i=0; i < NumOfCVs; i++){
-        vout << " " << setw(12) << CVs[i].GetMaxValue();
+        vout << " " << setw(12) << CVs[i]->GetMaxValue();
     }
     vout << endl;
     vout << left << "#      maxmov                          " << right << scientific << setprecision(5);
     for(int i=0; i < NumOfCVs; i++){
-        if( CVs[i].GetMaxMovement() > 0 ){
-            vout << " " << setw(12) << CVs[i].GetMaxMovement();
+        if( CVs[i]->GetMaxMovement() > 0 ){
+            vout << " " << setw(12) << CVs[i]->GetMaxMovement();
         } else {
             vout << " " << setw(12) << "--";
         }
@@ -1662,12 +1700,12 @@ void CSTMPath::PrintPathUpdate(std::ostream& vout)
 
     for(int b=0; b < NumOfBeads; b++){
         vout << right;
-        if( Beads[b].Permanent ) {
-            vout << "  " << setw(4) << Beads[b].GetBeadID() << setw(7) << " P     ";
+        if( Beads[b]->Permanent ) {
+            vout << "  " << setw(4) << Beads[b]->GetBeadID() << setw(7) << " P     ";
         } else {
-            vout << "  " << setw(4) << Beads[b].GetBeadID() << setw(7) << " F     ";
+            vout << "  " << setw(4) << Beads[b]->GetBeadID() << setw(7) << " F     ";
         }
-        switch(Beads[b].GetMode()){
+        switch(Beads[b]->GetMode()){
             case BMO_INITIALIZATION:
                 vout << " I ";
                 break;
@@ -1688,24 +1726,24 @@ void CSTMPath::PrintPathUpdate(std::ostream& vout)
                 break;
         }
         vout << fixed << setprecision(4);
-        vout << " " << setw(6) << Beads[b].Alpha;
+        vout << " " << setw(6) << Beads[b]->Alpha;
 
-        if( Beads[b].GetClientID() > 0 ){
-            vout << " " << setw(7) << Beads[b].GetClientID();
+        if( Beads[b]->GetClientID() > 0 ){
+            vout << " " << setw(7) << Beads[b]->GetClientID();
         } else {
             vout << " " << setw(7) << " --";
         }
-        vout << setw(8) << Beads[b].NumOfUpdates;
+        vout << setw(8) << Beads[b]->NumOfUpdates;
         vout << scientific << setprecision(5);
         for(int i=0; i < NumOfCVs; i++){
-            vout << " " << setw(12) << Beads[b].OPos[i];
+            vout << " " << setw(12) << Beads[b]->OPos[i];
         }
-        if( Beads[b].NumOfUpdates > 0 ){
+        if( Beads[b]->NumOfUpdates > 0 ){
             for(int i=0; i < NumOfCVs; i++){
-                vout << " " << setw(12) << Beads[b].Pos[i];
+                vout << " " << setw(12) << Beads[b]->Pos[i];
             }
             for(int i=0; i < NumOfCVs; i++){
-                vout << " " << setw(12) << Beads[b].Pos[i] - Beads[b].OPos[i];
+                vout << " " << setw(12) << Beads[b]->Pos[i] - Beads[b]->OPos[i];
             }
         }
         vout << endl;
@@ -1722,40 +1760,40 @@ void CSTMPath::PrintPath(std::ostream& vout)
     vout << "nbeads   " << NumOfBeads << endl;
     vout << "names    ";
     for(int i=0; i < NumOfCVs; i++){
-        vout << " " << setw(12) << CVs[i].GetName();
+        vout << " " << setw(12) << CVs[i]->GetName();
     }
     vout << endl;
     vout << "types    ";
     for(int i=0; i < NumOfCVs; i++){
-        vout << " " << setw(12) << CVs[i].GetType();
+        vout << " " << setw(12) << CVs[i]->GetType();
     }
     vout << endl;
     vout << "min      ";
     vout << scientific << setprecision(5);
     for(int i=0; i < NumOfCVs; i++){
-        vout << " " << setw(12) << CVs[i].GetMinValue();
+        vout << " " << setw(12) << CVs[i]->GetMinValue();
     }
     vout << endl;
     vout << "max      ";
     for(int i=0; i < NumOfCVs; i++){
-        vout << " " << setw(12) << CVs[i].GetMaxValue();
+        vout << " " << setw(12) << CVs[i]->GetMaxValue();
     }
     vout << endl;
     vout << "maxmov   ";
     for(int i=0; i < NumOfCVs; i++){
-        vout << " " << setw(12) << CVs[i].GetMaxMovement();
+        vout << " " << setw(12) << CVs[i]->GetMaxMovement();
     }
     vout << endl;
 
     for(int b=0; b < NumOfBeads; b++){
         vout << right;
-        if( Beads[b].Permanent ) {
+        if( Beads[b]->Permanent ) {
             vout << "permanent";
         } else {
             vout << "flexible ";
         }
         for(int i=0; i < NumOfCVs; i++){
-            vout << " " << setw(12) << Beads[b].Pos[i];
+            vout << " " << setw(12) << Beads[b]->Pos[i];
         }
         vout << endl;
     }
@@ -1801,7 +1839,7 @@ int CSTMPath::GetNumOfBeadsInRendezvousState(void)
     ProcessingMutex.Lock();
 
     for(int i=0; i < NumOfBeads; i++){
-        if( Beads[i].GetMode() == BMO_WAITFORRENDEZVOUS ) count++;
+        if( Beads[i]->GetMode() == BMO_WAITFORRENDEZVOUS ) count++;
     }
 
     ProcessingMutex.Unlock();
@@ -1824,23 +1862,21 @@ bool CSTMPath::IsAsynchronous(void)
 
 //------------------------------------------------------------------------------
 
-CBead* CSTMPath::GetBead(int bead_id)
+CBeadPtr CSTMPath::GetBead(int bead_id)
 {
     if( (bead_id <= 0) || (bead_id > NumOfBeads) ){
         LOGIC_ERROR("bead_id out-of-legal range");
     }
-    CBead* p_bead = &Beads[bead_id-1];
-    return(p_bead);
+    return(Beads[bead_id-1]);
 }
 
 //------------------------------------------------------------------------------
 
-CBead* CSTMPath::GetBeadByClientID(int client_id)
+CBeadPtr CSTMPath::GetBeadByClientID(int client_id)
 {
     for(int b=0; b < NumOfBeads; b++){
-        CBead* p_bead = &Beads[b];
-        if( p_bead->GetClientID() == client_id ){
-            return(p_bead);
+        if( Beads[b]->GetClientID() == client_id ){
+            return(Beads[b]);
         }
     }
     return(NULL);
@@ -1848,17 +1884,15 @@ CBead* CSTMPath::GetBeadByClientID(int client_id)
 
 //------------------------------------------------------------------------------
 
-CBead* CSTMPath::GetNextFreeBead(void)
+CBeadPtr CSTMPath::GetNextFreeBead(void)
 {
-    CBead* p_bead = NULL;
     for(int id=0; id < NumOfBeads; id++){
-        if( Beads[id].GetClientID() == -1 ){
-            Beads[id].SetClientID(0);
-            p_bead = &Beads[id];
-            return(p_bead);
+        if( Beads[id]->GetClientID() == -1 ){
+            Beads[id]->SetClientID(0);
+            return(Beads[id]);
         }
     }
-    return(NULL);
+    return(CBeadPtr());
 }
 
 //------------------------------------------------------------------------------
@@ -1881,8 +1915,8 @@ int CSTMPath::GetSTMStep(void)
 void CSTMPath::PrintSTMHeader(void)
 {
     vout << endl;
-    vout << "# Step   Path length  Length change   Max movement  BID  Ave movement  Term" << endl;
-    vout << "# ---- -------------- -------------- -------------- --- -------------- ----" << endl;
+    vout << "# Step|  Path length  Length change | Max movement  BID  Ave movement | Max pPMF size BID  Ave pPMF size|Term" << endl;
+    vout << "# ----|-------------- --------------|-------------- --- --------------|-------------- --- --------------|----" << endl;
 
     HeaderPrinted = true;
 }
@@ -1897,33 +1931,55 @@ void CSTMPath::PrintSTMStepInfo(void)
 
     MaxMovement = 0;
     AveMovement = 0;
+    pPMFSizeAve = 0;
+    pPMFSizeMax = 0;
+
     for(int b=0; b < NumOfBeads; b++){
         double mov = 0;
+        double ppmfsize = 0.0;
         for(int i=0; i < NumOfCVs; i++){
-            mov += (Beads[b].Pos[i]-Beads[b].OPos[i])*(Beads[b].Pos[i]-Beads[b].OPos[i]);
+            mov += (Beads[b]->Pos[i]-Beads[b]->OPos[i])*(Beads[b]->Pos[i]-Beads[b]->OPos[i]);
+            ppmfsize += (Beads[b]->pPMF[i])*(Beads[b]->pPMF[i]);
         }
-        AveMovement += mov; // add mov square
+
         mov = sqrt(mov);
+        AveMovement += mov; // add mov square
         if( mov > MaxMovement ){
             MaxMovement = mov;
             MaxMovementBead = b+1;
         }
+
+        ppmfsize = sqrt(ppmfsize);
+        pPMFSizeAve += ppmfsize;
+        if( ppmfsize > pPMFSizeMax ){
+            pPMFSizeMax = ppmfsize;
+            MaxpPMFBead = b+1;
+        }
     }
-    AveMovement = sqrt(AveMovement / NumOfBeads);
+    AveMovement = AveMovement / (double)NumOfBeads;
+    pPMFSizeAve = pPMFSizeAve / (double)NumOfBeads;
 
     vout << setw(14) << setprecision(7) << scientific << MaxMovement << " ";
     vout << setw(3) << MaxMovementBead << " ";
     vout << setw(14) << setprecision(7) << scientific << AveMovement << " ";
 
+    vout << setw(14) << setprecision(7) << scientific << pPMFSizeMax << " ";
+    vout << setw(3) << MaxpPMFBead << " ";
+    vout << setw(14) << setprecision(7) << scientific << pPMFSizeAve << " ";
+
     int termcrit = 0;
-    if( AveMovement < FinalAveMovement ) termcrit++;
-    if( MaxMovement < FinalMaxMovement ) termcrit++;
     if( fabs(UpdatedPathLength-CurrentPathLength) < FinalMaxPLenChange ) termcrit++;
 
-    vout << " " << setw(1) << termcrit << "/" << "3";
+    if( AveMovement < FinalAveMovement ) termcrit++;
+    if( MaxMovement < FinalMaxMovement ) termcrit++;
+
+    if( pPMFSizeAve < FinalpPMFSizeAve ) termcrit++;
+    if( pPMFSizeMax < FinalpPMFSizeMax ) termcrit++;
+
+    vout << " " << setw(1) << termcrit << "/" << "5";
     vout << endl;
 
-    if( termcrit == 3 ){
+    if( termcrit == 5 ){
         STMStatus = ESTMS_PATH_FOUND;
         vout << endl;
         vout << ">> INFO: The path have converged." << endl;
@@ -1953,13 +2009,12 @@ void CSTMPath::CompletePathData(void)
 {
     // re-optimize path
     for(int b=0; b < NumOfBeads; b++){
-        Beads[b].PPos = Beads[b].Pos;
+        Beads[b]->PPos = Beads[b]->Pos;
     }
     CurrentPathLength = OptimizePath(Beads);
 
     for(int i=0; i < NumOfBeads; i++){
-        CBead* p_bead = &Beads[i];
-        p_bead->CalcProjector();
+        Beads[i]->CalcProjector();
     }
 }
 
@@ -1970,8 +2025,7 @@ void CSTMPath::UpdateAllPositions(void)
     STMStep++;
 
     for(int i=0; i < NumOfBeads; i++){
-        CBead* p_bead = &Beads[i];
-        p_bead->UpdatePosition();
+        Beads[i]->UpdatePosition();
     }
 }
 
@@ -1981,7 +2035,7 @@ void CSTMPath::SmoothAllPositions(void)
 {
     if( (SmoothInterval == 0) || (STMStep % SmoothInterval != 0) ){
         for(int b=0; b < NumOfBeads; b++) {
-            Beads[b].SPos = Beads[b].NPos;
+            Beads[b]->SPos = Beads[b]->NPos;
         }
         return;
     }
@@ -1990,18 +2044,14 @@ void CSTMPath::SmoothAllPositions(void)
 
     // smooth path
     for(int i=0; i < NumOfBeads; i++){
-        CBead* p_bead = &Beads[i];
-
-        if( (i == 0) || (i == NumOfBeads-1) || (p_bead->Permanent) ){
-            for(int i=0; i < NumOfCVs; i++){
-                p_bead->SPos[i] = p_bead->NPos[i];
+        if( (i == 0) || (i == NumOfBeads-1) || (Beads[i]->Permanent) ){
+            for(int j=0; j < NumOfCVs; j++){
+                Beads[i]->SPos[j] = Beads[i]->NPos[j];
             }
         } else {
-            CBead* p_pnb = &Beads[i-1];
-            CBead* p_nnb = &Beads[i+1];
-            for(int i=0; i < NumOfCVs; i++){
-                p_bead->SPos[i] = (1.0-SmoothingFac)*p_bead->NPos[i]
-                                + 0.5*SmoothingFac*(p_pnb->NPos[i]+p_nnb->NPos[i]);
+            for(int j=0; j < NumOfCVs; j++){
+                Beads[i]->SPos[j] = (1.0-SmoothingFac)*Beads[i]->NPos[j]
+                                + 0.5*SmoothingFac*(Beads[i-1]->NPos[j]+Beads[i+1]->NPos[j]);
             }
         }
     }
@@ -2013,7 +2063,7 @@ void CSTMPath::ReparametrizeAllPositions(void)
 {
     if( (ReparamInterval == 0) || (STMStep % ReparamInterval != 0) ){
         for(int b=0; b < NumOfBeads; b++) {
-            Beads[b].FPos = Beads[b].SPos;
+            Beads[b]->FPos = Beads[b]->SPos;
         }
         return;
     }
@@ -2022,17 +2072,17 @@ void CSTMPath::ReparametrizeAllPositions(void)
 
     // reoptimize path
     for(int b=0; b < NumOfBeads; b++){
-        Beads[b].PPos = Beads[b].SPos;
+        Beads[b]->PPos = Beads[b]->SPos;
     }
     OptimizePath(Beads);
 
     // and correct positions
     for(int i=0; i < NumOfCVs; i++){
-        Beads[0].FPos[i] = CVSplines[i].GetCV(0.0);
-        Beads[NumOfBeads-1].FPos[i] = CVSplines[i].GetCV(1.0);
+        Beads[0]->FPos[i] = CVSplines[i]->GetCV(0.0);
+        Beads[NumOfBeads-1]->FPos[i] = CVSplines[i]->GetCV(1.0);
         for(int b=1; b < NumOfBeads-1; b++){
             double alpha = (double)b / ((double)NumOfBeads-1.0);
-            Beads[b].FPos[i] = CVSplines[i].GetCV(alpha);
+            Beads[b]->FPos[i] = CVSplines[i]->GetCV(alpha);
         }
     }
 }
@@ -2042,22 +2092,20 @@ void CSTMPath::ReparametrizeAllPositions(void)
 void CSTMPath::CheckBoundaries(void)
 {
     for(int b=0; b < NumOfBeads; b++){
-        CBead* p_bead = &Beads[b];
-
         for(int i=0; i < NumOfCVs; i++){
-            if( p_bead->FPos[i] < CVs[i].GetMinValue() ){
-                p_bead->FPos[i] = CVs[i].GetMinValue();
+            if( Beads[b]->FPos[i] < CVs[i]->GetMinValue() ){
+                Beads[b]->FPos[i] = CVs[i]->GetMinValue();
             }
-            if( p_bead->FPos[i] > CVs[i].GetMaxValue() ){
-                p_bead->FPos[i] = CVs[i].GetMaxValue();
+            if( Beads[b]->FPos[i] > CVs[i]->GetMaxValue() ){
+                Beads[b]->FPos[i] = CVs[i]->GetMaxValue();
             }
         }
     }
 
     // get data about the final path
     for(int b=0; b < NumOfBeads; b++){
-        Beads[b].Pos  = Beads[b].FPos;
-        Beads[b].PPos = Beads[b].Pos;
+        Beads[b]->Pos  = Beads[b]->FPos;
+        Beads[b]->PPos = Beads[b]->Pos;
     }
     UpdatedPathLength = OptimizePath(Beads);
 }
@@ -2072,14 +2120,14 @@ void CSTMPath::IntegratePath(void)
         double a = 0.0;
         // get bead derivative along path
         for(int i=0; i < NumOfCVs; i++) {
-            Beads[b].dCV[i] = CVSplines[i].GetCVFirstDer(Beads[b].Alpha);
-            a += Beads[b].dCV[i]*Beads[b].PMF[i];
+            Beads[b]->dCV[i] = CVSplines[i]->GetCVFirstDer(Beads[b]->Alpha);
+            a += Beads[b]->dCV[i]*Beads[b]->PMF[i];
         }
-        Beads[b].dAdAlpha = a;
+        Beads[b]->dAdAlpha = a;
         if( b > 0 ){
-            fes += 0.5*(Beads[b].Alpha - Beads[b-1].Alpha)*(Beads[b].dAdAlpha + Beads[b-1].dAdAlpha);
+            fes += 0.5*(Beads[b]->Alpha - Beads[b-1]->Alpha)*(Beads[b]->dAdAlpha + Beads[b-1]->dAdAlpha);
         }
-        Beads[b].A = fes;
+        Beads[b]->A = fes;
     }
 }
 
@@ -2095,18 +2143,18 @@ void CSTMPath::SetServerTerminated(void)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-double CSTMPath::OptimizePath(CSimpleVector<CBead>& beads)
+double CSTMPath::OptimizePath(std::vector<CBeadPtr>& beads)
 {
-    if( beads.GetLength() < 2 ){
-        RUNTIME_ERROR("beads.GetLength() must be greater or equal 2");
+    if( beads.size() < 2 ){
+        RUNTIME_ERROR("beads.size() must be greater or equal 2");
     }
 
     // get initial path length from linear interpolation
     double tot_length = 0;
-    for(size_t b=1; b < beads.GetLength(); b++){
+    for(size_t b=1; b < beads.size(); b++){
         double slen = 0;
         for(int i=0; i < NumOfCVs; i++){
-            slen += (beads[b].PPos[i]-beads[b-1].PPos[i])*(beads[b].PPos[i]-beads[b-1].PPos[i]);
+            slen += (beads[b]->PPos[i]-beads[b-1]->PPos[i])*(beads[b]->PPos[i]-beads[b-1]->PPos[i]);
         }
         tot_length += sqrt(slen);
     }
@@ -2116,20 +2164,20 @@ double CSTMPath::OptimizePath(CSimpleVector<CBead>& beads)
     }
 
     // get initial alphas from linear interpolation
-    beads[0].Alpha = 0.0;
+    beads[0]->Alpha = 0.0;
     double path_length = 0;
-    for(size_t b=1; b < beads.GetLength()-1; b++){
+    for(size_t b=1; b < beads.size()-1; b++){
         double slen = 0;
         for(int i=0; i < NumOfCVs; i++){
-            slen += (beads[b].PPos[i]-beads[b-1].PPos[i])*(beads[b].PPos[i]-beads[b-1].PPos[i]);
+            slen += (beads[b]->PPos[i]-beads[b-1]->PPos[i])*(beads[b]->PPos[i]-beads[b-1]->PPos[i]);
         }
         if( slen == 0 ){
             RUNTIME_ERROR("path segment has zero length");
         }
         path_length += sqrt(slen);
-        beads[b].Alpha = path_length/tot_length;
+        beads[b]->Alpha = path_length/tot_length;
     }
-    beads[beads.GetLength()-1].Alpha = 1.0;
+    beads[beads.size()-1]->Alpha = 1.0;
 
    // vout << debug;
    // vout << "Initial path length = " << tot_length << endl;
@@ -2139,38 +2187,42 @@ double CSTMPath::OptimizePath(CSimpleVector<CBead>& beads)
     for(;;){
         // interpolate CVS
         for(int i=0; i < NumOfCVs; i++){
-            CVSplines[i].Allocate(beads.GetLength());
-            for(size_t b=0; b < beads.GetLength(); b++){
-                CVSplines[i].AddPoint(b,beads[b].Alpha,beads[b].PPos[i]);
+            CVSplines[i]->Allocate(beads.size());
+            for(size_t b=0; b < beads.size(); b++){
+                if( CVSplines[i]->AddPoint(b,beads[b]->Alpha,beads[b]->PPos[i]) == false ){
+                    RUNTIME_ERROR("unable to add knot into CVSplines");
+                }
             }
-            CVSplines[i].Finalize();
+            if( CVSplines[i]->Finalize() == false ){
+                RUNTIME_ERROR("unable to finalize CVSplines");
+            };
         }
 
         prev_length = tot_length;
 
         // determine new path length
         tot_length = 0;
-        for(size_t b=1; b < beads.GetLength(); b++){
-            tot_length += GetSegmentLength(beads[b-1].Alpha,beads[b].Alpha);
+        for(size_t b=1; b < beads.size(); b++){
+            tot_length += GetSegmentLength(beads[b-1]->Alpha,beads[b]->Alpha);
         }
 
-       // vout << "Optimized path length = " << tot_length << endl;
+        // vout << "Optimized path length = " << tot_length << endl;
 
         if( fabs(tot_length-prev_length) < 1e-7 ){
-       //     vout << "Converged path length = " << tot_length << endl;
+        //     vout << "Converged path length = " << tot_length << endl;
             return(tot_length);
         }
 
         // determine new alphas
-        beads[0].Alpha = 0.0;
+        beads[0]->Alpha = 0.0;
         double path_length = 0;
-        double prev_alpha = beads[0].Alpha;
-        for(size_t b=1; b < beads.GetLength()-1; b++){
-            path_length += GetSegmentLength(prev_alpha,beads[b].Alpha);
-            beads[b].Alpha = path_length/tot_length;
-            prev_alpha = beads[b].Alpha;
+        double prev_alpha = beads[0]->Alpha;
+        for(size_t b=1; b < beads.size()-1; b++){
+            path_length += GetSegmentLength(prev_alpha,beads[b]->Alpha);
+            beads[b]->Alpha = path_length/tot_length;
+            prev_alpha = beads[b]->Alpha;
         }
-        beads[beads.GetLength()-1].Alpha = 1.0;
+        beads[beads.size()-1]->Alpha = 1.0;
     }
 }
 
@@ -2180,14 +2232,14 @@ double CSTMPath::GetSegmentLength(double alpha1,double alpha2)
 {
     double len = 0;
     for(int i=0; i < NumOfCVs; i++){
-        SPos[i] = CVSplines[i].GetCV(alpha1);
+        SPos[i] = CVSplines[i]->GetCV(alpha1);
     }
     double step = (alpha2-alpha1)/SegmentDiscretization;
     double alpha = alpha1 + step;
     while( alpha < alpha2 ){
         double slen2 = 0;
         for(int i=0; i < NumOfCVs; i++){
-            double curr = CVSplines[i].GetCV(alpha);
+            double curr = CVSplines[i]->GetCV(alpha);
             slen2 +=  (curr-SPos[i])*(curr-SPos[i]);
             SPos[i] = curr;
         }
@@ -2197,7 +2249,7 @@ double CSTMPath::GetSegmentLength(double alpha1,double alpha2)
 
     double slen2 = 0;
     for(int i=0; i < NumOfCVs; i++){
-        double last = CVSplines[i].GetCV(alpha2);
+        double last = CVSplines[i]->GetCV(alpha2);
         slen2 +=  (last-SPos[i])*(last-SPos[i]);
     }
     len += sqrt(slen2);

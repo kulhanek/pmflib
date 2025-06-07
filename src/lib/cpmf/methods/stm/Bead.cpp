@@ -23,7 +23,7 @@
 #include <ErrorSystem.hpp>
 #include <XMLElement.hpp>
 #include <math.h>
-#include <BeadList.hpp>
+#include <STMPath.hpp>
 
 //==============================================================================
 //------------------------------------------------------------------------------
@@ -272,7 +272,7 @@ void CBead::CalcProjector(void)
     // calculate derivative vector length
     double slen2 = 0.0;
     for(int i=0; i < NumOfCVs; i++){
-        double cvder = BeadList->CVSplines[i].GetCVFirstDer(Alpha);
+        double cvder = BeadList->CVSplines[i]->GetCVFirstDer(Alpha);
         slen2 += cvder*cvder;
     }
 
@@ -288,8 +288,8 @@ void CBead::CalcProjector(void)
             } else {
                 P[i][j] = 0.0;
             }
-            double cvder1 = BeadList->CVSplines[i].GetCVFirstDer(Alpha);
-            double cvder2 = BeadList->CVSplines[j].GetCVFirstDer(Alpha);
+            double cvder1 = BeadList->CVSplines[i]->GetCVFirstDer(Alpha);
+            double cvder2 = BeadList->CVSplines[j]->GetCVFirstDer(Alpha);
             P[i][j] -= cvder1*cvder2/slen2;
         }
     }
@@ -332,7 +332,7 @@ void CBead::UpdatePosition(void)
     double step = BeadList->StepSize;
 
     for(int i=0; i < NumOfCVs; i++){
-        double maxmov = BeadList->CVs[i].GetMaxMovement();
+        double maxmov = BeadList->CVs[i]->GetMaxMovement();
          OPos[i] = Pos[i];
         if( (maxmov <= 0) || (fabs(pPMF[i]*step) < maxmov) ){
             NPos[i] = Pos[i] - pPMF[i]*step;

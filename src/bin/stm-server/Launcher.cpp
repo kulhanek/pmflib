@@ -531,7 +531,7 @@ bool CLauncher::SubmitAllJobs(void)
 
     while( (it != ie) && (ThreadTerminated == false)  ){
         CLauncherJob& job = *it;
-        CBead* p_bead = StringServer.Beads.GetBead(job.BeadID);
+        CBeadPtr p_bead = StringServer.Beads.GetBead(job.BeadID);
         it++;
 
         if( (p_bead->GetModeStatus() == BMS_PREPARED) &&
