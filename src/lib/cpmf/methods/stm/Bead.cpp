@@ -272,6 +272,10 @@ template <typename T> int sgn(T val) {
 
 void CBead::CalcProjector(void)
 {
+    for(int i=0; i < NumOfCVs; i++){
+        OPos[i] = Pos[i];
+    }
+
     if( Permanent ){
         for(int i=0; i < NumOfCVs; i++){
             pPMF[i] = 0.0;
@@ -450,6 +454,8 @@ void CBead::GetProductionData(CXMLElement* p_ele)
     }
     MTZ.Load(p_mtzele);
 
+    Pos = FPos; // update position with the last position
+
     ModeStatus = BMS_FINISHED;
 }
 
@@ -474,7 +480,7 @@ void CBead::SetNextStepData(CXMLElement* p_ele)
 {
     if( ModeStatus != BMS_PREPARED ){
         CSmallString error;
-        error << "bead ID=" << BeadID << " is not in preapred mode, unable to set data for exchange";
+        error << "bead ID=" << BeadID << " is not in prepared mode, unable to set data for exchange";
         RUNTIME_ERROR(error);
     }
 
@@ -488,7 +494,7 @@ void CBead::SetNextStepData(CXMLElement* p_ele)
 
     // and bead position
     CXMLBinData* p_bposele = p_ele->CreateChildBinData("BPOS");
-    Pos.Save(p_bposele);
+    FPos.Save(p_bposele);   // use final position
 
     ModeStatus = BMS_RUNNING;
 }

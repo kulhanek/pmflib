@@ -559,6 +559,7 @@ bool CSTMPath::LoadCVSplines(CPrmFile& prmfile)
     // and again re-optimize path
     for(int b=0; b < NumOfBeads; b++){
         Beads[b]->PPos = Beads[b]->FPos;
+        Beads[b]->Pos  = Beads[b]->FPos;
     }
     OptimizePath(Beads);
 
@@ -1154,9 +1155,19 @@ void CSTMPath::ProcessProductionData(CBeadPtr p_bead)
             // do all operations on the whole path
             try{
                 if( STMStatus == ESTMS_PATH_FOUND ){
+                    CompletePathData();
+                    IntegratePath();
+                    STMStep++;
+                    SavePathAndTraj();
+
+                    vout << endl;
+                    PrintSTMStepInfo();
+
                     // this will happen if the path was found and final production runs are required
                     STMStatus = ESTMS_COMPLETED;
-                    vout << ">> INFO: The server is terminated since all data were acquired." <<  endl;
+
+                    vout << endl;
+                    vout << ">> INFO: The server is terminated since all data were acquired.*" <<  endl;
                 } else {
                     ProcessingMutex.Lock();
                     switch( p_bead->GetMode() ){
@@ -1177,7 +1188,7 @@ void CSTMPath::ProcessProductionData(CBeadPtr p_bead)
                                         Beads[b]->Mode = BMO_ACCUMULATION;
                                     }
                                     STMStatus = ESTMS_COMPLETED;
-                                    vout << ">> INFO: The server is terminated since all data were acquired." <<  endl;
+                                    vout << ">> INFO: The server is terminated since all data were acquired.**" <<  endl;
                                 }
                             } else {
                                 if( MaxSTMSteps <= STMStep ){
@@ -1187,13 +1198,23 @@ void CSTMPath::ProcessProductionData(CBeadPtr p_bead)
                             }
                             break;
                         case BMO_PRODUCTION:
+                            CompletePathData();
+                            IntegratePath();
+                            STMStep++;
+                            SavePathAndTraj();
+
+                            vout << endl;
+                            PrintSTMStepInfo();
+
                             for(int b=0; b < NumOfBeads; b++){
                                 Beads[b]->Mode = BMO_PRODUCTION;
                             }
                             // this can happen only when STM with production period is run
                             // e.g. init, equi, accu periods are zero
                             STMStatus = ESTMS_COMPLETED;
-                            vout << ">> INFO: The server is terminated since all data were acquired." <<  endl;
+
+                            vout << endl;
+                            vout << ">> INFO: The server is terminated since all data were acquired.***" <<  endl;
                             break;
                     }
                     if( Terminate ){
@@ -2021,7 +2042,7 @@ void CSTMPath::PrintSTMStepInfo(void)
         double mov = 0;
         double ppmfsize = 0.0;
         for(int i=0; i < NumOfCVs; i++){
-            mov += (Beads[b]->Pos[i]-Beads[b]->OPos[i])*(Beads[b]->Pos[i]-Beads[b]->OPos[i]);
+            mov += (Beads[b]->FPos[i]-Beads[b]->OPos[i])*(Beads[b]->FPos[i]-Beads[b]->OPos[i]);
             ppmfsize += (Beads[b]->pPMF[i])*(Beads[b]->pPMF[i]);
         }
 
@@ -2062,7 +2083,7 @@ void CSTMPath::PrintSTMStepInfo(void)
     vout << " " << setw(1) << termcrit << "/" << "5";
     vout << endl;
 
-    if( termcrit == 5 ){
+    if( (termcrit == 5) && (STMStatus != ESTMS_PATH_FOUND) ){
         STMStatus = ESTMS_PATH_FOUND;
         vout << endl;
         vout << ">> INFO: The path have converged." << endl;
@@ -2093,6 +2114,7 @@ void CSTMPath::CompletePathData(void)
     // re-optimize path
     for(int b=0; b < NumOfBeads; b++){
         Beads[b]->PPos = Beads[b]->Pos;
+        Beads[b]->FPos = Beads[b]->Pos;
     }
     CurrentPathLength = OptimizePath(Beads);
 
@@ -2200,8 +2222,7 @@ void CSTMPath::CheckBoundaries(void)
 
     // get data about the final path
     for(int b=0; b < NumOfBeads; b++){
-        Beads[b]->Pos  = Beads[b]->FPos;
-        Beads[b]->PPos = Beads[b]->Pos;
+        Beads[b]->PPos  = Beads[b]->FPos;
     }
     UpdatedPathLength = OptimizePath(Beads);
 }
