@@ -19,6 +19,11 @@
 // ===============================================================================
 
 #include <CVSplineSmoothingCubic.hpp>
+#include <iomanip>
+
+//------------------------------------------------------------------------------
+
+using namespace std;
 
 //==============================================================================
 //------------------------------------------------------------------------------
@@ -26,7 +31,8 @@
 
 CCVSplineSmoothingCubic::CCVSplineSmoothingCubic(void)
 {
-    lambda = 0.98; // interpolating spline
+    lambda = 1.0; // 1.0 - interpolating spline
+    all_sigma = 1.0;
 }
 
 //------------------------------------------------------------------------------
@@ -34,6 +40,36 @@ CCVSplineSmoothingCubic::CCVSplineSmoothingCubic(void)
 CCVSplineSmoothingCubic::~CCVSplineSmoothingCubic(void)
 {
     Clear();
+}
+
+//==============================================================================
+//------------------------------------------------------------------------------
+//==============================================================================
+
+bool CCVSplineSmoothingCubic::LoadSetup(CPrmFile& prmfile,std::ostream& vout)
+{
+    if( prmfile.GetDoubleByKey("lambda",lambda) == true  ) {
+        vout << "Lambda (lambda)                                = " << left << setw(20) << lambda << endl;
+    } else {
+        vout << "Lambda (lambda)                                = " << left << setw(20) << lambda << "  (default)" << endl;
+    }
+    if( prmfile.GetDoubleByKey("sigma",all_sigma) == true  ) {
+        vout << "All sigmas (sigma)                             = " << left << setw(20) << all_sigma << endl;
+    } else {
+        vout << "Lambda (lambda)                                = " << left << setw(20) << all_sigma << "  (default)" << endl;
+    }
+
+    vout << endl;
+    return(true);
+}
+
+//------------------------------------------------------------------------------
+
+void CCVSplineSmoothingCubic::PrintSetup(std::ostream& vout)
+{
+    vout << "Type        = smoothing cubic spline" << endl;
+    vout << "Lambda      = " << lambda << endl;
+    vout << "Sigma (all) = " << all_sigma << endl;
 }
 
 //==============================================================================
@@ -70,7 +106,7 @@ void CCVSplineSmoothingCubic::Allocate(int numofknots)
     y.SetZero();
 
     sigma.CreateVector(n+1); // 0,1,...,n
-    sigma.Set(0.005);
+    sigma.Set(all_sigma);
 
     sa.CreateVector(n+1); // 0,1,...,n
     sa.SetZero();
@@ -87,7 +123,7 @@ void CCVSplineSmoothingCubic::Allocate(int numofknots)
 
 //------------------------------------------------------------------------------
 
-void CCVSplineSmoothingCubic::AddPoint(int knotid,double alpha,double cv)
+void CCVSplineSmoothingCubic::SetPoint(int knotid,double alpha,double cv)
 {
     if( (knotid < 0) || (knotid > n)) {
         RUNTIME_ERROR("knotid is out-of-range");
@@ -95,6 +131,7 @@ void CCVSplineSmoothingCubic::AddPoint(int knotid,double alpha,double cv)
 
     x[knotid] = alpha;
     y[knotid] = cv;
+    sigma[knotid] = all_sigma;
 }
 
 //------------------------------------------------------------------------------
@@ -120,8 +157,13 @@ void CCVSplineSmoothingCubic::SetSigma(int knotid,double sig)
 
 //------------------------------------------------------------------------------
 
-void CCVSplineSmoothingCubic::Finalize(void)
+void CCVSplineSmoothingCubic::BuildSpline(void)
 {
+    sa.SetZero();
+    sb.SetZero();
+    sc.SetZero();
+    sd.SetZero();
+
     if (n <= 0){
         RUNTIME_ERROR("not enough of knots");
     }
@@ -130,8 +172,6 @@ void CCVSplineSmoothingCubic::Finalize(void)
         // linear interpolation - between two points
         sd[0] = y[0];
         sc[0] = (y[1] - y[0]) / (x[1] - x[0]);
-        sb[0] = 0.0;
-        sa[0] = 0.0;
         return;
     }
 

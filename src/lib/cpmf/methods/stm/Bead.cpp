@@ -191,6 +191,19 @@ void CBead::MoveToNextMode(void)
 {
     if( ModeStatus != BMS_FINISHED ) return; // keep current mode
 
+    // clear spline data
+    dCV.Set(0.0);
+    P.SetZero();
+
+    // clear accumulated data
+    PMF.Set(0.0);
+    MTZ.SetZero();
+
+    // clear derived data
+    pPMF.Set(0.0);
+    dAdAlpha = 0.0;
+    A = 0.0;
+
     switch(Mode){
         case BMO_UNKNOWN:
         default:

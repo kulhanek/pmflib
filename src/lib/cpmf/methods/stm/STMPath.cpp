@@ -29,7 +29,7 @@
 #include <math.h>
 #include <XMLIterator.hpp>
 #include <PrmUtils.hpp>
-#include <CVSplineNaturalCubic.hpp>
+#include <CVSplineInterpolatingCubic.hpp>
 #include <CVSplineSmoothingCubic.hpp>
 
 //------------------------------------------------------------------------------
@@ -63,10 +63,10 @@ CSTMPath::CSTMPath(void)
     MaxSTMSteps         = 250;
     StepSize            = 0.001;
     FinalMaxPLenChange  = 0.01;
-    FinalMaxMovement    = 0.01;
+    FinalMaxMovement    = 0.50;
     FinalAveMovement    = 0.01;
-    FinalpPMFSizeMax    = 0.01;
-    FinalpPMFSizeAve    = 0.01;
+    FinalpPMFSizeMax    = 5.00;
+    FinalpPMFSizeAve    = 1.50;
 
     SmoothingFac = 0.1;
     AsynchronousMode = false;    // update per bead or path
@@ -83,6 +83,8 @@ CSTMPath::CSTMPath(void)
     STMStatus = ESTMS_INITIALIZED;
     HeaderPrinted = false;
     Terminate = false;
+
+    CVSplineType = "interpolating-cubic";
 
     // how many points are used to calculate path segment length
     SegmentDiscretization = 10;
@@ -101,20 +103,18 @@ void CSTMPath::AllocatePath(void)
         RUNTIME_ERROR("number of beads must be larger than or equal to 3");
     }
 
+// CVs
     for(int i=0; i < NumOfCVs; i++){
         CColVariablePtr cv = CColVariablePtr(new CColVariable);
         CVs.push_back(cv);
-        CCVSplinePtr cvspline = CCVSplinePtr(new CCVSplineSmoothingCubic);
-        CVSplines.push_back(cvspline);
     }
 
+// path beads
     for(int b=0; b < NumOfBeads; b++){
         CBeadPtr bead = CBeadPtr(new CBead);
         Beads.push_back(bead);
         bead->InitBead(this,NumOfCVs);
     }
-
-    SPos.CreateVector(NumOfCVs);
 }
 
 //------------------------------------------------------------------------------
@@ -143,11 +143,11 @@ void CSTMPath::AttachVerboseStream(std::ostream& str,bool verbose)
 
 //------------------------------------------------------------------------------
 
-void CSTMPath::ProcessFilesControl(CPrmFile& file)
+bool CSTMPath::ProcessFilesControl(CPrmFile& prmfile)
 {
     vout << endl;
     vout << "=== [files] ====================================================================" << endl;
-    if(file.OpenSection("files") == false) {
+    if(prmfile.OpenSection("files") == false) {
         vout << "Input path (input)                             = " << setw(20) << InputPath
              << "  (default)" << endl;
         vout << "Output path (output)                           = " << setw(20) << OutputPath
@@ -156,45 +156,47 @@ void CSTMPath::ProcessFilesControl(CPrmFile& file)
              << "  (default)" << endl;
         vout << "Path trajectory (trajectory)                   = " << setw(20) << PathTrajectory
              << "  (default)" << endl;
-        return;
+        return(true);
     }
 
-    if(file.GetStringByKey("input",InputPath) == true) {
+    if(prmfile.GetStringByKey("input",InputPath) == true) {
         vout << "Input path (input)                             = " << setw(20) << InputPath << endl;
     } else {
         vout << "Input path (input)                             = " << setw(20) << InputPath
              << "  (default)" << endl;
     }
 
-    if(file.GetStringByKey("output",OutputPath) == true) {
+    if(prmfile.GetStringByKey("output",OutputPath) == true) {
         vout << "Output path (output)                           = " << setw(20) << OutputPath << endl;
     } else {
         vout << "Output path (output)                           = " << setw(20) << OutputPath
              << "  (default)" << endl;
     }
 
-    if(file.GetStringByKey("summary",OutputPathSummary) == true) {
+    if(prmfile.GetStringByKey("summary",OutputPathSummary) == true) {
         vout << "Output path summary (summary)                  = " << setw(20) << OutputPathSummary << endl;
     } else {
         vout << "Output path summary (summary)                  = " << setw(20) << OutputPathSummary
              << "  (default)" << endl;
     }
 
-    if(file.GetStringByKey("trajectory",PathTrajectory) == true) {
+    if(prmfile.GetStringByKey("trajectory",PathTrajectory) == true) {
         vout << "Path trajectory (trajectory)                   = " << setw(20) << PathTrajectory << endl;
     } else {
         vout << "Path trajectory (trajectory)                   = " << setw(20) << PathTrajectory
              << "  (default)" << endl;
     }
+
+    return(true);
 }
 
 //------------------------------------------------------------------------------
 
-void CSTMPath::ProcessSTMControl(CPrmFile& file)
+bool CSTMPath::ProcessSTMControl(CPrmFile& prmfile)
 {
     vout << endl;
     vout << "=== [stm] ======================================================================" << endl;
-    if(file.OpenSection("stm") == false) {
+    if(prmfile.OpenSection("stm") == false) {
         vout << "Max number of STM steps (steps)                = " << setw(9) << MaxSTMSteps
              << left << "             (default)" << endl;
         vout << "Step size (stepsize)                           = " << setw(9) << StepSize
@@ -207,9 +209,9 @@ void CSTMPath::ProcessSTMControl(CPrmFile& file)
         vout << "Average final path movement (avefmove)         = " << setw(9) << FinalAveMovement
              << left << "             (default)" << endl;
 
-        vout << "Average final path movement (maxfppmf)         = " << setw(9) << FinalpPMFSizeMax
+        vout << "Max perpendicular mean force (maxfppmf)        = " << setw(9) << FinalpPMFSizeMax
              << left << "             (default)" << endl;
-        vout << "Average final path movement (avefppmf)         = " << setw(9) << FinalpPMFSizeAve
+        vout << "Average perpendicular mean force (avefppmf)    = " << setw(9) << FinalpPMFSizeAve
              << left << "             (default)" << endl;
 
         vout << "Initialization period (init)                   = " << setw(9) << InitPeriod
@@ -226,108 +228,110 @@ void CSTMPath::ProcessSTMControl(CPrmFile& file)
              << left << "             (default)" << endl;
         vout << "Asynchronous mode (async)                      = " << setw(9) << right << PrmFileOnOff(AsynchronousMode)
              << left << "             (default)" << endl;
-        return;
+        return(true);
     }
 
-    if(file.GetIntegerByKey("steps",MaxSTMSteps) == true) {
+    if(prmfile.GetIntegerByKey("steps",MaxSTMSteps) == true) {
         vout << "Max number of STM steps (steps)                = " << setw(9) << MaxSTMSteps << left << endl;
     } else {
         vout << "Max number of STM steps (steps)                = " << setw(9) << MaxSTMSteps
              << left << "             (default)" << endl;
     }
 
-    if(file.GetDoubleByKey("stepsize",StepSize) == true) {
+    if(prmfile.GetDoubleByKey("stepsize",StepSize) == true) {
         vout << "Step size (stepsize)                           = " << setw(9) << StepSize << left << endl;
     } else {
         vout << "Step size (stepsize)                           = " << setw(9) << StepSize
              << left << "             (default)" << endl;
     }
 
-    if(file.GetDoubleByKey("maxfplch",FinalMaxPLenChange) == true) {
+    if(prmfile.GetDoubleByKey("maxfplch",FinalMaxPLenChange) == true) {
         vout << "Max final path length change (maxfplch)        = " << setw(9) << FinalMaxPLenChange << left << endl;
     } else {
         vout << "Max final path length change (maxfplch)        = " << setw(9) << FinalMaxPLenChange
              << left << "             (default)" << endl;
     }
 
-    if(file.GetDoubleByKey("maxfmove",FinalMaxMovement) == true) {
+    if(prmfile.GetDoubleByKey("maxfmove",FinalMaxMovement) == true) {
         vout << "Max final path movement (maxfmove)             = " << setw(9) << FinalMaxMovement << left << endl;
     } else {
         vout << "Max final path movement (maxfmove)             = " << setw(9) << FinalMaxMovement
              << left << "             (default)" << endl;
     }
 
-    if(file.GetDoubleByKey("avefmove",FinalAveMovement) == true) {
+    if(prmfile.GetDoubleByKey("avefmove",FinalAveMovement) == true) {
         vout << "Average final path movement (avefmove)         = " << setw(9) << FinalAveMovement << left << endl;
     } else {
         vout << "Average final path movement (avefmove)         = " << setw(9) << FinalAveMovement
              << left << "             (default)" << endl;
     }
 
-    if(file.GetDoubleByKey("maxfppmf",FinalpPMFSizeMax) == true) {
-        vout << "Max final path movement (maxfppmf)             = " << setw(9) << FinalpPMFSizeMax << left << endl;
+    if(prmfile.GetDoubleByKey("avefppmf",FinalpPMFSizeAve) == true) {
+        vout << "Average perpendicular mean force (avefppmf)    = " << setw(9) << FinalpPMFSizeAve << left << endl;
     } else {
-        vout << "Max final path movement (maxfppmf)             = " << setw(9) << FinalpPMFSizeMax
+        vout << "Average perpendicular mean force (avefppmf)    = " << setw(9) << FinalpPMFSizeAve
              << left << "             (default)" << endl;
     }
 
-    if(file.GetDoubleByKey("avefppmf",FinalpPMFSizeAve) == true) {
-        vout << "Average final path movement (avefppmf)         = " << setw(9) << FinalpPMFSizeAve << left << endl;
+    if(prmfile.GetDoubleByKey("maxfppmf",FinalpPMFSizeMax) == true) {
+        vout << "Max perpendicular mean force (maxfppmf)        = " << setw(9) << FinalpPMFSizeMax << left << endl;
     } else {
-        vout << "Average final path movement (avefppmf)         = " << setw(9) << FinalpPMFSizeAve
+        vout << "Max perpendicular mean force (maxfppmf)        = " << setw(9) << FinalpPMFSizeMax
              << left << "             (default)" << endl;
     }
 
-    if(file.GetIntegerByKey("init",InitPeriod) == true) {
+    if(prmfile.GetIntegerByKey("init",InitPeriod) == true) {
         vout << "Initialization period (init)                   = " << setw(9) << InitPeriod << endl;
     } else {
         vout << "Initialization period (init)                   = " << setw(9) << InitPeriod
              << "             (default)" << endl;
     }
 
-    if(file.GetIntegerByKey("accu",AccuPeriod) == true) {
+    if(prmfile.GetIntegerByKey("accu",AccuPeriod) == true) {
         vout << "Accumulation period (accu)                     = " << setw(9) << AccuPeriod << endl;
     } else {
         vout << "Accumulation period (accu)                     = " << setw(9) << AccuPeriod
              << "             (default)" << endl;
     }
 
-    if(file.GetIntegerByKey("equi",EquiPeriod) == true) {
+    if(prmfile.GetIntegerByKey("equi",EquiPeriod) == true) {
         vout << "Equilibration period (equi)                    = " << setw(9) << EquiPeriod << endl;
     } else {
         vout << "Equilibration period (equi)                    = " << setw(9) << EquiPeriod
              << "             (default)" << endl;
     }
 
-    if(file.GetIntegerByKey("prod",ProdPeriod) == true) {
+    if(prmfile.GetIntegerByKey("prod",ProdPeriod) == true) {
         vout << "Final production period (prod)                 = " << setw(9) << ProdPeriod << endl;
     } else {
         vout << "Final production period (prod)                 = " << setw(9) << ProdPeriod
              << "             (default)" << endl;
     }
 
-    if(file.GetDoubleByKey("sfac",SmoothingFac) == true) {
+    if(prmfile.GetDoubleByKey("sfac",SmoothingFac) == true) {
         vout << "Path smoothing factor (sfac)                   = " << setw(9) << SmoothingFac << left << endl;
     } else {
         vout << "Path smoothing factor (sfac)                   = " << setw(9) << SmoothingFac
              << left << "             (default)" << endl;
     }
 
-    if(file.GetLogicalByKey("async",AsynchronousMode) == true) {
+    if(prmfile.GetLogicalByKey("async",AsynchronousMode) == true) {
         vout << "Asynchronous mode (async)                      = " << setw(9) << right << PrmFileOnOff(AsynchronousMode) << left << endl;
     } else {
         vout << "Asynchronous mode (async)                      = " << setw(9) << right << PrmFileOnOff(AsynchronousMode)
              << left << "             (default)" << endl;
     }
+
+    return(true);
 }
 
 //------------------------------------------------------------------------------
 
-void CSTMPath::ProcessIntervalsControl(CPrmFile& file)
+bool CSTMPath::ProcessIntervalsControl(CPrmFile& prmfile)
 {
     vout << endl;
     vout << "=== [intervals] ================================================================" << endl;
-    if(file.OpenSection("intervals") == false) {
+    if(prmfile.OpenSection("intervals") == false) {
         vout << "Trajectory interval (trajectory)               = " << setw(9) << TrajInterval
              << "             (default)" << endl;
         vout << "Output path update (output)                    = " << setw(9) << OutInterval
@@ -336,41 +340,43 @@ void CSTMPath::ProcessIntervalsControl(CPrmFile& file)
              << "             (default)" << endl;
         vout << "Path reparametrization interval (reparam)      = " << setw(9) << ReparamInterval
              << "             (default)" << endl;
-        return;
+        return(true);
     }
 
-    if(file.GetIntegerByKey("trajectory",TrajInterval) == true) {
+    if(prmfile.GetIntegerByKey("trajectory",TrajInterval) == true) {
         vout << "Trajectory interval (trajectory)               = " << setw(9) << TrajInterval << endl;
     } else {
         vout << "Trajectory interval (trajectory)               = " << setw(9) << TrajInterval
              << "             (default)" << endl;
     }
 
-    if(file.GetIntegerByKey("output",OutInterval) == true) {
+    if(prmfile.GetIntegerByKey("output",OutInterval) == true) {
         vout << "Output path update (output)                    = " << setw(9) << OutInterval << endl;
     } else {
         vout << "Output path update (output)                    = " << setw(9) << OutInterval
              << "             (default)" << endl;
     }
 
-    if(file.GetIntegerByKey("smooth",SmoothInterval) == true) {
+    if(prmfile.GetIntegerByKey("smooth",SmoothInterval) == true) {
         vout << "Path smoothing interval (smooth)               = " << setw(9) << SmoothInterval << endl;
     } else {
         vout << "Path smoothing interval (smooth)               = " << setw(9) << SmoothInterval
              << "             (default)" << endl;
     }
 
-    if(file.GetIntegerByKey("reparam",ReparamInterval) == true) {
+    if(prmfile.GetIntegerByKey("reparam",ReparamInterval) == true) {
         vout << "Path reparametrization interval (reparam)      = " << setw(9) << ReparamInterval << endl;
     } else {
         vout << "Path reparametrization interval (reparam)      = " << setw(9) << ReparamInterval
              << "             (default)" << endl;
     }
+
+    return(true);
 }
 
 //------------------------------------------------------------------------------
 
-void CSTMPath::ProcessPathControl(CPrmFile& file)
+bool CSTMPath::ProcessPathControl(CPrmFile& prmfile)
 {
 //    ! [PATH]
 //    ! nbeads     number_of_beads
@@ -388,23 +394,23 @@ void CSTMPath::ProcessPathControl(CPrmFile& file)
 
     vout << endl;
     vout << "=== [PATH] =====================================================================" << endl;
-    if(file.OpenSection("PATH") == false) {
+    if(prmfile.OpenSection("PATH") == false) {
         RUNTIME_ERROR("[PATH] section is mandatory for a path specification");
     }
 
-    if(file.GetStringByKey("name",PathName) == true) {
+    if(prmfile.GetStringByKey("name",PathName) == true) {
         vout << "Path name                         = " << PathName << endl;
     } else {
         RUNTIME_ERROR("path name (name) is not specified");
     }
 
     // read number of beads and CVs
-    if(file.GetIntegerByKey("nbeads",NumOfBeads) == true) {
+    if(prmfile.GetIntegerByKey("nbeads",NumOfBeads) == true) {
         vout << "Number of beads (nbeads)          = " << NumOfBeads << endl;
     } else {
         RUNTIME_ERROR("number of beads (nbeads) is not specified");
     }
-    if(file.GetIntegerByKey("ncvs",NumOfCVs) == true) {
+    if(prmfile.GetIntegerByKey("ncvs",NumOfCVs) == true) {
         vout << "Number of CVS (ncvs)              = " << NumOfCVs << endl;
     } else {
         RUNTIME_ERROR("number of CVs (ncvs) is not specified");
@@ -430,34 +436,108 @@ void CSTMPath::ProcessPathControl(CPrmFile& file)
     vout << endl;
 
     // load cvs,types,min and max items
-    ReadPathControls(file);
+    ReadPathControls(prmfile);
 
     // read temporary path - only points specified by user
-    int num_of_user_beads = ReadPathNumberOfUserBeads(file);
+    int num_of_user_beads = ReadPathNumberOfUserBeads(prmfile);
 
     vout << debug << "Number of user provided beads: " << num_of_user_beads << endl;
     vout << high;
 
-    std::vector<CBeadPtr>  beads;
     for(int i=0; i < num_of_user_beads; i++){
         CBeadPtr bead = CBeadPtr(new CBead);
-        beads.push_back(bead);
+        InputBeads.push_back(bead);
     }
 
-    ReadPathUserBeads(file,beads);
+    ReadPathUserBeads(prmfile,InputBeads);
+
+    return(true);
+}
+
+//------------------------------------------------------------------------------
+
+bool CSTMPath::LoadCVSplines(CPrmFile& prmfile)
+{
+    if( NumOfCVs < 2 ){
+        RUNTIME_ERROR("number of CVs must be larger than or equal to 2");
+    }
+
+    if( prmfile.OpenGroup("CVSPLINES") == false ) {
+        vout << ">> Info: No {CVSPLINES} group is specified - using the default interpolating cubic splines ..." << endl;
+        CVSplineType = "interpolating-cubic";
+    } else {
+        vout << endl;
+        vout << "=== [setup] ====================================================================" << endl;
+        if( prmfile.OpenSection("setup") == false ) {
+            vout << "CV spline type (type)                          = " << left << setw(20) << CVSplineType << "  (default)" << endl;
+        } else {
+            if( prmfile.GetStringByKey("type",CVSplineType) == true  ) {
+                vout << "CV spline type (type)                          = " << left << setw(20) << CVSplineType << endl;
+            } else {
+                vout << "CV spline type (type)                          = " << left << setw(20) << CVSplineType << "  (default)" << endl;
+            }
+        }
+    }
+
+// path splines
+    for(int i=0; i < NumOfCVs; i++){
+        vout << endl;
+        vout << "# ### CV: " << CVs[i]->GetName() << endl;
+        vout << "# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" << endl;
+
+        CCVSplinePtr cvspline;
+        if( CVSplineType ==  "interpolating-cubic" ){
+            cvspline = CCVSplinePtr(new CCVSplineInterpolatingCubic);
+        } else if( CVSplineType ==  "smoothing-cubic" ){
+            cvspline = CCVSplinePtr(new CCVSplineSmoothingCubic);
+        } else {
+            RUNTIME_ERROR("not implemented CV spline");
+        }
+
+        // search CV spline setup
+        bool found = false;
+        bool res = prmfile.FirstSection();
+        while( res == true ){
+            if( prmfile.GetSectionName() == "CV" ){
+                CSmallString cv_name;
+                if( prmfile.GetStringByKey("name",cv_name) && (cv_name == CVs[i]->GetName()) ){
+                    found = true;
+                    cvspline->LoadSetup(prmfile,vout);
+                }
+            }
+            res = prmfile.NextSection();
+        }
+        if( found == false ){
+            if( prmfile.OpenSection("default") == true ) {
+                cvspline->LoadSetup(prmfile,vout);
+            }
+        }
+
+        cvspline->PrintSetup(vout);
+
+        CVSplines.push_back(cvspline);
+    }
+
+    vout << endl;
+    vout << ":::::::::::::::::::::::::::::::::: | FULL PATH | :::::::::::::::::::::::::::::::" << endl;
+
+// helper vector - spline segment length
+    SPos.CreateVector(NumOfCVs);
+
+    int num_of_user_beads = InputBeads.size();
 
     // optimize path
     for(int i=0; i < num_of_user_beads; i++){
-        beads[i]->PPos = beads[i]->Pos;
+        InputBeads[i]->PPos = InputBeads[i]->Pos;
     }
-    OptimizePath(beads);
+    OptimizePath(InputBeads);
 
-    // generate missing points or reoptimize path
+    // generate missing points or re-optimize path
     Beads[0]->Alpha = 0.0;
-    Beads[0]->Permanent = beads[0]->Permanent;
+    Beads[0]->Permanent = InputBeads[0]->Permanent;
     Beads[0]->BeadID = 1;
     Beads[NumOfBeads-1]->Alpha = 1.0;
-    Beads[NumOfBeads-1]->Permanent = beads[num_of_user_beads-1]->Permanent;
+    Beads[NumOfBeads-1]->Permanent = InputBeads[num_of_user_beads-1]->Permanent;
     Beads[NumOfBeads-1]->BeadID = NumOfBeads;
     for(int i=0; i < NumOfCVs; i++){
         Beads[0]->Pos[i] = CVSplines[i]->GetCV(0.0);
@@ -476,7 +556,7 @@ void CSTMPath::ProcessPathControl(CPrmFile& file)
     }
     CheckBoundaries();
 
-    // and again reoptimize path
+    // and again re-optimize path
     for(int b=0; b < NumOfBeads; b++){
         Beads[b]->PPos = Beads[b]->FPos;
     }
@@ -494,6 +574,8 @@ void CSTMPath::ProcessPathControl(CPrmFile& file)
             Beads[b]->Alpha = alpha;
         }
     }
+
+    return(true);
 }
 
 //------------------------------------------------------------------------------
@@ -2069,9 +2151,9 @@ void CSTMPath::ReparametrizeAllPositions(void)
         return;
     }
 
-   // vout << debug << "Reparametrizing positions ..." << endl << high;
+   // vout << debug << "Re-parametrizing positions ..." << endl << high;
 
-    // reoptimize path
+    // re-optimize path
     for(int b=0; b < NumOfBeads; b++){
         Beads[b]->PPos = Beads[b]->SPos;
     }
@@ -2079,11 +2161,24 @@ void CSTMPath::ReparametrizeAllPositions(void)
 
     // and correct positions
     for(int i=0; i < NumOfCVs; i++){
-        Beads[0]->FPos[i] = CVSplines[i]->GetCV(0.0);
-        Beads[NumOfBeads-1]->FPos[i] = CVSplines[i]->GetCV(1.0);
+        if( Beads[0]->Permanent ){
+            Beads[0]->FPos[i] = Beads[0]->SPos[i];
+        } else {
+            Beads[0]->FPos[i] = CVSplines[i]->GetCV(0.0);
+        }
+        if( Beads[NumOfBeads-1]->Permanent ){
+            Beads[NumOfBeads-1]->FPos[i] = Beads[NumOfBeads-1]->SPos[i];
+        } else {
+            Beads[NumOfBeads-1]->FPos[i] = CVSplines[i]->GetCV(1.0);
+        }
+
         for(int b=1; b < NumOfBeads-1; b++){
             double alpha = (double)b / ((double)NumOfBeads-1.0);
-            Beads[b]->FPos[i] = CVSplines[i]->GetCV(alpha);
+            if( Beads[b]->Permanent ){
+                Beads[b]->FPos[i] = Beads[b]->SPos[i];
+            } else {
+                Beads[b]->FPos[i] = CVSplines[i]->GetCV(alpha);
+            }
         }
     }
 }
@@ -2185,14 +2280,14 @@ double CSTMPath::OptimizePath(std::vector<CBeadPtr>& beads)
 
     double prev_length = 0;
 
-    for(;;){
+    for(int s=0; s < 1000; s++){
         // interpolate CVS
         for(int i=0; i < NumOfCVs; i++){
             CVSplines[i]->Allocate(beads.size());
             for(size_t b=0; b < beads.size(); b++){
-                CVSplines[i]->AddPoint(b,beads[b]->Alpha,beads[b]->PPos[i]);
+                CVSplines[i]->SetPoint(b,beads[b]->Alpha,beads[b]->PPos[i]);
             }
-            CVSplines[i]->Finalize();
+            CVSplines[i]->BuildSpline();
         }
 
         prev_length = tot_length;
@@ -2221,6 +2316,8 @@ double CSTMPath::OptimizePath(std::vector<CBeadPtr>& beads)
         }
         beads[beads.size()-1]->Alpha = 1.0;
     }
+
+    return(tot_length);
 }
 
 //------------------------------------------------------------------------------

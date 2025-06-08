@@ -68,9 +68,6 @@ CLauncher::CLauncher(void)
 
 bool CLauncher::ReadControl(CPrmFile& confile,ostream& vout)
 {
-    vout << endl;
-    vout << ":::::::::::::::::::::::::::::::::::: {LAUNCHER} ::::::::::::::::::::::::::::::::" << endl;
-
     if( confile.OpenGroup("LAUNCHER") == false ) {
         vout << ">> Info: No {LAUNCHER} group is specified - disabling job launcher ..." << endl;
         Enabled = false;

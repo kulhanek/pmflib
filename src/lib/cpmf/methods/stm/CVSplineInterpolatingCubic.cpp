@@ -18,19 +18,19 @@
 //     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 // ===============================================================================
 
-#include <CVSplineNaturalCubic.hpp>
+#include <CVSplineInterpolatingCubic.hpp>
 
 //==============================================================================
 //------------------------------------------------------------------------------
 //==============================================================================
 
-CCVSplineNaturalCubic::CCVSplineNaturalCubic(void)
+CCVSplineInterpolatingCubic::CCVSplineInterpolatingCubic(void)
 {
 }
 
 //------------------------------------------------------------------------------
 
-CCVSplineNaturalCubic::~CCVSplineNaturalCubic(void)
+CCVSplineInterpolatingCubic::~CCVSplineInterpolatingCubic(void)
 {
     Clear();
 }
@@ -39,7 +39,24 @@ CCVSplineNaturalCubic::~CCVSplineNaturalCubic(void)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void CCVSplineNaturalCubic::Clear(void)
+bool CCVSplineInterpolatingCubic::LoadSetup(CPrmFile& prmfile,std::ostream& vout)
+{
+    // nothing to be here
+    return(true);
+}
+
+//------------------------------------------------------------------------------
+
+void CCVSplineInterpolatingCubic::PrintSetup(std::ostream& vout)
+{
+    vout << "Type = interpolating cubic spline" << std::endl;
+}
+
+//==============================================================================
+//------------------------------------------------------------------------------
+//==============================================================================
+
+void CCVSplineInterpolatingCubic::Clear(void)
 {
     x.FreeVector();
     y.FreeVector();
@@ -52,7 +69,7 @@ void CCVSplineNaturalCubic::Clear(void)
 
 //------------------------------------------------------------------------------
 
-void CCVSplineNaturalCubic::Allocate(int numofknots)
+void CCVSplineInterpolatingCubic::Allocate(int numofknots)
 {
     Clear();
 
@@ -83,7 +100,7 @@ void CCVSplineNaturalCubic::Allocate(int numofknots)
 
 //------------------------------------------------------------------------------
 
-void CCVSplineNaturalCubic::AddPoint(int knotid,double alpha,double cv)
+void CCVSplineInterpolatingCubic::SetPoint(int knotid,double alpha,double cv)
 {
     if( (knotid < 0) || (knotid > n)) {
         RUNTIME_ERROR("knotid is out-of-range");
@@ -95,8 +112,13 @@ void CCVSplineNaturalCubic::AddPoint(int knotid,double alpha,double cv)
 
 //------------------------------------------------------------------------------
 
-void CCVSplineNaturalCubic::Finalize(void)
+void CCVSplineInterpolatingCubic::BuildSpline(void)
 {
+    sa.SetZero();
+    sb.SetZero();
+    sc.SetZero();
+    sd.SetZero();
+
     if (n <= 0){
         RUNTIME_ERROR("not enough of knots");
     }
@@ -105,8 +127,6 @@ void CCVSplineNaturalCubic::Finalize(void)
         // linear interpolation - between two points
         sd[0] = y[0];
         sc[0] = (y[1] - y[0]) / (x[1] - x[0]);
-        sb[0] = 0.0;
-        sa[0] = 0.0;
         return;
     }
 
@@ -163,7 +183,7 @@ void CCVSplineNaturalCubic::Finalize(void)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-double CCVSplineNaturalCubic::GetCV(double alpha)
+double CCVSplineInterpolatingCubic::GetCV(double alpha)
 {
     // Handle out-of-bounds queries by clamping to the closest interval
     if( alpha <= x[0] ) {
@@ -186,7 +206,7 @@ double CCVSplineNaturalCubic::GetCV(double alpha)
 
 //------------------------------------------------------------------------------
 
-double CCVSplineNaturalCubic::GetCVFirstDer(double alpha)
+double CCVSplineInterpolatingCubic::GetCVFirstDer(double alpha)
 {
     // Handle out-of-bounds queries by clamping to the closest interval
     if( alpha <= x[0] ) {

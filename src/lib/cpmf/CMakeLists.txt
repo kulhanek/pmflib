@@ -53,7 +53,7 @@ SET(CPMF_METHODS_SRC
         methods/stm/Bead.cpp
         methods/stm/STMPath.cpp
         methods/stm/CVSpline.cpp
-        methods/stm/CVSplineNaturalCubic.cpp
+        methods/stm/CVSplineInterpolatingCubic.cpp
         methods/stm/CVSplineSmoothingCubic.cpp
         )
 

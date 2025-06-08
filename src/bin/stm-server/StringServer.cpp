@@ -103,16 +103,30 @@ int CStringServer::Init(int argc,char* argv[])
         }
     }
 
+    vout << endl;
+    vout << ":::::::::::::::::::::::::::::::::::::: {MAIN} ::::::::::::::::::::::::::::::::::" << endl;
+
     if( ProcessServerControl(Controls) == false ){
        return( SO_USER_ERROR );
-       }
+    }
 
     // additional setup
-    Beads.ProcessSTMControl(Controls);
-    Beads.ProcessFilesControl(Controls);
-    Beads.ProcessIntervalsControl(Controls);
+    if( Beads.ProcessSTMControl(Controls) == false ){
+       return( SO_USER_ERROR );
+    }
 
-    // load luncher setup
+    if( Beads.ProcessIntervalsControl(Controls) == false ){
+       return( SO_USER_ERROR );
+    }
+
+    if( Beads.ProcessFilesControl(Controls) == false ){
+       return( SO_USER_ERROR );
+    }
+
+    vout << endl;
+    vout << ":::::::::::::::::::::::::::::::::::: {LAUNCHER} ::::::::::::::::::::::::::::::::" << endl;
+
+    // load launcher setup
     if( Launcher.ReadControl(Controls,vout) == false ){
         ES_TRACE_ERROR("unable to load launcher setup");
         return( SO_USER_ERROR );
@@ -121,7 +135,16 @@ int CStringServer::Init(int argc,char* argv[])
     vout << endl;
     vout << "::::::::::::::::::::::::::::::::::::: {PATHS} ::::::::::::::::::::::::::::::::::" << endl;
 
-    Beads.LoadPath(Controls);
+    if( Beads.LoadPath(Controls) == false ){
+       return( SO_USER_ERROR );
+    }
+
+    vout << endl;
+    vout << "::::::::::::::::::::::::::::::::::: {CVSPLINES} ::::::::::::::::::::::::::::::::" << endl;
+
+    if( Beads.LoadCVSplines(Controls) == false ){
+       return( SO_USER_ERROR );
+    }
 
     if( Controls.CountULines() > 0 ){
         vout << endl;

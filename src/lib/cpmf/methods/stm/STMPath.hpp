@@ -90,16 +90,19 @@ public:
 
 // control file parsing --------------------------------------------------------
     /// load files setup
-    void ProcessFilesControl(CPrmFile& file);
+    bool ProcessFilesControl(CPrmFile& prmfile);
 
     /// load stm setup
-    void ProcessSTMControl(CPrmFile& file);
+    bool ProcessSTMControl(CPrmFile& prmfile);
 
     /// load intervals setup
-    void ProcessIntervalsControl(CPrmFile& file);
+    bool ProcessIntervalsControl(CPrmFile& prmfile);
 
     /// load path specification
-    void ProcessPathControl(CPrmFile& file);
+    bool ProcessPathControl(CPrmFile& prmfile);
+
+    /// load CV splines setup
+    bool LoadCVSplines(CPrmFile& prmfile);
 
 // network executive methods ---------------------------------------------------
     /// check if client is eligible to connect to STM server
@@ -118,6 +121,8 @@ public:
     void ProcessPathAsynchronously(void);
 
 // i/o methods -----------------------------------------------------------------
+    // this is used to transfer data to the stm-admin tool
+
     /// load entire path form XML stream
     void LoadInfo(CXMLElement* p_ele);
 
@@ -189,9 +194,14 @@ private:
     int                             NumOfCVs;
     std::vector<CColVariablePtr>    CVs;        // CV definitions
 
+    std::vector<CBeadPtr>           InputBeads; // input beads provided by an user
+
     int                             NumOfBeads;
     std::vector<CBeadPtr>           Beads;      // bead data
-    std::vector<CCVSplinePtr>       CVSplines;  // interpolated CV
+
+    CSmallString                    CVSplineType;
+    std::vector<CCVSplinePtr>       CVSplines;      // interpolated CV
+
 
     // STM setup ---------------------------------
     int                 MaxSTMSteps;        // maximum number of STM steps

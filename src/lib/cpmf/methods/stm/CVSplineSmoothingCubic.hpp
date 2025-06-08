@@ -38,6 +38,13 @@ public:
     virtual ~CCVSplineSmoothingCubic(void);
 
 // setup method ----------------------------------------------------------------
+    /// load spline setup
+    virtual bool LoadSetup(CPrmFile& prmfile,std::ostream& vout);
+
+    /// print setup
+    virtual void PrintSetup(std::ostream& vout);
+
+// setup method ----------------------------------------------------------------
     /// clear all data
     virtual void Clear(void);
 
@@ -45,10 +52,10 @@ public:
     virtual void Allocate(int numofknots);
 
     /// register data point
-    virtual void AddPoint(int knotid,double alpha,double cv);
+    virtual void SetPoint(int knotid,double alpha,double cv);
 
     /// finalize spline
-    virtual void Finalize(void);
+    virtual void BuildSpline(void);
 
     /// set lambda
     void SetLambda(double lam);
@@ -70,6 +77,7 @@ private:
     CSimpleVector<double>   y;      // CV values    indexing: 0,1,...,n
     CSimpleVector<double>   sigma;
     double                  lambda;
+    double                  all_sigma;
 
     // spline
     CSimpleVector<double>   sa, sb, sc, sd;   //indexing: 0,1,...,n

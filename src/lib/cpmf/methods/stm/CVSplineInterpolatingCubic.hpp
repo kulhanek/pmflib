@@ -1,5 +1,5 @@
-#ifndef CVSplineNaturalCubicH
-#define CVSplineNaturalCubicH
+#ifndef CVSplineInterpolatingCubicH
+#define CVSplineInterpolatingCubicH
 // ===============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -------------------------------------------------------------------------------
@@ -32,10 +32,17 @@
 
 //------------------------------------------------------------------------------
 
-class PMF_PACKAGE CCVSplineNaturalCubic : public CCVSpline {
+class PMF_PACKAGE CCVSplineInterpolatingCubic : public CCVSpline {
 public:
-    CCVSplineNaturalCubic(void);
-    virtual ~CCVSplineNaturalCubic(void);
+    CCVSplineInterpolatingCubic(void);
+    virtual ~CCVSplineInterpolatingCubic(void);
+
+// setup method ----------------------------------------------------------------
+    /// load spline setup
+    virtual bool LoadSetup(CPrmFile& prmfile,std::ostream& vout);
+
+    /// print setup
+    virtual void PrintSetup(std::ostream& vout);
 
 // setup method ----------------------------------------------------------------
     /// clear all data
@@ -45,10 +52,10 @@ public:
     virtual void Allocate(int numofknots);
 
     /// register data point
-    virtual void AddPoint(int knotid,double alpha,double cv);
+    virtual void SetPoint(int knotid,double alpha,double cv);
 
     /// finalize spline
-    virtual void Finalize(void);
+    virtual void BuildSpline(void);
 
 // information methods ---------------------------------------------------------
     /// get CV value for given alpha
@@ -69,7 +76,7 @@ private:
 
 //------------------------------------------------------------------------------
 
-typedef std::shared_ptr<CCVSplineNaturalCubic> CCVSplineNaturalCubicPtr;
+typedef std::shared_ptr<CCVSplineInterpolatingCubic> CCVSplineInterpolatingCubicPtr;
 
 //------------------------------------------------------------------------------
 

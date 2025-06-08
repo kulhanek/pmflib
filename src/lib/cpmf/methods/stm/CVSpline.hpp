@@ -22,6 +22,8 @@
 
 #include <PMFMainHeader.hpp>
 #include <memory>
+#include <PrmFile.hpp>
+#include <iostream>
 
 //------------------------------------------------------------------------------
 
@@ -31,6 +33,13 @@ public:
     virtual ~CCVSpline(void);
 
 // setup method ----------------------------------------------------------------
+    /// load spline setup
+    virtual bool LoadSetup(CPrmFile& prmfile,std::ostream& vout);
+
+    /// print setup
+    virtual void PrintSetup(std::ostream& vout);
+
+// setup method ----------------------------------------------------------------
     /// clear all data
     virtual void Clear(void) = 0;
 
@@ -38,10 +47,10 @@ public:
     virtual void Allocate(int numofknots) = 0;
 
     /// register data point
-    virtual void AddPoint(int knotid,double alpha,double cv) = 0;
+    virtual void SetPoint(int knotid,double alpha,double cv) = 0;
 
     /// finalize spline
-    virtual void Finalize(void) = 0;
+    virtual void BuildSpline(void) = 0;
 
 // information methods ---------------------------------------------------------
     /// get CV value for given alpha
