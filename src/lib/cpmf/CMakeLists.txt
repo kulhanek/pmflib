@@ -54,6 +54,7 @@ SET(CPMF_METHODS_SRC
         methods/stm/STMPath.cpp
         methods/stm/CVSpline.cpp
         methods/stm/CVSplineNaturalCubic.cpp
+        methods/stm/CVSplineSmoothingCubic.cpp
         )
 
 SET(CPMF_MASK_SRC

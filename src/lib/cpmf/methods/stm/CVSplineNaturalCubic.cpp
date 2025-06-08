@@ -83,23 +83,23 @@ void CCVSplineNaturalCubic::Allocate(int numofknots)
 
 //------------------------------------------------------------------------------
 
-bool CCVSplineNaturalCubic::AddPoint(int knotid,double alpha,double cv)
+void CCVSplineNaturalCubic::AddPoint(int knotid,double alpha,double cv)
 {
     if( (knotid < 0) || (knotid > n)) {
-        return(false);
+        RUNTIME_ERROR("knotid is out-of-range");
     }
 
     x[knotid] = alpha;
     y[knotid] = cv;
-
-    return(true);
 }
 
 //------------------------------------------------------------------------------
 
-bool CCVSplineNaturalCubic::Finalize(void)
+void CCVSplineNaturalCubic::Finalize(void)
 {
-    if (n <= 0)  return(false);    // not enough data
+    if (n <= 0){
+        RUNTIME_ERROR("not enough of knots");
+    }
 
     if (n == 1) {
         // linear interpolation - between two points
@@ -107,7 +107,7 @@ bool CCVSplineNaturalCubic::Finalize(void)
         sc[0] = (y[1] - y[0]) / (x[1] - x[0]);
         sb[0] = 0.0;
         sa[0] = 0.0;
-        return(true);
+        return;
     }
 
 // helpers
@@ -157,8 +157,6 @@ bool CCVSplineNaturalCubic::Finalize(void)
         sc[i] = (b[i]+b[i-1])*h[i-1] + sc[i-1];
         sd[i] = y[i];
     }
-
-    return(true);
 }
 
 //==============================================================================

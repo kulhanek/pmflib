@@ -45,10 +45,10 @@ public:
     virtual void Allocate(int numofknots);
 
     /// register data point
-    virtual bool AddPoint(int knotid,double alpha,double cv);
+    virtual void AddPoint(int knotid,double alpha,double cv);
 
     /// finalize spline
-    virtual bool Finalize(void);
+    virtual void Finalize(void);
 
 // information methods ---------------------------------------------------------
     /// get CV value for given alpha

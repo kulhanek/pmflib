@@ -30,6 +30,7 @@
 #include <XMLIterator.hpp>
 #include <PrmUtils.hpp>
 #include <CVSplineNaturalCubic.hpp>
+#include <CVSplineSmoothingCubic.hpp>
 
 //------------------------------------------------------------------------------
 
@@ -103,7 +104,7 @@ void CSTMPath::AllocatePath(void)
     for(int i=0; i < NumOfCVs; i++){
         CColVariablePtr cv = CColVariablePtr(new CColVariable);
         CVs.push_back(cv);
-        CCVSplinePtr cvspline = CCVSplinePtr(new CCVSplineNaturalCubic);
+        CCVSplinePtr cvspline = CCVSplinePtr(new CCVSplineSmoothingCubic);
         CVSplines.push_back(cvspline);
     }
 
@@ -2189,13 +2190,9 @@ double CSTMPath::OptimizePath(std::vector<CBeadPtr>& beads)
         for(int i=0; i < NumOfCVs; i++){
             CVSplines[i]->Allocate(beads.size());
             for(size_t b=0; b < beads.size(); b++){
-                if( CVSplines[i]->AddPoint(b,beads[b]->Alpha,beads[b]->PPos[i]) == false ){
-                    RUNTIME_ERROR("unable to add knot into CVSplines");
-                }
+                CVSplines[i]->AddPoint(b,beads[b]->Alpha,beads[b]->PPos[i]);
             }
-            if( CVSplines[i]->Finalize() == false ){
-                RUNTIME_ERROR("unable to finalize CVSplines");
-            };
+            CVSplines[i]->Finalize();
         }
 
         prev_length = tot_length;
