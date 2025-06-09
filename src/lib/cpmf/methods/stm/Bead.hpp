@@ -90,6 +90,9 @@ public:
     /// next program
     void MoveToNextMode(void);
 
+    /// reset position updates
+    void ResetPosUpdates(void);
+
     /// calculate projector - path must be optimized!
     void CalcProjector(void);
 

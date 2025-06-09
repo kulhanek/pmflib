@@ -182,6 +182,18 @@ subroutine stm_client_exchange_data()
 
     write(STM_OUT,10) fstep,stmsteps
 
+    ! actual bead position - only for accumulation and production
+    select case(stmmode)
+        case(BMO_ACCUMULATION,BMO_PRODUCTION)
+            do i=1,NumOfSTMCVs
+                beadpos(i) = STMCVList(i)%target_value
+            end do
+        case default
+            do i=1,NumOfSTMCVs
+                beadpos(i) = 0.0d0
+            end do
+    end select
+
     ! scale down PMF and MTZ
     if( stmsteps .gt. 0 ) then
         MTZ = MTZ/stmsteps

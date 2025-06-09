@@ -175,6 +175,9 @@ bool CSTMClient::ExchangeData(int& mode,int& isteps,double* bpos,double* rpmf,do
         p_ele->SetAttribute("mode",mode);
 
         if( (mode == BMO_ACCUMULATION) || (mode == BMO_PRODUCTION) ) {
+            CXMLBinData* p_bposele = p_ele->CreateChildBinData("BPOS");
+            p_bposele->SetData(bpos,bpos_size,false,EXBDT_DOUBLE);
+
             CXMLBinData* p_rpmfele = p_ele->CreateChildBinData("PMF");
             p_rpmfele->SetData(rpmf,rpmf_size,false,EXBDT_DOUBLE);
 

@@ -264,6 +264,17 @@ void CBead::MoveToNextMode(void)
 
 //------------------------------------------------------------------------------
 
+void CBead::ResetPosUpdates(void)
+{
+    FPos = Pos;
+    OPos = Pos;
+    NPos = Pos;
+    SPos = Pos;
+    FPos = Pos;
+}
+
+//------------------------------------------------------------------------------
+
 template <typename T> int sgn(T val) {
     return (T(0) < val) - (val < T(0));
 }
@@ -272,10 +283,6 @@ template <typename T> int sgn(T val) {
 
 void CBead::CalcProjector(void)
 {
-    for(int i=0; i < NumOfCVs; i++){
-        OPos[i] = Pos[i];
-    }
-
     if( Permanent ){
         for(int i=0; i < NumOfCVs; i++){
             pPMF[i] = 0.0;
@@ -340,7 +347,6 @@ void CBead::UpdatePosition(void)
 
     if( Permanent ){
         for(int i=0; i < NumOfCVs; i++){
-            OPos[i] = Pos[i];
             NPos[i] = Pos[i];
         }
         return;
@@ -350,7 +356,6 @@ void CBead::UpdatePosition(void)
 
     for(int i=0; i < NumOfCVs; i++){
         double maxmov = BeadList->CVs[i]->GetMaxMovement();
-         OPos[i] = Pos[i];
         if( (maxmov <= 0) || (fabs(pPMF[i]*step) < maxmov) ){
             NPos[i] = Pos[i] - pPMF[i]*step;
         } else {
@@ -442,6 +447,15 @@ void CBead::GetProductionData(CXMLElement* p_ele)
         INVALID_ARGUMENT("p_ele is NULL");
     }
 
+    // only if accumulation or production
+    if( (GetMode() != BMO_ACCUMULATION) && (GetMode() != BMO_PRODUCTION) ) return;
+
+    CXMLBinData* p_bposele = p_ele->GetFirstChildBinData("BPOS");
+    if(p_bposele == NULL) {
+        LOGIC_ERROR("unable to open PMF element");
+    }
+    Pos.Load(p_bposele);
+
     CXMLBinData* p_pmfele = p_ele->GetFirstChildBinData("PMF");
     if(p_pmfele == NULL) {
         LOGIC_ERROR("unable to open PMF element");
@@ -453,8 +467,6 @@ void CBead::GetProductionData(CXMLElement* p_ele)
         LOGIC_ERROR("unable to open MTZ element");
     }
     MTZ.Load(p_mtzele);
-
-    Pos = FPos; // update position with the last position
 
     ModeStatus = BMS_FINISHED;
 }

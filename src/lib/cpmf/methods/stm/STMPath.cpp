@@ -2111,10 +2111,13 @@ void CSTMPath::SavePathAndTraj(void)
 
 void CSTMPath::CompletePathData(void)
 {
+    for(int i=0; i < NumOfBeads; i++){
+        Beads[i]->ResetPosUpdates();
+    }
+
     // re-optimize path
     for(int b=0; b < NumOfBeads; b++){
         Beads[b]->PPos = Beads[b]->Pos;
-        Beads[b]->FPos = Beads[b]->Pos;
     }
     CurrentPathLength = OptimizePath(Beads);
 
