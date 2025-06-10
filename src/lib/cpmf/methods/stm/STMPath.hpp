@@ -205,12 +205,13 @@ private:
 
     // STM setup ---------------------------------
     int                 MaxSTMSteps;        // maximum number of STM steps
+    CSmallString        OptMethod;
     double              StepSize;           // step size for bead update
     double              FinalMaxPLenChange; // termination criteria - max path movement
     double              FinalMaxMovement;   // termination criteria - max path movement
     double              FinalAveMovement;   // termination criteria - average path movement
-    double              FinalpPMFSizeMax;   // perpendicular force size (pPMF) - termination criteria
-    double              FinalpPMFSizeAve;
+    double              FinalpMFSizeMax;    // perpendicular force size (pMF) - termination criteria
+    double              FinalpMFSizeAve;
 
     int                 InitPeriod;         // initialization period
     int                 AccuPeriod;         // accumulation period
@@ -243,9 +244,11 @@ private:
     double              CurrentPathLength;
     double              UpdatedPathLength;
 
-    double              pPMFSizeAve;        // perpendicular force size (pPMF) - termination criteria
-    double              pPMFSizeMax;
-    int                 MaxpPMFBead;
+    double              pMFSizeAve;        // perpendicular force size (pPMF) - termination criteria
+    double              pMFSizeMax;
+    int                 MaxpMFBead;
+
+    double              UseStepSize;
 
     CSimpleMutex        ProcessingMutex;    // mutex for path processing accesses
 

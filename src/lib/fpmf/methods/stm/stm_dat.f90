@@ -77,7 +77,7 @@ integer                     :: stmmode          ! current STM mode
 integer                     :: stmsteps         ! number of steps for current mode
 integer                     :: curstep          ! current step
 real(PMFDP),allocatable     :: beadpos(:)       ! bead position
-real(PMFDP),allocatable     :: pmf(:)           ! mean force
+real(PMFDP),allocatable     :: MF(:)            ! mean force
 real(PMFDP),allocatable     :: MTZ(:,:)         ! MTZ matrix
 
 ! ------------------------------------------------------------------------------

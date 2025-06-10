@@ -147,12 +147,12 @@ void CBead::InitBead(CSTMPath* p_list,int ncvs)
     FPos.SetZero();
     PPos.CreateVector(NumOfCVs);
     PPos.SetZero();
-    PMF.CreateVector(NumOfCVs);
-    PMF.SetZero();
+    MF.CreateVector(NumOfCVs);
+    MF.SetZero();
     dCV.CreateVector(NumOfCVs);
     dCV.SetZero();
-    pPMF.CreateVector(NumOfCVs);
-    pPMF.SetZero();
+    pMF.CreateVector(NumOfCVs);
+    pMF.SetZero();
     MTZ.CreateMatrix(NumOfCVs,NumOfCVs);
     MTZ.SetZero();
     P.CreateMatrix(NumOfCVs,NumOfCVs);
@@ -196,11 +196,11 @@ void CBead::MoveToNextMode(void)
     P.SetZero();
 
     // clear accumulated data
-    PMF.Set(0.0);
+    MF.Set(0.0);
     MTZ.SetZero();
 
     // clear derived data
-    pPMF.Set(0.0);
+    pMF.Set(0.0);
     dAdAlpha = 0.0;
     A = 0.0;
 
@@ -285,7 +285,7 @@ void CBead::CalcProjector(void)
 {
     if( Permanent ){
         for(int i=0; i < NumOfCVs; i++){
-            pPMF[i] = 0.0;
+            pMF[i] = 0.0;
             for(int j=0; j < NumOfCVs; j++){
                 P[i][j] = 0.0;
             }
@@ -325,23 +325,23 @@ void CBead::CalcProjector(void)
         if( (BeadID == 1) || (BeadID == BeadList->GetNumOfBeads() ) ){
             // steepest descent movement
             for(int k=0; k < NumOfCVs; k++){
-                ps += MTZ[i][k]*PMF[k];
+                ps += MTZ[i][k]*MF[k];
             }
         } else {
             // projection perpendicular to the path
             for(int j=0; j < NumOfCVs; j++){
                 for(int k=0; k < NumOfCVs; k++){
-                    ps += P[i][j]*MTZ[j][k]*PMF[k];
+                    ps += P[i][j]*MTZ[j][k]*MF[k];
                 }
             }
         }
-        pPMF[i] = ps;
+        pMF[i] = ps;
     }
 }
 
 // -----------------------------------------------------------------------------
 
-void CBead::UpdatePosition(void)
+void CBead::UpdatePositionGD(double step)
 {
     NumOfUpdates++;
 
@@ -352,15 +352,51 @@ void CBead::UpdatePosition(void)
         return;
     }
 
-    double step = BeadList->StepSize;
-
     for(int i=0; i < NumOfCVs; i++){
         double maxmov = BeadList->CVs[i]->GetMaxMovement();
-        if( (maxmov <= 0) || (fabs(pPMF[i]*step) < maxmov) ){
-            NPos[i] = Pos[i] - pPMF[i]*step;
+        if( (maxmov <= 0) || (fabs(pMF[i]*step) < maxmov) ){
+            NPos[i] = Pos[i] - pMF[i]*step;
         } else {
-            NPos[i] = Pos[i] - maxmov*sgn(pPMF[i]*step);
+            NPos[i] = Pos[i] - maxmov*sgn(pMF[i]*step);
         }
+    }
+}
+
+// -----------------------------------------------------------------------------
+
+void CBead::UpdatePositionNGD(double step)
+{
+    double g2 = 0.0;
+
+    for(int i=0; i < NumOfCVs; i++){
+        g2 = g2 + pMF[i]*pMF[i];
+    }
+
+    double gnorm = sqrt( g2 / (double)NumOfCVs );
+    double nstep = step / (gnorm + 1e-3);
+
+    UpdatePositionGD(nstep);
+}
+
+// -----------------------------------------------------------------------------
+
+void CBead::UpdatePositionNGDAuto(double step,double maxgnorm)
+{
+    double g2 = 0.0;
+
+    for(int i=0; i < NumOfCVs; i++){
+        g2 = g2 + pMF[i]*pMF[i];
+    }
+
+    double gnorm = sqrt( g2 / (double)NumOfCVs );
+    double nstep = step / (gnorm + 1e-3);
+
+    if( gnorm < maxgnorm ){
+        // std::cout << "GD:  " << step << " " << gnorm << " " << nstep << std::endl;
+        UpdatePositionGD(step);
+    } else {
+        // std::cout << "NGD: " << step << " " << gnorm << " " << nstep << std::endl;
+        UpdatePositionGD(nstep);
     }
 }
 
@@ -392,11 +428,11 @@ void CBead::LoadInfo(CXMLElement* p_ele)
     }
     Pos.Load(p_posele);
 
-    CXMLBinData* p_pmfele = p_ele->GetFirstChildBinData("PMF");
+    CXMLBinData* p_pmfele = p_ele->GetFirstChildBinData("MF");
     if(p_pmfele == NULL) {
-        LOGIC_ERROR("unable to open PMF element");
+        LOGIC_ERROR("unable to open MF element");
     }
-    PMF.Load(p_pmfele);
+    MF.Load(p_pmfele);
 
     CXMLBinData* p_mtzele = p_ele->GetFirstChildBinData("MTZ");
     if(p_mtzele == NULL) {
@@ -429,8 +465,8 @@ void CBead::SaveInfo(CXMLElement* p_ele)
     CXMLBinData* p_posele = p_ele->CreateChildBinData("POS");
     Pos.Save(p_posele);
 
-    CXMLBinData* p_pmfele = p_ele->CreateChildBinData("PMF");
-    PMF.Save(p_pmfele);
+    CXMLBinData* p_pmfele = p_ele->CreateChildBinData("MF");
+    MF.Save(p_pmfele);
 
     CXMLBinData* p_mtzele = p_ele->CreateChildBinData("MTZ");
     MTZ.Save(p_mtzele);
@@ -452,15 +488,15 @@ void CBead::GetProductionData(CXMLElement* p_ele)
 
     CXMLBinData* p_bposele = p_ele->GetFirstChildBinData("BPOS");
     if(p_bposele == NULL) {
-        LOGIC_ERROR("unable to open PMF element");
+        LOGIC_ERROR("unable to open BPOS element");
     }
     Pos.Load(p_bposele);
 
-    CXMLBinData* p_pmfele = p_ele->GetFirstChildBinData("PMF");
+    CXMLBinData* p_pmfele = p_ele->GetFirstChildBinData("MF");
     if(p_pmfele == NULL) {
-        LOGIC_ERROR("unable to open PMF element");
+        LOGIC_ERROR("unable to open MF element");
     }
-    PMF.Load(p_pmfele);
+    MF.Load(p_pmfele);
 
     CXMLBinData* p_mtzele = p_ele->GetFirstChildBinData("MTZ");
     if(p_mtzele == NULL) {

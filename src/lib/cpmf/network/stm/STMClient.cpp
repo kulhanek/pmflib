@@ -156,7 +156,7 @@ bool CSTMClient::UnregisterClient(void)
 
 //------------------------------------------------------------------------------
 
-bool CSTMClient::ExchangeData(int& mode,int& isteps,double* bpos,double* rpmf,double* rfz)
+bool CSTMClient::ExchangeData(int& mode,int& isteps,double* bpos,double* rmf,double* rfz)
 {
     CClientCommand cmd;
     try{
@@ -165,7 +165,7 @@ bool CSTMClient::ExchangeData(int& mode,int& isteps,double* bpos,double* rpmf,do
         InitCommand(&cmd,OperationPMF_ExchangeData);
 
         long unsigned int bpos_size = NumOfCVs*sizeof(double);
-        long unsigned int rpmf_size = NumOfCVs*sizeof(double);
+        long unsigned int rmf_size = NumOfCVs*sizeof(double);
         long unsigned int rfz_size  = NumOfCVs*NumOfCVs*sizeof(double);
 
         // prepare input data
@@ -178,8 +178,8 @@ bool CSTMClient::ExchangeData(int& mode,int& isteps,double* bpos,double* rpmf,do
             CXMLBinData* p_bposele = p_ele->CreateChildBinData("BPOS");
             p_bposele->SetData(bpos,bpos_size,false,EXBDT_DOUBLE);
 
-            CXMLBinData* p_rpmfele = p_ele->CreateChildBinData("PMF");
-            p_rpmfele->SetData(rpmf,rpmf_size,false,EXBDT_DOUBLE);
+            CXMLBinData* p_rpmfele = p_ele->CreateChildBinData("MF");
+            p_rpmfele->SetData(rmf,rmf_size,false,EXBDT_DOUBLE);
 
             CXMLBinData* p_rfzele = p_ele->CreateChildBinData("MTZ");
             p_rfzele->SetData(rfz,rfz_size,false,EXBDT_DOUBLE);

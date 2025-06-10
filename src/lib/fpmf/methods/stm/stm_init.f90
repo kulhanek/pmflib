@@ -167,7 +167,7 @@ subroutine stm_init_arrays
 
     ! general arrays --------------------------------
     allocate(beadpos(NumOfSTMCVs),          &
-          PMF(NumOfSTMCVs),                 &
+          MF(NumOfSTMCVs),                  &
           MTZ(NumOfSTMCVs,NumOfSTMCVs),     &
           stat= alloc_failed )
 
@@ -176,9 +176,9 @@ subroutine stm_init_arrays
              '[STM] Unable to allocate memory for arrays!')
     end if
 
-    beadpos(:) = 0.0d0
-    PMF(:) = 0.0d0
-    MTZ(:,:) = 0.0d0
+    beadpos(:)  = 0.0d0
+    MF(:)       = 0.0d0
+    MTZ(:,:)    = 0.0d0
 
     return
 

@@ -55,12 +55,12 @@ interface
     end subroutine cpmf_stm_client_reg_by_key
 
     ! exchange data with server
-    subroutine cpmf_stm_client_exchange_data(ret_st,mode,isteps,ipos,rpmf,rfz)
+    subroutine cpmf_stm_client_exchange_data(ret_st,mode,isteps,ipos,rmf,rfz)
         integer         :: ret_st
         integer         :: mode
         integer         :: isteps
         real(8)         :: ipos(*)
-        real(8)         :: rpmf(*)
+        real(8)         :: rmf(*)
         real(8)         :: rfz(*)
     end subroutine cpmf_stm_client_exchange_data
 
@@ -196,13 +196,13 @@ subroutine stm_client_exchange_data()
 
     ! scale down PMF and MTZ
     if( stmsteps .gt. 0 ) then
-        MTZ = MTZ/stmsteps
-        PMF = PMF/stmsteps
+        MTZ = MTZ/real(stmsteps,PMFDP)
+        MF  = MF/real(stmsteps,PMFDP)
     end if
 
 #ifdef PMFLIB_NETWORK
     call cpmf_stm_client_exchange_data(ret_st, stmmode, stmsteps, &
-                                       beadpos, pmf, MTZ)
+                                       beadpos, MF, MTZ)
 
     if( ret_st .ne. 0 ) then
         call pmf_exit_mdloop(PMF_OUT,1,'Unable to exchange data with the server')
@@ -291,7 +291,7 @@ subroutine stm_client_exchange_data()
 
     ! reset accumulators
     curstep = 0
-    pmf(:) = 0.0d0
+    MF(:) = 0.0d0
     MTZ(:,:) = 0.0d0
 
     flush(STM_OUT)

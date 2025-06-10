@@ -61,12 +61,13 @@ CSTMPath::CSTMPath(void)
     ProdPeriod = 50000;         // final production period
 
     MaxSTMSteps         = 250;
-    StepSize            = 0.001;
-    FinalMaxPLenChange  = 0.01;
+    OptMethod           = "steepest-descent";
+    StepSize            = 0.05;
+    FinalMaxPLenChange  = 0.10;
     FinalMaxMovement    = 0.50;
-    FinalAveMovement    = 0.01;
-    FinalpPMFSizeMax    = 5.00;
-    FinalpPMFSizeAve    = 1.50;
+    FinalAveMovement    = 0.10;
+    FinalpMFSizeMax     = 4.00;
+    FinalpMFSizeAve     = 1.00;
 
     SmoothingFac = 0.1;
     AsynchronousMode = false;    // update per bead or path
@@ -75,8 +76,8 @@ CSTMPath::CSTMPath(void)
     MaxMovement = 0.0;          // current max path movement
     MaxMovementBead = 0;        // current max path movement is for given bead
     AveMovement = 0;            // current average path movement
-    pPMFSizeMax = 0;
-    pPMFSizeAve = 0;
+    pMFSizeMax = 0;
+    pMFSizeAve = 0;
 
     // control
     NumOfRendezvousBeads = 0;
@@ -199,6 +200,8 @@ bool CSTMPath::ProcessSTMControl(CPrmFile& prmfile)
     if(prmfile.OpenSection("stm") == false) {
         vout << "Max number of STM steps (steps)                = " << setw(9) << MaxSTMSteps
              << left << "             (default)" << endl;
+        vout << "Optimization method (optmethod)                = " << setw(9) << OptMethod
+             << left << "             (default)" << endl;
         vout << "Step size (stepsize)                           = " << setw(9) << StepSize
              << left << "             (default)" << endl;
 
@@ -209,9 +212,9 @@ bool CSTMPath::ProcessSTMControl(CPrmFile& prmfile)
         vout << "Average final path movement (avefmove)         = " << setw(9) << FinalAveMovement
              << left << "             (default)" << endl;
 
-        vout << "Max perpendicular mean force (maxfppmf)        = " << setw(9) << FinalpPMFSizeMax
+        vout << "Max perpendicular mean force (maxfpmf)         = " << setw(9) << FinalpMFSizeMax
              << left << "             (default)" << endl;
-        vout << "Average perpendicular mean force (avefppmf)    = " << setw(9) << FinalpPMFSizeAve
+        vout << "Average perpendicular mean force (avefpmf)     = " << setw(9) << FinalpMFSizeAve
              << left << "             (default)" << endl;
 
         vout << "Initialization period (init)                   = " << setw(9) << InitPeriod
@@ -235,6 +238,13 @@ bool CSTMPath::ProcessSTMControl(CPrmFile& prmfile)
         vout << "Max number of STM steps (steps)                = " << setw(9) << MaxSTMSteps << left << endl;
     } else {
         vout << "Max number of STM steps (steps)                = " << setw(9) << MaxSTMSteps
+             << left << "             (default)" << endl;
+    }
+
+    if(prmfile.GetStringByKey("optmethod",OptMethod) == true) {
+        vout << "Optimization method (optmethod)                = " << setw(9) << OptMethod << left << endl;
+    } else {
+        vout << "Optimization method (optmethod)                = " << setw(9) << OptMethod
              << left << "             (default)" << endl;
     }
 
@@ -266,17 +276,17 @@ bool CSTMPath::ProcessSTMControl(CPrmFile& prmfile)
              << left << "             (default)" << endl;
     }
 
-    if(prmfile.GetDoubleByKey("avefppmf",FinalpPMFSizeAve) == true) {
-        vout << "Average perpendicular mean force (avefppmf)    = " << setw(9) << FinalpPMFSizeAve << left << endl;
+    if(prmfile.GetDoubleByKey("avefpmf",FinalpMFSizeAve) == true) {
+        vout << "Average perpendicular mean force (avefpmf)     = " << setw(9) << FinalpMFSizeAve << left << endl;
     } else {
-        vout << "Average perpendicular mean force (avefppmf)    = " << setw(9) << FinalpPMFSizeAve
+        vout << "Average perpendicular mean force (avefpmf)     = " << setw(9) << FinalpMFSizeAve
              << left << "             (default)" << endl;
     }
 
-    if(prmfile.GetDoubleByKey("maxfppmf",FinalpPMFSizeMax) == true) {
-        vout << "Max perpendicular mean force (maxfppmf)        = " << setw(9) << FinalpPMFSizeMax << left << endl;
+    if(prmfile.GetDoubleByKey("maxfpmf",FinalpMFSizeMax) == true) {
+        vout << "Max perpendicular mean force (maxfpmf)         = " << setw(9) << FinalpMFSizeMax << left << endl;
     } else {
-        vout << "Max perpendicular mean force (maxfppmf)        = " << setw(9) << FinalpPMFSizeMax
+        vout << "Max perpendicular mean force (maxfpmf)         = " << setw(9) << FinalpMFSizeMax
              << left << "             (default)" << endl;
     }
 
@@ -1177,10 +1187,16 @@ void CSTMPath::ProcessProductionData(CBeadPtr p_bead)
                             CompletePathData();
                             IntegratePath();
                             SavePathAndTraj();
-                            UpdateAllPositions();
-                            SmoothAllPositions();
-                            ReparametrizeAllPositions();
-                            CheckBoundaries();
+                            UseStepSize = StepSize;
+                            for(int i=0; i < 5; i++){
+                                UpdateAllPositions();
+                                SmoothAllPositions();
+                                ReparametrizeAllPositions();
+                                CheckBoundaries();
+                                if( ! isnan(UpdatedPathLength) ) break;
+                                vout << ">> WARNING: Stability problem - reducing step size!" <<  endl;
+                                UseStepSize = UseStepSize / 2.0;
+                            }
                             PrintSTMStepInfo();
                             if( STMStatus == ESTMS_PATH_FOUND ){
                                 if( ProdPeriod <= 0 ){
@@ -1249,10 +1265,17 @@ void CSTMPath::ProcessPathAsynchronously(void)
             CompletePathData();
             IntegratePath();
             SavePathAndTraj();
-            UpdateAllPositions();
-            SmoothAllPositions();
-            ReparametrizeAllPositions();
-            CheckBoundaries();
+            UseStepSize = StepSize;
+            for(int i=0; i < 5; i++){
+                UpdateAllPositions();
+                SmoothAllPositions();
+                ReparametrizeAllPositions();
+                CheckBoundaries();
+                if( ! isnan(UpdatedPathLength) ) break;
+                vout << ">> WARNING: Stability problem - reducing step size!" <<  endl;
+                UseStepSize = UseStepSize / 2.0;
+            }
+
             PrintSTMStepInfo();
 
             if( STMStatus == ESTMS_PATH_FOUND ){
@@ -1665,13 +1688,13 @@ void CSTMPath::PrintPathSummaryData(std::ostream& vout)
             vout << " " << setw(12) << Beads[b]->Pos[i];
         }
         for(int i=0; i < NumOfCVs; i++){
-            vout << " " << setw(12) << Beads[b]->PMF[i];
+            vout << " " << setw(12) << Beads[b]->MF[i];
         }
         for(int i=0; i < NumOfCVs; i++){
             vout << " " << setw(12) << Beads[b]->dCV[i];
         }
         for(int i=0; i < NumOfCVs; i++){
-            vout << " " << setw(12) << Beads[b]->pPMF[i];
+            vout << " " << setw(12) << Beads[b]->pMF[i];
         }
         vout << endl;
     }
@@ -2019,7 +2042,7 @@ int CSTMPath::GetSTMStep(void)
 void CSTMPath::PrintSTMHeader(void)
 {
     vout << endl;
-    vout << "# Step|  Path length  Length change | Max movement  BID  Ave movement | Max pPMF size BID  Ave pPMF size|Term" << endl;
+    vout << "# Step|  Path length  Length change | Max movement  BID  Ave movement | Max pMF size  BID  Ave pMF size |Term" << endl;
     vout << "# ----|-------------- --------------|-------------- --- --------------|-------------- --- --------------|----" << endl;
 
     HeaderPrinted = true;
@@ -2029,21 +2052,29 @@ void CSTMPath::PrintSTMHeader(void)
 
 void CSTMPath::PrintSTMStepInfo(void)
 {
-    vout << setw(6)  << STMStep << " ";
+    int termcrit = 0;
+
+    vout << left << setw(6)  << STMStep << " " << right;
     vout << setw(14) << setprecision(7) << scientific << CurrentPathLength << " ";
-    vout << setw(14) << setprecision(7) << scientific << UpdatedPathLength-CurrentPathLength << " ";
+
+    if( fabs(UpdatedPathLength-CurrentPathLength) < FinalMaxPLenChange ){
+        vout << "<green>" << setw(14) << setprecision(7) << scientific << UpdatedPathLength-CurrentPathLength << "</green> ";
+        termcrit++;
+    } else {
+        vout << setw(14) << setprecision(7) << scientific << UpdatedPathLength-CurrentPathLength << " ";
+    }
 
     MaxMovement = 0;
     AveMovement = 0;
-    pPMFSizeAve = 0;
-    pPMFSizeMax = 0;
+    pMFSizeAve = 0;
+    pMFSizeMax = 0;
 
     for(int b=0; b < NumOfBeads; b++){
         double mov = 0;
-        double ppmfsize = 0.0;
+        double pmfsize = 0.0;
         for(int i=0; i < NumOfCVs; i++){
             mov += (Beads[b]->FPos[i]-Beads[b]->OPos[i])*(Beads[b]->FPos[i]-Beads[b]->OPos[i]);
-            ppmfsize += (Beads[b]->pPMF[i])*(Beads[b]->pPMF[i]);
+            pmfsize += (Beads[b]->pMF[i])*(Beads[b]->pMF[i]);
         }
 
         mov = sqrt(mov);
@@ -2053,32 +2084,47 @@ void CSTMPath::PrintSTMStepInfo(void)
             MaxMovementBead = b+1;
         }
 
-        ppmfsize = sqrt(ppmfsize);
-        pPMFSizeAve += ppmfsize;
-        if( ppmfsize > pPMFSizeMax ){
-            pPMFSizeMax = ppmfsize;
-            MaxpPMFBead = b+1;
+        pmfsize = sqrt(pmfsize);
+        pMFSizeAve += pmfsize;
+        if( pmfsize > pMFSizeMax ){
+            pMFSizeMax = pmfsize;
+            MaxpMFBead = b+1;
         }
     }
     AveMovement = AveMovement / (double)NumOfBeads;
-    pPMFSizeAve = pPMFSizeAve / (double)NumOfBeads;
+    pMFSizeAve = pMFSizeAve / (double)NumOfBeads;
 
-    vout << setw(14) << setprecision(7) << scientific << MaxMovement << " ";
+    if( MaxMovement < FinalMaxMovement ){
+        vout << "<green>" << setw(14) << setprecision(7) << scientific <<  MaxMovement << "</green> ";
+        termcrit++;
+    } else {
+        vout << setw(14) << setprecision(7) << scientific << MaxMovement << " ";
+    }
+
     vout << setw(3) << MaxMovementBead << " ";
-    vout << setw(14) << setprecision(7) << scientific << AveMovement << " ";
 
-    vout << setw(14) << setprecision(7) << scientific << pPMFSizeMax << " ";
-    vout << setw(3) << MaxpPMFBead << " ";
-    vout << setw(14) << setprecision(7) << scientific << pPMFSizeAve << " ";
+    if( AveMovement < FinalAveMovement ){
+        vout << "<green>" << setw(14) << setprecision(7) << scientific << AveMovement << "</green> ";
+        termcrit++;
+    } else {
+        vout << setw(14) << setprecision(7) << scientific << AveMovement << " ";
+    }
 
-    int termcrit = 0;
-    if( fabs(UpdatedPathLength-CurrentPathLength) < FinalMaxPLenChange ) termcrit++;
+    if( pMFSizeMax < FinalpMFSizeMax  ){
+        vout << "<green>" << setw(14) << setprecision(7) << scientific <<  pMFSizeMax << "</green> ";
+        termcrit++;
+    } else {
+        vout << setw(14) << setprecision(7) << scientific << pMFSizeMax << " ";
+    }
 
-    if( AveMovement < FinalAveMovement ) termcrit++;
-    if( MaxMovement < FinalMaxMovement ) termcrit++;
+    vout << setw(3) << MaxpMFBead << " ";
 
-    if( pPMFSizeAve < FinalpPMFSizeAve ) termcrit++;
-    if( pPMFSizeMax < FinalpPMFSizeMax ) termcrit++;
+    if( pMFSizeAve < FinalpMFSizeAve ){
+        vout << "<green>" << setw(14) << setprecision(7) << scientific <<  pMFSizeAve << "</green> ";
+        termcrit++;
+    } else {
+        vout << setw(14) << setprecision(7) << scientific << pMFSizeAve << " ";
+    }
 
     vout << " " << setw(1) << termcrit << "/" << "5";
     vout << endl;
@@ -2128,12 +2174,32 @@ void CSTMPath::CompletePathData(void)
 
 //------------------------------------------------------------------------------
 
+// https://en.wikipedia.org/wiki/Barzilai-Borwein_method
+// Barzilai-Borwein method does not work
+// because gradients are too noisy
+
+
 void CSTMPath::UpdateAllPositions(void)
 {
     STMStep++;
 
-    for(int i=0; i < NumOfBeads; i++){
-        Beads[i]->UpdatePosition();
+    if( OptMethod == "gd" ){
+        for(int i=0; i < NumOfBeads; i++){
+            Beads[i]->UpdatePositionGD(UseStepSize);
+        }
+    } else if ( OptMethod == "ngd" ){
+        for(int i=0; i < NumOfBeads; i++){
+            Beads[i]->UpdatePositionNGD(UseStepSize);
+        }
+    } else if ( OptMethod == "ngd-auto" ){
+        for(int i=0; i < NumOfBeads; i++){
+            Beads[i]->UpdatePositionNGDAuto(UseStepSize,5.0);
+        }
+    } else {
+        vout << endl;
+        vout << ">> INFO: The optimization method '" << OptMethod << "' is not implemented (CSTMPath::UpdateAllPositions)!" << endl;
+        STMStatus = ESTMS_MAX_STEPS_REACHED;
+        return;
     }
 }
 
@@ -2241,7 +2307,7 @@ void CSTMPath::IntegratePath(void)
         // get bead derivative along path
         for(int i=0; i < NumOfCVs; i++) {
             Beads[b]->dCV[i] = CVSplines[i]->GetCVFirstDer(Beads[b]->Alpha);
-            a += Beads[b]->dCV[i]*Beads[b]->PMF[i];
+            a += Beads[b]->dCV[i]*Beads[b]->MF[i];
         }
         Beads[b]->dAdAlpha = a;
         if( b > 0 ){

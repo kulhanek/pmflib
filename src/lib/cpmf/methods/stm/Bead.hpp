@@ -96,8 +96,14 @@ public:
     /// calculate projector - path must be optimized!
     void CalcProjector(void);
 
-    /// update bead position
-    void UpdatePosition(void);
+    /// update bead position - gradient descent
+    void UpdatePositionGD(double step);
+
+    /// update bead position - normalize gradient descent
+    void UpdatePositionNGD(double step);
+
+    /// update bead position - normalize gradient descent vs gradient descent
+    void UpdatePositionNGDAuto(double step,double maxgnorm);
 
 // input/output methods --------------------------------------------------------
     /// load data
@@ -132,9 +138,9 @@ private:
     int                     NumOfCVs;       // number of CVs
     bool                    Permanent;      // is bead permanent
     CSimpleVector<double>   Pos;            // bead position
-    CSimpleVector<double>   PMF;            // force acting on the bead
+    CSimpleVector<double>   MF;             // force acting on the bead
     CSimpleVector<double>   dCV;            // path derivatives
-    CSimpleVector<double>   pPMF;           // force/velocity acting perpendicularly to the path
+    CSimpleVector<double>   pMF;            // force/velocity acting perpendicularly to the path
     CFortranMatrix          MTZ;            // metric tensor
     CFortranMatrix          P;              // projector
     double                  Alpha;          // path position

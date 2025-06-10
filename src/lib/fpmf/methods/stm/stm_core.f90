@@ -82,8 +82,8 @@ subroutine stm_core_force
         TotalSTMEnergy = TotalSTMEnergy + STMCVList(i)%energy
         ! correct forces -----------------------------
         Frc(:,:) = Frc(:,:) - STMCVList(i)%force_constant*STMCVList(i)%deviation*CVContext%CVsDrvs(:,:,STMCVList(i)%cvindx)
-        ! get PMF
-        PMF(i) = PMF(i) - STMCVList(i)%force_constant*STMCVList(i)%deviation
+        ! get MF
+        MF(i) = MF(i) - STMCVList(i)%force_constant*STMCVList(i)%deviation
     end do
 
     ! accumulate MTZ

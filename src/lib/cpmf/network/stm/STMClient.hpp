@@ -57,7 +57,7 @@ public:
     bool UnregisterClient(void);
 
     /// exchange data with server
-    bool ExchangeData(int& mode,int& isteps,double* bpos,double* rpmf,double* rfz);
+    bool ExchangeData(int& mode,int& isteps,double* bpos,double* rmf,double* rfz);
 
 // section of private data ----------------------------------------------------
 private:

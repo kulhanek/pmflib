@@ -138,13 +138,13 @@ void PMF_PACKAGE cpmf_stm_client_exchange_data_(FTINT*  ret_st,
                                                 FTINT*  mode,
                                                 FTINT*  isteps,
                                                 double* bpos,
-                                                double* rpmf,
+                                                double* rmf,
                                                 double* rfz)
 {
 
     int listeps = *isteps;
     int lmode = *mode;
-    if(STMClient.ExchangeData(lmode,listeps,bpos,rpmf,rfz) == false) {
+    if(STMClient.ExchangeData(lmode,listeps,bpos,rmf,rfz) == false) {
         ES_ERROR("unable to exchange data");
         *ret_st = 1;
         return;
