@@ -69,6 +69,8 @@ CSTMPath::CSTMPath(void)
     FinalpMFSizeMax     = 4.00;
     FinalpMFSizeAve     = 1.00;
 
+    MaxGNormForGD       = 5.0;
+
     SmoothingFac = 0.1;
     AsynchronousMode = false;    // update per bead or path
 
@@ -246,6 +248,15 @@ bool CSTMPath::ProcessSTMControl(CPrmFile& prmfile)
     } else {
         vout << "Optimization method (optmethod)                = " << setw(9) << OptMethod
              << left << "             (default)" << endl;
+    }
+
+    if( OptMethod == "ngd-auto" ){
+    if(prmfile.GetDoubleByKey("maxgnormforgd",MaxGNormForGD) == true) {
+        vout << "Max gnorm to switch to GD (maxgnormforgd)      = " << setw(9) << MaxGNormForGD << left << endl;
+    } else {
+        vout << "Max gnorm to switch to GD (maxgnormforgd)      = " << setw(9) << MaxGNormForGD
+             << left << "             (default)" << endl;
+    }
     }
 
     if(prmfile.GetDoubleByKey("stepsize",StepSize) == true) {
@@ -1187,7 +1198,7 @@ void CSTMPath::ProcessProductionData(CBeadPtr p_bead)
                             CompletePathData();
                             IntegratePath();
                             SavePathAndTraj();
-                            UseStepSize = StepSize;
+                            UsedStepSize = StepSize;
                             for(int i=0; i < 5; i++){
                                 UpdateAllPositions();
                                 SmoothAllPositions();
@@ -1195,7 +1206,7 @@ void CSTMPath::ProcessProductionData(CBeadPtr p_bead)
                                 CheckBoundaries();
                                 if( ! isnan(UpdatedPathLength) ) break;
                                 vout << ">> WARNING: Stability problem - reducing step size!" <<  endl;
-                                UseStepSize = UseStepSize / 2.0;
+                                UsedStepSize = UsedStepSize / 2.0;
                             }
                             PrintSTMStepInfo();
                             if( STMStatus == ESTMS_PATH_FOUND ){
@@ -1265,7 +1276,7 @@ void CSTMPath::ProcessPathAsynchronously(void)
             CompletePathData();
             IntegratePath();
             SavePathAndTraj();
-            UseStepSize = StepSize;
+            UsedStepSize = StepSize;
             for(int i=0; i < 5; i++){
                 UpdateAllPositions();
                 SmoothAllPositions();
@@ -1273,7 +1284,7 @@ void CSTMPath::ProcessPathAsynchronously(void)
                 CheckBoundaries();
                 if( ! isnan(UpdatedPathLength) ) break;
                 vout << ">> WARNING: Stability problem - reducing step size!" <<  endl;
-                UseStepSize = UseStepSize / 2.0;
+                UsedStepSize = UsedStepSize / 2.0;
             }
 
             PrintSTMStepInfo();
@@ -2185,15 +2196,15 @@ void CSTMPath::UpdateAllPositions(void)
 
     if( OptMethod == "gd" ){
         for(int i=0; i < NumOfBeads; i++){
-            Beads[i]->UpdatePositionGD(UseStepSize);
+            Beads[i]->UpdatePositionGD(UsedStepSize);
         }
     } else if ( OptMethod == "ngd" ){
         for(int i=0; i < NumOfBeads; i++){
-            Beads[i]->UpdatePositionNGD(UseStepSize);
+            Beads[i]->UpdatePositionNGD(UsedStepSize);
         }
     } else if ( OptMethod == "ngd-auto" ){
         for(int i=0; i < NumOfBeads; i++){
-            Beads[i]->UpdatePositionNGDAuto(UseStepSize,5.0);
+            Beads[i]->UpdatePositionNGDAuto(UsedStepSize,MaxGNormForGD);
         }
     } else {
         vout << endl;

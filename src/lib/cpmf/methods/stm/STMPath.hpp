@@ -248,7 +248,8 @@ private:
     double              pMFSizeMax;
     int                 MaxpMFBead;
 
-    double              UseStepSize;
+    double              UsedStepSize;
+    double              MaxGNormForGD;      // max gnorm to switch from NGD to GD
 
     CSimpleMutex        ProcessingMutex;    // mutex for path processing accesses
 
