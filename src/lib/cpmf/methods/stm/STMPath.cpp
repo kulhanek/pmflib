@@ -70,6 +70,9 @@ CSTMPath::CSTMPath(void)
     FinalpMFSizeAve     = 1.00;
 
     MaxGNormForGD       = 5.0;
+    MinGNormEps         = 1e-7;
+    AdamB1              = 0.9;
+    AdamB2              = 0.999;
 
     SmoothingFac = 0.1;
     AsynchronousMode = false;    // update per bead or path
@@ -204,8 +207,6 @@ bool CSTMPath::ProcessSTMControl(CPrmFile& prmfile)
              << left << "             (default)" << endl;
         vout << "Optimization method (optmethod)                = " << setw(9) << OptMethod
              << left << "             (default)" << endl;
-        vout << "Step size (stepsize)                           = " << setw(9) << StepSize
-             << left << "             (default)" << endl;
 
         vout << "Max final path length change (maxfplch)        = " << setw(9) << FinalMaxPLenChange
              << left << "             (default)" << endl;
@@ -233,7 +234,10 @@ bool CSTMPath::ProcessSTMControl(CPrmFile& prmfile)
              << left << "             (default)" << endl;
         vout << "Asynchronous mode (async)                      = " << setw(9) << right << PrmFileOnOff(AsynchronousMode)
              << left << "             (default)" << endl;
-        return(true);
+
+        // opt method - GD
+        bool result  = ProcessGDOptMethodSetup(prmfile);
+        return(result);
     }
 
     if(prmfile.GetIntegerByKey("steps",MaxSTMSteps) == true) {
@@ -247,22 +251,6 @@ bool CSTMPath::ProcessSTMControl(CPrmFile& prmfile)
         vout << "Optimization method (optmethod)                = " << setw(9) << OptMethod << left << endl;
     } else {
         vout << "Optimization method (optmethod)                = " << setw(9) << OptMethod
-             << left << "             (default)" << endl;
-    }
-
-    if( OptMethod == "ngd-auto" ){
-    if(prmfile.GetDoubleByKey("maxgnormforgd",MaxGNormForGD) == true) {
-        vout << "Max gnorm to switch to GD (maxgnormforgd)      = " << setw(9) << MaxGNormForGD << left << endl;
-    } else {
-        vout << "Max gnorm to switch to GD (maxgnormforgd)      = " << setw(9) << MaxGNormForGD
-             << left << "             (default)" << endl;
-    }
-    }
-
-    if(prmfile.GetDoubleByKey("stepsize",StepSize) == true) {
-        vout << "Step size (stepsize)                           = " << setw(9) << StepSize << left << endl;
-    } else {
-        vout << "Step size (stepsize)                           = " << setw(9) << StepSize
              << left << "             (default)" << endl;
     }
 
@@ -340,6 +328,162 @@ bool CSTMPath::ProcessSTMControl(CPrmFile& prmfile)
         vout << "Asynchronous mode (async)                      = " << setw(9) << right << PrmFileOnOff(AsynchronousMode) << left << endl;
     } else {
         vout << "Asynchronous mode (async)                      = " << setw(9) << right << PrmFileOnOff(AsynchronousMode)
+             << left << "             (default)" << endl;
+    }
+
+// optimization method setup
+    bool result = true;
+    if( OptMethod == "gd" ){
+        result = ProcessGDOptMethodSetup(prmfile);
+    } else if( OptMethod == "ngd" ){
+        result = ProcessNGDOptMethodSetup(prmfile);
+    } else if( OptMethod == "ngd-auto" ){
+        result = ProcessNGDAutoOptMethodSetup(prmfile);
+    } else if( OptMethod == "adam" ){
+        result = ProcessAdamOptMethodSetup(prmfile);
+    } else {
+        RUNTIME_ERROR("not implemented opt method");
+    }
+
+    return(result);
+}
+
+//------------------------------------------------------------------------------
+
+bool CSTMPath::ProcessGDOptMethodSetup(CPrmFile& prmfile)
+{
+    vout << endl;
+    vout << "=== [gd] =======================================================================" << endl;
+    if(prmfile.OpenSection("gd") == false) {
+        vout << "Step size (stepsize)                           = " << setw(9) << StepSize
+             << left << "             (default)" << endl;
+        return(true);
+    }
+
+    if(prmfile.GetDoubleByKey("stepsize",StepSize) == true) {
+        vout << "Step size (stepsize)                           = " << setw(9) << StepSize << left << endl;
+    } else {
+        vout << "Step size (stepsize)                           = " << setw(9) << StepSize
+             << left << "             (default)" << endl;
+    }
+
+    return(true);
+}
+
+//------------------------------------------------------------------------------
+
+bool CSTMPath::ProcessNGDOptMethodSetup(CPrmFile& prmfile)
+{
+    vout << endl;
+    vout << "=== [ngd] ======================================================================" << endl;
+    if(prmfile.OpenSection("ngd") == false) {
+        vout << "Step size (stepsize)                           = " << setw(9) << StepSize
+             << left << "             (default)" << endl;
+        vout << "Min gnorm value (mingnormesp)                  = " << setw(9) << MinGNormEps
+             << left << "             (default)" << endl;
+        return(true);
+    }
+
+    if(prmfile.GetDoubleByKey("stepsize",StepSize) == true) {
+        vout << "Step size (stepsize)                           = " << setw(9) << StepSize << left << endl;
+    } else {
+        vout << "Step size (stepsize)                           = " << setw(9) << StepSize
+             << left << "             (default)" << endl;
+    }
+
+    if(prmfile.GetDoubleByKey("mingnormeps",MinGNormEps) == true) {
+        vout << "Min gnorm value (mingnormesp)                  = " << setw(9) << MinGNormEps << left << endl;
+    } else {
+        vout << "Min gnorm value (mingnormesp)                  = " << setw(9) << MinGNormEps
+             << left << "             (default)" << endl;
+    }
+
+    return(true);
+}
+
+//------------------------------------------------------------------------------
+
+bool CSTMPath::ProcessNGDAutoOptMethodSetup(CPrmFile& prmfile)
+{
+    vout << endl;
+    vout << "=== [ngd] ======================================================================" << endl;
+    if(prmfile.OpenSection("ngd") == false) {
+        vout << "Step size (stepsize)                           = " << setw(9) << StepSize
+             << left << "             (default)" << endl;
+        vout << "Max gnorm to switch to GD (maxgnormforgd)      = " << setw(9) << MaxGNormForGD
+             << left << "             (default)" << endl;
+        vout << "Min gnorm value (mingnormesp)                  = " << setw(9) << MinGNormEps
+             << left << "             (default)" << endl;
+        return(true);
+    }
+
+    if(prmfile.GetDoubleByKey("stepsize",StepSize) == true) {
+        vout << "Step size (stepsize)                           = " << setw(9) << StepSize << left << endl;
+    } else {
+        vout << "Step size (stepsize)                           = " << setw(9) << StepSize
+             << left << "             (default)" << endl;
+    }
+
+    if(prmfile.GetDoubleByKey("maxgnormforgd",MaxGNormForGD) == true) {
+        vout << "Max gnorm to switch to GD (maxgnormforgd)      = " << setw(9) << MaxGNormForGD << left << endl;
+    } else {
+        vout << "Max gnorm to switch to GD (maxgnormforgd)      = " << setw(9) << MaxGNormForGD
+             << left << "             (default)" << endl;
+    }
+
+    if(prmfile.GetDoubleByKey("mingnormeps",MinGNormEps) == true) {
+        vout << "Min gnorm value (mingnormesp)                  = " << setw(9) << MinGNormEps << left << endl;
+    } else {
+        vout << "Min gnorm value (mingnormesp)                  = " << setw(9) << MinGNormEps
+             << left << "             (default)" << endl;
+    }
+
+    return(true);
+}
+
+//------------------------------------------------------------------------------
+
+bool CSTMPath::ProcessAdamOptMethodSetup(CPrmFile& prmfile)
+{
+    vout << endl;
+    vout << "=== [adam] =====================================================================" << endl;
+    if(prmfile.OpenSection("adam") == false) {
+        vout << "Step size (stepsize)                           = " << setw(9) << StepSize
+             << left << "             (default)" << endl;
+        vout << "beta1                                          = " << setw(9) << AdamB1
+             << left << "             (default)" << endl;
+        vout << "beta2                                          = " << setw(9) << AdamB2
+             << left << "             (default)" << endl;
+        vout << "Min gnorm value (mingnormesp)                  = " << setw(9) << MinGNormEps
+             << left << "             (default)" << endl;
+        return(true);
+    }
+
+    if(prmfile.GetDoubleByKey("stepsize",StepSize) == true) {
+        vout << "Step size (stepsize)                           = " << setw(9) << StepSize << left << endl;
+    } else {
+        vout << "Step size (stepsize)                           = " << setw(9) << StepSize
+             << left << "             (default)" << endl;
+    }
+
+    if(prmfile.GetDoubleByKey("beta1",AdamB1) == true) {
+        vout << "beta1                                          = " << setw(9) << AdamB1 << left << endl;
+    } else {
+        vout << "beta1                                          = " << setw(9) << AdamB1
+             << left << "             (default)" << endl;
+    }
+
+    if(prmfile.GetDoubleByKey("beta2",AdamB2) == true) {
+        vout << "beta2                                          = " << setw(9) << AdamB2 << left << endl;
+    } else {
+        vout << "beta2                                          = " << setw(9) << AdamB2
+             << left << "             (default)" << endl;
+    }
+
+    if(prmfile.GetDoubleByKey("mingnormeps",MinGNormEps) == true) {
+        vout << "Min gnorm value (mingnormesp)                  = " << setw(9) << MinGNormEps << left << endl;
+    } else {
+        vout << "Min gnorm value (mingnormesp)                  = " << setw(9) << MinGNormEps
              << left << "             (default)" << endl;
     }
 
@@ -1208,6 +1352,7 @@ void CSTMPath::ProcessProductionData(CBeadPtr p_bead)
                                 vout << ">> WARNING: Stability problem - reducing step size!" <<  endl;
                                 UsedStepSize = UsedStepSize / 2.0;
                             }
+                            UpdateAllPositionsFinalize();
                             PrintSTMStepInfo();
                             if( STMStatus == ESTMS_PATH_FOUND ){
                                 if( ProdPeriod <= 0 ){
@@ -1286,7 +1431,7 @@ void CSTMPath::ProcessPathAsynchronously(void)
                 vout << ">> WARNING: Stability problem - reducing step size!" <<  endl;
                 UsedStepSize = UsedStepSize / 2.0;
             }
-
+            UpdateAllPositionsFinalize();
             PrintSTMStepInfo();
 
             if( STMStatus == ESTMS_PATH_FOUND ){
@@ -2082,10 +2227,11 @@ void CSTMPath::PrintSTMStepInfo(void)
 
     for(int b=0; b < NumOfBeads; b++){
         double mov = 0;
-        double pmfsize = 0.0;
+        double mfsize = 0.0;
         for(int i=0; i < NumOfCVs; i++){
             mov += (Beads[b]->FPos[i]-Beads[b]->OPos[i])*(Beads[b]->FPos[i]-Beads[b]->OPos[i]);
-            pmfsize += (Beads[b]->pMF[i])*(Beads[b]->pMF[i]);
+            mfsize += (Beads[b]->pMF[i])*(Beads[b]->pMF[i]);
+            //mfsize += (Beads[b]->mkold[i])*(Beads[b]->mkold[i]);
         }
 
         mov = sqrt(mov);
@@ -2095,10 +2241,10 @@ void CSTMPath::PrintSTMStepInfo(void)
             MaxMovementBead = b+1;
         }
 
-        pmfsize = sqrt(pmfsize);
-        pMFSizeAve += pmfsize;
-        if( pmfsize > pMFSizeMax ){
-            pMFSizeMax = pmfsize;
+        mfsize = sqrt(mfsize);
+        pMFSizeAve += mfsize;
+        if( mfsize > pMFSizeMax ){
+            pMFSizeMax = mfsize;
             MaxpMFBead = b+1;
         }
     }
@@ -2189,7 +2335,6 @@ void CSTMPath::CompletePathData(void)
 // Barzilai-Borwein method does not work
 // because gradients are too noisy
 
-
 void CSTMPath::UpdateAllPositions(void)
 {
     STMStep++;
@@ -2200,17 +2345,30 @@ void CSTMPath::UpdateAllPositions(void)
         }
     } else if ( OptMethod == "ngd" ){
         for(int i=0; i < NumOfBeads; i++){
-            Beads[i]->UpdatePositionNGD(UsedStepSize);
+            Beads[i]->UpdatePositionNGD(UsedStepSize,MinGNormEps);
         }
     } else if ( OptMethod == "ngd-auto" ){
         for(int i=0; i < NumOfBeads; i++){
-            Beads[i]->UpdatePositionNGDAuto(UsedStepSize,MaxGNormForGD);
+            Beads[i]->UpdatePositionNGDAuto(UsedStepSize,MaxGNormForGD,MinGNormEps);
+        }
+    } else if ( OptMethod == "adam" ){
+        for(int i=0; i < NumOfBeads; i++){
+            Beads[i]->UpdatePositionADAM(UsedStepSize,AdamB1,AdamB2,MinGNormEps);
         }
     } else {
         vout << endl;
         vout << ">> INFO: The optimization method '" << OptMethod << "' is not implemented (CSTMPath::UpdateAllPositions)!" << endl;
         STMStatus = ESTMS_MAX_STEPS_REACHED;
         return;
+    }
+}
+
+//------------------------------------------------------------------------------
+
+void CSTMPath::UpdateAllPositionsFinalize(void)
+{
+    for(int b=0; b < NumOfBeads; b++) {
+        Beads[b]->UpdatePositionFinalize();
     }
 }
 

@@ -185,6 +185,9 @@ public:
     /// integrate path
     void IntegratePath(void);
 
+    /// finalize only if the path is stable
+    void UpdateAllPositionsFinalize(void);
+
     /// server is terminated - unblock waiting beads
     void SetServerTerminated(void);
 
@@ -206,7 +209,7 @@ private:
     // STM setup ---------------------------------
     int                 MaxSTMSteps;        // maximum number of STM steps
     CSmallString        OptMethod;
-    double              StepSize;           // step size for bead update
+
     double              FinalMaxPLenChange; // termination criteria - max path movement
     double              FinalMaxMovement;   // termination criteria - max path movement
     double              FinalAveMovement;   // termination criteria - average path movement
@@ -219,13 +222,30 @@ private:
     int                 ProdPeriod;         // final production period
 
     bool                AsynchronousMode;   // use asynchronous mode
+
+    // bead position update
+    // [gd], [ngd]
+    double              StepSize;           // step size for bead update
+    double              UsedStepSize;
+
+    // [ngd-auto]
+    double              MinGNormEps;        // eps to avoid division by zero
+    double              MaxGNormForGD;      // max gnorm to switch from NGD to GD (for NGD-AUTO)
+
+    // [adam]
+    double              AdamB1;
+    double              AdamB2;
+
+    // smoothing ---------------------------------
+    int                 SmoothInterval;     // how often to smooth path
     double              SmoothingFac;       // smoothing factor
+
+    // path reparametrization
+    int                 ReparamInterval;    // how often to re-parametrize path
 
     // intervals ---------------------------------
     int                 TrajInterval;       // how often to print snapshot to trajectory
     int                 OutInterval;        // how often to write current path
-    int                 SmoothInterval;     // how often to smooth path
-    int                 ReparamInterval;    // how often to re-parametrize path
 
     // files -------------------------------------
     CSmallString        InputPath;
@@ -247,9 +267,6 @@ private:
     double              pMFSizeAve;        // perpendicular force size (pPMF) - termination criteria
     double              pMFSizeMax;
     int                 MaxpMFBead;
-
-    double              UsedStepSize;
-    double              MaxGNormForGD;      // max gnorm to switch from NGD to GD
 
     CSimpleMutex        ProcessingMutex;    // mutex for path processing accesses
 
@@ -312,6 +329,12 @@ private:
     void ReadPathControls(CPrmFile& file);
     int  ReadPathNumberOfUserBeads(CPrmFile& file);
     void ReadPathUserBeads(CPrmFile& file,std::vector<CBeadPtr>& beads);
+
+    // opt method setup
+    bool ProcessGDOptMethodSetup(CPrmFile& prmfile);
+    bool ProcessNGDOptMethodSetup(CPrmFile& prmfile);
+    bool ProcessNGDAutoOptMethodSetup(CPrmFile& prmfile);
+    bool ProcessAdamOptMethodSetup(CPrmFile& prmfile);
 
     friend class CBead;
 };

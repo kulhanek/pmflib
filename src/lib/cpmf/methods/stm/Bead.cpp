@@ -24,6 +24,8 @@
 #include <XMLElement.hpp>
 #include <math.h>
 #include <STMPath.hpp>
+#include <algorithm>
+
 
 //==============================================================================
 //------------------------------------------------------------------------------
@@ -46,6 +48,15 @@ CBead::CBead(void)
     dAdAlpha = 0.0;
     A = 0.0;
     NumOfUpdates = 0;
+
+    beta1kold   = 1.0;
+    beta2kold   = 1.0;
+    vkold       = 0.0;
+
+    beta1knew   = 1.0;
+    beta2knew   = 1.0;
+    vkold       = 0.0;
+    vkhat       = 0.0;
 }
 
 //==============================================================================
@@ -157,6 +168,12 @@ void CBead::InitBead(CSTMPath* p_list,int ncvs)
     MTZ.SetZero();
     P.CreateMatrix(NumOfCVs,NumOfCVs);
     P.SetZero();
+
+    mkold.CreateVector(NumOfCVs);
+    mkold.SetZero();
+    mknew.CreateVector(NumOfCVs);
+    mknew.SetZero();
+
     Alpha = 0;
     dAdAlpha = 0;
 }
@@ -364,7 +381,7 @@ void CBead::UpdatePositionGD(double step)
 
 // -----------------------------------------------------------------------------
 
-void CBead::UpdatePositionNGD(double step)
+void CBead::UpdatePositionNGD(double step,double mingnormeps)
 {
     double g2 = 0.0;
 
@@ -373,14 +390,14 @@ void CBead::UpdatePositionNGD(double step)
     }
 
     double gnorm = sqrt( g2 / (double)NumOfCVs );
-    double nstep = step / (gnorm + 1e-3);
+    double nstep = step / (gnorm + mingnormeps);
 
     UpdatePositionGD(nstep);
 }
 
 // -----------------------------------------------------------------------------
 
-void CBead::UpdatePositionNGDAuto(double step,double maxgnorm)
+void CBead::UpdatePositionNGDAuto(double step,double maxgnorm,double mingnormeps)
 {
     double g2 = 0.0;
 
@@ -389,7 +406,7 @@ void CBead::UpdatePositionNGDAuto(double step,double maxgnorm)
     }
 
     double gnorm = sqrt( g2 / (double)NumOfCVs );
-    double nstep = step / (gnorm + 1e-3);
+    double nstep = step / (gnorm + mingnormeps);
 
     if( gnorm < maxgnorm ){
         // std::cout << "GD:  " << step << " " << gnorm << " " << nstep << std::endl;
@@ -398,6 +415,57 @@ void CBead::UpdatePositionNGDAuto(double step,double maxgnorm)
         // std::cout << "NGD: " << step << " " << gnorm << " " << nstep << std::endl;
         UpdatePositionGD(nstep);
     }
+}
+
+// -----------------------------------------------------------------------------
+
+void CBead::UpdatePositionADAM(double step,double beta1,double beta2,double mingnormeps)
+{
+    NumOfUpdates++;
+
+    if( Permanent ){
+        for(int i=0; i < NumOfCVs; i++){
+            NPos[i] = Pos[i];
+        }
+        return;
+    }
+
+    double g2 = 0.0;
+    for(int i=0; i < NumOfCVs; i++){
+        g2 = g2 + pMF[i]*pMF[i];
+    }
+
+    vknew = beta2 * vkold + (1.0 - beta2) * g2;
+
+    beta1knew = beta1kold * beta1;
+    beta2knew = beta2kold * beta2;
+
+    double norm = sqrt(vknew/(1.0-beta2knew));
+
+    for(int i=0; i < NumOfCVs; i++){
+
+        mknew[i] = beta1 * mkold[i] + (1.0 - beta1) * pMF[i];
+
+        double dm = step*(mknew[i]/(1.0-beta1knew))/(norm+mingnormeps);
+
+        double maxmov = BeadList->CVs[i]->GetMaxMovement();
+
+        if( (maxmov <= 0) || (fabs(dm) < maxmov) ){
+            NPos[i] = Pos[i] - dm;
+        } else {
+            NPos[i] = Pos[i] - maxmov*sgn(dm);
+        }
+    }
+}
+
+//------------------------------------------------------------------------------
+
+void CBead::UpdatePositionFinalize(void)
+{
+    vkold = vknew;
+    mkold = mknew;
+    beta1kold = beta1knew;
+    beta2kold = beta2knew;
 }
 
 //==============================================================================

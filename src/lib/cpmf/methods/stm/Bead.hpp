@@ -100,10 +100,16 @@ public:
     void UpdatePositionGD(double step);
 
     /// update bead position - normalize gradient descent
-    void UpdatePositionNGD(double step);
+    void UpdatePositionNGD(double step,double mingnormeps);
 
     /// update bead position - normalize gradient descent vs gradient descent
-    void UpdatePositionNGDAuto(double step,double maxgnorm);
+    void UpdatePositionNGDAuto(double step,double maxgnorm,double mingnormeps);
+
+    /// Adam (Adaptive Moment Estimation)
+    void UpdatePositionADAM(double step,double beta1,double beta2,double mingnormeps);
+
+    /// currently only for ADAM
+    void UpdatePositionFinalize(void);
 
 // input/output methods --------------------------------------------------------
     /// load data
@@ -154,6 +160,17 @@ private:
     CSimpleVector<double>   SPos;           // smoothed position
     CSimpleVector<double>   FPos;           // re-parametrized position
     CSimpleVector<double>   PPos;           // position for path optimization
+
+    // Adam (Adaptive Moment Estimation)
+    double                  beta1kold;
+    double                  beta2kold;
+    double                  vkold;
+    CSimpleVector<double>   mkold;
+    double                  beta1knew;
+    double                  beta2knew;
+    double                  vknew;
+    double                  vkhat;
+    CSimpleVector<double>   mknew;
 
     friend class CSTMPath;
 };

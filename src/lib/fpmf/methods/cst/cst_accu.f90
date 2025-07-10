@@ -74,7 +74,7 @@ subroutine cst_accu_read(iounit)
             ! ------------------------------------
                 case('NSAMPLES')
                     call pmf_accu_read_rbuf_B(cstaccu,iounit,keyline,rbuf_B)
-                    faccumulation = rbuf_B(glbidx)
+                    faccumulation = int(rbuf_B(glbidx))
             ! ------------------------------------
                 case('MLAMBDA')
                     call pmf_accu_read_rbuf_M(cstaccu,iounit,keyline,rbuf_M)
