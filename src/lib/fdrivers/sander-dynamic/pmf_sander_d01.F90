@@ -353,10 +353,7 @@ subroutine pmf_sender_get_setup(setup,setup_len) bind(c,name='int_pmf_sander_get
         call pmf_utils_exit(PMF_OUT,1,'Incompatible PMFLIB_SETUP_SIZE - driver interface compromised in pmf_sender_get_setup!')
     end if
 
-    ! PMFLib constraints are not compatible with middle scheme
-    if( (setup(PMFLIB_SETUP_ISCHEME) .gt. 0) .and. cst_enabled ) then
-        call pmf_utils_exit(PMF_OUT,1,'[cst] is on but not compatible with ischeme > 0')
-    end if
+    ! currently nothing here
 
 end subroutine pmf_sender_get_setup
 
