@@ -209,7 +209,7 @@ subroutine cst_output_write
     end if
 
     ! write header --------------------------------------------------------------
-    write(CST_OUT,170,advance='NO') fstep,faccumulation,pmf_unit_get_rvalue(TimeUnit,ftime),fliter
+    write(CST_OUT,170,advance='NO') fstep,faccumulation,pmf_unit_get_rvalue(TimeUnit,ftime),fsiter
 
     ! go to energy units - calculate metric tensor correction
     if( faccumulation .ne. 0 ) then
@@ -294,13 +294,25 @@ subroutine cst_output_close
 
     implicit none
     integer             :: i,item,nitems
-    real(PMFDP)         :: mtc
+    real(PMFDP)         :: mtc,sig
     real(PMFDP)         :: alam,lams,alams
     real(PMFDP)         :: amu,mus,amus
     type(UnitType)      :: cv_unit
     type(UnitType)      :: lambda_unit
     character(len=15)   :: name
     ! -----------------------------------------------------------------------------
+
+    ! shake stat
+    sig = 0.0d0
+    if( nsupdates .gt. 0 ) then
+        sig = sqrt(m2fsiter/nsupdates)
+    end if
+    write(CST_OUT,'(A,F5.1,A,F5.1)') '# SHAKE STAT:  Average number of iterations: ', mfsiter, ' +/- ', sig
+    sig = 0.0d0
+    if( nrupdates .gt. 0 ) then
+        sig = sqrt(m2friter/nrupdates)
+    end if
+    write(CST_OUT,'(A,F5.1,A,F5.1)') '# RATTLE STAT: Average number of iterations: ', mfriter, ' +/- ', sig
 
     nitems = NumOfCONs
     if( fplevel .eq. 0 ) then

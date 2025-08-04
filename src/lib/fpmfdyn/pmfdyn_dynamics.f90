@@ -214,7 +214,8 @@ subroutine md_run
     use pmf_core_lf
 
     implicit none
-    integer            :: i
+    integer             :: i
+    integer             :: modified
     ! -----------------------------------------------------------------------------
 
     ! only init subsystems
@@ -260,7 +261,7 @@ subroutine md_run
         !===============================================================================
         ! shake and bluemoon constraints
         if( cst_enabled ) then
-            call pmf_core_lf_shake(md_x)
+            call pmf_core_lf_shake(md_x,modified)
             md_v(:,:) = (md_x(:,:) - md_old_x(:,:)) * idt
         end if
 

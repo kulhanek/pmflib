@@ -55,7 +55,7 @@ subroutine cst_init_method
     call cst_trajectory_open
 
     ! print header need value from restart file
-    call cst_init_print_header
+    call cst_init_print_summary
     call cst_output_write_header
 
 end subroutine cst_init_method
@@ -80,10 +80,12 @@ subroutine cst_init_dat
     frstupdate      = 500
     ftrjsample      = 0             ! how often save accumulator to "accumulator evolution"
 
-    flambdasolver   = CON_LS_NM     ! Newton-Rapson solver
+    fshakesolver    = CON_SHAKESOL_MM       ! mixed shake
+    frattlesolver   = CON_RATTLESOL_MA      ! matrix algebra
+
     flambdatol      = 1.0d-7        ! tolerance for lambda optimization
+    frveltol        = 1.0d-9        ! residual velocity in rattle/rattle-v
     fmaxiter        = 50            ! maximum of iteration in lambda optimization
-    frcond          = 1e-7
 
     fenthalpy       = .false.       ! accumulate enthalpy
     fentropy        = .false.       ! accumulate entropy
@@ -96,13 +98,21 @@ subroutine cst_init_dat
     NumOfSHAKECONs  = 0
     NumOfConAtoms   = 0
 
+    nsupdates       = 0.0d0
+    mfsiter         = 0.0d0
+    m2fsiter        = 0.0d0
+
+    nrupdates       = 0.0d0
+    mfriter         = 0.0d0
+    m2friter        = 0.0d0
+
 end subroutine cst_init_dat
 
 !===============================================================================
-! Subroutine:  cst_init_print_header
+! Subroutine:  cst_init_print_summary
 !===============================================================================
 
-subroutine cst_init_print_header
+subroutine cst_init_print_summary
 
     use prmfile
     use pmf_dat
@@ -130,11 +140,8 @@ subroutine cst_init_print_header
     write(PMF_OUT,120)
     write(PMF_OUT,120)  ' Constraint optimization options:'
     write(PMF_OUT,120)  ' ------------------------------------------------------'
-    write(PMF_OUT,140)  ' Lambda solver (flambdasolver)        : ', flambdasolver, &
-                                                                 trim(cst_init_get_lsolver_name(flambdasolver))
-    if( flambdasolver .eq. 2 ) then
-    write(PMF_OUT,135)  ' Condition number for SVD (frcond)    : ', frcond
-    end if
+    write(PMF_OUT,140)  ' SHAKE solver (fshakesolver)          : ', fshakesolver, &
+                                                                    trim(cst_init_get_shakesol_name(fshakesolver))
     write(PMF_OUT,135)  ' Lambda tolerance (flambdatol)        : ', flambdatol
     write(PMF_OUT,130)  ' Maximum of iteration (fmaxiter)      : ', fmaxiter
     write(PMF_OUT,120)
@@ -187,34 +194,40 @@ subroutine cst_init_print_header
 
 150 format(' == Constrained collective variable #',I4.4)
 
-end subroutine cst_init_print_header
+end subroutine cst_init_print_summary
 
 !===============================================================================
-! Function:  cst_init_get_lsolver_name
+! Function:  cst_init_get_shakesol_name
 !===============================================================================
 
-character(80) function cst_init_get_lsolver_name(solver_id)
+character(80) function cst_init_get_shakesol_name(solver_id)
 
     use cst_dat
+    use pmf_utils
 
     implicit none
     integer     :: solver_id
     ! --------------------------------------------------------------------------
 
     select case(solver_id)
-        case(CON_LS_NM)
-            cst_init_get_lsolver_name = "Newton method - LU"
-        case(CON_LS_CM)
-            cst_init_get_lsolver_name = "Chord method"
-        case(CON_LS_NM_SVD)
-            cst_init_get_lsolver_name = "Newton method - SVD"
+        case(CON_SHAKESOL_FM)
+            cst_init_get_shakesol_name = "Fixed SHAKE (LU)"
+        case(CON_SHAKESOL_MM)
+            cst_init_get_shakesol_name = "Mixed SHAKE (LU)"
+        case(CON_SHAKESOL_NM)
+            cst_init_get_shakesol_name = "Newton-Raphson SHAKE (LU)"
+        case(CON_SHAKESOL_DI)
+            cst_init_get_shakesol_name = "Mixed SHAKE (diagonal solver)"
+        case(CON_SHAKESOL_DIWG)
+            cst_init_get_shakesol_name = "Mixed SHAKE (diagonal solver) with initial guess"
         case default
-            cst_init_get_lsolver_name = "unknown"
+            call pmf_utils_exit(PMF_OUT, 1, &
+                        '[CST] Not implemented shake solver in cst_init_get_shakesol_name!')
     end select
 
     return
 
-end function cst_init_get_lsolver_name
+end function cst_init_get_shakesol_name
 
 !===============================================================================
 ! Subroutine:  cst_init_add_shake_csts
@@ -457,37 +470,26 @@ subroutine cst_init_core
     integer      :: alloc_failed, i, tot_nbins
     ! ------------------------------------------------------------------------------
 
-    select case(flambdasolver)
-        case(CON_LS_NM)
-            ! allocate arrays for LU decomposition
-            allocate(vv(NumOfCONs), indx(NumOfCONs), stat= alloc_failed)
-            if( alloc_failed .ne. 0 ) then
-                call pmf_utils_exit(PMF_OUT,1,&
-                         '[CST] Unable to allocate memory for arrays used in LU decomposition!')
-            end if
-        case(CON_LS_CM)
-            ! allocate arrays for LU decomposition
-            allocate(vv(NumOfCONs), indx(NumOfCONs), stat= alloc_failed)
-            if( alloc_failed .ne. 0 ) then
-                call pmf_utils_exit(PMF_OUT,1,&
-                         '[CST] Unable to allocate memory for arrays used in LU decomposition!')
-            end if
-        case(CON_LS_NM_SVD)
-            ! allocate arrays for SVD decomposition
-            lwork = (3*NumOfCONs + max( 2*NumOfCONs, NumOfCONs, 1 ))*10
-            allocate(vv(NumOfCONs), work(lwork), indx(NumOfCONs), stat= alloc_failed)
-            if( alloc_failed .ne. 0 ) then
-                call pmf_utils_exit(PMF_OUT,1,&
-                         '[CST] Unable to allocate memory for arrays used in LU decomposition!')
-            end if
+    select case(fintalg)
+        case(IA_LEAP_FROG)
+            isfdt = 1.0d0/(fdt*fdt) * PMF_L2CL
+        case(IA_VEL_VERLET)
+            isfdt = 2.0d0/(fdt*fdt) * PMF_L2CL
         case default
-            call pmf_utils_exit(PMF_OUT,1,'[CST] solver is not implemented!')
+            call pmf_utils_exit(PMF_OUT,1,'Unsupported integration algorithm in cst_init_print_summary!')
     end select
 
+! required always - det(Z) is calculate in core_analyse
+! allocate arrays for LU decomposition
+    allocate(vv(NumOfCONs), indx(NumOfCONs), stat= alloc_failed)
+    if( alloc_failed .ne. 0 ) then
+        call pmf_utils_exit(PMF_OUT,1,&
+                 '[CST] Unable to allocate memory for arrays used in LU decomposition!')
+    end if
 
 
 ! allocate arrays for lambda calculation ---------------------------------------
-    allocate(lambda(NumOfCONs), &
+    allocate(lambda(NumOfCONs),lambdav(NumOfCONs),  &
           cv(NumOfCONs), &
           jac(NumOfCONs,NumOfCONs), stat= alloc_failed )
 
@@ -527,7 +529,6 @@ subroutine cst_init_core
     ! -----------------------------------------------
     if( has_lambdav ) then
         allocate( lambdav(NumOfCONs), &
-                  matv(NumOfCONs,NumOfCONs), &
                   mlambdav(NumOfCONs), &
                   m2lambdav(NumOfCONs), &
                   stat= alloc_failed )
@@ -538,7 +539,6 @@ subroutine cst_init_core
         end if
 
         lambdav(:) = 0.0d0
-        matv(:,:) = 0.0d0
         mlambdav(:) = 0.0d0
         m2lambdav(:) = 0.0d0
     end if

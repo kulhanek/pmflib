@@ -379,7 +379,7 @@ subroutine cst_constraints_calc_fdxp
     ! get constrain deviations
     do i=1,NumOfCONs
         ci = CONList(i)%cvindx
-        cv(i) = get_deviation(CONList(i)%cv,CONList(i)%value,CVContextP%CVsValues(ci))
+        cv(i) = get_deviation(CONList(i)%cv,CVContextP%CVsValues(ci),CONList(i)%value)
     end do
 
     call pmf_timers_stop_timer(PMFLIB_CVS_TIMER)

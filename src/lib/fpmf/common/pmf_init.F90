@@ -81,6 +81,7 @@ subroutine pmf_init_dat
     rst_enabled  = .false.
     mtd_enabled  = .false.
     abf_enabled  = .false.
+    abf_cst_enabled = .false.
     abp_enabled  = .false.
     mon_enabled  = .false.
     stm_enabled  = .false.
@@ -371,6 +372,7 @@ subroutine pmf_init_pmf
     use pmf_dat
     use pmf_utils
     use cst_init
+    use abf_init
 
     implicit none
     integer                :: i,j,k,l,itmp,ai,tot_atoms
@@ -383,6 +385,7 @@ subroutine pmf_init_pmf
 
     ! update CV and CST according to SHAKE constraints
     call cst_init_add_shake_csts
+    call abf_init_add_shake_cvs
 
     !---------------------------------------------------------------------------
     ! calculate total number of atoms including duplicity records
@@ -503,9 +506,10 @@ subroutine pmf_init_pmf
         call pmf_utils_exit(PMF_OUT, 1,'[PMFLIB] Unable to allocate memory for common arrays!')
     endif
 
-    if( cst_enabled ) then
+    if( cst_enabled .or. abf_cst_enabled ) then
         ! allocate arrays used by bluemoon
         allocate( CrdP(3,NumOfLAtoms), &
+                  VelP(3,NumOfLAtoms), &
                   CVContextP%CVsValues(NumOfCVs), &
                   CVContextP%CVsDrvs(3,NumOfLAtoms,NumOfCVs), &
                   stat=alloc_failed)
@@ -513,16 +517,6 @@ subroutine pmf_init_pmf
         if( alloc_failed .ne. 0 ) then
             call pmf_utils_exit(PMF_OUT, 1,'[PMFLIB] Unable to allocate memory for CST arrays!')
         endif
-
-        if( fintalg .eq. IA_VEL_VERLET ) then
-            ! allocate arrays used by bluemoon
-            allocate(   VelP(3,NumOfLAtoms), &
-                        stat=alloc_failed)
-
-            if( alloc_failed .ne. 0 ) then
-                call pmf_utils_exit(PMF_OUT, 1,'[PMFLIB] Unable to allocate memory for CST array!')
-            endif
-        end if
     end if
 
 end subroutine pmf_init_pmf

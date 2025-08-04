@@ -278,6 +278,7 @@ subroutine stm_client_exchange_data()
             write(STM_OUT,*)
             write(STM_OUT,350) stmsteps
         case(BMO_TERMINATE)
+            write(STM_OUT,320)
             write(STM_OUT,400,advance='NO') '# Target '
             do i=1,NumOfSTMCVs
                 write(STM_OUT,410,advance='NO') STMCVList(i)%cv%get_rvalue(STMCVList(i)%target_value)

@@ -1,6 +1,7 @@
 !===============================================================================
 ! PMFLib - Library Supporting Potential of Mean Force Calculations
 !-------------------------------------------------------------------------------
+!    Copyright (C) 2025 Petr Kulhanek, kulhanek@chemi.muni.cz
 !    Copyright (C) 2022 Petr Kulhanek, kulhanek@chemi.muni.cz
 !
 !    This library is free software; you can redistribute it and/or
@@ -260,6 +261,16 @@ abstract interface
         real(CPMFDP)        :: x(*)
         integer(CPMFINT)    :: modified
     end subroutine int_pmf_sander_shake
+    ! --------------------------------------------------------------------------
+    subroutine int_pmf_sander_rattlev(anatom,x,v,update_xp,modified) bind(c)
+        import
+        implicit none
+        integer(CPMFINT)    :: anatom
+        real(CPMFDP)        :: x(*)
+        real(CPMFDP)        :: v(*)
+        integer(CPMFINT)    :: update_xp
+        integer(CPMFINT)    :: modified
+    end subroutine int_pmf_sander_rattlev
 
 #ifdef MPI
 ! MPI ============================================
@@ -329,6 +340,7 @@ procedure(int_pmf_sander_cst_init_collisions), bind(c), pointer     :: pmf_sande
 procedure(int_pmf_sander_num_of_pmflib_cst), bind(c), pointer       :: pmf_sander_num_of_pmflib_cst
 procedure(int_pmf_sander_cst_checkatom), bind(c), pointer           :: pmf_sander_cst_checkatom
 procedure(int_pmf_sander_shake), bind(c), pointer                   :: pmf_sander_shake
+procedure(int_pmf_sander_rattlev), bind(c), pointer                 :: pmf_sander_rattlev
 
 #ifdef MPI
 procedure(int_pmf_sander_init_taskid_mpi), bind(c), pointer         :: pmf_sander_init_taskid_mpi
@@ -502,6 +514,12 @@ subroutine pmf_sander_bind_to_driver(master)
         stop 'Unable to load the procedure int_pmf_sander_shake'
     end if
     call c_f_procpointer(proc_addr,pmf_sander_shake)
+        ! ------------------
+    proc_addr=dlsym(pmf_sander_driver_handle, "int_pmf_sander_rattlev"//c_null_char)
+    if (.not. c_associated(proc_addr))then
+        stop 'Unable to load the procedure int_pmf_sander_rattlev'
+    end if
+    call c_f_procpointer(proc_addr,pmf_sander_rattlev)
 
 #ifdef MPI
 ! ------------------

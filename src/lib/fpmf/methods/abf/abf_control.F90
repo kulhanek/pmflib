@@ -99,24 +99,26 @@ subroutine abf_control_read_abf(prm_fin)
     call pmf_ctrl_check_integer('ABF','ftrjsample',ftrjsample,0,CND_GE)
 
 ! ENT/TDS ====================
+    call pmf_ctrl_read_integer(prm_fin,'fshakemode',fshakemode,'I12')
+    call pmf_ctrl_check_integer_in_range('ABF','fshakemode',fshakemode,0,2)
+
     call pmf_ctrl_read_logical(prm_fin,'fenthalpy',fenthalpy)
     call pmf_ctrl_read_integer(prm_fin,'fenthalpy_der',fenthalpy_der,'I12')
-    call pmf_ctrl_check_integer_in_range('ABF','fenthalpy_der',fenthalpy_der,0,3)
+    call pmf_ctrl_check_integer_in_range('ABF','fenthalpy_der',fenthalpy_der,0,5)
 
     call pmf_ctrl_read_logical(prm_fin,'fentropy',fentropy)
     call pmf_ctrl_read_logical(prm_fin,'fentdecomp',fentdecomp)
 
-    if( fenthalpy .and. (fenthalpy_der .gt. 0) ) then
-        if( fentropy .eqv. .false. ) then
-            fentropy = .true.
-            write(PMF_OUT,200)
-        end if
-        if( fentdecomp .eqv. .false. ) then
-            fentdecomp = .true.
-            write(PMF_OUT,201)
-        end if
-    end if
-
+!    if( fenthalpy .and. (fenthalpy_der .gt. 0) ) then
+!        if( fentropy .eqv. .false. ) then
+!            fentropy = .true.
+!            write(PMF_OUT,200)
+!        end if
+!        if( fentdecomp .eqv. .false. ) then
+!            fentdecomp = .true.
+!            write(PMF_OUT,201)
+!        end if
+!    end if
 
     call pmf_ctrl_read_logical(prm_fin,'ftds_add_bias',ftds_add_bias)
 
@@ -131,9 +133,6 @@ subroutine abf_control_read_abf(prm_fin)
 
     call pmf_ctrl_read_integer(prm_fin,'fenesample',fenesample,'I12')
     call pmf_ctrl_check_integer('ABF','fenesample',fenesample,0,CND_GT)
-
-    call pmf_ctrl_read_integer(prm_fin,'finclude_pv',finclude_pv,'I12')
-    call pmf_ctrl_check_integer_in_range('ABF','finclude_pv',finclude_pv,0,2)
 
     call pmf_ctrl_read_logical(prm_fin,'fusmode',fusmode)
     call pmf_ctrl_read_logical(prm_fin,'falignbias',falignbias)
@@ -223,8 +222,8 @@ subroutine abf_control_read_abf(prm_fin)
 
 100 format (' >> Multiple-walkers ABF method is disabled!')
 
-200 format ('|- Forcing: fentropy   = on due to fenthalpy_der > 0')
-201 format ('|- Forcing: fentdecomp = on due to fenthalpy_der > 0')
+! 200 format ('|- Forcing: fentropy   = on due to fenthalpy_der > 0')
+! 201 format ('|- Forcing: fentdecomp = on due to fenthalpy_der > 0')
 
 #ifndef PMFLIB_NETWORK
 105 format (' >> Multiple-walkers ABF method is not compiled in!')
@@ -243,6 +242,7 @@ subroutine abf_control_read_cvs(prm_fin)
     use pmf_dat
     use pmf_utils
     use abf_dat
+    use abf_init
     use prmfile
 
     implicit none
@@ -280,6 +280,9 @@ subroutine abf_control_read_cvs(prm_fin)
 
         call prmfile_clear(locprmfile)
     end if
+
+    ! init ABF atom arrays for SHAKE collision detection
+    call abf_init_abf_atoms
 
     return
 

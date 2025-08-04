@@ -1,8 +1,10 @@
 !===============================================================================
 ! PMFLib - Library Supporting Potential of Mean Force Calculations
 !-------------------------------------------------------------------------------
+!    Copyright (C) 2025 Petr Kulhanek, kulhanek@chemi.muni.cz
 !    Copyright (C) 2011-2015 Petr Kulhanek, kulhanek@chemi.muni.cz
 !    Copyright (C) 2013-2015 Letif Mones, lam81@cam.ac.uk
+!    Copyright (C) 2010 Petr Kulhanek, kulhanek@chemi.muni.cz
 !    Copyright (C) 2007 Petr Kulhanek, kulhanek@enzim.hu
 !    Copyright (C) 2006 Petr Kulhanek, kulhanek@chemi.muni.cz &
 !                       Martin Petrek, petrek@chemi.muni.cz
@@ -33,95 +35,580 @@ implicit none
 contains
 
 !===============================================================================
-! logical function cst_shake_checkatom(atomid)
+! Subroutine:  cst_shake_calculate
 !===============================================================================
 
-logical function cst_shake_checkatom(atomid)
-
-    use pmf_dat
-    use cst_dat
-
-    implicit none
-    integer    :: atomid
-    ! -----------------------------------------------
-    integer    :: i
-    ! --------------------------------------------------------------------------
-
-    do i=1,NumOfConAtoms
-        if( ConAtoms(i) .eq. atomid ) then
-            cst_shake_checkatom = .true.
-            if( fdebug ) then
-                write(PMF_DEBUG+fmytaskid,*) 'cst_shake_checkatom-> conflict ',atomid
-            end if
-            return
-        end if
-    end do
-
-    cst_shake_checkatom = .false.
-
-    return
-
-end function cst_shake_checkatom
-
-!===============================================================================
-! Function:  cst_shake_allocate
-!===============================================================================
-
-subroutine cst_shake_allocate(num)
+subroutine cst_shake_calculate
 
     use pmf_utils
-    use pmf_dat
     use cst_dat
 
     implicit none
-    integer    :: num ! number of shake constraints
-    ! -----------------------------------------------
-    integer    :: i,alloc_failed
+    ! --------------------------------------------------------------------------
+
+    select case(fshakesolver)
+        case(CON_SHAKESOL_FM)
+            call cst_shake_calculate_fm()   ! fixed shake: JAC(0,0)
+        case(CON_SHAKESOL_MM)
+            call cst_shake_calculate_mm()   ! mixed shake: JAC(0,P)
+        case(CON_SHAKESOL_NM)
+            call cst_shake_calculate_nm()   ! Newton-Raphson shake: JAC(P,P)
+        case(CON_SHAKESOL_DI)
+            call cst_shake_calculate_di()   ! mixed shake: JAC(0,P) - diagonal solver
+        case(CON_SHAKESOL_DIWG)
+            call cst_shake_calculate_diwg() ! mixed shake: JAC(0,P) - diagonal solver with initial guess
+        case default
+            call pmf_utils_exit(PMF_OUT,1,'[CST] SHAKE solver is not implemented in cst_shake_calculate!')
+    end select
+
+end subroutine cst_shake_calculate
+
+!===============================================================================
+! Subroutine:  cst_shake_calculate_fm
+!===============================================================================
+
+subroutine cst_shake_calculate_fm
+
+    use pmf_dat
+    use pmf_utils
+    use cst_dat
+    use cst_constraints
+
+    implicit none
+    integer             :: i,k,info,ci,iter
+    logical             :: done
+    real(PMFDP)         :: invn,dfsiter1,dfsiter2
     ! -----------------------------------------------------------------------------
 
-    NumOfSHAKECONs = num
-    if( NumOfSHAKECONs .eq. 0 ) return
+    lambda(:) = 0.0d0
 
-    allocate(SHAKECONList(NumOfSHAKECONs),stat=alloc_failed)
+    ! calculate Jacobian matrix ------------------------
+    call cst_shake_calc_jacobian_fm ! it calculates jac(0,0)
 
-    if( alloc_failed .ne. 0 ) then
-        write(PMF_OUT,*) 'Unable to allocate memory for SHAKE constraints!'
-        call pmf_utils_exit(PMF_OUT, 1)
+    if ( NumOfCONs .gt. 1 ) then
+        ! LU decomposition
+        indx(:) = 0
+        call dgetrf(NumOfCONs,NumOfCONs,jac,NumOfCONs,indx,info)
+        if( info .ne. 0 ) then
+            call pmf_utils_exit(PMF_OUT,1,&
+                             '[CST] LU decomposition failed in cst_shake_calculate_fm!')
+        end if
     end if
 
-    do i=1,NumOfSHAKECONs
-        SHAKECONList(i)%at1   = 0
-        SHAKECONList(i)%at2   = 0
-        SHAKECONList(i)%value = 0.0d0
+    fsiter = 0
+
+! do step
+    do iter=1,fmaxiter
+
+        ! go through constraint list and calculate first derivative and constraint values at CrdP and cv
+        call cst_constraints_calc_fdxp
+
+        if ( NumOfCONs .gt. 1 ) then
+            ! solve LE
+            call dgetrs('N',NumOfCONs,1,jac,NumOfCONs,indx,cv,NumOfCONs,info)
+            if( info .ne. 0 ) then
+                call pmf_utils_exit(PMF_OUT,1, &
+                                 '[CST] Solution of LE failed in cst_shake_calculate_fm!')
+            end if
+        else
+            cv(1)=cv(1)/jac(1,1)
+        end if
+
+        ! correct lambda vector
+        lambda = lambda + cv
+
+        ! calculate new position vector
+        do i=1,NumOfCONs
+            ci = CONList(i)%cvindx
+            do k=1,NumOfLAtoms
+                CrdP(:,k) = CrdP(:,k) + MassInv(k)*cv(i)*CVContext%CVsDrvs(:,k,ci)
+            end do
+        end do
+
+        ! check convergence criteria in lambdax
+        done = .true.
+        do i=1,NumOfCONs
+            if( abs(cv(i)*isfdt) .gt. flambdatol ) done = .false.
+        end do
+
+        if( done ) exit
+
     end do
 
-return
+    fsiter = iter
 
-end subroutine cst_shake_allocate
+    lambda(:) = lambda(:)*isfdt
+
+    ! final derivatives and values
+    call cst_constraints_calc_fdxp
+
+    if( iter .eq. fmaxiter ) then
+        call pmf_utils_exit(PMF_OUT,1, &
+                         '[CST] Maximum number of iterations in lambda calculation exceeded in cst_shake_calculate_fm!')
+    end if
+
+! update stats about iterations
+    nsupdates = nsupdates + 1.0d0
+    invn = 1.0d0 / nsupdates
+    dfsiter1 = fsiter - mfsiter
+    mfsiter  = mfsiter  + dfsiter1 * invn
+    dfsiter2 = fsiter - mfsiter
+    m2fsiter = m2fsiter + dfsiter1 * dfsiter2
+
+end subroutine cst_shake_calculate_fm
 
 !===============================================================================
-! Function:  cst_shake_set
+! Subroutine:  cst_shake_calculate_mm
 !===============================================================================
 
-subroutine cst_shake_set(id,at1,at2,value)
+subroutine cst_shake_calculate_mm
+
+    use pmf_dat
+    use pmf_utils
+    use cst_dat
+    use cst_constraints
+
+    implicit none
+    integer             :: i,k,info,ci,iter
+    logical             :: done
+    real(PMFDP)         :: invn,dfsiter1,dfsiter2
+    ! -----------------------------------------------------------------------------
+
+    lambda(:) = 0.0d0
+
+    fsiter = 0
+
+! do step
+    do iter=1,fmaxiter
+
+        ! go through constraint list and calculate first derivative and constraint values at CrdP and cv
+        call cst_constraints_calc_fdxp
+
+        ! calculate Jacobian matrix
+        call cst_shake_calc_jacobian_mm ! it calculates jac(0,P)
+
+        if ( NumOfCONs .gt. 1 ) then
+            ! LU decomposition
+            indx(:) = 0
+            call dgetrf(NumOfCONs,NumOfCONs,jac,NumOfCONs,indx,info)
+            if( info .ne. 0 ) then
+                call pmf_utils_exit(PMF_OUT,1,&
+                                 '[CST] LU decomposition failed in cst_shake_calculate_mm!')
+            end if
+            ! solve LE
+            call dgetrs('N',NumOfCONs,1,jac,NumOfCONs,indx,cv,NumOfCONs,info)
+            if( info .ne. 0 ) then
+                call pmf_utils_exit(PMF_OUT,1, &
+                                 '[CST] Solution of LE failed in cst_shake_calculate_mm!')
+            end if
+        else
+            cv(1)=cv(1)/jac(1,1)
+        end if
+
+        ! correct lambda vector
+        lambda = lambda + cv
+
+        ! calculate new position vector
+        do i=1,NumOfCONs
+            ci = CONList(i)%cvindx
+            do k=1,NumOfLAtoms
+                CrdP(:,k) = CrdP(:,k) + MassInv(k)*cv(i)*CVContext%CVsDrvs(:,k,ci)
+            end do
+        end do
+
+        ! check convergence criteria in lambdax
+        done = .true.
+        do i=1,NumOfCONs
+            if( abs(cv(i)*isfdt) .gt. flambdatol ) done = .false.
+        end do
+
+        if( done ) exit
+
+    end do
+
+    fsiter = iter
+
+    lambda(:) = lambda(:)*isfdt
+
+    write(PMF_DEBUG+fmytaskid,*) 'lambda= ', lambda(:)
+
+! final derivatives and values
+    call cst_constraints_calc_fdxp
+
+    if( iter .eq. fmaxiter ) then
+        call pmf_utils_exit(PMF_OUT,1, &
+                         '[CST] Maximum number of iterations in lambda calculation exceeded in cst_shake_calculate_mm!')
+    end if
+
+! update stats about iterations
+    nsupdates = nsupdates + 1.0d0
+    invn = 1.0d0 / nsupdates
+    dfsiter1 = fsiter - mfsiter
+    mfsiter  = mfsiter  + dfsiter1 * invn
+    dfsiter2 = fsiter - mfsiter
+    m2fsiter = m2fsiter + dfsiter1 * dfsiter2
+
+end subroutine cst_shake_calculate_mm
+
+!===============================================================================
+! Subroutine:  cst_shake_calculate_nm
+!===============================================================================
+
+subroutine cst_shake_calculate_nm
+
+    use pmf_dat
+    use pmf_utils
+    use cst_dat
+    use cst_constraints
+
+    implicit none
+    integer             :: i,k,info,ci,iter
+    logical             :: done
+    real(PMFDP)         :: invn,dfsiter1,dfsiter2
+    ! -----------------------------------------------------------------------------
+
+    lambda(:) = 0.0d0
+
+    fsiter = 0
+
+! do step
+    do iter=1,fmaxiter
+
+        ! go through constraint list and calculate first derivative and constraint values at CrdP and cv
+        call cst_constraints_calc_fdxp
+
+        ! calculate Jacobian matrix
+        call cst_shake_calc_jacobian_nm ! it calculates jac(P,P)
+
+        if ( NumOfCONs .gt. 1 ) then
+            ! LU decomposition
+            indx(:) = 0
+            call dgetrf(NumOfCONs,NumOfCONs,jac,NumOfCONs,indx,info)
+            if( info .ne. 0 ) then
+                call pmf_utils_exit(PMF_OUT,1,&
+                                 '[CST] LU decomposition failed in cst_shake_calculate_nm!')
+            end if
+            ! solve LE
+            call dgetrs('N',NumOfCONs,1,jac,NumOfCONs,indx,cv,NumOfCONs,info)
+            if( info .ne. 0 ) then
+                call pmf_utils_exit(PMF_OUT,1, &
+                                 '[CST] Solution of LE failed in cst_shake_calculate_nm!')
+            end if
+        else
+            cv(1)=cv(1)/jac(1,1)
+        end if
+
+        ! correct lambda vector
+        lambda = lambda + cv
+
+        ! calculate new position vector
+        do i=1,NumOfCONs
+            ci = CONList(i)%cvindx
+            do k=1,NumOfLAtoms
+                CrdP(:,k) = CrdP(:,k) + MassInv(k)*cv(i)*CVContext%CVsDrvs(:,k,ci)
+            end do
+        end do
+
+        ! check convergence criteria in lambdax
+        done = .true.
+        do i=1,NumOfCONs
+            if( abs(cv(i)*isfdt) .gt. flambdatol ) done = .false.
+        end do
+
+        if( done ) exit
+
+    end do
+
+    fsiter = iter
+
+    lambda(:) = lambda(:)*isfdt
+
+    ! final derivatives and values
+    call cst_constraints_calc_fdxp
+
+    if( iter .eq. fmaxiter ) then
+        call pmf_utils_exit(PMF_OUT,1, &
+                         '[CST] Maximum number of iterations in lambda calculation exceeded in cst_shake_calculate_nm!')
+    end if
+
+! update stats about iterations
+    nsupdates = nsupdates + 1.0d0
+    invn = 1.0d0 / nsupdates
+    dfsiter1 = fsiter - mfsiter
+    mfsiter  = mfsiter  + dfsiter1 * invn
+    dfsiter2 = fsiter - mfsiter
+    m2fsiter = m2fsiter + dfsiter1 * dfsiter2
+
+end subroutine cst_shake_calculate_nm
+
+!===============================================================================
+! Subroutine:  cst_shake_calculate_di
+! JAC - only diagonal elements are considered - no matrix algebra is necessary
+!===============================================================================
+
+subroutine cst_shake_calculate_di
+
+    use pmf_dat
+    use pmf_utils
+    use cst_dat
+    use cst_constraints
+
+    implicit none
+    integer             :: i,k,ci,iter
+    real(PMFDP)         :: jacv
+    logical             :: done
+    real(PMFDP)         :: invn,dfsiter1,dfsiter2
+    ! -----------------------------------------------------------------------------
+
+    lambda(:) = 0.0d0
+
+    fsiter = 0
+
+! do step
+    do iter=1,fmaxiter
+
+        ! go through constraint list and calculate first derivative and constraint values at CrdP and cv
+        call cst_constraints_calc_fdxp
+
+        do i=1,NumOfCONs
+            ci = CONList(i)%cvindx
+
+            ! calculate diagonal value
+            jacv = 0.0d0
+            do k=1,NumOfLAtoms
+                jacv = jacv - MassInv(k)*dot_product(CVContext%CVsDrvs(:,k,ci),CVContextP%CVsDrvs(:,k,ci))
+            end do
+
+            ! solve LE
+            cv(i)=cv(i)/jacv
+
+            ! correct lambda vector
+            lambda(i) = lambda(i) + cv(i)
+
+            ! calculate new position vector
+            do k=1,NumOfLAtoms
+                CrdP(:,k) = CrdP(:,k) + MassInv(k)*cv(i)*CVContext%CVsDrvs(:,k,ci)
+            end do
+        end do
+
+        ! check convergence criteria in lambdax
+        done = .true.
+        do i=1,NumOfCONs
+            if( abs(cv(i)*isfdt) .gt. flambdatol ) done = .false.
+        end do
+
+        if( done ) exit
+
+    end do
+
+    fsiter = iter
+
+    lambda(:) = lambda(:)*isfdt
+
+! final derivatives and values
+    call cst_constraints_calc_fdxp
+
+    if( iter .eq. fmaxiter ) then
+        call pmf_utils_exit(PMF_OUT,1, &
+                         '[CST] Maximum number of iterations in lambda calculation exceeded in cst_shake_calculate_di!')
+    end if
+
+! update stats about iterations
+    nsupdates = nsupdates + 1.0d0
+    invn = 1.0d0 / nsupdates
+    dfsiter1 = fsiter - mfsiter
+    mfsiter  = mfsiter  + dfsiter1 * invn
+    dfsiter2 = fsiter - mfsiter
+    m2fsiter = m2fsiter + dfsiter1 * dfsiter2
+
+end subroutine cst_shake_calculate_di
+
+!===============================================================================
+! Subroutine:  cst_shake_calculate_diwg
+! JAC - only diagonal elements are considered - no matrix algebra is necessary
+! take lambda guess from the previous step
+!===============================================================================
+
+subroutine cst_shake_calculate_diwg
+
+    use pmf_dat
+    use pmf_utils
+    use cst_dat
+    use cst_constraints
+
+    implicit none
+    integer             :: i,k,ci,iter
+    real(PMFDP)         :: jacv
+    logical             :: done
+    logical,save        :: initialized_lambda = .false. ! static
+    real(PMFDP)         :: invn,dfsiter1,dfsiter2
+    ! -----------------------------------------------------------------------------
+
+    if( initialized_lambda ) then
+        lambda(:) = lambda(:)/isfdt
+        cv(:) = lambda(:)
+        do i=1,NumOfCONs
+            ci = CONList(i)%cvindx
+            do k=1,NumOfLAtoms
+                CrdP(:,k) = CrdP(:,k) + MassInv(k)*cv(i)*CVContext%CVsDrvs(:,k,ci)
+            end do
+        end do
+    else
+        lambda(:) = 0.0d0
+    end if
+
+    fsiter = 0
+
+! do step
+    do iter=1,fmaxiter
+
+        ! go through constraint list and calculate first derivative and constraint values at CrdP and cv
+        call cst_constraints_calc_fdxp
+
+        do i=1,NumOfCONs
+            ci = CONList(i)%cvindx
+
+            ! calculate diagonal value
+            jacv = 0.0d0
+            do k=1,NumOfLAtoms
+                jacv = jacv - MassInv(k)*dot_product(CVContext%CVsDrvs(:,k,ci),CVContextP%CVsDrvs(:,k,ci))
+            end do
+
+            ! solve LE
+            cv(i)=cv(i)/jacv
+
+            ! correct lambda vector
+            lambda(i) = lambda(i) + cv(i)
+
+            ! calculate new position vector
+            do k=1,NumOfLAtoms
+                CrdP(:,k) = CrdP(:,k) + MassInv(k)*cv(i)*CVContext%CVsDrvs(:,k,ci)
+            end do
+        end do
+
+        ! check convergence criteria in lambdax
+        done = .true.
+        do i=1,NumOfCONs
+            if( abs(cv(i)*isfdt) .gt. flambdatol ) done = .false.
+        end do
+
+        if( done ) exit
+
+    end do
+
+    fsiter = iter
+
+    lambda(:) = lambda(:)*isfdt
+
+! final derivatives and values
+    call cst_constraints_calc_fdxp
+
+    if( iter .eq. fmaxiter ) then
+        call pmf_utils_exit(PMF_OUT,1, &
+                         '[CST] Maximum number of iterations in lambda calculation exceeded in cst_shake_calculate_di!')
+    end if
+
+    initialized_lambda = .true.
+
+! update stats about iterations
+    nsupdates = nsupdates + 1.0d0
+    invn = 1.0d0 / nsupdates
+    dfsiter1 = fsiter - mfsiter
+    mfsiter  = mfsiter  + dfsiter1 * invn
+    dfsiter2 = fsiter - mfsiter
+    m2fsiter = m2fsiter + dfsiter1 * dfsiter2
+
+end subroutine cst_shake_calculate_diwg
+
+!===============================================================================
+! Subroutine:  cst_shake_calc_jacobian_fm
+!===============================================================================
+
+subroutine cst_shake_calc_jacobian_fm
 
     use pmf_dat
     use cst_dat
+    use cst_constraints
 
     implicit none
-    integer        :: id       ! id of constraint
-    integer        :: at1      ! id of first atom
-    integer        :: at2      ! id of second atom
-    real(PMFDP)    :: value    ! value of DS constraint
-    ! -----------------------------------------------------------------------------
+    integer                :: i,ci,j,cj,k
+    real(PMFDP)            :: jacv
+    ! --------------------------------------------------------------------------
 
-    SHAKECONList(id)%at1   = at1
-    SHAKECONList(id)%at2   = at2
-    SHAKECONList(id)%value = value
+    ! complete Jacobian matrix
+    do i=1,NumOfCONs
+        ci = CONList(i)%cvindx
+        do j=1,NumOfCONs
+            cj = CONList(j)%cvindx
+            jacv = 0.0d0
+            do k=1,NumOfLAtoms
+                jacv = jacv - MassInv(k)*dot_product(CVContext%CVsDrvs(:,k,ci),CVContext%CVsDrvs(:,k,cj))
+            end do
+            jac(i,j)=jacv
+        end do
+    end do
 
-return
+end subroutine cst_shake_calc_jacobian_fm
 
-end subroutine cst_shake_set
+!===============================================================================
+! Subroutine:  cst_shake_calc_jacobian_mm
+!===============================================================================
+
+subroutine cst_shake_calc_jacobian_mm
+
+    use pmf_dat
+    use cst_dat
+    use cst_constraints
+
+    implicit none
+    integer                :: i,ci,j,cj,k
+    real(PMFDP)            :: jacv
+    ! --------------------------------------------------------------------------
+
+    ! complete Jacobian matrix
+    do i=1,NumOfCONs
+        ci = CONList(i)%cvindx
+        do j=1,NumOfCONs
+            cj = CONList(j)%cvindx
+            jacv = 0.0d0
+            do k=1,NumOfLAtoms
+                jacv = jacv - MassInv(k)*dot_product(CVContext%CVsDrvs(:,k,ci),CVContextP%CVsDrvs(:,k,cj))
+            end do
+            jac(i,j)=jacv
+        end do
+    end do
+
+end subroutine cst_shake_calc_jacobian_mm
+
+!===============================================================================
+! Subroutine:  cst_shake_calc_jacobian_nm
+!===============================================================================
+
+subroutine cst_shake_calc_jacobian_nm
+
+    use pmf_dat
+    use cst_dat
+    use cst_constraints
+
+    implicit none
+    integer                :: i,ci,j,cj,k
+    real(PMFDP)            :: jacv
+    ! --------------------------------------------------------------------------
+
+    ! complete Jacobian matrix
+    do i=1,NumOfCONs
+        ci = CONList(i)%cvindx
+        do j=1,NumOfCONs
+            cj = CONList(j)%cvindx
+            jacv = 0.0d0
+            do k=1,NumOfLAtoms
+                jacv = jacv - MassInv(k)*dot_product(CVContextP%CVsDrvs(:,k,ci),CVContextP%CVsDrvs(:,k,cj))
+            end do
+            jac(i,j)=jacv
+        end do
+    end do
+
+end subroutine cst_shake_calc_jacobian_nm
 
 !===============================================================================
 

@@ -36,6 +36,7 @@ contains
 subroutine pmf_core_in_data_xvf(x,v,f)
 
     use pmf_dat
+    use pmf_timers
 
     implicit none
     real(PMFDP),intent(in)     :: x(:,:)
@@ -45,12 +46,16 @@ subroutine pmf_core_in_data_xvf(x,v,f)
     integer                    :: i,ridx
     ! --------------------------------------------------------------------------
 
+    call pmf_timers_start_timer(PMFLIB_DATA_TIMER)
+
     do i=1,NumOfLAtoms
         ridx = RIndexes(i)
         Crd(:,i) = x(:,ridx)*LengthConv
         Vel(:,i) = v(:,ridx)*VelocityConv
         Frc(:,i) = f(:,ridx)*ForceConv
     end do
+
+    call pmf_timers_stop_timer(PMFLIB_DATA_TIMER)
 
 end subroutine pmf_core_in_data_xvf
 
@@ -61,6 +66,7 @@ end subroutine pmf_core_in_data_xvf
 subroutine pmf_core_in_data_xf(x,f)
 
     use pmf_dat
+    use pmf_timers
 
     implicit none
     real(PMFDP),intent(in)     :: x(:,:)
@@ -69,11 +75,15 @@ subroutine pmf_core_in_data_xf(x,f)
     integer                    :: i,ridx
     ! --------------------------------------------------------------------------
 
+    call pmf_timers_start_timer(PMFLIB_DATA_TIMER)
+
     do i=1,NumOfLAtoms
         ridx = RIndexes(i)
         Crd(:,i) = x(:,ridx)*LengthConv
         Frc(:,i) = f(:,ridx)*ForceConv
     end do
+
+    call pmf_timers_stop_timer(PMFLIB_DATA_TIMER)
 
 end subroutine pmf_core_in_data_xf
 
@@ -84,6 +94,7 @@ end subroutine pmf_core_in_data_xf
 subroutine pmf_core_in_data_xv(x,v)
 
     use pmf_dat
+    use pmf_timers
 
     implicit none
     real(PMFDP),intent(in)     :: x(:,:)
@@ -92,11 +103,15 @@ subroutine pmf_core_in_data_xv(x,v)
     integer                    :: i,ridx
     ! --------------------------------------------------------------------------
 
+    call pmf_timers_start_timer(PMFLIB_DATA_TIMER)
+
     do i=1,NumOfLAtoms
         ridx = RIndexes(i)
         Crd(:,i) = x(:,ridx)*LengthConv
         Vel(:,i) = v(:,ridx)*VelocityConv
     end do
+
+    call pmf_timers_stop_timer(PMFLIB_DATA_TIMER)
 
 end subroutine pmf_core_in_data_xv
 
@@ -107,6 +122,7 @@ end subroutine pmf_core_in_data_xv
 subroutine pmf_core_in_data_xp(xp)
 
     use pmf_dat
+    use pmf_timers
 
     implicit none
     real(PMFDP),intent(in)     :: xp(:,:)
@@ -114,10 +130,14 @@ subroutine pmf_core_in_data_xp(xp)
     integer                    :: i,ridx
     ! --------------------------------------------------------------------------
 
+    call pmf_timers_start_timer(PMFLIB_DATA_TIMER)
+
     do i=1,NumOfLAtoms
         ridx = RIndexes(i)
         CrdP(:,i) = xp(:,ridx)*LengthConv
     end do
+
+    call pmf_timers_stop_timer(PMFLIB_DATA_TIMER)
 
 end subroutine pmf_core_in_data_xp
 
@@ -128,6 +148,7 @@ end subroutine pmf_core_in_data_xp
 subroutine pmf_core_in_data_vp(vp)
 
     use pmf_dat
+    use pmf_timers
 
     implicit none
     real(PMFDP),intent(in)     :: vp(:,:)
@@ -135,10 +156,14 @@ subroutine pmf_core_in_data_vp(vp)
     integer                    :: i,ridx
     ! --------------------------------------------------------------------------
 
+    call pmf_timers_start_timer(PMFLIB_DATA_TIMER)
+
     do i=1,NumOfLAtoms
         ridx = RIndexes(i)
         VelP(:,i) = vp(:,ridx)*VelocityConv
     end do
+
+    call pmf_timers_stop_timer(PMFLIB_DATA_TIMER)
 
 end subroutine pmf_core_in_data_vp
 
@@ -149,6 +174,7 @@ end subroutine pmf_core_in_data_vp
 subroutine pmf_core_in_data_xpvp(xp,vp)
 
     use pmf_dat
+    use pmf_timers
 
     implicit none
     real(PMFDP),intent(in)     :: xp(:,:)
@@ -157,11 +183,15 @@ subroutine pmf_core_in_data_xpvp(xp,vp)
     integer                    :: i,ridx
     ! --------------------------------------------------------------------------
 
+    call pmf_timers_start_timer(PMFLIB_DATA_TIMER)
+
     do i=1,NumOfLAtoms
         ridx = RIndexes(i)
         CrdP(:,i) = xp(:,ridx)*LengthConv
         VelP(:,i) = vp(:,ridx)*VelocityConv
     end do
+
+    call pmf_timers_stop_timer(PMFLIB_DATA_TIMER)
 
 end subroutine pmf_core_in_data_xpvp
 
@@ -172,6 +202,7 @@ end subroutine pmf_core_in_data_xpvp
 subroutine pmf_core_out_data_f(f)
 
     use pmf_dat
+    use pmf_timers
 
     implicit none
     real(PMFDP),intent(out)    :: f(:,:)
@@ -180,12 +211,16 @@ subroutine pmf_core_out_data_f(f)
     real(PMFDP)                :: fconv
     ! --------------------------------------------------------------------------
 
+    call pmf_timers_start_timer(PMFLIB_DATA_TIMER)
+
     fconv = 1.0d0 / ForceConv
 
     do i=1,NumOfLAtoms
         ridx = RIndexes(i)
         f(:,ridx) = Frc(:,i)*fconv
     end do
+
+    call pmf_timers_stop_timer(PMFLIB_DATA_TIMER)
 
 end subroutine pmf_core_out_data_f
 
@@ -196,6 +231,7 @@ end subroutine pmf_core_out_data_f
 subroutine pmf_core_out_data_xv(x,v)
 
     use pmf_dat
+    use pmf_timers
 
     implicit none
     real(PMFDP),intent(out)    :: x(:,:)
@@ -204,6 +240,8 @@ subroutine pmf_core_out_data_xv(x,v)
     integer                    :: i,ridx
     real(PMFDP)                :: xconv,vconv
     ! --------------------------------------------------------------------------
+
+    call pmf_timers_start_timer(PMFLIB_DATA_TIMER)
 
     xconv = 1.0d0 / LengthConv
     vconv = 1.0d0 / VelocityConv
@@ -214,6 +252,8 @@ subroutine pmf_core_out_data_xv(x,v)
         v(:,ridx) = Vel(:,i)*vconv
     end do
 
+    call pmf_timers_stop_timer(PMFLIB_DATA_TIMER)
+
 end subroutine pmf_core_out_data_xv
 
 !===============================================================================
@@ -223,6 +263,7 @@ end subroutine pmf_core_out_data_xv
 subroutine pmf_core_out_data_xp(xp)
 
     use pmf_dat
+    use pmf_timers
 
     implicit none
     real(PMFDP),intent(out)    :: xp(:,:)
@@ -231,12 +272,16 @@ subroutine pmf_core_out_data_xp(xp)
     real(PMFDP)                :: xconv
     ! --------------------------------------------------------------------------
 
+    call pmf_timers_start_timer(PMFLIB_DATA_TIMER)
+
     xconv = 1.0d0 / LengthConv
 
     do i=1,NumOfLAtoms
         ridx = RIndexes(i)
         xp(:,ridx) = CrdP(:,i)*xconv
     end do
+
+    call pmf_timers_stop_timer(PMFLIB_DATA_TIMER)
 
 end subroutine pmf_core_out_data_xp
 
@@ -247,6 +292,7 @@ end subroutine pmf_core_out_data_xp
 subroutine pmf_core_out_data_vp(vp)
 
     use pmf_dat
+    use pmf_timers
 
     implicit none
     real(PMFDP),intent(out)    :: vp(:,:)
@@ -255,12 +301,16 @@ subroutine pmf_core_out_data_vp(vp)
     real(PMFDP)                :: vconv
     ! --------------------------------------------------------------------------
 
+    call pmf_timers_start_timer(PMFLIB_DATA_TIMER)
+
     vconv = 1.0d0 / VelocityConv
 
     do i=1,NumOfLAtoms
         ridx = RIndexes(i)
         vp(:,ridx) = VelP(:,i)*vconv
     end do
+
+    call pmf_timers_stop_timer(PMFLIB_DATA_TIMER)
 
 end subroutine pmf_core_out_data_vp
 
@@ -271,6 +321,7 @@ end subroutine pmf_core_out_data_vp
 subroutine pmf_core_out_data_xpvp(xp,vp)
 
     use pmf_dat
+    use pmf_timers
 
     implicit none
     real(PMFDP),intent(out)    :: xp(:,:)
@@ -280,6 +331,8 @@ subroutine pmf_core_out_data_xpvp(xp,vp)
     real(PMFDP)                :: xconv,vconv
     ! --------------------------------------------------------------------------
 
+    call pmf_timers_start_timer(PMFLIB_DATA_TIMER)
+
     xconv = 1.0d0 / LengthConv
     vconv = 1.0d0 / VelocityConv
 
@@ -288,6 +341,8 @@ subroutine pmf_core_out_data_xpvp(xp,vp)
         xp(:,ridx) = CrdP(:,i)*xconv
         vp(:,ridx) = VelP(:,i)*vconv
     end do
+
+    call pmf_timers_stop_timer(PMFLIB_DATA_TIMER)
 
 end subroutine pmf_core_out_data_xpvp
 

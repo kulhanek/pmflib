@@ -42,9 +42,21 @@ integer         :: fplevel          ! print level
 logical         :: frestart         ! 1 - restart job with previous data, 0 - otherwise not
 integer         :: frstupdate       ! how often is restart file written
 integer         :: ftrjsample       ! how often save restart to "restart evolution"
-integer         :: flambdasolver    ! 0 - Newton method, 1 - chord method, 2 - Newton + SVD
+
+integer         :: fshakesolver     ! SHAKE solvers
+                                    ! 0 - fixed SHAKE
+                                    ! 1 - mixed SHAKE
+                                    ! 2 - Newton-Raphson SHAKE
+                                    ! 3 - diagonal SHAKE
+                                    ! 4 - diagonal SHAKE with initial guess from the previous step
+
+integer         :: frattlesolver    ! RATTLE solvers
+                                    ! 1 - mixed RATTLE
+
 real(PMFDP)     :: flambdatol       ! tolerance for lambda optimization
+real(PMFDP)     :: frveltol         ! residual for velocity in rattle/rattlev
 integer         :: fmaxiter         ! maximum of iteration in lambda optimization
+
 integer         :: fsamplefreq      ! how often take samples
 logical         :: freadranges      ! read ranges for CVs
 
@@ -53,7 +65,6 @@ logical         :: fentropy         ! collect data for entropy calculation
 real(PMFDP)     :: fepotoffset
 real(PMFDP)     :: fekinoffset
 
-real(PMFDP)     :: frcond
 
 ! item list --------------------------------------------------------------------
 type CVTypeBM
@@ -96,53 +107,78 @@ integer                         :: NumOfSHAKECONs            ! number of shake c
 type(CVTypeSHAKE),allocatable   :: SHAKECONList(:)           ! SHAKE definition of constraints
 
 ! serial/MPI variables ---------------------------------------------------------
-integer             :: NumOfConAtoms            ! number of constrained atoms (unique list)
-integer,allocatable :: ConAtoms(:)              ! constrained atoms with SHAKE
-
-! ------------------------------------------------------------------------------
-
-type(PMFAccuType)   :: cstaccu
-logical             :: fallconstant
-
-real(PMFDP),allocatable     :: rbuf_B(:)
-real(PMFDP),allocatable     :: rbuf_M(:,:)
+integer                     :: NumOfCONAtoms            ! number of constrained atoms (unique list)
+integer,allocatable         :: CONAtoms(:)              ! constrained atoms to test with SHAKE
 
 ! constants --------------------------------------------------------------------
-integer, parameter  :: CON_LS_NM         = 0    ! Newton method lambda solver - LU
-integer, parameter  :: CON_LS_CM         = 1    ! Chord method lambda solver
-integer, parameter  :: CON_LS_NM_SVD     = 2    ! Newton method lambda solver - SVD
+integer, parameter  :: CON_SHAKESOL_FM      = 0     ! fixed shake: JAC(0,0)
+integer, parameter  :: CON_SHAKESOL_MM      = 1     ! mixed shake: JAC(0,P)
+integer, parameter  :: CON_SHAKESOL_NM      = 2     ! Newton-Raphson shake: JAC(P,P)
+integer, parameter  :: CON_SHAKESOL_DI      = 3     ! diagonal JAC(0,P)
+integer, parameter  :: CON_SHAKESOL_DIWG    = 4     ! diagonal JAC(0,P) with initial guess from the previous step
 
-! global variables for lambda calculation -----------------------------------
-integer                     :: fliter           ! number of iterations in lambda solver
+! global variables for lambda calculation --------------------------------------
+real(PMFDP)                 :: isfdt            ! internal conversion factor
+integer                     :: fsiter           ! number of iterations in shake solver
 real(PMFDP),allocatable     :: lambda(:)        ! list of Lagrange multipliers
 real(PMFDP),allocatable     :: cv(:)            ! constraint value vector
-real(PMFDP),allocatable     :: jac(:,:)         ! Jacobian matrix
+
+real(PMFDP)                 :: nsupdates        ! number of shake updates
+real(PMFDP)                 :: mfsiter          ! mean value of fsiter
+real(PMFDP)                 :: m2fsiter         ! M2 moment of fsiter
+
+! constants --------------------------------------------------------------------
+integer, parameter  :: CON_RATTLESOL_MA     = 0     ! matrix algebra
+
+! global variables for velocity update -----------------------------------------
+integer                     :: friter           ! number of iterations in rattlev solver
 logical                     :: has_lambdav      ! mu values (lambdav)
+real(PMFDP),allocatable     :: lambdav(:)       ! velocity lambdas - kappa
 
-! global variables for LU decomposition  -----------------------------------
-real(PMFDP),allocatable     :: vv(:)            ! for LU decomposition
-integer                     :: lwork            ! for SVD decomposition
-real(PMFDP),allocatable     :: work(:)          ! for SVD decomposition
-integer,allocatable         :: indx(:)
+real(PMFDP)                 :: nrupdates        ! number of rattle updates
+real(PMFDP)                 :: mfriter          ! mean value of friter
+real(PMFDP)                 :: m2friter         ! M2 moment of friter
 
-! global variables for blue moon - results ---------------------------------
-integer                     :: faccumulation    ! total number of accumulated steps
+! metric tensor correction -----------------------------------------------------
 real(PMFDP),allocatable     :: fz(:,:)          ! Z matrix
 real(PMFDP)                 :: fzdet            ! current value of det(Z)
+
+! global variables for LU decomposition and other helper variable  -------------
+real(PMFDP),allocatable     :: jac(:,:)         ! Jacobian matrix
+real(PMFDP),allocatable     :: vv(:)            ! for LU decomposition
+integer,allocatable         :: indx(:)
+
+! history buffers ---------------------------------------------------------------
+real(PMFDP),allocatable     :: lambda0(:)       ! list of Lagrange multipliers, t-dt
+real(PMFDP),allocatable     :: lambda1(:)       ! list of Lagrange multipliers, t
+real(PMFDP)                 :: epothist0        ! history of Epot, t-dt
+real(PMFDP)                 :: epothist1        ! history of Epot, t
+real(PMFDP)                 :: ersthist0        ! history of Erst, t-dt
+real(PMFDP)                 :: ersthist1        ! history of Erst, t
+real(PMFDP)                 :: isrz0            ! history of isrz, t-dt
+real(PMFDP)                 :: isrz1            ! history of isrz, t
+
+! ------------------------------------------------------------------------------
+! ACCUMULATOR
+! ------------------------------------------------------------------------------
+
+type(PMFAccuType)           :: cstaccu
+logical                     :: fallconstant     ! all CST CVs must be constant for PMFAccumulator
+
+real(PMFDP),allocatable     :: rbuf_B(:)        ! helper buffers
+real(PMFDP),allocatable     :: rbuf_M(:,:)
+
+! global variables for blue moon - results -------------------------------------
+integer                     :: faccumulation    ! total number of accumulated steps
 real(PMFDP)                 :: misrz            ! mean of inverse square root of fzdet
 real(PMFDP)                 :: m2isrz           ! M2 of inverse square root of fzdet
 real(PMFDP),allocatable     :: mlambda(:)       ! mean of lambdas
 real(PMFDP),allocatable     :: m2lambda(:)      ! M2 of lambdas
-
-! global variables for velocity update ------------------------------
-real(PMFDP),allocatable     :: matv(:,:)        ! left side matrix
-real(PMFDP),allocatable     :: lambdav(:)       ! velocity lambdas - kappa
 real(PMFDP),allocatable     :: mlambdav(:)      ! mean of kappa
 real(PMFDP),allocatable     :: m2lambdav(:)     ! M2 of kappa
 
 ! enthalpy and entropy ----------------------------------------------
 integer                     :: fentaccu         ! number of step for enthalpy and entropy calculations
-! all at t+dt
 real(PMFDP)                 :: metot            ! mean of total energy
 real(PMFDP)                 :: m2etot           ! M2 of total energy
 real(PMFDP)                 :: mepot            ! mean of potential energy
@@ -157,18 +193,6 @@ real(PMFDP),allocatable     :: c11hh(:)
 real(PMFDP),allocatable     :: c11hp(:)
 real(PMFDP),allocatable     :: c11hk(:)
 real(PMFDP),allocatable     :: c11hr(:)
-
-real(PMFDP),allocatable     :: lambda0(:)       ! list of Lagrange multipliers, t-dt
-real(PMFDP),allocatable     :: lambda1(:)       ! list of Lagrange multipliers, t
-real(PMFDP)                 :: epothist0        ! history of Epot, t-dt
-real(PMFDP)                 :: epothist1        ! history of Epot, t
-real(PMFDP)                 :: ersthist0        ! history of Erst, t-dt
-real(PMFDP)                 :: ersthist1        ! history of Erst, t
-real(PMFDP)                 :: isrz0            ! history of isrz, t-dt
-real(PMFDP)                 :: isrz1            ! history of isrz, t
-
-! call in cst_core_main_lf
-! lambda(t), epot(t), ekin(t-dt)
 
 !===============================================================================
 

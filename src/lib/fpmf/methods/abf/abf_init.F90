@@ -1,6 +1,7 @@
 !===============================================================================
 ! PMFLib - Library Supporting Potential of Mean Force Calculations
 !-------------------------------------------------------------------------------
+!    Copyright (C) 2025 Petr Kulhanek, kulhanek@chemi.muni.cz
 !    Copyright (C) 2022-2015 Petr Kulhanek, kulhanek@chemi.muni.cz
 !    Copyright (C) 2011-2015 Petr Kulhanek, kulhanek@chemi.muni.cz
 !    Copyright (C) 2013-2015 Letif Mones, lam81@cam.ac.uk
@@ -89,8 +90,6 @@ subroutine abf_init_dat
     fentdecomp      = .false.
     fenesample      = 1
 
-    finclude_pv     = 0
-
     ftds_ekin_src   = 1
     ftds_add_bias   = .false.
 
@@ -128,6 +127,8 @@ subroutine abf_init_dat
     fsmooth_kernel  = 0
     fswitch2zero    = .false.
 
+    fshakemode      = 0
+
     fene_step       = 0
 
     abf_p2_vx = 7
@@ -151,7 +152,6 @@ subroutine abf_init_print_header
     write(PMF_OUT,120)  '================================================================================'
     write(PMF_OUT,120)  ' *********************** ADAPTIVE BIASING FORCE METHOD ************************ '
     write(PMF_OUT,120)  '================================================================================'
-    write(PMF_OUT,120)
 
 120 format(A)
 
@@ -169,6 +169,7 @@ subroutine abf_init_print_summary
     use abf_dat
     use abf_cvs
     use pmf_utils
+    use abf_constraints
 
     implicit none
     integer        :: i
@@ -242,9 +243,17 @@ subroutine abf_init_print_summary
     end select
 
     write(PMF_OUT,120)
-    write(PMF_OUT,120)  ' Enthalpy/entropy options:'
+    write(PMF_OUT,120)  ' Enthalpy options:'
     write(PMF_OUT,120)  ' ------------------------------------------------------'
     write(PMF_OUT,125)  ' Accumulate enthalpy (fenthalpy)         : ', prmfile_onoff(fenthalpy)
+    write(PMF_OUT,125)  ' Accumulate enth. deriv. (fenthalpy_der) : ', fenthalpy_der
+    write(PMF_OUT,150)  ' Potential energy offset (fepotaverage)  : ', pmf_unit_get_rvalue(EnergyUnit,fepotaverage),  &
+                                                                       '['//trim(pmf_unit_label(EnergyUnit))//']'
+    write(PMF_OUT,130)  ' Sampling for -TdS and dH (fenesample)   : ', fenesample
+
+    write(PMF_OUT,120)
+    write(PMF_OUT,120)  ' Entropy options:'
+    write(PMF_OUT,120)  ' ------------------------------------------------------'
     write(PMF_OUT,125)  ' Accumulate entropy (fentropy)           : ', prmfile_onoff(fentropy)
     write(PMF_OUT,125)  ' Decompose entropy (fentdecomp)          : ', prmfile_onoff(fentdecomp)
     write(PMF_OUT,125)  ' Use ABF bias for -TdS (ftds_add_bias)   : ', prmfile_onoff(ftds_add_bias)
@@ -259,8 +268,8 @@ subroutine abf_init_print_summary
     write(PMF_OUT,120)  '      |-> HA (Harmonic Approximation Verlet KE)'
     case(4)
     write(PMF_OUT,120)  '      |-> LF (Leap-Frog KE), shifted by 0.5'
-   ! case default
-   ! call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown kinetic energy source in abf_init_print_summary!')
+    case default
+    call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown kinetic energy source in abf_init_print_summary!')
     end select
     write(PMF_OUT,150)  ' Potential energy offset (fepotaverage)  : ', pmf_unit_get_rvalue(EnergyUnit,fepotaverage),  &
                                                                        '['//trim(pmf_unit_label(EnergyUnit))//']'
@@ -269,19 +278,7 @@ subroutine abf_init_print_summary
     write(PMF_OUT,130)  ' Pot energy smoothing mode (fepotsmooth) : ', fepotsmooth
     write(PMF_OUT,130)  ' Rst energy smoothing mode (ferstsmooth) : ', ferstsmooth
     write(PMF_OUT,130)  ' Kin energy smoothing mode (fekinsmooth) : ', fekinsmooth
-    write(PMF_OUT,130)  ' Sampling for -TdS and ENT (fenesample)  : ', fenesample
-
-    write(PMF_OUT,130)  ' Include pV term (finclude_pv)           : ', finclude_pv
-    select case(finclude_pv)
-    case(0)
-    write(PMF_OUT,120)  '      |-> none'
-    case(1)
-    write(PMF_OUT,120)  '      |-> p0V'
-    case(2)
-    write(PMF_OUT,120)  '      |-> pV'
-    case default
-    call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown pV mode in abf_init_print_summary!')
-    end select
+    write(PMF_OUT,130)  ' Sampling for -TdS and dH (fenesample)   : ', fenesample
 
     write(PMF_OUT,120)
     write(PMF_OUT,120)  ' Restart options:'
@@ -314,6 +311,35 @@ subroutine abf_init_print_summary
     write(PMF_OUT,130)  ' Number of connection repeats (fconrepeats)   : ', fconrepeats
     write(PMF_OUT,125)  ' Abort on MWA failure (fabortonmwaerr)        : ', prmfile_onoff(fabortonmwaerr)
     write(PMF_OUT,130)  ' MWA mode (fmwamode)                          : ', fmwamode
+
+
+    write(PMF_OUT,120)
+    write(PMF_OUT,120)  ' Constraints (SHAKE) in collision with ABF CVs'
+    write(PMF_OUT,120)  ' ------------------------------------------------------'
+    write(PMF_OUT,130)  ' How to handle constraints (fshakemode)   : ', fshakemode
+    select case(fshakemode)
+    case(0)
+    write(PMF_OUT,120)  '      |-> ignore'
+    case(1)
+    write(PMF_OUT,120)  '      |-> exclude'
+    case(2)
+    write(PMF_OUT,120)  '      |-> handle'
+    case default
+    call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown shake mode in abf_init_print_summary!')
+    end select
+
+    if( NumOfABFSHAKECONs .gt. 0 ) then
+    write(PMF_OUT,120)  ' List of SHAKE CVs in collision'
+    write(PMF_OUT,120)  ' -------------------------------------------------------'
+    write(PMF_OUT,120)
+
+    do i=1,NumOfABFSHAKECONs
+    write(PMF_OUT,140) i
+    call abf_constraints_cv_info(ABFSHAKECONList(i))
+    write(PMF_OUT,120)
+    end do
+    end if
+
     write(PMF_OUT,120)
     write(PMF_OUT,120)  ' List of ABF collective variables'
     write(PMF_OUT,120)  ' -------------------------------------------------------'
@@ -337,6 +363,217 @@ subroutine abf_init_print_summary
 140 format(' == Collective variable #',I4.4)
 
 end subroutine abf_init_print_summary
+
+!===============================================================================
+! Subroutine:  abf_init_add_shake_cvs
+!===============================================================================
+
+subroutine abf_init_add_shake_cvs
+
+    use pmf_utils
+    use pmf_dat
+    use cv_ds
+    use abf_dat
+    use pmf_unit
+
+    implicit none
+    type(CVPointer),allocatable    :: CVList_backup(:)
+    integer                        :: i,cvid,alloc_failed
+    ! ------------------------------------------------------------------------------
+
+    if( NumOfABFSHAKECONs .eq. 0 ) return
+
+    ! backup old CVs
+    allocate(CVList_backup(NumOfCVs),   &
+          stat = alloc_failed)
+    if( alloc_failed .ne. 0 ) then
+        call pmf_utils_exit(PMF_OUT, 1, &
+                        '[ABF] Unable to allocate memory for CVList_backup array!')
+    end if
+
+    CVList_backup(:) = CVList(:)
+
+    ! reallocate
+    if( allocated(CVList) ) deallocate(CVList)
+
+    allocate(CVList(NumOfCVs + NumOfABFSHAKECONs),  &
+          stat = alloc_failed)
+    if( alloc_failed .ne. 0 ) then
+        call pmf_utils_exit(PMF_OUT, 1,'[ABF] Unable to allocate memory for CVList array!')
+    end if
+
+    do i=1,NumOfCVs
+        CVList(i)  = CVList_backup(i)
+    end do
+
+    deallocate(CVList_backup)
+
+    ! add SHAKE constraints
+    do i= 1,NumOfABFSHAKECONs
+        cvid  = NumOfCVs + i
+        ! CV -----------------------------------------
+        allocate(CVTypeDS::CVList(cvid)%cv, &
+                 stat = alloc_failed)
+        if( alloc_failed .ne. 0 ) then
+            call pmf_utils_exit(PMF_OUT, 1,'[ABF] Unable to allocate memory for SHAKE constraint!')
+        end if
+        call CVList(cvid)%cv%reset_cv()
+        CVList(cvid)%cv%ctype     = 'DS'
+        CVList(cvid)%cv%unit      = pmf_unit_power_unit(LengthUnit,2)
+        CVList(cvid)%cv%idx       = i
+        CVList(cvid)%cv%name      = 'SHAKE'
+        CVList(cvid)%cv%natoms    = 2
+        CVList(cvid)%cv%ngrps     = 2
+        allocate(CVList(cvid)%cv%grps(CVList(cvid)%cv%ngrps), &
+                 CVList(cvid)%cv%rindexes(2), &
+                 CVList(cvid)%cv%lindexes(2), &
+                 stat = alloc_failed)
+        if( alloc_failed .ne. 0 ) then
+            call pmf_utils_exit(PMF_OUT, 1,'[ABF] Unable to allocate memory for CVList(i)%grps array!')
+        end if
+        CVList(cvid)%cv%grps(1)     = 1
+        CVList(cvid)%cv%grps(2)     = 2
+        CVList(cvid)%cv%rindexes(1) = ABFSHAKECONList(i)%at1
+        CVList(cvid)%cv%rindexes(2) = ABFSHAKECONList(i)%at2
+        ! CST ----------------------------------------
+        ABFSHAKECONList(i)%cvindx   = cvid
+        ABFSHAKECONList(i)%cv       => CVList(cvid)%cv
+    end do
+
+    ! correct numbers
+    NumOfCVs = NumOfCVs + NumOfABFSHAKECONs
+
+end subroutine abf_init_add_shake_cvs
+
+!===============================================================================
+! Subroutine:  abf_init_abf_atoms
+!===============================================================================
+
+subroutine abf_init_abf_atoms
+
+    use pmf_utils
+    use pmf_dat
+    use abf_dat
+
+    implicit none
+    integer                 :: ci, na, i, j, k, alloc_failed
+    logical                 :: found
+    integer,allocatable     :: tmp_indexes(:)
+    ! ------------------------------------------------------------------------------
+
+    ! count involved atoms
+    na = 0
+
+    do i=1, NumOfABFCVs
+        ci = ABFCVList(i)%cvindx
+        na = na + CVList(ci)%cv%natoms
+    end do
+
+    ! allocate index array
+    allocate(tmp_indexes(na),stat=alloc_failed)
+
+    if( alloc_failed .ne. 0 ) then
+        call pmf_utils_exit(PMF_OUT, 1,'[ABF] Unable to allocate memory for tmp_indexes array!')
+    end if
+
+    tmp_indexes(:) = 0
+    NumOfABFAtoms = 0;
+
+    ! add conflicting atoms
+    do i=1,NumOfABFCVs
+        ci = ABFCVList(i)%cvindx
+        do j=1,CVList(ci)%cv%natoms
+            found = .false.
+            do k=1,na
+                if( tmp_indexes(k) .eq. CVList(ci)%cv%rindexes(j) ) then
+                    found = .true.
+                    exit
+                end if
+            end do
+            if( .not. found ) then
+                NumOfABFAtoms = NumOfABFAtoms + 1
+                tmp_indexes(NumOfABFAtoms) = CVList(ci)%cv%rindexes(j)
+            end if
+        end do
+    end do
+
+    if( NumOfABFAtoms .eq. 0 ) then
+        ! release temporary array
+        deallocate(tmp_indexes)
+        return
+    end if
+
+    ! create final array
+    allocate(ABFAtoms(NumOfABFAtoms),stat=alloc_failed)
+
+    if( alloc_failed .ne. 0 ) then
+        call pmf_utils_exit(PMF_OUT, 1,'[ABF] Unable to allocate memory for ABFAtoms array!')
+    end if
+
+    do i=1,NumOfABFAtoms
+        ABFAtoms(i) = tmp_indexes(i)
+    end do
+
+    ! release temporary array
+    deallocate(tmp_indexes)
+
+end subroutine abf_init_abf_atoms
+
+#ifdef MPI
+
+!===============================================================================
+! Subroutine:  abf_init_mpi_bcast_constraints
+! this is required for abf_shake_checkatom
+!===============================================================================
+
+subroutine abf_init_mpi_bcast_constraints
+
+    use mpi
+    use cst_dat
+    use pmf_utils
+    use pmf_dat
+
+    implicit none
+    integer        :: alloc_failed,ierr
+    ! -----------------------------------------------------------------------------
+
+    if( fdebug ) then
+        write(PMF_DEBUG+fmytaskid,'(A)') '>> Broadcasting constrained atoms (only master is reporting)'
+    end if
+
+    ierr = MPI_SUCCESS
+
+    ! integers --------------------------------------
+    call mpi_bcast(NumOfConAtoms, 1, mpi_integer, 0, mpi_comm_world, ierr)
+    if( ierr .ne. MPI_SUCCESS ) then
+        call pmf_utils_exit(PMF_OUT, 1,'[CST] Unable to broadcast the value of NumOfConAtoms!')
+    end if
+
+    if( fdebug ) then
+        write(PMF_DEBUG+fmytaskid,'(A,I6)') '   Number of constrained atoms: ', NumOfConAtoms
+        write(PMF_DEBUG+fmytaskid,*)
+    end if
+
+    if( NumOfConAtoms .eq. 0 ) return ! no atoms are constrained
+
+    ! allocate arrays on slaves ---------------------
+    if( .not. fmaster ) then
+        allocate(ConAtoms(NumOfConAtoms),    &
+                stat= alloc_failed )
+        if( alloc_failed .ne. 0 ) then
+            call pmf_utils_exit(PMF_OUT, 1,'[CST] Unable to allocate ConAtoms!')
+        end if
+    end if
+
+    ! transfer ConAtoms
+    call mpi_bcast(ConAtoms, NumOfConAtoms, mpi_integer, 0, mpi_comm_world, ierr)
+    if( ierr .ne. MPI_SUCCESS ) then
+        call pmf_utils_exit(PMF_OUT, 1,'[CST] Unable to broadcast the ConAtoms array!')
+    end if
+
+end subroutine abf_init_mpi_bcast_constraints
+
+#endif
 
 !===============================================================================
 ! Subroutine:  abf_init_arrays
@@ -384,6 +621,33 @@ subroutine abf_init_arrays
     fzinv(:,:)  = 0.0d0
     sfac(:)     = 1.0d0
 
+! SHAKE --------------------------------
+
+    write(*,*) 'NumOfABFSHAKECONs=',NumOfABFSHAKECONs
+
+    if( fshakemode .eq. 2 ) then
+        allocate(                                   &
+                zinvcst(NumOfABFSHAKECONs,NumOfABFSHAKECONs),                    &
+                pcst(3,NumOfLAtoms,3,NumOfLAtoms),                  &
+                indxcst(NumOfABFSHAKECONs),                  &
+                vvcst(NumOfABFCVs),                    &
+                frcold(3,NumOfLAtoms), &
+                frcnew(3,NumOfLAtoms), &
+                stat= alloc_failed )
+
+        if( alloc_failed .ne. 0 ) then
+            call pmf_utils_exit(PMF_OUT,1, &
+                '[ABF] Unable to allocate memory for arrays used in ABF calculation (SHAKE)!')
+        end if
+
+        zinvcst(:,:)      = 0.0d0
+        pcst(:,:,:,:)         = 0.0d0
+        indxcst(:)    = 0.0d0
+        vvcst(:)        = 0.0d0
+        frcold(:,:) = 0.0d0
+        frcnew(:,:) = 0.0d0
+    end if
+
 ! history buffers ------------------------------------------
     select case(fmode)
         case(1)
@@ -409,10 +673,8 @@ subroutine abf_init_arrays
             ersthist(hist_len),                             &
             ekinhist(hist_len),                             &
             ekinlfhist(hist_len),                           &
-            epvhist(hist_len),                              &
             volhist(hist_len),                              &
             enevalidhist(hist_len),                         &
-            fdetzhist(hist_len),                            &
             fziihist(NumOfABFCVs,hist_len),                 &
             stat= alloc_failed )
 
@@ -430,14 +692,12 @@ subroutine abf_init_arrays
     epothist(:)         = 0.0d0
     ersthist(:)         = 0.0d0
     ekinhist(:)         = 0.0d0
-    epvhist(:)          = 0.0d0
     ekinlfhist(:)       = 0.0d0
     xphist(:,:)         = 0.0d0
     fzinvhist(:,:,:)    = 0.0d0
     cvderhist(:,:,:,:)  = 0.0d0
     zdhist(:,:,:,:)     = 0.0d0
     volhist(:)          = 0.0d0
-    fdetzhist(:)        = 0.0d0
     fziihist(:,:)       = 0.0d0
     enevalidhist(:)     = .false.
 

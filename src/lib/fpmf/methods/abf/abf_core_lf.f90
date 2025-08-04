@@ -93,11 +93,13 @@ subroutine abf_core_lf_force_2pX()
 ! shift accuvalue history
     do i=1,hist_len-1
         xphist(:,i)         = xphist(:,i+1)
+        cvderhist(:,:,:,i)  = cvderhist(:,:,:,i+1)  ! we do not need this, but for fenthalpy_der > 0, it must be here
         vhist(:,:,i)        = vhist(:,:,i+1)        ! we do not need this, but for fenthalpy_der > 0, it must be here
         fzinvhist(:,:,i)    = fzinvhist(:,:,i+1)
     end do
     vhist(:,:,hist_len)     = Vel(:,:)              ! t-dt/2
     fzinvhist(:,:,hist_len) = fzinv(:,:)
+    call abf_core_update_cvder
 
 ! Finite Difference Coefficients Calculator
 ! https://web.media.mit.edu/~crtaylor/calculator.html
@@ -296,7 +298,7 @@ subroutine abf_core_lf_force_2pX()
 
         ! register data
         call abf_accu_add_data_online(cvhist(:,hist_len+hist_fidx),icfhist(:,hist_len+hist_fidx),&
-                                      micfhist(:,hist_len+hist_fidx),fdetzhist(hist_len+hist_fidx),fziihist(:,hist_len+hist_fidx))
+                                      micfhist(:,hist_len+hist_fidx),fziihist(:,hist_len+hist_fidx))
     end if
 
 end subroutine abf_core_lf_force_2pX
@@ -407,7 +409,7 @@ subroutine abf_core_lf_force_2pV()
     if( mod(fstep,ficfsample) .eq. 0 ) then
         ! register data
         call abf_accu_add_data_online(cvhist(:,hist_len+hist_fidx),icfhist(:,hist_len+hist_fidx),&
-                                      micfhist(:,hist_len+hist_fidx),fdetzhist(hist_len+hist_fidx),fziihist(:,hist_len+hist_fidx))
+                                      micfhist(:,hist_len+hist_fidx),fziihist(:,hist_len+hist_fidx))
     end if
 
 end subroutine abf_core_lf_force_2pV
@@ -425,20 +427,21 @@ subroutine abf_core_lf_get_icfp()
     use abf_dat
     use abf_accu
     use abf_core
+    use abf_constraints
 
     implicit none
     integer                :: i,j,m
-    real(PMFDP)            :: f1
+    real(PMFDP)            :: f1, nv, icfp
     ! --------------------------------------------------------------------------
 
     ! shift history buffers
     do i=1,hist_len-1
-        fhist(:,:,i)    = fhist(:,:,i+1)
+       ! fhist(:,:,i)    = fhist(:,:,i+1)
         icfphist(:,i)   = icfphist(:,i+1)
         zdhist(:,:,:,i) = zdhist(:,:,:,i+1)
     end do
                                         ! at this moment, Frc contains ABF bias
-    fhist(:,:,hist_len) = Frc(:,:)      ! to be compatible with forces derived from velocities, which also contain the bias
+    ! fhist(:,:,hist_len) = Frc(:,:)      ! to be compatible with forces derived from velocities, which also contain the bias
     call abf_core_update_zdhist
 
     icfphist(:,hist_len) = 0.0d0
@@ -484,6 +487,65 @@ subroutine abf_core_lf_get_icfp()
             ! remove bias
             icfphist(i,hist_len-2) = (1.0d0/24.0d0)*f1*ifdtx - micfhist(i,hist_len-2)
         end do
+    else if( fenthalpy_der .eq. 4 ) then
+
+       ! call abf_shake_calc_Pmat(CVContext%CVsDrvs)
+
+        frcold(:,:) = fhist(:,:,hist_len)
+!        do i=1,NumOfABFCVs
+!            frcold(:,:) = frcold(:,:) - micfhist(i,hist_len)*cvderhist(:,:,i,hist_len)
+!        end do
+
+        !call abf_shake_calc_Pfix(frcold,frcnew,CVContext%CVsDrvs)
+
+        do i=1,NumOfABFCVs
+            f1 = 0.0d0
+            nv = 0.0d0
+            do j=1,NumOfLAtoms
+                do m=1,3
+                    ! force part
+                    !                  t                        t
+                    nv = nv + cvderhist(m,j,i,hist_len) * cvderhist(m,j,i,hist_len)
+                    f1 = f1 + cvderhist(m,j,i,hist_len) * frcnew(m,j)
+                end do
+            end do
+            f1 = f1 / nv
+            icfphist(i,hist_len) = f1 ! - micfhist(i,hist_len)
+        end do
+
+!        do i=1,NumOfABFCVs
+!            f1 = 0.0d0
+!            nv = 0.0d0
+!            do j=1,NumOfLAtoms
+!                do m=1,3
+!                    ! force part
+!                    !                  t                        t
+!                    nv = nv + cvderhist(m,j,i,hist_len) * cvderhist(m,j,i,hist_len)
+!                    f1 = f1 + cvderhist(m,j,i,hist_len) * fhist(m,j,hist_len)
+!                end do
+!            end do
+!            f1 = f1 / nv
+!            ! remove bias
+!            ! FIXME
+!            icfphist(i,hist_len) = f1 - micfhist(i,hist_len)
+!            ! write(14789,*) icfphist(i,hist_len), icfp
+!        end do
+    else if ( fenthalpy_der .eq. 5 ) then
+        do i=1,NumOfABFCVs
+            f1 = 0.0d0
+            nv = 0.0d0
+            do j=1,NumOfLAtoms
+                do m=1,3
+                    ! force part
+                    !                  t-dt                    t-dt/2               t-2*dt/2
+                    nv = nv + cvderhist(m,j,i,hist_len-1) * cvderhist(m,j,i,hist_len-1)
+                    f1 = f1 + cvderhist(m,j,i,hist_len-1) * (vhist(m,j,hist_len) - vhist(m,j,hist_len-1)) * Mass(j)
+                end do
+            end do
+            f1 = f1 / nv
+            ! remove bias
+            icfphist(i,hist_len-1) = f1*ifdtx - micfhist(i,hist_len-1)
+        end do
     end if
 
 end subroutine abf_core_lf_get_icfp
@@ -516,7 +578,6 @@ subroutine abf_core_lf_register_ekin()
         ekinhist(i)         = ekinhist(i+1)
         ekinlfhist(i)       = ekinlfhist(i+1)
         enevalidhist(i)     = enevalidhist(i+1)
-        epvhist(i)          = epvhist(i+1)
         volhist(i)          = volhist(i+1)
     end do
 
@@ -524,17 +585,6 @@ subroutine abf_core_lf_register_ekin()
     epothist(hist_len)      = PotEne - fepotaverage
     ersthist(hist_len)      = RstEne
     ekinlfhist(hist_len)    = KinEne%KinEneLF - fekinaverage   ! shifted by +1/2dt
-
-    select case(finclude_pv)
-        case(0)
-            epvhist(hist_len)       = 0.0d0
-        case(1)
-            epvhist(hist_len)       = p0VEne
-        case(2)
-            epvhist(hist_len)       = pVEne
-        case default
-            call pmf_utils_exit(PMF_OUT,1,'[ABF] Unknown pV mode in abf_core_lf_register_ekin!')
-    end select
 
     enevalidhist(hist_len)  = KinEne%Valid
     volhist(hist_len)       = fbox_volume
@@ -627,7 +677,7 @@ subroutine abf_core_lf_register_ekin()
     call abf_accu_add_data_energy(cvhist(:,hist_len+hist_fidx), &
                   icfhist(:,hist_len+hist_fidx), micfhist(:,hist_len+hist_fidx), icfphist(:,hist_len+hist_fidx), &
                   lepot, lerst, lekin, &
-                  epvhist(hist_len+hist_fidx),volhist(hist_len+hist_fidx))
+                  volhist(hist_len+hist_fidx))
 
 end subroutine abf_core_lf_register_ekin
 

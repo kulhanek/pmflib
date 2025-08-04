@@ -54,7 +54,9 @@ logical     :: fenthalpy        ! collect data for enthalpy calculation
 integer     :: fenthalpy_der    ! collect data for enthalpy derivative calculation
                                 ! 0 - no
                                 ! 1 - from forces
-                                ! 2 - from velocities
+                                ! 2 - from velocities, V2
+                                ! 3 - from velocities, V4
+! enthalpy/entropy calculations
 logical     :: fentropy         ! collect data for entropy calculation
 logical     :: fentdecomp       ! collect additional correlation terms
 logical     :: ftds_add_bias    ! include ABF bias into TdS calculation
@@ -62,11 +64,14 @@ integer     :: ftds_ekin_src    ! source of kinetic energy, see abf_core_update_
 real(PMFDP) :: fepotaverage
 real(PMFDP) :: fekinaverage
 integer     :: fenesample       ! how often update ABF accumulator for ENT and TDS
-integer     :: finclude_pv      ! include pV term
 
 integer     :: fepotsmooth
 integer     :: ferstsmooth
 integer     :: fekinsmooth
+
+integer     :: fshakemode       ! how to deal with SHAKE constraints in collision
+                                ! 0 - ignore them
+                                ! 1 - disable them
 
 ! US mode
 logical     :: fusmode      ! enable US mode
@@ -129,6 +134,26 @@ integer                     :: NumOfABFCVs          ! number of ALL CVs in a gro
 type(CVTypeABF),allocatable :: ABFCVList(:)         ! definition of CVs
 ! ----------------------
 
+type ABFTypeSHAKE
+    integer                 :: cvindx           ! general description of coordinate
+    class(CVType),pointer   :: cv               ! cv data
+    ! --------------------------------
+    integer                 :: at1              ! atom rindexes
+    integer                 :: at2
+    real(PMFDP)             :: value
+end type ABFTypeSHAKE
+
+! ----------------------
+integer                         :: NumOfABFSHAKECONs    ! number of shake constraints in collision
+type(ABFTypeSHAKE),allocatable  :: ABFSHAKECONList(:)   ! SHAKE definition of constraints
+! ----------------------
+
+! serial/MPI variables ---------------------------------------------------------
+integer             :: NumOfABFAtoms            ! number of ABF atoms (unique list)
+integer,allocatable :: ABFAtoms(:)              ! ABF atoms to test with SHAKE constraints
+
+! ----------------------
+
 type,extends(PMFAccuType) :: ABFAccuType
 
     real(PMFDP),pointer    :: binpos(:,:)               ! position of grids
@@ -141,11 +166,8 @@ type,extends(PMFAccuType) :: ABFAccuType
     real(PMFDP),pointer    :: mgfx(:,:)                 ! mean -GFX
     real(PMFDP),pointer    :: m2gfx(:,:)                ! M2 of GFX
 
-    real(PMFDP),pointer    :: msrdetz(:)                ! mean sqrt(det(Z))
-    real(PMFDP),pointer    :: m2srdetz(:)               ! M2 of srdetz
-
-    real(PMFDP),pointer    :: msrzii(:,:)                ! mean sqrt(Zii)
-    real(PMFDP),pointer    :: m2srzii(:,:)               ! M2 of srzii
+    real(PMFDP),pointer    :: msrzii(:,:)               ! mean sqrt(Zii) - correction for TST
+    real(PMFDP),pointer    :: m2srzii(:,:)              ! M2 of srzii
 
     real(PMFDP),pointer    :: mvol(:)                   ! mean volume
     real(PMFDP),pointer    :: m2vol(:)                  ! M2 of volume
@@ -161,8 +183,6 @@ type,extends(PMFAccuType) :: ABFAccuType
     real(PMFDP),pointer    :: m2erst(:)                 ! M2 of rst energy
     real(PMFDP),pointer    :: mekin(:)                  ! mean of kin energy
     real(PMFDP),pointer    :: m2ekin(:)                 ! M2 of kin energy
-    real(PMFDP),pointer    :: mepv(:)                   ! mean of pV energy
-    real(PMFDP),pointer    :: m2epv(:)                  ! M2 of pV energy
 
     real(PMFDP),pointer    :: metot(:)                  ! mean of tot energy
     real(PMFDP),pointer    :: m2etot(:)                 ! M2 of tot energy
@@ -171,12 +191,10 @@ type,extends(PMFAccuType) :: ABFAccuType
     real(PMFDP),pointer    :: mpn(:,:)                  ! mean of tot energy - icf
     real(PMFDP),pointer    :: m2pn(:,:)                 ! M2 of tot energy - icf
 
-    real(PMFDP),pointer    :: mpit(:,:)                 ! mean of ICF and tot energy product
-    real(PMFDP),pointer    :: m2pit(:,:)                ! M2 of ICF and tot energy product
-
 ! enthalpy derivative
     real(PMFDP),pointer    :: micfp(:,:)                ! mean of ICF-P
     real(PMFDP),pointer    :: m2icfp(:,:)               ! M2 of internal energy
+    real(PMFDP),pointer    :: c11pp(:,:)                ! co-variances covar(ICF-P,Epot)
 
 ! entropy - decomposition
     real(PMFDP),pointer    :: mhicf(:,:)                ! mean of ICF - hamiltonian
@@ -187,11 +205,9 @@ type,extends(PMFAccuType) :: ABFAccuType
     real(PMFDP),pointer    :: c11hp(:,:)                ! co-variances
     real(PMFDP),pointer    :: c11hr(:,:)
     real(PMFDP),pointer    :: c11hk(:,:)
-    real(PMFDP),pointer    :: c11hv(:,:)
     real(PMFDP),pointer    :: c11bp(:,:)
     real(PMFDP),pointer    :: c11br(:,:)
     real(PMFDP),pointer    :: c11bk(:,:)
-    real(PMFDP),pointer    :: c11bv(:,:)
 
 ! applied ICF - this is stored in accu but ignored
     real(PMFDP),pointer    :: bnsamples(:)              ! number of hits into bins
@@ -242,7 +258,6 @@ real(PMFDP),allocatable     :: xphist(:,:)          ! history of CV momenta
 real(PMFDP),allocatable     :: icfhist(:,:)         ! history of ABF ICF
 real(PMFDP),allocatable     :: micfhist(:,:)        ! history of ABF bias
 
-real(PMFDP),allocatable     :: fdetzhist(:)         ! history of fdetz
 real(PMFDP),allocatable     :: fziihist(:,:)        ! history of fzii
 
 real(PMFDP),allocatable     :: zdhist(:,:,:,:)      ! history of ZD
@@ -253,9 +268,19 @@ real(PMFDP),allocatable     :: epothist(:)          ! history of Epot
 real(PMFDP),allocatable     :: ersthist(:)          ! history of Erst
 real(PMFDP),allocatable     :: ekinhist(:)          ! history of Ekin
 real(PMFDP),allocatable     :: ekinlfhist(:)        ! history of EkinLF
-real(PMFDP),allocatable     :: epvhist(:)           ! history of pV
 real(PMFDP),allocatable     :: volhist(:)           ! history of volume
 logical,allocatable         :: enevalidhist(:)      ! is energy valid?
+
+! ------------------------------------------------------------------------------
+! SHAKE corrections
+
+real(PMFDP),allocatable     :: ccst(:,:)            ! jacobian matrix (M,3xN))
+real(PMFDP),allocatable     :: zinvcst(:,:)         ! (CxM^-1xC^T)^-1 (MxM)
+real(PMFDP),allocatable     :: pcst(:,:,:,:)            ! projection matrix (3xN,3xN))
+real(PMFDP),allocatable     :: vvcst(:)             ! for LU decomposition
+integer,allocatable         :: indxcst(:)           ! for LU decomposition
+real(PMFDP),allocatable     :: frcold(:,:)
+real(PMFDP),allocatable     :: frcnew(:,:)
 
 ! ------------------------------------------------------------------------------
 

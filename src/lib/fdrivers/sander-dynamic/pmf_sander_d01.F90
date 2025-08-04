@@ -126,6 +126,10 @@ subroutine pmf_sander_init_preinit(mdin,mdin_len,anatom,anres, &
 
     if( .not. fmaster ) return
 
+    if( fdebug ) then
+        write(PMF_DEBUG+fmytaskid,*) '>>TR: pmf_sander_init_preinit'
+    end if
+
     ! setup conversion factors
     MassConv         = 1.0d0        ! g/mol -> g/mol
     LengthConv       = 1.0d0        ! A -> A
@@ -260,6 +264,10 @@ subroutine pmf_sander_finalize_preinit(anatom,amass,ax) bind(c,name='int_pmf_san
 
     if( .not. fmaster ) return
 
+    if( fdebug ) then
+        write(PMF_DEBUG+fmytaskid,*) '>>TR: pmf_sander_finalize_preinit'
+    end if
+
     ! init mask topology atom masses and positions
     allocate(frmass(fnatoms), stat= alloc_failed )
     if( alloc_failed .ne. 0 ) then
@@ -294,6 +302,7 @@ subroutine pmf_sander_init(anatom,amass,ax) bind(c,name='int_pmf_sander_init')
     use pmf_sizes
     use pmf_init
     use pmf_dat
+    use pmf_utils
     use pmf_sander_dat_d01
 
     implicit none
@@ -303,6 +312,10 @@ subroutine pmf_sander_init(anatom,amass,ax) bind(c,name='int_pmf_sander_init')
     ! --------------------------------------------------------------------------
 
     if( .not. fmaster ) return
+
+    if( fdebug ) then
+        write(PMF_DEBUG+fmytaskid,*) '>>TR: pmf_sander_init'
+    end if
 
     ! init all methods
     call pmf_init_all(amass,ax)
@@ -332,6 +345,10 @@ subroutine pmf_sender_get_setup(setup,setup_len) bind(c,name='int_pmf_sander_get
 
     if( .not. fmaster ) return
 
+    if( fdebug ) then
+        write(PMF_DEBUG+fmytaskid,*) '>>TR: pmf_sender_get_setup'
+    end if
+
     if( setup_len .ne. PMFLIB_SETUP_SIZE ) then
         call pmf_utils_exit(PMF_OUT,1,'Incompatible PMFLIB_SETUP_SIZE - driver interface compromised in pmf_sender_get_setup!')
     end if
@@ -352,6 +369,7 @@ subroutine pmf_sander_shouldexit(exitcode) bind(c,name='int_pmf_sander_shouldexi
     use pmf_constants
     use pmf_sizes
     use pmf_dat
+    use pmf_utils
 
     implicit none
     integer(CPMFINT)    :: exitcode       ! MD loop exit code
@@ -360,6 +378,10 @@ subroutine pmf_sander_shouldexit(exitcode) bind(c,name='int_pmf_sander_shouldexi
     ! we cannot bcast the value here as pmf_sander_shouldexit is called on master
     ! protected sections several times per MD cycle
     ! thus fexit_mdloop is distributed in pmf_sander_force_mpi
+
+    if( fdebug ) then
+        write(PMF_DEBUG+fmytaskid,*) '>>TR: pmf_sander_shouldexit'
+    end if
 
     exitcode = fexit_mdloop
 
@@ -376,6 +398,7 @@ subroutine pmf_sander_update_box(a,b,c,alpha,beta,gamma) bind(c,name='int_pmf_sa
     use pmf_dat
     use pmf_pbc
     use pmf_timers
+    use pmf_utils
 
     real(CPMFDP)    :: a,b,c
     real(CPMFDP)    :: alpha,beta,gamma
@@ -383,6 +406,10 @@ subroutine pmf_sander_update_box(a,b,c,alpha,beta,gamma) bind(c,name='int_pmf_sa
 
     if( .not. fmaster ) return
     if( fsystype .eq. SYS_NT ) return  ! no box -> return
+
+    if( fdebug ) then
+        write(PMF_DEBUG+fmytaskid,*) '>>TR: pmf_sander_update_box'
+    end if
 
     call pmf_timers_start_timer(PMFLIB_TIMER)
     call pmf_pbc_set_box(a,b,c,alpha,beta,gamma)
@@ -412,6 +439,10 @@ subroutine pmf_sander_force(anatom,x,v,f,epot,epmf) bind(c,name='int_pmf_sander_
     ! --------------------------------------------------------------------------
 
     if( .not. fmaster ) return
+
+    if( fdebug ) then
+        write(PMF_DEBUG+fmytaskid,*) '>>TR: pmf_sander_force'
+    end if
 
     call pmf_timers_start_timer(PMFLIB_TIMER)
 
@@ -444,6 +475,10 @@ subroutine pmf_sander_register_ekin(ekin) bind(c,name='int_pmf_sander_register_e
 
     if( .not. fmaster ) return
 
+    if( fdebug ) then
+        write(PMF_DEBUG+fmytaskid,*) '>>TR: pmf_sander_register_ekin'
+    end if
+
     call pmf_timers_start_timer(PMFLIB_TIMER)
 
     sekin%KinEneVV = ekin(PMFLIB_EKIN_VV)
@@ -469,6 +504,8 @@ subroutine pmf_sander_rstforce(anatom,x,f,epot,epmf) bind(c,name='int_pmf_sander
     use pmf_sizes
     use pmf_core_lf
     use pmf_timers
+    use pmf_dat
+    use pmf_utils
 
     implicit none
     integer(CPMFINT)    :: anatom        ! in - number of atoms
@@ -477,6 +514,12 @@ subroutine pmf_sander_rstforce(anatom,x,f,epot,epmf) bind(c,name='int_pmf_sander
     real(CPMFDP)        :: epot          ! in
     real(CPMFDP)        :: epmf          ! out
     ! --------------------------------------------------------------------------
+
+    if( .not. fmaster ) return
+
+    if( fdebug ) then
+        write(PMF_DEBUG+fmytaskid,*) '>>TR: pmf_sander_rstforce'
+    end if
 
     call pmf_timers_start_timer(PMFLIB_TIMER)
     call pmf_core_lf_rstforce(x,f,epot,epmf)
@@ -493,7 +536,8 @@ end subroutine pmf_sander_rstforce
 subroutine pmf_sander_cst_init_collisions(ntc,nbt,ifstwt,ib,jb,conp) bind(c,name='int_pmf_sander_cst_init_collisions')
 
     use pmf_dat
-    use cst_shake
+    use cst_shake_cvs
+    use abf_constraints
     use pmf_sizes
     use pmf_core
     use pmf_utils
@@ -506,54 +550,152 @@ subroutine pmf_sander_cst_init_collisions(ntc,nbt,ifstwt,ib,jb,conp) bind(c,name
     integer(CPMFINT)    :: jb(*)        ! the second atom of bond
     real(CPMFDP)        :: conp(*)
     ! -----------------------------------------------
-    integer             :: ll, i, j, num
+    integer             :: ll, i, j, num, num2
     ! -----------------------------------------------------------------------------
 
     if( .not. fmaster ) return ! only master can init shake constraint in collision
-    if( .not. cst_enabled ) return
     if( ntc .eq. 1 ) return    ! no SHAKE
 
-    if( ntc .ne. 2 ) then
-        call pmf_utils_exit(PMF_OUT,1,'ntc has to be either one or two for PMFLib constrained dynamics!')
+    if( fdebug ) then
+        write(PMF_DEBUG+fmytaskid,*) '>>TR: pmf_sander_cst_init_collisions'
     end if
 
-    ! determine number of SHAKE constraints in collision
-    num = 0
+    if( cst_enabled .or. abf_enabled ) then
+        write(PMF_OUT,10)
+        write(PMF_OUT,15)
+    end if
 
-    do ll = 1,nbt
-        i = ib(ll)/3+1
-        j  = jb(ll)/3+1
-        if( ifstwt(ll) == 1 ) then
-            if( cst_shake_checkatom(i) .or. cst_shake_checkatom(j) ) then
-                call pmf_utils_exit(PMF_OUT,1,'Water atom cannot be a part of PMFLib constraint!')
+    if( cst_enabled .and. abf_enabled ) then
+        write(PMF_OUT,20)
+    end if
+
+! CST --------------------------------------------
+    if( cst_enabled ) then
+        if( ntc .ne. 2 ) then
+            call pmf_utils_exit(PMF_OUT,1,'ntc has to be either one or two for PMFLib constrained dynamics!')
+        end if
+
+        ! determine number of SHAKE constraints in collision
+        num = 0
+
+        do ll = 1,nbt
+            i = ib(ll)/3+1
+            j  = jb(ll)/3+1
+            if( ifstwt(ll) == 1 ) then
+                if( cst_shake_cvs_checkatom(i) .or. cst_shake_cvs_checkatom(j) ) then
+                    call pmf_utils_exit(PMF_OUT,1,'A fast water atom cannot be a part of CST CV')
+                end if
             end if
-        end if
-        if( (cst_shake_checkatom(i) .or. cst_shake_checkatom(j)) .and. &
-            (.not. (cst_shake_checkatom(i) .and. cst_shake_checkatom(j))) ) then
-            num = num + 1
-            cycle
-        end if
-    end do
+! this is most likely wrong
+!            if( (cst_shake_cvs_checkatom(i) .or. cst_shake_cvs_checkatom(j)) .and. &
+!                (.not. (cst_shake_cvs_checkatom(i) .and. cst_shake_cvs_checkatom(j))) ) then
+            if( cst_shake_cvs_checkatom(i) .or. cst_shake_cvs_checkatom(j) ) then
+                num = num + 1
+                write(PMF_OUT,100) i, j
+            end if
+        end do
 
-    if( num .eq. 0 ) return    ! nothing in collision
+        if( num .gt. 0 ) then
+            write(PMF_OUT,110) num
 
-    ! set SHAKE constraints in collisions
-    call cst_shake_allocate(num)
+            ! set SHAKE constraints in collisions
+            call cst_shake_cvs_allocate(num)
 
-    num = 1
-    do ll = 1,nbt
-        if (ifstwt(ll) == 1) cycle
-        i  = ib(ll)/3+1
-        j  = jb(ll)/3+1
-        if( (cst_shake_checkatom(i) .or. cst_shake_checkatom(j)) .and. &
-            (.not. (cst_shake_checkatom(i) .and. cst_shake_checkatom(j))) ) then
-            call cst_shake_set(num,i,j,conp(ll))
-            num = num + 1
-            cycle
+            num = 1
+            do ll = 1,nbt
+                if (ifstwt(ll) == 1) cycle
+                i  = ib(ll)/3+1
+                j  = jb(ll)/3+1
+! this is most likely wrong
+!                if( (cst_shake_cvs_checkatom(i) .or. cst_shake_cvs_checkatom(j)) .and. &
+!                    (.not. (cst_shake_cvs_checkatom(i) .and. cst_shake_cvs_checkatom(j))) ) then
+                if( cst_shake_cvs_checkatom(i) .or. cst_shake_cvs_checkatom(j) ) then
+                    call cst_shake_cvs_set(num,i,j,conp(ll))
+                    num = num + 1
+                    cycle
+                end if
+            end do
+        else
+            write(PMF_OUT,120)
         end if
-    end do
+
+        write(PMF_OUT,10)
+
+        return
+    end if
+
+! ABF --------------------------------------------
+    if( abf_enabled ) then
+        if( ntc .ne. 2 ) then
+            call pmf_utils_exit(PMF_OUT,1,'ntc has to be either one or two for PMFLib ABF dynamics!')
+        end if
+
+        ! determine number of SHAKE constraints in collision
+        num = 0
+        num2 = 0    ! removed but not added to PMFLib
+
+        do ll = 1,nbt
+            i = ib(ll)/3+1
+            j  = jb(ll)/3+1
+            if( ifstwt(ll) == 1 ) then
+                if( abf_constraints_checkatom(i,1) .or. abf_constraints_checkatom(j,1) ) then
+                    call pmf_utils_exit(PMF_OUT,1,'A fast water atom cannot be a part of ABF CV!')
+                end if
+            end if
+            if( abf_constraints_checkatom(i,1) .or. abf_constraints_checkatom(j,1) ) then
+                num = num + 1
+                write(PMF_OUT,200) i, j
+            else if( abf_constraints_checkatom(i,0) .or. abf_constraints_checkatom(j,0) ) then
+                num2 = num2 + 1
+                write(PMF_OUT,210) i, j
+            end if
+        end do
+
+        if( num2 .gt. 0 ) then
+            write(PMF_OUT,220) num2
+        end if
+
+        if( num .gt. 0 ) then
+            write(PMF_OUT,230) num
+
+            ! set SHAKE constraints in collisions
+            call abf_constraints_allocate(num)
+
+            num = 1
+            do ll = 1,nbt
+                if (ifstwt(ll) == 1) cycle
+                i  = ib(ll)/3+1
+                j  = jb(ll)/3+1
+                if( abf_constraints_checkatom(i,1) .or. abf_constraints_checkatom(j,1) ) then
+                    call abf_constraints_set(num,i,j,conp(ll))
+                    num = num + 1
+                    cycle
+                end if
+            end do
+        else
+            write(PMF_OUT,240)
+        end if
+
+        write(PMF_OUT,10)
+
+        return
+    end if
 
     return
+
+ 10 format('# ==============================================================================')
+ 15 format('# ******************* PMFLib: SHAKE <> CV collisions ***************************')
+ 20 format('# WARNING: BOTH CST and ABF enabled - CST has priority over ABF!')
+
+100 format("# CST: SHAKEn bond (",I6,"-",I6,") removed from MD engine and added into PMFLib CST CV list")
+110 format('# CST: Number of SHAKE constraints in collision: ', I6)
+120 format('# CST: No SHAKE in collision!')
+
+200 format("# ABF: SHAKEn bond (",I6,"-",I6,") added into PMFLib CV list")
+210 format("# ABF: SHAKEn bond (",I6,"-",I6,") removed from MD engine")
+220 format('# ABF: Number of SHAKE constraints removed: ', I6)
+230 format('# ABF: Number of SHAKE constraints in collision: ', I6)
+240 format('# ABF: No SHAKE in collision added to PMFLib!')
 
 end subroutine pmf_sander_cst_init_collisions
 
@@ -564,6 +706,7 @@ end subroutine pmf_sander_cst_init_collisions
 subroutine pmf_sander_num_of_pmflib_cst(numofcst) bind(c,name='int_pmf_sander_num_of_pmflib_cst')
 
     use cst_dat
+    use pmf_utils
 
     implicit none
     real(CPMFDP)    :: numofcst       ! number of CST constraints
@@ -572,6 +715,10 @@ subroutine pmf_sander_num_of_pmflib_cst(numofcst) bind(c,name='int_pmf_sander_nu
     numofcst = 0
     if( .not. cst_enabled ) return
 
+    if( fdebug ) then
+        write(PMF_DEBUG+fmytaskid,*) '>>TR: pmf_sander_num_of_pmflib_cst'
+    end if
+
     numofcst = NumOfCONs - NumOfSHAKECONs
     return
 
@@ -579,12 +726,14 @@ end subroutine pmf_sander_num_of_pmflib_cst
 
 !===============================================================================
 ! Subroutine: pmf_sander_cst_checkatom
+! this instruct MD engine to remove SHAKE constraint from its internal lists
 !===============================================================================
 
 function pmf_sander_cst_checkatom(atomid) bind(c,name='int_pmf_sander_cst_checkatom')
 
     use pmf_dat
-    use cst_shake
+    use cst_shake_cvs
+    use abf_constraints
 
     implicit none
     integer(CPMFINT)    :: atomid
@@ -592,9 +741,14 @@ function pmf_sander_cst_checkatom(atomid) bind(c,name='int_pmf_sander_cst_checka
     ! --------------------------------------------------------------------------
 
     pmf_sander_cst_checkatom = 0
-    if( .not. cst_enabled ) return
 
-    if( cst_shake_checkatom(atomid) ) pmf_sander_cst_checkatom = 1
+    if( cst_enabled ) then
+        if( cst_shake_cvs_checkatom(atomid) ) pmf_sander_cst_checkatom = 1
+    end if
+
+    if( abf_enabled ) then
+        if( abf_constraints_checkatom(atomid,0) ) pmf_sander_cst_checkatom = 1
+    end if
 
     return
 
@@ -604,7 +758,7 @@ end function pmf_sander_cst_checkatom
 ! Subroutine: pmf_sander_shake
 !===============================================================================
 
-subroutine pmf_sander_shake(anatom,x,modified) bind(c,name='int_pmf_sander_shake')
+subroutine pmf_sander_shake(anatom,xp,modified) bind(c,name='int_pmf_sander_shake')
 
     use pmf_sizes
     use pmf_dat
@@ -614,20 +768,55 @@ subroutine pmf_sander_shake(anatom,x,modified) bind(c,name='int_pmf_sander_shake
 
     implicit none
     integer(CPMFINT)    :: anatom            ! number of atoms
-    real(CPMFDP)        :: x(3,anatom)       ! positions in t+dt
+    real(CPMFDP)        :: xp(3,anatom)      ! positions in t+dt
     integer(CPMFINT)    :: modified          ! was constraint applied?
     ! --------------------------------------------------------------------------
 
     modified = 0
-    if( .not. cst_enabled ) return
+    if( .not. fmaster ) return
+
+    if( fdebug ) then
+        write(PMF_DEBUG+fmytaskid,*) '>>TR: pmf_sander_shake'
+    end if
 
     call pmf_timers_start_timer(PMFLIB_TIMER)
-    call pmf_core_lf_shake(x)
+        call pmf_core_lf_shake(xp,modified)
     call pmf_timers_stop_timer(PMFLIB_TIMER)
 
-    modified = 1
-
 end subroutine pmf_sander_shake
+
+!===============================================================================
+! Subroutine: pmf_sander_rattlev
+!===============================================================================
+
+subroutine pmf_sander_rattlev(anatom,xp,vp,update_xp,modified) bind(c,name='int_pmf_sander_rattlev')
+
+    use pmf_sizes
+    use pmf_dat
+    use pmf_timers
+    use pmf_utils
+    use pmf_core_lf
+
+    implicit none
+    integer(CPMFINT)    :: anatom            ! number of atoms
+    real(CPMFDP)        :: xp(3,anatom)      ! positions at FIXME
+    real(CPMFDP)        :: vp(3,anatom)      ! velocities at FIXME
+    integer(CPMFINT)    :: update_xp         ! update xp
+    integer(CPMFINT)    :: modified          ! was constraint applied?
+    ! --------------------------------------------------------------------------
+
+    modified = 0
+    if( .not. fmaster ) return
+
+    if( fdebug ) then
+        write(PMF_DEBUG+fmytaskid,*) '>>TR: pmf_sander_rattlev'
+    end if
+
+    call pmf_timers_start_timer(PMFLIB_TIMER)
+        call pmf_core_lf_rattlev(xp,vp,update_xp,modified)
+    call pmf_timers_stop_timer(PMFLIB_TIMER)
+
+end subroutine pmf_sander_rattlev
 
 !===============================================================================
 ! subroutine pmf_sander_finalize
@@ -645,6 +834,10 @@ subroutine pmf_sander_finalize() bind(c,name='int_pmf_sander_finalize')
     ! --------------------------------------------------------------------------
 
     if( .not. fmaster ) return
+
+    if( fdebug ) then
+        write(PMF_DEBUG+fmytaskid,*) '>>TR: pmf_sander_finalize'
+    end if
 
     write(PMF_OUT,*)
     call pmf_utils_heading(PMF_OUT,'PMF Library Finalization', '-')

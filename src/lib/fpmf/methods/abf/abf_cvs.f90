@@ -227,7 +227,7 @@ subroutine abf_cvs_cv_info(abf_item)
     implicit none
     type(CVTypeABF) :: abf_item
     ! -----------------------------------------------
-    type(UnitType)                      :: forceunit
+    type(UnitType)  :: forceunit
     ! --------------------------------------------------------------------------
 
     write(PMF_OUT,145) trim(abf_item%cv%name)

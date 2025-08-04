@@ -101,12 +101,8 @@ subroutine cst_control_read_con(prm_fin)
     call pmf_ctrl_read_real8_wunit(prm_fin,'fepotoffset',EnergyUnit,fepotoffset,'F10.1')
     call pmf_ctrl_read_real8_wunit(prm_fin,'fekinoffset',EnergyUnit,fekinoffset,'F10.1')
 
-    call pmf_ctrl_read_integer(prm_fin,'flambdasolver',flambdasolver,'I12')
-    call pmf_ctrl_check_integer_in_range('CST','flambdasolver',flambdasolver,0,2)
-
-    if( flambdasolver .eq. 2 ) then
-        call pmf_ctrl_read_real8(prm_fin,'frcond',frcond,'E12.4')
-    end if
+    call pmf_ctrl_read_integer(prm_fin,'fshakesolver',fshakesolver,'I12')
+    call pmf_ctrl_check_integer_in_range('CST','fshakesolver',fshakesolver,0,3)
 
     call pmf_ctrl_read_real8(prm_fin,'flambdatol',flambdatol,'E12.4')
     call pmf_ctrl_read_integer(prm_fin,'fmaxiter',fmaxiter,'I12')

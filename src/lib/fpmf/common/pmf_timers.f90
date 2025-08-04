@@ -30,6 +30,7 @@ implicit none
 
 integer     :: PMFLIB_TOTAL_TIMER                       = -10
     integer     :: PMFLIB_TIMER                         = -20
+        integer     :: PMFLIB_DATA_TIMER                = -22
         integer     :: PMFLIB_CVS_TIMER                 = -30
         integer     :: PMFLIB_PATH_TIMER                = -35
         integer     :: PMFLIB_METHODS_TIMER             = -40
@@ -82,6 +83,7 @@ subroutine pmf_timers_init
 
  ! add standard timers --------------------------------
  PMFLIB_TIMER           = add_timer(PMFLIB_TOTAL_TIMER,'PMFLib')
+    PMFLIB_DATA_TIMER             = add_timer(PMFLIB_TIMER,'Data Transfers')
     PMFLIB_CVS_TIMER              = add_timer(PMFLIB_TIMER,'Collective Variables')
     PMFLIB_PATH_TIMER              = add_timer(PMFLIB_TIMER,'Paths')
     PMFLIB_METHODS_TIMER          = add_timer(PMFLIB_TIMER,'Methods')

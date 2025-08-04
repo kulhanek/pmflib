@@ -135,7 +135,7 @@ SET(PMF_CVS_SRC
 
 SET(PMF_ABF_CORE_SRC
         methods/abf/abf_dat.f90
-        methods/abf/abf_init.f90
+        methods/abf/abf_init.F90
         methods/abf/abf_cvs.f90
         methods/abf/abf_control.F90
         methods/abf/abf_output.f90
@@ -145,6 +145,7 @@ SET(PMF_ABF_CORE_SRC
         methods/abf/abf_core_lf.f90
         methods/abf/abf_client.F90
         methods/abf/abf_trajectory.f90
+        methods/abf/abf_constraints.f90
         methods/abf/abf_finalize.f90
         )
 
@@ -174,9 +175,9 @@ SET(PMF_CST_CORE_SRC
         methods/cst/cst_output.f90
         methods/cst/cst_restart.f90
         methods/cst/cst_core.f90
-        methods/cst/cst_lambdas.f90
-        methods/cst/cst_velocities.f90
+        methods/cst/cst_shake_cvs.f90
         methods/cst/cst_shake.f90
+        methods/cst/cst_rattlev.f90
         methods/cst/cst_finalize.f90
         methods/cst/cst_trajectory.f90
         methods/cst/cst_accu.f90

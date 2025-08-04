@@ -93,6 +93,7 @@ logical                     :: cst_enabled
 logical                     :: rst_enabled
 logical                     :: mtd_enabled
 logical                     :: abf_enabled
+logical                     :: abf_cst_enabled  ! ABF CST sub-engine required
 logical                     :: abp_enabled
 logical                     :: mon_enabled
 logical                     :: stm_enabled

@@ -39,7 +39,7 @@ contains
 subroutine cst_core_main_lf
 
     use cst_constraints
-    use cst_lambdas
+    use cst_shake
     use cst_output
     use cst_restart
     use cst_trajectory
@@ -48,7 +48,7 @@ subroutine cst_core_main_lf
     ! --------------------------------------------------------------------------
 
     call cst_constraints_increment
-    call cst_lambdas_calculate
+    call cst_shake_calculate
     call cst_core_analyze
     call cst_output_write
     call cst_restart_update
@@ -56,43 +56,21 @@ subroutine cst_core_main_lf
 
 end subroutine cst_core_main_lf
 
+
 !===============================================================================
-! Subroutine:  cst_core_main_vv_shake
+! Subroutine:  cst_core_rattlev_lf
 !===============================================================================
 
-subroutine cst_core_main_vv_shake
+subroutine cst_core_rattlev_lf
 
-    use cst_lambdas
-    use cst_output
-    use cst_velocities
+    use cst_rattlev
 
     implicit none
     ! --------------------------------------------------------------------------
 
-    ! FIXME
-    call cst_lambdas_calculate
-    call cst_velocities_correct_a
-    call cst_core_analyze
-    call cst_output_write
+    call cst_rattlev_calculate
 
-end subroutine cst_core_main_vv_shake
-
-!===============================================================================
-! Subroutine:  cst_core_main_vv_rattle
-!===============================================================================
-
-subroutine cst_core_main_vv_rattle()
-
-    use cst_constraints
-    use cst_velocities
-
-    implicit none
-    ! --------------------------------------------------------------------------
-
-    call cst_constraints_increment
-    call cst_velocities_correct_b
-
-end subroutine cst_core_main_vv_rattle
+end subroutine cst_core_rattlev_lf
 
 !===============================================================================
 ! Subroutine:  cst_core_analyze
@@ -307,7 +285,7 @@ subroutine cst_core_analyze
     end do
 
     if( fdebug ) then
-        write(PMF_DEBUG+fmytaskid,*) '>>> ', (lambda0(i), i=1,NumOfCONs), etot, epot, ekin, erst
+        write(PMF_DEBUG+fmytaskid,*) '>>>TR: cst_core_analyze ', (lambda0(i), i=1,NumOfCONs), etot, epot, ekin, erst
     end if
 
 end subroutine cst_core_analyze
