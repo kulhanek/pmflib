@@ -1,6 +1,7 @@
 // =============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
+//    Copyright (C) 2025 Petr Kulhanek, kulhanek@chemi.muni.cz
 //    Copyright (C) 2021 Petr Kulhanek, kulhanek@chemi.muni.cz
 //
 //     This program is free software; you can redistribute it and/or modify
@@ -73,10 +74,6 @@ void CABFProxy_mTdS::SetType(EABFTdSType type)
         case(ABF_TdS_HK):
             Provide = "ABF -TdS(x) - cov(dH/dx,Ekin)";
         break;
-    // -------------------
-        case(ABF_TdS_HV):
-            Provide = "ABF -TdS(x) - cov(dH/dx,pV)";
-        break;
 
     // -------------------
         case(ABF_TdS_BP):
@@ -89,10 +86,6 @@ void CABFProxy_mTdS::SetType(EABFTdSType type)
     // -------------------
         case(ABF_TdS_BK):
             Provide = "ABF -TdS(x) -cov(bias,Ekin)";
-        break;
-    // -------------------
-        case(ABF_TdS_BV):
-            Provide = "ABF -TdS(x) -cov(bias,pV)";
         break;
 
     // -------------------
@@ -153,12 +146,6 @@ double CABFProxy_mTdS::GetValue(int ibin,int icv,EProxyRealm realm) const
             m2ene   = Accu->GetData("M2EKIN",ibin);
         break;
     // -------------------
-        case(ABF_TdS_HV):
-            c11     = Accu->GetData("C11HV",ibin,icv)/nsamples;
-            m2icf   = Accu->GetData("M2HICF",ibin,icv);
-            m2ene   = Accu->GetData("M2EPV",ibin);
-        break;
-    // -------------------
         case(ABF_TdS_BP):
             c11     = Accu->GetData("C11BP",ibin,icv)/nsamples;
             m2icf   = Accu->GetData("M2BICF",ibin,icv);
@@ -175,12 +162,6 @@ double CABFProxy_mTdS::GetValue(int ibin,int icv,EProxyRealm realm) const
             c11     = Accu->GetData("C11BK",ibin,icv)/nsamples;
             m2icf   = Accu->GetData("M2BICF",ibin,icv);
             m2ene   = Accu->GetData("M2EKIN",ibin);
-        break;
-    // -------------------
-        case(ABF_TdS_BV):
-            c11     = Accu->GetData("C11BV",ibin,icv)/nsamples;
-            m2icf   = Accu->GetData("M2BICF",ibin,icv);
-            m2ene   = Accu->GetData("M2EPV",ibin);
         break;
 
     // -------------------

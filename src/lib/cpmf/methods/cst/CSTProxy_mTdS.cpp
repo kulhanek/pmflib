@@ -1,6 +1,7 @@
 // =============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
+//    Copyright (C) 2025 Petr Kulhanek, kulhanek@chemi.muni.cz
 //    Copyright (C) 2021 Petr Kulhanek, kulhanek@chemi.muni.cz
 //
 //     This program is free software; you can redistribute it and/or modify
@@ -66,11 +67,11 @@ void CCSTProxy_mTdS::SetType(ECSTTdSType type)
         break;
     // -------------------
         case(CST_TdS_HR):
-            Provide = "CST -TdS(x)^{c} cov(dH/dx,Ekin)";    // entropy of the constrained system  - contribution
+            Provide = "CST -TdS(x)^{c} cov(dH/dx,Erst)";    // entropy of the constrained system  - contribution
         break;
     // -------------------
         case(CST_TdS_HK):
-            Provide = "CST -TdS(x)^{c} cov(dH/dx,Erst)";    // entropy of the constrained system  - contribution
+            Provide = "CST -TdS(x)^{c} cov(dH/dx,Ekin)";    // entropy of the constrained system  - contribution
         break;
     // -------------------
         default:
@@ -87,7 +88,7 @@ int CCSTProxy_mTdS::GetNumOfSamples(int ibin) const
     if( Accu == NULL ){
         RUNTIME_ERROR("Accu is NULL");
     }
-    return(Accu->GetData("NSAMPLES",ibin));
+    return(Accu->GetData("NTDS",ibin));
 }
 
 //------------------------------------------------------------------------------
@@ -97,7 +98,7 @@ void CCSTProxy_mTdS::SetNumOfSamples(int ibin,int nsamples)
     if( Accu == NULL ){
         RUNTIME_ERROR("Accu is NULL");
     }
-    Accu->SetData("NSAMPLES",ibin,nsamples);
+    Accu->SetData("NTDS",ibin,nsamples);
 }
 
 //------------------------------------------------------------------------------
@@ -108,32 +109,39 @@ double CCSTProxy_mTdS::GetValue(int ibin,int icv,EProxyRealm realm) const
         RUNTIME_ERROR("Accu is NULL");
     }
 
-    double  nsamples = Accu->GetData("NSAMPLES",ibin);
-    double  m2lam    = Accu->GetData("M2LAMBDA",ibin,icv);
+    double  nsamples = Accu->GetData("NTDS",ibin);
     double  ncorr    = Accu->GetNCorr();
 
     double  c11     = 0.0;
     double  m2ene   = 0.0;
+    double  m2icf   = 0.0;
 
     switch(Type){
     // -------------------
-        case(CST_TdS_HH):
-            c11     = Accu->GetData("C11HH",ibin,icv);
+        case(CST_TdS_HH):{
+            double m2pp = Accu->GetData("M2PP",ibin,icv);
+            double m2pn = Accu->GetData("M2PN",ibin,icv);
+            c11 = 0.25*(m2pp-m2pn)/nsamples;
+            m2icf   = Accu->GetData("M2HICF",ibin,icv);
             m2ene   = Accu->GetData("M2ETOT",ibin);
+        }
         break;
     // -------------------
         case(CST_TdS_HP):
             c11     = Accu->GetData("C11HP",ibin,icv);
+            m2icf   = Accu->GetData("M2HICF",ibin,icv);
             m2ene   = Accu->GetData("M2EPOT",ibin);
         break;
     // -------------------
         case(CST_TdS_HR):
             c11     = Accu->GetData("C11HR",ibin,icv);
+            m2icf   = Accu->GetData("M2HICF",ibin,icv);
             m2ene   = Accu->GetData("M2ERST",ibin);
         break;
     // -------------------
         case(CST_TdS_HK):
             c11     = Accu->GetData("C11HK",ibin,icv);
+            m2icf   = Accu->GetData("M2HICF",ibin,icv);
             m2ene   = Accu->GetData("M2EKIN",ibin);
         break;
     // -------------------
@@ -150,17 +158,17 @@ double CCSTProxy_mTdS::GetValue(int ibin,int icv,EProxyRealm realm) const
     // -------------------
         case(E_PROXY_VALUE): {
             // negative value due to lambda vs dG/dx
-            return( - (c11 / nsamples) / (temp * PMF_Rgas) );
+            return( (c11 / nsamples) / (temp * PMF_Rgas) );
         }
     // -------------------
         case(E_PROXY_SIGMA): {
             // approximation
-            return( sqrt(m2lam / nsamples) * sqrt( m2ene / nsamples )  / (temp * PMF_Rgas) );
+            return( sqrt(m2icf / nsamples) * sqrt( m2ene / nsamples )  / (temp * PMF_Rgas) );
         }
     // -------------------
         case(E_PROXY_ERROR): {
             // approximation
-            return( sqrt(ncorr) * sqrt(m2lam / nsamples) * sqrt( m2ene / nsamples ) / sqrt(nsamples) / (temp * PMF_Rgas) );
+            return( sqrt(ncorr) * sqrt(m2icf / nsamples) * sqrt( m2ene / nsamples ) / sqrt(nsamples) / (temp * PMF_Rgas) );
         }
     // -------------------
         default:

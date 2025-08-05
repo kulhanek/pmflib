@@ -31,12 +31,10 @@ enum EABFTdSType {
     ABF_TdS_HP,
     ABF_TdS_HR,
     ABF_TdS_HK,
-    ABF_TdS_HV,
 
     ABF_TdS_BP,
     ABF_TdS_BR,
     ABF_TdS_BK,
-    ABF_TdS_BV,
 };
 
 //------------------------------------------------------------------------------

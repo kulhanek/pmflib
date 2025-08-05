@@ -122,17 +122,6 @@ CEnergyDerProxyPtr CEnergyDerProxyInit::InitProxy(const CSmallString& realm,CPMF
             RUNTIME_ERROR(error);
         }
 // -----------------------------------------------
-    } else if ( (realm == "-TdS_HV/dx") || (realm == "mTdS_HV/dx") ) {
-        if( CABFProxy_mTdS::IsCompatible(accu) ){
-            CABFProxy_mTdS_Ptr proxy = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
-            proxy->SetType(ABF_TdS_HV);
-            lproxy = proxy;
-        } else {
-            CSmallString error;
-            error << "incompatible method: " << accu->GetMethod() << " with requested realm: " <<  realm;
-            RUNTIME_ERROR(error);
-        }
-// -----------------------------------------------
     } else if ( (realm == "-TdS_BP/dx") || (realm == "mTdS_BP/dx") ) {
         CABFProxy_mTdS_Ptr proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
         proxy->SetType(ABF_TdS_BP);
@@ -146,11 +135,6 @@ CEnergyDerProxyPtr CEnergyDerProxyInit::InitProxy(const CSmallString& realm,CPMF
     } else if ( (realm == "-TdS_BK/dx") || (realm == "mTdS_BK/dx") ) {
         CABFProxy_mTdS_Ptr proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
         proxy->SetType(ABF_TdS_BK);
-        lproxy = proxy;
-// -----------------------------------------------
-    } else if ( (realm == "-TdS_BV/dx") || (realm == "mTdS_BV/dx") ) {
-        CABFProxy_mTdS_Ptr proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
-        proxy->SetType(ABF_TdS_BV);
         lproxy = proxy;
 // -----------------------------------------------
     } else {
