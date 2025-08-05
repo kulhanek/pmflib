@@ -1478,84 +1478,48 @@ void CPMFEnergyIntegrate::AddMTCorr(void)
         FES->SetEnergy(i, f + MTCProxy->GetValue(i,E_PROXY_VALUE) );
     }
 
-    if( Options.IsOptGlobalMinSet() ){
+    if( FES->IsGlobalMinSet() ){
 
-// FIXME
-//        vout << "      Global minimum provided at: ";
-//        vout << setprecision(5) << FES->GetCV(0)->GetRealValue(GPos[0]);
-//        for(int i=1; i < FES->GetNumOfCVs(); i++){
-//            vout << "x" << setprecision(5) << FES->GetCV(i)->GetRealValue(GPos[i]);
-//        }
-//        vout << endl;
-
-//        // find the closest bin
-//        CSimpleVector<double>   pos;
-//        pos.CreateVector(FES->GetNumOfCVs());
-//        double minv = 0.0;
-//        int glb_bin = 0;
-//        for(int ibin=0; ibin < FES->GetNumOfBins(); ibin++){
-//            FES->GetPoint(ibin,pos);
-//            double dist2 = 0.0;
-//            for(int cv=0; cv < FES->GetNumOfCVs(); cv++){
-//                dist2 = dist2 + (pos[cv]-GPos[cv])*(pos[cv]-GPos[cv]);
-//            }
-//            if( ibin == 0 ){
-//                minv = dist2;
-//                glb_bin = 0;
-//            }
-//            if( dist2 < minv ){
-//                minv = dist2;
-//                glb_bin = ibin;
-//            }
-//        }
-//
-//        FES->GetPoint(glb_bin,pos);
-//
-//        vout << "      Closest bin found at: ";
-//        vout << setprecision(5) << FES->GetCV(0)->GetRealValue(pos[0]);
-//        for(int i=1; i < FES->GetNumOfCVs(); i++){
-//            vout << "x" << setprecision(5) << FES->GetCV(i)->GetRealValue(pos[i]);
-//        }
-//
-//        double glb_min = FES->GetEnergy(glb_bin);
-//        vout << " (" << setprecision(5) << glb_min << ")" << endl;
-//
-//        for(int i=0; i < FES->GetNumOfBins(); i++){
-//            if( FES->GetNumOfSamples(i) != 0 ) {
-//                double value = FES->GetEnergy(i);
-//                FES->SetEnergy(i,value-glb_min);
-//            }
-//        }
-    } else {
-        // search for global minimum
         CSimpleVector<double> gpos;
-        gpos.CreateVector(FES->GetNumOfCVs());
-        bool   first = true;
-        double glb_min = 0.0;
-        for(int i=0; i < FES->GetNumOfBins(); i++){
-            int samples = FES->GetNumOfSamples(i);
-            if( samples < -1 ) continue;    // include sampled areas and holes but exclude extrapolated areas
-            double value = FES->GetEnergy(i);
-            if( first || (glb_min > value) ){
-                glb_min = value;
-                first = false;
-                FES->GetPoint(i,gpos);
-            }
+
+        gpos = FES->GetGlobalMinPos();
+        vout << "      Global minimum provided at: ";
+        vout << setprecision(5) << gpos[0];
+        for(int i=1; i < FES->GetNumOfCVs(); i++){
+            vout << "x" << setprecision(5) << gpos[0];
+        }
+        vout << endl;
+
+        FES->FindGlobalMinBin();
+
+        gpos = FES->GetGlobalMinPos();
+        vout << "      Closest bin found at: ";
+        vout << setprecision(5) << gpos[0];
+        for(int i=1; i < FES->GetNumOfCVs(); i++){
+            vout << "x" << setprecision(5) << gpos[0];
         }
 
-   //   vout << "   Calculating FES ..." << endl;
-        vout << "      Global minimum found at: ";
-        vout << setprecision(5) << FES->GetCV(0)->GetRealValue(gpos[0]);
-        for(int i=1; i < FES->GetNumOfCVs(); i++){
-            vout << "x" << setprecision(5) << FES->GetCV(i)->GetRealValue(gpos[i]);
-        }
+        double glb_min = FES->GetGlobalMinEnergy();
         vout << " (" << setprecision(5) << glb_min << ")" << endl;
 
-        for(int i=0; i < FES->GetNumOfBins(); i++){
-            if( FES->GetNumOfSamples(i) != 0 ) {
-                double value = FES->GetEnergy(i);
-                FES->SetEnergy(i,value-glb_min);
-            }
+        for(int ibin=0; ibin < FES->GetNumOfBins(); ibin++) {
+            FES->SetEnergy(ibin, FES->GetEnergy(ibin)-glb_min);
+        }
+    } else {
+        // search for global minimum
+        FES->FindGlobalMin();
+
+        double                glb_min = FES->GetGlobalMinEnergy();
+        CSimpleVector<double> gpos    = FES->GetGlobalMinPos();
+
+        vout << "      Global minimum found at: ";
+        vout << setprecision(5) << gpos[0];
+        for(int i=1; i < FES->GetNumOfCVs(); i++){
+            vout << "x" << setprecision(5) << gpos[0];
+        }
+        vout << " (" << setprecision(5) << glb_min << ")" << endl;
+        for(int ibin=0; ibin < FES->GetNumOfBins(); ibin++) {
+            FES->SetEnergy(ibin, FES->GetEnergy(ibin)-glb_min);
         }
     }
 

@@ -72,12 +72,12 @@ subroutine cst_init_dat
     ! --------------------------------------------------------------------------
 
     fmode           = 0             ! 0 - disable BM, 1 - enabled BM
-    fsample         = 500           ! output sample pariod in steps
+    fsample         =  2500         ! output sample period in steps
     fplevel         = 0             ! print level
 
     frestart        = .false.       ! 1 - restart job with previous data, 0 - otherwise not
     faccurst        = 0             ! number of steps for equilibration, it is ignored if job is restarted
-    frstupdate      = 5000
+    frstupdate      = 10000
     ftrjsample      = 0             ! how often save accumulator to "accumulator evolution"
 
     flamsample      = 1

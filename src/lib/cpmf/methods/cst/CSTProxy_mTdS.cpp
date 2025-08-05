@@ -124,23 +124,24 @@ double CCSTProxy_mTdS::GetValue(int ibin,int icv,EProxyRealm realm) const
             c11 = 0.25*(m2pp-m2pn)/nsamples;
             m2icf   = Accu->GetData("M2HICF",ibin,icv);
             m2ene   = Accu->GetData("M2ETOT",ibin);
+            cout << c11 << endl;
         }
         break;
     // -------------------
         case(CST_TdS_HP):
-            c11     = Accu->GetData("C11HP",ibin,icv);
+            c11     = Accu->GetData("C11HP",ibin,icv)/nsamples;;
             m2icf   = Accu->GetData("M2HICF",ibin,icv);
             m2ene   = Accu->GetData("M2EPOT",ibin);
         break;
     // -------------------
         case(CST_TdS_HR):
-            c11     = Accu->GetData("C11HR",ibin,icv);
+            c11     = Accu->GetData("C11HR",ibin,icv)/nsamples;;
             m2icf   = Accu->GetData("M2HICF",ibin,icv);
             m2ene   = Accu->GetData("M2ERST",ibin);
         break;
     // -------------------
         case(CST_TdS_HK):
-            c11     = Accu->GetData("C11HK",ibin,icv);
+            c11     = Accu->GetData("C11HK",ibin,icv)/nsamples;;
             m2icf   = Accu->GetData("M2HICF",ibin,icv);
             m2ene   = Accu->GetData("M2EKIN",ibin);
         break;
@@ -158,7 +159,7 @@ double CCSTProxy_mTdS::GetValue(int ibin,int icv,EProxyRealm realm) const
     // -------------------
         case(E_PROXY_VALUE): {
             // negative value due to lambda vs dG/dx
-            return( (c11 / nsamples) / (temp * PMF_Rgas) );
+            return( c11 / (temp * PMF_Rgas) );
         }
     // -------------------
         case(E_PROXY_SIGMA): {
