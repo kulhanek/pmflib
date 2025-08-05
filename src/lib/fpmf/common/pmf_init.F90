@@ -595,7 +595,7 @@ subroutine pmf_init_title(driver_name)
     write(PMF_OUT,'(A)')   '#==============================================================================#'
     write(PMF_OUT,'(A)')   '# PMFLib - Potential of Mean Force Toolkit                                     #'
     write(PMF_OUT,'(A)')   '# -----------------------------------------------------------------------------#'
-    write(PMF_OUT,'(A)')   '# Authors: (c) 2019 - 2021 Petr Kulhanek (NCBR)                                #'
+    write(PMF_OUT,'(A)')   '# Authors: (c) 2019 - 2025 Petr Kulhanek (NCBR)                                #'
     write(PMF_OUT,'(A)')   '#          (c) 2011 - 2015 Petr Kulhanek (CEITEC)                              #'
     write(PMF_OUT,'(A)')   '#          (c) 2013 - 2015 Letif Mones (EDUC)                                  #'
     write(PMF_OUT,'(A)')   '#          (c) 2009 - 2011 Petr Kulhanek (NCBR)                                #'
@@ -668,6 +668,15 @@ subroutine pmf_init_sys_summary()
     write(form_str,'(F20.2)') pmf_unit_get_rvalue(TimeUnit,fdt*fnstlim)
     write(PMF_OUT,65)  trim(adjustl(form_str)), '['//trim(pmf_unit_label(TimeUnit))//']'
 
+    select case(fintalg)
+    case(IA_LEAP_FROG)
+    write(PMF_OUT,75)  'leap-frog Verlet (LF)'
+    case(IA_VEL_VERLET)
+    write(PMF_OUT,75)  'velocity Verlet (VV)'
+    case(IA_LF_MIDDLE)
+    write(PMF_OUT,75)  'leap-frog Verlet - middle scheme (LF-Middle)'
+    end select
+
     select case(fsystype)
     case(SYS_NT)
     write(PMF_OUT,70)  'NT'
@@ -724,6 +733,7 @@ subroutine pmf_init_sys_summary()
  60 format('# Number of steps          : ',A)
  65 format('# Simulation length        : ',A,1X,A)
  70 format('# System type              : ',A)
+ 75 format('# Integration algorithm    : ',A)
  80 format('# Box type                 : ',A)
 
 100 format('# Initial box A vector     : ',F12.4,1X,F12.4,1X,F12.4,1X,A)

@@ -209,6 +209,7 @@ integer,parameter       :: BOX_GENERAL          = 2
 
 integer,parameter       :: IA_LEAP_FROG         = 0
 integer,parameter       :: IA_VEL_VERLET        = 1
+integer,parameter       :: IA_LF_MIDDLE         = 2
 
 !===============================================================================
 

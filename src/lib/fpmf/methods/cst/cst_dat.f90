@@ -51,7 +51,7 @@ integer         :: fshakesolver     ! SHAKE solvers
                                     ! 4 - diagonal SHAKE with initial guess from the previous step
 
 integer         :: frattlesolver    ! RATTLE solvers
-                                    ! 1 - mixed RATTLE
+                                    ! 1 - matrix algebra RATTLE
 
 real(PMFDP)     :: flambdatol       ! tolerance for lambda optimization
 real(PMFDP)     :: frveltol         ! residual for velocity in rattle/rattlev
@@ -60,10 +60,16 @@ integer         :: fmaxiter         ! maximum of iteration in lambda optimizatio
 integer         :: fsamplefreq      ! how often take samples
 logical         :: freadranges      ! read ranges for CVs
 
+! enthalpy/entropy calculations
 logical         :: fenthalpy        ! collect data for enthalpy calculation
+logical         :: fenthalpy_der    ! collect data for enthalpy derivative calculation
+
+! enthalpy/entropy calculations
 logical         :: fentropy         ! collect data for entropy calculation
-real(PMFDP)     :: fepotoffset
-real(PMFDP)     :: fekinoffset
+logical         :: fentdecomp       ! collect additional correlation terms
+
+real(PMFDP)     :: fepotaverage
+real(PMFDP)     :: fekinaverage
 
 
 ! item list --------------------------------------------------------------------
@@ -118,9 +124,9 @@ integer, parameter  :: CON_SHAKESOL_DI      = 3     ! diagonal JAC(0,P)
 integer, parameter  :: CON_SHAKESOL_DIWG    = 4     ! diagonal JAC(0,P) with initial guess from the previous step
 
 ! global variables for lambda calculation --------------------------------------
-real(PMFDP)                 :: isfdt            ! internal conversion factor
+real(PMFDP)                 :: isfdts           ! internal conversion factor
 integer                     :: fsiter           ! number of iterations in shake solver
-real(PMFDP),allocatable     :: lambda(:)        ! list of Lagrange multipliers
+real(PMFDP),allocatable     :: lambdax(:)       ! list of Lagrange multipliers, internal units
 real(PMFDP),allocatable     :: cv(:)            ! constraint value vector
 
 real(PMFDP)                 :: nsupdates        ! number of shake updates
@@ -131,16 +137,16 @@ real(PMFDP)                 :: m2fsiter         ! M2 moment of fsiter
 integer, parameter  :: CON_RATTLESOL_MA     = 0     ! matrix algebra
 
 ! global variables for velocity update -----------------------------------------
+real(PMFDP)                 :: isfdtr           ! internal conversion factor
 integer                     :: friter           ! number of iterations in rattlev solver
-logical                     :: has_lambdav      ! mu values (lambdav)
-real(PMFDP),allocatable     :: lambdav(:)       ! velocity lambdas - kappa
+real(PMFDP),allocatable     :: lambdav(:)       ! velocity lambdas - kappa, internal units
 
 real(PMFDP)                 :: nrupdates        ! number of rattle updates
 real(PMFDP)                 :: mfriter          ! mean value of friter
 real(PMFDP)                 :: m2friter         ! M2 moment of friter
 
 ! metric tensor correction -----------------------------------------------------
-real(PMFDP),allocatable     :: fz(:,:)          ! Z matrix
+real(PMFDP),allocatable     :: lambda(:)        ! total lambda with corrected units
 real(PMFDP)                 :: fzdet            ! current value of det(Z)
 
 ! global variables for LU decomposition and other helper variable  -------------
@@ -149,14 +155,14 @@ real(PMFDP),allocatable     :: vv(:)            ! for LU decomposition
 integer,allocatable         :: indx(:)
 
 ! history buffers ---------------------------------------------------------------
-real(PMFDP),allocatable     :: lambda0(:)       ! list of Lagrange multipliers, t-dt
-real(PMFDP),allocatable     :: lambda1(:)       ! list of Lagrange multipliers, t
-real(PMFDP)                 :: epothist0        ! history of Epot, t-dt
-real(PMFDP)                 :: epothist1        ! history of Epot, t
-real(PMFDP)                 :: ersthist0        ! history of Erst, t-dt
-real(PMFDP)                 :: ersthist1        ! history of Erst, t
-real(PMFDP)                 :: isrz0            ! history of isrz, t-dt
-real(PMFDP)                 :: isrz1            ! history of isrz, t
+integer                     :: hist_len
+integer                     :: hist_fidx
+
+real(PMFDP),allocatable     :: lambdahist(:,:)
+real(PMFDP),allocatable     :: epothist(:)
+real(PMFDP),allocatable     :: ersthist(:)
+real(PMFDP),allocatable     :: ekinhist(:)
+real(PMFDP),allocatable     :: isrzhist(:)
 
 ! ------------------------------------------------------------------------------
 ! ACCUMULATOR
@@ -169,30 +175,44 @@ real(PMFDP),allocatable     :: rbuf_B(:)        ! helper buffers
 real(PMFDP),allocatable     :: rbuf_M(:,:)
 
 ! global variables for blue moon - results -------------------------------------
-integer                     :: faccumulation    ! total number of accumulated steps
+real(PMFDP)                 :: nsamples         ! total number of accumulated steps
 real(PMFDP)                 :: misrz            ! mean of inverse square root of fzdet
 real(PMFDP)                 :: m2isrz           ! M2 of inverse square root of fzdet
 real(PMFDP),allocatable     :: mlambda(:)       ! mean of lambdas
 real(PMFDP),allocatable     :: m2lambda(:)      ! M2 of lambdas
-real(PMFDP),allocatable     :: mlambdav(:)      ! mean of kappa
-real(PMFDP),allocatable     :: m2lambdav(:)     ! M2 of kappa
 
-! enthalpy and entropy ----------------------------------------------
-integer                     :: fentaccu         ! number of step for enthalpy and entropy calculations
-real(PMFDP)                 :: metot            ! mean of total energy
-real(PMFDP)                 :: m2etot           ! M2 of total energy
+! fenthalpy .or. fentropy  -----------------------------------------------------
+real(PMFDP)                 :: ntds             ! number of step for enthalpy and entropy calculations
+
+! fenthalpy .or. (fentropy .and. fentdecomp) -----------------------------------
+real(PMFDP)                 :: meint            ! mean of internal energy
+real(PMFDP)                 :: m2eint           ! M2 of internal energy
 real(PMFDP)                 :: mepot            ! mean of potential energy
 real(PMFDP)                 :: m2epot           ! M2 of potential energy
-real(PMFDP)                 :: mekin            ! mean of kinetic energy
-real(PMFDP)                 :: m2ekin           ! M2 of kinetic energy
 real(PMFDP)                 :: merst            ! mean of restraint energy
 real(PMFDP)                 :: m2erst           ! M2 of restraint energy
+real(PMFDP)                 :: mekin            ! mean of kinetic energy
+real(PMFDP)                 :: m2ekin           ! M2 of kinetic energy
 
-! data for entropy, co-moments between dH/dx a H (total energy), Pot, Kin, Rst energies
-real(PMFDP),allocatable     :: c11hh(:)
-real(PMFDP),allocatable     :: c11hp(:)
-real(PMFDP),allocatable     :: c11hk(:)
+! fenthalpy .and. (fenthalpy_der .gt. 0) ---------------------------------------
+real(PMFDP),allocatable     :: micfp(:)         ! mean of ICF-P
+real(PMFDP),allocatable     :: m2icfp(:)        ! M2 of internal energy
+real(PMFDP),allocatable     :: c11pp(:)         ! co-variances covar(ICF-P,Epot)
+
+! fentropy ---------------------------------------------------------------------
+real(PMFDP)                 :: metot            ! mean of total energy
+real(PMFDP)                 :: m2etot           ! M2 of total energy
+real(PMFDP),allocatable     :: mpp(:)           ! mean of tot energy + icf
+real(PMFDP),allocatable     :: m2pp(:)          ! M2 of tot energy + icf
+real(PMFDP),allocatable     :: mpn(:)           ! mean of tot energy - icf
+real(PMFDP),allocatable     :: m2pn(:)          ! M2 of tot energy - icf
+real(PMFDP),allocatable     :: mhicf(:)         ! mean of ICF - hamiltonian
+real(PMFDP),allocatable     :: m2hicf(:)        ! M2 of ICF - hamiltonian
+
+! fentropy .and. fentdecomp ----------------------------------------------------
+real(PMFDP),allocatable     :: c11hp(:)         ! co-moments between dH/dx and EPot, ERst, EKin energies
 real(PMFDP),allocatable     :: c11hr(:)
+real(PMFDP),allocatable     :: c11hk(:)
 
 !===============================================================================
 

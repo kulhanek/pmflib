@@ -91,7 +91,7 @@ end subroutine pmf_sander_check_interface
 ! subroutine pmf_sander_init_preinit
 !===============================================================================
 
-subroutine pmf_sander_init_preinit(mdin,mdin_len,anatom,anres, &
+subroutine pmf_sander_init_preinit(mdin,mdin_len,ischeme,anatom,anres, &
                             antb,antc,ansteps,astepsize,atemp0,apress0, &
                             box_a,box_b,box_c,box_alpha,box_beta,box_gamma) &
                             bind(c,name='int_pmf_sander_init_preinit')
@@ -109,6 +109,7 @@ subroutine pmf_sander_init_preinit(mdin,mdin_len,anatom,anres, &
     implicit none
     character(CPMFCHAR) :: mdin(*)
     integer(CPMFINT)    :: mdin_len
+    integer(CPMFINT)    :: ischeme
     integer(CPMFINT)    :: anatom                       ! number of atoms in AMBER topology
     integer(CPMFINT)    :: anres                        ! number of residues in AMBER topology
     integer(CPMFINT)    :: antb                         ! BOX type
@@ -152,7 +153,12 @@ subroutine pmf_sander_init_preinit(mdin,mdin_len,anatom,anres, &
 
     ! init basic PMF setup
     call pmf_init_dat()
-    call pmf_init_variables(IA_LEAP_FROG,anatom,antb,ansteps,astepsize,0.0d0,atemp0,apress0)
+    if( ischeme .ne. 0 ) then
+        call pmf_init_variables(IA_LF_MIDDLE,anatom,antb,ansteps,astepsize,0.0d0,atemp0,apress0)
+    else
+        call pmf_init_variables(IA_LEAP_FROG,anatom,antb,ansteps,astepsize,0.0d0,atemp0,apress0)
+    end if
+
     call pmf_pbc_set_box(box_a,box_b,box_c,box_alpha,box_beta,box_gamma)
 
     ! init mask subsystem
@@ -786,7 +792,7 @@ end subroutine pmf_sander_shake
 ! Subroutine: pmf_sander_rattlev
 !===============================================================================
 
-subroutine pmf_sander_rattlev(anatom,xp,vp,update_xp,modified) bind(c,name='int_pmf_sander_rattlev')
+subroutine pmf_sander_rattlev(anatom,xp,vp,cid,modified) bind(c,name='int_pmf_sander_rattlev')
 
     use pmf_sizes
     use pmf_dat
@@ -798,7 +804,7 @@ subroutine pmf_sander_rattlev(anatom,xp,vp,update_xp,modified) bind(c,name='int_
     integer(CPMFINT)    :: anatom            ! number of atoms
     real(CPMFDP)        :: xp(3,anatom)      ! positions at FIXME
     real(CPMFDP)        :: vp(3,anatom)      ! velocities at FIXME
-    integer(CPMFINT)    :: update_xp         ! update xp
+    integer(CPMFINT)    :: cid               ! callid
     integer(CPMFINT)    :: modified          ! was constraint applied?
     ! --------------------------------------------------------------------------
 
@@ -810,7 +816,7 @@ subroutine pmf_sander_rattlev(anatom,xp,vp,update_xp,modified) bind(c,name='int_
     end if
 
     call pmf_timers_start_timer(PMFLIB_TIMER)
-        call pmf_core_lf_rattlev(xp,vp,update_xp,modified)
+        call pmf_core_lf_rattlev(xp,vp,cid,modified)
     call pmf_timers_stop_timer(PMFLIB_TIMER)
 
 end subroutine pmf_sander_rattlev

@@ -42,9 +42,12 @@ subroutine cst_shake_calculate
 
     use pmf_utils
     use cst_dat
+    use pmf_timers
 
     implicit none
     ! --------------------------------------------------------------------------
+
+    call pmf_timers_start_timer(PMFLIB_CST_SHAKE_TIMER)
 
     select case(fshakesolver)
         case(CON_SHAKESOL_FM)
@@ -61,6 +64,8 @@ subroutine cst_shake_calculate
             call pmf_utils_exit(PMF_OUT,1,'[CST] SHAKE solver is not implemented in cst_shake_calculate!')
     end select
 
+    call pmf_timers_stop_timer(PMFLIB_CST_SHAKE_TIMER)
+
 end subroutine cst_shake_calculate
 
 !===============================================================================
@@ -75,12 +80,12 @@ subroutine cst_shake_calculate_fm
     use cst_constraints
 
     implicit none
-    integer             :: i,k,info,ci,iter
+    integer             :: i,k,info,ci
     logical             :: done
     real(PMFDP)         :: invn,dfsiter1,dfsiter2
     ! -----------------------------------------------------------------------------
 
-    lambda(:) = 0.0d0
+    lambdax(:) = 0.0d0
 
     ! calculate Jacobian matrix ------------------------
     call cst_shake_calc_jacobian_fm ! it calculates jac(0,0)
@@ -95,10 +100,8 @@ subroutine cst_shake_calculate_fm
         end if
     end if
 
-    fsiter = 0
-
 ! do step
-    do iter=1,fmaxiter
+    do fsiter=1,fmaxiter
 
         ! go through constraint list and calculate first derivative and constraint values at CrdP and cv
         call cst_constraints_calc_fdxp
@@ -115,7 +118,7 @@ subroutine cst_shake_calculate_fm
         end if
 
         ! correct lambda vector
-        lambda = lambda + cv
+        lambdax = lambdax + cv
 
         ! calculate new position vector
         do i=1,NumOfCONs
@@ -128,21 +131,14 @@ subroutine cst_shake_calculate_fm
         ! check convergence criteria in lambdax
         done = .true.
         do i=1,NumOfCONs
-            if( abs(cv(i)*isfdt) .gt. flambdatol ) done = .false.
+            if( abs(cv(i)*isfdts) .gt. flambdatol ) done = .false.
         end do
 
         if( done ) exit
 
     end do
 
-    fsiter = iter
-
-    lambda(:) = lambda(:)*isfdt
-
-    ! final derivatives and values
-    call cst_constraints_calc_fdxp
-
-    if( iter .eq. fmaxiter ) then
+    if( fsiter .eq. fmaxiter ) then
         call pmf_utils_exit(PMF_OUT,1, &
                          '[CST] Maximum number of iterations in lambda calculation exceeded in cst_shake_calculate_fm!')
     end if
@@ -169,17 +165,15 @@ subroutine cst_shake_calculate_mm
     use cst_constraints
 
     implicit none
-    integer             :: i,k,info,ci,iter
+    integer             :: i,k,info,ci
     logical             :: done
     real(PMFDP)         :: invn,dfsiter1,dfsiter2
     ! -----------------------------------------------------------------------------
 
-    lambda(:) = 0.0d0
-
-    fsiter = 0
+    lambdax(:) = 0.0d0
 
 ! do step
-    do iter=1,fmaxiter
+    do fsiter=1,fmaxiter
 
         ! go through constraint list and calculate first derivative and constraint values at CrdP and cv
         call cst_constraints_calc_fdxp
@@ -206,7 +200,7 @@ subroutine cst_shake_calculate_mm
         end if
 
         ! correct lambda vector
-        lambda = lambda + cv
+        lambdax = lambdax + cv
 
         ! calculate new position vector
         do i=1,NumOfCONs
@@ -219,23 +213,14 @@ subroutine cst_shake_calculate_mm
         ! check convergence criteria in lambdax
         done = .true.
         do i=1,NumOfCONs
-            if( abs(cv(i)*isfdt) .gt. flambdatol ) done = .false.
+            if( abs(cv(i)*isfdts) .gt. flambdatol ) done = .false.
         end do
 
         if( done ) exit
 
     end do
 
-    fsiter = iter
-
-    lambda(:) = lambda(:)*isfdt
-
-    write(PMF_DEBUG+fmytaskid,*) 'lambda= ', lambda(:)
-
-! final derivatives and values
-    call cst_constraints_calc_fdxp
-
-    if( iter .eq. fmaxiter ) then
+    if( fsiter .eq. fmaxiter ) then
         call pmf_utils_exit(PMF_OUT,1, &
                          '[CST] Maximum number of iterations in lambda calculation exceeded in cst_shake_calculate_mm!')
     end if
@@ -262,17 +247,15 @@ subroutine cst_shake_calculate_nm
     use cst_constraints
 
     implicit none
-    integer             :: i,k,info,ci,iter
+    integer             :: i,k,info,ci
     logical             :: done
     real(PMFDP)         :: invn,dfsiter1,dfsiter2
     ! -----------------------------------------------------------------------------
 
-    lambda(:) = 0.0d0
-
-    fsiter = 0
+    lambdax(:) = 0.0d0
 
 ! do step
-    do iter=1,fmaxiter
+    do fsiter=1,fmaxiter
 
         ! go through constraint list and calculate first derivative and constraint values at CrdP and cv
         call cst_constraints_calc_fdxp
@@ -299,7 +282,7 @@ subroutine cst_shake_calculate_nm
         end if
 
         ! correct lambda vector
-        lambda = lambda + cv
+        lambdax = lambdax + cv
 
         ! calculate new position vector
         do i=1,NumOfCONs
@@ -312,21 +295,14 @@ subroutine cst_shake_calculate_nm
         ! check convergence criteria in lambdax
         done = .true.
         do i=1,NumOfCONs
-            if( abs(cv(i)*isfdt) .gt. flambdatol ) done = .false.
+            if( abs(cv(i)*isfdts) .gt. flambdatol ) done = .false.
         end do
 
         if( done ) exit
 
     end do
 
-    fsiter = iter
-
-    lambda(:) = lambda(:)*isfdt
-
-    ! final derivatives and values
-    call cst_constraints_calc_fdxp
-
-    if( iter .eq. fmaxiter ) then
+    if( fsiter .eq. fmaxiter ) then
         call pmf_utils_exit(PMF_OUT,1, &
                          '[CST] Maximum number of iterations in lambda calculation exceeded in cst_shake_calculate_nm!')
     end if
@@ -354,18 +330,16 @@ subroutine cst_shake_calculate_di
     use cst_constraints
 
     implicit none
-    integer             :: i,k,ci,iter
+    integer             :: i,k,ci
     real(PMFDP)         :: jacv
     logical             :: done
     real(PMFDP)         :: invn,dfsiter1,dfsiter2
     ! -----------------------------------------------------------------------------
 
-    lambda(:) = 0.0d0
-
-    fsiter = 0
+    lambdax(:) = 0.0d0
 
 ! do step
-    do iter=1,fmaxiter
+    do fsiter=1,fmaxiter
 
         ! go through constraint list and calculate first derivative and constraint values at CrdP and cv
         call cst_constraints_calc_fdxp
@@ -383,7 +357,7 @@ subroutine cst_shake_calculate_di
             cv(i)=cv(i)/jacv
 
             ! correct lambda vector
-            lambda(i) = lambda(i) + cv(i)
+            lambdax(i) = lambdax(i) + cv(i)
 
             ! calculate new position vector
             do k=1,NumOfLAtoms
@@ -394,21 +368,14 @@ subroutine cst_shake_calculate_di
         ! check convergence criteria in lambdax
         done = .true.
         do i=1,NumOfCONs
-            if( abs(cv(i)*isfdt) .gt. flambdatol ) done = .false.
+            if( abs(cv(i)*isfdts) .gt. flambdatol ) done = .false.
         end do
 
         if( done ) exit
 
     end do
 
-    fsiter = iter
-
-    lambda(:) = lambda(:)*isfdt
-
-! final derivatives and values
-    call cst_constraints_calc_fdxp
-
-    if( iter .eq. fmaxiter ) then
+    if( fsiter .eq. fmaxiter ) then
         call pmf_utils_exit(PMF_OUT,1, &
                          '[CST] Maximum number of iterations in lambda calculation exceeded in cst_shake_calculate_di!')
     end if
@@ -437,7 +404,7 @@ subroutine cst_shake_calculate_diwg
     use cst_constraints
 
     implicit none
-    integer             :: i,k,ci,iter
+    integer             :: i,k,ci
     real(PMFDP)         :: jacv
     logical             :: done
     logical,save        :: initialized_lambda = .false. ! static
@@ -445,8 +412,7 @@ subroutine cst_shake_calculate_diwg
     ! -----------------------------------------------------------------------------
 
     if( initialized_lambda ) then
-        lambda(:) = lambda(:)/isfdt
-        cv(:) = lambda(:)
+        cv(:) = lambdax(:)
         do i=1,NumOfCONs
             ci = CONList(i)%cvindx
             do k=1,NumOfLAtoms
@@ -454,13 +420,11 @@ subroutine cst_shake_calculate_diwg
             end do
         end do
     else
-        lambda(:) = 0.0d0
+        lambdax(:) = 0.0d0
     end if
 
-    fsiter = 0
-
 ! do step
-    do iter=1,fmaxiter
+    do fsiter=1,fmaxiter
 
         ! go through constraint list and calculate first derivative and constraint values at CrdP and cv
         call cst_constraints_calc_fdxp
@@ -478,7 +442,7 @@ subroutine cst_shake_calculate_diwg
             cv(i)=cv(i)/jacv
 
             ! correct lambda vector
-            lambda(i) = lambda(i) + cv(i)
+            lambdax(i) = lambdax(i) + cv(i)
 
             ! calculate new position vector
             do k=1,NumOfLAtoms
@@ -489,21 +453,14 @@ subroutine cst_shake_calculate_diwg
         ! check convergence criteria in lambdax
         done = .true.
         do i=1,NumOfCONs
-            if( abs(cv(i)*isfdt) .gt. flambdatol ) done = .false.
+            if( abs(cv(i)*isfdts) .gt. flambdatol ) done = .false.
         end do
 
         if( done ) exit
 
     end do
 
-    fsiter = iter
-
-    lambda(:) = lambda(:)*isfdt
-
-! final derivatives and values
-    call cst_constraints_calc_fdxp
-
-    if( iter .eq. fmaxiter ) then
+    if( fsiter .eq. fmaxiter ) then
         call pmf_utils_exit(PMF_OUT,1, &
                          '[CST] Maximum number of iterations in lambda calculation exceeded in cst_shake_calculate_di!')
     end if

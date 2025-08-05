@@ -337,7 +337,7 @@ subroutine pmf_core_lf_shake(xp,modified)
     if( .not. (cst_enabled .or. abf_cst_enabled) ) return
 
     call pmf_timers_start_timer(PMFLIB_METHODS_TIMER)
-        call pmf_timers_start_timer(PMFLIB_CON_TIMER)
+        call pmf_timers_start_timer(PMFLIB_CST_TIMER)
 
         ! update local data
         call pmf_core_in_data_xp(xp)
@@ -353,7 +353,7 @@ subroutine pmf_core_lf_shake(xp,modified)
         ! update global data
         call pmf_core_out_data_xp(xp)
 
-        call pmf_timers_stop_timer(PMFLIB_CON_TIMER)
+        call pmf_timers_stop_timer(PMFLIB_CST_TIMER)
     call pmf_timers_stop_timer(PMFLIB_METHODS_TIMER)
 
     modified = 1
@@ -364,7 +364,7 @@ end subroutine pmf_core_lf_shake
 ! Subroutine:  pmf_core_lf_rattlev
 !===============================================================================
 
-subroutine pmf_core_lf_rattlev(xp,vp,update_xp,modified)
+subroutine pmf_core_lf_rattlev(xp,vp,cid,modified)
 
     use pmf_dat
     use pmf_cvs
@@ -375,7 +375,7 @@ subroutine pmf_core_lf_rattlev(xp,vp,update_xp,modified)
     implicit none
     real(PMFDP)     :: xp(:,:)       ! position in t + dt
     real(PMFDP)     :: vp(:,:)       ! velocities in t + ?? - FIXME
-    integer         :: update_xp
+    integer         :: cid
     integer         :: modified
     ! --------------------------------------------------------------------------
 
@@ -384,16 +384,14 @@ subroutine pmf_core_lf_rattlev(xp,vp,update_xp,modified)
     if( .not. (cst_enabled .or. abf_cst_enabled) ) return
 
     call pmf_timers_start_timer(PMFLIB_METHODS_TIMER)
-        call pmf_timers_start_timer(PMFLIB_CON_TIMER)
+        call pmf_timers_start_timer(PMFLIB_CST_TIMER)
 
         ! update local data
-        ! if( update_xp .eq. 1 ) then ----> ! always update xp
-            call pmf_core_in_data_xp(xp)
-        ! end if
+        call pmf_core_in_data_xp(xp)
         call pmf_core_in_data_vp(vp)
 
         if( cst_enabled ) then
-            call cst_core_rattlev_lf
+            call cst_core_rattlev_lf(cid)
         end if
 
         if( abf_cst_enabled ) then
@@ -403,7 +401,7 @@ subroutine pmf_core_lf_rattlev(xp,vp,update_xp,modified)
         ! update global data
         call pmf_core_out_data_vp(vp)
 
-        call pmf_timers_stop_timer(PMFLIB_CON_TIMER)
+        call pmf_timers_stop_timer(PMFLIB_CST_TIMER)
     call pmf_timers_stop_timer(PMFLIB_METHODS_TIMER)
 
     modified = 1

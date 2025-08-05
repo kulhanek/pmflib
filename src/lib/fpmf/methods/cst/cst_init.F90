@@ -77,7 +77,7 @@ subroutine cst_init_dat
 
     frestart        = .false.       ! 1 - restart job with previous data, 0 - otherwise not
     faccurst        = 0             ! number of steps for equilibration, it is ignored if job is restarted
-    frstupdate      = 500
+    frstupdate      = 5000
     ftrjsample      = 0             ! how often save accumulator to "accumulator evolution"
 
     fshakesolver    = CON_SHAKESOL_MM       ! mixed shake
@@ -89,8 +89,8 @@ subroutine cst_init_dat
 
     fenthalpy       = .false.       ! accumulate enthalpy
     fentropy        = .false.       ! accumulate entropy
-    fepotoffset     = 0.0d0
-    fekinoffset     = 0.0d0
+    fepotaverage    = 0.0d0
+    fekinaverage    = 0.0d0
 
     freadranges     = .false.        ! request full definitions of CVs
 
@@ -470,82 +470,72 @@ subroutine cst_init_core
     integer      :: alloc_failed, i, tot_nbins
     ! ------------------------------------------------------------------------------
 
+! setup conversion factors
     select case(fintalg)
         case(IA_LEAP_FROG)
-            isfdt = 1.0d0/(fdt*fdt) * PMF_L2CL
-        case(IA_VEL_VERLET)
-            isfdt = 2.0d0/(fdt*fdt) * PMF_L2CL
+            isfdts = 1.0d0/(fdt*fdt) * PMF_L2CL
+            isfdtr = 0.0d0
+        case(IA_LF_MIDDLE) ! FIXME
+            isfdts = 1.0d0/(fdt*fdt) * PMF_L2CL
+            isfdtr = 1.0d0/(fdt*PMF_VDT2DT) * PMF_L2CL
         case default
             call pmf_utils_exit(PMF_OUT,1,'Unsupported integration algorithm in cst_init_print_summary!')
     end select
 
 ! required always - det(Z) is calculate in core_analyse
 ! allocate arrays for LU decomposition
-    allocate(vv(NumOfCONs), indx(NumOfCONs), stat= alloc_failed)
+    allocate(vv(NumOfCONs), indx(NumOfCONs), jac(NumOfCONs,NumOfCONs), stat= alloc_failed)
     if( alloc_failed .ne. 0 ) then
         call pmf_utils_exit(PMF_OUT,1,&
                  '[CST] Unable to allocate memory for arrays used in LU decomposition!')
     end if
 
+    jac(:,:) = 0.0d0
 
-! allocate arrays for lambda calculation ---------------------------------------
-    allocate(lambda(NumOfCONs),lambdav(NumOfCONs),  &
-          cv(NumOfCONs), &
-          jac(NumOfCONs,NumOfCONs), stat= alloc_failed )
-
-    if( alloc_failed .ne. 0 ) then
-        call pmf_utils_exit(PMF_OUT,1,&
-                 '[CST] Unable to allocate memory for arrays used in lambda calculation!')
-    end if
-
-! allocate arrays for dF/dx calculation ---------------------------------------
-    allocate( fz(NumOfCONs,NumOfCONs), &
-           mlambda(NumOfCONs), &
-           m2lambda(NumOfCONs), &
-           stat= alloc_failed )
-
-    if( alloc_failed .ne. 0 ) then
-        call pmf_utils_exit(PMF_OUT,1,&
-                 '[CST] Unable to allocate memory for arrays used in lambda calculation!')
-    end if
-
-    misrz   = 0.0d0
-    m2isrz  = 0.0d0
-
-! in velocity verlet there is an additional rattle step
+! allocate arrays for lambda calculation
     select case(fintalg)
+        case(IA_LEAP_FROG) ! FIXME
+            allocate(lambdax(NumOfCONs), cv(NumOfCONs), stat= alloc_failed )
+            if( alloc_failed .ne. 0 ) then
+                call pmf_utils_exit(PMF_OUT,1,&
+                         '[CST] Unable to allocate memory for arrays used in lambda calculation!')
+            end if
+            lambdax(:) = 0.0d0
+            cv(:) = 0.0d0
         case(IA_VEL_VERLET)
-            faccumulation = -1
-            has_lambdav = .true.
+            allocate(lambdax(NumOfCONs), lambdav(NumOfCONs),  &
+                     cv(NumOfCONs), stat= alloc_failed )
+            if( alloc_failed .ne. 0 ) then
+                call pmf_utils_exit(PMF_OUT,1,&
+                         '[CST] Unable to allocate memory for arrays used in lambda calculation!')
+            end if
+            lambdax(:) = 0.0d0
+            lambdav(:) = 0.0d0
+            cv(:) = 0.0d0
+        case(IA_LF_MIDDLE)
+            allocate(lambdax(NumOfCONs), lambdav(NumOfCONs),  &
+                     cv(NumOfCONs), stat= alloc_failed )
+            if( alloc_failed .ne. 0 ) then
+                call pmf_utils_exit(PMF_OUT,1,&
+                         '[CST] Unable to allocate memory for arrays used in lambda calculation!')
+            end if
+            lambdax(:) = 0.0d0
+            lambdav(:) = 0.0d0
+            cv(:) = 0.0d0
         case default
-            has_lambdav = .false.
-            faccumulation = 0
+            call pmf_utils_exit(PMF_OUT,1,'Unsupported integration algorithm in cst_init_print_summary!')
     end select
 
-    lambda(:) = 0.0d0
-    mlambda(:) = 0.0d0
-    m2lambda(:) = 0.0d0
 
-    ! -----------------------------------------------
-    if( has_lambdav ) then
-        allocate( lambdav(NumOfCONs), &
-                  mlambdav(NumOfCONs), &
-                  m2lambdav(NumOfCONs), &
-                  stat= alloc_failed )
+! history buffers
+    hist_len = 2
+    hist_fidx = -1
 
-        if( alloc_failed .ne. 0 ) then
-            call pmf_utils_exit(PMF_OUT,1,&
-                     '[CST] Unable to allocate memory for arrays used in velocity corrections!')
-        end if
-
-        lambdav(:) = 0.0d0
-        mlambdav(:) = 0.0d0
-        m2lambdav(:) = 0.0d0
-    end if
-
-! history ----------------------------------------
-    allocate( lambda0(NumOfCONs),   &
-              lambda1(NumOfCONs),   &
+    allocate( lambdahist(NumOfCONs,hist_len),   &
+              epothist(hist_len),               &
+              ersthist(hist_len),               &
+              ekinhist(hist_len),               &
+              isrzhist(hist_len),               &
               stat= alloc_failed )
 
     if( alloc_failed .ne. 0 ) then
@@ -553,15 +543,68 @@ subroutine cst_init_core
                  '[CST] Unable to allocate memory for arrays used for history recording!')
     end if
 
-    lambda0(:)  = 0.0d0
-    lambda1(:)  = 0.0d0
+    lambdahist(:,:) = 0.0d0
+    epothist(:)     = 0.0d0
+    ersthist(:)     = 0.0d0
+    ekinhist(:)     = 0.0d0
+    isrzhist(:)     = 0.0d0
 
-! -----------------------------------------------
+! accumulator setup for free energy calculation
+    allocate( lambda(NumOfCONs),    &
+              mlambda(NumOfCONs),   &
+              m2lambda(NumOfCONs),  &
+              stat= alloc_failed )
+
+    if( alloc_failed .ne. 0 ) then
+        call pmf_utils_exit(PMF_OUT,1,&
+                 '[CST] Unable to allocate memory for arrays used in lambda calculation!')
+    end if
+
+    nsamples    = 0.0d0
+    misrz       = 0.0d0
+    m2isrz      = 0.0d0
+    lambda(:)   = 0.0d0
+    mlambda(:)  = 0.0d0
+    m2lambda(:) = 0.0d0
+
+! accumulator setup for entropy and enthalpy
+    if( fenthalpy .or. fentropy ) then
+        ntds = 0.0d0
+    end if
+
+    if( fenthalpy .or. (fentropy .and. fentdecomp) ) then
+        meint       = 0.0d0
+        m2eint      = 0.0d0
+        mepot       = 0.0d0
+        m2epot      = 0.0d0
+        merst       = 0.0d0
+        m2erst      = 0.0d0
+        mekin       = 0.0d0
+        m2ekin      = 0.0d0
+    end if
+
+    if( fenthalpy .and. fenthalpy_der ) then
+        allocate( micfp(NumOfCONs),     &
+                  m2icfp(NumOfCONs),    &
+                  c11pp(NumOfCONs),     &
+                  stat= alloc_failed )
+
+        if( alloc_failed .ne. 0 ) then
+            call pmf_utils_exit(PMF_OUT,1,&
+                     '[CST] Unable to allocate memory for arrays used for enthalpy/entropy calculations!')
+        end if
+        micfp(:)    = 0.0d0
+        m2icfp(:)   = 0.0d0
+        c11pp(:)    = 0.0d0
+    end if
+
     if( fentropy ) then
-        allocate( c11hh(NumOfCONs),     &
-                  c11hp(NumOfCONs),     &
-                  c11hk(NumOfCONs),     &
-                  c11hr(NumOfCONs),     &
+        allocate( mpp(NumOfCONs),     &
+                  m2pp(NumOfCONs),    &
+                  mpn(NumOfCONs),     &
+                  m2pn(NumOfCONs),     &
+                  mhicf(NumOfCONs),     &
+                  m2hicf(NumOfCONs),     &
                   stat= alloc_failed )
 
         if( alloc_failed .ne. 0 ) then
@@ -569,27 +612,32 @@ subroutine cst_init_core
                      '[CST] Unable to allocate memory for arrays used for enthalpy/entropy calculations!')
         end if
 
-        c11hh(:)    = 0.0d0
-        c11hp(:)    = 0.0d0
-        c11hk(:)    = 0.0d0
-        c11hr(:)    = 0.0d0
+        metot       = 0.0d0
+        m2etot      = 0.0d0
+        mpp(:)      = 0.0d0
+        m2pp(:)     = 0.0d0
+        mpn(:)      = 0.0d0
+        m2pn(:)     = 0.0d0
+        mhicf(:)    = 0.0d0
+        m2hicf(:)   = 0.0d0
     end if
 
-    fentaccu    = 0.0d0
-    metot       = 0.0d0
-    m2etot      = 0.0d0
-    mepot       = 0.0d0
-    m2epot      = 0.0d0
-    mekin       = 0.0d0
-    m2ekin      = 0.0d0
-    merst       = 0.0d0
-    m2erst      = 0.0d0
-    epothist0   = 0.0d0
-    epothist1   = 0.0d0
-    isrz0       = 0.0d0
-    isrz1       = 0.0d0
+    if( fentropy .and. fentdecomp ) then
+        allocate( c11hp(NumOfCONs),     &
+                  c11hr(NumOfCONs),     &
+                  c11hk(NumOfCONs),     &
+                  stat= alloc_failed )
 
-    ! init accu
+        if( alloc_failed .ne. 0 ) then
+            call pmf_utils_exit(PMF_OUT,1,&
+                     '[CST] Unable to allocate memory for arrays used for enthalpy/entropy calculations!')
+        end if
+        c11hp(:)    = 0.0d0
+        c11hr(:)    = 0.0d0
+        c11hk(:)    = 0.0d0
+    end if
+
+! init PMF accu
     cstaccu%tot_cvs = NumOfCONs - NumOfSHAKECONs
 
     allocate(cstaccu%sizes(cstaccu%tot_cvs), stat = alloc_failed)

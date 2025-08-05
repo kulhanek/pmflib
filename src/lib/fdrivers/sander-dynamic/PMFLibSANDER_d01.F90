@@ -55,9 +55,9 @@ integer, parameter          :: PMFLIB_EKIN_LF               = 2
 integer, parameter          :: PMFLIB_EKIN_HA               = 3
 integer, parameter          :: PMFLIB_EKIN_SIZE             = PMFLIB_EKIN_HA
 
-! setup array
-integer, parameter          :: PMFLIB_SETUP_ISCHEME         = 1
-integer, parameter          :: PMFLIB_SETUP_SIZE            = PMFLIB_SETUP_ISCHEME
+! setup array - currently not used
+integer, parameter          :: PMFLIB_SETUP_DUMMY           = 1
+integer, parameter          :: PMFLIB_SETUP_SIZE            = PMFLIB_SETUP_DUMMY
 
 ! ==============================================================================
 ! interface to linux API
@@ -132,7 +132,7 @@ abstract interface
         integer(CPMFINT)    :: str2_len
     end subroutine int_pmf_sander_check_interface
     ! -------------------------------------------------------------------------
-    subroutine int_pmf_sander_init_preinit(mdin,mdin_len,anatom,anres,  &
+    subroutine int_pmf_sander_init_preinit(mdin,mdin_len,ischeme,anatom,anres,  &
                             antb,antc,ansteps,astepsize,atemp0,apress0, &
                             box_a,box_b,box_c,                          &
                             box_alpha,box_beta,box_gamma) bind(c)
@@ -140,6 +140,7 @@ abstract interface
         implicit none
         character(CPMFCHAR) :: mdin(*)
         integer(CPMFINT)    :: mdin_len
+        integer(CPMFINT)    :: ischeme
         integer(CPMFINT)    :: anatom                       ! number of atoms in AMBER topology
         integer(CPMFINT)    :: anres                        ! number of residues in AMBER topology
         integer(CPMFINT)    :: antb                         ! BOX type
@@ -262,13 +263,13 @@ abstract interface
         integer(CPMFINT)    :: modified
     end subroutine int_pmf_sander_shake
     ! --------------------------------------------------------------------------
-    subroutine int_pmf_sander_rattlev(anatom,x,v,update_xp,modified) bind(c)
+    subroutine int_pmf_sander_rattlev(anatom,x,v,cid,modified) bind(c)
         import
         implicit none
         integer(CPMFINT)    :: anatom
         real(CPMFDP)        :: x(*)
         real(CPMFDP)        :: v(*)
-        integer(CPMFINT)    :: update_xp
+        integer(CPMFINT)    :: cid
         integer(CPMFINT)    :: modified
     end subroutine int_pmf_sander_rattlev
 
@@ -583,27 +584,6 @@ subroutine pmf_sander_bind_to_driver(master)
 100 format("#   Everything seems to be OK!")
 
 end subroutine pmf_sander_bind_to_driver
-
-!===============================================================================
-! subroutine pmf_sander_update_setup
-!===============================================================================
-
-subroutine pmf_sander_update_setup(master,ischeme)
-
-    implicit none
-    logical         :: master
-    integer         :: ischeme
-    ! --------------------------------------------------------------------------
-
-    if( .not. master ) return
-
-    ! populate setup
-    pmflib_setup(PMFLIB_SETUP_ISCHEME) = ischeme
-
-    ! send the setup
-    call pmf_sander_get_setup(pmflib_setup,PMFLIB_SETUP_SIZE)
-
-end subroutine pmf_sander_update_setup
 
 !===============================================================================
 ! subroutine pmf_sander_release_driver

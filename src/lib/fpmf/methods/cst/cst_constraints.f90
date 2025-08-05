@@ -369,7 +369,7 @@ subroutine cst_constraints_calc_fdxp
     CVContextP%CVsValues(:) = 0.0d0
     CVContextP%CVsDrvs(:,:,:) = 0.0d0
 
-    call pmf_timers_start_timer(PMFLIB_CVS_TIMER)
+   ! call pmf_timers_start_timer(PMFLIB_CVS_TIMER)
 
     ! get CVs at CrdP
     do i=1,NumOfCVs
@@ -382,7 +382,7 @@ subroutine cst_constraints_calc_fdxp
         cv(i) = get_deviation(CONList(i)%cv,CVContextP%CVsValues(ci),CONList(i)%value)
     end do
 
-    call pmf_timers_stop_timer(PMFLIB_CVS_TIMER)
+   ! call pmf_timers_stop_timer(PMFLIB_CVS_TIMER)
 
 end subroutine cst_constraints_calc_fdxp
 

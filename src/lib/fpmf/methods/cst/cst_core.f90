@@ -43,34 +43,182 @@ subroutine cst_core_main_lf
     use cst_output
     use cst_restart
     use cst_trajectory
+    use pmf_utils
 
     implicit none
     ! --------------------------------------------------------------------------
 
-    call cst_constraints_increment
+    ! write(1234,*) 'SHAKE: '
+
+    select case(fintalg)
+        case(IA_LEAP_FROG)
+            call cst_constraints_increment
+            call cst_core_shift_histbuffs
+            lambda(:) = 0.0d0
+        case(IA_LF_MIDDLE)
+            ! nothing to be here
+        case default
+            call pmf_utils_exit(PMF_OUT,1,'Unsupported integration algorithm in cst_core_main_lf!')
+    end select
+
+    call cst_core_calculate_zdet
     call cst_shake_calculate
-    call cst_core_analyze
-    call cst_output_write
-    call cst_restart_update
-    call cst_trajectory_write_snapshot
+
+    ! write(12478,*) 'lambdax=',lambdax(:) * isfdts
+    lambda(:) = lambda(:) + lambdax(:) * isfdts
+
+    select case(fintalg)
+        case(IA_LEAP_FROG)
+            lambdahist(:,hist_len) = lambda(:)
+            epothist(hist_len) = PotEne - fepotaverage
+            ersthist(hist_len) = PMFEne
+            call cst_core_analyze
+            call cst_output_write
+            call cst_restart_update
+            call cst_trajectory_write_snapshot
+        case(IA_LF_MIDDLE)
+            ! nothing to be here
+        case default
+            call pmf_utils_exit(PMF_OUT,1,'Unsupported integration algorithm in cst_core_main_lf!')
+    end select
 
 end subroutine cst_core_main_lf
-
 
 !===============================================================================
 ! Subroutine:  cst_core_rattlev_lf
 !===============================================================================
 
-subroutine cst_core_rattlev_lf
+subroutine cst_core_rattlev_lf(cid)
 
+    use cst_constraints
     use cst_rattlev
+    use pmf_dat
+    use pmf_utils
+    use cst_output
+    use cst_restart
+    use cst_trajectory
 
     implicit none
+    integer :: cid      ! call id from MD engine
+                        ! in the LF-middle, there are two rattle-v calls
     ! --------------------------------------------------------------------------
+
+    ! write(1234,*) 'RATTLE: ', cid
+
+    select case(fintalg)
+        case(IA_LEAP_FROG)
+            ! nothing to be here
+        case(IA_LF_MIDDLE)
+            if( cid .eq. 1 ) then
+                call cst_constraints_increment
+                call cst_core_shift_histbuffs
+                ! write(1234,*) 'RATTLE: ', cid, ' - INIT'
+                lambda(:) = 0.0d0
+            end if
+        case default
+            call pmf_utils_exit(PMF_OUT,1,'Unsupported integration algorithm in cst_core_main_lf!')
+    end select
 
     call cst_rattlev_calculate
 
+    ! write(12478,*) 'lambdav=',lambdav(:) * isfdtr
+    lambda(:) = lambda(:) + lambdav(:) * isfdtr
+
+    select case(fintalg)
+        case(IA_LEAP_FROG)
+            ! nothing to be here
+        case(IA_LF_MIDDLE)
+            if( cid .eq. 2 ) then
+                ! write(1234,*) 'RATTLE: ', cid, ' - FINAL'
+                lambdahist(:,hist_len) = lambda(:)
+                epothist(hist_len) = PotEne - fepotaverage
+                ersthist(hist_len) = PMFEne
+                call cst_core_analyze
+                call cst_output_write
+                call cst_restart_update
+                call cst_trajectory_write_snapshot
+            end if
+        case default
+            call pmf_utils_exit(PMF_OUT,1,'Unsupported integration algorithm in cst_core_main_lf!')
+    end select
+
 end subroutine cst_core_rattlev_lf
+
+!===============================================================================
+! Subroutine:  cst_core_calculate_zdet
+!===============================================================================
+
+subroutine cst_core_calculate_zdet
+
+    use pmf_utils
+    use pmf_dat
+    use cst_dat
+
+    implicit none
+    integer                :: i,ci,j,cj,k,info
+    real(PMFDP)            :: jacv,isrz
+    ! --------------------------------------------------------------------------
+
+! calculate Z matrix at Crd (in t)
+    do i=1,NumOfCONs
+        ci = CONList(i)%cvindx
+        do j=1,NumOfCONs
+            cj = CONList(j)%cvindx
+            jacv = 0.0
+            do k=1,NumOfLAtoms
+                jacv = jacv + MassInv(k)*dot_product(CVContext%CVsDrvs(:,k,ci),CVContext%CVsDrvs(:,k,cj))
+            end do
+            jac(i,j) = jacv
+        end do
+    end do
+
+! calculate Z determinant ------------------------------------
+    if( NumOfCONs .gt. 1 ) then
+        ! LU decomposition
+        call dgetrf(NumOfCONs,NumOfCONs,jac,NumOfCONs,indx,info)
+        if( info .ne. 0 ) then
+            call pmf_utils_exit(PMF_OUT,1,'[CST] LU decomposition failed in cst_core_calculate_zdet!')
+        end if
+        fzdet = 1.0d0
+        ! and finally determinant
+        do i=1,NumOfCONs
+            if( indx(i) .ne. i ) then
+                fzdet = - fzdet * jac(i,i)
+            else
+                fzdet = fzdet * jac(i,i)
+            end if
+        end do
+    else
+        fzdet = jac(1,1)
+    end if
+
+! record data
+    isrz    = 1.0d0/sqrt(fzdet)
+    isrzhist(hist_len) = isrz
+
+end subroutine cst_core_calculate_zdet
+
+!===============================================================================
+! Subroutine:  cst_core_shift_histbuffs
+!===============================================================================
+
+subroutine cst_core_shift_histbuffs
+
+    use cst_dat
+
+    implicit none
+    integer :: i
+    ! --------------------------------------------------------------------------
+
+    do i=1,hist_len-1
+        lambdahist(:,i) = lambdahist(:,i+1)
+        epothist(i)     = epothist(i+1)
+        ersthist(i)     = ersthist(i+1)
+        ekinhist(i)     = ekinhist(i+1)
+        isrzhist(i)     = isrzhist(i+1)
+    end do
+
+end subroutine cst_core_shift_histbuffs
 
 !===============================================================================
 ! Subroutine:  cst_core_analyze
@@ -83,57 +231,67 @@ subroutine cst_core_analyze
     use cst_dat
 
     implicit none
-    integer                :: i,ci,j,cj,k,info
-    real(PMFDP)            :: fzv,isrz,lam,mu,dval1,dval2,invn
-    real(PMFDP)            :: epot, ekin, etot, erst
-    real(PMFDP)            :: detot1, detot2
-    real(PMFDP)            :: depot1, depot2
-    real(PMFDP)            :: dekin1, dekin2
-    real(PMFDP)            :: derst1, derst2
+    integer         :: i,ci
+    real(PMFDP)     :: isrz,lam,dval1,dval2,invn
+    real(PMFDP)     :: etot,epot,erst,eint,ekin
+    real(PMFDP)     :: detot1, detot2
+    real(PMFDP)     :: depot1, depot2
+    real(PMFDP)     :: derst1, derst2
+    real(PMFDP)     :: deint1, deint2
+    real(PMFDP)     :: dekin1, dekin2
+    real(PMFDP)     :: dpp, dpp1, dpp2
+    real(PMFDP)     :: dpn, dpn1, dpn2
     ! --------------------------------------------------------------------------
 
-    ! reset accumulators ---------------------------------------------------
+! reset accumulators
     if ( faccurst .eq. 0 ) then
-        faccumulation   = 0
-        misrz           = 0
-        m2isrz          = 0
-        faccurst        = -1
+        faccurst = -1
 
-        mlambda(:)      = 0.0d0
-        m2lambda(:)     = 0.0d0
+        ! free energy calculation
+        nsamples    = 0.0d0
+        mlambda(:)  = 0.0d0
+        m2lambda(:) = 0.0d0
+        misrz       = 0.0d0
+        m2isrz      = 0.0d0
 
-        if( has_lambdav ) then
-            mlambdav(:) = 0.0d0
-            m2lambdav(:) = 0.0d0
-        end if
-
-        lambda0(:)  = 0.0d0
-        lambda1(:)  = 0.0d0
-
+        ! accumulator setup for entropy and enthalpy
         if( fenthalpy .or. fentropy ) then
-            c11hh(:)    = 0.0d0
-            c11hp(:)    = 0.0d0
-            c11hk(:)    = 0.0d0
-            c11hr(:)    = 0.0d0
+            ntds = 0.0d0
         end if
 
-        metot       = 0.0d0
-        m2etot      = 0.0d0
-        mepot       = 0.0d0
-        m2epot      = 0.0d0
-        mekin       = 0.0d0
-        m2ekin      = 0.0d0
-        merst       = 0.0d0
-        m2erst      = 0.0d0
+        if( fenthalpy .or. (fentropy .and. fentdecomp) ) then
+            meint       = 0.0d0
+            m2eint      = 0.0d0
+            mepot       = 0.0d0
+            m2epot      = 0.0d0
+            merst       = 0.0d0
+            m2erst      = 0.0d0
+            mekin       = 0.0d0
+            m2ekin      = 0.0d0
+        end if
 
-        epothist0   = 0.0d0
-        epothist1   = 0.0d0
+        if( fenthalpy .and. fenthalpy_der ) then
+            micfp(:)    = 0.0d0
+            m2icfp(:)   = 0.0d0
+            c11pp(:)    = 0.0d0
+        end if
 
-        ersthist0   = 0.0d0
-        ersthist1   = 0.0d0
+        if( fentropy ) then
+            metot       = 0.0d0
+            m2etot      = 0.0d0
+            mpp(:)      = 0.0d0
+            m2pp(:)     = 0.0d0
+            mpn(:)      = 0.0d0
+            m2pn(:)     = 0.0d0
+            mhicf(:)    = 0.0d0
+            m2hicf(:)   = 0.0d0
+        end if
 
-        isrz0       = 0.0d0
-        isrz1       = 0.0d0
+        if( fentropy .and. fentdecomp ) then
+            c11hp(:)    = 0.0d0
+            c11hr(:)    = 0.0d0
+            c11hk(:)    = 0.0d0
+        end if
 
         CONList(:)%sdevtot = 0.0d0
 
@@ -155,76 +313,23 @@ subroutine cst_core_analyze
         CONList(i)%sdevtot = CONList(i)%sdevtot + CONList(i)%deviation**2                               ! t+dt
     end do
 
-    ! calculate Z matrix at Crd (in t)
-    do i=1,NumOfCONs
-        ci = CONList(i)%cvindx
-        do j=1,NumOfCONs
-            cj = CONList(j)%cvindx
-            fzv = 0.0
-            do k=1,NumOfLAtoms
-                fzv = fzv + MassInv(k)*dot_product(CVContext%CVsDrvs(:,k,ci),CVContext%CVsDrvs(:,k,cj))
-            end do
-            fz(i,j) = fzv
-        end do
-    end do
-
-    ! calculate Z determinant ------------------------------------
-    if( NumOfCONs .gt. 1 ) then
-        ! LU decomposition
-        call dgetrf(NumOfCONs,NumOfCONs,fz,NumOfCONs,indx,info)
-        if( info .ne. 0 ) then
-            call pmf_utils_exit(PMF_OUT,1,'[CST] LU decomposition failed in cst_main!')
-        end if
-        fzdet = 1.0d0
-        ! and finally determinant
-        do i=1,NumOfCONs
-            if( indx(i) .ne. i ) then
-                fzdet = - fzdet * fz(i,i)
-            else
-                fzdet = fzdet * fz(i,i)
-            end if
-        end do
-    else
-        fzdet = fz(1,1)
-    end if
-
-    ! calculate metric tensor correction --------------------------------------------------------
-    isrz    = 1.0d0/sqrt(fzdet)         ! t
-
-! record history of isrz
-    isrz0 = isrz1                       ! t-dt
-    isrz1 = isrz                        ! t
-
-! record history of lambda
-    lambda0(:) = lambda1(:)             ! t-dt
-    lambda1(:) = lambda(:)              ! t
-
-! record history of Epot
-    epothist0  = epothist1              ! t-dt
-    epothist1  = PotEne + fepotoffset   ! t
-
-    ersthist0 = ersthist1               ! t-dt
-    ersthist1  = PMFEne                 ! t
-
-    ! KinEne                            ! t-dt
-
-     ! do we have enough samples?
+! do we have enough samples?
     if( fstep .le. 2 ) return
 
-    faccumulation = faccumulation + 1
+    nsamples = nsamples + 1
+    if( nsamples .le. 0 ) return
 
-    ! this will occur for velocity verlet algorithm
-    if( faccumulation .le. 0 ) return
-
-    invn = 1.0d0/real(faccumulation,PMFDP)
+    ntds = nsamples
+    invn = 1.0d0/nsamples
 
 ! values
-    epot = epothist0                    ! t-dt
-    ekin = KinEne%KinEneVV + fekinoffset         ! t-dt
-    erst = ersthist0                    ! t-dt
-    etot = epot + ekin + erst           ! t-dt
-    isrz = isrz0                        ! t-dt
-    ! lambda0(i)                        ! t-dt
+    lambda(:)   = lambdahist(:,hist_len+hist_fidx)
+    epot        = epothist(hist_len+hist_fidx)     ! t-dt
+    erst        = ersthist(hist_len+hist_fidx)     ! t-dt
+    ekin        = ekinhist(hist_len+hist_fidx)     ! t-dt
+    etot        = epot + erst + ekin               ! t-dt
+    eint        = epot + erst
+    isrz        = isrzhist(hist_len+hist_fidx)     ! t-dt
 
 ! isrz
     dval1   = isrz - misrz
@@ -232,60 +337,73 @@ subroutine cst_core_analyze
     dval2   = isrz - misrz
     m2isrz  = m2isrz + dval1*dval2
 
-! total energy
-    detot1 = etot - metot
-    metot  = metot  + detot1 * invn
-    detot2 = etot - metot
-    m2etot = m2etot + detot1 * detot2
+    if( fenthalpy .or. (fentropy .and. fentdecomp) ) then
+        ! internal energy
+        deint1 = eint - meint
+        meint  = meint  + deint1 * invn
+        deint2 = eint - meint
+        m2erst = m2erst + deint1 * deint2
 
-! potential energy
-    depot1 = epot - mepot
-    mepot  = mepot  + depot1 * invn
-    depot2 = epot - mepot
-    m2epot = m2epot + depot1 * depot2
+        ! potential energy
+        depot1 = epot - mepot
+        mepot  = mepot  + depot1 * invn
+        depot2 = epot - mepot
+        m2epot = m2epot + depot1 * depot2
 
-! potential energy
-    dekin1 = ekin - mekin
-    mekin  = mekin  + dekin1 * invn
-    dekin2 = ekin - mekin
-    m2ekin = m2ekin + dekin1 * dekin2
+        ! restraint energy
+        derst1 = erst - merst
+        merst  = merst  + derst1 * invn
+        derst2 = erst - merst
+        m2erst = m2erst + derst1 * derst2
 
-! restraint energy
-    derst1 = erst - merst
-    merst  = merst  + derst1 * invn
-    derst2 = erst - merst
-    m2erst = m2erst + derst1 * derst2
+        ! kinetic energy
+        dekin1 = ekin - mekin
+        mekin  = mekin  + dekin1 * invn
+        dekin2 = ekin - mekin
+        m2ekin = m2ekin + dekin1 * dekin2
+    end if
+
+    if( fentropy ) then
+        ! total energy
+        detot1 = etot - metot
+        metot  = metot  + detot1 * invn
+        detot2 = etot - metot
+        m2etot = m2etot + detot1 * detot2
+    end if
 
 ! lambda and entropy
     do i=1,NumOfCONs
 
-        if( has_lambdav ) then
-            ! FIXME - lambdav is not in correct time?
-            mu              = lambdav(i)
-            dval1           = mu - mlambdav(i)
-            mlambdav(i)     = mlambdav(i)  + dval1 * invn
-            dval2           = mu - mlambdav(i)
-            m2lambdav(i)    = m2lambdav(i) + dval1 * dval2
-        end if
-
-
-        ! lambda ----------------------------------
-        lam             = lambda0(i)        ! t-dt
+        ! lambda
+        lam             = lambda(i)
         dval1           = lam - mlambda(i)
         mlambda(i)      = mlambda(i)  + dval1 * invn
         dval2           = lam - mlambda(i)
         m2lambda(i)     = m2lambda(i) + dval1 * dval2
 
         if( fentropy ) then
-            c11hh(i)   = c11hh(i) + dval1 * detot2
-            c11hp(i)   = c11hp(i) + dval1 * depot2
-            c11hk(i)   = c11hk(i) + dval1 * dekin2
-            c11hr(i)   = c11hr(i) + dval1 * derst2
+            dpp     = lam + etot
+            dpp1    = dpp - mpp(i)
+            mpp(i)  = mpp(i)  + dpp1 * invn
+            dpp2    = dpp - mpp(i)
+            m2pp(i) = m2pp(i) + dpp1 * dpp2
+
+            dpn     = lam - etot
+            dpn1    = dpn - mpn(i)
+            mpn(i)  = mpn(i)  + dpn1 * invn
+            dpn2    = dpn - mpn(i)
+            m2pn(i) = m2pn(i) + dpn1 * dpn2
+
+            if( fentdecomp ) then
+                c11hp(i)   = c11hp(i) + dval1 * depot2
+                c11hr(i)   = c11hr(i) + dval1 * derst2
+                c11hk(i)   = c11hk(i) + dval1 * dekin2
+            end if
         end if
     end do
 
     if( fdebug ) then
-        write(PMF_DEBUG+fmytaskid,*) '>>>TR: cst_core_analyze ', (lambda0(i), i=1,NumOfCONs), etot, epot, ekin, erst
+        write(PMF_DEBUG+fmytaskid,*) '>>>TR: cst_core_analyze ', (lambda(i), i=1,NumOfCONs), etot, epot, erst, ekin
     end if
 
 end subroutine cst_core_analyze

@@ -55,8 +55,8 @@ integer, parameter              :: PMFLIB_EKIN_HA               = 3
 integer, parameter              :: PMFLIB_EKIN_SIZE             = PMFLIB_EKIN_HA
 
 ! setup array
-integer, parameter              :: PMFLIB_SETUP_ISCHEME         = 1
-integer, parameter              :: PMFLIB_SETUP_SIZE            = PMFLIB_SETUP_ISCHEME
+integer, parameter              :: PMFLIB_SETUP_DUMMY           = 1
+integer, parameter              :: PMFLIB_SETUP_SIZE            = PMFLIB_SETUP_DUMMY
 
 !===============================================================================
 !-------------------------------------------------------------------------------

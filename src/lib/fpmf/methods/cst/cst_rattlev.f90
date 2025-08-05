@@ -37,16 +37,21 @@ subroutine cst_rattlev_calculate
 
     use pmf_utils
     use cst_dat
+    use pmf_timers
 
     implicit none
     ! --------------------------------------------------------------------------
 
+    call pmf_timers_start_timer(PMFLIB_CST_RATTLE_TIMER)
+
     select case(frattlesolver)
         case(CON_RATTLESOL_MA)
-            call cst_rattlev_calculate_ma()
+            call cst_rattlev_calculate_ma
         case default
             call pmf_utils_exit(PMF_OUT,1,'[CST] RATTLE-V solver is not implemented in cst_rattlev_calculate!')
     end select
+
+    call pmf_timers_stop_timer(PMFLIB_CST_RATTLE_TIMER)
 
 end subroutine cst_rattlev_calculate
 
@@ -113,11 +118,6 @@ subroutine cst_rattlev_calculate_ma
         end do
     end do
 
-! transform to kcal/mol unit
-    lambdav(:) = lambdav(:) * PMF_DT2VDT * PMF_L2CL / fdt ! FIXME
-
-    write(PMF_DEBUG+fmytaskid,*) 'lambdav= ', lambdav(:)
-
 ! final check of convergence
     do i=1,NumOfCONs
         ci = CONList(i)%cvindx
@@ -132,6 +132,7 @@ subroutine cst_rattlev_calculate_ma
     end do
 
 ! update stats about iterations
+    friter = 1.0d0
     nrupdates = nrupdates + 1.0d0
     invn = 1.0d0 / nrupdates
     dfriter1 = friter - mfriter

@@ -98,8 +98,8 @@ subroutine cst_control_read_con(prm_fin)
     call pmf_ctrl_read_logical(prm_fin,'fenthalpy',fenthalpy)
     call pmf_ctrl_read_logical(prm_fin,'fentropy',fentropy)
 
-    call pmf_ctrl_read_real8_wunit(prm_fin,'fepotoffset',EnergyUnit,fepotoffset,'F10.1')
-    call pmf_ctrl_read_real8_wunit(prm_fin,'fekinoffset',EnergyUnit,fekinoffset,'F10.1')
+    call pmf_ctrl_read_real8_wunit(prm_fin,'fepotaverage',EnergyUnit,fepotaverage,'F10.1')
+    call pmf_ctrl_read_real8_wunit(prm_fin,'fekinaverage',EnergyUnit,fekinaverage,'F10.1')
 
     call pmf_ctrl_read_integer(prm_fin,'fshakesolver',fshakesolver,'I12')
     call pmf_ctrl_check_integer_in_range('CST','fshakesolver',fshakesolver,0,3)

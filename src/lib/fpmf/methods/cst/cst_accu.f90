@@ -74,7 +74,7 @@ subroutine cst_accu_read(iounit)
             ! ------------------------------------
                 case('NSAMPLES')
                     call pmf_accu_read_rbuf_B(cstaccu,iounit,keyline,rbuf_B)
-                    faccumulation = int(rbuf_B(glbidx))
+                    nsamples = int(rbuf_B(glbidx))
             ! ------------------------------------
                 case('MLAMBDA')
                     call pmf_accu_read_rbuf_M(cstaccu,iounit,keyline,rbuf_M)
@@ -87,22 +87,6 @@ subroutine cst_accu_read(iounit)
                     do i=1,cstaccu%tot_cvs
                         m2lambda(i) = rbuf_M(i,glbidx)
                     end do
-            ! ------------------------------------                             ! ------------------------------------
-                case('MLAMBDAV')
-                    call pmf_accu_read_rbuf_M(cstaccu,iounit,keyline,rbuf_M)
-                    if( has_lambdav ) then
-                        do i=1,cstaccu%tot_cvs
-                            mlambdav(i) = rbuf_M(i,glbidx)
-                        end do
-                   end if
-            ! ------------------------------------
-                case('M2LAMBDAV')
-                    call pmf_accu_read_rbuf_M(cstaccu,iounit,keyline,rbuf_M)
-                    if( has_lambdav ) then
-                        do i=1,cstaccu%tot_cvs
-                            m2lambdav(i) = rbuf_M(i,glbidx)
-                        end do
-                    end if
             ! ------------------------------------
                 case('MISRZ')
                     call pmf_accu_read_rbuf_B(cstaccu,iounit,keyline,rbuf_B)
@@ -111,84 +95,176 @@ subroutine cst_accu_read(iounit)
                 case('M2ISRZ')
                     call pmf_accu_read_rbuf_B(cstaccu,iounit,keyline,rbuf_B)
                     m2isrz = rbuf_B(glbidx)
-            ! ------------------------------------
-                case('METOT')
+
+! ------------------------------------
+
+                case('NTDS')
                     call pmf_accu_read_rbuf_B(cstaccu,iounit,keyline,rbuf_B)
-                    if( fenthalpy ) then
-                        metot = rbuf_B(glbidx)
+                    if( fenthalpy .or. fentropy ) then
+                        nsamples = int(rbuf_B(glbidx))
+                    end if
+
+! ------------------------------------
+
+                case('MEINT')
+                    call pmf_accu_read_rbuf_B(cstaccu,iounit,keyline,rbuf_B)
+                    if( fenthalpy .or. (fentropy .and. fentdecomp) ) then
+                        meint = rbuf_B(glbidx)
                     end if
             ! ------------------------------------
-                case('M2ETOT')
+                case('M2EINT')
                     call pmf_accu_read_rbuf_B(cstaccu,iounit,keyline,rbuf_B)
-                    if( fenthalpy ) then
-                        m2etot = rbuf_B(glbidx)
+                    if( fenthalpy .or. (fentropy .and. fentdecomp) ) then
+                        m2eint = rbuf_B(glbidx)
                     end if
             ! ------------------------------------
                 case('MEPOT')
                     call pmf_accu_read_rbuf_B(cstaccu,iounit,keyline,rbuf_B)
-                    if( fenthalpy ) then
+                    if( fenthalpy .or. (fentropy .and. fentdecomp) ) then
                         mepot = rbuf_B(glbidx)
                     end if
             ! ------------------------------------
                 case('M2EPOT')
                     call pmf_accu_read_rbuf_B(cstaccu,iounit,keyline,rbuf_B)
-                    if( fenthalpy ) then
+                    if( fenthalpy .or. (fentropy .and. fentdecomp) ) then
                         m2epot = rbuf_B(glbidx)
                     end if
             ! ------------------------------------
                 case('MEKIN')
                     call pmf_accu_read_rbuf_B(cstaccu,iounit,keyline,rbuf_B)
-                    if( fenthalpy ) then
+                    if( fenthalpy .or. (fentropy .and. fentdecomp) ) then
                         mekin = rbuf_B(glbidx)
                     end if
             ! ------------------------------------
                 case('M2EKIN')
                     call pmf_accu_read_rbuf_B(cstaccu,iounit,keyline,rbuf_B)
-                    if( fenthalpy ) then
+                    if( fenthalpy .or. (fentropy .and. fentdecomp) ) then
                         m2ekin = rbuf_B(glbidx)
                     end if
             ! ------------------------------------
                 case('MERST')
                     call pmf_accu_read_rbuf_B(cstaccu,iounit,keyline,rbuf_B)
-                    if( fenthalpy ) then
+                    if( fenthalpy .or. (fentropy .and. fentdecomp) ) then
                         merst = rbuf_B(glbidx)
                     end if
             ! ------------------------------------
                 case('M2ERST')
                     call pmf_accu_read_rbuf_B(cstaccu,iounit,keyline,rbuf_B)
-                    if( fenthalpy ) then
+                    if( fenthalpy .or. (fentropy .and. fentdecomp) ) then
                         m2erst = rbuf_B(glbidx)
                     end if
-            ! ------------------------------------
-                case('C11HH')
+
+! ------------------------------------
+
+                case('MICFP')
                     call pmf_accu_read_rbuf_M(cstaccu,iounit,keyline,rbuf_M)
-                    if( fentropy ) then
+                    if( fenthalpy .and. fenthalpy_der ) then
                         do i=1,cstaccu%tot_cvs
-                            c11hh(i) = rbuf_M(i,glbidx)
+                            micfp(i) = rbuf_M(i,glbidx)
+                        end do
+                    end if
+            ! ------------------------------------
+                case('M2ICFP')
+                    call pmf_accu_read_rbuf_M(cstaccu,iounit,keyline,rbuf_M)
+                    if( fenthalpy .and. fenthalpy_der ) then
+                        do i=1,cstaccu%tot_cvs
+                            m2icfp(i) = rbuf_M(i,glbidx)
                         end do
                     end if
            ! ------------------------------------
+                case('C11PP')
+                    call pmf_accu_read_rbuf_M(cstaccu,iounit,keyline,rbuf_M)
+                    if( fenthalpy .and. fenthalpy_der ) then
+                        do i=1,cstaccu%tot_cvs
+                            c11pp(i) = rbuf_M(i,glbidx)
+                        end do
+                    end if
+
+! ------------------------------------
+
+                case('METOT')
+                    call pmf_accu_read_rbuf_B(cstaccu,iounit,keyline,rbuf_B)
+                    if( fentropy ) then
+                        metot = rbuf_B(glbidx)
+                    end if
+            ! ------------------------------------
+                case('M2ETOT')
+                    call pmf_accu_read_rbuf_B(cstaccu,iounit,keyline,rbuf_B)
+                    if( fentropy ) then
+                        m2etot = rbuf_B(glbidx)
+                    end if
+           ! ------------------------------------
+                case('MPP')
+                    call pmf_accu_read_rbuf_M(cstaccu,iounit,keyline,rbuf_M)
+                    if( fentropy .and. fentdecomp ) then
+                        do i=1,cstaccu%tot_cvs
+                            mpp(i) = rbuf_M(i,glbidx)
+                        end do
+                    end if
+           ! ------------------------------------
+                case('M2PP')
+                    call pmf_accu_read_rbuf_M(cstaccu,iounit,keyline,rbuf_M)
+                    if( fentropy .and. fentdecomp ) then
+                        do i=1,cstaccu%tot_cvs
+                            m2pp(i) = rbuf_M(i,glbidx)
+                        end do
+                    end if
+           ! ------------------------------------
+                case('MPN')
+                    call pmf_accu_read_rbuf_M(cstaccu,iounit,keyline,rbuf_M)
+                    if( fentropy .and. fentdecomp ) then
+                        do i=1,cstaccu%tot_cvs
+                            mpn(i) = rbuf_M(i,glbidx)
+                        end do
+                    end if
+           ! ------------------------------------
+                case('M2PN')
+                    call pmf_accu_read_rbuf_M(cstaccu,iounit,keyline,rbuf_M)
+                    if( fentropy .and. fentdecomp ) then
+                        do i=1,cstaccu%tot_cvs
+                            m2pn(i) = rbuf_M(i,glbidx)
+                        end do
+                    end if
+           ! ------------------------------------
+                case('MHICF')
+                    call pmf_accu_read_rbuf_M(cstaccu,iounit,keyline,rbuf_M)
+                    if( fentropy .and. fentdecomp ) then
+                        do i=1,cstaccu%tot_cvs
+                            mhicf(i) = rbuf_M(i,glbidx)
+                        end do
+                    end if
+           ! ------------------------------------
+                case('M2HICF')
+                    call pmf_accu_read_rbuf_M(cstaccu,iounit,keyline,rbuf_M)
+                    if( fentropy .and. fentdecomp ) then
+                        do i=1,cstaccu%tot_cvs
+                            m2hicf(i) = rbuf_M(i,glbidx)
+                        end do
+                    end if
+
+! ------------------------------------
+
                 case('C11HP')
                     call pmf_accu_read_rbuf_M(cstaccu,iounit,keyline,rbuf_M)
-                    if( fentropy ) then
+                    if( fentropy .and. fentdecomp ) then
                         do i=1,cstaccu%tot_cvs
                             c11hp(i) = rbuf_M(i,glbidx)
                         end do
                     end if
            ! ------------------------------------
-                case('C11HK')
+                case('C11HR')
                     call pmf_accu_read_rbuf_M(cstaccu,iounit,keyline,rbuf_M)
-                    if( fentropy ) then
+                    if( fentropy .and. fentdecomp ) then
                         do i=1,cstaccu%tot_cvs
-                            c11hk(i) = rbuf_M(i,glbidx)
+                            c11hr(i) = rbuf_M(i,glbidx)
                         end do
                     end if
            ! ------------------------------------
-                case('C11HR')
+                case('C11HK')
                     call pmf_accu_read_rbuf_M(cstaccu,iounit,keyline,rbuf_M)
-                    if( fentropy ) then
+                    if( fentropy .and. fentdecomp ) then
                         do i=1,cstaccu%tot_cvs
-                            c11hr(i) = rbuf_M(i,glbidx)
+                            c11hk(i) = rbuf_M(i,glbidx)
                         end do
                     end if
             ! ------------------------------------
@@ -239,7 +315,7 @@ subroutine cst_accu_write(iounit)
     end if
 
     rbuf_B(:) = 0
-    rbuf_B(glbidx) = faccumulation
+    rbuf_B(glbidx) = nsamples
     call pmf_accu_write_rbuf_B(cstaccu,iounit,'NSAMPLES','AD',rbuf_B)
 
 ! ------------------------------------------------
@@ -255,20 +331,6 @@ subroutine cst_accu_write(iounit)
     end do
     call pmf_accu_write_rbuf_M(cstaccu,iounit,'M2LAMBDA','M2',rbuf_M,'NSAMPLES','MLAMBDA')
 
-    if( has_lambdav ) then
-        rbuf_M(:,:) = 0.0d0
-        do i=1,cstaccu%tot_cvs
-            rbuf_M(i,glbidx) = mlambdav(i)
-        end do
-        call pmf_accu_write_rbuf_M(cstaccu,iounit,'MLAMBDAV','WA',rbuf_M,'NSAMPLES')
-
-        rbuf_M(:,:) = 0.0d0
-        do i=1,cstaccu%tot_cvs
-            rbuf_M(i,glbidx) = m2lambdav(i)
-        end do
-        call pmf_accu_write_rbuf_M(cstaccu,iounit,'M2LAMBDAV','M2',rbuf_M,'NSAMPLES','MLAMBDAV')
-    end if
-
 ! ------------------------------------------------
     rbuf_B(:) = 0.0d0
     rbuf_B(glbidx) = misrz
@@ -279,65 +341,131 @@ subroutine cst_accu_write(iounit)
     call pmf_accu_write_rbuf_B(cstaccu,iounit,'M2ISRZ','M2',rbuf_B,'NSAMPLES','MISRZ')
 
 ! ------------------------------------------------
+
     if( fenthalpy .or. fentropy ) then
+        rbuf_B(:) = 0
+        rbuf_B(glbidx) = ntds
+        call pmf_accu_write_rbuf_B(cstaccu,iounit,'NTDS',   'AD',rbuf_B)
+    end if
+
+    if( fenthalpy .or. (fentropy .and. fentdecomp) ) then
         rbuf_B(:) = 0.0d0
-        rbuf_B(glbidx) = metot
-        call pmf_accu_write_rbuf_B(cstaccu,iounit,'METOT','WA',rbuf_B,'NSAMPLES')
+        rbuf_B(glbidx) = meint
+        call pmf_accu_write_rbuf_B(cstaccu,iounit,'MEINT',  'WA',rbuf_B, 'NTDS')
 
         rbuf_B(:) = 0.0d0
-        rbuf_B(glbidx) = m2etot
-        call pmf_accu_write_rbuf_B(cstaccu,iounit,'M2ETOT','M2',rbuf_B,'NSAMPLES','METOT')
+        rbuf_B(glbidx) = m2eint
+        call pmf_accu_write_rbuf_B(cstaccu,iounit,'M2EINT', 'M2',rbuf_B, 'NTDS','MEINT')
 
         rbuf_B(:) = 0.0d0
         rbuf_B(glbidx) = mepot
-        call pmf_accu_write_rbuf_B(cstaccu,iounit,'MEPOT','WA',rbuf_B,'NSAMPLES')
+        call pmf_accu_write_rbuf_B(cstaccu,iounit,'MEPOT',  'WA',rbuf_B, 'NTDS')
 
         rbuf_B(:) = 0.0d0
         rbuf_B(glbidx) = m2epot
-        call pmf_accu_write_rbuf_B(cstaccu,iounit,'M2EPOT','M2',rbuf_B,'NSAMPLES','MEPOT')
-
-        rbuf_B(:) = 0.0d0
-        rbuf_B(glbidx) = mekin
-        call pmf_accu_write_rbuf_B(cstaccu,iounit,'MEKIN','WA',rbuf_B,'NSAMPLES')
-
-        rbuf_B(:) = 0.0d0
-        rbuf_B(glbidx) = m2ekin
-        call pmf_accu_write_rbuf_B(cstaccu,iounit,'M2EKIN','M2',rbuf_B,'NSAMPLES','MEKIN')
+        call pmf_accu_write_rbuf_B(cstaccu,iounit,'M2EPOT', 'M2',rbuf_B, 'NTDS','MEPOT')
 
         rbuf_B(:) = 0.0d0
         rbuf_B(glbidx) = merst
-        call pmf_accu_write_rbuf_B(cstaccu,iounit,'MERST','WA',rbuf_B,'NSAMPLES')
+        call pmf_accu_write_rbuf_B(cstaccu,iounit,'MERST',  'WA',rbuf_B, 'NTDS')
 
         rbuf_B(:) = 0.0d0
         rbuf_B(glbidx) = m2erst
-        call pmf_accu_write_rbuf_B(cstaccu,iounit,'M2ERST','M2',rbuf_B,'NSAMPLES','MERST')
+        call pmf_accu_write_rbuf_B(cstaccu,iounit,'M2ERST', 'M2',rbuf_B, 'NTDS','MERST')
+
+        rbuf_B(:) = 0.0d0
+        rbuf_B(glbidx) = mekin
+        call pmf_accu_write_rbuf_B(cstaccu,iounit,'MEKIN',  'WA',rbuf_B, 'NTDS')
+
+        rbuf_B(:) = 0.0d0
+        rbuf_B(glbidx) = m2ekin
+        call pmf_accu_write_rbuf_B(cstaccu,iounit,'M2EKIN', 'M2',rbuf_B, 'NTDS','MEKIN')
     end if
 
-! ------------------------------------------------
-    if ( fentropy )  then
+    if( fenthalpy .and. fenthalpy_der ) then
         rbuf_M(:,:) = 0.0d0
         do i=1,cstaccu%tot_cvs
-            rbuf_M(i,glbidx) = c11hh(i)
+            rbuf_M(i,glbidx) = micfp(i)
         end do
-        call pmf_accu_write_rbuf_M(cstaccu,iounit,'C11HH','CO',rbuf_M,'NSAMPLES','MLAMBDA','METOT')
+        call pmf_accu_write_rbuf_M(cstaccu,iounit,'MICFP',  'WA',rbuf_M, 'NTDS')
 
+        rbuf_M(:,:) = 0.0d0
+        do i=1,cstaccu%tot_cvs
+            rbuf_M(i,glbidx) = m2icfp(i)
+        end do
+        call pmf_accu_write_rbuf_M(cstaccu,iounit,'M2ICFP', 'M2',rbuf_M, 'NTDS','MICFP')
+
+        rbuf_M(:,:) = 0.0d0
+        do i=1,cstaccu%tot_cvs
+            rbuf_M(i,glbidx) = c11pp(i)
+        end do
+        call pmf_accu_write_rbuf_M(cstaccu,iounit,'C11PP',  'CO',rbuf_M, 'NTDS','MICFP','MEINT')
+    end if
+
+    if( fentropy ) then
+        rbuf_B(:) = 0.0d0
+        rbuf_B(glbidx) = metot
+        call pmf_accu_write_rbuf_B(cstaccu,iounit,'METOT',  'WA',rbuf_B, 'NTDS')
+
+        rbuf_B(:) = 0.0d0
+        rbuf_B(glbidx) = m2etot
+        call pmf_accu_write_rbuf_B(cstaccu,iounit,'M2ETOT', 'M2',rbuf_B, 'NTDS','METOT')
+
+        rbuf_M(:,:) = 0.0d0
+        do i=1,cstaccu%tot_cvs
+            rbuf_M(i,glbidx) = mpp(i)
+        end do
+        call pmf_accu_write_rbuf_M(cstaccu,iounit,'MPP',    'WA',rbuf_M, 'NTDS')
+
+        rbuf_M(:,:) = 0.0d0
+        do i=1,cstaccu%tot_cvs
+            rbuf_M(i,glbidx) = m2pp(i)
+        end do
+        call pmf_accu_write_rbuf_M(cstaccu,iounit,'M2PP',   'M2',rbuf_M, 'NTDS','MPP')
+
+        rbuf_M(:,:) = 0.0d0
+        do i=1,cstaccu%tot_cvs
+            rbuf_M(i,glbidx) = mpn(i)
+        end do
+        call pmf_accu_write_rbuf_M(cstaccu,iounit,'MPN',    'WA',rbuf_M, 'NTDS')
+
+        rbuf_M(:,:) = 0.0d0
+        do i=1,cstaccu%tot_cvs
+            rbuf_M(i,glbidx) = m2pn(i)
+        end do
+        call pmf_accu_write_rbuf_M(cstaccu,iounit,'M2PN',   'M2',rbuf_M, 'NTDS','MPN')
+
+        rbuf_M(:,:) = 0.0d0
+        do i=1,cstaccu%tot_cvs
+            rbuf_M(i,glbidx) = mhicf(i)
+        end do
+        call pmf_accu_write_rbuf_M(cstaccu,iounit,'MHICF',  'WA',rbuf_M, 'NTDS')
+
+        rbuf_M(:,:) = 0.0d0
+        do i=1,cstaccu%tot_cvs
+            rbuf_M(i,glbidx) = m2hicf(i)
+        end do
+        call pmf_accu_write_rbuf_M(cstaccu,iounit,'M2HICF', 'M2',rbuf_M, 'NTDS','MHICF')
+    end if
+
+    if( fentropy .and. fentdecomp ) then
         rbuf_M(:,:) = 0.0d0
         do i=1,cstaccu%tot_cvs
             rbuf_M(i,glbidx) = c11hp(i)
         end do
-        call pmf_accu_write_rbuf_M(cstaccu,iounit,'C11HP','CO',rbuf_M,'NSAMPLES','MLAMBDA','MEPOT')
-
-        rbuf_M(:,:) = 0.0d0
-        do i=1,cstaccu%tot_cvs
-            rbuf_M(i,glbidx) = c11hk(i)
-        end do
-        call pmf_accu_write_rbuf_M(cstaccu,iounit,'C11HK','CO',rbuf_M,'NSAMPLES','MLAMBDA','MEKIN')
+        call pmf_accu_write_rbuf_M(cstaccu,iounit,'C11HP','CO',rbuf_M, 'NTDS','MHICF','MEPOT')
 
         rbuf_M(:,:) = 0.0d0
         do i=1,cstaccu%tot_cvs
             rbuf_M(i,glbidx) = c11hr(i)
         end do
-        call pmf_accu_write_rbuf_M(cstaccu,iounit,'C11HR','CO',rbuf_M,'NSAMPLES','MLAMBDA','MERST')
+        call pmf_accu_write_rbuf_M(cstaccu,iounit,'C11HR','CO',rbuf_M, 'NTDS','MHICF','MERST')
+
+        rbuf_M(:,:) = 0.0d0
+        do i=1,cstaccu%tot_cvs
+            rbuf_M(i,glbidx) = c11hk(i)
+        end do
+        call pmf_accu_write_rbuf_M(cstaccu,iounit,'C11HK','CO',rbuf_M, 'NTDS','MHICF','MEKIN')
     end if
 
 end subroutine cst_accu_write
