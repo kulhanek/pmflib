@@ -201,7 +201,6 @@ subroutine abf_init_print_summary
     write(PMF_OUT,125)  ' Update ABF force (fupdate_abf)          : ', prmfile_onoff(fupdate_abf)
     write(PMF_OUT,125)  ' ABF mask mode (fapply_mask)             : ', prmfile_onoff(fapply_mask)
     write(PMF_OUT,125)  ' ABF mask file (fabfmask)                : ', trim(fabfmask)
-    write(PMF_OUT,130)  ' Sampling for ICF (ficfsample)           : ', ficfsample
 
     write(PMF_OUT,120)
     write(PMF_OUT,120)  ' US-ABF Control'
@@ -296,8 +295,9 @@ subroutine abf_init_print_summary
     write(PMF_OUT,120)
     write(PMF_OUT,120)  ' Trajectory output options:'
     write(PMF_OUT,120)  ' ------------------------------------------------------'
-    write(PMF_OUT,130)  ' Trajectory sampling (ftrjsample)        : ', ftrjsample
     write(PMF_OUT,125)  ' Trajectory file (fabftrj)               : ', trim(fabftrj)
+    write(PMF_OUT,130)  ' Trajectory sampling (ftrjsample)        : ', ftrjsample
+
     write(PMF_OUT,120)
     write(PMF_OUT,120)  ' MWA server options:'
     write(PMF_OUT,120)  ' ------------------------------------------------------'

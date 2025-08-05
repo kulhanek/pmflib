@@ -213,6 +213,7 @@ subroutine pmf_core_lf_register_ekin(ekin)
 
     use pmf_dat
     use abf_core_lf
+    use cst_core
     use pmf_timers
     use pmf_core
 
@@ -235,6 +236,12 @@ subroutine pmf_core_lf_register_ekin(ekin)
         call pmf_timers_start_timer(PMFLIB_ABF_TIMER)
         call abf_core_lf_register_ekin()
         call pmf_timers_stop_timer(PMFLIB_ABF_TIMER)
+    end if
+
+    if( cst_enabled ) then
+        call pmf_timers_start_timer(PMFLIB_CST_TIMER)
+        call cst_core_register_ekin_lf()
+        call pmf_timers_stop_timer(PMFLIB_CST_TIMER)
     end if
 
     call pmf_timers_stop_timer(PMFLIB_METHODS_TIMER)

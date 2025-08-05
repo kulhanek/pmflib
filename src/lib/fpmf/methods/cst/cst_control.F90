@@ -78,6 +78,17 @@ subroutine cst_control_read_con(prm_fin)
 
     call pmf_ctrl_read_logical(prm_fin,'freadranges',freadranges)
 
+    call pmf_ctrl_read_integer(prm_fin,'fshakesolver',fshakesolver,'I12')
+    call pmf_ctrl_check_integer_in_range('CST','fshakesolver',fshakesolver,0,3)
+
+    call pmf_ctrl_read_integer(prm_fin,'frattlesolver',frattlesolver,'I12')
+    call pmf_ctrl_check_integer_in_range('CST','frattlesolver',frattlesolver,0,0)
+
+    call pmf_ctrl_read_real8(prm_fin,'flambdatol',flambdatol,'E12.4')
+    call pmf_ctrl_read_real8(prm_fin,'frveltol',frveltol,'E12.4')
+
+    call pmf_ctrl_read_integer(prm_fin,'fmaxiter',fmaxiter,'I12')
+
     call pmf_ctrl_read_integer(prm_fin,'fsample',fsample,'I12')
     call pmf_ctrl_check_integer('CST','fsample',fsample,0,CND_GE)
 
@@ -95,17 +106,19 @@ subroutine cst_control_read_con(prm_fin)
     call pmf_ctrl_read_integer(prm_fin,'ftrjsample',ftrjsample,'I12')
     call pmf_ctrl_check_integer('CST','ftrjsample',ftrjsample,0,CND_GE)
 
+    call pmf_ctrl_read_integer(prm_fin,'flamsample',flamsample,'I12')
+    call pmf_ctrl_check_integer('CST','flamsample',flamsample,0,CND_GT)
+
     call pmf_ctrl_read_logical(prm_fin,'fenthalpy',fenthalpy)
+    call pmf_ctrl_read_logical(prm_fin,'fenthalpy_der',fenthalpy_der)
     call pmf_ctrl_read_logical(prm_fin,'fentropy',fentropy)
+    call pmf_ctrl_read_logical(prm_fin,'fentdecomp',fentdecomp)
+
+    call pmf_ctrl_read_integer(prm_fin,'fenesample',fenesample,'I12')
+    call pmf_ctrl_check_integer('CST','fenesample',fenesample,0,CND_GT)
 
     call pmf_ctrl_read_real8_wunit(prm_fin,'fepotaverage',EnergyUnit,fepotaverage,'F10.1')
     call pmf_ctrl_read_real8_wunit(prm_fin,'fekinaverage',EnergyUnit,fekinaverage,'F10.1')
-
-    call pmf_ctrl_read_integer(prm_fin,'fshakesolver',fshakesolver,'I12')
-    call pmf_ctrl_check_integer_in_range('CST','fshakesolver',fshakesolver,0,3)
-
-    call pmf_ctrl_read_real8(prm_fin,'flambdatol',flambdatol,'E12.4')
-    call pmf_ctrl_read_integer(prm_fin,'fmaxiter',fmaxiter,'I12')
 
     cst_enabled = fmode .gt. 0
 

@@ -48,8 +48,6 @@ subroutine cst_core_main_lf
     implicit none
     ! --------------------------------------------------------------------------
 
-    ! write(1234,*) 'SHAKE: '
-
     select case(fintalg)
         case(IA_LEAP_FROG)
             call cst_constraints_increment
@@ -64,7 +62,6 @@ subroutine cst_core_main_lf
     call cst_core_calculate_zdet
     call cst_shake_calculate
 
-    ! write(12478,*) 'lambdax=',lambdax(:) * isfdts
     lambda(:) = lambda(:) + lambdax(:) * isfdts
 
     select case(fintalg)
@@ -103,8 +100,6 @@ subroutine cst_core_rattlev_lf(cid)
                         ! in the LF-middle, there are two rattle-v calls
     ! --------------------------------------------------------------------------
 
-    ! write(1234,*) 'RATTLE: ', cid
-
     select case(fintalg)
         case(IA_LEAP_FROG)
             ! nothing to be here
@@ -112,7 +107,6 @@ subroutine cst_core_rattlev_lf(cid)
             if( cid .eq. 1 ) then
                 call cst_constraints_increment
                 call cst_core_shift_histbuffs
-                ! write(1234,*) 'RATTLE: ', cid, ' - INIT'
                 lambda(:) = 0.0d0
             end if
         case default
@@ -121,7 +115,6 @@ subroutine cst_core_rattlev_lf(cid)
 
     call cst_rattlev_calculate
 
-    ! write(12478,*) 'lambdav=',lambdav(:) * isfdtr
     lambda(:) = lambda(:) + lambdav(:) * isfdtr
 
     select case(fintalg)
@@ -129,7 +122,6 @@ subroutine cst_core_rattlev_lf(cid)
             ! nothing to be here
         case(IA_LF_MIDDLE)
             if( cid .eq. 2 ) then
-                ! write(1234,*) 'RATTLE: ', cid, ' - FINAL'
                 lambdahist(:,hist_len) = lambda(:)
                 epothist(hist_len) = PotEne - fepotaverage
                 ersthist(hist_len) = PMFEne
@@ -143,6 +135,23 @@ subroutine cst_core_rattlev_lf(cid)
     end select
 
 end subroutine cst_core_rattlev_lf
+
+!===============================================================================
+! Subroutine:  cst_core_register_ekin
+!===============================================================================
+
+subroutine cst_core_register_ekin_lf
+
+    use pmf_dat
+    use cst_dat
+
+    implicit none
+    ! --------------------------------------------------------------------------
+
+    enevalidhist(hist_len)  = KinEne%Valid
+    ekinhist(hist_len)      = KinEne%KinEneVV - fekinaverage
+
+end subroutine cst_core_register_ekin_lf
 
 !===============================================================================
 ! Subroutine:  cst_core_calculate_zdet
@@ -216,6 +225,7 @@ subroutine cst_core_shift_histbuffs
         ersthist(i)     = ersthist(i+1)
         ekinhist(i)     = ekinhist(i+1)
         isrzhist(i)     = isrzhist(i+1)
+        enevalidhist(i) = enevalidhist(i+1)
     end do
 
 end subroutine cst_core_shift_histbuffs
@@ -232,15 +242,6 @@ subroutine cst_core_analyze
 
     implicit none
     integer         :: i,ci
-    real(PMFDP)     :: isrz,lam,dval1,dval2,invn
-    real(PMFDP)     :: etot,epot,erst,eint,ekin
-    real(PMFDP)     :: detot1, detot2
-    real(PMFDP)     :: depot1, depot2
-    real(PMFDP)     :: derst1, derst2
-    real(PMFDP)     :: deint1, deint2
-    real(PMFDP)     :: dekin1, dekin2
-    real(PMFDP)     :: dpp, dpp1, dpp2
-    real(PMFDP)     :: dpn, dpn1, dpn2
     ! --------------------------------------------------------------------------
 
 ! reset accumulators
@@ -255,6 +256,8 @@ subroutine cst_core_analyze
         m2isrz      = 0.0d0
 
         ! accumulator setup for entropy and enthalpy
+        fene_step = 0
+
         if( fenthalpy .or. fentropy ) then
             ntds = 0.0d0
         end if
@@ -316,20 +319,45 @@ subroutine cst_core_analyze
 ! do we have enough samples?
     if( fstep .le. 2 ) return
 
-    nsamples = nsamples + 1
-    if( nsamples .le. 0 ) return
+! record data
+    call cst_core_analyze_lam
+    call cst_core_analyze_dhTds
 
-    ntds = nsamples
-    invn = 1.0d0/nsamples
+end subroutine cst_core_analyze
+
+!===============================================================================
+! Subroutine:  cst_core_analyze_lam
+! free energy
+!===============================================================================
+
+subroutine cst_core_analyze_lam
+
+    use pmf_dat
+    use cst_dat
+
+    implicit none
+    integer         :: i
+    real(PMFDP)     :: isrz,lam,dval1,dval2,invn
+    ! --------------------------------------------------------------------------
+
+    if( mod(fstep,flamsample) .ne. 0 ) return
 
 ! values
     lambda(:)   = lambdahist(:,hist_len+hist_fidx)
-    epot        = epothist(hist_len+hist_fidx)     ! t-dt
-    erst        = ersthist(hist_len+hist_fidx)     ! t-dt
-    ekin        = ekinhist(hist_len+hist_fidx)     ! t-dt
-    etot        = epot + erst + ekin               ! t-dt
-    eint        = epot + erst
     isrz        = isrzhist(hist_len+hist_fidx)     ! t-dt
+
+    nsamples = nsamples + 1
+    if( nsamples .le. 0 ) return
+    invn = 1.0d0/nsamples
+
+    do i=1,NumOfCONs
+        ! lambda
+        lam             = lambda(i)
+        dval1           = lam - mlambda(i)
+        mlambda(i)      = mlambda(i)  + dval1 * invn
+        dval2           = lam - mlambda(i)
+        m2lambda(i)     = m2lambda(i) + dval1 * dval2
+    end do
 
 ! isrz
     dval1   = isrz - misrz
@@ -337,12 +365,50 @@ subroutine cst_core_analyze
     dval2   = isrz - misrz
     m2isrz  = m2isrz + dval1*dval2
 
+end subroutine cst_core_analyze_lam
+
+!===============================================================================
+! Subroutine:  cst_core_analyze_dhTds
+! enthalpy and entropy
+!===============================================================================
+
+subroutine cst_core_analyze_dhTds
+
+    use pmf_dat
+    use cst_dat
+
+    implicit none
+    integer         :: i
+    real(PMFDP)     :: lam,dval1,dval2,invn
+    real(PMFDP)     :: etot,epot,erst,eint,ekin
+    real(PMFDP)     :: detot1, detot2
+    real(PMFDP)     :: depot1, depot2
+    real(PMFDP)     :: derst1, derst2
+    real(PMFDP)     :: deint1, deint2
+    real(PMFDP)     :: dekin1, dekin2
+    real(PMFDP)     :: dpp, dpp1, dpp2
+    real(PMFDP)     :: dpn, dpn1, dpn2
+    ! --------------------------------------------------------------------------
+
+    if( enevalidhist(hist_len+hist_fidx) ) fene_step = fene_step + 1
+    if( .not. ( (mod(fene_step,fenesample) .eq. 0) .and. enevalidhist(hist_len+hist_fidx) ) ) return
+
+    ntds = ntds + 1.0d0
+    invn = 1.0d0/ntds
+
+    lambda(:)   = lambdahist(:,hist_len+hist_fidx)
+    epot        = epothist(hist_len+hist_fidx)     ! t-dt
+    erst        = ersthist(hist_len+hist_fidx)     ! t-dt
+    ekin        = ekinhist(hist_len+hist_fidx)     ! t-dt
+    etot        = epot + erst + ekin               ! t-dt
+    eint        = epot + erst
+
     if( fenthalpy .or. (fentropy .and. fentdecomp) ) then
         ! internal energy
         deint1 = eint - meint
         meint  = meint  + deint1 * invn
         deint2 = eint - meint
-        m2erst = m2erst + deint1 * deint2
+        m2eint = m2eint + deint1 * deint2
 
         ! potential energy
         depot1 = epot - mepot
@@ -372,16 +438,16 @@ subroutine cst_core_analyze
     end if
 
 ! lambda and entropy
-    do i=1,NumOfCONs
+    if( fentropy ) then
+        do i=1,NumOfCONs
 
-        ! lambda
-        lam             = lambda(i)
-        dval1           = lam - mlambda(i)
-        mlambda(i)      = mlambda(i)  + dval1 * invn
-        dval2           = lam - mlambda(i)
-        m2lambda(i)     = m2lambda(i) + dval1 * dval2
+            ! lambda
+            lam             = lambda(i)
+            dval1           = lam - mhicf(i)
+            mhicf(i)        = mhicf(i)  + dval1 * invn
+            dval2           = lam - mhicf(i)
+            m2hicf(i)       = m2hicf(i) + dval1 * dval2
 
-        if( fentropy ) then
             dpp     = lam + etot
             dpp1    = dpp - mpp(i)
             mpp(i)  = mpp(i)  + dpp1 * invn
@@ -399,14 +465,10 @@ subroutine cst_core_analyze
                 c11hr(i)   = c11hr(i) + dval1 * derst2
                 c11hk(i)   = c11hk(i) + dval1 * dekin2
             end if
-        end if
-    end do
-
-    if( fdebug ) then
-        write(PMF_DEBUG+fmytaskid,*) '>>>TR: cst_core_analyze ', (lambda(i), i=1,NumOfCONs), etot, epot, erst, ekin
+        end do
     end if
 
-end subroutine cst_core_analyze
+end subroutine cst_core_analyze_dhTds
 
 !===============================================================================
 

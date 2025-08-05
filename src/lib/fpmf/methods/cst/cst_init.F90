@@ -80,6 +80,7 @@ subroutine cst_init_dat
     frstupdate      = 5000
     ftrjsample      = 0             ! how often save accumulator to "accumulator evolution"
 
+    flamsample      = 1
     fshakesolver    = CON_SHAKESOL_MM       ! mixed shake
     frattlesolver   = CON_RATTLESOL_MA      ! matrix algebra
 
@@ -91,6 +92,7 @@ subroutine cst_init_dat
     fentropy        = .false.       ! accumulate entropy
     fepotaverage    = 0.0d0
     fekinaverage    = 0.0d0
+    fenesample      = 1
 
     freadranges     = .false.        ! request full definitions of CVs
 
@@ -130,33 +132,63 @@ subroutine cst_init_print_summary
     write(PMF_OUT,120)
     write(PMF_OUT,120)  ' Cartesian Constraint Dynamics Mode'
     write(PMF_OUT,120)  ' ------------------------------------------------------'
-    write(PMF_OUT,130)  ' Constrained dynamics mode (fmode)    : ', fmode
-    write(PMF_OUT,125)  ' Constraint definition file (fcstdef) : ', trim(fcstdef)
-    write(PMF_OUT,130)  ' Total number of constraints          : ', NumOfCONs
-    write(PMF_OUT,130)  ' SHAKE constraints in collisions      : ', NumOfSHAKECONs
-    write(PMF_OUT,130)  ' Num of constrained atoms (no SHAKE)  : ', NumOfConAtoms
-    write(PMF_OUT,125)  ' Read CV ranges (freadranges)         : ', prmfile_onoff(freadranges)
+    write(PMF_OUT,130)  ' Constrained dynamics mode (fmode)       : ', fmode
+    write(PMF_OUT,125)  ' Constraint definition file (fcstdef)    : ', trim(fcstdef)
+    write(PMF_OUT,130)  ' Total number of constraints             : ', NumOfCONs
+    write(PMF_OUT,130)  ' SHAKE constraints in collisions         : ', NumOfSHAKECONs
+    write(PMF_OUT,130)  ' Num of constrained atoms (no SHAKE)     : ', NumOfConAtoms
+    write(PMF_OUT,125)  ' Read CV ranges (freadranges)            : ', prmfile_onoff(freadranges)
 
     write(PMF_OUT,120)
     write(PMF_OUT,120)  ' Constraint optimization options:'
     write(PMF_OUT,120)  ' ------------------------------------------------------'
-    write(PMF_OUT,140)  ' SHAKE solver (fshakesolver)          : ', fshakesolver, &
+    write(PMF_OUT,140)  ' SHAKE solver (fshakesolver)             : ', fshakesolver, &
                                                                     trim(cst_init_get_shakesol_name(fshakesolver))
-    write(PMF_OUT,135)  ' Lambda tolerance (flambdatol)        : ', flambdatol
-    write(PMF_OUT,130)  ' Maximum of iteration (fmaxiter)      : ', fmaxiter
+    write(PMF_OUT,135)  ' SHAKE lambda tolerance (flambdatol)     : ', flambdatol
+
+    write(PMF_OUT,140)  ' RATTLE solver (frattlesolver)           : ', frattlesolver, &
+                                                                    trim(cst_init_get_rattlesol_name(frattlesolver))
+    write(PMF_OUT,135)  ' RATTLE velocity tolerance (frveltol)    : ', frveltol
+
+    write(PMF_OUT,130)  ' Maximum of iteration (fmaxiter)         : ', fmaxiter
+
     write(PMF_OUT,120)
-    write(PMF_OUT,120)  ' Output options:'
+    write(PMF_OUT,120)  ' Enthalpy options:'
     write(PMF_OUT,120)  ' ------------------------------------------------------'
-    write(PMF_OUT,125)  ' Output file (fcstout)                : ', trim(fcstout)
-    write(PMF_OUT,130)  ' Sample period (fsample)              : ', fsample
-    write(PMF_OUT,130)  ' Print level (fplevel)                : ', fplevel
+    write(PMF_OUT,125)  ' Accumulate enthalpy (fenthalpy)         : ', prmfile_onoff(fenthalpy)
+    write(PMF_OUT,125)  ' Accumulate enth. deriv. (fenthalpy_der) : ', prmfile_onoff(fenthalpy_der)
+    write(PMF_OUT,145)  ' Potential energy offset (fepotaverage)  : ', pmf_unit_get_rvalue(EnergyUnit,fepotaverage),  &
+                                                                       '['//trim(pmf_unit_label(EnergyUnit))//']'
+    write(PMF_OUT,130)  ' Sampling for -TdS and dH (fenesample)   : ', fenesample
+
+    write(PMF_OUT,120)
+    write(PMF_OUT,120)  ' Entropy options:'
+    write(PMF_OUT,120)  ' ------------------------------------------------------'
+    write(PMF_OUT,125)  ' Accumulate entropy (fentropy)           : ', prmfile_onoff(fentropy)
+    write(PMF_OUT,125)  ' Decompose entropy (fentdecomp)          : ', prmfile_onoff(fentdecomp)
+    write(PMF_OUT,145)  ' Potential energy offset (fepotaverage)  : ', pmf_unit_get_rvalue(EnergyUnit,fepotaverage),  &
+                                                                       '['//trim(pmf_unit_label(EnergyUnit))//']'
+    write(PMF_OUT,145)  ' Kinetic energy offset (fekinaverage)    : ', pmf_unit_get_rvalue(EnergyUnit,fekinaverage), &
+                                                                       '['//trim(pmf_unit_label(EnergyUnit))//']'
+    write(PMF_OUT,130)  ' Sampling for -TdS and dH (fenesample)   : ', fenesample
+
     write(PMF_OUT,120)
     write(PMF_OUT,120)  ' Restart options:'
     write(PMF_OUT,120)  ' ------------------------------------------------------'
-    write(PMF_OUT,125)  ' Restart file (fcstrst)               : ', trim(fcstrst)
-    write(PMF_OUT,125)  ' Restart from previous run (frestart) : ', prmfile_onoff(frestart)
-    write(PMF_OUT,130)  ' Accumulators reset (faccurst)        : ', faccurst
+    write(PMF_OUT,125)  ' Restart file (fcstrst)                  : ', trim(fcstrst)
+    write(PMF_OUT,125)  ' Restart from previous run (frestart)    : ', prmfile_onoff(frestart)
+    write(PMF_OUT,130)  ' Accumulators reset (faccurst)           : ', faccurst
     write(PMF_OUT,120)
+    write(PMF_OUT,120)  ' Output options:'
+    write(PMF_OUT,120)  ' ------------------------------------------------------'
+    write(PMF_OUT,125)  ' Output file (fcstout)                   : ', trim(fcstout)
+    write(PMF_OUT,130)  ' Sample period (fsample)                 : ', fsample
+    write(PMF_OUT,130)  ' Print level (fplevel)                   : ', fplevel
+    write(PMF_OUT,120)
+    write(PMF_OUT,120)  ' Trajectory output options:'
+    write(PMF_OUT,120)  ' ------------------------------------------------------'
+    write(PMF_OUT,125)  ' Trajectory file (fcsttrj)               : ', trim(fcsttrj)
+    write(PMF_OUT,130)  ' Trajectory sampling (ftrjsample)        : ', ftrjsample
 
     write(PMF_OUT,120)
     write(PMF_OUT,120)  ' List of constraints'
@@ -191,6 +223,7 @@ subroutine cst_init_print_summary
 130 format(A,I6)
 135 format(A,E12.5)
 140 format(A,I6,1X,A)
+145 format(A,F10.1,1X,A)
 
 150 format(' == Constrained collective variable #',I4.4)
 
@@ -228,6 +261,31 @@ character(80) function cst_init_get_shakesol_name(solver_id)
     return
 
 end function cst_init_get_shakesol_name
+
+!===============================================================================
+! Function:  cst_init_get_rattlesol_name
+!===============================================================================
+
+character(80) function cst_init_get_rattlesol_name(solver_id)
+
+    use cst_dat
+    use pmf_utils
+
+    implicit none
+    integer     :: solver_id
+    ! --------------------------------------------------------------------------
+
+    select case(solver_id)
+        case(CON_SHAKESOL_FM)
+            cst_init_get_rattlesol_name = "Matrix Algebra RATTLE"
+        case default
+            call pmf_utils_exit(PMF_OUT, 1, &
+                        '[CST] Not implemented rattle solver in cst_init_get_rattlesol_name!')
+    end select
+
+    return
+
+end function cst_init_get_rattlesol_name
 
 !===============================================================================
 ! Subroutine:  cst_init_add_shake_csts
@@ -536,6 +594,7 @@ subroutine cst_init_core
               ersthist(hist_len),               &
               ekinhist(hist_len),               &
               isrzhist(hist_len),               &
+              enevalidhist(hist_len),           &
               stat= alloc_failed )
 
     if( alloc_failed .ne. 0 ) then
@@ -548,6 +607,7 @@ subroutine cst_init_core
     ersthist(:)     = 0.0d0
     ekinhist(:)     = 0.0d0
     isrzhist(:)     = 0.0d0
+    enevalidhist(:) = .false.
 
 ! accumulator setup for free energy calculation
     allocate( lambda(NumOfCONs),    &
@@ -568,6 +628,8 @@ subroutine cst_init_core
     m2lambda(:) = 0.0d0
 
 ! accumulator setup for entropy and enthalpy
+    fene_step = 0
+
     if( fenthalpy .or. fentropy ) then
         ntds = 0.0d0
     end if

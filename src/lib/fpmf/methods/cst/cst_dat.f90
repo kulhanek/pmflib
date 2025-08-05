@@ -36,29 +36,37 @@ implicit none
 
 ! control section --------------------------------------------------------------
 integer         :: fmode            ! 0 - disable BM, 1 - enabled BM
-integer         :: fsample          ! output sample period in steps
-integer         :: faccurst         ! number of steps for equilibration, it is ignored if job is restarted
-integer         :: fplevel          ! print level
+logical         :: freadranges      ! read ranges for CVs
 logical         :: frestart         ! 1 - restart job with previous data, 0 - otherwise not
-integer         :: frstupdate       ! how often is restart file written
+
+! output -----------------------------------------
+integer         :: fsample          ! output sample period in steps
+integer         :: fplevel          ! print level
 integer         :: ftrjsample       ! how often save restart to "restart evolution"
 
+! restart ----------------------------------------
+integer         :: faccurst         ! number of steps for equilibration, it is ignored if job is restarted
+integer         :: frstupdate       ! how often is restart file written
+
+
+! constraints ------------------------------------
 integer         :: fshakesolver     ! SHAKE solvers
                                     ! 0 - fixed SHAKE
                                     ! 1 - mixed SHAKE
                                     ! 2 - Newton-Raphson SHAKE
                                     ! 3 - diagonal SHAKE
                                     ! 4 - diagonal SHAKE with initial guess from the previous step
+real(PMFDP)     :: flambdatol       ! tolerance for lambda optimization
 
 integer         :: frattlesolver    ! RATTLE solvers
                                     ! 1 - matrix algebra RATTLE
-
-real(PMFDP)     :: flambdatol       ! tolerance for lambda optimization
 real(PMFDP)     :: frveltol         ! residual for velocity in rattle/rattlev
-integer         :: fmaxiter         ! maximum of iteration in lambda optimization
 
-integer         :: fsamplefreq      ! how often take samples
-logical         :: freadranges      ! read ranges for CVs
+integer         :: fmaxiter         ! maximum of iteration in lambda optimization
+integer         :: flamsample       ! how often update lambda and metric tensor corrections
+
+! enthalpy/entropy calculations ----------------------------
+integer         :: fenesample      ! how often take samples
 
 ! enthalpy/entropy calculations
 logical         :: fenthalpy        ! collect data for enthalpy calculation
@@ -163,6 +171,7 @@ real(PMFDP),allocatable     :: epothist(:)
 real(PMFDP),allocatable     :: ersthist(:)
 real(PMFDP),allocatable     :: ekinhist(:)
 real(PMFDP),allocatable     :: isrzhist(:)
+logical,allocatable         :: enevalidhist(:)      ! is energy valid?
 
 ! ------------------------------------------------------------------------------
 ! ACCUMULATOR
@@ -182,6 +191,7 @@ real(PMFDP),allocatable     :: mlambda(:)       ! mean of lambdas
 real(PMFDP),allocatable     :: m2lambda(:)      ! M2 of lambdas
 
 ! fenthalpy .or. fentropy  -----------------------------------------------------
+integer                     :: fene_step
 real(PMFDP)                 :: ntds             ! number of step for enthalpy and entropy calculations
 
 ! fenthalpy .or. (fentropy .and. fentdecomp) -----------------------------------
