@@ -488,7 +488,7 @@ subroutine cst_core_analyze_dhTds
             dicf2     = icfp(i) - micfp(i)
             m2icfp(i) = m2icfp(i) + dicf1 * dicf2
 
-            c11pp(i)  = c11pp(i) + dicf1 * depot2
+            c11pp(i)  = c11pp(i) + dicf1 * deint2
         end do
     end if
 

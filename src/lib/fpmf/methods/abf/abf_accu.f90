@@ -807,7 +807,7 @@ subroutine abf_accu_add_data_energy(cvs,gfx,bfx,pfx,epot,erst,ekin,vol)
             dipx2 = ipx - abfaccu%micfp(i,gi0)
             abfaccu%m2icfp(i,gi0) = abfaccu%m2icfp(i,gi0) + dipx1 * dipx2
 
-            abfaccu%c11pp(i,gi0)  = abfaccu%c11pp(i,gi0) + dipx1 * deint1
+            abfaccu%c11pp(i,gi0)  = abfaccu%c11pp(i,gi0) + dipx1 * deint2
         end do
     end if
 
