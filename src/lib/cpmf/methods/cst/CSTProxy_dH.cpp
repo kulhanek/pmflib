@@ -209,6 +209,37 @@ double CCSTProxy_dH::GetValue(int ibin,int icv,EProxyRealm realm) const
     // -------------------
         case(CST_C11PP): {
             double  nsamples    = Accu->GetData("NTDS",ibin);
+            double  fw          = Accu->GetData("MFW",ibin,icv);
+            double  micfpeintfw = Accu->GetData("MICFPEINTFW",ibin,icv);
+            double  micfpfw     = Accu->GetData("MICFPFW",ibin,icv);
+            double  meintfw     = Accu->GetData("MEINTFW",ibin);
+
+            if( nsamples <= 0 ) return(value);
+
+            double value = (micfpeintfw/fw - micfpfw*meintfw/(fw*fw)) / (temp * PMF_Rgas);
+
+            // FIXME
+            double sigma = 0.0;
+
+            switch(realm){
+                // -------------------
+                case(E_PROXY_VALUE):
+                    return( value );
+                // -------------------
+                case(E_PROXY_SIGMA):
+                    return( sigma );
+                // -------------------
+                case(E_PROXY_ERROR):
+                    return( sqrt(ncorr) * sigma / sqrt(nsamples) );
+                // -------------------
+                default:
+                    RUNTIME_ERROR("unsupported realm");
+            }
+        }
+        break;
+// -------------------
+        case(CST_C11PPFW): {
+            double  nsamples    = Accu->GetData("NTDS",ibin);
             double  m2icfp      = Accu->GetData("M2ICFP",ibin,icv);
 
             double  chp         = Accu->GetData("C11PP",ibin,icv) / nsamples;

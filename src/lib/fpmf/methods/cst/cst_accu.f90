@@ -455,6 +455,18 @@ subroutine cst_accu_write(iounit)
             rbuf_M(i,glbidx) = m2icfpfw(i)
         end do
         call pmf_accu_write_rbuf_M(cstaccu,iounit,'M2ICFPFW','M2',rbuf_M, 'NTDS','MICFPFW')
+
+        rbuf_M(:,:) = 0.0d0
+        do i=1,cstaccu%tot_cvs
+            rbuf_M(i,glbidx) = micfpeintfw(i)
+        end do
+        call pmf_accu_write_rbuf_M(cstaccu,iounit,'MICFPEINTFW', 'WA',rbuf_M, 'NTDS')
+
+        rbuf_M(:,:) = 0.0d0
+        do i=1,cstaccu%tot_cvs
+            rbuf_M(i,glbidx) = m2icfpeintfw(i)
+        end do
+        call pmf_accu_write_rbuf_M(cstaccu,iounit,'M2ICFPEINTFW','M2',rbuf_M, 'NTDS','MICFPEINTFW')
     end if
 
     if( fentropy ) then
