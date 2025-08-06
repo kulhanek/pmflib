@@ -66,8 +66,16 @@ void CCSTProxy_dH::SetType(ECSTdHType type)
             Provide = "CST ICFP(x)";
         break;
     // -------------------
-        case(CST_MICFPZ):
-            Provide = "CST ICFPZ(x)";
+        case(CST_MICFPFW):
+            Provide = "CST ICFP(x)FW";
+        break;
+    // -------------------
+        case(CST_C11PP):
+            Provide = "CST C11PP";
+        break;
+    // -------------------
+        case(CST_C11PPFW):
+            Provide = "CST C11PPFW";
         break;
     // -------------------
         default:
@@ -169,13 +177,13 @@ double CCSTProxy_dH::GetValue(int ibin,int icv,EProxyRealm realm) const
         }
         break;
     // -------------------
-        case(CST_MICFPZ): {
+        case(CST_MICFPFW): {
             double  nsamples = Accu->GetData("NTDS",ibin);
 
-            double  mfixmanw    = Accu->GetData("MFIXW",ibin,icv);
+            double  mfixmanw    = Accu->GetData("MFW",ibin,icv);
 //            double  m2fixmanw   = Accu->GetData("M2FIXW",ibin,icv);
 
-            double  micfz       = Accu->GetData("MICFPZ",ibin,icv);
+            double  micfz       = Accu->GetData("MICFPFW",ibin,icv);
       //      double  m2icfz      = Accu->GetData("M2ICFPZ",ibin,icv);
 
             if( nsamples <= 0 ) return(value);
@@ -192,6 +200,39 @@ double CCSTProxy_dH::GetValue(int ibin,int icv,EProxyRealm realm) const
                 case(E_PROXY_ERROR):
                     return(0.0); // FIXME
                     // return( sqrt(m2icf * ncorr) / nsamples );
+                // -------------------
+                default:
+                    RUNTIME_ERROR("unsupported realm");
+            }
+        }
+        break;
+    // -------------------
+        case(CST_C11PP): {
+            double  nsamples    = Accu->GetData("NTDS",ibin);
+            double  m2icfp      = Accu->GetData("M2ICFP",ibin,icv);
+
+            double  chp         = Accu->GetData("C11PP",ibin,icv) / nsamples;
+            double  m2eint      = Accu->GetData("M2EINT",ibin);
+
+            if( nsamples <= 0 ) return(value);
+
+            double value = chp / (temp * PMF_Rgas);
+  //          double sicfp = sqrt(m2icfp / nsamples);
+            double shp  = sqrt(m2icfp / nsamples) * sqrt( m2eint / nsamples )  / (temp * PMF_Rgas);
+
+            // approximation
+            double sigma = sqrt(  shp*shp );
+
+            switch(realm){
+                // -------------------
+                case(E_PROXY_VALUE):
+                    return( value );
+                // -------------------
+                case(E_PROXY_SIGMA):
+                    return( sigma );
+                // -------------------
+                case(E_PROXY_ERROR):
+                    return( sqrt(ncorr) * sigma / sqrt(nsamples) );
                 // -------------------
                 default:
                     RUNTIME_ERROR("unsupported realm");

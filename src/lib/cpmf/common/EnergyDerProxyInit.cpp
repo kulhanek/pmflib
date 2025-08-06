@@ -60,10 +60,32 @@ CEnergyDerProxyPtr CEnergyDerProxyInit::InitProxy(const CSmallString& realm,CPMF
             RUNTIME_ERROR(error);
         }
 // -----------------------------------------------
-    } else if ( realm == "ICFPZ/dx" ) {
+    } else if ( realm == "ICFPFW/dx" ) {
         if ( CCSTProxy_dH::IsCompatible(accu) ){
             CCSTProxy_dH_Ptr proxy = CCSTProxy_dH_Ptr(new CCSTProxy_dH);
-            proxy->SetType(CST_MICFPZ);
+            proxy->SetType(CST_MICFPFW);
+            lproxy = proxy;
+        } else {
+            CSmallString error;
+            error << "incompatible method: " << accu->GetMethod() << " with requested realm: " <<  realm;
+            RUNTIME_ERROR(error);
+        }
+// -----------------------------------------------
+    } else if ( realm == "C11PP/dx" ) {
+        if ( CCSTProxy_dH::IsCompatible(accu) ){
+            CCSTProxy_dH_Ptr proxy = CCSTProxy_dH_Ptr(new CCSTProxy_dH);
+            proxy->SetType(CST_C11PP);
+            lproxy = proxy;
+        } else {
+            CSmallString error;
+            error << "incompatible method: " << accu->GetMethod() << " with requested realm: " <<  realm;
+            RUNTIME_ERROR(error);
+        }
+// -----------------------------------------------
+    } else if ( realm == "C11PPFW/dx" ) {
+        if ( CCSTProxy_dH::IsCompatible(accu) ){
+            CCSTProxy_dH_Ptr proxy = CCSTProxy_dH_Ptr(new CCSTProxy_dH);
+            proxy->SetType(CST_C11PPFW);
             lproxy = proxy;
         } else {
             CSmallString error;

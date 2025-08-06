@@ -29,7 +29,9 @@
 enum ECSTdHType {
     CST_dH,
     CST_MICFP,
-    CST_MICFPZ,
+    CST_MICFPFW,
+    CST_C11PP,
+    CST_C11PPFW,
 };
 
 //------------------------------------------------------------------------------
