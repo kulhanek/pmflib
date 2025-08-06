@@ -2,7 +2,7 @@
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
 //    Copyright (C) 2025 Petr Kulhanek, kulhanek@chemi.muni.cz
-//    Copyright (C) 2021 Petr Kulhanek, kulhanek@chemi.muni.cz
+//    Copyright (C) 2024 Petr Kulhanek, kulhanek@chemi.muni.cz
 //
 //     This program is free software; you can redistribute it and/or modify
 //     it under the terms of the GNU General Public License as published by
@@ -19,7 +19,7 @@
 //     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 // =============================================================================
 
-#include <CSTProxy_mTdS.hpp>
+#include <CSTProxy_dH.hpp>
 #include <PMFConstants.hpp>
 
 //------------------------------------------------------------------------------
@@ -30,21 +30,22 @@ using namespace std;
 //------------------------------------------------------------------------------
 //==============================================================================
 
-CCSTProxy_mTdS::CCSTProxy_mTdS(void)
+CCSTProxy_dH::CCSTProxy_dH(void)
 {
-    SetType(CST_TdS_HH);
+    SetType(CST_MICFP);
+
     Requires.push_back("CST");
 }
 
 //------------------------------------------------------------------------------
 
-CCSTProxy_mTdS::~CCSTProxy_mTdS(void)
+CCSTProxy_dH::~CCSTProxy_dH(void)
 {
 }
 
 //------------------------------------------------------------------------------
 
-bool CCSTProxy_mTdS::IsCompatible(CPMFAccumulatorPtr accu)
+bool CCSTProxy_dH::IsCompatible(CPMFAccumulatorPtr accu)
 {
     if( accu->GetMethod() == "CST" ) return(true);
     return(false);
@@ -52,26 +53,17 @@ bool CCSTProxy_mTdS::IsCompatible(CPMFAccumulatorPtr accu)
 
 //------------------------------------------------------------------------------
 
-void CCSTProxy_mTdS::SetType(ECSTTdSType type)
+void CCSTProxy_dH::SetType(ECSTdHType type)
 {
     Type = type;
 
     switch(Type){
     // -------------------
-        case(CST_TdS_HH):
-            Provide = "CST -TdS(x)^{c}";    // entropy of the constrained system
-        break;
+        case(CST_dH):
+            Provide = "CST dH(x) (based on derivatives)";
     // -------------------
-        case(CST_TdS_HP):
-            Provide = "CST -TdS(x)^{c} cov(dH/dx,Epot)";    // entropy of the constrained system  - contribution
-        break;
-    // -------------------
-        case(CST_TdS_HR):
-            Provide = "CST -TdS(x)^{c} cov(dH/dx,Erst)";    // entropy of the constrained system  - contribution
-        break;
-    // -------------------
-        case(CST_TdS_HK):
-            Provide = "CST -TdS(x)^{c} cov(dH/dx,Ekin)";    // entropy of the constrained system  - contribution
+        case(CST_MICFP):
+            Provide = "CST ICFP(x)";
         break;
     // -------------------
         default:
@@ -83,7 +75,7 @@ void CCSTProxy_mTdS::SetType(ECSTTdSType type)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-int CCSTProxy_mTdS::GetNumOfSamples(int ibin) const
+int CCSTProxy_dH::GetNumOfSamples(int ibin) const
 {
     if( Accu == NULL ){
         RUNTIME_ERROR("Accu is NULL");
@@ -93,7 +85,7 @@ int CCSTProxy_mTdS::GetNumOfSamples(int ibin) const
 
 //------------------------------------------------------------------------------
 
-void CCSTProxy_mTdS::SetNumOfSamples(int ibin,int nsamples)
+void CCSTProxy_dH::SetNumOfSamples(int ibin,int nsamples)
 {
     if( Accu == NULL ){
         RUNTIME_ERROR("Accu is NULL");
@@ -103,76 +95,78 @@ void CCSTProxy_mTdS::SetNumOfSamples(int ibin,int nsamples)
 
 //------------------------------------------------------------------------------
 
-double CCSTProxy_mTdS::GetValue(int ibin,int icv,EProxyRealm realm) const
+double CCSTProxy_dH::GetValue(int ibin,int icv,EProxyRealm realm) const
 {
     if( Accu == NULL ){
         RUNTIME_ERROR("Accu is NULL");
     }
 
-    double  nsamples = Accu->GetData("NTDS",ibin);
-    double  ncorr    = Accu->GetNCorr();
-
-    double  c11     = 0.0;
-    double  m2ene   = 0.0;
-    double  m2icf   = 0.0;
+    double value = 0.0;
+    double ncorr = Accu->GetNCorr();
+    double temp  = Accu->GetTemperature();
 
     switch(Type){
     // -------------------
-        case(CST_TdS_HH):{
-            double m2pp = Accu->GetData("M2PP",ibin,icv);
-            double m2pn = Accu->GetData("M2PN",ibin,icv);
-            c11 = 0.25*(m2pp-m2pn)/nsamples;
-            m2icf   = Accu->GetData("M2HICF",ibin,icv);
-            m2ene   = Accu->GetData("M2ETOT",ibin);
+        case(CST_dH): {
+            double  nsamples    = Accu->GetData("NTDS",ibin);
+            double  micfp       = Accu->GetData("MICFP",ibin,icv);
+            double  m2icfp      = Accu->GetData("M2ICFP",ibin,icv);
+
+            double  chp         = Accu->GetData("C11PP",ibin,icv) / nsamples;
+            double  m2eint      = Accu->GetData("M2EINT",ibin);
+
+            if( nsamples <= 0 ) return(value);
+
+            double value = micfp - chp / (temp * PMF_Rgas);
+            double sicfp = sqrt(m2icfp / nsamples);
+            double shp  = sqrt(m2icfp / nsamples) * sqrt( m2eint / nsamples )  / (temp * PMF_Rgas);
+
+            // approximation
+            double sigma = sqrt( sicfp*sicfp + shp*shp );
+
+            switch(realm){
+                // -------------------
+                case(E_PROXY_VALUE):
+                    return( value );
+                // -------------------
+                case(E_PROXY_SIGMA):
+                    return( sigma );
+                // -------------------
+                case(E_PROXY_ERROR):
+                    return( sqrt(ncorr) * sigma / sqrt(nsamples) );
+                // -------------------
+                default:
+                    RUNTIME_ERROR("unsupported realm");
+            }
         }
         break;
     // -------------------
-        case(CST_TdS_HP):
-            c11     = Accu->GetData("C11HP",ibin,icv)/nsamples;;
-            m2icf   = Accu->GetData("M2HICF",ibin,icv);
-            m2ene   = Accu->GetData("M2EPOT",ibin);
-        break;
-    // -------------------
-        case(CST_TdS_HR):
-            c11     = Accu->GetData("C11HR",ibin,icv)/nsamples;;
-            m2icf   = Accu->GetData("M2HICF",ibin,icv);
-            m2ene   = Accu->GetData("M2ERST",ibin);
-        break;
-    // -------------------
-        case(CST_TdS_HK):
-            c11     = Accu->GetData("C11HK",ibin,icv)/nsamples;;
-            m2icf   = Accu->GetData("M2HICF",ibin,icv);
-            m2ene   = Accu->GetData("M2EKIN",ibin);
+        case(CST_MICFP): {
+            double  nsamples = Accu->GetData("NTDS",ibin);
+            double  micf     = Accu->GetData("MICFP",ibin,icv);
+            double  m2icf    = Accu->GetData("M2ICFP",ibin,icv);
+
+            if( nsamples <= 0 ) return(value);
+
+            switch(realm){
+                // -------------------
+                case(E_PROXY_VALUE):
+                    return( micf );
+                // -------------------
+                case(E_PROXY_SIGMA):
+                    return( sqrt(m2icf / nsamples) );
+                // -------------------
+                case(E_PROXY_ERROR):
+                    return( sqrt(m2icf * ncorr) / nsamples );
+                // -------------------
+                default:
+                    RUNTIME_ERROR("unsupported realm");
+            }
+        }
         break;
     // -------------------
         default:
             RUNTIME_ERROR("unsupported type");
-    }
-
-    double  temp     = Accu->GetTemperature();
-
-    double value = 0.0;
-    if( nsamples <= 0 ) return(value);
-
-    switch(realm){
-    // -------------------
-        case(E_PROXY_VALUE): {
-            // negative value due to lambda vs dG/dx
-            return( c11 / (temp * PMF_Rgas) );
-        }
-    // -------------------
-        case(E_PROXY_SIGMA): {
-            // approximation
-            return( sqrt(m2icf / nsamples) * sqrt( m2ene / nsamples )  / (temp * PMF_Rgas) );
-        }
-    // -------------------
-        case(E_PROXY_ERROR): {
-            // approximation
-            return( sqrt(ncorr) * sqrt(m2icf / nsamples) * sqrt( m2ene / nsamples ) / sqrt(nsamples) / (temp * PMF_Rgas) );
-        }
-    // -------------------
-        default:
-            RUNTIME_ERROR("unsupported realm");
     }
 
     return(value);
@@ -181,6 +175,3 @@ double CCSTProxy_mTdS::GetValue(int ibin,int icv,EProxyRealm realm) const
 //==============================================================================
 //------------------------------------------------------------------------------
 //==============================================================================
-
-
-

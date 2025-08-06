@@ -133,12 +133,10 @@ public:
                 "** mTdS_HP/dx|-TdS_HP/dx   - entropy contribution to the free energy, cov(dH/dx,Epot)\n"
                 "** mTdS_HR/dx|-TdS_HR/dx   - entropy contribution to the free energy, cov(dH/dx,Erst)\n"
                 "** mTdS_HK/dx|-TdS_HK/dx   - entropy contribution to the free energy, cov(dH/dx,Ekin)\n"
-                "** mTdS_HV/dx|-TdS_HV/dx   - entropy contribution to the free energy, cov(dH/dx,pV)\n"
                 "\n"
                 "** mTdS_BP/dx|-TdS_BP/dx   - entropy contribution to the free energy, cov(bias,Epot)\n"
                 "** mTdS_BR/dx|-TdS_BR/dx   - entropy contribution to the free energy, cov(bias,Erst)\n"
                 "** mTdS_BK/dx|-TdS_BK/dx   - entropy contribution to the free energy, cov(bias,Ekin)\n"
-                "** mTdS_BV/dx|-TdS_BV/dx   - entropy contribution to the free energy, cov(bias,pV)\n"
                 )
     //----------------------------------------------------------------------
     CSO_MAP_OPT(CSmallString,                           /* option type */

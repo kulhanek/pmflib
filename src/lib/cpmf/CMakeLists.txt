@@ -46,6 +46,7 @@ SET(CPMF_METHODS_SRC
 
     # CST
         methods/cst/CSTProxy_dG.cpp
+        methods/cst/CSTProxy_dH.cpp
         methods/cst/CSTProxy_mTdS.cpp
         methods/cst/CSTProxy_MTC.cpp
 

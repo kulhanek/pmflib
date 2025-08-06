@@ -69,6 +69,10 @@ subroutine cst_core_main_lf
             lambdahist(:,hist_len) = lambda(:)
             epothist(hist_len) = PotEne - fepotaverage
             ersthist(hist_len) = PMFEne
+            if( fenthalpy_der ) then
+                call cst_core_calculate_icfp
+                icfphist(:,hist_len) = icfp(:)
+            end if
             call cst_core_analyze
             call cst_output_write
             call cst_restart_update
@@ -125,6 +129,10 @@ subroutine cst_core_rattlev_lf(cid)
                 lambdahist(:,hist_len) = lambda(:)
                 epothist(hist_len) = PotEne - fepotaverage
                 ersthist(hist_len) = PMFEne
+                if( fenthalpy_der ) then
+                    call cst_core_calculate_icfp
+                    icfphist(:,hist_len) = icfp(:)
+                end if
                 call cst_core_analyze
                 call cst_output_write
                 call cst_restart_update
@@ -206,6 +214,49 @@ subroutine cst_core_calculate_zdet
     isrzhist(hist_len) = isrz
 
 end subroutine cst_core_calculate_zdet
+
+!===============================================================================
+! Subroutine:  cst_core_calculate_icfp
+!===============================================================================
+
+subroutine cst_core_calculate_icfp
+
+    use pmf_utils
+    use pmf_dat
+    use cst_dat
+
+    implicit none
+    integer                :: i,ci,k,m
+    real(PMFDP)            :: f1,nv
+    ! --------------------------------------------------------------------------
+
+    ! start with dV/dx
+    CSTFrc(:,:) = Frc(:,:)
+
+    ! add constraint forces
+    do i=1,NumOfCONs
+        ci = CONList(i)%cvindx
+        do k=1,NumOfLAtoms
+            CSTFrc(:,k) = CSTFrc(:,k) + lambda(i)*CVContext%CVsDrvs(:,k,ci)
+        end do
+    end do
+
+    ! project to CVs
+    do i=1,NumOfCONs
+        ci = CONList(i)%cvindx
+        f1 = 0.0d0
+        nv = 0.0d0
+        do k=1,NumOfLAtoms
+            do m=1,3
+                ! force part
+                nv = nv + CVContext%CVsDrvs(m,k,ci) * CVContext%CVsDrvs(m,k,ci)
+                f1 = f1 + CVContext%CVsDrvs(m,k,ci) * CSTFrc(m,k)
+            end do
+        end do
+        icfp(i) = f1 / nv
+    end do
+
+end subroutine cst_core_calculate_icfp
 
 !===============================================================================
 ! Subroutine:  cst_core_shift_histbuffs
@@ -388,6 +439,7 @@ subroutine cst_core_analyze_dhTds
     real(PMFDP)     :: dekin1, dekin2
     real(PMFDP)     :: dpp, dpp1, dpp2
     real(PMFDP)     :: dpn, dpn1, dpn2
+    real(PMFDP)     :: dicf1, dicf2
     ! --------------------------------------------------------------------------
 
     if( enevalidhist(hist_len+hist_fidx) ) fene_step = fene_step + 1
@@ -406,33 +458,44 @@ subroutine cst_core_analyze_dhTds
     if( fenthalpy .or. (fentropy .and. fentdecomp) ) then
         ! internal energy
         deint1 = eint - meint
-        meint  = meint  + deint1 * invn
+        meint  = meint + deint1 * invn
         deint2 = eint - meint
         m2eint = m2eint + deint1 * deint2
 
         ! potential energy
         depot1 = epot - mepot
-        mepot  = mepot  + depot1 * invn
+        mepot  = mepot + depot1 * invn
         depot2 = epot - mepot
         m2epot = m2epot + depot1 * depot2
 
         ! restraint energy
         derst1 = erst - merst
-        merst  = merst  + derst1 * invn
+        merst  = merst + derst1 * invn
         derst2 = erst - merst
         m2erst = m2erst + derst1 * derst2
 
         ! kinetic energy
         dekin1 = ekin - mekin
-        mekin  = mekin  + dekin1 * invn
+        mekin  = mekin + dekin1 * invn
         dekin2 = ekin - mekin
         m2ekin = m2ekin + dekin1 * dekin2
+    end if
+
+    if( fenthalpy .and. fenthalpy_der ) then
+        do i=1,NumOfCONs
+            dicf1     = icfp(i) - micfp(i)
+            micfp(i)  = micfp(i) + dicf1 * invn
+            dicf2     = icfp(i) - micfp(i)
+            m2icfp(i) = m2icfp(i) + dicf1 * dicf2
+
+            c11pp(i)  = c11pp(i) + dicf1 * dicf2
+        end do
     end if
 
     if( fentropy ) then
         ! total energy
         detot1 = etot - metot
-        metot  = metot  + detot1 * invn
+        metot  = metot + detot1 * invn
         detot2 = etot - metot
         m2etot = m2etot + detot1 * detot2
     end if
@@ -444,19 +507,19 @@ subroutine cst_core_analyze_dhTds
             ! lambda
             lam             = lambda(i)
             dval1           = lam - mhicf(i)
-            mhicf(i)        = mhicf(i)  + dval1 * invn
+            mhicf(i)        = mhicf(i) + dval1 * invn
             dval2           = lam - mhicf(i)
             m2hicf(i)       = m2hicf(i) + dval1 * dval2
 
             dpp     = lam + etot
             dpp1    = dpp - mpp(i)
-            mpp(i)  = mpp(i)  + dpp1 * invn
+            mpp(i)  = mpp(i) + dpp1 * invn
             dpp2    = dpp - mpp(i)
             m2pp(i) = m2pp(i) + dpp1 * dpp2
 
             dpn     = lam - etot
             dpn1    = dpn - mpn(i)
-            mpn(i)  = mpn(i)  + dpn1 * invn
+            mpn(i)  = mpn(i) + dpn1 * invn
             dpn2    = dpn - mpn(i)
             m2pn(i) = m2pn(i) + dpn1 * dpn2
 

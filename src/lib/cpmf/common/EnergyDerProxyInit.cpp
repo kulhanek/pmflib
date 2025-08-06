@@ -23,6 +23,7 @@
 #include <ABFProxy_dH.hpp>
 #include <ABFProxy_mTdS.hpp>
 #include <CSTProxy_dG.hpp>
+#include <CSTProxy_dH.hpp>
 #include <CSTProxy_mTdS.hpp>
 
 //==============================================================================
@@ -45,9 +46,13 @@ CEnergyDerProxyPtr CEnergyDerProxyInit::InitProxy(const CSmallString& realm,CPMF
         }
 // -----------------------------------------------
     } else if ( realm == "ICFP/dx" ) {
-        if( CABFProxy_mTdS::IsCompatible(accu) ){
+        if( CABFProxy_dH::IsCompatible(accu) ){
             CABFProxy_dH_Ptr proxy = CABFProxy_dH_Ptr(new CABFProxy_dH);
             proxy->SetType(ABF_MICFP);
+            lproxy = proxy;
+        } else if ( CCSTProxy_dH::IsCompatible(accu) ){
+            CCSTProxy_dH_Ptr proxy = CCSTProxy_dH_Ptr(new CCSTProxy_dH);
+            proxy->SetType(CST_MICFP);
             lproxy = proxy;
         } else {
             CSmallString error;
@@ -56,9 +61,13 @@ CEnergyDerProxyPtr CEnergyDerProxyInit::InitProxy(const CSmallString& realm,CPMF
         }
 // -----------------------------------------------
     } else if ( realm == "dH/dx" ) {
-        if( CABFProxy_mTdS::IsCompatible(accu) ){
+        if( CABFProxy_dH::IsCompatible(accu) ){
             CABFProxy_dH_Ptr proxy = CABFProxy_dH_Ptr(new CABFProxy_dH);
             proxy->SetType(ABF_dH);
+            lproxy = proxy;
+        } else if ( CCSTProxy_dH::IsCompatible(accu) ){
+            CCSTProxy_dH_Ptr proxy = CCSTProxy_dH_Ptr(new CCSTProxy_dH);
+            proxy->SetType(CST_dH);
             lproxy = proxy;
         } else {
             CSmallString error;

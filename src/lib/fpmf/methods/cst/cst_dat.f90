@@ -157,6 +157,10 @@ real(PMFDP)                 :: m2friter         ! M2 moment of friter
 real(PMFDP),allocatable     :: lambda(:)        ! total lambda with corrected units
 real(PMFDP)                 :: fzdet            ! current value of det(Z)
 
+! ICFP
+real(PMFDP),allocatable     :: CSTFrc(:,:)      ! forces after constraints are imposed
+real(PMFDP),allocatable     :: icfp(:)          ! projected forces to CVs
+
 ! global variables for LU decomposition and other helper variable  -------------
 real(PMFDP),allocatable     :: jac(:,:)         ! Jacobian matrix
 real(PMFDP),allocatable     :: vv(:)            ! for LU decomposition
@@ -171,6 +175,7 @@ real(PMFDP),allocatable     :: epothist(:)
 real(PMFDP),allocatable     :: ersthist(:)
 real(PMFDP),allocatable     :: ekinhist(:)
 real(PMFDP),allocatable     :: isrzhist(:)
+real(PMFDP),allocatable     :: icfphist(:,:)
 logical,allocatable         :: enevalidhist(:)      ! is energy valid?
 
 ! ------------------------------------------------------------------------------

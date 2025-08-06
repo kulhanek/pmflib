@@ -594,6 +594,7 @@ subroutine cst_init_core
               ersthist(hist_len),               &
               ekinhist(hist_len),               &
               isrzhist(hist_len),               &
+              icfphist(NumOfCONs,hist_len),     &
               enevalidhist(hist_len),           &
               stat= alloc_failed )
 
@@ -607,6 +608,7 @@ subroutine cst_init_core
     ersthist(:)     = 0.0d0
     ekinhist(:)     = 0.0d0
     isrzhist(:)     = 0.0d0
+    icfphist(:,:)   = 0.0d0
     enevalidhist(:) = .false.
 
 ! accumulator setup for free energy calculation
@@ -646,27 +648,31 @@ subroutine cst_init_core
     end if
 
     if( fenthalpy .and. fenthalpy_der ) then
-        allocate( micfp(NumOfCONs),     &
-                  m2icfp(NumOfCONs),    &
-                  c11pp(NumOfCONs),     &
+        allocate( CSTFrc(3,NumOfLAtoms),    &
+                  icfp(NumOfCONs),          &
+                  micfp(NumOfCONs),         &
+                  m2icfp(NumOfCONs),        &
+                  c11pp(NumOfCONs),         &
                   stat= alloc_failed )
 
         if( alloc_failed .ne. 0 ) then
             call pmf_utils_exit(PMF_OUT,1,&
                      '[CST] Unable to allocate memory for arrays used for enthalpy/entropy calculations!')
         end if
+        CSTFrc(:,:) = 0.0d0
+        icfp(:)     = 0.0d0
         micfp(:)    = 0.0d0
         m2icfp(:)   = 0.0d0
         c11pp(:)    = 0.0d0
     end if
 
     if( fentropy ) then
-        allocate( mpp(NumOfCONs),     &
-                  m2pp(NumOfCONs),    &
-                  mpn(NumOfCONs),     &
-                  m2pn(NumOfCONs),     &
+        allocate( mpp(NumOfCONs),       &
+                  m2pp(NumOfCONs),      &
+                  mpn(NumOfCONs),       &
+                  m2pn(NumOfCONs),      &
                   mhicf(NumOfCONs),     &
-                  m2hicf(NumOfCONs),     &
+                  m2hicf(NumOfCONs),    &
                   stat= alloc_failed )
 
         if( alloc_failed .ne. 0 ) then

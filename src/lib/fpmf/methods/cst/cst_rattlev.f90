@@ -87,14 +87,8 @@ subroutine cst_rattlev_calculate_ma
         lambdav(i) = tmp
     end do
 
-    ! DEBUG
-    ! write(*,*) 'lambdav=',lambdav
-
 ! left side
     call cst_rattlev_calc_jacobian
-
-    ! DEBUG
-    ! write(*,*) 'jac=',jac
 
  ! solve LE
      if( NumOfCONs .gt. 1 ) then
