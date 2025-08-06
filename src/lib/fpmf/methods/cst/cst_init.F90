@@ -652,6 +652,8 @@ subroutine cst_init_core
                   icfp(NumOfCONs),          &
                   micfp(NumOfCONs),         &
                   m2icfp(NumOfCONs),        &
+                  micfpz(NumOfCONs),        &
+                  m2icfpz(NumOfCONs),        &
                   c11pp(NumOfCONs),         &
                   stat= alloc_failed )
 
@@ -663,7 +665,11 @@ subroutine cst_init_core
         icfp(:)     = 0.0d0
         micfp(:)    = 0.0d0
         m2icfp(:)   = 0.0d0
+        micfpz(:)   = 0.0d0
+        m2icfpz(:)  = 0.0d0
         c11pp(:)    = 0.0d0
+        mfixmanw    = 0.0d0
+        m2fixmanw   = 0.0d0
     end if
 
     if( fentropy ) then

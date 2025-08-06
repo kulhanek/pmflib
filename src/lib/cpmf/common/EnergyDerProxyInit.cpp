@@ -60,6 +60,17 @@ CEnergyDerProxyPtr CEnergyDerProxyInit::InitProxy(const CSmallString& realm,CPMF
             RUNTIME_ERROR(error);
         }
 // -----------------------------------------------
+    } else if ( realm == "ICFPZ/dx" ) {
+        if ( CCSTProxy_dH::IsCompatible(accu) ){
+            CCSTProxy_dH_Ptr proxy = CCSTProxy_dH_Ptr(new CCSTProxy_dH);
+            proxy->SetType(CST_MICFPZ);
+            lproxy = proxy;
+        } else {
+            CSmallString error;
+            error << "incompatible method: " << accu->GetMethod() << " with requested realm: " <<  realm;
+            RUNTIME_ERROR(error);
+        }
+// -----------------------------------------------
     } else if ( realm == "dH/dx" ) {
         if( CABFProxy_dH::IsCompatible(accu) ){
             CABFProxy_dH_Ptr proxy = CABFProxy_dH_Ptr(new CABFProxy_dH);

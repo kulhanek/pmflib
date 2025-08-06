@@ -66,6 +66,10 @@ void CCSTProxy_dH::SetType(ECSTdHType type)
             Provide = "CST ICFP(x)";
         break;
     // -------------------
+        case(CST_MICFPZ):
+            Provide = "CST ICFPZ(x)";
+        break;
+    // -------------------
         default:
             RUNTIME_ERROR("unsupported type");
     }
@@ -158,6 +162,36 @@ double CCSTProxy_dH::GetValue(int ibin,int icv,EProxyRealm realm) const
                 // -------------------
                 case(E_PROXY_ERROR):
                     return( sqrt(m2icf * ncorr) / nsamples );
+                // -------------------
+                default:
+                    RUNTIME_ERROR("unsupported realm");
+            }
+        }
+        break;
+    // -------------------
+        case(CST_MICFPZ): {
+            double  nsamples = Accu->GetData("NTDS",ibin);
+
+            double  mfixmanw    = Accu->GetData("MFIXW",ibin,icv);
+//            double  m2fixmanw   = Accu->GetData("M2FIXW",ibin,icv);
+
+            double  micfz       = Accu->GetData("MICFPZ",ibin,icv);
+      //      double  m2icfz      = Accu->GetData("M2ICFPZ",ibin,icv);
+
+            if( nsamples <= 0 ) return(value);
+
+            switch(realm){
+                // -------------------
+                case(E_PROXY_VALUE):
+                    return( micfz / mfixmanw );
+                // -------------------
+                case(E_PROXY_SIGMA):
+                    return(0.0); // FIXME
+                    // return( sqrt(m2icf / nsamples) );
+                // -------------------
+                case(E_PROXY_ERROR):
+                    return(0.0); // FIXME
+                    // return( sqrt(m2icf * ncorr) / nsamples );
                 // -------------------
                 default:
                     RUNTIME_ERROR("unsupported realm");

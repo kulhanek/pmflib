@@ -210,8 +210,12 @@ real(PMFDP)                 :: mekin            ! mean of kinetic energy
 real(PMFDP)                 :: m2ekin           ! M2 of kinetic energy
 
 ! fenthalpy .and. (fenthalpy_der .gt. 0) ---------------------------------------
+real(PMFDP)                 :: mfixmanw
+real(PMFDP)                 :: m2fixmanw
 real(PMFDP),allocatable     :: micfp(:)         ! mean of ICF-P
 real(PMFDP),allocatable     :: m2icfp(:)        ! M2 of internal energy
+real(PMFDP),allocatable     :: micfpz(:)        ! mean of ICF-P - Fixman weighted
+real(PMFDP),allocatable     :: m2icfpz(:)        ! M2 of internal energy - Fixman weighted
 real(PMFDP),allocatable     :: c11pp(:)         ! co-variances covar(ICF-P,Epot)
 
 ! fentropy ---------------------------------------------------------------------

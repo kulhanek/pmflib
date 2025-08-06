@@ -329,6 +329,8 @@ subroutine cst_core_analyze
         if( fenthalpy .and. fenthalpy_der ) then
             micfp(:)    = 0.0d0
             m2icfp(:)   = 0.0d0
+            micfpz(:)   = 0.0d0
+            m2icfpz(:)  = 0.0d0
             c11pp(:)    = 0.0d0
         end if
 
@@ -441,7 +443,8 @@ subroutine cst_core_analyze_dhTds
     real(PMFDP)     :: dekin1, dekin2
     real(PMFDP)     :: dpp, dpp1, dpp2
     real(PMFDP)     :: dpn, dpn1, dpn2
-    real(PMFDP)     :: dicf1, dicf2, licfp
+    real(PMFDP)     :: dicf1, dicf2, licfp, licfpz
+    real(PMFDP)     :: dfixmanw1, dfixmanw2, fixmanw
     ! --------------------------------------------------------------------------
 
     if( enevalidhist(hist_len+hist_fidx) ) fene_step = fene_step + 1
@@ -484,6 +487,13 @@ subroutine cst_core_analyze_dhTds
     end if
 
     if( fenthalpy .and. fenthalpy_der ) then
+        fixmanw = isrzhist(hist_len+hist_fidx)
+
+        dfixmanw1 = fixmanw - mfixmanw
+        mfixmanw  = mfixmanw + dfixmanw1 * invn
+        dfixmanw2 = fixmanw - mfixmanw
+        m2fixmanw = m2fixmanw + dfixmanw1 * dfixmanw2
+
         do i=1,NumOfCONs
             licfp = icfphist(i,hist_len+hist_fidx)
             dicf1     = licfp - micfp(i)
@@ -492,6 +502,12 @@ subroutine cst_core_analyze_dhTds
             m2icfp(i) = m2icfp(i) + dicf1 * dicf2
 
             c11pp(i)  = c11pp(i) + dicf1 * deint2
+
+            licfpz = icfphist(i,hist_len+hist_fidx) * fixmanw
+            dicf1      = licfpz - micfpz(i)
+            micfpz(i)  = micfpz(i) + dicf1 * invn
+            dicf2      = licfpz - micfpz(i)
+            m2icfpz(i) = m2icfpz(i) + dicf1 * dicf2
         end do
     end if
 
