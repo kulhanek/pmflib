@@ -33,6 +33,10 @@ CEnergyProxyPtr CEnergyProxyInit::InitProxy(const CSmallString& realm,CPMFAccumu
         CPMFProxy_dH_Ptr proxy = CPMFProxy_dH_Ptr(new CPMFProxy_dH);
         proxy->SetType(PMF_EINT);
         lproxy = proxy;
+    } else if( realm == "<EintFW>" ){
+        CPMFProxy_dH_Ptr proxy = CPMFProxy_dH_Ptr(new CPMFProxy_dH);
+        proxy->SetType(PMF_EINTFW);
+        lproxy = proxy;
     } else if( realm == "<Etot>" ){
         CPMFProxy_dH_Ptr proxy = CPMFProxy_dH_Ptr(new CPMFProxy_dH);
         proxy->SetType(PMF_ETOT);

@@ -27,6 +27,7 @@
 
 enum EPMFdHType {
     PMF_EINT,   // EPOT+ERST
+    PMF_EINTFW,   // EPOT+ERST - Fixman weighted
     PMF_ETOT,
     PMF_EPOT,
     PMF_EKIN,

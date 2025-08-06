@@ -346,6 +346,14 @@ subroutine cst_accu_write(iounit)
         rbuf_B(:) = 0
         rbuf_B(glbidx) = ntds
         call pmf_accu_write_rbuf_B(cstaccu,iounit,'NTDS',   'AD',rbuf_B)
+
+        rbuf_B(:) = 0.0d0
+        rbuf_B(glbidx) = mfw
+        call pmf_accu_write_rbuf_B(cstaccu,iounit,'MFW',    'WA',rbuf_B, 'NTDS')
+
+        rbuf_B(:) = 0.0d0
+        rbuf_B(glbidx) = m2fw
+        call pmf_accu_write_rbuf_B(cstaccu,iounit,'M2FW',   'M2',rbuf_B, 'NTDS','MFW')
     end if
 
     if( fenthalpy .or. (fentropy .and. fentdecomp) ) then
@@ -380,6 +388,40 @@ subroutine cst_accu_write(iounit)
         rbuf_B(:) = 0.0d0
         rbuf_B(glbidx) = m2ekin
         call pmf_accu_write_rbuf_B(cstaccu,iounit,'M2EKIN', 'M2',rbuf_B, 'NTDS','MEKIN')
+
+    ! --------------------------------------------
+
+        rbuf_B(:) = 0.0d0
+        rbuf_B(glbidx) = meintfw
+        call pmf_accu_write_rbuf_B(cstaccu,iounit,'MEINTFW',    'WA',rbuf_B, 'NTDS')
+
+        rbuf_B(:) = 0.0d0
+        rbuf_B(glbidx) = m2eintfw
+        call pmf_accu_write_rbuf_B(cstaccu,iounit,'M2EINTFW',   'M2',rbuf_B, 'NTDS','MEINTFW')
+
+        rbuf_B(:) = 0.0d0
+        rbuf_B(glbidx) = mepotfw
+        call pmf_accu_write_rbuf_B(cstaccu,iounit,'MEPOTFW',    'WA',rbuf_B, 'NTDS')
+
+        rbuf_B(:) = 0.0d0
+        rbuf_B(glbidx) = m2epotfw
+        call pmf_accu_write_rbuf_B(cstaccu,iounit,'M2EPOTFW',   'M2',rbuf_B, 'NTDS','MEPOTFW')
+
+        rbuf_B(:) = 0.0d0
+        rbuf_B(glbidx) = merstfw
+        call pmf_accu_write_rbuf_B(cstaccu,iounit,'MERSTFW',    'WA',rbuf_B, 'NTDS')
+
+        rbuf_B(:) = 0.0d0
+        rbuf_B(glbidx) = m2erstfw
+        call pmf_accu_write_rbuf_B(cstaccu,iounit,'M2ERSTFW',   'M2',rbuf_B, 'NTDS','MERSTFW')
+
+        rbuf_B(:) = 0.0d0
+        rbuf_B(glbidx) = mekinfw
+        call pmf_accu_write_rbuf_B(cstaccu,iounit,'MEKINFW',    'WA',rbuf_B, 'NTDS')
+
+        rbuf_B(:) = 0.0d0
+        rbuf_B(glbidx) = m2ekinfw
+        call pmf_accu_write_rbuf_B(cstaccu,iounit,'M2EKINFW',   'M2',rbuf_B, 'NTDS','MEKINFW')
     end if
 
     if( fenthalpy .and. fenthalpy_der ) then
@@ -397,29 +439,22 @@ subroutine cst_accu_write(iounit)
 
         rbuf_M(:,:) = 0.0d0
         do i=1,cstaccu%tot_cvs
-            rbuf_M(i,glbidx) = micfpz(i)
-        end do
-        call pmf_accu_write_rbuf_M(cstaccu,iounit,'MICFPZ', 'WA',rbuf_M, 'NTDS')
-
-        rbuf_M(:,:) = 0.0d0
-        do i=1,cstaccu%tot_cvs
-            rbuf_M(i,glbidx) = m2icfpz(i)
-        end do
-        call pmf_accu_write_rbuf_M(cstaccu,iounit,'M2ICFPZ','M2',rbuf_M, 'NTDS','MICFPZ')
-
-        rbuf_B(:) = 0.0d0
-        rbuf_B(glbidx) = mfixmanw
-        call pmf_accu_write_rbuf_B(cstaccu,iounit,'MFIXW',  'WA',rbuf_B, 'NTDS')
-
-        rbuf_B(:) = 0.0d0
-        rbuf_B(glbidx) = m2fixmanw
-        call pmf_accu_write_rbuf_B(cstaccu,iounit,'M2FIXW', 'M2',rbuf_B, 'NTDS','MFIXW')
-
-        rbuf_M(:,:) = 0.0d0
-        do i=1,cstaccu%tot_cvs
             rbuf_M(i,glbidx) = c11pp(i)
         end do
         call pmf_accu_write_rbuf_M(cstaccu,iounit,'C11PP',  'CO',rbuf_M, 'NTDS','MICFP','MEINT')
+
+
+        rbuf_M(:,:) = 0.0d0
+        do i=1,cstaccu%tot_cvs
+            rbuf_M(i,glbidx) = micfpfw(i)
+        end do
+        call pmf_accu_write_rbuf_M(cstaccu,iounit,'MICFPFW', 'WA',rbuf_M, 'NTDS')
+
+        rbuf_M(:,:) = 0.0d0
+        do i=1,cstaccu%tot_cvs
+            rbuf_M(i,glbidx) = m2icfpfw(i)
+        end do
+        call pmf_accu_write_rbuf_M(cstaccu,iounit,'M2ICFPFW','M2',rbuf_M, 'NTDS','MICFPFW')
     end if
 
     if( fentropy ) then

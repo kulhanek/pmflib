@@ -313,6 +313,8 @@ subroutine cst_core_analyze
 
         if( fenthalpy .or. fentropy ) then
             ntds = 0.0d0
+            mfw  = 0.0d0
+            m2fw = 0.0d0
         end if
 
         if( fenthalpy .or. (fentropy .and. fentdecomp) ) then
@@ -324,14 +326,25 @@ subroutine cst_core_analyze
             m2erst      = 0.0d0
             mekin       = 0.0d0
             m2ekin      = 0.0d0
+
+            meintfw     = 0.0d0
+            m2eintfw    = 0.0d0
+            mepotfw     = 0.0d0
+            m2epotfw    = 0.0d0
+            merstfw     = 0.0d0
+            m2erstfw    = 0.0d0
+            mekinfw     = 0.0d0
+            m2ekinfw    = 0.0d0
         end if
 
         if( fenthalpy .and. fenthalpy_der ) then
             micfp(:)    = 0.0d0
             m2icfp(:)   = 0.0d0
-            micfpz(:)   = 0.0d0
-            m2icfpz(:)  = 0.0d0
             c11pp(:)    = 0.0d0
+            micfpfw(:)  = 0.0d0
+            m2icfpfw(:) = 0.0d0
+            micfpeintfw(:)  = 0.0d0
+            m2icfpeintfw(:) = 0.0d0
         end if
 
         if( fentropy ) then
@@ -441,10 +454,16 @@ subroutine cst_core_analyze_dhTds
     real(PMFDP)     :: derst1, derst2
     real(PMFDP)     :: deint1, deint2
     real(PMFDP)     :: dekin1, dekin2
+    real(PMFDP)     :: depot1fw, depot2fw
+    real(PMFDP)     :: derst1fw, derst2fw
+    real(PMFDP)     :: deint1fw, deint2fw
+    real(PMFDP)     :: dekin1fw, dekin2fw
     real(PMFDP)     :: dpp, dpp1, dpp2
     real(PMFDP)     :: dpn, dpn1, dpn2
-    real(PMFDP)     :: dicf1, dicf2, licfp, licfpz
-    real(PMFDP)     :: dfixmanw1, dfixmanw2, fixmanw
+    real(PMFDP)     :: dicf1, dicf2, licfp
+    real(PMFDP)     :: dicf1fw, dicf2fw, licfpfw
+    real(PMFDP)     :: dicfeint1fw, dicfeint2fw, licfpeintfw
+    real(PMFDP)     :: dfw1, dfw2, fw
     ! --------------------------------------------------------------------------
 
     if( enevalidhist(hist_len+hist_fidx) ) fene_step = fene_step + 1
@@ -453,6 +472,15 @@ subroutine cst_core_analyze_dhTds
     ntds = ntds + 1.0d0
     invn = 1.0d0/ntds
 
+    fw = isrzhist(hist_len+hist_fidx)
+
+! fixman weight
+    dfw1 = fw - mfw
+    mfw  = mfw + dfw1 * invn
+    dfw2 = fw - mfw
+    m2fw = m2fw + dfw1 * dfw2
+
+! other data
     lambda(:)   = lambdahist(:,hist_len+hist_fidx)
     epot        = epothist(hist_len+hist_fidx)     ! t-dt
     erst        = ersthist(hist_len+hist_fidx)     ! t-dt
@@ -484,16 +512,33 @@ subroutine cst_core_analyze_dhTds
         mekin  = mekin + dekin1 * invn
         dekin2 = ekin - mekin
         m2ekin = m2ekin + dekin1 * dekin2
+    ! --------------------------------------------
+        ! internal energy
+        deint1fw = eint*fw - meintfw
+        meintfw  = meintfw + deint1fw * invn
+        deint2fw = eint*fw - meintfw
+        m2eintfw = m2eintfw + deint1fw * deint2fw
+
+        ! potential energy
+        depot1fw = epot*fw - mepotfw
+        mepotfw  = mepotfw + depot1fw * invn
+        depot2fw = epot*fw - mepotfw
+        m2epotfw = m2epotfw + depot1fw * depot2fw
+
+        ! restraint energy
+        derst1fw = erst*fw - merstfw
+        merstfw  = merstfw + derst1fw * invn
+        derst2fw = erst*fw - merstfw
+        m2erstfw = m2erstfw + derst1fw * derst2fw
+
+        ! kinetic energy
+        dekin1fw = ekin*fw - mekinfw
+        mekinfw  = mekinfw + dekin1fw * invn
+        dekin2fw = ekin*fw - mekinfw
+        m2ekinfw = m2ekinfw + dekin1fw * dekin2fw
     end if
 
     if( fenthalpy .and. fenthalpy_der ) then
-        fixmanw = isrzhist(hist_len+hist_fidx)
-
-        dfixmanw1 = fixmanw - mfixmanw
-        mfixmanw  = mfixmanw + dfixmanw1 * invn
-        dfixmanw2 = fixmanw - mfixmanw
-        m2fixmanw = m2fixmanw + dfixmanw1 * dfixmanw2
-
         do i=1,NumOfCONs
             licfp = icfphist(i,hist_len+hist_fidx)
             dicf1     = licfp - micfp(i)
@@ -503,11 +548,17 @@ subroutine cst_core_analyze_dhTds
 
             c11pp(i)  = c11pp(i) + dicf1 * deint2
 
-            licfpz = icfphist(i,hist_len+hist_fidx) * fixmanw
-            dicf1      = licfpz - micfpz(i)
-            micfpz(i)  = micfpz(i) + dicf1 * invn
-            dicf2      = licfpz - micfpz(i)
-            m2icfpz(i) = m2icfpz(i) + dicf1 * dicf2
+            licfpfw = icfphist(i,hist_len+hist_fidx)*fw
+            dicf1fw     = licfpfw - micfpfw(i)
+            micfpfw(i)  = micfpfw(i) + dicf1fw * invn
+            dicf2fw     = licfpfw - micfpfw(i)
+            m2icfpfw(i) = m2icfpfw(i) + dicf1fw * dicf2fw
+
+            licfpeintfw = icfphist(i,hist_len+hist_fidx)*eint*fw
+            dicfeint1fw     = licfpeintfw - micfpeintfw(i)
+            micfpeintfw(i)  = micfpeintfw(i) + dicfeint1fw * invn
+            dicfeint2fw     = licfpeintfw - micfpeintfw(i)
+            m2icfpeintfw(i) = m2icfpeintfw(i) + dicfeint1fw * dicfeint2fw
         end do
     end if
 

@@ -633,7 +633,9 @@ subroutine cst_init_core
     fene_step = 0
 
     if( fenthalpy .or. fentropy ) then
-        ntds = 0.0d0
+        ntds    = 0.0d0
+        mfw     = 0.0d0
+        m2fw    = 0.0d0
     end if
 
     if( fenthalpy .or. (fentropy .and. fentdecomp) ) then
@@ -645,6 +647,15 @@ subroutine cst_init_core
         m2erst      = 0.0d0
         mekin       = 0.0d0
         m2ekin      = 0.0d0
+
+        meintfw     = 0.0d0
+        m2eintfw    = 0.0d0
+        mepotfw     = 0.0d0
+        m2epotfw    = 0.0d0
+        merstfw     = 0.0d0
+        m2erstfw    = 0.0d0
+        mekinfw     = 0.0d0
+        m2ekinfw    = 0.0d0
     end if
 
     if( fenthalpy .and. fenthalpy_der ) then
@@ -652,9 +663,11 @@ subroutine cst_init_core
                   icfp(NumOfCONs),          &
                   micfp(NumOfCONs),         &
                   m2icfp(NumOfCONs),        &
-                  micfpz(NumOfCONs),        &
-                  m2icfpz(NumOfCONs),        &
                   c11pp(NumOfCONs),         &
+                  micfpfw(NumOfCONs),       &
+                  m2icfpfw(NumOfCONs),      &
+                  micfpeintfw(NumOfCONs),       &
+                  m2icfpeintfw(NumOfCONs),      &
                   stat= alloc_failed )
 
         if( alloc_failed .ne. 0 ) then
@@ -665,11 +678,12 @@ subroutine cst_init_core
         icfp(:)     = 0.0d0
         micfp(:)    = 0.0d0
         m2icfp(:)   = 0.0d0
-        micfpz(:)   = 0.0d0
-        m2icfpz(:)  = 0.0d0
         c11pp(:)    = 0.0d0
-        mfixmanw    = 0.0d0
-        m2fixmanw   = 0.0d0
+
+        micfpfw(:)  = 0.0d0
+        m2icfpfw(:) = 0.0d0
+        micfpeintfw(:)  = 0.0d0
+        m2icfpeintfw(:) = 0.0d0
     end if
 
     if( fentropy ) then

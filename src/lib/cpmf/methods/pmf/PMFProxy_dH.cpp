@@ -55,6 +55,10 @@ void CPMFProxy_dH::SetType(EPMFdHType type)
             Provide = "dH(x)=<Eint>";
         break;
     // -------------------
+        case(PMF_EINTFW):
+            Provide = "dH(x)=<EintFW>";
+        break;
+    // -------------------
         case(PMF_ETOT):
             Provide = "dH(x)=<Etot>";
         break;
@@ -111,6 +115,13 @@ double CPMFProxy_dH::GetValue( int ibin,EProxyRealm realm) const
                 mene    = Accu->GetData("MEPOT",ibin) + Accu->GetData("MERST",ibin);
                 m2ene    = Accu->GetData("M2ETOT",ibin) + Accu->GetData("M2ERST",ibin);
             }
+        break;
+        case(PMF_EINTFW):{
+            mene    = Accu->GetData("MEINTFW",ibin);
+            double fw      = Accu->GetData("MFW",ibin);
+            mene = mene / fw; // FIXME
+            m2ene   = Accu->GetData("M2EINT",ibin);
+        }
         break;
     // -------------------
         case(PMF_ETOT):

@@ -198,6 +198,8 @@ real(PMFDP),allocatable     :: m2lambda(:)      ! M2 of lambdas
 ! fenthalpy .or. fentropy  -----------------------------------------------------
 integer                     :: fene_step
 real(PMFDP)                 :: ntds             ! number of step for enthalpy and entropy calculations
+real(PMFDP)                 :: mfw              ! Fixman weight
+real(PMFDP)                 :: m2fw             ! M2 of Fixman weight
 
 ! fenthalpy .or. (fentropy .and. fentdecomp) -----------------------------------
 real(PMFDP)                 :: meint            ! mean of internal energy
@@ -209,14 +211,25 @@ real(PMFDP)                 :: m2erst           ! M2 of restraint energy
 real(PMFDP)                 :: mekin            ! mean of kinetic energy
 real(PMFDP)                 :: m2ekin           ! M2 of kinetic energy
 
+real(PMFDP)                 :: meintfw          ! mean of internal energy
+real(PMFDP)                 :: m2eintfw         ! M2 of internal energy
+real(PMFDP)                 :: mepotfw          ! mean of potential energy
+real(PMFDP)                 :: m2epotfw         ! M2 of potential energy
+real(PMFDP)                 :: merstfw          ! mean of restraint energy
+real(PMFDP)                 :: m2erstfw         ! M2 of restraint energy
+real(PMFDP)                 :: mekinfw          ! mean of kinetic energy
+real(PMFDP)                 :: m2ekinfw         ! M2 of kinetic energy
+
 ! fenthalpy .and. (fenthalpy_der .gt. 0) ---------------------------------------
-real(PMFDP)                 :: mfixmanw
-real(PMFDP)                 :: m2fixmanw
 real(PMFDP),allocatable     :: micfp(:)         ! mean of ICF-P
-real(PMFDP),allocatable     :: m2icfp(:)        ! M2 of internal energy
-real(PMFDP),allocatable     :: micfpz(:)        ! mean of ICF-P - Fixman weighted
-real(PMFDP),allocatable     :: m2icfpz(:)        ! M2 of internal energy - Fixman weighted
-real(PMFDP),allocatable     :: c11pp(:)         ! co-variances covar(ICF-P,Epot)
+real(PMFDP),allocatable     :: m2icfp(:)        ! M2 of ICF-P
+real(PMFDP),allocatable     :: c11pp(:)         ! co-variances covar(ICF-P,Eint)
+
+real(PMFDP),allocatable     :: micfpfw(:)       ! mean of ICF-P - Fixman weighted
+real(PMFDP),allocatable     :: m2icfpfw(:)      ! M2 of ICF-P - Fixman weighted
+
+real(PMFDP),allocatable     :: micfpeintfw(:)   ! mean of ICF-P * Eint - Fixman weighted
+real(PMFDP),allocatable     :: m2icfpeintfw(:)  ! M2 of ICF-P * Eint - Fixman weighted
 
 ! fentropy ---------------------------------------------------------------------
 real(PMFDP)                 :: metot            ! mean of total energy
