@@ -276,6 +276,7 @@ subroutine cst_core_shift_histbuffs
         ersthist(i)     = ersthist(i+1)
         ekinhist(i)     = ekinhist(i+1)
         isrzhist(i)     = isrzhist(i+1)
+        icfphist(:,i)   = icfphist(:,i+1)
         enevalidhist(i) = enevalidhist(i+1)
     end do
 
@@ -439,7 +440,7 @@ subroutine cst_core_analyze_dhTds
     real(PMFDP)     :: dekin1, dekin2
     real(PMFDP)     :: dpp, dpp1, dpp2
     real(PMFDP)     :: dpn, dpn1, dpn2
-    real(PMFDP)     :: dicf1, dicf2
+    real(PMFDP)     :: dicf1, dicf2, licfp
     ! --------------------------------------------------------------------------
 
     if( enevalidhist(hist_len+hist_fidx) ) fene_step = fene_step + 1
@@ -483,9 +484,10 @@ subroutine cst_core_analyze_dhTds
 
     if( fenthalpy .and. fenthalpy_der ) then
         do i=1,NumOfCONs
-            dicf1     = icfp(i) - micfp(i)
+            licfp = icfphist(i,hist_len+hist_fidx)
+            dicf1     = licfp - micfp(i)
             micfp(i)  = micfp(i) + dicf1 * invn
-            dicf2     = icfp(i) - micfp(i)
+            dicf2     = licfp - micfp(i)
             m2icfp(i) = m2icfp(i) + dicf1 * dicf2
 
             c11pp(i)  = c11pp(i) + dicf1 * deint2
