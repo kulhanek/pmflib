@@ -59,7 +59,7 @@ subroutine cst_core_main_lf
             call pmf_utils_exit(PMF_OUT,1,'Unsupported integration algorithm in cst_core_main_lf!')
     end select
 
-    call cst_core_calculate_zdet
+    call cst_core_calculate_fw
     call cst_shake_calculate
 
     lambda(:) = lambda(:) + lambdax(:) * isfdts
@@ -162,59 +162,100 @@ subroutine cst_core_register_ekin_lf
 end subroutine cst_core_register_ekin_lf
 
 !===============================================================================
-! Subroutine:  cst_core_calculate_zdet
+! Subroutine:  cst_core_calculate_fw
 !===============================================================================
 
-subroutine cst_core_calculate_zdet
+subroutine cst_core_calculate_fw
 
     use pmf_utils
     use pmf_dat
     use cst_dat
 
     implicit none
-    integer                :: i,ci,j,cj,k,info
-    real(PMFDP)            :: jacv,isrz
-    real(PMFDP)            :: mat(NumOfCONs-NumOfSHAKECONs,NumOfCONs-NumOfSHAKECONs)
+    integer                :: i,ci,j,cj,k,info,cvoff
+    real(PMFDP)            :: jacv,fzdeta,fzdets,fzdet
     ! --------------------------------------------------------------------------
 
+! ALL constraints ================================
+
 ! calculate Z matrix at Crd (in t)
-    do i=1,NumOfCONs-NumOfSHAKECONs
+    do i=1,NumOfCONs
         ci = CONList(i)%cvindx
-        do j=1,NumOfCONs-NumOfSHAKECONs
+        do j=1,NumOfCONs
             cj = CONList(j)%cvindx
             jacv = 0.0
             do k=1,NumOfLAtoms
                 jacv = jacv + MassInv(k)*dot_product(CVContext%CVsDrvs(:,k,ci),CVContext%CVsDrvs(:,k,cj))
             end do
-            mat(i,j) = jacv
+            zmata(i,j) = jacv
         end do
     end do
 
 ! calculate Z determinant ------------------------------------
-    if( NumOfCONs-NumOfSHAKECONs .gt. 1 ) then
+    if( NumOfCONs .gt. 1 ) then
         ! LU decomposition
-        call dgetrf(NumOfCONs-NumOfSHAKECONs,NumOfCONs-NumOfSHAKECONs,mat,NumOfCONs-NumOfSHAKECONs,indx,info)
+        call dgetrf(NumOfCONs,NumOfCONs,zmata,NumOfCONs,indx,info)
         if( info .ne. 0 ) then
-            call pmf_utils_exit(PMF_OUT,1,'[CST] LU decomposition failed in cst_core_calculate_zdet!')
+            call pmf_utils_exit(PMF_OUT,1,'[CST] LU decomposition failed in cst_core_calculate_fw!')
         end if
-        fzdet = 1.0d0
+        fzdeta = 1.0d0
         ! and finally determinant
-        do i=1,NumOfCONs-NumOfSHAKECONs
+        do i=1,NumOfCONs
             if( indx(i) .ne. i ) then
-                fzdet = - fzdet * mat(i,i)
+                fzdeta = - fzdeta * zmata(i,i)
             else
-                fzdet = fzdet * mat(i,i)
+                fzdeta = fzdeta * zmata(i,i)
             end if
         end do
     else
-        fzdet = mat(1,1)
+        fzdeta = zmata(1,1)
+    end if
+
+! SHAKE constraints ==============================
+
+! calculate Z matrix at Crd (in t)
+    cvoff = NumOfCONs - NumOfSHAKECONs
+    do i=1,NumOfSHAKECONs
+        ci = CONList(i+cvoff)%cvindx
+        do j=1,NumOfSHAKECONs
+            cj = CONList(j+cvoff)%cvindx
+            jacv = 0.0
+            do k=1,NumOfLAtoms
+                jacv = jacv + MassInv(k)*dot_product(CVContext%CVsDrvs(:,k,ci),CVContext%CVsDrvs(:,k,cj))
+            end do
+            zmats(i,j) = jacv
+        end do
+    end do
+
+! calculate Z determinant ------------------------------------
+    if( NumOfSHAKECONs .gt. 1 ) then
+        ! LU decomposition
+        call dgetrf(NumOfSHAKECONs,NumOfSHAKECONs,zmats,NumOfSHAKECONs,indx,info)
+        if( info .ne. 0 ) then
+            call pmf_utils_exit(PMF_OUT,1,'[CST] LU decomposition failed in cst_core_calculate_fw!')
+        end if
+        fzdets = 1.0d0
+        ! and finally determinant
+        do i=1,NumOfSHAKECONs
+            if( indx(i) .ne. i ) then
+                fzdets = - fzdets * zmats(i,i)
+            else
+                fzdets = fzdets * zmats(i,i)
+            end if
+        end do
+    else if( NumOfSHAKECONs .eq. 1 ) then
+        fzdets = zmats(1,1)
+    else
+        fzdets = 1.0d0
     end if
 
 ! record data
-    isrz    = 1.0d0/sqrt(fzdet)
-    isrzhist(hist_len) = isrz
+! DOI: 10.1080/00268970310001592746 - eq. 6
+    fzdet   = fzdeta / fzdets
+    fwfac   = 1.0d0/sqrt(fzdet)
+    ifwhist(hist_len) = fwfac
 
-end subroutine cst_core_calculate_zdet
+end subroutine cst_core_calculate_fw
 
 !===============================================================================
 ! Subroutine:  cst_core_calculate_icfp
@@ -277,7 +318,7 @@ subroutine cst_core_shift_histbuffs
         epothist(i)     = epothist(i+1)
         ersthist(i)     = ersthist(i+1)
         ekinhist(i)     = ekinhist(i+1)
-        isrzhist(i)     = isrzhist(i+1)
+        ifwhist(i)      = ifwhist(i+1)
         icfphist(:,i)   = icfphist(:,i+1)
         enevalidhist(i) = enevalidhist(i+1)
     end do
@@ -406,14 +447,14 @@ subroutine cst_core_analyze_lam
 
     implicit none
     integer         :: i
-    real(PMFDP)     :: isrz,lam,dval1,dval2,invn
+    real(PMFDP)     :: fw,lam,dval1,dval2,invn
     ! --------------------------------------------------------------------------
 
     if( mod(fstep,flamsample) .ne. 0 ) return
 
 ! values
     lambda(:)   = lambdahist(:,hist_len+hist_fidx)
-    isrz        = isrzhist(hist_len+hist_fidx)     ! t-dt
+    fw          = ifwhist(hist_len+hist_fidx)     ! t-dt
 
     nsamples = nsamples + 1
     if( nsamples .le. 0 ) return
@@ -429,9 +470,9 @@ subroutine cst_core_analyze_lam
     end do
 
 ! isrz
-    dval1   = isrz - misrz
+    dval1   = fw - misrz
     misrz   = misrz  + dval1 * invn
-    dval2   = isrz - misrz
+    dval2   = fw - misrz
     m2isrz  = m2isrz + dval1*dval2
 
 end subroutine cst_core_analyze_lam
@@ -473,7 +514,7 @@ subroutine cst_core_analyze_dhTds
     ntds = ntds + 1.0d0
     invn = 1.0d0/ntds
 
-    fw = isrzhist(hist_len+hist_fidx)
+    fw = ifwhist(hist_len+hist_fidx)
 
 ! fixman weight
     dfw1 = fw - mfw
@@ -487,7 +528,7 @@ subroutine cst_core_analyze_dhTds
     erst        = ersthist(hist_len+hist_fidx)     ! t-dt
     ekin        = ekinhist(hist_len+hist_fidx)     ! t-dt
     etot        = epot + erst + ekin               ! t-dt
-    eint        = epot + erst + ekin ! FIXME +ekin for test
+    eint        = epot + erst
 
     if( fenthalpy .or. (fentropy .and. fentdecomp) ) then
         ! internal energy

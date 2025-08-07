@@ -155,7 +155,7 @@ real(PMFDP)                 :: m2friter         ! M2 moment of friter
 
 ! metric tensor correction -----------------------------------------------------
 real(PMFDP),allocatable     :: lambda(:)        ! total lambda with corrected units
-real(PMFDP)                 :: fzdet            ! current value of det(Z)
+real(PMFDP),allocatable     :: fwfac            ! current value of Fixman weight
 
 ! ICFP
 real(PMFDP),allocatable     :: CSTFrc(:,:)      ! forces after constraints are imposed
@@ -165,6 +165,8 @@ real(PMFDP),allocatable     :: icfp(:)          ! projected forces to CVs
 real(PMFDP),allocatable     :: jac(:,:)         ! Jacobian matrix
 real(PMFDP),allocatable     :: vv(:)            ! for LU decomposition
 integer,allocatable         :: indx(:)
+real(PMFDP),allocatable     :: zmata(:,:)       ! Z-matrix - all constraints
+real(PMFDP),allocatable     :: zmats(:,:)       ! Z-matrix - SHAKE constraints
 
 ! history buffers ---------------------------------------------------------------
 integer                     :: hist_len
@@ -174,7 +176,7 @@ real(PMFDP),allocatable     :: lambdahist(:,:)
 real(PMFDP),allocatable     :: epothist(:)
 real(PMFDP),allocatable     :: ersthist(:)
 real(PMFDP),allocatable     :: ekinhist(:)
-real(PMFDP),allocatable     :: isrzhist(:)
+real(PMFDP),allocatable     :: ifwhist(:)
 real(PMFDP),allocatable     :: icfphist(:,:)
 logical,allocatable         :: enevalidhist(:)      ! is energy valid?
 

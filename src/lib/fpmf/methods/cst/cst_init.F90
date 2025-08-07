@@ -542,13 +542,22 @@ subroutine cst_init_core
 
 ! required always - det(Z) is calculate in core_analyse
 ! allocate arrays for LU decomposition
-    allocate(vv(NumOfCONs), indx(NumOfCONs), jac(NumOfCONs,NumOfCONs), stat= alloc_failed)
+    allocate(vv(NumOfCONs),             &
+             indx(NumOfCONs),           &
+             jac(NumOfCONs,NumOfCONs),  &
+             zmata(NumOfCONs,NumOfCONs), stat= alloc_failed)
     if( alloc_failed .ne. 0 ) then
         call pmf_utils_exit(PMF_OUT,1,&
                  '[CST] Unable to allocate memory for arrays used in LU decomposition!')
     end if
 
-    jac(:,:) = 0.0d0
+    if( NumOfSHAKECONS .gt. 0 ) then
+        allocate( zmats(NumOfSHAKECONS,NumOfSHAKECONS), stat= alloc_failed)
+        if( alloc_failed .ne. 0 ) then
+            call pmf_utils_exit(PMF_OUT,1,&
+                     '[CST] Unable to allocate memory for arrays used in LU decomposition!')
+        end if
+    end if
 
 ! allocate arrays for lambda calculation
     select case(fintalg)
@@ -593,7 +602,7 @@ subroutine cst_init_core
               epothist(hist_len),               &
               ersthist(hist_len),               &
               ekinhist(hist_len),               &
-              isrzhist(hist_len),               &
+              ifwhist(hist_len),                &
               icfphist(NumOfCONs,hist_len),     &
               enevalidhist(hist_len),           &
               stat= alloc_failed )
@@ -607,7 +616,7 @@ subroutine cst_init_core
     epothist(:)     = 0.0d0
     ersthist(:)     = 0.0d0
     ekinhist(:)     = 0.0d0
-    isrzhist(:)     = 0.0d0
+    ifwhist(:)      = 0.0d0
     icfphist(:,:)   = 0.0d0
     enevalidhist(:) = .false.
 
