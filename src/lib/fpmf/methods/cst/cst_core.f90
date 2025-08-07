@@ -174,39 +174,40 @@ subroutine cst_core_calculate_zdet
     implicit none
     integer                :: i,ci,j,cj,k,info
     real(PMFDP)            :: jacv,isrz
+    real(PMFDP)            :: mat(NumOfCONs-NumOfSHAKECONs,NumOfCONs-NumOfSHAKECONs)
     ! --------------------------------------------------------------------------
 
 ! calculate Z matrix at Crd (in t)
-    do i=1,NumOfCONs
+    do i=1,NumOfCONs-NumOfSHAKECONs
         ci = CONList(i)%cvindx
-        do j=1,NumOfCONs
+        do j=1,NumOfCONs-NumOfSHAKECONs
             cj = CONList(j)%cvindx
             jacv = 0.0
             do k=1,NumOfLAtoms
                 jacv = jacv + MassInv(k)*dot_product(CVContext%CVsDrvs(:,k,ci),CVContext%CVsDrvs(:,k,cj))
             end do
-            jac(i,j) = jacv
+            mat(i,j) = jacv
         end do
     end do
 
 ! calculate Z determinant ------------------------------------
-    if( NumOfCONs .gt. 1 ) then
+    if( NumOfCONs-NumOfSHAKECONs .gt. 1 ) then
         ! LU decomposition
-        call dgetrf(NumOfCONs,NumOfCONs,jac,NumOfCONs,indx,info)
+        call dgetrf(NumOfCONs-NumOfSHAKECONs,NumOfCONs-NumOfSHAKECONs,mat,NumOfCONs-NumOfSHAKECONs,indx,info)
         if( info .ne. 0 ) then
             call pmf_utils_exit(PMF_OUT,1,'[CST] LU decomposition failed in cst_core_calculate_zdet!')
         end if
         fzdet = 1.0d0
         ! and finally determinant
-        do i=1,NumOfCONs
+        do i=1,NumOfCONs-NumOfSHAKECONs
             if( indx(i) .ne. i ) then
-                fzdet = - fzdet * jac(i,i)
+                fzdet = - fzdet * mat(i,i)
             else
-                fzdet = fzdet * jac(i,i)
+                fzdet = fzdet * mat(i,i)
             end if
         end do
     else
-        fzdet = jac(1,1)
+        fzdet = mat(1,1)
     end if
 
 ! record data
@@ -233,17 +234,17 @@ subroutine cst_core_calculate_icfp
     ! start with dV/dx
     CSTFrc(:,:) = Frc(:,:)
 
-    ! add constraint forces from SHAKE constraints only
-    do i=1,NumOfCONs
-        ci = CONList(i)%cvindx
-        do k=1,NumOfLAtoms
-            CSTFrc(:,k) = CSTFrc(:,k) + lambda(i)*CVContext%CVsDrvs(:,k,ci)
-        end do
-    end do
+!    ! add constraint forces from SHAKE constraints only
+!    do i=1,NumOfCONs
+!        ci = CONList(i)%cvindx
+!        do k=1,NumOfLAtoms
+!            CSTFrc(:,k) = CSTFrc(:,k) + lambda(i)*CVContext%CVsDrvs(:,k,ci)
+!        end do
+!    end do
 
     ! project to CVs
     icfp(:) = 0.0d0
-    do i=1,NumOfCONs
+    do i=1,NumOfCONs-NumOfSHAKECONs
         ci = CONList(i)%cvindx
         f1 = 0.0d0
         nv = 0.0d0
