@@ -234,7 +234,7 @@ subroutine cst_core_calculate_icfp
     CSTFrc(:,:) = Frc(:,:)
 
     ! add constraint forces from SHAKE constraints only
-    do i=NumOfCONs-NumOfSHAKECONs+1,NumOfCONs
+    do i=1,NumOfCONs
         ci = CONList(i)%cvindx
         do k=1,NumOfLAtoms
             CSTFrc(:,k) = CSTFrc(:,k) + lambda(i)*CVContext%CVsDrvs(:,k,ci)
@@ -243,7 +243,7 @@ subroutine cst_core_calculate_icfp
 
     ! project to CVs
     icfp(:) = 0.0d0
-    do i=1,NumOfCONs-NumOfSHAKECONs
+    do i=1,NumOfCONs
         ci = CONList(i)%cvindx
         f1 = 0.0d0
         nv = 0.0d0
