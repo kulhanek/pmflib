@@ -487,7 +487,7 @@ subroutine cst_core_analyze_dhTds
     erst        = ersthist(hist_len+hist_fidx)     ! t-dt
     ekin        = ekinhist(hist_len+hist_fidx)     ! t-dt
     etot        = epot + erst + ekin               ! t-dt
-    eint        = epot + erst
+    eint        = epot + erst + ekin ! FIXME +ekin for test
 
     if( fenthalpy .or. (fentropy .and. fentdecomp) ) then
         ! internal energy
