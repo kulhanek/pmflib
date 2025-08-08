@@ -375,7 +375,7 @@ subroutine cst_core_calculate_icf
       end do
   end do
 
-!  write(47895,*) icfp(i), icfk(i)
+ ! write(47895,*) icfp(i), icfk(i)
 
 end subroutine cst_core_calculate_icf
 
@@ -433,6 +433,7 @@ subroutine cst_core_shift_histbuffs
         ekinhist(i)     = ekinhist(i+1)
         ifwhist(i)      = ifwhist(i+1)
         icfphist(:,i)   = icfphist(:,i+1)
+        icfkhist(:,i)   = icfkhist(:,i+1)
         enevalidhist(i) = enevalidhist(i+1)
     end do
 
