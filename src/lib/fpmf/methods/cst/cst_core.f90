@@ -508,9 +508,15 @@ subroutine cst_core_analyze
         if( fenthalpy .and. fenthalpy_der ) then
             micfp(:)    = 0.0d0
             m2icfp(:)   = 0.0d0
+            micfk(:)    = 0.0d0
+            m2icfk(:)   = 0.0d0
+            micf(:)     = 0.0d0
+            m2icf(:)    = 0.0d0
             c11pp(:)    = 0.0d0
             micfpfw(:)  = 0.0d0
             m2icfpfw(:) = 0.0d0
+            micfkfw(:)  = 0.0d0
+            m2icfkfw(:) = 0.0d0
             micfpeintfw(:)  = 0.0d0
             m2icfpeintfw(:) = 0.0d0
         end if
