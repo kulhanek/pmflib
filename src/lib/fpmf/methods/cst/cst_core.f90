@@ -347,26 +347,26 @@ subroutine cst_core_calculate_icf
     do j=1,CONList(i)%cv%natoms
         k = CONList(i)%cv%lindexes(j)
         do m=1,3
-            CrdP(:,:) = Crd(:,:)
-            CrdP(m,k) = CrdP(m,k) + dh
+            CSTFrc(:,:) = Crd(:,:)
+            CSTFrc(m,k) = CSTFrc(m,k) + dh
 
             CVContextP%CVsValues(:) = 0.0d0
             CVContextP%CVsDrvs(:,:,:) = 0.0d0
 
-            call CVList(i)%cv%calculate_cv(CrdP,CVContextP)
+            call CVList(i)%cv%calculate_cv(CSTFrc,CVContextP)
             call calc_icfk_vec
 
             v1 = icfk_vec(m,k)
 
             ! write(*,*) 'v1 = ', v1
 
-            CrdP(:,:) = Crd(:,:)
-            CrdP(m,k) = CrdP(m,k) - dh
+            CSTFrc(:,:) = Crd(:,:)
+            CSTFrc(m,k) = CSTFrc(m,k) - dh
 
             CVContextP%CVsValues(:) = 0.0d0
             CVContextP%CVsDrvs(:,:,:) = 0.0d0
 
-            call CVList(i)%cv%calculate_cv(CrdP,CVContextP)
+            call CVList(i)%cv%calculate_cv(CSTFrc,CVContextP)
             call calc_icfk_vec
 
             v2 = icfk_vec(m,k)
