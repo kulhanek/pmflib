@@ -683,6 +683,8 @@ subroutine cst_init_core
                   c11pp(NumOfCONs),         &
                   micfpfw(NumOfCONs),       &
                   m2icfpfw(NumOfCONs),      &
+                  micfkfw(NumOfCONs),       &
+                  m2icfkfw(NumOfCONs),      &
                   micfpeintfw(NumOfCONs),       &
                   m2icfpeintfw(NumOfCONs),      &
                   stat= alloc_failed )
@@ -705,6 +707,8 @@ subroutine cst_init_core
 
         micfpfw(:)  = 0.0d0
         m2icfpfw(:) = 0.0d0
+        micfkfw(:)  = 0.0d0
+        m2icfkfw(:) = 0.0d0
         micfpeintfw(:)  = 0.0d0
         m2icfpeintfw(:) = 0.0d0
     end if

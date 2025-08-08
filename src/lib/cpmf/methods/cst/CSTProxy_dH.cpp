@@ -70,6 +70,14 @@ void CCSTProxy_dH::SetType(ECSTdHType type)
             Provide = "CST ICFP(x)FW";
         break;
     // -------------------
+        case(CST_MICFK):
+            Provide = "CST ICFK(x)";
+        break;
+    // -------------------
+        case(CST_MICFKFW):
+            Provide = "CST ICFK(x)FW";
+        break;
+    // -------------------
         case(CST_C11PP):
             Provide = "CST C11PP";
         break;
@@ -184,6 +192,60 @@ double CCSTProxy_dH::GetValue(int ibin,int icv,EProxyRealm realm) const
 //            double  m2fixmanw   = Accu->GetData("M2FIXW",ibin,icv);
 
             double  micfz       = Accu->GetData("MICFPFW",ibin,icv);
+      //      double  m2icfz      = Accu->GetData("M2ICFPZ",ibin,icv);
+
+            if( nsamples <= 0 ) return(value);
+
+            switch(realm){
+                // -------------------
+                case(E_PROXY_VALUE):
+                    return( micfz / mfixmanw );
+                // -------------------
+                case(E_PROXY_SIGMA):
+                    return(0.0); // FIXME
+                    // return( sqrt(m2icf / nsamples) );
+                // -------------------
+                case(E_PROXY_ERROR):
+                    return(0.0); // FIXME
+                    // return( sqrt(m2icf * ncorr) / nsamples );
+                // -------------------
+                default:
+                    RUNTIME_ERROR("unsupported realm");
+            }
+        }
+        break;
+    // -------------------
+        case(CST_MICFK): {
+            double  nsamples = Accu->GetData("NTDS",ibin);
+            double  micf     = Accu->GetData("MICFK",ibin,icv);
+            double  m2icf    = Accu->GetData("M2ICFK",ibin,icv);
+
+            if( nsamples <= 0 ) return(value);
+
+            switch(realm){
+                // -------------------
+                case(E_PROXY_VALUE):
+                    return( micf );
+                // -------------------
+                case(E_PROXY_SIGMA):
+                    return( sqrt(m2icf / nsamples) );
+                // -------------------
+                case(E_PROXY_ERROR):
+                    return( sqrt(m2icf * ncorr) / nsamples );
+                // -------------------
+                default:
+                    RUNTIME_ERROR("unsupported realm");
+            }
+        }
+        break;
+    // -------------------
+        case(CST_MICFKFW): {
+            double  nsamples = Accu->GetData("NTDS",ibin);
+
+            double  mfixmanw    = Accu->GetData("MFW",ibin,icv);
+//            double  m2fixmanw   = Accu->GetData("M2FIXW",ibin,icv);
+
+            double  micfz       = Accu->GetData("MICFKFW",ibin,icv);
       //      double  m2icfz      = Accu->GetData("M2ICFPZ",ibin,icv);
 
             if( nsamples <= 0 ) return(value);

@@ -237,6 +237,9 @@ real(PMFDP),allocatable     :: c11pp(:)         ! co-variances covar(ICF-P,Eint)
 real(PMFDP),allocatable     :: micfpfw(:)       ! mean of ICF-P - Fixman weighted
 real(PMFDP),allocatable     :: m2icfpfw(:)      ! M2 of ICF-P - Fixman weighted
 
+real(PMFDP),allocatable     :: micfkfw(:)       ! mean of ICF-K - Fixman weighted
+real(PMFDP),allocatable     :: m2icfkfw(:)      ! M2 of ICF-K - Fixman weighted
+
 real(PMFDP),allocatable     :: micfpeintfw(:)   ! mean of ICF-P * Eint - Fixman weighted
 real(PMFDP),allocatable     :: m2icfpeintfw(:)  ! M2 of ICF-P * Eint - Fixman weighted
 

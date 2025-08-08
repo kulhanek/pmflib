@@ -483,6 +483,18 @@ subroutine cst_accu_write(iounit)
 
         rbuf_M(:,:) = 0.0d0
         do i=1,cstaccu%tot_cvs
+            rbuf_M(i,glbidx) = micfkfw(i)
+        end do
+        call pmf_accu_write_rbuf_M(cstaccu,iounit,'MICFKFW', 'WA',rbuf_M, 'NTDS')
+
+        rbuf_M(:,:) = 0.0d0
+        do i=1,cstaccu%tot_cvs
+            rbuf_M(i,glbidx) = m2icfkfw(i)
+        end do
+        call pmf_accu_write_rbuf_M(cstaccu,iounit,'M2ICFKFW','M2',rbuf_M, 'NTDS','MICFKFW')
+
+        rbuf_M(:,:) = 0.0d0
+        do i=1,cstaccu%tot_cvs
             rbuf_M(i,glbidx) = micfpeintfw(i)
         end do
         call pmf_accu_write_rbuf_M(cstaccu,iounit,'MICFPEINTFW', 'WA',rbuf_M, 'NTDS')

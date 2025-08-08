@@ -331,8 +331,9 @@ subroutine cst_core_calculate_icf
     ci = CONList(i)%cvindx
     f1 = 0.0d0
     nv = 0.0d0
-    do j=1,CONList(i)%cv%natoms
-        k = CONList(i)%cv%lindexes(j)
+    do k=1,NumOfLAtoms
+   ! do j=1,CONList(i)%cv%natoms
+   !     k = CONList(i)%cv%lindexes(j)
         do m=1,3
             ! force part
             nv = nv + CVContext%CVsDrvs(m,k,ci) * CVContext%CVsDrvs(m,k,ci)
@@ -341,11 +342,11 @@ subroutine cst_core_calculate_icf
     end do
     icfp(i) = - f1 / nv
 
-    dh = 1e-5
+    dh = 1e-4
 
 ! ICF-K by central differences
-    do j=1,CONList(i)%cv%natoms
-        k = CONList(i)%cv%lindexes(j)
+    do k=1,NumOfLAtoms
+        ! k = CONList(i)%cv%lindexes(j)
         do m=1,3
             CSTFrc(:,:) = Crd(:,:)
             CSTFrc(m,k) = CSTFrc(m,k) + dh
@@ -371,11 +372,15 @@ subroutine cst_core_calculate_icf
 
             v2 = icfk_vec(m,k)
 
+            write(7894,*) v1, v2, (v1-v2)/(2.0d0 * dh)
+
             icfk(i) = icfk(i) + (v1-v2)/(2.0d0 * dh)
       end do
   end do
 
- ! write(47895,*) icfp(i), icfk(i)
+ write(7894,*) 'icf= ', icfp(i), icfk(i), PMF_Rgas*ftemp * icfk(i)
+
+ stop
 
 end subroutine cst_core_calculate_icf
 
@@ -397,16 +402,16 @@ subroutine calc_icfk_vec
     i = 1   ! CV index
     ci = CONList(i)%cvindx
     nv = 0.0d0
-    do j=1,CONList(i)%cv%natoms
-        k = CONList(i)%cv%lindexes(j)
+    do k=1,NumOfLAtoms
         do m=1,3
             nv = nv + CVContextP%CVsDrvs(m,k,ci) * CVContextP%CVsDrvs(m,k,ci)
         end do
     end do
 
     ci = CONList(i)%cvindx
-    do j=1,CONList(i)%cv%natoms
-        k = CONList(i)%cv%lindexes(j)
+!    do j=1,CONList(i)%cv%natoms
+!        k = CONList(i)%cv%lindexes(j)
+    do k=1,NumOfLAtoms
         do m=1,3
             icfk_vec(m,k) = CVContextP%CVsDrvs(m,k,ci)/nv
         end do
@@ -619,7 +624,7 @@ subroutine cst_core_analyze_dhTds
     real(PMFDP)     :: dicf1, dicf2, licfp, licfk
     real(PMFDP)     :: licf
     real(PMFDP)     :: dicf1fw, dicf2fw, licfpfw
-    real(PMFDP)     :: dicfeint1fw, dicfeint2fw, licfpeintfw
+    real(PMFDP)     :: dicfeint1fw, dicfeint2fw, licfpeintfw, licfkfw
     real(PMFDP)     :: dfw1, dfw2, fw
     ! --------------------------------------------------------------------------
 
@@ -722,6 +727,12 @@ subroutine cst_core_analyze_dhTds
             micfpfw(i)  = micfpfw(i) + dicf1fw * invn
             dicf2fw     = licfpfw - micfpfw(i)
             m2icfpfw(i) = m2icfpfw(i) + dicf1fw * dicf2fw
+
+            licfkfw = - PMF_Rgas*ftemp * icfkhist(i,hist_len+hist_fidx)*fw
+            dicf1fw     = licfkfw - micfkfw(i)
+            micfkfw(i)  = micfkfw(i) + dicf1fw * invn
+            dicf2fw     = licfkfw - micfkfw(i)
+            m2icfkfw(i) = m2icfkfw(i) + dicf1fw * dicf2fw
 
             licfpeintfw = icfphist(i,hist_len+hist_fidx)*eint*fw
             dicfeint1fw     = licfpeintfw - micfpeintfw(i)
