@@ -330,7 +330,7 @@ subroutine cst_core_calculate_icf
     CSTFrc(:,:) = Frc(:,:)
 
     ! add constraint forces from SHAKE constraints only
-    do i=1,NumOfCONs
+    do i=NumOfCONs-NumOfSHAKECONs,NumOfCONs
         ci = CONList(i)%cvindx
         do k=1,NumOfLAtoms
             CSTFrc(:,k) = CSTFrc(:,k) + lambda(i)*CVContext%CVsDrvs(:,k,ci)
