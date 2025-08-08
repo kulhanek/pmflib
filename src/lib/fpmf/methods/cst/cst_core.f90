@@ -64,15 +64,17 @@ subroutine cst_core_main_lf
 
     lambda(:) = lambda(:) + lambdax(:) * isfdts
 
+    if( fenthalpy_der ) then
+        call cst_core_calculate_icf
+        icfphist(:,hist_len) = icfp(:)
+        icfkhist(:,hist_len) = icfk(:)
+    end if
+
     select case(fintalg)
         case(IA_LEAP_FROG)
             lambdahist(:,hist_len) = lambda(:)
             epothist(hist_len) = PotEne - fepotaverage
             ersthist(hist_len) = PMFEne
-            if( fenthalpy_der ) then
-                call cst_core_calculate_icfp
-                icfphist(:,hist_len) = icfp(:)
-            end if
             call cst_core_analyze
             call cst_output_write
             call cst_restart_update
@@ -129,10 +131,10 @@ subroutine cst_core_rattlev_lf(cid)
                 lambdahist(:,hist_len) = lambda(:)
                 epothist(hist_len) = PotEne - fepotaverage
                 ersthist(hist_len) = PMFEne
-                if( fenthalpy_der ) then
-                    call cst_core_calculate_icfp
-                    icfphist(:,hist_len) = icfp(:)
-                end if
+!                if( fenthalpy_der ) then
+!                    call cst_core_calculate_icfp
+!                    icfphist(:,hist_len) = icfp(:)
+!                end if
                 call cst_core_analyze
                 call cst_output_write
                 call cst_restart_update
@@ -260,21 +262,21 @@ end subroutine cst_core_calculate_fw
 !===============================================================================
 ! Subroutine:  cst_core_calculate_icfp
 !===============================================================================
-
-subroutine cst_core_calculate_icfp
-
-    use pmf_utils
-    use pmf_dat
-    use cst_dat
-
-    implicit none
-    integer                :: i,ci,k,m
-    real(PMFDP)            :: f1,nv
-    ! --------------------------------------------------------------------------
-
-    ! start with dV/dx
-    CSTFrc(:,:) = Frc(:,:)
-
+!
+!subroutine cst_core_calculate_icfp
+!
+!    use pmf_utils
+!    use pmf_dat
+!    use cst_dat
+!
+!    implicit none
+!    integer                :: i,ci,k,m
+!    real(PMFDP)            :: f1,nv
+!     --------------------------------------------------------------------------
+!
+!     start with dV/dx
+!    CSTFrc(:,:) = Frc(:,:)
+!
 !    ! add constraint forces from SHAKE constraints only
 !    do i=1,NumOfCONs
 !        ci = CONList(i)%cvindx
@@ -282,24 +284,135 @@ subroutine cst_core_calculate_icfp
 !            CSTFrc(:,k) = CSTFrc(:,k) + lambda(i)*CVContext%CVsDrvs(:,k,ci)
 !        end do
 !    end do
+!
+!     project to CVs
+!    icfp(:) = 0.0d0
+!    do i=1,NumOfCONs-NumOfSHAKECONs
+!        ci = CONList(i)%cvindx
+!        f1 = 0.0d0
+!        nv = 0.0d0
+!        do k=1,NumOfLAtoms
+!            do m=1,3
+!                 force part
+!                nv = nv + CVContext%CVsDrvs(m,k,ci) * CVContext%CVsDrvs(m,k,ci)
+!                f1 = f1 + CVContext%CVsDrvs(m,k,ci) * CSTFrc(m,k)
+!            end do
+!        end do
+!        icfp(i) = - f1 / nv
+!    end do
+!
+!end subroutine cst_core_calculate_icfp
 
-    ! project to CVs
+!===============================================================================
+! Subroutine:  cst_core_calculate_icf
+!===============================================================================
+
+subroutine cst_core_calculate_icf
+
+    use pmf_utils
+    use pmf_dat
+    use cst_dat
+
+    implicit none
+    integer                :: i,ci,j,k,m
+    real(PMFDP)            :: f1,nv,v1,v2,dh
+    ! --------------------------------------------------------------------------
+
+    if( NumOfCONs-NumOfSHAKECONs .ne. 1 ) then
+        call pmf_utils_exit(PMF_OUT,1,&
+                 '[CST] Only 1 CV supported in cst_core_calculate_icf!')
+    end if
+
     icfp(:) = 0.0d0
-    do i=1,NumOfCONs-NumOfSHAKECONs
-        ci = CONList(i)%cvindx
-        f1 = 0.0d0
-        nv = 0.0d0
-        do k=1,NumOfLAtoms
-            do m=1,3
-                ! force part
-                nv = nv + CVContext%CVsDrvs(m,k,ci) * CVContext%CVsDrvs(m,k,ci)
-                f1 = f1 + CVContext%CVsDrvs(m,k,ci) * CSTFrc(m,k)
-            end do
+    icfk(:) = 0.0d0
+
+! ICF-P
+    i = 1   ! CV index
+    ci = CONList(i)%cvindx
+    f1 = 0.0d0
+    nv = 0.0d0
+    do j=1,CONList(i)%cv%natoms
+        k = CONList(i)%cv%lindexes(j)
+        do m=1,3
+            ! force part
+            nv = nv + CVContext%CVsDrvs(m,k,ci) * CVContext%CVsDrvs(m,k,ci)
+            f1 = f1 + CVContext%CVsDrvs(m,k,ci) * Frc(m,k)
         end do
-        icfp(i) = - f1 / nv
+    end do
+    icfp(i) = - f1 / nv
+
+    dh = 1e-5
+
+! ICF-K by central differences
+    do j=1,CONList(i)%cv%natoms
+        k = CONList(i)%cv%lindexes(j)
+        do m=1,3
+            CrdP(:,:) = Crd(:,:)
+            CrdP(m,k) = CrdP(m,k) + dh
+
+            CVContextP%CVsValues(:) = 0.0d0
+            CVContextP%CVsDrvs(:,:,:) = 0.0d0
+
+            call CVList(i)%cv%calculate_cv(CrdP,CVContextP)
+            call calc_icfk_vec
+
+            v1 = icfk_vec(m,k)
+
+            ! write(*,*) 'v1 = ', v1
+
+            CrdP(:,:) = Crd(:,:)
+            CrdP(m,k) = CrdP(m,k) - dh
+
+            CVContextP%CVsValues(:) = 0.0d0
+            CVContextP%CVsDrvs(:,:,:) = 0.0d0
+
+            call CVList(i)%cv%calculate_cv(CrdP,CVContextP)
+            call calc_icfk_vec
+
+            v2 = icfk_vec(m,k)
+
+            icfk(i) = icfk(i) + (v1-v2)/(2.0d0 * dh)
+      end do
+  end do
+
+!  write(47895,*) icfp(i), icfk(i)
+
+end subroutine cst_core_calculate_icf
+
+!===============================================================================
+! Subroutine:  calc_icfk_vec
+!===============================================================================
+
+subroutine calc_icfk_vec
+
+    use pmf_utils
+    use pmf_dat
+    use cst_dat
+
+    implicit none
+    integer                :: i,ci,j,k,m
+    real(PMFDP)            :: nv
+    ! --------------------------------------------------------------------------
+
+    i = 1   ! CV index
+    ci = CONList(i)%cvindx
+    nv = 0.0d0
+    do j=1,CONList(i)%cv%natoms
+        k = CONList(i)%cv%lindexes(j)
+        do m=1,3
+            nv = nv + CVContextP%CVsDrvs(m,k,ci) * CVContextP%CVsDrvs(m,k,ci)
+        end do
     end do
 
-end subroutine cst_core_calculate_icfp
+    ci = CONList(i)%cvindx
+    do j=1,CONList(i)%cv%natoms
+        k = CONList(i)%cv%lindexes(j)
+        do m=1,3
+            icfk_vec(m,k) = CVContextP%CVsDrvs(m,k,ci)/nv
+        end do
+    end do
+
+end subroutine calc_icfk_vec
 
 !===============================================================================
 ! Subroutine:  cst_core_shift_histbuffs
@@ -502,7 +615,8 @@ subroutine cst_core_analyze_dhTds
     real(PMFDP)     :: dekin1fw, dekin2fw
     real(PMFDP)     :: dpp, dpp1, dpp2
     real(PMFDP)     :: dpn, dpn1, dpn2
-    real(PMFDP)     :: dicf1, dicf2, licfp
+    real(PMFDP)     :: dicf1, dicf2, licfp, licfk
+    real(PMFDP)     :: licf
     real(PMFDP)     :: dicf1fw, dicf2fw, licfpfw
     real(PMFDP)     :: dicfeint1fw, dicfeint2fw, licfpeintfw
     real(PMFDP)     :: dfw1, dfw2, fw
@@ -589,6 +703,18 @@ subroutine cst_core_analyze_dhTds
             m2icfp(i) = m2icfp(i) + dicf1 * dicf2
 
             c11pp(i)  = c11pp(i) + dicf1 * deint2
+
+            licfk = - PMF_Rgas*ftemp * icfkhist(i,hist_len+hist_fidx)
+            dicf1     = licfk - micfk(i)
+            micfk(i)  = micfk(i) + dicf1 * invn
+            dicf2     = licfk - micfk(i)
+            m2icfk(i) = m2icfk(i) + dicf1 * dicf2
+
+            licf = icfphist(i,hist_len+hist_fidx) - PMF_Rgas*ftemp * icfkhist(i,hist_len+hist_fidx)
+            dicf1     = licf - micf(i)
+            micf(i)  = micf(i) + dicf1 * invn
+            dicf2     = licf - micf(i)
+            m2icf(i) = m2icf(i) + dicf1 * dicf2
 
             licfpfw = icfphist(i,hist_len+hist_fidx)*fw
             dicf1fw     = licfpfw - micfpfw(i)

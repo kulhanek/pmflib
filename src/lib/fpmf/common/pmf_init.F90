@@ -66,8 +66,6 @@ subroutine pmf_init_dat
 
     RstEne      = 0.0d0
     PotEne      = 0.0d0
-    pVEne       = 0.0d0
-    p0VEne      = 0.0d0
 
     KinEne%KinEneVV = 0.0d0
     KinEne%KinEneHA = 0.0d0
@@ -400,7 +398,7 @@ subroutine pmf_init_pmf
     allocate(tmp_indexes(tot_atoms),stat=alloc_failed)
 
     if( alloc_failed .ne. 0 ) then
-        call pmf_utils_exit(PMF_OUT, 1,'[PMFLIB] Unable to allocate memory for tmp_indexes array!')
+        call pmf_utils_exit(PMF_OUT, 1,'[PMFLIB] Unable to allocate memory for tmp_indexes array in pmf_init_pmf!')
     end if
 
     ! fill array by indexes ----------------
@@ -439,7 +437,7 @@ subroutine pmf_init_pmf
 
     if( alloc_failed .ne. 0 ) then
         call pmf_utils_exit(PMF_OUT, 1,&
-                            '[PMFLIB] Unable to allocate memory for RIndexes array!')
+                            '[PMFLIB] Unable to allocate memory for RIndexes array in pmf_init_pmf!')
     endif
 
     do i=1,NumOfCVs
@@ -474,7 +472,7 @@ subroutine pmf_init_pmf
         allocate(CVList(i)%cv%indlindexes(CVList(i)%cv%nindatoms), stat=alloc_failed)
         if( alloc_failed .ne. 0 ) then
             call pmf_utils_exit(PMF_OUT, 1,&
-                                '[PMFLIB] Unable to allocate memory for indlindexes array!')
+                                '[PMFLIB] Unable to allocate memory for indlindexes array in pmf_init_pmf!')
         endif
         l = 0
  outer: do j=1,CVList(i)%cv%natoms
@@ -503,7 +501,7 @@ subroutine pmf_init_pmf
           stat=alloc_failed)
 
     if( alloc_failed .ne. 0 ) then
-        call pmf_utils_exit(PMF_OUT, 1,'[PMFLIB] Unable to allocate memory for common arrays!')
+        call pmf_utils_exit(PMF_OUT, 1,'[PMFLIB] Unable to allocate memory for common arrays in pmf_init_pmf!')
     endif
 
     if( cst_enabled .or. abf_cst_enabled ) then
@@ -515,7 +513,7 @@ subroutine pmf_init_pmf
                   stat=alloc_failed)
 
         if( alloc_failed .ne. 0 ) then
-            call pmf_utils_exit(PMF_OUT, 1,'[PMFLIB] Unable to allocate memory for CST arrays!')
+            call pmf_utils_exit(PMF_OUT, 1,'[PMFLIB] Unable to allocate memory for CST arrays in pmf_init_pmf!')
         endif
     end if
 

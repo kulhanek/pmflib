@@ -604,6 +604,7 @@ subroutine cst_init_core
               ekinhist(hist_len),               &
               ifwhist(hist_len),                &
               icfphist(NumOfCONs,hist_len),     &
+              icfkhist(NumOfCONs,hist_len),     &
               enevalidhist(hist_len),           &
               stat= alloc_failed )
 
@@ -618,6 +619,7 @@ subroutine cst_init_core
     ekinhist(:)     = 0.0d0
     ifwhist(:)      = 0.0d0
     icfphist(:,:)   = 0.0d0
+    icfkhist(:,:)   = 0.0d0
     enevalidhist(:) = .false.
 
 ! accumulator setup for free energy calculation
@@ -670,8 +672,14 @@ subroutine cst_init_core
     if( fenthalpy .and. fenthalpy_der ) then
         allocate( CSTFrc(3,NumOfLAtoms),    &
                   icfp(NumOfCONs),          &
+                  icfk(NumOfCONs),          &
+                  icfk_vec(3,NumOfLAtoms),  &
                   micfp(NumOfCONs),         &
                   m2icfp(NumOfCONs),        &
+                  micfk(NumOfCONs),         &
+                  m2icfk(NumOfCONs),        &
+                  micf(NumOfCONs),         &
+                  m2icf(NumOfCONs),        &
                   c11pp(NumOfCONs),         &
                   micfpfw(NumOfCONs),       &
                   m2icfpfw(NumOfCONs),      &
@@ -685,8 +693,14 @@ subroutine cst_init_core
         end if
         CSTFrc(:,:) = 0.0d0
         icfp(:)     = 0.0d0
+        icfk(:)     = 0.0d0
+        icfk_vec(:,:) = 0.0d0
         micfp(:)    = 0.0d0
         m2icfp(:)   = 0.0d0
+        micfk(:)    = 0.0d0
+        m2icfk(:)   = 0.0d0
+        micf(:)     = 0.0d0
+        m2icf(:)    = 0.0d0
         c11pp(:)    = 0.0d0
 
         micfpfw(:)  = 0.0d0

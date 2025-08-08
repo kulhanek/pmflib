@@ -118,9 +118,6 @@ real(PMFDP)                 :: PMFEne           ! current PMFLib potential energ
 
 real(PMFDP)                 :: PotEne           ! current potential energy in t
 type(PMFKineticEnergy)      :: KinEne           ! current kinetic energy in t
-real(PMFDP)                 :: ActPress         ! pressure in t
-real(PMFDP)                 :: pVEne            ! current pV energy in t
-real(PMFDP)                 :: p0VEne           ! current p0V energy in t
 
 ! used by Blue moon
 real(PMFDP),allocatable     :: CrdP(:,:)        ! coordinates in t+dt

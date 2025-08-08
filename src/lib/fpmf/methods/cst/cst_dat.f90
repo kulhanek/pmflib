@@ -157,9 +157,11 @@ real(PMFDP)                 :: m2friter         ! M2 moment of friter
 real(PMFDP),allocatable     :: lambda(:)        ! total lambda with corrected units
 real(PMFDP),allocatable     :: fwfac            ! current value of Fixman weight
 
-! ICFP
+! ICF
 real(PMFDP),allocatable     :: CSTFrc(:,:)      ! forces after constraints are imposed
-real(PMFDP),allocatable     :: icfp(:)          ! projected forces to CVs
+real(PMFDP),allocatable     :: icfp(:)          ! ICF - potential part
+real(PMFDP),allocatable     :: icfk(:)          ! ICF - the other part
+real(PMFDP),allocatable     :: icfk_vec(:,:)    ! helper array
 
 ! global variables for LU decomposition and other helper variable  -------------
 real(PMFDP),allocatable     :: jac(:,:)         ! Jacobian matrix
@@ -178,6 +180,7 @@ real(PMFDP),allocatable     :: ersthist(:)
 real(PMFDP),allocatable     :: ekinhist(:)
 real(PMFDP),allocatable     :: ifwhist(:)
 real(PMFDP),allocatable     :: icfphist(:,:)
+real(PMFDP),allocatable     :: icfkhist(:,:)
 logical,allocatable         :: enevalidhist(:)      ! is energy valid?
 
 ! ------------------------------------------------------------------------------
@@ -225,6 +228,10 @@ real(PMFDP)                 :: m2ekinfw         ! M2 of kinetic energy
 ! fenthalpy .and. (fenthalpy_der .gt. 0) ---------------------------------------
 real(PMFDP),allocatable     :: micfp(:)         ! mean of ICF-P
 real(PMFDP),allocatable     :: m2icfp(:)        ! M2 of ICF-P
+real(PMFDP),allocatable     :: micfk(:)         ! mean of ICF-K
+real(PMFDP),allocatable     :: m2icfk(:)        ! M2 of ICF-K
+real(PMFDP),allocatable     :: micf(:)          ! mean of ICF
+real(PMFDP),allocatable     :: m2icf(:)         ! M2 of ICF
 real(PMFDP),allocatable     :: c11pp(:)         ! co-variances covar(ICF-P,Eint)
 
 real(PMFDP),allocatable     :: micfpfw(:)       ! mean of ICF-P - Fixman weighted
