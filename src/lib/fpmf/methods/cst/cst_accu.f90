@@ -439,6 +439,31 @@ subroutine cst_accu_write(iounit)
 
         rbuf_M(:,:) = 0.0d0
         do i=1,cstaccu%tot_cvs
+            rbuf_M(i,glbidx) = micfk(i)
+        end do
+        call pmf_accu_write_rbuf_M(cstaccu,iounit,'MICFK',  'WA',rbuf_M, 'NTDS')
+
+        rbuf_M(:,:) = 0.0d0
+        do i=1,cstaccu%tot_cvs
+            rbuf_M(i,glbidx) = m2icfk(i)
+        end do
+        call pmf_accu_write_rbuf_M(cstaccu,iounit,'M2ICFK', 'M2',rbuf_M, 'NTDS','MICFK')
+
+        rbuf_M(:,:) = 0.0d0
+        do i=1,cstaccu%tot_cvs
+            rbuf_M(i,glbidx) = micf(i)
+        end do
+        call pmf_accu_write_rbuf_M(cstaccu,iounit,'MICF',  'WA',rbuf_M, 'NTDS')
+
+        rbuf_M(:,:) = 0.0d0
+        do i=1,cstaccu%tot_cvs
+            rbuf_M(i,glbidx) = m2icf(i)
+        end do
+        call pmf_accu_write_rbuf_M(cstaccu,iounit,'M2ICF', 'M2',rbuf_M, 'NTDS','MICF')
+
+
+        rbuf_M(:,:) = 0.0d0
+        do i=1,cstaccu%tot_cvs
             rbuf_M(i,glbidx) = c11pp(i)
         end do
         call pmf_accu_write_rbuf_M(cstaccu,iounit,'C11PP',  'CO',rbuf_M, 'NTDS','MICFP','MEINT')
