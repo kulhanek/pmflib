@@ -372,15 +372,11 @@ subroutine cst_core_calculate_icf
 
             v2 = icfk_vec(m,k)
 
-            write(7894,*) v1, v2, (v1-v2)/(2.0d0 * dh)
+          !  write(7894,*) v1, v2, (v1-v2)/(2.0d0 * dh)
 
             icfk(i) = icfk(i) + (v1-v2)/(2.0d0 * dh)
       end do
   end do
-
- write(7894,*) 'icf= ', icfp(i), icfk(i), PMF_Rgas*ftemp * icfk(i)
-
- stop
 
 end subroutine cst_core_calculate_icf
 
