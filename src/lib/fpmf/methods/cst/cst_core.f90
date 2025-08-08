@@ -768,6 +768,8 @@ subroutine cst_core_analyze_dhTds
             dval2           = lam - mhicf(i)
             m2hicf(i)       = m2hicf(i) + dval1 * dval2
 
+            lam = icfphist(i,hist_len+hist_fidx) - PMF_Rgas*ftemp * icfkhist(i,hist_len+hist_fidx)
+
             dpp     = lam + etot
             dpp1    = dpp - mpp(i)
             mpp(i)  = mpp(i) + dpp1 * invn
