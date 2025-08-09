@@ -1,6 +1,7 @@
 // =============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
+//    Copyright (C) 2025 Petr Kulhanek, kulhanek@chemi.muni.cz
 //    Copyright (C) 2021 Petr Kulhanek, kulhanek@chemi.muni.cz
 //
 //     This program is free software; you can redistribute it and/or modify
@@ -80,7 +81,7 @@ double CCSTProxy_MTC::GetValue(int ibin,EProxyRealm realm) const
     }
 
     double  nsamples = Accu->GetData("NSAMPLES",ibin);
-    double  misrz    = Accu->GetData("MISRZ",ibin);
+    double  mfw      = Accu->GetData("MFW",ibin);
     double  temp     = Accu->GetTemperature();
 
     double value = 0.0;
@@ -90,7 +91,7 @@ double CCSTProxy_MTC::GetValue(int ibin,EProxyRealm realm) const
 // MTC correction
         // -------------------
         case(E_PROXY_VALUE): {
-            double value = - PMF_Rgas * temp * log(misrz) ;
+            double value = - PMF_Rgas * temp * log(mfw) ;
             return( value );
         }
         // -------------------
