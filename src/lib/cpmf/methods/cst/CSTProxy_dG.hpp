@@ -3,6 +3,7 @@
 // =============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
+//    Copyright (C) 2025 Petr Kulhanek, kulhanek@chemi.muni.cz
 //    Copyright (C) 2021 Petr Kulhanek, kulhanek@chemi.muni.cz
 //
 //     This program is free software; you can redistribute it and/or modify
@@ -25,6 +26,16 @@
 
 //------------------------------------------------------------------------------
 
+enum ECSTdGType {
+    CST_dG,
+    CST_MICF,
+    CST_MICFFW,
+    CST_MICFPFW,
+    CST_MICFKFW,
+};
+
+//------------------------------------------------------------------------------
+
 /** \brief CST proxy providing mean force for the free energy integration
 */
 
@@ -33,6 +44,10 @@ public:
 // constructor and destructor --------------------------------------------------
     CCSTProxy_dG(void);
     ~CCSTProxy_dG(void);
+
+//------------------------------------------------------------------------------
+    // set type
+    void SetType(ECSTdGType type);
 
 //------------------------------------------------------------------------------
     // get number of samples
@@ -46,6 +61,10 @@ public:
 
     // is compatible with PMFAccumulator method
     static bool IsCompatible(CPMFAccumulatorPtr accu);
+
+// section of private data -----------------------------------------------------
+private:
+    ECSTdGType    Type;
 };
 
 //------------------------------------------------------------------------------
