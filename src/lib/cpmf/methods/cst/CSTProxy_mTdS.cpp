@@ -32,7 +32,7 @@ using namespace std;
 
 CCSTProxy_mTdS::CCSTProxy_mTdS(void)
 {
-    SetType(CST_TdS_HH);
+    SetType(CST_TdS_LTFW);
     Requires.push_back("CST");
 }
 
@@ -58,19 +58,27 @@ void CCSTProxy_mTdS::SetType(ECSTTdSType type)
 
     switch(Type){
     // -------------------
-        case(CST_TdS_HH):
+        case(CST_TdS_LT):
             Provide = "CST -TdS(x)^{c}";    // entropy of the constrained system
         break;
     // -------------------
-        case(CST_TdS_HP):
+        case(CST_TdS_LTFW):
             Provide = "CST -TdS(x)^{c} cov(dH/dx,Epot)";    // entropy of the constrained system  - contribution
         break;
     // -------------------
-        case(CST_TdS_HR):
+        case(CST_TdS_LIFW):
             Provide = "CST -TdS(x)^{c} cov(dH/dx,Erst)";    // entropy of the constrained system  - contribution
         break;
     // -------------------
-        case(CST_TdS_HK):
+        case(CST_TdS_LPFW):
+            Provide = "CST -TdS(x)^{c} cov(dH/dx,Ekin)";    // entropy of the constrained system  - contribution
+        break;
+    // -------------------
+        case(CST_TdS_LRFW):
+            Provide = "CST -TdS(x)^{c} cov(dH/dx,Ekin)";    // entropy of the constrained system  - contribution
+        break;
+    // -------------------
+        case(CST_TdS_LKFW):
             Provide = "CST -TdS(x)^{c} cov(dH/dx,Ekin)";    // entropy of the constrained system  - contribution
         break;
     // -------------------
@@ -118,32 +126,30 @@ double CCSTProxy_mTdS::GetValue(int ibin,int icv,EProxyRealm realm) const
 
     switch(Type){
     // -------------------
-        case(CST_TdS_HH):{
-            double m2pp = Accu->GetData("M2PP",ibin,icv);
-            double m2pn = Accu->GetData("M2PN",ibin,icv);
-            c11 = 0.25*(m2pp-m2pn)/nsamples;
-            m2icf   = Accu->GetData("M2HICF",ibin,icv);
+        case(CST_TdS_LT):{
+            c11     = Accu->GetData("C11LT",ibin,icv)/nsamples;;
+            m2icf   = Accu->GetData("M2LAMTDS",ibin,icv);
             m2ene   = Accu->GetData("M2ETOT",ibin);
         }
         break;
     // -------------------
-        case(CST_TdS_HP):
-            c11     = Accu->GetData("C11HP",ibin,icv)/nsamples;;
-            m2icf   = Accu->GetData("M2HICF",ibin,icv);
-            m2ene   = Accu->GetData("M2EPOT",ibin);
+        case(CST_TdS_LTFW):
+            c11     = Accu->GetData("C11LTFW",ibin,icv)/nsamples;;
+            m2icf   = Accu->GetData("M2LAMTDSFW",ibin,icv);
+            m2ene   = Accu->GetData("M2EPOTFW",ibin);
         break;
-    // -------------------
-        case(CST_TdS_HR):
-            c11     = Accu->GetData("C11HR",ibin,icv)/nsamples;;
-            m2icf   = Accu->GetData("M2HICF",ibin,icv);
-            m2ene   = Accu->GetData("M2ERST",ibin);
-        break;
-    // -------------------
-        case(CST_TdS_HK):
-            c11     = Accu->GetData("C11HK",ibin,icv)/nsamples;;
-            m2icf   = Accu->GetData("M2HICF",ibin,icv);
-            m2ene   = Accu->GetData("M2EKIN",ibin);
-        break;
+//    // -------------------
+//        case(CST_TdS_HR):
+//            c11     = Accu->GetData("C11HR",ibin,icv)/nsamples;;
+//            m2icf   = Accu->GetData("M2HICF",ibin,icv);
+//            m2ene   = Accu->GetData("M2ERST",ibin);
+//        break;
+//    // -------------------
+//        case(CST_TdS_HK):
+//            c11     = Accu->GetData("C11HK",ibin,icv)/nsamples;;
+//            m2icf   = Accu->GetData("M2HICF",ibin,icv);
+//            m2ene   = Accu->GetData("M2EKIN",ibin);
+//        break;
     // -------------------
         default:
             RUNTIME_ERROR("unsupported type");

@@ -26,10 +26,12 @@
 //------------------------------------------------------------------------------
 
 enum ECSTTdSType {
-    CST_TdS_HH,
-    CST_TdS_HP,
-    CST_TdS_HR,
-    CST_TdS_HK,
+    CST_TdS_LT,
+    CST_TdS_LTFW,
+    CST_TdS_LIFW,
+    CST_TdS_LPFW,
+    CST_TdS_LRFW,
+    CST_TdS_LKFW,
 };
 
 //------------------------------------------------------------------------------
