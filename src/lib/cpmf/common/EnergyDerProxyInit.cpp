@@ -151,6 +151,18 @@ CEnergyDerProxyPtr CEnergyDerProxyInit::InitProxy(const CSmallString& realm,CPMF
             error << "incompatible method: " << accu->GetMethod() << " with requested realm: " <<  realm;
             RUNTIME_ERROR(error);
         }
+
+// -----------------------------------------------
+    } else if ( (realm == "-TdS_LT/dx") || (realm == "mTdS_LT/dx") ) {
+        if (CCSTProxy_mTdS::IsCompatible(accu) ) {
+            CCSTProxy_mTdS_Ptr proxy = CCSTProxy_mTdS_Ptr(new CCSTProxy_mTdS);
+            proxy->SetType(CST_TdS_LT);
+            lproxy = proxy;
+        } else {
+            CSmallString error;
+            error << "incompatible method: " << accu->GetMethod() << " with requested realm: " <<  realm;
+            RUNTIME_ERROR(error);
+        }
 // -----------------------------------------------
     } else if ( (realm == "-TdS_HR/dx") || (realm == "mTdS_HR/dx") ) {
         if( CABFProxy_mTdS::IsCompatible(accu) ){
