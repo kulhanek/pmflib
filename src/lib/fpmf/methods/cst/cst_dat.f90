@@ -65,16 +65,9 @@ real(PMFDP)     :: frveltol         ! residual for velocity in rattle/rattlev
 integer         :: fmaxiter         ! maximum of iteration in lambda optimization
 integer         :: flamsample       ! how often update lambda and metric tensor corrections
 
-! enthalpy/entropy calculations ----------------------------
+! enthalpy/entropy calculations
+logical         :: fdhtds           ! collect data for enthalpy/entropy calculation
 integer         :: fenesample      ! how often take samples
-
-! enthalpy/entropy calculations
-logical         :: fenthalpy        ! collect data for enthalpy calculation
-logical         :: fenthalpy_der    ! collect data for enthalpy derivative calculation
-
-! enthalpy/entropy calculations
-logical         :: fentropy         ! collect data for entropy calculation
-logical         :: fentdecomp       ! collect additional correlation terms
 
 real(PMFDP)     :: fepotaverage
 real(PMFDP)     :: fekinaverage
@@ -107,7 +100,10 @@ type CVTypeBM
 end type CVTypeBM
 
 ! global variables for blue moon -----------------------------------------------
-integer                    :: NumOfCONs         ! number of constraints including shakes
+integer                    :: NumOfCONs         ! number of constraints
+integer                    :: NumOfSHAKECONs    ! number of shake constraints in collision
+integer                    :: NumOfAllCONs      ! number of constraints including shakes
+
 type(CVTypeBM),allocatable :: CONList(:)        ! constraint list
 
 ! shake in collisions with CVs -------------------------------------------------
@@ -117,7 +113,6 @@ type CVTypeSHAKE
     real(PMFDP)             :: value
 end type CVTypeSHAKE
 
-integer                         :: NumOfSHAKECONs            ! number of shake constraints in collision
 type(CVTypeSHAKE),allocatable   :: SHAKECONList(:)           ! SHAKE definition of constraints
 
 ! serial/MPI variables ---------------------------------------------------------
@@ -178,7 +173,7 @@ real(PMFDP),allocatable     :: lambdahist(:,:)
 real(PMFDP),allocatable     :: epothist(:)
 real(PMFDP),allocatable     :: ersthist(:)
 real(PMFDP),allocatable     :: ekinhist(:)
-real(PMFDP),allocatable     :: ifwhist(:)
+real(PMFDP),allocatable     :: fwhist(:)
 real(PMFDP),allocatable     :: icfphist(:,:)
 real(PMFDP),allocatable     :: icfkhist(:,:)
 logical,allocatable         :: enevalidhist(:)      ! is energy valid?
@@ -189,24 +184,30 @@ logical,allocatable         :: enevalidhist(:)      ! is energy valid?
 
 type(PMFAccuType)           :: cstaccu
 logical                     :: fallconstant     ! all CST CVs must be constant for PMFAccumulator
+integer                     :: faccustep        ! number of integration steps for accumulator data sampling, TdS
 
 real(PMFDP),allocatable     :: rbuf_B(:)        ! helper buffers
 real(PMFDP),allocatable     :: rbuf_M(:,:)
 
 ! global variables for blue moon - results -------------------------------------
 real(PMFDP)                 :: nsamples         ! total number of accumulated steps
-real(PMFDP)                 :: misrz            ! mean of inverse square root of fzdet
-real(PMFDP)                 :: m2isrz           ! M2 of inverse square root of fzdet
+real(PMFDP)                 :: mfw              ! mean of Fixman weights
+real(PMFDP)                 :: m2fw             ! M2 of Fixman weights
 real(PMFDP),allocatable     :: mlambda(:)       ! mean of lambdas
 real(PMFDP),allocatable     :: m2lambda(:)      ! M2 of lambdas
 
-! fenthalpy .or. fentropy  -----------------------------------------------------
-integer                     :: fene_step
+! fdhtds  ----------------------------------------------------------------------
 real(PMFDP)                 :: ntds             ! number of step for enthalpy and entropy calculations
-real(PMFDP)                 :: mfw              ! Fixman weight
-real(PMFDP)                 :: m2fw             ! M2 of Fixman weight
 
-! fenthalpy .or. (fentropy .and. fentdecomp) -----------------------------------
+real(PMFDP),allocatable     :: mlamtds(:)       ! mean of ICF - hamiltonian
+real(PMFDP),allocatable     :: m2lamtds(:)      ! M2 of ICF - hamiltonian
+real(PMFDP),allocatable     :: mlamtdsfw(:)     ! mean of ICF - hamiltonian  - Fixman weighted
+real(PMFDP),allocatable     :: m2lamtdsfw(:)    ! M2 of ICF - hamiltonian
+real(PMFDP)                 :: mfwtds           ! mean of Fixman weights
+real(PMFDP)                 :: m2fwtds          ! M2 of Fixman weights
+
+real(PMFDP)                 :: metot            ! mean of total energy
+real(PMFDP)                 :: m2etot           ! M2 of total energy
 real(PMFDP)                 :: meint            ! mean of internal energy
 real(PMFDP)                 :: m2eint           ! M2 of internal energy
 real(PMFDP)                 :: mepot            ! mean of potential energy
@@ -216,6 +217,8 @@ real(PMFDP)                 :: m2erst           ! M2 of restraint energy
 real(PMFDP)                 :: mekin            ! mean of kinetic energy
 real(PMFDP)                 :: m2ekin           ! M2 of kinetic energy
 
+real(PMFDP)                 :: metotfw          ! mean of total energy - Fixman weighted
+real(PMFDP)                 :: m2etotfw         ! M2 of total energy
 real(PMFDP)                 :: meintfw          ! mean of internal energy
 real(PMFDP)                 :: m2eintfw         ! M2 of internal energy
 real(PMFDP)                 :: mepotfw          ! mean of potential energy
@@ -225,38 +228,27 @@ real(PMFDP)                 :: m2erstfw         ! M2 of restraint energy
 real(PMFDP)                 :: mekinfw          ! mean of kinetic energy
 real(PMFDP)                 :: m2ekinfw         ! M2 of kinetic energy
 
-! fenthalpy .and. (fenthalpy_der .gt. 0) ---------------------------------------
-real(PMFDP),allocatable     :: micfp(:)         ! mean of ICF-P
-real(PMFDP),allocatable     :: m2icfp(:)        ! M2 of ICF-P
-real(PMFDP),allocatable     :: micfk(:)         ! mean of ICF-K
-real(PMFDP),allocatable     :: m2icfk(:)        ! M2 of ICF-K
 real(PMFDP),allocatable     :: micf(:)          ! mean of ICF
 real(PMFDP),allocatable     :: m2icf(:)         ! M2 of ICF
-real(PMFDP),allocatable     :: c11pp(:)         ! co-variances covar(ICF-P,Eint)
 
-real(PMFDP),allocatable     :: micfpfw(:)       ! mean of ICF-P - Fixman weighted
-real(PMFDP),allocatable     :: m2icfpfw(:)      ! M2 of ICF-P - Fixman weighted
+real(PMFDP),allocatable     :: micffw(:)        ! mean of ICF - Fixman weighted
+real(PMFDP),allocatable     :: m2icffw(:)       ! M2 of ICF
 
-real(PMFDP),allocatable     :: micfkfw(:)       ! mean of ICF-K - Fixman weighted
-real(PMFDP),allocatable     :: m2icfkfw(:)      ! M2 of ICF-K - Fixman weighted
+real(PMFDP),allocatable     :: micfpfw(:)       ! mean of ICF-P
+real(PMFDP),allocatable     :: m2icfpfw(:)      ! M2 of ICF-P
 
-real(PMFDP),allocatable     :: micfpeintfw(:)   ! mean of ICF-P * Eint - Fixman weighted
-real(PMFDP),allocatable     :: m2icfpeintfw(:)  ! M2 of ICF-P * Eint - Fixman weighted
+real(PMFDP),allocatable     :: micfkfw(:)       ! mean of ICF-K
+real(PMFDP),allocatable     :: m2icfkfw(:)      ! M2 of ICF-K
 
-! fentropy ---------------------------------------------------------------------
-real(PMFDP)                 :: metot            ! mean of total energy
-real(PMFDP)                 :: m2etot           ! M2 of total energy
-real(PMFDP),allocatable     :: mpp(:)           ! mean of tot energy + icf
-real(PMFDP),allocatable     :: m2pp(:)          ! M2 of tot energy + icf
-real(PMFDP),allocatable     :: mpn(:)           ! mean of tot energy - icf
-real(PMFDP),allocatable     :: m2pn(:)          ! M2 of tot energy - icf
-real(PMFDP),allocatable     :: mhicf(:)         ! mean of ICF - hamiltonian
-real(PMFDP),allocatable     :: m2hicf(:)        ! M2 of ICF - hamiltonian
+real(PMFDP),allocatable     :: c11ii(:)         ! co-variances covar(ICF,Eint)
+real(PMFDP),allocatable     :: c11iifw(:)       ! co-variances covar(ICF,Eint)- Fixman weighted
 
-! fentropy .and. fentdecomp ----------------------------------------------------
-real(PMFDP),allocatable     :: c11hp(:)         ! co-moments between dH/dx and EPot, ERst, EKin energies
-real(PMFDP),allocatable     :: c11hr(:)
-real(PMFDP),allocatable     :: c11hk(:)
+real(PMFDP),allocatable     :: c11lt(:)         ! co-moments between lambda and total energy
+real(PMFDP),allocatable     :: c11ltfw(:)       ! weighted co-moments between lambda and various energies
+real(PMFDP),allocatable     :: c11lifw(:)
+real(PMFDP),allocatable     :: c11lpfw(:)
+real(PMFDP),allocatable     :: c11lrfw(:)
+real(PMFDP),allocatable     :: c11lkfw(:)
 
 !===============================================================================
 

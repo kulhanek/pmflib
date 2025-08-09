@@ -64,7 +64,7 @@ subroutine cst_core_main_lf
 
     lambda(:) = lambda(:) + lambdax(:) * isfdts
 
-    if( fenthalpy_der ) then
+    if( fdhtds ) then
         call cst_core_calculate_icf
         icfphist(:,hist_len) = icfp(:)
         icfkhist(:,hist_len) = icfk(:)
@@ -165,6 +165,7 @@ end subroutine cst_core_register_ekin_lf
 
 !===============================================================================
 ! Subroutine:  cst_core_calculate_fw
+! it uses CVContext
 !===============================================================================
 
 subroutine cst_core_calculate_fw
@@ -174,16 +175,16 @@ subroutine cst_core_calculate_fw
     use cst_dat
 
     implicit none
-    integer                :: i,ci,j,cj,k,info,cvoff
+    integer                :: i,ci,j,cj,k,info
     real(PMFDP)            :: jacv,fzdeta,fzdets,fzdet
     ! --------------------------------------------------------------------------
 
 ! ALL constraints ================================
 
 ! calculate Z matrix at Crd (in t)
-    do i=1,NumOfCONs
+    do i=1,NumOfAllCONs
         ci = CONList(i)%cvindx
-        do j=1,NumOfCONs
+        do j=1,NumOfAllCONs
             cj = CONList(j)%cvindx
             jacv = 0.0
             do k=1,NumOfLAtoms
@@ -194,15 +195,15 @@ subroutine cst_core_calculate_fw
     end do
 
 ! calculate Z determinant ------------------------------------
-    if( NumOfCONs .gt. 1 ) then
+    if( NumOfAllCONs .gt. 1 ) then
         ! LU decomposition
-        call dgetrf(NumOfCONs,NumOfCONs,zmata,NumOfCONs,indx,info)
+        call dgetrf(NumOfAllCONs,NumOfAllCONs,zmata,NumOfAllCONs,indx,info)
         if( info .ne. 0 ) then
             call pmf_utils_exit(PMF_OUT,1,'[CST] LU decomposition failed in cst_core_calculate_fw!')
         end if
         fzdeta = 1.0d0
         ! and finally determinant
-        do i=1,NumOfCONs
+        do i=1,NumOfAllCONs
             if( indx(i) .ne. i ) then
                 fzdeta = - fzdeta * zmata(i,i)
             else
@@ -216,11 +217,10 @@ subroutine cst_core_calculate_fw
 ! SHAKE constraints ==============================
 
 ! calculate Z matrix at Crd (in t)
-    cvoff = NumOfCONs - NumOfSHAKECONs
     do i=1,NumOfSHAKECONs
-        ci = CONList(i+cvoff)%cvindx
+        ci = CONList(i+NumOfCONs)%cvindx
         do j=1,NumOfSHAKECONs
-            cj = CONList(j+cvoff)%cvindx
+            cj = CONList(j+NumOfCONs)%cvindx
             jacv = 0.0
             do k=1,NumOfLAtoms
                 jacv = jacv + MassInv(k)*dot_product(CVContext%CVsDrvs(:,k,ci),CVContext%CVsDrvs(:,k,cj))
@@ -255,53 +255,10 @@ subroutine cst_core_calculate_fw
 ! DOI: 10.1080/00268970310001592746 - eq. 6
     fzdet   = fzdeta / fzdets
     fwfac   = 1.0d0/sqrt(fzdet)
-    ifwhist(hist_len) = fwfac
+    fwhist(hist_len) = fwfac
 
 end subroutine cst_core_calculate_fw
 
-!===============================================================================
-! Subroutine:  cst_core_calculate_icfp
-!===============================================================================
-!
-!subroutine cst_core_calculate_icfp
-!
-!    use pmf_utils
-!    use pmf_dat
-!    use cst_dat
-!
-!    implicit none
-!    integer                :: i,ci,k,m
-!    real(PMFDP)            :: f1,nv
-!     --------------------------------------------------------------------------
-!
-!     start with dV/dx
-!    CSTFrc(:,:) = Frc(:,:)
-!
-!    ! add constraint forces from SHAKE constraints only
-!    do i=1,NumOfCONs
-!        ci = CONList(i)%cvindx
-!        do k=1,NumOfLAtoms
-!            CSTFrc(:,k) = CSTFrc(:,k) + lambda(i)*CVContext%CVsDrvs(:,k,ci)
-!        end do
-!    end do
-!
-!     project to CVs
-!    icfp(:) = 0.0d0
-!    do i=1,NumOfCONs-NumOfSHAKECONs
-!        ci = CONList(i)%cvindx
-!        f1 = 0.0d0
-!        nv = 0.0d0
-!        do k=1,NumOfLAtoms
-!            do m=1,3
-!                 force part
-!                nv = nv + CVContext%CVsDrvs(m,k,ci) * CVContext%CVsDrvs(m,k,ci)
-!                f1 = f1 + CVContext%CVsDrvs(m,k,ci) * CSTFrc(m,k)
-!            end do
-!        end do
-!        icfp(i) = - f1 / nv
-!    end do
-!
-!end subroutine cst_core_calculate_icfp
 
 !===============================================================================
 ! Subroutine:  cst_core_calculate_icf
@@ -318,7 +275,7 @@ subroutine cst_core_calculate_icf
     real(PMFDP)            :: f1,nv,v1,v2,dh
     ! --------------------------------------------------------------------------
 
-    if( NumOfCONs-NumOfSHAKECONs .ne. 1 ) then
+    if( NumOfCONs .ne. 1 ) then
         call pmf_utils_exit(PMF_OUT,1,&
                  '[CST] Only 1 CV supported in cst_core_calculate_icf!')
     end if
@@ -330,7 +287,7 @@ subroutine cst_core_calculate_icf
     CSTFrc(:,:) = Frc(:,:)
 
     ! add constraint forces from SHAKE constraints only
-    do i=NumOfCONs-NumOfSHAKECONs+1,NumOfCONs
+    do i=NumOfCONs+1,NumOfAllCONs
         ci = CONList(i)%cvindx
         do k=1,NumOfLAtoms
             CSTFrc(:,k) = CSTFrc(:,k) + lambda(i)*CVContext%CVsDrvs(:,k,ci)
@@ -342,9 +299,8 @@ subroutine cst_core_calculate_icf
     ci = CONList(i)%cvindx
     f1 = 0.0d0
     nv = 0.0d0
-    do k=1,NumOfLAtoms
-   ! do j=1,CONList(i)%cv%natoms
-   !     k = CONList(i)%cv%lindexes(j)
+    do j=1,CONList(i)%cv%natoms
+        k = CONList(i)%cv%lindexes(j)
         do m=1,3
             ! force part
             nv = nv + CVContext%CVsDrvs(m,k,ci) * CVContext%CVsDrvs(m,k,ci)
@@ -353,11 +309,11 @@ subroutine cst_core_calculate_icf
     end do
     icfp(i) = - f1 / nv
 
-    dh = 1e-4
+    dh = 1e-5
 
 ! ICF-K by central differences
-    do k=1,NumOfLAtoms
-        ! k = CONList(i)%cv%lindexes(j)
+    do j=1,CONList(i)%cv%natoms
+        k = CONList(i)%cv%lindexes(j)
         do m=1,3
             CSTFrc(:,:) = Crd(:,:)
             CSTFrc(m,k) = CSTFrc(m,k) + dh
@@ -416,9 +372,8 @@ subroutine calc_icfk_vec
     end do
 
     ci = CONList(i)%cvindx
-!    do j=1,CONList(i)%cv%natoms
-!        k = CONList(i)%cv%lindexes(j)
-    do k=1,NumOfLAtoms
+    do j=1,CONList(i)%cv%natoms
+        k = CONList(i)%cv%lindexes(j)
         do m=1,3
             icfk_vec(m,k) = CVContextP%CVsDrvs(m,k,ci)/nv
         end do
@@ -443,7 +398,7 @@ subroutine cst_core_shift_histbuffs
         epothist(i)     = epothist(i+1)
         ersthist(i)     = ersthist(i+1)
         ekinhist(i)     = ekinhist(i+1)
-        ifwhist(i)      = ifwhist(i+1)
+        fwhist(i)       = fwhist(i+1)
         icfphist(:,i)   = icfphist(:,i+1)
         icfkhist(:,i)   = icfkhist(:,i+1)
         enevalidhist(i) = enevalidhist(i+1)
@@ -460,6 +415,7 @@ subroutine cst_core_analyze
     use pmf_utils
     use pmf_dat
     use cst_dat
+    use cst_accu
 
     implicit none
     integer         :: i,ci
@@ -469,74 +425,7 @@ subroutine cst_core_analyze
     if ( faccurst .eq. 0 ) then
         faccurst = -1
 
-        ! free energy calculation
-        nsamples    = 0.0d0
-        mlambda(:)  = 0.0d0
-        m2lambda(:) = 0.0d0
-        misrz       = 0.0d0
-        m2isrz      = 0.0d0
-
-        ! accumulator setup for entropy and enthalpy
-        fene_step = 0
-
-        if( fenthalpy .or. fentropy ) then
-            ntds = 0.0d0
-            mfw  = 0.0d0
-            m2fw = 0.0d0
-        end if
-
-        if( fenthalpy .or. (fentropy .and. fentdecomp) ) then
-            meint       = 0.0d0
-            m2eint      = 0.0d0
-            mepot       = 0.0d0
-            m2epot      = 0.0d0
-            merst       = 0.0d0
-            m2erst      = 0.0d0
-            mekin       = 0.0d0
-            m2ekin      = 0.0d0
-
-            meintfw     = 0.0d0
-            m2eintfw    = 0.0d0
-            mepotfw     = 0.0d0
-            m2epotfw    = 0.0d0
-            merstfw     = 0.0d0
-            m2erstfw    = 0.0d0
-            mekinfw     = 0.0d0
-            m2ekinfw    = 0.0d0
-        end if
-
-        if( fenthalpy .and. fenthalpy_der ) then
-            micfp(:)    = 0.0d0
-            m2icfp(:)   = 0.0d0
-            micfk(:)    = 0.0d0
-            m2icfk(:)   = 0.0d0
-            micf(:)     = 0.0d0
-            m2icf(:)    = 0.0d0
-            c11pp(:)    = 0.0d0
-            micfpfw(:)  = 0.0d0
-            m2icfpfw(:) = 0.0d0
-            micfkfw(:)  = 0.0d0
-            m2icfkfw(:) = 0.0d0
-            micfpeintfw(:)  = 0.0d0
-            m2icfpeintfw(:) = 0.0d0
-        end if
-
-        if( fentropy ) then
-            metot       = 0.0d0
-            m2etot      = 0.0d0
-            mpp(:)      = 0.0d0
-            m2pp(:)     = 0.0d0
-            mpn(:)      = 0.0d0
-            m2pn(:)     = 0.0d0
-            mhicf(:)    = 0.0d0
-            m2hicf(:)   = 0.0d0
-        end if
-
-        if( fentropy .and. fentdecomp ) then
-            c11hp(:)    = 0.0d0
-            c11hr(:)    = 0.0d0
-            c11hk(:)    = 0.0d0
-        end if
+        call cst_accu_clear
 
         CONList(:)%sdevtot = 0.0d0
 
@@ -552,7 +441,7 @@ subroutine cst_core_analyze
     end if
 
 ! calculate final constraint deviations
-    do i=1,NumOfCONs
+    do i=1,NumOfAllCONs
         ci = CONList(i)%cvindx
         CONList(i)%deviation = CONList(i)%cv%get_deviation(CVContextP%CVsValues(ci),CONList(i)%value)   ! t+dt
         CONList(i)%sdevtot = CONList(i)%sdevtot + CONList(i)%deviation**2                               ! t+dt
@@ -562,241 +451,10 @@ subroutine cst_core_analyze
     if( fstep .le. 2 ) return
 
 ! record data
-    call cst_core_analyze_lam
-    call cst_core_analyze_dhTds
+    call cst_accu_add_lam
+    call cst_accu_add_dhTds
 
 end subroutine cst_core_analyze
-
-!===============================================================================
-! Subroutine:  cst_core_analyze_lam
-! free energy
-!===============================================================================
-
-subroutine cst_core_analyze_lam
-
-    use pmf_dat
-    use cst_dat
-
-    implicit none
-    integer         :: i
-    real(PMFDP)     :: fw,lam,dval1,dval2,invn
-    ! --------------------------------------------------------------------------
-
-    if( mod(fstep,flamsample) .ne. 0 ) return
-
-! values
-    lambda(:)   = lambdahist(:,hist_len+hist_fidx)
-    fw          = ifwhist(hist_len+hist_fidx)     ! t-dt
-
-    nsamples = nsamples + 1
-    if( nsamples .le. 0 ) return
-    invn = 1.0d0/nsamples
-
-    do i=1,NumOfCONs
-        ! lambda
-        lam             = lambda(i)
-        dval1           = lam - mlambda(i)
-        mlambda(i)      = mlambda(i)  + dval1 * invn
-        dval2           = lam - mlambda(i)
-        m2lambda(i)     = m2lambda(i) + dval1 * dval2
-    end do
-
-! isrz
-    dval1   = fw - misrz
-    misrz   = misrz  + dval1 * invn
-    dval2   = fw - misrz
-    m2isrz  = m2isrz + dval1*dval2
-
-end subroutine cst_core_analyze_lam
-
-!===============================================================================
-! Subroutine:  cst_core_analyze_dhTds
-! enthalpy and entropy
-!===============================================================================
-
-subroutine cst_core_analyze_dhTds
-
-    use pmf_dat
-    use cst_dat
-
-    implicit none
-    integer         :: i
-    real(PMFDP)     :: lam,dval1,dval2,invn
-    real(PMFDP)     :: etot,epot,erst,eint,ekin
-    real(PMFDP)     :: detot1, detot2
-    real(PMFDP)     :: depot1, depot2
-    real(PMFDP)     :: derst1, derst2
-    real(PMFDP)     :: deint1, deint2
-    real(PMFDP)     :: dekin1, dekin2
-    real(PMFDP)     :: depot1fw, depot2fw
-    real(PMFDP)     :: derst1fw, derst2fw
-    real(PMFDP)     :: deint1fw, deint2fw
-    real(PMFDP)     :: dekin1fw, dekin2fw
-    real(PMFDP)     :: dpp, dpp1, dpp2
-    real(PMFDP)     :: dpn, dpn1, dpn2
-    real(PMFDP)     :: dicf1, dicf2, licfp, licfk
-    real(PMFDP)     :: licf
-    real(PMFDP)     :: dicf1fw, dicf2fw, licfpfw
-    real(PMFDP)     :: dicfeint1fw, dicfeint2fw, licfpeintfw, licfkfw
-    real(PMFDP)     :: dfw1, dfw2, fw
-    ! --------------------------------------------------------------------------
-
-    if( enevalidhist(hist_len+hist_fidx) ) fene_step = fene_step + 1
-    if( .not. ( (mod(fene_step,fenesample) .eq. 0) .and. enevalidhist(hist_len+hist_fidx) ) ) return
-
-    ntds = ntds + 1.0d0
-    invn = 1.0d0/ntds
-
-    fw = ifwhist(hist_len+hist_fidx)
-
-! fixman weight
-    dfw1 = fw - mfw
-    mfw  = mfw + dfw1 * invn
-    dfw2 = fw - mfw
-    m2fw = m2fw + dfw1 * dfw2
-
-! other data
-    lambda(:)   = lambdahist(:,hist_len+hist_fidx)
-    epot        = epothist(hist_len+hist_fidx)     ! t-dt
-    erst        = ersthist(hist_len+hist_fidx)     ! t-dt
-    ekin        = ekinhist(hist_len+hist_fidx)     ! t-dt
-    etot        = epot + erst + ekin               ! t-dt
-    eint        = epot + erst
-
-    if( fenthalpy .or. (fentropy .and. fentdecomp) ) then
-        ! internal energy
-        deint1 = eint - meint
-        meint  = meint + deint1 * invn
-        deint2 = eint - meint
-        m2eint = m2eint + deint1 * deint2
-
-        ! potential energy
-        depot1 = epot - mepot
-        mepot  = mepot + depot1 * invn
-        depot2 = epot - mepot
-        m2epot = m2epot + depot1 * depot2
-
-        ! restraint energy
-        derst1 = erst - merst
-        merst  = merst + derst1 * invn
-        derst2 = erst - merst
-        m2erst = m2erst + derst1 * derst2
-
-        ! kinetic energy
-        dekin1 = ekin - mekin
-        mekin  = mekin + dekin1 * invn
-        dekin2 = ekin - mekin
-        m2ekin = m2ekin + dekin1 * dekin2
-    ! --------------------------------------------
-        ! internal energy
-        deint1fw = eint*fw - meintfw
-        meintfw  = meintfw + deint1fw * invn
-        deint2fw = eint*fw - meintfw
-        m2eintfw = m2eintfw + deint1fw * deint2fw
-
-        ! potential energy
-        depot1fw = epot*fw - mepotfw
-        mepotfw  = mepotfw + depot1fw * invn
-        depot2fw = epot*fw - mepotfw
-        m2epotfw = m2epotfw + depot1fw * depot2fw
-
-        ! restraint energy
-        derst1fw = erst*fw - merstfw
-        merstfw  = merstfw + derst1fw * invn
-        derst2fw = erst*fw - merstfw
-        m2erstfw = m2erstfw + derst1fw * derst2fw
-
-        ! kinetic energy
-        dekin1fw = ekin*fw - mekinfw
-        mekinfw  = mekinfw + dekin1fw * invn
-        dekin2fw = ekin*fw - mekinfw
-        m2ekinfw = m2ekinfw + dekin1fw * dekin2fw
-    end if
-
-    if( fenthalpy .and. fenthalpy_der ) then
-        do i=1,NumOfCONs
-            licfp = icfphist(i,hist_len+hist_fidx)
-            dicf1     = licfp - micfp(i)
-            micfp(i)  = micfp(i) + dicf1 * invn
-            dicf2     = licfp - micfp(i)
-            m2icfp(i) = m2icfp(i) + dicf1 * dicf2
-
-            c11pp(i)  = c11pp(i) + dicf1 * deint2
-
-            licfk = - PMF_Rgas*ftemp * icfkhist(i,hist_len+hist_fidx)
-            dicf1     = licfk - micfk(i)
-            micfk(i)  = micfk(i) + dicf1 * invn
-            dicf2     = licfk - micfk(i)
-            m2icfk(i) = m2icfk(i) + dicf1 * dicf2
-
-            licf = icfphist(i,hist_len+hist_fidx) - PMF_Rgas*ftemp * icfkhist(i,hist_len+hist_fidx)
-            dicf1     = licf - micf(i)
-            micf(i)  = micf(i) + dicf1 * invn
-            dicf2     = licf - micf(i)
-            m2icf(i) = m2icf(i) + dicf1 * dicf2
-
-            licfpfw = icfphist(i,hist_len+hist_fidx)*fw
-            dicf1fw     = licfpfw - micfpfw(i)
-            micfpfw(i)  = micfpfw(i) + dicf1fw * invn
-            dicf2fw     = licfpfw - micfpfw(i)
-            m2icfpfw(i) = m2icfpfw(i) + dicf1fw * dicf2fw
-
-            licfkfw = - PMF_Rgas*ftemp * icfkhist(i,hist_len+hist_fidx)*fw
-            dicf1fw     = licfkfw - micfkfw(i)
-            micfkfw(i)  = micfkfw(i) + dicf1fw * invn
-            dicf2fw     = licfkfw - micfkfw(i)
-            m2icfkfw(i) = m2icfkfw(i) + dicf1fw * dicf2fw
-
-            licfpeintfw = icfphist(i,hist_len+hist_fidx)*eint*fw
-            dicfeint1fw     = licfpeintfw - micfpeintfw(i)
-            micfpeintfw(i)  = micfpeintfw(i) + dicfeint1fw * invn
-            dicfeint2fw     = licfpeintfw - micfpeintfw(i)
-            m2icfpeintfw(i) = m2icfpeintfw(i) + dicfeint1fw * dicfeint2fw
-        end do
-    end if
-
-    if( fentropy ) then
-        ! total energy
-        detot1 = etot - metot
-        metot  = metot + detot1 * invn
-        detot2 = etot - metot
-        m2etot = m2etot + detot1 * detot2
-    end if
-
-! lambda and entropy
-    if( fentropy ) then
-        do i=1,NumOfCONs
-
-            ! lambda
-            lam             = lambda(i)
-            dval1           = lam - mhicf(i)
-            mhicf(i)        = mhicf(i) + dval1 * invn
-            dval2           = lam - mhicf(i)
-            m2hicf(i)       = m2hicf(i) + dval1 * dval2
-
-            lam = icfphist(i,hist_len+hist_fidx) - PMF_Rgas*ftemp * icfkhist(i,hist_len+hist_fidx)
-
-            dpp     = lam + etot
-            dpp1    = dpp - mpp(i)
-            mpp(i)  = mpp(i) + dpp1 * invn
-            dpp2    = dpp - mpp(i)
-            m2pp(i) = m2pp(i) + dpp1 * dpp2
-
-            dpn     = lam - etot
-            dpn1    = dpn - mpn(i)
-            mpn(i)  = mpn(i) + dpn1 * invn
-            dpn2    = dpn - mpn(i)
-            m2pn(i) = m2pn(i) + dpn1 * dpn2
-
-            if( fentdecomp ) then
-                c11hp(i)   = c11hp(i) + dval1 * depot2
-                c11hr(i)   = c11hr(i) + dval1 * derst2
-                c11hk(i)   = c11hk(i) + dval1 * dekin2
-            end if
-        end do
-    end if
-
-end subroutine cst_core_analyze_dhTds
 
 !===============================================================================
 

@@ -722,7 +722,7 @@ subroutine pmf_sander_num_of_pmflib_cst(numofcst) bind(c,name='int_pmf_sander_nu
         write(PMF_DEBUG+fmytaskid,*) '>>TR: pmf_sander_num_of_pmflib_cst'
     end if
 
-    numofcst = NumOfCONs - NumOfSHAKECONs
+    numofcst = NumOfAllCONs - NumOfSHAKECONs
     return
 
 end subroutine pmf_sander_num_of_pmflib_cst

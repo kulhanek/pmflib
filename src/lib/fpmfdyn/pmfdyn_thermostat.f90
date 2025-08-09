@@ -93,7 +93,7 @@ subroutine init_thermostat_subsystem(x,v)
             ncom = 0.0d0
     end select
 
-    nbm = real(NumOfCONs)
+    nbm = real(NumOfAllCONs)
 
     NOF = 3.0d0*natoms - ncom - nbm
 

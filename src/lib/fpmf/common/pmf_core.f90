@@ -362,7 +362,7 @@ integer function pmf_core_get_num_of_constraints()
 
     if ( .not. cst_enabled) return
 
-    pmf_core_get_num_of_constraints = NumOfCONs
+    pmf_core_get_num_of_constraints = NumOfAllCONs
 
     return
 

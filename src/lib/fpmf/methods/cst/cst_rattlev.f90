@@ -78,7 +78,7 @@ subroutine cst_rattlev_calculate_ma
     call cst_constraints_calc_fdxp
 
 ! construct right hand side
-    do i=1,NumOfCONs
+    do i=1,NumOfAllCONs
         ci = CONList(i)%cvindx
         tmp = 0.0d0
         do k=1,NumOfLAtoms
@@ -91,12 +91,12 @@ subroutine cst_rattlev_calculate_ma
     call cst_rattlev_calc_jacobian
 
  ! solve LE
-     if( NumOfCONs .gt. 1 ) then
-        call dgetrf(NumOfCONs,NumOfCONs,jac,NumOfCONs,indx,info)
+     if( NumOfAllCONs .gt. 1 ) then
+        call dgetrf(NumOfAllCONs,NumOfAllCONs,jac,NumOfAllCONs,indx,info)
         if( info .ne. 0 ) then
             call pmf_utils_exit(PMF_OUT,1,'[CST] LU decomposition failed in cst_rattlev_calculate_ma!')
         end if
-        call dgetrs('N',NumOfCONs,1,jac,NumOfCONs,indx,lambdav,NumOfCONs,info)
+        call dgetrs('N',NumOfAllCONs,1,jac,NumOfAllCONs,indx,lambdav,NumOfAllCONs,info)
         if( info .ne. 0 ) then
             call pmf_utils_exit(PMF_OUT,1,'[CST] Solution of LE failed in cst_rattlev_calculate_ma!')
         end if
@@ -105,7 +105,7 @@ subroutine cst_rattlev_calculate_ma
      end if
 
 ! correct velocities
-    do i=1,NumOfCONs
+    do i=1,NumOfAllCONs
         ci = CONList(i)%cvindx
         do k=1,NumOfLAtoms
             VelP(:,k) = VelP(:,k) + lambdav(i)*MassInv(k)*CVContextP%CVsDrvs(:,k,ci)
@@ -113,7 +113,7 @@ subroutine cst_rattlev_calculate_ma
     end do
 
 ! final check of convergence
-    do i=1,NumOfCONs
+    do i=1,NumOfAllCONs
         ci = CONList(i)%cvindx
         tmp = 0.0d0
         do k=1,NumOfLAtoms
@@ -152,9 +152,9 @@ subroutine cst_rattlev_calc_jacobian
     ! --------------------------------------------------------------------------
 
     ! complete Jacobian matrix
-    do i=1,NumOfCONs
+    do i=1,NumOfAllCONs
         ci = CONList(i)%cvindx
-        do j=1,NumOfCONs
+        do j=1,NumOfAllCONs
             cj = CONList(j)%cvindx
             jacv = 0.0d0
             do k=1,NumOfLAtoms

@@ -256,7 +256,7 @@ subroutine cst_constraints_init_all
     integer            :: i
     ! --------------------------------------------------------------------------
 
-    do i=1,NumOfCONs
+    do i=1,NumOfAllCONs
         call cst_constraints_cst_init(CONList(i))
     end do
 
@@ -312,7 +312,7 @@ subroutine cst_constraints_increment
     integer            :: i
     ! --------------------------------------------------------------------------
 
-    do i=1,NumOfCONs
+    do i=1,NumOfAllCONs
         call cst_constraints_cst_increment(CONList(i))
     end do
 
@@ -377,7 +377,7 @@ subroutine cst_constraints_calc_fdxp
     end do
 
     ! get constrain deviations
-    do i=1,NumOfCONs
+    do i=1,NumOfAllCONs
         ci = CONList(i)%cvindx
         cv(i) = get_deviation(CONList(i)%cv,CVContextP%CVsValues(ci),CONList(i)%value)
     end do

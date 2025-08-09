@@ -76,9 +76,9 @@ subroutine cst_output_write_header
     character(len=15)   :: name
     ! --------------------------------------------------------------------------
 
-    nitems = NumOfCONs
+    nitems = NumOfAllCONs
     if( fplevel .eq. 0 ) then
-        nitems = NumOfCONs - NumOfSHAKECONs
+        nitems = NumOfAllCONs - NumOfSHAKECONs
     end if
 
     if( faccurst .gt. 0 ) then
@@ -183,9 +183,9 @@ subroutine cst_output_write
     if( mod(fstep,fsample) .ne. 0 .and. fstep .ne. fnstlim ) return ! write only every fsample step
 
     if( nsamples .gt. 0 ) then
-        aisrz  = misrz
-        isrzs  = sqrt( m2isrz  / real(nsamples,PMFDP) )
-        aisrzs = isrzs / sqrt(real(nsamples,PMFDP))
+        aisrz  = mfw
+        isrzs  = sqrt( m2fw  / nsamples )
+        aisrzs = isrzs / sqrt(nsamples)
         mtc    = - PMF_Rgas*ftemp*log(aisrz)
     else
         aisrz  = 0.0d0
@@ -204,9 +204,9 @@ subroutine cst_output_write
         write(CST_OUT,185,advance='NO')
     end if
 
-    nitems = NumOfCONs
+    nitems = NumOfAllCONs
     if( fplevel .eq. 0 ) then
-        nitems = NumOfCONs - NumOfSHAKECONs
+        nitems = NumOfAllCONs - NumOfSHAKECONs
     end if
 
     do i=1,nitems
@@ -283,9 +283,9 @@ subroutine cst_output_close
     write(CST_OUT,'(A,F5.1,A,F5.1)') '# RATTLE STAT: Average number of iterations: ', mfriter, ' +/- ', sig
 
 ! write header
-    nitems = NumOfCONs
+    nitems = NumOfAllCONs
     if( fplevel .eq. 0 ) then
-        nitems = NumOfCONs - NumOfSHAKECONs
+        nitems = NumOfAllCONs - NumOfSHAKECONs
     end if
 
     write(CST_OUT,'(A)') '#'
@@ -343,7 +343,7 @@ subroutine cst_output_close
 ! calculate metric tensor correction
     mtc = 0.0d0
     if( nsamples .gt. 0 ) then
-        mtc = PMF_Rgas * ftemp * log(misrz)
+        mtc = PMF_Rgas * ftemp * log(fwfac)
     end if
 
 ! write data

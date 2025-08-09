@@ -90,10 +90,10 @@ subroutine cst_shake_calculate_fm
     ! calculate Jacobian matrix ------------------------
     call cst_shake_calc_jacobian_fm ! it calculates jac(0,0)
 
-    if ( NumOfCONs .gt. 1 ) then
+    if ( NumOfAllCONs .gt. 1 ) then
         ! LU decomposition
         indx(:) = 0
-        call dgetrf(NumOfCONs,NumOfCONs,jac,NumOfCONs,indx,info)
+        call dgetrf(NumOfAllCONs,NumOfAllCONs,jac,NumOfAllCONs,indx,info)
         if( info .ne. 0 ) then
             call pmf_utils_exit(PMF_OUT,1,&
                              '[CST] LU decomposition failed in cst_shake_calculate_fm!')
@@ -106,9 +106,9 @@ subroutine cst_shake_calculate_fm
         ! go through constraint list and calculate first derivative and constraint values at CrdP and cv
         call cst_constraints_calc_fdxp
 
-        if ( NumOfCONs .gt. 1 ) then
+        if ( NumOfAllCONs .gt. 1 ) then
             ! solve LE
-            call dgetrs('N',NumOfCONs,1,jac,NumOfCONs,indx,cv,NumOfCONs,info)
+            call dgetrs('N',NumOfAllCONs,1,jac,NumOfAllCONs,indx,cv,NumOfAllCONs,info)
             if( info .ne. 0 ) then
                 call pmf_utils_exit(PMF_OUT,1, &
                                  '[CST] Solution of LE failed in cst_shake_calculate_fm!')
@@ -121,7 +121,7 @@ subroutine cst_shake_calculate_fm
         lambdax = lambdax + cv
 
         ! calculate new position vector
-        do i=1,NumOfCONs
+        do i=1,NumOfAllCONs
             ci = CONList(i)%cvindx
             do k=1,NumOfLAtoms
                 CrdP(:,k) = CrdP(:,k) + MassInv(k)*cv(i)*CVContext%CVsDrvs(:,k,ci)
@@ -130,7 +130,7 @@ subroutine cst_shake_calculate_fm
 
         ! check convergence criteria in lambdax
         done = .true.
-        do i=1,NumOfCONs
+        do i=1,NumOfAllCONs
             if( abs(cv(i)*isfdts) .gt. flambdatol ) done = .false.
         end do
 
@@ -181,16 +181,16 @@ subroutine cst_shake_calculate_mm
         ! calculate Jacobian matrix
         call cst_shake_calc_jacobian_mm ! it calculates jac(0,P)
 
-        if ( NumOfCONs .gt. 1 ) then
+        if ( NumOfAllCONs .gt. 1 ) then
             ! LU decomposition
             indx(:) = 0
-            call dgetrf(NumOfCONs,NumOfCONs,jac,NumOfCONs,indx,info)
+            call dgetrf(NumOfAllCONs,NumOfAllCONs,jac,NumOfAllCONs,indx,info)
             if( info .ne. 0 ) then
                 call pmf_utils_exit(PMF_OUT,1,&
                                  '[CST] LU decomposition failed in cst_shake_calculate_mm!')
             end if
             ! solve LE
-            call dgetrs('N',NumOfCONs,1,jac,NumOfCONs,indx,cv,NumOfCONs,info)
+            call dgetrs('N',NumOfAllCONs,1,jac,NumOfAllCONs,indx,cv,NumOfAllCONs,info)
             if( info .ne. 0 ) then
                 call pmf_utils_exit(PMF_OUT,1, &
                                  '[CST] Solution of LE failed in cst_shake_calculate_mm!')
@@ -203,7 +203,7 @@ subroutine cst_shake_calculate_mm
         lambdax = lambdax + cv
 
         ! calculate new position vector
-        do i=1,NumOfCONs
+        do i=1,NumOfAllCONs
             ci = CONList(i)%cvindx
             do k=1,NumOfLAtoms
                 CrdP(:,k) = CrdP(:,k) + MassInv(k)*cv(i)*CVContext%CVsDrvs(:,k,ci)
@@ -212,7 +212,7 @@ subroutine cst_shake_calculate_mm
 
         ! check convergence criteria in lambdax
         done = .true.
-        do i=1,NumOfCONs
+        do i=1,NumOfAllCONs
             if( abs(cv(i)*isfdts) .gt. flambdatol ) done = .false.
         end do
 
@@ -263,16 +263,16 @@ subroutine cst_shake_calculate_nm
         ! calculate Jacobian matrix
         call cst_shake_calc_jacobian_nm ! it calculates jac(P,P)
 
-        if ( NumOfCONs .gt. 1 ) then
+        if ( NumOfAllCONs .gt. 1 ) then
             ! LU decomposition
             indx(:) = 0
-            call dgetrf(NumOfCONs,NumOfCONs,jac,NumOfCONs,indx,info)
+            call dgetrf(NumOfAllCONs,NumOfAllCONs,jac,NumOfAllCONs,indx,info)
             if( info .ne. 0 ) then
                 call pmf_utils_exit(PMF_OUT,1,&
                                  '[CST] LU decomposition failed in cst_shake_calculate_nm!')
             end if
             ! solve LE
-            call dgetrs('N',NumOfCONs,1,jac,NumOfCONs,indx,cv,NumOfCONs,info)
+            call dgetrs('N',NumOfAllCONs,1,jac,NumOfAllCONs,indx,cv,NumOfAllCONs,info)
             if( info .ne. 0 ) then
                 call pmf_utils_exit(PMF_OUT,1, &
                                  '[CST] Solution of LE failed in cst_shake_calculate_nm!')
@@ -285,7 +285,7 @@ subroutine cst_shake_calculate_nm
         lambdax = lambdax + cv
 
         ! calculate new position vector
-        do i=1,NumOfCONs
+        do i=1,NumOfAllCONs
             ci = CONList(i)%cvindx
             do k=1,NumOfLAtoms
                 CrdP(:,k) = CrdP(:,k) + MassInv(k)*cv(i)*CVContext%CVsDrvs(:,k,ci)
@@ -294,7 +294,7 @@ subroutine cst_shake_calculate_nm
 
         ! check convergence criteria in lambdax
         done = .true.
-        do i=1,NumOfCONs
+        do i=1,NumOfAllCONs
             if( abs(cv(i)*isfdts) .gt. flambdatol ) done = .false.
         end do
 
@@ -344,7 +344,7 @@ subroutine cst_shake_calculate_di
         ! go through constraint list and calculate first derivative and constraint values at CrdP and cv
         call cst_constraints_calc_fdxp
 
-        do i=1,NumOfCONs
+        do i=1,NumOfAllCONs
             ci = CONList(i)%cvindx
 
             ! calculate diagonal value
@@ -367,7 +367,7 @@ subroutine cst_shake_calculate_di
 
         ! check convergence criteria in lambdax
         done = .true.
-        do i=1,NumOfCONs
+        do i=1,NumOfAllCONs
             if( abs(cv(i)*isfdts) .gt. flambdatol ) done = .false.
         end do
 
@@ -413,7 +413,7 @@ subroutine cst_shake_calculate_diwg
 
     if( initialized_lambda ) then
         cv(:) = lambdax(:)
-        do i=1,NumOfCONs
+        do i=1,NumOfAllCONs
             ci = CONList(i)%cvindx
             do k=1,NumOfLAtoms
                 CrdP(:,k) = CrdP(:,k) + MassInv(k)*cv(i)*CVContext%CVsDrvs(:,k,ci)
@@ -429,7 +429,7 @@ subroutine cst_shake_calculate_diwg
         ! go through constraint list and calculate first derivative and constraint values at CrdP and cv
         call cst_constraints_calc_fdxp
 
-        do i=1,NumOfCONs
+        do i=1,NumOfAllCONs
             ci = CONList(i)%cvindx
 
             ! calculate diagonal value
@@ -452,7 +452,7 @@ subroutine cst_shake_calculate_diwg
 
         ! check convergence criteria in lambdax
         done = .true.
-        do i=1,NumOfCONs
+        do i=1,NumOfAllCONs
             if( abs(cv(i)*isfdts) .gt. flambdatol ) done = .false.
         end do
 
@@ -493,9 +493,9 @@ subroutine cst_shake_calc_jacobian_fm
     ! --------------------------------------------------------------------------
 
     ! complete Jacobian matrix
-    do i=1,NumOfCONs
+    do i=1,NumOfAllCONs
         ci = CONList(i)%cvindx
-        do j=1,NumOfCONs
+        do j=1,NumOfAllCONs
             cj = CONList(j)%cvindx
             jacv = 0.0d0
             do k=1,NumOfLAtoms
@@ -523,9 +523,9 @@ subroutine cst_shake_calc_jacobian_mm
     ! --------------------------------------------------------------------------
 
     ! complete Jacobian matrix
-    do i=1,NumOfCONs
+    do i=1,NumOfAllCONs
         ci = CONList(i)%cvindx
-        do j=1,NumOfCONs
+        do j=1,NumOfAllCONs
             cj = CONList(j)%cvindx
             jacv = 0.0d0
             do k=1,NumOfLAtoms
@@ -553,9 +553,9 @@ subroutine cst_shake_calc_jacobian_nm
     ! --------------------------------------------------------------------------
 
     ! complete Jacobian matrix
-    do i=1,NumOfCONs
+    do i=1,NumOfAllCONs
         ci = CONList(i)%cvindx
-        do j=1,NumOfCONs
+        do j=1,NumOfAllCONs
             cj = CONList(j)%cvindx
             jacv = 0.0d0
             do k=1,NumOfLAtoms

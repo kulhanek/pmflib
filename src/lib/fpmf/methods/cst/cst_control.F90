@@ -109,10 +109,7 @@ subroutine cst_control_read_con(prm_fin)
     call pmf_ctrl_read_integer(prm_fin,'flamsample',flamsample,'I12')
     call pmf_ctrl_check_integer('CST','flamsample',flamsample,0,CND_GT)
 
-    call pmf_ctrl_read_logical(prm_fin,'fenthalpy',fenthalpy)
-    call pmf_ctrl_read_logical(prm_fin,'fenthalpy_der',fenthalpy_der)
-    call pmf_ctrl_read_logical(prm_fin,'fentropy',fentropy)
-    call pmf_ctrl_read_logical(prm_fin,'fentdecomp',fentdecomp)
+    call pmf_ctrl_read_logical(prm_fin,'fdhtds',fdhtds)
 
     call pmf_ctrl_read_integer(prm_fin,'fenesample',fenesample,'I12')
     call pmf_ctrl_check_integer('CST','fenesample',fenesample,0,CND_GT)
@@ -210,9 +207,9 @@ subroutine cst_control_read_cvs_from_group(prm_fin)
     ! --------------------------------------------------------------------------
 
     ! count number of sections in group
-    NumOfCONs = prmfile_count_group(prm_fin)
+    NumOfAllCONs = prmfile_count_group(prm_fin)
 
-    if( NumOfCONs .le. 0 ) then
+    if( NumOfAllCONs .le. 0 ) then
         ! on CV in current or specified group
         fmode = 0
         cst_enabled = .false.
@@ -220,16 +217,16 @@ subroutine cst_control_read_cvs_from_group(prm_fin)
         return
     end if
 
-    write(PMF_OUT,110) NumOfCONs
+    write(PMF_OUT,110) NumOfAllCONs
 
     ! allocate constraint list ----------------------
-    allocate(CONList(NumOfCONs), stat = alloc_failed)
+    allocate(CONList(NumOfAllCONs), stat = alloc_failed)
 
     if ( alloc_failed .ne. 0 ) then
         call pmf_utils_exit(PMF_OUT,1,'[CST] Unable to allocate memory for constraint data!')
     end if
 
-    do i=1,NumOfCONs
+    do i=1,NumOfAllCONs
         call cst_constraints_reset_con(CONList(i))
     end do
 
@@ -260,8 +257,8 @@ subroutine cst_control_read_cvs_from_group(prm_fin)
     end do
 
     ! check if there is CV overlap
-    do i=1,NumOfCONs
-        do j=i+1,NumOfCONs
+    do i=1,NumOfAllCONs
+        do j=i+1,NumOfAllCONs
             if( CONList(i)%cvindx .eq. CONList(j)%cvindx ) then
                 call pmf_utils_exit(PMF_OUT,1,'[CST] Two different constraints share the same general collective variable!')
             end if
