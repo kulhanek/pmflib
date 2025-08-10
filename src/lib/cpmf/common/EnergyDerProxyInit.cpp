@@ -164,6 +164,28 @@ CEnergyDerProxyPtr CEnergyDerProxyInit::InitProxy(const CSmallString& realm,CPMF
             RUNTIME_ERROR(error);
         }
 // -----------------------------------------------
+    } else if ( (realm == "-TdS_LTFW/dx") || (realm == "mTdS_LTFW/dx") ) {
+        if (CCSTProxy_mTdS::IsCompatible(accu) ) {
+            CCSTProxy_mTdS_Ptr proxy = CCSTProxy_mTdS_Ptr(new CCSTProxy_mTdS);
+            proxy->SetType(CST_TdS_LTFW);
+            lproxy = proxy;
+        } else {
+            CSmallString error;
+            error << "incompatible method: " << accu->GetMethod() << " with requested realm: " <<  realm;
+            RUNTIME_ERROR(error);
+        }
+// -----------------------------------------------
+    } else if ( (realm == "-TdS_LIFW/dx") || (realm == "mTdS_LIFW/dx") ) {
+        if (CCSTProxy_mTdS::IsCompatible(accu) ) {
+            CCSTProxy_mTdS_Ptr proxy = CCSTProxy_mTdS_Ptr(new CCSTProxy_mTdS);
+            proxy->SetType(CST_TdS_LIFW);
+            lproxy = proxy;
+        } else {
+            CSmallString error;
+            error << "incompatible method: " << accu->GetMethod() << " with requested realm: " <<  realm;
+            RUNTIME_ERROR(error);
+        }
+// -----------------------------------------------
     } else if ( (realm == "-TdS_HR/dx") || (realm == "mTdS_HR/dx") ) {
         if( CABFProxy_mTdS::IsCompatible(accu) ){
             CABFProxy_mTdS_Ptr proxy = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
