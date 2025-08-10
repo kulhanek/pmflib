@@ -1283,31 +1283,32 @@ void COptGPRHyprms::CreateGPREngine_dF_dx(void)
 {
     CEnergyDerProxyPtr proxy;
 
-    if( Options.GetArgRealm() == "dG/dx" ) {
-        if( CABFProxy_dG::IsCompatible(Accu) ){
-           proxy    = CABFProxy_dG_Ptr(new CABFProxy_dG);
-        } else if (CCSTProxy_dG::IsCompatible(Accu) ) {
-            proxy    = CCSTProxy_dG_Ptr(new CCSTProxy_dG);
-        } else {
-            CSmallString error;
-            error << "incompatible method: " << Accu->GetMethod() << " with requested realm: " <<  Options.GetArgRealm();
-            RUNTIME_ERROR(error);
-        }
-    } else if( (Options.GetArgRealm() == "-TdS/dx") || (Options.GetArgRealm() == "mTdS/dx") ) {
-        if( CABFProxy_mTdS::IsCompatible(Accu) ){
-            proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
-        } else if (CCSTProxy_mTdS::IsCompatible(Accu) ) {
-            proxy    = CCSTProxy_mTdS_Ptr(new CCSTProxy_mTdS);
-        } else {
-            CSmallString error;
-            error << "incompatible method: " << Accu->GetMethod() << " with requested realm: " <<  Options.GetArgRealm();
-            RUNTIME_ERROR(error);
-        }
-    } else {
-            CSmallString error;
-            error << "unsupported realm: " <<  Options.GetArgRealm();
-            RUNTIME_ERROR(error);
-    }
+    // FIXME
+//    if( Options.GetArgRealm() == "dG/dx" ) {
+//        if( CABFProxy_dG::IsCompatible(Accu) ){
+//           proxy    = CABFProxy_dG_Ptr(new CABFProxy_dG);
+//        } else if (CCSTProxy_dG::IsCompatible(Accu) ) {
+//            proxy    = CCSTProxy_dG_Ptr(new CCSTProxy_dG);
+//        } else {
+//            CSmallString error;
+//            error << "incompatible method: " << Accu->GetMethod() << " with requested realm: " <<  Options.GetArgRealm();
+//            RUNTIME_ERROR(error);
+//        }
+//    } else if( (Options.GetArgRealm() == "-TdS/dx") || (Options.GetArgRealm() == "mTdS/dx") ) {
+//        if( CABFProxy_mTdS::IsCompatible(Accu) ){
+//            proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
+//        } else if (CCSTProxy_mTdS::IsCompatible(Accu) ) {
+//            proxy    = CCSTProxy_mTdS_Ptr(new CCSTProxy_mTdS);
+//        } else {
+//            CSmallString error;
+//            error << "incompatible method: " << Accu->GetMethod() << " with requested realm: " <<  Options.GetArgRealm();
+//            RUNTIME_ERROR(error);
+//        }
+//    } else {
+//            CSmallString error;
+//            error << "unsupported realm: " <<  Options.GetArgRealm();
+//            RUNTIME_ERROR(error);
+//    }
 
     proxy->Init(Accu);
 
@@ -1391,30 +1392,31 @@ void COptGPRHyprms::CreateGPREngine_GHS_dH_A(void)
     CEnergyProxyPtr    proxy_dh;
     CEnergyDerProxyPtr proxy_ds;
 
-    if( Options.GetArgRealm() == "GHS_dH_A" ) {
-        if( CABFProxy_dG::IsCompatible(Accu) ){
-           proxy_dg = CABFProxy_dG_Ptr(new CABFProxy_dG);
-           proxy_dg->Init(Accu);
-        } else {
-            CSmallString error;
-            error << "incompatible method: " << Accu->GetMethod() << " with requested realm for dG/dx: " <<  Options.GetArgRealm();
-            RUNTIME_ERROR(error);
-        }
-        proxy_dh = CPMFProxy_dH_Ptr(new CPMFProxy_dH);
-        proxy_dh->Init(Accu);
-        if( CABFProxy_mTdS::IsCompatible(Accu) ){
-            proxy_ds    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
-            proxy_ds->Init(Accu);
-        } else {
-            CSmallString error;
-            error << "incompatible method: " << Accu->GetMethod() << " with requested realm for -TdS/dx: " <<  Options.GetArgRealm();
-            RUNTIME_ERROR(error);
-        }
-    } else {
-        CSmallString error;
-        error << "unsupported realm: " <<  Options.GetArgRealm();
-        RUNTIME_ERROR(error);
-    }
+    // FIXME
+//    if( Options.GetArgRealm() == "GHS_dH_A" ) {
+//        if( CABFProxy_dG::IsCompatible(Accu) ){
+//           proxy_dg = CABFProxy_dG_Ptr(new CABFProxy_dG);
+//           proxy_dg->Init(Accu);
+//        } else {
+//            CSmallString error;
+//            error << "incompatible method: " << Accu->GetMethod() << " with requested realm for dG/dx: " <<  Options.GetArgRealm();
+//            RUNTIME_ERROR(error);
+//        }
+//        proxy_dh = CPMFProxy_dH_Ptr(new CPMFProxy_dH);
+//        proxy_dh->Init(Accu);
+//        if( CABFProxy_mTdS::IsCompatible(Accu) ){
+//            proxy_ds    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
+//            proxy_ds->Init(Accu);
+//        } else {
+//            CSmallString error;
+//            error << "incompatible method: " << Accu->GetMethod() << " with requested realm for -TdS/dx: " <<  Options.GetArgRealm();
+//            RUNTIME_ERROR(error);
+//        }
+//    } else {
+//        CSmallString error;
+//        error << "unsupported realm: " <<  Options.GetArgRealm();
+//        RUNTIME_ERROR(error);
+//    }
 
     CGHSIntegratorGPR0APtr gpr = CGHSIntegratorGPR0APtr(new CGHSIntegratorGPR0A);
 
@@ -1458,30 +1460,31 @@ void COptGPRHyprms::CreateGPREngine_cGHS_dH_A(void)
     CEnergyProxyPtr    proxy_dh;
     CEnergyDerProxyPtr proxy_ds;
 
-    if( Options.GetArgRealm() == "cGHS_dH_A" ) {
-        if( CABFProxy_dG::IsCompatible(Accu) ){
-           proxy_dg = CABFProxy_dG_Ptr(new CABFProxy_dG);
-           proxy_dg->Init(Accu);
-        } else {
-            CSmallString error;
-            error << "incompatible method: " << Accu->GetMethod() << " with requested realm for dG/dx: " <<  Options.GetArgRealm();
-            RUNTIME_ERROR(error);
-        }
-        proxy_dh = CPMFProxy_dH_Ptr(new CPMFProxy_dH);
-        proxy_dh->Init(Accu);
-        if( CABFProxy_mTdS::IsCompatible(Accu) ){
-            proxy_ds    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
-            proxy_ds->Init(Accu);
-        } else {
-            CSmallString error;
-            error << "incompatible method: " << Accu->GetMethod() << " with requested realm for -TdS/dx: " <<  Options.GetArgRealm();
-            RUNTIME_ERROR(error);
-        }
-    } else {
-        CSmallString error;
-        error << "unsupported realm: " <<  Options.GetArgRealm();
-        RUNTIME_ERROR(error);
-    }
+    // FIXME
+//    if( Options.GetArgRealm() == "cGHS_dH_A" ) {
+//        if( CABFProxy_dG::IsCompatible(Accu) ){
+//           proxy_dg = CABFProxy_dG_Ptr(new CABFProxy_dG);
+//           proxy_dg->Init(Accu);
+//        } else {
+//            CSmallString error;
+//            error << "incompatible method: " << Accu->GetMethod() << " with requested realm for dG/dx: " <<  Options.GetArgRealm();
+//            RUNTIME_ERROR(error);
+//        }
+//        proxy_dh = CPMFProxy_dH_Ptr(new CPMFProxy_dH);
+//        proxy_dh->Init(Accu);
+//        if( CABFProxy_mTdS::IsCompatible(Accu) ){
+//            proxy_ds    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
+//            proxy_ds->Init(Accu);
+//        } else {
+//            CSmallString error;
+//            error << "incompatible method: " << Accu->GetMethod() << " with requested realm for -TdS/dx: " <<  Options.GetArgRealm();
+//            RUNTIME_ERROR(error);
+//        }
+//    } else {
+//        CSmallString error;
+//        error << "unsupported realm: " <<  Options.GetArgRealm();
+//        RUNTIME_ERROR(error);
+//    }
 
     CGHSIntegratorGPRcAPtr gpr = CGHSIntegratorGPRcAPtr(new CGHSIntegratorGPRcA);
 
@@ -1528,30 +1531,31 @@ void COptGPRHyprms::CreateGPREngine_GHS_dH_B(void)
     CEnergyProxyPtr    proxy_dh;
     CEnergyDerProxyPtr proxy_ds;
 
-    if( Options.GetArgRealm() == "GHS_dH_B" ) {
-        if( CABFProxy_dG::IsCompatible(Accu) ){
-           proxy_dg = CABFProxy_dG_Ptr(new CABFProxy_dG);
-           proxy_dg->Init(Accu);
-        } else {
-            CSmallString error;
-            error << "incompatible method: " << Accu->GetMethod() << " with requested realm for dG/dx: " <<  Options.GetArgRealm();
-            RUNTIME_ERROR(error);
-        }
-        proxy_dh = CPMFProxy_dH_Ptr(new CPMFProxy_dH);
-        proxy_dh->Init(Accu);
-        if( CABFProxy_mTdS::IsCompatible(Accu) ){
-            proxy_ds    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
-            proxy_ds->Init(Accu);
-        } else {
-            CSmallString error;
-            error << "incompatible method: " << Accu->GetMethod() << " with requested realm for -TdS/dx: " <<  Options.GetArgRealm();
-            RUNTIME_ERROR(error);
-        }
-    } else {
-        CSmallString error;
-        error << "unsupported realm: " <<  Options.GetArgRealm();
-        RUNTIME_ERROR(error);
-    }
+    // FIXME
+//    if( Options.GetArgRealm() == "GHS_dH_B" ) {
+//        if( CABFProxy_dG::IsCompatible(Accu) ){
+//           proxy_dg = CABFProxy_dG_Ptr(new CABFProxy_dG);
+//           proxy_dg->Init(Accu);
+//        } else {
+//            CSmallString error;
+//            error << "incompatible method: " << Accu->GetMethod() << " with requested realm for dG/dx: " <<  Options.GetArgRealm();
+//            RUNTIME_ERROR(error);
+//        }
+//        proxy_dh = CPMFProxy_dH_Ptr(new CPMFProxy_dH);
+//        proxy_dh->Init(Accu);
+//        if( CABFProxy_mTdS::IsCompatible(Accu) ){
+//            proxy_ds    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
+//            proxy_ds->Init(Accu);
+//        } else {
+//            CSmallString error;
+//            error << "incompatible method: " << Accu->GetMethod() << " with requested realm for -TdS/dx: " <<  Options.GetArgRealm();
+//            RUNTIME_ERROR(error);
+//        }
+//    } else {
+//        CSmallString error;
+//        error << "unsupported realm: " <<  Options.GetArgRealm();
+//        RUNTIME_ERROR(error);
+//    }
 
     CGHSIntegratorGPR0BPtr gpr = CGHSIntegratorGPR0BPtr(new CGHSIntegratorGPR0B);
 

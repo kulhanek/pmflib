@@ -23,6 +23,7 @@
 #include <PMFMainHeader.hpp>
 #include <EnergyProxy.hpp>
 #include <vector>
+#include <SmallString.hpp>
 
 //------------------------------------------------------------------------------
 
@@ -36,12 +37,24 @@ public:
     // set accumulator and perform sanity checks
     virtual void Init(CPMFAccumulatorPtr accu);
 
+    // is compatible with PMF Accumulator method
+    virtual bool IsCompatible(CPMFAccumulatorPtr accu);
+
+    // set type if it is supported
+    virtual bool SetType(const CSmallString& realm);
+
 // access methods -------------------------------------------------------------
     // get PMF accumulator
     CPMFAccumulatorPtr GetAccu(void);
 
+    // get optional energy correction
+    virtual CEnergyProxyPtr GetEnergyCorrection(void);
+
     // get realm
     CSmallString GetRealm(void);
+
+    // get realm description
+    CSmallString GetDescription(void);
 
     /// return number of cvs
     int GetNumOfCVs(void) const;
@@ -50,7 +63,10 @@ public:
     int GetNumOfBins(void) const;
 
     // get number of samples
-    int GetNSamples(int ibin) const;
+    virtual int GetNumOfSamples(int ibin) const;
+
+    // set number of samples
+    virtual void SetNumOfSamples(int ibin,int nsamples);
 
     // get energy derivative and its error
     virtual double GetValue( int ibin,int cv,EProxyRealm realm) const;
@@ -58,7 +74,8 @@ public:
 // protected data --------------------------------------------------------------
 protected:
     std::vector<std::string>    Requires;
-    CSmallString                Provide;
+    CSmallString                Realm;
+    CSmallString                Description;
     CPMFAccumulatorPtr          Accu;
 };
 

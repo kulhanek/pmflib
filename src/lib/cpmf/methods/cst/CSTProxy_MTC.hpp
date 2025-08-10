@@ -45,7 +45,7 @@ public:
     // get energy derivative and its error
     virtual double GetValue( int ibin,EProxyRealm realm) const;
 
-    // is compatible with PMFAccumulator method
+    // is compatible with PMF Accumulator method
     static bool IsCompatible(CPMFAccumulatorPtr accu);
 };
 

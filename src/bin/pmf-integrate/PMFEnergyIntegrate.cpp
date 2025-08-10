@@ -696,14 +696,8 @@ bool CPMFEnergyIntegrate::IntegrateForEcut(void)
         INVALID_ARGUMENT("method - not implemented");
     }
 
-    // add metric tensor correction
-    if( Options.GetOptRealm() == "dG/dx" ){
-        AddMTCorr();
-    } else if ( Options.GetOptRealm() == "-TdS/dx" ) {
-        AddMTCorr();
-    } else {
-        // do not add MTC
-    }
+    // add energy correction
+    AddEneCorr();
 
     return(true);
 }
@@ -805,14 +799,8 @@ bool CPMFEnergyIntegrate::Integrate(void)
         INVALID_ARGUMENT("method - not implemented");
     }
 
-    // add metric tensor correction
-    if( Options.GetOptRealm() == "dG/dx" ){
-        AddMTCorr();
-    } else if ( Options.GetOptRealm() == "-TdS/dx" ) {
-        AddMTCorr();
-    } else {
-        // do not add MTC
-    }
+    // add energy correction
+    AddEneCorr();
 
     return(true);
 }
@@ -1463,19 +1451,16 @@ void CPMFEnergyIntegrate::DecodeEList(const CSmallString& spec, std::vector<bool
 
 //------------------------------------------------------------------------------
 
-void CPMFEnergyIntegrate::AddMTCorr(void)
+void CPMFEnergyIntegrate::AddEneCorr(void)
 {
-    if( CCSTProxy_MTC::IsCompatible(Accumulators[0]) == false ) return;
+    CEnergyProxyPtr ene_proxy = DerProxies[0]->GetEnergyCorrection();
+    if( ene_proxy == NULL ) return;
 
-    vout << "   Adding metric tensor correction ..." << endl;
-
-    CCSTProxy_MTC_Ptr MTCProxy    = CCSTProxy_MTC_Ptr(new CCSTProxy_MTC);
-    MTCProxy->Init(Accumulators[0]);
+    vout << "   Adding energy correction (only the first accumulator): " << ene_proxy->GetDescription() << endl;
 
     for(int i=0; i < FES->GetNumOfBins(); i++){
-        FES->SetNumOfSamples(i, MTCProxy->GetNumOfSamples(i) );
         double f = FES->GetEnergy(i);
-        FES->SetEnergy(i, f + MTCProxy->GetValue(i,E_PROXY_VALUE) );
+        FES->SetEnergy(i, f + ene_proxy->GetValue(i,E_PROXY_VALUE) );
     }
 
     if( FES->IsGlobalMinSet() ){

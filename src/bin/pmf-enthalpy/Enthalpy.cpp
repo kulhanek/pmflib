@@ -396,7 +396,7 @@ void CEnthalpy::AdjustGlobalMin(void)
 void CEnthalpy::GetRawEnthalpy(void)
 {
     for(int ibin=0; ibin < Accumulators[0]->GetNumOfBins(); ibin++){
-        int    nsamples = EnergyProxies[0]->GetNSamples(ibin);
+        int    nsamples = EnergyProxies[0]->GetNumOfSamples(ibin);
         double ent = EnergyProxies[0]->GetValue(ibin,E_PROXY_VALUE);
         double error = EnergyProxies[0]->GetValue(ibin,E_PROXY_ERROR);
         HES->SetNumOfSamples(ibin,nsamples);

@@ -95,7 +95,7 @@ private:
     void SyncAccuWithFES(void);
     void DecodeEList(const CSmallString& spec, std::vector<bool>& elist,const CSmallString& optionname);
     bool ReduceFES(void);
-    void AddMTCorr(void);
+    void AddEneCorr(void);
 };
 
 //------------------------------------------------------------------------------

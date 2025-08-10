@@ -52,27 +52,27 @@ void CPMFProxy_dH::SetType(EPMFdHType type)
     switch(Type){
     // -------------------
         case(PMF_EINT):
-            Provide = "dH(x)=<Eint>";
+            Description = "dH(x)=<Eint>";
         break;
     // -------------------
         case(PMF_EINTFW):
-            Provide = "dH(x)=<EintFW>";
+            Description = "dH(x)=<EintFW>";
         break;
     // -------------------
         case(PMF_ETOT):
-            Provide = "dH(x)=<Etot>";
+            Description = "dH(x)=<Etot>";
         break;
     // -------------------
         case(PMF_EPOT):
-            Provide = "dH(x)=<Epot>";
+            Description = "dH(x)=<Epot>";
         break;
     // -------------------
         case(PMF_EKIN):
-            Provide = "<Ekin>";
+            Description = "<Ekin>";
         break;
     // -------------------
         case(PMF_ERST):
-            Provide = "<Erst>";
+            Description = "<Erst>";
         break;
     // -------------------
         default:

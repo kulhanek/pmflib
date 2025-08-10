@@ -237,53 +237,54 @@ bool COptGPRHyprmsMulti::IsRealm(const CSmallString& name)
 void COptGPRHyprmsMulti::InitRealm(CProxyRealmPtr realm)
 {
 // init energyder proxy
-    if( realm->Name == "dG/dx" ){
-        for(size_t i=0; i < realm->Accumulators.size(); i++){
-            CPMFAccumulatorPtr accu = realm->Accumulators[i];
-            CEnergyDerProxyPtr proxy;
-            if( CABFProxy_dG::IsCompatible(accu) ){
-               proxy    = CABFProxy_dG_Ptr(new CABFProxy_dG);
-            } else if (CCSTProxy_dG::IsCompatible(accu) ) {
-                proxy    = CCSTProxy_dG_Ptr(new CCSTProxy_dG);
-            } else {
-                CSmallString error;
-                error << "incompatible method: " << accu->GetMethod() << " with requested realm: " <<  realm->Name;
-                RUNTIME_ERROR(error);
-            }
-            proxy->Init(accu);
-            realm->DerProxies.push_back(proxy);
-        }
-// -----------------------------------------------
-    } else if ( (realm->Name == "-TdS/dx") || (realm->Name == "mTdS/dx") ) {
-        for(size_t i=0; i < realm->Accumulators.size(); i++){
-            CPMFAccumulatorPtr accu = realm->Accumulators[i];
-            CEnergyDerProxyPtr proxy;
-            if( CABFProxy_mTdS::IsCompatible(accu) ){
-                proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
-            } else if (CCSTProxy_mTdS::IsCompatible(accu) ) {
-                proxy    = CCSTProxy_mTdS_Ptr(new CCSTProxy_mTdS);
-            } else {
-                CSmallString error;
-                error << "incompatible method: " << accu->GetMethod() << " with requested realm: " <<  realm->Name;
-                RUNTIME_ERROR(error);
-            }
-            proxy->Init(accu);
-            realm->DerProxies.push_back(proxy);
-        }
-
-    } else if ( realm->Name == "dH" ) {
-        for(size_t i=0; i < realm->Accumulators.size(); i++){
-            CPMFAccumulatorPtr accu = realm->Accumulators[i];
-            CEnergyProxyPtr proxy    = CPMFProxy_dH_Ptr(new CPMFProxy_dH);
-            proxy->Init(accu);
-            realm->EnergyProxies.push_back(proxy);
-        }
-// -----------------------------------------------
-    } else {
-        CSmallString error;
-        error << "unsupported realm: " << realm->Name;
-        RUNTIME_ERROR(error);
-    }
+// FIXME
+//    if( realm->Name == "dG/dx" ){
+//        for(size_t i=0; i < realm->Accumulators.size(); i++){
+//            CPMFAccumulatorPtr accu = realm->Accumulators[i];
+//            CEnergyDerProxyPtr proxy;
+//            if( CABFProxy_dG::IsCompatible(accu) ){
+//               proxy    = CABFProxy_dG_Ptr(new CABFProxy_dG);
+//            } else if (CCSTProxy_dG::IsCompatible(accu) ) {
+//                proxy    = CCSTProxy_dG_Ptr(new CCSTProxy_dG);
+//            } else {
+//                CSmallString error;
+//                error << "incompatible method: " << accu->GetMethod() << " with requested realm: " <<  realm->Name;
+//                RUNTIME_ERROR(error);
+//            }
+//            proxy->Init(accu);
+//            realm->DerProxies.push_back(proxy);
+//        }
+//// -----------------------------------------------
+//    } else if ( (realm->Name == "-TdS/dx") || (realm->Name == "mTdS/dx") ) {
+//        for(size_t i=0; i < realm->Accumulators.size(); i++){
+//            CPMFAccumulatorPtr accu = realm->Accumulators[i];
+//            CEnergyDerProxyPtr proxy;
+//            if( CABFProxy_mTdS::IsCompatible(accu) ){
+//                proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
+//            } else if (CCSTProxy_mTdS::IsCompatible(accu) ) {
+//                proxy    = CCSTProxy_mTdS_Ptr(new CCSTProxy_mTdS);
+//            } else {
+//                CSmallString error;
+//                error << "incompatible method: " << accu->GetMethod() << " with requested realm: " <<  realm->Name;
+//                RUNTIME_ERROR(error);
+//            }
+//            proxy->Init(accu);
+//            realm->DerProxies.push_back(proxy);
+//        }
+//
+//    } else if ( realm->Name == "dH" ) {
+//        for(size_t i=0; i < realm->Accumulators.size(); i++){
+//            CPMFAccumulatorPtr accu = realm->Accumulators[i];
+//            CEnergyProxyPtr proxy    = CPMFProxy_dH_Ptr(new CPMFProxy_dH);
+//            proxy->Init(accu);
+//            realm->EnergyProxies.push_back(proxy);
+//        }
+//// -----------------------------------------------
+//    } else {
+//        CSmallString error;
+//        error << "unsupported realm: " << realm->Name;
+//        RUNTIME_ERROR(error);
+//    }
 }
 
 //------------------------------------------------------------------------------

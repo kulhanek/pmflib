@@ -28,6 +28,7 @@
 
 enum ECSTdGType {
     CST_dG,
+    CST_LAMBDA,
     CST_MICF,
     CST_MICFFW,
     CST_MICFPFW,
@@ -46,8 +47,17 @@ public:
     ~CCSTProxy_dG(void);
 
 //------------------------------------------------------------------------------
+    // set type if it is supported
+    virtual bool SetType(const CSmallString& realm);
+
     // set type
     void SetType(ECSTdGType type);
+
+    // get type description
+    const CSmallString GetTypeDescription(ECSTdGType type);
+
+    // get optional energy correction - MTC
+    virtual CEnergyProxyPtr GetEnergyCorrection(void);
 
 //------------------------------------------------------------------------------
     // get number of samples
@@ -59,12 +69,10 @@ public:
     // get energy derivative and its error
     virtual double GetValue( int ibin,int icv,EProxyRealm realm) const;
 
-    // is compatible with PMFAccumulator method
-    static bool IsCompatible(CPMFAccumulatorPtr accu);
-
 // section of private data -----------------------------------------------------
 private:
-    ECSTdGType    Type;
+    std::map<CSmallString,ECSTdGType>   SupportedRealms;
+    ECSTdGType                          Type;
 };
 
 //------------------------------------------------------------------------------

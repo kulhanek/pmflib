@@ -26,6 +26,8 @@
 //------------------------------------------------------------------------------
 
 enum ECSTTdSType {
+    CST_TdS,
+
     CST_TdS_LT,         // Cov(lambda,Etot)
 
     CST_TdS_LTFW,       // Cov(lambda,Etot) - Fixman weighted
@@ -50,8 +52,17 @@ public:
     ~CCSTProxy_mTdS(void);
 
 //------------------------------------------------------------------------------
+    // set type if it is supported
+    virtual bool SetType(const CSmallString& realm);
+
     // set type
     void SetType(ECSTTdSType type);
+
+    // get type description
+    const CSmallString GetTypeDescription(ECSTTdSType type);
+
+    // get optional energy correction - MTC
+    virtual CEnergyProxyPtr GetEnergyCorrection(void);
 
 //------------------------------------------------------------------------------
     // get number of samples
@@ -63,12 +74,10 @@ public:
     // get energy derivative and its error
     virtual double GetValue( int ibin,int icv,EProxyRealm realm) const;
 
-    // is compatible with PMF Accumulator method
-    static bool IsCompatible(CPMFAccumulatorPtr accu);
-
 // section of private data -----------------------------------------------------
 private:
-    ECSTTdSType    Type;
+    std::map<CSmallString,ECSTTdSType>  SupportedRealms;
+    ECSTTdSType                         Type;
 };
 
 //------------------------------------------------------------------------------

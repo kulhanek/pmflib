@@ -1,6 +1,7 @@
 // =============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
+//    Copyright (C) 2025 Petr Kulhanek, kulhanek@chemi.muni.cz
 //    Copyright (C) 2024 Petr Kulhanek, kulhanek@chemi.muni.cz
 //
 //     This program is free software; you can redistribute it and/or modify
@@ -31,9 +32,13 @@ using namespace std;
 
 CABFProxy_dH::CABFProxy_dH(void)
 {
-    SetType(ABF_MICFP);
-
     Requires.push_back("ABF");
+
+//    SupportedRealms["dG/dx"]        = CST_dG;
+//    SupportedRealms["MICF/dx"]      = CST_MICF;
+//    SupportedRealms["MICFFW/dx"]    = CST_MICFFW;
+//    SupportedRealms["MICFPFW/dx"]   = CST_MICFPFW;
+//    SupportedRealms["MICFKFW/dx"]   = CST_MICFKFW;
 }
 
 //------------------------------------------------------------------------------
@@ -42,12 +47,16 @@ CABFProxy_dH::~CABFProxy_dH(void)
 {
 }
 
+//==============================================================================
 //------------------------------------------------------------------------------
+//==============================================================================
 
-bool CABFProxy_dH::IsCompatible(CPMFAccumulatorPtr accu)
+bool CABFProxy_dH::SetType(const CSmallString& realm)
 {
-    if( accu->GetMethod() == "ABF" ) return(true);
-    return(false);
+    if( SupportedRealms.count(realm) == 0 ) return(false);
+    Realm = realm;
+    SetType(SupportedRealms[realm]);
+    return(true);
 }
 
 //------------------------------------------------------------------------------
@@ -55,15 +64,20 @@ bool CABFProxy_dH::IsCompatible(CPMFAccumulatorPtr accu)
 void CABFProxy_dH::SetType(EABFdHType type)
 {
     Type = type;
+    Description = GetTypeDescription(Type);
+}
 
-    switch(Type){
+//------------------------------------------------------------------------------
+
+const CSmallString CABFProxy_dH::GetTypeDescription(EABFdHType type)
+{
+    switch(type){
     // -------------------
         case(ABF_dH):
-            Provide = "ABF dH(x) (based on derivatives)";
+            return("ABF dH(x) (based on derivatives)");
     // -------------------
         case(ABF_MICFP):
-            Provide = "ABF ICFP(x)";
-        break;
+            return("ABF ICFP(x)");
     // -------------------
         default:
             RUNTIME_ERROR("unsupported type");

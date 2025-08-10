@@ -44,8 +44,14 @@ public:
     ~CCSTProxy_dH(void);
 
 //------------------------------------------------------------------------------
+    // set type if it is supported
+    virtual bool SetType(const CSmallString& realm);
+
     // set type
     void SetType(ECSTdHType type);
+
+    // get type description
+    const CSmallString GetTypeDescription(ECSTdHType type);
 
 //------------------------------------------------------------------------------
     // get number of samples
@@ -57,12 +63,10 @@ public:
     // get energy derivative and its error
     virtual double GetValue( int ibin,int icv,EProxyRealm realm) const;
 
-    // is compatible with PMFAccumulator method
-    static bool IsCompatible(CPMFAccumulatorPtr accu);
-
 // section of private data -----------------------------------------------------
 private:
-    ECSTdHType    Type;
+    std::map<CSmallString,ECSTdHType>   SupportedRealms;
+    ECSTdHType                          Type;
 };
 
 //------------------------------------------------------------------------------

@@ -33,7 +33,8 @@ using namespace boost;
 
 CEnergyProxy::CEnergyProxy(void)
 {
-    Provide = "NONE";
+    Realm = "NONE";
+    Description = "NONE";
 }
 
 //------------------------------------------------------------------------------
@@ -70,7 +71,14 @@ CPMFAccumulatorPtr CEnergyProxy::GetAccu(void)
 
 CSmallString CEnergyProxy::GetRealm(void)
 {
-    return(Provide);
+    return(Realm);
+}
+
+//------------------------------------------------------------------------------
+
+CSmallString CEnergyProxy::GetDescription(void)
+{
+    return(Description);
 }
 
 //------------------------------------------------------------------------------
@@ -91,7 +99,7 @@ int CEnergyProxy::GetNumOfBins(void) const
 
 //------------------------------------------------------------------------------
 
-int CEnergyProxy::GetNSamples(int ibin) const
+int CEnergyProxy::GetNumOfSamples(int ibin) const
 {
     if( Accu == NULL ){
         RUNTIME_ERROR("Accu is NULL");

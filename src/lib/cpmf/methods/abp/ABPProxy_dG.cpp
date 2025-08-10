@@ -34,7 +34,7 @@ using namespace std;
 CABPProxy_dG::CABPProxy_dG(void)
 {
     Requires.push_back("ABP");
-    Provide = "ABP dG(x)";
+    Description = "ABP dG(x)";
 }
 
 //------------------------------------------------------------------------------

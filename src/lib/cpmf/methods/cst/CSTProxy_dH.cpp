@@ -45,10 +45,12 @@ CCSTProxy_dH::~CCSTProxy_dH(void)
 
 //------------------------------------------------------------------------------
 
-bool CCSTProxy_dH::IsCompatible(CPMFAccumulatorPtr accu)
+bool CCSTProxy_dH::SetType(const CSmallString& realm)
 {
-    if( accu->GetMethod() == "CST" ) return(true);
-    return(false);
+    if( SupportedRealms.count(realm) == 0 ) return(false);
+    Realm = realm;
+    SetType(SupportedRealms[realm]);
+    return(true);
 }
 
 //------------------------------------------------------------------------------
@@ -56,11 +58,17 @@ bool CCSTProxy_dH::IsCompatible(CPMFAccumulatorPtr accu)
 void CCSTProxy_dH::SetType(ECSTdHType type)
 {
     Type = type;
+    Description = GetTypeDescription(Type);
+}
 
-    switch(Type){
+//------------------------------------------------------------------------------
+
+const CSmallString CCSTProxy_dH::GetTypeDescription(ECSTdHType type)
+{
+    switch(type){
     // -------------------
         case(CST_dH):
-            Provide = "CST dH(x) (based on derivatives)";
+            return("CST dH(x) (based on derivatives)");
 //    // -------------------
 //        case(CST_MICFP):
 //            Provide = "CST ICFP(x)";

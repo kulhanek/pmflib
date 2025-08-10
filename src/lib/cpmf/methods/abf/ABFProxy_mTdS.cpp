@@ -32,8 +32,13 @@ using namespace std;
 
 CABFProxy_mTdS::CABFProxy_mTdS(void)
 {
-    SetType(ABF_TdS_HH);
     Requires.push_back("ABF");
+
+//    SupportedRealms["dG/dx"]        = CST_dG;
+//    SupportedRealms["MICF/dx"]      = CST_MICF;
+//    SupportedRealms["MICFFW/dx"]    = CST_MICFFW;
+//    SupportedRealms["MICFPFW/dx"]   = CST_MICFPFW;
+//    SupportedRealms["MICFKFW/dx"]   = CST_MICFKFW;
 }
 
 //------------------------------------------------------------------------------
@@ -42,12 +47,16 @@ CABFProxy_mTdS::~CABFProxy_mTdS(void)
 {
 }
 
+//==============================================================================
 //------------------------------------------------------------------------------
+//==============================================================================
 
-bool CABFProxy_mTdS::IsCompatible(CPMFAccumulatorPtr accu)
+bool CABFProxy_mTdS::SetType(const CSmallString& realm)
 {
-    if( accu->GetMethod() == "ABF" ) return(true);
-    return(false);
+    if( SupportedRealms.count(realm) == 0 ) return(false);
+    Realm = realm;
+    SetType(SupportedRealms[realm]);
+    return(true);
 }
 
 //------------------------------------------------------------------------------
@@ -55,38 +64,37 @@ bool CABFProxy_mTdS::IsCompatible(CPMFAccumulatorPtr accu)
 void CABFProxy_mTdS::SetType(EABFTdSType type)
 {
     Type = type;
+    Description = GetTypeDescription(Type);
+}
 
-    switch(Type){
+//------------------------------------------------------------------------------
+
+const CSmallString CABFProxy_mTdS::GetTypeDescription(EABFTdSType type)
+{
+    switch(type){
     // -------------------
         case(ABF_TdS_HH):
-            Provide = "ABF -TdS(x)";
-        break;
+            return("ABF -TdS(x)");
 
     // -------------------
         case(ABF_TdS_HP):
-            Provide = "ABF -TdS(x) - cov(dH/dx,Epot)";
-        break;
+            return("ABF -TdS(x) - cov(dH/dx,Epot)");
     // -------------------
         case(ABF_TdS_HR):
-            Provide = "ABF -TdS(x) - cov(dH/dx,Erst)";
-        break;
+            return("ABF -TdS(x) - cov(dH/dx,Erst)");
     // -------------------
         case(ABF_TdS_HK):
-            Provide = "ABF -TdS(x) - cov(dH/dx,Ekin)";
-        break;
+            return("ABF -TdS(x) - cov(dH/dx,Ekin)");
 
     // -------------------
         case(ABF_TdS_BP):
-            Provide = "ABF -TdS(x) - cov(bias,Epot)";
-        break;
+            return("ABF -TdS(x) - cov(bias,Epot)");
     // -------------------
         case(ABF_TdS_BR):
-            Provide = "ABF -TdS(x) - cov(bias,Erst)";
-        break;
+            return("ABF -TdS(x) - cov(bias,Erst)");
     // -------------------
         case(ABF_TdS_BK):
-            Provide = "ABF -TdS(x) -cov(bias,Ekin)";
-        break;
+            return("ABF -TdS(x) -cov(bias,Ekin)");
 
     // -------------------
         default:
@@ -97,6 +105,26 @@ void CABFProxy_mTdS::SetType(EABFTdSType type)
 //==============================================================================
 //------------------------------------------------------------------------------
 //==============================================================================
+
+int CABFProxy_mTdS::GetNumOfSamples(int ibin) const
+{
+    if( Accu == NULL ){
+        RUNTIME_ERROR("Accu is NULL");
+    }
+    return(Accu->GetData("NTDS",ibin));
+}
+
+//------------------------------------------------------------------------------
+
+void CABFProxy_mTdS::SetNumOfSamples(int ibin,int nsamples)
+{
+    if( Accu == NULL ){
+        RUNTIME_ERROR("Accu is NULL");
+    }
+    Accu->SetData("NTDS",ibin,nsamples);
+}
+
+//------------------------------------------------------------------------------
 
 double CABFProxy_mTdS::GetValue(int ibin,int icv,EProxyRealm realm) const
 {

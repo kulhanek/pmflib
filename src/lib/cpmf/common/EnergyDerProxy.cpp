@@ -33,7 +33,8 @@ using namespace boost;
 
 CEnergyDerProxy::CEnergyDerProxy(void)
 {
-    Provide = "NONE";
+    Realm = "NONE";
+    Description = "NONE";
 }
 
 //------------------------------------------------------------------------------
@@ -57,6 +58,20 @@ void CEnergyDerProxy::Init(CPMFAccumulatorPtr accu)
     Accu = accu;
 }
 
+//------------------------------------------------------------------------------
+
+bool CEnergyDerProxy::IsCompatible(CPMFAccumulatorPtr accu)
+{
+    return( std::find(Requires.begin(), Requires.end(), std::string(accu->GetMethod())) != Requires.end());
+}
+
+//------------------------------------------------------------------------------
+
+bool CEnergyDerProxy::SetType(const CSmallString& realm)
+{
+    return(false);
+}
+
 //==============================================================================
 //------------------------------------------------------------------------------
 //==============================================================================
@@ -68,9 +83,23 @@ CPMFAccumulatorPtr CEnergyDerProxy::GetAccu(void)
 
 //------------------------------------------------------------------------------
 
+CEnergyProxyPtr CEnergyDerProxy::GetEnergyCorrection(void)
+{
+    return(CEnergyProxyPtr());
+}
+
+//------------------------------------------------------------------------------
+
 CSmallString CEnergyDerProxy::GetRealm(void)
 {
-    return(Provide);
+    return(Realm);
+}
+
+//------------------------------------------------------------------------------
+
+CSmallString CEnergyDerProxy::GetDescription(void)
+{
+    return(Description);
 }
 
 //------------------------------------------------------------------------------
@@ -91,12 +120,22 @@ int CEnergyDerProxy::GetNumOfBins(void) const
 
 //------------------------------------------------------------------------------
 
-int CEnergyDerProxy::GetNSamples(int ibin) const
+int CEnergyDerProxy::GetNumOfSamples(int ibin) const
 {
     if( Accu == NULL ){
         RUNTIME_ERROR("Accu is NULL");
     }
     return(Accu->GetData("NSAMPLES",ibin));
+}
+
+//------------------------------------------------------------------------------
+
+void CEnergyDerProxy::SetNumOfSamples(int ibin,int nsamples)
+{
+    if( Accu == NULL ){
+        RUNTIME_ERROR("Accu is NULL");
+    }
+    Accu->SetData("NTDS",ibin,nsamples);
 }
 
 //------------------------------------------------------------------------------

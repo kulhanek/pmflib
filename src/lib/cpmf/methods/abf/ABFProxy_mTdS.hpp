@@ -3,6 +3,7 @@
 // =============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
+//    Copyright (C) 2025 Petr Kulhanek, kulhanek@chemi.muni.cz
 //    Copyright (C) 2021 Petr Kulhanek, kulhanek@chemi.muni.cz
 //
 //     This program is free software; you can redistribute it and/or modify
@@ -49,19 +50,29 @@ public:
     ~CABFProxy_mTdS(void);
 
 //------------------------------------------------------------------------------
+    // set type if it is supported
+    virtual bool SetType(const CSmallString& realm);
+
     // set type
     void SetType(EABFTdSType type);
 
+    // get type description
+    const CSmallString GetTypeDescription(EABFTdSType type);
+
 //------------------------------------------------------------------------------
+    // get number of samples
+    virtual int GetNumOfSamples(int ibin) const;
+
+    // set number of samples
+    virtual void SetNumOfSamples(int ibin,int nsamples);
+
     // get energy derivative and its error
     virtual double GetValue( int ibin,int icv,EProxyRealm realm) const;
 
-    // is compatible with PMF Accumulator method
-    static bool IsCompatible(CPMFAccumulatorPtr accu);
-
 // section of private data -----------------------------------------------------
 private:
-    EABFTdSType    Type;
+    std::map<CSmallString,EABFTdSType>  SupportedRealms;
+    EABFTdSType                         Type;
 };
 
 //------------------------------------------------------------------------------

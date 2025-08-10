@@ -33,7 +33,7 @@ using namespace std;
 CCSTProxy_MTC::CCSTProxy_MTC(void)
 {
     Requires.push_back("CST");
-    Provide = "CST dG(x)^{MTC}";      // metric tensor correction
+    Description = "CST E{MTC}";      // metric tensor correction
 }
 
 //------------------------------------------------------------------------------

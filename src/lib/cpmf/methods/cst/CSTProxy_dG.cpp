@@ -20,6 +20,7 @@
 // =============================================================================
 
 #include <CSTProxy_dG.hpp>
+#include <CSTProxy_MTC.hpp>
 
 //------------------------------------------------------------------------------
 
@@ -32,7 +33,13 @@ using namespace std;
 CCSTProxy_dG::CCSTProxy_dG(void)
 {
     Requires.push_back("CST");
-    SetType(CST_dG);
+
+    SupportedRealms["dG/dx"]        = CST_dG;
+    SupportedRealms["LAMBDA/dx"]    = CST_LAMBDA;
+    SupportedRealms["MICF/dx"]      = CST_MICF;
+    SupportedRealms["MICFFW/dx"]    = CST_MICFFW;
+    SupportedRealms["MICFPFW/dx"]   = CST_MICFPFW;
+    SupportedRealms["MICFKFW/dx"]   = CST_MICFKFW;
 }
 
 //------------------------------------------------------------------------------
@@ -45,30 +52,45 @@ CCSTProxy_dG::~CCSTProxy_dG(void)
 //------------------------------------------------------------------------------
 //==============================================================================
 
+bool CCSTProxy_dG::SetType(const CSmallString& realm)
+{
+    if( SupportedRealms.count(realm) == 0 ) return(false);
+    Realm = realm;
+    SetType(SupportedRealms[realm]);
+    return(true);
+}
+
+//------------------------------------------------------------------------------
+
 void CCSTProxy_dG::SetType(ECSTdGType type)
 {
     Type = type;
+    Description = GetTypeDescription(Type);
+}
 
-    switch(Type){
+//------------------------------------------------------------------------------
+
+const CSmallString CCSTProxy_dG::GetTypeDescription(ECSTdGType type)
+{
+    switch(type){
     // -------------------
         case(CST_dG):
-            Provide = "CST dG(x) (|<l> dx| + MTC)";
+            return("CST dG(x) (|<l> dx| + MTC)");
+    // -------------------
+        case(CST_LAMBDA):
+            return("CST |<lambda> dx|");
     // -------------------
         case(CST_MICF):
-            Provide = "CST |MICF(x) dx|";
-        break;
+            return("CST |MICF(x) dx|");
     // -------------------
         case(CST_MICFFW):
-            Provide = "CST |MICF(x)FW dx|";
-        break;
+            return("CST |MICF(x)FW dx|");
     // -------------------
         case(CST_MICFPFW):
-            Provide = "CST |MICFP(x)FW dx|";
-        break;
+            return("CST |MICFP(x)FW dx|");
     // -------------------
         case(CST_MICFKFW):
-            Provide = "CST |MICFK(x)FW dx|";
-        break;
+            return("CST |MICFK(x)FW dx|");
     // -------------------
         default:
             RUNTIME_ERROR("unsupported type");
@@ -77,10 +99,14 @@ void CCSTProxy_dG::SetType(ECSTdGType type)
 
 //------------------------------------------------------------------------------
 
-bool CCSTProxy_dG::IsCompatible(CPMFAccumulatorPtr accu)
+CEnergyProxyPtr CCSTProxy_dG::GetEnergyCorrection(void)
 {
-    if( accu->GetMethod() == "CST" ) return(true);
-    return(false);
+    CEnergyProxyPtr ene_proxy;
+    if( Type == CST_dG ){
+        ene_proxy = CCSTProxy_MTC_Ptr(new CCSTProxy_MTC);
+        ene_proxy->Init(Accu);
+    }
+    return(ene_proxy);
 }
 
 //==============================================================================
@@ -95,6 +121,7 @@ int CCSTProxy_dG::GetNumOfSamples(int ibin) const
     switch(Type){
     // -------------------
         case(CST_dG):
+        case(CST_LAMBDA):
             return(Accu->GetData("NSAMPLES",ibin));
     // -------------------
         case(CST_MICF):
@@ -119,6 +146,7 @@ void CCSTProxy_dG::SetNumOfSamples(int ibin,int nsamples)
     switch(Type){
     // -------------------
         case(CST_dG):
+        case(CST_LAMBDA):
             Accu->SetData("NSAMPLES",ibin,nsamples);
     // -------------------
         case(CST_MICF):
@@ -153,8 +181,8 @@ double CCSTProxy_dG::GetValue(int ibin,int icv,EProxyRealm realm) const
 // get requested data
     switch(Type){
     // -------------------
-        case(CST_dG): {
-            // this requires MTC correction
+        case(CST_dG):       // this requires MTC correction
+        case(CST_LAMBDA): {
             mean        = Accu->GetData("MLAMBDA",ibin,icv);
             double M2   = Accu->GetData("M2LAMBDA",ibin,icv);
             samvar      = M2 / nsamples;

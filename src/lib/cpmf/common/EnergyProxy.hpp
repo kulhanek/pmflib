@@ -55,6 +55,9 @@ public:
     // get realm
     CSmallString GetRealm(void);
 
+    // get realm description
+    CSmallString GetDescription(void);
+
     /// return number of cvs
     int GetNumOfCVs(void) const;
 
@@ -62,7 +65,7 @@ public:
     int GetNumOfBins(void) const;
 
     // get number of samples (NSAMPLES)
-    int GetNSamples(int ibin) const;
+    virtual int GetNumOfSamples(int ibin) const;
 
     // get energy and its error
     virtual double GetValue( int ibin,EProxyRealm realm) const;
@@ -70,7 +73,8 @@ public:
 // protected data --------------------------------------------------------------
 protected:
     std::vector<std::string>    Requires;
-    CSmallString                Provide;
+    CSmallString                Realm;
+    CSmallString                Description;
     CPMFAccumulatorPtr          Accu;
 };
 

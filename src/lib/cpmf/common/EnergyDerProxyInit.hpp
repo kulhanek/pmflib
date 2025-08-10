@@ -23,6 +23,7 @@
 #include <PMFMainHeader.hpp>
 #include <EnergyDerProxy.hpp>
 #include <PMFAccumulator.hpp>
+#include <list>
 
 //------------------------------------------------------------------------------
 
@@ -30,6 +31,7 @@ class PMF_PACKAGE CEnergyDerProxyInit {
 public:
 // setup methods ---------------------------------------------------------------
     static CEnergyDerProxyPtr InitProxy(const CSmallString& realm,CPMFAccumulatorPtr& accu);
+    static void InitProxyList(std::list<CEnergyDerProxyPtr>& eneder_proxies);
 };
 
 //------------------------------------------------------------------------------
