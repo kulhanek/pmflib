@@ -175,10 +175,21 @@ CEnergyDerProxyPtr CEnergyDerProxyInit::InitProxy(const CSmallString& realm,CPMF
             RUNTIME_ERROR(error);
         }
 // -----------------------------------------------
-    } else if ( (realm == "-TdS_LIFW/dx") || (realm == "mTdS_LIFW/dx") ) {
+    } else if ( (realm == "-TdS_II/dx") || (realm == "mTdS_II/dx") ) {
         if (CCSTProxy_mTdS::IsCompatible(accu) ) {
             CCSTProxy_mTdS_Ptr proxy = CCSTProxy_mTdS_Ptr(new CCSTProxy_mTdS);
-            proxy->SetType(CST_TdS_LIFW);
+            proxy->SetType(CST_TdS_II);
+            lproxy = proxy;
+        } else {
+            CSmallString error;
+            error << "incompatible method: " << accu->GetMethod() << " with requested realm: " <<  realm;
+            RUNTIME_ERROR(error);
+        }
+// -----------------------------------------------
+    } else if ( (realm == "-TdS_IIFW/dx") || (realm == "mTdS_IIFW/dx") ) {
+        if (CCSTProxy_mTdS::IsCompatible(accu) ) {
+            CCSTProxy_mTdS_Ptr proxy = CCSTProxy_mTdS_Ptr(new CCSTProxy_mTdS);
+            proxy->SetType(CST_TdS_IIFW);
             lproxy = proxy;
         } else {
             CSmallString error;

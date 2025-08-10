@@ -147,6 +147,23 @@ double CCSTProxy_mTdS::GetValue(int ibin,int icv,EProxyRealm realm) const
         }
         break;
     // -------------------
+        case(CST_TdS_II):{
+            double C        = Accu->GetData("C11II",ibin,icv);
+            mean            = C / nsamples;
+            samvar          = 0.0;  // FIXME
+            meanvar         = 0.0;
+        }
+        break;
+    // -------------------
+        case(CST_TdS_IIFW):{
+            double fwsum    = Accu->GetData("FWSUM",ibin);
+            double C        = Accu->GetData("C11IIFW",ibin,icv);
+            mean            = C / fwsum;
+            samvar          = 0.0;  // FIXME
+            meanvar         = 0.0;
+        }
+        break;
+    // -------------------
         default:
             RUNTIME_ERROR("unsupported type");
     }
