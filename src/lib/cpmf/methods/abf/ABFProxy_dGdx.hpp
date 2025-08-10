@@ -1,5 +1,5 @@
-#ifndef CSTProxy_dG_H
-#define CSTProxy_dG_H
+#ifndef ABFProxy_dG_H
+#define ABFProxy_dG_H
 // =============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
@@ -26,58 +26,44 @@
 
 //------------------------------------------------------------------------------
 
-enum ECSTdGType {
-    CST_dG,
-    CST_LAMBDA,
-    CST_MICF,
-    CST_MICFFW,
-    CST_MICFPFW,
-    CST_MICFKFW,
+enum EABFdGType {
+    ABF_MICF,
 };
 
 //------------------------------------------------------------------------------
 
-/** \brief CST proxy providing mean force for the free energy integration
+/** \brief ABF proxy providing mean force for the free energy integration
 */
 
-class PMF_PACKAGE CCSTProxy_dG : public CEnergyDerProxy {
+class PMF_PACKAGE CABFProxy_dGdx : public CEnergyDerProxy {
 public:
 // constructor and destructor --------------------------------------------------
-    CCSTProxy_dG(void);
-    ~CCSTProxy_dG(void);
+    CABFProxy_dGdx(void);
+    ~CABFProxy_dGdx(void);
 
 //------------------------------------------------------------------------------
     // set type if it is supported
     virtual bool SetType(const CSmallString& realm);
 
     // set type
-    void SetType(ECSTdGType type);
+    void SetType(EABFdGType type);
 
     // get type description
-    const CSmallString GetTypeDescription(ECSTdGType type);
-
-    // get optional energy correction - MTC
-    virtual CEnergyProxyPtr GetEnergyCorrection(void);
+    const CSmallString GetTypeDescription(EABFdGType type);
 
 //------------------------------------------------------------------------------
-    // get number of samples
-    virtual int GetNumOfSamples(int ibin) const;
-
-    // set number of samples
-    virtual void SetNumOfSamples(int ibin,int nsamples);
-
     // get energy derivative and its error
     virtual double GetValue( int ibin,int icv,EProxyRealm realm) const;
 
 // section of private data -----------------------------------------------------
 private:
-    std::map<CSmallString,ECSTdGType>   SupportedRealms;
-    ECSTdGType                          Type;
+    std::map<CSmallString,EABFdGType>   SupportedRealms;
+    EABFdGType                          Type;
 };
 
 //------------------------------------------------------------------------------
 
-typedef boost::shared_ptr<CCSTProxy_dG>    CCSTProxy_dG_Ptr;
+typedef boost::shared_ptr<CABFProxy_dGdx>    CABFProxy_dGdx_Ptr;
 
 //------------------------------------------------------------------------------
 

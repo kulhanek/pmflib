@@ -29,10 +29,10 @@
 #include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string/classification.hpp>
 #include <SciLapack.hpp>
-#include <ABFProxy_dG.hpp>
-#include <ABFProxy_mTdS.hpp>
-#include <CSTProxy_dG.hpp>
-#include <CSTProxy_mTdS.hpp>
+#include <ABFProxy_dGdx.hpp>
+#include <ABFProxy_mTdSdx.hpp>
+#include <CSTProxy_dGdx.hpp>
+#include <CSTProxy_mTdSdx.hpp>
 #include <PMFProxy_dH.hpp>
 
 //------------------------------------------------------------------------------
@@ -242,10 +242,10 @@ void COptGPRHyprmsMulti::InitRealm(CProxyRealmPtr realm)
 //        for(size_t i=0; i < realm->Accumulators.size(); i++){
 //            CPMFAccumulatorPtr accu = realm->Accumulators[i];
 //            CEnergyDerProxyPtr proxy;
-//            if( CABFProxy_dG::IsCompatible(accu) ){
-//               proxy    = CABFProxy_dG_Ptr(new CABFProxy_dG);
-//            } else if (CCSTProxy_dG::IsCompatible(accu) ) {
-//                proxy    = CCSTProxy_dG_Ptr(new CCSTProxy_dG);
+//            if( CABFProxy_dGdx::IsCompatible(accu) ){
+//               proxy    = CABFProxy_dGdx_Ptr(new CABFProxy_dGdx);
+//            } else if (CCSTProxy_dGdx::IsCompatible(accu) ) {
+//                proxy    = CCSTProxy_dGdx_Ptr(new CCSTProxy_dGdx);
 //            } else {
 //                CSmallString error;
 //                error << "incompatible method: " << accu->GetMethod() << " with requested realm: " <<  realm->Name;
@@ -259,10 +259,10 @@ void COptGPRHyprmsMulti::InitRealm(CProxyRealmPtr realm)
 //        for(size_t i=0; i < realm->Accumulators.size(); i++){
 //            CPMFAccumulatorPtr accu = realm->Accumulators[i];
 //            CEnergyDerProxyPtr proxy;
-//            if( CABFProxy_mTdS::IsCompatible(accu) ){
-//                proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
-//            } else if (CCSTProxy_mTdS::IsCompatible(accu) ) {
-//                proxy    = CCSTProxy_mTdS_Ptr(new CCSTProxy_mTdS);
+//            if( CABFProxy_mTdSdx::IsCompatible(accu) ){
+//                proxy    = CABFProxy_mTdSdx_Ptr(new CABFProxy_mTdSdx);
+//            } else if (CCSTProxy_mTdSdx::IsCompatible(accu) ) {
+//                proxy    = CCSTProxy_mTdSdx_Ptr(new CCSTProxy_mTdSdx);
 //            } else {
 //                CSmallString error;
 //                error << "incompatible method: " << accu->GetMethod() << " with requested realm: " <<  realm->Name;

@@ -1,8 +1,9 @@
-#ifndef CSTProxy_mTdS_H
-#define CSTProxy_mTdS_H
+#ifndef CSTProxy_dG_H
+#define CSTProxy_dG_H
 // =============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
+//    Copyright (C) 2025 Petr Kulhanek, kulhanek@chemi.muni.cz
 //    Copyright (C) 2021 Petr Kulhanek, kulhanek@chemi.muni.cz
 //
 //     This program is free software; you can redistribute it and/or modify
@@ -25,19 +26,13 @@
 
 //------------------------------------------------------------------------------
 
-enum ECSTTdSType {
-    CST_TdS,
-
-    CST_TdS_LT,         // Cov(lambda,Etot)
-
-    CST_TdS_LTFW,       // Cov(lambda,Etot) - Fixman weighted
-    CST_TdS_LIFW,       // Cov(lambda,Eint) - Fixman weighted
-    CST_TdS_LPFW,       // Cov(lambda,Epot) - Fixman weighted
-    CST_TdS_LRFW,       // Cov(lambda,Erst) - Fixman weighted
-    CST_TdS_LKFW,       // Cov(lambda,Ekin) - Fixman weighted
-
-    CST_TdS_II,         // Cov(ICF,Eint)
-    CST_TdS_IIFW,       // Cov(ICF,Eint) - Fixman weighted
+enum ECSTdGdxType {
+    CST_dGdx,
+    CST_LAMBDAdx,
+    CST_MICFdx,
+    CST_MICFFWdx,
+    CST_MICFPFWdx,
+    CST_MICFKFWdx,
 };
 
 //------------------------------------------------------------------------------
@@ -45,21 +40,21 @@ enum ECSTTdSType {
 /** \brief CST proxy providing mean force for the free energy integration
 */
 
-class PMF_PACKAGE CCSTProxy_mTdS : public CEnergyDerProxy {
+class PMF_PACKAGE CCSTProxy_dGdx : public CEnergyDerProxy {
 public:
 // constructor and destructor --------------------------------------------------
-    CCSTProxy_mTdS(void);
-    ~CCSTProxy_mTdS(void);
+    CCSTProxy_dGdx(void);
+    ~CCSTProxy_dGdx(void);
 
 //------------------------------------------------------------------------------
     // set type if it is supported
     virtual bool SetType(const CSmallString& realm);
 
     // set type
-    void SetType(ECSTTdSType type);
+    void SetType(ECSTdGdxType type);
 
     // get type description
-    const CSmallString GetTypeDescription(ECSTTdSType type);
+    const CSmallString GetTypeDescription(ECSTdGdxType type);
 
     // get optional energy correction - MTC
     virtual CEnergyProxyPtr GetEnergyCorrection(void);
@@ -76,13 +71,13 @@ public:
 
 // section of private data -----------------------------------------------------
 private:
-    std::map<CSmallString,ECSTTdSType>  SupportedRealms;
-    ECSTTdSType                         Type;
+    std::map<CSmallString,ECSTdGdxType>   SupportedRealms;
+    ECSTdGdxType                          Type;
 };
 
 //------------------------------------------------------------------------------
 
-typedef boost::shared_ptr   <CCSTProxy_mTdS>    CCSTProxy_mTdS_Ptr;
+typedef boost::shared_ptr<CCSTProxy_dGdx>    CCSTProxy_dGdx_Ptr;
 
 //------------------------------------------------------------------------------
 

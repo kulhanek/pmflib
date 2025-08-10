@@ -41,9 +41,6 @@ public:
     bool IsWTMeta(void);
 
 //------------------------------------------------------------------------------
-    // get number of samples
-    virtual int GetNumOfSamples(int ibin) const;
-
     // get energy derivative and its error
     virtual double GetValue( int ibin,EProxyRealm realm) const;
 };

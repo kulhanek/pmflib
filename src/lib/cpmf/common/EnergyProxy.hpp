@@ -48,6 +48,12 @@ public:
     // set accumulator and perform sanity checks
     virtual void Init(CPMFAccumulatorPtr accu);
 
+    // is compatible with PMF Accumulator method
+    virtual bool IsCompatible(CPMFAccumulatorPtr accu);
+
+    // set type if it is supported
+    virtual bool SetType(const CSmallString& realm);
+
 // access methods --------------------------------------------------------------
     // get PMF accumulator
     CPMFAccumulatorPtr GetAccu(void);
@@ -66,6 +72,9 @@ public:
 
     // get number of samples (NSAMPLES)
     virtual int GetNumOfSamples(int ibin) const;
+
+    // set number of samples
+    virtual void SetNumOfSamples(int ibin,int nsamples);
 
     // get energy and its error
     virtual double GetValue( int ibin,EProxyRealm realm) const;

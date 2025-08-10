@@ -135,7 +135,7 @@ void CEnergyDerProxy::SetNumOfSamples(int ibin,int nsamples)
     if( Accu == NULL ){
         RUNTIME_ERROR("Accu is NULL");
     }
-    Accu->SetData("NTDS",ibin,nsamples);
+    Accu->SetData("NSAMPLES",ibin,nsamples);
 }
 
 //------------------------------------------------------------------------------

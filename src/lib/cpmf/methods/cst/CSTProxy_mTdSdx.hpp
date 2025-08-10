@@ -1,10 +1,9 @@
-#ifndef ABFProxy_dH_H
-#define ABFProxy_dH_H
+#ifndef CSTProxy_mTdS_H
+#define CSTProxy_mTdS_H
 // =============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
-//    Copyright (C) 2025 Petr Kulhanek, kulhanek@chemi.muni.cz
-//    Copyright (C) 2024 Petr Kulhanek, kulhanek@chemi.muni.cz
+//    Copyright (C) 2021 Petr Kulhanek, kulhanek@chemi.muni.cz
 //
 //     This program is free software; you can redistribute it and/or modify
 //     it under the terms of the GNU General Public License as published by
@@ -26,31 +25,44 @@
 
 //------------------------------------------------------------------------------
 
-enum EABFdHType {
-    ABF_dH,
-    ABF_MICFP,
+enum ECSTTdSdxType {
+    CST_TdS,
+
+    CST_TdS_LT,         // Cov(lambda,Etot)
+
+    CST_TdS_LTFW,       // Cov(lambda,Etot) - Fixman weighted
+    CST_TdS_LIFW,       // Cov(lambda,Eint) - Fixman weighted
+    CST_TdS_LPFW,       // Cov(lambda,Epot) - Fixman weighted
+    CST_TdS_LRFW,       // Cov(lambda,Erst) - Fixman weighted
+    CST_TdS_LKFW,       // Cov(lambda,Ekin) - Fixman weighted
+
+    CST_TdS_II,         // Cov(ICF,Eint)
+    CST_TdS_IIFW,       // Cov(ICF,Eint) - Fixman weighted
 };
 
 //------------------------------------------------------------------------------
 
-/** \brief ABF proxy providing mean force for the free energy integration
+/** \brief CST proxy providing mean force for the free energy integration
 */
 
-class PMF_PACKAGE CABFProxy_dH : public CEnergyDerProxy {
+class PMF_PACKAGE CCSTProxy_mTdSdx : public CEnergyDerProxy {
 public:
 // constructor and destructor --------------------------------------------------
-    CABFProxy_dH(void);
-    ~CABFProxy_dH(void);
+    CCSTProxy_mTdSdx(void);
+    ~CCSTProxy_mTdSdx(void);
 
 //------------------------------------------------------------------------------
     // set type if it is supported
     virtual bool SetType(const CSmallString& realm);
 
     // set type
-    void SetType(EABFdHType type);
+    void SetType(ECSTTdSdxType type);
 
     // get type description
-    const CSmallString GetTypeDescription(EABFdHType type);
+    const CSmallString GetTypeDescription(ECSTTdSdxType type);
+
+    // get optional energy correction - MTC
+    virtual CEnergyProxyPtr GetEnergyCorrection(void);
 
 //------------------------------------------------------------------------------
     // get number of samples
@@ -64,13 +76,13 @@ public:
 
 // section of private data -----------------------------------------------------
 private:
-    std::map<CSmallString,EABFdHType>   SupportedRealms;
-    EABFdHType                          Type;
+    std::map<CSmallString,ECSTTdSdxType>  SupportedRealms;
+    ECSTTdSdxType                         Type;
 };
 
 //------------------------------------------------------------------------------
 
-typedef boost::shared_ptr<CABFProxy_dH>    CABFProxy_dH_Ptr;
+typedef boost::shared_ptr   <CCSTProxy_mTdSdx>    CCSTProxy_mTdSdx_Ptr;
 
 //------------------------------------------------------------------------------
 

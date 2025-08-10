@@ -148,8 +148,8 @@ bool CABFResample::Run(void)
     vout << format("%02d:Initializing the dG (ABF) realm ...")%State << endl;
     State++;
 
-    if( CABFProxy_dG::IsCompatible(InAccu) ){
-        DerProxy = CABFProxy_dG_Ptr(new CABFProxy_dG);
+    if( CABFProxy_dGdx::IsCompatible(InAccu) ){
+        DerProxy = CABFProxy_dGdx_Ptr(new CABFProxy_dGdx);
     } else {
         CSmallString error;
         error << "incompatible method: " << InAccu->GetMethod() << " with requested realm: dG (ABF)";

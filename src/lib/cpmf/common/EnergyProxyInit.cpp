@@ -1,6 +1,7 @@
 // =============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
+//    Copyright (C) 2025 Petr Kulhanek, kulhanek@chemi.muni.cz
 //    Copyright (C) 2023 Petr Kulhanek, kulhanek@chemi.muni.cz
 //
 //     This program is free software; you can redistribute it and/or modify
@@ -19,7 +20,24 @@
 // =============================================================================
 
 #include <EnergyProxyInit.hpp>
-#include <PMFProxy_dH.hpp>
+#include <ABFProxy_dH.hpp>
+#include <CSTProxy_dH.hpp>
+
+//==============================================================================
+//------------------------------------------------------------------------------
+//==============================================================================
+
+void CEnergyProxyInit::InitProxyList(std::list<CEnergyProxyPtr>& ene_proxies)
+{
+    CEnergyProxyPtr proxy;
+
+// add supported proxies
+    proxy = CEnergyProxyPtr(new CABFProxy_dH);
+    ene_proxies.push_back(proxy);
+
+    proxy = CEnergyProxyPtr(new CCSTProxy_dH);
+    ene_proxies.push_back(proxy);
+}
 
 //==============================================================================
 //------------------------------------------------------------------------------
@@ -27,43 +45,25 @@
 
 CEnergyProxyPtr CEnergyProxyInit::InitProxy(const CSmallString& realm,CPMFAccumulatorPtr& accu)
 {
-    CEnergyProxyPtr lproxy;
+    std::list<CEnergyProxyPtr> ened_proxies;
+    InitProxyList(ened_proxies);
 
-    if( (realm == "<Eint>") || (realm == "dH") ){
-        CPMFProxy_dH_Ptr proxy = CPMFProxy_dH_Ptr(new CPMFProxy_dH);
-        proxy->SetType(PMF_EINT);
-        lproxy = proxy;
-    } else if( realm == "<EintFW>" ){
-        CPMFProxy_dH_Ptr proxy = CPMFProxy_dH_Ptr(new CPMFProxy_dH);
-        proxy->SetType(PMF_EINTFW);
-        lproxy = proxy;
-    } else if( realm == "<Etot>" ){
-        CPMFProxy_dH_Ptr proxy = CPMFProxy_dH_Ptr(new CPMFProxy_dH);
-        proxy->SetType(PMF_ETOT);
-        lproxy = proxy;
-// -----------------------------------------------
-    } else if ( realm == "<Epot>" ) {
-        CPMFProxy_dH_Ptr proxy = CPMFProxy_dH_Ptr(new CPMFProxy_dH);
-        proxy->SetType(PMF_EPOT);
-        lproxy = proxy;
-// -----------------------------------------------
-    } else if ( realm == "<Ekin>" ) {
-        CPMFProxy_dH_Ptr proxy = CPMFProxy_dH_Ptr(new CPMFProxy_dH);
-        proxy->SetType(PMF_EKIN);
-        lproxy = proxy;
-// -----------------------------------------------
-    } else if ( realm == "<Erst>" ) {
-        CPMFProxy_dH_Ptr proxy = CPMFProxy_dH_Ptr(new CPMFProxy_dH);
-        proxy->SetType(PMF_ERST);
-        lproxy = proxy;
-// -----------------------------------------------
-    } else {
-        CSmallString error;
-        error << "unsupported realm: " << realm ;
-        RUNTIME_ERROR(error);
+    CEnergyProxyPtr proxy;
+
+// find suitable proxy
+    std::list<CEnergyProxyPtr>::iterator it = ened_proxies.begin();
+    std::list<CEnergyProxyPtr>::iterator ie = ened_proxies.end();
+
+    while( it != ie ){
+        proxy = *it;
+        it++;
+        if( proxy->IsCompatible(accu) == false ) continue;
+        if( proxy->SetType(realm) ) return(proxy);
     }
 
-    return(lproxy);
+    CSmallString error;
+    error << "incompatible method: " << accu->GetMethod() << " with requested realm: " <<  realm;
+    RUNTIME_ERROR(error);
 }
 
 //==============================================================================

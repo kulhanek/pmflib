@@ -19,7 +19,7 @@
 //     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 // =============================================================================
 
-#include <CSTProxy_dG.hpp>
+#include <CSTProxy_dGdx.hpp>
 #include <CSTProxy_MTC.hpp>
 
 //------------------------------------------------------------------------------
@@ -30,21 +30,21 @@ using namespace std;
 //------------------------------------------------------------------------------
 //==============================================================================
 
-CCSTProxy_dG::CCSTProxy_dG(void)
+CCSTProxy_dGdx::CCSTProxy_dGdx(void)
 {
     Requires.push_back("CST");
 
-    SupportedRealms["dG/dx"]        = CST_dG;
-    SupportedRealms["LAMBDA/dx"]    = CST_LAMBDA;
-    SupportedRealms["MICF/dx"]      = CST_MICF;
-    SupportedRealms["MICFFW/dx"]    = CST_MICFFW;
-    SupportedRealms["MICFPFW/dx"]   = CST_MICFPFW;
-    SupportedRealms["MICFKFW/dx"]   = CST_MICFKFW;
+    SupportedRealms["dG/dx"]        = CST_dGdx;
+    SupportedRealms["LAMBDA/dx"]    = CST_LAMBDAdx;
+    SupportedRealms["MICF/dx"]      = CST_MICFdx;
+    SupportedRealms["MICFFW/dx"]    = CST_MICFFWdx;
+    SupportedRealms["MICFPFW/dx"]   = CST_MICFPFWdx;
+    SupportedRealms["MICFKFW/dx"]   = CST_MICFKFWdx;
 }
 
 //------------------------------------------------------------------------------
 
-CCSTProxy_dG::~CCSTProxy_dG(void)
+CCSTProxy_dGdx::~CCSTProxy_dGdx(void)
 {
 }
 
@@ -52,7 +52,7 @@ CCSTProxy_dG::~CCSTProxy_dG(void)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-bool CCSTProxy_dG::SetType(const CSmallString& realm)
+bool CCSTProxy_dGdx::SetType(const CSmallString& realm)
 {
     if( SupportedRealms.count(realm) == 0 ) return(false);
     Realm = realm;
@@ -62,7 +62,7 @@ bool CCSTProxy_dG::SetType(const CSmallString& realm)
 
 //------------------------------------------------------------------------------
 
-void CCSTProxy_dG::SetType(ECSTdGType type)
+void CCSTProxy_dGdx::SetType(ECSTdGdxType type)
 {
     Type = type;
     Description = GetTypeDescription(Type);
@@ -70,26 +70,26 @@ void CCSTProxy_dG::SetType(ECSTdGType type)
 
 //------------------------------------------------------------------------------
 
-const CSmallString CCSTProxy_dG::GetTypeDescription(ECSTdGType type)
+const CSmallString CCSTProxy_dGdx::GetTypeDescription(ECSTdGdxType type)
 {
     switch(type){
     // -------------------
-        case(CST_dG):
+        case(CST_dGdx):
             return("CST dG(x) (|<l> dx| + MTC)");
     // -------------------
-        case(CST_LAMBDA):
+        case(CST_LAMBDAdx):
             return("CST |<lambda> dx|");
     // -------------------
-        case(CST_MICF):
+        case(CST_MICFdx):
             return("CST |MICF(x) dx|");
     // -------------------
-        case(CST_MICFFW):
+        case(CST_MICFFWdx):
             return("CST |MICF(x)FW dx|");
     // -------------------
-        case(CST_MICFPFW):
+        case(CST_MICFPFWdx):
             return("CST |MICFP(x)FW dx|");
     // -------------------
-        case(CST_MICFKFW):
+        case(CST_MICFKFWdx):
             return("CST |MICFK(x)FW dx|");
     // -------------------
         default:
@@ -99,10 +99,10 @@ const CSmallString CCSTProxy_dG::GetTypeDescription(ECSTdGType type)
 
 //------------------------------------------------------------------------------
 
-CEnergyProxyPtr CCSTProxy_dG::GetEnergyCorrection(void)
+CEnergyProxyPtr CCSTProxy_dGdx::GetEnergyCorrection(void)
 {
     CEnergyProxyPtr ene_proxy;
-    if( Type == CST_dG ){
+    if( Type == CST_dGdx ){
         ene_proxy = CCSTProxy_MTC_Ptr(new CCSTProxy_MTC);
         ene_proxy->Init(Accu);
     }
@@ -113,21 +113,21 @@ CEnergyProxyPtr CCSTProxy_dG::GetEnergyCorrection(void)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-int CCSTProxy_dG::GetNumOfSamples(int ibin) const
+int CCSTProxy_dGdx::GetNumOfSamples(int ibin) const
 {
     if( Accu == NULL ){
         RUNTIME_ERROR("Accu is NULL");
     }
     switch(Type){
     // -------------------
-        case(CST_dG):
-        case(CST_LAMBDA):
+        case(CST_dGdx):
+        case(CST_LAMBDAdx):
             return(Accu->GetData("NSAMPLES",ibin));
     // -------------------
-        case(CST_MICF):
-        case(CST_MICFFW):
-        case(CST_MICFPFW):
-        case(CST_MICFKFW):
+        case(CST_MICFdx):
+        case(CST_MICFFWdx):
+        case(CST_MICFPFWdx):
+        case(CST_MICFKFWdx):
             return(Accu->GetData("NTDS",ibin));
         break;
     // -------------------
@@ -138,21 +138,21 @@ int CCSTProxy_dG::GetNumOfSamples(int ibin) const
 
 //------------------------------------------------------------------------------
 
-void CCSTProxy_dG::SetNumOfSamples(int ibin,int nsamples)
+void CCSTProxy_dGdx::SetNumOfSamples(int ibin,int nsamples)
 {
     if( Accu == NULL ){
         RUNTIME_ERROR("Accu is NULL");
     }
     switch(Type){
     // -------------------
-        case(CST_dG):
-        case(CST_LAMBDA):
+        case(CST_dGdx):
+        case(CST_LAMBDAdx):
             Accu->SetData("NSAMPLES",ibin,nsamples);
     // -------------------
-        case(CST_MICF):
-        case(CST_MICFFW):
-        case(CST_MICFPFW):
-        case(CST_MICFKFW):
+        case(CST_MICFdx):
+        case(CST_MICFFWdx):
+        case(CST_MICFPFWdx):
+        case(CST_MICFKFWdx):
             Accu->SetData("NTDS",ibin,nsamples);
         break;
     // -------------------
@@ -163,7 +163,7 @@ void CCSTProxy_dG::SetNumOfSamples(int ibin,int nsamples)
 
 //------------------------------------------------------------------------------
 
-double CCSTProxy_dG::GetValue(int ibin,int icv,EProxyRealm realm) const
+double CCSTProxy_dGdx::GetValue(int ibin,int icv,EProxyRealm realm) const
 {
     if( Accu == NULL ){
         RUNTIME_ERROR("Accu is NULL");
@@ -181,8 +181,8 @@ double CCSTProxy_dG::GetValue(int ibin,int icv,EProxyRealm realm) const
 // get requested data
     switch(Type){
     // -------------------
-        case(CST_dG):       // this requires MTC correction
-        case(CST_LAMBDA): {
+        case(CST_dGdx):       // this requires MTC correction
+        case(CST_LAMBDAdx): {
             mean        = Accu->GetData("MLAMBDA",ibin,icv);
             double M2   = Accu->GetData("M2LAMBDA",ibin,icv);
             samvar      = M2 / nsamples;
@@ -190,7 +190,7 @@ double CCSTProxy_dG::GetValue(int ibin,int icv,EProxyRealm realm) const
         }
         break;
     // ------------------
-        case(CST_MICF): {
+        case(CST_MICFdx): {
             mean        = Accu->GetData("MICF",ibin,icv);
             double M2   = Accu->GetData("M2ICF",ibin,icv);
             samvar      = M2 / nsamples;
@@ -198,7 +198,7 @@ double CCSTProxy_dG::GetValue(int ibin,int icv,EProxyRealm realm) const
         }
         break;
     // -------------------
-        case(CST_MICFFW): {
+        case(CST_MICFFWdx): {
             double fwsum    = Accu->GetData("FWSUM",ibin);
             double fwsum2   = Accu->GetData("FWSUM2",ibin);
 
@@ -219,7 +219,7 @@ double CCSTProxy_dG::GetValue(int ibin,int icv,EProxyRealm realm) const
         }
         break;
     // -------------------
-        case(CST_MICFPFW):  {
+        case(CST_MICFPFWdx):  {
             double fwsum    = Accu->GetData("FWSUM",ibin);
             double fwsum2   = Accu->GetData("FWSUM2",ibin);
 
@@ -238,7 +238,7 @@ double CCSTProxy_dG::GetValue(int ibin,int icv,EProxyRealm realm) const
         }
         break;
     // -------------------
-        case(CST_MICFKFW):  {
+        case(CST_MICFKFWdx):  {
             double fwsum    = Accu->GetData("FWSUM",ibin);
             double fwsum2   = Accu->GetData("FWSUM2",ibin);
 

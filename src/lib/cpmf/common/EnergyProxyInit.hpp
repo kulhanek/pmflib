@@ -3,6 +3,7 @@
 // =============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
+//    Copyright (C) 2025 Petr Kulhanek, kulhanek@chemi.muni.cz
 //    Copyright (C) 2023 Petr Kulhanek, kulhanek@chemi.muni.cz
 //
 //     This program is free software; you can redistribute it and/or modify
@@ -21,7 +22,7 @@
 // =============================================================================
 
 #include <PMFMainHeader.hpp>
-#include <EnergyDerProxy.hpp>
+#include <EnergyProxy.hpp>
 #include <PMFAccumulator.hpp>
 
 //------------------------------------------------------------------------------
@@ -30,6 +31,7 @@ class PMF_PACKAGE CEnergyProxyInit {
 public:
 // setup methods ---------------------------------------------------------------
     static CEnergyProxyPtr InitProxy(const CSmallString& realm,CPMFAccumulatorPtr& accu);
+    static void InitProxyList(std::list<CEnergyProxyPtr>& ene_proxies);
 };
 
 //------------------------------------------------------------------------------

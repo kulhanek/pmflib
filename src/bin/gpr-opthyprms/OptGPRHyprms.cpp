@@ -36,10 +36,10 @@
 #include <GHSIntegratorGPRcA.hpp>
 #include <GHSIntegratorGPR0B.hpp>
 // ----------
-#include <ABFProxy_dG.hpp>
-#include <ABFProxy_mTdS.hpp>
-#include <CSTProxy_dG.hpp>
-#include <CSTProxy_mTdS.hpp>
+#include <ABFProxy_dGdx.hpp>
+#include <ABFProxy_mTdSdx.hpp>
+#include <CSTProxy_dGdx.hpp>
+#include <CSTProxy_mTdSdx.hpp>
 #include <PMFProxy_dH.hpp>
 
 //------------------------------------------------------------------------------
@@ -1285,20 +1285,20 @@ void COptGPRHyprms::CreateGPREngine_dF_dx(void)
 
     // FIXME
 //    if( Options.GetArgRealm() == "dG/dx" ) {
-//        if( CABFProxy_dG::IsCompatible(Accu) ){
-//           proxy    = CABFProxy_dG_Ptr(new CABFProxy_dG);
-//        } else if (CCSTProxy_dG::IsCompatible(Accu) ) {
-//            proxy    = CCSTProxy_dG_Ptr(new CCSTProxy_dG);
+//        if( CABFProxy_dGdx::IsCompatible(Accu) ){
+//           proxy    = CABFProxy_dGdx_Ptr(new CABFProxy_dGdx);
+//        } else if (CCSTProxy_dGdx::IsCompatible(Accu) ) {
+//            proxy    = CCSTProxy_dGdx_Ptr(new CCSTProxy_dGdx);
 //        } else {
 //            CSmallString error;
 //            error << "incompatible method: " << Accu->GetMethod() << " with requested realm: " <<  Options.GetArgRealm();
 //            RUNTIME_ERROR(error);
 //        }
 //    } else if( (Options.GetArgRealm() == "-TdS/dx") || (Options.GetArgRealm() == "mTdS/dx") ) {
-//        if( CABFProxy_mTdS::IsCompatible(Accu) ){
-//            proxy    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
-//        } else if (CCSTProxy_mTdS::IsCompatible(Accu) ) {
-//            proxy    = CCSTProxy_mTdS_Ptr(new CCSTProxy_mTdS);
+//        if( CABFProxy_mTdSdx::IsCompatible(Accu) ){
+//            proxy    = CABFProxy_mTdSdx_Ptr(new CABFProxy_mTdSdx);
+//        } else if (CCSTProxy_mTdSdx::IsCompatible(Accu) ) {
+//            proxy    = CCSTProxy_mTdSdx_Ptr(new CCSTProxy_mTdSdx);
 //        } else {
 //            CSmallString error;
 //            error << "incompatible method: " << Accu->GetMethod() << " with requested realm: " <<  Options.GetArgRealm();
@@ -1394,8 +1394,8 @@ void COptGPRHyprms::CreateGPREngine_GHS_dH_A(void)
 
     // FIXME
 //    if( Options.GetArgRealm() == "GHS_dH_A" ) {
-//        if( CABFProxy_dG::IsCompatible(Accu) ){
-//           proxy_dg = CABFProxy_dG_Ptr(new CABFProxy_dG);
+//        if( CABFProxy_dGdx::IsCompatible(Accu) ){
+//           proxy_dg = CABFProxy_dGdx_Ptr(new CABFProxy_dGdx);
 //           proxy_dg->Init(Accu);
 //        } else {
 //            CSmallString error;
@@ -1404,8 +1404,8 @@ void COptGPRHyprms::CreateGPREngine_GHS_dH_A(void)
 //        }
 //        proxy_dh = CPMFProxy_dH_Ptr(new CPMFProxy_dH);
 //        proxy_dh->Init(Accu);
-//        if( CABFProxy_mTdS::IsCompatible(Accu) ){
-//            proxy_ds    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
+//        if( CABFProxy_mTdSdx::IsCompatible(Accu) ){
+//            proxy_ds    = CABFProxy_mTdSdx_Ptr(new CABFProxy_mTdSdx);
 //            proxy_ds->Init(Accu);
 //        } else {
 //            CSmallString error;
@@ -1462,8 +1462,8 @@ void COptGPRHyprms::CreateGPREngine_cGHS_dH_A(void)
 
     // FIXME
 //    if( Options.GetArgRealm() == "cGHS_dH_A" ) {
-//        if( CABFProxy_dG::IsCompatible(Accu) ){
-//           proxy_dg = CABFProxy_dG_Ptr(new CABFProxy_dG);
+//        if( CABFProxy_dGdx::IsCompatible(Accu) ){
+//           proxy_dg = CABFProxy_dGdx_Ptr(new CABFProxy_dGdx);
 //           proxy_dg->Init(Accu);
 //        } else {
 //            CSmallString error;
@@ -1472,8 +1472,8 @@ void COptGPRHyprms::CreateGPREngine_cGHS_dH_A(void)
 //        }
 //        proxy_dh = CPMFProxy_dH_Ptr(new CPMFProxy_dH);
 //        proxy_dh->Init(Accu);
-//        if( CABFProxy_mTdS::IsCompatible(Accu) ){
-//            proxy_ds    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
+//        if( CABFProxy_mTdSdx::IsCompatible(Accu) ){
+//            proxy_ds    = CABFProxy_mTdSdx_Ptr(new CABFProxy_mTdSdx);
 //            proxy_ds->Init(Accu);
 //        } else {
 //            CSmallString error;
@@ -1533,8 +1533,8 @@ void COptGPRHyprms::CreateGPREngine_GHS_dH_B(void)
 
     // FIXME
 //    if( Options.GetArgRealm() == "GHS_dH_B" ) {
-//        if( CABFProxy_dG::IsCompatible(Accu) ){
-//           proxy_dg = CABFProxy_dG_Ptr(new CABFProxy_dG);
+//        if( CABFProxy_dGdx::IsCompatible(Accu) ){
+//           proxy_dg = CABFProxy_dGdx_Ptr(new CABFProxy_dGdx);
 //           proxy_dg->Init(Accu);
 //        } else {
 //            CSmallString error;
@@ -1543,8 +1543,8 @@ void COptGPRHyprms::CreateGPREngine_GHS_dH_B(void)
 //        }
 //        proxy_dh = CPMFProxy_dH_Ptr(new CPMFProxy_dH);
 //        proxy_dh->Init(Accu);
-//        if( CABFProxy_mTdS::IsCompatible(Accu) ){
-//            proxy_ds    = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS);
+//        if( CABFProxy_mTdSdx::IsCompatible(Accu) ){
+//            proxy_ds    = CABFProxy_mTdSdx_Ptr(new CABFProxy_mTdSdx);
 //            proxy_ds->Init(Accu);
 //        } else {
 //            CSmallString error;

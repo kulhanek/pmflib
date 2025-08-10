@@ -1,10 +1,10 @@
-#ifndef ABFProxy_dG_H
-#define ABFProxy_dG_H
+#ifndef ABFProxy_dH_H
+#define ABFProxy_dH_H
 // =============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
 //    Copyright (C) 2025 Petr Kulhanek, kulhanek@chemi.muni.cz
-//    Copyright (C) 2021 Petr Kulhanek, kulhanek@chemi.muni.cz
+//    Copyright (C) 2024 Petr Kulhanek, kulhanek@chemi.muni.cz
 //
 //     This program is free software; you can redistribute it and/or modify
 //     it under the terms of the GNU General Public License as published by
@@ -26,8 +26,9 @@
 
 //------------------------------------------------------------------------------
 
-enum EABFdGType {
-    ABF_MICF,
+enum EABFdHType {
+    ABF_dH,
+    ABF_MICFP,
 };
 
 //------------------------------------------------------------------------------
@@ -35,35 +36,41 @@ enum EABFdGType {
 /** \brief ABF proxy providing mean force for the free energy integration
 */
 
-class PMF_PACKAGE CABFProxy_dG : public CEnergyDerProxy {
+class PMF_PACKAGE CABFProxy_dHdx : public CEnergyDerProxy {
 public:
 // constructor and destructor --------------------------------------------------
-    CABFProxy_dG(void);
-    ~CABFProxy_dG(void);
+    CABFProxy_dHdx(void);
+    ~CABFProxy_dHdx(void);
 
 //------------------------------------------------------------------------------
     // set type if it is supported
     virtual bool SetType(const CSmallString& realm);
 
     // set type
-    void SetType(EABFdGType type);
+    void SetType(EABFdHType type);
 
     // get type description
-    const CSmallString GetTypeDescription(EABFdGType type);
+    const CSmallString GetTypeDescription(EABFdHType type);
 
 //------------------------------------------------------------------------------
+    // get number of samples
+    virtual int GetNumOfSamples(int ibin) const;
+
+    // set number of samples
+    virtual void SetNumOfSamples(int ibin,int nsamples);
+
     // get energy derivative and its error
     virtual double GetValue( int ibin,int icv,EProxyRealm realm) const;
 
 // section of private data -----------------------------------------------------
 private:
-    std::map<CSmallString,EABFdGType>   SupportedRealms;
-    EABFdGType                          Type;
+    std::map<CSmallString,EABFdHType>   SupportedRealms;
+    EABFdHType                          Type;
 };
 
 //------------------------------------------------------------------------------
 
-typedef boost::shared_ptr<CABFProxy_dG>    CABFProxy_dG_Ptr;
+typedef boost::shared_ptr<CABFProxy_dHdx>    CABFProxy_dHdx_Ptr;
 
 //------------------------------------------------------------------------------
 

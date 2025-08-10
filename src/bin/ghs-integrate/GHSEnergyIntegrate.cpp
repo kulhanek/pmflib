@@ -41,8 +41,8 @@
 // -------------
 #include <GHSIntegratorGPR0B.hpp>
 // -------------
-#include <ABFProxy_dG.hpp>
-#include <ABFProxy_mTdS.hpp>
+#include <ABFProxy_dGdx.hpp>
+#include <ABFProxy_mTdSdx.hpp>
 #include <PMFProxy_dH.hpp>
 
 //------------------------------------------------------------------------------
@@ -173,7 +173,7 @@ bool CGHSEnergyIntegrate::Run(void)
 
 // -------
     vout << format("   ** FES [from ABF dG(x)/dx]") << endl;
-    GDerProxy = CABFProxy_dG_Ptr(new CABFProxy_dG());
+    GDerProxy = CABFProxy_dGdx_Ptr(new CABFProxy_dGdx());
     GDerProxy->Init(Accu);
 
     FES = CEnergySurfacePtr(new CEnergySurface);
@@ -195,7 +195,7 @@ bool CGHSEnergyIntegrate::Run(void)
 
 // -------
     vout << format("   ** SES [from ABF -TdS(x)/dx]") << endl;
-    SDerProxy = CABFProxy_mTdS_Ptr(new CABFProxy_mTdS());
+    SDerProxy = CABFProxy_mTdSdx_Ptr(new CABFProxy_mTdSdx());
     SDerProxy->Init(Accu);
 
     SES = CEnergySurfacePtr(new CEnergySurface);

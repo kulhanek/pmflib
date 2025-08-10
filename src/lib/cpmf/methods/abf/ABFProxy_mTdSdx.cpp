@@ -19,8 +19,7 @@
 //     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 // =============================================================================
 
-#include <CSTProxy_mTdS.hpp>
-#include <CSTProxy_MTC.hpp>
+#include <ABFProxy_mTdSdx.hpp>
 #include <PMFConstants.hpp>
 
 //------------------------------------------------------------------------------
@@ -31,41 +30,20 @@ using namespace std;
 //------------------------------------------------------------------------------
 //==============================================================================
 
-CCSTProxy_mTdS::CCSTProxy_mTdS(void)
+CABFProxy_mTdSdx::CABFProxy_mTdSdx(void)
 {
-    Requires.push_back("CST");
+    Requires.push_back("ABF");
 
-    SupportedRealms["-TdS/dx"]      = CST_TdS;
-    SupportedRealms["mTdS/dx"]      = CST_TdS;
-
-    SupportedRealms["-TdS_LT/dx"]   = CST_TdS_LT;
-    SupportedRealms["mTdS_LT/dx"]   = CST_TdS_LT;
-
-    SupportedRealms["-TdS_LTFW/dx"] = CST_TdS_LTFW;
-    SupportedRealms["mTdS_LTFW/dx"] = CST_TdS_LTFW;
-
-    SupportedRealms["-TdS_LIFW/dx"] = CST_TdS_LIFW;
-    SupportedRealms["mTdS_LIFW/dx"] = CST_TdS_LIFW;
-
-    SupportedRealms["-TdS_LPFW/dx"] = CST_TdS_LPFW;
-    SupportedRealms["mTdS_LPFW/dx"] = CST_TdS_LPFW;
-
-    SupportedRealms["-TdS_LRFW/dx"] = CST_TdS_LRFW;
-    SupportedRealms["mTdS_LRFW/dx"] = CST_TdS_LRFW;
-
-    SupportedRealms["-TdS_LKFW/dx"] = CST_TdS_LKFW;
-    SupportedRealms["mTdS_LKFW/dx"] = CST_TdS_LKFW;
-
-    SupportedRealms["-TdS_II/dx"]   = CST_TdS_II;
-    SupportedRealms["mTdS_II/dx"]   = CST_TdS_II;
-
-    SupportedRealms["-TdS_IIFW/dx"] = CST_TdS_IIFW;
-    SupportedRealms["mTdS_IIFW/dx"] = CST_TdS_IIFW;
+//    SupportedRealms["dG/dx"]        = CST_dG;
+//    SupportedRealms["MICF/dx"]      = CST_MICF;
+//    SupportedRealms["MICFFW/dx"]    = CST_MICFFW;
+//    SupportedRealms["MICFPFW/dx"]   = CST_MICFPFW;
+//    SupportedRealms["MICFKFW/dx"]   = CST_MICFKFW;
 }
 
 //------------------------------------------------------------------------------
 
-CCSTProxy_mTdS::~CCSTProxy_mTdS(void)
+CABFProxy_mTdSdx::~CABFProxy_mTdSdx(void)
 {
 }
 
@@ -73,7 +51,7 @@ CCSTProxy_mTdS::~CCSTProxy_mTdS(void)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-bool CCSTProxy_mTdS::SetType(const CSmallString& realm)
+bool CABFProxy_mTdSdx::SetType(const CSmallString& realm)
 {
     if( SupportedRealms.count(realm) == 0 ) return(false);
     Realm = realm;
@@ -83,7 +61,7 @@ bool CCSTProxy_mTdS::SetType(const CSmallString& realm)
 
 //------------------------------------------------------------------------------
 
-void CCSTProxy_mTdS::SetType(ECSTTdSType type)
+void CABFProxy_mTdSdx::SetType(EABFTdSType type)
 {
     Type = type;
     Description = GetTypeDescription(Type);
@@ -91,47 +69,44 @@ void CCSTProxy_mTdS::SetType(ECSTTdSType type)
 
 //------------------------------------------------------------------------------
 
-const CSmallString CCSTProxy_mTdS::GetTypeDescription(ECSTTdSType type)
+const CSmallString CABFProxy_mTdSdx::GetTypeDescription(EABFTdSType type)
 {
     switch(type){
     // -------------------
-        case(CST_TdS):
-            return("CST -TdS(x)");
+        case(ABF_TdS_HH):
+            return("ABF -TdS(x)");
+
     // -------------------
-        case(CST_TdS_LT):
-            return("CST -TdS_LT(x)   cov(lambda,Epot)");
+        case(ABF_TdS_HP):
+            return("ABF -TdS(x) - cov(dH/dx,Epot)");
     // -------------------
-        case(CST_TdS_LTFW):
-            return("CST -TdS_LTFW(x) cov(lambda,Epot) - Fixman weighted");
+        case(ABF_TdS_HR):
+            return("ABF -TdS(x) - cov(dH/dx,Erst)");
     // -------------------
-        case(CST_TdS_II):
-            return("CST -TdS_II(x)   cov(ICF,Eint)");
+        case(ABF_TdS_HK):
+            return("ABF -TdS(x) - cov(dH/dx,Ekin)");
+
     // -------------------
-        case(CST_TdS_IIFW):
-            return("CST -TdS_IIFW(x) cov(ICF,Eint) - Fixman weighted");
+        case(ABF_TdS_BP):
+            return("ABF -TdS(x) - cov(bias,Epot)");
+    // -------------------
+        case(ABF_TdS_BR):
+            return("ABF -TdS(x) - cov(bias,Erst)");
+    // -------------------
+        case(ABF_TdS_BK):
+            return("ABF -TdS(x) -cov(bias,Ekin)");
+
     // -------------------
         default:
             RUNTIME_ERROR("unsupported type");
     }
 }
 
-//------------------------------------------------------------------------------
-
-CEnergyProxyPtr CCSTProxy_mTdS::GetEnergyCorrection(void)
-{
-    CEnergyProxyPtr ene_proxy;
-    if( Type == CST_TdS ){
-        ene_proxy = CCSTProxy_MTC_Ptr(new CCSTProxy_MTC);
-        ene_proxy->Init(Accu);
-    }
-    return(ene_proxy);
-}
-
 //==============================================================================
 //------------------------------------------------------------------------------
 //==============================================================================
 
-int CCSTProxy_mTdS::GetNumOfSamples(int ibin) const
+int CABFProxy_mTdSdx::GetNumOfSamples(int ibin) const
 {
     if( Accu == NULL ){
         RUNTIME_ERROR("Accu is NULL");
@@ -141,7 +116,7 @@ int CCSTProxy_mTdS::GetNumOfSamples(int ibin) const
 
 //------------------------------------------------------------------------------
 
-void CCSTProxy_mTdS::SetNumOfSamples(int ibin,int nsamples)
+void CABFProxy_mTdSdx::SetNumOfSamples(int ibin,int nsamples)
 {
     if( Accu == NULL ){
         RUNTIME_ERROR("Accu is NULL");
@@ -151,78 +126,98 @@ void CCSTProxy_mTdS::SetNumOfSamples(int ibin,int nsamples)
 
 //------------------------------------------------------------------------------
 
-double CCSTProxy_mTdS::GetValue(int ibin,int icv,EProxyRealm realm) const
+double CABFProxy_mTdSdx::GetValue(int ibin,int icv,EProxyRealm realm) const
 {
     if( Accu == NULL ){
         RUNTIME_ERROR("Accu is NULL");
     }
 
+    double  nsamples = Accu->GetData("NTDS",ibin);
     double  ncorr    = Accu->GetNCorr();
     double  temp     = Accu->GetTemperature();
-    double  mean     = 0.0; // sample mean
-    double  samvar   = 0.0; // sample variance
-    double  meanvar  = 0.0; // variance of sample mean
+    double  value    = 0.0;
 
-// do we have enough samples?
-    double nsamples    = GetNumOfSamples(ibin);
-    if( nsamples <= 0 ) return(mean);
 
-// get requested data
+    double  c11     = 0.0;
+    double  m2icf   = 0.0;
+    double  m2ene   = 0.0;
+
+    if( nsamples <= 0 ) return(value);
+
     switch(Type){
     // -------------------
-        case(CST_TdS_LT):{
-            double C        = Accu->GetData("C11LT",ibin,icv);
-            mean            = C / nsamples;
-            samvar          = 0.0;  // FIXME
-            meanvar         = 0.0;
+        case(ABF_TdS_HH):{
+            double m2pp = Accu->GetData("M2PP",ibin,icv);
+            double m2pn = Accu->GetData("M2PN",ibin,icv);
+            c11 = 0.25*(m2pp-m2pn)/nsamples;
+            m2icf   = Accu->GetData("M2HICF",ibin,icv);
+            m2ene   = Accu->GetData("M2ETOT",ibin);
         }
+        break;
+
+    // -------------------
+        case(ABF_TdS_HP):
+            c11     = Accu->GetData("C11HP",ibin,icv)/nsamples;
+            m2icf   = Accu->GetData("M2HICF",ibin,icv);
+            m2ene   = Accu->GetData("M2EPOT",ibin);
         break;
     // -------------------
-        case(CST_TdS_LTFW):{
-            double fwsum    = Accu->GetData("FWSUM",ibin);
-            double C        = Accu->GetData("C11LTFW",ibin,icv);
-            mean            = C / fwsum;
-            samvar          = 0.0;  // FIXME
-            meanvar         = 0.0;
-        }
+        case(ABF_TdS_HR):
+            c11     = Accu->GetData("C11HR",ibin,icv)/nsamples;
+            m2icf   = Accu->GetData("M2HICF",ibin,icv);
+            m2ene   = Accu->GetData("M2ERST",ibin);
         break;
     // -------------------
-        case(CST_TdS_II):{
-            double C        = Accu->GetData("C11II",ibin,icv);
-            mean            = C / nsamples;
-            samvar          = 0.0;  // FIXME
-            meanvar         = 0.0;
-        }
+        case(ABF_TdS_HK):
+            c11     = Accu->GetData("C11HK",ibin,icv)/nsamples;
+            m2icf   = Accu->GetData("M2HICF",ibin,icv);
+            m2ene   = Accu->GetData("M2EKIN",ibin);
         break;
     // -------------------
-        case(CST_TdS_IIFW):{
-            double fwsum    = Accu->GetData("FWSUM",ibin);
-            double C        = Accu->GetData("C11IIFW",ibin,icv);
-            mean            = C / fwsum;
-            samvar          = 0.0;  // FIXME
-            meanvar         = 0.0;
-        }
+        case(ABF_TdS_BP):
+            c11     = Accu->GetData("C11BP",ibin,icv)/nsamples;
+            m2icf   = Accu->GetData("M2BICF",ibin,icv);
+            m2ene   = Accu->GetData("M2EPOT",ibin);
         break;
+    // -------------------
+        case(ABF_TdS_BR):
+            c11     = Accu->GetData("C11BR",ibin,icv)/nsamples;
+            m2icf   = Accu->GetData("M2BICF",ibin,icv);
+            m2ene   = Accu->GetData("M2ERST",ibin);
+        break;
+    // -------------------
+        case(ABF_TdS_BK):
+            c11     = Accu->GetData("C11BK",ibin,icv)/nsamples;
+            m2icf   = Accu->GetData("M2BICF",ibin,icv);
+            m2ene   = Accu->GetData("M2EKIN",ibin);
+        break;
+
     // -------------------
         default:
             RUNTIME_ERROR("unsupported type");
     }
 
-// return result
     switch(realm){
-        // -------------------
-        case(E_PROXY_VALUE):
-            return( mean / (temp * PMF_Rgas) );
-        // -------------------
-        case(E_PROXY_SIGMA):
-            return( sqrt(samvar) / (temp * PMF_Rgas) );
-        // -------------------
-        case(E_PROXY_ERROR):
-            return( sqrt(ncorr * meanvar) / (temp * PMF_Rgas) );
-        // -------------------
+    // -------------------
+        case(E_PROXY_VALUE): {
+            return( c11  / (temp * PMF_Rgas) );
+        }
+    // -------------------
+        case(E_PROXY_SIGMA): {
+            // approximation
+            return( sqrt(m2icf / nsamples) * sqrt( m2ene / nsamples )  / (temp * PMF_Rgas) );
+        }
+    // -------------------
+        case(E_PROXY_ERROR): {
+            // approximation
+            return( sqrt(ncorr) * sqrt(m2icf / nsamples) * sqrt( m2ene / nsamples ) / sqrt(nsamples) / (temp * PMF_Rgas) );
+        }
+    // -------------------
         default:
             RUNTIME_ERROR("unsupported realm");
     }
+
+    return(value);
 }
 
 //==============================================================================

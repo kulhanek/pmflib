@@ -33,6 +33,7 @@ using namespace std;
 CCSTProxy_MTC::CCSTProxy_MTC(void)
 {
     Requires.push_back("CST");
+    Realm       = "MTC";
     Description = "CST E{MTC}";      // metric tensor correction
 }
 
@@ -42,37 +43,9 @@ CCSTProxy_MTC::~CCSTProxy_MTC(void)
 {
 }
 
-//------------------------------------------------------------------------------
-
-bool CCSTProxy_MTC::IsCompatible(CPMFAccumulatorPtr accu)
-{
-    if( accu->GetMethod() == "CST" ) return(true);
-    return(false);
-}
-
 //==============================================================================
 //------------------------------------------------------------------------------
 //==============================================================================
-
-int CCSTProxy_MTC::GetNumOfSamples(int ibin) const
-{
-    if( Accu == NULL ){
-        RUNTIME_ERROR("Accu is NULL");
-    }
-    return(Accu->GetData("NSAMPLES",ibin));
-}
-
-//------------------------------------------------------------------------------
-
-void CCSTProxy_MTC::SetNumOfSamples(int ibin,int nsamples)
-{
-    if( Accu == NULL ){
-        RUNTIME_ERROR("Accu is NULL");
-    }
-    Accu->SetData("NSAMPLES",ibin,nsamples);
-}
-
-//------------------------------------------------------------------------------
 
 double CCSTProxy_MTC::GetValue(int ibin,EProxyRealm realm) const
 {

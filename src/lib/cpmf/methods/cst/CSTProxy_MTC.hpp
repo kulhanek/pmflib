@@ -36,17 +36,8 @@ public:
     ~CCSTProxy_MTC(void);
 
 //------------------------------------------------------------------------------
-    // get number of samples
-    virtual int GetNumOfSamples(int ibin) const;
-
-    // set number of samples
-    virtual void SetNumOfSamples(int ibin,int nsamples);
-
     // get energy derivative and its error
     virtual double GetValue( int ibin,EProxyRealm realm) const;
-
-    // is compatible with PMF Accumulator method
-    static bool IsCompatible(CPMFAccumulatorPtr accu);
 };
 
 //------------------------------------------------------------------------------

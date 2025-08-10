@@ -33,6 +33,7 @@ using namespace std;
 CMTDProxy_dG::CMTDProxy_dG(void)
 {
     Requires.push_back("MTD");
+    Realm       = "dG";
     Description = "MTD dG(x)";
 }
 
@@ -54,17 +55,6 @@ bool CMTDProxy_dG::IsWTMeta(void)
     }
 
     return( Accu->HasSectionData("MTD-WT") );
-}
-
-//------------------------------------------------------------------------------
-
-int CMTDProxy_dG::GetNumOfSamples(int ibin) const
-{
-    if( Accu == NULL ){
-        RUNTIME_ERROR("Accu is NULL");
-    }
-
-    return( Accu->GetData("NSAMPLES",ibin) );
 }
 
 //------------------------------------------------------------------------------

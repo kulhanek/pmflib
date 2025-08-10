@@ -1,10 +1,10 @@
-#ifndef ABFProxy_mTdS_H
-#define ABFProxy_mTdS_H
+#ifndef CSTProxy_dH_H
+#define CSTProxy_dH_H
 // =============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
 //    Copyright (C) 2025 Petr Kulhanek, kulhanek@chemi.muni.cz
-//    Copyright (C) 2021 Petr Kulhanek, kulhanek@chemi.muni.cz
+//    Copyright (C) 2024 Petr Kulhanek, kulhanek@chemi.muni.cz
 //
 //     This program is free software; you can redistribute it and/or modify
 //     it under the terms of the GNU General Public License as published by
@@ -26,16 +26,10 @@
 
 //------------------------------------------------------------------------------
 
-enum EABFTdSType {
-    ABF_TdS_HH,
-
-    ABF_TdS_HP,
-    ABF_TdS_HR,
-    ABF_TdS_HK,
-
-    ABF_TdS_BP,
-    ABF_TdS_BR,
-    ABF_TdS_BK,
+enum ECSTdHdxType {
+    CST_dH,
+//    CST_C11PP,
+//    CST_C11PPFW,
 };
 
 //------------------------------------------------------------------------------
@@ -43,21 +37,21 @@ enum EABFTdSType {
 /** \brief ABF proxy providing mean force for the free energy integration
 */
 
-class PMF_PACKAGE CABFProxy_mTdS : public CEnergyDerProxy {
+class PMF_PACKAGE CCSTProxy_dHdx : public CEnergyDerProxy {
 public:
 // constructor and destructor --------------------------------------------------
-    CABFProxy_mTdS(void);
-    ~CABFProxy_mTdS(void);
+    CCSTProxy_dHdx(void);
+    ~CCSTProxy_dHdx(void);
 
 //------------------------------------------------------------------------------
     // set type if it is supported
     virtual bool SetType(const CSmallString& realm);
 
     // set type
-    void SetType(EABFTdSType type);
+    void SetType(ECSTdHdxType type);
 
     // get type description
-    const CSmallString GetTypeDescription(EABFTdSType type);
+    const CSmallString GetTypeDescription(ECSTdHdxType type);
 
 //------------------------------------------------------------------------------
     // get number of samples
@@ -71,13 +65,13 @@ public:
 
 // section of private data -----------------------------------------------------
 private:
-    std::map<CSmallString,EABFTdSType>  SupportedRealms;
-    EABFTdSType                         Type;
+    std::map<CSmallString,ECSTdHdxType>   SupportedRealms;
+    ECSTdHdxType                          Type;
 };
 
 //------------------------------------------------------------------------------
 
-typedef boost::shared_ptr<CABFProxy_mTdS>    CABFProxy_mTdS_Ptr;
+typedef boost::shared_ptr<CCSTProxy_dHdx>    CCSTProxy_dHdx_Ptr;
 
 //------------------------------------------------------------------------------
 

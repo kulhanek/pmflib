@@ -19,7 +19,7 @@
 //     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 // =============================================================================
 
-#include <CSTProxy_dH.hpp>
+#include <CSTProxy_dHdx.hpp>
 #include <PMFConstants.hpp>
 
 //------------------------------------------------------------------------------
@@ -30,7 +30,7 @@ using namespace std;
 //------------------------------------------------------------------------------
 //==============================================================================
 
-CCSTProxy_dH::CCSTProxy_dH(void)
+CCSTProxy_dHdx::CCSTProxy_dHdx(void)
 {
     SetType(CST_dH);
 
@@ -39,13 +39,13 @@ CCSTProxy_dH::CCSTProxy_dH(void)
 
 //------------------------------------------------------------------------------
 
-CCSTProxy_dH::~CCSTProxy_dH(void)
+CCSTProxy_dHdx::~CCSTProxy_dHdx(void)
 {
 }
 
 //------------------------------------------------------------------------------
 
-bool CCSTProxy_dH::SetType(const CSmallString& realm)
+bool CCSTProxy_dHdx::SetType(const CSmallString& realm)
 {
     if( SupportedRealms.count(realm) == 0 ) return(false);
     Realm = realm;
@@ -55,7 +55,7 @@ bool CCSTProxy_dH::SetType(const CSmallString& realm)
 
 //------------------------------------------------------------------------------
 
-void CCSTProxy_dH::SetType(ECSTdHType type)
+void CCSTProxy_dHdx::SetType(ECSTdHdxType type)
 {
     Type = type;
     Description = GetTypeDescription(Type);
@@ -63,7 +63,7 @@ void CCSTProxy_dH::SetType(ECSTdHType type)
 
 //------------------------------------------------------------------------------
 
-const CSmallString CCSTProxy_dH::GetTypeDescription(ECSTdHType type)
+const CSmallString CCSTProxy_dHdx::GetTypeDescription(ECSTdHdxType type)
 {
     switch(type){
     // -------------------
@@ -103,7 +103,7 @@ const CSmallString CCSTProxy_dH::GetTypeDescription(ECSTdHType type)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-int CCSTProxy_dH::GetNumOfSamples(int ibin) const
+int CCSTProxy_dHdx::GetNumOfSamples(int ibin) const
 {
     if( Accu == NULL ){
         RUNTIME_ERROR("Accu is NULL");
@@ -113,7 +113,7 @@ int CCSTProxy_dH::GetNumOfSamples(int ibin) const
 
 //------------------------------------------------------------------------------
 
-void CCSTProxy_dH::SetNumOfSamples(int ibin,int nsamples)
+void CCSTProxy_dHdx::SetNumOfSamples(int ibin,int nsamples)
 {
     if( Accu == NULL ){
         RUNTIME_ERROR("Accu is NULL");
@@ -123,7 +123,7 @@ void CCSTProxy_dH::SetNumOfSamples(int ibin,int nsamples)
 
 //------------------------------------------------------------------------------
 
-double CCSTProxy_dH::GetValue(int ibin,int icv,EProxyRealm realm) const
+double CCSTProxy_dHdx::GetValue(int ibin,int icv,EProxyRealm realm) const
 {
     if( Accu == NULL ){
         RUNTIME_ERROR("Accu is NULL");

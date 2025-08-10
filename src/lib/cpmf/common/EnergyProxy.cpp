@@ -58,6 +58,20 @@ void CEnergyProxy::Init(CPMFAccumulatorPtr accu)
     Accu = accu;
 }
 
+//------------------------------------------------------------------------------
+
+bool CEnergyProxy::IsCompatible(CPMFAccumulatorPtr accu)
+{
+    return( std::find(Requires.begin(), Requires.end(), std::string(accu->GetMethod())) != Requires.end());
+}
+
+//------------------------------------------------------------------------------
+
+bool CEnergyProxy::SetType(const CSmallString& realm)
+{
+    return(false);
+}
+
 //==============================================================================
 //------------------------------------------------------------------------------
 //==============================================================================
@@ -105,6 +119,16 @@ int CEnergyProxy::GetNumOfSamples(int ibin) const
         RUNTIME_ERROR("Accu is NULL");
     }
     return(Accu->GetData("NSAMPLES",ibin));
+}
+
+//------------------------------------------------------------------------------
+
+void CEnergyProxy::SetNumOfSamples(int ibin,int nsamples)
+{
+    if( Accu == NULL ){
+        RUNTIME_ERROR("Accu is NULL");
+    }
+    Accu->SetData("NSAMPLES",ibin,nsamples);
 }
 
 //------------------------------------------------------------------------------

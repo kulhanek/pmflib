@@ -31,9 +31,10 @@ SET(CPMF_METHODS_SRC
         methods/pmf/GHSIntegratorGPRcA.cpp
 
     # ABF
-        methods/abf/ABFProxy_dG.cpp
+        methods/abf/ABFProxy_dGdx.cpp
+        methods/abf/ABFProxy_dHdx.cpp
+        methods/abf/ABFProxy_mTdSdx.cpp
         methods/abf/ABFProxy_dH.cpp
-        methods/abf/ABFProxy_mTdS.cpp
 
     # MTD
         methods/mtd/MTDProxy_dG.cpp
@@ -45,9 +46,10 @@ SET(CPMF_METHODS_SRC
         methods/rst/RSTAccumulator.cpp
 
     # CST
-        methods/cst/CSTProxy_dG.cpp
+        methods/cst/CSTProxy_dGdx.cpp
+        methods/cst/CSTProxy_dHdx.cpp
+        methods/cst/CSTProxy_mTdSdx.cpp
         methods/cst/CSTProxy_dH.cpp
-        methods/cst/CSTProxy_mTdS.cpp
         methods/cst/CSTProxy_MTC.cpp
 
     # STM

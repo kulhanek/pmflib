@@ -2,7 +2,7 @@
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
 //    Copyright (C) 2025 Petr Kulhanek, kulhanek@chemi.muni.cz
-//    Copyright (C) 2021 Petr Kulhanek, kulhanek@chemi.muni.cz
+//    Copyright (C) 2024 Petr Kulhanek, kulhanek@chemi.muni.cz
 //
 //     This program is free software; you can redistribute it and/or modify
 //     it under the terms of the GNU General Public License as published by
@@ -19,7 +19,8 @@
 //     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 // =============================================================================
 
-#include <ABFProxy_dG.hpp>
+#include <ABFProxy_dHdx.hpp>
+#include <PMFConstants.hpp>
 
 //------------------------------------------------------------------------------
 
@@ -29,7 +30,7 @@ using namespace std;
 //------------------------------------------------------------------------------
 //==============================================================================
 
-CABFProxy_dG::CABFProxy_dG(void)
+CABFProxy_dHdx::CABFProxy_dHdx(void)
 {
     Requires.push_back("ABF");
 
@@ -42,7 +43,7 @@ CABFProxy_dG::CABFProxy_dG(void)
 
 //------------------------------------------------------------------------------
 
-CABFProxy_dG::~CABFProxy_dG(void)
+CABFProxy_dHdx::~CABFProxy_dHdx(void)
 {
 }
 
@@ -50,7 +51,7 @@ CABFProxy_dG::~CABFProxy_dG(void)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-bool CABFProxy_dG::SetType(const CSmallString& realm)
+bool CABFProxy_dHdx::SetType(const CSmallString& realm)
 {
     if( SupportedRealms.count(realm) == 0 ) return(false);
     Realm = realm;
@@ -60,7 +61,7 @@ bool CABFProxy_dG::SetType(const CSmallString& realm)
 
 //------------------------------------------------------------------------------
 
-void CABFProxy_dG::SetType(EABFdGType type)
+void CABFProxy_dHdx::SetType(EABFdHType type)
 {
     Type = type;
     Description = GetTypeDescription(Type);
@@ -68,12 +69,15 @@ void CABFProxy_dG::SetType(EABFdGType type)
 
 //------------------------------------------------------------------------------
 
-const CSmallString CABFProxy_dG::GetTypeDescription(EABFdGType type)
+const CSmallString CABFProxy_dHdx::GetTypeDescription(EABFdHType type)
 {
     switch(type){
     // -------------------
-        case(ABF_MICF):
-            return("ABF dG(x)");
+        case(ABF_dH):
+            return("ABF dH(x) (based on derivatives)");
+    // -------------------
+        case(ABF_MICFP):
+            return("ABF ICFP(x)");
     // -------------------
         default:
             RUNTIME_ERROR("unsupported type");
@@ -84,46 +88,98 @@ const CSmallString CABFProxy_dG::GetTypeDescription(EABFdGType type)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-double CABFProxy_dG::GetValue(int ibin,int icv,EProxyRealm realm) const
+int CABFProxy_dHdx::GetNumOfSamples(int ibin) const
+{
+    if( Accu == NULL ){
+        RUNTIME_ERROR("Accu is NULL");
+    }
+    return(Accu->GetData("NTDS",ibin));
+}
+
+//------------------------------------------------------------------------------
+
+void CABFProxy_dHdx::SetNumOfSamples(int ibin,int nsamples)
+{
+    if( Accu == NULL ){
+        RUNTIME_ERROR("Accu is NULL");
+    }
+    Accu->SetData("NTDS",ibin,nsamples);
+}
+
+//------------------------------------------------------------------------------
+
+double CABFProxy_dHdx::GetValue(int ibin,int icv,EProxyRealm realm) const
 {
     if( Accu == NULL ){
         RUNTIME_ERROR("Accu is NULL");
     }
 
-    double  nsamples = 0.0;
-    double  micf     = 0.0;
-    double  m2icf    = 0.0;
-    double  ncorr    = Accu->GetNCorr();
+    double value = 0.0;
+    double ncorr = Accu->GetNCorr();
+    double temp  = Accu->GetTemperature();
 
     switch(Type){
     // -------------------
-        case(ABF_MICF):
-            nsamples = Accu->GetData("NSAMPLES",ibin);
-            micf     = Accu->GetData("MICF",ibin,icv);
-            m2icf    = Accu->GetData("M2ICF",ibin,icv);
+        case(ABF_dH): {
+            double  nsamples    = Accu->GetData("NTDS",ibin);
+            double  micfp       = Accu->GetData("MICFP",ibin,icv);
+            double  m2icfp      = Accu->GetData("M2ICFP",ibin,icv);
+
+            double  chp         = Accu->GetData("C11PP",ibin,icv) / nsamples;
+            double  m2eint      = Accu->GetData("M2EINT",ibin);
+
+            if( nsamples <= 0 ) return(value);
+
+            double value = micfp - chp / (temp * PMF_Rgas);
+            double sicfp = sqrt(m2icfp / nsamples);
+            double shp  = sqrt(m2icfp / nsamples) * sqrt( m2eint / nsamples )  / (temp * PMF_Rgas);
+
+            // approximation
+            double sigma = sqrt( sicfp*sicfp + shp*shp );
+
+            switch(realm){
+                // -------------------
+                case(E_PROXY_VALUE):
+                    return( value );
+                // -------------------
+                case(E_PROXY_SIGMA):
+                    return( sigma );
+                // -------------------
+                case(E_PROXY_ERROR):
+                    return( sqrt(ncorr) * sigma / sqrt(nsamples) );
+                // -------------------
+                default:
+                    RUNTIME_ERROR("unsupported realm");
+            }
+        }
+        break;
+    // -------------------
+        case(ABF_MICFP): {
+            double  nsamples = Accu->GetData("NTDS",ibin);
+            double  micf     = Accu->GetData("MICFP",ibin,icv);
+            double  m2icf    = Accu->GetData("M2ICFP",ibin,icv);
+
+            if( nsamples <= 0 ) return(value);
+
+            switch(realm){
+                // -------------------
+                case(E_PROXY_VALUE):
+                    return( micf );
+                // -------------------
+                case(E_PROXY_SIGMA):
+                    return( sqrt(m2icf / nsamples) );
+                // -------------------
+                case(E_PROXY_ERROR):
+                    return( sqrt(m2icf * ncorr) / nsamples );
+                // -------------------
+                default:
+                    RUNTIME_ERROR("unsupported realm");
+            }
+        }
         break;
     // -------------------
         default:
             RUNTIME_ERROR("unsupported type");
-    }
-
-    double value = 0.0;
-    if( nsamples <= 0 ) return(value);
-
-    switch(realm){
-// mean force
-        // -------------------
-        case(E_PROXY_VALUE):
-            return( micf );
-        // -------------------
-        case(E_PROXY_SIGMA):
-            return( sqrt(m2icf / nsamples) );
-        // -------------------
-        case(E_PROXY_ERROR):
-            return( sqrt(m2icf * ncorr) / nsamples );
-        // -------------------
-        default:
-            RUNTIME_ERROR("unsupported realm");
     }
 
     return(value);
@@ -132,6 +188,3 @@ double CABFProxy_dG::GetValue(int ibin,int icv,EProxyRealm realm) const
 //==============================================================================
 //------------------------------------------------------------------------------
 //==============================================================================
-
-
-
