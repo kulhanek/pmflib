@@ -3,6 +3,7 @@
 // =============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
+//    Copyright (C) 2025 Petr Kulhanek, kulhanek@chemi.muni.cz
 //    Copyright (C) 2021 Petr Kulhanek, kulhanek@chemi.muni.cz
 //
 //     This program is free software; you can redistribute it and/or modify
@@ -27,10 +28,12 @@
 
 //------------------------------------------------------------------------------
 
+// if a given realm cannot provide a value, return zero.
+
 enum EProxyRealm {
-    E_PROXY_VALUE        = 1,  // energy
-    E_PROXY_SIGMA        = 2,  // fluctuation of energy
-    E_PROXY_ERROR        = 3,  // error of energy
+    E_PROXY_VALUE        = 1,  // sample mean
+    E_PROXY_SIGMA        = 2,  // sample variance (fluctuation)
+    E_PROXY_ERROR        = 3,  // variance of sample mean (error estimate)
 };
 
 //------------------------------------------------------------------------------

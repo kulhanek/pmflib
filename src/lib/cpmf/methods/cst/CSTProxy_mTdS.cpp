@@ -117,71 +117,55 @@ double CCSTProxy_mTdS::GetValue(int ibin,int icv,EProxyRealm realm) const
         RUNTIME_ERROR("Accu is NULL");
     }
 
-    double  nsamples = Accu->GetData("NTDS",ibin);
     double  ncorr    = Accu->GetNCorr();
+    double  temp     = Accu->GetTemperature();
+    double  mean     = 0.0; // sample mean
+    double  samvar   = 0.0; // sample variance
+    double  meanvar  = 0.0; // variance of sample mean
 
-    double  c11     = 0.0;
-    double  m2ene   = 0.0;
-    double  m2icf   = 0.0;
+// do we have enough samples?
+    double nsamples    = GetNumOfSamples(ibin);
+    if( nsamples <= 0 ) return(mean);
 
+// get requested data
     switch(Type){
     // -------------------
         case(CST_TdS_LT):{
-            c11     = Accu->GetData("C11LT",ibin,icv)/nsamples;;
-            m2icf   = Accu->GetData("M2LAMTDS",ibin,icv);
-            m2ene   = Accu->GetData("M2ETOT",ibin);
+            double C        = Accu->GetData("C11LT",ibin,icv);
+            mean            = C / nsamples;
+            samvar          = 0.0;  // FIXME
+            meanvar         = 0.0;
         }
         break;
     // -------------------
-        case(CST_TdS_LTFW):
-            c11     = Accu->GetData("C11LTFW",ibin,icv)/nsamples;;
-            m2icf   = Accu->GetData("M2LAMTDSFW",ibin,icv);
-            m2ene   = Accu->GetData("M2EPOTFW",ibin);
+        case(CST_TdS_LTFW):{
+            double fwsum    = Accu->GetData("FWSUM",ibin);
+            double C        = Accu->GetData("C11LTFW",ibin,icv);
+            mean            = C / fwsum;
+            samvar          = 0.0;  // FIXME
+            meanvar         = 0.0;
+        }
         break;
-//    // -------------------
-//        case(CST_TdS_HR):
-//            c11     = Accu->GetData("C11HR",ibin,icv)/nsamples;;
-//            m2icf   = Accu->GetData("M2HICF",ibin,icv);
-//            m2ene   = Accu->GetData("M2ERST",ibin);
-//        break;
-//    // -------------------
-//        case(CST_TdS_HK):
-//            c11     = Accu->GetData("C11HK",ibin,icv)/nsamples;;
-//            m2icf   = Accu->GetData("M2HICF",ibin,icv);
-//            m2ene   = Accu->GetData("M2EKIN",ibin);
-//        break;
     // -------------------
         default:
             RUNTIME_ERROR("unsupported type");
     }
 
-    double  temp     = Accu->GetTemperature();
-
-    double value = 0.0;
-    if( nsamples <= 0 ) return(value);
-
+// return result
     switch(realm){
-    // -------------------
-        case(E_PROXY_VALUE): {
-            // negative value due to lambda vs dG/dx
-            return( c11 / (temp * PMF_Rgas) );
-        }
-    // -------------------
-        case(E_PROXY_SIGMA): {
-            // approximation
-            return( sqrt(m2icf / nsamples) * sqrt( m2ene / nsamples )  / (temp * PMF_Rgas) );
-        }
-    // -------------------
-        case(E_PROXY_ERROR): {
-            // approximation
-            return( sqrt(ncorr) * sqrt(m2icf / nsamples) * sqrt( m2ene / nsamples ) / sqrt(nsamples) / (temp * PMF_Rgas) );
-        }
-    // -------------------
+        // -------------------
+        case(E_PROXY_VALUE):
+            return( mean / (temp * PMF_Rgas) );
+        // -------------------
+        case(E_PROXY_SIGMA):
+            return( sqrt(samvar) / (temp * PMF_Rgas) );
+        // -------------------
+        case(E_PROXY_ERROR):
+            return( sqrt(ncorr * meanvar) / (temp * PMF_Rgas) );
+        // -------------------
         default:
             RUNTIME_ERROR("unsupported realm");
     }
-
-    return(value);
 }
 
 //==============================================================================

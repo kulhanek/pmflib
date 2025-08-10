@@ -59,10 +59,6 @@ subroutine cst_accu_alloc
 
 
 ! fdhtds  ----------------------------------------------------------------------
-
-
-
-
 ! accumulator setup for entropy and enthalpy
 
     if( fdhtds ) then
@@ -176,6 +172,8 @@ subroutine cst_accu_clear
 ! fdhtds  = enthalpy/entropy calculations
     if( fdhtds ) then
         ntds            = 0.0d0
+        fwsum           = 0.0d0
+        fwsum2          = 0.0d0
         mlamtds(:)      = 0.0d0
         m2lamtds(:)     = 0.0d0
         mlamtdsfw(:)    = 0.0d0
@@ -634,8 +632,9 @@ subroutine cst_accu_write(iounit)
 ! fdhtds  ----------------------------------------------------------------------
 
     if( fdhtds ) then
-        call cst_accu_write_counter_B(iounit,glbidx,'NTDS',ntds)
-        call cst_accu_write_counter_B(iounit,glbidx,'FWSUM',fwsum)
+        call cst_accu_write_counter_B(iounit,glbidx,'NTDS',     ntds)
+        call cst_accu_write_counter_B(iounit,glbidx,'FWSUM',    fwsum)
+        call cst_accu_write_counter_B(iounit,glbidx,'FWSUM2',   fwsum2)
 
         call cst_accu_write_mean_M(iounit,glbidx,'MLAMTDS',   mlamtds,   'M2LAMTDS',   m2lamtds,   'NTDS')
         call cst_accu_write_mean_M(iounit,glbidx,'MLAMTDSFW', mlamtdsfw, 'M2LAMTDSFW', m2lamtdsfw, 'FWSUM')
@@ -833,8 +832,9 @@ subroutine cst_accu_add_dhTds
 
     lfw = fwhist(hist_len+hist_fidx)
 
-    fwsum = fwsum + lfw
-    invw = lfw / fwsum
+    fwsum   = fwsum + lfw
+    invw    = lfw / fwsum
+    fwsum2  = fwsum2 + lfw*lfw
 
 ! other data
     lepot        = epothist(hist_len+hist_fidx)

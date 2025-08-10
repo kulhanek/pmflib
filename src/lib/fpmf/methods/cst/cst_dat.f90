@@ -199,6 +199,7 @@ real(PMFDP),allocatable     :: m2lambda(:)      ! M2 of lambdas
 ! fdhtds  ----------------------------------------------------------------------
 real(PMFDP)                 :: ntds             ! number of step for enthalpy and entropy calculations
 real(PMFDP)                 :: fwsum            ! Fixman weights sum
+real(PMFDP)                 :: fwsum2           ! sum of Fixman weights squared
 
 real(PMFDP),allocatable     :: mlamtds(:)       ! mean of ICF - hamiltonian
 real(PMFDP),allocatable     :: m2lamtds(:)      ! M2 of ICF - hamiltonian

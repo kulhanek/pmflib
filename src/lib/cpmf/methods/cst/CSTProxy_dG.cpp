@@ -142,63 +142,90 @@ double CCSTProxy_dG::GetValue(int ibin,int icv,EProxyRealm realm) const
     }
 
     double  ncorr    = Accu->GetNCorr();
-    double  nsamples = 0.0;
-    double  micf     = 0.0;
-    double  m2icf    = 0.0;
+    double  mean     = 0.0; // sample mean
+    double  samvar   = 0.0; // sample variance
+    double  meanvar  = 0.0; // variance of sample mean
 
+// do we have enough samples?
+    double nsamples    = GetNumOfSamples(ibin);
+    if( nsamples <= 0 ) return(mean);
+
+// get requested data
     switch(Type){
     // -------------------
         case(CST_dG): {
-            nsamples = Accu->GetData("NSAMPLES",ibin);
-            micf     = Accu->GetData("MLAMBDA",ibin,icv);
-            m2icf    = Accu->GetData("M2LAMBDA",ibin,icv);
             // this requires MTC correction
+            mean        = Accu->GetData("MLAMBDA",ibin,icv);
+            double M2   = Accu->GetData("M2LAMBDA",ibin,icv);
+            samvar      = M2 / nsamples;
+            meanvar     = samvar / nsamples;
         }
         break;
     // ------------------
         case(CST_MICF): {
-            nsamples = Accu->GetData("NTDS",ibin);
-            micf     = Accu->GetData("MICF",ibin,icv);
-            m2icf    = Accu->GetData("M2ICF",ibin,icv);
+            mean        = Accu->GetData("MICF",ibin,icv);
+            double M2   = Accu->GetData("M2ICF",ibin,icv);
+            samvar      = M2 / nsamples;
+            meanvar     = samvar / nsamples;
         }
         break;
     // -------------------
         case(CST_MICFFW): {
-            double mfw  = Accu->GetData("MFWTDS",ibin);
-            double m2fw = Accu->GetData("M2FWTDS",ibin);
+            double fwsum    = Accu->GetData("FWSUM",ibin);
+            double fwsum2   = Accu->GetData("FWSUM2",ibin);
 
-            nsamples    = Accu->GetData("NTDS",ibin);
-            double mup  = Accu->GetData("MICFFW",ibin,icv);
-            double m2up = Accu->GetData("M2ICFFW",ibin,icv);
+            mean            = Accu->GetData("MICFFW",ibin,icv);
+            double M2       = Accu->GetData("M2ICFFW",ibin,icv);
 
-            micf  = mup / mfw;
-            m2icf = micf*micf * ( m2up/(mup*mup) + m2fw/(mfw*mfw) );
+            // https://seismo.berkeley.edu/~kirchner/Toolkits/Toolkit_12.pdf
+
+            // number of effective measurements
+            double neff = fwsum2 / (fwsum * fwsum);
+
+            // unbiased weighted sample variance
+            samvar          = M2 / fwsum * neff / (neff - 1.0);
+
+            // variance of the weighted mean
+            // unbiased importance weights
+            meanvar         = samvar / neff;
         }
         break;
     // -------------------
         case(CST_MICFPFW):  {
-            double mfw  = Accu->GetData("MFWTDS",ibin);
-            double m2fw = Accu->GetData("M2FWTDS",ibin);
+            double fwsum    = Accu->GetData("FWSUM",ibin);
+            double fwsum2   = Accu->GetData("FWSUM2",ibin);
 
-            nsamples    = Accu->GetData("NTDS",ibin);
-            double mup  = Accu->GetData("MICFPFW",ibin,icv);
-            double m2up = Accu->GetData("M2ICFPFW",ibin,icv);
+            mean            = Accu->GetData("MICFPFW",ibin,icv);
+            double M2       = Accu->GetData("M2ICFPFW",ibin,icv);
 
-            micf  = mup / mfw;
-            m2icf = micf*micf * ( m2up/(mup*mup) + m2fw/(mfw*mfw) );
+            // number of effective measurements
+            double neff = fwsum2 / (fwsum * fwsum);
+
+            // unbiased weighted sample variance
+            samvar          = M2 / fwsum * neff / (neff - 1.0);
+
+            // variance of the weighted mean
+            // unbiased importance weights
+            meanvar         = samvar / neff;
         }
         break;
     // -------------------
         case(CST_MICFKFW):  {
-            double mfw  = Accu->GetData("MFWTDS",ibin);
-            double m2fw = Accu->GetData("M2FWTDS",ibin);
+            double fwsum    = Accu->GetData("FWSUM",ibin);
+            double fwsum2   = Accu->GetData("FWSUM2",ibin);
 
-            nsamples    = Accu->GetData("NTDS",ibin);
-            double mup  = Accu->GetData("MICFKFW",ibin,icv);
-            double m2up = Accu->GetData("M2ICFKFW",ibin,icv);
+            mean            = Accu->GetData("MICFKFW",ibin,icv);
+            double M2       = Accu->GetData("M2ICFKFW",ibin,icv);
 
-            micf  = mup / mfw;
-            m2icf = micf*micf * ( m2up/(mup*mup) + m2fw/(mfw*mfw) );
+            // number of effective measurements
+            double neff = fwsum2 / (fwsum * fwsum);
+
+            // unbiased weighted sample variance
+            samvar          = M2 / fwsum * neff / (neff - 1.0);
+
+            // variance of the weighted mean
+            // unbiased importance weights
+            meanvar         = samvar / neff;
         }
         break;
     // -------------------
@@ -206,26 +233,21 @@ double CCSTProxy_dG::GetValue(int ibin,int icv,EProxyRealm realm) const
             RUNTIME_ERROR("unsupported type");
     }
 
-    double value = 0.0;
-    if( nsamples <= 0 ) return(value);
-
+// return result
     switch(realm){
-// mean force
         // -------------------
         case(E_PROXY_VALUE):
-            return( micf );
+            return( mean );
         // -------------------
         case(E_PROXY_SIGMA):
-            return( sqrt(m2icf / nsamples) );
+            return( sqrt(samvar) );
         // -------------------
         case(E_PROXY_ERROR):
-            return( sqrt(m2icf * ncorr) / nsamples );
+            return( sqrt(ncorr * meanvar) );
         // -------------------
         default:
             RUNTIME_ERROR("unsupported realm");
     }
-
-    return(value);
 }
 
 //==============================================================================

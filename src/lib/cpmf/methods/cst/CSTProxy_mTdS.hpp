@@ -26,12 +26,16 @@
 //------------------------------------------------------------------------------
 
 enum ECSTTdSType {
-    CST_TdS_LT,
-    CST_TdS_LTFW,
-    CST_TdS_LIFW,
-    CST_TdS_LPFW,
-    CST_TdS_LRFW,
-    CST_TdS_LKFW,
+    CST_TdS_LT,         // Cov(lambda,Etot)
+
+    CST_TdS_LTFW,       // Cov(lambda,Etot) - Fixman weighted
+    CST_TdS_LIFW,       // Cov(lambda,Eint) - Fixman weighted
+    CST_TdS_LPFW,       // Cov(lambda,Epot) - Fixman weighted
+    CST_TdS_LRFW,       // Cov(lambda,Erst) - Fixman weighted
+    CST_TdS_LKFW,       // Cov(lambda,Ekin) - Fixman weighted
+
+    CST_TdS_II,         // Cov(ICF,Eint)
+    CST_TdS_IIFW,       // Cov(ICF,Eint) - Fixman weighted
 };
 
 //------------------------------------------------------------------------------
@@ -59,7 +63,7 @@ public:
     // get energy derivative and its error
     virtual double GetValue( int ibin,int icv,EProxyRealm realm) const;
 
-    // is compatible with PMFAccumulator method
+    // is compatible with PMF Accumulator method
     static bool IsCompatible(CPMFAccumulatorPtr accu);
 
 // section of private data -----------------------------------------------------
