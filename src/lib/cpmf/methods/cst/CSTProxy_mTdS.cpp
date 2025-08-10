@@ -59,27 +59,19 @@ void CCSTProxy_mTdS::SetType(ECSTTdSType type)
     switch(Type){
     // -------------------
         case(CST_TdS_LT):
-            Provide = "CST -TdS(x)^{c}";    // entropy of the constrained system
+            Provide = "CST -TdS_LT(x)   cov(lambda,Epot)";
         break;
     // -------------------
         case(CST_TdS_LTFW):
-            Provide = "CST -TdS(x)^{c} cov(dH/dx,Epot)";    // entropy of the constrained system  - contribution
+            Provide = "CST -TdS_LTFW(x) cov(lambda,Epot) - Fixman weighted";
         break;
     // -------------------
-        case(CST_TdS_LIFW):
-            Provide = "CST -TdS(x)^{c} cov(dH/dx,Erst)";    // entropy of the constrained system  - contribution
+        case(CST_TdS_II):
+            Provide = "CST -TdS_II(x)   cov(ICF,Eint)";
         break;
     // -------------------
-        case(CST_TdS_LPFW):
-            Provide = "CST -TdS(x)^{c} cov(dH/dx,Ekin)";    // entropy of the constrained system  - contribution
-        break;
-    // -------------------
-        case(CST_TdS_LRFW):
-            Provide = "CST -TdS(x)^{c} cov(dH/dx,Ekin)";    // entropy of the constrained system  - contribution
-        break;
-    // -------------------
-        case(CST_TdS_LKFW):
-            Provide = "CST -TdS(x)^{c} cov(dH/dx,Ekin)";    // entropy of the constrained system  - contribution
+        case(CST_TdS_IIFW):
+            Provide = "CST -TdS_IIFW(x) cov(ICF,Eint) - Fixman weighted";
         break;
     // -------------------
         default:
