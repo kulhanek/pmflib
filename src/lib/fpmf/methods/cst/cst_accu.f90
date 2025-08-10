@@ -180,8 +180,6 @@ subroutine cst_accu_clear
         m2lamtds(:)     = 0.0d0
         mlamtdsfw(:)    = 0.0d0
         m2lamtdsfw(:)   = 0.0d0
-        mfwtds          = 0.0d0
-        m2fwtds         = 0.0d0
 
         metot       = 0.0d0
         m2etot      = 0.0d0
@@ -637,10 +635,10 @@ subroutine cst_accu_write(iounit)
 
     if( fdhtds ) then
         call cst_accu_write_counter_B(iounit,glbidx,'NTDS',ntds)
+        call cst_accu_write_counter_B(iounit,glbidx,'FWSUM',fwsum)
 
         call cst_accu_write_mean_M(iounit,glbidx,'MLAMTDS',   mlamtds,   'M2LAMTDS',   m2lamtds,   'NTDS')
-        call cst_accu_write_mean_M(iounit,glbidx,'MLAMTDSFW', mlamtdsfw, 'M2LAMTDSFW', m2lamtdsfw, 'NTDS')
-        call cst_accu_write_mean_B(iounit,glbidx,'MFWTDS',    mfwtds,    'M2FWTDS',    m2fwtds,    'NTDS')
+        call cst_accu_write_mean_M(iounit,glbidx,'MLAMTDSFW', mlamtdsfw, 'M2LAMTDSFW', m2lamtdsfw, 'FWSUM')
 
         call cst_accu_write_mean_B(iounit,glbidx,'METOT',metot,'M2ETOT',m2etot,'NTDS')
         call cst_accu_write_mean_B(iounit,glbidx,'MEINT',meint,'M2EINT',m2eint,'NTDS')
@@ -648,26 +646,26 @@ subroutine cst_accu_write(iounit)
         call cst_accu_write_mean_B(iounit,glbidx,'MERST',merst,'M2ERST',m2erst,'NTDS')
         call cst_accu_write_mean_B(iounit,glbidx,'MEKIN',mekin,'M2EKIN',m2ekin,'NTDS')
 
-        call cst_accu_write_mean_B(iounit,glbidx,'METOTFW',metotfw,'M2ETOTFW',m2etotfw,'NTDS')
-        call cst_accu_write_mean_B(iounit,glbidx,'MEINTFW',meintfw,'M2EINTFW',m2eintfw,'NTDS')
-        call cst_accu_write_mean_B(iounit,glbidx,'MEPOTFW',mepotfw,'M2EPOTFW',m2epotfw,'NTDS')
-        call cst_accu_write_mean_B(iounit,glbidx,'MERSTFW',merstfw,'M2ERSTFW',m2erstfw,'NTDS')
-        call cst_accu_write_mean_B(iounit,glbidx,'MEKINFW',mekinfw,'M2EKINFW',m2ekinfw,'NTDS')
+        call cst_accu_write_mean_B(iounit,glbidx,'METOTFW',metotfw,'M2ETOTFW',m2etotfw,'FWSUM')
+        call cst_accu_write_mean_B(iounit,glbidx,'MEINTFW',meintfw,'M2EINTFW',m2eintfw,'FWSUM')
+        call cst_accu_write_mean_B(iounit,glbidx,'MEPOTFW',mepotfw,'M2EPOTFW',m2epotfw,'FWSUM')
+        call cst_accu_write_mean_B(iounit,glbidx,'MERSTFW',merstfw,'M2ERSTFW',m2erstfw,'FWSUM')
+        call cst_accu_write_mean_B(iounit,glbidx,'MEKINFW',mekinfw,'M2EKINFW',m2ekinfw,'FWSUM')
 
         call cst_accu_write_mean_M(iounit,glbidx,'MICF',   micf,   'M2ICF',   m2icf,   'NTDS')
-        call cst_accu_write_mean_M(iounit,glbidx,'MICFFW', micffw, 'M2ICFFW', m2icffw, 'NTDS')
-        call cst_accu_write_mean_M(iounit,glbidx,'MICFPFW',micfpfw,'M2ICFPFW',m2icfpfw,'NTDS')
-        call cst_accu_write_mean_M(iounit,glbidx,'MICFKFW',micfkfw,'M2ICFKFW',m2icfkfw,'NTDS')
+        call cst_accu_write_mean_M(iounit,glbidx,'MICFFW', micffw, 'M2ICFFW', m2icffw, 'FWSUM')
+        call cst_accu_write_mean_M(iounit,glbidx,'MICFPFW',micfpfw,'M2ICFPFW',m2icfpfw,'FWSUM')
+        call cst_accu_write_mean_M(iounit,glbidx,'MICFKFW',micfkfw,'M2ICFKFW',m2icfkfw,'FWSUM')
 
-        call cst_accu_write_cmom_M(iounit,glbidx,'C11II',   c11ii,   'NTDS', 'MICF',    'MEINT')
-        call cst_accu_write_cmom_M(iounit,glbidx,'C11IIFW', c11iifw, 'NTDS', 'MICFFW',  'MEINTFW')
+        call cst_accu_write_cmom_M(iounit,glbidx,'C11II',   c11ii,   'NTDS',  'MICF',    'MEINT')
+        call cst_accu_write_cmom_M(iounit,glbidx,'C11IIFW', c11iifw, 'FWSUM', 'MICFFW',  'MEINTFW')
 
-        call cst_accu_write_cmom_M(iounit,glbidx,'C11LT',   c11lt,   'NTDS', 'MLAMTDS',   'METOT')
-        call cst_accu_write_cmom_M(iounit,glbidx,'C11LTFW', c11ltfw, 'NTDS', 'MLAMTDSFW', 'METOTFW')
-        call cst_accu_write_cmom_M(iounit,glbidx,'C11LIFW', c11ltfw, 'NTDS', 'MLAMTDSFW', 'MEINTFW')
-        call cst_accu_write_cmom_M(iounit,glbidx,'C11LPFW', c11ltfw, 'NTDS', 'MLAMTDSFW', 'MEPOTFW')
-        call cst_accu_write_cmom_M(iounit,glbidx,'C11LRFW', c11ltfw, 'NTDS', 'MLAMTDSFW', 'MERSTFW')
-        call cst_accu_write_cmom_M(iounit,glbidx,'C11LKFW', c11ltfw, 'NTDS', 'MLAMTDSFW', 'MEKINFW')
+        call cst_accu_write_cmom_M(iounit,glbidx,'C11LT',   c11lt,   'NTDS',  'MLAMTDS',   'METOT')
+        call cst_accu_write_cmom_M(iounit,glbidx,'C11LTFW', c11ltfw, 'FWSUM', 'MLAMTDSFW', 'METOTFW')
+        call cst_accu_write_cmom_M(iounit,glbidx,'C11LIFW', c11ltfw, 'FWSUM', 'MLAMTDSFW', 'MEINTFW')
+        call cst_accu_write_cmom_M(iounit,glbidx,'C11LPFW', c11ltfw, 'FWSUM', 'MLAMTDSFW', 'MEPOTFW')
+        call cst_accu_write_cmom_M(iounit,glbidx,'C11LRFW', c11ltfw, 'FWSUM', 'MLAMTDSFW', 'MERSTFW')
+        call cst_accu_write_cmom_M(iounit,glbidx,'C11LKFW', c11ltfw, 'FWSUM', 'MLAMTDSFW', 'MEKINFW')
 
     end if
 
@@ -701,12 +699,12 @@ end subroutine cst_accu_add_data_OM
 ! online weighted mean and M2
 !===============================================================================
 
-subroutine cst_accu_add_data_WOM(ival,w,wsum,mval,m2val)
+subroutine cst_accu_add_data_WOM(ival,invw,w,mval,m2val)
 
     implicit none
     real(PMFDP) :: ival
+    real(PMFDP) :: invw   ! w / wsum
     real(PMFDP) :: w
-    real(PMFDP) :: wsum
     real(PMFDP) :: mval
     real(PMFDP) :: m2val
     ! --------------------------------------------
@@ -714,7 +712,7 @@ subroutine cst_accu_add_data_WOM(ival,w,wsum,mval,m2val)
     ! --------------------------------------------------------------------------
 
     dval1 = ival  - mval
-    mval  = mval  + dval1 * w / wsum
+    mval  = mval  + dval1 * invw
     dval2 = ival  - mval
     m2val = m2val + w * dval1 * dval2
 
@@ -748,12 +746,12 @@ end subroutine cst_accu_add_data_OMI
 ! online weighted mean and M2
 !===============================================================================
 
-subroutine cst_accu_add_data_WOMI(ival,w,wsum,mval,m2val,dval1,dval2)
+subroutine cst_accu_add_data_WOMI(ival,invw,w,mval,m2val,dval1,dval2)
 
     implicit none
     real(PMFDP) :: ival
+    real(PMFDP) :: invw   ! w / wsum
     real(PMFDP) :: w
-    real(PMFDP) :: wsum
     real(PMFDP) :: mval
     real(PMFDP) :: m2val
     real(PMFDP) :: dval1
@@ -761,7 +759,7 @@ subroutine cst_accu_add_data_WOMI(ival,w,wsum,mval,m2val,dval1,dval2)
     ! --------------------------------------------------------------------------
 
     dval1 = ival  - mval
-    mval  = mval  + dval1 * (w / wsum)
+    mval  = mval  + dval1 * invw
     dval2 = ival  - mval
     m2val = m2val + w * dval1 * dval2
 
@@ -810,7 +808,7 @@ subroutine cst_accu_add_dhTds
 
     implicit none
     integer         :: i
-    real(PMFDP)     :: invn
+    real(PMFDP)     :: invn,invw
     real(PMFDP)     :: lfw,llam,licf,licfp,licfk
     real(PMFDP)     :: letot,leint,lepot,lerst,lekin
     real(PMFDP)     :: detot1,detot2
@@ -835,8 +833,8 @@ subroutine cst_accu_add_dhTds
 
     lfw = fwhist(hist_len+hist_fidx)
 
-! fixman weight
-    call cst_accu_add_data_OM(lfw,invn,mfwtds,m2fwtds)
+    fwsum = fwsum + lfw
+    invw = lfw / fwsum
 
 ! other data
     lepot        = epothist(hist_len+hist_fidx)
@@ -852,11 +850,11 @@ subroutine cst_accu_add_dhTds
     call cst_accu_add_data_OM(lerst,invn,merst,m2erst)
     call cst_accu_add_data_OM(lekin,invn,mekin,m2ekin)
 
-    call cst_accu_add_data_OMI(letot*lfw,invn,metotfw,m2etotfw,detot1fw,detot2fw)
-    call cst_accu_add_data_OMI(leint*lfw,invn,meintfw,m2eintfw,deint1fw,deint2fw)
-    call cst_accu_add_data_OMI(lepot*lfw,invn,mepotfw,m2epotfw,depot1fw,depot2fw)
-    call cst_accu_add_data_OMI(lerst*lfw,invn,merstfw,m2erstfw,derst1fw,derst2fw)
-    call cst_accu_add_data_OMI(lekin*lfw,invn,mekinfw,m2ekinfw,dekin1fw,dekin2fw)
+    call cst_accu_add_data_WOMI(letot,invw,lfw,metotfw,m2etotfw,detot1fw,detot2fw)
+    call cst_accu_add_data_WOMI(leint,invw,lfw,meintfw,m2eintfw,deint1fw,deint2fw)
+    call cst_accu_add_data_WOMI(lepot,invw,lfw,mepotfw,m2epotfw,depot1fw,depot2fw)
+    call cst_accu_add_data_WOMI(lerst,invw,lfw,merstfw,m2erstfw,derst1fw,derst2fw)
+    call cst_accu_add_data_WOMI(lekin,invw,lfw,mekinfw,m2ekinfw,dekin1fw,dekin2fw)
 
     do i=1,NumOfAllCONs
         licfp = icfphist(i,hist_len+hist_fidx)
@@ -867,21 +865,21 @@ subroutine cst_accu_add_dhTds
         call cst_accu_add_data_OMI(llam, invn, mlamtds(i), m2lamtds(i), dlam1, dlam2)
         call cst_accu_add_data_OMI(licf, invn, micf(i),    m2icf(i),    dicf1, dicf2)
 
-        call cst_accu_add_data_OMI(llam*lfw, invn, mlamtdsfw(i), m2lamtdsfw(i), dlam1fw, dlam2fw)
-        call cst_accu_add_data_OMI(licf*lfw, invn, micffw(i),    m2icffw(i),    dicf1fw, dicf2fw)
+        call cst_accu_add_data_WOMI(llam, invw, lfw, mlamtdsfw(i), m2lamtdsfw(i), dlam1fw, dlam2fw)
+        call cst_accu_add_data_WOMI(licf, invw, lfw, micffw(i),    m2icffw(i),    dicf1fw, dicf2fw)
 
-        call cst_accu_add_data_OM(licfp*lfw, invn, micfpfw(i),   m2icfpfw(i))
-        call cst_accu_add_data_OM(licfk*lfw, invn, micfkfw(i),   m2icfkfw(i))
+        call cst_accu_add_data_WOM(licfp, invw, lfw, micfpfw(i),   m2icfpfw(i))
+        call cst_accu_add_data_WOM(licfk, invw, lfw, micfkfw(i),   m2icfkfw(i))
 
         c11ii(i)    = c11ii(i)      +  dicf1   * deint2
-        c11iifw(i)  = c11iifw(i)    +  dicf1fw * deint2fw
+        c11iifw(i)  = c11iifw(i)    +  lfw * dicf1fw * deint2fw
 
         c11lt(i)    = c11lt(i)      +  dlam1   * detot2
-        c11ltfw(i)  = c11ltfw(i)    +  dlam1fw * detot2fw
-        c11lifw(i)  = c11lifw(i)    +  dlam1fw * deint2fw
-        c11lpfw(i)  = c11lpfw(i)    +  dlam1fw * depot2fw
-        c11lrfw(i)  = c11lrfw(i)    +  dlam1fw * derst2fw
-        c11lkfw(i)  = c11lkfw(i)    +  dlam1fw * dekin2fw
+        c11ltfw(i)  = c11ltfw(i)    +  lfw * dlam1fw * detot2fw
+        c11lifw(i)  = c11lifw(i)    +  lfw * dlam1fw * deint2fw
+        c11lpfw(i)  = c11lpfw(i)    +  lfw * dlam1fw * depot2fw
+        c11lrfw(i)  = c11lrfw(i)    +  lfw * dlam1fw * derst2fw
+        c11lkfw(i)  = c11lkfw(i)    +  lfw * dlam1fw * dekin2fw
     end do
 
 end subroutine cst_accu_add_dhTds
