@@ -20,7 +20,7 @@
 // =============================================================================
 
 #include <CSTProxy_mTdSdx.hpp>
-#include <CSTProxy_MTC.hpp>
+#include <CSTProxy_Ecorr.hpp>
 #include <PMFConstants.hpp>
 
 //------------------------------------------------------------------------------
@@ -97,7 +97,7 @@ CEnergyProxyPtr CCSTProxy_mTdSdx::GetEnergyCorrection(void)
 {
     CEnergyProxyPtr ene_proxy;
     if( RealmID == CST_TdS ){
-        ene_proxy = CCSTProxy_MTC_Ptr(new CCSTProxy_MTC);
+        ene_proxy = CCSTProxy_Ecorr_Ptr(new CCSTProxy_Ecorr);
         ene_proxy->Init(Accu);
     }
     return(ene_proxy);

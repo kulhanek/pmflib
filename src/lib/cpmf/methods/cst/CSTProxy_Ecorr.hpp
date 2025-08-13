@@ -1,5 +1,5 @@
-#ifndef CSTProxy_MTC_H
-#define CSTProxy_MTC_H
+#ifndef CSTProxy_Ecorr_H
+#define CSTProxy_Ecorr_H
 // =============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
@@ -29,11 +29,11 @@
 /** \brief CST proxy providing the free energy contribution due to constrained CVs (metric tensor correction)
 */
 
-class PMF_PACKAGE CCSTProxy_MTC : public CEnergyProxy {
+class PMF_PACKAGE CCSTProxy_Ecorr : public CEnergyProxy {
 public:
 // constructor and destructor --------------------------------------------------
-    CCSTProxy_MTC(void);
-    ~CCSTProxy_MTC(void);
+    CCSTProxy_Ecorr(void);
+    ~CCSTProxy_Ecorr(void);
 
 //------------------------------------------------------------------------------
     // get energy derivative and its error
@@ -42,7 +42,7 @@ public:
 
 //------------------------------------------------------------------------------
 
-typedef boost::shared_ptr<CCSTProxy_MTC>    CCSTProxy_MTC_Ptr;
+typedef boost::shared_ptr<CCSTProxy_Ecorr>    CCSTProxy_Ecorr_Ptr;
 
 //------------------------------------------------------------------------------
 

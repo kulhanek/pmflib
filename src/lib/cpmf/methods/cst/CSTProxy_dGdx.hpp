@@ -1,5 +1,5 @@
-#ifndef CSTProxy_dG_H
-#define CSTProxy_dG_H
+#ifndef CSTProxy_dGdx_H
+#define CSTProxy_dGdx_H
 // =============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
@@ -28,11 +28,6 @@
 
 enum ECSTdGdxType {
     CST_dGdx,
-    CST_dLAMBDAdx,
-    CST_dMICFdx,
-    CST_dMICFFWdx,
-    CST_dMICFPFWdx,
-    CST_dMICFKFWdx,
 };
 
 //------------------------------------------------------------------------------
@@ -47,11 +42,8 @@ public:
     ~CCSTProxy_dGdx(void);
 
 //------------------------------------------------------------------------------
-    // get number of samples
-    virtual int GetNumOfSamples(int ibin) const;
-
-    // set number of samples
-    virtual void SetNumOfSamples(int ibin,int nsamples);
+    // get optional energy correction - MTC
+    virtual CEnergyProxyPtr GetEnergyCorrection(void);
 
     // get energy derivative and its error
     virtual double GetValue( int ibin,int icv,EProxyRealm realm) const;

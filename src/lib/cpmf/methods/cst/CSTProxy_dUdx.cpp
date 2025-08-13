@@ -19,7 +19,7 @@
 //     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 // =============================================================================
 
-#include <CSTProxy_dHdx.hpp>
+#include <CSTProxy_dUdx.hpp>
 #include <PMFConstants.hpp>
 
 //------------------------------------------------------------------------------
@@ -30,7 +30,7 @@ using namespace std;
 //------------------------------------------------------------------------------
 //==============================================================================
 
-CCSTProxy_dHdx::CCSTProxy_dHdx(void)
+CCSTProxy_dUdx::CCSTProxy_dUdx(void)
 {
 //    SetType(CST_dH);
 //
@@ -38,11 +38,17 @@ CCSTProxy_dHdx::CCSTProxy_dHdx(void)
 
 //        case(CST_dH):
 //            return("CST dH(x) (based on derivatives)");
+
+//    RegisterRealm(CST_dLAMBDAdx,    "dLAMBDA/dx",   "CST", "|<lambda> dx|");
+//    RegisterRealm(CST_dMICFdx,      "dMICF/dx",     "CST", "|<lambda> dx|");
+//    RegisterRealm(CST_dMICFPFWdx,   "dMICFPFW/dx",  "CST", "|<lambda> dx|");
+//    RegisterRealm(CST_dMICFKFWdx,   "dMICFKFW/dx",  "CST", "|<lambda> dx|");
+
 }
 
 //------------------------------------------------------------------------------
 
-CCSTProxy_dHdx::~CCSTProxy_dHdx(void)
+CCSTProxy_dUdx::~CCSTProxy_dUdx(void)
 {
 }
 
@@ -50,7 +56,7 @@ CCSTProxy_dHdx::~CCSTProxy_dHdx(void)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-int CCSTProxy_dHdx::GetNumOfSamples(int ibin) const
+int CCSTProxy_dUdx::GetNumOfSamples(int ibin) const
 {
     if( Accu == NULL ){
         RUNTIME_ERROR("Accu is NULL");
@@ -60,7 +66,7 @@ int CCSTProxy_dHdx::GetNumOfSamples(int ibin) const
 
 //------------------------------------------------------------------------------
 
-void CCSTProxy_dHdx::SetNumOfSamples(int ibin,int nsamples)
+void CCSTProxy_dUdx::SetNumOfSamples(int ibin,int nsamples)
 {
     if( Accu == NULL ){
         RUNTIME_ERROR("Accu is NULL");
@@ -70,7 +76,7 @@ void CCSTProxy_dHdx::SetNumOfSamples(int ibin,int nsamples)
 
 //------------------------------------------------------------------------------
 
-double CCSTProxy_dHdx::GetValue(int ibin,int icv,EProxyRealm realm) const
+double CCSTProxy_dUdx::GetValue(int ibin,int icv,EProxyRealm realm) const
 {
     if( Accu == NULL ){
         RUNTIME_ERROR("Accu is NULL");
@@ -115,6 +121,81 @@ double CCSTProxy_dHdx::GetValue(int ibin,int icv,EProxyRealm realm) const
             }
         }
         break;
+//       case(CST_dGdx):       // this requires MTC correction
+//        case(CST_dLAMBDAdx): {
+//            mean        = Accu->GetData("MLAMBDA",ibin,icv);
+//            double M2   = Accu->GetData("M2LAMBDA",ibin,icv);
+//            samvar      = M2 / nsamples;
+//            meanvar     = samvar / nsamples;
+//        }
+//        break;
+//    // ------------------
+//        case(CST_dMICFdx): {
+//            mean        = Accu->GetData("MICF",ibin,icv);
+//            double M2   = Accu->GetData("M2ICF",ibin,icv);
+//            samvar      = M2 / nsamples;
+//            meanvar     = samvar / nsamples;
+//        }
+//        break;
+//    // -------------------
+//        case(CST_dMICFFWdx): {
+//            double fwsum    = Accu->GetData("FWSUM",ibin);
+//            double fwsum2   = Accu->GetData("FWSUM2",ibin);
+//
+//            mean            = Accu->GetData("MICFFW",ibin,icv);
+//            double M2       = Accu->GetData("M2ICFFW",ibin,icv);
+//
+//            // https://seismo.berkeley.edu/~kirchner/Toolkits/Toolkit_12.pdf
+//
+//            // number of effective measurements
+//            double neff = fwsum2 / (fwsum * fwsum);
+//
+//            // unbiased weighted sample variance
+//            samvar          = M2 / fwsum * neff / (neff - 1.0);
+//
+//            // variance of the weighted mean
+//            // unbiased importance weights
+//            meanvar         = samvar / neff;
+//        }
+//        break;
+//    // -------------------
+//        case(CST_dMICFPFWdx):  {
+//            double fwsum    = Accu->GetData("FWSUM",ibin);
+//            double fwsum2   = Accu->GetData("FWSUM2",ibin);
+//
+//            mean            = Accu->GetData("MICFPFW",ibin,icv);
+//            double M2       = Accu->GetData("M2ICFPFW",ibin,icv);
+//
+//            // number of effective measurements
+//            double neff = fwsum2 / (fwsum * fwsum);
+//
+//            // unbiased weighted sample variance
+//            samvar          = M2 / fwsum * neff / (neff - 1.0);
+//
+//            // variance of the weighted mean
+//            // unbiased importance weights
+//            meanvar         = samvar / neff;
+//        }
+//        break;
+//    // -------------------
+//        case(CST_dMICFKFWdx):  {
+//            double fwsum    = Accu->GetData("FWSUM",ibin);
+//            double fwsum2   = Accu->GetData("FWSUM2",ibin);
+//
+//            mean            = Accu->GetData("MICFKFW",ibin,icv);
+//            double M2       = Accu->GetData("M2ICFKFW",ibin,icv);
+//
+//            // number of effective measurements
+//            double neff = fwsum2 / (fwsum * fwsum);
+//
+//            // unbiased weighted sample variance
+//            samvar          = M2 / fwsum * neff / (neff - 1.0);
+//
+//            // variance of the weighted mean
+//            // unbiased importance weights
+//            meanvar         = samvar / neff;
+//        }
+//        break;
 //    // -------------------
 //        case(CST_MICFP): {
 //            double  nsamples = Accu->GetData("NTDS",ibin);

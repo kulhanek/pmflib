@@ -1,5 +1,5 @@
-#ifndef CSTProxy_mTdS_H
-#define CSTProxy_mTdS_H
+#ifndef CSTProxy_mTdSdx_H
+#define CSTProxy_mTdSdx_H
 // =============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------

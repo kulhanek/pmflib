@@ -1,5 +1,5 @@
-#ifndef CSTProxy_dH_H
-#define CSTProxy_dH_H
+#ifndef CSTProxy_dU_H
+#define CSTProxy_dU_H
 // =============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
@@ -37,11 +37,11 @@ enum ECSTdHType {
 /** \brief PMF proxy providing enthalpy
 */
 
-class PMF_PACKAGE CCSTProxy_dH : public CEnergyProxy {
+class PMF_PACKAGE CCSTProxy_dU : public CEnergyProxy {
 public:
 // constructor and destructor --------------------------------------------------
-    CCSTProxy_dH(void);
-    ~CCSTProxy_dH(void);
+    CCSTProxy_dU(void);
+    ~CCSTProxy_dU(void);
 //------------------------------------------------------------------------------
     // get number of samples
     virtual int GetNumOfSamples(int ibin) const;
@@ -55,7 +55,7 @@ public:
 
 //------------------------------------------------------------------------------
 
-typedef boost::shared_ptr<CCSTProxy_dH>    CCSTProxy_dH_Ptr;
+typedef boost::shared_ptr<CCSTProxy_dU>    CCSTProxy_dH_Ptr;
 
 //------------------------------------------------------------------------------
 

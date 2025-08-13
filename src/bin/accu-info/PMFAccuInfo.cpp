@@ -28,7 +28,7 @@
 #include <boost/format.hpp>
 #include <EnergyDerProxyInit.hpp>
 #include <EnergyProxyInit.hpp>
-#include <CSTProxy_MTC.hpp>
+#include <CSTProxy_Ecorr.hpp>
 
 //------------------------------------------------------------------------------
 
@@ -339,7 +339,7 @@ void CPMFAccuInfo::GetMTC(void)
 
     vout << high;
 
-    CCSTProxy_MTC_Ptr mtc_proxy   = CCSTProxy_MTC_Ptr(new CCSTProxy_MTC);
+    CCSTProxy_Ecorr_Ptr mtc_proxy   = CCSTProxy_Ecorr_Ptr(new CCSTProxy_Ecorr);
     mtc_proxy->Init(Accu);
 
     Values.CreateVector(Accu->GetNumOfBins());

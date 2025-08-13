@@ -1,5 +1,5 @@
-#ifndef CSTProxy_dH_H
-#define CSTProxy_dH_H
+#ifndef CSTProxy_dUdx_H
+#define CSTProxy_dUdx_H
 // =============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
@@ -37,11 +37,11 @@ enum ECSTdHdxType {
 /** \brief ABF proxy providing mean force for the free energy integration
 */
 
-class PMF_PACKAGE CCSTProxy_dHdx : public CEnergyDerProxy {
+class PMF_PACKAGE CCSTProxy_dUdx : public CEnergyDerProxy {
 public:
 // constructor and destructor --------------------------------------------------
-    CCSTProxy_dHdx(void);
-    ~CCSTProxy_dHdx(void);
+    CCSTProxy_dUdx(void);
+    ~CCSTProxy_dUdx(void);
 
 //------------------------------------------------------------------------------
     // get number of samples
@@ -56,7 +56,7 @@ public:
 
 //------------------------------------------------------------------------------
 
-typedef boost::shared_ptr<CCSTProxy_dHdx>    CCSTProxy_dHdx_Ptr;
+typedef boost::shared_ptr<CCSTProxy_dUdx>    CCSTProxy_dHdx_Ptr;
 
 //------------------------------------------------------------------------------
 

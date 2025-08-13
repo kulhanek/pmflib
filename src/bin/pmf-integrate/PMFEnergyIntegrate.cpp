@@ -37,7 +37,6 @@
 #include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string/classification.hpp>
 #include <EnergyDerProxyInit.hpp>
-#include <CSTProxy_MTC.hpp>
 
 //------------------------------------------------------------------------------
 

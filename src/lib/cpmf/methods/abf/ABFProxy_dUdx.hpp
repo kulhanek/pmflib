@@ -36,11 +36,11 @@ enum EABFdHType {
 /** \brief ABF proxy providing mean force for the free energy integration
 */
 
-class PMF_PACKAGE CABFProxy_dHdx : public CEnergyDerProxy {
+class PMF_PACKAGE CABFProxy_dUdx : public CEnergyDerProxy {
 public:
 // constructor and destructor --------------------------------------------------
-    CABFProxy_dHdx(void);
-    ~CABFProxy_dHdx(void);
+    CABFProxy_dUdx(void);
+    ~CABFProxy_dUdx(void);
 
 //------------------------------------------------------------------------------
     // get number of samples
@@ -55,7 +55,7 @@ public:
 
 //------------------------------------------------------------------------------
 
-typedef boost::shared_ptr<CABFProxy_dHdx>    CABFProxy_dHdx_Ptr;
+typedef boost::shared_ptr<CABFProxy_dUdx>    CABFProxy_dHdx_Ptr;
 
 //------------------------------------------------------------------------------
 

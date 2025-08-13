@@ -19,7 +19,7 @@
 //     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 // =============================================================================
 
-#include <ABFProxy_dH.hpp>
+#include <ABFProxy_dU.hpp>
 
 //------------------------------------------------------------------------------
 
@@ -29,7 +29,7 @@ using namespace std;
 //------------------------------------------------------------------------------
 //==============================================================================
 
-CABFProxy_dH::CABFProxy_dH(void)
+CABFProxy_dU::CABFProxy_dU(void)
 {
 //    Requires.push_back("ABF");
 //
@@ -45,7 +45,7 @@ CABFProxy_dH::CABFProxy_dH(void)
 
 //------------------------------------------------------------------------------
 
-CABFProxy_dH::~CABFProxy_dH(void)
+CABFProxy_dU::~CABFProxy_dU(void)
 {
 }
 
@@ -53,7 +53,7 @@ CABFProxy_dH::~CABFProxy_dH(void)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-int CABFProxy_dH::GetNumOfSamples(int ibin) const
+int CABFProxy_dU::GetNumOfSamples(int ibin) const
 {
     if( Accu == NULL ){
         RUNTIME_ERROR("Accu is NULL");
@@ -63,7 +63,7 @@ int CABFProxy_dH::GetNumOfSamples(int ibin) const
 
 //------------------------------------------------------------------------------
 
-void CABFProxy_dH::SetNumOfSamples(int ibin,int nsamples)
+void CABFProxy_dU::SetNumOfSamples(int ibin,int nsamples)
 {
     if( Accu == NULL ){
         RUNTIME_ERROR("Accu is NULL");
@@ -73,7 +73,7 @@ void CABFProxy_dH::SetNumOfSamples(int ibin,int nsamples)
 
 //------------------------------------------------------------------------------
 
-double CABFProxy_dH::GetValue( int ibin,EProxyRealm realm) const
+double CABFProxy_dU::GetValue( int ibin,EProxyRealm realm) const
 {
     if( Accu == NULL ){
         RUNTIME_ERROR("Accu is NULL");

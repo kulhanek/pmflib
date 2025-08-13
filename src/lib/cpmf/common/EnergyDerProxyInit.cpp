@@ -20,10 +20,10 @@
 
 #include <EnergyDerProxyInit.hpp>
 #include <ABFProxy_dGdx.hpp>
-#include <ABFProxy_dHdx.hpp>
+#include <ABFProxy_dUdx.hpp>
 #include <ABFProxy_mTdSdx.hpp>
 #include <CSTProxy_dGdx.hpp>
-#include <CSTProxy_dHdx.hpp>
+#include <CSTProxy_dUdx.hpp>
 #include <CSTProxy_mTdSdx.hpp>
 #include <iomanip>
 
@@ -39,7 +39,7 @@ void CEnergyDerProxyInit::InitProxyList(std::list<CEnergyDerProxyPtr>& eneder_pr
     proxy = CEnergyDerProxyPtr(new CABFProxy_dGdx);
     eneder_proxies.push_back(proxy);
 
-    proxy = CEnergyDerProxyPtr(new CABFProxy_dHdx);
+    proxy = CEnergyDerProxyPtr(new CABFProxy_dUdx);
     eneder_proxies.push_back(proxy);
 
     proxy = CEnergyDerProxyPtr(new CABFProxy_mTdSdx);
@@ -48,7 +48,7 @@ void CEnergyDerProxyInit::InitProxyList(std::list<CEnergyDerProxyPtr>& eneder_pr
     proxy = CEnergyDerProxyPtr(new CCSTProxy_dGdx);
     eneder_proxies.push_back(proxy);
 
-    proxy = CEnergyDerProxyPtr(new CCSTProxy_dHdx);
+    proxy = CEnergyDerProxyPtr(new CCSTProxy_dUdx);
     eneder_proxies.push_back(proxy);
 
     proxy = CEnergyDerProxyPtr(new CCSTProxy_mTdSdx);

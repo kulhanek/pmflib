@@ -32,9 +32,9 @@ SET(CPMF_METHODS_SRC
 
     # ABF
         methods/abf/ABFProxy_dGdx.cpp
-        methods/abf/ABFProxy_dHdx.cpp
+        methods/abf/ABFProxy_dUdx.cpp
         methods/abf/ABFProxy_mTdSdx.cpp
-        methods/abf/ABFProxy_dH.cpp
+        methods/abf/ABFProxy_dU.cpp
 
     # MTD
         methods/mtd/MTDProxy_dG.cpp
@@ -47,10 +47,10 @@ SET(CPMF_METHODS_SRC
 
     # CST
         methods/cst/CSTProxy_dGdx.cpp
-        methods/cst/CSTProxy_dHdx.cpp
+        methods/cst/CSTProxy_dUdx.cpp
         methods/cst/CSTProxy_mTdSdx.cpp
-        methods/cst/CSTProxy_dH.cpp
-        methods/cst/CSTProxy_MTC.cpp
+        methods/cst/CSTProxy_dU.cpp
+        methods/cst/CSTProxy_Ecorr.cpp
 
     # STM
         methods/stm/Bead.cpp

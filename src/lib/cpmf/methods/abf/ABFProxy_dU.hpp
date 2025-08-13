@@ -36,11 +36,11 @@ enum EABFdHType {
 /** \brief PMF proxy providing enthalpy
 */
 
-class PMF_PACKAGE CABFProxy_dH : public CEnergyProxy {
+class PMF_PACKAGE CABFProxy_dU : public CEnergyProxy {
 public:
 // constructor and destructor --------------------------------------------------
-    CABFProxy_dH(void);
-    ~CABFProxy_dH(void);
+    CABFProxy_dU(void);
+    ~CABFProxy_dU(void);
 //------------------------------------------------------------------------------
     // get number of samples
     virtual int GetNumOfSamples(int ibin) const;
@@ -54,7 +54,7 @@ public:
 
 //------------------------------------------------------------------------------
 
-typedef boost::shared_ptr<CABFProxy_dH>    CABFProxy_dH_Ptr;
+typedef boost::shared_ptr<CABFProxy_dU>    CABFProxy_dH_Ptr;
 
 //------------------------------------------------------------------------------
 

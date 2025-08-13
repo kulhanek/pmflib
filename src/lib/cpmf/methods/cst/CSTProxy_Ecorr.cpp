@@ -19,7 +19,7 @@
 //     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 // =============================================================================
 
-#include <CSTProxy_MTC.hpp>
+#include <CSTProxy_Ecorr.hpp>
 #include <PMFConstants.hpp>
 
 //------------------------------------------------------------------------------
@@ -30,7 +30,7 @@ using namespace std;
 //------------------------------------------------------------------------------
 //==============================================================================
 
-CCSTProxy_MTC::CCSTProxy_MTC(void)
+CCSTProxy_Ecorr::CCSTProxy_Ecorr(void)
 {
 //    Requires.push_back("CST");
 //    Realm       = "MTC";
@@ -39,7 +39,7 @@ CCSTProxy_MTC::CCSTProxy_MTC(void)
 
 //------------------------------------------------------------------------------
 
-CCSTProxy_MTC::~CCSTProxy_MTC(void)
+CCSTProxy_Ecorr::~CCSTProxy_Ecorr(void)
 {
 }
 
@@ -47,7 +47,7 @@ CCSTProxy_MTC::~CCSTProxy_MTC(void)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-double CCSTProxy_MTC::GetValue(int ibin,EProxyRealm realm) const
+double CCSTProxy_Ecorr::GetValue(int ibin,EProxyRealm realm) const
 {
     if( Accu == NULL ){
         RUNTIME_ERROR("Accu is NULL");

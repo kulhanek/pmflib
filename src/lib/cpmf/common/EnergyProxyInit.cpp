@@ -20,8 +20,8 @@
 // =============================================================================
 
 #include <EnergyProxyInit.hpp>
-#include <ABFProxy_dH.hpp>
-#include <CSTProxy_dH.hpp>
+#include <ABFProxy_dU.hpp>
+#include <CSTProxy_dU.hpp>
 
 //==============================================================================
 //------------------------------------------------------------------------------
@@ -32,10 +32,10 @@ void CEnergyProxyInit::InitProxyList(std::list<CEnergyProxyPtr>& ene_proxies)
     CEnergyProxyPtr proxy;
 
 // add supported proxies
-    proxy = CEnergyProxyPtr(new CABFProxy_dH);
+    proxy = CEnergyProxyPtr(new CABFProxy_dU);
     ene_proxies.push_back(proxy);
 
-    proxy = CEnergyProxyPtr(new CCSTProxy_dH);
+    proxy = CEnergyProxyPtr(new CCSTProxy_dU);
     ene_proxies.push_back(proxy);
 }
 
