@@ -66,7 +66,13 @@ integer         :: fmaxiter         ! maximum of iteration in lambda optimizatio
 integer         :: flamsample       ! how often update lambda and metric tensor corrections
 
 ! enthalpy/entropy calculations
-logical         :: fdhtds           ! collect data for enthalpy/entropy calculation
+logical         :: fintene          ! collect data for internal energy calculation
+logical         :: fintene_der      ! collect data for internal energy derivative calculation
+
+! enthalpy/entropy calculations
+logical         :: fentropy         ! collect data for entropy calculation
+logical         :: fentropy_decomp  ! collect additional correlation terms
+
 integer         :: fenesample      ! how often take samples
 
 real(PMFDP)     :: fepotaverage
@@ -200,6 +206,8 @@ real(PMFDP),allocatable     :: m2lambda(:)      ! M2 of lambdas
 real(PMFDP)                 :: ntds             ! number of step for enthalpy and entropy calculations
 real(PMFDP)                 :: fwsum            ! Fixman weights sum
 real(PMFDP)                 :: fwsum2           ! sum of Fixman weights squared
+real(PMFDP)                 :: mfwtds           ! mean of Fixman weights
+real(PMFDP)                 :: m2fwtds          ! M2 of Fixman weights
 
 real(PMFDP),allocatable     :: mlamtds(:)       ! mean of ICF - hamiltonian
 real(PMFDP),allocatable     :: m2lamtds(:)      ! M2 of ICF - hamiltonian
@@ -228,6 +236,17 @@ real(PMFDP)                 :: m2erstfw         ! M2 of restraint energy
 real(PMFDP)                 :: mekinfw          ! mean of kinetic energy
 real(PMFDP)                 :: m2ekinfw         ! M2 of kinetic energy
 
+real(PMFDP),allocatable     :: c11lt(:)         ! co-moments between lambda and total energy
+real(PMFDP),allocatable     :: c11ltfw(:)       ! weighted co-moments between lambda and various energies
+real(PMFDP),allocatable     :: c11zh(:)         ! co-variance covar(Z,Etot)
+
+real(PMFDP),allocatable     :: c11lifw(:)
+real(PMFDP),allocatable     :: c11lpfw(:)
+real(PMFDP),allocatable     :: c11lrfw(:)
+real(PMFDP),allocatable     :: c11lkfw(:)
+
+! fintene .and. fintene_der
+
 real(PMFDP),allocatable     :: micf(:)          ! mean of ICF
 real(PMFDP),allocatable     :: m2icf(:)         ! M2 of ICF
 
@@ -242,13 +261,6 @@ real(PMFDP),allocatable     :: m2icfkfw(:)      ! M2 of ICF-K
 
 real(PMFDP),allocatable     :: c11ii(:)         ! co-variances covar(ICF,Eint)
 real(PMFDP),allocatable     :: c11iifw(:)       ! co-variances covar(ICF,Eint)- Fixman weighted
-
-real(PMFDP),allocatable     :: c11lt(:)         ! co-moments between lambda and total energy
-real(PMFDP),allocatable     :: c11ltfw(:)       ! weighted co-moments between lambda and various energies
-real(PMFDP),allocatable     :: c11lifw(:)
-real(PMFDP),allocatable     :: c11lpfw(:)
-real(PMFDP),allocatable     :: c11lrfw(:)
-real(PMFDP),allocatable     :: c11lkfw(:)
 
 !===============================================================================
 

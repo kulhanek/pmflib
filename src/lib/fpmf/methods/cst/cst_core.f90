@@ -64,7 +64,7 @@ subroutine cst_core_main_lf
 
     lambda(:) = lambda(:) + lambdax(:) * isfdts
 
-    if( fdhtds ) then
+    if( fintene .and. fintene_der ) then
         call cst_core_calculate_icf
         icfphist(:,hist_len) = icfp(:)
         icfkhist(:,hist_len) = icfk(:)

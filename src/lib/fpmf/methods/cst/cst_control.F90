@@ -109,7 +109,11 @@ subroutine cst_control_read_con(prm_fin)
     call pmf_ctrl_read_integer(prm_fin,'flamsample',flamsample,'I12')
     call pmf_ctrl_check_integer('CST','flamsample',flamsample,0,CND_GT)
 
-    call pmf_ctrl_read_logical(prm_fin,'fdhtds',fdhtds)
+    call pmf_ctrl_read_logical(prm_fin,'fintene',fintene)
+    call pmf_ctrl_read_logical(prm_fin,'fintene_der',fintene_der)
+
+    call pmf_ctrl_read_logical(prm_fin,'fentropy',fentropy)
+    call pmf_ctrl_read_logical(prm_fin,'fentropy_decomp',fentropy_decomp)
 
     call pmf_ctrl_read_integer(prm_fin,'fenesample',fenesample,'I12')
     call pmf_ctrl_check_integer('CST','fenesample',fenesample,0,CND_GT)

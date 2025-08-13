@@ -61,12 +61,37 @@ subroutine cst_accu_alloc
 ! fdhtds  ----------------------------------------------------------------------
 ! accumulator setup for entropy and enthalpy
 
-    if( fdhtds ) then
+    if( fentropy ) then
         allocate( mlamtds(NumOfAllCONs),        &
                   m2lamtds(NumOfAllCONs),       &
                   mlamtdsfw(NumOfAllCONs),      &
                   m2lamtdsfw(NumOfAllCONs),     &
-                  micf(NumOfAllCONs),           &
+                  c11lt(NumOfAllCONs),          &
+                  c11ltfw(NumOfAllCONs),        &
+                  c11zh(NumOfAllCONs),          &
+                  stat= alloc_failed )
+
+        if( alloc_failed .ne. 0 ) then
+            call pmf_utils_exit(PMF_OUT,1,&
+                     '[CST] Unable to allocate memory for arrays used for enthalpy/entropy calculations!')
+        end if
+
+        if( fentropy_decomp ) then
+            allocate(   c11lifw(NumOfAllCONs),        &
+                        c11lpfw(NumOfAllCONs),        &
+                        c11lrfw(NumOfAllCONs),        &
+                        c11lkfw(NumOfAllCONs),        &
+                        stat= alloc_failed )
+
+            if( alloc_failed .ne. 0 ) then
+                call pmf_utils_exit(PMF_OUT,1,&
+                         '[CST] Unable to allocate memory for arrays used for enthalpy/entropy calculations!')
+            end if
+        end if
+    end if
+
+    if( fintene .and. fintene_der ) then
+        allocate( micf(NumOfAllCONs),           &
                   m2icf(NumOfAllCONs),          &
                   micffw(NumOfAllCONs),         &
                   m2icffw(NumOfAllCONs),        &
@@ -76,13 +101,6 @@ subroutine cst_accu_alloc
                   m2icfkfw(NumOfAllCONs),       &
                   c11ii(NumOfAllCONs),          &
                   c11iifw(NumOfAllCONs),        &
-
-                  c11lt(NumOfAllCONs),          &
-                  c11ltfw(NumOfAllCONs),        &
-                  c11lifw(NumOfAllCONs),        &
-                  c11lpfw(NumOfAllCONs),        &
-                  c11lrfw(NumOfAllCONs),        &
-                  c11lkfw(NumOfAllCONs),        &
                   stat= alloc_failed )
 
         if( alloc_failed .ne. 0 ) then
@@ -90,6 +108,7 @@ subroutine cst_accu_alloc
                      '[CST] Unable to allocate memory for arrays used for enthalpy/entropy calculations!')
         end if
     end if
+
 
 ! init PMF accu
     cstaccu%tot_cvs = NumOfCONs
@@ -170,19 +189,48 @@ subroutine cst_accu_clear
     m2lambda(:) = 0.0d0
 
 ! fdhtds  = enthalpy/entropy calculations
-    if( fdhtds ) then
+    if( fintene .or. fentropy ) then
         ntds            = 0.0d0
         fwsum           = 0.0d0
         fwsum2          = 0.0d0
+        mfwtds          = 0.0d0
+        m2fwtds         = 0.0d0
+    end if
+
+    if( fentropy ) then
         mlamtds(:)      = 0.0d0
         m2lamtds(:)     = 0.0d0
         mlamtdsfw(:)    = 0.0d0
         m2lamtdsfw(:)   = 0.0d0
 
+        c11lt(:)    = 0.0d0
+        c11ltfw(:)  = 0.0d0
+
+        c11zh(:)    = 0.0d0
+
+        if( fentropy_decomp ) then
+            c11lifw(:)  = 0.0d0
+            c11lpfw(:)  = 0.0d0
+            c11lrfw(:)  = 0.0d0
+            c11lkfw(:)  = 0.0d0
+        end if
+    end if
+
+    if( fentropy .or. fintene ) then
         metot       = 0.0d0
         m2etot      = 0.0d0
+        metotfw     = 0.0d0
+        m2etotfw    = 0.0d0
+    end if
+
+    if( (fentropy .and. fentropy_decomp) .or. fintene ) then
         meint       = 0.0d0
         m2eint      = 0.0d0
+        meintfw     = 0.0d0
+        m2eintfw    = 0.0d0
+    end if
+
+    if( fentropy .and. fentropy_decomp ) then
         mepot       = 0.0d0
         m2epot      = 0.0d0
         merst       = 0.0d0
@@ -190,17 +238,15 @@ subroutine cst_accu_clear
         mekin       = 0.0d0
         m2ekin      = 0.0d0
 
-        metotfw     = 0.0d0
-        m2etotfw    = 0.0d0
-        meintfw     = 0.0d0
-        m2eintfw    = 0.0d0
         mepotfw     = 0.0d0
         m2epotfw    = 0.0d0
         merstfw     = 0.0d0
         m2erstfw    = 0.0d0
         mekinfw     = 0.0d0
         m2ekinfw    = 0.0d0
+    end if
 
+    if( fintene .and. fintene_der ) then
         micf(:)     = 0.0d0
         m2icf(:)    = 0.0d0
         micffw(:)   = 0.0d0
@@ -213,13 +259,6 @@ subroutine cst_accu_clear
 
         c11ii(:)    = 0.0d0
         c11iifw(:)  = 0.0d0
-
-        c11lt(:)    = 0.0d0
-        c11ltfw(:)  = 0.0d0
-        c11lifw(:)  = 0.0d0
-        c11lpfw(:)  = 0.0d0
-        c11lrfw(:)  = 0.0d0
-        c11lkfw(:)  = 0.0d0
     end if
 
 end subroutine cst_accu_clear
@@ -631,26 +670,52 @@ subroutine cst_accu_write(iounit)
 
 ! fdhtds  ----------------------------------------------------------------------
 
-    if( fdhtds ) then
+   if( fintene .or. fentropy ) then
         call cst_accu_write_counter_B(iounit,glbidx,'NTDS',     ntds)
         call cst_accu_write_counter_B(iounit,glbidx,'FWSUM',    fwsum)
         call cst_accu_write_counter_B(iounit,glbidx,'FWSUM2',   fwsum2)
 
+        call cst_accu_write_mean_B(iounit,glbidx,'MFWTDS',mfwtds,'M2FWTDS',m2fwtds,   'NTDS')
+    end if
+
+    if( fentropy ) then
         call cst_accu_write_mean_M(iounit,glbidx,'MLAMTDS',   mlamtds,   'M2LAMTDS',   m2lamtds,   'NTDS')
         call cst_accu_write_mean_M(iounit,glbidx,'MLAMTDSFW', mlamtdsfw, 'M2LAMTDSFW', m2lamtdsfw, 'FWSUM')
 
+        call cst_accu_write_cmom_M(iounit,glbidx,'C11LT',   c11lt,   'NTDS',  'MLAMTDS',   'METOT')
+        call cst_accu_write_cmom_M(iounit,glbidx,'C11LTFW', c11ltfw, 'FWSUM', 'MLAMTDSFW', 'METOTFW')
+
+        call cst_accu_write_cmom_M(iounit,glbidx,'C11ZH',   c11zh,   'NTDS',  'MFWTDS',    'METOT')
+
+        if( fentropy_decomp ) then
+            call cst_accu_write_cmom_M(iounit,glbidx,'C11LIFW', c11ltfw, 'FWSUM', 'MLAMTDSFW', 'MEINTFW')
+            call cst_accu_write_cmom_M(iounit,glbidx,'C11LPFW', c11ltfw, 'FWSUM', 'MLAMTDSFW', 'MEPOTFW')
+            call cst_accu_write_cmom_M(iounit,glbidx,'C11LRFW', c11ltfw, 'FWSUM', 'MLAMTDSFW', 'MERSTFW')
+            call cst_accu_write_cmom_M(iounit,glbidx,'C11LKFW', c11ltfw, 'FWSUM', 'MLAMTDSFW', 'MEKINFW')
+        end if
+    end if
+
+    if( fentropy .or. fintene ) then
         call cst_accu_write_mean_B(iounit,glbidx,'METOT',metot,'M2ETOT',m2etot,'NTDS')
+        call cst_accu_write_mean_B(iounit,glbidx,'METOTFW',metotfw,'M2ETOTFW',m2etotfw,'FWSUM')
+    end if
+
+    if( (fentropy .and. fentropy_decomp) .or. fintene ) then
         call cst_accu_write_mean_B(iounit,glbidx,'MEINT',meint,'M2EINT',m2eint,'NTDS')
+        call cst_accu_write_mean_B(iounit,glbidx,'MEINTFW',meintfw,'M2EINTFW',m2eintfw,'FWSUM')
+    end if
+
+    if( fentropy .and. fentropy_decomp ) then
         call cst_accu_write_mean_B(iounit,glbidx,'MEPOT',mepot,'M2EPOT',m2epot,'NTDS')
         call cst_accu_write_mean_B(iounit,glbidx,'MERST',merst,'M2ERST',m2erst,'NTDS')
         call cst_accu_write_mean_B(iounit,glbidx,'MEKIN',mekin,'M2EKIN',m2ekin,'NTDS')
 
-        call cst_accu_write_mean_B(iounit,glbidx,'METOTFW',metotfw,'M2ETOTFW',m2etotfw,'FWSUM')
-        call cst_accu_write_mean_B(iounit,glbidx,'MEINTFW',meintfw,'M2EINTFW',m2eintfw,'FWSUM')
         call cst_accu_write_mean_B(iounit,glbidx,'MEPOTFW',mepotfw,'M2EPOTFW',m2epotfw,'FWSUM')
         call cst_accu_write_mean_B(iounit,glbidx,'MERSTFW',merstfw,'M2ERSTFW',m2erstfw,'FWSUM')
         call cst_accu_write_mean_B(iounit,glbidx,'MEKINFW',mekinfw,'M2EKINFW',m2ekinfw,'FWSUM')
+    end if
 
+    if( fintene .and. fintene_der ) then
         call cst_accu_write_mean_M(iounit,glbidx,'MICF',   micf,   'M2ICF',   m2icf,   'NTDS')
         call cst_accu_write_mean_M(iounit,glbidx,'MICFFW', micffw, 'M2ICFFW', m2icffw, 'FWSUM')
         call cst_accu_write_mean_M(iounit,glbidx,'MICFPFW',micfpfw,'M2ICFPFW',m2icfpfw,'FWSUM')
@@ -658,14 +723,6 @@ subroutine cst_accu_write(iounit)
 
         call cst_accu_write_cmom_M(iounit,glbidx,'C11II',   c11ii,   'NTDS',  'MICF',    'MEINT')
         call cst_accu_write_cmom_M(iounit,glbidx,'C11IIFW', c11iifw, 'FWSUM', 'MICFFW',  'MEINTFW')
-
-        call cst_accu_write_cmom_M(iounit,glbidx,'C11LT',   c11lt,   'NTDS',  'MLAMTDS',   'METOT')
-        call cst_accu_write_cmom_M(iounit,glbidx,'C11LTFW', c11ltfw, 'FWSUM', 'MLAMTDSFW', 'METOTFW')
-        call cst_accu_write_cmom_M(iounit,glbidx,'C11LIFW', c11ltfw, 'FWSUM', 'MLAMTDSFW', 'MEINTFW')
-        call cst_accu_write_cmom_M(iounit,glbidx,'C11LPFW', c11ltfw, 'FWSUM', 'MLAMTDSFW', 'MEPOTFW')
-        call cst_accu_write_cmom_M(iounit,glbidx,'C11LRFW', c11ltfw, 'FWSUM', 'MLAMTDSFW', 'MERSTFW')
-        call cst_accu_write_cmom_M(iounit,glbidx,'C11LKFW', c11ltfw, 'FWSUM', 'MLAMTDSFW', 'MEKINFW')
-
     end if
 
 end subroutine cst_accu_write
@@ -821,9 +878,10 @@ subroutine cst_accu_add_dhTds
     real(PMFDP)     :: dlam1,dlam2
     real(PMFDP)     :: dicf1fw,dicf2fw
     real(PMFDP)     :: dlam1fw,dlam2fw
+    real(PMFDP)     :: dfw1,dfw2
     ! --------------------------------------------------------------------------
 
-    if( .not. fdhtds ) return
+    if( .not. (fintene .or. fentropy) ) return
     if( enevalidhist(hist_len+hist_fidx) ) faccustep = faccustep + 1
     if( .not. ( (mod(faccustep,fenesample) .eq. 0) .and. enevalidhist(hist_len+hist_fidx) ) ) return
 
@@ -836,6 +894,8 @@ subroutine cst_accu_add_dhTds
     invw    = lfw / fwsum
     fwsum2  = fwsum2 + lfw*lfw
 
+    call cst_accu_add_data_OMI(lfw,invn,mfwtds,m2fwtds,dfw1,dfw2)
+
 ! other data
     lepot        = epothist(hist_len+hist_fidx)
     lerst        = ersthist(hist_len+hist_fidx)
@@ -845,41 +905,53 @@ subroutine cst_accu_add_dhTds
 
     call cst_accu_add_data_OMI(letot,invn,metot,m2etot,detot1,detot2)
     call cst_accu_add_data_OMI(leint,invn,meint,m2eint,deint1,deint2)
-
-    call cst_accu_add_data_OM(lepot,invn,mepot,m2epot)
-    call cst_accu_add_data_OM(lerst,invn,merst,m2erst)
-    call cst_accu_add_data_OM(lekin,invn,mekin,m2ekin)
-
     call cst_accu_add_data_WOMI(letot,invw,lfw,metotfw,m2etotfw,detot1fw,detot2fw)
     call cst_accu_add_data_WOMI(leint,invw,lfw,meintfw,m2eintfw,deint1fw,deint2fw)
-    call cst_accu_add_data_WOMI(lepot,invw,lfw,mepotfw,m2epotfw,depot1fw,depot2fw)
-    call cst_accu_add_data_WOMI(lerst,invw,lfw,merstfw,m2erstfw,derst1fw,derst2fw)
-    call cst_accu_add_data_WOMI(lekin,invw,lfw,mekinfw,m2ekinfw,dekin1fw,dekin2fw)
+
+    if( fentropy_decomp ) then
+        call cst_accu_add_data_OM(lepot,invn,mepot,m2epot)
+        call cst_accu_add_data_OM(lerst,invn,merst,m2erst)
+        call cst_accu_add_data_OM(lekin,invn,mekin,m2ekin)
+
+        call cst_accu_add_data_WOMI(lepot,invw,lfw,mepotfw,m2epotfw,depot1fw,depot2fw)
+        call cst_accu_add_data_WOMI(lerst,invw,lfw,merstfw,m2erstfw,derst1fw,derst2fw)
+        call cst_accu_add_data_WOMI(lekin,invw,lfw,mekinfw,m2ekinfw,dekin1fw,dekin2fw)
+    end if
 
     do i=1,NumOfAllCONs
-        licfp = icfphist(i,hist_len+hist_fidx)
-        licfk = - PMF_Rgas*ftemp * icfkhist(i,hist_len+hist_fidx)
-        licf  = licfp + licfk
+
         llam  = lambdahist(i,hist_len+hist_fidx)
 
-        call cst_accu_add_data_OMI(llam, invn, mlamtds(i), m2lamtds(i), dlam1, dlam2)
-        call cst_accu_add_data_OMI(licf, invn, micf(i),    m2icf(i),    dicf1, dicf2)
+        if( fentropy ) then
+            call cst_accu_add_data_OMI(llam, invn, mlamtds(i), m2lamtds(i), dlam1, dlam2)
+            call cst_accu_add_data_WOMI(llam, invw, lfw, mlamtdsfw(i), m2lamtdsfw(i), dlam1fw, dlam2fw)
 
-        call cst_accu_add_data_WOMI(llam, invw, lfw, mlamtdsfw(i), m2lamtdsfw(i), dlam1fw, dlam2fw)
-        call cst_accu_add_data_WOMI(licf, invw, lfw, micffw(i),    m2icffw(i),    dicf1fw, dicf2fw)
+            c11lt(i)    = c11lt(i)      + dlam1 * detot2
+            c11ltfw(i)  = c11ltfw(i)    + lfw * dlam1fw * detot2fw
 
-        call cst_accu_add_data_WOM(licfp, invw, lfw, micfpfw(i),   m2icfpfw(i))
-        call cst_accu_add_data_WOM(licfk, invw, lfw, micfkfw(i),   m2icfkfw(i))
+            c11zh(i)    = c11zh(i)      + dfw1 * detot2
 
-        c11ii(i)    = c11ii(i)      +  dicf1   * deint2
-        c11iifw(i)  = c11iifw(i)    +  lfw * dicf1fw * deint2fw
+            if( fentropy_decomp ) then
+                c11lifw(i)  = c11lifw(i)    +  lfw * dlam1fw * deint2fw
+                c11lpfw(i)  = c11lpfw(i)    +  lfw * dlam1fw * depot2fw
+                c11lrfw(i)  = c11lrfw(i)    +  lfw * dlam1fw * derst2fw
+                c11lkfw(i)  = c11lkfw(i)    +  lfw * dlam1fw * dekin2fw
+            end if
+        end if
 
-        c11lt(i)    = c11lt(i)      +  dlam1   * detot2
-        c11ltfw(i)  = c11ltfw(i)    +  lfw * dlam1fw * detot2fw
-        c11lifw(i)  = c11lifw(i)    +  lfw * dlam1fw * deint2fw
-        c11lpfw(i)  = c11lpfw(i)    +  lfw * dlam1fw * depot2fw
-        c11lrfw(i)  = c11lrfw(i)    +  lfw * dlam1fw * derst2fw
-        c11lkfw(i)  = c11lkfw(i)    +  lfw * dlam1fw * dekin2fw
+        if( fintene .and. fintene_der ) then
+            licfp = icfphist(i,hist_len+hist_fidx)
+            licfk = - PMF_Rgas*ftemp * icfkhist(i,hist_len+hist_fidx)
+            licf  = licfp + licfk
+
+            call cst_accu_add_data_OMI(licf, invn, micf(i),    m2icf(i),    dicf1, dicf2)
+            call cst_accu_add_data_WOMI(licf, invw, lfw, micffw(i),    m2icffw(i),    dicf1fw, dicf2fw)
+            call cst_accu_add_data_WOM(licfp, invw, lfw, micfpfw(i),   m2icfpfw(i))
+            call cst_accu_add_data_WOM(licfk, invw, lfw, micfkfw(i),   m2icfkfw(i))
+
+            c11ii(i)    = c11ii(i)      +  dicf1   * deint2
+            c11iifw(i)  = c11iifw(i)    +  lfw * dicf1fw * deint2fw
+        end if
     end do
 
 end subroutine cst_accu_add_dhTds

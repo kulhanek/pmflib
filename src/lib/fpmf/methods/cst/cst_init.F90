@@ -88,7 +88,11 @@ subroutine cst_init_dat
     frveltol        = 1.0d-9        ! residual velocity in rattle/rattle-v
     fmaxiter        = 50            ! maximum of iteration in lambda optimization
 
-    fdhtds       = .false.       ! accumulate enthalpy
+    fintene         = .false.       ! accumulate enthalpy
+    fintene_der     = .false.
+    fentropy        = .false.
+    fentropy_decomp = .false.
+
     fepotaverage    = 0.0d0
     fekinaverage    = 0.0d0
     fenesample      = 1
@@ -157,7 +161,11 @@ subroutine cst_init_print_summary
     write(PMF_OUT,120)
     write(PMF_OUT,120)  ' Enthalpy/Entropy options:'
     write(PMF_OUT,120)  ' ------------------------------------------------------'
-    write(PMF_OUT,125)  ' Accumulate enthalpy/entropy (fdhtds)    : ', prmfile_onoff(fdhtds)
+    write(PMF_OUT,125)  ' Accumulate internal energy (fintene)    : ', prmfile_onoff(fintene)
+    write(PMF_OUT,125)  ' Accumulate intene deriv. (fintene_der)  : ', prmfile_onoff(fintene_der)
+    write(PMF_OUT,125)  ' Accumulate entropy (fentropy)           : ', prmfile_onoff(fentropy)
+    write(PMF_OUT,125)  ' Decompose entropy (fentropy_decomp)     : ', prmfile_onoff(fentropy_decomp)
+
     write(PMF_OUT,145)  ' Potential energy offset (fepotaverage)  : ', pmf_unit_get_rvalue(EnergyUnit,fepotaverage),  &
                                                                        '['//trim(pmf_unit_label(EnergyUnit))//']'
     write(PMF_OUT,145)  ' Kinetic energy offset (fekinaverage)    : ', pmf_unit_get_rvalue(EnergyUnit,fekinaverage), &
@@ -618,7 +626,7 @@ subroutine cst_init_core
     enevalidhist(:) = .false.
 
 ! enthalpy/entropy
-    if( fdhtds ) then
+    if( fintene .and. fintene_der ) then
         allocate( icfp(NumOfAllCONs),       &
                   icfk(NumOfAllCONs),       &
                   CSTFrc(3,NumOfLAtoms),    &
