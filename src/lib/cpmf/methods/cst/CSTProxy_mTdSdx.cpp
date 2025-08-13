@@ -35,55 +35,6 @@ CCSTProxy_mTdSdx::CCSTProxy_mTdSdx(void)
 {
     RegisterRealm(CST_mTdSdx, "mTdS/dx", "CST", "-TdS(x)=Cov(lam,H)/RT + TdS{CST}corr");
     RegisterRealm(CST_mTdSdx, "-TdS/dx", "CST", "-TdS(x)=Cov(lam,H)/RT + TdS{CST}corr");
-
-//    Requires.push_back("CST");
-//
-//    SupportedRealms["-TdS/dx"]      = CST_TdS;
-//    SupportedRealms["mTdS/dx"]      = CST_TdS;
-//
-//    SupportedRealms["-TdS_LT/dx"]   = CST_TdS_LT;
-//    SupportedRealms["mTdS_LT/dx"]   = CST_TdS_LT;
-//
-//    SupportedRealms["-TdS_LTFW/dx"] = CST_TdS_LTFW;
-//    SupportedRealms["mTdS_LTFW/dx"] = CST_TdS_LTFW;
-//
-//    SupportedRealms["-TdS_LIFW/dx"] = CST_TdS_LIFW;
-//    SupportedRealms["mTdS_LIFW/dx"] = CST_TdS_LIFW;
-//
-//    SupportedRealms["-TdS_LPFW/dx"] = CST_TdS_LPFW;
-//    SupportedRealms["mTdS_LPFW/dx"] = CST_TdS_LPFW;
-//
-//    SupportedRealms["-TdS_LRFW/dx"] = CST_TdS_LRFW;
-//    SupportedRealms["mTdS_LRFW/dx"] = CST_TdS_LRFW;
-//
-//    SupportedRealms["-TdS_LKFW/dx"] = CST_TdS_LKFW;
-//    SupportedRealms["mTdS_LKFW/dx"] = CST_TdS_LKFW;
-//
-//    SupportedRealms["-TdS_II/dx"]   = CST_TdS_II;
-//    SupportedRealms["mTdS_II/dx"]   = CST_TdS_II;
-//
-//    SupportedRealms["-TdS_IIFW/dx"] = CST_TdS_IIFW;
-//    SupportedRealms["mTdS_IIFW/dx"] = CST_TdS_IIFW;
-
-//    switch(type){
-//    // -------------------
-//        case(CST_TdS):
-//            return("CST -TdS(x)");
-//    // -------------------
-//        case(CST_TdS_LT):
-//            return("CST -TdS_LT(x)   cov(lambda,Epot)");
-//    // -------------------
-//        case(CST_TdS_LTFW):
-//            return("CST -TdS_LTFW(x) cov(lambda,Epot) - Fixman weighted");
-//    // -------------------
-//        case(CST_TdS_II):
-//            return("CST -TdS_II(x)   cov(ICF,Eint)");
-//    // -------------------
-//        case(CST_TdS_IIFW):
-//            return("CST -TdS_IIFW(x) cov(ICF,Eint) - Fixman weighted");
-//    // -------------------
-//        default:
-//            RUNTIME_ERROR("unsupported type");
 }
 
 //------------------------------------------------------------------------------

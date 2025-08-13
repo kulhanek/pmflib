@@ -27,9 +27,17 @@
 //------------------------------------------------------------------------------
 
 enum ECSTdHType {
-    CST_dH,
+    CST_dU,         // ETOT - Fixman weighted
+    CST_ETOT,       // ETOT
+    CST_ETOTFW,     // ETOT - Fixman weighted
     CST_EINT,       // EPOT+ERST
     CST_EINTFW,     // EPOT+ERST - Fixman weighted
+    CST_EPOT,       // EPOT
+    CST_EPOTFW,     // EPOT - Fixman weighted
+    CST_ERST,       // ERST
+    CST_ERSTFW,     // ERST - Fixman weighted
+    CST_EKIN,       // EKIN
+    CST_EKINFW,     // EKIN - Fixman weighted
 };
 
 //------------------------------------------------------------------------------

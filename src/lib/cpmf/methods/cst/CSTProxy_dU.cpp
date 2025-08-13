@@ -31,22 +31,17 @@ using namespace std;
 
 CCSTProxy_dU::CCSTProxy_dU(void)
 {
-//    Requires.push_back("CST");
-//
-//    SupportedRealms["dH"]       = CST_dH;
-//    SupportedRealms["EINT"]     = CST_EINT;
-//    SupportedRealms["EINTFW"]   = CST_EINTFW;
-
-//    // -------------------
-//        case(CST_dH):
-//            return("dH(x)=<Eint>");
-//    // -------------------
-//        case(CST_EINT):
-//            return("dH(x)=<Eint>");
-//    // -------------------
-//        case(CST_EINTFW):
-//            return("dH(x)=<EintFW>");
-//    // -------------------
+    RegisterRealm(CST_dU,       "dU",       "CST", "dU=<Etot>FW");
+    RegisterRealm(CST_ETOT,     "<Etot>",   "CST", "<Etot>");
+    RegisterRealm(CST_ETOTFW,   "<Etot>FW", "CST", "<Etot>FW");
+    RegisterRealm(CST_EINT,     "<Eint>",   "CST", "<Eint>");
+    RegisterRealm(CST_EINTFW,   "<Eint>FW", "CST", "<Eint>FW");
+    RegisterRealm(CST_EPOT,     "<Epot>",   "CST", "<Epot>");
+    RegisterRealm(CST_EPOTFW,   "<Epot>FW", "CST", "<Epot>FW");
+    RegisterRealm(CST_ERST,     "<Erst>",   "CST", "<Erst>");
+    RegisterRealm(CST_ERSTFW,   "<Erst>FW", "CST", "<Erst>FW");
+    RegisterRealm(CST_EKIN,     "<Ekin>",   "CST", "<Ekin>");
+    RegisterRealm(CST_EKINFW,   "<Ekin>FW", "CST", "<Ekin>FW");
 }
 
 //------------------------------------------------------------------------------
@@ -96,6 +91,34 @@ double CCSTProxy_dU::GetValue( int ibin,EProxyRealm realm) const
 
     switch(RealmID){
     // -------------------
+        case(CST_ETOT):{
+            mean        = Accu->GetData("METOT",ibin);
+            double M2   = Accu->GetData("M2ETOT",ibin);
+            samvar      = M2 / nsamples;
+            meanvar     = samvar / nsamples;
+        }
+        break;
+    // -------------------
+        case(CST_dU):
+        case(CST_ETOTFW):{
+            double fwsum    = Accu->GetData("FWSUM",ibin);
+            double fwsum2   = Accu->GetData("FWSUM2",ibin);
+
+            mean            = Accu->GetData("METOTFW",ibin);
+            double M2       = Accu->GetData("M2ETOTFW",ibin);
+
+            // number of effective measurements
+            double neff = fwsum2 / (fwsum * fwsum);
+
+            // unbiased weighted sample variance
+            samvar          = M2 / fwsum * neff / (neff - 1.0);
+
+            // variance of the weighted mean
+            // unbiased importance weights
+            meanvar         = samvar / neff;
+        }
+        break;
+    // -------------------
         case(CST_EINT):{
             mean        = Accu->GetData("MEINT",ibin);
             double M2   = Accu->GetData("M2EINT",ibin);
@@ -104,13 +127,93 @@ double CCSTProxy_dU::GetValue( int ibin,EProxyRealm realm) const
         }
         break;
     // -------------------
-        case(CST_dH):
         case(CST_EINTFW):{
             double fwsum    = Accu->GetData("FWSUM",ibin);
             double fwsum2   = Accu->GetData("FWSUM2",ibin);
 
             mean            = Accu->GetData("MEINTFW",ibin);
             double M2       = Accu->GetData("M2EINTFW",ibin);
+
+            // number of effective measurements
+            double neff = fwsum2 / (fwsum * fwsum);
+
+            // unbiased weighted sample variance
+            samvar          = M2 / fwsum * neff / (neff - 1.0);
+
+            // variance of the weighted mean
+            // unbiased importance weights
+            meanvar         = samvar / neff;
+        }
+        break;
+    // -------------------
+        case(CST_EPOT):{
+            mean        = Accu->GetData("MEPOT",ibin);
+            double M2   = Accu->GetData("M2EPOT",ibin);
+            samvar      = M2 / nsamples;
+            meanvar     = samvar / nsamples;
+        }
+        break;
+    // -------------------
+        case(CST_EPOTFW):{
+            double fwsum    = Accu->GetData("FWSUM",ibin);
+            double fwsum2   = Accu->GetData("FWSUM2",ibin);
+
+            mean            = Accu->GetData("MEPOTFW",ibin);
+            double M2       = Accu->GetData("M2EPOTFW",ibin);
+
+            // number of effective measurements
+            double neff = fwsum2 / (fwsum * fwsum);
+
+            // unbiased weighted sample variance
+            samvar          = M2 / fwsum * neff / (neff - 1.0);
+
+            // variance of the weighted mean
+            // unbiased importance weights
+            meanvar         = samvar / neff;
+        }
+        break;
+    // -------------------
+        case(CST_ERST):{
+            mean        = Accu->GetData("MERST",ibin);
+            double M2   = Accu->GetData("M2ERST",ibin);
+            samvar      = M2 / nsamples;
+            meanvar     = samvar / nsamples;
+        }
+        break;
+    // -------------------
+        case(CST_ERSTFW):{
+            double fwsum    = Accu->GetData("FWSUM",ibin);
+            double fwsum2   = Accu->GetData("FWSUM2",ibin);
+
+            mean            = Accu->GetData("MERSTFW",ibin);
+            double M2       = Accu->GetData("M2ERSTFW",ibin);
+
+            // number of effective measurements
+            double neff = fwsum2 / (fwsum * fwsum);
+
+            // unbiased weighted sample variance
+            samvar          = M2 / fwsum * neff / (neff - 1.0);
+
+            // variance of the weighted mean
+            // unbiased importance weights
+            meanvar         = samvar / neff;
+        }
+        break;
+    // -------------------
+        case(CST_EKIN):{
+            mean        = Accu->GetData("MEKIN",ibin);
+            double M2   = Accu->GetData("M2EKIN",ibin);
+            samvar      = M2 / nsamples;
+            meanvar     = samvar / nsamples;
+        }
+        break;
+    // -------------------
+        case(CST_EKINFW):{
+            double fwsum    = Accu->GetData("FWSUM",ibin);
+            double fwsum2   = Accu->GetData("FWSUM2",ibin);
+
+            mean            = Accu->GetData("MEKINFW",ibin);
+            double M2       = Accu->GetData("M2EKINFW",ibin);
 
             // number of effective measurements
             double neff = fwsum2 / (fwsum * fwsum);

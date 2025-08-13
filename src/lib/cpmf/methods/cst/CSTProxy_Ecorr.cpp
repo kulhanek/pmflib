@@ -108,9 +108,20 @@ double CCSTProxy_Ecorr::GetValue(int ibin,EProxyRealm realm) const
 // get requested data
     switch(RealmID){
     // -------------------
-        case(CST_dG_corr): {  // this requires MTC correction
+        case(CST_dG_corr): {
             double mfw  = Accu->GetData("MFW",ibin);
             mean        = - PMF_Rgas * temp * log(mfw);
+        }
+        break;
+    // -------------------
+        case(CST_mTdS_corr): {
+            double mfw   = Accu->GetData("MFWTDS",ibin);
+            double corr1 = PMF_Rgas * temp * log(mfw);
+
+            double C     = Accu->GetData("C11ZH",ibin);
+            double corr2 = C / nsamples / mfw;
+
+            mean         = - (corr1 + corr2);
         }
         break;
     // -------------------
