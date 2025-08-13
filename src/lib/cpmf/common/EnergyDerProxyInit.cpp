@@ -74,7 +74,7 @@ CEnergyDerProxyPtr CEnergyDerProxyInit::InitProxy(const CSmallString& realm,CPMF
         proxy = *it;
         it++;
         if( proxy->IsCompatible(accu) == false ) continue;
-        if( proxy->SetType(realm) ) return(proxy);
+        if( proxy->SetRealm(realm) ) return(proxy);
     }
 
     CSmallString error;
@@ -86,7 +86,7 @@ CEnergyDerProxyPtr CEnergyDerProxyInit::InitProxy(const CSmallString& realm,CPMF
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void CEnergyDerProxyInit::EnumerateTypes(std::list<CProxyRealmDescr>& dlist)
+void CEnergyDerProxyInit::EnumerateRealms(std::list<CProxyRealmDescr>& dlist)
 {
     std::list<CEnergyDerProxyPtr> eneder_proxies;
     InitProxyList(eneder_proxies);
@@ -99,7 +99,7 @@ void CEnergyDerProxyInit::EnumerateTypes(std::list<CProxyRealmDescr>& dlist)
 
     while( it != ie ){
         proxy = *it;
-        proxy->EnumerateTypes(dlist);
+        proxy->EnumerateRealms(dlist);
         it++;
     }
 }
@@ -111,14 +111,18 @@ void CEnergyDerProxyInit::EnumerateTypes(std::list<CProxyRealmDescr>& dlist)
 void CEnergyDerProxyInit::PrintRealms(std::ostream& fout)
 {
     std::list<CProxyRealmDescr> dlist;
-    EnumerateTypes(dlist);
+    EnumerateRealms(dlist);
     dlist.sort(CProxyRealmDescr::Compare);
 
     std::list<CProxyRealmDescr>::iterator it = dlist.begin();
     std::list<CProxyRealmDescr>::iterator ie = dlist.end();
 
+    fout << std::endl;
+    fout << "# Realm              Method Description                                           " << std::endl;
+    fout << "# ------------------ ------ ------------------------------------------------------" << std::endl;
+
     while( it != ie ){
-        fout << std::left << std::setw(20) << (*it).Realm << " " << std::setw(20) << (*it).Method << " " << (*it).Description << std::endl;
+        fout << std::left << std::setw(20) << (*it).Realm << " " << std::setw(6) << (*it).Method << " " << (*it).Description << std::endl;
         it++;
     }
 }

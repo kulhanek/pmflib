@@ -130,9 +130,6 @@ bool CPMFAccuInfo::Run(void)
     } else if( Options.GetProgArg(1) == "get-energy" ){
         GetEnergy(Options.GetProgArg(2));
 // -----------------------------------------------
-    } else if( Options.GetProgArg(1) == "get-mtc" ){
-        GetMTC();
-// -----------------------------------------------
     } else if( Options.GetProgArg(1) == "get-mean" ){
         GetMean(Options.GetProgArg(2));
 // -----------------------------------------------
@@ -321,39 +318,6 @@ void CPMFAccuInfo::GetEnergy(const CSmallString& name)
         CSmallString title;
         title << "derivative for: " << name;
         PrintHeader(title,true);
-    }
-
-    // print data
-    PrintData(true);
-
-    vout << debug;
-}
-
-//------------------------------------------------------------------------------
-
-void CPMFAccuInfo::GetMTC(void)
-{
-// prepare accumulator --------------------------
-    vout << "#" << endl;
-    vout << "# Data section: MTC (from CST)" << endl;
-
-    vout << high;
-
-    CCSTProxy_Ecorr_Ptr mtc_proxy   = CCSTProxy_Ecorr_Ptr(new CCSTProxy_Ecorr);
-    mtc_proxy->Init(Accu);
-
-    Values.CreateVector(Accu->GetNumOfBins());
-    Sigmas.CreateVector(Accu->GetNumOfBins());
-    Errors.CreateVector(Accu->GetNumOfBins());
-
-    for(int ibin=0; ibin < Accu->GetNumOfBins(); ibin++){
-        Values[ibin] = mtc_proxy->GetValue(ibin,E_PROXY_VALUE);
-        Sigmas[ibin] = mtc_proxy->GetValue(ibin,E_PROXY_SIGMA);
-        Errors[ibin] = mtc_proxy->GetValue(ibin,E_PROXY_ERROR);
-    }
-
-    if( Options.GetOptNoHeader() == false ){
-        PrintHeader("MTC (from CST)",true);
     }
 
     // print data

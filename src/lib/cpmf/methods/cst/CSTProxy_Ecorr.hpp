@@ -26,7 +26,14 @@
 
 //------------------------------------------------------------------------------
 
-/** \brief CST proxy providing the free energy contribution due to constrained CVs (metric tensor correction)
+enum ECSTEcorrType {
+    CST_dG_corr,
+    CST_mTdS_corr,
+};
+
+//------------------------------------------------------------------------------
+
+/** \brief CST proxy providing the free energy contribution due to constrained CVs
 */
 
 class PMF_PACKAGE CCSTProxy_Ecorr : public CEnergyProxy {
@@ -36,6 +43,12 @@ public:
     ~CCSTProxy_Ecorr(void);
 
 //------------------------------------------------------------------------------
+    // get number of samples
+    virtual int GetNumOfSamples(int ibin) const;
+
+    // set number of samples
+    virtual void SetNumOfSamples(int ibin,int nsamples);
+
     // get energy derivative and its error
     virtual double GetValue( int ibin,EProxyRealm realm) const;
 };

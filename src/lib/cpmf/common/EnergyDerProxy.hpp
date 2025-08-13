@@ -37,7 +37,7 @@ public:
     virtual CEnergyProxyPtr GetEnergyCorrection(void);
 
     // get derivative and its error
-    double GetValue(int ibin,int cv,EProxyRealm realm) const;
+    virtual double GetValue(int ibin,int cv,EProxyRealm realm) const;
 };
 
 //------------------------------------------------------------------------------

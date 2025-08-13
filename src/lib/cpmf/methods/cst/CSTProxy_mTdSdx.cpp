@@ -33,6 +33,9 @@ using namespace std;
 
 CCSTProxy_mTdSdx::CCSTProxy_mTdSdx(void)
 {
+    RegisterRealm(CST_mTdSdx, "mTdS/dx", "CST", "-TdS(x)=Cov(lam,H)/RT + TdS{CST}corr");
+    RegisterRealm(CST_mTdSdx, "-TdS/dx", "CST", "-TdS(x)=Cov(lam,H)/RT + TdS{CST}corr");
+
 //    Requires.push_back("CST");
 //
 //    SupportedRealms["-TdS/dx"]      = CST_TdS;
@@ -96,8 +99,9 @@ CCSTProxy_mTdSdx::~CCSTProxy_mTdSdx(void)
 CEnergyProxyPtr CCSTProxy_mTdSdx::GetEnergyCorrection(void)
 {
     CEnergyProxyPtr ene_proxy;
-    if( RealmID == CST_TdS ){
+    if( RealmID == CST_mTdSdx ){
         ene_proxy = CCSTProxy_Ecorr_Ptr(new CCSTProxy_Ecorr);
+        ene_proxy->SetRealm(CST_mTdS_corr);
         ene_proxy->Init(Accu);
     }
     return(ene_proxy);
@@ -146,40 +150,39 @@ double CCSTProxy_mTdSdx::GetValue(int ibin,int icv,EProxyRealm realm) const
 // get requested data
     switch(RealmID){
     // -------------------
-        case(CST_TdS):      // plus MTC
-        case(CST_TdS_LT):{
+        case(CST_mTdSdx):{      // plus corrction
             double C        = Accu->GetData("C11LT",ibin,icv);
             mean            = C / nsamples;
             samvar          = 0.0;  // FIXME
             meanvar         = 0.0;
         }
         break;
-    // -------------------
-        case(CST_TdS_LTFW):{
-            double fwsum    = Accu->GetData("FWSUM",ibin);
-            double C        = Accu->GetData("C11LTFW",ibin,icv);
-            mean            = C / fwsum;
-            samvar          = 0.0;  // FIXME
-            meanvar         = 0.0;
-        }
-        break;
-    // -------------------
-        case(CST_TdS_II):{
-            double C        = Accu->GetData("C11II",ibin,icv);
-            mean            = C / nsamples;
-            samvar          = 0.0;  // FIXME
-            meanvar         = 0.0;
-        }
-        break;
-    // -------------------
-        case(CST_TdS_IIFW):{
-            double fwsum    = Accu->GetData("FWSUM",ibin);
-            double C        = Accu->GetData("C11IIFW",ibin,icv);
-            mean            = C / fwsum;
-            samvar          = 0.0;  // FIXME
-            meanvar         = 0.0;
-        }
-        break;
+//    // -------------------
+//        case(CST_TdS_LTFW):{
+//            double fwsum    = Accu->GetData("FWSUM",ibin);
+//            double C        = Accu->GetData("C11LTFW",ibin,icv);
+//            mean            = C / fwsum;
+//            samvar          = 0.0;  // FIXME
+//            meanvar         = 0.0;
+//        }
+//        break;
+//    // -------------------
+//        case(CST_TdS_II):{
+//            double C        = Accu->GetData("C11II",ibin,icv);
+//            mean            = C / nsamples;
+//            samvar          = 0.0;  // FIXME
+//            meanvar         = 0.0;
+//        }
+//        break;
+//    // -------------------
+//        case(CST_TdS_IIFW):{
+//            double fwsum    = Accu->GetData("FWSUM",ibin);
+//            double C        = Accu->GetData("C11IIFW",ibin,icv);
+//            mean            = C / fwsum;
+//            samvar          = 0.0;  // FIXME
+//            meanvar         = 0.0;
+//        }
+//        break;
     // -------------------
         default:
             RUNTIME_ERROR("unsupported type");

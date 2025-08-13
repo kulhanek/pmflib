@@ -20,8 +20,10 @@
 // =============================================================================
 
 #include <EnergyProxyInit.hpp>
+#include <iomanip>
 #include <ABFProxy_dU.hpp>
 #include <CSTProxy_dU.hpp>
+#include <CSTProxy_Ecorr.hpp>
 
 //==============================================================================
 //------------------------------------------------------------------------------
@@ -37,6 +39,9 @@ void CEnergyProxyInit::InitProxyList(std::list<CEnergyProxyPtr>& ene_proxies)
 
     proxy = CEnergyProxyPtr(new CCSTProxy_dU);
     ene_proxies.push_back(proxy);
+
+    proxy = CEnergyProxyPtr(new CCSTProxy_Ecorr);
+    ene_proxies.push_back(proxy);
 }
 
 //==============================================================================
@@ -45,25 +50,70 @@ void CEnergyProxyInit::InitProxyList(std::list<CEnergyProxyPtr>& ene_proxies)
 
 CEnergyProxyPtr CEnergyProxyInit::InitProxy(const CSmallString& realm,CPMFAccumulatorPtr& accu)
 {
-    std::list<CEnergyProxyPtr> ened_proxies;
-    InitProxyList(ened_proxies);
+    std::list<CEnergyProxyPtr> ene_proxies;
+    InitProxyList(ene_proxies);
 
     CEnergyProxyPtr proxy;
 
 // find suitable proxy
-    std::list<CEnergyProxyPtr>::iterator it = ened_proxies.begin();
-    std::list<CEnergyProxyPtr>::iterator ie = ened_proxies.end();
+    std::list<CEnergyProxyPtr>::iterator it = ene_proxies.begin();
+    std::list<CEnergyProxyPtr>::iterator ie = ene_proxies.end();
 
     while( it != ie ){
         proxy = *it;
         it++;
         if( proxy->IsCompatible(accu) == false ) continue;
-        if( proxy->SetType(realm) ) return(proxy);
+        if( proxy->SetRealm(realm) ) return(proxy);
     }
 
     CSmallString error;
     error << "incompatible method: " << accu->GetMethod() << " with requested realm: " <<  realm;
     RUNTIME_ERROR(error);
+}
+
+//==============================================================================
+//------------------------------------------------------------------------------
+//==============================================================================
+
+void CEnergyProxyInit::EnumerateRealms(std::list<CProxyRealmDescr>& dlist)
+{
+    std::list<CEnergyProxyPtr> ene_proxies;
+    InitProxyList(ene_proxies);
+
+    CEnergyProxyPtr proxy;
+
+// find suitable proxy
+    std::list<CEnergyProxyPtr>::iterator it = ene_proxies.begin();
+    std::list<CEnergyProxyPtr>::iterator ie = ene_proxies.end();
+
+    while( it != ie ){
+        proxy = *it;
+        proxy->EnumerateRealms(dlist);
+        it++;
+    }
+}
+
+//==============================================================================
+//------------------------------------------------------------------------------
+//==============================================================================
+
+void CEnergyProxyInit::PrintRealms(std::ostream& fout)
+{
+    std::list<CProxyRealmDescr> dlist;
+    EnumerateRealms(dlist);
+    dlist.sort(CProxyRealmDescr::Compare);
+
+    std::list<CProxyRealmDescr>::iterator it = dlist.begin();
+    std::list<CProxyRealmDescr>::iterator ie = dlist.end();
+
+    fout << std::endl;
+    fout << "# Realm              Method Description                                           " << std::endl;
+    fout << "# ------------------ ------ ------------------------------------------------------" << std::endl;
+
+    while( it != ie ){
+        fout << std::left << std::setw(20) << (*it).Realm << " " << std::setw(6) << (*it).Method << " " << (*it).Description << std::endl;
+        it++;
+    }
 }
 
 //==============================================================================

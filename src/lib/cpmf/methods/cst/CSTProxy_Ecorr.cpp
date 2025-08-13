@@ -32,9 +32,9 @@ using namespace std;
 
 CCSTProxy_Ecorr::CCSTProxy_Ecorr(void)
 {
-//    Requires.push_back("CST");
-//    Realm       = "MTC";
-//    Description = "CST E{MTC}";      // metric tensor correction
+    RegisterRealm(CST_dG_corr,   "dG_corr",     "CST", "dG{CST}corr");
+    RegisterRealm(CST_mTdS_corr, "mTdS_corr",   "CST", "-TdS{CST}corr");
+    RegisterRealm(CST_mTdS_corr, "-TdS_corr",   "CST", "-TdS{CST}corr");
 }
 
 //------------------------------------------------------------------------------
@@ -47,38 +47,92 @@ CCSTProxy_Ecorr::~CCSTProxy_Ecorr(void)
 //------------------------------------------------------------------------------
 //==============================================================================
 
+int CCSTProxy_Ecorr::GetNumOfSamples(int ibin) const
+{
+    if( Accu == NULL ){
+        RUNTIME_ERROR("Accu is NULL");
+    }
+    switch(RealmID){
+    // -------------------
+        case(CST_dG_corr):
+            return(Accu->GetData("NSAMPLES",ibin));
+    // -------------------
+        case(CST_mTdS_corr):
+            return(Accu->GetData("NTDS",ibin));
+        break;
+    // -------------------
+        default:
+            RUNTIME_ERROR("unsupported type");
+    }
+}
+
+//------------------------------------------------------------------------------
+
+void CCSTProxy_Ecorr::SetNumOfSamples(int ibin,int nsamples)
+{
+    if( Accu == NULL ){
+        RUNTIME_ERROR("Accu is NULL");
+    }
+    switch(RealmID){
+    // -------------------
+        case(CST_dG_corr):
+            Accu->SetData("NSAMPLES",ibin,nsamples);
+    // -------------------
+        case(CST_mTdS_corr):
+            Accu->SetData("NTDS",ibin,nsamples);
+        break;
+    // -------------------
+        default:
+            RUNTIME_ERROR("unsupported type");
+    }
+}
+
+//------------------------------------------------------------------------------
+
 double CCSTProxy_Ecorr::GetValue(int ibin,EProxyRealm realm) const
 {
     if( Accu == NULL ){
         RUNTIME_ERROR("Accu is NULL");
     }
 
-    double  nsamples = Accu->GetData("NSAMPLES",ibin);
-    double  mfw      = Accu->GetData("MFW",ibin);
+    double  ncorr    = Accu->GetNCorr();
     double  temp     = Accu->GetTemperature();
+    double  mean     = 0.0; // sample mean
+    double  samvar   = 0.0; // sample variance
+    double  meanvar  = 0.0; // variance of sample mean
 
-    double value = 0.0;
-    if( nsamples <= 0 ) return(value);
+// do we have enough samples?
+    double nsamples    = GetNumOfSamples(ibin);
+    if( nsamples <= 0 ) return(mean);
 
-    switch(realm){
-// MTC correction
-        // -------------------
-        case(E_PROXY_VALUE): {
-            double value = - PMF_Rgas * temp * log(mfw) ;
-            return( value );
+// get requested data
+    switch(RealmID){
+    // -------------------
+        case(CST_dG_corr): {  // this requires MTC correction
+            double mfw  = Accu->GetData("MFW",ibin);
+            mean        = - PMF_Rgas * temp * log(mfw);
         }
+        break;
+    // -------------------
+        default:
+            RUNTIME_ERROR("unsupported type");
+    }
+
+// return result
+    switch(realm){
+        // -------------------
+        case(E_PROXY_VALUE):
+            return( mean );
         // -------------------
         case(E_PROXY_SIGMA):
-            return( 0.0 );      // FIXME
+            return( sqrt(samvar) );
         // -------------------
         case(E_PROXY_ERROR):
-            return( 0.0 );      // FIXME
+            return( sqrt(ncorr * meanvar) );
         // -------------------
         default:
             RUNTIME_ERROR("unsupported realm");
     }
-
-    return(value);
 }
 
 //==============================================================================

@@ -66,7 +66,7 @@ CBaseProxy::~CBaseProxy(void)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void CBaseProxy::RegisterRealm(int realmid,const CSmallString& method,const CSmallString& realm,const CSmallString& descr)
+void CBaseProxy::RegisterRealm(int realmid,const CSmallString& realm,const CSmallString& method,const CSmallString& descr)
 {
     CProxyRealmDescr rdesc;
     rdesc.RealmID = realmid;
@@ -105,7 +105,7 @@ bool CBaseProxy::IsCompatible(CPMFAccumulatorPtr accu)
 
 //------------------------------------------------------------------------------
 
-bool CBaseProxy::SetType(const CSmallString& realm)
+bool CBaseProxy::SetRealm(const CSmallString& realm)
 {
     if( SupportedRealms.count(realm) == 0 ) return(false);
     RealmID = SupportedRealms[realm].RealmID;
@@ -114,7 +114,27 @@ bool CBaseProxy::SetType(const CSmallString& realm)
 
 //------------------------------------------------------------------------------
 
-void CBaseProxy::EnumerateTypes(std::list<CProxyRealmDescr>& dlist)
+void CBaseProxy::SetRealm(int realmid)
+{
+    std::map<CSmallString,CProxyRealmDescr>::iterator rit = SupportedRealms.begin();
+    std::map<CSmallString,CProxyRealmDescr>::iterator rie = SupportedRealms.end();
+
+    CSmallString realm;
+
+    while(rit != rie){
+        if( rit->second.RealmID == realmid ){
+            RealmID = rit->second.RealmID;
+            return;
+        }
+        rit++;
+    }
+
+    RUNTIME_ERROR("unsupported realmID");
+}
+
+//------------------------------------------------------------------------------
+
+void CBaseProxy::EnumerateRealms(std::list<CProxyRealmDescr>& dlist)
 {
     std::set<CSmallString>::iterator  mit = Requires.begin();
     std::set<CSmallString>::iterator  mie = Requires.end();

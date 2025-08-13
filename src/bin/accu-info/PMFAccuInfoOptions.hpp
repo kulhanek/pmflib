@@ -56,7 +56,6 @@ public:
     "                                               ** <b>get-section</b>       - get data from the section\n"
     "                                               ** <b>get-derivative</b>    - get derivative for given realm\n"
     "                                               ** <b>get-energy</b>        - get energy for given realm\n"
-    "                                               ** <b>get-mtc</b>           - get MTC correction\n"
     "                                               ** <b>get-mean</b>          - get sample mean, variance, and mean error\n"
     "                                               ** <b>get-tseries</b>       - get time series\n"
     "                                               ** <b>nsamples</b>          - print number of samples in bins\n"
@@ -79,87 +78,41 @@ public:
     CSO_LIST_END
 
     CSO_MAP_BEGIN
-// description of options ---------------------------------------------------
-    CSO_MAP_OPT(int,                           /* option type */
-                Limit,                        /* option name */
-                0,                          /* default value */
-                false,                          /* is option mandatory */
-                'l',                           /* short option name */
-                "limit",                      /* long option name */
-                "LIMIT",                           /* parameter name */
-                "Only bins containing more samples than NUMBER will be reported.")   /* option description */
-    //----------------------------------------------------------------------
-    CSO_MAP_OPT(int,                           /* option type */
-                CV,                        /* option name */
-                1,                          /* default value */
-                false,                          /* is option mandatory */
-                'i',                           /* short option name */
-                "item",                      /* long option name */
-                "CV",                           /* parameter name */
-                "Select CV for data printing.")   /* option description */
-    //----------------------------------------------------------------------
-    CSO_MAP_OPT(bool,                           /* option type */
-                NoGNUPlot,                        /* option name */
-                false,                          /* default value */
-                false,                          /* is option mandatory */
-                0,                           /* short option name */
-                "nognuplot",                      /* long option name */
-                NULL,                           /* parameter name */
-                "Do not print delimiters between records.")   /* option description */
-    //----------------------------------------------------------------------
-    CSO_MAP_OPT(bool,                           /* option type */
-                NoHeader,                        /* option name */
-                false,                          /* default value */
-                false,                          /* is option mandatory */
-                0,                           /* short option name */
-                "noheader",                      /* long option name */
-                NULL,                           /* parameter name */
-                "Do not print header to the output.")   /* option description */
-    //----------------------------------------------------------------------
-    CSO_MAP_OPT(CSmallString,                           /* option type */
-                IXFormat,                        /* option name */
-                "%15.7e",                          /* default value */
-                false,                          /* is option mandatory */
-                '\0',                           /* short option name */
-                "fx",                      /* long option name */
-                "FORMAT",                           /* parameter name */
-                "FORMAT for printing values of collective variables.")   /* option description */
-    //----------------------------------------------------------------------
-    CSO_MAP_OPT(CSmallString,                           /* option type */
-                OSFormat,                        /* option name */
-                "%15.7e",                          /* default value */
-                false,                          /* is option mandatory */
-                '\0',                           /* short option name */
-                "fe",                      /* long option name */
-                "FORMAT",                           /* parameter name */
-                "FORMAT for printing values of section data.")   /* option description */
-    //----------------------------------------------------------------------
-    CSO_MAP_OPT(bool,                           /* option type */
-                Verbose,                        /* option name */
-                false,                          /* default value */
-                false,                          /* is option mandatory */
-                'v',                           /* short option name */
-                "verbose",                      /* long option name */
-                NULL,                           /* parameter name */
-                "Increase output verbosity.")   /* option description */
-    //----------------------------------------------------------------------
-    CSO_MAP_OPT(bool,                           /* option type */
-                Version,                        /* option name */
-                false,                          /* default value */
-                false,                          /* is option mandatory */
-                '\0',                           /* short option name */
-                "version",                      /* long option name */
-                NULL,                           /* parameter name */
-                "Output version information and exit.")   /* option description */
-    //----------------------------------------------------------------------
-    CSO_MAP_OPT(bool,                           /* option type */
-                Help,                        /* option name */
-                false,                          /* default value */
-                false,                          /* is option mandatory */
-                'h',                           /* short option name */
-                "help",                      /* long option name */
-                NULL,                           /* parameter name */
-                "Display this help and exit.")   /* option description */
+        CSO_MAP_OPT(int, Limit, 0, false, 'l', "limit", "LIMIT",
+            "Report only bins containing more samples than the specified NUMBER."
+            )
+        // -------------------------------------------
+        CSO_MAP_OPT(int, CV, 1, false, 'i', "item", "CV",
+            "Select the collective variable (CV) for data output."
+            )
+        // -------------------------------------------
+        CSO_MAP_OPT(bool, NoGNUPlot, false, false, 0, "nognuplot", NULL,
+            "Disable printing of delimiters between records."
+            )
+        // -------------------------------------------
+        CSO_MAP_OPT(bool, NoHeader, false, false, 0, "noheader", NULL,
+            "Do not print the header in the output."
+            )
+        // -------------------------------------------
+        CSO_MAP_OPT(CSmallString, IXFormat, "%15.7e", false, '\0', "fx", "FORMAT",
+            "Format string for printing values of collective variables."
+            )
+        // -------------------------------------------
+        CSO_MAP_OPT(CSmallString, OSFormat, "%15.7e", false, '\0', "fe", "FORMAT",
+            "Format string for printing values of section data."
+            )
+        // -------------------------------------------
+        CSO_MAP_OPT(bool, Verbose, false, false, 'v', "verbose", NULL,
+            "Increase the verbosity of the output."
+            )
+        // -------------------------------------------
+        CSO_MAP_OPT(bool, Version, false, false, '\0', "version", NULL,
+            "Display version information and exit."
+            )
+        // -------------------------------------------
+        CSO_MAP_OPT(bool, Help, false, false, 'h', "help", NULL,
+            "Display this help message and exit."
+            )
     CSO_MAP_END
 
 // final operation with options ------------------------------------------------

@@ -20,6 +20,8 @@
 // =============================================================================
 
 #include "PMFEneOptions.hpp"
+#include <EnergyProxyInit.hpp>
+#include <iostream>
 
 //==============================================================================
 //------------------------------------------------------------------------------
@@ -171,6 +173,11 @@ int CPMFEneOptions::FinalizeOptions(void)
 
     if(GetOptVersion() == true) {
         PrintVersion();
+        ret_opt = true;
+    }
+
+    if( GetOptListRealms() == true){
+        CEnergyProxyInit::PrintRealms(std::cout);
         ret_opt = true;
     }
 

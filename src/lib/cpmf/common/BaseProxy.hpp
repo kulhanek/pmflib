@@ -64,7 +64,7 @@ public:
 
 // setup methods ---------------------------------------------------------------
     // register realm
-    void RegisterRealm(int realmid,const CSmallString& method,const CSmallString& realm,const CSmallString& descr);
+    void RegisterRealm(int realmid,const CSmallString& realm,const CSmallString& method,const CSmallString& descr);
 
     // set accumulator and perform sanity checks
     virtual void Init(CPMFAccumulatorPtr accu);
@@ -73,10 +73,13 @@ public:
     virtual bool IsCompatible(CPMFAccumulatorPtr accu);
 
     // set type if it is supported
-    virtual bool SetType(const CSmallString& realm);
+    virtual bool SetRealm(const CSmallString& realm);
+
+    // set type - if not supported throw runtime_error
+    virtual void SetRealm(int realmid);
 
     // enumerate types
-    virtual void EnumerateTypes(std::list<CProxyRealmDescr>& dlist);
+    virtual void EnumerateRealms(std::list<CProxyRealmDescr>& dlist);
 
 // access methods -------------------------------------------------------------
     // get PMF accumulator

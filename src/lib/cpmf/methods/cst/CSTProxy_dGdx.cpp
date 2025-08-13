@@ -32,7 +32,7 @@ using namespace std;
 
 CCSTProxy_dGdx::CCSTProxy_dGdx(void)
 {
-    RegisterRealm(CST_dGdx, "dG/dx", "CST", "dG(x)=|<l> dx| + dE{CST}corr");
+    RegisterRealm(CST_dGdx, "dG/dx", "CST", "dG(x)=|<lam> dx| + dG{CST}corr");
 }
 
 //------------------------------------------------------------------------------
@@ -50,6 +50,7 @@ CEnergyProxyPtr CCSTProxy_dGdx::GetEnergyCorrection(void)
     CEnergyProxyPtr ene_proxy;
     if( RealmID == CST_dGdx ){
         ene_proxy = CCSTProxy_Ecorr_Ptr(new CCSTProxy_Ecorr);
+        ene_proxy->SetRealm(CST_dG_corr);
         ene_proxy->Init(Accu);
     }
     return(ene_proxy);

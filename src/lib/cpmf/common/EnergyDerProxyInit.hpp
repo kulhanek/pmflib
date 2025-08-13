@@ -36,7 +36,7 @@ public:
     static void PrintRealms(std::ostream& fout);
 
     /// enumerate supported realms
-    static void EnumerateTypes(std::list<CProxyRealmDescr>& dlist);
+    static void EnumerateRealms(std::list<CProxyRealmDescr>& dlist);
 
 private:
     /// create list of all supported proxies

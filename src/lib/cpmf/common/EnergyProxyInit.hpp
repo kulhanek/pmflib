@@ -29,8 +29,17 @@
 
 class PMF_PACKAGE CEnergyProxyInit {
 public:
-// setup methods ---------------------------------------------------------------
+    /// init requested proxy
     static CEnergyProxyPtr InitProxy(const CSmallString& realm,CPMFAccumulatorPtr& accu);
+
+    /// print supported realms
+    static void PrintRealms(std::ostream& fout);
+
+    /// enumerate supported realms
+    static void EnumerateRealms(std::list<CProxyRealmDescr>& dlist);
+
+private:
+    /// create list of all supported proxies
     static void InitProxyList(std::list<CEnergyProxyPtr>& ene_proxies);
 };
 

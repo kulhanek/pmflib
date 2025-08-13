@@ -26,7 +26,7 @@
 //------------------------------------------------------------------------------
 
 enum ECSTTdSdxType {
-    CST_TdS,
+    CST_mTdSdx,
 
     CST_TdS_LT,         // Cov(lambda,Etot)
 
