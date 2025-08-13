@@ -33,7 +33,6 @@
 #include <ABFProxy_mTdSdx.hpp>
 #include <CSTProxy_dGdx.hpp>
 #include <CSTProxy_mTdSdx.hpp>
-#include <PMFProxy_dH.hpp>
 
 //------------------------------------------------------------------------------
 

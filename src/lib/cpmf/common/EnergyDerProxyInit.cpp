@@ -25,6 +25,7 @@
 #include <CSTProxy_dGdx.hpp>
 #include <CSTProxy_dHdx.hpp>
 #include <CSTProxy_mTdSdx.hpp>
+#include <iomanip>
 
 //==============================================================================
 //------------------------------------------------------------------------------
@@ -79,6 +80,47 @@ CEnergyDerProxyPtr CEnergyDerProxyInit::InitProxy(const CSmallString& realm,CPMF
     CSmallString error;
     error << "incompatible method: " << accu->GetMethod() << " with requested realm: " <<  realm;
     RUNTIME_ERROR(error);
+}
+
+//==============================================================================
+//------------------------------------------------------------------------------
+//==============================================================================
+
+void CEnergyDerProxyInit::EnumerateTypes(std::list<CProxyRealmDescr>& dlist)
+{
+    std::list<CEnergyDerProxyPtr> eneder_proxies;
+    InitProxyList(eneder_proxies);
+
+    CEnergyDerProxyPtr proxy;
+
+// find suitable proxy
+    std::list<CEnergyDerProxyPtr>::iterator it = eneder_proxies.begin();
+    std::list<CEnergyDerProxyPtr>::iterator ie = eneder_proxies.end();
+
+    while( it != ie ){
+        proxy = *it;
+        proxy->EnumerateTypes(dlist);
+        it++;
+    }
+}
+
+//==============================================================================
+//------------------------------------------------------------------------------
+//==============================================================================
+
+void CEnergyDerProxyInit::PrintRealms(std::ostream& fout)
+{
+    std::list<CProxyRealmDescr> dlist;
+    EnumerateTypes(dlist);
+    dlist.sort(CProxyRealmDescr::Compare);
+
+    std::list<CProxyRealmDescr>::iterator it = dlist.begin();
+    std::list<CProxyRealmDescr>::iterator ie = dlist.end();
+
+    while( it != ie ){
+        fout << std::left << std::setw(20) << (*it).Realm << " " << std::setw(20) << (*it).Method << " " << (*it).Description << std::endl;
+        it++;
+    }
 }
 
 //==============================================================================

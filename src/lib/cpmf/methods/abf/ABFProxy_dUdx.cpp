@@ -32,56 +32,26 @@ using namespace std;
 
 CABFProxy_dHdx::CABFProxy_dHdx(void)
 {
-    Requires.push_back("ABF");
+//    Requires.push_back("ABF");
 
 //    SupportedRealms["dG/dx"]        = CST_dG;
 //    SupportedRealms["MICF/dx"]      = CST_MICF;
 //    SupportedRealms["MICFFW/dx"]    = CST_MICFFW;
 //    SupportedRealms["MICFPFW/dx"]   = CST_MICFPFW;
 //    SupportedRealms["MICFKFW/dx"]   = CST_MICFKFW;
+//
+//    // -------------------
+//        case(ABF_dH):
+//            return("ABF dH(x) (based on derivatives)");
+//    // -------------------
+//        case(ABF_MICFP):
+//            return("ABF ICFP(x)");
 }
 
 //------------------------------------------------------------------------------
 
 CABFProxy_dHdx::~CABFProxy_dHdx(void)
 {
-}
-
-//==============================================================================
-//------------------------------------------------------------------------------
-//==============================================================================
-
-bool CABFProxy_dHdx::SetType(const CSmallString& realm)
-{
-    if( SupportedRealms.count(realm) == 0 ) return(false);
-    Realm = realm;
-    SetType(SupportedRealms[realm]);
-    return(true);
-}
-
-//------------------------------------------------------------------------------
-
-void CABFProxy_dHdx::SetType(EABFdHType type)
-{
-    Type = type;
-    Description = GetTypeDescription(Type);
-}
-
-//------------------------------------------------------------------------------
-
-const CSmallString CABFProxy_dHdx::GetTypeDescription(EABFdHType type)
-{
-    switch(type){
-    // -------------------
-        case(ABF_dH):
-            return("ABF dH(x) (based on derivatives)");
-    // -------------------
-        case(ABF_MICFP):
-            return("ABF ICFP(x)");
-    // -------------------
-        default:
-            RUNTIME_ERROR("unsupported type");
-    }
 }
 
 //==============================================================================
@@ -118,7 +88,7 @@ double CABFProxy_dHdx::GetValue(int ibin,int icv,EProxyRealm realm) const
     double ncorr = Accu->GetNCorr();
     double temp  = Accu->GetTemperature();
 
-    switch(Type){
+    switch(RealmID){
     // -------------------
         case(ABF_dH): {
             double  nsamples    = Accu->GetData("NTDS",ibin);

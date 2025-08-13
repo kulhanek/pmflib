@@ -9,6 +9,7 @@ SET(CPMF_METHODS_SRC
         common/PMFAccumulator.cpp
         common/EnergySurface.cpp
         common/ESPrinter.cpp
+        common/BaseProxy.cpp
         common/EnergyProxy.cpp
         common/EnergyProxyInit.cpp
         common/EnergyDerProxy.cpp
@@ -25,7 +26,6 @@ SET(CPMF_METHODS_SRC
         common/smoothers/SmootherGPR.cpp
 
     # PMF
-        methods/pmf/PMFProxy_dH.cpp
         methods/pmf/GHSIntegratorGPR0A.cpp
         methods/pmf/GHSIntegratorGPR0B.cpp
         methods/pmf/GHSIntegratorGPRcA.cpp

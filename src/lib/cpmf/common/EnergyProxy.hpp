@@ -22,69 +22,19 @@
 // =============================================================================
 
 #include <PMFMainHeader.hpp>
-#include <SmallString.hpp>
-#include <PMFAccumulator.hpp>
-#include <vector>
+#include <BaseProxy.hpp>
 
 //------------------------------------------------------------------------------
 
-// if a given realm cannot provide a value, return zero.
-
-enum EProxyRealm {
-    E_PROXY_VALUE        = 1,  // sample mean
-    E_PROXY_SIGMA        = 2,  // sample variance (fluctuation)
-    E_PROXY_ERROR        = 3,  // variance of sample mean (error estimate)
-};
-
-//------------------------------------------------------------------------------
-
-class PMF_PACKAGE CEnergyProxy {
+class PMF_PACKAGE CEnergyProxy : public CBaseProxy {
 public:
 // constructor and destructor --------------------------------------------------
     CEnergyProxy(void);
     virtual ~CEnergyProxy(void);
 
-// setup methods ---------------------------------------------------------------
-    // set accumulator and perform sanity checks
-    virtual void Init(CPMFAccumulatorPtr accu);
-
-    // is compatible with PMF Accumulator method
-    virtual bool IsCompatible(CPMFAccumulatorPtr accu);
-
-    // set type if it is supported
-    virtual bool SetType(const CSmallString& realm);
-
 // access methods --------------------------------------------------------------
-    // get PMF accumulator
-    CPMFAccumulatorPtr GetAccu(void);
-
-    // get realm
-    CSmallString GetRealm(void);
-
-    // get realm description
-    CSmallString GetDescription(void);
-
-    /// return number of cvs
-    int GetNumOfCVs(void) const;
-
-    /// return number of bins
-    int GetNumOfBins(void) const;
-
-    // get number of samples (NSAMPLES)
-    virtual int GetNumOfSamples(int ibin) const;
-
-    // set number of samples
-    virtual void SetNumOfSamples(int ibin,int nsamples);
-
     // get energy and its error
     virtual double GetValue( int ibin,EProxyRealm realm) const;
-
-// protected data --------------------------------------------------------------
-protected:
-    std::vector<std::string>    Requires;
-    CSmallString                Realm;
-    CSmallString                Description;
-    CPMFAccumulatorPtr          Accu;
 };
 
 //------------------------------------------------------------------------------

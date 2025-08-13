@@ -22,6 +22,8 @@
 // =============================================================================
 
 #include "PMFEnergyIntOptions.hpp"
+#include <EnergyDerProxyInit.hpp>
+#include <iostream>
 
 //==============================================================================
 //------------------------------------------------------------------------------
@@ -343,6 +345,11 @@ int CPMFEnergyIntOptions::FinalizeOptions(void)
 
     if(GetOptVersion() == true) {
         PrintVersion();
+        ret_opt = true;
+    }
+
+    if( GetOptListRealms() == true){
+        CEnergyDerProxyInit::PrintRealms(std::cout);
         ret_opt = true;
     }
 

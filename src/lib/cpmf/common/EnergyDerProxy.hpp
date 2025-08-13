@@ -21,62 +21,23 @@
 // =============================================================================
 
 #include <PMFMainHeader.hpp>
+#include <BaseProxy.hpp>
 #include <EnergyProxy.hpp>
-#include <vector>
-#include <SmallString.hpp>
 
 //------------------------------------------------------------------------------
 
-class PMF_PACKAGE CEnergyDerProxy {
+class PMF_PACKAGE CEnergyDerProxy : public CBaseProxy {
 public:
 // constructor and destructor --------------------------------------------------
     CEnergyDerProxy(void);
     virtual ~CEnergyDerProxy(void);
 
-// setup methods ---------------------------------------------------------------
-    // set accumulator and perform sanity checks
-    virtual void Init(CPMFAccumulatorPtr accu);
-
-    // is compatible with PMF Accumulator method
-    virtual bool IsCompatible(CPMFAccumulatorPtr accu);
-
-    // set type if it is supported
-    virtual bool SetType(const CSmallString& realm);
-
 // access methods -------------------------------------------------------------
-    // get PMF accumulator
-    CPMFAccumulatorPtr GetAccu(void);
-
     // get optional energy correction
     virtual CEnergyProxyPtr GetEnergyCorrection(void);
 
-    // get realm
-    CSmallString GetRealm(void);
-
-    // get realm description
-    CSmallString GetDescription(void);
-
-    /// return number of cvs
-    int GetNumOfCVs(void) const;
-
-    /// return number of bins
-    int GetNumOfBins(void) const;
-
-    // get number of samples
-    virtual int GetNumOfSamples(int ibin) const;
-
-    // set number of samples
-    virtual void SetNumOfSamples(int ibin,int nsamples);
-
-    // get energy derivative and its error
-    virtual double GetValue( int ibin,int cv,EProxyRealm realm) const;
-
-// protected data --------------------------------------------------------------
-protected:
-    std::vector<std::string>    Requires;
-    CSmallString                Realm;
-    CSmallString                Description;
-    CPMFAccumulatorPtr          Accu;
+    // get derivative and its error
+    double GetValue(int ibin,int cv,EProxyRealm realm) const;
 };
 
 //------------------------------------------------------------------------------

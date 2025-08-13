@@ -33,8 +33,8 @@ using namespace std;
 
 CABPProxy_dG::CABPProxy_dG(void)
 {
-    Requires.push_back("ABP");
-    Description = "ABP dG(x)";
+//    Requires.push_back("ABP");
+//    Description = "ABP dG(x)";
 }
 
 //------------------------------------------------------------------------------
@@ -47,17 +47,6 @@ CABPProxy_dG::~CABPProxy_dG(void)
 //==============================================================================
 //------------------------------------------------------------------------------
 //==============================================================================
-
-int CABPProxy_dG::GetNumOfSamples(int ibin) const
-{
-    if( Accu == NULL ){
-        RUNTIME_ERROR("Accu is NULL");
-    }
-
-    return( Accu->GetData("NSAMPLES",ibin) );
-}
-
-//------------------------------------------------------------------------------
 
 double CABPProxy_dG::GetValue(int ibin,EProxyRealm realm) const
 {

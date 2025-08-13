@@ -1,7 +1,8 @@
 // =============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
-//    Copyright (C) 2008 Petr Kulhanek, kulhanek@enzim.hu
+//    Copyright (C) 2025 Petr Kulhanek, kulhanek@chemi.muni.cz
+//    Copyright (C) 2021 Petr Kulhanek, kulhanek@chemi.muni.cz
 //
 //     This program is free software; you can redistribute it and/or modify
 //     it under the terms of the GNU General Public License as published by
@@ -18,13 +19,13 @@
 //     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 // =============================================================================
 
-#include "EnthalpyOptions.hpp"
+#include "PMFEneOptions.hpp"
 
 //==============================================================================
 //------------------------------------------------------------------------------
 //==============================================================================
 
-CEnthalpyOptions::CEnthalpyOptions(void)
+CPMFEneOptions::CPMFEneOptions(void)
 {
     SetShowMiniUsage(true);
     SetAllowProgArgs(true);
@@ -32,7 +33,7 @@ CEnthalpyOptions::CEnthalpyOptions(void)
 
 //------------------------------------------------------------------------------
 
-int CEnthalpyOptions::CheckOptions(void)
+int CPMFEneOptions::CheckOptions(void)
 {
     if( (GetOptMethod() != "raw") &&
         (GetOptMethod() != "gpr") ) {
@@ -159,7 +160,7 @@ int CEnthalpyOptions::CheckOptions(void)
 
 //------------------------------------------------------------------------------
 
-int CEnthalpyOptions::FinalizeOptions(void)
+int CPMFEneOptions::FinalizeOptions(void)
 {
     bool ret_opt = false;
 

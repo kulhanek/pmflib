@@ -3,7 +3,8 @@
 // =============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
-//    Copyright (C) 2008 Petr Kulhanek, kulhanek@enzim.hu
+//    Copyright (C) 2025 Petr Kulhanek, kulhanek@chemi.muni.cz
+//    Copyright (C) 2021 Petr Kulhanek, kulhanek@chemi.muni.cz
 //
 //     This program is free software; you can redistribute it and/or modify
 //     it under the terms of the GNU General Public License as published by
@@ -25,27 +26,27 @@
 
 //------------------------------------------------------------------------------
 
-class CEnthalpyOptions : public CSimpleOptions {
+class CPMFEneOptions : public CSimpleOptions {
 public:
     // constructor - tune option setup
-    CEnthalpyOptions(void);
+    CPMFEneOptions(void);
 
 // program name and description -----------------------------------------------
     CSO_PROG_NAME_BEGIN
-    "pmf-enthalpy"
+    "pmf-energy"
     CSO_PROG_NAME_END
 
     CSO_PROG_DESC_BEGIN
-    "The program provides enthalpy from the PMF accumulator."
+    "The program provides various types of energies from the PMF accumulator."
     CSO_PROG_DESC_END
 
     CSO_PROG_ARGS_SHORT_DESC_BEGIN
-    "accuname1 [accuname2 ...] enthalpy"
+    "accuname1 [accuname2 ...] energy"
     CSO_PROG_ARGS_SHORT_DESC_END
 
     CSO_PROG_ARGS_LONG_DESC_BEGIN
     "<cyan><b>accuname1</b></cyan>                  Name of file containing the PMF accumulator.\n"
-    "<cyan><b>enthalpy</b></cyan>                   Resulting enthalpy.\n"
+    "<cyan><b>energy</b></cyan>                     Resulting energy.\n"
     CSO_PROG_ARGS_LONG_DESC_END
 
     CSO_PROG_VERS_BEGIN

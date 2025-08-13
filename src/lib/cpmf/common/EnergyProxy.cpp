@@ -19,13 +19,6 @@
 // =============================================================================
 
 #include <EnergyProxy.hpp>
-#include <algorithm>
-#include <boost/algorithm/string/join.hpp>
-
-//------------------------------------------------------------------------------
-
-using namespace std;
-using namespace boost;
 
 //==============================================================================
 //------------------------------------------------------------------------------
@@ -33,8 +26,6 @@ using namespace boost;
 
 CEnergyProxy::CEnergyProxy(void)
 {
-    Realm = "NONE";
-    Description = "NONE";
 }
 
 //------------------------------------------------------------------------------
@@ -47,91 +38,6 @@ CEnergyProxy::~CEnergyProxy(void)
 //==============================================================================
 //------------------------------------------------------------------------------
 //==============================================================================
-
-void CEnergyProxy::Init(CPMFAccumulatorPtr accu)
-{
-    if( std::find(Requires.begin(),Requires.end(),string(accu->GetMethod())) == Requires.end() ) {
-        CSmallString error;
-        error << "PMF accumulator '" << accu->GetMethod() << "' is inconsistent with EnergyProxy requirements '" << join(Requires,",") << "'";
-        RUNTIME_ERROR(error)
-    }
-    Accu = accu;
-}
-
-//------------------------------------------------------------------------------
-
-bool CEnergyProxy::IsCompatible(CPMFAccumulatorPtr accu)
-{
-    return( std::find(Requires.begin(), Requires.end(), std::string(accu->GetMethod())) != Requires.end());
-}
-
-//------------------------------------------------------------------------------
-
-bool CEnergyProxy::SetType(const CSmallString& realm)
-{
-    return(false);
-}
-
-//==============================================================================
-//------------------------------------------------------------------------------
-//==============================================================================
-
-CPMFAccumulatorPtr CEnergyProxy::GetAccu(void)
-{
-    return(Accu);
-}
-
-//------------------------------------------------------------------------------
-
-CSmallString CEnergyProxy::GetRealm(void)
-{
-    return(Realm);
-}
-
-//------------------------------------------------------------------------------
-
-CSmallString CEnergyProxy::GetDescription(void)
-{
-    return(Description);
-}
-
-//------------------------------------------------------------------------------
-
-int CEnergyProxy::GetNumOfCVs(void) const
-{
-    if( Accu == NULL ) return(0);
-    return(Accu->GetNumOfCVs());
-}
-
-//------------------------------------------------------------------------------
-
-int CEnergyProxy::GetNumOfBins(void) const
-{
-    if( Accu == NULL ) return(0);
-    return(Accu->GetNumOfBins());
-}
-
-//------------------------------------------------------------------------------
-
-int CEnergyProxy::GetNumOfSamples(int ibin) const
-{
-    if( Accu == NULL ){
-        RUNTIME_ERROR("Accu is NULL");
-    }
-    return(Accu->GetData("NSAMPLES",ibin));
-}
-
-//------------------------------------------------------------------------------
-
-void CEnergyProxy::SetNumOfSamples(int ibin,int nsamples)
-{
-    if( Accu == NULL ){
-        RUNTIME_ERROR("Accu is NULL");
-    }
-    Accu->SetData("NSAMPLES",ibin,nsamples);
-}
-
-//------------------------------------------------------------------------------
 
 double CEnergyProxy::GetValue(int ibin,EProxyRealm realm) const
 {

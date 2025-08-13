@@ -1,7 +1,8 @@
 // =============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
-//    Copyright (C) 2008 Petr Kulhanek, kulhanek@enzim.hu
+//    Copyright (C) 2025 Petr Kulhanek, kulhanek@chemi.muni.cz
+//    Copyright (C) 2021 Petr Kulhanek, kulhanek@chemi.muni.cz
 //
 //     This program is free software; you can redistribute it and/or modify
 //     it under the terms of the GNU General Public License as published by
@@ -20,7 +21,7 @@
 
 #include <math.h>
 #include <errno.h>
-#include "Enthalpy.hpp"
+#include "PMFEnergy.hpp"
 #include <ErrorSystem.hpp>
 #include <SmallTimeAndDate.hpp>
 #include <boost/format.hpp>
@@ -38,13 +39,13 @@ using namespace boost::algorithm;
 
 //------------------------------------------------------------------------------
 
-MAIN_ENTRY(CEnthalpy)
+MAIN_ENTRY(CPMFEnergy)
 
 //==============================================================================
 //------------------------------------------------------------------------------
 //==============================================================================
 
-CEnthalpy::CEnthalpy(void)
+CPMFEnergy::CPMFEnergy(void)
 {
     State = 1;
 }
@@ -53,7 +54,7 @@ CEnthalpy::CEnthalpy(void)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-int CEnthalpy::Init(int argc,char* argv[])
+int CPMFEnergy::Init(int argc,char* argv[])
 {
 // encode program options, all check procedures are done inside of CIntOpts
     int result = Options.ParseCmdLine(argc,argv);
@@ -122,7 +123,7 @@ int CEnthalpy::Init(int argc,char* argv[])
 //------------------------------------------------------------------------------
 //==============================================================================
 
-bool CEnthalpy::Run(void)
+bool CPMFEnergy::Run(void)
 {
 // load accumulator
     State = 1;
@@ -286,7 +287,7 @@ bool CEnthalpy::Run(void)
 
 //------------------------------------------------------------------------------
 
-void CEnthalpy::AdjustGlobalMin(void)
+void CPMFEnergy::AdjustGlobalMin(void)
 {
     CSimpleVector<double>  GPos;
     GPos.CreateVector(HES->GetNumOfCVs());
@@ -393,7 +394,7 @@ void CEnthalpy::AdjustGlobalMin(void)
 
 //------------------------------------------------------------------------------
 
-void CEnthalpy::GetRawEnthalpy(void)
+void CPMFEnergy::GetRawEnthalpy(void)
 {
     for(int ibin=0; ibin < Accumulators[0]->GetNumOfBins(); ibin++){
         int    nsamples = EnergyProxies[0]->GetNumOfSamples(ibin);
@@ -407,7 +408,7 @@ void CEnthalpy::GetRawEnthalpy(void)
 
 //------------------------------------------------------------------------------
 
-bool CEnthalpy::PrintHES(void)
+bool CPMFEnergy::PrintHES(void)
 {
     vout << endl;
     vout << format("%02d:Writing results to file: %s")%State%string(HEOutputName) << endl;
@@ -462,7 +463,7 @@ bool CEnthalpy::PrintHES(void)
 
 //------------------------------------------------------------------------------
 
-void CEnthalpy::WriteHeader(void)
+void CPMFEnergy::WriteHeader(void)
 {
     if((Options.GetOptNoHeader() == false) && (Options.GetOptOutputFormat() != "fes")) {
         Options.PrintOptions(OutputFile);
@@ -472,7 +473,7 @@ void CEnthalpy::WriteHeader(void)
 
 //------------------------------------------------------------------------------
 
-void CEnthalpy::PrintSampledStat(void)
+void CPMFEnergy::PrintSampledStat(void)
 {
     for(size_t i=0; i < Accumulators.size(); i++){
         CPMFAccumulatorPtr  accu = Accumulators[i];
@@ -510,7 +511,7 @@ void CEnthalpy::PrintSampledStat(void)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void CEnthalpy::Finalize(void)
+void CPMFEnergy::Finalize(void)
 {
     // close files if they are own by program
     OutputFile.Close();

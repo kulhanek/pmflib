@@ -1,5 +1,5 @@
-#ifndef CSTProxy_dH_H
-#define CSTProxy_dH_H
+#ifndef ABFProxy_dH_H
+#define ABFProxy_dH_H
 // =============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
@@ -26,10 +26,9 @@
 
 //------------------------------------------------------------------------------
 
-enum ECSTdHdxType {
-    CST_dH,
-//    CST_C11PP,
-//    CST_C11PPFW,
+enum EABFdHType {
+    ABF_dH,
+    ABF_MICFP,
 };
 
 //------------------------------------------------------------------------------
@@ -37,21 +36,11 @@ enum ECSTdHdxType {
 /** \brief ABF proxy providing mean force for the free energy integration
 */
 
-class PMF_PACKAGE CCSTProxy_dHdx : public CEnergyDerProxy {
+class PMF_PACKAGE CABFProxy_dHdx : public CEnergyDerProxy {
 public:
 // constructor and destructor --------------------------------------------------
-    CCSTProxy_dHdx(void);
-    ~CCSTProxy_dHdx(void);
-
-//------------------------------------------------------------------------------
-    // set type if it is supported
-    virtual bool SetType(const CSmallString& realm);
-
-    // set type
-    void SetType(ECSTdHdxType type);
-
-    // get type description
-    const CSmallString GetTypeDescription(ECSTdHdxType type);
+    CABFProxy_dHdx(void);
+    ~CABFProxy_dHdx(void);
 
 //------------------------------------------------------------------------------
     // get number of samples
@@ -62,16 +51,11 @@ public:
 
     // get energy derivative and its error
     virtual double GetValue( int ibin,int icv,EProxyRealm realm) const;
-
-// section of private data -----------------------------------------------------
-private:
-    std::map<CSmallString,ECSTdHdxType>   SupportedRealms;
-    ECSTdHdxType                          Type;
 };
 
 //------------------------------------------------------------------------------
 
-typedef boost::shared_ptr<CCSTProxy_dHdx>    CCSTProxy_dHdx_Ptr;
+typedef boost::shared_ptr<CABFProxy_dHdx>    CABFProxy_dHdx_Ptr;
 
 //------------------------------------------------------------------------------
 

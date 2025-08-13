@@ -50,16 +50,6 @@ public:
     ~CABFProxy_mTdSdx(void);
 
 //------------------------------------------------------------------------------
-    // set type if it is supported
-    virtual bool SetType(const CSmallString& realm);
-
-    // set type
-    void SetType(EABFTdSType type);
-
-    // get type description
-    const CSmallString GetTypeDescription(EABFTdSType type);
-
-//------------------------------------------------------------------------------
     // get number of samples
     virtual int GetNumOfSamples(int ibin) const;
 
@@ -68,11 +58,6 @@ public:
 
     // get energy derivative and its error
     virtual double GetValue( int ibin,int icv,EProxyRealm realm) const;
-
-// section of private data -----------------------------------------------------
-private:
-    std::map<CSmallString,EABFTdSType>  SupportedRealms;
-    EABFTdSType                         Type;
 };
 
 //------------------------------------------------------------------------------

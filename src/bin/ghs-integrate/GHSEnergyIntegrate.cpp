@@ -43,7 +43,6 @@
 // -------------
 #include <ABFProxy_dGdx.hpp>
 #include <ABFProxy_mTdSdx.hpp>
-#include <PMFProxy_dH.hpp>
 
 //------------------------------------------------------------------------------
 
@@ -185,9 +184,10 @@ bool CGHSEnergyIntegrate::Run(void)
     }
 
 // -------
-    vout << format("   ** HES [from dH(x)]") << endl;
-    HEneProxy = CPMFProxy_dH_Ptr(new CPMFProxy_dH());
-    HEneProxy->Init(Accu);
+// FIXME
+//    vout << format("   ** HES [from dH(x)]") << endl;
+//    HEneProxy = CPMFProxy_dH_Ptr(new CPMFProxy_dH());
+//    HEneProxy->Init(Accu);
 
     HES = CEnergySurfacePtr(new CEnergySurface);
     HES->Allocate(Accu);

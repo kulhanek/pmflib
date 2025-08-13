@@ -32,71 +32,18 @@ using namespace std;
 
 CCSTProxy_dHdx::CCSTProxy_dHdx(void)
 {
-    SetType(CST_dH);
+//    SetType(CST_dH);
+//
+//    Requires.push_back("CST");
 
-    Requires.push_back("CST");
+//        case(CST_dH):
+//            return("CST dH(x) (based on derivatives)");
 }
 
 //------------------------------------------------------------------------------
 
 CCSTProxy_dHdx::~CCSTProxy_dHdx(void)
 {
-}
-
-//------------------------------------------------------------------------------
-
-bool CCSTProxy_dHdx::SetType(const CSmallString& realm)
-{
-    if( SupportedRealms.count(realm) == 0 ) return(false);
-    Realm = realm;
-    SetType(SupportedRealms[realm]);
-    return(true);
-}
-
-//------------------------------------------------------------------------------
-
-void CCSTProxy_dHdx::SetType(ECSTdHdxType type)
-{
-    Type = type;
-    Description = GetTypeDescription(Type);
-}
-
-//------------------------------------------------------------------------------
-
-const CSmallString CCSTProxy_dHdx::GetTypeDescription(ECSTdHdxType type)
-{
-    switch(type){
-    // -------------------
-        case(CST_dH):
-            return("CST dH(x) (based on derivatives)");
-//    // -------------------
-//        case(CST_MICFP):
-//            Provide = "CST ICFP(x)";
-//        break;
-//    // -------------------
-//        case(CST_MICFPFW):
-//            Provide = "CST ICFP(x)FW";
-//        break;
-//    // -------------------
-//        case(CST_MICFK):
-//            Provide = "CST ICFK(x)";
-//        break;
-//    // -------------------
-//        case(CST_MICFKFW):
-//            Provide = "CST ICFK(x)FW";
-//        break;
-//    // -------------------
-//        case(CST_C11PP):
-//            Provide = "CST C11PP";
-//        break;
-//    // -------------------
-//        case(CST_C11PPFW):
-//            Provide = "CST C11PPFW";
-//        break;
-    // -------------------
-        default:
-            RUNTIME_ERROR("unsupported type");
-    }
 }
 
 //==============================================================================
@@ -133,7 +80,7 @@ double CCSTProxy_dHdx::GetValue(int ibin,int icv,EProxyRealm realm) const
     double ncorr = Accu->GetNCorr();
     double temp  = Accu->GetTemperature();
 
-    switch(Type){
+    switch(RealmID){
     // -------------------
         case(CST_dH): {
             double  nsamples    = Accu->GetData("NTDS",ibin);

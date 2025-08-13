@@ -33,34 +33,54 @@ using namespace std;
 
 CCSTProxy_mTdSdx::CCSTProxy_mTdSdx(void)
 {
-    Requires.push_back("CST");
+//    Requires.push_back("CST");
+//
+//    SupportedRealms["-TdS/dx"]      = CST_TdS;
+//    SupportedRealms["mTdS/dx"]      = CST_TdS;
+//
+//    SupportedRealms["-TdS_LT/dx"]   = CST_TdS_LT;
+//    SupportedRealms["mTdS_LT/dx"]   = CST_TdS_LT;
+//
+//    SupportedRealms["-TdS_LTFW/dx"] = CST_TdS_LTFW;
+//    SupportedRealms["mTdS_LTFW/dx"] = CST_TdS_LTFW;
+//
+//    SupportedRealms["-TdS_LIFW/dx"] = CST_TdS_LIFW;
+//    SupportedRealms["mTdS_LIFW/dx"] = CST_TdS_LIFW;
+//
+//    SupportedRealms["-TdS_LPFW/dx"] = CST_TdS_LPFW;
+//    SupportedRealms["mTdS_LPFW/dx"] = CST_TdS_LPFW;
+//
+//    SupportedRealms["-TdS_LRFW/dx"] = CST_TdS_LRFW;
+//    SupportedRealms["mTdS_LRFW/dx"] = CST_TdS_LRFW;
+//
+//    SupportedRealms["-TdS_LKFW/dx"] = CST_TdS_LKFW;
+//    SupportedRealms["mTdS_LKFW/dx"] = CST_TdS_LKFW;
+//
+//    SupportedRealms["-TdS_II/dx"]   = CST_TdS_II;
+//    SupportedRealms["mTdS_II/dx"]   = CST_TdS_II;
+//
+//    SupportedRealms["-TdS_IIFW/dx"] = CST_TdS_IIFW;
+//    SupportedRealms["mTdS_IIFW/dx"] = CST_TdS_IIFW;
 
-    SupportedRealms["-TdS/dx"]      = CST_TdS;
-    SupportedRealms["mTdS/dx"]      = CST_TdS;
-
-    SupportedRealms["-TdS_LT/dx"]   = CST_TdS_LT;
-    SupportedRealms["mTdS_LT/dx"]   = CST_TdS_LT;
-
-    SupportedRealms["-TdS_LTFW/dx"] = CST_TdS_LTFW;
-    SupportedRealms["mTdS_LTFW/dx"] = CST_TdS_LTFW;
-
-    SupportedRealms["-TdS_LIFW/dx"] = CST_TdS_LIFW;
-    SupportedRealms["mTdS_LIFW/dx"] = CST_TdS_LIFW;
-
-    SupportedRealms["-TdS_LPFW/dx"] = CST_TdS_LPFW;
-    SupportedRealms["mTdS_LPFW/dx"] = CST_TdS_LPFW;
-
-    SupportedRealms["-TdS_LRFW/dx"] = CST_TdS_LRFW;
-    SupportedRealms["mTdS_LRFW/dx"] = CST_TdS_LRFW;
-
-    SupportedRealms["-TdS_LKFW/dx"] = CST_TdS_LKFW;
-    SupportedRealms["mTdS_LKFW/dx"] = CST_TdS_LKFW;
-
-    SupportedRealms["-TdS_II/dx"]   = CST_TdS_II;
-    SupportedRealms["mTdS_II/dx"]   = CST_TdS_II;
-
-    SupportedRealms["-TdS_IIFW/dx"] = CST_TdS_IIFW;
-    SupportedRealms["mTdS_IIFW/dx"] = CST_TdS_IIFW;
+//    switch(type){
+//    // -------------------
+//        case(CST_TdS):
+//            return("CST -TdS(x)");
+//    // -------------------
+//        case(CST_TdS_LT):
+//            return("CST -TdS_LT(x)   cov(lambda,Epot)");
+//    // -------------------
+//        case(CST_TdS_LTFW):
+//            return("CST -TdS_LTFW(x) cov(lambda,Epot) - Fixman weighted");
+//    // -------------------
+//        case(CST_TdS_II):
+//            return("CST -TdS_II(x)   cov(ICF,Eint)");
+//    // -------------------
+//        case(CST_TdS_IIFW):
+//            return("CST -TdS_IIFW(x) cov(ICF,Eint) - Fixman weighted");
+//    // -------------------
+//        default:
+//            RUNTIME_ERROR("unsupported type");
 }
 
 //------------------------------------------------------------------------------
@@ -73,54 +93,10 @@ CCSTProxy_mTdSdx::~CCSTProxy_mTdSdx(void)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-bool CCSTProxy_mTdSdx::SetType(const CSmallString& realm)
-{
-    if( SupportedRealms.count(realm) == 0 ) return(false);
-    Realm = realm;
-    SetType(SupportedRealms[realm]);
-    return(true);
-}
-
-//------------------------------------------------------------------------------
-
-void CCSTProxy_mTdSdx::SetType(ECSTTdSdxType type)
-{
-    Type = type;
-    Description = GetTypeDescription(Type);
-}
-
-//------------------------------------------------------------------------------
-
-const CSmallString CCSTProxy_mTdSdx::GetTypeDescription(ECSTTdSdxType type)
-{
-    switch(type){
-    // -------------------
-        case(CST_TdS):
-            return("CST -TdS(x)");
-    // -------------------
-        case(CST_TdS_LT):
-            return("CST -TdS_LT(x)   cov(lambda,Epot)");
-    // -------------------
-        case(CST_TdS_LTFW):
-            return("CST -TdS_LTFW(x) cov(lambda,Epot) - Fixman weighted");
-    // -------------------
-        case(CST_TdS_II):
-            return("CST -TdS_II(x)   cov(ICF,Eint)");
-    // -------------------
-        case(CST_TdS_IIFW):
-            return("CST -TdS_IIFW(x) cov(ICF,Eint) - Fixman weighted");
-    // -------------------
-        default:
-            RUNTIME_ERROR("unsupported type");
-    }
-}
-
-//------------------------------------------------------------------------------
-
 CEnergyProxyPtr CCSTProxy_mTdSdx::GetEnergyCorrection(void)
 {
     CEnergyProxyPtr ene_proxy;
-    if( Type == CST_TdS ){
+    if( RealmID == CST_TdS ){
         ene_proxy = CCSTProxy_MTC_Ptr(new CCSTProxy_MTC);
         ene_proxy->Init(Accu);
     }
@@ -168,7 +144,7 @@ double CCSTProxy_mTdSdx::GetValue(int ibin,int icv,EProxyRealm realm) const
     if( nsamples <= 0 ) return(mean);
 
 // get requested data
-    switch(Type){
+    switch(RealmID){
     // -------------------
         case(CST_TdS):      // plus MTC
         case(CST_TdS_LT):{

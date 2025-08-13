@@ -1,8 +1,9 @@
-#ifndef PMFProxy_dH_H
-#define PMFProxy_dH_H
+#ifndef CPMFEnergyH
+#define CPMFEnergyH
 // =============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
+//    Copyright (C) 2025 Petr Kulhanek, kulhanek@chemi.muni.cz
 //    Copyright (C) 2021 Petr Kulhanek, kulhanek@chemi.muni.cz
 //
 //     This program is free software; you can redistribute it and/or modify
@@ -20,50 +21,56 @@
 //     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 // =============================================================================
 
-#include <PMFMainHeader.hpp>
+#include "PMFEneOptions.hpp"
+#include <SimpleVector.hpp>
+#include <VerboseStr.hpp>
+#include <TerminalStr.hpp>
+#include <StdIOFile.hpp>
+#include <PMFAccumulator.hpp>
+#include <EnergySurface.hpp>
 #include <EnergyProxy.hpp>
+#include <SmootherGPR.hpp>
 
 //------------------------------------------------------------------------------
 
-enum EPMFdHType {
-    PMF_EINT,   // EPOT+ERST
-    PMF_EINTFW,   // EPOT+ERST - Fixman weighted
-    PMF_ETOT,
-    PMF_EPOT,
-    PMF_EKIN,
-    PMF_ERST,
-};
+/// utility to extract enthalpy from  accumulator
 
-//------------------------------------------------------------------------------
-
-/** \brief PMF proxy providing enthalpy
-*/
-
-class PMF_PACKAGE CPMFProxy_dH : public CEnergyProxy {
+class CPMFEnergy {
 public:
-// constructor and destructor --------------------------------------------------
-    CPMFProxy_dH(void);
-    ~CPMFProxy_dH(void);
+    CPMFEnergy(void);
 
-//------------------------------------------------------------------------------
-    // set type
-    void SetType(EPMFdHType type);
+// main methods ---------------------------------------------------------------
+    /// init options
+    int Init(int argc,char* argv[]);
 
-//------------------------------------------------------------------------------
-    // get number of value samples
-    virtual int GetVSamples(int ibin) const;
+    /// main part of program
+    bool Run(void);
 
-    // get energy derivative and its error
-    virtual double GetValue( int ibin,EProxyRealm realm) const;
+    /// finalize program
+    void Finalize(void);
 
 // section of private data ----------------------------------------------------
 private:
-    EPMFdHType  Type;
+    CPMFEneOptions                  Options;
+    CSmallString                    HEOutputName;
+    CStdIOFile                      OutputFile;
+    std::vector<CEnergyProxyPtr>    EnergyProxies;
+    std::vector<CPMFAccumulatorPtr> Accumulators;
+    CEnergySurfacePtr               HES;
+    int                             State;
+
+    // output ------------------------------------
+    CTerminalStr        Console;
+    CVerboseStr         vout;
+
+    /// helper methods
+    void GetRawEnthalpy(void);
+    void LoadGPRHyprms(CSmootherGPR& gpr);
+    bool PrintHES(void);
+    void WriteHeader(void);
+    void PrintSampledStat(void);
+    void AdjustGlobalMin(void);
 };
-
-//------------------------------------------------------------------------------
-
-typedef boost::shared_ptr<CPMFProxy_dH>    CPMFProxy_dH_Ptr;
 
 //------------------------------------------------------------------------------
 

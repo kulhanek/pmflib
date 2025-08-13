@@ -52,15 +52,6 @@ public:
     ~CCSTProxy_mTdSdx(void);
 
 //------------------------------------------------------------------------------
-    // set type if it is supported
-    virtual bool SetType(const CSmallString& realm);
-
-    // set type
-    void SetType(ECSTTdSdxType type);
-
-    // get type description
-    const CSmallString GetTypeDescription(ECSTTdSdxType type);
-
     // get optional energy correction - MTC
     virtual CEnergyProxyPtr GetEnergyCorrection(void);
 
@@ -73,11 +64,6 @@ public:
 
     // get energy derivative and its error
     virtual double GetValue( int ibin,int icv,EProxyRealm realm) const;
-
-// section of private data -----------------------------------------------------
-private:
-    std::map<CSmallString,ECSTTdSdxType>  SupportedRealms;
-    ECSTTdSdxType                         Type;
 };
 
 //------------------------------------------------------------------------------

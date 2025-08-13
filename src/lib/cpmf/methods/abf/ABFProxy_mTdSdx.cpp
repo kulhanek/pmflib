@@ -32,74 +32,47 @@ using namespace std;
 
 CABFProxy_mTdSdx::CABFProxy_mTdSdx(void)
 {
-    Requires.push_back("ABF");
+//    Requires.push_back("ABF");
 
 //    SupportedRealms["dG/dx"]        = CST_dG;
 //    SupportedRealms["MICF/dx"]      = CST_MICF;
 //    SupportedRealms["MICFFW/dx"]    = CST_MICFFW;
 //    SupportedRealms["MICFPFW/dx"]   = CST_MICFPFW;
 //    SupportedRealms["MICFKFW/dx"]   = CST_MICFKFW;
+
+//    // -------------------
+//        case(ABF_TdS_HH):
+//            return("ABF -TdS(x)");
+//
+//    // -------------------
+//        case(ABF_TdS_HP):
+//            return("ABF -TdS(x) - cov(dH/dx,Epot)");
+//    // -------------------
+//        case(ABF_TdS_HR):
+//            return("ABF -TdS(x) - cov(dH/dx,Erst)");
+//    // -------------------
+//        case(ABF_TdS_HK):
+//            return("ABF -TdS(x) - cov(dH/dx,Ekin)");
+//
+//    // -------------------
+//        case(ABF_TdS_BP):
+//            return("ABF -TdS(x) - cov(bias,Epot)");
+//    // -------------------
+//        case(ABF_TdS_BR):
+//            return("ABF -TdS(x) - cov(bias,Erst)");
+//    // -------------------
+//        case(ABF_TdS_BK):
+//            return("ABF -TdS(x) -cov(bias,Ekin)");
+//
+//    // -------------------
+//        default:
+//            RUNTIME_ERROR("unsupported type");
 }
 
 //------------------------------------------------------------------------------
 
 CABFProxy_mTdSdx::~CABFProxy_mTdSdx(void)
 {
-}
-
-//==============================================================================
-//------------------------------------------------------------------------------
-//==============================================================================
-
-bool CABFProxy_mTdSdx::SetType(const CSmallString& realm)
-{
-    if( SupportedRealms.count(realm) == 0 ) return(false);
-    Realm = realm;
-    SetType(SupportedRealms[realm]);
-    return(true);
-}
-
-//------------------------------------------------------------------------------
-
-void CABFProxy_mTdSdx::SetType(EABFTdSType type)
-{
-    Type = type;
-    Description = GetTypeDescription(Type);
-}
-
-//------------------------------------------------------------------------------
-
-const CSmallString CABFProxy_mTdSdx::GetTypeDescription(EABFTdSType type)
-{
-    switch(type){
-    // -------------------
-        case(ABF_TdS_HH):
-            return("ABF -TdS(x)");
-
-    // -------------------
-        case(ABF_TdS_HP):
-            return("ABF -TdS(x) - cov(dH/dx,Epot)");
-    // -------------------
-        case(ABF_TdS_HR):
-            return("ABF -TdS(x) - cov(dH/dx,Erst)");
-    // -------------------
-        case(ABF_TdS_HK):
-            return("ABF -TdS(x) - cov(dH/dx,Ekin)");
-
-    // -------------------
-        case(ABF_TdS_BP):
-            return("ABF -TdS(x) - cov(bias,Epot)");
-    // -------------------
-        case(ABF_TdS_BR):
-            return("ABF -TdS(x) - cov(bias,Erst)");
-    // -------------------
-        case(ABF_TdS_BK):
-            return("ABF -TdS(x) -cov(bias,Ekin)");
-
-    // -------------------
-        default:
-            RUNTIME_ERROR("unsupported type");
-    }
 }
 
 //==============================================================================
@@ -144,7 +117,7 @@ double CABFProxy_mTdSdx::GetValue(int ibin,int icv,EProxyRealm realm) const
 
     if( nsamples <= 0 ) return(value);
 
-    switch(Type){
+    switch(RealmID){
     // -------------------
         case(ABF_TdS_HH):{
             double m2pp = Accu->GetData("M2PP",ibin,icv);

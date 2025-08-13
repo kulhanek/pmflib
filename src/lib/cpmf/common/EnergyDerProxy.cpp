@@ -19,13 +19,6 @@
 // =============================================================================
 
 #include <EnergyDerProxy.hpp>
-#include <algorithm>
-#include <boost/algorithm/string/join.hpp>
-
-//------------------------------------------------------------------------------
-
-using namespace std;
-using namespace boost;
 
 //==============================================================================
 //------------------------------------------------------------------------------
@@ -33,8 +26,6 @@ using namespace boost;
 
 CEnergyDerProxy::CEnergyDerProxy(void)
 {
-    Realm = "NONE";
-    Description = "NONE";
 }
 
 //------------------------------------------------------------------------------
@@ -48,95 +39,11 @@ CEnergyDerProxy::~CEnergyDerProxy(void)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void CEnergyDerProxy::Init(CPMFAccumulatorPtr accu)
-{
-    if( std::find(Requires.begin(),Requires.end(),string(accu->GetMethod())) == Requires.end() ) {
-        CSmallString error;
-        error << "PMF accumulator '" << accu->GetMethod() << "' is inconsistent with EnergyDerProxy requirements '" << join(Requires,",") << "'";
-        RUNTIME_ERROR(error)
-    }
-    Accu = accu;
-}
-
-//------------------------------------------------------------------------------
-
-bool CEnergyDerProxy::IsCompatible(CPMFAccumulatorPtr accu)
-{
-    return( std::find(Requires.begin(), Requires.end(), std::string(accu->GetMethod())) != Requires.end());
-}
-
-//------------------------------------------------------------------------------
-
-bool CEnergyDerProxy::SetType(const CSmallString& realm)
-{
-    return(false);
-}
-
-//==============================================================================
-//------------------------------------------------------------------------------
-//==============================================================================
-
-CPMFAccumulatorPtr CEnergyDerProxy::GetAccu(void)
-{
-    return(Accu);
-}
-
-//------------------------------------------------------------------------------
-
 CEnergyProxyPtr CEnergyDerProxy::GetEnergyCorrection(void)
 {
     return(CEnergyProxyPtr());
 }
 
-//------------------------------------------------------------------------------
-
-CSmallString CEnergyDerProxy::GetRealm(void)
-{
-    return(Realm);
-}
-
-//------------------------------------------------------------------------------
-
-CSmallString CEnergyDerProxy::GetDescription(void)
-{
-    return(Description);
-}
-
-//------------------------------------------------------------------------------
-
-int CEnergyDerProxy::GetNumOfCVs(void) const
-{
-    if( Accu == NULL ) return(0);
-    return(Accu->GetNumOfCVs());
-}
-
-//------------------------------------------------------------------------------
-
-int CEnergyDerProxy::GetNumOfBins(void) const
-{
-    if( Accu == NULL ) return(0);
-    return(Accu->GetNumOfBins());
-}
-
-//------------------------------------------------------------------------------
-
-int CEnergyDerProxy::GetNumOfSamples(int ibin) const
-{
-    if( Accu == NULL ){
-        RUNTIME_ERROR("Accu is NULL");
-    }
-    return(Accu->GetData("NSAMPLES",ibin));
-}
-
-//------------------------------------------------------------------------------
-
-void CEnergyDerProxy::SetNumOfSamples(int ibin,int nsamples)
-{
-    if( Accu == NULL ){
-        RUNTIME_ERROR("Accu is NULL");
-    }
-    Accu->SetData("NSAMPLES",ibin,nsamples);
-}
 
 //------------------------------------------------------------------------------
 

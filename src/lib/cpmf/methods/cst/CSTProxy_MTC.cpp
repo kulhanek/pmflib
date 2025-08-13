@@ -32,9 +32,9 @@ using namespace std;
 
 CCSTProxy_MTC::CCSTProxy_MTC(void)
 {
-    Requires.push_back("CST");
-    Realm       = "MTC";
-    Description = "CST E{MTC}";      // metric tensor correction
+//    Requires.push_back("CST");
+//    Realm       = "MTC";
+//    Description = "CST E{MTC}";      // metric tensor correction
 }
 
 //------------------------------------------------------------------------------

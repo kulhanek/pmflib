@@ -22,15 +22,24 @@
 
 #include <PMFMainHeader.hpp>
 #include <EnergyDerProxy.hpp>
-#include <PMFAccumulator.hpp>
 #include <list>
+#include <iostream>
 
 //------------------------------------------------------------------------------
 
 class PMF_PACKAGE CEnergyDerProxyInit {
 public:
-// setup methods ---------------------------------------------------------------
+    /// init requested proxy
     static CEnergyDerProxyPtr InitProxy(const CSmallString& realm,CPMFAccumulatorPtr& accu);
+
+    /// print supported realms
+    static void PrintRealms(std::ostream& fout);
+
+    /// enumerate supported realms
+    static void EnumerateTypes(std::list<CProxyRealmDescr>& dlist);
+
+private:
+    /// create list of all supported proxies
     static void InitProxyList(std::list<CEnergyDerProxyPtr>& eneder_proxies);
 };
 

@@ -1,11 +1,10 @@
-#ifndef ABPProxy_dGH
-#define ABPProxy_dGH
+#ifndef CSTProxy_dH_H
+#define CSTProxy_dH_H
 // =============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
+//    Copyright (C) 2025 Petr Kulhanek, kulhanek@chemi.muni.cz
 //    Copyright (C) 2021 Petr Kulhanek, kulhanek@chemi.muni.cz
-//    Copyright (C) 2008 Petr Kulhanek, kulhanek@enzim.hu
-//                       Martin Petrek, petrek@chemi.muni.cz
 //
 //     This program is free software; you can redistribute it and/or modify
 //     it under the terms of the GNU General Public License as published by
@@ -27,23 +26,36 @@
 
 //------------------------------------------------------------------------------
 
-/** \brief return free energy from MTD accumulator
-*/
-
-class PMF_PACKAGE CABPProxy_dG : public CEnergyProxy {
-public:
-// constructor and destructor -------------------------------------------------
-    CABPProxy_dG(void);
-    ~CABPProxy_dG(void);
+enum ECSTdHType {
+    CST_dH,
+    CST_EINT,       // EPOT+ERST
+    CST_EINTFW,     // EPOT+ERST - Fixman weighted
+};
 
 //------------------------------------------------------------------------------
+
+/** \brief PMF proxy providing enthalpy
+*/
+
+class PMF_PACKAGE CCSTProxy_dH : public CEnergyProxy {
+public:
+// constructor and destructor --------------------------------------------------
+    CCSTProxy_dH(void);
+    ~CCSTProxy_dH(void);
+//------------------------------------------------------------------------------
+    // get number of samples
+    virtual int GetNumOfSamples(int ibin) const;
+
+    // set number of samples
+    virtual void SetNumOfSamples(int ibin,int nsamples);
+
     // get energy derivative and its error
     virtual double GetValue( int ibin,EProxyRealm realm) const;
 };
 
 //------------------------------------------------------------------------------
 
-typedef boost::shared_ptr<CABPProxy_dG>    CABPProxy_dG_Ptr;
+typedef boost::shared_ptr<CCSTProxy_dH>    CCSTProxy_dH_Ptr;
 
 //------------------------------------------------------------------------------
 

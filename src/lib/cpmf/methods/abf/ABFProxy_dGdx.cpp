@@ -31,53 +31,21 @@ using namespace std;
 
 CABFProxy_dGdx::CABFProxy_dGdx(void)
 {
-    Requires.push_back("ABF");
+//    Requires.push_back("ABF");
 
 //    SupportedRealms["dG/dx"]        = CST_dG;
 //    SupportedRealms["MICF/dx"]      = CST_MICF;
 //    SupportedRealms["MICFFW/dx"]    = CST_MICFFW;
 //    SupportedRealms["MICFPFW/dx"]   = CST_MICFPFW;
 //    SupportedRealms["MICFKFW/dx"]   = CST_MICFKFW;
+
+ //return("ABF dG(x)");
 }
 
 //------------------------------------------------------------------------------
 
 CABFProxy_dGdx::~CABFProxy_dGdx(void)
 {
-}
-
-//==============================================================================
-//------------------------------------------------------------------------------
-//==============================================================================
-
-bool CABFProxy_dGdx::SetType(const CSmallString& realm)
-{
-    if( SupportedRealms.count(realm) == 0 ) return(false);
-    Realm = realm;
-    SetType(SupportedRealms[realm]);
-    return(true);
-}
-
-//------------------------------------------------------------------------------
-
-void CABFProxy_dGdx::SetType(EABFdGType type)
-{
-    Type = type;
-    Description = GetTypeDescription(Type);
-}
-
-//------------------------------------------------------------------------------
-
-const CSmallString CABFProxy_dGdx::GetTypeDescription(EABFdGType type)
-{
-    switch(type){
-    // -------------------
-        case(ABF_MICF):
-            return("ABF dG(x)");
-    // -------------------
-        default:
-            RUNTIME_ERROR("unsupported type");
-    }
 }
 
 //==============================================================================
@@ -95,7 +63,7 @@ double CABFProxy_dGdx::GetValue(int ibin,int icv,EProxyRealm realm) const
     double  m2icf    = 0.0;
     double  ncorr    = Accu->GetNCorr();
 
-    switch(Type){
+    switch(RealmID){
     // -------------------
         case(ABF_MICF):
             nsamples = Accu->GetData("NSAMPLES",ibin);

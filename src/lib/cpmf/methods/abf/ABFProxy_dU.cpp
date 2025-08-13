@@ -1,9 +1,8 @@
 // =============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
+//    Copyright (C) 2025 Petr Kulhanek, kulhanek@chemi.muni.cz
 //    Copyright (C) 2021 Petr Kulhanek, kulhanek@chemi.muni.cz
-//    Copyright (C) 2008 Petr Kulhanek, kulhanek@enzim.hu
-//                       Martin Petrek, petrek@chemi.muni.cz
 //
 //     This program is free software; you can redistribute it and/or modify
 //     it under the terms of the GNU General Public License as published by
@@ -20,7 +19,7 @@
 //     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 // =============================================================================
 
-#include <MTDProxy_dG.hpp>
+#include <ABFProxy_dH.hpp>
 
 //------------------------------------------------------------------------------
 
@@ -30,65 +29,95 @@ using namespace std;
 //------------------------------------------------------------------------------
 //==============================================================================
 
-CMTDProxy_dG::CMTDProxy_dG(void)
+CABFProxy_dH::CABFProxy_dH(void)
 {
-//    Requires.push_back("MTD");
-//    Realm       = "dG";
-//    Description = "MTD dG(x)";
+//    Requires.push_back("ABF");
+//
+//    SupportedRealms["dH"]       = ABF_dH;
+//    SupportedRealms["EINT"]     = ABF_EINT;
+//
+//        case(ABF_dH):
+//            return("dH(x)=<Eint>");
+//    // -------------------
+//        case(ABF_EINT):
+//            return("dH(x)=<Eint>");
 }
 
 //------------------------------------------------------------------------------
 
-CMTDProxy_dG::~CMTDProxy_dG(void)
+CABFProxy_dH::~CABFProxy_dH(void)
 {
-
 }
 
 //==============================================================================
 //------------------------------------------------------------------------------
 //==============================================================================
 
-bool CMTDProxy_dG::IsWTMeta(void)
+int CABFProxy_dH::GetNumOfSamples(int ibin) const
 {
     if( Accu == NULL ){
         RUNTIME_ERROR("Accu is NULL");
     }
-
-    return( Accu->HasSectionData("MTD-WT") );
+    return(Accu->GetData("NTDS",ibin));
 }
 
 //------------------------------------------------------------------------------
 
-double CMTDProxy_dG::GetValue(int ibin,EProxyRealm realm) const
+void CABFProxy_dH::SetNumOfSamples(int ibin,int nsamples)
+{
+    if( Accu == NULL ){
+        RUNTIME_ERROR("Accu is NULL");
+    }
+    Accu->SetData("NTDS",ibin,nsamples);
+}
+
+//------------------------------------------------------------------------------
+
+double CABFProxy_dH::GetValue( int ibin,EProxyRealm realm) const
 {
     if( Accu == NULL ){
         RUNTIME_ERROR("Accu is NULL");
     }
 
-    double mtdpot = Accu->GetData("MTDPOT",ibin);
-    double fact = 1.0;
+    double  ncorr    = Accu->GetNCorr();
+    double  mean     = 0.0; // sample mean
+    double  samvar   = 0.0; // sample variance
+    double  meanvar  = 0.0; // variance of sample mean
 
-    if( Accu->HasSectionData("MTD-WT") ){
-        // well-tempered metadynamics
-        double temp = Accu->GetTemperature();
-        double wtem = Accu->GetData("MTD-WT",0);
-        if( wtem > 0 ){
-            fact = (temp + wtem) / wtem;
-        } else {
-            RUNTIME_ERROR("MTD-WT temerature is not greater than zero");
+// do we have enough samples?
+    double nsamples    = GetNumOfSamples(ibin);
+    if( nsamples <= 0 ) return(mean);
+
+    switch(RealmID){
+    // -------------------
+        case(ABF_dH):
+        case(ABF_EINT):{
+            mean        = Accu->GetData("MEINT",ibin);
+            double M2   = Accu->GetData("M2EINT",ibin);
+            samvar      = M2 / nsamples;
+            meanvar     = samvar / nsamples;
         }
+        break;
+    // -------------------
+        default:
+            RUNTIME_ERROR("unsupported type");
     }
 
+// return result
     switch(realm){
         // -------------------
         case(E_PROXY_VALUE):
-            return( - mtdpot * fact );
+            return( mean );
+        // -------------------
+        case(E_PROXY_SIGMA):
+            return( sqrt(samvar) );
+        // -------------------
+        case(E_PROXY_ERROR):
+            return( sqrt(ncorr * meanvar) );
         // -------------------
         default:
             RUNTIME_ERROR("unsupported realm");
     }
-
-    return( mtdpot );
 }
 
 //==============================================================================

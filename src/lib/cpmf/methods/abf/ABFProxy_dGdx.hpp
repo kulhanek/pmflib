@@ -42,23 +42,9 @@ public:
     ~CABFProxy_dGdx(void);
 
 //------------------------------------------------------------------------------
-    // set type if it is supported
-    virtual bool SetType(const CSmallString& realm);
-
-    // set type
-    void SetType(EABFdGType type);
-
-    // get type description
-    const CSmallString GetTypeDescription(EABFdGType type);
-
-//------------------------------------------------------------------------------
     // get energy derivative and its error
     virtual double GetValue( int ibin,int icv,EProxyRealm realm) const;
 
-// section of private data -----------------------------------------------------
-private:
-    std::map<CSmallString,EABFdGType>   SupportedRealms;
-    EABFdGType                          Type;
 };
 
 //------------------------------------------------------------------------------

@@ -40,7 +40,6 @@
 #include <ABFProxy_mTdSdx.hpp>
 #include <CSTProxy_dGdx.hpp>
 #include <CSTProxy_mTdSdx.hpp>
-#include <PMFProxy_dH.hpp>
 
 //------------------------------------------------------------------------------
 
@@ -1347,14 +1346,15 @@ void COptGPRHyprms::CreateGPREngine_dF(void)
 {
     CEnergyProxyPtr proxy;
 
-    if( Options.GetArgRealm() == "dH" ) {
-        proxy    = CPMFProxy_dH_Ptr(new CPMFProxy_dH);
-    } else {
-        CSmallString error;
-        error << "unsupported realm: " <<  Options.GetArgRealm();
-        RUNTIME_ERROR(error);
-    }
-    proxy->Init(Accu);
+    // FIXME
+//    if( Options.GetArgRealm() == "dH" ) {
+//        proxy    = CPMFProxy_dH_Ptr(new CPMFProxy_dH);
+//    } else {
+//        CSmallString error;
+//        error << "unsupported realm: " <<  Options.GetArgRealm();
+//        RUNTIME_ERROR(error);
+//    }
+//    proxy->Init(Accu);
 
     CSmootherGPRPtr gpr = CSmootherGPRPtr(new CSmootherGPR);
 
