@@ -609,6 +609,31 @@ subroutine cst_accu_write_mean_B(iounit,glbidx,mkey,mval,m2key,m2val,skey)
 end subroutine cst_accu_write_mean_B
 
 !===============================================================================
+! Subroutine:  cst_accu_write_cmom_B
+!===============================================================================
+
+subroutine cst_accu_write_cmom_B(iounit,glbidx,mkey,mval,nkey,akey,bkey)
+
+    use pmf_utils
+    use pmf_dat
+    use cst_dat
+
+    implicit none
+    integer         :: iounit
+    integer         :: glbidx
+    character(*)    :: mkey
+    real(PMFDP)     :: mval
+    character(*)    :: nkey
+    character(*)    :: akey
+    character(*)    :: bkey
+    ! --------------------------------------------------------------------------
+
+    rbuf_B(glbidx) = mval
+    call pmf_accu_write_rbuf_B(cstaccu,iounit,mkey, 'CO',rbuf_B,nkey,akey,bkey)
+
+end subroutine cst_accu_write_cmom_B
+
+!===============================================================================
 ! Subroutine:  cst_accu_write_counter_B
 !===============================================================================
 
