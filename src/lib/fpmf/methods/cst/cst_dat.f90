@@ -238,7 +238,7 @@ real(PMFDP)                 :: m2ekinfw         ! M2 of kinetic energy
 
 real(PMFDP),allocatable     :: c11lt(:)         ! co-moments between lambda and total energy
 real(PMFDP),allocatable     :: c11ltfw(:)       ! weighted co-moments between lambda and various energies
-real(PMFDP),allocatable     :: c11zh(:)         ! co-variance covar(Z,Etot)
+real(PMFDP)                 :: c11zh            ! co-variance covar(Z,Etot)
 
 real(PMFDP),allocatable     :: c11lifw(:)
 real(PMFDP),allocatable     :: c11lpfw(:)

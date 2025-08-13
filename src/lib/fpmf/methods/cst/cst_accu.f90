@@ -68,7 +68,6 @@ subroutine cst_accu_alloc
                   m2lamtdsfw(NumOfAllCONs),     &
                   c11lt(NumOfAllCONs),          &
                   c11ltfw(NumOfAllCONs),        &
-                  c11zh(NumOfAllCONs),          &
                   stat= alloc_failed )
 
         if( alloc_failed .ne. 0 ) then
@@ -206,7 +205,7 @@ subroutine cst_accu_clear
         c11lt(:)    = 0.0d0
         c11ltfw(:)  = 0.0d0
 
-        c11zh(:)    = 0.0d0
+        c11zh       = 0.0d0
 
         if( fentropy_decomp ) then
             c11lifw(:)  = 0.0d0
@@ -685,7 +684,7 @@ subroutine cst_accu_write(iounit)
         call cst_accu_write_cmom_M(iounit,glbidx,'C11LT',   c11lt,   'NTDS',  'MLAMTDS',   'METOT')
         call cst_accu_write_cmom_M(iounit,glbidx,'C11LTFW', c11ltfw, 'FWSUM', 'MLAMTDSFW', 'METOTFW')
 
-        call cst_accu_write_cmom_M(iounit,glbidx,'C11ZH',   c11zh,   'NTDS',  'MFWTDS',    'METOT')
+        call cst_accu_write_cmom_B(iounit,glbidx,'C11ZH',   c11zh,   'NTDS',  'MFWTDS',    'METOT')
 
         if( fentropy_decomp ) then
             call cst_accu_write_cmom_M(iounit,glbidx,'C11LIFW', c11ltfw, 'FWSUM', 'MLAMTDSFW', 'MEINTFW')
@@ -908,14 +907,18 @@ subroutine cst_accu_add_dhTds
     call cst_accu_add_data_WOMI(letot,invw,lfw,metotfw,m2etotfw,detot1fw,detot2fw)
     call cst_accu_add_data_WOMI(leint,invw,lfw,meintfw,m2eintfw,deint1fw,deint2fw)
 
-    if( fentropy_decomp ) then
-        call cst_accu_add_data_OM(lepot,invn,mepot,m2epot)
-        call cst_accu_add_data_OM(lerst,invn,merst,m2erst)
-        call cst_accu_add_data_OM(lekin,invn,mekin,m2ekin)
+    if( fentropy ) then
+        c11zh = c11zh + dfw1 * detot2
 
-        call cst_accu_add_data_WOMI(lepot,invw,lfw,mepotfw,m2epotfw,depot1fw,depot2fw)
-        call cst_accu_add_data_WOMI(lerst,invw,lfw,merstfw,m2erstfw,derst1fw,derst2fw)
-        call cst_accu_add_data_WOMI(lekin,invw,lfw,mekinfw,m2ekinfw,dekin1fw,dekin2fw)
+        if( fentropy_decomp ) then
+            call cst_accu_add_data_OM(lepot,invn,mepot,m2epot)
+            call cst_accu_add_data_OM(lerst,invn,merst,m2erst)
+            call cst_accu_add_data_OM(lekin,invn,mekin,m2ekin)
+
+            call cst_accu_add_data_WOMI(lepot,invw,lfw,mepotfw,m2epotfw,depot1fw,depot2fw)
+            call cst_accu_add_data_WOMI(lerst,invw,lfw,merstfw,m2erstfw,derst1fw,derst2fw)
+            call cst_accu_add_data_WOMI(lekin,invw,lfw,mekinfw,m2ekinfw,dekin1fw,dekin2fw)
+        end if
     end if
 
     do i=1,NumOfAllCONs
@@ -928,8 +931,6 @@ subroutine cst_accu_add_dhTds
 
             c11lt(i)    = c11lt(i)      + dlam1 * detot2
             c11ltfw(i)  = c11ltfw(i)    + lfw * dlam1fw * detot2fw
-
-            c11zh(i)    = c11zh(i)      + dfw1 * detot2
 
             if( fentropy_decomp ) then
                 c11lifw(i)  = c11lifw(i)    +  lfw * dlam1fw * deint2fw
