@@ -598,7 +598,7 @@ subroutine cst_init_core
     end select
 
 ! history buffers
-    hist_len = 2
+    hist_len = 3
     hist_fidx = -1
 
     allocate( lambdahist(NumOfAllCONs,hist_len),    &
