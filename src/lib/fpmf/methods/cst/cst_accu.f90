@@ -908,6 +908,7 @@ subroutine cst_accu_add_dhTds
     if( .not. (fintene .or. fentropy) ) return
     if( enevalidhist(hist_len+hist_fidx) ) faccustep = faccustep + 1
     if( .not. ( (mod(faccustep,fenesample) .eq. 0) .and. enevalidhist(hist_len+hist_fidx) ) ) return
+    if( fstep .le. 3*hist_len ) return
 
     ntds = ntds + 1.0d0
     invn = 1.0d0/ntds
@@ -926,6 +927,8 @@ subroutine cst_accu_add_dhTds
     lekin        = ekinhist(hist_len+hist_fidx)
     letot        = lepot + lerst + lekin
     leint        = lepot + lerst
+
+    write(12478,*) fstep, lepot, lekin
 
     call cst_accu_add_data_OMI(letot,invn,metot,m2etot,detot1,detot2)
     call cst_accu_add_data_OMI(leint,invn,meint,m2eint,deint1,deint2)
@@ -948,7 +951,7 @@ subroutine cst_accu_add_dhTds
 
     do i=1,NumOfAllCONs
 
-        llam  = lambdahist(i,hist_len+hist_fidx-2) ! FIXME
+        llam  = lambdahist(i,hist_len+hist_fidx+flambda_lag) ! FIXME
 
         if( fentropy ) then
             call cst_accu_add_data_OMI(llam, invn, mlamtds(i), m2lamtds(i), dlam1, dlam2)

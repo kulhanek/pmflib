@@ -58,6 +58,8 @@ integer         :: fshakesolver     ! SHAKE solvers
                                     ! 4 - diagonal SHAKE with initial guess from the previous step
 real(PMFDP)     :: flambdatol       ! tolerance for lambda optimization
 
+integer         :: flambda_lag
+
 integer         :: frattlesolver    ! RATTLE solvers
                                     ! 1 - matrix algebra RATTLE
 real(PMFDP)     :: frveltol         ! residual for velocity in rattle/rattlev

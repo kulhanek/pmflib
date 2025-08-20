@@ -112,6 +112,8 @@ subroutine cst_init_dat
     mfriter         = 0.0d0
     m2friter        = 0.0d0
 
+    flambda_lag     = 0
+
 end subroutine cst_init_dat
 
 !===============================================================================
@@ -171,6 +173,7 @@ subroutine cst_init_print_summary
     write(PMF_OUT,145)  ' Kinetic energy offset (fekinaverage)    : ', pmf_unit_get_rvalue(EnergyUnit,fekinaverage), &
                                                                        '['//trim(pmf_unit_label(EnergyUnit))//']'
     write(PMF_OUT,130)  ' Sampling for -TdS and dH (fenesample)   : ', fenesample
+    write(PMF_OUT,130)  ' Lambda lag (flambda_lag)                : ', flambda_lag
 
     write(PMF_OUT,120)
     write(PMF_OUT,120)  ' Restart options:'
@@ -598,8 +601,13 @@ subroutine cst_init_core
     end select
 
 ! history buffers
-    hist_len = 4
-    hist_fidx = -1
+    hist_len = 2 + flambda_lag
+    if( flambda_lag .gt. 0 ) then
+        hist_fidx = -1 - flambda_lag
+    else
+        hist_fidx = -1
+    end if
+
 
     allocate( lambdahist(NumOfAllCONs,hist_len),    &
               epothist(hist_len),                   &

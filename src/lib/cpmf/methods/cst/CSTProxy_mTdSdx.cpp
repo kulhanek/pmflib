@@ -101,7 +101,7 @@ double CCSTProxy_mTdSdx::GetValue(int ibin,int icv,EProxyRealm realm) const
 // get requested data
     switch(RealmID){
     // -------------------
-        case(CST_mTdSdx):{      // plus corrction
+        case(CST_mTdSdx):{      // plus correction
             double C        = Accu->GetData("C11LT",ibin,icv);
             mean            = C / nsamples;
             samvar          = 0.0;  // FIXME
