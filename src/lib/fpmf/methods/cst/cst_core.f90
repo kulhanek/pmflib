@@ -216,39 +216,43 @@ subroutine cst_core_calculate_fw
 
 ! SHAKE constraints ==============================
 
-! calculate Z matrix at Crd (in t)
-    do i=1,NumOfSHAKECONs
-        ci = CONList(i+NumOfCONs)%cvindx
-        do j=1,NumOfSHAKECONs
-            cj = CONList(j+NumOfCONs)%cvindx
-            jacv = 0.0
-            do k=1,NumOfLAtoms
-                jacv = jacv + MassInv(k)*dot_product(CVContext%CVsDrvs(:,k,ci),CVContext%CVsDrvs(:,k,cj))
-            end do
-            zmats(i,j) = jacv
-        end do
-    end do
+    fzdets = 1.0d0
 
-! calculate Z determinant ------------------------------------
-    if( NumOfSHAKECONs .gt. 1 ) then
-        ! LU decomposition
-        call dgetrf(NumOfSHAKECONs,NumOfSHAKECONs,zmats,NumOfSHAKECONs,indx,info)
-        if( info .ne. 0 ) then
-            call pmf_utils_exit(PMF_OUT,1,'[CST] LU decomposition failed in cst_core_calculate_fw!')
-        end if
-        fzdets = 1.0d0
-        ! and finally determinant
+    if( frmshake_zdet ) then
+    ! calculate Z matrix at Crd (in t)
         do i=1,NumOfSHAKECONs
-            if( indx(i) .ne. i ) then
-                fzdets = - fzdets * zmats(i,i)
-            else
-                fzdets = fzdets * zmats(i,i)
-            end if
+            ci = CONList(i+NumOfCONs)%cvindx
+            do j=1,NumOfSHAKECONs
+                cj = CONList(j+NumOfCONs)%cvindx
+                jacv = 0.0
+                do k=1,NumOfLAtoms
+                    jacv = jacv + MassInv(k)*dot_product(CVContext%CVsDrvs(:,k,ci),CVContext%CVsDrvs(:,k,cj))
+                end do
+                zmats(i,j) = jacv
+            end do
         end do
-    else if( NumOfSHAKECONs .eq. 1 ) then
-        fzdets = zmats(1,1)
-    else
-        fzdets = 1.0d0
+
+    ! calculate Z determinant ------------------------------------
+        if( NumOfSHAKECONs .gt. 1 ) then
+            ! LU decomposition
+            call dgetrf(NumOfSHAKECONs,NumOfSHAKECONs,zmats,NumOfSHAKECONs,indx,info)
+            if( info .ne. 0 ) then
+                call pmf_utils_exit(PMF_OUT,1,'[CST] LU decomposition failed in cst_core_calculate_fw!')
+            end if
+            fzdets = 1.0d0
+            ! and finally determinant
+            do i=1,NumOfSHAKECONs
+                if( indx(i) .ne. i ) then
+                    fzdets = - fzdets * zmats(i,i)
+                else
+                    fzdets = fzdets * zmats(i,i)
+                end if
+            end do
+        else if( NumOfSHAKECONs .eq. 1 ) then
+            fzdets = zmats(1,1)
+        else
+            fzdets = 1.0d0
+        end if
     end if
 
 ! record data

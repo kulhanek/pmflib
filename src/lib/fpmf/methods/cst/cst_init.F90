@@ -113,6 +113,7 @@ subroutine cst_init_dat
     m2friter        = 0.0d0
 
     flambda_lag     = 0
+    frmshake_zdet   = .true.
 
 end subroutine cst_init_dat
 
@@ -159,6 +160,7 @@ subroutine cst_init_print_summary
     write(PMF_OUT,135)  ' RATTLE velocity tolerance (frveltol)    : ', frveltol
 
     write(PMF_OUT,130)  ' Maximum of iteration (fmaxiter)         : ', fmaxiter
+    write(PMF_OUT,125)  ' Remove SHAKE form Zdet (frmshake_zdet)  : ', prmfile_onoff(frmshake_zdet)
 
     write(PMF_OUT,120)
     write(PMF_OUT,120)  ' Enthalpy/Entropy options:'

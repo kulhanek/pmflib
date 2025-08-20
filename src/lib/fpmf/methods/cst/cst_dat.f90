@@ -59,6 +59,7 @@ integer         :: fshakesolver     ! SHAKE solvers
 real(PMFDP)     :: flambdatol       ! tolerance for lambda optimization
 
 integer         :: flambda_lag
+logical         :: frmshake_zdet
 
 integer         :: frattlesolver    ! RATTLE solvers
                                     ! 1 - matrix algebra RATTLE

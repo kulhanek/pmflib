@@ -89,6 +89,8 @@ subroutine cst_control_read_con(prm_fin)
 
     call pmf_ctrl_read_integer(prm_fin,'flambda_lag',flambda_lag,'I12')
 
+    call pmf_ctrl_read_logical(prm_fin,'frmshake_zdet',frmshake_zdet)
+
     call pmf_ctrl_read_integer(prm_fin,'fmaxiter',fmaxiter,'I12')
 
     call pmf_ctrl_read_integer(prm_fin,'fsample',fsample,'I12')
