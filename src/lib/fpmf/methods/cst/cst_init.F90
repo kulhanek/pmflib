@@ -608,7 +608,6 @@ subroutine cst_init_core
         hist_fidx = -1
     end if
 
-
     allocate( lambdahist(NumOfAllCONs,hist_len),    &
               epothist(hist_len),                   &
               ersthist(hist_len),                   &

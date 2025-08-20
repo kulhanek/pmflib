@@ -928,7 +928,7 @@ subroutine cst_accu_add_dhTds
     letot        = lepot + lerst + lekin
     leint        = lepot + lerst
 
-    write(12478,*) fstep, lepot, lekin
+   ! write(12478,*) fstep, lepot, lekin
 
     call cst_accu_add_data_OMI(letot,invn,metot,m2etot,detot1,detot2)
     call cst_accu_add_data_OMI(leint,invn,meint,m2eint,deint1,deint2)
