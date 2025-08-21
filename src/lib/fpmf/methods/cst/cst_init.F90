@@ -114,6 +114,7 @@ subroutine cst_init_dat
 
     flambda_lag     = 0
     frmshake_zdet   = .true.
+    fshake_cvtype   = 0
 
 end subroutine cst_init_dat
 
@@ -160,7 +161,12 @@ subroutine cst_init_print_summary
     write(PMF_OUT,135)  ' RATTLE velocity tolerance (frveltol)    : ', frveltol
 
     write(PMF_OUT,130)  ' Maximum of iteration (fmaxiter)         : ', fmaxiter
-    write(PMF_OUT,125)  ' Remove SHAKE form Zdet (frmshake_zdet)  : ', prmfile_onoff(frmshake_zdet)
+
+    write(PMF_OUT,120)
+    write(PMF_OUT,120)  ' SHAKE constraints:'
+    write(PMF_OUT,120)  ' ------------------------------------------------------'
+    write(PMF_OUT,130)  ' CV type for SHAKEn bonds (fshake_cvtype): ', fshake_cvtype
+    write(PMF_OUT,125)  ' Remove SHAKE from Zdet (frmshake_zdet)  : ', prmfile_onoff(frmshake_zdet)
 
     write(PMF_OUT,120)
     write(PMF_OUT,120)  ' Enthalpy/Entropy options:'
@@ -175,7 +181,7 @@ subroutine cst_init_print_summary
     write(PMF_OUT,145)  ' Kinetic energy offset (fekinaverage)    : ', pmf_unit_get_rvalue(EnergyUnit,fekinaverage), &
                                                                        '['//trim(pmf_unit_label(EnergyUnit))//']'
     write(PMF_OUT,130)  ' Sampling for -TdS and dH (fenesample)   : ', fenesample
-    write(PMF_OUT,130)  ' Lambda lag (flambda_lag)                : ', flambda_lag
+    write(PMF_OUT,130)  ' Time lag in Cov(lam,Etot) (flambda_lag) : ', flambda_lag
 
     write(PMF_OUT,120)
     write(PMF_OUT,120)  ' Restart options:'
@@ -301,6 +307,7 @@ subroutine cst_init_add_shake_csts
     use pmf_utils
     use pmf_dat
     use cv_ds
+    use cv_dis
     use cst_dat
     use cst_constraints
     use pmf_unit
@@ -353,36 +360,73 @@ subroutine cst_init_add_shake_csts
         cvid  = NumOfCVs + i
         conid = NumOfAllCONs + i
         ! CV -----------------------------------------
-        allocate(CVTypeDS::CVList(cvid)%cv, &
-                 stat = alloc_failed)
-        if( alloc_failed .ne. 0 ) then
-            call pmf_utils_exit(PMF_OUT, 1,'[CST] Unable to allocate memory for SHAKE constraint!')
-        end if
-        call CVList(cvid)%cv%reset_cv()
-        CVList(cvid)%cv%ctype     = 'DS'
-        CVList(cvid)%cv%unit      = pmf_unit_power_unit(LengthUnit,2)
-        CVList(cvid)%cv%idx       = i
-        CVList(cvid)%cv%name      = 'SHAKE'
-        CVList(cvid)%cv%natoms    = 2
-        CVList(cvid)%cv%ngrps     = 2
-        allocate(CVList(cvid)%cv%grps(CVList(cvid)%cv%ngrps), &
-                 CVList(cvid)%cv%rindexes(2), &
-                 CVList(cvid)%cv%lindexes(2), &
-                 stat = alloc_failed)
-        if( alloc_failed .ne. 0 ) then
-            call pmf_utils_exit(PMF_OUT, 1,'[CST] Unable to allocate memory for CVList(i)%grps array!')
-        end if
-        CVList(cvid)%cv%grps(1)   = 1
-        CVList(cvid)%cv%grps(2)   = 2
-        CVList(cvid)%cv%rindexes(1) = SHAKECONList(i)%at1
-        CVList(cvid)%cv%rindexes(2) = SHAKECONList(i)%at2
-        ! CST ----------------------------------------
-        call cst_constraints_reset_con(CONList(conid))
-        CONList(conid)%cvindx       = cvid
-        CONList(conid)%cv           => CVList(cvid)%cv
-        CONList(conid)%mode         = 'C'
-        CONList(conid)%value        = SHAKECONList(i)%value
-        CONList(conid)%value_set    = .true.
+
+        select case(fshake_cvtype)
+            case(0)
+                allocate(CVTypeDS::CVList(cvid)%cv, &
+                         stat = alloc_failed)
+                if( alloc_failed .ne. 0 ) then
+                    call pmf_utils_exit(PMF_OUT, 1,'[CST] Unable to allocate memory for SHAKE constraint!')
+                end if
+                call CVList(cvid)%cv%reset_cv()
+                CVList(cvid)%cv%ctype     = 'DS'
+                CVList(cvid)%cv%unit      = pmf_unit_power_unit(LengthUnit,2)
+                CVList(cvid)%cv%idx       = i
+                CVList(cvid)%cv%name      = 'SHAKE'
+                CVList(cvid)%cv%natoms    = 2
+                CVList(cvid)%cv%ngrps     = 2
+                allocate(CVList(cvid)%cv%grps(CVList(cvid)%cv%ngrps), &
+                         CVList(cvid)%cv%rindexes(2), &
+                         CVList(cvid)%cv%lindexes(2), &
+                         stat = alloc_failed)
+                if( alloc_failed .ne. 0 ) then
+                    call pmf_utils_exit(PMF_OUT, 1,'[CST] Unable to allocate memory for CVList(i)%grps array!')
+                end if
+                CVList(cvid)%cv%grps(1)   = 1
+                CVList(cvid)%cv%grps(2)   = 2
+                CVList(cvid)%cv%rindexes(1) = SHAKECONList(i)%at1
+                CVList(cvid)%cv%rindexes(2) = SHAKECONList(i)%at2
+                ! CST ----------------------------------------
+                call cst_constraints_reset_con(CONList(conid))
+                CONList(conid)%cvindx       = cvid
+                CONList(conid)%cv           => CVList(cvid)%cv
+                CONList(conid)%mode         = 'C'
+                CONList(conid)%value        = SHAKECONList(i)%value
+                CONList(conid)%value_set    = .true.
+            case(1)
+                allocate(CVTypeDIS::CVList(cvid)%cv, &
+                         stat = alloc_failed)
+                if( alloc_failed .ne. 0 ) then
+                    call pmf_utils_exit(PMF_OUT, 1,'[CST] Unable to allocate memory for SHAKE constraint!')
+                end if
+                call CVList(cvid)%cv%reset_cv()
+                CVList(cvid)%cv%ctype     = 'DIS'
+                CVList(cvid)%cv%unit      = LengthUnit
+                CVList(cvid)%cv%idx       = i
+                CVList(cvid)%cv%name      = 'SHAKE'
+                CVList(cvid)%cv%natoms    = 2
+                CVList(cvid)%cv%ngrps     = 2
+                allocate(CVList(cvid)%cv%grps(CVList(cvid)%cv%ngrps), &
+                         CVList(cvid)%cv%rindexes(2), &
+                         CVList(cvid)%cv%lindexes(2), &
+                         stat = alloc_failed)
+                if( alloc_failed .ne. 0 ) then
+                    call pmf_utils_exit(PMF_OUT, 1,'[CST] Unable to allocate memory for CVList(i)%grps array!')
+                end if
+                CVList(cvid)%cv%grps(1)   = 1
+                CVList(cvid)%cv%grps(2)   = 2
+                CVList(cvid)%cv%rindexes(1) = SHAKECONList(i)%at1
+                CVList(cvid)%cv%rindexes(2) = SHAKECONList(i)%at2
+                ! CST ----------------------------------------
+                call cst_constraints_reset_con(CONList(conid))
+                CONList(conid)%cvindx       = cvid
+                CONList(conid)%cv           => CVList(cvid)%cv
+                CONList(conid)%mode         = 'C'
+                CONList(conid)%value        = sqrt(SHAKECONList(i)%value)
+                CONList(conid)%value_set    = .true.
+            case default
+                call pmf_utils_exit(PMF_OUT, 1,'[CST] Unsupported fshake_cvtype in cst_init_add_shake_csts!')
+        end select
     end do
 
     ! correct numbers

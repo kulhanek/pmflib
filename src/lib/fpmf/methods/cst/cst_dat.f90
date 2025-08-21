@@ -58,8 +58,8 @@ integer         :: fshakesolver     ! SHAKE solvers
                                     ! 4 - diagonal SHAKE with initial guess from the previous step
 real(PMFDP)     :: flambdatol       ! tolerance for lambda optimization
 
-integer         :: flambda_lag
-logical         :: frmshake_zdet
+integer         :: fshake_cvtype        ! CV type for SHAKE constraints, DS - 0 or DIS - 1
+logical         :: frmshake_zdet        ! do not exclude SHAKE constraints from Zdet calculation
 
 integer         :: frattlesolver    ! RATTLE solvers
                                     ! 1 - matrix algebra RATTLE
@@ -75,6 +75,7 @@ logical         :: fintene_der      ! collect data for internal energy derivativ
 ! enthalpy/entropy calculations
 logical         :: fentropy         ! collect data for entropy calculation
 logical         :: fentropy_decomp  ! collect additional correlation terms
+integer         :: flambda_lag      ! time leg for the calculation of Cov(lam,Etot)
 
 integer         :: fenesample      ! how often take samples
 

@@ -87,7 +87,8 @@ subroutine cst_control_read_con(prm_fin)
     call pmf_ctrl_read_real8(prm_fin,'flambdatol',flambdatol,'E12.4')
     call pmf_ctrl_read_real8(prm_fin,'frveltol',frveltol,'E12.4')
 
-    call pmf_ctrl_read_integer(prm_fin,'flambda_lag',flambda_lag,'I12')
+    call pmf_ctrl_read_integer(prm_fin,'fshake_cvtype',fshake_cvtype,'I12')
+    call pmf_ctrl_check_integer_in_range('CST','fshake_cvtype',fshake_cvtype,0,1)
 
     call pmf_ctrl_read_logical(prm_fin,'frmshake_zdet',frmshake_zdet)
 
@@ -118,6 +119,8 @@ subroutine cst_control_read_con(prm_fin)
 
     call pmf_ctrl_read_logical(prm_fin,'fentropy',fentropy)
     call pmf_ctrl_read_logical(prm_fin,'fentropy_decomp',fentropy_decomp)
+
+    call pmf_ctrl_read_integer(prm_fin,'flambda_lag',flambda_lag,'I12')
 
     call pmf_ctrl_read_integer(prm_fin,'fenesample',fenesample,'I12')
     call pmf_ctrl_check_integer('CST','fenesample',fenesample,0,CND_GT)
