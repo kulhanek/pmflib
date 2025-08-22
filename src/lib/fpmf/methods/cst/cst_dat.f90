@@ -250,10 +250,10 @@ real(PMFDP),allocatable     :: c11lt(:)         ! co-moments between lambda and 
 real(PMFDP),allocatable     :: c11ltfw(:)       ! weighted co-moments between lambda and various energies
 real(PMFDP)                 :: c11zh            ! co-variance covar(Z,Etot)
 
-real(PMFDP),allocatable     :: c11lifw(:)
-real(PMFDP),allocatable     :: c11lpfw(:)
-real(PMFDP),allocatable     :: c11lrfw(:)
-real(PMFDP),allocatable     :: c11lkfw(:)
+real(PMFDP),allocatable     :: c11li(:)
+real(PMFDP),allocatable     :: c11lp(:)
+real(PMFDP),allocatable     :: c11lr(:)
+real(PMFDP),allocatable     :: c11lk(:)
 
 ! fintene .and. fintene_der
 

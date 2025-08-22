@@ -76,10 +76,10 @@ subroutine cst_accu_alloc
         end if
 
         if( fentropy_decomp ) then
-            allocate(   c11lifw(NumOfAllCONs),        &
-                        c11lpfw(NumOfAllCONs),        &
-                        c11lrfw(NumOfAllCONs),        &
-                        c11lkfw(NumOfAllCONs),        &
+            allocate(   c11li(NumOfAllCONs),        &
+                        c11lp(NumOfAllCONs),        &
+                        c11lr(NumOfAllCONs),        &
+                        c11lk(NumOfAllCONs),        &
                         stat= alloc_failed )
 
             if( alloc_failed .ne. 0 ) then
@@ -208,10 +208,10 @@ subroutine cst_accu_clear
         c11zh       = 0.0d0
 
         if( fentropy_decomp ) then
-            c11lifw(:)  = 0.0d0
-            c11lpfw(:)  = 0.0d0
-            c11lrfw(:)  = 0.0d0
-            c11lkfw(:)  = 0.0d0
+            c11li(:)  = 0.0d0
+            c11lp(:)  = 0.0d0
+            c11lr(:)  = 0.0d0
+            c11lk(:)  = 0.0d0
         end if
     end if
 
@@ -712,10 +712,10 @@ subroutine cst_accu_write(iounit)
         call cst_accu_write_cmom_B(iounit,glbidx,'C11ZH',   c11zh,   'NTDS',  'MFWTDS',    'METOT')
 
         if( fentropy_decomp ) then
-            call cst_accu_write_cmom_M(iounit,glbidx,'C11LIFW', c11ltfw, 'FWSUM', 'MLAMTDSFW', 'MEINTFW')
-            call cst_accu_write_cmom_M(iounit,glbidx,'C11LPFW', c11ltfw, 'FWSUM', 'MLAMTDSFW', 'MEPOTFW')
-            call cst_accu_write_cmom_M(iounit,glbidx,'C11LRFW', c11ltfw, 'FWSUM', 'MLAMTDSFW', 'MERSTFW')
-            call cst_accu_write_cmom_M(iounit,glbidx,'C11LKFW', c11ltfw, 'FWSUM', 'MLAMTDSFW', 'MEKINFW')
+            call cst_accu_write_cmom_M(iounit,glbidx,'C11LI', c11li, 'NTDS', 'MLAMTDS', 'MEINT')
+            call cst_accu_write_cmom_M(iounit,glbidx,'C11LP', c11lp, 'NTDS', 'MLAMTDS', 'MEPOT')
+            call cst_accu_write_cmom_M(iounit,glbidx,'C11LR', c11lr, 'NTDS', 'MLAMTDS', 'MERST')
+            call cst_accu_write_cmom_M(iounit,glbidx,'C11LK', c11lk, 'NTDS', 'MLAMTDS', 'MEKIN')
         end if
     end if
 
@@ -895,9 +895,9 @@ subroutine cst_accu_add_dhTds
     real(PMFDP)     :: deint1,deint2
     real(PMFDP)     :: detot1fw,detot2fw
     real(PMFDP)     :: deint1fw,deint2fw
-    real(PMFDP)     :: depot1fw,depot2fw
-    real(PMFDP)     :: derst1fw,derst2fw
-    real(PMFDP)     :: dekin1fw,dekin2fw
+    real(PMFDP)     :: depot1,depot2
+    real(PMFDP)     :: derst1,derst2
+    real(PMFDP)     :: dekin1,dekin2
     real(PMFDP)     :: dicf1,dicf2
     real(PMFDP)     :: dlam1,dlam2
     real(PMFDP)     :: dicf1fw,dicf2fw
@@ -939,13 +939,13 @@ subroutine cst_accu_add_dhTds
         c11zh = c11zh + dfw1 * detot2
 
         if( fentropy_decomp ) then
-            call cst_accu_add_data_OM(lepot,invn,mepot,m2epot)
-            call cst_accu_add_data_OM(lerst,invn,merst,m2erst)
-            call cst_accu_add_data_OM(lekin,invn,mekin,m2ekin)
+            call cst_accu_add_data_OMI(lepot,invn,mepot,m2epot,depot1,depot2)
+            call cst_accu_add_data_OMI(lerst,invn,merst,m2erst,derst1,derst2)
+            call cst_accu_add_data_OMI(lekin,invn,mekin,m2ekin,dekin1,dekin2)
 
-            call cst_accu_add_data_WOMI(lepot,invw,lfw,mepotfw,m2epotfw,depot1fw,depot2fw)
-            call cst_accu_add_data_WOMI(lerst,invw,lfw,merstfw,m2erstfw,derst1fw,derst2fw)
-            call cst_accu_add_data_WOMI(lekin,invw,lfw,mekinfw,m2ekinfw,dekin1fw,dekin2fw)
+            call cst_accu_add_data_WOM(lepot,invw,lfw,mepotfw,m2epotfw)
+            call cst_accu_add_data_WOM(lerst,invw,lfw,merstfw,m2erstfw)
+            call cst_accu_add_data_WOM(lekin,invw,lfw,mekinfw,m2ekinfw)
         end if
     end if
 
@@ -961,10 +961,10 @@ subroutine cst_accu_add_dhTds
             c11ltfw(i)  = c11ltfw(i)    + lfw * dlam1fw * detot2fw
 
             if( fentropy_decomp ) then
-                c11lifw(i)  = c11lifw(i)    +  lfw * dlam1fw * deint2fw
-                c11lpfw(i)  = c11lpfw(i)    +  lfw * dlam1fw * depot2fw
-                c11lrfw(i)  = c11lrfw(i)    +  lfw * dlam1fw * derst2fw
-                c11lkfw(i)  = c11lkfw(i)    +  lfw * dlam1fw * dekin2fw
+                c11li(i)  = c11li(i)    +  dlam1 * deint2
+                c11lp(i)  = c11lp(i)    +  dlam1 * depot2
+                c11lr(i)  = c11lr(i)    +  dlam1 * derst2
+                c11lk(i)  = c11lk(i)    +  dlam1 * dekin2
             end if
         end if
 
