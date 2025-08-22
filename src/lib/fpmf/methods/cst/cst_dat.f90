@@ -57,6 +57,7 @@ integer         :: fshakesolver     ! SHAKE solvers
                                     ! 3 - diagonal SHAKE
                                     ! 4 - diagonal SHAKE with initial guess from the previous step
 real(PMFDP)     :: flambdatol       ! tolerance for lambda optimization
+real(PMFDP)     :: frcond
 
 integer         :: fshake_cvtype        ! CV type for SHAKE constraints, DS - 0 or DIS - 1
 logical         :: frmshake_zdet        ! do not exclude SHAKE constraints from Zdet calculation
@@ -135,12 +136,17 @@ integer, parameter  :: CON_SHAKESOL_MM      = 1     ! mixed shake: JAC(0,P)
 integer, parameter  :: CON_SHAKESOL_NM      = 2     ! Newton-Raphson shake: JAC(P,P)
 integer, parameter  :: CON_SHAKESOL_DI      = 3     ! diagonal JAC(0,P)
 integer, parameter  :: CON_SHAKESOL_DIWG    = 4     ! diagonal JAC(0,P) with initial guess from the previous step
+integer, parameter  :: CON_SHAKESOL_NMSVD   = 5     ! Newton-Raphson shake: JAC(P,P) + SVD
+integer, parameter  :: CON_SHAKESOL_NMSVD_P = 6     ! Newton-Raphson shake: JAC(P,P) + SVD + ContextP
 
 ! global variables for lambda calculation --------------------------------------
 real(PMFDP)                 :: isfdts           ! internal conversion factor
 integer                     :: fsiter           ! number of iterations in shake solver
 real(PMFDP),allocatable     :: lambdax(:)       ! list of Lagrange multipliers, internal units
 real(PMFDP),allocatable     :: cv(:)            ! constraint value vector
+
+integer                     :: lwork            ! for SVD decomposition
+real(PMFDP),allocatable     :: work(:)          ! for SVD decomposition
 
 real(PMFDP)                 :: nsupdates        ! number of shake updates
 real(PMFDP)                 :: mfsiter          ! mean value of fsiter

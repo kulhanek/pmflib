@@ -79,7 +79,7 @@ subroutine cst_control_read_con(prm_fin)
     call pmf_ctrl_read_logical(prm_fin,'freadranges',freadranges)
 
     call pmf_ctrl_read_integer(prm_fin,'fshakesolver',fshakesolver,'I12')
-    call pmf_ctrl_check_integer_in_range('CST','fshakesolver',fshakesolver,0,3)
+    call pmf_ctrl_check_integer_in_range('CST','fshakesolver',fshakesolver,0,6)
 
     call pmf_ctrl_read_integer(prm_fin,'frattlesolver',frattlesolver,'I12')
     call pmf_ctrl_check_integer_in_range('CST','frattlesolver',frattlesolver,0,0)

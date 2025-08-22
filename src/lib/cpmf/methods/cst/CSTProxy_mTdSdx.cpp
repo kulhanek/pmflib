@@ -35,6 +35,11 @@ CCSTProxy_mTdSdx::CCSTProxy_mTdSdx(void)
 {
     RegisterRealm(CST_mTdSdx, "mTdS/dx", "CST", "-TdS(x)=Cov(lam,H)/RT + TdS{CST}corr");
     RegisterRealm(CST_mTdSdx, "-TdS/dx", "CST", "-TdS(x)=Cov(lam,H)/RT + TdS{CST}corr");
+
+    RegisterRealm(CST_TdS_LT,   "C11LT",    "CST", "C11LT");
+    RegisterRealm(CST_TdS_LTFW, "C11LTFW",  "CST", "C11LTFW");
+
+    RegisterRealm(CST_TdS_LPFW, "C11LPFW",  "CST", "C11LPFW");
 }
 
 //------------------------------------------------------------------------------
@@ -101,22 +106,32 @@ double CCSTProxy_mTdSdx::GetValue(int ibin,int icv,EProxyRealm realm) const
 // get requested data
     switch(RealmID){
     // -------------------
-        case(CST_mTdSdx):{      // plus correction
+        case(CST_mTdSdx):
+        case(CST_TdS_LT):{      // plus correction
             double C        = Accu->GetData("C11LT",ibin,icv);
             mean            = C / nsamples;
             samvar          = 0.0;  // FIXME
             meanvar         = 0.0;
         }
         break;
-//    // -------------------
-//        case(CST_TdS_LTFW):{
-//            double fwsum    = Accu->GetData("FWSUM",ibin);
-//            double C        = Accu->GetData("C11LTFW",ibin,icv);
-//            mean            = C / fwsum;
-//            samvar          = 0.0;  // FIXME
-//            meanvar         = 0.0;
-//        }
-//        break;
+    // -------------------
+        case(CST_TdS_LTFW):{
+            double fwsum    = Accu->GetData("FWSUM",ibin);
+            double C        = Accu->GetData("C11LTFW",ibin,icv);
+            mean            = C / fwsum;
+            samvar          = 0.0;  // FIXME
+            meanvar         = 0.0;
+        }
+        break;
+    // -------------------
+        case(CST_TdS_LPFW):{
+            double fwsum    = Accu->GetData("FWSUM",ibin);
+            double C        = Accu->GetData("C11LPFW",ibin,icv);
+            mean            = C / fwsum;
+            samvar          = 0.0;  // FIXME
+            meanvar         = 0.0;
+        }
+        break;
 //    // -------------------
 //        case(CST_TdS_II):{
 //            double C        = Accu->GetData("C11II",ibin,icv);

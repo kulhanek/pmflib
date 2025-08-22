@@ -116,6 +116,8 @@ subroutine cst_init_dat
     frmshake_zdet   = .true.
     fshake_cvtype   = 0
 
+    frcond          = 1e-7
+
 end subroutine cst_init_dat
 
 !===============================================================================
@@ -264,6 +266,10 @@ character(80) function cst_init_get_shakesol_name(solver_id)
             cst_init_get_shakesol_name = "Mixed SHAKE (diagonal solver)"
         case(CON_SHAKESOL_DIWG)
             cst_init_get_shakesol_name = "Mixed SHAKE (diagonal solver) with initial guess"
+        case(CON_SHAKESOL_NMSVD)
+            cst_init_get_shakesol_name = "Newton-Raphson SHAKE (SVD)"
+        case(CON_SHAKESOL_NMSVD_P)
+            cst_init_get_shakesol_name = "Newton-Raphson SHAKE (SVD+ContextP)"
         case default
             call pmf_utils_exit(PMF_OUT, 1, &
                         '[CST] Not implemented shake solver in cst_init_get_shakesol_name!')
@@ -606,6 +612,16 @@ subroutine cst_init_core
 
     if( NumOfSHAKECONS .gt. 0 ) then
         allocate( zmats(NumOfSHAKECONS,NumOfSHAKECONS), stat= alloc_failed)
+        if( alloc_failed .ne. 0 ) then
+            call pmf_utils_exit(PMF_OUT,1,&
+                     '[CST] Unable to allocate memory for arrays used in LU decomposition!')
+        end if
+    end if
+
+    if( (fshakesolver .eq. CON_SHAKESOL_NMSVD) .or. (fshakesolver .eq. CON_SHAKESOL_NMSVD_P) ) then
+        ! allocate arrays for SVD decomposition
+        lwork = (3*NumOfAllCONs + max( 2*NumOfAllCONs, NumOfAllCONs, 1 ))*10
+        allocate(work(lwork), stat= alloc_failed)
         if( alloc_failed .ne. 0 ) then
             call pmf_utils_exit(PMF_OUT,1,&
                      '[CST] Unable to allocate memory for arrays used in LU decomposition!')
