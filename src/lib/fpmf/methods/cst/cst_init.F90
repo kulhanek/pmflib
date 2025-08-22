@@ -647,7 +647,7 @@ subroutine cst_init_core
     end select
 
 ! history buffers
-    hist_len = 2 + flambda_lag
+    hist_len = 2 + abs(flambda_lag)
     if( flambda_lag .gt. 0 ) then
         hist_fidx = -1 - flambda_lag
     else
