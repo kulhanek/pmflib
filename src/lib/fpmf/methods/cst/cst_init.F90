@@ -119,6 +119,8 @@ subroutine cst_init_dat
 
     frcond          = 1e-7
 
+    flambdasolver   = CON_LAMSOL_NONE
+
 end subroutine cst_init_dat
 
 !===============================================================================
@@ -633,34 +635,31 @@ subroutine cst_init_core
 ! allocate arrays for lambda calculation
     select case(fintalg)
         case(IA_LEAP_FROG) ! FIXME
-            allocate(lambdax(NumOfAllCONs), lambdax1(NumOfAllCONs), cv(NumOfAllCONs), stat= alloc_failed )
+            allocate(lambdax(NumOfAllCONs), cv(NumOfAllCONs), stat= alloc_failed )
             if( alloc_failed .ne. 0 ) then
                 call pmf_utils_exit(PMF_OUT,1,&
                          '[CST] Unable to allocate memory for arrays used in lambda calculation!')
             end if
             lambdax(:) = 0.0d0
-            lambdax1(:) = 0.0d0
             cv(:) = 0.0d0
         case(IA_VEL_VERLET)
-            allocate(lambdax(NumOfAllCONs), lambdax1(NumOfAllCONs), lambdav(NumOfAllCONs),  &
+            allocate(lambdax(NumOfAllCONs), lambdav(NumOfAllCONs),  &
                      cv(NumOfAllCONs), stat= alloc_failed )
             if( alloc_failed .ne. 0 ) then
                 call pmf_utils_exit(PMF_OUT,1,&
                          '[CST] Unable to allocate memory for arrays used in lambda calculation!')
             end if
             lambdax(:) = 0.0d0
-            lambdax1(:) = 0.0d0
             lambdav(:) = 0.0d0
             cv(:) = 0.0d0
         case(IA_LF_MIDDLE)
-            allocate(lambdax(NumOfAllCONs), lambdax1(NumOfAllCONs), lambdav(NumOfAllCONs),  &
+            allocate(lambdax(NumOfAllCONs), lambdav(NumOfAllCONs),  &
                      cv(NumOfAllCONs), stat= alloc_failed )
             if( alloc_failed .ne. 0 ) then
                 call pmf_utils_exit(PMF_OUT,1,&
                          '[CST] Unable to allocate memory for arrays used in lambda calculation!')
             end if
             lambdax(:) = 0.0d0
-            lambdax1(:) = 0.0d0
             lambdav(:) = 0.0d0
             cv(:) = 0.0d0
         case default
@@ -676,8 +675,7 @@ subroutine cst_init_core
     end if
 
     allocate( lambdahist(NumOfAllCONs,hist_len),    &
-              lambda1hist(NumOfAllCONs,hist_len),   &
-              lambdarhist(NumOfAllCONs,hist_len),   &
+              lambdaThist(NumOfAllCONs,hist_len),   &
               epothist(hist_len),                   &
               ersthist(hist_len),                   &
               ekinhist(hist_len),                   &
@@ -685,6 +683,10 @@ subroutine cst_init_core
               icfphist(NumOfAllCONs,hist_len),      &
               icfkhist(NumOfAllCONs,hist_len),      &
               enevalidhist(hist_len),               &
+              cvderhist(3,NumOfLAtoms,NumOfCVs,hist_len),               &
+              lamphist(NumOfAllCONs,hist_len),               &
+              lamk1hist(NumOfAllCONs,hist_len),               &
+              lamk2hist(NumOfAllCONs,hist_len),               &
               stat= alloc_failed )
 
     if( alloc_failed .ne. 0 ) then
@@ -693,8 +695,7 @@ subroutine cst_init_core
     end if
 
     lambdahist(:,:)     = 0.0d0
-    lambda1hist(:,:)    = 0.0d0
-    lambdarhist(:,:)    = 0.0d0
+    lambdaThist(:,:)    = 0.0d0
     epothist(:)         = 0.0d0
     ersthist(:)         = 0.0d0
     ekinhist(:)         = 0.0d0
@@ -702,6 +703,11 @@ subroutine cst_init_core
     icfphist(:,:)       = 0.0d0
     icfkhist(:,:)       = 0.0d0
     enevalidhist(:)     = .false.
+
+    cvderhist(:,:,:,:)  = 0.0d0
+    lamphist(:,:)       = 0.0d0
+    lamk1hist(:,:)      = 0.0d0
+    lamk2hist(:,:)      = 0.0d0
 
 ! enthalpy/entropy
     if( fintene .and. fintene_der ) then

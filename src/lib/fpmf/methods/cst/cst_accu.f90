@@ -955,7 +955,7 @@ subroutine cst_accu_add_dhTds
             case(0)
                 llam  = lambdahist(i,hist_len+hist_fidx+flambda_lag)
             case(1)
-                llam  = lambda1hist(i,hist_len+hist_fidx+flambda_lag)
+                llam  = lambdaThist(i,hist_len+hist_fidx+flambda_lag)
         end select
 
         if( fentropy ) then

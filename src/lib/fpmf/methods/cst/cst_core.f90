@@ -43,6 +43,7 @@ subroutine cst_core_main_lf
     use cst_output
     use cst_restart
     use cst_trajectory
+    use cst_lambda
     use pmf_utils
 
     implicit none
@@ -72,8 +73,8 @@ subroutine cst_core_main_lf
 
     select case(fintalg)
         case(IA_LEAP_FROG)
+            call cst_lambda_calculate
             lambdahist(:,hist_len)  = lambda(:)
-            lambda1hist(:,hist_len) = lambdax1(:) * isfdts
             epothist(hist_len) = PotEne - fepotaverage
             ersthist(hist_len) = PMFEne
             call cst_core_analyze
@@ -400,8 +401,7 @@ subroutine cst_core_shift_histbuffs
 
     do i=1,hist_len-1
         lambdahist(:,i)     = lambdahist(:,i+1)
-        lambda1hist(:,i)    = lambda1hist(:,i+1)
-        lambdarhist(:,i)    = lambdarhist(:,i+1)
+        lambdaThist(:,i)    = lambdaThist(:,i+1)
         epothist(i)         = epothist(i+1)
         ersthist(i)         = ersthist(i+1)
         ekinhist(i)         = ekinhist(i+1)
@@ -409,6 +409,11 @@ subroutine cst_core_shift_histbuffs
         icfphist(:,i)       = icfphist(:,i+1)
         icfkhist(:,i)       = icfkhist(:,i+1)
         enevalidhist(i)     = enevalidhist(i+1)
+
+        cvderhist(:,:,:,i)  = cvderhist(:,:,:,i+1)
+        lamphist(:,i)       = lamphist(:,i+1)
+        lamk1hist(:,i)      = lamk1hist(:,i+1)
+        lamk2hist(:,i)      = lamk2hist(:,i+1)
     end do
 
 end subroutine cst_core_shift_histbuffs

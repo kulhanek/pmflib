@@ -84,6 +84,10 @@ integer         :: fenesample       ! how often take samples
 real(PMFDP)     :: fepotaverage
 real(PMFDP)     :: fekinaverage
 
+integer         :: flambdasolver
+
+integer, parameter  :: CON_LAMSOL_NONE    = 0
+integer, parameter  :: CON_LAMSOL_SIMPLE  = 1
 
 ! item list --------------------------------------------------------------------
 type CVTypeBM
@@ -144,7 +148,6 @@ integer, parameter  :: CON_SHAKESOL_NMSVD_P = 6     ! Newton-Raphson shake: JAC(
 real(PMFDP)                 :: isfdts           ! internal conversion factor
 integer                     :: fsiter           ! number of iterations in shake solver
 real(PMFDP),allocatable     :: lambdax(:)       ! list of Lagrange multipliers, internal units
-real(PMFDP),allocatable     :: lambdax1(:)      ! list of Lagrange multipliers, internal units - 1st step
 real(PMFDP),allocatable     :: cv(:)            ! constraint value vector
 
 integer                     :: lwork            ! for SVD decomposition
@@ -188,8 +191,7 @@ integer                     :: hist_len
 integer                     :: hist_fidx
 
 real(PMFDP),allocatable     :: lambdahist(:,:)      ! lambda
-real(PMFDP),allocatable     :: lambda1hist(:,:)     ! lambda - 1st SHAKE iteration
-real(PMFDP),allocatable     :: lambdarhist(:,:)     ! lambda - raw calculation
+real(PMFDP),allocatable     :: lambdaThist(:,:)     ! lambda - 1st SHAKE iteration
 real(PMFDP),allocatable     :: epothist(:)
 real(PMFDP),allocatable     :: ersthist(:)
 real(PMFDP),allocatable     :: ekinhist(:)
@@ -197,6 +199,11 @@ real(PMFDP),allocatable     :: fwhist(:)
 real(PMFDP),allocatable     :: icfphist(:,:)
 real(PMFDP),allocatable     :: icfkhist(:,:)
 logical,allocatable         :: enevalidhist(:)      ! is energy valid?
+
+real(PMFDP),allocatable     :: cvderhist(:,:,:,:)
+real(PMFDP),allocatable     :: lamphist(:,:)
+real(PMFDP),allocatable     :: lamk1hist(:,:)
+real(PMFDP),allocatable     :: lamk2hist(:,:)
 
 ! ------------------------------------------------------------------------------
 ! ACCUMULATOR
