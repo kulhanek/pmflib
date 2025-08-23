@@ -31,10 +31,10 @@ enum ECSTTdSdxType {
     CST_TdS_LT,         // Cov(lambda,Etot)
 
     CST_TdS_LTFW,       // Cov(lambda,Etot) - Fixman weighted
-    CST_TdS_LIFW,       // Cov(lambda,Eint) - Fixman weighted
-    CST_TdS_LPFW,       // Cov(lambda,Epot) - Fixman weighted
-    CST_TdS_LRFW,       // Cov(lambda,Erst) - Fixman weighted
-    CST_TdS_LKFW,       // Cov(lambda,Ekin) - Fixman weighted
+    CST_TdS_LI,       // Cov(lambda,Eint)
+    CST_TdS_LP,       // Cov(lambda,Epot)
+    CST_TdS_LR,       // Cov(lambda,Erst)
+    CST_TdS_LK,       // Cov(lambda,Ekin)
 
     CST_TdS_II,         // Cov(ICF,Eint)
     CST_TdS_IIFW,       // Cov(ICF,Eint) - Fixman weighted

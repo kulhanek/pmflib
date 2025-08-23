@@ -121,8 +121,12 @@ subroutine cst_shake_calculate_fm
             cv(1)=cv(1)/jac(1,1)
         end if
 
+        if( fsiter .eq. 1 ) then
+            lambdax1(:) = cv(:)
+        end if
+
         ! correct lambda vector
-        lambdax = lambdax + cv
+        lambdax(:) = lambdax(:) + cv(:)
 
         ! calculate new position vector
         do i=1,NumOfAllCONs
@@ -203,8 +207,12 @@ subroutine cst_shake_calculate_mm
             cv(1)=cv(1)/jac(1,1)
         end if
 
+        if( fsiter .eq. 1 ) then
+            lambdax1(:) = cv(:)
+        end if
+
         ! correct lambda vector
-        lambdax = lambdax + cv
+        lambdax(:) = lambdax(:) + cv(:)
 
         ! calculate new position vector
         do i=1,NumOfAllCONs
@@ -285,8 +293,12 @@ subroutine cst_shake_calculate_nm
             cv(1)=cv(1)/jac(1,1)
         end if
 
+        if( fsiter .eq. 1 ) then
+            lambdax1(:) = cv(:)
+        end if
+
         ! correct lambda vector
-        lambdax = lambdax + cv
+        lambdax(:) = lambdax(:) + cv(:)
 
         ! calculate new position vector
         do i=1,NumOfAllCONs
@@ -360,8 +372,12 @@ subroutine cst_shake_calculate_nm_svd
             cv(1)=cv(1)/jac(1,1)
         end if
 
+        if( fsiter .eq. 1 ) then
+            lambdax1(:) = cv(:)
+        end if
+
         ! correct lambda vector
-        lambdax = lambdax + cv
+        lambdax(:) = lambdax(:) + cv(:)
 
         ! calculate new position vector
         do i=1,NumOfAllCONs
@@ -435,8 +451,12 @@ subroutine cst_shake_calculate_nm_svd_P
             cv(1)=cv(1)/jac(1,1)
         end if
 
+        if( fsiter .eq. 1 ) then
+            lambdax1(:) = cv(:)
+        end if
+
         ! correct lambda vector
-        lambdax = lambdax + cv
+        lambdax(:) = lambdax(:) + cv(:)
 
         ! calculate new position vector
         do i=1,NumOfAllCONs

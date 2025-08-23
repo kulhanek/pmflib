@@ -76,9 +76,10 @@ logical         :: fintene_der      ! collect data for internal energy derivativ
 ! enthalpy/entropy calculations
 logical         :: fentropy         ! collect data for entropy calculation
 logical         :: fentropy_decomp  ! collect additional correlation terms
+integer         :: flambda_src      ! lambda source
 integer         :: flambda_lag      ! time leg for the calculation of Cov(lam,Etot)
 
-integer         :: fenesample      ! how often take samples
+integer         :: fenesample       ! how often take samples
 
 real(PMFDP)     :: fepotaverage
 real(PMFDP)     :: fekinaverage
@@ -143,6 +144,7 @@ integer, parameter  :: CON_SHAKESOL_NMSVD_P = 6     ! Newton-Raphson shake: JAC(
 real(PMFDP)                 :: isfdts           ! internal conversion factor
 integer                     :: fsiter           ! number of iterations in shake solver
 real(PMFDP),allocatable     :: lambdax(:)       ! list of Lagrange multipliers, internal units
+real(PMFDP),allocatable     :: lambdax1(:)      ! list of Lagrange multipliers, internal units - 1st step
 real(PMFDP),allocatable     :: cv(:)            ! constraint value vector
 
 integer                     :: lwork            ! for SVD decomposition
@@ -185,7 +187,9 @@ real(PMFDP),allocatable     :: zmats(:,:)       ! Z-matrix - SHAKE constraints
 integer                     :: hist_len
 integer                     :: hist_fidx
 
-real(PMFDP),allocatable     :: lambdahist(:,:)
+real(PMFDP),allocatable     :: lambdahist(:,:)      ! lambda
+real(PMFDP),allocatable     :: lambda1hist(:,:)     ! lambda - 1st SHAKE iteration
+real(PMFDP),allocatable     :: lambdarhist(:,:)     ! lambda - raw calculation
 real(PMFDP),allocatable     :: epothist(:)
 real(PMFDP),allocatable     :: ersthist(:)
 real(PMFDP),allocatable     :: ekinhist(:)

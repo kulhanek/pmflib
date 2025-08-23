@@ -112,6 +112,7 @@ subroutine cst_init_dat
     mfriter         = 0.0d0
     m2friter        = 0.0d0
 
+    flambda_src     = 0
     flambda_lag     = 0
     frmshake_zdet   = .true.
     fshake_cvtype   = 0
@@ -183,6 +184,7 @@ subroutine cst_init_print_summary
     write(PMF_OUT,145)  ' Kinetic energy offset (fekinaverage)    : ', pmf_unit_get_rvalue(EnergyUnit,fekinaverage), &
                                                                        '['//trim(pmf_unit_label(EnergyUnit))//']'
     write(PMF_OUT,130)  ' Sampling for -TdS and dH (fenesample)   : ', fenesample
+    write(PMF_OUT,130)  ' Lambda source (flambda_src)             : ', flambda_src
     write(PMF_OUT,130)  ' Time lag in Cov(lam,Etot) (flambda_lag) : ', flambda_lag
 
     write(PMF_OUT,120)
@@ -631,31 +633,34 @@ subroutine cst_init_core
 ! allocate arrays for lambda calculation
     select case(fintalg)
         case(IA_LEAP_FROG) ! FIXME
-            allocate(lambdax(NumOfAllCONs), cv(NumOfAllCONs), stat= alloc_failed )
+            allocate(lambdax(NumOfAllCONs), lambdax1(NumOfAllCONs), cv(NumOfAllCONs), stat= alloc_failed )
             if( alloc_failed .ne. 0 ) then
                 call pmf_utils_exit(PMF_OUT,1,&
                          '[CST] Unable to allocate memory for arrays used in lambda calculation!')
             end if
             lambdax(:) = 0.0d0
+            lambdax1(:) = 0.0d0
             cv(:) = 0.0d0
         case(IA_VEL_VERLET)
-            allocate(lambdax(NumOfAllCONs), lambdav(NumOfAllCONs),  &
+            allocate(lambdax(NumOfAllCONs), lambdax1(NumOfAllCONs), lambdav(NumOfAllCONs),  &
                      cv(NumOfAllCONs), stat= alloc_failed )
             if( alloc_failed .ne. 0 ) then
                 call pmf_utils_exit(PMF_OUT,1,&
                          '[CST] Unable to allocate memory for arrays used in lambda calculation!')
             end if
             lambdax(:) = 0.0d0
+            lambdax1(:) = 0.0d0
             lambdav(:) = 0.0d0
             cv(:) = 0.0d0
         case(IA_LF_MIDDLE)
-            allocate(lambdax(NumOfAllCONs), lambdav(NumOfAllCONs),  &
+            allocate(lambdax(NumOfAllCONs), lambdax1(NumOfAllCONs), lambdav(NumOfAllCONs),  &
                      cv(NumOfAllCONs), stat= alloc_failed )
             if( alloc_failed .ne. 0 ) then
                 call pmf_utils_exit(PMF_OUT,1,&
                          '[CST] Unable to allocate memory for arrays used in lambda calculation!')
             end if
             lambdax(:) = 0.0d0
+            lambdax1(:) = 0.0d0
             lambdav(:) = 0.0d0
             cv(:) = 0.0d0
         case default
@@ -671,6 +676,8 @@ subroutine cst_init_core
     end if
 
     allocate( lambdahist(NumOfAllCONs,hist_len),    &
+              lambda1hist(NumOfAllCONs,hist_len),   &
+              lambdarhist(NumOfAllCONs,hist_len),   &
               epothist(hist_len),                   &
               ersthist(hist_len),                   &
               ekinhist(hist_len),                   &
@@ -685,14 +692,16 @@ subroutine cst_init_core
                  '[CST] Unable to allocate memory for arrays used for history recording!')
     end if
 
-    lambdahist(:,:) = 0.0d0
-    epothist(:)     = 0.0d0
-    ersthist(:)     = 0.0d0
-    ekinhist(:)     = 0.0d0
-    fwhist(:)      = 0.0d0
-    icfphist(:,:)   = 0.0d0
-    icfkhist(:,:)   = 0.0d0
-    enevalidhist(:) = .false.
+    lambdahist(:,:)     = 0.0d0
+    lambda1hist(:,:)    = 0.0d0
+    lambdarhist(:,:)    = 0.0d0
+    epothist(:)         = 0.0d0
+    ersthist(:)         = 0.0d0
+    ekinhist(:)         = 0.0d0
+    fwhist(:)           = 0.0d0
+    icfphist(:,:)       = 0.0d0
+    icfkhist(:,:)       = 0.0d0
+    enevalidhist(:)     = .false.
 
 ! enthalpy/entropy
     if( fintene .and. fintene_der ) then

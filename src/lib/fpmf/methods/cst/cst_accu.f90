@@ -951,7 +951,12 @@ subroutine cst_accu_add_dhTds
 
     do i=1,NumOfAllCONs
 
-        llam  = lambdahist(i,hist_len+hist_fidx+flambda_lag) ! FIXME
+        select case(flambda_src)
+            case(0)
+                llam  = lambdahist(i,hist_len+hist_fidx+flambda_lag)
+            case(1)
+                llam  = lambda1hist(i,hist_len+hist_fidx+flambda_lag)
+        end select
 
         if( fentropy ) then
             call cst_accu_add_data_OMI(llam, invn, mlamtds(i), m2lamtds(i), dlam1, dlam2)

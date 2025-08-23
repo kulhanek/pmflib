@@ -39,7 +39,10 @@ CCSTProxy_mTdSdx::CCSTProxy_mTdSdx(void)
     RegisterRealm(CST_TdS_LT,   "C11LT",    "CST", "C11LT");
     RegisterRealm(CST_TdS_LTFW, "C11LTFW",  "CST", "C11LTFW");
 
-    RegisterRealm(CST_TdS_LPFW, "C11LPFW",  "CST", "C11LPFW");
+    RegisterRealm(CST_TdS_LI, "C11LI",  "CST", "C11LI");
+    RegisterRealm(CST_TdS_LP, "C11LP",  "CST", "C11LP");
+    RegisterRealm(CST_TdS_LR, "C11LR",  "CST", "C11LR");
+    RegisterRealm(CST_TdS_LK, "C11LK",  "CST", "C11LK");
 }
 
 //------------------------------------------------------------------------------
@@ -124,31 +127,37 @@ double CCSTProxy_mTdSdx::GetValue(int ibin,int icv,EProxyRealm realm) const
         }
         break;
     // -------------------
-        case(CST_TdS_LPFW):{
-            double fwsum    = Accu->GetData("FWSUM",ibin);
-            double C        = Accu->GetData("C11LPFW",ibin,icv);
-            mean            = C / fwsum;
+        case(CST_TdS_LI):{
+            double C        = Accu->GetData("C11LI",ibin,icv);
+            mean            = C / nsamples;
             samvar          = 0.0;  // FIXME
             meanvar         = 0.0;
         }
         break;
-//    // -------------------
-//        case(CST_TdS_II):{
-//            double C        = Accu->GetData("C11II",ibin,icv);
-//            mean            = C / nsamples;
-//            samvar          = 0.0;  // FIXME
-//            meanvar         = 0.0;
-//        }
-//        break;
-//    // -------------------
-//        case(CST_TdS_IIFW):{
-//            double fwsum    = Accu->GetData("FWSUM",ibin);
-//            double C        = Accu->GetData("C11IIFW",ibin,icv);
-//            mean            = C / fwsum;
-//            samvar          = 0.0;  // FIXME
-//            meanvar         = 0.0;
-//        }
-//        break;
+    // -------------------
+        case(CST_TdS_LP):{
+            double C        = Accu->GetData("C11LP",ibin,icv);
+            mean            = C / nsamples;
+            samvar          = 0.0;  // FIXME
+            meanvar         = 0.0;
+        }
+        break;
+    // -------------------
+        case(CST_TdS_LR):{
+            double C        = Accu->GetData("C11LR",ibin,icv);
+            mean            = C / nsamples;
+            samvar          = 0.0;  // FIXME
+            meanvar         = 0.0;
+        }
+        break;
+    // -------------------
+        case(CST_TdS_LK):{
+            double C        = Accu->GetData("C11LK",ibin,icv);
+            mean            = C / nsamples;
+            samvar          = 0.0;  // FIXME
+            meanvar         = 0.0;
+        }
+        break;
     // -------------------
         default:
             RUNTIME_ERROR("unsupported type");
