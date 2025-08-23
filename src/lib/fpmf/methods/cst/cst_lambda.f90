@@ -43,7 +43,7 @@ subroutine cst_lambda_calculate
     ! call pmf_timers_start_timer(PMFLIB_CST_LAMBDA_TIMER)
 
     select case(flambdasolver)
-        case(CON_LAMSOL_NONE)
+        case(CON_LAMSOL_MD)
             ! noting to do
         case(CON_LAMSOL_SIMPLE)
             call cst_lambda_calculate_simple()

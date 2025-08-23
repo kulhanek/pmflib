@@ -951,10 +951,10 @@ subroutine cst_accu_add_dhTds
 
     do i=1,NumOfAllCONs
 
-        select case(flambda_src)
-            case(0)
+        select case(flambdasolver)
+            case(CON_LAMSOL_MD)
                 llam  = lambdahist(i,hist_len+hist_fidx+flambda_lag)
-            case(1)
+            case(CON_LAMSOL_SIMPLE)
                 llam  = lambdaThist(i,hist_len+hist_fidx+flambda_lag)
         end select
 

@@ -76,7 +76,6 @@ logical         :: fintene_der      ! collect data for internal energy derivativ
 ! enthalpy/entropy calculations
 logical         :: fentropy         ! collect data for entropy calculation
 logical         :: fentropy_decomp  ! collect additional correlation terms
-integer         :: flambda_src      ! lambda source
 integer         :: flambda_lag      ! time leg for the calculation of Cov(lam,Etot)
 
 integer         :: fenesample       ! how often take samples
@@ -86,7 +85,7 @@ real(PMFDP)     :: fekinaverage
 
 integer         :: flambdasolver
 
-integer, parameter  :: CON_LAMSOL_NONE    = 0
+integer, parameter  :: CON_LAMSOL_MD      = 0
 integer, parameter  :: CON_LAMSOL_SIMPLE  = 1
 
 ! item list --------------------------------------------------------------------

@@ -112,14 +112,13 @@ subroutine cst_init_dat
     mfriter         = 0.0d0
     m2friter        = 0.0d0
 
-    flambda_src     = 0
     flambda_lag     = 0
     frmshake_zdet   = .true.
     fshake_cvtype   = 0
 
     frcond          = 1e-7
 
-    flambdasolver   = CON_LAMSOL_NONE
+    flambdasolver   = CON_LAMSOL_MD
 
 end subroutine cst_init_dat
 
@@ -186,7 +185,7 @@ subroutine cst_init_print_summary
     write(PMF_OUT,145)  ' Kinetic energy offset (fekinaverage)    : ', pmf_unit_get_rvalue(EnergyUnit,fekinaverage), &
                                                                        '['//trim(pmf_unit_label(EnergyUnit))//']'
     write(PMF_OUT,130)  ' Sampling for -TdS and dH (fenesample)   : ', fenesample
-    write(PMF_OUT,130)  ' Lambda source (flambda_src)             : ', flambda_src
+    write(PMF_OUT,130)  ' Lambda solver (flambdasolver)           : ', flambdasolver  ! FIXME
     write(PMF_OUT,130)  ' Time lag in Cov(lam,Etot) (flambda_lag) : ', flambda_lag
 
     write(PMF_OUT,120)
