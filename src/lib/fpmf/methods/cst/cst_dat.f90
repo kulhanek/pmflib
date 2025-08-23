@@ -87,6 +87,7 @@ integer         :: flambdasolver
 
 integer, parameter  :: CON_LAMSOL_MD      = 0
 integer, parameter  :: CON_LAMSOL_SIMPLE  = 1
+integer, parameter  :: CON_LAMSOL_FULL    = 2
 
 ! item list --------------------------------------------------------------------
 type CVTypeBM

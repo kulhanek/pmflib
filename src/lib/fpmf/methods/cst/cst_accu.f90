@@ -954,7 +954,7 @@ subroutine cst_accu_add_dhTds
         select case(flambdasolver)
             case(CON_LAMSOL_MD)
                 llam  = lambdahist(i,hist_len+hist_fidx+flambda_lag)
-            case(CON_LAMSOL_SIMPLE)
+            case(CON_LAMSOL_SIMPLE,CON_LAMSOL_FULL)
                 llam  = lambdaThist(i,hist_len+hist_fidx+flambda_lag)
         end select
 
