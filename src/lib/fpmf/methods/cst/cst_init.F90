@@ -666,12 +666,14 @@ subroutine cst_init_core
     end select
 
 ! history buffers
-    hist_len = 2 + abs(flambda_lag)
+    hist_len = 5 + abs(flambda_lag)     ! FIXME
     if( flambda_lag .gt. 0 ) then
         hist_fidx = -1 - flambda_lag
     else
         hist_fidx = -1
     end if
+
+    hist_fidx_tds = -1
 
     allocate( lambdahist(NumOfAllCONs,hist_len),    &
               lambdaThist(NumOfAllCONs,hist_len),   &
@@ -682,6 +684,7 @@ subroutine cst_init_core
               icfphist(NumOfAllCONs,hist_len),      &
               icfkhist(NumOfAllCONs,hist_len),      &
               enevalidhist(hist_len),               &
+              crdhist(3,NumOfLAtoms,hist_len),               &
               cvderhist(3,NumOfLAtoms,NumOfCVs,hist_len),               &
               lamphist(NumOfAllCONs,hist_len),               &
               lamk1hist(NumOfAllCONs,hist_len),               &
@@ -703,6 +706,7 @@ subroutine cst_init_core
     icfkhist(:,:)       = 0.0d0
     enevalidhist(:)     = .false.
 
+    crdhist(:,:,:)      = 0.0d0
     cvderhist(:,:,:,:)  = 0.0d0
     lamphist(:,:)       = 0.0d0
     lamk1hist(:,:)      = 0.0d0

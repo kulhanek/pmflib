@@ -411,6 +411,7 @@ subroutine cst_core_shift_histbuffs
         enevalidhist(i)     = enevalidhist(i+1)
 
         cvderhist(:,:,:,i)  = cvderhist(:,:,:,i+1)
+        crdhist(:,:,i)      = crdhist(:,:,i+1)
         lamphist(:,i)       = lamphist(:,i+1)
         lamk1hist(:,i)      = lamk1hist(:,i+1)
         lamk2hist(:,i)      = lamk2hist(:,i+1)

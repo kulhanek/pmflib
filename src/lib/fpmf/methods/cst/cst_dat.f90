@@ -86,8 +86,8 @@ real(PMFDP)     :: fekinaverage
 integer         :: flambdasolver
 
 integer, parameter  :: CON_LAMSOL_MD      = 0
-integer, parameter  :: CON_LAMSOL_SIMPLE  = 1
-integer, parameter  :: CON_LAMSOL_FULL    = 2
+integer, parameter  :: CON_LAMSOL_V1      = 2
+integer, parameter  :: CON_LAMSOL_V2      = 3
 
 ! item list --------------------------------------------------------------------
 type CVTypeBM
@@ -189,6 +189,7 @@ real(PMFDP),allocatable     :: zmats(:,:)       ! Z-matrix - SHAKE constraints
 ! history buffers ---------------------------------------------------------------
 integer                     :: hist_len
 integer                     :: hist_fidx
+integer                     :: hist_fidx_tds
 
 real(PMFDP),allocatable     :: lambdahist(:,:)      ! lambda
 real(PMFDP),allocatable     :: lambdaThist(:,:)     ! lambda - 1st SHAKE iteration
@@ -200,6 +201,7 @@ real(PMFDP),allocatable     :: icfphist(:,:)
 real(PMFDP),allocatable     :: icfkhist(:,:)
 logical,allocatable         :: enevalidhist(:)      ! is energy valid?
 
+real(PMFDP),allocatable     :: crdhist(:,:,:)
 real(PMFDP),allocatable     :: cvderhist(:,:,:,:)
 real(PMFDP),allocatable     :: lamphist(:,:)
 real(PMFDP),allocatable     :: lamk1hist(:,:)

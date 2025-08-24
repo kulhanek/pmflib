@@ -45,10 +45,11 @@ subroutine cst_lambda_calculate
     select case(flambdasolver)
         case(CON_LAMSOL_MD)
             ! noting to do
-        case(CON_LAMSOL_SIMPLE)
-            call cst_lambda_calculate_simple()
-        case(CON_LAMSOL_FULL)
-            call cst_lambda_calculate_full()
+            hist_fidx_tds = -1
+        case(CON_LAMSOL_V1)
+            call cst_lambda_calculate_v1()
+        case(CON_LAMSOL_V2)
+            call cst_lambda_calculate_v2()
         case default
             call pmf_utils_exit(PMF_OUT,1,'[CST] LAMBDA solver is not implemented in cst_lambda_calculate!')
     end select
@@ -58,84 +59,10 @@ subroutine cst_lambda_calculate
 end subroutine cst_lambda_calculate
 
 !===============================================================================
-! Subroutine:  cst_lambda_calculate_simple
+! Subroutine:  cst_lambda_calculate_v1
 !===============================================================================
 
-subroutine cst_lambda_calculate_simple
-
-    use pmf_dat
-    use pmf_utils
-    use cst_dat
-    use cst_constraints
-
-    implicit none
-    integer             :: i,j,k,m,ci
-    real(PMFDP)         :: f1,lp,lk1,lk2,k1,k2
-    ! -----------------------------------------------------------------------------
-
-    if ( NumOfAllCONs .ne. 1 ) then
-            call pmf_utils_exit(PMF_OUT,1,&
-                             '[CST] Only one CV supported in cst_lambda_calculate_simple!')
-    end if
-
-! at t - force part
-    i = 1   ! CV index
-    ci = CONList(i)%cvindx
-    f1 = 0.0d0
-    do j=1,CONList(i)%cv%natoms
-        k = CONList(i)%cv%lindexes(j)
-        do m=1,3
-            ! force part
-            f1 = f1 + CVContext%CVsDrvs(m,k,ci) * Frc(m,k) * MassInv(k)
-        end do
-    end do
-    lamphist(i,hist_len) = f1
-
-! at t and t-dt/2 - kinetic part
-    i = 1   ! CV index
-    ci = CONList(i)%cvindx
-    k1 = 0.0d0
-    do j=1,CONList(i)%cv%natoms
-        k = CONList(i)%cv%lindexes(j)
-        do m=1,3
-            ! force part
-            k1 = k1 + CVContext%CVsDrvs(m,k,ci) * Vel(m,k)
-        end do
-    end do
-    lamk1hist(i,hist_len) = k1
-
-    cvderhist(:,:,:,hist_len) = CVContext%CVsDrvs(:,:,:)
-
-! at t-dt and t-dt/2 - kinetic part
-    i = 1   ! CV index
-    ci = CONList(i)%cvindx
-    k2 = 0.0d0
-    do j=1,CONList(i)%cv%natoms
-        k = CONList(i)%cv%lindexes(j)
-        do m=1,3
-            ! force part
-            k2 = k2 + cvderhist(m,k,ci,hist_len-1) * Vel(m,k)
-        end do
-    end do
-    lamk2hist(i,hist_len) = k2
-
-! zmat
-    call cst_shake_lambda_jacobian
-
-! at t-dt
-    lp = -lamphist(i,hist_len-1)
-    lk1 = (lamk1hist(i,hist_len)   - lamk2hist(i,hist_len)) * ifdtx
-    lk2 = (lamk1hist(i,hist_len-1) - lamk2hist(i,hist_len-1)) * ifdtx
-    lambdaThist(i,hist_len-1) =  (lp - 0.5d0*(lk1 + lk2)) / jac(i,i)
-
-end subroutine cst_lambda_calculate_simple
-
-!===============================================================================
-! Subroutine:  cst_lambda_calculate_full
-!===============================================================================
-
-subroutine cst_lambda_calculate_full
-
+subroutine cst_lambda_calculate_v1
     use pmf_dat
     use pmf_utils
     use cst_dat
@@ -146,6 +73,7 @@ subroutine cst_lambda_calculate_full
     real(PMFDP)         :: f1,lp,lk1,lk2,k1,k2
     ! -----------------------------------------------------------------------------
 
+    hist_fidx_tds = -1
 
 ! at t - force part
     do i = 1,NumOfAllCONs
@@ -168,7 +96,7 @@ subroutine cst_lambda_calculate_full
         do j=1,CONList(i)%cv%natoms
             k = CONList(i)%cv%lindexes(j)
             do m=1,3
-                ! force part
+                ! kinetic part
                 k1 = k1 + CVContext%CVsDrvs(m,k,ci) * Vel(m,k)
             end do
         end do
@@ -184,7 +112,7 @@ subroutine cst_lambda_calculate_full
         do j=1,CONList(i)%cv%natoms
             k = CONList(i)%cv%lindexes(j)
             do m=1,3
-                ! force part
+                ! kinetic part
                 k2 = k2 + cvderhist(m,k,ci,hist_len-1) * Vel(m,k)
             end do
         end do
@@ -192,9 +120,7 @@ subroutine cst_lambda_calculate_full
     end do
 
 ! at t-dt
-
-! zmat
-    call cst_shake_lambda_jacobian
+    if( fstep + hist_fidx_tds .le. 0 ) return
 
 ! cv
     do i = 1,NumOfAllCONs
@@ -204,38 +130,125 @@ subroutine cst_lambda_calculate_full
         cv(i) = lp - 0.5d0*(lk1 + lk2)
     end do
 
+! zmat
+    call cst_lambda_jacobian(hist_fidx_tds)
+
 ! linear equations
      if( NumOfAllCONs .gt. 1 ) then
         indx(:) = 0
         call dgetrf(NumOfAllCONs,NumOfAllCONs,jac,NumOfAllCONs,indx,info)
         if( info .ne. 0 ) then
-            call pmf_utils_exit(PMF_OUT,1,'[CST] LU decomposition failed in cst_rattlev_calculate_ma!')
+            call pmf_utils_exit(PMF_OUT,1,'[CST] LU decomposition failed in cst_lambda_calculate_v1!')
         end if
         call dgetrs('N',NumOfAllCONs,1,jac,NumOfAllCONs,indx,cv,NumOfAllCONs,info)
         if( info .ne. 0 ) then
-            call pmf_utils_exit(PMF_OUT,1,'[CST] Solution of LE failed in cst_rattlev_calculate_ma!')
+            call pmf_utils_exit(PMF_OUT,1,'[CST] Solution of LE failed in cst_lambda_calculate_v1!')
         end if
      else
         cv(1) = cv(1) / jac(1,1)
      end if
 
-    lambdaThist(:,hist_len-1) =  cv(:)
+    lambdaThist(:,hist_len+hist_fidx_tds) =  cv(:)
 
-end subroutine cst_lambda_calculate_full
+end subroutine cst_lambda_calculate_v1
 
 !===============================================================================
-! Subroutine:  cst_shake_lambda_jacobian
+! Subroutine:  cst_lambda_calculate_v2
 !===============================================================================
 
-subroutine cst_shake_lambda_jacobian
+subroutine cst_lambda_calculate_v2
+
+    use pmf_dat
+    use pmf_utils
+    use cst_dat
+    use cst_constraints
+
+    implicit none
+    integer             :: i,j,k,m,ci,info
+    real(PMFDP)         :: f1,k1,dx,dv
+    ! -----------------------------------------------------------------------------
+
+    hist_fidx_tds = -2
+
+! at t - force part
+    do i = 1,NumOfAllCONs
+        ci = CONList(i)%cvindx
+        f1 = 0.0d0
+        do j=1,CONList(i)%cv%natoms
+            k = CONList(i)%cv%lindexes(j)
+            do m=1,3
+                ! force part
+                f1 = f1 + CVContext%CVsDrvs(m,k,ci) * Frc(m,k) * MassInv(k)
+            end do
+        end do
+        lamphist(i,hist_len) = f1
+    end do
+
+! at t - 2dt
+    cvderhist(:,:,:,hist_len) = CVContext%CVsDrvs(:,:,:)
+    crdhist(:,:,hist_len) = Crd(:,:)
+
+    do i = 1,NumOfAllCONs
+        ci = CONList(i)%cvindx
+        k1 = 0.0d0
+        do j=1,CONList(i)%cv%natoms
+            k = CONList(i)%cv%lindexes(j)
+            do m=1,3
+                dx =   1.0d0 * cvderhist(m,k,ci,hist_len-4) - 8.0d0 * cvderhist(m,k,ci,hist_len-3) &
+                     + 8.0d0 * cvderhist(m,k,ci,hist_len-1) - 1.0d0 * cvderhist(m,k,ci,hist_len-0)
+                dv =   1.0d0 * crdhist(m,k,hist_len-4) - 8.0d0 * crdhist(m,k,hist_len-3) &
+                     + 8.0d0 * crdhist(m,k,hist_len-1) - 1.0d0 * crdhist(m,k,hist_len-0)
+                k1 = k1 + dx * dv
+            end do
+        end do
+        lamk1hist(i,hist_len+hist_fidx_tds) = k1 * ifdtx * ifdtx / (12.0d0 * 12.0d0)
+    end do
+
+! at t-dt
+    if( fstep + hist_fidx_tds .le. 0 ) return
+
+! zmat
+    call cst_lambda_jacobian(hist_fidx_tds)
+
+! cv
+    do i = 1,NumOfAllCONs
+        cv(i) = -lamphist(i,hist_len+hist_fidx_tds) - lamk1hist(i,hist_len+hist_fidx_tds)
+    end do
+
+! linear equations
+     if( NumOfAllCONs .gt. 1 ) then
+        indx(:) = 0
+        call dgetrf(NumOfAllCONs,NumOfAllCONs,jac,NumOfAllCONs,indx,info)
+        if( info .ne. 0 ) then
+            call pmf_utils_exit(PMF_OUT,1,'[CST] LU decomposition failed in cst_lambda_calculate_v2!')
+        end if
+        call dgetrs('N',NumOfAllCONs,1,jac,NumOfAllCONs,indx,cv,NumOfAllCONs,info)
+        if( info .ne. 0 ) then
+            call pmf_utils_exit(PMF_OUT,1,'[CST] Solution of LE failed in cst_lambda_calculate_v2!')
+        end if
+     else
+        cv(1) = cv(1) / jac(1,1)
+     end if
+
+    lambdaThist(:,hist_len+hist_fidx_tds) =  cv(:)
+
+end subroutine cst_lambda_calculate_v2
+
+!===============================================================================
+! Subroutine:  cst_lambda_jacobian
+!===============================================================================
+
+subroutine cst_lambda_jacobian(fidx)
 
     use pmf_dat
     use cst_dat
     use cst_constraints
 
     implicit none
-    integer                :: i,ci,j,cj,k
-    real(PMFDP)            :: jacv
+    integer         :: fidx
+    ! --------------------------------------------
+    integer         :: i,ci,j,cj,k
+    real(PMFDP)     :: jacv
     ! --------------------------------------------------------------------------
 
     ! complete Jacobian matrix
@@ -245,13 +258,13 @@ subroutine cst_shake_lambda_jacobian
             cj = CONList(j)%cvindx
             jacv = 0.0d0
             do k=1,NumOfLAtoms
-                jacv = jacv + MassInv(k)*dot_product(CVContext%CVsDrvs(:,k,ci),CVContext%CVsDrvs(:,k,cj))
+                jacv = jacv + MassInv(k)*dot_product(cvderhist(:,k,ci,hist_len+fidx),cvderhist(:,k,cj,hist_len+fidx))
             end do
             jac(i,j)=jacv
         end do
     end do
 
-end subroutine cst_shake_lambda_jacobian
+end subroutine cst_lambda_jacobian
 
 !===============================================================================
 

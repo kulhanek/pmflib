@@ -906,14 +906,14 @@ subroutine cst_accu_add_dhTds
     ! --------------------------------------------------------------------------
 
     if( .not. (fintene .or. fentropy) ) return
-    if( enevalidhist(hist_len+hist_fidx) ) faccustep = faccustep + 1
-    if( .not. ( (mod(faccustep,fenesample) .eq. 0) .and. enevalidhist(hist_len+hist_fidx) ) ) return
+    if( enevalidhist(hist_len+hist_fidx_tds) ) faccustep = faccustep + 1
+    if( .not. ( (mod(faccustep,fenesample) .eq. 0) .and. enevalidhist(hist_len+hist_fidx_tds) ) ) return
     if( fstep .le. 3*hist_len ) return
 
     ntds = ntds + 1.0d0
     invn = 1.0d0/ntds
 
-    lfw = fwhist(hist_len+hist_fidx)
+    lfw = fwhist(hist_len+hist_fidx_tds)
 
     fwsum   = fwsum + lfw
     invw    = lfw / fwsum
@@ -922,9 +922,9 @@ subroutine cst_accu_add_dhTds
     call cst_accu_add_data_OMI(lfw,invn,mfwtds,m2fwtds,dfw1,dfw2)
 
 ! other data
-    lepot        = epothist(hist_len+hist_fidx)
-    lerst        = ersthist(hist_len+hist_fidx)
-    lekin        = ekinhist(hist_len+hist_fidx)
+    lepot        = epothist(hist_len+hist_fidx_tds)
+    lerst        = ersthist(hist_len+hist_fidx_tds)
+    lekin        = ekinhist(hist_len+hist_fidx_tds)
     letot        = lepot + lerst + lekin
     leint        = lepot + lerst
 
@@ -953,9 +953,9 @@ subroutine cst_accu_add_dhTds
 
         select case(flambdasolver)
             case(CON_LAMSOL_MD)
-                llam  = lambdahist(i,hist_len+hist_fidx+flambda_lag)
-            case(CON_LAMSOL_SIMPLE,CON_LAMSOL_FULL)
-                llam  = lambdaThist(i,hist_len+hist_fidx+flambda_lag)
+                llam  = lambdahist(i,hist_len+hist_fidx_tds+flambda_lag)
+            case(CON_LAMSOL_V1,CON_LAMSOL_V2)
+                llam  = lambdaThist(i,hist_len+hist_fidx_tds+flambda_lag)
         end select
 
         if( fentropy ) then
@@ -974,8 +974,8 @@ subroutine cst_accu_add_dhTds
         end if
 
         if( fintene .and. fintene_der ) then
-            licfp = icfphist(i,hist_len+hist_fidx)
-            licfk = - PMF_Rgas*ftemp * icfkhist(i,hist_len+hist_fidx)
+            licfp = icfphist(i,hist_len+hist_fidx_tds)
+            licfk = - PMF_Rgas*ftemp * icfkhist(i,hist_len+hist_fidx_tds)
             licf  = licfp + licfk
 
             call cst_accu_add_data_OMI(licf, invn, micf(i),    m2icf(i),    dicf1, dicf2)
