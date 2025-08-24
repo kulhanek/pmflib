@@ -197,6 +197,7 @@ real(PMFDP),allocatable     :: lambdaThist(:,:)     ! lambda - 1st SHAKE iterati
 real(PMFDP),allocatable     :: epothist(:)
 real(PMFDP),allocatable     :: ersthist(:)
 real(PMFDP),allocatable     :: ekinhist(:)
+real(PMFDP),allocatable     :: ecsthist(:)
 real(PMFDP),allocatable     :: fwhist(:)
 real(PMFDP),allocatable     :: icfphist(:,:)
 real(PMFDP),allocatable     :: icfkhist(:,:)
@@ -248,6 +249,8 @@ real(PMFDP)                 :: merst            ! mean of restraint energy
 real(PMFDP)                 :: m2erst           ! M2 of restraint energy
 real(PMFDP)                 :: mekin            ! mean of kinetic energy
 real(PMFDP)                 :: m2ekin           ! M2 of kinetic energy
+real(PMFDP)                 :: mecst            ! mean of constraint energy
+real(PMFDP)                 :: m2ecst           ! M2 of constraint energy
 
 real(PMFDP)                 :: metotfw          ! mean of total energy - Fixman weighted
 real(PMFDP)                 :: m2etotfw         ! M2 of total energy
@@ -268,6 +271,7 @@ real(PMFDP),allocatable     :: c11li(:)
 real(PMFDP),allocatable     :: c11lp(:)
 real(PMFDP),allocatable     :: c11lr(:)
 real(PMFDP),allocatable     :: c11lk(:)
+real(PMFDP),allocatable     :: c11lc(:)
 
 ! fintene .and. fintene_der
 

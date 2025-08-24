@@ -80,6 +80,7 @@ subroutine cst_accu_alloc
                         c11lp(NumOfAllCONs),        &
                         c11lr(NumOfAllCONs),        &
                         c11lk(NumOfAllCONs),        &
+                        c11lc(NumOfAllCONs),        &
                         stat= alloc_failed )
 
             if( alloc_failed .ne. 0 ) then
@@ -212,6 +213,7 @@ subroutine cst_accu_clear
             c11lp(:)  = 0.0d0
             c11lr(:)  = 0.0d0
             c11lk(:)  = 0.0d0
+            c11lc(:)  = 0.0d0
         end if
     end if
 
@@ -236,6 +238,8 @@ subroutine cst_accu_clear
         m2erst      = 0.0d0
         mekin       = 0.0d0
         m2ekin      = 0.0d0
+        mecst       = 0.0d0
+        m2ecst      = 0.0d0
 
         mepotfw     = 0.0d0
         m2epotfw    = 0.0d0
@@ -716,6 +720,7 @@ subroutine cst_accu_write(iounit)
             call cst_accu_write_cmom_M(iounit,glbidx,'C11LP', c11lp, 'NTDS', 'MLAMTDS', 'MEPOT')
             call cst_accu_write_cmom_M(iounit,glbidx,'C11LR', c11lr, 'NTDS', 'MLAMTDS', 'MERST')
             call cst_accu_write_cmom_M(iounit,glbidx,'C11LK', c11lk, 'NTDS', 'MLAMTDS', 'MEKIN')
+            call cst_accu_write_cmom_M(iounit,glbidx,'C11LC', c11lc, 'NTDS', 'MLAMTDS', 'MECST')
         end if
     end if
 
@@ -733,6 +738,7 @@ subroutine cst_accu_write(iounit)
         call cst_accu_write_mean_B(iounit,glbidx,'MEPOT',mepot,'M2EPOT',m2epot,'NTDS')
         call cst_accu_write_mean_B(iounit,glbidx,'MERST',merst,'M2ERST',m2erst,'NTDS')
         call cst_accu_write_mean_B(iounit,glbidx,'MEKIN',mekin,'M2EKIN',m2ekin,'NTDS')
+        call cst_accu_write_mean_B(iounit,glbidx,'MECST',mecst,'M2ECST',m2ecst,'NTDS')
 
         call cst_accu_write_mean_B(iounit,glbidx,'MEPOTFW',mepotfw,'M2EPOTFW',m2epotfw,'FWSUM')
         call cst_accu_write_mean_B(iounit,glbidx,'MERSTFW',merstfw,'M2ERSTFW',m2erstfw,'FWSUM')
@@ -890,7 +896,7 @@ subroutine cst_accu_add_dhTds
     integer         :: i
     real(PMFDP)     :: invn,invw
     real(PMFDP)     :: lfw,llam,licf,licfp,licfk
-    real(PMFDP)     :: letot,leint,lepot,lerst,lekin
+    real(PMFDP)     :: letot,leint,lepot,lerst,lekin,lecst
     real(PMFDP)     :: detot1,detot2
     real(PMFDP)     :: deint1,deint2
     real(PMFDP)     :: detot1fw,detot2fw
@@ -898,6 +904,7 @@ subroutine cst_accu_add_dhTds
     real(PMFDP)     :: depot1,depot2
     real(PMFDP)     :: derst1,derst2
     real(PMFDP)     :: dekin1,dekin2
+    real(PMFDP)     :: decst1,decst2
     real(PMFDP)     :: dicf1,dicf2
     real(PMFDP)     :: dlam1,dlam2
     real(PMFDP)     :: dicf1fw,dicf2fw
@@ -925,7 +932,8 @@ subroutine cst_accu_add_dhTds
     lepot        = epothist(hist_len+hist_fidx_tds)
     lerst        = ersthist(hist_len+hist_fidx_tds)
     lekin        = ekinhist(hist_len+hist_fidx_tds)
-    letot        = lepot + lerst + lekin
+    lecst        = ecsthist(hist_len+hist_fidx_tds)
+    letot        = lepot + lerst + lekin + lecst
     leint        = lepot + lerst
 
    ! write(12478,*) fstep, lepot, lekin
@@ -942,6 +950,7 @@ subroutine cst_accu_add_dhTds
             call cst_accu_add_data_OMI(lepot,invn,mepot,m2epot,depot1,depot2)
             call cst_accu_add_data_OMI(lerst,invn,merst,m2erst,derst1,derst2)
             call cst_accu_add_data_OMI(lekin,invn,mekin,m2ekin,dekin1,dekin2)
+            call cst_accu_add_data_OMI(lecst,invn,mecst,m2ecst,decst1,decst2)
 
             call cst_accu_add_data_WOM(lepot,invw,lfw,mepotfw,m2epotfw)
             call cst_accu_add_data_WOM(lerst,invw,lfw,merstfw,m2erstfw)
@@ -970,6 +979,7 @@ subroutine cst_accu_add_dhTds
                 c11lp(i)  = c11lp(i)    +  dlam1 * depot2
                 c11lr(i)  = c11lr(i)    +  dlam1 * derst2
                 c11lk(i)  = c11lk(i)    +  dlam1 * dekin2
+                c11lc(i)  = c11lc(i)    +  dlam1 * decst2
             end if
         end if
 

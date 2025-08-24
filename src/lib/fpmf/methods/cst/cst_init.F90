@@ -680,6 +680,7 @@ subroutine cst_init_core
               epothist(hist_len),                   &
               ersthist(hist_len),                   &
               ekinhist(hist_len),                   &
+              ecsthist(hist_len),                   &
               fwhist(hist_len),                     &
               icfphist(NumOfAllCONs,hist_len),      &
               icfkhist(NumOfAllCONs,hist_len),      &
@@ -701,6 +702,7 @@ subroutine cst_init_core
     epothist(:)         = 0.0d0
     ersthist(:)         = 0.0d0
     ekinhist(:)         = 0.0d0
+    ecsthist(:)         = 0.0d0
     fwhist(:)           = 0.0d0
     icfphist(:,:)       = 0.0d0
     icfkhist(:,:)       = 0.0d0

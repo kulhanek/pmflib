@@ -77,8 +77,9 @@ subroutine cst_core_main_lf
             call cst_core_calculate_cstene
            ! write(12478,*) CSTEne
             lambdahist(:,hist_len)  = lambda(:)
-            epothist(hist_len) = PotEne - fepotaverage + CSTEne
+            epothist(hist_len) = PotEne - fepotaverage
             ersthist(hist_len) = PMFEne
+            ecsthist(hist_len) = CSTEne
             call cst_core_analyze
             call cst_output_write
             call cst_restart_update
@@ -430,6 +431,7 @@ subroutine cst_core_shift_histbuffs
         epothist(i)         = epothist(i+1)
         ersthist(i)         = ersthist(i+1)
         ekinhist(i)         = ekinhist(i+1)
+        ecsthist(i)         = ecsthist(i+1)
         fwhist(i)           = fwhist(i+1)
         icfphist(:,i)       = icfphist(:,i+1)
         icfkhist(:,i)       = icfkhist(:,i+1)
