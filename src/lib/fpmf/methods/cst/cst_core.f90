@@ -74,8 +74,9 @@ subroutine cst_core_main_lf
     select case(fintalg)
         case(IA_LEAP_FROG)
             call cst_lambda_calculate
+            call cst_core_calculate_cstene
             lambdahist(:,hist_len)  = lambda(:)
-            epothist(hist_len) = PotEne - fepotaverage
+            epothist(hist_len) = PotEne - fepotaverage + CSTEne
             ersthist(hist_len) = PMFEne
             call cst_core_analyze
             call cst_output_write
@@ -265,6 +266,29 @@ subroutine cst_core_calculate_fw
 
 end subroutine cst_core_calculate_fw
 
+!===============================================================================
+! Subroutine:  cst_core_calculate_cstene
+!===============================================================================
+
+subroutine cst_core_calculate_cstene
+
+    use pmf_utils
+    use pmf_dat
+    use cst_dat
+
+    implicit none
+    integer                :: i,ci
+    real(PMFDP)            :: diff
+    ! --------------------------------------------------------------------------
+
+    CSTEne = 0.0d0
+    do i=1,NumOfAllCONs
+        ci = CONList(i)%cvindx
+        diff = CVContext%CVsValues(ci) - CONList(i)%value
+        CSTEne = CSTEne + lambda(i) * diff
+    end do
+
+end subroutine cst_core_calculate_cstene
 
 !===============================================================================
 ! Subroutine:  cst_core_calculate_icf

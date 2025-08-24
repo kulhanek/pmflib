@@ -170,6 +170,7 @@ real(PMFDP)                 :: mfriter          ! mean value of friter
 real(PMFDP)                 :: m2friter         ! M2 moment of friter
 
 ! metric tensor correction -----------------------------------------------------
+real(PMFDP)                 :: CSTEne           ! energy of constraints
 real(PMFDP),allocatable     :: lambda(:)        ! total lambda with corrected units
 real(PMFDP),allocatable     :: fwfac            ! current value of Fixman weight
 
