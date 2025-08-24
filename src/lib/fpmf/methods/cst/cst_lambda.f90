@@ -248,7 +248,7 @@ subroutine cst_lambda_calculate_v2
 
 ! cv
     do i = 1,NumOfAllCONs
-        cv(i) = lamphist(i,hist_len+hist_fidx_tds) ! - lamk1hist(i,hist_len+hist_fidx_tds)
+        cv(i) = - lamk1hist(i,hist_len+hist_fidx_tds) ! lamphist(i,hist_len+hist_fidx_tds) !
     end do
 
 ! linear equations

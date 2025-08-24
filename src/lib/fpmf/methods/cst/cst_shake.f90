@@ -360,6 +360,8 @@ subroutine cst_shake_calculate_nm_svd
             cv(1)=cv(1)/jac(1,1)
         end if
 
+        ! write(45879,*) NumOfAllCONs,orank
+
         ! correct lambda vector
         lambdax(:) = lambdax(:) + cv(:)
 
