@@ -75,6 +75,7 @@ subroutine cst_core_main_lf
         case(IA_LEAP_FROG)
             call cst_lambda_calculate
             call cst_core_calculate_cstene
+           ! write(12478,*) CSTEne
             lambdahist(:,hist_len)  = lambda(:)
             epothist(hist_len) = PotEne - fepotaverage + CSTEne
             ersthist(hist_len) = PMFEne
