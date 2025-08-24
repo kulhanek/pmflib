@@ -166,6 +166,7 @@ subroutine cst_lambda_calculate_v2
     implicit none
     integer             :: i,j,k,m,ci,info,l,cl
     real(PMFDP)         :: f1,k1,dx,dv,k2
+    real(PMFDP)         :: f(3,NumOfLAtoms)
     ! -----------------------------------------------------------------------------
 
     hist_fidx_tds = -2
@@ -188,31 +189,41 @@ subroutine cst_lambda_calculate_v2
     crdhist(:,:,hist_len) = Crd(:,:)
 
 ! at t - 2dt
+    f(:,:) = 0.0d0
+    do k=1,NumOfLAtoms
+        do m=1,3
+            dx = -  1.0d0 * crdhist(m,k,hist_len-4) + 16.0d0 * crdhist(m,k,hist_len-3) &
+                 - 30.0d0 * crdhist(m,k,hist_len-2) &
+                +  16.0d0 * crdhist(m,k,hist_len-1) - 1.0d0 * crdhist(m,k,hist_len-0)
+            f(m,k) = Mass(k) * dx * ifdtx * ifdtx / 12.0d0
+        end do
+    end do
+
+    ! add constraint force
+    do i = 1,NumOfAllCONs
+        ci = CONList(i)%cvindx
+        do j=1,CONList(i)%cv%natoms
+            k = CONList(i)%cv%lindexes(j)
+            do m=1,3
+                f(m,k) = f(m,k) - lambdahist(i,hist_len-2)*cvderhist(m,k,i,hist_len-2)
+            end do
+        end do
+    end do
+
+    ! project
     do i = 1,NumOfAllCONs
         ci = CONList(i)%cvindx
         f1 = 0.0d0
         do j=1,CONList(i)%cv%natoms
             k = CONList(i)%cv%lindexes(j)
             do m=1,3
-                dx = -  1.0d0 * crdhist(m,k,hist_len-4) + 16.0d0 * crdhist(m,k,hist_len-3) &
-                     - 30.0d0 * crdhist(m,k,hist_len-2) &
-                    +  16.0d0 * crdhist(m,k,hist_len-1) - 1.0d0 * crdhist(m,k,hist_len-0)
-                k2 = 0.0d0
-                do l = 1,NumOfAllCONs
-                    cl = CONList(i)%cvindx
-                    k2 = k2 + lambdahist(l,hist_len-2)*cvderhist(m,k,l,hist_len-2)
-                end do
-
-                f1 = f1 + MassInv(k) * cvderhist(m,k,ci,hist_len-2) &
-                   * ( dx * ifdtx * ifdtx / 12.0d0 * Mass(k) - k2 )
+                f1 = f1 + MassInv(k) * cvderhist(m,k,ci,hist_len-2) * f(m,k)
             end do
         end do
         lamphist(i,hist_len+hist_fidx_tds) = - f1
     end do
 
 ! at t - 2dt
-
-
     do i = 1,NumOfAllCONs
         ci = CONList(i)%cvindx
         k1 = 0.0d0
