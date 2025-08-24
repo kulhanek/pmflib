@@ -91,7 +91,7 @@ subroutine cst_init_dat
     fintene         = .false.       ! accumulate enthalpy
     fintene_der     = .false.
     fentropy        = .false.
-    fentropy_decomp = .false.
+    ftds_decomp     = .false.
 
     fepotaverage    = 0.0d0
     fekinaverage    = 0.0d0
@@ -112,13 +112,14 @@ subroutine cst_init_dat
     mfriter         = 0.0d0
     m2friter        = 0.0d0
 
-    flambda_lag     = 0
     frmshake_zdet   = .true.
     fshake_cvtype   = 0
 
     frcond          = 1e-7
 
-    flambdasolver   = CON_LAMSOL_MD
+    ftds_lamsol     = CON_LAMSOL_MD
+
+    fshakemode      = 0
 
 end subroutine cst_init_dat
 
@@ -178,15 +179,16 @@ subroutine cst_init_print_summary
     write(PMF_OUT,125)  ' Accumulate internal energy (fintene)    : ', prmfile_onoff(fintene)
     write(PMF_OUT,125)  ' Accumulate intene deriv. (fintene_der)  : ', prmfile_onoff(fintene_der)
     write(PMF_OUT,125)  ' Accumulate entropy (fentropy)           : ', prmfile_onoff(fentropy)
-    write(PMF_OUT,125)  ' Decompose entropy (fentropy_decomp)     : ', prmfile_onoff(fentropy_decomp)
+    write(PMF_OUT,125)  ' Decompose entropy (ftds_decomp)         : ', prmfile_onoff(ftds_decomp)
 
     write(PMF_OUT,145)  ' Potential energy offset (fepotaverage)  : ', pmf_unit_get_rvalue(EnergyUnit,fepotaverage),  &
                                                                        '['//trim(pmf_unit_label(EnergyUnit))//']'
     write(PMF_OUT,145)  ' Kinetic energy offset (fekinaverage)    : ', pmf_unit_get_rvalue(EnergyUnit,fekinaverage), &
                                                                        '['//trim(pmf_unit_label(EnergyUnit))//']'
     write(PMF_OUT,130)  ' Sampling for -TdS and dH (fenesample)   : ', fenesample
-    write(PMF_OUT,130)  ' Lambda solver (flambdasolver)           : ', flambdasolver  ! FIXME
-    write(PMF_OUT,130)  ' Time lag in Cov(lam,Etot) (flambda_lag) : ', flambda_lag
+
+    write(PMF_OUT,130)  ' Kinetic energy source (ftds_ekinsrc)    : ', ftds_ekinsrc ! FIXME
+    write(PMF_OUT,130)  ' Lambda solver (ftds_lamsol)             : ', ftds_lamsol  ! FIXME
 
     write(PMF_OUT,120)
     write(PMF_OUT,120)  ' Restart options:'
@@ -666,13 +668,8 @@ subroutine cst_init_core
     end select
 
 ! history buffers
-    hist_len = 5 + abs(flambda_lag)     ! FIXME
-    if( flambda_lag .gt. 0 ) then
-        hist_fidx = -1 - flambda_lag
-    else
-        hist_fidx = -1
-    end if
-
+    hist_len = 5       ! FIXME
+    hist_fidx = -1
     hist_fidx_tds = -1
 
     allocate( lambdahist(NumOfAllCONs,hist_len),    &
@@ -680,16 +677,15 @@ subroutine cst_init_core
               epothist(hist_len),                   &
               ersthist(hist_len),                   &
               ekinhist(hist_len),                   &
-              ecsthist(hist_len),                   &
               fwhist(hist_len),                     &
               icfphist(NumOfAllCONs,hist_len),      &
               icfkhist(NumOfAllCONs,hist_len),      &
               enevalidhist(hist_len),               &
               crdhist(3,NumOfLAtoms,hist_len),               &
-              cvderhist(3,NumOfLAtoms,NumOfCVs,hist_len),               &
+              velhist(3,NumOfLAtoms,hist_len),               &
+              cvderhist(3,NumOfLAtoms,NumOfCVs,hist_len),    &
               lamphist(NumOfAllCONs,hist_len),               &
-              lamk1hist(NumOfAllCONs,hist_len),               &
-              lamk2hist(NumOfAllCONs,hist_len),               &
+              lamkhist(NumOfAllCONs,hist_len),               &
               stat= alloc_failed )
 
     if( alloc_failed .ne. 0 ) then
@@ -702,17 +698,16 @@ subroutine cst_init_core
     epothist(:)         = 0.0d0
     ersthist(:)         = 0.0d0
     ekinhist(:)         = 0.0d0
-    ecsthist(:)         = 0.0d0
     fwhist(:)           = 0.0d0
     icfphist(:,:)       = 0.0d0
     icfkhist(:,:)       = 0.0d0
     enevalidhist(:)     = .false.
 
     crdhist(:,:,:)      = 0.0d0
+    velhist(:,:,:)      = 0.0d0
     cvderhist(:,:,:,:)  = 0.0d0
     lamphist(:,:)       = 0.0d0
-    lamk1hist(:,:)      = 0.0d0
-    lamk2hist(:,:)      = 0.0d0
+    lamkhist(:,:)       = 0.0d0
 
 ! enthalpy/entropy
     if( fintene .and. fintene_der ) then

@@ -48,6 +48,9 @@ integer         :: ftrjsample       ! how often save restart to "restart evoluti
 integer         :: faccurst         ! number of steps for equilibration, it is ignored if job is restarted
 integer         :: frstupdate       ! how often is restart file written
 
+integer         :: fshakemode       ! how to deal with SHAKE constraints in collision
+                                    ! 0 - consider them
+                                    ! 1 - disable them
 
 ! constraints ------------------------------------
 integer         :: fshakesolver     ! SHAKE solvers
@@ -75,19 +78,20 @@ logical         :: fintene_der      ! collect data for internal energy derivativ
 
 ! enthalpy/entropy calculations
 logical         :: fentropy         ! collect data for entropy calculation
-logical         :: fentropy_decomp  ! collect additional correlation terms
-integer         :: flambda_lag      ! time leg for the calculation of Cov(lam,Etot)
+logical         :: ftds_decomp      ! collect additional correlation terms
+integer         :: ftds_lamsol      ! source of lambda
+                                    ! 0 - MD engine
+                                    ! 1 - explicit calculation
+
+integer, parameter  :: CON_LAMSOL_MD      = 0
+integer, parameter  :: CON_LAMSOL_V1      = 1
+
+integer         :: ftds_ekinsrc     ! source of kinetic energy
 
 integer         :: fenesample       ! how often take samples
 
 real(PMFDP)     :: fepotaverage
 real(PMFDP)     :: fekinaverage
-
-integer         :: flambdasolver
-
-integer, parameter  :: CON_LAMSOL_MD      = 0
-integer, parameter  :: CON_LAMSOL_V1      = 2
-integer, parameter  :: CON_LAMSOL_V2      = 3
 
 ! item list --------------------------------------------------------------------
 type CVTypeBM
@@ -170,7 +174,6 @@ real(PMFDP)                 :: mfriter          ! mean value of friter
 real(PMFDP)                 :: m2friter         ! M2 moment of friter
 
 ! metric tensor correction -----------------------------------------------------
-real(PMFDP)                 :: CSTEne           ! energy of constraints
 real(PMFDP),allocatable     :: lambda(:)        ! total lambda with corrected units
 real(PMFDP),allocatable     :: fwfac            ! current value of Fixman weight
 
@@ -197,17 +200,16 @@ real(PMFDP),allocatable     :: lambdaThist(:,:)     ! lambda - 1st SHAKE iterati
 real(PMFDP),allocatable     :: epothist(:)
 real(PMFDP),allocatable     :: ersthist(:)
 real(PMFDP),allocatable     :: ekinhist(:)
-real(PMFDP),allocatable     :: ecsthist(:)
 real(PMFDP),allocatable     :: fwhist(:)
 real(PMFDP),allocatable     :: icfphist(:,:)
 real(PMFDP),allocatable     :: icfkhist(:,:)
 logical,allocatable         :: enevalidhist(:)      ! is energy valid?
 
 real(PMFDP),allocatable     :: crdhist(:,:,:)
+real(PMFDP),allocatable     :: velhist(:,:,:)
 real(PMFDP),allocatable     :: cvderhist(:,:,:,:)
 real(PMFDP),allocatable     :: lamphist(:,:)
-real(PMFDP),allocatable     :: lamk1hist(:,:)
-real(PMFDP),allocatable     :: lamk2hist(:,:)
+real(PMFDP),allocatable     :: lamkhist(:,:)
 
 ! ------------------------------------------------------------------------------
 ! ACCUMULATOR
@@ -249,8 +251,6 @@ real(PMFDP)                 :: merst            ! mean of restraint energy
 real(PMFDP)                 :: m2erst           ! M2 of restraint energy
 real(PMFDP)                 :: mekin            ! mean of kinetic energy
 real(PMFDP)                 :: m2ekin           ! M2 of kinetic energy
-real(PMFDP)                 :: mecst            ! mean of constraint energy
-real(PMFDP)                 :: m2ecst           ! M2 of constraint energy
 
 real(PMFDP)                 :: metotfw          ! mean of total energy - Fixman weighted
 real(PMFDP)                 :: m2etotfw         ! M2 of total energy
@@ -271,7 +271,6 @@ real(PMFDP),allocatable     :: c11li(:)
 real(PMFDP),allocatable     :: c11lp(:)
 real(PMFDP),allocatable     :: c11lr(:)
 real(PMFDP),allocatable     :: c11lk(:)
-real(PMFDP),allocatable     :: c11lc(:)
 
 ! fintene .and. fintene_der
 

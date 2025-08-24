@@ -118,10 +118,13 @@ subroutine cst_control_read_con(prm_fin)
     call pmf_ctrl_read_logical(prm_fin,'fintene_der',fintene_der)
 
     call pmf_ctrl_read_logical(prm_fin,'fentropy',fentropy)
-    call pmf_ctrl_read_logical(prm_fin,'fentropy_decomp',fentropy_decomp)
+    call pmf_ctrl_read_logical(prm_fin,'ftds_decomp',ftds_decomp)
 
-    call pmf_ctrl_read_integer(prm_fin,'flambda_lag',flambda_lag,'I12')
-    call pmf_ctrl_read_integer(prm_fin,'flambdasolver',flambdasolver,'I12')
+    call pmf_ctrl_read_integer(prm_fin,'ftds_ekinsrc',ftds_ekinsrc,'I12')
+    call pmf_ctrl_check_integer_in_range('CST','ftds_ekinsrc',ftds_ekinsrc,0,1)
+
+    call pmf_ctrl_read_integer(prm_fin,'ftds_lamsol',ftds_lamsol,'I12')
+    call pmf_ctrl_check_integer_in_range('CST','ftds_lamsol',ftds_lamsol,0,1)
 
     call pmf_ctrl_read_integer(prm_fin,'fenesample',fenesample,'I12')
     call pmf_ctrl_check_integer('CST','fenesample',fenesample,0,CND_GT)

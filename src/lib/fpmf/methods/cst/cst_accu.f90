@@ -75,12 +75,11 @@ subroutine cst_accu_alloc
                      '[CST] Unable to allocate memory for arrays used for enthalpy/entropy calculations!')
         end if
 
-        if( fentropy_decomp ) then
+        if( ftds_decomp ) then
             allocate(   c11li(NumOfAllCONs),        &
                         c11lp(NumOfAllCONs),        &
                         c11lr(NumOfAllCONs),        &
                         c11lk(NumOfAllCONs),        &
-                        c11lc(NumOfAllCONs),        &
                         stat= alloc_failed )
 
             if( alloc_failed .ne. 0 ) then
@@ -208,12 +207,11 @@ subroutine cst_accu_clear
 
         c11zh       = 0.0d0
 
-        if( fentropy_decomp ) then
+        if( ftds_decomp ) then
             c11li(:)  = 0.0d0
             c11lp(:)  = 0.0d0
             c11lr(:)  = 0.0d0
             c11lk(:)  = 0.0d0
-            c11lc(:)  = 0.0d0
         end if
     end if
 
@@ -224,22 +222,20 @@ subroutine cst_accu_clear
         m2etotfw    = 0.0d0
     end if
 
-    if( (fentropy .and. fentropy_decomp) .or. fintene ) then
+    if( (fentropy .and. ftds_decomp) .or. fintene ) then
         meint       = 0.0d0
         m2eint      = 0.0d0
         meintfw     = 0.0d0
         m2eintfw    = 0.0d0
     end if
 
-    if( fentropy .and. fentropy_decomp ) then
+    if( fentropy .and. ftds_decomp ) then
         mepot       = 0.0d0
         m2epot      = 0.0d0
         merst       = 0.0d0
         m2erst      = 0.0d0
         mekin       = 0.0d0
         m2ekin      = 0.0d0
-        mecst       = 0.0d0
-        m2ecst      = 0.0d0
 
         mepotfw     = 0.0d0
         m2epotfw    = 0.0d0
@@ -715,12 +711,11 @@ subroutine cst_accu_write(iounit)
 
         call cst_accu_write_cmom_B(iounit,glbidx,'C11ZH',   c11zh,   'NTDS',  'MFWTDS',    'METOT')
 
-        if( fentropy_decomp ) then
+        if( ftds_decomp ) then
             call cst_accu_write_cmom_M(iounit,glbidx,'C11LI', c11li, 'NTDS', 'MLAMTDS', 'MEINT')
             call cst_accu_write_cmom_M(iounit,glbidx,'C11LP', c11lp, 'NTDS', 'MLAMTDS', 'MEPOT')
             call cst_accu_write_cmom_M(iounit,glbidx,'C11LR', c11lr, 'NTDS', 'MLAMTDS', 'MERST')
             call cst_accu_write_cmom_M(iounit,glbidx,'C11LK', c11lk, 'NTDS', 'MLAMTDS', 'MEKIN')
-            call cst_accu_write_cmom_M(iounit,glbidx,'C11LC', c11lc, 'NTDS', 'MLAMTDS', 'MECST')
         end if
     end if
 
@@ -729,16 +724,15 @@ subroutine cst_accu_write(iounit)
         call cst_accu_write_mean_B(iounit,glbidx,'METOTFW',metotfw,'M2ETOTFW',m2etotfw,'FWSUM')
     end if
 
-    if( (fentropy .and. fentropy_decomp) .or. fintene ) then
+    if( (fentropy .and. ftds_decomp) .or. fintene ) then
         call cst_accu_write_mean_B(iounit,glbidx,'MEINT',meint,'M2EINT',m2eint,'NTDS')
         call cst_accu_write_mean_B(iounit,glbidx,'MEINTFW',meintfw,'M2EINTFW',m2eintfw,'FWSUM')
     end if
 
-    if( fentropy .and. fentropy_decomp ) then
+    if( fentropy .and. ftds_decomp ) then
         call cst_accu_write_mean_B(iounit,glbidx,'MEPOT',mepot,'M2EPOT',m2epot,'NTDS')
         call cst_accu_write_mean_B(iounit,glbidx,'MERST',merst,'M2ERST',m2erst,'NTDS')
         call cst_accu_write_mean_B(iounit,glbidx,'MEKIN',mekin,'M2EKIN',m2ekin,'NTDS')
-        call cst_accu_write_mean_B(iounit,glbidx,'MECST',mecst,'M2ECST',m2ecst,'NTDS')
 
         call cst_accu_write_mean_B(iounit,glbidx,'MEPOTFW',mepotfw,'M2EPOTFW',m2epotfw,'FWSUM')
         call cst_accu_write_mean_B(iounit,glbidx,'MERSTFW',merstfw,'M2ERSTFW',m2erstfw,'FWSUM')
@@ -896,7 +890,7 @@ subroutine cst_accu_add_dhTds
     integer         :: i
     real(PMFDP)     :: invn,invw
     real(PMFDP)     :: lfw,llam,licf,licfp,licfk
-    real(PMFDP)     :: letot,leint,lepot,lerst,lekin,lecst
+    real(PMFDP)     :: letot,leint,lepot,lerst,lekin
     real(PMFDP)     :: detot1,detot2
     real(PMFDP)     :: deint1,deint2
     real(PMFDP)     :: detot1fw,detot2fw
@@ -904,7 +898,6 @@ subroutine cst_accu_add_dhTds
     real(PMFDP)     :: depot1,depot2
     real(PMFDP)     :: derst1,derst2
     real(PMFDP)     :: dekin1,dekin2
-    real(PMFDP)     :: decst1,decst2
     real(PMFDP)     :: dicf1,dicf2
     real(PMFDP)     :: dlam1,dlam2
     real(PMFDP)     :: dicf1fw,dicf2fw
@@ -931,9 +924,8 @@ subroutine cst_accu_add_dhTds
 ! other data
     lepot        = epothist(hist_len+hist_fidx_tds)
     lerst        = ersthist(hist_len+hist_fidx_tds)
-    lekin        = ekinhist(hist_len+hist_fidx_tds)
-    lecst        = ecsthist(hist_len+hist_fidx_tds)
-    letot        = lepot + lerst + lekin + lecst
+    lekin        = cst_accu_get_ekin(hist_fidx_tds)
+    letot        = lepot + lerst + lekin
     leint        = lepot + lerst
 
    ! write(12478,*) fstep, lepot, lekin
@@ -946,11 +938,10 @@ subroutine cst_accu_add_dhTds
     if( fentropy ) then
         c11zh = c11zh + dfw1 * detot2
 
-        if( fentropy_decomp ) then
+        if( ftds_decomp ) then
             call cst_accu_add_data_OMI(lepot,invn,mepot,m2epot,depot1,depot2)
             call cst_accu_add_data_OMI(lerst,invn,merst,m2erst,derst1,derst2)
             call cst_accu_add_data_OMI(lekin,invn,mekin,m2ekin,dekin1,dekin2)
-            call cst_accu_add_data_OMI(lecst,invn,mecst,m2ecst,decst1,decst2)
 
             call cst_accu_add_data_WOM(lepot,invw,lfw,mepotfw,m2epotfw)
             call cst_accu_add_data_WOM(lerst,invw,lfw,merstfw,m2erstfw)
@@ -960,11 +951,11 @@ subroutine cst_accu_add_dhTds
 
     do i=1,NumOfAllCONs
 
-        select case(flambdasolver)
+        select case(ftds_lamsol)
             case(CON_LAMSOL_MD)
-                llam  = lambdahist(i,hist_len+hist_fidx_tds+flambda_lag)
-            case(CON_LAMSOL_V1,CON_LAMSOL_V2)
-                llam  = lambdaThist(i,hist_len+hist_fidx_tds+flambda_lag)
+                llam  = lambdahist(i,hist_len+hist_fidx_tds)
+            case(CON_LAMSOL_V1)
+                llam  = lambdaThist(i,hist_len+hist_fidx_tds)
         end select
 
         if( fentropy ) then
@@ -974,12 +965,11 @@ subroutine cst_accu_add_dhTds
             c11lt(i)    = c11lt(i)      + dlam1 * detot2
             c11ltfw(i)  = c11ltfw(i)    + lfw * dlam1fw * detot2fw
 
-            if( fentropy_decomp ) then
+            if( ftds_decomp ) then
                 c11li(i)  = c11li(i)    +  dlam1 * deint2
                 c11lp(i)  = c11lp(i)    +  dlam1 * depot2
                 c11lr(i)  = c11lr(i)    +  dlam1 * derst2
                 c11lk(i)  = c11lk(i)    +  dlam1 * dekin2
-                c11lc(i)  = c11lc(i)    +  dlam1 * decst2
             end if
         end if
 
@@ -999,6 +989,56 @@ subroutine cst_accu_add_dhTds
     end do
 
 end subroutine cst_accu_add_dhTds
+
+!===============================================================================
+! Subroutine:  cst_accu_add_dhTds
+! enthalpy and entropy
+!===============================================================================
+
+function cst_accu_get_ekin(fidx) result(ekin)
+
+    use pmf_dat
+    use cst_dat
+    use pmf_utils
+
+    implicit none
+    integer         :: fidx
+    real(PMFDP)     :: ekin
+    ! --------------------------------------------
+    integer         :: k,m
+    real(PMFDP)     :: ekinvv,ekinv4,v
+    ! --------------------------------------------------------------------------
+
+    select case(ftds_ekinsrc)
+        case(0)
+            ekin = ekinhist(hist_len+fidx)
+        case(1)
+            ekin = ekinhist(hist_len+fidx)
+            ! get ekinvv
+            ekinvv = 0.0d0
+            do k=1,NumOfLAtoms
+                do m=1,3
+                    ekinvv = Mass(k)*(velhist(m,k,hist_len+fidx+1)+velhist(m,k,hist_len+fidx))**2
+                end do
+            end do
+            ekinvv = ekinvv * 0.125d0 ! 1/2 * (1/2)**2
+            ekin = ekin - ekinvv
+            ! get ekinv4
+            ekinv4 = 0.0d0
+            do k=1,NumOfLAtoms
+                do m=1,3
+                    v = -1.0d0 * velhist(m,k,hist_len+fidx+2) + 9.0d0* velhist(m,k,hist_len+fidx+1) &
+                        +9.0d0 * velhist(m,k,hist_len+fidx)   - 1.0d0* velhist(m,k,hist_len+fidx-1)
+                    ekinv4 = Mass(k)*(v/16.0d0)**2
+                end do
+            end do
+            ekinv4 = ekinv4 * 0.5d0 ! 1/2
+            ekin = ekin + ekinv4
+        case default
+            call pmf_utils_exit(PMF_OUT,1,'[CST] Unsupported ftds_ekinsrc in cst_accu_get_ekin!')
+    end select
+
+end function cst_accu_get_ekin
 
 !===============================================================================
 

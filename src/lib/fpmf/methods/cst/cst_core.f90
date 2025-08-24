@@ -71,15 +71,16 @@ subroutine cst_core_main_lf
         icfkhist(:,hist_len) = icfk(:)
     end if
 
+    epothist(hist_len)          = PotEne - fepotaverage
+    ersthist(hist_len)          = PMFEne
+    cvderhist(:,:,:,hist_len)   = CVContext%CVsDrvs(:,:,:)
+    velhist(:,:,hist_len)       = Vel(:,:)
+    crdhist(:,:,hist_len)       = Crd(:,:)
+
     select case(fintalg)
         case(IA_LEAP_FROG)
+            lambdahist(:,hist_len)      = lambda(:)
             call cst_lambda_calculate
-            call cst_core_calculate_cstene
-           ! write(12478,*) CSTEne
-            lambdahist(:,hist_len)  = lambda(:)
-            epothist(hist_len) = PotEne - fepotaverage
-            ersthist(hist_len) = PMFEne
-            ecsthist(hist_len) = CSTEne
             call cst_core_analyze
             call cst_output_write
             call cst_restart_update
@@ -269,30 +270,6 @@ subroutine cst_core_calculate_fw
 end subroutine cst_core_calculate_fw
 
 !===============================================================================
-! Subroutine:  cst_core_calculate_cstene
-!===============================================================================
-
-subroutine cst_core_calculate_cstene
-
-    use pmf_utils
-    use pmf_dat
-    use cst_dat
-
-    implicit none
-    integer                :: i,ci
-    real(PMFDP)            :: diff
-    ! --------------------------------------------------------------------------
-
-    CSTEne = 0.0d0
-    do i=1,NumOfAllCONs
-        ci = CONList(i)%cvindx
-        diff = CVContext%CVsValues(ci) - CONList(i)%value
-        CSTEne = CSTEne + lambda(i) * diff
-    end do
-
-end subroutine cst_core_calculate_cstene
-
-!===============================================================================
 ! Subroutine:  cst_core_calculate_icf
 !===============================================================================
 
@@ -431,7 +408,6 @@ subroutine cst_core_shift_histbuffs
         epothist(i)         = epothist(i+1)
         ersthist(i)         = ersthist(i+1)
         ekinhist(i)         = ekinhist(i+1)
-        ecsthist(i)         = ecsthist(i+1)
         fwhist(i)           = fwhist(i+1)
         icfphist(:,i)       = icfphist(:,i+1)
         icfkhist(:,i)       = icfkhist(:,i+1)
@@ -439,9 +415,9 @@ subroutine cst_core_shift_histbuffs
 
         cvderhist(:,:,:,i)  = cvderhist(:,:,:,i+1)
         crdhist(:,:,i)      = crdhist(:,:,i+1)
+        velhist(:,:,i)      = velhist(:,:,i+1)
         lamphist(:,i)       = lamphist(:,i+1)
-        lamk1hist(:,i)      = lamk1hist(:,i+1)
-        lamk2hist(:,i)      = lamk2hist(:,i+1)
+        lamkhist(:,i)       = lamkhist(:,i+1)
     end do
 
 end subroutine cst_core_shift_histbuffs
