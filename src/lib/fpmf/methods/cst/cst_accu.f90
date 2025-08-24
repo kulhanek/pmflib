@@ -1006,7 +1006,7 @@ function cst_accu_get_ekin(fidx) result(ekin)
     real(PMFDP)     :: ekin
     ! --------------------------------------------
     integer         :: k,m
-    real(PMFDP)     :: ekinvv,ekinv4,v
+    real(PMFDP)     :: ekinvv,ekinv4,v,v2
     ! --------------------------------------------------------------------------
 
     select case(ftds_ekinsrc)
@@ -1017,20 +1017,55 @@ function cst_accu_get_ekin(fidx) result(ekin)
             ! get ekinvv
             ekinvv = 0.0d0
             do k=1,NumOfLAtoms
+                v2 = 0.0d0
                 do m=1,3
-                    ekinvv = Mass(k)*(velhist(m,k,hist_len+fidx+1)+velhist(m,k,hist_len+fidx))**2
+                    v  = 0.5d0*(velhist(m,k,hist_len+fidx+1)+velhist(m,k,hist_len+fidx))
+                    v2 = v2 + v**2
                 end do
+                ekinvv = ekinvv + Mass(k)*v2
             end do
-            ekinvv = ekinvv * 0.125d0 ! 1/2 * (1/2)**2
+            ekinvv = ekinvv * 0.5d0 ! 1/2
             ekin = ekin - ekinvv
             ! get ekinv4
             ekinv4 = 0.0d0
             do k=1,NumOfLAtoms
+                v2 = 0.0d0
                 do m=1,3
                     v = -1.0d0 * velhist(m,k,hist_len+fidx+2) + 9.0d0* velhist(m,k,hist_len+fidx+1) &
                         +9.0d0 * velhist(m,k,hist_len+fidx)   - 1.0d0* velhist(m,k,hist_len+fidx-1)
-                    ekinv4 = Mass(k)*(v/16.0d0)**2
+                    v = v / 16.0d0
+                    v2 = v2 + v**2
+
                 end do
+                ekinv4 = ekinv4 + Mass(k)*v2
+            end do
+            ekinv4 = ekinv4 * 0.5d0 ! 1/2
+            ekin = ekin + ekinv4
+        case(2)
+            ekin = ekinhist(hist_len+fidx)
+            ! get ekinvv
+            ekinvv = 0.0d0
+            do k=1,NumOfLAtoms
+                v2 = 0.0d0
+                do m=1,3
+                    v  = 0.5d0*(velhist(m,k,hist_len+fidx+1)+velhist(m,k,hist_len+fidx))
+                    v2 = v2 + v**2
+                end do
+                ekinvv = ekinvv + Mass(k)*v2
+            end do
+            ekinvv = ekinvv * 0.5d0 ! 1/2
+            ekin = ekin - ekinvv
+            ! get ekinv4
+            ekinv4 = 0.0d0
+            do k=1,NumOfLAtoms
+                v2 = 0.0d0
+                do m=1,3
+                    v = +1.0d0 * crdhist(m,k,hist_len+fidx-2) - 8.0d0* crdhist(m,k,hist_len+fidx-1) &
+                        +8.0d0 * crdhist(m,k,hist_len+fidx+1) - 1.0d0* crdhist(m,k,hist_len+fidx+2)
+                    v = v * ifdtx / 12.0d0
+                    v2 = v2 + v**2
+                end do
+                ekinv4 = ekinv4 + Mass(k)*v2
             end do
             ekinv4 = ekinv4 * 0.5d0 ! 1/2
             ekin = ekin + ekinv4

@@ -121,7 +121,7 @@ subroutine cst_control_read_con(prm_fin)
     call pmf_ctrl_read_logical(prm_fin,'ftds_decomp',ftds_decomp)
 
     call pmf_ctrl_read_integer(prm_fin,'ftds_ekinsrc',ftds_ekinsrc,'I12')
-    call pmf_ctrl_check_integer_in_range('CST','ftds_ekinsrc',ftds_ekinsrc,0,1)
+    call pmf_ctrl_check_integer_in_range('CST','ftds_ekinsrc',ftds_ekinsrc,0,2)
 
     call pmf_ctrl_read_integer(prm_fin,'ftds_lamsol',ftds_lamsol,'I12')
     call pmf_ctrl_check_integer_in_range('CST','ftds_lamsol',ftds_lamsol,0,1)
