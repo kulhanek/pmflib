@@ -25,7 +25,7 @@
 !    Boston, MA  02110-1301  USA
 !===============================================================================
 
-module cst_shake_cvs
+module cst_mdcon_cvs
 
 use pmf_sizes
 use pmf_constants
@@ -34,77 +34,106 @@ implicit none
 contains
 
 !===============================================================================
-! logical function cst_shake_cvs_checkatom(atomid)
+! logical function cst_mdcon_cvs_checkatom(atomid)
 !===============================================================================
 
-logical function cst_shake_cvs_checkatom(atomid)
+logical function cst_mdcon_cvs_checkatom(atomid,stage)
 
     use pmf_dat
     use cst_dat
 
     implicit none
-    integer    :: atomid
+    integer     :: atomid
+    integer     :: stage
     ! -----------------------------------------------
-    integer    :: i
+    integer     :: i
     ! --------------------------------------------------------------------------
+
+    cst_mdcon_cvs_checkatom = .false.
+
+    select case(fmdconmode)
+!        case(0)                ! not applicable for CST
+!            ! do nothing
+!            return
+        case(1)
+            ! exclude MD constraint in collision from MD engine
+            if( stage .eq. 1 ) return
+        case(2)
+            ! add MD constraint in collision to PMFLib CV list and remove it from MD engine
+    end select
 
     do i=1,NumOfCONAtoms
         if( CONAtoms(i) .eq. atomid ) then
-            cst_shake_cvs_checkatom = .true.
+            cst_mdcon_cvs_checkatom = .true.
             if( fdebug ) then
-                write(PMF_DEBUG+fmytaskid,*) 'cst_shake_cvs_checkatom-> conflict ',atomid
+                write(PMF_DEBUG+fmytaskid,*) 'cst_mdcon_cvs_checkatom-> conflict ',atomid
             end if
             return
         end if
     end do
 
-    cst_shake_cvs_checkatom = .false.
-
     return
 
-end function cst_shake_cvs_checkatom
-
+end function cst_mdcon_cvs_checkatom
 !===============================================================================
-! Function:  cst_shake_cvs_allocate
+! Function:  cst_mdcon_cvs_allocate
 !===============================================================================
 
-subroutine cst_shake_cvs_allocate(num)
+subroutine cst_mdcon_cvs_setnumofexcluded(num)
 
     use pmf_utils
     use pmf_dat
     use cst_dat
 
     implicit none
-    integer    :: num ! number of shake constraints
+    integer    :: num ! number of excluded constraints
+    ! -----------------------------------------------------------------------------
+
+    NumOfExcMDCONs = num
+
+end subroutine cst_mdcon_cvs_setnumofexcluded
+
+!===============================================================================
+! Function:  cst_mdcon_cvs_allocate
+!===============================================================================
+
+subroutine cst_mdcon_cvs_allocate(num)
+
+    use pmf_utils
+    use pmf_dat
+    use cst_dat
+
+    implicit none
+    integer    :: num ! number of MD constraints
     ! -----------------------------------------------
     integer    :: i,alloc_failed
     ! -----------------------------------------------------------------------------
 
-    NumOfSHAKECONs = num
-    if( NumOfSHAKECONs .eq. 0 ) return
+    NumOfMDCONs = num
+    if( NumOfMDCONs .eq. 0 ) return
 
-    allocate(SHAKECONList(NumOfSHAKECONs),stat=alloc_failed)
+    allocate(MDCONList(NumOfMDCONs),stat=alloc_failed)
 
     if( alloc_failed .ne. 0 ) then
         write(PMF_OUT,*) 'Unable to allocate memory for SHAKE constraints!'
         call pmf_utils_exit(PMF_OUT, 1)
     end if
 
-    do i=1,NumOfSHAKECONs
-        SHAKECONList(i)%at1   = 0
-        SHAKECONList(i)%at2   = 0
-        SHAKECONList(i)%value = 0.0d0
+    do i=1,NumOfMDCONs
+        MDCONList(i)%at1   = 0
+        MDCONList(i)%at2   = 0
+        MDCONList(i)%value = 0.0d0
     end do
 
 return
 
-end subroutine cst_shake_cvs_allocate
+end subroutine cst_mdcon_cvs_allocate
 
 !===============================================================================
-! Function:  cst_shake_cvs_set
+! Function:  cst_mdcon_cvs_set
 !===============================================================================
 
-subroutine cst_shake_cvs_set(id,at1,at2,value)
+subroutine cst_mdcon_cvs_set(id,at1,at2,value)
 
     use pmf_dat
     use cst_dat
@@ -116,15 +145,15 @@ subroutine cst_shake_cvs_set(id,at1,at2,value)
     real(PMFDP)    :: value    ! value of DS constraint
     ! -----------------------------------------------------------------------------
 
-    SHAKECONList(id)%at1   = at1
-    SHAKECONList(id)%at2   = at2
-    SHAKECONList(id)%value = value
+    MDCONList(id)%at1   = at1
+    MDCONList(id)%at2   = at2
+    MDCONList(id)%value = value
 
 return
 
-end subroutine cst_shake_cvs_set
+end subroutine cst_mdcon_cvs_set
 
 !===============================================================================
 
-end module cst_shake_cvs
+end module cst_mdcon_cvs
 

@@ -127,7 +127,7 @@ subroutine abf_init_dat
     fsmooth_kernel  = 0
     fswitch2zero    = .false.
 
-    fshakemode      = 0
+    fmdconmode      = 0
 
     fene_step       = 0
 
@@ -316,8 +316,8 @@ subroutine abf_init_print_summary
     write(PMF_OUT,120)
     write(PMF_OUT,120)  ' Constraints (SHAKE) in collision with ABF CVs'
     write(PMF_OUT,120)  ' ------------------------------------------------------'
-    write(PMF_OUT,130)  ' How to handle constraints (fshakemode)   : ', fshakemode
-    select case(fshakemode)
+    write(PMF_OUT,130)  ' How to handle constraints (fmdconmode)   : ', fmdconmode
+    select case(fmdconmode)
     case(0)
     write(PMF_OUT,120)  '      |-> ignore'
     case(1)
@@ -625,7 +625,7 @@ subroutine abf_init_arrays
 
     write(*,*) 'NumOfABFSHAKECONs=',NumOfABFSHAKECONs
 
-    if( fshakemode .eq. 2 ) then
+    if( fmdconmode .eq. 2 ) then
         allocate(                                   &
                 zinvcst(NumOfABFSHAKECONs,NumOfABFSHAKECONs),                    &
                 pcst(3,NumOfLAtoms,3,NumOfLAtoms),                  &

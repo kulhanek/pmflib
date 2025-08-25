@@ -40,19 +40,18 @@ subroutine cst_lambda_calculate
     implicit none
     ! --------------------------------------------------------------------------
 
-    ! call pmf_timers_start_timer(PMFLIB_CST_LAMBDA_TIMER)   ! FIXME
+    call pmf_timers_start_timer(PMFLIB_CST_LAMBDA_TIMER)
 
     select case(ftds_lamsol)
         case(CON_LAMSOL_MD)
             ! noting to do
-            hist_fidx_tds = -1
         case(CON_LAMSOL_V1)
             call cst_lambda_calculate_v1()
         case default
-            call pmf_utils_exit(PMF_OUT,1,'[CST] LAMBDA solver is not implemented in cst_lambda_calculate!')
+            call pmf_utils_exit(PMF_OUT,1,'[CST] LAMBDA solver (ftds_lamsol) is not implemented in cst_lambda_calculate!')
     end select
 
-    ! call pmf_timers_stop_timer(PMFLIB_CST_LAMBDA_TIMER)
+    call pmf_timers_stop_timer(PMFLIB_CST_LAMBDA_TIMER)
 
 end subroutine cst_lambda_calculate
 
@@ -69,53 +68,58 @@ subroutine cst_lambda_calculate_v1
 
     implicit none
     integer             :: i,j,k,m,ci,info
-    real(PMFDP)         :: f1,k1,dx,dv
+    real(PMFDP)         :: f1,k1,dx,v,lamp
     ! -----------------------------------------------------------------------------
 
-    hist_fidx_tds = -2
+    if( fstep - hist_len .le. 0 ) return
 
-! at t - force part
+! rhs
+    cv(:) = 0.0d0
+
+! force part
     do i = 1,NumOfAllCONs
         ci = CONList(i)%cvindx
-        f1 = 0.0d0
+        lamp = 0.0d0
         do j=1,CONList(i)%cv%natoms
             k = CONList(i)%cv%lindexes(j)
+            f1 = 0.0d0
             do m=1,3
-                ! force part
-                f1 = f1 + CVContext%CVsDrvs(m,k,ci) * Frc(m,k) * MassInv(k)
+                f1 = f1 - cvderhist(m,k,ci,hist_len+hist_fidx_tds) * frchist(m,k,hist_len+hist_fidx_tds)
             end do
+            lamp = lamp + f1 * MassInv(k)
         end do
-        lamphist(i,hist_len) = - f1
+        cv(i) = lamp
     end do
 
-! at t - 2*dt - kinetic part
+! kinetic part
+    ! velocity
+    do k=1,NumOfLAtoms
+        do m=1,3
+            v = - 1.0d0 * velhist(m,k,hist_len+hist_fidx_tds-1) + 9.0d0 * velhist(m,k,hist_len+hist_fidx_tds+0) &
+                + 9.0d0 * velhist(m,k,hist_len+hist_fidx_tds+1) - 1.0d0 * velhist(m,k,hist_len+hist_fidx_tds+2)
+            ! v = v / 16.0d0 <- moved down
+            TmpT(m,k) = v
+         end do
+    end do
+
+    ! cvder time der
     do i = 1,NumOfAllCONs
         ci = CONList(i)%cvindx
         k1 = 0.0d0
         do j=1,CONList(i)%cv%natoms
             k = CONList(i)%cv%lindexes(j)
             do m=1,3
-                dx =   1.0d0 * cvderhist(m,k,ci,hist_len-4) - 8.0d0 * cvderhist(m,k,ci,hist_len-3) &
-                     + 8.0d0 * cvderhist(m,k,ci,hist_len-1) - 1.0d0 * cvderhist(m,k,ci,hist_len-0)
-                dv =   1.0d0 * crdhist(m,k,hist_len-4) - 8.0d0 * crdhist(m,k,hist_len-3) &
-                     + 8.0d0 * crdhist(m,k,hist_len-1) - 1.0d0 * crdhist(m,k,hist_len-0)
-                k1 = k1 + dx * dv
+                dx =   1.0d0 * cvderhist(m,k,ci,hist_len+hist_fidx_tds-2) - 8.0d0 * cvderhist(m,k,ci,hist_len+hist_fidx_tds-1) &
+                     + 8.0d0 * cvderhist(m,k,ci,hist_len+hist_fidx_tds+1) - 1.0d0 * cvderhist(m,k,ci,hist_len+hist_fidx_tds+2)
+                k1 = k1 + dx * TmpT(m,k)
             end do
         end do
-        lamkhist(i,hist_len+hist_fidx_tds) = k1 * ifdtx * ifdtx / (12.0d0 * 12.0d0)
+        ! one is for cvder time der, the other os for velocity
+        cv(i) = cv(i) - k1 * ifdtx / 12.0d0 / 16.0d0
     end do
-
-    if( fstep + hist_fidx_tds .le. 0 ) return
-
-! at t-2*dt
 
 ! zmat
     call cst_lambda_calc_zmat(hist_fidx_tds)
-
-! rhs
-    do i = 1,NumOfAllCONs
-        cv(i) = lamphist(i,hist_len+hist_fidx_tds) - lamkhist(i,hist_len+hist_fidx_tds)
-    end do
 
 ! linear equations
      if( NumOfAllCONs .gt. 1 ) then
@@ -132,7 +136,7 @@ subroutine cst_lambda_calculate_v1
         cv(1) = cv(1) / zmata(1,1)
      end if
 
-    lambdaThist(:,hist_len+hist_fidx_tds) =  cv(:)
+    lambdaEhist(:,hist_len+hist_fidx_tds) =  cv(:)
 
 end subroutine cst_lambda_calculate_v1
 

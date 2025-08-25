@@ -539,7 +539,7 @@ end subroutine pmf_sander_rstforce
 subroutine pmf_sander_cst_init_collisions(ntc,nbt,ifstwt,ib,jb,conp) bind(c,name='int_pmf_sander_cst_init_collisions')
 
     use pmf_dat
-    use cst_shake_cvs
+    use cst_mdcon_cvs
     use abf_constraints
     use pmf_sizes
     use pmf_core
@@ -574,52 +574,55 @@ subroutine pmf_sander_cst_init_collisions(ntc,nbt,ifstwt,ib,jb,conp) bind(c,name
 
 ! CST --------------------------------------------
     if( cst_enabled ) then
-        if( ntc .ne. 2 ) then
+        if( (ntc .ne. 1) .and. (ntc .ne. 2) ) then
             call pmf_utils_exit(PMF_OUT,1,'ntc has to be either one or two for PMFLib constrained dynamics!')
         end if
 
         ! determine number of SHAKE constraints in collision
         num = 0
+        num2 = 0
 
         do ll = 1,nbt
             i = ib(ll)/3+1
             j  = jb(ll)/3+1
             if( ifstwt(ll) == 1 ) then
-                if( cst_shake_cvs_checkatom(i) .or. cst_shake_cvs_checkatom(j) ) then
+                if( cst_mdcon_cvs_checkatom(i,1) .or. cst_mdcon_cvs_checkatom(j,1) ) then
                     call pmf_utils_exit(PMF_OUT,1,'A fast water atom cannot be a part of CST CV')
                 end if
             end if
-! this is most likely wrong
-!            if( (cst_shake_cvs_checkatom(i) .or. cst_shake_cvs_checkatom(j)) .and. &
-!                (.not. (cst_shake_cvs_checkatom(i) .and. cst_shake_cvs_checkatom(j))) ) then
-            if( cst_shake_cvs_checkatom(i) .or. cst_shake_cvs_checkatom(j) ) then
+            if( cst_mdcon_cvs_checkatom(i,1) .or. cst_mdcon_cvs_checkatom(j,1) ) then
                 num = num + 1
                 write(PMF_OUT,100) i, j
+            else if( cst_mdcon_cvs_checkatom(i,0) .or. cst_mdcon_cvs_checkatom(j,0) ) then
+                num2 = num2 + 1
+                write(PMF_OUT,110) i, j
             end if
         end do
 
+        if( num2 .gt. 0 ) then
+            write(PMF_OUT,120) num2
+            call cst_mdcon_cvs_setnumofexcluded(num2)
+        end if
+
         if( num .gt. 0 ) then
-            write(PMF_OUT,110) num
+            write(PMF_OUT,130) num
 
             ! set SHAKE constraints in collisions
-            call cst_shake_cvs_allocate(num)
+            call cst_mdcon_cvs_allocate(num)
 
             num = 1
             do ll = 1,nbt
                 if (ifstwt(ll) == 1) cycle
                 i  = ib(ll)/3+1
                 j  = jb(ll)/3+1
-! this is most likely wrong
-!                if( (cst_shake_cvs_checkatom(i) .or. cst_shake_cvs_checkatom(j)) .and. &
-!                    (.not. (cst_shake_cvs_checkatom(i) .and. cst_shake_cvs_checkatom(j))) ) then
-                if( cst_shake_cvs_checkatom(i) .or. cst_shake_cvs_checkatom(j) ) then
-                    call cst_shake_cvs_set(num,i,j,conp(ll))
+                if( cst_mdcon_cvs_checkatom(i,1) .or. cst_mdcon_cvs_checkatom(j,1) ) then
+                    call cst_mdcon_cvs_set(num,i,j,conp(ll))
                     num = num + 1
                     cycle
                 end if
             end do
         else
-            write(PMF_OUT,120)
+            write(PMF_OUT,140)
         end if
 
         write(PMF_OUT,10)
@@ -635,7 +638,7 @@ subroutine pmf_sander_cst_init_collisions(ntc,nbt,ifstwt,ib,jb,conp) bind(c,name
 
         ! determine number of SHAKE constraints in collision
         num = 0
-        num2 = 0    ! removed but not added to PMFLib
+        num2 = 0    ! exc but not added to PMFLib
 
         do ll = 1,nbt
             i = ib(ll)/3+1
@@ -690,12 +693,14 @@ subroutine pmf_sander_cst_init_collisions(ntc,nbt,ifstwt,ib,jb,conp) bind(c,name
  15 format('# ******************* PMFLib: SHAKE <> CV collisions ***************************')
  20 format('# WARNING: BOTH CST and ABF enabled - CST has priority over ABF!')
 
-100 format("# CST: SHAKEn bond (",I6,"-",I6,") removed from MD engine and added into PMFLib CST CV list")
-110 format('# CST: Number of SHAKE constraints in collision: ', I6)
-120 format('# CST: No SHAKE in collision!')
+100 format("# CST: SHAKEn bond (",I6,"-",I6,") excluded from MD engine and added into PMFLib CST CV list")
+110 format("# CST: SHAKEn bond (",I6,"-",I6,") excluded from MD engine")
+120 format('# CST: Number of MD constraints excluded: ', I6)
+130 format('# CST: Number of MD constraints in collision: ', I6)
+140 format('# CST: No MD constraints in collision!')
 
 200 format("# ABF: SHAKEn bond (",I6,"-",I6,") added into PMFLib CV list")
-210 format("# ABF: SHAKEn bond (",I6,"-",I6,") removed from MD engine")
+210 format("# ABF: SHAKEn bond (",I6,"-",I6,") excluded from MD engine")
 220 format('# ABF: Number of SHAKE constraints removed: ', I6)
 230 format('# ABF: Number of SHAKE constraints in collision: ', I6)
 240 format('# ABF: No SHAKE in collision added to PMFLib!')
@@ -722,7 +727,7 @@ subroutine pmf_sander_num_of_pmflib_cst(numofcst) bind(c,name='int_pmf_sander_nu
         write(PMF_DEBUG+fmytaskid,*) '>>TR: pmf_sander_num_of_pmflib_cst'
     end if
 
-    numofcst = NumOfAllCONs - NumOfSHAKECONs
+    numofcst = NumOfCONs - NumOfExcMDCONs ! we must return excluded MD constraints to MD
     return
 
 end subroutine pmf_sander_num_of_pmflib_cst
@@ -735,7 +740,7 @@ end subroutine pmf_sander_num_of_pmflib_cst
 function pmf_sander_cst_checkatom(atomid) bind(c,name='int_pmf_sander_cst_checkatom')
 
     use pmf_dat
-    use cst_shake_cvs
+    use cst_mdcon_cvs
     use abf_constraints
 
     implicit none
@@ -746,7 +751,7 @@ function pmf_sander_cst_checkatom(atomid) bind(c,name='int_pmf_sander_cst_checka
     pmf_sander_cst_checkatom = 0
 
     if( cst_enabled ) then
-        if( cst_shake_cvs_checkatom(atomid) ) pmf_sander_cst_checkatom = 1
+        if( cst_mdcon_cvs_checkatom(atomid,0) ) pmf_sander_cst_checkatom = 1
     end if
 
     if( abf_enabled ) then

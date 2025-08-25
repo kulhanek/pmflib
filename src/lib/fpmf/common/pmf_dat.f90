@@ -110,6 +110,7 @@ real(PMFDP),allocatable     :: MassInv(:)       ! mass inverse
 real(PMFDP),allocatable     :: Crd(:,:)         ! current coordinates in t
 real(PMFDP),allocatable     :: Frc(:,:)         ! current system forces in t due to potential energy
 real(PMFDP),allocatable     :: Vel(:,:)         ! current system velocities in t-dt/2
+real(PMFDP),allocatable     :: TmpT(:,:)        ! array for temporary results
 type(CVContextType)         :: CVContext        ! current CV context (values and derivatives) in t
 
 ! energies

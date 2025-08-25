@@ -490,14 +490,15 @@ subroutine pmf_init_pmf
     deallocate(tmp_indexes)
 
     ! allocate remaining arrays
-    allocate(InitialCrd(3,NumOfLAtoms), &
-          Mass(NumOfLAtoms), &
-          MassInv(NumOfLAtoms), &
-          Crd(3,NumOfLAtoms), &
-          Frc(3,NumOfLAtoms), &
-          Vel(3,NumOfLAtoms), &
-          CVContext%CVsValues(NumOfCVs), &
-          CVContext%CVsDrvs(3,NumOfLAtoms,NumOfCVs), &
+    allocate(InitialCrd(3,NumOfLAtoms),                 &
+          Mass(NumOfLAtoms),                            &
+          MassInv(NumOfLAtoms),                         &
+          Crd(3,NumOfLAtoms),                           &
+          Frc(3,NumOfLAtoms),                           &
+          Vel(3,NumOfLAtoms),                           &
+          TmpT(3,NumOfLAtoms),                          &
+          CVContext%CVsValues(NumOfCVs),                &
+          CVContext%CVsDrvs(3,NumOfLAtoms,NumOfCVs),    &
           stat=alloc_failed)
 
     if( alloc_failed .ne. 0 ) then

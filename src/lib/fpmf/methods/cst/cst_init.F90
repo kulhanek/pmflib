@@ -72,6 +72,8 @@ subroutine cst_init_dat
     ! --------------------------------------------------------------------------
 
     fmode           = 0             ! 0 - disable BM, 1 - enabled BM
+    freadranges     = .false.       ! request full definitions of CVs
+
     fsample         =  2500         ! output sample period in steps
     fplevel         = 0             ! print level
 
@@ -81,28 +83,34 @@ subroutine cst_init_dat
     ftrjsample      = 0             ! how often save accumulator to "accumulator evolution"
 
     flamsample      = 1
+
+    fmdconmode      = CON_MDCON_INCLUDE
+    fmdcon_cvtype   = CON_CVTYPE_DS
+
     fshakesolver    = CON_SHAKESOL_MM       ! mixed shake
     frattlesolver   = CON_RATTLESOL_MA      ! matrix algebra
 
     flambdatol      = 1.0d-7        ! tolerance for lambda optimization
     frveltol        = 1.0d-9        ! residual velocity in rattle/rattle-v
     fmaxiter        = 50            ! maximum of iteration in lambda optimization
+    frcond          = 1e-7
 
     fintene         = .false.       ! accumulate enthalpy
     fintene_der     = .false.
     fentropy        = .false.
     ftds_decomp     = .false.
+    ftds_lamsol     = CON_LAMSOL_MD
+    ftds_ekinsrc    = CON_EKINSRC_V4
 
     fepotaverage    = 0.0d0
     fekinaverage    = 0.0d0
     fenesample      = 1
 
-    freadranges     = .false.        ! request full definitions of CVs
-
     NumOfCONs       = 0
-    NumOfSHAKECONs  = 0
+    NumOfMDCONs     = 0
     NumOfAllCONs    = 0
     NumOfConAtoms   = 0
+    NumOfExcMDCONs  = 0
 
     nsupdates       = 0.0d0
     mfsiter         = 0.0d0
@@ -111,15 +119,6 @@ subroutine cst_init_dat
     nrupdates       = 0.0d0
     mfriter         = 0.0d0
     m2friter        = 0.0d0
-
-    frmshake_zdet   = .true.
-    fshake_cvtype   = 0
-
-    frcond          = 1e-7
-
-    ftds_lamsol     = CON_LAMSOL_MD
-
-    fshakemode      = 0
 
 end subroutine cst_init_dat
 
@@ -143,16 +142,17 @@ subroutine cst_init_print_summary
     write(PMF_OUT,120)  ' -------------- FREE ENERGY CALCULATION BY CONSTRAINED DYNAMICS --------------- '
     write(PMF_OUT,120)  '================================================================================'
     write(PMF_OUT,120)
-    write(PMF_OUT,120)  ' Cartesian Constraint Dynamics Mode'
+    write(PMF_OUT,120)  ' Cartesian Constrained Dynamics Mode'
     write(PMF_OUT,120)  ' ------------------------------------------------------'
     write(PMF_OUT,130)  ' Constrained dynamics mode (fmode)       : ', fmode
     write(PMF_OUT,125)  ' Constraint definition file (fcstdef)    : ', trim(fcstdef)
-    write(PMF_OUT,130)  ' Number of constraints                   : ', NumOfCONs
-    write(PMF_OUT,130)  ' SHAKE constraints in collisions         : ', NumOfSHAKECONs
-    write(PMF_OUT,130)  ' Total number of constraints             : ', NumOfAllCONs
-
-    write(PMF_OUT,130)  ' Num of constrained atoms (no SHAKE)     : ', NumOfConAtoms
     write(PMF_OUT,125)  ' Read CV ranges (freadranges)            : ', prmfile_onoff(freadranges)
+
+    write(PMF_OUT,130)  ' Number of constraints                   : ', NumOfCONs
+    write(PMF_OUT,130)  ' Num of constrained atoms (no MD cons)   : ', NumOfConAtoms
+    write(PMF_OUT,130)  ' MD constraints in collisions            : ', NumOfMDCONs
+    write(PMF_OUT,130)  ' Total number of constraints             : ', NumOfAllCONs
+    write(PMF_OUT,130)  ' Excluded MD constraints                 : ', NumOfExcMDCONs
 
     write(PMF_OUT,120)
     write(PMF_OUT,120)  ' Constraint optimization options:'
@@ -168,11 +168,12 @@ subroutine cst_init_print_summary
     write(PMF_OUT,130)  ' Maximum of iteration (fmaxiter)         : ', fmaxiter
 
     write(PMF_OUT,120)
-    write(PMF_OUT,120)  ' SHAKE constraints:'
+    write(PMF_OUT,120)  ' MD constraints:'
     write(PMF_OUT,120)  ' ------------------------------------------------------'
-    write(PMF_OUT,130)  ' CV type for SHAKEn bonds (fshake_cvtype): ', fshake_cvtype
-    write(PMF_OUT,125)  ' Remove SHAKE from Zdet (frmshake_zdet)  : ', prmfile_onoff(frmshake_zdet)
-
+    write(PMF_OUT,140)  ' MD constraints mode (fmdconmode)        : ', fmdconmode, &
+                                                                       trim(cst_init_get_mdcon_mode_name(fmdconmode))
+    write(PMF_OUT,140)  ' CV type for SHAKEn bonds (fmdcon_cvtype): ', fmdcon_cvtype, &
+                                                                       trim(cst_init_get_mdcon_cvtype_name(fmdcon_cvtype))
     write(PMF_OUT,120)
     write(PMF_OUT,120)  ' Enthalpy/Entropy options:'
     write(PMF_OUT,120)  ' ------------------------------------------------------'
@@ -187,8 +188,10 @@ subroutine cst_init_print_summary
                                                                        '['//trim(pmf_unit_label(EnergyUnit))//']'
     write(PMF_OUT,130)  ' Sampling for -TdS and dH (fenesample)   : ', fenesample
 
-    write(PMF_OUT,130)  ' Kinetic energy source (ftds_ekinsrc)    : ', ftds_ekinsrc ! FIXME
-    write(PMF_OUT,130)  ' Lambda solver (ftds_lamsol)             : ', ftds_lamsol  ! FIXME
+    write(PMF_OUT,140)  ' Lambda solver (ftds_lamsol)             : ', ftds_lamsol, &
+                                                                       trim(cst_init_get_lamsol_name(ftds_lamsol))
+    write(PMF_OUT,140)  ' Kinetic energy source (ftds_ekinsrc)    : ', ftds_ekinsrc, &
+                                                                       trim(cst_init_get_ekinsrc_name(ftds_ekinsrc))
 
     write(PMF_OUT,120)
     write(PMF_OUT,120)  ' Restart options:'
@@ -213,20 +216,20 @@ subroutine cst_init_print_summary
     write(PMF_OUT,120)  ' -------------------------------------------------------------------------------'
     write(PMF_OUT,120)
 
-    do i=1,NumOfAllCONs-NumOfSHAKECONs
+    do i=1,NumOfAllCONs-NumOfMDCONs
         write(PMF_OUT,150) i
         call cst_constraints_cst_info(CONList(i))
         write(PMF_OUT,120)
     end do
 
-    if( NumOfSHAKECONs .gt. 0 ) then
+    if( NumOfMDCONs .gt. 0 ) then
         write(PMF_OUT,120)
-        write(PMF_OUT,120)  ' List of SHAKE constraints in collision'
+        write(PMF_OUT,120)  ' List of MD constraints in collision'
         write(PMF_OUT,120)  ' -------------------------------------------------------------------------------'
     end if
 
     write(PMF_OUT,120)
-    do i=NumOfAllCONs-NumOfSHAKECONs+1,NumOfAllCONs
+    do i=NumOfAllCONs-NumOfMDCONs+1,NumOfAllCONs
         write(PMF_OUT,150) i
         call cst_constraints_cst_info(CONList(i))
         write(PMF_OUT,120)
@@ -273,8 +276,6 @@ character(80) function cst_init_get_shakesol_name(solver_id)
             cst_init_get_shakesol_name = "Mixed SHAKE (diagonal solver) with initial guess"
         case(CON_SHAKESOL_NMSVD)
             cst_init_get_shakesol_name = "Newton-Raphson SHAKE (SVD)"
-        case(CON_SHAKESOL_NMSVD_P)
-            cst_init_get_shakesol_name = "Newton-Raphson SHAKE (SVD+ContextP)"
         case default
             call pmf_utils_exit(PMF_OUT, 1, &
                         '[CST] Not implemented shake solver in cst_init_get_shakesol_name!')
@@ -310,6 +311,114 @@ character(80) function cst_init_get_rattlesol_name(solver_id)
 end function cst_init_get_rattlesol_name
 
 !===============================================================================
+! Function:  cst_init_get_mdcon_mode_name
+!===============================================================================
+
+character(80) function cst_init_get_mdcon_mode_name(mode)
+
+    use cst_dat
+    use pmf_utils
+
+    implicit none
+    integer     :: mode
+    ! --------------------------------------------------------------------------
+
+    select case(mode)
+        case(CON_MDCON_EXCLUDE)
+            cst_init_get_mdcon_mode_name = "exclude"
+        case(CON_MDCON_INCLUDE)
+            cst_init_get_mdcon_mode_name = "include"
+        case default
+            call pmf_utils_exit(PMF_OUT, 1, &
+                        '[CST] Not implemented CV type in cst_init_get_mdcon_mode_name!')
+    end select
+
+    return
+
+end function cst_init_get_mdcon_mode_name
+
+!===============================================================================
+! Function:  cst_init_get_mdcon_cvtype_name
+!===============================================================================
+
+character(80) function cst_init_get_mdcon_cvtype_name(cvname)
+
+    use cst_dat
+    use pmf_utils
+
+    implicit none
+    integer     :: cvname
+    ! --------------------------------------------------------------------------
+
+    select case(cvname)
+        case(CON_CVTYPE_DS)
+            cst_init_get_mdcon_cvtype_name = "DS"
+        case(CON_CVTYPE_DIS)
+            cst_init_get_mdcon_cvtype_name = "DIS"
+        case default
+            call pmf_utils_exit(PMF_OUT, 1, &
+                        '[CST] Not implemented CV type in cst_init_get_mdcon_cvtype_name!')
+    end select
+
+    return
+
+end function cst_init_get_mdcon_cvtype_name
+
+!===============================================================================
+! Function:  cst_init_get_lamsol_name
+!===============================================================================
+
+character(80) function cst_init_get_lamsol_name(lamsol)
+
+    use cst_dat
+    use pmf_utils
+
+    implicit none
+    integer     :: lamsol
+    ! --------------------------------------------------------------------------
+
+    select case(lamsol)
+        case(CON_LAMSOL_MD)
+            cst_init_get_lamsol_name = "MD Engine"
+        case(CON_LAMSOL_V1)
+            cst_init_get_lamsol_name = "Lambda Calculation (Explicit)"
+        case default
+            call pmf_utils_exit(PMF_OUT, 1, &
+                        '[CST] Not implemented lambda solver in cst_init_get_lamsol_name!')
+    end select
+
+    return
+
+end function cst_init_get_lamsol_name
+
+!===============================================================================
+! Function:  cst_init_get_ekinsrc_name
+!===============================================================================
+
+character(80) function cst_init_get_ekinsrc_name(ekinsrc)
+
+    use cst_dat
+    use pmf_utils
+
+    implicit none
+    integer     :: ekinsrc
+    ! --------------------------------------------------------------------------
+
+    select case(ekinsrc)
+        case(CON_LAMSOL_MD)
+            cst_init_get_ekinsrc_name = "VV (velocity Verlet)"
+        case(CON_LAMSOL_V1)
+            cst_init_get_ekinsrc_name = "V4 (4th-order)"
+        case default
+            call pmf_utils_exit(PMF_OUT, 1, &
+                        '[CST] Not implemented ekin srource in cst_init_get_ekinsrc_name!')
+    end select
+
+    return
+
+end function cst_init_get_ekinsrc_name
+
+!===============================================================================
 ! Subroutine:  cst_init_add_shake_csts
 !===============================================================================
 
@@ -331,7 +440,7 @@ subroutine cst_init_add_shake_csts
 
     NumOfCONs = NumOfAllCONs
 
-    if( NumOfSHAKECONs .eq. 0 .or. NumOfAllCONs .eq. 0 ) return
+    if( NumOfMDCONs .eq. 0 .or. NumOfAllCONs .eq. 0 ) return
 
     ! backup old CVs
     allocate(CVList_backup(NumOfCVs),   &
@@ -349,8 +458,8 @@ subroutine cst_init_add_shake_csts
     if( allocated(CVList) ) deallocate(CVList)
     if( allocated(CONList) ) deallocate(CONList)
 
-    allocate(CVList(NumOfCVs + NumOfSHAKECONs),  &
-          CONList(NumOfAllCONs + NumOfSHAKECONs), &
+    allocate(CVList(NumOfCVs + NumOfMDCONs),  &
+          CONList(NumOfAllCONs + NumOfMDCONs), &
           stat = alloc_failed)
     if( alloc_failed .ne. 0 ) then
         call pmf_utils_exit(PMF_OUT, 1,'[CST] Unable to allocate memory for CVList/CONList array!')
@@ -367,13 +476,13 @@ subroutine cst_init_add_shake_csts
     deallocate(CONList_backup)
 
     ! add SHAKE constraints
-    do i= 1,NumOfSHAKECONs
+    do i= 1,NumOfMDCONs
         cvid  = NumOfCVs + i
         conid = NumOfAllCONs + i
         ! CV -----------------------------------------
 
-        select case(fshake_cvtype)
-            case(0)
+        select case(fmdcon_cvtype)
+            case(CON_CVTYPE_DS)
                 allocate(CVTypeDS::CVList(cvid)%cv, &
                          stat = alloc_failed)
                 if( alloc_failed .ne. 0 ) then
@@ -383,7 +492,7 @@ subroutine cst_init_add_shake_csts
                 CVList(cvid)%cv%ctype     = 'DS'
                 CVList(cvid)%cv%unit      = pmf_unit_power_unit(LengthUnit,2)
                 CVList(cvid)%cv%idx       = i
-                CVList(cvid)%cv%name      = 'SHAKE'
+                CVList(cvid)%cv%name      = 'MDCON'
                 CVList(cvid)%cv%natoms    = 2
                 CVList(cvid)%cv%ngrps     = 2
                 allocate(CVList(cvid)%cv%grps(CVList(cvid)%cv%ngrps), &
@@ -395,16 +504,16 @@ subroutine cst_init_add_shake_csts
                 end if
                 CVList(cvid)%cv%grps(1)   = 1
                 CVList(cvid)%cv%grps(2)   = 2
-                CVList(cvid)%cv%rindexes(1) = SHAKECONList(i)%at1
-                CVList(cvid)%cv%rindexes(2) = SHAKECONList(i)%at2
+                CVList(cvid)%cv%rindexes(1) = MDCONList(i)%at1
+                CVList(cvid)%cv%rindexes(2) = MDCONList(i)%at2
                 ! CST ----------------------------------------
                 call cst_constraints_reset_con(CONList(conid))
                 CONList(conid)%cvindx       = cvid
                 CONList(conid)%cv           => CVList(cvid)%cv
                 CONList(conid)%mode         = 'C'
-                CONList(conid)%value        = SHAKECONList(i)%value
+                CONList(conid)%value        = MDCONList(i)%value
                 CONList(conid)%value_set    = .true.
-            case(1)
+            case(CON_CVTYPE_DIS)
                 allocate(CVTypeDIS::CVList(cvid)%cv, &
                          stat = alloc_failed)
                 if( alloc_failed .ne. 0 ) then
@@ -414,7 +523,7 @@ subroutine cst_init_add_shake_csts
                 CVList(cvid)%cv%ctype     = 'DIS'
                 CVList(cvid)%cv%unit      = LengthUnit
                 CVList(cvid)%cv%idx       = i
-                CVList(cvid)%cv%name      = 'SHAKE'
+                CVList(cvid)%cv%name      = 'MDCON'
                 CVList(cvid)%cv%natoms    = 2
                 CVList(cvid)%cv%ngrps     = 2
                 allocate(CVList(cvid)%cv%grps(CVList(cvid)%cv%ngrps), &
@@ -426,23 +535,23 @@ subroutine cst_init_add_shake_csts
                 end if
                 CVList(cvid)%cv%grps(1)   = 1
                 CVList(cvid)%cv%grps(2)   = 2
-                CVList(cvid)%cv%rindexes(1) = SHAKECONList(i)%at1
-                CVList(cvid)%cv%rindexes(2) = SHAKECONList(i)%at2
+                CVList(cvid)%cv%rindexes(1) = MDCONList(i)%at1
+                CVList(cvid)%cv%rindexes(2) = MDCONList(i)%at2
                 ! CST ----------------------------------------
                 call cst_constraints_reset_con(CONList(conid))
                 CONList(conid)%cvindx       = cvid
                 CONList(conid)%cv           => CVList(cvid)%cv
                 CONList(conid)%mode         = 'C'
-                CONList(conid)%value        = sqrt(SHAKECONList(i)%value)
+                CONList(conid)%value        = sqrt(MDCONList(i)%value)
                 CONList(conid)%value_set    = .true.
             case default
-                call pmf_utils_exit(PMF_OUT, 1,'[CST] Unsupported fshake_cvtype in cst_init_add_shake_csts!')
+                call pmf_utils_exit(PMF_OUT, 1,'[CST] Unsupported fmdcon_cvtype in cst_init_add_shake_csts!')
         end select
     end do
 
     ! correct numbers
-    NumOfCVs     = NumOfCVs + NumOfSHAKECONs
-    NumOfAllCONs = NumOfCONs + NumOfSHAKECONs
+    NumOfCVs     = NumOfCVs + NumOfMDCONs
+    NumOfAllCONs = NumOfCONs + NumOfMDCONs
 
 end subroutine cst_init_add_shake_csts
 
@@ -615,15 +724,7 @@ subroutine cst_init_core
                  '[CST] Unable to allocate memory for arrays used in LU decomposition!')
     end if
 
-    if( NumOfSHAKECONS .gt. 0 ) then
-        allocate( zmats(NumOfSHAKECONS,NumOfSHAKECONS), stat= alloc_failed)
-        if( alloc_failed .ne. 0 ) then
-            call pmf_utils_exit(PMF_OUT,1,&
-                     '[CST] Unable to allocate memory for arrays used in LU decomposition!')
-        end if
-    end if
-
-    if( (fshakesolver .eq. CON_SHAKESOL_NMSVD) .or. (fshakesolver .eq. CON_SHAKESOL_NMSVD_P) ) then
+    if( fshakesolver .eq. CON_SHAKESOL_NMSVD ) then
         ! allocate arrays for SVD decomposition
         lwork = (3*NumOfAllCONs + max( 2*NumOfAllCONs, NumOfAllCONs, 1 ))*10
         allocate(work(lwork), stat= alloc_failed)
@@ -668,24 +769,22 @@ subroutine cst_init_core
     end select
 
 ! history buffers
-    hist_len = 5       ! FIXME
-    hist_fidx = -1
-    hist_fidx_tds = -1
+    hist_len = 5       ! FIXED at 5
+    hist_fidx = -2
+    hist_fidx_tds = -2
 
-    allocate( lambdahist(NumOfAllCONs,hist_len),    &
-              lambdaThist(NumOfAllCONs,hist_len),   &
+    allocate( lambdaMhist(NumOfAllCONs,hist_len),   &
+              lambdaEhist(NumOfAllCONs,hist_len),   &
+              fwhist(hist_len),                     &
               epothist(hist_len),                   &
               ersthist(hist_len),                   &
               ekinhist(hist_len),                   &
-              fwhist(hist_len),                     &
+              enevalidhist(hist_len),               &
               icfphist(NumOfAllCONs,hist_len),      &
               icfkhist(NumOfAllCONs,hist_len),      &
-              enevalidhist(hist_len),               &
-              crdhist(3,NumOfLAtoms,hist_len),               &
-              velhist(3,NumOfLAtoms,hist_len),               &
               cvderhist(3,NumOfLAtoms,NumOfCVs,hist_len),    &
-              lamphist(NumOfAllCONs,hist_len),               &
-              lamkhist(NumOfAllCONs,hist_len),               &
+              frchist(3,NumOfLAtoms,hist_len),               &
+              velhist(3,NumOfLAtoms,hist_len),               &
               stat= alloc_failed )
 
     if( alloc_failed .ne. 0 ) then
@@ -693,21 +792,21 @@ subroutine cst_init_core
                  '[CST] Unable to allocate memory for arrays used for history recording!')
     end if
 
-    lambdahist(:,:)     = 0.0d0
-    lambdaThist(:,:)    = 0.0d0
+    lambdaMhist(:,:)    = 0.0d0
+    lambdaEhist(:,:)    = 0.0d0
+    fwhist(:)           = 0.0d0
+
     epothist(:)         = 0.0d0
     ersthist(:)         = 0.0d0
     ekinhist(:)         = 0.0d0
-    fwhist(:)           = 0.0d0
-    icfphist(:,:)       = 0.0d0
-    icfkhist(:,:)       = 0.0d0
     enevalidhist(:)     = .false.
 
-    crdhist(:,:,:)      = 0.0d0
-    velhist(:,:,:)      = 0.0d0
+    icfphist(:,:)       = 0.0d0
+    icfkhist(:,:)       = 0.0d0
+
     cvderhist(:,:,:,:)  = 0.0d0
-    lamphist(:,:)       = 0.0d0
-    lamkhist(:,:)       = 0.0d0
+    frchist(:,:,:)      = 0.0d0
+    velhist(:,:,:)      = 0.0d0
 
 ! enthalpy/entropy
     if( fintene .and. fintene_der ) then

@@ -78,6 +78,12 @@ subroutine cst_control_read_con(prm_fin)
 
     call pmf_ctrl_read_logical(prm_fin,'freadranges',freadranges)
 
+    call pmf_ctrl_read_integer(prm_fin,'fmdconmode',fmdconmode,'I12')
+    call pmf_ctrl_check_integer_in_range('CST','fmdconmode',fmdconmode,1,2)
+
+    call pmf_ctrl_read_integer(prm_fin,'fmdcon_cvtype',fmdcon_cvtype,'I12')
+    call pmf_ctrl_check_integer_in_range('CST','fmdcon_cvtype',fmdcon_cvtype,0,1)
+
     call pmf_ctrl_read_integer(prm_fin,'fshakesolver',fshakesolver,'I12')
     call pmf_ctrl_check_integer_in_range('CST','fshakesolver',fshakesolver,0,6)
 
@@ -86,11 +92,6 @@ subroutine cst_control_read_con(prm_fin)
 
     call pmf_ctrl_read_real8(prm_fin,'flambdatol',flambdatol,'E12.4')
     call pmf_ctrl_read_real8(prm_fin,'frveltol',frveltol,'E12.4')
-
-    call pmf_ctrl_read_integer(prm_fin,'fshake_cvtype',fshake_cvtype,'I12')
-    call pmf_ctrl_check_integer_in_range('CST','fshake_cvtype',fshake_cvtype,0,1)
-
-    call pmf_ctrl_read_logical(prm_fin,'frmshake_zdet',frmshake_zdet)
 
     call pmf_ctrl_read_integer(prm_fin,'fmaxiter',fmaxiter,'I12')
 
@@ -120,17 +121,17 @@ subroutine cst_control_read_con(prm_fin)
     call pmf_ctrl_read_logical(prm_fin,'fentropy',fentropy)
     call pmf_ctrl_read_logical(prm_fin,'ftds_decomp',ftds_decomp)
 
-    call pmf_ctrl_read_integer(prm_fin,'ftds_ekinsrc',ftds_ekinsrc,'I12')
-    call pmf_ctrl_check_integer_in_range('CST','ftds_ekinsrc',ftds_ekinsrc,0,2)
-
     call pmf_ctrl_read_integer(prm_fin,'ftds_lamsol',ftds_lamsol,'I12')
     call pmf_ctrl_check_integer_in_range('CST','ftds_lamsol',ftds_lamsol,0,1)
 
-    call pmf_ctrl_read_integer(prm_fin,'fenesample',fenesample,'I12')
-    call pmf_ctrl_check_integer('CST','fenesample',fenesample,0,CND_GT)
+    call pmf_ctrl_read_integer(prm_fin,'ftds_ekinsrc',ftds_ekinsrc,'I12')
+    call pmf_ctrl_check_integer_in_range('CST','ftds_ekinsrc',ftds_ekinsrc,0,1)
 
     call pmf_ctrl_read_real8_wunit(prm_fin,'fepotaverage',EnergyUnit,fepotaverage,'F10.1')
     call pmf_ctrl_read_real8_wunit(prm_fin,'fekinaverage',EnergyUnit,fekinaverage,'F10.1')
+
+    call pmf_ctrl_read_integer(prm_fin,'fenesample',fenesample,'I12')
+    call pmf_ctrl_check_integer('CST','fenesample',fenesample,0,CND_GT)
 
     cst_enabled = fmode .gt. 0
 

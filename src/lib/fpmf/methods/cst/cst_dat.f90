@@ -48,29 +48,58 @@ integer         :: ftrjsample       ! how often save restart to "restart evoluti
 integer         :: faccurst         ! number of steps for equilibration, it is ignored if job is restarted
 integer         :: frstupdate       ! how often is restart file written
 
-integer         :: fshakemode       ! how to deal with SHAKE constraints in collision
-                                    ! 0 - consider them
-                                    ! 1 - disable them
+! MD constraints ---------------------------------
+integer         :: fmdconmode       ! how to deal with SHAKE constraints in collision
+                                    ! 1 - exclude
+                                    ! 2 - include
 
-! constraints ------------------------------------
+! integer, parameter  :: CON_MDCON_IGNORE  = 0  <- not aplicable for CST
+integer, parameter  :: CON_MDCON_EXCLUDE = 1
+integer, parameter  :: CON_MDCON_INCLUDE = 2
+! ------------------------------------------------------------------------------
+
+integer         :: fmdcon_cvtype    ! CV type for MD constraints
+                                    ! 0 - DS
+                                    ! 1 - DIS
+
+integer, parameter  :: CON_CVTYPE_DS      = 0
+integer, parameter  :: CON_CVTYPE_DIS     = 1
+! ------------------------------------------------------------------------------
+
+! ==============================================================================
+
 integer         :: fshakesolver     ! SHAKE solvers
                                     ! 0 - fixed SHAKE
                                     ! 1 - mixed SHAKE
                                     ! 2 - Newton-Raphson SHAKE
                                     ! 3 - diagonal SHAKE
                                     ! 4 - diagonal SHAKE with initial guess from the previous step
-real(PMFDP)     :: flambdatol       ! tolerance for lambda optimization
-real(PMFDP)     :: frcond
+                                    ! 5 - Newton-Raphson SHAKE - SVD
 
-integer         :: fshake_cvtype        ! CV type for SHAKE constraints, DS - 0 or DIS - 1
-logical         :: frmshake_zdet        ! do not exclude SHAKE constraints from Zdet calculation
+integer, parameter  :: CON_SHAKESOL_FM      = 0     ! fixed shake: JAC(0,0)
+integer, parameter  :: CON_SHAKESOL_MM      = 1     ! mixed shake: JAC(0,P)
+integer, parameter  :: CON_SHAKESOL_NM      = 2     ! Newton-Raphson shake: JAC(P,P)
+integer, parameter  :: CON_SHAKESOL_DI      = 3     ! diagonal JAC(0,P)
+integer, parameter  :: CON_SHAKESOL_DIWG    = 4     ! diagonal JAC(0,P) with initial guess from the previous step
+integer, parameter  :: CON_SHAKESOL_NMSVD   = 5     ! Newton-Raphson shake: JAC(P,P) + SVD
+! ------------------------------------------------------------------------------
+
+real(PMFDP)     :: flambdatol       ! tolerance for lambda optimization
+real(PMFDP)     :: frcond           ! SVD rcond
+
+! ==============================================================================
 
 integer         :: frattlesolver    ! RATTLE solvers
                                     ! 1 - matrix algebra RATTLE
+
+integer, parameter  :: CON_RATTLESOL_MA     = 0     ! matrix algebra
+! ------------------------------------------------------------------------------
+
 real(PMFDP)     :: frveltol         ! residual for velocity in rattle/rattlev
 
 integer         :: fmaxiter         ! maximum of iteration in lambda optimization
-integer         :: flamsample       ! how often update lambda and metric tensor corrections
+
+! ==============================================================================
 
 ! enthalpy/entropy calculations
 logical         :: fintene          ! collect data for internal energy calculation
@@ -85,13 +114,21 @@ integer         :: ftds_lamsol      ! source of lambda
 
 integer, parameter  :: CON_LAMSOL_MD      = 0
 integer, parameter  :: CON_LAMSOL_V1      = 1
+! ------------------------------------------------------------------------------
 
 integer         :: ftds_ekinsrc     ! source of kinetic energy
+                                    ! 0 - velocity-Verlet
+                                    ! 1 - V4
 
-integer         :: fenesample       ! how often take samples
+integer, parameter  :: CON_EKINSRC_VV      = 0
+integer, parameter  :: CON_EKINSRC_V4      = 1
+! ------------------------------------------------------------------------------
 
 real(PMFDP)     :: fepotaverage
 real(PMFDP)     :: fekinaverage
+
+integer         :: flamsample       ! how often update lambda and metric tensor corrections
+integer         :: fenesample       ! how often take samples
 
 ! item list --------------------------------------------------------------------
 type CVTypeBM
@@ -120,33 +157,25 @@ type CVTypeBM
 end type CVTypeBM
 
 ! global variables for blue moon -----------------------------------------------
-integer                    :: NumOfCONs         ! number of constraints
-integer                    :: NumOfSHAKECONs    ! number of shake constraints in collision
-integer                    :: NumOfAllCONs      ! number of constraints including shakes
+integer                     :: NumOfCONs        ! number of constraints
+integer                     :: NumOfMDCONs      ! number of MD constraints in collision
+integer                     :: NumOfAllCONs     ! number of constraints including shakes
+integer                     :: NumOfExcMDCONs   ! number of excluded MD constraints
 
 type(CVTypeBM),allocatable :: CONList(:)        ! constraint list
 
-! shake in collisions with CVs -------------------------------------------------
+! MD constraints in collisions with CVs ----------------------------------------
 type CVTypeSHAKE
     integer                 :: at1
     integer                 :: at2
     real(PMFDP)             :: value
 end type CVTypeSHAKE
 
-type(CVTypeSHAKE),allocatable   :: SHAKECONList(:)           ! SHAKE definition of constraints
+type(CVTypeSHAKE),allocatable   :: MDCONList(:)         ! MD definition of constraints
 
 ! serial/MPI variables ---------------------------------------------------------
 integer                     :: NumOfCONAtoms            ! number of constrained atoms (unique list)
 integer,allocatable         :: CONAtoms(:)              ! constrained atoms to test with SHAKE
-
-! constants --------------------------------------------------------------------
-integer, parameter  :: CON_SHAKESOL_FM      = 0     ! fixed shake: JAC(0,0)
-integer, parameter  :: CON_SHAKESOL_MM      = 1     ! mixed shake: JAC(0,P)
-integer, parameter  :: CON_SHAKESOL_NM      = 2     ! Newton-Raphson shake: JAC(P,P)
-integer, parameter  :: CON_SHAKESOL_DI      = 3     ! diagonal JAC(0,P)
-integer, parameter  :: CON_SHAKESOL_DIWG    = 4     ! diagonal JAC(0,P) with initial guess from the previous step
-integer, parameter  :: CON_SHAKESOL_NMSVD   = 5     ! Newton-Raphson shake: JAC(P,P) + SVD
-integer, parameter  :: CON_SHAKESOL_NMSVD_P = 6     ! Newton-Raphson shake: JAC(P,P) + SVD + ContextP
 
 ! global variables for lambda calculation --------------------------------------
 real(PMFDP)                 :: isfdts           ! internal conversion factor
@@ -160,9 +189,6 @@ real(PMFDP),allocatable     :: work(:)          ! for SVD decomposition
 real(PMFDP)                 :: nsupdates        ! number of shake updates
 real(PMFDP)                 :: mfsiter          ! mean value of fsiter
 real(PMFDP)                 :: m2fsiter         ! M2 moment of fsiter
-
-! constants --------------------------------------------------------------------
-integer, parameter  :: CON_RATTLESOL_MA     = 0     ! matrix algebra
 
 ! global variables for velocity update -----------------------------------------
 real(PMFDP)                 :: isfdtr           ! internal conversion factor
@@ -188,28 +214,27 @@ real(PMFDP),allocatable     :: jac(:,:)         ! Jacobian matrix
 real(PMFDP),allocatable     :: vv(:)            ! for LU decomposition
 integer,allocatable         :: indx(:)
 real(PMFDP),allocatable     :: zmata(:,:)       ! Z-matrix - all constraints
-real(PMFDP),allocatable     :: zmats(:,:)       ! Z-matrix - SHAKE constraints
 
 ! history buffers ---------------------------------------------------------------
 integer                     :: hist_len
 integer                     :: hist_fidx
 integer                     :: hist_fidx_tds
 
-real(PMFDP),allocatable     :: lambdahist(:,:)      ! lambda
-real(PMFDP),allocatable     :: lambdaThist(:,:)     ! lambda - 1st SHAKE iteration
+real(PMFDP),allocatable     :: lambdaMhist(:,:)     ! lambda - from MD
+real(PMFDP),allocatable     :: lambdaEhist(:,:)     ! lambda - explicit
+real(PMFDP),allocatable     :: fwhist(:)
+
 real(PMFDP),allocatable     :: epothist(:)
 real(PMFDP),allocatable     :: ersthist(:)
 real(PMFDP),allocatable     :: ekinhist(:)
-real(PMFDP),allocatable     :: fwhist(:)
-real(PMFDP),allocatable     :: icfphist(:,:)
-real(PMFDP),allocatable     :: icfkhist(:,:)
 logical,allocatable         :: enevalidhist(:)      ! is energy valid?
 
-real(PMFDP),allocatable     :: crdhist(:,:,:)
-real(PMFDP),allocatable     :: velhist(:,:,:)
+real(PMFDP),allocatable     :: icfphist(:,:)
+real(PMFDP),allocatable     :: icfkhist(:,:)
+
 real(PMFDP),allocatable     :: cvderhist(:,:,:,:)
-real(PMFDP),allocatable     :: lamphist(:,:)
-real(PMFDP),allocatable     :: lamkhist(:,:)
+real(PMFDP),allocatable     :: frchist(:,:,:)
+real(PMFDP),allocatable     :: velhist(:,:,:)
 
 ! ------------------------------------------------------------------------------
 ! ACCUMULATOR

@@ -58,8 +58,6 @@ subroutine cst_shake_calculate
             call cst_shake_calculate_nm()   ! Newton-Raphson shake: JAC(P,P)
         case(CON_SHAKESOL_NMSVD)
             call cst_shake_calculate_nm_svd()   ! Newton-Raphson shake: JAC(P,P)
-        case(CON_SHAKESOL_NMSVD_P)
-            call cst_shake_calculate_nm_svd_p()   ! Newton-Raphson shake: JAC(P,P) + ContextP
         case(CON_SHAKESOL_DI)
             call cst_shake_calculate_di()   ! mixed shake: JAC(0,P) - diagonal solver
         case(CON_SHAKESOL_DIWG)
@@ -397,81 +395,6 @@ subroutine cst_shake_calculate_nm_svd
     m2fsiter = m2fsiter + dfsiter1 * dfsiter2
 
 end subroutine cst_shake_calculate_nm_svd
-
-!===============================================================================
-! Subroutine:  cst_shake_calculate_nm_svd_P
-!===============================================================================
-
-subroutine cst_shake_calculate_nm_svd_P
-
-    use pmf_dat
-    use pmf_utils
-    use cst_dat
-    use cst_constraints
-
-    implicit none
-    integer             :: i,k,info,ci,orank
-    logical             :: done
-    real(PMFDP)         :: invn,dfsiter1,dfsiter2
-    ! -----------------------------------------------------------------------------
-
-    lambdax(:) = 0.0d0
-
-! do step
-    do fsiter=1,fmaxiter
-
-        ! go through constraint list and calculate first derivative and constraint values at CrdP and cv
-        call cst_constraints_calc_fdxp
-
-        ! calculate Jacobian matrix
-        call cst_shake_calc_jacobian_nm ! it calculates jac(P,P)
-
-        if ( NumOfAllCONs .gt. 1 ) then
-            ! SVD decomposition
-            call dgelss(NumOfAllCONs,NumOfAllCONs,1,jac,NumOfAllCONs,cv,NumOfAllCONs,vv,frcond,orank,work,lwork,info)
-            if( info .ne. 0 ) then
-                call pmf_utils_exit(PMF_OUT,1,&
-                                 '[CST] SVD decomposition failed in cst_calculate_lambda_nm_svd!')
-            end if
-        else
-            cv(1)=cv(1)/jac(1,1)
-        end if
-
-        ! correct lambda vector
-        lambdax(:) = lambdax(:) + cv(:)
-
-        ! calculate new position vector
-        do i=1,NumOfAllCONs
-            ci = CONList(i)%cvindx
-            do k=1,NumOfLAtoms
-                CrdP(:,k) = CrdP(:,k) + MassInv(k)*cv(i)*CVContextP%CVsDrvs(:,k,ci)
-            end do
-        end do
-
-        ! check convergence criteria in lambdax
-        done = .true.
-        do i=1,NumOfAllCONs
-            if( abs(cv(i)*isfdts) .gt. flambdatol ) done = .false.
-        end do
-
-        if( done ) exit
-
-    end do
-
-    if( fsiter .eq. fmaxiter ) then
-        call pmf_utils_exit(PMF_OUT,1, &
-                         '[CST] Maximum number of iterations in lambda calculation exceeded in cst_shake_calculate_nm_svd!')
-    end if
-
-! update stats about iterations
-    nsupdates = nsupdates + 1.0d0
-    invn = 1.0d0 / nsupdates
-    dfsiter1 = fsiter - mfsiter
-    mfsiter  = mfsiter  + dfsiter1 * invn
-    dfsiter2 = fsiter - mfsiter
-    m2fsiter = m2fsiter + dfsiter1 * dfsiter2
-
-end subroutine cst_shake_calculate_nm_svd_P
 
 !===============================================================================
 ! Subroutine:  cst_shake_calculate_di

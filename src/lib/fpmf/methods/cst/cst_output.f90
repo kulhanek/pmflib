@@ -78,7 +78,7 @@ subroutine cst_output_write_header
 
     nitems = NumOfAllCONs
     if( fplevel .eq. 0 ) then
-        nitems = NumOfAllCONs - NumOfSHAKECONs
+        nitems = NumOfAllCONs - NumOfMDCONs
     end if
 
     if( faccurst .gt. 0 ) then
@@ -206,7 +206,7 @@ subroutine cst_output_write
 
     nitems = NumOfAllCONs
     if( fplevel .eq. 0 ) then
-        nitems = NumOfAllCONs - NumOfSHAKECONs
+        nitems = NumOfAllCONs - NumOfMDCONs
     end if
 
     do i=1,nitems
@@ -285,7 +285,7 @@ subroutine cst_output_close
 ! write header
     nitems = NumOfAllCONs
     if( fplevel .eq. 0 ) then
-        nitems = NumOfAllCONs - NumOfSHAKECONs
+        nitems = NumOfAllCONs - NumOfMDCONs
     end if
 
     write(CST_OUT,'(A)') '#'

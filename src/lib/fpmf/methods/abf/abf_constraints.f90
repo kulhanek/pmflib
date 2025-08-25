@@ -46,7 +46,7 @@ logical function abf_constraints_checkatom(atomid,stage)
 
     abf_constraints_checkatom = .false.
 
-    select case(fshakemode)
+    select case(fmdconmode)
         case(0)
             ! do nothing
             return

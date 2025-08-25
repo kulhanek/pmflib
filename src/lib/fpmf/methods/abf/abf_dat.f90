@@ -69,7 +69,7 @@ integer     :: fepotsmooth
 integer     :: ferstsmooth
 integer     :: fekinsmooth
 
-integer     :: fshakemode       ! how to deal with SHAKE constraints in collision
+integer     :: fmdconmode       ! how to deal with SHAKE constraints in collision
                                 ! 0 - ignore them
                                 ! 1 - disable them
 

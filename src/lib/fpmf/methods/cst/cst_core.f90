@@ -44,6 +44,7 @@ subroutine cst_core_main_lf
     use cst_restart
     use cst_trajectory
     use cst_lambda
+    use cst_icf
     use pmf_utils
 
     implicit none
@@ -65,22 +66,26 @@ subroutine cst_core_main_lf
 
     lambda(:) = lambda(:) + lambdax(:) * isfdts
 
+    epothist(hist_len)          = PotEne - fepotaverage
+    ersthist(hist_len)          = PMFEne
+
+    cvderhist(:,:,:,hist_len)   = CVContext%CVsDrvs(:,:,:)
+    frchist(:,:,hist_len)       = Frc(:,:)
+    velhist(:,:,hist_len)       = Vel(:,:)
+
     if( fintene .and. fintene_der ) then
-        call cst_core_calculate_icf
+        call cst_icf_calculate_icf
         icfphist(:,hist_len) = icfp(:)
         icfkhist(:,hist_len) = icfk(:)
     end if
 
-    epothist(hist_len)          = PotEne - fepotaverage
-    ersthist(hist_len)          = PMFEne
-    cvderhist(:,:,:,hist_len)   = CVContext%CVsDrvs(:,:,:)
-    velhist(:,:,hist_len)       = Vel(:,:)
-    crdhist(:,:,hist_len)       = Crd(:,:)
+    if( fentropy ) then
+        call cst_lambda_calculate
+    end if
 
     select case(fintalg)
         case(IA_LEAP_FROG)
-            lambdahist(:,hist_len)      = lambda(:)
-            call cst_lambda_calculate
+            lambdaMhist(:,hist_len)      = lambda(:)
             call cst_core_analyze
             call cst_output_write
             call cst_restart_update
@@ -134,7 +139,7 @@ subroutine cst_core_rattlev_lf(cid)
             ! nothing to be here
         case(IA_LF_MIDDLE)
             if( cid .eq. 2 ) then
-                lambdahist(:,hist_len) = lambda(:)
+                lambdaMhist(:,hist_len) = lambda(:)
                 epothist(hist_len) = PotEne - fepotaverage
                 ersthist(hist_len) = PMFEne
 !                if( fenthalpy_der ) then
@@ -182,7 +187,7 @@ subroutine cst_core_calculate_fw
 
     implicit none
     integer                :: i,ci,j,cj,k,info
-    real(PMFDP)            :: jacv,fzdeta,fzdets,fzdet
+    real(PMFDP)            :: jacv,fzdet
     ! --------------------------------------------------------------------------
 
 ! ALL constraints ================================
@@ -207,188 +212,23 @@ subroutine cst_core_calculate_fw
         if( info .ne. 0 ) then
             call pmf_utils_exit(PMF_OUT,1,'[CST] LU decomposition failed in cst_core_calculate_fw!')
         end if
-        fzdeta = 1.0d0
+        fzdet = 1.0d0
         ! and finally determinant
         do i=1,NumOfAllCONs
             if( indx(i) .ne. i ) then
-                fzdeta = - fzdeta * zmata(i,i)
+                fzdet = - fzdet * zmata(i,i)
             else
-                fzdeta = fzdeta * zmata(i,i)
+                fzdet = fzdet * zmata(i,i)
             end if
         end do
     else
-        fzdeta = zmata(1,1)
+        fzdet = zmata(1,1)
     end if
 
-! SHAKE constraints ==============================
-
-    fzdets = 1.0d0
-
-    if( frmshake_zdet ) then
-    ! calculate Z matrix at Crd (in t)
-        do i=1,NumOfSHAKECONs
-            ci = CONList(i+NumOfCONs)%cvindx
-            do j=1,NumOfSHAKECONs
-                cj = CONList(j+NumOfCONs)%cvindx
-                jacv = 0.0
-                do k=1,NumOfLAtoms
-                    jacv = jacv + MassInv(k)*dot_product(CVContext%CVsDrvs(:,k,ci),CVContext%CVsDrvs(:,k,cj))
-                end do
-                zmats(i,j) = jacv
-            end do
-        end do
-
-    ! calculate Z determinant ------------------------------------
-        if( NumOfSHAKECONs .gt. 1 ) then
-            ! LU decomposition
-            call dgetrf(NumOfSHAKECONs,NumOfSHAKECONs,zmats,NumOfSHAKECONs,indx,info)
-            if( info .ne. 0 ) then
-                call pmf_utils_exit(PMF_OUT,1,'[CST] LU decomposition failed in cst_core_calculate_fw!')
-            end if
-            fzdets = 1.0d0
-            ! and finally determinant
-            do i=1,NumOfSHAKECONs
-                if( indx(i) .ne. i ) then
-                    fzdets = - fzdets * zmats(i,i)
-                else
-                    fzdets = fzdets * zmats(i,i)
-                end if
-            end do
-        else if( NumOfSHAKECONs .eq. 1 ) then
-            fzdets = zmats(1,1)
-        else
-            fzdets = 1.0d0
-        end if
-    end if
-
-! record data
-! DOI: 10.1080/00268970310001592746 - eq. 6
-    fzdet   = fzdeta / fzdets
     fwfac   = 1.0d0/sqrt(fzdet)
     fwhist(hist_len) = fwfac
 
 end subroutine cst_core_calculate_fw
-
-!===============================================================================
-! Subroutine:  cst_core_calculate_icf
-!===============================================================================
-
-subroutine cst_core_calculate_icf
-
-    use pmf_utils
-    use pmf_dat
-    use cst_dat
-
-    implicit none
-    integer                :: i,ci,j,k,m
-    real(PMFDP)            :: f1,nv,v1,v2,dh
-    ! --------------------------------------------------------------------------
-
-    if( NumOfCONs .ne. 1 ) then
-        call pmf_utils_exit(PMF_OUT,1,&
-                 '[CST] Only 1 CV supported in cst_core_calculate_icf!')
-    end if
-
-    icfp(:) = 0.0d0
-    icfk(:) = 0.0d0
-
-    ! start with dV/dx
-    CSTFrc(:,:) = Frc(:,:)
-
-    ! add constraint forces from SHAKE constraints only
-    do i=NumOfCONs+1,NumOfAllCONs
-        ci = CONList(i)%cvindx
-        do k=1,NumOfLAtoms
-            CSTFrc(:,k) = CSTFrc(:,k) + lambda(i)*CVContext%CVsDrvs(:,k,ci)
-        end do
-    end do
-
-! ICF-P
-    i = 1   ! CV index
-    ci = CONList(i)%cvindx
-    f1 = 0.0d0
-    nv = 0.0d0
-    do j=1,CONList(i)%cv%natoms
-        k = CONList(i)%cv%lindexes(j)
-        do m=1,3
-            ! force part
-            nv = nv + CVContext%CVsDrvs(m,k,ci) * CVContext%CVsDrvs(m,k,ci)
-            f1 = f1 + CVContext%CVsDrvs(m,k,ci) * CSTFrc(m,k)
-        end do
-    end do
-    icfp(i) = - f1 / nv
-
-    dh = 1e-5
-
-! ICF-K by central differences
-    do j=1,CONList(i)%cv%natoms
-        k = CONList(i)%cv%lindexes(j)
-        do m=1,3
-            CSTFrc(:,:) = Crd(:,:)
-            CSTFrc(m,k) = CSTFrc(m,k) + dh
-
-            CVContextP%CVsValues(:) = 0.0d0
-            CVContextP%CVsDrvs(:,:,:) = 0.0d0
-
-            call CVList(i)%cv%calculate_cv(CSTFrc,CVContextP)
-            call calc_icfk_vec
-
-            v1 = icfk_vec(m,k)
-
-            ! write(*,*) 'v1 = ', v1
-
-            CSTFrc(:,:) = Crd(:,:)
-            CSTFrc(m,k) = CSTFrc(m,k) - dh
-
-            CVContextP%CVsValues(:) = 0.0d0
-            CVContextP%CVsDrvs(:,:,:) = 0.0d0
-
-            call CVList(i)%cv%calculate_cv(CSTFrc,CVContextP)
-            call calc_icfk_vec
-
-            v2 = icfk_vec(m,k)
-
-          !  write(7894,*) v1, v2, (v1-v2)/(2.0d0 * dh)
-
-            icfk(i) = icfk(i) + (v1-v2)/(2.0d0 * dh)
-      end do
-  end do
-
-end subroutine cst_core_calculate_icf
-
-!===============================================================================
-! Subroutine:  calc_icfk_vec
-!===============================================================================
-
-subroutine calc_icfk_vec
-
-    use pmf_utils
-    use pmf_dat
-    use cst_dat
-
-    implicit none
-    integer                :: i,ci,j,k,m
-    real(PMFDP)            :: nv
-    ! --------------------------------------------------------------------------
-
-    i = 1   ! CV index
-    ci = CONList(i)%cvindx
-    nv = 0.0d0
-    do k=1,NumOfLAtoms
-        do m=1,3
-            nv = nv + CVContextP%CVsDrvs(m,k,ci) * CVContextP%CVsDrvs(m,k,ci)
-        end do
-    end do
-
-    ci = CONList(i)%cvindx
-    do j=1,CONList(i)%cv%natoms
-        k = CONList(i)%cv%lindexes(j)
-        do m=1,3
-            icfk_vec(m,k) = CVContextP%CVsDrvs(m,k,ci)/nv
-        end do
-    end do
-
-end subroutine calc_icfk_vec
 
 !===============================================================================
 ! Subroutine:  cst_core_shift_histbuffs
@@ -403,21 +243,21 @@ subroutine cst_core_shift_histbuffs
     ! --------------------------------------------------------------------------
 
     do i=1,hist_len-1
-        lambdahist(:,i)     = lambdahist(:,i+1)
-        lambdaThist(:,i)    = lambdaThist(:,i+1)
+        lambdaMhist(:,i)    = lambdaMhist(:,i+1)
+        lambdaEhist(:,i)    = lambdaEhist(:,i+1)
+        fwhist(i)           = fwhist(i+1)
+
         epothist(i)         = epothist(i+1)
         ersthist(i)         = ersthist(i+1)
         ekinhist(i)         = ekinhist(i+1)
-        fwhist(i)           = fwhist(i+1)
-        icfphist(:,i)       = icfphist(:,i+1)
-        icfkhist(:,i)       = icfkhist(:,i+1)
         enevalidhist(i)     = enevalidhist(i+1)
 
+        icfphist(:,i)       = icfphist(:,i+1)
+        icfkhist(:,i)       = icfkhist(:,i+1)
+
         cvderhist(:,:,:,i)  = cvderhist(:,:,:,i+1)
-        crdhist(:,:,i)      = crdhist(:,:,i+1)
+        frchist(:,:,i)      = frchist(:,:,i+1)
         velhist(:,:,i)      = velhist(:,:,i+1)
-        lamphist(:,i)       = lamphist(:,i+1)
-        lamkhist(:,i)       = lamkhist(:,i+1)
     end do
 
 end subroutine cst_core_shift_histbuffs

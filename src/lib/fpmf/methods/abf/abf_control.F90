@@ -99,8 +99,8 @@ subroutine abf_control_read_abf(prm_fin)
     call pmf_ctrl_check_integer('ABF','ftrjsample',ftrjsample,0,CND_GE)
 
 ! ENT/TDS ====================
-    call pmf_ctrl_read_integer(prm_fin,'fshakemode',fshakemode,'I12')
-    call pmf_ctrl_check_integer_in_range('ABF','fshakemode',fshakemode,0,2)
+    call pmf_ctrl_read_integer(prm_fin,'fmdconmode',fmdconmode,'I12')
+    call pmf_ctrl_check_integer_in_range('ABF','fmdconmode',fmdconmode,0,2)
 
     call pmf_ctrl_read_logical(prm_fin,'fenthalpy',fenthalpy)
     call pmf_ctrl_read_integer(prm_fin,'fenthalpy_der',fenthalpy_der,'I12')

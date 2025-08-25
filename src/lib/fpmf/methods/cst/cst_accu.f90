@@ -867,7 +867,7 @@ subroutine cst_accu_add_lam
     invn = 1.0d0/nsamples
 
     do i=1,NumOfAllCONs
-        llam = lambdahist(i,hist_len+hist_fidx)
+        llam = lambdaMhist(i,hist_len+hist_fidx)
         call cst_accu_add_data_OM(llam,invn,mlambda(i),m2lambda(i))
     end do
 
@@ -953,9 +953,9 @@ subroutine cst_accu_add_dhTds
 
         select case(ftds_lamsol)
             case(CON_LAMSOL_MD)
-                llam  = lambdahist(i,hist_len+hist_fidx_tds)
+                llam  = lambdaMhist(i,hist_len+hist_fidx_tds)
             case(CON_LAMSOL_V1)
-                llam  = lambdaThist(i,hist_len+hist_fidx_tds)
+                llam  = lambdaEhist(i,hist_len+hist_fidx_tds)
         end select
 
         if( fentropy ) then
@@ -991,8 +991,7 @@ subroutine cst_accu_add_dhTds
 end subroutine cst_accu_add_dhTds
 
 !===============================================================================
-! Subroutine:  cst_accu_add_dhTds
-! enthalpy and entropy
+! Subroutine:  cst_accu_get_ekin
 !===============================================================================
 
 function cst_accu_get_ekin(fidx) result(ekin)
@@ -1004,76 +1003,120 @@ function cst_accu_get_ekin(fidx) result(ekin)
     implicit none
     integer         :: fidx
     real(PMFDP)     :: ekin
-    ! --------------------------------------------
-    integer         :: k,m
-    real(PMFDP)     :: ekinvv,ekinv4,v,v2
     ! --------------------------------------------------------------------------
 
     select case(ftds_ekinsrc)
-        case(0)
+        case(CON_EKINSRC_VV)
             ekin = ekinhist(hist_len+fidx)
-        case(1)
+        case(CON_EKINSRC_V4)
             ekin = ekinhist(hist_len+fidx)
-            ! get ekinvv
-            ekinvv = 0.0d0
-            do k=1,NumOfLAtoms
-                v2 = 0.0d0
-                do m=1,3
-                    v  = 0.5d0*(velhist(m,k,hist_len+fidx+1)+velhist(m,k,hist_len+fidx))
-                    v2 = v2 + v**2
-                end do
-                ekinvv = ekinvv + Mass(k)*v2
-            end do
-            ekinvv = ekinvv * 0.5d0 ! 1/2
-            ekin = ekin - ekinvv
-            ! get ekinv4
-            ekinv4 = 0.0d0
-            do k=1,NumOfLAtoms
-                v2 = 0.0d0
-                do m=1,3
-                    v = -1.0d0 * velhist(m,k,hist_len+fidx+2) + 9.0d0* velhist(m,k,hist_len+fidx+1) &
-                        +9.0d0 * velhist(m,k,hist_len+fidx)   - 1.0d0* velhist(m,k,hist_len+fidx-1)
-                    v = v / 16.0d0
-                    v2 = v2 + v**2
-
-                end do
-                ekinv4 = ekinv4 + Mass(k)*v2
-            end do
-            ekinv4 = ekinv4 * 0.5d0 ! 1/2
-            ekin = ekin + ekinv4
-        case(2)
-            ekin = ekinhist(hist_len+fidx)
-            ! get ekinvv
-            ekinvv = 0.0d0
-            do k=1,NumOfLAtoms
-                v2 = 0.0d0
-                do m=1,3
-                    v  = 0.5d0*(velhist(m,k,hist_len+fidx+1)+velhist(m,k,hist_len+fidx))
-                    v2 = v2 + v**2
-                end do
-                ekinvv = ekinvv + Mass(k)*v2
-            end do
-            ekinvv = ekinvv * 0.5d0 ! 1/2
-            ekin = ekin - ekinvv
-            ! get ekinv4
-            ekinv4 = 0.0d0
-            do k=1,NumOfLAtoms
-                v2 = 0.0d0
-                do m=1,3
-                    v = +1.0d0 * crdhist(m,k,hist_len+fidx-2) - 8.0d0* crdhist(m,k,hist_len+fidx-1) &
-                        +8.0d0 * crdhist(m,k,hist_len+fidx+1) - 1.0d0* crdhist(m,k,hist_len+fidx+2)
-                    v = v * ifdtx / 12.0d0
-                    v2 = v2 + v**2
-                end do
-                ekinv4 = ekinv4 + Mass(k)*v2
-            end do
-            ekinv4 = ekinv4 * 0.5d0 ! 1/2
-            ekin = ekin + ekinv4
+            ekin = ekin - cst_accu_get_ekinvv(fidx)
+            ekin = ekin + cst_accu_get_ekinv4(fidx)
         case default
             call pmf_utils_exit(PMF_OUT,1,'[CST] Unsupported ftds_ekinsrc in cst_accu_get_ekin!')
     end select
 
 end function cst_accu_get_ekin
+
+!===============================================================================
+! Subroutine:  cst_accu_get_ekinvv
+!===============================================================================
+
+function cst_accu_get_ekinvv(fidx) result(ekinvv)
+
+    use pmf_dat
+    use cst_dat
+    use pmf_utils
+
+    implicit none
+    integer         :: fidx
+    real(PMFDP)     :: ekinvv
+    ! --------------------------------------------
+    integer         :: k,m
+    real(PMFDP)     :: v,v2
+    ! --------------------------------------------------------------------------
+
+    ekinvv = 0.0d0
+    do k=1,NumOfLAtoms
+        v2 = 0.0d0
+        do m=1,3
+            v  = 0.5d0*(velhist(m,k,hist_len+fidx+1)+velhist(m,k,hist_len+fidx))
+            v2 = v2 + v**2
+        end do
+        ekinvv = ekinvv + Mass(k)*v2
+    end do
+    ekinvv = ekinvv * 0.5d0 ! 1/2
+
+end function cst_accu_get_ekinvv
+
+!===============================================================================
+! Subroutine:  cst_accu_get_ekinv4
+!===============================================================================
+
+function cst_accu_get_ekinv4(fidx) result(ekinv4)
+
+    use pmf_dat
+    use cst_dat
+    use pmf_utils
+
+    implicit none
+    integer         :: fidx
+    real(PMFDP)     :: ekinv4
+    ! --------------------------------------------
+    integer         :: k,m
+    real(PMFDP)     :: v,v2
+    ! --------------------------------------------------------------------------
+
+    ! get ekinv4
+    ekinv4 = 0.0d0
+    do k=1,NumOfLAtoms
+        v2 = 0.0d0
+        do m=1,3
+            v = - 1.0d0 * velhist(m,k,hist_len+fidx-1) + 9.0d0 * velhist(m,k,hist_len+fidx+0) &
+                + 9.0d0 * velhist(m,k,hist_len+fidx+1) - 1.0d0 * velhist(m,k,hist_len+fidx+2)
+            ! v = v / 16.0d0 <- moved down
+            v2 = v2 + v**2
+        end do
+        ekinv4 = ekinv4 + Mass(k)*v2
+    end do
+    ekinv4 = ekinv4 * 0.5d0 / 16.0**2 ! 1/2
+
+end function cst_accu_get_ekinv4
+
+!!===============================================================================
+!! Subroutine:  cst_accu_get_ekinc5
+!! WARNING WARNING - Crd are shifted by MD engine and thus the differences cannot be used
+!!                   for velocity calculation
+!!===============================================================================
+!
+!function cst_accu_get_ekinc5(fidx) result(ekinc5)
+!
+!    use pmf_dat
+!    use cst_dat
+!    use pmf_utils
+!
+!    implicit none
+!    integer         :: fidx
+!    real(PMFDP)     :: ekinc5
+!    ! --------------------------------------------
+!    integer         :: k,m
+!    real(PMFDP)     :: v,v2
+!    ! --------------------------------------------------------------------------
+!
+!    ekinc5 = 0.0d0
+!    do k=1,NumOfLAtoms
+!        v2 = 0.0d0
+!        do m=1,3
+!            v = + 1.0d0 * crdhist(m,k,hist_len+fidx-2) - 8.0d0 * crdhist(m,k,hist_len+fidx-1) &
+!                + 8.0d0 * crdhist(m,k,hist_len+fidx+1) - 1.0d0 * crdhist(m,k,hist_len+fidx+2)
+!            ! v = v * ifdtx / 12.0d0 <- moved down
+!            v2 = v2 + v**2
+!        end do
+!        ekinc5 = ekinc5 + Mass(k)*v2
+!    end do
+!    ekinc5 = ekinc5 * 0.5d0 * ifdtx / 12.0d0 * ifdtx / 12.0d0 ! 1/2
+!
+!end function cst_accu_get_ekinc5
 
 !===============================================================================
 
