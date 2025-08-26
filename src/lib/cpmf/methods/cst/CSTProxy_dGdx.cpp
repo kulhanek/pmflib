@@ -32,7 +32,11 @@ using namespace std;
 
 CCSTProxy_dGdx::CCSTProxy_dGdx(void)
 {
-    RegisterRealm(CST_dGdx, "dG/dx", "CST", "dG(x)=|<lam> dx| + dG{CST}corr");
+    RegisterRealm(CST_dGdx,  "dG/dx",  "CST", "dG(x)=|<lam> dx| + dG{CST}corr");
+    RegisterRealm(CST_ICF,   "ICF",    "CST", "|ICF dx|");
+    RegisterRealm(CST_ICFFW, "ICFFW",  "CST", "|ICFFW dx|");
+    RegisterRealm(CST_ICFPFW,  "ICFPFW",   "CST", "|ICFPFW dx|");
+    RegisterRealm(CST_ICFKFW,  "ICFKFW",   "CST", "|ICFKFW dx|");
 }
 
 //------------------------------------------------------------------------------
@@ -83,6 +87,39 @@ double CCSTProxy_dGdx::GetValue(int ibin,int icv,EProxyRealm realm) const
             meanvar     = samvar / nsamples;
         }
         break;
+    // -------------------
+        case(CST_ICF): {
+            mean        = Accu->GetData("MICF",ibin,icv);
+//            double M2   = Accu->GetData("M2MICF",ibin,icv);
+            samvar      = 0.0; // FIXME
+            meanvar     = 0.0;
+        }
+        break;
+    // -------------------
+        case(CST_ICFFW): {
+            mean        = Accu->GetData("MICFFW",ibin,icv);
+   //         double M2   = Accu->GetData("M2MICFFW",ibin,icv);
+            samvar      = 0.0; // FIXME
+            meanvar     = 0.0;
+        }
+        break;
+    // -------------------
+        case(CST_ICFPFW): {
+            mean        = Accu->GetData("MICFPFW",ibin,icv);
+//            double M2   = Accu->GetData("M2MICF",ibin,icv);
+            samvar      = 0.0; // FIXME
+            meanvar     = 0.0;
+        }
+        break;
+    // -------------------
+        case(CST_ICFKFW): {
+            mean        = Accu->GetData("MICFKFW",ibin,icv);
+//            double M2   = Accu->GetData("M2MICF",ibin,icv);
+            samvar      = 0.0; // FIXME
+            meanvar     = 0.0;
+        }
+        break;
+
     // -------------------
         default:
             RUNTIME_ERROR("unsupported type");

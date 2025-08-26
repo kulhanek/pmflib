@@ -28,6 +28,10 @@
 
 enum ECSTdGdxType {
     CST_dGdx,
+    CST_ICF,
+    CST_ICFFW,
+    CST_ICFPFW,
+    CST_ICFKFW,
 };
 
 //------------------------------------------------------------------------------

@@ -82,7 +82,7 @@ subroutine cst_icf_calculate_v1
                 f1 = f1 + icf_vi(m,k) * Frc(m,k)
             end do
         end do
-        icfp(i) = f1
+        icfp(i) = - f1
     end do
 
 ! ICFK part
