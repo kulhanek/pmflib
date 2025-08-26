@@ -140,12 +140,6 @@ subroutine cst_core_rattlev_lf(cid)
         case(IA_LF_MIDDLE)
             if( cid .eq. 2 ) then
                 lambdaMhist(:,hist_len) = lambda(:)
-                epothist(hist_len) = PotEne - fepotaverage
-                ersthist(hist_len) = PMFEne
-!                if( fenthalpy_der ) then
-!                    call cst_core_calculate_icfp
-!                    icfphist(:,hist_len) = icfp(:)
-!                end if
                 call cst_core_analyze
                 call cst_output_write
                 call cst_restart_update

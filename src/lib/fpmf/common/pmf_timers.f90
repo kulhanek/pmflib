@@ -45,6 +45,7 @@ integer     :: PMFLIB_TOTAL_TIMER                       = -10
                 integer     :: PMFLIB_CST_SHAKE_TIMER   = -71
                 integer     :: PMFLIB_CST_RATTLE_TIMER  = -72
                 integer     :: PMFLIB_CST_LAMBDA_TIMER  = -73
+                integer     :: PMFLIB_CST_ICF_TIMER     = -74
             integer     :: PMFLIB_RST_TIMER             = -80
             integer     :: PMFLIB_STM_TIMER             = -82
                 integer     :: PMFLIB_STM_NET_TIMER     = -84
@@ -102,6 +103,7 @@ subroutine pmf_timers_init
             PMFLIB_CST_SHAKE_TIMER      = add_timer(PMFLIB_CST_TIMER,'SHAKE')
             PMFLIB_CST_RATTLE_TIMER     = add_timer(PMFLIB_CST_TIMER,'RATTLE')
             PMFLIB_CST_LAMBDA_TIMER     = add_timer(PMFLIB_CST_TIMER,'LAMBDA (Explicit)')
+            PMFLIB_CST_ICF_TIMER        = add_timer(PMFLIB_CST_TIMER,'ICF')
         PMFLIB_RST_TIMER            = add_timer(PMFLIB_METHODS_TIMER,'RST - Restrained Dynamics')
     PMFLIB_EXTENSIONS_TIMER          = add_timer(PMFLIB_TIMER,'Extensions')
         PMFLIB_MON_TIMER        = add_timer(PMFLIB_EXTENSIONS_TIMER,'Monitoring')

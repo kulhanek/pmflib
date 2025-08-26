@@ -97,6 +97,8 @@ subroutine cst_init_dat
 
     fintene         = .false.       ! accumulate enthalpy
     fintene_der     = .false.
+    ftds_icfsol     = CON_ICFSOL_V1
+
     fentropy        = .false.
     ftds_decomp     = .false.
     ftds_lamsol     = CON_LAMSOL_MD
@@ -726,11 +728,21 @@ subroutine cst_init_core
 
     if( fshakesolver .eq. CON_SHAKESOL_NMSVD ) then
         ! allocate arrays for SVD decomposition
-        lwork = (3*NumOfAllCONs + max( 2*NumOfAllCONs, NumOfAllCONs, 1 ))*10
-        allocate(work(lwork), stat= alloc_failed)
+        lsvdwork = (3*NumOfAllCONs + max( 2*NumOfAllCONs, NumOfAllCONs, 1 ))*10
+        allocate(svdwork(lsvdwork), stat= alloc_failed)
         if( alloc_failed .ne. 0 ) then
             call pmf_utils_exit(PMF_OUT,1,&
                      '[CST] Unable to allocate memory for arrays used in LU decomposition!')
+        end if
+    end if
+
+    if( fintene_der ) then
+        ! allocate arrays for matrix inversion
+        linvwork = NumOfAllCONs * 64
+        allocate(invwork(linvwork), stat= alloc_failed)
+        if( alloc_failed .ne. 0 ) then
+            call pmf_utils_exit(PMF_OUT,1,&
+                     '[CST] Unable to allocate memory for arrays used in matrix inversion!')
         end if
     end if
 
@@ -812,8 +824,8 @@ subroutine cst_init_core
     if( fintene .and. fintene_der ) then
         allocate( icfp(NumOfAllCONs),       &
                   icfk(NumOfAllCONs),       &
-                  CSTFrc(3,NumOfLAtoms),    &
-                  icfk_vec(3,NumOfLAtoms),  &
+                  icf_he(3,NumOfLAtoms),    &
+                  icf_vi(3,NumOfLAtoms),    &
                   stat= alloc_failed )
 
         if( alloc_failed .ne. 0 ) then

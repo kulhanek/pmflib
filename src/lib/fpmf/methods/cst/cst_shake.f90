@@ -349,7 +349,7 @@ subroutine cst_shake_calculate_nm_svd
 
         if ( NumOfAllCONs .gt. 1 ) then
             ! SVD decomposition
-            call dgelss(NumOfAllCONs,NumOfAllCONs,1,jac,NumOfAllCONs,cv,NumOfAllCONs,vv,frcond,orank,work,lwork,info)
+            call dgelss(NumOfAllCONs,NumOfAllCONs,1,jac,NumOfAllCONs,cv,NumOfAllCONs,vv,frcond,orank,svdwork,lsvdwork,info)
             if( info .ne. 0 ) then
                 call pmf_utils_exit(PMF_OUT,1,&
                                  '[CST] SVD decomposition failed in cst_calculate_lambda_nm_svd!')

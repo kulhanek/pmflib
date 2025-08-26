@@ -104,6 +104,9 @@ integer         :: fmaxiter         ! maximum of iteration in lambda optimizatio
 ! enthalpy/entropy calculations
 logical         :: fintene          ! collect data for internal energy calculation
 logical         :: fintene_der      ! collect data for internal energy derivative calculation
+integer         :: ftds_icfsol
+
+integer, parameter  :: CON_ICFSOL_V1      = 1
 
 ! enthalpy/entropy calculations
 logical         :: fentropy         ! collect data for entropy calculation
@@ -183,8 +186,8 @@ integer                     :: fsiter           ! number of iterations in shake 
 real(PMFDP),allocatable     :: lambdax(:)       ! list of Lagrange multipliers, internal units
 real(PMFDP),allocatable     :: cv(:)            ! constraint value vector
 
-integer                     :: lwork            ! for SVD decomposition
-real(PMFDP),allocatable     :: work(:)          ! for SVD decomposition
+integer                     :: lsvdwork         ! for SVD decomposition
+real(PMFDP),allocatable     :: svdwork(:)       ! for SVD decomposition
 
 real(PMFDP)                 :: nsupdates        ! number of shake updates
 real(PMFDP)                 :: mfsiter          ! mean value of fsiter
@@ -204,10 +207,13 @@ real(PMFDP),allocatable     :: lambda(:)        ! total lambda with corrected un
 real(PMFDP),allocatable     :: fwfac            ! current value of Fixman weight
 
 ! ICF
-real(PMFDP),allocatable     :: CSTFrc(:,:)      ! forces after constraints are imposed
 real(PMFDP),allocatable     :: icfp(:)          ! ICF - potential part
 real(PMFDP),allocatable     :: icfk(:)          ! ICF - the other part
-real(PMFDP),allocatable     :: icfk_vec(:,:)    ! helper array
+real(PMFDP),allocatable     :: icf_he(:,:)      ! helper array
+real(PMFDP),allocatable     :: icf_vi(:,:)      ! helper array
+
+integer                     :: linvwork         ! for matrix inversion
+real(PMFDP),allocatable     :: invwork(:)       ! for matrix inversion
 
 ! global variables for LU decomposition and other helper variable  -------------
 real(PMFDP),allocatable     :: jac(:,:)         ! Jacobian matrix

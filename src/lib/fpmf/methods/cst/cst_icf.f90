@@ -28,125 +28,194 @@ implicit none
 contains
 
 !===============================================================================
-! Subroutine:  cst_core_calculate_icf
+! Subroutine:  cst_icf_calculate_icf
 !===============================================================================
 
 subroutine cst_icf_calculate_icf
 
     use pmf_utils
-    use pmf_dat
     use cst_dat
+    use pmf_timers
 
     implicit none
-    integer                :: i,ci,j,k,m
-    real(PMFDP)            :: f1,nv,v1,v2,dh
     ! --------------------------------------------------------------------------
 
-    if( NumOfCONs .ne. 1 ) then
-        call pmf_utils_exit(PMF_OUT,1,&
-                 '[CST] Only 1 CV supported in cst_core_calculate_icf!')
-    end if
+    call pmf_timers_start_timer(PMFLIB_CST_ICF_TIMER)
 
-    icfp(:) = 0.0d0
-    icfk(:) = 0.0d0
+    select case(ftds_icfsol)
+        case(CON_ICFSOL_V1)
+            call cst_icf_calculate_v1()
+        case default
+            call pmf_utils_exit(PMF_OUT,1,'[CST] ICF solver (ftds_icfsol) is not implemented in cst_icf_calculate_icf!')
+    end select
 
-    ! start with dV/dx
-    CSTFrc(:,:) = Frc(:,:)
-
-    ! add constraint forces from SHAKE constraints only
-    do i=NumOfCONs+1,NumOfAllCONs
-        ci = CONList(i)%cvindx
-        do k=1,NumOfLAtoms
-            CSTFrc(:,k) = CSTFrc(:,k) + lambda(i)*CVContext%CVsDrvs(:,k,ci)
-        end do
-    end do
-
-! ICF-P
-    i = 1   ! CV index
-    ci = CONList(i)%cvindx
-    f1 = 0.0d0
-    nv = 0.0d0
-    do j=1,CONList(i)%cv%natoms
-        k = CONList(i)%cv%lindexes(j)
-        do m=1,3
-            ! force part
-            nv = nv + CVContext%CVsDrvs(m,k,ci) * CVContext%CVsDrvs(m,k,ci)
-            f1 = f1 + CVContext%CVsDrvs(m,k,ci) * CSTFrc(m,k)
-        end do
-    end do
-    icfp(i) = - f1 / nv
-
-    dh = 1e-5
-
-! ICF-K by central differences
-    do j=1,CONList(i)%cv%natoms
-        k = CONList(i)%cv%lindexes(j)
-        do m=1,3
-            CSTFrc(:,:) = Crd(:,:)
-            CSTFrc(m,k) = CSTFrc(m,k) + dh
-
-            CVContextP%CVsValues(:) = 0.0d0
-            CVContextP%CVsDrvs(:,:,:) = 0.0d0
-
-            call CVList(i)%cv%calculate_cv(CSTFrc,CVContextP)
-            call calc_icfk_vec
-
-            v1 = icfk_vec(m,k)
-
-            ! write(*,*) 'v1 = ', v1
-
-            CSTFrc(:,:) = Crd(:,:)
-            CSTFrc(m,k) = CSTFrc(m,k) - dh
-
-            CVContextP%CVsValues(:) = 0.0d0
-            CVContextP%CVsDrvs(:,:,:) = 0.0d0
-
-            call CVList(i)%cv%calculate_cv(CSTFrc,CVContextP)
-            call calc_icfk_vec
-
-            v2 = icfk_vec(m,k)
-
-          !  write(7894,*) v1, v2, (v1-v2)/(2.0d0 * dh)
-
-            icfk(i) = icfk(i) + (v1-v2)/(2.0d0 * dh)
-      end do
-  end do
+    call pmf_timers_stop_timer(PMFLIB_CST_ICF_TIMER)
 
 end subroutine cst_icf_calculate_icf
 
 !===============================================================================
-! Subroutine:  calc_icfk_vec
+! Subroutine:  cst_icf_calculate_v1
 !===============================================================================
 
-subroutine calc_icfk_vec
+subroutine cst_icf_calculate_v1
 
     use pmf_utils
     use pmf_dat
     use cst_dat
 
     implicit none
-    integer                :: i,ci,j,k,m
-    real(PMFDP)            :: nv
+    integer                :: i,j,l,cl,k,m
+    real(PMFDP)            :: f1,v1,v2,dh
     ! --------------------------------------------------------------------------
 
-    i = 1   ! CV index
-    ci = CONList(i)%cvindx
-    nv = 0.0d0
-    do k=1,NumOfLAtoms
-        do m=1,3
-            nv = nv + CVContextP%CVsDrvs(m,k,ci) * CVContextP%CVsDrvs(m,k,ci)
+    icfp(:) = 0.0d0
+    icfk(:) = 0.0d0
+
+! ICFP part
+    call cst_icf_calculate_zmatinv(CVContext)
+
+    do i=1,NumOfCONs
+        call cst_icf_calculate_vi(CVContext,i)
+        f1 = 0.0d0
+        do k=1,NumOfLAtoms
+            do m=1,3
+                f1 = f1 + icf_vi(m,k) * Frc(m,k)
+            end do
+        end do
+        icfp(i) = f1
+    end do
+
+! ICFK part
+
+    dh = 1e-5
+
+! ICF-K by central differences
+    do i=1,NumOfCONs
+        do j=1,CONList(i)%cv%natoms
+            k = CONList(i)%cv%lindexes(j)
+            do m=1,3
+                icf_he(:,:) = Crd(:,:)
+                icf_he(m,k) = icf_he(m,k) + dh
+
+                CVContextP%CVsValues(:) = 0.0d0
+                CVContextP%CVsDrvs(:,:,:) = 0.0d0
+                do l=1,NumOfAllCONs
+                    cl = CONList(l)%cvindx
+                    call CVList(cl)%cv%calculate_cv(icf_he,CVContextP)
+                end do
+                call cst_icf_calculate_zmatinv(CVContextP)
+                call cst_icf_calculate_vi(CVContextP,i)
+
+                v1 = icf_vi(m,k)
+
+                ! write(*,*) 'v1 = ', v1
+
+                icf_he(:,:) = Crd(:,:)
+                icf_he(m,k) = icf_he(m,k) - dh
+
+                CVContextP%CVsValues(:) = 0.0d0
+                CVContextP%CVsDrvs(:,:,:) = 0.0d0
+
+                do l=1,NumOfAllCONs
+                    cl = CONList(l)%cvindx
+                    call CVList(cl)%cv%calculate_cv(icf_he,CVContextP)
+                end do
+                call cst_icf_calculate_zmatinv(CVContextP)
+                call cst_icf_calculate_vi(CVContextP,i)
+
+                v2 = icf_vi(m,k)
+
+              !  write(7894,*) v1, v2, (v1-v2)/(2.0d0 * dh)
+
+                icfk(i) = icfk(i) + (v1-v2)/(2.0d0 * dh)
+          end do
+      end do
+  end do
+
+end subroutine cst_icf_calculate_v1
+
+!===============================================================================
+! Subroutine:  cst_icf_calculate_vi
+!===============================================================================
+
+subroutine cst_icf_calculate_vi(ctx,i)
+
+    use pmf_dat
+    use cst_dat
+
+    implicit none
+    type(CVContextType) :: ctx
+    integer             :: i
+    ! --------------------------------------------
+    integer             :: j,cj,k,m
+    ! --------------------------------------------------------------------------
+
+    icf_vi(:,:) = 0.0d0
+
+    do j=1,NumOfAllCONs
+        cj = CONList(j)%cvindx
+        do k=1,NumOfLAtoms
+            do m=1,3
+                icf_vi(m,k) = icf_vi(m,k) + zmata(i,j) * ctx%CVsDrvs(m,k,cj)
+            end do
         end do
     end do
 
-    ci = CONList(i)%cvindx
-    do j=1,CONList(i)%cv%natoms
-        k = CONList(i)%cv%lindexes(j)
-        do m=1,3
-            icfk_vec(m,k) = CVContextP%CVsDrvs(m,k,ci)/nv
+end subroutine cst_icf_calculate_vi
+
+!===============================================================================
+! Subroutine:  cst_icf_calculate_zmatinv
+!===============================================================================
+
+subroutine cst_icf_calculate_zmatinv(ctx)
+
+    use pmf_utils
+    use pmf_dat
+    use cst_dat
+
+    implicit none
+    type(CVContextType) :: ctx
+    ! --------------------------------------------
+    integer             :: i,ci,j,cj,k,info
+    real(PMFDP)         :: jacv,loc_work(1)
+    ! --------------------------------------------------------------------------
+
+! this Z matrix is not mass weighted
+
+! get the matrix
+    do i=1,NumOfAllCONs
+        ci = CONList(i)%cvindx
+        do j=1,NumOfAllCONs
+            cj = CONList(j)%cvindx
+            jacv = 0.0d0
+            do k=1,NumOfLAtoms
+                jacv = jacv + dot_product(ctx%CVsDrvs(:,k,ci),ctx%CVsDrvs(:,k,cj))
+            end do
+            zmata(i,j) = jacv
         end do
     end do
 
-end subroutine calc_icfk_vec
+! invert
+    if ( NumOfAllCONs .gt. 1 ) then
+        ! LU decomposition
+        indx(:) = 0
+        call dgetrf(NumOfAllCONs,NumOfAllCONs,zmata,NumOfAllCONs,indx,info)
+        if( info .ne. 0 ) then
+            call pmf_utils_exit(PMF_OUT,1,&
+                             '[CST] LU decomposition failed in cst_icf_calculate_zmatinv!')
+        end if
+
+        ! invert
+        call dgetri(NumOfAllCONs, zmata, NumOfAllCONs, indx, invwork, linvwork, info)
+        if( info .ne. 0 ) then
+            call pmf_utils_exit(PMF_OUT,1, &
+                             '[CST] Matrix inversion failed in cst_icf_calculate_zmatinv!')
+        end if
+    else
+        zmata(1,1) = 1.0d0/zmata(1,1)
+    end if
+
+end subroutine cst_icf_calculate_zmatinv
 
 !===============================================================================
 
