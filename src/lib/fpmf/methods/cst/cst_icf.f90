@@ -64,7 +64,7 @@ subroutine cst_icf_calculate_v1
     use cst_dat
 
     implicit none
-    integer                :: i,j,l,cl,k,m
+    integer                :: i,l,cl,k,m
     real(PMFDP)            :: f1,v1,v2,dh
     ! --------------------------------------------------------------------------
 
@@ -91,8 +91,7 @@ subroutine cst_icf_calculate_v1
 
 ! ICF-K by central differences
     do i=1,NumOfCONs
-        do j=1,CONList(i)%cv%natoms
-            k = CONList(i)%cv%lindexes(j)
+        do k=1,NumOfLAtoms
             do m=1,3
                 icf_he(:,:) = Crd(:,:)
                 icf_he(m,k) = icf_he(m,k) + dh
