@@ -3,7 +3,7 @@
 !-------------------------------------------------------------------------------
 !    Copyright (C) 2007 Petr Kulhanek, kulhanek@enzim.hu
 !    Copyright (C) 2006 Petr Kulhanek, kulhanek@chemi.muni.cz &
-!                       Martin Petrek, petrek@chemi.muni.cz 
+!                       Martin Petrek, petrek@chemi.muni.cz
 !    Copyright (C) 2005 Petr Kulhanek, kulhanek@chemi.muni.cz
 !
 !    This library is free software; you can redistribute it and/or
@@ -18,7 +18,7 @@
 !
 !    You should have received a copy of the GNU Lesser General Public
 !    License along with this library; if not, write to the Free Software
-!    Foundation, Inc., 51 Franklin Street, Fifth Floor, 
+!    Foundation, Inc., 51 Franklin Street, Fifth Floor,
 !    Boston, MA  02110-1301  USA
 !===============================================================================
 
@@ -35,8 +35,9 @@ implicit none
 
 type, extends(CVType) :: CVTypeDS
     contains
-        procedure :: load_cv        => load_ds
-        procedure :: calculate_cv   => calculate_ds
+        procedure :: load_cv            => load_ds
+        procedure :: calculate_cv       => calculate_ds
+        procedure :: calculate_cv2ddrvs => calculate_ds_cv2ddrvs
 end type CVTypeDS
 
 !===============================================================================
@@ -111,7 +112,7 @@ subroutine calculate_ds(cv_item,x,ctx)
         totmass2 = totmass2 + amass
     end do
     if( totmass2 .le. 0 ) then
-        call pmf_utils_exit(PMF_OUT,1,'totmass1 is zero in calculate_ds!')
+        call pmf_utils_exit(PMF_OUT,1,'totmass2 is zero in calculate_ds!')
     end if
     d2(:) = d2(:) / totmass2
 
@@ -135,6 +136,110 @@ subroutine calculate_ds(cv_item,x,ctx)
     return
 
 end subroutine calculate_ds
+
+!===============================================================================
+! Subroutine:  calculate_cv2ddrvs
+!===============================================================================
+
+subroutine calculate_ds_cv2ddrvs(cv_item,x,ctx)
+
+    use pmf_utils
+
+    implicit none
+    class(CVTypeDS)     :: cv_item
+    real(PMFDP)         :: x(:,:)
+    type(CVContextType) :: ctx
+    ! -----------------------------------------------
+    integer             :: ai,m,k,n,aj,l
+    real(PMFDP)         :: d1(3),d2(3),dx(3)
+    real(PMFDP)         :: totmass1,totmass2,amass,amassi,amassj
+    ! -----------------------------------------------------------------------------
+
+    ! calculate actual value
+    totmass1 = 0.0d0
+    d1(:) = 0.0
+    do  m = 1, cv_item%grps(1)
+        ai = cv_item%lindexes(m)
+        amass = mass(ai)
+        d1(:) = d1(:) + x(:,ai)*amass
+        totmass1 = totmass1 + amass
+    end do
+    if( totmass1 .le. 0 ) then
+        call pmf_utils_exit(PMF_OUT,1,'totmass1 is zero in calculate_ds!')
+    end if
+    d1(:) = d1(:) / totmass1
+
+    totmass2 = 0.0d0
+    d2(:) = 0.0d0
+    do  m = cv_item%grps(1) + 1 , cv_item%grps(2)
+        ai = cv_item%lindexes(m)
+        amass = mass(ai)
+        d2(:) = d2(:) + x(:,ai)*amass
+        totmass2 = totmass2 + amass
+    end do
+    if( totmass2 .le. 0 ) then
+        call pmf_utils_exit(PMF_OUT,1,'totmass2 is zero in calculate_ds!')
+    end if
+    d2(:) = d2(:) / totmass2
+
+    dx(:) = d1(:) - d2(:)
+    ctx%CVsValues(cv_item%idx) = dx(1)**2 + dx(2)**2 + dx(3)**2
+
+    ! ------------------------------------------------
+
+    do  m = 1, cv_item%grps(1)
+        ai = cv_item%lindexes(m)
+        amass = mass(ai)
+        ctx%CVsDrvs(:,ai,cv_item%idx) = ctx%CVsDrvs(:,ai,cv_item%idx) + 2.0d0*dx(:)*amass/totmass1
+    end do
+
+    do  m = cv_item%grps(1) + 1 , cv_item%grps(2)
+        ai = cv_item%lindexes(m)
+        amass = mass(ai)
+        ctx%CVsDrvs(:,ai,cv_item%idx) = ctx%CVsDrvs(:,ai,cv_item%idx) - 2.0d0*dx(:)*amass/totmass2
+    end do
+
+    ! ------------------------------------------------
+    ! 2nd derivatives - FIXME, need to be tested
+
+    do  m = 1, cv_item%grps(1)
+        ai = cv_item%lindexes(m)
+        amass = mass(ai)
+        do k = 1, 3
+            ctx%CVs2ndDrvs(k,ai,k,ai,cv_item%idx) = ctx%CVs2ndDrvs(k,ai,k,ai,cv_item%idx) &
+                                                  + 2.0d0*amass/totmass1*amass/totmass1
+        end do
+    end do
+
+    do  m = 1, cv_item%grps(1)
+        ai = cv_item%lindexes(m)
+        amassi = mass(ai)
+        do k = 1, 3
+            do  n = cv_item%grps(1) + 1 , cv_item%grps(2)
+                aj = cv_item%lindexes(n)
+                amassj = mass(aj)
+                l = k
+                ctx%CVs2ndDrvs(l,aj,k,ai,cv_item%idx) = ctx%CVs2ndDrvs(l,aj,k,ai,cv_item%idx) &
+                                                      - 2.0d0*amassi/totmass1*amassj/totmass2
+                ctx%CVs2ndDrvs(k,ai,l,aj,cv_item%idx) = ctx%CVs2ndDrvs(k,ai,l,aj,cv_item%idx) &
+                                                      - 2.0d0*amassi/totmass1*amassj/totmass2
+            end do
+        end do
+    end do
+
+    do  m = cv_item%grps(1) + 1 , cv_item%grps(2)
+        ai = cv_item%lindexes(m)
+        amass = mass(ai)
+        do k = 1, 3
+            ctx%CVs2ndDrvs(k,ai,k,ai,cv_item%idx) = ctx%CVs2ndDrvs(k,ai,k,ai,cv_item%idx) &
+                                                  + 2.0d0*amass/totmass2*amass/totmass2
+        end do
+    end do
+
+    return
+
+
+end subroutine calculate_ds_cv2ddrvs
 
 !===============================================================================
 

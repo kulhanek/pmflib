@@ -118,6 +118,9 @@ subroutine cst_control_read_con(prm_fin)
     call pmf_ctrl_read_logical(prm_fin,'fintene',fintene)
     call pmf_ctrl_read_logical(prm_fin,'fintene_der',fintene_der)
 
+    call pmf_ctrl_read_integer(prm_fin,'ftds_icfsol',ftds_icfsol,'I12')
+    call pmf_ctrl_check_integer_in_range('CST','ftds_icfsol',ftds_icfsol,0,1)
+
     call pmf_ctrl_read_logical(prm_fin,'fentropy',fentropy)
     call pmf_ctrl_read_logical(prm_fin,'ftds_decomp',ftds_decomp)
 

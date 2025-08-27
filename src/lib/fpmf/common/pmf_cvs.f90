@@ -37,6 +37,7 @@ implicit none
 type CVContextType
     real(PMFDP),pointer         :: CVsValues(:)          ! CVs values
     real(PMFDP),pointer         :: CVsDrvs(:,:,:)        ! CVs derivatives
+    real(PMFDP),pointer         :: CVs2ndDrvs(:,:,:,:,:) ! CVs 2nd-derivatives
 end type CVContextType
 
 ! core definition of collective variables (CVs) --------------------------------
@@ -56,6 +57,7 @@ type CVType
     integer,pointer             :: indlindexes(:)   ! individual local atom indexes
     ! CV abilities -------------------------------
     logical                     :: gradforanycrd    ! is gradient available for any coordinates?
+    logical                     :: has2nddrvs       ! has analytical 2nd-derivatives
     logical                     :: isalgebraic      ! this CV combines other CVs
     integer,pointer             :: algebraicidxs(:) ! which CV indexes are used in algebra
 
@@ -64,6 +66,7 @@ type CVType
         procedure   :: reset_cv
         procedure   :: load_cv
         procedure   :: calculate_cv
+        procedure   :: calculate_cv2ddrvs
         procedure   :: free_cv
         ! unit methods
         procedure   :: get_ulabel
@@ -86,6 +89,13 @@ end type CVPointer
 integer                     :: NumOfCVs     ! number of CVs
 integer                     :: NumOfFakeCVs ! number of fake CVs
 type(CVPointer),allocatable :: CVList(:)    ! input definition of CVs
+
+
+! helper variables for hessian calculation
+real(PMFDP)                     :: fpmf_hess_dh = 1e-5
+real(PMFDP),allocatable         :: tmp_crd(:,:)     ! temporary coordinates
+type(CVContextType),allocatable :: tmp_gradsp(:,:)  ! gradients for numerical 2d derivatives
+type(CVContextType),allocatable :: tmp_gradsm(:,:)  ! gradients for numerical 2d derivatives
 
 contains
 
@@ -112,6 +122,7 @@ subroutine reset_cv(cv_item)
     cv_item%grps            => NULL()
     cv_item%pathidx         = 0
     cv_item%gradforanycrd   = .false.
+    cv_item%has2nddrvs      = .false.
     cv_item%nindatoms       = 0
     cv_item%indlindexes     => NULL()
     cv_item%isalgebraic     = .false.
@@ -163,6 +174,71 @@ subroutine calculate_cv(cv_item,x,ctx)
     ignored_arg__ = same_type_as(ctx,ctx)
 
 end subroutine calculate_cv
+
+!===============================================================================
+! Subroutine:  calculate_cv2ddrvs
+!===============================================================================
+
+subroutine calculate_cv2ddrvs(cv_item,x,ctx)
+
+    use pmf_utils
+
+    implicit none
+    class(CVType)       :: cv_item
+    real(PMFDP)         :: x(:,:)
+    type(CVContextType) :: ctx
+    ! --------------------------------------------
+    integer             :: i,ci,k,j,cj,m
+    real(PMFDP)         :: dinv
+    ! --------------------------------------------------------------------------
+
+    if( cv_item%has2nddrvs ) then
+        call pmf_utils_exit(PMF_OUT,1, &
+                'calculate_cv2ddrvs called for ' // cv_item%ctype // ' but has2nddrvs is .true.')
+    end if
+
+    if( .not. associated(ctx%CVs2ndDrvs) ) then
+        call pmf_utils_exit(PMF_OUT,1, 'ctx%CVs2ndDrvs is not allocated')
+    end if
+
+    ! calculate base energy and gradient
+    call cv_item%calculate_cv(x,ctx)
+
+    ! calculate perturbed gradients
+    do i=1,cv_item%natoms
+        ci=cv_item%lindexes(i)
+        do k=1,3
+            tmp_crd(:,:) = x(:,:)
+            tmp_crd(k,ci) = tmp_crd(k,ci) + fpmf_hess_dh
+            tmp_gradsp(k,ci)%CVsDrvs(:,:,cv_item%idx) = 0.0d0
+            call cv_item%calculate_cv(tmp_crd,tmp_gradsp(k,ci))
+
+            tmp_crd(:,:) = x(:,:)
+            tmp_crd(k,ci) = tmp_crd(k,ci) - fpmf_hess_dh
+            tmp_gradsm(k,ci)%CVsDrvs(:,:,cv_item%idx) = 0.0d0
+            call cv_item%calculate_cv(tmp_crd,tmp_gradsm(k,ci))
+        end do
+    end do
+
+    dinv = 1.0d0 / fpmf_hess_dh
+
+    ! hessian by central differences from gradients
+    ! items are added to be compatible with gradient code - it is because possible atom overlap between atom groups
+    do i=1,cv_item%natoms
+        ci=cv_item%lindexes(i)
+        do k=1,3
+            do j=1,cv_item%natoms
+                cj=cv_item%lindexes(j)
+                do m=1,3
+                    ctx%CVs2ndDrvs(k,ci,m,cj,cv_item%idx) = ctx%CVs2ndDrvs(k,ci,m,cj,cv_item%idx) + 0.25d0 * dinv *         &
+                            ( (tmp_gradsp(k,ci)%CVsDrvs(m,cj,cv_item%idx) - tmp_gradsm(k,ci)%CVsDrvs(m,cj,cv_item%idx))     &
+                            + (tmp_gradsp(m,cj)%CVsDrvs(k,ci,cv_item%idx) - tmp_gradsm(m,cj)%CVsDrvs(k,ci,cv_item%idx)) )
+                end do
+            end do
+        end do
+    end do
+
+end subroutine calculate_cv2ddrvs
 
 !===============================================================================
 ! Subroutine:  calculate_cv

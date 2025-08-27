@@ -104,9 +104,13 @@ integer         :: fmaxiter         ! maximum of iteration in lambda optimizatio
 ! enthalpy/entropy calculations
 logical         :: fintene          ! collect data for internal energy calculation
 logical         :: fintene_der      ! collect data for internal energy derivative calculation
-integer         :: ftds_icfsol
+integer         :: ftds_icfsol      ! 0 - numerical divergence
+                                    ! 1 - analytical but with numerical/analytical CV Hessian
 
-integer, parameter  :: CON_ICFSOL_V1      = 1
+integer, parameter  :: CON_ICFSOL_V1      = 0
+integer, parameter  :: CON_ICFSOL_V2      = 1
+
+real(PMFDP)     :: fpmf_div_dh  = 1e-5  ! step factor for numerical diveregence
 
 ! enthalpy/entropy calculations
 logical         :: fentropy         ! collect data for entropy calculation

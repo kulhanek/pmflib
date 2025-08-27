@@ -499,11 +499,40 @@ subroutine pmf_init_pmf
           TmpT(3,NumOfLAtoms),                          &
           CVContext%CVsValues(NumOfCVs),                &
           CVContext%CVsDrvs(3,NumOfLAtoms,NumOfCVs),    &
+          CVContext%CVs2ndDrvs(3,NumOfLAtoms,3,NumOfLAtoms,NumOfCVs),    &
           stat=alloc_failed)
 
     if( alloc_failed .ne. 0 ) then
         call pmf_utils_exit(PMF_OUT, 1,'[PMFLIB] Unable to allocate memory for common arrays in pmf_init_pmf!')
     endif
+
+    ! allocate working arrays for Hessian calculations
+    allocate(tmp_crd(3,NumOfLAtoms), &
+             tmp_gradsp(3,NumOfLAtoms), &
+             tmp_gradsm(3,NumOfLAtoms), &
+             stat= alloc_failed)
+    if( alloc_failed .ne. 0 ) then
+        call pmf_utils_exit(PMF_OUT,1,&
+                 '[PMFLIB] Unable to allocate memory for numerical Hessian calculation in pmf_init_pmf!')
+    end if
+    do i=1,NumOfLAtoms
+        do k=1,3
+            allocate(tmp_gradsp(k,i)%CVsValues(NumOfCVs), &
+                     tmp_gradsp(k,i)%CVsDrvs(3,NumOfLAtoms,NumOfCVs), &
+                     tmp_gradsm(k,i)%CVsValues(NumOfCVs), &
+                     tmp_gradsm(k,i)%CVsDrvs(3,NumOfLAtoms,NumOfCVs), &
+                     stat= alloc_failed)
+            if( alloc_failed .ne. 0 ) then
+                call pmf_utils_exit(PMF_OUT,1,&
+                         '[PMFLIB] Unable to allocate memory for numerical Hessian calculation in pmf_init_pmf!')
+            end if
+
+            tmp_gradsp(k,i)%CVsValues(:) = 0.0d0
+            tmp_gradsp(k,i)%CVsDrvs(:,:,:) = 0.0d0
+            tmp_gradsm(k,i)%CVsValues(:) = 0.0d0
+            tmp_gradsm(k,i)%CVsDrvs(:,:,:) = 0.0d0
+        end do
+    end do
 
     if( cst_enabled .or. abf_cst_enabled ) then
         ! allocate arrays used by bluemoon

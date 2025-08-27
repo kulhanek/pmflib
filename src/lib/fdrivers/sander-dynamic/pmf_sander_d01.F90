@@ -360,6 +360,7 @@ subroutine pmf_sender_get_setup(setup,setup_len) bind(c,name='int_pmf_sander_get
     end if
 
     ! currently nothing here
+    ignored_arg__ = size(setup) .ne. 0
 
 end subroutine pmf_sender_get_setup
 

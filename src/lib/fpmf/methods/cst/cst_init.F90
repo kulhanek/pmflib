@@ -181,6 +181,9 @@ subroutine cst_init_print_summary
     write(PMF_OUT,120)  ' ------------------------------------------------------'
     write(PMF_OUT,125)  ' Accumulate internal energy (fintene)    : ', prmfile_onoff(fintene)
     write(PMF_OUT,125)  ' Accumulate intene deriv. (fintene_der)  : ', prmfile_onoff(fintene_der)
+    write(PMF_OUT,140)  ' ICF solver (ftds_icfsol)                : ', ftds_icfsol, &
+                                                                       trim(cst_init_get_icfsol_name(ftds_icfsol))
+
     write(PMF_OUT,125)  ' Accumulate entropy (fentropy)           : ', prmfile_onoff(fentropy)
     write(PMF_OUT,125)  ' Decompose entropy (ftds_decomp)         : ', prmfile_onoff(ftds_decomp)
 
@@ -392,6 +395,33 @@ character(80) function cst_init_get_lamsol_name(lamsol)
     return
 
 end function cst_init_get_lamsol_name
+
+!===============================================================================
+! Function:  cst_init_get_icfsol_name
+!===============================================================================
+
+character(80) function cst_init_get_icfsol_name(icfsol)
+
+    use cst_dat
+    use pmf_utils
+
+    implicit none
+    integer     :: icfsol
+    ! --------------------------------------------------------------------------
+
+    select case(icfsol)
+        case(CON_ICFSOL_V1)
+            cst_init_get_icfsol_name = "V1 (numeric divergence)"
+        case(CON_ICFSOL_V2)
+            cst_init_get_icfsol_name = "V2 (analytic with analytic/numeric CV Hessian)"
+        case default
+            call pmf_utils_exit(PMF_OUT, 1, &
+                        '[CST] Not implemented ICF solver in cst_init_get_icfsol_name!')
+    end select
+
+    return
+
+end function cst_init_get_icfsol_name
 
 !===============================================================================
 ! Function:  cst_init_get_ekinsrc_name
