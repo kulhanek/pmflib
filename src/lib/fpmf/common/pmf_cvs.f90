@@ -223,7 +223,7 @@ subroutine calculate_cv2ddrvs(cv_item,x,ctx)
     dinv = 1.0d0 / fpmf_hess_dh
 
     ! hessian by central differences from gradients
-    ! items are added to be compatible with gradient code - it is because possible atom overlap between atom groups
+    ! items are added to CVs2ndDrvs to be compatible with gradient code - it is because possible atom overlap between atom groups
     do i=1,cv_item%natoms
         ci=cv_item%lindexes(i)
         do k=1,3

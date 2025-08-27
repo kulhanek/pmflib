@@ -109,6 +109,7 @@ integer         :: ftds_icfsol      ! 0 - numerical divergence
 
 integer, parameter  :: CON_ICFSOL_V1      = 0
 integer, parameter  :: CON_ICFSOL_V2      = 1
+integer, parameter  :: CON_ICFSOL_V3      = 2
 
 real(PMFDP)     :: fpmf_div_dh  = 1e-5  ! step factor for numerical diveregence
 
