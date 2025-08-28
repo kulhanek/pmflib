@@ -122,6 +122,12 @@ subroutine cst_init_dat
     mfriter         = 0.0d0
     m2friter        = 0.0d0
 
+    fpmf_div_dh     = 1e-5
+
+    fpmf_sdiv_dh    = 1e-4
+    fpmf_sdiv_S     = 16
+    fpmf_sdiv_qr    = .false.
+
 end subroutine cst_init_dat
 
 !===============================================================================
@@ -417,6 +423,8 @@ character(80) function cst_init_get_icfsol_name(icfsol)
             cst_init_get_icfsol_name = "V2 (analytic with analytic/numeric CV Hessian)"
         case(CON_ICFSOL_V3)
             cst_init_get_icfsol_name = "V3 (analytic with analytic/numeric CV Hessian) + symmetry"
+        case(CON_ICFSOL_V4)
+            cst_init_get_icfsol_name = "V4 (stochastic divergence)"
         case default
             call pmf_utils_exit(PMF_OUT, 1, &
                         '[CST] Not implemented ICF solver in cst_init_get_icfsol_name!')
@@ -732,7 +740,7 @@ subroutine cst_init_core
     use cst_accu
 
     implicit none
-    integer      :: alloc_failed
+    integer      :: alloc_failed, ntau
     ! ------------------------------------------------------------------------------
 
 ! setup conversion factors
@@ -776,6 +784,14 @@ subroutine cst_init_core
         if( alloc_failed .ne. 0 ) then
             call pmf_utils_exit(PMF_OUT,1,&
                      '[CST] Unable to allocate memory for arrays used in matrix inversion!')
+        end if
+        ! for QR normalization
+        lsdivwork = max(3*NumOfLAtoms,fpmf_sdiv_S) * 64
+        ntau = min(3*NumOfLAtoms,fpmf_sdiv_S)
+        allocate(sdivwork(lsdivwork),sdiv_z(3,NumOfLAtoms,fpmf_sdiv_S),sdivtau(ntau), stat= alloc_failed)
+        if( alloc_failed .ne. 0 ) then
+            call pmf_utils_exit(PMF_OUT,1,&
+                     '[CST] Unable to allocate memory for arrays used in QR normalization!')
         end if
     end if
 
@@ -858,7 +874,8 @@ subroutine cst_init_core
         allocate( icfp(NumOfAllCONs),       &
                   icfk(NumOfAllCONs),       &
                   icf_he(3,NumOfLAtoms),    &
-                  icf_vi(3,NumOfLAtoms),    &
+                  icf_vi1(3,NumOfLAtoms),   &
+                  icf_vi2(3,NumOfLAtoms),   &
                   icf_vin(3,NumOfLAtoms,NumOfAllCONs),    &
                   stat= alloc_failed )
 

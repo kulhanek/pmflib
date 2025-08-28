@@ -49,6 +49,8 @@ subroutine cst_icf_calculate_icf
             call cst_icf_calculate_v2()
         case(CON_ICFSOL_V3)
             call cst_icf_calculate_v3()
+        case(CON_ICFSOL_V4)
+            call cst_icf_calculate_v4()
         case default
             call pmf_utils_exit(PMF_OUT,1,'[CST] ICF solver (ftds_icfsol) is not implemented in cst_icf_calculate_icf!')
     end select
@@ -83,11 +85,11 @@ subroutine cst_icf_calculate_v1
     call cst_icf_calculate_zmatinv(CVContext)
 
     do i=1,NumOfCONs
-        call cst_icf_calculate_vi(CVContext,i)
+        call cst_icf_calculate_vi(CVContext,i,icf_vi1)
         f1 = 0.0d0
         do k=1,NumOfLAtoms
             do m=1,3
-                f1 = f1 + icf_vi(m,k) * Frc(m,k)
+                f1 = f1 + icf_vi1(m,k) * Frc(m,k)
             end do
         end do
         icfp(i) = - f1
@@ -111,9 +113,9 @@ subroutine cst_icf_calculate_v1
                     call CVList(cl)%cv%calculate_cv(icf_he,CVContextP)
                 end do
                 call cst_icf_calculate_zmatinv(CVContextP)
-                call cst_icf_calculate_vi(CVContextP,i)
+                call cst_icf_calculate_vi(CVContextP,i,icf_vi1)
 
-                v1 = icf_vi(m,k)
+                v1 = icf_vi1(m,k)
 
                 ! write(*,*) 'v1 = ', v1
 
@@ -128,9 +130,9 @@ subroutine cst_icf_calculate_v1
                     call CVList(cl)%cv%calculate_cv(icf_he,CVContextP)
                 end do
                 call cst_icf_calculate_zmatinv(CVContextP)
-                call cst_icf_calculate_vi(CVContextP,i)
+                call cst_icf_calculate_vi(CVContextP,i,icf_vi1)
 
-                v2 = icf_vi(m,k)
+                v2 = icf_vi1(m,k)
 
               !  write(7894,*) v1, v2, (v1-v2)/(2.0d0 * dh)
 
@@ -180,11 +182,11 @@ subroutine cst_icf_calculate_v2
 
 ! ICFP part
     do k=1,NumOfCONs
-        call cst_icf_calculate_vi(CVContext,k)
+        call cst_icf_calculate_vi(CVContext,k,icf_vi1)
         f1 = 0.0d0
         do n=1,NumOfLAtoms
             do m=1,3
-                f1 = f1 + icf_vi(m,n) * Frc(m,n)
+                f1 = f1 + icf_vi1(m,n) * Frc(m,n)
             end do
         end do
         icfp(k) = - f1
@@ -213,10 +215,10 @@ subroutine cst_icf_calculate_v2
         ! sparse matrix-vector multiplication in cst_icf_calculate_Higj
         do n=1,NumOfAllCONs
             cn = CONList(n)%cvindx
-            icf_vi(:,:) = 0.0d0
+            icf_vi1(:,:) = 0.0d0
             do l=1,NumOfAllCONs
                 cl = CONList(l)%cvindx
-                icf_vi(:,:) = icf_vi(:,:) + zmata(n,l) * CVContext%CVsDrvs(:,:,cl)
+                icf_vi1(:,:) = icf_vi1(:,:) + zmata(n,l) * CVContext%CVsDrvs(:,:,cl)
             end do
             do m=1,NumOfAllCONs
                 cm = CONList(m)%cvindx
@@ -226,7 +228,7 @@ subroutine cst_icf_calculate_v2
                 v1 = 0.0d0
                 do o=1,NumOfLAtoms
                     do p=1,3
-                        v1 = v1 + icf_he(p,o) * icf_vi(p,o)
+                        v1 = v1 + icf_he(p,o) * icf_vi1(p,o)
                     end do
                 end do
                 icfk(k) = icfk(k) - zmata(k,m) * v1
@@ -276,11 +278,11 @@ subroutine cst_icf_calculate_v3
 
 ! ICFP part
     do k=1,NumOfCONs
-        call cst_icf_calculate_vi(CVContext,k)
+        call cst_icf_calculate_vi(CVContext,k,icf_vi1)
         f1 = 0.0d0
         do n=1,NumOfLAtoms
             do m=1,3
-                f1 = f1 + icf_vi(m,n) * Frc(m,n)
+                f1 = f1 + icf_vi1(m,n) * Frc(m,n)
             end do
         end do
         icfp(k) = - f1
@@ -352,10 +354,155 @@ subroutine cst_icf_calculate_v3
 end subroutine cst_icf_calculate_v3
 
 !===============================================================================
+! Subroutine:  cst_icf_calculate_v4
+! numerical divergence - stochastic “trace trick” for divergence
+!===============================================================================
+
+subroutine cst_icf_calculate_v4
+
+    use pmf_utils
+    use pmf_dat
+    use cst_dat
+    use pmf_timers
+
+    implicit none
+    integer                :: k,s,l,cl
+    real(PMFDP)            :: v1
+    ! --------------------------------------------------------------------------
+
+    icfp(:) = 0.0d0
+    icfk(:) = 0.0d0
+
+! ICFP part
+    call pmf_timers_start_timer(PMFLIB_CST_ICF_ICFP_TIMER)
+
+    call cst_icf_calculate_zmatll(CVContext)
+
+    do k=1,NumOfCONs
+        call cst_icf_calculate_vi_ll(CVContext,k,icf_vi1)
+        icfp(k) = - sum( icf_vi1(:,:) * Frc(:,:) )
+    end do
+
+    call pmf_timers_stop_timer(PMFLIB_CST_ICF_ICFP_TIMER)
+
+! ICFK part
+    call pmf_timers_start_timer(PMFLIB_CST_ICF_ICFK_TIMER)
+    do k=1,NumOfCONs
+
+        ! generate z-probes
+        call cst_icf_draw_probes_rademacher(sdiv_z)
+        if( fpmf_sdiv_qr ) then
+            call cst_icf_orthonormalize_probes(sdiv_z)
+        end if
+
+        v1 = 0.0d0
+        do s=1,fpmf_sdiv_S
+
+            icf_he(:,:) = Crd(:,:) + fpmf_sdiv_dh * sdiv_z(:,:,s)
+
+            CVContextP%CVsValues(:) = 0.0d0
+            CVContextP%CVsDrvs(:,:,:) = 0.0d0
+            do l=1,NumOfAllCONs
+                cl = CONList(l)%cvindx
+                call CVList(cl)%cv%calculate_cv(icf_he,CVContextP)
+            end do
+            call cst_icf_calculate_zmatll(CVContextP)
+            call cst_icf_calculate_vi_ll(CVContextP,k,icf_vi1)
+
+            icf_he(:,:) = Crd(:,:) - fpmf_sdiv_dh * sdiv_z(:,:,s)
+
+            CVContextP%CVsValues(:) = 0.0d0
+            CVContextP%CVsDrvs(:,:,:) = 0.0d0
+
+            do l=1,NumOfAllCONs
+                cl = CONList(l)%cvindx
+                call CVList(cl)%cv%calculate_cv(icf_he,CVContextP)
+            end do
+            call cst_icf_calculate_zmatll(CVContextP)
+            call cst_icf_calculate_vi_ll(CVContextP,k,icf_vi2)
+
+            v1 = v1 + sum( sdiv_z(:,:,s)*(icf_vi1(:,:) - icf_vi2(:,:)) )
+
+        end do
+
+        if( fpmf_sdiv_qr ) then
+            icfk(k) =  3.0d0 * real(NumOfLAtoms,PMFDP) * v1 / (2.0d0 * fpmf_sdiv_dh * fpmf_sdiv_S)
+        else
+            icfk(k) =  v1 / (2.0d0 * fpmf_sdiv_dh * fpmf_sdiv_S)
+        end if
+
+    end do
+    call pmf_timers_stop_timer(PMFLIB_CST_ICF_ICFK_TIMER)
+
+end subroutine cst_icf_calculate_v4
+
+!===============================================================================
+! Subroutine:  cst_icf_draw_probes_rademacher
+!===============================================================================
+
+subroutine cst_icf_draw_probes_rademacher(z)
+
+    use pmf_dat
+    use cst_dat
+
+    implicit none
+    real(PMFDP)     :: z(:,:,:)
+    ! --------------------------------------------
+    integer         :: i,j,k
+    real(PMFDP)     :: u
+    ! --------------------------------------------------------------------------
+
+    ! dense Rademacher vector: entries are +/-1 with prob 1/2.
+
+    do j = 1, fpmf_sdiv_S
+        do i = 1, NumOfLAtoms
+            do k=1,3
+                call random_number(u)    ! u ~ U(0,1)
+                z(k,i,j) = merge( 1.0d0, -1.0d0, u >= 0.5d0)
+            end do
+        end do
+    end do
+
+end subroutine cst_icf_draw_probes_rademacher
+
+!===============================================================================
+! Subroutine:  cst_icf_orthonormalize_probes
+!===============================================================================
+
+subroutine cst_icf_orthonormalize_probes(z)
+
+    use pmf_utils
+    use pmf_dat
+    use cst_dat
+
+    implicit none
+    real(PMFDP)     :: z(:,:,:)
+    ! --------------------------------------------
+    integer         :: n,k,info
+    ! --------------------------------------------
+
+    n = 3*NumOfLAtoms
+    k = min(3*NumOfLAtoms,fpmf_sdiv_S)
+
+    call dgeqrf(n,fpmf_sdiv_S,z,n,sdivtau,sdivwork,lsdivwork,info)
+    if( info .ne. 0 ) then
+            call pmf_utils_exit(PMF_OUT,1,&
+                             '[CST] QR decomposition failed in cst_icf_orthonormalize_probes!')
+    end if
+
+    call dorgqr(n,fpmf_sdiv_S,k,z,n,sdivtau,sdivwork,lsdivwork,info)
+    if( info .ne. 0 ) then
+            call pmf_utils_exit(PMF_OUT,1,&
+                             '[CST] QR orthonormalization failed in cst_icf_orthonormalize_probes!')
+    end if
+
+end subroutine cst_icf_orthonormalize_probes
+
+!===============================================================================
 ! Subroutine:  cst_icf_calculate_vi
 !===============================================================================
 
-subroutine cst_icf_calculate_vi(ctx,i)
+subroutine cst_icf_calculate_vi(ctx,i,icf_vi)
 
     use pmf_dat
     use cst_dat
@@ -363,6 +510,7 @@ subroutine cst_icf_calculate_vi(ctx,i)
     implicit none
     type(CVContextType) :: ctx
     integer             :: i
+    real(PMFDP)         :: icf_vi(:,:)
     ! --------------------------------------------
     integer             :: j,cj,k,kj,m
     ! --------------------------------------------------------------------------
@@ -380,6 +528,51 @@ subroutine cst_icf_calculate_vi(ctx,i)
     end do
 
 end subroutine cst_icf_calculate_vi
+
+!===============================================================================
+! Subroutine:  cst_icf_calculate_vi_ll
+! optimized
+!===============================================================================
+
+subroutine cst_icf_calculate_vi_ll(ctx,i,icf_vi)
+
+    use pmf_utils
+    use pmf_dat
+    use cst_dat
+
+    implicit none
+    type(CVContextType) :: ctx
+    integer             :: i
+    real(PMFDP)         :: icf_vi(:,:)
+    ! --------------------------------------------
+    integer             :: j,cj,k,kj,m,info
+    ! --------------------------------------------------------------------------
+
+    ! form e_i
+    vv(:) = 0.0d0
+    vv(i) = 1.0d0
+
+    ! solve ZMATA w = e_i
+    call dpotrs('L',NumOfAllCONs,1,zmata,NumOfAllCONs,vv,NumOfAllCONs,info)
+    if( info .ne. 0 ) then
+        call pmf_utils_exit(PMF_OUT,1,&
+                         '[CST] LL linear equation failed in cst_icf_calculate_vi_ll!')
+    end if
+
+    icf_vi(:,:) = 0.0d0
+
+    ! sparse version
+    do j=1,NumOfAllCONs
+        cj = CONList(j)%cvindx
+        do kj=1,CONList(j)%cv%natoms
+            k = CONList(j)%cv%lindexes(kj)
+            do m=1,3
+                icf_vi(m,k) = icf_vi(m,k) + vv(j) * ctx%CVsDrvs(m,k,cj)
+            end do
+        end do
+    end do
+
+end subroutine cst_icf_calculate_vi_ll
 
 !===============================================================================
 ! Subroutine:  cst_icf_calculate_Higj
@@ -467,6 +660,45 @@ subroutine cst_icf_calculate_zmatinv(ctx)
     end if
 
 end subroutine cst_icf_calculate_zmatinv
+
+!===============================================================================
+! Subroutine:  cst_icf_calculate_zmatll
+! optimized
+!===============================================================================
+
+subroutine cst_icf_calculate_zmatll(ctx)
+
+    use pmf_utils
+    use pmf_dat
+    use cst_dat
+
+    implicit none
+    type(CVContextType)                 :: ctx
+    ! --------------------------------------------
+    integer                             :: i,j,info
+    real(PMFDP), pointer, contiguous    :: di(:,:), dj(:,:)
+    ! --------------------------------------------------------------------------
+
+! this Z matrix is not mass weighted
+
+! get the matrix
+    do i=1,NumOfAllCONs
+        di => ctx%CVsDrvs(:,:,CONList(i)%cvindx)
+        do j=1,i
+            dj => ctx%CVsDrvs(:,:,CONList(j)%cvindx)
+            zmata(i,j) = sum( di * dj )
+            if( i .ne. j ) zmata(j,i) = zmata(i,j)
+        end do
+    end do
+
+! calc LL
+    call dpotrf('L',NumOfAllCONs,zmata,NumOfAllCONs,info)
+    if( info .ne. 0 ) then
+        call pmf_utils_exit(PMF_OUT,1,&
+                         '[CST] LL decomposition failed in cst_icf_calculate_zmatll!')
+    end if
+
+end subroutine cst_icf_calculate_zmatll
 
 !===============================================================================
 

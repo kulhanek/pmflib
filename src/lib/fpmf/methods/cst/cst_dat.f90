@@ -101,19 +101,26 @@ integer         :: fmaxiter         ! maximum of iteration in lambda optimizatio
 
 ! ==============================================================================
 
-! enthalpy/entropy calculations
-logical         :: fintcalc          ! collect data for internal energy calculation
-logical         :: fint_der      ! collect data for internal energy derivative calculation
+! internal energy/entropy calculations
+logical         :: fintcalc         ! collect data for internal energy calculation
+logical         :: fint_der         ! collect data for internal energy derivative calculation
 integer         :: ftds_icfsol      ! 1 - numerical divergence
                                     ! 2 - analytical but with numerical/analytical CV Hessian
 
 integer, parameter  :: CON_ICFSOL_V1      = 1
 integer, parameter  :: CON_ICFSOL_V2      = 2
 integer, parameter  :: CON_ICFSOL_V3      = 3
+integer, parameter  :: CON_ICFSOL_V4      = 4
 
-real(PMFDP)     :: fpmf_div_dh  = 1e-5  ! step factor for numerical diveregence
+! numeric divergence
+real(PMFDP)     :: fpmf_div_dh      ! step factor for numerical divergence
 
-! enthalpy/entropy calculations
+! The Hutchinson stochastic estimator
+real(PMFDP)     :: fpmf_sdiv_dh     ! step factor for numerical divergence - stochastic estimator
+integer         :: fpmf_sdiv_S      ! number of probe vectors
+logical         :: fpmf_sdiv_qr     ! use QR ortho-normalization of z-probes
+
+! internal energy/entropy calculations
 logical         :: ftdscalc         ! collect data for entropy calculation
 logical         :: ftds_decomp      ! collect additional correlation terms
 integer         :: ftds_lamsol      ! source of lambda
@@ -215,8 +222,14 @@ real(PMFDP),allocatable     :: fwfac            ! current value of Fixman weight
 real(PMFDP),allocatable     :: icfp(:)          ! ICF - potential part
 real(PMFDP),allocatable     :: icfk(:)          ! ICF - the other part
 real(PMFDP),allocatable     :: icf_he(:,:)      ! helper array
-real(PMFDP),allocatable     :: icf_vi(:,:)      ! helper array
+real(PMFDP),allocatable     :: icf_vi1(:,:)     ! helper array
+real(PMFDP),allocatable     :: icf_vi2(:,:)     ! helper array
 real(PMFDP),allocatable     :: icf_vin(:,:,:)   ! helper array
+
+integer                     :: lsdivwork        ! for stochastic diveregnce
+real(PMFDP),allocatable     :: sdivwork(:)      ! for stochastic diveregnce
+real(PMFDP),allocatable     :: sdiv_z(:,:,:)
+real(PMFDP),allocatable     :: sdivtau(:)
 
 integer                     :: linvwork         ! for matrix inversion
 real(PMFDP),allocatable     :: invwork(:)       ! for matrix inversion
