@@ -567,7 +567,7 @@ subroutine abf_core_lf_register_ekin()
     real(PMFDP) :: lepot, lerst, lekin
     ! --------------------------------------------------------------------------
 
-    if( .not. (fenthalpy .or. fentropy) ) return
+    if( .not. (fenthalpy .or. ftdscalc) ) return
 
     ! kinetic energy at this point is in the same time as potential energy
 
@@ -616,7 +616,7 @@ subroutine abf_core_lf_register_ekin()
 
     if( enevalidhist(hist_len) ) fene_step = fene_step + 1
 
-    if( .not. ( (mod(fene_step,fenesample) .eq. 0) .and. enevalidhist(hist_len+hist_fidx) ) ) return
+    if( .not. ( (mod(fene_step,ftds_sample) .eq. 0) .and. enevalidhist(hist_len+hist_fidx) ) ) return
 
     lepot = epothist(hist_len+hist_fidx)
     lerst = ersthist(hist_len+hist_fidx)

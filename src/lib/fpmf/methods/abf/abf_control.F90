@@ -106,12 +106,12 @@ subroutine abf_control_read_abf(prm_fin)
     call pmf_ctrl_read_integer(prm_fin,'fenthalpy_der',fenthalpy_der,'I12')
     call pmf_ctrl_check_integer_in_range('ABF','fenthalpy_der',fenthalpy_der,0,5)
 
-    call pmf_ctrl_read_logical(prm_fin,'fentropy',fentropy)
+    call pmf_ctrl_read_logical(prm_fin,'ftdscalc',ftdscalc)
     call pmf_ctrl_read_logical(prm_fin,'fentdecomp',fentdecomp)
 
 !    if( fenthalpy .and. (fenthalpy_der .gt. 0) ) then
-!        if( fentropy .eqv. .false. ) then
-!            fentropy = .true.
+!        if( ftdscalc .eqv. .false. ) then
+!            ftdscalc = .true.
 !            write(PMF_OUT,200)
 !        end if
 !        if( fentdecomp .eqv. .false. ) then
@@ -131,8 +131,8 @@ subroutine abf_control_read_abf(prm_fin)
     call pmf_ctrl_read_integer(prm_fin,'ferstsmooth',ferstsmooth,'I12')
     call pmf_ctrl_read_integer(prm_fin,'fekinsmooth',fekinsmooth,'I12')
 
-    call pmf_ctrl_read_integer(prm_fin,'fenesample',fenesample,'I12')
-    call pmf_ctrl_check_integer('ABF','fenesample',fenesample,0,CND_GT)
+    call pmf_ctrl_read_integer(prm_fin,'ftds_sample',ftds_sample,'I12')
+    call pmf_ctrl_check_integer('ABF','ftds_sample',ftds_sample,0,CND_GT)
 
     call pmf_ctrl_read_logical(prm_fin,'fusmode',fusmode)
     call pmf_ctrl_read_logical(prm_fin,'falignbias',falignbias)
@@ -222,7 +222,7 @@ subroutine abf_control_read_abf(prm_fin)
 
 100 format (' >> Multiple-walkers ABF method is disabled!')
 
-! 200 format ('|- Forcing: fentropy   = on due to fenthalpy_der > 0')
+! 200 format ('|- Forcing: ftdscalc   = on due to fenthalpy_der > 0')
 ! 201 format ('|- Forcing: fentdecomp = on due to fenthalpy_der > 0')
 
 #ifndef PMFLIB_NETWORK

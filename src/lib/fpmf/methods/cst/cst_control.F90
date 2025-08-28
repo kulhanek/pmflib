@@ -112,16 +112,16 @@ subroutine cst_control_read_con(prm_fin)
     call pmf_ctrl_read_integer(prm_fin,'ftrjsample',ftrjsample,'I12')
     call pmf_ctrl_check_integer('CST','ftrjsample',ftrjsample,0,CND_GE)
 
-    call pmf_ctrl_read_integer(prm_fin,'flamsample',flamsample,'I12')
-    call pmf_ctrl_check_integer('CST','flamsample',flamsample,0,CND_GT)
+    call pmf_ctrl_read_integer(prm_fin,'flam_sample',flam_sample,'I12')
+    call pmf_ctrl_check_integer('CST','flam_sample',flam_sample,0,CND_GT)
 
-    call pmf_ctrl_read_logical(prm_fin,'fintene',fintene)
-    call pmf_ctrl_read_logical(prm_fin,'fintene_der',fintene_der)
+    call pmf_ctrl_read_logical(prm_fin,'fintcalc',fintcalc)
+    call pmf_ctrl_read_logical(prm_fin,'fint_der',fint_der)
 
     call pmf_ctrl_read_integer(prm_fin,'ftds_icfsol',ftds_icfsol,'I12')
-    call pmf_ctrl_check_integer_in_range('CST','ftds_icfsol',ftds_icfsol,0,2)
+    call pmf_ctrl_check_integer_in_range('CST','ftds_icfsol',ftds_icfsol,1,2)
 
-    call pmf_ctrl_read_logical(prm_fin,'fentropy',fentropy)
+    call pmf_ctrl_read_logical(prm_fin,'ftdscalc',ftdscalc)
     call pmf_ctrl_read_logical(prm_fin,'ftds_decomp',ftds_decomp)
 
     call pmf_ctrl_read_integer(prm_fin,'ftds_lamsol',ftds_lamsol,'I12')
@@ -133,8 +133,8 @@ subroutine cst_control_read_con(prm_fin)
     call pmf_ctrl_read_real8_wunit(prm_fin,'fepotaverage',EnergyUnit,fepotaverage,'F10.1')
     call pmf_ctrl_read_real8_wunit(prm_fin,'fekinaverage',EnergyUnit,fekinaverage,'F10.1')
 
-    call pmf_ctrl_read_integer(prm_fin,'fenesample',fenesample,'I12')
-    call pmf_ctrl_check_integer('CST','fenesample',fenesample,0,CND_GT)
+    call pmf_ctrl_read_integer(prm_fin,'ftds_sample',ftds_sample,'I12')
+    call pmf_ctrl_check_integer('CST','ftds_sample',ftds_sample,0,CND_GT)
 
     cst_enabled = fmode .gt. 0
 

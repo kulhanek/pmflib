@@ -82,7 +82,7 @@ subroutine cst_init_dat
     frstupdate      = 10000
     ftrjsample      = 0             ! how often save accumulator to "accumulator evolution"
 
-    flamsample      = 1
+    flam_sample     = 1
 
     fmdconmode      = CON_MDCON_INCLUDE
     fmdcon_cvtype   = CON_CVTYPE_DS
@@ -95,18 +95,18 @@ subroutine cst_init_dat
     fmaxiter        = 50            ! maximum of iteration in lambda optimization
     frcond          = 1e-7
 
-    fintene         = .false.       ! accumulate enthalpy
-    fintene_der     = .false.
+    fintcalc        = .false.       ! accumulate enthalpy
+    fint_der        = .false.
     ftds_icfsol     = CON_ICFSOL_V1
 
-    fentropy        = .false.
+    ftdscalc        = .false.
     ftds_decomp     = .false.
     ftds_lamsol     = CON_LAMSOL_MD
     ftds_ekinsrc    = CON_EKINSRC_V4
 
     fepotaverage    = 0.0d0
     fekinaverage    = 0.0d0
-    fenesample      = 1
+    ftds_sample     = 1
 
     NumOfCONs       = 0
     NumOfMDCONs     = 0
@@ -177,21 +177,20 @@ subroutine cst_init_print_summary
     write(PMF_OUT,140)  ' CV type for SHAKEn bonds (fmdcon_cvtype): ', fmdcon_cvtype, &
                                                                        trim(cst_init_get_mdcon_cvtype_name(fmdcon_cvtype))
     write(PMF_OUT,120)
-    write(PMF_OUT,120)  ' Enthalpy/Entropy options:'
+    write(PMF_OUT,120)  ' Internal energy/Entropy options:'
     write(PMF_OUT,120)  ' ------------------------------------------------------'
-    write(PMF_OUT,125)  ' Accumulate internal energy (fintene)    : ', prmfile_onoff(fintene)
-    write(PMF_OUT,125)  ' Accumulate intene deriv. (fintene_der)  : ', prmfile_onoff(fintene_der)
+    write(PMF_OUT,125)  ' Accumulate internal energy (fintcalc)   : ', prmfile_onoff(fintcalc)
+    write(PMF_OUT,125)  ' Accumulate intene deriv. (fint_der)     : ', prmfile_onoff(fint_der)
     write(PMF_OUT,140)  ' ICF solver (ftds_icfsol)                : ', ftds_icfsol, &
                                                                        trim(cst_init_get_icfsol_name(ftds_icfsol))
 
-    write(PMF_OUT,125)  ' Accumulate entropy (fentropy)           : ', prmfile_onoff(fentropy)
+    write(PMF_OUT,125)  ' Accumulate entropy (ftdscalc)           : ', prmfile_onoff(ftdscalc)
     write(PMF_OUT,125)  ' Decompose entropy (ftds_decomp)         : ', prmfile_onoff(ftds_decomp)
 
     write(PMF_OUT,145)  ' Potential energy offset (fepotaverage)  : ', pmf_unit_get_rvalue(EnergyUnit,fepotaverage),  &
                                                                        '['//trim(pmf_unit_label(EnergyUnit))//']'
     write(PMF_OUT,145)  ' Kinetic energy offset (fekinaverage)    : ', pmf_unit_get_rvalue(EnergyUnit,fekinaverage), &
                                                                        '['//trim(pmf_unit_label(EnergyUnit))//']'
-    write(PMF_OUT,130)  ' Sampling for -TdS and dH (fenesample)   : ', fenesample
 
     write(PMF_OUT,140)  ' Lambda solver (ftds_lamsol)             : ', ftds_lamsol, &
                                                                        trim(cst_init_get_lamsol_name(ftds_lamsol))
@@ -204,6 +203,8 @@ subroutine cst_init_print_summary
     write(PMF_OUT,125)  ' Restart file (fcstrst)                  : ', trim(fcstrst)
     write(PMF_OUT,125)  ' Restart from previous run (frestart)    : ', prmfile_onoff(frestart)
     write(PMF_OUT,130)  ' Accumulators reset (faccurst)           : ', faccurst
+    write(PMF_OUT,130)  ' Sampling for FEN (flam_sample)          : ', flam_sample
+    write(PMF_OUT,130)  ' Sampling for TDS and INT (ftds_sample)  : ', ftds_sample
     write(PMF_OUT,120)
     write(PMF_OUT,120)  ' Output options:'
     write(PMF_OUT,120)  ' ------------------------------------------------------'
@@ -223,7 +224,7 @@ subroutine cst_init_print_summary
 
     do i=1,NumOfAllCONs-NumOfMDCONs
         write(PMF_OUT,150) i
-        call cst_constraints_cst_info(CONList(i))
+        call cst_constraints_cst_info(CONList(i),.true.)
         write(PMF_OUT,120)
     end do
 
@@ -236,7 +237,7 @@ subroutine cst_init_print_summary
     write(PMF_OUT,120)
     do i=NumOfAllCONs-NumOfMDCONs+1,NumOfAllCONs
         write(PMF_OUT,150) i
-        call cst_constraints_cst_info(CONList(i))
+        call cst_constraints_cst_info(CONList(i),.false.)
         write(PMF_OUT,120)
     end do
 
@@ -414,8 +415,6 @@ character(80) function cst_init_get_icfsol_name(icfsol)
             cst_init_get_icfsol_name = "V1 (numeric divergence)"
         case(CON_ICFSOL_V2)
             cst_init_get_icfsol_name = "V2 (analytic with analytic/numeric CV Hessian)"
-        case(CON_ICFSOL_V3)
-            cst_init_get_icfsol_name = "V3 (analytic with analytic/numeric CV Hessian - optimized)"
         case default
             call pmf_utils_exit(PMF_OUT, 1, &
                         '[CST] Not implemented ICF solver in cst_init_get_icfsol_name!')
@@ -768,7 +767,7 @@ subroutine cst_init_core
         end if
     end if
 
-    if( fintene_der ) then
+    if( fint_der ) then
         ! allocate arrays for matrix inversion
         linvwork = NumOfAllCONs * 64
         allocate(invwork(linvwork), stat= alloc_failed)
@@ -853,7 +852,7 @@ subroutine cst_init_core
     velhist(:,:,:)      = 0.0d0
 
 ! enthalpy/entropy
-    if( fintene .and. fintene_der ) then
+    if( fintcalc .and. fint_der ) then
         allocate( icfp(NumOfAllCONs),       &
                   icfk(NumOfAllCONs),       &
                   icf_he(3,NumOfLAtoms),    &

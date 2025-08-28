@@ -73,13 +73,13 @@ subroutine cst_core_main_lf
     frchist(:,:,hist_len)       = Frc(:,:)
     velhist(:,:,hist_len)       = Vel(:,:)
 
-    if( fintene .and. fintene_der ) then
+    if( fintcalc .and. fint_der ) then
         call cst_icf_calculate_icf
         icfphist(:,hist_len) = icfp(:)
         icfkhist(:,hist_len) = icfk(:)
     end if
 
-    if( fentropy ) then
+    if( ftdscalc ) then
         call cst_lambda_calculate
     end if
 

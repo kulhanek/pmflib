@@ -108,7 +108,7 @@ subroutine pmf_pmemd_check_interface(rnum,inum,ekin_len,setup_len,str1,str1_len,
         ! pmemd mdout unit number
         PMF_OUT = 116
     end if
-    
+
 end subroutine pmf_pmemd_check_interface
 
 !===============================================================================
@@ -382,7 +382,7 @@ INCLUDE 'mpif.h'
             setup(PMFLIB_SETUP_FORCE_NEED_VEL) = 1
         end if
 
-        if( fenthalpy .or. fentropy ) then
+        if( fenthalpy .or. ftdscalc ) then
             setup(PMFLIB_SETUP_FORCE_NEED_ENE) = 1
         end if
 

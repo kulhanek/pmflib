@@ -186,12 +186,13 @@ end subroutine cst_constraints_read_con
 ! Subroutine:  cst_constraints_cst_info
 !===============================================================================
 
-subroutine cst_constraints_cst_info(cst_item)
+subroutine cst_constraints_cst_info(cst_item,ranges)
 
     use pmf_paths
 
     implicit none
-    type(CVTypeBM)     :: cst_item
+    type(CVTypeBM)      :: cst_item
+    logical             :: ranges
     ! --------------------------------------------------------------------------
 
     write(PMF_OUT,70) trim(cst_item%cv%name)
@@ -219,7 +220,7 @@ subroutine cst_constraints_cst_info(cst_item)
                            trim(cst_item%cv%get_ulabel())
     end select
 
-    if( freadranges ) then
+    if( freadranges .and. ranges ) then
         write(PMF_OUT,255) cst_item%cv%get_rvalue(cst_item%min_value), &
                         trim(cst_item%cv%get_ulabel())
         write(PMF_OUT,260) cst_item%cv%get_rvalue(cst_item%max_value), &

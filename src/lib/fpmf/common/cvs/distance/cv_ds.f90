@@ -37,7 +37,7 @@ type, extends(CVType) :: CVTypeDS
     contains
         procedure :: load_cv            => load_ds
         procedure :: calculate_cv       => calculate_ds
-     !   procedure :: calculate_cv2ddrvs => calculate_ds_cv2ddrvs
+        procedure :: calculate_cv2ddrvs => calculate_ds_cv2ddrvs
 end type CVTypeDS
 
 !===============================================================================

@@ -102,19 +102,18 @@ integer         :: fmaxiter         ! maximum of iteration in lambda optimizatio
 ! ==============================================================================
 
 ! enthalpy/entropy calculations
-logical         :: fintene          ! collect data for internal energy calculation
-logical         :: fintene_der      ! collect data for internal energy derivative calculation
-integer         :: ftds_icfsol      ! 0 - numerical divergence
-                                    ! 1 - analytical but with numerical/analytical CV Hessian
+logical         :: fintcalc          ! collect data for internal energy calculation
+logical         :: fint_der      ! collect data for internal energy derivative calculation
+integer         :: ftds_icfsol      ! 1 - numerical divergence
+                                    ! 2 - analytical but with numerical/analytical CV Hessian
 
-integer, parameter  :: CON_ICFSOL_V1      = 0
-integer, parameter  :: CON_ICFSOL_V2      = 1
-integer, parameter  :: CON_ICFSOL_V3      = 2
+integer, parameter  :: CON_ICFSOL_V1      = 1
+integer, parameter  :: CON_ICFSOL_V2      = 2
 
 real(PMFDP)     :: fpmf_div_dh  = 1e-5  ! step factor for numerical diveregence
 
 ! enthalpy/entropy calculations
-logical         :: fentropy         ! collect data for entropy calculation
+logical         :: ftdscalc         ! collect data for entropy calculation
 logical         :: ftds_decomp      ! collect additional correlation terms
 integer         :: ftds_lamsol      ! source of lambda
                                     ! 0 - MD engine
@@ -135,8 +134,8 @@ integer, parameter  :: CON_EKINSRC_V4      = 1
 real(PMFDP)     :: fepotaverage
 real(PMFDP)     :: fekinaverage
 
-integer         :: flamsample       ! how often update lambda and metric tensor corrections
-integer         :: fenesample       ! how often take samples
+integer         :: flam_sample       ! how often update lambda and metric tensor corrections for FEN
+integer         :: ftds_sample       ! how often take samples for TDS and INT
 
 ! item list --------------------------------------------------------------------
 type CVTypeBM
@@ -308,7 +307,7 @@ real(PMFDP),allocatable     :: c11lp(:)
 real(PMFDP),allocatable     :: c11lr(:)
 real(PMFDP),allocatable     :: c11lk(:)
 
-! fintene .and. fintene_der
+! fintcalc .and. fint_der
 
 real(PMFDP),allocatable     :: micf(:)          ! mean of ICF
 real(PMFDP),allocatable     :: m2icf(:)         ! M2 of ICF

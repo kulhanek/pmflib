@@ -86,9 +86,9 @@ subroutine abf_init_dat
 
     fenthalpy       = .false.
     fenthalpy_der   = 0
-    fentropy        = .false.
+    ftdscalc        = .false.
     fentdecomp      = .false.
-    fenesample      = 1
+    ftds_sample      = 1
 
     ftds_ekin_src   = 1
     ftds_add_bias   = .false.
@@ -248,12 +248,12 @@ subroutine abf_init_print_summary
     write(PMF_OUT,125)  ' Accumulate enth. deriv. (fenthalpy_der) : ', fenthalpy_der
     write(PMF_OUT,150)  ' Potential energy offset (fepotaverage)  : ', pmf_unit_get_rvalue(EnergyUnit,fepotaverage),  &
                                                                        '['//trim(pmf_unit_label(EnergyUnit))//']'
-    write(PMF_OUT,130)  ' Sampling for -TdS and dH (fenesample)   : ', fenesample
+    write(PMF_OUT,130)  ' Sampling for -TdS and dH (ftds_sample)   : ', ftds_sample
 
     write(PMF_OUT,120)
     write(PMF_OUT,120)  ' Entropy options:'
     write(PMF_OUT,120)  ' ------------------------------------------------------'
-    write(PMF_OUT,125)  ' Accumulate entropy (fentropy)           : ', prmfile_onoff(fentropy)
+    write(PMF_OUT,125)  ' Accumulate entropy (ftdscalc)           : ', prmfile_onoff(ftdscalc)
     write(PMF_OUT,125)  ' Decompose entropy (fentdecomp)          : ', prmfile_onoff(fentdecomp)
     write(PMF_OUT,125)  ' Use ABF bias for -TdS (ftds_add_bias)   : ', prmfile_onoff(ftds_add_bias)
 
@@ -277,7 +277,7 @@ subroutine abf_init_print_summary
     write(PMF_OUT,130)  ' Pot energy smoothing mode (fepotsmooth) : ', fepotsmooth
     write(PMF_OUT,130)  ' Rst energy smoothing mode (ferstsmooth) : ', ferstsmooth
     write(PMF_OUT,130)  ' Kin energy smoothing mode (fekinsmooth) : ', fekinsmooth
-    write(PMF_OUT,130)  ' Sampling for -TdS and dH (fenesample)   : ', fenesample
+    write(PMF_OUT,130)  ' Sampling for -TdS and dH (ftds_sample)   : ', ftds_sample
 
     write(PMF_OUT,120)
     write(PMF_OUT,120)  ' Restart options:'

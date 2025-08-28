@@ -57,13 +57,13 @@ integer     :: fenthalpy_der    ! collect data for enthalpy derivative calculati
                                 ! 2 - from velocities, V2
                                 ! 3 - from velocities, V4
 ! enthalpy/entropy calculations
-logical     :: fentropy         ! collect data for entropy calculation
+logical     :: ftdscalc         ! collect data for entropy calculation
 logical     :: fentdecomp       ! collect additional correlation terms
 logical     :: ftds_add_bias    ! include ABF bias into TdS calculation
 integer     :: ftds_ekin_src    ! source of kinetic energy, see abf_core_update_history_ene for supported values
 real(PMFDP) :: fepotaverage
 real(PMFDP) :: fekinaverage
-integer     :: fenesample       ! how often update ABF accumulator for ENT and TDS
+integer     :: ftds_sample       ! how often update ABF accumulator for ENT and TDS
 
 integer     :: fepotsmooth
 integer     :: ferstsmooth
