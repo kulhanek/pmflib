@@ -415,6 +415,8 @@ character(80) function cst_init_get_icfsol_name(icfsol)
             cst_init_get_icfsol_name = "V1 (numeric divergence)"
         case(CON_ICFSOL_V2)
             cst_init_get_icfsol_name = "V2 (analytic with analytic/numeric CV Hessian)"
+        case(CON_ICFSOL_V3)
+            cst_init_get_icfsol_name = "V3 (analytic with analytic/numeric CV Hessian) + symmetry"
         case default
             call pmf_utils_exit(PMF_OUT, 1, &
                         '[CST] Not implemented ICF solver in cst_init_get_icfsol_name!')
@@ -857,6 +859,7 @@ subroutine cst_init_core
                   icfk(NumOfAllCONs),       &
                   icf_he(3,NumOfLAtoms),    &
                   icf_vi(3,NumOfLAtoms),    &
+                  icf_vin(3,NumOfLAtoms,NumOfAllCONs),    &
                   stat= alloc_failed )
 
         if( alloc_failed .ne. 0 ) then

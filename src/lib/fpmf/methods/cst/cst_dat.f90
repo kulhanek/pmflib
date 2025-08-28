@@ -109,6 +109,7 @@ integer         :: ftds_icfsol      ! 1 - numerical divergence
 
 integer, parameter  :: CON_ICFSOL_V1      = 1
 integer, parameter  :: CON_ICFSOL_V2      = 2
+integer, parameter  :: CON_ICFSOL_V3      = 3
 
 real(PMFDP)     :: fpmf_div_dh  = 1e-5  ! step factor for numerical diveregence
 
@@ -215,6 +216,7 @@ real(PMFDP),allocatable     :: icfp(:)          ! ICF - potential part
 real(PMFDP),allocatable     :: icfk(:)          ! ICF - the other part
 real(PMFDP),allocatable     :: icf_he(:,:)      ! helper array
 real(PMFDP),allocatable     :: icf_vi(:,:)      ! helper array
+real(PMFDP),allocatable     :: icf_vin(:,:,:)   ! helper array
 
 integer                     :: linvwork         ! for matrix inversion
 real(PMFDP),allocatable     :: invwork(:)       ! for matrix inversion
