@@ -146,6 +146,8 @@ real(PMFDP)     :: fekinaverage
 integer         :: flam_sample       ! how often update lambda and metric tensor corrections for FEN
 integer         :: ftds_sample       ! how often take samples for TDS and INT
 
+logical         :: frmshake_zdet
+
 ! item list --------------------------------------------------------------------
 type CVTypeBM
     integer                 :: cvindx           ! index to PMF CV
@@ -239,6 +241,7 @@ real(PMFDP),allocatable     :: cv(:)            ! value vector for LE solution
 real(PMFDP),allocatable     :: vv(:)            ! value vector for LE solution
 integer,allocatable         :: indx(:)
 real(PMFDP),allocatable     :: zmat(:,:)        ! Z-matrix - all constraints
+real(PMFDP),allocatable     :: zmats(:,:)       ! Z-matrix - MD constraints
 
 ! history buffers ---------------------------------------------------------------
 integer                     :: hist_len

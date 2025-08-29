@@ -180,8 +180,8 @@ subroutine cst_core_calculate_fw
     use cst_dat
 
     implicit none
-    integer                :: i,ci,j,cj,k,info
-    real(PMFDP)            :: jacv,fzdet
+    integer                :: i,ci,j,cj,k,m,info
+    real(PMFDP)            :: z1,v1,fzdet,fzdets
     ! --------------------------------------------------------------------------
 
 ! ALL constraints ================================
@@ -189,13 +189,18 @@ subroutine cst_core_calculate_fw
 ! calculate Z matrix at Crd (in t)
     do i=1,NumOfAllCONs
         ci = CONList(i)%cvindx
-        do j=1,NumOfAllCONs
+        do j=1,i
             cj = CONList(j)%cvindx
-            jacv = 0.0
+            z1 = 0.0d0
             do k=1,NumOfLAtoms
-                jacv = jacv + MassInv(k)*dot_product(CVContext%CVsDrvs(:,k,ci),CVContext%CVsDrvs(:,k,cj))
+                v1 = 0.0
+                do m=1,3
+                    v1 = v1 + CVContext%CVsDrvs(m,k,ci)*CVContext%CVsDrvs(m,k,cj)
+                end do
+                z1 = z1 + MassInv(k)*v1
             end do
-            zmat(i,j) = jacv
+            zmat(i,j)=z1
+            zmat(j,i)=z1
         end do
     end do
 
@@ -219,6 +224,53 @@ subroutine cst_core_calculate_fw
         fzdet = zmat(1,1)
     end if
 
+! SHAKE constraints ==============================
+
+    fzdets = 1.0d0
+
+    if( frmshake_zdet ) then
+    ! calculate Z matrix at Crd (in t)
+        do i=1,NumOfMDCONs
+            ci = CONList(i+NumOfCONs)%cvindx
+            do j=1,i
+                cj = CONList(j+NumOfCONs)%cvindx
+                z1 = 0.0d0
+                do k=1,NumOfLAtoms
+                    v1 = 0.0
+                    do m=1,3
+                        v1 = v1 + CVContext%CVsDrvs(m,k,ci)*CVContext%CVsDrvs(m,k,cj)
+                    end do
+                    z1 = z1 + MassInv(k)*v1
+                end do
+                zmats(i,j)=z1
+                zmats(j,i)=z1
+            end do
+        end do
+
+    ! calculate Z determinant ------------------------------------
+        if( NumOfMDCONs .gt. 1 ) then
+            ! LU decomposition
+            call dgetrf(NumOfMDCONs,NumOfMDCONs,zmats,NumOfMDCONs,indx,info)
+            if( info .ne. 0 ) then
+                call pmf_utils_exit(PMF_OUT,1,'[CST] LU decomposition failed in cst_core_calculate_fw!')
+            end if
+            fzdets = 1.0d0
+            ! and finally determinant
+            do i=1,NumOfMDCONs
+                if( indx(i) .ne. i ) then
+                    fzdets = - fzdets * zmats(i,i)
+                else
+                    fzdets = fzdets * zmats(i,i)
+                end if
+            end do
+        else if( NumOfMDCONs .eq. 1 ) then
+            fzdets = zmats(1,1)
+        else
+            fzdets = 1.0d0
+        end if
+    end if
+
+    fzdet   = fzdet / fzdets
     fwfac   = 1.0d0/sqrt(fzdet)
     fwhist(hist_len) = fwfac
 

@@ -128,6 +128,8 @@ subroutine cst_init_dat
     fpmf_sdiv_S     = 16
     fpmf_sdiv_qr    = .false.
 
+    frmshake_zdet   = .false.
+
 end subroutine cst_init_dat
 
 !===============================================================================
@@ -763,7 +765,8 @@ subroutine cst_init_core
              cv(NumOfAllCONs),                  &
              vv(NumOfAllCONs),                  &
              indx(NumOfAllCONs),                &
-             zmat(NumOfAllCONs,NumOfAllCONs), stat= alloc_failed)
+             zmat(NumOfAllCONs,NumOfAllCONs),   &
+             zmats(NumOfMDCONs,NumOfMDCONs), stat= alloc_failed)
     if( alloc_failed .ne. 0 ) then
         call pmf_utils_exit(PMF_OUT,1,&
                  '[CST] Unable to allocate memory for arrays used in LU decomposition!')

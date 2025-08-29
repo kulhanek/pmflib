@@ -139,6 +139,8 @@ subroutine cst_control_read_con(prm_fin)
     call pmf_ctrl_read_integer(prm_fin,'ftds_sample',ftds_sample,'I12')
     call pmf_ctrl_check_integer('CST','ftds_sample',ftds_sample,0,CND_GT)
 
+    call pmf_ctrl_read_logical(prm_fin,'frmshake_zdet',frmshake_zdet)
+
     cst_enabled = fmode .gt. 0
 
     return
