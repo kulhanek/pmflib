@@ -597,8 +597,8 @@ subroutine cst_shake_calc_jacobian_mm
     use cst_constraints
 
     implicit none
-    integer                :: i,ci,j,cj,k
-    real(PMFDP)            :: jacv
+    integer                :: i,ci,j,cj,k,m
+    real(PMFDP)            :: jacv,v1
     ! --------------------------------------------------------------------------
 
     ! complete Jacobian matrix
@@ -608,9 +608,13 @@ subroutine cst_shake_calc_jacobian_mm
             cj = CONList(j)%cvindx
             jacv = 0.0d0
             do k=1,NumOfLAtoms
-                jacv = jacv - MassInv(k)*dot_product(CVContext%CVsDrvs(:,k,ci),CVContextP%CVsDrvs(:,k,cj))
+                v1 = 0.0
+                do m=1,3
+                    v1 = v1 + CVContext%CVsDrvs(m,k,ci)*CVContextP%CVsDrvs(m,k,cj)
+                end do
+                jacv = jacv - MassInv(k)*v1
             end do
-            jac(i,j)=jacv
+            jac(j,i) = jacv
         end do
     end do
 
