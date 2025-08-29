@@ -82,7 +82,7 @@ subroutine cst_shake_calculate_fm
     use cst_constraints
 
     implicit none
-    integer             :: i,k,info,ci
+    integer             :: i,k,info,ci,ki
     logical             :: done
     real(PMFDP)         :: invn,dfsiter1,dfsiter2
     ! -----------------------------------------------------------------------------
@@ -124,7 +124,8 @@ subroutine cst_shake_calculate_fm
         ! calculate new position vector
         do i=1,NumOfAllCONs
             ci = CONList(i)%cvindx
-            do k=1,NumOfLAtoms
+            do ki=1,CONList(i)%cv%natoms
+                k = CONList(i)%cv%lindexes(ki)
                 CrdP(:,k) = CrdP(:,k) - MassInv(k)*cv(i)*CVContext%CVsDrvs(:,k,ci)
             end do
         end do
@@ -166,7 +167,7 @@ subroutine cst_shake_calculate_mm
     use cst_constraints
 
     implicit none
-    integer             :: i,k,info,ci
+    integer             :: i,k,info,ci,ki
     logical             :: done
     real(PMFDP)         :: invn,dfsiter1,dfsiter2
     ! -----------------------------------------------------------------------------
@@ -205,7 +206,8 @@ subroutine cst_shake_calculate_mm
         ! calculate new position vector
         do i=1,NumOfAllCONs
             ci = CONList(i)%cvindx
-            do k=1,NumOfLAtoms
+            do ki=1,CONList(i)%cv%natoms
+                k = CONList(i)%cv%lindexes(ki)
                 CrdP(:,k) = CrdP(:,k) - MassInv(k)*cv(i)*CVContext%CVsDrvs(:,k,ci)
             end do
         end do
@@ -580,7 +582,7 @@ subroutine cst_shake_calc_jacobian_fm
                 do m=1,3
                     v1 = v1 + CVContext%CVsDrvs(m,k,ci)*CVContext%CVsDrvs(m,k,cj)
                 end do
-                z1 = z1 - MassInv(k)*v1
+                z1 = z1 + MassInv(k)*v1
             end do
             zmat(i,j)=z1
             zmat(j,i)=z1
@@ -615,7 +617,7 @@ subroutine cst_shake_calc_jacobian_mm
                 do m=1,3
                     v1 = v1 + CVContext%CVsDrvs(m,k,ci)*CVContextP%CVsDrvs(m,k,cj)
                 end do
-                z1 = z1 - MassInv(k)*v1
+                z1 = z1 + MassInv(k)*v1
             end do
             zmat(j,i) = z1
         end do
