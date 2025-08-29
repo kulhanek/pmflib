@@ -820,7 +820,7 @@ subroutine cst_icf_calculate_zmatll(ctx)
         do j=1,i
             dj => ctx%CVsDrvs(:,:,CONList(j)%cvindx)
             zmata(i,j) = sum( di * dj )
-            if( i .ne. j ) zmata(j,i) = zmata(i,j)
+            zmata(j,i) = zmata(i,j)
         end do
     end do
 
@@ -847,22 +847,25 @@ subroutine cst_icf_calculate_zmatll_mw(ctx)
     implicit none
     type(CVContextType)     :: ctx
     ! --------------------------------------------
-    integer                 :: i,ci,j,cj,info,k
-    real(PMFDP)             :: jacv
+    integer                 :: i,ci,j,cj,info,k,m
+    real(PMFDP)             :: jacv,v1
     ! --------------------------------------------------------------------------
-
-! this Z matrix is not mass weighted
 
 ! get the matrix
     do i=1,NumOfAllCONs
         ci = CONList(i)%cvindx
-        do j=1,NumOfAllCONs
+        do j=1,i
             cj = CONList(j)%cvindx
             jacv = 0.0d0
             do k=1,NumOfLAtoms
-                jacv = jacv + MassInv(k)*dot_product(ctx%CVsDrvs(:,k,ci),ctx%CVsDrvs(:,k,cj))
+                v1 = 0.0
+                do m=1,3
+                    v1 = v1 + ctx%CVsDrvs(m,k,ci)*ctx%CVsDrvs(m,k,cj)
+                end do
+                jacv = jacv + MassInv(k)*v1
             end do
             zmata(i,j) = jacv
+            zmata(j,i) = jacv
         end do
     end do
 
