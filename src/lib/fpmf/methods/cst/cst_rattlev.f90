@@ -88,21 +88,21 @@ subroutine cst_rattlev_calculate_ma
     end do
 
 ! left side
-    call cst_rattlev_calc_jacobian
+    call cst_rattlev_calc_zmat
 
  ! solve LE
      if( NumOfAllCONs .gt. 1 ) then
         indx(:) = 0
-        call dgetrf(NumOfAllCONs,NumOfAllCONs,jac,NumOfAllCONs,indx,info)
+        call dgetrf(NumOfAllCONs,NumOfAllCONs,zmat,NumOfAllCONs,indx,info)
         if( info .ne. 0 ) then
             call pmf_utils_exit(PMF_OUT,1,'[CST] LU decomposition failed in cst_rattlev_calculate_ma!')
         end if
-        call dgetrs('N',NumOfAllCONs,1,jac,NumOfAllCONs,indx,lambdav,NumOfAllCONs,info)
+        call dgetrs('N',NumOfAllCONs,1,zmat,NumOfAllCONs,indx,lambdav,NumOfAllCONs,info)
         if( info .ne. 0 ) then
             call pmf_utils_exit(PMF_OUT,1,'[CST] Solution of LE failed in cst_rattlev_calculate_ma!')
         end if
      else
-        lambdav(1) = lambdav(1) / jac(1,1)
+        lambdav(1) = lambdav(1) / zmat(1,1)
      end if
 
 ! correct velocities
@@ -138,34 +138,37 @@ subroutine cst_rattlev_calculate_ma
 end subroutine cst_rattlev_calculate_ma
 
 !===============================================================================
-! Subroutine:  cst_rattlev_calc_jacobian
+! Subroutine:  cst_rattlev_calc_zmat
 !===============================================================================
 
-subroutine cst_rattlev_calc_jacobian
+subroutine cst_rattlev_calc_zmat
 
     use pmf_dat
     use cst_dat
     use cst_constraints
 
     implicit none
-    integer                :: i,ci,j,cj,k
-    real(PMFDP)            :: jacv
+    integer                :: i,ci,j,cj,k,m
+    real(PMFDP)            :: z1,v1
     ! --------------------------------------------------------------------------
 
-    ! complete Jacobian matrix
     do i=1,NumOfAllCONs
         ci = CONList(i)%cvindx
-        do j=1,NumOfAllCONs
+        do j=1,i
             cj = CONList(j)%cvindx
-            jacv = 0.0d0
             do k=1,NumOfLAtoms
-                jacv = jacv - MassInv(k)*dot_product(CVContextP%CVsDrvs(:,k,ci),CVContextP%CVsDrvs(:,k,cj))
+                v1 = 0.0
+                do m=1,3
+                    v1 = v1 + CVContextP%CVsDrvs(m,k,ci)*CVContextP%CVsDrvs(m,k,cj)
+                end do
+                z1 = z1 + MassInv(k)*v1
             end do
-            jac(i,j)=jacv
+            zmat(i,j)=z1
+            zmat(j,i)=z1
         end do
     end do
 
-end subroutine cst_rattlev_calc_jacobian
+end subroutine cst_rattlev_calc_zmat
 
 !===============================================================================
 

@@ -197,7 +197,6 @@ integer,allocatable         :: CONAtoms(:)              ! constrained atoms to t
 real(PMFDP)                 :: isfdts           ! internal conversion factor
 integer                     :: fsiter           ! number of iterations in shake solver
 real(PMFDP),allocatable     :: lambdax(:)       ! list of Lagrange multipliers, internal units
-real(PMFDP),allocatable     :: cv(:)            ! constraint value vector
 
 integer                     :: lsvdwork         ! for SVD decomposition
 real(PMFDP),allocatable     :: svdwork(:)       ! for SVD decomposition
@@ -236,10 +235,10 @@ integer                     :: linvwork         ! for matrix inversion
 real(PMFDP),allocatable     :: invwork(:)       ! for matrix inversion
 
 ! global variables for LU decomposition and other helper variable  -------------
-real(PMFDP),allocatable     :: jac(:,:)         ! Jacobian matrix
-real(PMFDP),allocatable     :: vv(:)            ! for LU decomposition
+real(PMFDP),allocatable     :: cv(:)            ! value vector for LE solution
+real(PMFDP),allocatable     :: vv(:)            ! value vector for LE solution
 integer,allocatable         :: indx(:)
-real(PMFDP),allocatable     :: zmata(:,:)       ! Z-matrix - all constraints
+real(PMFDP),allocatable     :: zmat(:,:)        ! Z-matrix - all constraints
 
 ! history buffers ---------------------------------------------------------------
 integer                     :: hist_len

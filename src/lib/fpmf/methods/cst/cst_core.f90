@@ -195,14 +195,14 @@ subroutine cst_core_calculate_fw
             do k=1,NumOfLAtoms
                 jacv = jacv + MassInv(k)*dot_product(CVContext%CVsDrvs(:,k,ci),CVContext%CVsDrvs(:,k,cj))
             end do
-            zmata(i,j) = jacv
+            zmat(i,j) = jacv
         end do
     end do
 
 ! calculate Z determinant ------------------------------------
     if( NumOfAllCONs .gt. 1 ) then
         ! LU decomposition
-        call dgetrf(NumOfAllCONs,NumOfAllCONs,zmata,NumOfAllCONs,indx,info)
+        call dgetrf(NumOfAllCONs,NumOfAllCONs,zmat,NumOfAllCONs,indx,info)
         if( info .ne. 0 ) then
             call pmf_utils_exit(PMF_OUT,1,'[CST] LU decomposition failed in cst_core_calculate_fw!')
         end if
@@ -210,13 +210,13 @@ subroutine cst_core_calculate_fw
         ! and finally determinant
         do i=1,NumOfAllCONs
             if( indx(i) .ne. i ) then
-                fzdet = - fzdet * zmata(i,i)
+                fzdet = - fzdet * zmat(i,i)
             else
-                fzdet = fzdet * zmata(i,i)
+                fzdet = fzdet * zmat(i,i)
             end if
         end do
     else
-        fzdet = zmata(1,1)
+        fzdet = zmat(1,1)
     end if
 
     fwfac   = 1.0d0/sqrt(fzdet)

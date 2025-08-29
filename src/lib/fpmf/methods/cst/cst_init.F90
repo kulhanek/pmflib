@@ -760,10 +760,10 @@ subroutine cst_init_core
 ! required always - det(Z) is calculate in core_analyse
 ! allocate arrays for LU decomposition
     allocate(lambda(NumOfAllCONs),              &
+             cv(NumOfAllCONs),                  &
              vv(NumOfAllCONs),                  &
              indx(NumOfAllCONs),                &
-             jac(NumOfAllCONs,NumOfAllCONs),    &
-             zmata(NumOfAllCONs,NumOfAllCONs), stat= alloc_failed)
+             zmat(NumOfAllCONs,NumOfAllCONs), stat= alloc_failed)
     if( alloc_failed .ne. 0 ) then
         call pmf_utils_exit(PMF_OUT,1,&
                  '[CST] Unable to allocate memory for arrays used in LU decomposition!')
@@ -800,33 +800,28 @@ subroutine cst_init_core
 ! allocate arrays for lambda calculation
     select case(fintalg)
         case(IA_LEAP_FROG) ! FIXME
-            allocate(lambdax(NumOfAllCONs), cv(NumOfAllCONs), stat= alloc_failed )
+            allocate(lambdax(NumOfAllCONs), stat= alloc_failed )
             if( alloc_failed .ne. 0 ) then
                 call pmf_utils_exit(PMF_OUT,1,&
                          '[CST] Unable to allocate memory for arrays used in lambda calculation!')
             end if
             lambdax(:) = 0.0d0
-            cv(:) = 0.0d0
         case(IA_VEL_VERLET)
-            allocate(lambdax(NumOfAllCONs), lambdav(NumOfAllCONs),  &
-                     cv(NumOfAllCONs), stat= alloc_failed )
+            allocate(lambdax(NumOfAllCONs), lambdav(NumOfAllCONs), stat= alloc_failed )
             if( alloc_failed .ne. 0 ) then
                 call pmf_utils_exit(PMF_OUT,1,&
                          '[CST] Unable to allocate memory for arrays used in lambda calculation!')
             end if
             lambdax(:) = 0.0d0
             lambdav(:) = 0.0d0
-            cv(:) = 0.0d0
         case(IA_LF_MIDDLE)
-            allocate(lambdax(NumOfAllCONs), lambdav(NumOfAllCONs),  &
-                     cv(NumOfAllCONs), stat= alloc_failed )
+            allocate(lambdax(NumOfAllCONs), lambdav(NumOfAllCONs), stat= alloc_failed )
             if( alloc_failed .ne. 0 ) then
                 call pmf_utils_exit(PMF_OUT,1,&
                          '[CST] Unable to allocate memory for arrays used in lambda calculation!')
             end if
             lambdax(:) = 0.0d0
             lambdav(:) = 0.0d0
-            cv(:) = 0.0d0
         case default
             call pmf_utils_exit(PMF_OUT,1,'Unsupported integration algorithm in cst_init_print_summary!')
     end select

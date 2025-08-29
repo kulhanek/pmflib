@@ -124,16 +124,16 @@ subroutine cst_lambda_calculate_v1
 ! linear equations
      if( NumOfAllCONs .gt. 1 ) then
         indx(:) = 0
-        call dgetrf(NumOfAllCONs,NumOfAllCONs,zmata,NumOfAllCONs,indx,info)
+        call dgetrf(NumOfAllCONs,NumOfAllCONs,zmat,NumOfAllCONs,indx,info)
         if( info .ne. 0 ) then
             call pmf_utils_exit(PMF_OUT,1,'[CST] LU decomposition failed in cst_lambda_calculate_v1!')
         end if
-        call dgetrs('N',NumOfAllCONs,1,zmata,NumOfAllCONs,indx,cv,NumOfAllCONs,info)
+        call dgetrs('N',NumOfAllCONs,1,zmat,NumOfAllCONs,indx,cv,NumOfAllCONs,info)
         if( info .ne. 0 ) then
             call pmf_utils_exit(PMF_OUT,1,'[CST] Solution of LE failed in cst_lambda_calculate_v1!')
         end if
      else
-        cv(1) = cv(1) / zmata(1,1)
+        cv(1) = cv(1) / zmat(1,1)
      end if
 
     lambdaEhist(:,hist_len+hist_fidx_tds) =  cv(:)
@@ -166,7 +166,7 @@ subroutine cst_lambda_calc_zmat(fidx)
             do k=1,NumOfLAtoms
                 jacv = jacv + MassInv(k)*dot_product(cvderhist(:,k,ci,hist_len+fidx),cvderhist(:,k,cj,hist_len+fidx))
             end do
-            zmata(i,j)=jacv
+            zmat(i,j)=jacv
         end do
     end do
 

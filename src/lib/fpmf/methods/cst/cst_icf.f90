@@ -211,7 +211,7 @@ subroutine cst_icf_calculate_v2
                     v1 = v1 + CVContext%CVs2ndDrvs(p,o,p,o,cl)
                 end do
             end do
-            icfk(k) = icfk(k) + zmata(k,l) * v1
+            icfk(k) = icfk(k) + zmat(k,l) * v1
         end do
 
         ! harder part :-(
@@ -222,7 +222,7 @@ subroutine cst_icf_calculate_v2
             icf_vi1(:,:) = 0.0d0
             do l=1,NumOfAllCONs
                 cl = CONList(l)%cvindx
-                icf_vi1(:,:) = icf_vi1(:,:) + zmata(n,l) * CVContext%CVsDrvs(:,:,cl)
+                icf_vi1(:,:) = icf_vi1(:,:) + zmat(n,l) * CVContext%CVsDrvs(:,:,cl)
             end do
             do m=1,NumOfAllCONs
                 cm = CONList(m)%cvindx
@@ -235,7 +235,7 @@ subroutine cst_icf_calculate_v2
                         v1 = v1 + icf_he(p,o) * icf_vi1(p,o)
                     end do
                 end do
-                icfk(k) = icfk(k) - zmata(k,m) * v1
+                icfk(k) = icfk(k) - zmat(k,m) * v1
             end do
         end do
   end do
@@ -310,7 +310,7 @@ subroutine cst_icf_calculate_v3
                     v1 = v1 + CVContext%CVs2ndDrvs(p,o,p,o,cl)
                 end do
             end do
-            icfk(k) = icfk(k) + zmata(k,l) * v1
+            icfk(k) = icfk(k) + zmat(k,l) * v1
         end do
 
         ! harder part :-(
@@ -320,7 +320,7 @@ subroutine cst_icf_calculate_v3
         do n=1,NumOfAllCONs
             do l=1,NumOfAllCONs
                 cl = CONList(l)%cvindx
-                icf_vin(:,:,n) = icf_vin(:,:,n) + zmata(n,l) * CVContext%CVsDrvs(:,:,cl)
+                icf_vin(:,:,n) = icf_vin(:,:,n) + zmat(n,l) * CVContext%CVsDrvs(:,:,cl)
             end do
         end do
         do n=1,NumOfAllCONs
@@ -339,7 +339,7 @@ subroutine cst_icf_calculate_v3
                             v2 = v2 + icf_he(p,o) * icf_vin(p,o,m)
                         end do
                     end do
-                    icfk(k) = icfk(k) - zmata(k,m) * v1 - zmata(k,n) * v2
+                    icfk(k) = icfk(k) - zmat(k,m) * v1 - zmat(k,n) * v2
                 else
                     v1 = 0.0d0
                     do o=1,NumOfLAtoms
@@ -347,7 +347,7 @@ subroutine cst_icf_calculate_v3
                             v1 = v1 + icf_he(p,o) * icf_vin(p,o,n)
                         end do
                     end do
-                    icfk(k) = icfk(k) - zmata(k,m) * v1
+                    icfk(k) = icfk(k) - zmat(k,m) * v1
                 end if
             end do
         end do
@@ -610,7 +610,7 @@ subroutine cst_icf_calculate_vi(ctx,i,icf_vi)
         do kj=1,CONList(j)%cv%natoms
             k = CONList(j)%cv%lindexes(kj)
             do m=1,3
-                icf_vi(m,k) = icf_vi(m,k) + zmata(i,j) * ctx%CVsDrvs(m,k,cj)
+                icf_vi(m,k) = icf_vi(m,k) + zmat(i,j) * ctx%CVsDrvs(m,k,cj)
             end do
         end do
     end do
@@ -637,11 +637,11 @@ subroutine cst_icf_calculate_vi_ll(ctx,i,icf_vi)
     ! --------------------------------------------------------------------------
 
     ! form e_i
-    vv(:) = 0.0d0
-    vv(i) = 1.0d0
+    cv(:) = 0.0d0
+    cv(i) = 1.0d0
 
     ! solve ZMATA w = e_i
-    call dpotrs('L',NumOfAllCONs,1,zmata,NumOfAllCONs,vv,NumOfAllCONs,info)
+    call dpotrs('L',NumOfAllCONs,1,zmat,NumOfAllCONs,cv,NumOfAllCONs,info)
     if( info .ne. 0 ) then
         call pmf_utils_exit(PMF_OUT,1,&
                          '[CST] LL linear equation failed in cst_icf_calculate_vi_ll!')
@@ -655,7 +655,7 @@ subroutine cst_icf_calculate_vi_ll(ctx,i,icf_vi)
         do kj=1,CONList(j)%cv%natoms
             k = CONList(j)%cv%lindexes(kj)
             do m=1,3
-                icf_vi(m,k) = icf_vi(m,k) + vv(j) * ctx%CVsDrvs(m,k,cj)
+                icf_vi(m,k) = icf_vi(m,k) + cv(j) * ctx%CVsDrvs(m,k,cj)
             end do
         end do
     end do
@@ -682,11 +682,11 @@ subroutine cst_icf_calculate_vi_ll_mw(ctx,i,icf_vi)
     ! --------------------------------------------------------------------------
 
     ! form e_i
-    vv(:) = 0.0d0
-    vv(i) = 1.0d0
+    cv(:) = 0.0d0
+    cv(i) = 1.0d0
 
     ! solve ZMATA w = e_i
-    call dpotrs('L',NumOfAllCONs,1,zmata,NumOfAllCONs,vv,NumOfAllCONs,info)
+    call dpotrs('L',NumOfAllCONs,1,zmat,NumOfAllCONs,cv,NumOfAllCONs,info)
     if( info .ne. 0 ) then
         call pmf_utils_exit(PMF_OUT,1,&
                          '[CST] LL linear equation failed in cst_icf_calculate_vi_ll!')
@@ -700,7 +700,7 @@ subroutine cst_icf_calculate_vi_ll_mw(ctx,i,icf_vi)
         do kj=1,CONList(j)%cv%natoms
             k = CONList(j)%cv%lindexes(kj)
             do m=1,3
-                icf_vi(m,k) = icf_vi(m,k) + MassInv(k) * vv(j) * ctx%CVsDrvs(m,k,cj)
+                icf_vi(m,k) = icf_vi(m,k) + MassInv(k) * cv(j) * ctx%CVsDrvs(m,k,cj)
             end do
         end do
     end do
@@ -768,7 +768,7 @@ subroutine cst_icf_calculate_zmatinv(ctx)
             do k=1,NumOfLAtoms
                 jacv = jacv + dot_product(ctx%CVsDrvs(:,k,ci),ctx%CVsDrvs(:,k,cj))
             end do
-            zmata(i,j) = jacv
+            zmat(i,j) = jacv
         end do
     end do
 
@@ -776,20 +776,20 @@ subroutine cst_icf_calculate_zmatinv(ctx)
     if ( NumOfAllCONs .gt. 1 ) then
         ! LU decomposition
         indx(:) = 0
-        call dgetrf(NumOfAllCONs,NumOfAllCONs,zmata,NumOfAllCONs,indx,info)
+        call dgetrf(NumOfAllCONs,NumOfAllCONs,zmat,NumOfAllCONs,indx,info)
         if( info .ne. 0 ) then
             call pmf_utils_exit(PMF_OUT,1,&
                              '[CST] LU decomposition failed in cst_icf_calculate_zmatinv!')
         end if
 
         ! invert
-        call dgetri(NumOfAllCONs, zmata, NumOfAllCONs, indx, invwork, linvwork, info)
+        call dgetri(NumOfAllCONs, zmat, NumOfAllCONs, indx, invwork, linvwork, info)
         if( info .ne. 0 ) then
             call pmf_utils_exit(PMF_OUT,1, &
                              '[CST] Matrix inversion failed in cst_icf_calculate_zmatinv!')
         end if
     else
-        zmata(1,1) = 1.0d0/zmata(1,1)
+        zmat(1,1) = 1.0d0/zmat(1,1)
     end if
 
 end subroutine cst_icf_calculate_zmatinv
@@ -819,13 +819,13 @@ subroutine cst_icf_calculate_zmatll(ctx)
         di => ctx%CVsDrvs(:,:,CONList(i)%cvindx)
         do j=1,i
             dj => ctx%CVsDrvs(:,:,CONList(j)%cvindx)
-            zmata(i,j) = sum( di * dj )
-            zmata(j,i) = zmata(i,j)
+            zmat(i,j) = sum( di * dj )
+            zmat(j,i) = zmat(i,j)
         end do
     end do
 
 ! calc LL
-    call dpotrf('L',NumOfAllCONs,zmata,NumOfAllCONs,info)
+    call dpotrf('L',NumOfAllCONs,zmat,NumOfAllCONs,info)
     if( info .ne. 0 ) then
         call pmf_utils_exit(PMF_OUT,1,&
                          '[CST] LL decomposition failed in cst_icf_calculate_zmatll!')
@@ -864,13 +864,13 @@ subroutine cst_icf_calculate_zmatll_mw(ctx)
                 end do
                 jacv = jacv + MassInv(k)*v1
             end do
-            zmata(i,j) = jacv
-            zmata(j,i) = jacv
+            zmat(i,j) = jacv
+            zmat(j,i) = jacv
         end do
     end do
 
 ! calc LL
-    call dpotrf('L',NumOfAllCONs,zmata,NumOfAllCONs,info)
+    call dpotrf('L',NumOfAllCONs,zmat,NumOfAllCONs,info)
     if( info .ne. 0 ) then
         call pmf_utils_exit(PMF_OUT,1,&
                          '[CST] LL decomposition failed in cst_icf_calculate_zmatll!')
