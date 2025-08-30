@@ -156,12 +156,13 @@ subroutine cst_rattlev_calc_zmat
         ci = CONList(i)%cvindx
         do j=1,i
             cj = CONList(j)%cvindx
+            z1 = 0.0d0
             do k=1,NumOfLAtoms
                 v1 = 0.0
                 do m=1,3
                     v1 = v1 + CVContextP%CVsDrvs(m,k,ci)*CVContextP%CVsDrvs(m,k,cj)
                 end do
-                z1 = z1 + MassInv(k)*v1
+                z1 = z1 - MassInv(k)*v1
             end do
             zmat(i,j)=z1
             zmat(j,i)=z1
