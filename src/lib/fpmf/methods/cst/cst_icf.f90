@@ -67,6 +67,8 @@ subroutine cst_icf_calculate_icf
             icfkhist(:,hist_len) = icfk(:)
         case(CON_ICFSOL_V6)
             call cst_icf_calculate_v6()
+        case(CON_ICFSOL_V7)
+            call cst_icf_calculate_v7()
         case default
             call pmf_utils_exit(PMF_OUT,1,'[CST] ICF solver (ftds_icfsol) is not implemented in cst_icf_calculate_icf!')
     end select
@@ -256,7 +258,7 @@ subroutine cst_icf_calculate_v2
 end subroutine cst_icf_calculate_v2
 
 !===============================================================================
-! Subroutine:  cst_icf_calculate_v2
+! Subroutine:  cst_icf_calculate_v3
 ! analytical but with numerical/analytical second derivatives
 ! optimized looping in ICFK
 ! employ Hessian symmetry
@@ -392,10 +394,10 @@ subroutine cst_icf_calculate_v4
 ! ICFP part
     call pmf_timers_start_timer(PMFLIB_CST_ICF_ICFP_TIMER)
 
-    call cst_icf_calculate_zmatll(CVContext)
+    call cst_icf_calculate_zmatll(CVContext%CVsDrvs)
 
     do k=1,NumOfCONs
-        call cst_icf_calculate_vi_ll(CVContext,k,icf_vi1)
+        call cst_icf_calculate_vi_ll(CVContext%CVsDrvs,k,icf_vi1)
         icfp(k) = - sum( icf_vi1(:,:) * Frc(:,:) )
     end do
 
@@ -422,8 +424,8 @@ subroutine cst_icf_calculate_v4
                 cl = CONList(l)%cvindx
                 call CVList(cl)%cv%calculate_cv(icf_he,CVContextP)
             end do
-            call cst_icf_calculate_zmatll(CVContextP)
-            call cst_icf_calculate_vi_ll(CVContextP,k,icf_vi1)
+            call cst_icf_calculate_zmatll(CVContextP%CVsDrvs)
+            call cst_icf_calculate_vi_ll(CVContextP%CVsDrvs,k,icf_vi1)
 
             icf_he(:,:) = Crd(:,:) - fpmf_sdiv_dh * sdiv_z(:,:,s)
 
@@ -434,8 +436,8 @@ subroutine cst_icf_calculate_v4
                 cl = CONList(l)%cvindx
                 call CVList(cl)%cv%calculate_cv(icf_he,CVContextP)
             end do
-            call cst_icf_calculate_zmatll(CVContextP)
-            call cst_icf_calculate_vi_ll(CVContextP,k,icf_vi2)
+            call cst_icf_calculate_zmatll(CVContextP%CVsDrvs)
+            call cst_icf_calculate_vi_ll(CVContextP%CVsDrvs,k,icf_vi2)
 
             v1 = v1 + sum( sdiv_z(:,:,s)*(icf_vi1(:,:) - icf_vi2(:,:)) )
 
@@ -561,6 +563,17 @@ subroutine cst_icf_calculate_v6
 
     call cst_icf_calculate_zmatll_mw(cvderhist(:,:,:,hist_len+hist_fidx_tds))
 
+!    ! test orthogonality
+!    do k=1,NumOfAllCONs
+!        call cst_icf_calculate_vi_ll_mw(cvderhist(:,:,:,hist_len+hist_fidx_tds),k,icf_vi1)
+!        do l=1,NumOfAllCONs
+!            cl = CONList(l)%cvindx
+!            v1 = sum( icf_vi1(:,:) * cvderhist(:,:,cl,hist_len+hist_fidx_tds))
+!            write(78945,*) k,l,v1
+!        end do
+!    end do
+!    stop
+
     do k=1,NumOfCONs
         call cst_icf_calculate_vi_ll_mw(cvderhist(:,:,:,hist_len+hist_fidx_tds),k,icf_vi1)
         icf_he(:,:) = ( -1.0d0 * frchist(:,:,hist_len+hist_fidx_tds-2) + 4.0d0 * frchist(:,:,hist_len+hist_fidx_tds-1) &
@@ -621,6 +634,102 @@ subroutine cst_icf_calculate_v6
     call pmf_timers_stop_timer(PMFLIB_CST_ICF_ICFK_TIMER)
 
 end subroutine cst_icf_calculate_v6
+
+!===============================================================================
+! Subroutine:  cst_icf_calculate_v7
+! numerical divergence - stochastic “trace trick” for divergence
+!===============================================================================
+
+subroutine cst_icf_calculate_v7
+
+    use pmf_utils
+    use pmf_dat
+    use cst_dat
+    use pmf_timers
+
+    implicit none
+    integer                :: k,s,l,cl
+    real(PMFDP)            :: v1
+    ! --------------------------------------------------------------------------
+
+    if( fstep - hist_len .le. 0 ) return
+
+! ICFP part
+    call pmf_timers_start_timer(PMFLIB_CST_ICF_ICFP_TIMER)
+
+    call cst_icf_calculate_zmatll(cvderhist(:,:,:,hist_len+hist_fidx_tds))
+
+!    ! test orthogonality
+!    do k=1,NumOfAllCONs
+!        call cst_icf_calculate_vi_ll_mw(cvderhist(:,:,:,hist_len+hist_fidx_tds),k,icf_vi1)
+!        do l=1,NumOfAllCONs
+!            cl = CONList(l)%cvindx
+!            v1 = sum( icf_vi1(:,:) * cvderhist(:,:,cl,hist_len+hist_fidx_tds))
+!            write(78945,*) k,l,v1
+!        end do
+!    end do
+!    stop
+
+    do k=1,NumOfCONs
+        call cst_icf_calculate_vi_ll(cvderhist(:,:,:,hist_len+hist_fidx_tds),k,icf_vi1)
+        icf_he(:,:) = ( -1.0d0 * frchist(:,:,hist_len+hist_fidx_tds-2) + 4.0d0 * frchist(:,:,hist_len+hist_fidx_tds-1) &
+                        +4.0d0 * frchist(:,:,hist_len+hist_fidx_tds+1) - 1.0d0 * frchist(:,:,hist_len+hist_fidx_tds+2) ) &
+                    / 6.0d0
+        icfphist(k,hist_len+hist_fidx_tds) = - sum( icf_vi1(:,:) * icf_he(:,:) )
+    end do
+
+    call pmf_timers_stop_timer(PMFLIB_CST_ICF_ICFP_TIMER)
+
+! ICFK part
+    call pmf_timers_start_timer(PMFLIB_CST_ICF_ICFK_TIMER)
+    do k=1,NumOfCONs
+
+        ! generate z-probes
+        call cst_icf_draw_probes_rademacher(sdiv_z)
+        if( fpmf_sdiv_qr ) then
+            call cst_icf_orthonormalize_probes(sdiv_z)
+        end if
+
+        v1 = 0.0d0
+        do s=1,fpmf_sdiv_S
+
+            icf_he(:,:) = crdhist(:,:,hist_len+hist_fidx_tds) + fpmf_sdiv_dh * sdiv_z(:,:,s)
+
+            CVContextP%CVsValues(:) = 0.0d0
+            CVContextP%CVsDrvs(:,:,:) = 0.0d0
+            do l=1,NumOfAllCONs
+                cl = CONList(l)%cvindx
+                call CVList(cl)%cv%calculate_cv(icf_he,CVContextP)
+            end do
+            call cst_icf_calculate_zmatll(CVContextP%CVsDrvs)
+            call cst_icf_calculate_vi_ll(CVContextP%CVsDrvs,k,icf_vi1)
+
+            icf_he(:,:) = crdhist(:,:,hist_len+hist_fidx_tds) - fpmf_sdiv_dh * sdiv_z(:,:,s)
+
+            CVContextP%CVsValues(:) = 0.0d0
+            CVContextP%CVsDrvs(:,:,:) = 0.0d0
+
+            do l=1,NumOfAllCONs
+                cl = CONList(l)%cvindx
+                call CVList(cl)%cv%calculate_cv(icf_he,CVContextP)
+            end do
+            call cst_icf_calculate_zmatll(CVContextP%CVsDrvs)
+            call cst_icf_calculate_vi_ll(CVContextP%CVsDrvs,k,icf_vi2)
+
+            v1 = v1 + sum( sdiv_z(:,:,s)*(icf_vi1(:,:) - icf_vi2(:,:)) )
+
+        end do
+
+        if( fpmf_sdiv_qr ) then
+            icfkhist(k,hist_len+hist_fidx_tds) =  3.0d0 * real(NumOfLAtoms,PMFDP) * v1 / (2.0d0 * fpmf_sdiv_dh * fpmf_sdiv_S)
+        else
+            icfkhist(k,hist_len+hist_fidx_tds) =  v1 / (2.0d0 * fpmf_sdiv_dh * fpmf_sdiv_S)
+        end if
+
+    end do
+    call pmf_timers_stop_timer(PMFLIB_CST_ICF_ICFK_TIMER)
+
+end subroutine cst_icf_calculate_v7
 
 !===============================================================================
 ! Subroutine:  cst_icf_draw_probes_rademacher
@@ -720,14 +829,14 @@ end subroutine cst_icf_calculate_vi
 ! optimized
 !===============================================================================
 
-subroutine cst_icf_calculate_vi_ll(ctx,i,icf_vi)
+subroutine cst_icf_calculate_vi_ll(cvsdrvs,i,icf_vi)
 
     use pmf_utils
     use pmf_dat
     use cst_dat
 
     implicit none
-    type(CVContextType) :: ctx
+    real(PMFDP)         :: cvsdrvs(:,:,:)
     integer             :: i
     real(PMFDP)         :: icf_vi(:,:)
     ! --------------------------------------------
@@ -753,7 +862,7 @@ subroutine cst_icf_calculate_vi_ll(ctx,i,icf_vi)
         do kj=1,CONList(j)%cv%natoms
             k = CONList(j)%cv%lindexes(kj)
             do m=1,3
-                icf_vi(m,k) = icf_vi(m,k) + cv(j) * ctx%CVsDrvs(m,k,cj)
+                icf_vi(m,k) = icf_vi(m,k) + cv(j) * cvsdrvs(m,k,cj)
             end do
         end do
     end do
@@ -897,28 +1006,34 @@ end subroutine cst_icf_calculate_zmatinv
 ! optimized
 !===============================================================================
 
-subroutine cst_icf_calculate_zmatll(ctx)
+subroutine cst_icf_calculate_zmatll(cvsdrvs)
 
     use pmf_utils
     use pmf_dat
     use cst_dat
 
     implicit none
-    type(CVContextType)                 :: ctx
+    real(PMFDP)     :: cvsdrvs(:,:,:)
     ! --------------------------------------------
-    integer                             :: i,j,info
-    real(PMFDP), pointer, contiguous    :: di(:,:), dj(:,:)
+    integer         :: i,ci,j,cj,info,k,m
+    real(PMFDP)     :: jacv
     ! --------------------------------------------------------------------------
 
 ! this Z matrix is not mass weighted
 
 ! get the matrix
     do i=1,NumOfAllCONs
-        di => ctx%CVsDrvs(:,:,CONList(i)%cvindx)
+        ci = CONList(i)%cvindx
         do j=1,i
-            dj => ctx%CVsDrvs(:,:,CONList(j)%cvindx)
-            zmat(i,j) = sum( di * dj )
-            zmat(j,i) = zmat(i,j)
+            cj = CONList(j)%cvindx
+            jacv = 0.0d0
+            do k=1,NumOfLAtoms
+                do m=1,3
+                    jacv = jacv + cvsdrvs(m,k,ci)*cvsdrvs(m,k,cj)
+                end do
+            end do
+            zmat(i,j) = jacv
+            zmat(j,i) = jacv
         end do
     end do
 

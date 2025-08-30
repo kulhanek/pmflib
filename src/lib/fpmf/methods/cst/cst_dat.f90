@@ -113,6 +113,7 @@ integer, parameter  :: CON_ICFSOL_V3      = 3
 integer, parameter  :: CON_ICFSOL_V4      = 4
 integer, parameter  :: CON_ICFSOL_V5      = 5
 integer, parameter  :: CON_ICFSOL_V6      = 6
+integer, parameter  :: CON_ICFSOL_V7      = 7
 
 ! numeric divergence
 real(PMFDP)     :: fpmf_div_dh      ! step factor for numerical divergence

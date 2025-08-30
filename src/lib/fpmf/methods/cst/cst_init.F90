@@ -431,6 +431,8 @@ character(80) function cst_init_get_icfsol_name(icfsol)
             cst_init_get_icfsol_name = "V5 (stochastic divergence - mass weighted)"
         case(CON_ICFSOL_V6)
             cst_init_get_icfsol_name = "V6 (stochastic divergence - mass weighted, Frc interpolated)"
+        case(CON_ICFSOL_V7)
+            cst_init_get_icfsol_name = "V7 (stochastic divergence, Frc interpolated)"
         case default
             call pmf_utils_exit(PMF_OUT, 1, &
                         '[CST] Not implemented ICF solver in cst_init_get_icfsol_name!')
