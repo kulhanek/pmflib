@@ -112,6 +112,7 @@ integer, parameter  :: CON_ICFSOL_V2      = 2
 integer, parameter  :: CON_ICFSOL_V3      = 3
 integer, parameter  :: CON_ICFSOL_V4      = 4
 integer, parameter  :: CON_ICFSOL_V5      = 5
+integer, parameter  :: CON_ICFSOL_V6      = 6
 
 ! numeric divergence
 real(PMFDP)     :: fpmf_div_dh      ! step factor for numerical divergence
@@ -260,6 +261,7 @@ logical,allocatable         :: enevalidhist(:)      ! is energy valid?
 real(PMFDP),allocatable     :: icfphist(:,:)
 real(PMFDP),allocatable     :: icfkhist(:,:)
 
+real(PMFDP),allocatable     :: crdhist(:,:,:)
 real(PMFDP),allocatable     :: cvderhist(:,:,:,:)
 real(PMFDP),allocatable     :: frchist(:,:,:)
 real(PMFDP),allocatable     :: velhist(:,:,:)

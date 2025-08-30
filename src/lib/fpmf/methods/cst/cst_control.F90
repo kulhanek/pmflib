@@ -119,7 +119,7 @@ subroutine cst_control_read_con(prm_fin)
     call pmf_ctrl_read_logical(prm_fin,'fint_der',fint_der)
 
     call pmf_ctrl_read_integer(prm_fin,'ftds_icfsol',ftds_icfsol,'I12')
-    call pmf_ctrl_check_integer_in_range('CST','ftds_icfsol',ftds_icfsol,1,5)
+    call pmf_ctrl_check_integer_in_range('CST','ftds_icfsol',ftds_icfsol,1,6)
 
     call pmf_ctrl_read_integer(prm_fin,'fpmf_sdiv_S',fpmf_sdiv_S,'I12')
     call pmf_ctrl_read_real8(prm_fin,'fpmf_sdiv_dh',fpmf_sdiv_dh,'E12.4')

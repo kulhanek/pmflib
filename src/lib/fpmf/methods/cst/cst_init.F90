@@ -428,7 +428,9 @@ character(80) function cst_init_get_icfsol_name(icfsol)
         case(CON_ICFSOL_V4)
             cst_init_get_icfsol_name = "V4 (stochastic divergence)"
         case(CON_ICFSOL_V5)
-            cst_init_get_icfsol_name = "V4 (stochastic divergence - mass weighted)"
+            cst_init_get_icfsol_name = "V5 (stochastic divergence - mass weighted)"
+        case(CON_ICFSOL_V6)
+            cst_init_get_icfsol_name = "V6 (stochastic divergence - mass weighted, Frc interpolated)"
         case default
             call pmf_utils_exit(PMF_OUT, 1, &
                         '[CST] Not implemented ICF solver in cst_init_get_icfsol_name!')
@@ -843,6 +845,7 @@ subroutine cst_init_core
               enevalidhist(hist_len),               &
               icfphist(NumOfAllCONs,hist_len),      &
               icfkhist(NumOfAllCONs,hist_len),      &
+              crdhist(3,NumOfLAtoms,hist_len),               &
               cvderhist(3,NumOfLAtoms,NumOfCVs,hist_len),    &
               frchist(3,NumOfLAtoms,hist_len),               &
               velhist(3,NumOfLAtoms,hist_len),               &

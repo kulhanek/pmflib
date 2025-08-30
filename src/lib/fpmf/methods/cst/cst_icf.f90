@@ -47,14 +47,26 @@ subroutine cst_icf_calculate_icf
     select case(ftds_icfsol)
         case(CON_ICFSOL_V1)
             call cst_icf_calculate_v1()
+            icfphist(:,hist_len) = icfp(:)
+            icfkhist(:,hist_len) = icfk(:)
         case(CON_ICFSOL_V2)
             call cst_icf_calculate_v2()
+            icfphist(:,hist_len) = icfp(:)
+            icfkhist(:,hist_len) = icfk(:)
         case(CON_ICFSOL_V3)
             call cst_icf_calculate_v3()
+            icfphist(:,hist_len) = icfp(:)
+            icfkhist(:,hist_len) = icfk(:)
         case(CON_ICFSOL_V4)
             call cst_icf_calculate_v4()
+            icfphist(:,hist_len) = icfp(:)
+            icfkhist(:,hist_len) = icfk(:)
         case(CON_ICFSOL_V5)
             call cst_icf_calculate_v5()
+            icfphist(:,hist_len) = icfp(:)
+            icfkhist(:,hist_len) = icfk(:)
+        case(CON_ICFSOL_V6)
+            call cst_icf_calculate_v6()
         case default
             call pmf_utils_exit(PMF_OUT,1,'[CST] ICF solver (ftds_icfsol) is not implemented in cst_icf_calculate_icf!')
     end select
@@ -464,10 +476,10 @@ subroutine cst_icf_calculate_v5
 ! ICFP part
     call pmf_timers_start_timer(PMFLIB_CST_ICF_ICFP_TIMER)
 
-    call cst_icf_calculate_zmatll_mw(CVContext)
+    call cst_icf_calculate_zmatll_mw(CVContext%CVsDrvs)
 
     do k=1,NumOfCONs
-        call cst_icf_calculate_vi_ll_mw(CVContext,k,icf_vi1)
+        call cst_icf_calculate_vi_ll_mw(CVContext%CVsDrvs,k,icf_vi1)
         icfp(k) = - sum( icf_vi1(:,:) * Frc(:,:) )
     end do
 
@@ -494,8 +506,8 @@ subroutine cst_icf_calculate_v5
                 cl = CONList(l)%cvindx
                 call CVList(cl)%cv%calculate_cv(icf_he,CVContextP)
             end do
-            call cst_icf_calculate_zmatll_mw(CVContextP)
-            call cst_icf_calculate_vi_ll_mw(CVContextP,k,icf_vi1)
+            call cst_icf_calculate_zmatll_mw(CVContextP%CVsDrvs)
+            call cst_icf_calculate_vi_ll_mw(CVContextP%CVsDrvs,k,icf_vi1)
 
             icf_he(:,:) = Crd(:,:) - fpmf_sdiv_dh * sdiv_z(:,:,s)
 
@@ -506,8 +518,8 @@ subroutine cst_icf_calculate_v5
                 cl = CONList(l)%cvindx
                 call CVList(cl)%cv%calculate_cv(icf_he,CVContextP)
             end do
-            call cst_icf_calculate_zmatll_mw(CVContextP)
-            call cst_icf_calculate_vi_ll_mw(CVContextP,k,icf_vi2)
+            call cst_icf_calculate_zmatll_mw(CVContextP%CVsDrvs)
+            call cst_icf_calculate_vi_ll_mw(CVContextP%CVsDrvs,k,icf_vi2)
 
             v1 = v1 + sum( sdiv_z(:,:,s)*(icf_vi1(:,:) - icf_vi2(:,:)) )
 
@@ -523,6 +535,92 @@ subroutine cst_icf_calculate_v5
     call pmf_timers_stop_timer(PMFLIB_CST_ICF_ICFK_TIMER)
 
 end subroutine cst_icf_calculate_v5
+
+!===============================================================================
+! Subroutine:  cst_icf_calculate_v6
+! numerical divergence - stochastic “trace trick” for divergence
+! mass weighted
+!===============================================================================
+
+subroutine cst_icf_calculate_v6
+
+    use pmf_utils
+    use pmf_dat
+    use cst_dat
+    use pmf_timers
+
+    implicit none
+    integer                :: k,s,l,cl
+    real(PMFDP)            :: v1
+    ! --------------------------------------------------------------------------
+
+    if( fstep - hist_len .le. 0 ) return
+
+! ICFP part
+    call pmf_timers_start_timer(PMFLIB_CST_ICF_ICFP_TIMER)
+
+    call cst_icf_calculate_zmatll_mw(cvderhist(:,:,:,hist_len+hist_fidx_tds))
+
+    do k=1,NumOfCONs
+        call cst_icf_calculate_vi_ll_mw(cvderhist(:,:,:,hist_len+hist_fidx_tds),k,icf_vi1)
+        icf_he(:,:) = ( -1.0d0 * frchist(:,:,hist_len+hist_fidx_tds-2) + 4.0d0 * frchist(:,:,hist_len+hist_fidx_tds-1) &
+                        +4.0d0 * frchist(:,:,hist_len+hist_fidx_tds+1) - 1.0d0 * frchist(:,:,hist_len+hist_fidx_tds+2) ) &
+                    / 6.0d0
+        icfphist(k,hist_len+hist_fidx_tds) = - sum( icf_vi1(:,:) * icf_he(:,:) )
+    end do
+
+    call pmf_timers_stop_timer(PMFLIB_CST_ICF_ICFP_TIMER)
+
+! ICFK part
+    call pmf_timers_start_timer(PMFLIB_CST_ICF_ICFK_TIMER)
+    do k=1,NumOfCONs
+
+        ! generate z-probes
+        call cst_icf_draw_probes_rademacher(sdiv_z)
+        if( fpmf_sdiv_qr ) then
+            call cst_icf_orthonormalize_probes(sdiv_z)
+        end if
+
+        v1 = 0.0d0
+        do s=1,fpmf_sdiv_S
+
+            icf_he(:,:) = crdhist(:,:,hist_len+hist_fidx_tds) + fpmf_sdiv_dh * sdiv_z(:,:,s)
+
+            CVContextP%CVsValues(:) = 0.0d0
+            CVContextP%CVsDrvs(:,:,:) = 0.0d0
+            do l=1,NumOfAllCONs
+                cl = CONList(l)%cvindx
+                call CVList(cl)%cv%calculate_cv(icf_he,CVContextP)
+            end do
+            call cst_icf_calculate_zmatll_mw(CVContextP%CVsDrvs)
+            call cst_icf_calculate_vi_ll_mw(CVContextP%CVsDrvs,k,icf_vi1)
+
+            icf_he(:,:) = crdhist(:,:,hist_len+hist_fidx_tds) - fpmf_sdiv_dh * sdiv_z(:,:,s)
+
+            CVContextP%CVsValues(:) = 0.0d0
+            CVContextP%CVsDrvs(:,:,:) = 0.0d0
+
+            do l=1,NumOfAllCONs
+                cl = CONList(l)%cvindx
+                call CVList(cl)%cv%calculate_cv(icf_he,CVContextP)
+            end do
+            call cst_icf_calculate_zmatll_mw(CVContextP%CVsDrvs)
+            call cst_icf_calculate_vi_ll_mw(CVContextP%CVsDrvs,k,icf_vi2)
+
+            v1 = v1 + sum( sdiv_z(:,:,s)*(icf_vi1(:,:) - icf_vi2(:,:)) )
+
+        end do
+
+        if( fpmf_sdiv_qr ) then
+            icfkhist(k,hist_len+hist_fidx_tds) =  3.0d0 * real(NumOfLAtoms,PMFDP) * v1 / (2.0d0 * fpmf_sdiv_dh * fpmf_sdiv_S)
+        else
+            icfkhist(k,hist_len+hist_fidx_tds) =  v1 / (2.0d0 * fpmf_sdiv_dh * fpmf_sdiv_S)
+        end if
+
+    end do
+    call pmf_timers_stop_timer(PMFLIB_CST_ICF_ICFK_TIMER)
+
+end subroutine cst_icf_calculate_v6
 
 !===============================================================================
 ! Subroutine:  cst_icf_draw_probes_rademacher
@@ -667,14 +765,14 @@ end subroutine cst_icf_calculate_vi_ll
 ! optimized
 !===============================================================================
 
-subroutine cst_icf_calculate_vi_ll_mw(ctx,i,icf_vi)
+subroutine cst_icf_calculate_vi_ll_mw(cvsdrvs,i,icf_vi)
 
     use pmf_utils
     use pmf_dat
     use cst_dat
 
     implicit none
-    type(CVContextType) :: ctx
+    real(PMFDP)         :: cvsdrvs(:,:,:)
     integer             :: i
     real(PMFDP)         :: icf_vi(:,:)
     ! --------------------------------------------
@@ -700,7 +798,7 @@ subroutine cst_icf_calculate_vi_ll_mw(ctx,i,icf_vi)
         do kj=1,CONList(j)%cv%natoms
             k = CONList(j)%cv%lindexes(kj)
             do m=1,3
-                icf_vi(m,k) = icf_vi(m,k) + MassInv(k) * cv(j) * ctx%CVsDrvs(m,k,cj)
+                icf_vi(m,k) = icf_vi(m,k) + MassInv(k) * cv(j) * cvsdrvs(m,k,cj)
             end do
         end do
     end do
@@ -838,14 +936,14 @@ end subroutine cst_icf_calculate_zmatll
 ! optimized
 !===============================================================================
 
-subroutine cst_icf_calculate_zmatll_mw(ctx)
+subroutine cst_icf_calculate_zmatll_mw(cvsdrvs)
 
     use pmf_utils
     use pmf_dat
     use cst_dat
 
     implicit none
-    type(CVContextType)     :: ctx
+    real(PMFDP)             :: cvsdrvs(:,:,:)
     ! --------------------------------------------
     integer                 :: i,ci,j,cj,info,k,m
     real(PMFDP)             :: jacv,v1
@@ -860,7 +958,7 @@ subroutine cst_icf_calculate_zmatll_mw(ctx)
             do k=1,NumOfLAtoms
                 v1 = 0.0
                 do m=1,3
-                    v1 = v1 + ctx%CVsDrvs(m,k,ci)*ctx%CVsDrvs(m,k,cj)
+                    v1 = v1 + cvsdrvs(m,k,ci)*cvsdrvs(m,k,cj)
                 end do
                 jacv = jacv + MassInv(k)*v1
             end do
@@ -873,7 +971,7 @@ subroutine cst_icf_calculate_zmatll_mw(ctx)
     call dpotrf('L',NumOfAllCONs,zmat,NumOfAllCONs,info)
     if( info .ne. 0 ) then
         call pmf_utils_exit(PMF_OUT,1,&
-                         '[CST] LL decomposition failed in cst_icf_calculate_zmatll!')
+                         '[CST] LL decomposition failed in cst_icf_calculate_zmatll_mw!')
     end if
 
 end subroutine cst_icf_calculate_zmatll_mw

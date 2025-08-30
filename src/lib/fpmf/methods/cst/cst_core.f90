@@ -69,14 +69,13 @@ subroutine cst_core_main_lf
     epothist(hist_len)          = PotEne - fepotaverage
     ersthist(hist_len)          = PMFEne
 
+    crdhist(:,:,hist_len)       = Crd(:,:)
     cvderhist(:,:,:,hist_len)   = CVContext%CVsDrvs(:,:,:)
     frchist(:,:,hist_len)       = Frc(:,:)
     velhist(:,:,hist_len)       = Vel(:,:)
 
     if( fintcalc .and. fint_der ) then
         call cst_icf_calculate_icf
-        icfphist(:,hist_len) = icfp(:)
-        icfkhist(:,hist_len) = icfk(:)
     end if
 
     if( ftdscalc ) then
@@ -301,6 +300,7 @@ subroutine cst_core_shift_histbuffs
         icfphist(:,i)       = icfphist(:,i+1)
         icfkhist(:,i)       = icfkhist(:,i+1)
 
+        crdhist(:,:,i)      = crdhist(:,:,i+1)
         cvderhist(:,:,:,i)  = cvderhist(:,:,:,i+1)
         frchist(:,:,i)      = frchist(:,:,i+1)
         velhist(:,:,i)      = velhist(:,:,i+1)
