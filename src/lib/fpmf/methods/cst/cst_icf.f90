@@ -78,6 +78,49 @@ subroutine cst_icf_calculate_icf
 end subroutine cst_icf_calculate_icf
 
 !===============================================================================
+! Subroutine:  cst_icf_calculate_shadow_H
+!===============================================================================
+
+subroutine cst_icf_calculate_shadow_H
+
+    use pmf_utils
+    use pmf_dat
+    use cst_dat
+    use pmf_timers
+
+    implicit none
+    integer                :: i,k,m,ci
+    real(PMFDP)            :: f1,v1,h2
+    ! --------------------------------------------------------------------------
+
+    cfrchist(:,:,hist_len) = frchist(:,:,hist_len)
+    do i=1,NumOfAllCONs
+        ci = CONList(i)%cvindx
+        cfrchist(:,:,hist_len) = cfrchist(:,:,hist_len) + lambdaMhist(i,hist_len)*cvderhist(:,:,ci,hist_len)
+    end do
+
+    v1 = 0.0d0
+    do k=1,NumOfLAtoms
+        do m=1,3
+            v1 = v1 - 0.5d0*(velhist(m,k,hist_len+hist_fidx_tds+1)+velhist(m,k,hist_len+hist_fidx_tds)) &
+                    * (cfrchist(m,k,hist_len+hist_fidx_tds+1)+cfrchist(m,k,hist_len+hist_fidx_tds-1))
+        end do
+    end do
+
+    f1 = 0.0d0
+    do k=1,NumOfLAtoms
+        do m=1,3
+            f1 = f1 - MassInv(k) * (cfrchist(m,k,hist_len+hist_fidx_tds)*cfrchist(m,k,hist_len+hist_fidx_tds))
+        end do
+    end do
+
+    h2 = (1.0d0/24.0d0) * v1 * ifdtx - (1.0d0/24.0d0) * f1
+
+    shahist(hist_len+hist_fidx_tds) = h2 / ifdtx ** 2
+
+end subroutine cst_icf_calculate_shadow_H
+
+!===============================================================================
 ! Subroutine:  cst_icf_calculate_v1
 ! numerical divergence
 !===============================================================================

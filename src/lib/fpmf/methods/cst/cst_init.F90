@@ -845,11 +845,13 @@ subroutine cst_init_core
               ersthist(hist_len),                   &
               ekinhist(hist_len),                   &
               enevalidhist(hist_len),               &
+              shahist(hist_len),                    &
               icfphist(NumOfAllCONs,hist_len),      &
               icfkhist(NumOfAllCONs,hist_len),      &
               crdhist(3,NumOfLAtoms,hist_len),               &
               cvderhist(3,NumOfLAtoms,NumOfCVs,hist_len),    &
               frchist(3,NumOfLAtoms,hist_len),               &
+              cfrchist(3,NumOfLAtoms,hist_len),               &
               velhist(3,NumOfLAtoms,hist_len),               &
               stat= alloc_failed )
 
@@ -867,11 +869,14 @@ subroutine cst_init_core
     ekinhist(:)         = 0.0d0
     enevalidhist(:)     = .false.
 
+    shahist(:)          = 0.0d0
+
     icfphist(:,:)       = 0.0d0
     icfkhist(:,:)       = 0.0d0
 
     cvderhist(:,:,:,:)  = 0.0d0
     frchist(:,:,:)      = 0.0d0
+    cfrchist(:,:,:)     = 0.0d0
     velhist(:,:,:)      = 0.0d0
 
 ! enthalpy/entropy

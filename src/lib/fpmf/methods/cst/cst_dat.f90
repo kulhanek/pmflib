@@ -259,12 +259,15 @@ real(PMFDP),allocatable     :: ersthist(:)
 real(PMFDP),allocatable     :: ekinhist(:)
 logical,allocatable         :: enevalidhist(:)      ! is energy valid?
 
+real(PMFDP),allocatable     :: shahist(:)           ! shadow hamiltonian
+
 real(PMFDP),allocatable     :: icfphist(:,:)
 real(PMFDP),allocatable     :: icfkhist(:,:)
 
 real(PMFDP),allocatable     :: crdhist(:,:,:)
 real(PMFDP),allocatable     :: cvderhist(:,:,:,:)
 real(PMFDP),allocatable     :: frchist(:,:,:)
+real(PMFDP),allocatable     :: cfrchist(:,:,:)
 real(PMFDP),allocatable     :: velhist(:,:,:)
 
 ! ------------------------------------------------------------------------------
