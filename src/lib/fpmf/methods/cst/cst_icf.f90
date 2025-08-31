@@ -96,7 +96,8 @@ subroutine cst_icf_calculate_shadow_H
     cfrchist(:,:,hist_len) = frchist(:,:,hist_len)
     do i=1,NumOfAllCONs
         ci = CONList(i)%cvindx
-        cfrchist(:,:,hist_len) = cfrchist(:,:,hist_len) + lambdaMhist(i,hist_len)*cvderhist(:,:,ci,hist_len)
+        ! FIXME
+        cfrchist(:,:,hist_len) = cfrchist(:,:,hist_len) - lambdaMhist(i,hist_len)*cvderhist(:,:,ci,hist_len)
     end do
 
     v1 = 0.0d0
@@ -116,7 +117,7 @@ subroutine cst_icf_calculate_shadow_H
 
     h2 =  (1.0d0/24.0d0) * v1 * ifdtx  - (1.0d0/24.0d0) * f1
 
-    shahist(hist_len+hist_fidx_tds) = h2 / ifdtx ** 2
+    shahist(hist_len+hist_fidx_tds) = h2 * fdtx ** 2
 
   !  write(789,*) shahist(hist_len+hist_fidx_tds)
 
