@@ -103,20 +103,22 @@ subroutine cst_icf_calculate_shadow_H
     do k=1,NumOfLAtoms
         do m=1,3
             v1 = v1 - 0.5d0*(velhist(m,k,hist_len+hist_fidx_tds+1)+velhist(m,k,hist_len+hist_fidx_tds)) &
-                    * (cfrchist(m,k,hist_len+hist_fidx_tds+1)+cfrchist(m,k,hist_len+hist_fidx_tds-1))
+                    * (cfrchist(m,k,hist_len+hist_fidx_tds+1)-cfrchist(m,k,hist_len+hist_fidx_tds-1))
         end do
     end do
 
     f1 = 0.0d0
     do k=1,NumOfLAtoms
         do m=1,3
-            f1 = f1 - MassInv(k) * (cfrchist(m,k,hist_len+hist_fidx_tds)*cfrchist(m,k,hist_len+hist_fidx_tds))
+            f1 = f1 + MassInv(k) * (cfrchist(m,k,hist_len+hist_fidx_tds)*cfrchist(m,k,hist_len+hist_fidx_tds))
         end do
     end do
 
-    h2 = (1.0d0/24.0d0) * v1 * ifdtx - (1.0d0/24.0d0) * f1
+    h2 =  (1.0d0/24.0d0) * v1 * ifdtx  - (1.0d0/24.0d0) * f1
 
     shahist(hist_len+hist_fidx_tds) = h2 / ifdtx ** 2
+
+  !  write(789,*) shahist(hist_len+hist_fidx_tds)
 
 end subroutine cst_icf_calculate_shadow_H
 
