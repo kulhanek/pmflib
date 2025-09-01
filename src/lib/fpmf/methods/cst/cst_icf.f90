@@ -90,7 +90,7 @@ subroutine cst_icf_calculate_shadow_H
 
     implicit none
     integer                :: i,k,m,ci
-    real(PMFDP)            :: f1,v1,h2
+    real(PMFDP)            :: e1,e2,v,df
     ! --------------------------------------------------------------------------
 
     cfrchist(:,:,hist_len) = frchist(:,:,hist_len)
@@ -100,26 +100,24 @@ subroutine cst_icf_calculate_shadow_H
         cfrchist(:,:,hist_len) = cfrchist(:,:,hist_len) + lambdaMhist(i,hist_len)*cvderhist(:,:,ci,hist_len)
     end do
 
-    v1 = 0.0d0
+    e1 = 0.0d0
+    e2 = 0.0d0
     do k=1,NumOfLAtoms
         do m=1,3
-            v1 = v1 - 0.5d0*(velhist(m,k,hist_len+hist_fidx_tds+1)+velhist(m,k,hist_len+hist_fidx_tds)) &
-                    * (cfrchist(m,k,hist_len+hist_fidx_tds+1)-cfrchist(m,k,hist_len+hist_fidx_tds-1))
+            v  = - 1.0d0 * velhist(m,k,hist_len+hist_fidx_tds-1) + 9.0d0 * velhist(m,k,hist_len+hist_fidx_tds+0) &
+                 + 9.0d0 * velhist(m,k,hist_len+hist_fidx_tds+1) - 1.0d0 * velhist(m,k,hist_len+hist_fidx_tds+2)
+            v  = v / 16.0d0
+            df = + 1.0d0 * cfrchist(m,k,hist_len+hist_fidx_tds-2) - 8.0d0 * cfrchist(m,k,hist_len+hist_fidx_tds-1) &
+                 + 9.0d0 * cfrchist(m,k,hist_len+hist_fidx_tds+1) - 1.0d0 * cfrchist(m,k,hist_len+hist_fidx_tds+2)
+            df = df / 12.0d0 * ifdtx
+            e1 = e1 + 2.0d0 * v * df - MassInv(k) * (cfrchist(m,k,hist_len+hist_fidx_tds)*cfrchist(m,k,hist_len+hist_fidx_tds))
+            e2 = e2 + df**2 * MassInv(k)
         end do
     end do
 
-    f1 = 0.0d0
-    do k=1,NumOfLAtoms
-        do m=1,3
-            f1 = f1 + MassInv(k) * (cfrchist(m,k,hist_len+hist_fidx_tds)*cfrchist(m,k,hist_len+hist_fidx_tds))
-        end do
-    end do
+    shahist(hist_len+hist_fidx_tds) = e1 * fdtx ** 2 / 24.0d0 + e2 * fdtx**4 / 720.0d0
 
-    h2 =  (1.0d0/24.0d0) * v1 * ifdtx  - (1.0d0/24.0d0) * f1
-
-    shahist(hist_len+hist_fidx_tds) = h2 * fdtx ** 2
-
-  !  write(789,*) shahist(hist_len+hist_fidx_tds)
+!    write(789,*) e1 * fdtx ** 2 / 24.0d0, e2 * fdtx**4 / 720.0d0
 
 end subroutine cst_icf_calculate_shadow_H
 
