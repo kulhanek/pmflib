@@ -140,6 +140,7 @@ subroutine cst_core_rattlev_lf(cid)
         case(IA_LF_MIDDLE)
             if( cid .eq. 2 ) then
                 lambdaMhist(:,hist_len) = lambda(:)
+                call cst_icf_calculate_shadow_H
                 call cst_core_analyze
                 call cst_output_write
                 call cst_restart_update
