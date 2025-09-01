@@ -111,6 +111,7 @@ subroutine cst_core_rattlev_lf(cid)
     use cst_output
     use cst_restart
     use cst_trajectory
+    use cst_icf
 
     implicit none
     integer :: cid      ! call id from MD engine
