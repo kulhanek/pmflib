@@ -916,7 +916,7 @@ subroutine cst_accu_add_dhTds
     lfw = fwhist(hist_len+hist_fidx_tds)
 
     ! FIXME
-    lfw = lfw * exp(-shahist(hist_len+hist_fidx_tds)/(PMF_Rgas*ftemp))
+    lfw = lfw * exp(+shahist(hist_len+hist_fidx_tds)/(PMF_Rgas*ftemp))
 
     fwsum   = fwsum + lfw
     invw    = lfw / fwsum
@@ -929,7 +929,8 @@ subroutine cst_accu_add_dhTds
     lerst        = ersthist(hist_len+hist_fidx_tds)
     lekin        = cst_accu_get_ekin(hist_fidx_tds)
     letot        = lepot + lerst + lekin
-    leint        = lepot + lerst
+    ! FIXME
+    leint        = lepot + lerst + shahist(hist_len+hist_fidx_tds)
 
    ! write(12478,*) fstep, lepot, lekin
 

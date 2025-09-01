@@ -97,7 +97,7 @@ subroutine cst_icf_calculate_shadow_H
     do i=1,NumOfAllCONs
         ci = CONList(i)%cvindx
         ! FIXME
-        cfrchist(:,:,hist_len) = cfrchist(:,:,hist_len) - lambdaMhist(i,hist_len)*cvderhist(:,:,ci,hist_len)
+        cfrchist(:,:,hist_len) = cfrchist(:,:,hist_len) + lambdaMhist(i,hist_len)*cvderhist(:,:,ci,hist_len)
     end do
 
     v1 = 0.0d0
