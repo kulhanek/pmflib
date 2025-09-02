@@ -85,7 +85,6 @@ subroutine cst_core_main_lf
     select case(fintalg)
         case(IA_LEAP_FROG)
             lambdaMhist(:,hist_len)      = lambda(:)
-            call cst_icf_calculate_shadow_H
             call cst_core_analyze
             call cst_output_write
             call cst_restart_update
@@ -141,7 +140,6 @@ subroutine cst_core_rattlev_lf(cid)
         case(IA_LF_MIDDLE)
             if( cid .eq. 2 ) then
                 lambdaMhist(:,hist_len) = lambda(:)
-                call cst_icf_calculate_shadow_H
                 call cst_core_analyze
                 call cst_output_write
                 call cst_restart_update
@@ -300,15 +298,12 @@ subroutine cst_core_shift_histbuffs
         ekinhist(i)         = ekinhist(i+1)
         enevalidhist(i)     = enevalidhist(i+1)
 
-        shahist(i)          = shahist(i+1)
-
         icfphist(:,i)       = icfphist(:,i+1)
         icfkhist(:,i)       = icfkhist(:,i+1)
 
         crdhist(:,:,i)      = crdhist(:,:,i+1)
         cvderhist(:,:,:,i)  = cvderhist(:,:,:,i+1)
         frchist(:,:,i)      = frchist(:,:,i+1)
-        cfrchist(:,:,i)     = cfrchist(:,:,i+1)
         velhist(:,:,i)      = velhist(:,:,i+1)
     end do
 

@@ -915,9 +915,6 @@ subroutine cst_accu_add_dhTds
 
     lfw = fwhist(hist_len+hist_fidx_tds)
 
-    ! FIXME
-    lfw = lfw * exp(+shahist(hist_len+hist_fidx_tds)/(PMF_Rgas*ftemp))
-
     fwsum   = fwsum + lfw
     invw    = lfw / fwsum
     fwsum2  = fwsum2 + lfw*lfw
