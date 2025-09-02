@@ -89,8 +89,8 @@ subroutine cst_icf_calculate_shadow_H
     use pmf_timers
 
     implicit none
-    integer                :: i,k,m,ci
-    real(PMFDP)            :: e1,e2,v,df
+    integer                 :: i,k,m,ci
+    real(PMFDP)             :: e1a,e1b,e2,v,df
     ! --------------------------------------------------------------------------
 
     cfrchist(:,:,hist_len) = frchist(:,:,hist_len)
@@ -100,26 +100,145 @@ subroutine cst_icf_calculate_shadow_H
         cfrchist(:,:,hist_len) = cfrchist(:,:,hist_len) + lambdaMhist(i,hist_len)*cvderhist(:,:,ci,hist_len)
     end do
 
-    e1 = 0.0d0
+    e1a = 0.0d0
+    e1b = 0.0d0
     e2 = 0.0d0
     do k=1,NumOfLAtoms
         do m=1,3
-            v  = - 1.0d0 * velhist(m,k,hist_len+hist_fidx_tds-1) + 9.0d0 * velhist(m,k,hist_len+hist_fidx_tds+0) &
-                 + 9.0d0 * velhist(m,k,hist_len+hist_fidx_tds+1) - 1.0d0 * velhist(m,k,hist_len+hist_fidx_tds+2)
+            v  = - 1.0d0 * velhist(m,k,hist_len+hist_fidx_tds-1)  + 9.0d0 * velhist(m,k,hist_len+hist_fidx_tds-0) &
+                 + 9.0d0 * velhist(m,k,hist_len+hist_fidx_tds+1)  - 1.0d0 * velhist(m,k,hist_len+hist_fidx_tds+2)
             v  = v / 16.0d0
             df = + 1.0d0 * cfrchist(m,k,hist_len+hist_fidx_tds-2) - 8.0d0 * cfrchist(m,k,hist_len+hist_fidx_tds-1) &
-                 + 9.0d0 * cfrchist(m,k,hist_len+hist_fidx_tds+1) - 1.0d0 * cfrchist(m,k,hist_len+hist_fidx_tds+2)
-            df = df / 12.0d0 * ifdtx
-            e1 = e1 + 2.0d0 * v * df - MassInv(k) * (cfrchist(m,k,hist_len+hist_fidx_tds)*cfrchist(m,k,hist_len+hist_fidx_tds))
+                 + 8.0d0 * cfrchist(m,k,hist_len+hist_fidx_tds+1) - 1.0d0 * cfrchist(m,k,hist_len+hist_fidx_tds+2)
+            df = - df / 12.0d0 * ifdtx
+            e1a = e1a + 2.0d0 * v * df
+            e1b = e1b - MassInv(k) * (cfrchist(m,k,hist_len+hist_fidx_tds)*cfrchist(m,k,hist_len+hist_fidx_tds))
             e2 = e2 + df**2 * MassInv(k)
         end do
     end do
 
-    shahist(hist_len+hist_fidx_tds) = e1 * fdtx ** 2 / 24.0d0 + e2 * fdtx**4 / 720.0d0
+    shahist(hist_len+hist_fidx_tds) = (e1a+e1b) * fdtx ** 2 / 24.0d0 - e2 * fdtx**4 / 720.0d0
 
-  ! write(789,*) e1 * fdtx ** 2 / 24.0d0, e2 * fdtx**4 / 720.0d0
+   ! write(789,*) e1a * fdtx ** 2 / 24.0d0, e1b * fdtx ** 2 / 24.0d0, - e2 * fdtx**4 / 720.0d0
 
 end subroutine cst_icf_calculate_shadow_H
+
+!!===============================================================================
+!! Subroutine:  cst_icf_calculate_shadow_H
+!!===============================================================================
+!
+!subroutine cst_icf_calculate_shadow_H
+!
+!    use pmf_utils
+!    use pmf_dat
+!    use cst_dat
+!    use pmf_timers
+!
+!    implicit none
+!    integer                 :: i,j,k,m,ci
+!    real(PMFDP)             :: e1a,e1b,e2,v,df
+!
+!    real(PMFDP)             :: Vcols(3,NumOfLAtoms,5)
+!    real(PMFDP)             :: gdot(3,NumOfLAtoms,5)
+!    real(PMFDP)             :: Hw_hat(3,NumOfLAtoms)
+!    real(PMFDP)             :: gm(3,3)
+!    real(PMFDP)             :: rhs(3)
+!    real(PMFDP)             :: lam_v
+!    integer                 :: m_v,info
+!    ! --------------------------------------------------------------------------
+!
+!    cfrchist(:,:,hist_len) = frchist(:,:,hist_len)
+!    do i=1,NumOfAllCONs
+!        ci = CONList(i)%cvindx
+!        ! FIXME
+!        cfrchist(:,:,hist_len) = cfrchist(:,:,hist_len) + lambdaMhist(i,hist_len)*cvderhist(:,:,ci,hist_len)
+!    end do
+!
+!    e1a = 0.0d0
+!    e1b = 0.0d0
+!    e2 = 0.0d0
+!    do k=1,NumOfLAtoms
+!        do m=1,3
+!            v  = - 1.0d0 * velhist(m,k,hist_len+hist_fidx_tds-1)  + 9.0d0 * velhist(m,k,hist_len+hist_fidx_tds-0) &
+!                 + 9.0d0 * velhist(m,k,hist_len+hist_fidx_tds+1)  - 1.0d0 * velhist(m,k,hist_len+hist_fidx_tds+2)
+!            v  = v / 16.0d0
+!            df = + 1.0d0 * cfrchist(m,k,hist_len+hist_fidx_tds-2) - 8.0d0 * cfrchist(m,k,hist_len+hist_fidx_tds-1) &
+!                 + 8.0d0 * cfrchist(m,k,hist_len+hist_fidx_tds+1) - 1.0d0 * cfrchist(m,k,hist_len+hist_fidx_tds+2)
+!            df = - df / 12.0d0 * ifdtx
+!            e1a = e1a + 2.0d0 * v * df
+!            e1b = e1b - MassInv(k) * (cfrchist(m,k,hist_len+hist_fidx_tds)*cfrchist(m,k,hist_len+hist_fidx_tds))
+!            e2 = e2 + df**2 * MassInv(k)
+!        end do
+!    end do
+!
+!    shahist(hist_len+hist_fidx_tds) = (e1a+e1b) * fdtx ** 2 / 24.0d0 + e2 * fdtx**4 / 720.0d0
+!
+!    ! ============================
+!    ! (B) Estimate Hw via combination of accessible directions:
+!    ! Find α minimizing || V α - w || with V = [v^{t-1}, v^{t}, v^{t+1}]
+!    ! Then  H w ≈ Σ α_i ġ^{k_i}
+!    ! ============================
+!
+!    gdot(:,:,1) = + 1.0d0 * cfrchist(:,:,hist_len+hist_fidx_tds-3) - 8.0d0 * cfrchist(:,:,hist_len+hist_fidx_tds-2) &
+!                  + 8.0d0 * cfrchist(:,:,hist_len+hist_fidx_tds+0) - 1.0d0 * cfrchist(:,:,hist_len+hist_fidx_tds+1)  ! k=t-1
+!    gdot(:,:,2) = + 1.0d0 * cfrchist(:,:,hist_len+hist_fidx_tds-2) - 8.0d0 * cfrchist(:,:,hist_len+hist_fidx_tds-1) &
+!                  + 8.0d0 * cfrchist(:,:,hist_len+hist_fidx_tds+1) - 1.0d0 * cfrchist(:,:,hist_len+hist_fidx_tds+2) ! k=t
+!    gdot(:,:,3) = + 1.0d0 * cfrchist(:,:,hist_len+hist_fidx_tds-1) - 8.0d0 * cfrchist(:,:,hist_len+hist_fidx_tds-0) &
+!                  + 8.0d0 * cfrchist(:,:,hist_len+hist_fidx_tds+2) - 1.0d0 * cfrchist(:,:,hist_len+hist_fidx_tds+3) ! k=t+1
+!
+!    gdot(:,:,:) = - gdot(:,:,:) / 12.0d0 * ifdtx
+!
+!    m_v = 3
+!
+!    Vcols(:,:,1) = - 1.0d0 * velhist(:,:,hist_len+hist_fidx_tds-2) + 9.0d0 * velhist(:,:,hist_len+hist_fidx_tds-1) &
+!                   + 9.0d0 * velhist(:,:,hist_len+hist_fidx_tds+0) - 1.0d0 * velhist(:,:,hist_len+hist_fidx_tds+1)  ! v^{t-1}
+!    Vcols(:,:,2) = - 1.0d0 * velhist(:,:,hist_len+hist_fidx_tds-1) + 9.0d0 * velhist(:,:,hist_len+hist_fidx_tds-0) &
+!                   + 9.0d0 * velhist(:,:,hist_len+hist_fidx_tds+1) - 1.0d0 * velhist(:,:,hist_len+hist_fidx_tds+2)  ! v^{t}
+!    Vcols(:,:,3) = - 1.0d0 * velhist(:,:,hist_len+hist_fidx_tds-0) + 9.0d0 * velhist(:,:,hist_len+hist_fidx_tds+1) &
+!                   + 9.0d0 * velhist(:,:,hist_len+hist_fidx_tds+2) - 1.0d0 * velhist(:,:,hist_len+hist_fidx_tds+3)  ! v^{t+1}
+!
+!    Vcols(:,:,:) = Vcols(:,:,:) / 16.0d0
+!
+!    ! Normal equations (tiny): (V^T V + μ I) α = V^T w
+!    lam_v = 1.0d-12
+!    rhs(:) = 0.0d0
+!    do i = 1, m_v
+!        do j = 1, m_v
+!            Gm(i,j) = sum( Vcols(:,:,i) * Vcols(:,:,j) )
+!        end do
+!        Gm(i,i) = Gm(i,i) + lam_v
+!        do k=1,NumOfLAtoms
+!            do m=1,3
+!                rhs(i)  = rhs(i) - Vcols(m,k,i) * MassInv(k) * cfrchist(m,k,hist_len+hist_fidx_tds-0)
+!            end do
+!        end do
+!    end do
+!
+!        write(7894,*) rhs
+!
+!    call dpotrf('L',m_v,Gm,m_v,info)
+!    if( info .ne. 0 ) then
+!        call pmf_utils_exit(PMF_OUT,1,&
+!                         '[CST] LL decomposition failed in cst_icf_calculate_shadow_H!')
+!    end if
+!
+!    ! solve ZMATA w = e_i
+!    call dpotrs('L',m_v,1,Gm,m_v,rhs,m_v,info)
+!    if( info .ne. 0 ) then
+!        call pmf_utils_exit(PMF_OUT,1,&
+!                         '[CST] LL linear equation failed in cst_icf_calculate_shadow_H!')
+!    end if
+!
+!    write(7894,*) rhs
+!
+!    Hw_hat = rhs(1)*gdot(:,:,1) + rhs(2)*gdot(:,:,2) + rhs(3)*gdot(:,:,3)
+!
+!    write(789,*) e1a * fdtx ** 2 / 24.0d0, e1b * fdtx ** 2 / 24.0d0, e2 * fdtx**4 / 720.0d0
+!    write(790,*) Hw_hat
+!    write(791,*) cfrchist(:,:,hist_len+hist_fidx_tds-0)
+!    write(790,*)
+!
+!end subroutine cst_icf_calculate_shadow_H
 
 !===============================================================================
 ! Subroutine:  cst_icf_calculate_v1

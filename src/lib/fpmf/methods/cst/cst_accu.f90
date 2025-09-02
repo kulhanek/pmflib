@@ -930,7 +930,7 @@ subroutine cst_accu_add_dhTds
     lekin        = cst_accu_get_ekin(hist_fidx_tds)
     letot        = lepot + lerst + lekin
     ! FIXME
-    leint        = lepot + lerst + shahist(hist_len+hist_fidx_tds)
+    leint        = lepot + lerst ! + shahist(hist_len+hist_fidx_tds)
 
    ! write(12478,*) fstep, lepot, lekin
 

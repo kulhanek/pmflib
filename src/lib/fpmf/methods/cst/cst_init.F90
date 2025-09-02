@@ -834,9 +834,9 @@ subroutine cst_init_core
     end select
 
 ! history buffers
-    hist_len = 5       ! FIXED at 5
-    hist_fidx = -2
-    hist_fidx_tds = -2
+    hist_len = 7       ! FIXED at 7
+    hist_fidx = -3
+    hist_fidx_tds = -3
 
     allocate( lambdaMhist(NumOfAllCONs,hist_len),   &
               lambdaEhist(NumOfAllCONs,hist_len),   &
