@@ -338,7 +338,7 @@ subroutine cst_core_analyze
 
 ! record data
     call cst_accu_add_lam
-    call cst_accu_add_dhTds
+    call cst_accu_add_duTds
 
 end subroutine cst_core_analyze
 
