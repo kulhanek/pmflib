@@ -178,6 +178,7 @@ subroutine cst_core_calculate_fw
     use pmf_utils
     use pmf_dat
     use cst_dat
+    use cst_constraints
 
     implicit none
     integer                :: i,ci,j,cj,k,m,info
