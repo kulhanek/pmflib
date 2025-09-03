@@ -83,14 +83,13 @@ subroutine cst_core_main_lf
     end if
 
     select case(fintalg)
-        ! FIXME
-        case(IA_LEAP_FROG,IA_LF_MIDDLE)
+        case(IA_LEAP_FROG)
             lambdaMhist(:,hist_len)      = lambda(:)
             call cst_core_analyze
             call cst_output_write
             call cst_restart_update
             call cst_trajectory_write_snapshot
-      !  case(IA_LF_MIDDLE)
+        case(IA_LF_MIDDLE)
             ! nothing to be here
         case default
             call pmf_utils_exit(PMF_OUT,1,'Unsupported integration algorithm in cst_core_main_lf!')
