@@ -71,19 +71,22 @@ integer, parameter  :: CON_CVTYPE_DIS     = 1
 integer         :: fshakesolver     ! SHAKE solvers
                                     ! 0 - fixed SHAKE
                                     ! 1 - mixed SHAKE
-                                    ! 2 - Newton-Raphson SHAKE
+                                    ! 2 - Newton-Raphson SHAKE - LL
                                     ! 3 - diagonal SHAKE
                                     ! 4 - diagonal SHAKE with initial guess from the previous step
                                     ! 5 - Newton-Raphson SHAKE - SVD
+                                    ! 6 - Newton-Raphson SHAKE - LU
 
 integer, parameter  :: CON_SHAKESOL_FM      = 0     ! fixed shake: JAC(0,0)
 integer, parameter  :: CON_SHAKESOL_MM      = 1     ! mixed shake: JAC(0,P)
-integer, parameter  :: CON_SHAKESOL_NM      = 2     ! Newton-Raphson shake: JAC(P,P)
+integer, parameter  :: CON_SHAKESOL_NM      = 2     ! Newton-Raphson shake: JAC(P,P) + LL
 integer, parameter  :: CON_SHAKESOL_DI      = 3     ! diagonal JAC(0,P)
 integer, parameter  :: CON_SHAKESOL_DIWG    = 4     ! diagonal JAC(0,P) with initial guess from the previous step
 integer, parameter  :: CON_SHAKESOL_NMSVD   = 5     ! Newton-Raphson shake: JAC(P,P) + SVD
+integer, parameter  :: CON_SHAKESOL_NMLU    = 6     ! Newton-Raphson shake: JAC(P,P) + LU
 ! ------------------------------------------------------------------------------
 
+real(PMFDP)     :: fshake_fdamp     ! diagonal dumping for LL and LU factorizations
 real(PMFDP)     :: flambdatol       ! tolerance for lambda optimization
 real(PMFDP)     :: frcond           ! SVD rcond
 
@@ -95,6 +98,7 @@ integer         :: frattlesolver    ! RATTLE solvers
 integer, parameter  :: CON_RATTLESOL_MA     = 0     ! matrix algebra
 ! ------------------------------------------------------------------------------
 
+real(PMFDP)     :: frattle_fdamp    ! diagonal dumping for LL and LU factorizations
 real(PMFDP)     :: frveltol         ! residual for velocity in rattle/rattlev
 
 integer         :: fmaxiter         ! maximum of iteration in lambda optimization
@@ -134,21 +138,25 @@ integer, parameter  :: CON_LAMSOL_MD      = 0
 integer, parameter  :: CON_LAMSOL_V1      = 1
 ! ------------------------------------------------------------------------------
 
+real(PMFDP)     :: flamsol_fdamp    ! diagonal dumping for LL and LU factorizations
+
 integer         :: ftds_ekinsrc     ! source of kinetic energy
                                     ! 0 - velocity-Verlet
                                     ! 1 - V4
+                                    ! 2 - V6
 
 integer, parameter  :: CON_EKINSRC_VV      = 0
 integer, parameter  :: CON_EKINSRC_V4      = 1
+integer, parameter  :: CON_EKINSRC_V6      = 2
 ! ------------------------------------------------------------------------------
 
 real(PMFDP)     :: fepotaverage
 real(PMFDP)     :: fekinaverage
 
-integer         :: flam_sample       ! how often update lambda and metric tensor corrections for FEN
-integer         :: ftds_sample       ! how often take samples for TDS and INT
+integer         :: flam_sample      ! how often update lambda and metric tensor corrections for FEN
+integer         :: ftds_sample      ! how often take samples for TDS and INT
 
-logical         :: frmshake_zdet
+logical         :: frmmdcon_zdet    ! remove MD constraints from Fixman weight
 
 ! item list --------------------------------------------------------------------
 type CVTypeBM

@@ -187,22 +187,7 @@ subroutine cst_core_calculate_fw
 ! ALL constraints ================================
 
 ! calculate Z matrix at Crd (in t)
-    do i=1,NumOfAllCONs
-        ci = CONList(i)%cvindx
-        do j=1,i
-            cj = CONList(j)%cvindx
-            z1 = 0.0d0
-            do k=1,NumOfLAtoms
-                v1 = 0.0
-                do m=1,3
-                    v1 = v1 + CVContext%CVsDrvs(m,k,ci)*CVContext%CVsDrvs(m,k,cj)
-                end do
-                z1 = z1 + MassInv(k)*v1
-            end do
-            zmat(i,j)=z1
-            zmat(j,i)=z1
-        end do
-    end do
+    call cst_constraints_calc_zmat_mw(CVContext%CVsDRvs)
 
 ! calculate Z determinant ------------------------------------
     if( NumOfAllCONs .gt. 1 ) then
@@ -228,7 +213,7 @@ subroutine cst_core_calculate_fw
 
     fzdets = 1.0d0
 
-    if( frmshake_zdet ) then
+    if( frmmdcon_zdet ) then
     ! calculate Z matrix at Crd (in t)
         do i=1,NumOfMDCONs
             ci = CONList(i+NumOfCONs)%cvindx
@@ -265,8 +250,6 @@ subroutine cst_core_calculate_fw
             end do
         else if( NumOfMDCONs .eq. 1 ) then
             fzdets = zmats(1,1)
-        else
-            fzdets = 1.0d0
         end if
     end if
 

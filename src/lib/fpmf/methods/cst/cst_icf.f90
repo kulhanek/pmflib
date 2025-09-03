@@ -38,9 +38,14 @@ subroutine cst_icf_calculate_icf
     use pmf_timers
 
     implicit none
+    integer     :: faccustep_test
     ! --------------------------------------------------------------------------
 
-    ! if( .not. ( mod(faccustep,ftds_sample) .eq. 0 ) ) return
+    ! this is not optimal but better than nothing
+    faccustep_test = faccustep
+    if( .not. (fintcalc .or. ftdscalc) ) return
+    if( enevalidhist(hist_len+hist_fidx_tds) ) faccustep_test = faccustep_test + 1
+    if( .not. ( (mod(faccustep_test,ftds_sample) .eq. 0) .and. enevalidhist(hist_len+hist_fidx_tds) ) ) return
 
     call pmf_timers_start_timer(PMFLIB_CST_ICF_TIMER)
 

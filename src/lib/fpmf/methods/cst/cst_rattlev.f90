@@ -67,7 +67,7 @@ subroutine cst_rattlev_calculate_ma
     use cst_constraints
 
     implicit none
-    integer         :: i,ci,k,info
+    integer         :: i,ci,ki,k,m,info
     real(PMFDP)     :: tmp
     real(PMFDP)     :: invn,dfriter1,dfriter2
     ! --------------------------------------------------------------------------
@@ -81,14 +81,17 @@ subroutine cst_rattlev_calculate_ma
     do i=1,NumOfAllCONs
         ci = CONList(i)%cvindx
         tmp = 0.0d0
-        do k=1,NumOfLAtoms
-            tmp = tmp + dot_product(CVContextP%CVsDrvs(:,k,ci),VelP(:,k))
+        do ki=1,CONList(i)%cv%natoms
+            k = CONList(i)%cv%lindexes(ki)
+            do m=1,3
+                tmp = tmp + CVContextP%CVsDrvs(m,k,ci) * VelP(m,k)
+            end do
         end do
-        lambdav(i) = tmp
+        lambdav(i) = - tmp
     end do
 
 ! left side
-    call cst_rattlev_calc_zmat
+    call cst_constraints_calc_zmat_mw(CVContextP%CVsDRvs)
 
  ! solve LE
      if( NumOfAllCONs .gt. 1 ) then
@@ -108,7 +111,8 @@ subroutine cst_rattlev_calculate_ma
 ! correct velocities
     do i=1,NumOfAllCONs
         ci = CONList(i)%cvindx
-        do k=1,NumOfLAtoms
+        do ki=1,CONList(i)%cv%natoms
+            k = CONList(i)%cv%lindexes(ki)
             VelP(:,k) = VelP(:,k) + lambdav(i)*MassInv(k)*CVContextP%CVsDrvs(:,k,ci)
         end do
     end do
@@ -136,40 +140,6 @@ subroutine cst_rattlev_calculate_ma
     m2friter = m2friter + dfriter1 * dfriter2
 
 end subroutine cst_rattlev_calculate_ma
-
-!===============================================================================
-! Subroutine:  cst_rattlev_calc_zmat
-!===============================================================================
-
-subroutine cst_rattlev_calc_zmat
-
-    use pmf_dat
-    use cst_dat
-    use cst_constraints
-
-    implicit none
-    integer                :: i,ci,j,cj,k,m
-    real(PMFDP)            :: z1,v1
-    ! --------------------------------------------------------------------------
-
-    do i=1,NumOfAllCONs
-        ci = CONList(i)%cvindx
-        do j=1,i
-            cj = CONList(j)%cvindx
-            z1 = 0.0d0
-            do k=1,NumOfLAtoms
-                v1 = 0.0
-                do m=1,3
-                    v1 = v1 + CVContextP%CVsDrvs(m,k,ci)*CVContextP%CVsDrvs(m,k,cj)
-                end do
-                z1 = z1 - MassInv(k)*v1
-            end do
-            zmat(i,j)=z1
-            zmat(j,i)=z1
-        end do
-    end do
-
-end subroutine cst_rattlev_calc_zmat
 
 !===============================================================================
 

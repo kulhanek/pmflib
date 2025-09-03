@@ -58,6 +58,8 @@ subroutine cst_shake_calculate
             call cst_shake_calculate_nm()   ! Newton-Raphson shake: JAC(P,P)
         case(CON_SHAKESOL_NMSVD)
             call cst_shake_calculate_nm_svd()   ! Newton-Raphson shake: JAC(P,P)
+        case(CON_SHAKESOL_NMLU)
+            call cst_shake_calculate_nm_lu()   ! Newton-Raphson shake: JAC(P,P)
         case(CON_SHAKESOL_DI)
             call cst_shake_calculate_di()   ! mixed shake: JAC(0,P) - diagonal solver
         case(CON_SHAKESOL_DIWG)
@@ -89,16 +91,24 @@ subroutine cst_shake_calculate_fm
 
     lambdax(:) = 0.0d0
 
-    ! calculate Jacobian matrix ------------------------
-    call cst_shake_calc_jacobian_fm ! it calculates zmat(0,0)
+    ! calculate zmat matrix ------------------------
+    call cst_constraints_calc_zmat_mw(CVContext%CVsDRvs) ! it calculates zmat(0,0)
 
     if ( NumOfAllCONs .gt. 1 ) then
-        ! JAC is symmetrical -> LL
-        call dpotrf('L',NumOfAllCONs,zmat,NumOfAllCONs,info)
+        ! zmat diagonal regularization
+        do i=1,NumOfAllCONs
+            zmat(i,i) = zmat(i,i) + fshake_fdamp
+        end do
+
+        ! this method is unstable with LL
+
+        ! LU decomposition
+        call dgetrf(NumOfAllCONs,NumOfAllCONs,zmat,NumOfAllCONs,indx,info)
         if( info .ne. 0 ) then
             call pmf_utils_exit(PMF_OUT,1,&
-                             '[CST] LL decomposition failed in cst_shake_calculate_fm!')
+                             '[CST] LU decomposition failed in cst_shake_calculate_fm!')
         end if
+
     end if
 
 ! do step
@@ -109,10 +119,10 @@ subroutine cst_shake_calculate_fm
 
         if ( NumOfAllCONs .gt. 1 ) then
             ! solve LE
-            call dpotrs('L',NumOfAllCONs,1,zmat,NumOfAllCONs,vv,NumOfAllCONs,info)
+            call dgetrs('N',NumOfAllCONs,1,zmat,NumOfAllCONs,indx,cv,NumOfAllCONs,info)
             if( info .ne. 0 ) then
-                call pmf_utils_exit(PMF_OUT,1,&
-                                 '[CST] LL linear equations failed in cst_shake_calculate_fm!')
+                call pmf_utils_exit(PMF_OUT,1, &
+                                 '[CST] Solution of LE failed in cst_shake_calculate_fm!')
             end if
         else
             cv(1)=cv(1)/zmat(1,1)
@@ -180,10 +190,15 @@ subroutine cst_shake_calculate_mm
         ! go through constraint list and calculate first derivative and constraint values at CrdP and cv
         call cst_constraints_calc_fdxp
 
-        ! calculate Jacobian matrix
-        call cst_shake_calc_jacobian_mm ! it calculates zmat(0,P)
+        ! calculate zmat matrix
+        call cst_constraints_calc_zmat_mw_ns(CVContext%CVsDRvs,CVContextP%CVsDRvs) ! it calculates zmat(0,P)
 
         if ( NumOfAllCONs .gt. 1 ) then
+            ! zmat diagonal regularization
+            do i=1,NumOfAllCONs
+                zmat(i,i) = zmat(i,i) + fshake_fdamp
+            end do
+
             ! LU decomposition
             call dgetrf(NumOfAllCONs,NumOfAllCONs,zmat,NumOfAllCONs,indx,info)
             if( info .ne. 0 ) then
@@ -262,10 +277,15 @@ subroutine cst_shake_calculate_nm
         ! go through constraint list and calculate first derivative and constraint values at CrdP and cv
         call cst_constraints_calc_fdxp
 
-        ! calculate Jacobian matrix
-        call cst_shake_calc_jacobian_nm ! it calculates zmat(P,P)
+        ! calculate zmat matrix
+        call cst_constraints_calc_zmat_mw(CVContextP%CVsDRvs)! it calculates zmat(P,P)
 
         if ( NumOfAllCONs .gt. 1 ) then
+            ! zmat diagonal regularization
+            do i=1,NumOfAllCONs
+                zmat(i,i) = zmat(i,i) + fshake_fdamp
+            end do
+
             ! ZMAT is symmetrical -> LL
             call dpotrf('L',NumOfAllCONs,zmat,NumOfAllCONs,info)
             if( info .ne. 0 ) then
@@ -320,6 +340,93 @@ subroutine cst_shake_calculate_nm
 end subroutine cst_shake_calculate_nm
 
 !===============================================================================
+! Subroutine:  cst_shake_calculate_nm_lu
+!===============================================================================
+
+subroutine cst_shake_calculate_nm_lu
+
+    use pmf_dat
+    use pmf_utils
+    use cst_dat
+    use cst_constraints
+
+    implicit none
+    integer             :: i,k,ki,info,ci
+    logical             :: done
+    real(PMFDP)         :: invn,dfsiter1,dfsiter2
+    ! -----------------------------------------------------------------------------
+
+    lambdax(:) = 0.0d0
+
+! do step
+    do fsiter=1,fmaxiter
+
+        ! go through constraint list and calculate first derivative and constraint values at CrdP and cv
+        call cst_constraints_calc_fdxp
+
+        ! calculate zmat matrix
+        call cst_constraints_calc_zmat_mw(CVContextP%CVsDRvs)! it calculates zmat(P,P)
+
+        if ( NumOfAllCONs .gt. 1 ) then
+            ! zmat diagonal regularization
+            do i=1,NumOfAllCONs
+                zmat(i,i) = zmat(i,i) + fshake_fdamp
+            end do
+
+            ! LU decomposition
+            call dgetrf(NumOfAllCONs,NumOfAllCONs,zmat,NumOfAllCONs,indx,info)
+            if( info .ne. 0 ) then
+                call pmf_utils_exit(PMF_OUT,1,&
+                                 '[CST] LU decomposition failed in cst_shake_calculate_nm_lu!')
+            end if
+            ! solve LE
+            call dgetrs('N',NumOfAllCONs,1,zmat,NumOfAllCONs,indx,cv,NumOfAllCONs,info)
+            if( info .ne. 0 ) then
+                call pmf_utils_exit(PMF_OUT,1, &
+                                 '[CST] Solution of LE failed in cst_shake_calculate_nm_lu!')
+            end if
+        else
+            cv(1)=cv(1)/zmat(1,1)
+        end if
+
+        ! correct lambda vector
+        lambdax(:) = lambdax(:) - cv(:)
+
+        ! calculate new position vector
+        do i=1,NumOfAllCONs
+            ci = CONList(i)%cvindx
+            do ki=1,CONList(i)%cv%natoms
+                k = CONList(i)%cv%lindexes(ki)
+                CrdP(:,k) = CrdP(:,k) - MassInv(k)*cv(i)*CVContext%CVsDrvs(:,k,ci)
+            end do
+        end do
+
+        ! check convergence criteria in lambdax
+        done = .true.
+        do i=1,NumOfAllCONs
+            if( abs(cv(i)*isfdts) .gt. flambdatol ) done = .false.
+        end do
+
+        if( done ) exit
+
+    end do
+
+    if( fsiter .eq. fmaxiter ) then
+        call pmf_utils_exit(PMF_OUT,1, &
+                         '[CST] Maximum number of iterations in lambda calculation exceeded in cst_shake_calculate_nm!')
+    end if
+
+! update stats about iterations
+    nsupdates = nsupdates + 1.0d0
+    invn = 1.0d0 / nsupdates
+    dfsiter1 = fsiter - mfsiter
+    mfsiter  = mfsiter  + dfsiter1 * invn
+    dfsiter2 = fsiter - mfsiter
+    m2fsiter = m2fsiter + dfsiter1 * dfsiter2
+
+end subroutine cst_shake_calculate_nm_lu
+
+!===============================================================================
 ! Subroutine:  cst_shake_calculate_nm_svd
 !===============================================================================
 
@@ -344,8 +451,8 @@ subroutine cst_shake_calculate_nm_svd
         ! go through constraint list and calculate first derivative and constraint values at CrdP and cv
         call cst_constraints_calc_fdxp
 
-        ! calculate Jacobian matrix
-        call cst_shake_calc_jacobian_nm ! it calculates zmat(P,P)
+        ! calculate zmat matrix
+        call cst_constraints_calc_zmat_mw(CVContextP%CVsDRvs) ! it calculates zmat(P,P)
 
         if ( NumOfAllCONs .gt. 1 ) then
             ! SVD decomposition
@@ -410,7 +517,7 @@ subroutine cst_shake_calculate_di
 
     implicit none
     integer             :: i,k,ci
-    real(PMFDP)         :: jacv
+    real(PMFDP)         :: z1
     logical             :: done
     real(PMFDP)         :: invn,dfsiter1,dfsiter2
     ! -----------------------------------------------------------------------------
@@ -427,20 +534,20 @@ subroutine cst_shake_calculate_di
             ci = CONList(i)%cvindx
 
             ! calculate diagonal value
-            jacv = 0.0d0
+            z1 = 0.0d0
             do k=1,NumOfLAtoms
-                jacv = jacv - MassInv(k)*dot_product(CVContext%CVsDrvs(:,k,ci),CVContextP%CVsDrvs(:,k,ci))
+                z1 = z1 + MassInv(k)*dot_product(CVContext%CVsDrvs(:,k,ci),CVContextP%CVsDrvs(:,k,ci))
             end do
 
             ! solve LE
-            cv(i)=cv(i)/jacv
+            cv(i)=cv(i)/z1
 
             ! correct lambda vector
-            lambdax(i) = lambdax(i) + cv(i)
+            lambdax(i) = lambdax(i) - cv(i)
 
             ! calculate new position vector
             do k=1,NumOfLAtoms
-                CrdP(:,k) = CrdP(:,k) + MassInv(k)*cv(i)*CVContext%CVsDrvs(:,k,ci)
+                CrdP(:,k) = CrdP(:,k) - MassInv(k)*cv(i)*CVContext%CVsDrvs(:,k,ci)
             end do
         end do
 
@@ -484,7 +591,7 @@ subroutine cst_shake_calculate_diwg
 
     implicit none
     integer             :: i,k,ci
-    real(PMFDP)         :: jacv
+    real(PMFDP)         :: z1
     logical             :: done
     logical,save        :: initialized_lambda = .false. ! static
     real(PMFDP)         :: invn,dfsiter1,dfsiter2
@@ -512,20 +619,20 @@ subroutine cst_shake_calculate_diwg
             ci = CONList(i)%cvindx
 
             ! calculate diagonal value
-            jacv = 0.0d0
+            z1 = 0.0d0
             do k=1,NumOfLAtoms
-                jacv = jacv - MassInv(k)*dot_product(CVContext%CVsDrvs(:,k,ci),CVContextP%CVsDrvs(:,k,ci))
+                z1 = z1 + MassInv(k)*dot_product(CVContext%CVsDrvs(:,k,ci),CVContextP%CVsDrvs(:,k,ci))
             end do
 
             ! solve LE
-            cv(i)=cv(i)/jacv
+            cv(i)=cv(i)/z1
 
             ! correct lambda vector
-            lambdax(i) = lambdax(i) + cv(i)
+            lambdax(i) = lambdax(i) - cv(i)
 
             ! calculate new position vector
             do k=1,NumOfLAtoms
-                CrdP(:,k) = CrdP(:,k) + MassInv(k)*cv(i)*CVContext%CVsDrvs(:,k,ci)
+                CrdP(:,k) = CrdP(:,k) - MassInv(k)*cv(i)*CVContext%CVsDrvs(:,k,ci)
             end do
         end do
 
@@ -555,110 +662,6 @@ subroutine cst_shake_calculate_diwg
     m2fsiter = m2fsiter + dfsiter1 * dfsiter2
 
 end subroutine cst_shake_calculate_diwg
-
-!===============================================================================
-! Subroutine:  cst_shake_calc_jacobian_fm
-! zmat is symmetrical
-!===============================================================================
-
-subroutine cst_shake_calc_jacobian_fm
-
-    use pmf_dat
-    use cst_dat
-    use cst_constraints
-
-    implicit none
-    integer                :: i,ci,j,cj,k,m
-    real(PMFDP)            :: z1,v1
-    ! --------------------------------------------------------------------------
-
-    do i=1,NumOfAllCONs
-        ci = CONList(i)%cvindx
-        do j=1,i
-            cj = CONList(j)%cvindx
-            z1 = 0.0d0
-            do k=1,NumOfLAtoms
-                v1 = 0.0
-                do m=1,3
-                    v1 = v1 + CVContext%CVsDrvs(m,k,ci)*CVContext%CVsDrvs(m,k,cj)
-                end do
-                z1 = z1 + MassInv(k)*v1
-            end do
-            zmat(i,j)=z1
-            zmat(j,i)=z1
-        end do
-    end do
-
-end subroutine cst_shake_calc_jacobian_fm
-
-!===============================================================================
-! Subroutine:  cst_shake_calc_jacobian_mm
-! zmat is NOT symmetrical
-!===============================================================================
-
-subroutine cst_shake_calc_jacobian_mm
-
-    use pmf_dat
-    use cst_dat
-    use cst_constraints
-
-    implicit none
-    integer                :: i,ci,j,cj,k,m
-    real(PMFDP)            :: z1,v1
-    ! --------------------------------------------------------------------------
-
-    do i=1,NumOfAllCONs
-        ci = CONList(i)%cvindx
-        do j=1,NumOfAllCONs
-            cj = CONList(j)%cvindx
-            z1 = 0.0d0
-            do k=1,NumOfLAtoms
-                v1 = 0.0
-                do m=1,3
-                    v1 = v1 + CVContext%CVsDrvs(m,k,ci)*CVContextP%CVsDrvs(m,k,cj)
-                end do
-                z1 = z1 + MassInv(k)*v1
-            end do
-            zmat(j,i) = z1
-        end do
-    end do
-
-end subroutine cst_shake_calc_jacobian_mm
-
-!===============================================================================
-! Subroutine:  cst_shake_calc_jacobian_nm
-! zmat is symmetrical
-!===============================================================================
-
-subroutine cst_shake_calc_jacobian_nm
-
-    use pmf_dat
-    use cst_dat
-    use cst_constraints
-
-    implicit none
-    integer                :: i,ci,j,cj,k,m
-    real(PMFDP)            :: z1,v1
-    ! --------------------------------------------------------------------------
-
-    do i=1,NumOfAllCONs
-        ci = CONList(i)%cvindx
-        do j=1,i
-            cj = CONList(j)%cvindx
-            z1 = 0.0d0
-            do k=1,NumOfLAtoms
-                v1 = 0.0
-                do m=1,3
-                    v1 = v1 + CVContextP%CVsDrvs(m,k,ci)*CVContextP%CVsDrvs(m,k,cj)
-                end do
-                z1 = z1 + MassInv(k)*v1
-            end do
-            zmat(i,j)=z1
-            zmat(j,i)=z1
-        end do
-    end do
-
-end subroutine cst_shake_calc_jacobian_nm
 
 !===============================================================================
 

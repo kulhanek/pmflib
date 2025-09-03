@@ -90,6 +90,10 @@ subroutine cst_control_read_con(prm_fin)
     call pmf_ctrl_read_integer(prm_fin,'frattlesolver',frattlesolver,'I12')
     call pmf_ctrl_check_integer_in_range('CST','frattlesolver',frattlesolver,0,0)
 
+    call pmf_ctrl_read_real8(prm_fin,'fshake_fdamp',fshake_fdamp,'E12.4')
+    call pmf_ctrl_read_real8(prm_fin,'frattle_fdamp',frattle_fdamp,'E12.4')
+    call pmf_ctrl_read_real8(prm_fin,'flamsol_fdamp',flamsol_fdamp,'E12.4')
+
     call pmf_ctrl_read_real8(prm_fin,'flambdatol',flambdatol,'E12.4')
     call pmf_ctrl_read_real8(prm_fin,'frveltol',frveltol,'E12.4')
 
@@ -139,7 +143,7 @@ subroutine cst_control_read_con(prm_fin)
     call pmf_ctrl_read_integer(prm_fin,'ftds_sample',ftds_sample,'I12')
     call pmf_ctrl_check_integer('CST','ftds_sample',ftds_sample,0,CND_GT)
 
-    call pmf_ctrl_read_logical(prm_fin,'frmshake_zdet',frmshake_zdet)
+    call pmf_ctrl_read_logical(prm_fin,'frmmdcon_zdet',frmmdcon_zdet)
 
     cst_enabled = fmode .gt. 0
 

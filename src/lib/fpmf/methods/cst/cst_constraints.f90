@@ -440,5 +440,117 @@ subroutine cst_constraints_read_control_file(cst_item)
 end subroutine cst_constraints_read_control_file
 
 !===============================================================================
+! Subroutine:  cst_constraints_calc_zmat_mw_ns
+! non-symmetric version, mass-weighted
+!===============================================================================
+
+subroutine cst_constraints_calc_zmat_mw_ns(cvsdersi,cvsdersj)
+
+    use pmf_dat
+    use cst_dat
+
+    implicit none
+    real(PMFDP)     :: cvsdersi(:,:,:)
+    real(PMFDP)     :: cvsdersj(:,:,:)
+    ! --------------------------------------------
+    integer         :: i,ci,j,cj,ki,k,m
+    real(PMFDP)     :: z1,v1
+    ! --------------------------------------------------------------------------
+
+    do i=1,NumOfAllCONs
+        ci = CONList(i)%cvindx
+        do j=1,NumOfAllCONs
+            cj = CONList(j)%cvindx
+            z1 = 0.0d0
+            ! employ sparsity for ci CVs
+            do ki=1,CONList(i)%cv%natoms
+                k = CONList(i)%cv%lindexes(ki)
+                v1 = 0.0d0
+                do m=1,3
+                    v1 = v1 + cvsdersi(m,k,ci) * cvsdersj(m,k,cj)
+                end do
+                z1 = z1 + MassInv(k)*v1
+            end do
+            zmat(i,j)=z1
+        end do
+    end do
+
+end subroutine cst_constraints_calc_zmat_mw_ns
+
+!===============================================================================
+! Subroutine:  cst_constraints_calc_zmat_mw
+! symmetric version, mass-weighted
+!===============================================================================
+
+subroutine cst_constraints_calc_zmat_mw(cvsders)
+
+    use pmf_dat
+    use cst_dat
+
+    implicit none
+    real(PMFDP)     :: cvsders(:,:,:)
+    ! --------------------------------------------
+    integer         :: i,ci,j,cj,ki,k,m
+    real(PMFDP)     :: z1,v1
+    ! --------------------------------------------------------------------------
+
+    do i=1,NumOfAllCONs
+        ci = CONList(i)%cvindx
+        do j=1,i
+            cj = CONList(j)%cvindx
+            z1 = 0.0d0
+            ! employ sparsity for ci CVs
+            do ki=1,CONList(i)%cv%natoms
+                k = CONList(i)%cv%lindexes(ki)
+                v1 = 0.0d0
+                do m=1,3
+                    v1 = v1 + cvsders(m,k,ci) * cvsders(m,k,cj)
+                end do
+                z1 = z1 + MassInv(k)*v1
+            end do
+            zmat(i,j)=z1
+            zmat(j,i)=z1
+        end do
+    end do
+
+end subroutine cst_constraints_calc_zmat_mw
+
+!===============================================================================
+! Subroutine:  cst_constraints_calc_zmat
+! symmetric version, NO mass-weighted
+!===============================================================================
+
+subroutine cst_constraints_calc_zmat(cvsders)
+
+    use pmf_dat
+    use cst_dat
+
+    implicit none
+    real(PMFDP)     :: cvsders(:,:,:)
+    ! --------------------------------------------
+    integer         :: i,ci,j,cj,ki,k,m
+    real(PMFDP)     :: z1
+    ! --------------------------------------------------------------------------
+
+    do i=1,NumOfAllCONs
+        ci = CONList(i)%cvindx
+        do j=1,i
+            cj = CONList(j)%cvindx
+            z1 = 0.0d0
+            ! employ sparsity for ci CVs
+            do ki=1,CONList(i)%cv%natoms
+                k = CONList(i)%cv%lindexes(ki)
+                do m=1,3
+                    z1 = z1 + cvsders(m,k,ci) * cvsders(m,k,cj)
+                end do
+            end do
+            zmat(i,j)=z1
+            zmat(j,i)=z1
+        end do
+    end do
+
+end subroutine cst_constraints_calc_zmat
+
+!===============================================================================
 
 end module cst_constraints

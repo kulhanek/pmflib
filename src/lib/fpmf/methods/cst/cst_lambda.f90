@@ -38,7 +38,14 @@ subroutine cst_lambda_calculate
     use pmf_timers
 
     implicit none
+    integer     :: faccustep_test
     ! --------------------------------------------------------------------------
+
+    ! this is not optimal but better than nothing
+    faccustep_test = faccustep
+    if( .not. (fintcalc .or. ftdscalc) ) return
+    if( enevalidhist(hist_len+hist_fidx_tds) ) faccustep_test = faccustep_test + 1
+    if( .not. ( (mod(faccustep_test,ftds_sample) .eq. 0) .and. enevalidhist(hist_len+hist_fidx_tds) ) ) return
 
     call pmf_timers_start_timer(PMFLIB_CST_LAMBDA_TIMER)
 
@@ -119,18 +126,23 @@ subroutine cst_lambda_calculate_v1
     end do
 
 ! zmat
-    call cst_lambda_calc_zmat(hist_fidx_tds)
+    call cst_constraints_calc_zmat_mw(cvderhist(:,:,:,hist_len+hist_fidx_tds))
 
 ! linear equations
      if( NumOfAllCONs .gt. 1 ) then
-        indx(:) = 0
+        ! zmat diagonal regularization
+        do i=1,NumOfAllCONs
+            zmat(i,i) = zmat(i,i) + flamsol_fdamp
+        end do
+        ! LU
         call dgetrf(NumOfAllCONs,NumOfAllCONs,zmat,NumOfAllCONs,indx,info)
         if( info .ne. 0 ) then
             call pmf_utils_exit(PMF_OUT,1,'[CST] LU decomposition failed in cst_lambda_calculate_v1!')
         end if
+        ! LSE
         call dgetrs('N',NumOfAllCONs,1,zmat,NumOfAllCONs,indx,cv,NumOfAllCONs,info)
         if( info .ne. 0 ) then
-            call pmf_utils_exit(PMF_OUT,1,'[CST] Solution of LE failed in cst_lambda_calculate_v1!')
+            call pmf_utils_exit(PMF_OUT,1,'[CST] Solution of LSE failed in cst_lambda_calculate_v1!')
         end if
      else
         cv(1) = cv(1) / zmat(1,1)
@@ -139,38 +151,6 @@ subroutine cst_lambda_calculate_v1
     lambdaEhist(:,hist_len+hist_fidx_tds) =  cv(:)
 
 end subroutine cst_lambda_calculate_v1
-
-!===============================================================================
-! Subroutine:  cst_lambda_calc_zmat
-!===============================================================================
-
-subroutine cst_lambda_calc_zmat(fidx)
-
-    use pmf_dat
-    use cst_dat
-    use cst_constraints
-
-    implicit none
-    integer         :: fidx
-    ! --------------------------------------------
-    integer         :: i,ci,j,cj,k
-    real(PMFDP)     :: jacv
-    ! --------------------------------------------------------------------------
-
-    ! complete Jacobian matrix
-    do i=1,NumOfAllCONs
-        ci = CONList(i)%cvindx
-        do j=1,NumOfAllCONs
-            cj = CONList(j)%cvindx
-            jacv = 0.0d0
-            do k=1,NumOfLAtoms
-                jacv = jacv + MassInv(k)*dot_product(cvderhist(:,k,ci,hist_len+fidx),cvderhist(:,k,cj,hist_len+fidx))
-            end do
-            zmat(i,j)=jacv
-        end do
-    end do
-
-end subroutine cst_lambda_calc_zmat
 
 !===============================================================================
 

@@ -90,6 +90,10 @@ subroutine cst_init_dat
     fshakesolver    = CON_SHAKESOL_MM       ! mixed shake
     frattlesolver   = CON_RATTLESOL_MA      ! matrix algebra
 
+    fshake_fdamp    = 1.0d-7                ! FIXME
+    frattle_fdamp   = 1.0d-7                ! FIXME
+    flamsol_fdamp   = 1.0d-7                ! FIXME
+
     flambdatol      = 1.0d-7        ! tolerance for lambda optimization
     frveltol        = 1.0d-9        ! residual velocity in rattle/rattle-v
     fmaxiter        = 50            ! maximum of iteration in lambda optimization
@@ -128,7 +132,7 @@ subroutine cst_init_dat
     fpmf_sdiv_S     = 16
     fpmf_sdiv_qr    = .false.
 
-    frmshake_zdet   = .false.
+    frmmdcon_zdet   = .false.
 
 end subroutine cst_init_dat
 
@@ -163,16 +167,19 @@ subroutine cst_init_print_summary
     write(PMF_OUT,130)  ' MD constraints in collisions            : ', NumOfMDCONs
     write(PMF_OUT,130)  ' Total number of constraints             : ', NumOfAllCONs
     write(PMF_OUT,130)  ' Excluded MD constraints                 : ', NumOfExcMDCONs
+    write(PMF_OUT,125)  ' Remove MD con. from FW (frmmdcon_zdet)  : ', prmfile_onoff(frmmdcon_zdet)
 
     write(PMF_OUT,120)
     write(PMF_OUT,120)  ' Constraint optimization options:'
     write(PMF_OUT,120)  ' ------------------------------------------------------'
     write(PMF_OUT,140)  ' SHAKE solver (fshakesolver)             : ', fshakesolver, &
                                                                        trim(cst_init_get_shakesol_name(fshakesolver))
+    write(PMF_OUT,135)  ' SHAKE diag. reg. (fshake_fdamp)         : ', fshake_fdamp
     write(PMF_OUT,135)  ' SHAKE lambda tolerance (flambdatol)     : ', flambdatol
 
     write(PMF_OUT,140)  ' RATTLE solver (frattlesolver)           : ', frattlesolver, &
                                                                        trim(cst_init_get_rattlesol_name(frattlesolver))
+    write(PMF_OUT,135)  ' RATTLE diag. reg. (frattle_fdamp)       : ', frattle_fdamp
     write(PMF_OUT,135)  ' RATTLE velocity tolerance (frveltol)    : ', frveltol
 
     write(PMF_OUT,130)  ' Maximum of iteration (fmaxiter)         : ', fmaxiter
@@ -202,6 +209,7 @@ subroutine cst_init_print_summary
 
     write(PMF_OUT,140)  ' Lambda solver (ftds_lamsol)             : ', ftds_lamsol, &
                                                                        trim(cst_init_get_lamsol_name(ftds_lamsol))
+    write(PMF_OUT,135)  ' LAMSOL diag. reg. (flamsol_fdamp)       : ', flamsol_fdamp
     write(PMF_OUT,140)  ' Kinetic energy source (ftds_ekinsrc)    : ', ftds_ekinsrc, &
                                                                        trim(cst_init_get_ekinsrc_name(ftds_ekinsrc))
 
@@ -283,13 +291,15 @@ character(80) function cst_init_get_shakesol_name(solver_id)
         case(CON_SHAKESOL_MM)
             cst_init_get_shakesol_name = "Mixed SHAKE (LU)"
         case(CON_SHAKESOL_NM)
-            cst_init_get_shakesol_name = "Newton-Raphson SHAKE (LU)"
+            cst_init_get_shakesol_name = "Newton-Raphson SHAKE (LL)"
         case(CON_SHAKESOL_DI)
             cst_init_get_shakesol_name = "Mixed SHAKE (diagonal solver)"
         case(CON_SHAKESOL_DIWG)
             cst_init_get_shakesol_name = "Mixed SHAKE (diagonal solver) with initial guess"
         case(CON_SHAKESOL_NMSVD)
             cst_init_get_shakesol_name = "Newton-Raphson SHAKE (SVD)"
+        case(CON_SHAKESOL_NMLU)
+            cst_init_get_shakesol_name = "Newton-Raphson SHAKE (LU)"
         case default
             call pmf_utils_exit(PMF_OUT, 1, &
                         '[CST] Not implemented shake solver in cst_init_get_shakesol_name!')

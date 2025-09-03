@@ -877,11 +877,11 @@ subroutine cst_accu_add_lam
 end subroutine cst_accu_add_lam
 
 !===============================================================================
-! Subroutine:  cst_accu_add_dhTds
-! enthalpy and entropy
+! Subroutine:  cst_accu_add_duTds
+! internal energy and entropy
 !===============================================================================
 
-subroutine cst_accu_add_dhTds
+subroutine cst_accu_add_duTds
 
     use pmf_dat
     use cst_dat
@@ -989,7 +989,7 @@ subroutine cst_accu_add_dhTds
         end if
     end do
 
-end subroutine cst_accu_add_dhTds
+end subroutine cst_accu_add_duTds
 
 !===============================================================================
 ! Subroutine:  cst_accu_get_ekin
