@@ -720,12 +720,12 @@ subroutine cst_accu_write(iounit)
     end if
 
     if( ftdscalc .or. fintcalc ) then
-        call cst_accu_write_mean_B(iounit,glbidx,'METOT',metot,'M2ETOT',m2etot,'NTDS')
+        call cst_accu_write_mean_B(iounit,glbidx,'METOT',  metot,  'M2ETOT',  m2etot,  'NTDS')
         call cst_accu_write_mean_B(iounit,glbidx,'METOTFW',metotfw,'M2ETOTFW',m2etotfw,'FWSUM')
     end if
 
     if( (ftdscalc .and. ftds_decomp) .or. fintcalc ) then
-        call cst_accu_write_mean_B(iounit,glbidx,'MEINT',meint,'M2EINT',m2eint,'NTDS')
+        call cst_accu_write_mean_B(iounit,glbidx,'MEINT',  meint,  'M2EINT',  m2eint,  'NTDS')
         call cst_accu_write_mean_B(iounit,glbidx,'MEINTFW',meintfw,'M2EINTFW',m2eintfw,'FWSUM')
     end if
 
@@ -866,7 +866,7 @@ subroutine cst_accu_add_lam
     if( nsamples .le. 0 ) return
     invn = 1.0d0/nsamples
 
-    do i=1,NumOfAllCONs
+    do i=1,cstaccu%tot_cvs
         llam = lambdaMhist(i,hist_len+hist_fidx)
         call cst_accu_add_data_OM(llam,invn,mlambda(i),m2lambda(i))
     end do
@@ -926,8 +926,7 @@ subroutine cst_accu_add_duTds
     lerst        = ersthist(hist_len+hist_fidx_tds)
     lekin        = cst_accu_get_ekin(hist_fidx_tds)
     letot        = lepot + lerst + lekin
-    ! FIXME
-    leint        = lepot + lerst ! + shahist(hist_len+hist_fidx_tds)
+    leint        = lepot + lerst
 
    ! write(12478,*) fstep, lepot, lekin
 
@@ -935,6 +934,10 @@ subroutine cst_accu_add_duTds
     call cst_accu_add_data_OMI(leint,invn,meint,m2eint,deint1,deint2)
     call cst_accu_add_data_WOMI(letot,invw,lfw,metotfw,m2etotfw,detot1fw,detot2fw)
     call cst_accu_add_data_WOMI(leint,invw,lfw,meintfw,m2eintfw,deint1fw,deint2fw)
+
+    if( fdump_data .and.(faccurst .lt. 0) ) then
+        write(CST_DUMP,'(I9,1X,I9,1X)',ADVANCE='NO') fstep, faccustep
+    end if
 
     if( ftdscalc ) then
         c11zh = c11zh + dfw1 * detot2
@@ -950,7 +953,7 @@ subroutine cst_accu_add_duTds
         end if
     end if
 
-    do i=1,NumOfAllCONs
+    do i=1,cstaccu%tot_cvs
 
         select case(ftds_lamsol)
             case(CON_LAMSOL_MD)
@@ -959,8 +962,12 @@ subroutine cst_accu_add_duTds
                 llam  = lambdaEhist(i,hist_len+hist_fidx_tds)
         end select
 
+        if( fdump_data .and.(faccurst .lt. 0) ) then
+            write(CST_DUMP,'(E16.7,1X,E16.7,1X)',ADVANCE='NO') llam, letot
+        end if
+
         if( ftdscalc ) then
-            call cst_accu_add_data_OMI(llam, invn, mlamtds(i), m2lamtds(i), dlam1, dlam2)
+            call cst_accu_add_data_OMI (llam, invn,      mlamtds(i),   m2lamtds(i),   dlam1,   dlam2)
             call cst_accu_add_data_WOMI(llam, invw, lfw, mlamtdsfw(i), m2lamtdsfw(i), dlam1fw, dlam2fw)
 
             c11lt(i)    = c11lt(i)      + dlam1 * detot2
@@ -979,15 +986,23 @@ subroutine cst_accu_add_duTds
             licfk = - PMF_Rgas*ftemp * icfkhist(i,hist_len+hist_fidx_tds)
             licf  = licfp + licfk
 
-            call cst_accu_add_data_OMI(licf, invn, micf(i),    m2icf(i),    dicf1, dicf2)
-            call cst_accu_add_data_WOMI(licf, invw, lfw, micffw(i),    m2icffw(i),    dicf1fw, dicf2fw)
-            call cst_accu_add_data_WOM(licfp, invw, lfw, micfpfw(i),   m2icfpfw(i))
-            call cst_accu_add_data_WOM(licfk, invw, lfw, micfkfw(i),   m2icfkfw(i))
+            call cst_accu_add_data_OMI (licf,  invn,      micf(i),      m2icf(i),     dicf1,   dicf2)
+            call cst_accu_add_data_WOMI(licf,  invw, lfw, micffw(i),    m2icffw(i),   dicf1fw, dicf2fw)
+            call cst_accu_add_data_WOM (licfp, invw, lfw, micfpfw(i),   m2icfpfw(i))
+            call cst_accu_add_data_WOM (licfk, invw, lfw, micfkfw(i),   m2icfkfw(i))
 
-            c11ii(i)    = c11ii(i)      +  dicf1   * deint2
+            if( fdump_data .and.(faccurst .lt. 0) ) then
+                write(CST_DUMP,'(E16.7,1X,E16.7,1X)',ADVANCE='NO') licf, leint
+            end if
+
+            c11ii(i)    = c11ii(i)      +        dicf1   * deint2
             c11iifw(i)  = c11iifw(i)    +  lfw * dicf1fw * deint2fw
         end if
     end do
+
+    if( fdump_data .and.(faccurst .lt. 0) ) then
+        write(CST_DUMP,*)
+    end if
 
 end subroutine cst_accu_add_duTds
 
@@ -1013,11 +1028,22 @@ function cst_accu_get_ekin(fidx) result(ekin)
             ekin = ekinhist(hist_len+fidx)
             ekin = ekin - cst_accu_get_ekinvv(fidx)
             ekin = ekin + cst_accu_get_ekinv4(fidx)
+        case(CON_EKINSRC_V6)
+            ekin = ekinhist(hist_len+fidx)
+            ekin = ekin - cst_accu_get_ekinvv(fidx)
+            ekin = ekin + cst_accu_get_ekinv6(fidx)
         case default
             call pmf_utils_exit(PMF_OUT,1,'[CST] Unsupported ftds_ekinsrc in cst_accu_get_ekin!')
     end select
 
 end function cst_accu_get_ekin
+
+!!===============================================================================
+!! Subroutine:  cst_accu_get_ekinc5
+!! WARNING WARNING - Crd are occasionally shifted by MD engine to center the system
+!!                   into the virtual box
+!!                   thus the Crd differences cannot be for velocity calculation
+!!===============================================================================
 
 !===============================================================================
 ! Subroutine:  cst_accu_get_ekinvv
@@ -1068,7 +1094,8 @@ function cst_accu_get_ekinv4(fidx) result(ekinv4)
     real(PMFDP)     :: v,v2
     ! --------------------------------------------------------------------------
 
-    ! get ekinv4
+! https://web.media.mit.edu/~crtaylor/calculator.html
+
     ekinv4 = 0.0d0
     do k=1,NumOfLAtoms
         v2 = 0.0d0
@@ -1084,40 +1111,42 @@ function cst_accu_get_ekinv4(fidx) result(ekinv4)
 
 end function cst_accu_get_ekinv4
 
-!!===============================================================================
-!! Subroutine:  cst_accu_get_ekinc5
-!! WARNING WARNING - Crd are shifted by MD engine and thus the differences cannot be used
-!!                   for velocity calculation
-!!===============================================================================
-!
-!function cst_accu_get_ekinc5(fidx) result(ekinc5)
-!
-!    use pmf_dat
-!    use cst_dat
-!    use pmf_utils
-!
-!    implicit none
-!    integer         :: fidx
-!    real(PMFDP)     :: ekinc5
-!    ! --------------------------------------------
-!    integer         :: k,m
-!    real(PMFDP)     :: v,v2
-!    ! --------------------------------------------------------------------------
-!
-!    ekinc5 = 0.0d0
-!    do k=1,NumOfLAtoms
-!        v2 = 0.0d0
-!        do m=1,3
-!            v = + 1.0d0 * crdhist(m,k,hist_len+fidx-2) - 8.0d0 * crdhist(m,k,hist_len+fidx-1) &
-!                + 8.0d0 * crdhist(m,k,hist_len+fidx+1) - 1.0d0 * crdhist(m,k,hist_len+fidx+2)
-!            ! v = v * ifdtx / 12.0d0 <- moved down
-!            v2 = v2 + v**2
-!        end do
-!        ekinc5 = ekinc5 + Mass(k)*v2
-!    end do
-!    ekinc5 = ekinc5 * 0.5d0 * ifdtx / 12.0d0 * ifdtx / 12.0d0 ! 1/2
-!
-!end function cst_accu_get_ekinc5
+!===============================================================================
+! Subroutine:  cst_accu_get_ekinv6
+!===============================================================================
+
+function cst_accu_get_ekinv6(fidx) result(ekinv6)
+
+    use pmf_dat
+    use cst_dat
+    use pmf_utils
+
+    implicit none
+    integer         :: fidx
+    real(PMFDP)     :: ekinv6
+    ! --------------------------------------------
+    integer         :: k,m
+    real(PMFDP)     :: v,v2
+    ! --------------------------------------------------------------------------
+
+! https://web.media.mit.edu/~crtaylor/calculator.html
+
+    ekinv6 = 0.0d0
+    do k=1,NumOfLAtoms
+        v2 = 0.0d0
+        do m=1,3
+            v = +   3.0d0 * velhist(m,k,hist_len+fidx-2) &
+                -  25.0d0 * velhist(m,k,hist_len+fidx-1) + 150.0d0 * velhist(m,k,hist_len+fidx+0) &
+                + 150.0d0 * velhist(m,k,hist_len+fidx+1) -  25.0d0 * velhist(m,k,hist_len+fidx+2) &
+                +   3.0d0 * velhist(m,k,hist_len+fidx+3)
+            ! v = v / 256.0d0 <- moved down
+            v2 = v2 + v**2
+        end do
+        ekinv6 = ekinv6 + Mass(k)*v2
+    end do
+    ekinv6 = ekinv6 * 0.5d0 / 256.0**2 ! 1/2
+
+end function cst_accu_get_ekinv6
 
 !===============================================================================
 

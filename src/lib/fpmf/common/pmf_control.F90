@@ -288,6 +288,7 @@ subroutine pmf_control_read_files(prm_fin)
             call pmf_ctrl_print_default_stritem('fcstout',fcstout)
             call pmf_ctrl_print_default_stritem('fcstrst',fcstrst)
             call pmf_ctrl_print_default_stritem('fcsttrj',fcsttrj)
+            call pmf_ctrl_print_default_stritem('fcstdump',fcstdump)
         end if
         if( rst_enabled ) then
             write(PMF_OUT,200)
@@ -337,6 +338,7 @@ subroutine pmf_control_read_files(prm_fin)
         call  pmf_ctrl_read_stritem(prm_fin,'fcstout',fcstout)
         call  pmf_ctrl_read_stritem(prm_fin,'fcstrst',fcstrst)
         call  pmf_ctrl_read_stritem(prm_fin,'fcsttrj',fcsttrj)
+        call  pmf_ctrl_read_stritem(prm_fin,'fcstdump',fcstdump)
     end if
     if( rst_enabled ) then
         write(PMF_OUT,200)

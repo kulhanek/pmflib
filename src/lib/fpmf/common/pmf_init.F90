@@ -98,6 +98,7 @@ subroutine pmf_init_dat
     fcstout     = '_cst.out'
     fcstrst     = '_cst.rst'
     fcsttrj     = '_cst.trj'
+    fcstdump    = '_cst.dump'
 
     frstdef     = '{RST}'
     frstout     = '_rst.out'
@@ -540,6 +541,7 @@ subroutine pmf_init_pmf
                   VelP(3,NumOfLAtoms), &
                   CVContextP%CVsValues(NumOfCVs), &
                   CVContextP%CVsDrvs(3,NumOfLAtoms,NumOfCVs), &
+                  CVContextP%CVs2ndDrvs(3,NumOfLAtoms,3,NumOfLAtoms,NumOfCVs),    &
                   stat=alloc_failed)
 
         if( alloc_failed .ne. 0 ) then

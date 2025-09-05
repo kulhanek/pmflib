@@ -529,23 +529,23 @@ subroutine cst_constraints_calc_zmat(cvsders)
     real(PMFDP)     :: cvsders(:,:,:)
     ! --------------------------------------------
     integer         :: i,ci,j,cj,ki,k,m
-    real(PMFDP)     :: z1
+    real(PMFDP)     :: v1
     ! --------------------------------------------------------------------------
 
     do i=1,NumOfAllCONs
         ci = CONList(i)%cvindx
         do j=1,i
             cj = CONList(j)%cvindx
-            z1 = 0.0d0
+            v1 = 0.0d0
             ! employ sparsity for ci CVs
             do ki=1,CONList(i)%cv%natoms
                 k = CONList(i)%cv%lindexes(ki)
                 do m=1,3
-                    z1 = z1 + cvsders(m,k,ci) * cvsders(m,k,cj)
+                    v1 = v1 + cvsders(m,k,ci) * cvsders(m,k,cj)
                 end do
             end do
-            zmat(i,j)=z1
-            zmat(j,i)=z1
+            zmat(i,j)=v1
+            zmat(j,i)=v1
         end do
     end do
 

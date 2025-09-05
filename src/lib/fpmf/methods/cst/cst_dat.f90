@@ -110,14 +110,15 @@ logical         :: fintcalc         ! collect data for internal energy calculati
 logical         :: fint_der         ! collect data for internal energy derivative calculation
 integer         :: ftds_icfsol      ! 1 - numerical divergence
                                     ! 2 - analytical but with numerical/analytical CV Hessian
+                                    ! 3 - stochastic divergence
+                                    ! 4 - stochastic divergence - mass-weighted
 
 integer, parameter  :: CON_ICFSOL_V1      = 1
 integer, parameter  :: CON_ICFSOL_V2      = 2
 integer, parameter  :: CON_ICFSOL_V3      = 3
 integer, parameter  :: CON_ICFSOL_V4      = 4
-integer, parameter  :: CON_ICFSOL_V5      = 5
-integer, parameter  :: CON_ICFSOL_V6      = 6
-integer, parameter  :: CON_ICFSOL_V7      = 7
+
+real(PMFDP)     :: ficf_fdamp       ! diagonal dumping for LL and LU factorizations
 
 ! numeric divergence
 real(PMFDP)     :: fpmf_div_dh      ! step factor for numerical divergence
@@ -155,6 +156,8 @@ real(PMFDP)     :: fekinaverage
 
 integer         :: flam_sample      ! how often update lambda and metric tensor corrections for FEN
 integer         :: ftds_sample      ! how often take samples for TDS and INT
+
+logical         :: fdump_data       ! dump extra dU/mTdS data
 
 logical         :: frmmdcon_zdet    ! remove MD constraints from Fixman weight
 
@@ -231,8 +234,6 @@ real(PMFDP),allocatable     :: lambda(:)        ! total lambda with corrected un
 real(PMFDP),allocatable     :: fwfac            ! current value of Fixman weight
 
 ! ICF
-real(PMFDP),allocatable     :: icfp(:)          ! ICF - potential part
-real(PMFDP),allocatable     :: icfk(:)          ! ICF - the other part
 real(PMFDP),allocatable     :: icf_he(:,:)      ! helper array
 real(PMFDP),allocatable     :: icf_vi1(:,:)     ! helper array
 real(PMFDP),allocatable     :: icf_vi2(:,:)     ! helper array

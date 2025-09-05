@@ -93,6 +93,7 @@ subroutine cst_control_read_con(prm_fin)
     call pmf_ctrl_read_real8(prm_fin,'fshake_fdamp',fshake_fdamp,'E12.4')
     call pmf_ctrl_read_real8(prm_fin,'frattle_fdamp',frattle_fdamp,'E12.4')
     call pmf_ctrl_read_real8(prm_fin,'flamsol_fdamp',flamsol_fdamp,'E12.4')
+    call pmf_ctrl_read_real8(prm_fin,'ficf_fdamp',ficf_fdamp,'E12.4')
 
     call pmf_ctrl_read_real8(prm_fin,'flambdatol',flambdatol,'E12.4')
     call pmf_ctrl_read_real8(prm_fin,'frveltol',frveltol,'E12.4')
@@ -123,7 +124,7 @@ subroutine cst_control_read_con(prm_fin)
     call pmf_ctrl_read_logical(prm_fin,'fint_der',fint_der)
 
     call pmf_ctrl_read_integer(prm_fin,'ftds_icfsol',ftds_icfsol,'I12')
-    call pmf_ctrl_check_integer_in_range('CST','ftds_icfsol',ftds_icfsol,1,7)
+    call pmf_ctrl_check_integer_in_range('CST','ftds_icfsol',ftds_icfsol,1,4)
 
     call pmf_ctrl_read_integer(prm_fin,'fpmf_sdiv_S',fpmf_sdiv_S,'I12')
     call pmf_ctrl_read_real8(prm_fin,'fpmf_sdiv_dh',fpmf_sdiv_dh,'E12.4')
@@ -135,7 +136,7 @@ subroutine cst_control_read_con(prm_fin)
     call pmf_ctrl_check_integer_in_range('CST','ftds_lamsol',ftds_lamsol,0,1)
 
     call pmf_ctrl_read_integer(prm_fin,'ftds_ekinsrc',ftds_ekinsrc,'I12')
-    call pmf_ctrl_check_integer_in_range('CST','ftds_ekinsrc',ftds_ekinsrc,0,1)
+    call pmf_ctrl_check_integer_in_range('CST','ftds_ekinsrc',ftds_ekinsrc,0,2)
 
     call pmf_ctrl_read_real8_wunit(prm_fin,'fepotaverage',EnergyUnit,fepotaverage,'F10.1')
     call pmf_ctrl_read_real8_wunit(prm_fin,'fekinaverage',EnergyUnit,fekinaverage,'F10.1')
@@ -144,6 +145,8 @@ subroutine cst_control_read_con(prm_fin)
     call pmf_ctrl_check_integer('CST','ftds_sample',ftds_sample,0,CND_GT)
 
     call pmf_ctrl_read_logical(prm_fin,'frmmdcon_zdet',frmmdcon_zdet)
+
+    call pmf_ctrl_read_logical(prm_fin,'fdump_data',fdump_data)
 
     cst_enabled = fmode .gt. 0
 

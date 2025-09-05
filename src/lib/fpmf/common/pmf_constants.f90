@@ -141,6 +141,7 @@ integer,parameter       :: CST_OUT      = 151
 integer,parameter       :: CST_RST      = 152
 integer,parameter       :: CST_TRJ      = 154
 integer,parameter       :: CST_CTR      = 153
+integer,parameter       :: CST_DUMP     = 155
 
 ! umbrella part ----------------------------------------------------------------
 integer,parameter       :: RST_INP      = 160

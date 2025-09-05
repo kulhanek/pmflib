@@ -90,9 +90,10 @@ subroutine cst_init_dat
     fshakesolver    = CON_SHAKESOL_MM       ! mixed shake
     frattlesolver   = CON_RATTLESOL_MA      ! matrix algebra
 
-    fshake_fdamp    = 1.0d-7                ! FIXME
-    frattle_fdamp   = 1.0d-7                ! FIXME
-    flamsol_fdamp   = 1.0d-7                ! FIXME
+    fshake_fdamp    = 0.0d0                 ! FIXME
+    frattle_fdamp   = 0.0d0                 ! FIXME
+    flamsol_fdamp   = 0.0d0                 ! FIXME
+    ficf_fdamp      = 0.0d0                 ! FIXME
 
     flambdatol      = 1.0d-7        ! tolerance for lambda optimization
     frveltol        = 1.0d-9        ! residual velocity in rattle/rattle-v
@@ -106,7 +107,7 @@ subroutine cst_init_dat
     ftdscalc        = .false.
     ftds_decomp     = .false.
     ftds_lamsol     = CON_LAMSOL_MD
-    ftds_ekinsrc    = CON_EKINSRC_V4
+    ftds_ekinsrc    = CON_EKINSRC_V6
 
     fepotaverage    = 0.0d0
     fekinaverage    = 0.0d0
@@ -133,6 +134,8 @@ subroutine cst_init_dat
     fpmf_sdiv_qr    = .false.
 
     frmmdcon_zdet   = .false.
+
+    fdump_data      = .false.
 
 end subroutine cst_init_dat
 
@@ -198,7 +201,7 @@ subroutine cst_init_print_summary
     write(PMF_OUT,125)  ' Accumulate intene deriv. (fint_der)     : ', prmfile_onoff(fint_der)
     write(PMF_OUT,140)  ' ICF solver (ftds_icfsol)                : ', ftds_icfsol, &
                                                                        trim(cst_init_get_icfsol_name(ftds_icfsol))
-
+    write(PMF_OUT,135)  ' ICF diag. reg. (ficf_fdamp)             : ', ficf_fdamp
     write(PMF_OUT,125)  ' Accumulate entropy (ftdscalc)           : ', prmfile_onoff(ftdscalc)
     write(PMF_OUT,125)  ' Decompose entropy (ftds_decomp)         : ', prmfile_onoff(ftds_decomp)
 
@@ -227,6 +230,8 @@ subroutine cst_init_print_summary
     write(PMF_OUT,125)  ' Output file (fcstout)                   : ', trim(fcstout)
     write(PMF_OUT,130)  ' Sample period (fsample)                 : ', fsample
     write(PMF_OUT,130)  ' Print level (fplevel)                   : ', fplevel
+    write(PMF_OUT,125)  ' Dump dU/mTdS data (fdump_data)          : ', prmfile_onoff(fdump_data)
+    write(PMF_OUT,125)  ' Dump file (fcstdump)                    : ', trim(fcstdump)
     write(PMF_OUT,120)
     write(PMF_OUT,120)  ' Trajectory output options:'
     write(PMF_OUT,120)  ' ------------------------------------------------------'
@@ -432,17 +437,11 @@ character(80) function cst_init_get_icfsol_name(icfsol)
         case(CON_ICFSOL_V1)
             cst_init_get_icfsol_name = "V1 (numeric divergence)"
         case(CON_ICFSOL_V2)
-            cst_init_get_icfsol_name = "V2 (analytic with analytic/numeric CV Hessian)"
+            cst_init_get_icfsol_name = "V2 (analytic with analytic/numeric CV Hessian + symmetry)"
         case(CON_ICFSOL_V3)
-            cst_init_get_icfsol_name = "V3 (analytic with analytic/numeric CV Hessian) + symmetry"
+            cst_init_get_icfsol_name = "V3 (stochastic divergence)"
         case(CON_ICFSOL_V4)
-            cst_init_get_icfsol_name = "V4 (stochastic divergence)"
-        case(CON_ICFSOL_V5)
-            cst_init_get_icfsol_name = "V5 (stochastic divergence - mass weighted)"
-        case(CON_ICFSOL_V6)
-            cst_init_get_icfsol_name = "V6 (stochastic divergence - mass weighted, Frc interpolated)"
-        case(CON_ICFSOL_V7)
-            cst_init_get_icfsol_name = "V7 (stochastic divergence, Frc interpolated)"
+            cst_init_get_icfsol_name = "V4 (stochastic divergence - mass weighted)"
         case default
             call pmf_utils_exit(PMF_OUT, 1, &
                         '[CST] Not implemented ICF solver in cst_init_get_icfsol_name!')
@@ -466,10 +465,12 @@ character(80) function cst_init_get_ekinsrc_name(ekinsrc)
     ! --------------------------------------------------------------------------
 
     select case(ekinsrc)
-        case(CON_LAMSOL_MD)
+        case(CON_EKINSRC_VV)
             cst_init_get_ekinsrc_name = "VV (velocity Verlet)"
-        case(CON_LAMSOL_V1)
+        case(CON_EKINSRC_V4)
             cst_init_get_ekinsrc_name = "V4 (4th-order)"
+        case(CON_EKINSRC_V6)
+            cst_init_get_ekinsrc_name = "V6 (6th-order)"
         case default
             call pmf_utils_exit(PMF_OUT, 1, &
                         '[CST] Not implemented ekin srource in cst_init_get_ekinsrc_name!')
@@ -886,9 +887,7 @@ subroutine cst_init_core
 
 ! enthalpy/entropy
     if( fintcalc .and. fint_der ) then
-        allocate( icfp(NumOfAllCONs),       &
-                  icfk(NumOfAllCONs),       &
-                  icf_he(3,NumOfLAtoms),    &
+        allocate( icf_he(3,NumOfLAtoms),    &
                   icf_vi1(3,NumOfLAtoms),   &
                   icf_vi2(3,NumOfLAtoms),   &
                   icf_vin(3,NumOfLAtoms,NumOfAllCONs),    &

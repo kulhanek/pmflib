@@ -52,6 +52,10 @@ subroutine cst_output_open
     write(CST_OUT,120)
     write(CST_OUT,130)
 
+    if( fdump_data ) then
+        call pmf_utils_open(CST_DUMP,fcstdump,'R')
+    end if
+
     return
 
 110 format('#===============================================================================')
@@ -375,8 +379,12 @@ subroutine cst_output_close
 
     write(CST_OUT,*)
 
-! close file
+! close files
     close(CST_OUT)
+
+    if( fdump_data ) then
+        close(CST_DUMP)
+    end if
 
     return
 
