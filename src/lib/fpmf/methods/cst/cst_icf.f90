@@ -95,7 +95,7 @@ subroutine cst_icf_calculate_v1
         icfp = 0.0d0
         do n=1,NumOfLAtoms
             do m=1,3
-                icfp = icfp + icf_vi1(m,n) * Frc(m,n)
+                icfp = icfp + icf_vi1(m,n) * frchist(m,n,hist_len+hist_fidx_tds)
             end do
         end do
         icfphist(k,hist_len+hist_fidx_tds) = - icfp   ! FRC is force not gradient
@@ -188,7 +188,7 @@ subroutine cst_icf_calculate_v2
         icfp = 0.0d0
         do n=1,NumOfLAtoms
             do m=1,3
-                icfp = icfp + icf_vi1(m,n) * Frc(m,n)
+                icfp = icfp + icf_vi1(m,n) * frchist(m,n,hist_len+hist_fidx_tds)
             end do
         end do
         icfphist(k,hist_len+hist_fidx_tds) = - icfp   ! FRC is force not gradient
@@ -289,7 +289,7 @@ subroutine cst_icf_calculate_v3
         icfp = 0.0d0
         do n=1,NumOfLAtoms
             do m=1,3
-                icfp = icfp + icf_vi1(m,n) * Frc(m,n)
+                icfp = icfp + icf_vi1(m,n) * frchist(m,n,hist_len+hist_fidx_tds)
             end do
         end do
         icfphist(k,hist_len+hist_fidx_tds) = - icfp   ! FRC is force not gradient
@@ -335,7 +335,7 @@ subroutine cst_icf_calculate_v3
             call cst_icf_calculate_zmatll
             call cst_icf_calculate_vill(CVContextP%CVsDrvs,k,icf_vi2)
 
-            v1 = v1 + sum( sdiv_z(:,:,s)*(icf_vi1(:,:) - icf_vi2(:,:)) )
+            v1 = v1 + sum( sdiv_z(:,:,s)*(icf_vi1(:,:) - icf_vi2(:,:)))
 
         end do
 
@@ -380,7 +380,7 @@ subroutine cst_icf_calculate_v4
         icfp = 0.0d0
         do n=1,NumOfLAtoms
             do m=1,3
-                icfp = icfp + icf_vi1(m,n) * Frc(m,n)
+                icfp = icfp + icf_vi1(m,n) * frchist(m,n,hist_len+hist_fidx_tds)
             end do
         end do
         icfphist(k,hist_len+hist_fidx_tds) = - icfp   ! FRC is force not gradient
