@@ -1177,7 +1177,7 @@ bool COptGPRHyprms::CreateGPREngine_dF_dx(void)
     CIntegratorGPRPtr gpr = CIntegratorGPRPtr(new CIntegratorGPR);
 
     gpr->SetOutputES(FEN);
-    gpr->AddInputEnergyDerProxy(proxy);
+    gpr->SetInputEnergyDerProxy(proxy);
 
     GPREngine = gpr;
     return(true);

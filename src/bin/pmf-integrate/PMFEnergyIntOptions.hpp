@@ -1,8 +1,9 @@
-#ifndef ABFIntOptionsH
-#define ABFIntOptionsH
+#ifndef PMFIntOptionsH
+#define PMFIntOptionsH
 // =============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
+//    Copyright (C) 2025 Petr Kulhanek, kulhanek@chemi.muni.cz
 //    Copyright (C) 2021 Petr Kulhanek, kulhanek@chemi.muni.cz
 //    Copyright (C) 2019 Petr Kulhanek, kulhanek@chemi.muni.cz
 //    Copyright (C) 2008 Martin Petrek, petrek@chemi.muni.cz
@@ -47,17 +48,11 @@ public:
     LibBuildVersion_PMF
     CSO_PROG_VERS_END
 
-    CSO_PROG_ARGS_SHORT_DESC_BEGIN
-    "accuname1 [accuname2 [...]] fename"
-    CSO_PROG_ARGS_SHORT_DESC_END
-
-    CSO_PROG_ARGS_LONG_DESC_BEGIN
-    "<cyan><b>accuname1</b></cyan>                  Name of file containing the ABF accumulator.\n"
-    "<cyan><b>fename</b></cyan>                     Name of file where the resulting free energy surface will be printed. If the name is '-' then the output will be written to the standard output.\n"
-    CSO_PROG_ARGS_LONG_DESC_END
-
 // list of all options and arguments ------------------------------------------
     CSO_LIST_BEGIN
+    // arguments ----------------------------
+    CSO_ARG(CSmallString,AccuFile)
+    CSO_ARG(CSmallString,ENEFile)
     // options ------------------------------
     CSO_OPT(CSmallString,Realm)
     CSO_OPT(bool,ListRealms)
@@ -98,7 +93,7 @@ public:
     CSO_OPT(CSmallString,IXFormat)
     CSO_OPT(CSmallString,OEFormat)
     CSO_OPT(CSmallString,MFInfo)
-    CSO_OPT(CSmallString,SaveABF)
+    CSO_OPT(CSmallString,SaveACCU)
     CSO_OPT(CSmallString,GPRKernel)
     CSO_OPT(bool,GPRNumDiff)
     CSO_OPT(bool,GPRUseInv)
@@ -114,6 +109,14 @@ public:
     CSO_LIST_END
 
     CSO_MAP_BEGIN
+    // -------------------------------------------
+        CSO_MAP_ARG(CSmallString, AccuFile, NULL, true, "ACCU",
+            "Name of the file containing the input PMF accumulator.")
+    // -------------------------------------------
+        CSO_MAP_ARG(CSmallString, ENEFile, NULL, true, "ENE",
+            "Name of file where the resulting energy surface will be printed. "
+            "If the name is '-' then the output will be written to the standard output.")
+    // -------------------------------------------
         CSO_MAP_OPT(CSmallString, Realm, "dA/dx", false, 'r', "realm", "NAME",
             "Requested realm for the integration. The list of supported realms can be obtained by --listrealms.")
     // -------------------------------------------
@@ -214,8 +217,8 @@ public:
         CSO_MAP_OPT(bool, NoEnergy, false, false, 0, "noenergy", NULL,
             "GPR: Skip calculation of energy and errors (can save time when only logML is required).")
     // -------------------------------------------
-        CSO_MAP_OPT(CSmallString, SaveABF, NULL, false, '\0', "saveabf", "NAME",
-            "Save the final ABF accumulator to the file NAME.")
+        CSO_MAP_OPT(CSmallString, SaveACCU, NULL, false, '\0', "saveaccu", "NAME",
+            "Save the final PMF accumulator to the file NAME.")
     // -------------------------------------------
         CSO_MAP_OPT(CSmallString, MFInfo, NULL, false, 0, "mfinfo", "NAME",
             "RBF+GPR: Name of file containing input and predicted mean forces.")

@@ -46,10 +46,7 @@ public:
     void SetAccumulator(CPMFAccumulatorPtr accu);
 
     /// set input energy der proxy
-    void AddInputEnergyDerProxy(CEnergyDerProxyPtr p_proxy);
-
-    /// clear energy der proxies
-    void ClearInputEnergyDerProxies(void);
+    void SetInputEnergyDerProxy(CEnergyDerProxyPtr p_proxy);
 
     /// set output free energy surface
     void SetOutputES(CEnergySurfacePtr p_surf);
@@ -119,14 +116,13 @@ public:
 
 // section of private data ----------------------------------------------------
 private:
-    std::vector<CEnergyDerProxyPtr> DerProxyItems;
-    CEnergySurfacePtr               EneSurface;
+    CEnergyDerProxyPtr      DerProxy;
+    CEnergySurfacePtr       EneSurface;
 
     // GPR data, sizes and index maps
     size_t                  GPRSize;
     size_t                  NumOfUsedBins;
     std::vector<size_t>     SampledMap;
-    std::vector<size_t>     DerProxyMap;
     size_t                  NumOfValues;
     std::vector<size_t>     ValueMap;
 

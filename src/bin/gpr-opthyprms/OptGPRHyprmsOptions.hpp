@@ -96,7 +96,7 @@ public:
     CSO_MAP_BEGIN
     // -------------------------------------------
         CSO_MAP_ARG(CSmallString, AccuFile, NULL, true, "ACCU",
-            "Name of the file containing the input ABF accumulator.")
+            "Name of the file containing the input PMF accumulator.")
     // -------------------------------------------
         CSO_MAP_ARG(CSmallString, Realm, NULL, true, "REALM",
             "Realm for GPR hyperparameter optimization. The list of supported realms can be obtained by --listrealms.")

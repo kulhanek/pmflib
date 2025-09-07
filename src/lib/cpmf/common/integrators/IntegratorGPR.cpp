@@ -84,7 +84,7 @@ void CIntegratorGPR::SetAccumulator(CPMFAccumulatorPtr accu)
 
 //------------------------------------------------------------------------------
 
-void CIntegratorGPR::AddInputEnergyDerProxy(CEnergyDerProxyPtr p_proxy)
+void CIntegratorGPR::SetInputEnergyDerProxy(CEnergyDerProxyPtr p_proxy)
 {
     if( p_proxy == NULL ) return;                 // no-proxy
     if( p_proxy->GetAccu() == NULL ) return;      // no PMFAccu
@@ -100,14 +100,7 @@ void CIntegratorGPR::AddInputEnergyDerProxy(CEnergyDerProxyPtr p_proxy)
         SetAccumulator(p_proxy->GetAccu());
     }
 
-    DerProxyItems.push_back(p_proxy);
-}
-
-//------------------------------------------------------------------------------
-
-void CIntegratorGPR::ClearInputEnergyDerProxies(void)
-{
-    DerProxyItems.clear();
+    DerProxy = p_proxy;
 }
 
 //------------------------------------------------------------------------------
@@ -186,7 +179,7 @@ bool CIntegratorGPR::Integrate(CVerboseStr& vout,bool nostat)
 {
     PrintExecInfo(vout);
 
-    if( DerProxyItems.size() == 0 ){
+    if( DerProxy == NULL ){
         RUNTIME_ERROR("no input data");
     }
     if( EneSurface == NULL ) {
@@ -209,24 +202,18 @@ bool CIntegratorGPR::Integrate(CVerboseStr& vout,bool nostat)
 
     // number of data points
     NumOfUsedBins = 0;
-    for(size_t i=0; i < DerProxyItems.size(); i++){
-        for(size_t ibin=0; ibin < NumOfBins; ibin++){
-            if( DerProxyItems[i]->GetNumOfSamples(ibin) > 0 ) NumOfUsedBins++;
-        }
+    for(size_t ibin=0; ibin < NumOfBins; ibin++){
+        if( DerProxy->GetNumOfSamples(ibin) > 0 ) NumOfUsedBins++;
     }
     GPRSize = NumOfUsedBins * NumOfCVs;
 
     // create sampled map
     SampledMap.resize(NumOfUsedBins);
-    DerProxyMap.resize(NumOfUsedBins);
     size_t ind = 0;
-    for(size_t i=0; i < DerProxyItems.size(); i++){
-        for(size_t ibin=0; ibin < NumOfBins; ibin++){
-            if( DerProxyItems[i]->GetNumOfSamples(ibin) <= 0 ) continue;
-            SampledMap[ind] = ibin;
-            DerProxyMap[ind] = i;
-            ind++;
-        }
+    for(size_t ibin=0; ibin < NumOfBins; ibin++){
+        if( DerProxy->GetNumOfSamples(ibin) <= 0 ) continue;
+        SampledMap[ind] = ibin;
+        ind++;
     }
 
     // init GPR arrays
@@ -299,10 +286,9 @@ bool CIntegratorGPR::TrainGP(CVerboseStr& vout)
 // construct Y
     #pragma omp parallel for
     for(size_t indi=0; indi < NumOfUsedBins; indi++){
-        CEnergyDerProxyPtr  item = DerProxyItems[DerProxyMap[indi]];
-        size_t              ibin = SampledMap[indi];
+        size_t ibin = SampledMap[indi];
         for(size_t ii=0; ii < NumOfCVs; ii++){
-            double mf = item->GetValue(ibin,ii,E_PROXY_VALUE);
+            double mf = DerProxy->GetValue(ibin,ii,E_PROXY_VALUE);
             Y[indi*NumOfCVs+ii] = mf;
         }
     }
@@ -499,16 +485,14 @@ void CIntegratorGPR::CalculateEnergy(CVerboseStr& vout)
 
 // create map for bins with calculated energy and error
     std::set<size_t>    vset;
-    for(size_t i=0; i < DerProxyItems.size(); i++){
-        for(size_t ibin=0; ibin < NumOfBins; ibin++){
-            int samples = DerProxyItems[i]->GetNumOfSamples(ibin);
-            if( IncludeGluedBins ){
-                if( samples == 0 ) continue;
-            } else {
-                if( samples <= 0 ) continue;
-            }
-            vset.insert(ibin);
+    for(size_t ibin=0; ibin < NumOfBins; ibin++){
+        int samples = DerProxy->GetNumOfSamples(ibin);
+        if( IncludeGluedBins ){
+            if( samples == 0 ) continue;
+        } else {
+            if( samples <= 0 ) continue;
         }
+        vset.insert(ibin);
     }
     NumOfValues = vset.size();
     ValueMap.resize(NumOfValues);
@@ -538,14 +522,12 @@ void CIntegratorGPR::CalculateEnergy(CVerboseStr& vout)
     }
 
 // basic EneSurface update
-    for(size_t i=0; i < DerProxyItems.size(); i++){
-        for(size_t ibin=0; ibin < NumOfBins; ibin++){
-            int nsamples = DerProxyItems[i]->GetNumOfSamples(ibin);
-            int osamples = EneSurface->GetNumOfSamples(ibin);
-            EneSurface->SetNumOfSamples(ibin,nsamples+osamples);
-            EneSurface->SetEnergy(ibin,0.0);
-            EneSurface->SetError(ibin,0.0);
-        }
+    for(size_t ibin=0; ibin < NumOfBins; ibin++){
+        int nsamples = DerProxy->GetNumOfSamples(ibin);
+        int osamples = EneSurface->GetNumOfSamples(ibin);
+        EneSurface->SetNumOfSamples(ibin,nsamples+osamples);
+        EneSurface->SetEnergy(ibin,0.0);
+        EneSurface->SetError(ibin,0.0);
     }
 
 // update FES
@@ -682,12 +664,11 @@ double CIntegratorGPR::GetRMSR(size_t cv)
 
     #pragma omp parallel for firstprivate(ipos) reduction(+:rmsr)
     for(size_t indi=0; indi < NumOfUsedBins; indi++){
-        CEnergyDerProxyPtr  item = DerProxyItems[DerProxyMap[indi]];
         size_t              ibin = SampledMap[indi];
 
         EneSurface->GetPoint(ibin,ipos);
 
-        double mfi = item->GetValue(ibin,cv,E_PROXY_VALUE);
+        double mfi = DerProxy->GetValue(ibin,cv,E_PROXY_VALUE);
         double mfp = GetMeanForce(ipos,cv);
         double diff = mfi - mfp;
         rmsr += diff*diff;
@@ -736,13 +717,12 @@ bool CIntegratorGPR::WriteMFInfo(const CSmallString& name)
     // calculate
     #pragma omp parallel for firstprivate(ipos)
     for(size_t indi=0; indi < NumOfUsedBins; indi++){
-        CEnergyDerProxyPtr  item = DerProxyItems[DerProxyMap[indi]];
         size_t              ibin = SampledMap[indi];
 
         EneSurface->GetPoint(ibin,ipos);
         for(size_t k=0; k < NumOfCVs; k++){
-            mfi[indi*NumOfCVs+k] = item->GetValue(ibin,k,E_PROXY_VALUE);
-            double mfe = item->GetValue(ibin,k,E_PROXY_ERROR);
+            mfi[indi*NumOfCVs+k] = DerProxy->GetValue(ibin,k,E_PROXY_VALUE);
+            double mfe = DerProxy->GetValue(ibin,k,E_PROXY_ERROR);
             mfie[indi*NumOfCVs+k] = mfe;            // this is a sigma
 
             mfp[indi*NumOfCVs+k] = GetMeanForce(ipos,k);
@@ -760,15 +740,8 @@ bool CIntegratorGPR::WriteMFInfo(const CSmallString& name)
     }
 
     // print
-    size_t accu_prev = DerProxyMap[0];
     for(size_t indi=0; indi < NumOfUsedBins; indi++){
         size_t ibin = SampledMap[indi];
-        size_t accu = DerProxyMap[indi];
-
-        if( accu != accu_prev ){
-            ofs << endl;
-            accu_prev = accu;
-        }
 
         EneSurface->GetPoint(ibin,ipos);
 
@@ -824,13 +797,12 @@ void CIntegratorGPR::FilterByMFZScore(double zscore,CVerboseStr& vout)
     // precalculate values
     #pragma omp parallel for firstprivate(ipos)
     for(size_t indi=0; indi < NumOfUsedBins; indi++){
-        CEnergyDerProxyPtr  item = DerProxyItems[DerProxyMap[indi]];
         size_t              ibin = SampledMap[indi];
 
         EneSurface->GetPoint(ibin,ipos);
 
         for(size_t k=0; k < NumOfCVs; k++){
-            double mf = item->GetValue(ibin,k,E_PROXY_VALUE);
+            double mf = DerProxy->GetValue(ibin,k,E_PROXY_VALUE);
             double diff2 = mf - GetMeanForce(ipos,k);
             diff2 *= diff2;
             mferror2[indi*NumOfCVs+k] = diff2;
@@ -904,9 +876,7 @@ void CIntegratorGPR::FilterByMFZScore(double zscore,CVerboseStr& vout)
     size_t outliers = 0;
     for(size_t i=0; i < NumOfBins; i++){
         if( flags[i] == 0 ){
-            for(size_t j=0; j < DerProxyItems.size(); j++){
-                DerProxyItems[j]->GetAccu()->SetNumOfSamples(i,0);
-            }
+            DerProxy->GetAccu()->SetNumOfSamples(i,0);
             outliers++;
         }
     }

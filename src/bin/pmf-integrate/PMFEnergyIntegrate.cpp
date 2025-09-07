@@ -1,6 +1,7 @@
 // =============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
+//    Copyright (C) 2025 Petr Kulhanek, kulhanek@chemi.muni.cz
 //    Copyright (C) 2021 Petr Kulhanek, kulhanek@chemi.muni.cz
 //    Copyright (C) 2019 Petr Kulhanek, kulhanek@chemi.muni.cz
 //    Copyright (C) 2008 Martin Petrek, petrek@chemi.muni.cz
@@ -68,8 +69,6 @@ int CPMFEnergyIntegrate::Init(int argc,char* argv[])
 // should we exit or was it error?
     if(result != SO_CONTINUE) return(result);
 
-    FEOutputName = Options.GetProgArg(Options.GetNumberOfProgArgs()-1);
-
 // attach verbose stream to cout and set desired verbosity level
     vout.Attach(Console);
     if( Options.GetOptVerbose() ) {
@@ -86,8 +85,10 @@ int CPMFEnergyIntegrate::Init(int argc,char* argv[])
     vout << "# Version: " << LibBuildVersion_PMF << endl;
     vout << "# ==============================================================================" << endl;
 
-    if( FEOutputName != "-") {
-        vout << "# Free energy file (out): " << FEOutputName << endl;
+        vout << "# PMF accumulator (in)  : " << Options.GetArgAccuFile() << endl;
+
+    if( Options.GetArgENEFile() != "-") {
+        vout << "# Free energy file (out): " << Options.GetArgENEFile() << endl;
     } else {
         vout << "# Free energy file (out): - (standard output)" << endl;
     }
@@ -157,8 +158,8 @@ int CPMFEnergyIntegrate::Init(int argc,char* argv[])
         vout << "# Number of MF Z-tests  : " << Options.GetOptMFZTestPasses() << endl;
     }
     }
-        vout << "# Glueing FES factor    : " << Options.GetOptGlueingFactor() << endl;
-        vout << "# Glue holes on FES     : " << bool_to_str(Options.GetOptGlueHoles()) << endl;
+        vout << "# Glueing ENE factor    : " << Options.GetOptGlueingFactor() << endl;
+        vout << "# Glue holes on ENE     : " << bool_to_str(Options.GetOptGlueHoles()) << endl;
     if(Options.GetOptEnergyLimit() == -1) {
         vout << "# Energy limit          : not applied" << endl;
     } else {
@@ -170,12 +171,12 @@ int CPMFEnergyIntegrate::Init(int argc,char* argv[])
     vout << "# ------------------------------------------------" << endl;
 
     if( Options.IsOptGlobalMinSet() ){
-    vout << "# Global FES minimum    : " << Options.GetOptGlobalMin() << endl;
+    vout << "# Global ENE minimum    : " << Options.GetOptGlobalMin() << endl;
     } else {
-    vout << "# Global FES minimum    : -auto-" << endl;
+    vout << "# Global ENE minimum    : -auto-" << endl;
     }
     vout << "# Integration offset    : " << Options.GetOptOffset() << endl;
-    vout << "# Output FES format     : " << Options.GetOptOutputFormat() << endl;
+    vout << "# Output ENE format     : " << Options.GetOptOutputFormat() << endl;
     vout << "# No header to output   : " << bool_to_str(Options.GetOptNoHeader()) << endl;
     vout << "# Include bin statuses  : " << bool_to_str(Options.GetOptIncludeBinStat()) << endl;
     vout << "# X format              : " << Options.GetOptIXFormat() << endl;
@@ -183,7 +184,7 @@ int CPMFEnergyIntegrate::Init(int argc,char* argv[])
     if( Options.IsOptKeepCVsSet() ){
     vout << "# ------------------------------------------------------------------------------" << endl;
     vout << "# Keep CVs              : " << Options.GetOptKeepCVs() << endl;
-    vout << "# Reduced FES file      : " << Options.GetOptReducedFES() << endl;
+    vout << "# Reduced ENE file      : " << Options.GetOptReducedFES() << endl;
     }
 
     vout << "# ------------------------------------------------------------------------------" << endl;
@@ -199,70 +200,45 @@ bool CPMFEnergyIntegrate::Run(void)
     State = 1;
 
     vout << endl;
-    vout << format("%02d:Loading PMF accumulators ...")%State << endl;
+    vout << format("%02d:Loading PMF accumulator ...")%State << endl;
     State++;
-    for(int i=0; i < Options.GetNumberOfProgArgs()-1; i++){
-        CSmallString name = Options.GetProgArg(i);
-        vout << format("   ** PMF Accumulator #%05d: %s")%(i+1)%string(name) << endl;
-        CPMFAccumulatorPtr p_accu(new CPMFAccumulator);
-        try {
-            p_accu->Load(name);
-        } catch(...) {
-            CSmallString error;
-            error << "unable to load the input PMF accumulator file '" << name << "'";
-            ES_ERROR(error);
-            return(false);
-        }
-        Accumulators.push_back(p_accu);
-    }
-    vout << "   Done" << endl;
-
-    if( Accumulators.size() == 0 ){
+    vout << format("   ** Name: %s")%string(Options.GetArgAccuFile()) << endl;
+    Accu = CPMFAccumulatorPtr(new CPMFAccumulator);
+    try {
+        Accu->Load(Options.GetArgAccuFile());
+    } catch(...) {
         CSmallString error;
-        error << "no PMF accumulator was loaded";
+        error << "unable to load the input PMF accumulator file '" << Options.GetArgAccuFile() << "'";
         ES_ERROR(error);
         return(false);
     }
-
-    if( (Options.GetOptMethod() == "rfd") || (Options.GetOptMethod() == "rbf") ){
-        if( Accumulators.size() != 1 ){
-            CSmallString error;
-            error << "RFD/RBF: only one PMF accumulator can be provided";
-            ES_ERROR(error);
-            return(false);
-        }
-    }
+    vout << "   Done" << endl;
 
 // realms
     vout << endl;
     vout << format("%02d:Initializing %s realm ...")%State%Options.GetOptRealm()  << endl;
-    vout << format(  "   Number of loaded PMF accumulators = %d")%Accumulators.size() << endl;
     State++;
-    for(size_t i=0; i < Accumulators.size(); i++){
-        CPMFAccumulatorPtr accu   = Accumulators[i];
-        CEnergyDerProxyPtr lproxy = CEnergyDerProxyInit::InitProxy(Options.GetOptRealm(),accu);
-        lproxy->Init(accu);
-        DerProxies.push_back(lproxy);
-    vout << format(  "   %03d: %s [%s] | %s")%(i+1)%lproxy->GetRealm()%lproxy->GetMethods()%lproxy->GetDescription() << endl;
-    }
+    DerProxy = CEnergyDerProxyInit::InitProxy(Options.GetOptRealm(),Accu);
+    DerProxy->Init(Accu);
+    vout << format(  "   %s [%s] | %s")%DerProxy->GetRealm()%DerProxy->GetMethods()%DerProxy->GetDescription() << endl;
 
     // DO NOT SET IT HERE, Ncorr is now GPR hyperparameter
     // Accu->SetNCorr(Options.GetOptNCorr());
-    FES = CEnergySurfacePtr(new CEnergySurface);
-    FES->Allocate(Accumulators[0]);
-    FES->SetSLevel(Options.GetOptSLevel());
+    ENE = CEnergySurfacePtr(new CEnergySurface);
+    ENE->Allocate(Accu);
+    ENE->SetSLevel(Options.GetOptSLevel());
 
     if( Options.IsOptGlobalMinSet() ){
-        FES->SetGlobalMin(Options.GetOptGlobalMin());
+        ENE->SetGlobalMin(Options.GetOptGlobalMin());
     }
 
-// reduced FES options
+// reduced ENE options
     if( Options.IsOptKeepCVsSet() ){
         DecodeEList(Options.GetOptKeepCVs(),KeepCVs,"--keepcvs");
     }
 
     vout << endl;
-    vout << format("%02d:Statistics of input PMF accumulators")%State << endl;
+    vout << format("%02d:Statistics of input PMF accumulator")%State << endl;
     State++;
     PrintAccuStat();
     PrintSampledStat();
@@ -272,13 +248,13 @@ bool CPMFEnergyIntegrate::Run(void)
         // test early stage parsing of --globalmin
         CIntegratorRFD  integrator;
 
-        integrator.SetOutputES(FES);
-        integrator.SetInputEnergyDerProxy(DerProxies[0]);
+        integrator.SetOutputES(ENE);
+        integrator.SetInputEnergyDerProxy(DerProxy);
     }
 
 // sampling limit -------------------------------
     vout << endl;
-    vout << format("%02d:Preparing PMF accumulators for integration (sampling limit)")%State << endl;
+    vout << format("%02d:Preparing PMF accumulator for integration (sampling limit)")%State << endl;
     State++;
     PrepareAccumulatorI();
     if( ! Options.GetOptSkipFFTest() ){
@@ -305,24 +281,24 @@ bool CPMFEnergyIntegrate::Run(void)
             PrintSampledStat();
             vout << "   Done." << endl;
 
-            FES->Clear();
+            ENE->Clear();
         }
     }
 
 // glue fes ------------------------------------
     if( Options.GetOptGlueHoles() ){
         vout << endl;
-        vout << format("%02d:Preparing ABF accumulator for integration (glue holes on FES)")%State << endl;
+        vout << format("%02d:Preparing ABF accumulator for integration (glue holes on ENE)")%State << endl;
         State++;
         GlueHoles();
         PrintSampledStat();
         vout << "   Done." << endl;
-        FES->Clear();
+        ENE->Clear();
     }
 
     if( Options.GetOptGlueingFactor() > 0 ){
         vout << endl;
-        vout << format("%02d:Preparing ABF accumulator for integration (glueing FES)")%State << endl;
+        vout << format("%02d:Preparing ABF accumulator for integration (glueing ENE)")%State << endl;
         State++;
         vout << "   Searching for border regions in close vicinity of sampled areas ..." << endl;
         int tg = 0;
@@ -333,7 +309,7 @@ bool CPMFEnergyIntegrate::Run(void)
         PrintSampledStat();
         vout << "   Done." << endl;
 
-        FES->Clear();
+        ENE->Clear();
     }
 
 // energy limit --------------------------------
@@ -354,7 +330,7 @@ bool CPMFEnergyIntegrate::Run(void)
         PrintSampledStat();
         vout << "   Done." << endl;
 
-        FES->Clear();
+        ENE->Clear();
     }
 
 // integrate data ------------------------------
@@ -366,16 +342,16 @@ bool CPMFEnergyIntegrate::Run(void)
 
  // apply offset
     if( ! Options.IsOptGlobalMinSet() ){
-        FES->ApplyOffset(Options.GetOptOffset() - FES->GetGlobalMinimumValue());
+        ENE->ApplyOffset(Options.GetOptOffset() - ENE->GetGlobalMinimumValue());
     } else {
-        FES->ApplyOffset(Options.GetOptOffset());
+        ENE->ApplyOffset(Options.GetOptOffset());
     }
 
 // final energy limit --------------------------------
 
     if( (Options.GetOptEnergyLimit() > 0.0) && (Options.GetOptSkipLastEnergyLimit() == false) ){
         vout << endl;
-        vout << format("%02d:Cleaning FES (energy limit)")%State << endl;
+        vout << format("%02d:Cleaning ENE (energy limit)")%State << endl;
         State++;
         PrepareAccumulatorII();
         if( ! Options.GetOptSkipFFTest() ){
@@ -388,16 +364,16 @@ bool CPMFEnergyIntegrate::Run(void)
 // post-processing
     if( Options.GetOptUnsampledAsMaxE() ){
         if( Options.IsOptMaxEnergySet()){
-            FES->AdaptUnsampledToMaxEnergy(Options.GetOptMaxEnergy());
+            ENE->AdaptUnsampledToMaxEnergy(Options.GetOptMaxEnergy());
         } else {
-            FES->AdaptUnsampledToMaxEnergy();
+            ENE->AdaptUnsampledToMaxEnergy();
         }
     }
 
-// reduce FES ------------------------------
+// reduce ENE ------------------------------
     if( Options.IsOptReducedFESSet() ){
         vout << endl;
-        vout << format("%02d:Reducing FES by statistical reweighting")%State << endl;
+        vout << format("%02d:Reducing ENE by statistical reweighting")%State << endl;
         State++;
         if( ReduceFES() == false ) return(false);
         vout << "   Done." << endl;
@@ -405,9 +381,10 @@ bool CPMFEnergyIntegrate::Run(void)
 
 // print result ---------------------------------
     vout << endl;
-    vout << format("%02d:Writing results to file: %s")%State%string(FEOutputName) << endl;
+    vout << format("%02d:Writing results to file ...")%State << endl;
+    vout << format("   ** Name: %s")%string(Options.GetArgENEFile()) << endl;
 
-    if( OutputFile.Open(FEOutputName,"w") == false ){
+    if( OutputFile.Open(Options.GetArgENEFile(),"w") == false ){
         ES_ERROR("unable to open output file");
         return(SO_USER_ERROR);
     }
@@ -431,7 +408,7 @@ bool CPMFEnergyIntegrate::Run(void)
     printer.IncludeGluedAreas((Options.GetOptGlueingFactor() > 0)||Options.GetOptGlueHoles()||Options.GetOptIncludeGluedRegions());
     printer.SetIncludeError(Options.GetOptWithError());
     printer.SetIncludeBinStat(Options.GetOptIncludeBinStat());
-    printer.SetPrintedES(FES);
+    printer.SetPrintedES(ENE);
 
     try {
         printer.Print(OutputFile);
@@ -443,7 +420,8 @@ bool CPMFEnergyIntegrate::Run(void)
 
     if( Options.IsOptPrintAllSet()){
         vout << endl;
-        vout << format("%02d:Writing results to file: %s (full version, --printall)")%State%string(Options.GetOptPrintAll()) << endl;
+        vout << format("%02d:Writing results to file ... (full version, --printall)")%State << endl;
+        vout << format("   ** Name: %s")%string(Options.GetOptPrintAll()) << endl;
         State++;
 
         if( OutputFile.Open(Options.GetOptPrintAll(),"w") == false ){
@@ -470,7 +448,7 @@ bool CPMFEnergyIntegrate::Run(void)
         printer.IncludeGluedAreas((Options.GetOptGlueingFactor() > 0)||Options.GetOptGlueHoles()||Options.GetOptIncludeGluedRegions());
         printer.SetIncludeError(Options.GetOptWithError());
         printer.SetIncludeBinStat(Options.GetOptIncludeBinStat());
-        printer.SetPrintedES(FES);
+        printer.SetPrintedES(ENE);
 
         try {
             printer.Print(OutputFile);
@@ -482,18 +460,13 @@ bool CPMFEnergyIntegrate::Run(void)
     }
 
 // save accumulator if requested
-    if( Options.GetOptSaveABF() != NULL ){
+    if( Options.GetOptSaveACCU() != NULL ){
         vout << endl;
-        vout << format("%02d:Saving PMF accumulator to : %s")%State%string(Options.GetOptSaveABF()) << endl;
-
-        if( Accumulators.size() != 1 ){
-            ES_ERROR("only one PMF accumulator expected");
-            return(false);
-        }
+        vout << format("%02d:Saving PMF accumulator to : %s")%State%string(Options.GetOptSaveACCU()) << endl;
 
         State++;
         try {
-            Accumulators[0]->Save(Options.GetOptSaveABF());
+            Accu->Save(Options.GetOptSaveACCU());
         } catch(...) {
             ES_ERROR("unable to save the PMF accumulator file");
             return(false);
@@ -525,8 +498,8 @@ bool CPMFEnergyIntegrate::IntegrateForMFZScore(int pass)
     } else if( Options.GetOptEcutMethod() == "rbf" ){
         CIntegratorRBF   integrator;
 
-        integrator.SetOutputES(FES);
-        integrator.SetInputEnergyDerProxy(DerProxies[0]);
+        integrator.SetOutputES(ENE);
+        integrator.SetInputEnergyDerProxy(DerProxy);
 
         integrator.SetWFac(Options.GetOptWFac());
         integrator.SetRCond(Options.GetOptRCond());
@@ -556,10 +529,8 @@ bool CPMFEnergyIntegrate::IntegrateForMFZScore(int pass)
     } else if( Options.GetOptEcutMethod() == "gpr" ){
         CIntegratorGPR   integrator;
 
-        integrator.SetOutputES(FES);
-        for(size_t i=0; i < DerProxies.size(); i++){
-            integrator.AddInputEnergyDerProxy(DerProxies[i]);
-        }
+        integrator.SetOutputES(ENE);
+        integrator.SetInputEnergyDerProxy(DerProxy);
 
         if( Options.IsOptLoadHyprmsSet() ){
             integrator.LoadGPRHyprms(Options.GetOptLoadHyprms());
@@ -626,8 +597,8 @@ bool CPMFEnergyIntegrate::IntegrateForEcut(void)
             }
         }
 
-        integrator.SetOutputES(FES);
-        integrator.SetInputEnergyDerProxy(DerProxies[0]);
+        integrator.SetOutputES(ENE);
+        integrator.SetInputEnergyDerProxy(DerProxy);
 
         if(integrator.Integrate(vout) == false) {
             ES_ERROR("unable to integrate ABF accumulator");
@@ -637,8 +608,8 @@ bool CPMFEnergyIntegrate::IntegrateForEcut(void)
     } else if( Options.GetOptEcutMethod() == "rbf" ){
         CIntegratorRBF   integrator;
 
-        integrator.SetOutputES(FES);
-        integrator.SetInputEnergyDerProxy(DerProxies[0]);
+        integrator.SetOutputES(ENE);
+        integrator.SetInputEnergyDerProxy(DerProxy);
 
         integrator.SetWFac(Options.GetOptWFac());
         integrator.SetRCond(Options.GetOptRCond());
@@ -662,10 +633,8 @@ bool CPMFEnergyIntegrate::IntegrateForEcut(void)
     } else if( Options.GetOptEcutMethod() == "gpr" ){
         CIntegratorGPR   integrator;
 
-        integrator.SetOutputES(FES);
-        for(size_t i=0; i < DerProxies.size(); i++){
-            integrator.AddInputEnergyDerProxy(DerProxies[i]);
-        }
+        integrator.SetOutputES(ENE);
+        integrator.SetInputEnergyDerProxy(DerProxy);
 
         if( Options.IsOptLoadHyprmsSet() ){
             integrator.LoadGPRHyprms(Options.GetOptLoadHyprms());
@@ -707,8 +676,8 @@ bool CPMFEnergyIntegrate::Integrate(void)
     if(Options.GetOptMethod() == "rfd" ) {
         CIntegratorRFD   integrator;
 
-        integrator.SetOutputES(FES);
-        integrator.SetInputEnergyDerProxy(DerProxies[0]);
+        integrator.SetOutputES(ENE);
+        integrator.SetInputEnergyDerProxy(DerProxy);
 
         integrator.SetPeriodicity(Options.GetOptPeriodicity());
         integrator.SetFDPoints(Options.GetOptFDPoints());
@@ -731,8 +700,8 @@ bool CPMFEnergyIntegrate::Integrate(void)
     } else if( Options.GetOptMethod() == "rbf" ){
         CIntegratorRBF   integrator;
 
-        integrator.SetOutputES(FES);
-        integrator.SetInputEnergyDerProxy(DerProxies[0]);
+        integrator.SetOutputES(ENE);
+        integrator.SetInputEnergyDerProxy(DerProxy);
 
         integrator.SetWFac(Options.GetOptWFac());
         integrator.SetRCond(Options.GetOptRCond());
@@ -754,10 +723,8 @@ bool CPMFEnergyIntegrate::Integrate(void)
     } else if( Options.GetOptMethod() == "gpr" ){
         CIntegratorGPR   integrator;
 
-        integrator.SetOutputES(FES);
-        for(size_t i=0; i < DerProxies.size(); i++){
-            integrator.AddInputEnergyDerProxy(DerProxies[i]);
-        }
+        integrator.SetOutputES(ENE);
+        integrator.SetInputEnergyDerProxy(DerProxy);
 
         if( Options.IsOptLoadHyprmsSet() ){
             integrator.LoadGPRHyprms(Options.GetOptLoadHyprms());
@@ -806,7 +773,7 @@ bool CPMFEnergyIntegrate::Integrate(void)
 
 bool CPMFEnergyIntegrate::ReduceFES(void)
 {
-    vout << format("   Reduced FES : %s")%string(Options.GetOptReducedFES()) << endl;
+    vout << format("   Reduced ENE : %s")%string(Options.GetOptReducedFES()) << endl;
 
     size_t nrcvs = 0;
            vout << "   Kept CVs    : ";
@@ -820,7 +787,7 @@ bool CPMFEnergyIntegrate::ReduceFES(void)
         if( (i+1) < KeepCVs.size() ) vout << "x";
     }
     vout << endl;
-    if( nrcvs == (size_t)FES->GetNumOfCVs() ){
+    if( nrcvs == (size_t)ENE->GetNumOfCVs() ){
         vout << "   No reduction specified, skipping ..." << endl;
         return(true);
     }
@@ -829,7 +796,7 @@ bool CPMFEnergyIntegrate::ReduceFES(void)
         return(true);
     }
 
-    vout << format("   Temperature : %.1f K")%(FES->GetTemperature()) << endl;
+    vout << format("   Temperature : %.1f K")%(ENE->GetTemperature()) << endl;
 
     // FIXME
     CEnergySurfacePtr reducedFES;
@@ -838,14 +805,12 @@ bool CPMFEnergyIntegrate::ReduceFES(void)
         // need to run another integration
         CIntegratorGPR   integrator;
 
-        // FES is destroyed during reduction by CIntegratorGPR, thus use some temp version
+        // ENE is destroyed during reduction by CIntegratorGPR, thus use some temp version
         CEnergySurfacePtr tmp_FES = CEnergySurfacePtr(new CEnergySurface);
-        tmp_FES->Allocate(Accumulators[0]);
+        tmp_FES->Allocate(Accu);
 
         integrator.SetOutputES(tmp_FES);
-        for(size_t i=0; i < DerProxies.size(); i++){
-            integrator.AddInputEnergyDerProxy(DerProxies[i]);
-        }
+        integrator.SetInputEnergyDerProxy(DerProxy);
 
         if( Options.IsOptLoadHyprmsSet() ){
             integrator.LoadGPRHyprms(Options.GetOptLoadHyprms());
@@ -872,14 +837,14 @@ bool CPMFEnergyIntegrate::ReduceFES(void)
         }
         reducedFES = integrator.ReduceFES(KeepCVs);
         if( reducedFES == NULL ) {
-            ES_ERROR("unable to reduce FES");
+            ES_ERROR("unable to reduce ENE");
             return(false);
         }
 
     } else {
-        reducedFES = FES->ReduceFES(KeepCVs);
+        reducedFES = ENE->ReduceFES(KeepCVs);
         if( reducedFES == NULL ) {
-            ES_ERROR("unable to reduce FES");
+            ES_ERROR("unable to reduce ENE");
             return(false);
         }
     }
@@ -929,13 +894,10 @@ bool CPMFEnergyIntegrate::ReduceFES(void)
 
 void CPMFEnergyIntegrate::PrepareAccumulatorI(void)
 {
-    for(size_t i=0; i < Accumulators.size(); i++){
-        CPMFAccumulatorPtr accu = Accumulators[i];
-        for(int ibin=0; ibin < accu->GetNumOfBins(); ibin++) {
-            // erase datapoints not properly sampled, preserve glueing
-            if( (accu->GetNumOfSamples(ibin) >= 0) && (accu->GetNumOfSamples(ibin) <= Options.GetOptLimit()) ) {
-                accu->SetNumOfSamples(ibin,0);
-            }
+    for(int ibin=0; ibin < Accu->GetNumOfBins(); ibin++) {
+        // erase datapoints not properly sampled, preserve glueing
+        if( (Accu->GetNumOfSamples(ibin) >= 0) && (Accu->GetNumOfSamples(ibin) <= Options.GetOptLimit()) ) {
+            Accu->SetNumOfSamples(ibin,0);
         }
     }
 }
@@ -950,29 +912,23 @@ void CPMFEnergyIntegrate::PrepareAccumulatorII(void)
     SyncFESWithAccu();
 
     // filter by energy
-    for(int ibin=0; ibin < FES->GetNumOfBins(); ibin++) {
-        if( FES->GetNumOfSamples(ibin) != 0 ) {
+    for(int ibin=0; ibin < ENE->GetNumOfBins(); ibin++) {
+        if( ENE->GetNumOfSamples(ibin) != 0 ) {
             // consider only properly sampled data points
-            if( FES->GetEnergy(ibin) > Options.GetOptEnergyLimit() ){
+            if( ENE->GetEnergy(ibin) > Options.GetOptEnergyLimit() ){
                 // erase data points with too large energy
-                FES->SetNumOfSamples(ibin,0);
-                FES->SetEnergy(ibin,Options.GetOptEnergyLimit());
+                ENE->SetNumOfSamples(ibin,0);
+                ENE->SetEnergy(ibin,Options.GetOptEnergyLimit());
 
-                for(size_t i=0; i < Accumulators.size(); i++){
-                    CPMFAccumulatorPtr accu = Accumulators[i];
-                    accu->SetNumOfSamples(ibin,0);
-                }
+                Accu->SetNumOfSamples(ibin,0);
             }
             if( Options.GetOptEraseNegativeEnergy() ){
-                if( FES->GetEnergy(ibin) < 0 ){
+                if( ENE->GetEnergy(ibin) < 0 ){
                     // erase data points with negative energy
-                    FES->SetNumOfSamples(ibin,0);
-                    FES->SetEnergy(ibin,0.0);
+                    ENE->SetNumOfSamples(ibin,0);
+                    ENE->SetEnergy(ibin,0.0);
 
-                    for(size_t i=0; i < Accumulators.size(); i++){
-                        CPMFAccumulatorPtr accu = Accumulators[i];
-                        accu->SetNumOfSamples(ibin,0);
-                    }
+                    Accu->SetNumOfSamples(ibin,0);
                 }
             }
         }
@@ -983,17 +939,14 @@ void CPMFEnergyIntegrate::PrepareAccumulatorII(void)
 
 void CPMFEnergyIntegrate::SyncFESWithAccu(void)
 {
-    for(int ibin=0; ibin < FES->GetNumOfBins(); ibin++) {
-        FES->SetNumOfSamples(ibin,0);
+    for(int ibin=0; ibin < ENE->GetNumOfBins(); ibin++) {
+        ENE->SetNumOfSamples(ibin,0);
     }
 
-    for(size_t i=0; i < Accumulators.size(); i++){
-        CPMFAccumulatorPtr accu = Accumulators[i];
-        for(int ibin=0; ibin < accu->GetNumOfBins(); ibin++) {
-            int osam = FES->GetNumOfSamples(ibin);
-            int nsam = accu->GetNumOfSamples(ibin);
-            FES->SetNumOfSamples(ibin,osam+nsam);
-        }
+    for(int ibin=0; ibin < Accu->GetNumOfBins(); ibin++) {
+        int osam = ENE->GetNumOfSamples(ibin);
+        int nsam = Accu->GetNumOfSamples(ibin);
+        ENE->SetNumOfSamples(ibin,osam+nsam);
     }
 }
 
@@ -1001,12 +954,9 @@ void CPMFEnergyIntegrate::SyncFESWithAccu(void)
 
 void CPMFEnergyIntegrate::SyncAccuWithFES(void)
 {
-    for(size_t i=0; i < Accumulators.size(); i++){
-        CPMFAccumulatorPtr accu = Accumulators[i];
-        for(int ibin=0; ibin < accu->GetNumOfBins(); ibin++) {
-            if( FES->GetNumOfSamples(ibin) <= 0 ) {
-                accu->SetNumOfSamples(ibin,0);
-            }
+    for(int ibin=0; ibin < Accu->GetNumOfBins(); ibin++) {
+        if( ENE->GetNumOfSamples(ibin) <= 0 ) {
+            Accu->SetNumOfSamples(ibin,0);
         }
     }
 }
@@ -1015,34 +965,20 @@ void CPMFEnergyIntegrate::SyncAccuWithFES(void)
 
 void CPMFEnergyIntegrate::PrintAccuStat(void)
 {
-    int NCVs = 0;
-
-    for(size_t i=0; i < Accumulators.size(); i++){
-        CPMFAccumulatorPtr accu = Accumulators[i];
-        vout << format("   ** PMF Accumulator #%05d ... ")%(i+1);
-        // calculate sampled area
-        double maxbins = accu->GetNumOfBins();
-        int    sampled = 0;
-        for(int ibin=0; ibin < accu->GetNumOfBins(); ibin++) {
-            if( accu->GetNumOfSamples(ibin) > 0 ) {
-                sampled++;
-            }
-        }
-        if( maxbins > 0 ){
-            vout << "Sampled area: "
-                 << setw(6) << sampled << " / " << (int)maxbins << " | " << setw(5) << setprecision(1) << fixed << sampled/maxbins*100 <<"%";
-        }
-        vout << endl;
-        int ncvs = accu->GetNumOfCVs();
-        if( i == 0 ){
-            NCVs = ncvs;
-        }
-        if( NCVs != ncvs ){
-            CSmallString error;
-            error << "inconsistent dimensions (NCVs) of PMF accumulator: " << ncvs << "; the first accu: " << NCVs;
-            RUNTIME_ERROR(error);
+    vout << format("   -- ");
+    // calculate sampled area
+    double maxbins = Accu->GetNumOfBins();
+    int    sampled = 0;
+    for(int ibin=0; ibin < Accu->GetNumOfBins(); ibin++) {
+        if( Accu->GetNumOfSamples(ibin) > 0 ) {
+            sampled++;
         }
     }
+    if( maxbins > 0 ){
+        vout << "Sampled area:               "
+             << setw(6) << sampled << " / " << (int)maxbins << " | " << setw(5) << setprecision(1) << fixed << sampled/maxbins*100 <<"%";
+    }
+    vout << endl;
 }
 
 //------------------------------------------------------------------------------
@@ -1052,18 +988,18 @@ void CPMFEnergyIntegrate::PrintSampledStat(void)
     SyncFESWithAccu();
 
     // calculate sampled area
-    double maxbins = FES->GetNumOfBins();
+    double maxbins = ENE->GetNumOfBins();
     int    sampled = 0;
     int    holes = 0;
     int    glued = 0;
-    for(int ibin=0; ibin < FES->GetNumOfBins(); ibin++) {
-        if( FES->GetNumOfSamples(ibin) > 0 ) {
+    for(int ibin=0; ibin < ENE->GetNumOfBins(); ibin++) {
+        if( ENE->GetNumOfSamples(ibin) > 0 ) {
             sampled++;
         }
-        if( FES->GetNumOfSamples(ibin) < 0 ) {
+        if( ENE->GetNumOfSamples(ibin) < 0 ) {
             glued++;
         }
-        if( FES->GetNumOfSamples(ibin) == -1 ) {
+        if( ENE->GetNumOfSamples(ibin) == -1 ) {
             holes++;
         }
     }
@@ -1098,12 +1034,12 @@ void CPMFEnergyIntegrate::FloodFillTest(void)
 
     SyncFESWithAccu();
 
-    FFSeeds.CreateVector(FES->GetNumOfBins());
+    FFSeeds.CreateVector(ENE->GetNumOfBins());
     FFSeeds.SetZero();
-    IPos.CreateVector(FES->GetNumOfCVs());
-    TPos.CreateVector(FES->GetNumOfCVs());
+    IPos.CreateVector(ENE->GetNumOfCVs());
+    TPos.CreateVector(ENE->GetNumOfCVs());
 
-    double maxbins = FES->GetNumOfBins();
+    double maxbins = ENE->GetNumOfBins();
     int    maxseedid = 0;
     int    maxsampled = 0;
     bool   first = true;
@@ -1139,9 +1075,9 @@ void CPMFEnergyIntegrate::FloodFillTest(void)
 
         vout << "   -- Clearing all except region: " << maxseedid <<  endl;
 
-    for(int ibin=0; ibin < FES->GetNumOfBins(); ibin++) {
+    for(int ibin=0; ibin < ENE->GetNumOfBins(); ibin++) {
         if( FFSeeds[ibin] != maxseedid ) {
-            FES->SetNumOfSamples(ibin,0);
+            ENE->SetNumOfSamples(ibin,0);
         }
     }
 
@@ -1152,14 +1088,14 @@ void CPMFEnergyIntegrate::FloodFillTest(void)
 
 bool CPMFEnergyIntegrate::InstallNewSeed(int seedid,bool unsampled)
 {
-    for(int ibin=0; ibin < FES->GetNumOfBins(); ibin++) {
+    for(int ibin=0; ibin < ENE->GetNumOfBins(); ibin++) {
         if( unsampled ){
-            if( (FFSeeds[ibin] == 0) && ( FES->GetNumOfSamples(ibin) == 0 ) ) {
+            if( (FFSeeds[ibin] == 0) && ( ENE->GetNumOfSamples(ibin) == 0 ) ) {
                 FFSeeds[ibin] = seedid;
                 return(true);
             }
         } else {
-            if( (FFSeeds[ibin] == 0) && ( FES->GetNumOfSamples(ibin) != 0 ) ) {
+            if( (FFSeeds[ibin] == 0) && ( ENE->GetNumOfSamples(ibin) != 0 ) ) {
                 FFSeeds[ibin] = seedid;
                 return(true);
             }
@@ -1175,34 +1111,34 @@ int CPMFEnergyIntegrate::FillSeed(int seedid,bool unsampled)
 {
     int newsamples = 0;
     int ndir = 1;
-    for(int j=0; j < FES->GetNumOfCVs(); j++){
+    for(int j=0; j < ENE->GetNumOfCVs(); j++){
         ndir *= 3;
     }
 
-    for(int ibin=0; ibin < FES->GetNumOfBins(); ibin++) {
+    for(int ibin=0; ibin < ENE->GetNumOfBins(); ibin++) {
         if( unsampled ){
-            if( FES->GetNumOfSamples(ibin) > 0 ) continue; // skip sampled regions
+            if( ENE->GetNumOfSamples(ibin) > 0 ) continue; // skip sampled regions
         } else {
-            if( FES->GetNumOfSamples(ibin) == 0 ) continue; // skip unsampled regions
+            if( ENE->GetNumOfSamples(ibin) == 0 ) continue; // skip unsampled regions
         }
         if( FFSeeds[ibin] != seedid ) continue; // skip different regions
 
         // convert to ipont
-        FES->GetIPoint(ibin,IPos);
+        ENE->GetIPoint(ibin,IPos);
 
         // in each direction
         for(int j=0; j < ndir; j++){
             GetTPoint(IPos,j,TPos);
-            int tbin = FES->GetGlobalIndex(TPos);
+            int tbin = ENE->GetGlobalIndex(TPos);
             if( tbin >= 0 ){
                 if( FFSeeds[tbin] == 0 ){
                     if( unsampled ){
-                        if( FES->GetNumOfSamples(tbin) == 0 ){
+                        if( ENE->GetNumOfSamples(tbin) == 0 ){
                             FFSeeds[tbin] = seedid;
                             newsamples++;
                         }
                     } else {
-                        if( FES->GetNumOfSamples(tbin) != 0 ){
+                        if( ENE->GetNumOfSamples(tbin) != 0 ){
                             FFSeeds[tbin] = seedid;
                             newsamples++;
                         }
@@ -1219,7 +1155,7 @@ int CPMFEnergyIntegrate::FillSeed(int seedid,bool unsampled)
 
 void CPMFEnergyIntegrate::GetTPoint(CSimpleVector<int>& ipos,int d,CSimpleVector<int>& tpos)
 {
-    for(int k=FES->GetNumOfCVs()-1; k >= 0; k--) {
+    for(int k=ENE->GetNumOfCVs()-1; k >= 0; k--) {
         int ibin = d % 3 - 1;
         tpos[k] = ibin + ipos[k];
         d = d / 3;
@@ -1230,40 +1166,40 @@ void CPMFEnergyIntegrate::GetTPoint(CSimpleVector<int>& ipos,int d,CSimpleVector
 
 int CPMFEnergyIntegrate::GlueingFES(int factor)
 {
-    IPos.CreateVector(FES->GetNumOfCVs());
-    TPos.CreateVector(FES->GetNumOfCVs());
+    IPos.CreateVector(ENE->GetNumOfCVs());
+    TPos.CreateVector(ENE->GetNumOfCVs());
 
     int ndir = 1;
-    for(int j=0; j < FES->GetNumOfCVs(); j++){
+    for(int j=0; j < ENE->GetNumOfCVs(); j++){
         ndir *= 3;
     }
 
-    vout << "   Gluing FES: factor = " << factor;
+    vout << "   Gluing ENE: factor = " << factor;
 
     int glued = 0;
 
-    for(int ibin=0; ibin < FES->GetNumOfBins(); ibin++) {
-        if( FES->GetNumOfSamples(ibin) != 0 ) continue; // skip glued or sampled bins
+    for(int ibin=0; ibin < ENE->GetNumOfBins(); ibin++) {
+        if( ENE->GetNumOfSamples(ibin) != 0 ) continue; // skip glued or sampled bins
 
         // convert to ipont
-        FES->GetIPoint(ibin,IPos);
+        ENE->GetIPoint(ibin,IPos);
 
         // is sampled or glued region in close vicinty?
 
         // in each direction
         for(int j=0; j < ndir; j++){
             GetTPoint(IPos,j,TPos);
-            int tbin = FES->GetGlobalIndex(TPos);
+            int tbin = ENE->GetGlobalIndex(TPos);
             if( tbin >= 0 ){
                 if( factor == 1 ){
-                    if( FES->GetNumOfSamples(tbin) > 0 ){
-                        FES->SetNumOfSamples(ibin,-(factor+1));
+                    if( ENE->GetNumOfSamples(tbin) > 0 ){
+                        ENE->SetNumOfSamples(ibin,-(factor+1));
                         glued++;
                         break;
                     }
                 } else {
-                    if( FES->GetNumOfSamples(tbin) == -factor ){
-                        FES->SetNumOfSamples(ibin,-(factor+1));
+                    if( ENE->GetNumOfSamples(tbin) == -factor ){
+                        ENE->SetNumOfSamples(ibin,-(factor+1));
                         glued++;
                         break;
                     }
@@ -1281,17 +1217,17 @@ int CPMFEnergyIntegrate::GlueingFES(int factor)
 
 void CPMFEnergyIntegrate::GlueHoles(void)
 {
-    vout << "   Searching for holes on FES ..." << endl;
+    vout << "   Searching for holes on ENE ..." << endl;
     int seedid = 1;
 
     SyncFESWithAccu();
 
-    FFSeeds.CreateVector(FES->GetNumOfBins());
+    FFSeeds.CreateVector(ENE->GetNumOfBins());
     FFSeeds.SetZero();
-    IPos.CreateVector(FES->GetNumOfCVs());
-    TPos.CreateVector(FES->GetNumOfCVs());
+    IPos.CreateVector(ENE->GetNumOfCVs());
+    TPos.CreateVector(ENE->GetNumOfCVs());
 
-    double maxbins = FES->GetNumOfBins();
+    double maxbins = ENE->GetNumOfBins();
     int    numofholes = 0;
 
     int sampled = SeedSampled(seedid);
@@ -1345,8 +1281,8 @@ int CPMFEnergyIntegrate::SeedSampled(int seedid)
 {
     int sampled = 0;
 
-    for(int ibin=0; ibin < FES->GetNumOfBins(); ibin++) {
-        if( FES->GetNumOfSamples(ibin) > 0 ) {
+    for(int ibin=0; ibin < ENE->GetNumOfBins(); ibin++) {
+        if( ENE->GetNumOfSamples(ibin) > 0 ) {
             FFSeeds[ibin] = seedid;
             sampled++;
         }
@@ -1359,24 +1295,24 @@ int CPMFEnergyIntegrate::SeedSampled(int seedid)
 
 bool CPMFEnergyIntegrate::IsHole(int seedid)
 {
-    IPos.CreateVector(FES->GetNumOfCVs());
-    TPos.CreateVector(FES->GetNumOfCVs());
+    IPos.CreateVector(ENE->GetNumOfCVs());
+    TPos.CreateVector(ENE->GetNumOfCVs());
 
     int ndir = 1;
-    for(int j=0; j < FES->GetNumOfCVs(); j++){
+    for(int j=0; j < ENE->GetNumOfCVs(); j++){
         ndir *= 3;
     }
 
-    for(int ibin=0; ibin < FES->GetNumOfBins(); ibin++) {
+    for(int ibin=0; ibin < ENE->GetNumOfBins(); ibin++) {
         if( FFSeeds[ibin] != seedid ) continue;
 
         // convert to ipont
-        FES->GetIPoint(ibin,IPos);
+        ENE->GetIPoint(ibin,IPos);
 
         // test neighbouring of the point in each direction
         for(int j=0; j < ndir; j++){
             GetTPoint(IPos,j,TPos);
-            int tbin = FES->GetGlobalIndex(TPos);
+            int tbin = ENE->GetGlobalIndex(TPos);
             if( tbin < 0 ){
                 // outside of ABF accumulator - it is not a hole
                 return(false);
@@ -1392,9 +1328,9 @@ bool CPMFEnergyIntegrate::IsHole(int seedid)
 
 void CPMFEnergyIntegrate::MarkAsHole(int seedid)
 {
-    for(int ibin=0; ibin < FES->GetNumOfBins(); ibin++) {
+    for(int ibin=0; ibin < ENE->GetNumOfBins(); ibin++) {
         if( FFSeeds[ibin] == seedid ){
-            FES->SetNumOfSamples(ibin,-1);
+            ENE->SetNumOfSamples(ibin,-1);
         }
     }
 }
@@ -1405,7 +1341,7 @@ void CPMFEnergyIntegrate::MarkAsHole(int seedid)
 
 void CPMFEnergyIntegrate::DecodeEList(const CSmallString& spec, std::vector<bool>& elist,const CSmallString& optionname)
 {
-    int ncvs = FES->GetNumOfCVs();
+    int ncvs = ENE->GetNumOfCVs();
 
     string          sspecen(spec);
     vector<string>  slist;
@@ -1449,70 +1385,70 @@ void CPMFEnergyIntegrate::DecodeEList(const CSmallString& spec, std::vector<bool
 
 void CPMFEnergyIntegrate::AddEneCorr(void)
 {
-    CEnergyProxyPtr ene_proxy = DerProxies[0]->GetEnergyCorrection();
+    CEnergyProxyPtr ene_proxy = DerProxy->GetEnergyCorrection();
     if( ene_proxy == NULL ) return;
 
-    vout << "   Adding energy correction (only the first accumulator): " << ene_proxy->GetDescription() << endl;
+    vout << "   Adding energy correction: " << ene_proxy->GetDescription() << endl;
 
-    for(int i=0; i < FES->GetNumOfBins(); i++){
-        double f = FES->GetEnergy(i);
-        FES->SetEnergy(i, f + ene_proxy->GetValue(i,E_PROXY_VALUE) );
+    for(int i=0; i < ENE->GetNumOfBins(); i++){
+        double f = ENE->GetEnergy(i);
+        ENE->SetEnergy(i, f + ene_proxy->GetValue(i,E_PROXY_VALUE) );
     }
 
-    if( FES->IsGlobalMinSet() ){
+    if( ENE->IsGlobalMinSet() ){
 
         CSimpleVector<double> gpos;
 
-        gpos = FES->GetGlobalMinPos();
+        gpos = ENE->GetGlobalMinPos();
         vout << "      Global minimum provided at: ";
         vout << setprecision(5) << gpos[0];
-        for(int i=1; i < FES->GetNumOfCVs(); i++){
+        for(int i=1; i < ENE->GetNumOfCVs(); i++){
             vout << "x" << setprecision(5) << gpos[0];
         }
         vout << endl;
 
-        FES->FindGlobalMinBin();
+        ENE->FindGlobalMinBin();
 
-        gpos = FES->GetGlobalMinPos();
+        gpos = ENE->GetGlobalMinPos();
         vout << "      Closest bin found at: ";
         vout << setprecision(5) << gpos[0];
-        for(int i=1; i < FES->GetNumOfCVs(); i++){
+        for(int i=1; i < ENE->GetNumOfCVs(); i++){
             vout << "x" << setprecision(5) << gpos[0];
         }
 
-        double glb_min = FES->GetGlobalMinEnergy();
+        double glb_min = ENE->GetGlobalMinEnergy();
         vout << " (" << setprecision(5) << glb_min << ")" << endl;
 
-        for(int ibin=0; ibin < FES->GetNumOfBins(); ibin++) {
-            FES->SetEnergy(ibin, FES->GetEnergy(ibin)-glb_min);
+        for(int ibin=0; ibin < ENE->GetNumOfBins(); ibin++) {
+            ENE->SetEnergy(ibin, ENE->GetEnergy(ibin)-glb_min);
         }
     } else {
         // search for global minimum
-        FES->FindGlobalMin();
+        ENE->FindGlobalMin();
 
-        double                glb_min = FES->GetGlobalMinEnergy();
-        CSimpleVector<double> gpos    = FES->GetGlobalMinPos();
+        double                glb_min = ENE->GetGlobalMinEnergy();
+        CSimpleVector<double> gpos    = ENE->GetGlobalMinPos();
 
         vout << "      Global minimum found at: ";
         vout << setprecision(5) << gpos[0];
-        for(int i=1; i < FES->GetNumOfCVs(); i++){
+        for(int i=1; i < ENE->GetNumOfCVs(); i++){
             vout << "x" << setprecision(5) << gpos[0];
         }
         vout << " (" << setprecision(5) << glb_min << ")" << endl;
-        for(int ibin=0; ibin < FES->GetNumOfBins(); ibin++) {
-            FES->SetEnergy(ibin, FES->GetEnergy(ibin)-glb_min);
+        for(int ibin=0; ibin < ENE->GetNumOfBins(); ibin++) {
+            ENE->SetEnergy(ibin, ENE->GetEnergy(ibin)-glb_min);
         }
     }
 
-        vout << "      SigmaF2   = " << setprecision(5) << FES->GetSigmaF2() << endl;
+        vout << "      SigmaF2   = " << setprecision(5) << ENE->GetSigmaF2() << endl;
     if( Options.GetOptIncludeGluedRegions() ){
-        vout << "      SigmaF2 (including glued bins) = " << setprecision(5) << FES->GetSigmaF2(true) << endl;
+        vout << "      SigmaF2 (including glued bins) = " << setprecision(5) << ENE->GetSigmaF2(true) << endl;
     }
-        vout << "      SigmaF    = " << setprecision(5) << FES->GetSigmaF() << endl;
+        vout << "      SigmaF    = " << setprecision(5) << ENE->GetSigmaF() << endl;
 
     if( Options.GetOptWithError() ){
-        vout << "      RMSError  = " << setprecision(5) << FES->GetRMSError() << endl;
-        vout << "      MaxError  = " << setprecision(5) << FES->GetMaxError() << endl;
+        vout << "      RMSError  = " << setprecision(5) << ENE->GetRMSError() << endl;
+        vout << "      MaxError  = " << setprecision(5) << ENE->GetMaxError() << endl;
     }
 }
 

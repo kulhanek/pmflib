@@ -3,6 +3,7 @@
 // =============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
+//    Copyright (C) 2025 Petr Kulhanek, kulhanek@chemi.muni.cz
 //    Copyright (C) 2021 Petr Kulhanek, kulhanek@chemi.muni.cz
 //    Copyright (C) 2019 Petr Kulhanek, kulhanek@chemi.muni.cz
 //    Copyright (C) 2008 Martin Petrek, petrek@chemi.muni.cz
@@ -57,22 +58,21 @@ public:
 
 // section of private data ----------------------------------------------------
 private:
-    CPMFEnergyIntOptions                Options;
-    CStdIOFile                          OutputFile;
-    std::vector<CEnergyDerProxyPtr>     DerProxies;
-    std::vector<CPMFAccumulatorPtr>     Accumulators;
-    CEnergySurfacePtr                   FES;
-    CSmallTimeAndDate                   StartTime;
-    CSimpleVector<int>                  FFSeeds;
-    CSimpleVector<int>                  IPos;
-    CSimpleVector<int>                  TPos;
-    int                                 State;
+    CPMFEnergyIntOptions    Options;
+    CStdIOFile              OutputFile;
+    CEnergyDerProxyPtr      DerProxy;
+    CPMFAccumulatorPtr      Accu;
+    CEnergySurfacePtr       ENE;
+    CSmallTimeAndDate       StartTime;
+    CSimpleVector<int>      FFSeeds;
+    CSimpleVector<int>      IPos;
+    CSimpleVector<int>      TPos;
+    int                     State;
 
     // output ------------------------------------
-    CTerminalStr        Console;
-    CVerboseStr         vout;
-    CSmallString        FEOutputName;
-    std::vector<bool>   KeepCVs;
+    CTerminalStr            Console;
+    CVerboseStr             vout;
+    std::vector<bool>       KeepCVs;
 
     void PrepareAccumulatorI(void);
     void PrepareAccumulatorII(void);
