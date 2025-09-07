@@ -1,6 +1,7 @@
 // =============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
+//    Copyright (C) 2025 Petr Kulhanek, kulhanek@chemi.muni.cz
 //    Copyright (C) 2023 Petr Kulhanek, kulhanek@chemi.muni.cz
 //    Copyright (C) 2021 Petr Kulhanek, kulhanek@chemi.muni.cz
 //    Copyright (C) 2019 Petr Kulhanek, kulhanek@chemi.muni.cz
@@ -22,20 +23,20 @@
 //     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 // =============================================================================
 
-#include "GHSEnergyIntOptions.hpp"
+#include "AUSEnergyIntOptions.hpp"
 
 //==============================================================================
 //------------------------------------------------------------------------------
 //==============================================================================
 
-CGHSEnergyIntOptions::CGHSEnergyIntOptions(void)
+CAUSEnergyIntOptions::CAUSEnergyIntOptions(void)
 {
     SetShowMiniUsage(true);
 }
 
 //------------------------------------------------------------------------------
 
-int CGHSEnergyIntOptions::CheckOptions(void)
+int CAUSEnergyIntOptions::CheckOptions(void)
 {
     if(GetOptLimit() < 0) {
         if(IsError == false) fprintf(stderr,"\n");
@@ -109,7 +110,7 @@ int CGHSEnergyIntOptions::CheckOptions(void)
 
 //------------------------------------------------------------------------------
 
-int CGHSEnergyIntOptions::CheckArguments(void)
+int CAUSEnergyIntOptions::CheckArguments(void)
 {
     if(IsError == true) return(SO_OPTS_ERROR);
     return(SO_CONTINUE);
@@ -121,7 +122,7 @@ int CGHSEnergyIntOptions::CheckArguments(void)
  process special options (Help, Version) before arguments will be processed
 */
 
-int CGHSEnergyIntOptions::FinalizeOptions(void)
+int CAUSEnergyIntOptions::FinalizeOptions(void)
 {
     bool ret_opt = false;
 

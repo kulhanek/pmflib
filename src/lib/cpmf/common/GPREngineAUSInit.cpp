@@ -19,6 +19,18 @@
 // =============================================================================
 
 #include <GPREngineAUSInit.hpp>
+#include <iomanip>
+
+//==============================================================================
+//------------------------------------------------------------------------------
+//==============================================================================
+
+void CGPREngineAUSInit::InitProxyList(std::list<CGPREngineAUSPtr>& aus_proxies)
+{
+    CGPREngineAUSPtr proxy;
+
+    // FIXME
+}
 
 //==============================================================================
 //------------------------------------------------------------------------------
@@ -28,6 +40,51 @@ CGPREngineAUSPtr CGPREngineAUSInit::InitEngine(const CSmallString& realm,CPMFAcc
 {
     CGPREngineAUSPtr gpr;
     return(gpr);
+}
+
+//==============================================================================
+//------------------------------------------------------------------------------
+//==============================================================================
+
+void CGPREngineAUSInit::EnumerateRealms(std::list<CProxyRealmDescr>& dlist)
+{
+    std::list<CGPREngineAUSPtr> eneder_proxies;
+    InitProxyList(eneder_proxies);
+
+    CGPREngineAUSPtr proxy;
+
+// find suitable proxy
+    std::list<CGPREngineAUSPtr>::iterator it = eneder_proxies.begin();
+    std::list<CGPREngineAUSPtr>::iterator ie = eneder_proxies.end();
+
+    while( it != ie ){
+        proxy = *it;
+        proxy->EnumerateRealms(dlist);
+        it++;
+    }
+}
+
+//==============================================================================
+//------------------------------------------------------------------------------
+//==============================================================================
+
+void CGPREngineAUSInit::PrintRealms(std::ostream& fout)
+{
+    std::list<CProxyRealmDescr> dlist;
+    EnumerateRealms(dlist);
+    dlist.sort(CProxyRealmDescr::Compare);
+
+    std::list<CProxyRealmDescr>::iterator it = dlist.begin();
+    std::list<CProxyRealmDescr>::iterator ie = dlist.end();
+
+    fout << std::endl;
+    fout << "# Realm              Method Description                                           " << std::endl;
+    fout << "# ------------------ ------ ------------------------------------------------------" << std::endl;
+
+    while( it != ie ){
+        fout << std::left << std::setw(20) << (*it).Realm << " " << std::setw(6) << (*it).Method << " " << (*it).Description << std::endl;
+        it++;
+    }
 }
 
 //==============================================================================

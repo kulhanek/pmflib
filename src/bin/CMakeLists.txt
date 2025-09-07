@@ -25,10 +25,7 @@ ADD_SUBDIRECTORY(accu-trajectory)
 ADD_SUBDIRECTORY(pmf-integrate)
 ADD_SUBDIRECTORY(pmf-energy)
 ADD_SUBDIRECTORY(gpr-opthyprms)
-ADD_SUBDIRECTORY(ghs-integrate)
-
-# ABF utilities
-# ADD_SUBDIRECTORY(abf-resample)
+ADD_SUBDIRECTORY(aus-integrate)
 
 # MTD utilities
 ADD_SUBDIRECTORY(mtd-energy)
@@ -36,7 +33,7 @@ ADD_SUBDIRECTORY(mtd-energy)
 # ABP utilities
 ADD_SUBDIRECTORY(abp-energy)
 
-# STN utilities
+# STM utilities
 ADD_SUBDIRECTORY(stm-trajectory)
 
 ## network utilities ------------------------------------------------------------

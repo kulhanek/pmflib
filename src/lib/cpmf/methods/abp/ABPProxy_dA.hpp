@@ -1,10 +1,11 @@
-#ifndef CSTProxy_dGdx_H
-#define CSTProxy_dGdx_H
+#ifndef ABPProxy_dAH
+#define ABPProxy_dAH
 // =============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
-//    Copyright (C) 2025 Petr Kulhanek, kulhanek@chemi.muni.cz
 //    Copyright (C) 2021 Petr Kulhanek, kulhanek@chemi.muni.cz
+//    Copyright (C) 2008 Petr Kulhanek, kulhanek@enzim.hu
+//                       Martin Petrek, petrek@chemi.muni.cz
 //
 //     This program is free software; you can redistribute it and/or modify
 //     it under the terms of the GNU General Public License as published by
@@ -22,40 +23,27 @@
 // =============================================================================
 
 #include <PMFMainHeader.hpp>
-#include <EnergyDerProxy.hpp>
+#include <EnergyProxy.hpp>
 
 //------------------------------------------------------------------------------
 
-enum ECSTdGdxType {
-    CST_dGdx,
-    CST_ICF,
-    CST_ICFFW,
-    CST_ICFPFW,
-    CST_ICFKFW,
-};
-
-//------------------------------------------------------------------------------
-
-/** \brief CST proxy providing mean force for the free energy integration
+/** \brief return free energy from MTD accumulator
 */
 
-class PMF_PACKAGE CCSTProxy_dGdx : public CEnergyDerProxy {
+class PMF_PACKAGE CABPProxy_dA : public CEnergyProxy {
 public:
-// constructor and destructor --------------------------------------------------
-    CCSTProxy_dGdx(void);
-    ~CCSTProxy_dGdx(void);
+// constructor and destructor -------------------------------------------------
+    CABPProxy_dA(void);
+    ~CABPProxy_dA(void);
 
 //------------------------------------------------------------------------------
-    // get optional energy correction - MTC
-    virtual CEnergyProxyPtr GetEnergyCorrection(void);
-
     // get energy derivative and its error
-    virtual double GetValue( int ibin,int icv,EProxyRealm realm) const;
+    virtual double GetValue( int ibin,EProxyRealm realm) const;
 };
 
 //------------------------------------------------------------------------------
 
-typedef boost::shared_ptr<CCSTProxy_dGdx>    CCSTProxy_dGdx_Ptr;
+typedef boost::shared_ptr<CABPProxy_dA>    CABPProxy_dA_Ptr;
 
 //------------------------------------------------------------------------------
 

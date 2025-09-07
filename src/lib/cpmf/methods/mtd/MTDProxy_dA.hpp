@@ -1,5 +1,5 @@
-#ifndef ABPProxy_dGH
-#define ABPProxy_dGH
+#ifndef MTDProxy_dAH
+#define MTDProxy_dAH
 // =============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
@@ -30,11 +30,15 @@
 /** \brief return free energy from MTD accumulator
 */
 
-class PMF_PACKAGE CABPProxy_dG : public CEnergyProxy {
+class PMF_PACKAGE CMTDProxy_dA : public CEnergyProxy {
 public:
 // constructor and destructor -------------------------------------------------
-    CABPProxy_dG(void);
-    ~CABPProxy_dG(void);
+    CMTDProxy_dA(void);
+    ~CMTDProxy_dA(void);
+
+//------------------------------------------------------------------------------
+    // is well-tempered metadynamics
+    bool IsWTMeta(void);
 
 //------------------------------------------------------------------------------
     // get energy derivative and its error
@@ -43,7 +47,7 @@ public:
 
 //------------------------------------------------------------------------------
 
-typedef boost::shared_ptr<CABPProxy_dG>    CABPProxy_dG_Ptr;
+typedef boost::shared_ptr<CMTDProxy_dA>    CMTDProxy_dA_Ptr;
 
 //------------------------------------------------------------------------------
 

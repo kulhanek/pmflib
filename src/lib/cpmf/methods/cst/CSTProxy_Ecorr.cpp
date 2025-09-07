@@ -32,9 +32,9 @@ using namespace std;
 
 CCSTProxy_Ecorr::CCSTProxy_Ecorr(void)
 {
-    RegisterRealm(CST_dG_corr,   "dG_corr",     "CST", "dG{CST}corr");
-    RegisterRealm(CST_mTdS_corr, "mTdS_corr",   "CST", "-TdS{CST}corr");
-    RegisterRealm(CST_mTdS_corr, "-TdS_corr",   "CST", "-TdS{CST}corr");
+    RegisterRealm(CST_dA_corr,      "dA_corr",     "CST", "dA{CST}corr");
+    RegisterRealm(CST_mTdS_corr,    "mTdS_corr",   "CST", "-TdS{CST}corr");
+    RegisterRealm(CST_mTdS_corr,    "-TdS_corr",   "CST", "-TdS{CST}corr");
 }
 
 //------------------------------------------------------------------------------
@@ -54,7 +54,7 @@ int CCSTProxy_Ecorr::GetNumOfSamples(int ibin) const
     }
     switch(RealmID){
     // -------------------
-        case(CST_dG_corr):
+        case(CST_dA_corr):
             return(Accu->GetData("NSAMPLES",ibin));
     // -------------------
         case(CST_mTdS_corr):
@@ -75,7 +75,7 @@ void CCSTProxy_Ecorr::SetNumOfSamples(int ibin,int nsamples)
     }
     switch(RealmID){
     // -------------------
-        case(CST_dG_corr):
+        case(CST_dA_corr):
             Accu->SetData("NSAMPLES",ibin,nsamples);
     // -------------------
         case(CST_mTdS_corr):
@@ -108,7 +108,7 @@ double CCSTProxy_Ecorr::GetValue(int ibin,EProxyRealm realm) const
 // get requested data
     switch(RealmID){
     // -------------------
-        case(CST_dG_corr): {
+        case(CST_dA_corr): {
             double mfw  = Accu->GetData("MFW",ibin);
             mean        = - PMF_Rgas * temp * log(mfw);
         }

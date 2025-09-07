@@ -1,11 +1,10 @@
-#ifndef MTDProxy_dGH
-#define MTDProxy_dGH
+#ifndef ABFProxy_dAdx_H
+#define ABFProxy_dAdx_H
 // =============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
+//    Copyright (C) 2025 Petr Kulhanek, kulhanek@chemi.muni.cz
 //    Copyright (C) 2021 Petr Kulhanek, kulhanek@chemi.muni.cz
-//    Copyright (C) 2008 Petr Kulhanek, kulhanek@enzim.hu
-//                       Martin Petrek, petrek@chemi.muni.cz
 //
 //     This program is free software; you can redistribute it and/or modify
 //     it under the terms of the GNU General Public License as published by
@@ -23,31 +22,34 @@
 // =============================================================================
 
 #include <PMFMainHeader.hpp>
-#include <EnergyProxy.hpp>
+#include <EnergyDerProxy.hpp>
 
 //------------------------------------------------------------------------------
 
-/** \brief return free energy from MTD accumulator
-*/
-
-class PMF_PACKAGE CMTDProxy_dG : public CEnergyProxy {
-public:
-// constructor and destructor -------------------------------------------------
-    CMTDProxy_dG(void);
-    ~CMTDProxy_dG(void);
-
-//------------------------------------------------------------------------------
-    // is well-tempered metadynamics
-    bool IsWTMeta(void);
-
-//------------------------------------------------------------------------------
-    // get energy derivative and its error
-    virtual double GetValue( int ibin,EProxyRealm realm) const;
+enum EABFdGType {
+    ABF_MICF,
 };
 
 //------------------------------------------------------------------------------
 
-typedef boost::shared_ptr<CMTDProxy_dG>    CMTDProxy_dG_Ptr;
+/** \brief ABF proxy providing mean force for the free energy integration
+*/
+
+class PMF_PACKAGE CABFProxy_dAdx : public CEnergyDerProxy {
+public:
+// constructor and destructor --------------------------------------------------
+    CABFProxy_dAdx(void);
+    ~CABFProxy_dAdx(void);
+
+//------------------------------------------------------------------------------
+    // get energy derivative and its error
+    virtual double GetValue( int ibin,int icv,EProxyRealm realm) const;
+
+};
+
+//------------------------------------------------------------------------------
+
+typedef boost::shared_ptr<CABFProxy_dAdx>    CABFProxy_dAdx_Ptr;
 
 //------------------------------------------------------------------------------
 

@@ -19,7 +19,7 @@
 //     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 // =============================================================================
 
-#include <CSTProxy_dGdx.hpp>
+#include <CSTProxy_dAdx.hpp>
 #include <CSTProxy_Ecorr.hpp>
 
 //------------------------------------------------------------------------------
@@ -30,18 +30,18 @@ using namespace std;
 //------------------------------------------------------------------------------
 //==============================================================================
 
-CCSTProxy_dGdx::CCSTProxy_dGdx(void)
+CCSTProxy_dAdx::CCSTProxy_dAdx(void)
 {
-    RegisterRealm(CST_dGdx,  "dG/dx",  "CST", "dG(x)=|<lam> dx| + dG{CST}corr");
-    RegisterRealm(CST_ICF,   "ICF",    "CST", "|ICF dx|");
-    RegisterRealm(CST_ICFFW, "ICFFW",  "CST", "|ICFFW dx|");
-    RegisterRealm(CST_ICFPFW,  "ICFPFW",   "CST", "|ICFPFW dx|");
-    RegisterRealm(CST_ICFKFW,  "ICFKFW",   "CST", "|ICFKFW dx|");
+    RegisterRealm(CST_dAdx,     "dA/dx",    "CST", "dA(x)=|<lam> dx| + dA{CST}corr");
+    RegisterRealm(CST_ICF,      "ICF",      "CST", "|ICF dx|");
+    RegisterRealm(CST_ICFFW,    "ICFFW",    "CST", "|ICFFW dx|");
+    RegisterRealm(CST_ICFPFW,   "ICFPFW",   "CST", "|ICFPFW dx|");
+    RegisterRealm(CST_ICFKFW,   "ICFKFW",   "CST", "|ICFKFW dx|");
 }
 
 //------------------------------------------------------------------------------
 
-CCSTProxy_dGdx::~CCSTProxy_dGdx(void)
+CCSTProxy_dAdx::~CCSTProxy_dAdx(void)
 {
 }
 
@@ -49,12 +49,12 @@ CCSTProxy_dGdx::~CCSTProxy_dGdx(void)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-CEnergyProxyPtr CCSTProxy_dGdx::GetEnergyCorrection(void)
+CEnergyProxyPtr CCSTProxy_dAdx::GetEnergyCorrection(void)
 {
     CEnergyProxyPtr ene_proxy;
-    if( RealmID == CST_dGdx ){
+    if( RealmID == CST_dAdx ){
         ene_proxy = CCSTProxy_Ecorr_Ptr(new CCSTProxy_Ecorr);
-        ene_proxy->SetRealm(CST_dG_corr);
+        ene_proxy->SetRealm(CST_dA_corr);
         ene_proxy->Init(Accu);
     }
     return(ene_proxy);
@@ -62,7 +62,7 @@ CEnergyProxyPtr CCSTProxy_dGdx::GetEnergyCorrection(void)
 
 //------------------------------------------------------------------------------
 
-double CCSTProxy_dGdx::GetValue(int ibin,int icv,EProxyRealm realm) const
+double CCSTProxy_dAdx::GetValue(int ibin,int icv,EProxyRealm realm) const
 {
     if( Accu == NULL ){
         RUNTIME_ERROR("Accu is NULL");
@@ -80,7 +80,7 @@ double CCSTProxy_dGdx::GetValue(int ibin,int icv,EProxyRealm realm) const
 // get requested data
     switch(RealmID){
     // -------------------
-        case(CST_dGdx): {  // this requires MTC correction
+        case(CST_dAdx): {  // this requires MTC correction
             mean        = Accu->GetData("MLAMBDA",ibin,icv);
             double M2   = Accu->GetData("M2LAMBDA",ibin,icv);
             samvar      = M2 / nsamples;
@@ -90,33 +90,66 @@ double CCSTProxy_dGdx::GetValue(int ibin,int icv,EProxyRealm realm) const
     // -------------------
         case(CST_ICF): {
             mean        = Accu->GetData("MICF",ibin,icv);
-//            double M2   = Accu->GetData("M2MICF",ibin,icv);
-            samvar      = 0.0; // FIXME
-            meanvar     = 0.0;
+            double M2   = Accu->GetData("M2MICF",ibin,icv);
+            samvar      = M2 / nsamples;
+            meanvar     = samvar / nsamples;
         }
         break;
     // -------------------
         case(CST_ICFFW): {
-            mean        = Accu->GetData("MICFFW",ibin,icv);
-   //         double M2   = Accu->GetData("M2MICFFW",ibin,icv);
-            samvar      = 0.0; // FIXME
-            meanvar     = 0.0;
+            double fwsum    = Accu->GetData("FWSUM",ibin);
+            double fwsum2   = Accu->GetData("FWSUM2",ibin);
+
+            mean            = Accu->GetData("MICFFW",ibin);
+            double M2       = Accu->GetData("M2ICFFW",ibin);
+
+            // number of effective measurements
+            double neff = fwsum2 / (fwsum * fwsum);
+
+            // unbiased weighted sample variance
+            samvar          = M2 / fwsum * neff / (neff - 1.0);
+
+            // variance of the weighted mean
+            // unbiased importance weights
+            meanvar         = samvar / neff;
         }
         break;
     // -------------------
         case(CST_ICFPFW): {
-            mean        = Accu->GetData("MICFPFW",ibin,icv);
-//            double M2   = Accu->GetData("M2MICF",ibin,icv);
-            samvar      = 0.0; // FIXME
-            meanvar     = 0.0;
+            double fwsum    = Accu->GetData("FWSUM",ibin);
+            double fwsum2   = Accu->GetData("FWSUM2",ibin);
+
+            mean            = Accu->GetData("MICFPFW",ibin);
+            double M2       = Accu->GetData("M2ICFPFW",ibin);
+
+            // number of effective measurements
+            double neff = fwsum2 / (fwsum * fwsum);
+
+            // unbiased weighted sample variance
+            samvar          = M2 / fwsum * neff / (neff - 1.0);
+
+            // variance of the weighted mean
+            // unbiased importance weights
+            meanvar         = samvar / neff;
         }
         break;
     // -------------------
         case(CST_ICFKFW): {
-            mean        = Accu->GetData("MICFKFW",ibin,icv);
-//            double M2   = Accu->GetData("M2MICF",ibin,icv);
-            samvar      = 0.0; // FIXME
-            meanvar     = 0.0;
+            double fwsum    = Accu->GetData("FWSUM",ibin);
+            double fwsum2   = Accu->GetData("FWSUM2",ibin);
+
+            mean            = Accu->GetData("MICFKFW",ibin);
+            double M2       = Accu->GetData("M2ICFKFW",ibin);
+
+            // number of effective measurements
+            double neff = fwsum2 / (fwsum * fwsum);
+
+            // unbiased weighted sample variance
+            samvar          = M2 / fwsum * neff / (neff - 1.0);
+
+            // variance of the weighted mean
+            // unbiased importance weights
+            meanvar         = samvar / neff;
         }
         break;
 

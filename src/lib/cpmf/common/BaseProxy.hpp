@@ -88,6 +88,9 @@ public:
     // get realm
     CSmallString GetRealm(void);
 
+    // get methods
+    CSmallString GetMethods(void);
+
     // get realm description
     CSmallString GetDescription(void);
 

@@ -89,7 +89,7 @@ public:
     CSO_LIST_END
 
     CSO_MAP_BEGIN
-        CSO_MAP_OPT(CSmallString, Realm, "<Eint>", false, 'r', "realm", "NAME",
+        CSO_MAP_OPT(CSmallString, Realm, "dU", false, 'r', "realm", "NAME",
                 "Intended output. The list of supported realms can be obtained by --listrealms.")
         // -------------------------------------------
             CSO_MAP_OPT(bool, ListRealms, false, false, '\0', "listrealms", NULL,

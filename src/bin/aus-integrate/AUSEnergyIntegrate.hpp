@@ -1,8 +1,9 @@
-#ifndef CABFIntegrateH
-#define CABFIntegrateH
+#ifndef AUSEnergyIntegrateH
+#define AUSEnergyIntegrateH
 // =============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
+//    Copyright (C) 2025 Petr Kulhanek, kulhanek@chemi.muni.cz
 //    Copyright (C) 2023 Petr Kulhanek, kulhanek@chemi.muni.cz
 //    Copyright (C) 2021 Petr Kulhanek, kulhanek@chemi.muni.cz
 //    Copyright (C) 2019 Petr Kulhanek, kulhanek@chemi.muni.cz
@@ -24,26 +25,21 @@
 //     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 // =============================================================================
 
-#include "GHSEnergyIntOptions.hpp"
+#include "AUSEnergyIntOptions.hpp"
 #include <VerboseStr.hpp>
 #include <TerminalStr.hpp>
 #include <SmallTimeAndDate.hpp>
 #include <PMFAccumulator.hpp>
-#include <EnergyDerProxy.hpp>
 #include <EnergySurface.hpp>
-
-//------------------------------------------------------------------------------
-
-class CIntegratorGPR;
-class CSmootherGPR;
+#include <GPREngineAUS.hpp>
 
 //------------------------------------------------------------------------------
 
 /// utility to integrate ABF accumulator
 
-class CGHSEnergyIntegrate {
+class CAUSEnergyIntegrate {
 public:
-    CGHSEnergyIntegrate(void);
+    CAUSEnergyIntegrate(void);
 
 // main methods ---------------------------------------------------------------
     /// init options
@@ -57,19 +53,18 @@ public:
 
 // section of private data ----------------------------------------------------
 private:
-    CGHSEnergyIntOptions    Options;
+    CAUSEnergyIntOptions    Options;
 
     // input
     CPMFAccumulatorPtr      Accu;
-    CEnergyDerProxyPtr      GDerProxy;
-    CEnergyDerProxyPtr      HDerProxy;
-    CEnergyProxyPtr         HEneProxy;
-    CEnergyDerProxyPtr      SDerProxy;
+
+    // AUS engine
+    CGPREngineAUSPtr        AUSEngine;
 
     // output
-    CEnergySurfacePtr       FES;
-    CEnergySurfacePtr       HES;
-    CEnergySurfacePtr       SES;
+    CEnergySurfacePtr       FEN;
+    CEnergySurfacePtr       INT;
+    CEnergySurfacePtr       TDS;
 
     // sampled data
     CSimpleVector<int>      FFSeeds;
@@ -83,12 +78,7 @@ private:
     int                     State;
 
     void PrintAccuStat(void);
-
-    bool Integrate0A(void);
-    bool IntegratecA(void);
-
-    bool Integrate0B(void);
-
+    bool RunAUSEngine(void);
     void WriteES(CEnergySurfacePtr& surf,const CSmallString& name);
 };
 

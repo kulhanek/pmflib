@@ -23,13 +23,14 @@
 #include <PMFMainHeader.hpp>
 #include <GPREngine.hpp>
 #include <EnergySurface.hpp>
+#include <BaseProxy.hpp>
 
 //------------------------------------------------------------------------------
 
 /** \brief base for AUS GPR engines
 */
 
-class PMF_PACKAGE CGPREngineAUS: public CGPREngine {
+class PMF_PACKAGE CGPREngineAUS: public CGPREngine, public CBaseProxy {
 public:
 // constructor and destructor -------------------------------------------------
     CGPREngineAUS(void);

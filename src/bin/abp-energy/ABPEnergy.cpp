@@ -27,7 +27,7 @@
 #include <ESPrinter.hpp>
 #include "ABPEnergy.hpp"
 #include <iomanip>
-#include <ABPProxy_dG.hpp>
+#include <ABPProxy_dA.hpp>
 #include <boost/format.hpp>
 
 //------------------------------------------------------------------------------
@@ -159,7 +159,7 @@ bool CABPEnergy::Run(void)
 // setup accu, energy proxy, and output FES
     Accu        = CPMFAccumulatorPtr(new CPMFAccumulator);
     FES         = CEnergySurfacePtr(new CEnergySurface);
-    EneProxy    = CABPProxy_dG_Ptr(new CABPProxy_dG);
+    EneProxy    = CABPProxy_dA_Ptr(new CABPProxy_dA);
 
 // load ABP accumulator
     vout << endl;

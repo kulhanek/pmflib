@@ -20,8 +20,7 @@
 //     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 // =============================================================================
 
-#include <ABPProxy_dG.hpp>
-#include <PMFConstants.hpp>
+#include <MTDProxy_dA.hpp>
 
 //------------------------------------------------------------------------------
 
@@ -31,15 +30,16 @@ using namespace std;
 //------------------------------------------------------------------------------
 //==============================================================================
 
-CABPProxy_dG::CABPProxy_dG(void)
+CMTDProxy_dA::CMTDProxy_dA(void)
 {
-//    Requires.push_back("ABP");
-//    Description = "ABP dG(x)";
+//    Requires.push_back("MTD");
+//    Realm       = "dA";
+//    Description = "MTD dA(x)";
 }
 
 //------------------------------------------------------------------------------
 
-CABPProxy_dG::~CABPProxy_dG(void)
+CMTDProxy_dA::~CMTDProxy_dA(void)
 {
 
 }
@@ -48,29 +48,48 @@ CABPProxy_dG::~CABPProxy_dG(void)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-double CABPProxy_dG::GetValue(int ibin,EProxyRealm realm) const
+bool CMTDProxy_dA::IsWTMeta(void)
 {
     if( Accu == NULL ){
         RUNTIME_ERROR("Accu is NULL");
     }
 
-    double pop  = Accu->GetData("POP",ibin);
-    double temp = Accu->GetTemperature();
-    double ene  = 0.0;
+    return( Accu->HasSectionData("MTD-WT") );
+}
+
+//------------------------------------------------------------------------------
+
+double CMTDProxy_dA::GetValue(int ibin,EProxyRealm realm) const
+{
+    if( Accu == NULL ){
+        RUNTIME_ERROR("Accu is NULL");
+    }
+
+    double mtdpot = Accu->GetData("MTDPOT",ibin);
+    double fact = 1.0;
+
+    if( Accu->HasSectionData("MTD-WT") ){
+        // well-tempered metadynamics
+        double temp = Accu->GetTemperature();
+        double wtem = Accu->GetData("MTD-WT",0);
+        if( wtem > 0 ){
+            fact = (temp + wtem) / wtem;
+        } else {
+            RUNTIME_ERROR("MTD-WT temerature is not greater than zero");
+        }
+    }
 
     switch(realm){
         // -------------------
         case(E_PROXY_VALUE):
-            ene = - temp*PMF_Rgas*log(pop);
-            return( ene );
+            return( - mtdpot * fact );
         // -------------------
         default:
             RUNTIME_ERROR("unsupported realm");
     }
 
-    return( ene );
+    return( mtdpot );
 }
-
 
 //==============================================================================
 //------------------------------------------------------------------------------

@@ -114,7 +114,7 @@ public:
     CSO_LIST_END
 
     CSO_MAP_BEGIN
-        CSO_MAP_OPT(CSmallString, Realm, "dG/dx", false, 'r', "realm", "NAME",
+        CSO_MAP_OPT(CSmallString, Realm, "dA/dx", false, 'r', "realm", "NAME",
             "Requested realm for the integration. The list of supported realms can be obtained by --listrealms.")
     // -------------------------------------------
         CSO_MAP_OPT(bool, ListRealms, false, false, '\0', "listrealms", NULL,

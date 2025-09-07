@@ -1,5 +1,5 @@
-#ifndef ABFProxy_dG_H
-#define ABFProxy_dG_H
+#ifndef CSTProxy_dAdx_H
+#define CSTProxy_dAdx_H
 // =============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
@@ -26,30 +26,36 @@
 
 //------------------------------------------------------------------------------
 
-enum EABFdGType {
-    ABF_MICF,
+enum ECSTdAdxType {
+    CST_dAdx,
+    CST_ICF,
+    CST_ICFFW,
+    CST_ICFPFW,
+    CST_ICFKFW,
 };
 
 //------------------------------------------------------------------------------
 
-/** \brief ABF proxy providing mean force for the free energy integration
+/** \brief CST proxy providing mean force for the free energy integration
 */
 
-class PMF_PACKAGE CABFProxy_dGdx : public CEnergyDerProxy {
+class PMF_PACKAGE CCSTProxy_dAdx : public CEnergyDerProxy {
 public:
 // constructor and destructor --------------------------------------------------
-    CABFProxy_dGdx(void);
-    ~CABFProxy_dGdx(void);
+    CCSTProxy_dAdx(void);
+    ~CCSTProxy_dAdx(void);
 
 //------------------------------------------------------------------------------
+    // get optional energy correction - MTC
+    virtual CEnergyProxyPtr GetEnergyCorrection(void);
+
     // get energy derivative and its error
     virtual double GetValue( int ibin,int icv,EProxyRealm realm) const;
-
 };
 
 //------------------------------------------------------------------------------
 
-typedef boost::shared_ptr<CABFProxy_dGdx>    CABFProxy_dGdx_Ptr;
+typedef boost::shared_ptr<CCSTProxy_dAdx>    CCSTProxy_dAdx_Ptr;
 
 //------------------------------------------------------------------------------
 

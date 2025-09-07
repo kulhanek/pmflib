@@ -1,9 +1,8 @@
 // =============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
+//    Copyright (C) 2025 Petr Kulhanek, kulhanek@chemi.muni.cz
 //    Copyright (C) 2021 Petr Kulhanek, kulhanek@chemi.muni.cz
-//    Copyright (C) 2008 Petr Kulhanek, kulhanek@enzim.hu
-//                       Martin Petrek, petrek@chemi.muni.cz
 //
 //     This program is free software; you can redistribute it and/or modify
 //     it under the terms of the GNU General Public License as published by
@@ -20,7 +19,7 @@
 //     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 // =============================================================================
 
-#include <MTDProxy_dG.hpp>
+#include <ABFProxy_dAdx.hpp>
 
 //------------------------------------------------------------------------------
 
@@ -30,65 +29,72 @@ using namespace std;
 //------------------------------------------------------------------------------
 //==============================================================================
 
-CMTDProxy_dG::CMTDProxy_dG(void)
+CABFProxy_dAdx::CABFProxy_dAdx(void)
 {
-//    Requires.push_back("MTD");
-//    Realm       = "dG";
-//    Description = "MTD dG(x)";
+//    Requires.push_back("ABF");
+
+//    SupportedRealms["dG/dx"]        = CST_dG;
+//    SupportedRealms["MICF/dx"]      = CST_MICF;
+//    SupportedRealms["MICFFW/dx"]    = CST_MICFFW;
+//    SupportedRealms["MICFPFW/dx"]   = CST_MICFPFW;
+//    SupportedRealms["MICFKFW/dx"]   = CST_MICFKFW;
+
+ //return("ABF dG(x)");
 }
 
 //------------------------------------------------------------------------------
 
-CMTDProxy_dG::~CMTDProxy_dG(void)
+CABFProxy_dAdx::~CABFProxy_dAdx(void)
 {
-
 }
 
 //==============================================================================
 //------------------------------------------------------------------------------
 //==============================================================================
 
-bool CMTDProxy_dG::IsWTMeta(void)
+double CABFProxy_dAdx::GetValue(int ibin,int icv,EProxyRealm realm) const
 {
     if( Accu == NULL ){
         RUNTIME_ERROR("Accu is NULL");
     }
 
-    return( Accu->HasSectionData("MTD-WT") );
-}
+    double  nsamples = 0.0;
+    double  micf     = 0.0;
+    double  m2icf    = 0.0;
+    double  ncorr    = Accu->GetNCorr();
 
-//------------------------------------------------------------------------------
-
-double CMTDProxy_dG::GetValue(int ibin,EProxyRealm realm) const
-{
-    if( Accu == NULL ){
-        RUNTIME_ERROR("Accu is NULL");
+    switch(RealmID){
+    // -------------------
+        case(ABF_MICF):
+            nsamples = Accu->GetData("NSAMPLES",ibin);
+            micf     = Accu->GetData("MICF",ibin,icv);
+            m2icf    = Accu->GetData("M2ICF",ibin,icv);
+        break;
+    // -------------------
+        default:
+            RUNTIME_ERROR("unsupported type");
     }
 
-    double mtdpot = Accu->GetData("MTDPOT",ibin);
-    double fact = 1.0;
-
-    if( Accu->HasSectionData("MTD-WT") ){
-        // well-tempered metadynamics
-        double temp = Accu->GetTemperature();
-        double wtem = Accu->GetData("MTD-WT",0);
-        if( wtem > 0 ){
-            fact = (temp + wtem) / wtem;
-        } else {
-            RUNTIME_ERROR("MTD-WT temerature is not greater than zero");
-        }
-    }
+    double value = 0.0;
+    if( nsamples <= 0 ) return(value);
 
     switch(realm){
+// mean force
         // -------------------
         case(E_PROXY_VALUE):
-            return( - mtdpot * fact );
+            return( micf );
+        // -------------------
+        case(E_PROXY_SIGMA):
+            return( sqrt(m2icf / nsamples) );
+        // -------------------
+        case(E_PROXY_ERROR):
+            return( sqrt(m2icf * ncorr) / nsamples );
         // -------------------
         default:
             RUNTIME_ERROR("unsupported realm");
     }
 
-    return( mtdpot );
+    return(value);
 }
 
 //==============================================================================

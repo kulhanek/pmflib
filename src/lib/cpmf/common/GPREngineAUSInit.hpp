@@ -34,6 +34,16 @@ public:
 // initialization methods -----------------------------------------------------
     /// init requested proxy
     static CGPREngineAUSPtr InitEngine(const CSmallString& realm,CPMFAccumulatorPtr& accu,bool noerror=false);
+
+    /// print supported realms
+    static void PrintRealms(std::ostream& fout);
+
+    /// enumerate supported realms
+    static void EnumerateRealms(std::list<CProxyRealmDescr>& dlist);
+
+private:
+    /// create list of all supported proxies
+    static void InitProxyList(std::list<CGPREngineAUSPtr>& aus_proxies);
 };
 
 //------------------------------------------------------------------------------

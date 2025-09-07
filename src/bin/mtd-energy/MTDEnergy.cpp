@@ -29,7 +29,7 @@
 #include <iomanip>
 #include "MTDEnergy.hpp"
 #include <boost/format.hpp>
-#include <MTDProxy_dG.hpp>
+#include <MTDProxy_dA.hpp>
 
 //------------------------------------------------------------------------------
 
@@ -142,7 +142,7 @@ bool CMTDEnergy::Run(void)
     State++;
 
     CEnergySurfacePtr tmp_FES   = CEnergySurfacePtr(new CEnergySurface);
-    CMTDProxy_dG_Ptr  eneproxy  = CMTDProxy_dG_Ptr(new CMTDProxy_dG);
+    CMTDProxy_dA_Ptr  eneproxy  = CMTDProxy_dA_Ptr(new CMTDProxy_dA);
     FES                         = CEnergySurfacePtr(new CEnergySurface);
 
 // allocate surface

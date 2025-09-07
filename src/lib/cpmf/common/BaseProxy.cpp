@@ -183,6 +183,22 @@ CSmallString CBaseProxy::GetRealm(void)
 
 //------------------------------------------------------------------------------
 
+CSmallString CBaseProxy::GetMethods(void)
+{
+    std::set<CSmallString>::iterator it = Requires.begin();
+    std::set<CSmallString>::iterator ie = Requires.end();
+
+    CSmallString sm;
+    while( it != ie ){
+        if( it != Requires.begin() ) sm << ",";
+        sm << *it;
+        it++;
+    }
+    return(sm);
+}
+
+//------------------------------------------------------------------------------
+
 CSmallString CBaseProxy::GetDescription(void)
 {
     std::map<CSmallString,CProxyRealmDescr>::iterator rit = SupportedRealms.begin();

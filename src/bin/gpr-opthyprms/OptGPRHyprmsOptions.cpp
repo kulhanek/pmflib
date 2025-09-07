@@ -21,6 +21,9 @@
 // =============================================================================
 
 #include "OptGPRHyprmsOptions.hpp"
+#include <EnergyDerProxyInit.hpp>
+#include <EnergyProxyInit.hpp>
+#include <GPREngineAUSInit.hpp>
 
 //==============================================================================
 //------------------------------------------------------------------------------
@@ -112,6 +115,13 @@ int COptGPRHyprmsOptions::FinalizeOptions(void)
 
     if(GetOptVersion() == true) {
         PrintVersion();
+        ret_opt = true;
+    }
+
+    if( GetOptListRealms() == true){
+        CEnergyDerProxyInit::PrintRealms(std::cout);
+        CEnergyProxyInit::PrintRealms(std::cout);
+        CEnergyProxyInit::PrintRealms(std::cout);
         ret_opt = true;
     }
 

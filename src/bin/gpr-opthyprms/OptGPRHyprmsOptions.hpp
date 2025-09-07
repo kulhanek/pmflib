@@ -53,6 +53,7 @@ public:
     CSO_ARG(CSmallString,Realm)
     CSO_ARG(CSmallString,HyprmsFile)
     // options ------------------------------
+    CSO_OPT(bool,ListRealms)
     CSO_OPT(CSmallString,Target)
     CSO_OPT(int,Limit)
     CSO_OPT(CSmallString,LAMethod)
@@ -98,11 +99,13 @@ public:
             "Name of the file containing the input ABF accumulator.")
     // -------------------------------------------
         CSO_MAP_ARG(CSmallString, Realm, NULL, true, "REALM",
-            "Realm for GPR hyperparameter optimization. Supported realms: "
-            "dG/dx, dH/dx, dH, and mTDS/dx (-TdS/dx).")
+            "Realm for GPR hyperparameter optimization. The list of supported realms can be obtained by --listrealms.")
     // -------------------------------------------
         CSO_MAP_ARG(CSmallString, HyprmsFile, NULL, true, "HYPRMS",
             "Name of the file containing the optimized hyperparameters.")
+    // -------------------------------------------
+        CSO_MAP_OPT(bool, ListRealms, false, false, '\0', "listrealms", NULL,
+            "List supported realms.")
     // -------------------------------------------
         CSO_MAP_OPT(CSmallString, Target, "logml", false, 't', "target", "NAME",
             "Specify the optimized target, which can be either logml "
