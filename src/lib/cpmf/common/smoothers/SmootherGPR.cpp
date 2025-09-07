@@ -79,7 +79,7 @@ void CSmootherGPR::SetAccumulator(CPMFAccumulatorPtr accu)
 
 //------------------------------------------------------------------------------
 
-void CSmootherGPR::AddInputEnergyProxy(CEnergyProxyPtr p_prx)
+void CSmootherGPR::SetInputEnergyProxy(CEnergyProxyPtr p_prx)
 {
     if( p_prx == NULL ) return;                 // no-proxy
     if( p_prx->GetAccu() == NULL ) return;      // no PMFAccu
@@ -95,14 +95,7 @@ void CSmootherGPR::AddInputEnergyProxy(CEnergyProxyPtr p_prx)
         SetAccumulator(p_prx->GetAccu());
     }
 
-    EneProxyItems.push_back(p_prx);
-}
-
-//------------------------------------------------------------------------------
-
-void CSmootherGPR::ClearInputEnergyProxies(void)
-{
-    EneProxyItems.clear();
+    EneProxy = p_prx;
 }
 
 //------------------------------------------------------------------------------
@@ -148,7 +141,7 @@ bool CSmootherGPR::Interpolate(CVerboseStr& vout,bool nostat)
 {
     PrintExecInfo(vout);
 
-    if( EneProxyItems.size() == 0 ){
+    if( EneProxy == NULL ){
         RUNTIME_ERROR("no input data");
     }
     if( EneSurface == NULL ) {
@@ -172,23 +165,17 @@ bool CSmootherGPR::Interpolate(CVerboseStr& vout,bool nostat)
 
     // number of data points
     GPRSize = 0;
-    for(size_t i=0; i < EneProxyItems.size(); i++){
-        for(size_t ibin=0; ibin < NumOfBins; ibin++){
-            if( EneProxyItems[i]->GetNumOfSamples(ibin) > 0 ) GPRSize++;
-        }
+    for(size_t ibin=0; ibin < NumOfBins; ibin++){
+        if( EneProxy->GetNumOfSamples(ibin) > 0 ) GPRSize++;
     }
 
     // create sampled map
     SampledMap.resize(GPRSize);
-    EneProxyMap.resize(GPRSize);
     size_t ind = 0;
-    for(size_t i=0; i < EneProxyItems.size(); i++){
-        for(size_t ibin=0; ibin < NumOfBins; ibin++){
-            if( EneProxyItems[i]->GetNumOfSamples(ibin) <= 0 ) continue;
-            SampledMap[ind] = ibin;
-            EneProxyMap[ind] = i;
-            ind++;
-        }
+    for(size_t ibin=0; ibin < NumOfBins; ibin++){
+        if( EneProxy->GetNumOfSamples(ibin) <= 0 ) continue;
+        SampledMap[ind] = ibin;
+        ind++;
     }
 
     // init GPR arrays
@@ -258,12 +245,11 @@ bool CSmootherGPR::WriteMFInfo(const CSmallString& name)
     // calculate
     #pragma omp parallel for firstprivate(ipos)
     for(size_t indi=0; indi < GPRSize; indi++){
-        CEnergyProxyPtr  item = EneProxyItems[EneProxyMap[indi]];
-        size_t           ibin = SampledMap[indi];
+        size_t ibin = SampledMap[indi];
 
         EneSurface->GetPoint(ibin,ipos);
-        mfi[indi]  = item->GetValue(ibin,E_PROXY_VALUE);
-        mfie[indi] = item->GetValue(ibin,E_PROXY_ERROR);    // sigma
+        mfi[indi]  = EneProxy->GetValue(ibin,E_PROXY_VALUE);
+        mfie[indi] = EneProxy->GetValue(ibin,E_PROXY_ERROR);    // sigma
         mfp[indi]  = GetValue(ipos);
         mfpe[indi] = 0.0;
         for(size_t indv=0; indv < NumOfValues; indv++){
@@ -282,15 +268,8 @@ bool CSmootherGPR::WriteMFInfo(const CSmallString& name)
     }
 
     // print
-    size_t accu_prev = EneProxyMap[0];
     for(size_t indi=0; indi < GPRSize; indi++){
         size_t ibin = SampledMap[indi];
-        size_t accu = EneProxyMap[indi];
-
-        if( accu != accu_prev ){
-            ofs << endl;
-            accu_prev = accu;
-        }
 
         EneSurface->GetPoint(ibin,ipos);
 
@@ -318,18 +297,16 @@ bool CSmootherGPR::TrainGP(CVerboseStr& vout)
 
     Mean = 0.0;
     for(size_t indi=0; indi < GPRSize; indi++){
-        CEnergyProxyPtr item = EneProxyItems[EneProxyMap[indi]];
-        size_t          ibin = SampledMap[indi];
-        Mean += item->GetValue(ibin,E_PROXY_VALUE);
+        size_t ibin = SampledMap[indi];
+        Mean += EneProxy->GetValue(ibin,E_PROXY_VALUE);
     }
     Mean /= (double)GPRSize;
 
 // construct Y
     #pragma omp parallel for
     for(size_t indi=0; indi < GPRSize; indi++){
-        CEnergyProxyPtr item = EneProxyItems[EneProxyMap[indi]];
-        size_t          ibin = SampledMap[indi];
-        double mf   = item->GetValue(ibin,E_PROXY_VALUE);
+        size_t ibin = SampledMap[indi];
+        double mf   = EneProxy->GetValue(ibin,E_PROXY_VALUE);
         Y[indi]     = mf - Mean;
     }
 
@@ -472,11 +449,9 @@ void CSmootherGPR::CalculateEnergy(CVerboseStr& vout)
 
 // create map for bins with calculated energy and error
     std::set<size_t>    vset;
-    for(size_t i=0; i < EneProxyItems.size(); i++){
-        for(size_t ibin=0; ibin < NumOfBins; ibin++){
-            if( EneProxyItems[i]->GetNumOfSamples(ibin) <= 0 ) continue;
-            vset.insert(ibin);
-        }
+    for(size_t ibin=0; ibin < NumOfBins; ibin++){
+        if( EneProxy->GetNumOfSamples(ibin) <= 0 ) continue;
+        vset.insert(ibin);
     }
     NumOfValues = vset.size();
     ValueMap.resize(NumOfValues);
@@ -506,14 +481,12 @@ void CSmootherGPR::CalculateEnergy(CVerboseStr& vout)
     }
 
 // basic HES update
-    for(size_t i=0; i < EneProxyItems.size(); i++){
-        for(size_t ibin=0; ibin < NumOfBins; ibin++){
-            int nsamples = EneProxyItems[i]->GetNumOfSamples(ibin);
-            int osamples = EneSurface->GetNumOfSamples(ibin);
-            EneSurface->SetNumOfSamples(ibin,nsamples+osamples);
-            EneSurface->SetEnergy(ibin,0.0);
-            EneSurface->SetError(ibin,0.0);
-        }
+    for(size_t ibin=0; ibin < NumOfBins; ibin++){
+        int nsamples = EneProxy->GetNumOfSamples(ibin);
+        int osamples = EneSurface->GetNumOfSamples(ibin);
+        EneSurface->SetNumOfSamples(ibin,nsamples+osamples);
+        EneSurface->SetEnergy(ibin,0.0);
+        EneSurface->SetError(ibin,0.0);
     }
 
 // update HES

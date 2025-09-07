@@ -47,10 +47,7 @@ public:
     void SetAccumulator(CPMFAccumulatorPtr accu);
 
     /// set input energy proxy
-    void AddInputEnergyProxy(CEnergyProxyPtr p_proxy);
-
-    /// clear energy proxies
-    void ClearInputEnergyProxies(void);
+    void SetInputEnergyProxy(CEnergyProxyPtr p_proxy);
 
     /// set output energy surface
     void SetOutputES(CEnergySurfacePtr p_surf);
@@ -97,15 +94,14 @@ public:
 
 // section of private data ----------------------------------------------------
 private:
-    std::vector<CEnergyProxyPtr>    EneProxyItems;
-    CEnergySurfacePtr               EneSurface;
+    CEnergyProxyPtr         EneProxy;
+    CEnergySurfacePtr       EneSurface;
 
     // GPR data, sizes and index maps
-    size_t                          GPRSize;
-    std::vector<size_t>             SampledMap;
-    std::vector<size_t>             EneProxyMap;
-    size_t                          NumOfValues;
-    std::vector<size_t>             ValueMap;
+    size_t                  GPRSize;
+    std::vector<size_t>     SampledMap;
+    size_t                  NumOfValues;
+    std::vector<size_t>     ValueMap;
 
     // setup
     bool                    IncludeError;

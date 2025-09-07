@@ -1194,7 +1194,7 @@ bool COptGPRHyprms::CreateGPREngine_dF(void)
     CSmootherGPRPtr gpr = CSmootherGPRPtr(new CSmootherGPR);
 
     gpr->SetOutputES(FEN);
-    gpr->AddInputEnergyProxy(proxy);
+    gpr->SetInputEnergyProxy(proxy);
 
     GPREngine = gpr;
     return(true);

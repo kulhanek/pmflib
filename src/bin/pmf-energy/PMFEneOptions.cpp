@@ -30,7 +30,6 @@
 CPMFEneOptions::CPMFEneOptions(void)
 {
     SetShowMiniUsage(true);
-    SetAllowProgArgs(true);
 }
 
 //------------------------------------------------------------------------------

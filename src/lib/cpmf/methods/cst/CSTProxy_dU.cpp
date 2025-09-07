@@ -31,17 +31,17 @@ using namespace std;
 
 CCSTProxy_dU::CCSTProxy_dU(void)
 {
-    RegisterRealm(CST_dU,       "dU",       "CST", "dU=<Etot>FW");
-    RegisterRealm(CST_ETOT,     "<Etot>",   "CST", "<Etot>");
-    RegisterRealm(CST_ETOTFW,   "<Etot>FW", "CST", "<Etot>FW");
-    RegisterRealm(CST_EINT,     "<Eint>",   "CST", "<Eint>");
-    RegisterRealm(CST_EINTFW,   "<Eint>FW", "CST", "<Eint>FW");
-    RegisterRealm(CST_EPOT,     "<Epot>",   "CST", "<Epot>");
-    RegisterRealm(CST_EPOTFW,   "<Epot>FW", "CST", "<Epot>FW");
-    RegisterRealm(CST_ERST,     "<Erst>",   "CST", "<Erst>");
-    RegisterRealm(CST_ERSTFW,   "<Erst>FW", "CST", "<Erst>FW");
-    RegisterRealm(CST_EKIN,     "<Ekin>",   "CST", "<Ekin>");
-    RegisterRealm(CST_EKINFW,   "<Ekin>FW", "CST", "<Ekin>FW");
+    RegisterRealm(CST_dU,       "dU",       "CST", "dU={Etot}FW");
+    RegisterRealm(CST_ETOT,     "{Etot}",   "CST", "{Etot}");
+    RegisterRealm(CST_ETOTFW,   "{Etot}FW", "CST", "{Etot}FW");
+    RegisterRealm(CST_EINT,     "{Eint}",   "CST", "{Eint}");
+    RegisterRealm(CST_EINTFW,   "{Eint}FW", "CST", "{Eint}FW");
+    RegisterRealm(CST_EPOT,     "{Epot}",   "CST", "{Epot}");
+    RegisterRealm(CST_EPOTFW,   "{Epot}FW", "CST", "{Epot}FW");
+    RegisterRealm(CST_ERST,     "{Erst}",   "CST", "{Erst}");
+    RegisterRealm(CST_ERSTFW,   "{Erst}FW", "CST", "{Erst}FW");
+    RegisterRealm(CST_EKIN,     "{Ekin}",   "CST", "{Ekin}");
+    RegisterRealm(CST_EKINFW,   "{Ekin}FW", "CST", "{Ekin}FW");
 }
 
 //------------------------------------------------------------------------------

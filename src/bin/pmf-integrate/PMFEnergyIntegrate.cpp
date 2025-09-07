@@ -88,9 +88,9 @@ int CPMFEnergyIntegrate::Init(int argc,char* argv[])
         vout << "# PMF accumulator (in)  : " << Options.GetArgAccuFile() << endl;
 
     if( Options.GetArgENEFile() != "-") {
-        vout << "# Free energy file (out): " << Options.GetArgENEFile() << endl;
+        vout << "# Energy file (out)     : " << Options.GetArgENEFile() << endl;
     } else {
-        vout << "# Free energy file (out): - (standard output)" << endl;
+        vout << "# Energy file (out)     : - (standard output)" << endl;
     }
     vout << "# ------------------------------------------------" << endl;
         vout << "# Integrated realm      : " << Options.GetOptRealm() << endl;

@@ -40,21 +40,15 @@ public:
     "The program provides various types of energies from the PMF accumulator."
     CSO_PROG_DESC_END
 
-    CSO_PROG_ARGS_SHORT_DESC_BEGIN
-    "accuname1 [accuname2 ...] energy"
-    CSO_PROG_ARGS_SHORT_DESC_END
-
-    CSO_PROG_ARGS_LONG_DESC_BEGIN
-    "<cyan><b>accuname1</b></cyan>                  Name of file containing the PMF accumulator.\n"
-    "<cyan><b>energy</b></cyan>                     Resulting energy.\n"
-    CSO_PROG_ARGS_LONG_DESC_END
-
     CSO_PROG_VERS_BEGIN
     LibBuildVersion_PMF
     CSO_PROG_VERS_END
 
 // list of all options and arguments ------------------------------------------
     CSO_LIST_BEGIN
+    // arguments ----------------------------
+    CSO_ARG(CSmallString,AccuFile)
+    CSO_ARG(CSmallString,ENEFile)
     // options ------------------------------
     CSO_OPT(CSmallString,Realm)
     CSO_OPT(bool,ListRealms)
@@ -89,6 +83,14 @@ public:
     CSO_LIST_END
 
     CSO_MAP_BEGIN
+    // -------------------------------------------
+        CSO_MAP_ARG(CSmallString, AccuFile, NULL, true, "ACCU",
+            "Name of the file containing the input PMF accumulator.")
+    // -------------------------------------------
+        CSO_MAP_ARG(CSmallString, ENEFile, NULL, true, "ENE",
+            "Name of file where the resulting energy surface will be printed. "
+            "If the name is '-' then the output will be written to the standard output.")
+    // -------------------------------------------
         CSO_MAP_OPT(CSmallString, Realm, "dU", false, 'r', "realm", "NAME",
                 "Intended output. The list of supported realms can be obtained by --listrealms.")
         // -------------------------------------------
@@ -126,7 +128,7 @@ public:
                 "Number of statistically correlated samples in the form NCorr1[NCorr2x...]. "
                 "The last value pads the rest.")
         // -------------------------------------------
-            CSO_MAP_OPT(CSmallString, SigmaN2, "0.0", false, 'n', "sigman2", "SPEC",
+            CSO_MAP_OPT(CSmallString, SigmaN2, "1e-5", false, 'n', "sigman2", "SPEC",
                 "Values of noise sigma squared for each CV in the form SigmaN2(1)[xSigmaN2(2)x...]. "
                 "The last value pads the rest.")
         // -------------------------------------------

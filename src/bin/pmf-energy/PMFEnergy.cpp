@@ -70,8 +70,6 @@ int CPMFEnergy::Init(int argc,char* argv[])
         vout.Verbosity(CVerboseStr::high);
     }
 
-    HEOutputName = Options.GetProgArg(Options.GetNumberOfProgArgs()-1);
-
     CSmallTimeAndDate dt;
     dt.GetActualTimeAndDate();
 
@@ -81,10 +79,12 @@ int CPMFEnergy::Init(int argc,char* argv[])
     vout << "# Version: " << LibBuildVersion_PMF << endl;
     vout << "# ==============================================================================" << endl;
 
-    if(HEOutputName != "-") {
-        vout << "# Enthalpy file (out)       : " << HEOutputName << endl;
+        vout << "# PMF accumulator (in)      : " << Options.GetArgAccuFile() << endl;
+
+    if( Options.GetArgENEFile() != "-") {
+        vout << "# Energy file (out)         : " << Options.GetArgENEFile() << endl;
     } else {
-        vout << "# Enthalpy file (out)       : - (standard output)" << endl;
+        vout << "# Energy file (out)         : - (standard output)" << endl;
     }
     vout << "# ------------------------------------------------" << endl;
         vout << "# Processed realm           : " << Options.GetOptRealm() << endl;
@@ -101,17 +101,17 @@ int CPMFEnergy::Init(int argc,char* argv[])
     } else {
         vout << "# Limit                     : " << Options.GetOptLimit() << endl;
     }
-    vout << "# Print errors              : " << bool_to_str(Options.GetOptWithError()) << endl;
-    vout << "# Number of corr. samples   : " << Options.GetOptNCorr() << endl;
-    vout << "# ------------------------------------------------" << endl;
-    vout << "# No header to output       : " << bool_to_str(Options.GetOptNoHeader()) << endl;
-    vout << "# X format                  : " << Options.GetOptIXFormat() << endl;
-    vout << "# Y format                  : " << Options.GetOptOEFormat() << endl;
-    vout << "# ------------------------------------------------------------------------------" << endl;
+        vout << "# Print errors              : " << bool_to_str(Options.GetOptWithError()) << endl;
+        vout << "# Number of corr. samples   : " << Options.GetOptNCorr() << endl;
+        vout << "# ------------------------------------------------" << endl;
+        vout << "# No header to output       : " << bool_to_str(Options.GetOptNoHeader()) << endl;
+        vout << "# X format                  : " << Options.GetOptIXFormat() << endl;
+        vout << "# Y format                  : " << Options.GetOptOEFormat() << endl;
+        vout << "# ------------------------------------------------------------------------------" << endl;
     vout << endl;
 
     // open files -----------------------------------
-    if( OutputFile.Open(HEOutputName,"w") == false ){
+    if( OutputFile.Open(Options.GetArgENEFile(),"w") == false ){
         ES_ERROR("unable to open output file");
         return(SO_USER_ERROR);
     }
@@ -129,72 +129,49 @@ bool CPMFEnergy::Run(void)
     State = 1;
 
     vout << endl;
-    vout << format("%02d:Loading PMF accumulators ...")%State << endl;
+    vout << format("%02d:Loading PMF accumulator ...")%State << endl;
     State++;
-    for(int i=0; i < Options.GetNumberOfProgArgs()-1; i++){
-        CSmallString name = Options.GetProgArg(i);
-        vout << format("** PMF Accumulator #%05d: %s")%(i+1)%string(name) << endl;
-        CPMFAccumulatorPtr p_accu(new CPMFAccumulator);
-        try {
-            p_accu->Load(name);
-        } catch(...) {
-            CSmallString error;
-            error << "unable to load the input PMF accumulator file '" << name << "'";
-            ES_ERROR(error);
-            return(false);
-        }
-        Accumulators.push_back(p_accu);
-    }
-    vout << "   Done" << endl;
-
-    if( Accumulators.size() == 0 ){
+    vout << format("   ** Name: %s")%string(Options.GetArgAccuFile()) << endl;
+    Accu = CPMFAccumulatorPtr(new CPMFAccumulator);
+    try {
+        Accu->Load(Options.GetArgAccuFile());
+    } catch(...) {
         CSmallString error;
-        error << "no PMF accumulator was loaded";
+        error << "unable to load the input PMF accumulator file '" << Options.GetArgAccuFile() << "'";
         ES_ERROR(error);
         return(false);
     }
+    vout << "   Done" << endl;
 
 // realms
     vout << endl;
     vout << format("%02d:Initializing %s realm ...")%State%Options.GetOptRealm() << endl;
-    vout << format(  "   Number of loaded PMF accumulators = %d")%Accumulators.size() << endl;
     State++;
-    for(size_t i=0; i < Accumulators.size(); i++){
-        CPMFAccumulatorPtr  accu  = Accumulators[i];
-        CEnergyProxyPtr     proxy = CEnergyProxyInit::InitProxy(Options.GetOptRealm(),accu);
-        proxy->Init(accu);
-        EnergyProxies.push_back(proxy);
-    }
+    EneProxy = CEnergyProxyInit::InitProxy(Options.GetOptRealm(),Accu);
+    EneProxy->Init(Accu);
+    vout << format(  "   %s [%s] | %s")%EneProxy->GetRealm()%EneProxy->GetMethods()%EneProxy->GetDescription() << endl;
 
     // DO NOT SET IT HERE, Ncorr is now GPR hyperparameter
     // Accu->SetNCorr(Options.GetOptNCorr());
 
 // -----------------------------------------------------------------------------
     vout << endl;
-    vout << format("%02d:Statistics of input accumulators")%State << endl;
+    vout << format("%02d:Statistics of input accumulator")%State << endl;
     State++;
     PrintSampledStat();
     vout << "   Done." << endl;
 
 // -----------------------------------------------------------------------------
 
-    HES = CEnergySurfacePtr(new CEnergySurface);
-    HES->Allocate(Accumulators[0]);
-    HES->SetSLevel(Options.GetOptSLevel());
+    ENE = CEnergySurfacePtr(new CEnergySurface);
+    ENE->Allocate(Accu);
+    ENE->SetSLevel(Options.GetOptSLevel());
 
     if( Options.IsOptGlobalMinSet() ){
-        HES->SetGlobalMin(Options.GetOptGlobalMin());
+        ENE->SetGlobalMin(Options.GetOptGlobalMin());
     }
 
     if( Options.GetOptMethod() == "raw" ){
-        if( Accumulators.size() > 1 ){
-            CSmallString error;
-            error << "more than one PMF accumulator was loaded";
-            ES_ERROR(error);
-            return(false);
-        }
-// FIXME
-//        Accumulators[0]->SetNCorr(Options.GetOptNCorr());
         vout << endl;
         vout << format("%02d:Raw absolute energy")%State << endl;
         GetRawEnthalpy();
@@ -203,25 +180,23 @@ bool CPMFEnergy::Run(void)
             AdjustGlobalMin();
         }
 
-        vout << "      SigmaF2   = " << setprecision(5) << HES->GetSigmaF2() << endl;
-        vout << "      SigmaF    = " << setprecision(5) << HES->GetSigmaF() << endl;
+        vout << "      SigmaF2   = " << setprecision(5) << ENE->GetSigmaF2() << endl;
+        vout << "      SigmaF    = " << setprecision(5) << ENE->GetSigmaF() << endl;
         if( Options.GetOptWithError() ){
-        vout << "      RMSError  = " << setprecision(5) << HES->GetRMSError() << endl;
-        vout << "      MaxError  = " << setprecision(5) << HES->GetMaxError() << endl;
+        vout << "      RMSError  = " << setprecision(5) << ENE->GetRMSError() << endl;
+        vout << "      MaxError  = " << setprecision(5) << ENE->GetMaxError() << endl;
         }
         State++;
         vout << "   Done." << endl;
-        Accumulators[0]->SetNCorr(1.0);    // to prevent possible errors if used later
+        Accu->SetNCorr(1.0);    // to prevent possible errors if used later
 
     } else if ( Options.GetOptMethod() == "gpr" ){
         vout << endl;
         vout << format("%02d:GPR interpolated energy")%State << endl;
         CSmootherGPR   entgpr;
 
-        entgpr.SetOutputES(HES);
-        for(size_t i=0; i < EnergyProxies.size(); i++){
-            entgpr.AddInputEnergyProxy(EnergyProxies[i]);
-        }
+        entgpr.SetOutputES(ENE);
+        entgpr.SetInputEnergyProxy(EneProxy);
 
         if( Options.IsOptLoadHyprmsSet() ){
             entgpr.LoadGPRHyprms(Options.GetOptLoadHyprms());
@@ -259,24 +234,24 @@ bool CPMFEnergy::Run(void)
 
     if( Options.GetOptAbsolute() == false ){
         if( ! Options.IsOptGlobalMinSet() ){
-            HES->ApplyOffset(Options.GetOptOffset() - HES->GetGlobalMinimumValue());
+            ENE->ApplyOffset(Options.GetOptOffset() - ENE->GetGlobalMinimumValue());
         } else {
-            HES->ApplyOffset(Options.GetOptOffset());
+            ENE->ApplyOffset(Options.GetOptOffset());
         }
     }
 
     if( Options.GetOptUnsampledAsMaxE() ){
         if( Options.IsOptMaxEnergySet()){
-            HES->AdaptUnsampledToMaxEnergy(Options.GetOptMaxEnergy());
+            ENE->AdaptUnsampledToMaxEnergy(Options.GetOptMaxEnergy());
         } else {
-            HES->AdaptUnsampledToMaxEnergy();
+            ENE->AdaptUnsampledToMaxEnergy();
         }
     }
 
 // -----------------------------------------------------------------------------
 // print energy surface
 
-    if(PrintHES() == false) {
+    if(PrintENE() == false) {
         ES_ERROR("unable to print energy");
         return(false);
     }
@@ -289,7 +264,7 @@ bool CPMFEnergy::Run(void)
 void CPMFEnergy::AdjustGlobalMin(void)
 {
     CSimpleVector<double>  GPos;
-    GPos.CreateVector(HES->GetNumOfCVs());
+    GPos.CreateVector(ENE->GetNumOfCVs());
 
 // adjust global minimum
     if( Options.IsOptGlobalMinSet()  ){
@@ -300,7 +275,7 @@ void CPMFEnergy::AdjustGlobalMin(void)
 
         // parse values of CVs
         stringstream str(sspec);
-        for(int i=0; i < HES->GetNumOfCVs(); i++){
+        for(int i=0; i < ENE->GetNumOfCVs(); i++){
             double val;
             str >> val;
             if( ! str ){
@@ -308,28 +283,28 @@ void CPMFEnergy::AdjustGlobalMin(void)
                 error << "unable to decode CV value for position: " << i+1;
                 RUNTIME_ERROR(error);
             }
-            GPos[i] = HES->GetCV(i)->GetIntValue(val);
+            GPos[i] = ENE->GetCV(i)->GetIntValue(val);
         }
 
         // GPos.CreateVector(NCVs) - is created in  SetGlobalMin
    //   vout << "   Calculating FES ..." << endl;
         vout << "      Global minimum provided at: ";
-        vout << setprecision(5) << HES->GetCV(0)->GetRealValue(GPos[0]);
-        for(int i=1; i < HES->GetNumOfCVs(); i++){
-            vout << "x" << setprecision(5) << HES->GetCV(i)->GetRealValue(GPos[i]);
+        vout << setprecision(5) << ENE->GetCV(0)->GetRealValue(GPos[0]);
+        for(int i=1; i < ENE->GetNumOfCVs(); i++){
+            vout << "x" << setprecision(5) << ENE->GetCV(i)->GetRealValue(GPos[i]);
         }
         vout << endl;
 
         vout << "      Closest bin found at: ";
         // find the closest bin
         CSimpleVector<double>   pos;
-        pos.CreateVector(HES->GetNumOfCVs());
+        pos.CreateVector(ENE->GetNumOfCVs());
         double minv = 0.0;
         int    glb_bin = 0;
-        for(int ibin=0; ibin < HES->GetNumOfBins(); ibin++){
-            HES->GetPoint(ibin,pos);
+        for(int ibin=0; ibin < ENE->GetNumOfBins(); ibin++){
+            ENE->GetPoint(ibin,pos);
             double dist2 = 0.0;
-            for(int cv=0; cv < HES->GetNumOfCVs(); cv++){
+            for(int cv=0; cv < ENE->GetNumOfCVs(); cv++){
                 dist2 = dist2 + (pos[cv]-GPos[cv])*(pos[cv]-GPos[cv]);
             }
             if( ibin == 0 ){
@@ -342,50 +317,50 @@ void CPMFEnergy::AdjustGlobalMin(void)
             }
         }
 
-        HES->GetPoint(glb_bin,GPos);
+        ENE->GetPoint(glb_bin,GPos);
 
-        vout << setprecision(5) << HES->GetCV(0)->GetRealValue(GPos[0]);
-        for(int i=1; i < HES->GetNumOfCVs(); i++){
-            vout << "x" << setprecision(5) << HES->GetCV(i)->GetRealValue(GPos[i]);
+        vout << setprecision(5) << ENE->GetCV(0)->GetRealValue(GPos[0]);
+        for(int i=1; i < ENE->GetNumOfCVs(); i++){
+            vout << "x" << setprecision(5) << ENE->GetCV(i)->GetRealValue(GPos[i]);
         }
 
-        double glb_min = HES->GetEnergy(glb_bin);
+        double glb_min = ENE->GetEnergy(glb_bin);
         vout << " (" << setprecision(5) << glb_min << ")" << endl;
 
-        for(int ibin=0; ibin < HES->GetNumOfBins(); ibin++){
-            int samples = HES->GetNumOfSamples(ibin);
+        for(int ibin=0; ibin < ENE->GetNumOfBins(); ibin++){
+            int samples = ENE->GetNumOfSamples(ibin);
             if( samples != 0 ){
-                double ene = HES->GetEnergy(ibin);
-                HES->SetEnergy(ibin,ene-glb_min);
+                double ene = ENE->GetEnergy(ibin);
+                ENE->SetEnergy(ibin,ene-glb_min);
             }
         }
 
     } else {
         // search for global minimum
         double glb_min = 0.0;
-        for(int ibin=0; ibin < HES->GetNumOfBins(); ibin++){
-            int samples = HES->GetNumOfSamples(ibin);
+        for(int ibin=0; ibin < ENE->GetNumOfBins(); ibin++){
+            int samples = ENE->GetNumOfSamples(ibin);
             if( samples < -1 ) continue;    // include sampled areas and holes but exclude extrapolated areas
-            double value = HES->GetEnergy(ibin);
+            double value = ENE->GetEnergy(ibin);
             if( (ibin == 0) || (glb_min > value) ){
                 glb_min = value;
-                HES->GetPoint(ibin,GPos);
+                ENE->GetPoint(ibin,GPos);
             }
         }
 
    //   vout << "   Calculating FES ..." << endl;
         vout << "      Global minimum found at: ";
-        vout << setprecision(5) << HES->GetCV(0)->GetRealValue(GPos[0]);
-        for(int i=1; i < HES->GetNumOfCVs(); i++){
-            vout << "x" << setprecision(5) << HES->GetCV(i)->GetRealValue(GPos[i]);
+        vout << setprecision(5) << ENE->GetCV(0)->GetRealValue(GPos[0]);
+        for(int i=1; i < ENE->GetNumOfCVs(); i++){
+            vout << "x" << setprecision(5) << ENE->GetCV(i)->GetRealValue(GPos[i]);
         }
         vout << " (" << setprecision(5) << glb_min << ")" << endl;
 
-        for(int ibin=0; ibin < HES->GetNumOfBins(); ibin++){
-            int samples = HES->GetNumOfSamples(ibin);
+        for(int ibin=0; ibin < ENE->GetNumOfBins(); ibin++){
+            int samples = ENE->GetNumOfSamples(ibin);
             if( samples != 0 ){
-                double ene = HES->GetEnergy(ibin);
-                HES->SetEnergy(ibin,ene-glb_min);
+                double ene = ENE->GetEnergy(ibin);
+                ENE->SetEnergy(ibin,ene-glb_min);
             }
         }
     }
@@ -395,24 +370,25 @@ void CPMFEnergy::AdjustGlobalMin(void)
 
 void CPMFEnergy::GetRawEnthalpy(void)
 {
-    for(int ibin=0; ibin < Accumulators[0]->GetNumOfBins(); ibin++){
-        int    nsamples = EnergyProxies[0]->GetNumOfSamples(ibin);
-        double ent = EnergyProxies[0]->GetValue(ibin,E_PROXY_VALUE);
-        double error = EnergyProxies[0]->GetValue(ibin,E_PROXY_ERROR);
-        HES->SetNumOfSamples(ibin,nsamples);
-        HES->SetEnergy(ibin,ent);
-        HES->SetError(ibin,error);
+    for(int ibin=0; ibin < Accu->GetNumOfBins(); ibin++){
+        int    nsamples = EneProxy->GetNumOfSamples(ibin);
+        double ent = EneProxy->GetValue(ibin,E_PROXY_VALUE);
+        double error = EneProxy->GetValue(ibin,E_PROXY_ERROR);
+        ENE->SetNumOfSamples(ibin,nsamples);
+        ENE->SetEnergy(ibin,ent);
+        ENE->SetError(ibin,error);
     }
 }
 
 //------------------------------------------------------------------------------
 
-bool CPMFEnergy::PrintHES(void)
+bool CPMFEnergy::PrintENE(void)
 {
     vout << endl;
-    vout << format("%02d:Writing results to file: %s")%State%string(HEOutputName) << endl;
+    vout << format("%02d:Writing results to file ...")%State << endl;
+    vout << format("   ** Name: %s")%string(Options.GetArgENEFile()) << endl;
 
-    if( OutputFile.Open(HEOutputName,"w") == false ){
+    if( OutputFile.Open(Options.GetArgENEFile(),"w") == false ){
         ES_ERROR("unable to open output file");
         return(false);
     }
@@ -447,7 +423,7 @@ bool CPMFEnergy::PrintHES(void)
     }
 
     printer.SetIncludeError(Options.GetOptWithError());
-    printer.SetPrintedES(HES);
+    printer.SetPrintedES(ENE);
 
     try {
         printer.Print(OutputFile);
@@ -466,7 +442,7 @@ void CPMFEnergy::WriteHeader(void)
 {
     if((Options.GetOptNoHeader() == false) && (Options.GetOptOutputFormat() != "fes")) {
         Options.PrintOptions(OutputFile);
-        Accumulators[0]->PrintInfo(OutputFile);
+        Accu->PrintInfo(OutputFile);
     }
 }
 
@@ -474,36 +450,27 @@ void CPMFEnergy::WriteHeader(void)
 
 void CPMFEnergy::PrintSampledStat(void)
 {
-    for(size_t i=0; i < Accumulators.size(); i++){
-        CPMFAccumulatorPtr  accu = Accumulators[i];
-        vout << format("** PMF Accumulator #%05d ...")%(i+1) << endl;
-        // calculate sampled area
-        double maxbins = accu->GetNumOfBins();
-        int    sampled = 0;
-        int    limit = 0;
-        for(int ibin=0; ibin < accu->GetNumOfBins(); ibin++) {
-            if( accu->GetNumOfSamples(ibin) > 0 ) {
-                sampled++;
-            }
-            if( accu->GetNumOfSamples(ibin) > Options.GetOptLimit() ) {
-                limit++;
-            } else {
-                accu->SetNumOfSamples(ibin,0);
-            }
+    // calculate sampled area
+    double maxbins = Accu->GetNumOfBins();
+    int    sampled = 0;
+    int    limit = 0;
+    for(int ibin=0; ibin < Accu->GetNumOfBins(); ibin++) {
+        if( Accu->GetNumOfSamples(ibin) > 0 ) {
+            sampled++;
         }
-        if( maxbins > 0 ){
-            vout << "   Sampled area: "
-                 << setw(6) << sampled << " / " << (int)maxbins << " | " << setw(5) << setprecision(1) << fixed << sampled/maxbins*100 <<"%" ;
-            vout << " ... Within limit: "
-                 << setw(6) << limit << " / " << (int)maxbins << " | " << setw(5) << setprecision(1) << fixed << limit/maxbins*100 <<"%";
-        }
-        vout << endl;
-        if( accu->CheckCVSInfo(Accumulators[0]) == false ){
-            CSmallString error;
-            error << "inconsistent dimensions of two PMF accumulators";
-            RUNTIME_ERROR(error);
+        if( Accu->GetNumOfSamples(ibin) > Options.GetOptLimit() ) {
+            limit++;
+        } else {
+            Accu->SetNumOfSamples(ibin,0);
         }
     }
+    if( maxbins > 0 ){
+        vout << "   Sampled area: "
+             << setw(6) << sampled << " / " << (int)maxbins << " | " << setw(5) << setprecision(1) << fixed << sampled/maxbins*100 <<"%" ;
+        vout << " ... Within limit: "
+             << setw(6) << limit << " / " << (int)maxbins << " | " << setw(5) << setprecision(1) << fixed << limit/maxbins*100 <<"%";
+    }
+    vout << endl;
 }
 
 //==============================================================================

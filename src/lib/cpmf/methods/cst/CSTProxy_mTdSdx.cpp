@@ -33,8 +33,8 @@ using namespace std;
 
 CCSTProxy_mTdSdx::CCSTProxy_mTdSdx(void)
 {
-    RegisterRealm(CST_mTdSdx, "mTdS/dx", "CST", "-TdS(x)=Cov(lam,H)/RT + TdS{CST}corr");
-    RegisterRealm(CST_mTdSdx, "-TdS/dx", "CST", "-TdS(x)=Cov(lam,H)/RT + TdS{CST}corr");
+    RegisterRealm(CST_mTdSdx, "mTdS/dx", "CST", "-TdS(x)=|Cov(lam,H) dx]/RT + TdS{CST}corr");
+    RegisterRealm(CST_mTdSdx, "-TdS/dx", "CST", "-TdS(x)=|Cov(lam,H) dx|/RT + TdS{CST}corr");
 
     RegisterRealm(CST_TdS_LT,   "C11LT",    "CST", "C11LT");
     RegisterRealm(CST_TdS_LTFW, "C11LTFW",  "CST", "C11LTFW");

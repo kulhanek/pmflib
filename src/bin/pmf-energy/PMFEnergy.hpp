@@ -51,22 +51,21 @@ public:
 
 // section of private data ----------------------------------------------------
 private:
-    CPMFEneOptions                  Options;
-    CSmallString                    HEOutputName;
-    CStdIOFile                      OutputFile;
-    std::vector<CEnergyProxyPtr>    EnergyProxies;
-    std::vector<CPMFAccumulatorPtr> Accumulators;
-    CEnergySurfacePtr               HES;
-    int                             State;
+    CPMFEneOptions          Options;
+    CStdIOFile              OutputFile;
+    CPMFAccumulatorPtr      Accu;
+    CEnergyProxyPtr         EneProxy;
+    CEnergySurfacePtr       ENE;
+    int                     State;
 
     // output ------------------------------------
-    CTerminalStr        Console;
-    CVerboseStr         vout;
+    CTerminalStr            Console;
+    CVerboseStr             vout;
 
     /// helper methods
     void GetRawEnthalpy(void);
     void LoadGPRHyprms(CSmootherGPR& gpr);
-    bool PrintHES(void);
+    bool PrintENE(void);
     void WriteHeader(void);
     void PrintSampledStat(void);
     void AdjustGlobalMin(void);

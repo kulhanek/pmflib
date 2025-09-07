@@ -169,7 +169,7 @@ public:
         CSO_MAP_OPT(CSmallString, SigmaF2, "15.0", false, 's', "sigmaf2", "NUMBER",
             "GPR: Variance of the reconstructed free energy surface (signal variance).")
     // -------------------------------------------
-        CSO_MAP_OPT(CSmallString, NCorr, "0.0", false, 'c', "ncorr", "NUMBER",
+        CSO_MAP_OPT(CSmallString, NCorr, "1e-5", false, 'c', "ncorr", "NUMBER",
             "GPR: Number of statistically correlated samples.")
     // -------------------------------------------
         CSO_MAP_OPT(CSmallString, WFac, "3.0", false, 'w', "wfac", "SPEC",
