@@ -1,10 +1,9 @@
-#ifndef EnergyProxyInitH
-#define EnergyProxyInitH
+#ifndef GPREngineAUSInitH
+#define GPREngineAUSInitH
 // =============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
 //    Copyright (C) 2025 Petr Kulhanek, kulhanek@chemi.muni.cz
-//    Copyright (C) 2023 Petr Kulhanek, kulhanek@chemi.muni.cz
 //
 //     This program is free software; you can redistribute it and/or modify
 //     it under the terms of the GNU General Public License as published by
@@ -22,25 +21,19 @@
 // =============================================================================
 
 #include <PMFMainHeader.hpp>
-#include <EnergyProxy.hpp>
-#include <PMFAccumulator.hpp>
+#include <GPREngineAUS.hpp>
 
 //------------------------------------------------------------------------------
 
-class PMF_PACKAGE CEnergyProxyInit {
+/** \brief init AUS GPR engines
+*/
+
+class PMF_PACKAGE CGPREngineAUSInit {
 public:
+
+// initialization methods -----------------------------------------------------
     /// init requested proxy
-    static CEnergyProxyPtr InitProxy(const CSmallString& realm,CPMFAccumulatorPtr& accu,bool noerror=false);
-
-    /// print supported realms
-    static void PrintRealms(std::ostream& fout);
-
-    /// enumerate supported realms
-    static void EnumerateRealms(std::list<CProxyRealmDescr>& dlist);
-
-private:
-    /// create list of all supported proxies
-    static void InitProxyList(std::list<CEnergyProxyPtr>& ene_proxies);
+    static CGPREngineAUSPtr InitEngine(const CSmallString& realm,CPMFAccumulatorPtr& accu,bool noerror=false);
 };
 
 //------------------------------------------------------------------------------

@@ -18,7 +18,7 @@
 //     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 // =============================================================================
 
-#include <GPRHyprms.hpp>
+#include <GPREngine.hpp>
 #include <string>
 #include <vector>
 #include <boost/algorithm/string/split.hpp>
@@ -41,7 +41,7 @@ using namespace boost::algorithm;
 //------------------------------------------------------------------------------
 //==============================================================================
 
-CGPRHyprms::CGPRHyprms(void)
+CGPREngine::CGPREngine(void)
 {
     NumOfThreads    = 0;
 
@@ -54,13 +54,12 @@ CGPRHyprms::CGPRHyprms(void)
 
     NumOfSigmaF2    = 0;
     NumOfCoVar      = 0;
-    NumOfNCorr      = 0;
     NumOfSigmaN2    = 0;
 }
 
 //------------------------------------------------------------------------------
 
-CGPRHyprms::~CGPRHyprms(void)
+CGPREngine::~CGPREngine(void)
 {
 }
 
@@ -68,7 +67,69 @@ CGPRHyprms::~CGPRHyprms(void)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void CGPRHyprms::SetSigmaF2(const CSmallString& spec)
+int CGPREngine::GetNumOfSigmaF2(void)
+{
+    return(NumOfSigmaF2);
+}
+
+//------------------------------------------------------------------------------
+
+int CGPREngine::GetNumOfCoVar(void)
+{
+    return(NumOfCoVar);
+}
+
+//------------------------------------------------------------------------------
+
+int CGPREngine::GetNumOfWFac(void)
+{
+    return(NumOfCVs);
+}
+
+//------------------------------------------------------------------------------
+
+int CGPREngine::GetNumOfSigmaN2(void)
+{
+    return(NumOfSigmaN2);
+}
+
+//==============================================================================
+//------------------------------------------------------------------------------
+//==============================================================================
+
+void CGPREngine::SetIncludeError(bool set)
+{
+}
+
+//-----------------------------------------------------------------------------
+
+void CGPREngine::SetNoEnergy(bool set)
+{
+}
+
+//-----------------------------------------------------------------------------
+
+void CGPREngine::IncludeGluedAreas(bool set)
+{
+}
+
+//-----------------------------------------------------------------------------
+
+void CGPREngine::PrepForHyprmsGrd(bool set)
+{
+}
+
+//-----------------------------------------------------------------------------
+
+void CGPREngine::SetCalcLogPL(bool set)
+{
+}
+
+//==============================================================================
+//------------------------------------------------------------------------------
+//==============================================================================
+
+void CGPREngine::SetSigmaF2(const CSmallString& spec)
 {
     if( Accu == NULL ){
         RUNTIME_ERROR("Accu is not set!");
@@ -111,7 +172,7 @@ void CGPRHyprms::SetSigmaF2(const CSmallString& spec)
 
 //------------------------------------------------------------------------------
 
-void CGPRHyprms::SetSigmaF2(CSimpleVector<double>& sigmaf2)
+void CGPREngine::SetSigmaF2(CSimpleVector<double>& sigmaf2)
 {
     if( Accu == NULL ){
         RUNTIME_ERROR("Accu is not set!");
@@ -128,7 +189,7 @@ void CGPRHyprms::SetSigmaF2(CSimpleVector<double>& sigmaf2)
 
 //------------------------------------------------------------------------------
 
-void CGPRHyprms::SetSigmaF2(size_t cvind, double value)
+void CGPREngine::SetSigmaF2(size_t cvind, double value)
 {
     if( Accu == NULL ){
         RUNTIME_ERROR("Accu is not set!");
@@ -151,7 +212,7 @@ void CGPRHyprms::SetSigmaF2(size_t cvind, double value)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void CGPRHyprms::SetCoVar(const CSmallString& spec)
+void CGPREngine::SetCoVar(const CSmallString& spec)
 {
     if( Accu == NULL ){
         RUNTIME_ERROR("Accu is not set!");
@@ -194,7 +255,7 @@ void CGPRHyprms::SetCoVar(const CSmallString& spec)
 
 //------------------------------------------------------------------------------
 
-void CGPRHyprms::SetCoVar(CSimpleVector<double>& covar)
+void CGPREngine::SetCoVar(CSimpleVector<double>& covar)
 {
     if( Accu == NULL ){
         RUNTIME_ERROR("Accu is not set!");
@@ -211,7 +272,7 @@ void CGPRHyprms::SetCoVar(CSimpleVector<double>& covar)
 
 //------------------------------------------------------------------------------
 
-void CGPRHyprms::SetCoVar(size_t cvind, double value)
+void CGPREngine::SetCoVar(size_t cvind, double value)
 {
     if( Accu == NULL ){
         RUNTIME_ERROR("Accu is not set!");
@@ -234,91 +295,7 @@ void CGPRHyprms::SetCoVar(size_t cvind, double value)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void CGPRHyprms::SetNCorr(const CSmallString& spec)
-{
-    if( Accu == NULL ){
-        RUNTIME_ERROR("Accu is not set!");
-    }
-    if( NumOfNCorr == 0 ){
-        RUNTIME_ERROR("NumOfNCorr is zero");
-    }
-
-    string          sspec(spec);
-    vector<string>  sncorr;
-
-    split(sncorr,sspec,is_any_of("x"),token_compress_on);
-
-    if( sncorr.size() > NumOfNCorr ){
-        CSmallString error;
-        error << "too many ncorr (" << sncorr.size() << ") than required (" << NumOfNCorr << ")";
-        RUNTIME_ERROR(error);
-    }
-
-    NCorr.CreateVector(NumOfNCorr);
-
-    // parse values of ncorr
-    double last_ncorr = 1.0;
-    for(size_t i=0; i < sncorr.size(); i++){
-        stringstream str(sncorr[i]);
-        str >> last_ncorr;
-        if( ! str ){
-            CSmallString error;
-            error << "unable to decode ncorr value for position: " << i+1;
-            RUNTIME_ERROR(error);
-        }
-        NCorr[i] = last_ncorr;
-    }
-
-    // pad the rest with the last value
-    for(size_t i=sncorr.size(); i < NumOfNCorr; i++){
-        NCorr[i] = last_ncorr;
-    }
-}
-
-//------------------------------------------------------------------------------
-
-void CGPRHyprms::SetNCorr(CSimpleVector<double>& ncorr)
-{
-    if( Accu == NULL ){
-        RUNTIME_ERROR("Accu is not set!");
-    }
-    if( NumOfNCorr == 0 ){
-        RUNTIME_ERROR("NumOfNCorr is zero");
-    }
-
-    if( ncorr.GetLength() != NumOfNCorr ){
-        RUNTIME_ERROR("ncvs inconsistent in the source and target");
-    }
-
-    NCorr = ncorr;
-}
-
-//------------------------------------------------------------------------------
-
-void CGPRHyprms::SetNCorr(size_t cvind, double value)
-{
-    if( Accu == NULL ){
-        RUNTIME_ERROR("Accu is not set!");
-    }
-    if( NumOfNCorr == 0 ){
-        RUNTIME_ERROR("NumOfNCorr is zero");
-    }
-
-    if( cvind >= NumOfNCorr ){
-        RUNTIME_ERROR("cvind out-of-range");
-    }
-    // is NCorr initialized?
-    if( NCorr.GetLength() == 0 ){
-        NCorr.CreateVector(NumOfNCorr);
-    }
-    NCorr[cvind] = value;
-}
-
-//==============================================================================
-//------------------------------------------------------------------------------
-//==============================================================================
-
-void CGPRHyprms::SetSigmaN2(const CSmallString& spec)
+void CGPREngine::SetSigmaN2(const CSmallString& spec)
 {
     if( Accu == NULL ){
         RUNTIME_ERROR("Accu is not set!");
@@ -361,7 +338,7 @@ void CGPRHyprms::SetSigmaN2(const CSmallString& spec)
 
 //------------------------------------------------------------------------------
 
-void CGPRHyprms::SetSigmaN2(CSimpleVector<double>& sigman2)
+void CGPREngine::SetSigmaN2(CSimpleVector<double>& sigman2)
 {
     if( Accu == NULL ){
         RUNTIME_ERROR("Accu is not set!");
@@ -379,7 +356,7 @@ void CGPRHyprms::SetSigmaN2(CSimpleVector<double>& sigman2)
 
 //------------------------------------------------------------------------------
 
-void CGPRHyprms::SetSigmaN2(size_t cvind, double value)
+void CGPREngine::SetSigmaN2(size_t cvind, double value)
 {
     if( Accu == NULL ){
         RUNTIME_ERROR("Accu is not set!");
@@ -402,7 +379,7 @@ void CGPRHyprms::SetSigmaN2(size_t cvind, double value)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void CGPRHyprms::LoadGPRHyprms(const CSmallString& name)
+void CGPREngine::LoadGPRHyprms(const CSmallString& name)
 {
     ifstream fin;
     fin.open(name);
@@ -466,19 +443,6 @@ void CGPRHyprms::LoadGPRHyprms(const CSmallString& name)
             }
             cvind--; // transform to 0-based indexing
             SetWFac(cvind,value);
-        } else if( key.find("NCorr#") != string::npos ) {
-            std::replace( key.begin(), key.end(), '#', ' ');
-            stringstream kstr(key);
-            string swfac;
-            int    cvind;
-            kstr >> swfac >> cvind;
-            if( ! kstr ){
-                CSmallString error;
-                error << "GPR hyperparameters file, unable to decode ncorr key: " << key.c_str();
-                RUNTIME_ERROR(error);
-            }
-            cvind--; // transform to 0-based indexing
-            SetNCorr(cvind,value);
         } else if( key.find("SigmaN2#") != string::npos ) {
             std::replace( key.begin(), key.end(), '#', ' ');
             stringstream kstr(key);
@@ -504,7 +468,14 @@ void CGPRHyprms::LoadGPRHyprms(const CSmallString& name)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-double CGPRHyprms::GetLogML(void)
+bool CGPREngine::RunGPR(CVerboseStr& vout,bool nostat)
+{
+    return(false);
+}
+
+//------------------------------------------------------------------------------
+
+double CGPREngine::GetLogML(void)
 {
     double ml = 0.0;
     return(ml);
@@ -512,7 +483,7 @@ double CGPRHyprms::GetLogML(void)
 
 //------------------------------------------------------------------------------
 
-double CGPRHyprms::GetLogPL(void)
+double CGPREngine::GetLogPL(void)
 {
     double loo = 0.0;
     return(loo);
@@ -520,13 +491,13 @@ double CGPRHyprms::GetLogPL(void)
 
 //------------------------------------------------------------------------------
 
-void CGPRHyprms::GetLogMLDerivatives(const std::vector<bool>& flags,CSimpleVector<double>& der)
+void CGPREngine::GetLogMLDerivatives(const std::vector<bool>& flags,CSimpleVector<double>& der)
 {
 }
 
 //------------------------------------------------------------------------------
 
-void CGPRHyprms::GetLogPLDerivatives(const std::vector<bool>& flags,CSimpleVector<double>& der)
+void CGPREngine::GetLogPLDerivatives(const std::vector<bool>& flags,CSimpleVector<double>& der)
 {
 }
 
@@ -534,7 +505,7 @@ void CGPRHyprms::GetLogPLDerivatives(const std::vector<bool>& flags,CSimpleVecto
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void CGPRHyprms::PrintExecInfo(CVerboseStr& vout)
+void CGPREngine::PrintExecInfo(CVerboseStr& vout)
 {
     NumOfThreads = 1;
 
@@ -552,14 +523,14 @@ void CGPRHyprms::PrintExecInfo(CVerboseStr& vout)
 
 //------------------------------------------------------------------------------
 
-void CGPRHyprms::RunBlasLapackSeq(void)
+void CGPREngine::RunBlasLapackSeq(void)
 {
     CSciLapack::SetNumThreadsLocal(1);
 }
 
 //------------------------------------------------------------------------------
 
-void CGPRHyprms::RunBlasLapackPar(void)
+void CGPREngine::RunBlasLapackPar(void)
 {
     CSciLapack::SetNumThreadsLocal(NumOfThreads);
 }
@@ -568,14 +539,14 @@ void CGPRHyprms::RunBlasLapackPar(void)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void CGPRHyprms::SetLAMethod(EGPRLAMethod mset)
+void CGPREngine::SetLAMethod(EGPRLAMethod mset)
 {
     Method = mset;
 }
 
 //------------------------------------------------------------------------------
 
-void CGPRHyprms::SetLAMethod(const CSmallString& method)
+void CGPREngine::SetLAMethod(const CSmallString& method)
 {
     if( method == "svd" ){
         SetLAMethod(EGPRLA_SVD);
@@ -597,14 +568,14 @@ void CGPRHyprms::SetLAMethod(const CSmallString& method)
 
 //------------------------------------------------------------------------------
 
-void CGPRHyprms::SetRCond(double rcond)
+void CGPREngine::SetRCond(double rcond)
 {
     RCond = rcond;
 }
 
 //------------------------------------------------------------------------------
 
-void CGPRHyprms::SetUseInv(bool iset)
+void CGPREngine::SetUseInv(bool iset)
 {
     UseInv = iset;
 }

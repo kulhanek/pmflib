@@ -36,7 +36,7 @@
 /** \brief smooth energy by GPR
 */
 
-class PMF_PACKAGE CSmootherGPR : public CGPRHyprms {
+class PMF_PACKAGE CSmootherGPR : public CGPREngine {
 public:
 // constructor and destructor -------------------------------------------------
     CSmootherGPR(void);
@@ -60,6 +60,9 @@ public:
     void SetIncludeError(bool set);
 
 // execution method -----------------------------------------------------------
+    /// run GPR
+    virtual bool RunGPR(CVerboseStr& vout,bool nostat=false);
+
     /// interpolate data
     bool Interpolate(CVerboseStr& vout,bool nostat=false);
 
@@ -112,7 +115,7 @@ private:
     CFortranMatrix          KS;             // kernel matrix
     double                  logdetK;
     double                  Mean;
-    CSimpleVector<double>   Y;              // enthalpy
+    CSimpleVector<double>   Y;              // energy
     CSimpleVector<double>   GPRModel;       // weights
     CFortranMatrix          Cov;            // covariances
 
@@ -132,7 +135,6 @@ private:
 
     // derivatives
     void CalcKderWRTSigmaF2(void);
-    void CalcKderWRTNCorr(void);
     void CalcKderWRTWFac(size_t cv);
     void CalcKderWRTSigmaN2(size_t cv);
 };

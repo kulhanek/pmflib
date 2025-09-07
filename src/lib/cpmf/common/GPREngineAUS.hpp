@@ -1,10 +1,9 @@
-#ifndef EnergyProxyInitH
-#define EnergyProxyInitH
+#ifndef GPREngineAUSH
+#define GPREngineAUSH
 // =============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
 //    Copyright (C) 2025 Petr Kulhanek, kulhanek@chemi.muni.cz
-//    Copyright (C) 2023 Petr Kulhanek, kulhanek@chemi.muni.cz
 //
 //     This program is free software; you can redistribute it and/or modify
 //     it under the terms of the GNU General Public License as published by
@@ -22,26 +21,36 @@
 // =============================================================================
 
 #include <PMFMainHeader.hpp>
-#include <EnergyProxy.hpp>
-#include <PMFAccumulator.hpp>
+#include <GPREngine.hpp>
+#include <EnergySurface.hpp>
 
 //------------------------------------------------------------------------------
 
-class PMF_PACKAGE CEnergyProxyInit {
+/** \brief base for AUS GPR engines
+*/
+
+class PMF_PACKAGE CGPREngineAUS: public CGPREngine {
 public:
-    /// init requested proxy
-    static CEnergyProxyPtr InitProxy(const CSmallString& realm,CPMFAccumulatorPtr& accu,bool noerror=false);
+// constructor and destructor -------------------------------------------------
+    CGPREngineAUS(void);
+    virtual ~CGPREngineAUS(void);
 
-    /// print supported realms
-    static void PrintRealms(std::ostream& fout);
+// setup methods ---------------------------------------------------------------
+    /// set output energy surfaces
+    virtual void SetOutputFEN(CEnergySurfacePtr p_surf);
+    virtual void SetOutputINT(CEnergySurfacePtr p_surf);
+    virtual void SetOutputTDS(CEnergySurfacePtr p_surf);
 
-    /// enumerate supported realms
-    static void EnumerateRealms(std::list<CProxyRealmDescr>& dlist);
-
-private:
-    /// create list of all supported proxies
-    static void InitProxyList(std::list<CEnergyProxyPtr>& ene_proxies);
+// section of protected data ---------------------------------------------------
+protected:
+    CEnergySurfacePtr       ASurface;   // free energy
+    CEnergySurfacePtr       USurface;   // internal energy
+    CEnergySurfacePtr       SSurface;   // -TdS contribution
 };
+
+//------------------------------------------------------------------------------
+
+typedef boost::shared_ptr<CGPREngineAUS>    CGPREngineAUSPtr;
 
 //------------------------------------------------------------------------------
 

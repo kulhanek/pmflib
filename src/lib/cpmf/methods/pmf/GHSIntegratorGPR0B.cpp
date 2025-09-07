@@ -86,7 +86,6 @@ void CGHSIntegratorGPR0B::SetAccumulator(CPMFAccumulatorPtr accu)
 
     NumOfSigmaF2 = 3;
     NumOfCoVar   = 0;
-    NumOfNCorr   = 0;
     NumOfSigmaN2 = 3;
 }
 

@@ -28,14 +28,14 @@
 #include <stddef.h>
 #include <EnergyDerProxy.hpp>
 #include <EnergySurface.hpp>
-#include <GPRHyprms.hpp>
+#include <GPREngine.hpp>
 
 //------------------------------------------------------------------------------
 
 /** \brief integrator of ABF accumulator employing gaussian process
 */
 
-class PMF_PACKAGE CIntegratorGPR : public CGPRHyprms {
+class PMF_PACKAGE CIntegratorGPR : public CGPREngine {
 public:
 // constructor and destructor -------------------------------------------------
     CIntegratorGPR(void);
@@ -74,6 +74,9 @@ public:
     void SetFastError(bool set);
 
 // execution method -----------------------------------------------------------
+    /// run GPR
+    virtual bool RunGPR(CVerboseStr& vout,bool nostat=false);
+
     /// integrate data
     bool Integrate(CVerboseStr& vout,bool nostat=false);
 
@@ -166,7 +169,6 @@ private:
 
 // derivatives
     void CalcKderWRTSigmaF2(void);
-    void CalcKderWRTNCorr(void);
     void CalcKderWRTWFac(size_t cv);
     void CalcKderWRTSigmaN2(size_t cv);
 };

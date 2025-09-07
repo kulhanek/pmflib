@@ -8,10 +8,9 @@ ADD_SUBDIRECTORY(tests)
 IF(OpenMP_FOUND)
     INSTALL(FILES
                 bin/pmf-integrate
-                bin/ghs-integrate
-                bin/pmf-enthalpy
+                bin/aus-integrate
+                bin/pmf-energy
                 bin/gpr-opthyprms
-                bin/gpr-opthyprms-multi
             DESTINATION
                 bin
             PERMISSIONS

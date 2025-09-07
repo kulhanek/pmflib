@@ -59,7 +59,7 @@ subroutine cst_accu_alloc
 
 
 ! fdhtds  ----------------------------------------------------------------------
-! accumulator setup for entropy and enthalpy
+! accumulator setup for entropy and internal energy
 
     if( ftdscalc ) then
         allocate( mlamtds(NumOfAllCONs),        &
@@ -72,7 +72,7 @@ subroutine cst_accu_alloc
 
         if( alloc_failed .ne. 0 ) then
             call pmf_utils_exit(PMF_OUT,1,&
-                     '[CST] Unable to allocate memory for arrays used for enthalpy/entropy calculations!')
+                     '[CST] Unable to allocate memory for arrays used for internal energy/entropy calculations!')
         end if
 
         if( ftds_decomp ) then
@@ -84,7 +84,7 @@ subroutine cst_accu_alloc
 
             if( alloc_failed .ne. 0 ) then
                 call pmf_utils_exit(PMF_OUT,1,&
-                         '[CST] Unable to allocate memory for arrays used for enthalpy/entropy calculations!')
+                         '[CST] Unable to allocate memory for arrays used for internal energy/entropy calculations!')
             end if
         end if
     end if
@@ -104,7 +104,7 @@ subroutine cst_accu_alloc
 
         if( alloc_failed .ne. 0 ) then
             call pmf_utils_exit(PMF_OUT,1,&
-                     '[CST] Unable to allocate memory for arrays used for enthalpy/entropy calculations!')
+                     '[CST] Unable to allocate memory for arrays used for internal energy/entropy calculations!')
         end if
     end if
 
@@ -187,7 +187,7 @@ subroutine cst_accu_clear
     mlambda(:)  = 0.0d0
     m2lambda(:) = 0.0d0
 
-! fdhtds  = enthalpy/entropy calculations
+! fdhtds  = internal energy/entropy calculations
     if( fintcalc .or. ftdscalc ) then
         ntds            = 0.0d0
         fwsum           = 0.0d0

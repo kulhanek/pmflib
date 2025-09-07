@@ -1,6 +1,7 @@
 // =============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
+//    Copyright (C) 2025 Petr Kulhanek, kulhanek@chemi.muni.cz
 //    Copyright (C) 2021 Petr Kulhanek, kulhanek@chemi.muni.cz
 //    Copyright (C) 2019 Petr Kulhanek, kulhanek@chemi.muni.cz
 //
@@ -80,12 +81,6 @@ int COptGPRHyprmsOptions::CheckOptions(void)
     if( IsOptLoadHyprmsSet() && IsOptWFacSet() ){
         if(IsError == false) fprintf(stderr,"\n");
         fprintf(stderr,"%s: --loadhyprms is mutually exclusive with --wfac\n",
-                (const char*)GetProgramName());
-        IsError = true;
-    }
-    if( IsOptLoadHyprmsSet() && IsOptNCorrSet() ){
-        if(IsError == false) fprintf(stderr,"\n");
-        fprintf(stderr,"%s: --loadhyprms is mutually exclusive with --ncorr\n",
                 (const char*)GetProgramName());
         IsError = true;
     }

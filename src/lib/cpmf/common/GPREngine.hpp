@@ -40,14 +40,14 @@ enum EGPRLAMethod {
 
 //------------------------------------------------------------------------------
 
-/** \brief integrator of ABF accumulator employing gaussian process
+/** \brief base for GPR
 */
 
-class PMF_PACKAGE CGPRHyprms: public CGPRKernel {
+class PMF_PACKAGE CGPREngine: public CGPRKernel {
 public:
 // constructor and destructor -------------------------------------------------
-    CGPRHyprms(void);
-    virtual ~CGPRHyprms(void);
+    CGPREngine(void);
+    virtual ~CGPREngine(void);
 
 // hyperparameters
     /// set sigmaf2
@@ -72,16 +72,6 @@ public:
 //-----
     // WFac is part of CGPRKernel
 
-// ----
-    /// set ncorr
-    void SetNCorr(const CSmallString& spec);
-
-    /// set ncorr
-    void SetNCorr(CSimpleVector<double>& sigman2);
-
-    /// set ncorr
-    void SetNCorr(size_t cvind, double value);
-
 //-----
     /// set sigman2
     void SetSigmaN2(const CSmallString& spec);
@@ -93,7 +83,7 @@ public:
     void SetSigmaN2(size_t cvind, double value);
 
 //-----
-    /// load hyperparameters from file
+    /// load hyper-parameters from file
     void LoadGPRHyprms(const CSmallString& name);
 
 // parallel processing ---------------------------------------------------------
@@ -119,7 +109,33 @@ public:
     /// use inversion alg
     void SetUseInv(bool iset);
 
+// get parameters --------------------------------------------------------------
+
+    virtual int GetNumOfSigmaF2(void);
+    virtual int GetNumOfCoVar(void);
+    virtual int GetNumOfWFac(void);
+    virtual int GetNumOfSigmaN2(void);
+
+// setup -----------------------------------------------------------------------
+    /// set include error
+    virtual void SetIncludeError(bool set);
+
+    /// skip energy calculation, it also disables errors
+    virtual void SetNoEnergy(bool set);
+
+    /// should we include glued area to energy calculation?
+    virtual void IncludeGluedAreas(bool set);
+
+    /// calc hyprms grd
+    virtual void PrepForHyprmsGrd(bool set);
+
+    /// calc logpl
+    virtual void SetCalcLogPL(bool set);
+
 // base methods ----------------------------------------------------------------
+    /// run GPR
+    virtual bool RunGPR(CVerboseStr& vout,bool nostat=false);
+
     /// get log of Marginal Likelihood
     virtual double GetLogML(void);
 
@@ -138,7 +154,7 @@ public:
 
 // section of protected data ---------------------------------------------------
 protected:
-// hyper-paramters
+// hyper-parameters
     size_t                  NumOfSigmaF2;
     CSimpleVector<double>   SigmaF2;
 
@@ -146,9 +162,6 @@ protected:
     CSimpleVector<double>   CoVar;
 
     // CSimpleVector<double>   WFac;    // part of CGPRkernel
-
-    size_t                  NumOfNCorr;
-    CSimpleVector<double>   NCorr;
 
     size_t                  NumOfSigmaN2;
     CSimpleVector<double>   SigmaN2;
@@ -166,7 +179,7 @@ private:
 
 //------------------------------------------------------------------------------
 
-typedef boost::shared_ptr<CGPRHyprms>    CGPRHyprmsPtr;
+typedef boost::shared_ptr<CGPREngine>    CGPREnginePtr;
 
 //------------------------------------------------------------------------------
 

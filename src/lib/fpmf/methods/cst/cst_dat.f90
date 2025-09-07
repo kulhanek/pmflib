@@ -295,7 +295,7 @@ real(PMFDP),allocatable     :: mlambda(:)       ! mean of lambdas
 real(PMFDP),allocatable     :: m2lambda(:)      ! M2 of lambdas
 
 ! fdhtds  ----------------------------------------------------------------------
-real(PMFDP)                 :: ntds             ! number of step for enthalpy and entropy calculations
+real(PMFDP)                 :: ntds             ! number of step for internal energy and entropy calculations
 real(PMFDP)                 :: fwsum            ! Fixman weights sum
 real(PMFDP)                 :: fwsum2           ! sum of Fixman weights squared
 real(PMFDP)                 :: mfwtds           ! mean of Fixman weights

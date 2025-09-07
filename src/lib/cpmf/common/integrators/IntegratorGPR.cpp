@@ -79,7 +79,6 @@ void CIntegratorGPR::SetAccumulator(CPMFAccumulatorPtr accu)
 
     NumOfSigmaF2 = 1;
     NumOfCoVar   = 0;
-    NumOfNCorr   = 1;
     NumOfSigmaN2 = NumOfCVs;
 }
 
@@ -176,6 +175,13 @@ void CIntegratorGPR::SetFastError(bool iset)
 //------------------------------------------------------------------------------
 //==============================================================================
 
+bool CIntegratorGPR::RunGPR(CVerboseStr& vout,bool nostat)
+{
+    return(Integrate(vout,nostat));
+}
+
+//------------------------------------------------------------------------------
+
 bool CIntegratorGPR::Integrate(CVerboseStr& vout,bool nostat)
 {
     PrintExecInfo(vout);
@@ -235,9 +241,6 @@ bool CIntegratorGPR::Integrate(CVerboseStr& vout,bool nostat)
     }
     for(size_t k=0; k < NumOfCVs; k++ ){
         vout << format("      WFac#%-2d   = %10.4f")%(k+1)%WFac[k] << endl;
-    }
-    for(size_t k=0; k < NumOfNCorr; k++ ){
-        vout << format("      NCorr#%-2d  = %10.4f")%(k+1)%NCorr[k] << endl;
     }
     for(size_t k=0; k < NumOfSigmaN2; k++ ){
         vout << format("      SigmaN2#%-2d= %10.4e")%(k+1)%SigmaN2[k] << endl;
@@ -429,11 +432,8 @@ void CIntegratorGPR::CreateKS(void)
 // error of data points
     #pragma omp parallel for
     for(size_t indi=0; indi < NumOfUsedBins; indi++){
-        CEnergyDerProxyPtr  item = DerProxyItems[DerProxyMap[indi]];
-        size_t              ibin = SampledMap[indi];
         for(size_t ii=0; ii < NumOfCVs; ii++){
-            double er = item->GetValue(ibin,ii,E_PROXY_ERROR);
-            KS[indi*NumOfCVs+ii][indi*NumOfCVs+ii] += er*er*NCorr[0] + SigmaN2[ii];
+            KS[indi*NumOfCVs+ii][indi*NumOfCVs+ii] += SigmaN2[ii];
         }
     }
 }
@@ -1001,8 +1001,12 @@ void CIntegratorGPR::GetLogMLDerivatives(const std::vector<bool>& flags,CSimpleV
 
         // calc Kder
         // NumOfCVs = 1
-        // 0; 1; 2; 3
-        // 0; 1<1+NumOfCVs; NumOfCVs+1; 2+NumOfCVs<2+2*NumOfCVs+1
+        // 0; 1; 2
+        // NumOfCVs = 2
+        // 0; 1-2; 3-4
+        // NumOfCVs = 3
+        // 0; 1-3; 4-6
+        // 0; 1<1+NumOfCVs; 1+NumOfCVs < 1+2*NumOfCVs
         if( prm == 0 ){
             // sigmaf2
             CalcKderWRTSigmaF2();
@@ -1010,11 +1014,8 @@ void CIntegratorGPR::GetLogMLDerivatives(const std::vector<bool>& flags,CSimpleV
             // wfac
             size_t cv = prm - 1;
             CalcKderWRTWFac(cv);
-        } else if( prm == NumOfCVs+1 ){
-            // ncorr
-            CalcKderWRTNCorr();
-        } else if( (prm >= 2+NumOfCVs) && (prm < 3+2*NumOfCVs) ){
-            size_t cv = prm - (2+NumOfCVs);
+        } else if( (prm >= 1+NumOfCVs) && (prm < 1+2*NumOfCVs) ){
+            size_t cv = prm - (1+NumOfCVs);
             CalcKderWRTSigmaN2(cv);
         } else {
             RUNTIME_ERROR("prm out-of-range");
@@ -1071,8 +1072,12 @@ void CIntegratorGPR::GetLogPLDerivatives(const std::vector<bool>& flags,CSimpleV
 
         // calc Kder
         // NumOfCVs = 1
-        // 0; 1; 2; 3
-        // 0; 1<1+NumOfCVs; NumOfCVs+1; 2+NumOfCVs<2+2*NumOfCVs+1
+        // 0; 1; 2
+        // NumOfCVs = 2
+        // 0; 1-2; 3-4
+        // NumOfCVs = 3
+        // 0; 1-3; 4-6
+        // 0; 1<1+NumOfCVs; 1+NumOfCVs < 1+2*NumOfCVs
         if( prm == 0 ){
             // sigmaf2
             CalcKderWRTSigmaF2();
@@ -1080,11 +1085,8 @@ void CIntegratorGPR::GetLogPLDerivatives(const std::vector<bool>& flags,CSimpleV
             // wfac
             size_t cv = prm - 1;
             CalcKderWRTWFac(cv);
-        } else if( prm == NumOfCVs+1 ){
-            // ncorr
-            CalcKderWRTNCorr();
-        } else if( (prm >= 2+NumOfCVs) && (prm < 3+2*NumOfCVs) ){
-            size_t cv = prm - (2+NumOfCVs);
+        } else if( (prm >= 1+NumOfCVs) && (prm < 1+2*NumOfCVs) ){
+            size_t cv = prm - (1+NumOfCVs);
             CalcKderWRTSigmaN2(cv);
         } else {
             RUNTIME_ERROR("prm out-of-range");
@@ -1531,24 +1533,6 @@ void CIntegratorGPR::CalcKderWRTWFac(size_t cv)
                     Kder[indi*NumOfCVs+ii][indj*NumOfCVs+jj] = SigmaF2[0]*kblock[ii][jj];
                 }
             }
-        }
-    }
-}
-
-//------------------------------------------------------------------------------
-
-void CIntegratorGPR::CalcKderWRTNCorr(void)
-{
-    Kder.SetZero();
-
-    #pragma omp parallel for
-    for(size_t indi=0; indi < NumOfUsedBins; indi++){
-        CEnergyDerProxyPtr  item = DerProxyItems[DerProxyMap[indi]];
-        size_t              ibin = SampledMap[indi];
-
-        for(size_t ii=0; ii < NumOfCVs; ii++){
-            double er = item->GetValue(ibin,ii,E_PROXY_ERROR);
-            Kder[indi*NumOfCVs+ii][indi*NumOfCVs+ii] = er*er;
         }
     }
 }

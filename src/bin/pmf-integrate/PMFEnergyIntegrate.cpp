@@ -564,7 +564,6 @@ bool CPMFEnergyIntegrate::IntegrateForMFZScore(int pass)
             integrator.LoadGPRHyprms(Options.GetOptLoadHyprms());
         } else {
             integrator.SetSigmaF2(Options.GetOptSigmaF2());
-            integrator.SetNCorr(Options.GetOptNCorr());
             integrator.SetWFac(Options.GetOptWFac());
             integrator.SetSigmaN2(Options.GetOptSigmaN2());
         }
@@ -671,7 +670,6 @@ bool CPMFEnergyIntegrate::IntegrateForEcut(void)
             integrator.LoadGPRHyprms(Options.GetOptLoadHyprms());
         } else {
             integrator.SetSigmaF2(Options.GetOptSigmaF2());
-            integrator.SetNCorr(Options.GetOptNCorr());
             integrator.SetWFac(Options.GetOptWFac());
             integrator.SetSigmaN2(Options.GetOptSigmaN2());
         }
@@ -764,7 +762,6 @@ bool CPMFEnergyIntegrate::Integrate(void)
             integrator.LoadGPRHyprms(Options.GetOptLoadHyprms());
         } else {
             integrator.SetSigmaF2(Options.GetOptSigmaF2());
-            integrator.SetNCorr(Options.GetOptNCorr());
             integrator.SetWFac(Options.GetOptWFac());
             integrator.SetSigmaN2(Options.GetOptSigmaN2());
         }
@@ -853,7 +850,6 @@ bool CPMFEnergyIntegrate::ReduceFES(void)
             integrator.LoadGPRHyprms(Options.GetOptLoadHyprms());
         } else {
             integrator.SetSigmaF2(Options.GetOptSigmaF2());
-            integrator.SetNCorr(Options.GetOptNCorr());
             integrator.SetWFac(Options.GetOptWFac());
             integrator.SetSigmaN2(Options.GetOptSigmaN2());
         }

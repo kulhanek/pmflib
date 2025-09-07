@@ -1,6 +1,6 @@
 #!/bin/bash
 # =============================================================================
-# ghs-integrate
+# aus-integrate
 #
 # Optional environment:
 #  INF_NCPUS            - number of CPU used for job execution
@@ -16,5 +16,5 @@ else
     export OMP_PLACES=${OMP_PLACES:-cores}
 fi
 
-_ghs-integrate "$@"
+_aus-integrate "$@"
 

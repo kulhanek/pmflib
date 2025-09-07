@@ -15,7 +15,9 @@ SET(CPMF_METHODS_SRC
         common/EnergyDerProxy.cpp
         common/EnergyDerProxyInit.cpp
         common/GPRKernel.cpp
-        common/GPRHyprms.cpp
+        common/GPREngine.cpp
+        common/GPREngineAUS.cpp
+        common/GPREngineAUSInit.cpp
 
     # integrators
         common/integrators/IntegratorRFD.cpp

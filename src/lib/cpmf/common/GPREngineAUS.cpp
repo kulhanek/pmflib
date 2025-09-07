@@ -1,10 +1,7 @@
-#ifndef EnergyProxyInitH
-#define EnergyProxyInitH
 // =============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
 //    Copyright (C) 2025 Petr Kulhanek, kulhanek@chemi.muni.cz
-//    Copyright (C) 2023 Petr Kulhanek, kulhanek@chemi.muni.cz
 //
 //     This program is free software; you can redistribute it and/or modify
 //     it under the terms of the GNU General Public License as published by
@@ -21,28 +18,43 @@
 //     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 // =============================================================================
 
-#include <PMFMainHeader.hpp>
-#include <EnergyProxy.hpp>
-#include <PMFAccumulator.hpp>
+#include <GPREngineAUS.hpp>
+
+//==============================================================================
+//------------------------------------------------------------------------------
+//==============================================================================
+
+CGPREngineAUS::CGPREngineAUS(void)
+{
+}
 
 //------------------------------------------------------------------------------
 
-class PMF_PACKAGE CEnergyProxyInit {
-public:
-    /// init requested proxy
-    static CEnergyProxyPtr InitProxy(const CSmallString& realm,CPMFAccumulatorPtr& accu,bool noerror=false);
+CGPREngineAUS::~CGPREngineAUS(void)
+{
+}
 
-    /// print supported realms
-    static void PrintRealms(std::ostream& fout);
+//==============================================================================
+//------------------------------------------------------------------------------
+//==============================================================================
 
-    /// enumerate supported realms
-    static void EnumerateRealms(std::list<CProxyRealmDescr>& dlist);
-
-private:
-    /// create list of all supported proxies
-    static void InitProxyList(std::list<CEnergyProxyPtr>& ene_proxies);
-};
+void CGPREngineAUS::SetOutputFEN(CEnergySurfacePtr p_surf)
+{
+    ASurface = p_surf;
+}
 
 //------------------------------------------------------------------------------
 
-#endif
+void CGPREngineAUS::SetOutputINT(CEnergySurfacePtr p_surf)
+{
+    USurface = p_surf;
+}
+
+//------------------------------------------------------------------------------
+
+void CGPREngineAUS::SetOutputTDS(CEnergySurfacePtr p_surf)
+{
+    SSurface = p_surf;
+}
+
+//------------------------------------------------------------------------------

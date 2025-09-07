@@ -30,7 +30,7 @@
 class PMF_PACKAGE CEnergyDerProxyInit {
 public:
     /// init requested proxy
-    static CEnergyDerProxyPtr InitProxy(const CSmallString& realm,CPMFAccumulatorPtr& accu);
+    static CEnergyDerProxyPtr InitProxy(const CSmallString& realm,CPMFAccumulatorPtr& accu,bool noerror=false);
 
     /// print supported realms
     static void PrintRealms(std::ostream& fout);

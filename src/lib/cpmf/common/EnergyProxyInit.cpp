@@ -48,7 +48,7 @@ void CEnergyProxyInit::InitProxyList(std::list<CEnergyProxyPtr>& ene_proxies)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-CEnergyProxyPtr CEnergyProxyInit::InitProxy(const CSmallString& realm,CPMFAccumulatorPtr& accu)
+CEnergyProxyPtr CEnergyProxyInit::InitProxy(const CSmallString& realm,CPMFAccumulatorPtr& accu,bool noerror)
 {
     std::list<CEnergyProxyPtr> ene_proxies;
     InitProxyList(ene_proxies);
@@ -65,6 +65,8 @@ CEnergyProxyPtr CEnergyProxyInit::InitProxy(const CSmallString& realm,CPMFAccumu
         if( proxy->IsCompatible(accu) == false ) continue;
         if( proxy->SetRealm(realm) ) return(proxy);
     }
+
+    if( noerror ) return(CEnergyProxyPtr());
 
     CSmallString error;
     error << "incompatible method: " << accu->GetMethod() << " with requested realm: " <<  realm;

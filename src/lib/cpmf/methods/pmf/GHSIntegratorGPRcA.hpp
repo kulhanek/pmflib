@@ -30,14 +30,14 @@
 #include <EnergyDerProxy.hpp>
 #include <EnergySurface.hpp>
 #include <GPRKernel.hpp>
-#include <GPRHyprms.hpp>
+#include <GPREngine.hpp>
 
 //------------------------------------------------------------------------------
 
 /** \brief integrator of ABF accumulator employing gaussian process
 */
 
-class PMF_PACKAGE CGHSIntegratorGPRcA : public CGPRHyprms {
+class PMF_PACKAGE CGHSIntegratorGPRcA : public CGPREngine {
 public:
 // constructor and destructor -------------------------------------------------
     CGHSIntegratorGPRcA(void);

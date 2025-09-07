@@ -1,5 +1,5 @@
-#ifndef EnthalpyOptionsH
-#define EnthalpyOptionsH
+#ifndef PMFEnergyOptionsH
+#define PMFEnergyOptionsH
 // =============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
@@ -99,13 +99,13 @@ public:
                 "Supported methods: raw (data taken directly from the accumulator) and gpr (Gaussian process filtered data).")
         // -------------------------------------------
             CSO_MAP_OPT(bool, Absolute, false, false, 'a', "absolute", NULL,
-                "Absolute enthalpy.")
+                "Absolute energy.")
         // -------------------------------------------
             CSO_MAP_OPT(int, Limit, 0, false, 'l', "limit", "LIMIT",
                 "Only bins containing more samples than NUMBER are considered properly sampled.")
         // -------------------------------------------
             CSO_MAP_OPT(bool, WithError, false, false, 'e', "witherror", NULL,
-                "GPR: Estimate enthalpy errors from the GPR model. RAW: Print enthalpy errors from the PMF accumulator.")
+                "GPR: Estimate energy errors from the GPR model. RAW: Print energy errors from the PMF accumulator.")
         // -------------------------------------------
             CSO_MAP_OPT(CSmallString, GPRKernel, "default", false, '\0', "kernel", "NAME",
                 "GPR: Kernel type. Supported types: ardse (ARD squared exponential), ardmc52 (ARD Matern class 5/2), "
@@ -115,7 +115,7 @@ public:
                 "GPR: Calculate logPL.")
         // -------------------------------------------
             CSO_MAP_OPT(CSmallString, SigmaF2, "15.0", false, 's', "sigmaf2", "NUMBER",
-                "GPR: Variance of the reconstructed enthalpy surface (signal variance).")
+                "GPR: Variance of the reconstructed energy surface (signal variance).")
         // -------------------------------------------
             CSO_MAP_OPT(CSmallString, WFac, "3.0", false, 'w', "wfac", "SPEC",
                 "GPR: Factors influencing widths of squared exponential kernels. The width is the distance between "
@@ -137,7 +137,7 @@ public:
                 "Sigma-level for the confidence interval.")
         // -------------------------------------------
             CSO_MAP_OPT(CSmallString, MFInfo, NULL, false, '\0', "mfinfo", "NAME",
-                "GPR: Name of file with input and predicted enthalpy.")
+                "GPR: Name of file with input and predicted energy.")
         // -------------------------------------------
             CSO_MAP_OPT(CSmallString, GlobalMin, NULL, false, '\0', "globalmin", "SPEC",
                 "GPR: Position of the global minimum provided as a single string in the form CV1xCV2x...xCVn "
@@ -157,7 +157,7 @@ public:
                 "Include bin statuses (1 = sampled, 0 = unsampled, -1 = glued) in the resulting FES.")
         // -------------------------------------------
             CSO_MAP_OPT(CSmallString, OutputFormat, "gnuplot", false, 0, "output", "FORMAT",
-                "Output FORMAT for printing the enthalpy surface. Supported formats: plain and gnuplot.")
+                "Output FORMAT for printing the energy surface. Supported formats: plain and gnuplot.")
         // -------------------------------------------
             CSO_MAP_OPT(bool, NoHeader, false, false, 0, "noheader", NULL,
                 "Do not print a header to the output file.")

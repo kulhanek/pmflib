@@ -3,6 +3,7 @@
 // =============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
+//    Copyright (C) 2025 Petr Kulhanek, kulhanek@chemi.muni.cz
 //    Copyright (C) 2021 Petr Kulhanek, kulhanek@chemi.muni.cz
 //    Copyright (C) 2019 Petr Kulhanek, kulhanek@chemi.muni.cz
 //
@@ -27,7 +28,7 @@
 #include <TerminalStr.hpp>
 #include <StdIOFile.hpp>
 #include <SmallTimeAndDate.hpp>
-#include <GPRHyprms.hpp>
+#include <GPREngine.hpp>
 #include <FortranMatrix.hpp>
 #include <boost/shared_ptr.hpp>
 #include <vector>
@@ -41,7 +42,7 @@ enum EGPROptTarget {
 
 //------------------------------------------------------------------------------
 
-/// utility to find optimal GPR hyperparameters
+/// utility to find optimal GPR hyper-parameters
 
 class COptGPRHyprms {
 public:
@@ -61,16 +62,15 @@ public:
 private:
     COptGPRHyprmsOptions    Options;
     CPMFAccumulatorPtr      Accu;
-    CEnergySurfacePtr       FES;
-    CEnergySurfacePtr       HES;
-    CEnergySurfacePtr       SES;
-    CGPRHyprmsPtr           GPREngine;
+    CEnergySurfacePtr       FEN;
+    CEnergySurfacePtr       INT;
+    CEnergySurfacePtr       TDS;
+    CGPREnginePtr           GPREngine;
     CStdIOFile              OutputFile;
 
 // hyperparameters
     CSimpleVector<double>   SigmaF2;
     CSimpleVector<double>   CoVar;
-    CSimpleVector<double>   NCorr;
     CSimpleVector<double>   WFac;
     CSimpleVector<double>   SigmaN2;
 
@@ -78,7 +78,6 @@ private:
     int                     NumOfCorrections;
     std::vector<bool>       SigmaF2Enabled;
     std::vector<bool>       CoVarEnabled;
-    std::vector<bool>       NCorrEnabled;
     std::vector<bool>       WFacEnabled;
     std::vector<bool>       SigmaN2Enabled;
     int                     NumOfPrms;
@@ -127,18 +126,11 @@ private:
     std::string GetPrmName(int prm);
 
     void InitGPREngine(void);
-    void InitGPREngine_dF_dx(void);
-    void InitGPREngine_dF(void);
-    void InitGPREngine_GHS_dH_A(void);
-    void InitGPREngine_cGHS_dH_A(void);
-    void InitGPREngine_GHS_dH_B(void);
 
     void CreateGPREngine(void);
-    void CreateGPREngine_dF_dx(void);
-    void CreateGPREngine_dF(void);
-    void CreateGPREngine_GHS_dH_A(void);
-    void CreateGPREngine_cGHS_dH_A(void);
-    void CreateGPREngine_GHS_dH_B(void);
+    bool CreateGPREngine_dF_dx(void);
+    bool CreateGPREngine_dF(void);
+    bool CreateGPREngine_AUS(void);
 
     double  GetTarget(void);
     void    GetTargetDerivatives(CSimpleVector<double>& der);

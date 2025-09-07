@@ -77,7 +77,7 @@ int CPMFEnergy::Init(int argc,char* argv[])
 
     vout << endl;
     vout << "# ==============================================================================" << endl;
-    vout << "# pmf-enthalpy (PMFLib utility)  started at " << dt.GetSDateAndTime() << endl;
+    vout << "# pmf-energy (PMFLib utility)  started at " << dt.GetSDateAndTime() << endl;
     vout << "# Version: " << LibBuildVersion_PMF << endl;
     vout << "# ==============================================================================" << endl;
 
@@ -196,7 +196,7 @@ bool CPMFEnergy::Run(void)
 // FIXME
 //        Accumulators[0]->SetNCorr(Options.GetOptNCorr());
         vout << endl;
-        vout << format("%02d:Raw absolute enthalpy")%State << endl;
+        vout << format("%02d:Raw absolute energy")%State << endl;
         GetRawEnthalpy();
 
         if( ! Options.GetOptAbsolute() ){
@@ -215,7 +215,7 @@ bool CPMFEnergy::Run(void)
 
     } else if ( Options.GetOptMethod() == "gpr" ){
         vout << endl;
-        vout << format("%02d:GPR interpolated enthalpy")%State << endl;
+        vout << format("%02d:GPR interpolated energy")%State << endl;
         CSmootherGPR   entgpr;
 
         entgpr.SetOutputES(HES);
@@ -228,7 +228,6 @@ bool CPMFEnergy::Run(void)
         } else {
             entgpr.SetSigmaF2(Options.GetOptSigmaF2());
             entgpr.SetWFac(Options.GetOptWFac());
-            entgpr.SetNCorr(Options.GetOptNCorr());
             entgpr.SetSigmaN2(Options.GetOptSigmaN2());
         }
 
@@ -244,7 +243,7 @@ bool CPMFEnergy::Run(void)
         }
 
         if(entgpr.Interpolate(vout) == false) {
-            ES_ERROR("unable to interpolate enthalpy");
+            ES_ERROR("unable to interpolate energy");
             return(false);
         }
 
@@ -278,7 +277,7 @@ bool CPMFEnergy::Run(void)
 // print energy surface
 
     if(PrintHES() == false) {
-        ES_ERROR("unable to print enthalpy");
+        ES_ERROR("unable to print energy");
         return(false);
     }
 
@@ -453,7 +452,7 @@ bool CPMFEnergy::PrintHES(void)
     try {
         printer.Print(OutputFile);
     } catch(...) {
-        ES_ERROR("unable to save the output enthalpy file");
+        ES_ERROR("unable to save the output energy file");
         return(false);
     }
     vout << "   Done." << endl;
@@ -521,7 +520,7 @@ void CPMFEnergy::Finalize(void)
 
     vout << endl;
     vout << "# ==============================================================================" << endl;
-    vout << "# pmf-enthalpy terminated at " << dt.GetSDateAndTime() << endl;
+    vout << "# pmf-energy terminated at " << dt.GetSDateAndTime() << endl;
     vout << "# ==============================================================================" << endl;
 
     if( ErrorSystem.IsError() || Options.GetOptVerbose() ){

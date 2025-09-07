@@ -100,7 +100,7 @@ subroutine cst_init_dat
     fmaxiter        = 50            ! maximum of iteration in lambda optimization
     frcond          = 1e-7
 
-    fintcalc        = .false.       ! accumulate enthalpy
+    fintcalc        = .false.       ! accumulate internal energy
     fint_der        = .false.
     ftds_icfsol     = CON_ICFSOL_V1
 
@@ -885,7 +885,7 @@ subroutine cst_init_core
     frchist(:,:,:)      = 0.0d0
     velhist(:,:,:)      = 0.0d0
 
-! enthalpy/entropy
+! internal energy/entropy
     if( fintcalc .and. fint_der ) then
         allocate( icf_he(3,NumOfLAtoms),    &
                   icf_vi1(3,NumOfLAtoms),   &
@@ -895,7 +895,7 @@ subroutine cst_init_core
 
         if( alloc_failed .ne. 0 ) then
             call pmf_utils_exit(PMF_OUT,1,&
-                     '[CST] Unable to allocate memory for arrays used for enthalpy/entropy calculation!')
+                     '[CST] Unable to allocate memory for arrays used for internal energy/entropy calculation!')
         end if
     end if
 

@@ -1,6 +1,7 @@
 // =============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
+//    Copyright (C) 2025 Petr Kulhanek, kulhanek@chemi.muni.cz
 //    Copyright (C) 2021 Petr Kulhanek, kulhanek@chemi.muni.cz
 //    Copyright (C) 2019 Petr Kulhanek, kulhanek@chemi.muni.cz
 //
@@ -32,14 +33,10 @@
 // ----------
 #include <IntegratorGPR.hpp>
 #include <SmootherGPR.hpp>
-#include <GHSIntegratorGPR0A.hpp>
-#include <GHSIntegratorGPRcA.hpp>
-#include <GHSIntegratorGPR0B.hpp>
 // ----------
-#include <ABFProxy_dGdx.hpp>
-#include <ABFProxy_mTdSdx.hpp>
-#include <CSTProxy_dGdx.hpp>
-#include <CSTProxy_mTdSdx.hpp>
+#include <EnergyDerProxyInit.hpp>
+#include <EnergyProxyInit.hpp>
+#include <GPREngineAUSInit.hpp>
 
 //------------------------------------------------------------------------------
 
@@ -102,7 +99,6 @@ int COptGPRHyprms::Init(int argc,char* argv[])
         vout << "# SigmaF2               : " << (const char*)Options.GetOptSigmaF2() << endl;
         vout << "# CoVar                 : " << (const char*)Options.GetOptCoVar() << endl;
         vout << "# Width factor wfac     : " << (const char*)Options.GetOptWFac() << endl;
-        vout << "# NCorr                 : " << (const char*)Options.GetOptNCorr() << endl;
         vout << "# SigmaN2               : " << (const char*)Options.GetOptSigmaN2() << endl;
     }
     vout << "# ------------------------------------------------" << endl;
@@ -148,15 +144,15 @@ bool COptGPRHyprms::Run(void)
         ES_ERROR(error);
         return(false);
     }
-    FES = CEnergySurfacePtr(new CEnergySurface);
-    FES->Allocate(Accu);
-    HES = CEnergySurfacePtr(new CEnergySurface);
-    HES->Allocate(Accu);
-    SES = CEnergySurfacePtr(new CEnergySurface);
-    SES->Allocate(Accu);
+    FEN = CEnergySurfacePtr(new CEnergySurface);
+    FEN->Allocate(Accu);
+    INT = CEnergySurfacePtr(new CEnergySurface);
+    INT->Allocate(Accu);
+    TDS = CEnergySurfacePtr(new CEnergySurface);
+    TDS->Allocate(Accu);
 
     if( Options.IsOptGlobalMinSet() ){
-        FES->SetGlobalMin(Options.GetOptGlobalMin());
+        FEN->SetGlobalMin(Options.GetOptGlobalMin());
     }
     vout << "   Done" << endl;
 
@@ -227,7 +223,6 @@ void COptGPRHyprms::InitOptimizer(void)
     DecodeEList(Options.GetOptSigmaF2Enabled(),SigmaF2,SigmaF2Enabled,"--enablesigmaf2");
     DecodeEList(Options.GetOptCoVarEnabled(),CoVar,CoVarEnabled,"--enablecovar");
     DecodeEList(Options.GetOptWFacEnabled(),WFac,WFacEnabled,"--enablewfac");
-    DecodeEList(Options.GetOptNCorrEnabled(),NCorr,NCorrEnabled,"--enablencorr");
     DecodeEList(Options.GetOptSigmaN2Enabled(),SigmaN2,SigmaN2Enabled,"--enablesigman2");
 
 // number of optimized parameters
@@ -246,11 +241,6 @@ void COptGPRHyprms::InitOptimizer(void)
 // wfac
     for(size_t i=0; i < WFacEnabled.size(); i++){
         if( WFacEnabled[i] ) NumOfOptPrms++;
-        NumOfPrms++;
-    }
-// ncorr
-    for(size_t i=0; i < NCorrEnabled.size(); i++){
-        if( NCorrEnabled[i] ) NumOfOptPrms++;
         NumOfPrms++;
     }
 // sigman2
@@ -299,12 +289,6 @@ void COptGPRHyprms::InitOptimizer(void)
                 RUNTIME_ERROR("--wfac has to be greater than or equal to --minwfac");
             }
         }
-        DecodeVList(Options.GetOptNCorr(),NCorr,"--ncorr",0.0);
-        for(size_t i=0; i < NCorr.GetLength(); i++){
-            if( NCorr[i] < Options.GetOptMinNCorr() ){
-                RUNTIME_ERROR("--ncorr has to be greater than or equal to --minncorr");
-            }
-        }
         DecodeVList(Options.GetOptSigmaN2(),SigmaN2,"--sigman2",0.0);
         for(size_t i=0; i < SigmaN2.GetLength(); i++){
             if( SigmaN2[i] < Options.GetOptMinSigmaN2() ){
@@ -323,9 +307,6 @@ void COptGPRHyprms::InitOptimizer(void)
     }
     for(int k=0; k < (int)WFac.GetLength(); k++ ){
         vout << format("      WFac#%-2d    = %10.4f")%(k+1)%WFac[k] << endl;
-    }
-    for(int k=0; k < (int)NCorr.GetLength(); k++ ){
-        vout << format("      NCorr#%-2d   = %10.4e")%(k+1)%NCorr[k] << endl;
     }
     for(int k=0; k < (int)SigmaN2.GetLength(); k++ ){
         vout << format("      SigmaN2#%-2d = %10.4e")%(k+1)%SigmaN2[k] << endl;
@@ -351,12 +332,6 @@ void COptGPRHyprms::InitOptimizer(void)
     for(int i=0; i < (int)WFacEnabled.size(); i++){
         if( WFacEnabled[i] ){
             Hyprms[ind] = sqrt(WFac[i]-Options.GetOptMinWFac());
-            ind++;
-        }
-    }
-    for(int i=0; i < (int)NCorrEnabled.size(); i++){
-        if( NCorrEnabled[i] ){
-            Hyprms[ind] = sqrt(NCorr[i]-Options.GetOptMinNCorr());
             ind++;
         }
     }
@@ -507,9 +482,6 @@ bool COptGPRHyprms::Optimize(void)
     for(size_t i=0; i < WFacEnabled.size(); i++){
         if( WFacEnabled[i] )    vout << format("    WFac#%-2d")%(i+1);
     }
-    for(size_t i=0; i < NCorrEnabled.size(); i++){
-        if( NCorrEnabled[i] )   vout << format("   NCorr#%-2d")%(i+1);
-    }
     for(size_t i=0; i < SigmaN2Enabled.size(); i++){
         if( SigmaN2Enabled[i] ) vout << format(" SigmaN2#%-2d")%(i+1);
     }
@@ -524,9 +496,6 @@ bool COptGPRHyprms::Optimize(void)
     }
     for(size_t i=0; i < WFacEnabled.size(); i++){
         if( WFacEnabled[i] )    vout << " ----------";
-    }
-    for(size_t i=0; i < NCorrEnabled.size(); i++){
-        if( NCorrEnabled[i] )   vout << " ----------";
     }
     for(size_t i=0; i < SigmaN2Enabled.size(); i++){
         if( SigmaN2Enabled[i] ) vout << " ----------";
@@ -640,9 +609,6 @@ bool COptGPRHyprms::Optimize(void)
         }
         for(size_t i=0; i < WFacEnabled.size(); i++){
             if( WFacEnabled[i] ) vout << " ----------";
-        }
-        for(size_t i=0; i < NCorrEnabled.size(); i++){
-            if( NCorrEnabled[i] ) vout << " ----------";
         }
         for(size_t i=0; i < SigmaN2Enabled.size(); i++){
             if( SigmaN2Enabled[i] ) vout << " ----------";
@@ -793,12 +759,6 @@ std::string COptGPRHyprms::GetPrmName(int prm)
     for(size_t i=0; i < WFacEnabled.size(); i++){
         stringstream str;
         str << format("WFac#%-2d")%(i+1);
-        if( ind == prm) return(str.str());
-        ind++;
-    }
-    for(size_t i=0; i < NCorrEnabled.size(); i++){
-        stringstream str;
-        str << format("NCorr#%-2d")%(i+1);
         if( ind == prm) return(str.str());
         ind++;
     }
@@ -957,16 +917,6 @@ void COptGPRHyprms::PrintGradientSummary(void)
             ind++;
         }
     }
-    for(size_t i=0; i < NCorrEnabled.size(); i++){
-        if( NCorrEnabled[i] ) {
-            vout << format("%5d ")%(ind+1);
-            vout << format("NCorr#%-2d   ")%(i+1);
-            double value = Hyprms[ind]*Hyprms[ind] + Options.GetOptMinNCorr();
-            gnorm += HyprmsGrd[ind]*HyprmsGrd[ind];
-            vout << format("%14.6e %14.6e")%(value)%HyprmsGrd[ind] << endl;
-            ind++;
-        }
-    }
     for(size_t i=0; i < SigmaN2Enabled.size(); i++){
         if( SigmaN2Enabled[i] ) {
             vout << format("%5d ")%(ind+1);
@@ -1035,12 +985,6 @@ void COptGPRHyprms::RunGPRAnalytical(void)
     }
     for(int i=0; i < (int)WFacEnabled.size(); i++){
         if( WFacEnabled[i] ){
-            HyprmsGrd[ind] = 2.0*HyprmsGrd[ind]*Hyprms[ind];
-            ind++;
-        }
-    }
-    for(int i=0; i < (int)NCorrEnabled.size(); i++){
-        if( NCorrEnabled[i] ){
             HyprmsGrd[ind] = 2.0*HyprmsGrd[ind]*Hyprms[ind];
             ind++;
         }
@@ -1152,17 +1096,6 @@ void COptGPRHyprms::ScatterHyprms(CSimpleVector<double>& hyprsm)
         i++;
     }
 // ---------------
-    for(int k=0; k < (int)NCorrEnabled.size(); k++){
-        if( NCorrEnabled[k] ){
-            NCorr[k] = hyprsm[ind]*hyprsm[ind] + Options.GetOptMinNCorr();
-            ind++;
-            HyprmsEnabled[i] = true;
-        } else {
-            HyprmsEnabled[i] = false;
-        }
-        i++;
-    }
-// ---------------
     for(int k=0; k < (int)SigmaN2Enabled.size(); k++){
         if( SigmaN2Enabled[k] ){
             SigmaN2[k] = exp(hyprsm[ind]);
@@ -1179,416 +1112,108 @@ void COptGPRHyprms::ScatterHyprms(CSimpleVector<double>& hyprsm)
 
 void COptGPRHyprms::InitGPREngine(void)
 {
-    if( Options.GetArgRealm() == "dG/dx" ) {
-        InitGPREngine_dF_dx();
-    } else if( Options.GetArgRealm() == "dH/dx" ) {
-        InitGPREngine_dF_dx();
-    } else if( Options.GetArgRealm() == "-TdS/dx" ) {
-        InitGPREngine_dF_dx();
-    } else if( Options.GetArgRealm() == "mTdS/dx" ) {
-        InitGPREngine_dF_dx();
-    } else if( Options.GetArgRealm() == "dH" ) {
-        InitGPREngine_dF();
-    } else if( Options.GetArgRealm() == "GHS_dH_A" ) {
-        InitGPREngine_GHS_dH_A();
-    } else if( Options.GetArgRealm() == "cGHS_dH_A" ) {
-        InitGPREngine_cGHS_dH_A();
-    } else if( Options.GetArgRealm() == "GHS_dH_B" ) {
-        InitGPREngine_GHS_dH_B();
-    } else {
+    bool success = false;
+    success |= CreateGPREngine_dF_dx();
+    success |= CreateGPREngine_dF();
+    success |= CreateGPREngine_AUS();
+
+    if( success == false ){
         CSmallString error;
         error << "unsupported realm: " <<  Options.GetArgRealm();
         RUNTIME_ERROR(error);
     }
-}
 
-//------------------------------------------------------------------------------
-
-void COptGPRHyprms::InitGPREngine_dF_dx(void)
-{
-    SigmaF2.CreateVector(1);
-    NCorr.CreateVector(1);
-    WFac.CreateVector(Accu->GetNumOfCVs());
-    SigmaN2.CreateVector(Accu->GetNumOfCVs());
-}
-
-//------------------------------------------------------------------------------
-
-void COptGPRHyprms::InitGPREngine_dF(void)
-{
-    SigmaF2.CreateVector(1);
-    NCorr.CreateVector(1);
-    WFac.CreateVector(Accu->GetNumOfCVs());
-    SigmaN2.CreateVector(Accu->GetNumOfCVs());
-}
-
-//------------------------------------------------------------------------------
-
-void COptGPRHyprms::InitGPREngine_GHS_dH_A(void)
-{
-    SigmaF2.CreateVector(3);
-    WFac.CreateVector(Accu->GetNumOfCVs());
-    SigmaN2.CreateVector(3*Accu->GetNumOfCVs());
-}
-
-//------------------------------------------------------------------------------
-
-void COptGPRHyprms::InitGPREngine_cGHS_dH_A(void)
-{
-    SigmaF2.CreateVector(3);
-    WFac.CreateVector(Accu->GetNumOfCVs());
-    SigmaN2.CreateVector(3*Accu->GetNumOfCVs());
-}
-
-//------------------------------------------------------------------------------
-
-void COptGPRHyprms::InitGPREngine_GHS_dH_B(void)
-{
-    SigmaF2.CreateVector(3);
-    WFac.CreateVector(Accu->GetNumOfCVs());
-    SigmaN2.CreateVector(3*Accu->GetNumOfCVs());
+    SigmaF2.CreateVector(GPREngine->GetNumOfSigmaF2());
+    CoVar.CreateVector(GPREngine->GetNumOfCoVar());
+    WFac.CreateVector(GPREngine->GetNumOfWFac());
+    SigmaN2.CreateVector(GPREngine->GetNumOfSigmaN2());
 }
 
 //------------------------------------------------------------------------------
 
 void COptGPRHyprms::CreateGPREngine(void)
 {
-    if( Options.GetArgRealm() == "dG/dx" ) {
-        CreateGPREngine_dF_dx();
-    } else if( Options.GetArgRealm() == "dH/dx" ) {
-        CreateGPREngine_dF_dx();
-    } else if( Options.GetArgRealm() == "-TdS/dx" ) {
-        CreateGPREngine_dF_dx();
-    } else if( Options.GetArgRealm() == "mTdS/dx" ) {
-        CreateGPREngine_dF_dx();
-    } else if( Options.GetArgRealm() == "dH" ) {
-        CreateGPREngine_dF();
-    } else if( Options.GetArgRealm() == "GHS_dH_A" ) {
-        CreateGPREngine_GHS_dH_A();
-    } else if( Options.GetArgRealm() == "cGHS_dH_A" ) {
-        CreateGPREngine_cGHS_dH_A();
-    } else if( Options.GetArgRealm() == "GHS_dH_B" ) {
-        CreateGPREngine_GHS_dH_B();
-    } else {
+    // try one by one
+    bool success = false;
+    success |= CreateGPREngine_dF_dx();
+    success |= CreateGPREngine_dF();
+    success |= CreateGPREngine_AUS();
+
+    if( success == false ){
         CSmallString error;
         error << "unsupported realm: " <<  Options.GetArgRealm();
         RUNTIME_ERROR(error);
     }
+
+    GPREngine->SetRCond(Options.GetOptRCond());
+
+    GPREngine->SetIncludeError(false);
+    GPREngine->SetNoEnergy(false);
+    GPREngine->IncludeGluedAreas(false);
+
+    GPREngine->SetLAMethod(Options.GetOptLAMethod());
+    GPREngine->SetKernel(Options.GetOptGPRKernel());
+    GPREngine->SetUseInv(Options.GetOptGPRUseInv());
+    GPREngine->SetCalcLogPL(Options.GetOptGPRCalcLogPL() || (Target == EGOT_LOGPL));
+
+// set parameters
+    GPREngine->SetSigmaF2(SigmaF2);
+    GPREngine->SetWFac(WFac);
+    GPREngine->SetSigmaN2(SigmaN2);
+
+// run engine
+    GPREngine->PrepForHyprmsGrd(true);
+    GPREngine->RunGPR(vout,true);
 }
 
 //------------------------------------------------------------------------------
 
-void COptGPRHyprms::CreateGPREngine_dF_dx(void)
+bool COptGPRHyprms::CreateGPREngine_dF_dx(void)
 {
-    CEnergyDerProxyPtr proxy;
-
-    // FIXME
-//    if( Options.GetArgRealm() == "dG/dx" ) {
-//        if( CABFProxy_dGdx::IsCompatible(Accu) ){
-//           proxy    = CABFProxy_dGdx_Ptr(new CABFProxy_dGdx);
-//        } else if (CCSTProxy_dGdx::IsCompatible(Accu) ) {
-//            proxy    = CCSTProxy_dGdx_Ptr(new CCSTProxy_dGdx);
-//        } else {
-//            CSmallString error;
-//            error << "incompatible method: " << Accu->GetMethod() << " with requested realm: " <<  Options.GetArgRealm();
-//            RUNTIME_ERROR(error);
-//        }
-//    } else if( (Options.GetArgRealm() == "-TdS/dx") || (Options.GetArgRealm() == "mTdS/dx") ) {
-//        if( CABFProxy_mTdSdx::IsCompatible(Accu) ){
-//            proxy    = CABFProxy_mTdSdx_Ptr(new CABFProxy_mTdSdx);
-//        } else if (CCSTProxy_mTdSdx::IsCompatible(Accu) ) {
-//            proxy    = CCSTProxy_mTdSdx_Ptr(new CCSTProxy_mTdSdx);
-//        } else {
-//            CSmallString error;
-//            error << "incompatible method: " << Accu->GetMethod() << " with requested realm: " <<  Options.GetArgRealm();
-//            RUNTIME_ERROR(error);
-//        }
-//    } else {
-//            CSmallString error;
-//            error << "unsupported realm: " <<  Options.GetArgRealm();
-//            RUNTIME_ERROR(error);
-//    }
-
+    CEnergyDerProxyPtr proxy = CEnergyDerProxyInit::InitProxy(Options.GetArgRealm(),Accu,true);
+    if( proxy == NULL ) return(false);
     proxy->Init(Accu);
 
     CIntegratorGPRPtr gpr = CIntegratorGPRPtr(new CIntegratorGPR);
 
-    gpr->SetOutputES(FES);
+    gpr->SetOutputES(FEN);
     gpr->AddInputEnergyDerProxy(proxy);
 
-    gpr->SetRCond(Options.GetOptRCond());
-
-    gpr->SetIncludeError(false);
-    gpr->SetNoEnergy(false);
-    gpr->IncludeGluedAreas(false);
-
-    gpr->SetLAMethod(Options.GetOptLAMethod());
-    gpr->SetKernel(Options.GetOptGPRKernel());
-    gpr->SetUseInv(Options.GetOptGPRUseInv());
-    gpr->SetCalcLogPL(Options.GetOptGPRCalcLogPL() || (Target == EGOT_LOGPL));
-
-// set parameters
-    gpr->SetSigmaF2(SigmaF2);
-    gpr->SetWFac(WFac);
-    gpr->SetNCorr(NCorr);
-    gpr->SetSigmaN2(SigmaN2);
-
-// run integrator
-    gpr->PrepForHyprmsGrd(true);
-    gpr->Integrate(vout,false);
-
     GPREngine = gpr;
+    return(true);
 }
 
 //------------------------------------------------------------------------------
 
-void COptGPRHyprms::CreateGPREngine_dF(void)
+bool COptGPRHyprms::CreateGPREngine_dF(void)
 {
-    CEnergyProxyPtr proxy;
-
-    // FIXME
-//    if( Options.GetArgRealm() == "dH" ) {
-//        proxy    = CPMFProxy_dH_Ptr(new CPMFProxy_dH);
-//    } else {
-//        CSmallString error;
-//        error << "unsupported realm: " <<  Options.GetArgRealm();
-//        RUNTIME_ERROR(error);
-//    }
-//    proxy->Init(Accu);
+    CEnergyProxyPtr proxy = CEnergyProxyInit::InitProxy(Options.GetArgRealm(),Accu,true);
+    if( proxy == NULL ) return(false);
+    proxy->Init(Accu);
 
     CSmootherGPRPtr gpr = CSmootherGPRPtr(new CSmootherGPR);
 
-    gpr->SetOutputES(FES);
+    gpr->SetOutputES(FEN);
     gpr->AddInputEnergyProxy(proxy);
 
-    gpr->SetRCond(Options.GetOptRCond());
-
-    gpr->SetIncludeError(false);
-
-    gpr->SetLAMethod(Options.GetOptLAMethod());
-
-    gpr->SetKernel(Options.GetOptGPRKernel());
-    gpr->SetUseInv(Options.GetOptGPRUseInv());
-    gpr->SetCalcLogPL(Options.GetOptGPRCalcLogPL() || (Target == EGOT_LOGPL));
-
-// set parameters
-    gpr->SetSigmaF2(SigmaF2);
-    gpr->SetWFac(WFac);
-    gpr->SetNCorr(NCorr);
-    gpr->SetSigmaN2(SigmaN2);
-
-// run interpolator
-    gpr->PrepForHyprmsGrd(true);
-    gpr->Interpolate(vout,false);
-
     GPREngine = gpr;
+    return(true);
 }
 
 //------------------------------------------------------------------------------
 
-void COptGPRHyprms::CreateGPREngine_GHS_dH_A(void)
+bool COptGPRHyprms::CreateGPREngine_AUS(void)
 {
-    CEnergyDerProxyPtr proxy_dg;
-    CEnergyProxyPtr    proxy_dh;
-    CEnergyDerProxyPtr proxy_ds;
+    CGPREngineAUSPtr gpr_aus = CGPREngineAUSInit::InitEngine(Options.GetArgRealm(),Accu,true);
+    if( gpr_aus == NULL ) return(false);
 
-    // FIXME
-//    if( Options.GetArgRealm() == "GHS_dH_A" ) {
-//        if( CABFProxy_dGdx::IsCompatible(Accu) ){
-//           proxy_dg = CABFProxy_dGdx_Ptr(new CABFProxy_dGdx);
-//           proxy_dg->Init(Accu);
-//        } else {
-//            CSmallString error;
-//            error << "incompatible method: " << Accu->GetMethod() << " with requested realm for dG/dx: " <<  Options.GetArgRealm();
-//            RUNTIME_ERROR(error);
-//        }
-//        proxy_dh = CPMFProxy_dH_Ptr(new CPMFProxy_dH);
-//        proxy_dh->Init(Accu);
-//        if( CABFProxy_mTdSdx::IsCompatible(Accu) ){
-//            proxy_ds    = CABFProxy_mTdSdx_Ptr(new CABFProxy_mTdSdx);
-//            proxy_ds->Init(Accu);
-//        } else {
-//            CSmallString error;
-//            error << "incompatible method: " << Accu->GetMethod() << " with requested realm for -TdS/dx: " <<  Options.GetArgRealm();
-//            RUNTIME_ERROR(error);
-//        }
-//    } else {
-//        CSmallString error;
-//        error << "unsupported realm: " <<  Options.GetArgRealm();
-//        RUNTIME_ERROR(error);
-//    }
+    gpr_aus->SetAccumulator(Accu);
+    gpr_aus->SetOutputFEN(FEN);
+    gpr_aus->SetOutputINT(INT);
+    gpr_aus->SetOutputTDS(TDS);
 
-    CGHSIntegratorGPR0APtr gpr = CGHSIntegratorGPR0APtr(new CGHSIntegratorGPR0A);
-
-    gpr->SetAccumulator(Accu);
-
-    gpr->SetOutputFES(FES);
-    gpr->SetOutputHES(HES);
-    gpr->SetOutputSES(SES);
-
-    gpr->SetGDerProxy(proxy_dg);
-    gpr->SetHEneProxy(proxy_dh);
-    gpr->SetSDerProxy(proxy_ds);
-
-    gpr->SetRCond(Options.GetOptRCond());
-
-    gpr->SetIncludeError(false);
-    gpr->SetNoEnergy(false);
-
-    gpr->SetLAMethod(Options.GetOptLAMethod());
-    gpr->SetKernel(Options.GetOptGPRKernel());
-    gpr->SetUseInv(Options.GetOptGPRUseInv());
-    gpr->SetCalcLogPL(Options.GetOptGPRCalcLogPL() || (Target == EGOT_LOGPL));
-
-// set parameters
-    gpr->SetSigmaF2(SigmaF2);
-    gpr->SetWFac(WFac);
-    gpr->SetSigmaN2(SigmaN2);
-
-// run integrator
-    gpr->PrepForHyprmsGrd(true);
-    gpr->Integrate(vout,false);
-
-    GPREngine = gpr;
-}
-
-//------------------------------------------------------------------------------
-
-void COptGPRHyprms::CreateGPREngine_cGHS_dH_A(void)
-{
-    CEnergyDerProxyPtr proxy_dg;
-    CEnergyProxyPtr    proxy_dh;
-    CEnergyDerProxyPtr proxy_ds;
-
-    // FIXME
-//    if( Options.GetArgRealm() == "cGHS_dH_A" ) {
-//        if( CABFProxy_dGdx::IsCompatible(Accu) ){
-//           proxy_dg = CABFProxy_dGdx_Ptr(new CABFProxy_dGdx);
-//           proxy_dg->Init(Accu);
-//        } else {
-//            CSmallString error;
-//            error << "incompatible method: " << Accu->GetMethod() << " with requested realm for dG/dx: " <<  Options.GetArgRealm();
-//            RUNTIME_ERROR(error);
-//        }
-//        proxy_dh = CPMFProxy_dH_Ptr(new CPMFProxy_dH);
-//        proxy_dh->Init(Accu);
-//        if( CABFProxy_mTdSdx::IsCompatible(Accu) ){
-//            proxy_ds    = CABFProxy_mTdSdx_Ptr(new CABFProxy_mTdSdx);
-//            proxy_ds->Init(Accu);
-//        } else {
-//            CSmallString error;
-//            error << "incompatible method: " << Accu->GetMethod() << " with requested realm for -TdS/dx: " <<  Options.GetArgRealm();
-//            RUNTIME_ERROR(error);
-//        }
-//    } else {
-//        CSmallString error;
-//        error << "unsupported realm: " <<  Options.GetArgRealm();
-//        RUNTIME_ERROR(error);
-//    }
-
-    CGHSIntegratorGPRcAPtr gpr = CGHSIntegratorGPRcAPtr(new CGHSIntegratorGPRcA);
-
-    gpr->SetAccumulator(Accu);
-
-    gpr->SetOutputFES(FES);
-    gpr->SetOutputHES(HES);
-    gpr->SetOutputSES(SES);
-
-    gpr->SetGDerProxy(proxy_dg);
-    gpr->SetHEneProxy(proxy_dh);
-    gpr->SetSDerProxy(proxy_ds);
-
-    gpr->SetRCond(Options.GetOptRCond());
-
-    gpr->SetIncludeError(false);
-    gpr->SetNoEnergy(false);
-
-    gpr->SetLAMethod(Options.GetOptLAMethod());
-    gpr->SetKernel(Options.GetOptGPRKernel());
-    gpr->SetUseInv(Options.GetOptGPRUseInv());
-    gpr->SetCalcLogPL(Options.GetOptGPRCalcLogPL() || (Target == EGOT_LOGPL));
-
-    // FIXME
-   // gpr->SetUseNumDiff(true);
-
-// set parameters
-    gpr->SetSigmaF2(SigmaF2);
-    gpr->SetWFac(WFac);
-    gpr->SetSigmaN2(SigmaN2);
-
-// run integrator
-    gpr->PrepForHyprmsGrd(true);
-    gpr->Integrate(vout,false);
-
-    GPREngine = gpr;
-}
-
-//------------------------------------------------------------------------------
-
-void COptGPRHyprms::CreateGPREngine_GHS_dH_B(void)
-{
-    CEnergyDerProxyPtr proxy_dg;
-    CEnergyProxyPtr    proxy_dh;
-    CEnergyDerProxyPtr proxy_ds;
-
-    // FIXME
-//    if( Options.GetArgRealm() == "GHS_dH_B" ) {
-//        if( CABFProxy_dGdx::IsCompatible(Accu) ){
-//           proxy_dg = CABFProxy_dGdx_Ptr(new CABFProxy_dGdx);
-//           proxy_dg->Init(Accu);
-//        } else {
-//            CSmallString error;
-//            error << "incompatible method: " << Accu->GetMethod() << " with requested realm for dG/dx: " <<  Options.GetArgRealm();
-//            RUNTIME_ERROR(error);
-//        }
-//        proxy_dh = CPMFProxy_dH_Ptr(new CPMFProxy_dH);
-//        proxy_dh->Init(Accu);
-//        if( CABFProxy_mTdSdx::IsCompatible(Accu) ){
-//            proxy_ds    = CABFProxy_mTdSdx_Ptr(new CABFProxy_mTdSdx);
-//            proxy_ds->Init(Accu);
-//        } else {
-//            CSmallString error;
-//            error << "incompatible method: " << Accu->GetMethod() << " with requested realm for -TdS/dx: " <<  Options.GetArgRealm();
-//            RUNTIME_ERROR(error);
-//        }
-//    } else {
-//        CSmallString error;
-//        error << "unsupported realm: " <<  Options.GetArgRealm();
-//        RUNTIME_ERROR(error);
-//    }
-
-    CGHSIntegratorGPR0BPtr gpr = CGHSIntegratorGPR0BPtr(new CGHSIntegratorGPR0B);
-
-    gpr->SetAccumulator(Accu);
-
-    gpr->SetOutputFES(FES);
-    gpr->SetOutputHES(HES);
-    gpr->SetOutputSES(SES);
-
-    gpr->SetGDerProxy(proxy_dg);
-    gpr->SetHEneProxy(proxy_dh);
-    gpr->SetSDerProxy(proxy_ds);
-
-    gpr->SetRCond(Options.GetOptRCond());
-
-    gpr->SetIncludeError(false);
-    gpr->SetNoEnergy(false);
-
-    gpr->SetLAMethod(Options.GetOptLAMethod());
-    gpr->SetKernel(Options.GetOptGPRKernel());
-    gpr->SetUseInv(Options.GetOptGPRUseInv());
-    gpr->SetCalcLogPL(Options.GetOptGPRCalcLogPL() || (Target == EGOT_LOGPL));
-
-// set parameters
-    gpr->SetSigmaF2(SigmaF2);
-    gpr->SetWFac(WFac);
-    gpr->SetSigmaN2(SigmaN2);
-
-// run integrator
-    gpr->PrepForHyprmsGrd(true);
-    gpr->Integrate(vout,false);
-
-    GPREngine = gpr;
+    GPREngine = gpr_aus;
+    return(true);
 }
 
 //------------------------------------------------------------------------------
@@ -1630,7 +1255,6 @@ void COptGPRHyprms::GetTargetDerivatives(CSimpleVector<double>& der)
             GPREngine->GetLogPLDerivatives(HyprmsEnabled,der);
         break;
     }
-
 }
 
 //------------------------------------------------------------------------------
@@ -1647,9 +1271,6 @@ void COptGPRHyprms::WriteResults(int istep)
     }
     for(int i=0; i < (int)WFacEnabled.size(); i++){
         if( WFacEnabled[i] ) vout << format(" %10.3f")%WFac[i];
-    }
-    for(int i=0; i < (int)NCorrEnabled.size(); i++){
-        if( NCorrEnabled[i] ) vout << format(" %10.4e")%NCorr[i];
     }
     for(int i=0; i < (int)SigmaN2Enabled.size(); i++){
         if( SigmaN2Enabled[i] ) vout << format(" %10.4e")%SigmaN2[i];
@@ -1705,9 +1326,6 @@ bool COptGPRHyprms::WriteHyperPrms(FILE* p_fout)
     }
     for(size_t i=0; i < WFac.GetLength(); i++ ){
         if( fprintf(p_fout,"WFac#%-2ld    = %16.10e\n",i+1,WFac[i]) <= 0 ) return(false);
-    }
-    for(size_t i=0; i < NCorr.GetLength(); i++ ){
-        if( fprintf(p_fout,"NCorr#%-2ld   = %16.10e\n",i+1,NCorr[i]) <= 0 ) return(false);
     }
     for(size_t i=0; i < SigmaN2.GetLength(); i++ ){
         if( fprintf(p_fout,"SigmaN2#%-2ld = %16.10e\n",i+1,SigmaN2[i]) <= 0 ) return(false);
@@ -1797,24 +1415,6 @@ void COptGPRHyprms::LoadGPRHyprms(void)
                 RUNTIME_ERROR(error);
             }
             WFac[cvind] = value;
-        } else if( key.find("NCorr#") != string::npos ) {
-            std::replace( key.begin(), key.end(), '#', ' ');
-            stringstream kstr(key);
-            string swfac;
-            int    cvind;
-            kstr >> swfac >> cvind;
-            if( ! kstr ){
-                CSmallString error;
-                error << "GPR hyperparameters file, unable to decode ncorr key: " << key.c_str();
-                RUNTIME_ERROR(error);
-            }
-            cvind--; // transform to 0-based indexing
-            if( (cvind < 0) || (cvind >= (int)NCorr.GetLength()) ){
-                CSmallString error;
-                error << "ncorr index " << (cvind+1) << " out-of-range 1-" << NCorr.GetLength();
-                RUNTIME_ERROR(error);
-            }
-            NCorr[cvind] = value;
         } else if( key.find("SigmaN2#") != string::npos ) {
             std::replace( key.begin(), key.end(), '#', ' ');
             stringstream kstr(key);
