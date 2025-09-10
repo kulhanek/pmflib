@@ -59,9 +59,6 @@ public:
     /// set include error
     virtual void SetIncludeError(bool set);
 
-    /// use the first derivatives of the kernel
-    void UseFirstKernelDerivatives(bool set);
-
 // execution method -----------------------------------------------------------
     /// run GPR
     virtual bool RunGPR(CVerboseStr& vout,bool nostat=false);

@@ -133,6 +133,9 @@ public:
     /// calc logpl
     virtual void SetCalcLogPL(bool set);
 
+    /// use the first derivatives of the kernel
+    virtual void UseFirstKernelDerivatives(bool set);
+
 // base methods ----------------------------------------------------------------
     /// run GPR
     virtual bool RunGPR(CVerboseStr& vout,bool nostat=false);

@@ -1217,6 +1217,8 @@ bool COptGPRHyprms::CreateGPREngine_AUS(void)
     gpr_aus->SetOutputINT(INT);
     gpr_aus->SetOutputTDS(TDS);
 
+    gpr_aus->UseFirstKernelDerivatives(UseFDKernel);
+
     GPREngine = gpr_aus;
     return(true);
 }

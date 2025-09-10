@@ -312,6 +312,7 @@ bool CAUSEnergyIntegrate::RunAUSEngine(void)
 
     // it must be here - it can be redefined in LoadGPRHyprms
     AUSEngine->SetKernel(Options.GetOptGPRKernel());
+    AUSEngine->UseFirstKernelDerivatives(Options.GetOptUseFDKernel());
 
     if( Options.IsOptLoadHyprmsSet() ){
         AUSEngine->LoadGPRHyprms(Options.GetOptLoadHyprms());

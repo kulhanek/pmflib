@@ -129,13 +129,6 @@ void CSmootherGPR::SetIncludeError(bool set)
 
 //------------------------------------------------------------------------------
 
-void CSmootherGPR::UseFirstKernelDerivatives(bool set)
-{
-    UseFDKernel = set;
-}
-
-//------------------------------------------------------------------------------
-
 void CSmootherGPR::PrepForMFInfo(void)
 {
     IncludeError = true;
