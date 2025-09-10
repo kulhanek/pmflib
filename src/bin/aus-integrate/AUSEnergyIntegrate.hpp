@@ -65,6 +65,7 @@ private:
     CEnergySurfacePtr       FEN;
     CEnergySurfacePtr       INT;
     CEnergySurfacePtr       TDS;
+    CEnergySurfacePtr       RES;
 
     // sampled data
     CSimpleVector<int>      FFSeeds;

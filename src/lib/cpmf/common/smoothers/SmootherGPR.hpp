@@ -53,8 +53,14 @@ public:
     void SetOutputES(CEnergySurfacePtr p_surf);
 
 // setup
+    /// skip energy calculation, it also disables errors
+    virtual void SetNoEnergy(bool set);
+
     /// set include error
-    void SetIncludeError(bool set);
+    virtual void SetIncludeError(bool set);
+
+    /// use the first derivatives of the kernel
+    void UseFirstKernelDerivatives(bool set);
 
 // execution method -----------------------------------------------------------
     /// run GPR
@@ -71,26 +77,26 @@ public:
 
 // GPR model optimization ----------------------------------------------------
     /// calc hyprms grd
-    void PrepForHyprmsGrd(bool set);
+    virtual void PrepForHyprmsGrd(bool set);
 
     /// calc logpl
-    void SetCalcLogPL(bool set);
+    virtual void SetCalcLogPL(bool set);
 
     /// get log of Marginal Likelihood
-    double GetLogML(void);
+    virtual double GetLogML(void);
 
     /// get derivative of logML wrt hyperparameters
     /// order sigmaf2, wfac, ncorr, nsigman2: only requested ders are calculated
     /// derivatives are ADDED to der
-    void GetLogMLDerivatives(const std::vector<bool>& flags,CSimpleVector<double>& der);
+    virtual void GetLogMLDerivatives(const std::vector<bool>& flags,CSimpleVector<double>& der);
 
     /// get the log of pseudo-likelihood from leave-one-out cross-validation (LOO-CV)
-    double GetLogPL(void);
+    virtual double GetLogPL(void);
 
     /// get derivative of logPL wrt hyperparameters
     /// order sigmaf2, wfac, ncorr, nsigman2: only requested ders are calculated
     /// derivatives are ADDED to der
-    void GetLogPLDerivatives(const std::vector<bool>& flags,CSimpleVector<double>& der);
+    virtual void GetLogPLDerivatives(const std::vector<bool>& flags,CSimpleVector<double>& der);
 
 // section of private data ----------------------------------------------------
 private:
@@ -102,9 +108,6 @@ private:
     std::vector<size_t>     SampledMap;
     size_t                  NumOfValues;
     std::vector<size_t>     ValueMap;
-
-    // setup
-    bool                    IncludeError;
 
     // GPR model
     EGPRKernel              Kernel;
@@ -132,7 +135,7 @@ private:
     // derivatives
     void CalcKderWRTSigmaF2(void);
     void CalcKderWRTWFac(size_t cv);
-    void CalcKderWRTSigmaN2(size_t cv);
+    void CalcKderWRTSigmaN2(void);
 };
 
 //------------------------------------------------------------------------------

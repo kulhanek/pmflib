@@ -37,16 +37,39 @@ public:
     virtual ~CGPREngineAUS(void);
 
 // setup methods ---------------------------------------------------------------
+    /// set accumulator
+    virtual void SetAccumulator(CPMFAccumulatorPtr accu);
+
     /// set output energy surfaces
-    virtual void SetOutputFEN(CEnergySurfacePtr p_surf);
-    virtual void SetOutputINT(CEnergySurfacePtr p_surf);
-    virtual void SetOutputTDS(CEnergySurfacePtr p_surf);
+    virtual void SetOutputFEN(CEnergySurfacePtr p_surf);    // dA(x)
+    virtual void SetOutputINT(CEnergySurfacePtr p_surf);    // dU(x)
+    virtual void SetOutputTDS(CEnergySurfacePtr p_surf);    // -TdS(x)
+    virtual void SetOutputRES(CEnergySurfacePtr p_surf);    // residuals: d(A)-(dU(x)-TdS(x))
+
+    /// balance residual errors
+    virtual void SetBalanceResiduals(bool iset);
+
+    /// prepare for subsequent call WriteMFInfo
+    virtual void PrepForMFInfo(void);
+
+    /// return number of tasks
+    virtual int GetNumOfTasks(void);
+
+    /// write file with derivatives
+    virtual bool WriteMFInfo(const CSmallString& name,int task);
 
 // section of protected data ---------------------------------------------------
 protected:
     CEnergySurfacePtr       ASurface;   // free energy
     CEnergySurfacePtr       USurface;   // internal energy
     CEnergySurfacePtr       SSurface;   // -TdS contribution
+    CEnergySurfacePtr       RSurface;   // residuals: d(A)-(dU(x)-TdS(x))
+
+    bool DoBalanceResiduals;
+
+// calculate residuals
+    void CalcResiduals(CVerboseStr& vout,bool balanced);
+    void BalanceResiduals(void);
 };
 
 //------------------------------------------------------------------------------

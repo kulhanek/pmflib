@@ -20,6 +20,7 @@
 
 #include <GPREngineAUSInit.hpp>
 #include <iomanip>
+#include <AUSEngineCST_A.hpp>
 
 //==============================================================================
 //------------------------------------------------------------------------------
@@ -29,7 +30,9 @@ void CGPREngineAUSInit::InitProxyList(std::list<CGPREngineAUSPtr>& aus_proxies)
 {
     CGPREngineAUSPtr proxy;
 
-    // FIXME
+// add supported proxies
+    proxy = CGPREngineAUSPtr(new CAUSEngineCST_A);
+    aus_proxies.push_back(proxy);
 }
 
 //==============================================================================
@@ -38,8 +41,27 @@ void CGPREngineAUSInit::InitProxyList(std::list<CGPREngineAUSPtr>& aus_proxies)
 
 CGPREngineAUSPtr CGPREngineAUSInit::InitEngine(const CSmallString& realm,CPMFAccumulatorPtr& accu,bool noerror)
 {
-    CGPREngineAUSPtr gpr;
-    return(gpr);
+    std::list<CGPREngineAUSPtr> aus_proxies;
+    InitProxyList(aus_proxies);
+
+    CGPREngineAUSPtr proxy;
+
+// find suitable proxy
+    std::list<CGPREngineAUSPtr>::iterator it = aus_proxies.begin();
+    std::list<CGPREngineAUSPtr>::iterator ie = aus_proxies.end();
+
+    while( it != ie ){
+        proxy = *it;
+        it++;
+        if( proxy->IsCompatible(accu) == false ) continue;
+        if( proxy->SetRealm(realm) ) return(proxy);
+    }
+
+    if( noerror ) return(CGPREngineAUSPtr());
+
+    CSmallString error;
+    error << "incompatible method: " << accu->GetMethod() << " with requested realm: " <<  realm;
+    RUNTIME_ERROR(error);
 }
 
 //==============================================================================

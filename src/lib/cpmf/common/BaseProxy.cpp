@@ -218,6 +218,15 @@ CSmallString CBaseProxy::GetDescription(void)
 
 //------------------------------------------------------------------------------
 
+CSmallString CBaseProxy::GetFullDescription(void)
+{
+    CSmallString    desc;
+    desc << GetRealm() << " / [" << GetMethods() << "] / " << GetDescription();
+    return(desc);
+}
+
+//------------------------------------------------------------------------------
+
 int CBaseProxy::GetNumOfCVs(void) const
 {
     if( Accu == NULL ) return(0);

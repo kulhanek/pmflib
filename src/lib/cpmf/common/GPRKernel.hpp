@@ -65,8 +65,14 @@ public:
     /// set kernel by name
     void SetKernel(const CSmallString& kernel);
 
+    /// set kernel by ID
+    void SetKernel(EGPRKernel kernel);
+
     /// get kernel name
     const CSmallString GetKernelName(void);
+
+    /// get kernel ID
+    EGPRKernel GetKernel(void);
 
 // ----
     /// multiply of bin sizes
@@ -109,6 +115,7 @@ protected:
     EGPRKernel              Kernel;
     CSimpleVector<double>   WFac;
     double                  Alpha;
+    bool                    UseFDKernel;  // Use first derivative kernel in GPR smoother
 
 // section of private data -----------------------------------------------------
 private:

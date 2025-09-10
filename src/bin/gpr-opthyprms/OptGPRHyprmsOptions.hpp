@@ -85,6 +85,7 @@ public:
     CSO_OPT(bool,CD5)
     CSO_OPT(CSmallString,LoadHyprms)
     CSO_OPT(CSmallString,GPRKernel)
+    CSO_OPT(bool,UseFDKernel)
     CSO_OPT(bool,GPRUseInv)
     CSO_OPT(bool,GPRCalcLogPL)
     CSO_OPT(CSmallString,GlobalMin)
@@ -211,6 +212,9 @@ public:
         CSO_MAP_OPT(CSmallString, GPRKernel, "default", false, '\0', "kernel", "NAME",
             "GPR kernel type. Supported types: ardse (ARD squared exponential), "
             "ardmc52 (ARD Matérn class 5/2), default (=ardse).")
+    // -------------------------------------------
+        CSO_MAP_OPT(bool, UseFDKernel, false, false, 0, "fdkernel", NULL,
+            "Use the first derivatives of the GPR kernel (only for SmootherGPR).")
     // -------------------------------------------
         CSO_MAP_OPT(bool, GPRUseInv, false, false, 0, "useinv", NULL,
             "Use the matrix inversion pathway (for testing only).")

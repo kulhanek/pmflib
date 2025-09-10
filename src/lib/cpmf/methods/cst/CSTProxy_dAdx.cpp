@@ -33,6 +33,7 @@ using namespace std;
 CCSTProxy_dAdx::CCSTProxy_dAdx(void)
 {
     RegisterRealm(CST_dAdx,     "dA/dx",    "CST", "dA(x)=|<lam> dx| + dA{CST}corr");
+    RegisterRealm(CST_dLdx,     "dL/dx",    "CST", "dA^c(x)=|<lam> dx|");
     RegisterRealm(CST_ICF,      "ICF",      "CST", "|ICF dx|");
     RegisterRealm(CST_ICFFW,    "ICFFW",    "CST", "|ICFFW dx|");
     RegisterRealm(CST_ICFPFW,   "ICFPFW",   "CST", "|ICFPFW dx|");
@@ -80,7 +81,8 @@ double CCSTProxy_dAdx::GetValue(int ibin,int icv,EProxyRealm realm) const
 // get requested data
     switch(RealmID){
     // -------------------
-        case(CST_dAdx): {  // this requires MTC correction
+        case(CST_dAdx): // this requires MTC correction
+        case(CST_dLdx): {
             mean        = Accu->GetData("MLAMBDA",ibin,icv);
             double M2   = Accu->GetData("M2LAMBDA",ibin,icv);
             samvar      = M2 / nsamples;

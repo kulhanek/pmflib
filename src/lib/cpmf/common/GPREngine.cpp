@@ -55,6 +55,9 @@ CGPREngine::CGPREngine(void)
     NumOfSigmaF2    = 0;
     NumOfCoVar      = 0;
     NumOfSigmaN2    = 0;
+
+    IncludeError    = false;
+    NoEnergy        = false;
 }
 
 //------------------------------------------------------------------------------
@@ -91,6 +94,18 @@ int CGPREngine::GetNumOfWFac(void)
 int CGPREngine::GetNumOfSigmaN2(void)
 {
     return(NumOfSigmaN2);
+}
+
+//------------------------------------------------------------------------------
+
+int CGPREngine::GetNumOfHyprms(void)
+{
+    int num = 0;
+    num += GetNumOfSigmaF2();
+    num += GetNumOfCoVar();
+    num += GetNumOfWFac();
+    num += GetNumOfSigmaN2();
+    return(num);
 }
 
 //==============================================================================
@@ -394,6 +409,22 @@ void CGPREngine::LoadGPRHyprms(const CSmallString& name)
         // is it comment?
         if( (line.size() > 0) && (line[0] == '#') ) continue;
 
+        if( line.find("Kernel") == 0 ) {
+            stringstream str(line);
+            string key, buf, kernel;
+            str >> key >> buf >> kernel;
+            SetKernel(kernel);
+            continue;
+        }
+        if( line.find("UseFDKernel") == 0 ) {
+            UseFDKernel = true;
+            continue;
+        }
+        if( line.find("NoUseFDKernel") == 0 ) {
+            UseFDKernel = false;
+            continue;
+        }
+
         // parse line
         stringstream str(line);
         string key, buf;
@@ -404,12 +435,12 @@ void CGPREngine::LoadGPRHyprms(const CSmallString& name)
             error << "GPR hyperparameters file, unable to decode line: " << line.c_str();
             RUNTIME_ERROR(error);
         }
-        if( key.find("SigmaF2#") != string::npos ) {
+        if( key.find("SigmaF2#") == 0) {
             std::replace( key.begin(), key.end(), '#', ' ');
             stringstream kstr(key);
-            string swfac;
+            string stmp;
             int    cvind;
-            kstr >> swfac >> cvind;
+            kstr >> stmp >> cvind;
             if( ! kstr ){
                 CSmallString error;
                 error << "GPR hyperparameters file, unable to decode sigmaf2 key: " << key.c_str();
@@ -417,12 +448,12 @@ void CGPREngine::LoadGPRHyprms(const CSmallString& name)
             }
             cvind--; // transform to 0-based indexing
             SetSigmaF2(cvind,value);
-        } else         if( key.find("CoVar#") != string::npos ) {
+        } else         if( key.find("CoVar#") == 0 ) {
             std::replace( key.begin(), key.end(), '#', ' ');
             stringstream kstr(key);
-            string swfac;
+            string stmp;
             int    cvind;
-            kstr >> swfac >> cvind;
+            kstr >> stmp >> cvind;
             if( ! kstr ){
                 CSmallString error;
                 error << "GPR hyperparameters file, unable to decode covar key: " << key.c_str();
@@ -430,12 +461,12 @@ void CGPREngine::LoadGPRHyprms(const CSmallString& name)
             }
             cvind--; // transform to 0-based indexing
             SetCoVar(cvind,value);
-        } else if( key.find("WFac#") != string::npos ) {
+        } else if( key.find("WFac#") == 0 ) {
             std::replace( key.begin(), key.end(), '#', ' ');
             stringstream kstr(key);
-            string swfac;
+            string stmp;
             int    cvind;
-            kstr >> swfac >> cvind;
+            kstr >> stmp >> cvind;
             if( ! kstr ){
                 CSmallString error;
                 error << "GPR hyperparameters file, unable to decode wfac key: " << key.c_str();
@@ -443,12 +474,12 @@ void CGPREngine::LoadGPRHyprms(const CSmallString& name)
             }
             cvind--; // transform to 0-based indexing
             SetWFac(cvind,value);
-        } else if( key.find("SigmaN2#") != string::npos ) {
+        } else if( key.find("SigmaN2#") == 0 ) {
             std::replace( key.begin(), key.end(), '#', ' ');
             stringstream kstr(key);
-            string swfac;
+            string stmp;
             int    cvind;
-            kstr >> swfac >> cvind;
+            kstr >> stmp >> cvind;
             if( ! kstr ){
                 CSmallString error;
                 error << "GPR hyperparameters file, unable to decode sigman2 key: " << key.c_str();

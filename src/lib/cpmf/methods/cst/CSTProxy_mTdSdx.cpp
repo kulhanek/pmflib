@@ -116,6 +116,7 @@ double CCSTProxy_mTdSdx::GetValue(int ibin,int icv,EProxyRealm realm) const
         case(CST_TdS_LT):{      // plus correction
             double C        = Accu->GetData("C11LT",ibin,icv);
             mean            = C / nsamples;
+
             samvar          = 0.0;  // FIXME
             meanvar         = 0.0;
         }

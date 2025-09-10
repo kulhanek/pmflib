@@ -121,7 +121,7 @@ int COptGPRHyprmsOptions::FinalizeOptions(void)
     if( GetOptListRealms() == true){
         CEnergyDerProxyInit::PrintRealms(std::cout);
         CEnergyProxyInit::PrintRealms(std::cout);
-        CEnergyProxyInit::PrintRealms(std::cout);
+        CGPREngineAUSInit::PrintRealms(std::cout);
         ret_opt = true;
     }
 

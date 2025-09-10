@@ -28,6 +28,7 @@
 
 enum ECSTdAdxType {
     CST_dAdx,
+    CST_dLdx,
     CST_ICF,
     CST_ICFFW,
     CST_ICFPFW,

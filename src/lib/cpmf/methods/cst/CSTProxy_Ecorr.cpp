@@ -110,7 +110,14 @@ double CCSTProxy_Ecorr::GetValue(int ibin,EProxyRealm realm) const
     // -------------------
         case(CST_dA_corr): {
             double mfw  = Accu->GetData("MFW",ibin);
+            double m2fw = Accu->GetData("M2FW",ibin);
+
             mean        = - PMF_Rgas * temp * log(mfw);
+
+            samvar      = m2fw / nsamples;
+            samvar      = (PMF_Rgas*temp/mfw)*(PMF_Rgas*temp/mfw) * samvar;
+
+            meanvar     = samvar / nsamples;
         }
         break;
     // -------------------
@@ -122,6 +129,8 @@ double CCSTProxy_Ecorr::GetValue(int ibin,EProxyRealm realm) const
             double corr2 = C / nsamples / mfw;
 
             mean         = - (corr1 + corr2);
+            samvar       = 0.0; // FIXME
+            meanvar      = 0.0;
         }
         break;
     // -------------------

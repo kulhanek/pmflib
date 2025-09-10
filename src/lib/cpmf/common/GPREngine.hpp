@@ -98,16 +98,16 @@ public:
 
 // linear algebra setup --------------------------------------------------------
     /// set algorithm for LA
-    void SetLAMethod(EGPRLAMethod set);
+    virtual void SetLAMethod(EGPRLAMethod set);
 
     /// set algorithm for LA
-    void SetLAMethod(const CSmallString& method);
+    virtual void SetLAMethod(const CSmallString& method);
 
     /// set rcond for SVD
-    void SetRCond(double rcond);
+    virtual void SetRCond(double rcond);
 
     /// use inversion alg
-    void SetUseInv(bool iset);
+    virtual void SetUseInv(bool iset);
 
 // get parameters --------------------------------------------------------------
 
@@ -115,6 +115,7 @@ public:
     virtual int GetNumOfCoVar(void);
     virtual int GetNumOfWFac(void);
     virtual int GetNumOfSigmaN2(void);
+    virtual int GetNumOfHyprms(void);
 
 // setup -----------------------------------------------------------------------
     /// set include error
@@ -171,6 +172,10 @@ protected:
     double                  RCond;      // SVD setup
     bool                    UseInv;     // calc all via inversion
     bool                    NeedInv;    // need inverted matrix - hyprms, error analysis
+
+// setup
+    bool                    NoEnergy;
+    bool                    IncludeError;
 
 // section of private data ----------------------------------------------------
 private:

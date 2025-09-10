@@ -81,6 +81,7 @@ public:
     CSO_OPT(CSmallString,IXFormat)
     CSO_OPT(CSmallString,OEFormat)
     CSO_OPT(CSmallString,MFInfo)
+    CSO_OPT(CSmallString,ResidualsFile)
     CSO_OPT(CSmallString,GPRKernel)
     CSO_OPT(bool,GPRNumDiff)
     CSO_OPT(bool,GPRUseInv)
@@ -165,6 +166,9 @@ public:
     // -------------------------------------------
         CSO_MAP_OPT(CSmallString, MFInfo, NULL, false, '\0', "mfinfo", "NAME",
             "Name of the file with input and predicted mean forces.")
+    // -------------------------------------------
+        CSO_MAP_OPT(CSmallString, ResidualsFile, NULL, false, '\0', "residuals", "NAME",
+            "Name of the file with residuals values.")
     // -------------------------------------------
         CSO_MAP_OPT(CSmallString, OutputFormat, "gnuplot", false, 0, "output", "FORMAT",
             "Output format for printing the free energy surface. Supported formats: plain, gnuplot.")

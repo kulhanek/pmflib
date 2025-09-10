@@ -149,7 +149,7 @@ bool CPMFEnergy::Run(void)
     State++;
     EneProxy = CEnergyProxyInit::InitProxy(Options.GetOptRealm(),Accu);
     EneProxy->Init(Accu);
-    vout << format(  "   %s [%s] | %s")%EneProxy->GetRealm()%EneProxy->GetMethods()%EneProxy->GetDescription() << endl;
+    vout << format(  "   %s")%EneProxy->GetFullDescription() << endl;
 
     // DO NOT SET IT HERE, Ncorr is now GPR hyperparameter
     // Accu->SetNCorr(Options.GetOptNCorr());
@@ -198,6 +198,10 @@ bool CPMFEnergy::Run(void)
         entgpr.SetOutputES(ENE);
         entgpr.SetInputEnergyProxy(EneProxy);
 
+        // these two lines must be here - it can be overwritten in LoadGPRHyprms
+        entgpr.SetKernel(Options.GetOptGPRKernel());
+        entgpr.UseFirstKernelDerivatives(Options.GetOptUseFDKernel());
+
         if( Options.IsOptLoadHyprmsSet() ){
             entgpr.LoadGPRHyprms(Options.GetOptLoadHyprms());
         } else {
@@ -211,7 +215,6 @@ bool CPMFEnergy::Run(void)
         entgpr.SetRCond(Options.GetOptRCond());
         entgpr.SetLAMethod(Options.GetOptLAMethod());
         entgpr.SetCalcLogPL(Options.GetOptGPRCalcLogPL());
-        entgpr.SetKernel(Options.GetOptGPRKernel());
 
         if( Options.IsOptMFInfoSet() ){
             entgpr.PrepForMFInfo();

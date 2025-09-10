@@ -63,7 +63,7 @@ public:
 
 //------------------------------------------------------------------------------
 
-typedef boost::shared_ptr<CCSTProxy_dU>    CCSTProxy_dH_Ptr;
+typedef boost::shared_ptr<CCSTProxy_dU>    CCSTProxy_dU_Ptr;
 
 //------------------------------------------------------------------------------
 

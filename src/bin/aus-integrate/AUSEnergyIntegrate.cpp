@@ -179,7 +179,7 @@ bool CAUSEnergyIntegrate::Run(void)
     }
 
 // -------
-    vout << format("   ** INT surface]") << endl;
+    vout << format("   ** INT surface") << endl;
 
     INT = CEnergySurfacePtr(new CEnergySurface);
     INT->Allocate(Accu);
@@ -191,6 +191,16 @@ bool CAUSEnergyIntegrate::Run(void)
     TDS = CEnergySurfacePtr(new CEnergySurface);
     TDS->Allocate(Accu);
     TDS->SetSLevel(Options.GetOptSLevel());
+
+// -------
+    if( Options.GetOptResidualsFile() != NULL ){
+    vout << format("   ** RES surface") << endl;
+
+    RES = CEnergySurfacePtr(new CEnergySurface);
+    RES->Allocate(Accu);
+    RES->SetSLevel(Options.GetOptSLevel());
+    }
+
     vout << "   Done." << endl;
 
 // -------
@@ -216,6 +226,11 @@ bool CAUSEnergyIntegrate::Run(void)
     WriteES(INT,Options.GetArgINTFile());
     vout << format("   ** TDS [-TdS(x)] : %s")%string(Options.GetArgTDSFile()) << endl;
     WriteES(TDS,Options.GetArgTDSFile());
+
+    if( Options.GetOptResidualsFile() != NULL ){
+    vout << format("   ** RES (dA(x) - [dU(x)-TdS(x)]) : %s")%string(Options.GetOptResidualsFile()) << endl;
+    WriteES(RES,Options.GetOptResidualsFile());
+    }
 
     vout << "   Done." << endl;
 
@@ -285,67 +300,60 @@ void CAUSEnergyIntegrate::WriteES(CEnergySurfacePtr& surf,const CSmallString& na
 
 bool CAUSEnergyIntegrate::RunAUSEngine(void)
 {
+    AUSEngine->SetAccumulator(Accu);
 
-//    CGHSIntegratorGPR0A   integrator;
-//
-//    integrator.SetAccumulator(Accu);
-//
-//    integrator.SetGDerProxy(GDerProxy);
-//    integrator.SetHEneProxy(HEneProxy);
-//    integrator.SetSDerProxy(SDerProxy);
-//
-//    integrator.SetOutputFES(FEN);
-//    integrator.SetOutputHES(INT);
-//    integrator.SetOutputSES(TDS);
-//
-//    if( Options.IsOptLoadHyprmsSet() ){
-//        integrator.LoadGPRHyprms(Options.GetOptLoadHyprms());
-//    } else {
-//        integrator.SetSigmaF2(Options.GetOptSigmaF2());
-//        integrator.SetWFac(Options.GetOptWFac());
-//        integrator.SetSigmaN2(Options.GetOptSigmaN2());
-//    }
-//
-//    integrator.SetIncludeError(Options.GetOptWithError());
-//    integrator.SetNoEnergy(Options.GetOptNoEnergy());
-//    integrator.SetBalanceResiduals(Options.GetOptBalanceResiduals());
-//    integrator.SetUseNumDiff(Options.GetOptGPRNumDiff());
-//
-//    integrator.SetRCond(Options.GetOptRCond());
-//    integrator.SetLAMethod(Options.GetOptLAMethod());
-//    integrator.SetUseInv(Options.GetOptGPRUseInv());
-//    integrator.SetKernel(Options.GetOptGPRKernel());
-//    integrator.SetCalcLogPL(Options.GetOptGPRCalcLogPL());
-//
-//    if( Options.IsOptMFInfoSet() ){
-//       integrator.PrepForMFInfo();
-//    }
-//
-//    if(integrator.Integrate(vout) == false) {
-//        ES_ERROR("unable to integrate ABF accumulator");
-//        return(false);
-//    }
-//    vout << "   Done." << endl;
-//
-//    if( Options.IsOptMFInfoSet() ){
-//    vout << endl;
-//    vout << format("%02d:MF Info file: %s")%State%string(Options.GetOptMFInfo()) << endl;
-//    State++;
-//        CSmallString mfinfo;
-//        mfinfo = Options.GetOptMFInfo();
-//        mfinfo << ".dG_dx";
-//    vout << format("   ** dG(x)/dx") << endl;
-//        if( integrator.WriteMFInfo(mfinfo,0) == false ) return(false);
-//        mfinfo = Options.GetOptMFInfo();
-//        mfinfo << ".dH";
-//    vout << format("   ** dH(x)") << endl;
-//        if( integrator.WriteMFInfo(mfinfo,1) == false ) return(false);
-//        mfinfo = Options.GetOptMFInfo();
-//        mfinfo << ".mTdS_dx";
-//    vout << format("   ** -TdS(x)/dx") << endl;
-//        if( integrator.WriteMFInfo(mfinfo,2) == false ) return(false);
-//    }
-//    vout << "   Done." << endl;
+    AUSEngine->SetOutputFEN(FEN);
+    AUSEngine->SetOutputINT(INT);
+    AUSEngine->SetOutputTDS(TDS);
+
+    if( Options.GetOptResidualsFile() != NULL ){
+        AUSEngine->SetOutputRES(RES);
+    }
+
+    // it must be here - it can be redefined in LoadGPRHyprms
+    AUSEngine->SetKernel(Options.GetOptGPRKernel());
+
+    if( Options.IsOptLoadHyprmsSet() ){
+        AUSEngine->LoadGPRHyprms(Options.GetOptLoadHyprms());
+    } else {
+        AUSEngine->SetSigmaF2(Options.GetOptSigmaF2());
+        AUSEngine->SetWFac(Options.GetOptWFac());
+        AUSEngine->SetSigmaN2(Options.GetOptSigmaN2());
+    }
+
+    AUSEngine->SetIncludeError(Options.GetOptWithError());
+    AUSEngine->SetNoEnergy(Options.GetOptNoEnergy());
+    AUSEngine->SetBalanceResiduals(Options.GetOptBalanceResiduals());
+    AUSEngine->SetUseNumDiff(Options.GetOptGPRNumDiff());
+
+    AUSEngine->SetRCond(Options.GetOptRCond());
+    AUSEngine->SetLAMethod(Options.GetOptLAMethod());
+    AUSEngine->SetUseInv(Options.GetOptGPRUseInv());
+    AUSEngine->SetCalcLogPL(Options.GetOptGPRCalcLogPL());
+
+    if( Options.IsOptMFInfoSet() ){
+       AUSEngine->PrepForMFInfo();
+    }
+
+    if(AUSEngine->RunGPR(vout) == false) {
+        ES_ERROR("unable to integrate ABF accumulator");
+        return(false);
+    }
+    vout << "   Done." << endl;
+
+    if( Options.IsOptMFInfoSet() ){
+    vout << endl;
+    vout << format("%02d:MF Info file: %s")%State%string(Options.GetOptMFInfo()) << endl;
+    State++;
+        for(int task=0; task < AUSEngine->GetNumOfTasks(); task++ ){
+            vout << format("   ** GPR task: %d")%(task+1) << endl;
+            CSmallString mfinfo;
+            mfinfo = Options.GetOptMFInfo();
+            mfinfo << ".t" << (task+1);
+            if( AUSEngine->WriteMFInfo(mfinfo,task) == false ) return(false);
+        }
+    vout << "   Done." << endl;
+    }
 
     return(true);
 }

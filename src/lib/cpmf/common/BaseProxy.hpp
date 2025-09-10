@@ -94,6 +94,9 @@ public:
     // get realm description
     CSmallString GetDescription(void);
 
+    // get full description: realm / [methods] / description
+    CSmallString GetFullDescription(void);
+
     /// return number of cvs
     int GetNumOfCVs(void) const;
 

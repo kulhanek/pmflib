@@ -73,6 +73,8 @@ private:
     CSimpleVector<double>   CoVar;
     CSimpleVector<double>   WFac;
     CSimpleVector<double>   SigmaN2;
+    CSmallString            Kernel;
+    bool                    UseFDKernel;
 
 // L-BFGS setup
     int                     NumOfCorrections;

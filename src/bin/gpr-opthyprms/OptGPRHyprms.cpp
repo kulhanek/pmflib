@@ -55,6 +55,7 @@ MAIN_ENTRY(COptGPRHyprms)
 COptGPRHyprms::COptGPRHyprms(void)
 {
     NCVs = 0;
+    UseFDKernel = false;
 }
 
 //==============================================================================
@@ -100,6 +101,12 @@ int COptGPRHyprms::Init(int argc,char* argv[])
         vout << "# CoVar                 : " << (const char*)Options.GetOptCoVar() << endl;
         vout << "# Width factor wfac     : " << (const char*)Options.GetOptWFac() << endl;
         vout << "# SigmaN2               : " << (const char*)Options.GetOptSigmaN2() << endl;
+    // here we assume that kernels in IntegratorGPR and SmootherGPR are the same
+    CSmootherGPR gpr;
+    gpr.SetKernel(Options.GetOptGPRKernel());
+        vout << "# GPR Kernel            : " << gpr.GetKernelName() << endl;
+        UseFDKernel = Options.GetOptUseFDKernel();
+        vout << "# Use FD in GPR smoother: " << bool_to_str(UseFDKernel) << endl;
     }
     vout << "# ------------------------------------------------" << endl;
         vout << "# Linear algebra        : " << Options.GetOptLAMethod() << endl;
@@ -108,10 +115,6 @@ int COptGPRHyprms::Init(int argc,char* argv[])
     }
         vout << "# Optimized target      : " << Options.GetOptTarget() << endl;
 
-    // here we assume that kernels in IntegratorGPR and SmootherGPR are the same
-    CSmootherGPR gpr;
-    gpr.SetKernel(Options.GetOptGPRKernel());
-        vout << "# GPR Kernel            : " << gpr.GetKernelName() << endl;
     vout << "# ------------------------------------------------" << endl;
 
     if( Options.GetOptTarget() == "logml" ){
@@ -267,6 +270,10 @@ void COptGPRHyprms::InitOptimizer(void)
     vout << "   Total number of hyprms          = " << NumOfPrms << endl;
     vout << "   Number of optimized hyprms      = " << NumOfOptPrms << endl;
 
+    // this must be before LoadGPRHyprms
+    Kernel = Options.GetOptGPRKernel();
+    UseFDKernel = Options.GetOptUseFDKernel();
+
 // initial values
     if( Options.IsOptLoadHyprmsSet() ){
         LoadGPRHyprms();
@@ -311,6 +318,9 @@ void COptGPRHyprms::InitOptimizer(void)
     for(int k=0; k < (int)SigmaN2.GetLength(); k++ ){
         vout << format("      SigmaN2#%-2d = %10.4e")%(k+1)%SigmaN2[k] << endl;
     }
+
+               vout << "      GPR Kernel = " << Kernel << endl;
+               vout << "      UseFDKernel= " << bool_to_str(UseFDKernel) << endl;
 
     Hyprms.CreateVector(NumOfOptPrms);
     HyprmsGrd.CreateVector(NumOfOptPrms);
@@ -516,13 +526,6 @@ bool COptGPRHyprms::Optimize(void)
 
     CSimpleVector<double>   OldHyprms;
     OldHyprms.CreateVector(NumOfOptPrms);
-
-    // input parameters cannot be zero or negative
-    for(int i=0; i < NumOfOptPrms; i++){
-        if( Hyprms[i] <= 0.0 ){
-    //        Hyprms[i] = 1.0;
-        }
-    }
 
     int insupr = 0;
     int nochan = 0;
@@ -1148,22 +1151,23 @@ void COptGPRHyprms::CreateGPREngine(void)
     GPREngine->SetRCond(Options.GetOptRCond());
 
     GPREngine->SetIncludeError(false);
-    GPREngine->SetNoEnergy(false);
+    GPREngine->SetNoEnergy(true);
     GPREngine->IncludeGluedAreas(false);
 
     GPREngine->SetLAMethod(Options.GetOptLAMethod());
-    GPREngine->SetKernel(Options.GetOptGPRKernel());
+    GPREngine->SetKernel(Kernel);
     GPREngine->SetUseInv(Options.GetOptGPRUseInv());
     GPREngine->SetCalcLogPL(Options.GetOptGPRCalcLogPL() || (Target == EGOT_LOGPL));
 
 // set parameters
-    GPREngine->SetSigmaF2(SigmaF2);
-    GPREngine->SetWFac(WFac);
-    GPREngine->SetSigmaN2(SigmaN2);
+    if( SigmaF2.GetLength() > 0) GPREngine->SetSigmaF2(SigmaF2);
+    if( CoVar.GetLength() > 0)   GPREngine->SetCoVar(CoVar);
+    if( WFac.GetLength() > 0)    GPREngine->SetWFac(WFac);
+    if( SigmaN2.GetLength() > 0) GPREngine->SetSigmaN2(SigmaN2);
 
 // run engine
     GPREngine->PrepForHyprmsGrd(true);
-    GPREngine->RunGPR(vout,true);
+    GPREngine->RunGPR(vout,false);
 }
 
 //------------------------------------------------------------------------------
@@ -1195,6 +1199,7 @@ bool COptGPRHyprms::CreateGPREngine_dF(void)
 
     gpr->SetOutputES(FEN);
     gpr->SetInputEnergyProxy(proxy);
+    gpr->UseFirstKernelDerivatives(UseFDKernel);
 
     GPREngine = gpr;
     return(true);
@@ -1229,12 +1234,12 @@ double  COptGPRHyprms::GetTarget(void)
         case(EGOT_LOGML):
             // calculate logML
             target = GPREngine->GetLogML();
-            vout << "      logML     = " << setprecision(5) << target << endl;
+            vout << "      -> logML  = " << setprecision(5) << target << endl;
         break;
         case(EGOT_LOGPL):
             // calculate logLOO
             target = GPREngine->GetLogPL();
-            vout << "      logPL     = " << setprecision(5) << target << endl;
+            vout << "      -> logPL  = " << setprecision(5) << target << endl;
         break;
     }
 
@@ -1318,6 +1323,13 @@ bool COptGPRHyprms::WriteHyperPrms(FILE* p_fout)
 
     if( fprintf(p_fout,"# GPR hyper-parameters\n") <= 0 ) return(false);
 
+    fprintf(p_fout,"Kernel = %s\n",(const char*)Kernel);
+    if( UseFDKernel ){
+        fprintf(p_fout,"UseFDKernel\n");
+    } else {
+        fprintf(p_fout,"NoUseFDKernel\n");
+    }
+
     for(size_t i=0; i < SigmaF2.GetLength(); i++ ){
         if( fprintf(p_fout,"SigmaF2#%-2ld = %16.10e\n",i+1,SigmaF2[i]) <= 0 ) return(false);
     }
@@ -1351,6 +1363,23 @@ void COptGPRHyprms::LoadGPRHyprms(void)
         // is it comment?
         if( (line.size() > 0) && (line[0] == '#') ) continue;
 
+        if( line.find("Kernel") == 0 ) {
+            stringstream str(line);
+            string key, buf, kernel;
+            str >> key >> buf >> kernel;
+            Kernel = kernel;
+            continue;
+        }
+
+        if( line.find("UseFDKernel") == 0 ) {
+            UseFDKernel = true;
+            continue;
+        }
+        if( line.find("NoUseFDKernel") == 0 ) {
+            UseFDKernel = false;
+            continue;
+        }
+
         // parse line
         stringstream str(line);
         string key, buf;
@@ -1361,7 +1390,7 @@ void COptGPRHyprms::LoadGPRHyprms(void)
             error << "GPR hyperparameters file, unable to decode line: " << line.c_str();
             RUNTIME_ERROR(error);
         }
-        if( key.find("SigmaF2#") != string::npos ) {
+        if( key.find("SigmaF2#") == 0 ) {
             std::replace( key.begin(), key.end(), '#', ' ');
             stringstream kstr(key);
             string swfac;
@@ -1379,7 +1408,7 @@ void COptGPRHyprms::LoadGPRHyprms(void)
                 RUNTIME_ERROR(error);
             }
             SigmaF2[cvind] = value;
-        } else if( key.find("CoVar#") != string::npos ) {
+        } else if( key.find("CoVar#") == 0 ) {
             std::replace( key.begin(), key.end(), '#', ' ');
             stringstream kstr(key);
             string swfac;
@@ -1397,7 +1426,7 @@ void COptGPRHyprms::LoadGPRHyprms(void)
                 RUNTIME_ERROR(error);
             }
             CoVar[cvind] = value;
-        } else if( key.find("WFac#") != string::npos ) {
+        } else if( key.find("WFac#") == 0 ) {
             std::replace( key.begin(), key.end(), '#', ' ');
             stringstream kstr(key);
             string swfac;
@@ -1415,7 +1444,7 @@ void COptGPRHyprms::LoadGPRHyprms(void)
                 RUNTIME_ERROR(error);
             }
             WFac[cvind] = value;
-        } else if( key.find("SigmaN2#") != string::npos ) {
+        } else if( key.find("SigmaN2#") == 0 ) {
             std::replace( key.begin(), key.end(), '#', ' ');
             stringstream kstr(key);
             string ssigman2;

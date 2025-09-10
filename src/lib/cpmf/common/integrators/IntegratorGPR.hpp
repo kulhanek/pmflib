@@ -127,8 +127,6 @@ private:
     std::vector<size_t>     ValueMap;
 
     // setup
-    bool                    NoEnergy;
-    bool                    IncludeError;
     bool                    FastErrors;     // use faster but more memory intensive algorithm
     bool                    IncludeGluedBins;
 

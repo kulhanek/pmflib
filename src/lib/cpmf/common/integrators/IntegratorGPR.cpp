@@ -53,9 +53,7 @@ CIntegratorGPR::CIntegratorGPR(void)
     NumOfUsedBins       = 0;
     NumOfValues         = 0;
 
-    IncludeError        = false;
     IncludeGluedBins    = false;
-    NoEnergy            = false;
     FastErrors          = true;
 
     KSInverted          = false;
@@ -197,6 +195,7 @@ bool CIntegratorGPR::Integrate(CVerboseStr& vout,bool nostat)
     if( SigmaN2.GetLength() == 0 ){
         RUNTIME_ERROR("sigman2 is not set");
     }
+    vout        << "   EneDerProxy ... " << DerProxy->GetFullDescription() << endl;
 
     SetupKernel();
 
@@ -481,7 +480,7 @@ void CIntegratorGPR::CreateKff2(const CSimpleVector<double>& ip,size_t icoord,CS
 
 void CIntegratorGPR::CalculateEnergy(CVerboseStr& vout)
 {
-    vout << "   Calculating EneSurface ..." << endl;
+    vout << "   Calculating energy surface ..." << endl;
 
 // create map for bins with calculated energy and error
     std::set<size_t>    vset;
@@ -947,6 +946,9 @@ void CIntegratorGPR::GetLogMLDerivatives(const std::vector<bool>& flags,CSimpleV
     if( GPRSize <= 0 ){
         RUNTIME_ERROR("GPRSize <= NULL");
     }
+    if( (int)flags.size() != GetNumOfHyprms() ){
+        RUNTIME_ERROR("flags.size() != GetNumOfHyprms() ");
+    }
 
     Kder.CreateMatrix(GPRSize,GPRSize);
 
@@ -1022,6 +1024,9 @@ void CIntegratorGPR::GetLogPLDerivatives(const std::vector<bool>& flags,CSimpleV
     }
     if( GPRSize <= 0 ){
         RUNTIME_ERROR("GPRSize <= NULL");
+    }
+    if( (int)flags.size() != GetNumOfHyprms() ){
+        RUNTIME_ERROR("flags.size() != GetNumOfHyprms() ");
     }
 
     Kder.CreateMatrix(GPRSize,GPRSize);

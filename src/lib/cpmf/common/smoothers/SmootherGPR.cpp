@@ -53,6 +53,7 @@ CSmootherGPR::CSmootherGPR(void)
     GPRSize             = 0;
     NumOfValues         = 0;
 
+    NoEnergy            = false;
     IncludeError        = false;
 }
 
@@ -114,9 +115,23 @@ void CSmootherGPR::SetOutputES(CEnergySurfacePtr p_surf)
 
 //------------------------------------------------------------------------------
 
+void CSmootherGPR::SetNoEnergy(bool iset)
+{
+    NoEnergy = iset;
+}
+
+//------------------------------------------------------------------------------
+
 void CSmootherGPR::SetIncludeError(bool set)
 {
     IncludeError = set;
+}
+
+//------------------------------------------------------------------------------
+
+void CSmootherGPR::UseFirstKernelDerivatives(bool set)
+{
+    UseFDKernel = set;
 }
 
 //------------------------------------------------------------------------------
@@ -159,6 +174,8 @@ bool CSmootherGPR::Interpolate(CVerboseStr& vout,bool nostat)
     if( SigmaN2.GetLength() == 0 ){
         RUNTIME_ERROR("sigman2 is not set");
     }
+
+    vout        << "   EneProxy ... " << EneProxy->GetFullDescription() << endl;
 
     // kernel setup
     SetupKernel();
@@ -210,12 +227,14 @@ bool CSmootherGPR::Interpolate(CVerboseStr& vout,bool nostat)
         }
     }
 
-    // finalize HES
-    CalculateEnergy(vout);
+    if( ! NoEnergy ){
+        // finalize ENE
+        CalculateEnergy(vout);
 
-    if( IncludeError ){
-        CalculateCovs(vout);
-        CalculateErrorsFromCov(vout);
+        if( IncludeError ){
+            CalculateCovs(vout);
+            CalculateErrorsFromCov(vout);
+        }
     }
 
     return(true);
@@ -292,7 +311,12 @@ bool CSmootherGPR::WriteMFInfo(const CSmallString& name)
 bool CSmootherGPR::TrainGP(CVerboseStr& vout)
 {
     vout << "   Creating K+Sigma and Y ..." << endl;
+    if( UseFDKernel ) {
+    vout << "      Kernel    = " << GetKernelName() << " [first derivative]" << endl;
+    } else {
     vout << "      Kernel    = " << GetKernelName() << endl;
+    }
+
     vout << "      Dim       = " << GPRSize << " x " << GPRSize << endl;
 
     Mean = 0.0;
@@ -400,6 +424,9 @@ void CSmootherGPR::CreateKS(void)
     ipos.CreateVector(NumOfCVs);
     jpos.CreateVector(NumOfCVs);
 
+    CFortranMatrix kderij;
+    kderij.CreateMatrix(NumOfCVs,NumOfCVs);
+
     // main kernel matrix
     #pragma omp parallel for firstprivate(ipos,jpos)
     for(size_t indi=0; indi < GPRSize; indi++){
@@ -411,7 +438,13 @@ void CSmootherGPR::CreateKS(void)
             size_t jbin = SampledMap[indj];
 
             EneSurface->GetPoint(jbin,jpos);
-            KS[indi][indj] = SigmaF2[0]*GetKernelValue(ipos,jpos);
+
+            if( UseFDKernel ){
+                GetKernelDerIJ(ipos,jpos,kderij);
+                KS[indi][indj] = SigmaF2[0]*kderij[0][0];
+            } else {
+                KS[indi][indj] = SigmaF2[0]*GetKernelValue(ipos,jpos);
+            }
         }
     }
 
@@ -429,14 +462,22 @@ void CSmootherGPR::CreateKff(const CSimpleVector<double>& ip,CSimpleVector<doubl
     CSimpleVector<double> jpos;
     jpos.CreateVector(NumOfCVs);
 
+    CFortranMatrix kderij;
+    kderij.CreateMatrix(NumOfCVs,NumOfCVs);
+
     // main kernel matrix
     for(size_t indj=0; indj < GPRSize; indj++){
         size_t  jbin = SampledMap[indj];
 
         EneSurface->GetPoint(jbin,jpos);
-        kff[indj] = SigmaF2[0]*GetKernelValue(ip,jpos);
-    }
 
+        if( UseFDKernel ){
+            GetKernelDerIJ(ip,jpos,kderij);
+            kff[indj] = SigmaF2[0]*kderij[0][0];
+        } else {
+            kff[indj] = SigmaF2[0]*GetKernelValue(ip,jpos);
+        }
+    }
 }
 
 //==============================================================================
@@ -691,6 +732,9 @@ void CSmootherGPR::CalculateCovs(CVerboseStr& vout)
 // ------------------------------------
     Cov.CreateMatrix(nvals,nvals);
 
+    CFortranMatrix kderij;
+    kderij.CreateMatrix(NumOfCVs,NumOfCVs);
+
     #pragma omp parallel for firstprivate(ipos,jpos)
     for(size_t indi=0; indi < NumOfValues; indi++){
         size_t i = ValueMap[indi];
@@ -698,8 +742,13 @@ void CSmootherGPR::CalculateCovs(CVerboseStr& vout)
         for(size_t indj=0; indj < NumOfValues; indj++){
             size_t j = ValueMap[indj];
             EneSurface->GetPoint(j,jpos);
-            Cov[indi][indj] = SigmaF2[0]*GetKernelValue(ipos,jpos);
 
+            if( UseFDKernel ){
+                GetKernelDerIJ(ipos,jpos,kderij);
+                Cov[indi][indj] = SigmaF2[0]*kderij[0][0];
+            } else {
+                Cov[indi][indj] = SigmaF2[0]*GetKernelValue(ipos,jpos);
+            }
         }
     }
 
@@ -760,6 +809,9 @@ if( ! (NeedInv || UseInv) ){
     if( GPRSize <= 0 ){
         RUNTIME_ERROR("GPRSize <= NULL");
     }
+    if( (int)flags.size() != GetNumOfHyprms() ){
+        RUNTIME_ERROR("flags.size() != GetNumOfHyprms() ");
+    }
 
     Kder.CreateMatrix(GPRSize,GPRSize);
 
@@ -786,10 +838,10 @@ if( ! (NeedInv || UseInv) ){
         // NumOfCVs = 1
         // 0; 1; 2
         // NumOfCVs = 2
-        // 0; 1-2; 3-4
+        // 0; 1-2; 3
         // NumOfCVs = 3
-        // 0; 1-3; 4-6
-        // 0; 1<1+NumOfCVs; 1+NumOfCVs < 1+2*NumOfCVs
+        // 0; 1-3; 4
+        // 0; 1<1+NumOfCVs; 1+NumOfCVs
         if( prm == 0 ){
             // sigmaf2
             CalcKderWRTSigmaF2();
@@ -797,10 +849,9 @@ if( ! (NeedInv || UseInv) ){
             // wfac
             size_t cv = prm - 1;
             CalcKderWRTWFac(cv);
-        } else if( (prm >= 1+NumOfCVs) && (prm < 1+2*NumOfCVs) ){
+        } else if( prm == 1+NumOfCVs ){
             // sigman2
-            size_t cv = prm - (1+NumOfCVs);
-            CalcKderWRTSigmaN2(cv);
+            CalcKderWRTSigmaN2();
         } else {
             RUNTIME_ERROR("prm out-of-range");
         }
@@ -860,6 +911,9 @@ void CSmootherGPR::GetLogPLDerivatives(const std::vector<bool>& flags,CSimpleVec
     if( GPRSize <= 0 ){
         RUNTIME_ERROR("GPRSize <= NULL");
     }
+    if( (int)flags.size() != GetNumOfHyprms() ){
+        RUNTIME_ERROR("flags.size() != GetNumOfHyprms() ");
+    }
 
     Kder.CreateMatrix(GPRSize,GPRSize);
 
@@ -881,10 +935,10 @@ void CSmootherGPR::GetLogPLDerivatives(const std::vector<bool>& flags,CSimpleVec
         // NumOfCVs = 1
         // 0; 1; 2
         // NumOfCVs = 2
-        // 0; 1-2; 3-4
+        // 0; 1-2; 3
         // NumOfCVs = 3
-        // 0; 1-3; 4-6
-        // 0; 1<1+NumOfCVs; 1+NumOfCVs < 1+2*NumOfCVs
+        // 0; 1-3; 4
+        // 0; 1<1+NumOfCVs; 1+NumOfCVs
         if( prm == 0 ){
             // sigmaf2
             CalcKderWRTSigmaF2();
@@ -892,10 +946,9 @@ void CSmootherGPR::GetLogPLDerivatives(const std::vector<bool>& flags,CSimpleVec
             // wfac
             size_t cv = prm - 1;
             CalcKderWRTWFac(cv);
-        } else if( (prm >= 1+NumOfCVs) && (prm < 1+2*NumOfCVs) ){
+        } else if( prm == 1+NumOfCVs ){
             // sigman2
-            size_t cv = prm - (1+NumOfCVs);
-            CalcKderWRTSigmaN2(cv);
+            CalcKderWRTSigmaN2();
         } else {
             RUNTIME_ERROR("prm out-of-range");
         }
@@ -941,6 +994,9 @@ void CSmootherGPR::CalcKderWRTSigmaF2(void)
     ipos.CreateVector(NumOfCVs);
     jpos.CreateVector(NumOfCVs);
 
+    CFortranMatrix kderij;
+    kderij.CreateMatrix(NumOfCVs,NumOfCVs);
+
     #pragma omp parallel for firstprivate(ipos,jpos)
     for(size_t indi=0; indi < GPRSize; indi++){
         size_t i = SampledMap[indi];
@@ -950,7 +1006,12 @@ void CSmootherGPR::CalcKderWRTSigmaF2(void)
             size_t j = SampledMap[indj];
             EneSurface->GetPoint(j,jpos);
 
-            Kder[indi][indj] = GetKernelValue(ipos,jpos);
+            if( UseFDKernel ){
+                GetKernelDerIJ(ipos,jpos,kderij);
+                Kder[indi][indj] = kderij[0][0];
+            } else {
+                Kder[indi][indj] = GetKernelValue(ipos,jpos);
+            }
         }
     }
 }
@@ -966,6 +1027,9 @@ void CSmootherGPR::CalcKderWRTWFac(size_t cv)
     ipos.CreateVector(NumOfCVs);
     jpos.CreateVector(NumOfCVs);
 
+    CFortranMatrix kderij;
+    kderij.CreateMatrix(NumOfCVs,NumOfCVs);
+
     #pragma omp parallel for firstprivate(ipos,jpos)
     for(size_t indi=0; indi < GPRSize; indi++){
         size_t i = SampledMap[indi];
@@ -975,11 +1039,16 @@ void CSmootherGPR::CalcKderWRTWFac(size_t cv)
             size_t j = SampledMap[indj];
             EneSurface->GetPoint(j,jpos);
 
-            if( indi != indj ){
-                Kder[indi][indj] = SigmaF2[0]*GetKernelValueWFacDer(ipos,jpos,cv);
+            if( UseFDKernel ) {
+                GetKernelDerIJWFacDer(ipos,jpos,cv,kderij);
+                Kder[indi][indj] = SigmaF2[0]*kderij[0][0];
             } else {
-                // FIXME - check validity - this avoids division by zero in GetKernelValueWFacDer
-                Kder[indi][indj] = 0.0;
+                if( indi != indj ){
+                    Kder[indi][indj] = SigmaF2[0]*GetKernelValueWFacDer(ipos,jpos,cv);
+                } else {
+                    // FIXME - check validity - this avoids division by zero in GetKernelValueWFacDer
+                    Kder[indi][indj] = 0.0;
+                }
             }
         }
     }
@@ -987,11 +1056,9 @@ void CSmootherGPR::CalcKderWRTWFac(size_t cv)
 
 //------------------------------------------------------------------------------
 
-void CSmootherGPR::CalcKderWRTSigmaN2(size_t cv)
+void CSmootherGPR::CalcKderWRTSigmaN2(void)
 {
     Kder.SetZero();
-
-    // ignore cv index
 
     #pragma omp parallel for
     for(size_t indi=0; indi < GPRSize; indi++){

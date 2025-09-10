@@ -44,6 +44,7 @@ CGPRKernel::CGPRKernel(void)
     Accu                = NULL;
     UseNumDiff          = false;
     Alpha               = 10.0;
+    UseFDKernel         = false;
 }
 
 //------------------------------------------------------------------------------
@@ -117,6 +118,13 @@ void CGPRKernel::SetKernel(const CSmallString& kernel)
 
 //------------------------------------------------------------------------------
 
+void CGPRKernel::SetKernel(EGPRKernel kernel)
+{
+    Kernel = kernel;
+}
+
+//------------------------------------------------------------------------------
+
 const CSmallString CGPRKernel::GetKernelName(void)
 {
     switch(Kernel){
@@ -133,6 +141,13 @@ const CSmallString CGPRKernel::GetKernelName(void)
         default:
             RUNTIME_ERROR("not implemented");
     }
+}
+
+//------------------------------------------------------------------------------
+
+EGPRKernel CGPRKernel::GetKernel(void)
+{
+    return(Kernel);
 }
 
 //------------------------------------------------------------------------------

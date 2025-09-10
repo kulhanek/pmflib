@@ -62,6 +62,7 @@ public:
     CSO_OPT(CSmallString,GlobalMin)
     CSO_OPT(double,Offset)
     CSO_OPT(CSmallString,GPRKernel)
+    CSO_OPT(bool,UseFDKernel)
     CSO_OPT(bool,GPRCalcLogPL)
     CSO_OPT(CSmallString,SigmaF2)
     CSO_OPT(CSmallString,WFac)
@@ -112,6 +113,9 @@ public:
             CSO_MAP_OPT(CSmallString, GPRKernel, "default", false, '\0', "kernel", "NAME",
                 "GPR: Kernel type. Supported types: ardse (ARD squared exponential), ardmc52 (ARD Matern class 5/2), "
                 "ardmc32 (ARD Matern class 3/2), ardmc12 (ARD Matern class 1/2), default (=ardse).")
+        // -------------------------------------------
+            CSO_MAP_OPT(bool, UseFDKernel, false, false, 0, "fdkernel", NULL,
+                "Use the first derivatives of the GPR kernel (only for SmootherGPR).")
         // -------------------------------------------
             CSO_MAP_OPT(bool, GPRCalcLogPL, false, false, 0, "calclogpl", NULL,
                 "GPR: Calculate logPL.")

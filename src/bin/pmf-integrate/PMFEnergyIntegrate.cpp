@@ -220,7 +220,7 @@ bool CPMFEnergyIntegrate::Run(void)
     State++;
     DerProxy = CEnergyDerProxyInit::InitProxy(Options.GetOptRealm(),Accu);
     DerProxy->Init(Accu);
-    vout << format(  "   %s [%s] | %s")%DerProxy->GetRealm()%DerProxy->GetMethods()%DerProxy->GetDescription() << endl;
+    vout << format(  "   %s")%DerProxy->GetFullDescription() << endl;
 
     // DO NOT SET IT HERE, Ncorr is now GPR hyperparameter
     // Accu->SetNCorr(Options.GetOptNCorr());
