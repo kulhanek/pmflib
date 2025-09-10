@@ -187,7 +187,7 @@ public:
         CSO_MAP_OPT(double, TermEps, 1e-5, false, 0, "termeps", "NUMBER",
             "Termination criterion for the L-BFGS optimizer (see L-BFGS code).")
     // -------------------------------------------
-        CSO_MAP_OPT(double, TermVal, 1e-7, false, 0, "termval", "NUMBER",
+        CSO_MAP_OPT(double, TermVal, 1e-6, false, 0, "termval", "NUMBER",
             "Termination criterion for the L-BFGS optimizer. "
             "Minimum change of the optimized property.")
     // -------------------------------------------
