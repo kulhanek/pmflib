@@ -193,19 +193,19 @@ bool CAUSEngineCST_A::RunGPR(CVerboseStr& vout,bool nostat)
     C.SetRCond(RCond);
     C.SetUseInv(UseInv);
     C.SetKernel(GetKernel());
-    C.UseFirstKernelDerivatives(true);
+    // C.UseFirstKernelDerivatives(true);
 
     D.SetLAMethod(Method);
     D.SetRCond(RCond);
     D.SetUseInv(UseInv);
     D.SetKernel(GetKernel());
-    D.UseFirstKernelDerivatives(true);
+    // D.UseFirstKernelDerivatives(true);
 
     E.SetLAMethod(Method);
     E.SetRCond(RCond);
     E.SetUseInv(UseInv);
     E.SetKernel(GetKernel());
-    E.UseFirstKernelDerivatives(true);
+    // E.UseFirstKernelDerivatives(true);
 
     // it must be re-mapped
     int idx = 0;
