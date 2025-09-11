@@ -236,9 +236,14 @@ subroutine cst_output_write
         ci = CONList(i)%cvindx
         write(CST_OUT,190,advance='NO') pmf_unit_get_rvalue(cv_unit,CVContextP%CVsValues(ci)), &
                                         pmf_unit_get_rvalue(cv_unit,CONList(i)%deviation)
+
+        if( nsamples .gt. 0 ) then
         write(CST_OUT,200,advance='NO') pmf_unit_get_rvalue(lambda_unit,lam), &
                                         pmf_unit_get_rvalue(lambda_unit,alam), &
                                         pmf_unit_get_rvalue(lambda_unit,alams)
+        else
+        write(CST_OUT,185,advance='NO')
+        end if
     end do
     write(CST_OUT,*)
 

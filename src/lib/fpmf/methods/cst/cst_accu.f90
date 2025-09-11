@@ -861,6 +861,7 @@ subroutine cst_accu_add_lam
     ! --------------------------------------------------------------------------
 
     if( mod(fstep,flam_sample) .ne. 0 ) return
+    if( fstep .le. 3*hist_len ) return
 
     nsamples = nsamples + 1
     if( nsamples .le. 0 ) return
