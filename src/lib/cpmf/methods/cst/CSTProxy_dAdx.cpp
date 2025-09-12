@@ -50,12 +50,54 @@ CCSTProxy_dAdx::~CCSTProxy_dAdx(void)
 //------------------------------------------------------------------------------
 //==============================================================================
 
+int CCSTProxy_dAdx::GetNumOfSamples(int ibin) const
+{
+    if( Accu == NULL ){
+        RUNTIME_ERROR("Accu is NULL");
+    }
+
+    switch(RealmID){
+        case(CST_dAdx):
+        case(CST_dLdx):
+            return(Accu->GetData("NSAMPLES",ibin));
+        default:
+            return(Accu->GetData("NTDS",ibin));
+    }
+}
+
+//------------------------------------------------------------------------------
+
+void CCSTProxy_dAdx::SetNumOfSamples(int ibin,int nsamples)
+{
+    if( Accu == NULL ){
+        RUNTIME_ERROR("Accu is NULL");
+    }
+
+    switch(RealmID){
+        case(CST_dAdx):
+        case(CST_dLdx):
+            Accu->SetData("NSAMPLES",ibin,nsamples);
+        default:
+            Accu->SetData("NTDS",ibin,nsamples);
+            break;
+    }
+}
+
+//==============================================================================
+//------------------------------------------------------------------------------
+//==============================================================================
+
 CEnergyProxyPtr CCSTProxy_dAdx::GetEnergyCorrection(void)
 {
     CEnergyProxyPtr ene_proxy;
     if( RealmID == CST_dAdx ){
         ene_proxy = CCSTProxy_Ecorr_Ptr(new CCSTProxy_Ecorr);
         ene_proxy->SetRealm(CST_dA_corr);
+        ene_proxy->Init(Accu);
+    }
+    if( RealmID == CST_dAdx_TdS ){
+        ene_proxy = CCSTProxy_Ecorr_Ptr(new CCSTProxy_Ecorr);
+        ene_proxy->SetRealm(CST_dA_corr_TdS);
         ene_proxy->Init(Accu);
     }
     return(ene_proxy);
@@ -85,6 +127,16 @@ double CCSTProxy_dAdx::GetValue(int ibin,int icv,EProxyRealm realm) const
         case(CST_dLdx): {
             mean        = Accu->GetData("MLAMBDA",ibin,icv);
             double M2   = Accu->GetData("M2LAMBDA",ibin,icv);
+            nsamples    = Accu->GetData("NSAMPLES",ibin);
+            samvar      = M2 / nsamples;
+            meanvar     = samvar / nsamples;
+        }
+        break;
+    // -------------------
+        case(CST_dAdx_TdS): { // this requires MTC correction
+            mean        = Accu->GetData("MLAMTDS",ibin,icv);
+            double M2   = Accu->GetData("M2LAMTDS",ibin,icv);
+            nsamples    = Accu->GetData("NTDS",ibin);
             samvar      = M2 / nsamples;
             meanvar     = samvar / nsamples;
         }
@@ -93,6 +145,7 @@ double CCSTProxy_dAdx::GetValue(int ibin,int icv,EProxyRealm realm) const
         case(CST_ICF): {
             mean        = Accu->GetData("MICF",ibin,icv);
             double M2   = Accu->GetData("M2MICF",ibin,icv);
+            nsamples    = Accu->GetData("NTDS",ibin);
             samvar      = M2 / nsamples;
             meanvar     = samvar / nsamples;
         }
@@ -101,7 +154,6 @@ double CCSTProxy_dAdx::GetValue(int ibin,int icv,EProxyRealm realm) const
         case(CST_ICFFW): {
             double fwsum    = Accu->GetData("FWSUM",ibin);
             double fwsum2   = Accu->GetData("FWSUM2",ibin);
-
             mean            = Accu->GetData("MICFFW",ibin);
             double M2       = Accu->GetData("M2ICFFW",ibin);
 

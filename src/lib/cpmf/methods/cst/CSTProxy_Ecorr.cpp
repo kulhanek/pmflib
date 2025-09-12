@@ -33,6 +33,7 @@ using namespace std;
 CCSTProxy_Ecorr::CCSTProxy_Ecorr(void)
 {
     RegisterRealm(CST_dA_corr,      "dA_corr",     "CST", "dA{CST}corr");
+    RegisterRealm(CST_dA_corr_TdS,  "dA_corr_TdS", "CST", "dA{CST}corr - TdS source");
     RegisterRealm(CST_mTdS_corr,    "mTdS_corr",   "CST", "-TdS{CST}corr");
     RegisterRealm(CST_mTdS_corr,    "-TdS_corr",   "CST", "-TdS{CST}corr");
 }
@@ -57,6 +58,7 @@ int CCSTProxy_Ecorr::GetNumOfSamples(int ibin) const
         case(CST_dA_corr):
             return(Accu->GetData("NSAMPLES",ibin));
     // -------------------
+        case(CST_dA_corr_TdS):
         case(CST_mTdS_corr):
             return(Accu->GetData("NTDS",ibin));
         break;
@@ -77,7 +79,9 @@ void CCSTProxy_Ecorr::SetNumOfSamples(int ibin,int nsamples)
     // -------------------
         case(CST_dA_corr):
             Accu->SetData("NSAMPLES",ibin,nsamples);
+        break;
     // -------------------
+        case(CST_dA_corr_TdS):
         case(CST_mTdS_corr):
             Accu->SetData("NTDS",ibin,nsamples);
         break;
@@ -111,6 +115,19 @@ double CCSTProxy_Ecorr::GetValue(int ibin,EProxyRealm realm) const
         case(CST_dA_corr): {
             double mfw  = Accu->GetData("MFW",ibin);
             double m2fw = Accu->GetData("M2FW",ibin);
+
+            mean        = - PMF_Rgas * temp * log(mfw);
+
+            samvar      = m2fw / nsamples;
+            samvar      = (PMF_Rgas*temp/mfw)*(PMF_Rgas*temp/mfw) * samvar;
+
+            meanvar     = samvar / nsamples;
+        }
+        break;
+    // -------------------
+        case(CST_dA_corr_TdS): {
+            double mfw  = Accu->GetData("MFWTDS",ibin);
+            double m2fw = Accu->GetData("M2FWTDS",ibin);
 
             mean        = - PMF_Rgas * temp * log(mfw);
 

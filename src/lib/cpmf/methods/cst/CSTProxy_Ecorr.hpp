@@ -28,6 +28,7 @@
 
 enum ECSTEcorrType {
     CST_dA_corr,
+    CST_dA_corr_TdS,
     CST_mTdS_corr,
 };
 

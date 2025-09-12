@@ -107,7 +107,7 @@ subroutine cst_init_dat
     ftdscalc        = .false.
     ftds_decomp     = .false.
     ftds_lamsol     = CON_LAMSOL_MD
-    ftds_ekinsrc    = CON_EKINSRC_V6
+    ftds_ekinsrc    = CON_EKINSRC_V4
 
     fepotaverage    = 0.0d0
     fekinaverage    = 0.0d0

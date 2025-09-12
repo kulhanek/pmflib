@@ -28,6 +28,7 @@
 
 enum ECSTdAdxType {
     CST_dAdx,
+    CST_dAdx_TdS,
     CST_dLdx,
     CST_ICF,
     CST_ICFFW,
@@ -47,6 +48,12 @@ public:
     ~CCSTProxy_dAdx(void);
 
 //------------------------------------------------------------------------------
+    // get number of samples
+    virtual int GetNumOfSamples(int ibin) const;
+
+    // set number of samples
+    virtual void SetNumOfSamples(int ibin,int nsamples);
+
     // get optional energy correction - MTC
     virtual CEnergyProxyPtr GetEnergyCorrection(void);
 
