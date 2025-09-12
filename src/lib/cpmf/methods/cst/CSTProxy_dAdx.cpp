@@ -57,9 +57,11 @@ int CCSTProxy_dAdx::GetNumOfSamples(int ibin) const
     }
 
     switch(RealmID){
+    // -------------------
         case(CST_dAdx):
         case(CST_dLdx):
             return(Accu->GetData("NSAMPLES",ibin));
+    // -------------------
         default:
             return(Accu->GetData("NTDS",ibin));
     }
@@ -74,12 +76,15 @@ void CCSTProxy_dAdx::SetNumOfSamples(int ibin,int nsamples)
     }
 
     switch(RealmID){
+    // -------------------
         case(CST_dAdx):
         case(CST_dLdx):
             Accu->SetData("NSAMPLES",ibin,nsamples);
+        break;
+    // -------------------
         default:
             Accu->SetData("NTDS",ibin,nsamples);
-            break;
+        break;
     }
 }
 
