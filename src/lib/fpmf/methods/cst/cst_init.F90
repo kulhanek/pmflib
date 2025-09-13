@@ -202,6 +202,10 @@ subroutine cst_init_print_summary
     write(PMF_OUT,140)  ' ICF solver (ftds_icfsol)                : ', ftds_icfsol, &
                                                                        trim(cst_init_get_icfsol_name(ftds_icfsol))
     write(PMF_OUT,135)  ' ICF diag. reg. (ficf_fdamp)             : ', ficf_fdamp
+    write(PMF_OUT,130)  ' ICF sdiv num of trials (fpmf_sdiv_S)    : ', fpmf_sdiv_S
+    write(PMF_OUT,125)  ' ICF sdiv QR orthog. (fpmf_sdiv_qr)      : ', prmfile_onoff(fpmf_sdiv_qr)
+    write(PMF_OUT,135)  ' ICF sdiv dh factor (fpmf_sdiv_dh)       : ', fpmf_sdiv_dh
+
     write(PMF_OUT,125)  ' Accumulate entropy (ftdscalc)           : ', prmfile_onoff(ftdscalc)
     write(PMF_OUT,125)  ' Decompose entropy (ftds_decomp)         : ', prmfile_onoff(ftds_decomp)
 
