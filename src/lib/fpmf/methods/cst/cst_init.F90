@@ -129,7 +129,7 @@ subroutine cst_init_dat
 
     fpmf_div_dh     = 1e-5
 
-    fpmf_sdiv_dh    = 1e-4
+    fpmf_sdiv_dh    = 1e-5
     fpmf_sdiv_S     = 16
     fpmf_sdiv_qr    = .false.
 
