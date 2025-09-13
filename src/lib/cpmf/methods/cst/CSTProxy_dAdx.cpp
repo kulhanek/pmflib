@@ -159,8 +159,8 @@ double CCSTProxy_dAdx::GetValue(int ibin,int icv,EProxyRealm realm) const
         case(CST_ICFFW): {
             double fwsum    = Accu->GetData("FWSUM",ibin);
             double fwsum2   = Accu->GetData("FWSUM2",ibin);
-            mean            = Accu->GetData("MICFFW",ibin);
-            double M2       = Accu->GetData("M2ICFFW",ibin);
+            mean            = Accu->GetData("MICFFW",ibin,icv);
+            double M2       = Accu->GetData("M2ICFFW",ibin,icv);
 
             // number of effective measurements
             double neff = fwsum2 / (fwsum * fwsum);
@@ -178,8 +178,8 @@ double CCSTProxy_dAdx::GetValue(int ibin,int icv,EProxyRealm realm) const
             double fwsum    = Accu->GetData("FWSUM",ibin);
             double fwsum2   = Accu->GetData("FWSUM2",ibin);
 
-            mean            = Accu->GetData("MICFPFW",ibin);
-            double M2       = Accu->GetData("M2ICFPFW",ibin);
+            mean            = Accu->GetData("MICFPFW",ibin,icv);
+            double M2       = Accu->GetData("M2ICFPFW",ibin,icv);
 
             // number of effective measurements
             double neff = fwsum2 / (fwsum * fwsum);
@@ -197,8 +197,8 @@ double CCSTProxy_dAdx::GetValue(int ibin,int icv,EProxyRealm realm) const
             double fwsum    = Accu->GetData("FWSUM",ibin);
             double fwsum2   = Accu->GetData("FWSUM2",ibin);
 
-            mean            = Accu->GetData("MICFKFW",ibin);
-            double M2       = Accu->GetData("M2ICFKFW",ibin);
+            mean            = Accu->GetData("MICFKFW",ibin,icv);
+            double M2       = Accu->GetData("M2ICFKFW",ibin,icv);
 
             // number of effective measurements
             double neff = fwsum2 / (fwsum * fwsum);
