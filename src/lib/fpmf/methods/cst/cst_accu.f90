@@ -1002,7 +1002,7 @@ subroutine cst_accu_add_duTds
     end do
 
     if( fdump_data .and.(faccurst .lt. 0) ) then
-        write(CST_DUMP,*)
+        write(CST_DUMP,'(E16.7)') lfw
     end if
 
 end subroutine cst_accu_add_duTds
