@@ -46,6 +46,8 @@ CCSTProxy_mTdSdx::CCSTProxy_mTdSdx(void)
 
     RegisterRealm(CST_TdS_II,   "C11II",    "CST", "C11II");
     RegisterRealm(CST_TdS_IIFW, "C11IIFW",  "CST", "C11IIFW");
+    RegisterRealm(CST_TdS_IIFW, "C11PIFW",  "CST", "C11PIFW");
+    RegisterRealm(CST_TdS_IIFW, "C11KIFW",  "CST", "C11KIFW");
 }
 
 //------------------------------------------------------------------------------
@@ -174,6 +176,24 @@ double CCSTProxy_mTdSdx::GetValue(int ibin,int icv,EProxyRealm realm) const
         case(CST_TdS_IIFW):{
             double fwsum    = Accu->GetData("FWSUM",ibin);
             double C        = Accu->GetData("C11IIFW",ibin,icv);
+            mean            = C / fwsum;
+            samvar          = 0.0;  // FIXME
+            meanvar         = 0.0;
+        }
+        break;
+    // -------------------
+        case(CST_TdS_PIFW):{
+            double fwsum    = Accu->GetData("FWSUM",ibin);
+            double C        = Accu->GetData("C11PIFW",ibin,icv);
+            mean            = C / fwsum;
+            samvar          = 0.0;  // FIXME
+            meanvar         = 0.0;
+        }
+        break;
+    // -------------------
+        case(CST_TdS_KIFW):{
+            double fwsum    = Accu->GetData("FWSUM",ibin);
+            double C        = Accu->GetData("C11KIFW",ibin,icv);
             mean            = C / fwsum;
             samvar          = 0.0;  // FIXME
             meanvar         = 0.0;

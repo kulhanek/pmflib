@@ -38,6 +38,8 @@ enum ECSTTdSdxType {
 
     CST_TdS_II,         // Cov(ICF,Eint)
     CST_TdS_IIFW,       // Cov(ICF,Eint) - Fixman weighted
+    CST_TdS_PIFW,       // Cov(ICFP,Eint) - Fixman weighted
+    CST_TdS_KIFW,       // Cov(ICFK,Eint) - Fixman weighted
 };
 
 //------------------------------------------------------------------------------
