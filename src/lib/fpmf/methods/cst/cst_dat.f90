@@ -353,6 +353,8 @@ real(PMFDP),allocatable     :: m2icfkfw(:)      ! M2 of ICF-K
 
 real(PMFDP),allocatable     :: c11ii(:)         ! co-variances covar(ICF,Eint)
 real(PMFDP),allocatable     :: c11iifw(:)       ! co-variances covar(ICF,Eint)- Fixman weighted
+real(PMFDP),allocatable     :: c11pifw(:)       ! co-variances covar(ICFP,Eint)- Fixman weighted
+real(PMFDP),allocatable     :: c11kifw(:)       ! co-variances covar(ICFK,Eint)- Fixman weighted
 
 !===============================================================================
 

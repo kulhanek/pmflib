@@ -100,6 +100,8 @@ subroutine cst_accu_alloc
                   m2icfkfw(NumOfAllCONs),       &
                   c11ii(NumOfAllCONs),          &
                   c11iifw(NumOfAllCONs),        &
+                  c11pifw(NumOfAllCONs),        &
+                  c11kifw(NumOfAllCONs),        &
                   stat= alloc_failed )
 
         if( alloc_failed .ne. 0 ) then
@@ -258,6 +260,8 @@ subroutine cst_accu_clear
 
         c11ii(:)    = 0.0d0
         c11iifw(:)  = 0.0d0
+        c11pifw(:)  = 0.0d0
+        c11kifw(:)  = 0.0d0
     end if
 
 end subroutine cst_accu_clear
@@ -747,6 +751,8 @@ subroutine cst_accu_write(iounit)
 
         call cst_accu_write_cmom_M(iounit,glbidx,'C11II',   c11ii,   'NTDS',  'MICF',    'MEINT')
         call cst_accu_write_cmom_M(iounit,glbidx,'C11IIFW', c11iifw, 'FWSUM', 'MICFFW',  'MEINTFW')
+        call cst_accu_write_cmom_M(iounit,glbidx,'C11PIFW', c11pifw, 'FWSUM', 'MICFPFW', 'MEINTFW')
+        call cst_accu_write_cmom_M(iounit,glbidx,'C11KIFW', c11kifw, 'FWSUM', 'MICFKFW', 'MEINTFW')
     end if
 
 end subroutine cst_accu_write
@@ -902,6 +908,8 @@ subroutine cst_accu_add_duTds
     real(PMFDP)     :: dicf1,dicf2
     real(PMFDP)     :: dlam1,dlam2
     real(PMFDP)     :: dicf1fw,dicf2fw
+    real(PMFDP)     :: dicf1pfw, dicf2pfw
+    real(PMFDP)     :: dicf1kfw, dicf2kfw
     real(PMFDP)     :: dlam1fw,dlam2fw
     real(PMFDP)     :: dfw1,dfw2
     ! --------------------------------------------------------------------------
@@ -987,17 +995,19 @@ subroutine cst_accu_add_duTds
             licfk = - PMF_Rgas*ftemp * icfkhist(i,hist_len+hist_fidx_tds)
             licf  = licfp + licfk
 
-            call cst_accu_add_data_OMI (licf,  invn,      micf(i),      m2icf(i),     dicf1,   dicf2)
-            call cst_accu_add_data_WOMI(licf,  invw, lfw, micffw(i),    m2icffw(i),   dicf1fw, dicf2fw)
-            call cst_accu_add_data_WOM (licfp, invw, lfw, micfpfw(i),   m2icfpfw(i))
-            call cst_accu_add_data_WOM (licfk, invw, lfw, micfkfw(i),   m2icfkfw(i))
+            call cst_accu_add_data_OMI (licf,  invn,      micf(i),      m2icf(i),     dicf1,    dicf2)
+            call cst_accu_add_data_WOMI(licf,  invw, lfw, micffw(i),    m2icffw(i),   dicf1fw,  dicf2fw)
+            call cst_accu_add_data_WOMI(licfp, invw, lfw, micfpfw(i),   m2icfpfw(i),  dicf1pfw, dicf2pfw)
+            call cst_accu_add_data_WOMI(licfk, invw, lfw, micfkfw(i),   m2icfkfw(i),  dicf1kfw, dicf2kfw)
 
             if( fdump_data .and.(faccurst .lt. 0) ) then
                 write(CST_DUMP,'(E16.7,1X,E16.7,1X)',ADVANCE='NO') licf, leint
             end if
 
-            c11ii(i)    = c11ii(i)      +        dicf1   * deint2
-            c11iifw(i)  = c11iifw(i)    +  lfw * dicf1fw * deint2fw
+            c11ii(i)    = c11ii(i)      +        dicf1    * deint2
+            c11iifw(i)  = c11iifw(i)    +  lfw * dicf1fw  * deint2fw
+            c11pifw(i)  = c11pifw(i)    +  lfw * dicf1pfw * deint2fw
+            c11kifw(i)  = c11kifw(i)    +  lfw * dicf1kfw * deint2fw
         end if
     end do
 
