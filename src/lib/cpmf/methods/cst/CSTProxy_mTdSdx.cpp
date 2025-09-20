@@ -46,8 +46,8 @@ CCSTProxy_mTdSdx::CCSTProxy_mTdSdx(void)
 
     RegisterRealm(CST_TdS_II,   "C11II",    "CST", "C11II");
     RegisterRealm(CST_TdS_IIFW, "C11IIFW",  "CST", "C11IIFW");
-    RegisterRealm(CST_TdS_IIFW, "C11PIFW",  "CST", "C11PIFW");
-    RegisterRealm(CST_TdS_IIFW, "C11KIFW",  "CST", "C11KIFW");
+    RegisterRealm(CST_TdS_PIFW, "C11PIFW",  "CST", "C11PIFW");
+    RegisterRealm(CST_TdS_KIFW, "C11KIFW",  "CST", "C11KIFW");
 }
 
 //------------------------------------------------------------------------------
