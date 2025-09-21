@@ -962,6 +962,10 @@ subroutine cst_accu_add_duTds
         end if
     end if
 
+    if( fdump_data .and.(faccurst .lt. 0) ) then
+        write(CST_DUMP,'(E16.7,1X,E16.7,1X,E16.7,1X,E16.7,1X)',ADVANCE='NO') lfw, lepot, lerst, lekin
+    end if
+
     do i=1,cstaccu%tot_cvs
 
         select case(ftds_lamsol)
@@ -972,7 +976,7 @@ subroutine cst_accu_add_duTds
         end select
 
         if( fdump_data .and.(faccurst .lt. 0) ) then
-            write(CST_DUMP,'(E16.7,1X,E16.7,1X)',ADVANCE='NO') llam, letot
+            write(CST_DUMP,'(E16.7,1X)',ADVANCE='NO') llam
         end if
 
         if( ftdscalc ) then
@@ -1001,7 +1005,7 @@ subroutine cst_accu_add_duTds
             call cst_accu_add_data_WOMI(licfk, invw, lfw, micfkfw(i),   m2icfkfw(i),  dicf1kfw, dicf2kfw)
 
             if( fdump_data .and.(faccurst .lt. 0) ) then
-                write(CST_DUMP,'(E16.7,1X,E16.7,1X)',ADVANCE='NO') licf, leint
+                write(CST_DUMP,'(E16.7,1X,E16.7,1X)',ADVANCE='NO') licfp, licfk
             end if
 
             c11ii(i)    = c11ii(i)      +        dicf1    * deint2
@@ -1012,7 +1016,7 @@ subroutine cst_accu_add_duTds
     end do
 
     if( fdump_data .and.(faccurst .lt. 0) ) then
-        write(CST_DUMP,'(E16.7)') lfw
+        write(CST_DUMP,*)
     end if
 
 end subroutine cst_accu_add_duTds
