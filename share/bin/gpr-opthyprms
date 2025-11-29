@@ -16,5 +16,9 @@ else
     export OMP_PLACES=${OMP_PLACES:-cores}
 fi
 
+export MKL_DYNAMIC=false
+export OMP_MAX_ACTIVE_LEVELS=1
+export OMP_WAIT_MODE=passive
+
 _gpr-opthyprms "$@"
 

@@ -119,22 +119,22 @@ public:
 
 // setup -----------------------------------------------------------------------
     /// set include error
-    virtual void SetIncludeError(bool set);
+    virtual void SetIncludeError(bool iset);
 
     /// skip energy calculation, it also disables errors
-    virtual void SetNoEnergy(bool set);
+    virtual void SetNoEnergy(bool iset);
 
     /// should we include glued area to energy calculation?
-    virtual void IncludeGluedAreas(bool set);
+    virtual void IncludeGluedAreas(bool iset);
 
     /// calc hyprms grd
-    virtual void PrepForHyprmsGrd(bool set);
+    virtual void PrepForHyprmsGrd(bool iset);
 
     /// calc logpl
-    virtual void SetCalcLogPL(bool set);
+    virtual void SetCalcLogPL(bool iset);
 
     /// use the first derivatives of the kernel
-    virtual void UseFirstKernelDerivatives(bool set);
+    virtual void UseFirstKernelDerivatives(bool iset);
 
 // base methods ----------------------------------------------------------------
     /// run GPR

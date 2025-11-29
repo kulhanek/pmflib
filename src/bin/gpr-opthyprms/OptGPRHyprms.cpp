@@ -1148,10 +1148,12 @@ void COptGPRHyprms::CreateGPREngine(void)
         RUNTIME_ERROR(error);
     }
 
+    bool show_stat = Options.GetOptPrintStat();
+
     GPREngine->SetRCond(Options.GetOptRCond());
 
     GPREngine->SetIncludeError(false);
-    GPREngine->SetNoEnergy(true);
+    GPREngine->SetNoEnergy(!show_stat);
     GPREngine->IncludeGluedAreas(false);
 
     GPREngine->SetLAMethod(Options.GetOptLAMethod());
@@ -1167,7 +1169,7 @@ void COptGPRHyprms::CreateGPREngine(void)
 
 // run engine
     GPREngine->PrepForHyprmsGrd(true);
-    GPREngine->RunGPR(vout,false);
+    GPREngine->RunGPR(vout,!show_stat);
 }
 
 //------------------------------------------------------------------------------

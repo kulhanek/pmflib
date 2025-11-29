@@ -112,41 +112,45 @@ int CGPREngine::GetNumOfHyprms(void)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void CGPREngine::SetIncludeError(bool set)
+void CGPREngine::SetIncludeError(bool iset)
 {
+    IncludeError = iset;
 }
 
 //-----------------------------------------------------------------------------
 
-void CGPREngine::SetNoEnergy(bool set)
+void CGPREngine::SetNoEnergy(bool iset)
 {
+    NoEnergy = iset;
 }
 
 //-----------------------------------------------------------------------------
 
-void CGPREngine::IncludeGluedAreas(bool set)
+void CGPREngine::IncludeGluedAreas(bool iset)
 {
+    // nothing here
 }
 
 //-----------------------------------------------------------------------------
 
-void CGPREngine::PrepForHyprmsGrd(bool set)
+void CGPREngine::PrepForHyprmsGrd(bool iset)
 {
+   NeedInv |= iset;
 }
 
 //-----------------------------------------------------------------------------
 
-void CGPREngine::SetCalcLogPL(bool set)
+void CGPREngine::SetCalcLogPL(bool iset)
 {
+   NeedInv |= iset;
 }
 
 //------------------------------------------------------------------------------
 
-void CGPREngine::UseFirstKernelDerivatives(bool set)
+void CGPREngine::UseFirstKernelDerivatives(bool iset)
 {
-    UseFDKernel = set;
+    UseFDKernel = iset;
 }
-
 
 //==============================================================================
 //------------------------------------------------------------------------------

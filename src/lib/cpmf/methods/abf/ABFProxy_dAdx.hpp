@@ -26,7 +26,7 @@
 
 //------------------------------------------------------------------------------
 
-enum EABFdGType {
+enum EABFdAType {
     ABF_MICF,
 };
 
@@ -44,7 +44,6 @@ public:
 //------------------------------------------------------------------------------
     // get energy derivative and its error
     virtual double GetValue( int ibin,int icv,EProxyRealm realm) const;
-
 };
 
 //------------------------------------------------------------------------------

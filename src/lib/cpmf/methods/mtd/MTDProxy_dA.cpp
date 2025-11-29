@@ -32,9 +32,7 @@ using namespace std;
 
 CMTDProxy_dA::CMTDProxy_dA(void)
 {
-//    Requires.push_back("MTD");
-//    Realm       = "dA";
-//    Description = "MTD dA(x)";
+    RegisterRealm(MTD_dA, "dA", "MTD", "dA(x)");
 }
 
 //------------------------------------------------------------------------------

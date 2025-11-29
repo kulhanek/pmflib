@@ -31,15 +31,7 @@ using namespace std;
 
 CABFProxy_dAdx::CABFProxy_dAdx(void)
 {
-//    Requires.push_back("ABF");
-
-//    SupportedRealms["dG/dx"]        = CST_dG;
-//    SupportedRealms["MICF/dx"]      = CST_MICF;
-//    SupportedRealms["MICFFW/dx"]    = CST_MICFFW;
-//    SupportedRealms["MICFPFW/dx"]   = CST_MICFPFW;
-//    SupportedRealms["MICFKFW/dx"]   = CST_MICFKFW;
-
- //return("ABF dG(x)");
+    RegisterRealm(ABF_MICF, "dA/dx", "ABF", "dA(x)=|MICF dx|");
 }
 
 //------------------------------------------------------------------------------

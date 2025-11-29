@@ -129,30 +129,9 @@ void CIntegratorGPR::SetIncludeError(bool iset)
 
 //------------------------------------------------------------------------------
 
-void CIntegratorGPR::SetNoEnergy(bool iset)
-{
-    NoEnergy = iset;
-}
-
-//------------------------------------------------------------------------------
-
 void CIntegratorGPR::IncludeGluedAreas(bool iset)
 {
     IncludeGluedBins = iset;
-}
-
-//------------------------------------------------------------------------------
-
-void CIntegratorGPR::PrepForHyprmsGrd(bool iset)
-{
-   NeedInv |= iset;
-}
-
-//------------------------------------------------------------------------------
-
-void CIntegratorGPR::SetCalcLogPL(bool iset)
-{
-   NeedInv |= iset;
 }
 
 //------------------------------------------------------------------------------

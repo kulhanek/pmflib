@@ -53,22 +53,13 @@ public:
 
 // setup
     /// set include error
-    void SetIncludeError(bool set);
-
-    /// skip energy calculation, it also disables errors
-    void SetNoEnergy(bool set);
+    virtual void SetIncludeError(bool set);
 
     /// should we include glued area to energy calculation?
-    void IncludeGluedAreas(bool set);
-
-    /// calc hyprms grd
-    void PrepForHyprmsGrd(bool set);
-
-    /// calc logpl
-    void SetCalcLogPL(bool set);
+    virtual void IncludeGluedAreas(bool set);
 
     /// use fast error algorithm
-    void SetFastError(bool set);
+    virtual void SetFastError(bool set);
 
 // execution method -----------------------------------------------------------
     /// run GPR
