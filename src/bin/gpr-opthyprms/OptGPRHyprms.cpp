@@ -952,7 +952,7 @@ void COptGPRHyprms::ShowGPRStat(void)
     ScatterHyprms(Hyprms);
 
     vout << low;
-    CreateGPREngine();
+    CreateGPREngine(true);
 }
 
 //------------------------------------------------------------------------------
@@ -1134,7 +1134,7 @@ void COptGPRHyprms::InitGPREngine(void)
 
 //------------------------------------------------------------------------------
 
-void COptGPRHyprms::CreateGPREngine(void)
+void COptGPRHyprms::CreateGPREngine(bool showstat)
 {
     // try one by one
     bool success = false;
@@ -1148,7 +1148,7 @@ void COptGPRHyprms::CreateGPREngine(void)
         RUNTIME_ERROR(error);
     }
 
-    bool show_stat = Options.GetOptPrintStat();
+    bool show_stat = showstat || (Options.GetOptPrintStat() && Options.GetOptVerbose());
 
     GPREngine->SetRCond(Options.GetOptRCond());
 

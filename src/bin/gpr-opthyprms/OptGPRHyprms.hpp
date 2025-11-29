@@ -129,7 +129,7 @@ private:
 
     void InitGPREngine(void);
 
-    void CreateGPREngine();
+    void CreateGPREngine(bool showstat=false);
     bool CreateGPREngine_dF_dx(void);
     bool CreateGPREngine_dF(void);
     bool CreateGPREngine_AUS(void);
