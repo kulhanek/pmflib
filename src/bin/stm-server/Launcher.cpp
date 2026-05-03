@@ -549,6 +549,8 @@ bool CLauncher::SubmitAllJobs(void)
             }
         }
 
+        lout << "ms= " << p_bead->GetModeStatus() << endl;
+
         if( (p_bead->GetModeStatus() == BMS_FINISHED) &&
             ( (p_bead->GetMode() == BMO_INITIALIZATION) ||
               (p_bead->GetMode() == BMO_EQUILIBRATION) ||
