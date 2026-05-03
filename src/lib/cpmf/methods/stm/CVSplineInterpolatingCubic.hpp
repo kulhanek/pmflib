@@ -45,6 +45,13 @@ public:
     virtual void PrintSetup(std::ostream& vout);
 
 // setup method ----------------------------------------------------------------
+    /// load spline setup
+    virtual bool LoadInfo(CXMLElement* p_ele);
+
+    /// print setup
+    virtual void SaveInfo(CXMLElement* p_ele);
+
+// setup method ----------------------------------------------------------------
     /// clear all data
     virtual void Clear(void);
 

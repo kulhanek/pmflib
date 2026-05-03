@@ -221,6 +221,11 @@ bool CStringServer::Run(void)
     CmdProcessorList.RegisterProcessor(OperationPMF_GetData,&StringFactory);
     CmdProcessorList.RegisterProcessor(Operation_ShutdownServer,&StringFactory);
 
+// init beads in asynchronous mode
+    if( Beads.IsAsynchronous() ) {
+        Beads.BeginAsynchronousMode();
+    }
+
 // start job launcher
     if( Launcher.IsEnabled() ){
         if( Launcher.StartLauncher(vout) == false ) return(false);

@@ -76,6 +76,37 @@ void CCVSplineSmoothingCubic::PrintSetup(std::ostream& vout)
 //------------------------------------------------------------------------------
 //==============================================================================
 
+bool CCVSplineSmoothingCubic::LoadInfo(CXMLElement* p_ele)
+{
+    if( p_ele == NULL ) return(false);
+    CSmallString type;
+
+    p_ele->GetAttribute("type",type);
+    if( type != "smoothing-cubic") return(false);
+
+    lambda = 1.0; // 1.0 - interpolating spline
+    all_sigma = 1.0;
+
+    p_ele->GetAttribute("lambda",lambda);
+    p_ele->GetAttribute("all_sigma",all_sigma);
+
+    return(true);
+}
+
+//------------------------------------------------------------------------------
+
+void CCVSplineSmoothingCubic::SaveInfo(CXMLElement* p_ele)
+{
+    if( p_ele == NULL ) return;
+    p_ele->SetAttribute("type","smoothing-cubic");
+    p_ele->SetAttribute("lambda",lambda);
+    p_ele->SetAttribute("all_sigma",all_sigma);
+}
+
+//==============================================================================
+//------------------------------------------------------------------------------
+//==============================================================================
+
 void CCVSplineSmoothingCubic::Clear(void)
 {
     x.FreeVector();

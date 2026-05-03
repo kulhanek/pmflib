@@ -56,6 +56,29 @@ void CCVSplineInterpolatingCubic::PrintSetup(std::ostream& vout)
 //------------------------------------------------------------------------------
 //==============================================================================
 
+bool CCVSplineInterpolatingCubic::LoadInfo(CXMLElement* p_ele)
+{
+    if( p_ele == NULL ) return(false);
+    CSmallString type;
+
+    p_ele->GetAttribute("type",type);
+    if( type != "interpolating-cubic") return(false);
+
+    return(true);
+}
+
+//------------------------------------------------------------------------------
+
+void CCVSplineInterpolatingCubic::SaveInfo(CXMLElement* p_ele)
+{
+    if( p_ele == NULL ) return;
+    p_ele->SetAttribute("type","interpolating-cubic");
+}
+
+//==============================================================================
+//------------------------------------------------------------------------------
+//==============================================================================
+
 void CCVSplineInterpolatingCubic::Clear(void)
 {
     x.FreeVector();

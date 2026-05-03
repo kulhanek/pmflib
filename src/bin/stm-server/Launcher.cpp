@@ -358,8 +358,6 @@ void CLauncher::ExecuteThread(void)
         return;
     }
 
-    StringServer.Beads.BeginAsynchronousMode();
-
     int iter = 1;
     lout << endl;
     lout << "# ::::::::::::::::::::::::::::::: ENTERING STM LOOP ::::::::::::::::::::::::::::" << endl;

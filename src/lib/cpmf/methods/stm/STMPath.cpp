@@ -61,7 +61,7 @@ CSTMPath::CSTMPath(void)
     ProdPeriod = 50000;         // final production period
 
     MaxSTMSteps         = 250;
-    OptMethod           = "steepest-descent";
+    OptMethod           = "gd";
     StepSize            = 0.05;
     FinalMaxPLenChange  = 0.10;
     FinalMaxMovement    = 0.50;
@@ -1510,7 +1510,7 @@ void CSTMPath::ExchangeDataAsynchronously(CXMLElement* p_cele,CXMLElement* p_rel
     }
 
     if( p_bead->GetModeStatus() == BMS_PREPARED ){
-        // first step or bead was reeased
+        // first step or bead was released
         p_bead->SetNextStepData(p_rele);
         return;
     }
@@ -1581,6 +1581,38 @@ void CSTMPath::LoadInfo(CXMLElement* p_ele)
         p_iele = p_iele->GetNextSiblingElement("COORD");
     }
 
+    CVSplines.clear();
+
+    p_iele = p_mele->GetFirstChildElement("CVSPLINE");
+    for(int i=0; i < NumOfCVs; i++) {
+        if( p_iele != NULL ) {
+            CSmallString cvstype = "none";
+            p_iele->GetAttribute("type",cvstype);
+            CCVSplinePtr cvspline;
+            if( cvstype ==  "interpolating-cubic" ){
+                cvspline = CCVSplinePtr(new CCVSplineInterpolatingCubic);
+            } else if( cvstype ==  "smoothing-cubic" ){
+                cvspline = CCVSplinePtr(new CCVSplineSmoothingCubic);
+            } else {
+                RUNTIME_ERROR("not implemented CV spline");
+            }
+            cvspline->LoadInfo(p_iele);
+            CVSplines.push_back(cvspline);
+        }
+        p_iele = p_iele->GetNextSiblingElement("CVSPLINE");
+    }
+
+    if( CVSplines.size() != (size_t)NumOfCVs ){
+        CVSplines.clear();
+        for(int i=0; i < NumOfCVs; i++) {
+            CCVSplinePtr cvspline;
+            cvspline = CCVSplinePtr(new CCVSplineInterpolatingCubic);
+            CVSplines.push_back(cvspline);
+        }
+    }
+
+    SPos.CreateVector(NumOfCVs);
+
     p_iele = p_mele->GetFirstChildElement("BEAD");
     for(int b=0; b < NumOfBeads; b++) {
         Beads[b]->LoadInfo(p_iele);
@@ -1605,6 +1637,11 @@ void CSTMPath::SaveInfo(CXMLElement* p_ele)
     for(int i=0; i < NumOfCVs; i++) {
         CXMLElement* p_iele = p_mele->CreateChildElement("COORD");
         CVs[i]->SaveInfo(p_iele);
+    }
+
+    for(int i=0; i < NumOfCVs; i++) {
+        CXMLElement* p_iele = p_mele->CreateChildElement("CVSPLINE");
+        CVSplines[i]->SaveInfo(p_iele);
     }
 
     for(int b=0; b < NumOfBeads; b++) {
@@ -2583,6 +2620,10 @@ double CSTMPath::OptimizePath(std::vector<CBeadPtr>& beads)
 
 double CSTMPath::GetSegmentLength(double alpha1,double alpha2)
 {
+
+   // cout << "cv-splines: " << CVSplines.size() << endl;
+   // cout << "SPOS: " << SPos.GetLength() << endl;
+
     double len = 0;
     for(int i=0; i < NumOfCVs; i++){
         SPos[i] = CVSplines[i]->GetCV(alpha1);
