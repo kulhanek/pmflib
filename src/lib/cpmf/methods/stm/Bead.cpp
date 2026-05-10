@@ -426,6 +426,25 @@ void CBead::UpdatePositionNGDAuto(double step,double maxgnorm,double mingnormeps
 
 // -----------------------------------------------------------------------------
 
+void CBead::ResetADAM(void)
+{
+    beta1told   = 1.0;
+    beta2told   = 1.0;
+    beta1tnew   = 1.0;
+    beta2tnew   = 1.0;
+
+    mtold.SetZero();
+    mtnew.SetZero();
+
+    vtold.SetZero();
+    vtnew.SetZero();
+
+    vthatold.SetZero();
+    vthatnew.SetZero();
+}
+
+// -----------------------------------------------------------------------------
+
 void CBead::UpdatePositionADAM(double step,double beta1,double beta2,double mingnormeps)
 {
     NumOfUpdates++;
@@ -480,9 +499,12 @@ void CBead::UpdatePositionAMSGrad(double step,double beta1,double beta2,double m
         mtnew[i]    = beta1 * mtold[i] + (1.0 - beta1) * pMF[i];
         vtnew[i]    = beta2 * vtold[i] + (1.0 - beta2) * pMF[i]*pMF[i];
         vthatnew[i] = std::max(vthatold[i],vtnew[i]);
+    //    std::cout << "pMF: " << pMF[i] << std::endl;
     }
 
     for(int i=0; i < NumOfCVs; i++){
+
+     //       std::cout << "mtnew: " << mtnew[i] << " vthatnew: " << vthatnew[i] << std::endl;
 
         double dm = step*mtnew[i]/(sqrt(vthatnew[i])+mingnormeps);
 
@@ -490,6 +512,7 @@ void CBead::UpdatePositionAMSGrad(double step,double beta1,double beta2,double m
 
         if( (maxmov <= 0) || (fabs(dm) < maxmov) ){
             NPos[i] = Pos[i] - dm;
+       //     std::cout << "dm: " << dm << std::endl;
         } else {
             NPos[i] = Pos[i] - maxmov*sgn(dm);
         }

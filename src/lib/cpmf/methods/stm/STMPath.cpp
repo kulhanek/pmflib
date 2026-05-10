@@ -94,6 +94,8 @@ CSTMPath::CSTMPath(void)
     StepSize            = 0.1;
     AdamB1              = 0.9;
     AdamB2              = 0.999;
+    ResetAdamAlg        = 0;
+    MemoryLength        = 0;
 
     SmoothingFac        = 0.0;
 
@@ -484,6 +486,8 @@ bool CSTMPath::ProcessAdamOptMethodSetup(CPrmFile& prmfile)
              << left << "             (default)" << endl;
         vout << "Min gnorm value (mingnormesp)                  = " << setw(9) << MinGNormEps
              << left << "             (default)" << endl;
+        vout << "Reset memory every (memsteps)                  = " << setw(9) << MemoryLength
+             << left << "             (default)" << endl;
         return(true);
     }
 
@@ -512,6 +516,20 @@ bool CSTMPath::ProcessAdamOptMethodSetup(CPrmFile& prmfile)
         vout << "Min gnorm value (mingnormesp)                  = " << setw(9) << MinGNormEps << left << endl;
     } else {
         vout << "Min gnorm value (mingnormesp)                  = " << setw(9) << MinGNormEps
+             << left << "             (default)" << endl;
+    }
+
+    if(prmfile.GetIntegerByKey("maxresets",ResetAdamAlg) == true) {
+        vout << "Max resets (maxresets)                         = " << setw(9) << ResetAdamAlg << left << endl;
+    } else {
+        vout << "Max resets (maxresets)                         = " << setw(9) << ResetAdamAlg
+             << left << "             (default)" << endl;
+    }
+
+    if(prmfile.GetIntegerByKey("memsteps",MemoryLength) == true) {
+        vout << "Reset memory every (memsteps)                  = " << setw(9) << MemoryLength << left << endl;
+    } else {
+        vout << "Reset memory every (memsteps)                  = " << setw(9) << MemoryLength
              << left << "             (default)" << endl;
     }
 
@@ -533,6 +551,10 @@ bool CSTMPath::ProcessAMSGradOptMethodSetup(CPrmFile& prmfile)
              << left << "             (default)" << endl;
         vout << "Min gnorm value (mingnormesp)                  = " << setw(9) << MinGNormEps
              << left << "             (default)" << endl;
+        vout << "Max resets (maxresets)                         = " << setw(9) << ResetAdamAlg
+             << left << "             (default)" << endl;
+        vout << "Reset memory every (memsteps)                  = " << setw(9) << MemoryLength
+             << left << "             (default)" << endl;
         return(true);
     }
 
@@ -561,6 +583,20 @@ bool CSTMPath::ProcessAMSGradOptMethodSetup(CPrmFile& prmfile)
         vout << "Min gnorm value (mingnormesp)                  = " << setw(9) << MinGNormEps << left << endl;
     } else {
         vout << "Min gnorm value (mingnormesp)                  = " << setw(9) << MinGNormEps
+             << left << "             (default)" << endl;
+    }
+
+    if(prmfile.GetIntegerByKey("maxresets",ResetAdamAlg) == true) {
+        vout << "Max resets (maxresets)                         = " << setw(9) << ResetAdamAlg << left << endl;
+    } else {
+        vout << "Max resets (maxresets)                         = " << setw(9) << ResetAdamAlg
+             << left << "             (default)" << endl;
+    }
+
+    if(prmfile.GetIntegerByKey("memsteps",MemoryLength) == true) {
+        vout << "Reset memory every (memsteps)                  = " << setw(9) << MemoryLength << left << endl;
+    } else {
+        vout << "Reset memory every (memsteps)                  = " << setw(9) << MemoryLength
              << left << "             (default)" << endl;
     }
 
@@ -582,6 +618,10 @@ bool CSTMPath::ProcessAMSGradBCOptMethodSetup(CPrmFile& prmfile)
              << left << "             (default)" << endl;
         vout << "Min gnorm value (mingnormesp)                  = " << setw(9) << MinGNormEps
              << left << "             (default)" << endl;
+        vout << "Max resets (maxresets)                         = " << setw(9) << ResetAdamAlg
+             << left << "             (default)" << endl;
+        vout << "Reset memory every (memsteps)                  = " << setw(9) << MemoryLength
+             << left << "             (default)" << endl;
         return(true);
     }
 
@@ -610,6 +650,20 @@ bool CSTMPath::ProcessAMSGradBCOptMethodSetup(CPrmFile& prmfile)
         vout << "Min gnorm value (mingnormesp)                  = " << setw(9) << MinGNormEps << left << endl;
     } else {
         vout << "Min gnorm value (mingnormesp)                  = " << setw(9) << MinGNormEps
+             << left << "             (default)" << endl;
+    }
+
+    if(prmfile.GetIntegerByKey("maxresets",ResetAdamAlg) == true) {
+        vout << "Max resets (maxresets)                         = " << setw(9) << ResetAdamAlg << left << endl;
+    } else {
+        vout << "Max resets (maxresets)                         = " << setw(9) << ResetAdamAlg
+             << left << "             (default)" << endl;
+    }
+
+    if(prmfile.GetIntegerByKey("memsteps",MemoryLength) == true) {
+        vout << "Reset memory every (memsteps)                  = " << setw(9) << MemoryLength << left << endl;
+    } else {
+        vout << "Reset memory every (memsteps)                  = " << setw(9) << MemoryLength
              << left << "             (default)" << endl;
     }
 
@@ -2512,15 +2566,30 @@ void CSTMPath::UpdateAllPositions(void)
         }
     } else if ( OptMethod == "adam" ){
         for(int i=0; i < NumOfBeads; i++){
+            if( (ResetAdamAlg > 0) && (MemoryLength > 0) && (STMStep % MemoryLength == 0) ) Beads[i]->ResetADAM();
             Beads[i]->UpdatePositionADAM(UsedStepSize,AdamB1,AdamB2,MinGNormEps);
+        }
+        if( (ResetAdamAlg > 0) && (MemoryLength > 0) && (STMStep % MemoryLength == 0) ){
+            vout << ">> INFO: Reset ADAM memory." << endl;
+            ResetAdamAlg--;
         }
     } else if ( OptMethod == "amsgrad" ){
         for(int i=0; i < NumOfBeads; i++){
+            if( (ResetAdamAlg > 0) && (MemoryLength > 0) && (STMStep % MemoryLength == 0) ) Beads[i]->ResetADAM();
             Beads[i]->UpdatePositionAMSGrad(UsedStepSize,AdamB1,AdamB2,MinGNormEps);
+        }
+        if( (ResetAdamAlg > 0) && (MemoryLength > 0) && (STMStep % MemoryLength == 0) ){
+            vout << ">> INFO: Reset AMSGrad memory." << endl;
+            ResetAdamAlg--;
         }
     } else if ( OptMethod == "amsgradbc" ){
         for(int i=0; i < NumOfBeads; i++){
+            if( (ResetAdamAlg > 0) && (MemoryLength > 0) && (STMStep % MemoryLength == 0) ) Beads[i]->ResetADAM();
             Beads[i]->UpdatePositionAMSGradBC(UsedStepSize,AdamB1,AdamB2,MinGNormEps);
+        }
+        if( (ResetAdamAlg > 0) && (MemoryLength > 0) && (STMStep % MemoryLength == 0) ){
+            vout << ">> INFO: Reset AMSGradBC memory." << endl;
+            ResetAdamAlg--;
         }
     } else {
         vout << endl;

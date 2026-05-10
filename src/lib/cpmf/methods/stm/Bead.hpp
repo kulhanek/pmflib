@@ -105,6 +105,9 @@ public:
     /// update bead position - normalized gradient descent vs gradient descent
     void UpdatePositionNGDAuto(double step,double maxgnorm,double mingnormeps);
 
+    /// ResetADAM
+    void ResetADAM(void);
+
     /// Adam (Adaptive Moment Estimation)
     void UpdatePositionADAM(double step,double beta1,double beta2,double mingnormeps);
 

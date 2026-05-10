@@ -232,9 +232,11 @@ private:
     double              MinGNormEps;        // eps to avoid division by zero
     double              MaxGNormForGD;      // max gnorm to switch from NGD to GD (for NGD-AUTO)
 
-    // [adam]
+    // [adam], [amsgrad], [amsgradbc]
     double              AdamB1;
     double              AdamB2;
+    int                 ResetAdamAlg;
+    int                 MemoryLength;
 
     // smoothing ---------------------------------
     int                 SmoothInterval;     // how often to smooth path
