@@ -335,6 +335,8 @@ private:
     bool ProcessNGDOptMethodSetup(CPrmFile& prmfile);
     bool ProcessNGDAutoOptMethodSetup(CPrmFile& prmfile);
     bool ProcessAdamOptMethodSetup(CPrmFile& prmfile);
+    bool ProcessAMSGradOptMethodSetup(CPrmFile& prmfile);
+    bool ProcessAMSGradBCOptMethodSetup(CPrmFile& prmfile);
 
     friend class CBead;
 };

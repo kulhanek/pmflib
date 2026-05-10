@@ -36,6 +36,27 @@
 
 using namespace std;
 
+//------------------------------------------------------------------------------
+
+/*
+Methods:
+* GD        - gradient descent (gradient)
+* NGD       - normalized gradient descent (normalized gradient)
+* NGD-AUTO  - gradient descent (switch between GD and NGD)
+* ADAM      - Adaptive Moment Estimation
+* AMSGrad   - AMSGrad
+* AMSGradBC - AMSGrad + bias corrected estimates
+*/
+
+//------------------------------------------------------------------------------
+
+// https://en.wikipedia.org/wiki/Stochastic_gradient_descent << ADAM
+// https://www.ruder.io/optimizing-gradient-descent/
+
+// https://en.wikipedia.org/wiki/Barzilai-Borwein_method
+// Barzilai-Borwein method does not work
+// because gradients are too noisy
+
 //==============================================================================
 //------------------------------------------------------------------------------
 //==============================================================================
@@ -49,40 +70,41 @@ CSTMPath::CSTMPath(void)
     PathTrajectory = "_stm.traj";
 
     // intervals
-    TrajInterval = 0;
-    OutInterval = 100;
-    SmoothInterval = 1;
+    TrajInterval    = 0;
+    OutInterval     = 100;
+    SmoothInterval  = 0;
     ReparamInterval = 1;
 
     // stm
     InitPeriod = 10000;         // initialization period
-    AccuPeriod =  5000;         // accumulation period
     EquiPeriod =  1000;         // equilibration period
+    AccuPeriod =  5000;         // accumulation period
     ProdPeriod = 50000;         // final production period
 
-    MaxSTMSteps         = 250;
-    OptMethod           = "gd";
-    StepSize            = 0.05;
-    FinalMaxPLenChange  = 0.10;
-    FinalMaxMovement    = 0.50;
-    FinalAveMovement    = 0.10;
+    MaxSTMSteps         = 100;
+    OptMethod           = "amsgradbc";
+    FinalMaxPLenChange  = 0.005;
+    FinalMaxMovement    = 0.01;
+    FinalAveMovement    = 0.01;
     FinalpMFSizeMax     = 4.00;
     FinalpMFSizeAve     = 1.00;
 
     MaxGNormForGD       = 5.0;
     MinGNormEps         = 1e-7;
+    StepSize            = 0.1;
     AdamB1              = 0.9;
     AdamB2              = 0.999;
 
-    SmoothingFac = 0.1;
+    SmoothingFac        = 0.0;
+
     AsynchronousMode = false;    // update per bead or path
 
-    STMStep = 0;
-    MaxMovement = 0.0;          // current max path movement
+    STMStep         = 0;
+    MaxMovement     = 0.0;          // current max path movement
     MaxMovementBead = 0;        // current max path movement is for given bead
-    AveMovement = 0;            // current average path movement
-    pMFSizeMax = 0;
-    pMFSizeAve = 0;
+    AveMovement     = 0;            // current average path movement
+    pMFSizeMax      = 0;
+    pMFSizeAve      = 0;
 
     // control
     NumOfRendezvousBeads = 0;
@@ -90,7 +112,7 @@ CSTMPath::CSTMPath(void)
     HeaderPrinted = false;
     Terminate = false;
 
-    CVSplineType = "interpolating-cubic";
+    CVSplineType = "smoothing-cubic";
 
     // how many points are used to calculate path segment length
     SegmentDiscretization = 10;
@@ -332,6 +354,8 @@ bool CSTMPath::ProcessSTMControl(CPrmFile& prmfile)
     }
 
 // optimization method setup
+    OptMethod.ToLowerCase();
+
     bool result = true;
     if( OptMethod == "gd" ){
         result = ProcessGDOptMethodSetup(prmfile);
@@ -341,6 +365,10 @@ bool CSTMPath::ProcessSTMControl(CPrmFile& prmfile)
         result = ProcessNGDAutoOptMethodSetup(prmfile);
     } else if( OptMethod == "adam" ){
         result = ProcessAdamOptMethodSetup(prmfile);
+    } else if( OptMethod == "amsgrad" ){
+        result = ProcessAMSGradOptMethodSetup(prmfile);
+    } else if( OptMethod == "amsgradbc" ){
+        result = ProcessAMSGradBCOptMethodSetup(prmfile);
     } else {
         RUNTIME_ERROR("not implemented opt method");
     }
@@ -448,6 +476,104 @@ bool CSTMPath::ProcessAdamOptMethodSetup(CPrmFile& prmfile)
     vout << endl;
     vout << "=== [adam] =====================================================================" << endl;
     if(prmfile.OpenSection("adam") == false) {
+        vout << "Step size (stepsize)                           = " << setw(9) << StepSize
+             << left << "             (default)" << endl;
+        vout << "beta1                                          = " << setw(9) << AdamB1
+             << left << "             (default)" << endl;
+        vout << "beta2                                          = " << setw(9) << AdamB2
+             << left << "             (default)" << endl;
+        vout << "Min gnorm value (mingnormesp)                  = " << setw(9) << MinGNormEps
+             << left << "             (default)" << endl;
+        return(true);
+    }
+
+    if(prmfile.GetDoubleByKey("stepsize",StepSize) == true) {
+        vout << "Step size (stepsize)                           = " << setw(9) << StepSize << left << endl;
+    } else {
+        vout << "Step size (stepsize)                           = " << setw(9) << StepSize
+             << left << "             (default)" << endl;
+    }
+
+    if(prmfile.GetDoubleByKey("beta1",AdamB1) == true) {
+        vout << "beta1                                          = " << setw(9) << AdamB1 << left << endl;
+    } else {
+        vout << "beta1                                          = " << setw(9) << AdamB1
+             << left << "             (default)" << endl;
+    }
+
+    if(prmfile.GetDoubleByKey("beta2",AdamB2) == true) {
+        vout << "beta2                                          = " << setw(9) << AdamB2 << left << endl;
+    } else {
+        vout << "beta2                                          = " << setw(9) << AdamB2
+             << left << "             (default)" << endl;
+    }
+
+    if(prmfile.GetDoubleByKey("mingnormeps",MinGNormEps) == true) {
+        vout << "Min gnorm value (mingnormesp)                  = " << setw(9) << MinGNormEps << left << endl;
+    } else {
+        vout << "Min gnorm value (mingnormesp)                  = " << setw(9) << MinGNormEps
+             << left << "             (default)" << endl;
+    }
+
+    return(true);
+}
+
+//------------------------------------------------------------------------------
+
+bool CSTMPath::ProcessAMSGradOptMethodSetup(CPrmFile& prmfile)
+{
+    vout << endl;
+    vout << "=== [amsgrad] ==================================================================" << endl;
+    if(prmfile.OpenSection("amsgrad") == false) {
+        vout << "Step size (stepsize)                           = " << setw(9) << StepSize
+             << left << "             (default)" << endl;
+        vout << "beta1                                          = " << setw(9) << AdamB1
+             << left << "             (default)" << endl;
+        vout << "beta2                                          = " << setw(9) << AdamB2
+             << left << "             (default)" << endl;
+        vout << "Min gnorm value (mingnormesp)                  = " << setw(9) << MinGNormEps
+             << left << "             (default)" << endl;
+        return(true);
+    }
+
+    if(prmfile.GetDoubleByKey("stepsize",StepSize) == true) {
+        vout << "Step size (stepsize)                           = " << setw(9) << StepSize << left << endl;
+    } else {
+        vout << "Step size (stepsize)                           = " << setw(9) << StepSize
+             << left << "             (default)" << endl;
+    }
+
+    if(prmfile.GetDoubleByKey("beta1",AdamB1) == true) {
+        vout << "beta1                                          = " << setw(9) << AdamB1 << left << endl;
+    } else {
+        vout << "beta1                                          = " << setw(9) << AdamB1
+             << left << "             (default)" << endl;
+    }
+
+    if(prmfile.GetDoubleByKey("beta2",AdamB2) == true) {
+        vout << "beta2                                          = " << setw(9) << AdamB2 << left << endl;
+    } else {
+        vout << "beta2                                          = " << setw(9) << AdamB2
+             << left << "             (default)" << endl;
+    }
+
+    if(prmfile.GetDoubleByKey("mingnormeps",MinGNormEps) == true) {
+        vout << "Min gnorm value (mingnormesp)                  = " << setw(9) << MinGNormEps << left << endl;
+    } else {
+        vout << "Min gnorm value (mingnormesp)                  = " << setw(9) << MinGNormEps
+             << left << "             (default)" << endl;
+    }
+
+    return(true);
+}
+
+//------------------------------------------------------------------------------
+
+bool CSTMPath::ProcessAMSGradBCOptMethodSetup(CPrmFile& prmfile)
+{
+    vout << endl;
+    vout << "=== [amsgradbc] ================================================================" << endl;
+    if(prmfile.OpenSection("amsgradbc") == false) {
         vout << "Step size (stepsize)                           = " << setw(9) << StepSize
              << left << "             (default)" << endl;
         vout << "beta1                                          = " << setw(9) << AdamB1
@@ -2368,10 +2494,6 @@ void CSTMPath::CompletePathData(void)
 
 //------------------------------------------------------------------------------
 
-// https://en.wikipedia.org/wiki/Barzilai-Borwein_method
-// Barzilai-Borwein method does not work
-// because gradients are too noisy
-
 void CSTMPath::UpdateAllPositions(void)
 {
     STMStep++;
@@ -2391,6 +2513,14 @@ void CSTMPath::UpdateAllPositions(void)
     } else if ( OptMethod == "adam" ){
         for(int i=0; i < NumOfBeads; i++){
             Beads[i]->UpdatePositionADAM(UsedStepSize,AdamB1,AdamB2,MinGNormEps);
+        }
+    } else if ( OptMethod == "amsgrad" ){
+        for(int i=0; i < NumOfBeads; i++){
+            Beads[i]->UpdatePositionAMSGrad(UsedStepSize,AdamB1,AdamB2,MinGNormEps);
+        }
+    } else if ( OptMethod == "amsgradbc" ){
+        for(int i=0; i < NumOfBeads; i++){
+            Beads[i]->UpdatePositionAMSGradBC(UsedStepSize,AdamB1,AdamB2,MinGNormEps);
         }
     } else {
         vout << endl;

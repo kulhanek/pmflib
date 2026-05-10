@@ -99,14 +99,20 @@ public:
     /// update bead position - gradient descent
     void UpdatePositionGD(double step);
 
-    /// update bead position - normalize gradient descent
+    /// update bead position - normalized gradient descent
     void UpdatePositionNGD(double step,double mingnormeps);
 
-    /// update bead position - normalize gradient descent vs gradient descent
+    /// update bead position - normalized gradient descent vs gradient descent
     void UpdatePositionNGDAuto(double step,double maxgnorm,double mingnormeps);
 
     /// Adam (Adaptive Moment Estimation)
     void UpdatePositionADAM(double step,double beta1,double beta2,double mingnormeps);
+
+    /// AMSGrad
+    void UpdatePositionAMSGrad(double step,double beta1,double beta2,double mingnormeps);
+
+    /// AMSGrad + Bias Corrected Variant
+    void UpdatePositionAMSGradBC(double step,double beta1,double beta2,double mingnormeps);
 
     /// currently only for ADAM
     void UpdatePositionFinalize(void);
@@ -161,16 +167,18 @@ private:
     CSimpleVector<double>   FPos;           // re-parametrized position
     CSimpleVector<double>   PPos;           // position for path optimization
 
-    // Adam (Adaptive Moment Estimation)
-    double                  beta1kold;
-    double                  beta2kold;
-    double                  vkold;
-    CSimpleVector<double>   mkold;
-    double                  beta1knew;
-    double                  beta2knew;
-    double                  vknew;
-    double                  vkhat;
-    CSimpleVector<double>   mknew;
+    // Adam (Adaptive Moment Estimation) variants
+    double                  beta1told;
+    double                  beta2told;
+    CSimpleVector<double>   mtold;
+    CSimpleVector<double>   vtold;
+    CSimpleVector<double>   vthatold;
+
+    double                  beta1tnew;
+    double                  beta2tnew;
+    CSimpleVector<double>   mtnew;
+    CSimpleVector<double>   vtnew;
+    CSimpleVector<double>   vthatnew;
 
     friend class CSTMPath;
 };

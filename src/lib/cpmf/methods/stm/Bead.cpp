@@ -49,14 +49,11 @@ CBead::CBead(void)
     A = 0.0;
     NumOfUpdates = 0;
 
-    beta1kold   = 1.0;
-    beta2kold   = 1.0;
-    vkold       = 0.0;
+    beta1told   = 1.0;
+    beta2told   = 1.0;
+    beta1tnew   = 1.0;
+    beta2tnew   = 1.0;
 
-    beta1knew   = 1.0;
-    beta2knew   = 1.0;
-    vkold       = 0.0;
-    vkhat       = 0.0;
 }
 
 //==============================================================================
@@ -169,10 +166,20 @@ void CBead::InitBead(CSTMPath* p_list,int ncvs)
     P.CreateMatrix(NumOfCVs,NumOfCVs);
     P.SetZero();
 
-    mkold.CreateVector(NumOfCVs);
-    mkold.SetZero();
-    mknew.CreateVector(NumOfCVs);
-    mknew.SetZero();
+    mtold.CreateVector(NumOfCVs);
+    mtold.SetZero();
+    mtnew.CreateVector(NumOfCVs);
+    mtnew.SetZero();
+
+    vtold.CreateVector(NumOfCVs);
+    vtold.SetZero();
+    vtnew.CreateVector(NumOfCVs);
+    vtnew.SetZero();
+
+    vthatold.CreateVector(NumOfCVs);
+    vthatold.SetZero();
+    vthatnew.CreateVector(NumOfCVs);
+    vthatnew.SetZero();
 
     Alpha = 0;
     dAdAlpha = 0;
@@ -430,23 +437,95 @@ void CBead::UpdatePositionADAM(double step,double beta1,double beta2,double ming
         return;
     }
 
-    double g2 = 0.0;
     for(int i=0; i < NumOfCVs; i++){
-        g2 = g2 + pMF[i]*pMF[i];
+        mtnew[i] = beta1 * mtold[i] + (1.0 - beta1) * pMF[i];
+        vtnew[i] = beta2 * vtold[i] + (1.0 - beta2) * pMF[i]*pMF[i];
     }
 
-    vknew = beta2 * vkold + (1.0 - beta2) * g2;
-
-    beta1knew = beta1kold * beta1;
-    beta2knew = beta2kold * beta2;
-
-    double norm = sqrt(vknew/(1.0-beta2knew));
+    // the step can be rejected later
+    beta1tnew = beta1told * beta1;
+    beta2tnew = beta2told * beta2;
 
     for(int i=0; i < NumOfCVs; i++){
 
-        mknew[i] = beta1 * mkold[i] + (1.0 - beta1) * pMF[i];
+        double mthat = mtnew[i]/(1.0-beta1tnew);
+        double vthat = vtnew[i]/(1.0-beta2tnew);
 
-        double dm = step*(mknew[i]/(1.0-beta1knew))/(norm+mingnormeps);
+        double dm = step*mthat/(sqrt(vthat)+mingnormeps);
+
+        double maxmov = BeadList->CVs[i]->GetMaxMovement();
+
+        if( (maxmov <= 0) || (fabs(dm) < maxmov) ){
+            NPos[i] = Pos[i] - dm;
+        } else {
+            NPos[i] = Pos[i] - maxmov*sgn(dm);
+        }
+    }
+}
+
+// -----------------------------------------------------------------------------
+
+void CBead::UpdatePositionAMSGrad(double step,double beta1,double beta2,double mingnormeps)
+{
+    NumOfUpdates++;
+
+    if( Permanent ){
+        for(int i=0; i < NumOfCVs; i++){
+            NPos[i] = Pos[i];
+        }
+        return;
+    }
+
+    for(int i=0; i < NumOfCVs; i++){
+        mtnew[i]    = beta1 * mtold[i] + (1.0 - beta1) * pMF[i];
+        vtnew[i]    = beta2 * vtold[i] + (1.0 - beta2) * pMF[i]*pMF[i];
+        vthatnew[i] = std::max(vthatold[i],vtnew[i]);
+    }
+
+    for(int i=0; i < NumOfCVs; i++){
+
+        double dm = step*mtnew[i]/(sqrt(vthatnew[i])+mingnormeps);
+
+        double maxmov = BeadList->CVs[i]->GetMaxMovement();
+
+        if( (maxmov <= 0) || (fabs(dm) < maxmov) ){
+            NPos[i] = Pos[i] - dm;
+        } else {
+            NPos[i] = Pos[i] - maxmov*sgn(dm);
+        }
+    }
+}
+
+// -----------------------------------------------------------------------------
+
+void CBead::UpdatePositionAMSGradBC(double step,double beta1,double beta2,double mingnormeps)
+{
+    NumOfUpdates++;
+
+    if( Permanent ){
+        for(int i=0; i < NumOfCVs; i++){
+            NPos[i] = Pos[i];
+        }
+        return;
+    }
+
+    for(int i=0; i < NumOfCVs; i++){
+        mtnew[i] = beta1 * mtold[i] + (1.0 - beta1) * pMF[i];
+        vtnew[i] = beta2 * vtold[i] + (1.0 - beta2) * pMF[i]*pMF[i];
+    }
+
+    // the step can be rejected later
+    beta1tnew = beta1told * beta1;
+    beta2tnew = beta2told * beta2;
+
+    for(int i=0; i < NumOfCVs; i++){
+
+        double mthat = mtnew[i]/(1.0-beta1tnew);
+        double vthat = vtnew[i]/(1.0-beta2tnew);
+
+        vthatnew[i] = std::max(vthatold[i],vthat);
+
+        double dm = step*mthat/(sqrt(vthatnew[i])+mingnormeps);
 
         double maxmov = BeadList->CVs[i]->GetMaxMovement();
 
@@ -462,10 +541,11 @@ void CBead::UpdatePositionADAM(double step,double beta1,double beta2,double ming
 
 void CBead::UpdatePositionFinalize(void)
 {
-    vkold = vknew;
-    mkold = mknew;
-    beta1kold = beta1knew;
-    beta2kold = beta2knew;
+    vtold = vtnew;
+    mtold = mtnew;
+    vthatold = vthatnew;
+    beta1told = beta1tnew;
+    beta2told = beta2tnew;
 }
 
 //==============================================================================
