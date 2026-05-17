@@ -358,7 +358,7 @@ procedure(int_pmf_sander_init_taskid_mpi), bind(c), pointer         :: pmf_sande
 procedure(int_pmf_sander_bcast_dat_mpi), bind(c), pointer           :: pmf_sander_bcast_dat_mpi
 procedure(int_pmf_sander_force_mpi), bind(c), pointer               :: pmf_sander_force_mpi
 procedure(int_pmf_sander_shake_mpi), bind(c), pointer               :: pmf_sander_shake_mpi
-procedure(int_pmf_sander_rattlev), bind(c), pointer                 :: pmf_sander_rattlev_mpi
+procedure(int_pmf_sander_rattlev_mpi), bind(c), pointer             :: pmf_sander_rattlev_mpi
 #endif
 
 ! ==============================================================================
