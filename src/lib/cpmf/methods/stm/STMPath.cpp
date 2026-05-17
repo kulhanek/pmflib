@@ -1491,29 +1491,31 @@ void CSTMPath::ExchangeDataSynchronously(CXMLElement* p_cele,CXMLElement* p_rele
 void CSTMPath::ProcessProductionData(CBeadPtr p_bead)
 {
     // how many beads are waiting
-    RendezvousMutex.Lock();
+    try{
+        RendezvousMutex.Lock();
+
         NumOfRendezvousBeads++;
         if( NumOfRendezvousBeads != NumOfBeads ){
             p_bead->Mode = BMO_WAITFORRENDEZVOUS;
             RendezvousCond.WaitForSignal(RendezvousMutex);
         } else {
             // do all operations on the whole path
-            try{
-                if( STMStatus == ESTMS_PATH_FOUND ){
-                    CompletePathData();
-                    IntegratePath();
-                    STMStep++;
-                    SavePathAndTraj();
+            if( STMStatus == ESTMS_PATH_FOUND ){
+                CompletePathData();
+                IntegratePath();
+                STMStep++;
+                SavePathAndTraj();
 
-                    vout << endl;
-                    PrintSTMStepInfo();
+                vout << endl;
+                PrintSTMStepInfo();
 
-                    // this will happen if the path was found and final production runs are required
-                    STMStatus = ESTMS_COMPLETED;
+                // this will happen if the path was found and final production runs are required
+                STMStatus = ESTMS_COMPLETED;
 
-                    vout << endl;
-                    vout << ">> INFO: The server is terminated since all data were acquired.*" <<  endl;
-                } else {
+                vout << endl;
+                vout << ">> INFO: The server is terminated since all data were acquired.*" <<  endl;
+            } else {
+                try {
                     ProcessingMutex.Lock();
                     switch( p_bead->GetMode() ){
                         case BMO_ACCUMULATION:
@@ -1576,27 +1578,30 @@ void CSTMPath::ProcessProductionData(CBeadPtr p_bead)
                         }
                     }
                     ProcessingMutex.Unlock();
+                } catch(...){
+                    ProcessingMutex.Unlock();
+                    RendezvousCond.BroadcastSignal();
+                    NumOfRendezvousBeads = 0;
+                    throw;
                 }
-            } catch(...) {
-                RendezvousCond.BroadcastSignal();
-                NumOfRendezvousBeads = 0;
-                ProcessingMutex.Unlock();
-                RendezvousMutex.Unlock();
-                throw;
             }
             // unblock all other beads
             RendezvousCond.BroadcastSignal();
             NumOfRendezvousBeads = 0;
         }
-    RendezvousMutex.Unlock();
+        RendezvousMutex.Unlock();
+    } catch(...){
+        RendezvousMutex.Unlock();
+        throw;
+    }
 }
 
 //------------------------------------------------------------------------------
 
 void CSTMPath::ProcessPathAsynchronously(void)
 {
-    ProcessingMutex.Lock();
-
+    try {
+        ProcessingMutex.Lock();
         if( STMStatus == ESTMS_OPTIMIZING ){
             CompletePathData();
             IntegratePath();
@@ -1642,14 +1647,18 @@ void CSTMPath::ProcessPathAsynchronously(void)
             STMStatus = ESTMS_COMPLETED;
             vout << ">> INFO: The server is terminated since all data were acquired." <<  endl;
         } else {
-            RUNTIME_ERROR("should not happen")
+            RUNTIME_ERROR("should not happen");
         }
 
         if( Terminate ){
             STMStatus = ESTMS_COMPLETED;
         }
 
-    ProcessingMutex.Unlock();
+        ProcessingMutex.Unlock();
+    } catch(...){
+        ProcessingMutex.Unlock();
+        throw;
+    }
 }
 
 //------------------------------------------------------------------------------

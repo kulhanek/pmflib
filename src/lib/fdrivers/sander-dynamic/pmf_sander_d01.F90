@@ -961,7 +961,7 @@ subroutine pmf_sander_shake_mpi(anatom,x,modified) bind(c,name='int_pmf_sander_s
             end do
             write(PMF_DEBUG+fmytaskid,*)
         end if
-        call pmf_core_lf_shake(tmp_a)
+        call pmf_core_lf_shake(tmp_a,modified)
     end if
 
     ! update data
