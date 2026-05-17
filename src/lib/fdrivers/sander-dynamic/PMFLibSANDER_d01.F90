@@ -41,7 +41,7 @@ integer, parameter                          :: CPMFCHAR      = c_char
 integer(CPMFINT), parameter                 :: PMFLIB_CHECK_INT1 = 1089523658
 real(CPMFDP), parameter                     :: PMFLIB_CHECK_R81  = 1.78493547
 character(kind=CPMFCHAR,len=10), parameter  :: PMFLIB_CHECK_STR1 = 'PMFLib v06'
-character(kind=CPMFCHAR,len=10), parameter  :: PMFLIB_CHECK_STR2 = 'DRVABI d01'
+character(kind=CPMFCHAR,len=10), parameter  :: PMFLIB_CHECK_STR2 = 'DRVABI d1b' ! sander v24.x
 ! ==============================================================================
 
 ! constants
@@ -375,6 +375,10 @@ real(CPMFDP)        :: pmflib_erst              = 0.0d0
 real(CPMFDP)        :: pmflib_ekin(PMFLIB_EKIN_SIZE)
 integer(CPMFINT)    :: pmflib_setup(PMFLIB_SETUP_SIZE)
 
+
+! new in sander v24.x
+integer,parameter   :: PMF_OUT = 6
+
 ! ==============================================================================
 
 contains
@@ -395,11 +399,11 @@ subroutine pmf_sander_bind_to_driver(master)
 
 ! print header
     if( master ) then
-        write(6,*)
-        write(6,10)
-        write(6,20)
-        write(6,25)
-        write(6,30) trim(pmf_sander_driver_name)
+        write(PMF_OUT,*)
+        write(PMF_OUT,10)
+        write(PMF_OUT,20)
+        write(PMF_OUT,25)
+        write(PMF_OUT,30) trim(pmf_sander_driver_name)
     end if
 
 ! load the driver
@@ -407,9 +411,9 @@ subroutine pmf_sander_bind_to_driver(master)
     if( .not. c_associated(pmf_sander_driver_handle) ) then
         if( master ) then
             call pmf_sander_get_dlerror
-            write(6,40) trim(pmf_sander_driver_error)
-            write(6,10)
-            write(6,*)
+            write(PMF_OUT,40) trim(pmf_sander_driver_error)
+            write(PMF_OUT,10)
+            write(PMF_OUT,*)
         end if
         if( pmflib_stop_on_failure ) then
             stop 'Unable to load the PMFLib driver!'
@@ -423,9 +427,9 @@ subroutine pmf_sander_bind_to_driver(master)
             pmf_sander_driver_path = '-not specified-'
         end if
 
-        write(6,60) trim(pmf_sander_driver_path(1:max(0,index(pmf_sander_driver_path,c_null_char)-1)))
-        write(6,50)
-        write(6,70)
+        write(PMF_OUT,60) trim(pmf_sander_driver_path(1:max(0,index(pmf_sander_driver_path,c_null_char)-1)))
+        write(PMF_OUT,50)
+        write(PMF_OUT,70)
     end if
 
 ! bind procedures
@@ -569,14 +573,14 @@ subroutine pmf_sander_bind_to_driver(master)
 
 ! print footer
     if( master ) then
-        write(6,80)
-        write(6,90)
+        write(PMF_OUT,80)
+        write(PMF_OUT,90)
         call pmf_sander_check_interface(PMFLIB_CHECK_R81,PMFLIB_CHECK_INT1,PMFLIB_EKIN_SIZE,PMFLIB_SETUP_SIZE, &
                                        PMFLIB_CHECK_STR1,len(PMFLIB_CHECK_STR1), &
                                        PMFLIB_CHECK_STR2,len(PMFLIB_CHECK_STR2))
-        write(6,100)
-        write(6,10)
-        write(6,*)
+        write(PMF_OUT,100)
+        write(PMF_OUT,10)
+        write(PMF_OUT,*)
     else
         call pmf_sander_check_interface(PMFLIB_CHECK_R81,PMFLIB_CHECK_INT1,PMFLIB_EKIN_SIZE,PMFLIB_SETUP_SIZE, &
                                        PMFLIB_CHECK_STR1,len(PMFLIB_CHECK_STR1), &
@@ -615,32 +619,32 @@ subroutine pmf_sander_release_driver(master)
     if( .not. use_pmflib ) return
 
     if( master ) then
-        write(6,*)
-        write(6,10)
-        write(6,20)
-        write(6,30)
+        write(PMF_OUT,*)
+        write(PMF_OUT,10)
+        write(PMF_OUT,20)
+        write(PMF_OUT,30)
     end if
 
 !    if( dlclose(pmf_sander_driver_handle) .ne. 0 ) then
 !        if( master ) then
 !            call pmf_sander_get_dlerror
-!            write(6,40) trim(pmf_sander_driver_error)
-!            write(6,10)
-!            write(6,*)
+!            write(PMF_OUT,40) trim(pmf_sander_driver_error)
+!            write(PMF_OUT,10)
+!            write(PMF_OUT,*)
 !        end if
 !        return
 !    else
 !        if( master ) then
-!            write(6,50)
-!            write(6,10)
-!            write(6,*)
+!            write(PMF_OUT,50)
+!            write(PMF_OUT,10)
+!            write(PMF_OUT,*)
 !        end if
 !    end if
 
     if( master ) then
-        write(6,60)
-        write(6,10)
-        write(6,*)
+        write(PMF_OUT,60)
+        write(PMF_OUT,10)
+        write(PMF_OUT,*)
     end if
 
     use_pmflib = .false.
