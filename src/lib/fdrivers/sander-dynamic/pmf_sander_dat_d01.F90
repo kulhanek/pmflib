@@ -46,7 +46,7 @@ real(PMFDP),allocatable         :: tmp_c(:,:)   ! helper array
 integer, parameter              :: PMFLIB_CHECK_INT1 = 1089523658
 real(PMFDP), parameter          :: PMFLIB_CHECK_R81  = 1.78493547
 character(len=10), parameter    :: PMFLIB_CHECK_STR1 = 'PMFLib v06'
-character(len=10), parameter    :: PMFLIB_CHECK_STR2 = 'DRVABI d01'
+character(len=10), parameter    :: PMFLIB_CHECK_STR2 = 'DRVABI d1b'
 
 ! energy array
 integer, parameter              :: PMFLIB_EKIN_VV               = 1
