@@ -975,6 +975,55 @@ subroutine pmf_sander_shake_mpi(anatom,x,modified) bind(c,name='int_pmf_sander_s
 
 end subroutine pmf_sander_shake_mpi
 
+
+!===============================================================================
+! Subroutine: pmf_sander_rattlev_mpi
+!===============================================================================
+
+subroutine pmf_sander_rattlev_mpi(anatom,xp,vp,cid,modified) bind(c,name='int_pmf_sander_rattlev_mpi')
+
+    use pmf_sizes
+    use pmf_dat
+    use pmf_timers
+    use pmf_utils
+    use pmf_core_lf
+
+    implicit none
+    integer(CPMFINT)    :: anatom            ! number of atoms
+    real(CPMFDP)        :: xp(3,anatom)      ! positions at FIXME
+    real(CPMFDP)        :: vp(3,anatom)      ! velocities at FIXME
+    integer(CPMFINT)    :: cid               ! callid
+    integer(CPMFINT)    :: modified          ! was constraint applied?
+    ! --------------------------------------------------------------------------
+
+    modified = 0
+    if( .not. cst_enabled ) return
+
+    if(fmaster) then
+        call pmf_timers_start_timer(PMFLIB_TIMER)
+    end if
+
+    if( fdebug ) then
+        write(PMF_DEBUG+fmytaskid,*) '>>TR: pmf_sander_rattlev'
+    end if
+
+    call pmf_sander_gather_array_mpi(tmp_a,xp,atm_owner_map,1)
+    call pmf_sander_gather_array_mpi(tmp_b,vp,atm_owner_map,2)
+
+    if( fmaster ) then
+        call pmf_core_lf_rattlev(tmp_a,tmp_b,cid,modified)
+    end if
+
+    call pmf_sander_scatter_array_mpi(tmp_b,vp,atm_owner_map,5)
+
+    if(fmaster) then
+        call pmf_timers_stop_timer(PMFLIB_TIMER)
+    end if
+
+    modified = 1
+
+end subroutine pmf_sander_rattlev_mpi
+
 !===============================================================================
 ! subroutine pmf_sander_bcast_dat_mpi
 !===============================================================================

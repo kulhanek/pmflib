@@ -309,6 +309,16 @@ abstract interface
         integer(CPMFINT)    :: modified
     end subroutine int_pmf_sander_shake_mpi
     ! -------------------------------------------------------------------------
+    subroutine int_pmf_sander_rattlev_mpi(anatom,x,v,cid,modified) bind(c)
+        import
+        implicit none
+        integer(CPMFINT)    :: anatom
+        real(CPMFDP)        :: x(*)
+        real(CPMFDP)        :: v(*)
+        integer(CPMFINT)    :: cid
+        integer(CPMFINT)    :: modified
+    end subroutine int_pmf_sander_shake_mpi
+    ! -------------------------------------------------------------------------
 #endif
 
 end interface
@@ -348,6 +358,7 @@ procedure(int_pmf_sander_init_taskid_mpi), bind(c), pointer         :: pmf_sande
 procedure(int_pmf_sander_bcast_dat_mpi), bind(c), pointer           :: pmf_sander_bcast_dat_mpi
 procedure(int_pmf_sander_force_mpi), bind(c), pointer               :: pmf_sander_force_mpi
 procedure(int_pmf_sander_shake_mpi), bind(c), pointer               :: pmf_sander_shake_mpi
+procedure(int_pmf_sander_rattlev), bind(c), pointer                 :: pmf_sander_rattlev_mpi
 #endif
 
 ! ==============================================================================
@@ -547,6 +558,12 @@ subroutine pmf_sander_bind_to_driver(master)
         stop 'Unable to load the procedure int_pmf_sander_shake_mpi'
     end if
     call c_f_procpointer(proc_addr,pmf_sander_shake_mpi)
+! ------------------
+    proc_addr=dlsym(pmf_sander_driver_handle, "int_pmf_sander_rattlev_mpi"//c_null_char)
+    if (.not. c_associated(proc_addr))then
+        stop 'Unable to load the procedure int_pmf_sander_rattlev_mpi'
+    end if
+    call c_f_procpointer(proc_addr,pmf_sander_rattlev_mpi)
 ! ------------------
 #endif
 
