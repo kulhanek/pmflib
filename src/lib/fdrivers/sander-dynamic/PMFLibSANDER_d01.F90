@@ -309,15 +309,15 @@ abstract interface
         integer(CPMFINT)    :: modified
     end subroutine int_pmf_sander_shake_mpi
     ! -------------------------------------------------------------------------
-    subroutine int_pmf_sander_rattlev_mpi(anatom,x,v,cid,modified) bind(c)
+    subroutine int_pmf_sander_rattlev_mpi(anatom,xp,vp,cid,modified) bind(c)
         import
         implicit none
         integer(CPMFINT)    :: anatom
-        real(CPMFDP)        :: x(*)
-        real(CPMFDP)        :: v(*)
+        real(CPMFDP)        :: xp(*)
+        real(CPMFDP)        :: vp(*)
         integer(CPMFINT)    :: cid
         integer(CPMFINT)    :: modified
-    end subroutine int_pmf_sander_shake_mpi
+    end subroutine int_pmf_sander_rattlev_mpi
     ! -------------------------------------------------------------------------
 #endif
 
