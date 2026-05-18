@@ -1,9 +1,8 @@
 // =============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
+//    Copyright (C) 2026 Petr Kulhanek, kulhanek@chemi.muni.cz
 //    Copyright (C) 2021 Petr Kulhanek, kulhanek@chemi.muni.cz
-//    Copyright (C) 2008 Petr Kulhanek, kulhanek@enzim.hu
-//                       Martin Petrek, petrek@chemi.muni.cz
 //
 //     This program is free software; you can redistribute it and/or modify
 //     it under the terms of the GNU General Public License as published by
@@ -33,8 +32,7 @@ using namespace std;
 
 CABPProxy_dA::CABPProxy_dA(void)
 {
-//    Requires.push_back("ABP");
-//    Description = "ABP dA(x)";
+    RegisterRealm(ABP_dA, "dA", "ABP", "dA(x)");
 }
 
 //------------------------------------------------------------------------------
