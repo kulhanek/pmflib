@@ -249,7 +249,7 @@ bool CIntegratorRFD::Integrate(CVerboseStr& vout)
         vout << "      Global minimum provided at: ";
         vout << setprecision(5) << gpos[0];
         for(int i=1; i < Accu->GetNumOfCVs(); i++){
-            vout << "x" << setprecision(5) << gpos[0];
+            vout << "x" << setprecision(5) << gpos[i];
         }
         vout << endl;
 
@@ -259,7 +259,7 @@ bool CIntegratorRFD::Integrate(CVerboseStr& vout)
         vout << "      Closest bin found at: ";
         vout << setprecision(5) << gpos[0];
         for(int i=1; i < Accu->GetNumOfCVs(); i++){
-            vout << "x" << setprecision(5) << gpos[0];
+            vout << "x" << setprecision(5) << gpos[i];
         }
 
         double glb_min = EneSurf->GetGlobalMinEnergy();
@@ -281,7 +281,7 @@ bool CIntegratorRFD::Integrate(CVerboseStr& vout)
         vout << "      Global minimum found at: ";
         vout << setprecision(5) << gpos[0];
         for(int i=1; i < Accu->GetNumOfCVs(); i++){
-            vout << "x" << setprecision(5) << gpos[0];
+            vout << "x" << setprecision(5) << gpos[i];
         }
         vout << " (" << setprecision(5) << glb_min << ")" << endl;
         for(int ibin=0; ibin < EneSurf->GetNumOfBins(); ibin++) {
