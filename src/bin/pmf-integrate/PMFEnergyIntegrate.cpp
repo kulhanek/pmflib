@@ -513,7 +513,6 @@ bool CPMFEnergyIntegrate::IntegrateForMFZScore(int pass)
         integrator.SetNoEnergy(true);
 
         if(integrator.Integrate(vout) == false) {
-            ES_ERROR("unable to integrate ABF accumulator");
             return(false);
         }
 
@@ -557,7 +556,7 @@ bool CPMFEnergyIntegrate::IntegrateForMFZScore(int pass)
         }
 
         if(integrator.Integrate(vout) == false) {
-            ES_ERROR("unable to integrate ABF accumulator");
+            ES_ERROR("unable to integrate PMF accumulator");
             return(false);
         }
 
@@ -601,7 +600,7 @@ bool CPMFEnergyIntegrate::IntegrateForEcut(void)
         integrator.SetInputEnergyDerProxy(DerProxy);
 
         if(integrator.Integrate(vout) == false) {
-            ES_ERROR("unable to integrate ABF accumulator");
+            ES_ERROR("unable to integrate PMF accumulator");
             return(false);
         }
 
@@ -626,7 +625,7 @@ bool CPMFEnergyIntegrate::IntegrateForEcut(void)
         }
 
         if(integrator.Integrate(vout) == false) {
-            ES_ERROR("unable to integrate ABF accumulator");
+            ES_ERROR("unable to integrate PMF accumulator");
             return(false);
         }
 
@@ -656,7 +655,7 @@ bool CPMFEnergyIntegrate::IntegrateForEcut(void)
         integrator.SetKernel(Options.GetOptGPRKernel());
 
         if(integrator.Integrate(vout) == false) {
-            ES_ERROR("unable to integrate ABF accumulator");
+            ES_ERROR("unable to integrate PMF accumulator");
             return(false);
         }
     } else {
@@ -693,7 +692,7 @@ bool CPMFEnergyIntegrate::Integrate(void)
         integrator.SetUseOldRFDMode(Options.GetOptUseOldRFD());
 
         if(integrator.Integrate(vout) == false) {
-            ES_ERROR("unable to integrate ABF accumulator");
+            ES_ERROR("unable to integrate PMF accumulator");
             return(false);
         }
 
@@ -712,7 +711,7 @@ bool CPMFEnergyIntegrate::Integrate(void)
         integrator.SetLLSMethod(Options.GetOptLAMethod());
 
         if(integrator.Integrate(vout) == false) {
-            ES_ERROR("unable to integrate ABF accumulator");
+            ES_ERROR("unable to integrate PMF accumulator");
             return(false);
         }
 
@@ -751,7 +750,7 @@ bool CPMFEnergyIntegrate::Integrate(void)
         }
 
         if(integrator.Integrate(vout) == false) {
-            ES_ERROR("unable to integrate ABF accumulator");
+            ES_ERROR("unable to integrate PMF accumulator");
             return(false);
         }
 
@@ -832,7 +831,7 @@ bool CPMFEnergyIntegrate::ReduceFES(void)
         integrator.SetCalcLogPL(Options.GetOptGPRCalcLogPL());
 
         if(integrator.Integrate(vout) == false) {
-            ES_ERROR("unable to integrate ABF accumulator");
+            ES_ERROR("unable to integrate PMF accumulator");
             return(false);
         }
         reducedFES = integrator.ReduceFES(KeepCVs);

@@ -792,7 +792,7 @@ void CEnergySurface::FindGlobalMin(void)
     double glb_min = 0.0;
     for(int ibin=0; ibin < NumOfBins; ibin++){
         int samples = GetNumOfSamples(ibin);
-        if( samples < -1 ) continue;    // include sampled areas and holes but exclude extrapolated areas
+        if( samples == 0 ) continue;    // no samples
         double value = GetEnergy(ibin);
         if( first || (glb_min > value) ){
             glb_min = value;

@@ -523,7 +523,7 @@ void CIntegratorGPR::CalculateEnergy(CVerboseStr& vout)
         vout << "      Global minimum provided at: ";
         vout << setprecision(5) << gpos[0];
         for(size_t i=1; i < NumOfCVs; i++){
-            vout << "x" << setprecision(5) << gpos[0];
+            vout << "x" << setprecision(5) << gpos[i];
         }
         vout << endl;
 
@@ -533,7 +533,7 @@ void CIntegratorGPR::CalculateEnergy(CVerboseStr& vout)
         vout << "      Closest bin found at: ";
         vout << setprecision(5) << gpos[0];
         for(size_t i=1; i < NumOfCVs; i++){
-            vout << "x" << setprecision(5) << gpos[0];
+            vout << "x" << setprecision(5) << gpos[i];
         }
 
         double glb_min = EneSurface->GetGlobalMinEnergy();
@@ -553,7 +553,7 @@ void CIntegratorGPR::CalculateEnergy(CVerboseStr& vout)
         vout << "      Global minimum found at: ";
         vout << setprecision(5) << gpos[0];
         for(size_t i=1; i < NumOfCVs; i++){
-            vout << "x" << setprecision(5) << gpos[0];
+            vout << "x" << setprecision(5) << gpos[i];
         }
         vout << " (" << setprecision(5) << glb_min << ")" << endl;
         for(size_t indj=0; indj < NumOfValues; indj++){
