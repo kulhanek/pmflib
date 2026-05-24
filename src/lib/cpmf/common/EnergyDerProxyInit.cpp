@@ -25,6 +25,7 @@
 #include <CSTProxy_dAdx.hpp>
 #include <CSTProxy_dUdx.hpp>
 #include <CSTProxy_mTdSdx.hpp>
+#include <MTDProxy_dAdx.hpp>
 #include <iomanip>
 
 //==============================================================================
@@ -52,6 +53,9 @@ void CEnergyDerProxyInit::InitProxyList(std::list<CEnergyDerProxyPtr>& eneder_pr
     eneder_proxies.push_back(proxy);
 
     proxy = CEnergyDerProxyPtr(new CCSTProxy_mTdSdx);
+    eneder_proxies.push_back(proxy);
+
+    proxy = CEnergyDerProxyPtr(new CMTDProxy_dAdx);
     eneder_proxies.push_back(proxy);
 }
 

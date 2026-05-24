@@ -40,6 +40,7 @@ SET(CPMF_METHODS_SRC
 
     # MTD
         methods/mtd/MTDProxy_dA.cpp
+        methods/mtd/MTDProxy_dAdx.cpp
 
     # ABP
         methods/abp/ABPProxy_dA.cpp
