@@ -1,4 +1,4 @@
-[PATHZ]
+[PTPATHZ]
 name  cv1
 anchor @1-2
 refpoint @3,4
@@ -8,7 +8,7 @@ refpoint @8,9
 refpoint @9,10
 alpha 2.0
 
-[PATHZ]
+[PTPATHZ]
 name  cv2
 anchor @1-2
 refpoint @2-5
@@ -16,7 +16,7 @@ refpoint @5,6
 refpoint @6,10
 alpha 2.0
 
-[PATHZ]
+[PTPATHZ]
 name  cv3
 anchor @6
 refpoint @1-5
@@ -24,7 +24,7 @@ refpoint @5,6
 refpoint @6,10
 alpha 2.0
 
-[PATHZ]
+[PTPATHZ]
 name  cv4
 anchor @6
 refpoint @1-5
@@ -32,7 +32,7 @@ refpoint @5,6
 refpoint @6,10
 alpha 3.0
 
-[PATHZ]
+[PTPATHZ]
 name  cv5
 anchor @1-2
 refpoint @3,4

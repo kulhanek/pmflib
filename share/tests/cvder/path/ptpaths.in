@@ -1,4 +1,4 @@
-[PATHS]
+[PTPATHS]
 name  cv1
 anchor @1-2
 refpoint @3,4
@@ -9,7 +9,7 @@ refpoint @9,10
 alpha 2.0
 ioffset  1
 
-[PATHS]
+[PTPATHS]
 name  cv2
 anchor @1-2
 refpoint @2-5
@@ -19,7 +19,7 @@ alpha 2.0
 ioffset  1
 
 
-[PATHS]
+[PTPATHS]
 name  cv3
 anchor @6
 refpoint @1-5
@@ -29,7 +29,7 @@ alpha 2.0
 ioffset  3
 
 
-[PATHS]
+[PTPATHS]
 name  cv4
 anchor @6
 refpoint @1-5
@@ -39,7 +39,7 @@ alpha 3.0
 ioffset  0
 
 
-[PATHS]
+[PTPATHS]
 name  cv5
 anchor @1-2
 refpoint @3,4

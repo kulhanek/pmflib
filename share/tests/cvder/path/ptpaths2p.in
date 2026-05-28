@@ -1,4 +1,4 @@
-[PATHS2P]
+[PTPATHS2P]
 name  cv1
 nrefs  5
 anchor @1-2
@@ -7,7 +7,7 @@ refpoint @5,6
 alpha 2.0
 ioffset  1
 
-[PATHS2P]
+[PTPATHS2P]
 name  cv2
 nrefs  6
 anchor @1-2
@@ -17,7 +17,7 @@ alpha 2.0
 ioffset  1
 
 
-[PATHS2P]
+[PTPATHS2P]
 name  cv3
 nrefs  3
 anchor @6
@@ -27,7 +27,7 @@ alpha 2.0
 ioffset  3
 
 
-[PATHS2P]
+[PTPATHS2P]
 name  cv4
 nrefs  5
 anchor @6
@@ -37,7 +37,7 @@ alpha 3.0
 ioffset  0
 
 
-[PATHS2P]
+[PTPATHS2P]
 name  cv5
 nrefs  7
 anchor @1-2
