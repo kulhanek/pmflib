@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+
+SCRIPT_PATH="${BASH_SOURCE[0]}"
+
+# If invoked through PATH, resolve the actual location
+if [[ "$SCRIPT_PATH" != */* ]]; then
+    SCRIPT_PATH="$(command -v "$SCRIPT_PATH")"
+fi
+
+SCRIPT_DIR="$(cd "$(dirname "$SCRIPT_PATH")" && pwd)"
+
+module add anaconda3
+
+python3 "${SCRIPT_DIR}/../python/analyse-2D-surface.py" "$@"

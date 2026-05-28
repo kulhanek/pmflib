@@ -1,6 +1,7 @@
 !===============================================================================
 ! PMFLib - Library Supporting Potential of Mean Force Calculations
 !-------------------------------------------------------------------------------
+!    Copyright (C) 2026      Petr Kulhanek, kulhanek@chemi.muni.cz
 !    Copyright (C) 2011-2016 Petr Kulhanek, kulhanek@chemi.muni.cz
 !    Copyright (C) 2013-2015 Letif Mones, lam81@cam.ac.uk
 !    Copyright (C) 2012      Petr Kulhanek, kulhanek@chemi.muni.cz
@@ -119,10 +120,10 @@ subroutine pmf_alloc_cv_allocate(cv_type,cv_item)
     use cv_wormang
 
 ! path -------------------------------------------
-    use cv_paths
-    use cv_pathz
-    use cv_paths2p
-    use cv_paths2pn
+    use cv_ptpaths
+    use cv_ptpaths2p
+    use cv_ptpaths2pn
+    use cv_ptpathz
 
 ! algebra ----------------------------------------
     use cv_add
@@ -298,16 +299,14 @@ subroutine pmf_alloc_cv_allocate(cv_type,cv_item)
             allocate(CVTypeWORMANG::cv_item)
 
     ! path ------------------------------------
-        case('PATHS')
-            allocate(CVTypePATHS::cv_item)
-        case('PATHZ')
-            allocate(CVTypePATHZ::cv_item)
-
-        case('PATHS2P')
-            allocate(CVTypePATHS2P::cv_item)
-
-        case('PATHS2PN')
-            allocate(CVTypePATHS2PN::cv_item)
+        case('PTPATHS')
+            allocate(CVTypePTPATHS::cv_item)
+        case('PTPATHS2P')
+            allocate(CVTypePTPATHS2P::cv_item)
+        case('PTPATHS2PN')
+            allocate(CVTypePTPATHS2PN::cv_item)
+        case('PTPATHZ')
+            allocate(CVTypePTPATHZ::cv_item)
 
         case default
             call pmf_utils_exit(PMF_OUT,1,&

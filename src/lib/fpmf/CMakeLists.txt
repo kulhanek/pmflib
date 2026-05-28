@@ -117,10 +117,10 @@ SET(PMF_CVS_SRC
         common/cvs/worm/cv_wormang.f90
 
     # path
-        common/cvs/path/cv_paths.f90
-        common/cvs/path/cv_pathz.f90
-        common/cvs/path/cv_paths2p.f90
-        common/cvs/path/cv_paths2pn.f90
+        common/cvs/path/cv_ptpaths.f90
+        common/cvs/path/cv_ptpaths2p.f90
+        common/cvs/path/cv_ptpaths2pn.f90
+        common/cvs/path/cv_ptpathz.f90
 
     # algebra
         common/cvs/algebra/cv_add.f90

@@ -1,13 +1,14 @@
 !===============================================================================
 ! PMFLib - Library Supporting Potential of Mean Force Calculations
 !-------------------------------------------------------------------------------
+!    Copyright (C) 2024 Petr Kulhanek, kulhanek@chemi.muni.cz
 !
-!    This library is free software; you can repaths2pntribute it and/or
+!    This library is free software; you can redistribute it and/or
 !    modify it under the terms of the GNU Lesser General Public
 !    License as published by the Free Software Foundation; either
 !    version 2.1 of the License, or (at your option) any later version.
 !
-!    This library is paths2pntributed in the hope that it will be useful,
+!    This library is distributed in the hope that it will be useful,
 !    but WITHOUT ANY WARRANTY; without even the implied warranty of
 !    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 !    Lesser General Public License for more details.
@@ -18,7 +19,7 @@
 !    Boston, MA  02110-1301  USA
 !===============================================================================
 
-module cv_paths2pn
+module cv_ptpaths2pn
 
 use pmf_sizes
 use pmf_constants
@@ -29,7 +30,7 @@ implicit none
 
 !===============================================================================
 
-type, extends(CVType) :: CVTypePATHS2PN
+type, extends(CVType) :: CVTypePTPATHS2PN
 
     integer             :: nrefsp        ! number of reference points - positive
     integer             :: nrefsn        ! number of reference points - negative
@@ -37,32 +38,32 @@ type, extends(CVType) :: CVTypePATHS2PN
     real(PMFDP)         :: beta
 
     contains
-        procedure :: load_cv        => load_paths2pn
-        procedure :: calculate_cv   => calculate_paths2pn
-end type CVTypePATHS2PN
+        procedure :: load_cv        => load_ptpaths2pn
+        procedure :: calculate_cv   => calculate_ptpaths2pn
+end type CVTypePTPATHS2PN
 
 !===============================================================================
 
 contains
 
 !===============================================================================
-! Subroutine:  load_paths2pn
+! Subroutine:  load_ptpaths2pn
 !===============================================================================
 
-subroutine load_paths2pn(cv_item,prm_fin)
+subroutine load_ptpaths2pn(cv_item,prm_fin)
 
     use prmfile
     use pmf_utils
 
     implicit none
-    class(CVTypePATHS2PN)               :: cv_item
+    class(CVTypePTPATHS2PN)             :: cv_item
     type(PRMFILE_TYPE),intent(inout)    :: prm_fin
     ! --------------------------------------------
     character(len=PRMFILE_MAX_LINE)     :: mask
     ! --------------------------------------------------------------------------
 
 ! simple init and allocation --------------------
-    cv_item%ctype         = 'PATHS2PN'
+    cv_item%ctype         = 'PTPATHS2PN'
     call pmf_unit_init(cv_item%unit)
     cv_item%gradforanycrd = .true.
     call cv_common_read_name(cv_item,prm_fin)
@@ -146,13 +147,13 @@ subroutine load_paths2pn(cv_item,prm_fin)
    220 format('   ** Alpha              : ',F5.2,' [',A,']')
    230 format('   ** Beta               : ',F5.2,' [',A,']')
 
-end subroutine load_paths2pn
+end subroutine load_ptpaths2pn
 
 !===============================================================================
-! Subroutine:  calculate_paths2pn
+! Subroutine:  calculate_ptpaths2pn
 !===============================================================================
 
-subroutine calculate_paths2pn(cv_item,x,ctx)
+subroutine calculate_ptpaths2pn(cv_item,x,ctx)
 
     use pmf_dat
     use pmf_pbc
@@ -160,9 +161,9 @@ subroutine calculate_paths2pn(cv_item,x,ctx)
     use cv_math
 
     implicit none
-    class(CVTypePATHS2PN)  :: cv_item
-    real(PMFDP)         :: x(:,:)
-    type(CVContextType) :: ctx
+    class(CVTypePTPATHS2PN) :: cv_item
+    real(PMFDP)             :: x(:,:)
+    type(CVContextType)     :: ctx
     ! -----------------------------------------------
     integer             :: i
     real(PMFDP)         :: d1(3),d2(3),d3(3),dv(3),n_dv(3),dx(3),dy(3)
@@ -235,9 +236,9 @@ subroutine calculate_paths2pn(cv_item,x,ctx)
 
  return
 
-end subroutine calculate_paths2pn
+end subroutine calculate_ptpaths2pn
 
 !===============================================================================
 
-end module cv_paths2pn
+end module cv_ptpaths2pn
 

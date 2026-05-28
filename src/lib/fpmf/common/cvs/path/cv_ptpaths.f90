@@ -1,13 +1,14 @@
 !===============================================================================
 ! PMFLib - Library Supporting Potential of Mean Force Calculations
 !-------------------------------------------------------------------------------
+!    Copyright (C) 2024 Petr Kulhanek, kulhanek@chemi.muni.cz
 !
-!    This library is free software; you can repathstribute it and/or
+!    This library is free software; you can redistribute it and/or
 !    modify it under the terms of the GNU Lesser General Public
 !    License as published by the Free Software Foundation; either
 !    version 2.1 of the License, or (at your option) any later version.
 !
-!    This library is pathstributed in the hope that it will be useful,
+!    This library is distributed in the hope that it will be useful,
 !    but WITHOUT ANY WARRANTY; without even the implied warranty of
 !    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 !    Lesser General Public License for more details.
@@ -18,7 +19,9 @@
 !    Boston, MA  02110-1301  USA
 !===============================================================================
 
-module cv_paths
+! PTPATHS - path-progress coordinate for point-based paths
+
+module cv_ptpaths
 
 use pmf_sizes
 use pmf_constants
@@ -29,32 +32,32 @@ implicit none
 
 !===============================================================================
 
-type, extends(CVType) :: CVTypePATHS
+type, extends(CVType) :: CVTypePTPATHS
 
     integer             :: nrefs        ! number of reference points
     real(PMFDP)         :: alpha
     integer             :: ioffset
 
     contains
-        procedure :: load_cv        => load_paths
-        procedure :: calculate_cv   => calculate_paths
-end type CVTypePATHS
+        procedure :: load_cv        => load_ptpaths
+        procedure :: calculate_cv   => calculate_ptpaths
+end type CVTypePTPATHS
 
 !===============================================================================
 
 contains
 
 !===============================================================================
-! Subroutine:  load_paths
+! Subroutine:  load_ptpaths
 !===============================================================================
 
-subroutine load_paths(cv_item,prm_fin)
+subroutine load_ptpaths(cv_item,prm_fin)
 
     use prmfile
     use pmf_utils
 
     implicit none
-    class(CVTypePATHS)                  :: cv_item
+    class(CVTypePTPATHS)                :: cv_item
     type(PRMFILE_TYPE),intent(inout)    :: prm_fin
     ! --------------------------------------------
     integer                             :: i
@@ -63,7 +66,7 @@ subroutine load_paths(cv_item,prm_fin)
     ! --------------------------------------------------------------------------
 
 ! simple init and allocation --------------------
-    cv_item%ctype         = 'PATHS'
+    cv_item%ctype         = 'PTPATHS'
     call pmf_unit_init(cv_item%unit)
     cv_item%gradforanycrd = .true.
     call cv_common_read_name(cv_item,prm_fin)
@@ -148,22 +151,22 @@ subroutine load_paths(cv_item,prm_fin)
    220 format('   ** Alpha              : ',F5.2,' [',A,']')
    230 format('   ** IOffset            : ',I2)
 
-end subroutine load_paths
+end subroutine load_ptpaths
 
 !===============================================================================
-! Subroutine:  calculate_paths
+! Subroutine:  calculate_ptpaths
 !===============================================================================
 
-subroutine calculate_paths(cv_item,x,ctx)
+subroutine calculate_ptpaths(cv_item,x,ctx)
 
     use pmf_dat
     use pmf_pbc
     use pmf_utils
 
     implicit none
-    class(CVTypePATHS)  :: cv_item
-    real(PMFDP)         :: x(:,:)
-    type(CVContextType) :: ctx
+    class(CVTypePTPATHS)    :: cv_item
+    real(PMFDP)             :: x(:,:)
+    type(CVContextType)     :: ctx
     ! -----------------------------------------------
     integer             :: i,ai,m
     real(PMFDP)         :: d1(3),d2(3),dx(3)
@@ -181,7 +184,7 @@ subroutine calculate_paths(cv_item,x,ctx)
         totmass1 = totmass1 + amass
     end do
     if( totmass1 .le. 0 ) then
-        call pmf_utils_exit(PMF_OUT,1,'totmass1 is zero in calculate_paths!')
+        call pmf_utils_exit(PMF_OUT,1,'totmass1 is zero in calculate_ptpaths!')
     end if
     d1(:) = d1(:) / totmass1
 
@@ -198,7 +201,7 @@ subroutine calculate_paths(cv_item,x,ctx)
             totmass2 = totmass2 + amass
         end do
         if( totmass2 .le. 0 ) then
-            call pmf_utils_exit(PMF_OUT,1,'totmass2 is zero in calculate_paths!')
+            call pmf_utils_exit(PMF_OUT,1,'totmass2 is zero in calculate_ptpaths!')
         end if
         d2(:) = d2(:) / totmass2
 
@@ -268,9 +271,9 @@ subroutine calculate_paths(cv_item,x,ctx)
 
  return
 
-end subroutine calculate_paths
+end subroutine calculate_ptpaths
 
 !===============================================================================
 
-end module cv_paths
+end module cv_ptpaths
 
