@@ -19,6 +19,8 @@
 !    Boston, MA  02110-1301  USA
 !===============================================================================
 
+! PTPATHS2P - path-progress coordinate along a line generated from two points
+
 module cv_ptpaths2p
 
 use pmf_sizes
