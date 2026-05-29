@@ -1,0 +1,121 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Configure",
+            "type": "shell",
+            "command": "cmake",
+            "args": [
+                "."
+            ],
+            "presentation": {
+                "reveal": "always",
+                "revealProblems": "onProblem",
+                "echo": true,
+                "panel": "new",
+                "clear": true,
+                "showReuseMessage": false,
+                "close": false
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Build",
+            "type": "shell",
+            "command": "make",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "dependsOn": [
+                "Configure"
+            ],
+            "options": {
+                "env": {
+                    "GCC_COLORS": ""
+                }
+            },
+            "presentation": {
+                "reveal": "always",
+                "revealProblems": "onProblem",
+                "echo": true,
+                "panel": "new",
+                "clear": true,
+                "showReuseMessage": false,
+                "close": false
+            },
+            "problemMatcher": [
+                {
+                    "owner": "myf",
+                    "fileLocation": "absolute",
+                    "severity": "error",
+                    "pattern": [
+                        {
+                            "regexp": "^\\s*(.*\\.(?:f|F|for|FOR|f90|F90|f95|F95|f03|F03|f08|F08)):(\\d+):(\\d+):\\s*$",
+                            "file": 1,
+                            "line": 2,
+                            "column": 3
+                        },
+                        {
+                            "regexp": "^\\s*$"
+                        },
+                        {
+                            "regexp": "^\\s*\\d+\\s*\\|.*$"
+                        },
+                        {
+                            "regexp": "^\\s*\\|.*$"
+                        },
+                        {
+                            "regexp": "^\\s*(?:Error|Fatal Error):\\s+(.*)$",
+                            "message": 1
+                        }
+                    ]
+                },
+                {
+                    "owner": "myf",
+                    "fileLocation": "absolute",
+                    "severity": "warning",
+                    "pattern": [
+                        {
+                            "regexp": "^\\s*(.*\\.(?:f|F|for|FOR|f90|F90|f95|F95|f03|F03|f08|F08)):(\\d+):(\\d+):\\s*$",
+                            "file": 1,
+                            "line": 2,
+                            "column": 3
+                        },
+                        {
+                            "regexp": "^\\s*$"
+                        },
+                        {
+                            "regexp": "^\\s*\\d+\\s*\\|.*$"
+                        },
+                        {
+                            "regexp": "^\\s*\\|.*$"
+                        },
+                        {
+                            "regexp": "^\\s*Warning:\\s+(.*)$",
+                            "message": 1
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "label": "Clean",
+            "type": "shell",
+            "command": "${workspaceFolder}/CMakeClean.sh",
+            "args": [
+                "deep"
+            ],
+            "presentation": {
+                "reveal": "always",
+                "revealProblems": "onProblem",
+                "echo": true,
+                "panel": "new",
+                "clear": true,
+                "showReuseMessage": false,
+                "close": false
+            },
+            "problemMatcher": []
+        }
+    ]
+}

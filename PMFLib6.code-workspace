@@ -1,0 +1,26 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+    "settings": {
+        "files.exclude": {
+            "**/*.o": true,
+            "**/*.mod": true,
+            "**/build": true,
+			"**/*.cmake": true,
+			"bin": true,
+			"obj": true,
+			"lib": true,
+			"Testing": true,
+			"tests": true,
+			"**/CMakeFiles": true
+		},
+		"editor.fontSize": 16,
+		"fortran.linter.includePaths": [
+			"/scratch/kulhanek/Development/linux/projects/pmflib/6.0/src/lib/fpmf",
+			"/scratch/kulhanek/Development/linux/projects/prmfile/1.0/src/lib/fprmfile"
+		]
+	}
+}
