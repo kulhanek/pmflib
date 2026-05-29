@@ -26,5 +26,5 @@ TARGET_LINK_LIBRARIES(test-cv-math
 INSTALL(TARGETS
             test-cv-math
         RUNTIME DESTINATION
-            bin
+            bin/tests
         )

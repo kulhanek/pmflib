@@ -11,10 +11,10 @@ SET(TEST_COORDS_SRC
         )
 
 # final build ------------------------------------------------------------------
-ADD_EXECUTABLE(pmf-test-cvs ${TEST_COORDS_SRC})
-ADD_DEPENDENCIES(pmf-test-cvs fpmf_shared)
+ADD_EXECUTABLE(test-cvs ${TEST_COORDS_SRC})
+ADD_DEPENDENCIES(test-cvs fpmf_shared)
 
-TARGET_LINK_LIBRARIES(pmf-test-cvs
+TARGET_LINK_LIBRARIES(test-cvs
         fpmf
         ${XBPLIB_XCORE_LIB_NAME}
         ${XBPLIB_XFILES_LIB_NAME}
@@ -27,7 +27,7 @@ TARGET_LINK_LIBRARIES(pmf-test-cvs
         )
 
 INSTALL(TARGETS
-            pmf-test-cvs
+            test-cvs
         RUNTIME DESTINATION
-            bin
+            bin/tests
         )

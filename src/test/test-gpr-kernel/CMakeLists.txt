@@ -23,5 +23,5 @@ TARGET_LINK_LIBRARIES(test-gpr-kernel
 INSTALL(TARGETS
             test-gpr-kernel
         RUNTIME DESTINATION
-            bin
+            bin/tests
         )

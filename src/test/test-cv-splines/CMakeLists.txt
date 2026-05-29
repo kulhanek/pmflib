@@ -23,5 +23,5 @@ TARGET_LINK_LIBRARIES(test-cv-splines
 INSTALL(TARGETS
             test-cv-splines
         RUNTIME DESTINATION
-            bin
+            bin/tests
         )

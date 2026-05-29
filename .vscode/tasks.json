@@ -2,7 +2,7 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "Configure",
+            "label": "Configure PMFLib",
             "type": "shell",
             "command": "cmake",
             "args": [
@@ -13,14 +13,30 @@
                 "revealProblems": "onProblem",
                 "echo": true,
                 "panel": "new",
-                "clear": true,
                 "showReuseMessage": false,
                 "close": false
             },
-            "problemMatcher": []
+            "problemMatcher": [
+                {
+                    "owner": "cmake",
+                    "fileLocation": "relative",
+                    "pattern": [
+                        {
+                            "regexp": "^CMake (Error|Warning|Deprecation Warning|Author Warning) at (.*):([0-9]+) \\(([^)]+)\\):$",
+                            "severity": 1,
+                            "file": 2,
+                            "line": 3
+                        },
+                        {
+                            "regexp": "^  (.*)$",
+                            "message": 1
+                        }
+                    ]
+                }
+            ]
         },
         {
-            "label": "Build",
+            "label": "Build PMFLib",
             "type": "shell",
             "command": "make",
             "group": {
@@ -28,19 +44,13 @@
                 "isDefault": true
             },
             "dependsOn": [
-                "Configure"
+                "Configure PMFLib"
             ],
-            "options": {
-                "env": {
-                    "GCC_COLORS": ""
-                }
-            },
             "presentation": {
                 "reveal": "always",
                 "revealProblems": "onProblem",
                 "echo": true,
                 "panel": "new",
-                "clear": true,
                 "showReuseMessage": false,
                 "close": false
             },
@@ -100,7 +110,7 @@
             ]
         },
         {
-            "label": "Clean",
+            "label": "Clean PMFLib",
             "type": "shell",
             "command": "${workspaceFolder}/CMakeClean.sh",
             "args": [
@@ -111,7 +121,6 @@
                 "revealProblems": "onProblem",
                 "echo": true,
                 "panel": "new",
-                "clear": true,
                 "showReuseMessage": false,
                 "close": false
             },

@@ -15,12 +15,15 @@
 			"lib": true,
 			"Testing": true,
 			"tests": true,
-			"**/CMakeFiles": true
+			"**/CMakeFiles": true,
+			"**/Makefile": true,
+			"CMakeCache.txt": true,
+			"DartConfiguration.tcl": true
 		},
 		"editor.fontSize": 16,
 		"fortran.linter.includePaths": [
-			"/scratch/kulhanek/Development/linux/projects/pmflib/6.0/src/lib/fpmf",
-			"/scratch/kulhanek/Development/linux/projects/prmfile/1.0/src/lib/fprmfile"
+			"${workspaceFolder}/src/lib/fpmf",
+			"${workspaceFolder}/../../prmfile/1.0/src/lib/fprmfile"
 		]
 	}
 }

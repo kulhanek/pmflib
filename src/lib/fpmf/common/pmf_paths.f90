@@ -26,6 +26,7 @@ use pmf_sizes
 use pmf_constants
 use pmf_utils
 use pmf_dat
+use pmf_cvs
 
 ! list of paths ----------------------------------------------------------------
 
@@ -509,85 +510,6 @@ subroutine pmf_paths_load_cvs(prm_fin,path_item)
 605 format(' --------------')
 
 end subroutine pmf_paths_load_cvs
-
-!===============================================================================
-! Function:   pmf_paths_load_fake_cvs
-!===============================================================================
-
-subroutine pmf_paths_load_fake_cvs(prm_fin)
-
-    use prmfile
-    use pmf_core
-    use pmf_alloc_cv
-
-    implicit none
-    type(PRMFILE_TYPE),intent(inout)    :: prm_fin
-    ! --------------------------------------------
-    character(PRMFILE_MAX_LINE)             :: text
-    character(15)                           :: code
-    integer                                 :: ncvs, alloc_failed, i
-    character(PMF_MAX_TYPE),allocatable     :: types(:)
-    character(PMF_MAX_CV_NAME),allocatable  :: names(:)
-    logical                                 :: res
-    ! -----------------------------------------------------------------------------
-
-    if( .not. prmfile_get_integer_by_key(prm_fin,'ncvs',ncvs) ) then
-        return
-    end if
-
-    allocate(types(ncvs), names(ncvs), stat = alloc_failed)
-    if( alloc_failed .ne. 0 ) then
-        call pmf_utils_exit(PMF_OUT,1,'Unable to allocate memory for the path!')
-    end if
-
-    types(:) = ''
-    names(:) = ''
-
-    ! -----------------------------------------------
-    ! load types and names
-    res = prmfile_first_line(prm_fin)
-    do while (prmfile_get_line(prm_fin,text))
-        read(text,*) code
-        if( trim(code) .eq. 'types' ) then
-            read(text,*,err=20,end=20) code,(types(i),i=1,ncvs)
-        end if
-        if( trim(code) .eq. 'names' ) then
-            read(text,*,err=10,end=10) code,(names(i),i=1,ncvs)
-        end if
-    end do
-
-    ! generate CVs
-    do i=1,ncvs
-        NumOfFakeCVs = NumOfFakeCVs + 1
-        if( NumOfFakeCVs .gt. NumOfCVs ) then
-            call pmf_utils_exit(PMF_OUT,1,'Inconsistency in number of fake CVs and maximum number of CVs!')
-        end if
-
-        write(PMF_OUT,*)
-        write(PMF_OUT,130) NumOfFakeCVs,trim(types(i))
-
-        call pmf_alloc_cv_allocate(types(i),CVList(NumOfFakeCVs)%cv)
-
-        ! init and load CV data
-        call CVList(NumOfFakeCVs)%cv%reset_cv()
-        CVList(NumOfFakeCVs)%cv%idx   = NumOfFakeCVs
-        CVList(NumOfFakeCVs)%cv%name  = names(i)
-        CVList(NumOfFakeCVs)%cv%ctype = types(i)
-
-        write(PMF_OUT,140) trim(CVList(NumOfFakeCVs)%cv%name)
-    end do
-
-    ! -----------------------------------------------
-    ! clean up
-    deallocate(types,names)
-    return
-
-10 call pmf_utils_exit(PMF_OUT,1,'The keyword ''names'' is not provided correctly!')
-20 call pmf_utils_exit(PMF_OUT,1,'The keyword ''types'' is not provided correctly!')
-
-130 format('== Creating collective variable #',I4.4,' of type "',A,'"')
-140 format('   ** Collective variable name : ''',a,'''')
-end subroutine pmf_paths_load_fake_cvs
 
 !===============================================================================
 ! Function:   pmf_paths_get_nbeads

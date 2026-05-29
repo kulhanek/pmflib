@@ -8,10 +8,10 @@ SET(TEST_STAT_SRC
         )
 
 # final build ------------------------------------------------------------------
-ADD_EXECUTABLE(pmf-test-stat ${TEST_STAT_SRC})
-ADD_DEPENDENCIES(pmf-test-stat fpmf_shared)
+ADD_EXECUTABLE(test-stat ${TEST_STAT_SRC})
+ADD_DEPENDENCIES(test-stat fpmf_shared)
 
-TARGET_LINK_LIBRARIES(pmf-test-stat
+TARGET_LINK_LIBRARIES(test-stat
         fpmf
         ${PRMFILE_FLIB_NAME}
         ${LAPACK_LIB_NAME}
@@ -22,7 +22,7 @@ TARGET_LINK_LIBRARIES(pmf-test-stat
         )
 
 INSTALL(TARGETS
-            pmf-test-stat
+            test-stat
         RUNTIME DESTINATION
-            bin
+            bin/tests
         )
