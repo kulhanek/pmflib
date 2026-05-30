@@ -230,49 +230,109 @@ end subroutine read_files
 
 subroutine load_coordinates
 
- use prmfile
- use pmf_utils
- use pmf_dat
- use pmf_core
- use pmf_control
- use test_coords_dat
+    use prmfile
+    use pmf_utils
+    use pmf_dat
+    use pmf_core
+    use pmf_control
+    use test_coords_dat
 
- implicit none
- character(PRMFILE_MAX_GROUP_NAME)      :: grpname
- ! -----------------------------------------------------------------------------
+    implicit none
+    character(PRMFILE_MAX_GROUP_NAME)      :: grpname
+    ! -----------------------------------------------------------------------------
 
- write(PMF_OUT,*)
- call pmf_utils_heading(PMF_OUT,'TESTED COORDINATES', ':')
+    write(PMF_OUT,*)
+    call pmf_utils_heading(PMF_OUT,'TESTED COORDINATES', ':')
 
- ! get name of group
- if( CoordFile(1:1) .eq. '{' ) then
-    grpname = CoordFile(2:len_trim(CoordFile)-1)
-     write(PMF_OUT,110) grpname
-    ! open goup with name from abfdef
-    if( .not. prmfile_open_group(ControlPrmfile,trim(grpname)) ) then
-        call pmf_utils_exit(PMF_OUT,1,'Unable to open group {' // trim(grpname) // '}!')
+    ! get name of group
+    if( CoordFile(1:1) .eq. '{' ) then
+        grpname = CoordFile(2:len_trim(CoordFile)-1)
+        write(PMF_OUT,110) grpname
+        ! open goup with name from abfdef
+        if( .not. prmfile_open_group(ControlPrmfile,trim(grpname)) ) then
+            call pmf_utils_exit(PMF_OUT,1,'Unable to open group {' // trim(grpname) // '}!')
+        end if
+        call pmf_control_read_cvs_from_group(ControlPrmfile)
+    else
+        write(PMF_OUT,120) trim(CoordFile)
+
+        call prmfile_init(CoordPrmfile)
+
+        if( .not. prmfile_read(CoordPrmfile,CoordFile) ) then
+            call pmf_utils_exit(PMF_OUT,1,'Unable to load file: ' // trim(CoordFile) // '!')
+        end if
+
+        call pmf_control_read_cvs_from_group(CoordPrmfile)
+
+        call prmfile_clear(CoordPrmfile)
     end if
-    call pmf_control_read_cvs_from_group(ControlPrmfile)
- else
-    write(PMF_OUT,120) trim(CoordFile)
 
-    call prmfile_init(CoordPrmfile)
-
-    if( .not. prmfile_read(CoordPrmfile,CoordFile) ) then
-        call pmf_utils_exit(PMF_OUT,1,'Unable to load file: ' // trim(CoordFile) // '!')
-    end if
-
-    call pmf_control_read_cvs_from_group(CoordPrmfile)
-
-    call prmfile_clear(CoordPrmfile)
- end if
-
- return
+    return
 
 110 format('Coordinates are read from group: ',A)
 120 format('Coordinates are read from file : ',A)
 
 end subroutine load_coordinates
+
+!===============================================================================
+! Subroutine:  load_paths
+!===============================================================================
+
+subroutine load_paths()
+
+    use prmfile
+    use pmf_dat
+    use pmf_utils
+    use pmf_cvs
+    use test_coords_dat
+    use pmf_control
+
+    implicit none
+    character(PRMFILE_MAX_GROUP_NAME)       :: grpname
+    integer                                 :: i
+    ! --------------------------------------------------------------------------
+
+    write(PMF_OUT,*)
+    call pmf_utils_heading(PMF_OUT,'PATHS', ':')
+
+    ! get name of group
+    if( PathFile(1:1) .eq. '{' ) then
+        grpname = PathFile(2:len_trim(PathFile)-1)
+        write(PMF_OUT,110) trim(grpname)
+        ! open goup with name from PathFile
+        if( .not. prmfile_open_group(ControlPrmfile,trim(grpname)) ) then
+            write(PMF_OUT,130) trim(grpname)
+            return
+        end if
+        call pmf_control_read_paths_from_group(ControlPrmfile)
+    else
+        write(PMF_OUT,120) trim(PathFile)
+
+        call prmfile_init(PathPrmfile)
+
+        if( .not. prmfile_read(PathPrmfile,PathFile) ) then
+            call pmf_utils_exit(PMF_OUT,1,'[PMFLIB] Unable to load file: ' // trim(PathFile) // '!')
+        end if
+
+        call pmf_control_read_paths_from_group(PathPrmfile)
+
+        call prmfile_clear(PathPrmfile)
+    end if
+
+    ! join CVs
+    do i=1,NumOfCVs
+        if( CVList(i)%cv%requirepath ) then
+            call CVList(i)%cv%join_cv2path()
+        end if
+    end do
+
+    return
+
+110 format('Paths are read from group: ',A)
+120 format('Paths are read from file : ',A)
+130 format(' >> No ',A,' group was specified.')
+
+end subroutine load_paths
 
 !===============================================================================
 

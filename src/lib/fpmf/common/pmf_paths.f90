@@ -359,6 +359,11 @@ subroutine pmf_paths_load_cvs(prm_fin,path_item)
                                 trim(CVList(path_item%cvindxs(i))%cv%name) // ''' is already member of path number ' // &
                                 trim(code) // '!')
         end if
+        if( CVList(path_item%cvindxs(i))%cv%requirepath ) then
+            call pmf_utils_exit(PMF_OUT,1,'Collective variable ''' // &
+                                trim(CVList(path_item%cvindxs(i))%cv%name) // ''' depends on path. ' // &
+                                'Thus, it cannot be a member of this path!')
+        end if
         CVList(path_item%cvindxs(i))%cv%pathidx = path_item%idx
     end do
 

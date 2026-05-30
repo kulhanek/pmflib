@@ -40,14 +40,17 @@ program test_coords
         stop
     end if
 
-    if( command_argument_count() .ne. 2 ) then
+    if( (command_argument_count() .ne. 2) .and. (command_argument_count() .ne. 3) ) then
         call print_usage
-        call pmf_utils_exit(PMF_OUT,1,'Incorrect number of arguments was specified (two expected)!')
+        call pmf_utils_exit(PMF_OUT,1,'Incorrect number of arguments was specified (two/three expected)!')
     end if
 
 ! get arguments and print -----------------------
     call get_command_argument(1, ControlFile)
     call get_command_argument(2, CoordFile)
+    if(command_argument_count() .eq. 3) then
+        call get_command_argument(3, PathFile)
+    end if
 
 ! init timers
     call pmf_timers_init_top()
@@ -60,6 +63,10 @@ program test_coords
 
 ! load coordinates and test them ----------------
     call load_coordinates
+
+    if(command_argument_count() .eq. 3) then
+        call load_paths
+    end if
 
 ! initialization --------------------------------
     call initialization_pass_II

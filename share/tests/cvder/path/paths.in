@@ -1,0 +1,13 @@
+[DIS]
+name    cv1
+group_a @1
+group_b @2
+
+[DIS]
+name    cv2
+group_a @7
+group_b @3
+
+[PATHS]
+name   p1cv
+path   p1

@@ -431,7 +431,7 @@ subroutine abf_core_lf_get_icfp()
 
     implicit none
     integer                :: i,j,m
-    real(PMFDP)            :: f1, nv, icfp
+    real(PMFDP)            :: f1, nv
     ! --------------------------------------------------------------------------
 
     ! shift history buffers

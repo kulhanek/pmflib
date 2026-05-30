@@ -35,7 +35,12 @@ ADD_TEST(CVDerRand03-PTPATHS2PN ${EXECUTABLE_OUTPUT_PATH}/tests/test-cvs
 
 
 
-
+ADD_TEST(CVDerRand01-PATHS ${EXECUTABLE_OUTPUT_PATH}/tests/test-cvs
+                        ../random01.in paths.in path.in)
+ADD_TEST(CVDerRand02-PATHS ${EXECUTABLE_OUTPUT_PATH}/tests/test-cvs
+                        ../random02.in paths.in path.in)
+ADD_TEST(CVDerRand03-PATHS ${EXECUTABLE_OUTPUT_PATH}/tests/test-cvs
+                        ../random03.in paths.in path.in)
 
 
 

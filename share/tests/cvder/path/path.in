@@ -1,0 +1,29 @@
+[PATH]
+name     p1
+ncvs     2
+nbeads   19
+names              cv1          cv2
+types              DIS          DIS
+min        3.00000e+00  3.00000e+00
+max        1.15000e+01  1.15000e+01
+maxmov     2.00000e-01  2.00000e-01
+permanent  3.00000e+00  1.15000e+01
+flexible   3.19809e+00  1.11857e+01
+flexible   3.79069e+00  1.07566e+01
+flexible   4.50346e+00  1.05536e+01
+flexible   5.21178e+00  1.03352e+01
+flexible   5.89571e+00  1.00497e+01
+flexible   6.54013e+00  9.68429e+00
+flexible   7.12497e+00  9.22948e+00
+flexible   7.66231e+00  8.71877e+00
+flexible   8.18676e+00  8.19467e+00
+flexible   8.71146e+00  7.67083e+00
+flexible   9.22158e+00  7.13291e+00
+flexible   9.67733e+00  6.54878e+00
+flexible   1.00438e+01  5.90500e+00
+flexible   1.03236e+01  5.21875e+00
+flexible   1.05529e+01  4.51378e+00
+flexible   1.07656e+01  3.80378e+00
+flexible   1.11917e+01  3.20740e+00
+permanent  1.15000e+01  3.00000e+00
+

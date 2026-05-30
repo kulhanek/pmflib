@@ -501,12 +501,14 @@ subroutine pmf_control_read_paths(prm_fin)
     use prmfile
     use pmf_dat
     use pmf_utils
+    use pmf_cvs
 
     implicit none
-    type(PRMFILE_TYPE),intent(inout)       :: prm_fin
+    type(PRMFILE_TYPE),intent(inout)        :: prm_fin
     ! -----------------------------------------------
-    character(PRMFILE_MAX_GROUP_NAME)      :: grpname
-    type(PRMFILE_TYPE)                     :: locprmfile
+    character(PRMFILE_MAX_GROUP_NAME)       :: grpname
+    type(PRMFILE_TYPE)                      :: locprmfile
+    integer                                 :: i,nj
     ! --------------------------------------------------------------------------
 
     write(PMF_OUT,*)
@@ -537,11 +539,35 @@ subroutine pmf_control_read_paths(prm_fin)
         call prmfile_clear(locprmfile)
     end if
 
+    write(PMF_OUT,*)
+    call pmf_utils_heading(PMF_OUT,'CV <++> PATHS','+')
+
+    nj = 0
+
+    ! join CVs
+    do i=1,NumOfCVs
+        if( CVList(i)%cv%requirepath ) then
+            nj = nj + 1
+            write(PMF_OUT,*)
+            write(PMF_OUT,200) nj,trim(CVList(i)%cv%ctype)
+            write(PMF_OUT,210) trim(CVList(i)%cv%name)
+            call CVList(i)%cv%join_cv2path()
+        end if
+    end do
+
+    if( nj .eq. 0 ) then
+        write(PMF_OUT,220)
+    end if
+
     return
 
 110 format('Paths are read from group: ',A)
 120 format('Paths are read from file : ',A)
 130 format(' >> No ',A,' group was specified.')
+
+200 format('== Joining collective variable #',I4.4,' of type "',A,'"')
+210 format('   Collective variable name : ''',a,'''')
+220 format('>> No joined CVs with PATHs.')
 
 end subroutine pmf_control_read_paths
 

@@ -52,7 +52,7 @@ type CVType
     integer,pointer             :: lindexes(:)      ! local atom indexes
     integer                     :: ngrps            ! number of groups
     integer,pointer             :: grps(:)          ! groups boundary
-    integer                     :: pathidx          ! if CV is part of path
+    integer                     :: pathidx          ! if CV is part of path = its value is controlled by path
     integer                     :: nindatoms        ! number of individual atoms
     integer,pointer             :: indlindexes(:)   ! individual local atom indexes
     ! CV abilities -------------------------------
@@ -61,10 +61,14 @@ type CVType
     logical                     :: isalgebraic      ! this CV combines other CVs
     integer,pointer             :: algebraicidxs(:) ! which CV indexes are used in algebra
 
+    ! CV abilities -------------------------------
+    logical                     :: requirepath      ! require the path to get a CV value
+
     contains
         ! executive methods
         procedure   :: reset_cv
         procedure   :: load_cv
+        procedure   :: join_cv2path
         procedure   :: calculate_cv
         procedure   :: calculate_cv2ddrvs
         procedure   :: free_cv
@@ -127,6 +131,7 @@ subroutine reset_cv(cv_item)
     cv_item%indlindexes     => NULL()
     cv_item%isalgebraic     = .false.
     cv_item%algebraicidxs   => NULL()
+    cv_item%requirepath     = .false.
 
 end subroutine reset_cv
 
@@ -151,6 +156,26 @@ subroutine load_cv(cv_item,prm_fin)
     ignored_arg__ = same_type_as(prm_fin,prm_fin)
 
 end subroutine load_cv
+
+!===============================================================================
+! Subroutine:  join_cv2path
+!===============================================================================
+
+subroutine join_cv2path(cv_item)
+
+    use prmfile
+    use pmf_utils
+
+    implicit none
+    class(CVType)                       :: cv_item
+    ! --------------------------------------------------------------------------
+
+    if( cv_item%requirepath ) then
+        call pmf_utils_exit(PMF_OUT,1, &
+                'join_cv2path not implemented for ' // cv_item%ctype)
+    end if
+
+end subroutine join_cv2path
 
 !===============================================================================
 ! Subroutine:  calculate_cv
@@ -280,7 +305,6 @@ character(PMF_MAX_SUNIT) function get_ulabel(cv_item)
     get_ulabel = pmf_unit_label(cv_item%unit)
 
 end function get_ulabel
-
 
 !===============================================================================
 ! Function:   conv_to_ivalue

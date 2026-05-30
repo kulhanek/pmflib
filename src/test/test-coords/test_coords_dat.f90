@@ -36,6 +36,9 @@ type(PRMFILE_TYPE)          :: CoordPrmfile
 character(len=PMF_MAX_PATH) :: SnapshotFile
 logical                     :: UseExternalSnapshosts = .false.
 
+character(len=PMF_MAX_PATH) :: PathFile
+type(PRMFILE_TYPE)          :: PathPrmfile
+
 !===============================================================================
 
 integer,parameter       :: TEST_DERIV       = 1     ! numerical versus analytical derivatives

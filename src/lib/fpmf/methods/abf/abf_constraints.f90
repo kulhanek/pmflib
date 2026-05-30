@@ -374,7 +374,7 @@ subroutine abf_constraints_calc_Pfix(frcoldp,frcnewp,cvsdrv)
     real(PMFDP)         :: cvsdrv(:,:,:)
     ! --------------------------------------------
     real(PMFDP)         :: d1, d2, d3
-    integer             :: i, ci, j, k, l
+    integer             :: i, ci, j, k
     ! -----------------------------------------------------------------------------
 
    d1 = (frcold(1,1)-frcold(1,2))**2 + (frcold(2,1)-frcold(2,2))**2 + (frcold(3,1)-frcold(3,2))**2
