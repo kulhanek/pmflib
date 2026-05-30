@@ -101,8 +101,8 @@ subroutine abf_init_dat
     fekinsmooth     = 0
 
     feimode         = 1
-    fhramp_min      = 20000
-    fhramp_max      = 30000
+    fhramp_min      = 2000
+    fhramp_max      = 3000
 
     fusmode         = .false.
     falignbias      = .false.
