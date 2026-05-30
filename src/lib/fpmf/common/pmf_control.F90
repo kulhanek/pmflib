@@ -43,6 +43,7 @@ subroutine pmf_control_read_pmflib_group(prm_fin)
     use cst_control
     use stm_control
     use pdrv_control
+    use mtc_control
     use pmf_dat
     use pmf_mask
     use pmf_init
@@ -84,6 +85,7 @@ subroutine pmf_control_read_pmflib_group(prm_fin)
     call pmf_utils_heading(PMF_OUT,'Extensions','=')
     call pdrv_control_read_pdrv(prm_fin)
     call mon_control_read_mon(prm_fin)
+    call mtc_control_read_mtc(prm_fin)
 
     ! read filenames
     write(PMF_OUT,*)
@@ -306,6 +308,12 @@ subroutine pmf_control_read_files(prm_fin)
             call pmf_ctrl_print_default_stritem('fmondef',fmondef)
             call pmf_ctrl_print_default_stritem('fmonout',fmonout)
         end if
+        if( mtc_enabled ) then
+            write(PMF_OUT,900)
+            call pmf_ctrl_print_default_stritem('fmtcdef',fmtcdef)
+            call pmf_ctrl_print_default_stritem('fmtcout',fmtcout)
+            call pmf_ctrl_print_default_stritem('fmtcrst',fmtcrst)
+        end if
         return
     end if
 
@@ -356,6 +364,12 @@ subroutine pmf_control_read_files(prm_fin)
         call  pmf_ctrl_read_stritem(prm_fin,'fmondef',fmondef)
         call  pmf_ctrl_read_stritem(prm_fin,'fmonout',fmonout)
     end if
+    if( mtc_enabled ) then
+        write(PMF_OUT,900)
+        call pmf_ctrl_read_stritem(prm_fin,'fmtcdef',fmtcdef)
+        call pmf_ctrl_read_stritem(prm_fin,'fmtcout',fmtcout)
+        call pmf_ctrl_read_stritem(prm_fin,'fmtcrst',fmtcrst)
+    end if
 
     return
 
@@ -367,6 +381,7 @@ subroutine pmf_control_read_files(prm_fin)
 500 format('# -------- Monitoring (MON)')
 700 format('# -------- String Method (STM)')
 800 format('# -------- Path Driving (PDRV)')
+900 format('# -------- Metric Tensor Correction (MTC)')
 
 end subroutine pmf_control_read_files
 
@@ -859,6 +874,7 @@ subroutine pmf_control_read_method_cvs_and_paths(prm_fin)
     use cst_control
     use stm_control
     use pdrv_control
+    use mtc_control
 
     implicit none
     type(PRMFILE_TYPE),intent(inout)       :: prm_fin
@@ -890,6 +906,9 @@ subroutine pmf_control_read_method_cvs_and_paths(prm_fin)
     end if
     if( mon_enabled ) then
         call mon_control_read_cvs(prm_fin)
+    end if
+    if( mtc_enabled ) then
+        call mtc_control_read_cvs(prm_fin)
     end if
 
 end subroutine pmf_control_read_method_cvs_and_paths

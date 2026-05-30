@@ -54,6 +54,7 @@ integer     :: PMFLIB_TOTAL_TIMER                       = -10
                 integer     :: PMFLIB_STM_NET_TIMER     = -84
         integer     :: PMFLIB_EXTENSIONS_TIMER          = -90
             integer     :: PMFLIB_MON_TIMER             = -120
+            integer     :: PMFLIB_MTC_TIMER             = -122
             integer     :: PMFLIB_PDRV_TIMER            = -130
 
 contains
@@ -112,8 +113,9 @@ subroutine pmf_timers_init
                 PMFLIB_CST_ICF_ICFK_TIMER    = add_timer(PMFLIB_CST_ICF_TIMER,'ICFK')
         PMFLIB_RST_TIMER            = add_timer(PMFLIB_METHODS_TIMER,'RST - Restrained Dynamics')
     PMFLIB_EXTENSIONS_TIMER          = add_timer(PMFLIB_TIMER,'Extensions')
-        PMFLIB_MON_TIMER        = add_timer(PMFLIB_EXTENSIONS_TIMER,'Monitoring')
-        PMFLIB_PDRV_TIMER       = add_timer(PMFLIB_EXTENSIONS_TIMER,'Path Driving')
+        PMFLIB_MON_TIMER        = add_timer(PMFLIB_EXTENSIONS_TIMER,'MON - Monitoring')
+        PMFLIB_MTC_TIMER        = add_timer(PMFLIB_EXTENSIONS_TIMER,'MTC - Metric Tensor Correction')
+        PMFLIB_PDRV_TIMER       = add_timer(PMFLIB_EXTENSIONS_TIMER,'PDRV - Path Driving')
 
 end subroutine pmf_timers_init
 

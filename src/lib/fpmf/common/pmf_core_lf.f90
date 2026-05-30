@@ -70,6 +70,7 @@ subroutine pmf_core_lf_force(x,v,f,epot,epmf)
     use pmf_core
     use pmf_paths
     use pdrv_core
+    use mtc_core
 
     implicit none
     real(PMFDP)             :: x(:,:)        ! position in t
@@ -146,6 +147,12 @@ subroutine pmf_core_lf_force(x,v,f,epot,epmf)
         call pmf_timers_start_timer(PMFLIB_MON_TIMER)
         call mon_output_write_output
         call pmf_timers_stop_timer(PMFLIB_MON_TIMER)
+    end if
+
+    if( mtc_enabled ) then
+        call pmf_timers_start_timer(PMFLIB_MTC_TIMER)
+        call mtc_core_main
+        call pmf_timers_stop_timer(PMFLIB_MTC_TIMER)
     end if
 
     if( mtd_enabled ) then

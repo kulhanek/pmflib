@@ -168,7 +168,7 @@ SET(PMF_ABP_CORE_SRC
         methods/abp/abp_finalize.f90
         )
 
-# constrained dynamics ----------------------------------------------------------
+# CST - Constrained Dynamics ---------------------------------------------------
 
 SET(PMF_CST_CORE_SRC
         methods/cst/cst_dat.f90
@@ -188,7 +188,7 @@ SET(PMF_CST_CORE_SRC
         methods/cst/cst_accu.f90
         )
 
-# metadynamics -----------------------------------------------------------------
+# MTD - Metadynamics -----------------------------------------------------------
 
 SET(PMF_MTD_CORE_SRC
         methods/mtd/mtd_dat.f90
@@ -204,7 +204,7 @@ SET(PMF_MTD_CORE_SRC
         methods/mtd/mtd_trajectory.f90
         )
 
-# restrained dynamics -----------------------------------------------------------
+# RST - Restrained Dynamics ----------------------------------------------------
 
 SET(PMF_RST_CORE_SRC
         methods/rst/rst_dat.f90
@@ -218,7 +218,7 @@ SET(PMF_RST_CORE_SRC
         methods/rst/rst_finalize.f90
         )
 
-# string method ----------------------------------------------------------------
+# STM - String Method ----------------------------------------------------------
 
 SET(PMF_STM_CORE_SRC
         methods/stm/stm_dat.f90
@@ -231,7 +231,21 @@ SET(PMF_STM_CORE_SRC
         methods/stm/stm_finalize.f90
         )
 
-# monitoring -------------------------------------------------------------------
+# MTC - Metric Tensor Correction -----------------------------------------------
+
+SET(PMF_MTC_CORE_SRC
+        methods/mtc/mtc_dat.f90
+        methods/mtc/mtc_init.f90
+        methods/mtc/mtc_cvs.f90
+        methods/mtc/mtc_control.f90
+        methods/mtc/mtc_output.f90
+        methods/mtc/mtc_core.f90
+        methods/mtc/mtc_restart.f90
+        methods/mtc/mtc_accu.f90
+        methods/mtc/mtc_finalize.f90
+        )
+
+# MON - Monitoring -------------------------------------------------------------
 
 SET(PMF_MON_CORE_SRC
         methods/mon/mon_dat.f90
@@ -242,7 +256,7 @@ SET(PMF_MON_CORE_SRC
         methods/mon/mon_finalize.f90
         )
 
-# path driving -----------------------------------------------------------------
+# PDRV - Path Driving ----------------------------------------------------------
 
 SET(PMF_PDRV_CORE_SRC
         methods/pdrv/pdrv_dat.f90
@@ -266,6 +280,7 @@ SET(FPMF_SRC
         ${PMF_RST_CORE_SRC}
         ${PMF_STM_CORE_SRC}
         ${PMF_MON_CORE_SRC}
+        ${PMF_MTC_CORE_SRC}
         ${PMF_PDRV_CORE_SRC}
         )
 

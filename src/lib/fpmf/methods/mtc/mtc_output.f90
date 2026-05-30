@@ -1,10 +1,7 @@
 !===============================================================================
 ! PMFLib - Library Supporting Potential of Mean Force Calculations
 !-------------------------------------------------------------------------------
-!    Copyright (C) 2007 Martin Petrek, petrek@chemi.muni.cz &
-!                       Petr Kulhanek, kulhanek@enzim.hu
-!    Copyright (C) 2006 Petr Kulhanek, kulhanek@chemi.muni.cz &
-!                       Martin Petrek, petrek@chemi.muni.cz
+!    Copyright (C) 2026 Petr Kulhanek, kulhanek@chemi.muni.cz
 !
 !    This library is free software; you can redistribute it and/or
 !    modify it under the terms of the GNU Lesser General Public
@@ -22,7 +19,7 @@
 !    Boston, MA  02110-1301  USA
 !===============================================================================
 
-module mon_output
+module mtc_output
 
 use pmf_sizes
 use pmf_constants
@@ -31,10 +28,10 @@ implicit none
 contains
 
 !===============================================================================
-! Subroutine:  mon_output_open
+! Subroutine:  mtc_output_open
 !===============================================================================
 
-subroutine mon_output_open
+subroutine mtc_output_open
 
     use pmf_utils
     use pmf_dat
@@ -43,68 +40,71 @@ subroutine mon_output_open
     implicit none
     ! --------------------------------------------------------------------------
 
-    call pmf_utils_open(MON_OUT,fmonout,'R')
+    call pmf_utils_open(MTC_OUT,fmtcout,'R')
 
-    write(MON_OUT,10)
-    write(MON_OUT,20)
-    write(MON_OUT,30)
+    write(MTC_OUT,10)
+    write(MTC_OUT,20)
+    write(MTC_OUT,30)
 
     return
 
 10 format('#===============================================================================')
-20 format('# Monitoring Method                                                             ')
+20 format('# Metric Tensor Correction                                                      ')
 30 format('#===============================================================================')
 
-end subroutine mon_output_open
+end subroutine mtc_output_open
 
 !===============================================================================
-! Subroutine:  mon_output_write_header
+! Subroutine:  mtc_output_write_header
 !===============================================================================
 
-subroutine mon_output_write_header
+subroutine mtc_output_write_header
 
     use pmf_constants
     use pmf_dat
-    use mon_dat
+    use mtc_dat
     use pmf_cvs
 
     implicit none
     integer        :: i,off
     ! --------------------------------------------------------------------------
 
-    write(MON_OUT,1) '#'
-    write(MON_OUT,10,advance='NO') '#  NSTEP '
-    do i=1,NumOfMONCVs
-        write(MON_OUT,20,advance='NO') trim(MONCVList(i)%cv%name)
+    write(MTC_OUT,1) '#'
+    write(MTC_OUT,10,advance='NO') '#  NSTEP '
+    do i=1,NumOfMTCCVs
+        write(MTC_OUT,20,advance='NO') trim(MTCCVList(i)%cv%name)
     end do
-    write(MON_OUT,*)
+    write(MTC_OUT,20,advance='NO') 'MTC'
+    write(MTC_OUT,*)
 
-    write(MON_OUT,10,advance='NO') '#        '
-    do i=1,NumOfMONCVs
-        write(MON_OUT,30,advance='NO') '['//trim(MONCVList(i)%cv%get_ulabel())//']'
+    write(MTC_OUT,10,advance='NO') '#        '
+    do i=1,NumOfMTCCVs
+        write(MTC_OUT,30,advance='NO') '['//trim(MTCCVList(i)%cv%get_ulabel())//']'
     end do
-    write(MON_OUT,*)
+    write(MTC_OUT,20,advance='NO') '[i.u.]'
+    write(MTC_OUT,*)
 
-    write(MON_OUT,10,advance='NO') '#--------'
-    do i=1,NumOfMONCVs
-        write(MON_OUT,40,advance='NO') '---------------'
+    write(MTC_OUT,10,advance='NO') '#--------'
+    do i=1,NumOfMTCCVs
+        write(MTC_OUT,40,advance='NO') '---------------'
     end do
-    write(MON_OUT,*)
+    write(MTC_OUT,40,advance='NO') '---------------'
+    write(MTC_OUT,*)
 
-    write(MON_OUT,10,advance='NO') '#       1'
+    write(MTC_OUT,10,advance='NO') '#       1'
     off = 1
-    do i=off+1,off+NumOfMONCVs
-        write(MON_OUT,15,advance='NO') i
+    do i=off+1,off+NumOfMTCCVs
+        write(MTC_OUT,15,advance='NO') i
     end do
-    write(MON_OUT,*)
+    write(MTC_OUT,*)
 
-    write(MON_OUT,10,advance='NO') '#--------'
-    do i=1,NumOfMONCVs
-        write(MON_OUT,40,advance='NO') '---------------'
+    write(MTC_OUT,10,advance='NO') '#--------'
+    do i=1,NumOfMTCCVs+1
+        write(MTC_OUT,40,advance='NO') '---------------'
     end do
-    write(MON_OUT,*)
+    write(MTC_OUT,*)
 
-    flush(MON_OUT)
+    flush(MTC_OUT)
 
     return
 
@@ -115,46 +115,50 @@ subroutine mon_output_write_header
 30 format(1X,A15)
 40 format(1X,A15)
 
-end subroutine mon_output_write_header
+end subroutine mtc_output_write_header
 
 !===============================================================================
-! Subroutine:  mon_output_write_output
+! Subroutine:  mtc_output_write_output
 !===============================================================================
 
-subroutine mon_output_write_output
+subroutine mtc_output_write_output
 
     use pmf_constants
     use pmf_dat
-    use mon_dat
+    use mtc_dat
     use pmf_cvs
 
     implicit none
-    integer        :: i
+    integer         :: i
+    real(PMFDP)     :: mtc
     ! --------------------------------------------------------------------------
 
     if( fsample .le. 0 ) return ! output is written only of fsample > 0
     if( mod(fstep,fsample) .ne. 0 ) return
 
-    write(MON_OUT,10,advance='NO') fstep
+    write(MTC_OUT,10,advance='NO') fstep
 
-    do i=1,NumOfMONCVs
-     write(MON_OUT,20,advance='NO') &
-            MONCVList(i)%cv%get_rvalue(CVContext%CVsValues(MONCVList(i)%cvindx))
+    mtc = sqrt(fzdet)
+
+    do i=1,NumOfMTCCVs
+         write(MTC_OUT,20,advance='NO') &
+            MTCCVList(i)%cv%get_rvalue(CVContext%CVsValues(MTCCVList(i)%cvindx))
     end do
-    write(MON_OUT,*)
+    write(MTC_OUT,20,advance='NO') mtc
+    write(MTC_OUT,*)
 
     return
 
 10 format(I9)
 20 format(1X,F15.8)
 
-end subroutine mon_output_write_output
+end subroutine mtc_output_write_output
 
 !===============================================================================
-! Subroutine:  mon_output_close
+! Subroutine:  mtc_output_close
 !===============================================================================
 
-subroutine mon_output_close
+subroutine mtc_output_close
 
     use pmf_constants
     use pmf_dat
@@ -162,12 +166,12 @@ subroutine mon_output_close
     implicit none
     ! --------------------------------------------------------------------------
 
-    close(MON_OUT)
+    close(MTC_OUT)
 
     return
 
-end subroutine mon_output_close
+end subroutine mtc_output_close
 
 !===============================================================================
 
-end module mon_output
+end module mtc_output

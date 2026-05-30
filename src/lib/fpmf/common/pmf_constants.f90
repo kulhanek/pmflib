@@ -161,7 +161,7 @@ integer,parameter       :: ABP_OUT      = 371
 integer,parameter       :: ABP_RST      = 372
 integer,parameter       :: ABP_TRJ      = 373
 
-! metadyn part ----------------------------------------------------------------
+! metadynamic part -------------------------------------------------------------
 integer,parameter       :: MTD_INP      = 180
 integer,parameter       :: MTD_OUT      = 181
 integer,parameter       :: MTD_RST      = 182
@@ -173,16 +173,14 @@ integer,parameter       :: STM_INP      = 310
 integer,parameter       :: STM_OUT      = 311
 integer,parameter       :: STM_BEADID   = 312
 
+! mtc part ---------------------------------------------------------------------
+integer,parameter       :: MTC_INP      = 430
+integer,parameter       :: MTC_OUT      = 431
+integer,parameter       :: MTC_RST      = 438   
+
 ! monitoring part --------------------------------------------------------------
 integer,parameter       :: MON_INP      = 190
 integer,parameter       :: MON_OUT      = 191
-
-! remd part --------------------------------------------------------------------
-integer,parameter       :: REMD_OUT     = 211
-
-! gap part ---------------------------------------------------------------------
-integer,parameter       :: GAP_INP      = 221
-integer,parameter       :: GAP_OUT      = 222
 
 ! path driving method ----------------------------------------------------------
 integer,parameter       :: PDRV_INP     = 412

@@ -96,6 +96,7 @@ logical                     :: abf_enabled
 logical                     :: abf_cst_enabled  ! ABF CST sub-engine required
 logical                     :: abp_enabled
 logical                     :: mon_enabled
+logical                     :: mtc_enabled
 logical                     :: stm_enabled
 logical                     :: pdrv_enabled
 
@@ -159,7 +160,7 @@ character(PMF_MAX_PATH)     :: fabfout
 character(PMF_MAX_PATH)     :: fabfrst
 character(PMF_MAX_PATH)     :: fabftrj
 
-! adaptive biasing potential method ------------------
+! adaptive biasing potential method -------------
 character(PMF_MAX_PATH)     :: fabpdef
 character(PMF_MAX_PATH)     :: fabpout
 character(PMF_MAX_PATH)     :: fabprst
@@ -168,6 +169,11 @@ character(PMF_MAX_PATH)     :: fabptrj
 ! string method ----------------------------------
 character(PMF_MAX_PATH)     :: fstmdef
 character(PMF_MAX_PATH)     :: fstmout
+
+! MTC method -------------------------------------
+character(PMF_MAX_PATH)     :: fmtcdef
+character(PMF_MAX_PATH)     :: fmtcout
+character(PMF_MAX_PATH)     :: fmtcrst
 
 ! monitoring -------------------------------------
 character(PMF_MAX_PATH)     :: fmondef

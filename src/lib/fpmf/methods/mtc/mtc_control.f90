@@ -1,10 +1,7 @@
 !===============================================================================
 ! PMFLib - Library Supporting Potential of Mean Force Calculations
 !-------------------------------------------------------------------------------
-!    Copyright (C) 2007 Petr Kulhanek, kulhanek@enzim.hu
-!    Copyright (C) 2006 Petr Kulhanek, kulhanek@chemi.muni.cz &
-!                       Martin Petrek, petrek@chemi.muni.cz
-!    Copyright (C) 2005 Petr Kulhanek, kulhanek@chemi.muni.cz
+!    Copyright (C) 2026 Petr Kulhanek, kulhanek@chemi.muni.cz
 !
 !    This library is free software; you can redistribute it and/or
 !    modify it under the terms of the GNU Lesser General Public
@@ -22,7 +19,7 @@
 !    Boston, MA  02110-1301  USA
 !===============================================================================
 
-module mon_control
+module mtc_control
 
 use pmf_sizes
 use pmf_constants
@@ -31,26 +28,26 @@ implicit none
 contains
 
 !===============================================================================
-! Subroutine:  mon_control_read_mon
-! load only [mon] section
+! Subroutine:  mtc_control_read_mtc
+! load only [mtc] section
 !===============================================================================
 
-subroutine mon_control_read_mon(prm_fin)
+subroutine mtc_control_read_mtc(prm_fin)
 
     use prmfile
     use pmf_dat
     use pmf_utils
-    use mon_dat
-    use mon_init
+    use mtc_dat
+    use mtc_init
     use pmf_control_utils
 
     implicit none
     type(PRMFILE_TYPE),intent(inout)    :: prm_fin
     ! --------------------------------------------------------------------------
 
-    call mon_init_dat
+    call mtc_init_dat
 
-    write(PMF_OUT,'(/,a)')   '--- [mon] ----------------------------------------------------------------------'
+    write(PMF_OUT,'(/,a)')   '--- [mtc] ----------------------------------------------------------------------'
 
     ! try open group
     if( .not. prmfile_open_group(prm_fin,'PMFLIB') ) then
@@ -59,42 +56,47 @@ subroutine mon_control_read_mon(prm_fin)
     end if
 
     ! try open section
-    if( .not. prmfile_open_section(prm_fin,'mon') ) then
+    if( .not. prmfile_open_section(prm_fin,'mtc') ) then
         write(PMF_OUT,5)
         return
     end if
 
     ! read configuration
     call pmf_ctrl_read_integer(prm_fin,'fmode',fmode,'i12')
-    call pmf_ctrl_check_integer_in_range('MON','fmode',fmode,0,1)
+    call pmf_ctrl_check_integer_in_range('MTC','fmode',fmode,0,1)
 
     if( fmode .eq. 0 ) then
         write(PMF_OUT,5)
-        ! no mon - rest of section is skipped
+        ! no mtc - rest of section is skipped
         call prmfile_set_sec_as_processed(prm_fin)
         return
     end if
 
     call pmf_ctrl_read_integer(prm_fin,'fsample',fsample,'i12')
-    call pmf_ctrl_check_integer('MON','fsample',fsample,0,CND_GE)
+    call pmf_ctrl_check_integer('MTC','fsample',fsample,0,CND_GE)
 
-    mon_enabled = fmode .gt. 0
+    call pmf_ctrl_read_logical(prm_fin,'frestart',frestart)
+
+    call pmf_ctrl_read_integer(prm_fin,'frstupdate',frstupdate,'I12')
+    call pmf_ctrl_check_integer('MTC','frstupdate',frstupdate,0,CND_GE)
+
+    mtc_enabled = fmode .gt. 0
 
     return
 
-  5 format (' >> Monitoring is disabled!')
+  5 format (' >> Metric Tensor Correction is disabled!')
 
-end subroutine mon_control_read_mon
+end subroutine mtc_control_read_mtc
 
 !===============================================================================
-! Subroutine:  mon_control_read_cvs
+! Subroutine:  mtc_control_read_cvs
 !===============================================================================
 
-subroutine mon_control_read_cvs(prm_fin)
+subroutine mtc_control_read_cvs(prm_fin)
 
     use pmf_dat
     use pmf_utils
-    use mon_dat
+    use mtc_dat
     use prmfile
 
     implicit none
@@ -105,28 +107,28 @@ subroutine mon_control_read_cvs(prm_fin)
     ! --------------------------------------------------------------------------
 
     write(PMF_OUT,*)
-    call pmf_utils_heading(PMF_OUT,'{MON}',':')
+    call pmf_utils_heading(PMF_OUT,'{MTC}',':')
     write(PMF_OUT,*)
 
     ! get name of group
-    if( fmondef(1:1) .eq. '{' ) then
-        grpname = fmondef(2:len_trim(fmondef)-1)
+    if( fmtcdef(1:1) .eq. '{' ) then
+        grpname = fmtcdef(2:len_trim(fmtcdef)-1)
          write(PMF_OUT,110) trim(grpname)
-        ! open goup with name from mondef
+        ! open goup with name from mtcdef
         if( .not. prmfile_open_group(prm_fin,trim(grpname)) ) then
-            call pmf_utils_exit(PMF_OUT,1,'[MON] Unable to open group {' // trim(grpname) // '}!')
+            call pmf_utils_exit(PMF_OUT,1,'[MTC] Unable to open group {' // trim(grpname) // '}!')
         end if
-        call mon_control_read_cvs_from_group(prm_fin)
+        call mtc_control_read_cvs_from_group(prm_fin)
     else
-        write(PMF_OUT,120) trim(fmondef)
+        write(PMF_OUT,120) trim(fmtcdef)
 
         call prmfile_init(locprmfile)
 
-        if( .not. prmfile_read(locprmfile,fmondef) ) then
-            call pmf_utils_exit(PMF_OUT,1,'[MON] Unable to load file: ' // trim(fmondef) // '!')
+        if( .not. prmfile_read(locprmfile,fmtcdef) ) then
+            call pmf_utils_exit(PMF_OUT,1,'[MTC] Unable to load file: ' // trim(fmtcdef) // '!')
         end if
 
-        call mon_control_read_cvs_from_group(locprmfile)
+        call mtc_control_read_cvs_from_group(locprmfile)
 
         call prmfile_clear(locprmfile)
     end if
@@ -136,19 +138,20 @@ subroutine mon_control_read_cvs(prm_fin)
 110 format('Collective variables are read from group: ',A)
 120 format('Collective variables are read from file : ',A)
 
-end subroutine mon_control_read_cvs
+end subroutine mtc_control_read_cvs
 
 !===============================================================================
-! Subroutine:  mon_control_read_cvs_from_group
+! Subroutine:  mtc_control_read_cvs_from_group
 !===============================================================================
 
-subroutine mon_control_read_cvs_from_group(prm_fin)
+subroutine mtc_control_read_cvs_from_group(prm_fin)
 
     use prmfile
     use pmf_dat
     use pmf_utils
     use cv_common
-    use mon_dat
+    use mtc_dat
+    use mtc_cvs
 
     implicit none
     type(PRMFILE_TYPE),intent(inout)        :: prm_fin
@@ -160,23 +163,23 @@ subroutine mon_control_read_cvs_from_group(prm_fin)
     ! --------------------------------------------------------------------------
 
     ! count number of sections in group
-    NumOfMONCVs = prmfile_count_group(prm_fin)
+    NumOfMTCCVs = prmfile_count_group(prm_fin)
 
-    if( NumOfMONCVs .le. 0 ) then
+    if( NumOfMTCCVs .le. 0 ) then
         ! no CV in current or specified group
         fmode = 0
-        mon_enabled = .false.
+        mtc_enabled = .false.
         write(PMF_OUT,100)
         return
     end if
 
-    write(PMF_OUT,110) NumOfMONCVs
+    write(PMF_OUT,110) NumOfMTCCVs
 
     ! allocate list of CVs indexes ------------------------------------------------
-    allocate(MONCVList(NumOfMONCVs), stat = alloc_failed)
+    allocate(MTCCVList(NumOfMTCCVs), stat = alloc_failed)
 
     if ( alloc_failed .ne. 0 ) then
-        call pmf_utils_exit(PMF_OUT,1,'[MON] Unable to allocate memory for coordinate data!')
+        call pmf_utils_exit(PMF_OUT,1,'[MTC] Unable to allocate memory for coordinate data!')
     end if
 
     ! enumerate sections ----------------------------------------------------------
@@ -188,14 +191,17 @@ subroutine mon_control_read_cvs_from_group(prm_fin)
         write(PMF_OUT,130) i
         if( resname .ne. 'CV' ) then
             call pmf_utils_exit(PMF_OUT,1, &
-                 '[MON] Illegal section name ['//trim(resname)//'] - only [CV] is allowed!')
+                 '[MTC] Illegal section name ['//trim(resname)//'] - only [CV] is allowed!')
         end if
         if( .not. prmfile_get_string_by_key(prm_fin,'name',cvname)) then
-            call pmf_utils_exit(PMF_OUT,1,'[MON] CV name is not provided!')
+            call pmf_utils_exit(PMF_OUT,1,'[MTC] CV name is not provided!')
         end if
         write(PMF_OUT,140) trim(cvname)
-        MONCVList(i)%cvindx = cv_common_find_cv(cvname)
-        MONCVList(i)%cv => CVList(MONCVList(i)%cvindx)%cv
+        MTCCVList(i)%cvindx = cv_common_find_cv(cvname)
+        MTCCVList(i)%cv => CVList(MTCCVList(i)%cvindx)%cv
+
+        ! read the rest of MTC CV
+        call mtc_cvs_read_cv(prm_fin,MTCCVList(i))
 
         eresult = prmfile_next_section(prm_fin)
         i = i + 1
@@ -204,12 +210,12 @@ subroutine mon_control_read_cvs_from_group(prm_fin)
     return
 
 100 format('>>> INFO: No collective variables are defined. Monitoring is switched off!')
-110 format('Number of collective variables : ',I4)
-130 format('== Reading collective variable #',I4.4)
+110 format('Number of collective variables : ',I2)
+130 format('== Reading collective variable #',I2.2)
 140 format('   Collective variable name : ',a)
 
-end subroutine mon_control_read_cvs_from_group
+end subroutine mtc_control_read_cvs_from_group
 
 !===============================================================================
 
-end module mon_control
+end module mtc_control

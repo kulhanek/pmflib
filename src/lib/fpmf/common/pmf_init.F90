@@ -1,6 +1,7 @@
 !===============================================================================
 ! PMFLib - Library Supporting Potential of Mean Force Calculations
 !-------------------------------------------------------------------------------
+!    Copyright (C) 2026 Petr Kulhanek, kulhanek@chemi.muni.cz
 !    Copyright (C) 2011-2015 Petr Kulhanek, kulhanek@chemi.muni.cz
 !    Copyright (C) 2013-2015 Letif Mones, lam81@cam.ac.uk
 !    Copyright (C) 2007 Petr Kulhanek, kulhanek@enzim.hu
@@ -82,6 +83,7 @@ subroutine pmf_init_dat
     abf_cst_enabled = .false.
     abp_enabled  = .false.
     mon_enabled  = .false.
+    mtc_enabled  = .false.
     stm_enabled  = .false.
     pdrv_enabled = .false.
 
@@ -123,6 +125,10 @@ subroutine pmf_init_dat
 
     fstmdef     = '{STM}'
     fstmout     = '_stm.out'
+
+    fmtcdef     = '{MTC}'
+    fmtcout     = '_mtc.out'
+    fmtcrst     = '_mtc.rst'
 
     fmondef     = '{MON}'
     fmonout     = '_mon.out'
@@ -565,6 +571,7 @@ subroutine pmf_init_pmf_methods()
     use mtd_init
     use cst_init
     use stm_init
+    use mtc_init
     use pdrv_init
 
     implicit none
@@ -598,12 +605,17 @@ subroutine pmf_init_pmf_methods()
         call cst_init_method
     end if
 
+    if( mtc_enabled ) then
+        call mtc_init_method
+    end if
+
     if( mon_enabled ) then
         call mon_init_method
     end if
 
     pmf_enabled = abf_enabled .or. abp_enabled .or. mtd_enabled .or. stm_enabled &
-               .or. cst_enabled .or. rst_enabled .or. mon_enabled .or. pdrv_enabled
+               .or. cst_enabled .or. rst_enabled .or. mon_enabled .or. pdrv_enabled &
+               .or. mtc_enabled
 
 end subroutine pmf_init_pmf_methods
 

@@ -43,8 +43,8 @@ end type CVTypeMON
 
 ! ----------------------
 
-integer                     :: NumOfMONItems        ! number of monitored CVs
-type(CVTypeMON),allocatable :: MONCVList(:)          ! monitored items
+integer                     :: NumOfMONCVs      ! number of monitored CVs
+type(CVTypeMON),allocatable :: MONCVList(:)     ! monitored items
 
 ! ------------------------------------------------------------------------------
 

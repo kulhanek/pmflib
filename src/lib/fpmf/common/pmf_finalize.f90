@@ -115,6 +115,7 @@ subroutine pmf_finalize_methods
     use cst_finalize
     use pdrv_finalize
     use stm_finalize
+    use mtc_finalize
 
     implicit none
     ! --------------------------------------------------------------------------
@@ -149,6 +150,10 @@ subroutine pmf_finalize_methods
 
     if( stm_enabled ) then
         call stm_finalize_method
+    end if
+
+    if( mtc_enabled ) then
+        call mtc_finalize_method
     end if
 
     return
