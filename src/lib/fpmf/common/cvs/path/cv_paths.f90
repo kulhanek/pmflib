@@ -225,7 +225,6 @@ subroutine calculate_paths(cv_item,x,ctx)
     sc1 = 1.0 / ( cd * real(cv_item%srcpath%nbeads-1) )    ! cu'
     sc2 = cu / (cd * cd * real(cv_item%srcpath%nbeads-1) ) ! cd'
 
-    cu = 0.0d0
 
     cv_item%dsc(:) = 0.0d0
 
@@ -250,12 +249,12 @@ subroutine calculate_paths(cv_item,x,ctx)
             valr = cv_item%srcpath%points(i,j)
             vala = ctx%CVsValues(cv_item%srcpath%cvs(j)%cv%idx) 
             s = (vala - valr) / (max - min)
-            cv_item%dsc(j) = cv_item%dsc(j) + 2.0d0 * (sc1*sci - sc2*sce) * s / (cv_item%alpha**2 * (max - min))
+            cv_item%dsc(j) = cv_item%dsc(j) - 2.0d0 * (sc1*sci - sc2*sce) * s / (cv_item%alpha**2 * (max - min))
         end do
     end do
 
     do j=1,cv_item%srcpath%ncvs
-        ctx%CVsDrvs(:,:,cv_item%idx) = ctx%CVsDrvs(:,:,cv_item%idx) - cv_item%dsc(j)*ctx%CVsDrvs(:,:,cv_item%srcpath%cvs(j)%cv%idx)
+        ctx%CVsDrvs(:,:,cv_item%idx) = ctx%CVsDrvs(:,:,cv_item%idx) + cv_item%dsc(j)*ctx%CVsDrvs(:,:,cv_item%srcpath%cvs(j)%cv%idx)
     end do
 
     ! disable unused variable warning

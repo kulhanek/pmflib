@@ -540,7 +540,7 @@ subroutine pmf_control_read_paths(prm_fin)
     end if
 
     write(PMF_OUT,*)
-    call pmf_utils_heading(PMF_OUT,'CV <++> PATHS','+')
+    call pmf_utils_heading(PMF_OUT,'CV >>> PATHS','+')
 
     nj = 0
 
