@@ -146,11 +146,19 @@ public:
     void SaveInfo(CXMLElement* p_ele) const;
 
 // information methods --------------------------------------------------------
+// conversions using CV unit
     /// get real value of CV
     double GetRealValue(double value) const;
 
     /// get internal value of CV
     double GetIntValue(double value) const;
+
+// scaling/unscalling
+    /// get scalled value
+    double GetScaledValue(double value) const;
+
+   /// get unscalled value
+    double GetUnscaledValue(double value) const;
 
 // section of private data ----------------------------------------------------
 private:

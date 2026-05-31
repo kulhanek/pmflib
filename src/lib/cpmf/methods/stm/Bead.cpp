@@ -1,6 +1,7 @@
 // ===============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -------------------------------------------------------------------------------
+//    Copyright (C) 2025,2026 Petr Kulhanek, kulhanek@chemi.muni.cz
 //    Copyright (C) 2011 Petr Kulhanek, kulhanek@chemi.muni.cz
 //    Copyright (C) 2010 Petr Kulhanek, kulhanek@chemi.muni.cz
 //
@@ -25,7 +26,6 @@
 #include <math.h>
 #include <STMPath.hpp>
 #include <algorithm>
-
 
 //==============================================================================
 //------------------------------------------------------------------------------
@@ -155,16 +155,18 @@ void CBead::InitBead(CSTMPath* p_list,int ncvs)
     FPos.SetZero();
     PPos.CreateVector(NumOfCVs);
     PPos.SetZero();
+    BPos.CreateVector(NumOfCVs);
+    BPos.SetZero();
     MF.CreateVector(NumOfCVs);
     MF.SetZero();
-    dCV.CreateVector(NumOfCVs);
-    dCV.SetZero();
     pMF.CreateVector(NumOfCVs);
     pMF.SetZero();
     MTZ.CreateMatrix(NumOfCVs,NumOfCVs);
     MTZ.SetZero();
     P.CreateMatrix(NumOfCVs,NumOfCVs);
     P.SetZero();
+    dCVdAlpha.CreateVector(NumOfCVs);
+    dCVdAlpha.SetZero();
 
     mtold.CreateVector(NumOfCVs);
     mtold.SetZero();
@@ -215,8 +217,7 @@ void CBead::MoveToNextMode(void)
 {
     if( ModeStatus != BMS_FINISHED ) return; // keep current mode
 
-    // clear spline data
-    dCV.Set(0.0);
+    // clear projector data
     P.SetZero();
 
     // clear accumulated data
@@ -347,15 +348,18 @@ void CBead::CalcProjector(void)
         double ps = 0;
 
         if( (BeadID == 1) || (BeadID == BeadList->GetNumOfBeads() ) ){
+            double sc = ( BeadList->CVs[i]->GetMaxValue() - BeadList->CVs[i]->GetMinValue() );
             // steepest descent movement
             for(int k=0; k < NumOfCVs; k++){
-                ps += MTZ[i][k]*MF[k];
+                
+                ps += sc * MTZ[i][k] * MF[k];
             }
         } else {
             // projection perpendicular to the path
             for(int j=0; j < NumOfCVs; j++){
+                double sc = ( BeadList->CVs[j]->GetMaxValue() - BeadList->CVs[j]->GetMinValue() );
                 for(int k=0; k < NumOfCVs; k++){
-                    ps += P[i][j]*MTZ[j][k]*MF[k];
+                    ps += P[i][j] * sc * MTZ[j][k] * MF[k];
                 }
             }
         }
@@ -484,7 +488,7 @@ void CBead::UpdatePositionADAM(double step,double beta1,double beta2,double ming
 
 // -----------------------------------------------------------------------------
 
-void CBead::UpdatePositionADAMBelif(double step,double beta1,double beta2,double mingnormeps)
+void CBead::UpdatePositionADABelif(double step,double beta1,double beta2,double mingnormeps)
 {
     NumOfUpdates++;
 
@@ -631,12 +635,22 @@ void CBead::LoadInfo(CXMLElement* p_ele)
         LOGIC_ERROR("unable to read some attributes");
     }
 
-    // load positions
-    CXMLBinData* p_posele = p_ele->GetFirstChildBinData("POS");
+    // load bead
+
+    // here we use scaled positions
+    CXMLBinData* p_posele = p_ele->GetFirstChildBinData("S-POS");
     if(p_posele == NULL) {
         LOGIC_ERROR("unable to open POS element");
     }
     Pos.Load(p_posele);
+
+    // here we use scaled positions
+    CXMLBinData* p_rposele = p_ele->GetFirstChildBinData("S-OPOS");
+    if(p_rposele == NULL) {
+        LOGIC_ERROR("unable to open OPOS element");
+    }
+    OPos.Load(p_rposele);
+
 
     CXMLBinData* p_pmfele = p_ele->GetFirstChildBinData("MF");
     if(p_pmfele == NULL) {
@@ -649,12 +663,6 @@ void CBead::LoadInfo(CXMLElement* p_ele)
         LOGIC_ERROR("unable to open MTZ element");
     }
     MTZ.Load(p_mtzele);
-
-    CXMLBinData* p_rposele = p_ele->GetFirstChildBinData("OPOS");
-    if(p_rposele == NULL) {
-        LOGIC_ERROR("unable to open OPOS element");
-    }
-    OPos.Load(p_rposele);
 }
 
 //------------------------------------------------------------------------------
@@ -671,18 +679,21 @@ void CBead::SaveInfo(CXMLElement* p_ele)
     p_ele->SetAttribute("mode",Mode);
     p_ele->SetAttribute("nupd",NumOfUpdates);
 
-    // save position
-    CXMLBinData* p_posele = p_ele->CreateChildBinData("POS");
+    // save bead
+
+    // here we use scaled positions
+    CXMLBinData* p_posele = p_ele->CreateChildBinData("S-POS");
     Pos.Save(p_posele);
+
+    // here we use scaled positions
+    CXMLBinData* p_rposele = p_ele->CreateChildBinData("S-OPOS");
+    OPos.Save(p_rposele);
 
     CXMLBinData* p_pmfele = p_ele->CreateChildBinData("MF");
     MF.Save(p_pmfele);
 
     CXMLBinData* p_mtzele = p_ele->CreateChildBinData("MTZ");
     MTZ.Save(p_mtzele);
-
-    CXMLBinData* p_rposele = p_ele->CreateChildBinData("OPOS");
-    OPos.Save(p_rposele);
 }
 
 //------------------------------------------------------------------------------
@@ -696,12 +707,19 @@ void CBead::GetProductionData(CXMLElement* p_ele)
     // only if accumulation or production
     if( (GetMode() != BMO_ACCUMULATION) && (GetMode() != BMO_PRODUCTION) ) return;
 
+    // load unscaled BPos value
     CXMLBinData* p_bposele = p_ele->GetFirstChildBinData("BPOS");
     if(p_bposele == NULL) {
         LOGIC_ERROR("unable to open BPOS element");
     }
-    Pos.Load(p_bposele);
+    BPos.Load(p_bposele);
 
+    // convert to scaled
+    for(int i=0; i < NumOfCVs; i++){
+        Pos[i] = BeadList->CVs[i]->GetScaledValue(BPos[i]);
+    }
+
+    // load unscaled data
     CXMLBinData* p_pmfele = p_ele->GetFirstChildBinData("MF");
     if(p_pmfele == NULL) {
         LOGIC_ERROR("unable to open MF element");
@@ -750,9 +768,14 @@ void CBead::SetNextStepData(CXMLElement* p_ele)
     p_ele->SetAttribute("mode",GetMode());
     p_ele->SetAttribute("steps",GetModeLength());
 
+    // convert to unscaled
+    for(int i=0; i < NumOfCVs; i++){
+        BPos[i] = BeadList->CVs[i]->GetUnscaledValue(FPos[i]); // use final position
+    }
+
     // and bead position
     CXMLBinData* p_bposele = p_ele->CreateChildBinData("BPOS");
-    FPos.Save(p_bposele);   // use final position
+    BPos.Save(p_bposele);   // use final position
 
     ModeStatus = BMS_RUNNING;
 }

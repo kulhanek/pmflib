@@ -326,6 +326,20 @@ double CColVariable::GetIntValue(double value) const
     return(value / FConv);
 }
 
+//------------------------------------------------------------------------------
+
+double CColVariable::GetScaledValue(double value) const
+{
+    return( (value - MinValue) / (MaxValue - MinValue) );
+}
+
+//------------------------------------------------------------------------------
+
+double CColVariable::GetUnscaledValue(double value) const
+{
+    return( value*(MaxValue - MinValue) + MinValue );
+}
+
 //==============================================================================
 //------------------------------------------------------------------------------
 //==============================================================================

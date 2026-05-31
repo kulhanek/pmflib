@@ -31,7 +31,7 @@ using namespace std;
 
 CCVSplineSmoothingCubic::CCVSplineSmoothingCubic(void)
 {
-    lambda      = 0.99; // 1.0 - interpolating spline
+    lambda      = 0.999; // 1.0 - interpolating spline
     all_sigma   = 0.01;
 }
 

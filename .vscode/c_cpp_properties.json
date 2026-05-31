@@ -1,0 +1,20 @@
+{
+  "configurations": [
+    {
+      "name": "Linux-GCC",
+      "includePath": [
+            "${workspaceFolder}/**",
+            "${workspaceFolder}/../../hipoly/1.0/src/lib/hipoly/**",
+            "${workspaceFolder}/../../scimafic/1.0/src/lib/cscimafic/**",
+            "${workspaceFolder}/../../prmfile/1.0/src/lib/cprmfile/**",
+            "${workspaceFolder}/../../netlib/1.0/src/lib/netlib/**"
+        ],
+      "defines": [],
+      "compilerPath": "/usr/bin/g++",
+      "cStandard": "c17",
+      "cppStandard": "c++17",
+      "intelliSenseMode": "gcc-x64"
+    }
+  ],
+  "version": 4
+}

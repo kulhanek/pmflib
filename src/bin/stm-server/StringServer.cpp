@@ -171,6 +171,11 @@ bool CStringServer::Run(void)
         return(false);
     }
 
+    // open log journal
+    if( Beads.OpenOptLog() == false ){
+        return(false);
+    }
+
     vout << endl;
     vout << ":::::::::::::::::::::::::::::::::: String Server :::::::::::::::::::::::::::::::" << endl;
 
@@ -264,6 +269,10 @@ bool CStringServer::Run(void)
 
 void CStringServer::Finalize(void)
 {
+    // close files
+    Beads.CloseTrajectory();
+    Beads.CloseOptLog();
+
     CSmallTimeAndDate dt;
     dt.GetActualTimeAndDate();
 

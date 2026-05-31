@@ -3,6 +3,7 @@
 // ===============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -------------------------------------------------------------------------------
+//    Copyright (C) 2025,2026 Petr Kulhanek, kulhanek@chemi.muni.cz
 //    Copyright (C) 2011 Petr Kulhanek, kulhanek@chemi.muni.cz
 //    Copyright (C) 2010 Petr Kulhanek, kulhanek@chemi.muni.cz
 //
@@ -146,27 +147,34 @@ public:
 private:
     CSTMPath*               BeadList;
 
-    // bead data
+// bead data
     int                     BeadID;         // bead id
     int                     ClientID;       // client id
     int                     Mode;           // current bead mode
     int                     ModeStatus;     // what is status of current mode
 
-    // bead data
+// bead data 
     int                     NumOfCVs;       // number of CVs
-    bool                    Permanent;      // is bead permanent
-    CSimpleVector<double>   Pos;            // bead position
+    bool                    Permanent;      // is bead permanent?
+    int                     NumOfUpdates;   // how many updates was performed
+
+// bead data - unscaled
+    CSimpleVector<double>   BPos;           // bead position
     CSimpleVector<double>   MF;             // force acting on the bead
-    CSimpleVector<double>   dCV;            // path derivatives
-    CSimpleVector<double>   pMF;            // force/velocity acting perpendicularly to the path
     CFortranMatrix          MTZ;            // metric tensor
-    CFortranMatrix          P;              // projector
+
+// bead data - free energy
     double                  Alpha;          // path position
     double                  dAdAlpha;       // free energy derivative
     double                  A;              // free energy
-    int                     NumOfUpdates;   // how many updates was performed
 
-// helper positions
+// bead data - scaled
+    CFortranMatrix          P;              // projector
+    CSimpleVector<double>   Pos;            // bead position
+    CSimpleVector<double>   pMF;            // force acting perpendicularly to the path
+    CSimpleVector<double>   dCVdAlpha;
+
+// helper positions - scaled
     CSimpleVector<double>   OPos;           // old bead position
     CSimpleVector<double>   NPos;           // new bead position
     CSimpleVector<double>   SPos;           // smoothed position

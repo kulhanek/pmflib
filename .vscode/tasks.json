@@ -55,6 +55,7 @@
                 "close": false
             },
             "problemMatcher": [
+                "$gcc",
                 {
                     "owner": "myf",
                     "fileLocation": "absolute",

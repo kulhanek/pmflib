@@ -3,6 +3,7 @@
 // ===============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -------------------------------------------------------------------------------
+//    Copyright (C) 2025,2026 Petr Kulhanek, kulhanek@chemi.muni.cz
 //    Copyright (C) 2011 Petr Kulhanek, kulhanek@chemi.muni.cz
 //    Copyright (C) 2010 Petr Kulhanek, kulhanek@chemi.muni.cz
 //
@@ -76,11 +77,20 @@ public:
     /// open trajectory
     bool OpenTrajectory(void);
 
-    /// save path
-    void SaveSnapshot(void);
+    /// save path snapshot into trajectory
+    void SaveTrajectorySnapshot(void);
 
     /// close trajectory
     void CloseTrajectory(void);
+
+    /// open optimization journal
+    bool OpenOptLog(void);
+
+    /// save step into optimization journal
+    void SaveOptLogItem(void);
+
+    /// close optimization journal
+    void CloseOptLog(void);
 
     /// force termination
     void ForceTermination(void);
@@ -210,15 +220,21 @@ private:
     int                 MaxSTMSteps;        // maximum number of STM steps
     CSmallString        OptMethod;
 
-    double              FinalMaxPLenChange; // termination criteria - max path movement
-    double              FinalMaxMovement;   // termination criteria - max path movement
-    double              FinalAveMovement;   // termination criteria - average path movement
-    double              FinalpMFSizeMax;    // perpendicular force size (pMF) - termination criteria
-    double              FinalpMFSizeAve;
+    // termination criteria
+    double              FinalPLenChange;    // path length change
+    double              FinalMaxBeadMove;   // max bead movement
+    double              FinalAveBeadMove;   // average bead movement
+    double              FinalMaxpMFSize;    // max perpendicular force size (pMF) 
+    double              FinalAvepMFSize;    // average perpendicular force size (pMF) 
 
     int                 InitPeriod;         // initialization period
+    bool                SoloInitPeriod;
+
     int                 AccuPeriod;         // accumulation period
+    
     int                 EquiPeriod;         // equilibration period
+    bool                SoloEquiPeriod;
+    
     int                 ProdPeriod;         // final production period
 
     bool                AsynchronousMode;   // use asynchronous mode
@@ -252,30 +268,52 @@ private:
     // files -------------------------------------
     CSmallString        InputPath;
     CSmallString        OutputPath;
-    CSmallString        OutputPathSummary;
     CSmallString        PathTrajectory;
-    std::ofstream       Trajectory;
+
+    CSmallString        OutputPathSummary;
+    CSmallString        OptimizationLog;
+
+    std::ofstream       TrajectoryFOut;
+    std::ofstream       OptLogFOut;
 
     CVerboseStr         vout;               // info channel
     int                 STMStep;            // current STM step
 
-    double              AveMovement;        // current average path movement
-    double              MaxMovement;        // current max path movement
-    int                 MaxMovementBead;    // current max path movement is for given bead
-
     double              CurrentPathLength;
     double              UpdatedPathLength;
 
-    double              pMFSizeAve;        // perpendicular force size (pPMF) - termination criteria
-    double              pMFSizeMax;
-    int                 MaxpMFBead;
+    // current optimization status
+    double                  PLenChange;
+    double                  MaxBeadMove;
+    int                     MaxBeadMoveID;
+    double                  AveBeadMove;
+    double                  MaxpMFSize;
+    int                     MaxpMFSizeID;
+    double                  AvepMFSize;
 
-    CSimpleMutex        ProcessingMutex;    // mutex for path processing accesses
+    // moving averages - buffers
+    int                     MABufLength;
+    CSimpleVector<double>   MABufPLenChange;    
+    CSimpleVector<double>   MABufMaxBeadMove;
+    CSimpleVector<double>   MABufAveBeadMove;  
+    CSimpleVector<double>   MABufMaxpMFSize;    
+    CSimpleVector<double>   MABufAvepMFSize;
+
+    // moving averages
+    double                  MAPLenChange;    
+    double                  MAMaxBeadMove;
+    double                  MAAveBeadMove;  
+    double                  MAMaxpMFSize;    
+    double                  MAAvepMFSize;
+    int                     TermCrit;
 
     // STM engine state
     ESTMState           STMStatus;
     bool                HeaderPrinted;
     bool                Terminate;
+
+    // path processing
+    CSimpleMutex        ProcessingMutex;    // mutex for path processing accesses
 
     // rendezvous point for synchronous update
     CSimpleMutex        RendezvousMutex;
@@ -300,6 +338,15 @@ private:
 
     // print stm step
     void PrintSTMStepInfo(void);
+
+    // print header
+    void PrintSTMHeaderF(std::ostream& fout);
+
+    // print stm step
+    void PrintSTMStepInfoF(std::ostream& fout);
+
+    // calculate STMSttem info
+    void CalculateSTMStepStat(void);
 
     // save path
     void SavePathAndTraj(void);

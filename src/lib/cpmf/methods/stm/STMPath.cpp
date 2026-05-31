@@ -1,6 +1,7 @@
 // ===============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -------------------------------------------------------------------------------
+//    Copyright (C) 2025,2026 Petr Kulhanek, kulhanek@chemi.muni.cz
 //    Copyright (C) 2011 Petr Kulhanek, kulhanek@chemi.muni.cz
 //    Copyright (C) 2010 Petr Kulhanek, kulhanek@chemi.muni.cz
 //
@@ -67,34 +68,36 @@ CSTMPath::CSTMPath(void)
     // files
     InputPath = "{PATHS}";
     OutputPath = "_stm.path";
-    OutputPathSummary = "_stm.results";
     PathTrajectory = "_stm.traj";
 
+    OutputPathSummary = "_stm.results";
+    OptimizationLog = "_stm.log";
+
     // intervals
-    TrajInterval    = 0;
-    OutInterval     = 100;
     SmoothInterval  = 0;
     ReparamInterval = 1;
 
+    TrajInterval    = 0;
+    OutInterval     = 100;
+
     // stm
     InitPeriod = 10000;         // initialization period
+    SoloInitPeriod = true;
+
     EquiPeriod =  1000;         // equilibration period
+    SoloEquiPeriod = true;
+
     AccuPeriod =  5000;         // accumulation period
     ProdPeriod = 50000;         // final production period
 
     MaxSTMSteps         = 100;
-    OptMethod           = "amsgradbc";
-    FinalMaxPLenChange  = 0.005;
-    FinalMaxMovement    = 0.01;
-    FinalAveMovement    = 0.01;
-    FinalpMFSizeMax     = 4.00;
-    FinalpMFSizeAve     = 1.00;
+    OptMethod           = "adabelif";
 
     MaxGNormForGD       = 5.0;
     MinGNormEps         = 1e-7;
-    StepSize            = 0.1;
-    AdamB1              = 0.9;
-    AdamB2              = 0.999;
+    StepSize            = 0.003;
+    AdamB1              = 0.7;
+    AdamB2              = 0.99;
     ResetAdamAlg        = 0;
     MemoryLength        = 0;
 
@@ -103,11 +106,22 @@ CSTMPath::CSTMPath(void)
     AsynchronousMode = false;    // update per bead or path
 
     STMStep         = 0;
-    MaxMovement     = 0.0;          // current max path movement
-    MaxMovementBead = 0;        // current max path movement is for given bead
-    AveMovement     = 0;            // current average path movement
-    pMFSizeMax      = 0;
-    pMFSizeAve      = 0;
+
+    FinalPLenChange     = 0.001;
+    FinalMaxBeadMove    = 0.005;
+    FinalAveBeadMove    = 0.005;
+    FinalMaxpMFSize     = 10.00;
+    FinalAvepMFSize     = 4.00;
+
+    PLenChange = 0;
+    MaxBeadMove = 0;
+    MaxBeadMoveID = 0;
+    AveBeadMove = 0;
+    MaxpMFSize = 0;
+    MaxpMFSizeID = 0;
+    AvepMFSize = 0;
+
+    MABufLength = 3;    // buffers are allocated later
 
     // control
     NumOfRendezvousBeads = 0;
@@ -183,9 +197,11 @@ bool CSTMPath::ProcessFilesControl(CPrmFile& prmfile)
              << "  (default)" << endl;
         vout << "Output path (output)                           = " << setw(20) << OutputPath
              << "  (default)" << endl;
+        vout << "Path trajectory (trajectory)                   = " << setw(20) << PathTrajectory
+             << "  (default)" << endl;
         vout << "Output path summary (summary)                  = " << setw(20) << OutputPathSummary
              << "  (default)" << endl;
-        vout << "Path trajectory (trajectory)                   = " << setw(20) << PathTrajectory
+        vout << "Optimization journal (optlog)                  = " << setw(20) << OptimizationLog
              << "  (default)" << endl;
         return(true);
     }
@@ -204,6 +220,13 @@ bool CSTMPath::ProcessFilesControl(CPrmFile& prmfile)
              << "  (default)" << endl;
     }
 
+    if(prmfile.GetStringByKey("trajectory",PathTrajectory) == true) {
+        vout << "Path trajectory (trajectory)                   = " << setw(20) << PathTrajectory << endl;
+    } else {
+        vout << "Path trajectory (trajectory)                   = " << setw(20) << PathTrajectory
+             << "  (default)" << endl;
+    }
+
     if(prmfile.GetStringByKey("summary",OutputPathSummary) == true) {
         vout << "Output path summary (summary)                  = " << setw(20) << OutputPathSummary << endl;
     } else {
@@ -211,12 +234,13 @@ bool CSTMPath::ProcessFilesControl(CPrmFile& prmfile)
              << "  (default)" << endl;
     }
 
-    if(prmfile.GetStringByKey("trajectory",PathTrajectory) == true) {
-        vout << "Path trajectory (trajectory)                   = " << setw(20) << PathTrajectory << endl;
+    if(prmfile.GetStringByKey("optlog",OptimizationLog) == true) {
+        vout << "Optimization journal (optlog)                  = " << setw(20) << OptimizationLog << endl;
     } else {
-        vout << "Path trajectory (trajectory)                   = " << setw(20) << PathTrajectory
+        vout << "Optimization journal (optlog)                  = " << setw(20) << OptimizationLog
              << "  (default)" << endl;
     }
+
 
     return(true);
 }
@@ -233,18 +257,21 @@ bool CSTMPath::ProcessSTMControl(CPrmFile& prmfile)
         vout << "Optimization method (optmethod)                = " << setw(9) << OptMethod
              << left << "             (default)" << endl;
 
-        vout << "Max final path length change (maxfplch)        = " << setw(9) << FinalMaxPLenChange
+        vout << "Final path length change (fplch)               = " << setw(9) << FinalPLenChange
              << left << "             (default)" << endl;
-        vout << "Max final path movement (maxfmove)             = " << setw(9) << FinalMaxMovement
+        vout << "Max final bead movement (maxbmove)             = " << setw(9) << FinalMaxBeadMove
              << left << "             (default)" << endl;
-        vout << "Average final path movement (avefmove)         = " << setw(9) << FinalAveMovement
-             << left << "             (default)" << endl;
-
-        vout << "Max perpendicular mean force (maxfpmf)         = " << setw(9) << FinalpMFSizeMax
-             << left << "             (default)" << endl;
-        vout << "Average perpendicular mean force (avefpmf)     = " << setw(9) << FinalpMFSizeAve
+        vout << "Average final bead movement (avebmove)         = " << setw(9) << FinalAveBeadMove
              << left << "             (default)" << endl;
 
+        vout << "Max perpendicular mean force (maxppmf)         = " << setw(9) << FinalMaxpMFSize
+             << left << "             (default)" << endl;
+        vout << "Average perpendicular mean force (aveppmf)     = " << setw(9) << FinalAvepMFSize
+             << left << "             (default)" << endl;
+
+        vout << "Term buffer length (tbuflen)                   = " << setw(9) << MABufLength
+             << left << "             (default)" << endl;
+            
         vout << "Initialization period (init)                   = " << setw(9) << InitPeriod
              << left << "             (default)" << endl;
         vout << "Accumulation period (accu)                     = " << setw(9) << AccuPeriod
@@ -279,39 +306,46 @@ bool CSTMPath::ProcessSTMControl(CPrmFile& prmfile)
              << left << "             (default)" << endl;
     }
 
-    if(prmfile.GetDoubleByKey("maxfplch",FinalMaxPLenChange) == true) {
-        vout << "Max final path length change (maxfplch)        = " << setw(9) << FinalMaxPLenChange << left << endl;
+    if(prmfile.GetDoubleByKey("fplch",FinalPLenChange) == true) {
+        vout << "Final path length change (fplch)               = " << setw(9) << FinalPLenChange << left << endl;
     } else {
-        vout << "Max final path length change (maxfplch)        = " << setw(9) << FinalMaxPLenChange
+        vout << "Final path length change (fplch)               = " << setw(9) << FinalPLenChange
              << left << "             (default)" << endl;
     }
 
-    if(prmfile.GetDoubleByKey("maxfmove",FinalMaxMovement) == true) {
-        vout << "Max final path movement (maxfmove)             = " << setw(9) << FinalMaxMovement << left << endl;
+    if(prmfile.GetDoubleByKey("maxbmove",FinalMaxBeadMove) == true) {
+        vout << "Max final bead movement (maxbmove)             = " << setw(9) << FinalMaxBeadMove << left << endl;
     } else {
-        vout << "Max final path movement (maxfmove)             = " << setw(9) << FinalMaxMovement
+        vout << "Max final bead movement (maxbmove)             = " << setw(9) << FinalMaxBeadMove
              << left << "             (default)" << endl;
     }
 
-    if(prmfile.GetDoubleByKey("avefmove",FinalAveMovement) == true) {
-        vout << "Average final path movement (avefmove)         = " << setw(9) << FinalAveMovement << left << endl;
+    if(prmfile.GetDoubleByKey("avebmove",FinalAveBeadMove) == true) {
+        vout << "Average final bead movement (avebmove)         = " << setw(9) << FinalAveBeadMove << left << endl;
     } else {
-        vout << "Average final path movement (avefmove)         = " << setw(9) << FinalAveMovement
+        vout << "Average final bead movement (avebmove)         = " << setw(9) << FinalAveBeadMove
              << left << "             (default)" << endl;
     }
 
-    if(prmfile.GetDoubleByKey("avefpmf",FinalpMFSizeAve) == true) {
-        vout << "Average perpendicular mean force (avefpmf)     = " << setw(9) << FinalpMFSizeAve << left << endl;
+    if(prmfile.GetDoubleByKey("aveppmf",FinalMaxpMFSize) == true) {
+        vout << "Average perpendicular mean force (aveppmf)     = " << setw(9) << FinalMaxpMFSize << left << endl;
     } else {
-        vout << "Average perpendicular mean force (avefpmf)     = " << setw(9) << FinalpMFSizeAve
+        vout << "Average perpendicular mean force (aveppmf)     = " << setw(9) << FinalMaxpMFSize
              << left << "             (default)" << endl;
     }
 
-    if(prmfile.GetDoubleByKey("maxfpmf",FinalpMFSizeMax) == true) {
-        vout << "Max perpendicular mean force (maxfpmf)         = " << setw(9) << FinalpMFSizeMax << left << endl;
+    if(prmfile.GetDoubleByKey("maxppmf",FinalAvepMFSize) == true) {
+        vout << "Max perpendicular mean force (maxppmf)         = " << setw(9) << FinalAvepMFSize << left << endl;
     } else {
-        vout << "Max perpendicular mean force (maxfpmf)         = " << setw(9) << FinalpMFSizeMax
+        vout << "Max perpendicular mean force (maxppmf)         = " << setw(9) << FinalAvepMFSize
              << left << "             (default)" << endl;
+    }
+
+    if(prmfile.GetIntegerByKey("tbuflen",MABufLength) == true) {
+        vout << "Term buffer length (tbuflen)                   = " << setw(9) << MABufLength << endl;
+    } else {
+        vout << "Term buffer length (tbuflen)                   = " << setw(9) << MABufLength
+             << "             (default)" << endl;
     }
 
     if(prmfile.GetIntegerByKey("init",InitPeriod) == true) {
@@ -745,29 +779,16 @@ bool CSTMPath::ProcessIntervalsControl(CPrmFile& prmfile)
     vout << endl;
     vout << "=== [intervals] ================================================================" << endl;
     if(prmfile.OpenSection("intervals") == false) {
-        vout << "Trajectory interval (trajectory)               = " << setw(9) << TrajInterval
-             << "             (default)" << endl;
-        vout << "Output path update (output)                    = " << setw(9) << OutInterval
-             << "             (default)" << endl;
         vout << "Path smoothing interval (smooth)               = " << setw(9) << SmoothInterval
              << "             (default)" << endl;
         vout << "Path reparametrization interval (reparam)      = " << setw(9) << ReparamInterval
              << "             (default)" << endl;
-        return(true);
-    }
-
-    if(prmfile.GetIntegerByKey("trajectory",TrajInterval) == true) {
-        vout << "Trajectory interval (trajectory)               = " << setw(9) << TrajInterval << endl;
-    } else {
         vout << "Trajectory interval (trajectory)               = " << setw(9) << TrajInterval
              << "             (default)" << endl;
-    }
-
-    if(prmfile.GetIntegerByKey("output",OutInterval) == true) {
-        vout << "Output path update (output)                    = " << setw(9) << OutInterval << endl;
-    } else {
         vout << "Output path update (output)                    = " << setw(9) << OutInterval
              << "             (default)" << endl;
+
+        return(true);
     }
 
     if(prmfile.GetIntegerByKey("smooth",SmoothInterval) == true) {
@@ -781,6 +802,20 @@ bool CSTMPath::ProcessIntervalsControl(CPrmFile& prmfile)
         vout << "Path reparametrization interval (reparam)      = " << setw(9) << ReparamInterval << endl;
     } else {
         vout << "Path reparametrization interval (reparam)      = " << setw(9) << ReparamInterval
+             << "             (default)" << endl;
+    }
+
+    if(prmfile.GetIntegerByKey("trajectory",TrajInterval) == true) {
+        vout << "Trajectory interval (trajectory)               = " << setw(9) << TrajInterval << endl;
+    } else {
+        vout << "Trajectory interval (trajectory)               = " << setw(9) << TrajInterval
+             << "             (default)" << endl;
+    }
+
+    if(prmfile.GetIntegerByKey("output",OutInterval) == true) {
+        vout << "Output path update (output)                    = " << setw(9) << OutInterval << endl;
+    } else {
+        vout << "Output path update (output)                    = " << setw(9) << OutInterval
              << "             (default)" << endl;
     }
 
@@ -1182,7 +1217,9 @@ void CSTMPath::ReadPathUserBeads(CPrmFile& file,std::vector<CBeadPtr>& beads)
         // process permanent or flexible point definition
         beads[beadid]->InitBead(this,NumOfCVs);
         for(int i=0; i < NumOfCVs; i++){
-            beads[beadid]->Pos[i] = CSmallString(tokens[i+1]).ToDouble();
+            double unscaled = CSmallString(tokens[i+1]).ToDouble();
+            double scaled = CVs[i]->GetScaledValue(unscaled);
+            beads[beadid]->Pos[i] = scaled;
         }
         beads[beadid]->Permanent = tokens[0] != "flexible";
 
@@ -1192,7 +1229,8 @@ void CSTMPath::ReadPathUserBeads(CPrmFile& file,std::vector<CBeadPtr>& beads)
             vout << setw(4) << beadid+1 << " P     " << scientific << setprecision(5);
         }
         for(int i=0; i < NumOfCVs; i++){
-            vout << " " << setw(12) << beads[beadid]->Pos[i];
+            double unscaled = CVs[i]->GetUnscaledValue(beads[beadid]->Pos[i]);
+            vout << " " << setw(12) << unscaled;
         }
         vout << endl;
         beadid++;
@@ -1332,34 +1370,66 @@ bool CSTMPath::OpenTrajectory(void)
 {
     if( TrajInterval <= 0 ) return(true);
 
-    Trajectory.open(PathTrajectory);
-    if( ! Trajectory ){
+    TrajectoryFOut.open(PathTrajectory);
+    if( ! TrajectoryFOut ){
         ES_ERROR("unable to open path trajectory file");
         return(false);
     }
 
     // write header
-    Trajectory << "# STMTRAJ " << NumOfCVs << " " << NumOfBeads << endl;
-    PrintPathSummaryHeader(Trajectory);
+    TrajectoryFOut << "# STMTRAJ " << NumOfCVs << " " << NumOfBeads << endl;
+    PrintPathSummaryHeader(TrajectoryFOut);
 
     return(true);
 }
 
 //------------------------------------------------------------------------------
 
-void CSTMPath::SaveSnapshot(void)
+void CSTMPath::SaveTrajectorySnapshot(void)
 {
     if( TrajInterval <= 0 ) return;
-    Trajectory << "# STMSNAP " << STMStep / TrajInterval << endl;
-    PrintPathSummaryData(Trajectory);
-    Trajectory << endl; // necessary for gnuplot
+    TrajectoryFOut << "# STMSNAP " << STMStep / TrajInterval << endl;
+    PrintPathSummaryData(TrajectoryFOut);
+    TrajectoryFOut << endl; // necessary for gnuplot
 }
 
 //------------------------------------------------------------------------------
 
 void CSTMPath::CloseTrajectory(void)
 {
-    Trajectory.close();
+    TrajectoryFOut.close();
+}
+
+//------------------------------------------------------------------------------
+
+bool CSTMPath::OpenOptLog(void)
+{
+    if( TrajInterval <= 0 ) return(true);
+
+    OptLogFOut.open(OptimizationLog);
+    if( ! OptLogFOut ){
+        ES_ERROR("unable to open optimization journal");
+        return(false);
+    }
+
+    // write header
+   // PrintPathSummaryHeader(OptLogFOut);
+
+    return(true);
+}
+
+//------------------------------------------------------------------------------
+
+void CSTMPath::SaveOptLogItem(void)
+{
+   // PrintPathSummaryData(Trajectory);
+}
+
+//------------------------------------------------------------------------------
+
+void CSTMPath::CloseOptLog(void)
+{
+    OptLogFOut.close();
 }
 
 //------------------------------------------------------------------------------
@@ -1441,7 +1511,9 @@ void CSTMPath::RegisterBead(int bead_id,int client_id)
                     Beads[i]->MoveToNextMode();
                 }
             }
+            
             PrintSTMHeader();
+
             STMStatus = ESTMS_OPTIMIZING;
         }
 
@@ -1626,6 +1698,7 @@ void CSTMPath::ProcessProductionData(CBeadPtr p_bead)
                             SavePathAndTraj();
 
                             vout << endl;
+
                             PrintSTMStepInfo();
 
                             for(int b=0; b < NumOfBeads; b++){
@@ -2135,13 +2208,14 @@ void CSTMPath::PrintPathSummaryData(std::ostream& vout)
         vout << setw(8) << Beads[b]->NumOfUpdates;
         vout << scientific << setprecision(5);
         for(int i=0; i < NumOfCVs; i++){
-            vout << " " << setw(12) << Beads[b]->Pos[i];
+            double unscaled = CVs[i]->GetUnscaledValue(Beads[b]->Pos[i]);
+            vout << " " << setw(12) << unscaled;
         }
         for(int i=0; i < NumOfCVs; i++){
             vout << " " << setw(12) << Beads[b]->MF[i];
         }
         for(int i=0; i < NumOfCVs; i++){
-            vout << " " << setw(12) << Beads[b]->dCV[i];
+            vout << " " << setw(12) << Beads[b]->dCVdAlpha[i];
         }
         for(int i=0; i < NumOfCVs; i++){
             vout << " " << setw(12) << Beads[b]->pMF[i];
@@ -2313,14 +2387,18 @@ void CSTMPath::PrintPathUpdate(std::ostream& vout)
         vout << setw(8) << Beads[b]->NumOfUpdates;
         vout << scientific << setprecision(5);
         for(int i=0; i < NumOfCVs; i++){
-            vout << " " << setw(12) << Beads[b]->OPos[i];
+            double unscaled = CVs[i]->GetUnscaledValue(Beads[b]->OPos[i]);
+            vout << " " << setw(12) << unscaled;
         }
         if( Beads[b]->NumOfUpdates > 0 ){
             for(int i=0; i < NumOfCVs; i++){
-                vout << " " << setw(12) << Beads[b]->Pos[i];
+                double unscaled = CVs[i]->GetUnscaledValue(Beads[b]->Pos[i]);
+                vout << " " << setw(12) << unscaled;
             }
             for(int i=0; i < NumOfCVs; i++){
-                vout << " " << setw(12) << Beads[b]->Pos[i] - Beads[b]->OPos[i];
+                double unscaled1 = CVs[i]->GetUnscaledValue(Beads[b]->Pos[i]);
+                double unscaled2 = CVs[i]->GetUnscaledValue(Beads[b]->OPos[i]);
+                vout << " " << setw(12) << unscaled1 - unscaled2;
             }
         }
         vout << endl;
@@ -2370,7 +2448,9 @@ void CSTMPath::PrintPath(std::ostream& vout)
             vout << "flexible ";
         }
         for(int i=0; i < NumOfCVs; i++){
-            vout << " " << setw(12) << Beads[b]->Pos[i];
+            double scaled = Beads[b]->Pos[i];
+            double unscaled = CVs[i]->GetUnscaledValue(scaled);
+            vout << " " << setw(12) << unscaled;
         }
         vout << endl;
     }
@@ -2491,101 +2571,182 @@ int CSTMPath::GetSTMStep(void)
 
 void CSTMPath::PrintSTMHeader(void)
 {
-    vout << endl;
-    vout << "# Step|  Path length  Length change | Max movement  BID  Ave movement | Max pMF size  BID  Ave pMF size |Term" << endl;
-    vout << "# ----|-------------- --------------|-------------- --- --------------|-------------- --- --------------|----" << endl;
-
+    PrintSTMHeaderF(vout);
+    PrintSTMHeaderF(OptLogFOut);
     HeaderPrinted = true;
+
+    MABufPLenChange.CreateVector(MABufLength);    
+    MABufMaxBeadMove.CreateVector(MABufLength); 
+    MABufAveBeadMove.CreateVector(MABufLength);   
+    MABufMaxpMFSize.CreateVector(MABufLength);    
+    MABufAvepMFSize.CreateVector(MABufLength); 
 }
 
 //------------------------------------------------------------------------------
 
 void CSTMPath::PrintSTMStepInfo(void)
 {
-    int termcrit = 0;
+    CalculateSTMStepStat();
+    PrintSTMStepInfoF(vout);
+    PrintSTMStepInfoF(OptLogFOut);
+}
 
-    vout << left << setw(6)  << STMStep << " " << right;
-    vout << setw(14) << setprecision(7) << scientific << CurrentPathLength << " ";
+//------------------------------------------------------------------------------
 
-    if( fabs(UpdatedPathLength-CurrentPathLength) < FinalMaxPLenChange ){
-        vout << "<green>" << setw(14) << setprecision(7) << scientific << UpdatedPathLength-CurrentPathLength << "</green> ";
-        termcrit++;
-    } else {
-        vout << setw(14) << setprecision(7) << scientific << UpdatedPathLength-CurrentPathLength << " ";
-    }
+void CSTMPath::PrintSTMHeaderF(std::ostream& fout)
+{
+    fout << "#" << endl;
+    fout << "# NOTE: All values are in scalled units." << endl;
+    fout << "#" << endl;
+    fout << "#     |                                         Current Values                                          |    |                             Running Averages                             |" << endl;
+    fout << "# ----|-------------- --------------|-------------- --- --------------|-------------- --- --------------|----|--------------|-------------- --------------|-------------- --------------|" << endl;
+    fout << "# Step|  Path length  Length change | Max bead move BID Ave bead move | Max pMF size  BID  Ave pMF size |Term|Length change | Max bead move Ave bead move | Max pMF size   Ave pMF size |" << endl;
+    fout << "# ----|-------------- --------------|-------------- --- --------------|-------------- --- --------------|----|--------------|-------------- --------------|-------------- --------------|" << endl;
+    fout << "#    1|             2              3|             4   5              6|             7   8              9|  10|            11|            12             13|            14             15|" << endl;
+    fout << "# ----|-------------- --------------|-------------- --- --------------|-------------- --- --------------|----|--------------|-------------- --------------|-------------- --------------|" << endl;
+}
 
-    MaxMovement = 0;
-    AveMovement = 0;
-    pMFSizeAve = 0;
-    pMFSizeMax = 0;
+//------------------------------------------------------------------------------
 
+void CSTMPath::CalculateSTMStepStat(void)
+{
+
+    PLenChange = UpdatedPathLength-CurrentPathLength;
+
+    MaxBeadMove = 0;
+    MaxBeadMoveID = 0;
+    AveBeadMove = 0;
+
+    MaxpMFSize = 0;
+    MaxpMFSizeID = 0;
+    AvepMFSize = 0;
+
+    int bn = 0;
     for(int b=0; b < NumOfBeads; b++){
-        double mov = 0;
+        if( Beads[b]->Permanent ) continue; // skipt permanent beads
+        double bmov = 0;
         double mfsize = 0.0;
         for(int i=0; i < NumOfCVs; i++){
-            mov += (Beads[b]->FPos[i]-Beads[b]->OPos[i])*(Beads[b]->FPos[i]-Beads[b]->OPos[i]);
+            bmov += (Beads[b]->FPos[i]-Beads[b]->OPos[i])*(Beads[b]->FPos[i]-Beads[b]->OPos[i]);
             mfsize += (Beads[b]->pMF[i])*(Beads[b]->pMF[i]);
-            //mfsize += (Beads[b]->mkold[i])*(Beads[b]->mkold[i]);
         }
-
-        mov = sqrt(mov);
-        AveMovement += mov; // add mov square
-        if( mov > MaxMovement ){
-            MaxMovement = mov;
-            MaxMovementBead = b+1;
-        }
-
+        bmov = sqrt(bmov);
         mfsize = sqrt(mfsize);
-        pMFSizeAve += mfsize;
-        if( mfsize > pMFSizeMax ){
-            pMFSizeMax = mfsize;
-            MaxpMFBead = b+1;
+
+        AveBeadMove += bmov;
+        if( bmov > MaxBeadMove ){
+            MaxBeadMove = bmov;
+            MaxBeadMoveID = b+1;
         }
+
+        AvepMFSize += mfsize;
+        if( mfsize > MaxpMFSize ){
+            MaxpMFSize = mfsize;
+            MaxpMFSizeID = b+1;
+        }
+        bn++;
     }
-    AveMovement = AveMovement / (double)NumOfBeads;
-    pMFSizeAve = pMFSizeAve / (double)NumOfBeads;
-
-    if( MaxMovement < FinalMaxMovement ){
-        vout << "<green>" << setw(14) << setprecision(7) << scientific <<  MaxMovement << "</green> ";
-        termcrit++;
-    } else {
-        vout << setw(14) << setprecision(7) << scientific << MaxMovement << " ";
-    }
-
-    vout << setw(3) << MaxMovementBead << " ";
-
-    if( AveMovement < FinalAveMovement ){
-        vout << "<green>" << setw(14) << setprecision(7) << scientific << AveMovement << "</green> ";
-        termcrit++;
-    } else {
-        vout << setw(14) << setprecision(7) << scientific << AveMovement << " ";
+    if( bn > 0 ){
+        AveBeadMove = AveBeadMove / (double)bn;
+        AvepMFSize = AvepMFSize / (double)bn;
     }
 
-    if( pMFSizeMax < FinalpMFSizeMax  ){
-        vout << "<green>" << setw(14) << setprecision(7) << scientific <<  pMFSizeMax << "</green> ";
-        termcrit++;
-    } else {
-        vout << setw(14) << setprecision(7) << scientific << pMFSizeMax << " ";
+    // shft the moving average buffers
+    for(int i=0; i < MABufLength-1; i++){
+        MABufPLenChange[i]  = MABufPLenChange[i+1];
+        MABufMaxBeadMove[i] = MABufMaxBeadMove[i+1];
+        MABufAveBeadMove[i] = MABufAveBeadMove[i+1];
+        MABufMaxpMFSize[i]  = MABufMaxpMFSize[i+1];
+        MABufAvepMFSize[i]  = MABufAvepMFSize[i+1];
     }
 
-    vout << setw(3) << MaxpMFBead << " ";
 
-    if( pMFSizeAve < FinalpMFSizeAve ){
-        vout << "<green>" << setw(14) << setprecision(7) << scientific <<  pMFSizeAve << "</green> ";
-        termcrit++;
-    } else {
-        vout << setw(14) << setprecision(7) << scientific << pMFSizeAve << " ";
+    // add new values
+    MABufPLenChange[MABufLength-1]  = PLenChange;
+    MABufMaxBeadMove[MABufLength-1] = MaxBeadMove;
+    MABufAveBeadMove[MABufLength-1] = AveBeadMove;
+    MABufMaxpMFSize[MABufLength-1]  = MaxpMFSize;
+    MABufAvepMFSize[MABufLength-1]  = AvepMFSize;
+
+    // get moving averages
+    MAPLenChange    = 0.0;    
+    MAMaxBeadMove   = 0.0;
+    MAAveBeadMove   = 0.0;  
+    MAMaxpMFSize    = 0.0;    
+    MAAvepMFSize    = 0.0;
+    TermCrit        = 0;
+
+    if( STMStep < MABufLength ) return;
+
+    for(int i=0; i < MABufLength; i++){
+        MAPLenChange    += MABufPLenChange[i];    
+        MAMaxBeadMove   += MABufMaxBeadMove[i];
+        MAAveBeadMove   += MABufAveBeadMove[i];  
+        MAMaxpMFSize    += MABufMaxpMFSize[i];    
+        MAAvepMFSize    += MABufAvepMFSize[i];
     }
 
-    vout << " " << setw(1) << termcrit << "/" << "5";
-    vout << endl;
+    if( MABufLength > 0 ) {
+        MAPLenChange    /= (double)MABufLength;    
+        MAMaxBeadMove   /= (double)MABufLength;
+        MAAveBeadMove   /= (double)MABufLength; 
+        MAMaxpMFSize    /= (double)MABufLength;    
+        MAAvepMFSize    /= (double)MABufLength;
+    }
 
-    if( (termcrit == 5) && (STMStatus != ESTMS_PATH_FOUND) ){
+    // determine number of fullfilled termination criteria
+    if( MAPLenChange < FinalPLenChange ){
+        TermCrit++;
+    }
+    if( MAMaxBeadMove < FinalMaxBeadMove ){
+        TermCrit++;
+    }
+    if( MAAveBeadMove < FinalAveBeadMove ){
+        TermCrit++;
+    }
+    if( MAMaxpMFSize < FinalMaxpMFSize ){
+        TermCrit++;
+    }
+    if( MAAvepMFSize < FinalAvepMFSize ){
+        TermCrit++;
+    }
+}
+
+//------------------------------------------------------------------------------
+
+void CSTMPath::PrintSTMStepInfoF(std::ostream& fout)
+{
+    fout << left << setw(6)  << STMStep << " " << right;
+
+    fout << setw(14) << setprecision(7) << scientific << CurrentPathLength << " ";
+    fout << setw(14) << setprecision(7) << scientific << PLenChange << " ";    
+
+    fout << setw(14) << setprecision(7) << scientific << MaxBeadMove << " ";
+    fout << setw(3) << MaxBeadMoveID << " ";
+    fout << setw(14) << setprecision(7) << scientific << AveBeadMove << " ";
+
+    fout << setw(14) << setprecision(7) << scientific << MaxpMFSize << " ";
+    fout << setw(3) << MaxpMFSizeID << " ";
+    fout << setw(14) << setprecision(7) << scientific << AvepMFSize << " ";
+
+    fout << " " << setw(1) << TermCrit << "/" << "5 ";
+
+    fout << setw(14) << setprecision(7) << scientific << MAPLenChange << " ";  
+
+    fout << setw(14) << setprecision(7) << scientific << MAMaxBeadMove << " ";
+    fout << setw(14) << setprecision(7) << scientific << MAAveBeadMove << " ";
+
+    fout << setw(14) << setprecision(7) << scientific << MAMaxpMFSize << " ";
+    fout << setw(14) << setprecision(7) << scientific << MAAvepMFSize << " ";
+
+    fout << endl;
+
+    if( (TermCrit == 5) && (STMStatus != ESTMS_PATH_FOUND) ){
         STMStatus = ESTMS_PATH_FOUND;
-        vout << endl;
-        vout << ">> INFO: The path have converged." << endl;
+        fout << "#" << endl;
+        fout << "# >> INFO: The path have converged." << endl;
         if( ProdPeriod > 0 ){
-            vout << ">> INFO: Entering production accumulation (" << ProdPeriod <<" steps)." <<  endl;
+            fout << "# >> INFO: Entering production accumulation (" << ProdPeriod <<" steps)." <<  endl;
         }
     }
 }
@@ -2600,7 +2761,7 @@ void CSTMPath::SavePathAndTraj(void)
         SavePathSummary(OutputPathSummary);
     }
     if( (TrajInterval > 0) && (STMStep % TrajInterval == 0) ){
-        SaveSnapshot();
+        SaveTrajectorySnapshot();
     }
 }
 
@@ -2650,7 +2811,7 @@ void CSTMPath::UpdateAllPositions(void)
             vout << ">> INFO: Reset ADAM memory." << endl;
             ResetAdamAlg--;
         }
-    } else if ( OptMethod == "adambelive" ){
+    } else if ( OptMethod == "adabelif" ){
         for(int i=0; i < NumOfBeads; i++){
             if( (ResetAdamAlg > 0) && (MemoryLength > 0) && (STMStep % MemoryLength == 0) ) Beads[i]->ResetADAM();
             Beads[i]->UpdatePositionADABelif(UsedStepSize,AdamB1,AdamB2,MinGNormEps);
@@ -2769,13 +2930,14 @@ void CSTMPath::ReparametrizeAllPositions(void)
 
 void CSTMPath::CheckBoundaries(void)
 {
+    // now we are in scalled coordinates
     for(int b=0; b < NumOfBeads; b++){
         for(int i=0; i < NumOfCVs; i++){
-            if( Beads[b]->FPos[i] < CVs[i]->GetMinValue() ){
-                Beads[b]->FPos[i] = CVs[i]->GetMinValue();
+            if( Beads[b]->FPos[i] < 0.0 ){
+                Beads[b]->FPos[i] = 0.0;
             }
-            if( Beads[b]->FPos[i] > CVs[i]->GetMaxValue() ){
-                Beads[b]->FPos[i] = CVs[i]->GetMaxValue();
+            if( Beads[b]->FPos[i] > 1.0 ){
+                Beads[b]->FPos[i] = 1.0;
             }
         }
     }
@@ -2797,8 +2959,9 @@ void CSTMPath::IntegratePath(void)
         double a = 0.0;
         // get bead derivative along path
         for(int i=0; i < NumOfCVs; i++) {
-            Beads[b]->dCV[i] = CVSplines[i]->GetCVFirstDer(Beads[b]->Alpha);
-            a += Beads[b]->dCV[i]*Beads[b]->MF[i];
+            Beads[b]->dCVdAlpha[i] = CVSplines[i]->GetCVFirstDer(Beads[b]->Alpha);
+            double sc = CVs[i]->GetMaxValue() - CVs[i]->GetMinValue();
+            a += Beads[b]->dCVdAlpha[i] * sc * Beads[b]->MF[i];
         }
         Beads[b]->dAdAlpha = a;
         if( b > 0 ){
