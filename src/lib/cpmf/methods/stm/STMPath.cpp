@@ -40,12 +40,13 @@ using namespace std;
 
 /*
 Methods:
-* GD        - gradient descent (gradient)
-* NGD       - normalized gradient descent (normalized gradient)
-* NGD-AUTO  - gradient descent (switch between GD and NGD)
-* ADAM      - Adaptive Moment Estimation
-* AMSGrad   - AMSGrad
-* AMSGradBC - AMSGrad + bias corrected estimates
+* GD            - gradient descent (gradient)
+* NGD           - normalized gradient descent (normalized gradient)
+* NGD-AUTO      - gradient descent (switch between GD and NGD)
+* ADAM          - Adaptive Moment Estimation
+* AMSGrad       - AMSGrad
+* AMSGradBC     - AMSGrad + bias corrected estimates
+* ADABelif      - Adam-Belief
 */
 
 //------------------------------------------------------------------------------
@@ -367,6 +368,8 @@ bool CSTMPath::ProcessSTMControl(CPrmFile& prmfile)
         result = ProcessNGDAutoOptMethodSetup(prmfile);
     } else if( OptMethod == "adam" ){
         result = ProcessAdamOptMethodSetup(prmfile);
+    } else if( OptMethod == "adabelif" ){
+        result = ProcessADABeliefOptMethodSetup(prmfile);
     } else if( OptMethod == "amsgrad" ){
         result = ProcessAMSGradOptMethodSetup(prmfile);
     } else if( OptMethod == "amsgradbc" ){
@@ -478,6 +481,71 @@ bool CSTMPath::ProcessAdamOptMethodSetup(CPrmFile& prmfile)
     vout << endl;
     vout << "=== [adam] =====================================================================" << endl;
     if(prmfile.OpenSection("adam") == false) {
+        vout << "Step size (stepsize)                           = " << setw(9) << StepSize
+             << left << "             (default)" << endl;
+        vout << "beta1                                          = " << setw(9) << AdamB1
+             << left << "             (default)" << endl;
+        vout << "beta2                                          = " << setw(9) << AdamB2
+             << left << "             (default)" << endl;
+        vout << "Min gnorm value (mingnormesp)                  = " << setw(9) << MinGNormEps
+             << left << "             (default)" << endl;
+        vout << "Reset memory every (memsteps)                  = " << setw(9) << MemoryLength
+             << left << "             (default)" << endl;
+        return(true);
+    }
+
+    if(prmfile.GetDoubleByKey("stepsize",StepSize) == true) {
+        vout << "Step size (stepsize)                           = " << setw(9) << StepSize << left << endl;
+    } else {
+        vout << "Step size (stepsize)                           = " << setw(9) << StepSize
+             << left << "             (default)" << endl;
+    }
+
+    if(prmfile.GetDoubleByKey("beta1",AdamB1) == true) {
+        vout << "beta1                                          = " << setw(9) << AdamB1 << left << endl;
+    } else {
+        vout << "beta1                                          = " << setw(9) << AdamB1
+             << left << "             (default)" << endl;
+    }
+
+    if(prmfile.GetDoubleByKey("beta2",AdamB2) == true) {
+        vout << "beta2                                          = " << setw(9) << AdamB2 << left << endl;
+    } else {
+        vout << "beta2                                          = " << setw(9) << AdamB2
+             << left << "             (default)" << endl;
+    }
+
+    if(prmfile.GetDoubleByKey("mingnormeps",MinGNormEps) == true) {
+        vout << "Min gnorm value (mingnormesp)                  = " << setw(9) << MinGNormEps << left << endl;
+    } else {
+        vout << "Min gnorm value (mingnormesp)                  = " << setw(9) << MinGNormEps
+             << left << "             (default)" << endl;
+    }
+
+    if(prmfile.GetIntegerByKey("maxresets",ResetAdamAlg) == true) {
+        vout << "Max resets (maxresets)                         = " << setw(9) << ResetAdamAlg << left << endl;
+    } else {
+        vout << "Max resets (maxresets)                         = " << setw(9) << ResetAdamAlg
+             << left << "             (default)" << endl;
+    }
+
+    if(prmfile.GetIntegerByKey("memsteps",MemoryLength) == true) {
+        vout << "Reset memory every (memsteps)                  = " << setw(9) << MemoryLength << left << endl;
+    } else {
+        vout << "Reset memory every (memsteps)                  = " << setw(9) << MemoryLength
+             << left << "             (default)" << endl;
+    }
+
+    return(true);
+}
+
+//------------------------------------------------------------------------------
+
+bool CSTMPath::ProcessADABeliefOptMethodSetup(CPrmFile& prmfile)
+{
+    vout << endl;
+    vout << "=== [adam] =====================================================================" << endl;
+    if(prmfile.OpenSection("adabelif") == false) {
         vout << "Step size (stepsize)                           = " << setw(9) << StepSize
              << left << "             (default)" << endl;
         vout << "beta1                                          = " << setw(9) << AdamB1
@@ -2580,6 +2648,15 @@ void CSTMPath::UpdateAllPositions(void)
         }
         if( (ResetAdamAlg > 0) && (MemoryLength > 0) && (STMStep % MemoryLength == 0) ){
             vout << ">> INFO: Reset ADAM memory." << endl;
+            ResetAdamAlg--;
+        }
+    } else if ( OptMethod == "adambelive" ){
+        for(int i=0; i < NumOfBeads; i++){
+            if( (ResetAdamAlg > 0) && (MemoryLength > 0) && (STMStep % MemoryLength == 0) ) Beads[i]->ResetADAM();
+            Beads[i]->UpdatePositionADABelif(UsedStepSize,AdamB1,AdamB2,MinGNormEps);
+        }
+        if( (ResetAdamAlg > 0) && (MemoryLength > 0) && (STMStep % MemoryLength == 0) ){
+            vout << ">> INFO: Reset ADABelif memory." << endl;
             ResetAdamAlg--;
         }
     } else if ( OptMethod == "amsgrad" ){

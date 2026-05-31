@@ -195,12 +195,12 @@ public:
 private:
     CSmallString                    PathName;
     int                             NumOfCVs;
-    std::vector<CColVariablePtr>    CVs;        // CV definitions
+    std::vector<CColVariablePtr>    CVs;            // CV definitions
 
-    std::vector<CBeadPtr>           InputBeads; // input beads provided by an user
+    std::vector<CBeadPtr>           InputBeads;     // input beads provided by an user
 
     int                             NumOfBeads;
-    std::vector<CBeadPtr>           Beads;      // bead data
+    std::vector<CBeadPtr>           Beads;          // bead data
 
     CSmallString                    CVSplineType;
     std::vector<CCVSplinePtr>       CVSplines;      // interpolated CV
@@ -232,7 +232,7 @@ private:
     double              MinGNormEps;        // eps to avoid division by zero
     double              MaxGNormForGD;      // max gnorm to switch from NGD to GD (for NGD-AUTO)
 
-    // [adam], [amsgrad], [amsgradbc]
+    // [adam], [adabelif], [amsgrad], [amsgradbc]
     double              AdamB1;
     double              AdamB2;
     int                 ResetAdamAlg;
@@ -337,6 +337,7 @@ private:
     bool ProcessNGDOptMethodSetup(CPrmFile& prmfile);
     bool ProcessNGDAutoOptMethodSetup(CPrmFile& prmfile);
     bool ProcessAdamOptMethodSetup(CPrmFile& prmfile);
+    bool ProcessADABeliefOptMethodSetup(CPrmFile& prmfile);
     bool ProcessAMSGradOptMethodSetup(CPrmFile& prmfile);
     bool ProcessAMSGradBCOptMethodSetup(CPrmFile& prmfile);
 
