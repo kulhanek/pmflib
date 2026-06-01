@@ -21,9 +21,21 @@
 			"DartConfiguration.tcl": true
 		},
 		"editor.fontSize": 16,
+		"fortran.linter.compilerPath": "gfortran",
 		"fortran.linter.includePaths": [
 			"${workspaceFolder}/src/lib/fpmf",
-			"${workspaceFolder}/../../prmfile/1.0/src/lib/fprmfile"
-		]
+			"${workspaceFolder}/../../prmfile/1.0/src/lib/fprmfile",
+			"${workspaceFolder}/../../scimafic/1.0/src/lib/fscimafic",
+		],
+		"fortran.linter.extraArgs": [
+				"-cpp",
+				"-Wall"
+		],
+		"fortran.fortls.directories": [
+			"${workspaceFolder}/../../prmfile/1.0/src/lib/fprmfile/**",
+			"${workspaceFolder}/../../scimafic/1.0/src/lib/fscimafic/**",
+			"${workspaceFolder}/**"
+		],
+		"fortran.fortls.disableDiagnostics": true,
 	}
 }
