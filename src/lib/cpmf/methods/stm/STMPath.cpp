@@ -2089,7 +2089,7 @@ void CSTMPath::PrintPathSummaryHeader(std::ostream& vout)
 
 // header --------------------
     // legends
-    vout << "#  ID   Type  ST  alpha  dA/dalpha       A            CID Updates";
+    vout << "#  ID   Type  MO ST  alpha  dA/dalpha       A            CID Updates";
     for(int i=0; i < NumOfCVs; i++){
         vout << "     CV" << left << setw(2) << i+1 << "    ";
     }
@@ -2105,7 +2105,7 @@ void CSTMPath::PrintPathSummaryHeader(std::ostream& vout)
     vout << endl;
 
     // delimiters
-    vout << "# ---- ------ -- ------ ------------ ------------ ------- -------";
+    vout << "# ---- ------ -- -- ------ ------------ ------------ ------- -------";
     for(int i=0; i < NumOfCVs; i++){
         vout << " ------------";
     }
@@ -2174,9 +2174,8 @@ void CSTMPath::PrintPathSummaryHeader(std::ostream& vout)
         vout << " ------------";
     }
     vout << endl;
-
-    vout << "#    1      2  3      4            5            6       7       8";
-    int id = 9;
+    vout << "#    1      2  3  4      5            6            7       8       9";
+    int id = 10;
     for(int i=0; i < NumOfCVs; i++){
         vout << right << setw(13) << id;
         id++;
@@ -2194,7 +2193,7 @@ void CSTMPath::PrintPathSummaryHeader(std::ostream& vout)
         id++;
     }
     vout << endl;
-    vout << "# ---- ------ -- ------ ------------ ------------ ------- -------";
+    vout << "# ---- ------ -- -- ------ ------------ ------------ ------- -------";
     for(int i=0; i < NumOfCVs; i++){
         vout << " ------------";
     }
@@ -2242,6 +2241,22 @@ void CSTMPath::PrintPathSummaryData(std::ostream& vout)
                 vout << " UN";
                 break;
         }
+
+        switch(Beads[b]->GetModeStatus()){
+            case BMS_PREPARED:
+                vout << " P ";
+                break;
+            case BMS_RUNNING:
+                vout << " R ";
+                break;
+            case BMS_FINISHED:
+                vout << " F ";
+                break;
+            default:
+                vout << " UN";
+                break;
+        }
+
         vout << fixed << setprecision(4);
         vout << " " << setw(6) << Beads[b]->Alpha;
 
@@ -2296,7 +2311,7 @@ void CSTMPath::PrintPathUpdate(std::ostream& vout)
 
 // header --------------------
     // legends
-    vout << "#  ID   Type  ST Nalpha     CID Updates  ";
+    vout << "#  ID   Type  MO ST Nalpha     CID Updates  ";
     for(int i=0; i < NumOfCVs; i++){
         vout << " old CV" << left << setw(2) << i+1 << "    ";
     }
@@ -2309,7 +2324,7 @@ void CSTMPath::PrintPathUpdate(std::ostream& vout)
     vout << endl;
 
     // delimiters
-    vout << "# ---- ------ -- ------ ------- -------";
+    vout << "# ---- ------ -- -- ------ ------- -------";
     for(int i=0; i < NumOfCVs; i++){
         vout << " ------------";
     }
@@ -2358,7 +2373,7 @@ void CSTMPath::PrintPathUpdate(std::ostream& vout)
     }
     vout << endl;
 
-    vout << "# ---- ------ -- ------ ------- -------";
+    vout << "# ---- ------ -- -- ------ ------- -------";
     for(int i=0; i < NumOfCVs; i++){
         vout << " ------------";
     }
@@ -2370,8 +2385,8 @@ void CSTMPath::PrintPathUpdate(std::ostream& vout)
     }
     vout << endl;
 
-    vout << "#    1      2  3      4       5       6";
-    int id = 7;
+    vout << "#    1      2  3  4      5       6       7";
+    int id = 8;
     for(int i=0; i < NumOfCVs; i++){
         vout << right << setw(13) << id;
         id++;
@@ -2385,7 +2400,7 @@ void CSTMPath::PrintPathUpdate(std::ostream& vout)
         id++;
     }
     vout << endl;
-    vout << "# ---- ------ -- ------ ------- -------";
+    vout << "# ---- ------ -- -- ------ ------- -------";
     for(int i=0; i < NumOfCVs; i++){
         vout << " ------------";
     }
@@ -2404,6 +2419,7 @@ void CSTMPath::PrintPathUpdate(std::ostream& vout)
         } else {
             vout << "  " << setw(4) << Beads[b]->GetBeadID() << setw(7) << " F     ";
         }
+        
         switch(Beads[b]->GetMode()){
             case BMO_INITIALIZATION:
                 vout << " I ";
@@ -2424,6 +2440,22 @@ void CSTMPath::PrintPathUpdate(std::ostream& vout)
                 vout << " UN";
                 break;
         }
+
+        switch(Beads[b]->GetModeStatus()){
+            case BMS_PREPARED:
+                vout << " P ";
+                break;
+            case BMS_RUNNING:
+                vout << " R ";
+                break;
+            case BMS_FINISHED:
+                vout << " F ";
+                break;
+            default:
+                vout << " UN";
+                break;
+        }
+
         vout << fixed << setprecision(4);
         vout << " " << setw(6) << Beads[b]->Alpha;
 

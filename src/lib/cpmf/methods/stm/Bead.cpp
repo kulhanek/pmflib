@@ -629,6 +629,7 @@ void CBead::LoadInfo(CXMLElement* p_ele)
     result &= p_ele->GetAttribute("client_id",ClientID);
     result &= p_ele->GetAttribute("permanent",Permanent);
     result &= p_ele->GetAttribute("mode",Mode);
+    result &= p_ele->GetAttribute("status",ModeStatus);
     result &= p_ele->GetAttribute("nupd",NumOfUpdates);
 
     if(result == false) {
@@ -677,6 +678,7 @@ void CBead::SaveInfo(CXMLElement* p_ele)
     p_ele->SetAttribute("client_id",ClientID);
     p_ele->SetAttribute("permanent",Permanent);
     p_ele->SetAttribute("mode",Mode);
+    p_ele->SetAttribute("status",ModeStatus);
     p_ele->SetAttribute("nupd",NumOfUpdates);
 
     // save bead

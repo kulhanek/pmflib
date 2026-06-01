@@ -505,14 +505,14 @@ bool CLauncher::SubmitAllJobsAndWaitForRendezvous(void)
 
     while( ThreadTerminated == false ) {
         if( IsAnyJobRunning() == false ){
-            if( StringServer.Beads.GetNumOfBeadsInRendezvousState() != StringServer.Beads.GetNumOfBeads() ) {
+            if( StringServer.Beads.GetNumOfBeadsInRendezvousState() == StringServer.Beads.GetNumOfBeads() ) {
                 break;
             }
         }
         sleep(CheckServerSleepTime);
         if( SubmitAllJobs() == false ) return(false);
     }
-    
+
     if( ThreadTerminated ) {
         lout << ">>> INFO: Terminated upon external request ..." << endl;
         return(false);
@@ -589,7 +589,8 @@ bool CLauncher::SubmitAllJobs(void)
 
         if( (p_bead->GetModeStatus() == BMS_FINISHED) &&
             ( (p_bead->GetMode() == BMO_ACCUMULATION) || 
-              (p_bead->GetMode() == BMO_PRODUCTION) ) ){
+              (p_bead->GetMode() == BMO_PRODUCTION) ||
+              (p_bead->GetMode() == BMO_WAITFORRENDEZVOUS) ) ){
             if( job.Submitted == false ) continue; // process only submitted jobs
             // is job finished?
             if( IsJobFinished(job) == true ){
