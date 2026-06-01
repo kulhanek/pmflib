@@ -1,6 +1,7 @@
 !===============================================================================
 ! PMFLib - Library Supporting Potential of Mean Force Calculations
 !-------------------------------------------------------------------------------
+!    Copyright (C) 2026 Petr Kulhanek, kulhanek@chemi.muni.cz
 !    Copyright (C) 2011 Petr Kulhanek, kulhanek@chemi.muni.cz
 !    Copyright (C) 2010 Petr Kulhanek, kulhanek@chemi.muni.cz
 !
@@ -65,6 +66,7 @@ subroutine stm_init_dat
     fbeadid         = 0         ! read fbeadidfile is fbead == 0
     fbeadidfile     = 'beadid'  ! bead id file definition
     ftensor         = 1         ! 0 - unity, 1 - normal
+    fsteadylen      = 20        ! 20 %, length of steady part in the init and equi stages in percent 
 
     NumOfSTMCVs     = 0
 
@@ -109,6 +111,7 @@ subroutine stm_init_print_header
     write(PMF_OUT,130)  ' Number of coordinates                   : ', NumOfSTMCVs
     write(PMF_OUT,130)  ' Bead ID                                 : ', bead_id
     write(PMF_OUT,130)  ' Tensor mode (ftensor)                   : ', ftensor
+    write(PMF_OUT,135)  ' Steady length (fsteadylen)              : ', fsteadylen, ' [%]'
 
     select case(ftensor)
     case(0)
@@ -146,6 +149,7 @@ subroutine stm_init_print_header
 120 format(A)
 125 format(A,A)
 130 format(A,I6)
+135 format(A,I6,A)
 
 140 format(' == Collective variable #',I2.2)
 

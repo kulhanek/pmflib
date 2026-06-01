@@ -114,6 +114,9 @@ int CStringServer::Init(int argc,char* argv[])
     if( Beads.ProcessSTMControl(Controls) == false ){
        return( SO_USER_ERROR );
     }
+    if( Beads.ProcessSTMTerminationControl(Controls) == false ){
+       return( SO_USER_ERROR );
+    }
 
     if( Beads.ProcessIntervalsControl(Controls) == false ){
        return( SO_USER_ERROR );

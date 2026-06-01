@@ -1,6 +1,7 @@
 !===============================================================================
 ! PMFLib - Library Supporting Potential of Mean Force Calculations
 !-------------------------------------------------------------------------------
+!    Copyright (C) 2026 Petr Kulhanek, kulhanek@chemi.muni.cz
 !    Copyright (C) 2011 Petr Kulhanek, kulhanek@chemi.muni.cz
 !    Copyright (C) 2010 Petr Kulhanek, kulhanek@chemi.muni.cz
 !
@@ -146,6 +147,7 @@ subroutine stm_client_register
  15 format(' STM Server Key file : ', A)
  20 format(' Registering client on server, please wait .... ')
 
+#ifdef PMFLIB_NETWORK
  30 format(' Registration FAILED!')
  40 format(' Registration SUCCESSFULL! (Client ID: ',I6,')')
 
@@ -153,6 +155,7 @@ subroutine stm_client_register
  50 format('# [STM-CLIENT] Registration to server ',A,' failed!')
  60 format('# [STM-CLIENT] Registration to server ',A,' successful.')
  70 format('# [STM-CLIENT] Client ID: ',I6)
+#endif
 
 end subroutine stm_client_register
 
@@ -349,7 +352,10 @@ subroutine stm_client_unregister
 
 10 format('>>> INFO: Removing registration from STM server ',A)
 20 format('# [STM-CLIENT] Removing registration from server')
+
+#ifdef PMFLIB_NETWORK
 40 format('# [STM-CLIENT]    Client was unregistered')
+#endif
 
 end subroutine stm_client_unregister
 

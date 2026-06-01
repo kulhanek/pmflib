@@ -105,6 +105,9 @@ public:
     /// load stm setup
     bool ProcessSTMControl(CPrmFile& prmfile);
 
+    /// process stm termination control
+    bool ProcessSTMTerminationControl(CPrmFile& prmfile);
+
     /// load intervals setup
     bool ProcessIntervalsControl(CPrmFile& prmfile);
 
@@ -220,13 +223,6 @@ private:
     int                 MaxSTMSteps;        // maximum number of STM steps
     CSmallString        OptMethod;
 
-    // termination criteria
-    double              FinalPLenChange;    // path length change
-    double              FinalMaxBeadMove;   // max bead movement
-    double              FinalAveBeadMove;   // average bead movement
-    double              FinalMaxpMFSize;    // max perpendicular force size (pMF) 
-    double              FinalAvepMFSize;    // average perpendicular force size (pMF) 
-
     int                 InitPeriod;         // initialization period
     bool                SoloInitPeriod;
 
@@ -281,6 +277,13 @@ private:
 
     double              CurrentPathLength;
     double              UpdatedPathLength;
+
+    // termination criteria
+    double                  FinalPLenChange;    // path length change
+    double                  FinalMaxBeadMove;   // max bead movement
+    double                  FinalAveBeadMove;   // average bead movement
+    double                  FinalMaxpMFSize;    // max perpendicular force size (pMF) 
+    double                  FinalAvepMFSize;    // average perpendicular force size (pMF) 
 
     // current optimization status
     double                  PLenChange;

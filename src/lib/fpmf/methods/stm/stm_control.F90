@@ -1,6 +1,7 @@
 !===============================================================================
 ! PMFLib - Library Supporting Potential of Mean Force Calculations
 !-------------------------------------------------------------------------------
+!    Copyright (C) 2026 Petr Kulhanek, kulhanek@chemi.muni.cz
 !    Copyright (C) 2011 Petr Kulhanek, kulhanek@chemi.muni.cz
 !    Copyright (C) 2010 Petr Kulhanek, kulhanek@chemi.muni.cz
 !
@@ -88,7 +89,6 @@ subroutine stm_control_read_stm(prm_fin)
 
 #else
     fserver_enabled = .false.
-    use_key = .false.
     write(PMF_OUT,105)
     call pmf_utils_exit(PMF_OUT,1,'The string method is requested but a network support is not available in PMFLib!')
 #endif
@@ -112,8 +112,10 @@ subroutine stm_control_read_stm(prm_fin)
 
     call pmf_ctrl_check_integer('STM','fbeadid',fbeadid,0,CND_GT)
 
-    bead_id = fbeadid
+    call pmf_ctrl_read_integer(prm_fin,'fsteadylen',fsteadylen,'i12')
+    call pmf_ctrl_check_integer_in_range('STM','fsteadylen',fsteadylen,0,100)
 
+    bead_id = fbeadid
     stm_enabled = fmode .gt. 0
 
     return
@@ -121,7 +123,10 @@ subroutine stm_control_read_stm(prm_fin)
 500 call pmf_utils_exit(PMF_OUT,1,'Unable to read bead id!')
 
  10 format (' >> String method is disabled!')
+
+#ifdef PMFLIB_NETWORK
 110 format ('fserverkey                            = ',a)
+#endif
 
 #ifndef PMFLIB_NETWORK
 105 format (' >> The string method is not compiled in (network support is required)!')

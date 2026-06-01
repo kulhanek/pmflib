@@ -111,7 +111,7 @@ CSTMPath::CSTMPath(void)
     FinalMaxBeadMove    = 0.005;
     FinalAveBeadMove    = 0.005;
     FinalMaxpMFSize     = 10.00;
-    FinalAvepMFSize     = 4.00;
+    FinalAvepMFSize     = 2.00;
 
     PLenChange = 0;
     MaxBeadMove = 0;
@@ -252,10 +252,133 @@ bool CSTMPath::ProcessSTMControl(CPrmFile& prmfile)
     vout << endl;
     vout << "=== [stm] ======================================================================" << endl;
     if(prmfile.OpenSection("stm") == false) {
-        vout << "Max number of STM steps (steps)                = " << setw(9) << MaxSTMSteps
-             << left << "             (default)" << endl;
-        vout << "Optimization method (optmethod)                = " << setw(9) << OptMethod
-             << left << "             (default)" << endl;
+        vout << "Max number of STM steps (steps)                = " << setw(12) << right << MaxSTMSteps
+             << "        (default)" << endl;
+        vout << "Optimization method (optmethod)                = " << setw(12) << right << OptMethod
+             << "        (default)" << endl;
+            
+        vout << "Initialization period (init)                   = " << setw(12) << right << InitPeriod
+             << "        (default)" << endl;
+        vout << "Accumulation period (accu)                     = " << setw(12) << right << AccuPeriod
+             << "        (default)" << endl;
+        vout << "Equilibration period (equi)                    = " << setw(12) << right << EquiPeriod
+             << "        (default)" << endl;
+        vout << "Final production period (prod)                 = " << setw(12) << right << ProdPeriod
+             << "        (default)" << endl;
+
+        vout << "Path smoothing factor (sfac)                   = " << setw(12) << right << SmoothingFac
+             << "        (default)" << endl;
+        vout << "Asynchronous mode (async)                      = " << setw(12) << right << PrmFileOnOff(AsynchronousMode)
+             << "        (default)" << endl;
+
+        // opt method
+        bool result  = ProcessGDOptMethodSetup(prmfile);
+        return(result);
+    }
+
+    if(prmfile.GetIntegerByKey("steps",MaxSTMSteps) == true) {
+        vout << "Max number of STM steps (steps)                = " << setw(12) << right << MaxSTMSteps << endl;
+    } else {
+        vout << "Max number of STM steps (steps)                = " << setw(12) << right << MaxSTMSteps
+            << "         (default)" << endl;
+    }
+
+    if(prmfile.GetStringByKey("optmethod",OptMethod) == true) {
+        vout << "Optimization method (optmethod)                = " << setw(12) << right << OptMethod << endl;
+    } else {
+        vout << "Optimization method (optmethod)                = " << setw(12) << right << OptMethod
+            << "         (default)" << endl;
+    }
+
+    
+    if(prmfile.GetIntegerByKey("init",InitPeriod) == true) {
+        vout << "Initialization period (init)                   = " << setw(12) << right << InitPeriod << endl;
+    } else {
+        vout << "Initialization period (init)                   = " << setw(12) << right << InitPeriod
+             << "         (default)" << endl;
+    }
+
+    if(prmfile.GetLogicalByKey("soloinit",SoloInitPeriod) == true) {
+        vout << "Solo initialization period (soloinit)          = " << setw(12) << right << PrmFileOnOff(SoloInitPeriod) << left << endl;
+    } else {
+        vout << "Solo initialization period (soloinit)          = " << setw(12) << right << PrmFileOnOff(SoloInitPeriod)
+            << "          (default)" << endl;
+    }
+
+
+    if(prmfile.GetIntegerByKey("accu",AccuPeriod) == true) {
+        vout << "Accumulation period (accu)                     = " << setw(12) << right << AccuPeriod << endl;
+    } else {
+        vout << "Accumulation period (accu)                     = " << setw(12) << right << AccuPeriod
+             << "        (default)" << endl;
+    }
+
+    if(prmfile.GetIntegerByKey("equi",EquiPeriod) == true) {
+        vout << "Equilibration period (equi)                    = " << setw(12) << right << EquiPeriod << endl;
+    } else {
+        vout << "Equilibration period (equi)                    = " << setw(12) << right << EquiPeriod
+             << "        (default)" << endl;
+    }
+    if(prmfile.GetLogicalByKey("soloequi",SoloEquiPeriod) == true) {
+        vout << "Solo equilibration period (soloequi)           = " << setw(12) << right << PrmFileOnOff(SoloEquiPeriod) << left << endl;
+    } else {
+        vout << "Solo equilibration period (soloequi)           = " << setw(12) << right << PrmFileOnOff(SoloEquiPeriod)
+            << "          (default)" << endl;
+    }
+
+    if(prmfile.GetIntegerByKey("prod",ProdPeriod) == true) {
+        vout << "Final production period (prod)                 = " << setw(12) << right << ProdPeriod << endl;
+    } else {
+        vout << "Final production period (prod)                 = " << setw(12) << right << ProdPeriod
+             << "        (default)" << endl;
+    }
+
+    if(prmfile.GetDoubleByKey("sfac",SmoothingFac) == true) {
+        vout << "Path smoothing factor (sfac)                   = " << setw(12) << right << SmoothingFac << left << endl;
+    } else {
+        vout << "Path smoothing factor (sfac)                   = " << setw(12) << right << SmoothingFac
+             << "        (default)" << endl;
+    }
+
+    if(prmfile.GetLogicalByKey("async",AsynchronousMode) == true) {
+        vout << "Asynchronous mode (async)                      = " << setw(12) << right << PrmFileOnOff(AsynchronousMode) << left << endl;
+    } else {
+        vout << "Asynchronous mode (async)                      = " << setw(12) << right << PrmFileOnOff(AsynchronousMode)
+            << "         (default)" << endl;
+    }
+
+// optimization method setup
+    OptMethod.ToLowerCase();
+
+    bool result = true;
+    if( OptMethod == "gd" ){
+        result = ProcessGDOptMethodSetup(prmfile);
+    } else if( OptMethod == "ngd" ){
+        result = ProcessNGDOptMethodSetup(prmfile);
+    } else if( OptMethod == "ngd-auto" ){
+        result = ProcessNGDAutoOptMethodSetup(prmfile);
+    } else if( OptMethod == "adam" ){
+        result = ProcessAdamOptMethodSetup(prmfile);
+    } else if( OptMethod == "adabelif" ){
+        result = ProcessADABeliefOptMethodSetup(prmfile);
+    } else if( OptMethod == "amsgrad" ){
+        result = ProcessAMSGradOptMethodSetup(prmfile);
+    } else if( OptMethod == "amsgradbc" ){
+        result = ProcessAMSGradBCOptMethodSetup(prmfile);
+    } else {
+        RUNTIME_ERROR("not implemented opt method");
+    }
+
+    return(result);
+}
+
+//------------------------------------------------------------------------------
+
+bool CSTMPath::ProcessSTMTerminationControl(CPrmFile& prmfile)
+{
+    vout << endl;
+    vout << "=== [termination] ==============================================================" << endl;
+    if(prmfile.OpenSection("termination") == false) {
 
         vout << "Final path length change (fplch)               = " << setw(9) << FinalPLenChange
              << left << "             (default)" << endl;
@@ -271,39 +394,8 @@ bool CSTMPath::ProcessSTMControl(CPrmFile& prmfile)
 
         vout << "Term buffer length (tbuflen)                   = " << setw(9) << MABufLength
              << left << "             (default)" << endl;
-            
-        vout << "Initialization period (init)                   = " << setw(9) << InitPeriod
-             << left << "             (default)" << endl;
-        vout << "Accumulation period (accu)                     = " << setw(9) << AccuPeriod
-             << left << "             (default)" << endl;
-        vout << "Equilibration period (equi)                    = " << setw(9) << EquiPeriod
-             << left << "             (default)" << endl;
-        vout << "Final production period (prod)                 = " << setw(9) << ProdPeriod
-             << left << "             (default)" << endl;
-        vout << "Asynchronous mode (async)                      = " << setw(9) << right << PrmFileOnOff(AsynchronousMode)
-             << left << "             (default)" << endl;
-        vout << "Path smoothing factor (sfac)                   = " << setw(9) << SmoothingFac
-             << left << "             (default)" << endl;
-        vout << "Asynchronous mode (async)                      = " << setw(9) << right << PrmFileOnOff(AsynchronousMode)
-             << left << "             (default)" << endl;
-
-        // opt method - GD
-        bool result  = ProcessGDOptMethodSetup(prmfile);
-        return(result);
-    }
-
-    if(prmfile.GetIntegerByKey("steps",MaxSTMSteps) == true) {
-        vout << "Max number of STM steps (steps)                = " << setw(9) << MaxSTMSteps << left << endl;
-    } else {
-        vout << "Max number of STM steps (steps)                = " << setw(9) << MaxSTMSteps
-             << left << "             (default)" << endl;
-    }
-
-    if(prmfile.GetStringByKey("optmethod",OptMethod) == true) {
-        vout << "Optimization method (optmethod)                = " << setw(9) << OptMethod << left << endl;
-    } else {
-        vout << "Optimization method (optmethod)                = " << setw(9) << OptMethod
-             << left << "             (default)" << endl;
+        
+        return(true);
     }
 
     if(prmfile.GetDoubleByKey("fplch",FinalPLenChange) == true) {
@@ -348,71 +440,7 @@ bool CSTMPath::ProcessSTMControl(CPrmFile& prmfile)
              << "             (default)" << endl;
     }
 
-    if(prmfile.GetIntegerByKey("init",InitPeriod) == true) {
-        vout << "Initialization period (init)                   = " << setw(9) << InitPeriod << endl;
-    } else {
-        vout << "Initialization period (init)                   = " << setw(9) << InitPeriod
-             << "             (default)" << endl;
-    }
-
-    if(prmfile.GetIntegerByKey("accu",AccuPeriod) == true) {
-        vout << "Accumulation period (accu)                     = " << setw(9) << AccuPeriod << endl;
-    } else {
-        vout << "Accumulation period (accu)                     = " << setw(9) << AccuPeriod
-             << "             (default)" << endl;
-    }
-
-    if(prmfile.GetIntegerByKey("equi",EquiPeriod) == true) {
-        vout << "Equilibration period (equi)                    = " << setw(9) << EquiPeriod << endl;
-    } else {
-        vout << "Equilibration period (equi)                    = " << setw(9) << EquiPeriod
-             << "             (default)" << endl;
-    }
-
-    if(prmfile.GetIntegerByKey("prod",ProdPeriod) == true) {
-        vout << "Final production period (prod)                 = " << setw(9) << ProdPeriod << endl;
-    } else {
-        vout << "Final production period (prod)                 = " << setw(9) << ProdPeriod
-             << "             (default)" << endl;
-    }
-
-    if(prmfile.GetDoubleByKey("sfac",SmoothingFac) == true) {
-        vout << "Path smoothing factor (sfac)                   = " << setw(9) << SmoothingFac << left << endl;
-    } else {
-        vout << "Path smoothing factor (sfac)                   = " << setw(9) << SmoothingFac
-             << left << "             (default)" << endl;
-    }
-
-    if(prmfile.GetLogicalByKey("async",AsynchronousMode) == true) {
-        vout << "Asynchronous mode (async)                      = " << setw(9) << right << PrmFileOnOff(AsynchronousMode) << left << endl;
-    } else {
-        vout << "Asynchronous mode (async)                      = " << setw(9) << right << PrmFileOnOff(AsynchronousMode)
-             << left << "             (default)" << endl;
-    }
-
-// optimization method setup
-    OptMethod.ToLowerCase();
-
-    bool result = true;
-    if( OptMethod == "gd" ){
-        result = ProcessGDOptMethodSetup(prmfile);
-    } else if( OptMethod == "ngd" ){
-        result = ProcessNGDOptMethodSetup(prmfile);
-    } else if( OptMethod == "ngd-auto" ){
-        result = ProcessNGDAutoOptMethodSetup(prmfile);
-    } else if( OptMethod == "adam" ){
-        result = ProcessAdamOptMethodSetup(prmfile);
-    } else if( OptMethod == "adabelif" ){
-        result = ProcessADABeliefOptMethodSetup(prmfile);
-    } else if( OptMethod == "amsgrad" ){
-        result = ProcessAMSGradOptMethodSetup(prmfile);
-    } else if( OptMethod == "amsgradbc" ){
-        result = ProcessAMSGradBCOptMethodSetup(prmfile);
-    } else {
-        RUNTIME_ERROR("not implemented opt method");
-    }
-
-    return(result);
+    return(true);
 }
 
 //------------------------------------------------------------------------------
@@ -578,7 +606,8 @@ bool CSTMPath::ProcessAdamOptMethodSetup(CPrmFile& prmfile)
 bool CSTMPath::ProcessADABeliefOptMethodSetup(CPrmFile& prmfile)
 {
     vout << endl;
-    vout << "=== [adam] =====================================================================" << endl;
+    vout << "=== [adabelif] =================================================================" << endl;
+
     if(prmfile.OpenSection("adabelif") == false) {
         vout << "Step size (stepsize)                           = " << setw(9) << StepSize
              << left << "             (default)" << endl;
@@ -779,9 +808,9 @@ bool CSTMPath::ProcessIntervalsControl(CPrmFile& prmfile)
     vout << endl;
     vout << "=== [intervals] ================================================================" << endl;
     if(prmfile.OpenSection("intervals") == false) {
-        vout << "Path smoothing interval (smooth)               = " << setw(9) << SmoothInterval
-             << "             (default)" << endl;
         vout << "Path reparametrization interval (reparam)      = " << setw(9) << ReparamInterval
+             << "             (default)" << endl;
+        vout << "Path smoothing interval (smooth)               = " << setw(9) << SmoothInterval
              << "             (default)" << endl;
         vout << "Trajectory interval (trajectory)               = " << setw(9) << TrajInterval
              << "             (default)" << endl;
@@ -791,17 +820,17 @@ bool CSTMPath::ProcessIntervalsControl(CPrmFile& prmfile)
         return(true);
     }
 
-    if(prmfile.GetIntegerByKey("smooth",SmoothInterval) == true) {
-        vout << "Path smoothing interval (smooth)               = " << setw(9) << SmoothInterval << endl;
-    } else {
-        vout << "Path smoothing interval (smooth)               = " << setw(9) << SmoothInterval
-             << "             (default)" << endl;
-    }
-
     if(prmfile.GetIntegerByKey("reparam",ReparamInterval) == true) {
         vout << "Path reparametrization interval (reparam)      = " << setw(9) << ReparamInterval << endl;
     } else {
         vout << "Path reparametrization interval (reparam)      = " << setw(9) << ReparamInterval
+             << "             (default)" << endl;
+    }
+
+    if(prmfile.GetIntegerByKey("smooth",SmoothInterval) == true) {
+        vout << "Path smoothing interval (smooth)               = " << setw(9) << SmoothInterval << endl;
+    } else {
+        vout << "Path smoothing interval (smooth)               = " << setw(9) << SmoothInterval
              << "             (default)" << endl;
     }
 

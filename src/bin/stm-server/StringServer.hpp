@@ -68,7 +68,7 @@ private:
 
     // global data -------------------------------
     CRegClientList      RegClients;     // registered clients
-    CSTMPath           Beads;          // available beads
+    CSTMPath            Beads;          // available beads
     CLauncher           Launcher;       // job luncher
 
     // output ------------------------------------

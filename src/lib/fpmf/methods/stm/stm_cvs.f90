@@ -1,6 +1,7 @@
 !===============================================================================
 ! PMFLib - Library Supporting Potential of Mean Force Calculations
 !-------------------------------------------------------------------------------
+!    Copyright (C) 2026 Petr Kulhanek, kulhanek@chemi.muni.cz
 !    Copyright (C) 2011 Petr Kulhanek, kulhanek@chemi.muni.cz
 !    Copyright (C) 2010 Petr Kulhanek, kulhanek@chemi.muni.cz
 !
@@ -133,15 +134,24 @@ subroutine stm_restraints_increment(stm_item)
 
     implicit none
     type(CVTypeSTM)     :: stm_item
+    integer             :: nstep
     ! --------------------------------------------------------------------------
 
     if( stmmode .eq. BMO_ACCUMULATION ) return  ! no change of constant restraint
     if( stmmode .eq. BMO_PRODUCTION ) return  ! no change of constant restraint
     if( stmmode .eq. BMO_TERMINATE ) return  ! no change of constant restraint
 
+    nstep = stmsteps * (100 - fsteadylen) / 100
+
+    ! did we reach the target value?
+    if( curstep >= nstep ) then
+        stm_item%target_value = stm_item%stopvalue
+        return
+    end if
+
     ! incrementation is in linear mode
     stm_item%target_value = stm_item%startvalue + &
-                  (stm_item%stopvalue-stm_item%startvalue) * curstep / stmsteps
+                  (stm_item%stopvalue-stm_item%startvalue) * curstep / nstep
 
     return
 

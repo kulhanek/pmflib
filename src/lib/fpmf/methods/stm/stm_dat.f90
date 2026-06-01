@@ -1,6 +1,7 @@
 !===============================================================================
 ! PMFLib - Library Supporting Potential of Mean Force Calculations
 !-------------------------------------------------------------------------------
+!    Copyright (C) 2026 Petr Kulhanek, kulhanek@chemi.muni.cz
 !    Copyright (C) 2011 Petr Kulhanek, kulhanek@chemi.muni.cz
 !    Copyright (C) 2010 Petr Kulhanek, kulhanek@chemi.muni.cz
 !
@@ -35,6 +36,7 @@ integer                 :: fsample          ! output sample period in steps
 integer                 :: ftensor          ! 0 - unity, 1 - normal
 integer                 :: fbeadid          ! bead id
 character(PMF_MAX_PATH) :: fbeadidfile      ! name of file containing bead id
+integer                 :: fsteadylen       ! length of steady part in the init and equi stages in percent 
 
 ! server part ------------------------------------------------------------------
 character(PMF_MAX_PATH) :: fserverkey           ! stm-server key file name
