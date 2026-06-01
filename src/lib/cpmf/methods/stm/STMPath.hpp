@@ -86,9 +86,6 @@ public:
     /// open optimization journal
     bool OpenOptLog(void);
 
-    /// save step into optimization journal
-    void SaveOptLogItem(void);
-
     /// close optimization journal
     void CloseOptLog(void);
 
@@ -220,8 +217,9 @@ private:
 
 
     // STM setup ---------------------------------
-    int                 MaxSTMSteps;        // maximum number of STM steps
+    int                 MaxSTMSteps;            // maximum number of STM steps
     CSmallString        OptMethod;
+    bool                ShifGlobalMinA2Zero;    // shift global FES minima to zero
 
     int                 InitPeriod;         // initialization period
     bool                SoloInitPeriod;

@@ -383,13 +383,13 @@ void CLauncher::ExecuteThread(void)
         lout << "3) Processing STM path data ..." << endl;
         StringServer.Beads.ProcessPathAsynchronously();
 
-        lout << endl;
-        lout << "4) Wait until all jobs finish ..." << endl;
-        if( WaitForAllJobs() == false ){
-            ES_ERROR("unable to wait for all jobs");
-            StringServer.TerminateServer();
-            return;
-        }
+        // lout << endl;
+        // lout << "4) Wait until all jobs finish ..." << endl;
+        // if( WaitForAllJobs() == false ){
+        //     ES_ERROR("unable to wait for all jobs");
+        //     StringServer.TerminateServer();
+        //     return;
+        // }
 
         if( (StringServer.Beads.GetSTMStatus() == ESTMS_MAX_STEPS_REACHED) ||
             (StringServer.Beads.GetSTMStatus() == ESTMS_COMPLETED) ) {
@@ -553,15 +553,25 @@ bool CLauncher::SubmitAllJobs(void)
 
         if( (p_bead->GetModeStatus() == BMS_FINISHED) &&
             ( (p_bead->GetMode() == BMO_INITIALIZATION) ||
-              (p_bead->GetMode() == BMO_EQUILIBRATION) ||
-              (p_bead->GetMode() == BMO_ACCUMULATION) ||
+              (p_bead->GetMode() == BMO_EQUILIBRATION) ) ){
+            if( job.Submitted == false ) continue; // process only submitted jobs
+            // is job finished?
+            if( IsJobFinished(job) == true ){
+                lout << "      # " << setfill('0') << setw(3) << job.BeadID << setfill(' ') << " bead ";
+                lout << "(" << p_bead->GetModeString() << ") ... finished -> advancing to the next mode" << endl;
+                p_bead->MoveToNextMode();   // we can advance to next step
+                job.Submitted = false;
+            }
+        }
+
+        if( (p_bead->GetModeStatus() == BMS_FINISHED) &&
+            ( (p_bead->GetMode() == BMO_ACCUMULATION) || 
               (p_bead->GetMode() == BMO_PRODUCTION) ) ){
             if( job.Submitted == false ) continue; // process only submitted jobs
             // is job finished?
             if( IsJobFinished(job) == true ){
                 lout << "      # " << setfill('0') << setw(3) << job.BeadID << setfill(' ') << " bead ";
-                lout << "(" << p_bead->GetModeString() << ") ... finished" << endl;
-                p_bead->MoveToNextMode();
+                lout << "(" << p_bead->GetModeString() << ") ... finished -> waiting for rendezvous" << endl;
                 job.Submitted = false;
             }
         }

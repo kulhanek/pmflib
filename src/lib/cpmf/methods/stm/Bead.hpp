@@ -137,8 +137,8 @@ public:
     /// skip production data
     void SkipProductionData(void);
 
-    /// wait for rendezvous
-    void WaitForRendezvous(void);
+    /// set flag to wait for rendezvous
+    void SetWaitForRendezvous(void);
 
     /// get production data
     void SetNextStepData(CXMLElement* p_ele);

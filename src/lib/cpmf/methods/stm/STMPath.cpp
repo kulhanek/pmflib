@@ -92,6 +92,7 @@ CSTMPath::CSTMPath(void)
 
     MaxSTMSteps         = 100;
     OptMethod           = "adabelif";
+    ShifGlobalMinA2Zero = true;
 
     MaxGNormForGD       = 5.0;
     MinGNormEps         = 1e-7;
@@ -253,23 +254,29 @@ bool CSTMPath::ProcessSTMControl(CPrmFile& prmfile)
     vout << "=== [stm] ======================================================================" << endl;
     if(prmfile.OpenSection("stm") == false) {
         vout << "Max number of STM steps (steps)                = " << setw(12) << right << MaxSTMSteps
-             << "        (default)" << endl;
+            << "          (default)" << endl;
         vout << "Optimization method (optmethod)                = " << setw(12) << right << OptMethod
-             << "        (default)" << endl;
-            
+            << "          (default)" << endl;
+        vout << "Shift global A min to zero (shift2zero)        = " << setw(12) << right << PrmFileOnOff(ShifGlobalMinA2Zero)
+            << "          (default)" << endl;
+
         vout << "Initialization period (init)                   = " << setw(12) << right << InitPeriod
-             << "        (default)" << endl;
+            << "          (default)" << endl;
+        vout << "Solo initialization period (soloinit)          = " << setw(12) << right << PrmFileOnOff(SoloInitPeriod)
+            << "          (default)" << endl;
         vout << "Accumulation period (accu)                     = " << setw(12) << right << AccuPeriod
-             << "        (default)" << endl;
+            << "          (default)" << endl;
         vout << "Equilibration period (equi)                    = " << setw(12) << right << EquiPeriod
-             << "        (default)" << endl;
+            << "          (default)" << endl;
+        vout << "Solo equilibration period (soloequi)           = " << setw(12) << right << PrmFileOnOff(SoloEquiPeriod)
+            << "          (default)" << endl;
         vout << "Final production period (prod)                 = " << setw(12) << right << ProdPeriod
-             << "        (default)" << endl;
+            << "          (default)" << endl;
 
         vout << "Path smoothing factor (sfac)                   = " << setw(12) << right << SmoothingFac
-             << "        (default)" << endl;
+            << "          (default)" << endl;
         vout << "Asynchronous mode (async)                      = " << setw(12) << right << PrmFileOnOff(AsynchronousMode)
-             << "        (default)" << endl;
+            << "          (default)" << endl;
 
         // opt method
         bool result  = ProcessGDOptMethodSetup(prmfile);
@@ -280,14 +287,21 @@ bool CSTMPath::ProcessSTMControl(CPrmFile& prmfile)
         vout << "Max number of STM steps (steps)                = " << setw(12) << right << MaxSTMSteps << endl;
     } else {
         vout << "Max number of STM steps (steps)                = " << setw(12) << right << MaxSTMSteps
-            << "         (default)" << endl;
+            << "          (default)" << endl;
     }
 
     if(prmfile.GetStringByKey("optmethod",OptMethod) == true) {
         vout << "Optimization method (optmethod)                = " << setw(12) << right << OptMethod << endl;
     } else {
         vout << "Optimization method (optmethod)                = " << setw(12) << right << OptMethod
-            << "         (default)" << endl;
+            << "          (default)" << endl;
+    }
+
+    if(prmfile.GetLogicalByKey("shift2zero",ShifGlobalMinA2Zero) == true) {
+        vout << "Shift global A min to zero (shift2zero)        = " << setw(12) << right << PrmFileOnOff(ShifGlobalMinA2Zero) << left << endl;
+    } else {
+        vout << "Shift global A min to zero (shift2zero)        = " << setw(12) << right << PrmFileOnOff(ShifGlobalMinA2Zero)
+            << "          (default)" << endl;
     }
 
     
@@ -295,7 +309,7 @@ bool CSTMPath::ProcessSTMControl(CPrmFile& prmfile)
         vout << "Initialization period (init)                   = " << setw(12) << right << InitPeriod << endl;
     } else {
         vout << "Initialization period (init)                   = " << setw(12) << right << InitPeriod
-             << "         (default)" << endl;
+            << "          (default)" << endl;
     }
 
     if(prmfile.GetLogicalByKey("soloinit",SoloInitPeriod) == true) {
@@ -305,19 +319,18 @@ bool CSTMPath::ProcessSTMControl(CPrmFile& prmfile)
             << "          (default)" << endl;
     }
 
-
     if(prmfile.GetIntegerByKey("accu",AccuPeriod) == true) {
         vout << "Accumulation period (accu)                     = " << setw(12) << right << AccuPeriod << endl;
     } else {
         vout << "Accumulation period (accu)                     = " << setw(12) << right << AccuPeriod
-             << "        (default)" << endl;
+            << "          (default)" << endl;
     }
 
     if(prmfile.GetIntegerByKey("equi",EquiPeriod) == true) {
         vout << "Equilibration period (equi)                    = " << setw(12) << right << EquiPeriod << endl;
     } else {
         vout << "Equilibration period (equi)                    = " << setw(12) << right << EquiPeriod
-             << "        (default)" << endl;
+            << "          (default)" << endl;
     }
     if(prmfile.GetLogicalByKey("soloequi",SoloEquiPeriod) == true) {
         vout << "Solo equilibration period (soloequi)           = " << setw(12) << right << PrmFileOnOff(SoloEquiPeriod) << left << endl;
@@ -330,21 +343,21 @@ bool CSTMPath::ProcessSTMControl(CPrmFile& prmfile)
         vout << "Final production period (prod)                 = " << setw(12) << right << ProdPeriod << endl;
     } else {
         vout << "Final production period (prod)                 = " << setw(12) << right << ProdPeriod
-             << "        (default)" << endl;
+            << "          (default)" << endl;
     }
 
     if(prmfile.GetDoubleByKey("sfac",SmoothingFac) == true) {
         vout << "Path smoothing factor (sfac)                   = " << setw(12) << right << SmoothingFac << left << endl;
     } else {
         vout << "Path smoothing factor (sfac)                   = " << setw(12) << right << SmoothingFac
-             << "        (default)" << endl;
+            << "          (default)" << endl;
     }
 
     if(prmfile.GetLogicalByKey("async",AsynchronousMode) == true) {
         vout << "Asynchronous mode (async)                      = " << setw(12) << right << PrmFileOnOff(AsynchronousMode) << left << endl;
     } else {
         vout << "Asynchronous mode (async)                      = " << setw(12) << right << PrmFileOnOff(AsynchronousMode)
-            << "         (default)" << endl;
+            << "          (default)" << endl;
     }
 
 // optimization method setup
@@ -1441,17 +1454,7 @@ bool CSTMPath::OpenOptLog(void)
         return(false);
     }
 
-    // write header
-   // PrintPathSummaryHeader(OptLogFOut);
-
     return(true);
-}
-
-//------------------------------------------------------------------------------
-
-void CSTMPath::SaveOptLogItem(void)
-{
-   // PrintPathSummaryData(Trajectory);
 }
 
 //------------------------------------------------------------------------------
@@ -1882,18 +1885,34 @@ void CSTMPath::ExchangeDataAsynchronously(CXMLElement* p_cele,CXMLElement* p_rel
 
     if( (p_bead->GetMode() == BMO_ACCUMULATION) || (p_bead->GetMode() == BMO_PRODUCTION) ){
         p_bead->GetProductionData(p_cele);
-        p_bead->WaitForRendezvous();
+        p_bead->SetWaitForRendezvous();
         // shift to next mode is processed in Launcher
+        // terminate client
+        TerminateClient(p_rele);
+        return;
     } else {
         p_bead->SkipProductionData();
     }
 
-// FIXME
-// should it be here?
-//    if( (STMStatus == ESTMS_MAX_STEPS_REACHED) || (STMStatus == ESTMS_COMPLETED) ) return;
+    if( (p_bead->GetMode() == BMO_INITIALIZATION) && (SoloInitPeriod == true) ){
+        // terminate client
+        TerminateClient(p_rele);
+        return;
+    }
 
-    // terminate client
-    TerminateClient(p_rele);
+    if( (p_bead->GetMode() == BMO_EQUILIBRATION) && (SoloEquiPeriod == true) ){
+        // terminate client
+        TerminateClient(p_rele);
+        return;
+    }
+
+    // move to the next step
+
+    // update program ----------------------------
+    p_bead->MoveToNextMode();
+
+    // set data for client -----------------------
+    p_bead->SetNextStepData(p_rele);
 }
 
 //------------------------------------------------------------------------------
@@ -2997,6 +3016,19 @@ void CSTMPath::IntegratePath(void)
             fes += 0.5*(Beads[b]->Alpha - Beads[b-1]->Alpha)*(Beads[b]->dAdAlpha + Beads[b-1]->dAdAlpha);
         }
         Beads[b]->A = fes;
+    }
+
+    if( ShifGlobalMinA2Zero ) {
+        // get value of global minima
+        double min = Beads[0]->A;
+        for(int b=1; b < NumOfBeads; b++){
+            if( min > Beads[b]->A ){
+                min = Beads[b]->A;
+            } 
+        }
+        for(int b=0; b < NumOfBeads; b++){
+            Beads[b]->A = Beads[b]->A - min;
+        }
     }
 }
 

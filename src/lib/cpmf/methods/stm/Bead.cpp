@@ -744,7 +744,7 @@ void CBead::SkipProductionData(void)
 
 //------------------------------------------------------------------------------
 
-void CBead::WaitForRendezvous(void)
+void CBead::SetWaitForRendezvous(void)
 {
     Mode = BMO_WAITFORRENDEZVOUS;
     ModeStatus = BMS_FINISHED;

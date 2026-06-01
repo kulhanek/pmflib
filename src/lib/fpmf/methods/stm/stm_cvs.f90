@@ -144,7 +144,9 @@ subroutine stm_restraints_increment(stm_item)
     nstep = stmsteps * (100 - fsteadylen) / 100
 
     ! did we reach the target value?
-    if( curstep >= nstep ) then
+    if( curstep .ge. nstep ) then
+        if( curstep .eq. nstep ) write(STM_OUT,10) trim(stm_item%cv%name), &
+                                stm_item%cv%get_rvalue(stm_item%target_value)
         stm_item%target_value = stm_item%stopvalue
         return
     end if
@@ -154,6 +156,8 @@ subroutine stm_restraints_increment(stm_item)
                   (stm_item%stopvalue-stm_item%startvalue) * curstep / nstep
 
     return
+
+10 format('# [STM-CLIENT] The CV (',A,') reached the target value:',1X,F15.8)
 
 end subroutine stm_restraints_increment
 
