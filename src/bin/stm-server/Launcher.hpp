@@ -116,6 +116,9 @@ private:
 
     /// is it job terminated?
     bool IsJobFinished(CLauncherJob& job);
+
+    /// do we have any job submitted?
+    bool IsAnyJobRunning(void);
 };
 
 //------------------------------------------------------------------------------

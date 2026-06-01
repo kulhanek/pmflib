@@ -500,12 +500,19 @@ bool CLauncher::DistributeKeyForJob(const CLauncherJob& job)
 bool CLauncher::SubmitAllJobsAndWaitForRendezvous(void)
 {
     lout << "   Checking STM server/client status every " << CheckServerSleepTime << " seconds." << endl;
-    SubmitAllJobs();
-    while( (StringServer.Beads.GetNumOfBeadsInRendezvousState() != StringServer.Beads.GetNumOfBeads())
-        && (ThreadTerminated == false) ){
+    
+    if( SubmitAllJobs() == false ) return(false);
+
+    while( ThreadTerminated == false ) {
+        if( IsAnyJobRunning() == false ){
+            if( StringServer.Beads.GetNumOfBeadsInRendezvousState() != StringServer.Beads.GetNumOfBeads() ) {
+                break;
+            }
+        }
         sleep(CheckServerSleepTime);
-        SubmitAllJobs();
+        if( SubmitAllJobs() == false ) return(false);
     }
+    
     if( ThreadTerminated ) {
         lout << ">>> INFO: Terminated upon external request ..." << endl;
         return(false);
@@ -514,6 +521,22 @@ bool CLauncher::SubmitAllJobsAndWaitForRendezvous(void)
     lout << "   All beads are in rendezvous state ..." << endl;
 
     return(true);
+}
+
+//------------------------------------------------------------------------------
+
+bool CLauncher::IsAnyJobRunning(void)
+{
+    vector<CLauncherJob>::iterator  it = Jobs.begin();
+    vector<CLauncherJob>::iterator  ie = Jobs.end();
+
+    while( it != ie ) {
+        CLauncherJob& job = *it;
+        if( job.Submitted ) return(true);
+        it++;
+    } 
+
+    return(false);
 }
 
 //------------------------------------------------------------------------------
