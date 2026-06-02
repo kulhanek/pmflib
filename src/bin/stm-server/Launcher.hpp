@@ -40,6 +40,7 @@ public:
     CSmallString    JobID;
     int             SerialID;   // serial id used for psubmit suffix
     bool            Submitted;  // job was submitted
+    bool            Dead;
 };
 
 //------------------------------------------------------------------------------
@@ -57,6 +58,9 @@ public:
 
     /// start launcher
     bool StartLauncher(std::ostream& vout);
+
+    /// release bead
+    void ReleaseBead(int bead_id);
 
 // section of private data -----------------------------------------------------
 private:
@@ -79,6 +83,9 @@ private:
     int             SubmitSleepTime;
     int             StatusSleepTime;
     int             RecheckPeriodSleepTime;
+
+    // setup
+    bool            ResubmitDead;
 
 // read controls ------------------------
     /// read luncher [setup]

@@ -30,6 +30,7 @@
 #include <FileSystem.hpp>
 #include <errno.h>
 #include <unistd.h>
+#include <PrmUtils.hpp>
 
 using namespace std;
 
@@ -62,6 +63,8 @@ CLauncher::CLauncher(void)
     SubmitSleepTime         = 0;
     StatusSleepTime         = 0;
     RecheckPeriodSleepTime  = 10000;
+
+    ResubmitDead = false;
 }
 
 //==============================================================================
@@ -142,6 +145,8 @@ bool CLauncher::ReadSetup(CPrmFile& confile,ostream& vout)
     if( confile.OpenSection("setup") == false ) {
         vout << "Job specification file name (jobs)             = " << left << setw(20) << JobFile << "  (default)" << endl;
         vout << "Log file name (log)                            = " << left << setw(20) << LogFile << "  (default)" << endl;
+        vout << "Resubmit dead beads (resubmit)                 = " << setw(12) << right << PrmFileOnOff(ResubmitDead)
+            << "          (default)" << endl;
         vout << "Distribute key sleep time (keytime)            = " << setw(12) << right << DistributeKeySleepTime
             << " [ms]     (default)" << endl;
         vout << "Submit sleep time (submittime)                 = " << setw(12) << right << SubmitSleepTime
@@ -163,6 +168,13 @@ bool CLauncher::ReadSetup(CPrmFile& confile,ostream& vout)
         vout << "Log file name (log)                            = " << left << setw(20) << LogFile << endl;
     } else {
         vout << "Log file name (log)                            = " << left << setw(20) << LogFile << "  (default)" << endl;
+    }
+
+    if( confile.GetLogicalByKey("resubmit",ResubmitDead) == true ) {
+        vout << "Resubmit dead beads (resubmit)                 = " << setw(12) << right << PrmFileOnOff(ResubmitDead) << left << endl;
+    } else {
+        vout << "Resubmit dead beads (resubmit)                 = " << setw(12) << right << PrmFileOnOff(ResubmitDead)
+            << "          (default)" << endl;
     }
 
     if(confile.GetIntegerByKey("keytime",DistributeKeySleepTime) == true) {
@@ -341,6 +353,22 @@ bool CLauncher::ReadJobs(CPrmFile& confile,ostream& vout)
 bool CLauncher::IsEnabled(void)
 {
     return(Enabled);
+}
+
+//------------------------------------------------------------------------------
+
+void CLauncher::ReleaseBead(int bead_id)
+{
+    vector<CLauncherJob>::iterator  it = Jobs.begin();
+    vector<CLauncherJob>::iterator  ie = Jobs.end();
+
+    while( it != ie ) {
+        CLauncherJob& job = *it;
+        if( job.BeadID == bead_id ){
+            job.Submitted = false;
+            job.Dead = false;
+        }
+    } 
 }
 
 //------------------------------------------------------------------------------
@@ -597,12 +625,34 @@ bool CLauncher::SubmitAllJobs(void)
         CBeadPtr p_bead = StringServer.Beads.GetBead(job.BeadID);
         it++;
 
-        if( (p_bead->GetModeStatus() == BMS_PREPARED) &&
+        bool finst = false;
+        if( job.Submitted ){
+            finst = IsJobFinished(job);
+        }
+
+        if( ( (p_bead->GetModeStatus() == BMS_PREPARED) || (p_bead->GetModeStatus() == BMS_RUNNING) ) &&
+            (job.Submitted == true ) && (job.Dead == false) &&
+            (finst == true) ){
+            // mark bead as dead
+            job.Dead = true;
+            lout << "      # " << setfill('0') << setw(3) << job.BeadID << setfill(' ') << " bead ";
+            if( ResubmitDead == false ){
+                lout << "(" << p_bead->GetModeProgram() << ") ... is DEAD: Manual intervention is required!" << endl;
+            } else {
+                lout << "(" << p_bead->GetModeProgram() << ") ... is DEAD: Marking bead as released!" << endl;
+                p_bead->SetClientID(-1);
+                p_bead->ReleaseBead(); 
+                job.Dead = false;
+                job.Submitted = false; 
+            }
+        }
+
+        if( (job.Dead  == false) && (p_bead->GetModeStatus() == BMS_PREPARED) &&
             ( (p_bead->GetMode() == BMO_INITIALIZATION) ||
               (p_bead->GetMode() == BMO_EQUILIBRATION) ||
               (p_bead->GetMode() == BMO_ACCUMULATION) ||
               (p_bead->GetMode() == BMO_PRODUCTION) ) ) {
-            if( job.Submitted ) continue; // already submitted
+            if( job.Submitted  ) continue; // already submitted
             // submit new job
             lout << "      # " << setfill('0') << setw(3) << job.BeadID << setfill(' ') << " bead ";
             lout << "(" << p_bead->GetModeProgram() << ") ... ";
@@ -617,12 +667,12 @@ bool CLauncher::SubmitAllJobs(void)
             }
         }
 
-        if( (p_bead->GetModeStatus() == BMS_FINISHED) &&
+        if( (job.Dead  == false) && (p_bead->GetModeStatus() == BMS_FINISHED) &&
             ( (p_bead->GetMode() == BMO_INITIALIZATION) ||
               (p_bead->GetMode() == BMO_EQUILIBRATION) ) ){
             if( job.Submitted == false ) continue; // process only submitted jobs
             // is job finished?
-            if( IsJobFinished(job) == true ){
+            if( finst == true ){
                 lout << "      # " << setfill('0') << setw(3) << job.BeadID << setfill(' ') << " bead ";
                 lout << "(" << p_bead->GetModeProgram() << ") ... finished -> advancing to the next mode" << endl;
                 p_bead->MoveToNextMode();   // we can advance to next step
@@ -630,13 +680,13 @@ bool CLauncher::SubmitAllJobs(void)
             }
         }
 
-        if( (p_bead->GetModeStatus() == BMS_FINISHED) &&
+        if( (job.Dead  == false) && (p_bead->GetModeStatus() == BMS_FINISHED) &&
             ( (p_bead->GetMode() == BMO_ACCUMULATION) || 
               (p_bead->GetMode() == BMO_PRODUCTION) ||
               (p_bead->GetMode() == BMO_WAITFORRENDEZVOUS) ) ){
             if( job.Submitted == false ) continue; // process only submitted jobs
             // is job finished?
-            if( IsJobFinished(job) == true ){
+            if( finst == true ){
                 lout << "      # " << setfill('0') << setw(3) << job.BeadID << setfill(' ') << " bead ";
                 lout << "(" << p_bead->GetModeProgram() << ") ... finished -> waiting for rendezvous" << endl;
                 job.Submitted = false;

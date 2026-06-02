@@ -51,13 +51,22 @@ void CStringProcessor::UnregisterClient(void)
     bool release = false;
     CommandElement->GetAttribute("release",release);
 
+    //  and unregister it from list
+
     if( release ){
         p_bead->ReleaseBead();
+        p_bead->SetClientID(-1);
+        try {
+            StringServer.RegClients.UnregisterClient(client_id);
+        } catch(...) {
+            // do not care if client is or is not registered
+        }
+        // notify launcher
+        StringServer.Launcher.ReleaseBead(bead_id);
+    } else {
+        StringServer.RegClients.UnregisterClient(client_id);
+        p_bead->SetClientID(-1);
     }
-    p_bead->SetClientID(-1);
-
-//  and unregister it from list
-    StringServer.RegClients.UnregisterClient(client_id);
 
 // automatically shutdown server if last client is unregistered
     if(StringServer.RegClients.GetNumberOfActiveRegistration() == 0) {
