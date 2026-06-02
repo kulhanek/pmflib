@@ -212,10 +212,10 @@ bool CLauncher::ReadSetup(CPrmFile& confile,ostream& vout)
     if( SubmitSleepTime < 0 ){
         RUNTIME_ERROR("SubmitSleepTime < 0");
     }
-    if( StatusSleepTime <= 0 ){
+    if( StatusSleepTime < 0 ){
         RUNTIME_ERROR("StatusSleepTime < 0");
     }
-    if( RecheckPeriodSleepTime <= 0 ){
+    if( RecheckPeriodSleepTime < 0 ){
         RUNTIME_ERROR("RecheckPeriodSleepTime < 0");
     }
 
