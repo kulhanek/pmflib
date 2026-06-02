@@ -605,7 +605,7 @@ bool CLauncher::SubmitAllJobs(void)
             if( job.Submitted ) continue; // already submitted
             // submit new job
             lout << "      # " << setfill('0') << setw(3) << job.BeadID << setfill(' ') << " bead ";
-            lout << "(" << p_bead->GetModeString() << ") ... ";
+            lout << "(" << p_bead->GetModeProgram() << ") ... ";
             CSmallString job_id;
             if( SubmitJob(job,job_id) == false ){
                 lout << "FAILED" << endl;
@@ -624,7 +624,7 @@ bool CLauncher::SubmitAllJobs(void)
             // is job finished?
             if( IsJobFinished(job) == true ){
                 lout << "      # " << setfill('0') << setw(3) << job.BeadID << setfill(' ') << " bead ";
-                lout << "(" << p_bead->GetModeString() << ") ... finished -> advancing to the next mode" << endl;
+                lout << "(" << p_bead->GetModeProgram() << ") ... finished -> advancing to the next mode" << endl;
                 p_bead->MoveToNextMode();   // we can advance to next step
                 job.Submitted = false;
             }
@@ -638,7 +638,7 @@ bool CLauncher::SubmitAllJobs(void)
             // is job finished?
             if( IsJobFinished(job) == true ){
                 lout << "      # " << setfill('0') << setw(3) << job.BeadID << setfill(' ') << " bead ";
-                lout << "(" << p_bead->GetModeString() << ") ... finished -> waiting for rendezvous" << endl;
+                lout << "(" << p_bead->GetModeProgram() << ") ... finished -> waiting for rendezvous" << endl;
                 job.Submitted = false;
             }
         }

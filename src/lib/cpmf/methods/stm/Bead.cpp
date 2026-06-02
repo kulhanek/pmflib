@@ -90,7 +90,14 @@ int CBead::GetMode(void)
 
 char CBead::GetModeString(void)
 {
-    switch(Mode){
+    return(GetModeString(Mode));
+}
+
+//------------------------------------------------------------------------------
+
+char CBead::GetModeString(int mode)
+{
+    switch(mode){
         case BMO_UNKNOWN:
             return('U');
         case BMO_INITIALIZATION:
@@ -107,6 +114,50 @@ char CBead::GetModeString(void)
             return('T');
     }
     return('-');
+}
+
+//------------------------------------------------------------------------------
+
+const CSmallString CBead::GetModeProgram(void)
+{
+    CSmallString mprog;
+
+    mprog << GetModeString(Mode);
+
+    switch(Mode){
+        case BMO_UNKNOWN:
+            break;
+        case BMO_INITIALIZATION:
+            if( BeadList->SoloInitPeriod == false ){
+                if( BeadList->AccuPeriod > 0 ){
+                    mprog << "+" << GetModeString(BMO_ACCUMULATION);
+                } else {
+                    if( BeadList->ProdPeriod > 0 ){
+                        mprog << "+" << GetModeString(BMO_PRODUCTION);
+                    }  
+                }
+            }
+        case BMO_ACCUMULATION:
+            break;
+        case BMO_EQUILIBRATION:
+            if( BeadList->SoloInitPeriod == false ){
+                if( (BeadList->AccuPeriod > 0) && (BeadList->GetSTMStatus() != ESTMS_PATH_FOUND) ){
+                    mprog << "+" << GetModeString(BMO_ACCUMULATION);
+                } else {
+                    if( BeadList->ProdPeriod > 0 ){
+                        mprog << "+" << GetModeString(BMO_PRODUCTION);
+                    }  
+                }
+            }
+        case BMO_PRODUCTION:
+            break;
+        case BMO_WAITFORRENDEZVOUS:
+            break;
+        case BMO_TERMINATE:
+            break;
+    }
+
+    return(mprog);
 }
 
 //------------------------------------------------------------------------------

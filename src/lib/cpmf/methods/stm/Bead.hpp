@@ -66,8 +66,14 @@ public:
     /// get bead mode
     int GetMode(void);
 
-    /// get bead mode
+    /// get current bead mode
     char GetModeString(void);
+
+    /// get mode string
+    char GetModeString(int mode);
+
+    /// get current bead mode programm
+    const CSmallString GetModeProgram(void);
 
     /// get mode status
     int GetModeStatus(void);
