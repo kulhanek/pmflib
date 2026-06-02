@@ -369,6 +369,7 @@ void CLauncher::ReleaseBead(int bead_id)
             job.Submitted = false;
             job.Dead = false;
         }
+        it++;
     } 
 }
 
@@ -487,9 +488,9 @@ bool CLauncher::DistributeKey(void)
 {
     // wait for serverkey
     lout << "   Waiting until the server key is ready ..." << endl;
-    lout << "       Testing every " << DistributeKeySleepTime << " miliseconds" << endl;
+    lout << "       Testing every " << RecheckPeriodSleepTime << " miliseconds" << endl;
     while( (StringServer.IsServerKeyReady() == false) && (ThreadTerminated == false) ){
-        if( DistributeKeySleepTime > 0 ) usleep(DistributeKeySleepTime*1000);
+        if( RecheckPeriodSleepTime > 0 ) usleep(RecheckPeriodSleepTime*1000);
     }
     if( ThreadTerminated ) {
         lout << ">>> INFO: Terminated upon external request ..." << endl;
