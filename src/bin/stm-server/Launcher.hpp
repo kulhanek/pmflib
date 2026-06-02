@@ -74,9 +74,11 @@ private:
     CSmallString    SubmitJobWrapper;
     CSmallString    JobStatusWrapper;
 
-    // sleep times
+    // sleep times in miliseconds
     int             DistributeKeySleepTime;
-    int             CheckServerSleepTime;
+    int             SubmitSleepTime;
+    int             StatusSleepTime;
+    int             RecheckPeriodSleepTime;
 
 // read controls ------------------------
     /// read luncher [setup]
@@ -104,12 +106,6 @@ private:
 
     /// submit all client jobs
     bool SubmitAllJobs(void);
-
-    /// wait for all jobs
-    bool WaitForAllJobs(void);
-
-    /// wait for all jobs
-    int WaitForJobs(void);
 
     /// submit individual job
     bool SubmitJob(CLauncherJob& job,CSmallString& id);

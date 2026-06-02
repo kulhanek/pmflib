@@ -58,8 +58,10 @@ CLauncher::CLauncher(void)
     SubmitJobWrapper = "submit-job";
     JobStatusWrapper = "job-status";
 
-    DistributeKeySleepTime = 5;
-    CheckServerSleepTime = 5;
+    DistributeKeySleepTime  = 500;
+    SubmitSleepTime         = 1000;
+    StatusSleepTime         = 500;
+    RecheckPeriodSleepTime  = 10000;
 }
 
 //==============================================================================
@@ -140,6 +142,14 @@ bool CLauncher::ReadSetup(CPrmFile& confile,ostream& vout)
     if( confile.OpenSection("setup") == false ) {
         vout << "Job specification file name (jobs)             = " << left << setw(20) << JobFile << "  (default)" << endl;
         vout << "Log file name (log)                            = " << left << setw(20) << LogFile << "  (default)" << endl;
+        vout << "Distribute key sleep time (keytime)            = " << setw(12) << right << DistributeKeySleepTime
+            << " [ms]     (default)" << endl;
+        vout << "Submit sleep time (submittime)                 = " << setw(12) << right << SubmitSleepTime
+            << " [ms]     (default)" << endl;
+        vout << "Check status sleep time (statustime)           = " << setw(12) << right << StatusSleepTime
+            << " [ms]     (default)" << endl;
+        vout << "Recheck sleep time (rechecktime)               = " << setw(12) << right << RecheckPeriodSleepTime
+            << " [ms]     (default)" << endl;
         return(true);
     }
 
@@ -153,6 +163,47 @@ bool CLauncher::ReadSetup(CPrmFile& confile,ostream& vout)
         vout << "Log file name (log)                            = " << left << setw(20) << LogFile << endl;
     } else {
         vout << "Log file name (log)                            = " << left << setw(20) << LogFile << "  (default)" << endl;
+    }
+
+    if(confile.GetIntegerByKey("keytime",DistributeKeySleepTime) == true) {
+        vout << "Distribute key sleep time (keytime)            = " << setw(12) << right << DistributeKeySleepTime << " [ms]" << endl;
+    } else {
+        vout << "Distribute key sleep time (keytime)            = " << setw(12) << right << DistributeKeySleepTime
+            << " [ms]     (default)" << endl;
+    }
+
+    if(confile.GetIntegerByKey("submittime",SubmitSleepTime) == true) {
+        vout << "Submit sleep time (submittime)                 = " << setw(12) << right << SubmitSleepTime << " [ms]" << endl;
+    } else {
+        vout << "Submit sleep time (submittime)                 = " << setw(12) << right << SubmitSleepTime
+            << " [ms]     (default)" << endl;
+    }
+
+    if(confile.GetIntegerByKey("statustime",StatusSleepTime) == true) {
+        vout << "Check status sleep time (statustime)           = " << setw(12) << right << StatusSleepTime << " [ms]" << endl;
+    } else {
+        vout << "Check status sleep time (statustime)           = " << setw(12) << right << StatusSleepTime
+            << " [ms]     (default)" << endl;
+    }
+
+    if(confile.GetIntegerByKey("rechecktime",RecheckPeriodSleepTime) == true) {
+        vout << "Recheck sleep time (rechecktime)               = " << setw(12) << right << RecheckPeriodSleepTime << " [ms]" << endl;
+    } else {
+        vout << "Recheck sleep time (rechecktime)               = " << setw(12) << right << RecheckPeriodSleepTime
+            << " [ms]     (default)" << endl;
+    }
+
+    if( DistributeKeySleepTime <= 0 ){
+        RUNTIME_ERROR("DistributeKeySleepTime <= 0");
+    }
+    if( SubmitSleepTime <= 0 ){
+        RUNTIME_ERROR("SubmitSleepTime <= 0");
+    }
+    if( StatusSleepTime <= 0 ){
+        RUNTIME_ERROR("StatusSleepTime <= 0");
+    }
+    if( RecheckPeriodSleepTime <= 0 ){
+        RUNTIME_ERROR("RecheckPeriodSleepTime <= 0");
     }
 
     return(true);
@@ -383,14 +434,6 @@ void CLauncher::ExecuteThread(void)
         lout << "3) Processing STM path data ..." << endl;
         StringServer.Beads.ProcessPathAsynchronously();
 
-        // lout << endl;
-        // lout << "4) Wait until all jobs finish ..." << endl;
-        // if( WaitForAllJobs() == false ){
-        //     ES_ERROR("unable to wait for all jobs");
-        //     StringServer.TerminateServer();
-        //     return;
-        // }
-
         if( (StringServer.Beads.GetSTMStatus() == ESTMS_MAX_STEPS_REACHED) ||
             (StringServer.Beads.GetSTMStatus() == ESTMS_COMPLETED) ) {
             break; // exit STM loop
@@ -400,7 +443,7 @@ void CLauncher::ExecuteThread(void)
     }
 
     lout << endl;
-    lout << "5) Terminating STM server ..." << endl;
+    lout << "4) Terminating STM server ..." << endl;
     StringServer.TerminateServer();
 
     lout << endl;
@@ -415,9 +458,9 @@ bool CLauncher::DistributeKey(void)
 {
     // wait for serverkey
     lout << "   Waiting until the server key is ready ..." << endl;
-    lout << "       Testing every " << DistributeKeySleepTime << " seconds" << endl;
+    lout << "       Testing every " << DistributeKeySleepTime << " miliseconds" << endl;
     while( (StringServer.IsServerKeyReady() == false) && (ThreadTerminated == false) ){
-        sleep(DistributeKeySleepTime);
+        usleep(DistributeKeySleepTime*1000);
     }
     if( ThreadTerminated ) {
         lout << ">>> INFO: Terminated upon external request ..." << endl;
@@ -492,6 +535,8 @@ bool CLauncher::DistributeKeyForJob(const CLauncherJob& job)
         lout << endl;
     }
 
+    usleep(DistributeKeySleepTime*1000);
+
     return( retcode == 0 );
 }
 
@@ -499,7 +544,7 @@ bool CLauncher::DistributeKeyForJob(const CLauncherJob& job)
 
 bool CLauncher::SubmitAllJobsAndWaitForRendezvous(void)
 {
-    lout << "   Checking STM server/client status every " << CheckServerSleepTime << " seconds." << endl;
+    lout << "   Checking STM server/client status every " << RecheckPeriodSleepTime << " miliseconds." << endl;
     
     if( SubmitAllJobs() == false ) return(false);
 
@@ -509,7 +554,7 @@ bool CLauncher::SubmitAllJobsAndWaitForRendezvous(void)
                 break;
             }
         }
-        sleep(CheckServerSleepTime);
+        usleep(RecheckPeriodSleepTime*1000);
         if( SubmitAllJobs() == false ) return(false);
     }
 
@@ -572,8 +617,6 @@ bool CLauncher::SubmitAllJobs(void)
             }
         }
 
-        // lout << "ms= " << p_bead->GetModeStatus() << endl;
-
         if( (p_bead->GetModeStatus() == BMS_FINISHED) &&
             ( (p_bead->GetMode() == BMO_INITIALIZATION) ||
               (p_bead->GetMode() == BMO_EQUILIBRATION) ) ){
@@ -603,57 +646,6 @@ bool CLauncher::SubmitAllJobs(void)
     if( ThreadTerminated ) return(false);
 
     return(true);
-}
-
-//------------------------------------------------------------------------------
-
-bool CLauncher::WaitForAllJobs(void)
-{
-    lout << "   Checking job status every " << CheckServerSleepTime << " seconds." << endl;
-    while( (WaitForJobs() > 0) && (ThreadTerminated == false) ){
-        sleep(CheckServerSleepTime);
-    }
-    if( ThreadTerminated ) {
-        lout << ">>> INFO: Terminated upon external request ..." << endl;
-        return(false);
-    }
-
-    lout << "   All bead clients were finished." << endl;
-
-    return(true);
-}
-
-//------------------------------------------------------------------------------
-
-int CLauncher::WaitForJobs(void)
-{
-    // submit individual jobs
-    vector<CLauncherJob>::iterator  it = Jobs.begin();
-    vector<CLauncherJob>::iterator  ie = Jobs.end();
-
-    int count = 0;
-
-    while( (it != ie) && (ThreadTerminated == false)  ){
-        CLauncherJob& job = *it;
-        it++;
-
-        if( job.Submitted == false ){
-            continue; // process only submitted jobs
-        }
-
-        // is job finished?
-        if( IsJobFinished(job) == true ){
-            lout << "      # " << setfill('0') << setw(3) << job.BeadID << setfill(' ') << " bead";
-            lout << " ... finished" << endl;
-            job.Submitted = false;
-        } else {
-            count++;
-        }
-
-    }
-    if( ThreadTerminated ) return(-1);
-
-    return(count);
 }
 
 //------------------------------------------------------------------------------
@@ -706,6 +698,8 @@ bool CLauncher::SubmitJob(CLauncherJob& job,CSmallString& id)
     // increase serial number of job
     job.SerialID++;
 
+    usleep(SubmitSleepTime*1000);
+
     return(true);
 }
 
@@ -746,6 +740,8 @@ bool CLauncher::IsJobFinished(CLauncherJob& job)
         lout << endl;
         return(false);
     }
+
+    usleep(StatusSleepTime*1000);
 
     // extract job id
     stringstream idstr(str.str());

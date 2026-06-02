@@ -232,7 +232,7 @@ void CBead::MoveToNextMode(void)
     switch(Mode){
         case BMO_UNKNOWN:
         default:
-            // UN->I->(A->E->)P
+            // UN->I->(A->W->E->)P
             if( BeadList->InitPeriod > 0 ){
                 Mode = BMO_INITIALIZATION;
             } else if( BeadList->EquiPeriod > 0 ) {

@@ -1692,10 +1692,12 @@ void CSTMPath::ProcessProductionData(CBeadPtr p_bead)
                     switch( p_bead->GetMode() ){
                         case BMO_ACCUMULATION:
                             p_bead->Mode = BMO_WAITFORRENDEZVOUS;
+
                             // regular data acquisition
                             CompletePathData();
                             IntegratePath();
                             SavePathAndTraj();
+
                             UsedStepSize = StepSize;
                             for(int i=0; i < 5; i++){
                                 UpdateAllPositions();
@@ -1706,8 +1708,10 @@ void CSTMPath::ProcessProductionData(CBeadPtr p_bead)
                                 vout << ">> WARNING: Stability problem - reducing step size!" <<  endl;
                                 UsedStepSize = UsedStepSize / 2.0;
                             }
-                            UpdateAllPositionsFinalize();
+
+                            UpdateAllPositionsFinalize();  // call STMStep++;
                             PrintSTMStepInfo();
+
                             if( STMStatus == ESTMS_PATH_FOUND ){
                                 if( ProdPeriod <= 0 ){
                                     for(int b=0; b < NumOfBeads; b++){
@@ -1776,9 +1780,11 @@ void CSTMPath::ProcessPathAsynchronously(void)
     try {
         ProcessingMutex.Lock();
         if( STMStatus == ESTMS_OPTIMIZING ){
+
             CompletePathData();
             IntegratePath();
             SavePathAndTraj();
+
             UsedStepSize = StepSize;
             for(int i=0; i < 5; i++){
                 UpdateAllPositions();
@@ -1789,7 +1795,8 @@ void CSTMPath::ProcessPathAsynchronously(void)
                 vout << ">> WARNING: Stability problem - reducing step size!" <<  endl;
                 UsedStepSize = UsedStepSize / 2.0;
             }
-            UpdateAllPositionsFinalize();
+
+            UpdateAllPositionsFinalize();  // call STMStep++;
             PrintSTMStepInfo();
 
             if( STMStatus == ESTMS_PATH_FOUND ){
@@ -1813,10 +1820,15 @@ void CSTMPath::ProcessPathAsynchronously(void)
                     Beads[i]->MoveToNextMode();
                 }
             }
+
         } else if( STMStatus == ESTMS_PATH_FOUND ){
+            
             CompletePathData();
             IntegratePath();
             SavePathAndTraj();
+            STMStep++;
+            PrintSTMStepInfo();
+            
             STMStatus = ESTMS_COMPLETED;
             vout << ">> INFO: The server is terminated since all data were acquired." <<  endl;
         } else {
