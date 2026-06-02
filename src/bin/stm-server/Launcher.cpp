@@ -58,9 +58,9 @@ CLauncher::CLauncher(void)
     SubmitJobWrapper = "submit-job";
     JobStatusWrapper = "job-status";
 
-    DistributeKeySleepTime  = 500;
-    SubmitSleepTime         = 1000;
-    StatusSleepTime         = 500;
+    DistributeKeySleepTime  = 0;
+    SubmitSleepTime         = 0;
+    StatusSleepTime         = 0;
     RecheckPeriodSleepTime  = 10000;
 }
 
@@ -193,17 +193,17 @@ bool CLauncher::ReadSetup(CPrmFile& confile,ostream& vout)
             << " [ms]     (default)" << endl;
     }
 
-    if( DistributeKeySleepTime <= 0 ){
-        RUNTIME_ERROR("DistributeKeySleepTime <= 0");
+    if( DistributeKeySleepTime < 0 ){
+        RUNTIME_ERROR("DistributeKeySleepTime < 0");
     }
-    if( SubmitSleepTime <= 0 ){
-        RUNTIME_ERROR("SubmitSleepTime <= 0");
+    if( SubmitSleepTime < 0 ){
+        RUNTIME_ERROR("SubmitSleepTime < 0");
     }
     if( StatusSleepTime <= 0 ){
-        RUNTIME_ERROR("StatusSleepTime <= 0");
+        RUNTIME_ERROR("StatusSleepTime < 0");
     }
     if( RecheckPeriodSleepTime <= 0 ){
-        RUNTIME_ERROR("RecheckPeriodSleepTime <= 0");
+        RUNTIME_ERROR("RecheckPeriodSleepTime < 0");
     }
 
     return(true);
@@ -460,7 +460,7 @@ bool CLauncher::DistributeKey(void)
     lout << "   Waiting until the server key is ready ..." << endl;
     lout << "       Testing every " << DistributeKeySleepTime << " miliseconds" << endl;
     while( (StringServer.IsServerKeyReady() == false) && (ThreadTerminated == false) ){
-        usleep(DistributeKeySleepTime*1000);
+        if( DistributeKeySleepTime > 0 ) usleep(DistributeKeySleepTime*1000);
     }
     if( ThreadTerminated ) {
         lout << ">>> INFO: Terminated upon external request ..." << endl;
@@ -535,7 +535,7 @@ bool CLauncher::DistributeKeyForJob(const CLauncherJob& job)
         lout << endl;
     }
 
-    usleep(DistributeKeySleepTime*1000);
+    if( DistributeKeySleepTime > 0 ) usleep(DistributeKeySleepTime*1000);
 
     return( retcode == 0 );
 }
@@ -554,7 +554,7 @@ bool CLauncher::SubmitAllJobsAndWaitForRendezvous(void)
                 break;
             }
         }
-        usleep(RecheckPeriodSleepTime*1000);
+        if( RecheckPeriodSleepTime > 0 ) usleep(RecheckPeriodSleepTime*1000);
         if( SubmitAllJobs() == false ) return(false);
     }
 
@@ -698,7 +698,7 @@ bool CLauncher::SubmitJob(CLauncherJob& job,CSmallString& id)
     // increase serial number of job
     job.SerialID++;
 
-    usleep(SubmitSleepTime*1000);
+    if( SubmitSleepTime > 0 ) usleep(SubmitSleepTime*1000);
 
     return(true);
 }
@@ -741,7 +741,7 @@ bool CLauncher::IsJobFinished(CLauncherJob& job)
         return(false);
     }
 
-    usleep(StatusSleepTime*1000);
+    if( StatusSleepTime > 0 ) usleep(StatusSleepTime*1000);
 
     // extract job id
     stringstream idstr(str.str());
