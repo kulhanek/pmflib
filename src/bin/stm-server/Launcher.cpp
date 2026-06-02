@@ -43,6 +43,7 @@ CLauncherJob::CLauncherJob(void)
     BeadID = -1;
     SerialID = 1;
     Submitted = false;
+    Dead = false;
 }
 
 //==============================================================================
