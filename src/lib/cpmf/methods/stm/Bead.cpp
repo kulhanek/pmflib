@@ -259,7 +259,24 @@ void CBead::SetClientID(int client_id)
 
 void CBead::ReleaseBead(void)
 {
+    if( Mode == BMO_WAITFORRENDEZVOUS ) return; // this bead cannot be released
+
     ModeStatus = BMS_PREPARED; // rollback any progress for current mode
+    
+    if( Mode == BMO_ACCUMULATION ){
+        if( (BeadList->SoloEquiPeriod == false) && (BeadList->EquiPeriod > 0) ){
+            // this bead client will be effectivelly restarted from coordinates used for equi+accu
+            // switch even further to equi
+            Mode = BMO_EQUILIBRATION;
+        }
+    }
+    if( Mode == BMO_PRODUCTION ){
+        if( (BeadList->SoloEquiPeriod == false) && (BeadList->EquiPeriod > 0) ){
+            // this bead client will be effectivelly restarted from coordinates used for equi+prod
+            // switch even further to equi
+            Mode = BMO_EQUILIBRATION;
+        }
+    }
 }
 
 //------------------------------------------------------------------------------
