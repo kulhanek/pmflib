@@ -144,7 +144,6 @@ character(PMF_MAX_PATH)     :: fcsttrj
 character(PMF_MAX_PATH)     :: frstdef
 character(PMF_MAX_PATH)     :: frstout
 character(PMF_MAX_PATH)     :: frsthist
-character(PMF_MAX_PATH)     :: frstctr
 
 ! metadynamics -----------------------------------
 character(PMF_MAX_PATH)     :: fmtddef

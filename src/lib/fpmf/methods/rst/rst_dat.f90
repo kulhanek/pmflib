@@ -80,6 +80,9 @@ type CVTypeUM
     real(PMFDP),pointer     :: control_values(:) ! values for controlled streering
 end type CVTypeUM
 
+! name of control file, see rst_restraints_read_control_file
+character(PMF_MAX_PATH)     :: frstctr
+
 ! RST accumulator --------------------------------------------------------------
 
 type,extends(PMFAccuType) ::  UMAccuType
