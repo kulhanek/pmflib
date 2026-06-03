@@ -219,6 +219,24 @@ bool CStringServer::Run(void)
         }
     }
 
+    if( Beads.IsAsynchronous() == false ){
+        if( Beads.GetSoloInitPeriod() == false ){
+            vout << endl;
+            vout << ">>> WARNING: In the synchronous mode, option [stm]/soloinit must be set to true!" << endl;
+            vout << "             [stm]/soloinit is set to true" << endl;
+            Beads.SetSoloInitPeriod(true);
+        }
+    }
+
+    if( Beads.IsAsynchronous() == false ){
+        if( Beads.GetSoloEquiPeriod() == false ){
+            vout << endl;
+            vout << ">>> WARNING: In the synchronous mode, option [stm]/soloequi must be set to true!" << endl;
+            vout << "             [stm]/soloequi is set to true" << endl;
+            Beads.SetSoloEquiPeriod(true);
+        }
+    }
+
 // register operations
     CmdProcessorList.RegisterProcessor(Operation_GetServerInfo,&StringFactory);
     CmdProcessorList.RegisterProcessor(OperationPMF_FlushServerData,&StringFactory);

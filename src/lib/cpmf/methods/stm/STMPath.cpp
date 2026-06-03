@@ -432,17 +432,17 @@ bool CSTMPath::ProcessSTMTerminationControl(CPrmFile& prmfile)
              << left << "             (default)" << endl;
     }
 
-    if(prmfile.GetDoubleByKey("aveppmf",FinalMaxpMFSize) == true) {
-        vout << "Average perpendicular mean force (aveppmf)     = " << setw(9) << FinalMaxpMFSize << left << endl;
+    if(prmfile.GetDoubleByKey("",FinalMaxpMFSize) == true) {
+        vout << "Max perpendicular mean force (maxppmf)         = " << setw(9) << FinalMaxpMFSize << left << endl;
     } else {
-        vout << "Average perpendicular mean force (aveppmf)     = " << setw(9) << FinalMaxpMFSize
+        vout << "Max perpendicular mean force (maxppmf)         = " << setw(9) << FinalMaxpMFSize
              << left << "             (default)" << endl;
     }
 
-    if(prmfile.GetDoubleByKey("maxppmf",FinalAvepMFSize) == true) {
-        vout << "Max perpendicular mean force (maxppmf)         = " << setw(9) << FinalAvepMFSize << left << endl;
+    if(prmfile.GetDoubleByKey("aveppmf",FinalAvepMFSize) == true) {
+        vout << "Average perpendicular mean force (aveppmf)     = " << setw(9) << FinalAvepMFSize << left << endl;
     } else {
-        vout << "Max perpendicular mean force (maxppmf)         = " << setw(9) << FinalAvepMFSize
+        vout << "Average perpendicular mean force (aveppmf)     = " << setw(9) << FinalAvepMFSize
              << left << "             (default)" << endl;
     }
 
@@ -1277,6 +1277,34 @@ void CSTMPath::ReadPathUserBeads(CPrmFile& file,std::vector<CBeadPtr>& beads)
         vout << endl;
         beadid++;
     }
+}
+
+//------------------------------------------------------------------------------
+
+bool CSTMPath::GetSoloInitPeriod(void) const
+{
+    return(SoloInitPeriod);
+}
+
+//------------------------------------------------------------------------------
+
+void CSTMPath::SetSoloInitPeriod(bool set) 
+{
+    SoloInitPeriod = set;
+}
+
+//------------------------------------------------------------------------------
+
+bool CSTMPath::GetSoloEquiPeriod(void) const
+{
+    return(SoloEquiPeriod);
+}
+
+//------------------------------------------------------------------------------
+
+void CSTMPath::SetSoloEquiPeriod(bool set)
+{
+    SoloEquiPeriod = set;
 }
 
 //==============================================================================
@@ -2172,7 +2200,7 @@ void CSTMPath::PrintPathSummaryHeader(std::ostream& vout)
     }
     vout << endl;
 
-    vout << "# ---- ------ -- ------ ------------ ------------ ------- -------";
+    vout << "# ---- ------ -- -- ------ ------------ ------------ ------- -------";
     for(int i=0; i < NumOfCVs; i++){
         vout << " ------------";
     }

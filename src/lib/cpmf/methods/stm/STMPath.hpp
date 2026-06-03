@@ -114,6 +114,18 @@ public:
     /// load CV splines setup
     bool LoadCVSplines(CPrmFile& prmfile);
 
+    /// get soloinit value
+    bool GetSoloInitPeriod(void) const;
+
+    /// set soloinit value
+    void SetSoloInitPeriod(bool set);
+
+    /// get soloequi value
+    bool GetSoloEquiPeriod(void) const;
+
+    /// set soloequi value
+    void SetSoloEquiPeriod(bool set);
+
 // network executive methods ---------------------------------------------------
     /// check if client is eligible to connect to STM server
     bool CheckClient(CXMLElement* p_cele);

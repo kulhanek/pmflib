@@ -264,16 +264,16 @@ void CBead::ReleaseBead(void)
     ModeStatus = BMS_PREPARED; // rollback any progress for current mode
     
     if( Mode == BMO_ACCUMULATION ){
-        if( (BeadList->SoloEquiPeriod == false) && (BeadList->EquiPeriod > 0) ){
+        if( (BeadList->SoloEquiPeriod == false) && (BeadList->EquiPeriod > 0) && (BeadList->AsynchronousMode == true) ){
             // this bead client will be effectivelly restarted from coordinates used for equi+accu
-            // switch even further to equi
+            // thus switch even further to equi mode
             Mode = BMO_EQUILIBRATION;
         }
     }
     if( Mode == BMO_PRODUCTION ){
-        if( (BeadList->SoloEquiPeriod == false) && (BeadList->EquiPeriod > 0) ){
+        if( (BeadList->SoloEquiPeriod == false) && (BeadList->EquiPeriod > 0) && (BeadList->AsynchronousMode == true) ){
             // this bead client will be effectivelly restarted from coordinates used for equi+prod
-            // switch even further to equi
+            // thus switch even further to equi mode
             Mode = BMO_EQUILIBRATION;
         }
     }
