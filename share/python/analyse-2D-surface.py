@@ -276,6 +276,13 @@ class EnergySurface2D:
         self.y_data = np.asarray(y_values, dtype=float)
         self.e_data = np.asarray(e_values, dtype=float)
 
+        zmin = np.nanmin(self.e_data)
+        if zmin < 0:
+            self.e_data = self.e_data - zmin
+
+        if self.zmax == None:
+            self.zmax = np.nanmax(self.e_data)
+
     # ------------------------------------------------------
 
     def calc_z_and_sp(self, npx=180, npy=180):
@@ -284,8 +291,8 @@ class EnergySurface2D:
             raise ValueError("npx and npy must be larger than 1")
 
         # Grid in original coordinates
-        self.x_grid = np.linspace(self.x_axis.cvmin, self.x_axis.cvmax, self.x_axis.npts)
-        self.y_grid = np.linspace(self.y_axis.cvmin, self.y_axis.cvmax, self.y_axis.npts)
+        self.x_grid = np.linspace(self.x_axis.cvmin, self.x_axis.cvmax, self.x_axis.npts+1)
+        self.y_grid = np.linspace(self.y_axis.cvmin, self.y_axis.cvmax, self.y_axis.npts+1)
 
         self.X, self.Y = np.meshgrid(self.x_grid, self.y_grid, indexing="xy")
         self.Z = np.empty_like(self.X, dtype=float)
@@ -296,13 +303,6 @@ class EnergySurface2D:
                 value, gradient, hessian = self.eval([self.X[iy, ix], self.Y[iy, ix]])
                 self.Z[iy, ix] = value
 
-        zmin = np.nanmin(self.e_data)
-        if zmin < 0:
-            self.e_data = self.e_data - zmin
-
-        if self.zmax == None:
-            self.zmax = np.nanmax(self.e_data)
-
         # detect unsampled points
         self.unsampled_mask, nearest_dist = surf.detect_unsampled_grid_points()
 
@@ -310,8 +310,8 @@ class EnergySurface2D:
         self.Z[self.unsampled_mask] = self.zmax
 
         # Grid in scaled coordinates
-        xgrid = np.linspace(0.0, 1.0, self.x_axis.npts)
-        ygrid = np.linspace(0.0, 1.0, self.y_axis.npts)
+        xgrid = np.linspace(0.0, 1.0, self.x_axis.npts+1)
+        ygrid = np.linspace(0.0, 1.0, self.y_axis.npts+1)
 
         self.U, self.V = np.meshgrid(xgrid, ygrid, indexing="xy")
         self.SP = np.empty_like(self.U, dtype=float)
