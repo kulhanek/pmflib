@@ -287,7 +287,8 @@ class CVSplineSmoothingCubic(CVSplineBase):
         self._quincunx(u, v, w, q)
 
         self.sd[0] = self.y[0] - mu*r[0]*q[1]*self.sigma[0]
-        self.sd[1] = self.y[1] - mu*(f[1]*q[1] + r[1]*q[2])*self.sigma[0]
+        # BUG??? self.sd[1] = self.y[1] - mu*(f[1]*q[1] + r[1]*q[2])*self.sigma[0]
+        self.sd[1] = self.y[1] - mu*(f[1]*q[1] + r[1]*q[2])*self.sigma[1]
         self.sa[0] = q[1] / (3.0*h[0])
         self.sb[0] = 0.0
         self.sc[0] = (self.sd[1] - self.sd[0])/h[0] - q[1]*h[0]/3.0
@@ -432,8 +433,7 @@ class EnergySurface2D:
         self.e_data = data[:, 2]
 
         zmin = np.nanmin(self.e_data)
-        if zmin < 0:
-            self.e_data = self.e_data - zmin
+        self.e_data = self.e_data - zmin
 
         if self.zmax == None:
             self.zmax = np.nanmax(self.e_data)
@@ -539,8 +539,21 @@ class EnergySurface2D:
 
     def calc_grid(self) -> None:
 
-        x_grid = np.linspace(self.x_axis.cvmin, self.x_axis.cvmax, self.x_axis.npts+1)
-        y_grid = np.linspace(self.y_axis.cvmin, self.y_axis.cvmax, self.y_axis.npts+1)
+        x_edges = np.linspace(
+            self.x_axis.cvmin,
+            self.x_axis.cvmax,
+            self.x_axis.npts + 1,
+        )
+        y_edges = np.linspace(
+            self.y_axis.cvmin,
+            self.y_axis.cvmax,
+            self.y_axis.npts + 1,
+        )
+
+        # centered at bins
+        x_grid = 0.5 * (x_edges[:-1] + x_edges[1:])
+        y_grid = 0.5 * (y_edges[:-1] + y_edges[1:])
+
         self.X, self.Y = np.meshgrid(x_grid, y_grid, indexing="xy")
         self.Z = np.empty_like(self.X, dtype=float)
         for i in range(self.Z.shape[0]):
@@ -593,8 +606,8 @@ class EnergySurface2D:
             self.y_axis.scale(self.Y.ravel()),
         ])
 
-        dx = 1.0 / (self.x_axis.npts - 1)
-        dy = 1.0 / (self.y_axis.npts - 1)
+        dx = 1.0 / self.x_axis.npts
+        dy = 1.0 / self.y_axis.npts
 
         # ------------------------------------------------------------
         # Default threshold:
@@ -626,13 +639,13 @@ class EnergySurface2D:
 
     def plot_fes_with_path(self, title: str = None, 
                            path_x: np.ndarray = None, path_y: np.ndarray = None, 
-                           filename: str=None, show: bool = None, dpi: int = 300) -> None:
+                           filename: str=None, show: bool = None, figsize = None, dpi: int = 300) -> None:
 
         cmap, norm = self.make_colormap()
         cmax = np.ceil(self.zmax / self.contour_spacing) * self.contour_spacing
         levels = np.arange(0.0, cmax + self.contour_spacing, self.contour_spacing)
 
-        fig, ax = plt.subplots()
+        fig, ax = plt.subplots(figsize=figsize)
         im = ax.pcolormesh(self.X, self.Y, self.Z, shading="auto", cmap=cmap, norm=norm)
         fig.colorbar(im, ax=ax, label=self.ene_label)
         ax.contour(self.X, self.Y, self.Z, levels=levels, colors="black", linewidths=0.5)
@@ -691,7 +704,7 @@ class Bead:
 
 # ------------------------------------------------------------------------------
 
-    def UpdatePositionADABelif(self,step,beta1,beta2,mingnormeps,cvs):
+    def UpdatePositionAdaBelief(self,step,beta1,beta2,mingnormeps,cvs):
 
         self.mt[:] = beta1 * self.mt[:] + (1.0 - beta1) * self.pGrad[:]
         self.vt[:] = beta2 * self.vt[:] + (1.0 - beta2) * ((self.pGrad[:] - self.mt[:])*(self.pGrad[:] - self.mt[:]) + mingnormeps)
@@ -777,7 +790,7 @@ class STMPath:
             path_x, path_y = self.beads_to_xy_arrays(input_beads)
             self.surface.plot_fes_with_path(title="Initial Path - User Input",
                 path_x=path_x, path_y=path_y,
-                filename=f"{args.plot_prefix}_0000_a_initial_path-user.png", show=args.show, dpi=args.dpi)
+                filename=f"{args.plot_prefix}_path_0000_a_initial-user.png", show=args.show, figsize=args.figsize, dpi=args.dpi)
 
         #  generate completed path
         self.beads = self.generate_beads_from_input_beads(
@@ -790,9 +803,9 @@ class STMPath:
             path_x, path_y = self.beads_to_xy_arrays(self.beads)
             self.surface.plot_fes_with_path(title="Initial Path - Full Path",
                 path_x=path_x, path_y=path_y,
-                filename=f"{args.plot_prefix}_0000_b_initial_path-full.png", show=args.show, dpi=args.dpi)
+                filename=f"{args.plot_prefix}_path_0000_b_initial-full.png", show=args.show, figsize=args.figsize, dpi=args.dpi)
 
-        # setup ADABelif
+        # setup AdaBelief
         self.StepSize           = args.stepsize
         self.AdamB1             = args.beta1
         self.AdamB2             = args.beta2
@@ -822,14 +835,18 @@ class STMPath:
         self.calculate_stm_step_stat()
 
         if args.output is not None:
-            fout=open(args.output,"w")
-            self.print_path(fout=fout,beads=self.beads)
-            fout.close()
+            with open(args.output,"w") as fout:
+                self.print_path(fout=fout,beads=self.beads)
 
         print("")
         print("# Initial path summary ...")
         self.print_path_summary_header()
         self.print_path_summary_data()
+
+        if args.summary is not None:
+            with open(args.summary,"w") as fsum:
+                self.print_path_summary_header(fout=fsum)
+                self.print_path_summary_data(fout=fsum)
 
         print("")
         self.print_stm_header_f()
@@ -868,13 +885,13 @@ class STMPath:
                 path_x, path_y = self.beads_to_xy_arrays(self.beads)
                 self.surface.plot_fes_with_path(title=f"Intermediate Path #{self.STMStep:04d}",
                     path_x=path_x, path_y=path_y,
-                    filename=f"{args.plot_prefix}_{self.STMStep:04d}_c_path.png", show=args.show, dpi=args.dpi)
+                    filename=f"{args.plot_prefix}_path_{self.STMStep:04d}_c.png", show=args.show, figsize=args.figsize, dpi=args.dpi)
 
             if self.TermCrit == 5:
                 break
 
         if self.TermCrit == 5:
-            print(">>> STM path optimization was sucessfull.")
+            print(">>> STM path optimization was successful.")
         else:
             print(">>> STM path optimization failed.")
 
@@ -883,16 +900,21 @@ class STMPath:
         self.print_path_summary_header()
         self.print_path_summary_data()
 
-        if args.plot :
+        # now overwrite the summary with final data
+        if args.summary is not None:
+            with open(args.summary,"w") as fsum:
+                self.print_path_summary_header(fout=fsum)
+                self.print_path_summary_data(fout=fsum)
+
+        if args.plot:
             path_x, path_y = self.beads_to_xy_arrays(self.beads)
             self.surface.plot_fes_with_path(title="Final Path",
                 path_x=path_x, path_y=path_y,
-                filename=f"{args.plot_prefix}_{self.STMStep:04d}_d_final_path.png", show=args.show, dpi=args.dpi)
+                filename=f"{args.plot_prefix}_path_{self.STMStep:04d}_d_final.png", show=args.show, figsize=args.figsize, dpi=args.dpi)
 
         if args.output is not None:
-            fout=open(args.output,"w")
-            self.print_path(fout=fout,beads=self.beads)
-            fout.close()
+            with open(args.output,"w") as fout:
+                self.print_path(fout=fout,beads=self.beads)
 
         if args.optlog is not None:
             flog.close()
@@ -914,12 +936,12 @@ class STMPath:
 
         # update positions - for terminals
         if self.freeterminals == True:
-            self.beads[0].UpdatePositionADABelif(self.StepSize,self.AdamB1,self.AdamB2,self.MinGNormEps,self.cvs)
-            self.beads[-1].UpdatePositionADABelif(self.StepSize,self.AdamB1,self.AdamB2,self.MinGNormEps,self.cvs)
+            self.beads[0].UpdatePositionAdaBelief(self.StepSize,self.AdamB1,self.AdamB2,self.MinGNormEps,self.cvs)
+            self.beads[-1].UpdatePositionAdaBelief(self.StepSize,self.AdamB1,self.AdamB2,self.MinGNormEps,self.cvs)
         
         # for the rest of the path
         for bead in self.beads[1:-1]:
-            bead.UpdatePositionADABelif(self.StepSize,self.AdamB1,self.AdamB2,self.MinGNormEps,self.cvs)
+            bead.UpdatePositionAdaBelief(self.StepSize,self.AdamB1,self.AdamB2,self.MinGNormEps,self.cvs)
 
 # ------------------------------------------------------------------------------
 
@@ -927,9 +949,14 @@ class STMPath:
 
         if (self.SmoothInterval == 0) or (self.STMStep % self.SmoothInterval != 0 ):
             return;
+    
+        old_pos = np.array([bead.Pos.copy() for bead in self.beads])
 
-        for i in range(1,self.nbeads-1):
-            self.beads[i].Pos = (1.0-self.SmoothingFac)*self.beads[i].Pos + 0.5*self.SmoothingFac * (self.beads[i-1].Pos + self.beads[i+1].Pos)
+        for i in range(1, self.nbeads - 1):
+            self.beads[i].Pos[:] = (
+                (1.0 - self.SmoothingFac) * old_pos[i]
+                + 0.5 * self.SmoothingFac * (old_pos[i - 1] + old_pos[i + 1])
+            )
 
 # ------------------------------------------------------------------------------
 
@@ -1033,32 +1060,24 @@ class STMPath:
             previous_length = total_length
 
             # Determine current spline path length.
-            total_length = 0.0
-
+            segment_lengths = np.zeros(len(beads) - 1, dtype=float)
             for b in range(1, len(beads)):
-                total_length += self.get_segment_length(
+                segment_lengths[b - 1] = self.get_segment_length(
                     beads[b - 1].Alpha,
                     beads[b].Alpha,
                 )
+            total_length = float(np.sum(segment_lengths))
 
             if abs(total_length - previous_length) < 1.0e-7:
                 return total_length
 
             # Determine new alpha values.
+            cum_lengths = np.concatenate(([0.0], np.cumsum(segment_lengths)))
+
+            for b, bead in enumerate(beads):
+                bead.Alpha = cum_lengths[b] / total_length
+
             beads[0].Alpha = 0.0
-
-            path_length = 0.0
-            previous_alpha = beads[0].Alpha
-
-            for b in range(1, len(beads) - 1):
-                path_length += self.get_segment_length(
-                    previous_alpha,
-                    beads[b].Alpha,
-                )
-
-                beads[b].Alpha = path_length / total_length
-                previous_alpha = beads[b].Alpha
-
             beads[-1].Alpha = 1.0
 
         return total_length
@@ -1493,42 +1512,61 @@ class STMPath:
         print(f"# Number of beads = {self.nbeads}", file=fout)
 
         # Header legends.
-        print("#  ID   Type  MO ST  alpha  dA/dalpha       A            CID Updates", end="", file=fout)
+        print("#  ID   Type  MO ST  alpha    dA/dalpha            A     CID Updates", end="", file=fout)
         for i in range(self.ncvs):
             print(f"     CV{i + 1:<2d}    ", end="", file=fout)
         for i in range(self.ncvs):
-            print(f"   dA/dCV{i + 1:<2d}  ", end="", file=fout)
+            print(f"    sCV{i + 1:<2d}    ", end="", file=fout)
         for i in range(self.ncvs):
-            print(f" dCV{i + 1:<2d}/dalpha", end="", file=fout)
+            print(f"  dA/dsCV{i + 1:<2d}  ", end="", file=fout)
+        for i in range(self.ncvs):
+            print(f" dsCV{i + 1:<2d}/dalph", end="", file=fout)
         for i in range(self.ncvs):
             print(f" -|F{i + 1:<2d}/dalpha", end="", file=fout)
+
+        print(f"          ENE", end="", file=fout)
         print(file=fout)
 
         # Delimiters.
         delimiter = "# ---- ------ -- -- ------ ------------ ------------ ------- -------"
-        delimiter += " ------------" * (4 * self.ncvs)
+        delimiter += " ------------" * (5 * self.ncvs)
+        delimiter += " ------------"
         print(delimiter, file=fout)
 
         # CV metadata rows.
         print(f"{'#      names':<68}", end="", file=fout)
-        for _ in range(4):
+        for _ in range(5):
             for cv in self.cvs:
                 print(f" {cv.name:>12}", end="", file=fout)
         print(file=fout)
 
         print(f"{'#      types':<68}", end="", file=fout)
-        for cv in self.cvs:
-            print(f" {cv.type:>12}", end="", file=fout)
+        for _ in range(2):
+            for cv in self.cvs:
+                print(f" {cv.type:>12}", end="", file=fout)
+        for _ in range(3):
+            for cv in self.cvs:
+                print(f"             ", end="", file=fout)
         print(file=fout)
 
         print(f"{'#      min':<68}", end="", file=fout)
         for cv in self.cvs:
             print(f" {cv.cvmin:12.5e}", end="", file=fout)
+        for cv in self.cvs:
+            print(f" {0.0:12.5e}", end="", file=fout)
+        for _ in range(3):
+            for cv in self.cvs:
+                print(f"             ", end="", file=fout)
         print(file=fout)
 
         print(f"{'#      max':<68}", end="", file=fout)
         for cv in self.cvs:
             print(f" {cv.cvmax:12.5e}", end="", file=fout)
+        for cv in self.cvs:
+            print(f" {1.0:12.5e}", end="", file=fout)
+        for _ in range(3):
+            for cv in self.cvs:
+                print(f"             ", end="", file=fout)
         print(file=fout)
 
         print(f"{'#      maxmov':<68}", end="", file=fout)
@@ -1537,16 +1575,34 @@ class STMPath:
                 print(f" {cv.maxmove:12.5e}", end="", file=fout)
             else:
                 print(f" {'--':>12}", end="", file=fout)
+        for cv in self.cvs:
+            if cv.smaxmove is not None and cv.smaxmove > 0.0:
+                print(f" {cv.smaxmove:12.5e}", end="", file=fout)
+            else:
+                print(f" {'--':>12}", end="", file=fout)
+        for _ in range(3):
+            for cv in self.cvs:
+                print(f"             ", end="", file=fout)
+        print(f"             ", end="", file=fout)
         print(file=fout)
 
         print(delimiter, file=fout)
 
+        delimiter2 = "# ---- ------ -- -- ------ ------------ ------------ ------- -------"
+        delimiter2 += " uuuuuuuuuuuu" * (1 * self.ncvs)
+        delimiter2 += " ssssssssssss" * (4 * self.ncvs)
+        delimiter2 += " ------------"
+
+        print(delimiter2, file=fout)
+        print(delimiter, file=fout)
+
         print("#    1      2  3  4      5            6            7       8       9", end="", file=fout)
         column_id = 10
-        for _ in range(4):
+        for _ in range(5):
             for _ in range(self.ncvs):
                 print(f"{column_id:13d}", end="", file=fout)
                 column_id += 1
+        print(f"{column_id:13d}", end="", file=fout)
         print(file=fout)
 
         print(delimiter, file=fout)
@@ -1579,6 +1635,7 @@ class STMPath:
             alpha = 0.0 if bead.Alpha is None else float(bead.Alpha)
             d_ad_alpha = 0.0 if bead.dAdAlpha is None else float(bead.dAdAlpha)
             free_energy = 0.0 if bead.A is None else float(bead.A)
+            ene_surf = 0.0 if bead.Asurf is None else float(bead.Asurf)
 
             print(
                 f"  {bead_id:4d} {bead_type:>6} {mode:>2} {status:>2} "
@@ -1596,6 +1653,10 @@ class STMPath:
                 unscaled = cv.unscale(bead.Pos[i])
                 print(f" {float(unscaled):12.5e}", end="", file=fout)
 
+            # CV coordinates in scaled units.
+            for i, cv in enumerate(self.cvs):
+                print(f" {float(bead.Pos[i]):12.5e}", end="", file=fout)
+
             # dA/dCV in scaled coordinates.
             for i in range(self.ncvs):
                 print(f" {float(bead.Grad[i]):12.5e}", end="", file=fout)
@@ -1607,6 +1668,8 @@ class STMPath:
             # Projected force, i.e. perpendicular component in scaled coordinates.
             for i in range(self.ncvs):
                 print(f" {float(bead.pGrad[i]):12.5e}", end="", file=fout)
+
+            print(f" {ene_surf:12.5e}", end="", file=fout)
 
             print(file=fout)
 
@@ -1749,12 +1812,12 @@ class STMPath:
             self.AveBeadMove += bmov
             if bmov > self.MaxBeadMove:
                 self.MaxBeadMove = bmov
-                self.MaxBeadMoveID = b + 1
+                self.MaxBeadMoveID = b
 
             self.AvepMFSize += mfsize
             if mfsize > self.MaxpMFSize:
                 self.MaxpMFSize = mfsize
-                self.MaxpMFSizeID = b + 1
+                self.MaxpMFSizeID = b
 
             bn += 1
 
@@ -1770,7 +1833,7 @@ class STMPath:
         self.MABufAvepMFSize[:-1] = self.MABufAvepMFSize[1:]
 
         # Add new values.
-        self.MABufPLenChange[-1] = self.PLenChange
+        self.MABufPLenChange[-1] = abs(self.PLenChange)
         self.MABufMaxBeadMove[-1] = self.MaxBeadMove
         self.MABufAveBeadMove[-1] = self.AveBeadMove
         self.MABufMaxpMFSize[-1] = self.MaxpMFSize
@@ -1851,9 +1914,23 @@ def parse_args():
         if not values:
             raise argparse.ArgumentTypeError("at least one value is required")
         return np.asarray(values, dtype=float)
+    
+    def parse_figsize(value):
+        """Converts a comma-separated string into a tuple of floats."""
+        try:
+            # Split the string by comma and convert to floats
+            parts = value.split(',')
+            if len(parts) != 2:
+                raise ValueError()
+            return tuple(map(float, parts))
+        except ValueError:
+            raise argparse.ArgumentTypeError(
+                f"Invalid figsize format: '{value}'. Must be 'width,height' (e.g., '10,6')."
+            )
 
+    print("")
     parser = argparse.ArgumentParser(
-            description="String-method path optimisation on a 2D FES/PES represented by Gaussian RBFs."
+            description="The simplified string-method (STM) path optimisation on a 2D FES/PES represented by Gaussian RBFs."
         )
 
     # -------------------------------------------------------------------------
@@ -1928,7 +2005,7 @@ def parse_args():
         help="Maximum value of the second collective variable."
     )
 
-    cv1group.add_argument(
+    cv2group.add_argument(
         "--cv2maxmove", type=float,
         help="Maximum move allowed for the second collective variable during the path optimization."
     )
@@ -2002,12 +2079,12 @@ def parse_args():
 
     filegroup.add_argument(
         "--output", default="_stm.path", 
-        help="Path in the PMFLib format, printed at the beggining and end of STM."
+        help="Path in the PMFLib format, printed at the beginning and end of STM."
     )
     
     filegroup.add_argument(
         "--summary", default="_stm.results", 
-        help="Path summary, printed at the beggining and end of STM."
+        help="Path summary, printed at the beginning and end of STM."
     )
 
     filegroup.add_argument(
@@ -2048,7 +2125,7 @@ def parse_args():
     )
 
     pathgroup.add_argument("--segdisc", type=int, default=10, 
-        help="Path segment discrimination."
+        help="Path segment discretization."
     )
 
     pathgroup.add_argument("--cvspline", type=int, default=1,
@@ -2089,22 +2166,22 @@ def parse_args():
     # STM Setup
     # -------------------------------------------------------------------------
 
-    adagroup = parser.add_argument_group("ADABelif specification")
+    adagroup = parser.add_argument_group("AdaBelief specification")
 
     adagroup.add_argument("--stepsize", type=float, default=0.003,
         help="Optimisation time step."
     )
 
     adagroup.add_argument("--beta1", type=float, default=0.7,
-        help="ADABelif beta1."
+        help="AdaBelief beta1."
     )
 
     adagroup.add_argument("--beta2", type=float, default=0.99,
-        help="ADABelif beta2."
+        help="AdaBelief beta2."
     )
 
     adagroup.add_argument("--mingnormesp", type=float, default=1e-7,
-        help="ADABelif epsilon."
+        help="AdaBelief epsilon."
     )
 
     # -------------------------------------------------------------------------
@@ -2155,23 +2232,43 @@ def parse_args():
         help="Show plots interactively after saving."
     )
 
+    plotgroup.add_argument('--figsize',type=parse_figsize,default=(6.4, 4.8),  # Default Matplotlib size fallback
+        help="Figure size as 'width,height' in inches (default: 6.4,4.8)"
+    )
+
     plotgroup.add_argument(
         "--dpi", type=int, default=300,
         help="Resolution for plot figures."
     )
 
-    return parser.parse_args()
+    args = parser.parse_args()
+
+    # check some input 
+    if args.nbeads < 2:
+        parser.error("--nbeads must be at least 2")
+
+    if args.segdisc < 5:
+        parser.error("--segdisc must be at least 5")
+
+    if args.mabuflen < 1:
+        parser.error("--mabuflen must be at least 1")
+
+    if not (0.0 <= args.smoothingfac <= 1.0):
+        parser.error("--smoothingfac must be in the interval [0, 1]")
+
+    if args.cvspline not in (0, 1):
+        parser.error("--cvspline must be 0 or 1")
+
+    return args
 
 # ------------------------------------------------------------------------------
 
 def main() -> None:
 
-    print("#")
-    print("# ==============================================================================")
-    print("#              *** Simplified String Method on 2D Energy Surface ***            ")
-    print("# ==============================================================================")
-    print("#         The stm-path-2D-surface utility is the part of PMFLib toolkit.        ")
-    print("#")
+    print("")
+    print("#==============================================================================#")
+    print("#          *** Simplified String Method (STM) on 2D Energy Surface ***         #")
+    print("#         The stm-path-2D-surface utility is the part of PMFLib toolkit.       #")
     print("#==============================================================================#")
     print("# PMFLib - Potential of Mean Force Toolkit                                     #")
     print("# -----------------------------------------------------------------------------#")
@@ -2185,13 +2282,14 @@ def main() -> None:
     args = parse_args()
 
     options = vars(args)
-    print(f"")
+
     print("# All arguments ...")
     print(options)
 
     # do all STM stuff :-)
     stmpath = STMPath(args)
     stmpath.stm_optimize(args)
+
     print("")
     
 # -------------------------------------------------------------------------
