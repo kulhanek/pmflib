@@ -2143,7 +2143,7 @@ def parse_args():
 
     plotgroup = parser.add_argument_group("The graphical plot specification")
 
-    plotgroup.add_argument("--plot", action="store_true", default=True,
+    plotgroup.add_argument("--plot", action="store_true", default=False,
         help="Write PNG plots."
         )
     
@@ -2175,7 +2175,7 @@ def main() -> None:
     print("#==============================================================================#")
     print("# PMFLib - Potential of Mean Force Toolkit                                     #")
     print("# -----------------------------------------------------------------------------#")
-    print("# Authors: (c) 2019 - 2026 Petr Kulhanek (NCBR)                                #")
+    print("# Authors: (c) 2026 Petr Kulhanek (NCBR)                                       #")
     print("#                                                                              #")
     print("# NCBR:    National Centre for Biomolecular Research, Masaryk University, CZ   #")
     print("#                                                                              #")
