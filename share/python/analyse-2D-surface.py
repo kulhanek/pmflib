@@ -3011,6 +3011,22 @@ def find_basins(args,surf):
 
 if __name__ == "__main__":
 
+    print("#")
+    print("# ==============================================================================")
+    print("#                        *** Analyze 2D Energy Surface ***                      ")
+    print("# ==============================================================================")
+    print("#          The analyse-2D-surface utility is the part of PMFLib toolkit.        ")
+    print("#")
+    print("#==============================================================================#")
+    print("# PMFLib - Potential of Mean Force Toolkit                                     #")
+    print("# -----------------------------------------------------------------------------#")
+    print("# Authors: (c) 2026 Petr Kulhanek (NCBR)                                       #")
+    print("#                                                                              #")
+    print("# NCBR:    National Centre for Biomolecular Research, Masaryk University, CZ   #")
+    print("#                                                                              #")
+    print("# PMFLib is licensed under Lesser GPL v2.1 and above.                          #")
+    print("#==============================================================================#")
+
     args = parse_args()
 
     options = vars(args)
