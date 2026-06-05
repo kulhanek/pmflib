@@ -17,3 +17,22 @@ IF(OpenMP_FOUND)
                 OWNER_EXECUTE OWNER_READ OWNER_WRITE GROUP_EXECUTE GROUP_READ WORLD_EXECUTE WORLD_READ
             )
 ENDIF()
+
+# Python stuff
+INSTALL(FILES
+            python/analyse-2D-surface.py
+            python/stm-path-2D-surface.py
+        DESTINATION
+            share/python
+        PERMISSIONS
+            OWNER_READ OWNER_WRITE GROUP_READ WORLD_READ
+        )
+
+INSTALL(FILES
+            scripts/analyse-2D-surface
+            scripts/stm-path-2D-surface
+        DESTINATION
+            share/scripts
+        PERMISSIONS
+            OWNER_EXECUTE OWNER_READ OWNER_WRITE GROUP_EXECUTE GROUP_READ WORLD_EXECUTE WORLD_READ
+        )
