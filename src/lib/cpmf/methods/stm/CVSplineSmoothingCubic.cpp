@@ -53,10 +53,19 @@ bool CCVSplineSmoothingCubic::LoadSetup(CPrmFile& prmfile,std::ostream& vout)
     } else {
         vout << "Lambda (lambda)                                = " << left << setw(20) << lambda << "  (default)" << endl;
     }
+
+    if( (lambda <= 0) || (lambda > 1.0) ){
+        RUNTIME_ERROR("lambda is out-of-range (0.0;1.0>");
+    }
+
     if( prmfile.GetDoubleByKey("sigma",all_sigma) == true  ) {
         vout << "All sigmas (sigma)                             = " << left << setw(20) << all_sigma << endl;
     } else {
-        vout << "Lambda (lambda)                                = " << left << setw(20) << all_sigma << "  (default)" << endl;
+        vout << "All sigmas (sigma)                             = " << left << setw(20) << all_sigma << "  (default)" << endl;
+    }
+
+    if( all_sigma <= 0.0 ) {
+        RUNTIME_ERROR("sigma must be positive");
     }
 
     vout << endl;
@@ -84,8 +93,8 @@ bool CCVSplineSmoothingCubic::LoadInfo(CXMLElement* p_ele)
     p_ele->GetAttribute("type",type);
     if( type != "smoothing-cubic") return(false);
 
-    lambda = 1.0; // 1.0 - interpolating spline
-    all_sigma = 1.0;
+    lambda      = 0.999; // 1.0 - interpolating spline
+    all_sigma   = 0.01;
 
     p_ele->GetAttribute("lambda",lambda);
     p_ele->GetAttribute("all_sigma",all_sigma);
@@ -115,6 +124,7 @@ void CCVSplineSmoothingCubic::Clear(void)
     sb.FreeVector();
     sc.FreeVector();
     sd.FreeVector();
+    sigma.FreeVector();
     n = -1;
 }
 
@@ -160,6 +170,10 @@ void CCVSplineSmoothingCubic::SetPoint(int knotid,double alpha,double cv)
         RUNTIME_ERROR("knotid is out-of-range");
     }
 
+    if( all_sigma <= 0.0 ) {
+        RUNTIME_ERROR("sigma must be positive");
+    }
+
     x[knotid] = alpha;
     y[knotid] = cv;
     sigma[knotid] = all_sigma;
@@ -181,6 +195,10 @@ void CCVSplineSmoothingCubic::SetSigma(int knotid,double sig)
 {
     if( (knotid < 0) || (knotid > n)) {
         RUNTIME_ERROR("knotid is out-of-range");
+    }
+
+    if( sig <= 0.0 ) {
+        RUNTIME_ERROR("sigma must be positive");
     }
 
     sigma[knotid] = sig;
@@ -263,7 +281,10 @@ void CCVSplineSmoothingCubic::BuildSpline(void)
 
 // --------------------
     sd[0] = y[0] - mu*r[0]*q[1]*sigma[0];
-    sd[1] = y[1] - mu*(f[1]*q[1]+r[1]*q[2])*sigma[0];
+    // BUG???? sd[1] = y[1] - mu*(f[1]*q[1]+r[1]*q[2])*sigma[0];
+    // in the pdf, it is sigma[0]
+    // ChatGPT and Gemini claims: sigma[1]
+    sd[1] = y[1] - mu*(f[1]*q[1]+r[1]*q[2])*sigma[1];
     sa[0] = q[1]/(3.0*h[0]);
     sb[0] = 0.0;
     sc[0] = (sd[1]-sd[0])/h[0] - q[1]*h[0]/3.0;
