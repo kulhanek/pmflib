@@ -7,9 +7,9 @@ This is a Python rewrite of stm_path01.m and C++ implementation of STM in PMFLib
 The FES is represented by the same basic Gaussian RBF idea used in analyse-2D-surface.py: coordinates are scaled to
 [0, 1], a tensor-product Gaussian RBF basis is fitted by SVD, and energies plus analytical gradients are evaluated from the fitted surface.
 
-In this implementation, the metric tensor (MTC) is considered as an unit matrix.
+In this implementation, the metric tensor (MT) is considered as an unit matrix.
 """
-# =============================================================================
+# ==============================================================================
 
 from __future__ import annotations
 
@@ -28,9 +28,9 @@ from scipy.spatial import cKDTree
 
 RAD2DEG = 180.0 / np.pi
 
-# =============================================================================
+# ==============================================================================
 # Cubic splines for path parametrisation
-# =============================================================================
+# ==============================================================================
 
 class CVSplineBase:
     """Small Python analogue of the PMFLib CV spline interface."""
@@ -125,7 +125,7 @@ class CVSplineBase:
         fn = self.get_cv_first_der if der == 1 else self.get_cv
         return np.array([fn(a) for a in arr], dtype=float)
 
-# =============================================================================
+# ==============================================================================
 
 class CVSplineInterpolatingCubic(CVSplineBase):
     """Natural interpolating cubic spline translated from CCVSplineInterpolatingCubic."""
@@ -178,7 +178,7 @@ class CVSplineInterpolatingCubic(CVSplineBase):
             self.sc[i] = (b[i] + b[i - 1])*h[i - 1] + self.sc[i - 1]
             self.sd[i] = self.y[i]
 
-# =============================================================================
+# ==============================================================================
 
 class CVSplineSmoothingCubic(CVSplineBase):
     """Smoothing cubic spline translated from CCVSplineSmoothingCubic."""
@@ -324,13 +324,13 @@ class CVSplineSmoothingCubic(CVSplineBase):
         for j in range(self.n - 2, 0, -1):
             q[j] = q[j] - v[j]*q[j + 1] - w[j]*q[j + 2]
 
-# =============================================================================
+# ==============================================================================
 # RBF surface model, adapted from analyse-2D-surface.py
-# =============================================================================
+# ==============================================================================
 
-# =============================================================================
+# ==============================================================================
 # Axis
-# =============================================================================
+# ==============================================================================
 
 class Axis:
     """One collective variable axis, represented internally on the scaled interval [0, 1]."""
@@ -383,9 +383,9 @@ class Axis:
         du = float(u) - self.centers
         return du
 
-# =============================================================================
+# ==============================================================================
 # EnergySurface2D
-# =============================================================================
+# ==============================================================================
 
 class EnergySurface2D:
     """2D Gaussian RBF energy surface with analytical gradients."""
@@ -668,13 +668,13 @@ class EnergySurface2D:
         
         plt.close(fig)
 
-# =============================================================================
+# ==============================================================================
 # String-method utilities
-# =============================================================================
+# ==============================================================================
 
-# =============================================================================
+# ==============================================================================
 # Bead
-# =============================================================================
+# ==============================================================================
 
 class Bead:
     def __init__(self, stmpath: STMPath):
@@ -724,9 +724,9 @@ class Bead:
             else:
                 self.Pos[i] = self.Pos[i] - cvs[i].smaxmove*math.copysign(1.0,dm)
 
-# =============================================================================
+# ==============================================================================
 # STMPath
-# =============================================================================
+# ==============================================================================
 
 class STMPath:
     def __init__(self, args):
@@ -747,18 +747,18 @@ class STMPath:
         y_axis = Axis(args.cv2min,args.cv2max,args.cv2nrbfs,args.cv2nbins,args.cv2label,args.cv2name,args.cv2type,args.cv2maxmove)
         self.cvs.append(y_axis)
 
-        self.surface = EnergySurface2D(x_axis,y_axis,args.enen,args.zmax,args.contour_spacing)
+        self.surface = EnergySurface2D(x_axis,y_axis,args.enelabel,args.zmax,args.contour_spacing)
 
         print("")
-        print(f"# Load FES: {args.input}")
-        self.surface.load(args.input)
+        print(f"# Load FES: {args.input_fes}")
+        self.surface.load(args.input_fes)
 
         print(f"")
         print(f"# Optimize RBF ...")
-        print(f"  Sx:           {args.sx:10.3f}")
-        print(f"  Sy:           {args.sy:10.3f}")
+        print(f"  Sx:           {args.rbfsx:10.3f}")
+        print(f"  Sy:           {args.rbfsy:10.3f}")
 
-        self.surface.fit(sx=args.sx, sy=args.sy, rcond=args.rcond)
+        self.surface.fit(sx=args.rbfsx, sy=args.rbfsy, rcond=args.rcond)
         print(f"  RBF fit RMSE: {self.surface.fit_rmse:10.3f}")
 
         print("")
@@ -834,8 +834,8 @@ class STMPath:
         self.integrate_path()
         self.calculate_stm_step_stat()
 
-        if args.output is not None:
-            with open(args.output,"w") as fout:
+        if args.output_path is not None:
+            with open(args.output_path,"w") as fout:
                 self.print_path(fout=fout,beads=self.beads)
 
         print("")
@@ -912,8 +912,8 @@ class STMPath:
                 path_x=path_x, path_y=path_y,
                 filename=f"{args.plot_prefix}_path_{self.STMStep:04d}_d_final.png", show=args.show, figsize=args.figsize, dpi=args.dpi)
 
-        if args.output is not None:
-            with open(args.output,"w") as fout:
+        if args.output_path is not None:
+            with open(args.output_path,"w") as fout:
                 self.print_path(fout=fout,beads=self.beads)
 
         if args.optlog is not None:
@@ -1082,7 +1082,7 @@ class STMPath:
 
         return total_length
 
-# -------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
     def get_segment_length(self, alpha1, alpha2):
         alphas = np.linspace(
@@ -1100,7 +1100,7 @@ class STMPath:
         return np.sum(np.linalg.norm(diffs, axis=1))
 
 
-# -------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
     def create_initial_beads_from_args(self, args):
         """
@@ -1143,7 +1143,7 @@ class STMPath:
 
         return beads
     
-# -------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
     def generate_beads_from_input_beads(
         self,
@@ -1244,7 +1244,7 @@ class STMPath:
 
         return beads
     
-# -------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
     def check_boundaries_of_beads(self, beads):
         """
@@ -1257,7 +1257,7 @@ class STMPath:
         for bead in beads:
             bead.Pos[:] = np.clip(bead.Pos, 0.0, 1.0)
         
-# -------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
     def beads_to_xy_arrays(self, beads):
         if len(beads) == 0:
@@ -1275,7 +1275,7 @@ class STMPath:
 
         return xy[:, 0], xy[:, 1]
 
-# -------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
     def calc_beads(self):
         """
@@ -1341,7 +1341,7 @@ class STMPath:
         for bead in self.beads[1:-1]:
             bead.pGrad[:] = bead.P @ bead.Grad
 
-# -------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
     def integrate_path(self):
         """
@@ -1408,7 +1408,7 @@ class STMPath:
         for bead in self.beads:
             bead.A -= amin
 
-# -------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
     def print_path(self, fout=None, beads=None):
             """
@@ -1476,7 +1476,7 @@ class STMPath:
 
                 print(file=fout)
 
-# -------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
     def is_bead_permanent(self, bead_index):
         """
@@ -1489,7 +1489,7 @@ class STMPath:
 
         return (not self.freeterminals) and (bead_index == 0 or bead_index == self.nbeads - 1)
 
-# -------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
     def print_path_summary_header(self, fout=None):
         """
@@ -1514,15 +1514,15 @@ class STMPath:
         # Header legends.
         print("#  ID   Type  MO ST  alpha    dA/dalpha            A     CID Updates", end="", file=fout)
         for i in range(self.ncvs):
-            print(f"     CV{i + 1:<2d}    ", end="", file=fout)
+            print(f"          CV{i + 1:<1d}", end="", file=fout)
         for i in range(self.ncvs):
-            print(f"    sCV{i + 1:<2d}    ", end="", file=fout)
+            print(f"         sCV{i + 1:<1d}", end="", file=fout)
         for i in range(self.ncvs):
-            print(f"  dA/dsCV{i + 1:<2d}  ", end="", file=fout)
+            print(f"     dA/dsCV{i + 1:<1d}", end="", file=fout)
         for i in range(self.ncvs):
-            print(f" dsCV{i + 1:<2d}/dalph", end="", file=fout)
+            print(f" dsCV{i + 1:<1d}/dalpha", end="", file=fout)
         for i in range(self.ncvs):
-            print(f" -|F{i + 1:<2d}/dalpha", end="", file=fout)
+            print(f"  -|F{i + 1:<1d}/dalpha", end="", file=fout)
 
         print(f"          ENE", end="", file=fout)
         print(file=fout)
@@ -1607,7 +1607,7 @@ class STMPath:
 
         print(delimiter, file=fout)
 
-# -------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
     def print_path_summary_data(self, fout=None):
         """
@@ -1673,7 +1673,7 @@ class STMPath:
 
             print(file=fout)
 
-# -------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
     def write_trajectory_header(self, fout=None):
         
@@ -1683,7 +1683,7 @@ class STMPath:
         print(f"# STMTRAJ {self.ncvs} {self.nbeads}", file=fout)
         self.print_path_summary_header(fout)
 
-# -------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
     def write_trajectory_snapshot(self, fout=None):
         
@@ -1694,7 +1694,7 @@ class STMPath:
         self.print_path_summary_data(fout)
         print("",file=fout) # necessary for gnuplot
 
-# -------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
     def init_stm_statistics(self, args=None):
         """
@@ -1741,7 +1741,7 @@ class STMPath:
         self.FinalMaxpMFSize    = args.final_maxpmfsize
         self.FinalAvepMFSize    = args.final_avepmfsize
 
-# -------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
     def print_stm_header_f(self, fout=None):
         """
@@ -1781,7 +1781,7 @@ class STMPath:
             file=fout,
         )
 
-# -------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
     def calculate_stm_step_stat(self):
         """
@@ -1872,7 +1872,7 @@ class STMPath:
         if self.MAAvepMFSize < self.FinalAvepMFSize:
             self.TermCrit += 1
 
-# -------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
     def print_stm_step_info_f(self, fout=None):
         """
@@ -1903,9 +1903,9 @@ class STMPath:
             file=fout,
         )
 
-# =============================================================================
+# ==============================================================================
 # CLI
-# =============================================================================
+# ==============================================================================
 
 def parse_args():
 
@@ -2022,12 +2022,12 @@ def parse_args():
     enegroup = parser.add_argument_group("The energy axis specification")
 
     enegroup.add_argument(
-        "--enen", type=str, default=r"${\Delta}G [kcal/mol]$",
+        "--enelabel", type=str, default=r"${\Delta}G [kcal/mol]$",
         help="Energy label."
     )
 
     enegroup.add_argument(
-        "--zmax", type=float, default=18.0,
+        "--zmax", type=float, required=True,
         help="Maximum energy value considered."
     )
 
@@ -2053,18 +2053,19 @@ def parse_args():
     )
 
     rbfgroup.add_argument(
-        "--sx", type=float, default=1.5,
+        "--rbfsx", type=float, default=1.5,
         help="Width factor for CV1 in the RBF static width mode."
     )
 
     rbfgroup.add_argument(
-        "--sy", type=float, default=1.5,
+        "--rbfsy", type=float, default=1.5,
         help="Width factor for CV2 in the RBF static width mode."
     )
 
     rbfgroup.add_argument(
         "--rcond", type=float, default=1.0e-9,
-        help="SVD cutoff for RBF fitting.")
+        help="SVD cutoff for RBF fitting."
+    )
 
     # -------------------------------------------------------------------------
     # Files
@@ -2073,12 +2074,12 @@ def parse_args():
     filegroup = parser.add_argument_group("The input/output files specification")
 
     filegroup.add_argument(
-        "--input", required=True,
+        "--input-fes", required=True,
         help="Input FES/PES file. First three columns are CV1, CV2, energy."
     )
 
     filegroup.add_argument(
-        "--output", default="_stm.path", 
+        "--output-path", default="_stm.path", 
         help="Path in the PMFLib format, printed at the beginning and end of STM."
     )
     
@@ -2114,7 +2115,6 @@ def parse_args():
     pathgroup.add_argument("--pathname", type=str, default="p1",
         help="Name of the path."
     )
-
 
     pathgroup.add_argument("--nbeads", type=int, default=51,
         help="Number of string beads."
@@ -2261,14 +2261,16 @@ def parse_args():
 
     return args
 
-# ------------------------------------------------------------------------------
+# ==============================================================================
+# Main
+# ==============================================================================
 
 def main() -> None:
 
     print("")
     print("#==============================================================================#")
     print("#          *** Simplified String Method (STM) on 2D Energy Surface ***         #")
-    print("#         The stm-path-2D-surface utility is the part of PMFLib toolkit.       #")
+    print("#         The stm-path-2D-surface utility is part of the PMFLib toolkit.       #")
     print("#==============================================================================#")
     print("# PMFLib - Potential of Mean Force Toolkit                                     #")
     print("# -----------------------------------------------------------------------------#")
@@ -2292,7 +2294,9 @@ def main() -> None:
 
     print("")
     
-# -------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
 if __name__ == "__main__":
     main()
+
+# ==============================================================================
