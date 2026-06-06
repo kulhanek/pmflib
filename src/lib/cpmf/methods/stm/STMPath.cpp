@@ -47,7 +47,7 @@ Methods:
 * ADAM          - Adaptive Moment Estimation
 * AMSGrad       - AMSGrad
 * AMSGradBC     - AMSGrad + bias corrected estimates
-* ADABelif      - Adam-Belief
+* AdaBelief     - Adam-Belief
 */
 
 //------------------------------------------------------------------------------
@@ -91,7 +91,7 @@ CSTMPath::CSTMPath(void)
     ProdPeriod = 50000;         // final production period
 
     MaxSTMSteps         = 100;
-    OptMethod           = "adabelif";
+    OptMethod           = "adabelief";
     ShifGlobalMinA2Zero = true;
 
     MaxGNormForGD       = 5.0;
@@ -372,7 +372,7 @@ bool CSTMPath::ProcessSTMControl(CPrmFile& prmfile)
         result = ProcessNGDAutoOptMethodSetup(prmfile);
     } else if( OptMethod == "adam" ){
         result = ProcessAdamOptMethodSetup(prmfile);
-    } else if( OptMethod == "adabelif" ){
+    } else if( OptMethod == "adabelief" ){
         result = ProcessADABeliefOptMethodSetup(prmfile);
     } else if( OptMethod == "amsgrad" ){
         result = ProcessAMSGradOptMethodSetup(prmfile);
@@ -619,9 +619,9 @@ bool CSTMPath::ProcessAdamOptMethodSetup(CPrmFile& prmfile)
 bool CSTMPath::ProcessADABeliefOptMethodSetup(CPrmFile& prmfile)
 {
     vout << endl;
-    vout << "=== [adabelif] =================================================================" << endl;
+    vout << "=== [adabelief] ================================================================" << endl;
 
-    if(prmfile.OpenSection("adabelif") == false) {
+    if(prmfile.OpenSection("adabelief") == false) {
         vout << "Step size (stepsize)                           = " << setw(9) << StepSize
              << left << "             (default)" << endl;
         vout << "beta1                                          = " << setw(9) << AdamB1
@@ -2780,9 +2780,8 @@ void CSTMPath::CalculateSTMStepStat(void)
         MABufAvepMFSize[i]  = MABufAvepMFSize[i+1];
     }
 
-
     // add new values
-    MABufPLenChange[MABufLength-1]  = PLenChange;
+    MABufPLenChange[MABufLength-1]  = fabs(PLenChange);
     MABufMaxBeadMove[MABufLength-1] = MaxBeadMove;
     MABufAveBeadMove[MABufLength-1] = AveBeadMove;
     MABufMaxpMFSize[MABufLength-1]  = MaxpMFSize;
@@ -2931,10 +2930,10 @@ void CSTMPath::UpdateAllPositions(void)
             vout << ">> INFO: Reset ADAM memory." << endl;
             ResetAdamAlg--;
         }
-    } else if ( OptMethod == "adabelif" ){
+    } else if ( OptMethod == "adabelief" ){
         for(int i=0; i < NumOfBeads; i++){
             if( (ResetAdamAlg > 0) && (MemoryLength > 0) && (STMStep % MemoryLength == 0) ) Beads[i]->ResetADAM();
-            Beads[i]->UpdatePositionADABelif(UsedStepSize,AdamB1,AdamB2,MinGNormEps);
+            Beads[i]->UpdatePositionADABelief(UsedStepSize,AdamB1,AdamB2,MinGNormEps);
         }
         if( (ResetAdamAlg > 0) && (MemoryLength > 0) && (STMStep % MemoryLength == 0) ){
             vout << ">> INFO: Reset ADABelif memory." << endl;
@@ -3157,6 +3156,9 @@ double CSTMPath::OptimizePath(std::vector<CBeadPtr>& beads)
 
     double prev_length = 0;
 
+    CSimpleVector<double>  pseglengths;
+    pseglengths.CreateVector(beads.size());
+
     for(int s=0; s < 1000; s++){
         // interpolate CVS
         for(int i=0; i < NumOfCVs; i++){
@@ -3171,8 +3173,11 @@ double CSTMPath::OptimizePath(std::vector<CBeadPtr>& beads)
 
         // determine new path length
         tot_length = 0;
+        pseglengths[0] = 0.0;
         for(size_t b=1; b < beads.size(); b++){
-            tot_length += GetSegmentLength(beads[b-1]->Alpha,beads[b]->Alpha);
+            double seg_length = GetSegmentLength(beads[b-1]->Alpha,beads[b]->Alpha);
+            pseglengths[b] = seg_length;
+            tot_length += seg_length;
         }
 
         // vout << "Optimized path length = " << tot_length << endl;
@@ -3185,11 +3190,9 @@ double CSTMPath::OptimizePath(std::vector<CBeadPtr>& beads)
         // determine new alphas
         beads[0]->Alpha = 0.0;
         double path_length = 0;
-        double prev_alpha = beads[0]->Alpha;
         for(size_t b=1; b < beads.size()-1; b++){
-            path_length += GetSegmentLength(prev_alpha,beads[b]->Alpha);
+            path_length += pseglengths[b];
             beads[b]->Alpha = path_length/tot_length;
-            prev_alpha = beads[b]->Alpha;
         }
         beads[beads.size()-1]->Alpha = 1.0;
     }
