@@ -556,7 +556,7 @@ void CBead::UpdatePositionADAM(double step,double beta1,double beta2,double ming
 
 // -----------------------------------------------------------------------------
 
-void CBead::UpdatePositionADABelif(double step,double beta1,double beta2,double mingnormeps)
+void CBead::UpdatePositionADABelief(double step,double beta1,double beta2,double mingnormeps)
 {
     NumOfUpdates++;
 

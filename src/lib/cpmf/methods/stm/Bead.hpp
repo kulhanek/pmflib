@@ -118,8 +118,8 @@ public:
     /// Adam (Adaptive Moment Estimation)
     void UpdatePositionADAM(double step,double beta1,double beta2,double mingnormeps);
 
-    /// ADABelif
-    void UpdatePositionADABelif(double step,double beta1,double beta2,double mingnormeps);
+    /// ADABelief
+    void UpdatePositionADABelief(double step,double beta1,double beta2,double mingnormeps);
 
     /// AMSGrad
     void UpdatePositionAMSGrad(double step,double beta1,double beta2,double mingnormeps);
