@@ -324,6 +324,510 @@ class CVSplineSmoothingCubic(CVSplineBase):
         for j in range(self.n - 2, 0, -1):
             q[j] = q[j] - v[j]*q[j + 1] - w[j]*q[j + 2]
 
+
+class CVSmoothingCubicSplineSVD:
+    """
+    Natural smoothing cubic spline using SVD-based linear solves.
+
+    The spline minimizes
+
+        lam * sum_i ((y_i - z_i)^2 / sigma_i^2)
+        + (1.0 - lam) * integral (S''(x))^2 dx
+
+    Interface
+    ---------
+    spline = CVSmoothingCubicSplineSVD(lam, all_sigma, rcond)
+
+    spline.update_points(x, y)
+
+    value = spline(x)
+    der1  = spline(x, 1)
+    der2  = spline(x, 2)
+    der3  = spline(x, 3)
+
+    Parameters
+    ----------
+    lam : float
+        Smoothing/data-balance parameter in [0, 1].
+
+        lam = 1:
+            Interpolating natural cubic spline through y.
+
+        lam = 0:
+            Pure roughness minimization. The minimizer is not unique because
+            any straight line has zero roughness. With the SVD pseudoinverse,
+            the minimum-norm solution is selected.
+
+    all_sigma : float or array_like
+        If scalar, the same sigma is used for all points.
+        If array-like, it must have the same length as x and y.
+
+    rcond : float
+        Relative singular-value cutoff for SVD pseudoinverse solves.
+    """
+
+    def __init__(self, lam, all_sigma, rcond):
+        self.lam = float(lam)
+        self.all_sigma = all_sigma
+        self.rcond = float(rcond)
+
+        if self.lam < 0.0 or self.lam > 1.0:
+            raise ValueError("lam must be in the interval [0, 1].")
+
+        if self.rcond < 0.0:
+            raise ValueError("rcond must be non-negative.")
+
+        self.x = None
+        self.y = None
+        self.sigma = None
+
+        self.n = 0
+        self.h = None
+
+        self.z = None
+
+        self.a = None
+        self.b = None
+        self.c = None
+        self.d = None
+
+    # -------------------------------------------------------------------------
+    # Public interface
+    # -------------------------------------------------------------------------
+
+    def merge_close_points(self, x, y, sigma=None, atol=1e-12):
+        """
+        Merge duplicate or nearly duplicate x values.
+
+        Points with distance <= atol are treated as one point.
+        Their x, y, and optionally sigma values are averaged.
+
+        Parameters
+        ----------
+        x : array_like
+            Input x values.
+
+        y : array_like
+            Input y values.
+
+        sigma : array_like or None
+            Optional sigma values.
+
+        atol : float
+            Absolute tolerance for considering two x values identical.
+
+        Returns
+        -------
+        x_new, y_new, sigma_new
+            Merged arrays. sigma_new is None if sigma was None.
+        """
+
+        x = np.asarray(x, dtype=float)
+        y = np.asarray(y, dtype=float)
+
+        if sigma is not None:
+            sigma = np.asarray(sigma, dtype=float)
+
+        order = np.argsort(x)
+        x = x[order]
+        y = y[order]
+
+        if sigma is not None:
+            sigma = sigma[order]
+
+        x_new = []
+        y_new = []
+        sigma_new = [] if sigma is not None else None
+
+        group_x = [x[0]]
+        group_y = [y[0]]
+        group_sigma = [sigma[0]] if sigma is not None else None
+
+        for i in range(1, x.size):
+            if abs(x[i] - group_x[-1]) <= atol:
+                group_x.append(x[i])
+                group_y.append(y[i])
+                if sigma is not None:
+                    group_sigma.append(sigma[i])
+            else:
+                x_new.append(np.mean(group_x))
+                y_new.append(np.mean(group_y))
+
+                if sigma is not None:
+                    sigma_new.append(np.mean(group_sigma))
+
+                group_x = [x[i]]
+                group_y = [y[i]]
+                group_sigma = [sigma[i]] if sigma is not None else None
+
+        x_new.append(np.mean(group_x))
+        y_new.append(np.mean(group_y))
+
+        if sigma is not None:
+            sigma_new.append(np.mean(group_sigma))
+
+        x_new = np.asarray(x_new, dtype=float)
+        y_new = np.asarray(y_new, dtype=float)
+
+        if sigma is not None:
+            sigma_new = np.asarray(sigma_new, dtype=float)
+
+        return x_new, y_new, sigma_new
+
+    def update_points(self, x, y):
+        x = np.asarray(x, dtype=float)
+        y = np.asarray(y, dtype=float)
+
+        if x.ndim != 1:
+            raise ValueError("x must be a one-dimensional array.")
+
+        if y.ndim != 1:
+            raise ValueError("y must be a one-dimensional array.")
+
+        if x.size != y.size:
+            raise ValueError("x and y must have the same length.")
+
+        if x.size < 2:
+            raise ValueError("At least two points are required.")
+
+        sigma = self._prepare_sigma(x.size)
+
+        x, y, sigma = self.merge_close_points(
+            x,
+            y,
+            sigma=sigma,
+            atol=1e-12,
+        )
+
+        if x.size < 2:
+            raise ValueError("At least two distinct x points are required.")
+
+        h = np.diff(x)
+
+        if np.any(h <= 0.0):
+            raise ValueError("x values must be strictly increasing after merging.")
+
+        if np.any(sigma <= 0.0):
+            raise ValueError("All sigma values must be positive.")
+
+        self.x = x
+        self.y = y
+        self.sigma = sigma
+
+        self.n = x.size
+        self.h = h
+
+        self._build_spline()
+
+    # def update_points(self, x, y):
+    #     """
+    #     Set or update spline points.
+
+    #     Parameters
+    #     ----------
+    #     x : array_like
+    #         Knot positions.
+    #     y : array_like
+    #         Values at knot positions.
+    #     """
+
+    #     x = np.asarray(x, dtype=float)
+    #     y = np.asarray(y, dtype=float)
+
+    #     if x.ndim != 1:
+    #         raise ValueError("x must be a one-dimensional array.")
+
+    #     if y.ndim != 1:
+    #         raise ValueError("y must be a one-dimensional array.")
+
+    #     if x.size != y.size:
+    #         raise ValueError("x and y must have the same length.")
+
+    #     if x.size < 2:
+    #         raise ValueError("At least two points are required.")
+
+    #     order = np.argsort(x)
+    #     x = x[order]
+    #     y = y[order]
+
+    #     h = np.diff(x)
+
+    #     if np.any(h <= 0.0):
+    #         raise ValueError("x values must be strictly increasing.")
+
+    #     sigma = self._prepare_sigma(x.size)
+
+    #     if sigma.size == x.size:
+    #         sigma = sigma[order]
+
+    #     if np.any(sigma <= 0.0):
+    #         raise ValueError("All sigma values must be positive.")
+
+    #     self.x = x
+    #     self.y = y
+    #     self.sigma = sigma
+
+    #     self.n = x.size
+    #     self.h = h
+
+    #     self._build_spline()
+
+    def __call__(self, x_eval, der=0):
+        """
+        Evaluate spline or its derivative.
+
+        Parameters
+        ----------
+        x_eval : float or array_like
+            Evaluation point or points.
+
+        der : int, default=0
+            Derivative order.
+
+            der = 0:
+                value
+
+            der = 1:
+                first derivative
+
+            der = 2:
+                second derivative
+
+            der = 3:
+                third derivative
+
+            der > 3:
+                zero
+
+        Returns
+        -------
+        float or ndarray
+            Spline value or derivative.
+        """
+
+        if self.x is None:
+            raise RuntimeError("Spline points are not initialized. Call update_points(x, y) first.")
+
+        if der < 0:
+            raise ValueError("Derivative order must be non-negative.")
+
+        scalar_input = np.isscalar(x_eval)
+        x_eval = np.asarray(x_eval, dtype=float)
+
+        idx = np.searchsorted(self.x, x_eval, side="right") - 1
+        idx = np.clip(idx, 0, self.n - 2)
+
+        t = x_eval - self.x[idx]
+
+        a = self.a[idx]
+        b = self.b[idx]
+        c = self.c[idx]
+        d = self.d[idx]
+
+        if der == 0:
+            out = a + b*t + c*t**2 + d*t**3
+        elif der == 1:
+            out = b + 2.0*c*t + 3.0*d*t**2
+        elif der == 2:
+            out = 2.0*c + 6.0*d*t
+        elif der == 3:
+            out = 6.0*d
+        else:
+            out = np.zeros_like(x_eval, dtype=float)
+
+        if scalar_input:
+            return float(out)
+
+        return out
+
+    # -------------------------------------------------------------------------
+    # Spline construction
+    # -------------------------------------------------------------------------
+
+    def _build_spline(self):
+        """
+        Build smoothing spline.
+        """
+
+        if self.n == 2:
+            self.z = self.y.copy()
+            self._build_natural_cubic(self.z)
+            return
+
+        if self.lam == 1.0:
+            self.z = self.y.copy()
+        else:
+            self.z = self._calculate_smoothed_values()
+
+        self._build_natural_cubic(self.z)
+
+    def _calculate_smoothed_values(self):
+        """
+        Calculate smoothed knot values z.
+        """
+
+        q, r = self._build_qr_matrices()
+
+        rinv_qt = self._svd_solve(r, q.T)
+
+        k = q @ rinv_qt
+
+        w_diag = 1.0 / (self.sigma**2)
+
+        lhs = self.lam * np.diag(w_diag) + (1.0 - self.lam) * k
+        rhs = self.lam * w_diag * self.y
+
+        z = self._svd_solve(lhs, rhs)
+
+        return z
+
+    def _build_qr_matrices(self):
+        """
+        Build Reinsch Q and R matrices for a natural cubic spline.
+        """
+
+        n = self.n
+        h = self.h
+
+        q = np.zeros((n, n - 2), dtype=float)
+
+        for i in range(n - 2):
+            q[i, i] = 1.0 / h[i]
+            q[i + 1, i] = -1.0 / h[i] - 1.0 / h[i + 1]
+            q[i + 2, i] = 1.0 / h[i + 1]
+
+        r = np.zeros((n - 2, n - 2), dtype=float)
+
+        for i in range(n - 2):
+            r[i, i] = (h[i] + h[i + 1]) / 3.0
+
+        for i in range(n - 3):
+            r[i, i + 1] = h[i + 1] / 6.0
+            r[i + 1, i] = h[i + 1] / 6.0
+
+        return q, r
+
+    def _build_natural_cubic(self, z):
+        """
+        Build natural cubic interpolation coefficients through smoothed values z.
+
+        On interval [x_i, x_{i+1}], the spline is
+
+            S_i(x) = a_i + b_i t + c_i t^2 + d_i t^3
+
+        with
+
+            t = x - x_i
+        """
+
+        n = self.n
+        h = self.h
+
+        if n == 2:
+            self.a = np.array([z[0]], dtype=float)
+            self.b = np.array([(z[1] - z[0]) / h[0]], dtype=float)
+            self.c = np.array([0.0], dtype=float)
+            self.d = np.array([0.0], dtype=float)
+            return
+
+        amat = np.zeros((n - 2, n - 2), dtype=float)
+        rhs = np.zeros(n - 2, dtype=float)
+
+        for i in range(1, n - 1):
+            row = i - 1
+
+            if i > 1:
+                amat[row, row - 1] = h[i - 1]
+
+            amat[row, row] = 2.0 * (h[i - 1] + h[i])
+
+            if i < n - 2:
+                amat[row, row + 1] = h[i]
+
+            rhs[row] = 6.0 * (
+                (z[i + 1] - z[i]) / h[i]
+                - (z[i] - z[i - 1]) / h[i - 1]
+            )
+
+        m_inner = self._svd_solve(amat, rhs)
+
+        m = np.zeros(n, dtype=float)
+        m[1:-1] = m_inner
+
+        self.a = z[:-1].copy()
+
+        self.b = (
+            (z[1:] - z[:-1]) / h
+            - h * (2.0*m[:-1] + m[1:]) / 6.0
+        )
+
+        self.c = m[:-1] / 2.0
+
+        self.d = (m[1:] - m[:-1]) / (6.0*h)
+
+    # -------------------------------------------------------------------------
+    # Helpers
+    # -------------------------------------------------------------------------
+
+    def _prepare_sigma(self, n):
+        """
+        Prepare sigma array.
+        """
+
+        sigma = np.asarray(self.all_sigma, dtype=float)
+
+        if sigma.ndim == 0:
+            return np.full(n, float(sigma), dtype=float)
+
+        if sigma.ndim != 1:
+            raise ValueError("all_sigma must be either a scalar or a one-dimensional array.")
+
+        if sigma.size != n:
+            raise ValueError("If all_sigma is an array, it must have the same length as x and y.")
+
+        return sigma.copy()
+
+    def _svd_solve(self, a, b):
+        """
+        Solve a x = b by SVD pseudoinverse.
+
+        Singular values are accepted if
+
+            s_i > rcond * max(s)
+
+        Parameters
+        ----------
+        a : ndarray
+            Matrix.
+
+        b : ndarray
+            Right-hand side.
+
+        Returns
+        -------
+        ndarray
+            Pseudoinverse solution.
+        """
+
+        a = np.asarray(a, dtype=float)
+        b = np.asarray(b, dtype=float)
+
+        u, s, vt = np.linalg.svd(a, full_matrices=False)
+
+        if s.size == 0:
+            raise np.linalg.LinAlgError("SVD failed: no singular values found.")
+
+        cutoff = self.rcond * np.max(s)
+
+        sinv = np.zeros_like(s)
+        keep = s > cutoff
+        sinv[keep] = 1.0 / s[keep]
+
+        if b.ndim == 1:
+            return vt.T @ (sinv * (u.T @ b))
+
+        return vt.T @ (sinv[:, None] * (u.T @ b))
+
 # ==============================================================================
 # RBF surface model, adapted from analyse-2D-surface.py
 # ==============================================================================
@@ -767,10 +1271,7 @@ class STMPath:
 
         print("")
         print("# CV splines ...")
-        if args.cvspline == 0:
-            print(f"  >>> Interpolating Cubic Spline")
-            self.cv_splines =  [CVSplineInterpolatingCubic() for _ in range(self.ncvs)]
-        else:
+        if args.cvspline == 1:
             print(f"  >>> Smoothing Cubic Spline")
             print(f"      Lambda: {args.spline_lambda:10.5f}")
             print(f"      Sigma:  {args.spline_sigma:10.5f}")
@@ -778,6 +1279,18 @@ class STMPath:
                 CVSplineSmoothingCubic(lam=args.spline_lambda, sigma=args.spline_sigma)
                 for _ in range(self.ncvs)
             ]
+        elif args.cvspline == 2:
+            print(f"  >>> Smoothing Cubic Spline via SVD")
+            print(f"      Lambda: {args.spline_lambda:10.5f}")
+            print(f"      Sigma:  {args.spline_sigma:10.5f}")
+            print(f"      RCond:  {args.rcond:10.5f}")
+            self.cv_splines =  [
+                CVSmoothingCubicSplineSVD(lam=args.spline_lambda, all_sigma=args.spline_sigma,rcond=1e-6)
+                for _ in range(self.ncvs)
+            ]
+        else:
+            print(f"  >>> Interpolating Cubic Spline")
+            self.cv_splines =  [CVSplineInterpolatingCubic() for _ in range(self.ncvs)]
 
         print("")
         print("# Initial path ...")
@@ -866,6 +1379,13 @@ class STMPath:
             # update bead positions
             self.update_all_positions()
             self.smooth_all_positions()
+
+            if args.plot :
+                path_x, path_y = self.beads_to_xy_arrays(self.beads)
+                self.surface.plot_fes_with_path(title=f"Intermediate Path #{self.STMStep:04d}",
+                    path_x=path_x, path_y=path_y,
+                    filename=f"{args.plot_prefix}_path_b_{self.STMStep:04d}_c.png", show=args.show, figsize=args.figsize, dpi=args.dpi)
+
             self.reparametrize_all_positions()
             self.check_boundaries_of_beads(self.beads)
 
@@ -955,8 +1475,9 @@ class STMPath:
         for i in range(1, self.nbeads - 1):
             self.beads[i].Pos[:] = (
                 (1.0 - self.SmoothingFac) * old_pos[i]
-                + 0.5 * self.SmoothingFac * (old_pos[i - 1] + old_pos[i + 1])
+                + 0.5 * self.cSmoothingFac * (old_pos[i - 1] + old_pos[i + 1])
             )
+        print("smooth")
 
 # ------------------------------------------------------------------------------
 
@@ -964,6 +1485,8 @@ class STMPath:
 
         if (self.ReparamInterval == 0) or (self.STMStep % self.ReparamInterval != 0 ):
             return;
+
+        alphas1 = np.array([bead.Alpha for bead in self.beads], dtype=float)
 
         self.optimize_path(self.beads)
 
@@ -974,8 +1497,8 @@ class STMPath:
         self.beads[0].Alpha = 0.0
         self.beads[-1].Alpha = 1.0
 
-        alphas = np.array([bead.Alpha for bead in self.beads], dtype=float)
-        #print(alphas)
+        alphas2 = np.array([bead.Alpha for bead in self.beads], dtype=float)
+        print(alphas2-alphas1)
 
         # update positions along the path based on new alphas
         for cv in range(self.ncvs):
@@ -1034,7 +1557,9 @@ class STMPath:
             segment_length = np.linalg.norm(diff)
 
             if segment_length == 0.0:
-                raise RuntimeError("path segment has zero length")
+                segment_length = 1e-7
+                print("warning: path segment has zero length")
+                # raise RuntimeError("path segment has zero length")
 
             path_length += segment_length
             beads[b].Alpha = path_length / total_length
@@ -2256,8 +2781,8 @@ def parse_args():
     if not (0.0 <= args.smoothingfac <= 1.0):
         parser.error("--smoothingfac must be in the interval [0, 1]")
 
-    if args.cvspline not in (0, 1):
-        parser.error("--cvspline must be 0 or 1")
+    if args.cvspline not in (0, 2):
+        parser.error("--cvspline must be 0 or 1 or 2")
 
     return args
 
