@@ -325,14 +325,20 @@ class CVSplineSmoothingCubic(CVSplineBase):
             q[j] = q[j] - v[j]*q[j + 1] - w[j]*q[j + 2]
 
 
+# ==============================================================================
+
 class CVSmoothingCubicSplineSVD:
     """
-    Natural smoothing cubic spline using SVD-based linear solves.
+    Natural smoothing cubic spline solved by SVD.
 
     The spline minimizes
 
-        lam * sum_i ((y_i - z_i)^2 / sigma_i^2)
-        + (1.0 - lam) * integral (S''(x))^2 dx
+        sum_i w_i * (y_i - z_i)^2
+        + lam * integral (S''(x))^2 dx
+
+    where
+
+        w_i = 1 / sigma_i^2
 
     Interface
     ---------
@@ -345,34 +351,19 @@ class CVSmoothingCubicSplineSVD:
     der2  = spline(x, 2)
     der3  = spline(x, 3)
 
-    Parameters
-    ----------
-    lam : float
-        Smoothing/data-balance parameter in [0, 1].
-
-        lam = 1:
-            Interpolating natural cubic spline through y.
-
-        lam = 0:
-            Pure roughness minimization. The minimizer is not unique because
-            any straight line has zero roughness. With the SVD pseudoinverse,
-            the minimum-norm solution is selected.
-
-    all_sigma : float or array_like
-        If scalar, the same sigma is used for all points.
-        If array-like, it must have the same length as x and y.
-
-    rcond : float
-        Relative singular-value cutoff for SVD pseudoinverse solves.
+    Notes
+    -----
+    lam = 0.0 gives a natural interpolating cubic spline.
+    Larger lam gives stronger smoothing.
     """
 
-    def __init__(self, lam, all_sigma, rcond):
+    def __init__(self, lam: float, all_sigma: float | np.ndarray, rcond: float):
         self.lam = float(lam)
         self.all_sigma = all_sigma
         self.rcond = float(rcond)
 
-        if self.lam < 0.0 or self.lam > 1.0:
-            raise ValueError("lam must be in the interval [0, 1].")
+        if self.lam < 0.0:
+            raise ValueError("lam must be non-negative.")
 
         if self.rcond < 0.0:
             raise ValueError("rcond must be non-negative.")
@@ -380,101 +371,50 @@ class CVSmoothingCubicSplineSVD:
         self.x = None
         self.y = None
         self.sigma = None
+        self.w = None
 
-        self.n = 0
+        self.npts = 0
+        self.nseg = 0
         self.h = None
 
+        # Smoothed knot values.
         self.z = None
 
+        # Polynomial coefficients on interval i:
+        #
+        #   S_i(x) = a_i + b_i*t + c_i*t^2 + d_i*t^3
+        #
+        # where:
+        #
+        #   t = x - x_i
+        #
         self.a = None
         self.b = None
         self.c = None
         self.d = None
 
     # -------------------------------------------------------------------------
-    # Public interface
+    # Public API
     # -------------------------------------------------------------------------
 
-    def merge_close_points(self, x, y, sigma=None, atol=1e-12):
+    def update_points(self, x, y):
         """
-        Merge duplicate or nearly duplicate x values.
-
-        Points with distance <= atol are treated as one point.
-        Their x, y, and optionally sigma values are averaged.
+        Set or update spline points.
 
         Parameters
         ----------
         x : array_like
-            Input x values.
+            Knot positions. They must be strictly increasing after sorting.
 
         y : array_like
-            Input y values.
+            Values at knot positions.
 
-        sigma : array_like or None
-            Optional sigma values.
-
-        atol : float
-            Absolute tolerance for considering two x values identical.
-
-        Returns
-        -------
-        x_new, y_new, sigma_new
-            Merged arrays. sigma_new is None if sigma was None.
+        Important
+        ---------
+        This method does not merge duplicate or nearly duplicate x values.
+        Duplicate x values are treated as an error.
         """
 
-        x = np.asarray(x, dtype=float)
-        y = np.asarray(y, dtype=float)
-
-        if sigma is not None:
-            sigma = np.asarray(sigma, dtype=float)
-
-        order = np.argsort(x)
-        x = x[order]
-        y = y[order]
-
-        if sigma is not None:
-            sigma = sigma[order]
-
-        x_new = []
-        y_new = []
-        sigma_new = [] if sigma is not None else None
-
-        group_x = [x[0]]
-        group_y = [y[0]]
-        group_sigma = [sigma[0]] if sigma is not None else None
-
-        for i in range(1, x.size):
-            if abs(x[i] - group_x[-1]) <= atol:
-                group_x.append(x[i])
-                group_y.append(y[i])
-                if sigma is not None:
-                    group_sigma.append(sigma[i])
-            else:
-                x_new.append(np.mean(group_x))
-                y_new.append(np.mean(group_y))
-
-                if sigma is not None:
-                    sigma_new.append(np.mean(group_sigma))
-
-                group_x = [x[i]]
-                group_y = [y[i]]
-                group_sigma = [sigma[i]] if sigma is not None else None
-
-        x_new.append(np.mean(group_x))
-        y_new.append(np.mean(group_y))
-
-        if sigma is not None:
-            sigma_new.append(np.mean(group_sigma))
-
-        x_new = np.asarray(x_new, dtype=float)
-        y_new = np.asarray(y_new, dtype=float)
-
-        if sigma is not None:
-            sigma_new = np.asarray(sigma_new, dtype=float)
-
-        return x_new, y_new, sigma_new
-
-    def update_points(self, x, y):
         x = np.asarray(x, dtype=float)
         y = np.asarray(y, dtype=float)
 
@@ -490,34 +430,490 @@ class CVSmoothingCubicSplineSVD:
         if x.size < 2:
             raise ValueError("At least two points are required.")
 
+        order = np.argsort(x)
+        x = x[order]
+        y = y[order]
+
         sigma = self._prepare_sigma(x.size)
-
-        x, y, sigma = self.merge_close_points(
-            x,
-            y,
-            sigma=sigma,
-            atol=1e-12,
-        )
-
-        if x.size < 2:
-            raise ValueError("At least two distinct x points are required.")
-
-        h = np.diff(x)
-
-        if np.any(h <= 0.0):
-            raise ValueError("x values must be strictly increasing after merging.")
+        sigma = sigma[order]
 
         if np.any(sigma <= 0.0):
             raise ValueError("All sigma values must be positive.")
 
+        h = np.diff(x)
+
+        if np.any(h <= 0.0):
+            raise ValueError("x values must be strictly increasing.")
+
         self.x = x
         self.y = y
         self.sigma = sigma
+        self.w = 1.0 / sigma**2
 
-        self.n = x.size
+        self.npts = x.size
+        self.nseg = x.size - 1
         self.h = h
 
         self._build_spline()
+
+    def __call__(self, x_eval, der: int = 0):
+        """
+        Evaluate spline or derivative.
+
+        Parameters
+        ----------
+        x_eval : float or array_like
+            Evaluation point or points.
+
+        der : int, default=0
+            Derivative order.
+
+            der = 0:
+                spline value
+
+            der = 1:
+                first derivative
+
+            der = 2:
+                second derivative
+
+            der = 3:
+                third derivative
+
+            der > 3:
+                zero
+        """
+
+        if self.x is None:
+            raise RuntimeError("Spline is not initialized. Call update_points(x, y) first.")
+
+        der = int(der)
+
+        if der < 0:
+            raise ValueError("Derivative order must be non-negative.")
+
+        scalar_input = np.isscalar(x_eval)
+        x_eval = np.asarray(x_eval, dtype=float)
+
+        idx = np.searchsorted(self.x, x_eval, side="right") - 1
+        idx = np.clip(idx, 0, self.nseg - 1)
+
+        t = x_eval - self.x[idx]
+
+        a = self.a[idx]
+        b = self.b[idx]
+        c = self.c[idx]
+        d = self.d[idx]
+
+        if der == 0:
+            out = a + b*t + c*t**2 + d*t**3
+        elif der == 1:
+            out = b + 2.0*c*t + 3.0*d*t**2
+        elif der == 2:
+            out = 2.0*c + 6.0*d*t
+        elif der == 3:
+            out = 6.0*d
+        else:
+            out = np.zeros_like(x_eval, dtype=float)
+
+        if scalar_input:
+            return float(out)
+
+        return out
+
+    # -------------------------------------------------------------------------
+    # Spline construction
+    # -------------------------------------------------------------------------
+
+    def _build_spline(self):
+        """
+        Build the smoothing spline.
+        """
+
+        if self.npts == 2:
+            self.z = self.y.copy()
+            self._build_natural_cubic_from_values(self.z)
+            return
+
+        if self.lam == 0.0:
+            self.z = self.y.copy()
+        else:
+            self.z = self._calculate_smoothed_values()
+
+        self._build_natural_cubic_from_values(self.z)
+
+    def _calculate_smoothed_values(self):
+        """
+        Calculate smoothed knot values z from
+
+            (W + lam*K) z = W y
+        """
+
+        q, r = self._build_reinsch_matrices()
+
+        # Compute K = Q R^{-1} Q^T.
+        #
+        # We do not explicitly invert R. Instead, solve
+        #
+        #     R X = Q^T
+        #
+        # by SVD.
+        rinv_qt = self._svd_solve(r, q.T)
+        k = q @ rinv_qt
+
+        lhs = np.diag(self.w) + self.lam * k
+        rhs = self.w * self.y
+
+        z = self._svd_solve(lhs, rhs)
+
+        return z
+
+    def _build_reinsch_matrices(self):
+        """
+        Build Q and R matrices for the natural cubic smoothing spline.
+
+        The roughness penalty can be written as
+
+            z^T K z
+
+        with
+
+            K = Q R^{-1} Q^T
+        """
+
+        n = self.npts
+        h = self.h
+
+        q = np.zeros((n, n - 2), dtype=float)
+
+        for i in range(n - 2):
+            q[i, i] = 1.0 / h[i]
+            q[i + 1, i] = -1.0 / h[i] - 1.0 / h[i + 1]
+            q[i + 2, i] = 1.0 / h[i + 1]
+
+        r = np.zeros((n - 2, n - 2), dtype=float)
+
+        for i in range(n - 2):
+            r[i, i] = (h[i] + h[i + 1]) / 3.0
+
+        for i in range(n - 3):
+            r[i, i + 1] = h[i + 1] / 6.0
+            r[i + 1, i] = h[i + 1] / 6.0
+
+        return q, r
+
+    def _build_natural_cubic_from_values(self, z):
+        """
+        Build natural cubic spline coefficients through values z.
+
+        On interval [x_i, x_{i+1}]:
+
+            S_i(x) = a_i + b_i*t + c_i*t^2 + d_i*t^3
+
+        where:
+
+            t = x - x_i
+        """
+
+        n = self.npts
+        h = self.h
+
+        if n == 2:
+            self.a = np.array([z[0]], dtype=float)
+            self.b = np.array([(z[1] - z[0]) / h[0]], dtype=float)
+            self.c = np.array([0.0], dtype=float)
+            self.d = np.array([0.0], dtype=float)
+            return
+
+        amat = np.zeros((n - 2, n - 2), dtype=float)
+        rhs = np.zeros(n - 2, dtype=float)
+
+        for i in range(1, n - 1):
+            row = i - 1
+
+            if i > 1:
+                amat[row, row - 1] = h[i - 1]
+
+            amat[row, row] = 2.0 * (h[i - 1] + h[i])
+
+            if i < n - 2:
+                amat[row, row + 1] = h[i]
+
+            rhs[row] = 6.0 * (
+                (z[i + 1] - z[i]) / h[i]
+                - (z[i] - z[i - 1]) / h[i - 1]
+            )
+
+        m_inner = self._svd_solve(amat, rhs)
+
+        m = np.zeros(n, dtype=float)
+        m[1:-1] = m_inner
+
+        self.a = z[:-1].copy()
+
+        self.b = (
+            (z[1:] - z[:-1]) / h
+            - h * (2.0*m[:-1] + m[1:]) / 6.0
+        )
+
+        self.c = m[:-1] / 2.0
+
+        self.d = (m[1:] - m[:-1]) / (6.0*h)
+
+    # -------------------------------------------------------------------------
+    # Helpers
+    # -------------------------------------------------------------------------
+
+    def _prepare_sigma(self, npts):
+        """
+        Prepare sigma array from self.all_sigma.
+
+        self.all_sigma can be either a scalar or an array with length npts.
+        """
+
+        sigma = np.asarray(self.all_sigma, dtype=float)
+
+        if sigma.ndim == 0:
+            return np.full(npts, float(sigma), dtype=float)
+
+        if sigma.ndim != 1:
+            raise ValueError("all_sigma must be either a scalar or a one-dimensional array.")
+
+        if sigma.size != npts:
+            raise ValueError("If all_sigma is an array, it must have the same length as x and y.")
+
+        return sigma.copy()
+
+    def _svd_solve(self, a, b):
+        """
+        Solve a*x = b using SVD pseudoinverse.
+
+        Singular values are accepted if
+
+            s_i > rcond * max(s)
+
+        Parameters
+        ----------
+        a : ndarray
+            Matrix.
+
+        b : ndarray
+            Right-hand side vector or matrix.
+        """
+
+        a = np.asarray(a, dtype=float)
+        b = np.asarray(b, dtype=float)
+
+        u, s, vt = np.linalg.svd(a, full_matrices=False)
+
+        if s.size == 0:
+            raise np.linalg.LinAlgError("SVD failed: no singular values found.")
+
+        cutoff = self.rcond * np.max(s)
+
+        sinv = np.zeros_like(s)
+        keep = s > cutoff
+        sinv[keep] = 1.0 / s[keep]
+
+        if b.ndim == 1:
+            return vt.T @ (sinv * (u.T @ b))
+
+        return vt.T @ (sinv[:, None] * (u.T @ b))
+
+
+# class CVSmoothingCubicSplineSVD:
+#     """
+#     Natural smoothing cubic spline using SVD-based linear solves.
+
+#     The spline minimizes
+
+#         lam * sum_i ((y_i - z_i)^2 / sigma_i^2)
+#         + (1.0 - lam) * integral (S''(x))^2 dx
+
+#     Interface
+#     ---------
+#     spline = CVSmoothingCubicSplineSVD(lam, all_sigma, rcond)
+
+#     spline.update_points(x, y)
+
+#     value = spline(x)
+#     der1  = spline(x, 1)
+#     der2  = spline(x, 2)
+#     der3  = spline(x, 3)
+
+#     Parameters
+#     ----------
+#     lam : float
+#         Smoothing/data-balance parameter in [0, 1].
+
+#         lam = 1:
+#             Interpolating natural cubic spline through y.
+
+#         lam = 0:
+#             Pure roughness minimization. The minimizer is not unique because
+#             any straight line has zero roughness. With the SVD pseudoinverse,
+#             the minimum-norm solution is selected.
+
+#     all_sigma : float or array_like
+#         If scalar, the same sigma is used for all points.
+#         If array-like, it must have the same length as x and y.
+
+#     rcond : float
+#         Relative singular-value cutoff for SVD pseudoinverse solves.
+#     """
+
+#     def __init__(self, lam, all_sigma, rcond):
+#         self.lam = float(lam)
+#         self.all_sigma = all_sigma
+#         self.rcond = float(rcond)
+
+#         if self.lam < 0.0 or self.lam > 1.0:
+#             raise ValueError("lam must be in the interval [0, 1].")
+
+#         if self.rcond < 0.0:
+#             raise ValueError("rcond must be non-negative.")
+
+#         self.x = None
+#         self.y = None
+#         self.sigma = None
+
+#         self.n = 0
+#         self.h = None
+
+#         self.z = None
+
+#         self.a = None
+#         self.b = None
+#         self.c = None
+#         self.d = None
+
+#     # -------------------------------------------------------------------------
+#     # Public interface
+#     # -------------------------------------------------------------------------
+
+#     def merge_close_points(self, x, y, sigma=None, atol=1e-12):
+#         """
+#         Merge duplicate or nearly duplicate x values.
+
+#         Points with distance <= atol are treated as one point.
+#         Their x, y, and optionally sigma values are averaged.
+
+#         Parameters
+#         ----------
+#         x : array_like
+#             Input x values.
+
+#         y : array_like
+#             Input y values.
+
+#         sigma : array_like or None
+#             Optional sigma values.
+
+#         atol : float
+#             Absolute tolerance for considering two x values identical.
+
+#         Returns
+#         -------
+#         x_new, y_new, sigma_new
+#             Merged arrays. sigma_new is None if sigma was None.
+#         """
+
+#         x = np.asarray(x, dtype=float)
+#         y = np.asarray(y, dtype=float)
+
+#         if sigma is not None:
+#             sigma = np.asarray(sigma, dtype=float)
+
+#         order = np.argsort(x)
+#         x = x[order]
+#         y = y[order]
+
+#         if sigma is not None:
+#             sigma = sigma[order]
+
+#         x_new = []
+#         y_new = []
+#         sigma_new = [] if sigma is not None else None
+
+#         group_x = [x[0]]
+#         group_y = [y[0]]
+#         group_sigma = [sigma[0]] if sigma is not None else None
+
+#         for i in range(1, x.size):
+#             if abs(x[i] - group_x[-1]) <= atol:
+#                 group_x.append(x[i])
+#                 group_y.append(y[i])
+#                 if sigma is not None:
+#                     group_sigma.append(sigma[i])
+#             else:
+#                 x_new.append(np.mean(group_x))
+#                 y_new.append(np.mean(group_y))
+
+#                 if sigma is not None:
+#                     sigma_new.append(np.mean(group_sigma))
+
+#                 group_x = [x[i]]
+#                 group_y = [y[i]]
+#                 group_sigma = [sigma[i]] if sigma is not None else None
+
+#         x_new.append(np.mean(group_x))
+#         y_new.append(np.mean(group_y))
+
+#         if sigma is not None:
+#             sigma_new.append(np.mean(group_sigma))
+
+#         x_new = np.asarray(x_new, dtype=float)
+#         y_new = np.asarray(y_new, dtype=float)
+
+#         if sigma is not None:
+#             sigma_new = np.asarray(sigma_new, dtype=float)
+
+#         return x_new, y_new, sigma_new
+
+#     def update_points(self, x, y):
+#         x = np.asarray(x, dtype=float)
+#         y = np.asarray(y, dtype=float)
+
+#         if x.ndim != 1:
+#             raise ValueError("x must be a one-dimensional array.")
+
+#         if y.ndim != 1:
+#             raise ValueError("y must be a one-dimensional array.")
+
+#         if x.size != y.size:
+#             raise ValueError("x and y must have the same length.")
+
+#         if x.size < 2:
+#             raise ValueError("At least two points are required.")
+
+#         sigma = self._prepare_sigma(x.size)
+
+#         x, y, sigma = self.merge_close_points(
+#             x,
+#             y,
+#             sigma=sigma,
+#             atol=1e-12,
+#         )
+
+#         if x.size < 2:
+#             raise ValueError("At least two distinct x points are required.")
+
+#         h = np.diff(x)
+
+#         if np.any(h <= 0.0):
+#             raise ValueError("x values must be strictly increasing after merging.")
+
+#         if np.any(sigma <= 0.0):
+#             raise ValueError("All sigma values must be positive.")
+
+#         self.x = x
+#         self.y = y
+#         self.sigma = sigma
+
+#         self.n = x.size
+#         self.h = h
+
+#         self._build_spline()
 
     # def update_points(self, x, y):
     #     """
@@ -572,261 +968,261 @@ class CVSmoothingCubicSplineSVD:
 
     #     self._build_spline()
 
-    def __call__(self, x_eval, der=0):
-        """
-        Evaluate spline or its derivative.
+    # def __call__(self, x_eval, der=0):
+    #     """
+    #     Evaluate spline or its derivative.
 
-        Parameters
-        ----------
-        x_eval : float or array_like
-            Evaluation point or points.
+    #     Parameters
+    #     ----------
+    #     x_eval : float or array_like
+    #         Evaluation point or points.
 
-        der : int, default=0
-            Derivative order.
+    #     der : int, default=0
+    #         Derivative order.
 
-            der = 0:
-                value
+    #         der = 0:
+    #             value
 
-            der = 1:
-                first derivative
+    #         der = 1:
+    #             first derivative
 
-            der = 2:
-                second derivative
+    #         der = 2:
+    #             second derivative
 
-            der = 3:
-                third derivative
+    #         der = 3:
+    #             third derivative
 
-            der > 3:
-                zero
+    #         der > 3:
+    #             zero
 
-        Returns
-        -------
-        float or ndarray
-            Spline value or derivative.
-        """
+    #     Returns
+    #     -------
+    #     float or ndarray
+    #         Spline value or derivative.
+    #     """
 
-        if self.x is None:
-            raise RuntimeError("Spline points are not initialized. Call update_points(x, y) first.")
+    #     if self.x is None:
+    #         raise RuntimeError("Spline points are not initialized. Call update_points(x, y) first.")
 
-        if der < 0:
-            raise ValueError("Derivative order must be non-negative.")
+    #     if der < 0:
+    #         raise ValueError("Derivative order must be non-negative.")
 
-        scalar_input = np.isscalar(x_eval)
-        x_eval = np.asarray(x_eval, dtype=float)
+    #     scalar_input = np.isscalar(x_eval)
+    #     x_eval = np.asarray(x_eval, dtype=float)
 
-        idx = np.searchsorted(self.x, x_eval, side="right") - 1
-        idx = np.clip(idx, 0, self.n - 2)
+    #     idx = np.searchsorted(self.x, x_eval, side="right") - 1
+    #     idx = np.clip(idx, 0, self.n - 2)
 
-        t = x_eval - self.x[idx]
+    #     t = x_eval - self.x[idx]
 
-        a = self.a[idx]
-        b = self.b[idx]
-        c = self.c[idx]
-        d = self.d[idx]
+    #     a = self.a[idx]
+    #     b = self.b[idx]
+    #     c = self.c[idx]
+    #     d = self.d[idx]
 
-        if der == 0:
-            out = a + b*t + c*t**2 + d*t**3
-        elif der == 1:
-            out = b + 2.0*c*t + 3.0*d*t**2
-        elif der == 2:
-            out = 2.0*c + 6.0*d*t
-        elif der == 3:
-            out = 6.0*d
-        else:
-            out = np.zeros_like(x_eval, dtype=float)
+    #     if der == 0:
+    #         out = a + b*t + c*t**2 + d*t**3
+    #     elif der == 1:
+    #         out = b + 2.0*c*t + 3.0*d*t**2
+    #     elif der == 2:
+    #         out = 2.0*c + 6.0*d*t
+    #     elif der == 3:
+    #         out = 6.0*d
+    #     else:
+    #         out = np.zeros_like(x_eval, dtype=float)
 
-        if scalar_input:
-            return float(out)
+    #     if scalar_input:
+    #         return float(out)
 
-        return out
+    #     return out
 
-    # -------------------------------------------------------------------------
-    # Spline construction
-    # -------------------------------------------------------------------------
+    # # -------------------------------------------------------------------------
+    # # Spline construction
+    # # -------------------------------------------------------------------------
 
-    def _build_spline(self):
-        """
-        Build smoothing spline.
-        """
+    # def _build_spline(self):
+    #     """
+    #     Build smoothing spline.
+    #     """
 
-        if self.n == 2:
-            self.z = self.y.copy()
-            self._build_natural_cubic(self.z)
-            return
+    #     if self.n == 2:
+    #         self.z = self.y.copy()
+    #         self._build_natural_cubic(self.z)
+    #         return
 
-        if self.lam == 1.0:
-            self.z = self.y.copy()
-        else:
-            self.z = self._calculate_smoothed_values()
+    #     if self.lam == 1.0:
+    #         self.z = self.y.copy()
+    #     else:
+    #         self.z = self._calculate_smoothed_values()
 
-        self._build_natural_cubic(self.z)
+    #     self._build_natural_cubic(self.z)
 
-    def _calculate_smoothed_values(self):
-        """
-        Calculate smoothed knot values z.
-        """
+    # def _calculate_smoothed_values(self):
+    #     """
+    #     Calculate smoothed knot values z.
+    #     """
 
-        q, r = self._build_qr_matrices()
+    #     q, r = self._build_qr_matrices()
 
-        rinv_qt = self._svd_solve(r, q.T)
+    #     rinv_qt = self._svd_solve(r, q.T)
 
-        k = q @ rinv_qt
+    #     k = q @ rinv_qt
 
-        w_diag = 1.0 / (self.sigma**2)
+    #     w_diag = 1.0 / (self.sigma**2)
 
-        lhs = self.lam * np.diag(w_diag) + (1.0 - self.lam) * k
-        rhs = self.lam * w_diag * self.y
+    #     lhs = self.lam * np.diag(w_diag) + (1.0 - self.lam) * k
+    #     rhs = self.lam * w_diag * self.y
 
-        z = self._svd_solve(lhs, rhs)
+    #     z = self._svd_solve(lhs, rhs)
 
-        return z
+    #     return z
 
-    def _build_qr_matrices(self):
-        """
-        Build Reinsch Q and R matrices for a natural cubic spline.
-        """
+    # def _build_qr_matrices(self):
+    #     """
+    #     Build Reinsch Q and R matrices for a natural cubic spline.
+    #     """
 
-        n = self.n
-        h = self.h
+    #     n = self.n
+    #     h = self.h
 
-        q = np.zeros((n, n - 2), dtype=float)
+    #     q = np.zeros((n, n - 2), dtype=float)
 
-        for i in range(n - 2):
-            q[i, i] = 1.0 / h[i]
-            q[i + 1, i] = -1.0 / h[i] - 1.0 / h[i + 1]
-            q[i + 2, i] = 1.0 / h[i + 1]
+    #     for i in range(n - 2):
+    #         q[i, i] = 1.0 / h[i]
+    #         q[i + 1, i] = -1.0 / h[i] - 1.0 / h[i + 1]
+    #         q[i + 2, i] = 1.0 / h[i + 1]
 
-        r = np.zeros((n - 2, n - 2), dtype=float)
+    #     r = np.zeros((n - 2, n - 2), dtype=float)
 
-        for i in range(n - 2):
-            r[i, i] = (h[i] + h[i + 1]) / 3.0
+    #     for i in range(n - 2):
+    #         r[i, i] = (h[i] + h[i + 1]) / 3.0
 
-        for i in range(n - 3):
-            r[i, i + 1] = h[i + 1] / 6.0
-            r[i + 1, i] = h[i + 1] / 6.0
+    #     for i in range(n - 3):
+    #         r[i, i + 1] = h[i + 1] / 6.0
+    #         r[i + 1, i] = h[i + 1] / 6.0
 
-        return q, r
+    #     return q, r
 
-    def _build_natural_cubic(self, z):
-        """
-        Build natural cubic interpolation coefficients through smoothed values z.
+    # def _build_natural_cubic(self, z):
+    #     """
+    #     Build natural cubic interpolation coefficients through smoothed values z.
 
-        On interval [x_i, x_{i+1}], the spline is
+    #     On interval [x_i, x_{i+1}], the spline is
 
-            S_i(x) = a_i + b_i t + c_i t^2 + d_i t^3
+    #         S_i(x) = a_i + b_i t + c_i t^2 + d_i t^3
 
-        with
+    #     with
 
-            t = x - x_i
-        """
+    #         t = x - x_i
+    #     """
 
-        n = self.n
-        h = self.h
+    #     n = self.n
+    #     h = self.h
 
-        if n == 2:
-            self.a = np.array([z[0]], dtype=float)
-            self.b = np.array([(z[1] - z[0]) / h[0]], dtype=float)
-            self.c = np.array([0.0], dtype=float)
-            self.d = np.array([0.0], dtype=float)
-            return
+    #     if n == 2:
+    #         self.a = np.array([z[0]], dtype=float)
+    #         self.b = np.array([(z[1] - z[0]) / h[0]], dtype=float)
+    #         self.c = np.array([0.0], dtype=float)
+    #         self.d = np.array([0.0], dtype=float)
+    #         return
 
-        amat = np.zeros((n - 2, n - 2), dtype=float)
-        rhs = np.zeros(n - 2, dtype=float)
+    #     amat = np.zeros((n - 2, n - 2), dtype=float)
+    #     rhs = np.zeros(n - 2, dtype=float)
 
-        for i in range(1, n - 1):
-            row = i - 1
+    #     for i in range(1, n - 1):
+    #         row = i - 1
 
-            if i > 1:
-                amat[row, row - 1] = h[i - 1]
+    #         if i > 1:
+    #             amat[row, row - 1] = h[i - 1]
 
-            amat[row, row] = 2.0 * (h[i - 1] + h[i])
+    #         amat[row, row] = 2.0 * (h[i - 1] + h[i])
 
-            if i < n - 2:
-                amat[row, row + 1] = h[i]
+    #         if i < n - 2:
+    #             amat[row, row + 1] = h[i]
 
-            rhs[row] = 6.0 * (
-                (z[i + 1] - z[i]) / h[i]
-                - (z[i] - z[i - 1]) / h[i - 1]
-            )
+    #         rhs[row] = 6.0 * (
+    #             (z[i + 1] - z[i]) / h[i]
+    #             - (z[i] - z[i - 1]) / h[i - 1]
+    #         )
 
-        m_inner = self._svd_solve(amat, rhs)
+    #     m_inner = self._svd_solve(amat, rhs)
 
-        m = np.zeros(n, dtype=float)
-        m[1:-1] = m_inner
+    #     m = np.zeros(n, dtype=float)
+    #     m[1:-1] = m_inner
 
-        self.a = z[:-1].copy()
+    #     self.a = z[:-1].copy()
 
-        self.b = (
-            (z[1:] - z[:-1]) / h
-            - h * (2.0*m[:-1] + m[1:]) / 6.0
-        )
+    #     self.b = (
+    #         (z[1:] - z[:-1]) / h
+    #         - h * (2.0*m[:-1] + m[1:]) / 6.0
+    #     )
 
-        self.c = m[:-1] / 2.0
+    #     self.c = m[:-1] / 2.0
 
-        self.d = (m[1:] - m[:-1]) / (6.0*h)
+    #     self.d = (m[1:] - m[:-1]) / (6.0*h)
 
-    # -------------------------------------------------------------------------
-    # Helpers
-    # -------------------------------------------------------------------------
+    # # -------------------------------------------------------------------------
+    # # Helpers
+    # # -------------------------------------------------------------------------
 
-    def _prepare_sigma(self, n):
-        """
-        Prepare sigma array.
-        """
+    # def _prepare_sigma(self, n):
+    #     """
+    #     Prepare sigma array.
+    #     """
 
-        sigma = np.asarray(self.all_sigma, dtype=float)
+    #     sigma = np.asarray(self.all_sigma, dtype=float)
 
-        if sigma.ndim == 0:
-            return np.full(n, float(sigma), dtype=float)
+    #     if sigma.ndim == 0:
+    #         return np.full(n, float(sigma), dtype=float)
 
-        if sigma.ndim != 1:
-            raise ValueError("all_sigma must be either a scalar or a one-dimensional array.")
+    #     if sigma.ndim != 1:
+    #         raise ValueError("all_sigma must be either a scalar or a one-dimensional array.")
 
-        if sigma.size != n:
-            raise ValueError("If all_sigma is an array, it must have the same length as x and y.")
+    #     if sigma.size != n:
+    #         raise ValueError("If all_sigma is an array, it must have the same length as x and y.")
 
-        return sigma.copy()
+    #     return sigma.copy()
 
-    def _svd_solve(self, a, b):
-        """
-        Solve a x = b by SVD pseudoinverse.
+    # def _svd_solve(self, a, b):
+    #     """
+    #     Solve a x = b by SVD pseudoinverse.
 
-        Singular values are accepted if
+    #     Singular values are accepted if
 
-            s_i > rcond * max(s)
+    #         s_i > rcond * max(s)
 
-        Parameters
-        ----------
-        a : ndarray
-            Matrix.
+    #     Parameters
+    #     ----------
+    #     a : ndarray
+    #         Matrix.
 
-        b : ndarray
-            Right-hand side.
+    #     b : ndarray
+    #         Right-hand side.
 
-        Returns
-        -------
-        ndarray
-            Pseudoinverse solution.
-        """
+    #     Returns
+    #     -------
+    #     ndarray
+    #         Pseudoinverse solution.
+    #     """
 
-        a = np.asarray(a, dtype=float)
-        b = np.asarray(b, dtype=float)
+    #     a = np.asarray(a, dtype=float)
+    #     b = np.asarray(b, dtype=float)
 
-        u, s, vt = np.linalg.svd(a, full_matrices=False)
+    #     u, s, vt = np.linalg.svd(a, full_matrices=False)
 
-        if s.size == 0:
-            raise np.linalg.LinAlgError("SVD failed: no singular values found.")
+    #     if s.size == 0:
+    #         raise np.linalg.LinAlgError("SVD failed: no singular values found.")
 
-        cutoff = self.rcond * np.max(s)
+    #     cutoff = self.rcond * np.max(s)
 
-        sinv = np.zeros_like(s)
-        keep = s > cutoff
-        sinv[keep] = 1.0 / s[keep]
+    #     sinv = np.zeros_like(s)
+    #     keep = s > cutoff
+    #     sinv[keep] = 1.0 / s[keep]
 
-        if b.ndim == 1:
-            return vt.T @ (sinv * (u.T @ b))
+    #     if b.ndim == 1:
+    #         return vt.T @ (sinv * (u.T @ b))
 
-        return vt.T @ (sinv[:, None] * (u.T @ b))
+    #     return vt.T @ (sinv[:, None] * (u.T @ b))
 
 # ==============================================================================
 # RBF surface model, adapted from analyse-2D-surface.py
@@ -839,7 +1235,7 @@ class CVSmoothingCubicSplineSVD:
 class Axis:
     """One collective variable axis, represented internally on the scaled interval [0, 1]."""
 
-    def __init__(self, cvmin, cvmax, nrbfs, npts, label, name, stype, maxmove):
+    def __init__(self, cvmin, cvmax, nrbfs, npts, label):
         
         if cvmax <= cvmin:
             raise ValueError("cvmax must be larger than cvmin")
@@ -852,20 +1248,11 @@ class Axis:
         self.cvmax      = float(cvmax)
         self.nrbfs      = int(nrbfs)
         self.npts       = int(npts)
-        self.label      = label
-        self.name       = name
-        self.type       = stype
-        self.maxmove    = maxmove  
-
+        self.label      = str(label)
 
         self.range = self.cvmax - self.cvmin
         self.width = 1.0 / self.nrbfs
         self.width_scale = 1.0
-
-        if self.maxmove is None:
-            self.maxmove = self.range / 10.0
-
-        self.smaxmove = self.maxmove / self.range
 
         self.centers = np.arange(self.nrbfs + 1, dtype=float) / self.nrbfs
 
@@ -1141,36 +1528,79 @@ class EnergySurface2D:
     
 # ------------------------------------------------------------------------------
 
-    def plot_fes_with_path(self, title: str = None, 
-                           path_x: np.ndarray = None, path_y: np.ndarray = None, 
-                           filename: str=None, show: bool = None, figsize = None, dpi: int = 300) -> None:
+    def plot_fes_with_path(self, title: str = None,
+                            path_x: np.ndarray = None, path_y: np.ndarray = None,
+                            path_types: np.ndarray = None,
+                            filename: str = None, show: bool = None,
+                            figsize = None, dpi: int = 300, legend: bool = False) -> None:
 
-        cmap, norm = self.make_colormap()
-        cmax = np.ceil(self.zmax / self.contour_spacing) * self.contour_spacing
-        levels = np.arange(0.0, cmax + self.contour_spacing, self.contour_spacing)
+            cmap, norm = self.make_colormap()
+            cmax = np.ceil(self.zmax / self.contour_spacing) * self.contour_spacing
+            levels = np.arange(0.0, cmax + self.contour_spacing, self.contour_spacing)
 
-        fig, ax = plt.subplots(figsize=figsize)
-        im = ax.pcolormesh(self.X, self.Y, self.Z, shading="auto", cmap=cmap, norm=norm)
-        fig.colorbar(im, ax=ax, label=self.ene_label)
-        ax.contour(self.X, self.Y, self.Z, levels=levels, colors="black", linewidths=0.5)
+            bead_colors = {
+                "flexible":  "green",
+                "terminal":  "green",
+                "permanent": "black",
+                "kink":      "orange",
+            }
 
-        if( path_x is not None and path_y is not None):
-            ax.plot(path_x, path_y, ".-", color="white", markersize=5, linewidth=1.0)
-        
-        ax.set_xlabel(self.x_axis.label)
-        ax.set_ylabel(self.y_axis.label)
-        ax.set_title(title)
+            fig, ax = plt.subplots(figsize=figsize)
+            im = ax.pcolormesh(self.X, self.Y, self.Z, shading="auto", cmap=cmap, norm=norm)
+            fig.colorbar(im, ax=ax, label=self.ene_label)
+            ax.contour(self.X, self.Y, self.Z, levels=levels, colors="black", linewidths=0.5)
 
-        ax.set_aspect("equal", adjustable="box")
-        fig.tight_layout()
+            if path_x is not None and path_y is not None:
+                path_x = np.asarray(path_x, dtype=float)
+                path_y = np.asarray(path_y, dtype=float)
 
-        if filename is not None:
-            fig.savefig(filename, dpi=dpi)
+                if path_x.shape != path_y.shape:
+                    raise ValueError("path_x and path_y must have the same shape")
 
-        if show:
-            plt.show()
-        
-        plt.close(fig)
+                # Draw the connecting string first.  Bead markers are drawn later so
+                # that their colours are not hidden by the line.
+                ax.plot(path_x, path_y, "-", color="white", linewidth=1.0, zorder=4)
+
+                if path_types is None:
+                    path_types = np.full(path_x.shape, "unknown", dtype=object)
+                else:
+                    path_types = np.asarray(path_types, dtype=object)
+                    if path_types.shape != path_x.shape:
+                        raise ValueError("path_types must have the same shape as path_x and path_y")
+
+                # Plot one bead type at a time.  This gives a clean legend and keeps
+                # the type-to-colour mapping local to the plotting routine.
+                for bead_type in ("flexible", "terminal", "permanent", "kink"):
+                    mask = path_types == bead_type
+                    if not np.any(mask):
+                        continue
+                    ax.scatter(
+                        path_x[mask], path_y[mask],
+                        s=28,
+                        c=bead_colors[bead_type],
+                        edgecolors="white",
+                        linewidths=0.6,
+                        label=bead_type,
+                        zorder=5,
+                    )
+
+                if legend:
+                    ax.legend(loc="best", frameon=True)
+
+            ax.set_xlabel(self.x_axis.label)
+            ax.set_ylabel(self.y_axis.label)
+            ax.set_title(title)
+
+            ax.set_aspect("equal", adjustable="box")
+            fig.tight_layout()
+
+            if filename is not None:
+                fig.savefig(filename, dpi=dpi)
+
+            if show:
+                plt.show()
+
+            plt.close(fig)
 
 # ==============================================================================
 # String-method utilities
@@ -1184,6 +1614,8 @@ class Bead:
     def __init__(self, stmpath: STMPath):
 
         self.ncvs       = stmpath.ncvs
+
+        self.type       = None
 
         self.Pos        = np.zeros(self.ncvs)               #  bead position, scaled
         self.dCVdAlpha  = np.zeros(self.ncvs)
@@ -1210,8 +1642,18 @@ class Bead:
 
     def UpdatePositionAdaBelief(self,step,beta1,beta2,mingnormeps,cvs):
 
-        self.mt[:] = beta1 * self.mt[:] + (1.0 - beta1) * self.pGrad[:]
-        self.vt[:] = beta2 * self.vt[:] + (1.0 - beta2) * ((self.pGrad[:] - self.mt[:])*(self.pGrad[:] - self.mt[:]) + mingnormeps)
+        if self.type == "permanent":
+            return
+        
+        grad = np.zeros(self.ncvs)
+
+        if self.type == "terminal" or self.type == "kink":
+            grad[:] = self.Grad[:]  # gradient descent move
+        else:
+            grad[:] = self.pGrad[:] # perpedicular move
+
+        self.mt[:] = beta1 * self.mt[:] + (1.0 - beta1) * grad[:]
+        self.vt[:] = beta2 * self.vt[:] + (1.0 - beta2) * ((grad[:] - self.mt[:])*(grad[:] - self.mt[:]) + mingnormeps)
 
         self.beta1t = self.beta1t * beta1
         self.beta2t = self.beta2t * beta2
@@ -1223,10 +1665,10 @@ class Bead:
 
             dm = step * mthat/(math.sqrt(vthat)+mingnormeps)
 
-            if (cvs[i].smaxmove <= 0) or (math.fabs(dm) < cvs[i].smaxmove):
+            if (cvs[i].smaxmov <= 0) or (math.fabs(dm) < cvs[i].smaxmov):
                 self.Pos[i] = self.Pos[i] - dm
             else:
-                self.Pos[i] = self.Pos[i] - cvs[i].smaxmove*math.copysign(1.0,dm)
+                self.Pos[i] = self.Pos[i] - cvs[i].smaxmov*math.copysign(1.0,dm)
 
 # ==============================================================================
 # STMPath
@@ -1236,19 +1678,17 @@ class STMPath:
     def __init__(self, args):
 
         # path parameters
-        self.PathName               = args.pathname
-        self.ncvs                   = 2
-        self.nbeads                 = args.nbeads
-        self.freeterminals          = args.freeterminals    # are path ends permanent?
-        self.segment_discretization = args.segdisc          # path segment discretization
+        self.ncvs           = 2
+        # self.nbeads       -> load_path_file()
+        # self.PathName     -> load_path_file()
 
         # axes/CVs
         self.cvs = []
 
-        x_axis = Axis(args.cv1min,args.cv1max,args.cv1nrbfs,args.cv1nbins,args.cv1label,args.cv1name,args.cv1type,args.cv1maxmove)
+        x_axis = Axis(args.cv1min,args.cv1max,args.cv1nrbfs,args.cv1nbins,args.cv1label)
         self.cvs.append(x_axis)
 
-        y_axis = Axis(args.cv2min,args.cv2max,args.cv2nrbfs,args.cv2nbins,args.cv2label,args.cv2name,args.cv2type,args.cv2maxmove)
+        y_axis = Axis(args.cv2min,args.cv2max,args.cv2nrbfs,args.cv2nbins,args.cv2label)
         self.cvs.append(y_axis)
 
         self.surface = EnergySurface2D(x_axis,y_axis,args.enelabel,args.zmax,args.contour_spacing)
@@ -1282,40 +1722,38 @@ class STMPath:
         elif args.cvspline == 2:
             print(f"  >>> Smoothing Cubic Spline via SVD")
             print(f"      Lambda: {args.spline_lambda:10.5f}")
-            print(f"      Sigma:  {args.spline_sigma:10.5f}")
-            print(f"      RCond:  {args.rcond:10.5f}")
+            print(f"      RCond:  {args.spline_rcond:10.6e}")
             self.cv_splines =  [
-                CVSmoothingCubicSplineSVD(lam=args.spline_lambda, all_sigma=args.spline_sigma,rcond=1e-6)
+                CVSmoothingCubicSplineSVD(lam=args.spline_lambda, all_sigma=1.0, rcond=args.spline_rcond)
                 for _ in range(self.ncvs)
             ]
         else:
             print(f"  >>> Interpolating Cubic Spline")
             self.cv_splines =  [CVSplineInterpolatingCubic() for _ in range(self.ncvs)]
 
+        self.PathParamMode = args.path_param_mode
+
         print("")
         print("# Initial path ...")
 
         # read initial path
-        input_beads = self.create_initial_beads_from_args(args)
+        input_beads = self.load_path_file(args.input_path)
 
         # plot the user initial path
         if args.plot :
-            path_x, path_y = self.beads_to_xy_arrays(input_beads)
+            path_x, path_y, path_types = self.beads_to_xy_arrays(input_beads)
             self.surface.plot_fes_with_path(title="Initial Path - User Input",
-                path_x=path_x, path_y=path_y,
+                path_x=path_x, path_y=path_y, path_types=path_types,
                 filename=f"{args.plot_prefix}_path_0000_a_initial-user.png", show=args.show, figsize=args.figsize, dpi=args.dpi)
 
         #  generate completed path
-        self.beads = self.generate_beads_from_input_beads(
-                        input_beads=input_beads,
-                        num_beads=self.nbeads,
-                    )
+        self.beads = self.generate_beads_from_input_beads(input_beads)
 
         # plot the user completed path
         if args.plot :
-            path_x, path_y = self.beads_to_xy_arrays(self.beads)
+            path_x, path_y, path_types = self.beads_to_xy_arrays(self.beads)
             self.surface.plot_fes_with_path(title="Initial Path - Full Path",
-                path_x=path_x, path_y=path_y,
+                path_x=path_x, path_y=path_y, path_types=path_types,
                 filename=f"{args.plot_prefix}_path_0000_b_initial-full.png", show=args.show, figsize=args.figsize, dpi=args.dpi)
 
         # setup AdaBelief
@@ -1326,7 +1764,7 @@ class STMPath:
 
         # smoothing, reparameterization
         self.SmoothInterval     = args.smoothinterval
-        self.SmoothingFac       = args.smoothingfac
+        self.SmoothingFac       = args.sfac
         self.ReparamInterval    = args.reparaminterval
 
         # STM
@@ -1336,7 +1774,7 @@ class STMPath:
         # run initial statistics
         self.init_stm_statistics(args)
         
-# ------------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
 
     def stm_optimize(self,args):
 
@@ -1379,13 +1817,6 @@ class STMPath:
             # update bead positions
             self.update_all_positions()
             self.smooth_all_positions()
-
-            if args.plot :
-                path_x, path_y = self.beads_to_xy_arrays(self.beads)
-                self.surface.plot_fes_with_path(title=f"Intermediate Path #{self.STMStep:04d}",
-                    path_x=path_x, path_y=path_y,
-                    filename=f"{args.plot_prefix}_path_b_{self.STMStep:04d}_c.png", show=args.show, figsize=args.figsize, dpi=args.dpi)
-
             self.reparametrize_all_positions()
             self.check_boundaries_of_beads(self.beads)
 
@@ -1402,9 +1833,9 @@ class STMPath:
                 self.write_trajectory_snapshot(ftraj)
 
             if args.plot :
-                path_x, path_y = self.beads_to_xy_arrays(self.beads)
+                path_x, path_y, path_types = self.beads_to_xy_arrays(self.beads)
                 self.surface.plot_fes_with_path(title=f"Intermediate Path #{self.STMStep:04d}",
-                    path_x=path_x, path_y=path_y,
+                    path_x=path_x, path_y=path_y, path_types=path_types,
                     filename=f"{args.plot_prefix}_path_{self.STMStep:04d}_c.png", show=args.show, figsize=args.figsize, dpi=args.dpi)
 
             if self.TermCrit == 5:
@@ -1427,9 +1858,9 @@ class STMPath:
                 self.print_path_summary_data(fout=fsum)
 
         if args.plot:
-            path_x, path_y = self.beads_to_xy_arrays(self.beads)
+            path_x, path_y, path_types = self.beads_to_xy_arrays(self.beads)
             self.surface.plot_fes_with_path(title="Final Path",
-                path_x=path_x, path_y=path_y,
+                path_x=path_x, path_y=path_y, path_types=path_types,
                 filename=f"{args.plot_prefix}_path_{self.STMStep:04d}_d_final.png", show=args.show, figsize=args.figsize, dpi=args.dpi)
 
         if args.output_path is not None:
@@ -1442,78 +1873,11 @@ class STMPath:
         if args.trajectory is not None:
             ftraj.close()
 
-# ------------------------------------------------------------------------------
+# ==============================================================================
+# path manipulation
+# ==============================================================================
 
-    def update_all_positions(self):
-
-        # backup old positions
-        for bead in self.beads:
-            bead.OPos[:] = bead.Pos[:]
-
-        self.OldCPathLength = self.CurrentPathLength
-
-        self.STMStep += 1
-
-        # update positions - for terminals
-        if self.freeterminals == True:
-            self.beads[0].UpdatePositionAdaBelief(self.StepSize,self.AdamB1,self.AdamB2,self.MinGNormEps,self.cvs)
-            self.beads[-1].UpdatePositionAdaBelief(self.StepSize,self.AdamB1,self.AdamB2,self.MinGNormEps,self.cvs)
-        
-        # for the rest of the path
-        for bead in self.beads[1:-1]:
-            bead.UpdatePositionAdaBelief(self.StepSize,self.AdamB1,self.AdamB2,self.MinGNormEps,self.cvs)
-
-# ------------------------------------------------------------------------------
-
-    def smooth_all_positions(self):
-
-        if (self.SmoothInterval == 0) or (self.STMStep % self.SmoothInterval != 0 ):
-            return;
-    
-        old_pos = np.array([bead.Pos.copy() for bead in self.beads])
-
-        for i in range(1, self.nbeads - 1):
-            self.beads[i].Pos[:] = (
-                (1.0 - self.SmoothingFac) * old_pos[i]
-                + 0.5 * self.cSmoothingFac * (old_pos[i - 1] + old_pos[i + 1])
-            )
-        print("smooth")
-
-# ------------------------------------------------------------------------------
-
-    def reparametrize_all_positions(self):
-
-        if (self.ReparamInterval == 0) or (self.STMStep % self.ReparamInterval != 0 ):
-            return;
-
-        alphas1 = np.array([bead.Alpha for bead in self.beads], dtype=float)
-
-        self.optimize_path(self.beads)
-
-        # generate evenly distributed set of alphas
-        for i in range(self.nbeads):
-            self.beads[i].Alpha = float(i) / float(self.nbeads-1)
-
-        self.beads[0].Alpha = 0.0
-        self.beads[-1].Alpha = 1.0
-
-        alphas2 = np.array([bead.Alpha for bead in self.beads], dtype=float)
-        print(alphas2-alphas1)
-
-        # update positions along the path based on new alphas
-        for cv in range(self.ncvs):
-            # if free terminals, update their positions
-            if self.freeterminals == True:
-                self.beads[0].Pos[cv]  = self.cv_splines[cv](0.0)
-                self.beads[-1].Pos[cv] = self.cv_splines[cv](1.0)
-            
-            # redistribute other beads
-            for bead in self.beads[1:-1]:
-                bead.Pos[cv] = self.cv_splines[cv](bead.Alpha)
-
-# ------------------------------------------------------------------------------
-
-    def optimize_path(self, beads):
+    def parametrize_path(self, beads):
         """
         Determine Alpha values according to bead Positions.
 
@@ -1521,6 +1885,9 @@ class STMPath:
         ----------
         beads : list[Bead]
             Beads defining the path. Each bead stores bead.Pos.
+
+        self.PathParamMode :  0 - "chord-length" parameterization
+                              1 - centripetal parameterization
 
         Returns
         -------
@@ -1535,11 +1902,15 @@ class STMPath:
         # Initial path length from linear interpolation.
         # ---------------------------------------------------------------------
 
-        total_length = 0.0
+        total_length      = 0.0
+        total_length_sqrt = 0.0
 
         for b in range(1, len(beads)):
             diff = beads[b].Pos - beads[b - 1].Pos
-            total_length += np.linalg.norm(diff)
+            slen = np.linalg.norm(diff)
+
+            total_length      += slen
+            total_length_sqrt += math.sqrt(slen)
 
         if total_length == 0.0:
             raise RuntimeError("path has zero length")
@@ -1551,320 +1922,180 @@ class STMPath:
         beads[0].Alpha = 0.0
 
         path_length = 0.0
+        path_length_sqrt = 0.0
 
         for b in range(1, len(beads) - 1):
             diff = beads[b].Pos - beads[b - 1].Pos
-            segment_length = np.linalg.norm(diff)
+            slen = np.linalg.norm(diff)
 
-            if segment_length == 0.0:
-                segment_length = 1e-7
-                print("warning: path segment has zero length")
-                # raise RuntimeError("path segment has zero length")
+            if slen == 0.0:
+                raise RuntimeError("path segment has zero length")
+            
+            path_length      += slen
+            path_length_sqrt += math.sqrt(slen)
 
-            path_length += segment_length
-            beads[b].Alpha = path_length / total_length
+            if self.PathParamMode == 1:
+                beads[b].Alpha = path_length_sqrt / total_length_sqrt
+            else:
+                beads[b].Alpha = path_length / total_length
 
         beads[-1].Alpha = 1.0
 
         # ---------------------------------------------------------------------
-        # Iteratively improve the alpha values using spline arc length.
+        # Build the splines
         # ---------------------------------------------------------------------
 
-        for iter in range(1000):
+        alphas = np.array([bead.Alpha for bead in beads], dtype=float)
 
-            # Build one spline for each CV coordinate:
-            #
-            #   CV_i = CV_i(alpha)
-            #
-            alphas = np.array([bead.Alpha for bead in beads], dtype=float)
-
-            for i in range(self.ncvs):
-                values = np.array([bead.Pos[i] for bead in beads], dtype=float)
-                self.cv_splines[i].update_points(alphas, values)
-
-            previous_length = total_length
-
-            # Determine current spline path length.
-            segment_lengths = np.zeros(len(beads) - 1, dtype=float)
-            for b in range(1, len(beads)):
-                segment_lengths[b - 1] = self.get_segment_length(
-                    beads[b - 1].Alpha,
-                    beads[b].Alpha,
-                )
-            total_length = float(np.sum(segment_lengths))
-
-            if abs(total_length - previous_length) < 1.0e-7:
-                return total_length
-
-            # Determine new alpha values.
-            cum_lengths = np.concatenate(([0.0], np.cumsum(segment_lengths)))
-
-            for b, bead in enumerate(beads):
-                bead.Alpha = cum_lengths[b] / total_length
-
-            beads[0].Alpha = 0.0
-            beads[-1].Alpha = 1.0
+        for i in range(self.ncvs):
+            values = np.array([bead.Pos[i] for bead in beads], dtype=float)
+            self.cv_splines[i].update_points(alphas, values)
 
         return total_length
 
-# ------------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
 
-    def get_segment_length(self, alpha1, alpha2):
-        alphas = np.linspace(
-            alpha1,
-            alpha2,
-            self.segment_discretization + 1,
-        )
+    def update_all_positions(self):
 
-        points = np.column_stack([
-            self.cv_splines[i](alphas)
-            for i in range(self.ncvs)
-        ])
+        # backup old positions
+        for bead in self.beads:
+            bead.OPos[:] = bead.Pos[:]
 
-        diffs = points[1:] - points[:-1]
-        return np.sum(np.linalg.norm(diffs, axis=1))
+        self.OldCPathLength = self.CurrentPathLength
 
+        self.STMStep += 1
 
-# ------------------------------------------------------------------------------
+        # update positions
+        for bead in self.beads:
+            # bead types are handled in UpdatePositionAdaBelief()
+            bead.UpdatePositionAdaBelief(self.StepSize,self.AdamB1,self.AdamB2,self.MinGNormEps,self.cvs)
+            
+    # --------------------------------------------------------------------------
 
-    def create_initial_beads_from_args(self, args):
-        """
-        Create initial STM beads from command-line arguments.
+    def smooth_all_positions(self):
 
-        The input coordinates are expected in physical EnergySurface2D
-        coordinates, for example:
+        if (self.SmoothInterval == 0) or (self.STMStep % self.SmoothInterval != 0 ):
+            return;
+    
+        old_pos = np.array([bead.Pos.copy() for bead in self.beads])
 
-            --initial-cv1 "-3.0,-2.5,-0.5,1.0,3.2"
-            --initial-cv2 "-2.0,-1.5,-1.5,0.0,2.0"
+        for i in range(1, self.nbeads - 1):
+            if self.beads[i].type == "permanent" or self.beads[i].type == "kink":
+                # skip kink or permanent beads 
+                continue
 
-        The returned bead positions are stored in scaled EnergySurface2D
-        coordinates:
-
-            u = surface.to_scaled([cv1, cv2])
-
-        The bead alpha values are intentionally left uninitialized.
-        They are later assigned by optimize_path().
-        """
-
-        cv1_values = args.initial_cv1
-        cv2_values = args.initial_cv2
-
-        if len(cv1_values) != len(cv2_values):
-            raise ValueError(
-                "--initial-cv1 and --initial-cv2 must contain the same number "
-                f"of values, got {len(cv1_values)} and {len(cv2_values)}"
+            self.beads[i].Pos[:] = (
+                (1.0 - self.SmoothingFac) * old_pos[i]
+                + 0.5 * self.cSmoothingFac * (old_pos[i - 1] + old_pos[i + 1])
             )
 
-        if len(cv1_values) < 2:
-            raise ValueError("At least two initial points are required")
+    # --------------------------------------------------------------------------
 
-        beads = []
+    def reparametrize_all_positions(self):
 
-        for cv1, cv2 in zip(cv1_values, cv2_values):
-            pos_scaled = self.surface.to_scaled([cv1, cv2])
-            bead = Bead(self)
-            bead.Pos = pos_scaled
-            beads.append(bead)
-
-        return beads
+        if (self.ReparamInterval == 0) or (self.STMStep % self.ReparamInterval != 0 ):
+            return;
     
-# ------------------------------------------------------------------------------
+        self.parametrize_path(self.beads)
 
-    def generate_beads_from_input_beads(
-        self,
-        input_beads,
-        num_beads,
-        check_boundaries=True
-    ):
-        """
-        Generate the final uniformly distributed STM bead list from user input beads.
+        # generate evenly distributed set of alphas
+        for i in range(self.nbeads):
+            self.beads[i].Alpha = float(i) / float(self.nbeads-1)
 
-        This is the Python analogue of the C++ setup logic:
-        
-            2. Optimize/reparametrize the input path.
-            3. Generate NumOfBeads beads from the spline path.
-            4. Check/correct boundaries.
-            5. Re-optimize the corrected path.
-            6. Generate final uniformly spaced bead positions.
+        self.beads[0].Alpha = 0.0
+        self.beads[-1].Alpha = 1.0
 
-        Notes
-        -----
-        All coordinates are assumed to be in scaled EnergySurface2D coordinates,
-        usually [0, 1] x [0, 1].
-
-        Parameters
-        ----------
-        input_beads : list[Bead]
-            User-defined beads, usually created from --initial-cv1 and --initial-cv2.
-
-        num_beads : int
-            Total number of STM beads to generate.
-
-        check_boundaries : bool
-            If True, bead positions are passed through boundary correction.
-
-        Returns
-        -------
-        beads : list[Bead]
-            Final generated bead list.
-        """
-
-        if len(input_beads) < 2:
-            raise RuntimeError("At least two input beads are required")
-
-        if num_beads < 2:
-            raise RuntimeError("num_beads must be greater or equal to 2")
-
-        # ---------------------------------------------------------------------
-        # 1) Optimize the user-provided path.
-        # ---------------------------------------------------------------------
-
-        self.optimize_path(input_beads)
-
-        # ---------------------------------------------------------------------
-        # 2) Generate missing beads from the optimized input spline.
-        # ---------------------------------------------------------------------
-
-        beads = [Bead(self) for _ in range(num_beads)]
-
-        for b, bead in enumerate(beads):
-            alpha = float(b) / float(num_beads - 1)
-
-            bead.Alpha = alpha
-
-            for i in range(self.ncvs):
-                bead.Pos[i] = self.cv_splines[i](alpha)
-
-        # Force exact endpoint alphas.
-        beads[0].Alpha = 0.0
-        beads[-1].Alpha = 1.0
-
-        # ---------------------------------------------------------------------
-        # 3) Check boundaries.
-        # ---------------------------------------------------------------------
-
-        if check_boundaries:
-            self.check_boundaries_of_beads(beads)
-
-        # ---------------------------------------------------------------------
-        # 4) Re-optimize path after boundary correction.
-        # ---------------------------------------------------------------------
-
-        self.optimize_path(beads)
-
-        # ---------------------------------------------------------------------
-        # 5) Final correction: regenerate bead positions at uniform alpha values.
-        # ---------------------------------------------------------------------
-
-        for b, bead in enumerate(beads):
-            alpha = float(b) / float(num_beads - 1)
-
-            bead.Alpha = alpha
-
-            for i in range(self.ncvs):
-                bead.Pos[i] = self.cv_splines[i](alpha)
-
-        beads[0].Alpha = 0.0
-        beads[-1].Alpha = 1.0
-
-        return beads
-    
-# ------------------------------------------------------------------------------
+        # update positions along the path based on new alphas
+        for cv in range(self.ncvs):
+            # FIXME
+            # redistribute other beads
+            for bead in self.beads:
+                if bead.type == "permanent":
+                    continue
+                bead.Pos[cv] = self.cv_splines[cv](bead.Alpha)
+       
+    # --------------------------------------------------------------------------
 
     def check_boundaries_of_beads(self, beads):
         """
         Correct bead.Pos positions after path generation.
-
-        This simple version assumes all CVs are already in scaled coordinates.
-        Thus, valid coordinates are clipped to [0, 1].
         """
-
         for bead in beads:
-            bead.Pos[:] = np.clip(bead.Pos, 0.0, 1.0)
+            for cvidx, cv in enumerate(self.cvs):
+                if bead.Pos[cvidx] < cv.scale(cv.pathmin):
+                    bead.Pos[cvidx] = cv.scale(cv.pathmin)
+                if bead.Pos[cvidx] > cv.scale(cv.pathmax):
+                    bead.Pos[cvidx] = cv.scale(cv.pathmax)        
         
-# ------------------------------------------------------------------------------
-
-    def beads_to_xy_arrays(self, beads):
-        if len(beads) == 0:
-            raise ValueError("bead list must not be empty")
-
-        scaled_positions = np.array([bead.Pos for bead in beads], dtype=float)
-
-        if scaled_positions.ndim != 2 or scaled_positions.shape[1] != 2:
-            raise ValueError("all bead positions must have shape (2,)")
-
-        xy = np.array(
-            [self.surface.from_scaled(pos) for pos in scaled_positions],
-            dtype=float,
-        )
-
-        return xy[:, 0], xy[:, 1]
-
 # ------------------------------------------------------------------------------
 
     def calc_beads(self):
         """
         For all beads:
-            Calculate bead Asurf and MF.
             Calculate perpendicular projectors and projected mean forces
+            Calculate kink angles
         
         Assumptions
         -----------
         - bead.Pos, bead.Grad, bead.pGrad are in scaled coordinates.
         - MTZ is the identity matrix and is omitted.
         - No additional CV range scaling is applied.
-        - self.cv_splines were already built by optimize_path()
+        - self.cv_splines were already built by parametrize_path()
         """
 
-        self.CurrentPathLength = self.optimize_path(self.beads)
+        self.CurrentPathLength = self.parametrize_path(self.beads)
 
         for bead in self.beads:            
-            # ---------------------------------------------------------------------
             # Calculate MF and A
-            # ---------------------------------------------------------------------
-
             bead.Asurf, grad, hessian = self.surface.eval_uv(bead.Pos)
             bead.Grad[:] = grad[:]
 
-            # ---------------------------------------------------------------------
             # Calculate tangent dCV/dalpha from the path splines.
-            # ---------------------------------------------------------------------
-
             for i in range(self.ncvs):
-                # scipy.interpolate.CubicSpline:
-                # spline(alpha, 1) gives the first derivative.
                 bead.dCVdAlpha[i] = self.cv_splines[i](bead.Alpha, 1)
 
-
             slen2 = float(np.dot(bead.dCVdAlpha, bead.dCVdAlpha))
-
             if slen2 == 0.0:
                 raise RuntimeError("derivative segment has zero length")
 
-            # ---------------------------------------------------------------------
             # Projector perpendicular to the path:
-            #
             #     P = I - t t^T / |t|^2
-            # ---------------------------------------------------------------------
 
             bead.P[:, :] = np.eye(self.ncvs) - np.outer(bead.dCVdAlpha, bead.dCVdAlpha) / slen2
 
-        # ---------------------------------------------------------------------
-        # Project mean force.
-        #
-        # End beads move by steepest descent, without perpendicular projection.
-        # Internal beads move only perpendicular to the path.
-        # ---------------------------------------------------------------------
-
-        if( self.freeterminals ):
-            self.beads[0].pGrad[:] = self.beads[0].Grad[:]
-            self.beads[-1].pGrad[:] = self.beads[-1].Grad[:]
-        else:
-            self.beads[0].pGrad[:] = 0.0
-            self.beads[-1].pGrad[:] = 0.0
-        
-        for bead in self.beads[1:-1]:
+        # Project gradients
+        for bead in self.beads:
             bead.pGrad[:] = bead.P @ bead.Grad
+
+        v1 = np.zeros(self.ncvs)
+        v2 = np.zeros(self.ncvs)
+
+        # Calculate kink angles
+        for bidx in range(self.nbeads):
+
+            if bidx == 0  or bidx == self.nbeads - 1:
+                self.beads[bidx].kangle = 180.0
+                continue
+
+            v1[:] = self.beads[bidx+1].Pos[:] - self.beads[bidx].Pos[:]
+            v2[:] = self.beads[bidx-1].Pos[:] - self.beads[bidx].Pos[:]
+
+            # 1. Compute dot product and magnitudes
+            dot_product = np.dot(v1, v2)
+            norm_v1 = np.linalg.norm(v1)
+            norm_v2 = np.linalg.norm(v2)
+
+            # 2. Get the cosine of the angle
+            cos_theta = dot_product / (norm_v1 * norm_v2)
+
+            # 3. Prevent floating-point errors from pushing cos_theta outside [-1, 1]
+            cos_theta = np.clip(cos_theta, -1.0, 1.0)
+
+            # 4. Calculate the angle in radians
+            angle_radians = np.arccos(cos_theta)
+
+            # 5. Convert to degrees (optional)
+            self.beads[bidx].kangle = np.degrees(angle_radians)
 
 # ------------------------------------------------------------------------------
 
@@ -1933,7 +2164,291 @@ class STMPath:
         for bead in self.beads:
             bead.A -= amin
 
-# ------------------------------------------------------------------------------
+   # --------------------------------------------------------------------------
+
+    def generate_beads_from_input_beads(self, input_beads):
+        """
+        Generate the final path from user provided one.
+
+        Parameters
+        ----------
+        input_beads : list[Bead]
+            User-defined beads
+
+        Returns
+        -------
+        beads : list[Bead]
+            Final bead list.
+        """
+
+        # ---------------------------------------------------------------------
+        # 1) Check input
+        # ---------------------------------------------------------------------
+
+        if len(input_beads) < 2:
+            raise RuntimeError("At least two input beads (flexible/permanent/terminal/kink) must be specified in the input PATH file!")
+        
+        if self.nbeads < 2:
+            raise RuntimeError("At least two beads (nbeads) must be requested in the input PATH file!")
+
+        if input_beads[0].type == "kink":
+            raise RuntimeError(f"Terminal bead must be terminal/flexible/permanent but {input_beads[0].type} was specified!")
+        if input_beads[-1].type == "kink":
+            raise RuntimeError(f"Terminal bead must be terminal/flexible/permanent but {input_beads[0].type} was specified!")
+
+        if len(input_beads) == self.nbeads:
+            # check boundaries
+            self.check_boundaries_of_beads(input_beads)
+
+            # path is complete, keep it as it is
+            return input_beads
+        
+        # path is incompleted, it will be rebuilded
+
+        for bead in input_beads[1:-1]:
+            if bead.type != "flexible":
+                raise RuntimeError(f"For the incomplete path, all inner beads must be flexible but {bead.type} was requested!")
+
+        # ---------------------------------------------------------------------
+        # 2) Parametrize user provided path
+        # ---------------------------------------------------------------------
+
+        self.parametrize_path(input_beads)
+
+        # ---------------------------------------------------------------------
+        # 3) Generate missing beads from the optimized input spline.
+        # ---------------------------------------------------------------------
+
+        beads = [Bead(self) for _ in range(self.nbeads)]
+
+        for bidx, bead in enumerate(beads):
+            alpha = float(bidx) / float(self.nbeads - 1)
+
+            bead.Alpha = alpha
+            bead.type  = "flexible"
+
+            # copy type of terminals from the input path
+            if (bidx == 0) or (bidx == self.nbeads - 1):
+                bead.type = input_beads[0].type
+
+            for i in range(self.ncvs):
+                bead.Pos[i] = self.cv_splines[i](alpha)
+
+        # Force exact endpoint alphas.
+        beads[0].Alpha = 0.0
+        beads[-1].Alpha = 1.0
+
+        # ---------------------------------------------------------------------
+        # 4) Check boundaries.
+        # ---------------------------------------------------------------------
+
+        self.check_boundaries_of_beads(beads)
+
+        return beads
+    
+    # --------------------------------------------------------------------------
+
+    def beads_to_xy_arrays(self, beads):
+        if len(beads) == 0:
+            raise ValueError("bead list must not be empty")
+
+        scaled_positions = np.array([bead.Pos for bead in beads], dtype=float)
+
+        if scaled_positions.ndim != 2 or scaled_positions.shape[1] != 2:
+            raise ValueError("all bead positions must have shape (2,)")
+
+        xy = np.array(
+            [self.surface.from_scaled(pos) for pos in scaled_positions],
+            dtype=float,
+        )
+
+        bead_types = np.array(
+            ["unknown" if bead.type is None else str(bead.type) for bead in beads],
+            dtype=object,
+        )
+
+        return xy[:, 0], xy[:, 1], bead_types
+
+# ==============================================================================
+# load/print path
+# ==============================================================================
+
+    def load_path_file(self,filename: str | Path):
+        """
+        Parse a PMFLib-like [PATH] file.
+
+        Supported keywords
+        ------------------
+        [PATH]
+        name
+        nbeads
+        ncvs
+        names
+        types
+        min
+        max
+        maxmov
+        permanent
+        terminal
+        flexible
+        kink
+        """
+
+    # --------------------------------------------------------------------------
+
+        def strip_path_comment(line: str) -> str:
+            """
+            Remove PMFLib-style comments.
+
+            Comment characters are '#', '!', and '*'.
+            The first occurrence of any of them starts a comment.
+            """
+
+            cut = len(line)
+
+            for c in ("#", "!", "*"):
+                i = line.find(c)
+                if i >= 0:
+                    cut = min(cut, i)
+
+            return line[:cut].strip()
+
+    # --------------------------------------------------------------------------
+
+        in_path_section = False
+
+        name_loaded = False
+        nbeads_loaded = False
+        ncvs_loaded = False
+        names_loaded = False
+        types_loaded = False
+        pathmin_loaded = False
+        pathmax_loaded = False
+        maxmov_loaded = False
+
+        beads = []
+
+        with open(filename, "r", encoding="utf-8") as fin:
+            for lineno, raw_line in enumerate(fin, start=1):
+
+                line = strip_path_comment(raw_line)
+
+                if not line:
+                    continue
+
+                if line.upper() == "[PATH]":
+                    in_path_section = True
+                    continue
+
+                if line.startswith("[") and line.endswith("]"):
+                    in_path_section = False
+                    continue
+
+                if not in_path_section:
+                    continue
+
+                fields = line.split()
+                if not fields:
+                    continue
+
+                key = fields[0].lower()
+                values = fields[1:]
+
+                try:
+                    if key == "name":
+                        if len(values) != 1:
+                            raise ValueError("keyword 'name' expects one value")
+                        self.PathName = values[0]
+                        name_loaded = True
+
+                    elif key == "nbeads":
+                        if len(values) != 1:
+                            raise ValueError("keyword 'nbeads' expects one value")
+                        self.nbeads = int(values[0])
+                        nbeads_loaded = True
+
+                    elif key == "ncvs":
+                        if len(values) != 1:
+                            raise ValueError("keyword 'ncvs' expects one value")
+                        if int(values[0]) != self.ncvs:
+                            raise ValueError(f"exactly {self.ncvs} CVs must be specified in the path")
+                        ncvs_loaded = True
+
+                    elif key == "names":
+                        if len(values) != self.ncvs:
+                            raise ValueError(f"keyword 'names' expects {self.ncvs} values")
+                        for idx, name in enumerate(values):
+                            self.cvs[idx].name = name
+                        names_loaded = True
+
+                    elif key == "types":
+                        if len(values) != self.ncvs:
+                            raise ValueError(f"keyword 'types' expects {self.ncvs} values")
+                        for idx, type in enumerate(values):
+                            self.cvs[idx].type = type
+                        types_loaded = True
+
+                    elif key == "min":
+                        if len(values) != self.ncvs:
+                            raise ValueError(f"keyword 'min' expects {self.ncvs} values")
+                        for idx, min in enumerate(values):
+                            if float(min) < self.cvs[idx].cvmin:
+                                raise ValueError(f"'min' value for CV {idx+1} must be within FES area: {float(min)} < {self.cvs[idx].cvmin}!")
+                            if float(min) > self.cvs[idx].cvmax:
+                                raise ValueError(f"p'min' value for CV {idx+1} must be within FES area: {float(min)} > {self.cvs[idx].cvmax}!")
+                            self.cvs[idx].pathmin = float(min)
+                        pathmin_loaded = True
+
+                    elif key == "max":
+                        if len(values) != self.ncvs:
+                            raise ValueError(f"keyword 'max' expects {self.ncvs} values")
+                        for idx, max in enumerate(values):
+                            if float(min) < self.cvs[idx].cvmin:
+                                raise ValueError(f"'max' value for CV {idx+1} must be within FES area: {float(max)} < {self.cvs[idx].cvmin}!")
+                            if float(min) > self.cvs[idx].cvmax:
+                                raise ValueError(f"p'max' value for CV {idx+1} must be within FES area: {float(max)} > {self.cvs[idx].cvmax}!")
+                            self.cvs[idx].pathmax = float(max)
+                        pathmax_loaded = True
+
+                    elif key == "maxmov":
+                        if len(values) != self.ncvs:
+                            raise ValueError(f"keyword 'maxmov' expects {self.ncvs} values")
+                        for idx, maxmov in enumerate(values):
+                            self.cvs[idx].maxmov = float(maxmov)
+                            self.cvs[idx].smaxmov = self.cvs[idx].maxmov / (self.cvs[idx].cvmax - self.cvs[idx].cvmin)
+                        maxmov_loaded = True
+
+                    elif key in ("permanent", "terminal", "flexible", "kink"):
+                        if  len(values) != self.ncvs:
+                            raise ValueError(
+                                f"keyword '{key}' expects {self.ncvs} CV values, "
+                                f"got {len(values)}"
+                            )
+
+                        bead = Bead(self)
+                        bead.type = key
+                        for idx, pos in enumerate(values):
+                            bead.Pos[idx] = self.cvs[idx].scale(float(pos))
+
+                        beads.append(bead)
+                    else:
+                        raise ValueError(f"unknown keyword '{key}'")
+
+                except ValueError as e:
+                    raise ValueError(
+                        f"{filename}:{lineno}: invalid [PATH] line: {raw_line.rstrip()}\n"
+                        f"Reason: {e}"
+                    ) from e
+
+        if not (name_loaded and nbeads_loaded and ncvs_loaded and names_loaded and types_loaded and pathmin_loaded and pathmax_loaded and maxmov_loaded):
+            raise ValueError(f"mandatory path item not loaded | name:{name_loaded}/nbeads:{nbeads_loaded}/ncvs:{ncvs_loaded}/names:{names_loaded}/types:{types_loaded}/min:{pathmin_loaded}/max:{pathmax_loaded}/maxmov:{maxmov_loaded}")
+        
+        if len(beads) < 2:
+            raise ValueError(f"at least two beads must be provided | flexible/permanent/terminal/kink")
+        
+        return beads
+
+    # --------------------------------------------------------------------------
 
     def print_path(self, fout=None, beads=None):
             """
@@ -1941,7 +2456,6 @@ class STMPath:
 
             Notes
             -----
-            - Only flexible terminal beads are supported.
             - All bead positions are stored internally in scaled coordinates.
             - Printed bead positions are converted back to physical CV units.
             """
@@ -1971,28 +2485,22 @@ class STMPath:
 
             print("min       ", end="", file=fout)
             for cv in self.cvs:
-                print(f" {cv.cvmin:12.5e}", end="", file=fout)
+                print(f" {cv.pathmin:12.5e}", end="", file=fout)
             print(file=fout)
 
             print("max       ", end="", file=fout)
             for cv in self.cvs:
-                print(f" {cv.cvmax:12.5e}", end="", file=fout)
+                print(f" {cv.pathmax:12.5e}", end="", file=fout)
             print(file=fout)
 
             print("maxmov    ", end="", file=fout)
             for cv in self.cvs:
-                if cv.maxmove is None:
-                    print(f" {'None':>12}", end="", file=fout)
-                else:
-                    print(f" {cv.maxmove:12.5e}", end="", file=fout)
+                print(f" {cv.maxmov:12.5e}", end="", file=fout)
             print(file=fout)
 
             for index, bead in enumerate(beads):
                 # Python version supports only flexible beads.
-                if self.is_bead_permanent(index):
-                    print("permanent ", end="", file=fout)
-                else:
-                    print("flexible  ", end="", file=fout)
+                print(f"{bead.type:<9} ", end="", file=fout)
 
                 for i, cv in enumerate(self.cvs):
                     scaled = bead.Pos[i]
@@ -2001,20 +2509,9 @@ class STMPath:
 
                 print(file=fout)
 
-# ------------------------------------------------------------------------------
-
-    def is_bead_permanent(self, bead_index):
-        """
-        Return True if the bead should be reported as permanent.
-
-        The simplified Python STM implementation does not store the C++
-        Bead::Permanent flag explicitly.  Fixed terminal beads are therefore
-        interpreted as permanent when --freeterminals is not active.
-        """
-
-        return (not self.freeterminals) and (bead_index == 0 or bead_index == self.nbeads - 1)
-
-# ------------------------------------------------------------------------------
+# ==============================================================================
+# path summary and summary trajectory
+# ==============================================================================
 
     def print_path_summary_header(self, fout=None):
         """
@@ -2037,7 +2534,7 @@ class STMPath:
         print(f"# Number of beads = {self.nbeads}", file=fout)
 
         # Header legends.
-        print("#  ID   Type  MO ST  alpha    dA/dalpha            A     CID Updates", end="", file=fout)
+        print("#  ID   Type  MO ST KinkA  alpha    dA/dalpha            A     CID Updates", end="", file=fout)
         for i in range(self.ncvs):
             print(f"          CV{i + 1:<1d}", end="", file=fout)
         for i in range(self.ncvs):
@@ -2053,7 +2550,7 @@ class STMPath:
         print(file=fout)
 
         # Delimiters.
-        delimiter = "# ---- ------ -- -- ------ ------------ ------------ ------- -------"
+        delimiter = "# ---- ------ -- -- ----- ------ ------------ ------------ ------- -------"
         delimiter += " ------------" * (5 * self.ncvs)
         delimiter += " ------------"
         print(delimiter, file=fout)
@@ -2076,7 +2573,7 @@ class STMPath:
 
         print(f"{'#      min':<68}", end="", file=fout)
         for cv in self.cvs:
-            print(f" {cv.cvmin:12.5e}", end="", file=fout)
+            print(f" {cv.pathmin:12.5e}", end="", file=fout)
         for cv in self.cvs:
             print(f" {0.0:12.5e}", end="", file=fout)
         for _ in range(3):
@@ -2086,7 +2583,7 @@ class STMPath:
 
         print(f"{'#      max':<68}", end="", file=fout)
         for cv in self.cvs:
-            print(f" {cv.cvmax:12.5e}", end="", file=fout)
+            print(f" {cv.pathmax:12.5e}", end="", file=fout)
         for cv in self.cvs:
             print(f" {1.0:12.5e}", end="", file=fout)
         for _ in range(3):
@@ -2096,15 +2593,7 @@ class STMPath:
 
         print(f"{'#      maxmov':<68}", end="", file=fout)
         for cv in self.cvs:
-            if cv.maxmove is not None and cv.maxmove > 0.0:
-                print(f" {cv.maxmove:12.5e}", end="", file=fout)
-            else:
-                print(f" {'--':>12}", end="", file=fout)
-        for cv in self.cvs:
-            if cv.smaxmove is not None and cv.smaxmove > 0.0:
-                print(f" {cv.smaxmove:12.5e}", end="", file=fout)
-            else:
-                print(f" {'--':>12}", end="", file=fout)
+            print(f" {cv.maxmov:12.5e}", end="", file=fout)
         for _ in range(3):
             for cv in self.cvs:
                 print(f"             ", end="", file=fout)
@@ -2113,7 +2602,7 @@ class STMPath:
 
         print(delimiter, file=fout)
 
-        delimiter2 = "# ---- ------ -- -- ------ ------------ ------------ ------- -------"
+        delimiter2 = "# ---- ------ -- -- ----- ------ ------------ ------------ ------- -------"
         delimiter2 += " uuuuuuuuuuuu" * (1 * self.ncvs)
         delimiter2 += " ssssssssssss" * (4 * self.ncvs)
         delimiter2 += " ------------"
@@ -2121,8 +2610,8 @@ class STMPath:
         print(delimiter2, file=fout)
         print(delimiter, file=fout)
 
-        print("#    1      2  3  4      5            6            7       8       9", end="", file=fout)
-        column_id = 10
+        print("#    1      2  3  4     5      6            7            8       9      10", end="", file=fout)
+        column_id = 11
         for _ in range(5):
             for _ in range(self.ncvs):
                 print(f"{column_id:13d}", end="", file=fout)
@@ -2132,7 +2621,7 @@ class STMPath:
 
         print(delimiter, file=fout)
 
-# ------------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
 
     def print_path_summary_data(self, fout=None):
         """
@@ -2152,10 +2641,19 @@ class STMPath:
 
         for bead_index, bead in enumerate(self.beads):
             bead_id = bead_index + 1
-            bead_type = "P" if self.is_bead_permanent(bead_index) else "F"
+            bead_type = 'U'
+            if bead.type == "permanent":
+                bead_type = 'P'
+            elif bead.type == "flexible":
+                bead_type = 'F'
+            elif bead.type == "terminal":
+                bead_type = 'T'
+            elif bead.type == "kink":
+                bead_type = 'K'
             mode = "--"
             status = "--"
             client_id = "--"
+            kangle = bead.kangle
 
             alpha = 0.0 if bead.Alpha is None else float(bead.Alpha)
             d_ad_alpha = 0.0 if bead.dAdAlpha is None else float(bead.dAdAlpha)
@@ -2164,6 +2662,7 @@ class STMPath:
 
             print(
                 f"  {bead_id:4d} {bead_type:>6} {mode:>2} {status:>2} "
+                f"{kangle:5.1f} "
                 f"{alpha:6.4f} "
                 f"{d_ad_alpha:12.5e} "
                 f"{free_energy:12.5e} "
@@ -2198,7 +2697,7 @@ class STMPath:
 
             print(file=fout)
 
-# ------------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
 
     def write_trajectory_header(self, fout=None):
         
@@ -2208,7 +2707,7 @@ class STMPath:
         print(f"# STMTRAJ {self.ncvs} {self.nbeads}", file=fout)
         self.print_path_summary_header(fout)
 
-# ------------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
 
     def write_trajectory_snapshot(self, fout=None):
         
@@ -2219,7 +2718,9 @@ class STMPath:
         self.print_path_summary_data(fout)
         print("",file=fout) # necessary for gnuplot
 
-# ------------------------------------------------------------------------------
+# ==============================================================================
+# path statistics
+# ==============================================================================
 
     def init_stm_statistics(self, args=None):
         """
@@ -2266,7 +2767,7 @@ class STMPath:
         self.FinalMaxpMFSize    = args.final_maxpmfsize
         self.FinalAvepMFSize    = args.final_avepmfsize
 
-# ------------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
 
     def print_stm_header_f(self, fout=None):
         """
@@ -2306,7 +2807,7 @@ class STMPath:
             file=fout,
         )
 
-# ------------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
 
     def calculate_stm_step_stat(self):
         """
@@ -2324,25 +2825,28 @@ class STMPath:
         self.AvepMFSize = 0.0
 
         bn = 0
-        b = 0
-        for bead in self.beads:
-            b += 1
-            if (self.freeterminals == False) and ( (b == 1) or (b == self.nbeads) ):
+        for bidx, bead in enumerate(self.beads,start=1):
+            if bead.type == "permanent":
                 continue
             
             # print(bead.Pos,bead.OPos)
             bmov = float(np.linalg.norm(bead.Pos - bead.OPos))
-            mfsize = float(np.linalg.norm(bead.pGrad))
+
+            if bead.type == "flexible":
+                mfsize = float(np.linalg.norm(bead.pGrad))
+            else:
+                # kink, terminal
+                mfsize = float(np.linalg.norm(bead.Grad))
 
             self.AveBeadMove += bmov
             if bmov > self.MaxBeadMove:
                 self.MaxBeadMove = bmov
-                self.MaxBeadMoveID = b
+                self.MaxBeadMoveID = bidx
 
             self.AvepMFSize += mfsize
             if mfsize > self.MaxpMFSize:
                 self.MaxpMFSize = mfsize
-                self.MaxpMFSizeID = b
+                self.MaxpMFSizeID = bidx
 
             bn += 1
 
@@ -2397,7 +2901,7 @@ class STMPath:
         if self.MAAvepMFSize < self.FinalAvepMFSize:
             self.TermCrit += 1
 
-# ------------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
 
     def print_stm_step_info_f(self, fout=None):
         """
@@ -2433,12 +2937,6 @@ class STMPath:
 # ==============================================================================
 
 def parse_args():
-
-    def parse_csv_floats(text: str) -> np.ndarray:
-        values = [float(v) for v in text.replace(";", ",").split(",") if v.strip()]
-        if not values:
-            raise argparse.ArgumentTypeError("at least one value is required")
-        return np.asarray(values, dtype=float)
     
     def parse_figsize(value):
         """Converts a comma-separated string into a tuple of floats."""
@@ -2464,40 +2962,17 @@ def parse_args():
 
     cv1group = parser.add_argument_group("The first collective variable (CV1) specification")
 
-    cv1group.add_argument(
-        "--cv1label", type=str, default=r"cv1",
-        help="Label of the first collective variable."
-    )
+    cv1group.add_argument( "--cv1label", type=str, default=r"cv1",
+        help="Label of the first collective variable." )
 
-    cv1group.add_argument(
-        "--cv1name", type=str, default=r"cv1",
-        help="Name of the first collective variable."
-    )
+    cv1group.add_argument( "--cv1min", type=float, required=True,
+        help="Minimum value of the first collective variable." )
 
-    cv1group.add_argument(
-        "--cv1type", type=str, default=r"DIS",
-        help="Type of the first collective variable."
-    )
+    cv1group.add_argument( "--cv1max", type=float, required=True,
+        help="Maximum value of the first collective variable." )
 
-    cv1group.add_argument(
-        "--cv1min", type=float, required=True,
-        help="Minimum value of the first collective variable."
-    )
-
-    cv1group.add_argument(
-        "--cv1max", type=float, required=True,
-        help="Maximum value of the first collective variable."
-    )
-
-    cv1group.add_argument(
-        "--cv1maxmove", type=float,
-        help="Maximum move allowed for the first collective variable during the path optimization."
-    )
-
-    cv1group.add_argument(
-        "--cv1nbins", type=int, required=True,
-        help="Number of grid bins/points for the first collective variable."
-    )
+    cv1group.add_argument( "--cv1nbins", type=int, required=True,
+        help="Number of grid bins/points for the first collective variable." )
 
     # -------------------------------------------------------------------------
     # CV2
@@ -2505,40 +2980,17 @@ def parse_args():
 
     cv2group = parser.add_argument_group("The second collective variable (CV2) specification")
 
-    cv2group.add_argument(
-        "--cv2label", type=str, default=r"cv2",
-        help="Label of the second collective variable."
-    )
+    cv2group.add_argument( "--cv2label", type=str, default=r"cv2",
+        help="Label of the second collective variable." )
 
-    cv2group.add_argument(
-        "--cv2name", type=str, default=r"cv2",
-        help="Name of the second collective variable."
-    )
+    cv2group.add_argument( "--cv2min", type=float, required=True,
+        help="Minimum value of the second collective variable." )
 
-    cv2group.add_argument(
-        "--cv2type", type=str, default=r"DIS",
-        help="Type of the second collective variable."
-    )
+    cv2group.add_argument( "--cv2max", type=float, required=True,
+        help="Maximum value of the second collective variable." )
 
-    cv2group.add_argument(
-        "--cv2min", type=float, required=True,
-        help="Minimum value of the second collective variable."
-    )
-
-    cv2group.add_argument(
-        "--cv2max", type=float, required=True,
-        help="Maximum value of the second collective variable."
-    )
-
-    cv2group.add_argument(
-        "--cv2maxmove", type=float,
-        help="Maximum move allowed for the second collective variable during the path optimization."
-    )
-
-    cv2group.add_argument(
-        "--cv2nbins", type=int, required=True,
-        help="Number of grid bins/points for the second collective variable."
-    )
+    cv2group.add_argument( "--cv2nbins", type=int, required=True,
+        help="Number of grid bins/points for the second collective variable." )
 
     # -------------------------------------------------------------------------
     # Energy label
@@ -2567,30 +3019,20 @@ def parse_args():
 
     rbfgroup = parser.add_argument_group("The RBF (Radial Basis Function) interpolation specification")
 
-    rbfgroup.add_argument(
-        "--cv1nrbfs", type=int, default=20,
-        help="Number of RBFs for the first collective variable."
-    )
+    rbfgroup.add_argument( "--cv1nrbfs", type=int, default=20,
+        help="Number of RBFs for the first collective variable." )
 
-    rbfgroup.add_argument(
-        "--cv2nrbfs", type=int, default=20,
-        help="Number of RBFs for the second collective variable."
-    )
+    rbfgroup.add_argument( "--cv2nrbfs", type=int, default=20,
+        help="Number of RBFs for the second collective variable." )
 
-    rbfgroup.add_argument(
-        "--rbfsx", type=float, default=1.5,
-        help="Width factor for CV1 in the RBF static width mode."
-    )
+    rbfgroup.add_argument( "--rbfsx", type=float, default=1.5,
+        help="Width factor for CV1 in the RBF static width mode." )
 
-    rbfgroup.add_argument(
-        "--rbfsy", type=float, default=1.5,
-        help="Width factor for CV2 in the RBF static width mode."
-    )
+    rbfgroup.add_argument( "--rbfsy", type=float, default=1.5,
+        help="Width factor for CV2 in the RBF static width mode." )
 
-    rbfgroup.add_argument(
-        "--rcond", type=float, default=1.0e-9,
-        help="SVD cutoff for RBF fitting."
-    )
+    rbfgroup.add_argument( "--rcond", type=float, default=1.0e-9,
+        help="SVD cutoff for RBF fitting." )
 
     # -------------------------------------------------------------------------
     # Files
@@ -2598,30 +3040,23 @@ def parse_args():
 
     filegroup = parser.add_argument_group("The input/output files specification")
 
-    filegroup.add_argument(
-        "--input-fes", required=True,
-        help="Input FES/PES file. First three columns are CV1, CV2, energy."
-    )
+    filegroup.add_argument( "--input-fes", type=str, required=True,
+        help="Input FES/PES file. First three columns are CV1, CV2, energy." )
 
-    filegroup.add_argument(
-        "--output-path", default="_stm.path", 
-        help="Path in the PMFLib format, printed at the beginning and end of STM."
-    )
+    filegroup.add_argument( "--input-path", type=str, required=True,
+        help="Input path in the PMFLib format to optimize." )
+
+    filegroup.add_argument( "--output-path", type=str, default="_stm.path", 
+        help="Path in the PMFLib format, printed at the beginning and end of STM optimization." )
     
-    filegroup.add_argument(
-        "--summary", default="_stm.results", 
-        help="Path summary, printed at the beginning and end of STM."
-    )
+    filegroup.add_argument( "--summary", type=str, default="_stm.results", 
+        help="Path summary, printed at the beginning and end of STM optimization." )
 
-    filegroup.add_argument(
-        "--trajectory", default="_stm.traj", 
-        help="Path summary trajectory."
-    )
+    filegroup.add_argument( "--trajectory", type=str, default="_stm.traj", 
+        help="Path summary trajectory." )
 
-    filegroup.add_argument(
-        "--optlog", default="_stm.log", 
-        help="STM optimization log file."
-    )
+    filegroup.add_argument( "--optlog", type=str, default="_stm.log", 
+        help="STM optimization log file." )
  
     # -------------------------------------------------------------------------
     # Path
@@ -2629,42 +3064,21 @@ def parse_args():
     
     pathgroup = parser.add_argument_group("Path specification")
 
-    pathgroup.add_argument("--initial-cv1", type=parse_csv_floats, required=True,
-        help="Comma-separated initial CV1 path points."
-    )
-
-    pathgroup.add_argument("--initial-cv2", type=parse_csv_floats, required=True,
-        help="Comma-separated initial CV2 path points."
-    )
-
-    pathgroup.add_argument("--pathname", type=str, default="p1",
-        help="Name of the path."
-    )
-
-    pathgroup.add_argument("--nbeads", type=int, default=51,
-        help="Number of string beads."
-    )
-
-    pathgroup.add_argument("--freeterminals", action="store_true", default=False,
-        help="Optimise endpoints by steepest descent."
-    )
-
-    pathgroup.add_argument("--segdisc", type=int, default=10, 
-        help="Path segment discretization."
-    )
-
-    pathgroup.add_argument("--cvspline", type=int, default=1,
-        help="Type of CV spline: 0 - interpolating cubic spline, 1 - smoothing cubic spline."
-    )
+    pathgroup.add_argument("--cvspline", type=int, default=2,
+        help="Type of CV spline: 0 - interpolating cubic spline, 1 - smoothing cubic spline, 2 - smoothing cubic spline SVD." )
 
     pathgroup.add_argument("--spline-lambda", type=float, default=0.999,
-        help="Lambda for the internal smoothing cubic spline; 1.0 gives interpolation."
-    )
+        help="Lambda for the internal smoothing cubic spline; 1.0 gives interpolation." )
     
     pathgroup.add_argument("--spline-sigma", type=float, default=0.01,
-        help="Default sigma assigned to all knots of the internal smoothing cubic spline."
-    )
+        help="Default sigma assigned to all knots of the internal smoothing cubic spline." )
+    
+    pathgroup.add_argument("--spline-rcond", type=float, default=1e-9,
+        help="SVD cutoff for CVSmoothingCubicSplineSVD." )
 
+    pathgroup.add_argument("--path-param-mode", type=int, default=1,
+        help="Path parameterization mode: 0 - 'chord-length' parameterization, 1 - centripetal parameterization." )
+    
     # -------------------------------------------------------------------------
     # STM Setup
     # -------------------------------------------------------------------------
@@ -2672,20 +3086,17 @@ def parse_args():
     stmgroup = parser.add_argument_group("Path specification")
 
     stmgroup.add_argument("--nstepmax", type=int, default=200, 
-        help="Maximum optimisation steps."
-    )
+        help="Maximum optimisation steps." )
     
-    stmgroup.add_argument("--smoothingfac", type=float, default=0.0,
+    stmgroup.add_argument("--sfac", type=float, default=0.0,
         help="Path smoothing factor."
     )
     
     stmgroup.add_argument("--smoothinterval", type=int, default=0,
-        help="How often to smooth the path."
-    )
+        help="How often to smooth the path." )
     
     stmgroup.add_argument("--reparaminterval", type=int, default=1,
-        help="How often to reparametrize the path."
-    )
+        help="How often to reparametrize the path." )
 
     # -------------------------------------------------------------------------
     # STM Setup
@@ -2694,20 +3105,16 @@ def parse_args():
     adagroup = parser.add_argument_group("AdaBelief specification")
 
     adagroup.add_argument("--stepsize", type=float, default=0.003,
-        help="Optimisation time step."
-    )
+        help="Optimisation time step." )
 
     adagroup.add_argument("--beta1", type=float, default=0.7,
-        help="AdaBelief beta1."
-    )
+        help="AdaBelief beta1." )
 
     adagroup.add_argument("--beta2", type=float, default=0.99,
-        help="AdaBelief beta2."
-    )
+        help="AdaBelief beta2." )
 
     adagroup.add_argument("--mingnormesp", type=float, default=1e-7,
-        help="AdaBelief epsilon."
-    )
+        help="AdaBelief epsilon." )
 
     # -------------------------------------------------------------------------
     # Termination
@@ -2716,28 +3123,22 @@ def parse_args():
     termgroup = parser.add_argument_group("Termination criteria for the STM path optimization")
 
     termgroup.add_argument("--mabuflen", type=int, default=3,
-        help="Moving-average buffer length."
-    )
+        help="Moving-average buffer length." )
 
     termgroup.add_argument("--final-plenchange", type=float, default=0.001,
-        help="Final threshold for moving-average path-length change."
-    )
+        help="Final threshold for moving-average path-length change." )
     
     termgroup.add_argument("--final-maxbeadmove", type=float, default=0.005,
-        help="Final threshold for moving-average maximum bead movement."
-    )
+        help="Final threshold for moving-average maximum bead movement." )
 
     termgroup.add_argument("--final-avebeadmove", type=float, default=.005,
-        help="Final threshold for moving-average average bead movement."
-    )
+        help="Final threshold for moving-average average bead movement." )
     
     termgroup.add_argument("--final-maxpmfsize", type=float, default=2.00,
-        help="Final threshold for moving-average maximum projected mean-force size."
-    )
+        help="Final threshold for moving-average maximum projected mean-force size." )
 
     termgroup.add_argument("--final-avepmfsize", type=float, default=0.80,
-        help="Final threshold for moving-average average projected mean-force size."
-    )
+        help="Final threshold for moving-average average projected mean-force size." )
 
     # -------------------------------------------------------------------------
     # Plots
@@ -2746,42 +3147,32 @@ def parse_args():
     plotgroup = parser.add_argument_group("The graphical plot specification")
 
     plotgroup.add_argument("--plot", action="store_true", default=False,
-        help="Write PNG plots."
-        )
+        help="Write PNG plots." )
     
     plotgroup.add_argument("--plot-prefix", type=str, default="_stm", 
-        help="Prefix for output PNG plots."
-        )
+        help="Prefix for output PNG plots." )
     
     plotgroup.add_argument("--show", action="store_true", default=False,
-        help="Show plots interactively after saving."
-    )
+        help="Show plots interactively after saving." )
 
     plotgroup.add_argument('--figsize',type=parse_figsize,default=(6.4, 4.8),  # Default Matplotlib size fallback
-        help="Figure size as 'width,height' in inches (default: 6.4,4.8)"
-    )
+        help="Figure size as 'width,height' in inches (default: 6.4,4.8)" )
 
-    plotgroup.add_argument(
-        "--dpi", type=int, default=300,
-        help="Resolution for plot figures."
-    )
+    plotgroup.add_argument( "--dpi", type=int, default=300,
+        help="Resolution for plot figures." )
+
+    # -------------------------------------------------------------------------
 
     args = parser.parse_args()
 
     # check some input 
-    if args.nbeads < 2:
-        parser.error("--nbeads must be at least 2")
-
-    if args.segdisc < 5:
-        parser.error("--segdisc must be at least 5")
-
     if args.mabuflen < 1:
         parser.error("--mabuflen must be at least 1")
 
-    if not (0.0 <= args.smoothingfac <= 1.0):
-        parser.error("--smoothingfac must be in the interval [0, 1]")
+    if not (0.0 <= args.sfac <= 1.0):
+        parser.error("--sfac must be in the interval [0, 1]")
 
-    if args.cvspline not in (0, 2):
+    if args.cvspline not in (0, 1, 2):
         parser.error("--cvspline must be 0 or 1 or 2")
 
     return args
