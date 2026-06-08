@@ -32,8 +32,23 @@ RAD2DEG = 180.0 / np.pi
 # Cubic splines for path parametrisation
 # ==============================================================================
 
-class CVSplineBase:
-    """Small Python analogue of the PMFLib CV spline interface."""
+class CVInterpolatingCubicSpline:
+    """
+    Natural interpolating cubic spline.
+
+    The spline is represented on each interval [x_i, x_{i+1}] as
+
+        S_i(t) = sd_i + sc_i*t + sb_i*t^2 + sa_i*t^3
+
+    where
+
+        t = alpha - x_i
+
+    Public interface:
+        update_points(alphas, values)
+        spline(alpha)       -> value
+        spline(alpha, 1)    -> first derivative
+    """
 
     def __init__(self):
         self.clear()
@@ -41,35 +56,44 @@ class CVSplineBase:
 # ------------------------------------------------------------------------------
 
     def clear(self):
-        self.n = -1
+        self.n = 0              # number of spline intervals
         self.x = np.zeros(0, dtype=float)
         self.y = np.zeros(0, dtype=float)
-        self.sa = np.zeros(0, dtype=float)
-        self.sb = np.zeros(0, dtype=float)
-        self.sc = np.zeros(0, dtype=float)
-        self.sd = np.zeros(0, dtype=float)
+
+        # Polynomial coefficients per interval.
+        self.sa = np.zeros(0, dtype=float)   # cubic coefficient
+        self.sb = np.zeros(0, dtype=float)   # quadratic coefficient
+        self.sc = np.zeros(0, dtype=float)   # linear coefficient
+        self.sd = np.zeros(0, dtype=float)   # constant coefficient
 
 # ------------------------------------------------------------------------------
 
     def allocate(self, numofknots: int):
         self.clear()
-        self.n = int(numofknots) - 1
-        if self.n <= 0:
-            self.n = 0
-            return
-        size = self.n + 1
-        self.x = np.zeros(size, dtype=float)
-        self.y = np.zeros(size, dtype=float)
-        self.sa = np.zeros(size, dtype=float)
-        self.sb = np.zeros(size, dtype=float)
-        self.sc = np.zeros(size, dtype=float)
-        self.sd = np.zeros(size, dtype=float)
+
+        numofknots = int(numofknots)
+        if numofknots < 2:
+            raise RuntimeError("at least two knots are required")
+
+        self.n = numofknots - 1
+
+        self.x = np.zeros(numofknots, dtype=float)
+        self.y = np.zeros(numofknots, dtype=float)
+
+        self.sa = np.zeros(self.n, dtype=float)
+        self.sb = np.zeros(self.n, dtype=float)
+        self.sc = np.zeros(self.n, dtype=float)
+        self.sd = np.zeros(self.n, dtype=float)
 
 # ------------------------------------------------------------------------------
 
     def set_point(self, knotid: int, alpha: float, cv: float):
-        if knotid < 0 or knotid > self.n:
+        if self.x.size == 0:
+            raise RuntimeError("spline storage is not allocated")
+
+        if knotid < 0 or knotid >= self.x.size:
             raise RuntimeError("knotid is out-of-range")
+
         self.x[knotid] = float(alpha)
         self.y[knotid] = float(cv)
 
@@ -78,271 +102,233 @@ class CVSplineBase:
     def update_points(self, alphas, values):
         alphas = np.asarray(alphas, dtype=float)
         values = np.asarray(values, dtype=float)
+
         if alphas.ndim != 1 or values.ndim != 1:
             raise ValueError("alphas and values must be one-dimensional arrays")
-        if len(alphas) != len(values):
+
+        if alphas.size != values.size:
             raise ValueError("alphas and values must have the same length")
-        if len(alphas) < 2:
+
+        if alphas.size < 2:
             raise RuntimeError("at least two knots are required")
+
         if np.any(np.diff(alphas) <= 0.0):
             raise RuntimeError("spline knots must have strictly increasing alpha values")
-        if self.n != len(alphas) - 1:
-            self.allocate(len(alphas))
+
+        if self.x.size != alphas.size:
+            self.allocate(alphas.size)
+
         self.x[:] = alphas
         self.y[:] = values
+
         self.build_spline()
+
+# ------------------------------------------------------------------------------
+
+    def build_spline(self):
+        """
+        Build a natural cubic spline.
+
+        Natural boundary conditions are used:
+
+            S''(x_0) = 0
+            S''(x_n) = 0
+        """
+
+        if self.n <= 0:
+            raise RuntimeError("not enough knots")
+
+        self.sa[:] = 0.0
+        self.sb[:] = 0.0
+        self.sc[:] = 0.0
+        self.sd[:] = 0.0
+
+        h = np.diff(self.x)
+
+        if np.any(h <= 0.0):
+            raise RuntimeError("spline knots must have strictly increasing alpha values")
+
+        # Special case: only one interval -> straight line.
+        if self.n == 1:
+            self.sd[0] = self.y[0]
+            self.sc[0] = (self.y[1] - self.y[0]) / h[0]
+            self.sb[0] = 0.0
+            self.sa[0] = 0.0
+            return
+
+        # Solve for second-derivative-related coefficients.
+        #
+        # We solve the tridiagonal system for c_i where
+        #
+        #     S_i(t) = a_i + b_i t + c_i t^2 + d_i t^3
+        #
+        # with natural boundary conditions c_0 = c_n = 0.
+        #
+        # The internal equations are:
+        #
+        #     h_{i-1} c_{i-1}
+        #   + 2 (h_{i-1} + h_i) c_i
+        #   + h_i c_{i+1}
+        #   = 3 [ (y_{i+1}-y_i)/h_i - (y_i-y_{i-1})/h_{i-1} ]
+        #
+        # for i = 1, ..., n-1.
+
+        lower = np.zeros(self.n - 1, dtype=float)
+        diag = np.zeros(self.n - 1, dtype=float)
+        upper = np.zeros(self.n - 1, dtype=float)
+        rhs = np.zeros(self.n - 1, dtype=float)
+
+        for i in range(1, self.n):
+            k = i - 1
+
+            lower[k] = h[i - 1] if k > 0 else 0.0
+            diag[k] = 2.0 * (h[i - 1] + h[i])
+            upper[k] = h[i] if k < self.n - 2 else 0.0
+
+            rhs[k] = 3.0 * (
+                (self.y[i + 1] - self.y[i]) / h[i]
+                - (self.y[i] - self.y[i - 1]) / h[i - 1]
+            )
+
+        c_internal = self._solve_tridiagonal(lower, diag, upper, rhs)
+
+        c = np.zeros(self.n + 1, dtype=float)
+        c[1:self.n] = c_internal
+
+        # Convert to the coefficient convention used by this class:
+        #
+        #     S_i(t) = sd_i + sc_i*t + sb_i*t^2 + sa_i*t^3
+
+        for i in range(self.n):
+            self.sd[i] = self.y[i]
+            self.sc[i] = (
+                (self.y[i + 1] - self.y[i]) / h[i]
+                - h[i] * (2.0 * c[i] + c[i + 1]) / 3.0
+            )
+            self.sb[i] = c[i]
+            self.sa[i] = (c[i + 1] - c[i]) / (3.0 * h[i])
+
+# ------------------------------------------------------------------------------
+
+    @staticmethod
+    def _solve_tridiagonal(lower, diag, upper, rhs):
+        """
+        Solve a tridiagonal linear system using the Thomas algorithm.
+
+        lower[i] is the subdiagonal element in row i.
+        diag[i]  is the diagonal element in row i.
+        upper[i] is the superdiagonal element in row i.
+        """
+
+        n = rhs.size
+
+        if n == 0:
+            return np.zeros(0, dtype=float)
+
+        a = lower.copy()
+        b = diag.copy()
+        c = upper.copy()
+        d = rhs.copy()
+
+        for i in range(1, n):
+            if b[i - 1] == 0.0:
+                raise RuntimeError("singular tridiagonal system")
+
+            w = a[i] / b[i - 1]
+            b[i] -= w * c[i - 1]
+            d[i] -= w * d[i - 1]
+
+        if b[-1] == 0.0:
+            raise RuntimeError("singular tridiagonal system")
+
+        x = np.zeros(n, dtype=float)
+        x[-1] = d[-1] / b[-1]
+
+        for i in range(n - 2, -1, -1):
+            if b[i] == 0.0:
+                raise RuntimeError("singular tridiagonal system")
+
+            x[i] = (d[i] - c[i] * x[i + 1]) / b[i]
+
+        return x
 
 # ------------------------------------------------------------------------------
 
     def _interval_index(self, alpha: float) -> tuple[int, float]:
         if self.n <= 0:
-            raise RuntimeError("not enough of knots")
-        a = float(np.clip(alpha, self.x[0], self.x[self.n]))
+            raise RuntimeError("not enough knots")
+
+        a = float(np.clip(alpha, self.x[0], self.x[-1]))
+
         i = int(np.searchsorted(self.x, a, side="right") - 1)
         i = min(max(i, 0), self.n - 1)
-        return i, a - self.x[i]
+
+        dx = a - self.x[i]
+
+        return i, dx
 
 # ------------------------------------------------------------------------------
 
     def get_cv(self, alpha: float) -> float:
         i, dx = self._interval_index(alpha)
-        return float(self.sd[i] + self.sc[i]*dx + self.sb[i]*dx*dx + self.sa[i]*dx*dx*dx)
+
+        return float(
+            self.sd[i]
+            + self.sc[i] * dx
+            + self.sb[i] * dx * dx
+            + self.sa[i] * dx * dx * dx
+        )
 
 # ------------------------------------------------------------------------------
 
     def get_cv_first_der(self, alpha: float) -> float:
         i, dx = self._interval_index(alpha)
-        return float(self.sc[i] + 2.0*self.sb[i]*dx + 3.0*self.sa[i]*dx*dx)
+
+        return float(
+            self.sc[i]
+            + 2.0 * self.sb[i] * dx
+            + 3.0 * self.sa[i] * dx * dx
+        )
 
 # ------------------------------------------------------------------------------
 
     def __call__(self, alpha, der: int = 0):
         if der not in (0, 1):
             raise ValueError("only value (der=0) and first derivative (der=1) are supported")
+
         arr = np.asarray(alpha, dtype=float)
+
         if arr.ndim == 0:
-            return self.get_cv_first_der(float(arr)) if der == 1 else self.get_cv(float(arr))
-        fn = self.get_cv_first_der if der == 1 else self.get_cv
-        return np.array([fn(a) for a in arr], dtype=float)
+            if der == 0:
+                return self.get_cv(float(arr))
+            else:
+                return self.get_cv_first_der(float(arr))
 
-# ==============================================================================
-
-class CVSplineInterpolatingCubic(CVSplineBase):
-    """Natural interpolating cubic spline translated from CCVSplineInterpolatingCubic."""
-
-    def build_spline(self):
-        self.sa[:] = 0.0
-        self.sb[:] = 0.0
-        self.sc[:] = 0.0
-        self.sd[:] = 0.0
-
-        if self.n <= 0:
-            raise RuntimeError("not enough of knots")
-
-        if self.n == 1:
-            dx = self.x[1] - self.x[0]
-            if dx == 0.0:
-                raise RuntimeError("zero spline interval")
-            self.sd[0] = self.y[0]
-            self.sc[0] = (self.y[1] - self.y[0]) / dx
-            return
-
-        h = np.zeros(self.n + 1, dtype=float)
-        p = np.zeros(self.n + 1, dtype=float)
-        q = np.zeros(self.n + 1, dtype=float)
-        b = np.zeros(self.n + 1, dtype=float)
-
-        h[0] = self.x[1] - self.x[0]
-        for i in range(1, self.n):
-            h[i] = self.x[i + 1] - self.x[i]
-            p[i] = 2.0 * (self.x[i + 1] - self.x[i - 1])
-            q[i] = 3.0*(self.y[i + 1] - self.y[i])/h[i] - 3.0*(self.y[i] - self.y[i - 1])/h[i - 1]
-
-        for i in range(2, self.n):
-            p[i] = p[i] - h[i - 1]*h[i - 1]/p[i - 1]
-            q[i] = q[i] - q[i - 1]*h[i - 1]/p[i - 1]
-
-        b[self.n - 1] = q[self.n - 1]/p[self.n - 1]
-        for i in range(2, self.n):
-            j = self.n - i
-            b[j] = (q[j] - h[j]*b[j + 1]) / p[j]
-
-        self.sa[0] = b[1] / (3.0*h[0])
-        self.sb[0] = 0.0
-        self.sc[0] = (self.y[1] - self.y[0])/h[0] - b[1]*h[0]/3.0
-        self.sd[0] = self.y[0]
-
-        for i in range(1, self.n):
-            self.sa[i] = (b[i + 1] - b[i]) / (3.0*h[i])
-            self.sb[i] = b[i]
-            self.sc[i] = (b[i] + b[i - 1])*h[i - 1] + self.sc[i - 1]
-            self.sd[i] = self.y[i]
-
-# ==============================================================================
-
-class CVSplineSmoothingCubic(CVSplineBase):
-    """Smoothing cubic spline translated from CCVSplineSmoothingCubic."""
-
-    def __init__(self, lam: float = 0.999, sigma: float = 0.01):
-        self.lambda_ = float(lam)
-        self.all_sigma = float(sigma)
-        super().__init__()
-
-# ------------------------------------------------------------------------------
-
-    def clear(self):
-        super().clear()
-        self.sigma = np.zeros(0, dtype=float)
-
-# ------------------------------------------------------------------------------
-
-    def allocate(self, numofknots: int):
-        super().allocate(numofknots)
-        if self.n > 0:
-            self.sigma = np.full(self.n + 1, self.all_sigma, dtype=float)
+        if der == 0:
+            return np.array([self.get_cv(a) for a in arr], dtype=float)
         else:
-            self.sigma = np.zeros(0, dtype=float)
-
-# ------------------------------------------------------------------------------
-
-    def set_point(self, knotid: int, alpha: float, cv: float):
-        super().set_point(knotid, alpha, cv)
-        self.sigma[knotid] = self.all_sigma
-
-# ------------------------------------------------------------------------------
-
-    def set_lambda(self, lam: float):
-        lam = float(lam)
-        if lam <= 0.0 or lam > 1.0:
-            raise RuntimeError("lambda out-of-range (0.0;1.0>")
-        self.lambda_ = lam
-
-# ------------------------------------------------------------------------------
-
-    def set_sigma(self, knotid: int, sig: float):
-        if knotid < 0 or knotid > self.n:
-            raise RuntimeError("knotid is out-of-range")
-        self.sigma[knotid] = float(sig)
-
-# ------------------------------------------------------------------------------
-
-    def update_points(self, alphas, values):
-        alphas = np.asarray(alphas, dtype=float)
-        values = np.asarray(values, dtype=float)
-        if self.n != len(alphas) - 1:
-            self.allocate(len(alphas))
-        else:
-            self.sigma[:] = self.all_sigma
-        super().update_points(alphas, values)
-
-# ------------------------------------------------------------------------------
-
-    def build_spline(self):
-        self.sa[:] = 0.0
-        self.sb[:] = 0.0
-        self.sc[:] = 0.0
-        self.sd[:] = 0.0
-
-        if self.n <= 0:
-            raise RuntimeError("not enough of knots")
-
-        if self.n == 1:
-            dx = self.x[1] - self.x[0]
-            if dx == 0.0:
-                raise RuntimeError("zero spline interval")
-            self.sd[0] = self.y[0]
-            self.sc[0] = (self.y[1] - self.y[0]) / dx
-            return
-
-        h = np.zeros(self.n + 1, dtype=float)
-        r = np.zeros(self.n + 2, dtype=float)
-        f = np.zeros(self.n + 2, dtype=float)
-        p = np.zeros(self.n + 1, dtype=float)
-        q = np.zeros(self.n + 1, dtype=float)
-        u = np.zeros(self.n + 1, dtype=float)
-        v = np.zeros(self.n + 1, dtype=float)
-        w = np.zeros(self.n + 1, dtype=float)
-
-        mu = 2.0 * (1.0 - self.lambda_) / (3.0 * self.lambda_)
-
-        h[0] = self.x[1] - self.x[0]
-        r[0] = 3.0 / h[0]
-        for i in range(1, self.n):
-            h[i] = self.x[i + 1] - self.x[i]
-            r[i] = 3.0 / h[i]
-            f[i] = -(r[i - 1] + r[i])
-            p[i] = 2.0 * (self.x[i + 1] - self.x[i - 1])
-            q[i] = 3.0*(self.y[i + 1] - self.y[i])/h[i] - 3.0*(self.y[i] - self.y[i - 1])/h[i - 1]
-
-        v[0] = h[0]
-        for i in range(1, self.n):
-            u[i] = (r[i - 1]*r[i - 1]*self.sigma[i - 1]
-                  + f[i]*f[i]*self.sigma[i]
-                  + r[i]*r[i]*self.sigma[i + 1])
-            u[i] = mu*u[i] + p[i]
-            v[i] = f[i]*r[i]*self.sigma[i] + r[i]*f[i + 1]*self.sigma[i + 1]
-            v[i] = mu*v[i] + h[i]
-            w[i] = mu*r[i]*r[i + 1]*self.sigma[i + 1]
-
-        self._quincunx(u, v, w, q)
-
-        self.sd[0] = self.y[0] - mu*r[0]*q[1]*self.sigma[0]
-        # BUG??? self.sd[1] = self.y[1] - mu*(f[1]*q[1] + r[1]*q[2])*self.sigma[0]
-        self.sd[1] = self.y[1] - mu*(f[1]*q[1] + r[1]*q[2])*self.sigma[1]
-        self.sa[0] = q[1] / (3.0*h[0])
-        self.sb[0] = 0.0
-        self.sc[0] = (self.sd[1] - self.sd[0])/h[0] - q[1]*h[0]/3.0
-        r[0] = 0.0
-
-        for j in range(1, self.n):
-            self.sa[j] = (q[j + 1] - q[j]) / (3.0*h[j])
-            self.sb[j] = q[j]
-            self.sc[j] = (q[j] + q[j - 1])*h[j - 1] + self.sc[j - 1]
-            self.sd[j] = r[j - 1]*q[j - 1] + f[j]*q[j] + r[j]*q[j + 1]
-            self.sd[j] = self.y[j] - mu*self.sd[j]*self.sigma[j]
-
-# ------------------------------------------------------------------------------
-
-    def _quincunx(self, u, v, w, q):
-        u[0] = 0.0
-        v[1] = v[1] / u[1]
-        w[1] = w[1] / u[1]
-
-        for j in range(2, self.n):
-            u[j] = u[j] - u[j - 2]*w[j - 2]*w[j - 2] - u[j - 1]*v[j - 1]*v[j - 1]
-            v[j] = (v[j] - u[j - 1]*v[j - 1]*w[j - 1]) / u[j]
-            w[j] = w[j] / u[j]
-
-        q[1] = q[1] - v[0]*q[0]
-        for j in range(2, self.n):
-            q[j] = q[j] - v[j - 1]*q[j - 1] - w[j - 2]*q[j - 2]
-
-        for j in range(1, self.n):
-            q[j] = q[j] / u[j]
-
-        q[self.n] = 0.0
-        for j in range(self.n - 2, 0, -1):
-            q[j] = q[j] - v[j]*q[j + 1] - w[j]*q[j + 2]
-
+            return np.array([self.get_cv_first_der(a) for a in arr], dtype=float)
 
 # ==============================================================================
+# CVSmoothingCubicSpline
+# ==============================================================================
 
-class CVSmoothingCubicSplineSVD:
+class CVSmoothingCubicSpline:
     """
-    Natural smoothing cubic spline solved by SVD.
+    Natural smoothing cubic spline without SVD.
 
     The spline minimizes
 
-        sum_i w_i * (y_i - z_i)^2
-        + lam * integral (S''(x))^2 dx
+        E(z) = sum_i w_i * (y_i - z_i)^2
+             + lam * integral (S''(x))^2 dx
 
     where
 
-        w_i = 1 / sigma_i^2
+        w_i = 1 / N
 
     Interface
     ---------
-    spline = CVSmoothingCubicSplineSVD(lam, all_sigma, rcond)
+    spline = CVSmoothingCubicSpline(lam)
 
     spline.update_points(x, y)
 
@@ -354,23 +340,22 @@ class CVSmoothingCubicSplineSVD:
     Notes
     -----
     lam = 0.0 gives a natural interpolating cubic spline.
+
     Larger lam gives stronger smoothing.
+
+    This implementation does not use SVD. It assumes that the involved
+    matrices are symmetric positive definite and solves them by Cholesky
+    factorization when possible.
     """
 
-    def __init__(self, lam: float, all_sigma: float | np.ndarray, rcond: float):
+    def __init__(self, lam: float):
         self.lam = float(lam)
-        self.all_sigma = all_sigma
-        self.rcond = float(rcond)
 
         if self.lam < 0.0:
             raise ValueError("lam must be non-negative.")
 
-        if self.rcond < 0.0:
-            raise ValueError("rcond must be non-negative.")
-
         self.x = None
         self.y = None
-        self.sigma = None
         self.w = None
 
         self.npts = 0
@@ -434,12 +419,6 @@ class CVSmoothingCubicSplineSVD:
         x = x[order]
         y = y[order]
 
-        sigma = self._prepare_sigma(x.size)
-        sigma = sigma[order]
-
-        if np.any(sigma <= 0.0):
-            raise ValueError("All sigma values must be positive.")
-
         h = np.diff(x)
 
         if np.any(h <= 0.0):
@@ -447,8 +426,12 @@ class CVSmoothingCubicSplineSVD:
 
         self.x = x
         self.y = y
-        self.sigma = sigma
-        self.w = 1.0 / sigma**2
+
+        # Uniform weights:
+        #
+        #   w_i = 1 / N
+        #
+        self.w = np.full(x.size, 1.0 / float(x.size))
 
         self.npts = x.size
         self.nseg = x.size - 1
@@ -485,7 +468,9 @@ class CVSmoothingCubicSplineSVD:
         """
 
         if self.x is None:
-            raise RuntimeError("Spline is not initialized. Call update_points(x, y) first.")
+            raise RuntimeError(
+                "Spline is not initialized. Call update_points(x, y) first."
+            )
 
         der = int(der)
 
@@ -547,24 +532,33 @@ class CVSmoothingCubicSplineSVD:
         Calculate smoothed knot values z from
 
             (W + lam*K) z = W y
+
+        without using SVD.
         """
 
         q, r = self._build_reinsch_matrices()
 
-        # Compute K = Q R^{-1} Q^T.
+        # Compute
         #
-        # We do not explicitly invert R. Instead, solve
+        #   K = Q R^{-1} Q^T
         #
-        #     R X = Q^T
+        # without explicitly inverting R.
         #
-        # by SVD.
-        rinv_qt = self._svd_solve(r, q.T)
-        k = q @ rinv_qt
+        # Solve
+        #
+        #   R X = Q^T
+        #
+        # and then use
+        #
+        #   K = Q X
+        #
+        xmat = self._solve_spd(r, q.T)
+        k = q @ xmat
 
         lhs = np.diag(self.w) + self.lam * k
         rhs = self.w * self.y
 
-        z = self._svd_solve(lhs, rhs)
+        z = self._solve_spd(lhs, rhs)
 
         return z
 
@@ -644,7 +638,7 @@ class CVSmoothingCubicSplineSVD:
                 - (z[i] - z[i - 1]) / h[i - 1]
             )
 
-        m_inner = self._svd_solve(amat, rhs)
+        m_inner = self._solve_spd(amat, rhs)
 
         m = np.zeros(n, dtype=float)
         m[1:-1] = m_inner
@@ -661,64 +655,46 @@ class CVSmoothingCubicSplineSVD:
         self.d = (m[1:] - m[:-1]) / (6.0*h)
 
     # -------------------------------------------------------------------------
-    # Helpers
+    # Linear algebra helpers
     # -------------------------------------------------------------------------
 
-    def _prepare_sigma(self, npts):
+    @staticmethod
+    def _solve_spd(a, b):
         """
-        Prepare sigma array from self.all_sigma.
+        Solve
 
-        self.all_sigma can be either a scalar or an array with length npts.
-        """
+            a x = b
 
-        sigma = np.asarray(self.all_sigma, dtype=float)
+        for a symmetric positive-definite matrix a.
 
-        if sigma.ndim == 0:
-            return np.full(npts, float(sigma), dtype=float)
-
-        if sigma.ndim != 1:
-            raise ValueError("all_sigma must be either a scalar or a one-dimensional array.")
-
-        if sigma.size != npts:
-            raise ValueError("If all_sigma is an array, it must have the same length as x and y.")
-
-        return sigma.copy()
-
-    def _svd_solve(self, a, b):
-        """
-        Solve a*x = b using SVD pseudoinverse.
-
-        Singular values are accepted if
-
-            s_i > rcond * max(s)
-
-        Parameters
-        ----------
-        a : ndarray
-            Matrix.
-
-        b : ndarray
-            Right-hand side vector or matrix.
+        The preferred path is Cholesky factorization. If Cholesky fails,
+        np.linalg.solve is tried as a fallback. No SVD is used.
         """
 
         a = np.asarray(a, dtype=float)
         b = np.asarray(b, dtype=float)
 
-        u, s, vt = np.linalg.svd(a, full_matrices=False)
+        try:
+            lmat = np.linalg.cholesky(a)
 
-        if s.size == 0:
-            raise np.linalg.LinAlgError("SVD failed: no singular values found.")
+            # Solve
+            #
+            #   L q = b
+            #
+            q = np.linalg.solve(lmat, b)
 
-        cutoff = self.rcond * np.max(s)
+            # Solve
+            #
+            #   L.T x = q
+            #
+            x = np.linalg.solve(lmat.T, q)
 
-        sinv = np.zeros_like(s)
-        keep = s > cutoff
-        sinv[keep] = 1.0 / s[keep]
+            return x
 
-        if b.ndim == 1:
-            return vt.T @ (sinv * (u.T @ b))
-
-        return vt.T @ (sinv[:, None] * (u.T @ b))
+        except np.linalg.LinAlgError:
+            # Fallback for cases where the matrix is numerically not recognized
+            # as positive definite. This still does not use SVD.
+            return np.linalg.solve(a, b)
 
 # ==============================================================================
 # RBF surface model, adapted from analyse-2D-surface.py
@@ -1072,10 +1048,10 @@ class EnergySurface2D:
                         continue
                     ax.scatter(
                         path_x[mask], path_y[mask],
-                        s=28,
+                        s=10,
                         c=bead_colors[bead_type],
                         edgecolors="white",
-                        linewidths=0.6,
+                        linewidths=0.3,
                         label=bead_type,
                         zorder=5,
                     )
@@ -1117,49 +1093,28 @@ class Bead:
         self.dCVdAlpha  = np.zeros(self.ncvs)
         self.P          = np.zeros((self.ncvs,self.ncvs))   # projector
 
-        self.Grad         = np.zeros(self.ncvs)
+        self.Grad         = np.zeros(self.ncvs)             # ENE gradient
         self.pGrad        = np.zeros(self.ncvs)             # force acting perpendicularly to the path
+        self.uGrad        = np.zeros(self.ncvs)             # gradient to move bead
 
         self.Alpha      = None      # path position
         self.dAdAlpha   = None      # free energy derivative
         self.A          = None      # free energy, integrated
         self.Asurf      = None      # free energy from EnergySurface2D
              
-        # Adam (Adaptive Moment Estimation) variants
-        self.beta1t    = 1.0
-        self.beta2t    = 1.0  
-        self.mt        = np.zeros(self.ncvs)
-        self.vt        = np.zeros(self.ncvs)
-
         # old pos
         self.OPos      = np.zeros(self.ncvs)
 
 # ------------------------------------------------------------------------------
 
-    def UpdatePositionAdaBelief(self,step,beta1,beta2,mingnormeps,cvs):
+    def UpdatePositionGradientDescent(self,stepsize,cvs):
 
         if self.type == "permanent":
             return
         
-        grad = np.zeros(self.ncvs)
-
-        if self.type == "terminal" or self.type == "kink":
-            grad[:] = self.Grad[:]  # gradient descent move
-        else:
-            grad[:] = self.pGrad[:] # perpedicular move
-
-        self.mt[:] = beta1 * self.mt[:] + (1.0 - beta1) * grad[:]
-        self.vt[:] = beta2 * self.vt[:] + (1.0 - beta2) * ((grad[:] - self.mt[:])*(grad[:] - self.mt[:]) + mingnormeps)
-
-        self.beta1t = self.beta1t * beta1
-        self.beta2t = self.beta2t * beta2
-
         for i in range(self.ncvs):
 
-            mthat = self.mt[i]/(1.0-self.beta1t)
-            vthat = self.vt[i]/(1.0-self.beta2t)
-
-            dm = step * mthat/(math.sqrt(vthat)+mingnormeps)
+            dm = stepsize * self.uGrad[i]
 
             if (cvs[i].smaxmov <= 0) or (math.fabs(dm) < cvs[i].smaxmov):
                 self.Pos[i] = self.Pos[i] - dm
@@ -1210,22 +1165,13 @@ class STMPath:
         if args.cvspline == 1:
             print(f"  >>> Smoothing Cubic Spline")
             print(f"      Lambda: {args.spline_lambda:10.5f}")
-            print(f"      Sigma:  {args.spline_sigma:10.5f}")
             self.cv_splines =  [
-                CVSplineSmoothingCubic(lam=args.spline_lambda, sigma=args.spline_sigma)
-                for _ in range(self.ncvs)
-            ]
-        elif args.cvspline == 2:
-            print(f"  >>> Smoothing Cubic Spline via SVD")
-            print(f"      Lambda: {args.spline_lambda:10.5f}")
-            print(f"      RCond:  {args.spline_rcond:10.6e}")
-            self.cv_splines =  [
-                CVSmoothingCubicSplineSVD(lam=args.spline_lambda, all_sigma=1.0, rcond=args.spline_rcond)
+                CVSmoothingCubicSpline(lam=args.spline_lambda)
                 for _ in range(self.ncvs)
             ]
         else:
             print(f"  >>> Interpolating Cubic Spline")
-            self.cv_splines =  [CVSplineInterpolatingCubic() for _ in range(self.ncvs)]
+            self.cv_splines =  [CVInterpolatingCubicSpline() for _ in range(self.ncvs)]
 
         self.PathParamMode = args.path_param_mode
 
@@ -1252,20 +1198,18 @@ class STMPath:
                 path_x=path_x, path_y=path_y, path_types=path_types,
                 filename=f"{args.plot_prefix}_path_0000_b_initial-full.png", show=args.show, figsize=args.figsize, dpi=args.dpi)
 
-        # setup AdaBelief
-        self.StepSize           = args.stepsize
-        self.AdamB1             = args.beta1
-        self.AdamB2             = args.beta2
-        self.MinGNormEps        = args.mingnormesp
-
         # smoothing, reparameterization
         self.SmoothInterval     = args.smoothinterval
         self.SmoothingFac       = args.sfac
         self.ReparamInterval    = args.reparaminterval
+        self.DetectKinksStep    = args.detect_kinks_step
+        self.KinkEnergyThr      = args.kink_energy_thr
 
         # STM
         self.STMStep            = 0
+        self.StepSize           = args.stepsize
         self.nstepmax           = args.nstepmax
+
 
         # run initial statistics
         self.init_stm_statistics(args)
@@ -1319,6 +1263,11 @@ class STMPath:
             # re-evaluate path
             self.calc_beads()
             self.integrate_path()
+
+            if self.STMStep == self.DetectKinksStep:
+                # mark kink knots
+                self.detect_kinks(self.KinkEnergyThr);
+
             self.calculate_stm_step_stat()
 
             self.print_stm_step_info_f()
@@ -1455,7 +1404,7 @@ class STMPath:
 
         # backup old positions
         for bead in self.beads:
-            bead.OPos[:] = bead.Pos[:]
+            bead.OPos[:]  = bead.Pos[:]
 
         self.OldCPathLength = self.CurrentPathLength
 
@@ -1463,8 +1412,8 @@ class STMPath:
 
         # update positions
         for bead in self.beads:
-            # bead types are handled in UpdatePositionAdaBelief()
-            bead.UpdatePositionAdaBelief(self.StepSize,self.AdamB1,self.AdamB2,self.MinGNormEps,self.cvs)
+            # bead types are handled in UpdatePositionGradientDescent()
+            bead.UpdatePositionGradientDescent(self.StepSize,self.cvs)
             
     # --------------------------------------------------------------------------
 
@@ -1476,39 +1425,88 @@ class STMPath:
         old_pos = np.array([bead.Pos.copy() for bead in self.beads])
 
         for i in range(1, self.nbeads - 1):
-            if self.beads[i].type == "permanent" or self.beads[i].type == "kink":
-                # skip kink or permanent beads 
-                continue
-
-            self.beads[i].Pos[:] = (
-                (1.0 - self.SmoothingFac) * old_pos[i]
-                + 0.5 * self.cSmoothingFac * (old_pos[i - 1] + old_pos[i + 1])
-            )
+            if self.beads[i].type == "flexible":
+                self.beads[i].Pos[:] = (
+                    (1.0 - self.SmoothingFac) * old_pos[i]
+                    + 0.5 * self.SmoothingFac * (old_pos[i - 1] + old_pos[i + 1])
+                )
 
     # --------------------------------------------------------------------------
 
     def reparametrize_all_positions(self):
 
-        if (self.ReparamInterval == 0) or (self.STMStep % self.ReparamInterval != 0 ):
-            return;
-    
-        self.parametrize_path(self.beads)
+        if (self.ReparamInterval == 0) or (self.STMStep % self.ReparamInterval != 0):
+            return
 
-        # generate evenly distributed set of alphas
-        for i in range(self.nbeads):
-            self.beads[i].Alpha = float(i) / float(self.nbeads-1)
+        def iter_flexible_segments_with_terminals(beads):
+            """
+            Yield segments composed of:
 
-        self.beads[0].Alpha = 0.0
-        self.beads[-1].Alpha = 1.0
+                (left terminal bead) - optional
+                one or more flexible beads
+                (right terminal bead) - optional
 
-        # update positions along the path based on new alphas
-        for cv in range(self.ncvs):
-            # FIXME
-            # redistribute other beads
-            for bead in self.beads:
-                if bead.type == "permanent":
-                    continue
-                bead.Pos[cv] = self.cv_splines[cv](bead.Alpha)
+            The terminal beads are any non-flexible beads, for example:
+            terminal, permanent, kink.
+            """
+
+            nbeads = len(beads)
+            i = 0
+
+            while i < nbeads:
+
+                # Find the first flexible bead.
+                while i < nbeads and beads[i].type != "flexible":
+                    i += 1
+
+                if i >= nbeads:
+                    # no more beads
+                    # print("here")
+                    break
+
+                first_flexible = i
+
+                # Find the end of this continuous flexible block.
+                while i < nbeads and beads[i].type == "flexible":
+                    i += 1
+
+                last_flexible = i
+
+                # make a list
+                segment_beads = []
+                # include left and right item to flexible beads if possible
+                for idx in range(first_flexible-1,last_flexible+1):
+                    if idx < 0 or idx >= self.nbeads:
+                        continue
+                    segment_beads.append(self.beads[idx])
+
+                yield segment_beads
+
+        for segment_beads in iter_flexible_segments_with_terminals(self.beads):
+            
+            # At least one bead inside the segment
+            if len(segment_beads) < 3:
+                continue
+
+            # Parametrize this local segment and build CV splines for it.
+            # The first and last beads become alpha = 0.0 and alpha = 1.0.
+            self.parametrize_path(segment_beads)
+
+            # generate evenly distributed set of alphas
+            alphas = []
+            for idx, bead in enumerate(segment_beads):
+                alpha = float(idx) / float(len(segment_beads) - 1)
+                alphas.append(alpha)
+
+            alphas[0] = 0.0
+            alphas[-1] = 1.0
+
+            # update positions along the path based on new alphas
+            for cv in range(self.ncvs):
+                # redistribute beads - exclude terminals
+                for bidx, bead in enumerate(segment_beads[1:-1],start=1):
+                    if bead.type == "flexible":
+                        bead.Pos[cv] = self.cv_splines[cv](alphas[bidx])
        
     # --------------------------------------------------------------------------
 
@@ -1521,7 +1519,151 @@ class STMPath:
                 if bead.Pos[cvidx] < cv.scale(cv.pathmin):
                     bead.Pos[cvidx] = cv.scale(cv.pathmin)
                 if bead.Pos[cvidx] > cv.scale(cv.pathmax):
-                    bead.Pos[cvidx] = cv.scale(cv.pathmax)        
+                    bead.Pos[cvidx] = cv.scale(cv.pathmax)  
+
+# ------------------------------------------------------------------------------
+
+    def detect_kinks(self, ethr=0.0):
+
+        alphas = np.array([bead.Alpha for bead in self.beads], dtype=float)
+        enes   = np.array([bead.Asurf for bead in self.beads], dtype=float)
+
+        _, bidxs = self.find_minima_positions(alphas,enes)
+
+        for bidx in bidxs:
+            self.beads[bidx].type = "kink"
+
+        print(f"# >> Detecting kink beads. Found: {len(bidxs)}")
+
+# ------------------------------------------------------------------------------
+
+    def find_minima_positions(self, x, y, ethr=0.0):
+        """
+        Detect minima of y = f(x), merge minima within the same basin,
+        and return only the lowest minimum from each basin.
+
+        Two neighbouring minima are considered separate only if the maximum
+        between them is at least `ethr` higher than both minima. Otherwise,
+        they belong to the same basin and only the lower one is retained.
+
+        Parameters
+        ----------
+        x : array-like
+            Positions.
+        y : array-like
+            Function values.
+        ethr : float
+            Minimum barrier height required to separate two basins.
+
+        Returns
+        -------
+        minima_x : np.ndarray
+            x positions of selected minima.
+        minima_indices : list
+            Indices or index ranges corresponding to selected minima.
+        """
+
+        x = np.asarray(x, dtype=float)
+        y = np.asarray(y, dtype=float)
+
+        if x.ndim != 1 or y.ndim != 1:
+            raise ValueError("x and y must be one-dimensional arrays.")
+
+        if len(x) != len(y):
+            raise ValueError("x and y must have the same length.")
+
+        if ethr < 0.0:
+            raise ValueError("ethr must be non-negative.")
+
+        n = len(y)
+        if n < 3:
+            return np.array([]), []
+
+        # ------------------------------------------------------------
+        # Step 1: detect all local minima, including flat minima.
+        # Each minimum is represented as (start, end, xmin, ymin).
+        # For sharp minima, start == end.
+        # ------------------------------------------------------------
+
+        candidates = []
+
+        i = 1
+        while i < n - 1:
+
+            # sharp minimum
+            if y[i] < y[i - 1] and y[i] < y[i + 1]:
+                candidates.append((i, i, x[i], y[i]))
+                i += 1
+                continue
+
+            # flat minimum
+            if y[i] < y[i - 1] and y[i] == y[i + 1]:
+                start = i
+
+                while i + 1 < n and y[i + 1] == y[start]:
+                    i += 1
+
+                end = i
+
+                if end < n - 1 and y[end] < y[end + 1]:
+                    xmin = 0.5 * (x[start] + x[end])
+                    ymin = y[start]
+                    candidates.append((start, end, xmin, ymin))
+
+            i += 1
+
+        if not candidates:
+            return np.array([]), []
+
+        # ------------------------------------------------------------
+        # Step 2: merge minima that are not separated by ethr barrier.
+        # ------------------------------------------------------------
+
+        basins = []
+        current_basin = [candidates[0]]
+
+        for m1, m2 in zip(candidates[:-1], candidates[1:]):
+            _, end1, _, ymin1 = m1
+            start2, _, _, ymin2 = m2
+
+            # maximum between the two minima
+            ymax_between = np.max(y[end1:start2 + 1])
+
+            barrier1 = ymax_between - ymin1
+            barrier2 = ymax_between - ymin2
+
+            separated = (barrier1 >= ethr) and (barrier2 >= ethr)
+
+            if separated:
+                basins.append(current_basin)
+                current_basin = [m2]
+            else:
+                current_basin.append(m2)
+
+        basins.append(current_basin)
+
+        # ------------------------------------------------------------
+        # Step 3: retain only the lowest minimum from each basin.
+        # ------------------------------------------------------------
+
+        selected = []
+
+        for basin in basins:
+            lowest = min(basin, key=lambda item: item[3])
+            selected.append(lowest)
+
+        minima_x = []
+        minima_indices = []
+
+        for start, end, xmin, ymin in selected:
+            minima_x.append(xmin)
+
+            if start == end:
+                minima_indices.append(start)
+            else:
+                minima_indices.append((start, end))
+
+        return np.asarray(minima_x), minima_indices
         
 # ------------------------------------------------------------------------------
 
@@ -1539,34 +1681,109 @@ class STMPath:
         - self.cv_splines were already built by parametrize_path()
         """
 
-        self.CurrentPathLength = self.parametrize_path(self.beads)
+        def iter_nokink_segments_with_terminals(beads):
+            """
+            Yield segments composed of:
 
+                (left terminal bead) - optional
+                one or more flexible beads
+                (right terminal bead) - optional
+
+            The terminal beads are any non-flexible beads, for example:
+            terminal, permanent, kink.
+            """
+
+            nbeads = len(beads)
+            i = 0
+
+            while i < nbeads:
+
+                # start with next bead
+                if i >= nbeads:
+                    # no more beads
+                    break
+
+                first_seg = i
+
+                i += 1
+
+                # kink
+                while i < nbeads and beads[i].type != "kink":
+                    i += 1
+
+                last_seg = i
+
+                i += 1
+
+                # make a list
+                segment_beads = []
+                # include left and right item to segment beads if possible
+                for idx in range(first_seg-1,last_seg+1):
+                    if idx < 0 or idx >= self.nbeads:
+                        continue
+                    segment_beads.append(self.beads[idx])
+
+                yield segment_beads
+
+        # for all beads
         for bead in self.beads:            
             # Calculate MF and A
             bead.Asurf, grad, hessian = self.surface.eval_uv(bead.Pos)
             bead.Grad[:] = grad[:]
+            bead.P[:,:] = 0.0
+            bead.dCVdAlpha[:] = 0.0
 
+        # for non-kink segments
+        for segment_beads in iter_nokink_segments_with_terminals(self.beads):
+            
+            # At least one bead inside the segment
+            if len(segment_beads) < 3:
+                continue
+
+            # Parametrize this local segment and build CV splines for it.
+            # The first and last beads become alpha = 0.0 and alpha = 1.0.
+            self.parametrize_path(segment_beads)
+
+            for bead in segment_beads:            
+
+                dCVdAlpha = np.zeros(self.ncvs)
+                # Calculate tangent dCV/dalpha from the path splines.
+                for i in range(self.ncvs):
+                    dCVdAlpha[i] = self.cv_splines[i](bead.Alpha, 1)
+
+                slen2 = float(np.dot(dCVdAlpha, dCVdAlpha))
+                if slen2 == 0.0:
+                    raise RuntimeError("derivative segment has zero length")
+
+                # Projector perpendicular to the path:
+                #     P = I - t t^T / |t|^2
+
+                bead.P[:, :] = np.eye(self.ncvs) - np.outer(dCVdAlpha, dCVdAlpha) / slen2
+
+                bead.pGrad[:] = bead.P @ bead.Grad
+
+                if bead.type == "terminal" or bead.type == "kink":
+                    bead.uGrad[:] = bead.Grad[:]    # switch to gradient descent move
+                elif bead.type == "flexible":
+                    bead.uGrad[:] = bead.pGrad[:]   # use perpendicular gradient
+                else:
+                    bead.uGrad[:] = 0.0
+
+        # and now for the entire path
+        self.CurrentPathLength = self.parametrize_path(self.beads)  
+
+        for bead in self.beads:            
             # Calculate tangent dCV/dalpha from the path splines.
             for i in range(self.ncvs):
-                bead.dCVdAlpha[i] = self.cv_splines[i](bead.Alpha, 1)
+                if bead.type == "terminal" or bead.type == "kink":
+                    bead.dCVdAlpha[i] = 0.0
+                else:
+                    bead.dCVdAlpha[i] = self.cv_splines[i](bead.Alpha, 1)
 
-            slen2 = float(np.dot(bead.dCVdAlpha, bead.dCVdAlpha))
-            if slen2 == 0.0:
-                raise RuntimeError("derivative segment has zero length")
-
-            # Projector perpendicular to the path:
-            #     P = I - t t^T / |t|^2
-
-            bead.P[:, :] = np.eye(self.ncvs) - np.outer(bead.dCVdAlpha, bead.dCVdAlpha) / slen2
-
-        # Project gradients
-        for bead in self.beads:
-            bead.pGrad[:] = bead.P @ bead.Grad
-
+        # Calculate kink angles
         v1 = np.zeros(self.ncvs)
         v2 = np.zeros(self.ncvs)
 
-        # Calculate kink angles
         for bidx in range(self.nbeads):
 
             if bidx == 0  or bidx == self.nbeads - 1:
@@ -1651,14 +1868,14 @@ class STMPath:
 
             bead.A = fes
 
-        # -------------------------------------------------------------------------
-        # Shift global minimum to zero.
-        # -------------------------------------------------------------------------
-
+        # shift global minimum to zero.
         amin = min(bead.A for bead in self.beads)
+        emin = min(bead.Asurf for bead in self.beads)
 
         for bead in self.beads:
             bead.A -= amin
+            bead.Asurf -= emin
+
 
    # --------------------------------------------------------------------------
 
@@ -1724,8 +1941,10 @@ class STMPath:
             bead.type  = "flexible"
 
             # copy type of terminals from the input path
-            if (bidx == 0) or (bidx == self.nbeads - 1):
+            if bidx == 0:
                 bead.type = input_beads[0].type
+            if bidx == self.nbeads - 1:
+                bead.type = input_beads[-1].type
 
             for i in range(self.ncvs):
                 bead.Pos[i] = self.cv_splines[i](alpha)
@@ -2030,7 +2249,7 @@ class STMPath:
         print(f"# Number of beads = {self.nbeads}", file=fout)
 
         # Header legends.
-        print("#  ID   Type  MO ST KinkA  alpha    dA/dalpha            A     CID Updates", end="", file=fout)
+        print("#  ID   Type  MO ST KinkA  alpha    dA/dalpha        Asurf     CID Updates", end="", file=fout)
         for i in range(self.ncvs):
             print(f"          CV{i + 1:<1d}", end="", file=fout)
         for i in range(self.ncvs):
@@ -2042,7 +2261,7 @@ class STMPath:
         for i in range(self.ncvs):
             print(f"  -|F{i + 1:<1d}/dalpha", end="", file=fout)
 
-        print(f"          ENE", end="", file=fout)
+        print(f"         Aint", end="", file=fout)
         print(file=fout)
 
         # Delimiters.
@@ -2153,15 +2372,15 @@ class STMPath:
 
             alpha = 0.0 if bead.Alpha is None else float(bead.Alpha)
             d_ad_alpha = 0.0 if bead.dAdAlpha is None else float(bead.dAdAlpha)
-            free_energy = 0.0 if bead.A is None else float(bead.A)
-            ene_surf = 0.0 if bead.Asurf is None else float(bead.Asurf)
+            free_energy_surf = 0.0 if bead.Asurf is None else float(bead.A)
+            free_energy_int = 0.0 if bead.A is None else float(bead.Asurf)
 
             print(
                 f"  {bead_id:4d} {bead_type:>6} {mode:>2} {status:>2} "
                 f"{kangle:5.1f} "
                 f"{alpha:6.4f} "
                 f"{d_ad_alpha:12.5e} "
-                f"{free_energy:12.5e} "
+                f"{free_energy_surf:12.5e} "
                 f"{client_id:>7}"
                 f"{self.STMStep:8d}",
                 end="",
@@ -2189,7 +2408,7 @@ class STMPath:
             for i in range(self.ncvs):
                 print(f" {float(bead.pGrad[i]):12.5e}", end="", file=fout)
 
-            print(f" {ene_surf:12.5e}", end="", file=fout)
+            print(f" {free_energy_int:12.5e}", end="", file=fout)
 
             print(file=fout)
 
@@ -2325,14 +2544,8 @@ class STMPath:
             if bead.type == "permanent":
                 continue
             
-            # print(bead.Pos,bead.OPos)
             bmov = float(np.linalg.norm(bead.Pos - bead.OPos))
-
-            if bead.type == "flexible":
-                mfsize = float(np.linalg.norm(bead.pGrad))
-            else:
-                # kink, terminal
-                mfsize = float(np.linalg.norm(bead.Grad))
+            mfsize = float(np.linalg.norm(bead.uGrad))
 
             self.AveBeadMove += bmov
             if bmov > self.MaxBeadMove:
@@ -2560,19 +2773,13 @@ def parse_args():
     
     pathgroup = parser.add_argument_group("Path specification")
 
-    pathgroup.add_argument("--cvspline", type=int, default=2,
-        help="Type of CV spline: 0 - interpolating cubic spline, 1 - smoothing cubic spline, 2 - smoothing cubic spline SVD." )
+    pathgroup.add_argument("--cvspline", type=int, default=1,
+        help="Type of CV spline: 0 - interpolating cubic spline, 1 - smoothing cubic spline" )
 
-    pathgroup.add_argument("--spline-lambda", type=float, default=0.999,
-        help="Lambda for the internal smoothing cubic spline; 1.0 gives interpolation." )
+    pathgroup.add_argument("--spline-lambda", type=float, default=1e-6,
+        help="Lambda for the internal smoothing cubic spline; 0.0 gives interpolation." )
     
-    pathgroup.add_argument("--spline-sigma", type=float, default=0.01,
-        help="Default sigma assigned to all knots of the internal smoothing cubic spline." )
-    
-    pathgroup.add_argument("--spline-rcond", type=float, default=1e-9,
-        help="SVD cutoff for CVSmoothingCubicSplineSVD." )
-
-    pathgroup.add_argument("--path-param-mode", type=int, default=1,
+    pathgroup.add_argument("--path-param-mode", type=int, default=0,
         help="Path parameterization mode: 0 - 'chord-length' parameterization, 1 - centripetal parameterization." )
     
     # -------------------------------------------------------------------------
@@ -2585,32 +2792,28 @@ def parse_args():
         help="Maximum optimisation steps." )
     
     stmgroup.add_argument("--sfac", type=float, default=0.0,
-        help="Path smoothing factor."
-    )
+        help="Path smoothing factor." )
     
     stmgroup.add_argument("--smoothinterval", type=int, default=0,
         help="How often to smooth the path." )
     
     stmgroup.add_argument("--reparaminterval", type=int, default=1,
         help="How often to reparametrize the path." )
+    
+    stmgroup.add_argument("--detect-kinks-step", type=int, default=0,
+        help="Detect kinks at given STM optimization step." )
+    
+    stmgroup.add_argument("--kink-energy-thr", type=float, default=0.25,
+        help="Minimum energy of basin with a kink/minimum." )
 
     # -------------------------------------------------------------------------
-    # STM Setup
+    # Optimizer Setup
     # -------------------------------------------------------------------------
 
-    adagroup = parser.add_argument_group("AdaBelief specification")
+    adagroup = parser.add_argument_group("Optimizer specification")
 
     adagroup.add_argument("--stepsize", type=float, default=0.003,
         help="Optimisation time step." )
-
-    adagroup.add_argument("--beta1", type=float, default=0.7,
-        help="AdaBelief beta1." )
-
-    adagroup.add_argument("--beta2", type=float, default=0.99,
-        help="AdaBelief beta2." )
-
-    adagroup.add_argument("--mingnormesp", type=float, default=1e-7,
-        help="AdaBelief epsilon." )
 
     # -------------------------------------------------------------------------
     # Termination
@@ -2630,7 +2833,7 @@ def parse_args():
     termgroup.add_argument("--final-avebeadmove", type=float, default=.005,
         help="Final threshold for moving-average average bead movement." )
     
-    termgroup.add_argument("--final-maxpmfsize", type=float, default=2.00,
+    termgroup.add_argument("--final-maxpmfsize", type=float, default=5.00,
         help="Final threshold for moving-average maximum projected mean-force size." )
 
     termgroup.add_argument("--final-avepmfsize", type=float, default=0.80,
@@ -2668,8 +2871,11 @@ def parse_args():
     if not (0.0 <= args.sfac <= 1.0):
         parser.error("--sfac must be in the interval [0, 1]")
 
-    if args.cvspline not in (0, 1, 2):
-        parser.error("--cvspline must be 0 or 1 or 2")
+    if args.cvspline not in (0, 1):
+        parser.error("--cvspline must be 0 or 1")
+
+    if args.path_param_mode not in (0, 1):
+        parser.error("--path-param-mode must be 0 or 1")
 
     return args
 
