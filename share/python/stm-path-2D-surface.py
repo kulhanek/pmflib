@@ -2776,7 +2776,7 @@ def parse_args():
     pathgroup.add_argument("--cvspline", type=int, default=1,
         help="Type of CV spline: 0 - interpolating cubic spline, 1 - smoothing cubic spline" )
 
-    pathgroup.add_argument("--spline-lambda", type=float, default=1e-6,
+    pathgroup.add_argument("--spline-lambda", type=float, default=0.00000002,
         help="Lambda for the internal smoothing cubic spline; 0.0 gives interpolation." )
     
     pathgroup.add_argument("--path-param-mode", type=int, default=0,
@@ -2788,7 +2788,7 @@ def parse_args():
 
     stmgroup = parser.add_argument_group("Path specification")
 
-    stmgroup.add_argument("--nstepmax", type=int, default=200, 
+    stmgroup.add_argument("--nstepmax", type=int, default=500, 
         help="Maximum optimisation steps." )
     
     stmgroup.add_argument("--sfac", type=float, default=0.0,
@@ -2803,7 +2803,7 @@ def parse_args():
     stmgroup.add_argument("--detect-kinks-step", type=int, default=0,
         help="Detect kinks at given STM optimization step." )
     
-    stmgroup.add_argument("--kink-energy-thr", type=float, default=0.25,
+    stmgroup.add_argument("--kink-energy-thr", type=float, default=0.5,
         help="Minimum energy of basin with a kink/minimum." )
 
     # -------------------------------------------------------------------------
@@ -2812,7 +2812,7 @@ def parse_args():
 
     adagroup = parser.add_argument_group("Optimizer specification")
 
-    adagroup.add_argument("--stepsize", type=float, default=0.003,
+    adagroup.add_argument("--stepsize", type=float, default=0.00005,
         help="Optimisation time step." )
 
     # -------------------------------------------------------------------------
