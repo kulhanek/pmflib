@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
 
-import numpy as np
-from scipy import ndimage
-import matplotlib.pyplot as plt
-from matplotlib.colors import LinearSegmentedColormap, BoundaryNorm, ListedColormap
-from mpl_toolkits.axes_grid1 import make_axes_locatable
-from scipy.optimize import minimize
-from scipy.spatial import cKDTree
 import argparse
 import time
 import math
+import numpy as np
+import matplotlib.pyplot as plt
+
+from scipy import ndimage
+from matplotlib.colors import LinearSegmentedColormap, BoundaryNorm, ListedColormap
+from scipy.optimize import minimize
+from scipy.spatial import cKDTree
 from skimage.segmentation import watershed
 
-# -------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
 rad2deg = 180.0 / np.pi
 rfac = 0.001987204258640       # kcal/mol/K
@@ -166,9 +166,9 @@ class EnergySurface2D:
         print(f"  Random seed: {random_seed}")
         self.rng = np.random.default_rng(random_seed)
 
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     # Coordinate conversion
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
 
     def to_scaled(self, x):
         """
@@ -197,7 +197,7 @@ class EnergySurface2D:
             dtype=float,
         )
 
-    # ------------------------------------------------------
+    # --------------------------------------------------------------------------
 
     def from_scaled(self, u):
         """
@@ -226,9 +226,9 @@ class EnergySurface2D:
             dtype=float,
         )
 
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     # Data loading and fitting
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
 
     def load(self, filename):
         """
@@ -277,22 +277,30 @@ class EnergySurface2D:
         self.e_data = np.asarray(e_values, dtype=float)
 
         zmin = np.nanmin(self.e_data)
-        if zmin < 0:
-            self.e_data = self.e_data - zmin
+        self.e_data = self.e_data - zmin
 
-        if self.zmax == None:
-            self.zmax = np.nanmax(self.e_data)
+    # --------------------------------------------------------------------------
 
-    # ------------------------------------------------------
-
-    def calc_z_and_sp(self, npx=180, npy=180):
+    def calc_z_and_sp(self):
 
         if self.x_axis.npts <= 1 or self.y_axis.npts <= 1:
             raise ValueError("npx and npy must be larger than 1")
 
         # Grid in original coordinates
-        self.x_grid = np.linspace(self.x_axis.cvmin, self.x_axis.cvmax, self.x_axis.npts+1)
-        self.y_grid = np.linspace(self.y_axis.cvmin, self.y_axis.cvmax, self.y_axis.npts+1)
+        x_edges = np.linspace(
+            self.x_axis.cvmin,
+            self.x_axis.cvmax,
+            self.x_axis.npts + 1,
+        )
+        y_edges = np.linspace(
+            self.y_axis.cvmin,
+            self.y_axis.cvmax,
+            self.y_axis.npts + 1,
+        )
+
+        # centered at bins
+        self.x_grid = 0.5 * (x_edges[:-1] + x_edges[1:])
+        self.y_grid = 0.5 * (y_edges[:-1] + y_edges[1:])
 
         self.X, self.Y = np.meshgrid(self.x_grid, self.y_grid, indexing="xy")
         self.Z = np.empty_like(self.X, dtype=float)
@@ -304,16 +312,28 @@ class EnergySurface2D:
                 self.Z[iy, ix] = value
 
         # detect unsampled points
-        self.unsampled_mask, nearest_dist = surf.detect_unsampled_grid_points()
+        self.unsampled_mask, nearest_dist = self.detect_unsampled_grid_points()
 
         # set them to zmax
         self.Z[self.unsampled_mask] = self.zmax
 
         # Grid in scaled coordinates
-        xgrid = np.linspace(0.0, 1.0, self.x_axis.npts+1)
-        ygrid = np.linspace(0.0, 1.0, self.y_axis.npts+1)
+        u_edges = np.linspace(
+            0.0,
+            1.0,
+            self.x_axis.npts + 1,
+        )
+        v_edges = np.linspace(
+            0.0,
+            1.0,
+            self.y_axis.npts + 1,
+        )
 
-        self.U, self.V = np.meshgrid(xgrid, ygrid, indexing="xy")
+        # centered at bins
+        self.u_grid = 0.5 * (u_edges[:-1] + u_edges[1:])
+        self.v_grid = 0.5 * (v_edges[:-1] + v_edges[1:])
+
+        self.U, self.V = np.meshgrid(self.u_grid, self.v_grid, indexing="xy")
         self.SP = np.empty_like(self.U, dtype=float)
 
         # Evaluate the surface through eval(), as requested
@@ -324,9 +344,9 @@ class EnergySurface2D:
         spmax = np.nanmax(self.SP)
         self.SP[self.unsampled_mask] = spmax
 
-    # ------------------------------------------------------
+    # --------------------------------------------------------------------------
 
-    def detect_unsampled_grid_points(self, max_distance=None, scaled=True):
+    def detect_unsampled_grid_points(self, max_distance=None):
         """
         Detect grid points that are too far from any sampled scattered data point.
 
@@ -335,10 +355,6 @@ class EnergySurface2D:
         max_distance : float or None
             Maximum allowed distance to the nearest sampled point.
             If None, it is estimated from the regular grid spacing.
-
-        scaled : bool
-            If True, detection is done in scaled coordinates [0, 1] x [0, 1].
-            This is usually safer if x and y have different physical units/ranges.
 
         Returns
         -------
@@ -355,35 +371,27 @@ class EnergySurface2D:
         if self.X is None or self.Y is None:
             raise RuntimeError("Regular grid is not available. Call calc_z_and_sp() first.")
 
-        # ------------------------------------------------------------
+        # ----------------------------------------------------------------------
         # Work either in scaled coordinates or in original coordinates
-        # ------------------------------------------------------------
+        # ----------------------------------------------------------------------
 
-        if scaled:
-            data_points = np.array(
-                [self.to_scaled([x, y]) for x, y in zip(self.x_data, self.y_data)]
-            )
+        data_points = np.array(
+            [self.to_scaled([x, y]) for x, y in zip(self.x_data, self.y_data)]
+        )
 
-            grid_points = np.column_stack([
-                self.x_axis.scale(self.X.ravel()),
-                self.y_axis.scale(self.Y.ravel()),
-            ])
+        grid_points = np.column_stack([
+            self.x_axis.scale(self.X.ravel()),
+            self.y_axis.scale(self.Y.ravel()),
+        ])
 
-            dx = 1.0 / (self.x_axis.npts - 1)
-            dy = 1.0 / (self.y_axis.npts - 1)
+        dx = 1.0 / self.x_axis.npts
+        dy = 1.0 / self.y_axis.npts
 
-        else:
-            data_points = np.column_stack([self.x_data, self.y_data])
-            grid_points = np.column_stack([self.X.ravel(), self.Y.ravel()])
-
-            dx = (self.x_axis.cvmax - self.x_axis.cvmin) / (self.x_axis.npts - 1)
-            dy = (self.y_axis.cvmax - self.y_axis.cvmin) / (self.y_axis.npts - 1)
-
-        # ------------------------------------------------------------
+        # ----------------------------------------------------------------------
         # Default threshold:
         # a grid point is sampled if there is a data point roughly within
         # one grid-cell diagonal.
-        # ------------------------------------------------------------
+        # ----------------------------------------------------------------------
 
         if max_distance is None:
             max_distance = 0.75 * np.sqrt(dx**2 + dy**2)
@@ -396,7 +404,7 @@ class EnergySurface2D:
 
         return unsampled_mask, nearest_dist
 
-    # ------------------------------------------------------
+    # --------------------------------------------------------------------------
 
     def _build_design_matrix(self, indices):
         """
@@ -426,7 +434,7 @@ class EnergySurface2D:
 
         return B
 
-    # ------------------------------------------------------
+    # --------------------------------------------------------------------------
 
     def _solve_svd(self, B, y, rcond):
         """
@@ -463,7 +471,7 @@ class EnergySurface2D:
 
         return coeff
 
-    # ------------------------------------------------------
+    # --------------------------------------------------------------------------
 
     def fit(self, sx=1.0, sy=1.0, rcond=1.0e-12):
         """
@@ -511,7 +519,7 @@ class EnergySurface2D:
 
         return self.amplitudes
 
-    # ------------------------------------------------------
+    # --------------------------------------------------------------------------
 
     def fit_width_grid(
         self,
@@ -604,7 +612,7 @@ class EnergySurface2D:
 
         return self.amplitudes
 
-    # ------------------------------------------------------
+    # --------------------------------------------------------------------------
 
     def fit_width_optimize(
         self,
@@ -618,7 +626,7 @@ class EnergySurface2D:
         Fit RBF amplitudes and optimise separate Gaussian widths for both CVs.
 
         The width scales are optimised by scipy.optimize.minimize using a
-        derivative-free Powell optimiser with bounds.
+        derivative-free optimiser with bounds.
 
         Parameters
         ----------
@@ -654,7 +662,6 @@ class EnergySurface2D:
         amplitudes : ndarray
             Fitted RBF amplitudes using the optimised widths and all data.
         """
-        from scipy.optimize import minimize
 
         if self.x_data is None or self.y_data is None or self.e_data is None:
             raise RuntimeError("No data loaded. Call load() first.")
@@ -768,9 +775,9 @@ class EnergySurface2D:
 
         return self.amplitudes
 
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     # RBF basis
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
 
     def _basis_1d(self, u, axis):
         """
@@ -796,7 +803,7 @@ class EnergySurface2D:
 
         return g, dg, d2g
 
-    # ------------------------------------------------------
+    # --------------------------------------------------------------------------
 
     def _basis_2d_uv(self, u, derivatives=False):
         """
@@ -852,9 +859,9 @@ class EnergySurface2D:
             phi_uv.ravel(),
         )
 
-# =============================================================================
+# ==============================================================================
 # Evaluation
-# =============================================================================
+# ==============================================================================
 
     def eval_uv(self, u):
         """
@@ -910,7 +917,7 @@ class EnergySurface2D:
 
         return value, gradient, hessian
 
-    # ------------------------------------------------------
+    # --------------------------------------------------------------------------
 
     def eval(self, x):
         """
@@ -957,7 +964,7 @@ class EnergySurface2D:
 
         return value, gradient, hessian
 
-    # ------------------------------------------------------
+    # --------------------------------------------------------------------------
 
     def eval_uv_sp_f(self, u):
 
@@ -967,9 +974,9 @@ class EnergySurface2D:
 
         return sp_v
 
-# =============================================================================
+# ==============================================================================
 # Plots
-# =============================================================================
+# ==============================================================================
 
     def make_gnuplot_like_colormaps(self,zmin,zmax,contour_spacing):
         """
@@ -1021,7 +1028,7 @@ class EnergySurface2D:
 
         return fes_cmap, fes_norm, ws_cmap
 
-    # ------------------------------------------------------
+    # --------------------------------------------------------------------------
 
     def plot_raw(
         self,
@@ -1104,7 +1111,7 @@ class EnergySurface2D:
 
         return fig, ax
 
-    # ------------------------------------------------------
+    # --------------------------------------------------------------------------
 
     def plot_rbf(
         self,
@@ -1198,7 +1205,7 @@ class EnergySurface2D:
 
         return fig, ax
 
-    # ------------------------------------------------------
+    # --------------------------------------------------------------------------
 
     def plot_uv_sp(
         self,
@@ -1248,7 +1255,7 @@ class EnergySurface2D:
 
         if zmax is not None:
             zmax = float(zmax)
-            Zplot = np.minimum(SP, zmax)
+            Zplot = np.minimum(self.SP, zmax)
         else:
             Zplot = self.SP
 
@@ -1279,8 +1286,8 @@ class EnergySurface2D:
         levels = np.arange(cmin, cmax + contour_spacing, contour_spacing)
 
         contours = ax.contour(
-            X,
-            Y,
+            self.X,
+            self.Y,
             Zplot,
             levels=levels,
             colors="black",
@@ -1311,7 +1318,7 @@ class EnergySurface2D:
 
         return fig, ax
 
-# ------------------------------------------------------
+    # --------------------------------------------------------------------------
 
     def plot_rbf_with_sp_guesses(
         self,
@@ -1396,9 +1403,9 @@ class EnergySurface2D:
             labels = []
 
             for k, region in enumerate(self.sp_guesses):
-                rx.append(region["x"])
-                ry.append(region["y"])
-                labels.append(region["label"])
+                rx.append(region['x'])
+                ry.append(region['y'])
+                labels.append(region['id'])
 
             ax.scatter(
                 rx,
@@ -1416,7 +1423,7 @@ class EnergySurface2D:
                 rx,
                 ry,
                 s=15,
-                marker="x",
+                marker='x',
                 color="red",
                 zorder=11,
             )
@@ -1459,7 +1466,7 @@ class EnergySurface2D:
 
         return fig, ax
 
-    # ------------------------------------------------------
+    # --------------------------------------------------------------------------
 
     def plot_rbf_with_sp_optimized(
         self,
@@ -1577,11 +1584,11 @@ class EnergySurface2D:
         t_values = np.linspace(0.0, 2.0 * np.pi, ellipse_npts)
 
         for p in self.sp_optimized:
-            x0 = p["x"]
-            y0 = p["y"]
-            r1 = p["r1"]
-            r2 = p["r2"]
-            angle = p["angle"] / rad2deg
+            x0 = p['x']
+            y0 = p['y']
+            r1 = p['r1']
+            r2 = p['r2']
+            angle = p['angle'] / rad2deg
 
             ca = np.cos(angle)
             sa = np.sin(angle)
@@ -1612,14 +1619,14 @@ class EnergySurface2D:
                 [x0],
                 [y0],
                 s=20,
-                marker="x",
+                marker='x',
                 color=point_color,
                 zorder=12,
             )
 
-            label = str(p["label"])
+            label = str(p['id'])
 
-            if p["type"] != "":
+            if p['type'] != "":
                 label = f"{label}:{p['type']}"
 
             ax.text(
@@ -1656,7 +1663,7 @@ class EnergySurface2D:
 
         return fig, ax
 
-    # ------------------------------------------------------
+    # --------------------------------------------------------------------------
 
     def plot_rbf_with_watershed_basins(
         self,
@@ -1764,10 +1771,10 @@ class EnergySurface2D:
         # -------------------------------------------------------------------------
 
         for i, p in enumerate(self.sp_optimized, start=1):
-            ax.plot(p["x"], p["y"], "ko", markersize=4,zorder=6)
+            ax.plot(p['x'], p['y'], "ko", markersize=4,zorder=6)
             ax.text(
-                p["x"],
-                p["y"],
+                p['x'],
+                p['y'],
                 f" {i}",
                 color="white",
                 fontsize=8,
@@ -1801,9 +1808,9 @@ class EnergySurface2D:
 
         return fig, ax
 
-# =============================================================================
+# ==============================================================================
 # Detect stationary points
-# =============================================================================
+# ==============================================================================
 
     def detect_sp_regions_connected(
         self,
@@ -1874,23 +1881,23 @@ class EnergySurface2D:
                 raise ValueError("representative must be 'minabs' or 'centroid'")
 
             self.sp_guesses.append({
-                "label": label,
+                'id': label,
                 "i": int(i),
                 "j": int(j),
                 "u": float(self.U[i, j]),
                 "v": float(self.V[i, j]),
-                "spf": float(self.SP[i, j]),
-                "x": float(self.X[i, j]),
-                "y": float(self.Y[i, j]),
-                "ene": float(self.Z[i, j]),
+                'spf': float(self.SP[i, j]),
+                'x': float(self.X[i, j]),
+                'y': float(self.Y[i, j]),
+                'ene': float(self.Z[i, j]),
                 "size": int(idx.shape[0]),
             })
 
         return self.sp_guesses, self.sp_guess_labels, self.sp_guess_mask
 
-# =============================================================================
+# ==============================================================================
 # Optimize stationary points
-# =============================================================================
+# ==============================================================================
 
     def find_sp(self, gx, gy, trust_r0=0.06):
         """
@@ -2007,8 +2014,6 @@ class EnergySurface2D:
         # Optimize size and rotation of ellipse
         # -------------------------------------------------------------------------
 
-        self.thr = 0.25
-
         # # initial params
         # r1 = np.sqrt(2.0 * self.thr / abs(eigvals[0]))
         # r2 = np.sqrt(2.0 * self.thr / abs(eigvals[1]))
@@ -2068,49 +2073,39 @@ class EnergySurface2D:
         sp_label = len(self.sp_optimized) + 1
 
         item = {
-            "label": sp_label,
-            "x": float(xopt[0]),
-            "y": float(xopt[1]),
-            "ene": float(self.xoptene),
-            "spf": float(spf),
-            "r1": float(r1),
-            "r2": float(r2),
-            "angle": float(angle * rad2deg),
-            "type": xopttype,
+            'id': sp_label,
+            'x': float(xopt[0]),
+            'y': float(xopt[1]),
+            'ene': float(self.xoptene),
+            'spf': float(spf),
+            'r1': float(r1),
+            'r2': float(r2),
+            'angle': float(angle * rad2deg),
+            'type': xopttype,
+            'sl1': eigvals[0],
+            'sl2': eigvals[1],
         }
 
         self.sp_optimized.append(item)
 
         return item
 
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
 
-    def remove_near_duplicate_sp_optimized(
-        self,
-        max_distance_uv=0.1,
-        relabel=True,
-        verbose=True,
-    ):
+    def remove_near_duplicate_sp_optimized(self, min_distance_uv=0.1):
         """
         Remove nearly duplicate optimized stationary points.
 
         Two points are considered duplicates only if they have the same type
         ('S', 'T', or 'M') and their distance in scaled UV coordinates is
-        smaller than or equal to max_distance_uv.
+        smaller than or equal to min_distance_uv.
 
         From each duplicate group, the point with the lowest energy is kept.
 
         Parameters
         ----------
-        max_distance_uv : float
-            Maximum distance in scaled UV coordinates for two points to be
-            considered duplicates.
-
-        relabel : bool
-            If True, labels of the remaining points are reassigned from 1.
-
-        verbose : bool
-            If True, print information about removed points.
+        min_distance_uv : float
+            Minimum distance between two SPs to be considered as individual points.
 
         Returns
         -------
@@ -2118,8 +2113,10 @@ class EnergySurface2D:
             List of removed stationary points.
         """
 
-        if max_distance_uv <= 0.0:
-            raise ValueError("max_distance_uv must be positive")
+        print("# Detecting near duplicate points ...")
+
+        if min_distance_uv <= 0.0:
+            raise ValueError("min_distance_uv must be positive")
 
         if len(self.sp_optimized) <= 1:
             return []
@@ -2132,7 +2129,7 @@ class EnergySurface2D:
 
         sorted_points = sorted(
             self.sp_optimized,
-            key=lambda p: float(p["ene"])
+            key=lambda p: float(p['ene'])
         )
 
         kept = []
@@ -2140,23 +2137,23 @@ class EnergySurface2D:
 
         for p in sorted_points:
 
-            p_type = p.get("type", "")
+            p_type = p.get('type', "")
             if p_type not in ("S", "T", "M"):
                 # Unknown type: do not compare it with S/T/M points.
                 kept.append(p)
                 continue
 
-            p_uv = self.to_scaled([p["x"], p["y"]])
+            p_uv = self.to_scaled([p['x'], p['y']])
 
             duplicate_of = None
 
             for q in kept:
 
-                q_type = q.get("type", "")
+                q_type = q.get('type', "")
                 if q_type != p_type:
                     continue
 
-                q_uv = self.to_scaled([q["x"], q["y"]])
+                q_uv = self.to_scaled([q['x'], q['y']])
 
                 du = p_uv - q_uv
 
@@ -2169,7 +2166,7 @@ class EnergySurface2D:
 
                 dist_uv = np.linalg.norm(du)
 
-                if dist_uv <= max_distance_uv:
+                if dist_uv <= min_distance_uv:
                     duplicate_of = q
                     break
 
@@ -2177,45 +2174,69 @@ class EnergySurface2D:
                 kept.append(p)
             else:
                 removed.append(p)
-
-                if verbose:
-                    print(
-                        "  Removing duplicate SP: "
-                        f"label = {p['label']}, "
-                        f"type = {p_type}, "
-                        f"ene = {p['ene']:.6f}, "
-                        f"spf = {p['spf']:.6f}, "
-                        f"x = {p['x']:.6f}, "
-                        f"y = {p['y']:.6f}; "
-                        f"kept label = {duplicate_of['label']}, "
-                        f"kept ene = {duplicate_of['ene']:.6f}"
-                    )
+                print(
+                    "  Removing duplicate SP: "
+                    f"label = {p['id']}, "
+                    f"type = {p_type}, "
+                    f"ene = {p['ene']:.6f}, "
+                    f"spf = {p['spf']:.6f}, "
+                    f"x = {p['x']:.6f}, "
+                    f"y = {p['y']:.6f}; "
+                    f"kept label = {duplicate_of['id']}, "
+                    f"kept ene = {duplicate_of['ene']:.6f}"
+                )
 
         # ------------------------------------------------------------------
         # Restore a stable order, preferably by label.
         # ------------------------------------------------------------------
 
-        kept = sorted(kept, key=lambda p: int(p["label"]))
+        kept = sorted(kept, key=lambda p: int(p['id']))
 
-        if relabel:
-            for i, p in enumerate(kept, start=1):
-                p["label"] = i
+        # relabel
+        for i, p in enumerate(kept, start=1):
+            p['id'] = i
 
         self.sp_optimized = kept
 
-        if verbose:
-            print(
-                f"  Removed {len(removed)} near-duplicate optimized "
-                f"stationary point(s)."
-            )
-            print(
-                f"  Remaining optimized stationary points: "
-                f"{len(self.sp_optimized)}"
-            )
+        print(f"  Removed {len(removed)} near-duplicate optimized stationary point(s).")
+        print(f"  Remaining optimized stationary points: {len(self.sp_optimized)}")
 
         return removed
+    
+    # --------------------------------------------------------------------------
 
-    # ------------------------------------------------------
+    def remove_stationary_point_outliers(self, minslam=5.0, maxslam=5000.0):
+
+        print(f"")
+        print(f"# Detecting Hessian outliers ...")
+        print(f"  Allowed Hessian eigenvalues: <{minslam:.1f}, {maxslam:.1f}>")
+    
+        kept = []
+        removed = []
+
+        for item in self.sp_optimized:
+            outlier = (
+                min(abs(item["sl1"]), abs(item["sl2"])) < minslam
+                or max(abs(item["sl1"]), abs(item["sl2"])) > maxslam
+            )
+            if outlier:
+                print(f"  Removing stationary point {item['id']} ({item['type']}) due to Hessian eigenvalues ({item['sl1']:.1f},{item['sl2']:.1f}) out-of-allowed values.")
+                removed.append(item)
+            else:
+                kept.append(item)
+
+        # relabel
+        for i, p in enumerate(kept, start=1):
+            p['id'] = i
+
+        self.sp_optimized = kept
+
+        print(f"  Removed {len(removed)} stationary point(s).")
+        print(f"  Remaining optimized stationary points: {len(self.sp_optimized)}")
+
+        return
+
+    # --------------------------------------------------------------------------
 
     def ellipse_scaled_to_original(self, xopt, r1, r2, angle):
         """
@@ -2293,7 +2314,7 @@ class EnergySurface2D:
 
         return xopt_orig, R1_orig, R2_orig, angle_orig, eigvecs
 
-    # ------------------------------------------------------
+    # --------------------------------------------------------------------------
 
     def my_ellipse_err(self,lx):
         """
@@ -2304,6 +2325,10 @@ class EnergySurface2D:
 
         r1 = lx[0]
         r2 = lx[1]
+
+        if r1 <= 0.0 or r2 <= 0.0:
+            return np.inf
+
         angle = lx[2]
 
         err = 0.0
@@ -2333,7 +2358,7 @@ class EnergySurface2D:
 # detect basins
 # =============================================================================
 
-    def calculate_watershed(self, sigma=0.0):
+    def calculate_watershed(self):
         """
         Calculate watershed regions on the FES.
 
@@ -2346,13 +2371,8 @@ class EnergySurface2D:
 
         self.basins_markers = self.points_to_markers(self.basins_mask)
 
-        if sigma > 0.0:
-            V_ws = ndi.gaussian_filter(self.Z, sigma=sigma)
-        else:
-            V_ws = self.Z.copy()
-
         self.basins_labels = watershed(
-            V_ws,
+            self.Z,
             markers=self.basins_markers,
             mask=self.basins_mask,
             watershed_line=True,
@@ -2360,7 +2380,7 @@ class EnergySurface2D:
 
         return self.basins_labels, self.basins_markers, self.basins_mask
 
-    # ------------------------------------------------------
+    # --------------------------------------------------------------------------
 
     def points_to_markers(self, mask):
         """
@@ -2377,21 +2397,21 @@ class EnergySurface2D:
 
         for p in self.sp_optimized:
 
-            if p["type"] != "S":
+            if p['type'] != "S":
                 continue
 
-            marker_id = int(p["label"])
-            ix = int(np.argmin(np.abs(self.x_grid - p["x"])))
-            iy = int(np.argmin(np.abs(self.y_grid - p["y"])))
+            marker_id = int(p['id'])
+            ix = int(np.argmin(np.abs(self.x_grid - p['x'])))
+            iy = int(np.argmin(np.abs(self.y_grid - p['y'])))
 
             if not mask[iy, ix]:
                 print(
-                    f"    WARNING: seed {p['label']} at ({p['x']:.4f}, {p['y']:.4f}) "
+                    f"    WARNING: seed {p['id']} at ({p['x']:.4f}, {p['y']:.4f}) "
                     f"is outside the valid FES mask; searching nearest valid grid point."
                 )
 
                 valid_y, valid_x = np.where(mask)
-                dist2 = (self.x_grid[valid_x] - p["x"])**2 + (self.y_grid[valid_y] - p["y"])**2
+                dist2 = (self.x_grid[valid_x] - p['x'])**2 + (self.y_grid[valid_y] - p['y'])**2
                 nearest = np.argmin(dist2)
 
                 iy = valid_y[nearest]
@@ -2409,212 +2429,184 @@ class EnergySurface2D:
 
         return markers
 
-    # ------------------------------------------------------
+    # --------------------------------------------------------------------------
 
-    def calculate_basins_corrections(self):
+    def calculate_basins_ene_state(self):
 
+        minima = [pt for pt in self.sp_optimized if pt["type"] == "S"]
+
+        if len(minima) == 0:
+            print("  WARNING: No minima found; basin state energies cannot be calculated.")
+            return
+
+        for pt in minima:
+            region_id = int(pt['id'])
+            dx = 1.0 / self.x_axis.npts
+            dy = 1.0 / self.y_axis.npts
+            mask = self.basins_labels == region_id
+            weights = np.exp(-self.Z[mask] / (self.temp * rfac))
+            Q =  np.sum(weights) * dx * dy
+            ene_int = - self.temp * rfac * math.log(Q)
+            pt['ene_state'] = ene_int
+
+        # get minimum energy and calculate corrected energy value
+        ene_min = min(pt['ene_state'] for pt in self.sp_optimized if pt['type'] == "S")
         for pt in self.sp_optimized:
-            corr = 0.0
-            if pt["type"] == "S":
-                region_id = int(pt["label"])
-                mask = self.basins_labels == region_id
-                weights = np.exp(-self.Z[mask] / (self.temp * rfac))
-                Q =  np.sum(weights)
-                corr = - self.temp * rfac * math.log(Q)
-            elif pt["type"] == "T":
-                corr = 0.0
-            else:
-                corr = 0.0
-            pt["dcorr"] = corr
-            pt["ene_corr"] = pt["ene"] + corr
+            if pt['type'] == "S":
+                pt['ene_state0'] = pt['ene_state'] - ene_min
 
-
-# -----------------------------------------------------------------------------
+# ==============================================================================
 # Command-line arguments
-# -----------------------------------------------------------------------------
+# ==============================================================================
 
 def parse_args():
     parser = argparse.ArgumentParser(
         description="Detect and optimize stationary points on a 2D free-energy/potential-energy surface."
     )
 
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     # CV1
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
 
     cv1group = parser.add_argument_group("The first collective variable (CV1) specification")
 
     cv1group.add_argument(
-        "--cv1n",
-        default=r"cv1",
+        "--cv1label", type=str, default=r"cv1",
         help="Label of the first collective variable."
     )
 
     cv1group.add_argument(
-        "--cv1min",
-        type=float,
-        help="Minimum value of the first collective variable.",
-        required=True
+        "--cv1min", type=float, required=True,
+        help="Minimum value of the first collective variable."
     )
 
     cv1group.add_argument(
-        "--cv1max",
-        type=float,
-        help="Maximum value of the first collective variable.",
-        required=True
+        "--cv1max", type=float, required=True,
+        help="Maximum value of the first collective variable."
     )
 
     cv1group.add_argument(
-        "--cv1nbins",
-        type=int,
-        help="Number of grid bins/points for the first collective variable.",
-        required=True
+        "--cv1nbins", type=int, required=True,
+        help="Number of grid bins/points for the first collective variable."
     )
 
     cv1group.add_argument(
-        "--cv1periodic",
-        type=bool,
-        default=False,
+        "--cv1periodic", type=bool, default=False,
         help="Force the first collective variable to be a periodic in the <min,max) interval."
     )
 
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     # CV2
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
 
     cv2group = parser.add_argument_group("The second collective variable (CV2) specification")
 
     cv2group.add_argument(
-        "--cv2n",
-        default=r"cv2",
+        "--cv2label", type=str, default=r"cv2",
         help="Label of the second collective variable."
     )
 
     cv2group.add_argument(
-        "--cv2min",
-        type=float,
-        help="Minimum value of the second collective variable.",
-        required=True
+        "--cv2min", type=float, required=True,
+        help="Minimum value of the second collective variable."
     )
 
     cv2group.add_argument(
-        "--cv2max",
-        type=float,
-        help="Maximum value of the second collective variable.",
-        required=True
+        "--cv2max", type=float, required=True,
+        help="Maximum value of the second collective variable."
     )
 
     cv2group.add_argument(
-        "--cv2nbins",
-        type=int,
-        help="Number of grid bins/points for the second collective variable.",
-        required=True
+        "--cv2nbins", type=int, required=True,
+        help="Number of grid bins/points for the second collective variable."
     )
 
     cv2group.add_argument(
-        "--cv2periodic",
-        type=bool,
-        default=False,
+        "--cv2periodic", type=bool, default=False,
         help="Force the second collective variable to be a periodic in the <min,max) interval."
     )
 
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     # Energy label
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
 
     enegroup = parser.add_argument_group("The energy axis specification")
 
     enegroup.add_argument(
-        "--enen",
-        default=r"${\Delta}G [kcal/mol]$",
+        "--enelabel", type=str, default=r"${\Delta}G [kcal/mol]$",
         help="Energy label."
     )
 
     enegroup.add_argument(
-        "--zmax",
-        type=float,
-        default=18.0,
+        "--zmax", type=float, required=True,
         help="Maximum energy value considered."
     )
 
     enegroup.add_argument(
-        "--contour_spacing",
-        type=float,
-        default=1.0,
+        "--contour_spacing", type=float, default=1.0,
         help="Contour spacing."
     )
 
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     # RBF interpolation
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
 
     rbfgroup = parser.add_argument_group("The RBF (Radial Basis Function) interpolation specification")
 
     rbfgroup.add_argument(
-        "--cv1nrbfs",
-        type=int,
-        default=20,
+        "--cv1nrbfs", type=int, default=20,
         help="Number of RBFs for the first collective variable."
     )
 
     rbfgroup.add_argument(
-        "--cv2nrbfs",
-        type=int,
-        default=20,
+        "--cv2nrbfs", type=int, default=20,
         help="Number of RBFs for the second collective variable."
     )
 
     rbfgroup.add_argument(
-        "--rbfwidthmode",
-        type=str,
-        default="static",
+        "--rbfwidthmode", type=str, default="static",
         help="RBF width mode: static, gridsearch, optimize."
     )
 
     rbfgroup.add_argument(
-        "--sx",
-        type=float,
-        default=1.5,
+        "--rbfsx", type=float, default=1.5,
         help="Width factor for CV1 in the RBF static width mode."
     )
 
     rbfgroup.add_argument(
-        "--sy",
-        type=float,
-        default=1.5,
+        "--rbfsy", type=float, default=1.5,
         help="Width factor for CV2 in the RBF static width mode."
     )
 
-    # -------------------------------------------------------------------------
+    rbfgroup.add_argument(
+        "--rcond", type=float, default=1.0e-9,
+        help="SVD cutoff for RBF fitting."
+    )
+
+    # --------------------------------------------------------------------------
     # Files
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
 
     filegroup = parser.add_argument_group("The input/output files specification")
 
     filegroup.add_argument(
-        "--input-fes",
-        dest="fname_input_fes",
+        "--input-fes", type=str, dest="fname_input_fes", required=True,
         help="Input FES filename.",
-        required=True
     )
 
     filegroup.add_argument(
-        "--sp-guesses",
-        dest="fname_sp_guesses",
-        default="guess.txt",
+        "--sp-guesses", type=str, dest="fname_sp_guesses", default="guess.txt",
         help="Output/Input filename for initial stationary-point guesses."
     )
 
     filegroup.add_argument(
-        "--sp-optimized",
-        dest="fname_sp_optimized",
-        default="points.txt",
+        "--sp-optimized", type=str, dest="fname_sp_optimized", default="points.txt",
         help="Output filename for optimized stationary points."
     )
 
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     # Other setup
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
 
     sysgroup = parser.add_argument_group("The system specification")
 
@@ -2635,114 +2627,107 @@ def parse_args():
     )
 
     sysgroup.add_argument(
-        "--temp",
-        type=float,
-        default=300.0,
+        "--temp", type=float, default=300.0,
         help="Thermodynamic temperature."
     )
 
     sysgroup.add_argument(
-        "--thrfac",
-        type=float,
-        default=0.25,
-        help="Energy treshold factor for defining ellipsis representing a stationary point (thrfac * kB * T)."
+        "--thrfac", type=float, default=0.25,
+        help="Energy threshold factor for defining ellipse representing a stationary point (thrfac * kB * T)."
     )
 
     sysgroup.add_argument(
-        "--random_seed",
-        type=int,
-        default=None,
+        "--random_seed", type=int, default=None,
         help="Random generator seed."
     )
 
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
+    # Treshold
+    # --------------------------------------------------------------------------
+
+    tresholdgroup = parser.add_argument_group("Treshold specification")
+
+    tresholdgroup.add_argument(
+        "--minslam", type=float, default=5.0,
+        help="Minimal allowed value for scaled Hessian eigenvalue."
+    )
+
+    tresholdgroup.add_argument(
+        "--maxslam", type=float, default=5000.0,
+        help="Maximum allowed value for scaled Hessian eigenvalue."
+    )
+
+    tresholdgroup.add_argument(
+        "--min_distance_uv", type=float, default=0.1,
+        help="Minimum distance between two SPs to be considered as individual points."
+    )
+
+    # --------------------------------------------------------------------------
     # Plots
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
 
     plotgroup = parser.add_argument_group("The graphical plot specification")
 
     plotgroup.add_argument(
-        "--showrawfes",
-        type=bool,
-        default=False,
+        "--showrawfes", action="store_true",
         help="Show an interactive plot with the raw FES loaded (action: loadfes)."
     )
 
     plotgroup.add_argument(
-        "--saverawfes",
-        type=str,
-        default="FigureFES-RAW.png",
+        "--saverawfes", type=str, default="FigureFES-RAW.png",
         help="Save a plot with the raw FES loaded into a file (action: loadfes)."
     )
 
     plotgroup.add_argument(
-        "--showrbffes",
-        type=bool,
-        default=False,
+        "--showrbffes", action="store_true",
         help="Show an interactive plot with the RBF interpolated FES (action: calcsurfs)."
     )
 
     plotgroup.add_argument(
-        "--saverbffes",
-        type=str,
-        default="FigureFES-RBF.png",
+        "--saverbffes", type=str, default="FigureFES-RBF.png",
         help="Save a plot with the RBF interpolated FES into a file (action: calcsurfs)."
     )
 
     plotgroup.add_argument(
-        "--showgpts",
-        type=bool,
-        default=False,
+        "--showgpts", action="store_true",
         help="Show an interactive plot with the RBF interpolated FES and guessed stationary points (action: guess, loadguess)."
     )
 
     plotgroup.add_argument(
-        "--savegpts",
-        type=str,
-        default="FigureFES-GPTS.png",
+        "--savegpts", type=str, default="FigureFES-GPTS.png",
         help="Save a plot with the RBF interpolated FES and guessed stationary points into a file (action: guess, loadguess)."
     )
 
     plotgroup.add_argument(
-        "--showopts",
-        type=bool,
-        default=False,
+        "--showopts", action="store_true",
         help="Show an interactive plot with the RBF interpolated FES and optimized stationary points (action: optimize, loadopts)."
     )
 
     plotgroup.add_argument(
-        "--saveopts",
-        type=str,
-        default="FigureFES-OPTS.png",
+        "--saveopts", type=str, default="FigureFES-OPTS.png",
         help="Save a plot with the RBF interpolated FES and optimized stationary points into a file (action: optimize, loadopts)."
     )
 
     plotgroup.add_argument(
-        "--showbasins",
-        type=bool,
-        default=False,
+        "--showbasins", action="store_true",
         help="Show an interactive plot with the RBF interpolated FES and minima basins (action: basins)."
     )
 
     plotgroup.add_argument(
-        "--savebasins",
-        type=str,
-        default="FigureFES-Basins.png",
+        "--savebasins", type=str, default="FigureFES-Basins.png",
         help="Save a plot with the RBF interpolated FES and minima basins into a file (action: basins)."
     )
 
     plotgroup.add_argument(
-        "--dpi",
-        type=int,
-        default=300,
+        "--dpi", type=int, default=300,
         help="Resolution for plot figures."
     )
 
     return parser.parse_args()
 
-# -----------------------------------------------------------------------------
-# Example usage
-# -----------------------------------------------------------------------------
+# ==============================================================================
+# Action handlers
+# ==============================================================================
 
 def load_fes(args,surf):
     print("")
@@ -2752,7 +2737,7 @@ def load_fes(args,surf):
     if args.showrawfes == True or args.saverawfes is not None:
         surf.plot_raw(show=args.showrawfes,save=args.saverawfes,dpi=args.dpi)
 
-# -------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
 def opt_rbfs(args,surf):
     print(f"")
@@ -2760,19 +2745,19 @@ def opt_rbfs(args,surf):
     print(f"  Width mode: {args.rbfwidthmode}")
 
     if args.rbfwidthmode == "static":
-        print(f"  Sx:         {args.sx:10.3f}")
-        print(f"  Sy:         {args.sy:10.3f}")
-        surf.fit(sx=args.sx,sy=args.sy)
+        print(f"  Sx:         {args.rbfsx:10.3f}")
+        print(f"  Sy:         {args.rbfsy:10.3f}")
+        surf.fit(sx=args.rbfsx,sy=args.rbfsy,rcond=args.rcond)
     elif args.rbfwidthmode == "gridsearch":
-        surf.fit_width_grid()
+        surf.fit_width_grid(rcond=args.rcond)
     elif args.rbfwidthmode == "optimize":
-        surf.fit_width_optimize()
+        surf.fit_width_optimize(rcond=args.rcond)
     else:
         raise NameError(f"Unsupported action: {args.rbfwidthmode:s}")
 
     print(f"  RMSE:       {surf.fit_rmse:10.3f}")
 
-# -------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
 def cal_surfs(args,surf):
     print("")
@@ -2782,7 +2767,7 @@ def cal_surfs(args,surf):
     if args.showrbffes == True or args.saverbffes is not None:
         surf.plot_rbf(show=args.showrbffes,save=args.saverbffes,dpi=args.dpi)
 
-# -------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
 def load_sp_guesses(args,surf):
 
@@ -2812,9 +2797,9 @@ def load_sp_guesses(args,surf):
             if len(fields) >= 2:
                 indx = len(surf.sp_guesses) + 1
                 surf.sp_guesses.append({
-                    "label": int(indx),
-                    "x": float(fields[0]),
-                    "y": float(fields[1]),
+                    'id': int(indx),
+                    'x': float(fields[0]),
+                    'y': float(fields[1]),
                 })
             else:
                 raise ValueError("Stationary point file must contain at least 2 columns.")
@@ -2826,12 +2811,12 @@ def load_sp_guesses(args,surf):
     print("# -------- ---------- ----------")
 
     for pt in surf.sp_guesses:
-        print(f"{pt["label"]:10d} {pt["x"]:10.3f} {pt["y"]:10.3f}")
+        print(f"{pt['id']:10d} {pt['x']:10.3f} {pt['y']:10.3f}")
 
     if args.showgpts == True or args.savegpts is not None:
         surf.plot_rbf_with_sp_guesses(show=args.showgpts,save=args.savegpts,dpi=args.dpi)
 
-# -------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
 def sp_guess(args,surf):
     print("")
@@ -2862,16 +2847,16 @@ def sp_guess(args,surf):
             )
 
     print("")
-    print("#       ID          X          Y        ENE        SPF       Size")
+    print("#       ID          X          Y   ENE(X,Y)   SPF(X,Y)       Size")
     print("# -------- ---------- ---------- ---------- ---------- ----------")
 
     for pt in surf.sp_guesses:
-        print(f"{pt["label"]:10d} {pt["x"]:10.3f} {pt["y"]:10.3f} {pt["ene"]:10.1f} {pt["spf"]:10.1f} {pt["size"]:10d}")
+        print(f"{pt['id']:10d} {pt['x']:10.3f} {pt['y']:10.3f} {pt['ene']:10.1f} {pt['spf']:10.1f} {pt["size"]:10d}")
 
     if args.showgpts == True or args.savegpts is not None:
         surf.plot_rbf_with_sp_guesses(show=args.showgpts,save=args.savegpts,dpi=args.dpi)
 
-# -------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
 def load_sp_optimized(args,surf):
 
@@ -2900,15 +2885,15 @@ def load_sp_optimized(args,surf):
 
             if len(fields) >= 9:
                 surf.sp_optimized.append({
-                    "label": int(fields[0]),
-                    "x": float(fields[1]),
-                    "y": float(fields[2]),
-                    "ene": float(fields[3]),
-                    "r1": float(fields[4]),
-                    "r2": float(fields[5]),
-                    "angle": float(fields[6]),
-                    "type": str(fields[7]),
-                    "spf": float(fields[8]),
+                    'id': int(fields[0]),
+                    'x': float(fields[1]),
+                    'y': float(fields[2]),
+                    'ene': float(fields[3]),
+                    'r1': float(fields[4]),
+                    'r2': float(fields[5]),
+                    'angle': float(fields[6]),
+                    'type': str(fields[7]),
+                    'spf': float(fields[8]),
                 })
             else:
                 raise ValueError("Stationary point file must contain at least 9 columns.")
@@ -2916,16 +2901,16 @@ def load_sp_optimized(args,surf):
     print(f"  Number of loaded optimized stationary points: {len(surf.sp_optimized)}")
 
     print("")
-    print("#       ID          X          Y        ENE        SPF         R1         R2      Angle       Type")
+    print("#       ID          X          Y   ENE(X,Y)   SPF(X,Y)         R1         R2      Angle       Type")
     print("# -------- ---------- ---------- ---------- ---------- ---------- ---------- ---------- ----------")
     for opt in surf.sp_optimized:
-        print(f"{opt["label"]:10d} {opt["x"]:10.3f} {opt["y"]:10.3f} {opt["ene"]:10.3f} {opt["spf"]:10.1f} {opt["r1"]:10.3f} {opt["r2"]:10.3f} {opt["angle"]:10.1f} {opt["type"]:>10}")
+        print(f"{opt['id']:10d} {opt['x']:10.3f} {opt['y']:10.3f} {opt['ene']:10.3f} {opt['spf']:10.1f} {opt['r1']:10.3f} {opt['r2']:10.3f} {opt['angle']:10.1f} {opt['type']:>10}")
     print("")
 
     if args.showopts == True or args.saveopts is not None:
         surf.plot_rbf_with_sp_optimized(show=args.showopts,save=args.saveopts,dpi=args.dpi)
 
-# -------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
 def opt_sps(args,surf):
     print("")
@@ -2934,8 +2919,8 @@ def opt_sps(args,surf):
     for gpt in surf.sp_guesses:
         print(f"")
         print(f"# ==============================================================================")
-        print(f">>> Processing initial guess: x = {gpt["x"]}, y = {gpt["y"]}")
-        surf.find_sp(gpt["x"], gpt["y"])
+        print(f">>> Processing initial guess: x = {gpt['x']}, y = {gpt['y']}")
+        surf.find_sp(gpt['x'], gpt['y'])
 
     print("# ==============================================================================")
 
@@ -2943,20 +2928,21 @@ def opt_sps(args,surf):
     print("# Cleaning stationary points ...")
 
     print("")
-    print("#       ID          X          Y        ENE        SPF         R1         R2      Angle       Type")
-    print("# -------- ---------- ---------- ---------- ---------- ---------- ---------- ---------- ----------")
+    print("#       ID          X          Y   ENE(X,Y)   SPF(X,Y)         R1         R2      Angle Type        sL1        sL2")
+    print("# -------- ---------- ---------- ---------- ---------- ---------- ---------- ---------- ---- ---------- ----------")
     for opt in surf.sp_optimized:
-        print(f"{opt["label"]:10d} {opt["x"]:10.3f} {opt["y"]:10.3f} {opt["ene"]:10.3f} {opt["spf"]:10.1f} {opt["r1"]:10.3f} {opt["r2"]:10.3f} {opt["angle"]:10.1f} {opt["type"]:>10}")
+        print(f"{opt['id']:10d} {opt['x']:10.3f} {opt['y']:10.3f} {opt['ene']:10.3f} {opt['spf']:10.1f} {opt['r1']:10.3f} {opt['r2']:10.3f} {opt['angle']:10.1f} {opt['type']:>4} {opt['sl1']:10.1f} {opt['sl2']:10.1f}")
     print("")
-    surf.remove_near_duplicate_sp_optimized()
+    surf.remove_near_duplicate_sp_optimized(min_distance_uv=args.min_distance_uv)
+    surf.remove_stationary_point_outliers(minslam=args.minslam,maxslam=args.maxslam)
 
     print(f"")
     print(f"# Optimized stationary points ...")
     print(f"  Saved as:                        {args.fname_sp_optimized}")
     print(f"  Number of all stationary points: {len(surf.sp_optimized)}")
-    print(f"  Number of minima:                {sum(1 for item in surf.sp_optimized if item["type"] == "S")}")
-    print(f"  Number of transition states:     {sum(1 for item in surf.sp_optimized if item["type"] == "T")}")
-    print(f"  Number of maxima:                {sum(1 for item in surf.sp_optimized if item["type"] == "M")}")
+    print(f"  Number of minima:                {sum(1 for item in surf.sp_optimized if item['type'] == "S")}")
+    print(f"  Number of transition states:     {sum(1 for item in surf.sp_optimized if item['type'] == "T")}")
+    print(f"  Number of maxima:                {sum(1 for item in surf.sp_optimized if item['type'] == "M")}")
 
     with open(args.fname_sp_optimized, "w") as fout_spo:
         fout_spo.write("# Optimized stationary points\n")
@@ -2964,22 +2950,22 @@ def opt_sps(args,surf):
 
         for opt in surf.sp_optimized:
             fout_spo.write(
-                f"{opt["label"]:d} "
-                f"{opt["x"]:20.4f} "
-                f"{opt["y"]:20.4f} "
-                f"{opt["ene"]:20.4f} "
-                f"{opt["r1"]:20.4f} "
-                f"{opt["r2"]:20.4f} "
-                f"{opt["angle"]:20.4f} "
-                f"{opt["type"]:s} "
-                f"{opt["spf"]:20.4f}\n"
+                f"{opt['id']:d} "
+                f"{opt['x']:20.4f} "
+                f"{opt['y']:20.4f} "
+                f"{opt['ene']:20.4f} "
+                f"{opt['r1']:20.4f} "
+                f"{opt['r2']:20.4f} "
+                f"{opt['angle']:20.4f} "
+                f"{opt['type']:s} "
+                f"{opt['spf']:20.4f}\n"
             )
 
     print("")
-    print("#       ID          X          Y        ENE        SPF         R1         R2      Angle       Type")
+    print("#       ID          X          Y   ENE(X,Y)   SPF(X,Y)         R1         R2      Angle       Type")
     print("# -------- ---------- ---------- ---------- ---------- ---------- ---------- ---------- ----------")
     for opt in surf.sp_optimized:
-        print(f"{opt["label"]:10d} {opt["x"]:10.3f} {opt["y"]:10.3f} {opt["ene"]:10.3f} {opt["spf"]:10.1f} {opt["r1"]:10.3f} {opt["r2"]:10.3f} {opt["angle"]:10.1f} {opt["type"]:>10}")
+        print(f"{opt['id']:10d} {opt['x']:10.3f} {opt['y']:10.3f} {opt['ene']:10.3f} {opt['spf']:10.1f} {opt['r1']:10.3f} {opt['r2']:10.3f} {opt['angle']:10.1f} {opt['type']:>10}")
 
     if args.showopts == True or args.saveopts is not None:
         surf.plot_rbf_with_sp_optimized(show=args.showopts,save=args.saveopts,dpi=args.dpi)
@@ -2988,35 +2974,34 @@ def opt_sps(args,surf):
 
 def find_basins(args,surf):
     print("")
-    print("# Find minima basins ...")
+    print("# Find minimum basins ...")
 
     surf.calculate_watershed()
-    surf.calculate_basins_corrections()
+    surf.calculate_basins_ene_state()
+
+    print(f"  Number of minimum basins:        {sum(1 for item in surf.sp_optimized if item['type'] == "S")}")
 
     print("")
-    print("#       ID  Type          X          Y        ENE      dcorr   ENE-corr")
-    print("# --------  ---- ---------- ---------- ---------- ---------- ----------")
+    print("#       ID Type          X          Y A=ENE(X,Y)   A(state)  A0(state)")
+    print("# -------- ---- ---------- ---------- ---------- ---------- ----------")
     for opt in surf.sp_optimized:
-        print(f"{opt["label"]:10d} {opt["type"]:>4} {opt["x"]:10.3f} {opt["y"]:10.3f} {opt["ene"]:10.3f} {opt["dcorr"]:10.3f} {opt["ene_corr"]:10.3f}")
+        if opt['type'] == "S":
+            print(f"{opt['id']:10d} {opt['type']:>4} {opt['x']:10.3f} {opt['y']:10.3f} {opt['ene']:10.3f} {opt['ene_state']:10.3f} {opt['ene_state0']:10.3f}")
     print("")
 
     if args.showbasins == True or args.savebasins is not None:
         surf.plot_rbf_with_watershed_basins(show=args.showbasins,save=args.savebasins,dpi=args.dpi)
 
-# -------------------------------------------------------------------------
-
-# -----------------------------------------------------------------------------
-# Example usage
-# -----------------------------------------------------------------------------
+# ==============================================================================
+# Main
+# ==============================================================================
 
 if __name__ == "__main__":
 
-    print("#")
+    print("")
     print("# ==============================================================================")
-    print("#                        *** Analyze 2D Energy Surface ***                      ")
-    print("# ==============================================================================")
-    print("#          The analyse-2D-surface utility is the part of PMFLib toolkit.        ")
-    print("#")
+    print("#                        *** Analyze 2D Energy Surface ***                     #")
+    print("#          The analyse-2D-surface utility is part of the PMFLib toolkit.       #")
     print("#==============================================================================#")
     print("# PMFLib - Potential of Mean Force Toolkit                                     #")
     print("# -----------------------------------------------------------------------------#")
@@ -3027,10 +3012,10 @@ if __name__ == "__main__":
     print("# PMFLib is licensed under Lesser GPL v2.1 and above.                          #")
     print("#==============================================================================#")
 
+    print("")
     args = parse_args()
 
     options = vars(args)
-    print(f"")
     print("# All arguments ...")
     print(options)
 
@@ -3043,17 +3028,17 @@ if __name__ == "__main__":
         cv1_periodic=args.cv1periodic,
         cv1_nx=args.cv1nrbfs,
         cv1_px=args.cv1nbins,
-        cv1_label=args.cv1n,
+        cv1_label=args.cv1label,
 
         cv2min=args.cv2min,
         cv2max=args.cv2max,
         cv2_periodic=args.cv2periodic,
         cv2_nx=args.cv2nrbfs,
         cv2_px=args.cv2nbins,
-        cv2_label=args.cv2n,
+        cv2_label=args.cv2label,
 
         zmax=args.zmax,
-        ene_label=args.enen,
+        ene_label=args.enelabel,
         contour_spacing=args.contour_spacing,
         temp=args.temp,
         thrfac=args.thrfac,
@@ -3088,13 +3073,8 @@ if __name__ == "__main__":
         else:
             raise NameError(f"Unsupported action: {action:s}")
 
-
     print("")
 
-
-
-
-
-
+# ==============================================================================
 
 
