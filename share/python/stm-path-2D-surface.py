@@ -1011,10 +1011,9 @@ class EnergySurface2D:
             levels = np.arange(0.0, cmax + self.contour_spacing, self.contour_spacing)
 
             bead_colors = {
-                "flexible":  "green",
-                "terminal":  "green",
+                "normal":    "green",
+                "free":      "orange",
                 "permanent": "black",
-                "kink":      "orange",
             }
 
             fig, ax = plt.subplots(figsize=figsize)
@@ -1042,7 +1041,7 @@ class EnergySurface2D:
 
                 # Plot one bead type at a time.  This gives a clean legend and keeps
                 # the type-to-colour mapping local to the plotting routine.
-                for bead_type in ("flexible", "terminal", "permanent", "kink"):
+                for bead_type in list(bead_colors.keys()):
                     mask = path_types == bead_type
                     if not np.any(mask):
                         continue
@@ -1086,24 +1085,25 @@ class Bead:
     def __init__(self, stmpath: STMPath):
 
         self.ncvs       = stmpath.ncvs
+        self.eval_uv    = stmpath.surface.eval_uv
 
         self.type       = None
+        self.OPos       = np.zeros(self.ncvs)               # old position, scaled
+        self.Pos        = np.zeros(self.ncvs)               # bead position, scaled
 
-        self.Pos        = np.zeros(self.ncvs)               #  bead position, scaled
-        self.dCVdAlpha  = np.zeros(self.ncvs)
-        self.P          = np.zeros((self.ncvs,self.ncvs))   # projector
+        self.Grad       = np.zeros(self.ncvs)             # ENE gradient
+        self.pGrad      = np.zeros(self.ncvs)             # force acting perpendicularly to the path
+        self.uGrad      = np.zeros(self.ncvs)             # gradient to move bead
 
-        self.Grad         = np.zeros(self.ncvs)             # ENE gradient
-        self.pGrad        = np.zeros(self.ncvs)             # force acting perpendicularly to the path
-        self.uGrad        = np.zeros(self.ncvs)             # gradient to move bead
+        # per path segment
+        self.dCVdAlpha  = np.zeros(self.ncvs)        
+        self.Seglength  = 0.0
 
         self.Alpha      = None      # path position
         self.dAdAlpha   = None      # free energy derivative
         self.A          = None      # free energy, integrated
         self.Asurf      = None      # free energy from EnergySurface2D
-             
-        # old pos
-        self.OPos      = np.zeros(self.ncvs)
+
 
 # ------------------------------------------------------------------------------
 
@@ -1114,12 +1114,12 @@ class Bead:
         
         for i in range(self.ncvs):
 
-            dm = stepsize * self.uGrad[i]
+            dm = - stepsize * self.uGrad[i]
 
             if (cvs[i].smaxmov <= 0) or (math.fabs(dm) < cvs[i].smaxmov):
-                self.Pos[i] = self.Pos[i] - dm
+                self.Pos[i] = self.Pos[i] + dm
             else:
-                self.Pos[i] = self.Pos[i] - cvs[i].smaxmov*math.copysign(1.0,dm)
+                self.Pos[i] = self.Pos[i] + cvs[i].smaxmov*math.copysign(1.0,dm)
 
 # ==============================================================================
 # STMPath
@@ -1164,7 +1164,7 @@ class STMPath:
         print("# CV splines ...")
         if args.cvspline == 1:
             print(f"  >>> Smoothing Cubic Spline")
-            print(f"      Lambda: {args.spline_lambda:10.5f}")
+            print(f"      Lambda: {args.spline_lambda:10.5e}")
             self.cv_splines =  [
                 CVSmoothingCubicSpline(lam=args.spline_lambda)
                 for _ in range(self.ncvs)
@@ -1172,8 +1172,6 @@ class STMPath:
         else:
             print(f"  >>> Interpolating Cubic Spline")
             self.cv_splines =  [CVInterpolatingCubicSpline() for _ in range(self.ncvs)]
-
-        self.PathParamMode = args.path_param_mode
 
         print("")
         print("# Initial path ...")
@@ -1199,11 +1197,11 @@ class STMPath:
                 filename=f"{args.plot_prefix}_path_0000_b_initial-full.png", show=args.show, figsize=args.figsize, dpi=args.dpi)
 
         # smoothing, reparameterization
-        self.SmoothInterval     = args.smoothinterval
-        self.SmoothingFac       = args.sfac
-        self.ReparamInterval    = args.reparaminterval
-        self.DetectKinksStep    = args.detect_kinks_step
-        self.KinkEnergyThr      = args.kink_energy_thr
+        self.SmoothInterval         = args.smoothinterval
+        self.SmoothingFac           = args.sfac
+        self.ReparamInterval        = args.reparaminterval
+        self.DetectMinimaAtStep     = args.detect_minima_at_step
+        self.MinimaTreshold         = args.minima_treshold
 
         # STM
         self.STMStep            = 0
@@ -1264,9 +1262,22 @@ class STMPath:
             self.calc_beads()
             self.integrate_path()
 
-            if self.STMStep == self.DetectKinksStep:
-                # mark kink knots
-                self.detect_kinks(self.KinkEnergyThr);
+            if self.STMStep == self.DetectMinimaAtStep:
+                # mark minima as free beads
+                self.detect_minima();
+                self.StepSize *= args.scale_stepsize
+                print(f"# >>>>> New Stepsize: {self.StepSize}")
+                print(f"# >>>>> CV Splines ...")
+                if args.cvspline == 1:
+                    print(f"#       Smoothing Cubic Spline")
+                    print(f"#       Lambda: {args.spline_lambda*args.scale_lambda:10.5e}")
+                    self.cv_splines =  [
+                        CVSmoothingCubicSpline(lam=args.spline_lambda*args.scale_lambda)
+                        for _ in range(self.ncvs)
+                    ]
+                else:
+                    print(f"  >>> Interpolating Cubic Spline")
+                    self.cv_splines =  [CVInterpolatingCubicSpline() for _ in range(self.ncvs)]
 
             self.calculate_stm_step_stat()
 
@@ -1331,9 +1342,6 @@ class STMPath:
         beads : list[Bead]
             Beads defining the path. Each bead stores bead.Pos.
 
-        self.PathParamMode :  0 - "chord-length" parameterization
-                              1 - centripetal parameterization
-
         Returns
         -------
         float
@@ -1348,14 +1356,12 @@ class STMPath:
         # ---------------------------------------------------------------------
 
         total_length      = 0.0
-        total_length_sqrt = 0.0
 
         for b in range(1, len(beads)):
             diff = beads[b].Pos - beads[b - 1].Pos
             slen = np.linalg.norm(diff)
 
             total_length      += slen
-            total_length_sqrt += math.sqrt(slen)
 
         if total_length == 0.0:
             raise RuntimeError("path has zero length")
@@ -1367,7 +1373,6 @@ class STMPath:
         beads[0].Alpha = 0.0
 
         path_length = 0.0
-        path_length_sqrt = 0.0
 
         for b in range(1, len(beads) - 1):
             diff = beads[b].Pos - beads[b - 1].Pos
@@ -1376,13 +1381,9 @@ class STMPath:
             if slen == 0.0:
                 raise RuntimeError("path segment has zero length")
             
-            path_length      += slen
-            path_length_sqrt += math.sqrt(slen)
+            path_length   += slen
 
-            if self.PathParamMode == 1:
-                beads[b].Alpha = path_length_sqrt / total_length_sqrt
-            else:
-                beads[b].Alpha = path_length / total_length
+            beads[b].Alpha = path_length / total_length
 
         beads[-1].Alpha = 1.0
 
@@ -1400,7 +1401,7 @@ class STMPath:
 
     # --------------------------------------------------------------------------
 
-    def update_all_positions(self):
+    def update_all_positions(self, optimizer = 0):
 
         # backup old positions
         for bead in self.beads:
@@ -1412,9 +1413,8 @@ class STMPath:
 
         # update positions
         for bead in self.beads:
-            # bead types are handled in UpdatePositionGradientDescent()
             bead.UpdatePositionGradientDescent(self.StepSize,self.cvs)
-            
+
     # --------------------------------------------------------------------------
 
     def smooth_all_positions(self):
@@ -1425,11 +1425,48 @@ class STMPath:
         old_pos = np.array([bead.Pos.copy() for bead in self.beads])
 
         for i in range(1, self.nbeads - 1):
-            if self.beads[i].type == "flexible":
+            if self.beads[i].type == "normal":
                 self.beads[i].Pos[:] = (
                     (1.0 - self.SmoothingFac) * old_pos[i]
                     + 0.5 * self.SmoothingFac * (old_pos[i - 1] + old_pos[i + 1])
                 )
+
+    # --------------------------------------------------------------------------
+
+    def iter_path_segments(self, beads):
+        """
+        Yield segments composed of:
+            (left terminal bead) - optional, first path bead or free bead
+            one or more normal / permanent beads
+            (right terminal bead) - optional, last path bead or free bead
+        """
+
+        nbeads = len(beads)
+        i = 0
+
+        while i < nbeads:
+
+            if i != 0 and beads[i].type != "free":
+                raise RuntimeError(f"path segment must start with the free bead or the first bead of the path, bidx: {i}")
+
+            seg_first = i
+
+            i += 1
+
+            # Find the end of the segment
+            while i < nbeads and beads[i].type != "free":
+                i += 1
+
+            seg_last = i
+
+            # make a list
+            segment_beads = []
+            for idx in range(seg_first,seg_last+1):
+                if idx < 0 or idx >= self.nbeads:
+                    continue
+                segment_beads.append(self.beads[idx])
+
+            yield segment_beads
 
     # --------------------------------------------------------------------------
 
@@ -1438,51 +1475,7 @@ class STMPath:
         if (self.ReparamInterval == 0) or (self.STMStep % self.ReparamInterval != 0):
             return
 
-        def iter_flexible_segments_with_terminals(beads):
-            """
-            Yield segments composed of:
-
-                (left terminal bead) - optional
-                one or more flexible beads
-                (right terminal bead) - optional
-
-            The terminal beads are any non-flexible beads, for example:
-            terminal, permanent, kink.
-            """
-
-            nbeads = len(beads)
-            i = 0
-
-            while i < nbeads:
-
-                # Find the first flexible bead.
-                while i < nbeads and beads[i].type != "flexible":
-                    i += 1
-
-                if i >= nbeads:
-                    # no more beads
-                    # print("here")
-                    break
-
-                first_flexible = i
-
-                # Find the end of this continuous flexible block.
-                while i < nbeads and beads[i].type == "flexible":
-                    i += 1
-
-                last_flexible = i
-
-                # make a list
-                segment_beads = []
-                # include left and right item to flexible beads if possible
-                for idx in range(first_flexible-1,last_flexible+1):
-                    if idx < 0 or idx >= self.nbeads:
-                        continue
-                    segment_beads.append(self.beads[idx])
-
-                yield segment_beads
-
-        for segment_beads in iter_flexible_segments_with_terminals(self.beads):
+        for segment_beads in self.iter_path_segments(self.beads):
             
             # At least one bead inside the segment
             if len(segment_beads) < 3:
@@ -1505,7 +1498,7 @@ class STMPath:
             for cv in range(self.ncvs):
                 # redistribute beads - exclude terminals
                 for bidx, bead in enumerate(segment_beads[1:-1],start=1):
-                    if bead.type == "flexible":
+                    if bead.type == "normal":
                         bead.Pos[cv] = self.cv_splines[cv](alphas[bidx])
        
     # --------------------------------------------------------------------------
@@ -1523,17 +1516,19 @@ class STMPath:
 
 # ------------------------------------------------------------------------------
 
-    def detect_kinks(self, ethr=0.0):
+    def detect_minima(self):
+
+        print(f"# >>>>> Detecting Minima ...")
 
         alphas = np.array([bead.Alpha for bead in self.beads], dtype=float)
         enes   = np.array([bead.Asurf for bead in self.beads], dtype=float)
 
-        _, bidxs = self.find_minima_positions(alphas,enes)
+        _, bidxs = self.find_minima_positions(alphas,enes,self.MinimaTreshold)
 
         for bidx in bidxs:
-            self.beads[bidx].type = "kink"
+            self.beads[bidx].type = "free"
 
-        print(f"# >> Detecting kink beads. Found: {len(bidxs)}")
+        print(f"#       Found: {len(bidxs)}")
 
 # ------------------------------------------------------------------------------
 
@@ -1571,9 +1566,6 @@ class STMPath:
 
         if len(x) != len(y):
             raise ValueError("x and y must have the same length.")
-
-        if ethr < 0.0:
-            raise ValueError("ethr must be non-negative.")
 
         n = len(y)
         if n < 3:
@@ -1681,104 +1673,43 @@ class STMPath:
         - self.cv_splines were already built by parametrize_path()
         """
 
-        def iter_nokink_segments_with_terminals(beads):
-            """
-            Yield segments composed of:
-
-                (left terminal bead) - optional
-                one or more flexible beads
-                (right terminal bead) - optional
-
-            The terminal beads are any non-flexible beads, for example:
-            terminal, permanent, kink.
-            """
-
-            nbeads = len(beads)
-            i = 0
-
-            while i < nbeads:
-
-                # start with next bead
-                if i >= nbeads:
-                    # no more beads
-                    break
-
-                first_seg = i
-
-                i += 1
-
-                # kink
-                while i < nbeads and beads[i].type != "kink":
-                    i += 1
-
-                last_seg = i
-
-                i += 1
-
-                # make a list
-                segment_beads = []
-                # include left and right item to segment beads if possible
-                for idx in range(first_seg-1,last_seg+1):
-                    if idx < 0 or idx >= self.nbeads:
-                        continue
-                    segment_beads.append(self.beads[idx])
-
-                yield segment_beads
-
         # for all beads
         for bead in self.beads:            
             # Calculate MF and A
-            bead.Asurf, grad, hessian = self.surface.eval_uv(bead.Pos)
+            bead.Asurf,grad,_ = self.surface.eval_uv(bead.Pos)
             bead.Grad[:] = grad[:]
-            bead.P[:,:] = 0.0
-            bead.dCVdAlpha[:] = 0.0
 
-        # for non-kink segments
-        for segment_beads in iter_nokink_segments_with_terminals(self.beads):
+        # for path segments
+        for segment_beads in self.iter_path_segments(self.beads):
             
-            # At least one bead inside the segment
-            if len(segment_beads) < 3:
-                continue
-
             # Parametrize this local segment and build CV splines for it.
             # The first and last beads become alpha = 0.0 and alpha = 1.0.
-            self.parametrize_path(segment_beads)
+            seglen = self.parametrize_path(segment_beads)
 
             for bead in segment_beads:            
 
-                dCVdAlpha = np.zeros(self.ncvs)
+                bead.Seglength = seglen
+
                 # Calculate tangent dCV/dalpha from the path splines.
                 for i in range(self.ncvs):
-                    dCVdAlpha[i] = self.cv_splines[i](bead.Alpha, 1)
+                    bead.dCVdAlpha[i] = self.cv_splines[i](bead.Alpha, 1)
 
-                slen2 = float(np.dot(dCVdAlpha, dCVdAlpha))
+                slen2 = float(np.dot(bead.dCVdAlpha, bead.dCVdAlpha))
                 if slen2 == 0.0:
                     raise RuntimeError("derivative segment has zero length")
 
-                # Projector perpendicular to the path:
-                #     P = I - t t^T / |t|^2
+                # get perpendicular gradient
+                bead.pGrad[:] = bead.Grad[:] - bead.dCVdAlpha[:] * (np.dot(bead.dCVdAlpha, bead.Grad) / slen2)
 
-                bead.P[:, :] = np.eye(self.ncvs) - np.outer(dCVdAlpha, dCVdAlpha) / slen2
-
-                bead.pGrad[:] = bead.P @ bead.Grad
-
-                if bead.type == "terminal" or bead.type == "kink":
+                if bead.type == "free":
                     bead.uGrad[:] = bead.Grad[:]    # switch to gradient descent move
-                elif bead.type == "flexible":
+                elif bead.type == "normal":
                     bead.uGrad[:] = bead.pGrad[:]   # use perpendicular gradient
                 else:
                     bead.uGrad[:] = 0.0
 
         # and now for the entire path
         self.CurrentPathLength = self.parametrize_path(self.beads)  
-
-        for bead in self.beads:            
-            # Calculate tangent dCV/dalpha from the path splines.
-            for i in range(self.ncvs):
-                if bead.type == "terminal" or bead.type == "kink":
-                    bead.dCVdAlpha[i] = 0.0
-                else:
-                    bead.dCVdAlpha[i] = self.cv_splines[i](bead.Alpha, 1)
 
         # Calculate kink angles
         v1 = np.zeros(self.ncvs)
@@ -1850,7 +1781,8 @@ class STMPath:
             #     dA/dalpha = dot(dCV/dalpha, MF)
             # ---------------------------------------------------------------------
 
-            bead.dAdAlpha = float(np.dot(bead.dCVdAlpha, bead.Grad))
+            # bead.dCVdAlpha are per path segment, thus correction * self.CurrentPathLength / bead.Seglength
+            bead.dAdAlpha = float(np.dot(bead.dCVdAlpha, bead.Grad)) * self.CurrentPathLength / bead.Seglength
 
             # ---------------------------------------------------------------------
             # Trapezoidal integration along alpha.
@@ -1899,15 +1831,10 @@ class STMPath:
         # ---------------------------------------------------------------------
 
         if len(input_beads) < 2:
-            raise RuntimeError("At least two input beads (flexible/permanent/terminal/kink) must be specified in the input PATH file!")
+            raise RuntimeError("At least two input beads (normal/free/permanent) must be specified in the input PATH file!")
         
         if self.nbeads < 2:
             raise RuntimeError("At least two beads (nbeads) must be requested in the input PATH file!")
-
-        if input_beads[0].type == "kink":
-            raise RuntimeError(f"Terminal bead must be terminal/flexible/permanent but {input_beads[0].type} was specified!")
-        if input_beads[-1].type == "kink":
-            raise RuntimeError(f"Terminal bead must be terminal/flexible/permanent but {input_beads[0].type} was specified!")
 
         if len(input_beads) == self.nbeads:
             # check boundaries
@@ -1919,8 +1846,8 @@ class STMPath:
         # path is incompleted, it will be rebuilded
 
         for bead in input_beads[1:-1]:
-            if bead.type != "flexible":
-                raise RuntimeError(f"For the incomplete path, all inner beads must be flexible but {bead.type} was requested!")
+            if bead.type != "normal":
+                raise RuntimeError(f"For the incomplete path, all inner beads must be 'normal' but {bead.type} was requested!")
 
         # ---------------------------------------------------------------------
         # 2) Parametrize user provided path
@@ -1938,7 +1865,7 @@ class STMPath:
             alpha = float(bidx) / float(self.nbeads - 1)
 
             bead.Alpha = alpha
-            bead.type  = "flexible"
+            bead.type  = "normal"
 
             # copy type of terminals from the input path
             if bidx == 0:
@@ -2003,10 +1930,9 @@ class STMPath:
         min
         max
         maxmov
-        permanent
-        terminal
-        flexible
-        kink
+        normal      - moves only perpendicular to the path
+        free        - moves by full gradient descent
+        permanent   - does not move   
         """
 
     # --------------------------------------------------------------------------
@@ -2133,7 +2059,7 @@ class STMPath:
                             self.cvs[idx].smaxmov = self.cvs[idx].maxmov / (self.cvs[idx].cvmax - self.cvs[idx].cvmin)
                         maxmov_loaded = True
 
-                    elif key in ("permanent", "terminal", "flexible", "kink"):
+                    elif key in ("permanent", "normal", "free"):
                         if  len(values) != self.ncvs:
                             raise ValueError(
                                 f"keyword '{key}' expects {self.ncvs} CV values, "
@@ -2159,7 +2085,7 @@ class STMPath:
             raise ValueError(f"mandatory path item not loaded | name:{name_loaded}/nbeads:{nbeads_loaded}/ncvs:{ncvs_loaded}/names:{names_loaded}/types:{types_loaded}/min:{pathmin_loaded}/max:{pathmax_loaded}/maxmov:{maxmov_loaded}")
         
         if len(beads) < 2:
-            raise ValueError(f"at least two beads must be provided | flexible/permanent/terminal/kink")
+            raise ValueError(f"at least two beads must be provided | normal/free/permanent")
         
         return beads
 
@@ -2214,7 +2140,6 @@ class STMPath:
             print(file=fout)
 
             for index, bead in enumerate(beads):
-                # Python version supports only flexible beads.
                 print(f"{bead.type:<9} ", end="", file=fout)
 
                 for i, cv in enumerate(self.cvs):
@@ -2271,22 +2196,24 @@ class STMPath:
         print(delimiter, file=fout)
 
         # CV metadata rows.
-        print(f"{'#      names':<68}", end="", file=fout)
+        print(f"{'#      names':<74}", end="", file=fout)
         for _ in range(5):
             for cv in self.cvs:
                 print(f" {cv.name:>12}", end="", file=fout)
+        print(f"             ", end="", file=fout)
         print(file=fout)
 
-        print(f"{'#      types':<68}", end="", file=fout)
+        print(f"{'#      types':<74}", end="", file=fout)
         for _ in range(2):
             for cv in self.cvs:
                 print(f" {cv.type:>12}", end="", file=fout)
         for _ in range(3):
             for cv in self.cvs:
                 print(f"             ", end="", file=fout)
+        print(f"             ", end="", file=fout)
         print(file=fout)
 
-        print(f"{'#      min':<68}", end="", file=fout)
+        print(f"{'#      min':<74}", end="", file=fout)
         for cv in self.cvs:
             print(f" {cv.pathmin:12.5e}", end="", file=fout)
         for cv in self.cvs:
@@ -2294,9 +2221,10 @@ class STMPath:
         for _ in range(3):
             for cv in self.cvs:
                 print(f"             ", end="", file=fout)
+        print(f"             ", end="", file=fout)
         print(file=fout)
 
-        print(f"{'#      max':<68}", end="", file=fout)
+        print(f"{'#      max':<74}", end="", file=fout)
         for cv in self.cvs:
             print(f" {cv.pathmax:12.5e}", end="", file=fout)
         for cv in self.cvs:
@@ -2304,12 +2232,13 @@ class STMPath:
         for _ in range(3):
             for cv in self.cvs:
                 print(f"             ", end="", file=fout)
+        print(f"             ", end="", file=fout)
         print(file=fout)
 
-        print(f"{'#      maxmov':<68}", end="", file=fout)
+        print(f"{'#      maxmov':<74}", end="", file=fout)
         for cv in self.cvs:
             print(f" {cv.maxmov:12.5e}", end="", file=fout)
-        for _ in range(3):
+        for _ in range(4):
             for cv in self.cvs:
                 print(f"             ", end="", file=fout)
         print(f"             ", end="", file=fout)
@@ -2359,12 +2288,10 @@ class STMPath:
             bead_type = 'U'
             if bead.type == "permanent":
                 bead_type = 'P'
-            elif bead.type == "flexible":
+            elif bead.type == "normal":
+                bead_type = 'N'
+            elif bead.type == "free":
                 bead_type = 'F'
-            elif bead.type == "terminal":
-                bead_type = 'T'
-            elif bead.type == "kink":
-                bead_type = 'K'
             mode = "--"
             status = "--"
             client_id = "--"
@@ -2707,20 +2634,14 @@ def parse_args():
 
     enegroup = parser.add_argument_group("The energy axis specification")
 
-    enegroup.add_argument(
-        "--enelabel", type=str, default=r"${\Delta}G [kcal/mol]$",
-        help="Energy label."
-    )
+    enegroup.add_argument( "--enelabel", type=str, default=r"${\Delta}G [kcal/mol]$",
+        help="Energy label." )
 
-    enegroup.add_argument(
-        "--zmax", type=float, required=True,
-        help="Maximum energy value considered."
-    )
+    enegroup.add_argument( "--zmax", type=float, required=True,
+        help="Maximum energy value considered." )
 
-    enegroup.add_argument(
-        "--contour_spacing", type=float, default=1.0,
-        help="Contour spacing."
-    )
+    enegroup.add_argument( "--contour_spacing", type=float, default=1.0,
+        help="Contour spacing." )
 
     # -------------------------------------------------------------------------
     # RBF interpolation
@@ -2778,10 +2699,7 @@ def parse_args():
 
     pathgroup.add_argument("--spline-lambda", type=float, default=0.00000002,
         help="Lambda for the internal smoothing cubic spline; 0.0 gives interpolation." )
-    
-    pathgroup.add_argument("--path-param-mode", type=int, default=0,
-        help="Path parameterization mode: 0 - 'chord-length' parameterization, 1 - centripetal parameterization." )
-    
+        
     # -------------------------------------------------------------------------
     # STM Setup
     # -------------------------------------------------------------------------
@@ -2800,20 +2718,26 @@ def parse_args():
     stmgroup.add_argument("--reparaminterval", type=int, default=1,
         help="How often to reparametrize the path." )
     
-    stmgroup.add_argument("--detect-kinks-step", type=int, default=0,
-        help="Detect kinks at given STM optimization step." )
+    stmgroup.add_argument("--detect-minima-at-step", type=int, default=0,
+        help="Detect minima along the pathway at given STM optimization step." )
     
-    stmgroup.add_argument("--kink-energy-thr", type=float, default=0.5,
-        help="Minimum energy of basin with a kink/minimum." )
-
+    stmgroup.add_argument("--minima-treshold", type=float, default=0.5,
+        help="Minimum energy separating minima along the pathway." )
+    
     # -------------------------------------------------------------------------
     # Optimizer Setup
     # -------------------------------------------------------------------------
 
     adagroup = parser.add_argument_group("Optimizer specification")
 
-    adagroup.add_argument("--stepsize", type=float, default=0.00005,
+    adagroup.add_argument("--stepsize", type=float, default=0.0002,
         help="Optimisation time step." )
+    
+    stmgroup.add_argument("--scale-lambda", type=float, default=10.0,
+        help="Factor scaling the smoothing cubic spline lambda when minima detected." )
+    
+    stmgroup.add_argument("--scale-stepsize", type=float, default=0.5,
+        help="Factor scaling the step size when minima detected." )
 
     # -------------------------------------------------------------------------
     # Termination
@@ -2836,7 +2760,7 @@ def parse_args():
     termgroup.add_argument("--final-maxpmfsize", type=float, default=5.00,
         help="Final threshold for moving-average maximum projected mean-force size." )
 
-    termgroup.add_argument("--final-avepmfsize", type=float, default=0.80,
+    termgroup.add_argument("--final-avepmfsize", type=float, default=1.00,
         help="Final threshold for moving-average average projected mean-force size." )
 
     # -------------------------------------------------------------------------
@@ -2874,8 +2798,8 @@ def parse_args():
     if args.cvspline not in (0, 1):
         parser.error("--cvspline must be 0 or 1")
 
-    if args.path_param_mode not in (0, 1):
-        parser.error("--path-param-mode must be 0 or 1")
+    if args.minima_treshold < 0.0:
+        parser.error("--minima-treshold > 0.")
 
     return args
 
