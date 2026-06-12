@@ -18,7 +18,7 @@
 !    Foundation, Inc., 51 Franklin Street, Fifth Floor,
 !    Boston, MA  02110-1301  USA
 !===============================================================================
-module mtc_init
+module mta_init
 
 use pmf_sizes
 use pmf_constants
@@ -27,57 +27,57 @@ implicit none
 contains
 
 !===============================================================================
-! Subroutine:  mtc_init_method
+! Subroutine:  mta_init_method
 !===============================================================================
 
-subroutine mtc_init_method
+subroutine mta_init_method
 
-    use mtc_output
-    use mtc_restart
+    use mta_output
+    use mta_restart
 
     implicit none
     ! --------------------------------------------------------------------------
 
-    call mtc_init_print_header
-    call mtc_init_arrays
-    call mtc_output_open
-    call mtc_restart_read
-    call mtc_output_write_header
+    call mta_init_print_header
+    call mta_init_arrays
+    call mta_output_open
+    call mta_restart_read
+    call mta_output_write_header
 
-end subroutine mtc_init_method
+end subroutine mta_init_method
 
 !===============================================================================
-! Subroutine:  mtc_init_dat
+! Subroutine:  mta_init_dat
 !===============================================================================
 
-subroutine mtc_init_dat
+subroutine mta_init_dat
 
-    use mtc_dat
+    use mta_dat
 
     implicit none
     ! --------------------------------------------------------------------------
 
-    fmode               = 0         ! 0 - disable MTC, 1 - enabled MTC
+    fmode               = 0         ! 0 - disable MTA, 1 - enabled MTA
     fsample             = 500       ! output sample pariod in steps
     frestart            = .false.
     frstupdate          = 5000
 
-    NumOfMTCCVs         = 0         ! number of CVs
+    NumOfMTACVs         = 0         ! number of CVs
 
-end subroutine mtc_init_dat
+end subroutine mta_init_dat
 
 !===============================================================================
-! Subroutine:  mtc_init_print_header
+! Subroutine:  mta_init_print_header
 !===============================================================================
 
-subroutine mtc_init_print_header
+subroutine mta_init_print_header
 
-    use mtc_dat
+    use mta_dat
     use pmf_dat
     use pmf_utils
     use pmf_cvs
     use prmfile
-    use mtc_cvs
+    use mta_cvs
 
     implicit none
     integer        :: i
@@ -88,30 +88,30 @@ subroutine mtc_init_print_header
     write(PMF_OUT,120)  ' ************************** METRIC TENSOR CORRECTION ************************** '
     write(PMF_OUT,120)  '================================================================================'
     write(PMF_OUT,120)
-    write(PMF_OUT,120)  ' MTC Mode'
+    write(PMF_OUT,120)  ' MTA Mode'
     write(PMF_OUT,120)  ' ------------------------------------------------------'
-    write(PMF_OUT,130)  ' MTC mode (fmode)                        : ', fmode
-    write(PMF_OUT,130)  ' Number of collective variables          : ', NumOfMTCCVs
-    write(PMF_OUT,125)  ' CV definition file (fmtcdef)            : ', trim(fmtcdef)
+    write(PMF_OUT,130)  ' MTA mode (fmode)                        : ', fmode
+    write(PMF_OUT,130)  ' Number of collective variables          : ', NumOfMTACVs
+    write(PMF_OUT,125)  ' CV definition file (fmtadef)            : ', trim(fmtadef)
     write(PMF_OUT,120)
     write(PMF_OUT,120)  ' Output options:'
     write(PMF_OUT,120)  ' ------------------------------------------------------'
-    write(PMF_OUT,125)  ' Output file (fmtcout)                   : ', trim(fmtcout)
+    write(PMF_OUT,125)  ' Output file (fmtaout)                   : ', trim(fmtaout)
     write(PMF_OUT,130)  ' Output sampling (fsample)               : ', fsample
     write(PMF_OUT,120)
     write(PMF_OUT,120)  ' Restart options:'
     write(PMF_OUT,120)  ' ------------------------------------------------------'
-    write(PMF_OUT,125)  ' Restart file (fmtcrst)                  : ', trim(fmtcrst)
+    write(PMF_OUT,125)  ' Restart file (fmtarst)                  : ', trim(fmtarst)
     write(PMF_OUT,125)  ' Restart enabled (frestart)              : ', prmfile_onoff(frestart)
     write(PMF_OUT,130)  ' Restart file update (frstupdate)        : ', frstupdate
     write(PMF_OUT,120)
-    write(PMF_OUT,120)  ' List of MTC collective variables'
+    write(PMF_OUT,120)  ' List of MTA collective variables'
     write(PMF_OUT,120)  ' -------------------------------------------------------'
     write(PMF_OUT,120)
 
-    do i=1,NumOfMTCCVs
+    do i=1,NumOfMTACVs
         write(PMF_OUT,140) i
-        call mtc_cvs_cv_info(MTCCVList(i))
+        call mta_cvs_cv_info(MTACVList(i))
         write(PMF_OUT,120)
     end do
 
@@ -124,37 +124,37 @@ subroutine mtc_init_print_header
 130 format(A,I6)
 140 format(' == Collective variable #',I2.2)
 
-end subroutine mtc_init_print_header
+end subroutine mta_init_print_header
 
 !===============================================================================
-! Subroutine:  mtc_init_arrays
+! Subroutine:  mta_init_arrays
 !===============================================================================
 
-subroutine mtc_init_arrays
+subroutine mta_init_arrays
 
     use pmf_utils
     use pmf_dat
-    use mtc_dat
-    use mtc_accu
+    use mta_dat
+    use mta_accu
 
     implicit none
     integer     :: alloc_failed
     ! --------------------------------------------------------------------------
 
 ! init accumulator
-    call mtc_accu_init
+    call mta_accu_init
 
 ! general arrays --------------------------------
     allocate(                                   &
-            fz(NumOfMTCCVs,NumOfMTCCVs),        &
-            fzinv(NumOfMTCCVs,NumOfMTCCVs),     &
-            indx(NumOfMTCCVs),                  &
-            vv(NumOfMTCCVs),                    &
+            fz(NumOfMTACVs,NumOfMTACVs),        &
+            fzinv(NumOfMTACVs,NumOfMTACVs),     &
+            indx(NumOfMTACVs),                  &
+            vv(NumOfMTACVs),                    &
             stat= alloc_failed )
 
     if( alloc_failed .ne. 0 ) then
         call pmf_utils_exit(PMF_OUT,1, &
-            '[MTC] Unable to allocate memory for arrays used in MTC calculation!')
+            '[MTA] Unable to allocate memory for arrays used in MTA calculation!')
     end if
 
     fz(:,:)     = 0.0d0
@@ -162,8 +162,8 @@ subroutine mtc_init_arrays
     indx(:)     = 1.0d0
     vv(:)       = 1.0d0
 
-end subroutine mtc_init_arrays
+end subroutine mta_init_arrays
 
 !===============================================================================
 
-end module mtc_init
+end module mta_init

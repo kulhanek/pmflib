@@ -19,7 +19,7 @@
 !    Boston, MA  02110-1301  USA
 !===============================================================================
 
-module mtc_output
+module mta_output
 
 use pmf_sizes
 use pmf_constants
@@ -28,10 +28,10 @@ implicit none
 contains
 
 !===============================================================================
-! Subroutine:  mtc_output_open
+! Subroutine:  mta_output_open
 !===============================================================================
 
-subroutine mtc_output_open
+subroutine mta_output_open
 
     use pmf_utils
     use pmf_dat
@@ -40,11 +40,11 @@ subroutine mtc_output_open
     implicit none
     ! --------------------------------------------------------------------------
 
-    call pmf_utils_open(MTC_OUT,fmtcout,'R')
+    call pmf_utils_open(MTA_OUT,fmtaout,'R')
 
-    write(MTC_OUT,10)
-    write(MTC_OUT,20)
-    write(MTC_OUT,30)
+    write(MTA_OUT,10)
+    write(MTA_OUT,20)
+    write(MTA_OUT,30)
 
     return
 
@@ -52,59 +52,59 @@ subroutine mtc_output_open
 20 format('# Metric Tensor Correction                                                      ')
 30 format('#===============================================================================')
 
-end subroutine mtc_output_open
+end subroutine mta_output_open
 
 !===============================================================================
-! Subroutine:  mtc_output_write_header
+! Subroutine:  mta_output_write_header
 !===============================================================================
 
-subroutine mtc_output_write_header
+subroutine mta_output_write_header
 
     use pmf_constants
     use pmf_dat
-    use mtc_dat
+    use mta_dat
     use pmf_cvs
 
     implicit none
     integer        :: i,off
     ! --------------------------------------------------------------------------
 
-    write(MTC_OUT,1) '#'
-    write(MTC_OUT,10,advance='NO') '#  NSTEP '
-    do i=1,NumOfMTCCVs
-        write(MTC_OUT,20,advance='NO') trim(MTCCVList(i)%cv%name)
+    write(MTA_OUT,1) '#'
+    write(MTA_OUT,10,advance='NO') '#  NSTEP '
+    do i=1,NumOfMTACVs
+        write(MTA_OUT,20,advance='NO') trim(MTACVList(i)%cv%name)
     end do
-    write(MTC_OUT,20,advance='NO') 'MTC'
-    write(MTC_OUT,*)
+    write(MTA_OUT,20,advance='NO') 'MTA'
+    write(MTA_OUT,*)
 
-    write(MTC_OUT,10,advance='NO') '#        '
-    do i=1,NumOfMTCCVs
-        write(MTC_OUT,30,advance='NO') '['//trim(MTCCVList(i)%cv%get_ulabel())//']'
+    write(MTA_OUT,10,advance='NO') '#        '
+    do i=1,NumOfMTACVs
+        write(MTA_OUT,30,advance='NO') '['//trim(MTACVList(i)%cv%get_ulabel())//']'
     end do
-    write(MTC_OUT,20,advance='NO') '[i.u.]'
-    write(MTC_OUT,*)
+    write(MTA_OUT,20,advance='NO') '[i.u.]'
+    write(MTA_OUT,*)
 
-    write(MTC_OUT,10,advance='NO') '#--------'
-    do i=1,NumOfMTCCVs
-        write(MTC_OUT,40,advance='NO') '---------------'
+    write(MTA_OUT,10,advance='NO') '#--------'
+    do i=1,NumOfMTACVs
+        write(MTA_OUT,40,advance='NO') '---------------'
     end do
-    write(MTC_OUT,40,advance='NO') '---------------'
-    write(MTC_OUT,*)
+    write(MTA_OUT,40,advance='NO') '---------------'
+    write(MTA_OUT,*)
 
-    write(MTC_OUT,10,advance='NO') '#       1'
+    write(MTA_OUT,10,advance='NO') '#       1'
     off = 1
-    do i=off+1,off+NumOfMTCCVs
-        write(MTC_OUT,15,advance='NO') i
+    do i=off+1,off+NumOfMTACVs
+        write(MTA_OUT,15,advance='NO') i
     end do
-    write(MTC_OUT,*)
+    write(MTA_OUT,*)
 
-    write(MTC_OUT,10,advance='NO') '#--------'
-    do i=1,NumOfMTCCVs+1
-        write(MTC_OUT,40,advance='NO') '---------------'
+    write(MTA_OUT,10,advance='NO') '#--------'
+    do i=1,NumOfMTACVs+1
+        write(MTA_OUT,40,advance='NO') '---------------'
     end do
-    write(MTC_OUT,*)
+    write(MTA_OUT,*)
 
-    flush(MTC_OUT)
+    flush(MTA_OUT)
 
     return
 
@@ -115,50 +115,50 @@ subroutine mtc_output_write_header
 30 format(1X,A15)
 40 format(1X,A15)
 
-end subroutine mtc_output_write_header
+end subroutine mta_output_write_header
 
 !===============================================================================
-! Subroutine:  mtc_output_write_output
+! Subroutine:  mta_output_write_output
 !===============================================================================
 
-subroutine mtc_output_write_output
+subroutine mta_output_write_output
 
     use pmf_constants
     use pmf_dat
-    use mtc_dat
+    use mta_dat
     use pmf_cvs
 
     implicit none
     integer         :: i
-    real(PMFDP)     :: mtc
+    real(PMFDP)     :: mta
     ! --------------------------------------------------------------------------
 
     if( fsample .le. 0 ) return ! output is written only of fsample > 0
     if( mod(fstep,fsample) .ne. 0 ) return
 
-    write(MTC_OUT,10,advance='NO') fstep
+    write(MTA_OUT,10,advance='NO') fstep
 
-    mtc = sqrt(fzdet)
+    mta = sqrt(fzdet)
 
-    do i=1,NumOfMTCCVs
-         write(MTC_OUT,20,advance='NO') &
-            MTCCVList(i)%cv%get_rvalue(CVContext%CVsValues(MTCCVList(i)%cvindx))
+    do i=1,NumOfMTACVs
+         write(MTA_OUT,20,advance='NO') &
+            MTACVList(i)%cv%get_rvalue(CVContext%CVsValues(MTACVList(i)%cvindx))
     end do
-    write(MTC_OUT,20,advance='NO') mtc
-    write(MTC_OUT,*)
+    write(MTA_OUT,20,advance='NO') mta
+    write(MTA_OUT,*)
 
     return
 
 10 format(I9)
 20 format(1X,F15.8)
 
-end subroutine mtc_output_write_output
+end subroutine mta_output_write_output
 
 !===============================================================================
-! Subroutine:  mtc_output_close
+! Subroutine:  mta_output_close
 !===============================================================================
 
-subroutine mtc_output_close
+subroutine mta_output_close
 
     use pmf_constants
     use pmf_dat
@@ -166,12 +166,12 @@ subroutine mtc_output_close
     implicit none
     ! --------------------------------------------------------------------------
 
-    close(MTC_OUT)
+    close(MTA_OUT)
 
     return
 
-end subroutine mtc_output_close
+end subroutine mta_output_close
 
 !===============================================================================
 
-end module mtc_output
+end module mta_output

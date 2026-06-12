@@ -19,7 +19,7 @@
 !    Boston, MA  02110-1301  USA
 !===============================================================================
 
-module mtc_core
+module mta_core
 
 use pmf_sizes
 use pmf_constants
@@ -28,33 +28,33 @@ implicit none
 contains
 
 !===============================================================================
-! Subroutine:  mtc_core_main
+! Subroutine:  mta_core_main
 !===============================================================================
 
-subroutine mtc_core_main
+subroutine mta_core_main
 
-    use mtc_restart
-    use mtc_output
-    use mtc_dat
-    use mtc_accu
+    use mta_restart
+    use mta_output
+    use mta_dat
+    use mta_accu
     use pmf_utils
     ! --------------------------------------------------------------------------
 
-    call mtc_core_calc_Zmat
-    call mtc_accu_add_data_online
-    call mtc_output_write_output
-    call mtc_restart_update
+    call mta_core_calc_Zmat
+    call mta_accu_add_data_online
+    call mta_output_write_output
+    call mta_restart_update
 
-end subroutine mtc_core_main
+end subroutine mta_core_main
 
 !===============================================================================
-! subroutine:  mtc_core_calc_Zmat
+! subroutine:  mta_core_calc_Zmat
 !===============================================================================
 
-subroutine mtc_core_calc_Zmat
+subroutine mta_core_calc_Zmat
 
     use pmf_utils
-    use mtc_dat
+    use mta_dat
     use pmf_dat
 
     implicit none
@@ -62,10 +62,10 @@ subroutine mtc_core_calc_Zmat
     ! -----------------------------------------------------------------------------
 
     ! calculate Z matrix
-    do i=1,NumOfMTCCVs
-        ci = MTCCVList(i)%cvindx
-        do j=1,NumOfMTCCVs
-            cj = MTCCVList(j)%cvindx
+    do i=1,NumOfMTACVs
+        ci = MTACVList(i)%cvindx
+        do j=1,NumOfMTACVs
+            cj = MTACVList(j)%cvindx
             fz(i,j) = 0.0d0
             do k=1,NumOfLAtoms
                 fz(i,j) = fz(i,j) + MassInv(k)*dot_product(CVContext%CVsDrvs(:,k,ci),CVContext%CVsDrvs(:,k,cj))
@@ -76,15 +76,15 @@ subroutine mtc_core_calc_Zmat
     fzdet = 1.0d0
 
     ! and now its inversion - we will use LAPAC and LU decomposition
-    if (NumOfMTCCVs .gt. 1) then
+    if (NumOfMTACVs .gt. 1) then
         fzinv(:,:)  = fz(:,:)
-        call dgetrf(NumOfMTCCVs,NumOfMTCCVs,fzinv,NumOfMTCCVs,indx,info)
+        call dgetrf(NumOfMTACVs,NumOfMTACVs,fzinv,NumOfMTACVs,indx,info)
         if( info .ne. 0 ) then
-            call pmf_utils_exit(PMF_OUT,1,'[MTC] LU decomposition failed in mtc_core_calc_Zmat!')
+            call pmf_utils_exit(PMF_OUT,1,'[MTA] LU decomposition failed in mta_core_calc_Zmat!')
         end if
 
          ! and finally determinant
-        do i=1,NumOfMTCCVs
+        do i=1,NumOfMTACVs
             if( indx(i) .ne. i ) then
                 fzdet = - fzdet * fzinv(i,i)
             else
@@ -92,9 +92,9 @@ subroutine mtc_core_calc_Zmat
             end if
         end do
 
-        call dgetri(NumOfMTCCVs,fzinv,NumOfMTCCVs,indx,vv,NumOfMTCCVs,info)
+        call dgetri(NumOfMTACVs,fzinv,NumOfMTACVs,indx,vv,NumOfMTACVs,info)
         if( info .ne. 0 ) then
-            call pmf_utils_exit(PMF_OUT,1,'[MTC] Matrix inversion failed in mtc_core_calc_Zmat!')
+            call pmf_utils_exit(PMF_OUT,1,'[MTA] Matrix inversion failed in mta_core_calc_Zmat!')
         end if
     else
         fzdet       = fz(1,1)
@@ -103,8 +103,8 @@ subroutine mtc_core_calc_Zmat
 
     return
 
-end subroutine mtc_core_calc_Zmat
+end subroutine mta_core_calc_Zmat
 
 !===============================================================================
 
-end module mtc_core
+end module mta_core

@@ -83,7 +83,7 @@ subroutine pmf_init_dat
     abf_cst_enabled = .false.
     abp_enabled  = .false.
     mon_enabled  = .false.
-    mtc_enabled  = .false.
+    mta_enabled  = .false.
     stm_enabled  = .false.
     pdrv_enabled = .false.
 
@@ -126,9 +126,9 @@ subroutine pmf_init_dat
     fstmdef     = '{STM}'
     fstmout     = '_stm.out'
 
-    fmtcdef     = '{MTC}'
-    fmtcout     = '_mtc.out'
-    fmtcrst     = '_mtc.rst'
+    fmtadef     = '{MTC}'
+    fmtaout     = '_mta.out'
+    fmtarst     = '_mta.rst'
 
     fmondef     = '{MON}'
     fmonout     = '_mon.out'
@@ -571,7 +571,7 @@ subroutine pmf_init_pmf_methods()
     use mtd_init
     use cst_init
     use stm_init
-    use mtc_init
+    use mta_init
     use pdrv_init
 
     implicit none
@@ -605,8 +605,8 @@ subroutine pmf_init_pmf_methods()
         call cst_init_method
     end if
 
-    if( mtc_enabled ) then
-        call mtc_init_method
+    if( mta_enabled ) then
+        call mta_init_method
     end if
 
     if( mon_enabled ) then
@@ -615,7 +615,7 @@ subroutine pmf_init_pmf_methods()
 
     pmf_enabled = abf_enabled .or. abp_enabled .or. mtd_enabled .or. stm_enabled &
                .or. cst_enabled .or. rst_enabled .or. mon_enabled .or. pdrv_enabled &
-               .or. mtc_enabled
+               .or. mta_enabled
 
 end subroutine pmf_init_pmf_methods
 

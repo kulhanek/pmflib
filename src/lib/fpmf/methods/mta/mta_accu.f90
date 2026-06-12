@@ -19,7 +19,7 @@
 !    Boston, MA  02110-1301  USA
 !===============================================================================
 
-module mtc_accu
+module mta_accu
 
 use pmf_constants
 
@@ -27,12 +27,12 @@ implicit none
 contains
 
 !===============================================================================
-! Subroutine:  mtc_accu_init
+! Subroutine:  mta_accu_init
 !===============================================================================
 
-subroutine mtc_accu_init()
+subroutine mta_accu_init()
 
-    use mtc_dat
+    use mta_dat
     use pmf_dat
     use pmf_utils
 
@@ -41,70 +41,70 @@ subroutine mtc_accu_init()
     integer              :: alloc_failed
     ! --------------------------------------------------------------------------
 
-    mtcaccu%tot_cvs = NumOfMTCCVs
+    mtaaccu%tot_cvs = NumOfMTACVs
 
     ! init dimensions ------------------------------
-    allocate(mtcaccu%sizes(mtcaccu%tot_cvs), stat = alloc_failed)
+    allocate(mtaaccu%sizes(mtaaccu%tot_cvs), stat = alloc_failed)
     if( alloc_failed .ne. 0 ) then
-        call pmf_utils_exit(PMF_OUT, 1,'[MTC] Unable to allocate memory for mtc accumulator!')
+        call pmf_utils_exit(PMF_OUT, 1,'[MTA] Unable to allocate memory for mta accumulator!')
     endif
 
-    mtcaccu%tot_nbins   = 1
-    do i=1, mtcaccu%tot_cvs
-        mtcaccu%sizes(i)%min_value  = MTCCVList(i)%min_value
-        mtcaccu%sizes(i)%max_value  = MTCCVList(i)%max_value
-        mtcaccu%sizes(i)%nbins      = MTCCVList(i)%nbins
-        mtcaccu%sizes(i)%width      = abs(mtcaccu%sizes(i)%max_value - mtcaccu%sizes(i)%min_value)
-        mtcaccu%sizes(i)%bin_width  = mtcaccu%sizes(i)%width / mtcaccu%sizes(i)%nbins
-        mtcaccu%sizes(i)%cv         => MTCCVList(i)%cv
-        mtcaccu%tot_nbins           = mtcaccu%tot_nbins * mtcaccu%sizes(i)%nbins
+    mtaaccu%tot_nbins   = 1
+    do i=1, mtaaccu%tot_cvs
+        mtaaccu%sizes(i)%min_value  = MTACVList(i)%min_value
+        mtaaccu%sizes(i)%max_value  = MTACVList(i)%max_value
+        mtaaccu%sizes(i)%nbins      = MTACVList(i)%nbins
+        mtaaccu%sizes(i)%width      = abs(mtaaccu%sizes(i)%max_value - mtaaccu%sizes(i)%min_value)
+        mtaaccu%sizes(i)%bin_width  = mtaaccu%sizes(i)%width / mtaaccu%sizes(i)%nbins
+        mtaaccu%sizes(i)%cv         => MTACVList(i)%cv
+        mtaaccu%tot_nbins           = mtaaccu%tot_nbins * mtaaccu%sizes(i)%nbins
     end do
 
-    ! MTC arrays
-    allocate(   mtcaccu%nsamples(mtcaccu%tot_nbins),                    &
-                mtcaccu%mmtc(mtcaccu%tot_nbins),        &
-                mtcaccu%m2mtc(mtcaccu%tot_nbins),       &
-                mtcaccu%mimtc(mtcaccu%tot_nbins),       &
-                mtcaccu%m2imtc(mtcaccu%tot_nbins),      &
+    ! MTA arrays
+    allocate(   mtaaccu%nsamples(mtaaccu%tot_nbins),                    &
+                mtaaccu%mmta(mtaaccu%tot_nbins),        &
+                mtaaccu%m2mta(mtaaccu%tot_nbins),       &
+                mtaaccu%mimta(mtaaccu%tot_nbins),       &
+                mtaaccu%m2imta(mtaaccu%tot_nbins),      &
                 stat = alloc_failed)
 
     if( alloc_failed .ne. 0 ) then
-        call pmf_utils_exit(PMF_OUT, 1,'[MTC] Unable to allocate memory for mtc accumulator (mtcforce)!')
+        call pmf_utils_exit(PMF_OUT, 1,'[MTA] Unable to allocate memory for mta accumulator (mtaforce)!')
     endif
 
-    call mtc_accu_clear()
+    call mta_accu_clear()
 
     return
 
-end subroutine mtc_accu_init
+end subroutine mta_accu_init
 
 !===============================================================================
-! Subroutine:  mtc_accu_clear
+! Subroutine:  mta_accu_clear
 !===============================================================================
 
-subroutine mtc_accu_clear()
+subroutine mta_accu_clear()
 
-    use mtc_dat
+    use mta_dat
     use pmf_dat
 
     implicit none
     ! --------------------------------------------------------------------------
 
-    mtcaccu%nsamples(:)     = 0.0d0
-    mtcaccu%mmtc(:)         = 0.0d0
-    mtcaccu%m2mtc(:)        = 0.0d0
-    mtcaccu%mimtc(:)        = 0.0d0
-    mtcaccu%m2imtc(:)       = 0.0d0
+    mtaaccu%nsamples(:)     = 0.0d0
+    mtaaccu%mmta(:)         = 0.0d0
+    mtaaccu%m2mta(:)        = 0.0d0
+    mtaaccu%mimta(:)        = 0.0d0
+    mtaaccu%m2imta(:)       = 0.0d0
 
-end subroutine mtc_accu_clear
+end subroutine mta_accu_clear
 
 !===============================================================================
-! Subroutine:  mtc_accu_read
+! Subroutine:  mta_accu_read
 !===============================================================================
 
-subroutine mtc_accu_read(iounit)
+subroutine mta_accu_read(iounit)
 
-    use mtc_dat
+    use mta_dat
     use pmf_dat
     use pmf_utils
     use pmf_accu
@@ -122,28 +122,28 @@ subroutine mtc_accu_read(iounit)
 
         ! process keyline
         if( pmf_accu_is_header_key(keyline) ) then
-            call pmf_accu_read_header(mtcaccu%PMFAccuType,iounit,'MTC',keyline)
+            call pmf_accu_read_header(mtaaccu%PMFAccuType,iounit,'MTA',keyline)
         else
             select case( pmf_accu_get_key(keyline) )
             ! ------------------------------------
                 case('NSAMPLES')
-                    call pmf_accu_read_rbuf_B(mtcaccu%PMFAccuType,iounit,keyline,mtcaccu%nsamples)
+                    call pmf_accu_read_rbuf_B(mtaaccu%PMFAccuType,iounit,keyline,mtaaccu%nsamples)
             ! ------------------------------------
-                case('MMTC')
-                    call pmf_accu_read_rbuf_B(mtcaccu%PMFAccuType,iounit,keyline,mtcaccu%mmtc)
+                case('MMTA')
+                    call pmf_accu_read_rbuf_B(mtaaccu%PMFAccuType,iounit,keyline,mtaaccu%mmta)
             ! ------------------------------------
-                case('M2MTC')
-                    call pmf_accu_read_rbuf_B(mtcaccu%PMFAccuType,iounit,keyline,mtcaccu%m2mtc)
+                case('M2MTA')
+                    call pmf_accu_read_rbuf_B(mtaaccu%PMFAccuType,iounit,keyline,mtaaccu%m2mta)
             ! ------------------------------------
-                case('MIMTC')
-                    call pmf_accu_read_rbuf_B(mtcaccu%PMFAccuType,iounit,keyline,mtcaccu%mimtc)
+                case('MIMTA')
+                    call pmf_accu_read_rbuf_B(mtaaccu%PMFAccuType,iounit,keyline,mtaaccu%mimta)
             ! ------------------------------------
-                case('M2IMTC')
-                    call pmf_accu_read_rbuf_B(mtcaccu%PMFAccuType,iounit,keyline,mtcaccu%m2imtc)
+                case('M2IMTA')
+                    call pmf_accu_read_rbuf_B(mtaaccu%PMFAccuType,iounit,keyline,mtaaccu%m2imta)
             
             ! ------------------------------------
                 case default
-                    call pmf_accu_skip_section(iounit,keyline,MTC_OUT)
+                    call pmf_accu_skip_section(iounit,keyline,MTA_OUT)
             end select
         end if
     end do
@@ -152,51 +152,51 @@ subroutine mtc_accu_read(iounit)
 
   5 format(A80)
 
-300 call pmf_utils_exit(PMF_OUT,1,'[MTC] Unable to read from the accumulator - keyline!')
+300 call pmf_utils_exit(PMF_OUT,1,'[MTA] Unable to read from the accumulator - keyline!')
 
-end subroutine mtc_accu_read
+end subroutine mta_accu_read
 
 !===============================================================================
-! Subroutine:  mtc_accu_write
+! Subroutine:  mta_accu_write
 !===============================================================================
 
-subroutine mtc_accu_write(iounit)
+subroutine mta_accu_write(iounit)
 
-    use mtc_dat
+    use mta_dat
 
     implicit none
     integer  :: iounit
     !---------------------------------------------------------------------------
 
-    mtcaccu%method = 'MTC'
-    call pmf_accu_write_header(mtcaccu%PMFAccuType,iounit)
-    call pmf_accu_write_rbuf_B(mtcaccu%PMFAccuType,iounit,'NSAMPLES',   'AD',mtcaccu%nsamples)
-    call pmf_accu_write_rbuf_B(mtcaccu%PMFAccuType,iounit,'MMTC',       'WA',mtcaccu%mmtc,  'NSAMPLES')
-    call pmf_accu_write_rbuf_B(mtcaccu%PMFAccuType,iounit,'M2MTC',      'M2',mtcaccu%m2mtc, 'NSAMPLES','MMTC')
-    call pmf_accu_write_rbuf_B(mtcaccu%PMFAccuType,iounit,'MIMTC',      'WA',mtcaccu%mimtc, 'NSAMPLES')
-    call pmf_accu_write_rbuf_B(mtcaccu%PMFAccuType,iounit,'M2IMTC',     'M2',mtcaccu%m2imtc,'NSAMPLES','MIMTC')
+    mtaaccu%method = 'MTA'
+    call pmf_accu_write_header(mtaaccu%PMFAccuType,iounit)
+    call pmf_accu_write_rbuf_B(mtaaccu%PMFAccuType,iounit,'NSAMPLES',   'AD',mtaaccu%nsamples)
+    call pmf_accu_write_rbuf_B(mtaaccu%PMFAccuType,iounit,'MMTA',       'WA',mtaaccu%mmta,  'NSAMPLES')
+    call pmf_accu_write_rbuf_B(mtaaccu%PMFAccuType,iounit,'M2MTA',      'M2',mtaaccu%m2mta, 'NSAMPLES','MMTA')
+    call pmf_accu_write_rbuf_B(mtaaccu%PMFAccuType,iounit,'MIMTA',      'WA',mtaaccu%mimta, 'NSAMPLES')
+    call pmf_accu_write_rbuf_B(mtaaccu%PMFAccuType,iounit,'M2IMTA',     'M2',mtaaccu%m2imta,'NSAMPLES','MIMTA')
 
-end subroutine mtc_accu_write
+end subroutine mta_accu_write
 
 !===============================================================================
-! Subroutine:  mtc_accu_add_data_online
+! Subroutine:  mta_accu_add_data_online
 !===============================================================================
 
-subroutine mtc_accu_add_data_online
+subroutine mta_accu_add_data_online
 
-    use mtc_dat
+    use mta_dat
     use pmf_dat
 
     implicit none
     integer        :: gi0
     real(PMFDP)    :: invn
-    real(PMFDP)    :: dmtc1, dmtc2
-    real(PMFDP)    :: dimtc1, dimtc2
-    real(PMFDP)    :: mtc, imtc
+    real(PMFDP)    :: dmta1, dmta2
+    real(PMFDP)    :: dimta1, dimta2
+    real(PMFDP)    :: mta, imta
     ! --------------------------------------------------------------------------
 
     ! get global index to accumulator for cvs values
-    gi0 = pmf_accu_globalindex(mtcaccu%PMFAccuType,CVContext%CVsValues(:))
+    gi0 = pmf_accu_globalindex(mtaaccu%PMFAccuType,CVContext%CVsValues(:))
     if( gi0 .le. 0 ) then
         outsidesamples = outsidesamples + 1
         return ! out of valid area
@@ -205,25 +205,25 @@ subroutine mtc_accu_add_data_online
     end if
 
     ! increase number of samples
-    mtcaccu%nsamples(gi0) = mtcaccu%nsamples(gi0) + 1.0d0
-    invn = 1.0d0 / mtcaccu%nsamples(gi0)
+    mtaaccu%nsamples(gi0) = mtaaccu%nsamples(gi0) + 1.0d0
+    invn = 1.0d0 / mtaaccu%nsamples(gi0)
 
-    mtc = sqrt(fzdet)
-    imtc = 1.0d0 / mtc
+    mta = sqrt(fzdet)
+    imta = 1.0d0 / mta
 
-    dmtc1 = mtc - mtcaccu%mmtc(gi0)
-    mtcaccu%mmtc(gi0)  = mtcaccu%mmtc(gi0)  + dmtc1 * invn
-    dmtc2 = mtc - mtcaccu%mmtc(gi0)
-    mtcaccu%m2mtc(gi0) = mtcaccu%m2mtc(gi0) + dmtc1 * dmtc2
+    dmta1 = mta - mtaaccu%mmta(gi0)
+    mtaaccu%mmta(gi0)  = mtaaccu%mmta(gi0)  + dmta1 * invn
+    dmta2 = mta - mtaaccu%mmta(gi0)
+    mtaaccu%m2mta(gi0) = mtaaccu%m2mta(gi0) + dmta1 * dmta2
 
-    dimtc1 = imtc - mtcaccu%mimtc(gi0)
-    mtcaccu%mimtc(gi0)  = mtcaccu%mimtc(gi0)  + dimtc1 * invn
-    dimtc2 = imtc - mtcaccu%mimtc(gi0)
-    mtcaccu%m2imtc(gi0) = mtcaccu%m2imtc(gi0) + dimtc1 * dimtc2
+    dimta1 = imta - mtaaccu%mimta(gi0)
+    mtaaccu%mimta(gi0)  = mtaaccu%mimta(gi0)  + dimta1 * invn
+    dimta2 = imta - mtaaccu%mimta(gi0)
+    mtaaccu%m2imta(gi0) = mtaaccu%m2imta(gi0) + dimta1 * dimta2
 
-end subroutine mtc_accu_add_data_online
+end subroutine mta_accu_add_data_online
 
 !===============================================================================
 
-end module mtc_accu
+end module mta_accu
 

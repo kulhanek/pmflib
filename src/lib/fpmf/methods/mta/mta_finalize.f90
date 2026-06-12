@@ -19,7 +19,7 @@
 !    Boston, MA  02110-1301  USA
 !===============================================================================
 
-module mtc_finalize
+module mta_finalize
 
 use pmf_sizes
 use pmf_constants
@@ -28,22 +28,22 @@ implicit none
 contains
 
 !===============================================================================
-! Subroutine:  mtc_finalize_method
+! Subroutine:  mta_finalize_method
 !===============================================================================
 
-subroutine mtc_finalize_method
+subroutine mta_finalize_method
 
-    use mtc_output
-    use mtc_restart
+    use mta_output
+    use mta_restart
 
     implicit none
     ! --------------------------------------------------------------------------
 
-    call mtc_restart_write
-    call mtc_output_close
+    call mta_restart_write
+    call mta_output_close
 
-end subroutine mtc_finalize_method
+end subroutine mta_finalize_method
 
 !===============================================================================
 
-end module mtc_finalize
+end module mta_finalize

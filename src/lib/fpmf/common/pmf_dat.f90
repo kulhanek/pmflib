@@ -96,7 +96,7 @@ logical                     :: abf_enabled
 logical                     :: abf_cst_enabled  ! ABF CST sub-engine required
 logical                     :: abp_enabled
 logical                     :: mon_enabled
-logical                     :: mtc_enabled
+logical                     :: mta_enabled
 logical                     :: stm_enabled
 logical                     :: pdrv_enabled
 
@@ -170,9 +170,9 @@ character(PMF_MAX_PATH)     :: fstmdef
 character(PMF_MAX_PATH)     :: fstmout
 
 ! MTC method -------------------------------------
-character(PMF_MAX_PATH)     :: fmtcdef
-character(PMF_MAX_PATH)     :: fmtcout
-character(PMF_MAX_PATH)     :: fmtcrst
+character(PMF_MAX_PATH)     :: fmtadef
+character(PMF_MAX_PATH)     :: fmtaout
+character(PMF_MAX_PATH)     :: fmtarst
 
 ! monitoring -------------------------------------
 character(PMF_MAX_PATH)     :: fmondef

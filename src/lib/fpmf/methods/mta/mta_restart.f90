@@ -19,41 +19,41 @@
 !    Boston, MA  02110-1301  USA
 !===============================================================================
 
-module mtc_restart
+module mta_restart
 
 implicit none
 contains
 
 !===============================================================================
-! Subroutine:  mtc_restart_read
+! Subroutine:  mta_restart_read
 !===============================================================================
 
-subroutine mtc_restart_read
+subroutine mta_restart_read
 
     use pmf_dat
     use pmf_utils
-    use mtc_dat
-    use mtc_accu
+    use mta_dat
+    use mta_accu
 
     implicit none
     ! --------------------------------------------------------------------------
 
     ! test if restart file exists
-    if( frestart .and. .not. pmf_utils_fexist(fmtcrst) ) then
+    if( frestart .and. .not. pmf_utils_fexist(fmtarst) ) then
         frestart = .false.
-        write(MTC_OUT,10) trim(fmtcrst)
+        write(MTA_OUT,10) trim(fmtarst)
     end if
 
     if( frestart ) then
-        write(MTC_OUT,20)
+        write(MTA_OUT,20)
         ! open restart file ----------------------------------------------------
-        call pmf_utils_open(MTC_RST,fmtcrst,'O')
+        call pmf_utils_open(MTA_RST,fmtarst,'O')
 
-        call mtc_accu_read(MTC_RST)
+        call mta_accu_read(MTA_RST)
 
-        close(MTC_RST)
+        close(MTA_RST)
     else
-        write(MTC_OUT,30)
+        write(MTA_OUT,30)
     end if
 
     return
@@ -62,18 +62,18 @@ subroutine mtc_restart_read
  20 format('# RST: frestart = on')
  30 format('# RST: frestart = off')
 
-end subroutine mtc_restart_read
+end subroutine mta_restart_read
 
 !===============================================================================
-! Subroutine:  mtc_restart_update
+! Subroutine:  mta_restart_update
 !===============================================================================
 
-subroutine mtc_restart_update
+subroutine mta_restart_update
 
     use pmf_dat
     use pmf_utils
-    use mtc_accu
-    use mtc_dat
+    use mta_accu
+    use mta_dat
 
     implicit none
     !---------------------------------------------------------------------------
@@ -82,42 +82,42 @@ subroutine mtc_restart_update
 
     if( mod(fstep,frstupdate) .ne. 0 ) return
 
-    call pmf_utils_open(MTC_RST,fmtcrst,'U')
-    call mtc_accu_write(MTC_RST)
-    close(MTC_RST)
+    call pmf_utils_open(MTA_RST,fmtarst,'U')
+    call mta_accu_write(MTA_RST)
+    close(MTA_RST)
 
-    write(MTC_OUT,10) fstep, insidesamples, outsidesamples
+    write(MTA_OUT,10) fstep, insidesamples, outsidesamples
 
     return
 
  10 format('# [ACCU] Total steps     = ',I12,' Inside samples  = ',I12,' Outside samples = ',I12  )
 
-end subroutine mtc_restart_update
+end subroutine mta_restart_update
 
 !===============================================================================
-! Subroutine:  mtc_restart_write
+! Subroutine:  mta_restart_write
 !===============================================================================
 
-subroutine mtc_restart_write()
+subroutine mta_restart_write()
 
     use pmf_dat
     use pmf_utils
-    use mtc_accu
+    use mta_accu
 
     implicit none
     !---------------------------------------------------------------------------
 
-    call pmf_utils_open(MTC_RST,fmtcrst,'U')
+    call pmf_utils_open(MTA_RST,fmtarst,'U')
 
-    call mtc_accu_write(MTC_RST)
+    call mta_accu_write(MTA_RST)
 
-    close(MTC_RST)
+    close(MTA_RST)
 
     return
 
-end subroutine mtc_restart_write
+end subroutine mta_restart_write
 
 !===============================================================================
 
-end module mtc_restart
+end module mta_restart
 

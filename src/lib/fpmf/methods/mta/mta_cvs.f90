@@ -19,40 +19,40 @@
 !    Boston, MA  02110-1301  USA
 !===============================================================================
 
-module mtc_cvs
+module mta_cvs
 
 implicit none
 contains
 
 !===============================================================================
-! Subroutine:  mtc_cvs_reset_cv
+! Subroutine:  mta_cvs_reset_cv
 !===============================================================================
 
-subroutine mtc_cvs_reset_cv(mtc_item)
+subroutine mta_cvs_reset_cv(mta_item)
 
-    use mtc_dat
+    use mta_dat
 
     implicit none
-    type(CVTypeMTC) :: mtc_item
+    type(CVTypeMTA) :: mta_item
     ! --------------------------------------------------------------------------
 
-    mtc_item%cvindx         = 0         ! CV index
-    mtc_item%cv             => null()
+    mta_item%cvindx         = 0         ! CV index
+    mta_item%cv             => null()
 
-    mtc_item%min_value      = 0.0       ! left range
-    mtc_item%max_value      = 0.0       ! right range
-    mtc_item%nbins          = 0         ! number of bins
+    mta_item%min_value      = 0.0       ! left range
+    mta_item%max_value      = 0.0       ! right range
+    mta_item%nbins          = 0         ! number of bins
 
-end subroutine mtc_cvs_reset_cv
+end subroutine mta_cvs_reset_cv
 
 !===============================================================================
-! Subroutine:  mtc_cvs_read_cv
+! Subroutine:  mta_cvs_read_cv
 !===============================================================================
 
-subroutine mtc_cvs_read_cv(prm_fin,mtc_item)
+subroutine mta_cvs_read_cv(prm_fin,mta_item)
 
     use prmfile
-    use mtc_dat
+    use mta_dat
     use pmf_cvs
     use pmf_unit
     use pmf_utils
@@ -61,43 +61,43 @@ subroutine mtc_cvs_read_cv(prm_fin,mtc_item)
 
     implicit none
     type(PRMFILE_TYPE),intent(inout)    :: prm_fin
-    type(CVTypeMTC)                     :: mtc_item
+    type(CVTypeMTA)                     :: mta_item
     ! --------------------------------------------------------------------------
 
 ! used CV cannot be controlled by the path subsystem
-    if( mtc_item%cv%pathidx .gt. 0 ) then
-        if( PathList(mtc_item%cv%pathidx)%path%driven_mode ) then
+    if( mta_item%cv%pathidx .gt. 0 ) then
+        if( PathList(mta_item%cv%pathidx)%path%driven_mode ) then
             call pmf_utils_exit(PMF_OUT,1,'Requested CV is connected with the path that is in a driven mode!')
         end if
     end if
 
 ! main CV setup
     ! ========================
-    if( .not. prmfile_get_real8_by_key(prm_fin,'min_value',mtc_item%min_value) ) then
+    if( .not. prmfile_get_real8_by_key(prm_fin,'min_value',mta_item%min_value) ) then
         call pmf_utils_exit(PMF_OUT,1,'min_value is not specified!')
     end if
-    write(PMF_OUT,110) mtc_item%min_value, trim(mtc_item%cv%get_ulabel())
-    call mtc_item%cv%conv_to_ivalue(mtc_item%min_value)
+    write(PMF_OUT,110) mta_item%min_value, trim(mta_item%cv%get_ulabel())
+    call mta_item%cv%conv_to_ivalue(mta_item%min_value)
 
     ! ========================
-    if( .not. prmfile_get_real8_by_key(prm_fin,'max_value',mtc_item%max_value) ) then
+    if( .not. prmfile_get_real8_by_key(prm_fin,'max_value',mta_item%max_value) ) then
         call pmf_utils_exit(PMF_OUT,1,'max_value is not specified!')
     end if
-    write(PMF_OUT,120) mtc_item%max_value, trim(mtc_item%cv%get_ulabel())
-    call mtc_item%cv%conv_to_ivalue(mtc_item%max_value)
+    write(PMF_OUT,120) mta_item%max_value, trim(mta_item%cv%get_ulabel())
+    call mta_item%cv%conv_to_ivalue(mta_item%max_value)
 
-    if( mtc_item%max_value .le. mtc_item%min_value ) then
+    if( mta_item%max_value .le. mta_item%min_value ) then
         call pmf_utils_exit(PMF_OUT,1,'max_value has to be greater then min_value!')
     end if
 
     ! ========================
-    if( .not. prmfile_get_integer_by_key(prm_fin,'nbins',mtc_item%nbins) ) then
+    if( .not. prmfile_get_integer_by_key(prm_fin,'nbins',mta_item%nbins) ) then
         call pmf_utils_exit(PMF_OUT,1,'nbins is not specified!')
     end if
-    if( mtc_item%nbins .lt. 1 ) then
+    if( mta_item%nbins .lt. 1 ) then
         call pmf_utils_exit(PMF_OUT,1,'nbins has to be greater then zero!')
     end if
-    write(PMF_OUT,125) mtc_item%nbins
+    write(PMF_OUT,125) mta_item%nbins
 
     return
 
@@ -105,34 +105,34 @@ subroutine mtc_cvs_read_cv(prm_fin,mtc_item)
 120 format('    ** Max value         : ',F16.7,' [',A,']')
 125 format('    ** Number of bins    : ',I8)
 
-end subroutine mtc_cvs_read_cv
+end subroutine mta_cvs_read_cv
 
 !===============================================================================
-! Subroutine:  mtc_cvs_cv_info
+! Subroutine:  mta_cvs_cv_info
 !===============================================================================
 
-subroutine mtc_cvs_cv_info(mtc_item)
+subroutine mta_cvs_cv_info(mta_item)
 
-    use mtc_dat
+    use mta_dat
     use pmf_dat
     use pmf_cvs
     use pmf_unit
     use prmfile
 
     implicit none
-    type(CVTypeMTC) :: mtc_item
+    type(CVTypeMTA) :: mta_item
     ! --------------------------------------------------------------------------
 
-    write(PMF_OUT,145) trim(mtc_item%cv%name)
-    write(PMF_OUT,146) trim(mtc_item%cv%ctype)
-    write(PMF_OUT,150) mtc_item%cv%get_rvalue(CVContext%CVsValues(mtc_item%cvindx)), &
-                    trim(mtc_item%cv%get_ulabel())
+    write(PMF_OUT,145) trim(mta_item%cv%name)
+    write(PMF_OUT,146) trim(mta_item%cv%ctype)
+    write(PMF_OUT,150) mta_item%cv%get_rvalue(CVContext%CVsValues(mta_item%cvindx)), &
+                    trim(mta_item%cv%get_ulabel())
 
-    write(PMF_OUT,155) mtc_item%cv%get_rvalue(mtc_item%min_value), &
-                    trim(mtc_item%cv%get_ulabel())
-    write(PMF_OUT,160) mtc_item%cv%get_rvalue(mtc_item%max_value), &
-                    trim(mtc_item%cv%get_ulabel())
-    write(PMF_OUT,165) mtc_item%nbins
+    write(PMF_OUT,155) mta_item%cv%get_rvalue(mta_item%min_value), &
+                    trim(mta_item%cv%get_ulabel())
+    write(PMF_OUT,160) mta_item%cv%get_rvalue(mta_item%max_value), &
+                    trim(mta_item%cv%get_ulabel())
+    write(PMF_OUT,165) mta_item%nbins
 
     return
 
@@ -143,8 +143,8 @@ subroutine mtc_cvs_cv_info(mtc_item)
 160 format('    ** Max value         : ',E16.7,' [',A,']')
 165 format('    ** Number of bins    : ',I9)
 
-end subroutine mtc_cvs_cv_info
+end subroutine mta_cvs_cv_info
 
 !===============================================================================
 
-end module mtc_cvs
+end module mta_cvs

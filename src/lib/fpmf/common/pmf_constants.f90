@@ -173,10 +173,10 @@ integer,parameter       :: STM_INP      = 310
 integer,parameter       :: STM_OUT      = 311
 integer,parameter       :: STM_BEADID   = 312
 
-! mtc part ---------------------------------------------------------------------
-integer,parameter       :: MTC_INP      = 430
-integer,parameter       :: MTC_OUT      = 431
-integer,parameter       :: MTC_RST      = 438   
+! mta part ---------------------------------------------------------------------
+integer,parameter       :: MTA_INP      = 430
+integer,parameter       :: MTA_OUT      = 431
+integer,parameter       :: MTA_RST      = 438   
 
 ! monitoring part --------------------------------------------------------------
 integer,parameter       :: MON_INP      = 190

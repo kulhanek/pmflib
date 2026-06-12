@@ -231,18 +231,18 @@ SET(PMF_STM_CORE_SRC
         methods/stm/stm_finalize.f90
         )
 
-# MTC - Metric Tensor Correction -----------------------------------------------
+# MTA - Metric Tensor Correction -----------------------------------------------
 
-SET(PMF_MTC_CORE_SRC
-        methods/mtc/mtc_dat.f90
-        methods/mtc/mtc_init.f90
-        methods/mtc/mtc_cvs.f90
-        methods/mtc/mtc_control.f90
-        methods/mtc/mtc_output.f90
-        methods/mtc/mtc_core.f90
-        methods/mtc/mtc_restart.f90
-        methods/mtc/mtc_accu.f90
-        methods/mtc/mtc_finalize.f90
+SET(PMF_MTA_CORE_SRC
+        methods/mta/mta_dat.f90
+        methods/mta/mta_init.f90
+        methods/mta/mta_cvs.f90
+        methods/mta/mta_control.f90
+        methods/mta/mta_output.f90
+        methods/mta/mta_core.f90
+        methods/mta/mta_restart.f90
+        methods/mta/mta_accu.f90
+        methods/mta/mta_finalize.f90
         )
 
 # MON - Monitoring -------------------------------------------------------------
@@ -280,7 +280,7 @@ SET(FPMF_SRC
         ${PMF_RST_CORE_SRC}
         ${PMF_STM_CORE_SRC}
         ${PMF_MON_CORE_SRC}
-        ${PMF_MTC_CORE_SRC}
+        ${PMF_MTA_CORE_SRC}
         ${PMF_PDRV_CORE_SRC}
         )
 
