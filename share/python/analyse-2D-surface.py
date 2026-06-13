@@ -24,7 +24,7 @@ rfac = 0.001987204258640       # kcal/mol/K
 class Axis:
     """One collective variable axis, represented internally on the scaled interval [0, 1]."""
 
-    def __init__(self, cvmin, cvmax, periodic, nrbfs, npts, label):
+    def __init__(self, cvmin, cvmax, nrbfs, npts, label):
         if cvmax <= cvmin:
             raise ValueError("cvmax must be larger than cvmin")
         if nrbfs <= 0:
@@ -34,7 +34,6 @@ class Axis:
 
         self.cvmin = float(cvmin)
         self.cvmax = float(cvmax)
-        self.periodic = bool(periodic)
         self.nrbfs = int(nrbfs)
         self.npts = int(npts)
         self.label = label
@@ -43,37 +42,23 @@ class Axis:
         self.width = 1.0 / self.nrbfs
         self.width_scale = 1.0
 
-        if self.periodic:
-            # Periodic CV: centers at 0, 1/nrbfs, ..., (nx-1)/nrbfs
-            self.centers = np.arange(self.nrbfs, dtype=float) / self.nrbfs
-        else:
-            # Non-periodic CV: centers at both boundaries, therefore nx+1 centers
-            self.centers = np.arange(self.nrbfs + 1, dtype=float) / self.nrbfs
+        # Non-periodic CV: centers at both boundaries, therefore nx+1 centers
+        self.centers = np.arange(self.nrbfs + 1, dtype=float) / self.nrbfs
 
     def scale(self, x):
         """Convert a physical CV value to the internal scaled coordinate."""
         u = (x - self.cvmin) / self.range
-        if self.periodic:
-            u = u % 1.0
         return u
 
     def unscale(self, u):
         """Convert an internal scaled coordinate to the physical CV value."""
-        if self.periodic:
-            u = u % 1.0
         return self.cvmin + u * self.range
 
     def delta(self, u):
         """
         Difference between scaled coordinate u and all RBF centers.
-
-        For periodic CVs, minimum-image convention is used.
         """
         du = u - self.centers
-
-        if self.periodic:
-            du -= np.round(du)
-
         return du
 
 # ==============================================================================
@@ -105,13 +90,11 @@ class EnergySurface2D:
         self,
         cv1min,
         cv1max,
-        cv1_periodic,
         cv1_nx,
         cv1_px,
         cv1_label,
         cv2min,
         cv2max,
-        cv2_periodic,
         cv2_nx,
         cv2_px,
         cv2_label,
@@ -133,8 +116,8 @@ class EnergySurface2D:
             Spacing between contour lines in energy units.
         """
 
-        self.x_axis = Axis(cv1min, cv1max, cv1_periodic, cv1_nx, cv1_px, cv1_label)
-        self.y_axis = Axis(cv2min, cv2max, cv2_periodic, cv2_nx, cv2_px, cv2_label)
+        self.x_axis = Axis(cv1min, cv1max, cv1_nx, cv1_px, cv1_label)
+        self.y_axis = Axis(cv2min, cv2max, cv2_nx, cv2_px, cv2_label)
 
         self.x_data = None
         self.y_data = None
@@ -2124,13 +2107,6 @@ class EnergySurface2D:
 
                 du = p_uv - q_uv
 
-                # Minimum-image convention for periodic axes.
-                if self.x_axis.periodic:
-                    du[0] -= np.round(du[0])
-
-                if self.y_axis.periodic:
-                    du[1] -= np.round(du[1])
-
                 dist_uv = np.linalg.norm(du)
 
                 if dist_uv <= min_distance_uv:
@@ -2590,9 +2566,6 @@ def parse_args():
     cv1group.add_argument("--cv1nbins", type=int, required=True,
         help="Number of grid bins/points for the first collective variable." )
 
-    cv1group.add_argument("--cv1periodic", type=bool, default=False,
-        help="Force the first collective variable to be a periodic in the <min,max) interval." )
-
     # --------------------------------------------------------------------------
     # CV2
     # --------------------------------------------------------------------------
@@ -2610,9 +2583,6 @@ def parse_args():
 
     cv2group.add_argument("--cv2nbins", type=int, required=True,
         help="Number of grid bins/points for the second collective variable." )
-
-    cv2group.add_argument("--cv2periodic", type=bool, default=False,
-        help="Force the second collective variable to be a periodic in the <min,max) interval." )
 
     # --------------------------------------------------------------------------
     # Energy label
@@ -3139,14 +3109,12 @@ if __name__ == "__main__":
     surf = EnergySurface2D(
         cv1min=args.cv1min,
         cv1max=args.cv1max,
-        cv1_periodic=args.cv1periodic,
         cv1_nx=args.cv1nrbfs,
         cv1_px=args.cv1nbins,
         cv1_label=args.cv1label,
 
         cv2min=args.cv2min,
         cv2max=args.cv2max,
-        cv2_periodic=args.cv2periodic,
         cv2_nx=args.cv2nrbfs,
         cv2_px=args.cv2nbins,
         cv2_label=args.cv2label,

@@ -22,7 +22,7 @@ rfac = 0.001987204258640       # kcal/mol/K
 class Axis:
     """One collective-variable axis, represented internally on [0, 1]."""
 
-    def __init__(self, cvmin, cvmax, periodic, nrbfs, npts, label):
+    def __init__(self, cvmin, cvmax,nrbfs, npts, label):
         if cvmax <= cvmin:
             raise ValueError("cvmax must be larger than cvmin")
         if nrbfs <= 0:
@@ -32,7 +32,6 @@ class Axis:
 
         self.cvmin = float(cvmin)
         self.cvmax = float(cvmax)
-        self.periodic = bool(periodic)
         self.nrbfs = int(nrbfs)
         self.npts = int(npts)
         self.label = label
@@ -41,20 +40,14 @@ class Axis:
         self.width = 1.0 / float(self.nrbfs)
         self.width_scale = 1.0
 
-        if self.periodic:
-            # Periodic CV: centers at 0, 1/nrbfs, ..., (nrbfs-1)/nrbfs.
-            self.centers = np.arange(self.nrbfs, dtype=float) / float(self.nrbfs)
-        else:
-            # Non-periodic CV: centers include both boundaries.
-            self.centers = np.arange(self.nrbfs + 1, dtype=float) / float(self.nrbfs)
+        # Non-periodic CV: centers include both boundaries.
+        self.centers = np.arange(self.nrbfs + 1, dtype=float) / float(self.nrbfs)
 
     # -------------------------------------------------------------------------
 
     def scale(self, x):
         """Convert a physical CV value to a scaled coordinate."""
         u = (np.asarray(x, dtype=float) - self.cvmin) / self.range
-        if self.periodic:
-            u = u % 1.0
         return u
 
     # -------------------------------------------------------------------------
@@ -62,8 +55,6 @@ class Axis:
     def unscale(self, u):
         """Convert a scaled coordinate to a physical CV value."""
         u = np.asarray(u, dtype=float)
-        if self.periodic:
-            u = u % 1.0
         return self.cvmin + u * self.range
 
     # -------------------------------------------------------------------------
@@ -71,14 +62,9 @@ class Axis:
     def delta(self, u):
         """
         Difference between scaled coordinate u and all RBF centers.
-
-        For periodic CVs, the minimum-image convention is used.
         """
         du = float(u) - self.centers
-        if self.periodic:
-            du -= np.round(du)
         return du
-
 
 # ==============================================================================
 # EnergySurface1D
@@ -105,7 +91,6 @@ class EnergySurface1D:
         self,
         cv1min,
         cv1max,
-        cv1_periodic,
         cv1_nrbfs,
         cv1_nbins,
         cv1_label,
@@ -115,7 +100,7 @@ class EnergySurface1D:
         temp,
         random_seed,
     ):
-        self.x_axis = Axis(cv1min, cv1max, cv1_periodic, cv1_nrbfs, cv1_nbins, cv1_label)
+        self.x_axis = Axis(cv1min, cv1max, cv1_nrbfs, cv1_nbins, cv1_label)
 
         self.x_data = None
         self.e_data = None
@@ -463,8 +448,6 @@ class EnergySurface1D:
             return 1.0 / float(self.x_axis.npts)
 
         diffs = np.diff(data_u)
-        if self.x_axis.periodic:
-            diffs = np.append(diffs, data_u[0] + 1.0 - data_u[-1])
 
         diffs = diffs[diffs > 0.0]
         if len(diffs) == 0:
@@ -506,95 +489,37 @@ class EnergySurface1D:
         regions = []
         sorted_index_to_region = {}
 
-        def add_region(component, wraps=False):
+        def add_region(component):
             rid = len(regions) + 1
             comp = np.asarray(component, dtype=int)
             comp_u = sorted_u[comp]
             comp_x = sorted_x[comp]
 
-            if self.x_axis.periodic:
-                if wraps:
-                    start_u = sorted_u[comp[0]]
-                    comp_uw = comp_u.copy()
-                    comp_uw[comp_uw < start_u] += 1.0
-                    umin = float(np.min(comp_uw))
-                    umax = float(np.max(comp_uw))
-                else:
-                    umin = float(np.min(comp_u))
-                    umax = float(np.max(comp_u))
-            else:
-                umin = float(np.min(comp_u))
-                umax = float(np.max(comp_u))
-
             item = {
                 "id": rid,
                 "min": float(np.min(comp_x)),
                 "max": float(np.max(comp_x)),
-                "umin": umin,
-                "umax": umax,
-                "wraps": bool(wraps),
+                "umin": float(np.min(comp_u)),
+                "umax": float(np.max(comp_u)),
             }
             regions.append(item)
             for idx in comp:
                 sorted_index_to_region[int(idx)] = item
 
-        if not self.x_axis.periodic:
-            start = 0
-            for i, gap in enumerate(np.diff(sorted_u)):
-                if gap > split_distance:
-                    add_region(np.arange(start, i + 1), wraps=False)
-                    start = i + 1
-            add_region(np.arange(start, len(sorted_u)), wraps=False)
-        else:
-            if len(sorted_u) == 1:
-                add_region(np.array([0]), wraps=False)
-            else:
-                gaps = np.diff(sorted_u)
-                gaps = np.append(gaps, sorted_u[0] + 1.0 - sorted_u[-1])
-                breaks = np.argwhere(gaps > split_distance).ravel()
-
-                if len(breaks) == 0:
-                    # No unsampled gap on the periodic circle.  There is no
-                    # physical boundary at cvmin/cvmax.
-                    item = {
-                        "id": 1,
-                        "min": float(np.min(sorted_x)),
-                        "max": float(np.max(sorted_x)),
-                        "umin": 0.0,
-                        "umax": 1.0,
-                        "wraps": False,
-                    }
-                    regions.append(item)
-                    for idx in range(len(sorted_u)):
-                        sorted_index_to_region[idx] = item
-                else:
-                    breaks = [int(b) for b in breaks]
-                    for bidx, start_break in enumerate(breaks):
-                        end_break = breaks[(bidx + 1) % len(breaks)]
-                        start = (start_break + 1) % len(sorted_u)
-                        end = end_break
-
-                        if start <= end:
-                            component = np.arange(start, end + 1)
-                            wraps = False
-                        else:
-                            component = np.concatenate((np.arange(start, len(sorted_u)), np.arange(0, end + 1)))
-                            wraps = True
-                        add_region(component, wraps=wraps)
-
+        start = 0
+        for i, gap in enumerate(np.diff(sorted_u)):
+            if gap > split_distance:
+                add_region(np.arange(start, i + 1))
+                start = i + 1
+        add_region(np.arange(start, len(sorted_u)))
+        
         grid_u = np.asarray(self.x_axis.scale(self.x_grid), dtype=float)
         region_map = np.empty(len(grid_u), dtype=object)
         region_map[:] = None
 
         for i, gu in enumerate(grid_u):
-            if self.x_axis.periodic:
-                du = gu - sorted_u
-                du -= np.round(du)
-                nearest_sorted_idx = int(np.argmin(np.abs(du)))
-                nearest_dist = float(abs(du[nearest_sorted_idx]))
-            else:
-                nearest_sorted_idx = int(np.argmin(np.abs(gu - sorted_u)))
-                nearest_dist = float(abs(gu - sorted_u[nearest_sorted_idx]))
+            nearest_sorted_idx = int(np.argmin(np.abs(gu - sorted_u)))
+            nearest_dist = float(abs(gu - sorted_u[nearest_sorted_idx]))
 
             if nearest_dist <= max_distance:
                 region_map[i] = sorted_index_to_region[nearest_sorted_idx]
@@ -622,14 +547,8 @@ class EnergySurface1D:
             # max_distance is a distance in scaled coordinates.
             max_distance = 1.05 * self._default_sample_spacing_u()
 
-        if self.x_axis.periodic:
-            # Direct 1D periodic nearest-neighbour distance.
-            du = grid_u - data_u.T
-            du -= np.round(du)
-            nearest_dist = np.min(np.abs(du), axis=1)
-        else:
-            # Direct computation is sufficient and avoids an extra dependency.
-            nearest_dist = np.min(np.abs(grid_u - data_u.T), axis=1)
+        # Direct computation is sufficient and avoids an extra dependency.
+        nearest_dist = np.min(np.abs(grid_u - data_u.T), axis=1)
 
         unsampled_mask = nearest_dist > max_distance
         self.build_sampled_regions(max_distance)
@@ -826,18 +745,12 @@ class EnergySurface1D:
             ymin, ymax = ax.get_ylim()
             for bidx, basin in enumerate(self.basins):
                 color = ws_cmap(bidx % ws_cmap.N)
-                segments = basin.get("segments", [(basin["xmin"], basin["xmax"])])
+                xmin = basin["xmin"]
+                xmax = basin["xmax"]
+                ax.axvspan(xmin, xmax, alpha=0.25, color=color, zorder=-1)
 
-                # Periodic basins can cross cvmax/cvmin.  Draw each visible
-                # segment with the same colour instead of drawing one long span
-                # across the whole plot.
-                for xmin, xmax in segments:
-                    ax.axvspan(xmin, xmax, alpha=0.25, color=color, zorder=-1)
-
-                # Put the label in the longest visible segment.
-                label_xmin, label_xmax = max(segments, key=lambda item: abs(item[1] - item[0]))
                 ax.text(
-                    0.5 * (label_xmin + label_xmax),
+                    0.5 * (xmin + xmax),
                     0.95 * ymax,
                     str(basin["id"]),
                     ha="center",
@@ -1121,8 +1034,6 @@ class EnergySurface1D:
 
                 q_u = self.to_scaled(q["x"])
                 du = p_u - q_u
-                if self.x_axis.periodic:
-                    du -= np.round(du)
 
                 if abs(du) <= min_distance_u:
                     duplicate_index = i
@@ -1144,120 +1055,6 @@ class EnergySurface1D:
         print(f"  Remaining optimized stationary points: {len(self.sp_optimized)}")
 
         return removed
-
-
-    # def remove_near_duplicate_sp_optimized(self, min_distance_u=0.01):
-    #     """
-    #     Remove nearly duplicate optimized stationary points.
-
-    #     Two points are considered duplicates only if they have the same type
-    #     ('S', 'T', or 'M') and their distance in scaled UV coordinates is
-    #     smaller than or equal to min_distance_u.
-
-    #     From each duplicate group, the point with the lowest energy is kept.
-
-    #     Parameters
-    #     ----------
-    #     min_distance_u : float
-    #         Minimum distance between two SPs to be considered as individual points.
-
-    #     Returns
-    #     -------
-    #     removed : list of dict
-    #         List of removed stationary points.
-    #     """
-
-    #     print("")
-    #     print("# Detecting near duplicate points ...")
-
-    #     if min_distance_u <= 0.0:
-    #         raise ValueError("min_distance_uv must be positive")
-
-    #     if len(self.sp_optimized) <= 1:
-    #         return []
-
-    #     # ------------------------------------------------------------------
-    #     # Sort points by increasing energy.
-    #     # Therefore, when a conflict is found, the already kept point always
-    #     # has lower or equal energy.
-    #     # ------------------------------------------------------------------
-
-    #     kept = []
-    #     removed = []
-
-    #     for pidx, p in enumerate(self.sp_optimized):
-
-    #         p_type = p.get('type', "")
-    #         if p_type not in ("S", "T"):
-    #             # Unknown type: do not compare it with S/T/M points.
-    #             kept.append(p)
-    #             continue
-
-    #         p_u = self.to_scaled(p['x'])
-
-    #         keep_item = p
-
-    #         if keep_item in kept:
-    #             continue
-
-    #         duplicate_of = None
-
-    #         for q in self.sp_optimized[pidx+1:-1]:
-
-    #             q_type = q.get('type', "")
-    #             if q_type != p_type:
-    #                 continue
-
-    #             q_u = self.to_scaled(q['x'])
-
-    #             du = p_u - q_u
-
-    #             # Minimum-image convention for periodic axes.
-    #             if self.x_axis.periodic:
-    #                 du -= np.round(du)
-
-    #             dist_u = abs(du)
-
-    #             if dist_u <= min_distance_u:
-    #                 if p["type"] == "S":
-    #                     if p["ene"] > q["ene"]:
-    #                         keep_item = q
-    #                         duplicate_of = p
-    #                         break
-    #                 if p["type"] == "T":
-    #                     if p["ene"] < q["ene"]:
-    #                         keep_item = q
-    #                         duplicate_of = p
-    #                         break
-
-    #         if duplicate_of is None:
-    #             kept.append(keep_item)
-    #         else:
-    #             kept.append(keep_item)
-    #             removed.append(duplicate_of)
-    #             print(
-    #                 "  Removing duplicate SP: "
-    #                 f"label = {duplicate_of['id']}, "
-    #                 f"type = {duplicate_of['type']}, "
-    #                 f"ene = {duplicate_of['ene']:.6f}, "
-    #                 f"sng = {duplicate_of['sng']:.6f}, "
-    #                 f"x = {duplicate_of['x']:.6f}, "
-    #                 f"kept label = {keep_item['id']}, "
-    #                 f"kept ene = {keep_item['ene']:.6f}"
-    #             )
-
-    #     # ------------------------------------------------------------------
-    #     # Restore a stable order, preferably by label.
-    #     # ------------------------------------------------------------------
-
-    #     kept = sorted(kept, key=lambda p: int(p['id']))
-
-    #     self.sp_optimized = kept
-
-    #     print(f"  Removed {len(removed)} near-duplicate optimized stationary point(s).")
-    #     print(f"  Remaining optimized stationary points: {len(self.sp_optimized)}")
-
-    #     return removed
 
     # --------------------------------------------------------------------------
 
@@ -1314,104 +1111,38 @@ class EnergySurface1D:
         print(f"  Removed {len(removed)} stationary point(s).")
         print(f"  Remaining optimized stationary points: {len(self.sp_optimized)}")
 
-        return
+        return removed
 
     # --------------------------------------------------------------------------
     # Basins
     # --------------------------------------------------------------------------
 
-    def _sampled_arcs_u(self):
-        """
-        Return connected sampled regions in scaled coordinates.
-
-        Each returned item is a dictionary.  The physical limits ``min`` and
-        ``max`` are taken from ``self.x_data`` rather than from regular-grid
-        edges.  ``umin`` and ``umax`` are the corresponding scaled limits used
-        internally for basin clipping.
-        """
+    def _sampled_regions_u(self):
+        """Return connected sampled regions in scaled coordinates."""
 
         if self.u_grid is None or self.ENE is None:
             raise RuntimeError("The regular grid is not available. Call calc_ene_and_sng() first.")
 
         if self.sampled_region_map is None:
-            self._build_sampled_region_items(1.05 * self._default_sample_spacing_u())
+            self.build_sampled_regions(1.05 * self._default_sample_spacing_u())
 
         used_ids = set()
         regions = []
         for item in self.sampled_region_map:
-            if item is None:
-                continue
-            if item["id"] in used_ids:
+            if item is None or item["id"] in used_ids:
                 continue
             used_ids.add(item["id"])
             regions.append(item)
 
-        return regions
+        return sorted(regions, key=lambda item: item["umin"])
 
     # --------------------------------------------------------------------------
 
-    def _arc_bounds(self, arc):
-        """Return scaled interval bounds from a sampled-region dictionary."""
+    @staticmethod
+    def _region_contains_u(u, region):
+        """Return True if scaled coordinate u belongs to a sampled region."""
 
-        if isinstance(arc, dict):
-            return float(arc["umin"]), float(arc["umax"])
-        return arc
-
-    # --------------------------------------------------------------------------
-
-    def _put_u_in_arc(self, u, arc):
-        """Return u shifted by an integer period so that it lies in arc."""
-
-        u = float(u) % 1.0 if self.x_axis.periodic else float(u)
-        a, b = self._arc_bounds(arc)
-
-        if not self.x_axis.periodic:
-            return u
-
-        while u < a:
-            u += 1.0
-        while u >= b:
-            u -= 1.0
-        return u
-
-    # --------------------------------------------------------------------------
-
-    def _arc_contains_u(self, u, arc):
-        """Return True if the scaled coordinate u belongs to arc."""
-
-        uu = self._put_u_in_arc(u, arc)
-        a, b = self._arc_bounds(arc)
-        return (uu >= a) and (uu <= b)
-
-    # --------------------------------------------------------------------------
-
-    def _u_interval_to_x_segments(self, u0, u1):
-        """Convert a scaled interval, possibly periodic, to physical plot spans."""
-
-        if u1 < u0:
-            raise ValueError("u1 must be larger than or equal to u0")
-
-        if not self.x_axis.periodic:
-            return [(self.from_scaled(u0), self.from_scaled(u1))]
-
-        if u1 - u0 >= 1.0:
-            return [(self.x_axis.cvmin, self.x_axis.cvmax)]
-
-        segments = []
-        left = float(u0)
-        eps = 1.0e-14
-        while left < u1 - eps:
-            right = min(u1, math.floor(left) + 1.0)
-            ul = left % 1.0
-            ur = right % 1.0
-            if abs(ur) < eps and right > left:
-                ur = 1.0
-            xl = self.x_axis.cvmin + ul * self.x_axis.range
-            xr = self.x_axis.cvmin + ur * self.x_axis.range
-            segments.append((float(xl), float(xr)))
-            left = right
-
-        return segments
+        return float(region["umin"]) <= float(u) <= float(region["umax"])
 
     # --------------------------------------------------------------------------
 
@@ -1419,89 +1150,75 @@ class EnergySurface1D:
         """
         Calculate 1D minima basins.
 
-        Each minimum basin is bounded by neighbouring transition states/maxima,
-        but it is also clipped to the connected sampled region that contains the
-        minimum.  For periodic CVs, basins may wrap over the cvmax/cvmin boundary.
+        Each minimum basin is bounded by neighbouring transition states/maxima
+        within the same connected sampled region.  If a maximum is missing on
+        one side, the basin is clipped at the sampled-region boundary.
         """
-        minima = sorted([p for p in self.sp_optimized if p["type"] == "S"], key=lambda p: self.to_scaled(p["x"]))
-        maxima = sorted([p for p in self.sp_optimized if p["type"] == "T"], key=lambda p: self.to_scaled(p["x"]))
+
+        minima = sorted(
+            [p for p in self.sp_optimized if p["type"] == "S"],
+            key=lambda p: self.to_scaled(p["x"]),
+        )
+        maxima = sorted(
+            [p for p in self.sp_optimized if p["type"] == "T"],
+            key=lambda p: self.to_scaled(p["x"]),
+        )
 
         if len(minima) == 0:
             print("  WARNING: No minima found; basins cannot be calculated.")
             self.basins = []
             return self.basins
 
-        sampled_arcs = self._sampled_arcs_u()
-        if len(sampled_arcs) == 0:
+        sampled_regions = self._sampled_regions_u()
+        if len(sampled_regions) == 0:
             print("  WARNING: No sampled region found; basins cannot be calculated.")
             self.basins = []
             return self.basins
 
-        max_u = [self.to_scaled(p["x"]) for p in maxima]
         self.basins = []
 
         for pt in minima:
             pt_u = self.to_scaled(pt["x"])
-            containing_arc = None
-            for arc in sampled_arcs:
-                if self._arc_contains_u(pt_u, arc):
-                    containing_arc = arc
+
+            containing_region = None
+            for region in sampled_regions:
+                if self._region_contains_u(pt_u, region):
+                    containing_region = region
                     break
 
-            if containing_arc is None:
+            if containing_region is None:
                 print(f"  WARNING: Minimum {pt['id']} is outside sampled regions; skipping basin.")
                 continue
 
-            arc0, arc1 = self._arc_bounds(containing_arc)
+            u0 = float(containing_region["umin"])
+            u1 = float(containing_region["umax"])
 
-            # A fully sampled periodic CV has no real edge at u=0/1.  Work in
-            # a two-period window centred on the current minimum so the nearest
-            # left and right maxima can be found across the periodic boundary.
-            if self.x_axis.periodic and (arc1 - arc0 >= 1.0 - 1.0e-14):
-                arc0 = pt_u - 1.0
-                arc1 = pt_u + 1.0
-                pt_uw = pt_u
-            else:
-                pt_uw = self._put_u_in_arc(pt_u, (arc0, arc1))
+            maxima_in_region = [
+                self.to_scaled(p["x"])
+                for p in maxima
+                if u0 < self.to_scaled(p["x"]) < u1
+            ]
 
-            max_candidates = []
-            for u in max_u:
-                if self.x_axis.periodic:
-                    for shift in (-1.0, 0.0, 1.0):
-                        uw = u + shift
-                        if arc0 < uw < arc1:
-                            max_candidates.append(uw)
-                else:
-                    uw = u
-                    if arc0 < uw < arc1:
-                        max_candidates.append(uw)
+            left_maxima = [u for u in maxima_in_region if u < pt_u]
+            right_maxima = [u for u in maxima_in_region if u > pt_u]
 
-            left_candidates = [u for u in max_candidates if u < pt_uw]
-            right_candidates = [u for u in max_candidates if u > pt_uw]
-
-            umin = max(left_candidates) if left_candidates else arc0
-            umax = min(right_candidates) if right_candidates else arc1
-
-            segments = self._u_interval_to_x_segments(umin, umax)
-            xmin = self.from_scaled(umin % 1.0 if self.x_axis.periodic else umin)
-            xmax = self.from_scaled(umax % 1.0 if self.x_axis.periodic else umax)
+            umin = max(left_maxima) if left_maxima else u0
+            umax = min(right_maxima) if right_maxima else u1
+            xmin = self.from_scaled(umin)
+            xmax = self.from_scaled(umax)
 
             pt["xmin"] = float(xmin)
             pt["xmax"] = float(xmax)
-            pt["umin"] = float(umin % 1.0 if self.x_axis.periodic else umin)
-            pt["umax"] = float(umax % 1.0 if self.x_axis.periodic else umax)
-            pt["wraps"] = bool(self.x_axis.periodic and (umax > 1.0 or pt["umin"] > pt["umax"]))
-            pt["segments"] = segments
+            pt["umin"] = float(umin)
+            pt["umax"] = float(umax)
 
             self.basins.append({
                 "id": pt["id"],
                 "xmin": float(xmin),
                 "xmax": float(xmax),
-                "umin": pt["umin"],
-                "umax": pt["umax"],
-                "wraps": pt["wraps"],
-                "segments": segments,
-                "sampled_region": containing_arc,
+                "umin": float(umin),
+                "umax": float(umax),
+                "sampled_region": containing_region,
                 "pt": pt,
             })
 
@@ -1512,11 +1229,7 @@ class EnergySurface1D:
     def _basin_grid_mask(self, basin):
         """Return a mask selecting sampled grid points belonging to one basin."""
 
-        mask = np.zeros_like(self.x_grid, dtype=bool)
-        for xmin, xmax in basin.get("segments", []):
-            lo = min(xmin, xmax)
-            hi = max(xmin, xmax)
-            mask |= (self.x_grid >= lo) & (self.x_grid <= hi)
+        mask = (self.x_grid >= basin["xmin"]) & (self.x_grid <= basin["xmax"])
 
         if self.unsampled_mask is not None:
             mask &= ~self.unsampled_mask
@@ -1614,9 +1327,6 @@ def parse_args():
     
     cv1group.add_argument("--cv1nbins", type=int, required=True, 
         help="Number of grid bins/points.")
-    
-    cv1group.add_argument("--cv1periodic",type=str2bool,default=False,
-        help="Treat the collective variable as periodic in the <min,max) interval.",)
 
     # --------------------------------------------------------------------------
     # Energy label
@@ -2082,7 +1792,6 @@ if __name__ == "__main__":
     surf = EnergySurface1D(
         cv1min=args.cv1min,
         cv1max=args.cv1max,
-        cv1_periodic=args.cv1periodic,
         cv1_nrbfs=args.cv1nrbfs,
         cv1_nbins=args.cv1nbins,
         cv1_label=args.cv1label,
