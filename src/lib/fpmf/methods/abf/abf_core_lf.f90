@@ -298,7 +298,7 @@ subroutine abf_core_lf_force_2pX()
 
         ! register data
         call abf_accu_add_data_online(cvhist(:,hist_len+hist_fidx),icfhist(:,hist_len+hist_fidx),&
-                                      micfhist(:,hist_len+hist_fidx),fziihist(:,hist_len+hist_fidx))
+                                      micfhist(:,hist_len+hist_fidx))
     end if
 
 end subroutine abf_core_lf_force_2pX
@@ -409,7 +409,7 @@ subroutine abf_core_lf_force_2pV()
     if( mod(fstep,ficfsample) .eq. 0 ) then
         ! register data
         call abf_accu_add_data_online(cvhist(:,hist_len+hist_fidx),icfhist(:,hist_len+hist_fidx),&
-                                      micfhist(:,hist_len+hist_fidx),fziihist(:,hist_len+hist_fidx))
+                                      micfhist(:,hist_len+hist_fidx))
     end if
 
 end subroutine abf_core_lf_force_2pV
@@ -578,7 +578,6 @@ subroutine abf_core_lf_register_ekin()
         ekinhist(i)         = ekinhist(i+1)
         ekinlfhist(i)       = ekinlfhist(i+1)
         enevalidhist(i)     = enevalidhist(i+1)
-        volhist(i)          = volhist(i+1)
     end do
 
 ! raw data
@@ -587,7 +586,6 @@ subroutine abf_core_lf_register_ekin()
     ekinlfhist(hist_len)    = KinEne%KinEneLF - fekinaverage   ! shifted by +1/2dt
 
     enevalidhist(hist_len)  = KinEne%Valid
-    volhist(hist_len)       = fbox_volume
 
     ! get ICF-P
     call abf_core_lf_get_icfp
@@ -621,63 +619,13 @@ subroutine abf_core_lf_register_ekin()
     lepot = epothist(hist_len+hist_fidx)
     lerst = ersthist(hist_len+hist_fidx)
     lekin = ekinhist(hist_len+hist_fidx)
-
-! https://web.media.mit.edu/~crtaylor/calculator.html
-
-    select case(fepotsmooth)
-        case(0)
-            ! nothing to be here
-        case(5)
-            lepot = (  - 1.0d0 * epothist(hist_len+hist_fidx-2) &
-                       + 4.0d0 * epothist(hist_len+hist_fidx-1) &
-                       + 4.0d0 * epothist(hist_len+hist_fidx+1) &
-                       - 1.0d0 * epothist(hist_len+hist_fidx+2) &
-                    ) / 6.0d0
-        case(7)
-            lepot = (  + 1.0d0 * epothist(hist_len+hist_fidx-3) &
-                       - 6.0d0 * epothist(hist_len+hist_fidx-2) &
-                       +15.0d0 * epothist(hist_len+hist_fidx-1) &
-                       +15.0d0 * epothist(hist_len+hist_fidx+1) &
-                       - 6.0d0 * epothist(hist_len+hist_fidx+2) &
-                       + 1.0d0 * epothist(hist_len+hist_fidx+3) &
-                    ) / 20.0d0
-        case(9)
-            lepot = (  - 1.0d0 * epothist(hist_len+hist_fidx-4) &
-                       + 8.0d0 * epothist(hist_len+hist_fidx-3) &
-                       -28.0d0 * epothist(hist_len+hist_fidx-2) &
-                       +56.0d0 * epothist(hist_len+hist_fidx-1) &
-                       +56.0d0 * epothist(hist_len+hist_fidx+1) &
-                       -28.0d0 * epothist(hist_len+hist_fidx+2) &
-                       + 8.0d0 * epothist(hist_len+hist_fidx+3) &
-                       - 1.0d0 * epothist(hist_len+hist_fidx+4) &
-                    ) / 70.0d0
-        case(11)
-            ! -5,-4,-3,-2,-1,1,2,3,4,5
-            ! f_ = (1*f[i-5]-10*f[i-4]+45*f[i-3]-120*f[i-2]+210*f[i-1]+210*f[i+1]-120*f[i+2]+45*f[i+3]-10*f[i+4]+1*f[i+5])/(252*1.0*h**0)
-            lepot = (  +   1.0d0 * epothist(hist_len+hist_fidx-5) &
-                       -  10.0d0 * epothist(hist_len+hist_fidx-4) &
-                       +  45.0d0 * epothist(hist_len+hist_fidx-3) &
-                       - 120.0d0 * epothist(hist_len+hist_fidx-2) &
-                       + 210.0d0 * epothist(hist_len+hist_fidx-1) &
-                       + 210.0d0 * epothist(hist_len+hist_fidx+1) &
-                       - 120.0d0 * epothist(hist_len+hist_fidx+2) &
-                       +  45.0d0 * epothist(hist_len+hist_fidx+3) &
-                       -  10.0d0 * epothist(hist_len+hist_fidx+4) &
-                       +   1.0d0 * epothist(hist_len+hist_fidx+5) &
-                    ) / 252.0d0
-
-        case default
-            call pmf_utils_exit(PMF_OUT,1,'[ABF] Unsupported fepotsmooth mode in abf_core_lf_register_ekin!')
-    end select
-
-
+    
   !  write(1487,*) fstep
 
     ! register data
     call abf_accu_add_data_energy(cvhist(:,hist_len+hist_fidx), &
                   icfhist(:,hist_len+hist_fidx), micfhist(:,hist_len+hist_fidx), icfphist(:,hist_len+hist_fidx), &
-                  lepot, lerst, lekin, &
-                  volhist(hist_len+hist_fidx))
+                  lepot, lerst, lekin)
 
 end subroutine abf_core_lf_register_ekin
 

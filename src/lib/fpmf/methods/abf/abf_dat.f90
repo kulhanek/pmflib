@@ -61,13 +61,9 @@ logical     :: ftdscalc         ! collect data for entropy calculation
 logical     :: fentdecomp       ! collect additional correlation terms
 logical     :: ftds_add_bias    ! include ABF bias into TdS calculation
 integer     :: ftds_ekin_src    ! source of kinetic energy, see abf_core_update_history_ene for supported values
-real(PMFDP) :: fepotaverage
-real(PMFDP) :: fekinaverage
-integer     :: ftds_sample       ! how often update ABF accumulator for ENT and TDS
-
-integer     :: fepotsmooth
-integer     :: ferstsmooth
-integer     :: fekinsmooth
+real(PMFDP) :: fepotaverage     ! expected potential energy average value
+real(PMFDP) :: fekinaverage     ! expected kinetic energy average value
+integer     :: ftds_sample      ! how often update ABF accumulator for ENT and TDS
 
 integer     :: fmdconmode       ! how to deal with SHAKE constraints in collision
                                 ! 0 - ignore them
@@ -166,12 +162,6 @@ type,extends(PMFAccuType) :: ABFAccuType
     real(PMFDP),pointer    :: mgfx(:,:)                 ! mean -GFX
     real(PMFDP),pointer    :: m2gfx(:,:)                ! M2 of GFX
 
-    real(PMFDP),pointer    :: msrzii(:,:)               ! mean sqrt(Zii) - correction for TST
-    real(PMFDP),pointer    :: m2srzii(:,:)              ! M2 of srzii
-
-    real(PMFDP),pointer    :: mvol(:)                   ! mean volume
-    real(PMFDP),pointer    :: m2vol(:)                  ! M2 of volume
-
 ! enthalpy & entropy
     real(PMFDP),pointer    :: ntds(:)                   ! number of hits into bins
 
@@ -258,8 +248,6 @@ real(PMFDP),allocatable     :: xphist(:,:)          ! history of CV momenta
 real(PMFDP),allocatable     :: icfhist(:,:)         ! history of ABF ICF
 real(PMFDP),allocatable     :: micfhist(:,:)        ! history of ABF bias
 
-real(PMFDP),allocatable     :: fziihist(:,:)        ! history of fzii
-
 real(PMFDP),allocatable     :: zdhist(:,:,:,:)      ! history of ZD
 real(PMFDP),allocatable     :: fhist(:,:,:)         ! history of forces
 real(PMFDP),allocatable     :: icfphist(:,:)        ! history of ABF ICF-P
@@ -268,7 +256,6 @@ real(PMFDP),allocatable     :: epothist(:)          ! history of Epot
 real(PMFDP),allocatable     :: ersthist(:)          ! history of Erst
 real(PMFDP),allocatable     :: ekinhist(:)          ! history of Ekin
 real(PMFDP),allocatable     :: ekinlfhist(:)        ! history of EkinLF
-real(PMFDP),allocatable     :: volhist(:)           ! history of volume
 logical,allocatable         :: enevalidhist(:)      ! is energy valid?
 
 ! ------------------------------------------------------------------------------

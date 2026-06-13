@@ -127,10 +127,6 @@ subroutine abf_control_read_abf(prm_fin)
     call pmf_ctrl_read_real8_wunit(prm_fin,'fepotaverage',EnergyUnit,fepotaverage,'F10.1')
     call pmf_ctrl_read_real8_wunit(prm_fin,'fekinaverage',EnergyUnit,fekinaverage,'F10.1')
 
-    call pmf_ctrl_read_integer(prm_fin,'fepotsmooth',fepotsmooth,'I12')
-    call pmf_ctrl_read_integer(prm_fin,'ferstsmooth',ferstsmooth,'I12')
-    call pmf_ctrl_read_integer(prm_fin,'fekinsmooth',fekinsmooth,'I12')
-
     call pmf_ctrl_read_integer(prm_fin,'ftds_sample',ftds_sample,'I12')
     call pmf_ctrl_check_integer('ABF','ftds_sample',ftds_sample,0,CND_GT)
 

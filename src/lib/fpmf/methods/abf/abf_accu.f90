@@ -74,8 +74,6 @@ subroutine abf_accu_init()
                 abfaccu%m2icf(abfaccu%tot_cvs,abfaccu%tot_nbins),   &
                 abfaccu%mgfx(abfaccu%tot_cvs,abfaccu%tot_nbins),    &
                 abfaccu%m2gfx(abfaccu%tot_cvs,abfaccu%tot_nbins),   &
-                abfaccu%msrzii(abfaccu%tot_cvs,abfaccu%tot_nbins),  &
-                abfaccu%m2srzii(abfaccu%tot_cvs,abfaccu%tot_nbins), &
                 abfaccu%bnsamples(abfaccu%tot_nbins),               &
                 abfaccu%bmicf(abfaccu%tot_cvs,abfaccu%tot_nbins),   &
                 stat = alloc_failed)
@@ -83,16 +81,6 @@ subroutine abf_accu_init()
     if( alloc_failed .ne. 0 ) then
         call pmf_utils_exit(PMF_OUT, 1,'[ABF] Unable to allocate memory for abf accumulator (abfforce)!')
     endif
-
-    if( fsystype .eq. SYS_NTP ) then
-        allocate(   abfaccu%mvol(abfaccu%tot_nbins),   &
-                    abfaccu%m2vol(abfaccu%tot_nbins),  &
-                    stat = alloc_failed)
-
-        if( alloc_failed .ne. 0 ) then
-            call pmf_utils_exit(PMF_OUT, 1,'[ABF] Unable to allocate memory for abf accumulator (mvol)!')
-        endif
-    end if
 
     if( fenthalpy .or. ftdscalc ) then
         allocate(   abfaccu%ntds(abfaccu%tot_nbins),   &
@@ -207,16 +195,8 @@ subroutine abf_accu_clear()
     abfaccu%mgfx(:,:)       = 0.0d0
     abfaccu%m2gfx(:,:)      = 0.0d0
 
-    abfaccu%msrzii(:,:)     = 0.0d0
-    abfaccu%m2srzii(:,:)    = 0.0d0
-
     abfaccu%bnsamples(:)    = 0
     abfaccu%bmicf(:,:)      = 0.0d0
-
-    if( fsystype .eq. SYS_NTP ) then
-        abfaccu%mvol(:)     = 0.0d0
-        abfaccu%m2vol(:)    = 0.0d0
-    end if
 
     if( fenthalpy .or. ftdscalc ) then
         abfaccu%ntds(:)         = 0.0d0
@@ -314,24 +294,6 @@ subroutine abf_accu_read(iounit)
             ! ------------------------------------
                 case('M2GFX')
                     call pmf_accu_read_rbuf_M(abfaccu%PMFAccuType,iounit,keyline,abfaccu%m2gfx)
-
-            ! ------------------------------------
-                case('MSRZII')
-                    call pmf_accu_read_rbuf_M(abfaccu%PMFAccuType,iounit,keyline,abfaccu%msrzii)
-            ! ------------------------------------
-                case('M2SRZII')
-                    call pmf_accu_read_rbuf_M(abfaccu%PMFAccuType,iounit,keyline,abfaccu%m2srzii)
-
-            ! ------------------------------------
-                case('MVOL')
-                    if( fsystype .eq. SYS_NTP ) then
-                        call pmf_accu_read_rbuf_B(abfaccu%PMFAccuType,iounit,keyline,abfaccu%mvol)
-                    end if
-            ! ------------------------------------
-                case('M2VOL')
-                    if( fsystype .eq. SYS_NTP ) then
-                        call pmf_accu_read_rbuf_B(abfaccu%PMFAccuType,iounit,keyline,abfaccu%m2vol)
-                    end if
 
             ! ------------------------------------
                 case('NTDS')
@@ -559,14 +521,6 @@ subroutine abf_accu_write(iounit)
     call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'MGFX',       'WA',abfaccu%mgfx,  'NSAMPLES')
     call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'M2GFX',      'M2',abfaccu%m2gfx, 'NSAMPLES','MGFX')
 
-    call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'MSRZII',     'WA',abfaccu%msrzii, 'NSAMPLES')
-    call pmf_accu_write_rbuf_M(abfaccu%PMFAccuType,iounit,'M2SRZII',    'M2',abfaccu%m2srzii,'NSAMPLES','MSRZII')
-
-    if( fsystype .eq. SYS_NTP ) then
-        call pmf_accu_write_rbuf_B(abfaccu%PMFAccuType,iounit,'MVOL',   'WA',abfaccu%mvol,  'NSAMPLES')
-        call pmf_accu_write_rbuf_B(abfaccu%PMFAccuType,iounit,'M2VOL',  'M2',abfaccu%m2vol, 'NSAMPLES','MVOL')
-    end if
-
     if( fenthalpy .or. ftdscalc ) then
         call pmf_accu_write_rbuf_B(abfaccu%PMFAccuType,iounit,'NTDS',   'AD',abfaccu%ntds)
     end if
@@ -621,7 +575,7 @@ end subroutine abf_accu_write
 ! Subroutine:  abf_accu_add_data_online
 !===============================================================================
 
-subroutine abf_accu_add_data_online(cvs,gfx,bfx,zii)
+subroutine abf_accu_add_data_online(cvs,gfx,bfx)
 
     use abf_dat
     use pmf_dat
@@ -630,13 +584,11 @@ subroutine abf_accu_add_data_online(cvs,gfx,bfx,zii)
     real(PMFDP),intent(in)  :: cvs(:)
     real(PMFDP),intent(in)  :: gfx(:)
     real(PMFDP),intent(in)  :: bfx(:)
-    real(PMFDP),intent(in)  :: zii(:)
     ! -----------------------------------------------
     integer        :: gi0, i
     real(PMFDP)    :: invn, icf, igf
     real(PMFDP)    :: dicf1, dicf2
     real(PMFDP)    :: dgfx1, dgfx2
-    real(PMFDP)    :: srzii, dsrzii1, dsrzii2
     ! --------------------------------------------------------------------------
 
     ! get global index to accumulator for cvs values
@@ -667,15 +619,8 @@ subroutine abf_accu_add_data_online(cvs,gfx,bfx,zii)
         abfaccu%mgfx(i,gi0)  = abfaccu%mgfx(i,gi0)  + dgfx1 * invn
         dgfx2 = igf - abfaccu%mgfx(i,gi0)
         abfaccu%m2gfx(i,gi0) = abfaccu%m2gfx(i,gi0) + dgfx1 * dgfx2
-
-        ! correction for TST
-        srzii = sqrt(zii(i))
-        dsrzii1 = srzii - abfaccu%msrzii(i,gi0)
-        abfaccu%msrzii(i,gi0)  = abfaccu%msrzii(i,gi0)  + dsrzii1 * invn
-        dsrzii2 = srzii - abfaccu%msrzii(i,gi0)
-        abfaccu%m2srzii(i,gi0) = abfaccu%m2srzii(i,gi0) + dsrzii1 * dsrzii2
-
     end do
+
 
     if( fupdate_abf ) then
         if( fserver_enabled ) then
@@ -710,7 +655,7 @@ end subroutine abf_accu_add_data_online
 ! Subroutine:  abf_accu_add_data_energy
 !===============================================================================
 
-subroutine abf_accu_add_data_energy(cvs,gfx,bfx,pfx,epot,erst,ekin,vol)
+subroutine abf_accu_add_data_energy(cvs,gfx,bfx,pfx,epot,erst,ekin)
 
     use abf_dat
     use pmf_dat
@@ -723,7 +668,6 @@ subroutine abf_accu_add_data_energy(cvs,gfx,bfx,pfx,epot,erst,ekin,vol)
     real(PMFDP),intent(in)  :: epot
     real(PMFDP),intent(in)  :: erst
     real(PMFDP),intent(in)  :: ekin
-    real(PMFDP),intent(in)  :: vol      ! volume
     ! -----------------------------------------------
     integer         :: gi0, i
     real(PMFDP)     :: invn, icf
@@ -732,7 +676,6 @@ subroutine abf_accu_add_data_energy(cvs,gfx,bfx,pfx,epot,erst,ekin,vol)
     real(PMFDP)     :: dekin1, dekin2
     real(PMFDP)     :: detot1, detot2
     real(PMFDP)     :: deint1, deint2
-    real(PMFDP)     :: dvol1, dvol2
     real(PMFDP)     :: dpp, dpp1, dpp2
     real(PMFDP)     :: dpn, dpn1, dpn2
     real(PMFDP)     :: etot, eint
@@ -756,13 +699,6 @@ subroutine abf_accu_add_data_energy(cvs,gfx,bfx,pfx,epot,erst,ekin,vol)
     ! increase number of samples
     abfaccu%ntds(gi0) = abfaccu%ntds(gi0) + 1.0d0
     invn = 1.0d0 / abfaccu%ntds(gi0)
-
-    if( fsystype .eq. SYS_NTP ) then
-        dvol1 = vol - abfaccu%mvol(gi0)
-        abfaccu%mvol(gi0)  = abfaccu%mvol(gi0)  + dvol1 * invn
-        dvol2 = vol - abfaccu%mvol(gi0)
-        abfaccu%m2vol(gi0) = abfaccu%m2vol(gi0) + dvol1 * dvol2
-    end if
 
     if( fenthalpy .or. (ftdscalc .and. fentdecomp) ) then
         ! internal energy

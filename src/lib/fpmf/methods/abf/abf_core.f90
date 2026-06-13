@@ -90,8 +90,7 @@ subroutine abf_core_update_history_force()
         cvhist(:,i)         = cvhist(:,i+1)
         micfhist(:,i)       = micfhist(:,i+1)
         icfhist(:,i)        = icfhist(:,i+1)
-        fziihist(:,i)       = fziihist(:,i+1)
-        fhist(:,:,i)    = fhist(:,:,i+1) ! FIXME
+        fhist(:,:,i)        = fhist(:,:,i+1) ! FIXME
     end do
 
     fhist(:,:,hist_len) = Frc(:,:)  ! FIXME
@@ -99,12 +98,6 @@ subroutine abf_core_update_history_force()
     do i=1,NumOfABFCVs
         ci = ABFCVList(i)%cvindx
         cvhist(i,hist_len)  = CVContext%CVsValues(ci)
-    end do
-
-! calculate Z matrix and its inverse
-    call abf_core_calc_Zmat(CVContext)
-    do i=1,NumOfABFCVs
-        fziihist(i,hist_len) = fz(i,i)
     end do
 
 ! apply force filters

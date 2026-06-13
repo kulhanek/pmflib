@@ -96,10 +96,6 @@ subroutine abf_init_dat
     fepotaverage    = 0.0d0
     fekinaverage    = 0.0d0
 
-    fepotsmooth     = 0
-    ferstsmooth     = 0
-    fekinsmooth     = 0
-
     feimode         = 1
     fhramp_min      = 2000
     fhramp_max      = 3000
@@ -274,9 +270,6 @@ subroutine abf_init_print_summary
                                                                        '['//trim(pmf_unit_label(EnergyUnit))//']'
     write(PMF_OUT,150)  ' Kinetic energy offset (fekinaverage)    : ', pmf_unit_get_rvalue(EnergyUnit,fekinaverage), &
                                                                        '['//trim(pmf_unit_label(EnergyUnit))//']'
-    write(PMF_OUT,130)  ' Pot energy smoothing mode (fepotsmooth) : ', fepotsmooth
-    write(PMF_OUT,130)  ' Rst energy smoothing mode (ferstsmooth) : ', ferstsmooth
-    write(PMF_OUT,130)  ' Kin energy smoothing mode (fekinsmooth) : ', fekinsmooth
     write(PMF_OUT,130)  ' Sampling for -TdS and dH (ftds_sample)   : ', ftds_sample
 
     write(PMF_OUT,120)
@@ -673,9 +666,7 @@ subroutine abf_init_arrays
             ersthist(hist_len),                             &
             ekinhist(hist_len),                             &
             ekinlfhist(hist_len),                           &
-            volhist(hist_len),                              &
             enevalidhist(hist_len),                         &
-            fziihist(NumOfABFCVs,hist_len),                 &
             stat= alloc_failed )
 
     if( alloc_failed .ne. 0 ) then
@@ -697,8 +688,6 @@ subroutine abf_init_arrays
     fzinvhist(:,:,:)    = 0.0d0
     cvderhist(:,:,:,:)  = 0.0d0
     zdhist(:,:,:,:)     = 0.0d0
-    volhist(:)          = 0.0d0
-    fziihist(:,:)       = 0.0d0
     enevalidhist(:)     = .false.
 
 ! other setup ----------------------------------------------
