@@ -1008,7 +1008,7 @@ subroutine pmf_paths_optimize_alphas(path_item)
     type(PathType)  :: path_item  
     ! --------------------------------------------
     integer                 :: i,b,alloc_failed
-    real(PMFDP)             :: tot_length, slen, path_length, prev_length
+    real(PMFDP)             :: tot_length, slen, path_length
     real(PMFDP),allocatable :: lalphas(:)
     ! --------------------------------------------------------------------------
 
@@ -1051,35 +1051,8 @@ subroutine pmf_paths_optimize_alphas(path_item)
     end do
     path_item%alphas(path_item%nbeads) = 1.0
 
-    do while( .true. )
-        ! interpolate CVs
-        call pmf_paths_get_setint(path_item)
-
-        prev_length = tot_length
-
-        ! determine new path length
-        tot_length = 0
-        do b=2,path_item%nbeads
-            tot_length = tot_length + pmf_paths_get_seglen(path_item,path_item%alphas(b-1),path_item%alphas(b))
-        end do
-
-        if( abs(tot_length-prev_length) < 1e-7 ) then
-            deallocate(lalphas)
-            ! no significant change - quit optimization
-            return
-        end if
-
-        ! determine new alphas
-        lalphas(1) = 0.0
-        path_length = 0
-        do b=2,path_item%nbeads-1
-            path_length =  path_length + pmf_paths_get_seglen(path_item,path_item%alphas(b-1),path_item%alphas(b))
-            lalphas(b) = path_length / tot_length
-        end do
-        lalphas(path_item%nbeads) = 1.0
-        path_item%alphas = lalphas
-
-    end do
+    ! interpolate CVs
+    call pmf_paths_get_setint(path_item)
 
 end subroutine pmf_paths_optimize_alphas
 
