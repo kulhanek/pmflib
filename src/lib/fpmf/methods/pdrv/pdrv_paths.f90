@@ -64,6 +64,7 @@ subroutine pdrv_paths_read_pdrv(prm_fin,pdrv_item)
     ! -----------------------------------------------
     character(len=1)                    :: buffer
     integer                             :: alloc_stat
+    logical                             :: rst
     ! --------------------------------------------------------------------------
 
     if(      prmfile_get_real8_by_key(prm_fin,'attach_to',pdrv_item%final_alpha) &
@@ -84,7 +85,11 @@ subroutine pdrv_paths_read_pdrv(prm_fin,pdrv_item)
         end if
 ! --------------------------------------
     else if( prmfile_get_real8_by_key(prm_fin,'increment',pdrv_item%final_alpha) ) then
-        if( prmfile_get_real8_by_key(prm_fin,'initial_value',pdrv_item%initial_alpha) ) then
+
+        buffer = ''
+        rst = prmfile_get_string_by_key(prm_fin,'initial_value',buffer)
+
+        if( (trim(buffer) .ne. '@') .and. prmfile_get_real8_by_key(prm_fin,'initial_value',pdrv_item%initial_alpha) ) then
             write(PMF_OUT,10) pdrv_item%initial_alpha
             pdrv_item%initial_value_set = .true.
         else
@@ -94,12 +99,17 @@ subroutine pdrv_paths_read_pdrv(prm_fin,pdrv_item)
         write(PMF_OUT,110) pdrv_item%final_alpha
 ! --------------------------------------
     else if( prmfile_get_real8_by_key(prm_fin,'change_to',pdrv_item%final_alpha) ) then
-        if( prmfile_get_real8_by_key(prm_fin,'initial_value',pdrv_item%initial_alpha) ) then
+
+        buffer = ''
+        rst = prmfile_get_string_by_key(prm_fin,'initial_value',buffer)
+
+        if( (trim(buffer) .ne. '@') .and. prmfile_get_real8_by_key(prm_fin,'initial_value',pdrv_item%initial_alpha) ) then
             write(PMF_OUT,10) pdrv_item%initial_alpha
             pdrv_item%initial_value_set = .true.
         else
             write(PMF_OUT,15)
         end if
+
         pdrv_item%mode = 'P'
         write(PMF_OUT,120) pdrv_item%final_alpha
 ! --------------------------------------

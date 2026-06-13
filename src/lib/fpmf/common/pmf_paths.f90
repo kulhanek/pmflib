@@ -390,7 +390,9 @@ subroutine pmf_paths_load_cvs(prm_fin,path_item)
     do i=1,path_item%ncvs
         if( trim(buff(i)) .ne. trim(CVList(path_item%cvindxs(i))%cv%ctype) ) then
             write(code,'(I3)') i
-            call pmf_utils_exit(PMF_OUT,1,'CV types do not match for CV number ''' // trim(code) // '''!')
+            call pmf_utils_exit(PMF_OUT,1, &
+            'PATH CV type ('// trim(buff(i)) //') does not match the CV type (' &
+             // trim(CVList(path_item%cvindxs(i))%cv%ctype) // ') for CV number ''' // trim(code) // '''!')
         end if
     end do
 
