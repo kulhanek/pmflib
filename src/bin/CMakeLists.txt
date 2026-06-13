@@ -7,7 +7,6 @@
 # fortran utilities
 IF(PMFLIB_COMPILE_FPMF)
     ADD_SUBDIRECTORY(pmf-dyn)
-    ADD_SUBDIRECTORY(pmf-path-explore)
     ADD_SUBDIRECTORY(pmf-path-reconstruct)
     ADD_SUBDIRECTORY(pmf-path-derivatives)
 ENDIF(PMFLIB_COMPILE_FPMF)
