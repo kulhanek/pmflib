@@ -40,7 +40,7 @@ type PathType
     integer                     :: nbeads           ! number of beads
     real(PMFDP),pointer         :: alphas(:)        ! alphas
     real(PMFDP),pointer         :: points(:,:)      ! points along path - dimm (nbeads,ncvs) !!!!
-    logical,pointer             :: fixed(:)         ! point statuses - dimm (nbeads)
+    character,pointer           :: types(:)         ! point types - dimm (nbeads)
     real(PMFDP),pointer         :: minvalues(:)     ! minimum allowed CV values - dimm (ncvs)
     real(PMFDP),pointer         :: maxvalues(:)     ! maximum allowed CV values - dimm (ncvs)
     real(PMFDP),pointer         :: maxmoves(:)      ! maximum allowed CV value change - dimm (ncvs)
@@ -95,7 +95,8 @@ subroutine pmf_paths_load_path(prm_fin,path_item)
     type(PathType)                      :: incomplete_path_item
     ! -----------------------------------------------------------------------------
 
-    ! flexible   cv1 cv2 cv3 ... cvn
+    ! free       cv1 cv2 cv3 ... cvn
+    ! normal     cv1 cv2 cv3 ... cvn
     ! permanent  cv1 cv2 cv3 ... cvn
 
     write(PMF_OUT,'(/,a)') '=== [PATH] ====================================================================='
@@ -121,10 +122,6 @@ subroutine pmf_paths_load_path(prm_fin,path_item)
     user_nbeads = pmf_paths_get_nbeads(prm_fin)
     write(PMF_OUT,30) user_nbeads
 
-    if( user_nbeads .gt. path_item%nbeads ) then
-        call pmf_utils_exit(PMF_OUT,1,'More bead specifications than number provided via ''nbeads'' keyword!')
-    end if
-
     if( user_nbeads .eq. path_item%nbeads ) then
         write(PMF_OUT,40)
     else
@@ -138,7 +135,7 @@ subroutine pmf_paths_load_path(prm_fin,path_item)
              path_item%maxvalues(path_item%ncvs), &
              path_item%maxmoves(path_item%ncvs), &
              path_item%points(path_item%nbeads,path_item%ncvs), &
-             path_item%fixed(path_item%nbeads), &
+             path_item%types(path_item%nbeads), &
              path_item%alphas(path_item%nbeads), &
              path_item%ypp(path_item%nbeads,path_item%ncvs), &
              path_item%spos(path_item%ncvs), &
@@ -150,7 +147,7 @@ subroutine pmf_paths_load_path(prm_fin,path_item)
         call pmf_utils_exit(PMF_OUT,1,'Unable to allocate memory for the path!')
     end if
 
-    path_item%fixed(:) = .false.
+    path_item%types(:)    = 'N'
     path_item%driven_mode = .false.
 
     ! -----------------------------------------------
@@ -175,21 +172,21 @@ subroutine pmf_paths_load_path(prm_fin,path_item)
                  incomplete_path_item%maxvalues(path_item%ncvs), &
                  incomplete_path_item%maxmoves(path_item%ncvs), &
                  incomplete_path_item%points(user_nbeads,path_item%ncvs), &
-                 incomplete_path_item%fixed(user_nbeads), &
+                 incomplete_path_item%types(user_nbeads), &
                  incomplete_path_item%alphas(user_nbeads), &
                  incomplete_path_item%ypp(user_nbeads,path_item%ncvs), &
                  incomplete_path_item%spos(path_item%ncvs), &
                  stat=alloc_failed)
 
         if( alloc_failed .ne. 0 ) then
-            call pmf_utils_exit(PMF_OUT,1,'Unable to allocate memory for the intermediate path!')
+            call pmf_utils_exit(PMF_OUT,1,'Unable to allocate memory for the incomplete path!')
         end if
         incomplete_path_item%cvindxs(:) = path_item%cvindxs(:)
         incomplete_path_item%cvs(:) = path_item%cvs(:)
         incomplete_path_item%minvalues(:) = path_item%minvalues(:)
         incomplete_path_item%maxvalues(:) = path_item%maxvalues(:)
         incomplete_path_item%maxmoves(:) = path_item%maxmoves(:)
-        incomplete_path_item%fixed(:) = .false.
+        incomplete_path_item%types(:) = 'N'
 
         ! load user data
         call pmf_paths_load_beads(prm_fin,incomplete_path_item)
@@ -198,19 +195,19 @@ subroutine pmf_paths_load_path(prm_fin,path_item)
         call pmf_paths_optimize_alphas(incomplete_path_item)
 
         do b=2,incomplete_path_item%nbeads-1
-            if( incomplete_path_item%fixed(b) ) then
-                call pmf_utils_exit(PMF_OUT,1,'Permanent beads can be only at path ends!')
+            if( (incomplete_path_item%types(b) .eq. 'P') .or. (incomplete_path_item%types(b) .eq. 'F') ) then
+                call pmf_utils_exit(PMF_OUT,1,'For Incomplete path, permanent/free beads can be only at path terminals!')
             end if
         end do
 
         ! construct final path
         path_item%alphas(1) = 0.0
-        path_item%fixed(1) = incomplete_path_item%fixed(1)
+        path_item%types(1) = incomplete_path_item%types(1)
         do b=2,path_item%nbeads-1
             path_item%alphas(b) = real(b-1) / real(path_item%nbeads-1)
         end do
         path_item%alphas(path_item%nbeads) = 1.0
-        path_item%fixed(path_item%nbeads) = incomplete_path_item%fixed(incomplete_path_item%nbeads)
+        path_item%types(path_item%nbeads) = incomplete_path_item%types(incomplete_path_item%nbeads)
 
         do b=1,path_item%nbeads
             do i=1,path_item%ncvs
@@ -225,7 +222,7 @@ subroutine pmf_paths_load_path(prm_fin,path_item)
                  incomplete_path_item%maxvalues, &
                  incomplete_path_item%maxmoves, &
                  incomplete_path_item%points, &
-                 incomplete_path_item%fixed, &
+                 incomplete_path_item%types, &
                  incomplete_path_item%alphas, &
                  incomplete_path_item%ypp, &
                  incomplete_path_item%spos )
@@ -537,8 +534,9 @@ integer function pmf_paths_get_nbeads(prm_fin)
     res = prmfile_first_line(prm_fin)
     do while (prmfile_get_line(prm_fin,text))
         read(text,*) code
-        if( trim(code) .eq. 'permanent' ) pmf_paths_get_nbeads = pmf_paths_get_nbeads + 1
-        if( trim(code) .eq. 'flexible' )  pmf_paths_get_nbeads = pmf_paths_get_nbeads + 1
+        if( trim(code) .eq. 'permanent' )   pmf_paths_get_nbeads = pmf_paths_get_nbeads + 1
+        if( trim(code) .eq. 'free' )        pmf_paths_get_nbeads = pmf_paths_get_nbeads + 1
+        if( trim(code) .eq. 'normal' )      pmf_paths_get_nbeads = pmf_paths_get_nbeads + 1
     end do
 
 end function pmf_paths_get_nbeads
@@ -565,13 +563,18 @@ subroutine pmf_paths_load_beads(prm_fin,path_item)
     b = 1
     do while (prmfile_get_line(prm_fin,text))
         read(text,*) code
-        if( (trim(code) .eq. 'permanent') .or. (trim(code) .eq. 'flexible') ) then
-            path_item%fixed(b) = trim(code) .eq. 'permanent'
-            if(  path_item%fixed(b) ) then
-                write(PMF_OUT,25,ADVANCE='NO') b
-            else
-                write(PMF_OUT,20,ADVANCE='NO') b
-            end if
+        if( (trim(code) .eq. 'normal') .or. (trim(code) .eq. 'permanent') .or. (trim(code) .eq. 'free') ) then
+            select case(trim(code))
+                case('normal')
+                    path_item%types(b) = 'N'
+                    write(PMF_OUT,20,ADVANCE='NO') b
+                case('permanent')
+                    path_item%types(b) = 'P'
+                    write(PMF_OUT,25,ADVANCE='NO') b
+                case('free')
+                    path_item%types(b) = 'F'
+                    write(PMF_OUT,27,ADVANCE='NO') b
+            end select
             read(text,*,err=10,end=10) code, (path_item%points(b,i),i=1,path_item%ncvs)
             do i=1,path_item%ncvs
                 call CVList(path_item%cvindxs(i))%cv%conv_to_ivalue(path_item%points(b,i))
@@ -584,10 +587,12 @@ subroutine pmf_paths_load_beads(prm_fin,path_item)
 
     return
 
-10 call pmf_utils_exit(PMF_OUT,1,'The keyword ''permanent'' or ''flexible'' is not provided correctly!')
+10 call pmf_utils_exit(PMF_OUT,1,'The keyword ''permanent''/''normal''/''free'' is not provided correctly!')
 
-20 format(I6,   ' flexible     ')
+20 format(I6,   ' normal       ')
 25 format(I6,   ' permanent    ')
+27 format(I6,   ' free         ')
+
 30 format(1X,E14.6)
 
 end subroutine pmf_paths_load_beads
@@ -646,11 +651,14 @@ subroutine pmf_paths_write_path(iounit,path_item)
     write(iounit,*)
 
     do b=1,path_item%nbeads
-        if( path_item%fixed(b) ) then
-            write(iounit,160,ADVANCE='NO')
-        else
-            write(iounit,150,ADVANCE='NO')
-        end if
+        select case(path_item%types(b))
+            case('N')
+                write(iounit,150,ADVANCE='NO')
+            case('P')
+                write(iounit,160,ADVANCE='NO')
+            case('F')
+                write(iounit,170,ADVANCE='NO')
+        end select
         do i=1,path_item%ncvs
             write(iounit,60,ADVANCE='NO') path_item%points(b,i)
         end do
@@ -672,8 +680,10 @@ subroutine pmf_paths_write_path(iounit,path_item)
 120 format('min      ')
 130 format('max      ')
 140 format('maxmov   ')
-150 format('flexible ')
+
+150 format('normal   ')
 160 format('permanent')
+170 format('free     ')
 
 end subroutine pmf_paths_write_path
 
@@ -964,11 +974,14 @@ subroutine pmf_paths_print_beads(path_item)
     ! --------------------------------------------------------------------------
 
     do b=1,path_item%nbeads
-        if(  path_item%fixed(b) ) then
-            write(PMF_OUT,25,ADVANCE='NO') b,path_item%alphas(b)
-        else
-            write(PMF_OUT,20,ADVANCE='NO') b,path_item%alphas(b)
-        end if
+        select case(path_item%types(b))
+            case('N')
+                write(PMF_OUT,20,ADVANCE='NO') b,path_item%alphas(b)
+            case('P')
+                write(PMF_OUT,25,ADVANCE='NO') b,path_item%alphas(b)
+            case('F')
+                write(PMF_OUT,27,ADVANCE='NO') b,path_item%alphas(b)
+        end select
         do i=1,path_item%ncvs
             write(PMF_OUT,30,ADVANCE='NO') CVList(path_item%cvindxs(i))%cv%get_rvalue(path_item%points(b,i))
         end do
@@ -977,8 +990,10 @@ subroutine pmf_paths_print_beads(path_item)
 
     return
 
-20 format(I6,   ' F     ',1X,F6.3)
+20 format(I6,   ' N     ',1X,F6.3)
 25 format(I6,   ' P     ',1X,F6.3)
+27 format(I6,   ' F     ',1X,F6.3)
+
 30 format(1X,E14.6)
 
 end subroutine pmf_paths_print_beads
