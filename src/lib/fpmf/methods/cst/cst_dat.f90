@@ -188,6 +188,9 @@ type CVTypeBM
 
 end type CVTypeBM
 
+! name of control file, see cst_constraints_read_control_file
+character(PMF_MAX_PATH)     :: fcstctr
+
 ! global variables for blue moon -----------------------------------------------
 integer                     :: NumOfCONs        ! number of constraints
 integer                     :: NumOfMDCONs      ! number of MD constraints in collision

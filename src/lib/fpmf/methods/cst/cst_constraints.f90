@@ -139,31 +139,38 @@ subroutine cst_constraints_read_con(prm_fin,cst_item)
     ! constant mode by default
     cst_item%mode = 'C'
 
-    if( prmfile_get_real8_by_key(prm_fin,'change_to',cst_item%stopvalue) ) then
-        cst_item%mode = 'V'
-        write(PMF_OUT,100) cst_item%stopvalue, trim(cst_item%cv%get_ulabel())
-        call cst_item%cv%conv_to_ivalue(cst_item%stopvalue)
-    else if( prmfile_get_integer_by_key(prm_fin,'change_to_bin',ibin) ) then
-        cst_item%mode = 'V'
-        cst_item%stopvalue = (real(ibin,PMFDP)-0.5d0)*(cst_item%max_value -  cst_item%min_value)/real(cst_item%nbins) &
-                           + cst_item%min_value
-        write(PMF_OUT,101) cst_item%cv%get_rvalue(cst_item%stopvalue), trim(cst_item%cv%get_ulabel()), ibin
-    end if
+    if( prmfile_get_string_by_key(prm_fin,'control_file',fcstctr) ) then
+        cst_item%mode = 'I'
+        write(PMF_OUT,105) trim(fcstctr)
+        call cst_constraints_read_control_file(cst_item)
+    else
 
-    if( prmfile_get_real8_by_key(prm_fin,'increment',cst_item%stopvalue) ) then
-        if( cst_item%mode .eq. 'V' ) then
-            call pmf_utils_exit(PMF_OUT,1,'change_to/change_to_bin and increment keywords cannot be used together!')
+        if( prmfile_get_real8_by_key(prm_fin,'change_to',cst_item%stopvalue) ) then
+            cst_item%mode = 'V'
+            write(PMF_OUT,100) cst_item%stopvalue, trim(cst_item%cv%get_ulabel())
+            call cst_item%cv%conv_to_ivalue(cst_item%stopvalue)
+        else if( prmfile_get_integer_by_key(prm_fin,'change_to_bin',ibin) ) then
+            cst_item%mode = 'V'
+            cst_item%stopvalue = (real(ibin,PMFDP)-0.5d0)*(cst_item%max_value -  cst_item%min_value)/real(cst_item%nbins) &
+                            + cst_item%min_value
+            write(PMF_OUT,101) cst_item%cv%get_rvalue(cst_item%stopvalue), trim(cst_item%cv%get_ulabel()), ibin
         end if
-        cst_item%mode = 'I'
-        write(PMF_OUT,110) cst_item%stopvalue, trim(cst_item%cv%get_ulabel())
-        call cst_item%cv%conv_to_ivalue(cst_item%stopvalue)
-    else if( prmfile_get_integer_by_key(prm_fin,'increment_by_bins',ibin) ) then
-        if( cst_item%mode .eq. 'V' ) then
-            call pmf_utils_exit(PMF_OUT,1,'change_to/change_to_bin and increment_by_bins keywords cannot be used together!')
+
+        if( prmfile_get_real8_by_key(prm_fin,'increment',cst_item%stopvalue) ) then
+            if( cst_item%mode .eq. 'V' ) then
+                call pmf_utils_exit(PMF_OUT,1,'change_to/change_to_bin and increment keywords cannot be used together!')
+            end if
+            cst_item%mode = 'I'
+            write(PMF_OUT,110) cst_item%stopvalue, trim(cst_item%cv%get_ulabel())
+            call cst_item%cv%conv_to_ivalue(cst_item%stopvalue)
+        else if( prmfile_get_integer_by_key(prm_fin,'increment_by_bins',ibin) ) then
+            if( cst_item%mode .eq. 'V' ) then
+                call pmf_utils_exit(PMF_OUT,1,'change_to/change_to_bin and increment_by_bins keywords cannot be used together!')
+            end if
+            cst_item%stopvalue = real(ibin,PMFDP)*(cst_item%max_value -  cst_item%min_value)/real(cst_item%nbins)
+            cst_item%mode = 'I'
+            write(PMF_OUT,111) cst_item%cv%get_rvalue(cst_item%stopvalue), trim(cst_item%cv%get_ulabel()), ibin
         end if
-        cst_item%stopvalue = real(ibin,PMFDP)*(cst_item%max_value -  cst_item%min_value)/real(cst_item%nbins)
-        cst_item%mode = 'I'
-        write(PMF_OUT,111) cst_item%cv%get_rvalue(cst_item%stopvalue), trim(cst_item%cv%get_ulabel()), ibin
     end if
 
     return
@@ -180,6 +187,8 @@ subroutine cst_constraints_read_con(prm_fin,cst_item)
 101 format('   ** Change to value    :',E16.7,' [',A,'] at bin: ', I2)
 110 format('   ** Increment value    :',E16.7,' [',A,']')
 111 format('   ** Increment value    :',E16.7,' [',A,'] by ', I2, ' bins')
+
+105 format('   ** Control file       : ',A)
 
 end subroutine cst_constraints_read_con
 
