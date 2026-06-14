@@ -690,6 +690,9 @@ subroutine cst_icf_calculate_zmatinv
                              '[CST] Matrix inversion failed in cst_icf_calculate_zmatinv!')
         end if
     else
+        if( abs(zmat(1,1)) .lt. eps_zmat ) then
+            call pmf_utils_exit(PMF_OUT,1,'[CST] Singular one-dimensional Z matrix in cst_icf_calculate_zmatinv!')
+        end if
         zmat(1,1) = 1.0d0/zmat(1,1)
     end if
 

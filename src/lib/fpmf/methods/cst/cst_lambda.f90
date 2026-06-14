@@ -145,6 +145,9 @@ subroutine cst_lambda_calculate_v1
             call pmf_utils_exit(PMF_OUT,1,'[CST] Solution of LSE failed in cst_lambda_calculate_v1!')
         end if
      else
+        if( abs(zmat(1,1)) .lt. eps_zmat ) then
+            call pmf_utils_exit(PMF_OUT,1,'[CST] Singular one-dimensional Z matrix in cst_lambda_calculate_v1!')
+        end if
         cv(1) = cv(1) / zmat(1,1)
      end if
 

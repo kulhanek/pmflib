@@ -64,6 +64,7 @@ subroutine cst_restart_read
         ! open restart file ----------------------------------------------------
         call pmf_utils_open(CST_RST,fcstrst,'O')
         call cst_accu_read(CST_RST)
+        faccurst = -1
         close(CST_RST)
     else
         write(CST_OUT,30)

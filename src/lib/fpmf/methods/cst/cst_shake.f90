@@ -126,6 +126,9 @@ subroutine cst_shake_calculate_fm
                                  '[CST] Solution of LE failed in cst_shake_calculate_fm!')
             end if
         else
+            if( abs(zmat(1,1)) .lt. eps_zmat ) then
+                call pmf_utils_exit(PMF_OUT,1,'[CST] Singular one-dimensional Z matrix in cst_shake_calculate_fm!')
+            end if
             cv(1)=cv(1)/zmat(1,1)
         end if
 
@@ -213,6 +216,9 @@ subroutine cst_shake_calculate_mm
                                  '[CST] Solution of LE failed in cst_shake_calculate_mm!')
             end if
         else
+            if( abs(zmat(1,1)) .lt. eps_zmat ) then
+                call pmf_utils_exit(PMF_OUT,1,'[CST] Singular one-dimensional Z matrix in cst_shake_calculate_mm!')
+            end if
             cv(1)=cv(1)/zmat(1,1)
         end if
 
@@ -300,6 +306,9 @@ subroutine cst_shake_calculate_nm
                                  '[CST] LL linear equations failed in cst_shake_calculate_nm!')
             end if
         else
+            if( abs(zmat(1,1)) .lt. eps_zmat ) then
+                call pmf_utils_exit(PMF_OUT,1,'[CST] Singular one-dimensional Z matrix in cst_shake_calculate_nm!')
+            end if
             cv(1)=cv(1)/zmat(1,1)
         end if
 
@@ -387,6 +396,9 @@ subroutine cst_shake_calculate_nm_lu
                                  '[CST] Solution of LE failed in cst_shake_calculate_nm_lu!')
             end if
         else
+            if( abs(zmat(1,1)) .lt. eps_zmat ) then
+                call pmf_utils_exit(PMF_OUT,1,'[CST] Singular one-dimensional Z matrix in cst_shake_calculate_nm_lu!')
+            end if
             cv(1)=cv(1)/zmat(1,1)
         end if
 
@@ -463,6 +475,9 @@ subroutine cst_shake_calculate_nm_svd
                                  '[CST] SVD decomposition failed in cst_calculate_lambda_nm_svd!')
             end if
         else
+            if( abs(zmat(1,1)) .lt. eps_zmat ) then
+                call pmf_utils_exit(PMF_OUT,1,'[CST] Singular one-dimensional Z matrix in cst_shake_calculate_nm_svd!')
+            end if
             cv(1)=cv(1)/zmat(1,1)
         end if
 

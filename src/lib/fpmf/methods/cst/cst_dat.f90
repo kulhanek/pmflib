@@ -255,6 +255,8 @@ integer,allocatable         :: indx(:)
 real(PMFDP),allocatable     :: zmat(:,:)        ! Z-matrix - all constraints
 real(PMFDP),allocatable     :: zmats(:,:)       ! Z-matrix - MD constraints
 
+real(PMFDP)                 :: eps_zmat = 1e-11
+
 ! history buffers ---------------------------------------------------------------
 integer                     :: hist_len
 integer                     :: hist_fidx
