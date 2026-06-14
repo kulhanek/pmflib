@@ -304,203 +304,348 @@ subroutine cst_accu_read(iounit)
         if( pmf_accu_is_header_key(keyline) ) then
             call pmf_accu_read_header(cstaccu,iounit,'CST',keyline)
         else
+
             select case( pmf_accu_get_key(keyline) )
             ! ------------------------------------
                 case('NSAMPLES')
                     call pmf_accu_read_rbuf_B(cstaccu,iounit,keyline,rbuf_B)
-                    nsamples = int(rbuf_B(glbidx))
-!            ! ------------------------------------
-!                case('MLAMBDA')
-!                    call pmf_accu_read_rbuf_M(cstaccu,iounit,keyline,rbuf_M)
-!                    do i=1,cstaccu%tot_cvs
-!                        mlambda(i) = rbuf_M(i,glbidx)
-!                    end do
-!            ! ------------------------------------
-!                case('M2LAMBDA')
-!                    call pmf_accu_read_rbuf_M(cstaccu,iounit,keyline,rbuf_M)
-!                    do i=1,cstaccu%tot_cvs
-!                        m2lambda(i) = rbuf_M(i,glbidx)
-!                    end do
-!            ! ------------------------------------
-!                case('MISRZ')
-!                    call pmf_accu_read_rbuf_B(cstaccu,iounit,keyline,rbuf_B)
-!                    misrz = rbuf_B(glbidx)
-!            ! ------------------------------------
-!                case('M2ISRZ')
-!                    call pmf_accu_read_rbuf_B(cstaccu,iounit,keyline,rbuf_B)
-!                    m2isrz = rbuf_B(glbidx)
-!
-!! ------------------------------------
-!
-!                case('NTDS')
-!                    call pmf_accu_read_rbuf_B(cstaccu,iounit,keyline,rbuf_B)
-!                    if( fenthalpy .or. ftdscalc ) then
-!                        nsamples = int(rbuf_B(glbidx))
-!                    end if
-!
-!! ------------------------------------
-!
-!                case('MEINT')
-!                    call pmf_accu_read_rbuf_B(cstaccu,iounit,keyline,rbuf_B)
-!                    if( fenthalpy .or. (ftdscalc .and. fentdecomp) ) then
-!                        meint = rbuf_B(glbidx)
-!                    end if
-!            ! ------------------------------------
-!                case('M2EINT')
-!                    call pmf_accu_read_rbuf_B(cstaccu,iounit,keyline,rbuf_B)
-!                    if( fenthalpy .or. (ftdscalc .and. fentdecomp) ) then
-!                        m2eint = rbuf_B(glbidx)
-!                    end if
-!            ! ------------------------------------
-!                case('MEPOT')
-!                    call pmf_accu_read_rbuf_B(cstaccu,iounit,keyline,rbuf_B)
-!                    if( fenthalpy .or. (ftdscalc .and. fentdecomp) ) then
-!                        mepot = rbuf_B(glbidx)
-!                    end if
-!            ! ------------------------------------
-!                case('M2EPOT')
-!                    call pmf_accu_read_rbuf_B(cstaccu,iounit,keyline,rbuf_B)
-!                    if( fenthalpy .or. (ftdscalc .and. fentdecomp) ) then
-!                        m2epot = rbuf_B(glbidx)
-!                    end if
-!            ! ------------------------------------
-!                case('MEKIN')
-!                    call pmf_accu_read_rbuf_B(cstaccu,iounit,keyline,rbuf_B)
-!                    if( fenthalpy .or. (ftdscalc .and. fentdecomp) ) then
-!                        mekin = rbuf_B(glbidx)
-!                    end if
-!            ! ------------------------------------
-!                case('M2EKIN')
-!                    call pmf_accu_read_rbuf_B(cstaccu,iounit,keyline,rbuf_B)
-!                    if( fenthalpy .or. (ftdscalc .and. fentdecomp) ) then
-!                        m2ekin = rbuf_B(glbidx)
-!                    end if
-!            ! ------------------------------------
-!                case('MERST')
-!                    call pmf_accu_read_rbuf_B(cstaccu,iounit,keyline,rbuf_B)
-!                    if( fenthalpy .or. (ftdscalc .and. fentdecomp) ) then
-!                        merst = rbuf_B(glbidx)
-!                    end if
-!            ! ------------------------------------
-!                case('M2ERST')
-!                    call pmf_accu_read_rbuf_B(cstaccu,iounit,keyline,rbuf_B)
-!                    if( fenthalpy .or. (ftdscalc .and. fentdecomp) ) then
-!                        m2erst = rbuf_B(glbidx)
-!                    end if
-!
-!! ------------------------------------
-!
-!                case('MICFP')
-!                    call pmf_accu_read_rbuf_M(cstaccu,iounit,keyline,rbuf_M)
-!                    if( fenthalpy .and. fenthalpy_der ) then
-!                        do i=1,cstaccu%tot_cvs
-!                            micfp(i) = rbuf_M(i,glbidx)
-!                        end do
-!                    end if
-!            ! ------------------------------------
-!                case('M2ICFP')
-!                    call pmf_accu_read_rbuf_M(cstaccu,iounit,keyline,rbuf_M)
-!                    if( fenthalpy .and. fenthalpy_der ) then
-!                        do i=1,cstaccu%tot_cvs
-!                            m2icfp(i) = rbuf_M(i,glbidx)
-!                        end do
-!                    end if
-!           ! ------------------------------------
-!                case('C11PP')
-!                    call pmf_accu_read_rbuf_M(cstaccu,iounit,keyline,rbuf_M)
-!                    if( fenthalpy .and. fenthalpy_der ) then
-!                        do i=1,cstaccu%tot_cvs
-!                            c11pp(i) = rbuf_M(i,glbidx)
-!                        end do
-!                    end if
-!
-!! ------------------------------------
-!
-!                case('METOT')
-!                    call pmf_accu_read_rbuf_B(cstaccu,iounit,keyline,rbuf_B)
-!                    if( ftdscalc ) then
-!                        metot = rbuf_B(glbidx)
-!                    end if
-!            ! ------------------------------------
-!                case('M2ETOT')
-!                    call pmf_accu_read_rbuf_B(cstaccu,iounit,keyline,rbuf_B)
-!                    if( ftdscalc ) then
-!                        m2etot = rbuf_B(glbidx)
-!                    end if
-!           ! ------------------------------------
-!                case('MPP')
-!                    call pmf_accu_read_rbuf_M(cstaccu,iounit,keyline,rbuf_M)
-!                    if( ftdscalc .and. fentdecomp ) then
-!                        do i=1,cstaccu%tot_cvs
-!                            mpp(i) = rbuf_M(i,glbidx)
-!                        end do
-!                    end if
-!           ! ------------------------------------
-!                case('M2PP')
-!                    call pmf_accu_read_rbuf_M(cstaccu,iounit,keyline,rbuf_M)
-!                    if( ftdscalc .and. fentdecomp ) then
-!                        do i=1,cstaccu%tot_cvs
-!                            m2pp(i) = rbuf_M(i,glbidx)
-!                        end do
-!                    end if
-!           ! ------------------------------------
-!                case('MPN')
-!                    call pmf_accu_read_rbuf_M(cstaccu,iounit,keyline,rbuf_M)
-!                    if( ftdscalc .and. fentdecomp ) then
-!                        do i=1,cstaccu%tot_cvs
-!                            mpn(i) = rbuf_M(i,glbidx)
-!                        end do
-!                    end if
-!           ! ------------------------------------
-!                case('M2PN')
-!                    call pmf_accu_read_rbuf_M(cstaccu,iounit,keyline,rbuf_M)
-!                    if( ftdscalc .and. fentdecomp ) then
-!                        do i=1,cstaccu%tot_cvs
-!                            m2pn(i) = rbuf_M(i,glbidx)
-!                        end do
-!                    end if
-!           ! ------------------------------------
-!                case('MHICF')
-!                    call pmf_accu_read_rbuf_M(cstaccu,iounit,keyline,rbuf_M)
-!                    if( ftdscalc .and. fentdecomp ) then
-!                        do i=1,cstaccu%tot_cvs
-!                            mhicf(i) = rbuf_M(i,glbidx)
-!                        end do
-!                    end if
-!           ! ------------------------------------
-!                case('M2HICF')
-!                    call pmf_accu_read_rbuf_M(cstaccu,iounit,keyline,rbuf_M)
-!                    if( ftdscalc .and. fentdecomp ) then
-!                        do i=1,cstaccu%tot_cvs
-!                            m2hicf(i) = rbuf_M(i,glbidx)
-!                        end do
-!                    end if
-!
-!! ------------------------------------
-!
-!                case('C11HP')
-!                    call pmf_accu_read_rbuf_M(cstaccu,iounit,keyline,rbuf_M)
-!                    if( ftdscalc .and. fentdecomp ) then
-!                        do i=1,cstaccu%tot_cvs
-!                            c11hp(i) = rbuf_M(i,glbidx)
-!                        end do
-!                    end if
-!           ! ------------------------------------
-!                case('C11HR')
-!                    call pmf_accu_read_rbuf_M(cstaccu,iounit,keyline,rbuf_M)
-!                    if( ftdscalc .and. fentdecomp ) then
-!                        do i=1,cstaccu%tot_cvs
-!                            c11hr(i) = rbuf_M(i,glbidx)
-!                        end do
-!                    end if
-!           ! ------------------------------------
-!                case('C11HK')
-!                    call pmf_accu_read_rbuf_M(cstaccu,iounit,keyline,rbuf_M)
-!                    if( ftdscalc .and. fentdecomp ) then
-!                        do i=1,cstaccu%tot_cvs
-!                            c11hk(i) = rbuf_M(i,glbidx)
-!                        end do
-!                    end if
+                    nsamples = rbuf_B(glbidx)
+           ! ------------------------------------
+               case('MLAMBDA')
+                   call pmf_accu_read_rbuf_M(cstaccu,iounit,keyline,rbuf_M)
+                   do i=1,cstaccu%tot_cvs
+                       mlambda(i) = rbuf_M(i,glbidx)
+                   end do
+           ! ------------------------------------
+               case('M2LAMBDA')
+                   call pmf_accu_read_rbuf_M(cstaccu,iounit,keyline,rbuf_M)
+                   do i=1,cstaccu%tot_cvs
+                       m2lambda(i) = rbuf_M(i,glbidx)
+                   end do
+           ! ------------------------------------
+               case('MFW')
+                   call pmf_accu_read_rbuf_B(cstaccu,iounit,keyline,rbuf_B)
+                   mfw = rbuf_B(glbidx)
+           ! ------------------------------------
+               case('M2FW')
+                   call pmf_accu_read_rbuf_B(cstaccu,iounit,keyline,rbuf_B)
+                   m2fw = rbuf_B(glbidx)
+
+! ------------------------------------    
+! ------------------------------------
+
+               case('NTDS')
+                   call pmf_accu_read_rbuf_B(cstaccu,iounit,keyline,rbuf_B)
+                   if( fintcalc .or. ftdscalc ) then
+                       ntds = rbuf_B(glbidx)
+                   end if
+
+               case('FWSUM')
+                   call pmf_accu_read_rbuf_B(cstaccu,iounit,keyline,rbuf_B)
+                   if( fintcalc .or. ftdscalc ) then
+                       fwsum = rbuf_B(glbidx)
+                   end if
+
+               case('FWSUM2')
+                   call pmf_accu_read_rbuf_B(cstaccu,iounit,keyline,rbuf_B)
+                   if( fintcalc .or. ftdscalc ) then
+                       fwsum2 = rbuf_B(glbidx)
+                   end if
+
+               case('MFWTDS')
+                   call pmf_accu_read_rbuf_B(cstaccu,iounit,keyline,rbuf_B)
+                   if( fintcalc .or. ftdscalc ) then
+                       mfwtds = rbuf_B(glbidx)
+                   end if
+
+               case('M2FWTDS')
+                   call pmf_accu_read_rbuf_B(cstaccu,iounit,keyline,rbuf_B)
+                   if( fintcalc .or. ftdscalc ) then
+                       m2fwtds = rbuf_B(glbidx)
+                   end if
+
+! ------------------------------------    
+! ------------------------------------
+
+               case('MLAMTDS')
+                   call pmf_accu_read_rbuf_B(cstaccu,iounit,keyline,rbuf_B)
+                   if( ftdscalc ) then
+                       mlamtds = rbuf_B(glbidx)
+                   end if
+           ! ------------------------------------
+               case('M2LAMTDS')
+                   call pmf_accu_read_rbuf_B(cstaccu,iounit,keyline,rbuf_B)
+                   if( ftdscalc ) then
+                       m2lamtds = rbuf_B(glbidx)
+                   end if
+           ! ------------------------------------
+               case('MLAMTDSFW')
+                   call pmf_accu_read_rbuf_B(cstaccu,iounit,keyline,rbuf_B)
+                   if( ftdscalc ) then
+                       mlamtdsfw = rbuf_B(glbidx)
+                   end if
+           ! ------------------------------------
+               case('M2LAMTDSFW')
+                   call pmf_accu_read_rbuf_B(cstaccu,iounit,keyline,rbuf_B)
+                   if( ftdscalc ) then
+                       m2lamtdsfw = rbuf_B(glbidx)
+                   end if
+           ! ------------------------------------
+               case('C11LT')
+                   call pmf_accu_read_rbuf_M(cstaccu,iounit,keyline,rbuf_M)
+                   if( ftdscalc ) then
+                       c11lt(:) = rbuf_M(:,glbidx)
+                   end if
+           ! ------------------------------------
+               case('C11LTFW')
+                   call pmf_accu_read_rbuf_M(cstaccu,iounit,keyline,rbuf_M)
+                   if( ftdscalc ) then
+                       c11ltfw(:) = rbuf_M(:,glbidx)
+                   end if
+           ! ------------------------------------
+               case('C11ZH')
+                   call pmf_accu_read_rbuf_B(cstaccu,iounit,keyline,rbuf_B)
+                   if( ftdscalc ) then
+                       c11zh = rbuf_B(glbidx)
+                   end if
+
+! ------------------------------------    
+! ------------------------------------
+
+               case('C11LI')
+                   call pmf_accu_read_rbuf_M(cstaccu,iounit,keyline,rbuf_M)
+                   if( ftdscalc .and. ftds_decomp ) then
+                       c11li(:) = rbuf_M(:,glbidx)
+                   end if
+           ! ------------------------------------
+               case('C11LP')
+                   call pmf_accu_read_rbuf_M(cstaccu,iounit,keyline,rbuf_M)
+                   if( ftdscalc .and. ftds_decomp  ) then
+                       c11lp(:) = rbuf_M(:,glbidx)
+                   end if
+           ! ------------------------------------
+               case('C11LR')
+                   call pmf_accu_read_rbuf_M(cstaccu,iounit,keyline,rbuf_M)
+                   if( ftdscalc .and. ftds_decomp  ) then
+                       c11lr(:) = rbuf_M(:,glbidx)
+                   end if
+           ! ------------------------------------
+               case('C11LK')
+                   call pmf_accu_read_rbuf_M(cstaccu,iounit,keyline,rbuf_M)
+                   if( ftdscalc .and. ftds_decomp  ) then
+                       c11lk(:) = rbuf_M(:,glbidx)
+                   end if
+
+! ------------------------------------    
+! ------------------------------------
+
+               case('METOT')
+                   call pmf_accu_read_rbuf_B(cstaccu,iounit,keyline,rbuf_B)
+                   if( ftdscalc .or. fintcalc ) then
+                       metot = rbuf_B(glbidx)
+                   end if
+           ! ------------------------------------
+               case('M2ETOT')
+                   call pmf_accu_read_rbuf_B(cstaccu,iounit,keyline,rbuf_B)
+                   if( ftdscalc .or. fintcalc ) then
+                       m2etot = rbuf_B(glbidx)
+                   end if
+           ! ------------------------------------
+               case('METOTFW')
+                   call pmf_accu_read_rbuf_B(cstaccu,iounit,keyline,rbuf_B)
+                   if( ftdscalc .or. fintcalc ) then
+                       metotfw = rbuf_B(glbidx)
+                   end if
+           ! ------------------------------------
+               case('M2ETOTFW')
+                   call pmf_accu_read_rbuf_B(cstaccu,iounit,keyline,rbuf_B)
+                   if( ftdscalc .or. fintcalc ) then
+                       m2etotfw = rbuf_B(glbidx)
+                   end if
+
+! ------------------------------------    
+! ------------------------------------
+
+               case('MEINT')
+                   call pmf_accu_read_rbuf_B(cstaccu,iounit,keyline,rbuf_B)
+                   if( (ftdscalc .and. ftds_decomp) .or. fintcalc ) then
+                        meint = rbuf_B(glbidx)
+                   end if
+            ! ------------------------------------
+               case('M2EINT')
+                   call pmf_accu_read_rbuf_B(cstaccu,iounit,keyline,rbuf_B)
+                   if( (ftdscalc .and. ftds_decomp) .or. fintcalc ) then
+                        m2eint = rbuf_B(glbidx)
+                   end if
+            ! ------------------------------------
+               case('MEINTFW')
+                   call pmf_accu_read_rbuf_B(cstaccu,iounit,keyline,rbuf_B)
+                   if( (ftdscalc .and. ftds_decomp) .or. fintcalc ) then
+                        meintfw = rbuf_B(glbidx)
+                   end if
+            ! ------------------------------------
+               case('M2EINTFW')
+                   call pmf_accu_read_rbuf_B(cstaccu,iounit,keyline,rbuf_B)
+                   if( (ftdscalc .and. ftds_decomp) .or. fintcalc ) then
+                        m2eintfw = rbuf_B(glbidx)
+                   end if
+
+! ------------------------------------    
+! ------------------------------------
+
+                case('MEPOT')
+                    call pmf_accu_read_rbuf_B(cstaccu,iounit,keyline,rbuf_B)
+                    if( ftdscalc .and. ftds_decomp ) then
+                        mepot = rbuf_B(glbidx)
+                    end if
+            ! ------------------------------------
+                case('M2EPOT')
+                    call pmf_accu_read_rbuf_B(cstaccu,iounit,keyline,rbuf_B)
+                    if( ftdscalc .and. ftds_decomp ) then
+                        m2epot = rbuf_B(glbidx)
+                    end if
+            ! ------------------------------------
+                case('MERST')
+                    call pmf_accu_read_rbuf_B(cstaccu,iounit,keyline,rbuf_B)
+                    if( ftdscalc .and. ftds_decomp ) then
+                        merst = rbuf_B(glbidx)
+                    end if
+            ! ------------------------------------
+                case('M2ERST')
+                    call pmf_accu_read_rbuf_B(cstaccu,iounit,keyline,rbuf_B)
+                    if( ftdscalc .and. ftds_decomp ) then
+                        m2erst = rbuf_B(glbidx)
+                    end if
+            ! ------------------------------------
+                case('MEKIN')
+                    call pmf_accu_read_rbuf_B(cstaccu,iounit,keyline,rbuf_B)
+                    if( ftdscalc .and. ftds_decomp ) then
+                        mekin = rbuf_B(glbidx)
+                    end if
+            ! ------------------------------------
+                case('M2EKIN')
+                    call pmf_accu_read_rbuf_B(cstaccu,iounit,keyline,rbuf_B)
+                    if( ftdscalc .and. ftds_decomp ) then
+                        m2ekin = rbuf_B(glbidx)
+                    end if
+
+! ------------------------------------    
+! ------------------------------------
+
+                case('MEPOTFW')
+                    call pmf_accu_read_rbuf_B(cstaccu,iounit,keyline,rbuf_B)
+                    if( ftdscalc .and. ftds_decomp ) then
+                        mepotfw = rbuf_B(glbidx)
+                    end if
+            ! ------------------------------------
+                case('M2EPOTFW')
+                    call pmf_accu_read_rbuf_B(cstaccu,iounit,keyline,rbuf_B)
+                    if( ftdscalc .and. ftds_decomp ) then
+                        m2epotfw = rbuf_B(glbidx)
+                    end if
+            ! ------------------------------------
+                case('MERSTFW')
+                    call pmf_accu_read_rbuf_B(cstaccu,iounit,keyline,rbuf_B)
+                    if( ftdscalc .and. ftds_decomp ) then
+                        merstfw = rbuf_B(glbidx)
+                    end if
+            ! ------------------------------------
+                case('M2ERSTFW')
+                    call pmf_accu_read_rbuf_B(cstaccu,iounit,keyline,rbuf_B)
+                    if( ftdscalc .and. ftds_decomp ) then
+                        m2erstfw = rbuf_B(glbidx)
+                    end if
+            ! ------------------------------------
+                case('MEKINFW')
+                    call pmf_accu_read_rbuf_B(cstaccu,iounit,keyline,rbuf_B)
+                    if( ftdscalc .and. ftds_decomp ) then
+                        mekinfw = rbuf_B(glbidx)
+                    end if
+            ! ------------------------------------
+                case('M2EKINFW')
+                    call pmf_accu_read_rbuf_B(cstaccu,iounit,keyline,rbuf_B)
+                    if( ftdscalc .and. ftds_decomp ) then
+                        m2ekinfw = rbuf_B(glbidx)
+                    end if
+
+! ------------------------------------    
+! ------------------------------------
+
+                case('MICF')
+                    call pmf_accu_read_rbuf_M(cstaccu,iounit,keyline,rbuf_M)
+                    if( fintcalc .and. fint_der ) then
+                        micf(:) = rbuf_M(:,glbidx)
+                    end if
+            ! ------------------------------------
+                case('M2ICF')
+                    call pmf_accu_read_rbuf_M(cstaccu,iounit,keyline,rbuf_M)
+                    if( fintcalc .and. fint_der ) then
+                        m2icf(:) = rbuf_M(:,glbidx)
+                    end if
+            ! ------------------------------------
+                case('MICFFW')
+                    call pmf_accu_read_rbuf_M(cstaccu,iounit,keyline,rbuf_M)
+                    if( fintcalc .and. fint_der ) then
+                        micffw(:) = rbuf_M(:,glbidx)
+                    end if
+            ! ------------------------------------
+                case('M2ICFFW')
+                    call pmf_accu_read_rbuf_M(cstaccu,iounit,keyline,rbuf_M)
+                    if( fintcalc .and. fint_der ) then
+                        m2icffw(:) = rbuf_M(:,glbidx)
+                    end if
+            ! ------------------------------------
+                case('MICFPFW')
+                    call pmf_accu_read_rbuf_M(cstaccu,iounit,keyline,rbuf_M)
+                    if( fintcalc .and. fint_der ) then
+                        micfpfw(:) = rbuf_M(:,glbidx)
+                    end if
+            ! ------------------------------------
+                case('M2ICFPFW')
+                    call pmf_accu_read_rbuf_M(cstaccu,iounit,keyline,rbuf_M)
+                    if( fintcalc .and. fint_der ) then
+                        m2icfpfw(:) = rbuf_M(:,glbidx)
+                    end if
+            ! ------------------------------------
+                case('MICFKFW')
+                    call pmf_accu_read_rbuf_M(cstaccu,iounit,keyline,rbuf_M)
+                    if( fintcalc .and. fint_der ) then
+                        micfkfw(:) = rbuf_M(:,glbidx)
+                    end if
+            ! ------------------------------------
+                case('M2ICFKFW')
+                    call pmf_accu_read_rbuf_M(cstaccu,iounit,keyline,rbuf_M)
+                    if( fintcalc .and. fint_der ) then
+                        m2icfkfw(:) = rbuf_M(:,glbidx)
+                    end if
+
+! ------------------------------------    
+! ------------------------------------
+
+                case('C11II')
+                    call pmf_accu_read_rbuf_M(cstaccu,iounit,keyline,rbuf_M)
+                    if( fintcalc .and. fint_der  ) then
+                        c11ii(:) = rbuf_M(:,glbidx)
+                    end if
+            ! ------------------------------------
+                case('C11IIFW')
+                    call pmf_accu_read_rbuf_M(cstaccu,iounit,keyline,rbuf_M)
+                    if( fintcalc .and. fint_der  ) then
+                        c11iifw(:) = rbuf_M(:,glbidx)
+                    end if
+            ! ------------------------------------
+                case('C11PIFW')
+                    call pmf_accu_read_rbuf_M(cstaccu,iounit,keyline,rbuf_M)
+                    if( fintcalc .and. fint_der  ) then
+                        c11pifw(:) = rbuf_M(:,glbidx)
+                    end if
+            ! ------------------------------------
+                case('C11KIFW')
+                    call pmf_accu_read_rbuf_M(cstaccu,iounit,keyline,rbuf_M)
+                    if( fintcalc .and. fint_der  ) then
+                        c11kifw(:) = rbuf_M(:,glbidx)
+                    end if
+               
             ! ------------------------------------
                 case default
                     call pmf_accu_skip_section(iounit,keyline,MTD_OUT)
