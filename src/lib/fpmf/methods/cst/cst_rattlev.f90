@@ -97,6 +97,9 @@ subroutine cst_rattlev_calculate_ma
  ! solve LE
      if( NumOfAllCONs .gt. 1 ) then
         indx(:) = 0
+        do i=1,NumOfAllCONs
+            zmat(i,i) = zmat(i,i) + frattle_fdamp
+        end do
         call dgetrf(NumOfAllCONs,NumOfAllCONs,zmat,NumOfAllCONs,indx,info)
         if( info .ne. 0 ) then
             call pmf_utils_exit(PMF_OUT,1,'[CST] LU decomposition failed in cst_rattlev_calculate_ma!')
