@@ -426,7 +426,7 @@ subroutine cst_shake_calculate_nm_lu
 
     if( fsiter .eq. fmaxiter ) then
         call pmf_utils_exit(PMF_OUT,1, &
-                         '[CST] Maximum number of iterations in lambda calculation exceeded in cst_shake_calculate_nm!')
+                         '[CST] Maximum number of iterations in lambda calculation exceeded in cst_shake_calculate_nm_lu!')
     end if
 
 ! update stats about iterations
@@ -489,7 +489,8 @@ subroutine cst_shake_calculate_nm_svd
         ! calculate new position vector
         do i=1,NumOfAllCONs
             ci = CONList(i)%cvindx
-            do k=1,NumOfLAtoms
+            do ki=1,NumOfLAtoms
+                k = CONList(i)%cv%lindexes(ki)
                 CrdP(:,k) = CrdP(:,k) - MassInv(k)*cv(i)*CVContext%CVsDrvs(:,k,ci)
             end do
         end do
@@ -664,7 +665,7 @@ subroutine cst_shake_calculate_diwg
 
     if( fsiter .eq. fmaxiter ) then
         call pmf_utils_exit(PMF_OUT,1, &
-                         '[CST] Maximum number of iterations in lambda calculation exceeded in cst_shake_calculate_di!')
+                         '[CST] Maximum number of iterations in lambda calculation exceeded in cst_shake_calculate_diwg!')
     end if
 
     initialized_lambda = .true.

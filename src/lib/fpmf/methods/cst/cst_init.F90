@@ -822,21 +822,13 @@ subroutine cst_init_core
 
 ! allocate arrays for lambda calculation
     select case(fintalg)
-        case(IA_LEAP_FROG) ! FIXME
+        case(IA_LEAP_FROG)
             allocate(lambdax(NumOfAllCONs), stat= alloc_failed )
             if( alloc_failed .ne. 0 ) then
                 call pmf_utils_exit(PMF_OUT,1,&
                          '[CST] Unable to allocate memory for arrays used in lambda calculation!')
             end if
             lambdax(:) = 0.0d0
-        case(IA_VEL_VERLET)
-            allocate(lambdax(NumOfAllCONs), lambdav(NumOfAllCONs), stat= alloc_failed )
-            if( alloc_failed .ne. 0 ) then
-                call pmf_utils_exit(PMF_OUT,1,&
-                         '[CST] Unable to allocate memory for arrays used in lambda calculation!')
-            end if
-            lambdax(:) = 0.0d0
-            lambdav(:) = 0.0d0
         case(IA_LF_MIDDLE)
             allocate(lambdax(NumOfAllCONs), lambdav(NumOfAllCONs), stat= alloc_failed )
             if( alloc_failed .ne. 0 ) then

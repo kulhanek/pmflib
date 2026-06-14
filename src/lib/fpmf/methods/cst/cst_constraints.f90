@@ -352,8 +352,13 @@ subroutine cst_constraints_cst_increment(cst_item)
     if( (fstep .lt. 0) .or. (fstep .gt. fnstlim) ) return
 
     if( cst_item%mode .eq. 'S' ) then
-        ! set corresponding value
-        cst_item%value = cst_item%control_values(fstep)
+        if( fstep .eq. 0 ) then
+            ! set corresponding value
+            cst_item%value = cst_item%control_values(1)
+        else
+            ! set corresponding value
+            cst_item%value = cst_item%control_values(fstep)
+        end if
     else
         ! an increment is in linear mode
         cst_item%value = cst_item%startvalue + (cst_item%stopvalue - cst_item%startvalue)*fstep/fnstlim

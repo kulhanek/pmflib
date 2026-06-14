@@ -87,7 +87,7 @@ integer, parameter  :: CON_SHAKESOL_NMSVD   = 5     ! Newton-Raphson shake: JAC(
 integer, parameter  :: CON_SHAKESOL_NMLU    = 6     ! Newton-Raphson shake: JAC(P,P) + LU
 ! ------------------------------------------------------------------------------
 
-real(PMFDP)     :: fshake_fdamp     ! diagonal dumping for LL and LU factorizations
+real(PMFDP)     :: fshake_fdamp     ! diagonal damping for LL and LU factorizations
 real(PMFDP)     :: flambdatol       ! tolerance for lambda optimization
 real(PMFDP)     :: frcond           ! SVD rcond
 
@@ -99,7 +99,7 @@ integer         :: frattlesolver    ! RATTLE solvers
 integer, parameter  :: CON_RATTLESOL_MA     = 0     ! matrix algebra
 ! ------------------------------------------------------------------------------
 
-real(PMFDP)     :: frattle_fdamp    ! diagonal dumping for LL and LU factorizations
+real(PMFDP)     :: frattle_fdamp    ! diagonal damping for LL and LU factorizations
 real(PMFDP)     :: frveltol         ! residual for velocity in rattle/rattlev
 
 integer         :: fmaxiter         ! maximum of iteration in lambda optimization
@@ -119,7 +119,7 @@ integer, parameter  :: CON_ICFSOL_V2      = 2
 integer, parameter  :: CON_ICFSOL_V3      = 3
 integer, parameter  :: CON_ICFSOL_V4      = 4
 
-real(PMFDP)     :: ficf_fdamp       ! diagonal dumping for LL and LU factorizations
+real(PMFDP)     :: ficf_fdamp       ! diagonal damping for LL and LU factorizations
 
 ! numeric divergence
 real(PMFDP)     :: fpmf_div_dh      ! step factor for numerical divergence
@@ -140,7 +140,7 @@ integer, parameter  :: CON_LAMSOL_MD      = 0
 integer, parameter  :: CON_LAMSOL_V1      = 1
 ! ------------------------------------------------------------------------------
 
-real(PMFDP)     :: flamsol_fdamp    ! diagonal dumping for LL and LU factorizations
+real(PMFDP)     :: flamsol_fdamp    ! diagonal damping for LL and LU factorizations
 
 integer         :: ftds_ekinsrc     ! source of kinetic energy
                                     ! 0 - velocity-Verlet

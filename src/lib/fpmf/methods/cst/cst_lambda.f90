@@ -51,7 +51,7 @@ subroutine cst_lambda_calculate
 
     select case(ftds_lamsol)
         case(CON_LAMSOL_MD)
-            ! noting to do
+            ! nothing to do
         case(CON_LAMSOL_V1)
             call cst_lambda_calculate_v1()
         case default
