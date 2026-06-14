@@ -307,6 +307,10 @@ bool CColVariable::IsPeriodic(void) const
         // min and max values must be at boundary
         if( ( (MinValue + M_PI) <= 0.01 ) && ( (MaxValue-M_PI) <= 0.01 ) ) return(true);
     }
+    if(strstr(Type,"DIH2") != NULL){
+        // min and max values must be at boundary
+        if( ( (MinValue + M_PI) <= 0.01 ) && ( (MaxValue-M_PI) <= 0.01 ) ) return(true);
+    }
     // FIXME - make list of other CVs
     return(false);
 }
