@@ -353,7 +353,7 @@ subroutine cst_output_close
 ! calculate metric tensor correction
     mtc = 0.0d0
     if( nsamples .gt. 0 ) then
-        mtc = PMF_Rgas * ftemp * log(fwfac)
+        mtc    = - PMF_Rgas*ftemp*log(mfw)
     end if
 
 ! write data
