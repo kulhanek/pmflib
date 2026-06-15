@@ -52,12 +52,16 @@ subroutine cst_icf_calculate_icf
     select case(ftds_icfsol)
         case(CON_ICFSOL_V1)
             call cst_icf_calculate_v1()
+        case(CON_ICFSOL_V1MW)
+            call cst_icf_calculate_v1_mw()
         case(CON_ICFSOL_V2)
             call cst_icf_calculate_v2()
+        case(CON_ICFSOL_V2MW)
+            call cst_icf_calculate_v2_mw()
         case(CON_ICFSOL_V3)
             call cst_icf_calculate_v3()
-        case(CON_ICFSOL_V4)
-            call cst_icf_calculate_v4()
+        case(CON_ICFSOL_V3MW)
+            call cst_icf_calculate_v3_mw()
         case default
             call pmf_utils_exit(PMF_OUT,1,'[CST] ICF solver (ftds_icfsol) is not implemented in cst_icf_calculate_icf!')
     end select
@@ -145,6 +149,87 @@ subroutine cst_icf_calculate_v1
     call pmf_timers_stop_timer(PMFLIB_CST_ICF_ICFK_TIMER)
 
 end subroutine cst_icf_calculate_v1
+
+!===============================================================================
+! Subroutine:  cst_icf_calculate_v1_mw
+! numerical divergence, mass-weighted
+!===============================================================================
+
+subroutine cst_icf_calculate_v1_mw
+
+    use pmf_utils
+    use pmf_dat
+    use cst_dat
+    use pmf_timers
+    use cst_constraints
+
+    implicit none
+    integer                :: k,l,cl,n,m
+    real(PMFDP)            :: icfp,icfk
+    ! --------------------------------------------------------------------------
+
+! ICFP part
+    call pmf_timers_start_timer(PMFLIB_CST_ICF_ICFP_TIMER)
+
+    call cst_constraints_calc_zmat_mw(cvderhist(:,:,:,hist_len+hist_fidx_tds))
+    call cst_icf_calculate_zmatll
+
+    do k=1,NumOfCONs
+        call cst_icf_calculate_vill_mw(cvderhist(:,:,:,hist_len+hist_fidx_tds),k,icf_vi1)
+        icfp = 0.0d0
+        do n=1,NumOfLAtoms
+            do m=1,3
+                icfp = icfp + icf_vi1(m,n) * frchist(m,n,hist_len+hist_fidx_tds)
+            end do
+        end do
+        icfphist(k,hist_len+hist_fidx_tds) = - icfp   ! FRC is force not gradient
+    end do
+
+    call pmf_timers_stop_timer(PMFLIB_CST_ICF_ICFP_TIMER)
+
+! ICFK part
+    call pmf_timers_start_timer(PMFLIB_CST_ICF_ICFK_TIMER)
+! ICF-K by central differences
+    do k=1,NumOfCONs
+        icfk = 0.0d0
+        do n=1,NumOfLAtoms
+            do m=1,3
+                icf_he(:,:) = crdhist(:,:,hist_len+hist_fidx_tds)
+                icf_he(m,n) = icf_he(m,n) + fpmf_div_dh
+
+                CVContextP%CVsValues(:) = 0.0d0
+                CVContextP%CVsDrvs(:,:,:) = 0.0d0
+                do l=1,NumOfAllCONs
+                    cl = CONList(l)%cvindx
+                    call CVList(cl)%cv%calculate_cv(icf_he,CVContextP)
+                end do
+                call cst_constraints_calc_zmat_mw(CVContextP%CVsDrvs)
+                call cst_icf_calculate_zmatll
+                call cst_icf_calculate_vill_mw(CVContextP%CVsDrvs,k,icf_vi1)
+
+                icf_he(:,:) = crdhist(:,:,hist_len+hist_fidx_tds)
+                icf_he(m,n) = icf_he(m,n) - fpmf_div_dh
+
+                CVContextP%CVsValues(:) = 0.0d0
+                CVContextP%CVsDrvs(:,:,:) = 0.0d0
+
+                do l=1,NumOfAllCONs
+                    cl = CONList(l)%cvindx
+                    call CVList(cl)%cv%calculate_cv(icf_he,CVContextP)
+                end do
+                call cst_constraints_calc_zmat_mw(CVContextP%CVsDrvs)
+                call cst_icf_calculate_zmatll
+                call cst_icf_calculate_vill_mw(CVContextP%CVsDrvs,k,icf_vi2)
+
+                icfk = icfk + (icf_vi1(m,n)-icf_vi2(m,n))/(2.0d0 * fpmf_div_dh)
+            end do
+        end do
+        icfkhist(k,hist_len+hist_fidx_tds) = icfk
+    end do
+    call pmf_timers_stop_timer(PMFLIB_CST_ICF_ICFK_TIMER)
+
+end subroutine cst_icf_calculate_v1_mw
+
 
 !===============================================================================
 ! Subroutine:  cst_icf_calculate_v2
@@ -261,6 +346,123 @@ subroutine cst_icf_calculate_v2
 end subroutine cst_icf_calculate_v2
 
 !===============================================================================
+! Subroutine:  cst_icf_calculate_v2_mw
+! analytical but with numerical/analytical second derivatives
+! optimized looping in ICFK, employ Hessian symmetry
+! mass-weighted
+!===============================================================================
+
+subroutine cst_icf_calculate_v2_mw
+
+    use pmf_utils
+    use pmf_dat
+    use cst_dat
+    use pmf_timers
+    use cst_constraints
+
+    implicit none
+    integer                :: k,l,cl,m,cm,n,cn,o,ol,p
+    real(PMFDP)            :: v1,v2,icfp,icfk
+    ! --------------------------------------------------------------------------
+
+! update CVs - calculate Values, gradients, and Hessians
+    call pmf_timers_start_timer(PMFLIB_CST_ICF_HESS_TIMER)
+    CVContextP%CVsValues(:) = 0.0d0
+    CVContextP%CVsDrvs(:,:,:) = 0.0d0
+    CVContextP%CVs2ndDrvs(:,:,:,:,:) = 0.0d0
+
+    do l=1,NumOfAllCONs
+        call CONList(l)%cv%calculate_cv2ddrvs(crdhist(:,:,hist_len+hist_fidx_tds),CVContextP)
+    end do
+    call pmf_timers_stop_timer(PMFLIB_CST_ICF_HESS_TIMER)
+
+! get inversion of mass-weighted W
+    call pmf_timers_start_timer(PMFLIB_CST_ICF_ICFP_TIMER)
+
+    call cst_constraints_calc_zmat_mw(CVContextP%CVsDrvs)
+    call cst_icf_calculate_zmatinv
+
+! ICFP part
+    do k=1,NumOfCONs
+        call cst_icf_calculate_vi_mw(CVContextP%CVsDrvs,k,icf_vi1)
+        icfp = 0.0d0
+        do n=1,NumOfLAtoms
+            do m=1,3
+                icfp = icfp + icf_vi1(m,n) * frchist(m,n,hist_len+hist_fidx_tds)
+            end do
+        end do
+        icfphist(k,hist_len+hist_fidx_tds) = - icfp   ! FRC is force not gradient
+    end do
+    call pmf_timers_stop_timer(PMFLIB_CST_ICF_ICFP_TIMER)
+
+! ICF-K part
+    call pmf_timers_start_timer(PMFLIB_CST_ICF_ICFK_TIMER)
+
+    do k=1,NumOfCONs
+        icfk = 0.0d0
+
+        ! simpler part: div(M^-1 grad xi_l)
+        do l=1,NumOfAllCONs
+            cl = CONList(l)%cvindx
+            ! get mass-weighted Laplacian
+            v1 = 0.0d0
+            do ol=1,CONList(l)%cv%natoms
+                o = CONList(l)%cv%lindexes(ol)
+                do p=1,3
+                    v1 = v1 + MassInv(o) * CVContextP%CVs2ndDrvs(p,o,p,o,cl)
+                end do
+            end do
+            icfk = icfk + zmat(k,l) * v1
+        end do
+
+        ! harder part: derivative of inverse mass-weighted W
+        ! sparse matrix-vector multiplication in cst_icf_calculate_Higj_mw
+        icf_vin(:,:,:) = 0.0d0
+        do n=1,NumOfAllCONs
+            do l=1,NumOfAllCONs
+                cl = CONList(l)%cvindx
+                do o=1,NumOfLAtoms
+                    icf_vin(:,o,n) = icf_vin(:,o,n) + MassInv(o) * zmat(n,l) * CVContextP%CVsDrvs(:,o,cl)
+                end do
+            end do
+        end do
+        do n=1,NumOfAllCONs
+            cn = CONList(n)%cvindx
+            do m=1,n                    ! triangular sum
+                cm = CONList(m)%cvindx
+                icf_he(:,:) = 0.0d0
+                call cst_icf_calculate_Higj_mw(cn,cm)
+                call cst_icf_calculate_Higj_mw(cm,cn)
+                if( n .ne. m ) then
+                    v1 = 0.0d0
+                    v2 = 0.0d0
+                    do o=1,NumOfLAtoms
+                        do p=1,3
+                            v1 = v1 + icf_he(p,o) * icf_vin(p,o,n)
+                            v2 = v2 + icf_he(p,o) * icf_vin(p,o,m)
+                        end do
+                    end do
+                    icfk = icfk - zmat(k,m) * v1 - zmat(k,n) * v2
+                else
+                    v1 = 0.0d0
+                    do o=1,NumOfLAtoms
+                        do p=1,3
+                            v1 = v1 + icf_he(p,o) * icf_vin(p,o,n)
+                        end do
+                    end do
+                    icfk = icfk - zmat(k,m) * v1
+                end if
+            end do
+        end do
+        icfkhist(k,hist_len+hist_fidx_tds) = icfk
+    end do
+
+    call pmf_timers_stop_timer(PMFLIB_CST_ICF_ICFK_TIMER)
+
+end subroutine cst_icf_calculate_v2_mw
+
+
+!===============================================================================
 ! Subroutine:  cst_icf_calculate_v3
 ! numerical divergence - stochastic “trace trick” for divergence
 !===============================================================================
@@ -351,12 +553,12 @@ subroutine cst_icf_calculate_v3
 end subroutine cst_icf_calculate_v3
 
 !===============================================================================
-! Subroutine:  cst_icf_calculate_v4
+! Subroutine:  cst_icf_calculate_v3_mw
 ! numerical divergence - stochastic “trace trick” for divergence
 ! mass-weighted
 !===============================================================================
 
-subroutine cst_icf_calculate_v4
+subroutine cst_icf_calculate_v3_mw
 
     use pmf_utils
     use pmf_dat
@@ -439,7 +641,7 @@ subroutine cst_icf_calculate_v4
     end do
     call pmf_timers_stop_timer(PMFLIB_CST_ICF_ICFK_TIMER)
 
-end subroutine cst_icf_calculate_v4
+end subroutine cst_icf_calculate_v3_mw
 
 !===============================================================================
 ! Subroutine:  cst_icf_draw_probes_rademacher
@@ -535,6 +737,41 @@ subroutine cst_icf_calculate_Higj(ci,cj)
     end do
 
 end subroutine cst_icf_calculate_Higj
+
+!===============================================================================
+! Subroutine:  cst_icf_calculate_Higj_mw
+! Calculate H_i M^-1 g_j contribution for the derivative of mass-weighted W.
+!===============================================================================
+
+subroutine cst_icf_calculate_Higj_mw(ci,cj)
+
+    use pmf_dat
+    use cst_dat
+
+    implicit none
+    integer             :: ci
+    integer             :: cj
+    ! --------------------------------------------
+    integer             :: ki,k,o,lj,l,p
+    real(PMFDP)         :: v1
+    ! --------------------------------------------------------------------------
+
+    do ki=1,CVList(ci)%cv%natoms
+        k = CVList(ci)%cv%lindexes(ki)
+        do o=1,3
+            v1 = 0.0d0
+            do lj=1,CVList(cj)%cv%natoms
+                l = CVList(cj)%cv%lindexes(lj)
+                do p=1,3
+                    v1 = v1 + CVContextP%CVs2ndDrvs(p,l,o,k,ci) * MassInv(l) * CVContextP%CVsDrvs(p,l,cj)
+                end do
+            end do
+            icf_he(o,k) = icf_he(o,k) + v1
+        end do
+    end do
+
+end subroutine cst_icf_calculate_Higj_mw
+
 
 !===============================================================================
 ! Subroutine:  cst_icf_calculate_zmatll
@@ -729,6 +966,39 @@ subroutine cst_icf_calculate_vi(cvsdrvs,i,icf_vi)
     end do
 
 end subroutine cst_icf_calculate_vi
+
+!===============================================================================
+! Subroutine:  cst_icf_calculate_vi_mw
+! zmat is inverted, mass-weighted
+!===============================================================================
+
+subroutine cst_icf_calculate_vi_mw(cvsdrvs,i,icf_vi)
+
+    use pmf_dat
+    use cst_dat
+
+    implicit none
+    real(PMFDP)         :: cvsdrvs(:,:,:)
+    integer             :: i
+    real(PMFDP)         :: icf_vi(:,:)
+    ! --------------------------------------------
+    integer             :: j,cj,k,kj,m
+    ! --------------------------------------------------------------------------
+
+    icf_vi(:,:) = 0.0d0
+
+    do j=1,NumOfAllCONs
+        cj = CONList(j)%cvindx
+        do kj=1,CONList(j)%cv%natoms
+            k = CONList(j)%cv%lindexes(kj)
+            do m=1,3
+                icf_vi(m,k) = icf_vi(m,k) + MassInv(k) * zmat(i,j) * cvsdrvs(m,k,cj)
+            end do
+        end do
+    end do
+
+end subroutine cst_icf_calculate_vi_mw
+
 
 !===============================================================================
 

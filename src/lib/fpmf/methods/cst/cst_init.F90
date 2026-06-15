@@ -445,8 +445,12 @@ character(80) function cst_init_get_icfsol_name(icfsol)
             cst_init_get_icfsol_name = "V2 (analytic with analytic/numeric CV Hessian + symmetry)"
         case(CON_ICFSOL_V3)
             cst_init_get_icfsol_name = "V3 (stochastic divergence)"
-        case(CON_ICFSOL_V4)
-            cst_init_get_icfsol_name = "V4 (stochastic divergence - mass weighted)"
+        case(CON_ICFSOL_V1MW)
+            cst_init_get_icfsol_name = "V1 (numeric divergence - mass weighted)"
+        case(CON_ICFSOL_V2MW)
+            cst_init_get_icfsol_name = "V2 (analytic with analytic/numeric CV Hessian + symmetry - mass weighted)"
+        case(CON_ICFSOL_V3MW)
+            cst_init_get_icfsol_name = "V3 (stochastic divergence - mass weighted)"
         case default
             call pmf_utils_exit(PMF_OUT, 1, &
                         '[CST] Not implemented ICF solver in cst_init_get_icfsol_name!')

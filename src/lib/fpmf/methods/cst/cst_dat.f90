@@ -112,12 +112,16 @@ logical         :: fint_der         ! collect data for internal energy derivativ
 integer         :: ftds_icfsol      ! 1 - numerical divergence
                                     ! 2 - analytical but with numerical/analytical CV Hessian
                                     ! 3 - stochastic divergence
-                                    ! 4 - stochastic divergence - mass-weighted
+                                    ! 4 - numerical divergence - mass-weighted
+                                    ! 5 - analytical but with numerical/analytical CV Hessian - mass-weighted
+                                    ! 6 - stochastic divergence - mass-weighted
 
 integer, parameter  :: CON_ICFSOL_V1      = 1
 integer, parameter  :: CON_ICFSOL_V2      = 2
 integer, parameter  :: CON_ICFSOL_V3      = 3
-integer, parameter  :: CON_ICFSOL_V4      = 4
+integer, parameter  :: CON_ICFSOL_V1MW    = 4
+integer, parameter  :: CON_ICFSOL_V2MW    = 5
+integer, parameter  :: CON_ICFSOL_V3MW    = 6
 
 real(PMFDP)     :: ficf_fdamp       ! diagonal damping for LL and LU factorizations
 
