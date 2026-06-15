@@ -451,7 +451,7 @@ subroutine cst_shake_calculate_nm_svd
     use cst_constraints
 
     implicit none
-    integer             :: i,k,info,ci,orank
+    integer             :: i,k,ki,info,ci,orank
     logical             :: done
     real(PMFDP)         :: invn,dfsiter1,dfsiter2
     ! -----------------------------------------------------------------------------
