@@ -150,9 +150,11 @@ subroutine calculate_ds_cv2ddrvs(cv_item,x,ctx)
     real(PMFDP)         :: x(:,:)
     type(CVContextType) :: ctx
     ! -----------------------------------------------
-    integer             :: ai,m,k,n,aj,l
+    integer             :: ai,m,k,aj
     real(PMFDP)         :: d1(3),d2(3),dx(3)
-    real(PMFDP)         :: totmass1,totmass2,amass,amassi,amassj
+    real(PMFDP)         :: totmass1,totmass2,amass
+    real(PMFDP)         :: qi, qj
+    integer             :: mi, mj
     ! -----------------------------------------------------------------------------
 
     ! calculate actual value
@@ -200,40 +202,43 @@ subroutine calculate_ds_cv2ddrvs(cv_item,x,ctx)
     end do
 
     ! ------------------------------------------------
-    ! 2nd derivatives - FIXME, need to be tested
+    ! 2nd derivatives of xi = |d1 - d2|^2
+    !
+    ! d2xi / d r_{ai,k} d r_{aj,l}
+    !     = 2 q_i q_j delta_kl
+    !
+    ! q_i = +m_i/M1 for atoms in group 1
+    ! q_i = -m_i/M2 for atoms in group 2
 
-    do  m = 1, cv_item%grps(1)
-        ai = cv_item%lindexes(m)
-        amass = mass(ai)
-        do k = 1, 3
-            ctx%CVs2ndDrvs(k,ai,k,ai,cv_item%idx) = ctx%CVs2ndDrvs(k,ai,k,ai,cv_item%idx) &
-                                                  + 2.0d0*amass/totmass1*amass/totmass1
-        end do
-    end do
 
-    do  m = 1, cv_item%grps(1)
-        ai = cv_item%lindexes(m)
-        amassi = mass(ai)
-        do k = 1, 3
-            do  n = cv_item%grps(1) + 1 , cv_item%grps(2)
-                aj = cv_item%lindexes(n)
-                amassj = mass(aj)
-                l = k
-                ctx%CVs2ndDrvs(l,aj,k,ai,cv_item%idx) = ctx%CVs2ndDrvs(l,aj,k,ai,cv_item%idx) &
-                                                      - 2.0d0*amassi/totmass1*amassj/totmass2
-                ctx%CVs2ndDrvs(k,ai,l,aj,cv_item%idx) = ctx%CVs2ndDrvs(k,ai,l,aj,cv_item%idx) &
-                                                      - 2.0d0*amassi/totmass1*amassj/totmass2
+
+    do mi = 1, cv_item%grps(2)
+
+        ai = cv_item%lindexes(mi)
+
+        if( mi <= cv_item%grps(1) ) then
+            qi = mass(ai) / totmass1
+        else
+            qi = -mass(ai) / totmass2
+        end if
+
+        do mj = 1, cv_item%grps(2)
+
+            aj = cv_item%lindexes(mj)
+
+            if( mj <= cv_item%grps(1) ) then
+                qj = mass(aj) / totmass1
+            else
+                qj = -mass(aj) / totmass2
+            end if
+
+            do k = 1, 3
+                ctx%CVs2ndDrvs(k,ai,k,aj,cv_item%idx) = &
+                ctx%CVs2ndDrvs(k,ai,k,aj,cv_item%idx) + 2.0d0*qi*qj
             end do
-        end do
-    end do
 
-    do  m = cv_item%grps(1) + 1 , cv_item%grps(2)
-        ai = cv_item%lindexes(m)
-        amass = mass(ai)
-        do k = 1, 3
-            ctx%CVs2ndDrvs(k,ai,k,ai,cv_item%idx) = ctx%CVs2ndDrvs(k,ai,k,ai,cv_item%idx) &
-                                                  + 2.0d0*amass/totmass2*amass/totmass2
         end do
+
     end do
 
     return
