@@ -33,7 +33,8 @@ using namespace std;
 
 CCSTProxy_dUdx::CCSTProxy_dUdx(void)
 {
-    RegisterRealm(CST_dUdx_VF,  "dU/dx",    "CST",  "dU=|[<ICFP>_FW - cov(ICF,Eint)_FW/(k_B*T)] dx|");
+    RegisterRealm(CST_dUdx_VF,  "dU/dx",        "CST",  "dU=|[<ICFP>_FW - cov(ICF,Eint)_FW/(k_B*T)] dx| (VF subsystem)");
+    RegisterRealm(CST_dUdx_VF,  "dU/dx(VF)",    "CST",  "dU=|[<ICFP>_FW - cov(ICF,Eint)_FW/(k_B*T)] dx| (VF subsystem)");
 }
 
 //------------------------------------------------------------------------------

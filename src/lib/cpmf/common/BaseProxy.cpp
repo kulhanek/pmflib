@@ -617,7 +617,9 @@ void CBaseProxy::GetCovarianceValue(const CSmallString& section_name,
 // std. deviation
     CSmallString mx_sname = csec->GetMXName();
     CSmallString m2x_sname;
-    m2x_sname << "M2" << mx_sname.GetSubString(1,-1);
+    if( mx_sname.GetLength() > 1 ){
+        m2x_sname << "M2" << mx_sname.GetSubStringFromTo(1,mx_sname.GetLength()-1);
+    }
 
     CPMFAccuDataPtr m2x = Accu->GetSectionData(m2x_sname);
     if( ! m2x ){
@@ -653,7 +655,9 @@ void CBaseProxy::GetCovarianceValue(const CSmallString& section_name,
 
     CSmallString my_sname = csec->GetMYName();
     CSmallString m2y_sname;
-    m2y_sname << "M2" << my_sname.GetSubString(1,-1);
+    if( my_sname.GetLength() > 1 ){
+        m2y_sname << "M2" << my_sname.GetSubStringFromTo(1,my_sname.GetLength()-1);
+    }
 
     CPMFAccuDataPtr m2y = Accu->GetSectionData(m2y_sname);
     if( ! m2y ){
@@ -803,7 +807,9 @@ void CBaseProxy::GetWCovarianceValue(const CSmallString& section_name,const CSma
 
     CSmallString mx_sname = csec->GetMXName();
     CSmallString m2x_sname;
-    m2x_sname << "M2" << mx_sname.GetSubString(1,-1);
+    if( mx_sname.GetLength() > 1 ){
+        m2x_sname << "M2" << mx_sname.GetSubStringFromTo(1,mx_sname.GetLength()-1);
+    }
 
     CPMFAccuDataPtr m2x = Accu->GetSectionData(m2x_sname);
     if( ! m2x ){
@@ -856,7 +862,9 @@ void CBaseProxy::GetWCovarianceValue(const CSmallString& section_name,const CSma
 
     CSmallString my_sname = csec->GetMYName();
     CSmallString m2y_sname;
-    m2y_sname << "M2" << my_sname.GetSubString(1,-1);
+    if( my_sname.GetLength() > 1 ){
+        m2y_sname << "M2" << my_sname.GetSubStringFromTo(1,my_sname.GetLength()-1);
+    }
 
     CPMFAccuDataPtr m2y = Accu->GetSectionData(m2y_sname);
     if( ! m2y ){

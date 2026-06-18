@@ -118,6 +118,8 @@ double CCSTProxy_Ecorr::GetValue(int ibin,EProxyRealm realm) const
 
             GetMeanValue("FW",fw_mean,fw_sd,fw_sem,realm==E_PROXY_MEAN,ibin);
 
+            if( fw_mean == 0.0 ) break;
+
             value = - PMF_Rgas * temp * log(fw_mean);
 
             // https://en.wikipedia.org/wiki/Propagation_of_uncertainty
@@ -135,6 +137,8 @@ double CCSTProxy_Ecorr::GetValue(int ibin,EProxyRealm realm) const
 
             GetMeanValue("FWTDS",fw_mean,fw_sd,fw_sem,realm==E_PROXY_MEAN,ibin);
 
+            if( fw_mean == 0.0 ) break;
+
             value = - PMF_Rgas * temp * log(fw_mean);
 
             // https://en.wikipedia.org/wiki/Propagation_of_uncertainty
@@ -151,6 +155,8 @@ double CCSTProxy_Ecorr::GetValue(int ibin,EProxyRealm realm) const
             double fw_sem = 0.0;
 
             GetMeanValue("FWTDS",fw_mean,fw_sd,fw_sem,realm==E_PROXY_MEAN,ibin);
+
+            if( fw_mean == 0.0 ) break;
 
             double corr1_mean = - PMF_Rgas * temp * log(fw_mean);
             double corr1_sd = 0.0;
@@ -172,20 +178,18 @@ double CCSTProxy_Ecorr::GetValue(int ibin,EProxyRealm realm) const
 
             // https://en.wikipedia.org/wiki/Propagation_of_uncertainty
             // approximative estimates - terms are considered as independent
-            if( fw_mean != 0.0 ){
-                const double f  = fw_mean;
-                const double c  = c11_cval;
-                const double f2 = f*f;
-                const double f4 = f2*f2;
+            const double f  = fw_mean;
+            const double c  = c11_cval;
+            const double f2 = f*f;
+            const double f4 = f2*f2;
 
-                sd = sqrt( corr1_sd*corr1_sd
-                        + c11_sd*c11_sd / f2
-                        + c*c * fw_sd*fw_sd / f4 );
+            sd = sqrt( corr1_sd*corr1_sd
+                    + c11_sd*c11_sd / f2
+                    + c*c * fw_sd*fw_sd / f4 );
 
-                sem = sqrt( corr1_sem*corr1_sem
-                        + c11_sem*c11_sem / f2
-                        + c*c * fw_sem*fw_sem / f4 );
-            }
+            sem = sqrt( corr1_sem*corr1_sem
+                    + c11_sem*c11_sem / f2
+                    + c*c * fw_sem*fw_sem / f4 );
         }
         break;
     // -------------------
