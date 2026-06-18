@@ -1297,6 +1297,9 @@ void COptGPRHyprms::PrintSampledStat(void)
         proxy = CEnergyProxyInit::InitProxy(Options.GetArgRealm(),Accu,true);
     }
     if( proxy == NULL ){
+        proxy = CGPREngineAUSInit::InitEngine(Options.GetArgRealm(),Accu,true);
+    }
+    if( proxy == NULL ){
         RUNTIME_ERROR("no active proxy")
     }
     proxy->Init(Accu);
