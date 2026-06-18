@@ -135,7 +135,6 @@ int CPMFEnergyIntegrate::Init(int argc,char* argv[])
             // actual values are printed in detailed output from integrator
         } else {
             vout << "# SigmaF2               : " << setprecision(3) << Options.GetOptSigmaF2() << endl;
-            vout << "# NCorr                 : " << setprecision(3) << Options.GetOptNCorr() << endl;
             vout << "# Width factor wfac     : " << Options.GetOptWFac() << endl;
             vout << "# SigmaN2               : " << Options.GetOptSigmaN2() << endl;
         }
@@ -893,10 +892,10 @@ bool CPMFEnergyIntegrate::ReduceFES(void)
 
 void CPMFEnergyIntegrate::PrepareAccumulatorI(void)
 {
-    for(int ibin=0; ibin < Accu->GetNumOfBins(); ibin++) {
+    for(int ibin=0; ibin < DerProxy->GetNumOfBins(); ibin++) {
         // erase datapoints not properly sampled, preserve glueing
-        if( (Accu->GetNumOfSamples(ibin) >= 0) && (Accu->GetNumOfSamples(ibin) <= Options.GetOptLimit()) ) {
-            Accu->SetNumOfSamples(ibin,0);
+        if( (DerProxy->GetNumOfSamples(ibin) >= 0) && (DerProxy->GetNumOfSamples(ibin) <= Options.GetOptLimit()) ) {
+            DerProxy->SetNumOfSamples(ibin,0);
         }
     }
 }
@@ -908,7 +907,7 @@ void CPMFEnergyIntegrate::PrepareAccumulatorI(void)
 
 void CPMFEnergyIntegrate::PrepareAccumulatorII(void)
 {
-    SyncFESWithAccu();
+    SyncFESWithProxy();
 
     // filter by energy
     for(int ibin=0; ibin < ENE->GetNumOfBins(); ibin++) {
@@ -919,7 +918,7 @@ void CPMFEnergyIntegrate::PrepareAccumulatorII(void)
                 ENE->SetNumOfSamples(ibin,0);
                 ENE->SetEnergy(ibin,Options.GetOptEnergyLimit());
 
-                Accu->SetNumOfSamples(ibin,0);
+                DerProxy->SetNumOfSamples(ibin,0);
             }
             if( Options.GetOptEraseNegativeEnergy() ){
                 if( ENE->GetEnergy(ibin) < 0 ){
@@ -927,7 +926,7 @@ void CPMFEnergyIntegrate::PrepareAccumulatorII(void)
                     ENE->SetNumOfSamples(ibin,0);
                     ENE->SetEnergy(ibin,0.0);
 
-                    Accu->SetNumOfSamples(ibin,0);
+                    DerProxy->SetNumOfSamples(ibin,0);
                 }
             }
         }
@@ -936,26 +935,26 @@ void CPMFEnergyIntegrate::PrepareAccumulatorII(void)
 
 //------------------------------------------------------------------------------
 
-void CPMFEnergyIntegrate::SyncFESWithAccu(void)
+void CPMFEnergyIntegrate::SyncFESWithProxy(void)
 {
     for(int ibin=0; ibin < ENE->GetNumOfBins(); ibin++) {
         ENE->SetNumOfSamples(ibin,0);
     }
 
-    for(int ibin=0; ibin < Accu->GetNumOfBins(); ibin++) {
+    for(int ibin=0; ibin < DerProxy->GetNumOfBins(); ibin++) {
         int osam = ENE->GetNumOfSamples(ibin);
-        int nsam = Accu->GetNumOfSamples(ibin);
+        int nsam = DerProxy->GetNumOfSamples(ibin);
         ENE->SetNumOfSamples(ibin,osam+nsam);
     }
 }
 
 //------------------------------------------------------------------------------
 
-void CPMFEnergyIntegrate::SyncAccuWithFES(void)
+void CPMFEnergyIntegrate::SyncProxyWithFES(void)
 {
-    for(int ibin=0; ibin < Accu->GetNumOfBins(); ibin++) {
+    for(int ibin=0; ibin < DerProxy->GetNumOfBins(); ibin++) {
         if( ENE->GetNumOfSamples(ibin) <= 0 ) {
-            Accu->SetNumOfSamples(ibin,0);
+            DerProxy->SetNumOfSamples(ibin,0);
         }
     }
 }
@@ -966,10 +965,10 @@ void CPMFEnergyIntegrate::PrintAccuStat(void)
 {
     vout << format("   -- ");
     // calculate sampled area
-    double maxbins = Accu->GetNumOfBins();
+    double maxbins = DerProxy->GetNumOfBins();
     int    sampled = 0;
-    for(int ibin=0; ibin < Accu->GetNumOfBins(); ibin++) {
-        if( Accu->GetNumOfSamples(ibin) > 0 ) {
+    for(int ibin=0; ibin < DerProxy->GetNumOfBins(); ibin++) {
+        if( DerProxy->GetNumOfSamples(ibin) > 0 ) {
             sampled++;
         }
     }
@@ -984,7 +983,7 @@ void CPMFEnergyIntegrate::PrintAccuStat(void)
 
 void CPMFEnergyIntegrate::PrintSampledStat(void)
 {
-    SyncFESWithAccu();
+    SyncFESWithProxy();
 
     // calculate sampled area
     double maxbins = ENE->GetNumOfBins();
@@ -1031,7 +1030,7 @@ void CPMFEnergyIntegrate::FloodFillTest(void)
     vout << "   Searching for discontinuous regions ..." << endl;
     int seedid = 1;
 
-    SyncFESWithAccu();
+    SyncFESWithProxy();
 
     FFSeeds.CreateVector(ENE->GetNumOfBins());
     FFSeeds.SetZero();
@@ -1080,7 +1079,7 @@ void CPMFEnergyIntegrate::FloodFillTest(void)
         }
     }
 
-    SyncAccuWithFES();
+    SyncProxyWithFES();
 }
 
 //------------------------------------------------------------------------------
@@ -1219,7 +1218,7 @@ void CPMFEnergyIntegrate::GlueHoles(void)
     vout << "   Searching for holes on ENE ..." << endl;
     int seedid = 1;
 
-    SyncFESWithAccu();
+    SyncFESWithProxy();
 
     FFSeeds.CreateVector(ENE->GetNumOfBins());
     FFSeeds.SetZero();
@@ -1271,7 +1270,7 @@ void CPMFEnergyIntegrate::GlueHoles(void)
     vout << "   -- Number of holes      : " <<  numofholes << endl;
     vout << "   -- Number of glued bins : " <<  tg << endl;
 
-    SyncAccuWithFES();
+    SyncProxyWithFES();
 }
 
 //------------------------------------------------------------------------------
@@ -1391,7 +1390,7 @@ void CPMFEnergyIntegrate::AddEneCorr(void)
 
     for(int i=0; i < ENE->GetNumOfBins(); i++){
         double f = ENE->GetEnergy(i);
-        ENE->SetEnergy(i, f + ene_proxy->GetValue(i,E_PROXY_VALUE) );
+        ENE->SetEnergy(i, f + ene_proxy->GetValue(i,E_PROXY_MEAN) );
     }
 
     if( ENE->IsGlobalMinSet() ){

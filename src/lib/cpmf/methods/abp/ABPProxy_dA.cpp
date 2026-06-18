@@ -58,7 +58,7 @@ double CABPProxy_dA::GetValue(int ibin,EProxyRealm realm) const
 
     switch(realm){
         // -------------------
-        case(E_PROXY_VALUE):
+        case(E_PROXY_MEAN):
             ene = - temp*PMF_Rgas*log(pop);
             return( ene );
         // -------------------

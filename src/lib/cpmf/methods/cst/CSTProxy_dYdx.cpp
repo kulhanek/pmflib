@@ -1,8 +1,9 @@
 // =============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
+//    Copyright (C) 2026 Petr Kulhanek, kulhanek@chemi.muni.cz
 //    Copyright (C) 2025 Petr Kulhanek, kulhanek@chemi.muni.cz
-//    Copyright (C) 2021 Petr Kulhanek, kulhanek@chemi.muni.cz
+//    Copyright (C) 2024 Petr Kulhanek, kulhanek@chemi.muni.cz
 //
 //     This program is free software; you can redistribute it and/or modify
 //     it under the terms of the GNU General Public License as published by
@@ -19,7 +20,8 @@
 //     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 // =============================================================================
 
-#include <ABFProxy_dU.hpp>
+#include <CSTProxy_dYdx.hpp>
+#include <PMFConstants.hpp>
 
 //------------------------------------------------------------------------------
 
@@ -29,23 +31,20 @@ using namespace std;
 //------------------------------------------------------------------------------
 //==============================================================================
 
-CABFProxy_dU::CABFProxy_dU(void)
+CCSTProxy_dYdx::CCSTProxy_dYdx(void)
 {
-//    Requires.push_back("ABF");
-//
-//    SupportedRealms["dH"]       = ABF_dH;
-//    SupportedRealms["EINT"]     = ABF_EINT;
-//
-//        case(ABF_dH):
-//            return("dH(x)=<Eint>");
-//    // -------------------
-//        case(ABF_EINT):
-//            return("dH(x)=<Eint>");
+    RegisterRealm(CST_dLAMBDAdx,    "dLAMBDA/dx(MD)",   "CST", "|<lambda> dx| (MD subsystem)");
+    RegisterRealm(CST_dLAMTDSdx,    "dLAMBDA/dx(TDS)",  "CST", "|<lambda> dx| (TDS subsystem)");
+
+    RegisterRealm(CST_dMICFdx,      "dMICF/dx",         "CST", "|<ICF> dx| (VF subsystem)");
+    RegisterRealm(CST_dMICFFWdx,    "dMICFFW/dx",       "CST", "|<ICF>_FW dx| (VF subsystem)");
+    RegisterRealm(CST_dMICFPFWdx,   "dMICFPFW/dx",      "CST", "|<ICFP>_FW dx| (VF subsystem)");
+    RegisterRealm(CST_dMICFKFWdx,   "dMICFKFW/dx",      "CST", "|<ICFK>_FW dx| (VF subsystem)");
 }
 
 //------------------------------------------------------------------------------
 
-CABFProxy_dU::~CABFProxy_dU(void)
+CCSTProxy_dYdx::~CCSTProxy_dYdx(void)
 {
 }
 
@@ -53,66 +52,92 @@ CABFProxy_dU::~CABFProxy_dU(void)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-int CABFProxy_dU::GetNumOfSamples(int ibin) const
+int CCSTProxy_dYdx::GetNumOfSamples(int ibin) const
 {
-    if( Accu == NULL ){
-        RUNTIME_ERROR("Accu is NULL");
+    switch(RealmID){
+    // -------------------
+        case(CST_dLAMBDAdx):
+            return(Accu->GetData("NSAMPLES",ibin));
+    // -------------------
+        default:
+            return(Accu->GetData("NTDS",ibin));
     }
-    return(Accu->GetData("NTDS",ibin));
 }
 
 //------------------------------------------------------------------------------
 
-void CABFProxy_dU::SetNumOfSamples(int ibin,int nsamples)
+void CCSTProxy_dYdx::SetNumOfSamples(int ibin,int nsamples)
 {
     if( Accu == NULL ){
         RUNTIME_ERROR("Accu is NULL");
     }
-    Accu->SetData("NTDS",ibin,nsamples);
-}
-
-//------------------------------------------------------------------------------
-
-double CABFProxy_dU::GetValue( int ibin,EProxyRealm realm) const
-{
-    if( Accu == NULL ){
-        RUNTIME_ERROR("Accu is NULL");
-    }
-
-    double  mean     = 0.0; // sample mean
-    double  samvar   = 0.0; // sample variance
-    double  meanvar  = 0.0; // variance of sample mean
-
-// do we have enough samples?
-    double nsamples    = GetNumOfSamples(ibin);
-    if( nsamples <= 0 ) return(mean);
 
     switch(RealmID){
     // -------------------
-        case(ABF_dH):
-        case(ABF_EINT):{
-            mean        = Accu->GetData("MEINT",ibin);
-            double M2   = Accu->GetData("M2EINT",ibin);
-            samvar      = M2 / nsamples;
-            meanvar     = samvar / nsamples;
-        }
+        case(CST_dLAMBDAdx):
+            Accu->SetData("NSAMPLES",ibin,nsamples);
+        break;
+    // -------------------
+        default:
+            Accu->SetData("NTDS",ibin,nsamples);
+        break;
+    }
+}
+
+//------------------------------------------------------------------------------
+
+double CCSTProxy_dYdx::GetValue(int ibin,int icv,EProxyRealm realm) const
+{
+    if( Accu == NULL ){
+        RUNTIME_ERROR("Accu is NULL");
+    }
+
+    double  value   = 0.0;  // result
+    double  sd      = 0.0;  // unbiased sample standard deviation
+    double  sem     = 0.0;  // standard error of the sample result
+
+    switch(RealmID){
+    // -------------------
+        case(CST_dLAMBDAdx):
+            GetMeanValue("LAMBDA",value,sd,sem,realm==E_PROXY_MEAN,ibin,icv);
+        break;
+    // -------------------
+        case(CST_dLAMTDSdx):
+            GetMeanValue("LAMTDS",value,sd,sem,realm==E_PROXY_MEAN,ibin,icv);
+        break;
+    // -------------------
+        case(CST_dMICFdx):
+            GetMeanValue("ICF",value,sd,sem,realm==E_PROXY_MEAN,ibin,icv);
+        break;
+    // -------------------
+        case(CST_dMICFFWdx):
+            GetWMeanValue("ICFFW","FW",value,sd,sem,realm==E_PROXY_MEAN,ibin,icv);
+        break;
+    // -------------------
+        case(CST_dMICFPFWdx):
+            GetWMeanValue("ICFPFW","FW",value,sd,sem,realm==E_PROXY_MEAN,ibin,icv);
+        break;
+    // -------------------
+        case(CST_dMICFKFWdx):
+            GetWMeanValue("ICFKFW","FW",value,sd,sem,realm==E_PROXY_MEAN,ibin,icv);
         break;
     // -------------------
         default:
             RUNTIME_ERROR("unsupported type");
+        break;
     }
 
 // return result
     switch(realm){
         // -------------------
         case(E_PROXY_MEAN):
-            return( mean );
+            return( value );
         // -------------------
         case(E_PROXY_SD):
-            return( sqrt(samvar) );
+            return( sd );
         // -------------------
         case(E_PROXY_SEM):
-            return( sqrt( meanvar) );
+            return( sem );
         // -------------------
         default:
             RUNTIME_ERROR("unsupported realm");
@@ -122,6 +147,3 @@ double CABFProxy_dU::GetValue( int ibin,EProxyRealm realm) const
 //==============================================================================
 //------------------------------------------------------------------------------
 //==============================================================================
-
-
-

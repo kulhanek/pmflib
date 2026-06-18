@@ -85,7 +85,6 @@ double CABFProxy_dUdx::GetValue(int ibin,int icv,EProxyRealm realm) const
     }
 
     double value = 0.0;
-    double ncorr = Accu->GetNCorr();
     double temp  = Accu->GetTemperature();
 
     switch(RealmID){
@@ -109,14 +108,14 @@ double CABFProxy_dUdx::GetValue(int ibin,int icv,EProxyRealm realm) const
 
             switch(realm){
                 // -------------------
-                case(E_PROXY_VALUE):
+                case(E_PROXY_MEAN):
                     return( value );
                 // -------------------
-                case(E_PROXY_SIGMA):
+                case(E_PROXY_SD):
                     return( sigma );
                 // -------------------
-                case(E_PROXY_ERROR):
-                    return( sqrt(ncorr) * sigma / sqrt(nsamples) );
+                case(E_PROXY_SEM):
+                    return( sigma / sqrt(nsamples) );
                 // -------------------
                 default:
                     RUNTIME_ERROR("unsupported realm");
@@ -133,14 +132,14 @@ double CABFProxy_dUdx::GetValue(int ibin,int icv,EProxyRealm realm) const
 
             switch(realm){
                 // -------------------
-                case(E_PROXY_VALUE):
+                case(E_PROXY_MEAN):
                     return( micf );
                 // -------------------
-                case(E_PROXY_SIGMA):
+                case(E_PROXY_SD):
                     return( sqrt(m2icf / nsamples) );
                 // -------------------
-                case(E_PROXY_ERROR):
-                    return( sqrt(m2icf * ncorr) / nsamples );
+                case(E_PROXY_SEM):
+                    return( sqrt(m2icf) / nsamples );
                 // -------------------
                 default:
                     RUNTIME_ERROR("unsupported realm");

@@ -133,15 +133,6 @@ public:
                 "NUMBER",                           /* parameter name */
                 "GPR: Variance of the reconstructed free energy surface (signal variance).")   /* option description */
     //----------------------------------------------------------------------
-    CSO_MAP_OPT(double,                           /* option type */
-                NCorr,                        /* option name */
-                1.0,                          /* default value */
-                false,                          /* is option mandatory */
-                'c',                           /* short option name */
-                "ncorr",                      /* long option name */
-                "NUMBER",                           /* parameter name */
-                "GPR: Number of statistically correlated samples.")   /* option description */
-    //----------------------------------------------------------------------
     CSO_MAP_OPT(CSmallString,                           /* option type */
                 WFac,                        /* option name */
                 "3.0",                          /* default value */

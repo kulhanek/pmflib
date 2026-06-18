@@ -91,10 +91,10 @@ subroutine cst_init_dat
     fshakesolver    = CON_SHAKESOL_MM       ! mixed shake
     frattlesolver   = CON_RATTLESOL_MA      ! matrix algebra
 
-    fshake_fdamp    = 0.0d0                 ! FIXME
-    frattle_fdamp   = 0.0d0                 ! FIXME
-    flamsol_fdamp   = 0.0d0                 ! FIXME
-    ficf_fdamp      = 0.0d0                 ! FIXME
+    fshake_fdamp    = 0.0d0
+    frattle_fdamp   = 0.0d0
+    flamsol_fdamp   = 0.0d0
+    ficf_fdamp      = 0.0d0
 
     flambdatol      = 1.0d-7        ! tolerance for lambda optimization
     frveltol        = 1.0d-9        ! residual velocity in rattle/rattle-v
@@ -446,11 +446,11 @@ character(80) function cst_init_get_icfsol_name(icfsol)
         case(CON_ICFSOL_V3)
             cst_init_get_icfsol_name = "V3 (stochastic divergence)"
         case(CON_ICFSOL_V1MW)
-            cst_init_get_icfsol_name = "V1 (numeric divergence - mass weighted)"
+            cst_init_get_icfsol_name = "V1MW (numeric divergence - mass weighted)"
         case(CON_ICFSOL_V2MW)
-            cst_init_get_icfsol_name = "V2 (analytic with analytic/numeric CV Hessian + symmetry - mass weighted)"
+            cst_init_get_icfsol_name = "V2MW (analytic with analytic/numeric CV Hessian + symmetry - mass weighted)"
         case(CON_ICFSOL_V3MW)
-            cst_init_get_icfsol_name = "V3 (stochastic divergence - mass weighted)"
+            cst_init_get_icfsol_name = "V3MW (stochastic divergence - mass weighted)"
         case default
             call pmf_utils_exit(PMF_OUT, 1, &
                         '[CST] Not implemented ICF solver in cst_init_get_icfsol_name!')

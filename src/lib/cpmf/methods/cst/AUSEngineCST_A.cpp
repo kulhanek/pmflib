@@ -63,7 +63,8 @@ void CAUSEngineCST_A::SetAccumulator(CPMFAccumulatorPtr accu)
     A.SetOutputES(A_ES);
 
     CCSTProxy_dAdx_Ptr a_proxy = CCSTProxy_dAdx_Ptr(new CCSTProxy_dAdx());
-    a_proxy->SetRealm(CST_dLdx);
+    // check FIXME
+  //  a_proxy->SetRealm(CST_dAcdx);
     a_proxy->Init(accu);
     A.SetInputEnergyDerProxy(a_proxy);
 
@@ -72,7 +73,7 @@ void CAUSEngineCST_A::SetAccumulator(CPMFAccumulatorPtr accu)
     B.SetOutputES(B_ES);
 
     CCSTProxy_mTdSdx_Ptr b_proxy = CCSTProxy_mTdSdx_Ptr(new CCSTProxy_mTdSdx());
-    b_proxy->SetRealm(CST_TdS_LT);
+ //   b_proxy->SetRealm(CST_TdS_LT);
     b_proxy->Init(accu);
     B.SetInputEnergyDerProxy(b_proxy);
 
@@ -81,7 +82,7 @@ void CAUSEngineCST_A::SetAccumulator(CPMFAccumulatorPtr accu)
     C.SetOutputES(C_ES);
 
     CCSTProxy_dU_Ptr c_proxy = CCSTProxy_dU_Ptr(new CCSTProxy_dU());
-    c_proxy->SetRealm(CST_ETOTFW);
+ //   c_proxy->SetRealm(CST_ETOTFW);
     c_proxy->Init(accu);
     C.SetInputEnergyProxy(c_proxy);
 
@@ -90,7 +91,7 @@ void CAUSEngineCST_A::SetAccumulator(CPMFAccumulatorPtr accu)
     D.SetOutputES(D_ES);
 
     CCSTProxy_dU_Ptr d_proxy = CCSTProxy_dU_Ptr(new CCSTProxy_dU());
-    d_proxy->SetRealm(CST_ETOT);
+ //   d_proxy->SetRealm(CST_ETOT);
     d_proxy->Init(accu);
     D.SetInputEnergyProxy(d_proxy);
 

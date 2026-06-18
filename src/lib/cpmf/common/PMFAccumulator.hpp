@@ -201,25 +201,8 @@ public:
     /// get energy unit
     const CSmallString& GetEnergyUnit(void) const;
 
- // -----------------------------------------------
-
-    /// get number of samples
-    int GetNumOfSamples(int ibin) const;
-
-    /// set number of samples
-    void SetNumOfSamples(int ibin,int nsamples);
-
-    /// get total number of samples
-    int GetTotalNumOfSamples(void) const;
-
     /// get real value of energy
     double GetEnergyRealValue(double value) const;
-
-    // set NCorr
-    void SetNCorr(double ncorr);
-
-    // get NCorr
-    double GetNCorr(void) const;
 
 // mathematical operation -----------------------------------------------------
     /// set all data to zero
@@ -332,8 +315,6 @@ protected:
 
     double                          EnergyFConv;        // energy unit
     CSmallString                    EnergyUnit;
-
-    double                          NCorr;
 
     int                             NumOfCVs;           // number of CVs
     std::vector<CColVariablePtr>    CVs;                // collective variables

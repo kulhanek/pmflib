@@ -91,8 +91,8 @@ private:
     int  SeedSampled(int seedid);
     bool IsHole(int seedid);
     void MarkAsHole(int seedid);
-    void SyncFESWithAccu(void);
-    void SyncAccuWithFES(void);
+    void SyncFESWithProxy(void);
+    void SyncProxyWithFES(void);
     void DecodeEList(const CSmallString& spec, std::vector<bool>& elist,const CSmallString& optionname);
     bool ReduceFES(void);
     void AddEneCorr(void);

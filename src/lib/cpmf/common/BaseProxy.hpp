@@ -32,9 +32,9 @@
 // if a given realm cannot provide a value, return zero.
 
 enum EProxyRealm {
-    E_PROXY_VALUE        = 1,  // sample mean
-    E_PROXY_SIGMA        = 2,  // sample variance (fluctuation)
-    E_PROXY_ERROR        = 3,  // variance of sample mean (error estimate)
+    E_PROXY_MEAN    = 1,  // sample mean
+    E_PROXY_SD      = 2,  // unbiased sample standard deviation
+    E_PROXY_SEM     = 3,  // standard error of the sample mean
 };
 
 //------------------------------------------------------------------------------
@@ -109,6 +109,26 @@ public:
     // set number of samples
     virtual void SetNumOfSamples(int ibin,int nsamples);
 
+// access methods (mean) -------------------------------------------------------
+
+    // get mean value, sample standard deviation (sd), standard error of the mean (sem) 
+    void GetMeanValue(const CSmallString& section_name,
+                        double& mean, double& sd, double& sem, bool value_only, int ibin, int icv=-1) const;
+
+    // get weighted mean value, sample standard deviation (sd), standard error of the mean (sem) 
+    void GetWMeanValue(const CSmallString& section_name,const CSmallString& weight_section_name,
+                        double& mean, double& sd, double& sem, bool value_only, int ibin, int icv=-1) const;
+
+// access methods (covariance) -------------------------------------------------
+
+    // get covariance value, sample standard deviation (sd), standard error of the covariance (sem) 
+    void GetCovarianceValue(const CSmallString& section_name,
+                        double& cval, double& sd, double& sem, bool value_only, int ibin, int icv=-1) const;
+
+    // get weighted covariance value, sample standard deviation (sd), standard error of the covariance (sem) 
+    void GetWCovarianceValue(const CSmallString& section_name,const CSmallString& weight_section_name,
+                        double& cval, double& sd, double& sem, bool value_only, int ibin, int icv=-1) const;
+
 // protected data --------------------------------------------------------------
 protected:
     CPMFAccumulatorPtr                      Accu;
@@ -116,6 +136,10 @@ protected:
     std::map<CSmallString,CProxyRealmDescr> SupportedRealms;
     int                                     RealmID;
 };
+
+//------------------------------------------------------------------------------
+
+typedef boost::shared_ptr<CBaseProxy>    CBaseProxyPtr;
 
 //------------------------------------------------------------------------------
 

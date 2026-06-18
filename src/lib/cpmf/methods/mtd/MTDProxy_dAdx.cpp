@@ -31,7 +31,7 @@ using namespace std;
 
 CMTDProxy_dAdx::CMTDProxy_dAdx(void)
 {
-    RegisterRealm(MTD_MICF, "dA/dx", "MTD", "dA(x)=|MICF dx|");
+    RegisterRealm(MTD_MICF, "dA/dx", "MTD", "dA(x)=|<ICF> dx|");
 }
 
 //------------------------------------------------------------------------------
@@ -88,14 +88,8 @@ double CMTDProxy_dAdx::GetValue(int ibin,int icv,EProxyRealm realm) const
     switch(realm){
 // mean force
         // -------------------
-        case(E_PROXY_VALUE):
+        case(E_PROXY_MEAN):
             return( micf * fact );
-        // -------------------
-        case(E_PROXY_SIGMA):
-            return( 0.0 );
-        // -------------------
-        case(E_PROXY_ERROR):
-            return( 0.0 );
         // -------------------
         default:
             RUNTIME_ERROR("unsupported realm");

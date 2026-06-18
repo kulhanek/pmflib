@@ -23,6 +23,7 @@
 #include <iomanip>
 #include <ABFProxy_dU.hpp>
 #include <CSTProxy_dU.hpp>
+#include <CSTProxy_dY.hpp>
 #include <CSTProxy_Ecorr.hpp>
 #include <ABPProxy_dA.hpp>
 
@@ -39,6 +40,9 @@ void CEnergyProxyInit::InitProxyList(std::list<CEnergyProxyPtr>& ene_proxies)
     ene_proxies.push_back(proxy);
 
     proxy = CEnergyProxyPtr(new CCSTProxy_dU);
+    ene_proxies.push_back(proxy);
+
+    proxy = CEnergyProxyPtr(new CCSTProxy_dY);
     ene_proxies.push_back(proxy);
 
     proxy = CEnergyProxyPtr(new CCSTProxy_Ecorr);

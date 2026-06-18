@@ -53,6 +53,10 @@ SET(CPMF_METHODS_SRC
         methods/cst/CSTProxy_dUdx.cpp
         methods/cst/CSTProxy_mTdSdx.cpp
         methods/cst/CSTProxy_dU.cpp
+        methods/cst/CSTProxy_dUdx.cpp
+        methods/cst/CSTProxy_dY.cpp
+        methods/cst/CSTProxy_dYdx.cpp
+        methods/cst/CSTProxy_dCdx.cpp
         methods/cst/CSTProxy_Ecorr.cpp
         methods/cst/AUSEngineCST_A.cpp
 

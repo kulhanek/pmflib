@@ -73,12 +73,6 @@ int CABFResampleOptions::CheckOptions(void)
                 (const char*)GetProgramName());
         IsError = true;
     }
-    if( IsOptLoadHyprmsSet() && IsOptNCorrSet() ){
-        if(IsError == false) fprintf(stderr,"\n");
-        fprintf(stderr,"%s: --loadhyprms is mutually exclusive with --ncorr\n",
-                (const char*)GetProgramName());
-        IsError = true;
-    }
     if( IsOptLoadHyprmsSet() && IsOptWFacSet() ){
         if(IsError == false) fprintf(stderr,"\n");
         fprintf(stderr,"%s: --loadhyprms is mutually exclusive with --wfac\n",

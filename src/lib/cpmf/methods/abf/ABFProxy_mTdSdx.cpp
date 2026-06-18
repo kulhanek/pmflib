@@ -106,7 +106,6 @@ double CABFProxy_mTdSdx::GetValue(int ibin,int icv,EProxyRealm realm) const
     }
 
     double  nsamples = Accu->GetData("NTDS",ibin);
-    double  ncorr    = Accu->GetNCorr();
     double  temp     = Accu->GetTemperature();
     double  value    = 0.0;
 
@@ -172,18 +171,18 @@ double CABFProxy_mTdSdx::GetValue(int ibin,int icv,EProxyRealm realm) const
 
     switch(realm){
     // -------------------
-        case(E_PROXY_VALUE): {
+        case(E_PROXY_MEAN): {
             return( c11  / (temp * PMF_Rgas) );
         }
     // -------------------
-        case(E_PROXY_SIGMA): {
+        case(E_PROXY_SD): {
             // approximation
             return( sqrt(m2icf / nsamples) * sqrt( m2ene / nsamples )  / (temp * PMF_Rgas) );
         }
     // -------------------
-        case(E_PROXY_ERROR): {
+        case(E_PROXY_SEM): {
             // approximation
-            return( sqrt(ncorr) * sqrt(m2icf / nsamples) * sqrt( m2ene / nsamples ) / sqrt(nsamples) / (temp * PMF_Rgas) );
+            return( sqrt(m2icf / nsamples) * sqrt( m2ene / nsamples ) / sqrt(nsamples) / (temp * PMF_Rgas) );
         }
     // -------------------
         default:

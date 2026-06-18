@@ -159,9 +159,16 @@ bool CMTDEnergy::Run(void)
     // calculate energy
         for(int j=0; j < accu->GetNumOfBins(); j++){
             tmp_FES->SetNumOfSamples(j,eneproxy->GetNumOfSamples(j));
-            tmp_FES->SetEnergy(j, eneproxy->GetValue(j,E_PROXY_VALUE) );
+            tmp_FES->SetEnergy(j, eneproxy->GetValue(j,E_PROXY_MEAN) );
         }
-        int numofhills = accu->GetTotalNumOfSamples();
+
+// //------------------------------------------------------------------------------
+
+        int numofhills = 0;
+        for(int ibin=0; ibin < accu->GetNumOfBins(); ibin++){
+            numofhills += accu->GetData("NSAMPLES",ibin);
+        }
+
         CSmallString type = "MTD";
         if( eneproxy->IsWTMeta() ){
             type << "-WT";

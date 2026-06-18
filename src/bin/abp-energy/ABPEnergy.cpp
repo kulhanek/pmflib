@@ -193,7 +193,7 @@ bool CABPEnergy::Run(void)
 // calculate mollified FES
     for(int i=0; i < Accu->GetNumOfBins(); i++){
         FES->SetNumOfSamples(i,EneProxy->GetNumOfSamples(i));
-        FES->SetEnergy(i, EneProxy->GetValue(i,E_PROXY_VALUE) );
+        FES->SetEnergy(i, EneProxy->GetValue(i,E_PROXY_MEAN) );
     }
 
     vout << format("   Mollified FES SigmaF2         = %10.5f")%FES->GetSigmaF2() << endl;
@@ -320,7 +320,7 @@ void CABPEnergy::RunRLDeconvolution(void)
     // calculate deconvoluted FES
         for(int i=0; i < Accu->GetNumOfBins(); i++){
             FES->SetNumOfSamples(i,EneProxy->GetNumOfSamples(i));
-            FES->SetEnergy(i, EneProxy->GetValue(i,E_PROXY_VALUE) );
+            FES->SetEnergy(i, EneProxy->GetValue(i,E_PROXY_MEAN) );
         }
         vout << format("   #%03d Deconvoluted FES SigmaF2 = %10.5f")%(i+1)%FES->GetSigmaF2() << endl;
     }

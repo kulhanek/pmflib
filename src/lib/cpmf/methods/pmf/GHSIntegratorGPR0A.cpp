@@ -303,7 +303,8 @@ bool CGHSIntegratorGPR0A::Integrate(CVerboseStr& vout,bool nostat)
     // number of data points
     NumOfUsedBins = 0;
     for(size_t ibin=0; ibin < NumOfBins; ibin++){
-        if( Accu->GetNumOfSamples(ibin) > 0 ) NumOfUsedBins++;
+        // FIXME
+        //  if( Accu->GetNumOfSamples(ibin) > 0 ) NumOfUsedBins++;
     }
     GPRSize = 3 * NumOfUsedBins;
 
@@ -311,7 +312,8 @@ bool CGHSIntegratorGPR0A::Integrate(CVerboseStr& vout,bool nostat)
     SampledMap.resize(NumOfUsedBins);
     size_t ind = 0;
     for(size_t ibin=0; ibin < NumOfBins; ibin++){
-        if( Accu->GetNumOfSamples(ibin) <= 0 ) continue;
+        // FIXME
+        //  if( Accu->GetNumOfSamples(ibin) <= 0 ) continue;
         SampledMap[ind] = ibin;
         ind++;
     }
@@ -387,7 +389,7 @@ bool CGHSIntegratorGPR0A::TrainGP(CVerboseStr& vout)
     HMean = 0.0;
     for(size_t indi=0; indi < NumOfUsedBins; indi++){
         size_t ibin = SampledMap[indi];
-        HMean += HEneProxy->GetValue(ibin,E_PROXY_VALUE);
+        HMean += HEneProxy->GetValue(ibin,E_PROXY_MEAN);
     }
     HMean /= (double)NumOfUsedBins;
 
@@ -399,9 +401,9 @@ bool CGHSIntegratorGPR0A::TrainGP(CVerboseStr& vout)
     #pragma omp parallel for
     for(size_t indi=0; indi < NumOfUsedBins; indi++){
         size_t ibin = SampledMap[indi];
-        Y[offset0 + indi] = GDerProxy->GetValue(ibin,0,E_PROXY_VALUE);
-        Y[offset1 + indi] = HEneProxy->GetValue(ibin,E_PROXY_VALUE)-HMean;
-        Y[offset2 + indi] = SDerProxy->GetValue(ibin,0,E_PROXY_VALUE);
+        Y[offset0 + indi] = GDerProxy->GetValue(ibin,0,E_PROXY_MEAN);
+        Y[offset1 + indi] = HEneProxy->GetValue(ibin,E_PROXY_MEAN)-HMean;
+        Y[offset2 + indi] = SDerProxy->GetValue(ibin,0,E_PROXY_MEAN);
     }
 
 // construct TK and KS
@@ -506,7 +508,7 @@ void CGHSIntegratorGPR0A::CalculateEnergy(CVerboseStr& vout)
 // basic EneSurface update
     #pragma omp parallel for
     for(size_t ibin=0; ibin < NumOfBins; ibin++){
-        int nsamples = Accu->GetNumOfSamples(ibin);
+        int nsamples =      0;   // FIXME Accu->GetNumOfSamples(ibin);
         GSurface->SetNumOfSamples(ibin,nsamples);
         GSurface->SetEnergy(ibin,0.0);
         GSurface->SetError(ibin,0.0);
@@ -777,7 +779,7 @@ double CGHSIntegratorGPR0A::GetRMSR(size_t cv,int task)
 
             Accu->GetPoint(ibin,ipos);
 
-            double mfi = proxy->GetValue(ibin,cv,E_PROXY_VALUE);
+            double mfi = proxy->GetValue(ibin,cv,E_PROXY_MEAN);
             double mfp = GetTrainingValue(ipos,cv,task);
             double diff = mfi - mfp;
             rmsr += diff*diff;
@@ -804,7 +806,7 @@ double CGHSIntegratorGPR0A::GetRMSR(size_t cv,int task)
 
             Accu->GetPoint(ibin,ipos);
 
-            double mfi = proxy->GetValue(ibin,E_PROXY_VALUE);
+            double mfi = proxy->GetValue(ibin,E_PROXY_MEAN);
             double mfp = GetTrainingValue(ipos,cv,task);
             double diff = mfi - mfp;
             rmsr += diff*diff;
@@ -1001,8 +1003,8 @@ bool CGHSIntegratorGPR0A::WriteMFInfo(const CSmallString& name,int task)
 
             Accu->GetPoint(ibin,ipos);
             for(size_t k=0; k < NumOfCVs; k++){
-                mfi[indi*NumOfCVs+k] = proxy->GetValue(ibin,k,E_PROXY_VALUE);
-                double mfe = proxy->GetValue(ibin,k,E_PROXY_ERROR);
+                mfi[indi*NumOfCVs+k] = proxy->GetValue(ibin,k,E_PROXY_MEAN);
+                double mfe = proxy->GetValue(ibin,k,E_PROXY_SEM);
                 mfie[indi*NumOfCVs+k] = mfe;            // this is a sigma
 
                 mfp[indi*NumOfCVs+k] = GetTrainingValue(ipos,k,task);
@@ -1033,8 +1035,8 @@ bool CGHSIntegratorGPR0A::WriteMFInfo(const CSmallString& name,int task)
 
             Accu->GetPoint(ibin,ipos);
             size_t k = 0;
-            mfi[indi*NumOfCVs+k] = proxy->GetValue(ibin,E_PROXY_VALUE);
-            double mfe = proxy->GetValue(ibin,E_PROXY_ERROR);
+            mfi[indi*NumOfCVs+k] = proxy->GetValue(ibin,E_PROXY_MEAN);
+            double mfe = proxy->GetValue(ibin,E_PROXY_SEM);
             mfie[indi*NumOfCVs+k] = mfe;            // this is a sigma
 
             mfp[indi*NumOfCVs+k] = GetTrainingValue(ipos,k,task);

@@ -278,9 +278,9 @@ void CPMFAccuInfo::GetDerivative(const CSmallString& name)
     Errors.CreateVector(Accu->GetNumOfBins());
 
     for(int ibin=0; ibin < Accu->GetNumOfBins(); ibin++){
-        Values[ibin] = der_proxy->GetValue(ibin,Options.GetOptCV()-1,E_PROXY_VALUE);
-        Sigmas[ibin] = der_proxy->GetValue(ibin,Options.GetOptCV()-1,E_PROXY_SIGMA);
-        Errors[ibin] = der_proxy->GetValue(ibin,Options.GetOptCV()-1,E_PROXY_ERROR);
+        Values[ibin] = der_proxy->GetValue(ibin,Options.GetOptCV()-1,E_PROXY_MEAN);
+        Sigmas[ibin] = der_proxy->GetValue(ibin,Options.GetOptCV()-1,E_PROXY_SD);
+        Errors[ibin] = der_proxy->GetValue(ibin,Options.GetOptCV()-1,E_PROXY_SEM);
     }
 
     if( Options.GetOptNoHeader() == false ){
@@ -309,9 +309,9 @@ void CPMFAccuInfo::GetEnergy(const CSmallString& name)
     Errors.CreateVector(Accu->GetNumOfBins());
 
     for(int ibin=0; ibin < Accu->GetNumOfBins(); ibin++){
-        Values[ibin] = ene_proxy->GetValue(ibin,E_PROXY_VALUE);
-        Sigmas[ibin] = ene_proxy->GetValue(ibin,E_PROXY_SIGMA);
-        Errors[ibin] = ene_proxy->GetValue(ibin,E_PROXY_ERROR);
+        Values[ibin] = ene_proxy->GetValue(ibin,E_PROXY_MEAN);
+        Sigmas[ibin] = ene_proxy->GetValue(ibin,E_PROXY_SD);
+        Errors[ibin] = ene_proxy->GetValue(ibin,E_PROXY_SEM);
     }
 
     if( Options.GetOptNoHeader() == false ){
@@ -354,8 +354,6 @@ void CPMFAccuInfo::GetMean(const CSmallString& name)
     Sigmas.CreateVector(Accu->GetNumOfBins());
     Errors.CreateVector(Accu->GetNumOfBins());
 
-    double  ncorr       = Accu->GetNCorr();
-
     for(int ibin=0; ibin < Accu->GetNumOfBins(); ibin++){
 
         double  nsamples    = nsamples_sd->GetData(ibin);
@@ -365,7 +363,7 @@ void CPMFAccuInfo::GetMean(const CSmallString& name)
         if( nsamples > 0 ) {
             Values[ibin] = mene;
             Sigmas[ibin] = sqrt(m2ene / nsamples);
-            Errors[ibin] = sqrt(m2ene * ncorr) / nsamples;
+            Errors[ibin] = sqrt(m2ene) / nsamples;
         } else {
             Values[ibin] = 0.0;
             Sigmas[ibin] = 0.0;
@@ -490,7 +488,7 @@ void CPMFAccuInfo::PrintData(bool print_errors)
     for(int ibin=0; ibin < Accu->GetNumOfBins(); ibin++){
 
         // do we have enough samples?
-        double nsamples = Accu->GetNumOfSamples(ibin);
+        double nsamples = 0; // FIXME double nsamples = Accu->GetNumOfSamples(ibin);
         if( Options.IsOptLimitSet() ){
             if( nsamples < Options.GetOptLimit() ) continue;
         }

@@ -3,6 +3,7 @@
 // =============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
+//    Copyright (C) 2026 Petr Kulhanek, kulhanek@chemi.muni.cz
 //    Copyright (C) 2025 Petr Kulhanek, kulhanek@chemi.muni.cz
 //    Copyright (C) 2024 Petr Kulhanek, kulhanek@chemi.muni.cz
 //
@@ -27,9 +28,7 @@
 //------------------------------------------------------------------------------
 
 enum ECSTdHdxType {
-    CST_dH,
-//    CST_C11PP,
-//    CST_C11PPFW,
+    CST_dUdx_VF,
 };
 
 //------------------------------------------------------------------------------

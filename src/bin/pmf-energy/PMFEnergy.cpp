@@ -188,7 +188,6 @@ bool CPMFEnergy::Run(void)
         }
         State++;
         vout << "   Done." << endl;
-        Accu->SetNCorr(1.0);    // to prevent possible errors if used later
 
     } else if ( Options.GetOptMethod() == "gpr" ){
         vout << endl;
@@ -373,10 +372,10 @@ void CPMFEnergy::AdjustGlobalMin(void)
 
 void CPMFEnergy::GetRawEnthalpy(void)
 {
-    for(int ibin=0; ibin < Accu->GetNumOfBins(); ibin++){
+    for(int ibin=0; ibin < EneProxy->GetNumOfBins(); ibin++){
         int    nsamples = EneProxy->GetNumOfSamples(ibin);
-        double ent = EneProxy->GetValue(ibin,E_PROXY_VALUE);
-        double error = EneProxy->GetValue(ibin,E_PROXY_ERROR);
+        double ent = EneProxy->GetValue(ibin,E_PROXY_MEAN);
+        double error = EneProxy->GetValue(ibin,E_PROXY_SEM);
         ENE->SetNumOfSamples(ibin,nsamples);
         ENE->SetEnergy(ibin,ent);
         ENE->SetError(ibin,error);
@@ -454,17 +453,17 @@ void CPMFEnergy::WriteHeader(void)
 void CPMFEnergy::PrintSampledStat(void)
 {
     // calculate sampled area
-    double maxbins = Accu->GetNumOfBins();
+    double maxbins = EneProxy->GetNumOfBins();
     int    sampled = 0;
     int    limit = 0;
-    for(int ibin=0; ibin < Accu->GetNumOfBins(); ibin++) {
-        if( Accu->GetNumOfSamples(ibin) > 0 ) {
+    for(int ibin=0; ibin < EneProxy->GetNumOfBins(); ibin++) {
+        if( EneProxy->GetNumOfSamples(ibin) > 0 ) {
             sampled++;
         }
-        if( Accu->GetNumOfSamples(ibin) > Options.GetOptLimit() ) {
+        if( EneProxy->GetNumOfSamples(ibin) > Options.GetOptLimit() ) {
             limit++;
         } else {
-            Accu->SetNumOfSamples(ibin,0);
+            EneProxy->SetNumOfSamples(ibin,0);
         }
     }
     if( maxbins > 0 ){

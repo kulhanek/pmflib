@@ -207,10 +207,6 @@ void CMWAServer::ProcessSyncControl(void)
     } else{
         vout << "Synchronous mode                  = off" << endl;
     }
-
-    // FIXME - Letif
-    // do we need any further setup or parameters to mix data in CMWAServerAccu::ExchangeDataSynchronousMode?
-    // if so then we can read them here or in other more relavant section than in [sync]
 }
 
 //------------------------------------------------------------------------------

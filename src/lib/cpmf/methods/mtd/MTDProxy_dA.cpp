@@ -79,7 +79,7 @@ double CMTDProxy_dA::GetValue(int ibin,EProxyRealm realm) const
 
     switch(realm){
         // -------------------
-        case(E_PROXY_VALUE):
+        case(E_PROXY_MEAN):
             return( - mtdpot * fact );
         // -------------------
         default:

@@ -200,25 +200,27 @@ void CACCUCombine::PrintSampledStat(void)
         CPMFAccumulatorPtr accu = InAccus[i];
         vout << format("** PMF Accumulator #%05d ...")%(i+1);
         // calculate sampled area
-        double maxbins = accu->GetNumOfBins();
+       // double maxbins = 0; // FIXME accu->GetNumOfBins();
         int    sampled = 0;
         int    limit = 0;
         for(int ibin=0; ibin < accu->GetNumOfBins(); ibin++) {
-            if( accu->GetNumOfSamples(ibin) > 0 ) {
+           // FIXME if( accu->GetNumOfSamples(ibin) > 0 ) {
                 sampled++;
-            }
-            if( accu->GetNumOfSamples(ibin) > Options.GetOptLimit() ) {
+            // }
+            // FIXME if( accu->GetNumOfSamples(ibin) > Options.GetOptLimit() ) {
                 limit++;
-            } else {
-                accu->SetNumOfSamples(ibin,0);
-            }
+            // } else {
+                // FIXME
+               // accu->SetNumOfSamples(ibin,0);
+            // }
         }
-        if( maxbins > 0 ){
-            vout << " Sampled area: "
-                 << setw(6) << sampled << " / " << (int)maxbins << " | " << setw(5) << setprecision(1) << fixed << sampled/maxbins*100 <<"%";
-            vout << " Within limit: "
-                 << setw(6) << limit << " / " << (int)maxbins << " | " << setw(5) << setprecision(1) << fixed << limit/maxbins*100 <<"%";
-        }
+        // FIXME
+        // if( maxbins > 0 ){
+        //     vout << " Sampled area: "
+        //          << setw(6) << sampled << " / " << (int)maxbins << " | " << setw(5) << setprecision(1) << fixed << sampled/maxbins*100 <<"%";
+        //     vout << " Within limit: "
+        //          << setw(6) << limit << " / " << (int)maxbins << " | " << setw(5) << setprecision(1) << fixed << limit/maxbins*100 <<"%";
+        // }
         vout << endl;
         if( accu->CheckCVSInfo(InAccus[0]) == false ){
             CSmallString error;

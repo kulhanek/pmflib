@@ -128,10 +128,6 @@ public:
                 "adjacent squared exponential functions multiplied by these factors in the form WFac1[xWFac2x...]. "
                 "The last value pads the rest.")
         // -------------------------------------------
-            CSO_MAP_OPT(CSmallString, NCorr, "0.0", false, 'c', "ncorr", "VALUE",
-                "Number of statistically correlated samples in the form NCorr1[NCorr2x...]. "
-                "The last value pads the rest.")
-        // -------------------------------------------
             CSO_MAP_OPT(CSmallString, SigmaN2, "1e-5", false, 'n', "sigman2", "SPEC",
                 "Values of noise sigma squared for each CV in the form SigmaN2(1)[xSigmaN2(2)x...]. "
                 "The last value pads the rest.")

@@ -370,14 +370,15 @@ void CAUSEnergyIntegrate::PrintAccuStat(void)
     int    sampled = 0;
     int    limit = 0;
     for(int ibin=0; ibin < Accu->GetNumOfBins(); ibin++) {
-        if( Accu->GetNumOfSamples(ibin) > 0 ) {
-            sampled++;
-        }
-        if( Accu->GetNumOfSamples(ibin) > Options.GetOptLimit() ) {
-            limit++;
-        } else {
-            Accu->SetNumOfSamples(ibin,0);
-        }
+        // FIXME
+        // if( Accu->GetNumOfSamples(ibin) > 0 ) {
+        //     sampled++;
+        // }
+        // if( Accu->GetNumOfSamples(ibin) > Options.GetOptLimit() ) {
+        //     limit++;
+        // } else {
+        //    // FIXME Accu->SetNumOfSamples(ibin,0);
+        // }
     }
     if( maxbins > 0 ){
         vout << " Sampled area: "

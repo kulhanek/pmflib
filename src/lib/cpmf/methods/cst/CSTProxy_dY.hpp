@@ -1,9 +1,9 @@
-#ifndef CSTProxy_dU_H
-#define CSTProxy_dU_H
+#ifndef CSTProxy_dY_H
+#define CSTProxy_dY_H
 // =============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
-//    Copyright (C) 2026 Petr Kulhanek, kulhanek@chemi.muni.cz
+//    Copyright (C) 2025 Petr Kulhanek, kulhanek@chemi.muni.cz
 //    Copyright (C) 2025 Petr Kulhanek, kulhanek@chemi.muni.cz
 //    Copyright (C) 2021 Petr Kulhanek, kulhanek@chemi.muni.cz
 //
@@ -27,8 +27,17 @@
 
 //------------------------------------------------------------------------------
 
-enum ECSTdUType {
-    CST_dU,         // ETOT - Fixman weighted
+enum ECSTdYType {
+    CST_ETOT,       // ETOT
+    CST_ETOTFW,     // ETOT         - Fixman weighted
+    CST_EINT,       // EPOT+ERST
+    CST_EINTFW,     // EPOT+ERST    - Fixman weighted
+    CST_EPOT,       // EPOT
+    CST_EPOTFW,     // EPOT         - Fixman weighted
+    CST_ERST,       // ERST
+    CST_ERSTFW,     // ERST         - Fixman weighted
+    CST_EKIN,       // EKIN
+    CST_EKINFW,     // EKIN         - Fixman weighted
 };
 
 //------------------------------------------------------------------------------
@@ -36,11 +45,11 @@ enum ECSTdUType {
 /** \brief PMF proxy providing enthalpy
 */
 
-class PMF_PACKAGE CCSTProxy_dU : public CEnergyProxy {
+class PMF_PACKAGE CCSTProxy_dY : public CEnergyProxy {
 public:
 // constructor and destructor --------------------------------------------------
-    CCSTProxy_dU(void);
-    ~CCSTProxy_dU(void);
+    CCSTProxy_dY(void);
+    ~CCSTProxy_dY(void);
 //------------------------------------------------------------------------------
     // get number of samples
     virtual int GetNumOfSamples(int ibin) const;
@@ -54,7 +63,7 @@ public:
 
 //------------------------------------------------------------------------------
 
-typedef boost::shared_ptr<CCSTProxy_dU>    CCSTProxy_dU_Ptr;
+typedef boost::shared_ptr<CCSTProxy_dY>    CCSTProxy_dY_Ptr;
 
 //------------------------------------------------------------------------------
 

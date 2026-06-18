@@ -260,8 +260,8 @@ bool CSmootherGPR::WriteMFInfo(const CSmallString& name)
         size_t ibin = SampledMap[indi];
 
         EneSurface->GetPoint(ibin,ipos);
-        mfi[indi]  = EneProxy->GetValue(ibin,E_PROXY_VALUE);
-        mfie[indi] = EneProxy->GetValue(ibin,E_PROXY_ERROR);    // sigma
+        mfi[indi]  = EneProxy->GetValue(ibin,E_PROXY_MEAN);
+        mfie[indi] = EneProxy->GetValue(ibin,E_PROXY_SEM);    // sigma
         mfp[indi]  = GetValue(ipos);
         mfpe[indi] = 0.0;
         for(size_t indv=0; indv < NumOfValues; indv++){
@@ -315,7 +315,7 @@ bool CSmootherGPR::TrainGP(CVerboseStr& vout)
     Mean = 0.0;
     for(size_t indi=0; indi < GPRSize; indi++){
         size_t ibin = SampledMap[indi];
-        Mean += EneProxy->GetValue(ibin,E_PROXY_VALUE);
+        Mean += EneProxy->GetValue(ibin,E_PROXY_MEAN);
     }
     Mean /= (double)GPRSize;
 
@@ -323,7 +323,7 @@ bool CSmootherGPR::TrainGP(CVerboseStr& vout)
     #pragma omp parallel for
     for(size_t indi=0; indi < GPRSize; indi++){
         size_t ibin = SampledMap[indi];
-        double mf   = EneProxy->GetValue(ibin,E_PROXY_VALUE);
+        double mf   = EneProxy->GetValue(ibin,E_PROXY_MEAN);
         Y[indi]     = mf - Mean;
     }
 

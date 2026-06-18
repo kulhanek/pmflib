@@ -1,6 +1,7 @@
 // =============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
+//    Copyright (C) 2026 Petr Kulhanek, kulhanek@chemi.muni.cz
 //    Copyright (C) 2025 Petr Kulhanek, kulhanek@chemi.muni.cz
 //    Copyright (C) 2021 Petr Kulhanek, kulhanek@chemi.muni.cz
 //
@@ -32,10 +33,10 @@ using namespace std;
 
 CCSTProxy_Ecorr::CCSTProxy_Ecorr(void)
 {
-    RegisterRealm(CST_dA_corr,      "dA_corr",     "CST", "dA{CST}corr");
-    RegisterRealm(CST_dA_corr_TdS,  "dA_corr_TdS", "CST", "dA{CST}corr - TdS source");
-    RegisterRealm(CST_mTdS_corr,    "mTdS_corr",   "CST", "-TdS{CST}corr");
-    RegisterRealm(CST_mTdS_corr,    "-TdS_corr",   "CST", "-TdS{CST}corr");
+    RegisterRealm(CST_dA_corr,      "dA_corr",      "CST", "dA{CST}corr");
+    RegisterRealm(CST_dA_corr_TdS,  "dA_corr(TdS)", "CST", "dA{CST}corr (TDS subsystem)");
+    RegisterRealm(CST_mTdS_corr,    "mTdS_corr",    "CST", "-TdS{CST}corr");
+    RegisterRealm(CST_mTdS_corr,    "-TdS_corr",    "CST", "-TdS{CST}corr");
 }
 
 //------------------------------------------------------------------------------
@@ -65,6 +66,7 @@ int CCSTProxy_Ecorr::GetNumOfSamples(int ibin) const
     // -------------------
         default:
             RUNTIME_ERROR("unsupported type");
+        break;
     }
 }
 
@@ -88,6 +90,7 @@ void CCSTProxy_Ecorr::SetNumOfSamples(int ibin,int nsamples)
     // -------------------
         default:
             RUNTIME_ERROR("unsupported type");
+        break;
     }
 }
 
@@ -99,55 +102,90 @@ double CCSTProxy_Ecorr::GetValue(int ibin,EProxyRealm realm) const
         RUNTIME_ERROR("Accu is NULL");
     }
 
-    double  ncorr    = Accu->GetNCorr();
     double  temp     = Accu->GetTemperature();
-    double  mean     = 0.0; // sample mean
-    double  samvar   = 0.0; // sample variance
-    double  meanvar  = 0.0; // variance of sample mean
 
-// do we have enough samples?
-    double nsamples    = GetNumOfSamples(ibin);
-    if( nsamples <= 0 ) return(mean);
+    double  value   = 0.0;  // result
+    double  sd      = 0.0;  // unbiased sample standard deviation
+    double  sem     = 0.0;  // standard error of the sample result
 
 // get requested data
     switch(RealmID){
     // -------------------
         case(CST_dA_corr): {
-            double mfw  = Accu->GetData("MFW",ibin);
-            double m2fw = Accu->GetData("M2FW",ibin);
+            double fw_mean = 0.0;
+            double fw_sd = 0.0;
+            double fw_sem = 0.0;
 
-            mean        = - PMF_Rgas * temp * log(mfw);
+            GetMeanValue("FW",fw_mean,fw_sd,fw_sem,realm==E_PROXY_MEAN,ibin);
 
-            samvar      = m2fw / nsamples;
-            samvar      = (PMF_Rgas*temp/mfw)*(PMF_Rgas*temp/mfw) * samvar;
+            value = - PMF_Rgas * temp * log(fw_mean);
 
-            meanvar     = samvar / nsamples;
+            // https://en.wikipedia.org/wiki/Propagation_of_uncertainty
+            if( fw_mean != 0.0 ){
+                sd = fabs(- PMF_Rgas * temp * fw_sd / fw_mean);
+                sem = fabs( - PMF_Rgas * temp * fw_sem / fw_mean );
+            }
         }
         break;
     // -------------------
         case(CST_dA_corr_TdS): {
-            double mfw  = Accu->GetData("MFWTDS",ibin);
-            double m2fw = Accu->GetData("M2FWTDS",ibin);
+            double fw_mean = 0.0;
+            double fw_sd = 0.0;
+            double fw_sem = 0.0;
 
-            mean        = - PMF_Rgas * temp * log(mfw);
+            GetMeanValue("FWTDS",fw_mean,fw_sd,fw_sem,realm==E_PROXY_MEAN,ibin);
 
-            samvar      = m2fw / nsamples;
-            samvar      = (PMF_Rgas*temp/mfw)*(PMF_Rgas*temp/mfw) * samvar;
+            value = - PMF_Rgas * temp * log(fw_mean);
 
-            meanvar     = samvar / nsamples;
+            // https://en.wikipedia.org/wiki/Propagation_of_uncertainty
+            if( fw_mean != 0.0 ){
+                sd = fabs(- PMF_Rgas * temp * fw_sd / fw_mean);
+                sem = fabs( - PMF_Rgas * temp * fw_sem / fw_mean );
+            }
         }
         break;
     // -------------------
         case(CST_mTdS_corr): {
-            double mfw   = Accu->GetData("MFWTDS",ibin);
-            double corr1 = PMF_Rgas * temp * log(mfw);
+            double fw_mean = 0.0;
+            double fw_sd = 0.0;
+            double fw_sem = 0.0;
 
-            double C     = Accu->GetData("C11ZH",ibin);
-            double corr2 = C / nsamples / mfw;
+            GetMeanValue("FWTDS",fw_mean,fw_sd,fw_sem,realm==E_PROXY_MEAN,ibin);
 
-            mean         = - (corr1 + corr2);
-            samvar       = 0.0; // FIXME
-            meanvar      = 0.0;
+            double corr1_mean = - PMF_Rgas * temp * log(fw_mean);
+            double corr1_sd = 0.0;
+            double corr1_sem = 0.0;
+
+            // https://en.wikipedia.org/wiki/Propagation_of_uncertainty
+            if( fw_mean != 0.0 ){
+                corr1_sd = fabs(- PMF_Rgas * temp * fw_sd / fw_mean);
+                corr1_sem = fabs( - PMF_Rgas * temp * fw_sem / fw_mean );
+            }
+
+            double c11_cval = 0.0;
+            double c11_sd = 0.0;
+            double c11_sem = 0.0;
+
+            GetCovarianceValue("C11ZH",c11_cval,c11_sd,c11_sem,realm==E_PROXY_MEAN,ibin);
+
+            value  = corr1_mean - c11_cval / fw_mean;
+
+            // https://en.wikipedia.org/wiki/Propagation_of_uncertainty
+            // approximative estimates - terms are considered as independent
+            if( fw_mean != 0.0 ){
+                const double f  = fw_mean;
+                const double c  = c11_cval;
+                const double f2 = f*f;
+                const double f4 = f2*f2;
+
+                sd = sqrt( corr1_sd*corr1_sd
+                        + c11_sd*c11_sd / f2
+                        + c*c * fw_sd*fw_sd / f4 );
+
+                sem = sqrt( corr1_sem*corr1_sem
+                        + c11_sem*c11_sem / f2
+                        + c*c * fw_sem*fw_sem / f4 );
+            }
         }
         break;
     // -------------------
@@ -158,14 +196,14 @@ double CCSTProxy_Ecorr::GetValue(int ibin,EProxyRealm realm) const
 // return result
     switch(realm){
         // -------------------
-        case(E_PROXY_VALUE):
-            return( mean );
+        case(E_PROXY_MEAN):
+            return( value );
         // -------------------
-        case(E_PROXY_SIGMA):
-            return( sqrt(samvar) );
+        case(E_PROXY_SD):
+            return( sd );
         // -------------------
-        case(E_PROXY_ERROR):
-            return( sqrt(ncorr * meanvar) );
+        case(E_PROXY_SEM):
+            return( sem );
         // -------------------
         default:
             RUNTIME_ERROR("unsupported realm");

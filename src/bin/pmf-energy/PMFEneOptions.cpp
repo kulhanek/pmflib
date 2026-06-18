@@ -88,13 +88,6 @@ int CPMFEneOptions::CheckOptions(void)
         IsError = true;
     }
 
-    if( IsOptNCorrSet() && (GetOptMethod() != "gpr") ){
-        if(IsError == false) fprintf(stderr,"\n");
-        fprintf(stderr,"%s: --ncorr can be set only for GPR method\n",
-                (const char*)GetProgramName());
-        IsError = true;
-    }
-
     if( IsOptSigmaN2Set() && (GetOptMethod() != "gpr") ){
         if(IsError == false) fprintf(stderr,"\n");
         fprintf(stderr,"%s: --sigman2 can be set only for GPR method\n",
@@ -124,12 +117,6 @@ int CPMFEneOptions::CheckOptions(void)
     if( IsOptLoadHyprmsSet() && IsOptSigmaF2Set() ){
         if(IsError == false) fprintf(stderr,"\n");
         fprintf(stderr,"%s: --loadhyprms is mutually exclusive with --sigmaf2\n",
-                (const char*)GetProgramName());
-        IsError = true;
-    }
-    if( IsOptLoadHyprmsSet() && IsOptNCorrSet() ){
-        if(IsError == false) fprintf(stderr,"\n");
-        fprintf(stderr,"%s: --loadhyprms is mutually exclusive with --ncorr\n",
                 (const char*)GetProgramName());
         IsError = true;
     }

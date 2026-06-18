@@ -121,7 +121,6 @@ public:
     /// get data
     double GetData(int indi) const;
 
-
     /// get data
     double GetData(int indi, int icv) const;
 

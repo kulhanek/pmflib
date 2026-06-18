@@ -58,7 +58,6 @@ CPMFAccumulator::CPMFAccumulator(void)
     EnergyFConv         = 1.0;
     EnergyUnit          = "kcal mol^-1";
 
-    NCorr               = 1.0;
     NSTLimit            = 0;
     CurrStep            = 0;
     TimeStep            = 0.0;
@@ -1147,8 +1146,6 @@ CPMFAccumulatorPtr CPMFAccumulator::Duplicate(void)
     outaccu->PressureFConv      = PressureFConv;
     outaccu->PressureUnit       = PressureUnit;
 
-    outaccu->NCorr              = NCorr;
-
     outaccu->NSTLimit           = NSTLimit;
     outaccu->CurrStep           = CurrStep;
     outaccu->TimeStep           = TimeStep;
@@ -1200,8 +1197,6 @@ CPMFAccumulatorPtr CPMFAccumulator::DuplicateHeader(void)
     outaccu->Pressure           = Pressure;
     outaccu->PressureFConv      = PressureFConv;
     outaccu->PressureUnit       = PressureUnit;
-
-    outaccu->NCorr              = NCorr;
 
     outaccu->NSTLimit           = NSTLimit;
     outaccu->CurrStep           = CurrStep;
@@ -1373,48 +1368,9 @@ const CSmallString& CPMFAccumulator::GetEnergyUnit(void) const
 
 //------------------------------------------------------------------------------
 
-int CPMFAccumulator::GetNumOfSamples(int ibin) const
-{
-    return(GetData("NSAMPLES",ibin));
-}
-
-//------------------------------------------------------------------------------
-
-void CPMFAccumulator::SetNumOfSamples(int ibin,int nsamples)
-{
-    SetData("NSAMPLES",ibin,nsamples);
-}
-
-//------------------------------------------------------------------------------
-
-int CPMFAccumulator::GetTotalNumOfSamples(void) const
-{
-    int nsamples = 0;
-    for(int ibin=0; ibin < NumOfBins; ibin++){
-        nsamples += GetData("NSAMPLES",ibin);
-    }
-    return(nsamples);
-}
-
-//------------------------------------------------------------------------------
-
 double CPMFAccumulator::GetEnergyRealValue(double value) const
 {
     return(value * EnergyFConv);
-}
-
-//------------------------------------------------------------------------------
-
-void CPMFAccumulator::SetNCorr(double ncorr)
-{
-    NCorr = ncorr;
-}
-
-//------------------------------------------------------------------------------
-
-double CPMFAccumulator::GetNCorr(void) const
-{
-    return(NCorr);
 }
 
 //==============================================================================

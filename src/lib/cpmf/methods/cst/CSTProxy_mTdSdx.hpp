@@ -3,6 +3,7 @@
 // =============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
+//    Copyright (C) 2026 Petr Kulhanek, kulhanek@chemi.muni.cz
 //    Copyright (C) 2021 Petr Kulhanek, kulhanek@chemi.muni.cz
 //
 //     This program is free software; you can redistribute it and/or modify
@@ -26,20 +27,8 @@
 //------------------------------------------------------------------------------
 
 enum ECSTTdSdxType {
-    CST_mTdSdx,
-
-    CST_TdS_LT,         // Cov(lambda,Etot)
-
-    CST_TdS_LTFW,       // Cov(lambda,Etot) - Fixman weighted
-    CST_TdS_LI,       // Cov(lambda,Eint)
-    CST_TdS_LP,       // Cov(lambda,Epot)
-    CST_TdS_LR,       // Cov(lambda,Erst)
-    CST_TdS_LK,       // Cov(lambda,Ekin)
-
-    CST_TdS_II,         // Cov(ICF,Eint)
-    CST_TdS_IIFW,       // Cov(ICF,Eint) - Fixman weighted
-    CST_TdS_PIFW,       // Cov(ICFP,Eint) - Fixman weighted
-    CST_TdS_KIFW,       // Cov(ICFK,Eint) - Fixman weighted
+    CST_mTdSdx_TDS,     // from TDS subsystem
+    CST_mTdSdx_VF,      // from vector field
 };
 
 //------------------------------------------------------------------------------

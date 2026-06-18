@@ -266,7 +266,7 @@ bool CIntegratorGPR::TrainGP(CVerboseStr& vout)
     for(size_t indi=0; indi < NumOfUsedBins; indi++){
         size_t ibin = SampledMap[indi];
         for(size_t ii=0; ii < NumOfCVs; ii++){
-            double mf = DerProxy->GetValue(ibin,ii,E_PROXY_VALUE);
+            double mf = DerProxy->GetValue(ibin,ii,E_PROXY_MEAN);
             Y[indi*NumOfCVs+ii] = mf;
         }
     }
@@ -646,7 +646,7 @@ double CIntegratorGPR::GetRMSR(size_t cv)
 
         EneSurface->GetPoint(ibin,ipos);
 
-        double mfi = DerProxy->GetValue(ibin,cv,E_PROXY_VALUE);
+        double mfi = DerProxy->GetValue(ibin,cv,E_PROXY_MEAN);
         double mfp = GetMeanForce(ipos,cv);
         double diff = mfi - mfp;
         rmsr += diff*diff;
@@ -699,8 +699,8 @@ bool CIntegratorGPR::WriteMFInfo(const CSmallString& name)
 
         EneSurface->GetPoint(ibin,ipos);
         for(size_t k=0; k < NumOfCVs; k++){
-            mfi[indi*NumOfCVs+k] = DerProxy->GetValue(ibin,k,E_PROXY_VALUE);
-            double mfe = DerProxy->GetValue(ibin,k,E_PROXY_ERROR);
+            mfi[indi*NumOfCVs+k] = DerProxy->GetValue(ibin,k,E_PROXY_MEAN);
+            double mfe = DerProxy->GetValue(ibin,k,E_PROXY_SEM);
             mfie[indi*NumOfCVs+k] = mfe;            // this is a sigma
 
             mfp[indi*NumOfCVs+k] = GetMeanForce(ipos,k);
@@ -780,7 +780,7 @@ void CIntegratorGPR::FilterByMFZScore(double zscore,CVerboseStr& vout)
         EneSurface->GetPoint(ibin,ipos);
 
         for(size_t k=0; k < NumOfCVs; k++){
-            double mf = DerProxy->GetValue(ibin,k,E_PROXY_VALUE);
+            double mf = DerProxy->GetValue(ibin,k,E_PROXY_MEAN);
             double diff2 = mf - GetMeanForce(ipos,k);
             diff2 *= diff2;
             mferror2[indi*NumOfCVs+k] = diff2;
@@ -854,7 +854,7 @@ void CIntegratorGPR::FilterByMFZScore(double zscore,CVerboseStr& vout)
     size_t outliers = 0;
     for(size_t i=0; i < NumOfBins; i++){
         if( flags[i] == 0 ){
-            DerProxy->GetAccu()->SetNumOfSamples(i,0);
+            DerProxy->SetNumOfSamples(i,0);
             outliers++;
         }
     }

@@ -83,7 +83,7 @@ public:
     virtual double GetLogML(void);
 
     /// get derivative of logML wrt hyperparameters
-    /// order sigmaf2, wfac, ncorr, nsigman2: only requested ders are calculated
+    /// order sigmaf2, wfac, nsigman2: only requested ders are calculated
     /// derivatives are ADDED to der
     virtual void GetLogMLDerivatives(const std::vector<bool>& flags,CSimpleVector<double>& der);
 
@@ -91,7 +91,7 @@ public:
     virtual double GetLogPL(void);
 
     /// get derivative of logPL wrt hyperparameters
-    /// order sigmaf2, wfac, ncorr, nsigman2: only requested ders are calculated
+    /// order sigmaf2, wfac, nsigman2: only requested ders are calculated
     /// derivatives are ADDED to der
     virtual void GetLogPLDerivatives(const std::vector<bool>& flags,CSimpleVector<double>& der);
 

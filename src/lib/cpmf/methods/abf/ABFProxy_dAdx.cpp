@@ -53,7 +53,6 @@ double CABFProxy_dAdx::GetValue(int ibin,int icv,EProxyRealm realm) const
     double  nsamples = 0.0;
     double  micf     = 0.0;
     double  m2icf    = 0.0;
-    double  ncorr    = Accu->GetNCorr();
 
     switch(RealmID){
     // -------------------
@@ -73,14 +72,14 @@ double CABFProxy_dAdx::GetValue(int ibin,int icv,EProxyRealm realm) const
     switch(realm){
 // mean force
         // -------------------
-        case(E_PROXY_VALUE):
+        case(E_PROXY_MEAN):
             return( micf );
         // -------------------
-        case(E_PROXY_SIGMA):
+        case(E_PROXY_SD):
             return( sqrt(m2icf / nsamples) );
         // -------------------
-        case(E_PROXY_ERROR):
-            return( sqrt(m2icf * ncorr) / nsamples );
+        case(E_PROXY_SEM):
+            return( sqrt(m2icf) / nsamples );
         // -------------------
         default:
             RUNTIME_ERROR("unsupported realm");

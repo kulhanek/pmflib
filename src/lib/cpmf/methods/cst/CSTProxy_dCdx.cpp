@@ -3,7 +3,7 @@
 // -----------------------------------------------------------------------------
 //    Copyright (C) 2026 Petr Kulhanek, kulhanek@chemi.muni.cz
 //    Copyright (C) 2025 Petr Kulhanek, kulhanek@chemi.muni.cz
-//    Copyright (C) 2021 Petr Kulhanek, kulhanek@chemi.muni.cz
+//    Copyright (C) 2024 Petr Kulhanek, kulhanek@chemi.muni.cz
 //
 //     This program is free software; you can redistribute it and/or modify
 //     it under the terms of the GNU General Public License as published by
@@ -20,8 +20,7 @@
 //     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 // =============================================================================
 
-#include <CSTProxy_mTdSdx.hpp>
-#include <CSTProxy_Ecorr.hpp>
+#include <CSTProxy_dCdx.hpp>
 #include <PMFConstants.hpp>
 
 //------------------------------------------------------------------------------
@@ -32,41 +31,33 @@ using namespace std;
 //------------------------------------------------------------------------------
 //==============================================================================
 
-CCSTProxy_mTdSdx::CCSTProxy_mTdSdx(void)
+CCSTProxy_dCdx::CCSTProxy_dCdx(void)
 {
-    RegisterRealm(CST_mTdSdx_TDS, "mTdS/dx",    "CST", "-TdS(x)=|Cov(lam,H) dx]/RT + TdS{CST}corr (TDS subsystem)");
-    RegisterRealm(CST_mTdSdx_TDS, "-TdS/dx",    "CST", "-TdS(x)=|Cov(lam,H) dx|/RT + TdS{CST}corr (TDS subsystem)");
+    RegisterRealm(CST_TdS_LT,       "C11LT",            "CST", "|cov(lambda,Etot)/(k_B*T) dx| (TDS subsystem)");
+    RegisterRealm(CST_TdS_LI,       "C11LI",            "CST", "|cov(lambda,Eint)/(k_B*T) dx| (TDS subsystem)");
+    RegisterRealm(CST_TdS_LP,       "C11LP",            "CST", "|cov(lambda,Epot)/(k_B*T) dx| (TDS subsystem)");
+    RegisterRealm(CST_TdS_LR,       "C11LR",            "CST", "|cov(lambda,Erst)/(k_B*T) dx| (TDS subsystem)");
+    RegisterRealm(CST_TdS_LK,       "C11LK",            "CST", "|cov(lambda,Ekin)/(k_B*T) dx| (TDS subsystem)");
 
-    RegisterRealm(CST_mTdSdx_VF, "mTdS/dx(VF)", "CST", "-TdS(x)=|[<ICFK>_FW + cov(ICF,Eint)_FW/(k_B*T)]dx| (VF subsystem)");
-    RegisterRealm(CST_mTdSdx_VF, "-TdS/dx(VF)", "CST", "-TdS(x)=|[<ICFK>_FW + cov(ICF,Eint)_FW/(k_B*T)]dx| (VF subsystem)");
+    RegisterRealm(CST_TdS_LTFW,     "C11LTFW",          "CST", "|cov(lambda,Etot)_FW/(k_B*T) dx| (TDS subsystem)");
+
+    RegisterRealm(CST_TdS_II,       "C11II",            "CST", "|cov(ICF,Eint)/(k_B*T) dx| (VF subsystem)");
+    RegisterRealm(CST_TdS_IIFW,     "C11IIFW",          "CST", "|cov(ICF,Eint)_FW/(k_B*T) dx| (VF subsystem)");
+    RegisterRealm(CST_TdS_PIFW,     "C11PIFW",          "CST", "|cov(ICFP,Eint)_FW/(k_B*T) dx| (VF subsystem)");
+    RegisterRealm(CST_TdS_KIFW,     "C11KIFW",          "CST", "|cov(ICFK,Eint)_FW/(k_B*T) dx| (VF subsystem)");
 }
 
 //------------------------------------------------------------------------------
 
-CCSTProxy_mTdSdx::~CCSTProxy_mTdSdx(void)
+CCSTProxy_dCdx::~CCSTProxy_dCdx(void)
 {
-}
-
-//==============================================================================
-//------------------------------------------------------------------------------
-//==============================================================================
-
-CEnergyProxyPtr CCSTProxy_mTdSdx::GetEnergyCorrection(void)
-{
-    CEnergyProxyPtr ene_proxy;
-    if( RealmID == CST_mTdSdx_TDS ){
-        ene_proxy = CCSTProxy_Ecorr_Ptr(new CCSTProxy_Ecorr);
-        ene_proxy->SetRealm(CST_mTdS_corr);
-        ene_proxy->Init(Accu);
-    }
-    return(ene_proxy);
 }
 
 //==============================================================================
 //------------------------------------------------------------------------------
 //==============================================================================
 
-int CCSTProxy_mTdSdx::GetNumOfSamples(int ibin) const
+int CCSTProxy_dCdx::GetNumOfSamples(int ibin) const
 {
     if( Accu == NULL ){
         RUNTIME_ERROR("Accu is NULL");
@@ -76,7 +67,7 @@ int CCSTProxy_mTdSdx::GetNumOfSamples(int ibin) const
 
 //------------------------------------------------------------------------------
 
-void CCSTProxy_mTdSdx::SetNumOfSamples(int ibin,int nsamples)
+void CCSTProxy_dCdx::SetNumOfSamples(int ibin,int nsamples)
 {
     if( Accu == NULL ){
         RUNTIME_ERROR("Accu is NULL");
@@ -86,56 +77,66 @@ void CCSTProxy_mTdSdx::SetNumOfSamples(int ibin,int nsamples)
 
 //------------------------------------------------------------------------------
 
-double CCSTProxy_mTdSdx::GetValue(int ibin,int icv,EProxyRealm realm) const
+double CCSTProxy_dCdx::GetValue(int ibin,int icv,EProxyRealm realm) const
 {
     if( Accu == NULL ){
         RUNTIME_ERROR("Accu is NULL");
     }
 
-    double  temp     = Accu->GetTemperature();
+    double temp  = Accu->GetTemperature();
 
     double  value   = 0.0;  // result
     double  sd      = 0.0;  // unbiased sample standard deviation
     double  sem     = 0.0;  // standard error of the sample result
 
-//------------------------------------------------
-
-    // get requested data
     switch(RealmID){
-    // -------------------
-        case(CST_mTdSdx_TDS):   // + energy fix
+        case(CST_TdS_LT):
             GetCovarianceValue("C11LT",value,sd,sem,realm==E_PROXY_MEAN,ibin,icv);
-            value = value / (temp * PMF_Rgas);
-            sd = sd / (temp * PMF_Rgas);
-            sem = sem / (temp * PMF_Rgas);
         break;
     // -------------------
-        case(CST_mTdSdx_VF):{
-            double icfkfw_mean = 0.0;
-            double icfkfw_sd = 0.0;
-            double icfkfw_sem = 0.0;
-
-            GetWMeanValue("ICFKFW","FW",icfkfw_mean,icfkfw_sd,icfkfw_sem,realm==E_PROXY_MEAN,ibin,icv);
-
-            double c11iifw_cval = 0.0;
-            double c11iifw_sd = 0.0;
-            double c11iifw_sem = 0.0;
-
-            GetWCovarianceValue("C11IIFW","FW",c11iifw_cval,c11iifw_sd,c11iifw_sem,realm==E_PROXY_MEAN,ibin,icv);
-
-            value  =  icfkfw_mean + c11iifw_cval / (temp * PMF_Rgas);
-
-            // https://en.wikipedia.org/wiki/Propagation_of_uncertainty
-            // approximative estimates - icfkfw_mean and c11iifw_cval are considered as independent
-            sd = sqrt( icfkfw_sd*icfkfw_sd + (c11iifw_sd / (temp * PMF_Rgas)) * (c11iifw_sd / (temp * PMF_Rgas)) );
-            sem = sqrt( icfkfw_sem*icfkfw_sem + (c11iifw_sem / (temp * PMF_Rgas)) * (c11iifw_sem / (temp * PMF_Rgas)) );
-        }
+        case(CST_TdS_LI):
+            GetCovarianceValue("C11LI",value,sd,sem,realm==E_PROXY_MEAN,ibin,icv);
+        break;
+    // -------------------
+        case(CST_TdS_LP):
+            GetCovarianceValue("C11LP",value,sd,sem,realm==E_PROXY_MEAN,ibin,icv);
+        break;
+    // -------------------
+        case(CST_TdS_LR):
+            GetCovarianceValue("C11LR",value,sd,sem,realm==E_PROXY_MEAN,ibin,icv);
+        break;
+    // -------------------
+        case(CST_TdS_LK):
+            GetCovarianceValue("C11LK",value,sd,sem,realm==E_PROXY_MEAN,ibin,icv);
+        break;
+    // -------------------
+        case(CST_TdS_LTFW):
+            GetWCovarianceValue("C11LTFW","FW",value,sd,sem,realm==E_PROXY_MEAN,ibin,icv);
+        break;
+    // -------------------
+        case(CST_TdS_II):
+            GetCovarianceValue("C11II",value,sd,sem,realm==E_PROXY_MEAN,ibin,icv);
+        break;
+    // -------------------
+        case(CST_TdS_IIFW):
+            GetWCovarianceValue("C11IIFW","FW",value,sd,sem,realm==E_PROXY_MEAN,ibin,icv);
+        break;
+    // -------------------
+        case(CST_TdS_PIFW):
+            GetWCovarianceValue("C11PIFW","FW",value,sd,sem,realm==E_PROXY_MEAN,ibin,icv);
+        break;
+    // -------------------
+        case(CST_TdS_KIFW):
+            GetWCovarianceValue("C11KIFW","FW",value,sd,sem,realm==E_PROXY_MEAN,ibin,icv);
         break;
     // -------------------
         default:
             RUNTIME_ERROR("unsupported type");
-        break;
     }
+
+    value = value / (temp * PMF_Rgas);
+    sd = sd / (temp * PMF_Rgas);
+    sem = sem / (temp * PMF_Rgas);
 
 // return result
     switch(realm){
@@ -157,6 +158,3 @@ double CCSTProxy_mTdSdx::GetValue(int ibin,int icv,EProxyRealm realm) const
 //==============================================================================
 //------------------------------------------------------------------------------
 //==============================================================================
-
-
-

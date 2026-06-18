@@ -1292,18 +1292,27 @@ void COptGPRHyprms::WriteResults(int istep)
 
 void COptGPRHyprms::PrintSampledStat(void)
 {
+    CBaseProxyPtr proxy = CEnergyDerProxyInit::InitProxy(Options.GetArgRealm(),Accu,true);
+    if( proxy == NULL ){
+        proxy = CEnergyProxyInit::InitProxy(Options.GetArgRealm(),Accu,true);
+    }
+    if( proxy == NULL ){
+        RUNTIME_ERROR("no active proxy")
+    }
+    proxy->Init(Accu);
+    
     // calculate sampled area
-    double maxbins = Accu->GetNumOfBins();
+    double maxbins = proxy->GetNumOfBins();
     int    sampled = 0;
     int    limit = 0;
-    for(int ibin=0; ibin < Accu->GetNumOfBins(); ibin++) {
-        if( Accu->GetNumOfSamples(ibin) > 0 ) {
+    for(int ibin=0; ibin < proxy->GetNumOfBins(); ibin++) {
+        if( proxy->GetNumOfSamples(ibin) > 0 ) {
             sampled++;
         }
-        if( Accu->GetNumOfSamples(ibin) > Options.GetOptLimit() ) {
+        if( proxy->GetNumOfSamples(ibin) > Options.GetOptLimit() ) {
             limit++;
         } else {
-            Accu->SetNumOfSamples(ibin,0);
+           proxy->SetNumOfSamples(ibin,0);
         }
     }
     if( maxbins > 0 ){

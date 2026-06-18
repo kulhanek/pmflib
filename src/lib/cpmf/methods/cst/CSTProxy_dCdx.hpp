@@ -1,11 +1,11 @@
-#ifndef CSTProxy_dU_H
-#define CSTProxy_dU_H
+#ifndef CSTProxy_dCdx_H
+#define CSTProxy_dCdx_H
 // =============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
 //    Copyright (C) 2026 Petr Kulhanek, kulhanek@chemi.muni.cz
 //    Copyright (C) 2025 Petr Kulhanek, kulhanek@chemi.muni.cz
-//    Copyright (C) 2021 Petr Kulhanek, kulhanek@chemi.muni.cz
+//    Copyright (C) 2024 Petr Kulhanek, kulhanek@chemi.muni.cz
 //
 //     This program is free software; you can redistribute it and/or modify
 //     it under the terms of the GNU General Public License as published by
@@ -23,24 +23,39 @@
 // =============================================================================
 
 #include <PMFMainHeader.hpp>
-#include <EnergyProxy.hpp>
+#include <EnergyDerProxy.hpp>
 
 //------------------------------------------------------------------------------
 
-enum ECSTdUType {
-    CST_dU,         // ETOT - Fixman weighted
+enum ECSTdCdxType {
+
+    // TDS subsystem
+    CST_TdS_LT,         // Cov(lambda,Etot)
+    CST_TdS_LI,         // Cov(lambda,Eint)
+    CST_TdS_LP,         // Cov(lambda,Epot)
+    CST_TdS_LR,         // Cov(lambda,Erst)
+    CST_TdS_LK,         // Cov(lambda,Ekin)
+
+    CST_TdS_LTFW,       // Cov(lambda,Etot) - Fixman weighted
+
+    // TDS+VF subsystem
+    CST_TdS_II,         // Cov(ICF,Eint)
+    CST_TdS_IIFW,       // Cov(ICF,Eint)    - Fixman weighted
+    CST_TdS_PIFW,       // Cov(ICFP,Eint)   - Fixman weighted
+    CST_TdS_KIFW,       // Cov(ICFK,Eint)   - Fixman weighted
 };
 
 //------------------------------------------------------------------------------
 
-/** \brief PMF proxy providing enthalpy
+/** \brief ABF proxy providing mean force for the free energy integration
 */
 
-class PMF_PACKAGE CCSTProxy_dU : public CEnergyProxy {
+class PMF_PACKAGE CCSTProxy_dCdx : public CEnergyDerProxy {
 public:
 // constructor and destructor --------------------------------------------------
-    CCSTProxy_dU(void);
-    ~CCSTProxy_dU(void);
+    CCSTProxy_dCdx(void);
+    ~CCSTProxy_dCdx(void);
+
 //------------------------------------------------------------------------------
     // get number of samples
     virtual int GetNumOfSamples(int ibin) const;
@@ -49,12 +64,12 @@ public:
     virtual void SetNumOfSamples(int ibin,int nsamples);
 
     // get energy derivative and its error
-    virtual double GetValue( int ibin,EProxyRealm realm) const;
+    virtual double GetValue( int ibin,int icv,EProxyRealm realm) const;
 };
 
 //------------------------------------------------------------------------------
 
-typedef boost::shared_ptr<CCSTProxy_dU>    CCSTProxy_dU_Ptr;
+typedef boost::shared_ptr<CCSTProxy_dCdx>    CCSTProxy_dCdx_Ptr;
 
 //------------------------------------------------------------------------------
 

@@ -32,12 +32,9 @@ using namespace std;
 
 CCSTProxy_dAdx::CCSTProxy_dAdx(void)
 {
-    RegisterRealm(CST_dAdx,     "dA/dx",    "CST", "dA(x)=|<lam> dx| + dA{CST}corr");
-    RegisterRealm(CST_dLdx,     "dL/dx",    "CST", "dA^c(x)=|<lam> dx|");
-    RegisterRealm(CST_ICF,      "ICF",      "CST", "|ICF dx|");
-    RegisterRealm(CST_ICFFW,    "ICFFW",    "CST", "|ICFFW dx|");
-    RegisterRealm(CST_ICFPFW,   "ICFPFW",   "CST", "|ICFPFW dx|");
-    RegisterRealm(CST_ICFKFW,   "ICFKFW",   "CST", "|ICFKFW dx|");
+    RegisterRealm(CST_dAdx,         "dA/dx",        "CST", "dA(x)=|<lam> dx| + dA{CST}corr (MD subsystem)");
+    RegisterRealm(CST_dAdx_TdS,     "dA/dx(TDS)",   "CST", "dA(x)=|<lam> dx| + dA{CST}corr (TDS subsystem)");
+    RegisterRealm(CST_dAdx_VF,      "dA/dx(VF)",    "CST", "dA(x)=|<ICFFW> dx| (VF subsystem)");
 }
 
 //------------------------------------------------------------------------------
@@ -59,7 +56,6 @@ int CCSTProxy_dAdx::GetNumOfSamples(int ibin) const
     switch(RealmID){
     // -------------------
         case(CST_dAdx):
-        case(CST_dLdx):
             return(Accu->GetData("NSAMPLES",ibin));
     // -------------------
         default:
@@ -78,10 +74,9 @@ void CCSTProxy_dAdx::SetNumOfSamples(int ibin,int nsamples)
     switch(RealmID){
     // -------------------
         case(CST_dAdx):
-        case(CST_dLdx):
             Accu->SetData("NSAMPLES",ibin,nsamples);
         break;
-    // -------------------
+    // -------------------  
         default:
             Accu->SetData("NTDS",ibin,nsamples);
         break;
@@ -116,118 +111,41 @@ double CCSTProxy_dAdx::GetValue(int ibin,int icv,EProxyRealm realm) const
         RUNTIME_ERROR("Accu is NULL");
     }
 
-    double  ncorr    = Accu->GetNCorr();
-    double  mean     = 0.0; // sample mean
-    double  samvar   = 0.0; // sample variance
-    double  meanvar  = 0.0; // variance of sample mean
-
-// do we have enough samples?
-    double nsamples    = GetNumOfSamples(ibin);
-    if( nsamples <= 0 ) return(mean);
+    double  value   = 0.0;  // result
+    double  sd      = 0.0;  // unbiased sample standard deviation
+    double  sem     = 0.0;  // standard error of the sample result
 
 // get requested data
     switch(RealmID){
     // -------------------
-        case(CST_dAdx): // this requires MTC correction
-        case(CST_dLdx): {
-            mean        = Accu->GetData("MLAMBDA",ibin,icv);
-            double M2   = Accu->GetData("M2LAMBDA",ibin,icv);
-            nsamples    = Accu->GetData("NSAMPLES",ibin);
-            samvar      = M2 / nsamples;
-            meanvar     = samvar / nsamples;
-        }
+        case(CST_dAdx):     // this adds MTC correction
+            GetMeanValue("LAMBDA",value,sd,sem,realm==E_PROXY_MEAN,ibin,icv);
         break;
     // -------------------
-        case(CST_dAdx_TdS): { // this requires MTC correction
-            mean        = Accu->GetData("MLAMTDS",ibin,icv);
-            double M2   = Accu->GetData("M2LAMTDS",ibin,icv);
-            nsamples    = Accu->GetData("NTDS",ibin);
-            samvar      = M2 / nsamples;
-            meanvar     = samvar / nsamples;
-        }
+        case(CST_dAdx_TdS): // this adds MTC correction
+            GetMeanValue("LAMTDS",value,sd,sem,realm==E_PROXY_MEAN,ibin,icv);
         break;
     // -------------------
-        case(CST_ICF): {
-            mean        = Accu->GetData("MICF",ibin,icv);
-            double M2   = Accu->GetData("M2MICF",ibin,icv);
-            nsamples    = Accu->GetData("NTDS",ibin);
-            samvar      = M2 / nsamples;
-            meanvar     = samvar / nsamples;
-        }
+        case(CST_dAdx_VF):
+            GetWMeanValue("ICFFW","FW",value,sd,sem,realm==E_PROXY_MEAN,ibin,icv);
         break;
-    // -------------------
-        case(CST_ICFFW): {
-            double fwsum    = Accu->GetData("FWSUM",ibin);
-            double fwsum2   = Accu->GetData("FWSUM2",ibin);
-            mean            = Accu->GetData("MICFFW",ibin,icv);
-            double M2       = Accu->GetData("M2ICFFW",ibin,icv);
-
-            // number of effective measurements
-            double neff = fwsum2 / (fwsum * fwsum);
-
-            // unbiased weighted sample variance
-            samvar          = M2 / fwsum * neff / (neff - 1.0);
-
-            // variance of the weighted mean
-            // unbiased importance weights
-            meanvar         = samvar / neff;
-        }
-        break;
-    // -------------------
-        case(CST_ICFPFW): {
-            double fwsum    = Accu->GetData("FWSUM",ibin);
-            double fwsum2   = Accu->GetData("FWSUM2",ibin);
-
-            mean            = Accu->GetData("MICFPFW",ibin,icv);
-            double M2       = Accu->GetData("M2ICFPFW",ibin,icv);
-
-            // number of effective measurements
-            double neff = fwsum2 / (fwsum * fwsum);
-
-            // unbiased weighted sample variance
-            samvar          = M2 / fwsum * neff / (neff - 1.0);
-
-            // variance of the weighted mean
-            // unbiased importance weights
-            meanvar         = samvar / neff;
-        }
-        break;
-    // -------------------
-        case(CST_ICFKFW): {
-            double fwsum    = Accu->GetData("FWSUM",ibin);
-            double fwsum2   = Accu->GetData("FWSUM2",ibin);
-
-            mean            = Accu->GetData("MICFKFW",ibin,icv);
-            double M2       = Accu->GetData("M2ICFKFW",ibin,icv);
-
-            // number of effective measurements
-            double neff = fwsum2 / (fwsum * fwsum);
-
-            // unbiased weighted sample variance
-            samvar          = M2 / fwsum * neff / (neff - 1.0);
-
-            // variance of the weighted mean
-            // unbiased importance weights
-            meanvar         = samvar / neff;
-        }
-        break;
-
     // -------------------
         default:
             RUNTIME_ERROR("unsupported type");
+        break;
     }
 
 // return result
     switch(realm){
         // -------------------
-        case(E_PROXY_VALUE):
-            return( mean );
+        case(E_PROXY_MEAN):
+            return( value );
         // -------------------
-        case(E_PROXY_SIGMA):
-            return( sqrt(samvar) );
+        case(E_PROXY_SD):
+            return( sd );
         // -------------------
-        case(E_PROXY_ERROR):
-            return( sqrt(ncorr * meanvar) );
+        case(E_PROXY_SEM):
+            return( sem );
         // -------------------
         default:
             RUNTIME_ERROR("unsupported realm");

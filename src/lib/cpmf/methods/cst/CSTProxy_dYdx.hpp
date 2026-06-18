@@ -1,11 +1,11 @@
-#ifndef CSTProxy_dU_H
-#define CSTProxy_dU_H
+#ifndef CSTProxy_dYdx_H
+#define CSTProxy_dYdx_H
 // =============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
 //    Copyright (C) 2026 Petr Kulhanek, kulhanek@chemi.muni.cz
 //    Copyright (C) 2025 Petr Kulhanek, kulhanek@chemi.muni.cz
-//    Copyright (C) 2021 Petr Kulhanek, kulhanek@chemi.muni.cz
+//    Copyright (C) 2024 Petr Kulhanek, kulhanek@chemi.muni.cz
 //
 //     This program is free software; you can redistribute it and/or modify
 //     it under the terms of the GNU General Public License as published by
@@ -23,24 +23,36 @@
 // =============================================================================
 
 #include <PMFMainHeader.hpp>
-#include <EnergyProxy.hpp>
+#include <EnergyDerProxy.hpp>
 
 //------------------------------------------------------------------------------
 
-enum ECSTdUType {
-    CST_dU,         // ETOT - Fixman weighted
+enum ECSTdYdxType {
+
+    //  MD subsystem
+    CST_dLAMBDAdx,      // <LAMBDA>
+
+    // TDS subsystem
+    CST_dLAMTDSdx,      // <LAMBDA>
+
+    // TDS+VF subsystems
+    CST_dMICFdx,        // <ICF>
+    CST_dMICFFWdx,      // <ICF>            - Fixman weighted
+    CST_dMICFPFWdx,     // <ICFP>           - Fixman weighted
+    CST_dMICFKFWdx,     // <ICFK>           - Fixman weighted
 };
 
 //------------------------------------------------------------------------------
 
-/** \brief PMF proxy providing enthalpy
+/** \brief ABF proxy providing mean force for the free energy integration
 */
 
-class PMF_PACKAGE CCSTProxy_dU : public CEnergyProxy {
+class PMF_PACKAGE CCSTProxy_dYdx : public CEnergyDerProxy {
 public:
 // constructor and destructor --------------------------------------------------
-    CCSTProxy_dU(void);
-    ~CCSTProxy_dU(void);
+    CCSTProxy_dYdx(void);
+    ~CCSTProxy_dYdx(void);
+
 //------------------------------------------------------------------------------
     // get number of samples
     virtual int GetNumOfSamples(int ibin) const;
@@ -49,12 +61,12 @@ public:
     virtual void SetNumOfSamples(int ibin,int nsamples);
 
     // get energy derivative and its error
-    virtual double GetValue( int ibin,EProxyRealm realm) const;
+    virtual double GetValue( int ibin,int icv,EProxyRealm realm) const;
 };
 
 //------------------------------------------------------------------------------
 
-typedef boost::shared_ptr<CCSTProxy_dU>    CCSTProxy_dU_Ptr;
+typedef boost::shared_ptr<CCSTProxy_dYdx>    CCSTProxy_dYdx_Ptr;
 
 //------------------------------------------------------------------------------
 
