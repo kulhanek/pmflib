@@ -79,6 +79,7 @@ subroutine cst_constraints_read_con(prm_fin,cst_item)
     type(CVTypeBM)                      :: cst_item
     ! --------------------------------------------
     integer                             :: ibin
+    character(1)                        :: buffer
     ! --------------------------------------------------------------------------
 
     if( cst_item%cv%pathidx .gt. 0 ) then
@@ -117,10 +118,18 @@ subroutine cst_constraints_read_con(prm_fin,cst_item)
         write(PMF_OUT,225) cst_item%nbins
     end if
 
-    if( prmfile_get_real8_by_key(prm_fin,'value',cst_item%value) ) then
-        write(PMF_OUT,90) cst_item%value, trim(cst_item%cv%get_ulabel())
-        call cst_item%cv%conv_to_ivalue(cst_item%value)
-        cst_item%value_set = .true.
+    if( prmfile_get_string_by_key(prm_fin,'value',buffer) ) then
+        if( trim(buffer) .eq. '@' ) then
+            write(PMF_OUT,95)
+            cst_item%value_set = .false.
+        else
+            if( prmfile_get_real8_by_key(prm_fin,'value',cst_item%value) ) then
+                write(PMF_OUT,90) cst_item%value, trim(cst_item%cv%get_ulabel())
+                call cst_item%cv%conv_to_ivalue(cst_item%value)
+                cst_item%value_set = .true.
+            end if
+            ! else block shoudld not happen
+        end if
     else if( prmfile_get_integer_by_key(prm_fin,'value_at_bin',ibin) ) then
         if( (ibin .lt. 1) .or. (ibin .gt. cst_item%nbins) ) then
             call pmf_utils_exit(PMF_OUT,1,'value_at_bin out-of-range!')
@@ -144,7 +153,6 @@ subroutine cst_constraints_read_con(prm_fin,cst_item)
         write(PMF_OUT,105) trim(fcstctr)
         call cst_constraints_read_control_file(cst_item)
     else
-
         if( prmfile_get_real8_by_key(prm_fin,'change_to',cst_item%stopvalue) ) then
             cst_item%mode = 'V'
             write(PMF_OUT,100) cst_item%stopvalue, trim(cst_item%cv%get_ulabel())
