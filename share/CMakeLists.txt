@@ -20,6 +20,8 @@ ENDIF()
 
 # Python stuff
 INSTALL(FILES
+            python/analyse-act.py
+            python/analyse-1D-surface.py
             python/analyse-2D-surface.py
             python/stm-path-2D-surface.py
         DESTINATION
@@ -29,6 +31,8 @@ INSTALL(FILES
         )
 
 INSTALL(FILES
+            scripts/analyse-act
+            scripts/analyse-1D-surface
             scripts/analyse-2D-surface
             scripts/stm-path-2D-surface
         DESTINATION
