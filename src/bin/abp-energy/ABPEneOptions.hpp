@@ -38,7 +38,7 @@ public:
     CSO_PROG_NAME_END
 
     CSO_PROG_DESC_BEGIN
-    "It calculate the free energy surface estimate from the metadynamics restart file."
+    "Calculates mollified or deconvoluted free energy surfaces from an ABP accumulator/restart file."
     CSO_PROG_DESC_END
 
     CSO_PROG_VERS_BEGIN
@@ -64,7 +64,6 @@ public:
     CSO_OPT(bool,NoHeader)
     CSO_OPT(CSmallString,IXFormat)
     CSO_OPT(CSmallString,OEFormat)
-    CSO_OPT(CSmallString,OSFormat)
     CSO_OPT(bool,Help)
     CSO_OPT(bool,Version)
     CSO_OPT(bool,Verbose)
@@ -202,16 +201,6 @@ public:
                 "fe",                      /* long option name */
                 "FORMAT",                           /* parameter name */
                 "Output FORMAT, which will be used to print values of free energy.")   /* option description */
-    //----------------------------------------------------------------------
-    CSO_MAP_OPT(CSmallString,                           /* option type */
-                OSFormat,                        /* option name */
-                "%15.7le",                          /* default value */
-                false,                          /* is option mandatory */
-                '\0',                           /* short option name */
-                "fs",                      /* long option name */
-                "FORMAT",                           /* parameter name */
-                "Output FORMAT, which will be used to print values of standard deviations.")   /* option description */
-
     //----------------------------------------------------------------------
     CSO_MAP_OPT(bool,                           /* option type */
                 Verbose,                        /* option name */

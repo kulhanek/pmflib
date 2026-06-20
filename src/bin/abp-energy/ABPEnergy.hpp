@@ -25,7 +25,6 @@
 #include <stdio.h>
 #include <SimpleVector.hpp>
 #include <EnergySurface.hpp>
-#include <EnergyProxy.hpp>
 #include <VerboseStr.hpp>
 #include <TerminalStr.hpp>
 #include "ABPEneOptions.hpp"
@@ -55,11 +54,11 @@ private:
     FILE*                   OutputFile;         // output file
     bool                    OwnOutputFile;      // do we own output file handle?
     CPMFAccumulatorPtr      Accu;               // ABP accumulator
-    CEnergyProxyPtr         EneProxy;           // energy proxy for ABP accumulator
     CEnergySurfacePtr       FES;                // energy surface
     CTerminalStr            Console;
     CVerboseStr             vout;
 
+    void GetMollifiedFES(void);
     void RunRLDeconvolution(void);
     double PSF(int ibin,int jbin); // PSF = point spread function
 };

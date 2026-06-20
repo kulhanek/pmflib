@@ -27,8 +27,8 @@
 #include <ESPrinter.hpp>
 #include "ABPEnergy.hpp"
 #include <iomanip>
-#include <ABPProxy_dA.hpp>
 #include <boost/format.hpp>
+#include <PMFConstants.hpp>
 
 //------------------------------------------------------------------------------
 
@@ -156,10 +156,9 @@ bool CABPEnergy::Run(void)
     int State = 1;
 
 // -----------------------------------------------------------------------------
-// setup accu, energy proxy, and output FES
+// setup accu, and output FES
     Accu        = CPMFAccumulatorPtr(new CPMFAccumulator);
     FES         = CEnergySurfacePtr(new CEnergySurface);
-    EneProxy    = CABPProxy_dA_Ptr(new CABPProxy_dA);
 
 // load ABP accumulator
     vout << endl;
@@ -172,7 +171,6 @@ bool CABPEnergy::Run(void)
     }
 
     Accu->PrintInfo(vout);
-    EneProxy->Init(Accu);
 
 // -----------------------------------------------------------------------------
 // calculate FES
@@ -182,7 +180,7 @@ bool CABPEnergy::Run(void)
     State++;
 
 // print header
-    if((Options.GetOptNoHeader() == false) && (Options.GetOptOutputFormat() != "fes")) {
+    if( Options.GetOptNoHeader() == false ) {
         Options.PrintOptions(OutputFile);
         Accu->PrintInfo(OutputFile);
     }
@@ -191,11 +189,7 @@ bool CABPEnergy::Run(void)
     FES->Allocate(Accu);
 
 // calculate mollified FES
-    for(int i=0; i < Accu->GetNumOfBins(); i++){
-        FES->SetNumOfSamples(i,EneProxy->GetNumOfSamples(i));
-        FES->SetEnergy(i, EneProxy->GetValue(i,E_PROXY_MEAN) );
-    }
-
+    GetMollifiedFES();
     vout << format("   Mollified FES SigmaF2         = %10.5f")%FES->GetSigmaF2() << endl;
 
     if( Options.GetOptMode() == "rl" ){
@@ -274,13 +268,10 @@ bool CABPEnergy::Run(void)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void CABPEnergy::RunRLDeconvolution(void)
+void CABPEnergy::GetMollifiedFES(void)
 {
-    vout << "   Initiating Lucy-Richardson deconvolution ..." << endl;
-    // POP is de-convoluted
-    // create copy of original data
+    // POP is without factor + 1
     CPMFAccuDataPtr upop = Accu->GetSectionData("POP");
-    Accu->DeleteSectionData("DPOP"); // this will not be valid after deconvolution
 
     // normalize POP
     double popsum = 0.0;
@@ -294,34 +285,83 @@ void CABPEnergy::RunRLDeconvolution(void)
         }
     }
 
+    // calculate FES
+    CPMFAccuDataPtr nsamples = Accu->GetSectionData("NSAMPLES");
+    double          temp     = Accu->GetTemperature();
+    
+    for(int ibin=0; ibin < Accu->GetNumOfBins(); ibin++){
+        FES->SetNumOfSamples(ibin,nsamples->GetData(ibin));
+        double fen = 0.0;
+        double pop = upop->GetData(ibin);
+        if( pop > 0.0 ){
+            fen = -PMF_Rgas * temp * log(pop);
+        }
+        FES->SetEnergy(ibin, fen);
+    }
+}
+
+//------------------------------------------------------------------------------
+
+void CABPEnergy::RunRLDeconvolution(void)
+{
+    vout << "   Initiating Lucy-Richardson deconvolution ..." << endl;
+
+    //  POP is now with +1.0 factor and normalized
+    CPMFAccuDataPtr upop = Accu->GetSectionData("POP");
+
     CPMFAccuDataPtr dpop = upop->Duplicate();
+    CPMFAccuDataPtr oldpop = upop->Duplicate();
+    CPMFAccuDataPtr newpop = upop->Duplicate();
 
     for(int i=0; i < Options.GetOptRLIter(); i++){
 
     // run iteration
-        for(int jbin=0; jbin < upop->GetNumOfBins(); jbin++){
-            double u  = upop->GetData(jbin);
+        for(int jbin=0; jbin < oldpop->GetNumOfBins(); jbin++){
+            double u  = oldpop->GetData(jbin);
             double f = 0.0;
-            for(int ibin=0; ibin < upop->GetNumOfBins(); ibin++){
+            for(int ibin=0; ibin < oldpop->GetNumOfBins(); ibin++){
                 double di  = dpop->GetData(ibin);
                 double pij = PSF(ibin,jbin);
                 double ci  = 0.0;
-                for(int kbin=0; kbin < upop->GetNumOfBins(); kbin++){
-                    double uk  = upop->GetData(kbin);
+                for(int kbin=0; kbin < oldpop->GetNumOfBins(); kbin++){
+                    double uk  = oldpop->GetData(kbin);
                     double pik = PSF(kbin,ibin);
                     ci = ci + uk * pik;
                 }
                 f = f + di * pij / ci;
             }
             u = u * f;
-            upop->SetData(jbin,u);
+            newpop->SetData(jbin,u);
         }
 
-    // calculate deconvoluted FES
-        for(int i=0; i < Accu->GetNumOfBins(); i++){
-            FES->SetNumOfSamples(i,EneProxy->GetNumOfSamples(i));
-            FES->SetEnergy(i, EneProxy->GetValue(i,E_PROXY_MEAN) );
+        // normalize new POP
+        double popsum = 0.0;
+        for(int ibin = 0; ibin < newpop->GetNumOfBins(); ibin++){
+            popsum = popsum + newpop->GetData(ibin);
         }
+        if( popsum != 0.0 ){
+            for(int ibin = 0; ibin < newpop->GetNumOfBins(); ibin++){
+                double pop = newpop->GetData(ibin) / popsum;
+                newpop->SetData(ibin,pop);
+            }
+        }
+
+        oldpop = newpop->Duplicate();
+
+    // calculate deconvoluted FES
+        CPMFAccuDataPtr nsamples = Accu->GetSectionData("NSAMPLES");
+        double          temp     = Accu->GetTemperature();
+        
+        for(int ibin=0; ibin < Accu->GetNumOfBins(); ibin++){
+            FES->SetNumOfSamples(ibin,nsamples->GetData(ibin));
+            double fen = 0.0;
+            double pop = newpop->GetData(ibin);
+            if( pop > 0.0 ){
+                fen = -PMF_Rgas * temp * log(pop);
+            }
+            FES->SetEnergy(ibin, fen );
+        }
+
         vout << format("   #%03d Deconvoluted FES SigmaF2 = %10.5f")%(i+1)%FES->GetSigmaF2() << endl;
     }
 }
