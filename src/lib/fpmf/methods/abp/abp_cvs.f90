@@ -42,7 +42,7 @@ subroutine abp_cvs_reset_cv(abp_item)
     abp_item%set             = 0
     abp_item%min_value       = 0.0d0 ! left range
     abp_item%max_value       = 0.0d0 ! right range
-    abp_item%nbins           = 0.0d0 ! number of bins
+    abp_item%nbins           = 0     ! number of bins
     abp_item%width           = 0.0d0 ! width factor
 
 end subroutine abp_cvs_reset_cv
@@ -103,6 +103,10 @@ subroutine abp_cvs_read_cv(prm_fin,abp_item)
         call pmf_utils_exit(PMF_OUT,1,'>>> ERROR: nbins is not specified!')
     end if
     write(PMF_OUT,140) abp_item%nbins
+
+    if( abp_item%nbins .le. 0 ) then
+        call pmf_utils_exit(PMF_OUT,1,'[ABP] nbins has to be greater than zero!')
+    end if
 
     return
 

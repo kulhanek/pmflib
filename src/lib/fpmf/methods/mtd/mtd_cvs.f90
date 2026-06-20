@@ -131,6 +131,10 @@ subroutine mtd_cvs_read_cv(prm_fin,mtd_item)
     end if
     write(PMF_OUT,130) mtd_item%nbins
 
+    if( mtd_item%nbins .le. 0 ) then
+        call pmf_utils_exit(PMF_OUT,1,'[MTD] nbins has to be greater than zero!')
+    end if
+
     ! ========================
     mtd_item%buffer = 0.0d0
     if( prmfile_get_real8_by_key(prm_fin,'buffer',mtd_item%buffer) ) then
