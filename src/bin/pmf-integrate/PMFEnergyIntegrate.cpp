@@ -480,8 +480,9 @@ bool CPMFEnergyIntegrate::Run(void)
 
 void CPMFEnergyIntegrate::WriteHeader()
 {
-    if((Options.GetOptNoHeader() == false) && (Options.GetOptOutputFormat() != "fes")) {
+    if( Options.GetOptNoHeader() == false ) {
         Options.PrintOptions(OutputFile);
+        Accu->PrintInfo(OutputFile);
     }
 }
 

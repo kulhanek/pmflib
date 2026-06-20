@@ -442,7 +442,7 @@ bool CPMFEnergy::PrintENE(void)
 
 void CPMFEnergy::WriteHeader(void)
 {
-    if((Options.GetOptNoHeader() == false) && (Options.GetOptOutputFormat() != "fes")) {
+    if( Options.GetOptNoHeader() == false ) {
         Options.PrintOptions(OutputFile);
         Accu->PrintInfo(OutputFile);
     }

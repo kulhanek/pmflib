@@ -215,7 +215,7 @@ bool CMTDEnergy::Run(void)
     State++;
 
 // print header
-    if((Options.GetOptNoHeader() == false) && (Options.GetOptOutputFormat() != "fes")) {
+    if( Options.GetOptNoHeader() == false ) {
         Options.PrintOptions(OutputFile);
         accu = Accus.back();
         accu->PrintInfo(OutputFile);

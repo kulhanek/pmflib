@@ -266,8 +266,9 @@ void CAUSEnergyIntegrate::WriteES(CEnergySurfacePtr& surf,const CSmallString& na
 
     CESPrinter printer;
 
-    if((Options.GetOptNoHeader() == false) && (Options.GetOptOutputFormat() != "fes")) {
+    if( Options.GetOptNoHeader() == false ) {
         Options.PrintOptions(out);
+        Accu->PrintInfo(out);
     }
 
     printer.SetXFormat(Options.GetOptIXFormat());
