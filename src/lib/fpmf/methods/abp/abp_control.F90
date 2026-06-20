@@ -114,9 +114,13 @@ subroutine abp_control_read_abp(prm_fin)
     end if
 
     call pmf_ctrl_read_integer(prm_fin,'fserverupdate',fserverupdate,'i12')
-    call pmf_ctrl_check_integer('ABF','fserverupdate',fserverupdate,0,CND_GT)
+    call pmf_ctrl_check_integer('ABP','fserverupdate',fserverupdate,0,CND_GT)
 
     call pmf_ctrl_read_logical(prm_fin,'fabortonmwaerr',fabortonmwaerr)
+
+    call pmf_ctrl_read_integer(prm_fin,'fconrepeats',fconrepeats,'i12')
+    call pmf_ctrl_check_integer('ABP','fconrepeats',fconrepeats,0,CND_GE)
+
 #else
     fserver_enabled = .false.
     write(PMF_OUT,105)
@@ -228,7 +232,7 @@ subroutine abp_control_read_cvs_from_group(prm_fin)
     NumOfABPCVs = prmfile_count_group(prm_fin)
 
     if( NumOfABPCVs .le. 0 ) then
-        ! on CV in current or specified group
+        ! no CV in current or specified group
         fmode = 0
         abp_enabled = .false.
         write(PMF_OUT,100)

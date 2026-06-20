@@ -188,6 +188,9 @@ subroutine abf_control_read_abf(prm_fin)
 
     call pmf_ctrl_read_logical(prm_fin,'fabortonmwaerr',fabortonmwaerr)
 
+    call pmf_ctrl_read_integer(prm_fin,'fconrepeats',fconrepeats,'i12')
+    call pmf_ctrl_check_integer('ABF','fconrepeats',fconrepeats,0,CND_GE)
+
     call pmf_ctrl_read_integer(prm_fin,'fmwamode',fmwamode,'I12')
     call pmf_ctrl_check_integer_in_range('ABF','fmwamode',fmwamode,0,1)
 #else

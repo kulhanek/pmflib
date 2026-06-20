@@ -51,6 +51,7 @@ subroutine abp_restart_read
         call pmf_utils_open(ABP_RST,fabprst,'O')
 
         call abp_accu_read(ABP_RST)
+        call abp_accu_update_M()
 
         close(ABP_RST)
     else
@@ -79,7 +80,7 @@ subroutine abp_restart_update
     implicit none
     !---------------------------------------------------------------------------
 
-    if( frstupdate .le. 0 ) return ! trajectory is written only of frstupdate > 0
+    if( frstupdate .le. 0 ) return ! restat is written only of frstupdate > 0
 
     if( mod(fstep,frstupdate) .ne. 0 ) return
 

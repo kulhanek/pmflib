@@ -202,7 +202,6 @@ subroutine abp_client_get_initial_data
 #ifdef PMFLIB_NETWORK
     integer        :: ret_st = 0
 #endif
-    integer        :: i
     ! -----------------------------------------------------------------------------
 
     if( .not. fserver_enabled ) return
@@ -227,9 +226,7 @@ subroutine abp_client_get_initial_data
 #endif
 
     ! update M
-    do i=1,abpaccu%tot_nbins
-        if( (abpaccu%pop(i)+1.0d0) .gt. abpaccu%M ) abpaccu%M = abpaccu%pop(i) + 1.0d0
-    end do
+    call abp_accu_update_M()
 
     call pmf_timers_stop_timer(PMFLIB_ABP_MWA_TIMER)
 

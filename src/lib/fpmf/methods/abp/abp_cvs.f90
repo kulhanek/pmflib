@@ -54,10 +54,12 @@ end subroutine abp_cvs_reset_cv
 subroutine abp_cvs_read_cv(prm_fin,abp_item)
 
     use prmfile
+    use pmf_dat
     use abp_dat
     use pmf_cvs
     use pmf_paths
     use pmf_control_utils
+    use pmf_utils
 
     implicit none
     type(PRMFILE_TYPE),intent(inout)   :: prm_fin

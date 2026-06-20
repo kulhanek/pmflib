@@ -120,6 +120,9 @@ subroutine mtd_control_read_mtd(prm_fin)
 
     call pmf_ctrl_read_logical(prm_fin,'fabortonmwaerr',fabortonmwaerr)
 
+    call pmf_ctrl_read_integer(prm_fin,'fconrepeats',fconrepeats,'i12')
+    call pmf_ctrl_check_integer('MTD','fconrepeats',fconrepeats,0,CND_GE)
+
 #else
     fserver_enabled = .false.
     fserver_key_enabled = .false.

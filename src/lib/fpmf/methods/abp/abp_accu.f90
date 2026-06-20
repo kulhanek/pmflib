@@ -71,7 +71,7 @@ subroutine abp_accu_init()
                 stat = alloc_failed)
 
     if( alloc_failed .ne. 0 ) then
-        call pmf_utils_exit(PMF_OUT, 1,'[ABP] Unable to allocate memory fo abpaccu!')
+        call pmf_utils_exit(PMF_OUT, 1,'[ABP] Unable to allocate memory for abpaccu!')
     endif
 
     if( fserver_enabled ) then
@@ -301,6 +301,25 @@ subroutine abp_accu_update_direct
     end do
 
 end subroutine abp_accu_update_direct
+
+!===============================================================================
+
+subroutine abp_accu_update_M()
+
+    use abp_dat
+
+    implicit none
+    integer :: i
+    ! --------------------------------------------------------------------------
+
+    abpaccu%M = 1.0d0
+    do i = 1, abpaccu%tot_nbins
+        if( abpaccu%pop(i) + 1.0d0 .gt. abpaccu%M ) then
+            abpaccu%M = abpaccu%pop(i) + 1.0d0
+        end if
+    end do
+
+end subroutine abp_accu_update_M
 
 !===============================================================================
 
