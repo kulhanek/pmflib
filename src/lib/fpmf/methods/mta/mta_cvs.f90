@@ -39,8 +39,8 @@ subroutine mta_cvs_reset_cv(mta_item)
     mta_item%cvindx         = 0         ! CV index
     mta_item%cv             => null()
 
-    mta_item%min_value      = 0.0       ! left range
-    mta_item%max_value      = 0.0       ! right range
+    mta_item%min_value      = 0.0d0     ! left range
+    mta_item%max_value      = 0.0d0     ! right range
     mta_item%nbins          = 0         ! number of bins
 
 end subroutine mta_cvs_reset_cv

@@ -52,7 +52,7 @@ subroutine abf_core_get_us_bias(values,gfx,bene)
     integer         :: i
     ! --------------------------------------------------------------------------
 
-    bene = 0.0
+    bene = 0.0d0
 
     do i=1,NumOfABFCVs
 

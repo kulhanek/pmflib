@@ -112,7 +112,7 @@ subroutine read_restart
     ! init masses
     do i=1,natoms
         mass(i) = SearchMassBySymbol(restart_xyz%symbols(i))
-        if( mass(i) .eq. 0.0 ) then
+        if( mass(i) .eq. 0.0d0 ) then
             call pmf_utils_exit(PMF_OUT,1,'Some atom has zero mass!')
         end if
         if( mass(i) .gt. 1.5d0 ) then

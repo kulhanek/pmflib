@@ -91,7 +91,7 @@ subroutine calculate_ds(cv_item,x,ctx)
 
     ! calculate actual value
     totmass1 = 0.0d0
-    d1(:) = 0.0
+    d1(:) = 0.0d0
     do  m = 1, cv_item%grps(1)
         ai = cv_item%lindexes(m)
         amass = mass(ai)
@@ -159,7 +159,7 @@ subroutine calculate_ds_cv2ddrvs(cv_item,x,ctx)
 
     ! calculate actual value
     totmass1 = 0.0d0
-    d1(:) = 0.0
+    d1(:) = 0.0d0
     do  m = 1, cv_item%grps(1)
         ai = cv_item%lindexes(m)
         amass = mass(ai)

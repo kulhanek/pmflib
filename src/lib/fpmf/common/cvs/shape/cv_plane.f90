@@ -101,7 +101,7 @@ subroutine calculate_plane(cv_item,x,ctx)
 
     ! calculate centres of mases --------------------
     totmass1 = 0.0d0
-    d1(:) = 0.0
+    d1(:) = 0.0d0
     do  m = 1, cv_item%grps(1)
         ai = cv_item%lindexes(m)
         amass = mass(ai)
@@ -168,7 +168,7 @@ subroutine calculate_plane(cv_item,x,ctx)
     if( ctx%CVsValues(cv_item%idx) .gt. 1.0d-7 ) then
         sc = 1.0d0 / ctx%CVsValues(cv_item%idx)
     else
-        sc = 0.0
+        sc = 0.0d0
     end if
 
     ! first part, e.g. a*dx'

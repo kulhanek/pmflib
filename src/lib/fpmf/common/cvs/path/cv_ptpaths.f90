@@ -176,7 +176,7 @@ subroutine calculate_ptpaths(cv_item,x,ctx)
 
 ! calculate CV value
     totmass1 = 0.0d0
-    d1(:) = 0.0
+    d1(:) = 0.0d0
     do  m = 1, cv_item%grps(1)
         ai = cv_item%lindexes(m)
         amass = mass(ai)

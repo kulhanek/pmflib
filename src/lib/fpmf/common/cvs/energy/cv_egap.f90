@@ -156,7 +156,7 @@ subroutine calculate_egap(cv_item,x,ctx)
 
     ! original coordinates
     qx(:,:) = md_x(:,:)
-    qd(:,:,:) = 0.0
+    qd(:,:,:) = 0.0d0
 
     ! make copy of x
     do i=1,cv_item%natoms
@@ -185,7 +185,7 @@ subroutine calculate_egap(cv_item,x,ctx)
     end do
 
     ! finalize energy and gradients
-    ctx%CVsValues(cv_item%idx) = 0.0
+    ctx%CVsValues(cv_item%idx) = 0.0d0
     do istate = 1, nstates
         ctx%CVsValues(cv_item%idx) = ctx%CVsValues(cv_item%idx) + cv_item%alphas(istate)*(EQ(istate)%total + Egalphas(istate))
     end do

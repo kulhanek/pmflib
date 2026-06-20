@@ -114,7 +114,7 @@ subroutine calculate_rad(cv_item,x,ctx)
     ! --------------------------------------------------------------------------
 
     totmass = 0.0d0
-    pos(:) = 0.0
+    pos(:) = 0.0d0
     do  m = 1, cv_item%grps(1)
         ai = cv_item%lindexes(m)
         amass = mass(ai)
@@ -139,7 +139,7 @@ subroutine calculate_rad(cv_item,x,ctx)
     if( ctx%CVsValues(cv_item%idx) .gt. 1e-7 ) then
         sc = 1.0d0 / ctx%CVsValues(cv_item%idx)
     else
-        sc = 0.0
+        sc = 0.0d0
     end if
 
     do  m = 1, cv_item%grps(1)

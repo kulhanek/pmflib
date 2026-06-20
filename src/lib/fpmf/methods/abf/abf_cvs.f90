@@ -45,8 +45,8 @@ subroutine abf_cvs_reset_cv(abf_item)
     abf_item%cvindx         = 0         ! CV index
     abf_item%cv             => null()
     abf_item%set            = 0
-    abf_item%min_value      = 0.0       ! left range
-    abf_item%max_value      = 0.0       ! right range
+    abf_item%min_value      = 0.0d0     ! left range
+    abf_item%max_value      = 0.0d0     ! right range
     abf_item%nbins          = 0         ! number of bins
     abf_item%wfac           = 1.0d0
     abf_item%buffer         = 0.0d0
@@ -112,7 +112,7 @@ subroutine abf_cvs_read_cv(prm_fin,abf_item)
     write(PMF_OUT,125) abf_item%nbins
 
     ! ========================
-    abf_item%buffer = 0.0
+    abf_item%buffer = 0.0d0
     if( prmfile_get_real8_by_key(prm_fin,'buffer',abf_item%buffer) ) then
         write(PMF_OUT,180) abf_item%buffer, trim(abf_item%cv%get_ulabel())
         call abf_item%cv%conv_to_ivalue(abf_item%buffer)

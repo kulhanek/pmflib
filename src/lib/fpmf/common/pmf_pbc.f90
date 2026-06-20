@@ -232,7 +232,7 @@ subroutine pmf_pbc_get_cbox(has_box,cbox)
     real(PMFDP)    :: cbox(3)
     ! --------------------------------------------------------------------------
 
-    cbox = 0.0
+    cbox = 0.0d0
 
     if( fbox_type .eq. BOX_ISOLATED_SYSTEM ) then
         has_box = 0

@@ -706,7 +706,7 @@ subroutine pmf_pmemd_mpistat
 
     write(PMF_OUT,25)
     write(PMF_OUT,30)
-    tot = 0.0
+    tot = 0.0d0
     do i=1,fnumoftasks
         f = real(accu_chunk_sizes(i),PMFDP) / real(3*numofmpitransfers,PMFDP)
         write(PMF_OUT,35) i, f

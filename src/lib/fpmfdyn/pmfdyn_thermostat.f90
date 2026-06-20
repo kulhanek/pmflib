@@ -339,9 +339,9 @@ subroutine cheatham_thermostat(oldv,v)
     tekin = 0.5 * NOF * PMF_Rgas * TempT
 
     ! recalculate kinetic energies - we need more, optimization is not important now
-    ekin0 = 0.0
-    ekin1 = 0.0
-    ekin2 = 0.0
+    ekin0 = 0.0d0
+    ekin1 = 0.0d0
+    ekin2 = 0.0d0
 
     do i=1,natoms
         ekin0 = ekin0 + 0.5*mass(i)*(oldv(1,i)**2 + &
@@ -434,7 +434,7 @@ subroutine stop_com(x,v)
     vcom(:) = 0.d0
     acom(:) = 0.d0
     ocom(:) = 0.d0
-    totmass = 0.0
+    totmass = 0.0d0
 
     do j = 1,natoms
         mmass = mass(j)

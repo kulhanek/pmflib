@@ -395,7 +395,7 @@ subroutine calculate_nabend(cv_item,x,ctx)
     ingrd = 1.0d0 / (cv_item%grps(4)-cv_item%grps(3))
 
     ! calculate hinge axis
-    d1(:) = 0.0
+    d1(:) = 0.0d0
     do  i = cv_item%grps(2)+1, cv_item%grps(3)
         ai = cv_item%lindexes(i)
         d1(:) = d1(:) + x(:,ai)

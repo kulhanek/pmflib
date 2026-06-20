@@ -41,8 +41,8 @@ subroutine pdrv_paths_reset_pdrv(pdrv_item)
     pdrv_item%mode                  = ' '  ! mode
     pdrv_item%initial_value_set     = .false.
     pdrv_item%set_attach_to_value   = .false.
-    pdrv_item%initial_alpha         = 0.0
-    pdrv_item%final_alpha           = 0.0
+    pdrv_item%initial_alpha         = 0.0d0
+    pdrv_item%final_alpha           = 0.0d0
 
 end subroutine pdrv_paths_reset_pdrv
 

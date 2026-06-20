@@ -197,7 +197,7 @@ subroutine calculate_axang(cv_item,x,ctx)
 
     ! calculate centres of masses --------------------
     totmass1 = 0.0d0
-    com1(:) = 0.0
+    com1(:) = 0.0d0
     do  m = 1, cv_item%grps(1)
         ai = cv_item%lindexes(m)
         amass = mass(ai)
@@ -211,7 +211,7 @@ subroutine calculate_axang(cv_item,x,ctx)
     com1(:) = com1(:) * itotmass1
 
     totmass2 = 0.0d0
-    com2(:) = 0.0
+    com2(:) = 0.0d0
     do m = cv_item%grps(1)+1, cv_item%grps(2)
         ai = cv_item%lindexes(m)
         amass = mass(ai)

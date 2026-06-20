@@ -114,7 +114,7 @@ subroutine calculate_pos(cv_item,x,ctx)
     ! --------------------------------------------------------------------------
 
     totmass = 0.0d0
-    pos(:) = 0.0
+    pos(:) = 0.0d0
     do  m = 1, cv_item%grps(1)
         ai = cv_item%lindexes(m)
         amass = mass(ai)

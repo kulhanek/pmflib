@@ -223,7 +223,7 @@ subroutine cst_core_calculate_fw
                 cj = CONList(j+NumOfCONs)%cvindx
                 z1 = 0.0d0
                 do k=1,NumOfLAtoms
-                    v1 = 0.0
+                    v1 = 0.0d0
                     do m=1,3
                         v1 = v1 + CVContext%CVsDrvs(m,k,ci)*CVContext%CVsDrvs(m,k,cj)
                     end do

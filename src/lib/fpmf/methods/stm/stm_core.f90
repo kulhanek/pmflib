@@ -75,7 +75,7 @@ subroutine stm_core_force
     end do
 
     ! calculate energy and gradients ----------------
-    TotalSTMEnergy = 0.0
+    TotalSTMEnergy = 0.0d0
     do i=1,NumOfSTMCVs
         rvalue = CVContext%CVsValues(STMCVList(i)%cvindx)
         STMCVList(i)%deviation = STMCVList(i)%cv%get_deviation(rvalue,STMCVList(i)%target_value)

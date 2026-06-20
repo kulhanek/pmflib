@@ -42,7 +42,7 @@ subroutine test_norm_vec_der
 
     h = 1e-5
 
-    nd_a(:) = 0.0
+    nd_a(:) = 0.0d0
     do i=1,3
         as(:) = a(:)
         as(i) = as(i) - h

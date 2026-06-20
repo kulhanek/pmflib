@@ -44,9 +44,9 @@ subroutine mtd_cvs_reset_cv(mtd_item)
     ! --------------------------------------------------------------------------
 
     mtd_item%cvindx         = 0     ! CV index
-    mtd_item%width          = 0.0   ! width
-    mtd_item%min_value      = 0.0   ! left range
-    mtd_item%max_value      = 0.0   ! right range
+    mtd_item%width          = 0.0d0 ! width
+    mtd_item%min_value      = 0.0d0 ! left range
+    mtd_item%max_value      = 0.0d0 ! right range
     mtd_item%nbins          = 0     ! number of bins
     mtd_item%buffer         = 0.0d0
 
@@ -132,7 +132,7 @@ subroutine mtd_cvs_read_cv(prm_fin,mtd_item)
     write(PMF_OUT,130) mtd_item%nbins
 
     ! ========================
-    mtd_item%buffer = 0.0
+    mtd_item%buffer = 0.0d0
     if( prmfile_get_real8_by_key(prm_fin,'buffer',mtd_item%buffer) ) then
         write(PMF_OUT,180) mtd_item%buffer, trim(mtd_item%cv%get_ulabel())
         call mtd_item%cv%conv_to_ivalue(mtd_item%buffer)

@@ -45,16 +45,16 @@ subroutine rst_restraints_reset_rst(rst_item)
     rst_item%cvindx          = 0    ! CV index
     rst_item%mode            = ' '  ! mode
 
-    rst_item%startvalue      = 0.0 ! start value
-    rst_item%stopvalue       = 0.0 ! stop value
-    rst_item%target_value    = 0.0 ! required value of restraint
+    rst_item%startvalue      = 0.0d0 ! start value
+    rst_item%stopvalue       = 0.0d0 ! stop value
+    rst_item%target_value    = 0.0d0 ! required value of restraint
 
-    rst_item%left_value      = 0.0 ! left value for wall restraint
-    rst_item%right_value     = 0.0 ! right value for wall restraint
+    rst_item%left_value      = 0.0d0 ! left value for wall restraint
+    rst_item%right_value     = 0.0d0 ! right value for wall restraint
 
-    rst_item%force_constant  = 0.0 ! sigma value
-    rst_item%deviation       = 0.0 ! deviation between real and actual value
-    rst_item%energy          = 0.0 ! restraint energy
+    rst_item%force_constant  = 0.0d0 ! sigma value
+    rst_item%deviation       = 0.0d0 ! deviation between real and actual value
+    rst_item%energy          = 0.0d0 ! restraint energy
 
     rst_item%set_value       = .false.
 

@@ -136,7 +136,7 @@ subroutine calculate_pmgtd(cv_item,x,ctx)
 
     ! calculate centre of mases --------------------
     totmass = 0.0d0
-    com(:) = 0.0
+    com(:) = 0.0d0
     do  m = 1, cv_item%natoms
         ai = cv_item%lindexes(m)
         amass = mass(ai)

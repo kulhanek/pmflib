@@ -56,9 +56,9 @@ subroutine cst_constraints_reset_con(cst_item)
     cst_item%sdevtot        = 0.0d0   ! total sum of deviation squares
     cst_item%value_set      = .false. ! initial value is user provided
 
-    cst_item%min_value      = 0.0   ! left range
-    cst_item%max_value      = 0.0   ! right range
-    cst_item%nbins          = 0     ! number of bins
+    cst_item%min_value      = 0.0d0   ! left range
+    cst_item%max_value      = 0.0d0   ! right range
+    cst_item%nbins          = 0       ! number of bins
 
     cst_item%ibin           = 0
 
@@ -303,8 +303,8 @@ subroutine cst_constraints_cst_init(cst_item)
     end if
 
     cst_item%startvalue = cst_item%value
-    cst_item%deviation  = 0.0
-    cst_item%sdevtot    = 0.0
+    cst_item%deviation  = 0.0d0
+    cst_item%sdevtot    = 0.0d0
 
     ! correct increment and stop value -----------------------------------------------
     if( cst_item%mode .eq. 'I' ) then

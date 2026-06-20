@@ -77,7 +77,7 @@ subroutine rst_core_force
     end do
 
 ! calculate energy and gradients ----------------
-    TotalRstEnergy = 0.0
+    TotalRstEnergy = 0.0d0
     do i=1,NumOfRSTCVs
         ci = RSTCVList(i)%cvindx
         rvalue = CVContext%CVsValues(ci)

@@ -91,7 +91,7 @@ subroutine calculate_dd(cv_item,x,ctx)
 
     ! calculate first distance ----------------------
     totmass1 = 0.0d0
-    d1(:) = 0.0
+    d1(:) = 0.0d0
     do  m = 1, cv_item%grps(1)
         ai = cv_item%lindexes(m)
         amass = mass(ai)
@@ -124,7 +124,7 @@ subroutine calculate_dd(cv_item,x,ctx)
 
     ! calculate second distance  --------------------
     totmass3 = 0.0d0
-    d3(:) = 0.0
+    d3(:) = 0.0d0
     do  m = cv_item%grps(2) + 1, cv_item%grps(3)
         ai = cv_item%lindexes(m)
         amass = mass(ai)
@@ -161,13 +161,13 @@ subroutine calculate_dd(cv_item,x,ctx)
     if( sqvp1 .gt. 1e-7 ) then
         sc1 = 1.0d0 / sqvp1
     else
-        sc1 = 0.0
+        sc1 = 0.0d0
     end if
 
     if( sqvp2 .gt. 1e-7 ) then
         sc2 = 1.0d0 / sqvp2
     else
-        sc2 = 0.0
+        sc2 = 0.0d0
     end if
 
     ! warning - groups can overlap - it is therefore important to add gradients

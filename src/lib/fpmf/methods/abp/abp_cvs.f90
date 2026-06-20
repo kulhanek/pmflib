@@ -40,10 +40,10 @@ subroutine abp_cvs_reset_cv(abp_item)
     abp_item%cvindx          = 0   ! CV index
     abp_item%cv              => null()
     abp_item%set             = 0
-    abp_item%min_value       = 0.0 ! left range
-    abp_item%max_value       = 0.0 ! right range
-    abp_item%nbins           = 0.0 ! number of bins
-    abp_item%width           = 0.0 ! width factor
+    abp_item%min_value       = 0.0d0 ! left range
+    abp_item%max_value       = 0.0d0 ! right range
+    abp_item%nbins           = 0.0d0 ! number of bins
+    abp_item%width           = 0.0d0 ! width factor
 
 end subroutine abp_cvs_reset_cv
 

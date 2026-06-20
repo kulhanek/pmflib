@@ -132,7 +132,7 @@ subroutine calculate_orad(cv_item,x,ctx)
 
     ! calculate centre of mass for first group
     totmass1 = 0.0d0
-    com(:) = 0.0
+    com(:) = 0.0d0
     do  m = 1, cv_item%grps(1)
         ai = cv_item%lindexes(m)
         amass = mass(ai)
@@ -148,7 +148,7 @@ subroutine calculate_orad(cv_item,x,ctx)
 
     ! calculate centre of mass for second group
     totmass2 = 0.0d0
-    pos(:) = 0.0
+    pos(:) = 0.0d0
     do  m = cv_item%grps(1)+1, cv_item%grps(2)
         ai = cv_item%lindexes(m)
         amass = mass(ai)

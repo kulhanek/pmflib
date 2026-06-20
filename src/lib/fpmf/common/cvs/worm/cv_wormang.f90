@@ -250,10 +250,10 @@ subroutine calculate_wormang(cv_item,x,ctx)
     real(PMFDP)    :: v(3,3),api(3,3),cij(3),xij(3,3,3),bint(3,3)
     ! -----------------------------------------------------------------------------
 
-    cv_item%coms(:,:)   = 0.0
-    cv_item%totmass(:)  = 0.0
-    cv_item%wdist(:)    = 0.0
-    cv_item%wd(:)       = 0.0
+    cv_item%coms(:,:)   = 0.0d0
+    cv_item%totmass(:)  = 0.0d0
+    cv_item%wdist(:)    = 0.0d0
+    cv_item%wd(:)       = 0.0d0
 
     ! for each group, calculate coms and totmass
     do i = 1, cv_item%ngrps

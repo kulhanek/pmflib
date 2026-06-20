@@ -201,7 +201,7 @@ subroutine pmf_paths_load_path(prm_fin,path_item)
         end do
 
         ! construct final path
-        path_item%alphas(1) = 0.0
+        path_item%alphas(1) = 0.0d0
         path_item%types(1) = incomplete_path_item%types(1)
         do b=2,path_item%nbeads-1
             path_item%alphas(b) = real(b-1) / real(path_item%nbeads-1)
@@ -1257,8 +1257,8 @@ real(PMFDP) function pmf_paths_get_alpha(path_item,ctx)
     real(PMFDP)         :: min_alpha
     ! --------------------------------------------------------------------------
 
-    left_alpha = 0.0
-    right_alpha = 1.0
+    left_alpha = 0.0d0
+    right_alpha = 1.0d0
     do i=0,PMF_PATH_ALPHA_NFOCUS
         int_len = (right_alpha-left_alpha)/PMF_PATH_ALPHA_PRECISION
         min_alpha = pmf_paths_get_alpha_guess(path_item,ctx,left_alpha,right_alpha)
@@ -1287,8 +1287,8 @@ real(PMFDP) function pmf_paths_get_alpha_guess(path_item,ctx,left_alpha,right_al
     real(PMFDP)         :: step,dist,min_dist,alpha,min_alpha
     ! --------------------------------------------------------------------------
 
-    if( left_alpha .lt. 0.0 ) left_alpha = 0.0
-    if( right_alpha .gt. 1.0 ) right_alpha = 1.0
+    if( left_alpha .lt. 0.0d0 ) left_alpha = 0.0d0
+    if( right_alpha .gt. 1.0d0 ) right_alpha = 1.0d0
 
     alpha = left_alpha
     min_alpha = alpha

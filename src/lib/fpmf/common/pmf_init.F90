@@ -315,7 +315,7 @@ subroutine pmf_init_all_nocvvalues(amass,ax)
         if( Mass(i) .ne. 0 ) then
             MassInv(i) = 1.0d0 / Mass(i)
         else
-            MassInv(i) = 0.0
+            MassInv(i) = 0.0d0
         end if
         Crd(:,i) = ax(:,RIndexes(i))*LengthConv
     end do

@@ -298,9 +298,9 @@ subroutine abf_constraints_calc_Pmat(cvsdrv)
             do k=1,NumOfLAtoms
                 do l=1,3
                     if( m .eq. n ) then
-                        pcst(j,i,l,k) = 1.0
+                        pcst(j,i,l,k) = 1.0d0
                     else
-                        pcst(j,i,l,k) = 0.0
+                        pcst(j,i,l,k) = 0.0d0
                     end if
                     n = n + 1
                 end do

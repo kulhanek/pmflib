@@ -174,8 +174,8 @@ subroutine calculate_puck5q(cv_item,x,ctx)
         do  i = 1, 5  ! over atoms
             ai = cv_item%lindexes(i)
 
-            wx = 0.0
-            vx = 0.0
+            wx = 0.0d0
+            vx = 0.0d0
             do k = 1, 5
                 wx = wx + (kdelta(k,i)-1.0d0/5.0d0)*sin(2.0d0/5.0d0*PMF_PI*(k-1))
                 vx = vx + (kdelta(k,i)-1.0d0/5.0d0)*cos(2.0d0/5.0d0*PMF_PI*(k-1))
