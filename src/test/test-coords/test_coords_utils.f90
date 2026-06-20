@@ -396,7 +396,7 @@ subroutine run_coord_test_identity(test_id)
     call CVList(2)%cv%calculate_cv(lx,tmp_context)
     value_2 = tmp_context%CVsValues(2)
 
-    if( abs(value_1-value_2) .lt. alarm_treshold ) then
+    if( abs(value_1-value_2) .lt. alarm_threshold ) then
         write(PMF_OUT,10) test_id,value_1,value_2
     else
         write(PMF_OUT,20) test_id,value_1,value_2
@@ -571,7 +571,7 @@ logical function compare_gradients(fd1,fd2)
 
     do i=1,NumOfLAtoms
         do k=1,3
-            if( abs(fd1(k,i)-fd2(k,i)) .gt. alarm_treshold ) then
+            if( abs(fd1(k,i)-fd2(k,i)) .gt. alarm_threshold ) then
                 compare_gradients = .false.
                 return
             end if

@@ -4,6 +4,9 @@ import argparse
 import numpy as np
 import matplotlib.pyplot as plt
 
+# https://espressomd.github.io/tutorials/error_analysis/error_analysis_part2.html
+# improve the integration range
+
 # ==============================================================================
 
 def read_columns(filename, columns):

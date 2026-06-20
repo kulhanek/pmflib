@@ -126,7 +126,7 @@ subroutine read_thermostat
         write(PMF_OUT,75) prmfile_onoff(MonitorHotAtoms)
     end if
 
-    if( prmfile_get_real8_by_key(ControlPrmfile,'hot_atom_treshold', HotAtomTreshold) ) then
+    if( prmfile_get_real8_by_key(ControlPrmfile,'hot_atom_threshold', HotAtomTreshold) ) then
         write(PMF_OUT,80) HotAtomTreshold
     else
         write(PMF_OUT,85) HotAtomTreshold
@@ -161,8 +161,8 @@ subroutine read_thermostat
  60  format ('Initial temperature (initial_temperature) = ',f14.1)
  70  format ('Monitor hot atoms (monitor_hot_atoms)     = ',a12)
  75  format ('Monitor hot atoms (monitor_hot_atoms)     = ',a12,'               (default)')
- 80  format ('Hot atom treshold (hot_atom_treshold)     = ',f14.1,' [K]')
- 85  format ('Hot atom treshold (hot_atom_treshold)     = ',f14.1,' [K]         (default)')
+ 80  format ('Hot atom threshold (hot_atom_threshold)     = ',f14.1,' [K]')
+ 85  format ('Hot atom threshold (hot_atom_threshold)     = ',f14.1,' [K]         (default)')
  90  format ('Remove hot atoms (remove_hot_atoms)       = ',a12)
  95  format ('Remove hot atoms (remove_hot_atoms)       = ',a12,'               (default)')
 100  format ('Random seed (random_seed)                 = ',i12)

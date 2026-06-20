@@ -149,7 +149,7 @@ subroutine stm_client_register
 
 #ifdef PMFLIB_NETWORK
  30 format(' Registration FAILED!')
- 40 format(' Registration SUCCESSFULL! (Client ID: ',I6,')')
+ 40 format(' Registration SUCCESSFUL! (Client ID: ',I6,')')
 
  45 format('# [STM-CLIENT] Bead ID  : ',I6)
  50 format('# [STM-CLIENT] Registration to server ',A,' failed!')

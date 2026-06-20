@@ -43,7 +43,7 @@ implicit none
 
 !===============================================================================
 
-! precision tresholds
+! precision thresholds
 real(PMFDP),parameter   :: PMF_MEPS = 1d-7
 
 ! math part ------------------------------------------------------------------

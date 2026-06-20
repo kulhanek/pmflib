@@ -105,7 +105,7 @@ subroutine cst_constraints_read_con(prm_fin,cst_item)
         call cst_item%cv%conv_to_ivalue(cst_item%max_value)
 
         if( cst_item%max_value .le. cst_item%min_value ) then
-            call pmf_utils_exit(PMF_OUT,1,'max_value has to be greater then min_value!')
+            call pmf_utils_exit(PMF_OUT,1,'max_value has to be greater than min_value!')
         end if
 
         ! ========================
@@ -113,7 +113,7 @@ subroutine cst_constraints_read_con(prm_fin,cst_item)
             call pmf_utils_exit(PMF_OUT,1,'nbins is not specified!')
         end if
         if( cst_item%nbins .lt. 1 ) then
-            call pmf_utils_exit(PMF_OUT,1,'nbins has to be greater then zero!')
+            call pmf_utils_exit(PMF_OUT,1,'nbins has to be greater than zero!')
         end if
         write(PMF_OUT,225) cst_item%nbins
     end if

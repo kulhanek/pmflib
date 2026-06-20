@@ -87,7 +87,7 @@ subroutine mta_cvs_read_cv(prm_fin,mta_item)
     call mta_item%cv%conv_to_ivalue(mta_item%max_value)
 
     if( mta_item%max_value .le. mta_item%min_value ) then
-        call pmf_utils_exit(PMF_OUT,1,'max_value has to be greater then min_value!')
+        call pmf_utils_exit(PMF_OUT,1,'max_value has to be greater than min_value!')
     end if
 
     ! ========================
@@ -95,7 +95,7 @@ subroutine mta_cvs_read_cv(prm_fin,mta_item)
         call pmf_utils_exit(PMF_OUT,1,'nbins is not specified!')
     end if
     if( mta_item%nbins .lt. 1 ) then
-        call pmf_utils_exit(PMF_OUT,1,'nbins has to be greater then zero!')
+        call pmf_utils_exit(PMF_OUT,1,'nbins has to be greater than zero!')
     end if
     write(PMF_OUT,125) mta_item%nbins
 

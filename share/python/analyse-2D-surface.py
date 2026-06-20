@@ -2688,30 +2688,30 @@ def parse_args():
     # Treshold
     # --------------------------------------------------------------------------
 
-    tresholdgroup = parser.add_argument_group("Treshold specification")
+    thresholdgroup = parser.add_argument_group("Treshold specification")
     
-    tresholdgroup.add_argument( "--sng-cutoff", type=float, default=100.0,
+    thresholdgroup.add_argument( "--sng-cutoff", type=float, default=100.0,
         help="Cut-off value of SNG to consider a stationary point." )
 
-    tresholdgroup.add_argument( "--sng-min-size", type=int, default=1,
+    thresholdgroup.add_argument( "--sng-min-size", type=int, default=1,
         help="Minimum number of bins to consider a SNG region as a stationary point." )
     
-    tresholdgroup.add_argument( "--trust-r0", type=float, default=0.01,
+    thresholdgroup.add_argument( "--trust-r0", type=float, default=0.01,
         help="Trust radius in scaled coordinates to locate stationary points." )
     
-    tresholdgroup.add_argument( "--minslam", type=float, default=5.0,
+    thresholdgroup.add_argument( "--minslam", type=float, default=5.0,
         help="Minimal allowed value for scaled Hessian eigenvalue." )
 
-    tresholdgroup.add_argument( "--maxslam", type=float, default=5000.0,
+    thresholdgroup.add_argument( "--maxslam", type=float, default=5000.0,
         help="Maximum allowed value for scaled Hessian eigenvalue." )
 
-    tresholdgroup.add_argument( "--min-distance-uv", type=float, default=0.1,
+    thresholdgroup.add_argument( "--min-distance-uv", type=float, default=0.1,
         help="Minimum distance between two SPs to be considered as individual points." )
 
-    tresholdgroup.add_argument( "--min-r", type=float, default=0.001,
+    thresholdgroup.add_argument( "--min-r", type=float, default=0.001,
         help="Minimum ellipse radius (scaled units)." )
 
-    tresholdgroup.add_argument( "--max-sng", type=float, default=0.5,
+    thresholdgroup.add_argument( "--max-sng", type=float, default=0.5,
         help="Maximum value of SNG for stationary points." )
 
     # --------------------------------------------------------------------------

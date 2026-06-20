@@ -101,7 +101,7 @@ subroutine mtd_cvs_read_cv(prm_fin,mtd_item)
     call mtd_item%cv%conv_to_ivalue(mtd_item%max_value)
 
     if( mtd_item%max_value .le. mtd_item%min_value ) then
-        call pmf_utils_exit(PMF_OUT,1,'max_value has to be greater then min_value!')
+        call pmf_utils_exit(PMF_OUT,1,'max_value has to be greater than min_value!')
     end if
 
     mtd_item%min_deposit = mtd_item%min_value    ! already in internal units

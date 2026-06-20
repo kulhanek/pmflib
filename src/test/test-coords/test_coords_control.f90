@@ -147,10 +147,10 @@ subroutine read_main
  else
     write(PMF_OUT,55) num_diff
  end if
- if(prmfile_get_real8_by_key(ControlPrmfile,'alarm_treshold', alarm_treshold)) then
-    write(PMF_OUT,60) alarm_treshold
+ if(prmfile_get_real8_by_key(ControlPrmfile,'alarm_threshold', alarm_threshold)) then
+    write(PMF_OUT,60) alarm_threshold
  else
-    write(PMF_OUT,65) alarm_treshold
+    write(PMF_OUT,65) alarm_threshold
  end if
  if(prmfile_get_logical_by_key(ControlPrmfile,'stop_when_error', stop_when_error)) then
     write(PMF_OUT,70) prmfile_onoff(stop_when_error)
@@ -178,8 +178,8 @@ subroutine read_main
  45 format ('num_of_tests                           = ',i12,'                  (default)')
  50 format ('num_diff                               = ',E12.4)
  55 format ('num_diff                               = ',E12.4,'                  (default)')
- 60 format ('alarm_treshold                         = ',E12.4)
- 65 format ('alarm_treshold                         = ',E12.4,'                  (default)')
+ 60 format ('alarm_threshold                         = ',E12.4)
+ 65 format ('alarm_threshold                         = ',E12.4,'                  (default)')
  70 format ('stop_when_error                        = ',a12)
  75 format ('stop_when_error                        = ',a12,'                  (default)')
  80 format ('verbose_print                          = ',a12)

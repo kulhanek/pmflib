@@ -1201,7 +1201,7 @@ class STMPath:
         self.SmoothingFac           = args.sfac
         self.ReparamInterval        = args.reparaminterval
         self.DetectMinimaAtStep     = args.detect_minima_at_step
-        self.MinimaTreshold         = args.minima_treshold
+        self.MinimaTreshold         = args.minima_threshold
 
         # STM
         self.STMStep            = 0
@@ -2721,7 +2721,7 @@ def parse_args():
     stmgroup.add_argument("--detect-minima-at-step", type=int, default=0,
         help="Detect minima along the pathway at given STM optimization step." )
     
-    stmgroup.add_argument("--minima-treshold", type=float, default=0.5,
+    stmgroup.add_argument("--minima-threshold", type=float, default=0.5,
         help="Minimum energy separating minima along the pathway." )
     
     # -------------------------------------------------------------------------
@@ -2798,8 +2798,8 @@ def parse_args():
     if args.cvspline not in (0, 1):
         parser.error("--cvspline must be 0 or 1")
 
-    if args.minima_treshold < 0.0:
-        parser.error("--minima-treshold > 0.")
+    if args.minima_threshold < 0.0:
+        parser.error("--minima-threshold > 0.")
 
     return args
 

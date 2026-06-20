@@ -181,7 +181,7 @@ subroutine mtd_client_register
 20 format(' Registering client on server, please wait .... ')
 
 30 format(' Registration FAILED!')
-40 format(' Registration SUCCESSFULL! (Client ID: ',I6,')')
+40 format(' Registration SUCCESSFUL! (Client ID: ',I6,')')
 
 50 format('# [MTD-CLIENT] Registration to server ',A,' failed!')
 60 format('# [MTD-CLIENT] Registration to server ',A,' successful.')
@@ -280,9 +280,9 @@ subroutine mtd_client_exchange_data(force_exchange)
         write(MTD_OUT,20) failure_counter,fconrepeats
         if( failure_counter .gt. fconrepeats ) then
             if( fabortonmwaerr ) then
-                call pmf_utils_exit(PMF_OUT,1,'MWA connection failures reach the treshold!')
+                call pmf_utils_exit(PMF_OUT,1,'MWA connection failures reach the threshold!')
             else
-                call pmf_exit_mdloop(PMF_OUT,1,'MWA connection failures reach the treshold!')
+                call pmf_exit_mdloop(PMF_OUT,1,'MWA connection failures reach the threshold!')
             end if
         end if
         call pmf_timers_stop_timer(PMFLIB_MTD_MWA_TIMER)

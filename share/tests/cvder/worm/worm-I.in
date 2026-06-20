@@ -7,7 +7,7 @@ num_of_tests		2
 stop_when_error 	on
 verbose_print 		on
 num_diff                0.000001
-alarm_treshold          0.00000001
+alarm_threshold         0.00000001
 
 [files]
 snapshots               traj/worm-I.xyz

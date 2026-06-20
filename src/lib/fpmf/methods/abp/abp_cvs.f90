@@ -87,7 +87,7 @@ subroutine abp_cvs_read_cv(prm_fin,abp_item)
     call abp_item%cv%conv_to_ivalue(abp_item%max_value)
 
     if( abp_item%max_value .le. abp_item%min_value ) then
-        call pmf_utils_exit(PMF_OUT,1,'max_value has to be greater then min_value!')
+        call pmf_utils_exit(PMF_OUT,1,'max_value has to be greater than min_value!')
     end if
 
     ! ========================

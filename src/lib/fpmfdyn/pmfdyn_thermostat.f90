@@ -127,7 +127,7 @@ subroutine init_thermostat_subsystem(x,v)
  80 format  ('   Random seed                             = ',i10)
  72 format  ('   Monitor hot atoms                       = ',a10)
  74 format  ('   Remove hot atoms                        = ',a10)
- 76 format  ('   Hot atom treshold                       = ',f12.1,' [K]')
+ 76 format  ('   Hot atom threshold                       = ',f12.1,' [K]')
 
 110 format(/,'   Degree of freedom (3*N_atoms)           = ',f12.1)
 120 format  ('   Number of COM constraints               = ',f12.1)
@@ -217,7 +217,7 @@ subroutine adjust_thermostat_controls(v)
         TempT = Temp0 + (Temp1-Temp0)*real(Istep)/real(Nsteps)
     end if
 
-    ! recalculate treshold for hot atoms
+    ! recalculate threshold for hot atoms
     ! 1.5 = (3/2), eg. three degree of freedoms per atom
     HotAtomMaxEkin = HotAtomTreshold*1.5d0*PMF_Rgas*TempT
 

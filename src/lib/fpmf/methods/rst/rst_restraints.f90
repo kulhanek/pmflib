@@ -270,7 +270,7 @@ subroutine rst_restraints_read_rst_hist(prm_fin,rst_item)
     call rst_item%cv%conv_to_ivalue(rst_item%max_value)
 
     if( rst_item%max_value .le. rst_item%min_value ) then
-        call pmf_utils_exit(PMF_OUT,1,'max_value has to be greater then min_value!')
+        call pmf_utils_exit(PMF_OUT,1,'max_value has to be greater than min_value!')
     end if
 
     ! ========================

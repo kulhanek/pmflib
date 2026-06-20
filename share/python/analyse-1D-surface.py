@@ -1404,27 +1404,27 @@ def parse_args():
     # Thresholds
     # --------------------------------------------------------------------------
 
-    tresholdgroup = parser.add_argument_group("Threshold specification")
+    thresholdgroup = parser.add_argument_group("Threshold specification")
     
-    tresholdgroup.add_argument( "--sng-cutoff", type=float, default=20.0,
+    thresholdgroup.add_argument( "--sng-cutoff", type=float, default=20.0,
         help="Cut-off value of SNG to consider a stationary point." )
 
-    tresholdgroup.add_argument( "--sng-min-size", type=int, default=1,
+    thresholdgroup.add_argument( "--sng-min-size", type=int, default=1,
         help="Minimum number of bins to consider a SNG region as a stationary point." )
     
-    tresholdgroup.add_argument( "--trust-r0", type=float, default=0.005,
+    thresholdgroup.add_argument( "--trust-r0", type=float, default=0.005,
         help="Trust radius in scaled coordinates to locate stationary points." )
     
-    tresholdgroup.add_argument( "--minslam", type=float, default=5.0,
+    thresholdgroup.add_argument( "--minslam", type=float, default=5.0,
         help="Minimal allowed value for scaled Hessian eigenvalue." )
 
-    tresholdgroup.add_argument( "--maxslam", type=float, default=50000.0,
+    thresholdgroup.add_argument( "--maxslam", type=float, default=50000.0,
         help="Maximum allowed value for scaled Hessian eigenvalue." )
 
-    tresholdgroup.add_argument( "--min-distance-u", type=float, default=0.005,
+    thresholdgroup.add_argument( "--min-distance-u", type=float, default=0.005,
         help="Minimum distance between two SPs to be considered as individual points." )
 
-    tresholdgroup.add_argument( "--max-sng", type=float, default=0.5,
+    thresholdgroup.add_argument( "--max-sng", type=float, default=0.5,
         help="Maximum value of SNG for optimized stationary points." )
 
     # --------------------------------------------------------------------------
