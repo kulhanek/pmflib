@@ -192,7 +192,7 @@ subroutine rst_output_write_header
     end do
     write(RST_OUT,*)
 
-    write(RST_OUT,10,advance='NO') '#--------'
+    write(RST_OUT,10,advance='NO') '#-------- -'
     do i=1,NumOfRSTCVs
         select case(fplevel)
             case(0)
