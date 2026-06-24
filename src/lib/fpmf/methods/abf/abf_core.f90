@@ -100,6 +100,8 @@ subroutine abf_core_update_history_force()
         cvhist(i,hist_len)  = CVContext%CVsValues(ci)
     end do
 
+    call abf_core_calc_Zmat(CVContext)
+
 ! apply force filters
     la(:) = 0.0d0
     if( fapply_abf ) then
