@@ -2474,42 +2474,56 @@ class EnergySurface2D:
                 pt['ene_state0'] = pt['ene_state'] - ene_state_min
 
 # --------------------------------------------------------------------------
-
-    def remove_transition_states_inside_minima_basins(self):
+    def remove_transition_states_inside_minima_basins(self, boundary_distance_uv=0.0):
         """
-        Remove transition-state stationary points that fall inside minima basins.
+        Remove transition-state stationary points that fall well inside minima basins.
 
         Watershed labels are generated from local minima. A transition state should
         lie on a basin boundary. If a point of type ``T`` maps to a labelled basin
-        pixel, it is inside the corresponding minimum basin and is removed from
-        ``self.sp_optimized``. Points on watershed lines, outside the valid mask,
-        or outside the grid are kept.
+        pixel, it is removed only if its grid-cell distance from the nearest basin
+        boundary is larger than ``boundary_distance_uv``. Points on watershed
+        lines, near watershed lines, outside the valid mask, or outside the grid
+        are kept.
 
-        Returns
-        -------
-        removed : list of dict
-            Removed transition-state stationary points.
+        The boundary distance is measured in scaled UV coordinates. For example,
+        ``boundary_distance_uv = 0.02`` keeps transition states whose nearest
+        grid cell is within 0.02 scaled-coordinate units from a watershed boundary.
+        With the default value of 0.0, the method reproduces the previous strict
+        behaviour and removes every transition state mapped to a labelled basin.
         """
 
         print("")
         print("# Detecting transition states inside minima basins ...")
+        print(f"  Basin-boundary distance threshold: {boundary_distance_uv:.6f} [scaled UV]")
+
+        if boundary_distance_uv < 0.0:
+            raise ValueError("boundary_distance_uv must be non-negative")
 
         if self.basins_labels is None:
             raise RuntimeError("Basin labels are not available. Call calculate_watershed() first.")
 
         kept = []
         removed = []
+        distance_maps = {}
+
+        dx = 1.0 / self.x_axis.npts
+        dy = 1.0 / self.y_axis.npts
+
+        def get_basin_distance_map(basin_id):
+            """Return distances from basin pixels to the nearest non-basin pixel."""
+            if basin_id not in distance_maps:
+                basin_mask = self.basins_labels == basin_id
+                distance_maps[basin_id] = ndimage.distance_transform_edt(
+                    basin_mask,
+                    sampling=(dy, dx),
+                )
+            return distance_maps[basin_id]
 
         for item in self.sp_optimized:
             if item.get('type', "") != "T":
                 kept.append(item)
                 continue
 
-            ix = int(np.argmin(np.abs(self.x_grid - item['x'])))
-            iy = int(np.argmin(np.abs(self.y_grid - item['y'])))
-
-            # If the nearest grid point is not the point itself because the point
-            # is outside the plotting range, keep it rather than silently remove it.
             outside_grid = (
                 item['x'] < self.x_axis.cvmin or item['x'] > self.x_axis.cvmax
                 or item['y'] < self.y_axis.cvmin or item['y'] > self.y_axis.cvmax
@@ -2519,9 +2533,30 @@ class EnergySurface2D:
                 kept.append(item)
                 continue
 
+            ix = int(np.argmin(np.abs(self.x_grid - item['x'])))
+            iy = int(np.argmin(np.abs(self.y_grid - item['y'])))
+
             basin_id = int(self.basins_labels[iy, ix])
 
-            if basin_id > 0:
+            if basin_id <= 0:
+                # Watershed line or invalid/unassigned region.
+                kept.append(item)
+                continue
+
+            basin_distance_uv = float(get_basin_distance_map(basin_id)[iy, ix])
+
+            if basin_distance_uv <= boundary_distance_uv:
+                kept.append(item)
+                print(
+                    "  Keeping transition state near basin boundary: "
+                    f"label = {item['id']}, "
+                    f"x = {item['x']:.6f}, "
+                    f"y = {item['y']:.6f}, "
+                    f"ene = {item['ene']:.6f}, "
+                    f"basin = {basin_id}, "
+                    f"boundary distance = {basin_distance_uv:.6f}"
+                )
+            else:
                 removed.append(item)
                 print(
                     "  Removing transition state inside minimum basin: "
@@ -2529,17 +2564,11 @@ class EnergySurface2D:
                     f"x = {item['x']:.6f}, "
                     f"y = {item['y']:.6f}, "
                     f"ene = {item['ene']:.6f}, "
-                    f"basin = {basin_id}"
+                    f"basin = {basin_id}, "
+                    f"boundary distance = {basin_distance_uv:.6f}"
                 )
-            else:
-                kept.append(item)
 
         self.sp_optimized = kept
-
-        print(f"  Removed {len(removed)} transition state(s) inside minima basins.")
-        print(f"  Remaining optimized stationary points: {len(self.sp_optimized)}")
-
-        return removed
 
 # ==============================================================================
 # Command-line arguments
@@ -2732,6 +2761,9 @@ def parse_args():
 
     thresholdgroup.add_argument( "--max-sng", type=float, default=0.5,
         help="Maximum value of SNG for stationary points." )
+    
+    thresholdgroup.add_argument( "--basin-boundary-distance-uv", type=float, default=0.005,
+        help="Scaled-coordinate distance from a watershed basin boundary below which a transition state is kept as a boundary point." )
 
     # --------------------------------------------------------------------------
     # Plots
@@ -3045,7 +3077,7 @@ def find_basins(args,surf):
     print("# Find minimum basins ...")
 
     surf.calculate_watershed()
-    surf.remove_transition_states_inside_minima_basins()
+    surf.remove_transition_states_inside_minima_basins(boundary_distance_uv=args.basin_boundary_distance_uv)
     surf.calculate_basins_ene_state()
 
     print(f"  Number of minimum basins:        {sum(1 for item in surf.sp_optimized if item['type'] == "S")}")
