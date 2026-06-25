@@ -773,27 +773,43 @@ class EnergySurface2D:
 
 # ------------------------------------------------------------------------------
 
-    def load(self, filename: str | Path) -> None:
+    def load(self, filename: str | Path, xcolumn=1, ycolumn=2, ecolumn=3) -> None:
         """Load text FES data. First three columns are CV1, CV2, energy."""
-        rows = []
+
+        x_values = []
+        y_values = []
+        e_values = []
+
         with open(filename, "r", encoding="utf-8") as fin:
             for line in fin:
-                line = line.split("#", 1)[0].strip()
+                line = line.strip()
+
                 if not line:
                     continue
-                fields = line.split()
-                if len(fields) < 3:
+
+                if line.startswith("#"):
                     continue
-                rows.append([float(v) for v in fields])
 
-        if not rows:
-            raise ValueError(f"No valid FES points were loaded from {filename!s}")
+                line = line.split("#", 1)[0].strip()
 
-        data = np.asarray(rows, dtype=float)
+                if not line:
+                    continue
 
-        self.x_data = data[:, 0]
-        self.y_data = data[:, 1]
-        self.e_data = data[:, 2]
+                fields = line.split()
+
+                if len(fields) < max(xcolumn,ycolumn,ecolumn):
+                    continue
+
+                x_values.append(float(fields[xcolumn-1]))
+                y_values.append(float(fields[ycolumn-1]))
+                e_values.append(float(fields[ecolumn-1]))
+
+        if len(e_values) == 0:
+            raise ValueError("No valid data points were loaded")
+
+        self.x_data = np.asarray(x_values, dtype=float)
+        self.y_data = np.asarray(y_values, dtype=float)
+        self.e_data = np.asarray(e_values, dtype=float)
 
         zmin = np.nanmin(self.e_data)
         self.e_data = self.e_data - zmin
@@ -1163,7 +1179,7 @@ class STMPath:
 
         print("")
         print(f"# Load FES: {args.input_fes}")
-        self.surface.load(args.input_fes)
+        self.surface.load(args.input_fes,xcolumn=args.input_fes_x_column,ycolumn=args.input_fes_y_column,ecolumn=args.input_fes_e_column)
 
         print(f"")
         print(f"# Optimize RBF ...")
@@ -2689,6 +2705,15 @@ def parse_args():
 
     filegroup.add_argument( "--input-fes", type=str, required=True,
         help="Input FES/PES file. First three columns are CV1, CV2, energy." )
+    
+    filegroup.add_argument("--input-fes-x-column", type=int, default=1,
+        help="Index of x-column in the input FES file." )
+    
+    filegroup.add_argument("--input-fes-y-column", type=int, default=2,
+        help="Index of y-column in the input FES file." )
+    
+    filegroup.add_argument("--input-fes-e-column", type=int, default=3,
+        help="Index of e-column in the input FES file." )
 
     filegroup.add_argument( "--input-path", type=str, required=True,
         help="Input path in the PMFLib format to optimize." )
