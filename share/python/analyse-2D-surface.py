@@ -213,7 +213,7 @@ class EnergySurface2D:
     # Data loading and fitting
     # --------------------------------------------------------------------------
 
-    def load(self, filename, xcolumn=1, ycolumn=2, ecolumn=3):
+    def load(self, filename, xcolumn=1, ycolumn=2, ecolumn=3, shift2zero=False):
         """
         Load input data from a text file.
 
@@ -259,8 +259,9 @@ class EnergySurface2D:
         self.y_data = np.asarray(y_values, dtype=float)
         self.e_data = np.asarray(e_values, dtype=float)
 
-        zmin = np.nanmin(self.e_data)
-        self.e_data = self.e_data - zmin
+        if shift2zero:
+            zmin = np.nanmin(self.e_data)
+            self.e_data = self.e_data - zmin
 
         # determine sampling spacing -------------
 
@@ -2637,6 +2638,9 @@ def parse_args():
 
     rbfgroup.add_argument("--rcond", type=float, default=1.0e-9,
         help="SVD cutoff for RBF fitting." )
+    
+    rbfgroup.add_argument( "--shift2zero", action="store_true", default=False,
+        help="Shift energy global minimum to zero." )
 
     # --------------------------------------------------------------------------
     # Files
@@ -2786,7 +2790,7 @@ def parse_args():
 def load_fes(args,surf):
     print("")
     print(f"# Load FES: {args.fname_input_fes}")
-    surf.load(args.fname_input_fes,xcolumn=args.input_fes_x_column,ycolumn=args.input_fes_y_column,ecolumn=args.input_fes_e_column)
+    surf.load(args.fname_input_fes,xcolumn=args.input_fes_x_column,ycolumn=args.input_fes_y_column,ecolumn=args.input_fes_e_column,shift2zero=args.shift2zero)
 
     if args.showrawfes == True or args.saverawfes is not None:
         surf.plot_raw(show=args.showrawfes,save=args.saverawfes,figsize=args.figsize,dpi=args.dpi)
@@ -2797,13 +2801,12 @@ def opt_rbfs(args,surf):
     print(f"")
     print(f"# Optimize RBF ...")
     print(f"  Width mode: {args.rbfwidthmode}")
-
-    print(f"  Nx:         {args.rbfsx:10.3f}")
-    print(f"  Ny:         {args.rbfsy:10.3f}")
-
+    print(f"  Nx:         {args.cv1nrbfs:6d}")
+    print(f"  Ny:         {args.cv2nrbfs:6d}")
+    
     if args.rbfwidthmode == "static":
-        print(f"  Sx:         {args.cv1nrbfs:6d}")
-        print(f"  Sy:         {args.cv2nrbfs:6d}")
+        print(f"  Sx:         {args.rbfsx:10.3f}")
+        print(f"  Sy:         {args.rbfsy:10.3f}")
         surf.fit(sx=args.rbfsx,sy=args.rbfsy,rcond=args.rcond)
     elif args.rbfwidthmode == "gridsearch":
         surf.fit_width_grid(rcond=args.rcond)

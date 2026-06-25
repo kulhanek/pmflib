@@ -773,7 +773,7 @@ class EnergySurface2D:
 
 # ------------------------------------------------------------------------------
 
-    def load(self, filename: str | Path, xcolumn=1, ycolumn=2, ecolumn=3) -> None:
+    def load(self, filename: str | Path, xcolumn=1, ycolumn=2, ecolumn=3, shift2zero=False) -> None:
         """Load text FES data. First three columns are CV1, CV2, energy."""
 
         x_values = []
@@ -811,8 +811,9 @@ class EnergySurface2D:
         self.y_data = np.asarray(y_values, dtype=float)
         self.e_data = np.asarray(e_values, dtype=float)
 
-        zmin = np.nanmin(self.e_data)
-        self.e_data = self.e_data - zmin
+        if shift2zero:
+            zmin = np.nanmin(self.e_data)
+            self.e_data = self.e_data - zmin
 
         if self.zmax == None:
             self.zmax = np.nanmax(self.e_data)
@@ -1179,7 +1180,8 @@ class STMPath:
 
         print("")
         print(f"# Load FES: {args.input_fes}")
-        self.surface.load(args.input_fes,xcolumn=args.input_fes_x_column,ycolumn=args.input_fes_y_column,ecolumn=args.input_fes_e_column)
+        self.surface.load(args.input_fes, xcolumn=args.input_fes_x_column, ycolumn=args.input_fes_y_column,
+                          ecolumn=args.input_fes_e_column, shift2zero=args.shift2zero)
 
         print(f"")
         print(f"# Optimize RBF ...")
@@ -1839,7 +1841,7 @@ class STMPath:
 
         for bead in self.beads:
             bead.A -= amin
-            bead.Asurf -= emin
+            bead.Asurf0 = bead.Asurf - emin
 
 
    # --------------------------------------------------------------------------
@@ -2207,7 +2209,7 @@ class STMPath:
         print(f"# Number of beads = {self.nbeads}", file=fout)
 
         # Header legends.
-        print("#  ID   Type  MO ST KinkA  alpha    dA/dalpha        Asurf     CID Updates", end="", file=fout)
+        print("#  ID   Type  MO ST KinkA  alpha    dA/dalpha         Aint     CID Updates", end="", file=fout)
         for i in range(self.ncvs):
             print(f"          CV{i + 1:<1d}", end="", file=fout)
         for i in range(self.ncvs):
@@ -2219,12 +2221,14 @@ class STMPath:
         for i in range(self.ncvs):
             print(f"  -|F{i + 1:<1d}/dalpha", end="", file=fout)
 
-        print(f"         Aint", end="", file=fout)
+        print(f"        Asurf", end="", file=fout)
+        print(f"       Asurf0", end="", file=fout)
         print(file=fout)
 
         # Delimiters.
         delimiter = "# ---- ------ -- -- ----- ------ ------------ ------------ ------- -------"
         delimiter += " ------------" * (5 * self.ncvs)
+        delimiter += " ------------"
         delimiter += " ------------"
         print(delimiter, file=fout)
 
@@ -2275,6 +2279,7 @@ class STMPath:
             for cv in self.cvs:
                 print(f"             ", end="", file=fout)
         print(f"             ", end="", file=fout)
+        print(f"             ", end="", file=fout)
         print(file=fout)
 
         print(delimiter, file=fout)
@@ -2282,6 +2287,7 @@ class STMPath:
         delimiter2 = "# ---- ------ -- -- ----- ------ ------------ ------------ ------- -------"
         delimiter2 += " uuuuuuuuuuuu" * (1 * self.ncvs)
         delimiter2 += " ssssssssssss" * (4 * self.ncvs)
+        delimiter2 += " ------------"
         delimiter2 += " ------------"
 
         print(delimiter2, file=fout)
@@ -2293,6 +2299,8 @@ class STMPath:
             for _ in range(self.ncvs):
                 print(f"{column_id:13d}", end="", file=fout)
                 column_id += 1
+        print(f"{column_id:13d}", end="", file=fout)
+        column_id += 1
         print(f"{column_id:13d}", end="", file=fout)
         print(file=fout)
 
@@ -2332,15 +2340,16 @@ class STMPath:
 
             alpha = 0.0 if bead.Alpha is None else float(bead.Alpha)
             d_ad_alpha = 0.0 if bead.dAdAlpha is None else float(bead.dAdAlpha)
-            free_energy_surf = 0.0 if bead.Asurf is None else float(bead.A)
-            free_energy_int = 0.0 if bead.A is None else float(bead.Asurf)
+            free_energy_int = 0.0 if bead.A is None else float(bead.A)
+            free_energy_surf = 0.0 if bead.Asurf is None else float(bead.Asurf)
+            free_energy_surf0 = 0.0 if bead.Asurf0 is None else float(bead.Asurf0)
 
             print(
                 f"  {bead_id:4d} {bead_type:>6} {mode:>2} {status:>2} "
                 f"{kangle:5.1f} "
                 f"{alpha:6.4f} "
                 f"{d_ad_alpha:12.5e} "
-                f"{free_energy_surf:12.5e} "
+                f"{free_energy_int:12.5e} "
                 f"{client_id:>7}"
                 f"{self.STMStep:8d}",
                 end="",
@@ -2368,7 +2377,8 @@ class STMPath:
             for i in range(self.ncvs):
                 print(f" {float(bead.pGrad[i]):12.5e}", end="", file=fout)
 
-            print(f" {free_energy_int:12.5e}", end="", file=fout)
+            print(f" {free_energy_surf:12.5e}", end="", file=fout)
+            print(f" {free_energy_surf0:12.5e}", end="", file=fout)
 
             print(file=fout)
 
@@ -2696,6 +2706,9 @@ def parse_args():
 
     rbfgroup.add_argument( "--rcond", type=float, default=1.0e-9,
         help="SVD cutoff for RBF fitting." )
+    
+    rbfgroup.add_argument( "--shift2zero", action="store_true", default=False,
+        help="Shift energy global minimum to zero." )
 
     # -------------------------------------------------------------------------
     # Files
