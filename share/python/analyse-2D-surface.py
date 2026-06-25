@@ -2153,8 +2153,6 @@ class EnergySurface2D:
         # Restore a stable order, preferably by label.
         # ------------------------------------------------------------------
 
-        kept = sorted(kept, key=lambda p: int(p['id']))
-
         self.sp_optimized = kept
 
         print(f"  Removed {len(removed)} near-duplicate optimized stationary point(s).")
