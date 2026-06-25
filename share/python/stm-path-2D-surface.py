@@ -801,6 +801,26 @@ class EnergySurface2D:
         if self.zmax == None:
             self.zmax = np.nanmax(self.e_data)
 
+        # determine sampling spacing -------------
+
+        # sort and remove exact duplicates
+        x_data_unique = np.unique(self.x_data)
+
+        # differences between consecutive unique sorted values
+        dx = np.diff(x_data_unique)
+
+        # minimal positive difference
+        self.x_min_dx = np.min(dx[dx > 0]) if np.any(dx > 0) else None
+
+        # sort and remove exact duplicates
+        y_data_unique = np.unique(self.y_data)
+
+        # differences between consecutive unique sorted values
+        dy = np.diff(y_data_unique)
+
+        # minimal positive difference
+        self.y_min_dy = np.min(dy[dy > 0]) if np.any(dy > 0) else None  
+
 # ------------------------------------------------------------------------------
 
     def to_scaled(self, x: Iterable[float]) -> np.ndarray:
@@ -969,9 +989,6 @@ class EnergySurface2D:
             self.y_axis.scale(self.Y.ravel()),
         ])
 
-        dx = 1.0 / self.x_axis.npts
-        dy = 1.0 / self.y_axis.npts
-
         # ------------------------------------------------------------
         # Default threshold:
         # a grid point is sampled if there is a data point roughly within
@@ -979,7 +996,7 @@ class EnergySurface2D:
         # ------------------------------------------------------------
 
         if max_distance is None:
-            max_distance = 0.75 * np.sqrt(dx**2 + dy**2)
+            max_distance = 1.5 * np.sqrt(self.x_min_dx**2 + self.y_min_dy**2)
 
         tree = cKDTree(data_points)
         nearest_dist, nearest_idx = tree.query(grid_points, k=1)

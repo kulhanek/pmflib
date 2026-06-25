@@ -262,6 +262,26 @@ class EnergySurface2D:
         zmin = np.nanmin(self.e_data)
         self.e_data = self.e_data - zmin
 
+        # determine sampling spacing -------------
+
+        # sort and remove exact duplicates
+        x_data_unique = np.unique(self.x_data)
+
+        # differences between consecutive unique sorted values
+        dx = np.diff(x_data_unique)
+
+        # minimal positive difference
+        self.x_min_dx = np.min(dx[dx > 0]) if np.any(dx > 0) else None
+
+        # sort and remove exact duplicates
+        y_data_unique = np.unique(self.y_data)
+
+        # differences between consecutive unique sorted values
+        dy = np.diff(y_data_unique)
+
+        # minimal positive difference
+        self.y_min_dy = np.min(dy[dy > 0]) if np.any(dy > 0) else None  
+
     # --------------------------------------------------------------------------
 
     def calc_ene_and_sng(self):
@@ -367,9 +387,6 @@ class EnergySurface2D:
             self.y_axis.scale(self.Y.ravel()),
         ])
 
-        dx = 1.0 / self.x_axis.npts
-        dy = 1.0 / self.y_axis.npts
-
         # ----------------------------------------------------------------------
         # Default threshold:
         # a grid point is sampled if there is a data point roughly within
@@ -377,7 +394,7 @@ class EnergySurface2D:
         # ----------------------------------------------------------------------
 
         if max_distance is None:
-            max_distance = 0.75 * np.sqrt(dx**2 + dy**2)
+            max_distance = 1.5 * np.sqrt(self.x_min_dx**2 + self.y_min_dy**2)
 
         tree = cKDTree(data_points)
         nearest_dist, nearest_idx = tree.query(grid_points, k=1)
@@ -1247,28 +1264,20 @@ class EnergySurface2D:
         cbar = fig.colorbar(im, ax=ax)
         cbar.set_label("SNG Metric")
 
-        zmin_plot = np.nanmin(Zplot)
         zmax_plot = np.nanmax(Zplot)
 
-        cmin = np.floor(zmin_plot / contour_spacing) * contour_spacing
-        cmax = np.ceil(zmax_plot / contour_spacing) * contour_spacing
+        cmin = 0.0
+        cmax = zmax_plot
 
-        levels = np.arange(cmin, cmax + contour_spacing, contour_spacing)
+        levels = np.arange(cmin, cmax, cmax/10)
 
-        contours = ax.contour(
-            self.X,
-            self.Y,
+        ax.contour(
+            self.U,
+            self.V,
             Zplot,
             levels=levels,
-            colors="black",
-            linewidths=0.6,
-        )
-
-        ax.clabel(
-            contours,
-            inline=True,
-            fontsize=8,
-            fmt="%.1f",
+            colors="white",
+            linewidths=0.3,
         )
 
         ax.set_xlabel("CV1 [scaled]")
@@ -1342,6 +1351,7 @@ class EnergySurface2D:
             levels=levels,
             colors="black",
             linewidths=0.6,
+            zorder=2,
         )
 
         ax.clabel(
@@ -1349,6 +1359,7 @@ class EnergySurface2D:
             inline=True,
             fontsize=8,
             fmt="%.0f",
+            zorder=3,
         )
 
         # -------------------------------------------------------------------------
@@ -1947,7 +1958,7 @@ class EnergySurface2D:
         if num_negative == 2:
             print("Type of SP: local maximum")
             xopttype = "M"
-            self.ts_ellipse = 0
+            self.ts_ellipse = 2
         elif num_negative == 1:
             print("Type of SP: transition state")
             xopttype = "T"
@@ -2344,12 +2355,18 @@ class EnergySurface2D:
 
             [ene, g, h] = self.eval_uv(x)
 
-            if self.ts_ellipse == 1:
-                z   = - self.thr * np.cos(2*t)
-            else:
+            if self.ts_ellipse == 0:
                 z   = self.thr
-
-            err += ((ene - self.xoptene) - z) ** 2
+                err += ((ene - self.xoptene) - z) ** 2
+            elif self.ts_ellipse == 1:
+                z   = - self.thr * np.cos(2*t)
+                err += ((ene - self.xoptene) - z) ** 2
+            elif self.ts_ellipse == 2:
+                z   = self.thr
+                err += (abs(ene - self.xoptene) - z) ** 2
+            else:
+                err += 0.0
+            
             cnt += 1.0
 
         return np.sqrt(err / cnt)
@@ -2783,9 +2800,12 @@ def opt_rbfs(args,surf):
     print(f"# Optimize RBF ...")
     print(f"  Width mode: {args.rbfwidthmode}")
 
+    print(f"  Nx:         {args.rbfsx:10.3f}")
+    print(f"  Ny:         {args.rbfsy:10.3f}")
+
     if args.rbfwidthmode == "static":
-        print(f"  Sx:         {args.rbfsx:10.3f}")
-        print(f"  Sy:         {args.rbfsy:10.3f}")
+        print(f"  Sx:         {args.cv1nrbfs:6d}")
+        print(f"  Sy:         {args.cv2nrbfs:6d}")
         surf.fit(sx=args.rbfsx,sy=args.rbfsy,rcond=args.rcond)
     elif args.rbfwidthmode == "gridsearch":
         surf.fit_width_grid(rcond=args.rcond)
