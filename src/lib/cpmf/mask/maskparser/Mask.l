@@ -14,45 +14,18 @@ AMBER Mask Lexical Analyzer
 %option noyywrap
 newline       [\n]
 whitesp       [ \t]+
-string        [a-zA-z]+[^,&|!() \t@]*
-inumber       [0-9]+
+string        [0-9]*[a-zA-Z]+[a-zA-Z0-9$^+_*=\-']*
 rnumber       [0-9]+[.]?[0-9]*
+inumber       [0-9]+
 
 /* rules ==================================================================== */
 %%
-{inumber} {
-    pmf_yylval.iValue.Position = PMFLexPosition;
-    if( sscanf(yytext, "%d", &pmf_yylval.iValue.Number) != 1 ){
-        pmf_pperror("unable to convert string to integer",PMFLexPosition);
-        }
-    PMFLexPosition += yyleng;
-    return INUMBER;
-    }
-
-{rnumber} {
-    pmf_yylval.rValue.Position = PMFLexPosition;
-    if( sscanf(yytext, "%lf", &pmf_yylval.rValue.Number) != 1 ){
-        pmf_pperror("unable to convert string to real number",PMFLexPosition);
-        }
-    return RNUMBER;
-    }
 
 "origin"    { pmf_yylval.gValue.Position = PMFLexPosition; PMFLexPosition += 6; return ORIGIN; }
 "cbox"      { pmf_yylval.gValue.Position = PMFLexPosition; PMFLexPosition += 4; return CBOX; }
 "list"      { pmf_yylval.gValue.Position = PMFLexPosition; PMFLexPosition += 4; return LIST; }
 "com"       { pmf_yylval.gValue.Position = PMFLexPosition; PMFLexPosition += 3; return COM; }
 "plane"     { pmf_yylval.gValue.Position = PMFLexPosition; PMFLexPosition += 5; return PLANE; }
-
-{string}  {
-    pmf_yylval.sValue.Position = PMFLexPosition;
-    if( yyleng > 4 ){
-        pmf_pperror("name is too long (max 4 characters)",PMFLexPosition);
-        }
-    memset(pmf_yylval.sValue.String,' ',4);
-    strncpy(pmf_yylval.sValue.String,yytext,yyleng);
-    PMFLexPosition += yyleng;
-    return STRING;
-    }
 
 "*"       { pmf_yylval.gValue.Position = PMFLexPosition; PMFLexPosition++; return STAR; }
 ","       { pmf_yylval.gValue.Position = PMFLexPosition; PMFLexPosition++; return COMMA; }
@@ -73,6 +46,34 @@ rnumber       [0-9]+[.]?[0-9]*
 
 "("       { pmf_yylval.gValue.Position = PMFLexPosition; PMFLexPosition++; return LBRA; }
 ")"       { pmf_yylval.gValue.Position = PMFLexPosition; PMFLexPosition++; return RBRA; }
+
+{string}  {
+    pmf_yylval.sValue.Position = PMFLexPosition;
+    if( yyleng > 4 ){
+        pmf_pperror("name is too long (max 4 characters)",PMFLexPosition);
+        }
+    memset(pmf_yylval.sValue.String,' ',4);
+    strncpy(pmf_yylval.sValue.String,yytext,yyleng);
+    PMFLexPosition += yyleng;
+    return STRING;
+    }
+
+{inumber} {
+    pmf_yylval.iValue.Position = PMFLexPosition;
+    if( sscanf(yytext, "%d", &pmf_yylval.iValue.Number) != 1 ){
+        pmf_pperror("unable to convert string to integer",PMFLexPosition);
+        }
+    PMFLexPosition += yyleng;
+    return INUMBER;
+    }
+
+{rnumber} {
+    pmf_yylval.rValue.Position = PMFLexPosition;
+    if( sscanf(yytext, "%lf", &pmf_yylval.rValue.Number) != 1 ){
+        pmf_pperror("unable to convert string to real number",PMFLexPosition);
+        }
+    return RNUMBER;
+    }
 
 {whitesp} { PMFLexPosition += yyleng;}
 

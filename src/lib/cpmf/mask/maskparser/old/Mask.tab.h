@@ -1,9 +1,8 @@
-/* A Bison parser, made by GNU Bison 3.8.2.  */
+/* A Bison parser, made by GNU Bison 3.0.2.  */
 
 /* Bison interface for Yacc-like parsers in C
 
-   Copyright (C) 1984, 1989-1990, 2000-2015, 2018-2021 Free Software Foundation,
-   Inc.
+   Copyright (C) 1984, 1989-1990, 2000-2013 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -16,7 +15,7 @@
    GNU General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program.  If not, see <https://www.gnu.org/licenses/>.  */
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.  */
 
 /* As a special exception, you may create a larger work that contains
    part or all of the Bison parser skeleton and distribute that work
@@ -31,10 +30,6 @@
    This special exception was added by the Free Software Foundation in
    version 2.2 of Bison.  */
 
-/* DO NOT RELY ON FEATURES THAT ARE NOT DOCUMENTED in the manual,
-   especially those whose name start with YY_ or yy_.  They are
-   private implementation details that can be changed or removed.  */
-
 #ifndef YY_PMF_YY_MASK_TAB_H_INCLUDED
 # define YY_PMF_YY_MASK_TAB_H_INCLUDED
 /* Debug traces.  */
@@ -45,48 +40,44 @@
 extern int pmf_yydebug;
 #endif
 
-/* Token kinds.  */
+/* Token type.  */
 #ifndef YYTOKENTYPE
 # define YYTOKENTYPE
   enum yytokentype
   {
-    YYEMPTY = -2,
-    YYEOF = 0,                     /* "end of file"  */
-    YYerror = 256,                 /* error  */
-    YYUNDEF = 257,                 /* "invalid token"  */
-    STRING = 258,                  /* STRING  */
-    INUMBER = 259,                 /* INUMBER  */
-    RNUMBER = 260,                 /* RNUMBER  */
-    STAR = 261,                    /* STAR  */
-    COMMA = 262,                   /* COMMA  */
-    RANGE = 263,                   /* RANGE  */
-    RSELECTOR = 264,               /* RSELECTOR  */
-    ASELECTOR = 265,               /* ASELECTOR  */
-    TSELECTOR = 266,               /* TSELECTOR  */
-    RLT = 267,                     /* RLT  */
-    RGT = 268,                     /* RGT  */
-    ALT = 269,                     /* ALT  */
-    AGT = 270,                     /* AGT  */
-    NOT = 271,                     /* NOT  */
-    AND = 272,                     /* AND  */
-    OR = 273,                      /* OR  */
-    RBRA = 274,                    /* RBRA  */
-    LBRA = 275,                    /* LBRA  */
-    ERROR = 276,                   /* ERROR  */
-    ORIGIN = 277,                  /* ORIGIN  */
-    CBOX = 278,                    /* CBOX  */
-    LIST = 279,                    /* LIST  */
-    COM = 280,                     /* COM  */
-    PLANE = 281                    /* PLANE  */
+    STRING = 258,
+    INUMBER = 259,
+    RNUMBER = 260,
+    STAR = 261,
+    COMMA = 262,
+    RANGE = 263,
+    RSELECTOR = 264,
+    ASELECTOR = 265,
+    TSELECTOR = 266,
+    RLT = 267,
+    RGT = 268,
+    ALT = 269,
+    AGT = 270,
+    NOT = 271,
+    AND = 272,
+    OR = 273,
+    RBRA = 274,
+    LBRA = 275,
+    ERROR = 276,
+    ORIGIN = 277,
+    CBOX = 278,
+    LIST = 279,
+    COM = 280,
+    PLANE = 281
   };
-  typedef enum yytokentype yytoken_kind_t;
 #endif
 
 /* Value type.  */
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
+typedef union YYSTYPE YYSTYPE;
 union YYSTYPE
 {
-#line 16 "Mask.y"
+#line 16 "Mask.y" /* yacc.c:1909  */
 
     SGrammar                gValue;
     SInteger                iValue;
@@ -98,10 +89,8 @@ union YYSTYPE
     struct SExpression*     exprValue;
     
 
-#line 102 "Mask.tab.h"
-
+#line 93 "Mask.tab.h" /* yacc.c:1909  */
 };
-typedef union YYSTYPE YYSTYPE;
 # define YYSTYPE_IS_TRIVIAL 1
 # define YYSTYPE_IS_DECLARED 1
 #endif
@@ -109,8 +98,6 @@ typedef union YYSTYPE YYSTYPE;
 
 extern YYSTYPE pmf_yylval;
 
-
 int pmf_yyparse (void);
-
 
 #endif /* !YY_PMF_YY_MASK_TAB_H_INCLUDED  */
