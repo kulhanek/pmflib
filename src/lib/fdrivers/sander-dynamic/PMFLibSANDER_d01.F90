@@ -575,15 +575,15 @@ subroutine pmf_sander_bind_to_driver(master)
         write(PMF_OUT,80)
         write(PMF_OUT,90)
         call pmf_sander_check_interface(PMFLIB_CHECK_R81,PMFLIB_CHECK_INT1,PMFLIB_EKIN_SIZE,PMFLIB_SETUP_SIZE, &
-                                       PMFLIB_CHECK_STR1,len(PMFLIB_CHECK_STR1), &
-                                       PMFLIB_CHECK_STR2,len(PMFLIB_CHECK_STR2))
+                                       PMFLIB_CHECK_STR1,int(len(PMFLIB_CHECK_STR1),CPMFINT), &
+                                       PMFLIB_CHECK_STR2,int(len(PMFLIB_CHECK_STR2),CPMFINT))
         write(PMF_OUT,100)
         write(PMF_OUT,10)
         write(PMF_OUT,*)
     else
         call pmf_sander_check_interface(PMFLIB_CHECK_R81,PMFLIB_CHECK_INT1,PMFLIB_EKIN_SIZE,PMFLIB_SETUP_SIZE, &
-                                       PMFLIB_CHECK_STR1,len(PMFLIB_CHECK_STR1), &
-                                       PMFLIB_CHECK_STR2,len(PMFLIB_CHECK_STR2))
+                                       PMFLIB_CHECK_STR1,int(len(PMFLIB_CHECK_STR1),CPMFINT), &
+                                       PMFLIB_CHECK_STR2,int(len(PMFLIB_CHECK_STR2),CPMFINT))
     end if
 
     use_pmflib = .true.
