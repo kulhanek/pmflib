@@ -129,8 +129,8 @@ extern "C" {
 
     extern int yyerror(const char* p_error);
     extern int yylex(void);
-    extern struct yy_buffer_state* yy_scan_string(const char* p_string);
-    extern int yylex_destroy(void);
+    extern struct yy_buffer_state* pmf_yy_scan_string(const char* p_string);
+    extern int pmf_yylex_destroy(void);
     extern int pmf_yyerror(const char* p_error);
     extern int pmf_pperror(const char* p_error,int position);
 
