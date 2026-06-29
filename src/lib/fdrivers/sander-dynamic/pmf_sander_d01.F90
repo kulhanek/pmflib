@@ -750,11 +750,11 @@ function pmf_sander_cst_checkatom(atomid) bind(c,name='int_pmf_sander_cst_checka
     pmf_sander_cst_checkatom = 0
 
     if( cst_enabled ) then
-        if( cst_mdcon_cvs_checkatom(atomid,0) ) pmf_sander_cst_checkatom = 1
+        if( cst_mdcon_cvs_checkatom(int(atomid),0) ) pmf_sander_cst_checkatom = 1
     end if
 
     if( abf_enabled ) then
-        if( abf_constraints_checkatom(atomid,0) ) pmf_sander_cst_checkatom = 1
+        if( abf_constraints_checkatom(int(atomid),0) ) pmf_sander_cst_checkatom = 1
     end if
 
     return
@@ -777,6 +777,7 @@ subroutine pmf_sander_shake(anatom,xp,modified) bind(c,name='int_pmf_sander_shak
     integer(CPMFINT)    :: anatom            ! number of atoms
     real(CPMFDP)        :: xp(3,anatom)      ! positions in t+dt
     integer(CPMFINT)    :: modified          ! was constraint applied?
+    integer             :: lmod              ! local modified
     ! --------------------------------------------------------------------------
 
     modified = 0
@@ -787,7 +788,9 @@ subroutine pmf_sander_shake(anatom,xp,modified) bind(c,name='int_pmf_sander_shak
     end if
 
     call pmf_timers_start_timer(PMFLIB_TIMER)
-        call pmf_core_lf_shake(xp,modified)
+        lmod = 0
+        call pmf_core_lf_shake(xp,lmod)
+        modified = lmod
     call pmf_timers_stop_timer(PMFLIB_TIMER)
 
 end subroutine pmf_sander_shake
