@@ -91,8 +91,8 @@ end subroutine pmf_sander_check_interface
 ! subroutine pmf_sander_init_preinit
 !===============================================================================
 
-subroutine pmf_sander_init_preinit(mdin,mdin_len,ischeme,anatom,anres, &
-                            antb,antc,ansteps,astepsize,atemp0,apress0, &
+subroutine pmf_sander_init_preinit(mdin,mdin_len,ischeme,anatom,anres,      &
+                            antb,antc,ansteps,astepsize,atemp0,             &
                             box_a,box_b,box_c,box_alpha,box_beta,box_gamma) &
                             bind(c,name='int_pmf_sander_init_preinit')
 
@@ -117,7 +117,6 @@ subroutine pmf_sander_init_preinit(mdin,mdin_len,ischeme,anatom,anres, &
     integer(CPMFINT)    :: ansteps                      ! number of MD steps
     real(CPMFDP)        :: astepsize                    ! step size
     real(CPMFDP)        :: atemp0                       ! temperature
-    real(CPMFDP)        :: apress0                      ! pressure
     real(CPMFDP)        :: box_a,box_b,box_c            ! box dimensions
     real(CPMFDP)        :: box_alpha,box_beta,box_gamma
     ! -----------------------------------------------
@@ -140,7 +139,6 @@ subroutine pmf_sander_init_preinit(mdin,mdin_len,ischeme,anatom,anres, &
     EnergyConv       = 1.0d0        ! kcal/mol -> kcal/mol
     ForceConv        = 1.0d0        ! kcal/mol/A -> kcal/mol/A
     TemperatureConv  = 1.0d0        ! K
-    PressureConv     = 1.0d5        ! Bar -> Pa
 
     ControlFileName = ''
     do i=1,min(mdin_len,len(ControlFileName))
@@ -154,9 +152,9 @@ subroutine pmf_sander_init_preinit(mdin,mdin_len,ischeme,anatom,anres, &
     ! init basic PMF setup
     call pmf_init_dat()
     if( ischeme .ne. 0 ) then
-        call pmf_init_variables(IA_LF_MIDDLE,anatom,antb,ansteps,astepsize,0.0d0,atemp0,apress0)
+        call pmf_init_variables(IA_LF_MIDDLE,anatom,antb,ansteps,astepsize,0.0d0,atemp0)
     else
-        call pmf_init_variables(IA_LEAP_FROG,anatom,antb,ansteps,astepsize,0.0d0,atemp0,apress0)
+        call pmf_init_variables(IA_LEAP_FROG,anatom,antb,ansteps,astepsize,0.0d0,atemp0)
     end if
 
     call pmf_pbc_set_box(box_a,box_b,box_c,box_alpha,box_beta,box_gamma)

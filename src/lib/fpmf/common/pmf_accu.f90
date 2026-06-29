@@ -250,15 +250,6 @@ subroutine pmf_accu_read_header(accu,iounit,method,keyline)
         case('TEMPERATURE-UNIT')
             ! read but do not use
             read(iounit,27,end=303,err=303) fconv, sunit
-        case('PRESSURE')
-            ! read and test
-            read(iounit,6,end=306,err=306) fconv
-            if( (fconv - fpressure) .gt. 1.0d0 ) then
-                call pmf_utils_exit(PMF_OUT,1,'[PMFAccu] Inconsistent pressures!')
-            end if
-        case('PRESSURE-UNIT')
-            ! read but do not use
-            read(iounit,27,end=307,err=307) fconv, sunit
         case('NSTLIMIT')
             ! read but do not use
             read(iounit,30,end=304,err=304) itmp
@@ -304,8 +295,6 @@ subroutine pmf_accu_read_header(accu,iounit,method,keyline)
 303 call pmf_utils_exit(PMF_OUT,1,'[PMFAccu] Unable to read from the accumulator - temperature unit!')
 304 call pmf_utils_exit(PMF_OUT,1,'[PMFAccu] Unable to read from the accumulator - number of MD steps!')
 305 call pmf_utils_exit(PMF_OUT,1,'[PMFAccu] Unable to read from the accumulator - time step!')
-306 call pmf_utils_exit(PMF_OUT,1,'[PMFAccu] Unable to read from the accumulator - pressure!')
-307 call pmf_utils_exit(PMF_OUT,1,'[PMFAccu] Unable to read from the accumulator - pressure unit!')
 
 end subroutine pmf_accu_read_header
 
@@ -353,12 +342,6 @@ subroutine pmf_accu_write_header(accu,iounit)
     write(iounit,5) adjustl(key)
     write(iounit,26) fsystype
 
-    if( fsystype .eq. 2 ) then
-    key = '%PRESSURE'
-    write(iounit,5) adjustl(key)
-    write(iounit,25) fpressure
-    end if
-
     key = '%CVS'
     write(iounit,5) adjustl(key)
     do i=1, accu%tot_cvs
@@ -378,12 +361,6 @@ subroutine pmf_accu_write_header(accu,iounit)
     write(iounit,5) adjustl(key)
     write(iounit,40) pmf_unit_get_rvalue(TemperatureUnit,1.0d0),trim(pmf_unit_label(TemperatureUnit))
 
-    if( fsystype .eq. 2 ) then
-    key = '%PRESSURE-UNIT'
-    write(iounit,5) adjustl(key)
-    write(iounit,40) pmf_unit_get_rvalue(PressureUnit,1.0d0),trim(pmf_unit_label(PressureUnit))
-    end if
-
     key = '%NSTLIMIT'
     write(iounit,5) adjustl(key)
     write(iounit,41) fnstlim
@@ -402,7 +379,6 @@ subroutine pmf_accu_write_header(accu,iounit)
 10  format(A)
 15  format(I2)
 20  format(F10.4)
-25  format(F10.1)
 26  format(I10)
 
 30  format(I2,1X,E18.11,1X,E18.11,1X,I6,1X,A10)

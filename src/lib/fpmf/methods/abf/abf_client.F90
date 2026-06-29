@@ -38,7 +38,6 @@ interface
     subroutine cpmf_abf_client_set_header(ret_st,ncvs,nbins,version,driver, &
                     temp,temp_unit,temp_fconv,  &
                     systype,                    &
-                    pres,pres_unit,pres_fconv,  &
                     ene_unit,ene_fconv)
         import
         implicit none
@@ -51,9 +50,6 @@ interface
         character(*)    :: temp_unit
         real(PMFDP)     :: temp_fconv
         integer         :: systype
-        real(PMFDP)     :: pres
-        character(*)    :: pres_unit
-        real(PMFDP)     :: pres_fconv
         character(*)    :: ene_unit
         real(PMFDP)     :: ene_fconv
     end subroutine cpmf_abf_client_set_header
@@ -145,7 +141,6 @@ subroutine abf_client_register
         call cpmf_abf_client_set_header(ret_st,abfaccu%tot_cvs,abfaccu%tot_nbins,PMFLIBVER,DriverName, &
                                         ftemp,trim(pmf_unit_label(TemperatureUnit)),pmf_unit_get_rvalue(TemperatureUnit,1.0d0), &
                                         fsystype, &
-                                        fpressure,trim(pmf_unit_label(PressureUnit)),pmf_unit_get_rvalue(PressureUnit,1.0d0), &
                                         trim(pmf_unit_label(EnergyUnit)),pmf_unit_get_rvalue(EnergyUnit,1.0d0))
 
         if( ret_st .ne. 0 ) then

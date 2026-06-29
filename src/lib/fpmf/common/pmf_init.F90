@@ -143,7 +143,6 @@ subroutine pmf_init_dat
     call pmf_unit_decode_length_unit('A',LengthUnit)
     call pmf_unit_decode_angle_unit('deg',AngleUnit)
     call pmf_unit_decode_temp_unit('K',TemperatureUnit)
-    call pmf_unit_decode_press_unit('kPa',PressureUnit)
 
     ! timers -------------------------------------
     call pmf_timers_init
@@ -245,7 +244,7 @@ end subroutine pmf_init_bcast_dat_mpi
 ! Subroutine:  pmf_init_variables
 !===============================================================================
 
-subroutine pmf_init_variables(intalg,natom,systype,nstlim,dt,time,temp,press)
+subroutine pmf_init_variables(intalg,natom,systype,nstlim,dt,time,temp)
 
     use pmf_dat
     use pmf_core
@@ -259,7 +258,6 @@ subroutine pmf_init_variables(intalg,natom,systype,nstlim,dt,time,temp,press)
     real(PMFDP)    :: dt       ! dt of step
     real(PMFDP)    :: time     ! actual time
     real(PMFDP)    :: temp     ! simulation temperature
-    real(PMFDP)    :: press    ! simulation pressure
     ! --------------------------------------------------------------------------
 
     ! MD setup --------------------------------------
@@ -269,7 +267,6 @@ subroutine pmf_init_variables(intalg,natom,systype,nstlim,dt,time,temp,press)
     fdt         = dt*TimeConv
     ftime       = time*TimeConv
     ftemp       = temp*TemperatureConv
-    fpressure   = press*PressureConv
     fsystype    = systype
 
     fdtx  = fdt*PMF_DT2VDT
@@ -698,9 +695,6 @@ subroutine pmf_init_sys_summary()
     write(form_str,'(F10.1)') pmf_unit_get_rvalue(TemperatureUnit,ftemp)
     write(PMF_OUT,40)  trim(adjustl(form_str)), '['//trim(pmf_unit_label(TemperatureUnit))//']'
 
-    write(form_str,'(F10.1)') pmf_unit_get_rvalue(PressureUnit,fpressure)
-    write(PMF_OUT,45)  trim(adjustl(form_str)), '['//trim(pmf_unit_label(PressureUnit))//']'
-
     write(form_str,'(F10.3)') pmf_unit_get_rvalue(TimeUnit,fdt)
     write(PMF_OUT,50)  trim(adjustl(form_str)), '['//trim(pmf_unit_label(TimeUnit))//']'
 
@@ -770,7 +764,6 @@ subroutine pmf_init_sys_summary()
  30 format('# Number of atoms involved : ',A)
  35 format('# SHAKE                    : ',A)
  40 format('# Temperature              : ',A,1X,A)
- 45 format('# Pressure                 : ',A,1X,A)
  50 format('# Time step                : ',A,1X,A)
  60 format('# Number of steps          : ',A)
  65 format('# Simulation length        : ',A,1X,A)

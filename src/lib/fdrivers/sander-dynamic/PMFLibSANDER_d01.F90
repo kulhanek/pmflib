@@ -133,8 +133,8 @@ abstract interface
     end subroutine int_pmf_sander_check_interface
     ! -------------------------------------------------------------------------
     subroutine int_pmf_sander_init_preinit(mdin,mdin_len,ischeme,anatom,anres,  &
-                            antb,antc,ansteps,astepsize,atemp0,apress0, &
-                            box_a,box_b,box_c,                          &
+                            antb,antc,ansteps,astepsize,atemp0,                 &
+                            box_a,box_b,box_c,                                  &
                             box_alpha,box_beta,box_gamma) bind(c)
         import
         implicit none
@@ -148,7 +148,6 @@ abstract interface
         integer(CPMFINT)    :: ansteps                      ! number of MD steps
         real(CPMFDP)        :: astepsize                    ! step size
         real(CPMFDP)        :: atemp0                       ! temperature
-        real(CPMFDP)        :: apress0                      ! pressure
         real(CPMFDP)        :: box_a,box_b,box_c            ! box dimensions
         real(CPMFDP)        :: box_alpha,box_beta,box_gamma
     end subroutine int_pmf_sander_init_preinit

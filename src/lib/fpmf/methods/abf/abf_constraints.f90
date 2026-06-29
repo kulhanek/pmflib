@@ -199,13 +199,13 @@ subroutine abf_constraints_calc_ZmatInv(cvsdrv)
     if (NumOfABFSHAKECONs .gt. 1) then
         call dgetrf(NumOfABFSHAKECONs,NumOfABFSHAKECONs,zinvcst,NumOfABFSHAKECONs,indxcst,info)
         if( info .ne. 0 ) then
-            call pmf_utils_exit(PMF_OUT,1,'[ABF] LU decomposition failed in abf_core_calc_Zmat!')
+            call pmf_utils_exit(PMF_OUT,1,'[ABF] LU decomposition failed in abf_constraints_calc_ZmatInv!')
         end if
 
 
         call dgetri(NumOfABFSHAKECONs,zinvcst,NumOfABFSHAKECONs,indxcst,vvcst,NumOfABFSHAKECONs,info)
         if( info .ne. 0 ) then
-            call pmf_utils_exit(PMF_OUT,1,'[ABF] Matrix inversion failed in abf_core_calc_Zmat!')
+            call pmf_utils_exit(PMF_OUT,1,'[ABF] Matrix inversion failed in abf_constraints_calc_ZmatInv!')
         end if
     else
         zinvcst(1,1)  = 1.0d0/zinvcst(1,1)

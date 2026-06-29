@@ -134,7 +134,7 @@ abstract interface
     end subroutine int_pmf_pmemd_check_interface
     ! -------------------------------------------------------------------------
     subroutine int_pmf_pmemd_init_preinit(mdin,mdin_len,anatom,anres,   &
-                            antb,antc,ansteps,astepsize,atemp0,apress0, &
+                            antb,antc,ansteps,astepsize,atemp0,         &
                             box_a,box_b,box_c,                          &
                             box_alpha,box_beta,box_gamma) bind(c)
         import
@@ -148,7 +148,6 @@ abstract interface
         integer(CPMFINT)    :: ansteps                      ! number of MD steps
         real(CPMFDP)        :: astepsize                    ! step size
         real(CPMFDP)        :: atemp0                       ! temperature
-        real(CPMFDP)        :: apress0                      ! pressure
         real(CPMFDP)        :: box_a,box_b,box_c            ! box dimensions
         real(CPMFDP)        :: box_alpha,box_beta,box_gamma
     end subroutine int_pmf_pmemd_init_preinit
@@ -220,11 +219,10 @@ abstract interface
         real(CPMFDP)        :: epmf         ! out
     end subroutine int_pmf_pmemd_force
     ! --------------------------------------------------------------------------
-    subroutine int_pmf_pmemd_register_ekin(ekin,press,valid) bind(c)
+    subroutine int_pmf_pmemd_register_ekin(ekin,valid) bind(c)
         import
         implicit none
         real(CPMFDP)        :: ekin(:)      ! in
-        real(CPMFDP)        :: press
         integer(CPMFINT)    :: valid
     end subroutine int_pmf_pmemd_register_ekin
 

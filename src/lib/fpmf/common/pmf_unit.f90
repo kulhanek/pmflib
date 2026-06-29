@@ -41,7 +41,6 @@ real(PMFDP) :: VelocityConv     = 1.0d0
 real(PMFDP) :: EnergyConv       = 1.0d0
 real(PMFDP) :: ForceConv        = 1.0d0
 real(PMFDP) :: TemperatureConv  = 1.0d0
-real(PMFDP) :: PressureConv     = 1.0d0
 
 ! internal PMFLib units are
 ! time   - fs
@@ -49,7 +48,6 @@ real(PMFDP) :: PressureConv     = 1.0d0
 ! angle  - rad
 ! energy - kcal/mol
 ! temperature - K
-! pressure - Pa
 
 ! quantities -------------------------------------------------------------------
 integer,parameter   :: QUANTITY_MASS            = 1     ! mass
@@ -59,8 +57,7 @@ integer,parameter   :: QUANTITY_ANGLE           = 4     ! angle
 integer,parameter   :: QUANTITY_ENERGY          = 5     ! energy
 integer,parameter   :: QUANTITY_AMOUNT          = 6     ! amount
 integer,parameter   :: QUANTITY_TEMPERATURE     = 7     ! temperature
-integer,parameter   :: QUANTITY_PRESSURE        = 8     ! pressure
-integer,parameter   :: MAX_QUANTITIES           = QUANTITY_PRESSURE
+integer,parameter   :: MAX_QUANTITIES           = QUANTITY_TEMPERATURE
 
 ! unit object ------------------------------------------------------------------
 type UnitType
@@ -75,7 +72,6 @@ type(UnitType)  :: LengthUnit
 type(UnitType)  :: AngleUnit
 type(UnitType)  :: MassUnit
 type(UnitType)  :: TemperatureUnit
-type(UnitType)  :: PressureUnit
 
 ! unit types -------------------------------------------------------------------
 integer,parameter   :: AMOUNT_MOL  = 1          ! mol
@@ -101,9 +97,6 @@ integer,parameter   :: ENERGY_KJ    = 3         ! kJ
 integer,parameter   :: ENERGY_eV    = 4         ! eV
 
 integer,parameter   :: TEMPERATURE_K    = 1     ! K
-
-integer,parameter   :: PRESSURE_Pa    = 1       ! Pa
-integer,parameter   :: PRESSURE_KPa   = 2       ! kPa
 
 !===============================================================================
 
@@ -205,8 +198,6 @@ character(PMF_MAX_SUNIT) function pmf_unit_quantity_label(quantity,unit)
             pmf_unit_quantity_label =  pmf_unit_energy_label(unit)
         case(QUANTITY_TEMPERATURE)
             pmf_unit_quantity_label =  pmf_unit_temperature_label(unit)
-        case(QUANTITY_PRESSURE)
-            pmf_unit_quantity_label =  pmf_unit_pressure_label(unit)
         case default
             call pmf_utils_exit(PMF_OUT,1,'Unsupported quantity kind in pmf_unit_quantity_label!')
     end select
@@ -377,29 +368,6 @@ character(PMF_MAX_SUNIT) function pmf_unit_temperature_label(unit)
     end select
 
 end function pmf_unit_temperature_label
-
-!===============================================================================
-! Function:   pmf_unit_temperature_label
-!===============================================================================
-
-character(PMF_MAX_SUNIT) function pmf_unit_pressure_label(unit)
-
-    use pmf_utils
-
-    implicit none
-    integer      :: unit
-    ! --------------------------------------------------------------------------
-
-    select case(unit)
-       case(PRESSURE_Pa)
-           pmf_unit_pressure_label = 'Pa'
-       case(PRESSURE_kPa)
-           pmf_unit_pressure_label = 'kPa'
-       case default
-           call pmf_utils_exit(PMF_OUT,1,'Unsupported temperature unit in pmf_unit_pressure_label!')
-    end select
-
-end function pmf_unit_pressure_label
 
 !===============================================================================
 ! #############################################################################
@@ -618,38 +586,6 @@ subroutine pmf_unit_decode_temp_unit(unit_label,unit)
     end select
 
 end subroutine pmf_unit_decode_temp_unit
-
-!===============================================================================
-! Subroutine:   pmf_unit_decode_press_unit
-!===============================================================================
-
-subroutine pmf_unit_decode_press_unit(unit_label,unit)
-
-    use pmf_utils
-
-    implicit none
-    character(*)        :: unit_label
-    type(UnitType)      :: unit
-    ! --------------------------------------------------------------------------
-
-    call pmf_unit_init(unit)
-
-    select case(unit_label)
-        case('Pa')
-            unit%ConversionFac = 1
-            unit%Units(QUANTITY_PRESSURE) = PRESSURE_Pa
-            unit%Expns(QUANTITY_PRESSURE) = 1
-        case('kPa')
-            unit%ConversionFac = 1d-3
-            unit%Units(QUANTITY_PRESSURE) = PRESSURE_kPa
-            unit%Expns(QUANTITY_PRESSURE) = 1
-        case default
-            write(PMF_OUT,'(A)')   ''//trim(unit_label)//' is not supported pressure unit'
-            write(PMF_OUT,'(A,/)') '           Supported units are: Pa, KPa'
-            call pmf_utils_exit(PMF_OUT,1,'Unable to decode pressure unit!')
-    end select
-
-end subroutine pmf_unit_decode_press_unit
 
 !===============================================================================
 ! #############################################################################
