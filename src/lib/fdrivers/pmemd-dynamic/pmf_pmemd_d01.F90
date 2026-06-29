@@ -171,12 +171,12 @@ subroutine pmf_pmemd_init_preinit(mdin,mdin_len,anatom,anres,   &
 
     ! init basic PMF setup
     call pmf_init_dat()
-    call pmf_init_variables(IA_LEAP_FROG,anatom,antb,ansteps,astepsize,0.0d0,atemp0)
+    call pmf_init_variables(IA_LEAP_FROG,int(anatom),int(antb),int(ansteps),astepsize,0.0d0,atemp0)
     call pmf_pbc_set_box(box_a,box_b,box_c,box_alpha,box_beta,box_gamma)
 
     ! init mask subsystem
     call pmf_pbc_get_cbox(has_box,cbox)
-    call pmf_mask_topo_init(anatom,anres,has_box,cbox(1),cbox(2),cbox(3))
+    call pmf_mask_topo_init(int(anatom),int(anres),has_box,cbox(1),cbox(2),cbox(3))
 
     ! rewrite the setup
     fcanexmdloop     = .true.       ! the client is able to terminate md loop
@@ -215,7 +215,7 @@ subroutine pmf_pmemd_set_residue(idx,name,name_len,first_atom) bind(c,name='int_
         lname(i:i) = name(i)
     end do
 
-    call pmf_mask_set_topo_residue(idx,lname,first_atom)
+    call pmf_mask_set_topo_residue(int(idx),lname,int(first_atom))
 
 end subroutine pmf_pmemd_set_residue
 
@@ -252,7 +252,7 @@ subroutine pmf_pmemd_set_atom(idx,name,name_len,atype,atype_len) bind(c,name='in
         latype(i:i) = atype(i)
     end do
 
-    call pmf_mask_set_topo_atom(idx,lname,latype)
+    call pmf_mask_set_topo_atom(int(idx),lname,latype)
 
 end subroutine pmf_pmemd_set_atom
 
@@ -559,7 +559,7 @@ subroutine pmf_pmemd_init_taskid_mpi(mytaskid,numoftasks) bind(c,name='int_pmf_p
     integer(CPMFINT)    :: numoftasks
     ! --------------------------------------------------------------------------
 
-    call pmf_init_taskid_mpi(mytaskid,numoftasks)
+    call pmf_init_taskid_mpi(int(mytaskid),int(numoftasks))
 
 end subroutine pmf_pmemd_init_taskid_mpi
 
