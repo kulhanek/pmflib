@@ -813,6 +813,7 @@ subroutine pmf_sander_rattlev(anatom,xp,vp,cid,modified) bind(c,name='int_pmf_sa
     real(CPMFDP)        :: vp(3,anatom)      ! velocities at FIXME
     integer(CPMFINT)    :: cid               ! callid
     integer(CPMFINT)    :: modified          ! was constraint applied?
+    integer             :: lmod              ! local mofified
     ! --------------------------------------------------------------------------
 
     modified = 0
@@ -823,7 +824,9 @@ subroutine pmf_sander_rattlev(anatom,xp,vp,cid,modified) bind(c,name='int_pmf_sa
     end if
 
     call pmf_timers_start_timer(PMFLIB_TIMER)
-        call pmf_core_lf_rattlev(xp,vp,cid,modified)
+        lmod = 0    
+        call pmf_core_lf_rattlev(xp,vp,int(cid),lmod)
+        modified = lmod
     call pmf_timers_stop_timer(PMFLIB_TIMER)
 
 end subroutine pmf_sander_rattlev
