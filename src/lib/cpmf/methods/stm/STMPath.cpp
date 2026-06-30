@@ -876,8 +876,9 @@ bool CSTMPath::ProcessPathControl(CPrmFile& prmfile)
 //    ! min        cv1 cv2 cv3 ... cvn
 //    ! max        cv1 cv2 cv3 ... cvn
 //    ! maxmov     cv1 cv2 cv3 ... cvn
-//    ! flexible   cv1 cv2 cv3 ... cvn
+//    ! normal     cv1 cv2 cv3 ... cvn
 //    ! permanent  cv1 cv2 cv3 ... cvn
+//    ! free       cv1 cv2 cv3 ... cvn
 
     // clear path
     ClearPath();
@@ -1016,27 +1017,47 @@ bool CSTMPath::LoadCVSplines(CPrmFile& prmfile)
 
     int num_of_user_beads = InputBeads.size();
 
-    // optimize path
-    for(int i=0; i < num_of_user_beads; i++){
-        InputBeads[i]->PPos = InputBeads[i]->Pos;
-    }
-    OptimizePath(InputBeads);
+    if( num_of_user_beads != NumOfBeads ){
+        // incomplete path
 
-    // generate missing points or re-optimize path
-    Beads[0]->Alpha = 0.0;
-    Beads[0]->Permanent = InputBeads[0]->Permanent;
-    Beads[0]->BeadID = 1;
-    Beads[NumOfBeads-1]->Alpha = 1.0;
-    Beads[NumOfBeads-1]->Permanent = InputBeads[num_of_user_beads-1]->Permanent;
-    Beads[NumOfBeads-1]->BeadID = NumOfBeads;
-    for(int i=0; i < NumOfCVs; i++){
-        Beads[0]->Pos[i] = CVSplines[i]->GetCV(0.0);
-        Beads[NumOfBeads-1]->Pos[i] = CVSplines[i]->GetCV(1.0);
-        for(int b=1; b < NumOfBeads-1; b++){
-            double alpha = (double)b / ((double)NumOfBeads-1.0);
-            Beads[b]->Pos[i] = CVSplines[i]->GetCV(alpha);
-            Beads[b]->Alpha = alpha;
-            Beads[b]->BeadID = b + 1;
+        // optimize path
+        for(int b=0; b < num_of_user_beads; b++){
+            if( (b != 0) && (b != num_of_user_beads - 1) ){
+                if( InputBeads[b]->BeadType != BTY_NORMAL ){
+                    RUNTIME_ERROR("the internal beads for incomplete path must be all of \"normal\" type!");
+                }
+            }
+            InputBeads[b]->PPos = InputBeads[b]->Pos;
+        }
+        OptimizePath(InputBeads);
+
+        // generate missing points or re-optimize path
+        Beads[0]->Alpha = 0.0;
+        Beads[0]->BeadType = InputBeads[0]->BeadType;
+        Beads[0]->BeadID = 1;
+        Beads[NumOfBeads-1]->Alpha = 1.0;
+        Beads[NumOfBeads-1]->BeadType = InputBeads[num_of_user_beads-1]->BeadType;
+        Beads[NumOfBeads-1]->BeadID = NumOfBeads;
+        for(int i=0; i < NumOfCVs; i++){
+            Beads[0]->Pos[i] = CVSplines[i]->GetCV(0.0);
+            Beads[NumOfBeads-1]->Pos[i] = CVSplines[i]->GetCV(1.0);
+            for(int b=1; b < NumOfBeads-1; b++){
+                double alpha = (double)b / ((double)NumOfBeads-1.0);
+                Beads[b]->Pos[i] = CVSplines[i]->GetCV(alpha);
+                Beads[b]->Alpha = alpha;
+                Beads[b]->BeadID = b + 1;
+                Beads[b]->BeadType = BTY_NORMAL;
+            }
+        }
+
+    } else {
+        OptimizePath(InputBeads);
+
+        for(int i=0; i < NumOfBeads; i++){
+            Beads[i]->Pos = InputBeads[i]->Pos;
+            Beads[i]->Alpha = InputBeads[i]->Alpha;
+            Beads[i]->BeadID = InputBeads[i]->BeadID;
+            Beads[i]->BeadType = InputBeads[i]->BeadType;
         }
     }
 
@@ -1046,25 +1067,11 @@ bool CSTMPath::LoadCVSplines(CPrmFile& prmfile)
     }
     CheckBoundaries();
 
-    // and again re-optimize path
     for(int b=0; b < NumOfBeads; b++){
         Beads[b]->PPos = Beads[b]->FPos;
         Beads[b]->Pos  = Beads[b]->FPos;
     }
-    OptimizePath(Beads);
-
-    // and final correct positions
-    Beads[0]->Alpha = 0.0;
-    Beads[NumOfBeads-1]->Alpha = 1.0;
-    for(int i=0; i < NumOfCVs; i++){
-        Beads[0]->Pos[i] = CVSplines[i]->GetCV(0.0);
-        Beads[NumOfBeads-1]->Pos[i] = CVSplines[i]->GetCV(1.0);
-        for(int b=1; b < NumOfBeads-1; b++){
-            double alpha = (double)b / ((double)NumOfBeads-1.0);
-            Beads[b]->Pos[i] = CVSplines[i]->GetCV(alpha);
-            Beads[b]->Alpha = alpha;
-        }
-    }
+    CurrentPathLength = OptimizePath(Beads);
 
     return(true);
 }
@@ -1199,7 +1206,7 @@ int CSTMPath::ReadPathNumberOfUserBeads(CPrmFile& file)
         if( tokens[0] == "max" ) continue;
         if( tokens[0] == "maxmov" ) continue;
 
-        if( (tokens[0] != "flexible") && (tokens[0] != "permanent") ){
+        if( (tokens[0] != "normal") && (tokens[0] != "permanent") && (tokens[0] != "free") ){
             CSmallString error;
             error << "unsupported key '" << tokens[0] << "'";
             RUNTIME_ERROR(error)
@@ -1247,7 +1254,7 @@ void CSTMPath::ReadPathUserBeads(CPrmFile& file,std::vector<CBeadPtr>& beads)
         if( tokens[0] == "max" ) continue;
         if( tokens[0] == "maxmov" ) continue;
 
-        if( (tokens[0] != "flexible") && (tokens[0] != "permanent") ){
+        if( (tokens[0] != "normal") && (tokens[0] != "permanent") && (tokens[0] != "free")  ){
             CSmallString error;
             error << "unsupported key '" << tokens[0] << "'";
             RUNTIME_ERROR(error)
@@ -1256,20 +1263,29 @@ void CSTMPath::ReadPathUserBeads(CPrmFile& file,std::vector<CBeadPtr>& beads)
             RUNTIME_ERROR("more beads specification than nbeads");
         }
 
-        // process permanent or flexible point definition
+        // process point definition
         beads[beadid]->InitBead(this,NumOfCVs);
         for(int i=0; i < NumOfCVs; i++){
             double unscaled = CSmallString(tokens[i+1]).ToDouble();
             double scaled = CVs[i]->GetScaledValue(unscaled);
             beads[beadid]->Pos[i] = scaled;
         }
-        beads[beadid]->Permanent = tokens[0] != "flexible";
 
-        if( tokens[0] == "flexible" ) {
+        if( tokens[0] == "free" ){
             vout << setw(4) << beadid+1 << " F     " << scientific << setprecision(5);
-        } else {
+            beads[beadid]->BeadType = BTY_FREE;
+        } else if( tokens[0] == "permanent" ){
             vout << setw(4) << beadid+1 << " P     " << scientific << setprecision(5);
+            beads[beadid]->BeadType = BTY_PERMANENT;
+        } else if( tokens[0] == "normal" ){
+            vout << setw(4) << beadid+1 << " N     " << scientific << setprecision(5);
+            beads[beadid]->BeadType = BTY_NORMAL;
+        } else {
+            CSmallString error;
+            error << "unsupported bead type '" << tokens[0] << "'";
+            RUNTIME_ERROR(error) 
         }
+
         for(int i=0; i < NumOfCVs; i++){
             double unscaled = CVs[i]->GetUnscaledValue(beads[beadid]->Pos[i]);
             vout << " " << setw(12) << unscaled;
@@ -1726,16 +1742,10 @@ void CSTMPath::ProcessProductionData(CBeadPtr p_bead)
                             IntegratePath();
                             SavePathAndTraj();
 
-                            UsedStepSize = StepSize;
-                            for(int i=0; i < 5; i++){
                                 UpdateAllPositions();
                                 SmoothAllPositions();
                                 ReparametrizeAllPositions();
                                 CheckBoundaries();
-                                if( ! isnan(UpdatedPathLength) ) break;
-                                vout << ">> WARNING: Stability problem - reducing step size!" <<  endl;
-                                UsedStepSize = UsedStepSize / 2.0;
-                            }
 
                             UpdateAllPositionsFinalize();  // call STMStep++;
                             PrintSTMStepInfo();
@@ -1813,16 +1823,10 @@ void CSTMPath::ProcessPathAsynchronously(void)
             IntegratePath();
             SavePathAndTraj();
 
-            UsedStepSize = StepSize;
-            for(int i=0; i < 5; i++){
-                UpdateAllPositions();
-                SmoothAllPositions();
-                ReparametrizeAllPositions();
-                CheckBoundaries();
-                if( ! isnan(UpdatedPathLength) ) break;
-                vout << ">> WARNING: Stability problem - reducing step size!" <<  endl;
-                UsedStepSize = UsedStepSize / 2.0;
-            }
+            UpdateAllPositions();
+            SmoothAllPositions();
+            ReparametrizeAllPositions();
+            CheckBoundaries();
 
             UpdateAllPositionsFinalize();  // call STMStep++;
             PrintSTMStepInfo();
@@ -2129,23 +2133,30 @@ void CSTMPath::PrintPathSummaryHeader(std::ostream& vout)
 
 // header --------------------
     // legends
-    vout << "#  ID   Type  MO ST  alpha  dA/dalpha       A            CID Updates";
+    vout << "#   ID   Type MO ST KinkA      α        dA/dα            A     CID Updates";
     for(int i=0; i < NumOfCVs; i++){
-        vout << "     CV" << left << setw(2) << i+1 << "    ";
+        vout << "         CV" << right << setw(2) << setfill('0') << i+1;
     }
     for(int i=0; i < NumOfCVs; i++){
-        vout << "   dA/dCV" << left << setw(2) << i+1 << "  ";
+        vout << "        sCV" << right << setw(2) << setfill('0') << i+1;
     }
     for(int i=0; i < NumOfCVs; i++){
-        vout << " dCV" << left << setw(2) << i+1 << "/dalpha";
+        vout << "    dA/dsCV" << right << setw(2) << setfill('0') << i+1;
     }
     for(int i=0; i < NumOfCVs; i++){
-        vout << " -|F" << left << setw(2) << i+1 << "/dalpha";
+        vout << "    dsCV" << right << setw(2) << setfill('0') << i+1 << "/dα";
     }
+    for(int i=0; i < NumOfCVs; i++){
+        vout << "     -|F" << right << setw(2) << setfill('0') << i+1 << "/dα";
+    }
+    vout << setfill(' ');
     vout << endl;
 
     // delimiters
-    vout << "# ---- ------ -- -- ------ ------------ ------------ ------- -------";
+    vout << "# ---- ------ -- -- ----- ------ ------------ ------------ ------- -------";
+    for(int i=0; i < NumOfCVs; i++){
+        vout << " ------------";
+    }
     for(int i=0; i < NumOfCVs; i++){
         vout << " ------------";
     }
@@ -2161,7 +2172,10 @@ void CSTMPath::PrintPathSummaryHeader(std::ostream& vout)
     vout << endl;
 
 // data ----------------------
-    vout << left << "#      names                                                    " << right;
+    vout << left << "#      names                                                              " << right;
+    for(int i=0; i < NumOfCVs; i++){
+        vout << " " << setw(12) << CVs[i]->GetName();
+    }
     for(int i=0; i < NumOfCVs; i++){
         vout << " " << setw(12) << CVs[i]->GetName();
     }
@@ -2175,22 +2189,22 @@ void CSTMPath::PrintPathSummaryHeader(std::ostream& vout)
         vout << " " << setw(12) << CVs[i]->GetName();
     }
     vout << endl;
-    vout << left << "#      types                                                    " << right;
+    vout << left << "#      types                                                              " << right;
     for(int i=0; i < NumOfCVs; i++){
         vout << " " << setw(12) << CVs[i]->GetType();
     }
-    vout << endl;
-    vout << left << "#      min                                                      " << right << scientific << setprecision(5);
+    vout << endl; 
+    vout << left << "#      min                                                                " << right << scientific << setprecision(5);
     for(int i=0; i < NumOfCVs; i++){
         vout << " " << setw(12) << CVs[i]->GetMinValue();
     }
     vout << endl;
-    vout << left << "#      max                                                      " << right << scientific << setprecision(5);
+    vout << left << "#      max                                                                " << right << scientific << setprecision(5);
     for(int i=0; i < NumOfCVs; i++){
         vout << " " << setw(12) << CVs[i]->GetMaxValue();
     }
     vout << endl;
-    vout << left << "#      maxmov                                                   " << right << scientific << setprecision(5);
+    vout << left << "#      maxmov                                                             " << right << scientific << setprecision(5);
     for(int i=0; i < NumOfCVs; i++){
         if( CVs[i]->GetMaxMovement() > 0 ){
             vout << " " << setw(12) << CVs[i]->GetMaxMovement();
@@ -2200,7 +2214,10 @@ void CSTMPath::PrintPathSummaryHeader(std::ostream& vout)
     }
     vout << endl;
 
-    vout << "# ---- ------ -- -- ------ ------------ ------------ ------- -------";
+    vout << "# ---- ------ -- -- ----- ------ ------------ ------------ ------- -------";
+    for(int i=0; i < NumOfCVs; i++){
+        vout << " ------------";
+    }
     for(int i=0; i < NumOfCVs; i++){
         vout << " ------------";
     }
@@ -2214,8 +2231,12 @@ void CSTMPath::PrintPathSummaryHeader(std::ostream& vout)
         vout << " ------------";
     }
     vout << endl;
-    vout << "#    1      2  3  4      5            6            7       8       9";
-    int id = 10;
+    vout << "#    1      2  3  4     5      6            7            8       9      10";
+    int id = 11;
+    for(int i=0; i < NumOfCVs; i++){
+        vout << right << setw(13) << id;
+        id++;
+    }
     for(int i=0; i < NumOfCVs; i++){
         vout << right << setw(13) << id;
         id++;
@@ -2233,7 +2254,10 @@ void CSTMPath::PrintPathSummaryHeader(std::ostream& vout)
         id++;
     }
     vout << endl;
-    vout << "# ---- ------ -- -- ------ ------------ ------------ ------- -------";
+    vout << "# ---- ------ -- -- ----- ------ ------------ ------------ ------- -------";
+    for(int i=0; i < NumOfCVs; i++){
+        vout << " ------------";
+    }
     for(int i=0; i < NumOfCVs; i++){
         vout << " ------------";
     }
@@ -2256,11 +2280,19 @@ void CSTMPath::PrintPathSummaryData(std::ostream& vout)
 {
     for(int b=0; b < NumOfBeads; b++){
         vout << right;
-        if( Beads[b]->Permanent ) {
-            vout << "  " << setw(4) << Beads[b]->GetBeadID() << setw(7) << " P     ";
-        } else {
+        switch(Beads[b]->BeadType ){
+            case(BTY_FREE):
             vout << "  " << setw(4) << Beads[b]->GetBeadID() << setw(7) << " F     ";
+            break;
+            case(BTY_PERMANENT):
+            vout << "  " << setw(4) << Beads[b]->GetBeadID() << setw(7) << " P     ";
+            break;
+            case(BTY_NORMAL):
+            default:
+            vout << "  " << setw(4) << Beads[b]->GetBeadID() << setw(7) << " N     ";
+            break;
         }
+
         switch(Beads[b]->GetMode()){
             case BMO_INITIALIZATION:
                 vout << " I ";
@@ -2297,6 +2329,9 @@ void CSTMPath::PrintPathSummaryData(std::ostream& vout)
                 break;
         }
 
+        vout << fixed << setprecision(1);
+        vout << " " << setw(5) << Beads[b]->KinkA;
+
         vout << fixed << setprecision(4);
         vout << " " << setw(6) << Beads[b]->Alpha;
 
@@ -2313,6 +2348,10 @@ void CSTMPath::PrintPathSummaryData(std::ostream& vout)
         for(int i=0; i < NumOfCVs; i++){
             double unscaled = CVs[i]->GetUnscaledValue(Beads[b]->Pos[i]);
             vout << " " << setw(12) << unscaled;
+        }
+        for(int i=0; i < NumOfCVs; i++){
+            double scaled = Beads[b]->Pos[i];
+            vout << " " << setw(12) << scaled;
         }
         for(int i=0; i < NumOfCVs; i++){
             vout << " " << setw(12) << Beads[b]->MF[i];
@@ -2454,10 +2493,18 @@ void CSTMPath::PrintPathUpdate(std::ostream& vout)
 
     for(int b=0; b < NumOfBeads; b++){
         vout << right;
-        if( Beads[b]->Permanent ) {
-            vout << "  " << setw(4) << Beads[b]->GetBeadID() << setw(7) << " P     ";
-        } else {
+
+        switch(Beads[b]->BeadType ){
+            case(BTY_FREE):
             vout << "  " << setw(4) << Beads[b]->GetBeadID() << setw(7) << " F     ";
+            break;
+            case(BTY_PERMANENT):
+            vout << "  " << setw(4) << Beads[b]->GetBeadID() << setw(7) << " P     ";
+            break;
+            case(BTY_NORMAL):
+            default:
+            vout << "  " << setw(4) << Beads[b]->GetBeadID() << setw(7) << " N     ";
+            break;
         }
         
         switch(Beads[b]->GetMode()){
@@ -2562,11 +2609,19 @@ void CSTMPath::PrintPath(std::ostream& vout)
 
     for(int b=0; b < NumOfBeads; b++){
         vout << right;
-        if( Beads[b]->Permanent ) {
+        switch(Beads[b]->BeadType ){
+            case(BTY_FREE):
+            vout << "free     ";
+            break;
+            case(BTY_PERMANENT):
             vout << "permanent";
-        } else {
-            vout << "flexible ";
+            break;
+            case(BTY_NORMAL):
+            default:
+            vout << "normal   ";
+            break;
         }
+
         for(int i=0; i < NumOfCVs; i++){
             double scaled = Beads[b]->Pos[i];
             double unscaled = CVs[i]->GetUnscaledValue(scaled);
@@ -2743,12 +2798,12 @@ void CSTMPath::CalculateSTMStepStat(void)
 
     int bn = 0;
     for(int b=0; b < NumOfBeads; b++){
-        if( Beads[b]->Permanent ) continue; // skipt permanent beads
+        if( Beads[b]->BeadType == BTY_PERMANENT ) continue; // skipt permanent beads
         double bmov = 0;
         double mfsize = 0.0;
         for(int i=0; i < NumOfCVs; i++){
             bmov += (Beads[b]->FPos[i]-Beads[b]->OPos[i])*(Beads[b]->FPos[i]-Beads[b]->OPos[i]);
-            mfsize += (Beads[b]->pMF[i])*(Beads[b]->pMF[i]);
+            mfsize += (Beads[b]->uMF[i])*(Beads[b]->uMF[i]);
         }
         bmov = sqrt(bmov);
         mfsize = sqrt(mfsize);
@@ -2888,18 +2943,70 @@ void CSTMPath::SavePathAndTraj(void)
 
 void CSTMPath::CompletePathData(void)
 {
-    for(int i=0; i < NumOfBeads; i++){
-        Beads[i]->ResetPosUpdates();
+    for(int b=0; b < NumOfBeads; b++){
+        Beads[b]->ResetPosUpdates();
     }
 
-    // re-optimize path
+// needed by OptimizePath()
     for(int b=0; b < NumOfBeads; b++){
         Beads[b]->PPos = Beads[b]->Pos;
+        Beads[b]->SegLength = 0.0;
     }
+
+// update segments
+    InitPathSegments();
+
+// per path segments
+    std::vector< std::vector<CBeadPtr> >::iterator it = PathSegments.begin();
+    std::vector< std::vector<CBeadPtr> >::iterator ie = PathSegments.end();
+
+    while( it != ie ){
+        std::vector<CBeadPtr>& bl = *it;
+        double seglen = OptimizePath(bl);
+
+        for(size_t b=0; b < bl.size(); b++){
+            bl[b]->CalcBead();
+            bl[b]->SegLength = seglen;
+        }
+        it++;
+    }
+
     CurrentPathLength = OptimizePath(Beads);
 
-    for(int i=0; i < NumOfBeads; i++){
-        Beads[i]->CalcProjector();
+    CSimpleVector<double> v1,v2;
+    v1.CreateVector(NumOfCVs);
+    v2.CreateVector(NumOfCVs); 
+
+// calculate kink angle
+    for(int b=0; b < NumOfBeads; b++){
+        if( (b == 0) || (b == NumOfBeads - 1) ){
+            Beads[b]->KinkA = 180.0;
+            continue;
+        }
+
+        for(int i=0; i < NumOfCVs; i++){
+            v1[i] = Beads[b+1]->Pos[i] - Beads[b]->Pos[i];
+            v2[i] = Beads[b-1]->Pos[i] - Beads[b]->Pos[i];
+        }
+
+        double dot_product = 0.0;
+        double norm2_v1 = 0.0;
+        double norm2_v2 = 0.0;
+        for(int i=0; i < NumOfCVs; i++){
+            dot_product += v1[i] * v2[i];
+            norm2_v1 += v1[i] * v1[i];
+            norm2_v2 += v2[i] * v2[i];
+        }
+
+        if( (norm2_v1 > 0.0) && (norm2_v2 > 0.0)  ){
+            double cos_theta = dot_product / (sqrt(norm2_v1) * sqrt(norm2_v2));
+            if( cos_theta < -1.0 ) cos_theta = -1.0;
+            if( cos_theta >  1.0 ) cos_theta =  1.0;
+
+            Beads[b]->KinkA = acos(cos_theta) * 180.0 / M_PI;
+        } else {
+            Beads[b]->KinkA = 0.0;
+        }
     }
 }
 
@@ -2911,20 +3018,20 @@ void CSTMPath::UpdateAllPositions(void)
 
     if( OptMethod == "gd" ){
         for(int i=0; i < NumOfBeads; i++){
-            Beads[i]->UpdatePositionGD(UsedStepSize);
+            Beads[i]->UpdatePositionGD(StepSize);
         }
     } else if ( OptMethod == "ngd" ){
         for(int i=0; i < NumOfBeads; i++){
-            Beads[i]->UpdatePositionNGD(UsedStepSize,MinGNormEps);
+            Beads[i]->UpdatePositionNGD(StepSize,MinGNormEps);
         }
     } else if ( OptMethod == "ngd-auto" ){
         for(int i=0; i < NumOfBeads; i++){
-            Beads[i]->UpdatePositionNGDAuto(UsedStepSize,MaxGNormForGD,MinGNormEps);
+            Beads[i]->UpdatePositionNGDAuto(StepSize,MaxGNormForGD,MinGNormEps);
         }
     } else if ( OptMethod == "adam" ){
         for(int i=0; i < NumOfBeads; i++){
             if( (ResetAdamAlg > 0) && (MemoryLength > 0) && (STMStep % MemoryLength == 0) ) Beads[i]->ResetADAM();
-            Beads[i]->UpdatePositionADAM(UsedStepSize,AdamB1,AdamB2,MinGNormEps);
+            Beads[i]->UpdatePositionADAM(StepSize,AdamB1,AdamB2,MinGNormEps);
         }
         if( (ResetAdamAlg > 0) && (MemoryLength > 0) && (STMStep % MemoryLength == 0) ){
             vout << ">> INFO: Reset ADAM memory." << endl;
@@ -2933,7 +3040,7 @@ void CSTMPath::UpdateAllPositions(void)
     } else if ( OptMethod == "adabelief" ){
         for(int i=0; i < NumOfBeads; i++){
             if( (ResetAdamAlg > 0) && (MemoryLength > 0) && (STMStep % MemoryLength == 0) ) Beads[i]->ResetADAM();
-            Beads[i]->UpdatePositionADABelief(UsedStepSize,AdamB1,AdamB2,MinGNormEps);
+            Beads[i]->UpdatePositionADABelief(StepSize,AdamB1,AdamB2,MinGNormEps);
         }
         if( (ResetAdamAlg > 0) && (MemoryLength > 0) && (STMStep % MemoryLength == 0) ){
             vout << ">> INFO: Reset ADABelif memory." << endl;
@@ -2942,7 +3049,7 @@ void CSTMPath::UpdateAllPositions(void)
     } else if ( OptMethod == "amsgrad" ){
         for(int i=0; i < NumOfBeads; i++){
             if( (ResetAdamAlg > 0) && (MemoryLength > 0) && (STMStep % MemoryLength == 0) ) Beads[i]->ResetADAM();
-            Beads[i]->UpdatePositionAMSGrad(UsedStepSize,AdamB1,AdamB2,MinGNormEps);
+            Beads[i]->UpdatePositionAMSGrad(StepSize,AdamB1,AdamB2,MinGNormEps);
         }
         if( (ResetAdamAlg > 0) && (MemoryLength > 0) && (STMStep % MemoryLength == 0) ){
             vout << ">> INFO: Reset AMSGrad memory." << endl;
@@ -2951,7 +3058,7 @@ void CSTMPath::UpdateAllPositions(void)
     } else if ( OptMethod == "amsgradbc" ){
         for(int i=0; i < NumOfBeads; i++){
             if( (ResetAdamAlg > 0) && (MemoryLength > 0) && (STMStep % MemoryLength == 0) ) Beads[i]->ResetADAM();
-            Beads[i]->UpdatePositionAMSGradBC(UsedStepSize,AdamB1,AdamB2,MinGNormEps);
+            Beads[i]->UpdatePositionAMSGradBC(StepSize,AdamB1,AdamB2,MinGNormEps);
         }
         if( (ResetAdamAlg > 0) && (MemoryLength > 0) && (STMStep % MemoryLength == 0) ){
             vout << ">> INFO: Reset AMSGradBC memory." << endl;
@@ -2989,14 +3096,14 @@ void CSTMPath::SmoothAllPositions(void)
 
     // smooth path
     for(int i=0; i < NumOfBeads; i++){
-        if( (i == 0) || (i == NumOfBeads-1) || (Beads[i]->Permanent) ){
-            for(int j=0; j < NumOfCVs; j++){
-                Beads[i]->SPos[j] = Beads[i]->NPos[j];
-            }
-        } else {
+        if( (i != 0) && (i != NumOfBeads-1) && (Beads[i]->BeadType == BTY_NORMAL) ){
             for(int j=0; j < NumOfCVs; j++){
                 Beads[i]->SPos[j] = (1.0-SmoothingFac)*Beads[i]->NPos[j]
                                 + 0.5*SmoothingFac*(Beads[i-1]->NPos[j]+Beads[i+1]->NPos[j]);
+            }
+        } else {
+            for(int j=0; j < NumOfCVs; j++){
+                Beads[i]->SPos[j] = Beads[i]->NPos[j];
             }
         }
     }
@@ -3018,31 +3125,72 @@ void CSTMPath::ReparametrizeAllPositions(void)
     // re-optimize path
     for(int b=0; b < NumOfBeads; b++){
         Beads[b]->PPos = Beads[b]->SPos;
+        Beads[b]->FPos = Beads[b]->SPos;
     }
-    OptimizePath(Beads);
 
-    // and correct positions
-    for(int i=0; i < NumOfCVs; i++){
-        if( Beads[0]->Permanent ){
-            Beads[0]->FPos[i] = Beads[0]->SPos[i];
-        } else {
-            Beads[0]->FPos[i] = CVSplines[i]->GetCV(0.0);
-        }
-        if( Beads[NumOfBeads-1]->Permanent ){
-            Beads[NumOfBeads-1]->FPos[i] = Beads[NumOfBeads-1]->SPos[i];
-        } else {
-            Beads[NumOfBeads-1]->FPos[i] = CVSplines[i]->GetCV(1.0);
-        }
+    // update segments
+    InitPathSegments();
 
-        for(int b=1; b < NumOfBeads-1; b++){
-            double alpha = (double)b / ((double)NumOfBeads-1.0);
-            if( Beads[b]->Permanent ){
-                Beads[b]->FPos[i] = Beads[b]->SPos[i];
-            } else {
-                Beads[b]->FPos[i] = CVSplines[i]->GetCV(alpha);
+    // per path segments
+    std::vector< std::vector<CBeadPtr> >::iterator it = PathSegments.begin();
+    std::vector< std::vector<CBeadPtr> >::iterator ie = PathSegments.end();
+
+    while( it != ie ){
+        std::vector<CBeadPtr>& bl = *it;
+
+        if( bl.size() < 3 ) continue;
+
+        OptimizePath(bl);
+
+        for(size_t b=1; b < bl.size()-1; b++){  // skip terminals
+
+            double alpha = (double)b / ((double)bl.size()-1.0);
+            for(int i=0; i < NumOfCVs; i++){
+                if( Beads[b]->BeadType == BTY_NORMAL ){
+                    Beads[b]->FPos[i] = CVSplines[i]->GetCV(alpha);
+                }
             }
         }
+
+        it++;
     }
+}
+
+//------------------------------------------------------------------------------
+
+void CSTMPath::InitPathSegments(void)
+{
+    PathSegments.clear();
+
+    int nbeads = Beads.size();
+    int i = 0;
+
+    while( i < nbeads ){
+        if( (i != 0) && (Beads[i]->BeadType != BTY_FREE) ){
+            CSmallString error;
+            error << "path segment must start with the free bead or the first bead of the path, bidx: " << i+1;
+            RUNTIME_ERROR(error)
+        }
+        int seg_first = i;
+
+        i++;
+
+        // Find the end of the segment
+        while( (i < nbeads) && (Beads[i]->BeadType != BTY_FREE) ) {
+            i++;
+        }
+        int seg_last = i;
+
+        // make a list
+        std::vector<CBeadPtr> segment;
+        for(int idx = seg_first; idx < seg_last; idx++){
+            if( (idx < 0) || (idx >= nbeads) ) continue;
+            segment.push_back(Beads[idx]);
+        }
+        PathSegments.push_back(segment);
+    }
+
+    // cout << "PSS: " << PathSegments.size() <<  endl; 
 }
 
 //------------------------------------------------------------------------------
@@ -3080,7 +3228,8 @@ void CSTMPath::IntegratePath(void)
         for(int i=0; i < NumOfCVs; i++) {
             Beads[b]->dCVdAlpha[i] = CVSplines[i]->GetCVFirstDer(Beads[b]->Alpha);
             double sc = CVs[i]->GetMaxValue() - CVs[i]->GetMinValue();
-            a += Beads[b]->dCVdAlpha[i] * sc * Beads[b]->MF[i];
+            // dAdAlphas are per path segment, thus correction * CurrentPathLength / bead->SegLength
+            a += Beads[b]->dCVdAlpha[i] * sc * Beads[b]->MF[i] * CurrentPathLength / Beads[b]->SegLength;
         }
         Beads[b]->dAdAlpha = a;
         if( b > 0 ){
@@ -3151,88 +3300,19 @@ double CSTMPath::OptimizePath(std::vector<CBeadPtr>& beads)
     }
     beads[beads.size()-1]->Alpha = 1.0;
 
-   // vout << debug;
-   // vout << "Initial path length = " << tot_length << endl;
-
-    double prev_length = 0;
-
-    CSimpleVector<double>  pseglengths;
-    pseglengths.CreateVector(beads.size());
-
-    for(int s=0; s < 1000; s++){
-        // interpolate CVS
-        for(int i=0; i < NumOfCVs; i++){
-            CVSplines[i]->Allocate(beads.size());
-            for(size_t b=0; b < beads.size(); b++){
-                CVSplines[i]->SetPoint(b,beads[b]->Alpha,beads[b]->PPos[i]);
-            }
-            CVSplines[i]->BuildSpline();
+    // interpolate CVS
+    for(int i=0; i < NumOfCVs; i++){
+        CVSplines[i]->Allocate(beads.size());
+        for(size_t b=0; b < beads.size(); b++){
+            CVSplines[i]->SetPoint(b,beads[b]->Alpha,beads[b]->PPos[i]);
         }
-
-        prev_length = tot_length;
-
-        // determine new path length
-        tot_length = 0;
-        pseglengths[0] = 0.0;
-        for(size_t b=1; b < beads.size(); b++){
-            double seg_length = GetSegmentLength(beads[b-1]->Alpha,beads[b]->Alpha);
-            pseglengths[b] = seg_length;
-            tot_length += seg_length;
-        }
-
-        // vout << "Optimized path length = " << tot_length << endl;
-
-        if( fabs(tot_length-prev_length) < 1e-7 ){
-        //     vout << "Converged path length = " << tot_length << endl;
-            return(tot_length);
-        }
-
-        // determine new alphas
-        beads[0]->Alpha = 0.0;
-        double path_length = 0;
-        for(size_t b=1; b < beads.size()-1; b++){
-            path_length += pseglengths[b];
-            beads[b]->Alpha = path_length/tot_length;
-        }
-        beads[beads.size()-1]->Alpha = 1.0;
+        CVSplines[i]->BuildSpline();
     }
+
+   // vout << debug;
+   // vout << "Path length = " << tot_length << endl;
 
     return(tot_length);
-}
-
-//------------------------------------------------------------------------------
-
-double CSTMPath::GetSegmentLength(double alpha1,double alpha2)
-{
-
-   // cout << "cv-splines: " << CVSplines.size() << endl;
-   // cout << "SPOS: " << SPos.GetLength() << endl;
-
-    double len = 0;
-    for(int i=0; i < NumOfCVs; i++){
-        SPos[i] = CVSplines[i]->GetCV(alpha1);
-    }
-    double step = (alpha2-alpha1)/SegmentDiscretization;
-    double alpha = alpha1 + step;
-    while( alpha < alpha2 ){
-        double slen2 = 0;
-        for(int i=0; i < NumOfCVs; i++){
-            double curr = CVSplines[i]->GetCV(alpha);
-            slen2 +=  (curr-SPos[i])*(curr-SPos[i]);
-            SPos[i] = curr;
-        }
-        len += sqrt(slen2);
-        alpha += step;
-    }
-
-    double slen2 = 0;
-    for(int i=0; i < NumOfCVs; i++){
-        double last = CVSplines[i]->GetCV(alpha2);
-        slen2 +=  (last-SPos[i])*(last-SPos[i]);
-    }
-    len += sqrt(slen2);
-
-    return(len);
 }
 
 //==============================================================================

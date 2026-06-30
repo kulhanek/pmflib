@@ -43,7 +43,7 @@ CBead::CBead(void)
     Mode = BMO_UNKNOWN;
     ModeStatus = BMS_FINISHED;
 
-    Permanent = false;
+    BeadType = BTY_NORMAL;
     Alpha = 0.0;
     dAdAlpha = 0.0;
     A = 0.0;
@@ -54,6 +54,8 @@ CBead::CBead(void)
     beta1tnew   = 1.0;
     beta2tnew   = 1.0;
 
+    SegLength   = 0.0;
+    KinkA       = 0.0;
 }
 
 //==============================================================================
@@ -210,12 +212,14 @@ void CBead::InitBead(CSTMPath* p_list,int ncvs)
     BPos.SetZero();
     MF.CreateVector(NumOfCVs);
     MF.SetZero();
+    cMF.CreateVector(NumOfCVs);
+    cMF.SetZero();
     pMF.CreateVector(NumOfCVs);
     pMF.SetZero();
+    uMF.CreateVector(NumOfCVs);
+    uMF.SetZero();
     MTZ.CreateMatrix(NumOfCVs,NumOfCVs);
     MTZ.SetZero();
-    P.CreateMatrix(NumOfCVs,NumOfCVs);
-    P.SetZero();
     dCVdAlpha.CreateVector(NumOfCVs);
     dCVdAlpha.SetZero();
 
@@ -240,12 +244,12 @@ void CBead::InitBead(CSTMPath* p_list,int ncvs)
 
 //------------------------------------------------------------------------------
 
-void CBead::SetBeadData(int beadid,const CSimpleVector<double>& pos,bool flexible)
+void CBead::SetBeadData(int beadid,const CSimpleVector<double>& pos,int btype)
 {
     BeadID = beadid;
     OPos = pos;
     Pos = pos;
-    Permanent = !flexible;
+    BeadType = btype;
 }
 
 //------------------------------------------------------------------------------
@@ -285,15 +289,15 @@ void CBead::MoveToNextMode(void)
 {
     if( ModeStatus != BMS_FINISHED ) return; // keep current mode
 
-    // clear projector data
-    P.SetZero();
 
     // clear accumulated data
     MF.Set(0.0);
     MTZ.SetZero();
 
     // clear derived data
+    cMF.Set(0.0);
     pMF.Set(0.0);
+    uMF.Set(0.0);
     dAdAlpha = 0.0;
     A = 0.0;
 
@@ -374,64 +378,64 @@ template <typename T> int sgn(T val) {
 
 //------------------------------------------------------------------------------
 
-void CBead::CalcProjector(void)
+void CBead::CalcBead(void)
 {
-    if( Permanent ){
-        for(int i=0; i < NumOfCVs; i++){
-            pMF[i] = 0.0;
-            for(int j=0; j < NumOfCVs; j++){
-                P[i][j] = 0.0;
-            }
-        }
+    if( BeadType == BTY_PERMANENT ){
+        cMF.SetZero();
+        pMF.SetZero();
+        uMF.SetZero();
         return;
     }
 
-    // calculate derivative vector length
+// corrected MF
+    for(int i=0; i < NumOfCVs; i++){
+        double sc = ( BeadList->CVs[i]->GetMaxValue() - BeadList->CVs[i]->GetMinValue() );
+        double ps = 0;
+        for(int j=0; j < NumOfCVs; j++){
+            ps += sc * MTZ[i][j] * MF[j];
+        }
+        cMF[i] = ps;
+    }
+
+// calculate derivative vector length and dot product
+    double dot = 0.0;
     double slen2 = 0.0;
     for(int i=0; i < NumOfCVs; i++){
         double cvder = BeadList->CVSplines[i]->GetCVFirstDer(Alpha);
         slen2 += cvder*cvder;
+        dot += cvder * cMF[i];
     }
 
     if( slen2 == 0 ){
         LOGIC_ERROR("derivative segment has zero length");
     }
 
-    // calculate projection
+// MF perpendicular to path
+// bead.pGrad[:] = bead.Grad[:] - bead.dCVdAlpha[:] * (np.dot(bead.dCVdAlpha, bead.Grad) / slen2)
+
     for(int i=0; i < NumOfCVs; i++){
-        for(int j=0; j < NumOfCVs; j++){
-            if( i == j ){
-                P[i][j] = 1.0;
-            } else {
-                P[i][j] = 0.0;
-            }
-            double cvder1 = BeadList->CVSplines[i]->GetCVFirstDer(Alpha);
-            double cvder2 = BeadList->CVSplines[j]->GetCVFirstDer(Alpha);
-            P[i][j] -= cvder1*cvder2/slen2;
-        }
+        double cvder = BeadList->CVSplines[i]->GetCVFirstDer(Alpha);
+        pMF[i] = cMF[i] - cvder * dot / slen2;
     }
+        
 
-    // projection perpendicular to the path
+// get final force
     for(int i=0; i < NumOfCVs; i++){
-        double ps = 0;
-
-        if( (BeadID == 1) || (BeadID == BeadList->GetNumOfBeads() ) ){
-            double sc = ( BeadList->CVs[i]->GetMaxValue() - BeadList->CVs[i]->GetMinValue() );
-            // steepest descent movement
-            for(int k=0; k < NumOfCVs; k++){
-                
-                ps += sc * MTZ[i][k] * MF[k];
-            }
-        } else {
-            // projection perpendicular to the path
-            for(int j=0; j < NumOfCVs; j++){
-                double sc = ( BeadList->CVs[j]->GetMaxValue() - BeadList->CVs[j]->GetMinValue() );
-                for(int k=0; k < NumOfCVs; k++){
-                    ps += P[i][j] * sc * MTZ[j][k] * MF[k];
-                }
-            }
+        switch(BeadType){
+            case(BTY_FREE):
+                // steepest descent movement
+                uMF[i] = cMF[i];
+            break;
+            case(BTY_NORMAL):
+                // movement perpendicular to path
+                uMF[i] = pMF[i];
+            break;
+            case(BTY_PERMANENT):
+            default:
+                // steepest descent movement
+                uMF[i] = 0.0;
+            break;   
         }
-        pMF[i] = ps;
     }
 }
 
@@ -441,7 +445,7 @@ void CBead::UpdatePositionGD(double step)
 {
     NumOfUpdates++;
 
-    if( Permanent ){
+    if( BeadType == BTY_PERMANENT ){
         for(int i=0; i < NumOfCVs; i++){
             NPos[i] = Pos[i];
         }
@@ -450,10 +454,10 @@ void CBead::UpdatePositionGD(double step)
 
     for(int i=0; i < NumOfCVs; i++){
         double maxmov = BeadList->CVs[i]->GetMaxMovement();
-        if( (maxmov <= 0) || (fabs(pMF[i]*step) < maxmov) ){
-            NPos[i] = Pos[i] - pMF[i]*step;
+        if( (maxmov <= 0) || (fabs(uMF[i]*step) < maxmov) ){
+            NPos[i] = Pos[i] - uMF[i]*step;
         } else {
-            NPos[i] = Pos[i] - maxmov*sgn(pMF[i]*step);
+            NPos[i] = Pos[i] - maxmov*sgn(uMF[i]*step);
         }
     }
 }
@@ -465,7 +469,7 @@ void CBead::UpdatePositionNGD(double step,double mingnormeps)
     double g2 = 0.0;
 
     for(int i=0; i < NumOfCVs; i++){
-        g2 = g2 + pMF[i]*pMF[i];
+        g2 = g2 + uMF[i]*uMF[i];
     }
 
     double gnorm = sqrt( g2 / (double)NumOfCVs );
@@ -481,7 +485,7 @@ void CBead::UpdatePositionNGDAuto(double step,double maxgnorm,double mingnormeps
     double g2 = 0.0;
 
     for(int i=0; i < NumOfCVs; i++){
-        g2 = g2 + pMF[i]*pMF[i];
+        g2 = g2 + uMF[i]*uMF[i];
     }
 
     double gnorm = sqrt( g2 / (double)NumOfCVs );
@@ -521,7 +525,7 @@ void CBead::UpdatePositionADAM(double step,double beta1,double beta2,double ming
 {
     NumOfUpdates++;
 
-    if( Permanent ){
+    if( BeadType == BTY_PERMANENT ){
         for(int i=0; i < NumOfCVs; i++){
             NPos[i] = Pos[i];
         }
@@ -529,8 +533,8 @@ void CBead::UpdatePositionADAM(double step,double beta1,double beta2,double ming
     }
 
     for(int i=0; i < NumOfCVs; i++){
-        mtnew[i] = beta1 * mtold[i] + (1.0 - beta1) * pMF[i];
-        vtnew[i] = beta2 * vtold[i] + (1.0 - beta2) * pMF[i]*pMF[i];
+        mtnew[i] = beta1 * mtold[i] + (1.0 - beta1) * uMF[i];
+        vtnew[i] = beta2 * vtold[i] + (1.0 - beta2) * uMF[i]*uMF[i];
     }
 
     // the step can be rejected later
@@ -560,7 +564,7 @@ void CBead::UpdatePositionADABelief(double step,double beta1,double beta2,double
 {
     NumOfUpdates++;
 
-    if( Permanent ){
+    if( BeadType == BTY_PERMANENT ){
         for(int i=0; i < NumOfCVs; i++){
             NPos[i] = Pos[i];
         }
@@ -568,8 +572,8 @@ void CBead::UpdatePositionADABelief(double step,double beta1,double beta2,double
     }
 
     for(int i=0; i < NumOfCVs; i++){
-        mtnew[i] = beta1 * mtold[i] + (1.0 - beta1) * pMF[i];
-        vtnew[i] = beta2 * vtold[i] + (1.0 - beta2) * ((pMF[i] - mtnew[i])*(pMF[i] - mtnew[i]) + mingnormeps);
+        mtnew[i] = beta1 * mtold[i] + (1.0 - beta1) * uMF[i];
+        vtnew[i] = beta2 * vtold[i] + (1.0 - beta2) * ((uMF[i] - mtnew[i])*(uMF[i] - mtnew[i]) + mingnormeps);
     }
 
     // the step can be rejected later
@@ -599,7 +603,7 @@ void CBead::UpdatePositionAMSGrad(double step,double beta1,double beta2,double m
 {
     NumOfUpdates++;
 
-    if( Permanent ){
+    if( BeadType == BTY_PERMANENT ){
         for(int i=0; i < NumOfCVs; i++){
             NPos[i] = Pos[i];
         }
@@ -607,10 +611,10 @@ void CBead::UpdatePositionAMSGrad(double step,double beta1,double beta2,double m
     }
 
     for(int i=0; i < NumOfCVs; i++){
-        mtnew[i]    = beta1 * mtold[i] + (1.0 - beta1) * pMF[i];
-        vtnew[i]    = beta2 * vtold[i] + (1.0 - beta2) * pMF[i]*pMF[i];
+        mtnew[i]    = beta1 * mtold[i] + (1.0 - beta1) * uMF[i];
+        vtnew[i]    = beta2 * vtold[i] + (1.0 - beta2) * uMF[i]*uMF[i];
         vthatnew[i] = std::max(vthatold[i],vtnew[i]);
-    //    std::cout << "pMF: " << pMF[i] << std::endl;
+    //    std::cout << "uMF: " << uMF[i] << std::endl;
     }
 
     for(int i=0; i < NumOfCVs; i++){
@@ -636,7 +640,7 @@ void CBead::UpdatePositionAMSGradBC(double step,double beta1,double beta2,double
 {
     NumOfUpdates++;
 
-    if( Permanent ){
+    if( BeadType == BTY_PERMANENT ){
         for(int i=0; i < NumOfCVs; i++){
             NPos[i] = Pos[i];
         }
@@ -644,8 +648,8 @@ void CBead::UpdatePositionAMSGradBC(double step,double beta1,double beta2,double
     }
 
     for(int i=0; i < NumOfCVs; i++){
-        mtnew[i] = beta1 * mtold[i] + (1.0 - beta1) * pMF[i];
-        vtnew[i] = beta2 * vtold[i] + (1.0 - beta2) * pMF[i]*pMF[i];
+        mtnew[i] = beta1 * mtold[i] + (1.0 - beta1) * uMF[i];
+        vtnew[i] = beta2 * vtold[i] + (1.0 - beta2) * uMF[i]*uMF[i];
     }
 
     // the step can be rejected later
@@ -695,7 +699,7 @@ void CBead::LoadInfo(CXMLElement* p_ele)
     bool result = true;
     result &= p_ele->GetAttribute("bead_id",BeadID);
     result &= p_ele->GetAttribute("client_id",ClientID);
-    result &= p_ele->GetAttribute("permanent",Permanent);
+    result &= p_ele->GetAttribute("btype",BeadType);
     result &= p_ele->GetAttribute("mode",Mode);
     result &= p_ele->GetAttribute("status",ModeStatus);
     result &= p_ele->GetAttribute("nupd",NumOfUpdates);
@@ -744,7 +748,7 @@ void CBead::SaveInfo(CXMLElement* p_ele)
 
     p_ele->SetAttribute("bead_id",BeadID);
     p_ele->SetAttribute("client_id",ClientID);
-    p_ele->SetAttribute("permanent",Permanent);
+    p_ele->SetAttribute("btype",BeadType);
     p_ele->SetAttribute("mode",Mode);
     p_ele->SetAttribute("status",ModeStatus);
     p_ele->SetAttribute("nupd",NumOfUpdates);

@@ -43,6 +43,10 @@
 #define BMS_RUNNING             1
 #define BMS_FINISHED            2
 
+#define BTY_NORMAL              0
+#define BTY_PERMANENT           1
+#define BTY_FREE                2
+
 //------------------------------------------------------------------------------
 
 class CSTMPath;
@@ -86,7 +90,7 @@ public:
     void InitBead(CSTMPath* p_list,int ncvs);
 
     /// set bead data
-    void SetBeadData(int beadid,const CSimpleVector<double>& pos,bool flexible);
+    void SetBeadData(int beadid,const CSimpleVector<double>& pos,int btype);
 
     /// set client ID
     void SetClientID(int client_id);
@@ -100,8 +104,8 @@ public:
     /// reset position updates
     void ResetPosUpdates(void);
 
-    /// calculate projector - path must be optimized!
-    void CalcProjector(void);
+    /// get pMF and uMF
+    void CalcBead(void);
 
     /// update bead position - gradient descent
     void UpdatePositionGD(double step);
@@ -161,7 +165,7 @@ private:
 
 // bead data 
     int                     NumOfCVs;       // number of CVs
-    bool                    Permanent;      // is bead permanent?
+    int                     BeadType;       // bead type
     int                     NumOfUpdates;   // how many updates was performed
 
 // bead data - unscaled
@@ -173,11 +177,14 @@ private:
     double                  Alpha;          // path position
     double                  dAdAlpha;       // free energy derivative
     double                  A;              // free energy
+    double                  KinkA;          // kink angle
 
 // bead data - scaled
-    CFortranMatrix          P;              // projector
+    double                  SegLength;      // path segmetn length
     CSimpleVector<double>   Pos;            // bead position
+    CSimpleVector<double>   cMF;            // MF + MTC
     CSimpleVector<double>   pMF;            // force acting perpendicularly to the path
+    CSimpleVector<double>   uMF;            // mean force used to update bead position 
     CSimpleVector<double>   dCVdAlpha;
 
 // helper positions - scaled

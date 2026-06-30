@@ -221,8 +221,9 @@ private:
 
     std::vector<CBeadPtr>           InputBeads;     // input beads provided by an user
 
-    int                             NumOfBeads;
-    std::vector<CBeadPtr>           Beads;          // bead data
+    int                                     NumOfBeads;
+    std::vector<CBeadPtr>                   Beads;          // bead data
+    std::vector< std::vector<CBeadPtr> >    PathSegments;
 
     CSmallString                    CVSplineType;
     std::vector<CCVSplinePtr>       CVSplines;      // interpolated CV
@@ -248,7 +249,6 @@ private:
     // bead position update
     // [gd], [ngd]
     double              StepSize;           // step size for bead update
-    double              UsedStepSize;
 
     // [ngd-auto]
     double              MinGNormEps;        // eps to avoid division by zero
@@ -340,6 +340,9 @@ private:
     // allocate path
     void AllocatePath(void);
 
+    // init path segments
+    void InitPathSegments(void);
+
     // clear everything
     void ClearPath(void);
 
@@ -383,9 +386,6 @@ private:
     // path optimization, it return path length and initialize CVSplines
     // positions that are optimized are in PPos
     double OptimizePath(std::vector<CBeadPtr>& beads);
-
-    // get path length
-    double GetSegmentLength(double alpha1,double alpha2);
 
     // read path helpers
     void ReadPathControls(CPrmFile& file);
