@@ -46,7 +46,6 @@ void PMF_PACKAGE cpmf_abf_client_set_header_(FTINT* ret_st,
                                  UFTINT     version_len,
                                  UFTINT     driver_len,
                                  UFTINT     temp_unit_len,
-                                 UFTINT     pres_unit_len,
                                  UFTINT     ene_unit_len
                                  )
 {

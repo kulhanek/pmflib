@@ -241,7 +241,7 @@ subroutine abf_init_print_summary
     write(PMF_OUT,120)  ' Enthalpy options:'
     write(PMF_OUT,120)  ' ------------------------------------------------------'
     write(PMF_OUT,125)  ' Accumulate enthalpy (fenthalpy)         : ', prmfile_onoff(fenthalpy)
-    write(PMF_OUT,125)  ' Accumulate enth. deriv. (fenthalpy_der) : ', fenthalpy_der
+    write(PMF_OUT,130)  ' Accumulate enth. deriv. (fenthalpy_der) : ', fenthalpy_der
     write(PMF_OUT,150)  ' Potential energy offset (fepotaverage)  : ', pmf_unit_get_rvalue(EnergyUnit,fepotaverage),  &
                                                                        '['//trim(pmf_unit_label(EnergyUnit))//']'
     write(PMF_OUT,130)  ' Sampling for -TdS and dH (ftds_sample)   : ', ftds_sample
