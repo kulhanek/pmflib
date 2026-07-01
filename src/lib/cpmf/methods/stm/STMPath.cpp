@@ -1165,9 +1165,10 @@ void CSTMPath::ReadPathControls(CPrmFile& file)
 
         vout << left << "     maxmov" << right << scientific << setprecision(5);
         for(int i=0; i < NumOfCVs; i++){
-            double max = CSmallString(tokens[i]).ToDouble();
-            CVs[i]->SetMaxMovement(max);
-            vout << " " << setw(12) << max;
+            double maxmov = CSmallString(tokens[i]).ToDouble();
+            vout << " " << setw(12) << maxmov;
+            maxmov = maxmov / (CVs[i]->GetMaxValue() - CVs[i]->GetMinValue());
+            CVs[i]->SetMaxMovement(maxmov); // scaled
         }
         vout << endl;
     }
@@ -2133,7 +2134,7 @@ void CSTMPath::PrintPathSummaryHeader(std::ostream& vout)
 
 // header --------------------
     // legends
-    vout << "#   ID   Type MO ST KinkA      α        dA/dα            A     CID Updates";
+    vout << "#   ID   Type MO ST KinkA      α        dA/dα         Aint     CID Updates";
     for(int i=0; i < NumOfCVs; i++){
         vout << "         CV" << right << setw(2) << setfill('0') << i+1;
     }
@@ -2193,18 +2194,34 @@ void CSTMPath::PrintPathSummaryHeader(std::ostream& vout)
     for(int i=0; i < NumOfCVs; i++){
         vout << " " << setw(12) << CVs[i]->GetType();
     }
+    for(int i=0; i < NumOfCVs; i++){
+        vout << " " << setw(12) << CVs[i]->GetType();
+    }
     vout << endl; 
     vout << left << "#      min                                                                " << right << scientific << setprecision(5);
     for(int i=0; i < NumOfCVs; i++){
         vout << " " << setw(12) << CVs[i]->GetMinValue();
+    }
+    for(int i=0; i < NumOfCVs; i++){
+        vout << " " << setw(12) << 0.0;
     }
     vout << endl;
     vout << left << "#      max                                                                " << right << scientific << setprecision(5);
     for(int i=0; i < NumOfCVs; i++){
         vout << " " << setw(12) << CVs[i]->GetMaxValue();
     }
+    for(int i=0; i < NumOfCVs; i++){
+        vout << " " << setw(12) << 1.0;
+    }
     vout << endl;
     vout << left << "#      maxmov                                                             " << right << scientific << setprecision(5);
+    for(int i=0; i < NumOfCVs; i++){
+        if( CVs[i]->GetMaxMovement() > 0 ){
+            vout << " " << setw(12) << CVs[i]->GetMaxMovement() * (CVs[i]->GetMaxValue() - CVs[i]->GetMinValue());
+        } else {
+            vout << " " << setw(12) << "--";
+        }
+    }
     for(int i=0; i < NumOfCVs; i++){
         if( CVs[i]->GetMaxMovement() > 0 ){
             vout << " " << setw(12) << CVs[i]->GetMaxMovement();
@@ -2231,6 +2248,43 @@ void CSTMPath::PrintPathSummaryHeader(std::ostream& vout)
         vout << " ------------";
     }
     vout << endl;
+
+    vout << "# ---- ------ -- -- ----- ------ ------------ ------------ ------- -------";
+    for(int i=0; i < NumOfCVs; i++){
+        vout << " uuuuuuuuuuuu";
+    }
+    for(int i=0; i < NumOfCVs; i++){
+        vout << " ssssssssssss";
+    }
+    for(int i=0; i < NumOfCVs; i++){
+        vout << " ssssssssssss";
+    }
+    for(int i=0; i < NumOfCVs; i++){
+        vout << " ssssssssssss";
+    }
+    for(int i=0; i < NumOfCVs; i++){
+        vout << " ssssssssssss";
+    }
+    vout << endl;
+
+    vout << "# ---- ------ -- -- ----- ------ ------------ ------------ ------- -------";
+    for(int i=0; i < NumOfCVs; i++){
+        vout << " ------------";
+    }
+    for(int i=0; i < NumOfCVs; i++){
+        vout << " ------------";
+    }
+    for(int i=0; i < NumOfCVs; i++){
+        vout << " ------------";
+    }
+    for(int i=0; i < NumOfCVs; i++){
+        vout << " ------------";
+    }
+    for(int i=0; i < NumOfCVs; i++){
+        vout << " ------------";
+    }
+    vout << endl;
+
     vout << "#    1      2  3  4     5      6            7            8       9      10";
     int id = 11;
     for(int i=0; i < NumOfCVs; i++){
@@ -2444,8 +2498,8 @@ void CSTMPath::PrintPathUpdate(std::ostream& vout)
     vout << endl;
     vout << left << "#      maxmov                          " << right << scientific << setprecision(5);
     for(int i=0; i < NumOfCVs; i++){
-        if( CVs[i]->GetMaxMovement() > 0 ){
-            vout << " " << setw(12) << CVs[i]->GetMaxMovement();
+        if( CVs[i]->GetMaxMovement() > 0 ){                     // unscalled
+            vout << " " << setw(12) << CVs[i]->GetMaxMovement() * (CVs[i]->GetMaxValue() - CVs[i]->GetMinValue());
         } else {
             vout << " " << setw(12) << "--";
         }
@@ -2603,7 +2657,7 @@ void CSTMPath::PrintPath(std::ostream& vout)
     vout << endl;
     vout << "maxmov   ";
     for(int i=0; i < NumOfCVs; i++){
-        vout << " " << setw(12) << CVs[i]->GetMaxMovement();
+        vout << " " << setw(12) << CVs[i]->GetMaxMovement() * (CVs[i]->GetMaxValue() - CVs[i]->GetMinValue());;
     }
     vout << endl;
 

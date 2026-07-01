@@ -1179,23 +1179,6 @@ class STMPath:
         self.surface = EnergySurface2D(x_axis,y_axis,args.enelabel,args.zmax,args.contour_spacing)
 
         print("")
-        print(f"# Load FES: {args.input_fes}")
-        self.surface.load(args.input_fes, xcolumn=args.input_fes_x_column, ycolumn=args.input_fes_y_column,
-                          ecolumn=args.input_fes_e_column, shift2zero=args.shift2zero)
-
-        print(f"")
-        print(f"# Optimize RBF ...")
-        print(f"  Sx:           {args.rbfsx:10.3f}")
-        print(f"  Sy:           {args.rbfsy:10.3f}")
-
-        self.surface.fit(sx=args.rbfsx, sy=args.rbfsy, rcond=args.rcond)
-        print(f"  RBF fit RMSE: {self.surface.fit_rmse:10.3f}")
-
-        print("")
-        print("# Calculate Z surface ...")
-        self.surface.calc_grid()
-
-        print("")
         print("# CV splines ...")
         if args.cvspline == 1:
             print(f"  >>> Smoothing Cubic Spline")
@@ -1213,6 +1196,23 @@ class STMPath:
 
         # read initial path
         input_beads = self.load_path_file(args.input_path)
+
+        print("")
+        print(f"# Load FES: {args.input_fes}")
+        self.surface.load(args.input_fes, xcolumn=args.input_fes_x_column, ycolumn=args.input_fes_y_column,
+                          ecolumn=args.input_fes_e_column, shift2zero=args.shift2zero)
+
+        print(f"")
+        print(f"# Optimize RBF ...")
+        print(f"  Sx:           {args.rbfsx:10.3f}")
+        print(f"  Sy:           {args.rbfsy:10.3f}")
+
+        self.surface.fit(sx=args.rbfsx, sy=args.rbfsy, rcond=args.rcond)
+        print(f"  RBF fit RMSE: {self.surface.fit_rmse:10.3f}")
+
+        print("")
+        print("# Calculate Z surface ...")
+        self.surface.calc_grid()
 
         # plot the user initial path
         if args.plot :
@@ -2209,7 +2209,7 @@ class STMPath:
         print(f"# Number of beads = {self.nbeads}", file=fout)
 
         # Header legends.
-        print("#  ID   Type  MO ST KinkA  alpha    dA/dalpha         Aint     CID Updates", end="", file=fout)
+        print("#  ID   Type  MO ST KinkA      α        dA/dα         Aint     CID Updates", end="", file=fout)
         for i in range(self.ncvs):
             print(f"          CV{i + 1:<1d}", end="", file=fout)
         for i in range(self.ncvs):
@@ -2217,9 +2217,9 @@ class STMPath:
         for i in range(self.ncvs):
             print(f"     dA/dsCV{i + 1:<1d}", end="", file=fout)
         for i in range(self.ncvs):
-            print(f" dsCV{i + 1:<1d}/dalpha", end="", file=fout)
+            print(f"     dsCV{i + 1:<1d}/dα", end="", file=fout)
         for i in range(self.ncvs):
-            print(f"  -|F{i + 1:<1d}/dalpha", end="", file=fout)
+            print(f"      -|F{i + 1:<1d}/dα", end="", file=fout)
 
         print(f"        Asurf", end="", file=fout)
         print(f"       Asurf0", end="", file=fout)
@@ -2275,6 +2275,8 @@ class STMPath:
         print(f"{'#      maxmov':<74}", end="", file=fout)
         for cv in self.cvs:
             print(f" {cv.maxmov:12.5e}", end="", file=fout)
+        for cv in self.cvs:
+            print(f" {cv.smaxmov:12.5e}", end="", file=fout)
         for _ in range(4):
             for cv in self.cvs:
                 print(f"             ", end="", file=fout)
