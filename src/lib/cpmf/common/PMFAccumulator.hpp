@@ -102,7 +102,6 @@ public:
     void SetHeaders(const CSmallString& method, const CSmallString& version, const CSmallString& driver,
                     double temp, const CSmallString& temp_unit, double temp_fconv,
                     int systype,
-                    double pres, const CSmallString& pres_unit, double pres_fconv,
                     const CSmallString& ene_unit, double ene_fconv);
 
 // dimension specification ----------------------------------------------------
@@ -178,20 +177,6 @@ public:
 
     /// get temperature conversion factor to given unit
     double GetTemperatureFConv(void);
-
- // -----------------------------------------------
-
-    /// get pressure in iu
-    double GetPressure(void) const;
-
-    /// get pressure in unit
-    double GetRealPressure(void) const;
-
-    /// get pressure unit
-    const CSmallString& GetPressureUnit(void) const;
-
-    /// get pressure conversion factor to given unit
-    double GetPressureFConv(void);
 
  // -----------------------------------------------
 
@@ -309,9 +294,6 @@ protected:
     int                             SysType;            // 0 - isolated system
                                                         // 1 - constant volume
                                                         // 2 - constant pressure
-    double                          Pressure;           // pressure
-    double                          PressureFConv;
-    CSmallString                    PressureUnit;
 
     double                          EnergyFConv;        // energy unit
     CSmallString                    EnergyUnit;

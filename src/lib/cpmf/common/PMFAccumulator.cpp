@@ -51,9 +51,6 @@ CPMFAccumulator::CPMFAccumulator(void)
     TemperatureUnit     = "K";
 
     SysType             = 0;        // isolated system
-    Pressure            = 0;
-    PressureFConv       = 1.0;
-    PressureUnit        = "Pa";
 
     EnergyFConv         = 1.0;
     EnergyUnit          = "kcal mol^-1";
@@ -231,9 +228,6 @@ void CPMFAccumulator::Load(CXMLElement* p_root)
         } else if (  name == "SYSTYPE" ) {
             result &= p_item->GetAttribute("value",SysType);
     // -------------------------------------------
-        } else if (  name == "PRESSURE" ) {
-            result &= p_item->GetAttribute("value",Pressure);
-    // -------------------------------------------
         } else if (  name == "ENERGY-UNIT" ) {
             result &= p_item->GetAttribute("value",EnergyUnit);
             result &= p_item->GetAttribute("fconv",EnergyFConv);
@@ -241,10 +235,6 @@ void CPMFAccumulator::Load(CXMLElement* p_root)
         } else if (  name == "TEMPERATURE-UNIT" ) {
             result &= p_item->GetAttribute("value",TemperatureUnit);
             result &= p_item->GetAttribute("fconv",TemperatureFConv);
-    // -------------------------------------------
-        } else if (  name == "PRESSURE-UNIT" ) {
-            result &= p_item->GetAttribute("value",PressureUnit);
-            result &= p_item->GetAttribute("fconv",PressureFConv);
     // -------------------------------------------
         } else if (  name == "NSTLIMIT" ) {
             int tmp;  // read but ignored
@@ -722,16 +712,6 @@ void CPMFAccumulator::ReadHeaderSection(FILE* fin,const CSmallString& keyline)
             RUNTIME_ERROR(error);
         }
 // -----------------------------------------------------
-    } else if( key == "PRESSURE" ) {
-        // read item
-        sbuff.ReadLineFromFile(fin,true,true);
-        int tr = sscanf(sbuff,"%lf",&Pressure);
-        if( tr != 1 ) {
-            CSmallString error;
-            error << "unable to read pressure (" << tr << " != 1)";
-            RUNTIME_ERROR(error);
-        }
-// -----------------------------------------------------
     } else if( key == "ENERGY-UNIT" ) {
         int             tr = 0;
 
@@ -771,26 +751,6 @@ void CPMFAccumulator::ReadHeaderSection(FILE* fin,const CSmallString& keyline)
         }
         TemperatureUnit = sbuff.GetSubStringFromTo(22,57);
         TemperatureUnit.Trim();
-    // -----------------------------------------------------
-    } else if( key == "PRESSURE-UNIT" ) {
-        int             tr = 0;
-
-// 40  format(3X,E18.11,1X,A36)
-        // read item
-        sbuff.ReadLineFromFile(fin,true,true);
-        tr = sscanf(sbuff,"%lf",&PressureFConv);
-        if( tr != 1 ) {
-            CSmallString error;
-            error << "unable to read pressure unit (" << tr << " != 1)";
-            RUNTIME_ERROR(error);
-        }
-        if( sbuff.GetLength() != 58 ){
-            CSmallString error;
-            error << "unable to read pressure unit: '" << sbuff << "'";
-            RUNTIME_ERROR(error);
-        }
-        PressureUnit = sbuff.GetSubStringFromTo(22,57);
-        PressureUnit.Trim();
 // -----------------------------------------------------
     } else if( key == "NSTLIMIT" ) {
         // read item
@@ -917,13 +877,6 @@ void CPMFAccumulator::Save(CXMLElement* p_ele)
     p_item->SetAttribute("value",SysType);
 
 // header item -----------------------------------
-    if( SysType == 2 ) {
-    p_item = p_root->CreateChildElement("HEADER");
-    p_item->SetAttribute("name","PRESSURE");
-    p_item->SetAttribute("value",Pressure);
-    }
-
-// header item -----------------------------------
     p_item = p_root->CreateChildElement("HEADER");
     p_item->SetAttribute("name","ENERGY-UNIT");
     p_item->SetAttribute("value",EnergyUnit);
@@ -934,14 +887,6 @@ void CPMFAccumulator::Save(CXMLElement* p_ele)
     p_item->SetAttribute("name","TEMPERATURE-UNIT");
     p_item->SetAttribute("value",TemperatureUnit);
     p_item->SetAttribute("fconv",TemperatureFConv);
-
-// header item -----------------------------------
-    if( SysType == 2 ) {
-    p_item = p_root->CreateChildElement("HEADER");
-    p_item->SetAttribute("name","PRESSURE-UNIT");
-    p_item->SetAttribute("value",PressureUnit);
-    p_item->SetAttribute("fconv",PressureFConv);
-    }
 
 // header item -----------------------------------
     p_item = p_root->CreateChildElement("HEADER");
@@ -1024,14 +969,6 @@ void CPMFAccumulator::Save(FILE* fout)
         RUNTIME_ERROR(error);
     }
 
-    if( SysType == 2 ){
-    if(fprintf(fout,"%%PRESSURE\n%10.1f\n",Pressure) <= 0) {
-        CSmallString error;
-        error << "unable to write pressure";
-        RUNTIME_ERROR(error);
-    }
-    }
-
     // 40  format(3X,E18.11,1X,A36)
     if(fprintf(fout,"%%ENERGY-UNIT\n   %18.11E %36s\n",EnergyFConv,(const char*)EnergyUnit) <= 0) {
         CSmallString error;
@@ -1043,14 +980,6 @@ void CPMFAccumulator::Save(FILE* fout)
         CSmallString error;
         error << "unable to write temperature unit";
         RUNTIME_ERROR(error);
-    }
-
-    if( SysType == 2 ){
-    if(fprintf(fout,"%%PRESSURE-UNIT\n   %18.11E %36s\n",PressureFConv,(const char*)PressureUnit) <= 0) {
-        CSmallString error;
-        error << "unable to write pressure unit";
-        RUNTIME_ERROR(error);
-    }
     }
 
     if( NSTLimit > 0 ){
@@ -1142,10 +1071,6 @@ CPMFAccumulatorPtr CPMFAccumulator::Duplicate(void)
 
     outaccu->SysType            = SysType;
 
-    outaccu->Pressure           = Pressure;
-    outaccu->PressureFConv      = PressureFConv;
-    outaccu->PressureUnit       = PressureUnit;
-
     outaccu->NSTLimit           = NSTLimit;
     outaccu->CurrStep           = CurrStep;
     outaccu->TimeStep           = TimeStep;
@@ -1194,10 +1119,6 @@ CPMFAccumulatorPtr CPMFAccumulator::DuplicateHeader(void)
 
     outaccu->SysType            = SysType;
 
-    outaccu->Pressure           = Pressure;
-    outaccu->PressureFConv      = PressureFConv;
-    outaccu->PressureUnit       = PressureUnit;
-
     outaccu->NSTLimit           = NSTLimit;
     outaccu->CurrStep           = CurrStep;
     outaccu->TimeStep           = TimeStep;
@@ -1238,7 +1159,6 @@ void CPMFAccumulator::SetHeaders(const CSmallString& method, const CSmallString&
 void CPMFAccumulator::SetHeaders(const CSmallString& method, const CSmallString& version, const CSmallString& driver,
                 double temp, const CSmallString& temp_unit, double temp_fconv,
                 int systype,
-                double pres, const CSmallString& pres_unit, double pres_fconv,
                 const CSmallString& ene_unit, double ene_fconv)
 {
     Method = method;
@@ -1250,10 +1170,6 @@ void CPMFAccumulator::SetHeaders(const CSmallString& method, const CSmallString&
     TemperatureFConv = temp_fconv;
 
     SysType = systype;
-
-    Pressure = pres;
-    PressureUnit = pres_unit;
-    PressureFConv = pres_fconv;
 
     EnergyUnit  = ene_unit;
     EnergyFConv = ene_fconv;
@@ -1321,34 +1237,6 @@ const CSmallString& CPMFAccumulator::GetTemperatureUnit(void) const
 double CPMFAccumulator::GetTemperatureFConv(void)
 {
     return(TemperatureFConv);
-}
-
-//------------------------------------------------------------------------------
-
-double CPMFAccumulator::GetPressure(void) const
-{
-    return(Pressure);
-}
-
-//------------------------------------------------------------------------------
-
-double CPMFAccumulator::GetRealPressure(void) const
-{
-    return(Pressure*PressureFConv);
-}
-
-//------------------------------------------------------------------------------
-
-const CSmallString& CPMFAccumulator::GetPressureUnit(void) const
-{
-    return(PressureUnit);
-}
-
-//------------------------------------------------------------------------------
-
-double CPMFAccumulator::GetPressureFConv(void)
-{
-    return(PressureFConv);
 }
 
 //------------------------------------------------------------------------------
