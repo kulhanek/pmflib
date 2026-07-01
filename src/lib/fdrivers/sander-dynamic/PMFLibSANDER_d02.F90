@@ -24,7 +24,7 @@
 ! this a client side of the SANDER driver
 ! ==============================================================================
 
-module PMFLibSANDER_d01
+module PMFLibSANDER_d02
 
 use iso_c_binding
 
@@ -41,7 +41,7 @@ integer, parameter                          :: CPMFCHAR      = c_char
 integer(CPMFINT), parameter                 :: PMFLIB_CHECK_INT1 = 1089523658
 real(CPMFDP), parameter                     :: PMFLIB_CHECK_R81  = 1.78493547
 character(kind=CPMFCHAR,len=10), parameter  :: PMFLIB_CHECK_STR1 = 'PMFLib v06'
-character(kind=CPMFCHAR,len=10), parameter  :: PMFLIB_CHECK_STR2 = 'DRVABI d1b' ! sander v24.x
+character(kind=CPMFCHAR,len=10), parameter  :: PMFLIB_CHECK_STR2 = 'DRVABI d02' ! sander v24.x
 ! ==============================================================================
 
 ! constants
@@ -324,7 +324,7 @@ end interface
 
 ! ==============================================================================
 ! driver setup
-character(len=100)          :: pmf_sander_driver_name    = 'libfpmfdrv_sander_d01.so'
+character(len=100)          :: pmf_sander_driver_name    = 'libfpmfdrv_sander_d02.so'
 character(len=MAX_PATH)     :: pmf_sander_driver_path    = ''
 character(len=MAX_PATH)     :: pmf_sander_driver_error   = ''
 type(c_ptr)                 :: pmf_sander_driver_handle  = C_NULL_PTR
@@ -684,5 +684,5 @@ end subroutine pmf_sander_get_dlerror
 
 #endif
 
-end module PMFLibSANDER_d01
+end module PMFLibSANDER_d02
 

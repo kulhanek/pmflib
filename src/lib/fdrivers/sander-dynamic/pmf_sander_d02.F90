@@ -24,7 +24,7 @@
 module pmf_sander
 
 use pmf_sizes
-use pmf_sander_dat_d01
+use pmf_sander_dat_d02
 use iso_c_binding
 
 implicit none
@@ -99,8 +99,8 @@ subroutine pmf_sander_init_preinit(mdin,mdin_len,ischeme,anatom,anres,      &
     use pmf_utils
     use pmf_dat
     use pmf_init
-    use pmf_sander_dat_d01
-    use pmf_sander_control_d01
+    use pmf_sander_dat_d02
+    use pmf_sander_control_d02
     use pmf_pbc
     use pmf_core
     use pmf_mask
@@ -255,7 +255,7 @@ subroutine pmf_sander_finalize_preinit(anatom,amass,ax) bind(c,name='int_pmf_san
     use pmf_mask
     use pmf_core
     use pmf_init
-    use pmf_sander_control_d01
+    use pmf_sander_control_d02
     use pmf_utils
 
     implicit none
@@ -307,7 +307,7 @@ subroutine pmf_sander_init(anatom,amass,ax) bind(c,name='int_pmf_sander_init')
     use pmf_init
     use pmf_dat
     use pmf_utils
-    use pmf_sander_dat_d01
+    use pmf_sander_dat_d02
 
     implicit none
     integer(CPMFINT)    :: anatom       ! number of atoms
@@ -872,7 +872,7 @@ subroutine pmf_sander_force_mpi(anatom,x,v,f,epot,epmf) bind(c,name='int_pmf_san
 
     use pmf_sizes
     use pmf_core_lf
-    use pmf_sander_dat_d01
+    use pmf_sander_dat_d02
     use pmf_dat
     use pmf_timers
     use pmf_utils
@@ -934,7 +934,7 @@ subroutine pmf_sander_shake_mpi(anatom,x,modified) bind(c,name='int_pmf_sander_s
     use pmf_sizes
     use pmf_dat
     use pmf_core_lf
-    use pmf_sander_dat_d01
+    use pmf_sander_dat_d02
     use pmf_dat
     use pmf_timers
     use pmf_utils
@@ -1035,7 +1035,7 @@ end subroutine pmf_sander_rattlev_mpi
 subroutine pmf_sander_bcast_dat_mpi(anatom,anumtasks,aiparpt) bind(c,name='int_pmf_sander_bcast_dat_mpi')
 
     use pmf_init
-    use pmf_sander_dat_d01
+    use pmf_sander_dat_d02
     use pmf_dat
     use pmf_utils
 

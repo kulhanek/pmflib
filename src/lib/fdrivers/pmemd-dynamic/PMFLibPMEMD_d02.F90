@@ -23,7 +23,7 @@
 ! this a client side of the PMEMD driver
 ! ==============================================================================
 
-module PMFLibPMEMD_d01
+module PMFLibPMEMD_d02
 
 use iso_c_binding
 
@@ -40,7 +40,7 @@ integer, parameter                          :: CPMFCHAR      = c_char
 integer(CPMFINT), parameter                 :: PMFLIB_CHECK_INT1 = 1089523658
 real(CPMFDP), parameter                     :: PMFLIB_CHECK_R81  = 1.78493547
 character(kind=CPMFCHAR,len=10), parameter  :: PMFLIB_CHECK_STR1 = 'PMFLib v06'
-character(kind=CPMFCHAR,len=10), parameter  :: PMFLIB_CHECK_STR2 = 'DRVABI d1b' ! pmemd v24.x
+character(kind=CPMFCHAR,len=10), parameter  :: PMFLIB_CHECK_STR2 = 'DRVABI d02' ! pmemd v24.x
 ! ==============================================================================
 
 ! constants
@@ -256,7 +256,7 @@ end interface
 
 ! ==============================================================================
 ! driver setup
-character(len=100)          :: pmf_pmemd_driver_name    = 'libfpmfdrv_pmemd_d01.so'
+character(len=100)          :: pmf_pmemd_driver_name    = 'libfpmfdrv_pmemd_d02.so'
 character(len=MAX_PATH)     :: pmf_pmemd_driver_path    = ''
 character(len=MAX_PATH)     :: pmf_pmemd_driver_error   = ''
 type(c_ptr)                 :: pmf_pmemd_driver_handle  = C_NULL_PTR
@@ -607,5 +607,5 @@ end subroutine pmf_pmemd_get_dlerror
 
 #endif
 
-end module PMFLibPMEMD_d01
+end module PMFLibPMEMD_d02
 

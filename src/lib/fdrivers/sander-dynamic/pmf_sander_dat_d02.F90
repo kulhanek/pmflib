@@ -21,7 +21,7 @@
 !    Boston, MA  02110-1301  USA
 !===============================================================================
 
-module pmf_pmemd_dat_d01
+module pmf_sander_dat_d02
 
 use prmfile_dat
 use pmf_sizes
@@ -36,27 +36,17 @@ character(len=PMF_MAX_PATH)     :: ControlFileName
 type(PRMFILE_TYPE)              :: ControlPrmfile
 
 #ifdef MPI
+integer,allocatable             :: atm_owner_map(:) ! atom map among processes
 real(PMFDP),allocatable         :: tmp_a(:,:)   ! helper array
 real(PMFDP),allocatable         :: tmp_b(:,:)   ! helper array
 real(PMFDP),allocatable         :: tmp_c(:,:)   ! helper array
-
-real(PMFDP),allocatable         :: send_buffer(:,:)     ! communication buffer
-real(PMFDP),allocatable         :: recv_buffer(:,:)     ! communication buffer
-integer,allocatable             :: chunk_sizes(:)       ! length of each chunk
-integer,allocatable             :: chunk_offsets(:)     ! starting positions
-! only master
-integer(8)                      :: numofmpitransfers    ! number of gather/scatter operations
-integer(8)                      :: fragmentation        ! total fragmentation (number of data chunks distributed to individual CPUs)
-integer(8),allocatable          :: accu_chunk_sizes(:)  ! accumulated length of each chunk
-integer(8)                      :: numofchunkgaps       ! related to FATAL-ERROR in data distribution in SVN < 6360
 #endif
 
 ! interface binding check
-integer, parameter              :: PMFLIB_CHECK_INT1    = 1089523658
-real(PMFDP), parameter          :: PMFLIB_CHECK_R81     = 1.78493547
-character(len=10), parameter    :: PMFLIB_CHECK_STR1    = 'PMFLib v06'
-character(len=10), parameter    :: PMFLIB_CHECK_STR2    = 'DRVABI d01'
-character(len=10), parameter    :: PMFLIB_CHECK_STR2a   = 'DRVABI d1b' ! pmemd v24.x
+integer, parameter              :: PMFLIB_CHECK_INT1 = 1089523658
+real(PMFDP), parameter          :: PMFLIB_CHECK_R81  = 1.78493547
+character(len=10), parameter    :: PMFLIB_CHECK_STR1 = 'PMFLib v06'
+character(len=10), parameter    :: PMFLIB_CHECK_STR2 = 'DRVABI d02'
 
 ! energy array
 integer, parameter              :: PMFLIB_EKIN_VV               = 1
@@ -65,13 +55,11 @@ integer, parameter              :: PMFLIB_EKIN_HA               = 3
 integer, parameter              :: PMFLIB_EKIN_SIZE             = PMFLIB_EKIN_HA
 
 ! setup array
-integer, parameter              :: PMFLIB_SETUP_FORCE_NEED_ENE  = 1
-integer, parameter              :: PMFLIB_SETUP_FORCE_NEED_FRC  = 2
-integer, parameter              :: PMFLIB_SETUP_FORCE_NEED_VEL  = 3
-integer, parameter              :: PMFLIB_SETUP_SIZE            = PMFLIB_SETUP_FORCE_NEED_VEL
+integer, parameter              :: PMFLIB_SETUP_DUMMY           = 1
+integer, parameter              :: PMFLIB_SETUP_SIZE            = PMFLIB_SETUP_DUMMY
 
 !===============================================================================
 !-------------------------------------------------------------------------------
 !===============================================================================
 
-end module pmf_pmemd_dat_d01
+end module pmf_sander_dat_d02

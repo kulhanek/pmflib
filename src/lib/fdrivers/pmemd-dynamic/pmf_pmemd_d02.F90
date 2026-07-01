@@ -21,11 +21,11 @@
 !    Boston, MA  02110-1301  USA
 !===============================================================================
 
-module pmf_pmemd_d01
+module pmf_pmemd_d02
 
 use pmf_sizes
 use iso_c_binding
-use pmf_pmemd_dat_d01
+use pmf_pmemd_dat_d02
 
 implicit none
 contains
@@ -51,7 +51,7 @@ subroutine pmf_pmemd_check_interface(rnum,inum,ekin_len,setup_len,str1,str1_len,
     integer(CPMFINT)    :: str2_len
     ! -------------------------------------------
     integer             :: i
-    logical             :: found_d01
+    logical             :: found_d02
     logical             :: found_d1a
     ! --------------------------------------------------------------------------
 
@@ -78,30 +78,20 @@ subroutine pmf_pmemd_check_interface(rnum,inum,ekin_len,setup_len,str1,str1_len,
         end if
     end do
 
-    if( (str2_len .ne. len(PMFLIB_CHECK_STR2)) .and. (str2_len .ne. len(PMFLIB_CHECK_STR2a)) ) then
-        call pmf_utils_exit(PMF_OUT,1,'Driver interface compromised for len(PMFLIB_CHECK_STR2/a)!')
+    if( str2_len .ne. len(PMFLIB_CHECK_STR2) ) then
+        call pmf_utils_exit(PMF_OUT,1,'Driver interface compromised for len(PMFLIB_CHECK_STR2)!')
     end if
 
-    found_d01 = .false.
     found_d1a = .false.
 
     do i=1,min(str2_len,len(PMFLIB_CHECK_STR2))
         if( str2(i) .eq. PMFLIB_CHECK_STR2(i:i) ) then
-            found_d01 = .true.
-        else
-            found_d01 = .false.
-        end if
-    end do
-    do i=1,min(str2_len,len(PMFLIB_CHECK_STR2a))
-        if( str2(i) .eq. PMFLIB_CHECK_STR2a(i:i) ) then
-            found_d1a = .true.
-        else
-            found_d1a = .false.
+            found_d02 = .true.
         end if
     end do
 
-    if( .not. (found_d01 .or. found_d1a) ) then
-        call pmf_utils_exit(PMF_OUT,1,'Driver interface compromised for PMFLIB_CHECK_STR2a!')
+    if( .not. found_d02 ) then
+        call pmf_utils_exit(PMF_OUT,1,'Driver interface compromised for PMFLIB_CHECK_STR2!')
     end if
 
     if( found_d1a ) then
@@ -125,7 +115,7 @@ subroutine pmf_pmemd_init_preinit(mdin,mdin_len,anatom,anres,   &
     use pmf_dat
     use pmf_init
     use pmf_utils
-    use pmf_pmemd_control_d01
+    use pmf_pmemd_control_d02
     use pmf_pbc
     use pmf_core
     use pmf_mask
@@ -268,7 +258,7 @@ subroutine pmf_pmemd_finalize_preinit(amass,ax) bind(c,name='int_pmf_pmemd_final
     use pmf_mask
     use pmf_core
     use pmf_init
-    use pmf_pmemd_control_d01
+    use pmf_pmemd_control_d02
     use pmf_utils
 
     implicit none
@@ -312,7 +302,7 @@ subroutine pmf_pmemd_init(amass,ax) bind(c,name='int_pmf_pmemd_init')
     use pmf_init
     use pmf_dat
     use cst_init
-    use pmf_pmemd_control_d01
+    use pmf_pmemd_control_d02
 
     implicit none
     real(CPMFDP)   :: amass(:)
@@ -978,7 +968,7 @@ end subroutine pmf_pmemd_scatter_array_mpi
 
 !===============================================================================
 
-end module pmf_pmemd_d01
+end module pmf_pmemd_d02
 
 
 

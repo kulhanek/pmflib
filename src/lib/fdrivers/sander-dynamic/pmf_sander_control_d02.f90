@@ -21,7 +21,7 @@
 !    Boston, MA  02110-1301  USA
 !===============================================================================
 
-module pmf_pmemd_control_d01
+module pmf_sander_control_d02
 
 implicit none
 contains
@@ -30,10 +30,10 @@ contains
 !-------------------------------------------------------------------------------
 !===============================================================================
 
-subroutine pmf_pmemd_process_control
+subroutine pmf_sander_process_control
 
     use pmf_constants
-    use pmf_pmemd_dat_d01
+    use pmf_sander_dat_d02
     use prmfile
     use pmf_utils
     use pmf_control
@@ -53,7 +53,7 @@ subroutine pmf_pmemd_process_control
     end if
 
     ! read groups
-    call pmf_pmemd_read_pmemd
+    call pmf_sander_read_sander
     call pmf_control_read_pmflib_group(ControlPrmfile)
 
     ! read method CV setup
@@ -73,21 +73,21 @@ subroutine pmf_pmemd_process_control
 
     return
 
-end subroutine pmf_pmemd_process_control
+end subroutine pmf_sander_process_control
 
 !===============================================================================
 !-------------------------------------------------------------------------------
 !===============================================================================
 
-subroutine pmf_pmemd_read_pmemd
+subroutine pmf_sander_read_sander
 
     use pmf_constants
-    use pmf_pmemd_dat_d01
+    use pmf_sander_dat_d02
     use prmfile
     use pmf_utils
 
     implicit none
-    ! ----------------------------------------------------------------------------
+    ! --------------------------------------------------------------------------
 
     write(PMF_OUT,*)
     call pmf_utils_heading(PMF_OUT,'{MAIN}',':')
@@ -100,7 +100,7 @@ subroutine pmf_pmemd_read_pmemd
 
     write(PMF_OUT,'(a)') '--- [amber] --------------------------------------------------------------------'
 
-    ! open pmemd section
+    ! open sander section
     if( .not. prmfile_open_section(ControlPrmfile,'amber') ) then
         call pmf_utils_exit(PMF_OUT,1,'[amber] section has to be specified in control file!')
     end if
@@ -110,10 +110,10 @@ subroutine pmf_pmemd_read_pmemd
 
     return
 
-end subroutine pmf_pmemd_read_pmemd
+end subroutine pmf_sander_read_sander
 
 !===============================================================================
 !-------------------------------------------------------------------------------
 !===============================================================================
 
-end module pmf_pmemd_control_d01
+end module pmf_sander_control_d02
