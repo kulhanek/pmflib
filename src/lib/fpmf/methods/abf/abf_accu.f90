@@ -480,7 +480,7 @@ subroutine abf_accu_read_mask(iounit)
 
         ! process keyline
         if( pmf_accu_is_header_key(keyline) ) then
-            call pmf_accu_read_header(abfaccu%PMFAccuType,iounit,keyline,'ABF')
+            call pmf_accu_read_header(abfaccu%PMFAccuType,iounit,'ABF',keyline)
         else
             select case( pmf_accu_get_key(keyline) )
             ! ------------------------------------
