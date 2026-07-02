@@ -31,9 +31,6 @@
 
 using namespace std;
 
-// this is a global option
-bool    CColVariable::EnablePeriodic = false;
-
 //==============================================================================
 //------------------------------------------------------------------------------
 //==============================================================================
@@ -276,8 +273,11 @@ const CSmallString& CColVariable::GetUnit(void) const
 
 //------------------------------------------------------------------------------
 
-double CColVariable::GetDifference(double left,double right) const
+double CColVariable::GetDifference(double left,double right,bool periodic_cvs) const
 {
+    if( ! periodic_cvs ){
+        return(left-right); 
+    }
 
     if( ! IsPeriodic() ) {
         return(left-right);
@@ -301,8 +301,6 @@ double CColVariable::GetDifference(double left,double right) const
 
 bool CColVariable::IsPeriodic(void) const
 {
-    if( EnablePeriodic == false ) return(false);
-
     if(strstr(Type,"DIH") != NULL){
         // min and max values must be at boundary
         if( ( (MinValue + M_PI) <= 0.01 ) && ( (MaxValue-M_PI) <= 0.01 ) ) return(true);

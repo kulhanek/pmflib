@@ -106,7 +106,7 @@ public:
     int GetIndex(double value) const;
 
     /// get difference between two CVs
-    double GetDifference(double left,double right) const;
+    double GetDifference(double left,double right,bool periodic_cvs) const;
 
     /// return coordinate type
     const CSmallString& GetType(void) const;
@@ -183,8 +183,6 @@ private:
     friend class CABPAccumulator;
     friend class CRSTAccumulator;
     friend class CSTMPath;
-
-    static bool     EnablePeriodic;
 };
 
 //------------------------------------------------------------------------------

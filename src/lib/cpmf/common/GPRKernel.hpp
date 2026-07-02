@@ -115,7 +115,8 @@ protected:
     EGPRKernel              Kernel;
     CSimpleVector<double>   WFac;
     double                  Alpha;
-    bool                    UseFDKernel;  // Use first derivative kernel in GPR smoother
+    bool                    UseFDKernel;    // Use first derivative kernel in GPR smoother
+    bool                    PeriodicCVs;    // consider periodic CVs
 
 // section of private data -----------------------------------------------------
 private:

@@ -74,7 +74,6 @@ private:
     CEnergySurfacePtr       EneSurf;
 
     int                     FDLevel;
-    bool                    Periodicity;
     bool                    UseOldRFDMode;
 
     int                     NumOfVariables;

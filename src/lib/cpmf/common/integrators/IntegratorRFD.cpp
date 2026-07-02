@@ -41,7 +41,6 @@ CIntegratorRFD::CIntegratorRFD(void)
     cA = NULL;
     LocIter = 0;
 
-    Periodicity = false;
     FDLevel = 4;
 
     UseOldRFDMode = false;
@@ -86,7 +85,8 @@ void CIntegratorRFD::SetFDPoints(int npts)
 
 void CIntegratorRFD::SetPeriodicity(bool set)
 {
-    Periodicity = set;
+    if( set == false ) return;
+    RUNTIME_ERROR("periodicity is not supported by RFD integrator");
 }
 
 //------------------------------------------------------------------------------
@@ -511,10 +511,10 @@ int CIntegratorRFD::GetFBinIndex(const CSimpleVector<int>& position,int ifcoord,
         int pos = position[i];
         if(i == ifcoord) {
             pos += offset;
-            if(Periodicity == true) {
-                if((p_coord->IsPeriodic() == true) && (pos < 0)) pos = nbins + pos;
-                if((p_coord->IsPeriodic() == true) && (pos >= nbins)) pos = pos - nbins;
-            }
+            // if(Periodicity == true) {        // FIXME
+            //     if((p_coord->IsPeriodic() && Periodicity) && (pos < 0)) pos = nbins + pos;
+            //     if((p_coord->IsPeriodic() && Periodicity) && (pos >= nbins)) pos = pos - nbins;
+            // }
             if(pos < 0) return(-1);
             if(pos >= nbins) return(-1);
         }

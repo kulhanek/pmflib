@@ -783,7 +783,7 @@ void CPMFAccumulator::ReadHeaderSection(FILE* fin,const CSmallString& keyline)
         }
     }else {
         CSmallString error;
-        error << "unrecognized ABF accumulator header keyword: '" << key << "'";
+        error << "unrecognized PMF accumulator header keyword: '" << key << "'";
         RUNTIME_ERROR(error);
     }
 }
@@ -824,6 +824,28 @@ void CPMFAccumulator::Save(const CSmallString& name)
 
     try {
         Save(fout);
+    } catch(...) {
+        fclose(fout);
+        throw;
+    }
+
+    fclose(fout);
+}
+
+//------------------------------------------------------------------------------
+
+void CPMFAccumulator::SaveMask(const CSmallString& name)
+{
+    FILE* fout = fopen(name, "w");
+
+    if(fout == NULL) {
+        CSmallString error;
+        error << "unable to open file '" << name << "' (" << strerror(errno) << ")";
+        RUNTIME_ERROR(error);
+    }
+
+    try {
+        SaveMask(fout);
     } catch(...) {
         fclose(fout);
         throw;
@@ -932,7 +954,35 @@ void CPMFAccumulator::Save(FILE* fout)
         RUNTIME_ERROR(error);
     }
 
-// write ABF accumulator header ------------------
+// save header
+    SaveHeader(fout);
+
+// write data section
+    std::map<CSmallString,CPMFAccuDataPtr>::iterator  it = DataBlocks.begin();
+    std::map<CSmallString,CPMFAccuDataPtr>::iterator  ie = DataBlocks.end();
+
+    while( it != ie ){
+        CPMFAccuDataPtr ds = it->second;
+        ds->Save(fout);
+        it++;
+    }
+}
+
+//------------------------------------------------------------------------------
+
+void CPMFAccumulator::SaveHeader(FILE* fout)
+{
+    if(fout == NULL) {
+        INVALID_ARGUMENT("stream is not open");
+    }
+
+    if( NumOfBins == 0 ) {
+        CSmallString error;
+        error << "no data in accumulator";
+        RUNTIME_ERROR(error);
+    }
+
+// write PMF accumulator header ------------------
     if(fprintf(fout,"%%PMFLIB-V6\n%3d\n",NumOfCVs) <= 0) {
         CSmallString error;
         error << "unable to write header";
@@ -1039,16 +1089,30 @@ void CPMFAccumulator::Save(FILE* fout)
             RUNTIME_ERROR(error);
         }
     }
+}
 
-// write data section
-    std::map<CSmallString,CPMFAccuDataPtr>::iterator  it = DataBlocks.begin();
-    std::map<CSmallString,CPMFAccuDataPtr>::iterator  ie = DataBlocks.end();
+//------------------------------------------------------------------------------
 
-    while( it != ie ){
-        CPMFAccuDataPtr ds = it->second;
-        ds->Save(fout);
-        it++;
+void CPMFAccumulator::SaveMask(FILE* fout)
+{
+    if(fout == NULL) {
+        INVALID_ARGUMENT("stream is not open");
     }
+
+    if( NumOfBins == 0 ) {
+        CSmallString error;
+        error << "no data in accumulator";
+        RUNTIME_ERROR(error);
+    }
+
+// save header
+    SaveHeader(fout);
+
+// save weights
+    CPMFAccuDataPtr weights = GetSectionData("WEIGHTS");
+    if( weights ) {
+        weights->Save(fout);
+    }    
 }
 
 //------------------------------------------------------------------------------

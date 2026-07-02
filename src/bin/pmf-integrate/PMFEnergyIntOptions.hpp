@@ -93,6 +93,7 @@ public:
     CSO_OPT(CSmallString,OEFormat)
     CSO_OPT(CSmallString,MFInfo)
     CSO_OPT(CSmallString,SaveACCU)
+    CSO_OPT(CSmallString,SaveMask)   
     CSO_OPT(CSmallString,GPRKernel)
     CSO_OPT(bool,GPRNumDiff)
     CSO_OPT(bool,GPRUseInv)
@@ -215,6 +216,9 @@ public:
     // -------------------------------------------
         CSO_MAP_OPT(CSmallString, SaveACCU, NULL, false, '\0', "saveaccu", "NAME",
             "Save the final PMF accumulator to the file NAME.")
+    // -------------------------------------------
+        CSO_MAP_OPT(CSmallString, SaveMask, NULL, false, '\0', "savemask", "NAME",
+            "Save the unsampled regions as a mask to the file NAME.")
     // -------------------------------------------
         CSO_MAP_OPT(CSmallString, MFInfo, NULL, false, 0, "mfinfo", "NAME",
             "RBF+GPR: Name of file containing input and predicted mean forces.")

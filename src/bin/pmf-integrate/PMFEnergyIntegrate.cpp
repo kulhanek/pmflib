@@ -465,7 +465,32 @@ bool CPMFEnergyIntegrate::Run(void)
 
         State++;
         try {
-            Accu->Save(Options.GetOptSaveACCU());
+            Accu->Save(Options.GetOptSaveACCU());            
+        } catch(...) {
+            ES_ERROR("unable to save the PMF accumulator file");
+            return(false);
+        }
+        vout << "   Done." << endl;
+    }
+
+// save mask if requested
+    if( Options.GetOptSaveMask() != NULL ){
+        vout << endl;
+        vout << format("%02d:Saving PMF mask to : %s")%State%string(Options.GetOptSaveMask()) << endl;
+
+        State++;
+        try {
+            CPMFAccuDataPtr weights = Accu->CreateSectionData("WEIGHTS", "IG","R","B");
+
+            for(int ibin=0; ibin < ENE->GetNumOfBins(); ibin++) {
+                if( ENE->GetNumOfSamples(ibin) > 0 ) {
+                    weights->SetData(ibin,1.0);
+                } else {
+                    weights->SetData(ibin,0.0);
+                }
+            }
+
+            Accu->SaveMask(Options.GetOptSaveMask());            
         } catch(...) {
             ES_ERROR("unable to save the PMF accumulator file");
             return(false);
@@ -505,6 +530,7 @@ bool CPMFEnergyIntegrate::IntegrateForMFZScore(int pass)
         integrator.SetRCond(Options.GetOptRCond());
         integrator.SetRFac(Options.GetOptRFac());
         integrator.SetOverhang(Options.GetOptOverhang());
+        integrator.SetPeriodicity(Options.GetOptPeriodicity());
 
         if( Options.GetOptEcutMethod() == Options.GetOptMethod() ){
             integrator.SetLLSMethod(Options.GetOptLAMethod());
@@ -614,6 +640,8 @@ bool CPMFEnergyIntegrate::IntegrateForEcut(void)
         integrator.SetRCond(Options.GetOptRCond());
         integrator.SetRFac(Options.GetOptRFac());
         integrator.SetOverhang(Options.GetOptOverhang());
+        integrator.SetPeriodicity(Options.GetOptPeriodicity());
+
         integrator.IncludeGluedAreas((Options.GetOptGlueingFactor() > 0)||Options.GetOptGlueHoles()||Options.GetOptIncludeGluedRegions());
 
         if( Options.GetOptEcutMethod() == Options.GetOptMethod() ){
@@ -706,6 +734,8 @@ bool CPMFEnergyIntegrate::Integrate(void)
         integrator.SetRCond(Options.GetOptRCond());
         integrator.SetRFac(Options.GetOptRFac());
         integrator.SetOverhang(Options.GetOptOverhang());
+        integrator.SetPeriodicity(Options.GetOptPeriodicity());
+
         integrator.IncludeGluedAreas((Options.GetOptGlueingFactor() > 0)||Options.GetOptGlueHoles()||Options.GetOptIncludeGluedRegions());
 
         integrator.SetLLSMethod(Options.GetOptLAMethod());

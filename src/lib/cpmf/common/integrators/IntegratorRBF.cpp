@@ -53,6 +53,7 @@ CIntegratorRBF::CIntegratorRBF(void)
     RCond   = -1; // machine precision
 
     IncludeGluedBins = false;
+    Periodicity = false;
 
     NumOfBins   = 0;
     NCVs        = 0;
@@ -181,6 +182,14 @@ void CIntegratorRBF::SetRFac(const CSmallString& spec)
         RFac[i] = last_rfac;
     }
 }
+
+//------------------------------------------------------------------------------
+
+void CIntegratorRBF::SetPeriodicity(bool set)
+{
+    Periodicity = set;
+}
+
 //------------------------------------------------------------------------------
 
 void CIntegratorRBF::SetOverhang(int nrbfs)
@@ -334,7 +343,7 @@ bool CIntegratorRBF::Integrate(CVerboseStr& vout)
     for(size_t i=0; i < NCVs; i++ ){
         size_t nrbfbins;
         nrbfbins = Accu->GetCV(i)->GetNumOfBins()/RFac[i];
-        if( ! Accu->GetCV(i)->IsPeriodic() ){
+        if( ! (Accu->GetCV(i)->IsPeriodic() && Periodicity) ){
             nrbfbins += 2*Overhang;
         }
         NumOfRBFBins[i] = nrbfbins;
@@ -355,6 +364,9 @@ bool CIntegratorRBF::Integrate(CVerboseStr& vout)
 
     // print hyperparameters
     vout << "   RBF parameters ..." << endl;
+    if( Periodicity ){
+        vout << "      Periodic  = on" << endl;
+    }
     for(size_t k=0; k < NCVs; k++ ){
         vout << format("      WFac#%-2d   = %10.4f")%(k+1)%WFac[k] << endl;
     }
@@ -612,12 +624,12 @@ bool CIntegratorRBF::IntegrateByLS(CVerboseStr& vout)
                   //      cout << lpos[0] << " " << lpos[1] << endl;
             double av = 1.0;
             for(size_t k=0; k < NCVs; k++){
-                double dvc = Accu->GetCV(k)->GetDifference(ipos[k],lpos[k]);
+                double dvc = Accu->GetCV(k)->GetDifference(ipos[k],lpos[k],Periodicity);
                 double sig = Sigmas[k];
                 av *= exp( - dvc*dvc/(2.0*sig*sig) );
             }
             for(size_t k=0; k < NCVs; k++){
-                double dvc = Accu->GetCV(k)->GetDifference(ipos[k],lpos[k]);
+                double dvc = Accu->GetCV(k)->GetDifference(ipos[k],lpos[k],Periodicity);
                 double sig = Sigmas[k];
                 double fc = -dvc/(sig*sig);  // switch to derivatives
                 A[indi*NCVs+k][l] = av * fc;
@@ -679,11 +691,11 @@ void CIntegratorRBF::GetRBFPosition(size_t index,CSimpleVector<double>& position
         // bin  = 0,...,NBins-1
         double start = p_coord->GetMinValue();
         int nbins = NumOfRBFBins[k];
-        if( ! p_coord->IsPeriodic() ){
+        if( ! (p_coord->IsPeriodic() && Periodicity) ){
             nbins -= 2*Overhang;
         }
         double step = (p_coord->GetMaxValue()-p_coord->GetMinValue())/((double)nbins);
-        if( ! p_coord->IsPeriodic() ){
+        if( ! (p_coord->IsPeriodic() && Periodicity) ){
             start -= Overhang*step; // only half
         }
         position[k] = start + ((double)ibin + 0.5)*step;
@@ -705,7 +717,7 @@ double CIntegratorRBF::GetValue(const CSimpleVector<double>& position)
         GetRBFPosition(i,rbfpos);
         double value = Weights[i];
         for(size_t j=0; j < NCVs; j++){
-            double dvc = Accu->GetCV(j)->GetDifference(position[j],rbfpos[j]);
+            double dvc = Accu->GetCV(j)->GetDifference(position[j],rbfpos[j],Periodicity);
             double sig = Sigmas[j];
             value *= exp( - dvc*dvc/(2.0*sig*sig) );
         }
@@ -950,11 +962,11 @@ double CIntegratorRBF::GetMeanForce(const CSimpleVector<double>& ipos,size_t ico
               //      cout << lpos[0] << " " << lpos[1] << endl;
         double av = 1.0;
         for(size_t k=0; k < NCVs; k++){
-            double dvc = Accu->GetCV(k)->GetDifference(ipos[k],lpos[k]);
+            double dvc = Accu->GetCV(k)->GetDifference(ipos[k],lpos[k],Periodicity);
             double sig = Sigmas[k];
             av *= exp( - dvc*dvc/(2.0*sig*sig) );
         }
-        double dvc = Accu->GetCV(icoord)->GetDifference(ipos[icoord],lpos[icoord]);
+        double dvc = Accu->GetCV(icoord)->GetDifference(ipos[icoord],lpos[icoord],Periodicity);
         double sig = Sigmas[icoord];
         double fc = -dvc/(sig*sig);  // switch to derivatives
         mf += Weights[l] * av * fc;

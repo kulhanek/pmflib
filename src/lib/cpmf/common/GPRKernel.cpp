@@ -45,6 +45,7 @@ CGPRKernel::CGPRKernel(void)
     UseNumDiff          = false;
     Alpha               = 10.0;
     UseFDKernel         = false;
+    PeriodicCVs         = false;
 }
 
 //------------------------------------------------------------------------------
@@ -262,7 +263,7 @@ double CGPRKernel::GetKernelValue(const CSimpleVector<double>& ip,const CSimpleV
     // calculate scaled distance
     double scdist2 = 0.0;
     for(size_t ii=0; ii < NumOfCVs; ii++){
-        double du = Accu->GetCV(ii)->GetDifference(ip[ii],jp[ii]);
+        double du = Accu->GetCV(ii)->GetDifference(ip[ii],jp[ii],PeriodicCVs);
         double dd = CVLengths2[ii];
         scdist2 += du*du/dd;
     }
@@ -319,7 +320,7 @@ double CGPRKernel::GetKernelIntI(const CSimpleVector<double>& ip,const CSimpleVe
     // get kernel value
     switch(Kernel){
     case(EGPRK_ARDSE):{
-        double du = Accu->GetCV(0)->GetDifference(ip[0],jp[0]);
+        double du = Accu->GetCV(0)->GetDifference(ip[0],jp[0],PeriodicCVs);
         double dd = 2.0*CVLengths2[0];
         kint = 0.5*sqrt(M_PI)*sqrt(dd)*erf(du/sqrt(dd));
         }
@@ -345,7 +346,7 @@ double CGPRKernel::GetKernelIntIJ(const CSimpleVector<double>& ip,const CSimpleV
     // get kernel value
     switch(Kernel){
     case(EGPRK_ARDSE):{
-        double du = Accu->GetCV(0)->GetDifference(ip[0],jp[0]);
+        double du = Accu->GetCV(0)->GetDifference(ip[0],jp[0],PeriodicCVs);
         double dd = 2.0*CVLengths2[0];
         kint = -0.5*sqrt(M_PI)*sqrt(dd)*du*erf(du/sqrt(dd))-0.5*dd*exp(-du*du/dd)+1.5;
         }
@@ -402,7 +403,7 @@ void CGPRKernel::GetKernelDerIAna(const CSimpleVector<double>& ip,const CSimpleV
     // calculate scaled distance
     double scdist2 = 0.0;
     for(size_t ii=0; ii < NumOfCVs; ii++){
-        double du = Accu->GetCV(ii)->GetDifference(ip[ii],jp[ii]);
+        double du = Accu->GetCV(ii)->GetDifference(ip[ii],jp[ii],PeriodicCVs);
         double dd = CVLengths2[ii];
         scdist2 += du*du/dd;
     }
@@ -412,7 +413,7 @@ void CGPRKernel::GetKernelDerIAna(const CSimpleVector<double>& ip,const CSimpleV
     case(EGPRK_ARDSE):{
             double pre = exp(-0.5*scdist2);
             for(size_t ii=0; ii < NumOfCVs; ii++){
-                double du = Accu->GetCV(ii)->GetDifference(ip[ii],jp[ii]);
+                double du = Accu->GetCV(ii)->GetDifference(ip[ii],jp[ii],PeriodicCVs);
                 double dd = CVLengths2[ii];
                 kder[ii] = -pre*du/dd;
             }
@@ -422,7 +423,7 @@ void CGPRKernel::GetKernelDerIAna(const CSimpleVector<double>& ip,const CSimpleV
             double scdist = sqrt(scdist2);
             double pre = -(5.0/3.0)*exp(-sqrt(5.0)*scdist)*(sqrt(5.0)*scdist+1.0);
             for(size_t ii=0; ii < NumOfCVs; ii++){
-                double du = Accu->GetCV(ii)->GetDifference(ip[ii],jp[ii]);
+                double du = Accu->GetCV(ii)->GetDifference(ip[ii],jp[ii],PeriodicCVs);
                 double dd = CVLengths2[ii];
                 kder[ii] = pre*du/dd;
             }
@@ -432,7 +433,7 @@ void CGPRKernel::GetKernelDerIAna(const CSimpleVector<double>& ip,const CSimpleV
             double in = 1.0 + 0.5*scdist2/Alpha;
             double pre = pow(in,-(Alpha+1.0));
             for(size_t ii=0; ii < NumOfCVs; ii++){
-                double du = Accu->GetCV(ii)->GetDifference(ip[ii],jp[ii]);
+                double du = Accu->GetCV(ii)->GetDifference(ip[ii],jp[ii],PeriodicCVs);
                 double dd = CVLengths2[ii];
                 kder[ii] = -pre*du/dd;
             }
@@ -478,7 +479,7 @@ void CGPRKernel::GetKernelDerJAna(const CSimpleVector<double>& ip,const CSimpleV
     // calculate scaled distance
     double scdist2 = 0.0;
     for(size_t ii=0; ii < NumOfCVs; ii++){
-        double du = Accu->GetCV(ii)->GetDifference(ip[ii],jp[ii]);
+        double du = Accu->GetCV(ii)->GetDifference(ip[ii],jp[ii],PeriodicCVs);
         double dd = CVLengths2[ii];
         scdist2 += du*du/dd;
     }
@@ -488,7 +489,7 @@ void CGPRKernel::GetKernelDerJAna(const CSimpleVector<double>& ip,const CSimpleV
     case(EGPRK_ARDSE):{
             double pre = exp(-0.5*scdist2);
             for(size_t ii=0; ii < NumOfCVs; ii++){
-                double du = Accu->GetCV(ii)->GetDifference(ip[ii],jp[ii]);
+                double du = Accu->GetCV(ii)->GetDifference(ip[ii],jp[ii],PeriodicCVs);
                 double dd = CVLengths2[ii];
                 kder[ii] = pre*du/dd;
             }
@@ -498,7 +499,7 @@ void CGPRKernel::GetKernelDerJAna(const CSimpleVector<double>& ip,const CSimpleV
             double scdist = sqrt(scdist2);
             double pre = -(5.0/3.0)*exp(-sqrt(5.0)*scdist)*(sqrt(5.0)*scdist+1.0);
             for(size_t ii=0; ii < NumOfCVs; ii++){
-                double du = Accu->GetCV(ii)->GetDifference(ip[ii],jp[ii]);
+                double du = Accu->GetCV(ii)->GetDifference(ip[ii],jp[ii],PeriodicCVs);
                 double dd = CVLengths2[ii];
                 kder[ii] = -pre*du/dd;
             }
@@ -508,7 +509,7 @@ void CGPRKernel::GetKernelDerJAna(const CSimpleVector<double>& ip,const CSimpleV
             double in = 1.0 + 0.5*scdist2/Alpha;
             double pre = pow(in,-(Alpha+1.0));
             for(size_t ii=0; ii < NumOfCVs; ii++){
-                double du = Accu->GetCV(ii)->GetDifference(ip[ii],jp[ii]);
+                double du = Accu->GetCV(ii)->GetDifference(ip[ii],jp[ii],PeriodicCVs);
                 double dd = CVLengths2[ii];
                 kder[ii] = pre*du/dd;
             }
@@ -556,7 +557,7 @@ void CGPRKernel::GetKernelDerIJAna(const CSimpleVector<double>& ip,const CSimple
 // calculate scaled distance
     double scdist2 = 0.0;
     for(size_t ii=0; ii < NumOfCVs; ii++){
-        double du = Accu->GetCV(ii)->GetDifference(ip[ii],jp[ii]);
+        double du = Accu->GetCV(ii)->GetDifference(ip[ii],jp[ii],PeriodicCVs);
         double dd = CVLengths2[ii];
         scdist2 += du*du/dd;
     }
@@ -567,8 +568,8 @@ void CGPRKernel::GetKernelDerIJAna(const CSimpleVector<double>& ip,const CSimple
             double pre = exp(-0.5*scdist2);
             for(size_t ii=0; ii < NumOfCVs; ii++){
                 for(size_t jj=0; jj < NumOfCVs; jj++){
-                    double du = Accu->GetCV(ii)->GetDifference(ip[ii],jp[ii]) *
-                                Accu->GetCV(jj)->GetDifference(ip[jj],jp[jj]);
+                    double du = Accu->GetCV(ii)->GetDifference(ip[ii],jp[ii],PeriodicCVs) *
+                                Accu->GetCV(jj)->GetDifference(ip[jj],jp[jj],PeriodicCVs);
                     double dd = CVLengths2[ii]*CVLengths2[jj];
                     kblock[ii][jj] -= pre*du/dd;
                     if( ii == jj ){
@@ -584,8 +585,8 @@ void CGPRKernel::GetKernelDerIJAna(const CSimpleVector<double>& ip,const CSimple
             double d1 = pr*(sqrt(5.0)*scdist+1.0);
             for(size_t ii=0; ii < NumOfCVs; ii++){
                 for(size_t jj=0; jj < NumOfCVs; jj++){
-                    double du = Accu->GetCV(ii)->GetDifference(ip[ii],jp[ii]) *
-                                Accu->GetCV(jj)->GetDifference(ip[jj],jp[jj]);
+                    double du = Accu->GetCV(ii)->GetDifference(ip[ii],jp[ii],PeriodicCVs) *
+                                Accu->GetCV(jj)->GetDifference(ip[jj],jp[jj],PeriodicCVs);
                     double dd = CVLengths2[ii]*CVLengths2[jj];
                     kblock[ii][jj] += 5.0*pr*du/dd;
                     if( ii == jj ){
@@ -601,8 +602,8 @@ void CGPRKernel::GetKernelDerIJAna(const CSimpleVector<double>& ip,const CSimple
             double pre1 = pow(in,-(Alpha+1.0));
             for(size_t ii=0; ii < NumOfCVs; ii++){
                 for(size_t jj=0; jj < NumOfCVs; jj++){
-                    double du = Accu->GetCV(ii)->GetDifference(ip[ii],jp[ii]) *
-                                Accu->GetCV(jj)->GetDifference(ip[jj],jp[jj]);
+                    double du = Accu->GetCV(ii)->GetDifference(ip[ii],jp[ii],PeriodicCVs) *
+                                Accu->GetCV(jj)->GetDifference(ip[jj],jp[jj],PeriodicCVs);
                     double dd = CVLengths2[ii]*CVLengths2[jj];
                     kblock[ii][jj] -= (Alpha+1.0)*pre*du/(dd*Alpha);
                     if( ii == jj ){
@@ -718,7 +719,7 @@ double CGPRKernel::GetKernelValueWFacDerAna(const CSimpleVector<double>& ip,cons
 // calculate scaled distance
     double scdist2 = 0.0;
     for(size_t ii=0; ii < NumOfCVs; ii++){
-        double du = Accu->GetCV(ii)->GetDifference(ip[ii],jp[ii]);
+        double du = Accu->GetCV(ii)->GetDifference(ip[ii],jp[ii],PeriodicCVs);
         double dd = CVLengths2[ii];
         scdist2 += du*du/dd;
     }
@@ -727,7 +728,7 @@ double CGPRKernel::GetKernelValueWFacDerAna(const CSimpleVector<double>& ip,cons
     switch(Kernel){
         case(EGPRK_ARDSE): {
                 double val = exp(-0.5*scdist2);
-                double du = Accu->GetCV(cv)->GetDifference(ip[cv],jp[cv]);
+                double du = Accu->GetCV(cv)->GetDifference(ip[cv],jp[cv],PeriodicCVs);
                 double dd = CVLengths2[cv];
                 double wf = WFac[cv];
                 double der = val * du*du / (dd * wf);
@@ -740,7 +741,7 @@ double CGPRKernel::GetKernelValueWFacDerAna(const CSimpleVector<double>& ip,cons
             double scdist = sqrt(scdist2);
             double vex = exp(-sqrt(5.0)*scdist);
             double val = vex*(1.0+sqrt(5.0)*scdist+(5.0/3.0)*scdist2);
-            double du = Accu->GetCV(cv)->GetDifference(ip[cv],jp[cv]);
+            double du = Accu->GetCV(cv)->GetDifference(ip[cv],jp[cv],PeriodicCVs);
             double dd = CVLengths2[cv];
             double wf = WFac[cv];
             double dexp =   val * sqrt(5.0) * du*du / (dd * wf) / scdist;       // exponential part
@@ -754,7 +755,7 @@ double CGPRKernel::GetKernelValueWFacDerAna(const CSimpleVector<double>& ip,cons
             double scdist = sqrt(scdist2);
             double vex = exp(-sqrt(3.0)*scdist);
             double val = vex*(1.0+sqrt(3.0)*scdist);
-            double du = Accu->GetCV(cv)->GetDifference(ip[cv],jp[cv]);
+            double du = Accu->GetCV(cv)->GetDifference(ip[cv],jp[cv],PeriodicCVs);
             double dd = CVLengths2[cv];
             double wf = WFac[cv];
             double dexp =   val * sqrt(3.0) * du*du / (dd * wf) / scdist;   // exponential part
@@ -767,7 +768,7 @@ double CGPRKernel::GetKernelValueWFacDerAna(const CSimpleVector<double>& ip,cons
             // possible division by zero is solved in CalcKderWRTWFac
             double scdist = sqrt(scdist2);
             double val = exp(-scdist);
-            double du = Accu->GetCV(cv)->GetDifference(ip[cv],jp[cv]);
+            double du = Accu->GetCV(cv)->GetDifference(ip[cv],jp[cv],PeriodicCVs);
             double dd = CVLengths2[cv];
             double wf = WFac[cv];
             double der = val * du*du / (dd * wf) / scdist;
@@ -778,7 +779,7 @@ double CGPRKernel::GetKernelValueWFacDerAna(const CSimpleVector<double>& ip,cons
         case(EGPRK_ARDRQ): {
             double in  = 1.0 + 0.5*scdist2/Alpha;
             double pre = pow(in,-(Alpha+1.0));
-            double du = Accu->GetCV(cv)->GetDifference(ip[cv],jp[cv]);
+            double du = Accu->GetCV(cv)->GetDifference(ip[cv],jp[cv],PeriodicCVs);
             double dd = CVLengths2[cv];
             double wf = WFac[cv];
             double der = pre * du*du / (2.0*dd*dd*wf);
@@ -842,7 +843,7 @@ void CGPRKernel::GetKernelDerIWFacDerAna(const CSimpleVector<double>& ip,const C
 // calculate scaled distance
     double scdist2 = 0.0;
     for(size_t ii=0; ii < NumOfCVs; ii++){
-        double du = Accu->GetCV(ii)->GetDifference(ip[ii],jp[ii]);
+        double du = Accu->GetCV(ii)->GetDifference(ip[ii],jp[ii],PeriodicCVs);
         double dd = CVLengths2[ii];
         scdist2 += du*du/dd;
     }
@@ -851,7 +852,7 @@ void CGPRKernel::GetKernelDerIWFacDerAna(const CSimpleVector<double>& ip,const C
     switch(Kernel){
     case(EGPRK_ARDSE):{
             double pre = exp(-0.5*scdist2);
-            double du  = Accu->GetCV(cv)->GetDifference(ip[cv],jp[cv]);
+            double du  = Accu->GetCV(cv)->GetDifference(ip[cv],jp[cv],PeriodicCVs);
             double dd  = CVLengths2[cv];
             double wf  = WFac[cv];
             // -1/2 * du*du * wfac^-2*dbin-^2
@@ -861,7 +862,7 @@ void CGPRKernel::GetKernelDerIWFacDerAna(const CSimpleVector<double>& ip,const C
             double der = pre * du*du / (dd * wf);
 
             for(size_t ii=0; ii < NumOfCVs; ii++){
-                double du = Accu->GetCV(ii)->GetDifference(ip[ii],jp[ii]);
+                double du = Accu->GetCV(ii)->GetDifference(ip[ii],jp[ii],PeriodicCVs);
                 double dd = CVLengths2[ii];
                 // kder[ii] = -pre*du/dd;
                 // [(-pre*du)'*(dd) - (-pre*du)*(dd)']/(dd*dd)
@@ -878,12 +879,12 @@ void CGPRKernel::GetKernelDerIWFacDerAna(const CSimpleVector<double>& ip,const C
             double in   = 1.0 + 0.5*scdist2/Alpha;
             double pre  = pow(in,-(Alpha+2.0));
             double pre1 = pow(in,-(Alpha+1.0));
-            double du = Accu->GetCV(cv)->GetDifference(ip[cv],jp[cv]);
+            double du = Accu->GetCV(cv)->GetDifference(ip[cv],jp[cv],PeriodicCVs);
             double dd = CVLengths2[cv];
             double wf = WFac[cv];
             double der = -(Alpha+1.0)*pre*du*du/(Alpha*dd*wf);
             for(size_t ii=0; ii < NumOfCVs; ii++){
-                double du = Accu->GetCV(ii)->GetDifference(ip[ii],jp[ii]);
+                double du = Accu->GetCV(ii)->GetDifference(ip[ii],jp[ii],PeriodicCVs);
                 double dd = CVLengths2[ii];
                 if( cv == ii ){
                     kder[ii] = 2.0*du*pre1/(dd*wf) - (Alpha+1.0)*du*du*du*pre/(Alpha*dd*dd*wf);
@@ -952,7 +953,7 @@ void CGPRKernel::GetKernelDerJWFacDerAna(const CSimpleVector<double>& ip,const C
 // calculate scaled distance
     double scdist2 = 0.0;
     for(size_t ii=0; ii < NumOfCVs; ii++){
-        double du = Accu->GetCV(ii)->GetDifference(ip[ii],jp[ii]);
+        double du = Accu->GetCV(ii)->GetDifference(ip[ii],jp[ii],PeriodicCVs);
         double dd = CVLengths2[ii];
         scdist2 += du*du/dd;
     }
@@ -961,7 +962,7 @@ void CGPRKernel::GetKernelDerJWFacDerAna(const CSimpleVector<double>& ip,const C
     switch(Kernel){
     case(EGPRK_ARDSE):{
             double pre = exp(-0.5*scdist2);
-            double du  = Accu->GetCV(cv)->GetDifference(ip[cv],jp[cv]);
+            double du  = Accu->GetCV(cv)->GetDifference(ip[cv],jp[cv],PeriodicCVs);
             double dd  = CVLengths2[cv];
             double wf  = WFac[cv];
             // -1/2 * du*du * wfac^-2*dbin-^2
@@ -971,7 +972,7 @@ void CGPRKernel::GetKernelDerJWFacDerAna(const CSimpleVector<double>& ip,const C
             double der = pre * du*du / (dd * wf);
 
             for(size_t ii=0; ii < NumOfCVs; ii++){
-                double du = Accu->GetCV(ii)->GetDifference(ip[ii],jp[ii]);
+                double du = Accu->GetCV(ii)->GetDifference(ip[ii],jp[ii],PeriodicCVs);
                 double dd = CVLengths2[ii];
                 // kder[ii] = pre*du/dd;
                 // [(pre*du)'*(dd) - (pre*du)*(dd)']/(dd*dd)
@@ -988,12 +989,12 @@ void CGPRKernel::GetKernelDerJWFacDerAna(const CSimpleVector<double>& ip,const C
             double in   = 1.0 + 0.5*scdist2/Alpha;
             double pre  = pow(in,-(Alpha+2.0));
             double pre1 = pow(in,-(Alpha+1.0));
-            double du = Accu->GetCV(cv)->GetDifference(ip[cv],jp[cv]);
+            double du = Accu->GetCV(cv)->GetDifference(ip[cv],jp[cv],PeriodicCVs);
             double dd = CVLengths2[cv];
             double wf = WFac[cv];
             double der = -(Alpha+1.0)*pre*du*du/(Alpha*dd*wf);
             for(size_t ii=0; ii < NumOfCVs; ii++){
-                double du = Accu->GetCV(ii)->GetDifference(ip[ii],jp[ii]);
+                double du = Accu->GetCV(ii)->GetDifference(ip[ii],jp[ii],PeriodicCVs);
                 double dd = CVLengths2[ii];
                 if( cv == ii ){
                     kder[ii] = -2.0*du*pre1/(dd*wf) + (Alpha+1.0)*du*du*du*pre/(Alpha*dd*dd*wf);
@@ -1061,7 +1062,7 @@ void CGPRKernel::GetKernelDerIJWFacDerAna(const CSimpleVector<double>& ip,const 
 // calculate scaled distance
     double scdist2 = 0.0;
     for(size_t ii=0; ii < NumOfCVs; ii++){
-        double du = Accu->GetCV(ii)->GetDifference(ip[ii],jp[ii]);
+        double du = Accu->GetCV(ii)->GetDifference(ip[ii],jp[ii],PeriodicCVs);
         double dd = CVLengths2[ii];
         scdist2 += du*du/dd;
     }
@@ -1072,7 +1073,7 @@ void CGPRKernel::GetKernelDerIJWFacDerAna(const CSimpleVector<double>& ip,const 
     double wf = WFac[cv];
     double wd3 = 1.0/(CVLengths2[cv]*wf);
     double wd5 = wd3/CVLengths2[cv];
-    double dc = Accu->GetCV(cv)->GetDifference(ip[cv],jp[cv]);
+    double dc = Accu->GetCV(cv)->GetDifference(ip[cv],jp[cv],PeriodicCVs);
 
     switch(Kernel){
     case(EGPRK_ARDSE): {
@@ -1080,8 +1081,8 @@ void CGPRKernel::GetKernelDerIJWFacDerAna(const CSimpleVector<double>& ip,const 
             double argd = arg*dc*dc*wd3;
             for(size_t ii=0; ii < NumOfCVs; ii++){
                 for(size_t jj=0; jj < NumOfCVs; jj++){
-                    double du = Accu->GetCV(ii)->GetDifference(ip[ii],jp[ii]) *
-                                Accu->GetCV(jj)->GetDifference(ip[jj],jp[jj]);
+                    double du = Accu->GetCV(ii)->GetDifference(ip[ii],jp[ii],PeriodicCVs) *
+                                Accu->GetCV(jj)->GetDifference(ip[jj],jp[jj],PeriodicCVs);
                     double dd = CVLengths2[ii]*CVLengths2[jj];
                     kblock[ii][jj] -= argd*du/dd;
                     if( (cv == ii) && (cv != jj) ) {
@@ -1112,8 +1113,8 @@ void CGPRKernel::GetKernelDerIJWFacDerAna(const CSimpleVector<double>& ip,const 
             double d1d = -(25.0/3.0)*exp(-sqrt(5.0)*scdist)*wd3*dc*dc;
             for(size_t ii=0; ii < NumOfCVs; ii++){
                 for(size_t jj=0; jj < NumOfCVs; jj++){
-                    double du = Accu->GetCV(ii)->GetDifference(ip[ii],jp[ii]) *
-                                Accu->GetCV(jj)->GetDifference(ip[jj],jp[jj]);
+                    double du = Accu->GetCV(ii)->GetDifference(ip[ii],jp[ii],PeriodicCVs) *
+                                Accu->GetCV(jj)->GetDifference(ip[jj],jp[jj],PeriodicCVs);
                     double dd = CVLengths2[ii]*CVLengths2[jj];
                     kblock[ii][jj] += 5.0*prd*du/dd;
                     if( (cv == ii) && (cv != jj) ) {
@@ -1140,13 +1141,13 @@ void CGPRKernel::GetKernelDerIJWFacDerAna(const CSimpleVector<double>& ip,const 
             double pre2 = pow(in,-(Alpha+2.0));
             double pre3 = pow(in,-(Alpha+3.0));
 
-            double du = Accu->GetCV(cv)->GetDifference(ip[cv],jp[cv]);
+            double du = Accu->GetCV(cv)->GetDifference(ip[cv],jp[cv],PeriodicCVs);
             double dd = CVLengths2[cv];
 
             for(size_t ii=0; ii < NumOfCVs; ii++){
                 for(size_t jj=0; jj < NumOfCVs; jj++){
-                    double duii = Accu->GetCV(ii)->GetDifference(ip[ii],jp[ii]);
-                    double dujj = Accu->GetCV(jj)->GetDifference(ip[jj],jp[jj]);
+                    double duii = Accu->GetCV(ii)->GetDifference(ip[ii],jp[ii],PeriodicCVs);
+                    double dujj = Accu->GetCV(jj)->GetDifference(ip[jj],jp[jj],PeriodicCVs);
                     double ddii = CVLengths2[ii];
                     double ddjj = CVLengths2[jj];
                            if( (cv == ii) && (cv != jj) ) {

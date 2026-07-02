@@ -77,8 +77,14 @@ public:
     /// save accumulator data from file with name
     void Save(const CSmallString& name);
 
-    /// save accumulator data from file
+    /// save mask
+    void SaveMask(const CSmallString& name);
+
+    /// save accumulator data to file
     void Save(FILE* fout);
+
+    /// save mask to file
+    void SaveMask(FILE* fout);
 
     /// save accumulator data to XML
     void Save(CXMLElement* p_ele);
@@ -327,6 +333,9 @@ protected:
 
     /// read section data
     void ReadDataSection(FILE* fin,const CSmallString& keyline);
+
+    /// save accu header
+    void SaveHeader(FILE* fout);
 
     /// combine two sections
     CPMFAccuDataPtr Combine(CPMFAccumulatorPtr right,CPMFAccuDataPtr ldb,CPMFAccuDataPtr rdb);

@@ -385,7 +385,7 @@ double CABPEnergy::PSF(int ibin,int jbin)
     double dnorm = 1.0;
 
     for(int icv=0; icv < Accu->GetNumOfCVs(); icv++){
-        double diff     = Accu->GetCV(icv)->GetDifference(ipos[icv],jpos[icv]);
+        double diff     = Accu->GetCV(icv)->GetDifference(ipos[icv],jpos[icv],false); // FIXME - periodicity
         double width    = widths->GetData(icv);
         arg             = arg + diff*diff / (width*width);
         dnorm           = dnorm / (width * sqrt(2.0*M_PI));

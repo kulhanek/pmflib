@@ -121,6 +121,7 @@ private:
     CSimpleVector<double>   WFac;
     CSimpleVector<double>   RFac;   // reduction factor for number of RBFs
     int                     Overhang;
+    bool                    Periodicity;
     ERBFLLSMethod           Method;
 
     // RBF data

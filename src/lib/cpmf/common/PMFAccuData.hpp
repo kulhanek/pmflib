@@ -156,6 +156,7 @@ private:
                                         // WA - weighted average
                                         // M2 - second moment
                                         // CO - co-variance
+                                        // IG - ignore
 
     CSmallString            Type;       // data type: R - real, I - integer
     CSmallString            Mode;       // data mode: B - per bins, C - per CVs, M - mixed per bins and cvs
