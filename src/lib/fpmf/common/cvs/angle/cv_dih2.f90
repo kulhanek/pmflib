@@ -263,7 +263,7 @@ subroutine calculate_dih2(cv_item,x,ctx)
     y6 = y6 / totmass6
     z6 = z6 / totmass6
 
-    ! calc dih2edral angle
+    ! calc dihedral angle
 
     rijx = x1 - x2
     rijy = y1 - y2
