@@ -269,7 +269,7 @@ subroutine pmf_accu_read_header(accu,iounit,method,keyline)
  6  format(F10.4)
 
 10  format(A)
-15  format(I2)
+15  format(I3)
 
 20  format(I2,1X,E18.11,1X,E18.11,1X,I6,1X,A10)
 25  format(I2,1X,A55)
