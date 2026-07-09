@@ -1295,6 +1295,8 @@ class EnergySurface2D:
         ax.set_xlim(0.0, 1.0)
         ax.set_ylim(0.0, 1.0)
 
+        if aspect == 'equal':
+            ax.set_aspect('equal', adjustable='box')
         fig.tight_layout()
 
         if save is not None:
