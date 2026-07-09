@@ -1702,7 +1702,7 @@ class EnergySurface2D:
             ax.text(
                 p['x'],
                 p['y'],
-                f" {i}",
+                f" {p['id']}",
                 color="white",
                 fontsize=8,
                 weight="bold",
