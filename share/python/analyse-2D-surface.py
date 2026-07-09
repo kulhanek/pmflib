@@ -394,8 +394,11 @@ class EnergySurface2D:
         # one grid-cell diagonal.
         # ----------------------------------------------------------------------
 
+        s_x_min_dx = self.x_min_dx / self.x_axis.range
+        s_y_min_dy = self.y_min_dy / self.y_axis.range
+
         if max_distance is None:
-            max_distance = 1.5 * np.sqrt(self.x_min_dx**2 + self.y_min_dy**2)
+            max_distance = 1.5 * np.sqrt(s_x_min_dx**2 + s_y_min_dy**2)
 
         tree = cKDTree(data_points)
         nearest_dist, nearest_idx = tree.query(grid_points, k=1)
