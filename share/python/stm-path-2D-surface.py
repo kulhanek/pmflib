@@ -1041,7 +1041,7 @@ class EnergySurface2D:
                             path_x: np.ndarray = None, path_y: np.ndarray = None,
                             path_types: np.ndarray = None,
                             filename: str = None, show: bool = None,
-                            figsize = None, dpi: int = 300, legend: bool = False) -> None:
+                            figsize = None, dpi: int = 300, legend: bool = False, aspect: str = None) -> None:
 
             cmap, norm = self.make_colormap()
             cmax = np.ceil(self.zmax / self.contour_spacing) * self.contour_spacing
@@ -1099,7 +1099,9 @@ class EnergySurface2D:
             ax.set_ylabel(self.y_axis.label)
             ax.set_title(title)
 
-            ax.set_aspect("equal", adjustable="box")
+            if aspect == 'equal':
+                ax.set_aspect("equal", adjustable="box")
+
             fig.tight_layout()
 
             if filename is not None:
@@ -1222,7 +1224,7 @@ class STMPath:
             path_x, path_y, path_types = self.beads_to_xy_arrays(input_beads)
             self.surface.plot_fes_with_path(title="Initial Path - User Input",
                 path_x=path_x, path_y=path_y, path_types=path_types,
-                filename=f"{args.plot_prefix}_path_0000_a_initial-user.png", show=args.show, figsize=args.figsize, dpi=args.dpi)
+                filename=f"{args.plot_prefix}_path_0000_a_initial-user.png", show=args.show, figsize=args.figsize, dpi=args.dpi, aspect=args.plot_aspect)
 
         #  generate completed path
         self.beads = self.generate_beads_from_input_beads(input_beads)
@@ -1232,7 +1234,7 @@ class STMPath:
             path_x, path_y, path_types = self.beads_to_xy_arrays(self.beads)
             self.surface.plot_fes_with_path(title="Initial Path - Full Path",
                 path_x=path_x, path_y=path_y, path_types=path_types,
-                filename=f"{args.plot_prefix}_path_0000_b_initial-full.png", show=args.show, figsize=args.figsize, dpi=args.dpi)
+                filename=f"{args.plot_prefix}_path_0000_b_initial-full.png", show=args.show, figsize=args.figsize, dpi=args.dpi, aspect=args.plot_aspect)
 
         # smoothing, reparameterization
         self.SmoothInterval         = args.smoothinterval
@@ -1330,7 +1332,7 @@ class STMPath:
                 path_x, path_y, path_types = self.beads_to_xy_arrays(self.beads)
                 self.surface.plot_fes_with_path(title=f"Intermediate Path #{self.STMStep:04d}",
                     path_x=path_x, path_y=path_y, path_types=path_types,
-                    filename=f"{args.plot_prefix}_path_{self.STMStep:04d}_c.png", show=args.show, figsize=args.figsize, dpi=args.dpi)
+                    filename=f"{args.plot_prefix}_path_{self.STMStep:04d}_c.png", show=args.show, figsize=args.figsize, dpi=args.dpi, aspect=args.plot_aspect)
 
             if self.TermCrit == 5:
                 break
@@ -1355,7 +1357,7 @@ class STMPath:
             path_x, path_y, path_types = self.beads_to_xy_arrays(self.beads)
             self.surface.plot_fes_with_path(title="Final Path",
                 path_x=path_x, path_y=path_y, path_types=path_types,
-                filename=f"{args.plot_prefix}_path_{self.STMStep:04d}_d_final.png", show=args.show, figsize=args.figsize, dpi=args.dpi)
+                filename=f"{args.plot_prefix}_path_{self.STMStep:04d}_d_final.png", show=args.show, figsize=args.figsize, dpi=args.dpi, aspect=args.plot_aspect)
 
         if args.output_path is not None:
             with open(args.output_path,"w") as fout:
@@ -2688,7 +2690,7 @@ def parse_args():
     enegroup.add_argument( "--zmax", type=float, required=True,
         help="Maximum energy value considered." )
 
-    enegroup.add_argument( "--contour_spacing", type=float, default=1.0,
+    enegroup.add_argument( "--contour-spacing", type=float, default=1.0,
         help="Contour spacing." )
 
     # -------------------------------------------------------------------------
@@ -2843,6 +2845,9 @@ def parse_args():
 
     plotgroup.add_argument( "--dpi", type=int, default=300,
         help="Resolution for plot figures." )
+    
+    plotgroup.add_argument( "--plot-aspect", type=str, default=None,
+        help="Plot aspect: None, equal" )
 
     # -------------------------------------------------------------------------
 

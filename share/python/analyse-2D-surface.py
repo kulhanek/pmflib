@@ -1068,7 +1068,7 @@ class EnergySurface2D:
     
     # --------------------------------------------------------------------------
 
-    def _finish_plot(self, fig, ax, show, save, dpi):
+    def _finish_plot(self, fig, ax, show, save, dpi, aspect):
 
         ax.set_xlabel(self.x_axis.label)
         ax.set_ylabel(self.y_axis.label)
@@ -1076,7 +1076,8 @@ class EnergySurface2D:
         ax.set_xlim(self.x_axis.cvmin, self.x_axis.cvmax)
         ax.set_ylim(self.y_axis.cvmin, self.y_axis.cvmax)
 
-        ax.set_aspect('equal', adjustable='box')
+        if aspect == 'equal':
+            ax.set_aspect('equal', adjustable='box')
         fig.tight_layout()
 
         if save is not None:
@@ -1095,6 +1096,7 @@ class EnergySurface2D:
         show=True,
         save=None,
         dpi=300,
+        aspect=None
     ):
         """
         Visualise the original 2D energy surface.
@@ -1139,7 +1141,7 @@ class EnergySurface2D:
         cbar.set_label(self.ene_label)
 
         ax.set_title("Original FES")
-        self._finish_plot(fig, ax, show, save, dpi)
+        self._finish_plot(fig, ax, show, save, dpi, aspect)
 
     # --------------------------------------------------------------------------
 
@@ -1149,6 +1151,7 @@ class EnergySurface2D:
         show=True,
         save=None,
         dpi=300,
+        aspect=None
     ):
         """
         Visualise the fitted 2D energy surface using eval().
@@ -1205,7 +1208,7 @@ class EnergySurface2D:
         )
 
         ax.set_title("Interpolated FES")
-        self._finish_plot(fig, ax, show, save, dpi)
+        self._finish_plot(fig, ax, show, save, dpi, aspect)
 
     # --------------------------------------------------------------------------
 
@@ -1218,6 +1221,7 @@ class EnergySurface2D:
         show=True,
         save=None,
         dpi=300,
+        aspect=None
     ):
         """
         Visualise the fitted 2D energy surface using eval().
@@ -1309,6 +1313,7 @@ class EnergySurface2D:
         show=True,
         save=None,
         dpi=300,
+        aspect=None
     ):
         """
         Visualise the fitted 2D energy surface using eval() + sp guesses.
@@ -1421,7 +1426,7 @@ class EnergySurface2D:
         # -------------------------------------------------------------------------
 
         ax.set_title("Interpolated FES with Stationary Point Guesses")
-        self._finish_plot(fig, ax, show, save, dpi)
+        self._finish_plot(fig, ax, show, save, dpi, aspect)
 
     # --------------------------------------------------------------------------
 
@@ -1438,6 +1443,7 @@ class EnergySurface2D:
         ellipse_color="red",
         label_color="red",
         label_offset=(0.05, 0.05),
+        aspect=None
     ):
         """
         Plot interpolated FES and stationary points with labelled ellipses.
@@ -1591,7 +1597,7 @@ class EnergySurface2D:
         # ---------------------------------------------------------------------
 
         ax.set_title("Interpolated FES with Optimized Stationary Points")
-        self._finish_plot(fig, ax, show, save, dpi)
+        self._finish_plot(fig, ax, show, save, dpi, aspect)
 
     # --------------------------------------------------------------------------
 
@@ -1601,6 +1607,7 @@ class EnergySurface2D:
         show=True,
         save=None,
         dpi=300,
+        aspect=None
     ):
 
         # ---------------------------------------------------------------------
@@ -1716,7 +1723,7 @@ class EnergySurface2D:
         # ---------------------------------------------------------------------
 
         ax.set_title("Interpolated FES with Minima Basins")
-        self._finish_plot(fig, ax, show, save, dpi)
+        self._finish_plot(fig, ax, show, save, dpi, aspect)
 
 # ==============================================================================
 # Detect stationary points
@@ -2644,7 +2651,7 @@ def parse_args():
     enegroup.add_argument("--zmax", type=float, required=True,
         help="Maximum energy value considered." )
 
-    enegroup.add_argument("--contour_spacing", type=float, default=1.0,
+    enegroup.add_argument("--contour-spacing", type=float, default=1.0,
         help="Contour spacing." )
 
     # --------------------------------------------------------------------------
@@ -2815,6 +2822,9 @@ def parse_args():
 
     plotgroup.add_argument( "--dpi", type=int, default=300,
         help="Resolution for plot figures." )
+    
+    plotgroup.add_argument( "--plot-aspect", type=str, default=None,
+        help="Plot aspect: None, equal" )
 
     return parser.parse_args()
 
@@ -2828,7 +2838,7 @@ def load_fes(args,surf):
     surf.load(args.fname_input_fes,xcolumn=args.input_fes_x_column,ycolumn=args.input_fes_y_column,ecolumn=args.input_fes_e_column,shift2zero=args.shift2zero)
 
     if args.showrawfes == True or args.saverawfes is not None:
-        surf.plot_raw(show=args.showrawfes,save=args.saverawfes,figsize=args.figsize,dpi=args.dpi)
+        surf.plot_raw(show=args.showrawfes,save=args.saverawfes,figsize=args.figsize,dpi=args.dpi,aspect=args.plot_aspect)
 
 # ------------------------------------------------------------------------------
 
@@ -2860,7 +2870,7 @@ def cal_surfs(args,surf):
     surf.calc_ene_and_sng()
 
     if args.showrbffes == True or args.saverbffes is not None:
-        surf.plot_rbf(show=args.showrbffes,save=args.saverbffes,figsize=args.figsize,dpi=args.dpi)
+        surf.plot_rbf(show=args.showrbffes,save=args.saverbffes,figsize=args.figsize,dpi=args.dpi,aspect=args.plot_aspect)
 
 # ------------------------------------------------------------------------------
 
@@ -2909,7 +2919,7 @@ def load_sp_guesses(args,surf):
         print(f"{pt['id']:10d} {pt['x']:10.3f} {pt['y']:10.3f}")
 
     if args.showgpts == True or args.savegpts is not None:
-        surf.plot_rbf_with_sp_guesses(show=args.showgpts,save=args.savegpts,figsize=args.figsize,dpi=args.dpi)
+        surf.plot_rbf_with_sp_guesses(show=args.showgpts,save=args.savegpts,figsize=args.figsize,dpi=args.dpi,aspect=args.plot_aspect)
 
 # ------------------------------------------------------------------------------
 
@@ -2951,10 +2961,10 @@ def sp_guess(args,surf):
         print(f"{pt['id']:10d} {pt['x']:10.3f} {pt['y']:10.3f} {pt['ene']:10.1f} {pt['sng']:10.1f} {pt["size"]:10d}")
 
     if args.showgpts == True or args.savegpts is not None:
-        surf.plot_rbf_with_sp_guesses(show=args.showgpts,save=args.savegpts,figsize=args.figsize,dpi=args.dpi)
+        surf.plot_rbf_with_sp_guesses(show=args.showgpts,save=args.savegpts,figsize=args.figsize,dpi=args.dpi,aspect=args.plot_aspect)
 
     if args.showsng == True or args.savesng is not None:
-        surf.plot_uv_sng(show=args.showsng,save=args.savesng,figsize=args.figsize,dpi=args.dpi,zmax=args.sng_cutoff)
+        surf.plot_uv_sng(show=args.showsng,save=args.savesng,figsize=args.figsize,dpi=args.dpi,zmax=args.sng_cutoff,aspect=args.plot_aspect)
 
 # ------------------------------------------------------------------------------
 
@@ -3008,7 +3018,7 @@ def load_sp_optimized(args,surf):
     print("")
 
     if args.showopts == True or args.saveopts is not None:
-        surf.plot_rbf_with_sp_optimized(show=args.showopts,save=args.saveopts,figsize=args.figsize,dpi=args.dpi)
+        surf.plot_rbf_with_sp_optimized(show=args.showopts,save=args.saveopts,figsize=args.figsize,dpi=args.dpi,aspect=args.plot_aspect)
 
 # ------------------------------------------------------------------------------
 
@@ -3071,7 +3081,7 @@ def opt_sps(args,surf):
         print(f"{opt['id']:10d} {opt['x']:10.3f} {opt['y']:10.3f} {opt['ene']:10.3f} {opt['sng']:10.1f} {opt['r1']:10.3f} {opt['r2']:10.3f} {opt['angle']:10.1f} {opt['type']:>10}")
 
     if args.showopts == True or args.saveopts is not None:
-        surf.plot_rbf_with_sp_optimized(show=args.showopts,save=args.saveopts,figsize=args.figsize,dpi=args.dpi)
+        surf.plot_rbf_with_sp_optimized(show=args.showopts,save=args.saveopts,figsize=args.figsize,dpi=args.dpi,aspect=args.plot_aspect)
 
 # -------------------------------------------------------------------------
 
@@ -3130,7 +3140,7 @@ def find_basins(args,surf):
                 )
 
     if args.showbasins == True or args.savebasins is not None:
-        surf.plot_rbf_with_watershed_basins(show=args.showbasins,save=args.savebasins,figsize=args.figsize,dpi=args.dpi)
+        surf.plot_rbf_with_watershed_basins(show=args.showbasins,save=args.savebasins,figsize=args.figsize,dpi=args.dpi,aspect=args.plot_aspect)
 
 # ==============================================================================
 # Main
