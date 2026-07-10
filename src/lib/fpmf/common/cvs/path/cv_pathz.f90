@@ -124,7 +124,7 @@ subroutine join_cv2path_pathz(cv_item)
     class(CVTypePATHZ)  :: cv_item
     ! --------------------------------------------
     integer             :: i,j,alloc_failed
-    real(PMFDP)         :: ndl,dl2,s,min,max,valn1,valn2
+    real(PMFDP)         :: ndl,dl2,s,cvmin,cvmax,valn1,valn2,range
     ! --------------------------------------------------------------------------
 
 ! get the path
@@ -156,11 +156,15 @@ subroutine join_cv2path_pathz(cv_item)
         do i=1,cv_item%srcpath%nbeads-1
             dl2 = 0.0d0
             do j=1,cv_item%srcpath%ncvs
-                min = cv_item%srcpath%minvalues(j)
-                max = cv_item%srcpath%maxvalues(j)
+                cvmin = cv_item%srcpath%minvalues(j)
+                cvmax = cv_item%srcpath%maxvalues(j)
+                range = cvmax - cvmin
+                if( range .le. 0.0d0 ) then
+                    call pmf_utils_exit(PMF_OUT,1,'[PATHZ] Invalid CV range in join_cv2path_pathz!')
+                end if
                 valn1 = cv_item%srcpath%points(i+0,j)
                 valn2 = cv_item%srcpath%points(i+1,j)
-                s = (valn2 - valn1) / (max - min)
+                s = (valn2 - valn1) / range
                 dl2 = dl2 + s**2
             end do
             cv_item%alpha = cv_item%alpha + sqrt(dl2)
@@ -193,58 +197,88 @@ subroutine calculate_pathz(cv_item,x,ctx)
     type(CVContextType)     :: ctx
     ! -----------------------------------------------
     integer                 :: i,j
-    real(PMFDP)             :: r2,max,min,vala,valr,s,ce,cu
-    real(PMFDP)             :: sc,sce
+    real(PMFDP)             :: r2,cvmin,cvmax,range,vala,valr,s
+    real(PMFDP)             :: exponent,max_exponent,weight,weight_sum
+    real(PMFDP)             :: alpha2
     ! --------------------------------------------------------------------------
 
-    cu = 0.0d0
+    if( cv_item%srcpath%nbeads .le. 0 ) then
+        call pmf_utils_exit(PMF_OUT,1,'[PATHZ] The source path does not contain any beads!')
+    end if
+
+    if( cv_item%alpha .le. 0.0d0 ) then
+        call pmf_utils_exit(PMF_OUT,1,'[PATHZ] Alpha must be greater than zero!')
+    end if
+
+    alpha2 = cv_item%alpha * cv_item%alpha
+
+! Find the largest exponent. Subtracting it from all exponents prevents
+! simultaneous underflow of all Gaussian weights.
+
+    max_exponent = -huge(1.0d0)
 
     do i=1,cv_item%srcpath%nbeads
         r2 = 0.0d0
         do j=1,cv_item%srcpath%ncvs
-            min = cv_item%srcpath%minvalues(j)
-            max = cv_item%srcpath%maxvalues(j)
+            cvmin = cv_item%srcpath%minvalues(j)
+            cvmax = cv_item%srcpath%maxvalues(j)
+            range = cvmax - cvmin
+            if( range .le. 0.0d0 ) then
+                call pmf_utils_exit(PMF_OUT,1,'[PATHZ] Invalid CV range in calculate_pathz!')
+            end if
             valr = cv_item%srcpath%points(i,j)
-            vala = ctx%CVsValues(cv_item%srcpath%cvs(j)%cv%idx) 
-            s = (vala - valr) / (max - min)
-            r2 = r2 + s**2
+            vala = ctx%CVsValues(cv_item%srcpath%cvs(j)%cv%idx)
+            s = (vala - valr) / range
+            r2 = r2 + s*s
         end do
-
-        ce = exp(-r2/cv_item%alpha**2)
-        cu = cu + ce
+        exponent = -r2 / alpha2
+        max_exponent = max(max_exponent,exponent)
     end do
 
-    ctx%CVsValues(cv_item%idx) = - log(cu) * cv_item%alpha**2
+! Evaluate the shifted exponential sum and its normalized derivative.
+! At least one shifted weight is exactly one, so weight_sum cannot underflow.
 
-! ------------------------------------------------
-! calculate derivatives
-
-    sc = - 1.0d0 / cu * cv_item%alpha**2
-
+    weight_sum = 0.0d0
     cv_item%dsc(:) = 0.0d0
 
     do i=1,cv_item%srcpath%nbeads
         r2 = 0.0d0
         do j=1,cv_item%srcpath%ncvs
-            min = cv_item%srcpath%minvalues(j)
-            max = cv_item%srcpath%maxvalues(j)
+            cvmin = cv_item%srcpath%minvalues(j)
+            cvmax = cv_item%srcpath%maxvalues(j)
+            range = cvmax - cvmin
             valr = cv_item%srcpath%points(i,j)
-            vala = ctx%CVsValues(cv_item%srcpath%cvs(j)%cv%idx) 
-            s = (vala - valr) / (max - min)
-            r2 = r2 + s**2
+            vala = ctx%CVsValues(cv_item%srcpath%cvs(j)%cv%idx)
+            s = (vala - valr) / range
+            r2 = r2 + s*s
         end do
 
-        sce = exp(-r2/cv_item%alpha**2)
+        exponent = -r2 / alpha2
+        weight = exp(exponent - max_exponent)
+        weight_sum = weight_sum + weight
 
         do j=1,cv_item%srcpath%ncvs
-            min = cv_item%srcpath%minvalues(j)
-            max = cv_item%srcpath%maxvalues(j)
+            cvmin = cv_item%srcpath%minvalues(j)
+            cvmax = cv_item%srcpath%maxvalues(j)
+            range = cvmax - cvmin
             valr = cv_item%srcpath%points(i,j)
-            vala = ctx%CVsValues(cv_item%srcpath%cvs(j)%cv%idx) 
-            s = (vala - valr) / (max - min)
-            cv_item%dsc(j) = cv_item%dsc(j) - 2.0d0 * sc * sce * s / (cv_item%alpha**2 * (max - min))
+            vala = ctx%CVsValues(cv_item%srcpath%cvs(j)%cv%idx)
+            s = (vala - valr) / range
+            cv_item%dsc(j) = cv_item%dsc(j) + weight * s / range
         end do
     end do
+
+    if( weight_sum .le. 0.0d0 ) then
+        call pmf_utils_exit(PMF_OUT,1,'[PATHZ] Unable to normalize path weights!')
+    end if
+
+! log(sum(exp(exponent))) = max_exponent + log(weight_sum)
+
+    ctx%CVsValues(cv_item%idx) = -alpha2 * (max_exponent + log(weight_sum))
+
+! dz/dq_j = 2 * sum_i p_i s_ij / range_j
+
+    cv_item%dsc(:) = 2.0d0 * cv_item%dsc(:) / weight_sum
 
     do j=1,cv_item%srcpath%ncvs
         ctx%CVsDrvs(:,:,cv_item%idx) = ctx%CVsDrvs(:,:,cv_item%idx) + cv_item%dsc(j)*ctx%CVsDrvs(:,:,cv_item%srcpath%cvs(j)%cv%idx)

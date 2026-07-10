@@ -131,8 +131,14 @@ subroutine abf_core_update_history_force()
 
         ! project abf force along coordinate
         do i=1,NumOfABFCVs
+            if( fdebug ) then
+                write(PMF_DEBUG,*) '  ABF LA: ',la(i)
+            end if
             ci = ABFCVList(i)%cvindx
             do j=1,NumOfLAtoms
+                if( fdebug ) then
+                    write(PMF_DEBUG,*) '    ABF CVContext%CVsDrvs: ',CVContext%CVsDrvs(:,j,ci)
+                end if
                 Frc(:,j) = Frc(:,j) + la(i) * CVContext%CVsDrvs(:,j,ci)
             end do
         end do

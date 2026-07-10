@@ -193,68 +193,112 @@ subroutine calculate_paths(cv_item,x,ctx)
     type(CVContextType)     :: ctx
     ! -----------------------------------------------
     integer                 :: i,j
-    real(PMFDP)             :: r2,max,min,vala,valr,s,ce,cu,cd
-    real(PMFDP)             :: sc1,sc2,sce,sci
+    real(PMFDP)             :: r2,vala,valr,s
+    real(PMFDP)             :: exponent,max_exponent,weight,sumw,sumkw,meank
+    real(PMFDP)             :: range,alpha2,ki
     ! --------------------------------------------------------------------------
 
-    cu = 0.0d0
-    cd = 0.0d0
+    if( cv_item%srcpath%nbeads .le. 1 ) then
+        call pmf_utils_exit(PMF_OUT,1,'[PATHS] At least two path beads are required!')
+    end if
+
+    alpha2 = cv_item%alpha**2
+    if( alpha2 .le. tiny(alpha2) ) then
+        call pmf_utils_exit(PMF_OUT,1,'[PATHS] Alpha must be positive and sufficiently large!')
+    end if
+
+! Find the largest exponent.  Subtracting it below implements the
+! log-sum-exp/softmax stabilization.  The largest shifted weight is then one,
+! so the denominator cannot underflow even far away from the path.
+    max_exponent = -huge(1.0_PMFDP)
 
     do i=1,cv_item%srcpath%nbeads
         r2 = 0.0d0
         do j=1,cv_item%srcpath%ncvs
-            min = cv_item%srcpath%minvalues(j)
-            max = cv_item%srcpath%maxvalues(j)
+            range = cv_item%srcpath%maxvalues(j) - cv_item%srcpath%minvalues(j)
+            if( abs(range) .le. tiny(range) ) then
+                call pmf_utils_exit(PMF_OUT,1,'[PATHS] Invalid zero range of a source collective variable!')
+            end if
             valr = cv_item%srcpath%points(i,j)
-            vala = ctx%CVsValues(cv_item%srcpath%cvs(j)%cv%idx) 
-            s = (vala - valr) / (max - min)
-            r2 = r2 + s**2
+            vala = ctx%CVsValues(cv_item%srcpath%cvs(j)%cv%idx)
+            s = (vala - valr) / range
+            r2 = r2 + s*s
         end do
-
-        ce = exp(-r2/cv_item%alpha**2)
-        cu = cu + real(i-cv_item%ioffset,PMFDP)*ce
-        cd = cd + ce
+        exponent = -r2/alpha2
+        max_exponent = max(max_exponent,exponent)
     end do
 
-    ctx%CVsValues(cv_item%idx) = cu / ( cd *real(cv_item%srcpath%nbeads-1) )
-
-! ------------------------------------------------
-! calculate derivatives
-
-    ! (a'b - a*b')/b^2
-    sc1 = 1.0 / ( cd * real(cv_item%srcpath%nbeads-1) )    ! cu'
-    sc2 = cu / (cd * cd * real(cv_item%srcpath%nbeads-1) ) ! cd'
-
-
-    cv_item%dsc(:) = 0.0d0
+! Calculate normalized weighted mean of the bead index.  The common factor
+! exp(max_exponent) cancels exactly from numerator and denominator.
+    sumw  = 0.0_PMFDP
+    sumkw = 0.0_PMFDP
 
     do i=1,cv_item%srcpath%nbeads
-        r2 = 0.0d0
+        r2 = 0.0_PMFDP
         do j=1,cv_item%srcpath%ncvs
-            min = cv_item%srcpath%minvalues(j)
-            max = cv_item%srcpath%maxvalues(j)
+            range = cv_item%srcpath%maxvalues(j) - cv_item%srcpath%minvalues(j)
             valr = cv_item%srcpath%points(i,j)
-            vala = ctx%CVsValues(cv_item%srcpath%cvs(j)%cv%idx) 
-            s = (vala - valr) / (max - min)
-            r2 = r2 + s**2
+            vala = ctx%CVsValues(cv_item%srcpath%cvs(j)%cv%idx)
+            s = (vala - valr) / range
+            r2 = r2 + s*s
         end do
 
-        sce = exp(-r2/cv_item%alpha**2)
+        exponent = -r2/alpha2
+        weight = exp(exponent-max_exponent)
+        ki = real(i-cv_item%ioffset,PMFDP)
+        sumw  = sumw  + weight
+        sumkw = sumkw + ki*weight
+    end do
 
-        sci = real(i-cv_item%ioffset,PMFDP)*sce
+    meank = sumkw/sumw
+    ctx%CVsValues(cv_item%idx) = meank/real(cv_item%srcpath%nbeads-1,PMFDP)
+
+    if( fdebug ) then
+        write(PMF_DEBUG,*) 'PATHS max exponent= ', max_exponent
+        write(PMF_DEBUG,*) 'PATHS shifted sumw= ', sumw
+        write(PMF_DEBUG,*) 'PATHS mean index= ', meank
+        write(PMF_DEBUG,*) 'PATHS v= ', ctx%CVsValues(cv_item%idx)
+    end if
+
+! The derivative is evaluated as a covariance under the normalized weights:
+!
+!   d<k>/dq = sum_i p_i (k_i-<k>) d(log w_i)/dq
+!
+! This avoids the unstable 1/sumw and 1/sumw**2 terms of the quotient rule.
+    cv_item%dsc(:) = 0.0_PMFDP
+
+    do i=1,cv_item%srcpath%nbeads
+        r2 = 0.0_PMFDP
+        do j=1,cv_item%srcpath%ncvs
+            range = cv_item%srcpath%maxvalues(j) - cv_item%srcpath%minvalues(j)
+            valr = cv_item%srcpath%points(i,j)
+            vala = ctx%CVsValues(cv_item%srcpath%cvs(j)%cv%idx)
+            s = (vala - valr) / range
+            r2 = r2 + s*s
+        end do
+
+        exponent = -r2/alpha2
+        weight = exp(exponent-max_exponent)/sumw
+        ki = real(i-cv_item%ioffset,PMFDP)
 
         do j=1,cv_item%srcpath%ncvs
-            min = cv_item%srcpath%minvalues(j)
-            max = cv_item%srcpath%maxvalues(j)
+            range = cv_item%srcpath%maxvalues(j) - cv_item%srcpath%minvalues(j)
             valr = cv_item%srcpath%points(i,j)
-            vala = ctx%CVsValues(cv_item%srcpath%cvs(j)%cv%idx) 
-            s = (vala - valr) / (max - min)
-            cv_item%dsc(j) = cv_item%dsc(j) - 2.0d0 * (sc1*sci - sc2*sce) * s / (cv_item%alpha**2 * (max - min))
+            vala = ctx%CVsValues(cv_item%srcpath%cvs(j)%cv%idx)
+            s = (vala - valr) / range
+
+            cv_item%dsc(j) = cv_item%dsc(j) &
+                - 2.0_PMFDP*weight*(ki-meank)*s &
+                / (alpha2*range*real(cv_item%srcpath%nbeads-1,PMFDP))
         end do
     end do
 
     do j=1,cv_item%srcpath%ncvs
-        ctx%CVsDrvs(:,:,cv_item%idx) = ctx%CVsDrvs(:,:,cv_item%idx) + cv_item%dsc(j)*ctx%CVsDrvs(:,:,cv_item%srcpath%cvs(j)%cv%idx)
+        if( fdebug ) then
+            write(PMF_DEBUG,*) 'PATHS grd= ', cv_item%dsc(j)
+        end if
+        ctx%CVsDrvs(:,:,cv_item%idx) = ctx%CVsDrvs(:,:,cv_item%idx) &
+            + cv_item%dsc(j)*ctx%CVsDrvs(:,:,cv_item%srcpath%cvs(j)%cv%idx)
     end do
 
     ! disable unused variable warning
