@@ -319,16 +319,12 @@ class CVSmoothingCubicSpline:
 
     The spline minimizes
 
-        E(z) = sum_i w_i * (y_i - z_i)^2
-             + lam * integral (S''(x))^2 dx
-
-    where
-
-        w_i = 1 / N
+        E(z) = lam * sum_i ((y_i - z_i)^2 / delta^2)
+             + (1 - lam) * integral (S''(x))^2 dx
 
     Interface
     ---------
-    spline = CVSmoothingCubicSpline(lam)
+    spline = CVSmoothingCubicSpline(lam, delta=1.0)
 
     spline.update_points(x, y)
 
@@ -339,25 +335,31 @@ class CVSmoothingCubicSpline:
 
     Notes
     -----
-    lam = 0.0 gives a natural interpolating cubic spline.
+    lam = 1.0 gives a natural interpolating cubic spline.
 
-    Larger lam gives stronger smoothing.
+    Decreasing lam gives stronger smoothing. For lam = 0.0, the data term
+    vanishes and the minimizer is not unique; this implementation returns
+    the least-squares straight line, corresponding to the lam -> 0+ limit.
+
+    delta must be positive and controls the scale of the data-misfit term.
 
     This implementation does not use SVD. It assumes that the involved
     matrices are symmetric positive definite and solves them by Cholesky
     factorization when possible.
     """
 
-    def __init__(self, lam: float):
+    def __init__(self, lam: float, delta: float = 1.0):
         self.lam = float(lam)
+        self.delta = float(delta)
 
-        if self.lam < 0.0:
-            raise ValueError("lam must be non-negative.")
+        if not 0.0 <= self.lam <= 1.0:
+            raise ValueError("lam must be in the interval [0, 1].")
+
+        if not np.isfinite(self.delta) or self.delta <= 0.0:
+            raise ValueError("delta must be a finite positive number.")
 
         self.x = None
         self.y = None
-        self.w = None
-
         self.npts = 0
         self.nseg = 0
         self.h = None
@@ -426,12 +428,6 @@ class CVSmoothingCubicSpline:
 
         self.x = x
         self.y = y
-
-        # Uniform weights:
-        #
-        #   w_i = 1 / N
-        #
-        self.w = np.full(x.size, 1.0 / float(x.size))
 
         self.npts = x.size
         self.nseg = x.size - 1
@@ -520,8 +516,10 @@ class CVSmoothingCubicSpline:
             self._build_natural_cubic_from_values(self.z)
             return
 
-        if self.lam == 0.0:
+        if self.lam == 1.0:
             self.z = self.y.copy()
+        elif self.lam == 0.0:
+            self.z = self._calculate_least_squares_line_values()
         else:
             self.z = self._calculate_smoothed_values()
 
@@ -531,7 +529,8 @@ class CVSmoothingCubicSpline:
         """
         Calculate smoothed knot values z from
 
-            (W + lam*K) z = W y
+            [lam/delta^2 * I + (1-lam) * K] z
+                = lam/delta^2 * y
 
         without using SVD.
         """
@@ -555,12 +554,24 @@ class CVSmoothingCubicSpline:
         xmat = self._solve_spd(r, q.T)
         k = q @ xmat
 
-        lhs = np.diag(self.w) + self.lam * k
-        rhs = self.w * self.y
+        data_weight = self.lam / (self.delta * self.delta)
+        roughness_weight = 1.0 - self.lam
+
+        lhs = data_weight * np.eye(self.npts) + roughness_weight * k
+        rhs = data_weight * self.y
 
         z = self._solve_spd(lhs, rhs)
 
         return z
+
+    def _calculate_least_squares_line_values(self):
+        """Return knot values of the least-squares straight line."""
+
+        design = np.column_stack((np.ones(self.npts), self.x))
+        normal = design.T @ design
+        rhs = design.T @ self.y
+        coeff = self._solve_spd(normal, rhs)
+        return design @ coeff
 
     def _build_reinsch_matrices(self):
         """
@@ -1188,8 +1199,9 @@ class STMPath:
         if args.cvspline == 1:
             print(f"  >>> Smoothing Cubic Spline")
             print(f"      Lambda: {args.spline_lambda:10.5e}")
+            print(f"      Delta:  {args.spline_delta:10.5e}")
             self.cv_splines =  [
-                CVSmoothingCubicSpline(lam=args.spline_lambda)
+                CVSmoothingCubicSpline(lam=args.spline_lambda, delta=args.spline_delta)
                 for _ in range(self.ncvs)
             ]
         else:
@@ -1310,9 +1322,16 @@ class STMPath:
                 print(f"# >>>>> CV Splines ...")
                 if args.cvspline == 1:
                     print(f"#       Smoothing Cubic Spline")
-                    print(f"#       Lambda: {args.spline_lambda*args.scale_lambda:10.5e}")
+                    scaled_lambda = args.spline_lambda * args.scale_lambda
+                    if not 0.0 <= scaled_lambda <= 1.0:
+                        raise ValueError(
+                            "scaled spline lambda must remain in [0, 1]: "
+                            f"{args.spline_lambda} * {args.scale_lambda} = {scaled_lambda}"
+                        )
+                    print(f"#       Lambda: {scaled_lambda:10.5e}")
+                    print(f"#       Delta:  {args.spline_delta:10.5e}")
                     self.cv_splines =  [
-                        CVSmoothingCubicSpline(lam=args.spline_lambda*args.scale_lambda)
+                        CVSmoothingCubicSpline(lam=scaled_lambda, delta=args.spline_delta)
                         for _ in range(self.ncvs)
                     ]
                 else:
@@ -2759,8 +2778,15 @@ def parse_args():
     pathgroup.add_argument("--cvspline", type=int, default=1,
         help="Type of CV spline: 0 - interpolating cubic spline, 1 - smoothing cubic spline" )
 
-    pathgroup.add_argument("--spline-lambda", type=float, default=0.00000002,
-        help="Lambda for the internal smoothing cubic spline; 0.0 gives interpolation." )
+    pathgroup.add_argument("--spline-lambda", type=float, default=0.90,
+        help=("Data-smoothing factor for the smoothing cubic spline; "
+              "must be in [0, 1]. A value of 1.0 gives interpolation, while "
+              "smaller values give stronger smoothing."))
+
+    pathgroup.add_argument("--spline-delta", type=float, default=0.001,
+        help=("Data-fidelity weight for the smoothing cubic spline; "
+              "positive value in the spline data term "
+              "sum((y_i-z_i)^2/delta^2)."))
         
     # -------------------------------------------------------------------------
     # STM Setup
@@ -2795,8 +2821,8 @@ def parse_args():
     adagroup.add_argument("--stepsize", type=float, default=0.0002,
         help="Optimisation time step." )
     
-    stmgroup.add_argument("--scale-lambda", type=float, default=10.0,
-        help="Factor scaling the smoothing cubic spline lambda when minima detected." )
+    # stmgroup.add_argument("--scale-lambda", type=float, default=10.0,
+    #     help="Factor scaling the smoothing cubic spline lambda when minima detected." )
     
     stmgroup.add_argument("--scale-stepsize", type=float, default=0.5,
         help="Factor scaling the step size when minima detected." )
