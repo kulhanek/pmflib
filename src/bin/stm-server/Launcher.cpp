@@ -65,7 +65,7 @@ CLauncher::CLauncher(void)
     StatusSleepTime         = 0;
     RecheckPeriodSleepTime  = 10000;
 
-    ResubmitDead = false;
+    ResubmitDead = true;
 }
 
 //==============================================================================
