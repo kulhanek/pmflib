@@ -20,7 +20,7 @@
 //     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 // =============================================================================
 
-#include <GHSIntegratorGPRcA.hpp>
+#include <AUSIntegratorGPR0B.hpp>
 #include <ErrorSystem.hpp>
 #include <FortranMatrix.hpp>
 #include <Vector.hpp>
@@ -48,7 +48,7 @@ using namespace boost::algorithm;
 //------------------------------------------------------------------------------
 //==============================================================================
 
-CGHSIntegratorGPRcA::CGHSIntegratorGPRcA(void)
+CAUSIntegratorGPR0B::CAUSIntegratorGPR0B(void)
 {
     GDerProxy           = NULL;
     HEneProxy           = NULL;
@@ -70,7 +70,7 @@ CGHSIntegratorGPRcA::CGHSIntegratorGPRcA(void)
 
 //------------------------------------------------------------------------------
 
-CGHSIntegratorGPRcA::~CGHSIntegratorGPRcA(void)
+CAUSIntegratorGPR0B::~CAUSIntegratorGPR0B(void)
 {
 }
 
@@ -78,7 +78,7 @@ CGHSIntegratorGPRcA::~CGHSIntegratorGPRcA(void)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void CGHSIntegratorGPRcA::SetAccumulator(CPMFAccumulatorPtr accu)
+void CAUSIntegratorGPR0B::SetAccumulator(CPMFAccumulatorPtr accu)
 {
     if( accu == NULL ) return;                 // no-accu
 
@@ -91,7 +91,7 @@ void CGHSIntegratorGPRcA::SetAccumulator(CPMFAccumulatorPtr accu)
 
 //------------------------------------------------------------------------------
 
-void CGHSIntegratorGPRcA::SetGDerProxy(CEnergyDerProxyPtr p_proxy)
+void CAUSIntegratorGPR0B::SetGDerProxy(CEnergyDerProxyPtr p_proxy)
 {
     if( p_proxy == NULL ) return;                 // no-proxy
     if( p_proxy->GetAccu() == NULL ) return;      // no PMFAccu
@@ -113,7 +113,7 @@ void CGHSIntegratorGPRcA::SetGDerProxy(CEnergyDerProxyPtr p_proxy)
 
 //------------------------------------------------------------------------------
 
-void CGHSIntegratorGPRcA::SetHEneProxy(CEnergyProxyPtr p_proxy)
+void CAUSIntegratorGPR0B::SetHEneProxy(CEnergyProxyPtr p_proxy)
 {
     if( p_proxy == NULL ) return;                 // no-proxy
     if( p_proxy->GetAccu() == NULL ) return;      // no PMFAccu
@@ -135,7 +135,7 @@ void CGHSIntegratorGPRcA::SetHEneProxy(CEnergyProxyPtr p_proxy)
 
 //------------------------------------------------------------------------------
 
-void CGHSIntegratorGPRcA::SetSDerProxy(CEnergyDerProxyPtr p_proxy)
+void CAUSIntegratorGPR0B::SetSDerProxy(CEnergyDerProxyPtr p_proxy)
 {
     if( p_proxy == NULL ) return;                 // no-proxy
     if( p_proxy->GetAccu() == NULL ) return;      // no PMFAccu
@@ -157,7 +157,7 @@ void CGHSIntegratorGPRcA::SetSDerProxy(CEnergyDerProxyPtr p_proxy)
 
 //------------------------------------------------------------------------------
 
-void CGHSIntegratorGPRcA::SetOutputFES(CEnergySurfacePtr p_surf)
+void CAUSIntegratorGPR0B::SetOutputFES(CEnergySurfacePtr p_surf)
 {
     if( NumOfCVs == 0 ){
         NumOfCVs  = (size_t)p_surf->GetNumOfCVs();
@@ -176,7 +176,7 @@ void CGHSIntegratorGPRcA::SetOutputFES(CEnergySurfacePtr p_surf)
 
 //------------------------------------------------------------------------------
 
-void CGHSIntegratorGPRcA::SetOutputHES(CEnergySurfacePtr p_surf)
+void CAUSIntegratorGPR0B::SetOutputHES(CEnergySurfacePtr p_surf)
 {
     if( NumOfCVs == 0 ){
         NumOfCVs  = (size_t)p_surf->GetNumOfCVs();
@@ -195,7 +195,7 @@ void CGHSIntegratorGPRcA::SetOutputHES(CEnergySurfacePtr p_surf)
 
 //------------------------------------------------------------------------------
 
-void CGHSIntegratorGPRcA::SetOutputSES(CEnergySurfacePtr p_surf)
+void CAUSIntegratorGPR0B::SetOutputSES(CEnergySurfacePtr p_surf)
 {
     if( NumOfCVs == 0 ){
         NumOfCVs  = (size_t)p_surf->GetNumOfCVs();
@@ -214,7 +214,7 @@ void CGHSIntegratorGPRcA::SetOutputSES(CEnergySurfacePtr p_surf)
 
 //------------------------------------------------------------------------------
 
-void CGHSIntegratorGPRcA::SetIncludeError(bool iset)
+void CAUSIntegratorGPR0B::SetIncludeError(bool iset)
 {
     if( iset == true ){
         RUNTIME_ERROR("error calculation is not possible with this GPR integrator");
@@ -223,28 +223,28 @@ void CGHSIntegratorGPRcA::SetIncludeError(bool iset)
 
 //------------------------------------------------------------------------------
 
-void CGHSIntegratorGPRcA::SetNoEnergy(bool iset)
+void CAUSIntegratorGPR0B::SetNoEnergy(bool iset)
 {
     NoEnergy = iset;
 }
 
 //------------------------------------------------------------------------------
 
-void CGHSIntegratorGPRcA::SetBalanceResiduals(bool iset)
+void CAUSIntegratorGPR0B::SetBalanceResiduals(bool iset)
 {
     DoBalanceResiduals = iset;
 }
 
 //------------------------------------------------------------------------------
 
-void CGHSIntegratorGPRcA::PrepForHyprmsGrd(bool iset)
+void CAUSIntegratorGPR0B::PrepForHyprmsGrd(bool iset)
 {
    NeedInv |= iset;
 }
 
 //------------------------------------------------------------------------------
 
-void CGHSIntegratorGPRcA::SetCalcLogPL(bool iset)
+void CAUSIntegratorGPR0B::SetCalcLogPL(bool iset)
 {
    NeedInv |= iset;
 }
@@ -253,7 +253,7 @@ void CGHSIntegratorGPRcA::SetCalcLogPL(bool iset)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-bool CGHSIntegratorGPRcA::Integrate(CVerboseStr& vout,bool nostat)
+bool CAUSIntegratorGPR0B::Integrate(CVerboseStr& vout,bool nostat)
 {
     PrintExecInfo(vout);
 
@@ -372,7 +372,7 @@ bool CGHSIntegratorGPRcA::Integrate(CVerboseStr& vout,bool nostat)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-bool CGHSIntegratorGPRcA::TrainGP(CVerboseStr& vout)
+bool CAUSIntegratorGPR0B::TrainGP(CVerboseStr& vout)
 {
     if( IsNumDiffEnabled() ) {
         vout << "   Creating K+Sigma and Y (numeric differentiation) ..." << endl;
@@ -492,7 +492,7 @@ bool CGHSIntegratorGPRcA::TrainGP(CVerboseStr& vout)
 
 //------------------------------------------------------------------------------
 
-void CGHSIntegratorGPRcA::CalculateEnergy(CVerboseStr& vout)
+void CAUSIntegratorGPR0B::CalculateEnergy(CVerboseStr& vout)
 {
     vout << "   Calculating dG, dH, -TdS surfaces ..." << endl;
     vout << "      >>>>>>>>" << endl;
@@ -611,7 +611,7 @@ void CGHSIntegratorGPRcA::CalculateEnergy(CVerboseStr& vout)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void CGHSIntegratorGPRcA::CreateKS(void)
+void CAUSIntegratorGPR0B::CreateKS(void)
 {
     CSimpleVector<double> ipos;
     CSimpleVector<double> jpos;
@@ -655,7 +655,7 @@ void CGHSIntegratorGPRcA::CreateKS(void)
         }
     }
 
-// error of data points;
+ // error of data points;
     int offsetn0 = 0;
     int offsetn1 = offsetn0 + 1;
     int offsetn2 = offsetn1 + 1;
@@ -670,20 +670,44 @@ void CGHSIntegratorGPRcA::CreateKS(void)
 
 //------------------------------------------------------------------------------
 
-void CGHSIntegratorGPRcA::CreateTK(const CSimpleVector<double>& ip, const CSimpleVector<double>& jp, CFortranMatrix& kblock)
+void CAUSIntegratorGPR0B::CreateTK(const CSimpleVector<double>& ip, const CSimpleVector<double>& jp, CFortranMatrix& kblock)
 {
     kblock.SetZero();
 
-    CSimpleVector<double> kderi;
+    CFortranMatrix kderij;
+    kderij.CreateMatrix(NumOfCVs,NumOfCVs);
+
+    GetKernelDerIJ(ip,jp,kderij);
+
+    double A = SigmaF2[0];
+    double B = SigmaF2[1];
+    double C = SigmaF2[2];
+
+    kblock[0][0] = A*kderij[0][0];
+    kblock[1][0] = 0.0;
+    kblock[2][0] = 0.0;
+
+    kblock[0][1] = 0.0;
+    kblock[1][1] = B*kderij[0][0];
+    kblock[2][1] = 0.0;
+
+    kblock[0][2] = 0.0;
+    kblock[1][2] = 0.0;
+    kblock[2][2] = C*kderij[0][0];
+}
+
+//------------------------------------------------------------------------------
+
+void CAUSIntegratorGPR0B::CreateTKInt(const CSimpleVector<double>& ip, const CSimpleVector<double>& jp, CFortranMatrix& kblock)
+{
+    kblock.SetZero();
+
     CSimpleVector<double> kderj;
-    kderi.CreateVector(NumOfCVs);
     kderj.CreateVector(NumOfCVs);
 
     CFortranMatrix kderij;
     kderij.CreateMatrix(NumOfCVs,NumOfCVs);
 
-    double kval = GetKernelValue(ip,jp);
-    GetKernelDerI(ip,jp,kderi);
     GetKernelDerJ(ip,jp,kderj);
     GetKernelDerIJ(ip,jp,kderij);
 
@@ -691,62 +715,24 @@ void CGHSIntegratorGPRcA::CreateTK(const CSimpleVector<double>& ip, const CSimpl
     double B = SigmaF2[1];
     double C = SigmaF2[2];
 
-    kblock[0][0] = B*kval+C*kderij[0][0];
-    kblock[1][0] = C*kderj[0];
-    kblock[2][0] = B*kval;
+    kblock[0][0] = A*kderj[0];
+    kblock[0][1] = 0.0;
+    kblock[0][2] = 0.0;
 
-    kblock[0][1] = C*kderi[0];
-    kblock[1][1] = A*kval+C*kval;
-    kblock[2][1] = -A*kderi[0];
+    kblock[1][0] = 0.0;
+    kblock[1][1] = B*kderij[0][0];
+    kblock[1][2] = 0.0;
 
-    kblock[0][2] = B*kval;
-    kblock[1][2] = -A*kderj[0];
-    kblock[2][2] = B*kval+A*kderij[0][0];
-}
-
-//------------------------------------------------------------------------------
-
-void CGHSIntegratorGPRcA::CreateTKInt(const CSimpleVector<double>& ip, const CSimpleVector<double>& jp, CFortranMatrix& kblock)
-{
-    kblock.SetZero();
-
-    CSimpleVector<double> kderi;
-    CSimpleVector<double> kderj;
-    kderi.CreateVector(NumOfCVs);
-    kderj.CreateVector(NumOfCVs);
-
-    CFortranMatrix kderij;
-    kderij.CreateMatrix(NumOfCVs,NumOfCVs);
-
-    double kval = GetKernelValue(ip,jp);
-    double kint = GetKernelIntI(ip,jp);
-
-    GetKernelDerI(ip,jp,kderi);
-    GetKernelDerJ(ip,jp,kderj);
-    GetKernelDerIJ(ip,jp,kderij);
-
-    double A = SigmaF2[0];
-    double B = SigmaF2[1];
-    double C = SigmaF2[2];
-
-    kblock[0][0] = B*kint+C*kderj[0];
-    kblock[0][1] = C*kval;
-    kblock[0][2] =  B*kint;
-
-    kblock[1][0] = C*kderj[0];
-    kblock[1][1] = A*kval+C*kval;
-    kblock[1][2] = -A*kderj[0];
-
-    kblock[2][0] = B*kint;
-    kblock[2][1] = -A*kval;
-    kblock[2][2] = B*kint+A*kderj[0];
+    kblock[2][0] = 0.0;
+    kblock[2][1] = 0.0;
+    kblock[2][2] = C*kderj[0];
 }
 
 //==============================================================================
 //------------------------------------------------------------------------------
 //==============================================================================
 
-double CGHSIntegratorGPRcA::GetValue(const CSimpleVector<double>& position,int task)
+double CAUSIntegratorGPR0B::GetValue(const CSimpleVector<double>& position,int task)
 {
     CSimpleVector<double>   kff;
     kff.CreateVector(GPRSize);
@@ -759,7 +745,7 @@ double CGHSIntegratorGPRcA::GetValue(const CSimpleVector<double>& position,int t
 
 //------------------------------------------------------------------------------
 
-double CGHSIntegratorGPRcA::GetTrainingValue(const CSimpleVector<double>& position,size_t icoord,int task)
+double CAUSIntegratorGPR0B::GetTrainingValue(const CSimpleVector<double>& position,size_t icoord,int task)
 {
     if( (task < 0) || (task >= 3) ){
         ES_ERROR("out-of-range task");
@@ -785,7 +771,7 @@ double CGHSIntegratorGPRcA::GetTrainingValue(const CSimpleVector<double>& positi
 
 //------------------------------------------------------------------------------
 
-double CGHSIntegratorGPRcA::GetTrainingValueVar(const CSimpleVector<double>& position,size_t icoord,int task)
+double CAUSIntegratorGPR0B::GetTrainingValueVar(const CSimpleVector<double>& position,size_t icoord,int task)
 {
     if( KSInverted != true ) {
         RUNTIME_ERROR("KS must be inverted!");
@@ -809,7 +795,7 @@ double CGHSIntegratorGPRcA::GetTrainingValueVar(const CSimpleVector<double>& pos
 
 //------------------------------------------------------------------------------
 
-double CGHSIntegratorGPRcA::GetRMSR(size_t cv,int task)
+double CAUSIntegratorGPR0B::GetRMSR(size_t cv,int task)
 {
     if( NumOfBins == 0 ){
         RUNTIME_ERROR("number of bins is not > 0");
@@ -892,7 +878,7 @@ double CGHSIntegratorGPRcA::GetRMSR(size_t cv,int task)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void CGHSIntegratorGPRcA::CreateKff(const CSimpleVector<double>& ip,CSimpleVector<double>& kff,int task)
+void CAUSIntegratorGPR0B::CreateKff(const CSimpleVector<double>& ip,CSimpleVector<double>& kff,int task)
 {
     CSimpleVector<double> jpos;
     jpos.CreateVector(NumOfCVs);
@@ -914,11 +900,12 @@ void CGHSIntegratorGPRcA::CreateKff(const CSimpleVector<double>& ip,CSimpleVecto
         kff[offset1 + indj] = kblock[task][1];
         kff[offset2 + indj] = kblock[task][2];
     }
+
 }
 
 //------------------------------------------------------------------------------
 
-void CGHSIntegratorGPRcA::CreateKff2(const CSimpleVector<double>& ip,size_t icoord,CSimpleVector<double>& kff2,int task)
+void CAUSIntegratorGPR0B::CreateKff2(const CSimpleVector<double>& ip,size_t icoord,CSimpleVector<double>& kff2,int task)
 {
     CSimpleVector<double> jpos;
     jpos.CreateVector(NumOfCVs);
@@ -946,7 +933,7 @@ void CGHSIntegratorGPRcA::CreateKff2(const CSimpleVector<double>& ip,size_t icoo
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void CGHSIntegratorGPRcA::CalcResiduals(CVerboseStr& vout,bool balanced)
+void CAUSIntegratorGPR0B::CalcResiduals(CVerboseStr& vout,bool balanced)
 {
     double mf = 0.0;
     double m2 = 0.0;
@@ -984,7 +971,7 @@ void CGHSIntegratorGPRcA::CalcResiduals(CVerboseStr& vout,bool balanced)
 
 //------------------------------------------------------------------------------
 
-void CGHSIntegratorGPRcA::BalanceResiduals(void)
+void CAUSIntegratorGPR0B::BalanceResiduals(void)
 {
     double mf = 0.0;
     double n  = 0.0;
@@ -1014,14 +1001,14 @@ void CGHSIntegratorGPRcA::BalanceResiduals(void)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void CGHSIntegratorGPRcA::PrepForMFInfo(void)
+void CAUSIntegratorGPR0B::PrepForMFInfo(void)
 {
     NeedInv = true;
 }
 
 //------------------------------------------------------------------------------
 
-bool CGHSIntegratorGPRcA::WriteMFInfo(const CSmallString& name,int task)
+bool CAUSIntegratorGPR0B::WriteMFInfo(const CSmallString& name,int task)
 {
     if( NumOfBins == 0 ){
         ES_ERROR("number of bins is not > 0");
@@ -1146,7 +1133,7 @@ bool CGHSIntegratorGPRcA::WriteMFInfo(const CSmallString& name,int task)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-double CGHSIntegratorGPRcA::GetLogML(void)
+double CAUSIntegratorGPR0B::GetLogML(void)
 {
     double ml = 0.0;
 
@@ -1165,7 +1152,7 @@ double CGHSIntegratorGPRcA::GetLogML(void)
 
 //------------------------------------------------------------------------------
 
-double CGHSIntegratorGPRcA::GetLogPL(void)
+double CAUSIntegratorGPR0B::GetLogPL(void)
 {
     if( ! (NeedInv || UseInv) ){
         RUNTIME_ERROR("logPL requires K+Sigma inverted matrix");
@@ -1189,7 +1176,7 @@ double CGHSIntegratorGPRcA::GetLogPL(void)
 
 //------------------------------------------------------------------------------
 
-void CGHSIntegratorGPRcA::GetLogMLDerivatives(const std::vector<bool>& flags,CSimpleVector<double>& der)
+void CAUSIntegratorGPR0B::GetLogMLDerivatives(const std::vector<bool>& flags,CSimpleVector<double>& der)
 {
     if( ! (NeedInv || UseInv) ){
         RUNTIME_ERROR("GetLogMLDerivatives requires K+Sigma inverted matrix");
@@ -1258,7 +1245,7 @@ void CGHSIntegratorGPRcA::GetLogMLDerivatives(const std::vector<bool>& flags,CSi
 
 //------------------------------------------------------------------------------
 
-void CGHSIntegratorGPRcA::GetLogPLDerivatives(const std::vector<bool>& flags,CSimpleVector<double>& der)
+void CAUSIntegratorGPR0B::GetLogPLDerivatives(const std::vector<bool>& flags,CSimpleVector<double>& der)
 {
     if( ! (NeedInv || UseInv) ){
         RUNTIME_ERROR("GetLogPLDerivatives requires K+Sigma inverted matrix");
@@ -1337,7 +1324,7 @@ void CGHSIntegratorGPRcA::GetLogPLDerivatives(const std::vector<bool>& flags,CSi
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void CGHSIntegratorGPRcA::CalcKderWRTSigmaF2(size_t idx)
+void CAUSIntegratorGPR0B::CalcKderWRTSigmaF2(size_t idx)
 {
     CSimpleVector<double> ipos;
     CSimpleVector<double> jpos;
@@ -1382,7 +1369,7 @@ void CGHSIntegratorGPRcA::CalcKderWRTSigmaF2(size_t idx)
 
 //------------------------------------------------------------------------------
 
-void CGHSIntegratorGPRcA::CreateTKDerSigmaF2(const CSimpleVector<double>& ip, const CSimpleVector<double>& jp, CFortranMatrix& kblock, size_t idx)
+void CAUSIntegratorGPR0B::CreateTKDerSigmaF2(const CSimpleVector<double>& ip, const CSimpleVector<double>& jp, CFortranMatrix& kblock, size_t idx)
 {
     kblock.SetZero();
 
@@ -1423,7 +1410,7 @@ void CGHSIntegratorGPRcA::CreateTKDerSigmaF2(const CSimpleVector<double>& ip, co
 
 //------------------------------------------------------------------------------
 
-void CGHSIntegratorGPRcA::CalcKderWRTWFac(size_t cv)
+void CAUSIntegratorGPR0B::CalcKderWRTWFac(size_t cv)
 {
     CSimpleVector<double> ipos;
     CSimpleVector<double> jpos;
@@ -1468,43 +1455,35 @@ void CGHSIntegratorGPRcA::CalcKderWRTWFac(size_t cv)
 
 //------------------------------------------------------------------------------
 
-void CGHSIntegratorGPRcA::CreateTKDerWFac(const CSimpleVector<double>& ip, const CSimpleVector<double>& jp, CFortranMatrix& kblock, int cv)
+void CAUSIntegratorGPR0B::CreateTKDerWFac(const CSimpleVector<double>& ip, const CSimpleVector<double>& jp, CFortranMatrix& kblock, int cv)
 {
     kblock.SetZero();
-
-    CSimpleVector<double> kderi;
-    CSimpleVector<double> kderj;
-    kderi.CreateVector(NumOfCVs);
-    kderj.CreateVector(NumOfCVs);
 
     CFortranMatrix kderij;
     kderij.CreateMatrix(NumOfCVs,NumOfCVs);
 
-    double kval = GetKernelValueWFacDer(ip,jp,cv);
-    GetKernelDerIWFacDer(ip,jp,cv,kderi);
-    GetKernelDerJWFacDer(ip,jp,cv,kderj);
     GetKernelDerIJWFacDer(ip,jp,cv,kderij);
 
     double A = SigmaF2[0];
     double B = SigmaF2[1];
     double C = SigmaF2[2];
 
-    kblock[0][0] = B*kval+C*kderij[0][0];
-    kblock[1][0] = C*kderj[0];
-    kblock[2][0] = B*kval;
+    kblock[0][0] = A*kderij[0][0];
+    kblock[1][0] = 0.0;
+    kblock[2][0] = 0.0;
 
-    kblock[0][1] = C*kderi[0];
-    kblock[1][1] = A*kval+C*kval;
-    kblock[2][1] = -A*kderi[0];
+    kblock[0][1] = 0.0;
+    kblock[1][1] = B*kderij[0][0];
+    kblock[2][1] = 0.0;
 
-    kblock[0][2] = B*kval;
-    kblock[1][2] = -A*kderj[0];
-    kblock[2][2] = B*kval+A*kderij[0][0];
+    kblock[0][2] = 0.0;
+    kblock[1][2] = 0.0;
+    kblock[2][2] = C*kderij[0][0];
 }
 
 //------------------------------------------------------------------------------
 
-void CGHSIntegratorGPRcA::CalcKderWRTSigmaN2(size_t idx)
+void CAUSIntegratorGPR0B::CalcKderWRTSigmaN2(size_t idx)
 {
     if( (idx < 0) || (idx > 2) ) RUNTIME_ERROR("idx out-of-range");
 

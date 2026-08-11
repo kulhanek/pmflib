@@ -1,5 +1,5 @@
-#ifndef GHSIntegratorGPR0BH
-#define GHSIntegratorGPR0BH
+#ifndef AUSIntegratorGPR0BH
+#define AUSIntegratorGPR0BH
 // =============================================================================
 // PMFLib - Library Supporting Potential of Mean Force Calculations
 // -----------------------------------------------------------------------------
@@ -37,11 +37,11 @@
 /** \brief integrator of ABF accumulator employing gaussian process
 */
 
-class PMF_PACKAGE CGHSIntegratorGPR0B : public CGPREngine {
+class PMF_PACKAGE CAUSIntegratorGPR0B : public CGPREngine {
 public:
 // constructor and destructor -------------------------------------------------
-    CGHSIntegratorGPR0B(void);
-    virtual ~CGHSIntegratorGPR0B(void);
+    CAUSIntegratorGPR0B(void);
+    virtual ~CAUSIntegratorGPR0B(void);
 
 // setup methods --------------------------------------------------------------
     /// set accumulator
@@ -167,7 +167,7 @@ private:
 
 //------------------------------------------------------------------------------
 
-typedef boost::shared_ptr<CGHSIntegratorGPR0B>    CGHSIntegratorGPR0BPtr;
+typedef boost::shared_ptr<CAUSIntegratorGPR0B>    CAUSIntegratorGPR0BPtr;
 
 //------------------------------------------------------------------------------
 

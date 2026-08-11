@@ -20,7 +20,7 @@
 //     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 // =============================================================================
 
-#include <GHSIntegratorGPR0A.hpp>
+#include <AUSIntegratorGPRcA.hpp>
 #include <ErrorSystem.hpp>
 #include <FortranMatrix.hpp>
 #include <Vector.hpp>
@@ -48,7 +48,7 @@ using namespace boost::algorithm;
 //------------------------------------------------------------------------------
 //==============================================================================
 
-CGHSIntegratorGPR0A::CGHSIntegratorGPR0A(void)
+CAUSIntegratorGPRcA::CAUSIntegratorGPRcA(void)
 {
     GDerProxy           = NULL;
     HEneProxy           = NULL;
@@ -70,7 +70,7 @@ CGHSIntegratorGPR0A::CGHSIntegratorGPR0A(void)
 
 //------------------------------------------------------------------------------
 
-CGHSIntegratorGPR0A::~CGHSIntegratorGPR0A(void)
+CAUSIntegratorGPRcA::~CAUSIntegratorGPRcA(void)
 {
 }
 
@@ -78,7 +78,7 @@ CGHSIntegratorGPR0A::~CGHSIntegratorGPR0A(void)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void CGHSIntegratorGPR0A::SetAccumulator(CPMFAccumulatorPtr accu)
+void CAUSIntegratorGPRcA::SetAccumulator(CPMFAccumulatorPtr accu)
 {
     if( accu == NULL ) return;                 // no-accu
 
@@ -91,7 +91,7 @@ void CGHSIntegratorGPR0A::SetAccumulator(CPMFAccumulatorPtr accu)
 
 //------------------------------------------------------------------------------
 
-void CGHSIntegratorGPR0A::SetGDerProxy(CEnergyDerProxyPtr p_proxy)
+void CAUSIntegratorGPRcA::SetGDerProxy(CEnergyDerProxyPtr p_proxy)
 {
     if( p_proxy == NULL ) return;                 // no-proxy
     if( p_proxy->GetAccu() == NULL ) return;      // no PMFAccu
@@ -113,7 +113,7 @@ void CGHSIntegratorGPR0A::SetGDerProxy(CEnergyDerProxyPtr p_proxy)
 
 //------------------------------------------------------------------------------
 
-void CGHSIntegratorGPR0A::SetHEneProxy(CEnergyProxyPtr p_proxy)
+void CAUSIntegratorGPRcA::SetHEneProxy(CEnergyProxyPtr p_proxy)
 {
     if( p_proxy == NULL ) return;                 // no-proxy
     if( p_proxy->GetAccu() == NULL ) return;      // no PMFAccu
@@ -135,7 +135,7 @@ void CGHSIntegratorGPR0A::SetHEneProxy(CEnergyProxyPtr p_proxy)
 
 //------------------------------------------------------------------------------
 
-void CGHSIntegratorGPR0A::SetSDerProxy(CEnergyDerProxyPtr p_proxy)
+void CAUSIntegratorGPRcA::SetSDerProxy(CEnergyDerProxyPtr p_proxy)
 {
     if( p_proxy == NULL ) return;                 // no-proxy
     if( p_proxy->GetAccu() == NULL ) return;      // no PMFAccu
@@ -157,7 +157,7 @@ void CGHSIntegratorGPR0A::SetSDerProxy(CEnergyDerProxyPtr p_proxy)
 
 //------------------------------------------------------------------------------
 
-void CGHSIntegratorGPR0A::SetOutputFES(CEnergySurfacePtr p_surf)
+void CAUSIntegratorGPRcA::SetOutputFES(CEnergySurfacePtr p_surf)
 {
     if( NumOfCVs == 0 ){
         NumOfCVs  = (size_t)p_surf->GetNumOfCVs();
@@ -176,7 +176,7 @@ void CGHSIntegratorGPR0A::SetOutputFES(CEnergySurfacePtr p_surf)
 
 //------------------------------------------------------------------------------
 
-void CGHSIntegratorGPR0A::SetOutputHES(CEnergySurfacePtr p_surf)
+void CAUSIntegratorGPRcA::SetOutputHES(CEnergySurfacePtr p_surf)
 {
     if( NumOfCVs == 0 ){
         NumOfCVs  = (size_t)p_surf->GetNumOfCVs();
@@ -195,7 +195,7 @@ void CGHSIntegratorGPR0A::SetOutputHES(CEnergySurfacePtr p_surf)
 
 //------------------------------------------------------------------------------
 
-void CGHSIntegratorGPR0A::SetOutputSES(CEnergySurfacePtr p_surf)
+void CAUSIntegratorGPRcA::SetOutputSES(CEnergySurfacePtr p_surf)
 {
     if( NumOfCVs == 0 ){
         NumOfCVs  = (size_t)p_surf->GetNumOfCVs();
@@ -214,7 +214,7 @@ void CGHSIntegratorGPR0A::SetOutputSES(CEnergySurfacePtr p_surf)
 
 //------------------------------------------------------------------------------
 
-void CGHSIntegratorGPR0A::SetIncludeError(bool iset)
+void CAUSIntegratorGPRcA::SetIncludeError(bool iset)
 {
     if( iset == true ){
         RUNTIME_ERROR("error calculation is not possible with this GPR integrator");
@@ -223,28 +223,28 @@ void CGHSIntegratorGPR0A::SetIncludeError(bool iset)
 
 //------------------------------------------------------------------------------
 
-void CGHSIntegratorGPR0A::SetNoEnergy(bool iset)
+void CAUSIntegratorGPRcA::SetNoEnergy(bool iset)
 {
     NoEnergy = iset;
 }
 
 //------------------------------------------------------------------------------
 
-void CGHSIntegratorGPR0A::SetBalanceResiduals(bool iset)
+void CAUSIntegratorGPRcA::SetBalanceResiduals(bool iset)
 {
     DoBalanceResiduals = iset;
 }
 
 //------------------------------------------------------------------------------
 
-void CGHSIntegratorGPR0A::PrepForHyprmsGrd(bool iset)
+void CAUSIntegratorGPRcA::PrepForHyprmsGrd(bool iset)
 {
    NeedInv |= iset;
 }
 
 //------------------------------------------------------------------------------
 
-void CGHSIntegratorGPR0A::SetCalcLogPL(bool iset)
+void CAUSIntegratorGPRcA::SetCalcLogPL(bool iset)
 {
    NeedInv |= iset;
 }
@@ -253,7 +253,7 @@ void CGHSIntegratorGPR0A::SetCalcLogPL(bool iset)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-bool CGHSIntegratorGPR0A::Integrate(CVerboseStr& vout,bool nostat)
+bool CAUSIntegratorGPRcA::Integrate(CVerboseStr& vout,bool nostat)
 {
     PrintExecInfo(vout);
 
@@ -303,8 +303,7 @@ bool CGHSIntegratorGPR0A::Integrate(CVerboseStr& vout,bool nostat)
     // number of data points
     NumOfUsedBins = 0;
     for(size_t ibin=0; ibin < NumOfBins; ibin++){
-        // FIXME
-        //  if( Accu->GetNumOfSamples(ibin) > 0 ) NumOfUsedBins++;
+        if( GDerProxy->GetNumOfSamples(ibin) > 0 ) NumOfUsedBins++;
     }
     GPRSize = 3 * NumOfUsedBins;
 
@@ -312,8 +311,7 @@ bool CGHSIntegratorGPR0A::Integrate(CVerboseStr& vout,bool nostat)
     SampledMap.resize(NumOfUsedBins);
     size_t ind = 0;
     for(size_t ibin=0; ibin < NumOfBins; ibin++){
-        // FIXME
-        //  if( Accu->GetNumOfSamples(ibin) <= 0 ) continue;
+        if( GDerProxy->GetNumOfSamples(ibin) <= 0 ) continue;
         SampledMap[ind] = ibin;
         ind++;
     }
@@ -323,7 +321,6 @@ bool CGHSIntegratorGPR0A::Integrate(CVerboseStr& vout,bool nostat)
     Y.CreateVector(GPRSize);
     KS.CreateMatrix(GPRSize,GPRSize);
     TK.CreateMatrix(3,3);
-    TKder.CreateMatrix(3,3);
 
     // print hyperparameters
         vout        << "   Hyperparameters ..." << endl;
@@ -375,7 +372,7 @@ bool CGHSIntegratorGPR0A::Integrate(CVerboseStr& vout,bool nostat)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-bool CGHSIntegratorGPR0A::TrainGP(CVerboseStr& vout)
+bool CAUSIntegratorGPRcA::TrainGP(CVerboseStr& vout)
 {
     if( IsNumDiffEnabled() ) {
         vout << "   Creating K+Sigma and Y (numeric differentiation) ..." << endl;
@@ -406,8 +403,7 @@ bool CGHSIntegratorGPR0A::TrainGP(CVerboseStr& vout)
         Y[offset2 + indi] = SDerProxy->GetValue(ibin,0,E_PROXY_MEAN);
     }
 
-// construct TK and KS
-    CreateTK();
+// construct KS
     CreateKS();
 
     RunBlasLapackPar();
@@ -496,7 +492,7 @@ bool CGHSIntegratorGPR0A::TrainGP(CVerboseStr& vout)
 
 //------------------------------------------------------------------------------
 
-void CGHSIntegratorGPR0A::CalculateEnergy(CVerboseStr& vout)
+void CAUSIntegratorGPRcA::CalculateEnergy(CVerboseStr& vout)
 {
     vout << "   Calculating dG, dH, -TdS surfaces ..." << endl;
     vout << "      >>>>>>>>" << endl;
@@ -508,7 +504,7 @@ void CGHSIntegratorGPR0A::CalculateEnergy(CVerboseStr& vout)
 // basic EneSurface update
     #pragma omp parallel for
     for(size_t ibin=0; ibin < NumOfBins; ibin++){
-        int nsamples =      0;   // FIXME Accu->GetNumOfSamples(ibin);
+        int nsamples = GDerProxy->GetNumOfSamples(ibin);
         GSurface->SetNumOfSamples(ibin,nsamples);
         GSurface->SetEnergy(ibin,0.0);
         GSurface->SetError(ibin,0.0);
@@ -615,23 +611,15 @@ void CGHSIntegratorGPR0A::CalculateEnergy(CVerboseStr& vout)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-// TK is multitask covariance matrix
-void CGHSIntegratorGPR0A::CreateTK(void)
-{
-    TK.SetZero();
-    TK[0][0] = SigmaF2[0];
-    TK[1][1] = SigmaF2[1];
-    TK[2][2] = SigmaF2[2];
-}
-
-//------------------------------------------------------------------------------
-
-void CGHSIntegratorGPR0A::CreateKS(void)
+void CAUSIntegratorGPRcA::CreateKS(void)
 {
     CSimpleVector<double> ipos;
     CSimpleVector<double> jpos;
     ipos.CreateVector(NumOfCVs);
     jpos.CreateVector(NumOfCVs);
+
+    CFortranMatrix kblock;
+    kblock.CreateMatrix(3,3);
 
     KS.SetZero();
 
@@ -640,7 +628,7 @@ void CGHSIntegratorGPR0A::CreateKS(void)
     int offset2 = offset1 + NumOfUsedBins;
 
     // generate main kernel block
-    #pragma omp parallel for firstprivate(ipos,jpos)
+    #pragma omp parallel for firstprivate(ipos,jpos,kblock)
     for(size_t indi=0; indi < NumOfUsedBins; indi++){
         size_t ibin = SampledMap[indi];
         Accu->GetPoint(ibin,ipos);
@@ -649,20 +637,21 @@ void CGHSIntegratorGPR0A::CreateKS(void)
             size_t jbin = SampledMap[indj];
             Accu->GetPoint(jbin,jpos);
 
-            double kval = GetKernelValue(ipos,jpos);
+            CreateTK(ipos,jpos,kblock);
 
             // distribute to main kernel matrix
-            KS[offset0 + indi][offset0 + indj] = TK[0][0]*kval;
-            KS[offset0 + indi][offset1 + indj] = TK[0][1]*kval;
-            KS[offset0 + indi][offset2 + indj] = TK[0][2]*kval;
 
-            KS[offset1 + indi][offset0 + indj] = TK[1][0]*kval;
-            KS[offset1 + indi][offset1 + indj] = TK[1][1]*kval;
-            KS[offset1 + indi][offset2 + indj] = TK[1][2]*kval;
+            KS[offset0 + indi][offset0 + indj] = kblock[0][0];
+            KS[offset0 + indi][offset1 + indj] = kblock[0][1];
+            KS[offset0 + indi][offset2 + indj] = kblock[0][2];
 
-            KS[offset2 + indi][offset0 + indj] = TK[2][0]*kval;
-            KS[offset2 + indi][offset1 + indj] = TK[2][1]*kval;
-            KS[offset2 + indi][offset2 + indj] = TK[2][2]*kval;
+            KS[offset1 + indi][offset0 + indj] = kblock[1][0];
+            KS[offset1 + indi][offset1 + indj] = kblock[1][1];
+            KS[offset1 + indi][offset2 + indj] = kblock[1][2];
+
+            KS[offset2 + indi][offset0 + indj] = kblock[2][0];
+            KS[offset2 + indi][offset1 + indj] = kblock[2][1];
+            KS[offset2 + indi][offset2 + indj] = kblock[2][2];
         }
     }
 
@@ -679,11 +668,85 @@ void CGHSIntegratorGPR0A::CreateKS(void)
     }
 }
 
+//------------------------------------------------------------------------------
+
+void CAUSIntegratorGPRcA::CreateTK(const CSimpleVector<double>& ip, const CSimpleVector<double>& jp, CFortranMatrix& kblock)
+{
+    kblock.SetZero();
+
+    CSimpleVector<double> kderi;
+    CSimpleVector<double> kderj;
+    kderi.CreateVector(NumOfCVs);
+    kderj.CreateVector(NumOfCVs);
+
+    CFortranMatrix kderij;
+    kderij.CreateMatrix(NumOfCVs,NumOfCVs);
+
+    double kval = GetKernelValue(ip,jp);
+    GetKernelDerI(ip,jp,kderi);
+    GetKernelDerJ(ip,jp,kderj);
+    GetKernelDerIJ(ip,jp,kderij);
+
+    double A = SigmaF2[0];
+    double B = SigmaF2[1];
+    double C = SigmaF2[2];
+
+    kblock[0][0] = B*kval+C*kderij[0][0];
+    kblock[1][0] = C*kderj[0];
+    kblock[2][0] = B*kval;
+
+    kblock[0][1] = C*kderi[0];
+    kblock[1][1] = A*kval+C*kval;
+    kblock[2][1] = -A*kderi[0];
+
+    kblock[0][2] = B*kval;
+    kblock[1][2] = -A*kderj[0];
+    kblock[2][2] = B*kval+A*kderij[0][0];
+}
+
+//------------------------------------------------------------------------------
+
+void CAUSIntegratorGPRcA::CreateTKInt(const CSimpleVector<double>& ip, const CSimpleVector<double>& jp, CFortranMatrix& kblock)
+{
+    kblock.SetZero();
+
+    CSimpleVector<double> kderi;
+    CSimpleVector<double> kderj;
+    kderi.CreateVector(NumOfCVs);
+    kderj.CreateVector(NumOfCVs);
+
+    CFortranMatrix kderij;
+    kderij.CreateMatrix(NumOfCVs,NumOfCVs);
+
+    double kval = GetKernelValue(ip,jp);
+    double kint = GetKernelIntI(ip,jp);
+
+    GetKernelDerI(ip,jp,kderi);
+    GetKernelDerJ(ip,jp,kderj);
+    GetKernelDerIJ(ip,jp,kderij);
+
+    double A = SigmaF2[0];
+    double B = SigmaF2[1];
+    double C = SigmaF2[2];
+
+    kblock[0][0] = B*kint+C*kderj[0];
+    kblock[0][1] = C*kval;
+    kblock[0][2] =  B*kint;
+
+    kblock[1][0] = C*kderj[0];
+    kblock[1][1] = A*kval+C*kval;
+    kblock[1][2] = -A*kderj[0];
+
+    kblock[2][0] = B*kint;
+    kblock[2][1] = -A*kval;
+    kblock[2][2] = B*kint+A*kderj[0];
+}
+
 //==============================================================================
 //------------------------------------------------------------------------------
 //==============================================================================
 
-double CGHSIntegratorGPR0A::GetValue(const CSimpleVector<double>& position,int task)
+double CAUSIntegratorGPRcA::GetValue(const CSimpleVector<double>& position,int task)
 {
     CSimpleVector<double>   kff;
     kff.CreateVector(GPRSize);
@@ -696,7 +759,7 @@ double CGHSIntegratorGPR0A::GetValue(const CSimpleVector<double>& position,int t
 
 //------------------------------------------------------------------------------
 
-double CGHSIntegratorGPR0A::GetTrainingValue(const CSimpleVector<double>& position,size_t icoord,int task)
+double CAUSIntegratorGPRcA::GetTrainingValue(const CSimpleVector<double>& position,size_t icoord,int task)
 {
     if( (task < 0) || (task >= 3) ){
         ES_ERROR("out-of-range task");
@@ -722,7 +785,7 @@ double CGHSIntegratorGPR0A::GetTrainingValue(const CSimpleVector<double>& positi
 
 //------------------------------------------------------------------------------
 
-double CGHSIntegratorGPR0A::GetTrainingValueVar(const CSimpleVector<double>& position,size_t icoord,int task)
+double CAUSIntegratorGPRcA::GetTrainingValueVar(const CSimpleVector<double>& position,size_t icoord,int task)
 {
     if( KSInverted != true ) {
         RUNTIME_ERROR("KS must be inverted!");
@@ -746,7 +809,7 @@ double CGHSIntegratorGPR0A::GetTrainingValueVar(const CSimpleVector<double>& pos
 
 //------------------------------------------------------------------------------
 
-double CGHSIntegratorGPR0A::GetRMSR(size_t cv,int task)
+double CAUSIntegratorGPRcA::GetRMSR(size_t cv,int task)
 {
     if( NumOfBins == 0 ){
         RUNTIME_ERROR("number of bins is not > 0");
@@ -829,36 +892,13 @@ double CGHSIntegratorGPR0A::GetRMSR(size_t cv,int task)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void CGHSIntegratorGPR0A::CreateKff(const CSimpleVector<double>& ip,CSimpleVector<double>& kff,int task)
+void CAUSIntegratorGPRcA::CreateKff(const CSimpleVector<double>& ip,CSimpleVector<double>& kff,int task)
 {
     CSimpleVector<double> jpos;
     jpos.CreateVector(NumOfCVs);
 
-    int offset0 = 0;
-    int offset1 = offset0 + NumOfUsedBins;
-    int offset2 = offset1 + NumOfUsedBins;
-
-    // main kernel matrix
-    for(size_t indj=0; indj < NumOfUsedBins; indj++){
-        size_t jbin = SampledMap[indj];
-        Accu->GetPoint(jbin,jpos);
-
-        double kblock = GetKernelValue(ip,jpos);
-        double kint   = GetKernelIntI(ip,jpos);
-
-        // distribute to vector
-        kff[offset0 + indj] = TK[0][task]*kint;
-        kff[offset1 + indj] = TK[1][task]*kblock;
-        kff[offset2 + indj] = TK[2][task]*kint;
-    }
-}
-
-//------------------------------------------------------------------------------
-
-void CGHSIntegratorGPR0A::CreateKff2(const CSimpleVector<double>& ip,size_t icoord,CSimpleVector<double>& kff2,int task)
-{
-    CSimpleVector<double> jpos;
-    jpos.CreateVector(NumOfCVs);
+    CFortranMatrix kblock;
+    kblock.CreateMatrix(3,3);
 
     int offset0 = 0;
     int offset1 = offset0 + NumOfUsedBins;
@@ -868,12 +908,37 @@ void CGHSIntegratorGPR0A::CreateKff2(const CSimpleVector<double>& ip,size_t icoo
         size_t jbin = SampledMap[indj];
         Accu->GetPoint(jbin,jpos);
 
-        double kblock = GetKernelValue(ip,jpos);
+        CreateTKInt(ip,jpos,kblock);
 
-        // distribute to vector
-        kff2[offset0 + indj] = TK[0][task]*kblock;
-        kff2[offset1 + indj] = TK[1][task]*kblock;
-        kff2[offset2 + indj] = TK[2][task]*kblock;
+        kff[offset0 + indj] = kblock[task][0];
+        kff[offset1 + indj] = kblock[task][1];
+        kff[offset2 + indj] = kblock[task][2];
+    }
+}
+
+//------------------------------------------------------------------------------
+
+void CAUSIntegratorGPRcA::CreateKff2(const CSimpleVector<double>& ip,size_t icoord,CSimpleVector<double>& kff2,int task)
+{
+    CSimpleVector<double> jpos;
+    jpos.CreateVector(NumOfCVs);
+
+    CFortranMatrix kblock;
+    kblock.CreateMatrix(3,3);
+
+    int offset0 = 0;
+    int offset1 = offset0 + NumOfUsedBins;
+    int offset2 = offset1 + NumOfUsedBins;
+
+    for(size_t indj=0; indj < NumOfUsedBins; indj++){
+        size_t jbin = SampledMap[indj];
+        Accu->GetPoint(jbin,jpos);
+
+        CreateTK(ip,jpos,kblock);
+
+        kff2[offset0 + indj] = kblock[task][0];
+        kff2[offset1 + indj] = kblock[task][1];
+        kff2[offset2 + indj] = kblock[task][2];
     }
 }
 
@@ -881,7 +946,7 @@ void CGHSIntegratorGPR0A::CreateKff2(const CSimpleVector<double>& ip,size_t icoo
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void CGHSIntegratorGPR0A::CalcResiduals(CVerboseStr& vout,bool balanced)
+void CAUSIntegratorGPRcA::CalcResiduals(CVerboseStr& vout,bool balanced)
 {
     double mf = 0.0;
     double m2 = 0.0;
@@ -919,7 +984,7 @@ void CGHSIntegratorGPR0A::CalcResiduals(CVerboseStr& vout,bool balanced)
 
 //------------------------------------------------------------------------------
 
-void CGHSIntegratorGPR0A::BalanceResiduals(void)
+void CAUSIntegratorGPRcA::BalanceResiduals(void)
 {
     double mf = 0.0;
     double n  = 0.0;
@@ -949,14 +1014,14 @@ void CGHSIntegratorGPR0A::BalanceResiduals(void)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void CGHSIntegratorGPR0A::PrepForMFInfo(void)
+void CAUSIntegratorGPRcA::PrepForMFInfo(void)
 {
     NeedInv = true;
 }
 
 //------------------------------------------------------------------------------
 
-bool CGHSIntegratorGPR0A::WriteMFInfo(const CSmallString& name,int task)
+bool CAUSIntegratorGPRcA::WriteMFInfo(const CSmallString& name,int task)
 {
     if( NumOfBins == 0 ){
         ES_ERROR("number of bins is not > 0");
@@ -1081,7 +1146,7 @@ bool CGHSIntegratorGPR0A::WriteMFInfo(const CSmallString& name,int task)
 //------------------------------------------------------------------------------
 //==============================================================================
 
-double CGHSIntegratorGPR0A::GetLogML(void)
+double CAUSIntegratorGPRcA::GetLogML(void)
 {
     double ml = 0.0;
 
@@ -1100,7 +1165,7 @@ double CGHSIntegratorGPR0A::GetLogML(void)
 
 //------------------------------------------------------------------------------
 
-double CGHSIntegratorGPR0A::GetLogPL(void)
+double CAUSIntegratorGPRcA::GetLogPL(void)
 {
     if( ! (NeedInv || UseInv) ){
         RUNTIME_ERROR("logPL requires K+Sigma inverted matrix");
@@ -1124,7 +1189,7 @@ double CGHSIntegratorGPR0A::GetLogPL(void)
 
 //------------------------------------------------------------------------------
 
-void CGHSIntegratorGPR0A::GetLogMLDerivatives(const std::vector<bool>& flags,CSimpleVector<double>& der)
+void CAUSIntegratorGPRcA::GetLogMLDerivatives(const std::vector<bool>& flags,CSimpleVector<double>& der)
 {
     if( ! (NeedInv || UseInv) ){
         RUNTIME_ERROR("GetLogMLDerivatives requires K+Sigma inverted matrix");
@@ -1193,7 +1258,7 @@ void CGHSIntegratorGPR0A::GetLogMLDerivatives(const std::vector<bool>& flags,CSi
 
 //------------------------------------------------------------------------------
 
-void CGHSIntegratorGPR0A::GetLogPLDerivatives(const std::vector<bool>& flags,CSimpleVector<double>& der)
+void CAUSIntegratorGPRcA::GetLogPLDerivatives(const std::vector<bool>& flags,CSimpleVector<double>& der)
 {
     if( ! (NeedInv || UseInv) ){
         RUNTIME_ERROR("GetLogPLDerivatives requires K+Sigma inverted matrix");
@@ -1272,69 +1337,15 @@ void CGHSIntegratorGPR0A::GetLogPLDerivatives(const std::vector<bool>& flags,CSi
 //------------------------------------------------------------------------------
 //==============================================================================
 
-void CGHSIntegratorGPR0A::CalcKderWRTSigmaF2(size_t idx)
+void CAUSIntegratorGPRcA::CalcKderWRTSigmaF2(size_t idx)
 {
     CSimpleVector<double> ipos;
     CSimpleVector<double> jpos;
     ipos.CreateVector(NumOfCVs);
     jpos.CreateVector(NumOfCVs);
 
-    CSimpleVector<double> kblock1i;
-    CSimpleVector<double> kblock1j;
-    kblock1i.CreateVector(NumOfCVs);
-    kblock1j.CreateVector(NumOfCVs);
-
-    Kder.SetZero();
-
-    int offset0 = 0;
-    int offset1 = offset0 + NumOfUsedBins*NumOfCVs;
-    int offset2 = offset1 + NumOfUsedBins;
-
-    CreateTKDerSigmaF2(idx);
-
-    // generate main kernel block
-    #pragma omp parallel for firstprivate(ipos,jpos)
-    for(size_t indi=0; indi < NumOfUsedBins; indi++){
-        size_t ibin = SampledMap[indi];
-        Accu->GetPoint(ibin,ipos);
-
-        for(size_t indj=0; indj < NumOfUsedBins; indj++){
-            size_t jbin = SampledMap[indj];
-            Accu->GetPoint(jbin,jpos);
-
-            double kblock = GetKernelValue(ipos,jpos);
-
-            Kder[offset0 + indi][offset0 + indj] = TKder[0][0]*kblock;
-            Kder[offset0 + indi][offset1 + indj] = TKder[0][1]*kblock;
-            Kder[offset0 + indi][offset2 + indj] = TKder[0][2]*kblock;
-
-            Kder[offset1 + indi][offset0 + indj] = TKder[1][0]*kblock;
-            Kder[offset1 + indi][offset1 + indj] = TKder[1][1]*kblock;
-            Kder[offset1 + indi][offset2 + indj] = TKder[1][2]*kblock;
-
-            Kder[offset2 + indi][offset0 + indj] = TKder[2][0]*kblock;
-            Kder[offset2 + indi][offset1 + indj] = TKder[2][1]*kblock;
-            Kder[offset2 + indi][offset2 + indj] = TKder[2][2]*kblock;
-        }
-    }
-}
-
-//------------------------------------------------------------------------------
-
-void CGHSIntegratorGPR0A::CreateTKDerSigmaF2(size_t idx)
-{
-    TKder.SetZero();
-    TKder[idx][idx] = 1.0;
-}
-
-//------------------------------------------------------------------------------
-
-void CGHSIntegratorGPR0A::CalcKderWRTWFac(size_t cv)
-{
-CSimpleVector<double> ipos;
-    CSimpleVector<double> jpos;
-    ipos.CreateVector(NumOfCVs);
-    jpos.CreateVector(NumOfCVs);
+    CFortranMatrix kblock;
+    kblock.CreateMatrix(3,3);
 
     Kder.SetZero();
 
@@ -1343,7 +1354,7 @@ CSimpleVector<double> ipos;
     int offset2 = offset1 + NumOfUsedBins;
 
     // generate main kernel block
-    #pragma omp parallel for firstprivate(ipos,jpos)
+    #pragma omp parallel for firstprivate(ipos,jpos,kblock)
     for(size_t indi=0; indi < NumOfUsedBins; indi++){
         size_t ibin = SampledMap[indi];
         Accu->GetPoint(ibin,ipos);
@@ -1352,26 +1363,148 @@ CSimpleVector<double> ipos;
             size_t jbin = SampledMap[indj];
             Accu->GetPoint(jbin,jpos);
 
-            double kblock = GetKernelValueWFacDer(ipos,jpos,cv);
+            CreateTKDerSigmaF2(ipos,jpos,kblock,idx);
 
-            Kder[offset0 + indi][offset0 + indj] = TK[0][0]*kblock;
-            Kder[offset0 + indi][offset1 + indj] = TK[0][1]*kblock;
-            Kder[offset0 + indi][offset2 + indj] = TK[0][2]*kblock;
+            Kder[offset0 + indi][offset0 + indj] = kblock[0][0];
+            Kder[offset0 + indi][offset1 + indj] = kblock[0][1];
+            Kder[offset0 + indi][offset2 + indj] = kblock[0][2];
 
-            Kder[offset1 + indi][offset0 + indj] = TK[1][0]*kblock;
-            Kder[offset1 + indi][offset1 + indj] = TK[1][1]*kblock;
-            Kder[offset1 + indi][offset2 + indj] = TK[1][2]*kblock;
+            Kder[offset1 + indi][offset0 + indj] = kblock[1][0];
+            Kder[offset1 + indi][offset1 + indj] = kblock[1][1];
+            Kder[offset1 + indi][offset2 + indj] = kblock[1][2];
 
-            Kder[offset2 + indi][offset0 + indj] = TK[2][0]*kblock;
-            Kder[offset2 + indi][offset1 + indj] = TK[2][1]*kblock;
-            Kder[offset2 + indi][offset2 + indj] = TK[2][2]*kblock;
+            Kder[offset2 + indi][offset0 + indj] = kblock[2][0];
+            Kder[offset2 + indi][offset1 + indj] = kblock[2][1];
+            Kder[offset2 + indi][offset2 + indj] = kblock[2][2];
         }
     }
 }
 
 //------------------------------------------------------------------------------
 
-void CGHSIntegratorGPR0A::CalcKderWRTSigmaN2(size_t idx)
+void CAUSIntegratorGPRcA::CreateTKDerSigmaF2(const CSimpleVector<double>& ip, const CSimpleVector<double>& jp, CFortranMatrix& kblock, size_t idx)
+{
+    kblock.SetZero();
+
+    CSimpleVector<double> kderi;
+    CSimpleVector<double> kderj;
+    kderi.CreateVector(NumOfCVs);
+    kderj.CreateVector(NumOfCVs);
+
+    CFortranMatrix kderij;
+    kderij.CreateMatrix(NumOfCVs,NumOfCVs);
+
+    double kval = GetKernelValue(ip,jp);
+    GetKernelDerI(ip,jp,kderi);
+    GetKernelDerJ(ip,jp,kderj);
+    GetKernelDerIJ(ip,jp,kderij);
+
+    double A = 0;
+    if( idx == 0 ) A = 1.0;
+
+    double B = 0;
+    if( idx == 1 ) B = 1.0;
+
+    double C = 0;
+    if( idx == 2 ) C = 1.0;
+
+    kblock[0][0] = B*kval+C*kderij[0][0];
+    kblock[1][0] = C*kderj[0];
+    kblock[2][0] = B*kval;
+
+    kblock[0][1] = C*kderi[0];
+    kblock[1][1] = A*kval+C*kval;
+    kblock[2][1] = -A*kderi[0];
+
+    kblock[0][2] = B*kval;
+    kblock[1][2] = -A*kderj[0];
+    kblock[2][2] = B*kval+A*kderij[0][0];
+}
+
+//------------------------------------------------------------------------------
+
+void CAUSIntegratorGPRcA::CalcKderWRTWFac(size_t cv)
+{
+    CSimpleVector<double> ipos;
+    CSimpleVector<double> jpos;
+    ipos.CreateVector(NumOfCVs);
+    jpos.CreateVector(NumOfCVs);
+
+    CFortranMatrix kblock;
+    kblock.CreateMatrix(3,3);
+
+    Kder.SetZero();
+
+    int offset0 = 0;
+    int offset1 = offset0 + NumOfUsedBins;
+    int offset2 = offset1 + NumOfUsedBins;
+
+    // generate main kernel block
+    #pragma omp parallel for firstprivate(ipos,jpos,kblock)
+    for(size_t indi=0; indi < NumOfUsedBins; indi++){
+        size_t ibin = SampledMap[indi];
+        Accu->GetPoint(ibin,ipos);
+
+        for(size_t indj=0; indj < NumOfUsedBins; indj++){
+            size_t jbin = SampledMap[indj];
+            Accu->GetPoint(jbin,jpos);
+
+            CreateTKDerWFac(ipos,jpos,kblock,cv);
+
+            Kder[offset0 + indi][offset0 + indj] = kblock[0][0];
+            Kder[offset0 + indi][offset1 + indj] = kblock[0][1];
+            Kder[offset0 + indi][offset2 + indj] = kblock[0][2];
+
+            Kder[offset1 + indi][offset0 + indj] = kblock[1][0];
+            Kder[offset1 + indi][offset1 + indj] = kblock[1][1];
+            Kder[offset1 + indi][offset2 + indj] = kblock[1][2];
+
+            Kder[offset2 + indi][offset0 + indj] = kblock[2][0];
+            Kder[offset2 + indi][offset1 + indj] = kblock[2][1];
+            Kder[offset2 + indi][offset2 + indj] = kblock[2][2];
+        }
+    }
+}
+
+//------------------------------------------------------------------------------
+
+void CAUSIntegratorGPRcA::CreateTKDerWFac(const CSimpleVector<double>& ip, const CSimpleVector<double>& jp, CFortranMatrix& kblock, int cv)
+{
+    kblock.SetZero();
+
+    CSimpleVector<double> kderi;
+    CSimpleVector<double> kderj;
+    kderi.CreateVector(NumOfCVs);
+    kderj.CreateVector(NumOfCVs);
+
+    CFortranMatrix kderij;
+    kderij.CreateMatrix(NumOfCVs,NumOfCVs);
+
+    double kval = GetKernelValueWFacDer(ip,jp,cv);
+    GetKernelDerIWFacDer(ip,jp,cv,kderi);
+    GetKernelDerJWFacDer(ip,jp,cv,kderj);
+    GetKernelDerIJWFacDer(ip,jp,cv,kderij);
+
+    double A = SigmaF2[0];
+    double B = SigmaF2[1];
+    double C = SigmaF2[2];
+
+    kblock[0][0] = B*kval+C*kderij[0][0];
+    kblock[1][0] = C*kderj[0];
+    kblock[2][0] = B*kval;
+
+    kblock[0][1] = C*kderi[0];
+    kblock[1][1] = A*kval+C*kval;
+    kblock[2][1] = -A*kderi[0];
+
+    kblock[0][2] = B*kval;
+    kblock[1][2] = -A*kderj[0];
+    kblock[2][2] = B*kval+A*kderij[0][0];
+}
+
+//------------------------------------------------------------------------------
+
+void CAUSIntegratorGPRcA::CalcKderWRTSigmaN2(size_t idx)
 {
     if( (idx < 0) || (idx > 2) ) RUNTIME_ERROR("idx out-of-range");
 

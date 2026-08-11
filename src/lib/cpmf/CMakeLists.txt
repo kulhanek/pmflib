@@ -28,9 +28,9 @@ SET(CPMF_METHODS_SRC
         common/smoothers/SmootherGPR.cpp
 
     # PMF
-        methods/pmf/GHSIntegratorGPR0A.cpp
-        methods/pmf/GHSIntegratorGPR0B.cpp
-        methods/pmf/GHSIntegratorGPRcA.cpp
+        methods/pmf/AUSIntegratorGPR0A.cpp
+        methods/pmf/AUSIntegratorGPR0B.cpp
+        methods/pmf/AUSIntegratorGPRcA.cpp
 
     # ABF
         methods/abf/ABFProxy_dAdx.cpp
