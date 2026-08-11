@@ -24,6 +24,7 @@
 // =============================================================================
 
 #include "AUSEnergyIntOptions.hpp"
+#include <GPREngineAUSInit.hpp>
 
 //==============================================================================
 //------------------------------------------------------------------------------
@@ -133,6 +134,11 @@ int CAUSEnergyIntOptions::FinalizeOptions(void)
 
     if(GetOptVersion() == true) {
         PrintVersion();
+        ret_opt = true;
+    }
+
+    if( GetOptListRealms() == true){
+        CGPREngineAUSInit::PrintRealms(std::cout);
         ret_opt = true;
     }
 
