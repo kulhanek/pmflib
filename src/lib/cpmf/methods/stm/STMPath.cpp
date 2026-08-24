@@ -1051,11 +1051,15 @@ bool CSTMPath::LoadCVSplines(CPrmFile& prmfile)
         }
 
     } else {
+        for(int i=0; i < NumOfBeads; i++){
+            InputBeads[i]->PPos = InputBeads[i]->Pos;
+        }
+
         OptimizePath(InputBeads);
 
         for(int i=0; i < NumOfBeads; i++){
-            Beads[i]->Pos = InputBeads[i]->Pos;
-            Beads[i]->Alpha = InputBeads[i]->Alpha;
+            Beads[i]->Pos = InputBeads[i]->Pos;         /* keep original positions */
+            Beads[i]->Alpha = InputBeads[i]->Alpha;     /* use calculated alphas in OptimizePath() */
             Beads[i]->BeadID = InputBeads[i]->BeadID;
             Beads[i]->BeadType = InputBeads[i]->BeadType;
         }
