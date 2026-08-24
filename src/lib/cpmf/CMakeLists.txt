@@ -23,14 +23,12 @@ SET(CPMF_METHODS_SRC
         common/integrators/IntegratorRFD.cpp
         common/integrators/IntegratorRBF.cpp
         common/integrators/IntegratorGPR.cpp
+        common/integrators/AUSIntegratorGPR0A.cpp
+        common/integrators/AUSIntegratorGPR0B.cpp
+        common/integrators/AUSIntegratorGPRcA.cpp
 
     # smoothers
         common/smoothers/SmootherGPR.cpp
-
-    # PMF
-        methods/pmf/AUSIntegratorGPR0A.cpp
-        methods/pmf/AUSIntegratorGPR0B.cpp
-        methods/pmf/AUSIntegratorGPRcA.cpp
 
     # ABF
         methods/abf/ABFProxy_dAdx.cpp
