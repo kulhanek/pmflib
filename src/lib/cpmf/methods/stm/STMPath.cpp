@@ -3234,17 +3234,19 @@ void CSTMPath::InitPathSegments(void)
         i++;
 
         // Find the end of the segment
-        while( (i < nbeads) && (Beads[i]->BeadType != BTY_FREE) ) {
+        while( (i < nbeads-1) && (Beads[i]->BeadType != BTY_FREE) ) {
             i++;
         }
         int seg_last = i;
+        i++;
 
         // make a list
         std::vector<CBeadPtr> segment;
-        for(int idx = seg_first; idx < seg_last; idx++){
+        for(int idx = seg_first; idx <= seg_last; idx++){
             if( (idx < 0) || (idx >= nbeads) ) continue;
             segment.push_back(Beads[idx]);
         }
+        // cout << "PSS: " << segment.size() << " " << seg_first << " " << seg_last <<  endl; 
         PathSegments.push_back(segment);
     }
 
