@@ -3223,34 +3223,45 @@ void CSTMPath::InitPathSegments(void)
     int nbeads = Beads.size();
     int i = 0;
 
-    while( i < nbeads ){
-        if( (i != 0) && (Beads[i]->BeadType != BTY_FREE) ){
+    while (i < nbeads) {
+        if ((i != 0) && (Beads[i]->BeadType != BTY_FREE)) {
             CSmallString error;
-            error << "path segment must start with the free bead or the first bead of the path, bidx: " << i+1;
+            error << "path segment must start with the free bead "
+                     "or the first bead of the path, bidx: "
+                  << i + 1;
             RUNTIME_ERROR(error)
         }
+
         int seg_first = i;
 
         i++;
 
-        // Find the end of the segment
-        while( (i < nbeads-1) && (Beads[i]->BeadType != BTY_FREE) ) {
+        // Find the end of the segment:
+        // either the next BTY_FREE bead or the last bead.
+        while ((i < nbeads - 1) &&
+               (Beads[i]->BeadType != BTY_FREE)) {
             i++;
         }
-        int seg_last = i;
-        i++;
 
-        // make a list
+        int seg_last = i;
+
+        // Make a list
         std::vector<CBeadPtr> segment;
-        for(int idx = seg_first; idx <= seg_last; idx++){
-            if( (idx < 0) || (idx >= nbeads) ) continue;
+        for (int idx = seg_first; idx <= seg_last; idx++) {
             segment.push_back(Beads[idx]);
         }
-        // cout << "PSS: " << segment.size() << " " << seg_first << " " << seg_last <<  endl; 
-        PathSegments.push_back(segment);
-    }
 
-    // cout << "PSS: " << PathSegments.size() <<  endl; 
+        PathSegments.push_back(segment);
+
+        // A BTY_FREE bead is the end of this segment and
+        // the beginning of the next one.
+        // If we reached the last bead, we are done.
+        if (seg_last == nbeads - 1) {
+            break;
+        }
+
+        i = seg_last;
+    }
 }
 
 //------------------------------------------------------------------------------
